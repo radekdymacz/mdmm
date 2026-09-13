@@ -61,7 +61,7 @@ namespace md
 		// Continuously drain this DSP's HOTX into the UC-facing HI08 receive queue, bounded so the
 		// queue never exceeds _maxUcWords. Returns the number of words moved. Safe to call from the
 		// scheduler (same context as the other UC-side callers of hdiTransferDSPtoUC). Used by
-		// md::Hardware to model MAME's continuous host_tx_queue push for DSP2, which raises the
+		// md::Hardware to keep DSP2's receive queue current, which raises the
 		// HI08 HREQ line that drives the ColdFire external IRQ4 (see mdhardware.cpp).
 		uint32_t pumpHostRx(size_t _maxUcWords);
 		void setHostPumpWakeCallback(const std::function<void()>& _callback);

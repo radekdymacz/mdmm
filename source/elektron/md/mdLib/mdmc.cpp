@@ -109,8 +109,8 @@ namespace md
 		// Report the MKII board profile used by both supported targets.
 		m_sim.setMk2PortAInvertedLoopback(true);
 
-		// The panel controller is not part of the emulator. Reproduce the public
-		// MAME driver's UART startup handshake here.
+		// The panel controller is not part of the emulator. Supply the minimal
+		// firmware-observed UART startup exchange here.
 		m_sim.setTransmitCallback(Sim::g_uartPanel, [this](const uint8_t _b) { onPanelTransmit(_b); });
 		m_sim.setTransmitCallback(Sim::g_uartMidi, [this](const uint8_t _b)
 		{
@@ -338,7 +338,9 @@ namespace md
 
 	void Microcontroller::onPanelTransmit(const uint8_t _byte)
 	{
-		// MAME-compatible Monomachine panel handshake.
+		// Minimal Monomachine panel handshake. Firmware disassembly establishes
+		// the 0xcc autobaud response; 0x23,0x01 is the compatible descriptor used
+		// by the earlier private bring-up implementation.
 		if(m_model == MachineModel::Monomachine)
 		{
 			// The exchange consists of an autobaud reply, a startup probe, and a
@@ -392,7 +394,7 @@ namespace md
 		if(m_panelDisplayReady && m_frontPanel)
 			decodePanelByte(_byte);
 
-		// Match the Machinedrum panel probe implemented by the MAME Elektron driver.
+		// Match the Machinedrum startup probe observed in the firmware UART stream.
 		static constexpr uint8_t probe[] =
 			{ 0x20, 0xff, 0x21, 0xff, 0x22, 0xff, 0x23, 0xff, 0x24, 0xff, 0x25, 0xff, 0x30, 0x00 };
 
@@ -401,16 +403,13 @@ namespace md
 			if(++m_panelProbeIndex == sizeof(probe))
 			{
 				m_panelProbeIndex = 0;
-				// Startup reply, matching MAME panel_send_startup_reply's default: ready
-				// signature 0x24, then the panel "startup flags" byte (MAME's PANEL config
-				// ioport, whose default is 0x00 - a DIP-style panel-variant selector), then
-				// the model/status byte 0x00. 0x00 is the correct default, not a placeholder.
+				// The 0x24,0x00,0x00 reply was found by tracing the firmware's
+				// receive path and advances it from panel probing into DSP setup.
 				m_sim.queueRx(Sim::g_uartPanel, 0x24);	// startup ready signature
 				m_sim.queueRx(Sim::g_uartPanel, 0x00);	// startup flags (PANEL config default)
 				m_sim.queueRx(Sim::g_uartPanel, 0x00);	// model / status
 
-				// The panel is now "present"; enable the periodic display-ready semaphore
-				// post (MAME: panel_send_startup_reply -> panel_display_ready).
+				// The panel is now present, so subsequent bytes are LCD/LED traffic.
 				m_panelDisplayReady = true;
 			}
 		}
@@ -584,55 +583,6 @@ namespace md
 		if(r.peripheral)					{ logPeripheral(_addr, 0, 1, false); return 0; }
 		if(!r.data || r.offset >= r.size)	return 0;
 		return r.data[r.offset];
-	}
-
-	bool Microcontroller::tryUpdatePatchBytes(const PatchByteUpdate* const _updates,
-		const size_t _count)
-	{
-		if(!_updates || _count == 0)
-			return false;
-		std::unique_lock patchLock(m_patchRamMutex, std::try_to_lock);
-		if(!patchLock.owns_lock())
-			return false;
-
-		for(size_t i = 0; i < _count; ++i)
-		{
-			if(!memorymap::isPatchRam(_updates[i].address))
-				return false;
-			const auto region = resolve(_updates[i].address);
-			if(!region.writable || !region.data || region.offset >= region.size)
-				return false;
-		}
-		for(size_t i = 0; i < _count; ++i)
-		{
-			const auto region = resolve(_updates[i].address);
-			const auto& update = _updates[i];
-			region.data[region.offset] = static_cast<uint8_t>(
-				(region.data[region.offset] & ~update.mask)
-				| (update.value & update.mask));
-		}
-		return true;
-	}
-
-	bool Microcontroller::tryReadPatchBytes(const uint32_t* const _addresses,
-		uint8_t* const _values, const size_t _count)
-	{
-		if(!_addresses || !_values || _count == 0)
-			return false;
-		std::shared_lock patchLock(m_patchRamMutex, std::try_to_lock);
-		if(!patchLock.owns_lock())
-			return false;
-
-		for(size_t i = 0; i < _count; ++i)
-		{
-			if(!memorymap::isPatchRam(_addresses[i]))
-				return false;
-			const auto region = resolve(_addresses[i]);
-			if(!region.data || region.offset >= region.size)
-				return false;
-			_values[i] = region.data[region.offset];
-		}
-		return true;
 	}
 
 	uint16_t Microcontroller::read16(const uint32_t _addr)

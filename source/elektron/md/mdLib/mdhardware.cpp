@@ -1,5 +1,6 @@
 #include "mdhardware.h"
 #include "mdhostclock.h"
+#include "mdtransportpolicy.h"
 
 #include "mdsysexautomation.h"
 #include "synthLib/realtimeInstrumentation.h"
@@ -22,15 +23,13 @@
 
 namespace md
 {
-	// ColdFire MCF5206E system clock. The MAME driver clocks the CPU from a 25.447 MHz
-	// crystal (elektronmono.cpp); used to convert mixer-DSP execution -> UC cycle budget. The
-	// MD Sim doesn't model a PLL yet, so this is the fixed nominal rate.
+	// The current 40 MHz ColdFire clock is consistent with the firmware's timer
+	// and UART divisors. It converts mixer-DSP execution into a UC cycle budget.
 
 	// One codec (ESSI1) stereo frame corresponds to a fixed number of DSP1-executed cycles. The
 	// firmware configures a 96-cycle base link slot; the ESSI1 divider and two stereo slots produce
 	// 2304 cycles per codec frame at the 101.6064 MHz DSP clock.
-	// The UC is granted g_ucClockHz/44100 = 577 cycles per such frame, matching the
-	// hardware's 25.447/101.6064 MHz clock ratio.
+	// The UC is granted g_ucClockHz/44100, about 907.03 cycles per frame.
 	constexpr uint64_t g_dsp1CyclesPerEsaiFrame  = 2304;
 
 	Rom initRom(const std::vector<uint8_t>& _romData, const std::string& _romName,
@@ -215,7 +214,7 @@ namespace md
 					}
 
 					// Typed early-link-catch-up construction selects floor 0; otherwise the post-boot
-					// gate is 256. Floor 0 runs MAME-style consumer catch-up during the boot window.
+					// gate is 256. Floor 0 runs consumer catch-up during the boot window.
 					const uint64_t strobeEpoch = (isMonomachine() && _selfDsp == 1)
 						? m_mmLinkStrobeEpoch.load(std::memory_order_acquire) : 0;
 					// With an explicit floor, fire when esaiFrameIndex >= floor (floor=0 => ALWAYS,
@@ -436,9 +435,10 @@ namespace md
 		// the producer (DSP2) receives it, so the mixer's inputs stay quiet (nothing sets a
 		// host input source -> reads 0) and the producer sees a running clock. The producer's
 		// ESSI0 SC01 pin (Port C bit 1) additionally carries the link frame sync the program
-		// paces itself against (MAME models the same signal as a synthesized toggle every
-		// 147456 cycles). All modelled as instruction-counter derived square waves, evaluated
-		// in the reading DSP's execution context.
+		// paces itself against. Earlier firmware disassembly and timing sweeps identified
+		// one edge per 147456 DSP cycles, or 128 codec-word periods. The current model
+		// forwards DSP1's Port C edge below. Port D remains instruction-counter derived
+		// and is evaluated in the reading DSP's execution context.
 		{
 			const auto& cnt = m_dspProducer.dsp().getInstructionCounter();
 
@@ -915,24 +915,25 @@ namespace md
 		// DSP2's HI08 receive request drives ColdFire IRQ4. Monomachine uses
 		// the hardware RXDF latch. Waiting for three queued words spans two of
 		// its block notifications instead of requesting service for the first word.
-		const size_t hostRxIrqMinWords = isMonomachine() ? 1 : 3;
-		static constexpr size_t g_maxUcQueuedWords  = 16;	// bound on the host-side queue depth
+		const auto policy = transportPolicy(m_model);
 
-		// MAME drains both DSP transmit paths continuously; only the HREQ-to-IRQ4
-		// wire is DSP2-specific. Drain the mixer path as well so its transmit
+		// Drain both DSP transmit paths continuously; only the HREQ-to-IRQ4 wire
+		// is DSP2-specific. Drain the mixer path as well so its transmit
 		// register cannot remain full.
 		uint32_t mixerMoved = 0;
 		if(m_dspMixer.booted())
-			mixerMoved = m_dspMixer.pumpHostRx(g_maxUcQueuedWords);
+			mixerMoved = m_dspMixer.pumpHostRx(policy.hostReceiveQueueCapacityWords);
 
 		if(!m_dspProducer.booted())
 			return;	// pre-boot: DSP2 is not producing; IRQ4 stays deasserted (reset default)
 
-		const uint32_t producerMoved = m_dspProducer.pumpHostRx(g_maxUcQueuedWords);
+		const uint32_t producerMoved = m_dspProducer.pumpHostRx(
+			policy.hostReceiveQueueCapacityWords);
 
 		auto& hdi = m_uc.getHdi08Dsp2();
 		const bool rreq = (hdi.icr() & mc68k::Hdi08::Rreq) != 0;	// ColdFire enabled receive requests
-		const bool hreq = rreq && hdi.hostRxWordsAvailable() >= hostRxIrqMinWords;
+		const bool hreq = rreq && hdi.hostRxWordsAvailable()
+			>= policy.hostReceiveIrqMinWords;
 		(void)mixerMoved;
 		(void)producerMoved;
 		m_uc.getSim().setExternalIrq4(hreq);
@@ -1057,25 +1058,21 @@ namespace md
 	// _machineFrames codec frames of shared machine time, on the caller's thread, with no background
 	// threads. It maintains a machine clock in codec frames and, in an event-driven loop, repeatedly
 	// steps whichever component (UC / DSP1 / DSP2) is furthest BEHIND the clock forward by a bounded
-	// background quantum (MAME's "run each processor in large chunks, catch up at every interaction"
-	// model; fine-grained UC<->DSP synchronisation happens at each HI08 access). Rates are
+	// background quantum. Fine-grained UC<->DSP synchronization happens at each HI08 access. Rates are
 	// exact: one frame = g_dsp1CyclesPerEsaiFrame (2304) DSP cycles = g_ucClockHz/g_samplerate UC
-	// cycles. The scheduler uses a model-specific background quantum and MAME's
-	// 100k-cycle catch-up clamp.
+	// cycles. The scheduler uses the model-specific transport policy below.
 	// -------------------------------------------------------------------------------------------
 	namespace
 	{
 		double schedQuantumFrames(const MachineModel _model)
 		{
-			// MM's host traffic needs a tighter background interleave than the MD
-			// path so short mailbox pulses remain visible.
-			const double us = _model == MachineModel::Monomachine ? 30.0 : 125.0;
+			const double us = transportPolicy(_model).backgroundQuantumMicroseconds;
 			return us * static_cast<double>(g_samplerate) / 1.0e6;				// -> codec frames
 		}
 
-		uint64_t schedClampCycles()
+		uint64_t schedClampCycles(const MachineModel _model)
 		{
-			return 100'000;	// MAME time_catchup_max_cycles
+			return transportPolicy(_model).catchUpMaxDspCycles;
 		}
 
 		double schedUcCyclesPerFrame()
@@ -1120,7 +1117,7 @@ namespace md
 	{
 		const double ucPerFrame   = schedUcCyclesPerFrame();
 		const double quantumFrames= schedQuantumFrames(m_model);
-		const uint64_t clampCycles= schedClampCycles();
+		const uint64_t clampCycles= schedClampCycles(m_model);
 		const double target       = m_schedFramesTotal;
 
 		const double ucPos = static_cast<double>(m_schedUcCyclesDone) / ucPerFrame;
@@ -1150,20 +1147,21 @@ namespace md
 		const bool s_mmBackpressure = isMonomachine();
 		if(s_mmBackpressure)
 		{
-			constexpr size_t   g_bpThresholdWords = 4;			// MAME MM host queue is 2 words deep
-			constexpr uint64_t g_bpReleaseUcCycles = 200000;	// MAME backpressure clamp is 100k DSP cycles
+			const auto policy = transportPolicy(m_model);
 			for(uint32_t i = 0; i < 2; ++i)
 			{
 				auto& d = (i == 0) ? m_dspMixer : m_dspProducer;
 				double& pos = (i == 0) ? dsp1Pos : dsp2Pos;
-				if(!m_schedDspOriginLatched[i] || !d.booted() || d.hostTxBacklog() <= g_bpThresholdWords)
+				if(!m_schedDspOriginLatched[i] || !d.booted()
+					|| d.hostTxBacklog() <= policy.hostTransmitBackpressureThresholdWords)
 				{
 					m_mmBpSinceUcCycles[i] = 0;
 					continue;
 				}
 				if(!m_mmBpSinceUcCycles[i])
 					m_mmBpSinceUcCycles[i] = m_schedUcCyclesDone + 1;	// +1: 0 means "not stalled"
-				if(m_schedUcCyclesDone - (m_mmBpSinceUcCycles[i] - 1) < g_bpReleaseUcCycles)
+				if(m_schedUcCyclesDone - (m_mmBpSinceUcCycles[i] - 1)
+					< policy.hostTransmitBackpressureReleaseUcCycles)
 					pos = target;
 			}
 		}
@@ -1272,7 +1270,7 @@ namespace md
 
 	void Hardware::schedCatchUpDsp(const uint32_t _dspIndex)
 	{
-		// MAME catch_up_elapsed_time: run the target DSP inline up to the UC's current machine time
+		// Run the target DSP inline up to the UC's current machine time
 		// (the caller's point in the boot handshake) before a host access. This is what advances the
 		// DSP in fine lockstep with the UC's poll loops, so the UC's ISR/reply polls converge instead
 		// of spinning while the DSP is frozen for the UC's whole background quantum. Bounded by the
@@ -1287,19 +1285,21 @@ namespace md
 		const uint64_t targetCyc = dspCatchupDeadline<g_ucClockHz,
 			g_dsp1CyclesPerEsaiFrame * g_samplerate>(m_schedDspOriginCycles[i],
 				m_schedUcCyclesDone - m_schedDspOriginUcCycles[i]);
-		const uint64_t clampStop = d.dsp().getCycles() + schedClampCycles();
+		const auto policy = transportPolicy(m_model);
+		const uint64_t clampStop = d.dsp().getCycles() + policy.catchUpMaxDspCycles;
 		// MM flow control: a host-TX-backlogged DSP does not advance in catch-up either - the
 		// catch-up loops are how a DSP outruns the UC by thousands of words in the first place
 		// (see the schedStep backpressure comment). MD path untouched.
 		const bool s_mmBp = isMonomachine();
 		while(d.dsp().getCycles() < targetCyc && d.dsp().getCycles() < clampStop
-			&& (!s_mmBp || d.hostTxBacklog() <= 4))
+			&& (!s_mmBp
+				|| d.hostTxBacklog() <= policy.hostTransmitBackpressureThresholdWords))
 			d.dsp().exec();
 	}
 
 	void Hardware::schedCatchUpDspToDsp(const uint32_t _consumer, const uint32_t _producer)
 	{
-		// Before a producer DSP enqueues a link frame into the MAME-style ESSI route,
+		// Before a producer DSP enqueues a link frame into the ESSI route,
 		// consumer DSP's input ring, advance the CONSUMER to the producer's current machine time - so a
 		// frame is never consumed "before" (in DSP-time) it was produced, nor an arbitrary quantum
 		// late. The reentrancy guard stops the consumer's own back-channel pushes from recursing into a
@@ -1328,11 +1328,13 @@ namespace md
 			// left the reentrancy guard; returning here is equivalent and avoids that hot cost.
 			return;
 		}
-		const uint64_t clampStop = d.dsp().getCycles() + schedClampCycles();
+		const auto policy = transportPolicy(m_model);
+		const uint64_t clampStop = d.dsp().getCycles() + policy.catchUpMaxDspCycles;
 		m_schedInLinkDelivery = true;
 		const bool bpGate = isMonomachine();
 		while(d.dsp().getCycles() < targetCyc && d.dsp().getCycles() < clampStop
-			&& (!bpGate || d.hostTxBacklog() <= 4))
+			&& (!bpGate
+				|| d.hostTxBacklog() <= policy.hostTransmitBackpressureThresholdWords))
 			d.dsp().exec();
 		m_schedInLinkDelivery = false;
 	}

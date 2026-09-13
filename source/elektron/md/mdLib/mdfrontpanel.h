@@ -26,8 +26,9 @@ namespace md
 	//         0x24 = sound/DRUM LEDs 1-8      0x25 = sound/DRUM LEDs 9-16
 	//       MM extends the protocol through 0x2d; raw accessors expose those banks.
 	//
-	// The stream interleaves both. Decoder behavior follows the public MAME
-	// Elektron driver and the documented LCD controller protocol. It carries no
+	// The stream interleaves both. Decoder behavior follows captured firmware
+	// output from the earlier bring-up work and the documented LCD controller
+	// protocol. It carries no
 	// emulator, MCU/DSP state, or I/O.
 	// Feed it host->panel bytes with processByte()/processBytes() and read the
 	// reconstructed framebuffer and LED banks back through the accessors.
@@ -149,7 +150,7 @@ namespace md
 		std::array<uint8_t, g_ledBankCount> m_ledBank{};
 		std::array<bool, g_ledBankCount> m_ledBankWritten{};
 
-		// Streaming parser (mirrors the MAME state machine):
+		// Streaming parser for the observed panel protocol:
 		//   0 idle, 1 tile column-base, 2 tile payload, 3 command argument.
 		uint8_t m_parseState = 0;
 		uint8_t m_cmd = 0;
