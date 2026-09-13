@@ -80,13 +80,21 @@ set_tests_properties(mdIdleSchedulerFirmwareTest PROPERTIES
 	LABELS "Integration;FirmwareTest;Timing" SKIP_RETURN_CODE 77 TIMEOUT 120)
 set_property(TARGET mdIdleSchedulerFirmwareTest PROPERTY FOLDER "Elektron/test")
 
+add_executable(mdPanelReadinessFirmwareTest panelReadinessFirmwareTest.cpp)
+target_link_libraries(mdPanelReadinessFirmwareTest PRIVATE mdLib)
+add_test(NAME mdPanelReadinessFirmwareTest COMMAND mdPanelReadinessFirmwareTest)
+set_tests_properties(mdPanelReadinessFirmwareTest PROPERTIES
+	LABELS "Integration;FirmwareTest;Panel" SKIP_RETURN_CODE 77 TIMEOUT 180)
+set_property(TARGET mdPanelReadinessFirmwareTest PROPERTY FOLDER "Elektron/test")
+
 if(BUILD_TESTING)
 	# The existing CI gate builds mdLibTest and selects only mdLibTests.
 	# Build its prerequisites and let CTest fixtures include them in that
 	# focused run, so a core/receive regression cannot silently skip the gate.
 	add_dependencies(mdLibTest mc68kColdFireTimingTest mc68kHdi08ReceiveTest
 		mc68kColdFireDivideTest mdHostRxTimingTest mdHostRxFirmwareTest
-		mdIdleSelfBranchTest mdIdleSchedulerFirmwareTest mdUartRegisterTest mdUartCpuInterruptTest)
+		mdIdleSelfBranchTest mdIdleSchedulerFirmwareTest mdPanelReadinessFirmwareTest
+		mdUartRegisterTest mdUartCpuInterruptTest)
 	set_tests_properties(mdHostRxTimingTest PROPERTIES FIXTURES_SETUP MdTimedHostRx)
 	set_tests_properties(mdIdleSelfBranchTest PROPERTIES FIXTURES_SETUP MdIdleSelfBranch)
 	set_tests_properties(mdUartRegisterTest mdUartCpuInterruptTest PROPERTIES FIXTURES_SETUP MdUart)
