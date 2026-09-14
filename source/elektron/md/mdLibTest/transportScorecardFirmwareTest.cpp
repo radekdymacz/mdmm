@@ -132,6 +132,25 @@ namespace
 			<< score.idleSelfBranchInstructions
 			<< " MM backpressure parks=" << score.mmBackpressureParkDecisions[0]
 			<< ',' << score.mmBackpressureParkDecisions[1] << '\n';
+
+		// A snapshot must read the real queues, not merely repeat the depth
+		// remembered by the recorder. Inject one deliberately unrecorded frame
+		// after firmware validation; no further firmware is run on this instance.
+		for(size_t direction = 0; direction < score.link.size(); ++direction)
+		{
+			auto& receiver = direction == 0 ? hardware->getDspProducer()
+				: hardware->getDspMixer();
+			auto& ring = receiver.getPeriph().getEssi0().getAudioInputs();
+			require(!ring.full(), "no room for independent queue snapshot regression");
+			const auto depth = ring.size();
+			dsp56k::Audio::RxFrame injected;
+			injected.clear();
+			ring.push_back(std::move(injected));
+			const auto mutated = hardware->getTransportScorecard();
+			require(mutated.link[direction].currentRingDepth == depth + 1
+				&& mutated.link[direction].acceptedFrames == score.link[direction].acceptedFrames,
+				"snapshot hid an unrecorded queue mutation");
+		}
 	}
 }
 
