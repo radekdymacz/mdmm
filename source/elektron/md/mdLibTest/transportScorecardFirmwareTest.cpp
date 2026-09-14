@@ -70,6 +70,13 @@ namespace
 			const auto& link = score.link[direction];
 			const std::string name = direction == 0
 				? "mixer->producer" : "producer->mixer";
+			// The MM firmware does not use the reverse link. Every active link
+			// must have real traffic; otherwise all-zero counters satisfy the
+			// accounting identities even when recording is accidentally absent.
+			if(direction == 1 || _model == md::MachineModel::Machinedrum)
+				require(link.transmitFrames > 0 && link.acceptedFrames > 0
+					&& link.receiveCallbacks > 0 && link.poppedFrames > 0,
+					std::string(_label) + ' ' + name + " recorded no traffic");
 			require(link.transmitFrames == link.dispositionTotal(),
 				std::string(_label) + ' ' + name
 					+ " dispositions do not account for every transmit frame");
@@ -110,11 +117,16 @@ namespace
 				<< " mm-strobe=" << link.mmStrobePurgedFrames << '\n';
 		}
 
+		require(score.backgroundUc.calls > 0 && score.backgroundUc.executedCycles > 0,
+			std::string(_label) + " recorded no background UC work");
 		verifySchedulerPath(score.backgroundUc, std::string(_label) + " background UC");
 		printSchedulerPath(score.backgroundUc, "background UC");
 		for(size_t dsp = 0; dsp < 2; ++dsp)
 		{
 			const auto suffix = std::string(" DSP") + std::to_string(dsp + 1);
+			require(score.backgroundDsp[dsp].calls > 0
+				&& score.backgroundDsp[dsp].executedCycles > 0,
+				std::string(_label) + " recorded no background" + suffix + " work");
 			verifySchedulerPath(score.backgroundDsp[dsp],
 				std::string(_label) + " background" + suffix);
 			verifySchedulerPath(score.coldFireToDsp[dsp],
