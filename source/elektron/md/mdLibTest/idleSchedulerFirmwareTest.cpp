@@ -39,9 +39,9 @@ namespace
 	}
 
 	std::unique_ptr<md::Hardware> machine(const std::vector<uint8_t>& rom,
-		uint64_t now, unsigned source, uint64_t delta)
+		uint64_t now, unsigned source, uint64_t delta, const md::MachineModel model)
 	{
-		auto hw = std::make_unique<md::Hardware>(rom, "idle-boundary-test", md::MachineModel::Monomachine);
+		auto hw = std::make_unique<md::Hardware>(rom, "idle-boundary-test", model);
 		require(hw->isValid(), "invalid hardware");
 		auto& cpu = hw->getUC();
 		cpu.write16(0x200080, 0x60fe);
@@ -73,15 +73,20 @@ namespace
 		}
 		auto& producer = source ? hw->getDspProducer() : hw->getDspMixer();
 		producer.hdi08().writeTX(0x123456);
-		require(producer.hasDeferredHostRx() == (delta != 0), "staged deadline differs");
+		// Only the Monomachine stages host words through a timed receive latch.
+		// The Machinedrum pumps them straight into the host queue on the next
+		// UC step, so there is no deferred state to assert for it.
+		if(model == md::MachineModel::Monomachine)
+			require(producer.hasDeferredHostRx() == (delta != 0), "staged deadline differs");
 		return hw;
 	}
 
 	void compare(const std::vector<uint8_t>& rom, uint64_t now,
-		unsigned source, uint64_t delta, uint64_t targetCycles)
+		unsigned source, uint64_t delta, uint64_t targetCycles,
+		const md::MachineModel model)
 	{
-		auto a = machine(rom, now, source, delta);
-		auto b = machine(rom, now, source, delta);
+		auto a = machine(rom, now, source, delta, model);
+		auto b = machine(rom, now, source, delta, model);
 		const double target = static_cast<double>(now + targetCycles) / (40000000.0 / 44100);
 		Access::target(*a, target);
 		Access::target(*b, target);
@@ -110,7 +115,8 @@ namespace
 			== b->getUC().getSim().read16(Sim::g_timer1Base + Sim::g_timerTcn), "timer progression differs");
 	}
 
-	void schedulerBoundaries(const std::vector<uint8_t>& rom)
+	void schedulerBoundaries(const std::vector<uint8_t>& rom,
+		const md::MachineModel model)
 	{
 		unsigned cases = 0;
 		for(uint64_t now : {uint64_t{0}, (uint64_t{1} << 40) + 8, uint64_t{40000000} * 86400})
@@ -119,27 +125,41 @@ namespace
 					uint64_t{16}, uint64_t{17}, uint64_t{63}, uint64_t{129}})
 					for(uint64_t target : {delta > 2 ? delta - 1 : uint64_t{2}, delta + 1, delta + 3, uint64_t{512}})
 					{
-						compare(rom, now, source, delta, target);
+						compare(rom, now, source, delta, target, model);
 						++cases;
 					}
-		std::cout << "Scheduler: " << cases << " publication/core/timer comparisons passed\n";
+		std::cout << (model == md::MachineModel::Monomachine ? "Monomachine" : "Machinedrum")
+			<< ": Scheduler: " << cases << " publication/core/timer comparisons passed\n";
+	}
+
+	bool runModelBoundaries(const char* envVar, const md::MachineModel model,
+		const char* label)
+	{
+		const auto* path = std::getenv(envVar);
+		if(!path || !*path)
+		{
+			std::cout << "Set " << envVar << " to run the " << label
+				<< " idle scheduler integration test\n";
+			return false;
+		}
+		std::vector<uint8_t> rom;
+		require(baseLib::filesystem::readFile(rom, path), "could not read firmware");
+		require(md::RomLoader::isRomForModel(rom, model), "unsupported firmware");
+		schedulerBoundaries(rom, model);
+		return true;
 	}
 }
 
 int main()
 {
-	const auto* path = std::getenv("GEARMULATOR_MM_FIRMWARE_BIN");
-	if(!path || !*path)
-	{
-		std::cout << "Set GEARMULATOR_MM_FIRMWARE_BIN to run the idle scheduler integration test\n";
-		return 77;
-	}
 	try
 	{
-		std::vector<uint8_t> rom;
-		require(baseLib::filesystem::readFile(rom, path), "could not read firmware");
-		require(md::RomLoader::isRomForModel(rom, md::MachineModel::Monomachine), "unsupported firmware");
-		schedulerBoundaries(rom);
+		const bool mm = runModelBoundaries("GEARMULATOR_MM_FIRMWARE_BIN",
+			md::MachineModel::Monomachine, "Monomachine");
+		const bool md = runModelBoundaries("GEARMULATOR_MD_FIRMWARE_BIN",
+			md::MachineModel::Machinedrum, "Machinedrum");
+		if(!mm && !md)
+			return 77;
 	}
 	catch(const std::exception& e)
 	{
