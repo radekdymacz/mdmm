@@ -470,10 +470,7 @@ namespace md
 				return 0;
 			_maxCycles = std::min(_maxCycles, deadline - 1);
 		}
-		uint32_t instructions = _maxCycles / 2;
-		if(m_panelDisplayReady)
-			instructions = std::min(instructions,
-				0x3fffu - (m_panelDisplayReadyDivider & 0x3fffu));
+		const uint32_t instructions = _maxCycles / 2;
 		return instructions >= 8 ? instructions : 0;
 #endif
 	}
@@ -485,7 +482,7 @@ namespace md
 		// exactly the values left by the preceding real execution.
 		const uint32_t cycles = _instructions * 2;
 		m_cycles += cycles;
-		advanceAfterCpu(cycles, _instructions);
+		advanceAfterCpu(cycles);
 	}
 
 	uint32_t Microcontroller::readIrqUserVector(const uint8_t _level)
@@ -538,7 +535,7 @@ namespace md
 		}
 	}
 
-	void Microcontroller::advanceAfterCpu(const uint32_t _cycles, const uint32_t _instructions)
+	void Microcontroller::advanceAfterCpu(const uint32_t _cycles)
 	{
 		m_sim.exec(_cycles);
 
@@ -554,91 +551,6 @@ namespace md
 
 		if(m_externalIrq4Pending || m_sim.externalIrq4Asserted())
 			serviceExternalIrq4();
-
-		// Temporary MD firmware task-list workaround, not panel peripheral emulation.
-		// MM boot and continued panel operation do not require these private writes.
-		if(m_model == MachineModel::Machinedrum && m_panelDisplayReady
-			&& ((m_panelDisplayReadyDivider += _instructions) & 0x3fff) == 0)
-			panelDisplayReadyPost();
-	}
-
-	uint32_t Microcontroller::readMem32(const uint32_t _addr)
-	{
-		return (static_cast<uint32_t>(read16(_addr)) << 16) | read16(_addr + 2);
-	}
-
-	void Microcontroller::writeMem32(const uint32_t _addr, const uint32_t _value)
-	{
-		write16(_addr,     static_cast<uint16_t>(_value >> 16));
-		write16(_addr + 2, static_cast<uint16_t>(_value & 0xffff));
-	}
-
-	void Microcontroller::panelDisplayReadyPost()
-	{
-		// Retained MD firmware task-list manipulation. A hardware-level readiness
-		// replacement is still needed; the original MAME attribution is unverified.
-		constexpr uint32_t g_semaphore       = 0x002899e8;
-		constexpr uint32_t g_semaphoreSlot   = 0x0028d714;
-		constexpr uint32_t g_highestReadyList= 0x01001dc4;
-		constexpr uint32_t g_sramBase        = 0x01000000;
-		constexpr uint32_t g_sramEnd         = 0x01010000;
-
-		auto inSram = [](const uint32_t _a) { return !(_a & 3) && _a >= g_sramBase && _a <= (g_sramEnd - 4); };
-
-		// Validate the retained workaround's notification slot before updating it.
-		if(readMem32(g_semaphoreSlot) != g_semaphore)
-			return;
-
-		const uint32_t count  = readMem32(g_semaphore);
-		const uint32_t waiter = readMem32(g_semaphore + 4);
-
-		if(waiter == 0)
-		{
-			// Record a pending notification when no receiver is waiting.
-			if(count == 0)
-				writeMem32(g_semaphore, 1);
-			return;
-		}
-
-		if(!inSram(waiter))
-			return;
-
-		const uint32_t readyList = readMem32(waiter + 8);
-		if(!inSram(readyList))
-			return;
-
-		const uint32_t head = readMem32(readyList);
-		uint32_t headNext = 0;
-		if(head != 0)
-		{
-			if(!inSram(head))
-				return;
-			headNext = readMem32(head);
-			if(!inSram(headNext))
-				return;
-		}
-
-		// Apply the retained workaround's bounded task-list update.
-		writeMem32(g_semaphore, count);
-		writeMem32(g_semaphore + 4, 0);
-
-		const uint32_t highest = readMem32(g_highestReadyList);
-		if(readyList > highest)
-			writeMem32(g_highestReadyList, readyList);
-
-		if(head == 0)
-		{
-			writeMem32(readyList, waiter);
-			writeMem32(waiter, waiter);
-			writeMem32(waiter + 4, waiter);
-		}
-		else
-		{
-			writeMem32(waiter + 4, head);
-			writeMem32(waiter, headNext);
-			writeMem32(headNext + 4, waiter);
-			writeMem32(readyList, waiter);
-		}
 	}
 
 	uint32_t Microcontroller::onIllegalInstruction(const uint32_t _opcode)

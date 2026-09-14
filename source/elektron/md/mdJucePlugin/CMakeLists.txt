@@ -271,6 +271,12 @@ if(BUILD_TESTING)
 		${CMAKE_CURRENT_SOURCE_DIR}/../../..)
 	target_compile_definitions(mdProjectStateRestoreTest PRIVATE
 		JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1)
+	# Keep the restored-audio NaN/Inf checks effective in optimized test builds.
+	if(MSVC)
+		target_compile_options(mdProjectStateRestoreTest PRIVATE /fp:precise)
+	else()
+		target_compile_options(mdProjectStateRestoreTest PRIVATE -fno-fast-math)
+	endif()
 	add_test(NAME mdProjectStateRestoreTest COMMAND mdProjectStateRestoreTest)
 	set_tests_properties(mdProjectStateRestoreTest PROPERTIES
 		LABELS "Integration;FirmwareTest"

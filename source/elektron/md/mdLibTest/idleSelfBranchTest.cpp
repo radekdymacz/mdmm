@@ -19,15 +19,6 @@ namespace md
 		{
 			c.advanceIdleSelfBranch(instructions);
 		}
-		static void panel(Microcontroller& c, uint32_t divider)
-		{
-			c.m_panelDisplayReady = true;
-			c.m_panelDisplayReadyDivider = divider;
-		}
-		static uint32_t divider(const Microcontroller& c)
-		{
-			return c.m_panelDisplayReadyDivider;
-		}
 	};
 }
 
@@ -71,7 +62,6 @@ namespace
 		require(std::memcmp(static_cast<m68ki_cpu_core*>(a.getCpuState()),
 			static_cast<m68ki_cpu_core*>(b.getCpuState()), sizeof(m68ki_cpu_core)) == 0,
 			"CPU architectural/internal state differs");
-		require(Access::divider(a) == Access::divider(b), "panel instruction divider differs");
 		for(unsigned base : {Sim::g_timer1Base, Sim::g_timer2Base})
 			for(unsigned offset : {Sim::g_timerTmr, Sim::g_timerTrr, Sim::g_timerTcn, Sim::g_timerTer})
 				require(a.getSim().read16(base + offset) == b.getSim().read16(base + offset),
@@ -198,16 +188,6 @@ namespace
 			b->injectInterrupt(28, 4);
 			require(Access::limit(*b, 1000) == 0, "serviceable interrupt was skipped");
 		}
-		auto a = cpu();
-		auto b = cpu();
-		for(uint32_t divider : {0u, 0x3ff0u, 0x3ffeu, 0x3fffu, 0xfffffff0u})
-		{
-			Access::panel(*a, divider);
-			Access::panel(*b, divider);
-			run(*a, 100, false);
-			run(*b, 100, true);
-			equal(*a, *b);
-		}
 		auto c = cpu();
 		c->getSim().write16(Sim::g_imr, 0);
 		c->getSim().write8(Sim::g_icrExtIrq4, 4 << 2);
@@ -222,7 +202,7 @@ namespace
 		c->exec();
 		require(!c->hasPendingInterrupt(28, 4), "external IRQ not removed");
 		require(Access::limit(*c, 1000) > 0, "idle acceleration did not resume");
-		std::cout<<"CPU, code mutation, panel divider and external IRQ guards passed\n";
+		std::cout<<"CPU, code mutation and external IRQ guards passed\n";
 	}
 }
 
