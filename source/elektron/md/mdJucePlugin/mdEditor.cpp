@@ -6,6 +6,7 @@
 #include "mdSettingsAudioInput.h"
 #include "mdSettingsPanelFeel.h"
 #include "mdPixelPerfectPanel.h"
+#include "mdLcdViewport.h"
 
 #include "jucePluginEditorLib/pluginProcessor.h"
 #include "jucePluginEditorLib/fileChooserFlow.h"
@@ -36,7 +37,7 @@
 #include "RmlUi/Core/ElementDocument.h"
 
 #include <algorithm>
-#include <cstdlib>
+#include <cmath>
 #include <functional>
 #include <string>
 #include <vector>
@@ -221,6 +222,9 @@ namespace mdJucePlugin
 		auto published = publisher->readPublishedState();
 		m_lcdChanged = !m_frontPanelSnapshotValid
 			|| lcdChanged(m_frontPanelSnapshot, published.panel);
+		m_lcdInteractionInputChanged = !m_frontPanelSnapshotValid || m_lcdChanged
+			|| lcdInteraction::classificationLedsChanged(
+				m_frontPanelSnapshot, published.panel, getModel());
 		m_frontPanelSnapshot = std::move(published.panel);
 
 		if(m_ledResyncPending && published.ledSequence >= m_ledResyncSequence)
@@ -324,10 +328,73 @@ namespace mdJucePlugin
 
 		m_lcdCanvas = juceRmlUi::ElemCanvas::create(lcdArea);
 		m_lcdCanvas->setClearEveryFrame(true);
+		m_lcdCanvas->SetProperty(Rml::PropertyId::Drag, Rml::Style::Drag::Drag);
 		m_lcdCanvas->setRepaintGraphicsCallback([this](const juce::Image& _image, juce::Graphics& _g)
 		{
 			paintLcd(_image, _g);
 		});
+		juceRmlUi::EventListener::Add(m_lcdCanvas, Rml::EventId::Mousemove,
+			[this](Rml::Event& _event) { updateLcdHover(_event); });
+		juceRmlUi::EventListener::Add(m_lcdCanvas, Rml::EventId::Mouseout,
+			[this](Rml::Event&) { clearLcdHover(); });
+		juceRmlUi::EventListener::Add(m_lcdCanvas, Rml::EventId::Mousedown,
+			[this](Rml::Event& _event)
+			{
+				if(juceRmlUi::helper::getMouseButton(_event) != juceRmlUi::MouseButton::Left
+					|| juceRmlUi::helper::isContextMenu(_event) || !m_lcdInteractionState)
+					return;
+				const auto target = lcdTargetAt(_event);
+				if(!target)
+					return;
+				const auto mouse = juceRmlUi::helper::getMousePos(_event);
+				(void)m_lcdDragGesture.begin(*m_lcdInteractionState, *target,
+					mouse.x, mouse.y);
+				// RmlUi arms its drag source only after mousedown propagation completes.
+				// Stopping this event prevents every subsequent Drag event.
+			});
+		juceRmlUi::EventListener::Add(m_lcdCanvas, Rml::EventId::Drag,
+			[this](Rml::Event& _event)
+			{
+				if(!m_lcdDragGesture.active() || !m_lcdInteractionState)
+				{
+					cancelLcdGesture();
+					return;
+				}
+				const auto mouse = juceRmlUi::helper::getMousePos(_event);
+				const auto percent = getProcessor().getConfig().getIntValue(
+					"panelEncoderSpeedPercent", 100);
+				const auto base = getModel() == md::MachineModel::Monomachine ? 150.0 : 120.0;
+				const auto modifier = juceRmlUi::helper::getKeyModCommand(_event)
+					? lcdInteraction::commandFineScale : 1.0;
+				const auto steps = m_lcdDragGesture.drag(*m_lcdInteractionState,
+					mouse.x, mouse.y,
+					std::max(1, percent) / base * modifier, g_encoderBurstCap);
+				if(const auto encoder = m_lcdDragGesture.encoder(); encoder && steps != 0)
+					emitEncoderSteps(static_cast<md::PanelEncoder>(
+						static_cast<unsigned>(md::PanelEncoder::DataEntryA) + *encoder), steps);
+				_event.StopPropagation();
+			});
+		juceRmlUi::EventListener::Add(m_lcdCanvas, Rml::EventId::Mousescroll,
+			[this](Rml::Event& _event)
+			{
+				const auto target = lcdTargetAt(_event);
+				if(!target)
+					return;
+				if(m_lcdWheelEncoder != target)
+				{
+					m_lcdWheelEncoder = target;
+					m_lcdWheelAccumulator.reset();
+				}
+				const auto percent = getProcessor().getConfig().getIntValue(
+					"panelWheelSpeedPercent", 100);
+				const auto wheel = juceRmlUi::helper::getMouseWheelDelta(_event);
+				const auto steps = m_lcdWheelAccumulator.add(-wheel.y * (100.0 / 7.5)
+					* std::max(1, percent) / 100.0, g_encoderBurstCap);
+				if(steps != 0)
+					emitEncoderSteps(static_cast<md::PanelEncoder>(
+						static_cast<unsigned>(md::PanelEncoder::DataEntryA) + *target), steps);
+				_event.StopPropagation();
+			});
 		m_lcdCanvas->repaint();
 
 		// LED/LCD presentation follows the renderer at roughly 60 Hz. Firmware-facing
@@ -335,6 +402,85 @@ namespace mdJucePlugin
 		startTimer(g_presentationTimerId,
 			g_presentationTimerIntervalMilliseconds);
 		startTimer(g_panelTimerId, g_panelTimerIntervalMilliseconds);
+	}
+
+	void Editor::updateLcdInteractionState()
+	{
+		const auto enabled = getProcessor().getConfig().getBoolValue(
+			lcdInteraction::configKey, lcdInteraction::defaultEnabled);
+		const auto oldState = m_lcdInteractionState;
+		m_lcdInteractionState = enabled && m_frontPanelSnapshotValid
+			? lcdInteraction::classify(m_frontPanelSnapshot, getModel(), m_encoderPress.active())
+			: std::nullopt;
+		m_lcdInteractionInputChanged = false;
+		const auto identityChanged = oldState.has_value() != m_lcdInteractionState.has_value()
+			|| (oldState && m_lcdInteractionState
+				&& (oldState->identityToken != m_lcdInteractionState->identityToken
+					|| oldState->layout != m_lcdInteractionState->layout
+					|| oldState->activeEncoderMask != m_lcdInteractionState->activeEncoderMask));
+		if(m_lcdDragGesture.active()
+			&& (!m_lcdInteractionState || !m_lcdDragGesture.validFor(*m_lcdInteractionState)))
+			cancelLcdGesture();
+		if(identityChanged)
+			clearLcdHover();
+		else if(m_lcdHoverEncoder && (!m_lcdInteractionState
+			|| (m_lcdInteractionState->activeEncoderMask & (1u << *m_lcdHoverEncoder)) == 0))
+			clearLcdHover();
+	}
+
+	std::optional<unsigned> Editor::lcdTargetAt(const Rml::Event& _event) const
+	{
+		if(!m_lcdCanvas || !m_lcdInteractionState)
+			return std::nullopt;
+		const auto mouse = juceRmlUi::helper::getMousePos(_event);
+		const auto offset = m_lcdCanvas->GetAbsoluteOffset(Rml::BoxArea::Content);
+		const auto display = m_lcdCanvas->GetBox().GetSize(Rml::BoxArea::Content);
+		auto paint = m_lcdCanvas->getPaintSize();
+		// A pointer can arrive before the canvas has completed its first Render and
+		// allocated a texture. In that brief interval the box is already laid out,
+		// so its content size is the correct unpadded fallback paint size.
+		if(paint.x <= 0 || paint.y <= 0)
+			paint = {static_cast<int>(display.x), static_cast<int>(display.y)};
+		const auto viewport = lcdInteraction::Viewport::create(display.x, display.y,
+			paint.x, paint.y, m_pixelPerfectPanel && m_pixelPerfectPanel->isEnabled());
+		const auto point = viewport.displayToNative(mouse.x - offset.x, mouse.y - offset.y);
+		if(!point)
+			return std::nullopt;
+		return lcdInteraction::hitTest(*m_lcdInteractionState,
+			static_cast<int>(std::floor(point->x)), static_cast<int>(std::floor(point->y)));
+	}
+
+	void Editor::updateLcdHover(const Rml::Event& _event)
+	{
+		const auto target = lcdTargetAt(_event);
+		if(target == m_lcdHoverEncoder)
+			return;
+		m_lcdHoverEncoder = target;
+		m_lcdWheelEncoder.reset();
+		m_lcdWheelAccumulator.reset();
+		if(m_lcdCanvas)
+		{
+			if(target)
+				m_lcdCanvas->SetProperty("cursor", "ns-resize");
+			else
+				m_lcdCanvas->RemoveProperty(Rml::PropertyId::Cursor);
+		}
+	}
+
+	void Editor::clearLcdHover()
+	{
+		if(!m_lcdHoverEncoder && !m_lcdWheelEncoder)
+			return;
+		m_lcdHoverEncoder.reset();
+		m_lcdWheelEncoder.reset();
+		m_lcdWheelAccumulator.reset();
+		if(m_lcdCanvas)
+			m_lcdCanvas->RemoveProperty(Rml::PropertyId::Cursor);
+	}
+
+	void Editor::cancelLcdGesture()
+	{
+		m_lcdDragGesture.cancel();
 	}
 
 	void Editor::applyPixelPerfectPanel()
@@ -346,6 +492,12 @@ namespace mdJucePlugin
 			m_pixelPerfectPanel->apply(*component, m_lcdCanvas,
 				getProcessor().getConfig().getBoolValue(PixelPerfectPanel::configKey, PixelPerfectPanel::defaultEnabled));
 		}
+	}
+
+	void Editor::applyLcdInteraction()
+	{
+		m_lcdInteractionInputChanged = true;
+		updateLcdInteractionState();
 	}
 
 	void Editor::createButtons()
@@ -436,7 +588,7 @@ namespace mdJucePlugin
 					if(juceRmlUi::helper::getKeyIdentifier(_event) != Rml::Input::KI_ESCAPE
 						|| (m_shiftPanelLatch.empty() && m_activePanelButtons.empty()
 							&& m_panelGesturePackets.empty() && !m_patternBankPacket
-							&& !m_encoderPress.active()))
+							&& !m_encoderPress.active() && !m_lcdDragGesture.active()))
 						return;
 					_event.StopPropagation();
 					cancelPanelInputGestures();
@@ -445,10 +597,17 @@ namespace mdJucePlugin
 				[this](Rml::Event& _event)
 				{
 					if(juceRmlUi::helper::getMouseButton(_event) == juceRmlUi::MouseButton::Left)
+					{
 						releaseEncoderPress();
+						cancelLcdGesture();
+					}
 				});
 			juceRmlUi::EventListener::Add(document, Rml::EventId::Dragend,
-				[this](Rml::Event&) { releaseEncoderPress(); });
+				[this](Rml::Event&)
+				{
+					releaseEncoderPress();
+					cancelLcdGesture();
+				});
 		}
 	}
 
@@ -679,6 +838,7 @@ namespace mdJucePlugin
 
 	void Editor::cancelPanelInputGestures()
 	{
+		cancelLcdGesture();
 		endPanelGesture();
 		releasePanelButtonGestures();
 		releaseAllPanelInputs();
@@ -686,6 +846,7 @@ namespace mdJucePlugin
 
 	void Editor::releaseEncoderPress()
 	{
+		const auto wasActive = m_encoderPress.active();
 		if(const auto packet = m_encoderPress.release())
 		{
 			const auto combined = m_panelRows.release(*packet);
@@ -694,6 +855,13 @@ namespace mdJucePlugin
 		if(m_pressedEncoder)
 			m_pressedEncoder->SetClass("encoderPressed", false);
 		m_pressedEncoder = nullptr;
+		if(wasActive)
+		{
+			// The held-switch state is a classifier input. Restore hit targets
+			// immediately even if a short press never produced an LCD redraw.
+			m_lcdInteractionInputChanged = true;
+			updateLcdInteractionState();
+		}
 	}
 
 	void Editor::globalFocusChanged(juce::Component* const _focusedComponent)
@@ -1603,6 +1771,10 @@ namespace mdJucePlugin
 							&& !juceRmlUi::helper::isContextMenu(_event),
 						juceRmlUi::helper::getKeyModAlt(_event)))
 					{
+						// Suppress LCD hit targets immediately, before firmware has time
+						// to draw the held-value overlay on the next presentation tick.
+						m_lcdInteractionInputChanged = true;
+						updateLcdInteractionState();
 						m_pressedEncoder = _knob;
 						_knob->SetClass("encoderPressed", true);
 						const auto combined = m_panelRows.press(*packet);
@@ -1651,16 +1823,18 @@ namespace mdJucePlugin
 
 		_accum -= static_cast<float>(steps);
 
-		// Emit one ±1 panel event per detent (0x01 = +1, 0xff = -1), matching the
-		// documented DATA ENTRY encoder packets; robust if only ±1 is honored.
-		const auto cmd = md::panelEncoderCommand(getModel(), _encoder);
-		if(!cmd)
-			return;
-		const uint8_t arg = steps > 0 ? 0x01 : 0xff;
-		const int n = std::min(std::abs(steps), g_encoderBurstCap);
+		emitEncoderSteps(_encoder, steps);
+	}
 
-		for(int s=0; s<n; ++s)
-			(void)sendPanelEvent(*cmd, arg);
+	void Editor::emitEncoderSteps(const md::PanelEncoder _encoder, const int _steps) const
+	{
+		const auto command = md::panelEncoderCommand(getModel(), _encoder);
+		if(!command || _steps == 0)
+			return;
+		const auto argument = static_cast<uint8_t>(_steps > 0 ? 0x01 : 0xff);
+		const auto count = std::min(std::abs(_steps), g_encoderBurstCap);
+		for(int step = 0; step < count; ++step)
+			(void)sendPanelEvent(*command, argument);
 	}
 
 	void Editor::createLeds()
@@ -1848,11 +2022,19 @@ namespace mdJucePlugin
 		}
 
 		_g.setImageResamplingQuality(juce::Graphics::lowResamplingQuality);
-		if (m_pixelPerfectPanel && m_pixelPerfectPanel->paintLcd(lcd, _g))
+		if(m_pixelPerfectPanel && m_pixelPerfectPanel->paintLcd(lcd, _g))
 			return;
-		_g.drawImageWithin(lcd,
-			0, 0, _target.getWidth(), _target.getHeight(),
-			juce::RectanglePlacement::centred);
+		auto paintSize = m_lcdCanvas ? m_lcdCanvas->getPaintSize()
+			: Rml::Vector2i(_target.getWidth(), _target.getHeight());
+		if(paintSize.x <= 0 || paintSize.y <= 0)
+			paintSize = {_target.getWidth(), _target.getHeight()};
+		const auto viewport = lcdInteraction::Viewport::create(
+			paintSize.x, paintSize.y, paintSize.x, paintSize.y,
+			false);
+		const auto content = viewport.contentInPaintSpace();
+		_g.drawImage(lcd, juce::Rectangle<float>(static_cast<float>(content.x),
+			static_cast<float>(content.y), static_cast<float>(content.width),
+			static_cast<float>(content.height)));
 	}
 
 	void Editor::timerCallback(const int _timerId)
@@ -1875,8 +2057,13 @@ namespace mdJucePlugin
 			&& !juce::ModifierKeys::getCurrentModifiersRealtime().isShiftDown())
 			releasePanelButtonGestures();
 
+		const auto hadFrontPanelSnapshot = m_frontPanelSnapshotValid;
 		m_frontPanelSnapshotValid = refreshFrontPanelState(nowMilliseconds);
+		if(hadFrontPanelSnapshot && !m_frontPanelSnapshotValid)
+			m_lcdInteractionInputChanged = true;
 		serviceUserSysexProgress();
+		if(m_lcdInteractionInputChanged)
+			updateLcdInteractionState();
 
 		if(m_lcdCanvas && m_lcdChanged)
 			m_lcdCanvas->repaint();

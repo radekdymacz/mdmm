@@ -175,4 +175,9 @@ namespace mdJucePlugin
 		}
 		return true;
 	}
+
+	bool PixelPerfectPanel::isEnabled() const
+	{
+		return m_impl->enabled;
+	}
 }
