@@ -57,29 +57,19 @@ namespace
 			throw std::runtime_error(_message);
 	}
 
-	void advance(md::Hardware& _hardware, const uint32_t _frames)
-	{
-		constexpr uint32_t block = 128;
-		for(uint32_t frames = 0; frames < _frames; frames += block)
-			_hardware.advance(std::min(block, _frames - frames));
-	}
-
 	bool initializeUwFlash(md::Hardware& _hardware)
 	{
-		advance(_hardware, md::g_samplerate * 5);
 		if(_hardware.isFactoryFlashReadyForReboot())
 			return true;
-		for(uint32_t instruction = 0; instruction < 200'000'000; ++instruction)
-			_hardware.processUC();
-		for(uint32_t instruction = 0; instruction < 100'000'000; ++instruction)
+		// Factory initialization needs DSP2 HREQ-driven firmware timer progress,
+		// not just ColdFire instructions. Bound the wait in emulated audio time.
+		constexpr uint32_t block = 128;
+		constexpr uint32_t maximumFrames = md::g_samplerate * 18;
+		for(uint32_t frames = 0; frames < maximumFrames; frames += block)
 		{
-			_hardware.processUC();
-			if((instruction & 1023u) == 0)
-			{
-				_hardware.advance(0);
-				if(_hardware.isFactoryFlashReadyForReboot())
-					return true;
-			}
+			_hardware.advance(std::min(block, maximumFrames - frames));
+			if(_hardware.isFactoryFlashReadyForReboot())
+				return true;
 		}
 		return _hardware.isFactoryFlashReadyForReboot();
 	}

@@ -1,6 +1,7 @@
 #include "mdLib/mdfrontpanel.h"
 #include "mdLib/mdpanel.h"
 #include "mdLib/mdsim.h"
+#include "mdLib/mdtransportpolicy.h"
 #include "dsp56kEmu/memory.h"
 
 #include <array>
@@ -60,6 +61,28 @@ namespace
 			return true;
 		std::cerr << _message << '\n';
 		return false;
+	}
+
+	bool testTransportPolicy()
+	{
+		const auto md = md::transportPolicy(md::MachineModel::Machinedrum);
+		const auto mm = md::transportPolicy(md::MachineModel::Monomachine);
+		return check(md.backgroundQuantumMicroseconds == 125.0
+			&& md.catchUpMaxDspCycles == 100'000
+			&& md.hostReceiveIrqMinWords == 3
+			&& md.hostReceiveQueueCapacityWords == 16
+			&& md.hostTransmitBackpressureThresholdWords == 4
+			&& md.hostTransmitBackpressureReleaseUcCycles == 200'000
+			&& !md.exactEssiCycleDeadlines,
+			"Machinedrum transport policy changed during consolidation")
+			&& check(mm.backgroundQuantumMicroseconds == 30.0
+				&& mm.catchUpMaxDspCycles == 100'000
+				&& mm.hostReceiveIrqMinWords == 1
+				&& mm.hostReceiveQueueCapacityWords == 16
+				&& mm.hostTransmitBackpressureThresholdWords == 4
+				&& mm.hostTransmitBackpressureReleaseUcCycles == 200'000
+				&& mm.exactEssiCycleDeadlines,
+				"Monomachine transport policy changed during consolidation");
 	}
 
 	bool testDspMemoryFallback()
@@ -440,7 +463,7 @@ namespace
 
 int main()
 {
-	if(!testDspMemoryFallback() || !testMk2PortAInvertedLoopback()
+	if(!testTransportPolicy() || !testDspMemoryFallback() || !testMk2PortAInvertedLoopback()
 		|| !testFrontPanelStepLeds() || !testMachinedrumPanelLedBanks()
 		|| !testFrontPanelTransitionPublication()
 		|| !testPanelInputReleaseRecovery()

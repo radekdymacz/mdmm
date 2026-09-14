@@ -76,8 +76,11 @@ set_property(TARGET mdIdleSelfBranchTest PROPERTY FOLDER "Elektron/test")
 add_executable(mdIdleSchedulerFirmwareTest idleSchedulerFirmwareTest.cpp)
 target_link_libraries(mdIdleSchedulerFirmwareTest PRIVATE mdLib)
 add_test(NAME mdIdleSchedulerFirmwareTest COMMAND mdIdleSchedulerFirmwareTest)
+# Both models now run 192 paired-machine comparisons each. The old 120-second
+# limit covered one model; retain all 384 cases with proportional hang-guard
+# headroom. This allocation-heavy fixture is not a realtime performance gate.
 set_tests_properties(mdIdleSchedulerFirmwareTest PROPERTIES
-	LABELS "Integration;FirmwareTest;Timing" SKIP_RETURN_CODE 77 TIMEOUT 120)
+	LABELS "Integration;FirmwareTest;Timing" SKIP_RETURN_CODE 77 TIMEOUT 240)
 set_property(TARGET mdIdleSchedulerFirmwareTest PROPERTY FOLDER "Elektron/test")
 
 add_executable(mdPanelReadinessFirmwareTest panelReadinessFirmwareTest.cpp)
