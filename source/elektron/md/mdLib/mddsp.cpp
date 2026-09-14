@@ -70,8 +70,14 @@ namespace md
 					if(m_periphX.getDMA().getDCR(4) & (1u << dsp56k::DmaChannel::De))
 						return;
 					auto& ring = m_periphX.getEssi0().getAudioInputs();
+#if MD_TRANSPORT_DIAGNOSTICS
+					const auto purgedFrames = ring.size();
+#endif
 					while(!ring.empty())
 						ring.pop_front();
+#if MD_TRANSPORT_DIAGNOSTICS
+					m_hardware.recordMdLinkPurge(purgedFrames);
+#endif
 					m_hardware.mdLinkWindowFlushed();
 				});
 			}
@@ -262,13 +268,22 @@ namespace md
 			// reply or the in-flight host command has been fully serviced, bounded.
 			// A reserved/readable MM reply already satisfies production: wait for
 			// CPU time to make it visible instead of running the producer farther.
-			const uint64_t clampStop = m_dsp.getCycles()
+			const uint64_t startCycle = m_dsp.getCycles();
+			const uint64_t clampStop = startCycle
 				+ schedInlineClamp(m_hardware.getModel());
 			while(!hdi08().hasTX()
 				&& (!m_hardware.isMonomachine() || (!m_timedHostRx.pending() && m_hdiUC.canReceiveData()))
 				&& (hdi08().hostCommandBusy() || dsp().hasPendingInterrupts())
 				&& m_dsp.getCycles() < clampStop)
 				m_dsp.exec();
+#if MD_TRANSPORT_DIAGNOSTICS
+			const bool workComplete = hdi08().hasTX()
+				|| (m_hardware.isMonomachine()
+					&& (m_timedHostRx.pending() || !m_hdiUC.canReceiveData()))
+				|| (!hdi08().hostCommandBusy() && !dsp().hasPendingInterrupts());
+			m_hardware.recordInlineHdi08Run(m_index, startCycle, clampStop,
+				workComplete);
+#endif
 			hdiTransferDSPtoUC();
 			return;
 		}
@@ -293,10 +308,15 @@ namespace md
 		// a word in HRX, advance the target DSP until the previous word drains, bounded by the
 		// scheduler clamp. This preserves receive ordering without a wall-clock
 		// wait or an unbounded host-side FIFO.
-		const uint64_t clampStop = m_dsp.getCycles()
+		const uint64_t startCycle = m_dsp.getCycles();
+		const uint64_t clampStop = startCycle
 			+ schedInlineClamp(m_hardware.getModel());
 		while(hdi08().hasRXData() && m_dsp.getCycles() < clampStop)
 			m_dsp.exec();
+#if MD_TRANSPORT_DIAGNOSTICS
+		m_hardware.recordInlineHdi08Run(m_index, startCycle, clampStop,
+			!hdi08().hasRXData());
+#endif
 		hdi08().writeRX(&_word, 1);
 		return;
 	}
@@ -308,10 +328,15 @@ namespace md
 		if(!hdi08().hostCommandBusy())
 			return;
 
-		const uint64_t clampStop = m_dsp.getCycles()
+		const uint64_t startCycle = m_dsp.getCycles();
+		const uint64_t clampStop = startCycle
 			+ schedInlineClamp(m_hardware.getModel());
 		while(hdi08().hostCommandBusy() && m_dsp.getCycles() < clampStop)
 			m_dsp.exec();
+#if MD_TRANSPORT_DIAGNOSTICS
+		m_hardware.recordInlineHdi08Run(m_index, startCycle, clampStop,
+			!hdi08().hostCommandBusy());
+#endif
 		return;
 	}
 
@@ -339,10 +364,15 @@ namespace md
 		const bool s_mmInOrderCvr = m_hardware.isMonomachine();
 		if(s_mmInOrderCvr && booted())
 		{
-			const uint64_t clampStop = m_dsp.getCycles()
+			const uint64_t startCycle = m_dsp.getCycles();
+			const uint64_t clampStop = startCycle
 				+ schedInlineClamp(m_hardware.getModel()) * 4;
 			while(!hdi08().rxData().empty() && m_dsp.getCycles() < clampStop)
 				m_dsp.exec();
+#if MD_TRANSPORT_DIAGNOSTICS
+			m_hardware.recordInlineHdi08Run(m_index, startCycle, clampStop,
+				hdi08().rxData().empty());
+#endif
 		}
 
 		if(!booted())

@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.10)
 
 project(mdLib)
 
+option(MD_TRANSPORT_DIAGNOSTICS
+	"Compile the MD/MM transport and scheduler scorecard" OFF)
+
 add_library(mdLib STATIC)
 
 set(SOURCES
@@ -30,6 +33,7 @@ set(SOURCES
 	mdturbomidi.cpp mdturbomidi.h
 	mdtypes.h
 	mdtimedhostrx.h
+	mdtransportdiagnostics.h
 	mdtransportpolicy.h
 )
 
@@ -37,6 +41,8 @@ target_sources(mdLib PRIVATE ${SOURCES})
 source_group("source" FILES ${SOURCES})
 
 target_link_libraries(mdLib PUBLIC hardwareLib dsp56kEmu)
+target_compile_definitions(mdLib PUBLIC
+	MD_TRANSPORT_DIAGNOSTICS=$<BOOL:${MD_TRANSPORT_DIAGNOSTICS}>)
 
 set_property(TARGET mdLib PROPERTY FOLDER "Elektron")
 

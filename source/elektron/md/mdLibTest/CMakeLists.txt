@@ -203,6 +203,32 @@ set_tests_properties(mdAudioFirmwareTest PROPERTIES
 
 set_property(TARGET mdAudioFirmwareTest PROPERTY FOLDER "Elektron/test")
 
+add_executable(mdTransportScorecardTest transportScorecardTest.cpp)
+target_link_libraries(mdTransportScorecardTest PRIVATE mdLib)
+add_test(NAME mdTransportScorecardTest COMMAND mdTransportScorecardTest)
+set_tests_properties(mdTransportScorecardTest PROPERTIES
+	LABELS "UnitTest;Timing" TIMEOUT 10 FIXTURES_SETUP MdTransportScorecard)
+set_property(TARGET mdTransportScorecardTest PROPERTY FOLDER "Elektron/test")
+if(BUILD_TESTING)
+	add_dependencies(mdLibTest mdTransportScorecardTest)
+	add_dependencies(mdAudioQueueTest mdTransportScorecardTest)
+	set_property(TEST mdLibTests mdAudioQueueTest APPEND PROPERTY
+		FIXTURES_REQUIRED MdTransportScorecard)
+endif()
+
+if(MD_TRANSPORT_DIAGNOSTICS)
+	add_executable(mdTransportScorecardFirmwareTest
+		transportScorecardFirmwareTest.cpp)
+	target_link_libraries(mdTransportScorecardFirmwareTest PRIVATE mdLib)
+	add_test(NAME mdTransportScorecardFirmwareTest
+		COMMAND mdTransportScorecardFirmwareTest)
+	set_tests_properties(mdTransportScorecardFirmwareTest PROPERTIES
+		LABELS "Integration;FirmwareTest;Timing"
+		SKIP_RETURN_CODE 77 TIMEOUT 180)
+	set_property(TARGET mdTransportScorecardFirmwareTest
+		PROPERTY FOLDER "Elektron/test")
+endif()
+
 add_executable(encoderPressFirmwareTest encoderPressFirmwareTest.cpp)
 target_link_libraries(encoderPressFirmwareTest PRIVATE mdLib)
 add_test(NAME mdEncoderPressFirmwareTest COMMAND encoderPressFirmwareTest md)
