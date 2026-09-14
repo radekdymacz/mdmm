@@ -5,6 +5,7 @@
 #include <iostream>
 #include <initializer_list>
 #include <limits>
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -22,7 +23,8 @@ namespace
 			bytes.push_back(_byte);
 			return true;
 		}
-		size_t queuedMidiByteCount() const override { return 0; }
+		size_t queuedMidiByteCount() const override { return queued; }
+		size_t queued = 0;
 		std::vector<uint8_t> bytes;
 		size_t acceptLimit = std::numeric_limits<size_t>::max();
 	};
@@ -88,33 +90,231 @@ namespace
 				"fallback reason is wrong");
 	}
 
-	bool testDocumentedHandshake()
+	// These transcripts pin the existing sender policy, including permissive
+	// replies and speed selection. They are not a protocol-conformance claim.
+	struct LinkFixture
 	{
-		md::TurboMidiTransfer transfer(g_testClockHz);
+		static constexpr uint64_t ClockHz = 1000000;
+		md::TurboMidiTransfer transfer{ClockHz};
 		MidiSink sink;
+
+		bool start()
+		{
+			auto prepared = md::prepareMidiSysexTransfer(userDump());
+			if(!prepared || !transfer.start(*prepared, 0)) return false;
+			transfer.service(10000, true, sink);
+			return expect(turboMessage(0x10));
+		}
+
+		bool expect(const std::vector<uint8_t>& bytes)
+		{
+			const bool result = check(sink.bytes == bytes, "unexpected TurboMIDI wire transcript");
+			sink.bytes.clear();
+			return result;
+		}
+
+		bool negotiate(uint8_t certifiedHigh = 1, uint8_t finalSpeed = 8)
+		{
+			reply(transfer, 0x11, {0x7f, 1, 0x7f, certifiedHigh});
+			transfer.service(10000, true, sink);
+			return expect(turboMessage(0x12, {8, finalSpeed}));
+		}
+
+		bool firstTest()
+		{
+			reply(transfer, 0x13);
+			transfer.service(1024, true, sink); // 32 bytes at 10x.
+			std::vector<uint8_t> expected(16, 0);
+			const auto test = turboMessage(0x14, {0x55, 0x55, 0x55, 0x55, 0, 0, 0, 0});
+			expected.insert(expected.end(), test.begin(), test.end());
+			return expect(expected) && check(transfer.progress().speedCode == 8,
+				"first link test did not switch to speed 1");
+		}
+
+		bool secondTest(uint32_t cycles = 256)
+		{
+			reply(transfer, 0x15, {0x55, 0x55, 0x55, 0x55, 0, 0, 0, 0});
+			transfer.service(cycles, true, sink);
+			return expect(turboMessage(0x16));
+		}
+	};
+
+	bool testHandshakeTranscript()
+	{
+		LinkFixture f;
+		if(!f.start() || !f.negotiate() || !f.firstTest() || !f.secondTest()) return false;
+		reply(f.transfer, 0x17);
+		f.transfer.service(0, true, f.sink);
+		f.transfer.service(9999, true, f.sink);
+		if(!f.expect({}) || !check(f.transfer.progress().sent == 0,
+			"payload overtook firmware speed transition")) return false;
+		f.sink.queued = 1;
+		f.transfer.service(1, true, f.sink);
+		if(!check(f.transfer.progress().sent == 1, "settle boundary changed fractional byte credit")) return false;
+		f.transfer.service(480, true, f.sink);
+		if(!f.expect(userDump()) || !check(f.transfer.ownsMidiWire(),
+			"transfer released ownership before UART drained")) return false;
+		f.sink.queued = 0;
+		f.transfer.service(0, true, f.sink);
+		return check(f.transfer.progress().state == md::MidiSysexTransferState::Complete
+			&& f.transfer.progress().fallbackCount == 0, "TurboMIDI did not complete cleanly");
+	}
+
+	bool testSpeedSelectionTranscript()
+	{
+		struct Speeds { uint8_t supportedLow, supportedHigh, certifiedLow, certifiedHigh, first, second; };
+		const Speeds cases[] = {
+			{0x7f, 1, 0x7f, 1, 8, 8}, // certified maximum
+			{0x7f, 1, 0x08, 0, 8, 7}, // next supported, even if not certified
+			{0x0a, 0, 0x02, 0, 4, 2}, // sparse mask
+			{0x02, 0, 0x02, 0, 2, 2}, // lowest Turbo code
+			{0, 2, 0, 2, 1, 1},       // unsupported high bits
+			{0x02, 0, 0, 0, 2, 1},    // no lower Turbo candidate
+		};
+		for(const auto& c : cases)
+		{
+			LinkFixture f;
+			if(!f.start()) return false;
+			reply(f.transfer, 0x11, {c.supportedLow, c.supportedHigh, c.certifiedLow, c.certifiedHigh});
+			f.transfer.service(10000, true, f.sink);
+			if(c.second > 1)
+			{
+				if(!f.expect(turboMessage(0x12, {c.first, c.second}))) return false;
+			}
+			else if(!f.expect(userDump()) || !check(f.transfer.progress().fallbackReason
+				== md::MidiTurboFallbackReason::NoCommonCertifiedSpeed, "wrong speed fallback")) return false;
+		}
+		LinkFixture f;
+		if(!f.start() || !f.negotiate(0, 7) || !f.firstTest()) return false;
+		// Current sender switches to speed 2 before sending the second test.
+		return f.secondTest(320) && check(f.transfer.progress().speedCode == 7,
+			"second link test did not switch to speed 2");
+	}
+
+	bool testSpeedPacing()
+	{
+		// Independent byte counts after 1 ms at each supported wire rate.
+		const unsigned byteCounts[] = {6, 10, 12, 15, 20, 25, 31};
+		const char* labels[] = {"2", "3.33", "4", "5", "6.66", "8", "10"};
+		for(uint8_t code = 2; code <= 8; ++code)
+		{
+			LinkFixture f;
+			if(!f.start()) return false;
+			const uint16_t mask = uint16_t{1} << (code - 1);
+			const auto low = static_cast<uint8_t>(mask & 0x7f);
+			const auto high = static_cast<uint8_t>(mask >> 7);
+			reply(f.transfer, 0x11, {low, high, low, high});
+			f.transfer.service(10000, true, f.sink);
+			if(!f.expect(turboMessage(0x12, {code, code}))) return false;
+			reply(f.transfer, 0x13);
+			f.transfer.service(1000, true, f.sink);
+			if(!check(f.sink.bytes.size() == byteCounts[code - 2], "wire rate changed")
+				|| !check(std::string(md::midiTurboSpeedLabel(code)) == labels[code - 2],
+					"speed label changed")) return false;
+		}
+		return true;
+	}
+
+	bool testSendAndPartialReplyDeadlines()
+	{
+		LinkFixture f;
 		auto prepared = md::prepareMidiSysexTransfer(userDump());
-		if(!prepared || !transfer.start(*prepared, 0))
-			return check(false, "TurboMIDI transfer did not start");
+		if(!prepared || !f.transfer.start(*prepared, 0)) return false;
+		f.sink.acceptLimit = 2;
+		f.transfer.service(10000, true, f.sink);
+		f.transfer.service(2 * LinkFixture::ClockHz, true, f.sink);
+		if(!check(f.transfer.progress().fallbackCount == 0, "reply deadline ran while request blocked")) return false;
+		f.sink.acceptLimit = 100;
+		f.transfer.service(0, true, f.sink);
+		if(!f.expect(turboMessage(0x10))) return false;
+		f.transfer.service(900000, true, f.sink);
+		f.transfer.observeTransmitByte(0xf0);
+		f.transfer.service(100001, true, f.sink);
+		return check(f.transfer.progress().fallbackReason == md::MidiTurboFallbackReason::CapabilityRequestTimedOut,
+			"partial reply restarted the phase deadline") && f.expect(userDump());
+	}
 
-		transfer.service(g_testClockHz, true, sink);
-		reply(transfer, 0x11, {0x7f, 0x01, 0x7f, 0x01});
-		transfer.service(g_testClockHz, true, sink);
-		reply(transfer, 0x13);
-		transfer.service(g_testClockHz, true, sink);
-		reply(transfer, 0x15,
-			{0x55, 0x55, 0x55, 0x55, 0x00, 0x00, 0x00, 0x00});
-		transfer.service(g_testClockHz, true, sink);
-		reply(transfer, 0x17);
-		transfer.service(g_testClockHz, true, sink);
-		if(!check(transfer.progress().sent == 0, "payload overtook firmware speed transition")) return false;
-		transfer.service(g_testClockHz / 100, true, sink);
+	bool testNegotiationTimeouts()
+	{
+		const md::MidiTurboFallbackReason reasons[] = {
+			md::MidiTurboFallbackReason::CapabilityRequestTimedOut,
+			md::MidiTurboFallbackReason::SpeedAcknowledgementTimedOut,
+			md::MidiTurboFallbackReason::FirstLinkTestTimedOut,
+			md::MidiTurboFallbackReason::SecondLinkTestTimedOut};
+		for(unsigned stage = 0; stage < 4; ++stage)
+		{
+			LinkFixture f;
+			if(!f.start() || (stage >= 1 && !f.negotiate())
+				|| (stage >= 2 && !f.firstTest()) || (stage >= 3 && !f.secondTest())) return false;
+			f.transfer.service(LinkFixture::ClockHz, false, f.sink);
+			if(!f.expect({})) return false; // ingress stalls do not advance time
+			f.transfer.service(LinkFixture::ClockHz, true, f.sink);
+			if(!check(f.transfer.progress().fallbackCount == 0, "timeout fired at inclusive boundary")) return false;
+			f.sink.bytes.clear(); // discard active sensing at Turbo speed
+			f.transfer.service(1, true, f.sink);
+			if(!check(f.transfer.progress().fallbackReason == reasons[stage]
+				&& f.transfer.progress().fallbackCount == 1, "wrong phase timeout")) return false;
+			if(stage >= 2)
+			{
+				f.transfer.service(349999, true, f.sink);
+				if(!f.expect({}) || !check(f.transfer.progress().sent == 0,
+					"payload overtook peer reset")) return false;
+				f.transfer.service(1, true, f.sink);
+			}
+			f.transfer.service(10000, true, f.sink);
+			if(!f.expect(userDump())) return false;
+		}
+		return true;
+	}
 
-		const auto progress = transfer.progress();
-		return check(progress.state == md::MidiSysexTransferState::Complete,
-			"TurboMIDI transfer did not complete")
-			&& check(progress.sent == 15, "TurboMIDI byte count is wrong")
-			&& check(progress.fallbackReason == md::MidiTurboFallbackReason::None,
-				"TurboMIDI unexpectedly fell back");
+	bool testReplyFramingAndFallback()
+	{
+		LinkFixture f;
+		if(!f.start()) return false;
+		// Ignore unrelated replies and realtime bytes embedded in a split reply.
+		reply(f.transfer, 0x13);
+		const auto answer = turboMessage(0x11, {0x7f, 1, 0x7f, 1, 0x42});
+		for(size_t i = 0; i < answer.size() - 1; ++i)
+		{
+			f.transfer.observeTransmitByte(answer[i]);
+			f.transfer.observeTransmitByte(0xfe);
+		}
+		f.transfer.service(900000, true, f.sink);
+		if(!f.expect({})) return false;
+		f.transfer.observeTransmitByte(0xf7);
+		f.transfer.service(10000, true, f.sink);
+		if(!f.expect(turboMessage(0x12, {8, 8})) || !f.firstTest()) return false;
+		reply(f.transfer, 0x15, {0x55, 0x55, 0x55, 0x54, 0, 0, 0, 0});
+		f.transfer.service(0, true, f.sink);
+		if(!check(f.transfer.progress().fallbackReason == md::MidiTurboFallbackReason::FirstLinkTestBadData,
+			"corrupted link test accepted")) return false;
+		f.transfer.service(349999, true, f.sink);
+		if(!f.expect({})) return false;
+		f.transfer.service(10000, true, f.sink);
+		if(!f.expect(userDump())) return false;
+
+		LinkFixture malformed;
+		if(!malformed.start()) return false;
+		reply(malformed.transfer, 0x11, {0x7f, 1, 0x7f});
+		malformed.transfer.service(10000, true, malformed.sink);
+		return malformed.expect(userDump()) && check(malformed.transfer.progress().fallbackReason
+			== md::MidiTurboFallbackReason::MalformedSpeedAnswer, "short capability answer accepted");
+	}
+
+	bool testActiveSensingAndBackpressure()
+	{
+		LinkFixture f;
+		if(!f.start() || !f.negotiate() || !f.firstTest()) return false;
+		f.transfer.service(149999, true, f.sink);
+		if(!f.expect({})) return false;
+		f.sink.acceptLimit = 0;
+		f.transfer.service(1, true, f.sink);
+		if(!f.expect({})) return false;
+		f.sink.acceptLimit = 100;
+		f.transfer.service(0, true, f.sink);
+		if(!f.expect({0xfe})) return false; // blocked byte retains its pacing credit
+		f.transfer.service(150000, true, f.sink);
+		return f.expect({0xfe});
 	}
 
 	bool testCancellationAndRetirement()
@@ -350,7 +550,10 @@ namespace
 
 int main()
 {
-	if(!testTimeoutFallback() || !testDocumentedHandshake()
+	if(!testTimeoutFallback() || !testHandshakeTranscript()
+		|| !testSpeedSelectionTranscript() || !testSpeedPacing()
+		|| !testSendAndPartialReplyDeadlines() || !testNegotiationTimeouts()
+		|| !testReplyFramingAndFallback() || !testActiveSensingAndBackpressure()
 		|| !testCancellationAndRetirement()
 		|| !testCompletedPayloadRetirement() || !testPausedServiceResumes()
 		|| !testValidation()

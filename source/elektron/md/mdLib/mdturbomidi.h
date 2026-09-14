@@ -9,6 +9,7 @@
 
 #include "mdfixedbytequeue.h"
 #include "mdsysextransfer.h"
+#include "mdturbomidiprotocol.h"
 
 namespace md
 {
@@ -24,6 +25,9 @@ namespace md
 	// Machinedrum manual. All calls are externally serialized by Hardware's owning
 	// synthLib::Plugin lock; the UART transmit observer runs synchronously on that
 	// same scheduler path. No lock or allocation occurs while service() is running.
+	// service() receives emulated cycles and advances only after pre-transfer MIDI
+	// ingress has drained. The sink reports byte admission separately from UART
+	// drain completion; payload completion/cancellation retains ownership until both.
 	class TurboMidiTransfer
 	{
 	public:
@@ -62,14 +66,14 @@ namespace md
 		{
 			Idle,
 			BeginNegotiation,
-			SendRequest,
-			WaitAnswer,
+			SendSpeedRequest,
+			WaitSpeedReport,
 			SendNegotiation,
-			WaitAck,
-			SendTest1,
-			WaitTest1,
-			SendTest2,
-			WaitTest2,
+			WaitSpeedAcknowledgement,
+			SendFirstTest,
+			WaitFirstTestResult,
+			SendSecondTest,
+			WaitSecondTestResult,
 			SettleLink,
 			WaitFallbackReset,
 			Payload,
@@ -81,12 +85,15 @@ namespace md
 			DrainCancellation
 		};
 
-		void queueMessage(uint8_t _command,
+		void queueMessage(turboMidi::Command _command,
 			std::initializer_list<uint8_t> _payload = {});
 		void parseTransmitBytes();
 		bool pushResponse(const Response& _message);
-		bool takeResponse(uint8_t _command, Response& _message);
+		bool takeResponse(turboMidi::Command _command, Response& _message);
 		void clearResponses();
+		void serviceNegotiation();
+		void finishNegotiationSend();
+		void setLinkSpeed(uint8_t _code);
 		void beginPayload();
 		void fallBack(bool _waitForPeerReset, MidiTurboFallbackReason _reason);
 		void pumpWire(MidiByteSink& _midiPort);
@@ -139,10 +146,9 @@ namespace md
 		FixedByteQueue<4096> m_wire;
 		uint64_t m_baudAccumulator = 0;
 		Phase m_phase = Phase::Idle;
-		uint8_t m_speed1 = 1;
-		uint8_t m_speed2 = 1;
+		turboMidi::NegotiatedSpeeds m_negotiatedSpeeds{1, 1};
 		uint8_t m_speedCode = 1;
-		uint32_t m_bytesPerSecond = 3125;
+		uint32_t m_bytesPerSecond = turboMidi::Speeds[1].bytesPerSecond;
 		uint64_t m_phaseCycles = 0;
 		uint64_t m_activeSenseCycles = 0;
 		MidiTurboFallbackReason m_fallbackReason = MidiTurboFallbackReason::None;
