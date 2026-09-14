@@ -894,12 +894,17 @@ namespace md
 #endif
 	}
 
-	void Hardware::mdLinkWindowFlushed(const size_t _purgedFrames)
+	void Hardware::recordMdLinkPurge(const size_t _purgedFrames) noexcept
 	{
 		MD_TRANSPORT_RECORD(m_transportScorecard.link[1].mdWindowPurgedFrames
 			+= _purgedFrames;
 			m_transportScorecard.link[1].currentRingDepth -= std::min(
 				m_transportScorecard.link[1].currentRingDepth, _purgedFrames););
+		(void)_purgedFrames;
+	}
+
+	void Hardware::mdLinkWindowFlushed()
+	{
 		if(!m_mdLinkRoeEngaged)
 			return;
 		++m_mdLinkFlushEpoch;

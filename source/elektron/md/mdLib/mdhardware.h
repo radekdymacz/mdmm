@@ -191,9 +191,10 @@ namespace md
 		TransportScorecard getTransportScorecard() noexcept;
 		void recordInlineHdi08Run(uint32_t _dspIndex, uint64_t _startCycle,
 			uint64_t _clampCycle, bool _workComplete) noexcept;
+		void recordMdLinkPurge(size_t _purgedFrames) noexcept;
 
 		// Mark the start of a Machinedrum DMA receive window. No-op for MM.
-		void mdLinkWindowFlushed(size_t _purgedFrames);
+		void mdLinkWindowFlushed();
 
 		bool sendMidi(const synthLib::SMidiEvent& _ev);
 		// Audio-owner entry point: _ev.offset is relative to the next native block.

@@ -72,12 +72,13 @@ namespace md
 					auto& ring = m_periphX.getEssi0().getAudioInputs();
 #if MD_TRANSPORT_DIAGNOSTICS
 					const auto purgedFrames = ring.size();
-#else
-					constexpr size_t purgedFrames = 0;
 #endif
 					while(!ring.empty())
 						ring.pop_front();
-					m_hardware.mdLinkWindowFlushed(purgedFrames);
+#if MD_TRANSPORT_DIAGNOSTICS
+					m_hardware.recordMdLinkPurge(purgedFrames);
+#endif
+					m_hardware.mdLinkWindowFlushed();
 				});
 			}
 		}
