@@ -245,6 +245,8 @@ for test_name in \
   mdAudioProbePluginVST3IdentityTest \
   mdVst3ProgramChangeTest \
   mdVst3ProgramChangeOptOutTest \
+  mdJucePlugin_VST3ProgramChangeTest \
+  mmJucePlugin_VST3ProgramChangeTest \
   mdFirmwareImageTest \
   mc68kColdFireDivideTest \
   midiOutputDispatcherTest \

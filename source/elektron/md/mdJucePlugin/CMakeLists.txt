@@ -128,6 +128,16 @@ if(BUILD_TESTING)
 	add_test(NAME mdVst3ProgramChangeOptOutTest COMMAND vst3ProgramChangeTest
 		$<GENEX_EVAL:$<TARGET_PROPERTY:mdProgramChangeLegacyProbe_VST3,JUCE_PLUGIN_ARTEFACT_FILE>> --legacy)
 	set_tests_properties(mdVst3ProgramChangeOptOutTest PROPERTIES LABELS "PluginTest;MIDI")
+	# Check the shipping targets as well as the probes: a probe's independent
+	# opt-in must not hide a missing definition on either production wrapper.
+	foreach(plugin_target mdJucePlugin mmJucePlugin)
+		add_test(NAME ${plugin_target}_VST3ProgramChangeTest COMMAND vst3ProgramChangeTest
+			$<GENEX_EVAL:$<TARGET_PROPERTY:${plugin_target}_VST3,JUCE_PLUGIN_ARTEFACT_FILE>>)
+		set_tests_properties(${plugin_target}_VST3ProgramChangeTest PROPERTIES
+			LABELS "PluginTest;MIDI"
+			TIMEOUT 30
+			ENVIRONMENT "GEARMULATOR_DATA_ROOT=${CMAKE_CURRENT_BINARY_DIR}/program-metadata/${plugin_target}")
+	endforeach()
 
 	add_executable(mdStandaloneRendererPolicyTest mdStandaloneRendererPolicyTest.cpp)
 	add_test(NAME mdStandaloneRendererPolicyTest COMMAND mdStandaloneRendererPolicyTest)
