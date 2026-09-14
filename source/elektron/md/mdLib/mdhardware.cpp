@@ -127,12 +127,13 @@ namespace md
 		m_mdOnDemandRendezvousArmPending = !isMonomachine()
 			&& m_firmwareFingerprint == g_mdOs163Fingerprint;
 
-		if(isMonomachine())
-		{
-			const auto wake = [this] { notifyHostPumpStateChanged(); };
-			m_dspMixer.setHostPumpWakeCallback(wake);
-			m_dspProducer.setHostPumpWakeCallback(wake);
-		}
+		// Wake the scheduler host pump when either DSP produces a host word or
+		// the UC-side port state changes. The pump itself runs only on a wake
+		// (see pumpDsp2HostRequest), so an idle UC step skips both drains and
+		// the HREQ recomputation entirely.
+		const auto wake = [this] { notifyHostPumpStateChanged(); };
+		m_dspMixer.setHostPumpWakeCallback(wake);
+		m_dspProducer.setHostPumpWakeCallback(wake);
 
 		// Feed the OS's host->panel UART2 stream into the front-panel LCD/LED decoder.
 		m_uc.setFrontPanel(&m_frontPanel);
@@ -896,21 +897,18 @@ namespace md
 
 	void Hardware::pumpDsp2HostRequest()
 	{
-		if(isMonomachine())
-		{
-			// The settled MM path executes millions of ColdFire instructions between meaningful
-			// host-port edges. Keep that overwhelmingly common clean check read-only; reserve the
-			// cache-line-writing RMW for a producer/consumer/ICR wake. A wake racing the exchange
-			// remains set for the next instruction, so no event can be lost.
-			// Advancing CPU time can make a reserved word visible even without
-			// another peripheral edge. Keep pumping until it reaches its deadline.
-			const bool deferred = m_dspMixer.hasDeferredHostRx()
-				|| m_dspProducer.hasDeferredHostRx();
-			if(!m_schedulerHostPumpDirty.load(std::memory_order_acquire) && !deferred)
-				return;
-			if(!m_schedulerHostPumpDirty.exchange(false, std::memory_order_acq_rel) && !deferred)
-				return;
-		}
+		// The settled path executes millions of ColdFire instructions between meaningful
+		// host-port edges. Keep that overwhelmingly common clean check read-only; reserve the
+		// cache-line-writing RMW for a producer/consumer/ICR wake. A wake racing the exchange
+		// remains set for the next instruction, so no event can be lost.
+		// Advancing CPU time can make a reserved word visible even without
+		// another peripheral edge. Keep pumping until it reaches its deadline.
+		const bool deferred = m_dspMixer.hasDeferredHostRx()
+			|| m_dspProducer.hasDeferredHostRx();
+		if(!m_schedulerHostPumpDirty.load(std::memory_order_acquire) && !deferred)
+			return;
+		if(!m_schedulerHostPumpDirty.exchange(false, std::memory_order_acq_rel) && !deferred)
+			return;
 
 		// DSP2's HI08 receive request drives ColdFire IRQ4. Monomachine uses
 		// the hardware RXDF latch. Waiting for three queued words spans two of
@@ -941,8 +939,7 @@ namespace md
 
 	void Hardware::notifyHostPumpStateChanged()
 	{
-		if(isMonomachine())
-			m_schedulerHostPumpDirty.store(true, std::memory_order_release);
+		m_schedulerHostPumpDirty.store(true, std::memory_order_release);
 	}
 
 	void Hardware::onEssiCallbackMixer()
@@ -1183,10 +1180,21 @@ namespace md
 			uint32_t probeCount = 0;
 			do
 			{
-				processUC();
-				// Probe periodically within the existing UC slice. A
-				// pending host word/wake, restore or MIDI transfer disables skipping.
-				if(((probeCount++ & 15u) == 0) && isMonomachine() && m_schedUcCyclesDone < clampStop
+			processUC();
+			// Probe periodically within the existing UC slice. A
+			// pending host word/wake, restore or MIDI transfer disables skipping.
+			// The Monomachine path skips its ColdFire idle loop (BRA.B -2) in
+			// chunks. The Machinedrum idles the same way, but its unconditional
+			// per-step host pump must not be skipped while a DSP holds an
+			// unpumped transmit word: delaying that word would delay the
+			// HREQ->IRQ4 edge the idle firmware may be waiting for. With both
+			// transmit registers empty the pump is a no-op (no UC reads happen
+			// mid-skip, so the latched queue state cannot be observed), and the
+			// skip stays transparent.
+			const bool dspTxClear = !m_dspMixer.hdi08().hasTX()
+				&& !m_dspProducer.hdi08().hasTX();
+			if(((probeCount++ & 15u) == 0) && (isMonomachine() || dspTxClear)
+				&& m_schedUcCyclesDone < clampStop
 					&& !m_pendingFlashRestoreActive.load(std::memory_order_acquire)
 					&& !m_schedulerHostPumpDirty.load(std::memory_order_acquire)
 					&& !m_dspMixer.hasDeferredHostRx() && !m_dspProducer.hasDeferredHostRx()
