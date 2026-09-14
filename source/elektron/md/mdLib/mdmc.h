@@ -215,13 +215,6 @@ namespace md
 		void logPeripheral(uint32_t _addr, uint32_t _value, uint8_t _size, bool _write);
 		void onPanelTransmit(uint8_t _byte);	// startup reply modeled from the public MAME driver
 
-		// Temporary MD-only firmware task-list workaround, not panel emulation.
-		// Runs on the CPU thread.
-		void panelDisplayReadyPost();
-
-		uint32_t readMem32(uint32_t _addr);
-		void     writeMem32(uint32_t _addr, uint32_t _value);
-
 		const MachineModel m_model;
 		const Rom& m_rom;
 		FlashCommandDecoder m_flashCommands;
@@ -280,9 +273,8 @@ namespace md
 		bool     m_mmPanelHandshakeDone = false;
 
 		bool     m_panelDisplayReady = false;	// enabled once the panel startup handshake completes
-		uint32_t m_panelDisplayReadyDivider = 0;	// rate-limits the periodic semaphore post
 
-		void advanceAfterCpu(uint32_t _cycles, uint32_t _instructions = 1);
+		void advanceAfterCpu(uint32_t _cycles);
 		uint32_t idleSelfBranchInstructions(uint32_t _maxCycles);
 		void advanceIdleSelfBranch(uint32_t _instructions);
 		void decodePanelByte(uint8_t _byte);
