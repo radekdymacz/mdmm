@@ -30,6 +30,7 @@ set(SOURCES
 	mdturbomidi.cpp mdturbomidi.h
 	mdtypes.h
 	mdtimedhostrx.h
+	mdtransportpolicy.h
 )
 
 target_sources(mdLib PRIVATE ${SOURCES})
