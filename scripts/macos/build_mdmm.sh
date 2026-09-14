@@ -206,6 +206,8 @@ cmake --build "${build_dir}" --parallel 4 --target \
   mdAudioIoLayoutTest \
   mdProjectStateRestoreTest \
   mdAudioProbePlugin_VST3 \
+  vst3ProgramChangeTest \
+  mdProgramChangeProbe_VST3 \
   mdStandaloneRendererPolicyTest \
   mdPanelRenderingTest \
   juceRmlMouseInputTest \
@@ -241,6 +243,10 @@ for test_name in \
   mdAudioQueueTest \
   mdAudioIoLayoutTest \
   mdAudioProbePluginVST3IdentityTest \
+  mdVst3ProgramChangeTest \
+  mdVst3ProgramChangeOptOutTest \
+  mdJucePlugin_VST3ProgramChangeTest \
+  mmJucePlugin_VST3ProgramChangeTest \
   mdFirmwareImageTest \
   mc68kColdFireDivideTest \
   midiOutputDispatcherTest \
