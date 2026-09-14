@@ -139,18 +139,16 @@ int main()
 {
 	const auto* const mdPath = std::getenv("GEARMULATOR_MD_FIRMWARE_BIN");
 	const auto* const mmPath = std::getenv("GEARMULATOR_MM_FIRMWARE_BIN");
-	if((!mdPath || !*mdPath) && (!mmPath || !*mmPath))
+	if(!mdPath || !*mdPath || !mmPath || !*mmPath)
 	{
 		std::cout << "mdTransportScorecardFirmwareTest: SKIP "
-			"(pinned firmware not supplied)\n";
+			"(both pinned MD and MM firmware images are required)\n";
 		return 77;
 	}
 	try
 	{
-		if(mdPath && *mdPath)
-			verifyFirmware("MD 1.63", mdPath, md::MachineModel::Machinedrum);
-		if(mmPath && *mmPath)
-			verifyFirmware("MM 1.32b", mmPath, md::MachineModel::Monomachine);
+		verifyFirmware("MD 1.63", mdPath, md::MachineModel::Machinedrum);
+		verifyFirmware("MM 1.32b", mmPath, md::MachineModel::Monomachine);
 		std::cout << "mdTransportScorecardFirmwareTest: PASS\n";
 		return 0;
 	}

@@ -188,7 +188,7 @@ namespace md
 		uint64_t hostCurrentCycle() const { return m_schedUcCyclesDone; }
 		// Diagnostic snapshot. The caller must serialize with the machine thread,
 		// as Device does for its other control-plane observations.
-		TransportScorecard getTransportScorecard() const noexcept;
+		TransportScorecard getTransportScorecard() noexcept;
 		void recordInlineHdi08Run(uint32_t _dspIndex, uint64_t _startCycle,
 			uint64_t _clampCycle, bool _workComplete) noexcept;
 
@@ -324,7 +324,9 @@ namespace md
 		// MM stall-purge decision, so it must never be shared by concurrently
 		// running Hardware instances (as it was when this lived as a static local).
 		std::array<uint64_t, 2> m_linkLastShallow{};
+#if MD_TRANSPORT_DIAGNOSTICS
 		TransportScorecard m_transportScorecard;
+#endif
 
 		// Codec frames produced by the mixer.
 		uint32_t m_esaiFrameIndex = 0;			// codec frames produced

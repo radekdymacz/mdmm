@@ -840,10 +840,16 @@ namespace md
 		registerExternalInteraction();
 	}
 
-	TransportScorecard Hardware::getTransportScorecard() const noexcept
+	TransportScorecard Hardware::getTransportScorecard() noexcept
 	{
-		auto result = m_transportScorecard;
 #if MD_TRANSPORT_DIAGNOSTICS
+		auto result = m_transportScorecard;
+		// Sample the actual queues, independently of the recording counters, so
+		// queue-conservation checks can detect an unaccounted mutation.
+		result.link[0].currentRingDepth =
+			m_dspProducer.getPeriph().getEssi0().getAudioInputs().size();
+		result.link[1].currentRingDepth =
+			m_dspMixer.getPeriph().getEssi0().getAudioInputs().size();
 		result.mdRendezvousActive = m_mdOnDemandRendezvousActive;
 		result.mdPortCEdgePending = m_mdProducerPortCPending;
 		result.mdFlushEpoch = m_mdLinkFlushEpoch;
@@ -851,8 +857,10 @@ namespace md
 		result.mmAwaitingFreshResponse =
 			m_mmLinkAwaitFresh.load(std::memory_order_relaxed);
 		result.mmStrobeEpoch = m_mmLinkStrobeEpoch.load(std::memory_order_relaxed);
-#endif
 		return result;
+#else
+		return {};
+#endif
 	}
 
 	void Hardware::recordInlineHdi08Run(const uint32_t _dspIndex,

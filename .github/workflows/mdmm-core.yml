@@ -88,7 +88,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mode: ${{ fromJSON(github.event_name == 'pull_request' && '["release"]' || '["release", "asan-ubsan"]') }}
+        mode: ${{ fromJSON(github.event_name == 'pull_request' && '["release", "transport-diagnostics"]' || '["release", "transport-diagnostics", "asan-ubsan"]') }}
 
     steps:
       - uses: actions/checkout@v4
@@ -117,6 +117,7 @@ jobs:
             -DCMAKE_C_COMPILER_LAUNCHER=sccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
             -DBUILD_TESTING=ON \
+            -DMD_TRANSPORT_DIAGNOSTICS=${{ matrix.mode == 'transport-diagnostics' && 'ON' || 'OFF' }} \
             -Dgearmulator_BUILD_JUCEPLUGIN=${{ matrix.mode == 'asan-ubsan' && 'ON' || 'OFF' }} \
             -Dgearmulator_BUILD_FX_PLUGIN=OFF \
             -Dgearmulator_BUILD_JUCEPLUGIN_VST2=OFF \
@@ -138,6 +139,13 @@ jobs:
           cmake --build build-mdmm-core --parallel 4 --target mdLibTest mdShiftPanelLatchTest
           ctest --test-dir build-mdmm-core -C Release --output-on-failure \
             --no-tests=error --tests-regex '^(mdLibTests|mdShiftPanelLatchTest|mdEncoderPressFirmwareTest|mmEncoderPressFirmwareTest)$'
+
+      - name: Build and run enabled transport diagnostics gates
+        if: matrix.mode == 'transport-diagnostics'
+        run: |
+          cmake --build build-mdmm-core --parallel 4 --target mdTransportScorecardTest mdTransportScorecardFirmwareTest
+          ctest --test-dir build-mdmm-core -C Release --output-on-failure \
+            --no-tests=error --tests-regex '^(mdTransportScorecardTest|mdTransportScorecardFirmwareTest)$'
 
       - name: Build headless gates
         run: >-
