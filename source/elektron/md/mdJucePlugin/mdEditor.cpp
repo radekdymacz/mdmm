@@ -432,8 +432,17 @@ namespace mdJucePlugin
 		if(!m_lcdCanvas || !m_lcdInteractionState)
 			return std::nullopt;
 		const auto mouse = juceRmlUi::helper::getMousePos(_event);
-		const auto offset = m_lcdCanvas->GetAbsoluteOffset(Rml::BoxArea::Content);
-		const auto display = m_lcdCanvas->GetBox().GetSize(Rml::BoxArea::Content);
+		auto offset = m_lcdCanvas->GetAbsoluteOffset(Rml::BoxArea::Content);
+		auto display = m_lcdCanvas->GetBox().GetSize(Rml::BoxArea::Content);
+		const auto pixelAligned = m_pixelPerfectPanel && m_pixelPerfectPanel->isEnabled();
+		// Pixel-aligned canvases draw a snapped quad, which need not coincide with
+		// the unsnapped layout box. Use the quad actually rendered for input too.
+		if(pixelAligned)
+			if(const auto rendered = m_lcdCanvas->getRenderedRect())
+			{
+				offset = rendered->origin;
+				display = rendered->size;
+			}
 		auto paint = m_lcdCanvas->getPaintSize();
 		// A pointer can arrive before the canvas has completed its first Render and
 		// allocated a texture. In that brief interval the box is already laid out,
@@ -441,7 +450,7 @@ namespace mdJucePlugin
 		if(paint.x <= 0 || paint.y <= 0)
 			paint = {static_cast<int>(display.x), static_cast<int>(display.y)};
 		const auto viewport = lcdInteraction::Viewport::create(display.x, display.y,
-			paint.x, paint.y, m_pixelPerfectPanel && m_pixelPerfectPanel->isEnabled());
+			paint.x, paint.y, pixelAligned);
 		const auto point = viewport.displayToNative(mouse.x - offset.x, mouse.y - offset.y);
 		if(!point)
 			return std::nullopt;

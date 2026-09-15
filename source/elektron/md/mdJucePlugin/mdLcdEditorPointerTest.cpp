@@ -1,5 +1,7 @@
 #include "mdEditor.h"
+#include "mdLcdViewport.h"
 #include "mdPluginEditorState.h"
+#include "mdPixelPerfectPanel.h"
 #include "mdPluginProcessor.h"
 
 #include "juceRmlUi/juceRmlComponent.h"
@@ -62,6 +64,14 @@ namespace mdJucePlugin
 			juce::Graphics graphics(_image);
 			_editor.paintLcd(_image, graphics);
 		}
+	};
+}
+
+namespace juceRmlUi
+{
+	struct RenderingTestAccess
+	{
+		static void update(RmlComponent& _component) { _component.update(); }
 	};
 }
 
@@ -463,6 +473,55 @@ int main()
 			LayoutKind::MasterFx, 0xff, "Master FX");
 		exerciseCells(*editor, context, canvas, instrumentation, model,
 			LayoutKind::Standard, 0, "disabled surface");
+
+		// The pixel-perfect renderer snaps the outer canvas quad independently
+		// of RmlUi's fractional layout position. Drive real pointer events at the
+		// *absolute painted* A/B boundary, rather than round-tripping a viewport.
+		mdJucePlugin::EditorIdentityTestAccess::publishPanel(*editor,
+			makeStandardPanel(model));
+		processor.getConfig().setValue(mdJucePlugin::PixelPerfectPanel::configKey, true);
+		editor->applyPixelPerfectPanel();
+		auto* lcdArea = canvas.GetParentNode();
+		lcdArea->SetProperty("left", "30.25px");
+		lcdArea->SetProperty("top", "40.25px");
+		lcdArea->SetProperty("width", "229.5px");
+		lcdArea->SetProperty("height", "125.5px");
+		for(int frame = 0; frame < 4; ++frame)
+		{
+			juceRmlUi::RenderingTestAccess::update(*component);
+			juce::Image image(juce::Image::ARGB,
+				component->getWidth(), component->getHeight(), true);
+			juce::Graphics graphics(image);
+			component->paint(graphics);
+		}
+		const auto layoutOffset = canvas.GetAbsoluteOffset(Rml::BoxArea::Content);
+		const auto rendered = canvas.getRenderedRect();
+		const auto paintSize = canvas.getPaintSize();
+		require(rendered && std::abs(layoutOffset.x - rendered->origin.x) > 0.1f
+			&& std::abs(layoutOffset.y - rendered->origin.y) > 0.1f,
+			"fractional canvas origin did not diverge from snapped painted origin");
+		require(rendered->size.x == paintSize.x && rendered->size.y == paintSize.y,
+			"rendered canvas dimensions disagree with pixel-aligned paint size");
+		const auto viewport = Viewport::create(
+			rendered->size.x, rendered->size.y,
+			paintSize.x, paintSize.y, true);
+		const auto lcd = viewport.contentInPaintSpace();
+		const auto boundaryX = static_cast<int>(rendered->origin.x + lcd.x + 68);
+		const auto boundaryY = static_cast<int>(rendered->origin.y + lcd.y + 10);
+		for(const auto sample : {std::pair{boundaryX - 1, 0u},
+			std::pair{boundaryX, 1u}})
+		{
+			instrumentation.reset();
+			context.ProcessMouseMove(sample.first, boundaryY, 0);
+			context.ProcessMouseButtonDown(0, 0);
+			require(mdJucePlugin::EditorIdentityTestAccess::dragActive(*editor),
+				"painted boundary click did not acquire a DATA ENTRY field");
+			context.ProcessMouseMove(sample.first + 30, boundaryY, 0);
+			context.ProcessMouseButtonUp(0, 0);
+			require(requireOnlyEncoderInput(instrumentation, model, sample.second,
+				"absolute painted A/B boundary drag") != 0,
+				"painted boundary drag did not emit its displayed encoder");
+		}
 
 		std::printf("%s LcdEditorPointerTest: PASS\n", product);
 		return 0;
