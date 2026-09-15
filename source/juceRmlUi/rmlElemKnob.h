@@ -22,6 +22,8 @@ namespace juceRmlUi
 		void setEndless(bool _endless);
 
 		static bool isReversed(const Rml::Element* _element);
+		static float mouseWheelValueDelta(float _range, const Rml::Event& _event,
+			bool _reversed = false);
 
 		static void processMouseWheel(Rml::Element& _element, const Rml::Event& _event);
 

@@ -21,6 +21,7 @@ namespace mdJucePlugin
 		void apply(juceRmlUi::RmlComponent& _component, juceRmlUi::ElemCanvas* _canvas, bool _enabled);
 		// Returns false to use the editor's normal aspect-fit painter.
 		bool paintLcd(const juce::Image& _lcd, juce::Graphics& _graphics) const;
+		bool isEnabled() const;
 
 	private:
 		struct Impl;
