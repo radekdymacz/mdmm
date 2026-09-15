@@ -204,7 +204,9 @@ jobs:
           cmake --build build --config Release --parallel 4
           --target midiLearnTest midiOutputDispatcherTest mdAutomationParameterTest
           mdAutomationRobustnessTest mdAudioIoLayoutTest
-          mdFrontPanelPresentationTest mdPanelRenderingTest pluginTester
+          mdFrontPanelPresentationTest mdPanelRenderingTest
+          mdLcdInteractionModelTest mdLcdEditorPointerTest mmLcdEditorPointerTest
+          pluginTester
           mdJucePlugin_VST3 mmJucePlugin_VST3 mdAudioProbePlugin_VST3
           vst3ProgramChangeTest mdProgramChangeProbe_VST3
           synthLibAudioTest mdAudioQueueTest mdAudioFirmwareTest
@@ -213,4 +215,4 @@ jobs:
       - name: Run processor and built-plugin tests
         run: >-
           ctest --test-dir build -C Release --output-on-failure
-          --tests-regex "^(midiLearnTests|midiOutputDispatcherTest|mdAutomationParameterTest|mdAutomationArchitectureTest|mdAudioIoLayoutTest|mdFrontPanelPresentationTests|mdPanelRenderingTest|mdJucePlugin_VST3AudioIoTest|mmJucePlugin_VST3AudioIoTest|mdAudioProbePluginVST3IdentityTest|mdVst3ProgramChange(Test|OptOutTest)|(md|mm)JucePlugin_VST3ProgramChangeTest|synthLibAudioTest|mdAudioQueueTest|mdAudioFirmwareTest|mdUwFirmwareTest|dsp56300_accumulatorTests)$"
+          --tests-regex "^(midiLearnTests|midiOutputDispatcherTest|mdAutomationParameterTest|mdAutomationArchitectureTest|mdAudioIoLayoutTest|mdFrontPanelPresentationTests|mdPanelRenderingTest|mdLcdInteractionModelTest|mdLcdEditorPointerTest|mmLcdEditorPointerTest|mdJucePlugin_VST3AudioIoTest|mmJucePlugin_VST3AudioIoTest|mdAudioProbePluginVST3IdentityTest|mdVst3ProgramChange(Test|OptOutTest)|(md|mm)JucePlugin_VST3ProgramChangeTest|synthLibAudioTest|mdAudioQueueTest|mdAudioFirmwareTest|mdUwFirmwareTest|dsp56300_accumulatorTests)$"
