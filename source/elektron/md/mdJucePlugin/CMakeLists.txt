@@ -131,12 +131,15 @@ if(BUILD_TESTING)
 	# Check the shipping targets as well as the probes: a probe's independent
 	# opt-in must not hide a missing definition on either production wrapper.
 	foreach(plugin_target mdJucePlugin mmJucePlugin)
-		add_test(NAME ${plugin_target}_VST3ProgramChangeTest COMMAND vst3ProgramChangeTest
-			$<GENEX_EVAL:$<TARGET_PROPERTY:${plugin_target}_VST3,JUCE_PLUGIN_ARTEFACT_FILE>>)
-		set_tests_properties(${plugin_target}_VST3ProgramChangeTest PROPERTIES
-			LABELS "PluginTest;MIDI"
-			TIMEOUT 30
-			ENVIRONMENT "GEARMULATOR_DATA_ROOT=${CMAKE_CURRENT_BINARY_DIR}/program-metadata/${plugin_target}")
+		# The deep JUCE sanitizer build disables shipping plugin formats.
+		if(TARGET ${plugin_target}_VST3)
+			add_test(NAME ${plugin_target}_VST3ProgramChangeTest COMMAND vst3ProgramChangeTest
+				$<GENEX_EVAL:$<TARGET_PROPERTY:${plugin_target}_VST3,JUCE_PLUGIN_ARTEFACT_FILE>>)
+			set_tests_properties(${plugin_target}_VST3ProgramChangeTest PROPERTIES
+				LABELS "PluginTest;MIDI"
+				TIMEOUT 30
+				ENVIRONMENT "GEARMULATOR_DATA_ROOT=${CMAKE_CURRENT_BINARY_DIR}/program-metadata/${plugin_target}")
+		endif()
 	endforeach()
 
 	add_executable(mdStandaloneRendererPolicyTest mdStandaloneRendererPolicyTest.cpp)
