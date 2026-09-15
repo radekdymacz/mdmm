@@ -76,9 +76,19 @@ set_property(TARGET mdIdleSelfBranchTest PROPERTY FOLDER "Elektron/test")
 add_executable(mdIdleSchedulerFirmwareTest idleSchedulerFirmwareTest.cpp)
 target_link_libraries(mdIdleSchedulerFirmwareTest PRIVATE mdLib)
 add_test(NAME mdIdleSchedulerFirmwareTest COMMAND mdIdleSchedulerFirmwareTest)
+# Both models now run 192 paired-machine comparisons each. The old 120-second
+# limit covered one model; retain all 384 cases with proportional hang-guard
+# headroom. This allocation-heavy fixture is not a realtime performance gate.
 set_tests_properties(mdIdleSchedulerFirmwareTest PROPERTIES
-	LABELS "Integration;FirmwareTest;Timing" SKIP_RETURN_CODE 77 TIMEOUT 120)
+	LABELS "Integration;FirmwareTest;Timing" SKIP_RETURN_CODE 77 TIMEOUT 240)
 set_property(TARGET mdIdleSchedulerFirmwareTest PROPERTY FOLDER "Elektron/test")
+
+add_executable(mdPanelReadinessFirmwareTest panelReadinessFirmwareTest.cpp)
+target_link_libraries(mdPanelReadinessFirmwareTest PRIVATE mdLib)
+add_test(NAME mdPanelReadinessFirmwareTest COMMAND mdPanelReadinessFirmwareTest)
+set_tests_properties(mdPanelReadinessFirmwareTest PROPERTIES
+	LABELS "Integration;FirmwareTest;Panel" SKIP_RETURN_CODE 77 TIMEOUT 180)
+set_property(TARGET mdPanelReadinessFirmwareTest PROPERTY FOLDER "Elektron/test")
 
 if(BUILD_TESTING)
 	# The existing CI gate builds mdLibTest and selects only mdLibTests.
@@ -86,7 +96,8 @@ if(BUILD_TESTING)
 	# focused run, so a core/receive regression cannot silently skip the gate.
 	add_dependencies(mdLibTest mc68kColdFireTimingTest mc68kHdi08ReceiveTest
 		mc68kColdFireDivideTest mdHostRxTimingTest mdHostRxFirmwareTest
-		mdIdleSelfBranchTest mdIdleSchedulerFirmwareTest mdUartRegisterTest mdUartCpuInterruptTest)
+		mdIdleSelfBranchTest mdIdleSchedulerFirmwareTest mdPanelReadinessFirmwareTest
+		mdUartRegisterTest mdUartCpuInterruptTest)
 	set_tests_properties(mdHostRxTimingTest PROPERTIES FIXTURES_SETUP MdTimedHostRx)
 	set_tests_properties(mdIdleSelfBranchTest PROPERTIES FIXTURES_SETUP MdIdleSelfBranch)
 	set_tests_properties(mdUartRegisterTest mdUartCpuInterruptTest PROPERTIES FIXTURES_SETUP MdUart)
@@ -191,6 +202,32 @@ set_tests_properties(mdAudioFirmwareTest PROPERTIES
 	SKIP_RETURN_CODE 77)
 
 set_property(TARGET mdAudioFirmwareTest PROPERTY FOLDER "Elektron/test")
+
+add_executable(mdTransportScorecardTest transportScorecardTest.cpp)
+target_link_libraries(mdTransportScorecardTest PRIVATE mdLib)
+add_test(NAME mdTransportScorecardTest COMMAND mdTransportScorecardTest)
+set_tests_properties(mdTransportScorecardTest PROPERTIES
+	LABELS "UnitTest;Timing" TIMEOUT 10 FIXTURES_SETUP MdTransportScorecard)
+set_property(TARGET mdTransportScorecardTest PROPERTY FOLDER "Elektron/test")
+if(BUILD_TESTING)
+	add_dependencies(mdLibTest mdTransportScorecardTest)
+	add_dependencies(mdAudioQueueTest mdTransportScorecardTest)
+	set_property(TEST mdLibTests mdAudioQueueTest APPEND PROPERTY
+		FIXTURES_REQUIRED MdTransportScorecard)
+endif()
+
+if(MD_TRANSPORT_DIAGNOSTICS)
+	add_executable(mdTransportScorecardFirmwareTest
+		transportScorecardFirmwareTest.cpp)
+	target_link_libraries(mdTransportScorecardFirmwareTest PRIVATE mdLib)
+	add_test(NAME mdTransportScorecardFirmwareTest
+		COMMAND mdTransportScorecardFirmwareTest)
+	set_tests_properties(mdTransportScorecardFirmwareTest PROPERTIES
+		LABELS "Integration;FirmwareTest;Timing"
+		SKIP_RETURN_CODE 77 TIMEOUT 180)
+	set_property(TARGET mdTransportScorecardFirmwareTest
+		PROPERTY FOLDER "Elektron/test")
+endif()
 
 add_executable(encoderPressFirmwareTest encoderPressFirmwareTest.cpp)
 target_link_libraries(encoderPressFirmwareTest PRIVATE mdLib)

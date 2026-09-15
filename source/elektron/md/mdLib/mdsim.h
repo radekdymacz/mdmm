@@ -13,7 +13,7 @@ namespace md
 	// This models the on-chip peripheral register window described by the
 	// Motorola/Freescale MCF5206E User's Manual (MCF5206EUM).
 	//
-	// mdmc maps the public MAME driver's 64 KB SIM window and calls this class
+	// mdmc maps the public MAME skeleton's 64 KB SIM window and calls this class
 	// with MBAR-relative offsets.
 	//
 	// Modelled behaviourally (everything else is store/return-stored backing RAM):
@@ -228,8 +228,8 @@ namespace md
 		bool takeNextInterrupt(uint8_t& _level, uint8_t& _vector);
 
 		// Drive the external IRQ4 input level (UM 8.3.2.3 external interrupt sources). On the MD
-		// this pin is wired to DSP2's HI08 HREQ output (MAME elektronmono.cpp: m_dsp2gm->irq_cb()
-		// -> write_irq_4). Level-sensitive - it stays asserted as long as DSP2 has words for the
+		// this pin is wired to DSP2's HI08 HREQ output. Level-sensitive, it stays
+		// asserted while DSP2 has words for the
 		// host; the handler silences it by draining DSP2's HI08. See getExternalIrq4.
 		void setExternalIrq4(bool _level);
 

@@ -1,5 +1,6 @@
 #include "mdhardware.h"
 #include "mdhostclock.h"
+#include "mdtransportpolicy.h"
 
 #include "mdsysexautomation.h"
 #include "synthLib/realtimeInstrumentation.h"
@@ -20,17 +21,21 @@
 
 #include "dsp56kEmu/jitblockinfo.h"
 
+#if MD_TRANSPORT_DIAGNOSTICS
+#define MD_TRANSPORT_RECORD(...) do { __VA_ARGS__; } while(false)
+#else
+#define MD_TRANSPORT_RECORD(...) do {} while(false)
+#endif
+
 namespace md
 {
-	// ColdFire MCF5206E system clock. The MAME driver clocks the CPU from a 25.447 MHz
-	// crystal (elektronmono.cpp); used to convert mixer-DSP execution -> UC cycle budget. The
-	// MD Sim doesn't model a PLL yet, so this is the fixed nominal rate.
+	// The current 40 MHz ColdFire clock is consistent with the firmware's timer
+	// and UART divisors. It converts mixer-DSP execution into a UC cycle budget.
 
 	// One codec (ESSI1) stereo frame corresponds to a fixed number of DSP1-executed cycles. The
 	// firmware configures a 96-cycle base link slot; the ESSI1 divider and two stereo slots produce
 	// 2304 cycles per codec frame at the 101.6064 MHz DSP clock.
-	// The UC is granted g_ucClockHz/44100 = 577 cycles per such frame, matching the
-	// hardware's 25.447/101.6064 MHz clock ratio.
+	// The UC is granted g_ucClockHz/44100, about 907.03 cycles per frame.
 	constexpr uint64_t g_dsp1CyclesPerEsaiFrame  = 2304;
 
 	Rom initRom(const std::vector<uint8_t>& _romData, const std::string& _romName,
@@ -128,12 +133,13 @@ namespace md
 		m_mdOnDemandRendezvousArmPending = !isMonomachine()
 			&& m_firmwareFingerprint == g_mdOs163Fingerprint;
 
-		if(isMonomachine())
-		{
-			const auto wake = [this] { notifyHostPumpStateChanged(); };
-			m_dspMixer.setHostPumpWakeCallback(wake);
-			m_dspProducer.setHostPumpWakeCallback(wake);
-		}
+		// Wake the scheduler host pump when either DSP produces a host word or
+		// the UC-side port state changes. The pump itself runs only on a wake
+		// (see pumpDsp2HostRequest), so an idle UC step skips both drains and
+		// the HREQ recomputation entirely.
+		const auto wake = [this] { notifyHostPumpStateChanged(); };
+		m_dspMixer.setHostPumpWakeCallback(wake);
+		m_dspProducer.setHostPumpWakeCallback(wake);
 
 		// Feed the OS's host->panel UART2 stream into the front-panel LCD/LED decoder.
 		m_uc.setFrontPanel(&m_frontPanel);
@@ -163,10 +169,12 @@ namespace md
 		// push, silence-on-empty for the consumer pop. Ordering/level correctness comes from the
 		// scheduler advancing the peer before delivery and, when it lands, the hardware-true
 		// skip-on-empty link RX.
-		const auto pushToInput = [txToRx, this](dsp56k::Essi& _consumer, const uint32_t _selfDsp)
+		const auto pushToInput = [txToRx, this](dsp56k::Essi& _consumer,
+			const uint32_t _selfDsp)
 		{
 			return [txToRx, this, &_consumer, _selfDsp](uint64_t& _frameIndex, const dsp56k::Audio::TxFrame& _values)
 			{
+				MD_TRANSPORT_RECORD(++m_transportScorecard.link[_selfDsp].transmitFrames;);
 				dsp56k::Audio::RxFrame rx;
 				txToRx(_values, rx);
 				auto& ring = _consumer.getAudioInputs();
@@ -190,6 +198,8 @@ namespace md
 					// such backlog, so discard data while receive is disabled.
 					if(!_consumer.hasEnabledReceivers())
 					{
+						MD_TRANSPORT_RECORD(++m_transportScorecard.link[_selfDsp]
+							.receiverDisabledDrops;);
 						++_frameIndex;
 						return;
 					}
@@ -207,15 +217,33 @@ namespace md
 							& (1u << dsp56k::DmaChannel::De)) != 0;
 						const bool fresh = m_dspProducer.getPeriph().getEssi0()
 							.getLastTxWrittenMask() != 0;
-						if(fresh && releasedForWindow && dma4Active && !ring.full())
+						if(!fresh)
+							MD_TRANSPORT_RECORD(++m_transportScorecard.link[_selfDsp]
+								.mdRendezvousRetainedDrops;);
+						else if(!releasedForWindow)
+							MD_TRANSPORT_RECORD(++m_transportScorecard.link[_selfDsp]
+								.mdRendezvousUnreleasedDrops;);
+						else if(!dma4Active)
+							MD_TRANSPORT_RECORD(++m_transportScorecard.link[_selfDsp]
+								.mdRendezvousDmaInactiveDrops;);
+						else if(ring.full())
+							MD_TRANSPORT_RECORD(++m_transportScorecard.link[_selfDsp]
+								.mdRendezvousRingFullDrops;);
+						else
+						{
 							ring.push_back(std::move(rx));
+							MD_TRANSPORT_RECORD(auto& score = m_transportScorecard.link[_selfDsp];
+								++score.acceptedFrames;
+								score.currentRingDepth = ring.size();
+								score.maximumRingDepth = std::max(score.maximumRingDepth, ring.size()););
+						}
 						schedCatchUpDspToDsp(1u - _selfDsp, _selfDsp);
 						++_frameIndex;
 						return;
 					}
 
 					// Typed early-link-catch-up construction selects floor 0; otherwise the post-boot
-					// gate is 256. Floor 0 runs MAME-style consumer catch-up during the boot window.
+					// gate is 256. Floor 0 runs consumer catch-up during the boot window.
 					const uint64_t strobeEpoch = (isMonomachine() && _selfDsp == 1)
 						? m_mmLinkStrobeEpoch.load(std::memory_order_acquire) : 0;
 					// With an explicit floor, fire when esaiFrameIndex >= floor (floor=0 => ALWAYS,
@@ -233,6 +261,8 @@ namespace md
 					if(mdProducerToMixer && !rendezvousActiveBefore
 						&& m_mdOnDemandRendezvousActive)
 					{
+						MD_TRANSPORT_RECORD(++m_transportScorecard.link[_selfDsp]
+							.mdWindowOpenedDuringCatchUpDrops;);
 						++_frameIndex;
 						return;
 					}
@@ -243,6 +273,8 @@ namespace md
 					if(isMonomachine() && _selfDsp == 1 &&
 						m_mmLinkStrobeEpoch.load(std::memory_order_acquire) != strobeEpoch)
 					{
+						MD_TRANSPORT_RECORD(++m_transportScorecard.link[_selfDsp]
+							.mmStrobeChangedDuringCatchUpDrops;);
 						++_frameIndex;
 						return;
 					}
@@ -268,6 +300,8 @@ namespace md
 						if(m_mdLinkRoeEngaged && _consumer.getSR().test(dsp56k::Essi::SSISR_RDF))
 						{
 							_consumer.setReceiverOverrun();
+							MD_TRANSPORT_RECORD(++m_transportScorecard.link[_selfDsp]
+								.mdReceiverOverrunDrops;);
 							++_frameIndex;
 							return;
 						}
@@ -282,16 +316,26 @@ namespace md
 						// not an overrun.
 						if(m_mdLinkAwaitFresh)
 						{
-						if(m_dspProducer.getPeriph().getEssi0().getLastTxWrittenMask() == 0)
-						{
-							++_frameIndex;
+							if(m_dspProducer.getPeriph().getEssi0().getLastTxWrittenMask() == 0)
+							{
+								MD_TRANSPORT_RECORD(++m_transportScorecard.link[_selfDsp]
+									.mdPostFlushRetainedDrops;);
+								++_frameIndex;
 								return;
 							}
 							m_mdLinkAwaitFresh = false;
 						}
 					}
 					if(!ring.full())
+					{
 						ring.push_back(std::move(rx));
+						MD_TRANSPORT_RECORD(auto& score = m_transportScorecard.link[_selfDsp];
+							++score.acceptedFrames;
+							score.currentRingDepth = ring.size();
+							score.maximumRingDepth = std::max(score.maximumRingDepth, ring.size()););
+					}
+					else
+						MD_TRANSPORT_RECORD(++m_transportScorecard.link[_selfDsp].ringFullDrops;);
 				++_frameIndex;
 			};
 		};
@@ -300,6 +344,8 @@ namespace md
 		{
 			return [this, &_self, _selfDsp](uint64_t& _frameIndex, dsp56k::Audio::RxFrame& _frame)
 			{
+				MD_TRANSPORT_RECORD(++m_transportScorecard.link[1u - _selfDsp]
+					.receiveCallbacks;);
 				auto& ring = _self.getAudioInputs();
 					// Stall recovery: under scheduler link catch-up the consumer is
 					// advanced to the producer's time before every enqueue, so this ring can only be
@@ -330,6 +376,9 @@ namespace md
 						else if(!preserveRendezvousFutureEdges
 							&& (s_immediate || esaiNow - lastShallow > 1024))
 						{
+							MD_TRANSPORT_RECORD(m_transportScorecard.link[1u - _selfDsp]
+								.stallPurgedFrames += ring.size();
+								m_transportScorecard.link[1u - _selfDsp].currentRingDepth = 0;);
 							while(!ring.empty())
 								ring.pop_front();
 							lastShallow = esaiNow;	// ring is now empty (shallow)
@@ -339,9 +388,17 @@ namespace md
 					// Hardware-true skip-on-empty link receive replaces this with matched consumption
 					// and production once the frame has landed.
 					if(ring.empty())
+					{
 						_frame.clear();
+						MD_TRANSPORT_RECORD(++m_transportScorecard.link[1u - _selfDsp].emptyReads;);
+					}
 					else
+					{
 						_frame = ring.pop_front();
+						MD_TRANSPORT_RECORD(auto& score = m_transportScorecard.link[1u - _selfDsp];
+							++score.poppedFrames;
+							score.currentRingDepth = ring.size(););
+					}
 				++_frameIndex;
 			};
 		};
@@ -402,6 +459,16 @@ namespace md
 							m_dspProducer.getPeriph().getEssi0().getLastTxWrittenMask();
 						if(!dma4Active || !dma1Active || writtenMask == 0)
 						{
+							MD_TRANSPORT_RECORD(++m_transportScorecard.link[1].transmitFrames;);
+							if(!dma4Active)
+								MD_TRANSPORT_RECORD(++m_transportScorecard.link[1]
+									.mmMixerDmaInactiveDrops;);
+							else if(!dma1Active)
+								MD_TRANSPORT_RECORD(++m_transportScorecard.link[1]
+									.mmProducerDmaInactiveDrops;);
+							else
+								MD_TRANSPORT_RECORD(++m_transportScorecard.link[1]
+									.mmRetainedPrefixDrops;);
 							++_frameIndex;
 							return;
 						}
@@ -436,9 +503,10 @@ namespace md
 		// the producer (DSP2) receives it, so the mixer's inputs stay quiet (nothing sets a
 		// host input source -> reads 0) and the producer sees a running clock. The producer's
 		// ESSI0 SC01 pin (Port C bit 1) additionally carries the link frame sync the program
-		// paces itself against (MAME models the same signal as a synthesized toggle every
-		// 147456 cycles). All modelled as instruction-counter derived square waves, evaluated
-		// in the reading DSP's execution context.
+		// paces itself against. Earlier firmware disassembly and timing sweeps identified
+		// one edge per 147456 DSP cycles, or 128 codec-word periods. The current model
+		// forwards DSP1's Port C edge below. Port D remains instruction-counter derived
+		// and is evaluated in the reading DSP's execution context.
 		{
 			const auto& cnt = m_dspProducer.dsp().getInstructionCounter();
 
@@ -486,6 +554,9 @@ namespace md
 						// completed/idle wire interval and cannot precede DSP2's
 						// response in the new DMA4 window.
 						auto& ring = m_dspMixer.getPeriph().getEssi0().getAudioInputs();
+						MD_TRANSPORT_RECORD(m_transportScorecard.link[1]
+							.mmStrobePurgedFrames += ring.size();
+							m_transportScorecard.link[1].currentRingDepth = 0;);
 						while(!ring.empty())
 							ring.pop_front();
 						m_mmLinkAwaitFresh.store(true, std::memory_order_release);
@@ -495,6 +566,16 @@ namespace md
 				m_dspProducer.getPeriph().getPortC().hostWrite(level);
 			});
 		}
+
+		MD_TRANSPORT_RECORD(m_transportScorecard.link[0].currentRingDepth =
+			m_dspProducer.getPeriph().getEssi0().getAudioInputs().size();
+		m_transportScorecard.link[1].currentRingDepth =
+			m_dspMixer.getPeriph().getEssi0().getAudioInputs().size();
+		for(auto& score : m_transportScorecard.link)
+		{
+			score.initialRingDepth = score.currentRingDepth;
+			score.maximumRingDepth = score.currentRingDepth;
+		});
 
 		// Load SP/PC from the reset vectors before scheduled UC execution starts.
 		m_uc.reset();
@@ -759,6 +840,69 @@ namespace md
 		registerExternalInteraction();
 	}
 
+	TransportScorecard Hardware::getTransportScorecard() noexcept
+	{
+#if MD_TRANSPORT_DIAGNOSTICS
+		auto result = m_transportScorecard;
+		// Sample the actual queues, independently of the recording counters, so
+		// queue-conservation checks can detect an unaccounted mutation.
+		result.link[0].currentRingDepth =
+			m_dspProducer.getPeriph().getEssi0().getAudioInputs().size();
+		result.link[1].currentRingDepth =
+			m_dspMixer.getPeriph().getEssi0().getAudioInputs().size();
+		result.mdRendezvousActive = m_mdOnDemandRendezvousActive;
+		result.mdPortCEdgePending = m_mdProducerPortCPending;
+		result.mdFlushEpoch = m_mdLinkFlushEpoch;
+		result.mdPortCReleaseEpoch = m_mdProducerPortCReleaseEpoch;
+		result.mmAwaitingFreshResponse =
+			m_mmLinkAwaitFresh.load(std::memory_order_relaxed);
+		result.mmStrobeEpoch = m_mmLinkStrobeEpoch.load(std::memory_order_relaxed);
+		return result;
+#else
+		return {};
+#endif
+	}
+
+	void Hardware::recordInlineHdi08Run(const uint32_t _dspIndex,
+		const uint64_t _startCycle, const uint64_t _clampCycle,
+		const bool _workComplete) noexcept
+	{
+#if MD_TRANSPORT_DIAGNOSTICS
+		auto& score = m_transportScorecard.inlineHdi08[_dspIndex & 1];
+		const auto endCycle = (_dspIndex & 1) == 0
+			? m_dspMixer.dsp().getCycles() : m_dspProducer.dsp().getCycles();
+		const auto requested = _clampCycle - _startCycle;
+		const auto executed = endCycle - _startCycle;
+		++score.calls;
+		score.requestedCycles += requested;
+		score.executedCycles += executed;
+		score.maximumRequestedCycles = std::max(
+			score.maximumRequestedCycles, requested);
+		score.maximumExecutedCycles = std::max(
+			score.maximumExecutedCycles, executed);
+		if(_workComplete)
+			++score.reachedTarget;
+		else if(endCycle >= _clampCycle)
+			++score.hitClamp;
+		else
+			++score.unexpectedShort;
+#else
+		(void)_dspIndex;
+		(void)_startCycle;
+		(void)_clampCycle;
+		(void)_workComplete;
+#endif
+	}
+
+	void Hardware::recordMdLinkPurge(const size_t _purgedFrames) noexcept
+	{
+		MD_TRANSPORT_RECORD(m_transportScorecard.link[1].mdWindowPurgedFrames
+			+= _purgedFrames;
+			m_transportScorecard.link[1].currentRingDepth -= std::min(
+				m_transportScorecard.link[1].currentRingDepth, _purgedFrames););
+		(void)_purgedFrames;
+	}
+
 	void Hardware::mdLinkWindowFlushed()
 	{
 		if(!m_mdLinkRoeEngaged)
@@ -896,43 +1040,41 @@ namespace md
 
 	void Hardware::pumpDsp2HostRequest()
 	{
-		if(isMonomachine())
-		{
-			// The settled MM path executes millions of ColdFire instructions between meaningful
-			// host-port edges. Keep that overwhelmingly common clean check read-only; reserve the
-			// cache-line-writing RMW for a producer/consumer/ICR wake. A wake racing the exchange
-			// remains set for the next instruction, so no event can be lost.
-			// Advancing CPU time can make a reserved word visible even without
-			// another peripheral edge. Keep pumping until it reaches its deadline.
-			const bool deferred = m_dspMixer.hasDeferredHostRx()
-				|| m_dspProducer.hasDeferredHostRx();
-			if(!m_schedulerHostPumpDirty.load(std::memory_order_acquire) && !deferred)
-				return;
-			if(!m_schedulerHostPumpDirty.exchange(false, std::memory_order_acq_rel) && !deferred)
-				return;
-		}
+		// The settled path executes millions of ColdFire instructions between meaningful
+		// host-port edges. Keep that overwhelmingly common clean check read-only; reserve the
+		// cache-line-writing RMW for a producer/consumer/ICR wake. A wake racing the exchange
+		// remains set for the next instruction, so no event can be lost.
+		// Advancing CPU time can make a reserved word visible even without
+		// another peripheral edge. Keep pumping until it reaches its deadline.
+		const bool deferred = m_dspMixer.hasDeferredHostRx()
+			|| m_dspProducer.hasDeferredHostRx();
+		if(!m_schedulerHostPumpDirty.load(std::memory_order_acquire) && !deferred)
+			return;
+		if(!m_schedulerHostPumpDirty.exchange(false, std::memory_order_acq_rel) && !deferred)
+			return;
 
 		// DSP2's HI08 receive request drives ColdFire IRQ4. Monomachine uses
 		// the hardware RXDF latch. Waiting for three queued words spans two of
 		// its block notifications instead of requesting service for the first word.
-		const size_t hostRxIrqMinWords = isMonomachine() ? 1 : 3;
-		static constexpr size_t g_maxUcQueuedWords  = 16;	// bound on the host-side queue depth
+		const auto policy = transportPolicy(m_model);
 
-		// MAME drains both DSP transmit paths continuously; only the HREQ-to-IRQ4
-		// wire is DSP2-specific. Drain the mixer path as well so its transmit
+		// Drain both DSP transmit paths continuously; only the HREQ-to-IRQ4 wire
+		// is DSP2-specific. Drain the mixer path as well so its transmit
 		// register cannot remain full.
 		uint32_t mixerMoved = 0;
 		if(m_dspMixer.booted())
-			mixerMoved = m_dspMixer.pumpHostRx(g_maxUcQueuedWords);
+			mixerMoved = m_dspMixer.pumpHostRx(policy.hostReceiveQueueCapacityWords);
 
 		if(!m_dspProducer.booted())
 			return;	// pre-boot: DSP2 is not producing; IRQ4 stays deasserted (reset default)
 
-		const uint32_t producerMoved = m_dspProducer.pumpHostRx(g_maxUcQueuedWords);
+		const uint32_t producerMoved = m_dspProducer.pumpHostRx(
+			policy.hostReceiveQueueCapacityWords);
 
 		auto& hdi = m_uc.getHdi08Dsp2();
 		const bool rreq = (hdi.icr() & mc68k::Hdi08::Rreq) != 0;	// ColdFire enabled receive requests
-		const bool hreq = rreq && hdi.hostRxWordsAvailable() >= hostRxIrqMinWords;
+		const bool hreq = rreq && hdi.hostRxWordsAvailable()
+			>= policy.hostReceiveIrqMinWords;
 		(void)mixerMoved;
 		(void)producerMoved;
 		m_uc.getSim().setExternalIrq4(hreq);
@@ -940,8 +1082,7 @@ namespace md
 
 	void Hardware::notifyHostPumpStateChanged()
 	{
-		if(isMonomachine())
-			m_schedulerHostPumpDirty.store(true, std::memory_order_release);
+		m_schedulerHostPumpDirty.store(true, std::memory_order_release);
 	}
 
 	void Hardware::onEssiCallbackMixer()
@@ -1057,25 +1198,21 @@ namespace md
 	// _machineFrames codec frames of shared machine time, on the caller's thread, with no background
 	// threads. It maintains a machine clock in codec frames and, in an event-driven loop, repeatedly
 	// steps whichever component (UC / DSP1 / DSP2) is furthest BEHIND the clock forward by a bounded
-	// background quantum (MAME's "run each processor in large chunks, catch up at every interaction"
-	// model; fine-grained UC<->DSP synchronisation happens at each HI08 access). Rates are
+	// background quantum. Fine-grained UC<->DSP synchronization happens at each HI08 access. Rates are
 	// exact: one frame = g_dsp1CyclesPerEsaiFrame (2304) DSP cycles = g_ucClockHz/g_samplerate UC
-	// cycles. The scheduler uses a model-specific background quantum and MAME's
-	// 100k-cycle catch-up clamp.
+	// cycles. The scheduler uses the model-specific transport policy below.
 	// -------------------------------------------------------------------------------------------
 	namespace
 	{
 		double schedQuantumFrames(const MachineModel _model)
 		{
-			// MM's host traffic needs a tighter background interleave than the MD
-			// path so short mailbox pulses remain visible.
-			const double us = _model == MachineModel::Monomachine ? 30.0 : 125.0;
+			const double us = transportPolicy(_model).backgroundQuantumMicroseconds;
 			return us * static_cast<double>(g_samplerate) / 1.0e6;				// -> codec frames
 		}
 
-		uint64_t schedClampCycles()
+		uint64_t schedClampCycles(const MachineModel _model)
 		{
-			return 100'000;	// MAME time_catchup_max_cycles
+			return transportPolicy(_model).catchUpMaxDspCycles;
 		}
 
 		double schedUcCyclesPerFrame()
@@ -1120,7 +1257,7 @@ namespace md
 	{
 		const double ucPerFrame   = schedUcCyclesPerFrame();
 		const double quantumFrames= schedQuantumFrames(m_model);
-		const uint64_t clampCycles= schedClampCycles();
+		const uint64_t clampCycles= schedClampCycles(m_model);
 		const double target       = m_schedFramesTotal;
 
 		const double ucPos = static_cast<double>(m_schedUcCyclesDone) / ucPerFrame;
@@ -1150,21 +1287,25 @@ namespace md
 		const bool s_mmBackpressure = isMonomachine();
 		if(s_mmBackpressure)
 		{
-			constexpr size_t   g_bpThresholdWords = 4;			// MAME MM host queue is 2 words deep
-			constexpr uint64_t g_bpReleaseUcCycles = 200000;	// MAME backpressure clamp is 100k DSP cycles
+			const auto policy = transportPolicy(m_model);
 			for(uint32_t i = 0; i < 2; ++i)
 			{
 				auto& d = (i == 0) ? m_dspMixer : m_dspProducer;
 				double& pos = (i == 0) ? dsp1Pos : dsp2Pos;
-				if(!m_schedDspOriginLatched[i] || !d.booted() || d.hostTxBacklog() <= g_bpThresholdWords)
+				if(!m_schedDspOriginLatched[i] || !d.booted()
+					|| d.hostTxBacklog() <= policy.hostTransmitBackpressureThresholdWords)
 				{
 					m_mmBpSinceUcCycles[i] = 0;
 					continue;
 				}
 				if(!m_mmBpSinceUcCycles[i])
 					m_mmBpSinceUcCycles[i] = m_schedUcCyclesDone + 1;	// +1: 0 means "not stalled"
-				if(m_schedUcCyclesDone - (m_mmBpSinceUcCycles[i] - 1) < g_bpReleaseUcCycles)
+				if(m_schedUcCyclesDone - (m_mmBpSinceUcCycles[i] - 1)
+					< policy.hostTransmitBackpressureReleaseUcCycles)
+				{
 					pos = target;
+					MD_TRANSPORT_RECORD(++m_transportScorecard.mmBackpressureParkDecisions[i];);
+				}
 			}
 		}
 		double minPos = ucPos; int who = 0;			// 0 = UC, 1 = DSP1(mixer), 2 = DSP2(producer)
@@ -1178,6 +1319,18 @@ namespace md
 
 		if(who == 0)
 		{
+#if MD_TRANSPORT_DIAGNOSTICS
+			auto& score = m_transportScorecard.backgroundUc;
+			++score.calls;
+			const auto diagnosticStart = m_schedUcCyclesDone;
+			const auto diagnosticTarget = static_cast<uint64_t>(
+				std::ceil(subTarget * ucPerFrame));
+			const auto diagnosticRequested = diagnosticTarget > diagnosticStart
+				? diagnosticTarget - diagnosticStart : 0;
+			score.requestedCycles += diagnosticRequested;
+			score.maximumRequestedCycles = std::max(
+				score.maximumRequestedCycles, diagnosticRequested);
+#endif
 			// Advance the UC toward subTarget; each processUC() runs one m_uc.exec() (and its HI08
 			// callbacks, which catch the target DSP up inline). Guaranteed at least one step; clamped.
 			const uint64_t clampStop = m_schedUcCyclesDone + clampCycles;
@@ -1185,10 +1338,21 @@ namespace md
 			uint32_t probeCount = 0;
 			do
 			{
-				processUC();
-				// Probe periodically within the existing UC slice. A
-				// pending host word/wake, restore or MIDI transfer disables skipping.
-				if(((probeCount++ & 15u) == 0) && isMonomachine() && m_schedUcCyclesDone < clampStop
+			processUC();
+			// Probe periodically within the existing UC slice. A
+			// pending host word/wake, restore or MIDI transfer disables skipping.
+			// The Monomachine path skips its ColdFire idle loop (BRA.B -2) in
+			// chunks. The Machinedrum idles the same way, but its unconditional
+			// per-step host pump must not be skipped while a DSP holds an
+			// unpumped transmit word: delaying that word would delay the
+			// HREQ->IRQ4 edge the idle firmware may be waiting for. With both
+			// transmit registers empty the pump is a no-op (no UC reads happen
+			// mid-skip, so the latched queue state cannot be observed), and the
+			// skip stays transparent.
+			const bool dspTxClear = !m_dspMixer.hdi08().hasTX()
+				&& !m_dspProducer.hdi08().hasTX();
+			if(((probeCount++ & 15u) == 0) && (isMonomachine() || dspTxClear)
+				&& m_schedUcCyclesDone < clampStop
 					&& !m_pendingFlashRestoreActive.load(std::memory_order_acquire)
 					&& !m_schedulerHostPumpDirty.load(std::memory_order_acquire)
 					&& !m_dspMixer.hasDeferredHostRx() && !m_dspProducer.hasDeferredHostRx()
@@ -1218,6 +1382,8 @@ namespace md
 								break;
 						if(instructions)
 						{
+							MD_TRANSPORT_RECORD(m_transportScorecard.idleSelfBranchInstructions
+								+= instructions;);
 							const auto cycles = instructions * 2;
 							// Preserve the host clock seen by the final SIM update.
 							m_schedUcCyclesDone += cycles - 2;
@@ -1229,6 +1395,18 @@ namespace md
 			}
 			while(static_cast<double>(m_schedUcCyclesDone) / ucPerFrame < subTarget
 				&& m_schedUcCyclesDone < clampStop);
+#if MD_TRANSPORT_DIAGNOSTICS
+			const auto diagnosticExecuted = m_schedUcCyclesDone - diagnosticStart;
+			score.executedCycles += diagnosticExecuted;
+			score.maximumExecutedCycles = std::max(
+				score.maximumExecutedCycles, diagnosticExecuted);
+			if(static_cast<double>(m_schedUcCyclesDone) / ucPerFrame >= subTarget)
+				++score.reachedTarget;
+			else if(m_schedUcCyclesDone >= clampStop)
+				++score.hitClamp;
+			else
+				++score.unexpectedShort;
+#endif
 		}
 		else
 		{
@@ -1240,6 +1418,14 @@ namespace md
 			if(targetCyc <= startCyc)
 				targetCyc = startCyc + 1;			// guarantee >=1 step of progress (float rounding)
 			const uint64_t stopCyc = std::min(targetCyc, startCyc + clampCycles);
+#if MD_TRANSPORT_DIAGNOSTICS
+			auto& score = m_transportScorecard.backgroundDsp[idx];
+			++score.calls;
+			const auto diagnosticRequested = targetCyc - startCyc;
+			score.requestedCycles += diagnosticRequested;
+			score.maximumRequestedCycles = std::max(
+				score.maximumRequestedCycles, diagnosticRequested);
+#endif
 			if(m_schedBoundedJit)
 				d.dsp().execUntilCycles(stopCyc);
 			else
@@ -1248,6 +1434,18 @@ namespace md
 				while(d.dsp().getCycles() < stopCyc)
 					d.dsp().exec();
 			}
+#if MD_TRANSPORT_DIAGNOSTICS
+			const auto diagnosticExecuted = d.dsp().getCycles() - startCyc;
+			score.executedCycles += diagnosticExecuted;
+			score.maximumExecutedCycles = std::max(
+				score.maximumExecutedCycles, diagnosticExecuted);
+			if(d.dsp().getCycles() >= targetCyc)
+				++score.reachedTarget;
+			else if(stopCyc < targetCyc && d.dsp().getCycles() >= stopCyc)
+				++score.hitClamp;
+			else
+				++score.unexpectedShort;
+#endif
 			if(who == 1)
 				schedDrainCodecOutput();			// keep the mixer ESSI1 output ring shallow
 		}
@@ -1272,69 +1470,132 @@ namespace md
 
 	void Hardware::schedCatchUpDsp(const uint32_t _dspIndex)
 	{
-		// MAME catch_up_elapsed_time: run the target DSP inline up to the UC's current machine time
+		// Run the target DSP inline up to the UC's current machine time
 		// (the caller's point in the boot handshake) before a host access. This is what advances the
 		// DSP in fine lockstep with the UC's poll loops, so the UC's ISR/reply polls converge instead
 		// of spinning while the DSP is frozen for the UC's whole background quantum. Bounded by the
 		// catch-up clamp; monotone (never runs the DSP backwards or past the UC).
 		const uint32_t i = _dspIndex & 1;
+#if MD_TRANSPORT_DIAGNOSTICS
+		auto& score = m_transportScorecard.coldFireToDsp[i];
+		++score.calls;
+#endif
 		if(!m_schedDspOriginLatched[i])
+		{
+			MD_TRANSPORT_RECORD(++score.originUnavailable;);
 			return;									// not yet rate-locked (still booting) - nothing to catch up
+		}
 		auto& d = (i == 0) ? m_dspMixer : m_dspProducer;
 
 		if(m_schedUcCyclesDone <= m_schedDspOriginUcCycles[i])
+		{
+			MD_TRANSPORT_RECORD(++score.timeUnavailable;);
 			return;
+		}
 		const uint64_t targetCyc = dspCatchupDeadline<g_ucClockHz,
 			g_dsp1CyclesPerEsaiFrame * g_samplerate>(m_schedDspOriginCycles[i],
 				m_schedUcCyclesDone - m_schedDspOriginUcCycles[i]);
-		const uint64_t clampStop = d.dsp().getCycles() + schedClampCycles();
+		const uint64_t startCyc = d.dsp().getCycles();
+		if(startCyc >= targetCyc)
+		{
+			MD_TRANSPORT_RECORD(++score.alreadyAtTarget;);
+			return;
+		}
+		const auto policy = transportPolicy(m_model);
+		const uint64_t clampStop = startCyc + policy.catchUpMaxDspCycles;
+		MD_TRANSPORT_RECORD(const auto requested = targetCyc - startCyc;
+			score.requestedCycles += requested;
+			score.maximumRequestedCycles = std::max(score.maximumRequestedCycles, requested););
 		// MM flow control: a host-TX-backlogged DSP does not advance in catch-up either - the
 		// catch-up loops are how a DSP outruns the UC by thousands of words in the first place
 		// (see the schedStep backpressure comment). MD path untouched.
 		const bool s_mmBp = isMonomachine();
 		while(d.dsp().getCycles() < targetCyc && d.dsp().getCycles() < clampStop
-			&& (!s_mmBp || d.hostTxBacklog() <= 4))
+			&& (!s_mmBp
+				|| d.hostTxBacklog() <= policy.hostTransmitBackpressureThresholdWords))
 			d.dsp().exec();
+		MD_TRANSPORT_RECORD(const auto executed = d.dsp().getCycles() - startCyc;
+			score.executedCycles += executed;
+			score.maximumExecutedCycles = std::max(score.maximumExecutedCycles, executed);
+			if(d.dsp().getCycles() >= targetCyc)
+				++score.reachedTarget;
+			else if(d.dsp().getCycles() >= clampStop)
+				++score.hitClamp;
+			else if(s_mmBp && d.hostTxBacklog()
+				> policy.hostTransmitBackpressureThresholdWords)
+				++score.stoppedByBackpressure;
+			else
+				++score.unexpectedShort;);
 	}
 
 	void Hardware::schedCatchUpDspToDsp(const uint32_t _consumer, const uint32_t _producer)
 	{
-		// Before a producer DSP enqueues a link frame into the MAME-style ESSI route,
+		// Before a producer DSP enqueues a link frame into the ESSI route,
 		// consumer DSP's input ring, advance the CONSUMER to the producer's current machine time - so a
 		// frame is never consumed "before" (in DSP-time) it was produced, nor an arbitrary quantum
 		// late. The reentrancy guard stops the consumer's own back-channel pushes from recursing into a
 		// second catch-up (they just enqueue non-blocking; that DSP is caught up at its next link frame
 		// or by the scheduler). Bounded by the catch-up clamp; only ever runs a DSP forward.
-		if(m_schedInLinkDelivery)
-			return;
 		const uint32_t c = _consumer & 1;
 		const uint32_t p = _producer & 1;
+#if MD_TRANSPORT_DIAGNOSTICS
+		auto& score = m_transportScorecard.dspToDsp[c];
+		++score.calls;
+#endif
+		if(m_schedInLinkDelivery)
+		{
+			MD_TRANSPORT_RECORD(++score.reentrant;);
+			return;
+		}
 
 		if(!m_schedDspOriginLatched[c] || !m_schedDspOriginLatched[p])
+		{
+			MD_TRANSPORT_RECORD(++score.originUnavailable;);
 			return;
+		}
 		auto& d = (c == 0) ? m_dspMixer : m_dspProducer;
 		const double producerPos = schedDspFramePos(p);
 		const double deltaFrames = producerPos - m_schedDspOriginFrame[c];
 		if(deltaFrames <= 0.0)
 		{
+			MD_TRANSPORT_RECORD(++score.timeUnavailable;);
 			return;
 		}
 		const uint64_t targetCyc = m_schedDspOriginCycles[c]
 			+ static_cast<uint64_t>(deltaFrames * static_cast<double>(g_dsp1CyclesPerEsaiFrame));
 		if(d.dsp().getCycles() >= targetCyc)
 		{
+			MD_TRANSPORT_RECORD(++score.alreadyAtTarget;);
 			// Most link writes arrive after the consumer's ordinary scheduler slice already
 			// reached this producer timestamp. The old zero-iteration path merely entered and
 			// left the reentrancy guard; returning here is equivalent and avoids that hot cost.
 			return;
 		}
-		const uint64_t clampStop = d.dsp().getCycles() + schedClampCycles();
+		const auto policy = transportPolicy(m_model);
+		const uint64_t startCyc = d.dsp().getCycles();
+		const uint64_t clampStop = startCyc + policy.catchUpMaxDspCycles;
+		MD_TRANSPORT_RECORD(const auto requested = targetCyc - startCyc;
+			score.requestedCycles += requested;
+			score.maximumRequestedCycles = std::max(score.maximumRequestedCycles, requested););
 		m_schedInLinkDelivery = true;
 		const bool bpGate = isMonomachine();
 		while(d.dsp().getCycles() < targetCyc && d.dsp().getCycles() < clampStop
-			&& (!bpGate || d.hostTxBacklog() <= 4))
+			&& (!bpGate
+				|| d.hostTxBacklog() <= policy.hostTransmitBackpressureThresholdWords))
 			d.dsp().exec();
 		m_schedInLinkDelivery = false;
+		MD_TRANSPORT_RECORD(const auto executed = d.dsp().getCycles() - startCyc;
+			score.executedCycles += executed;
+			score.maximumExecutedCycles = std::max(score.maximumExecutedCycles, executed);
+			if(d.dsp().getCycles() >= targetCyc)
+				++score.reachedTarget;
+			else if(d.dsp().getCycles() >= clampStop)
+				++score.hitClamp;
+			else if(bpGate && d.hostTxBacklog()
+				> policy.hostTransmitBackpressureThresholdWords)
+				++score.stoppedByBackpressure;
+			else
+				++score.unexpectedShort;);
 	}
 
 	void Hardware::advance(const uint32_t _machineFrames)

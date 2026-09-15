@@ -37,7 +37,7 @@ namespace md
 	// md::Sim; the two DSP HI08 host-port windows (0x500000 / 0x600000) are backed by
 	// real dsp56kEmu DSP56303s (md::Dsp).
 	//
-	// Address map (from the MAME driver's elektron_map; see COLDFIRE notes):
+	// Address map (from the public MAME skeleton's elektron_map; see COLDFIRE notes):
 	//   0x00000000-0x000fffff  ROM  (flash low 1 MB)
 	//   0x00100000-0x001fffff  patch RAM (bootstrap)            aliased at 0x00700000 (OS)
 	//   0x00200000-0x002fffff  main RAM                         aliased at 0x20000000 / 0x40000000
@@ -139,20 +139,6 @@ namespace md
 		}
 		bool isPanelHandshakeComplete() const { return m_panelDisplayReady; }
 
-		struct PatchByteUpdate
-		{
-			uint32_t address = 0;
-			uint8_t value = 0;
-			uint8_t mask = 0xff;
-		};
-
-		// Audio-owner helpers for small semantic updates. They never wait behind a
-		// state snapshot: contention returns false and the caller retries at a later
-		// block boundary. All addresses are validated before an update is committed.
-		bool tryUpdatePatchBytes(const PatchByteUpdate* _updates, size_t _count);
-		bool tryReadPatchBytes(const uint32_t* _addresses, uint8_t* _values,
-			size_t _count);
-
 		// Drain complete MIDI messages written by the firmware to UART1 TX.
 		void readMidiOut(std::vector<synthLib::SMidiEvent>& _midiOut, uint64_t _nativeOrigin = 0);
 		uint64_t midiTxOverflowCount() const
@@ -213,14 +199,7 @@ namespace md
 
 		Region resolve(uint32_t _addr);
 		void logPeripheral(uint32_t _addr, uint32_t _value, uint8_t _size, bool _write);
-		void onPanelTransmit(uint8_t _byte);	// startup reply modeled from the public MAME driver
-
-		// Temporary MD-only firmware task-list workaround, not panel emulation.
-		// Runs on the CPU thread.
-		void panelDisplayReadyPost();
-
-		uint32_t readMem32(uint32_t _addr);
-		void     writeMem32(uint32_t _addr, uint32_t _value);
+		void onPanelTransmit(uint8_t _byte);	// minimal response from the absent panel controller
 
 		const MachineModel m_model;
 		const Rom& m_rom;
@@ -280,9 +259,8 @@ namespace md
 		bool     m_mmPanelHandshakeDone = false;
 
 		bool     m_panelDisplayReady = false;	// enabled once the panel startup handshake completes
-		uint32_t m_panelDisplayReadyDivider = 0;	// rate-limits the periodic semaphore post
 
-		void advanceAfterCpu(uint32_t _cycles, uint32_t _instructions = 1);
+		void advanceAfterCpu(uint32_t _cycles);
 		uint32_t idleSelfBranchInstructions(uint32_t _maxCycles);
 		void advanceIdleSelfBranch(uint32_t _instructions);
 		void decodePanelByte(uint8_t _byte);

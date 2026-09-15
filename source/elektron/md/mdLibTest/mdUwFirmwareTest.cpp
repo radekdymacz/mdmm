@@ -71,21 +71,20 @@ namespace
 		const std::function<void(md::Hardware&)>& _observe = {},
 		const std::function<void(md::Hardware&)>& _beforeCapture = {})
 	{
-		advance(_hardware, md::g_samplerate * 5);
 		if(_hardware.isFactoryFlashReadyForReboot())
 			return true;
-		for(uint32_t instruction = 0; instruction < 200'000'000; ++instruction)
-			_hardware.processUC();
-		for(uint32_t instruction = 0; instruction < 100'000'000; ++instruction)
+		// Factory initialization is paced by DSP2 HREQ service. A CPU-only loop
+		// cannot advance that firmware timer; keep the complete machine running.
+		constexpr uint32_t block = 128;
+		constexpr uint32_t maximumFrames = md::g_samplerate * 18;
+		for(uint32_t frames = 0; frames < maximumFrames; frames += block)
 		{
-			_hardware.processUC();
-			if((instruction & 1023u) == 0)
+			// Observe both ordinary callbacks and the zero-frame publication tail.
+			for(const uint32_t count : {std::min(block, maximumFrames - frames), uint32_t{0}})
 			{
 				if(_beforeCapture)
 					_beforeCapture(_hardware);
-				// Zero-frame advances still run the bounded capture/publication tail,
-				// exercising the same state machine used by an audio callback.
-				_hardware.advance(0);
+				_hardware.advance(count);
 				if(_observe)
 					_observe(_hardware);
 				if(_hardware.isFactoryFlashReadyForReboot())
@@ -595,15 +594,19 @@ static int runFirmwareTest(const char* const firmwarePath)
 		return fail("deferred UW project flash was not queued");
 	bool partialStateObserved = false;
 	bool synchronousRestoreObserved = false;
+	size_t captureObservations = 0;
 	std::vector<uint8_t> preRestorePatch;
 	constexpr uint64_t ucClockHz = 40'000'000;
 	const auto deferredInitialized = initializeUwFlash(*deferred,
 		[&](md::Hardware& _current)
 		{
 			const auto& uc = _current.getUC();
-			if(uc.getCycles() < ucClockHz * 10
+			// Match capture readiness: before the first flash write, a quiet
+			// startup image is not an in-progress publication of project state.
+			if(!_current.flashDirty() || uc.getCycles() < ucClockHz * 10
 				|| uc.flashIdleCycles() < ucClockHz * 2)
 				return;
+			++captureObservations;
 			const auto flash = _current.copyFlashData();
 			if(flash != initializedFlash && flash != projectFlash)
 				partialStateObserved = true;
@@ -637,6 +640,10 @@ static int runFirmwareTest(const char* const firmwarePath)
 		|| deferred->getUC().copyPatchRam() != projectPatch
 		|| &device.getHardware() != liveBeforeRestore)
 		return fail("deferred UW project flash was not restored after initialization");
+	if(captureObservations < 2)
+		return fail("deferred UW restore did not expose multiple capture observations");
+	std::cout << "UW deferred restore: " << captureObservations
+		<< " coherent capture observations\n";
 	uint64_t deferredGeneration = 0;
 	auto validated = device.takeFinishedDeferredState(deferredGeneration);
 	if(!validated || !device.hasDeferredStateRestore()

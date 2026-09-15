@@ -78,7 +78,8 @@ createJucePlugin(mmJucePlugin "Gearmulator MM" TRUE "Tmno" mmJucePlugin_BinaryDa
 # with output only.
 foreach(plugin_target mdJucePlugin mmJucePlugin)
 	target_compile_definitions(${plugin_target} PUBLIC
-		JUCE_STANDALONE_PLUGIN_AUTO_OPEN_AUDIO_INPUT=0)
+		JUCE_STANDALONE_PLUGIN_AUTO_OPEN_AUDIO_INPUT=0
+		JUCE_VST3_EMULATE_MIDI_PC_WITH_PROGRAMS=1)
 endforeach()
 
 # JUCE can populate bundle resources after its first ad-hoc signing pass on
@@ -104,6 +105,46 @@ endif()
 target_compile_definitions(mmJucePlugin PRIVATE MD_JUCEPLUGIN_MONOMACHINE=1)
 
 if(BUILD_TESTING)
+	juce_add_plugin(mdProgramChangeProbe
+		COMPANY_NAME "Gearmulator" IS_SYNTH TRUE NEEDS_MIDI_INPUT TRUE
+		NEEDS_MIDI_OUTPUT FALSE COPY_PLUGIN_AFTER_BUILD FALSE
+		PLUGIN_MANUFACTURER_CODE GmPv PLUGIN_CODE Tmpc FORMATS VST3
+		PRODUCT_NAME "Gearmulator MIDI Program Probe")
+	target_sources(mdProgramChangeProbe PRIVATE ../../../pluginTester/programChange/programChangeProbe.cpp)
+	removeJuceDependencies(mdProgramChangeProbe)
+	target_link_libraries(mdProgramChangeProbe PRIVATE juce_plugin_modules)
+	target_compile_definitions(mdProgramChangeProbe PUBLIC
+		JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1 JUCE_VST3_EMULATE_MIDI_PC_WITH_PROGRAMS=1)
+	add_test(NAME mdVst3ProgramChangeTest COMMAND vst3ProgramChangeTest
+		$<GENEX_EVAL:$<TARGET_PROPERTY:mdProgramChangeProbe_VST3,JUCE_PLUGIN_ARTEFACT_FILE>> --fixture)
+	set_tests_properties(mdVst3ProgramChangeTest PROPERTIES LABELS "PluginTest;MIDI")
+	juce_add_plugin(mdProgramChangeLegacyProbe
+		COMPANY_NAME "Gearmulator" IS_SYNTH TRUE NEEDS_MIDI_INPUT TRUE
+		NEEDS_MIDI_OUTPUT FALSE COPY_PLUGIN_AFTER_BUILD FALSE
+		PLUGIN_MANUFACTURER_CODE GmPv PLUGIN_CODE Tmpl FORMATS VST3
+		PRODUCT_NAME "Gearmulator Legacy MIDI Program Probe")
+	target_sources(mdProgramChangeLegacyProbe PRIVATE ../../../pluginTester/programChange/programChangeProbe.cpp)
+	removeJuceDependencies(mdProgramChangeLegacyProbe)
+	target_link_libraries(mdProgramChangeLegacyProbe PRIVATE juce_plugin_modules)
+	target_compile_definitions(mdProgramChangeLegacyProbe PUBLIC JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1)
+	add_dependencies(mdProgramChangeProbe_VST3 mdProgramChangeLegacyProbe_VST3 vst3ProgramChangeTest)
+	add_test(NAME mdVst3ProgramChangeOptOutTest COMMAND vst3ProgramChangeTest
+		$<GENEX_EVAL:$<TARGET_PROPERTY:mdProgramChangeLegacyProbe_VST3,JUCE_PLUGIN_ARTEFACT_FILE>> --legacy)
+	set_tests_properties(mdVst3ProgramChangeOptOutTest PROPERTIES LABELS "PluginTest;MIDI")
+	# Check the shipping targets as well as the probes: a probe's independent
+	# opt-in must not hide a missing definition on either production wrapper.
+	foreach(plugin_target mdJucePlugin mmJucePlugin)
+		# The deep JUCE sanitizer build disables shipping plugin formats.
+		if(TARGET ${plugin_target}_VST3)
+			add_test(NAME ${plugin_target}_VST3ProgramChangeTest COMMAND vst3ProgramChangeTest
+				$<GENEX_EVAL:$<TARGET_PROPERTY:${plugin_target}_VST3,JUCE_PLUGIN_ARTEFACT_FILE>>)
+			set_tests_properties(${plugin_target}_VST3ProgramChangeTest PROPERTIES
+				LABELS "PluginTest;MIDI"
+				TIMEOUT 30
+				ENVIRONMENT "GEARMULATOR_DATA_ROOT=${CMAKE_CURRENT_BINARY_DIR}/program-metadata/${plugin_target}")
+		endif()
+	endforeach()
+
 	add_executable(mdLcdInteractionModelTest
 		mdLcdInteractionModelTest.cpp mdLcdInteractionModel.cpp)
 	target_link_libraries(mdLcdInteractionModelTest PRIVATE mdLib)
@@ -288,6 +329,12 @@ if(BUILD_TESTING)
 		${CMAKE_CURRENT_SOURCE_DIR}/../../..)
 	target_compile_definitions(mdProjectStateRestoreTest PRIVATE
 		JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1)
+	# Keep the restored-audio NaN/Inf checks effective in optimized test builds.
+	if(MSVC)
+		target_compile_options(mdProjectStateRestoreTest PRIVATE /fp:precise)
+	else()
+		target_compile_options(mdProjectStateRestoreTest PRIVATE -fno-fast-math)
+	endif()
 	add_test(NAME mdProjectStateRestoreTest COMMAND mdProjectStateRestoreTest)
 	set_tests_properties(mdProjectStateRestoreTest PROPERTIES
 		LABELS "Integration;FirmwareTest"

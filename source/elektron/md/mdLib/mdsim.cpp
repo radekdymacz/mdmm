@@ -631,8 +631,8 @@ namespace md
 
 	bool Sim::getExternalIrq4(uint8_t& _level, uint8_t& _vector)
 	{
-		// External IRQ4 is the DSP2 HI08 HREQ line (MCF5206E UM 8.3.2.3;
-		// MAME Elektron driver). It is level-sensitive and uses the configured ICR.
+		// External IRQ4 is the DSP2 HI08 HREQ line. It is level-sensitive and
+		// uses the configured ICR (MCF5206E UM 8.3.2.3).
 		if(!m_extIrq4Level || imrMasked(g_irqSrcExtIrq4))
 			return false;
 

@@ -8,7 +8,12 @@ There is a Discord channel [here](https://discord.gg/BnkTKpmp8) at #gearmulator-
 [Downloads](https://github.com/joelanders/gearmulator-md-mm/releases) ·
 [Report a bug](https://github.com/joelanders/gearmulator-md-mm/issues)
 
-## Using the panel
+Link to a short demo on Youtube:
+
+<a href="https://www.youtube.com/watch?v=NmfE5xljYRU"><img width="800" alt="youtube" src="https://i3.ytimg.com/vi/NmfE5xljYRU/maxresdefault.jpg" /></a>
+
+
+## Features
 
 - **Key chording / p-locks:** shift-click one or more buttons to hold them
   down until you release the shift key.

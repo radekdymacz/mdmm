@@ -1,6 +1,7 @@
 #include "mddsp.h"
 
 #include "mdhardware.h"
+#include "mdtransportpolicy.h"
 
 #include "mc68k/hdi08.h"
 #include "synthLib/realtimeInstrumentation.h"
@@ -44,7 +45,8 @@ namespace md
 		m_periphX.getEssiClock().setExternalClockFrequency(10'240'000);
 		m_periphX.getEssiClock().setSamplerate(44100);
 		m_periphX.getEssiClock().setClockSource(dsp56k::EsxiClock::ClockSource::Cycles);
-		m_periphX.getEssiClock().setExactCycleDeadlineEnabled(m_hardware.isMonomachine());
+		m_periphX.getEssiClock().setExactCycleDeadlineEnabled(
+			transportPolicy(m_hardware.getModel()).exactEssiCycleDeadlines);
 
 		// Fine-link mode must be active before the firmware writes CRA so ESSI0 can
 		// run below the codec clock base. Synchronous receivers skip RX when their
@@ -68,8 +70,14 @@ namespace md
 					if(m_periphX.getDMA().getDCR(4) & (1u << dsp56k::DmaChannel::De))
 						return;
 					auto& ring = m_periphX.getEssi0().getAudioInputs();
+#if MD_TRANSPORT_DIAGNOSTICS
+					const auto purgedFrames = ring.size();
+#endif
 					while(!ring.empty())
 						ring.pop_front();
+#if MD_TRANSPORT_DIAGNOSTICS
+					m_hardware.recordMdLinkPurge(purgedFrames);
+#endif
 					m_hardware.mdLinkWindowFlushed();
 				});
 			}
@@ -103,8 +111,7 @@ namespace md
 		config.dynamicFastInterrupts = true;
 		// Cap JIT block size so tight program loops return to the dispatcher often enough
 		// for the peripherals (the ESSI cycle clock in particular) to be serviced; the
-		// EssiClock ticks at most once per peripherals exec. MAME's hosting of this core
-		// uses the same cap for the MD DSPs.
+		// EssiClock ticks at most once per peripherals exec.
 		config.maxInstructionsPerBlock = 32;
 		// Likewise return from hardware DO loops regularly to service peripherals.
 		config.maxDoIterations = 4;
@@ -200,11 +207,9 @@ namespace md
 
 	namespace
 	{
-		// Cycle bound for a synchronous-HI08 inline DSP run (MAME's
-		// time_catchup_max_cycles).
-		uint64_t schedInlineClamp()
+		uint64_t schedInlineClamp(const MachineModel _model)
 		{
-			return 100'000;
+			return transportPolicy(_model).catchUpMaxDspCycles;
 		}
 	}
 
@@ -219,8 +224,8 @@ namespace md
 		if(m_hardware.isMonomachine())
 			return hdiTransferDSPtoUC() ? 1 : 0;
 
-		// MAME (elektronmono.cpp) drains DSP2's HOTX into a host-side queue CONTINUOUSLY
-		// (host_tx_queue) rather than demand-pulling one word at a time; that queue depth is what
+		// Drain DSP HOTX continuously into a bounded host-side queue rather than
+		// demand-pulling one word at a time; that queue depth is what
 		// raises HI08 HREQ (>= set_host_rx_irq_min_words words). Our UC-facing HI08 backing queue
 		// (m_rxData) is that host-side queue: push DSP HOTX words straight into it, bypassing the
 		// one-word RXDF latch gate in hdiTransferDSPtoUC (canReceiveData) which otherwise caps
@@ -263,12 +268,22 @@ namespace md
 			// reply or the in-flight host command has been fully serviced, bounded.
 			// A reserved/readable MM reply already satisfies production: wait for
 			// CPU time to make it visible instead of running the producer farther.
-			const uint64_t clampStop = m_dsp.getCycles() + schedInlineClamp();
+			const uint64_t startCycle = m_dsp.getCycles();
+			const uint64_t clampStop = startCycle
+				+ schedInlineClamp(m_hardware.getModel());
 			while(!hdi08().hasTX()
 				&& (!m_hardware.isMonomachine() || (!m_timedHostRx.pending() && m_hdiUC.canReceiveData()))
 				&& (hdi08().hostCommandBusy() || dsp().hasPendingInterrupts())
 				&& m_dsp.getCycles() < clampStop)
 				m_dsp.exec();
+#if MD_TRANSPORT_DIAGNOSTICS
+			const bool workComplete = hdi08().hasTX()
+				|| (m_hardware.isMonomachine()
+					&& (m_timedHostRx.pending() || !m_hdiUC.canReceiveData()))
+				|| (!hdi08().hostCommandBusy() && !dsp().hasPendingInterrupts());
+			m_hardware.recordInlineHdi08Run(m_index, startCycle, clampStop,
+				workComplete);
+#endif
 			hdiTransferDSPtoUC();
 			return;
 		}
@@ -279,7 +294,7 @@ namespace md
 	void Dsp::hdiTransferUCtoDSP(const uint32_t _word)
 	{
 		// Catch the DSP up to the UC's current machine time before the word
-		// lands (MAME catch_up_elapsed_time), so it consumes everything up to "now" first.
+		// lands, so it consumes everything up to "now" first.
 		m_hardware.schedCatchUpDsp(m_index);
 
 		// Route ordinary data words through the paced host receive path. Host-command
@@ -289,32 +304,19 @@ namespace md
 
 	void Dsp::writeWordToDsp(const uint32_t _word)
 	{
-		// Preserve MM parameter-transfer ordering while the previous block is active.
-		if(m_hardware.isMonomachine() && m_mmParamBlockVoice >= 0)
-		{
-			if(m_mmParamBlockWord == 0x28 && ((_word & 0xff) == 0x81 || (_word & 0xff) == 0x02))
-			{
-				const uint32_t targetHandle =
-					0x528 + static_cast<uint32_t>(m_mmParamBlockVoice) * 0x100;
-				if(m_dsp.memory().get(dsp56k::MemArea_Y, 0x123) == targetHandle)
-				{
-					const uint64_t clampStop = m_dsp.getCycles() + schedInlineClamp();
-					while(m_dsp.memory().get(dsp56k::MemArea_Y, 0x123) == targetHandle
-						&& m_dsp.getCycles() < clampStop)
-						m_dsp.exec();
-				}
-			}
-			if(++m_mmParamBlockWord >= 52)
-				m_mmParamBlockVoice = -1;
-		}
-
 		// The DSP56303 HI08 host data path has a host latch and a one-word HRX. Before placing
 		// a word in HRX, advance the target DSP until the previous word drains, bounded by the
-		// scheduler clamp. This preserves MAME's feed_host_rx_queue invariant without a wall-clock
+		// scheduler clamp. This preserves receive ordering without a wall-clock
 		// wait or an unbounded host-side FIFO.
-		const uint64_t clampStop = m_dsp.getCycles() + schedInlineClamp();
+		const uint64_t startCycle = m_dsp.getCycles();
+		const uint64_t clampStop = startCycle
+			+ schedInlineClamp(m_hardware.getModel());
 		while(hdi08().hasRXData() && m_dsp.getCycles() < clampStop)
 			m_dsp.exec();
+#if MD_TRANSPORT_DIAGNOSTICS
+		m_hardware.recordInlineHdi08Run(m_index, startCycle, clampStop,
+			!hdi08().hasRXData());
+#endif
 		hdi08().writeRX(&_word, 1);
 		return;
 	}
@@ -326,9 +328,15 @@ namespace md
 		if(!hdi08().hostCommandBusy())
 			return;
 
-		const uint64_t clampStop = m_dsp.getCycles() + schedInlineClamp();
+		const uint64_t startCycle = m_dsp.getCycles();
+		const uint64_t clampStop = startCycle
+			+ schedInlineClamp(m_hardware.getModel());
 		while(hdi08().hostCommandBusy() && m_dsp.getCycles() < clampStop)
 			m_dsp.exec();
+#if MD_TRANSPORT_DIAGNOSTICS
+		m_hardware.recordInlineHdi08Run(m_index, startCycle, clampStop,
+			!hdi08().hostCommandBusy());
+#endif
 		return;
 	}
 
@@ -346,15 +354,9 @@ namespace md
 	void Dsp::hdiSendIrqToDSP(const uint8_t _irq)
 	{
 		// Catch the DSP up to the UC's current machine time before the CVR is
-		// dispatched (MAME catch_up_elapsed_time), so HCP is raised at a defined point in DSP time.
+		// dispatched, so HCP is raised at a defined point in DSP time.
 		if(booted())
 			m_hardware.schedCatchUpDsp(m_index);
-		if(m_hardware.isMonomachine() && booted() && _irq >= 0x10 && _irq <= 0x14
-			&& (_irq & 1) == 0)
-		{
-			m_mmParamBlockVoice = static_cast<int32_t>((_irq - 0x10) >> 1);
-			m_mmParamBlockWord = 0;
-		}
 		// Preserve Monomachine host-command ordering. Data words precede the next
 		// command, so drain the receive path before dispatching that command. Run the DSP
 		// inline until HORX has drained before dispatching the CVR. This is needed
@@ -362,9 +364,15 @@ namespace md
 		const bool s_mmInOrderCvr = m_hardware.isMonomachine();
 		if(s_mmInOrderCvr && booted())
 		{
-			const uint64_t clampStop = m_dsp.getCycles() + schedInlineClamp() * 4;
+			const uint64_t startCycle = m_dsp.getCycles();
+			const uint64_t clampStop = startCycle
+				+ schedInlineClamp(m_hardware.getModel()) * 4;
 			while(!hdi08().rxData().empty() && m_dsp.getCycles() < clampStop)
 				m_dsp.exec();
+#if MD_TRANSPORT_DIAGNOSTICS
+			m_hardware.recordInlineHdi08Run(m_index, startCycle, clampStop,
+				hdi08().rxData().empty());
+#endif
 		}
 
 		if(!booted())
@@ -387,7 +395,7 @@ namespace md
 	{
 		// Catch the DSP up to the UC's current machine time before reporting
 		// status, so a UC status-poll loop sees the DSP's progress (e.g. a reply it is waiting for)
-		// in fine lockstep instead of a frozen snapshot. MAME runs a status slice at the same point.
+		// in fine lockstep instead of a frozen snapshot.
 		m_hardware.schedCatchUpDsp(m_index);
 		hdiTransferDSPtoUC();
 		// Publication above may have changed RXDF after Hdi08 sampled _isr.

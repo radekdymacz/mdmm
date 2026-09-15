@@ -19,6 +19,7 @@
 #include "mdstate.h"
 #include "mdsysextransfer.h"
 #include "mdturbomidi.h"
+#include "mdtransportdiagnostics.h"
 #include "mdtypes.h"
 
 #include "synthLib/audioTypes.h"
@@ -171,20 +172,26 @@ namespace md
 
 		// Advance the whole machine by _machineFrames codec frames of shared
 		// machine time on the calling thread, with NO background threads. One frame = g_dsp1CyclesPer
-		// EsaiFrame (2304) DSP cycles = g_ucClockHz/g_samplerate (577.03) UC cycles. UC + both DSPs are
+		// EsaiFrame (2304) DSP cycles = g_ucClockHz/g_samplerate (about 907.03) UC cycles. UC + both DSPs are
 		// stepped event-driven (advance the most-lagging against the shared clock; synchronous HI08
 		// catch-up at every host access). Drains the codec output ring so the mixer never blocks.
 		// processAudio retains the drained frames; headless callers discard them.
 		void advance(uint32_t _machineFrames);
 
 		// Advance DSP _dspIndex to the UC's current machine-time position
-		// before a host (HI08) access - MAME's catch_up_elapsed_time. Called from the DSP-side HI08
+		// before a host (HI08) access. Called from the DSP-side HI08
 		// bridge so that every ColdFire read/write/CVR sees the target DSP at the same machine time,
 		// which is what makes the boot handshake (UC poll <-> DSP reply) converge deterministically.
 		void schedCatchUpDsp(uint32_t _dspIndex);
 		void notifyHostPumpStateChanged();
 		uint64_t hostRxReadyCycle(uint32_t _dspIndex, uint64_t _dspCycle) const;
 		uint64_t hostCurrentCycle() const { return m_schedUcCyclesDone; }
+		// Diagnostic snapshot. The caller must serialize with the machine thread,
+		// as Device does for its other control-plane observations.
+		TransportScorecard getTransportScorecard() noexcept;
+		void recordInlineHdi08Run(uint32_t _dspIndex, uint64_t _startCycle,
+			uint64_t _clampCycle, bool _workComplete) noexcept;
+		void recordMdLinkPurge(size_t _purgedFrames) noexcept;
 
 		// Mark the start of a Machinedrum DMA receive window. No-op for MM.
 		void mdLinkWindowFlushed();
@@ -318,6 +325,9 @@ namespace md
 		// MM stall-purge decision, so it must never be shared by concurrently
 		// running Hardware instances (as it was when this lived as a static local).
 		std::array<uint64_t, 2> m_linkLastShallow{};
+#if MD_TRANSPORT_DIAGNOSTICS
+		TransportScorecard m_transportScorecard;
+#endif
 
 		// Codec frames produced by the mixer.
 		uint32_t m_esaiFrameIndex = 0;			// codec frames produced
