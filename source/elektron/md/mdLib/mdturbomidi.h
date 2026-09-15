@@ -10,9 +10,15 @@
 #include "mdfixedbytequeue.h"
 #include "mdsysextransfer.h"
 #include "mdturbomidiprotocol.h"
+#include "mdturbomidisenderpolicy.h"
 
 namespace md
 {
+	// Host-to-instrument byte admission, with backpressure. A successful write
+	// queues a byte; it does not prove that a physical UART has shifted its stop
+	// bit. MC implements queuedMidiByteCount() as pending firmware RX bytes.
+	// This interface has no baud-control operation. UART1 in Sim delivers bytes
+	// behaviorally and does not enforce matching transmitter/receiver baud rates.
 	class MidiByteSink
 	{
 	public:
@@ -40,6 +46,9 @@ namespace md
 		bool resumeReceiveMode(uint32_t _transferId, size_t _step);
 		void service(uint32_t _cycles, bool _ingressDrained,
 			MidiByteSink& _midiPort);
+		// Instrument-to-host observation. MC invokes this at firmware UTB writes;
+		// it is not a physical TX-complete notification. A hardware adapter would
+		// need explicit TX-drain and TX/RX baud-change boundaries of its own.
 		void observeTransmitByte(uint8_t _byte);
 
 		bool ownsMidiWire() const;
@@ -93,7 +102,7 @@ namespace md
 		void clearResponses();
 		void serviceNegotiation();
 		void finishNegotiationSend();
-		void setLinkSpeed(uint8_t _code);
+		void setBytePacing(uint8_t _code);
 		void beginPayload();
 		void fallBack(bool _waitForPeerReset, MidiTurboFallbackReason _reason);
 		void pumpWire(MidiByteSink& _midiPort);
@@ -146,7 +155,7 @@ namespace md
 		FixedByteQueue<4096> m_wire;
 		uint64_t m_baudAccumulator = 0;
 		Phase m_phase = Phase::Idle;
-		turboMidi::NegotiatedSpeeds m_negotiatedSpeeds{1, 1};
+		turboMidi::senderPolicy::NegotiatedSpeeds m_negotiatedSpeeds{1, 1};
 		uint8_t m_speedCode = 1;
 		uint32_t m_bytesPerSecond = turboMidi::Speeds[1].bytesPerSecond;
 		uint64_t m_phaseCycles = 0;

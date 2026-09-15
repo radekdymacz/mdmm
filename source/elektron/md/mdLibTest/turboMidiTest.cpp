@@ -164,7 +164,9 @@ namespace
 	{
 		struct Speeds { uint8_t supportedLow, supportedHigh, certifiedLow, certifiedHigh, first, second; };
 		const Speeds cases[] = {
-			{0x7f, 1, 0x7f, 1, 8, 8}, // certified maximum
+			{0x7f, 1, 0x7f, 1, 8, 8}, // synthetic certified maximum
+			{0x7f, 1, 0x0f, 0, 8, 7}, // observed MD 1.63/MM 1.32b report
+			{0x01, 0, 0x01, 0, 1, 1}, // disputed lowest bit: existing policy, not a peer oracle
 			{0x7f, 1, 0x08, 0, 8, 7}, // next supported, even if not certified
 			{0x0a, 0, 0x02, 0, 4, 2}, // sparse mask
 			{0x02, 0, 0x02, 0, 2, 2}, // lowest Turbo code
@@ -186,7 +188,9 @@ namespace
 		}
 		LinkFixture f;
 		if(!f.start() || !f.negotiate(0, 7) || !f.firstTest()) return false;
-		// Current sender switches to speed 2 before sending the second test.
+		// Existing host admission policy, not a baud-aware peer simulation.
+		// mdTurboMidiFirmwareTest independently checks the peer's divider:
+		// it remains at speed1 through 0x17, unlike this early pacing change.
 		return f.secondTest(320) && check(f.transfer.progress().speedCode == 7,
 			"second link test did not switch to speed 2");
 	}
@@ -232,6 +236,18 @@ namespace
 		f.transfer.service(100001, true, f.sink);
 		return check(f.transfer.progress().fallbackReason == md::MidiTurboFallbackReason::CapabilityRequestTimedOut,
 			"partial reply restarted the phase deadline") && f.expect(userDump());
+	}
+
+	bool testReplyDeadlineStartsAtAdmission()
+	{
+		LinkFixture f;
+		f.sink.queued = 1; // The backend still has pending bytes after accepting F7.
+		if(!f.start()) return false;
+		f.transfer.service(LinkFixture::ClockHz, true, f.sink);
+		if(!check(f.transfer.progress().fallbackCount == 0, "reply timeout fired too early")) return false;
+		f.transfer.service(1, true, f.sink);
+		return check(f.transfer.progress().fallbackReason == md::MidiTurboFallbackReason::CapabilityRequestTimedOut,
+			"reply timer waited for backend drain instead of final-byte admission");
 	}
 
 	bool testNegotiationTimeouts()
@@ -552,7 +568,8 @@ int main()
 {
 	if(!testTimeoutFallback() || !testHandshakeTranscript()
 		|| !testSpeedSelectionTranscript() || !testSpeedPacing()
-		|| !testSendAndPartialReplyDeadlines() || !testNegotiationTimeouts()
+		|| !testSendAndPartialReplyDeadlines() || !testReplyDeadlineStartsAtAdmission()
+		|| !testNegotiationTimeouts()
 		|| !testReplyFramingAndFallback() || !testActiveSensingAndBackpressure()
 		|| !testCancellationAndRetirement()
 		|| !testCompletedPayloadRetirement() || !testPausedServiceResumes()

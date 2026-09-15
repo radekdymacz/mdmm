@@ -12,11 +12,7 @@ namespace md
 	{
 		using TurboCommand = turboMidi::Command;
 
-		// Sender timing policy, measured in emulated time. The response deadline
-		// is per phase, not restarted by individual reply bytes.
-		constexpr uint32_t ResponseTimeoutSeconds = 1;
-		constexpr uint32_t PeerResetMilliseconds = 350;
-		constexpr uint32_t ActiveSenseMilliseconds = 150;
+		namespace policy = turboMidi::senderPolicy;
 	}
 
 	TurboMidiTransfer::TurboMidiTransfer(const uint64_t _clockHz)
@@ -217,7 +213,7 @@ namespace md
 				&& message[3] >= 0x7c && message[3] <= 0x7f && message[4] < 0x80
 				&& !pushResponse(message))
 				++m_overflow;
-			if(message.size >= 8
+			if(message.size >= turboMidi::EnvelopeBytes
 				&& std::equal(turboMidi::Header.begin(), turboMidi::Header.end(), message.bytes.begin())
 				&& !pushResponse(message))
 				++m_overflow;
@@ -250,7 +246,8 @@ namespace md
 			auto& candidate = m_responses[m_responseRead];
 			m_responseRead = (m_responseRead + 1) % m_responses.size();
 			--m_responseCount;
-			if(candidate.size > 7 && candidate[6] == static_cast<uint8_t>(_command))
+			if(candidate.size >= turboMidi::EnvelopeBytes
+				&& candidate[turboMidi::CommandOffset] == static_cast<uint8_t>(_command))
 			{
 				_message = candidate;
 				return true;
@@ -395,7 +392,7 @@ namespace md
 
 	void TurboMidiTransfer::pumpWire(MidiByteSink& _midiPort)
 	{
-		const uint64_t activeSenseIntervalCycles = (m_clockHz * ActiveSenseMilliseconds) / 1000u;
+		const uint64_t activeSenseIntervalCycles = (m_clockHz * policy::ActiveSenseMilliseconds) / 1000u;
 		bool blocked = false;
 		while(m_baudAccumulator >= m_clockHz)
 		{
@@ -471,7 +468,7 @@ namespace md
 			m_baudAccumulator = std::min<uint64_t>(m_baudAccumulator, m_clockHz - 1u);
 	}
 
-	void TurboMidiTransfer::setLinkSpeed(const uint8_t _code)
+	void TurboMidiTransfer::setBytePacing(const uint8_t _code)
 	{
 		m_speedCode = _code;
 		m_bytesPerSecond = turboMidi::Speeds[_code].bytesPerSecond;
@@ -480,12 +477,19 @@ namespace md
 
 	// Negotiation transcript: request/report -> negotiate/ack -> padding and
 	// first test/result -> second test/result -> firmware settle -> payload.
-	// Send phases end when our queue enters the UART; payload/SDS drain phases
-	// also wait for the UART itself to empty.
+	// Current host admission rate / observed MD 1.63 & MM 1.32b UART divider:
+	//   0x10/11, 0x12/13: 1x / 1x (fresh negotiation)
+	//   padding, 0x14/15: speed1 / speed1
+	//   0x16/17:          speed2 / speed1
+	//   after 0x17:       speed2 / speed2, with a 10ms host settling pause
+	// The peer observation is at UTB writes, not at a physical final stop bit.
+	// See mdTurboMidiFirmwareTest for the independent peer-register check.
+	// Send phases end at admission; payload/SDS drain phases also wait for the
+	// sink's pending-byte count to reach zero. See MidiByteSink for its meaning.
 	void TurboMidiTransfer::serviceNegotiation()
 	{
-		const uint64_t responseTimeoutCycles = m_clockHz * ResponseTimeoutSeconds;
-		const uint64_t fallbackResetCycles = (m_clockHz * PeerResetMilliseconds) / 1000u;
+		const uint64_t responseTimeoutCycles = m_clockHz * policy::ResponseTimeoutSeconds;
+		const uint64_t fallbackResetCycles = (m_clockHz * policy::PeerResetMilliseconds) / 1000u;
 		Response response;
 		switch(m_phase)
 		{
@@ -500,16 +504,15 @@ namespace md
 		case Phase::WaitSpeedReport:
 			if(takeResponse(TurboCommand::SpeedReport, response))
 			{
-				if(response.size < 12)
+				if(response.size < turboMidi::SpeedReportBytes)
 				{
 					fallBack(false, MidiTurboFallbackReason::MalformedSpeedAnswer);
 					break;
 				}
-				const uint16_t supported = static_cast<uint16_t>(response[7])
-					| (static_cast<uint16_t>(response[8]) << 7);
-				const uint16_t certified = static_cast<uint16_t>(response[9])
-					| (static_cast<uint16_t>(response[10]) << 7);
-				m_negotiatedSpeeds = turboMidi::selectSpeeds(supported, certified);
+				const auto* data = response.bytes.data() + turboMidi::DataOffset;
+				const auto supported = policy::decodeCapabilityMask(data[0], data[1]);
+				const auto certified = policy::decodeCapabilityMask(data[2], data[3]);
+				m_negotiatedSpeeds = policy::selectSpeeds(supported, certified);
 				if(!m_negotiatedSpeeds.turboAvailable())
 				{
 					fallBack(false, MidiTurboFallbackReason::NoCommonCertifiedSpeed);
@@ -526,7 +529,7 @@ namespace md
 		case Phase::WaitSpeedAcknowledgement:
 			if(takeResponse(TurboCommand::SpeedAcknowledgement, response))
 			{
-				setLinkSpeed(m_negotiatedSpeeds.firstTest);
+				setBytePacing(m_negotiatedSpeeds.firstTest);
 				m_activeSenseCycles = 0;
 				for(uint32_t i = 0; i < turboMidi::FirstTestPaddingBytes; ++i)
 					if(!m_wire.tryPush(0x00))
@@ -542,17 +545,20 @@ namespace md
 			if(takeResponse(TurboCommand::FirstTestResult, response))
 			{
 				const auto& expected = turboMidi::FirstTestPattern;
-				const bool valid = response.size >= 16
+				const bool valid = response.size >= turboMidi::EnvelopeBytes + expected.size()
 					&& std::equal(std::begin(expected), std::end(expected),
-						response.bytes.begin() + 7);
+						response.bytes.begin() + turboMidi::DataOffset);
 				if(!valid)
 				{
 					fallBack(true, MidiTurboFallbackReason::FirstLinkTestBadData);
 					break;
 				}
-				// Preserve current pacing: speed2 applies before the second test.
-				// Reconcile that ordering with peer traces separately from cleanup.
-				setLinkSpeed(m_negotiatedSpeeds.transfer);
+				// Retained host admission policy: speed2 applies before 0x16.
+				// This is NOT the peer's UART baud boundary: MD 1.63/MM 1.32b
+				// keep the speed1 divider through their 0x17 UTB write, then
+				// set speed2 (mdTurboMidiFirmwareTest). UART1 does not model
+				// baud mismatch, so this passing exchange is not a DIN test.
+				setBytePacing(m_negotiatedSpeeds.transfer);
 				queueMessage(TurboCommand::SecondTest);
 				m_phase = Phase::SendSecondTest;
 				m_phaseCycles = 0;

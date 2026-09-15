@@ -37,6 +37,12 @@ add_test(NAME mdTurboMidiUnitTest COMMAND mdTurboMidiUnitTest)
 set_tests_properties(mdTurboMidiUnitTest PROPERTIES LABELS "UnitTest;Midi")
 set_property(TARGET mdTurboMidiUnitTest PROPERTY FOLDER "Elektron")
 
+# Manual peer-register check for MD 1.63/MM 1.32b, independent of the sender.
+# Requires locally supplied ROM and cache/patch fixtures; no firmware is bundled.
+add_executable(mdTurboMidiFirmwareTest turboMidiFirmwareTest.cpp)
+target_link_libraries(mdTurboMidiFirmwareTest PRIVATE mdLib)
+set_property(TARGET mdTurboMidiFirmwareTest PROPERTY FOLDER "Elektron/test")
+
 # Manual acceptance test: user-supplied firmware/data paths make this unsuitable
 # for ctest, but it exercises the same validated sender against real firmware and
 # requires an observable machine-state mutation after the UART drains.
@@ -273,3 +279,12 @@ add_executable(mdLatencyFixture EXCLUDE_FROM_ALL
     ${CMAKE_SOURCE_DIR}/source/pluginTester/latency/create_transport_fixture.cpp)
 target_link_libraries(mdLatencyFixture PRIVATE mdLib)
 set_property(TARGET mdLatencyFixture PROPERTY FOLDER "Elektron/test")
+
+if(BUILD_TESTING)
+	# Existing core/audio CI selectors must exercise the sender transcripts and
+	# compile the manual peer probe, even without private firmware fixtures.
+	add_dependencies(mdLibTest mdTurboMidiUnitTest mdSdsTransferTest mdTurboMidiFirmwareTest)
+	add_dependencies(mdAudioQueueTest mdTurboMidiUnitTest mdSdsTransferTest mdTurboMidiFirmwareTest)
+	set_tests_properties(mdTurboMidiUnitTest mdSdsTransferTest PROPERTIES FIXTURES_SETUP MdSysexTransport)
+	set_property(TEST mdLibTests mdAudioQueueTest APPEND PROPERTY FIXTURES_REQUIRED MdSysexTransport)
+endif()
