@@ -7,6 +7,7 @@
 
 namespace md::turboMidi
 {
+	// Start with doc/turbomidi.md for a complete worked exchange and evidence limits.
 	// Initiator/responder wire vocabulary; payload transport (e.g. SDS) is separate.
 	// Source: Machinedrum OS 1.63 manual, Appendix C, printed C-4 through C-6:
 	// https://www.elektron.se/wp-content/uploads/2024/09/machinedrum_manual_OS1.63.pdf

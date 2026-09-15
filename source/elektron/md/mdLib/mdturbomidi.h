@@ -32,8 +32,9 @@ namespace md
 	// synthLib::Plugin lock; the UART transmit observer runs synchronously on that
 	// same scheduler path. No lock or allocation occurs while service() is running.
 	// service() receives emulated cycles and advances only after pre-transfer MIDI
-	// ingress has drained. The sink reports byte admission separately from UART
-	// drain completion; payload completion/cancellation retains ownership until both.
+	// ingress has drained. The sink reports byte admission separately from backend
+	// pending-receive queue drain; payload completion/cancellation retains ownership
+	// until both. Neither condition establishes physical UART transmit completion.
 	class TurboMidiTransfer
 	{
 	public:
