@@ -412,7 +412,15 @@ namespace jucePluginEditorLib
 
 		if(!m_processor.getConfig().getBoolValue("disclaimerSeen", false))
 		{
+			const auto& plugin4CC = m_processor.getProperties().plugin4CC;
+			const auto firmwareNotice = plugin4CC == "Tmdr" || plugin4CC == "Tmno"
+				? "Do NOT discuss firmware or ROMs in Discord. "
+				  "Do not request or share files or download links, "
+				  "or ask for help obtaining or installing firmware.\n\n"
+				: "";
+
 			const juce::MessageBoxOptions options = juce::MessageBoxOptions::makeOptionsOk(juce::MessageBoxIconType::WarningIcon, m_processor.getProperties().name,
+				juce::String(firmwareNotice) +
 	           "It is the sole responsibility of the user to operate this emulator within the bounds of all applicable laws.\n\n"
 
 				"Usage of emulators in conjunction with ROM images you are not legally entitled to own is forbidden by copyright law.\n\n"

@@ -4,6 +4,7 @@ Machinedrum and Monomachine.
 I'm not affiliated with TUS or Elektron. Don't bug them for support :)
 
 There is a Discord channel [here](https://discord.gg/BnkTKpmp8) at #gearmulator-development.
+**Do NOT discuss firmware or ROMs in Discord.**
 **DO NOT ask us for the .bin files / firmware! They're under Elektron's copyright. This emulator is for people who own the original hardware.**
 
 [Downloads](https://github.com/joelanders/gearmulator-md-mm/releases) ·

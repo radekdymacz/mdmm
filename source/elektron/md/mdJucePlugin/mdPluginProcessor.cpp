@@ -798,7 +798,11 @@ namespace mdJucePlugin
 		auto d = std::make_unique<md::Device>(params, m_initialPatchRam);
 		if(!d->isValid())
 			throw synthLib::DeviceException(synthLib::DeviceError::FirmwareMissing,
-				std::string("A ") + productName(m_model) + " firmware rom (8 MB .bin) is required, but was not found.");
+				std::string("A ") + productName(m_model) +
+				" firmware rom (8 MB .bin) is required, but was not found.\n\n"
+				"Do NOT discuss firmware or ROMs in Discord. "
+				"Do not request or share files or download links, "
+				"or ask for help obtaining or installing firmware.");
 		return d.release();
 	}
 
