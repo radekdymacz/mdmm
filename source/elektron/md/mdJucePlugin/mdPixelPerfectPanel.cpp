@@ -1,5 +1,7 @@
 #include "mdPixelPerfectPanel.h"
 
+#include "mdLcdViewport.h"
+
 #include "RmlUi/Core/ComputedValues.h"
 #include "RmlUi/Core/Element.h"
 #include "RmlUi/Core/Geometry.h"
@@ -159,20 +161,19 @@ namespace mdJucePlugin
 			return false;
 		_graphics.setImageResamplingQuality(juce::Graphics::lowResamplingQuality);
 		const auto size = canvas->getPaintSize();
-		const auto scale = std::min(size.x / _lcd.getWidth(), size.y / _lcd.getHeight());
-		if (scale >= 1)
-		{
-			const auto w = scale * _lcd.getWidth();
-			const auto h = scale * _lcd.getHeight();
-			_graphics.drawImage(_lcd, (size.x - w) / 2, (size.y - h) / 2, w, h,
-				0, 0, _lcd.getWidth(), _lcd.getHeight());
-		}
-		else
-		{
-			// Fit the visible canvas, not its possibly larger power-of-two texture.
-			// Otherwise small windows crop the right/bottom of the LCD contents.
-			_graphics.drawImageWithin(_lcd, 0, 0, size.x, size.y, juce::RectanglePlacement::centred);
-		}
+		const auto viewport = lcdInteraction::Viewport::create(
+			size.x, size.y, size.x, size.y, true);
+		const auto content = viewport.contentInPaintSpace();
+		// Fit the visible canvas, not its possibly larger power-of-two texture.
+		// The hit tester consumes this same rectangle and snapping policy.
+		_graphics.drawImage(_lcd, juce::Rectangle<float>(
+			static_cast<float>(content.x), static_cast<float>(content.y),
+			static_cast<float>(content.width), static_cast<float>(content.height)));
 		return true;
+	}
+
+	bool PixelPerfectPanel::isEnabled() const
+	{
+		return m_impl->enabled;
 	}
 }

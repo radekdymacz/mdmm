@@ -60,6 +60,11 @@ namespace juceRmlUi
 		repaint();
 	}
 
+	std::optional<ElemCanvas::RenderedRect> ElemCanvas::getRenderedRect() const
+	{
+		return m_lastRenderedRect;
+	}
+
 	ElemCanvas* ElemCanvas::create(Rml::Element* _parent)
 	{
 		auto canvas = _parent->GetOwnerDocument()->CreateElement("canvas");
@@ -113,6 +118,8 @@ namespace juceRmlUi
 			origin = origin.Round();
 			uvEnd = {w > 0 ? size.x / w : 0, h > 0 ? size.y / h : 0};
 		}
+		m_quadOrigin = origin;
+		m_quadSize = size;
 		MeshUtilities::GenerateQuad(mesh, origin, size, quadColour, Vector2f(0,0), uvEnd);
 
 		if (RenderManager* rm = GetRenderManager())
@@ -154,8 +161,12 @@ namespace juceRmlUi
 		if (m_textureSize.x > 0 && m_textureSize.y > 0)
 		{
 			auto offset = GetAbsoluteOffset(BoxArea::Border);
-			m_geometry.Render(m_pixelAligned ? offset.Round() : offset, m_texture);
+			offset = m_pixelAligned ? offset.Round() : offset;
+			m_lastRenderedRect = RenderedRect{offset + m_quadOrigin, m_quadSize};
+			m_geometry.Render(offset, m_texture);
 		}
+		else
+			m_lastRenderedRect.reset();
 	}
 
 	void ElemCanvas::OnResize()

@@ -10,6 +10,8 @@
 #include "jucePluginEditorLib/pluginEditor.h"
 
 #include "mdFrontPanelPresentation.h"
+#include "mdLcdGesture.h"
+#include "mdLcdInteractionModel.h"
 #include "mdPanelAffordances.h"
 #include "mdLib/mdfrontpanel.h"
 #include "mdLib/mdsyseximport.h"
@@ -25,6 +27,7 @@ namespace juce
 namespace Rml
 {
 	class Element;
+	class Event;
 }
 
 namespace juceRmlUi
@@ -69,6 +72,7 @@ namespace mdJucePlugin
 		// panel knobs. Called on create and from the settings page.
 		void applyPanelSpeeds();
 		void applyPixelPerfectPanel();
+		void applyLcdInteraction();
 		void loadInstalledFactoryStorage();
 		void chooseStorageImage();
 		void restorePreviousStorage();
@@ -94,6 +98,12 @@ namespace mdJucePlugin
 		bool refreshFrontPanelState(double _nowMilliseconds);
 		md::MachineModel getModel() const;
 		void createLcd();
+		void updateLcdInteractionState();
+		std::optional<unsigned> lcdTargetAt(const Rml::Event& _event) const;
+		void updateLcdHover(const Rml::Event& _event);
+		void clearLcdHover();
+		void cancelLcdGesture();
+		void emitEncoderSteps(md::PanelEncoder _encoder, int _steps) const;
 		void createButtons();
 		void createPanelAffordances();
 		void bindPanelTarget(const char* _id, md::PanelControl _control);
@@ -163,6 +173,12 @@ namespace mdJucePlugin
 		md::FrontPanel m_frontPanelSnapshot;
 		bool m_frontPanelSnapshotValid = false;
 		bool m_lcdChanged = true;
+		bool m_lcdInteractionInputChanged = true;
+		std::optional<lcdInteraction::State> m_lcdInteractionState;
+		std::optional<unsigned> m_lcdHoverEncoder;
+		std::optional<unsigned> m_lcdWheelEncoder;
+		lcdInteraction::DragGesture m_lcdDragGesture;
+		lcdInteraction::DetentAccumulator m_lcdWheelAccumulator;
 		FrontPanelLedPresentation m_ledPresentation;
 		bool m_ledsChanged = true;
 		md::FrontPanelLedTransitionStatus m_ledTransitionStatus;

@@ -5,6 +5,8 @@
 #include "RmlUi/Core/CallbackTexture.h"
 #include "RmlUi/Core/Geometry.h"
 
+#include <optional>
+
 namespace juce
 {
 	class Graphics;
@@ -20,6 +22,12 @@ namespace juceRmlUi
 	class ElemCanvas : public Element
 	{
 	public:
+		struct RenderedRect
+		{
+			Rml::Vector2f origin;
+			Rml::Vector2f size;
+		};
+
 		using RepaintCallback = std::function<void(std::vector<uint8_t>&)>;
 		using RepaintGraphicsCallback = std::function<void(juce::Image&, juce::Graphics&)>;
 
@@ -33,6 +41,7 @@ namespace juceRmlUi
 		void setClearEveryFrame(bool _clearEveryFrame);
 		void setPixelAligned(bool _enabled);
 		Rml::Vector2i getPaintSize() const { return m_pixelAligned ? m_paintSize : m_textureSize; }
+		std::optional<RenderedRect> getRenderedRect() const;
 
 		static ElemCanvas* create(Rml::Element* _parent);
 
@@ -62,5 +71,8 @@ namespace juceRmlUi
 		bool m_clearEveryFrame = false;
 		bool m_pixelAligned = false;
 		Rml::Vector2i m_paintSize{0, 0};
+		Rml::Vector2f m_quadOrigin{0, 0};
+		Rml::Vector2f m_quadSize{0, 0};
+		std::optional<RenderedRect> m_lastRenderedRect;
 	};
 }
