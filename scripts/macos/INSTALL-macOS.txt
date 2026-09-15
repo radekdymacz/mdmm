@@ -28,5 +28,11 @@ Run the setup command again whenever you install an updated download. The
 command only clears extended attributes from the Gearmulator MD/MM bundles in
 the extracted folder; it does not copy or delete plug-ins.
 
-Firmware is not included. Each application or plug-in will ask you to select a
-firmware image that you are entitled to use.
+Firmware is not included. If no supported firmware image is found, the
+application or plug-in displays the required ROM folder. Click OK to open it,
+copy a firmware image that you are entitled to use into that folder, then
+restart the application or reload the plug-in.
+
+Do NOT discuss firmware or ROMs in Discord.
+Do not request or share files or download links, or ask for help obtaining
+or installing firmware.
