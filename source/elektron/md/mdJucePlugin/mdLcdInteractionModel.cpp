@@ -15,17 +15,26 @@ namespace mdJucePlugin::lcdInteraction
 		// two firmware versions accepted by RomLoader (MD 1.63 and MM 1.32b).
 		// They were collected through ordinary front-panel input and contain no
 		// firmware bytes, memory addresses, or disassembly-derived state.
-		constexpr uint64_t g_mdOs163LfoContext = 0x11f7ceecc74c8d84ull;
+		constexpr uint64_t g_mdOs163LfoHeader = 0x4bfd96d3fb63c803ull;
 		constexpr std::array<std::pair<uint64_t, SurfaceKind>, 4>
-			g_mdOs163MasterFxContexts{{
-				{0x10981a1368a02892ull, SurfaceKind::MasterFxEcho},
-				{0x9d35c108aedc61e2ull, SurfaceKind::MasterFxReverb},
-				{0xd9623bb2a680e5faull, SurfaceKind::MasterFxEq},
-				{0x410a0c01f890b9a6ull, SurfaceKind::MasterFxDynamics},
+			g_mdOs163MasterFxHeaders{{
+				{0x11ab18b99c193931ull, SurfaceKind::MasterFxEcho},
+				{0xbd1b80ddda82a721ull, SurfaceKind::MasterFxReverb},
+				{0x9a7f117b7a583819ull, SurfaceKind::MasterFxEq},
+				{0x751748c08e8fa95dull, SurfaceKind::MasterFxDynamics},
 			}};
-		constexpr uint64_t g_mdOs163SynthesisIdentity = 0x9bf30200c6972b84ull;
-		constexpr uint64_t g_mmOs132bSynthesisIdentity = 0x94c9044e9e2b8651ull;
 		constexpr uint64_t g_mdOs163Ctr8pLabels = 0x519d0ad13d054c45ull;
+
+		// Keep page LEDs and mode LEDs that change DATA ENTRY routing in screen
+		// identity. Pattern-bank groups, tempo, trig mode and track-page lamps can
+		// change while the same LCD controls remain active.
+		constexpr uint8_t g_mdDataPageMask = 0xe0;
+		constexpr uint8_t g_mdPatternSongModeMask = 0x18;
+		constexpr uint8_t g_mdRecordMask = 0x10;
+		constexpr uint8_t g_mmDataPages03Mask = 0xf0;
+		constexpr uint8_t g_mmDataPages46Mask = 0x07;
+		constexpr uint8_t g_mmPolyModeMask = 0x04;
+		constexpr uint8_t g_mmRecordMask = 0x01;
 
 		void addHashByte(uint64_t& _hash, const uint8_t _value)
 		{
@@ -38,28 +47,50 @@ namespace mdJucePlugin::lcdInteraction
 			uint64_t hash = g_fnvOffset;
 			if(_model == md::MachineModel::Monomachine)
 			{
-				addHashByte(hash, static_cast<uint8_t>(_panel.getLedBankRaw(0x25) & 0xf0));
-				addHashByte(hash, static_cast<uint8_t>(_panel.getLedBankRaw(0x26) & 0x7f));
-				addHashByte(hash, _panel.getLedBankRaw(0x27));
+				addHashByte(hash, static_cast<uint8_t>(_panel.getLedBankRaw(0x25)
+					& (g_mmDataPages03Mask | g_mmPolyModeMask)));
+				addHashByte(hash, static_cast<uint8_t>(_panel.getLedBankRaw(0x26)
+					& g_mmDataPages46Mask));
+				addHashByte(hash, static_cast<uint8_t>(_panel.getLedBankRaw(0x27)
+					& g_mmRecordMask));
 			}
 			else
 			{
-				addHashByte(hash, _panel.getLedBankRaw(0x22));
-				addHashByte(hash, static_cast<uint8_t>(_panel.getLedBankRaw(0x23) & ~(1u << 5)));
+				addHashByte(hash, static_cast<uint8_t>(_panel.getLedBankRaw(0x22)
+					& (g_mdDataPageMask | g_mdPatternSongModeMask)));
+				addHashByte(hash, static_cast<uint8_t>(_panel.getLedBankRaw(0x23)
+					& g_mdRecordMask));
 			}
 			return hash;
 		}
 
-		uint64_t contextFingerprint(const md::FrontPanel& _panel,
-			const md::MachineModel _model, const unsigned _height)
+		bool synthesisPanelContext(const md::FrontPanel& _panel,
+			const md::MachineModel _model)
+		{
+			if(_model == md::MachineModel::Monomachine)
+				return (_panel.getLedBankRaw(0x25) & g_mmDataPages03Mask) == 0xe0
+					&& (_panel.getLedBankRaw(0x25) & g_mmPolyModeMask) == 0
+					&& (_panel.getLedBankRaw(0x26) & g_mmDataPages46Mask) == 0x07
+					&& (_panel.getLedBankRaw(0x27) & g_mmRecordMask) == 0x01;
+			return (_panel.getLedBankRaw(0x22)
+					& (g_mdDataPageMask | g_mdPatternSongModeMask)) == 0x70
+				&& (_panel.getLedBankRaw(0x23) & g_mdRecordMask) == 0x10;
+		}
+
+		bool mdOverlayPanelContext(const md::FrontPanel& _panel)
+		{
+			return (_panel.getLedBankRaw(0x22)
+					& (g_mdDataPageMask | g_mdPatternSongModeMask)) == 0xf0
+				&& (_panel.getLedBankRaw(0x23) & g_mdRecordMask) == 0x10;
+		}
+
+		uint64_t lcdHeaderFingerprint(const md::FrontPanel& _panel,
+			const unsigned _height)
 		{
 			uint64_t hash = g_fnvOffset;
 			for(unsigned y = 0; y < _height; ++y)
 				for(unsigned x = 0; x < md::FrontPanel::g_lcdWidth; ++x)
 					addHashByte(hash, _panel.getLcdPixel(x, y) ? 1u : 0u);
-			const auto identity = panelIdentity(_panel, _model);
-			for(unsigned shift = 0; shift < 64; shift += 8)
-				addHashByte(hash, static_cast<uint8_t>(identity >> shift));
 			return hash;
 		}
 
@@ -168,9 +199,10 @@ namespace mdJucePlugin::lcdInteraction
 			return std::nullopt;
 
 		const auto identity = panelIdentity(_panel, _model);
-		if(_model == md::MachineModel::Machinedrum)
+		if(_model == md::MachineModel::Machinedrum
+			&& mdOverlayPanelContext(_panel))
 		{
-			if(contextFingerprint(_panel, _model, 9) == g_mdOs163LfoContext)
+			if(lcdHeaderFingerprint(_panel, 9) == g_mdOs163LfoHeader)
 			{
 				const auto mask = occupancy(_panel, LayoutKind::Lfo);
 				if(mask == 0xff)
@@ -179,8 +211,8 @@ namespace mdJucePlugin::lcdInteraction
 				return std::nullopt;
 			}
 
-			const auto masterContext = contextFingerprint(_panel, _model, 20);
-			for(const auto& [fingerprint, surface] : g_mdOs163MasterFxContexts)
+			const auto masterContext = lcdHeaderFingerprint(_panel, 20);
+			for(const auto& [fingerprint, surface] : g_mdOs163MasterFxHeaders)
 				if(masterContext == fingerprint)
 				{
 					const auto mask = occupancy(_panel, LayoutKind::MasterFx);
@@ -191,9 +223,7 @@ namespace mdJucePlugin::lcdInteraction
 				}
 		}
 
-		const auto expectedIdentity = _model == md::MachineModel::Monomachine
-			? g_mmOs132bSynthesisIdentity : g_mdOs163SynthesisIdentity;
-		if(identity != expectedIdentity || !hasStandardFrame(_panel))
+		if(!synthesisPanelContext(_panel, _model) || !hasStandardFrame(_panel))
 			return std::nullopt;
 
 		auto mask = occupancy(_panel, LayoutKind::Standard);
@@ -216,14 +246,20 @@ namespace mdJucePlugin::lcdInteraction
 		const md::FrontPanel& _after, const md::MachineModel _model)
 	{
 		if(_model == md::MachineModel::Monomachine)
-			return (_before.getLedBankRaw(0x25) & 0xf0)
-					!= (_after.getLedBankRaw(0x25) & 0xf0)
-				|| (_before.getLedBankRaw(0x26) & 0x7f)
-					!= (_after.getLedBankRaw(0x26) & 0x7f)
-				|| _before.getLedBankRaw(0x27) != _after.getLedBankRaw(0x27);
-		return _before.getLedBankRaw(0x22) != _after.getLedBankRaw(0x22)
-			|| (_before.getLedBankRaw(0x23) & ~(1u << 5))
-				!= (_after.getLedBankRaw(0x23) & ~(1u << 5));
+			return (_before.getLedBankRaw(0x25)
+					& (g_mmDataPages03Mask | g_mmPolyModeMask))
+					!= (_after.getLedBankRaw(0x25)
+						& (g_mmDataPages03Mask | g_mmPolyModeMask))
+				|| (_before.getLedBankRaw(0x26) & g_mmDataPages46Mask)
+					!= (_after.getLedBankRaw(0x26) & g_mmDataPages46Mask)
+				|| (_before.getLedBankRaw(0x27) & g_mmRecordMask)
+					!= (_after.getLedBankRaw(0x27) & g_mmRecordMask);
+		return (_before.getLedBankRaw(0x22)
+				& (g_mdDataPageMask | g_mdPatternSongModeMask))
+				!= (_after.getLedBankRaw(0x22)
+					& (g_mdDataPageMask | g_mdPatternSongModeMask))
+			|| (_before.getLedBankRaw(0x23) & g_mdRecordMask)
+				!= (_after.getLedBankRaw(0x23) & g_mdRecordMask);
 	}
 
 	std::optional<unsigned> hitTest(const State& _state, const int _nativeX,

@@ -40,8 +40,15 @@ namespace mdJucePlugin::lcdInteraction
 				scale = std::floor(scale);
 			result.m_content.width = 128.0 * scale;
 			result.m_content.height = 64.0 * scale;
-			result.m_content.x = (result.m_paintWidth - result.m_content.width) * 0.5;
-			result.m_content.y = (result.m_paintHeight - result.m_content.height) * 0.5;
+			const auto centreX = (result.m_paintWidth - result.m_content.width) * 0.5;
+			const auto centreY = (result.m_paintHeight - result.m_content.height) * 0.5;
+			// Whole-pixel rendering uses the same top/left choice as integer drawing
+			// when the spare margin is odd. Pointer conversion must use that exact
+			// snapped rectangle or a visible cell-boundary pixel can hit its neighbour.
+			result.m_content.x = _integerScale && scale >= 1.0
+				? std::floor(centreX) : centreX;
+			result.m_content.y = _integerScale && scale >= 1.0
+				? std::floor(centreY) : centreY;
 			return result;
 		}
 

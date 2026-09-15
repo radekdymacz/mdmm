@@ -119,8 +119,26 @@ namespace
 			}
 
 			const auto full = makeStandardPanel(model, 0xff);
+			auto changedBankGroup = full;
+			if(model == md::MachineModel::Monomachine)
+				setLedBank(changedBankGroup, 0x26, 0xcf);
+			else
+				setLedBank(changedBankGroup, 0x23, 0xf5);
+			const auto originalState = classify(full, model);
+			const auto changedBankState = classify(changedBankGroup, model);
+			require(originalState && changedBankState
+				&& changedBankState->activeEncoderMask == originalState->activeEncoderMask
+				&& changedBankState->identityToken == originalState->identityToken,
+				"bank-group LEDs changed synthesis recognition");
 			require(!classify(full, model, true),
 				"held DATA ENTRY switch did not suppress LCD targets");
+			if(model == md::MachineModel::Monomachine)
+			{
+				auto polyMode = full;
+				setLedBank(polyMode, 0x25, 0xed);
+				require(!classify(polyMode, model),
+					"MM poly mode retained synthesis targets");
+			}
 			require(!classify(makeStandardPanel(model, 0), model),
 				"empty synthesis grid was interactive");
 		}
@@ -157,27 +175,53 @@ namespace
 		using mdJucePlugin::lcdInteraction::classificationLedsChanged;
 		md::FrontPanel before;
 		md::FrontPanel after;
+		setLedBank(before, 0x22, 0x00);
 		setLedBank(before, 0x23, 0x00);
+		setLedBank(after, 0x22, 0x00);
+		setLedBank(after, 0x23, 0x00);
 		setLedBank(after, 0x23, 0x20);
 		require(!classificationLedsChanged(before, after,
 			md::MachineModel::Machinedrum), "ignored MD LED changed classification");
+		setLedBank(after, 0x23, 0x0c);
+		require(!classificationLedsChanged(before, after,
+			md::MachineModel::Machinedrum), "MD bank-group LEDs changed classification");
 		setLedBank(after, 0x22, 0x01);
+		require(!classificationLedsChanged(before, after,
+			md::MachineModel::Machinedrum), "MD pattern-page LED changed classification");
+		setLedBank(after, 0x22, 0x08);
 		require(classificationLedsChanged(before, after,
-			md::MachineModel::Machinedrum), "relevant MD LED did not invalidate classification");
+			md::MachineModel::Machinedrum), "MD song-mode LED did not invalidate classification");
+		setLedBank(after, 0x22, 0x20);
+		require(classificationLedsChanged(before, after,
+			md::MachineModel::Machinedrum), "MD data-page LED did not invalidate classification");
+		setLedBank(after, 0x22, 0x00);
+		setLedBank(after, 0x23, 0x10);
+		require(classificationLedsChanged(before, after,
+			md::MachineModel::Machinedrum), "MD record LED did not invalidate classification");
 
 		before = {};
 		after = {};
 		setLedBank(before, 0x25, 0x00);
 		setLedBank(before, 0x26, 0x00);
+		setLedBank(before, 0x27, 0x00);
 		setLedBank(after, 0x25, 0x00);
 		setLedBank(after, 0x26, 0x00);
-		setLedBank(after, 0x25, 0x0f);
-		setLedBank(after, 0x26, 0x80);
+		setLedBank(after, 0x27, 0x00);
+		setLedBank(after, 0x25, 0x0b);
+		setLedBank(after, 0x26, 0xf8);
+		setLedBank(after, 0x27, 0xfe);
 		require(!classificationLedsChanged(before, after,
 			md::MachineModel::Monomachine), "ignored MM LEDs changed classification");
+		setLedBank(after, 0x25, 0x04);
+		require(classificationLedsChanged(before, after,
+			md::MachineModel::Monomachine), "MM poly-mode LED did not invalidate classification");
 		setLedBank(after, 0x25, 0x10);
 		require(classificationLedsChanged(before, after,
 			md::MachineModel::Monomachine), "relevant MM LED did not invalidate classification");
+		setLedBank(after, 0x25, 0x00);
+		setLedBank(after, 0x27, 0x01);
+		require(classificationLedsChanged(before, after,
+			md::MachineModel::Monomachine), "MM record LED did not invalidate classification");
 	}
 
 	void testGeometry()
@@ -243,6 +287,27 @@ namespace
 			"integer letterbox edge accepted");
 		require(!integer.displayToNative(178, 30),
 			"half-open LCD right edge accepted");
+
+		const auto oddInteger = Viewport::create(229, 125, 229, 125, true);
+		const auto oddRect = oddInteger.contentInPaintSpace();
+		require(oddRect.x == 50 && oddRect.y == 30
+			&& oddRect.width == 128 && oddRect.height == 64,
+			"odd integer viewport disagrees with pixel-snapped painting");
+		const auto leftOfBoundary = oddInteger.displayToNative(117.999, 40);
+		const auto onBoundary = oddInteger.displayToNative(118, 40);
+		require(leftOfBoundary && onBoundary
+			&& static_cast<int>(std::floor(leftOfBoundary->x)) == 67
+			&& static_cast<int>(std::floor(onBoundary->x)) == 68
+			&& static_cast<int>(std::floor(onBoundary->y)) == 10,
+			"odd integer viewport shifted a painted cell boundary");
+
+		const auto fractionalDisplay = Viewport::create(114.5, 62.5, 229, 125, true);
+		const auto fractionalLeft = fractionalDisplay.displayToNative(58.9995, 20);
+		const auto fractionalBoundary = fractionalDisplay.displayToNative(59, 20);
+		require(fractionalLeft && fractionalBoundary
+			&& static_cast<int>(std::floor(fractionalLeft->x)) == 67
+			&& static_cast<int>(std::floor(fractionalBoundary->x)) == 68,
+			"fractional display scaling shifted a painted cell boundary");
 
 		const auto subNative = Viewport::create(80.5, 40.5, 80, 40, true);
 		const auto subNativeCenter = subNative.displayToNative(40.25, 20.25);

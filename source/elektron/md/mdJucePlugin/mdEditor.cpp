@@ -385,11 +385,10 @@ namespace mdJucePlugin
 					m_lcdWheelEncoder = target;
 					m_lcdWheelAccumulator.reset();
 				}
-				const auto percent = getProcessor().getConfig().getIntValue(
-					"panelWheelSpeedPercent", 100);
-				const auto wheel = juceRmlUi::helper::getMouseWheelDelta(_event);
-				const auto steps = m_lcdWheelAccumulator.add(-wheel.y * (100.0 / 7.5)
-					* std::max(1, percent) / 100.0, g_encoderBurstCap);
+				const auto steps = m_lcdWheelAccumulator.add(
+					juceRmlUi::ElemKnob::mouseWheelValueDelta(
+						g_encoderRange, _event),
+					g_encoderBurstCap);
 				if(steps != 0)
 					emitEncoderSteps(static_cast<md::PanelEncoder>(
 						static_cast<unsigned>(md::PanelEncoder::DataEntryA) + *target), steps);

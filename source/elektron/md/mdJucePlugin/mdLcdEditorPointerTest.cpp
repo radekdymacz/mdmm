@@ -12,6 +12,7 @@
 #include "synthLib/realtimeInstrumentation.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -28,6 +29,20 @@ namespace mdJucePlugin
 			_editor.m_frontPanelSnapshotValid = true;
 			_editor.m_lcdInteractionInputChanged = false;
 			_editor.m_lcdInteractionState = _state;
+		}
+
+		static void publishPanel(Editor& _editor, const md::FrontPanel& _panel)
+		{
+			_editor.m_frontPanelSnapshot = _panel;
+			_editor.m_frontPanelSnapshotValid = true;
+			_editor.m_lcdInteractionInputChanged = true;
+			_editor.updateLcdInteractionState();
+		}
+
+		static const std::optional<lcdInteraction::State>& interactionState(
+			const Editor& _editor)
+		{
+			return _editor.m_lcdInteractionState;
 		}
 
 		static juceRmlUi::ElemCanvas& canvas(Editor& _editor)
@@ -52,10 +67,83 @@ namespace mdJucePlugin
 
 namespace
 {
+	using Pixels = std::array<uint8_t,
+		md::FrontPanel::g_lcdWidth * md::FrontPanel::g_lcdHeight>;
+
 	void require(const bool _condition, const std::string& _message)
 	{
 		if(!_condition)
 			throw std::runtime_error(_message);
+	}
+
+	void setPixel(Pixels& _pixels, const int _x, const int _y)
+	{
+		_pixels[static_cast<size_t>(_y) * md::FrontPanel::g_lcdWidth
+			+ static_cast<size_t>(_x)] = 1;
+	}
+
+	void setLedBank(md::FrontPanel& _panel, const uint8_t _bank,
+		const uint8_t _value)
+	{
+		_panel.processByte(_bank);
+		_panel.processByte(_value);
+	}
+
+	md::FrontPanel makePanel(const Pixels& _pixels)
+	{
+		md::FrontPanel panel;
+		for(unsigned half = 0; half < 2; ++half)
+			for(unsigned page = 0; page < 8; ++page)
+				for(unsigned base = 0; base < 64; base += 8)
+				{
+					panel.processByte(static_cast<uint8_t>(0x10 | (half << 3) | page));
+					panel.processByte(static_cast<uint8_t>(base));
+					for(unsigned column = base; column < base + 8; ++column)
+					{
+						uint8_t value = 0;
+						for(unsigned bit = 0; bit < 8; ++bit)
+						{
+							const auto x = half * 64 + column;
+							const auto y = page * 8 + bit;
+							if(_pixels[y * md::FrontPanel::g_lcdWidth + x])
+								value |= static_cast<uint8_t>(1u << bit);
+						}
+						panel.processByte(value);
+					}
+				}
+		return panel;
+	}
+
+	md::FrontPanel makeStandardPanel(const md::MachineModel _model)
+	{
+		using namespace mdJucePlugin::lcdInteraction;
+		Pixels pixels{};
+		for(unsigned index = 0; index < 8; ++index)
+		{
+			const auto rect = encoderRect(LayoutKind::Standard, index);
+			for(int x = rect.x + 1; x < rect.x + rect.width; x += 2)
+				setPixel(pixels, x, rect.y);
+			for(int y = rect.y + 2; y < rect.y + 31; y += 2)
+				setPixel(pixels, rect.x + rect.width - 1, y);
+			for(int y = rect.y + 14; y < rect.y + 29; ++y)
+			{
+				setPixel(pixels, rect.x + 2, y);
+				setPixel(pixels, rect.x + 3, y);
+			}
+		}
+		auto panel = makePanel(pixels);
+		if(_model == md::MachineModel::Monomachine)
+		{
+			setLedBank(panel, 0x25, 0xe9);
+			setLedBank(panel, 0x26, 0xd7);
+			setLedBank(panel, 0x27, 0x01);
+		}
+		else
+		{
+			setLedBank(panel, 0x22, 0x74);
+			setLedBank(panel, 0x23, 0xf9);
+		}
+		return panel;
 	}
 
 	Rml::Vector2i encoderCenter(juceRmlUi::ElemCanvas& _canvas,
@@ -227,6 +315,70 @@ int main()
 			"LCD canvas was not laid out");
 
 		using namespace mdJucePlugin::lcdInteraction;
+		auto publishedPanel = makeStandardPanel(model);
+		mdJucePlugin::EditorIdentityTestAccess::publishPanel(*editor, publishedPanel);
+		const auto publishedState =
+			mdJucePlugin::EditorIdentityTestAccess::interactionState(*editor);
+		require(publishedState && publishedState->surface == SurfaceKind::Synthesis
+			&& publishedState->activeEncoderMask == 0xff,
+			"published LCD/LED state did not reach editor classification");
+		const auto publishedIdentity = publishedState->identityToken;
+		const auto publishedPoint = encoderCenter(canvas, LayoutKind::Standard, 0);
+		instrumentation.reset();
+		context.ProcessMouseMove(publishedPoint.x, publishedPoint.y, 0);
+		context.ProcessMouseButtonDown(0, 0);
+		context.ProcessMouseMove(publishedPoint.x + 30, publishedPoint.y, 0);
+		context.ProcessMouseButtonUp(0, 0);
+		require(requireOnlyEncoderInput(instrumentation, model, 0,
+			"published-state drag") != 0,
+			"classified published state did not route pointer input");
+
+		if(model == md::MachineModel::Monomachine)
+			setLedBank(publishedPanel, 0x26, 0xcf);
+		else
+			setLedBank(publishedPanel, 0x23, 0xf5);
+		mdJucePlugin::EditorIdentityTestAccess::publishPanel(*editor, publishedPanel);
+		const auto changedBankState =
+			mdJucePlugin::EditorIdentityTestAccess::interactionState(*editor);
+		require(changedBankState && changedBankState->activeEncoderMask == 0xff
+			&& changedBankState->identityToken == publishedIdentity,
+			"bank-group change disabled or replaced the published surface");
+
+		instrumentation.reset();
+		context.ProcessMouseMove(publishedPoint.x, publishedPoint.y, 0);
+		context.ProcessMouseButtonDown(0, 0);
+		require(mdJucePlugin::EditorIdentityTestAccess::dragActive(*editor),
+			"published-state transition test did not begin a drag");
+		if(model == md::MachineModel::Monomachine)
+			setLedBank(publishedPanel, 0x27, 0x00);
+		else
+			setLedBank(publishedPanel, 0x23, 0xe5);
+		mdJucePlugin::EditorIdentityTestAccess::publishPanel(*editor, publishedPanel);
+		require(!mdJucePlugin::EditorIdentityTestAccess::dragActive(*editor),
+			"unsupported published state did not cancel the active drag");
+		context.ProcessMouseMove(publishedPoint.x + 30, publishedPoint.y, 0);
+		context.ProcessMouseButtonUp(0, 0);
+		requireNoPanelInput(instrumentation,
+			"pointer input after unsupported published state");
+
+		publishedPanel = makeStandardPanel(model);
+		mdJucePlugin::EditorIdentityTestAccess::publishPanel(*editor, publishedPanel);
+		instrumentation.reset();
+		context.ProcessMouseMove(publishedPoint.x, publishedPoint.y, 0);
+		context.ProcessMouseButtonDown(0, 0);
+		require(mdJucePlugin::EditorIdentityTestAccess::dragActive(*editor),
+			"disable transition test did not begin a drag");
+		processor.getConfig().setValue(configKey, false);
+		editor->applyLcdInteraction();
+		require(!mdJucePlugin::EditorIdentityTestAccess::dragActive(*editor)
+			&& !mdJucePlugin::EditorIdentityTestAccess::interactionState(*editor),
+			"disabling LCD interaction did not cancel the active drag");
+		context.ProcessMouseMove(publishedPoint.x + 30, publishedPoint.y, 0);
+		context.ProcessMouseButtonUp(0, 0);
+		requireNoPanelInput(instrumentation, "pointer input after feature disable");
+		processor.getConfig().setValue(configKey, true);
+		editor->applyLcdInteraction();
+
 		mdJucePlugin::EditorIdentityTestAccess::installSurface(*editor,
 			State{SurfaceKind::Synthesis, LayoutKind::Standard, 0xff, 1});
 		const auto start = encoderCenter(canvas, LayoutKind::Standard, 0);
@@ -268,6 +420,38 @@ int main()
 		context.ProcessMouseButtonUp(0, Rml::Input::KM_META);
 		require(fineSteps != 0 && fineSteps < ordinarySteps,
 			"Command-drag did not produce a slower turn");
+
+		mdJucePlugin::EditorIdentityTestAccess::installSurface(*editor,
+			State{SurfaceKind::Synthesis, LayoutKind::Standard, 0xff, 1});
+		const auto other = encoderCenter(canvas, LayoutKind::Standard, 1);
+		context.ProcessMouseMove(other.x, other.y, 0);
+		context.ProcessMouseMove(start.x, start.y, 0);
+		instrumentation.reset();
+		context.ProcessMouseWheel(Rml::Vector2f{0.f, -1.f}, 0);
+		const auto ordinaryWheelSteps = requireOnlyEncoderInput(
+			instrumentation, model, 0, "ordinary LCD wheel");
+		require(ordinaryWheelSteps == 8,
+			"ordinary LCD wheel did not match the DATA ENTRY knob burst");
+
+		context.ProcessMouseMove(other.x, other.y, 0);
+		context.ProcessMouseMove(start.x, start.y, 0);
+		instrumentation.reset();
+		context.ProcessMouseWheel(Rml::Vector2f{0.f, -1.f}, Rml::Input::KM_META);
+		const auto fineWheelSteps = requireOnlyEncoderInput(
+			instrumentation, model, 0, "fine LCD wheel");
+		require(fineWheelSteps == 1,
+			"Command/Ctrl LCD wheel did not use the DATA ENTRY knob single step");
+
+		context.ProcessMouseMove(other.x, other.y, 0);
+		context.ProcessMouseMove(start.x, start.y, 0);
+		instrumentation.reset();
+		context.ProcessMouseWheel(Rml::Vector2f{0.f, -0.01f}, 0);
+		requireNoPanelInput(instrumentation,
+			"fractional ordinary LCD wheel emitted before one detent");
+		context.ProcessMouseWheel(Rml::Vector2f{0.f, -0.01f}, Rml::Input::KM_META);
+		require(requireOnlyEncoderInput(instrumentation, model, 0,
+			"fractional fine LCD wheel") == 1,
+			"fractional Command/Ctrl wheel did not emit one fine step");
 
 		exerciseCells(*editor, context, canvas, instrumentation, model,
 			LayoutKind::Standard, 0xff, "standard full");
