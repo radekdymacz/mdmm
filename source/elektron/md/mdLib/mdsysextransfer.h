@@ -10,6 +10,7 @@
 
 #include "mdtypes.h"
 #include "mdsysexfile.h"
+#include "mdturbomidiprotocol.h"
 
 namespace md
 {
@@ -17,17 +18,7 @@ namespace md
 
 	inline const char* midiTurboSpeedLabel(const uint8_t _code)
 	{
-		switch(_code)
-		{
-		case 2: return "2";
-		case 3: return "3.33";
-		case 4: return "4";
-		case 5: return "5";
-		case 6: return "6.66";
-		case 7: return "8";
-		case 8: return "10";
-		default: return "1";
-		}
+		return turboMidi::Speeds[_code <= 8 ? _code : 1].label;
 	}
 
 

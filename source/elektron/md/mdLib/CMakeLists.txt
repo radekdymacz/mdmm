@@ -30,7 +30,7 @@ set(SOURCES
 	mdstate.cpp mdstate.h
 	mdsysextransfer.h
 	mdsyseximport.h
-	mdturbomidi.cpp mdturbomidi.h
+	mdturbomidi.cpp mdturbomidi.h mdturbomidiprotocol.h mdturbomidisenderpolicy.h
 	mdtypes.h
 	mdtimedhostrx.h
 	mdtransportdiagnostics.h
