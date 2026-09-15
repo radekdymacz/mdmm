@@ -11,6 +11,13 @@
 	</div>
 	<settingsspacer1/>
 	<label>Use whole-pixel LCD enlargement and align thin panel lines to pixels. Changes immediately; the LCD may appear smaller with more space around it.</label>
+	<settingsspacer1/>
+	<div id="btLcdRotaryInteraction" class="settings-checkboxwithlabel">
+		<button id="button" class="settings-checkbox"/>
+		<label>Drag and scroll rotary controls shown on the LCD</label>
+	</div>
+	<settingsspacer1/>
+	<label>Works on synthesis parameters, LFO edit, and Master FX. Menus, tabs, empty cells, and other LCD controls remain inert.</label>
 
 	<settingsspacer1/>
 	<div class="settings-advanced">

@@ -18,6 +18,9 @@ set(SOURCES
 	mdController.cpp mdController.h
 	mdEditor.cpp mdEditor.h
 	mdFrontPanelPresentation.h
+	mdLcdGesture.h
+	mdLcdInteractionModel.cpp mdLcdInteractionModel.h
+	mdLcdViewport.h
 	mdPixelPerfectPanel.cpp mdPixelPerfectPanel.h
 	mdPanelAffordances.h
 	mdPluginEditorState.cpp mdPluginEditorState.h
@@ -141,6 +144,48 @@ if(BUILD_TESTING)
 				ENVIRONMENT "GEARMULATOR_DATA_ROOT=${CMAKE_CURRENT_BINARY_DIR}/program-metadata/${plugin_target}")
 		endif()
 	endforeach()
+
+	add_executable(mdLcdInteractionModelTest
+		mdLcdInteractionModelTest.cpp mdLcdInteractionModel.cpp)
+	target_link_libraries(mdLcdInteractionModelTest PRIVATE mdLib)
+	add_test(NAME mdLcdInteractionModelTest COMMAND mdLcdInteractionModelTest)
+	set_tests_properties(mdLcdInteractionModelTest PROPERTIES
+		LABELS "UnitTest;LcdInteraction")
+	set_property(TARGET mdLcdInteractionModelTest PROPERTY FOLDER "Elektron/test")
+	set(MD_LCD_TEST_CORPUS_DIR "" CACHE PATH
+		"Optional private MD/MM LCD screenshot corpus used by the exhaustive classifier replay")
+	if(MD_LCD_TEST_CORPUS_DIR)
+		add_executable(mdLcdInteractionCorpusTest
+			mdLcdInteractionCorpusTest.cpp mdLcdInteractionModel.cpp)
+		target_link_libraries(mdLcdInteractionCorpusTest PRIVATE mdLib)
+		target_compile_definitions(mdLcdInteractionCorpusTest PRIVATE
+			MD_LCD_TEST_CORPUS_DIR="${MD_LCD_TEST_CORPUS_DIR}")
+		add_test(NAME mdLcdInteractionCorpusTest COMMAND mdLcdInteractionCorpusTest)
+		set_tests_properties(mdLcdInteractionCorpusTest PROPERTIES
+			LABELS "LcdInteraction;LocalCorpus")
+		set_property(TARGET mdLcdInteractionCorpusTest PROPERTY FOLDER "Elektron/test")
+	endif()
+
+	add_executable(mdLcdEditorPointerTest mdLcdEditorPointerTest.cpp)
+	target_include_directories(mdLcdEditorPointerTest PRIVATE
+		"${CMAKE_SOURCE_DIR}/source" "${CMAKE_SOURCE_DIR}/source/elektron/md")
+	target_link_libraries(mdLcdEditorPointerTest PRIVATE mdJucePlugin
+		jucePluginEditorLib juceRmlUi juceUiLib juce_plugin_modules mdLib)
+	add_test(NAME mdLcdEditorPointerTest COMMAND mdLcdEditorPointerTest)
+	set_tests_properties(mdLcdEditorPointerTest PROPERTIES
+		LABELS "IntegrationTest;LcdInteraction;PointerInput")
+	set_property(TARGET mdLcdEditorPointerTest PROPERTY FOLDER "Elektron/test")
+
+	add_executable(mmLcdEditorPointerTest mdLcdEditorPointerTest.cpp)
+	target_compile_definitions(mmLcdEditorPointerTest PRIVATE MD_LCD_POINTER_TEST_MM=1)
+	target_include_directories(mmLcdEditorPointerTest PRIVATE
+		"${CMAKE_SOURCE_DIR}/source" "${CMAKE_SOURCE_DIR}/source/elektron/md")
+	target_link_libraries(mmLcdEditorPointerTest PRIVATE mmJucePlugin
+		jucePluginEditorLib juceRmlUi juceUiLib juce_plugin_modules mdLib)
+	add_test(NAME mmLcdEditorPointerTest COMMAND mmLcdEditorPointerTest)
+	set_tests_properties(mmLcdEditorPointerTest PROPERTIES
+		LABELS "IntegrationTest;LcdInteraction;PointerInput")
+	set_property(TARGET mmLcdEditorPointerTest PROPERTY FOLDER "Elektron/test")
 
 	add_executable(mdStandaloneRendererPolicyTest mdStandaloneRendererPolicyTest.cpp)
 	add_test(NAME mdStandaloneRendererPolicyTest COMMAND mdStandaloneRendererPolicyTest)

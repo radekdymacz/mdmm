@@ -1,6 +1,7 @@
 #include "mdSettingsPanelFeel.h"
 
 #include "mdEditor.h"
+#include "mdLcdInteractionModel.h"
 #include "mdPixelPerfectPanel.h"
 
 #include "jucePluginEditorLib/pluginProcessor.h"
@@ -21,6 +22,11 @@ namespace mdJucePlugin
 			{
 				m_editor.applyPixelPerfectPanel();
 			}, PixelPerfectPanel::defaultEnabled);
+		jucePluginEditorLib::SettingsPlugin::createToggleButton(_root, "btLcdRotaryInteraction",
+			m_editor.getProcessor().getConfig(), lcdInteraction::configKey, [this](bool)
+			{
+				m_editor.applyLcdInteraction();
+			}, lcdInteraction::defaultEnabled);
 		bindGroup(_root, "btWheelSpeed", "panelWheelSpeedPercent");
 		bindGroup(_root, "btEncoderSpeed", "panelEncoderSpeedPercent");
 

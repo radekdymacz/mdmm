@@ -103,34 +103,24 @@ namespace juceRmlUi
 		return attrib->Get(_element->GetCoreInstance(), std::string()) == "vertical";
 	}
 
+	float ElemKnob::mouseWheelValueDelta(const float _range,
+		const Rml::Event& _event, const bool _reversed)
+	{
+		auto delta = helper::getMouseWheelDelta(_event).y;
+		if(_reversed)
+			delta = -delta;
+		if(delta == 0.0f)
+			return 0.0f;
+		if(_range > 32.0f && !helper::getKeyModCommand(_event))
+			return -_range * delta / 7.5f;
+		return delta > 0.0f ? -1.0f : 1.0f;
+	}
+
 	void ElemKnob::processMouseWheel(Rml::Element& _element, const Rml::Event& _event)
 	{
-		const auto wheel = helper::getMouseWheelDelta(_event);
-		auto delta = wheel.y;
-
-		if (isReversed(&_element))
-			delta = -delta;
-
 		const auto range = getRange(&_element);
-
-		float value;
-
-		// we use the default behaviour if ctrl/cmd is not pressed and the range is large enough
-		if(range > 32 && !helper::getKeyModCommand(_event))
-		{
-			value = getValue(&_element) - range * delta / 7.5f;	// this should be pretty close to what Juce did
-		}
-		else
-		{
-			// Otherwise inc/dec single steps
-
-			constexpr auto diff = 1;
-
-			if(delta > 0)
-				value = getValue(&_element) - diff;
-			else
-				value = getValue(&_element) + diff;
-		}
+		auto value = getValue(&_element)
+			+ mouseWheelValueDelta(range, _event, isReversed(&_element));
 
 		// An endless knob wraps at its bounds like the drag path does; clamping
 		// would swallow all further wheel input at the stops.

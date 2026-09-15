@@ -1,4 +1,5 @@
 #include "mdPixelPerfectPanel.h"
+#include "mdLcdViewport.h"
 
 #include "juceRmlUi/juceRmlComponent.h"
 #include "juceRmlUi/juceRmlLookAndFeel.h"
@@ -155,11 +156,28 @@ namespace
 			require(doc->GetElementById("unmarked")->GetNumChildren() == 0, "unmarked hairline was altered");
 			require(doc->GetElementById("rule")->GetNumChildren() == 1, "explicit rule was not attached exactly once");
 			const auto size = canvas->getPaintSize();
+			const auto display = canvas->GetBox().GetSize(Rml::BoxArea::Content);
 			const auto pos = canvas->GetAbsoluteOffset(Rml::BoxArea::Border).Round();
 			const int k = std::min(size.x / 128, size.y / 64);
 			require(k > 0, "test framebuffer should fit");
 			const int ox = static_cast<int>(pos.x) + (size.x - 128 * k) / 2;
 			const int oy = static_cast<int>(pos.y) + (size.y - 64 * k) / 2;
+			const auto viewport = mdJucePlugin::lcdInteraction::Viewport::create(
+				display.x, display.y, size.x, size.y, true);
+			const auto content = viewport.contentInPaintSpace();
+			require(content.x == ox - pos.x && content.y == oy - pos.y
+				&& content.width == 128 * k && content.height == 64 * k,
+				"painted LCD rectangle disagrees with pointer viewport");
+			const auto boundaryDisplayX = (content.x + 68 * k) * display.x / size.x;
+			const auto boundaryDisplayY = (content.y + 10 * k) * display.y / size.y;
+			const auto boundary = viewport.displayToNative(
+				boundaryDisplayX, boundaryDisplayY);
+			const auto beforeBoundary = viewport.displayToNative(
+				boundaryDisplayX - 0.001, boundaryDisplayY);
+			require(boundary && beforeBoundary
+				&& static_cast<int>(std::floor(boundary->x)) == 68
+				&& static_cast<int>(std::floor(beforeBoundary->x)) == 67,
+				"painted LCD cell boundary disagrees with pointer mapping");
 			const auto black = crisp.getPixelAt(ox, oy), white = crisp.getPixelAt(ox + k, oy);
 			require(black.getBrightness() < .02f && white.getBrightness() > .98f, "LCD palette lost");
 			for (int y = 0; y < 64 * k; ++y)

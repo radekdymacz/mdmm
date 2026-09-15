@@ -32,6 +32,11 @@ Link to a short demo on Youtube:
   functions. Additional output pairs are available in a multi-output VST3 host;
   the standalone apps use stereo output.
 
+## Implementation references
+
+- [TurboMIDI negotiation](doc/turbomidi.md): a worked exchange, firmware observations,
+  and Gearmulator sender policy.
+
 Thanks to the upstream Gearmulator contributors whose work makes this fork
 possible. See [the upstream README](README.upstream.md) for the original project
 overview.
