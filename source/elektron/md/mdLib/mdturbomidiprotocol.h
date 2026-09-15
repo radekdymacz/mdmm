@@ -15,6 +15,8 @@ namespace md::turboMidi
 	// I = initiator (host); R = responder (instrument). MIDI realtime bytes can
 	// interleave with SysEx and do not contribute to its length.
 	//
+	// Capability pairs use low | (high << 7); bit n denotes code n+2.
+	// Confirmed with isolated reports to original MD 1.63 / MM 1.32b firmware.
 	// Read mdturbomidisenderpolicy.h for Gearmulator choices and discrepancies;
 	// read TurboMidiTransfer::serviceNegotiation() for the current host sequence.
 	// These definitions do not provide a physical UART endpoint implementation.

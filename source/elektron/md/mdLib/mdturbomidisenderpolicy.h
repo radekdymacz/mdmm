@@ -9,12 +9,14 @@ namespace md::turboMidi::senderPolicy
 	//   bit:         0  1  2     3  4  5     6  7
 	//   code:        1  2  3     4  5  6     7  8
 	//   multiplier:  1  2  3.33  4  5  6.66  8  10
-	// The manual describes bit 0 as 2x instead. The retained bit+1 mapping also
+	// Original MD 1.63 / MM 1.32b firmware confirms the manual: bit n means
+	// code n+2 (bit 0 = 2x). This retained decoder is off by one. It remains
+	// unchanged here to preserve sender behavior; see doc/turbomidi.md and
+	// turboMidiFirmwareTest.cpp for independent firmware vectors. Bit+1 also
 	// appears in MCL's startTurboMidi() at commit 312e9b44dd988cfa9597f156decd81b7cc3e24c1:
 	// https://github.com/jmamma/MCL/blob/312e9b44dd988cfa9597f156decd81b7cc3e24c1/avr/cores/megacommand/Midi/TurboMidi.cpp
-	// Neither agreement with MCL nor a fixed firmware report resolves bit 0.
-	// For example, report 01 00 01 00 falls back here; do not use that as a
-	// verified interoperability vector. turboMidiTest.cpp characterizes it.
+	// For example, report 01 00 01 00 falls back here, while original firmware
+	// requests codes 2/2. turboMidiTest.cpp characterizes the retained mismatch.
 	//
 	// All timers below use emulated time, paused while ingress is blocked:
 	// - response budget: >1s per wait phase, starting at final byte ADMISSION;

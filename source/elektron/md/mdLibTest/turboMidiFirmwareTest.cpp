@@ -85,6 +85,18 @@ namespace
 				command, atReply, afterReply);
 		}
 
+		void expectSilence()
+		{
+			require(m_replies.empty(), "unexpected firmware reply");
+		}
+
+		void resetNegotiation()
+		{
+			send(0x12, {1, 1});
+			expectSilence();
+			require(divider() == 40, "negotiation reset did not restore standard MIDI");
+		}
+
 	private:
 		struct Reply { std::vector<uint8_t> bytes; uint16_t divider; };
 		static std::vector<uint8_t> frame(uint8_t command, std::initializer_list<uint8_t> data)
@@ -102,6 +114,94 @@ namespace
 		std::vector<uint8_t> m_partial;
 		std::vector<Reply> m_replies;
 	};
+
+	void checkCapabilityBits(md::Hardware& hardware, PeerProbe& peer, bool mm)
+	{
+		// Version-specific test setup for MD 1.63 / MM 1.32b. Put the original
+		// firmware in its initiator report-wait state with preferred code 9;
+		// replies then traverse its real MIDI parser, selector and transmitter.
+		// This bypasses the UI, not the protocol implementation. No firmware
+		// instructions are changed. These addresses are NOT protocol constants.
+		auto& uc = hardware.getUC();
+		const uint32_t state = mm ? 0x29bd44 : 0x262418;
+		const uint32_t timeout = mm ? 0x29bd58 : 0x26242c;
+		const uint32_t preference = mm ? 0x70001c : 0x7723c0;
+		const uint32_t dividerTable = mm ? 0x2511d6 : 0x246298;
+		constexpr uint8_t dividers[]{0, 40, 20, 12, 10, 8, 6, 5, 4, 3, 0, 0};
+		for(unsigned code = 0; code < std::size(dividers); ++code)
+			require(uc.read8(dividerTable + code) == dividers[code], "unsupported firmware profile");
+		const auto write32 = [&](uint32_t address, uint32_t value)
+		{
+			uc.write16(address, static_cast<uint16_t>(value >> 16));
+			uc.write16(address + 2, static_cast<uint16_t>(value));
+		};
+		const auto originalPreference = uc.read16(preference);
+		// Fixed independent vectors. The first negotiated code establishes the
+		// bit interpretation; the second also reflects firmware's own policy.
+		constexpr uint8_t first[]{2, 3, 4, 5, 6, 7, 8, 9, 1, 1};
+		constexpr uint8_t second[]{2, 3, 4, 5, 5, 6, 7, 8, 1, 1};
+		for(unsigned bit = 0; bit < std::size(first); ++bit)
+		{
+			peer.resetNegotiation();
+			uc.write16(preference, 9);
+			write32(timeout, 10000);
+			write32(state, 10);
+			const auto mask = uint16_t{1} << bit;
+			std::printf("isolated capability bit=%u\n", bit);
+			peer.send(0x11, {uint8_t(mask & 127), uint8_t(mask >> 7),
+				uint8_t(mask & 127), uint8_t(mask >> 7)});
+			peer.expect(0x12, {first[bit], second[bit]}, 40, 40);
+		}
+		// Complete the reverse-role unequal-speed handshake: firmware is the
+		// initiator, and our injected replies stand in for an external peer.
+		peer.resetNegotiation();
+		write32(timeout, 10000);
+		write32(state, 10);
+		peer.send(0x11, {0x40, 0, 0x40, 0});
+		peer.expect(0x12, {8, 7}, 40, 40);
+		peer.send(0x13);
+		peer.expect(0x14, {0x55, 0x55, 0x55, 0x55, 0, 0, 0, 0}, 4, 4);
+		peer.send(0x15, {0x55, 0x55, 0x55, 0x55, 0, 0, 0, 0});
+		peer.expect(0x16, {}, 4, 4);
+		peer.send(0x17);
+		peer.expectSilence();
+		require(peer.divider() == 5, "firmware initiator did not switch after second result");
+		peer.resetNegotiation();
+		uc.write16(preference, originalPreference);
+	}
+
+	void checkSpeedCodes(PeerProbe& peer)
+	{
+		constexpr uint16_t dividers[]{0, 40, 20, 12, 10, 8, 6, 5, 4, 3};
+		for(uint8_t code = 2; code <= 11; ++code)
+		{
+			peer.resetNegotiation();
+			peer.send(0x12, {code, code});
+			// Equal-speed negotiation is accepted only at certified codes 2..5.
+			if(code <= 5) peer.expect(0x13, {}, 40, dividers[code]);
+			else
+			{
+				peer.expectSilence();
+				require(peer.divider() == 40, "rejected speed changed divider");
+			}
+
+			peer.resetNegotiation();
+			peer.send(0x12, {code, 2});
+			if(code >= 10)
+			{
+				peer.expectSilence();
+				require(peer.divider() == 40, "unsupported speed changed divider");
+				continue;
+			}
+			peer.expect(0x13, {}, 40, dividers[code]);
+			for(unsigned i = 0; i < 16; ++i) peer.writeByte(0);
+			peer.send(0x14, {0x55, 0x55, 0x55, 0x55, 0, 0, 0, 0});
+			peer.expect(0x15, {0x55, 0x55, 0x55, 0x55, 0, 0, 0, 0}, dividers[code], dividers[code]);
+			peer.send(0x16);
+			peer.expect(0x17, {}, dividers[code], 20);
+		}
+		peer.resetNegotiation();
+	}
 }
 
 int main(int argc, char** argv)
@@ -134,8 +234,7 @@ int main(int argc, char** argv)
 		PeerProbe peer(*hardware);
 		require(peer.divider() == 40, "unexpected initial MIDI divider");
 		peer.send(0x10);
-		// Recorded MD 1.63 and MM 1.32b report. This fixed vector alone does not
-		// establish the meaning of every capability bit, especially bit zero.
+		// Recorded MD 1.63 and MM 1.32b report; isolated bits are checked below.
 		peer.expect(0x11, {0x7f, 1, 0x0f, 0}, 40, 40);
 		peer.send(0x12, {8, 7}); // unequal speeds: 10x test, 8x transfer
 		peer.expect(0x13, {}, 40, 4);
@@ -144,7 +243,9 @@ int main(int argc, char** argv)
 		peer.expect(0x15, {0x55, 0x55, 0x55, 0x55, 0, 0, 0, 0}, 4, 4);
 		peer.send(0x16);
 		peer.expect(0x17, {}, 4, 5);
-		std::puts("TurboMIDI firmware report and unequal-speed divider checks passed");
+		checkCapabilityBits(*hardware, peer, mm);
+		checkSpeedCodes(peer);
+		std::puts("TurboMIDI firmware capability, speed-code and divider checks passed");
 		return 0;
 	}
 	catch(const std::exception& error)

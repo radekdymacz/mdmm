@@ -8,8 +8,9 @@ Sample Dump Standard (SDS), have their own protocols.
 
 Three kinds of information are identified below: the published protocol,
 observations of firmware running in the emulator, and Gearmulator's sender policy.
-The capability-bit interpretation remains unresolved, and the emulator does not
-validate physical UART interoperability.
+Isolated capability reports and firmware instruction inspection establish the bit
+mapping and the responder's transmit-complete wait. The emulator does not validate
+physical UART interoperability.
 
 ## Frames and speeds
 
@@ -40,19 +41,22 @@ Speed codes and Gearmulator's pacing rates are:
 MIDI uses 8-N-1 framing: ten serial bits per byte. Standard MIDI is 31,250 bit/s;
 8× and 10× correspond to 250,000 and 312,500 bit/s. The table retains the sender's
 integer rounding for fractional multipliers. Those byte rates are admission
-limits, not UART register settings. The manual also lists codes 9–11 as unsupported
-by these instruments. See [Elektron's Appendix C](https://www.elektron.se/wp-content/uploads/2024/09/machinedrum_manual_OS1.63.pdf#page=118)
+limits, not UART register settings. The manual lists codes 9–11 as unsupported
+by these instruments. The tested firmware nevertheless accepts code 9 and programs
+divider 3 (13.33×); codes 10 and 11 are rejected. This is a firmware observation,
+not a claim of reliable physical operation at 13.33×. See [Elektron's Appendix C](https://www.elektron.se/wp-content/uploads/2024/09/machinedrum_manual_OS1.63.pdf#page=118)
 for the published message and speed definitions.
 
 ## Complete worked exchange
 
 Both tested firmware profiles return capability data `7F 01 0F 00`. The four
 bytes are supported-low, supported-high, certified-low, certified-high.
+Firmware interprets this as supported codes 2–9 and certified codes 2–5.
 Gearmulator combines each pair as `low | (high << 7)` and interprets bit *n* as
 code *n + 1*. Under that interpretation it chooses code 8 for SPEED1 (10×), then
 code 7 for SPEED2 (8×): its policy selects the next supported code when the highest
 code is uncertified, without a second certification check. This is the sender's
-selection heuristic; the unresolved bit interpretation is discussed below.
+selection heuristic, including the retained off-by-one decoder described below.
 
 The **UART rate** column follows the manual's transition order and the firmware
 divider observations. The **Gearmulator** column describes host-to-instrument byte
@@ -89,7 +93,19 @@ profiles it observes these UART1 divider values (decimal):
 | `17` | 4 | 5 |
 
 Relative to the initial divider 40, dividers 4 and 5 represent 10× and 8×.
-This supports the peer transition order in the exchange above. The probe samples
+Instruction inspection additionally shows that both firmware versions flush their
+software TX queue, then poll UART status **TxEMP (bit 3)** before writing the new
+divider. This occurs after both `13` and `17`; the first test result does not change
+speed. TxEMP indicates that the last stop bit has completed, unlike TxRDY, which
+only reports room in the holding register. See the
+[Motorola UART register definition, printed 11-25](https://sca.uwaterloo.ca/coldfire/ftp/mot/5206_s11.pdf#page=25).
+Thus the firmware's intended physical boundary agrees with the Elektron manual.
+The reverse-role probe also runs the instrument firmware as initiator: it emits
+`16` at divider 4, retains divider 4 afterward, and switches to divider 5 only
+after receiving `17`. Both endpoint roles therefore use SPEED1 for the second
+test exchange.
+
+The probe samples
 firmware transmit-buffer (UTB) writes and later register state; **it does not
 observe the final stop bit on a cable**. It injects bytes into the firmware receive
 queue, and UART1 does not model baud mismatch.
@@ -127,20 +143,49 @@ in the current backend. Payload completion and cancellation retain ownership unt
 those pending bytes drain. That condition is distinct from physical transmission
 completion on an external serial adapter.
 
-## Unresolved capability interpretation
+## Capability mapping and retained sender discrepancy
 
-The manual describes the lowest capability bit as 2×; Gearmulator's retained
-bit-to-code mapping makes it code 1, or 1×. For report data `01 00 01 00`, the
-manual's reading advertises certified 2×, while this sender falls back to 1×.
-The corresponding unit test characterizes existing behavior; it does not establish
-which interpretation an external peer requires.
+Combine each two-byte capability field as `low | (high << 7)`. **Bit n denotes
+speed code n + 2**, not n + 1. Original MD 1.63 and MM 1.32b firmware both interpret
+isolated capability reports this way, agreeing with the manual's lowest-bit
+meaning. The second byte starts at bit 7, corresponding to code 9 (13.33×).
 
-[MCL's implementation at commit 312e9b44](https://github.com/jmamma/MCL/blob/312e9b44dd988cfa9597f156decd81b7cc3e24c1/avr/cores/megacommand/Midi/TurboMidi.cpp)
-also joins masks with a seven-bit shift and derives codes using highest-bit plus
-one. That is historical corroboration, not a resolution of the discrepancy.
-Neither the broad firmware report above nor the divider probe establishes the
-meaning of an isolated capability bit. Treat this mapping as an explicitly
-unresolved compatibility choice when implementing another endpoint.
+The firmware probe places each instrument in its initiator report-wait state,
+sets preferred code 9, and supplies one supported/certified bit at a time through
+the original MIDI parser. This setup writes version-specific firmware state and
+bypasses the UI; it does not patch firmware instructions or use Gearmulator's
+selector. Both firmware versions emit these independently recorded results:
+
+| Supported and certified bytes (each pair) | Capability bit | Firmware requests SPEED1 / SPEED2 |
+| --- | ---: | --- |
+| `01 00` | 0 | 2 / 2 |
+| `02 00` | 1 | 3 / 3 |
+| `04 00` | 2 | 4 / 4 |
+| `08 00` | 3 | 5 / 5 |
+| `10 00` | 4 | 6 / 5 |
+| `20 00` | 5 | 7 / 6 |
+| `40 00` | 6 | 8 / 7 |
+| `00 01` | 7 | 9 / 8 |
+| `00 02` or `00 04` | 8 or 9 | 1 / 1 (fallback) |
+
+The first requested code establishes the supported-bit mapping. The second also
+reflects firmware selection policy: above its certified limit, it can choose a
+lower transfer code absent from the supplied mask. Do not copy that choice as a
+requirement on all initiators. Separate responder tests accept equal-speed pairs
+2/2 through 5/5, reject equal pairs 6/6 through 9/9, and accept first-test codes
+2–9 with transfer code 2. All cases start from a verified standard-speed reset.
+
+**Gearmulator retains an off-by-one capability decoder in this refactor.** It
+maps bit n to code n + 1, so `01 00 01 00` falls back to standard MIDI although
+firmware requests 2/2. Its synthetic transcript tests preserve existing behavior;
+the independent firmware vectors establish the different wire interpretation.
+For the instrument's broad report, the current sender still chooses the accepted
+8/7 pair shown above. Correcting selection, including handling code 9 beyond the
+current pacing table, requires a separate behavior change.
+
+[MCL at commit 312e9b44](https://github.com/jmamma/MCL/blob/312e9b44dd988cfa9597f156decd81b7cc3e24c1/avr/cores/megacommand/Midi/TurboMidi.cpp)
+also uses highest-bit plus one. That historical agreement does not override the
+original firmware evidence.
 
 ## Code and validation entry points
 

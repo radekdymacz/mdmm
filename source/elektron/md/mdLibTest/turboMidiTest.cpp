@@ -166,7 +166,7 @@ namespace
 		const Speeds cases[] = {
 			{0x7f, 1, 0x7f, 1, 8, 8}, // synthetic certified maximum
 			{0x7f, 1, 0x0f, 0, 8, 7}, // observed MD 1.63/MM 1.32b report
-			{0x01, 0, 0x01, 0, 1, 1}, // disputed lowest bit: existing policy, not a peer oracle
+			{0x01, 0, 0x01, 0, 1, 1}, // retained off-by-one: firmware interprets this as code 2
 			{0x7f, 1, 0x08, 0, 8, 7}, // next supported, even if not certified
 			{0x0a, 0, 0x02, 0, 4, 2}, // sparse mask
 			{0x02, 0, 0x02, 0, 2, 2}, // lowest Turbo code
