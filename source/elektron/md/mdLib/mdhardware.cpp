@@ -367,7 +367,7 @@ namespace md
 						// this legacy purge; strict skip-on-empty RX supplies the hardware boundary.
 						const bool s_immediate = !isMonomachine();
 						const bool preserveRendezvousFutureEdges =
-							m_mdOnDemandRendezvousActive && _selfDsp == 0
+							m_mdOnDemandRendezvousActive
 							&& !isMonomachine();
 						const uint64_t esaiNow = m_esaiFrameIndex;
 						auto& lastShallow = m_linkLastShallow[_selfDsp];
@@ -945,6 +945,19 @@ namespace md
 				});
 				producerEssi.setOnDemandTxWireSemantics(true);
 				mixerEssi.setOnDemandRxWireSemantics(true);
+				// Both directions share the same on-demand serial protocol: only
+				// fresh TX words form receive edges, and a complete burst must
+				// survive the legacy queue cleanup.
+				mixerEssi.setOnDemandTxWireSemantics(true);
+				producerEssi.setOnDemandRxWireSemantics(true);
+				producerEssi.setPendingReceiveDmaOnEnable(true);
+				// Retained idle words used to keep the peer's scheduler clock
+				// coupled. Preserve that clock rendezvous without inventing RX
+				// data; otherwise coarse slices can slip a 32-sample block.
+				mixerEssi.setOnDemandTxIdleCallback([this]
+				{
+					schedCatchUpDspToDsp(1, 0);
+				});
 				m_mdLinkAwaitFresh = false;
 			}
 		}
