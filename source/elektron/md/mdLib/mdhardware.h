@@ -83,6 +83,13 @@ namespace md
 				&& m_uc.isMidiReceiveReady();
 		}
 		uint64_t firmwareFingerprint() const { return m_firmwareFingerprint; }
+		bool supportsRamRecordingMode() const
+		{
+			return m_model == MachineModel::Machinedrum
+				&& m_firmwareFingerprint == g_mdOs163Fingerprint;
+		}
+		void requestRamRecordingMode(RamRecordingMode _mode);
+		RamRecordingMode requestedRamRecordingMode() const { return m_ramRecordingMode; }
 		uint64_t hostAudioOverflowCount() const
 		{
 			return m_schedHostAudioOverflow.load(std::memory_order_relaxed);
@@ -289,6 +296,7 @@ namespace md
 		void setHostAudioInputLatency(uint32_t _latency);
 		void queueHostAudioInput(uint32_t _frames);
 		void advanceFactoryFlashCapture();
+		void serviceRamRecordingMode();
 		void registerExternalInteraction();
 		void pumpDsp2HostRequest();		// DSP2 HI08 HREQ -> ColdFire external IRQ4 (see .cpp)
 		void onEssiCallbackMixer();		// master clock: advance the ESSI frame counter
@@ -319,6 +327,8 @@ namespace md
 		TurboMidiTransfer m_midiSysexTransfer;
 		Dsp m_dspMixer;		// index 0 = DSP1 (0x500000), receives the ring, drives the DAC
 		Dsp m_dspProducer;	// index 1 = DSP2 (0x600000), produces voices into the ring
+		RamRecordingMode m_ramRecordingMode = RamRecordingMode::Original;
+		bool m_ramRecordingModePending = false;
 
 		AudioOutputs m_audioOutputs;
 		// Per-machine age of the last shallow link ring. This participates in the

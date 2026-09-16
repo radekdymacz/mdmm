@@ -1,5 +1,6 @@
 #include "mdhardware.h"
 #include "mdhostclock.h"
+#include "mdrampacking.h"
 #include "mdtransportpolicy.h"
 
 #include "mdsysexautomation.h"
@@ -1613,6 +1614,7 @@ namespace md
 
 	void Hardware::advance(const uint32_t _machineFrames)
 	{
+		serviceRamRecordingMode();
 		m_schedFramesTotal += static_cast<double>(_machineFrames);
 
 		while(schedStep())
@@ -1624,6 +1626,32 @@ namespace md
 		// Never make the emulation/audio thread wait for a UI snapshot read. If the
 		// reader owns the short copy lock, the next machine interval republishes.
 		m_frontPanelPublisher->tryPublish(m_frontPanel);
+	}
+
+	void Hardware::requestRamRecordingMode(const RamRecordingMode _mode)
+	{
+		m_ramRecordingMode = _mode;
+		m_ramRecordingModePending = supportsRamRecordingMode();
+	}
+
+	void Hardware::serviceRamRecordingMode()
+	{
+		if(!m_ramRecordingModePending || !isFirmwareMidiReady())
+			return;
+		switch(setRamPackingMode(m_dspProducer.dsp(), m_ramRecordingMode))
+		{
+		case RamPackingUpdate::Busy:
+			return;
+		case RamPackingUpdate::Applied:
+		case RamPackingUpdate::AlreadyApplied:
+			m_ramRecordingModePending = false;
+			return;
+		case RamPackingUpdate::UnexpectedCode:
+			m_ramRecordingModePending = false;
+			std::fprintf(stderr,
+				"[MD] RAM recording compatibility mode unavailable: unexpected loaded program\n");
+			return;
+		}
 	}
 
 	namespace
