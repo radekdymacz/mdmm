@@ -4,6 +4,7 @@
 #include "mdLib/mdtypes.h"
 #include "synthLib/performanceReport.h"
 
+#include <atomic>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -47,6 +48,13 @@ namespace mdJucePlugin
 		std::string performanceDiagnosticsStatus() const;
 		juce::File performanceDiagnosticsFolder() const;
 		juce::File performanceDiagnosticsFile() const { return m_performanceReportFile; }
+		void setRamRecordingMode(md::RamRecordingMode _mode);
+		md::RamRecordingMode getRamRecordingMode() const
+		{
+			return static_cast<md::RamRecordingMode>(
+				m_ramRecordingMode.load(std::memory_order_relaxed));
+		}
+		bool isRamRecordingModeAvailable();
 
 	    jucePluginEditorLib::PluginEditorState* createEditorState() override;
 	    synthLib::Device* createDevice() override;
@@ -55,6 +63,7 @@ namespace mdJucePlugin
 	    pluginLib::Controller* createController() override;
 		void saveChunkData(baseLib::BinaryStream& _stream) override;
 		void loadChunkData(baseLib::ChunkReader& _reader) override;
+		bool loadCustomData(const std::vector<uint8_t>& _sourceBuffer) override;
 
 	private:
 		static BusesProperties createBusesProperties();
@@ -80,6 +89,9 @@ namespace mdJucePlugin
 		juce::File m_startupDiagnosticsFile;
 		double m_startupDiagnosticsStartMilliseconds = 0.0;
 		bool m_startupDiagnosticsEnabled = false;
+		std::atomic<uint8_t> m_ramRecordingMode{
+			static_cast<uint8_t>(md::RamRecordingMode::Original)};
+		bool m_ramRecordingModeChunkSeen = false;
 		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPluginAudioProcessor)
 	};
 }

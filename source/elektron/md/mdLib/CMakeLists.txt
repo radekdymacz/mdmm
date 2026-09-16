@@ -22,6 +22,7 @@ set(SOURCES
 	mdsysexautomation.cpp mdsysexautomation.h
 	mdrealtimemidiqueue.h
 	mdpanel.cpp mdpanel.h
+	mdrampacking.h
 	mdsim.cpp mdsim.h
 	mdrom.cpp mdrom.h
 	mdromdata.cpp mdromdata.h

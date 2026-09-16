@@ -326,6 +326,7 @@ namespace md
 				: transaction->m_error);
 			return false;
 		}
+		transaction->m_prepared->m_hardware->requestRamRecordingMode(m_ramRecordingMode);
 		if(transaction->m_prepared->m_hardware->isProjectStateRestorePending())
 		{
 			m_deferredPreparedState = std::move(transaction->m_prepared);
@@ -483,6 +484,7 @@ namespace md
 			return false;
 
 		const auto clockPercent = getDspClockPercent();
+		_prepared.m_hardware->requestRamRecordingMode(m_ramRecordingMode);
 		_prepared.m_hardware->getDspMixer().getPeriph().getEssiClock()
 			.setSpeedPercent(clockPercent);
 		if(m_model == MachineModel::Machinedrum && !_prepared.m_containsFlash)
@@ -500,6 +502,16 @@ namespace md
 		++m_hardwareEpoch;
 		_prepared.m_committed = true;
 		return true;
+	}
+
+	void Device::setRamRecordingMode(const RamRecordingMode _mode)
+	{
+		m_ramRecordingMode = m_model == MachineModel::Machinedrum
+			? _mode : RamRecordingMode::Original;
+		if(m_hardware)
+			m_hardware->requestRamRecordingMode(m_ramRecordingMode);
+		if(m_deferredPreparedState && m_deferredPreparedState->m_hardware)
+			m_deferredPreparedState->m_hardware->requestRamRecordingMode(m_ramRecordingMode);
 	}
 
 	bool Device::commitDeferredStateRestore(PreparedState& _prepared,
