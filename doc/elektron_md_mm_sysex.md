@@ -79,6 +79,21 @@ mdUserSysexFirmwareTest mm <firmware.bin> <1MiB-patch-ram.bin> \
   <user-data.syx> [first|cancel]
 ```
 
+Machine-originated Monomachine exports have a separate firmware-backed check:
+
+```sh
+mmSysexExportFirmwareTest <MM-firmware.bin> <1MiB-patch-ram.bin>
+MM_SYSEX_EXPORT_BLOCK=8192 \
+  mmSysexExportFirmwareTest <MM-firmware.bin> <1MiB-patch-ram.bin> full
+```
+
+The first form requests and validates one Kit, Pattern, Song, and Global. The
+`full` form drives the firmware's **SYSEX SEND → ALL** panel workflow, compares
+raw UART bytes with host-visible messages, validates every checksum and length,
+and requires all 128 Kits, 128 Patterns, 24 Songs, and 8 Globals with no UART
+capture overflow. The block-size override stresses callback-sized output
+bursts; it does not change firmware timing.
+
 The harness drives the Monomachine receive screens, interleaves clock,
 controller/automation-like traffic, and ordinary MIDI with the transfer, waits
 for the emulated UART to drain, and requires persistent RAM or flash mutation.
