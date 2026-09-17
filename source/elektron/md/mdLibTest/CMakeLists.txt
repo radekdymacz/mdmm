@@ -126,6 +126,13 @@ else()
 	target_compile_options(mmSysexWorkflowTest PRIVATE -fno-fast-math)
 endif()
 set_property(TARGET mmSysexWorkflowTest PROPERTY FOLDER "Elektron/test")
+
+# Manual, firmware-backed check for machine-originated MM user-data dumps.
+# The ROM and initialized patch RAM are caller supplied and never enter CI.
+add_executable(mmSysexExportFirmwareTest mmSysexExportFirmwareTest.cpp)
+target_link_libraries(mmSysexExportFirmwareTest PRIVATE mdLib)
+set_property(TARGET mmSysexExportFirmwareTest PROPERTY FOLDER "Elektron/test")
+
 add_test(NAME mmDigiProImportAudioOracleTest COMMAND mmSysexWorkflowTest --audio-oracle)
 set_tests_properties(mmDigiProImportAudioOracleTest PROPERTIES LABELS "UnitTest;AudioIo" TIMEOUT 15)
 foreach(profile 32 1024 irregular)
