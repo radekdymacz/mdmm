@@ -33,7 +33,7 @@ namespace mdJucePlugin::lcdInteraction
 		constexpr uint8_t g_mdRecordMask = 0x10;
 		constexpr uint8_t g_mmDataPages03Mask = 0xf0;
 		constexpr uint8_t g_mmDataPages46Mask = 0x07;
-		constexpr uint8_t g_mmPolyModeMask = 0x04;
+		constexpr uint8_t g_mmSongModeMask = 0x40;
 		constexpr uint8_t g_mmRecordMask = 0x01;
 
 		void addHashByte(uint64_t& _hash, const uint8_t _value)
@@ -48,9 +48,9 @@ namespace mdJucePlugin::lcdInteraction
 			if(_model == md::MachineModel::Monomachine)
 			{
 				addHashByte(hash, static_cast<uint8_t>(_panel.getLedBankRaw(0x25)
-					& (g_mmDataPages03Mask | g_mmPolyModeMask)));
+					& g_mmDataPages03Mask));
 				addHashByte(hash, static_cast<uint8_t>(_panel.getLedBankRaw(0x26)
-					& g_mmDataPages46Mask));
+					& (g_mmDataPages46Mask | g_mmSongModeMask)));
 				addHashByte(hash, static_cast<uint8_t>(_panel.getLedBankRaw(0x27)
 					& g_mmRecordMask));
 			}
@@ -64,14 +64,22 @@ namespace mdJucePlugin::lcdInteraction
 			return hash;
 		}
 
-		bool synthesisPanelContext(const md::FrontPanel& _panel,
+		bool standardEditPanelContext(const md::FrontPanel& _panel,
 			const md::MachineModel _model)
 		{
 			if(_model == md::MachineModel::Monomachine)
-				return (_panel.getLedBankRaw(0x25) & g_mmDataPages03Mask) == 0xe0
-					&& (_panel.getLedBankRaw(0x25) & g_mmPolyModeMask) == 0
-					&& (_panel.getLedBankRaw(0x26) & g_mmDataPages46Mask) == 0x07
+			{
+				// MM's seven DATA pages are active-low across 0x25 bits 4..7 and
+				// 0x26 bits 0..2.  The low nibble of 0x25 is track-colour state,
+				// not Poly mode; including it made track 2 falsely non-interactive.
+				const auto pages = static_cast<uint8_t>(
+					((_panel.getLedBankRaw(0x25) & g_mmDataPages03Mask) >> 4)
+					| ((_panel.getLedBankRaw(0x26) & g_mmDataPages46Mask) << 4));
+				const auto activePages = static_cast<uint8_t>((~pages) & 0x7f);
+				return activePages != 0 && (activePages & (activePages - 1)) == 0
+					&& (_panel.getLedBankRaw(0x26) & g_mmSongModeMask) != 0
 					&& (_panel.getLedBankRaw(0x27) & g_mmRecordMask) == 0x01;
+			}
 			return (_panel.getLedBankRaw(0x22)
 					& (g_mdDataPageMask | g_mdPatternSongModeMask)) == 0x70
 				&& (_panel.getLedBankRaw(0x23) & g_mdRecordMask) == 0x10;
@@ -223,7 +231,7 @@ namespace mdJucePlugin::lcdInteraction
 				}
 		}
 
-		if(!synthesisPanelContext(_panel, _model) || !hasStandardFrame(_panel))
+		if(!standardEditPanelContext(_panel, _model) || !hasStandardFrame(_panel))
 			return std::nullopt;
 
 		auto mask = occupancy(_panel, LayoutKind::Standard);
@@ -238,8 +246,8 @@ namespace mdJucePlugin::lcdInteraction
 
 		if(mask == 0)
 			return std::nullopt;
-		return State{SurfaceKind::Synthesis, LayoutKind::Standard, mask,
-			identityToken(SurfaceKind::Synthesis, identity, labels)};
+		return State{SurfaceKind::EditGrid, LayoutKind::Standard, mask,
+			identityToken(SurfaceKind::EditGrid, identity, labels)};
 	}
 
 	bool classificationLedsChanged(const md::FrontPanel& _before,
@@ -247,11 +255,13 @@ namespace mdJucePlugin::lcdInteraction
 	{
 		if(_model == md::MachineModel::Monomachine)
 			return (_before.getLedBankRaw(0x25)
-					& (g_mmDataPages03Mask | g_mmPolyModeMask))
+					& g_mmDataPages03Mask)
 					!= (_after.getLedBankRaw(0x25)
-						& (g_mmDataPages03Mask | g_mmPolyModeMask))
-				|| (_before.getLedBankRaw(0x26) & g_mmDataPages46Mask)
-					!= (_after.getLedBankRaw(0x26) & g_mmDataPages46Mask)
+						& g_mmDataPages03Mask)
+				|| (_before.getLedBankRaw(0x26)
+					& (g_mmDataPages46Mask | g_mmSongModeMask))
+					!= (_after.getLedBankRaw(0x26)
+						& (g_mmDataPages46Mask | g_mmSongModeMask))
 				|| (_before.getLedBankRaw(0x27) & g_mmRecordMask)
 					!= (_after.getLedBankRaw(0x27) & g_mmRecordMask);
 		return (_before.getLedBankRaw(0x22)
