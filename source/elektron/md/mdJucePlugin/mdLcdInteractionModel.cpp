@@ -83,9 +83,11 @@ namespace mdJucePlugin::lcdInteraction
 				const auto normalEdit = oneDataPage && (mode & g_mmSongModeMask) != 0;
 				const auto poly = oneDataPage && (mode
 					& (g_mmDataPages46Mask | g_mmSongModeMask)) == g_mmDataPages46Mask;
+				// MIDI SEQ drives all four 0x25 page bits low and leaves the
+				// remaining three page bits inactive. Poly may independently change
+				// the song/mode lamp, so it must not disqualify this surface.
 				const auto midiSequencer = (pages & 0x0f) == 0
-					&& (mode & (g_mmDataPages46Mask | g_mmSongModeMask))
-						== (g_mmDataPages46Mask | g_mmSongModeMask);
+					&& (mode & g_mmDataPages46Mask) == g_mmDataPages46Mask;
 				return recordOff && (normalEdit || poly || midiSequencer);
 			}
 			const auto bank22 = _panel.getLedBankRaw(0x22);

@@ -371,6 +371,7 @@ int main()
 				uint8_t mask;
 			};
 			for(const auto special : {SpecialSurface{0x09, 0x57, 0xff},
+				SpecialSurface{0x09, 0x17, 0xff},
 				SpecialSurface{0xed, 0x17, 0xff},
 				SpecialSurface{0xf9, 0x57, 0x0f}})
 			{

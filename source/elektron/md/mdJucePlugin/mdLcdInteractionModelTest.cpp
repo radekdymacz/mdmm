@@ -158,6 +158,7 @@ namespace
 						"MM DATA page 4-6 was not recognized");
 				}
 				for(const auto special : {std::pair{uint8_t{0x09}, uint8_t{0x57}},
+					std::pair{uint8_t{0x09}, uint8_t{0x17}},
 					std::pair{uint8_t{0xed}, uint8_t{0x17}}})
 				{
 					auto page = full;
