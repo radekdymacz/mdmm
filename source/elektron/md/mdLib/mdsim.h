@@ -126,7 +126,10 @@ namespace md
 		// Host-side scheduling backlog, not the physical three-byte FIFO. Fixed
 		// storage removes allocator work from emulation while allowing large bursts.
 		static constexpr size_t g_uartRxCapacity = 65536;
-		static constexpr size_t g_uartTxCapacity = 4096;
+		// Firmware can serialize several complete user-data dumps inside one large
+		// host audio block. Keep the producer side large enough for that bounded
+		// callback burst; overflow discards bytes and corrupts the enclosing SysEx.
+		static constexpr size_t g_uartTxCapacity = 65536;
 		// Callback invoked for every byte the firmware writes to a UART transmit
 		// buffer (UTB). Used later to route MIDI (UART1) / panel (UART2) traffic.
 		using TransmitCallback = std::function<void(uint8_t)>;
