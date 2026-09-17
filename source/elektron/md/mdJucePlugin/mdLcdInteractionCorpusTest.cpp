@@ -142,7 +142,7 @@ namespace
 						+ " unexpectedly interactive");
 				else
 					require(state && state->surface
-						== mdJucePlugin::lcdInteraction::SurfaceKind::Synthesis
+						== mdJucePlugin::lcdInteraction::SurfaceKind::EditGrid
 						&& state->activeEncoderMask == expected,
 						std::string(name) + " " + row.at("machine")
 							+ " classifier mismatch");
@@ -197,13 +197,60 @@ namespace
 		require(directCount == direct.size(), "missing direct rotary page capture");
 	}
 
+	void testMonomachineEditPages()
+	{
+		const std::unordered_map<std::string, uint8_t> expected{
+			{"working-synthesis", 0xf7}, {"working-amplification", 0xff},
+			{"working-filter", 0xff}, {"working-effects", 0xff},
+			{"working-lfo1", 0xff}, {"working-lfo2", 0xff},
+			{"working-lfo3", 0xff}, {"midi-sequencer", 0xff},
+			{"poly", 0xf7}, {"multi-envelope", 0x0f},
+		};
+		unsigned found = 0;
+		for(const auto& row : readTsv(generatedRoot + "/mm-capture-ledger.tsv"))
+		{
+			const auto match = expected.find(row.at("id"));
+			if(match == expected.end())
+				continue;
+			const auto state = mdJucePlugin::lcdInteraction::classify(
+				loadPanel(row), md::MachineModel::Monomachine);
+			require(state && state->layout == mdJucePlugin::lcdInteraction::LayoutKind::Standard
+				&& state->activeEncoderMask == match->second,
+				"MM EDIT page was not interactive: " + row.at("id"));
+			++found;
+		}
+		require(found == expected.size(), "missing MM EDIT page capture");
+	}
+
+	void testMachinedrumEditPages()
+	{
+		const std::unordered_map<std::string, uint8_t> expected{
+			{"working-synthesis", 0xff}, {"working-effects", 0xff},
+			{"working-routing", 0xff},
+		};
+		unsigned found = 0;
+		for(const auto& row : readTsv(generatedRoot + "/md-capture-ledger.tsv"))
+		{
+			const auto match = expected.find(row.at("id"));
+			if(match == expected.end())
+				continue;
+			const auto state = mdJucePlugin::lcdInteraction::classify(
+				loadPanel(row), md::MachineModel::Machinedrum);
+			require(state && state->layout == mdJucePlugin::lcdInteraction::LayoutKind::Standard
+				&& state->activeEncoderMask == match->second,
+				"MD EDIT page was not interactive: " + row.at("id"));
+			++found;
+		}
+		require(found == expected.size(), "missing MD EDIT page capture");
+	}
+
 	void testKnownNegativeRoutes()
 	{
 		const std::unordered_map<std::string, std::vector<std::string>> negatives{
 			{"md", {"kit-root", "kit-load-list", "kit-save-list", "kit-name-editor",
 				"kit-name-palette", "kit-edit-track", "song-root", "song-mode",
 				"song-load-list", "song-save-list", "song-name-editor",
-				"song-name-palette", "working-effects", "working-routing", "tempo",
+				"song-name-palette", "tempo",
 				"tap-tempo", "tap-tempo-measured", "operation-copy",
 				"pattern-bank-sticky", "scale-setup", "mute", "mute-minimized",
 				"accent", "swing", "slide", "global-root", "global-slots",
@@ -215,13 +262,11 @@ namespace
 				"global-sync-tempo-out", "global-sync-control-out",
 				"song-pattern-row", "song-mute-mask", "grid-record",
 				"parameter-lock"}},
-			{"mm", {"working-lfo1", "working-lfo2", "working-lfo3",
-				"midi-sequencer", "multi-envelope", "tempo", "tap-tempo",
+			{"mm", {"tempo", "tap-tempo",
 				"tap-tempo-measured", "kit-root", "kit-load-list", "kit-save-list",
 				"kit-name-editor", "kit-name-palette", "operation-copy", "mute",
-				"mute-minimized", "poly", "grid-record", "trig-keyboard",
-				"trig-chord-list", "parameter-lock", "working-amplification",
-				"working-filter", "working-effects", "step-record",
+				"mute-minimized", "grid-record", "trig-keyboard",
+				"trig-chord-list", "parameter-lock", "step-record",
 				"global-master-tune", "global-midi-channels", "global-turbo",
 				"song-track-transpose", "song-edit-scroll-row"}},
 		};
@@ -250,6 +295,8 @@ int main()
 	{
 		testEveryEngine();
 		testDirectPagesAndHeldOverlays();
+		testMachinedrumEditPages();
+		testMonomachineEditPages();
 		testKnownNegativeRoutes();
 		std::cout << "PASS: private corpus replayed 156 engines, direct pages, overlays, and negative routes\n";
 		return 0;

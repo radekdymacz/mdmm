@@ -233,7 +233,7 @@ namespace
 		{
 			const auto surface = _layout == LayoutKind::Lfo ? SurfaceKind::Lfo
 				: _layout == LayoutKind::MasterFx ? SurfaceKind::MasterFxEcho
-				: SurfaceKind::Synthesis;
+				: SurfaceKind::EditGrid;
 			mdJucePlugin::EditorIdentityTestAccess::installSurface(_editor,
 				State{surface, _layout, _activeMask,
 					static_cast<uint64_t>(_layout) + 1});
@@ -329,11 +329,101 @@ int main()
 		mdJucePlugin::EditorIdentityTestAccess::publishPanel(*editor, publishedPanel);
 		const auto publishedState =
 			mdJucePlugin::EditorIdentityTestAccess::interactionState(*editor);
-		require(publishedState && publishedState->surface == SurfaceKind::Synthesis
+		require(publishedState && publishedState->surface == SurfaceKind::EditGrid
 			&& publishedState->activeEncoderMask == 0xff,
 			"published LCD/LED state did not reach editor classification");
 		const auto publishedIdentity = publishedState->identityToken;
 		const auto publishedPoint = encoderCenter(canvas, LayoutKind::Standard, 0);
+		if(model == md::MachineModel::Monomachine)
+		{
+			constexpr uint8_t page25High[]{0xe0, 0xd0, 0xb0, 0x70, 0xf0, 0xf0, 0xf0};
+			constexpr uint8_t page26[]{0xd7, 0xd7, 0xd7, 0xd7, 0xd6, 0xd5, 0xd3};
+			// The low nibble of bank 0x25 is track-colour state, not a mode.
+			// Sweep every possible value so every real track transition is covered.
+			for(unsigned trackLeds = 0; trackLeds < 16; ++trackLeds)
+				for(unsigned page = 0; page < 7; ++page)
+				{
+					auto transitionPanel = makeStandardPanel(model);
+					setLedBank(transitionPanel, 0x25,
+						static_cast<uint8_t>(page25High[page] | trackLeds));
+					setLedBank(transitionPanel, 0x26, page26[page]);
+					mdJucePlugin::EditorIdentityTestAccess::publishPanel(*editor,
+						transitionPanel);
+					const auto transitionState =
+						mdJucePlugin::EditorIdentityTestAccess::interactionState(*editor);
+					require(transitionState && transitionState->surface == SurfaceKind::EditGrid
+						&& transitionState->activeEncoderMask == 0xff,
+						"MM track/page transition lost the EDIT grid");
+
+					instrumentation.reset();
+					context.ProcessMouseMove(publishedPoint.x, publishedPoint.y, 0);
+					context.ProcessMouseButtonDown(0, 0);
+					context.ProcessMouseMove(publishedPoint.x + 30, publishedPoint.y, 0);
+					context.ProcessMouseButtonUp(0, 0);
+					require(requireOnlyEncoderInput(instrumentation, model, 0,
+						"MM track/page transition drag") != 0,
+						"MM track/page transition ignored pointer drag");
+				}
+			struct SpecialSurface
+			{
+				uint8_t bank25;
+				uint8_t bank26;
+				uint8_t mask;
+			};
+			for(const auto special : {SpecialSurface{0x09, 0x57, 0xff},
+				SpecialSurface{0x09, 0x17, 0xff},
+				SpecialSurface{0xed, 0x17, 0xff},
+				SpecialSurface{0xf9, 0x57, 0x0f}})
+			{
+				auto transitionPanel = makeStandardPanel(model);
+				setLedBank(transitionPanel, 0x25, special.bank25);
+				setLedBank(transitionPanel, 0x26, special.bank26);
+				mdJucePlugin::EditorIdentityTestAccess::publishPanel(*editor,
+					transitionPanel);
+				const auto transitionState =
+					mdJucePlugin::EditorIdentityTestAccess::interactionState(*editor);
+				require(transitionState
+					&& transitionState->activeEncoderMask == special.mask,
+					"MM special DATA surface lost its qualified controls");
+
+				instrumentation.reset();
+				context.ProcessMouseMove(publishedPoint.x, publishedPoint.y, 0);
+				context.ProcessMouseButtonDown(0, 0);
+				context.ProcessMouseMove(publishedPoint.x + 30, publishedPoint.y, 0);
+				context.ProcessMouseButtonUp(0, 0);
+				require(requireOnlyEncoderInput(instrumentation, model, 0,
+					"MM special DATA surface drag") != 0,
+					"MM special DATA surface ignored pointer drag");
+			}
+			publishedPanel = makeStandardPanel(model);
+			mdJucePlugin::EditorIdentityTestAccess::publishPanel(*editor, publishedPanel);
+		}
+		else
+		{
+			for(const auto bank22 : {uint8_t{0x74}, uint8_t{0xb4}, uint8_t{0xd4}})
+			{
+				auto transitionPanel = makeStandardPanel(model);
+				setLedBank(transitionPanel, 0x22, bank22);
+				mdJucePlugin::EditorIdentityTestAccess::publishPanel(*editor,
+					transitionPanel);
+				const auto transitionState =
+					mdJucePlugin::EditorIdentityTestAccess::interactionState(*editor);
+				require(transitionState && transitionState->surface == SurfaceKind::EditGrid
+					&& transitionState->activeEncoderMask == 0xff,
+					"MD page transition lost the EDIT grid");
+
+				instrumentation.reset();
+				context.ProcessMouseMove(publishedPoint.x, publishedPoint.y, 0);
+				context.ProcessMouseButtonDown(0, 0);
+				context.ProcessMouseMove(publishedPoint.x + 30, publishedPoint.y, 0);
+				context.ProcessMouseButtonUp(0, 0);
+				require(requireOnlyEncoderInput(instrumentation, model, 0,
+					"MD page transition drag") != 0,
+					"MD page transition ignored pointer drag");
+			}
+			publishedPanel = makeStandardPanel(model);
+			mdJucePlugin::EditorIdentityTestAccess::publishPanel(*editor, publishedPanel);
+		}
 		instrumentation.reset();
 		context.ProcessMouseMove(publishedPoint.x, publishedPoint.y, 0);
 		context.ProcessMouseButtonDown(0, 0);
@@ -390,7 +480,7 @@ int main()
 		editor->applyLcdInteraction();
 
 		mdJucePlugin::EditorIdentityTestAccess::installSurface(*editor,
-			State{SurfaceKind::Synthesis, LayoutKind::Standard, 0xff, 1});
+			State{SurfaceKind::EditGrid, LayoutKind::Standard, 0xff, 1});
 		const auto start = encoderCenter(canvas, LayoutKind::Standard, 0);
 		const auto canvasSize = canvas.GetBox().GetSize(Rml::BoxArea::Content);
 		juce::Image beforeHover(juce::Image::ARGB,
@@ -432,7 +522,7 @@ int main()
 			"Command-drag did not produce a slower turn");
 
 		mdJucePlugin::EditorIdentityTestAccess::installSurface(*editor,
-			State{SurfaceKind::Synthesis, LayoutKind::Standard, 0xff, 1});
+			State{SurfaceKind::EditGrid, LayoutKind::Standard, 0xff, 1});
 		const auto other = encoderCenter(canvas, LayoutKind::Standard, 1);
 		context.ProcessMouseMove(other.x, other.y, 0);
 		context.ProcessMouseMove(start.x, start.y, 0);

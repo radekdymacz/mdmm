@@ -152,6 +152,14 @@ if(BUILD_TESTING)
 	set_tests_properties(mdLcdInteractionModelTest PROPERTIES
 		LABELS "UnitTest;LcdInteraction")
 	set_property(TARGET mdLcdInteractionModelTest PROPERTY FOLDER "Elektron/test")
+	add_executable(mmLcdEditPagesFirmwareTest
+		mmLcdEditPagesFirmwareTest.cpp mdLcdInteractionModel.cpp)
+	target_link_libraries(mmLcdEditPagesFirmwareTest PRIVATE mdLib)
+	add_test(NAME mmLcdEditPagesFirmwareTest COMMAND mmLcdEditPagesFirmwareTest)
+	set_tests_properties(mmLcdEditPagesFirmwareTest PROPERTIES
+		LABELS "Integration;FirmwareTest;Panel;LcdInteraction"
+		SKIP_RETURN_CODE 77 TIMEOUT 180)
+	set_property(TARGET mmLcdEditPagesFirmwareTest PROPERTY FOLDER "Elektron/test")
 	set(MD_LCD_TEST_CORPUS_DIR "" CACHE PATH
 		"Optional private MD/MM LCD screenshot corpus used by the exhaustive classifier replay")
 	if(MD_LCD_TEST_CORPUS_DIR)

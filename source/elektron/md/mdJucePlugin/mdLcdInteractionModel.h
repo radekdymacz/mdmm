@@ -18,7 +18,7 @@ namespace mdJucePlugin::lcdInteraction
 
 	enum class SurfaceKind : uint8_t
 	{
-		Synthesis,
+		EditGrid,
 		Lfo,
 		MasterFxEcho,
 		MasterFxReverb,
@@ -48,7 +48,7 @@ namespace mdJucePlugin::lcdInteraction
 
 	struct State
 	{
-		SurfaceKind surface = SurfaceKind::Synthesis;
+		SurfaceKind surface = SurfaceKind::EditGrid;
 		LayoutKind layout = LayoutKind::Standard;
 		uint8_t activeEncoderMask = 0;
 		uint64_t identityToken = 0;

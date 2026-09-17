@@ -111,7 +111,7 @@ namespace
 			for(const auto mask : {uint8_t{0xff}, uint8_t{0x55}, uint8_t{0x81}})
 			{
 				const auto state = classify(makeStandardPanel(model, mask), model);
-				require(state && state->surface == SurfaceKind::Synthesis,
+				require(state && state->surface == SurfaceKind::EditGrid,
 					"synthetic synthesis surface was not recognized");
 				require(state->layout == LayoutKind::Standard
 					&& state->activeEncoderMask == mask,
@@ -134,10 +134,56 @@ namespace
 				"held DATA ENTRY switch did not suppress LCD targets");
 			if(model == md::MachineModel::Monomachine)
 			{
-				auto polyMode = full;
-				setLedBank(polyMode, 0x25, 0xed);
-				require(!classify(polyMode, model),
-					"MM poly mode retained synthesis targets");
+				for(const auto lowTrackBits : {uint8_t{0x0}, uint8_t{0x6}, uint8_t{0xd}})
+				{
+					auto otherTrack = full;
+					setLedBank(otherTrack, 0x25,
+						static_cast<uint8_t>(0xe0 | lowTrackBits));
+					require(classify(otherTrack, model).has_value(),
+						"MM track-colour LEDs disabled the EDIT grid");
+				}
+				for(const auto page25 : {uint8_t{0xd9}, uint8_t{0xb9}, uint8_t{0x79}})
+				{
+					auto page = full;
+					setLedBank(page, 0x25, page25);
+					require(classify(page, model).has_value(),
+						"MM DATA page 1-3 was not recognized");
+				}
+				for(const auto page26 : {uint8_t{0xd6}, uint8_t{0xd5}, uint8_t{0xd3}})
+				{
+					auto page = full;
+					setLedBank(page, 0x25, 0xf9);
+					setLedBank(page, 0x26, page26);
+					require(classify(page, model).has_value(),
+						"MM DATA page 4-6 was not recognized");
+				}
+				for(const auto special : {std::pair{uint8_t{0x09}, uint8_t{0x57}},
+					std::pair{uint8_t{0x09}, uint8_t{0x17}},
+					std::pair{uint8_t{0xed}, uint8_t{0x17}}})
+				{
+					auto page = full;
+					setLedBank(page, 0x25, special.first);
+					setLedBank(page, 0x26, special.second);
+					require(classify(page, model).has_value(),
+						"MM MIDI/Poly DATA surface was not recognized");
+				}
+				auto multiEnvelope = full;
+				setLedBank(multiEnvelope, 0x25, 0xf9);
+				setLedBank(multiEnvelope, 0x26, 0x57);
+				const auto multiEnvelopeState = classify(multiEnvelope, model);
+				require(multiEnvelopeState
+					&& multiEnvelopeState->activeEncoderMask == 0x0f,
+					"MM MULTI ENV ADSR controls were not recognized");
+			}
+			else
+			{
+				for(const auto bank22 : {uint8_t{0x74}, uint8_t{0xb4}, uint8_t{0xd4}})
+				{
+					auto page = full;
+					setLedBank(page, 0x22, bank22);
+					require(classify(page, model).has_value(),
+						"MD DATA page was not recognized");
+				}
 			}
 			require(!classify(makeStandardPanel(model, 0), model),
 				"empty synthesis grid was interactive");
@@ -208,17 +254,21 @@ namespace
 		setLedBank(after, 0x26, 0x00);
 		setLedBank(after, 0x27, 0x00);
 		setLedBank(after, 0x25, 0x0b);
-		setLedBank(after, 0x26, 0xf8);
+		setLedBank(after, 0x26, 0xb8);
 		setLedBank(after, 0x27, 0xfe);
 		require(!classificationLedsChanged(before, after,
 			md::MachineModel::Monomachine), "ignored MM LEDs changed classification");
 		setLedBank(after, 0x25, 0x04);
-		require(classificationLedsChanged(before, after,
-			md::MachineModel::Monomachine), "MM poly-mode LED did not invalidate classification");
+		require(!classificationLedsChanged(before, after,
+			md::MachineModel::Monomachine), "MM track LED invalidated classification");
 		setLedBank(after, 0x25, 0x10);
 		require(classificationLedsChanged(before, after,
 			md::MachineModel::Monomachine), "relevant MM LED did not invalidate classification");
 		setLedBank(after, 0x25, 0x00);
+		setLedBank(after, 0x26, 0x40);
+		require(classificationLedsChanged(before, after,
+			md::MachineModel::Monomachine), "MM song-mode LED did not invalidate classification");
+		setLedBank(after, 0x26, 0x00);
 		setLedBank(after, 0x27, 0x01);
 		require(classificationLedsChanged(before, after,
 			md::MachineModel::Monomachine), "MM record LED did not invalidate classification");
@@ -230,7 +280,7 @@ namespace
 		for(const auto layout : {LayoutKind::Standard, LayoutKind::Lfo,
 			LayoutKind::MasterFx})
 		{
-			State state{SurfaceKind::Synthesis, layout, 0xff, 1};
+			State state{SurfaceKind::EditGrid, layout, 0xff, 1};
 			for(int y = -1; y <= 64; ++y)
 				for(int x = -1; x <= 128; ++x)
 				{
@@ -320,7 +370,7 @@ namespace
 	{
 		using namespace mdJucePlugin::lcdInteraction;
 		static_assert(commandFineScale == 0.2);
-		State state{SurfaceKind::Synthesis, LayoutKind::Standard, 0xff, 42};
+		State state{SurfaceKind::EditGrid, LayoutKind::Standard, 0xff, 42};
 		DragGesture drag;
 		require(drag.begin(state, 2, 50, 100), "qualified drag did not begin");
 		require(drag.drag(state, 50, 99.5, 1.0, 8) == 0,
