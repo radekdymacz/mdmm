@@ -367,6 +367,32 @@ int main()
 			publishedPanel = makeStandardPanel(model);
 			mdJucePlugin::EditorIdentityTestAccess::publishPanel(*editor, publishedPanel);
 		}
+		else
+		{
+			for(const auto bank22 : {uint8_t{0x74}, uint8_t{0xb4}, uint8_t{0xd4}})
+			{
+				auto transitionPanel = makeStandardPanel(model);
+				setLedBank(transitionPanel, 0x22, bank22);
+				mdJucePlugin::EditorIdentityTestAccess::publishPanel(*editor,
+					transitionPanel);
+				const auto transitionState =
+					mdJucePlugin::EditorIdentityTestAccess::interactionState(*editor);
+				require(transitionState && transitionState->surface == SurfaceKind::EditGrid
+					&& transitionState->activeEncoderMask == 0xff,
+					"MD page transition lost the EDIT grid");
+
+				instrumentation.reset();
+				context.ProcessMouseMove(publishedPoint.x, publishedPoint.y, 0);
+				context.ProcessMouseButtonDown(0, 0);
+				context.ProcessMouseMove(publishedPoint.x + 30, publishedPoint.y, 0);
+				context.ProcessMouseButtonUp(0, 0);
+				require(requireOnlyEncoderInput(instrumentation, model, 0,
+					"MD page transition drag") != 0,
+					"MD page transition ignored pointer drag");
+			}
+			publishedPanel = makeStandardPanel(model);
+			mdJucePlugin::EditorIdentityTestAccess::publishPanel(*editor, publishedPanel);
+		}
 		instrumentation.reset();
 		context.ProcessMouseMove(publishedPoint.x, publishedPoint.y, 0);
 		context.ProcessMouseButtonDown(0, 0);

@@ -158,6 +158,16 @@ namespace
 						"MM DATA page 4-6 was not recognized");
 				}
 			}
+			else
+			{
+				for(const auto bank22 : {uint8_t{0x74}, uint8_t{0xb4}, uint8_t{0xd4}})
+				{
+					auto page = full;
+					setLedBank(page, 0x22, bank22);
+					require(classify(page, model).has_value(),
+						"MD DATA page was not recognized");
+				}
+			}
 			require(!classify(makeStandardPanel(model, 0), model),
 				"empty synthesis grid was interactive");
 		}

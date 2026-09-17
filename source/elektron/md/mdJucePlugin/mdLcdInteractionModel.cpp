@@ -80,8 +80,10 @@ namespace mdJucePlugin::lcdInteraction
 					&& (_panel.getLedBankRaw(0x26) & g_mmSongModeMask) != 0
 					&& (_panel.getLedBankRaw(0x27) & g_mmRecordMask) == 0x01;
 			}
-			return (_panel.getLedBankRaw(0x22)
-					& (g_mdDataPageMask | g_mdPatternSongModeMask)) == 0x70
+			const auto bank22 = _panel.getLedBankRaw(0x22);
+			const auto activePages = static_cast<uint8_t>((~bank22) & g_mdDataPageMask);
+			return activePages != 0 && (activePages & (activePages - 1)) == 0
+				&& (bank22 & g_mdPatternSongModeMask) == 0x10
 				&& (_panel.getLedBankRaw(0x23) & g_mdRecordMask) == 0x10;
 		}
 

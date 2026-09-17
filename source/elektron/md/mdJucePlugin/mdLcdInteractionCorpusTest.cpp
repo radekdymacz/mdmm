@@ -221,13 +221,35 @@ namespace
 		require(found == expected.size(), "missing MM EDIT page capture");
 	}
 
+	void testMachinedrumEditPages()
+	{
+		const std::unordered_map<std::string, uint8_t> expected{
+			{"working-synthesis", 0xff}, {"working-effects", 0xff},
+			{"working-routing", 0xff},
+		};
+		unsigned found = 0;
+		for(const auto& row : readTsv(generatedRoot + "/md-capture-ledger.tsv"))
+		{
+			const auto match = expected.find(row.at("id"));
+			if(match == expected.end())
+				continue;
+			const auto state = mdJucePlugin::lcdInteraction::classify(
+				loadPanel(row), md::MachineModel::Machinedrum);
+			require(state && state->layout == mdJucePlugin::lcdInteraction::LayoutKind::Standard
+				&& state->activeEncoderMask == match->second,
+				"MD EDIT page was not interactive: " + row.at("id"));
+			++found;
+		}
+		require(found == expected.size(), "missing MD EDIT page capture");
+	}
+
 	void testKnownNegativeRoutes()
 	{
 		const std::unordered_map<std::string, std::vector<std::string>> negatives{
 			{"md", {"kit-root", "kit-load-list", "kit-save-list", "kit-name-editor",
 				"kit-name-palette", "kit-edit-track", "song-root", "song-mode",
 				"song-load-list", "song-save-list", "song-name-editor",
-				"song-name-palette", "working-effects", "working-routing", "tempo",
+				"song-name-palette", "tempo",
 				"tap-tempo", "tap-tempo-measured", "operation-copy",
 				"pattern-bank-sticky", "scale-setup", "mute", "mute-minimized",
 				"accent", "swing", "slide", "global-root", "global-slots",
@@ -272,6 +294,7 @@ int main()
 	{
 		testEveryEngine();
 		testDirectPagesAndHeldOverlays();
+		testMachinedrumEditPages();
 		testMonomachineEditPages();
 		testKnownNegativeRoutes();
 		std::cout << "PASS: private corpus replayed 156 engines, direct pages, overlays, and negative routes\n";
