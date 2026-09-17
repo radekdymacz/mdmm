@@ -157,6 +157,22 @@ namespace
 					require(classify(page, model).has_value(),
 						"MM DATA page 4-6 was not recognized");
 				}
+				for(const auto special : {std::pair{uint8_t{0x09}, uint8_t{0x57}},
+					std::pair{uint8_t{0xed}, uint8_t{0x17}}})
+				{
+					auto page = full;
+					setLedBank(page, 0x25, special.first);
+					setLedBank(page, 0x26, special.second);
+					require(classify(page, model).has_value(),
+						"MM MIDI/Poly DATA surface was not recognized");
+				}
+				auto multiEnvelope = full;
+				setLedBank(multiEnvelope, 0x25, 0xf9);
+				setLedBank(multiEnvelope, 0x26, 0x57);
+				const auto multiEnvelopeState = classify(multiEnvelope, model);
+				require(multiEnvelopeState
+					&& multiEnvelopeState->activeEncoderMask == 0x0f,
+					"MM MULTI ENV ADSR controls were not recognized");
 			}
 			else
 			{

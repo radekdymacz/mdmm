@@ -203,7 +203,8 @@ namespace
 			{"working-synthesis", 0xf7}, {"working-amplification", 0xff},
 			{"working-filter", 0xff}, {"working-effects", 0xff},
 			{"working-lfo1", 0xff}, {"working-lfo2", 0xff},
-			{"working-lfo3", 0xff},
+			{"working-lfo3", 0xff}, {"midi-sequencer", 0xff},
+			{"poly", 0xf7}, {"multi-envelope", 0x0f},
 		};
 		unsigned found = 0;
 		for(const auto& row : readTsv(generatedRoot + "/mm-capture-ledger.tsv"))
@@ -261,10 +262,10 @@ namespace
 				"global-sync-tempo-out", "global-sync-control-out",
 				"song-pattern-row", "song-mute-mask", "grid-record",
 				"parameter-lock"}},
-			{"mm", {"midi-sequencer", "multi-envelope", "tempo", "tap-tempo",
+			{"mm", {"tempo", "tap-tempo",
 				"tap-tempo-measured", "kit-root", "kit-load-list", "kit-save-list",
 				"kit-name-editor", "kit-name-palette", "operation-copy", "mute",
-				"mute-minimized", "poly", "grid-record", "trig-keyboard",
+				"mute-minimized", "grid-record", "trig-keyboard",
 				"trig-chord-list", "parameter-lock", "step-record",
 				"global-master-tune", "global-midi-channels", "global-turbo",
 				"song-track-transpose", "song-edit-scroll-row"}},

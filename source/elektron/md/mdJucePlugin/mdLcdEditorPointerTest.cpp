@@ -364,6 +364,36 @@ int main()
 						"MM track/page transition drag") != 0,
 						"MM track/page transition ignored pointer drag");
 				}
+			struct SpecialSurface
+			{
+				uint8_t bank25;
+				uint8_t bank26;
+				uint8_t mask;
+			};
+			for(const auto special : {SpecialSurface{0x09, 0x57, 0xff},
+				SpecialSurface{0xed, 0x17, 0xff},
+				SpecialSurface{0xf9, 0x57, 0x0f}})
+			{
+				auto transitionPanel = makeStandardPanel(model);
+				setLedBank(transitionPanel, 0x25, special.bank25);
+				setLedBank(transitionPanel, 0x26, special.bank26);
+				mdJucePlugin::EditorIdentityTestAccess::publishPanel(*editor,
+					transitionPanel);
+				const auto transitionState =
+					mdJucePlugin::EditorIdentityTestAccess::interactionState(*editor);
+				require(transitionState
+					&& transitionState->activeEncoderMask == special.mask,
+					"MM special DATA surface lost its qualified controls");
+
+				instrumentation.reset();
+				context.ProcessMouseMove(publishedPoint.x, publishedPoint.y, 0);
+				context.ProcessMouseButtonDown(0, 0);
+				context.ProcessMouseMove(publishedPoint.x + 30, publishedPoint.y, 0);
+				context.ProcessMouseButtonUp(0, 0);
+				require(requireOnlyEncoderInput(instrumentation, model, 0,
+					"MM special DATA surface drag") != 0,
+					"MM special DATA surface ignored pointer drag");
+			}
 			publishedPanel = makeStandardPanel(model);
 			mdJucePlugin::EditorIdentityTestAccess::publishPanel(*editor, publishedPanel);
 		}

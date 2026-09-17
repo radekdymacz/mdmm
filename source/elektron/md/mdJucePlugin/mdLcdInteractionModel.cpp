@@ -76,9 +76,17 @@ namespace mdJucePlugin::lcdInteraction
 					((_panel.getLedBankRaw(0x25) & g_mmDataPages03Mask) >> 4)
 					| ((_panel.getLedBankRaw(0x26) & g_mmDataPages46Mask) << 4));
 				const auto activePages = static_cast<uint8_t>((~pages) & 0x7f);
-				return activePages != 0 && (activePages & (activePages - 1)) == 0
-					&& (_panel.getLedBankRaw(0x26) & g_mmSongModeMask) != 0
-					&& (_panel.getLedBankRaw(0x27) & g_mmRecordMask) == 0x01;
+				const auto oneDataPage = activePages != 0
+					&& (activePages & (activePages - 1)) == 0;
+				const auto mode = _panel.getLedBankRaw(0x26);
+				const auto recordOff = (_panel.getLedBankRaw(0x27) & g_mmRecordMask) != 0;
+				const auto normalEdit = oneDataPage && (mode & g_mmSongModeMask) != 0;
+				const auto poly = oneDataPage && (mode
+					& (g_mmDataPages46Mask | g_mmSongModeMask)) == g_mmDataPages46Mask;
+				const auto midiSequencer = (pages & 0x0f) == 0
+					&& (mode & (g_mmDataPages46Mask | g_mmSongModeMask))
+						== (g_mmDataPages46Mask | g_mmSongModeMask);
+				return recordOff && (normalEdit || poly || midiSequencer);
 			}
 			const auto bank22 = _panel.getLedBankRaw(0x22);
 			const auto activePages = static_cast<uint8_t>((~bank22) & g_mdDataPageMask);
@@ -152,6 +160,29 @@ namespace mdJucePlugin::lcdInteraction
 				for(int y = rect.y + 2; y < rect.y + 31; y += 2)
 					if(!_panel.getLcdPixel(static_cast<unsigned>(rect.x + rect.width - 1),
 						static_cast<unsigned>(y)))
+						return false;
+			}
+			return true;
+		}
+
+		bool mmMultiEnvelopeContext(const md::FrontPanel& _panel)
+		{
+			return (_panel.getLedBankRaw(0x25) & g_mmDataPages03Mask)
+					== g_mmDataPages03Mask
+				&& (_panel.getLedBankRaw(0x26)
+					& (g_mmDataPages46Mask | g_mmSongModeMask))
+					== (g_mmDataPages46Mask | g_mmSongModeMask)
+				&& (_panel.getLedBankRaw(0x27) & g_mmRecordMask) != 0;
+		}
+
+		bool hasStandardTopRow(const md::FrontPanel& _panel)
+		{
+			for(unsigned index = 0; index < 4; ++index)
+			{
+				const auto rect = encoderRect(LayoutKind::Standard, index);
+				for(int x = rect.x + 1; x < rect.x + rect.width; x += 2)
+					if(!_panel.getLcdPixel(static_cast<unsigned>(x),
+						static_cast<unsigned>(rect.y)))
 						return false;
 			}
 			return true;
@@ -231,6 +262,17 @@ namespace mdJucePlugin::lcdInteraction
 							identityToken(surface, identity)};
 					return std::nullopt;
 				}
+		}
+
+		if(_model == md::MachineModel::Monomachine
+			&& mmMultiEnvelopeContext(_panel) && hasStandardTopRow(_panel))
+		{
+			// MULTI ENV exposes the four top-row ADSR controls. PORT/TUNE and
+			// the lower graph are status/visual content, not qualified A-H cells.
+			constexpr uint8_t mask = 0x0f;
+			return State{SurfaceKind::EditGrid, LayoutKind::Standard, mask,
+				identityToken(SurfaceKind::EditGrid, identity,
+					standardLabelFingerprint(_panel))};
 		}
 
 		if(!standardEditPanelContext(_panel, _model) || !hasStandardFrame(_panel))
