@@ -8,6 +8,9 @@ param(
     [ValidateSet('Visual Studio 17 2022', 'Ninja Multi-Config')]
     [string] $Generator = 'Visual Studio 17 2022',
     [string] $CompilerLauncher = '',
+    [ValidateSet('none', 'generate', 'use')]
+    [string] $PgoMode = 'none',
+    [string] $PgoDirectory = '',
     [switch] $WithTests,
     [switch] $BuildOnly,
     [switch] $TestOnly
@@ -44,6 +47,9 @@ if ($env:OS -ne 'Windows_NT') {
 }
 if ($BuildOnly -and $TestOnly) {
     throw '-BuildOnly and -TestOnly are mutually exclusive.'
+}
+if ($PgoMode -ne 'none' -and -not $PgoDirectory) {
+    throw '-PgoDirectory is required when -PgoMode is generate or use.'
 }
 
 $SourceDir = (Resolve-Path -LiteralPath $SourceDir).Path
@@ -86,6 +92,12 @@ if (-not $TestOnly) {
         '-Dgearmulator_SYNTH_NODALRED2X=OFF',
         '-Dgearmulator_SYNTH_JE8086=OFF'
     )
+    if ($PgoMode -ne 'none') {
+        $configureArgs += @(
+            "-DGEARMULATOR_MDMM_MSVC_PGO_MODE=$PgoMode",
+            "-DGEARMULATOR_MDMM_MSVC_PGO_DIRECTORY=$([IO.Path]::GetFullPath($PgoDirectory))"
+        )
+    }
     if ($Generator -eq 'Visual Studio 17 2022') {
         $configureArgs += @('-A', 'x64')
     } else {
@@ -211,6 +223,7 @@ $receipt = [ordered]@{
     created_utc = [DateTime]::UtcNow.ToString('o')
     configuration = $Configuration
     architecture = 'x64'
+    pgo_mode = $PgoMode
     source_commit = $sourceCommit
     dsp56300_commit = $dspCommit
     mc68k_commit = $mc68kCommit
