@@ -216,8 +216,8 @@ $receiptArtifacts = foreach ($artifact in $artifacts) {
 }
 
 $sourceCommit = (& $git -C $SourceDir rev-parse HEAD).Trim()
-$dspCommit = (& $git -C (Join-Path $SourceDir 'source\dsp56300') rev-parse HEAD).Trim()
-$mc68kCommit = (& $git -C (Join-Path $SourceDir 'source\mc68k') rev-parse HEAD).Trim()
+$dspCommit = (& $git -C $SourceDir rev-parse 'HEAD:source/dsp56300').Trim()
+$mc68kCommit = (& $git -C $SourceDir rev-parse 'HEAD:source/mc68k').Trim()
 $pgoTargets = @()
 if ($PgoMode -ne 'none') {
     $cacheLine = Select-String -LiteralPath (Join-Path $BuildDir 'CMakeCache.txt') `
