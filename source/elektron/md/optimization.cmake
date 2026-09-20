@@ -95,12 +95,25 @@ if(NOT GEARMULATOR_MDMM_MSVC_PGO_MODE STREQUAL "none")
 	if(GEARMULATOR_MDMM_MSVC_PGO_MODE STREQUAL "generate")
 		file(MAKE_DIRECTORY "${_mdmm_msvc_profile_dir}")
 	endif()
+	# Train the hostable VST3 images.  At profile-use time, apply each model's
+	# trained database to the standalone image as well; both images consume the
+	# same /GL core libraries, and LINK validates whether the profile matches.
 	set(_mdmm_msvc_targets
 		mdJucePlugin_VST3 mmJucePlugin_VST3)
+	if(GEARMULATOR_MDMM_MSVC_PGO_MODE STREQUAL "use")
+		list(APPEND _mdmm_msvc_targets
+			mdJucePlugin_Standalone mmJucePlugin_Standalone)
+	endif()
 	set(_mdmm_msvc_applied_targets "")
 	foreach(_mdmm_target IN LISTS _mdmm_msvc_targets)
 		if(TARGET ${_mdmm_target})
-			set(_mdmm_pgd "${_mdmm_msvc_profile_dir}/${_mdmm_target}.pgd")
+			set(_mdmm_profile_target "${_mdmm_target}")
+			if(_mdmm_target STREQUAL "mdJucePlugin_Standalone")
+				set(_mdmm_profile_target "mdJucePlugin_VST3")
+			elseif(_mdmm_target STREQUAL "mmJucePlugin_Standalone")
+				set(_mdmm_profile_target "mmJucePlugin_VST3")
+			endif()
+			set(_mdmm_pgd "${_mdmm_msvc_profile_dir}/${_mdmm_profile_target}.pgd")
 			if(GEARMULATOR_MDMM_MSVC_PGO_MODE STREQUAL "generate")
 				target_link_options(${_mdmm_target} PRIVATE
 					"$<$<CONFIG:Release>:/GENPROFILE:PGD=${_mdmm_pgd}>")

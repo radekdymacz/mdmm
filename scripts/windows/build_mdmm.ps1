@@ -218,12 +218,30 @@ $receiptArtifacts = foreach ($artifact in $artifacts) {
 $sourceCommit = (& $git -C $SourceDir rev-parse HEAD).Trim()
 $dspCommit = (& $git -C (Join-Path $SourceDir 'source\dsp56300') rev-parse HEAD).Trim()
 $mc68kCommit = (& $git -C (Join-Path $SourceDir 'source\mc68k') rev-parse HEAD).Trim()
+$pgoTargets = @()
+if ($PgoMode -ne 'none') {
+    $cacheLine = Select-String -LiteralPath (Join-Path $BuildDir 'CMakeCache.txt') `
+        -Pattern '^GEARMULATOR_MDMM_MSVC_OPTIMIZATION_APPLIED_TARGETS:INTERNAL=(.*)$'
+    if ($cacheLine.Matches.Count -ne 1) {
+        throw 'The configured build did not record its MSVC PGO targets.'
+    }
+    $pgoTargets = @($cacheLine.Matches[0].Groups[1].Value -split ';' |
+        Where-Object { $_ })
+    if ($PgoMode -eq 'use') {
+        $expectedPgoTargets = @('mdJucePlugin_VST3', 'mmJucePlugin_VST3',
+            'mdJucePlugin_Standalone', 'mmJucePlugin_Standalone')
+        if (@(Compare-Object $expectedPgoTargets $pgoTargets).Count -ne 0) {
+            throw "Profile-use build did not cover every product target: $($pgoTargets -join ', ')"
+        }
+    }
+}
 $receipt = [ordered]@{
     schema = 'gearmulator-elektron-windows-build-v1'
     created_utc = [DateTime]::UtcNow.ToString('o')
     configuration = $Configuration
     architecture = 'x64'
     pgo_mode = $PgoMode
+    pgo_targets = $pgoTargets
     source_commit = $sourceCommit
     dsp56300_commit = $dspCommit
     mc68k_commit = $mc68kCommit
