@@ -19,6 +19,7 @@ on:
       - "CMakeLists.txt"
       - "base.cmake"
       - "scripts/windows/build_mdmm.ps1"
+      - "scripts/windows/build_mdmm_pgo.ps1"
       - "source/3rdparty/**"
       - "source/CMakeLists.txt"
       - "source/JUCE"

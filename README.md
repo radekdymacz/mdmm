@@ -36,6 +36,9 @@ Link to a short demo on Youtube:
 
 ## Implementation references
 
+- [Linux installation](doc/linux-installation.md): runtime requirements and VST3 setup.
+- [Windows/Linux PGO builds](doc/mdmm-x64-pgo.md) and
+  [Mac optimization builds](doc/mdmm-apple-optimization.md).
 - [TurboMIDI negotiation](doc/turbomidi.md): a worked exchange, firmware observations,
   and Gearmulator sender policy.
 
