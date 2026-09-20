@@ -246,7 +246,9 @@ $receipt = [ordered]@{
     dsp56300_commit = $dspCommit
     mc68k_commit = $mc68kCommit
     firmware_included = $false
-    tests_run = [bool]$WithTests
+    tests_run = $true
+    plugin_smoke_tests_run = $true
+    full_test_suite_run = [bool]$WithTests
     artifacts = $receiptArtifacts
 }
 
