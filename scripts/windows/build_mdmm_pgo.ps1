@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string] $SourceDir = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path,
+    [string] $SourceDir = '',
     [string] $BuildDir = '',
     [string] $OutputDir = '',
     [string] $ProfileDir = '',
@@ -36,7 +36,26 @@ function Find-ExactlyOne {
     return $matches[0].FullName
 }
 
+function Find-PgoRuntimeDirectory {
+    $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+    if (-not (Test-Path -LiteralPath $vswhere)) {
+        throw "Visual Studio locator not found: $vswhere"
+    }
+    $installationPath = (& $vswhere -latest -products * -property installationPath).Trim()
+    if (-not $installationPath) { throw 'No Visual Studio installation was found.' }
+    $runtime = @(Get-ChildItem (Join-Path $installationPath 'VC\Tools\MSVC') `
+        -Recurse -File -Filter pgort140.dll |
+        Where-Object FullName -like '*\bin\Hostx64\x64\pgort140.dll')
+    if ($runtime.Count -ne 1) {
+        throw "Expected one x64 pgort140.dll, found $($runtime.Count)."
+    }
+    return $runtime[0].DirectoryName
+}
+
 if ($env:OS -ne 'Windows_NT') { throw 'build_mdmm_pgo.ps1 requires Windows.' }
+if (-not $SourceDir) {
+    $SourceDir = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+}
 $SourceDir = (Resolve-Path -LiteralPath $SourceDir).Path
 $MdFirmware = (Resolve-Path -LiteralPath $MdFirmware).Path
 $MmFirmware = (Resolve-Path -LiteralPath $MmFirmware).Path
@@ -48,16 +67,16 @@ $OutputDir = [IO.Path]::GetFullPath($OutputDir)
 $ProfileDir = [IO.Path]::GetFullPath($ProfileDir)
 
 $buildScript = Join-Path $PSScriptRoot 'build_mdmm.ps1'
-$common = @(
-    '-SourceDir', $SourceDir,
-    '-BuildDir', $BuildDir,
-    '-OutputDir', $OutputDir,
-    '-Configuration', 'Release',
-    '-Parallel', "$Parallel",
-    '-Generator', $Generator,
-    '-PgoDirectory', $ProfileDir
-)
-if ($CompilerLauncher) { $common += @('-CompilerLauncher', $CompilerLauncher) }
+$common = @{
+    SourceDir = $SourceDir
+    BuildDir = $BuildDir
+    OutputDir = $OutputDir
+    Configuration = 'Release'
+    Parallel = $Parallel
+    Generator = $Generator
+    PgoDirectory = $ProfileDir
+}
+if ($CompilerLauncher) { $common.CompilerLauncher = $CompilerLauncher }
 
 New-Item -ItemType Directory -Path $ProfileDir -Force | Out-Null
 Get-ChildItem -LiteralPath $ProfileDir -File |
@@ -70,12 +89,17 @@ if ($LASTEXITCODE -ne 0) { throw 'Instrumented Windows build failed.' }
 $productRoot = Join-Path $SourceDir 'bin\plugins\Release'
 $vst3Root = Join-Path $productRoot 'VST3'
 $pluginTester = Find-ExactlyOne -Root $BuildDir -Filter 'pluginTester.exe'
+$pgoRuntimeDirectory = Find-PgoRuntimeDirectory
+Get-ChildItem -LiteralPath $vst3Root -Recurse -File -Filter '*.pgc' `
+    -ErrorAction SilentlyContinue | Remove-Item -Force
 $training = @(
     @{ Name = 'MD'; Plugin = Join-Path $vst3Root 'Gearmulator MD.vst3'; Firmware = $MdFirmware },
     @{ Name = 'MM'; Plugin = Join-Path $vst3Root 'Gearmulator MM.vst3'; Firmware = $MmFirmware }
 )
 
 try {
+    $previousPath = $env:PATH
+    $env:PATH = "$pgoRuntimeDirectory;$previousPath"
     foreach ($item in $training) {
         $privateCopy = Join-Path $vst3Root ([IO.Path]::GetFileName($item.Firmware))
         Copy-Item -LiteralPath $item.Firmware -Destination $privateCopy -Force
@@ -93,6 +117,7 @@ try {
         }
     }
 } finally {
+    $env:PATH = $previousPath
     Get-ChildItem -LiteralPath $vst3Root -File -ErrorAction SilentlyContinue |
         Where-Object { $_.Extension -match '^\.(bin|rom|nvram|syx)$' } |
         Remove-Item -Force
@@ -101,6 +126,10 @@ try {
 foreach ($target in @('mdJucePlugin_VST3', 'mmJucePlugin_VST3')) {
     $pgd = Join-Path $ProfileDir "$target.pgd"
     if (-not (Test-Path -LiteralPath $pgd)) { throw "Missing profile database: $pgd" }
+}
+$generatedProfiles = @(Get-ChildItem -LiteralPath $vst3Root -Recurse -File -Filter '*.pgc')
+foreach ($profile in $generatedProfiles) {
+    Move-Item -LiteralPath $profile.FullName -Destination $ProfileDir -Force
 }
 $counts = @(Get-ChildItem -LiteralPath $ProfileDir -File -Filter '*.pgc')
 if ($counts.Count -eq 0) { throw "Training produced no .pgc files in $ProfileDir" }
