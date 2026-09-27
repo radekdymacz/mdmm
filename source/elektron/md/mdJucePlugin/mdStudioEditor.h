@@ -55,5 +55,6 @@ namespace mdJucePlugin
 		int m_learnTrack = -1;
 		int m_learnIndex = -1;
 		mdDesk::Desk::Firmware m_lastFirmware = mdDesk::Desk::Firmware::Missing;
+		std::vector<uint8_t> m_lastLcd;
 	};
 }
