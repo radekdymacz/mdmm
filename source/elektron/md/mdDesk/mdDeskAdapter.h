@@ -3,8 +3,12 @@
 #include "mdDeskModel.h"
 #include "mdDeskTelemetry.h"
 
+#include "mdDeskSds.h"
+
 #include "deskCore/deskCore.h"
 #include "deskCore/deskPush.h"
+
+#include "elektronData/mdSamples.h"
 
 #include <cstdint>
 #include <functional>
@@ -76,5 +80,12 @@ namespace mdDesk
 		virtual void sendModulation(uint8_t _track, uint8_t _param, uint8_t _value, const Documents& _view) = 0;
 
 		virtual const Telemetry& telemetry() const = 0;
+
+		// P9, UW samples: _upload to ROM slot _slot (0-47) as SDS, paced by the machine's handshake
+		// (SdsSender); the device's other SysEx waits meanwhile. The reason when it cannot start ("" =
+		// started).
+		virtual std::string sendSample(uint8_t _slot, const elektronData::MdSampleUpload& _upload) = 0;
+		virtual void cancelSample() = 0;
+		virtual const SdsSender::Progress& sampleProgress() const = 0;
 	};
 }
