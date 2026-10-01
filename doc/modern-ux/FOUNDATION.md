@@ -156,6 +156,7 @@ Configure a test build with `-DBUILD_TESTING=ON -Dgearmulator_MDMM_DIAGNOSTICS=O
 - `ctest -E "Plugin|_AU|VST|FirmwareTest"` runs the unit tests.
 - `mdDeskFirmwareTest <MD ROM> [hw|p4|playload]` and `mmDeskFirmwareTest <MM ROM>` run the firmware smoke tests, including the contract check; `GEARMULATOR_MD_FIRMWARE_BIN=<MD ROM> ctest -R mdSessionFirmwareTest` runs the session without an editor.
 - `GEARMULATOR_MDSTUDIO_SELFTEST=1|p4|p4hw|p5|p6audio|p7` and `GEARMULATOR_MMSTUDIO_SELFTEST=1|mmcpu|p4|p6audio|p7` run the in-plugin self-tests on the standalone apps (MM `p4`: the MM-P4 features ported in P8).
+- `mdDeskFirmwareTest <MD ROM> sampler` does what the SAMPLER card's Set up sampling and the chop grid do (RAM-R1/RAM-P1 over unsaved ROM machines, then trigs and STRT locks) and checks the working kit keeps every unsaved edit across the pattern dumps.
 - `mdDeskFirmwareTest <MD ROM> hostclock` and `mmDeskFirmwareTest <MM ROM> hostclock` check that the machines follow a host's clock after `followHost`.
 - `mmDeskFirmwareTest <MM ROM> p4` checks the MM-P4 features on the firmware (POLY, MIDI track mutes through the MUTE window, LIVE and GRID RECORDING, MULTI TRIG, PORTAMENTO, the MULTI MAP, another song, undo of a slot write); `mmDeskFirmwareTest <MM ROM> hw` drives a second emulated Monomachine as the HW MIDI peer through the plug-in's `wirePort` at DIN speed, with the test playing the person at the machine (SYSEX RECV, `hwSend`, TRANSPORT ACCEPT).
 

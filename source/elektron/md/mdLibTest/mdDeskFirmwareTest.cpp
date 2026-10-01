@@ -7,6 +7,7 @@
 //   mdDeskFirmwareTest <ROM>          the smoke test (edits, read-backs, timing)
 //   mdDeskFirmwareTest <ROM> probe    also: telemetry RAM, group removal
 //   mdDeskFirmwareTest <ROM> playload PLAY while the desk loads in the background
+//   mdDeskFirmwareTest <ROM> samples  P9: WAV files into UW ROM slots (SDS), the waveforms read back
 //
 // Exits 77 (skip) without arguments.
 
@@ -24,7 +25,10 @@
 #include "elektronData/mdWorkingKit.h"
 #include "elektronData/syxImport.h"
 
+#include "elektronData/mdSamples.h"
+
 #include "mdLib/mdautomation.h"
+#include "mdLib/mddeskdevice.h"
 #include "mdLib/mdfrontpanel.h"
 #include "mdLib/mdsequencerstate.h"
 
@@ -318,6 +322,19 @@ namespace
 				m_lastRegion = region;
 				m_desk->onWorkingKitMemory(region);
 			}
+			if(m_sampleWanted)
+			{
+				const auto memory = md::sampleMemoryOf(m_machine.hardware());
+				const auto signature = ed::mdSampleSignature(memory);
+				auto& uc = m_machine.hardware().getUC();
+				const bool quiet = !uc.flashDirty() || uc.flashIdleCycles() > 12'000'000;
+				if(signature == m_sampleSeen && quiet && (signature != m_samplePublished || !m_samplesDoc))
+				{
+					m_samplePublished = signature;
+					m_desk->onSampleBank(ed::readMdSampleBank(memory));
+				}
+				m_sampleSeen = signature;
+			}
 			m_desk->tick();
 		}
 
@@ -350,6 +367,14 @@ namespace
 			}
 			else if(t == "telemetry")
 				m_publishedTelemetry = _m;
+			else if(t == "samples")
+				m_samplesDoc = *_m.find("doc");
+			else if(t == "sampleLoad")
+			{
+				m_sampleLoad = _m;
+				if(_m.find("state")->asString() != "sending")
+					std::printf("  sampleLoad %s: %s\n", _m.find("state")->asString().c_str(), _m.find("text")->asString().c_str());
+			}
 		}
 
 		Machine m_machine;
@@ -369,6 +394,10 @@ namespace
 		std::optional<Value> m_machineDoc;
 		bool m_tx = false;
 		std::optional<Value> m_publishedTelemetry;
+		std::optional<Value> m_samplesDoc;
+		std::optional<Value> m_sampleLoad;
+		uint64_t m_sampleSeen = 0, m_samplePublished = 0;
+		bool m_sampleWanted = false;
 		Bytes m_lastRegion;
 		md::SequencerState m_leds;
 		uint64_t m_ledsAt = 0;
@@ -378,6 +407,10 @@ namespace
 
 	public:
 		const mdDesk::Telemetry& telemetry() const { return m_lastTelemetry; }
+		// P9: the UW sample bank, as md::DeskDevice publishes it (when the memory changed and has been quiet).
+		void watchSamples() { m_sampleWanted = true; }
+		const std::optional<Value>& samplesDoc() const { return m_samplesDoc; }
+		const std::optional<Value>& sampleLoad() const { return m_sampleLoad; }
 		std::string machineString(std::initializer_list<const char*> _path) const
 		{
 			if(!m_machineDoc)
@@ -1707,12 +1740,187 @@ namespace
 		check(rig.lastResult() && rig.lastResult()->find("note")->asString().empty(), "a second followHost changes nothing");
 	}
 
+	// P9: a WAV into a UW ROM slot through the desk (decode, mono 16-bit, SDS with the machine's
+	// handshake, the name with 0x73), then the slot's waveform as the desk publishes it from the machine's
+	// memory, against the peaks of what was sent. Then RAM-R1 records and RAM 1 shows a take.
+	void samples(Rig& _rig)
+	{
+		std::puts("== SAMPLES: WAV files into ROM slots, the waveforms read back");
+		auto& desk = _rig.desk();
+		auto& hw = _rig.machine().hardware();
+		_rig.runUntil([&] { return hw.isFactoryFlashReadyForReboot(); }, 60000);
+		_rig.watchSamples();
+		check(_rig.runUntil([&] { return _rig.samplesDoc().has_value(); }, 5000), "the samples document comes from memory");
+		if(!_rig.samplesDoc())
+			return;
+		const auto slotDoc = [&](const char* _kind, const int _n) { return _rig.samplesDoc()->find(_kind)->asArray()[size_t(_n)]; };
+		const auto rom0 = slotDoc("rom", 0);
+		std::printf("  ROM-01: %s %d samples at %d Hz; used %d of %d\n", rom0.find("name")->isString() ? rom0.find("name")->asString().c_str() : "-",
+			int(rom0.find("length")->asNumber()), int(rom0.find("rate")->asNumber()), int(_rig.samplesDoc()->find("used")->asNumber()),
+			int(_rig.samplesDoc()->find("capacity")->asNumber()));
+		check(!rom0.find("empty")->asBool() && rom0.find("length")->asNumber() > 0 && rom0.find("peaks")->asArray().size() == 2 * ed::g_mdSampleBins,
+			"factory ROM-01 has a waveform");
+		check(_rig.samplesDoc()->find("ramReadable")->asBool(), "the RAM buffers can be read (DSP table and expander found)");
+
+		// A tone with a shape: a decaying sine, silence, then a half-scale square.
+		const auto make = [](const uint32_t _rate, const size_t _frames, const size_t _channels)
+		{
+			ed::AudioClip c;
+			c.rate = _rate;
+			c.channels.assign(_channels, std::vector<float>(_frames));
+			for(size_t i = 0; i < _frames; ++i)
+			{
+				const double u = double(i) / _frames;
+				const float v = u < 0.5 ? float(0.9 * std::exp(-u * 6) * std::sin(i * 0.07)) : u < 0.6 ? 0.0f : ((i / 40) % 2 ? 0.5f : -0.5f);
+				for(size_t ch = 0; ch < _channels; ++ch)
+					c.channels[ch][i] = ch ? v * 0.5f : v;
+			}
+			return c;
+		};
+		const auto load = [&](const uint8_t _slot, const std::string& _file, const ed::AudioClip& _clip)
+		{
+			const auto wav = ed::encodeWav16(_clip);
+			std::string error;
+			// What the desk sends, as the oracle: the file decoded and prepared the same way.
+			const auto sent = ed::prepareMdSample(*ed::decodeAudioFile(wav, error), _file, 1u << 20, error);
+			const auto t0 = _rig.machine().now();
+			const auto why = desk.loadSample(_slot, _file, wav);
+			check(why.empty(), "loadSample " + _file + " into ROM-" + std::to_string(_slot + 1) + (why.empty() ? "" : ": " + why));
+			const bool done = _rig.runUntil([&] { const auto& l = _rig.sampleLoad(); return l && l->find("state")->asString() != "sending"; }, 120000);
+			const auto took = ms(_rig.machine().now() - t0);
+			check(done && _rig.sampleLoad()->find("state")->asString() == "done", "SDS done (" + std::to_string(int(took)) + " ms machine time, "
+				+ std::to_string(sent->samples.size()) + " samples, " + std::to_string(int(_rig.sampleLoad()->find("total")->asNumber())) + " packets, retries "
+				+ std::to_string(int(_rig.sampleLoad()->find("retries")->asNumber())) + ")");
+			const auto shows = [&]
+			{
+				const auto s = slotDoc("rom", _slot);
+				return !s.find("empty")->asBool() && size_t(s.find("length")->asNumber()) == sent->samples.size();
+			};
+			check(_rig.runUntil(shows, 20000), "the slot's waveform shows the new sample");
+			const auto s = slotDoc("rom", _slot);
+			const auto want = ed::mdPeaks(static_cast<uint32_t>(sent->samples.size()), ed::g_mdSampleBins,
+				[&](const uint32_t _i) { return sent->samples[_i] / 32768.0f; });
+			const auto& got = s.find("peaks")->asArray();
+			int worst = 0;
+			for(size_t i = 0; i < got.size() && i < want.size(); ++i)
+				worst = std::max(worst, std::abs(int(got[i].asNumber()) - want[i]));
+			check(got.size() == want.size() && worst <= 1, "its peaks match what was sent (worst bin off by " + std::to_string(worst) + ")");
+			check(int(s.find("rate")->asNumber()) == int(sent->rate) && s.find("name")->isString() && s.find("name")->asString() == sent->name,
+				"rate " + std::to_string(sent->rate) + " Hz and name " + sent->name + " (0x73) read back");
+		};
+		load(40, "TONE.wav", make(32000, 16000, 1));
+		load(2, "Kick Big.wav", make(48000, 9000, 2));	// over a factory sample; stereo at 48 kHz
+		check(slotDoc("rom", 0).find("length")->asNumber() == rom0.find("length")->asNumber(), "the other slots are untouched");
+
+		// A RAM slot cannot take a file (measured: no answer to SDS sample 48, nothing stored).
+		check(!desk.loadSample(48, "x.wav", ed::encodeWav16(make(44100, 100, 1))).empty(), "RAM 1: refused");
+
+		// RAM-R1 records a loop: RAM 1 shows a take.
+		const auto kit = std::to_string(*desk.linkState().kit);
+		const auto pattern = std::to_string(*desk.linkState().pattern);
+		_rig.page("{\"op\":\"machine\",\"k\":" + kit + ",\"t\":12,\"model\":" + std::to_string(*ed::mdMachineModel("RAM-R1")) + ",\"keepFx\":true}");
+		_rig.page("{\"op\":\"trig\",\"p\":" + pattern + ",\"t\":12,\"s\":0,\"on\":true}");
+		_rig.page("{\"op\":\"param\",\"k\":" + kit + ",\"t\":12,\"i\":6,\"v\":32}");	// LEN: 8 steps
+		_rig.run(1500);
+		_rig.page(R"({"op":"play"})");
+		_rig.run(3000);
+		_rig.page(R"({"op":"stop"})");
+		check(_rig.runUntil([&] { return !slotDoc("ram", 0).find("empty")->asBool(); }, 10000), "RAM 1 shows the take RAM-R1 recorded ("
+			+ std::to_string(int(slotDoc("ram", 0).find("length")->asNumber())) + " samples)");
+	}
+
+	// The SAMPLER card's "Set up sampling" (mdDeskApp.js, [data-setupgo]): two machine ops in one gesture put
+	// RAM-R1 and RAM-P1 on two tracks that played ROM machines, a trig on the recorder; then the chop grid's
+	// trigs + STRT locks on the player. A pattern dump over the current pattern makes OS 1.63 load the kit it
+	// links from its slot, also the kit that plays: the desk sends the unsaved edits again after it
+	// (MdMachine::restoreWorkingKit), and the page never sees the slot's kit meanwhile.
+	void samplerSetup(Rig& _rig)
+	{
+		std::puts("== SAMPLER: Set up sampling (RAM-R1/RAM-P1 over ROM machines), then chops");
+		auto& desk = _rig.desk();
+		const auto kit = std::to_string(*desk.linkState().kit);
+		const auto pattern = std::to_string(*desk.linkState().pattern);
+		const auto model = [](const char* _n) { return *ed::mdMachineModel(_n); };
+		const auto working = [&] { return desk.documents().working->kit; };
+		const auto models = [&] { const auto w = working(); return std::pair{w.models[12], w.models[13]}; };
+		const auto show = [&](const char* _when)
+		{
+			const auto [r, p] = models();
+			std::printf("  %s: T13 %s, T14 %s\n", _when, ed::mdMachineName(r).c_str(), ed::mdMachineName(p).c_str());
+		};
+		const auto settle = [&] { _rig.runUntil([&] { return !desk.isBusy() && !_rig.pageTx(); }, 3000); _rig.run(1500); };
+		// Run while watching the working kit the page is shown: it must stay _want throughout.
+		const auto hold = [&](const ed::MdKit& _want, const double _ms)
+		{
+			bool held = true;
+			for(double t = 0; t < _ms; t += 10)
+			{
+				_rig.run(10);
+				const auto w = working();
+				if(!ed::mdSameKitSound(w, _want) && held)
+				{
+					for(size_t tr = 0; tr < 16; ++tr)
+					{
+						if(w.models[tr] != _want.models[tr])
+							std::printf("  differs: T%zu machine %s, not %s\n", tr + 1, ed::mdMachineName(w.models[tr]).c_str(), ed::mdMachineName(_want.models[tr]).c_str());
+						for(size_t i = 0; i < 24; ++i)
+							if(w.params[tr][i] != _want.params[tr][i])
+								std::printf("  differs: T%zu param %zu = %d, not %d\n", tr + 1, i, w.params[tr][i], _want.params[tr][i]);
+						if(w.levels[tr] != _want.levels[tr])
+							std::printf("  differs: T%zu level\n", tr + 1);
+					}
+					held = false;
+				}
+			}
+			return held;
+		};
+		_rig.page("{\"op\":\"machine\",\"k\":" + kit + ",\"t\":12,\"model\":" + std::to_string(model("ROM-21")) + ",\"keepFx\":true}");
+		_rig.page("{\"op\":\"machine\",\"k\":" + kit + ",\"t\":13,\"model\":" + std::to_string(model("ROM-24")) + ",\"keepFx\":true}");
+		settle();
+		show("before");
+		check(models() == std::pair{model("ROM-21"), model("ROM-24")}, "the two tracks play ROM-21 and ROM-24 (not saved)");
+
+		// Any unsaved edit, a CC one too, survives a trig elsewhere.
+		const auto dist = (working().params[0][16] + 17) & 0x7f;
+		_rig.page("{\"op\":\"param\",\"k\":" + kit + ",\"t\":0,\"i\":16,\"v\":" + std::to_string(dist) + "}");
+		settle();
+		const auto edited = working();
+		_rig.page("{\"op\":\"trig\",\"p\":" + pattern + ",\"t\":3,\"s\":7,\"on\":true}");
+		check(hold(edited, 1500), "a trig on another track keeps the unsaved kit edits, shown and held (T1 DIST, T13/T14 machines)");
+
+		_rig.page("{\"op\":\"machine\",\"k\":" + kit + ",\"t\":12,\"model\":" + std::to_string(model("RAM-R1")) + ",\"keepFx\":true,\"g\":901}");
+		check(resultOk(_rig), "RAM-R1 accepted");
+		_rig.page("{\"op\":\"machine\",\"k\":" + kit + ",\"t\":13,\"model\":" + std::to_string(model("RAM-P1")) + ",\"keepFx\":true,\"g\":901}");
+		check(resultOk(_rig), "RAM-P1 accepted");
+		_rig.page("{\"op\":\"trig\",\"p\":" + pattern + ",\"t\":12,\"s\":0,\"on\":true,\"g\":901}");
+		settle();
+		show("set up");
+		check(models() == std::pair{model("RAM-R1"), model("RAM-P1")}, "after Set up sampling the working kit has RAM-R1 and RAM-P1");
+
+		const auto setUp = working();
+		bool held = true;
+		for(int s = 0; s < 16; s += 4)
+		{
+			_rig.page("{\"op\":\"trig\",\"p\":" + pattern + ",\"t\":13,\"s\":" + std::to_string(s) + ",\"on\":true}");
+			_rig.page("{\"op\":\"lock\",\"p\":" + pattern + ",\"t\":13,\"i\":4,\"s\":" + std::to_string(s) + ",\"v\":" + std::to_string(s * 8) + "}");
+			held &= hold(setUp, 150);
+		}
+		held &= hold(setUp, 2000);
+		show("chopped");
+		check(held, "while chopping the working kit keeps RAM-R1 and RAM-P1 and every value");
+		const auto saved = _rig.saveAndReadKit(*desk.linkState().kit);
+		check(saved && saved->models[12] == model("RAM-R1") && saved->models[13] == model("RAM-P1") && saved->params[0][16] == dist,
+			"the machine holds RAM-R1, RAM-P1 and the DIST edit");
+		const auto chops = _rig.readPattern(*desk.linkState().pattern);
+		check(chops && ed::hasTrig(*chops, 13, 12) && ed::lockValue(*chops, 13, 4, 12) == uint8_t{96}, "and the chops (trig + STRT lock)");
+	}
+
 int main(const int _argc, char** _argv)
 {
 	std::setvbuf(stdout, nullptr, _IOLBF, 0);
 	if(_argc < 2)
 	{
-		std::puts("usage: mdDeskFirmwareTest <MD-1.63-ROM> [probe]");
+		std::puts("usage: mdDeskFirmwareTest <MD-1.63-ROM> [probe|hw|p4|tweak|sampler|samples|hostclock|playload|syximport]");
 		return 77;
 	}
 	try
@@ -1757,6 +1965,26 @@ int main(const int _argc, char** _argv)
 			controlAllTruth(rig);
 			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 			std::printf("mdDeskFirmwareTest tweak: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
+			return g_failures ? 1 : 0;
+		}
+		if(mode == "sampler")
+		{
+			Rig rig(rom, _argv[1]);
+			rig.page(R"({"op":"ready"})");
+			rig.runUntil([&] { return rig.desk().isReady() && rig.desk().linkState().kit && rig.desk().linkState().pattern && rig.desk().documents().working; }, 8000);
+			samplerSetup(rig);
+			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
+			std::printf("mdDeskFirmwareTest sampler: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
+			return g_failures ? 1 : 0;
+		}
+		if(mode == "samples")
+		{
+			Rig rig(rom, _argv[1]);
+			rig.page(R"({"op":"ready"})");
+			rig.runUntil([&] { return rig.desk().isReady() && rig.desk().linkState().kit && rig.desk().linkState().pattern && rig.desk().documents().working; }, 8000);
+			samples(rig);
+			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
+			std::printf("mdDeskFirmwareTest samples: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
 			return g_failures ? 1 : 0;
 		}
 		if(mode == "hostclock")

@@ -265,7 +265,9 @@ firmware (`mdP4ProbeFirmwareTest library`, smoke test p4):
 - Rename: the kit that plays live (0x55, SAVE stores it); another slot: its dump
   written back with the new name.
 - A pattern dump over the current pattern that links another kit makes the machine
-  load that kit. Slot writes that would lose unsaved kit edits answer
+  load that kit. One that links the kit that plays loads it again from its slot, so
+  its unsaved edits go; the desk sends them again as live edits right after the dump
+  (`MdMachine::restoreWorkingKit`, `mdDeskFirmwareTest <MD ROM> sampler`). Slot writes that would lose unsaved kit edits answer
   `{"type":"ask","ask":"overwriteKit"|"relinkKit"|"loadKit","command"}`; the page
   sends the command again with `force`.
 Slot writes are undoable in the editor; LOAD and SAVE are the machine's (it keeps

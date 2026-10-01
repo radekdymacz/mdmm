@@ -9,7 +9,7 @@
    pending, doc}, the slot it was loaded from); sources: each stored document's "source"
    ("kit:3" -> "dump"); telemetry: the last telemetry notice (the transport and the playhead).
    The catalogue and the MIDI learn document are the model's and the plug-in's: they stay. */
-const emptyDocs = () => ({ patterns: {}, kits: {}, songs: {}, global: null, machine: null, workingKit: null, sources: {}, telemetry: null });
+const emptyDocs = () => ({ patterns: {}, kits: {}, songs: {}, global: null, machine: null, workingKit: null, sources: {}, telemetry: null, samples: null });
 const EMPTY_DOCS = Object.freeze(emptyDocs());
 const Docs = Object.assign(emptyDocs(), { catalogue: null, learn: null });
 /* the engine changed: its documents start over */

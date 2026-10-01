@@ -234,6 +234,26 @@ namespace mdJucePlugin
 		return true;
 	}
 
+	bool StudioLink::readSampleBank(std::shared_ptr<const elektronData::MdSampleBank>& _bank)
+	{
+		uint32_t sequence = 0;
+		const void* source = nullptr;
+		auto bank = m_processor.getPlugin().withDeviceLocked([&](synthLib::Device* _base) -> std::shared_ptr<const elektronData::MdSampleBank>
+		{
+			auto* device = dynamic_cast<md::DeskDevice*>(_base);
+			if(!device)
+				return nullptr;
+			source = device;
+			return device->readSampleBank(sequence);
+		});
+		if(!bank || (sequence == m_sampleSequence && source == m_sampleSource))
+			return false;
+		m_sampleSequence = sequence;
+		m_sampleSource = source;
+		_bank = std::move(bank);
+		return true;
+	}
+
 	bool StudioLink::readLcd(std::vector<uint8_t>& _bits)
 	{
 		if(!m_panel)
