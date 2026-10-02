@@ -627,15 +627,18 @@ body{box-sizing:border-box;overflow:hidden}
 .ws-seq .lanewrap{padding-top:8px!important}
 .ws-seq .lanetop{border-top:0!important;padding-top:0!important}
 /* Mix: the faders and the routing diagram share the height */
-#main>.routewrap{flex:1 1 auto;min-height:0;grid-template-rows:auto auto minmax(140px,1fr) auto}
+/* the routing graph is as tall as its width needs (no letterbox); the strips' faders take the rest of the page */
+#main>.routewrap{flex:1 1 auto;min-height:0;grid-template-rows:minmax(0,1fr) auto auto auto;align-content:start}
+#main>.routewrap>.strips6{min-height:0;max-height:560px}
+#main>.routewrap .strip6{grid-template-rows:auto minmax(0,1fr) auto auto auto;align-content:stretch}
 /* a strip: the fader and its LEV value in one column, as tall as the four value boxes beside it (no gap) */
-.strip6 .frow{height:clamp(124px,calc((100vh - 560px) * .55),300px);align-items:stretch!important}
+.strip6 .frow{height:auto;min-height:124px;max-height:320px;align-items:stretch!important}
 .strip6 .fcol{display:grid;grid-template-rows:minmax(0,1fr) auto;justify-items:center;gap:5px;min-height:0}
 .strip6 .fcol .fader{height:auto!important;min-height:0;width:100%}
 .strip6 .fcol .v{font:500 13px/1 var(--mono);color:var(--body);text-align:center;min-width:3ch}
 .strip6 .pcs{grid-template-rows:repeat(4,minmax(0,1fr));align-content:stretch!important;min-height:0}
 .strip6 .pcs .pc{height:auto!important;min-height:0}
-svg.route{width:100%;height:100%;min-height:0}
+svg.route{width:100%;height:auto;aspect-ratio:1200/146;min-height:0}
 /* Shift + M prepares a mute, as the MD Editor (P7): "+" unmute, "X" mute, blinking until Shift comes up */
 .ms.m.prep{box-shadow:inset 0 0 0 2px var(--led);position:relative;color:transparent!important}
 .ms.m.prep::after{content:attr(data-prep);position:absolute;inset:0;display:grid;place-items:center;font:700 12px var(--pix);color:var(--keytext);animation:blink .5s steps(2) infinite}
