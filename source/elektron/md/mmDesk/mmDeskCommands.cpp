@@ -109,6 +109,14 @@ namespace mmDesk
 		const auto s = m_recv.state();
 		if(s == RecvSession::State::Entering || s == RecvSession::State::ToMain || s == RecvSession::State::Leaving)
 			return false;
+		// Parked on SYSEX RECV no panel key works but EXIT (PLAY, STOP, RECORD, the MUTE window and BANK GROUP do
+		// nothing there, measured: mmDeskFirmwareTest parked): refused as busy, and the session leaves as soon as
+		// its dumps are taken, so the next try reaches the main screen.
+		if(s == RecvSession::State::Parked)
+		{
+			m_recv.leaveSoon();
+			return false;
+		}
 		if(!m_port.pressKeys || !m_port.pressKeys(_keys))
 			return false;
 		size_t states = 0;
