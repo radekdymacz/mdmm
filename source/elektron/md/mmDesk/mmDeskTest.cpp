@@ -48,6 +48,30 @@ namespace
 		return t;
 	}
 
+	void recvLeaveSoon()
+	{
+		std::puts("RECV session: leave soon");
+		mmDesk::RecvSession r;
+		r.want({0xf0, 1, 0xf7});
+		r.tick(0, screen(mmDesk::Screen::GlobalEdit));
+		auto t = screen(mmDesk::Screen::GlobalEdit);
+		auto out = r.tick(10, t);
+		check(r.parked() && out.sends.size() == 1, "parked: the dump goes out");
+		r.leaveSoon();
+		out = r.tick(100, t);
+		check(out.keys.empty() && r.parked(), "the panel is wanted, but the dump is not taken yet: stays parked");
+		t.recvCount = 1;
+		out = r.tick(200, t);
+		check(out.keys == mmDesk::RecvSession::exitKeys() && r.state() == mmDesk::RecvSession::State::Leaving, "taken: EXIT at once, long before the idle time");
+		r.tick(500, screen(mmDesk::Screen::Main));
+		r.want({0xf0, 2, 0xf7});
+		r.tick(600, screen(mmDesk::Screen::Main));
+		r.tick(1000, screen(mmDesk::Screen::GlobalEdit));
+		out = r.tick(1010, screen(mmDesk::Screen::GlobalEdit));
+		out = r.tick(2000, screen(mmDesk::Screen::GlobalEdit));
+		check(out.keys.empty() && r.parked(), "a new park without leaveSoon keeps the idle time");
+	}
+
 	void recvSession()
 	{
 		std::puts("RECV session");
@@ -159,6 +183,8 @@ namespace
 		mmDesk::Screen screenWord = mmDesk::Screen::Main;
 		int keysPressed = 0;
 		uint8_t pattern = 3, kit = 5;
+		uint32_t recvTaken = 0;	// dumps taken on SYSEX RECV (the RECV count, RAM 0x26a3c4)
+		int recording = -1;		// the recording mode the telemetry says (-1 unknown)
 		std::vector<Bytes> replies;
 		std::vector<Bytes> ignored;
 
@@ -172,7 +198,10 @@ namespace
 			if(cmd == 0x67 || cmd == 0x52 || cmd == 0x69 || cmd == 0x50)
 			{
 				if(screenWord == mmDesk::Screen::GlobalEdit)
+				{
 					slots[{cmd, _m[9]}] = _m;
+					++recvTaken;
+				}
 				else
 					ignored.push_back(_m);
 				return;
@@ -271,6 +300,8 @@ namespace
 			{
 				now += 10;
 				mmDesk::Telemetry tel = screen(m.screenWord);
+				tel.recvCount = m.recvTaken;
+				tel.recording = m.recording;
 				d.onTelemetry(tel);
 				d.tick();
 				auto replies = std::move(m.replies);
@@ -312,6 +343,30 @@ namespace
 		check(d.lastRoundTripMs() > 0, "read back and confirmed");
 		run(3500);
 		check(m.screenWord == mmDesk::Screen::Main && !d.recvParked(), "left SYSEX RECV when idle");
+
+		// Bug 4 (the user journeys): parked on SYSEX RECV no panel key works but EXIT (mmDeskFirmwareTest parked).
+		// RECORD then is refused as busy, not answered ok, and the session leaves at once for the next try.
+		{
+			p.notes[0][0] = 62;
+			msg(R"({"op":"set","id":8,"kind":"pattern","doc":)" + ed::json::write(ed::mmPatternToJson(p)) + "}");
+			run(800);
+			check(d.recvParked(), "parked on SYSEX RECV for the edit");
+			m.recording = 0;
+			run(20);	// the telemetry says the mode
+			check(d.recvParked(), "still parked");
+			const int keys0 = m.keysPressed;
+			msg(R"({"op":"record","mode":"grid"})");
+			const auto r1 = lastResult();
+			check(!r1.find("ok")->asBool() && r1.find("errors")->asArray()[0].asString() == "The panel is busy (SYSEX RECV); try again.",
+				"RECORD while parked: refused as busy");
+			run(400);
+			check(m.screenWord == mmDesk::Screen::Main && !d.recvParked() && m.keysPressed == keys0 + static_cast<int>(mmDesk::RecvSession::exitKeys().size()),
+				"the session left at once (EXIT only), not after its idle time");
+			msg(R"({"op":"record","mode":"grid"})");
+			check(lastResult().find("ok")->asBool() && m.keysPressed > keys0 + static_cast<int>(mmDesk::RecvSession::exitKeys().size()), "RECORD again: taken, its key pressed");
+			m.recording = -1;
+			run(300);
+		}
 
 		// Invalid: 63 locked parameters.
 		auto badDoc = ed::mmPatternToJson(p);
@@ -1453,6 +1508,7 @@ int main(const int _argc, char** _argv)
 		return 0;
 	}
 	recvSession();
+	recvLeaveSoon();
 	desk();
 	playingFromSteps();
 	watchSteps();

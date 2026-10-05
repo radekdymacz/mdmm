@@ -39,6 +39,14 @@ namespace mmDesk
 			giveUp(_out, _now);
 	}
 
+	void RecvSession::park(const double _now, const Telemetry& _t)
+	{
+		m_lastActivity = _now;
+		m_recvBase = _t.recvCount;
+		m_sentParked = 0;
+		go(State::Parked, _now);
+	}
+
 	void RecvSession::giveUp(Out& _out, const double _now)
 	{
 		for(const auto& s : m_queue)
@@ -87,8 +95,7 @@ namespace mmDesk
 			if(onRecv)
 			{
 				m_failures = 0;
-				go(State::Parked, now);
-				m_lastActivity = now;
+				park(now, _t);
 				break;
 			}
 			if(onMain)
@@ -128,8 +135,7 @@ namespace mmDesk
 			{
 				m_attempts = 0;
 				m_failures = 0;
-				m_lastActivity = now;
-				go(State::Parked, now);
+				park(now, _t);
 			}
 			else if(now - m_since > timeoutMs)
 			{
@@ -154,10 +160,13 @@ namespace mmDesk
 				out.sends.push_back(std::move(m_queue.front()));
 				m_queue.pop_front();
 				m_lastActivity = now;
+				++m_sentParked;
 			}
-			if(now - m_lastActivity > idleMs)
+			// quiet for the idle time, or the panel is wanted and the machine took every dump sent
+			if(now - m_lastActivity > idleMs || (m_leaveSoon && _t.recvCount - m_recvBase >= m_sentParked))
 			{
 				out.keys = exitKeys();
+				m_leaveSoon = false;
 				go(State::Leaving, now);
 			}
 			break;
