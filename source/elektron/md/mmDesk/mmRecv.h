@@ -58,6 +58,9 @@ namespace mmDesk
 		void want(std::vector<uint8_t> _dump, const uint32_t _tag = 0) { m_queue.push_back({std::move(_dump), _tag, -1}); }
 		// Keeps the session parked a while longer (an edit is coming).
 		void touch() { m_lastActivity = m_clock; }
+		// The panel is wanted (a key the person pressed): no panel key works on SYSEX RECV but EXIT (measured,
+		// mmDeskFirmwareTest parked), so leave as soon as every dump sent is taken, without the idle time.
+		void leaveSoon() { m_leaveSoon = true; }
 		Out tick(double _now, const Telemetry& _t);
 
 		State state() const { return m_state; }
@@ -72,6 +75,7 @@ namespace mmDesk
 
 	private:
 		void go(State _s, double _now) { m_state = _s; m_since = _now; }
+		void park(double _now, const Telemetry& _t);
 		void failed(Out& _out, double _now);
 		void giveUp(Out& _out, double _now);
 
@@ -85,5 +89,8 @@ namespace mmDesk
 		double m_lastNowMs = -1;
 		uint64_t m_lastBlocks = 0;
 		double m_keysDone = 0;	// the keys pressed last are through by then
+		bool m_leaveSoon = false;	// leaveSoon(): leave once the dumps sent are taken
+		uint32_t m_recvBase = 0;	// the machine's RECV count when the session parked
+		uint32_t m_sentParked = 0;	// dumps sent since then
 	};
 }
