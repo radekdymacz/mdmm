@@ -9,6 +9,7 @@
 #           javascript: URL is loaded while it is still pending (the plug-in answers a page message from inside
 #           pageAboutToLoad, before JUCE sends the decision).
 # answered: the same, but the decision is answered first and the javascript: URL loaded after it.
+# file:     as pending, but the answer is a numbered script file beside the page that the page's poll loads.
 import json
 import os
 import sys
@@ -73,7 +74,14 @@ def policy(view, decision, kind):
         return True
 
     def load():
-        v.load_uri(script)
+        if mode == "file":
+            # the plug-in writes the next numbered script beside the page; the page's poll loads it
+            k = len(seen) - 1
+            tmp = os.path.join(d, "t.js")
+            open(tmp, "w").write(script[len("javascript:"):])
+            os.rename(tmp, os.path.join(d, "recv-" + str(k) + ".js"))
+        else:
+            v.load_uri(script)
         return False
 
     def pending_then_answer():
@@ -86,7 +94,7 @@ def policy(view, decision, kind):
         GLib.timeout_add(5, load)
         return False
 
-    GLib.idle_add(pending_then_answer if mode == "pending" else answer_then_load)
+    GLib.idle_add(pending_then_answer if mode in ("pending", "file") else answer_then_load)
     return True
 
 
@@ -126,7 +134,7 @@ def tick():
     return True
 
 
-v.load_uri("file://" + page + ("?poll" if mode == "basic" else ""))
+v.load_uri("file://" + page + ("?poll" if mode in ("basic", "file") else ""))
 GLib.timeout_add(200, tick)
 Gtk.main()
 sys.exit(1 if crashed else 0)
