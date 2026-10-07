@@ -216,6 +216,25 @@ function(mdmm_plugin_targets)
 		endforeach()
 	endif()
 
+	# Linux (mdmmLinuxWebView.cmake): the webkit2gtk and GTK shims beside the standalone and the VST3 module,
+	# found through $ORIGIN (dlopen searches the run path of the object that calls it).
+	if(TARGET mdmmLinuxWebkitShim)
+		foreach(plugin_target mdJucePlugin_VST3 mmJucePlugin_VST3 mdJucePlugin_Standalone mmJucePlugin_Standalone)
+			if(NOT TARGET ${plugin_target})
+				continue()
+			endif()
+			set_property(TARGET ${plugin_target} PROPERTY BUILD_RPATH "\$ORIGIN")
+			add_dependencies(${plugin_target} mdmmLinuxWebkitShim mdmmLinuxGtkShim)
+			add_custom_command(TARGET ${plugin_target} POST_BUILD
+				COMMAND ${CMAKE_COMMAND} -E copy_if_different
+					"$<TARGET_FILE:mdmmLinuxWebkitShim>" "$<TARGET_FILE:mdmmLinuxGtkShim>"
+					"$<TARGET_FILE_DIR:${plugin_target}>"
+				COMMENT "Web view shims beside ${plugin_target}"
+				VERBATIM
+			)
+		endforeach()
+	endif()
+
 	if(NOT BUILD_TESTING)
 		return()
 	endif()
