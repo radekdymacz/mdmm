@@ -65,6 +65,16 @@ for tarball in "${archives}"/*-Linux-x64-not-tested.tar.gz; do
 		status=1
 	fi
 	grep -E -i 'webkit|gtk' "${out}/${name}-processes.txt" || true
+	# The bridge's plug-in -> page files (mdPageBridge.h): the page reads them and says so, the plug-in deletes them,
+	# so only the last few are left. Many left means the page stopped reading.
+	left="$(find /tmp /var/tmp -maxdepth 1 -name 'gearmulator-*.html.recv-*.js' 2>/dev/null | wc -l)"
+	pages="$(find /tmp /var/tmp -maxdepth 1 -name 'gearmulator-*.html' 2>/dev/null | wc -l)"
+	echo "${name}: ${pages} page file(s) in the temp folder"
+	echo "${name}: ${left} unread bridge file(s) in the temp folder"
+	if [[ "${left}" -gt 200 ]]; then
+		echo "::error::${name}: ${left} bridge files left: the page does not read them"
+		status=1
+	fi
 	kill "${pid}" 2>/dev/null || true
 	sleep 2
 	kill -9 "${pid}" 2>/dev/null || true
