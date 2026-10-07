@@ -42,6 +42,13 @@ standalone under Xvfb on Ubuntu 22.04 and 24.04 with runtime packages only: the 
 child and WebKit's `WebKitWebProcess` start, and a screenshot is kept as an artifact. Not checked: the VST3 in
 a Linux DAW, audio and MIDI devices, a ROM, Wayland, any distribution but Ubuntu.
 
+On Linux `synthLib::SysexBuffer` is a `std::pmr::vector` (macOS 10.13 builds have no `<memory_resource>`, so
+there it is a plain `std::vector`): a few of upstream's firmware test programs assign one to the other and do not
+compile on Linux (`sysexContentOracle.h`, `sdsFirmwareTest.cpp`, `userSysexFirmwareTest.cpp`,
+`mmSysexExportFirmwareTest.cpp`). The build script builds everything with `-k 0`, warns, and leaves the tests of
+programs that did not build out of the ctest run (they need a ROM anyway, but for the two `mmSysexWorkflowTest`
+oracle tests). The fix belongs upstream.
+
 ## Windows: known risk
 
 JUCE 7's default Windows web view is the Internet Explorer control (`WebBrowserComponent::Options::Backend::
