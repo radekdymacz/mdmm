@@ -20,6 +20,9 @@ parallel="${MDMM_LINUX_PARALLEL:-$(nproc)}"
 skip_tests="${MDMM_LINUX_SKIP_TESTS:-0}"
 diagnostics="${MDMM_LINUX_DIAGNOSTICS:-0}"
 products="${build_dir}/products"
+# JUCE loads each VST3 to write its moduleinfo.json: keep what that load writes out of the real home.
+build_home="${build_dir}/build-home"
+mkdir -p "${build_home}"
 
 launcher_args=()
 if [[ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]]; then
@@ -51,11 +54,12 @@ cmake -S "${source_dir}" -B "${build_dir}" -G Ninja \
 	-Dgearmulator_SYNTH_JE8086=OFF
 
 if [[ "${skip_tests}" == 1 ]]; then
-	cmake --build "${build_dir}" --config "${config}" --parallel "${parallel}" --target \
+	HOME="${build_home}" cmake --build "${build_dir}" --config "${config}" --parallel "${parallel}" --target \
 		mdJucePlugin_VST3 mmJucePlugin_VST3 mdJucePlugin_Standalone mmJucePlugin_Standalone
 else
 	# Everything: the products and every test target (ctest runs what was built).
-	cmake --build "${build_dir}" --config "${config}" --parallel "${parallel}"
+	# -k 0: every compile error in one run.
+	HOME="${build_home}" cmake --build "${build_dir}" --config "${config}" --parallel "${parallel}" -- -k 0
 	# The unit tests (doc/modern-ux/FOUNDATION.md, "Build and check"): no plug-in hosting, no firmware.
 	# synthLibMidiClockTimingTest is a known failure (-Ofast and isfinite, see the release notes' history).
 	# A display for the tests that make JUCE components: xvfb-run in the workflow.
