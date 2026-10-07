@@ -31,7 +31,16 @@ for tarball in "${archives}"/*-Linux-x64-not-tested.tar.gz; do
 	mkdir -p "${home}"
 	HOME="${home}" XDG_CONFIG_HOME="${home}/.config" "${app}" > "${out}/${name}.log" 2>&1 &
 	pid=$!
-	sleep 40
+	# Every 2 s for 40 s: is WebKit's web process there (when it appears, and whether it goes away).
+	: > "${out}/${name}-webprocess.txt"
+	for second in $(seq 2 2 40); do
+		sleep 2
+		printf '%3ss %s\n' "${second}" "$(pgrep -f WebKitWebProcess | tr '\n' ' ')" >> "${out}/${name}-webprocess.txt"
+	done
+	echo "-- WebKitWebProcess pids, every 2 s"
+	cat "${out}/${name}-webprocess.txt"
+	echo "-- kernel log (a crashed process shows here)"
+	sudo dmesg 2>/dev/null | grep -i -E 'segfault|trap|killed|oom|WebKit' | tail -n 20 || true
 	if ! kill -0 "${pid}" 2>/dev/null; then
 		echo "::error::${name}: the standalone exited"
 		cat "${out}/${name}.log"

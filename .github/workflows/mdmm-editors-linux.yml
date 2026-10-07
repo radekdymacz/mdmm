@@ -132,7 +132,8 @@ jobs:
         run: >-
           sudo apt-get update && sudo apt-get install -y --no-install-recommends xvfb x11-utils imagemagick
           ${{ matrix.packages }} libx11-6 libxext6 libxcursor1 libxinerama1 libxrandr2 libxrender1
-          libxcomposite1 libfreetype6 libfontconfig1
+          libxcomposite1 libfreetype6 libfontconfig1 &&
+          dpkg -l | grep -i -E 'webkit2gtk|libgtk-3-0'
 
       - uses: actions/download-artifact@v4
         with:
