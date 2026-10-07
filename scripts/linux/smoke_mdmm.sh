@@ -10,7 +10,8 @@
 set -euo pipefail
 
 archives="$(realpath "$1")"
-out="$(realpath -m "$2")"
+mkdir -p "$2"
+out="$(realpath "$2")"
 mkdir -p "${out}"
 display=":97"
 Xvfb "${display}" -screen 0 1600x1000x24 >/dev/null 2>&1 &
