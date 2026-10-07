@@ -28,11 +28,18 @@ The editor is a web page in JUCE 7's `WebBrowserComponent`. On Linux JUCE runs w
   JUCE's sixteen functions to `libwebkit2gtk-4.0.so.37` or `libwebkit2gtk-4.1.so.0` (the same C API); the GTK one
   only depends on `libgtk-3.so.0`. A JUCE update must check the shim's list against
   `juce_WebBrowserComponent_linux.cpp`. Without WebKit the editor is empty; the plug-in still loads.
-- **The bridge** (`mdPageBridge.h`, `skins/shared/deskBridge.js`) needs no Linux code: under webkit2gtk-4.0 the
-  page's `gmbridge://` iframe navigations reach `decide-policy` (as main-frame-less navigations, which JUCE hands
-  to `pageAboutToLoad`) and `javascript:` URLs given to `webkit_web_view_load_uri` run, a 900 KB one too
-  (`scripts/linux/probe_webkit_bridge.py`, run once on CI 2026-10-07). The page loads from a `file://` temp file
-  as on macOS. The zoom that fits the design width is macOS-only (`mdStudioWebZoom.mm`), as on Windows.
+- **The bridge** (`mdPageBridge.h`, `skins/shared/deskBridge.js`). Page -> plug-in is as on macOS: the page's
+  `gmbridge://` iframe navigations reach webkit2gtk's `decide-policy`, which JUCE hands to `pageAboutToLoad`.
+  Plug-in -> page is not: webkit2gtk 2.50 (Ubuntu 22.04's 4.0) runs a `javascript:` URL given to
+  `webkit_web_view_load_uri`, but its web process then crashes (a null read in `libwebkit2gtk-4.0.so.37`) when the
+  page's bridge iframes navigate around it; the probe (`scripts/linux/probe_webkit_bridge.py pending|answered`)
+  crashed in 10 of 10 runs, and the packaged editors did on CI two runs out of three. So on Linux the plug-in writes
+  each `gm.recv([...], seq)` call as a script file beside the page file (`<page>.recv-<seq>.js`), the page (loaded
+  with `?recv=file`) loads them in order with `<script>` tags, polling every 8 ms for the next one, and reports
+  `gmbridge://a/<seq>` every 250 ms so the plug-in deletes what was read (`a/0` when it starts: a page that loaded
+  again reads from 1). The same probe in that mode (`file`) passed 5 of 5 runs of 300 round trips under the same
+  load. The page loads from a `file://` temp file as on macOS. The zoom that fits the design width is macOS-only
+  (`mdStudioWebZoom.mm`), as on Windows.
 
 ## Checked by CI, and not
 
