@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MD + MM Editor 0.2.1 release notes</title>
+<meta name="description" content="A fix and speed release on top of 0.2.0.">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/releases/0.2.1/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MD + MM Editor">
+<meta property="og:title" content="MD + MM Editor 0.2.1 release notes">
+<meta property="og:description" content="A fix and speed release on top of 0.2.0.">
+<meta property="og:url" content="https://mdmm.dev/releases/0.2.1/">
+<meta property="og:image" content="https://mdmm.dev/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Free editors for Machinedrum and Monomachine, beside a screenshot of the Machinedrum Editor's step grid and GEN bar.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="MD + MM Editor 0.2.1 release notes">
+<meta name="twitter:description" content="A fix and speed release on top of 0.2.0.">
+<meta name="twitter:image" content="https://mdmm.dev/og.png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261010">
+<script src="/assets/theme.js?v=20261008"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="opt" href="/#features">Features</a>
+      <a class="keep" href="/guide/">Guide</a>
+      <a class="opt" href="/#faq">FAQ</a>
+      <a class="disc" href="https://discord.gg/8xwXwBHbtn" aria-label="Discord community"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5h11a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7l-3 2.5V11.5H2.5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="5.5" cy="7.5" r="1" fill="currentColor"/><circle cx="8" cy="7.5" r="1" fill="currentColor"/><circle cx="10.5" cy="7.5" r="1" fill="currentColor"/></svg><span>Discord</span></a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="checkout legalpage guide">
+  <div class="wrap">
+    <span class="eyebrow">Release notes</span>
+    <h1>Machinedrum Editor + Monomachine Editor 0.2.1</h1>
+<p><small>Released 2026-09-29</small></p>
+<p>A fix and speed release on top of <a href="/releases/0.2.0/">0.2.0</a>. The editors no longer crash when you quit, the Monomachine's Sound tab always opens, and fast editing no longer loads the emulator so much that audio glitches in a DAW.</p>
+<p>Screenshots, features and FAQ: <b><a href="https://mdmm.dev">https://mdmm.dev</a></b> Pay what you want (optional, same download): <b><a href="https://mdmm.dev/get/">https://mdmm.dev/get/</a></b></p>
+<h2>What's new</h2>
+<h3>Control All</h3>
+<ul>
+<li><b>Alt-drag (Option-drag) a value to move that knob on every track</b>, like the Machinedrum's FUNCTION + DATA ENTRY knob (manual p.37). It now works on every page, the Sound page's LFO boxes and curve editors too. One drag is one undo step.
+</li>
+<li>On the Machinedrum emulator the editor uses the machine's own FUNCTION + knob gesture, so the machine decides which tracks move (MIDI and CTRL machines stay; RAM recorders stay on their synthesis page), exactly as on the hardware.
+</li>
+<li><b>New on the Monomachine's Sound workspace:</b> the same Alt-drag moves the knob on all six synth tracks. MIDI tracks are left alone.
+</li>
+</ul>
+<h3>Smoother while you edit</h3>
+<ul>
+<li>Drawing parameter locks sends the pattern to the machine at most five times a second (latest value wins) and reads it back once when you stop. The screen still follows at once. In a VST3 host this cut the Machinedrum's extra emulator load while drawing from about +20 % to under +5 %.
+</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li><b>Quitting crashed both editors</b> (the standalone apps and the plug-ins' teardown): the editor window now closes before the machine session.
+</li>
+<li><b>The Monomachine's Sound tab could open empty</b>: the page sometimes started before its value tables had loaded, and tracks with an LFO on another page failed to draw.
+</li>
+<li>Both installers keep "Install for me only".
+</li>
+</ul>
+<h2>Known</h2>
+<ul>
+<li>Unsigned: macOS asks you to allow the app the first time (System Settings &gt; Privacy &amp; Security).
+</li>
+<li>A kit that contains a CTR-AL machine cannot be edited in the Machinedrum Editor yet.
+</li>
+<li>Bring your own ROM. No firmware is included.
+</li>
+</ul>
+    <p><a href="/releases/">All release notes</a> · <a href="/get/">Download</a></p>
+  </div>
+</main>
+
+<footer class="foot">
+  <div class="wrap grid">
+    <p><b>MD + MM Editor</b> <span data-version></span> · Machinedrum Editor and Monomachine Editor<br>A NativeKloud Consulting project — <a href="https://nativekloud.com">nativekloud.com</a></p>
+    <p><b>Free software</b> under the <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPL-3</a>. <a href="https://github.com/radekdymacz/gearmulator-md-mm">Source</a> · <a href="https://github.com/radekdymacz/gearmulator-md-mm/releases">All releases</a></p>
+    <p><b>Credits.</b> Built on <a href="https://github.com/joelanders/gearmulator-md-mm">gearmulator-md-mm</a> by joelanders (the Machinedrum and Monomachine emulation) and <a href="https://github.com/dsp56300/gearmulator">Gearmulator</a> by The Usual Suspects (dsp56300). Thanks to Elektron for the instruments.</p>
+    <p class="legal"><a href="/guide/">Guide</a> · <a href="/releases/">Release notes</a> · <a href="/terms/">Terms</a> · <a href="/privacy/">Privacy</a> · <a href="/refunds/">Refunds</a> · <a href="/contact/">Contact</a> · <a href="https://discord.gg/8xwXwBHbtn">Discord</a> · <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#114;&#97;&#100;&#101;&#107;&#100;&#121;&#109;&#97;&#99;&#122;&#64;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;">&#114;&#97;&#100;&#101;&#107;&#100;&#121;&#109;&#97;&#99;&#122;&#64;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;</a></p>
+    <p><b>Trademarks.</b> Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This project is independent and not affiliated with or endorsed by Elektron, joelanders or The Usual Suspects. No firmware is included. No cookies, no analytics, no third-party scripts.</p>
+  </div>
+</footer>
+
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+</body>
+</html>
