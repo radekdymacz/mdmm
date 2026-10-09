@@ -55,10 +55,10 @@ namespace mdJucePlugin
 				m_ramRecordingMode.load(std::memory_order_relaxed));
 		}
 		bool isRamRecordingModeAvailable();
-		// Tester switch (doc/md_mm_performance_diagnostics.md): step the emulated SIM timers after every
-		// instruction, as before L5. Identical audio, more host CPU. Kept in the plug-in's config.
-		void setLegacySimStepping(bool _legacy);
-		bool isLegacySimStepping();
+		// Tester switch (doc/md_mm_performance_diagnostics.md): run the emulation as before the step 1
+		// speed-ups (md::Device::setSpeedUps). Identical audio, more host CPU. Kept in the plug-in's config.
+		void setLegacyEmulation(bool _legacy);
+		bool isLegacyEmulation();
 		// The Machinedrum/Monomachine Editors' setup and session (mdDeskHost.h, doc/modern-ux/UPSTREAM.md).
 		class DeskHost* getDeskHost() const { return m_desk.get(); }
 
