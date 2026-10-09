@@ -112,6 +112,15 @@ namespace mdJucePlugin
 					});
 			});
 		diagnostics.addSeparator();
+		// For testers: tells in minutes whether a CPU problem comes from the event-driven SIM stepping (L5).
+		// Same audio either way; ticked is the slower per-instruction stepping of before.
+		const bool legacySimStepping = processor.isLegacySimStepping();
+		diagnostics.addEntry("Legacy ColdFire timer stepping (slower)", true, legacySimStepping,
+			[&processor, legacySimStepping]
+			{
+				processor.setLegacySimStepping(!legacySimStepping);
+			});
+		diagnostics.addSeparator();
 		diagnostics.addEntry(processor.performanceDiagnosticsStatus(), false, false, {});
 		_menu.addSubMenu("Performance diagnostics", std::move(diagnostics));
 
