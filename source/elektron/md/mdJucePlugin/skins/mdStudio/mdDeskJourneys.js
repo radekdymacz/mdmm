@@ -1279,8 +1279,20 @@ const MdJourneys = (() => {
 		],
 		async tidy(u, c) { DeskTransport.setDelayed(false); DeskTransport.closeTempo(); if (c.b0 != null && Math.abs(Docs.global.tempo - c.b0) >= 0.05) cmd("tempo", { bpm: c.b0 }); await sleep(300); }
 	};
+	const playFromJ = {
+		name: "md-song-play-from", proves: ["MD-146", "MD-145"],
+		steps: [
+			go("song"),
+			{ say: "click row 3 of the arrangement, then ▶ From here: the machine plays the song from row 3, in SONG mode", act: async (u, c) => { c.m0 = machineState().songMode === true; u.click('.scell[data-i="2"]'); await sleep(150); u.click('[data-rowact="from"]'); },
+				screen: () => ok(V.songMode === true && V.playing, "song mode " + V.songMode + ", playing " + V.playing),
+				machine: () => ok(playing() && tele.last.songRow === 2, "row " + (tele.last?.songRow + 1) + ", playing " + playing()), within: 8000 },
+			{ say: "click row 2 and press Enter: from row 2", act: async u => { u.click('.scell[data-i="1"]'); await sleep(150); document.activeElement?.blur?.(); u.key("Enter"); },
+				machine: () => ok(playing() && tele.last.songRow === 1, "row " + (tele.last?.songRow + 1)), within: 8000 }
+		],
+		async tidy(u, c) { await stopAll(u); if (!c.m0 && machineState().songMode === true) { cmd("seqMode", { song: false }); await sleep(800); } }
+	};
 
-	const all = [bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
+	const all = [bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
 		paintUndo, accentSlide, lockLane, pagesJ, copyPaste, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec,
 		genJourney("md-gen-mutate-undo", false, { proves: [] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: [] }), genKeys,
 		shapeSound, arrows, machinePick, soundCopy, editorDrag, controlAll, globalKey, songModeJ,

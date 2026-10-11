@@ -1554,8 +1554,21 @@ const MmJourneys = (() => {
 		],
 		async tidy(u, c) { if (c.b0 != null && Math.abs(machine().tempo - c.b0) >= 0.05) HOST.tempo(c.b0); await sleep(300); }
 	};
+	const playFromJ = {
+		name: "mm-song-play-from", proves: ["MM-258", "MM-270", "MM-256"],
+		steps: [
+			go("song"),
+			{ say: "the song the machine plays, Arrange; click row 3, then ▶ From here: the question to set TRANSPORT IN to ACCEPT", act: async (u, c) => { c.m0 = machine().song?.songMode === true; c.slot0 = S().songs?.slot; if (S().songs?.slot !== machine().song?.current) await choose(u, "songsel", machine().song?.current ?? 0); u.click('[data-set="songpick"] button[data-v="arrange"]'); await sleep(200); u.click('.scell[data-i="2"]'); await sleep(150); u.click('[data-rowact="from"]'); },
+				screen: () => ok(dlgShown() && !!dlgButton("Set TRANSPORT to ACCEPT"), "no question"), within: 4000 },
+			{ say: "confirm: ACCEPT goes to the machine, then the song plays from row 3 by itself, in SONG mode", act: u => u.click(dlgButton("Set TRANSPORT to ACCEPT")),
+				machine: () => ok(playing() && tele.last.songRow === 2 && machine().song?.songMode === true, "row " + (tele.last?.songRow + 1) + ", playing " + playing() + ", song mode " + machine().song?.songMode + ", TRANSPORT IN " + I().doc("global", machine().global?.current ?? 0)?.controlIn?.transport), within: 20000 },
+			{ say: "click row 2 and press Enter: from row 2", act: async u => { u.click('.scell[data-i="1"]'); await sleep(150); blur(); u.key("Enter"); },
+				machine: () => ok(playing() && tele.last.songRow === 1, "row " + (tele.last?.songRow + 1)), within: 8000 }
+		],
+		async tidy(u, c) { await stopAll(u); if (!c.m0 && machine().song?.songMode === true) { u.click('[data-seqmode="pattern"]'); await sleep(1500); } }
+	};
 
-	const all = [bootCard, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
+	const all = [bootCard, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff,
 		poly, multiTrig, multiMap, kbPlay, songRows, songPicker, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
