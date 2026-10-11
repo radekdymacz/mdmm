@@ -1,5 +1,6 @@
-/* The GLOBAL panel both editors share (deskGlobal.js; B-051, F3): the Machinedrum Editor's v61 (P5) panel, moved here
-   unchanged, plus the Reset to defaults key and the channel warning. Plain grid and flex (macOS 12's WebKit). */
+/* The GLOBAL page both editors share (deskGlobal.js; B-051, F3): the Machinedrum Editor's v61 (P5) panel, moved here,
+   the channel warning; since 0.6 a page over the workspace under the header (.gpage, DESIGN-machine-menus.md §2, the
+   mock-ups md-08 and mm-06): the head on one line, the cards in three columns. Plain grid and flex (macOS 12's WebKit). */
 .globpop{position:absolute;z-index:22;width:min(1180px,calc(100vw - 32px));display:grid;gap:10px;align-content:start;padding:14px;background:var(--plate);border:2px solid var(--print);border-radius:6px;box-shadow:0 18px 40px rgba(0,0,0,.35);overflow:auto;overscroll-behavior:contain;color:var(--body)}
 .globgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .globgrid .card{gap:8px}
@@ -28,3 +29,28 @@
 .gnv{font:600 9px var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--print3);border:1px solid var(--rule);border-radius:2px;padding:0 4px;margin-left:6px}
 .libhead .greset{flex:none}
 .gwarn{grid-column:1/-1;margin:0;font-size:12px;color:var(--red)}
+/* 0.6: the page: no frame of its own, the header's width, scrolls inside */
+.globpop.gpage{z-index:var(--mz,22);border:0;border-radius:0;box-shadow:none;padding:0 2px 16px;gap:14px;background:var(--plate);box-sizing:border-box}
+.gphead{display:flex;align-items:center;gap:14px;flex-wrap:nowrap;white-space:nowrap;border-bottom:2px solid var(--print);padding-bottom:10px;min-width:0}
+.gpname{font:600 22px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase;color:var(--print)}
+.gphead .gslots button{width:34px;height:30px;font-size:13px}
+.gpkeys{display:flex;gap:4px}
+.gphead .gpkeys button,.gphead .gpback,.globgrid .mini{height:30px;padding:0 12px;font:600 11px var(--sans);letter-spacing:.14em;text-transform:uppercase;white-space:nowrap}
+.gphead .gpkeys button[disabled]{opacity:.45}
+.gphead .danger:hover{background:var(--rec,var(--red));color:#fff}
+.gphead .gpsp{flex:1 1 auto}
+.gphead .note{font-size:13px}
+.gpage .globgrid{gap:22px 28px;align-items:start}
+.gpage .globgrid .grow2{min-height:32px}
+.gpage .globgrid .grow2 .ilab{min-width:120px}
+.globgrid .mini{height:22px;padding:0 8px;font-size:10px;margin-right:8px}
+/* the map editor's LEARN dots (MD): click one, play a note */
+.gmk small{display:flex;align-items:center;gap:4px}
+.glearn{width:12px;height:12px;padding:0;border:0;border-radius:50%;background:transparent;box-shadow:inset 0 0 0 1.5px currentColor;opacity:.7;cursor:pointer;min-width:0}
+.glearn[aria-pressed=true]{background:var(--led,var(--red));box-shadow:0 0 5px 1px var(--led,var(--red));opacity:1}
+.glearnhint{font-size:12px;color:var(--print2)}
+/* TRIG IN A / B as steppers (MD) and CONTROL OUT1 rows (MM) */
+.ginputs .stepper{display:flex;gap:2px;align-items:center}
+.ginputs .stepper button{width:18px;height:22px;padding:0;min-width:0}
+.ginputs .stepper b{min-width:3ch;text-align:center;font-weight:500}
+.gpage .stepper b{min-width:5ch;text-align:center}

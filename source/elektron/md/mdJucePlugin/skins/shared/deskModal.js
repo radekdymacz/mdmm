@@ -10,11 +10,14 @@
      panel    a library, settings or list: Esc and a click outside close it (its own close function)
      boot     the start-up card (deskBoot.js): nothing closes it but the machine becoming ready
      menu     a context menu (deskMenu.js, K3): at the pointer, nothing dimmed, Esc and a click outside close it
+     page     a page over the workspace (0.6: GLOBAL): placed by its owner under the header, nothing dimmed, the header
+              stays clickable (its owner closes it on a click there), Esc closes it; the keys stay its own, as a panel's
    A listbox (the dropdowns) is not a modal: it stays at its button. */
 const Modal = (() => {
 	const KINDS = { confirm: { outside: false, focusLast: true, esc: true }, panel: { outside: true, focusLast: false, esc: true },
-		boot: { outside: false, focusLast: false, esc: false }, menu: { outside: true, focusLast: false, esc: true } };
-	const DIALOGS = [["#dlg", "confirm", null], ["#libpop", "panel", "closeLib"], ["#globpop", "panel", "closeGlobal"],
+		boot: { outside: false, focusLast: false, esc: false }, menu: { outside: true, focusLast: false, esc: true },
+		page: { outside: false, focusLast: false, esc: true } };
+	const DIALOGS = [["#dlg", "confirm", null], ["#libpop", "panel", "closeLib"], ["#globpop", "page", "closeGlobal"],
 		["#keyspop", "panel", "toggleKeys"], ["#audiopop", "panel", "closeAudio"], ["#machpop", "panel", "closePicker"], ["#bootcard", "boot", null],
 		["#syxpop", "panel", null], ["#deskmenu", "menu", "closeDeskMenu"]];
 	const stack = [];	// {el, kind, close, back}
@@ -26,7 +29,7 @@ const Modal = (() => {
 	const keys = d => [...box(d).querySelectorAll(FOCUSABLE)].filter(e => e.offsetParent !== null || e === document.activeElement);
 	function layer() {
 		if (!bg) { bg = document.createElement("div"); bg.id = "modalbg"; bg.className = "modalbg"; bg.hidden = true; document.body.appendChild(bg); }
-		bg.hidden = !stack.length;
+		bg.hidden = !stack.length || stack[stack.length - 1].kind === "page";	/* a page dims nothing and covers no header */
 		bg.classList.toggle("clear", stack.length > 0 && stack[stack.length - 1].kind === "menu");	/* a menu dims nothing */
 		stack.forEach((d, i) => { d.el.classList.add("modal"); d.el.style.setProperty("--mz", 60 + i * 2); });
 		if (stack.length) bg.style.setProperty("--mz", 59 + (stack.length - 1) * 2);
@@ -85,7 +88,7 @@ const Modal = (() => {
 		if (ev === "click") { if (KINDS[d.kind].outside) dismiss(d); else { const b = box(d); b.classList.remove("nudge"); void b.offsetWidth; b.classList.add("nudge"); } }
 	}, true);
 	/* focus that leaves the top dialog (a click on the page behind is stopped above) comes back */
-	document.addEventListener("focusin", e => { const d = top(); if (d && !d.el.contains(e.target) && e.target !== bg && !e.target.closest?.("#kpop")) focusIn(d); });
+	document.addEventListener("focusin", e => { const d = top(); if (d && d.kind !== "page" && !d.el.contains(e.target) && e.target !== bg && !e.target.closest?.("#kpop")) focusIn(d); });
 	if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", watch); else watch();
 	/* Tips: the LCD's titles show under the display, never over it (a native tooltip covers the fields) */
 	const tip = document.createElement("div"); tip.className = "lcdtip"; tip.hidden = true; tip.setAttribute("role", "tooltip"); document.body.appendChild(tip);
