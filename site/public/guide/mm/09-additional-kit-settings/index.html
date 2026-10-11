@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>9. Additional kit settings · Monomachine Editor guide</title>
+<meta name="description" content="Assign performance controls to parameters, set how a track's notes and glides behave, and play all six tracks from one keyboard.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/mm/09-additional-kit-settings/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261010">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>@page { @top-left { content: "9. Additional kit settings"; } }</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › <a href="/guide/mm/">Monomachine Editor</a> › Additional kit settings</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Chapters of the Monomachine Editor guide">
+<p class="gd-side-title"><a href="/guide/mm/">Monomachine Editor guide</a></p>
+<ol class="gd-side-list"><li><a href="/guide/mm/01-introduction-philosophy-highlights/">1. Introduction, philosophy, highlights</a></li>
+<li><a href="/guide/mm/02-user-interface-and-connectors/">2. User interface and connectors</a></li>
+<li><a href="/guide/mm/03-the-lcd-user-interface/">3. The LCD user interface</a></li>
+<li><a href="/guide/mm/04-quick-start/">4. Quick start</a></li>
+<li><a href="/guide/mm/05-monomachine-overview/">5. Monomachine overview</a></li>
+<li><a href="/guide/mm/06-synthesis-arrangement-kits-and-machines/">6. Synthesis arrangement: kits and machines</a></li>
+<li><a href="/guide/mm/07-track-effects/">7. Track effects</a></li>
+<li><a href="/guide/mm/08-low-frequency-oscillators/">8. Low frequency oscillators</a></li>
+<li class="gd-side-cur"><a href="/guide/mm/09-additional-kit-settings/" aria-current="page">9. Additional kit settings</a><ol class="gd-side-subs"><li><a href="#assign">ASSIGN</a></li><li><a href="#trig-track-settings">TRIG TRACK SETTINGS</a></li><li><a href="#multi-trig">MULTI TRIG</a></li><li><a href="#multi-env">MULTI ENV</a></li></ol></li>
+<li><a href="/guide/mm/10-the-pattern-sequencer-pattern-operation/">10. The pattern sequencer: pattern operation</a></li>
+<li><a href="/guide/mm/11-composing-a-pattern/">11. Composing a pattern</a></li>
+<li><a href="/guide/mm/12-tempo/">12. Tempo</a></li>
+<li><a href="/guide/mm/13-parameter-locks/">13. Parameter locks</a></li>
+<li><a href="/guide/mm/14-advanced-sequencer-control/">14. Advanced sequencer control</a></li>
+<li><a href="/guide/mm/15-additional-sequencer-features/">15. Additional sequencer features</a></li>
+<li><a href="/guide/mm/16-the-midi-sequencer/">16. The MIDI sequencer</a></li>
+<li><a href="/guide/mm/17-the-song-mode/">17. The song mode</a></li>
+<li><a href="/guide/mm/18-routing/">18. Routing</a></li>
+<li><a href="/guide/mm/19-global-settings/">19. Global settings</a></li>
+<li><span class="gd-side-todo">20. Early startup menu, technical information <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">21. Appendix A: machine reference <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">22. Appendix B: MIDI control reference <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">23. Appendix C: SysEx reference <span class="gd-vh">(to come)</span></span></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">9</span><span class="gd-ctitle">Additional kit settings</span></h1><p class="gd-cmeta">MM manual pp.1-38 to 1-44</p></header>
+<div class="gd-intro gd-prose"><p>Besides the sound of each track, a kit holds settings for how the tracks are played: what the joystick, the velocity and the key position control, which track a trig also plays, how the portamento and legato behave, and how a single keyboard drives several tracks. The assign settings and the multi trig, multi map and multi envelope settings are on the <b class="gd-ui">Perform</b> workspace. Press <kbd class="gd-key">[4]</kbd>, or click the <b class="gd-ui">Perform</b> tab. The trig track settings are on <b class="gd-ui">Sequence</b>.</p></div>
+<section class="gd-sec" id="assign" aria-labelledby="assign-h">
+<div class="gd-body gd-prose"><h2 id="assign-h">ASSIGN <a class="gd-anchor" href="#assign" aria-label="Link to ASSIGN">#</a></h2>
+<p class="gd-ref">MM manual pp.1-38, 1-39, 1-40</p>
+<p>Assign lets a performance control move a parameter of the track. Each control has two rows. A row names a page, a parameter on that page, and an amount to add.</p>
+<p>The <b class="gd-ui">Assign</b> card follows the track selected in the rail. Its header shows the track and its machine, for example Assign · T2 SWAVE-1. The keys 1 to 6 in the header choose another track.</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[4]</kbd>.</li><li>Click a tab to choose the control: JOY RL, JOY U, JOY D, VEL or KEY.</li><li>In a row, choose the page: SYN, AMP, FLT, EFX, LF1, LF2, LF3 or PTCH.</li><li>Choose the destination. The list holds the parameters of that page for the machine on the track.</li><li>Set <b class="gd-ui">ADD</b>, from −64 to +63, by dragging the box up or down. Double-click it to return to 0.</li></ol>
+<h4 class="gd-h3" id="copy-clear-and-paste-an-assign">Copy, clear and paste an assign</h4>
+<p>The LCD keys <b class="gd-ui">Copy</b>, <b class="gd-ui">Clr</b> and <b class="gd-ui">Paste</b> act on all the assign tabs of the track while <b class="gd-ui">Perform</b> is open.</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">Copy</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>.</li><li>Choose another track in the <b class="gd-ui">Assign</b> header.</li><li>Click <b class="gd-ui">Paste</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>. The track takes all the tabs of the copy.</li></ol>
+<p><b class="gd-ui">Clr</b> empties the tabs of the track. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> takes back a paste or a clear.</p>
+<h4 class="gd-h3" id="joystick">JOYSTICK</h4>
+<p>The tabs JOY RL, JOY U and JOY D hold the joystick's three directions: right and left together, up and down. Beside the rows the card shows a stick. Drag it with the pointer to try the assignment. It springs back to the middle when you let go.</p>
+<p><b class="gd-ui">MIRR</b> is on the JOY RL tab. When it is lit, a move to the left acts as the same move to the right with the sign reversed. When it is dark, only the right half of the movement acts.</p>
+<h4 class="gd-h3" id="velocity">VELOCITY</h4>
+<p>The VEL tab assigns the velocity of the notes you play to a parameter. The sequencer always plays its notes at velocity 100, so a velocity assign only responds to the keys.</p>
+<h4 class="gd-h3" id="key-tracking">KEY TRACKING</h4>
+<p>The KEY tab assigns the key you played last to a parameter. The value is low for the lowest key and near its maximum for the highest.</p>
+<p>Two keys on this tab, <b class="gd-ui">HPF tracks keys</b> and <b class="gd-ui">LPF tracks keys</b>, switch the key tracking of the high-pass and low-pass filters.</p>
+</div></section>
+<section class="gd-sec" id="trig-track-settings" aria-labelledby="trig-track-settings-h">
+<div class="gd-body gd-prose"><h2 id="trig-track-settings-h">TRIG TRACK SETTINGS <a class="gd-anchor" href="#trig-track-settings" aria-label="Link to TRIG TRACK SETTINGS">#</a></h2>
+<p class="gd-ref">MM manual pp.1-40, 1-41</p>
+<p>These settings belong to one track. They sit in the <b class="gd-ui">Trig setup</b> tab, in the header of the lock lane on <b class="gd-ui">Sequence</b>. A MIDI track has the <b class="gd-ui">MIDI page</b> tab in its place (see chapter 16).</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[1]</kbd>.</li><li>Select a synth track in the rail.</li><li>Click <b class="gd-ui">Trig setup</b> above the lock lane. The keys of the tab appear in the rail.</li></ol>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The Trig setup tab"><span>Screenshot to come</span></div><figcaption>The Trig setup tab</figcaption></figure>
+<p><b class="gd-ui">Trig position</b> chooses a second track that also plays this track's notes. The keys are T1 to T6, without the track itself, and a dash for none. The <b class="gd-ui">Mix</b> workspace draws the link as a dotted cord labelled TRIG and the target track.</p>
+<p><b class="gd-ui">Port</b> sets how the portamento works.</p>
+<ul class="gd-list"><li><b class="gd-ui">ALWAYS</b>: the track glides to every note.</li><li><b class="gd-ui">LEGATO</b>: the track glides only between notes that overlap.</li></ul>
+<p><b class="gd-ui">Legato</b> has three keys, <b class="gd-ui">AMP</b>, <b class="gd-ui">FLT</b> and <b class="gd-ui">LFO</b>. A lit key means that envelope fires again when a note starts while the one before still sounds. With all three lit every note retriggers, which suits a bass. With all three dark the notes join smoothly, which suits a lead.</p>
+<p>The value boxes <b class="gd-ui">ATK</b>, <b class="gd-ui">HOLD</b>, <b class="gd-ui">DEC</b> and <b class="gd-ui">PORT</b> above the picture are the track's amp envelope and glide amount. The picture draws one gate and the glide between two notes. Drag its dots to change the values.</p>
+</div></section>
+<section class="gd-sec" id="multi-trig" aria-labelledby="multi-trig-h">
+<div class="gd-body gd-prose"><h2 id="multi-trig-h">MULTI TRIG <a class="gd-anchor" href="#multi-trig" aria-label="Link to MULTI TRIG">#</a></h2>
+<p class="gd-ref">MM manual pp.1-41, 1-42, 1-43</p>
+<p>In multi trig mode one source plays all six tracks, as a single large mono synth.</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[4]</kbd>.</li><li>In the <b class="gd-ui">Keyboard</b> bar, click <b class="gd-ui">Multi trig</b>.</li><li>Click one of the four modes: <b class="gd-ui">ALL TRK</b>, <b class="gd-ui">SPLIT KEY</b>, <b class="gd-ui">SEQ START</b> or <b class="gd-ui">SEQ TRNSP</b>.</li><li>Play the keyboard on the page, or send notes on the multi trig channel. The second line of the LCD shows the channel in the CH field. You set the channel in <b class="gd-ui">GLOBAL</b> (chapter 19).</li></ol>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The Perform workspace in multi trig mode"><span>Screenshot to come</span></div><figcaption>The Perform workspace in multi trig mode</figcaption></figure>
+<h4 class="gd-h3" id="all-trk">ALL TRK</h4>
+<p>Every note plays on all six tracks. Each track keeps its own arpeggiator.</p>
+<h4 class="gd-h3" id="split-key">SPLIT KEY</h4>
+<p>The keyboard splits in two. Keys from the split point up play the tracks from T<b class="gd-ui">n</b> to T6. Keys below play T1 to the track before T<b class="gd-ui">n</b>.</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">SPLIT KEY</b>.</li><li>Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> beside <b class="gd-ui">Upper from</b> to choose T<b class="gd-ui">n</b>.</li><li>Drag the split marker on the keyboard to choose the split key. The marker reads, for example, SPLIT C-4 · T3-6 above.</li></ol>
+<p>In split mode the multi envelope does not act.</p>
+<h4 class="gd-h3" id="seq-start">SEQ START</h4>
+<p>Each note you play restarts the pattern. The pattern is transposed by the distance of the note from C-4.</p>
+<h4 class="gd-h3" id="seq-trnsp">SEQ TRNSP</h4>
+<p>The first note you play starts the pattern. Later notes only transpose it, so the loop never breaks.</p>
+<h4 class="gd-h3" id="timing">Timing</h4>
+<p><b class="gd-ui">SEQ START</b> and <b class="gd-ui">SEQ TRNSP</b> show a <b class="gd-ui">Timing</b> stepper. Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> to choose DIRECT, 1/16, 2/16, 4/16, 8/16, 16/16 or 32/16. With DIRECT the note acts at once. With another value it acts at the next division of that length, and the page says so when you play.</p>
+</div></section>
+<section class="gd-sec" id="multi-env" aria-labelledby="multi-env-h">
+<div class="gd-body gd-prose"><h2 id="multi-env-h">MULTI ENV <a class="gd-anchor" href="#multi-env" aria-label="Link to MULTI ENV">#</a></h2>
+<p class="gd-ref">MM manual pp.1-43, 1-44</p>
+<p>The <b class="gd-ui">Multi envelope</b> card holds an ADSR that acts on top of every track's own envelope. It acts in multi trig mode.</p>
+<p>The five boxes are <b class="gd-ui">ATK</b>, <b class="gd-ui">DEC</b>, <b class="gd-ui">SUS</b>, <b class="gd-ui">REL</b> and <b class="gd-ui">PORT</b>. PORT is the portamento for all tracks. The plot above them shows the envelope. Drag its dots to change ATK, DEC with SUS, and REL. A REL of 127 never fades, and the plot says so.</p>
+<aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>For no effect from the multi envelope, set ATK to 0, and DEC, SUS and REL to 127.</p></aside>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/mm/08-low-frequency-oscillators/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">8. Low frequency oscillators</span></a><a href="/guide/mm/10-the-pattern-sequencer-pattern-operation/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">10. The pattern sequencer: pattern operation</span></a></nav>
+</article>
+</div>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

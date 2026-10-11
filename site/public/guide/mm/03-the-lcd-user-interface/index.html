@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3. The LCD user interface · Monomachine Editor guide</title>
+<meta name="description" content="What the fields of the LCD in the top bar show, and where the rest of the machine's screen went.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/mm/03-the-lcd-user-interface/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261010">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>@page { @top-left { content: "3. The LCD user interface"; } }</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › <a href="/guide/mm/">Monomachine Editor</a> › The LCD user interface</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Chapters of the Monomachine Editor guide">
+<p class="gd-side-title"><a href="/guide/mm/">Monomachine Editor guide</a></p>
+<ol class="gd-side-list"><li><a href="/guide/mm/01-introduction-philosophy-highlights/">1. Introduction, philosophy, highlights</a></li>
+<li><a href="/guide/mm/02-user-interface-and-connectors/">2. User interface and connectors</a></li>
+<li class="gd-side-cur"><a href="/guide/mm/03-the-lcd-user-interface/" aria-current="page">3. The LCD user interface</a><ol class="gd-side-subs"><li><a href="#lcd">LCD</a></li><li><a href="#layer-edit-and-windows">LAYER EDIT AND WINDOWS</a></li></ol></li>
+<li><a href="/guide/mm/04-quick-start/">4. Quick start</a></li>
+<li><a href="/guide/mm/05-monomachine-overview/">5. Monomachine overview</a></li>
+<li><a href="/guide/mm/06-synthesis-arrangement-kits-and-machines/">6. Synthesis arrangement: kits and machines</a></li>
+<li><a href="/guide/mm/07-track-effects/">7. Track effects</a></li>
+<li><a href="/guide/mm/08-low-frequency-oscillators/">8. Low frequency oscillators</a></li>
+<li><a href="/guide/mm/09-additional-kit-settings/">9. Additional kit settings</a></li>
+<li><a href="/guide/mm/10-the-pattern-sequencer-pattern-operation/">10. The pattern sequencer: pattern operation</a></li>
+<li><a href="/guide/mm/11-composing-a-pattern/">11. Composing a pattern</a></li>
+<li><a href="/guide/mm/12-tempo/">12. Tempo</a></li>
+<li><a href="/guide/mm/13-parameter-locks/">13. Parameter locks</a></li>
+<li><a href="/guide/mm/14-advanced-sequencer-control/">14. Advanced sequencer control</a></li>
+<li><a href="/guide/mm/15-additional-sequencer-features/">15. Additional sequencer features</a></li>
+<li><a href="/guide/mm/16-the-midi-sequencer/">16. The MIDI sequencer</a></li>
+<li><a href="/guide/mm/17-the-song-mode/">17. The song mode</a></li>
+<li><a href="/guide/mm/18-routing/">18. Routing</a></li>
+<li><a href="/guide/mm/19-global-settings/">19. Global settings</a></li>
+<li><span class="gd-side-todo">20. Early startup menu, technical information <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">21. Appendix A: machine reference <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">22. Appendix B: MIDI control reference <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">23. Appendix C: SysEx reference <span class="gd-vh">(to come)</span></span></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">3</span><span class="gd-ctitle">The LCD user interface</span></h1><p class="gd-cmeta">MM manual p.1-10</p></header>
+<div class="gd-intro gd-prose"><p>The machine's screen shows the tempo, a level bar, eight parameter circles, four position boxes, the kit and the pattern. The editor's LCD is a strip in the top bar. It shows the same state: the fields that matter all the time stay in view, and the parameters of the screen live in the workspaces.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The LCD in the top bar"><span>Screenshot to come</span></div><figcaption>The LCD in the top bar</figcaption></figure>
+<p>The LCD has two lines. The first line, from the left: the engine menu, the record and play keys, <b class="gd-light">&lt;TEMPO&gt;</b>, <b class="gd-light">&lt;POSITION&gt;</b>, <b class="gd-light">&lt;PATTERN&gt;</b>, <b class="gd-light">&lt;KIT&gt;</b> and <b class="gd-light">&lt;LOCKS&gt;</b>. The second line changes with the workspace. At its right end it has the sync field, then the keys <b class="gd-light">&lt;COPY&gt;</b>, <b class="gd-light">&lt;CLR&gt;</b> and <b class="gd-light">&lt;PASTE&gt;</b>.</p></div>
+<section class="gd-sec" id="lcd" aria-labelledby="lcd-h">
+<div class="gd-body gd-prose"><h2 id="lcd-h">LCD <a class="gd-anchor" href="#lcd" aria-label="Link to LCD">#</a></h2>
+<p class="gd-ref">MM manual pp.1-4, 1-10</p>
+<h4 class="gd-h3" id="tempo">Tempo</h4>
+<p><b class="gd-light">&lt;TEMPO&gt;</b> shows the tempo in beats per minute, with one decimal. Drag it up or down to change it. When the host sets the tempo, the field is marked as the DAW's tempo and refuses edits. This is the editor's counterpart of the EXT the machine shows when it follows an external clock.</p>
+<h4 class="gd-h3" id="level-and-parameters">Level and parameters</h4>
+<p>The machine's level bar is the <b class="gd-ui">LEVEL</b> fader of the <b class="gd-ui">Mix</b> workspace. The eight parameter circles with their names are the value boxes of the <b class="gd-ui">Sound</b> workspace. Each box has the parameter's name and its value.</p>
+<h4 class="gd-h3" id="position">Position</h4>
+<p><b class="gd-light">&lt;POSITION&gt;</b> shows the playback position as bar and step, for example 02.05. It reads --.-- when the machine is stopped. In the <b class="gd-ui">Sequence</b> workspace, four lights beside the <b class="gd-ui">Page</b> key show which pages the pattern has and the page shown, and a playhead runs across the steps.</p>
+<h4 class="gd-h3" id="status">Status</h4>
+<p>The record key and the play key light while the machine records and plays. The play key reads a triangle when stopped and a square when playing. The editor has no pause state.</p>
+<h4 class="gd-h3" id="kit">Kit</h4>
+<p><b class="gd-light">&lt;KIT&gt;</b> shows the number and the name of the current kit, for example K01 MONOMACHINE. Beside the label a small field reads saved or edited. It reads edited when the values of the kit differ from the kit saved in its slot on the machine. Click the field to open the kit library.</p>
+<h4 class="gd-h3" id="pattern">Pattern</h4>
+<p><b class="gd-light">&lt;PATTERN&gt;</b> shows the current pattern, A01 to H16. The <b class="gd-ui">‹</b> and <b class="gd-ui">›</b> keys beside it step to the pattern before or after. Click the name to open the pattern chooser. A pattern that waits for the end of the current one blinks.</p>
+<h4 class="gd-h3" id="machine">Machine</h4>
+<p>The machine of the selected track is named in its row of the track rail and in the header of the <b class="gd-ui">Sound</b> workspace. The header is also the machine picker: click it to change the machine.</p>
+<h4 class="gd-h3" id="locks">Locks</h4>
+<p><b class="gd-light">&lt;LOCKS&gt;</b> counts the locked parameters in the pattern, out of 62. The Monomachine shares those 62 between all twelve tracks. The field warns when you near the limit.</p>
+<h4 class="gd-h3" id="sync">Sync</h4>
+<p>The sync field at the right of the second line reads Sync when the editor and the machine agree. It reads RECV while the emulator takes a dump from the editor. With a real machine it reads SEND and a number when edits wait to go to it. Click it to send them.</p>
+</div></section>
+<section class="gd-sec" id="layer-edit-and-windows" aria-labelledby="layer-edit-and-windows-h">
+<div class="gd-body gd-prose"><h2 id="layer-edit-and-windows-h">LAYER EDIT AND WINDOWS <a class="gd-anchor" href="#layer-edit-and-windows" aria-label="Link to LAYER EDIT AND WINDOWS">#</a></h2>
+<p class="gd-ref">MM manual p.1-10</p>
+<p>On the machine, windows open over the screen and the keys below them stay live. In the editor, dialogs open over the page with their own buttons. The kit library, the pattern chooser, the machine picker and the GLOBAL and AUDIO / MIDI panels are windows of the page. Press <kbd class="gd-key">[ESC]</kbd> to close a dialog or panel.</p>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/mm/02-user-interface-and-connectors/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">2. User interface and connectors</span></a><a href="/guide/mm/04-quick-start/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">4. Quick start</span></a></nav>
+</article>
+</div>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

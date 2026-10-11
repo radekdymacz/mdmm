@@ -20,12 +20,48 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Fix (`fix/mm-intent-cases`):** the macro moves the cursor to the active global first (up, left to slot 1, then over and down), then ENTER (`RecvSession::enterMacro(activeGlobal)`); a GLOBAL slot still to be made active is sent before the macro starts. Tests: `mmDeskFirmwareTest <MM ROM> factoryglobal` (a pattern edit with GLOBAL 3 active: GLOBAL 3 stays; GLOBAL 6 without the fix), mmDeskTest (the macro for GLOBAL 7).
 - **Status:** fixed on `fix/mm-intent-cases`.
 
+## B-066 · Monomachine 0.5.1: the LCD's PLAY value (PAT / SONG) is cut off
+
+- **From:** Radek, 2026-10-11, on 0.5.1 (screenshot): the LCD's second row on Sequence reads `SWG 50%  PLAY |  ● HOST`; the PAT or SONG value after PLAY is not shown.
+- **Cause (read from the code):** row 2 is fixed-width slots in one flex line that hides what does not fit (`mmMockup.js` `renderSub`, `L2(...)`; `mmStudio.css` `.row2 .lcd2{flex:1;min-width:0}`, `.lcd2{overflow:hidden}`, `.l2{flex:none;overflow:hidden}`). On Sequence the slots are SEQ 9ch, ×2 3ch, SPD 7ch, SWG 7ch, PLAY 9ch plus gaps; the sync field (HOST) and 0.5.1's output meter and volume strip at the LCD's right end (I-021) now take part of that width, so the last slot, PLAY, is cut. The row has no fit step of its own.
+- **Should:** every slot of row 2 visible on every workspace at 1280 px and up; same family as B-061 (top bar past the right edge) and B-065 (the LCD's size per workspace). Fix all three with one measured fit (as the GEN bar's `genBarFit`) and a journey that checks every row-2 slot and the top bar on every workspace.
+- **Status:** open: a 0.5.1 regression, for 0.6 (Radek, 2026-10-11), fixed together with B-061 and B-065.
+
+## B-065 · The LCD changes size or proportions when you switch workspaces
+
+- **From:** Discord tester M, 2026-10-11 (screenshots sent to Radek), the same session as B-062 to B-064: "the LCD seems to change size or proportions when switching between workspaces. It would be nice if it could keep a consistent size across all of them."
+- **Not yet read in the code:** which editor (most of the report was the Monomachine), and whether the LCD group is sized by the workspace's own columns or by the window. Likely the same root as B-061: the top bar's width differs per workspace, and the LCD takes what is left.
+- **Should:** the LCD keeps one size and one aspect ratio on every workspace; a journey measures the LCD's box on each workspace and fails on any difference.
+- **Status:** open, for 0.6. Needs the screenshots in the repo's notes (described, not attached: testers' images stay off the public repo).
+
+## B-064 · Monomachine: Poly, filter key tracking and the Multi envelope seem broken or missing (hard to find, limits not said)
+
+- **From:** Discord tester M, 2026-10-11, MacBook Pro M1 8 GB, macOS 26.6.2, version not given (0.5.x): "poly mode doesn't seem to be working"; could not find the switch that turns key tracking off for LPF and HPF; the "global ADSR" works "sometimes, only on a single track", and with a pattern playing has no effect.
+- **Cause (read from the code and the manual; not run):** all three exist and do what the firmware does, but the page neither leads to them nor says their limits. Poly: Perform > Keyboard mode > Poly sends the poly status (`mmMockup.js` ~3777, `mmDeskCommands.cpp` ~414); the firmware then gives six voices to the track in focus only, silences the others, and the sequencer plays chords only where the pattern has chord notes (manual 1-69). Key tracking: Perform > Assign > KEY tab, "HPF tracks keys" / "LPF tracks keys", per selected track (`mmMockup.js` ~3812, `mmDeskEdit.cpp` ~1298), as on the machine (KIT > ASSIGN > KEY). Multi envelope: Perform > Multi envelope writes all six tracks (`mmDeskEdit.cpp` ~1304), and the firmware applies it only to notes on the MULTI TRIG channel in ALL TRK mode: not to the sequencer, not to single-track notes (manual 1-43). The journey `mm-perform-poly` checks the poly flag only, not six voices.
+- **Should:** each card says what it does and when it has no effect (one line), the Filter group points to the KEY switches, and the guide (chapters 7, 9, 2) says it. Journeys that prove the sound: six voices in poly, key tracking off changes the filter, the Multi envelope shapes multi-trig notes.
+- **Rows:** MM-032, MM-087, MM-239 (poly), MM-128, MM-149 (key tracking), MM-160 (Multi envelope): done, but unproved by sound.
+- **Status:** open, for 0.6.
+
+## B-063 · Window resizing: the Monomachine window does not resize with the mouse; the Machinedrum looks distorted when resized
+
+- **From:** Discord tester M, 2026-10-11 (screenshots promised): the Monomachine Editor's window cannot be resized by dragging; the Machinedrum Editor's can, but the page "ends up looking distorted".
+- **Read in the code:** both editors use the same window code (free size, 60 % minimum, aspect free: `pluginEditorWindow.cpp` ~149-170, `editorWindowFit.h`); the page zooms to fit its 1440 x 924 design size, and below 1440 x 720 it zooms out (as in B-056). A plug-in window's resizing also depends on the host.
+- **Needs:** standalone or plug-in, which host, and the screenshots. Meanwhile: right-click > Window Size (50-300 %) and Page Zoom (Cmd +/-).
+- **Status:** open, waiting for the tester's screenshots and host.
+
+## B-062 · Monomachine Perform keyboard: a key stays lit after you let go
+
+- **From:** Discord tester M, 2026-10-11, asking for keys that light up when pressed, as Ableton's on-screen keyboard.
+- **Read in the code:** a pressed key gets the class `dn` (`mmMockup.js` ~3838), but key up never clears it (`mmMockup.js` ~4675, `mmAdapter.js` ~510): the key stays lit until another is pressed. Notes from MIDI in are not shown (I-002).
+- **Should:** lit while held (mouse, computer keyboard), dark on release; MIDI in lights the key too (I-002).
+- **Status:** open, for 0.6.
 ## B-061 · Machinedrum: in a small window the top bar's Setup keys run past the window's right edge
 
 - **From:** the journeys `md-top-cpu-meter` and `md-lcd-volume`, 2026-10-11, in `--background` runs (both hosts) while cutting 0.5.1; they pass at full size.
 - **What happens:** in the background runs' small window (the page zoomed out, 1440 CSS px wide) the CPU meter, GLOBAL and MKI/MKII end at 1520-1558 px. The CPU meter (I-018) and the output strip (I-021, 20 px there) made the bar wider; the cut was not measured before them.
 - **Cause:** as B-056: a window under 1440 x 720 points zooms the page below 100 % (mdPageZoom.h) and WebKit raises 9 to 15 px text to its minimum logical font size (15 px in that window), so the same CSS width holds less. At 100 % the bar fits at 1280 and 1440 px (the journeys pass in a full-size window).
 - **For 0.5.1:** the journeys check the bar's fit only where 9 px text is laid out at 9 px (`topOut`, shared/deskJourney.js) and say so in the step's note otherwise. Not fixed in the page: a measured tightening as the MM's GEN bar has (76-gen.js `genBarFit`) would do it.
+- **Also seen by a user:** Discord tester M, 2026-10-11, with screenshots: the MKI/MKII switch is partly cut off at the window's right edge, "when switching between workspaces" (most of the report was the Monomachine, so the MM bar may need the same fix). Not only a test-window effect.
 - **Status:** open (0.6).
 
 ## B-060 · Monomachine: a transpose changed while playing is heard only after STOP and PLAY

@@ -2,6 +2,8 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://mdmm.dev/</loc></url>
   <url><loc>https://mdmm.dev/guide/</loc></url>
+  <url><loc>https://mdmm.dev/guide/start/</loc></url>
+  <url><loc>https://mdmm.dev/guide/keys/</loc></url>
   <url><loc>https://mdmm.dev/releases/</loc></url>
   <url><loc>https://mdmm.dev/releases/0.5.1/</loc></url>
   <url><loc>https://mdmm.dev/releases/0.5.0/</loc></url>

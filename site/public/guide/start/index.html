@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Install and first start — MD + MM Editor guide</title>
+<meta name="description" content="Install the editors, add your ROM, choose the emulator or a real machine, use them in a DAW.">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/start/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MD + MM Editor">
+<meta property="og:title" content="MD + MM Editor — free editors for Machinedrum and Monomachine">
+<meta property="og:description" content="Free desktop editors for the Elektron Machinedrum and Monomachine. The real firmware, emulated, or your own machine over MIDI. VST3, AU and app for macOS (Intel and Apple silicon). Windows build, not tested.">
+<meta property="og:url" content="https://mdmm.dev/guide/start/">
+<meta property="og:image" content="https://mdmm.dev/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Free editors for Machinedrum and Monomachine, beside a screenshot of the Machinedrum Editor's step grid and GEN bar.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="MD + MM Editor — free editors for Machinedrum and Monomachine">
+<meta name="twitter:description" content="Free desktop editors for the Elektron Machinedrum and Monomachine. VST3, AU and app for macOS (Intel and Apple silicon). Windows build, not tested.">
+<meta name="twitter:image" content="https://mdmm.dev/og.png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261010">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="opt" href="/#features">Features</a>
+      <a class="keep" href="/guide/">Guide</a>
+      <a class="opt" href="/#faq">FAQ</a>
+      <a class="disc" href="https://discord.gg/8xwXwBHbtn" aria-label="Discord community"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5h11a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7l-3 2.5V11.5H2.5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="5.5" cy="7.5" r="1" fill="currentColor"/><circle cx="8" cy="7.5" r="1" fill="currentColor"/><circle cx="10.5" cy="7.5" r="1" fill="currentColor"/></svg><span>Discord</span></a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › Install and first start</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Install and first start: sections">
+<p class="gd-side-title"><a href="/guide/">User guide</a></p>
+<ol class="gd-side-list"><li class="gd-side-cur"><a href="/guide/start/" aria-current="page">Install and first start</a><ol class="gd-side-subs"><li><a href="#getting-started">Getting started</a></li><li><a href="#add-your-rom">Add your ROM</a></li><li><a href="#emulator-or-real-machine">Emulator or real machine</a></li><li><a href="#in-a-daw">In a DAW</a></li><li><a href="#workspaces">Workspaces</a></li><li><a href="#uninstall">Uninstall</a></li></ol></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/md/">Machinedrum Editor guide</a></li><li><a href="/guide/mm/">Monomachine Editor guide</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-ctitle">Install and first start</span></h1></header>
+<div class="gd-intro gd-prose"><p>Everything a first-time user needs for the Machinedrum Editor and the Monomachine Editor. Tested on macOS (Intel and Apple silicon builds, macOS 12 or later). Windows x64 and Linux x64 builds are available but not tested yet.</p></div>
+<section class="gd-sec" id="getting-started" aria-labelledby="getting-started-h">
+<div class="gd-body gd-prose"><h2 id="getting-started-h">Getting started <a class="gd-anchor" href="#getting-started" aria-label="Link to Getting started">#</a></h2>
+<ol class="gd-steps"><li><a href="/get/">Download</a> the installer for your machine. Each installer holds the standalone app, the VST3 and the AU.</li><li>Double-click the <code>.pkg</code>. It is not notarised by Apple, so macOS 15 and later blocks it. Open <b class="gd-ui">System Settings → Privacy &amp; Security</b>, scroll down to the message about the installer, click <b class="gd-ui">Open Anyway</b> and confirm with your password or Touch ID. Right-click → Open no longer works for installers.</li><li>At <b class="gd-ui">Destination Select</b> choose <b class="gd-ui">Install for all users</b> (needs an administrator) or <b class="gd-ui">Install for me only</b>. The app goes to <code>/Applications</code> or <code>~/Applications</code>. The plug-ins go to <code>/Library/Audio/Plug-Ins</code> or <code>~/Library/Audio/Plug-Ins</code>.</li><li>Open <b class="gd-ui">Machinedrum Editor</b> or <b class="gd-ui">Monomachine Editor</b> from Applications. Next, add your ROM.</li></ol>
+</div></section>
+<section class="gd-sec" id="add-your-rom" aria-labelledby="add-your-rom-h">
+<div class="gd-body gd-prose"><h2 id="add-your-rom-h">Add your ROM <a class="gd-anchor" href="#add-your-rom" aria-label="Link to Add your ROM">#</a></h2>
+<p>The editors run the machine's real firmware. You bring your own: <b class="gd-ui">Machinedrum OS 1.63</b> or <b class="gd-ui">Monomachine SFX-60 OS 1.32B</b>, an 8 MiB image. No firmware is included and we cannot supply it.</p>
+<ol class="gd-steps"><li>Open the editor. With no ROM there is no error pop-up. A start-up card says <b class="gd-ui">Machinedrum firmware needed</b> (or Monomachine).</li><li>Click the large area on the card: <b class="gd-ui">Choose your Machinedrum OS 1.63 ROM (.bin or .zip, 8 MB)</b> (for the Monomachine, <b class="gd-ui">Choose your Monomachine SFX-60 OS 1.32B ROM</b>). Under it, <b class="gd-ui">Click here to choose the file</b>. The file chooser opens. Pick the <code>.bin</code>, or a <code>.zip</code> that holds it. On macOS you can also drop the <code>.bin</code> or <code>.zip</code> onto the window; a dropped <code>.syx</code> opens the SysEx import window and dropped samples go into the Sampler. On Windows and Linux use the file chooser.</li><li>The editor checks the file and copies it into its ROM folder: on macOS <code>~/Documents/Gearmulator Preview/Machinedrum/roms/</code>, on Windows <code>Documents\Gearmulator Preview\Machinedrum\roms\</code> (or the <code>Monomachine</code> folder). The firmware stays on your computer and is sent nowhere. The machine then starts, which takes 10 to 15 seconds.</li></ol>
+<p>You can also copy the image into that folder yourself. On the card, the links <b class="gd-ui">Show the ROM folder</b> and <b class="gd-ui">Check again</b> open the folder and look again. A file that is the wrong OS or a damaged dump is refused, with the reason on the card.</p>
+<p>To replace or remove the firmware later, use <b class="gd-ui">LOAD ROM</b> in the engine menu. Your project stays. A session that starts without a ROM keeps your saved project, and in a DAW it keeps the automation and the editor setup until the ROM arrives.</p>
+</div></section>
+<section class="gd-sec" id="emulator-or-real-machine" aria-labelledby="emulator-or-real-machine-h">
+<div class="gd-body gd-prose"><h2 id="emulator-or-real-machine-h">Emulator or real machine <a class="gd-anchor" href="#emulator-or-real-machine" aria-label="Link to Emulator or real machine">#</a></h2>
+<p>The <b class="gd-ui">engine menu</b> in the editor's header chooses what the editor drives.</p>
+<ul class="gd-list"><li><b class="gd-ui">EMU OS 1.63</b> (Monomachine: <b class="gd-ui">EMU OS 1.32B</b>), the default. The real firmware runs inside the editor. It needs the ROM above. Nothing else is needed.</li><li><b class="gd-ui">HW MIDI</b> (beta). The editor drives your own machine over MIDI. Choose its MIDI in and out in <b class="gd-ui">AUDIO/MIDI…</b> in the same menu (also the <kbd class="gd-key">[,]</kbd> key). Until the machine answers, the editor dims and a card offers AUDIO / MIDI or a return to the emulator. It has so far only been tested against the emulator, not a real machine.</li></ul>
+<p>The same menu also has <b class="gd-ui">LOAD ROM</b> and, in the Machinedrum Editor, <b class="gd-ui">GLOBAL…</b>.</p>
+<p>Over HW MIDI, some controls are disabled because the machine has no MIDI message for them. The editor says why. Use the standalone app for HW MIDI. In most DAWs the plug-in has no MIDI output to the machine, so HW MIDI is disabled there.</p>
+</div></section>
+<section class="gd-sec" id="in-a-daw" aria-labelledby="in-a-daw-h">
+<div class="gd-body gd-prose"><h2 id="in-a-daw-h">In a DAW <a class="gd-anchor" href="#in-a-daw" aria-label="Link to In a DAW">#</a></h2>
+<p>After the installer, rescan plug-ins in your DAW. The plug-ins are called <b class="gd-ui">Machinedrum Editor</b> and <b class="gd-ui">Monomachine Editor</b> (by Future Native Audio), as VST3 and AU instruments. Up to 0.3.1 they were called Gearmulator MD and Gearmulator MM: the installer removes those, and projects saved with them open with the new names. If your DAW still lists the editor twice, delete the old-named <code>.vst3</code> and <code>.component</code> from <code>/Library/Audio/Plug-Ins</code> and <code>~/Library/Audio/Plug-Ins</code> by hand. (The installer does this for you; dragging in the <code>.dmg</code>'s files does not.) They follow the DAW's tempo and transport. The plug-in window shows the same editor, and the same start-up card if the ROM is missing.</p>
+<p>If a DAW will not load the AU, macOS may have quarantined it. In Terminal run:</p>
+<p><code>xattr -dr com.apple.quarantine &quot;/Library/Audio/Plug-Ins/Components/Machinedrum Editor.component&quot;</code></p>
+<p>Use <code>Monomachine Editor.component</code> for the Monomachine, and <code>~/Library/Audio/Plug-Ins/Components</code> if you installed for yourself only. Then rescan plug-ins.</p>
+<p><b class="gd-ui">Both editors open at once in Ableton Live:</b> Live shows only the selected track's plug-in windows while <b class="gd-ui">Auto-Hide Plug-In Windows</b> is on, so picking the Machinedrum track hides the Monomachine Editor and the other way round. In Live, open Settings &gt; Plug-Ins, turn <b class="gd-ui">Multiple Plug-In Windows</b> on and <b class="gd-ui">Auto-Hide Plug-In Windows</b> off.</p>
+</div></section>
+<section class="gd-sec" id="workspaces" aria-labelledby="workspaces-h">
+<div class="gd-body gd-prose"><h2 id="workspaces-h">Workspaces <a class="gd-anchor" href="#workspaces" aria-label="Link to Workspaces">#</a></h2>
+<p>Each editor has five workspaces. Switch with the tabs, or with the keys <kbd class="gd-key">[1]</kbd> to <kbd class="gd-key">[5]</kbd>.</p>
+<h4 class="gd-h3" id="machinedrum-editor">Machinedrum Editor</h4>
+<table class="gd-table"><thead><tr><th>Workspace</th><th>What it shows</th></tr></thead><tbody><tr><td><kbd class="gd-key">[1]</kbd> Sequence</td><td>The step grid for all 16 tracks, with trigs, accents, slides and drawn parameter locks. A lock needs a trig on its step: the Machinedrum (OS 1.63) keeps a lock on a step without a trig but never plays it, so there are no trigless locks as on the Monomachine.</td></tr><tr><td><kbd class="gd-key">[2]</kbd> Sound</td><td>One track: its machine, effects, routing and LFO, grouped by function.</td></tr><tr><td><kbd class="gd-key">[3]</kbd> Mix</td><td>A strip per track (level, pan, drive, sends, output, mute and solo) and the master effects.</td></tr><tr><td><kbd class="gd-key">[4]</kbd> Sampler</td><td>Sample slots as waveform tiles, loading and auditioning WAV or AIFF files, and a RAM view of steps.</td></tr><tr><td><kbd class="gd-key">[5]</kbd> Song</td><td>The arrangement: add patterns to the song, chain them and edit rows.</td></tr></tbody></table>
+<h4 class="gd-h3" id="monomachine-editor">Monomachine Editor</h4>
+<table class="gd-table"><thead><tr><th>Workspace</th><th>What it shows</th></tr></thead><tbody><tr><td><kbd class="gd-key">[1]</kbd> Sequence</td><td>A piano roll with slide and swing rows, and a lock lane. Draw notes of the length you pick (1/16, 1/8 …) and drag their ends; with Draw off (<kbd class="gd-key">[B]</kbd>), box notes to select and move them.</td></tr><tr><td><kbd class="gd-key">[2]</kbd> Sound</td><td>One track's sound, grouped by function.</td></tr><tr><td><kbd class="gd-key">[3]</kbd> Mix</td><td>Channel strips with pan, amp volume, distortion and delay send, one level fader, and the routing into the buses.</td></tr><tr><td><kbd class="gd-key">[4]</kbd> Perform</td><td>Keyboard modes, multi trig, multi map, multi envelope, assign and mutes.</td></tr><tr><td><kbd class="gd-key">[5]</kbd> Song</td><td>The arrangement: pick a song, add and edit rows.</td></tr></tbody></table>
+<h4 class="gd-h3" id="more-to-know">More to know</h4>
+<ul class="gd-list"><li><b class="gd-ui">GEN</b> (Sequence): a rhythm generator per track. <kbd class="gd-key">[R]</kbd> rolls a new variation, <kbd class="gd-key">[⌥]</kbd> <kbd class="gd-key">[R]</kbd> does every track. One undo step.</li><li><b class="gd-ui">MUTATE</b> (Sound): vary a sound at random, then undo it.</li><li><b class="gd-ui">Import SysEx…</b> and <b class="gd-ui">Export SysEx</b>, in the kit and pattern libraries: open a <code>.syx</code> and choose what to import, or save a backup.</li><li>In a library, drag a kit (or pattern) slot onto another to copy it.</li><li><b class="gd-ui">Set up sampling</b> (Machinedrum, Sampler): one card that sets up the recorder and the player.</li><li><b class="gd-ui">Transpose</b> (Monomachine, Perform): a clickable one-octave keyboard.</li></ul>
+<h4 class="gd-h3" id="known-limits">Known limits</h4>
+<ul class="gd-list"><li>A Machinedrum kit that has a CTR-AL machine cannot be edited yet.</li><li>Over HW MIDI you can send a WAV or AIFF to a sample slot when the MIDI port can send SysEx. Samples cannot be read back, so there are no waveforms and no audition. Live recording and chains need the emulator.</li></ul>
+</div></section>
+<section class="gd-sec" id="uninstall" aria-labelledby="uninstall-h">
+<div class="gd-body gd-prose"><h2 id="uninstall-h">Uninstall <a class="gd-anchor" href="#uninstall" aria-label="Link to Uninstall">#</a></h2>
+<p>Delete the three bundles of each editor. Your ROM and your settings are not touched. Up to 0.3.1 the plug-ins were called Gearmulator MD and Gearmulator MM: delete any of those left in the same folders too.</p>
+<table class="gd-table"><thead><tr><th>Format</th><th>Files</th></tr></thead><tbody><tr><td>App</td><td><code>Machinedrum Editor.app</code> and <code>Monomachine Editor.app</code> in <code>/Applications</code> (or <code>~/Applications</code>)</td></tr><tr><td>VST3</td><td><code>Machinedrum Editor.vst3</code> and <code>Monomachine Editor.vst3</code> in <code>/Library/Audio/Plug-Ins/VST3</code> (or <code>~/Library/Audio/Plug-Ins/VST3</code>)</td></tr><tr><td>AU</td><td><code>Machinedrum Editor.component</code> and <code>Monomachine Editor.component</code> in <code>/Library/Audio/Plug-Ins/Components</code> (or <code>~/Library/Audio/Plug-Ins/Components</code>)</td></tr></tbody></table>
+<p>Questions or bugs: <a href="/contact/">contact</a>. Release notes: <a href="/releases/">every version</a>.</p>
+</div></section>
+
+</article>
+</div>
+</div>
+</main>
+
+<footer class="foot">
+  <div class="wrap grid">
+    <p><b>MD + MM Editor</b> <span data-version></span> · Machinedrum Editor and Monomachine Editor<br>A NativeKloud Consulting project — <a href="https://nativekloud.com">nativekloud.com</a></p>
+    <p><b>Free software</b> under the <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPL-3</a>. <a href="https://github.com/radekdymacz/mdmm">Source</a> · <a href="https://github.com/radekdymacz/mdmm/releases">All releases</a></p>
+    <p><b>Credits.</b> Built on <a href="https://github.com/joelanders/gearmulator-md-mm">gearmulator-md-mm</a> by joelanders (the Machinedrum and Monomachine emulation) and <a href="https://github.com/dsp56300/gearmulator">Gearmulator</a> by The Usual Suspects (dsp56300). Thanks to Elektron for the instruments.</p>
+    <p class="legal"><a href="/guide/">Guide</a> · <a href="/releases/">Release notes</a> · <a href="/terms/">Terms</a> · <a href="/privacy/">Privacy</a> · <a href="/refunds/">Refunds</a> · <a href="/contact/">Contact</a> · <a href="https://discord.gg/8xwXwBHbtn">Discord</a> · <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#114;&#97;&#100;&#101;&#107;&#100;&#121;&#109;&#97;&#99;&#122;&#64;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;">&#114;&#97;&#100;&#101;&#107;&#100;&#121;&#109;&#97;&#99;&#122;&#64;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;</a></p>
+    <p><b>Trademarks.</b> Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This project is independent and not affiliated with or endorsed by Elektron, joelanders or The Usual Suspects. No firmware is included. No cookies, no analytics, no third-party scripts.</p>
+  </div>
+</footer>
+
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

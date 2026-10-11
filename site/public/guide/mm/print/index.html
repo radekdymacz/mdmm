@@ -1,0 +1,1341 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monomachine Editor guide, for print</title>
+<meta name="description" content="The whole Monomachine Editor guide on one page, for print and PDF.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/mm/print/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261010">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>
+@page contents { @top-left { content: "Contents"; } }
+@page c1 { @top-left { content: "1. Introduction, philosophy, highlights"; } }
+@page c2 { @top-left { content: "2. User interface and connectors"; } }
+@page c3 { @top-left { content: "3. The LCD user interface"; } }
+@page c4 { @top-left { content: "4. Quick start"; } }
+@page c5 { @top-left { content: "5. Monomachine overview"; } }
+@page c6 { @top-left { content: "6. Synthesis arrangement: kits and machines"; } }
+@page c7 { @top-left { content: "7. Track effects"; } }
+@page c8 { @top-left { content: "8. Low frequency oscillators"; } }
+@page c9 { @top-left { content: "9. Additional kit settings"; } }
+@page c10 { @top-left { content: "10. The pattern sequencer: pattern operation"; } }
+@page c11 { @top-left { content: "11. Composing a pattern"; } }
+@page c12 { @top-left { content: "12. Tempo"; } }
+@page c13 { @top-left { content: "13. Parameter locks"; } }
+@page c14 { @top-left { content: "14. Advanced sequencer control"; } }
+@page c15 { @top-left { content: "15. Additional sequencer features"; } }
+@page c16 { @top-left { content: "16. The MIDI sequencer"; } }
+@page c17 { @top-left { content: "17. The song mode"; } }
+@page c18 { @top-left { content: "18. Routing"; } }
+@page c19 { @top-left { content: "19. Global settings"; } }
+</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main gd-book">
+<div class="gd-page">
+<section class="gd-cover"><p class="gd-cnum">MM</p><h1>Monomachine Editor</h1><p class="gd-cover-sub">User guide · version 0.5.1</p><p class="gd-cover-note">Future Native Audio · mdmm.dev<br>The chapters follow the Monomachine manual's order. Every sentence is our own.</p></section>
+<section class="gd-contents" style="page: contents"><div class="gd-runhead"><span>Contents</span><span>Monomachine Editor</span></div><h2>Contents</h2><ol class="gd-toc gd-toc-print">
+<li><a href="#c1"><span class="gd-tnum">1</span><span class="gd-ttitle">Introduction, philosophy, highlights</span><span class="gd-tsum">What the Monomachine is, what the Monomachine Editor adds to it, and how this guide writes about controls.</span></a></li>
+<li><a href="#c2"><span class="gd-tnum">2</span><span class="gd-ttitle">User interface and connectors</span><span class="gd-tsum">The Monomachine's panel, keyboard and sockets, and where each control is on the editor's page.</span></a></li>
+<li><a href="#c3"><span class="gd-tnum">3</span><span class="gd-ttitle">The LCD user interface</span><span class="gd-tsum">What the fields of the LCD in the top bar show, and where the rest of the machine's screen went.</span></a></li>
+<li><a href="#c4"><span class="gd-tnum">4</span><span class="gd-ttitle">Quick start</span><span class="gd-tsum">Pick a pattern, play it, play the keyboard, draw notes, record live and lock a value on a step.</span></a></li>
+<li><a href="#c5"><span class="gd-tnum">5</span><span class="gd-ttitle">Monomachine overview</span><span class="gd-tsum">Six synth tracks, the sequencer, the MIDI tracks, and the keyboard modes poly, multi trig and multi map.</span></a></li>
+<li><a href="#c6"><span class="gd-tnum">6</span><span class="gd-ttitle">Synthesis arrangement: kits and machines</span><span class="gd-tsum">The machine families, the kit that holds six machines and their settings, and how to load, save, copy and clear kits and machines.</span></a></li>
+<li><a href="#c7"><span class="gd-tnum">7</span><span class="gd-ttitle">Track effects</span><span class="gd-tsum">The amp, filter, equaliser, sample rate reducer and delay that every track has after its machine.</span></a></li>
+<li><a href="#c8"><span class="gd-tnum">8</span><span class="gd-ttitle">Low frequency oscillators</span><span class="gd-tsum">The three LFOs of each track: where they point, when they start, their shape, speed and depth.</span></a></li>
+<li><a href="#c9"><span class="gd-tnum">9</span><span class="gd-ttitle">Additional kit settings</span><span class="gd-tsum">Assign performance controls to parameters, set how a track's notes and glides behave, and play all six tracks from one keyboard.</span></a></li>
+<li><a href="#c10"><span class="gd-tnum">10</span><span class="gd-ttitle">The pattern sequencer: pattern operation</span><span class="gd-tsum">Choose a pattern, chain patterns, and set the length and speed of the pattern that plays.</span></a></li>
+<li><a href="#c11"><span class="gd-tnum">11</span><span class="gd-ttitle">Composing a pattern</span><span class="gd-tsum">Write notes in the piano roll or record them live, and copy, move and clear notes, pages, tracks and patterns.</span></a></li>
+<li><a href="#c12"><span class="gd-tnum">12</span><span class="gd-ttitle">Tempo</span><span class="gd-tsum">Set the tempo by hand or by tapping, and follow a DAW or an external clock.</span></a></li>
+<li><a href="#c13"><span class="gd-tnum">13</span><span class="gd-ttitle">Parameter locks</span><span class="gd-tsum">Give a parameter its own value on single steps, draw the values in the lock lane, and record them while the pattern plays.</span></a></li>
+<li><a href="#c14"><span class="gd-tnum">14</span><span class="gd-ttitle">Advanced sequencer control</span><span class="gd-tsum">Choose which envelopes a trig fires, and write trigs that carry only a pitch or only locks.</span></a></li>
+<li><a href="#c15"><span class="gd-tnum">15</span><span class="gd-ttitle">Additional sequencer features</span><span class="gd-tsum">Arpeggiator, transpose, swing, slide, the mute window and poly mode.</span></a></li>
+<li><a href="#c16"><span class="gd-tnum">16</span><span class="gd-ttitle">The MIDI sequencer</span><span class="gd-tsum">Write notes, velocities and controller values for the six MIDI tracks.</span></a></li>
+<li><a href="#c17"><span class="gd-tnum">17</span><span class="gd-ttitle">The song mode</span><span class="gd-tsum">Arrange patterns into songs of up to 200 rows, with repeats, transposes, parts, mutes, tempo changes and loops.</span></a></li>
+<li><a href="#c18"><span class="gd-tnum">18</span><span class="gd-ttitle">Routing</span><span class="gd-tsum">Send tracks to the mix buses and outputs, feed effects from other tracks or the audio inputs, and choose the routing mode.</span></a></li>
+<li><a href="#c19"><span class="gd-tnum">19</span><span class="gd-ttitle">Global settings</span><span class="gd-tsum">The machine's own settings: MIDI channels, sync, routing, the multi map, and the SysEx import and export.</span></a></li>
+<li class="gd-tocome"><span class="gd-tnum">20</span><span class="gd-ttitle">Early startup menu, technical information</span><span class="gd-tsum">To come</span></li>
+<li class="gd-tocome"><span class="gd-tnum">21</span><span class="gd-ttitle">Appendix A: machine reference</span><span class="gd-tsum">To come</span></li>
+<li class="gd-tocome"><span class="gd-tnum">22</span><span class="gd-ttitle">Appendix B: MIDI control reference</span><span class="gd-tsum">To come</span></li>
+<li class="gd-tocome"><span class="gd-tnum">23</span><span class="gd-ttitle">Appendix C: SysEx reference</span><span class="gd-tsum">To come</span></li>
+</ol></section>
+<article class="gd-chapter" id="c1" style="page: c1">
+<div class="gd-runhead"><span>1. Introduction, philosophy, highlights</span><span>Monomachine Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">1</p><h1>Introduction, philosophy, highlights</h1>
+<p class="gd-cmeta">MM manual pp.1-1 to 1-3</p>
+</header>
+<div class="gd-intro gd-prose"><p>The Monomachine is a six-track synthesizer and sequencer made by Elektron. Each of its six synth tracks plays one machine, a sound generator of its own kind, and runs it through its own filter, effects and three LFOs. A sequencer with 64 steps per pattern plays the six tracks and six more tracks of MIDI notes.</p>
+<p>The Monomachine Editor puts the whole instrument on one web page. It runs the real Monomachine operating system, OS 1.32B, from a firmware image you supply. The page edits the machine and shows what the machine reports. The sound comes from the firmware, not from a copy of it.</p>
+<p>The editor runs as a standalone application and as a VST3 or AU plug-in. It has two engines. The emulator runs the firmware on your computer. The HW MIDI engine edits a real Monomachine over MIDI with the same page.</p></div>
+<section class="gd-sec" id="highlights">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-2</span></span></aside>
+<div class="gd-body gd-prose"><h2>HIGHLIGHTS</h2>
+<p>The machine's main features, and where each one is in the editor:</p>
+<ul class="gd-list"><li><b class="gd-ui">Six synth tracks with a sequencer.</b> The <b class="gd-ui">Sequence</b> and <b class="gd-ui">Sound</b> workspaces edit the six tracks of a kit and their patterns.</li><li><b class="gd-ui">Six MIDI tracks.</b> The switch in the track rail changes between the synth side and the MIDI side. The MIDI tracks have their own page of settings.</li><li><b class="gd-ui">Machines.</b> Five synthesis families (SuperWave, SID, DigiPRO, FM+ and VO), the basic GND machines and the FX machines. The machine picker on the <b class="gd-ui">Sound</b> workspace lists them by family.</li><li><b class="gd-ui">FX machines.</b> Through, gate reverb, chorus, dynamics, ring modulator, phaser and flanger process audio from the inputs or from other tracks instead of making sound. Set their input in the <b class="gd-ui">Mix</b> workspace and their parameters in the <b class="gd-ui">Sound</b> workspace.</li><li><b class="gd-ui">One delay per track.</b> It is tempo synchronised. Its controls are in the <b class="gd-ui">Effects</b> groups of the <b class="gd-ui">Sound</b> workspace.</li><li><b class="gd-ui">Three LFOs per track.</b> They sit at the foot of the <b class="gd-ui">Sound</b> workspace.</li><li><b class="gd-ui">Twelve arpeggiators.</b> One for each synth track and each MIDI track. They are in the Sequence dock under <b class="gd-ui">Arp</b>.</li><li><b class="gd-ui">Real-time control.</b> Every value box on the page is live. A value you drag reaches the machine as a controller message at once.</li></ul>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The Sound workspace"><span>Screenshot to come</span></div><figcaption>The Sound workspace</figcaption></figure>
+</div></section>
+<section class="gd-sec" id="digipro-user-waveforms">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-2</span></span></aside>
+<div class="gd-body gd-prose"><h2>DIGIPRO USER WAVEFORMS</h2>
+<p>The DigiPRO machines of an MKII play 64 waveforms, and the MKII lets you load your own. The editor picks a waveform from 1 to 64 in the wave fields of the DigiPRO machines, but it cannot send, receive, rename or erase user waveforms yet.</p>
+<p>The <b class="gd-ui">MKII</b> key in the top bar switches the editor between the MKI and MKII plate. The MKII adds the user waveforms and the DigiPRO double draw and ensemble machines. On the MKI plate the machine picker greys those two machines out and says &quot;MKII only&quot;.</p>
+</div></section>
+<section class="gd-sec" id="conventions">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-1,</span> <span>1-3</span></span></aside>
+<div class="gd-body gd-prose"><h2>CONVENTIONS</h2>
+<p>This guide writes controls in a fixed way.</p>
+<ul class="gd-list"><li><b class="gd-ui">Bold</b> names a control on the page: <b class="gd-ui">Mix</b>, <b class="gd-ui">Effects</b>.</li><li><kbd class="gd-key">[SPACE]</kbd> and <kbd class="gd-key">[⌘]</kbd> name a key of your computer. <kbd class="gd-key">[⌘]</kbd> is <kbd class="gd-key">[CTRL]</kbd> on Windows and Linux.</li><li><b class="gd-light">&lt;PLAY&gt;</b> names a field or light on the LCD at the top of the page.</li><li>The manual's names for the machine's own keys, such as <kbd class="gd-key">[FUNCTION]</kbd> and <kbd class="gd-key">[TRIG]</kbd>, appear where the editor does it differently, with the editor's way beside them.</li></ul>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The Monomachine has a +Drive option for storing snapshots, digibanks and waveforms. The editor does not emulate it.</p></aside>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The Monomachine Editor"><span>Screenshot to come</span></div><figcaption>The Monomachine Editor</figcaption></figure>
+</div></section>
+</article>
+<article class="gd-chapter" id="c2" style="page: c2">
+<div class="gd-runhead"><span>2. User interface and connectors</span><span>Monomachine Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">2</p><h1>User interface and connectors</h1>
+<p class="gd-cmeta">MM manual pp.1-4 to 1-9</p>
+</header>
+<div class="gd-intro gd-prose"><p>The Monomachine has a front panel of keys and knobs, an LCD, a keyboard on the SFX-6 and a row of sockets at the back. The editor has none of these as pictures. Its page holds the same functions as controls of its own, and this chapter names, for each part of the machine, the control that does its job.</p>
+<p>The page has a top bar and a body. The top bar holds the five workspace tabs, the LCD with its two lines, and the setup keys <b class="gd-ui">Undo</b>, <b class="gd-ui">Redo</b>, <b class="gd-ui">Global</b> and <b class="gd-ui">MKII</b>. The body shows the track rail on the left and the workspace on the right.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The Monomachine Editor"><span>Screenshot to come</span></div><figcaption>The Monomachine Editor</figcaption></figure>
+<p>The workspaces are <b class="gd-ui">Sequence</b>, <b class="gd-ui">Sound</b>, <b class="gd-ui">Mix</b>, <b class="gd-ui">Perform</b> and <b class="gd-ui">Song</b>. Press <kbd class="gd-key">[1]</kbd> to <kbd class="gd-key">[5]</kbd> to go to one. A sixth workspace, <b class="gd-ui">Control</b>, appears only when the plug-in has MIDI mapping on, and it is pressed with <kbd class="gd-key">[6]</kbd>.</p></div>
+<section class="gd-sec" id="master-volume-and-lcd">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-4</span></span></aside>
+<div class="gd-body gd-prose"><h2>MASTER VOLUME AND LCD</h2>
+<p>The machine has one master volume knob. The editor has none: the application or the host sets the output level.</p>
+<p>The LCD of the machine is the <b class="gd-ui">LCD</b> in the top bar. It holds the fields <b class="gd-light">&lt;TEMPO&gt;</b>, <b class="gd-light">&lt;POSITION&gt;</b>, <b class="gd-light">&lt;PATTERN&gt;</b>, <b class="gd-light">&lt;KIT&gt;</b> and <b class="gd-light">&lt;LOCKS&gt;</b>, the record and play keys, and a second line of fields that changes with the workspace. Chapter 3 describes it.</p>
+<p>The machine's own screen is not shown after start-up. What it would show is spread over the page.</p>
+</div></section>
+<section class="gd-sec" id="level-and-data-entry">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-4</span></span></aside>
+<div class="gd-body gd-prose"><h2>LEVEL AND DATA ENTRY</h2>
+<p>On the machine the LEVEL knob sets the level of the selected track and the eight DATA ENTRY knobs set the parameters of the page shown. In the editor every parameter is a value box.</p>
+<ul class="gd-list"><li>LEVEL is the <b class="gd-ui">LEVEL</b> fader of each track in the <b class="gd-ui">Mix</b> workspace.</li><li>A value box changes when you drag it up or down, or sideways. Each pixel of drag is one step.</li><li>Turn the mouse wheel over a value box to step it, one step a notch.</li><li>Click a value box and press the arrow keys to step it (<kbd class="gd-key">[↑]</kbd> or <kbd class="gd-key">[↓]</kbd>).</li><li>Double-click a value box to set it to its default.</li></ul>
+<p>The machine's accelerated edit, where you press a knob and turn it for larger steps, is a different gesture here. Hold <kbd class="gd-key">[⇧]</kbd> while you drag for fine steps, a quarter as fast. Hold <kbd class="gd-key">[⇧]</kbd> while you turn the wheel, or press Page Up or Page Down on a focused value, to step by ten.</p>
+</div></section>
+<section class="gd-sec" id="data-page">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-4</span></span></aside>
+<div class="gd-body gd-prose"><h2>DATA PAGE</h2>
+<p>The machine has seven DATA pages for each track: SYN, AMP, FLT, EFX, LF1, LF2 and LF3. It shows one at a time on its eight knobs. The <b class="gd-ui">Sound</b> workspace shows every page of the selected track at once, in groups of a few values. The <b class="gd-ui">Sequence</b> workspace has the page tabs SYN, AMP, FLT, EFX, LF1, LF2 and LF3 in the track rail. They choose the parameters the lock lane edits.</p>
+<p>Pressing both DATA PAGE keys on the machine opens the multi envelope. In the editor the multi envelope is the first card of the <b class="gd-ui">Perform</b> workspace. It works in multi trig mode only: see chapter 5.</p>
+</div></section>
+<section class="gd-sec" id="track-keys">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-4</span></span></aside>
+<div class="gd-body gd-prose"><h2>TRACK KEYS</h2>
+<p>The six TRACK keys select the track you edit.</p>
+<ul class="gd-list"><li>Click a track in the rail at the left of the page.</li><li>Press <kbd class="gd-key">[↑]</kbd> or <kbd class="gd-key">[↓]</kbd> to select the track before or after.</li><li>In the <b class="gd-ui">Mix</b> workspace, click the track's node in the routing graph.</li></ul>
+<p>To mute a track, click <b class="gd-ui">M</b> in its rail row or press <kbd class="gd-key">[M]</kbd>. Click <b class="gd-ui">S</b> to solo it. Drag across several <b class="gd-ui">M</b> keys to mute or unmute each track you cross as the first one became.</p>
+<p>To prepare mutes, hold <kbd class="gd-key">[⇧]</kbd> and click <b class="gd-ui">M</b> on the tracks. Each track shows + or X for the change it will make. The changes apply when you let go of <kbd class="gd-key">[⇧]</kbd>. This is the machine's mute window.</p>
+<ul class="gd-list"><li><kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[M]</kbd> mutes every track. When none is audible it unmutes every track.</li><li><kbd class="gd-key">[0]</kbd> unmutes and unsolos every track. The <b class="gd-ui">M/S off</b> key at the head of the rail does the same.</li><li>The <b class="gd-ui">Mutes</b> card of the <b class="gd-ui">Perform</b> workspace lists all twelve tracks, T1 to T6 and M1 to M6.</li></ul>
+<p>A muted track dims in the rail. The selected track is lit.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Mutes act on notes. A sound that already plays rings out.</p></aside>
+</div></section>
+<section class="gd-sec" id="tempo-key">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-4</span></span></aside>
+<div class="gd-body gd-prose"><h2>TEMPO KEY</h2>
+<p>The <b class="gd-light">&lt;TEMPO&gt;</b> field of the LCD is the tempo window of the machine. Drag it up or down: a pixel is half a beat per minute, and <kbd class="gd-key">[⇧]</kbd> makes it a tenth. With the field focused, the arrow keys step it.</p>
+<p>To tap a tempo, press <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[B]</kbd>. The editor uses the average of your last taps. On every workspace except <b class="gd-ui">Sequence</b> a plain <kbd class="gd-key">[B]</kbd> taps too. On <b class="gd-ui">Sequence</b> that key switches the piano roll's Draw mode.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>In a DAW the host sets the tempo. The field is marked and refuses an edit, with a note that says to change it in the DAW.</p></aside>
+</div></section>
+<section class="gd-sec" id="function-key">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-4</span></span></aside>
+<div class="gd-body gd-prose"><h2>FUNCTION KEY</h2>
+<p>The machine's <kbd class="gd-key">[FUNCTION]</kbd> key gives the other keys a second job. The editor has no such key. The second jobs are separate controls on the page, or they follow a modifier key of your computer. Hold <kbd class="gd-key">[⌥]</kbd> and the keys it changes say what they do then: <b class="gd-light">&lt;CLR&gt;</b> becomes the clear of the whole pattern, for example.</p>
+</div></section>
+<section class="gd-sec" id="kit-and-song-keys">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-4</span></span></aside>
+<div class="gd-body gd-prose"><h2>KIT AND SONG KEYS</h2>
+<p>On the machine <kbd class="gd-key">[KIT]</kbd> opens the kit menu. In the editor click the <b class="gd-light">&lt;KIT&gt;</b> field of the LCD to open the kit library. Chapter 6 describes it. The <b class="gd-ui">Song</b> workspace (<kbd class="gd-key">[5]</kbd>) is the song menu: see chapter 17.</p>
+<p><kbd class="gd-key">[FUNCTION]</kbd> + <kbd class="gd-key">[KIT]</kbd> opens the global menu. In the editor open it in one of three ways:</p>
+<ul class="gd-list"><li>click <b class="gd-ui">Global</b> in the top bar;</li><li>choose <b class="gd-ui">GLOBAL…</b> in the engine menu, the drop-down at the left of the LCD;</li><li>press the GLOBAL link in the <b class="gd-ui">AUDIO / MIDI</b> panel.</li></ul>
+<p>The panel holds eight global slots and the Control, Sync and Routing settings. <kbd class="gd-key">[ESC]</kbd> closes it.</p>
+<p>Master tune is not on the GLOBAL panel yet.</p>
+</div></section>
+<section class="gd-sec" id="trig-keys">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-5</span></span></aside>
+<div class="gd-body gd-prose"><h2>TRIG KEYS</h2>
+<p>The sixteen TRIG keys play notes and set trigs. In the editor:</p>
+<ul class="gd-list"><li>The keys <kbd class="gd-key">[A S D F G H J K L]</kbd> play the selected synth track, from any workspace. They are the white keys C to D. <kbd class="gd-key">[W E T Y U O P]</kbd> are the black keys above them.</li><li>Press <kbd class="gd-key">[Z]</kbd> or <kbd class="gd-key">[X]</kbd> to move the octave down or up, from −3 to +3. Press <kbd class="gd-key">[C]</kbd> or <kbd class="gd-key">[V]</kbd> to step the velocity through 20, 40, 60, 80, 100 and 127.</li><li>The on-screen keyboard in the <b class="gd-ui">Perform</b> workspace plays notes by click or drag.</li><li>Clicking in the piano roll of the <b class="gd-ui">Sequence</b> workspace plays the pitch.</li></ul>
+<p>To set a trig on a step, as the TRIG keys do in grid mode, click the piano roll with Draw on, click a dot in the ENV row, or right-click the step for the step menu.</p>
+<p>On the machine, <kbd class="gd-key">[BANK]</kbd> + <kbd class="gd-key">[TRIG]</kbd> picks a pattern. In the editor click the <b class="gd-light">&lt;PATTERN&gt;</b> field of the LCD for the pattern chooser, or the <b class="gd-ui">‹</b> and <b class="gd-ui">›</b> keys beside it. Chapter 4 describes picking.</p>
+</div></section>
+<section class="gd-sec" id="pattern-and-song-key">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-5</span></span></aside>
+<div class="gd-body gd-prose"><h2>PATTERN AND SONG KEY</h2>
+<p><kbd class="gd-key">[PATTERN/SONG]</kbd> switches between playing a pattern and playing a song. Click <b class="gd-light">&lt;PLAY&gt;</b> in the second line of the LCD. It reads PAT or SONG, what the machine reports, and each click switches. The <b class="gd-ui">Song</b> workspace has the same switch.</p>
+<p><kbd class="gd-key">[FUNCTION]</kbd> + <kbd class="gd-key">[PATTERN/SONG]</kbd> switches POLY mode. In the editor the <b class="gd-ui">Perform</b> workspace has a <b class="gd-ui">Poly</b> key in the <b class="gd-ui">Keyboard</b> card. Chapter 5 describes poly mode.</p>
+</div></section>
+<section class="gd-sec" id="enter-exit-and-arrow-keys">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-5</span></span></aside>
+<div class="gd-body gd-prose"><h2>ENTER, EXIT AND ARROW KEYS</h2>
+<p>The machine's <kbd class="gd-key">[ENTER/YES]</kbd> and <kbd class="gd-key">[EXIT/NO]</kbd> confirm and cancel. The editor asks in dialogs on the page: answer with the dialog's buttons, and close one with <kbd class="gd-key">[ESC]</kbd>.</p>
+<p>The arrow keys of the machine move the cursor and set the octave of the TRIG keys. In the editor <kbd class="gd-key">[←]</kbd> or <kbd class="gd-key">[→]</kbd> and <kbd class="gd-key">[↑]</kbd> or <kbd class="gd-key">[↓]</kbd> step a focused value, and <kbd class="gd-key">[Z]</kbd> and <kbd class="gd-key">[X]</kbd> set the octave of the note keys.</p>
+</div></section>
+<section class="gd-sec" id="bank-keys">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-5</span></span></aside>
+<div class="gd-body gd-prose"><h2>BANK KEYS</h2>
+<p>The machine's BANK GROUP and BANK keys choose the pattern bank. The pattern chooser shows all eight banks A to H at once. Press <kbd class="gd-key">[A–H]</kbd> inside it to jump to a bank.</p>
+<p><kbd class="gd-key">[FUNCTION]</kbd> + <kbd class="gd-key">[BANK GROUP]</kbd> opens the mute window: it is the <b class="gd-ui">Mutes</b> card in <b class="gd-ui">Perform</b>, and the prepared mutes described above.</p>
+<p>The keys that open the secondary windows, ARP, TRANSPOSE, SWING and SLIDE, are as follows.</p>
+<ul class="gd-list"><li><b class="gd-ui">Arp</b> and <b class="gd-ui">Transpose</b> are tabs of the dock in the <b class="gd-ui">Sequence</b> workspace. The <b class="gd-ui">Sound</b> workspace has keys that go to them.</li><li>Swing is a lane of the <b class="gd-ui">Sequence</b> workspace and the <b class="gd-light">&lt;SWG&gt;</b> field of the LCD's second line.</li><li>Slide is a lane of the <b class="gd-ui">Sequence</b> workspace, the row marked Slide.</li></ul>
+</div></section>
+<section class="gd-sec" id="record-play-and-stop">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-5</span></span></aside>
+<div class="gd-body gd-prose"><h2>RECORD, PLAY AND STOP</h2>
+<p>The record and play keys are at the top right of the LCD.</p>
+<ul class="gd-list"><li>Press <kbd class="gd-key">[SPACE]</kbd> or click the play key. The machine plays. Press it again to stop.</li><li>Click the record key while the machine is stopped to switch grid recording on. Editing steps on the page does not need it.</li><li>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[SPACE]</kbd> to start live recording, the machine's <kbd class="gd-key">[REC]</kbd> + <kbd class="gd-key">[PLAY]</kbd>. Press it again to stop recording.</li></ul>
+<p>Grid recording is not needed to edit steps with the mouse. The play key does not pause. It starts and stops. There is no double stop that rewinds the pattern and silences the notes. You cannot record by stepping through the pattern in the editor yet.</p>
+<p>COPY, CLEAR and PASTE are the three keys under the LCD, <b class="gd-light">&lt;COPY&gt;</b>, <b class="gd-light">&lt;CLR&gt;</b> and <b class="gd-light">&lt;PASTE&gt;</b>, with <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>, <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> and <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>. What they act on depends on the workspace:</p>
+<table class="gd-table"><thead><tr><th>Workspace</th><th>They act on</th></tr></thead><tbody><tr><td><b class="gd-ui">Sequence</b></td><td>the selected steps, or else the page of steps shown</td></tr><tr><td><b class="gd-ui">Sound</b></td><td>the machine of the selected synth track, with all seven DATA pages</td></tr><tr><td><b class="gd-ui">Perform</b></td><td>the assign tabs of the selected track</td></tr><tr><td><b class="gd-ui">Song</b></td><td>the selected song row</td></tr></tbody></table>
+<p><kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[BACKSPACE]</kbd> on <b class="gd-ui">Sequence</b> clears the whole pattern. Clicking <b class="gd-light">&lt;CLR&gt;</b> with <kbd class="gd-key">[⌥]</kbd> held does the same.</p>
+</div></section>
+<section class="gd-sec" id="scale-key">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-5</span></span></aside>
+<div class="gd-body gd-prose"><h2>SCALE KEY</h2>
+<p>The machine's <kbd class="gd-key">[SCALE]</kbd> key shows one page of 16 steps. In the editor press <b class="gd-ui">Page</b> in the <b class="gd-ui">Sequence</b> workspace, or press the square bracket keys, to step through the pages. Four lights show the pages the pattern has and which one is shown.</p>
+<p><kbd class="gd-key">[FUNCTION]</kbd> + <kbd class="gd-key">[SCALE]</kbd> opens the scale set-up. In the editor its fields are in the LCD's second line on <b class="gd-ui">Sequence</b>: <b class="gd-light">&lt;LEN&gt;</b> sets the pattern length and <b class="gd-light">&lt;SPD&gt;</b> the speed. Click a field to step it. Chapter 11 describes both.</p>
+</div></section>
+<section class="gd-sec" id="trig-select-key">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-5</span></span></aside>
+<div class="gd-body gd-prose"><h2>TRIG SELECT KEY</h2>
+<p>On the machine <kbd class="gd-key">[TRIG SELECT]</kbd> chooses which trig track the TRIG keys edit: AMP, FILTER, LFO or ALL. In the editor each step has a row of three dots, A, F and L, in the <b class="gd-ui">Sequence</b> workspace. A dot lights for each envelope the step fires. Click a dot to switch it. A step with no dots lit is trigless.</p>
+<p><kbd class="gd-key">[FUNCTION]</kbd> + <kbd class="gd-key">[TRIG SELECT]</kbd> edits the MIDI tracks. In the editor use the <b class="gd-ui">Synth</b> and <b class="gd-ui">MIDI</b> keys in the track rail, or the <b class="gd-light">&lt;SEQ&gt;</b> field in the LCD, to change between the six synth tracks and the six MIDI tracks.</p>
+</div></section>
+<section class="gd-sec" id="the-keyboard-sfx-6">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-6</span></span></aside>
+<div class="gd-body gd-prose"><h2>THE KEYBOARD (SFX-6)</h2>
+<p>The SFX-6 has a keyboard and a joystick. The editor has the same functions on the <b class="gd-ui">Perform</b> workspace.</p>
+<ul class="gd-list"><li>The <b class="gd-ui">Keyboard</b> card plays notes. It has four modes: <b class="gd-ui">Auto track</b>, <b class="gd-ui">Multi trig</b>, <b class="gd-ui">Multi map</b> and <b class="gd-ui">Poly</b>.</li><li>The <b class="gd-ui">Assign</b> card has a joystick pad. Drag the stick. It springs back when you let go. On the machine's tabletop models the pad sends pitch bend, CC 1 and CC 2.</li><li><b class="gd-ui">Multi trig</b> and <b class="gd-ui">Multi map</b> are keys of the card.</li><li>The <b class="gd-ui">Octave</b> stepper moves the on-screen keyboard.</li></ul>
+<p>The computer keys play notes too: <kbd class="gd-key">[A S D F G H J K L]</kbd> and <kbd class="gd-key">[W E T Y U O P]</kbd>. The piano roll shows the pitches the machine plays, so the keyboard LEDs have no counterpart.</p>
+</div></section>
+<section class="gd-sec" id="rear-panel">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-7</span></span></aside>
+<div class="gd-body gd-prose"><h2>REAR PANEL</h2>
+<p>Power, the voltage selector and the fuse belong to the hardware. The editor has no counterpart.</p>
+<h4 class="gd-h3">MIDI sockets</h4>
+<p>The standalone editor has the <b class="gd-ui">AUDIO / MIDI</b> panel for its MIDI. Press <kbd class="gd-key">[,]</kbd> or choose <b class="gd-ui">AUDIO/MIDI…</b> in the engine menu. The <b class="gd-ui">MIDI</b> card lists the inputs, with a light for each that is on, and an output. A button pairs a Bluetooth MIDI device. No MIDI input is on until you switch it on there.</p>
+<p>In a plug-in the host routes MIDI. The machine's own MIDI out, which carries notes, controllers, program changes, pitch bend, pressure and clock, reaches the plug-in's MIDI output. Its SysEx never does.</p>
+<p>The editor has no MIDI THRU.</p>
+<h4 class="gd-h3">Audio inputs and outputs</h4>
+<p>The audio the host gives the plug-in goes to the machine's inputs. In the <b class="gd-ui">Mix</b> workspace each FX machine has an <b class="gd-ui">In</b> selector: NEIBOR, INP A, INP B, INP AB or a bus. This is where you choose which input the machine reads.</p>
+<p>Each track has <b class="gd-ui">Out</b> keys AB, CD and EF. The routing keys under the strips set the global routing: 3xSTEREO, 3xSTEREO + AB = MIX or 6xMONO. A multi-output VST3 host receives the extra pairs. Other hosts receive the main pair.</p>
+<p>The headphone output has no counterpart. It is a copy of the AB pair.</p>
+</div></section>
+<section class="gd-sec" id="connecting">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-8,</span> <span>1-9</span></span></aside>
+<div class="gd-body gd-prose"><h2>CONNECTING</h2>
+<p>Mounting, cabling, cleaning and the battery are matters for the hardware. The editor needs only the firmware image, which it asks for on the first start.</p>
+</div></section>
+</article>
+<article class="gd-chapter" id="c3" style="page: c3">
+<div class="gd-runhead"><span>3. The LCD user interface</span><span>Monomachine Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">3</p><h1>The LCD user interface</h1>
+<p class="gd-cmeta">MM manual p.1-10</p>
+</header>
+<div class="gd-intro gd-prose"><p>The machine's screen shows the tempo, a level bar, eight parameter circles, four position boxes, the kit and the pattern. The editor's LCD is a strip in the top bar. It shows the same state: the fields that matter all the time stay in view, and the parameters of the screen live in the workspaces.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The LCD in the top bar"><span>Screenshot to come</span></div><figcaption>The LCD in the top bar</figcaption></figure>
+<p>The LCD has two lines. The first line, from the left: the engine menu, the record and play keys, <b class="gd-light">&lt;TEMPO&gt;</b>, <b class="gd-light">&lt;POSITION&gt;</b>, <b class="gd-light">&lt;PATTERN&gt;</b>, <b class="gd-light">&lt;KIT&gt;</b> and <b class="gd-light">&lt;LOCKS&gt;</b>. The second line changes with the workspace. At its right end it has the sync field, then the keys <b class="gd-light">&lt;COPY&gt;</b>, <b class="gd-light">&lt;CLR&gt;</b> and <b class="gd-light">&lt;PASTE&gt;</b>.</p></div>
+<section class="gd-sec" id="lcd">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-4,</span> <span>1-10</span></span></aside>
+<div class="gd-body gd-prose"><h2>LCD</h2>
+<h4 class="gd-h3">Tempo</h4>
+<p><b class="gd-light">&lt;TEMPO&gt;</b> shows the tempo in beats per minute, with one decimal. Drag it up or down to change it. When the host sets the tempo, the field is marked as the DAW's tempo and refuses edits. This is the editor's counterpart of the EXT the machine shows when it follows an external clock.</p>
+<h4 class="gd-h3">Level and parameters</h4>
+<p>The machine's level bar is the <b class="gd-ui">LEVEL</b> fader of the <b class="gd-ui">Mix</b> workspace. The eight parameter circles with their names are the value boxes of the <b class="gd-ui">Sound</b> workspace. Each box has the parameter's name and its value.</p>
+<h4 class="gd-h3">Position</h4>
+<p><b class="gd-light">&lt;POSITION&gt;</b> shows the playback position as bar and step, for example 02.05. It reads --.-- when the machine is stopped. In the <b class="gd-ui">Sequence</b> workspace, four lights beside the <b class="gd-ui">Page</b> key show which pages the pattern has and the page shown, and a playhead runs across the steps.</p>
+<h4 class="gd-h3">Status</h4>
+<p>The record key and the play key light while the machine records and plays. The play key reads a triangle when stopped and a square when playing. The editor has no pause state.</p>
+<h4 class="gd-h3">Kit</h4>
+<p><b class="gd-light">&lt;KIT&gt;</b> shows the number and the name of the current kit, for example K01 MONOMACHINE. Beside the label a small field reads saved or edited. It reads edited when the values of the kit differ from the kit saved in its slot on the machine. Click the field to open the kit library.</p>
+<h4 class="gd-h3">Pattern</h4>
+<p><b class="gd-light">&lt;PATTERN&gt;</b> shows the current pattern, A01 to H16. The <b class="gd-ui">‹</b> and <b class="gd-ui">›</b> keys beside it step to the pattern before or after. Click the name to open the pattern chooser. A pattern that waits for the end of the current one blinks.</p>
+<h4 class="gd-h3">Machine</h4>
+<p>The machine of the selected track is named in its row of the track rail and in the header of the <b class="gd-ui">Sound</b> workspace. The header is also the machine picker: click it to change the machine.</p>
+<h4 class="gd-h3">Locks</h4>
+<p><b class="gd-light">&lt;LOCKS&gt;</b> counts the locked parameters in the pattern, out of 62. The Monomachine shares those 62 between all twelve tracks. The field warns when you near the limit.</p>
+<h4 class="gd-h3">Sync</h4>
+<p>The sync field at the right of the second line reads Sync when the editor and the machine agree. It reads RECV while the emulator takes a dump from the editor. With a real machine it reads SEND and a number when edits wait to go to it. Click it to send them.</p>
+</div></section>
+<section class="gd-sec" id="layer-edit-and-windows">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-10</span></span></aside>
+<div class="gd-body gd-prose"><h2>LAYER EDIT AND WINDOWS</h2>
+<p>On the machine, windows open over the screen and the keys below them stay live. In the editor, dialogs open over the page with their own buttons. The kit library, the pattern chooser, the machine picker and the GLOBAL and AUDIO / MIDI panels are windows of the page. Press <kbd class="gd-key">[ESC]</kbd> to close a dialog or panel.</p>
+</div></section>
+</article>
+<article class="gd-chapter" id="c4" style="page: c4">
+<div class="gd-runhead"><span>4. Quick start</span><span>Monomachine Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">4</p><h1>Quick start</h1>
+<p class="gd-cmeta">MM manual pp.1-11 to 1-14</p>
+</header>
+<div class="gd-intro gd-prose"><p>This chapter takes you through the first things you do with the machine: choose a pattern, hear it, change it and record into it. Each part gives the steps in the editor and says where they differ from the Monomachine's panel. The editor must be running with the firmware image loaded, and the LCD must show the kit and the pattern.</p></div>
+<section class="gd-sec" id="selecting-and-playing">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-11</span></span></aside>
+<div class="gd-body gd-prose"><h2>SELECTING AND PLAYING</h2>
+<p>A pattern recalls the kit it was saved with. When you pick a pattern, the machine loads its kit.</p>
+<ol class="gd-steps"><li>Click the <b class="gd-light">&lt;PATTERN&gt;</b> field in the LCD. The pattern chooser opens: 8 banks, A to H, of 16 patterns.</li><li>Click a pattern. Stopped, the machine switches at once. Playing, it queues the pattern and starts it when the current pattern ends. The name in the LCD blinks while it waits.</li><li>To switch at once while the machine plays, hold <kbd class="gd-key">[⇧]</kbd> and click, or click <b class="gd-ui">Now</b>.</li><li>Press <kbd class="gd-key">[SPACE]</kbd>. The machine plays and the <b class="gd-light">&lt;POSITION&gt;</b> field counts.</li></ol>
+<p>You can also step through patterns with the <b class="gd-ui">‹</b> and <b class="gd-ui">›</b> keys beside the name.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The pattern chooser"><span>Screenshot to come</span></div><figcaption>The pattern chooser</figcaption></figure>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The OS loads the kit of a pattern only for the patterns in banks A to D. In banks E to H the kit that played stays. When you pick an A to D pattern with kit edits that are not saved, the editor asks first and offers to save the kit, to switch and let the machine keep the edits in its UNDO KIT, or to cancel.</p></aside>
+<p>Press <kbd class="gd-key">[SPACE]</kbd> again to stop.</p>
+</div></section>
+<section class="gd-sec" id="playing-in-multi-trig">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-12</span></span></aside>
+<div class="gd-body gd-prose"><h2>PLAYING IN MULTI TRIG</h2>
+<p>In multi trig mode one source plays all six tracks. To use it:</p>
+<ol class="gd-steps"><li>Go to the <b class="gd-ui">Perform</b> workspace (<kbd class="gd-key">[4]</kbd>).</li><li>In the <b class="gd-ui">Keyboard</b> card, click <b class="gd-ui">Multi trig</b>.</li><li>Click or drag across the on-screen keyboard. Every track plays the note. The lamps below the keyboard flash for each track that sounds.</li></ol>
+<p>Multi trig takes its notes on MIDI channel 7. Chapter 5 describes the other keyboard modes.</p>
+</div></section>
+<section class="gd-sec" id="exploring-a-pattern">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-12</span></span></aside>
+<div class="gd-body gd-prose"><h2>EXPLORING A PATTERN</h2>
+<p>Play the pattern and listen to each track.</p>
+<ol class="gd-steps"><li>Click a track in the rail to select it.</li><li>Press <kbd class="gd-key">[M]</kbd> to mute it, or <b class="gd-ui">S</b> in its rail row to solo it.</li><li>Go to the <b class="gd-ui">Sound</b> workspace (<kbd class="gd-key">[2]</kbd>) and drag the values of the track. The sound changes as you drag.</li><li>Play the track from your keyboard with <kbd class="gd-key">[A S D F G H J K L]</kbd>.</li></ol>
+<p>The piano roll plays the pitch of a note when you click it.</p>
+</div></section>
+<section class="gd-sec" id="grid-recording">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-12,</span> <span>1-13</span></span></aside>
+<div class="gd-body gd-prose"><h2>GRID RECORDING</h2>
+<p>In grid recording you place notes on the steps of a pattern one by one. The machine does this with the TRIG keys. In the editor you draw in the piano roll of the <b class="gd-ui">Sequence</b> workspace.</p>
+<ol class="gd-steps"><li>Go to the <b class="gd-ui">Sequence</b> workspace (<kbd class="gd-key">[1]</kbd>) and select a track.</li><li>If you want the pattern's own kit, open the kit library and load it: click <b class="gd-light">&lt;KIT&gt;</b>, choose a kit, click <b class="gd-ui">Load</b>. Chapter 6 describes the library.</li><li>Check that <b class="gd-ui">Draw</b> is lit. Press <kbd class="gd-key">[B]</kbd> to switch it.</li><li>Click an empty step in the roll. A note goes on it, as long as the <b class="gd-ui">Len</b> key says.</li><li>Drag the new note up or down to change its pitch.</li></ol>
+<p>To paint the same note on several steps, drag sideways. The steps you cross get the note. A drag is one undo step.</p>
+<p>To place a note off, which stops the sound at a step, hold <kbd class="gd-key">[⌥]</kbd> and click an empty step. You can also drag the end of a note: the note's length is the distance to its NOTE OFF.</p>
+<p>For a chord note on a step, hold <kbd class="gd-key">[⇧]</kbd> and click the roll there. Right-click a step for the step menu (Ctrl-click on a Mac). It offers a note on or off, NOTE OFF, trigless, slide and a chord note.</p>
+</div></section>
+<section class="gd-sec" id="live-recording">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-13</span></span></aside>
+<div class="gd-body gd-prose"><h2>LIVE RECORDING</h2>
+<p>In live recording you play the keys while the pattern runs, and the machine writes the notes to the steps that play. The firmware quantises them.</p>
+<ol class="gd-steps"><li>Select the track to record.</li><li>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[SPACE]</kbd>. The machine starts if it was stopped, and the record light comes on. Clicking the record key while the machine plays does the same.</li><li>Play with <kbd class="gd-key">[A S D F G H J K L]</kbd> or the on-screen keyboard.</li><li>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[SPACE]</kbd> again to stop recording.</li></ol>
+<p>You cannot erase notes while recording, as the machine does with <kbd class="gd-key">[EXIT]</kbd>. Clear steps in the roll instead.</p>
+</div></section>
+<section class="gd-sec" id="parameter-locks">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-13,</span> <span>1-14</span></span></aside>
+<div class="gd-body gd-prose"><h2>PARAMETER LOCKS</h2>
+<p>A parameter lock gives one parameter a value of its own for one step.</p>
+<h4 class="gd-h3">Lock a value</h4>
+<ol class="gd-steps"><li>In the <b class="gd-ui">Sequence</b> workspace, click a page tab in the rail, for example FLT.</li><li>Click the parameter, for example BASE. The lock lane under the roll now edits it.</li><li>Drag over the bars of the lane. Each step with a trig gets a lock with the value where you dragged.</li><li>To draw a straight line of values, hold <kbd class="gd-key">[⇧]</kbd> and drag.</li><li>To set a locked value from the keys, turn the wheel over a lock step. Each notch is 4, and <kbd class="gd-key">[⇧]</kbd> makes it 1.</li></ol>
+<p>The <b class="gd-light">&lt;LOCKS&gt;</b> field of the LCD counts the locks of the pattern, out of 62.</p>
+<h4 class="gd-h3">Lock live</h4>
+<p>While live recording plays, turn a value on the <b class="gd-ui">Sound</b> workspace. The machine records the value as a lock on the step that plays when the value arrives. The editor marks that step in the trig row and in the lock lane, for about three seconds, and a note says which value it locked.</p>
+<h4 class="gd-h3">Remove locks</h4>
+<ul class="gd-list"><li>Hold <kbd class="gd-key">[⌥]</kbd> and drag over the lane to erase the locks of one parameter.</li><li>The clear key in the rail header clears the locks of the parameter you are looking at. Hold <kbd class="gd-key">[⌥]</kbd> and click it to clear every lock of the track.</li><li>Select a step and press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd>. The step loses its note, its slide and its locks together.</li></ul>
+<p>You cannot remove the locks of a step and keep its note yet.</p>
+</div></section>
+</article>
+<article class="gd-chapter" id="c5" style="page: c5">
+<div class="gd-runhead"><span>5. Monomachine overview</span><span>Monomachine Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">5</p><h1>Monomachine overview</h1>
+<p class="gd-cmeta">MM manual pp.1-15, 1-16</p>
+</header>
+<div class="gd-intro gd-prose"><p>The Monomachine has six synth tracks. Each track has its own machine, filter, amp, effects, delay and three LFOs. The sequencer plays the six tracks from one pattern, and six MIDI tracks beside them. The keyboard can play the tracks one at a time, all together, or as a trigger for patterns.</p></div>
+<section class="gd-sec" id="six-individual-tracks">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-15</span></span></aside>
+<div class="gd-body gd-prose"><h2>SIX INDIVIDUAL TRACKS</h2>
+<p>The six tracks are independent. A kit holds a machine for each and a full set of parameters. In the editor:</p>
+<ul class="gd-list"><li>The track rail at the left lists the tracks T1 to T6 with their machines.</li><li>The <b class="gd-ui">Sound</b> workspace edits the selected track.</li><li>The <b class="gd-ui">Mix</b> workspace shows the six tracks side by side, each with its own level, pan and routing.</li></ul>
+<p>Chapter 6 describes the machines and kits.</p>
+</div></section>
+<section class="gd-sec" id="six-track-sequencing">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-15</span></span></aside>
+<div class="gd-body gd-prose"><h2>SIX TRACK SEQUENCING</h2>
+<p>A pattern holds the notes, the envelope trigs and the parameter locks of the six tracks. The <b class="gd-ui">Sequence</b> workspace edits them: a piano roll for notes, a row of A, F and L dots for the envelope trigs, and a lock lane for the parameters. Chapters 10 to 15 describe the sequencer.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The Sequence workspace"><span>Screenshot to come</span></div><figcaption>The Sequence workspace</figcaption></figure>
+</div></section>
+<section class="gd-sec" id="midi-sequencing">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-15</span></span></aside>
+<div class="gd-body gd-prose"><h2>MIDI SEQUENCING</h2>
+<p>Six more tracks in each pattern send MIDI notes. Click <b class="gd-ui">MIDI</b> in the track rail of the <b class="gd-ui">Sequence</b> workspace to edit them. The rail then lists M1 to M6, each with its MIDI channel. The <b class="gd-ui">Sound</b> workspace shows the MIDI page of the selected MIDI track: note length and velocity, pitch bend and program change, and four controllers. Chapter 16 describes the MIDI sequencer.</p>
+</div></section>
+<section class="gd-sec" id="poly-mode">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-15</span></span></aside>
+<div class="gd-body gd-prose"><h2>POLY MODE</h2>
+<p>In poly mode all six synth engines play the selected track, so it has six voices. The other tracks go quiet.</p>
+<ol class="gd-steps"><li>Go to the <b class="gd-ui">Perform</b> workspace (<kbd class="gd-key">[4]</kbd>).</li><li>In the <b class="gd-ui">Keyboard</b> card, click <b class="gd-ui">Poly</b>.</li><li>Select the track to play. The rail rows of the other tracks dim.</li><li>Play the keyboard. Poly mode takes its notes on MIDI channel 9, as auto track does.</li></ol>
+<p>On the <b class="gd-ui">Perform</b> workspace the <b class="gd-light">&lt;MODE&gt;</b> field in the second line of the LCD reads POLY while the mode is on. Click <b class="gd-ui">Auto track</b> to leave it.</p>
+</div></section>
+<section class="gd-sec" id="multi-trig-mode">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-15</span></span></aside>
+<div class="gd-body gd-prose"><h2>MULTI TRIG MODE</h2>
+<p>In multi trig mode one source plays all six tracks, as if they were one large mono synth. Click <b class="gd-ui">Multi trig</b> in the <b class="gd-ui">Keyboard</b> card. The mode takes its notes on MIDI channel 7.</p>
+<p>Multi trig has four settings. Choose one with the keys in the title bar of the <b class="gd-ui">Keyboard</b> card:</p>
+<table class="gd-table"><thead><tr><th>Setting</th><th>What the keyboard does</th></tr></thead><tbody><tr><td><b class="gd-ui">ALL TRK</b></td><td>each note plays all six tracks; each track keeps its own arpeggiator</td></tr><tr><td><b class="gd-ui">SPLIT KEY</b></td><td>keys from the split point play the tracks from <b class="gd-ui">Upper from</b> to T6; keys below play the tracks before it</td></tr><tr><td><b class="gd-ui">SEQ START</b></td><td>each note restarts the pattern, transposed from C-4</td></tr><tr><td><b class="gd-ui">SEQ TRNSP</b></td><td>the first note starts the pattern; later notes only transpose it</td></tr></tbody></table>
+<p>In <b class="gd-ui">SPLIT KEY</b> mode, drag the split marker on the keyboard to move the split point, and click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> beside <b class="gd-ui">Upper from</b> to set the first track of the upper zone. In the two sequencer settings, the <b class="gd-ui">Timing</b> stepper sets when the change happens: DIRECT, or one of the values from 1/16 to 32/16.</p>
+<h4 class="gd-h3">Multi envelope</h4>
+<p>The <b class="gd-ui">Multi envelope</b> card of the <b class="gd-ui">Perform</b> workspace holds an ADSR that works on top of every track's own envelope. It has the values ATK, DEC, SUS, REL and PORT. Drag the dots in the plot or the value boxes. For no effect, set ATK to 0 and DEC, SUS and REL to 127. SPLIT KEY does not use it.</p>
+</div></section>
+<section class="gd-sec" id="multi-map-mode">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-15</span></span></aside>
+<div class="gd-body gd-prose"><h2>MULTI MAP MODE</h2>
+<p>In multi map mode key ranges of the keyboard start patterns. Click <b class="gd-ui">Multi map</b> in the <b class="gd-ui">Keyboard</b> card. The mode takes its notes on MIDI channel 8.</p>
+<p>The <b class="gd-ui">Multi map</b> card lists the ranges. Each row has:</p>
+<ul class="gd-list"><li>the range of keys, its upper key set with <b class="gd-ui">−</b> and <b class="gd-ui">+</b>;</li><li>the pattern to start, or CUR for the current pattern;</li><li>OFS, the first step to play, and LEN, the number of steps. LEN needs an offset first;</li><li>TRN, the transpose;</li><li>the timing, which waits for a bar line.</li></ul>
+<p>Click <b class="gd-ui">Split selected range</b> to add a range. Click the × on a row to delete it. The keyboard shows the ranges as bands with the pattern names. The ranges are stored in the global slot.</p>
+</div></section>
+<section class="gd-sec" id="figure-1">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-16</span></span></aside>
+<div class="gd-body gd-prose"><h2>FIGURE 1</h2>
+<p>The manual's overview figure shows how the tracks, effects and outputs join. The <b class="gd-ui">Mix</b> workspace draws this as a signal graph: a node for each track with its machine, three buses AB, CD and EF below, and the outputs at the right. Click a node to select its strip.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The routing graph"><span>Screenshot to come</span></div><figcaption>The routing graph</figcaption></figure>
+</div></section>
+</article>
+<article class="gd-chapter" id="c6" style="page: c6">
+<div class="gd-runhead"><span>6. Synthesis arrangement: kits and machines</span><span>Monomachine Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">6</p><h1>Synthesis arrangement: kits and machines</h1>
+<p class="gd-cmeta">MM manual pp.1-17 to 1-25</p>
+</header>
+<div class="gd-intro gd-prose"><p>Each of the six synth tracks plays one machine. A machine is a kind of sound generator. Its output goes through the same chain on every track: the amp, the filter, the effects and the delay. A kit stores the machines of all six tracks and everything that belongs to them.</p></div>
+<section class="gd-sec" id="arrangement">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-17</span></span></aside>
+<div class="gd-body gd-prose"><h2>ARRANGEMENT</h2>
+<p>The machines come in families:</p>
+<table class="gd-table"><thead><tr><th>Family</th><th>What it is</th></tr></thead><tbody><tr><td>SWAVE</td><td>SuperWave: analogue style oscillators with unison and sub oscillators</td></tr><tr><td>SID</td><td>the 6581 chip, with ring modulation and sync</td></tr><tr><td>DPRO</td><td>DigiPRO: digital waves, a beat box of drum sounds, and on the MKII a double draw and an ensemble</td></tr><tr><td>FM+</td><td>frequency modulation, in three arrangements</td></tr><tr><td>VO</td><td>a voice with vowels and consonants</td></tr><tr><td>GND</td><td>basic sources: silence, a sine and noise</td></tr><tr><td>FX</td><td>machines that process audio from the inputs or other tracks</td></tr></tbody></table>
+<p>Every track also has the same track effects after its machine: an amp with an envelope and distortion, a filter with its own envelope, an equaliser, sample rate reduction and a tempo synchronised delay. Chapter 7 describes them.</p>
+</div></section>
+<section class="gd-sec" id="kits">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-18</span></span></aside>
+<div class="gd-body gd-prose"><h2>KITS</h2>
+<p>A kit holds the machine of each track and all seven DATA pages of each track, with the LFOs. It also holds the MIDI pages of the six MIDI tracks, the routing and input of each track, the trig settings, the multi envelope and the name.</p>
+<p>The editor edits the kit the machine plays. It does not write a value to a stored kit slot until you save.</p>
+</div></section>
+<section class="gd-sec" id="link-kits-and-patterns">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-18</span></span></aside>
+<div class="gd-body gd-prose"><h2>LINK KITS AND PATTERNS</h2>
+<p>Every pattern recalls a kit. When you pick a pattern, the machine loads its kit, unless the kit is already the one that plays.</p>
+<p>The pattern chooser shows, on each pattern, its length and its kit as K and a number. The kit library shows on each kit slot the patterns that link to it. A kit no pattern links to ends its name with a star and reads &quot;no pattern&quot;.</p>
+<p>If you pick a pattern with a different kit while the current kit has edits that are not saved, the editor asks. It offers <b class="gd-ui">Save kit, then switch</b>, a switch that leaves the edits to the machine's UNDO KIT, and <b class="gd-ui">Cancel</b>.</p>
+<p>Loading a kit from the library makes it the kit of the current pattern. You cannot set the kit of another pattern directly.</p>
+</div></section>
+<section class="gd-sec" id="loading-a-kit">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-19</span></span></aside>
+<div class="gd-body gd-prose"><h2>LOADING A KIT</h2>
+<p>The machine holds 128 kits. The kit library lists them all.</p>
+<ol class="gd-steps"><li>Click the <b class="gd-light">&lt;KIT&gt;</b> field in the LCD. The kit library opens with the 128 slots as a grid.</li><li>Click a slot, or move to it with the arrow keys and press <kbd class="gd-key">[ENTER]</kbd>. The kit loads. If the current kit has unsaved edits, the editor asks first.</li><li>To select a slot without loading it, hold <kbd class="gd-key">[⌥]</kbd> and click.</li></ol>
+<p>The current kit is marked in the grid, with ok or ed to say whether it is saved or edited. Slots with a name show it; empty slots read EMPTY. <kbd class="gd-key">[ESC]</kbd> closes the library.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The kit library"><span>Screenshot to come</span></div><figcaption>The kit library</figcaption></figure>
+<h4 class="gd-h3">Load an empty kit</h4>
+<p>Load an empty slot to start from nothing. The kit has six tracks with the machine GND-SIN, the sine, and default settings.</p>
+</div></section>
+<section class="gd-sec" id="saving-and-naming">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-19,</span> <span>1-20</span></span></aside>
+<div class="gd-body gd-prose"><h2>SAVING AND NAMING</h2>
+<p>The small field beside the <b class="gd-light">&lt;KIT&gt;</b> label reads <b class="gd-ui">edited</b> while the kit differs from its saved slot on the machine, and <b class="gd-ui">saved</b> when it matches. The kit edits are kept in the project of your DAW as well.</p>
+<ul class="gd-list"><li><b class="gd-ui">Save</b> writes the current kit to its own slot. The slot's old content goes to the machine's UNDO KIT.</li><li><b class="gd-ui">Save as</b> writes it to the slot you selected, after asking if that slot is used, and the kit becomes that slot's kit. The slot you saved from keeps what it had.</li></ul>
+<p>To rename a kit, select its slot and press <kbd class="gd-key">[F2]</kbd>, or double-click the slot, or click <b class="gd-ui">Rename</b>. Type a name of up to 11 characters and press <kbd class="gd-key">[ENTER]</kbd>. The editor takes the name as text, so there is no character picker.</p>
+</div></section>
+<section class="gd-sec" id="undo-kit">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-20</span></span></aside>
+<div class="gd-body gd-prose"><h2>UNDO KIT</h2>
+<p>The machine keeps one extra kit, the UNDO KIT, as the first entry of its kit list. It holds the kit lost to the last load or overwrite without saving. The dialogs of the editor name it when an action puts a kit there. The editor's own undo, <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd>, works on top of it.</p>
+<p>You cannot open the UNDO KIT slot from the editor yet.</p>
+</div></section>
+<section class="gd-sec" id="copy-kit">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-21</span></span></aside>
+<div class="gd-body gd-prose"><h2>COPY KIT</h2>
+<ol class="gd-steps"><li>Open the kit library and select the kit slot.</li><li>Click <b class="gd-ui">Copy</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C / V]</kbd>.</li><li>Select the slot to copy into and click <b class="gd-ui">Paste</b>.</li></ol>
+<p>You can also drag a slot onto another slot to copy it there.</p>
+<p>Pasting a kit writes it to the machine as a dump. The machine takes a dump only in its receive state, so the editor passes the dump through the machine's SYSEX RECV, and the sync field of the LCD reads RECV while it does. With a real Monomachine the field reads SEND and a number until you send the edit.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>To hear a kit pasted into the slot that plays, load that slot again.</p></aside>
+</div></section>
+<section class="gd-sec" id="clear-kit">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-21</span></span></aside>
+<div class="gd-body gd-prose"><h2>CLEAR KIT</h2>
+<ol class="gd-steps"><li>Select the kit slot in the library.</li><li>Click <b class="gd-ui">Clear</b>, or press <kbd class="gd-key">[DELETE]</kbd>.</li></ol>
+<p>The slot gets the empty kit: six sine machines and default settings. The machine has no clear message, so the editor writes the empty kit as a dump, through SYSEX RECV. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> undoes a paste, clear or rename.</p>
+</div></section>
+<section class="gd-sec" id="assigning-a-machine">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-22</span></span></aside>
+<div class="gd-body gd-prose"><h2>ASSIGNING A MACHINE</h2>
+<ol class="gd-steps"><li>Select the track in the rail.</li><li>Go to the <b class="gd-ui">Sound</b> workspace (<kbd class="gd-key">[2]</kbd>).</li><li>Click the machine name at the head of the workspace. The machine picker opens.</li><li>Click a family at the left, then a machine. Move the pointer over a machine to read what it is and what its eight synthesis parameters are called.</li></ol>
+<p>The track now plays the machine, with the machine's start values for the synthesis page.</p>
+<p>The picker has a toggle, <b class="gd-ui">Keep track effects + LFOs</b>. While it is lit, the amp, filter, effects and LFO pages of the track stay as they were. Switch it off to set those pages to their start values too.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The machine picker"><span>Screenshot to come</span></div><figcaption>The machine picker</figcaption></figure>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Changing the machine removes the step locks the track had on the synthesis page, because the old machine's parameters do not exist on the new one.</p></aside>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A processing machine (an FX machine) needs audio. If the track did not have one, the editor sets its input to INP AB on track 1 or to the track before on the others, and sets AMP DEC and REL to 127 so the sound passes. A note says so.</p></aside>
+</div></section>
+<section class="gd-sec" id="copy-machine">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-23</span></span></aside>
+<div class="gd-body gd-prose"><h2>COPY MACHINE</h2>
+<ol class="gd-steps"><li>Go to the <b class="gd-ui">Sound</b> workspace and select the track.</li><li>Click <b class="gd-light">&lt;COPY&gt;</b> under the LCD, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>. The machine and all seven DATA pages are copied.</li><li>Select another track and click <b class="gd-light">&lt;PASTE&gt;</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>. The track gets the machine and its settings.</li></ol>
+</div></section>
+<section class="gd-sec" id="clear-machine">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-24</span></span></aside>
+<div class="gd-body gd-prose"><h2>CLEAR MACHINE</h2>
+<p>On the <b class="gd-ui">Sound</b> workspace, click <b class="gd-light">&lt;CLR&gt;</b>. The track plays GND-SIN again, with every page at its start values.</p>
+</div></section>
+<section class="gd-sec" id="setting-the-mix-bus">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-24</span></span></aside>
+<div class="gd-body gd-prose"><h2>SETTING THE MIX BUS</h2>
+<p>A track sends its sound to one or two mix buses: AB, CD and EF. In the <b class="gd-ui">Mix</b> workspace each track strip has three <b class="gd-ui">Out</b> keys. Click a key to send the track to that bus or to stop sending it. A track can feed two buses. Chapter 18 describes routing.</p>
+</div></section>
+<section class="gd-sec" id="parameter-editing">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-25</span></span></aside>
+<div class="gd-body gd-prose"><h2>PARAMETER EDITING</h2>
+<p>A track has seven pages of eight parameters, 56 in all. The <b class="gd-ui">Sound</b> workspace shows them as groups of a few values, with a small picture where the values draw a shape:</p>
+<ul class="gd-list"><li>the synthesis page, whose groups depend on the machine;</li><li>the amp, filter and effects pages, the same on every machine;</li><li>the three LFOs at the foot.</li></ul>
+<p>Most synth machines have TUNE, a fine tune in semitones, on the synthesis page. The beat box and the FX machines do not.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The Sound workspace"><span>Screenshot to come</span></div><figcaption>The Sound workspace</figcaption></figure>
+<p>Every edit goes to the machine at once, as a controller message, but it is not in the stored kit until you save. The <b class="gd-ui">edited</b> mark in the LCD says so.</p>
+</div></section>
+</article>
+<article class="gd-chapter" id="c7" style="page: c7">
+<div class="gd-runhead"><span>7. Track effects</span><span>Monomachine Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">7</p><h1>Track effects</h1>
+<p class="gd-cmeta">MM manual pp.1-26 to 1-34</p>
+</header>
+<div class="gd-intro gd-prose"><p>The sound of a machine passes through the same chain on every track: amp, filter, equaliser, sample rate reduction and delay. The chain is the same for every machine, so these parameters mean the same on every track. All of them are on the <b class="gd-ui">Sound</b> workspace, in the groups under the machine's own. Select the track, press <kbd class="gd-key">[2]</kbd> and drag the values.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The amp, filter and effects groups"><span>Screenshot to come</span></div><figcaption>The amp, filter and effects groups</figcaption></figure>
+<p>A value box changes when you drag it, turn the wheel over it or press an arrow key on it. Double-click it for its default. Where a group has a picture, drag the dots in the picture to change the values they stand for.</p></div>
+<section class="gd-sec" id="level">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-26</span></span></aside>
+<div class="gd-body gd-prose"><h2>LEVEL</h2>
+<p>LEVEL is the track's mix level, at the end of its path. It is the <b class="gd-ui">LEVEL</b> fader of the track's strip in the <b class="gd-ui">Mix</b> workspace. It can neither be locked on a step nor moved by an LFO. To balance tracks against each other use LEVEL. For movement inside the sound use VOL.</p>
+</div></section>
+<section class="gd-sec" id="amp-envelope">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-26,</span> <span>1-27</span></span></aside>
+<div class="gd-body gd-prose"><h2>AMP ENVELOPE</h2>
+<p>The <b class="gd-ui">Envelope</b> group of the amp page holds four values.</p>
+<table class="gd-table"><thead><tr><th>Value</th><th>What it sets</th></tr></thead><tbody><tr><td>ATK</td><td>the attack: how long the level takes to rise after a trig</td></tr><tr><td>HOLD</td><td>how long the level stays up, before the decay starts</td></tr><tr><td>DEC</td><td>the decay: how long the level takes to fall</td></tr><tr><td>REL</td><td>the release: how long it falls after a NOTE OFF</td></tr></tbody></table>
+<p>ATK, DEC and REL are times. Each 8 more about doubles the time. ATK 64 reaches 90 percent of the level in about 0.14 seconds, and DEC 64 falls 20 dB in about 0.55 seconds. DEC 127 holds the level until the NOTE OFF, and REL 127 never fades. HOLD counts in steps of the pattern: HOLD 8 is one step, so it follows the tempo.</p>
+<p>The picture shows the shape as the machine plays it, with the release dashed. Drag its dots to set the values.</p>
+<aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>The <b class="gd-ui">Trig setup</b> plate in the <b class="gd-ui">Sequence</b> workspace draws the same envelope together with the portamento, and shows how long a gate really sounds in steps at the current tempo.</p></aside>
+</div></section>
+<section class="gd-sec" id="distortion">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-27</span></span></aside>
+<div class="gd-body gd-prose"><h2>DISTORTION</h2>
+<p>DIST is in the <b class="gd-ui">Drive</b> group of the amp page. Drag the dot in its picture up or down, or use the value box. Above 0 it overloads the sound. Below 0 it adds headroom: the sound is quieter and cleaner.</p>
+</div></section>
+<section class="gd-sec" id="track-volume">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-28</span></span></aside>
+<div class="gd-body gd-prose"><h2>TRACK VOLUME</h2>
+<p>VOL is the volume of the voice. It is in the <b class="gd-ui">Level · pan</b> group of the amp page, and it is the trim at the top of each strip in the <b class="gd-ui">Mix</b> workspace, as AMP VOL. VOL comes before LEVEL in the path. Unlike LEVEL you can lock it on a step and an LFO can move it.</p>
+</div></section>
+<section class="gd-sec" id="pan">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-29</span></span></aside>
+<div class="gd-body gd-prose"><h2>PAN</h2>
+<p>PAN places the track in the stereo field, from L64 to R63. It is in the <b class="gd-ui">Level · pan</b> group and in each strip of the <b class="gd-ui">Mix</b> workspace, where you drag it sideways. Double-click it for the centre.</p>
+</div></section>
+<section class="gd-sec" id="portamento">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-29</span></span></aside>
+<div class="gd-body gd-prose"><h2>PORTAMENTO</h2>
+<p>PORT sets how long the pitch glides from the note before to the next note. It is in the <b class="gd-ui">Glide</b> group of the amp page and in the <b class="gd-ui">Trig setup</b> plate of the <b class="gd-ui">Sequence</b> workspace. In the plate, <b class="gd-ui">Port</b> chooses when it glides: <b class="gd-ui">ALWAYS</b> glides to every note, and <b class="gd-ui">LEGATO</b> glides only between notes that overlap.</p>
+</div></section>
+<section class="gd-sec" id="filter">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-30</span></span></aside>
+<div class="gd-body gd-prose"><h2>FILTER</h2>
+<p>The filter of each track is a 24 dB filter built from a high-pass and a low-pass. The <b class="gd-ui">Filter</b> group of the filter page holds four values:</p>
+<table class="gd-table"><thead><tr><th>Value</th><th>What it sets</th></tr></thead><tbody><tr><td>BASE</td><td>the cutoff of the high-pass</td></tr><tr><td>WDTH</td><td>the gap from the high-pass up to the low-pass</td></tr><tr><td>HPQ</td><td>the resonance of the high-pass</td></tr><tr><td>LPQ</td><td>the resonance of the low-pass</td></tr></tbody></table>
+<p>In the picture, drag the dots sideways for BASE and WDTH and up for HPQ and LPQ. A dashed line shows where the filter envelope takes the filter.</p>
+</div></section>
+<section class="gd-sec" id="filter-envelope">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-31</span></span></aside>
+<div class="gd-body gd-prose"><h2>FILTER ENVELOPE</h2>
+<p>The <b class="gd-ui">Filter env</b> group holds ATK and DEC, the attack and decay times of the filter envelope, and BOFS and WOFS, how far the envelope moves BASE and WDTH.</p>
+</div></section>
+<section class="gd-sec" id="filter-tracking">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-31</span></span></aside>
+<div class="gd-body gd-prose"><h2>FILTER TRACKING</h2>
+<p>Both filters can follow the pitch of the notes. The switches are on the <b class="gd-ui">Perform</b> workspace, in the <b class="gd-ui">Assign</b> card.</p>
+<ol class="gd-steps"><li>Select the track with the numbered keys in the title of the <b class="gd-ui">Assign</b> card.</li><li>Click the <b class="gd-ui">KEY</b> tab.</li><li>Click <b class="gd-ui">HPF tracks keys</b> or <b class="gd-ui">LPF tracks keys</b>. A lit key means the filter follows the keys.</li></ol>
+</div></section>
+<section class="gd-sec" id="eq">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-32</span></span></aside>
+<div class="gd-body gd-prose"><h2>EQ</h2>
+<p>The <b class="gd-ui">EQ</b> group holds EQF, the frequency of the equaliser band, and EQG, its gain. A negative EQG cuts the band and a positive one boosts it.</p>
+</div></section>
+<section class="gd-sec" id="sample-rate-reduction">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-32</span></span></aside>
+<div class="gd-body gd-prose"><h2>SAMPLE RATE REDUCTION</h2>
+<p>SRR, in its own group, reduces the sample rate of the track for a lo-fi sound. Drag its dot, or the value box.</p>
+</div></section>
+<section class="gd-sec" id="delay">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-33</span></span></aside>
+<div class="gd-body gd-prose"><h2>DELAY</h2>
+<p>Each track has its own delay, synchronised to the tempo. The <b class="gd-ui">Delay</b> group holds three values and the <b class="gd-ui">Delay filter</b> group two.</p>
+<table class="gd-table"><thead><tr><th>Value</th><th>What it sets</th></tr></thead><tbody><tr><td>DSND</td><td>the send into the delay. A negative value keeps the stereo image, a positive value is ping-pong, 0 is no delay</td></tr><tr><td>DTIM</td><td>the delay time, in 256th notes</td></tr><tr><td>DFB</td><td>the feedback. The editor warns above 64</td></tr><tr><td>DBAS</td><td>the base of the filter in the feedback path</td></tr><tr><td>DWID</td><td>the width of that filter</td></tr></tbody></table>
+<p>DSND is also in the trim row at the top of each strip in the <b class="gd-ui">Mix</b> workspace, with VOL and DIST.</p>
+</div></section>
+</article>
+<article class="gd-chapter" id="c8" style="page: c8">
+<div class="gd-runhead"><span>8. Low frequency oscillators</span><span>Monomachine Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">8</p><h1>Low frequency oscillators</h1>
+<p class="gd-cmeta">MM manual pp.1-35 to 1-37</p>
+</header>
+<div class="gd-intro gd-prose"><p>Each synth track has three LFOs. An LFO moves one parameter of the track, or of the pitch, in a repeating shape. The three LFOs of a track are independent, and an LFO can move a parameter of another LFO.</p>
+<p>The LFOs are the bottom row of the <b class="gd-ui">Sound</b> workspace. Each has its own group, titled <b class="gd-ui">LFO 1</b>, <b class="gd-ui">LFO 2</b> and <b class="gd-ui">LFO 3</b>. A group holds, from the top:</p>
+<ul class="gd-list"><li>a picture of the LFO over two bars, with ticks where the LFO is triggered;</li><li>the target: <b class="gd-ui">PAGE</b> and <b class="gd-ui">DEST</b> selects, with the <b class="gd-ui">TRIG</b> keys beside them;</li><li>eleven keys for the shape;</li><li>four value boxes: MULT, SPD, INTL and DPTH.</li></ul>
+<p>The group is marked off while its depth is 0.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The LFO groups"><span>Screenshot to come</span></div><figcaption>The LFO groups</figcaption></figure></div>
+<section class="gd-sec" id="lfo">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-35</span></span></aside>
+<div class="gd-body gd-prose"><h2>LFO</h2>
+<p>An LFO needs a target. Its target is a page and a destination on that page.</p>
+<h4 class="gd-h3">Choose a target</h4>
+<ol class="gd-steps"><li>Select the track and go to the <b class="gd-ui">Sound</b> workspace (<kbd class="gd-key">[2]</kbd>).</li><li>In the LFO's group, open the <b class="gd-ui">PAGE</b> select. It lists PTCH, SYN, AMP, FLT, EFX, LF1, LF2, LF3 and MIDI.</li><li>Open the <b class="gd-ui">DEST</b> select and choose the parameter. It lists the parameters of the page. For PTCH it lists eight ranges: 1/12, 2/12, 7/12, 1OCT, 2OCT, 4OCT, 8OCT and 16OCT. For LF1 to LF3 the parameters are those of the other LFOs. For MIDI they are the parameters of the MIDI page.</li><li>Set DPTH, the depth, above 0.</li></ol>
+<p>Changing the page sets the destination back to the first entry.</p>
+<h4 class="gd-h3">Route by dragging</h4>
+<p>The key marked <b class="gd-ui">~</b> and the LFO's number, at the head of the group, is a handle. Drag it onto any value box on the page. The value boxes that can be a target are marked while you drag. Drop the handle on one. The editor sets PAGE and DEST to that value, and gives the depth a start value of 32 if it was 0. A note names the LFO and the value it now moves.</p>
+</div></section>
+<section class="gd-sec" id="trig">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-35</span></span></aside>
+<div class="gd-body gd-prose"><h2>TRIG</h2>
+<p>The <b class="gd-ui">TRIG</b> keys set how the LFO starts.</p>
+<table class="gd-table"><thead><tr><th>Key</th><th>What the LFO does</th></tr></thead><tbody><tr><td>FREE</td><td>runs on without being restarted</td></tr><tr><td>TRIG</td><td>starts again on each trig</td></tr><tr><td>HOLD</td><td>holds the value it has when a trig comes</td></tr><tr><td>ONE</td><td>plays one cycle after a trig</td></tr><tr><td>HALF</td><td>plays half a cycle after a trig</td></tr></tbody></table>
+<p>Which steps trigger the LFO is set in the sequencer: see &quot;LFO trigs&quot; below.</p>
+</div></section>
+<section class="gd-sec" id="wave">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-35</span></span></aside>
+<div class="gd-body gd-prose"><h2>WAVE</h2>
+<p>Eleven keys, each with a small picture, choose the shape. They are, in order: TRI, ITRI, SAW, ISAW, SQR, ISQR, EXP, IEXP, RMP, IRMP and RND. Click a key to choose a shape. The picture of the LFO redraws.</p>
+</div></section>
+<section class="gd-sec" id="mult">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-35</span></span></aside>
+<div class="gd-body gd-prose"><h2>MULT</h2>
+<p>MULT multiplies the speed. Its values are 1X, 2X, 4X, 8X, 16X, 32X and 64X.</p>
+</div></section>
+<section class="gd-sec" id="spd">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-36</span></span></aside>
+<div class="gd-body gd-prose"><h2>SPD</h2>
+<p>SPD sets the speed of the LFO. MULT multiplies it. Drag the value box.</p>
+</div></section>
+<section class="gd-sec" id="intl">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-36</span></span></aside>
+<div class="gd-body gd-prose"><h2>INTL</h2>
+<p>INTL is the interlace of the LFO. Drag the value box.</p>
+</div></section>
+<section class="gd-sec" id="dpth">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-36</span></span></aside>
+<div class="gd-body gd-prose"><h2>DPTH</h2>
+<p>DPTH is the depth: how far the LFO moves its target. At 0 the LFO does nothing and its group reads off. Drag the value box.</p>
+</div></section>
+<section class="gd-sec" id="layering">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-37</span></span></aside>
+<div class="gd-body gd-prose"><h2>LAYERING</h2>
+<p>Two LFOs can move the same target, and their movements add. A value box that an LFO moves shows a small badge, ~ and the number of the LFO, for example ~1 or ~12 when two LFOs move it. Hover over the badge to read which LFOs these are.</p>
+</div></section>
+<section class="gd-sec" id="lfo-trigs">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-37</span></span></aside>
+<div class="gd-body gd-prose"><h2>LFO TRIGS</h2>
+<p>The sequencer triggers the LFOs on its own. In the <b class="gd-ui">Sequence</b> workspace each step has a row of three dots, A, F and L. The L dot of a step triggers the LFOs of the track at that step. It matters for the TRIG, HOLD, ONE and HALF keys. Click the dot to switch it.</p>
+</div></section>
+<section class="gd-sec" id="shared-lfos">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-35</span></span></aside>
+<div class="gd-body gd-prose"><h2>SHARED LFOS</h2>
+<p>A MIDI track shares its three LFOs with the synth track of the same number. M1 shares with T1, and so on. An LFO that has PAGE set to MIDI moves the MIDI page.</p>
+<p>On a MIDI track, the <b class="gd-ui">Sound</b> workspace shows the MIDI page, and in the place of the LFO groups a note says which synth track they belong to. Click <b class="gd-ui">Open T1 LFOs</b> (with the number of the track) to go to them.</p>
+</div></section>
+</article>
+<article class="gd-chapter" id="c9" style="page: c9">
+<div class="gd-runhead"><span>9. Additional kit settings</span><span>Monomachine Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">9</p><h1>Additional kit settings</h1>
+<p class="gd-cmeta">MM manual pp.1-38 to 1-44</p>
+</header>
+<div class="gd-intro gd-prose"><p>Besides the sound of each track, a kit holds settings for how the tracks are played: what the joystick, the velocity and the key position control, which track a trig also plays, how the portamento and legato behave, and how a single keyboard drives several tracks. The assign settings and the multi trig, multi map and multi envelope settings are on the <b class="gd-ui">Perform</b> workspace. Press <kbd class="gd-key">[4]</kbd>, or click the <b class="gd-ui">Perform</b> tab. The trig track settings are on <b class="gd-ui">Sequence</b>.</p></div>
+<section class="gd-sec" id="assign">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-38,</span> <span>1-39,</span> <span>1-40</span></span></aside>
+<div class="gd-body gd-prose"><h2>ASSIGN</h2>
+<p>Assign lets a performance control move a parameter of the track. Each control has two rows. A row names a page, a parameter on that page, and an amount to add.</p>
+<p>The <b class="gd-ui">Assign</b> card follows the track selected in the rail. Its header shows the track and its machine, for example Assign · T2 SWAVE-1. The keys 1 to 6 in the header choose another track.</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[4]</kbd>.</li><li>Click a tab to choose the control: JOY RL, JOY U, JOY D, VEL or KEY.</li><li>In a row, choose the page: SYN, AMP, FLT, EFX, LF1, LF2, LF3 or PTCH.</li><li>Choose the destination. The list holds the parameters of that page for the machine on the track.</li><li>Set <b class="gd-ui">ADD</b>, from −64 to +63, by dragging the box up or down. Double-click it to return to 0.</li></ol>
+<h4 class="gd-h3">Copy, clear and paste an assign</h4>
+<p>The LCD keys <b class="gd-ui">Copy</b>, <b class="gd-ui">Clr</b> and <b class="gd-ui">Paste</b> act on all the assign tabs of the track while <b class="gd-ui">Perform</b> is open.</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">Copy</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>.</li><li>Choose another track in the <b class="gd-ui">Assign</b> header.</li><li>Click <b class="gd-ui">Paste</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>. The track takes all the tabs of the copy.</li></ol>
+<p><b class="gd-ui">Clr</b> empties the tabs of the track. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> takes back a paste or a clear.</p>
+<h4 class="gd-h3">JOYSTICK</h4>
+<p>The tabs JOY RL, JOY U and JOY D hold the joystick's three directions: right and left together, up and down. Beside the rows the card shows a stick. Drag it with the pointer to try the assignment. It springs back to the middle when you let go.</p>
+<p><b class="gd-ui">MIRR</b> is on the JOY RL tab. When it is lit, a move to the left acts as the same move to the right with the sign reversed. When it is dark, only the right half of the movement acts.</p>
+<h4 class="gd-h3">VELOCITY</h4>
+<p>The VEL tab assigns the velocity of the notes you play to a parameter. The sequencer always plays its notes at velocity 100, so a velocity assign only responds to the keys.</p>
+<h4 class="gd-h3">KEY TRACKING</h4>
+<p>The KEY tab assigns the key you played last to a parameter. The value is low for the lowest key and near its maximum for the highest.</p>
+<p>Two keys on this tab, <b class="gd-ui">HPF tracks keys</b> and <b class="gd-ui">LPF tracks keys</b>, switch the key tracking of the high-pass and low-pass filters.</p>
+</div></section>
+<section class="gd-sec" id="trig-track-settings">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-40,</span> <span>1-41</span></span></aside>
+<div class="gd-body gd-prose"><h2>TRIG TRACK SETTINGS</h2>
+<p>These settings belong to one track. They sit in the <b class="gd-ui">Trig setup</b> tab, in the header of the lock lane on <b class="gd-ui">Sequence</b>. A MIDI track has the <b class="gd-ui">MIDI page</b> tab in its place (see chapter 16).</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[1]</kbd>.</li><li>Select a synth track in the rail.</li><li>Click <b class="gd-ui">Trig setup</b> above the lock lane. The keys of the tab appear in the rail.</li></ol>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The Trig setup tab"><span>Screenshot to come</span></div><figcaption>The Trig setup tab</figcaption></figure>
+<p><b class="gd-ui">Trig position</b> chooses a second track that also plays this track's notes. The keys are T1 to T6, without the track itself, and a dash for none. The <b class="gd-ui">Mix</b> workspace draws the link as a dotted cord labelled TRIG and the target track.</p>
+<p><b class="gd-ui">Port</b> sets how the portamento works.</p>
+<ul class="gd-list"><li><b class="gd-ui">ALWAYS</b>: the track glides to every note.</li><li><b class="gd-ui">LEGATO</b>: the track glides only between notes that overlap.</li></ul>
+<p><b class="gd-ui">Legato</b> has three keys, <b class="gd-ui">AMP</b>, <b class="gd-ui">FLT</b> and <b class="gd-ui">LFO</b>. A lit key means that envelope fires again when a note starts while the one before still sounds. With all three lit every note retriggers, which suits a bass. With all three dark the notes join smoothly, which suits a lead.</p>
+<p>The value boxes <b class="gd-ui">ATK</b>, <b class="gd-ui">HOLD</b>, <b class="gd-ui">DEC</b> and <b class="gd-ui">PORT</b> above the picture are the track's amp envelope and glide amount. The picture draws one gate and the glide between two notes. Drag its dots to change the values.</p>
+</div></section>
+<section class="gd-sec" id="multi-trig">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-41,</span> <span>1-42,</span> <span>1-43</span></span></aside>
+<div class="gd-body gd-prose"><h2>MULTI TRIG</h2>
+<p>In multi trig mode one source plays all six tracks, as a single large mono synth.</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[4]</kbd>.</li><li>In the <b class="gd-ui">Keyboard</b> bar, click <b class="gd-ui">Multi trig</b>.</li><li>Click one of the four modes: <b class="gd-ui">ALL TRK</b>, <b class="gd-ui">SPLIT KEY</b>, <b class="gd-ui">SEQ START</b> or <b class="gd-ui">SEQ TRNSP</b>.</li><li>Play the keyboard on the page, or send notes on the multi trig channel. The second line of the LCD shows the channel in the CH field. You set the channel in <b class="gd-ui">GLOBAL</b> (chapter 19).</li></ol>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The Perform workspace in multi trig mode"><span>Screenshot to come</span></div><figcaption>The Perform workspace in multi trig mode</figcaption></figure>
+<h4 class="gd-h3">ALL TRK</h4>
+<p>Every note plays on all six tracks. Each track keeps its own arpeggiator.</p>
+<h4 class="gd-h3">SPLIT KEY</h4>
+<p>The keyboard splits in two. Keys from the split point up play the tracks from T<b class="gd-ui">n</b> to T6. Keys below play T1 to the track before T<b class="gd-ui">n</b>.</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">SPLIT KEY</b>.</li><li>Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> beside <b class="gd-ui">Upper from</b> to choose T<b class="gd-ui">n</b>.</li><li>Drag the split marker on the keyboard to choose the split key. The marker reads, for example, SPLIT C-4 · T3-6 above.</li></ol>
+<p>In split mode the multi envelope does not act.</p>
+<h4 class="gd-h3">SEQ START</h4>
+<p>Each note you play restarts the pattern. The pattern is transposed by the distance of the note from C-4.</p>
+<h4 class="gd-h3">SEQ TRNSP</h4>
+<p>The first note you play starts the pattern. Later notes only transpose it, so the loop never breaks.</p>
+<h4 class="gd-h3">Timing</h4>
+<p><b class="gd-ui">SEQ START</b> and <b class="gd-ui">SEQ TRNSP</b> show a <b class="gd-ui">Timing</b> stepper. Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> to choose DIRECT, 1/16, 2/16, 4/16, 8/16, 16/16 or 32/16. With DIRECT the note acts at once. With another value it acts at the next division of that length, and the page says so when you play.</p>
+</div></section>
+<section class="gd-sec" id="multi-env">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-43,</span> <span>1-44</span></span></aside>
+<div class="gd-body gd-prose"><h2>MULTI ENV</h2>
+<p>The <b class="gd-ui">Multi envelope</b> card holds an ADSR that acts on top of every track's own envelope. It acts in multi trig mode.</p>
+<p>The five boxes are <b class="gd-ui">ATK</b>, <b class="gd-ui">DEC</b>, <b class="gd-ui">SUS</b>, <b class="gd-ui">REL</b> and <b class="gd-ui">PORT</b>. PORT is the portamento for all tracks. The plot above them shows the envelope. Drag its dots to change ATK, DEC with SUS, and REL. A REL of 127 never fades, and the plot says so.</p>
+<aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>For no effect from the multi envelope, set ATK to 0, and DEC, SUS and REL to 127.</p></aside>
+</div></section>
+</article>
+<article class="gd-chapter" id="c10" style="page: c10">
+<div class="gd-runhead"><span>10. The pattern sequencer: pattern operation</span><span>Monomachine Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">10</p><h1>The pattern sequencer: pattern operation</h1>
+<p class="gd-cmeta">MM manual pp.1-45 to 1-47</p>
+</header>
+<div class="gd-intro gd-prose"><p>The sequencer plays patterns. The Monomachine holds 128 patterns, A01 to H16, in eight banks of 16. A pattern has twelve tracks: six synth tracks and six MIDI tracks. It is up to 64 steps long. The editor shows the patterns on the <b class="gd-ui">Sequence</b> workspace. Press <kbd class="gd-key">[1]</kbd>, or click the <b class="gd-ui">Sequence</b> tab.</p></div>
+<section class="gd-sec" id="basic-pattern-operation">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-45,</span> <span>1-46,</span> <span>1-47</span></span></aside>
+<div class="gd-body gd-prose"><h2>BASIC PATTERN OPERATION</h2>
+<h4 class="gd-h3">PATTERN SELECTION</h4>
+<p>The pattern field of the LCD shows the pattern that plays. Click <b class="gd-ui">‹</b> or <b class="gd-ui">›</b> beside it to go to the pattern before or after. For any other pattern, open the pattern chooser.</p>
+<ol class="gd-steps"><li>Click the pattern field, or focus it and press <kbd class="gd-key">[ENTER]</kbd>. The chooser opens.</li><li>Click a bank letter, A to H, or press the letter. The row of 16 slots shows that bank.</li><li>Click a slot. Each slot shows the pattern name, its length and its kit, for example 32 · K01. A slot with no data reads EMPTY.</li></ol>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The pattern chooser"><span>Screenshot to come</span></div><figcaption>The pattern chooser</figcaption></figure>
+<p>While the machine is stopped, a click switches to the pattern at once. While it plays, the machine switches at the end of the pattern that plays. The slot is marked as queued, and the pattern field of the LCD blinks with the name of the pattern that waits. The button in the row above the slots reads <b class="gd-ui">Go</b> when the machine is stopped and <b class="gd-ui">Queue</b> when it plays.</p>
+<p>To switch at once while the machine plays, hold <kbd class="gd-key">[⇧]</kbd> and click the slot, or click <b class="gd-ui">Now</b>.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A pattern is linked to a kit and loads it. On the OS 1.32B, only a pattern in banks A to D loads its linked kit. In banks E to H the kit that played goes on.</p></aside>
+<p>Press <kbd class="gd-key">[ESC]</kbd> to close the chooser.</p>
+<h4 class="gd-h3">PATTERN CHAINING</h4>
+<p>A chain plays patterns of one bank one after the other, each once, and then starts again. You build a chain on the <b class="gd-ui">Song</b> workspace, in the same <b class="gd-ui">Patterns</b> card that builds a song.</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[5]</kbd>.</li><li>In the <b class="gd-ui">Patterns</b> card, click <b class="gd-ui">Chain</b>.</li><li>Click a bank, A to H.</li><li>Click the pads in the order to play. Each pad shows its number in the chain, up to 16.</li></ol>
+<p>The machine plays the chain as soon as there are two pads. If it plays, the chain starts at the end of the pattern that plays. If it is stopped, <kbd class="gd-key">[SPACE]</kbd> starts it at the first pad. The <b class="gd-ui">What plays</b> card reads CHAIN and the patterns in order, for example CHAIN A03»A05.</p>
+<ul class="gd-list"><li>Click a numbered pad to take it out of the chain.</li><li><b class="gd-ui">Back</b> takes out the last pad.</li><li><b class="gd-ui">Clear</b> ends the chain.</li></ul>
+<p>Choosing a pattern from the pattern field or the chooser also ends the chain. Editing the patterns of a chain does not.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A chain holds the patterns of one bank. Choosing another bank starts the list again.</p></aside>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>In song mode the machine plays the song, not the chain. Click <b class="gd-ui">PATTERN</b> in <b class="gd-ui">What plays</b>, or choose a new chain, to leave song mode.</p></aside>
+<h4 class="gd-h3">SCALE SETUP</h4>
+<p>The scale of a pattern is its length and its speed. Both are on the second line of the LCD while <b class="gd-ui">Sequence</b> is open.</p>
+<p>#### Length</p>
+<p><b class="gd-ui">LEN</b> sets the length of the pattern, from 2 to 64 steps. All tracks share it.</p>
+<ul class="gd-list"><li>Click <b class="gd-ui">LEN</b> for the next full page: 16, 32, 48, 64 and then 16 again.</li><li>Hold <kbd class="gd-key">[⇧]</kbd> and click for the page before.</li><li>Scroll the wheel over it to change the length one step at a time.</li></ul>
+<p>The key beside it, <b class="gd-ui">×2</b>, doubles the pattern. The new half is a copy of the first half, with every track's steps, slides, swing steps and locks. A pattern of more than 32 steps cannot double, and the page says so. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> takes the doubling back in one step.</p>
+<p>A page is 16 steps. The <b class="gd-ui">Page</b> key on the bar above the lock lane steps through the pages. The keys <kbd class="gd-key">[ and ]</kbd> go to the page before and after. The four lights beside <b class="gd-ui">Page</b> show how many pages the pattern has and which one you see. <b class="gd-ui">All</b> shows every step at once. <b class="gd-ui">Fol</b> makes the page follow the play position.</p>
+<p>#### Speed</p>
+<p><b class="gd-ui">SPD</b> sets the tempo multiplier of the pattern: 1X, 2X, 3/4X or 3/2X. Click it for the next value, or hold <kbd class="gd-key">[⇧]</kbd> and click for the one before.</p>
+<p>#### Song rows</p>
+<p>A song row can play a part of a pattern with an offset and a length of its own. See &quot;Play part of a pattern&quot; in chapter 17.</p>
+</div></section>
+</article>
+<article class="gd-chapter" id="c11" style="page: c11">
+<div class="gd-runhead"><span>11. Composing a pattern</span><span>Monomachine Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">11</p><h1>Composing a pattern</h1>
+<p class="gd-cmeta">MM manual pp.1-47 to 1-55</p>
+</header>
+<div class="gd-intro gd-prose"><p>You write a pattern on the <b class="gd-ui">Sequence</b> workspace. Press <kbd class="gd-key">[1]</kbd>, or click the <b class="gd-ui">Sequence</b> tab. The rail on the left holds the tracks. The piano roll in the middle shows the notes of the selected track, one column to a step. Under the roll are the rows for the envelope trigs, slide and swing, and under them the lock lane.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The Sequence workspace"><span>Screenshot to come</span></div><figcaption>The Sequence workspace</figcaption></figure></div>
+<section class="gd-sec" id="recording-preparations">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-47</span></span></aside>
+<div class="gd-body gd-prose"><h2>RECORDING PREPARATIONS</h2>
+<p>On the machine you select a kit, a track and the trig tracks before you record. In the editor you only select the track.</p>
+<ol class="gd-steps"><li>Click a track in the rail, or press <kbd class="gd-key">[↑]</kbd> or <kbd class="gd-key">[↓]</kbd> to move to the track before or after.</li><li>Click <b class="gd-ui">Synth</b> under the rail for the six synth tracks, or <b class="gd-ui">MIDI</b> for the six MIDI tracks.</li></ol>
+<p>The roll shows the selected track. The field SEQ on the second line of the LCD also switches between SYNTH and MIDI.</p>
+</div></section>
+<section class="gd-sec" id="grid-recording">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-47,</span> <span>1-48,</span> <span>1-49</span></span></aside>
+<div class="gd-body gd-prose"><h2>GRID RECORDING</h2>
+<p>On the machine you step through the grid with the trig keys. In the editor you draw the notes in the piano roll.</p>
+<h4 class="gd-h3">Write notes</h4>
+<ol class="gd-steps"><li>Make sure <b class="gd-ui">Draw</b> is lit above the roll. Press <kbd class="gd-key">[B]</kbd> to turn it on or off.</li><li>Click the <b class="gd-ui">Len</b> key to choose the length a new note gets: 1/16, 1/8, 1/4, 1/2 or 1 bar. Click for the next length. Hold <kbd class="gd-key">[⇧]</kbd> and click for the one before.</li><li>Click an empty step at the pitch you want. A note of that length goes in.</li><li>To change the pitch, drag the note up or down.</li><li>To fill steps, drag sideways. Every empty step the pointer crosses gets the note.</li></ol>
+<p>A drag, a paint or a run of rotates is one undo step. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> takes it back whole.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>With <b class="gd-ui">Draw</b> dark, a drag in an empty place draws a box round notes and selects them, and a double-click adds a note.</p></aside>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The piano roll"><span>Screenshot to come</span></div><figcaption>The piano roll</figcaption></figure>
+<p>The roll shows a range of pitches. Scroll the wheel over it to move the range. Hold <kbd class="gd-key">[⇧]</kbd> to move it an octave at a time. On a synth track the keys at the left of the roll play the pitch.</p>
+<h4 class="gd-h3">Note length and NOTE OFF</h4>
+<p>Drag the end of a note to set its length. New notes take the length too. On a synth track a note sounds until the next NOTE OFF or the next trig of the track, so the editor writes a NOTE OFF where the note ends. On a MIDI track the editor writes the note's LEN, 6 to a step. A note can be drawn up to the next trig of its track. It can run past the end of the pattern onto its start, and the roll draws that part lighter.</p>
+<p>To set a NOTE OFF by hand, hold <kbd class="gd-key">[⌥]</kbd> and click an empty step. A NOTE OFF is a yellow mark.</p>
+<p>To delete a note, hold <kbd class="gd-key">[⌥]</kbd> and click it. The note before it keeps its length. Drag on with <kbd class="gd-key">[⌥]</kbd> held to delete every step the pointer crosses.</p>
+<h4 class="gd-h3">Chords</h4>
+<p>Hold <kbd class="gd-key">[⇧]</kbd> and click the step at another pitch. The step holds a chord note. A chord on a MIDI track has one length for all its notes. A synth track plays a chord through its arpeggiator (chapter 15) or in poly mode.</p>
+<h4 class="gd-h3">Rotate</h4>
+<p>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[←]</kbd> or <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[→]</kbd> to move all the notes, slides and locks of the selected track one step earlier or later. They wrap round at the length of the pattern.</p>
+<h4 class="gd-h3">Copy, clear and paste on the LCD</h4>
+<p>The LCD keys <b class="gd-ui">Copy</b>, <b class="gd-ui">Clr</b> and <b class="gd-ui">Paste</b> act on the selected track. With no steps selected they act on the page shown (see &quot;Track page copy&quot;). With steps selected they act on the selection (see &quot;Note copy&quot;).</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The machine also has a GRID RECORDING state. When the machine is stopped, <b class="gd-ui">●</b> on the LCD turns it on, and the machine's own trig keys write steps. The editor reads the steps back. You do not need it to write notes.</p></aside>
+</div></section>
+<section class="gd-sec" id="live-recording">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-49</span></span></aside>
+<div class="gd-body gd-prose"><h2>LIVE RECORDING</h2>
+<p>Live recording records the notes you play while the pattern runs.</p>
+<ol class="gd-steps"><li>Select a synth track.</li><li>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[SPACE]</kbd>. The machine starts to play and to record. While the machine already plays, you can also click <b class="gd-ui">●</b> on the LCD.</li><li>Play the computer keys: the white keys A to L and the black keys W E T Y U O P. Z and X move the octave, C and V the velocity.</li><li>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[SPACE]</kbd> again, or click <b class="gd-ui">●</b>, to stop recording.</li></ol>
+<p>The machine records each note on the step nearest to it. The notes appear in the roll.</p>
+<p>The editor records one key at a time. Draw a chord with <kbd class="gd-key">[⇧]</kbd>-click in the roll.</p>
+<p>You cannot erase notes with a key while you record in the editor yet. Delete them in the roll.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Wait until live recording stops before you select steps or open the step menu. The editor refuses them while it records.</p></aside>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Values you turn while the pattern records are locked. See &quot;Parameter locks in live recording mode&quot; in chapter 13.</p></aside>
+</div></section>
+<section class="gd-sec" id="step-recording">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-50</span></span></aside>
+<div class="gd-body gd-prose"><h2>STEP RECORDING</h2>
+<p>Notes are entered in the editor by drawing them in the piano roll. The editor has no step recording yet.</p>
+</div></section>
+<section class="gd-sec" id="note-copy">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-50</span></span></aside>
+<div class="gd-body gd-prose"><h2>NOTE COPY</h2>
+<p>You copy notes with a selection of steps. A selection holds steps of one track or of several tracks.</p>
+<ol class="gd-steps"><li>Hold <kbd class="gd-key">[⌘]</kbd> and click a step in the roll or in the trig rows to select it. Hold <kbd class="gd-key">[⌘]</kbd> and drag to select a run of steps. A drag over the step ruler above the roll selects steps of the selected track without a key. Hold <kbd class="gd-key">[⇧]</kbd> and click the ruler to extend the selection.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>, or click <b class="gd-ui">Copy</b> on the LCD.</li><li>Select the step to copy to.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>, or click <b class="gd-ui">Paste</b>. The copy goes in with its first step on the selected step.</li></ol>
+<p>Notes, NOTE OFFs, envelope trigs, slides and locks go along. Other keys on a selection:</p>
+<table class="gd-table"><thead><tr><th>Key</th><th>Does</th></tr></thead><tbody><tr><td><kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[X]</kbd></td><td>copy, then clear</td></tr><tr><td><kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[D]</kbd></td><td>put a copy right after the selection; again for another</td></tr><tr><td><kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[A]</kbd></td><td>select every step of the six tracks shown</td></tr><tr><td><kbd class="gd-key">[←]</kbd> or <kbd class="gd-key">[→]</kbd></td><td>move the selection one step</td></tr><tr><td><kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[←]</kbd> or <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[→]</kbd></td><td>extend the selection one step</td></tr><tr><td><kbd class="gd-key">[ESC]</kbd></td><td>clear the selection</td></tr></tbody></table>
+<p>Drag the selection with <kbd class="gd-key">[⌘]</kbd> held to drop a copy where you let go. A dashed frame shows where it lands. With <b class="gd-ui">Draw</b> dark, drag the selected notes in the roll without <kbd class="gd-key">[⌘]</kbd> to move them.</p>
+<p>Right-click a step for the step menu: note on or off, NOTE OFF, trigless, slide, a chord note, copy, cut, paste here, duplicate, clear, and fill every 2nd or 4th step from the one you clicked. Synth steps paste onto synth tracks, MIDI steps onto MIDI tracks.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p><kbd class="gd-key">[⌘]</kbd> is <kbd class="gd-key">[CTRL]</kbd> on Windows and Linux.</p></aside>
+</div></section>
+<section class="gd-sec" id="clear-note-parameter-locks">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-50</span></span></aside>
+<div class="gd-body gd-prose"><h2>CLEAR NOTE PARAMETER LOCKS</h2>
+<p>To clear the locks of one parameter on some steps, hold <kbd class="gd-key">[⌥]</kbd> and drag across the bars in the lock lane. Click the bin in the lane header to clear all the locks of that parameter. Hold <kbd class="gd-key">[⌥]</kbd> and click the bin to clear every lock of the track. A selected step cleared with <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> loses its note and its locks together.</p>
+<p>There is no key that clears the locks of one step and keeps its note.</p>
+</div></section>
+<section class="gd-sec" id="track-page-copy">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-49,</span> <span>1-51</span></span></aside>
+<div class="gd-body gd-prose"><h2>TRACK PAGE COPY</h2>
+<p>A page is the 16 steps shown while <b class="gd-ui">Page</b> is on. While <b class="gd-ui">All</b> is lit, the page is the whole pattern. With no steps selected, the LCD keys copy and paste the page shown of the selected track.</p>
+<ol class="gd-steps"><li>Show the page to copy.</li><li>Click <b class="gd-ui">Copy</b> on the LCD. The steps, slides and locks of the page are copied.</li><li>Show the page to paste into. It can be on another track of the same kind.</li><li>Click <b class="gd-ui">Paste</b>.</li></ol>
+<p>Pages paste between synth tracks or between MIDI tracks, not between the two. A lock for a parameter the target machine does not have is skipped, and the page says how many.</p>
+<p>To paste into several tracks at once, hold <kbd class="gd-key">[⇧]</kbd> and click the tracks in the rail. The marked tracks light. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>. The page goes into every marked track as one undo step. Press <kbd class="gd-key">[ESC]</kbd> to unmark.</p>
+</div></section>
+<section class="gd-sec" id="clear-track-page">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-51</span></span></aside>
+<div class="gd-body gd-prose"><h2>CLEAR TRACK PAGE</h2>
+<p>Click <b class="gd-ui">Clr</b> on the LCD with no steps selected. The notes, slides and locks of the page shown on the selected track go. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> takes it back.</p>
+</div></section>
+<section class="gd-sec" id="track-copy">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-52</span></span></aside>
+<div class="gd-body gd-prose"><h2>TRACK COPY</h2>
+<ol class="gd-steps"><li>Drag across the whole step ruler to select all the steps of the selected track.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>.</li><li>Click the target track in the rail, then click the first step of the ruler.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>.</li></ol>
+<p>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[A]</kbd> to select the six tracks shown, and paste them as a block. To copy the machine of a track, use <b class="gd-ui">Copy</b> and <b class="gd-ui">Paste</b> on the <b class="gd-ui">Sound</b> workspace.</p>
+<p>A track copy takes the steps, slides and locks. It does not take the machine, the arpeggiator, the transpose or the swing in the same copy.</p>
+</div></section>
+<section class="gd-sec" id="clear-track">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-53</span></span></aside>
+<div class="gd-body gd-prose"><h2>CLEAR TRACK</h2>
+<p>Select all the steps of the track with the ruler and press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd>. To clear every lock of the track, hold <kbd class="gd-key">[⌥]</kbd> and click the bin in the lane header.</p>
+<p>There is no key that clears a track whole. <b class="gd-ui">Clr</b> clears the page shown.</p>
+</div></section>
+<section class="gd-sec" id="pattern-copy">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-53</span></span></aside>
+<div class="gd-body gd-prose"><h2>PATTERN COPY</h2>
+<p>A pattern copy takes the whole pattern: the notes, locks, MIDI notes, the arpeggiator, transpose, swing and slide, and the link to the kit.</p>
+<ol class="gd-steps"><li>Open the pattern chooser: click the pattern field of the LCD.</li><li>Click the slot to copy, then <b class="gd-ui">Copy</b>.</li><li>Click the target slot, then <b class="gd-ui">Paste</b>.</li></ol>
+<p>You can also drag a slot onto another slot to copy it there.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A pattern paste goes through the machine's SYSEX RECV. The editor does that by itself. With a real Monomachine over MIDI the sync field on the second line of the LCD shows SEND and the number of waiting edits. See chapter 19, &quot;File&quot;.</p></aside>
+</div></section>
+<section class="gd-sec" id="clear-pattern">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-54</span></span></aside>
+<div class="gd-body gd-prose"><h2>CLEAR PATTERN</h2>
+<p>In the pattern chooser, click the slot and then <b class="gd-ui">Clear</b>. Or, on <b class="gd-ui">Sequence</b>, press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[BACKSPACE]</kbd>.</p>
+<p>Both clear the notes and locks of every track. The pattern keeps its link to the kit, as on the machine.</p>
+</div></section>
+<section class="gd-sec" id="super-copy">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-54</span></span></aside>
+<div class="gd-body gd-prose"><h2>SUPER COPY</h2>
+<p>You cannot choose which part of a track is copied, for example the melody only. A selection copies a block of tracks and steps whole.</p>
+</div></section>
+<section class="gd-sec" id="super-clear">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-55</span></span></aside>
+<div class="gd-body gd-prose"><h2>SUPER CLEAR</h2>
+<p>You cannot choose which part of a track is cleared. Clear the steps, the locks, the pattern or the machine one at a time.</p>
+</div></section>
+</article>
+<article class="gd-chapter" id="c12" style="page: c12">
+<div class="gd-runhead"><span>12. Tempo</span><span>Monomachine Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">12</p><h1>Tempo</h1>
+<p class="gd-cmeta">MM manual pp.1-55 to 1-57</p>
+</header>
+<section class="gd-sec" id="tempo">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-55,</span> <span>1-57</span></span></aside>
+<div class="gd-body gd-prose"><h2>TEMPO</h2>
+<p>The tempo is global. A pattern does not store it, so changing the pattern never changes the tempo. A song row can carry a tempo of its own (see chapter 17, &quot;Set a tempo for a row&quot;).</p>
+<p>The <b class="gd-ui">Tempo</b> field of the LCD shows the tempo in BPM with one decimal. It is on every workspace.</p>
+</div></section>
+<section class="gd-sec" id="the-tempo-screen">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-56</span></span></aside>
+<div class="gd-body gd-prose"><h2>THE TEMPO SCREEN</h2>
+<p>The editor has no tempo screen. You set the tempo in the <b class="gd-ui">Tempo</b> field itself, from 30 to 300 BPM.</p>
+<ul class="gd-list"><li>Drag the field up or down. Each pixel is half a BPM. Hold <kbd class="gd-key">[⇧]</kbd> to change it a tenth of a BPM at a time.</li><li>Click the field and press <kbd class="gd-key">[↑]</kbd> or <kbd class="gd-key">[↓]</kbd> to change it by 1 BPM. Hold <kbd class="gd-key">[⇧]</kbd> for a tenth.</li></ul>
+<p>The decimal part is kept, so 120.5 is a tempo.</p>
+<p>You cannot hold a tempo change back until a key is released in the editor.</p>
+<p>There is no key that shifts the tempo by 10 % for a moment.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>In a DAW the machine follows the tempo of the DAW and the field refuses edits. The page says &quot;The DAW sets the tempo. Change it there.&quot;</p></aside>
+</div></section>
+<section class="gd-sec" id="tap-tempo">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-56</span></span></aside>
+<div class="gd-body gd-prose"><h2>TAP TEMPO</h2>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[B]</kbd> in time with the music. It works on every workspace.</li><li>After the second tap the tempo is set and the page shows it, for example Tap tempo: 128.0 BPM.</li></ol>
+<p>The tempo is the average of the last five taps. A pause of two seconds starts the count again.</p>
+<p>On workspaces other than <b class="gd-ui">Sequence</b>, <kbd class="gd-key">[B]</kbd> taps too. On <b class="gd-ui">Sequence</b> <kbd class="gd-key">[B]</kbd> is the <b class="gd-ui">Draw</b> key of the piano roll.</p>
+</div></section>
+<section class="gd-sec" id="external-synchronisation">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-56</span></span></aside>
+<div class="gd-body gd-prose"><h2>EXTERNAL SYNCHRONISATION</h2>
+<p>The machine runs on its own clock or follows a MIDI clock. The setting is in the <b class="gd-ui">GLOBAL</b> panel.</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">Global</b> in the top bar.</li><li>In the <b class="gd-ui">Sync</b> card, click <b class="gd-ui">EXT</b> beside <b class="gd-ui">Tempo in</b> to follow a MIDI clock, or <b class="gd-ui">INT</b> for the machine's own tempo.</li><li>Click <b class="gd-ui">ON</b> beside <b class="gd-ui">Ctrl in</b> if the machine should also follow MIDI start and stop.</li></ol>
+<p>In a DAW you set nothing. The plug-in sets <b class="gd-ui">Tempo in</b> to EXT and <b class="gd-ui">Ctrl in</b> to ON itself, and the machine follows the host. See chapter 19, &quot;Control out 2&quot; and &quot;Control in&quot;, for the other settings of the card.</p>
+</div></section>
+</article>
+<article class="gd-chapter" id="c13" style="page: c13">
+<div class="gd-runhead"><span>13. Parameter locks</span><span>Monomachine Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">13</p><h1>Parameter locks</h1>
+<p class="gd-cmeta">MM manual pp.1-57, 1-58</p>
+</header>
+<div class="gd-intro gd-prose"><p>A parameter lock gives one parameter a value of its own on one step. The parameter takes the value when that step plays and goes back to the kit value after it. A lock needs a trig: a step without one cannot hold a lock.</p>
+<p>The pattern holds locks for 62 parameters. The count is shared by all twelve tracks. A parameter counts once however many steps lock it. The <b class="gd-ui">Locks</b> field of the LCD shows the count, for example 12/62. When all 62 are used, the editor refuses a new locked parameter and says so. Clear the locks of one parameter to make room.</p></div>
+<section class="gd-sec" id="parameter-locks">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-58</span></span></aside>
+<div class="gd-body gd-prose"><h2>PARAMETER LOCKS</h2>
+<p>The lock lane is under the piano roll on <b class="gd-ui">Sequence</b>. Press <kbd class="gd-key">[1]</kbd> and select a track.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The lock lane"><span>Screenshot to come</span></div><figcaption>The lock lane</figcaption></figure>
+<p>The rail on the left of the lane lists what you can lock. For a synth track the page keys are SYN, AMP, FLT, EFX, LF1, LF2 and LF3. For a MIDI track there is one key, MIDI PAGE. A green light on a page key means the page holds locks. Under the page keys are the parameters of the page. A number on a parameter key counts its locked steps.</p>
+<p>The lane shows one parameter at a time, the one lit in the rail. Each step with a trig has a bar. A dashed line across the lane marks the value of the kit. Hatched steps have no trig.</p>
+</div></section>
+<section class="gd-sec" id="parameter-locks-in-grid-recording-mode">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-57</span></span></aside>
+<div class="gd-body gd-prose"><h2>PARAMETER LOCKS IN GRID RECORDING MODE</h2>
+<p>On the machine you hold a trig and turn a knob. In the editor you draw the value in the lane.</p>
+<ol class="gd-steps"><li>Click the page key and the parameter key in the rail.</li><li>Drag across the bars in the lane. Each step with a trig that the pointer crosses takes the value at the height of the pointer.</li><li>To move one lock, scroll the wheel over its step. A notch moves the value by 4. Hold <kbd class="gd-key">[⇧]</kbd> for 1. A step with no lock starts from the kit value.</li><li>To draw a straight line of values, hold <kbd class="gd-key">[⇧]</kbd> and drag from the first step to the last. Every step with a trig under the line gets a lock. It is one undo step.</li></ol>
+<p>Every lock of the parameter shows as a bar, so you can read the values of a step at any time. When you change the selected track or the parameter, the lane shows the new one.</p>
+<h4 class="gd-h3">Remove locks</h4>
+<ul class="gd-list"><li>Hold <kbd class="gd-key">[⌥]</kbd> and drag across the bars to remove the locks of that parameter on the steps you cross.</li><li>Click the bin in the lane header to remove all the locks of the parameter.</li><li>Hold <kbd class="gd-key">[⌥]</kbd> and click the bin to remove every lock of the track.</li><li>Select a step and press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> to clear the step whole, with its note.</li></ul>
+<p>There is no key that removes only the locks of one step and keeps its note.</p>
+<p>You cannot lock the current value of a parameter with one click. Draw the value in the lane.</p>
+<h4 class="gd-h3">Copy a note with its locks</h4>
+<p>The locks of a step go with the step when you copy it. See &quot;Note copy&quot; in chapter 11.</p>
+<h4 class="gd-h3">Slide</h4>
+<p>The <b class="gd-ui">Slide</b> row under the roll marks steps that glide. On a step with a slide, a locked value glides to the next lock instead of jumping. See &quot;Slide&quot; in chapter 15.</p>
+</div></section>
+<section class="gd-sec" id="parameter-locks-in-live-recording-mode">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-58</span></span></aside>
+<div class="gd-body gd-prose"><h2>PARAMETER LOCKS IN LIVE RECORDING MODE</h2>
+<p>While LIVE RECORDING plays (see chapter 11), turn a value on any page. The machine locks it on the step that plays when the value arrives. A step without a trig gets a trigless lock.</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[SPACE]</kbd> to record live.</li><li>Turn a value, for example the filter <b class="gd-ui">BASE</b> on <b class="gd-ui">Sound</b>.</li><li>The editor marks the step in the trig row and the bar in the lock lane, and says which value it locked and on which step, for example Locks T1 FLT BASE on step 5.</li></ol>
+<p>To tidy up, stop recording and draw the values again in the lock lane.</p>
+</div></section>
+</article>
+<article class="gd-chapter" id="c14" style="page: c14">
+<div class="gd-runhead"><span>14. Advanced sequencer control</span><span>Monomachine Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">14</p><h1>Advanced sequencer control</h1>
+<p class="gd-cmeta">MM manual pp.1-58 to 1-60</p>
+</header>
+<section class="gd-sec" id="trig-tracks">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-58,</span> <span>1-59</span></span></aside>
+<div class="gd-body gd-prose"><h2>TRIG TRACKS</h2>
+<p>Every note on a synth track is a trig. A trig can fire the amplitude envelope (AMP), the filter envelope (FILTER), the LFO envelope (LFO), or any of them together. The machine keeps one trig track for each. The editor shows them in the <b class="gd-ui">ENV</b> row under the piano roll, with the label A F L. A MIDI track has no trig tracks, so its row shows the velocity (see chapter 16).</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The ENV row"><span>Screenshot to come</span></div><figcaption>The ENV row</figcaption></figure>
+<p>Each step with a note has three dots in the ENV row: AMP in red, FILTER in yellow and LFO in green. A lit dot means the trig fires that envelope.</p>
+<ul class="gd-list"><li>A note you draw in the roll fires all three envelopes.</li><li>Click a dot to switch that envelope off or on for the trig.</li><li>Drag across the dots of a row to switch a run of steps the same way.</li><li>A single trig has one dot lit: AMP only, FILTER only or LFO only.</li></ul>
+<p>The editor shows the trig colours as dots, one colour for each envelope. It does not show the machine's trig key lights.</p>
+</div></section>
+<section class="gd-sec" id="trigless-trigs">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-59</span></span></aside>
+<div class="gd-body gd-prose"><h2>TRIGLESS TRIGS</h2>
+<p>A trigless trig fires no envelope. It is there to carry a pitch or locks.</p>
+<ul class="gd-list"><li>Switch all three dots of a step off, or</li><li>Right-click the step and choose <b class="gd-ui">Trigless (no envelope trigs)</b>. Choose it again to put the dots back.</li></ul>
+<p>The roll draws a trigless note as an outlined bar. The step menu works on a selection as well.</p>
+</div></section>
+<section class="gd-sec" id="pitchless-trigs">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-59</span></span></aside>
+<div class="gd-body gd-prose"><h2>PITCHLESS TRIGS</h2>
+<p>A pitchless trig fires envelopes without a pitch of its own. The ENV row shows its dots, and the roll draws it as a dashed bar.</p>
+</div></section>
+</article>
+<article class="gd-chapter" id="c15" style="page: c15">
+<div class="gd-runhead"><span>15. Additional sequencer features</span><span>Monomachine Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">15</p><h1>Additional sequencer features</h1>
+<p class="gd-cmeta">MM manual pp.1-61 to 1-69</p>
+</header>
+<div class="gd-intro gd-prose"><p>The arpeggiator and transpose are tabs in the header of the lock lane on <b class="gd-ui">Sequence</b>: <b class="gd-ui">Arp</b> and <b class="gd-ui">Transpose</b>. Click a tab to show its keys in the rail and its values and picture under the roll. Swing and slide are rows under the roll.</p></div>
+<section class="gd-sec" id="the-arpeggiator">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-61,</span> <span>1-62,</span> <span>1-63</span></span></aside>
+<div class="gd-body gd-prose"><h2>THE ARPEGGIATOR</h2>
+<p>Each of the twelve tracks has its own arpeggiator, six synth tracks and six MIDI tracks. A pattern holds all twelve. The arpeggiator turns the chord notes of a trig into a run of notes.</p>
+<ol class="gd-steps"><li>Select a track and click <b class="gd-ui">Arp</b>.</li><li>Write a chord: hold <kbd class="gd-key">[⇧]</kbd> and click the steps at the other pitches in the roll.</li><li>Set the mode and the other values below.</li></ol>
+<p>The light notes in the roll show what the arpeggiator plays.</p>
+<h4 class="gd-h3">ARPEGGIATOR BASIC SETTINGS</h4>
+<ul class="gd-list"><li><b class="gd-ui">SPD</b> is the speed. 6 is a sixteenth note.</li><li><b class="gd-ui">RNGE</b> is the number of octaves the run covers.</li><li><b class="gd-ui">OJMP</b> is the octave jump.</li></ul>
+<p><b class="gd-ui">Mode</b> keys:</p>
+<ul class="gd-list"><li><b class="gd-ui">OFF</b>: the track plays the base note of each trig.</li><li><b class="gd-ui">KEY</b>: the arpeggiator runs while keys are held and plays only the held notes.</li><li><b class="gd-ui">SID</b>: it needs two or more notes. They stay in the cycle after you release them, until a new chord.</li><li><b class="gd-ui">ADD</b>: it starts on the first note. Each extra key joins while one key is held.</li></ul>
+<p><b class="gd-ui">Play</b> keys: <b class="gd-ui">TRUE</b> plays the notes in the order of the chord, <b class="gd-ui">UP</b> from low to high, <b class="gd-ui">DOWN</b> from high to low, <b class="gd-ui">CYCLE</b> up and then down, and <b class="gd-ui">RND</b> in a random order. With RND the roll draws the notes outlined, because the pitches vary.</p>
+<p>You cannot copy, clear or paste an arpeggiator, and you cannot undo one on its own. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> undoes the page's last edit.</p>
+<h4 class="gd-h3">ARPEGGIATOR ENVELOPE TRIGGING SWITCHES</h4>
+<p>The <b class="gd-ui">Trig</b> keys <b class="gd-ui">AMP</b>, <b class="gd-ui">FLT</b> and <b class="gd-ui">LFO</b> choose which envelopes the arpeggiator's notes fire again. A MIDI track has no envelopes, so the keys read &quot;none on MIDI&quot;.</p>
+<h4 class="gd-h3">ARPEGGIATOR RHYTHM AND OFFSET TRACK</h4>
+<p>Under the values is a strip of 16 cells. It repeats while the arpeggiator runs.</p>
+<ul class="gd-list"><li>Click a cell to mute it or to switch it on again.</li><li>Drag a cell up or down to give its note an offset from minus 24 to plus 24 semitones.</li><li>Click a cell past the end, or a key of the <b class="gd-ui">LEN</b> row under the strip, to set the length of the strip from 1 to 16.</li></ul>
+</div></section>
+<section class="gd-sec" id="transpose">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-63,</span> <span>1-64</span></span></aside>
+<div class="gd-body gd-prose"><h2>TRANSPOSE</h2>
+<p>Transpose changes the pitch of the notes while they play. The programmed notes stay as they are. Click <b class="gd-ui">Transpose</b>.</p>
+<ol class="gd-steps"><li>Set <b class="gd-ui">TRACK</b>, the transpose of the selected track, by dragging the box. The value runs from −64 to +63 semitones.</li><li>Set <b class="gd-ui">PAT · all</b>, the transpose of the whole pattern. All tracks follow it.</li><li>Under <b class="gd-ui">Scale</b> choose <b class="gd-ui">---</b>, <b class="gd-ui">FIX</b>, <b class="gd-ui">MAJ</b> or <b class="gd-ui">MIN</b>.</li></ol>
+<p>The line above the keyboard picture says what the track plays, for example plays +5 semitones.</p>
+<ul class="gd-list"><li><b class="gd-ui">---</b>: no scale. The transposes of the track, the pattern, the song and the multi trig add up. Any note can sound.</li><li><b class="gd-ui">FIX</b>: only the track transpose acts. Use it for drums and effects.</li><li><b class="gd-ui">MAJ</b> and <b class="gd-ui">MIN</b>: transposed notes stay in the major or minor scale of the key. Keys outside the scale are hatched, in the picture and in the roll.</li></ul>
+<p>For MAJ and MIN, click a key of the keyboard picture to set the root key. With <b class="gd-ui">---</b> and <b class="gd-ui">FIX</b>, a click on a key sets the track transpose so that C plays that key, upward from C. Hold <kbd class="gd-key">[⌥]</kbd> and click to go down to it. The note also sounds while you hold the button.</p>
+</div></section>
+<section class="gd-sec" id="swing">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-64,</span> <span>1-65</span></span></aside>
+<div class="gd-body gd-prose"><h2>SWING</h2>
+<p>Swing delays every other sixteenth note. The <b class="gd-ui">SWG</b> field of the LCD sets the amount for the pattern, from 50 to 80 %. Drag the field up or down, or scroll over it.</p>
+<h4 class="gd-h3">THE SWING TRACK</h4>
+<p>The <b class="gd-ui">Swing</b> row under the roll chooses the steps that swing. A lit cell comes late by the amount of <b class="gd-ui">SWG</b>. Click a cell to switch it. Drag across cells to paint them. Each track has its own swing row.</p>
+<p>You cannot copy, clear or paste a swing row, or undo it on its own.</p>
+</div></section>
+<section class="gd-sec" id="slide">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-66</span></span></aside>
+<div class="gd-body gd-prose"><h2>SLIDE</h2>
+<p>A slide makes a locked value glide to the next lock instead of jumping. The <b class="gd-ui">Slide</b> row under the roll marks the steps that slide. Click a cell, or drag across cells. A slide needs a note on its step. The right-click menu has <b class="gd-ui">Slide</b> too. In the lock lane the glide is drawn from one lock to the next.</p>
+<p>You cannot copy, clear or paste a slide row, or undo it on its own.</p>
+</div></section>
+<section class="gd-sec" id="the-mute-mode">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-67,</span> <span>1-68</span></span></aside>
+<div class="gd-body gd-prose"><h2>THE MUTE MODE</h2>
+<p>Mutes are global: they do not belong to the pattern. The machine holds them.</p>
+<ul class="gd-list"><li>Click <b class="gd-ui">M</b> on a track in the rail, or on the <b class="gd-ui">Mix</b> workspace, to mute it. Click <b class="gd-ui">S</b> to solo it.</li><li>Press <kbd class="gd-key">[M]</kbd> to mute or unmute the selected track.</li><li>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[M]</kbd> to mute every track. When none is audible, it unmutes every track.</li><li>Press <kbd class="gd-key">[0]</kbd>, or click <b class="gd-ui">M/S off</b> in the rail, to unmute and unsolo everything.</li><li>Drag across <b class="gd-ui">M</b> or <b class="gd-ui">S</b> keys to set every track you cross as the first one became.</li></ul>
+<p>The <b class="gd-ui">Perform</b> workspace has a <b class="gd-ui">Mutes</b> card with all twelve tracks, T1 to T6 and M1 to M6. A lit key means the track is audible.</p>
+<h4 class="gd-h3">Prepare mutes</h4>
+<p>To change several mutes together, hold <kbd class="gd-key">[⇧]</kbd> and click the <b class="gd-ui">M</b> keys. Each marked key shows + or X for the change to come. When you let go of <kbd class="gd-key">[⇧]</kbd> the changes happen together.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A mute acts on notes. A sound that already plays rings out.</p></aside>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A MIDI track needs a MIDI channel of its own to be muted over MIDI. If it has none, the page says so and offers <b class="gd-ui">Give each track its own channel</b>. That sets the channel span of the global to 6.</p></aside>
+<h4 class="gd-h3">MINIMISING THE MUTE WINDOW</h4>
+<p>The mute window of the machine is a screen of its own. The editor has no such window, so there is nothing to minimise.</p>
+</div></section>
+<section class="gd-sec" id="poly-mode">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-69</span></span></aside>
+<div class="gd-body gd-prose"><h2>POLY MODE</h2>
+<p>In poly mode all six engines play the track in focus, with six voices.</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[4]</kbd>.</li><li>In the <b class="gd-ui">Keyboard</b> bar, click <b class="gd-ui">Poly</b>.</li></ol>
+<p>The other five tracks are off until you leave poly mode. The page says so, and the rail marks the tracks that are off.</p>
+</div></section>
+</article>
+<article class="gd-chapter" id="c16" style="page: c16">
+<div class="gd-runhead"><span>16. The MIDI sequencer</span><span>Monomachine Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">16</p><h1>The MIDI sequencer</h1>
+<p class="gd-cmeta">MM manual pp.1-70 to 1-72</p>
+</header>
+<div class="gd-intro gd-prose"><p>The Monomachine has six MIDI tracks next to its six synth tracks. They send notes and controller values to other instruments. The editor edits them on <b class="gd-ui">Sequence</b>, with the same roll, docks and rows.</p></div>
+<section class="gd-sec" id="using-the-midi-sequencer">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-70</span></span></aside>
+<div class="gd-body gd-prose"><h2>USING THE MIDI SEQUENCER</h2>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[1]</kbd>.</li><li>Click <b class="gd-ui">MIDI</b> under the rail, or click SEQ on the second line of the LCD until it reads MIDI. The rail shows M1 to M6.</li><li>Click a track. It shows its MIDI channel, for example CH 03. <b class="gd-ui">M</b> mutes it and <b class="gd-ui">S</b> solos it.</li><li>Draw notes in the roll as on a synth track. See chapter 11.</li></ol>
+<p>A MIDI note has a real length. Drag the end of a note to set it. The editor writes the note's LEN, 6 to a step. Notes of a chord share one length. The row under the roll is <b class="gd-ui">VEL</b>, the velocity of each note. You can lock any value of the MIDI page on a step with the lock lane. See chapter 13.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: A MIDI track in the roll"><span>Screenshot to come</span></div><figcaption>A MIDI track in the roll</figcaption></figure>
+</div></section>
+<section class="gd-sec" id="the-midi-page">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-71,</span> <span>1-108,</span> <span>1-109</span></span></aside>
+<div class="gd-body gd-prose"><h2>THE MIDI PAGE</h2>
+<p>Click <b class="gd-ui">MIDI page</b> in the header of the lock lane. The tab holds these values:</p>
+<ul class="gd-list"><li><b class="gd-ui">LEN</b>: the length of a note, 1 to 127. 127 lasts until a NOTE OFF. Dragging a note's end sets it.</li><li><b class="gd-ui">VEL</b>: the velocity.</li><li><b class="gd-ui">PB</b>: the pitch bend.</li><li><b class="gd-ui">PCHG</b>: a program change. It is sent only when you lock it on a step.</li><li><b class="gd-ui">CC 1 to CC 4</b>: the values of four controllers.</li></ul>
+<p>Below the controller values are the boxes <b class="gd-ui">CL1</b> to <b class="gd-ui">CL4</b>. They choose the controller number of each. Choose AFT to send aftertouch.</p>
+<p>The <b class="gd-ui">Channel</b> keys 1 to 16 set the MIDI channel of the track.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The LFOs of a MIDI track are shared with the synth track of the same number.</p></aside>
+</div></section>
+<section class="gd-sec" id="comparison">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-71</span></span></aside>
+<div class="gd-body gd-prose"><h2>COMPARISON</h2>
+<p>A MIDI track has no trig tracks, so its row under the roll shows the velocity in place of the envelope dots. It has an arpeggiator without envelope switches, swing, slide and transpose, in the same tabs as a synth track.</p>
+<p>The MIDI page is stored in the kit, so edits of it are kit edits.</p>
+<p>You cannot make a synth track send MIDI from the editor yet.</p>
+</div></section>
+</article>
+<article class="gd-chapter" id="c17" style="page: c17">
+<div class="gd-runhead"><span>17. The song mode</span><span>Monomachine Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">17</p><h1>The song mode</h1>
+<p class="gd-cmeta">MM manual pp.1-73 to 1-80</p>
+</header>
+<div class="gd-intro gd-prose"><p>The song mode plays patterns in a set order. Each row of a song names a pattern and how it plays: how many times, transposed or not, the whole pattern or a part of it, with some tracks muted, at a tempo of its own. Command rows loop back, jump forward or halt the song. Use a song for a finished arrangement, or for a set of loops to play live.</p>
+<p>The Monomachine holds 24 songs. A song has up to 200 rows.</p>
+<p>In the editor the song mode is the <b class="gd-ui">Song</b> workspace. Press <kbd class="gd-key">[5]</kbd>, or click the <b class="gd-ui">Song</b> tab. The left column holds, from the top: <b class="gd-ui">What plays</b>, the <b class="gd-ui">Song</b> card, the <b class="gd-ui">Patterns</b> palette and the <b class="gd-ui">Selected row</b>. On the right, the <b class="gd-ui">Arrangement</b> shows every row of the song as a cell, 16 cells to a line.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The Song workspace"><span>Screenshot to come</span></div><figcaption>The Song workspace</figcaption></figure>
+<p>The machine plays the song. The editor writes the song into the machine and shows what the machine reports: the mode, the row that plays and the tempo.</p>
+<p>To put the machine in song mode:</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">SONG</b> in the <b class="gd-ui">What plays</b> card.</li><li>The switch lights <b class="gd-ui">SONG</b> when the machine reports song mode. The line under it reads the song number and its row count, for example SONG 01 · 65 rows · stopped.</li></ol>
+<p>On the machine you press <kbd class="gd-key">[PATTERN/SONG]</kbd>. In the editor you can also click <b class="gd-light">&lt;PLAY&gt;</b> on the second line of the LCD, on every workspace: it reads PAT in pattern mode and SONG in song mode, and each click switches.</p></div>
+<section class="gd-sec" id="load-song">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-73</span></span></aside>
+<div class="gd-body gd-prose"><h2>LOAD SONG</h2>
+<p>Loading a song makes it the song the machine plays in song mode. The editor keeps two things apart: the song you edit and the song the machine holds. You can edit any of the 24 songs while the machine plays another.</p>
+<ol class="gd-steps"><li>Stop the machine. Press <kbd class="gd-key">[SPACE]</kbd> if it plays.</li><li>Open the song menu in the <b class="gd-ui">Song</b> card. It lists the songs S01 to S24 by name. The song the machine holds is marked &quot;on the machine&quot;.</li><li>Choose a song. The <b class="gd-ui">Arrangement</b> shows its rows. The machine still holds the song it had.</li><li>Click <b class="gd-ui">Load on the machine</b>. The machine loads the song, and the menu marks it &quot;on the machine&quot;.</li></ol>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The machine loads a song only while it is stopped. While it plays, the editor refuses the load and says so.</p></aside>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p><b class="gd-ui">Load on the machine</b> is greyed out while the song shown is already the one the machine holds.</p></aside>
+</div></section>
+<section class="gd-sec" id="save-song">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-74</span></span></aside>
+<div class="gd-body gd-prose"><h2>SAVE SONG</h2>
+<p>On the machine you edit a song and then save it into one of the 24 slots, with a name. The editor works differently. It edits the slot itself: each change goes into the slot you chose in the <b class="gd-ui">Song</b> card as you make it. There is no separate save, and nothing is lost when you load another song.</p>
+<p>You cannot name a song or save it into another slot in the editor yet.</p>
+<p>You cannot copy, paste or clear a whole song slot in the editor yet. Rows can be copied one at a time: see &quot;Copy, paste and undo&quot; under SONG EDITING.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A song stores which patterns it plays, not the patterns themselves. Change a pattern and every row that uses it plays the changed pattern.</p></aside>
+</div></section>
+<section class="gd-sec" id="song-play">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-75</span></span></aside>
+<div class="gd-body gd-prose"><h2>SONG PLAY</h2>
+<p>In song mode the machine plays the song from row 001, row by row, to its END row.</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">SONG</b> in <b class="gd-ui">What plays</b>, or click <b class="gd-light">&lt;PLAY&gt;</b> on the LCD until it reads SONG.</li><li>Press <kbd class="gd-key">[SPACE]</kbd>. The song plays. The <b class="gd-ui">Arrangement</b> header reads Playing and the arrangement is framed.</li><li>Read what plays in <b class="gd-ui">What plays</b>: SONG 01 · row 017 of 65 · B01 means song 01, row 017 of 65 rows, pattern B01. The pattern field of the LCD reads the song and the row in the same way.</li><li>Press <kbd class="gd-key">[SPACE]</kbd> again to stop.</li></ol>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: What plays, in song mode"><span>Screenshot to come</span></div><figcaption>What plays, in song mode</figcaption></figure>
+<p>You can go to pattern mode and back while the song plays. Click <b class="gd-ui">PATTERN</b>: the machine plays a pattern and holds its place in the song. Click <b class="gd-ui">SONG</b> and the song goes on from that place.</p>
+<p>On the machine <kbd class="gd-key">[PLAY]</kbd> pauses a song that plays, and <kbd class="gd-key">[STOP]</kbd> stops it. The editor has no pause yet: <kbd class="gd-key">[SPACE]</kbd> starts and stops.</p>
+</div></section>
+<section class="gd-sec" id="song-transport">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-75</span></span></aside>
+<div class="gd-body gd-prose"><h2>SONG TRANSPORT</h2>
+<p>On the machine you move the song pointer to another row while the song plays, and the song goes on from there when the current row ends. You cannot move the song pointer from the editor yet.</p>
+<p>The editor shows where the song is. While the song plays, the <b class="gd-ui">Arrangement</b> marks the row that plays and the bar above the grid fills up to it. The mark comes from the machine itself, so it follows repeats, loops and jumps.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A song plays to its END row and stops. A loop set to play forever never reaches the end.</p></aside>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A row with a tempo of its own sets the tempo of the machine when it plays.</p></aside>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The machine sends and follows MIDI song position by itself. The editor does not change that.</p></aside>
+</div></section>
+<section class="gd-sec" id="song-editing">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-76,</span> <span>1-77,</span> <span>1-79,</span> <span>1-80</span></span></aside>
+<div class="gd-body gd-prose"><h2>SONG EDITING</h2>
+<p>The <b class="gd-ui">Arrangement</b> is where you build the song. Each cell is a row: the pattern it plays, with marks under the name for what else the row does. You can edit the song while it plays.</p>
+<p>On the machine each row has columns that you step through with the arrow keys and set with the LEVEL knob. In the editor you select a cell and set the row in the <b class="gd-ui">Selected row</b> card.</p>
+<table class="gd-table"><thead><tr><th>On the machine</th><th>In the editor</th></tr></thead><tbody><tr><td>ROW</td><td>the place of the cell in the <b class="gd-ui">Arrangement</b>, 001 to 200</td></tr><tr><td>PAT</td><td>the pattern name in the cell; <b class="gd-ui">‹</b> and <b class="gd-ui">›</b> in <b class="gd-ui">Selected row</b></td></tr><tr><td>REP</td><td><b class="gd-ui">Repeat</b></td></tr><tr><td>TRN</td><td><b class="gd-ui">Transpose</b>; single tracks under <b class="gd-ui">More</b></td></tr><tr><td>OF LN</td><td><b class="gd-ui">Part</b>, under <b class="gd-ui">More</b></td></tr><tr><td>XTRA</td><td><b class="gd-ui">Tempo</b>; <b class="gd-ui">Mutes</b>, under <b class="gd-ui">More</b></td></tr></tbody></table>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The arrangement and the selected row"><span>Screenshot to come</span></div><figcaption>The arrangement and the selected row</figcaption></figure>
+<h4 class="gd-h3">Select a row</h4>
+<ul class="gd-list"><li>Click a cell in the <b class="gd-ui">Arrangement</b>.</li><li>Press <kbd class="gd-key">[←]</kbd> or <kbd class="gd-key">[→]</kbd> for the row before or after.</li><li>Click a bar in the time bar above the grid. Each bar is as long as its row plays.</li></ul>
+<p>The last row of every song is END. The song stops there.</p>
+<h4 class="gd-h3">Add patterns</h4>
+<ol class="gd-steps"><li>In the <b class="gd-ui">Patterns</b> card, make sure <b class="gd-ui">Arrange</b> is lit.</li><li>Click a bank, A to H. The pads show its 16 patterns, each with its length, or &quot;empty&quot;.</li><li>Click a pad. A new row with that pattern goes in after the selected row, and becomes the selected row.</li></ol>
+<p>You can also drag a pad onto the <b class="gd-ui">Arrangement</b>. Drop it on a cell and that row plays the new pattern. Drop it on the free cell after the last row and a new row goes in before END.</p>
+<h4 class="gd-h3">Set a row</h4>
+<ol class="gd-steps"><li>Select the row.</li><li>Click <b class="gd-ui">‹</b> or <b class="gd-ui">›</b> to step to the pattern before or after.</li><li>Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> beside <b class="gd-ui">Repeat</b> to set how many times the row plays, 1 to 64.</li><li>Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> beside <b class="gd-ui">Transpose</b> to transpose all the tracks of the pattern for this row, in semitones.</li></ol>
+<p>Hold <kbd class="gd-key">[⇧]</kbd> and click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> to change a value by ten.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Tracks with the transpose scale FIX ignore the row's transpose.</p></aside>
+<h4 class="gd-h3">Play part of a pattern</h4>
+<p>A row can play part of its pattern: from a start step, for a number of steps. Use it to build odd bar lengths, or to swap the end of a pattern for a fill.</p>
+<ol class="gd-steps"><li>Select the row and click <b class="gd-ui">More</b>.</li><li>Under <b class="gd-ui">Part</b>, set <b class="gd-ui">Offset</b>, the first step that plays, and <b class="gd-ui">Length</b>, the number of steps. The bar above shows the steps that play.</li><li>To play the whole pattern again, click <b class="gd-ui">Whole pattern</b>.</li></ol>
+<aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>For a fill at the end of a 64-step pattern, play its steps 1 to 48 on one row, then steps 49 to 64 of a fill pattern on the next.</p></aside>
+<h4 class="gd-h3">Insert, move and delete rows</h4>
+<ul class="gd-list"><li><b class="gd-ui">Duplicate</b> puts a copy of the selected row after it.</li><li><b class="gd-ui">←</b> and <b class="gd-ui">→</b> in the <b class="gd-ui">Selected row</b> header move the row one place earlier or later. You can also drag a cell to another place.</li><li><b class="gd-ui">Delete</b>, <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> or <b class="gd-light">&lt;CLR&gt;</b> on the LCD deletes the selected row.</li></ul>
+<p>On the machine you insert a row with <kbd class="gd-key">[FUNCTION]</kbd> + <kbd class="gd-key">[DOWN]</kbd> and remove one with <kbd class="gd-key">[FUNCTION]</kbd> + <kbd class="gd-key">[UP]</kbd>. In the editor a new row comes from a pad, from <b class="gd-ui">Duplicate</b> or from a paste.</p>
+<h4 class="gd-h3">Copy, paste and undo</h4>
+<ol class="gd-steps"><li>Select a row and press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>, or click <b class="gd-light">&lt;COPY&gt;</b> on the LCD.</li><li>Select the row to paste after.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>, or click <b class="gd-light">&lt;PASTE&gt;</b>. The copy goes in after the selected row.</li></ol>
+<p>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to undo the last edit.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The END row cannot be copied, moved or deleted.</p></aside>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A song holds 200 rows. The editor refuses a row past that.</p></aside>
+<h4 class="gd-h3">Read the cells</h4>
+<p>The marks under a pattern name say what else the row does.</p>
+<table class="gd-table"><thead><tr><th>Mark</th><th>Meaning</th></tr></thead><tbody><tr><td>×4</td><td>the row plays four times</td></tr><tr><td>+5, −7</td><td>the row's transpose, in semitones</td></tr><tr><td>T</td><td>single tracks are transposed</td></tr><tr><td>M</td><td>tracks are muted</td></tr><tr><td>B</td><td>the row has a tempo of its own</td></tr><tr><td>~</td><td>the row plays part of its pattern</td></tr></tbody></table>
+<p>On the machine a T replaces the TRN value. The editor shows both.</p>
+<p>The <b class="gd-ui">Arrangement</b> header counts the rows, out of 200. The <b class="gd-ui">Song</b> card shows the song's rows, its length in bars and its playing time at the current tempo. On the Song workspace the LCD's second line shows the same: SONG, ROWS, BARS and TIME.</p>
+<h4 class="gd-h3">When the machine hears an edit</h4>
+<p>The editor writes each edit into the song on the machine. An edit made while the machine is stopped plays at the next start. An edit made while the song plays is heard from the next start of the song. An edit made in pattern mode is there when you switch to song mode.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>With a real Monomachine over MIDI, edits wait until the machine takes them. The sync field at the right of the LCD, which normally reads Sync, reads SEND and the number of edits that wait. Click it and follow the steps.</p></aside>
+</div></section>
+<section class="gd-sec" id="song-edit-transport">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-77</span></span></aside>
+<div class="gd-body gd-prose"><h2>SONG EDIT TRANSPORT</h2>
+<p>On the machine you start the song from any row: select the row and press <kbd class="gd-key">[ENTER/YES]</kbd>. You cannot start the song from a chosen row in the editor yet.</p>
+<p>The machine shows the song position in bars and beats. The editor shows the length of the whole song instead, in the <b class="gd-ui">Song</b> card and on the LCD. There is no live bar and beat counter in the editor yet.</p>
+</div></section>
+<section class="gd-sec" id="song-loops">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-78</span></span></aside>
+<div class="gd-body gd-prose"><h2>SONG LOOPS</h2>
+<p>A loop row sends the song back to an earlier row, a set number of times. Loops keep a song short and its shape clear. They also make parts longer than the 64 steps of one pattern.</p>
+<p>On the machine a loop is a value of the PAT column, after END. In the editor a loop is a command row of its own.</p>
+<ol class="gd-steps"><li>Select the last row of the part to repeat.</li><li>Click <b class="gd-ui">Add loop</b> in the <b class="gd-ui">Selected row</b> header. A loop row goes in after it. Its cell reads ↺ and the row it goes back to, with ×2 under it.</li><li>Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> beside <b class="gd-ui">Back to</b> to set the first row of the part.</li><li>Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> beside <b class="gd-ui">Times</b> to set how many times the part plays, 1 to 63. Click <b class="gd-ui">Forever</b> for a loop that never ends. The cell shows ∞.</li></ol>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: A loop row"><span>Screenshot to come</span></div><figcaption>A loop row</figcaption></figure>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Loops can sit inside other loops.</p></aside>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>In this version, a loop written by the editor goes back to the first row of the song on the machine, whatever row <b class="gd-ui">Back to</b> names. This is a known fault.</p></aside>
+</div></section>
+<section class="gd-sec" id="song-jump">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-78</span></span></aside>
+<div class="gd-body gd-prose"><h2>SONG JUMP</h2>
+<p>A jump row sends the song forward to a later row. The rows between are not played.</p>
+<p>On the machine a loop becomes a jump when you set its row after the loop. In the editor you choose the command.</p>
+<ol class="gd-steps"><li>Select a command row, or add one with <b class="gd-ui">Add loop</b>.</li><li>Under <b class="gd-ui">Command</b>, click <b class="gd-ui">JUMP</b>.</li><li>Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> beside <b class="gd-ui">Jump to</b> to set the row to go to. The cell reads → and that row.</li></ol>
+</div></section>
+<section class="gd-sec" id="song-halt">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-75,</span> <span>1-78</span></span></aside>
+<div class="gd-body gd-prose"><h2>SONG HALT</h2>
+<p>A halt row stops the song where it stands. The song waits there until you choose a row to go on from.</p>
+<p>On the machine a loop becomes a halt when it points at itself. In the editor you choose the command.</p>
+<ol class="gd-steps"><li>Select a command row, or add one with <b class="gd-ui">Add loop</b>.</li><li>Under <b class="gd-ui">Command</b>, click <b class="gd-ui">HALT</b>. The cell reads HALT.</li></ol>
+<p>The editor cannot choose the row to go on from yet. Use the song transport of the machine.</p>
+</div></section>
+<section class="gd-sec" id="song-track-transpose">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-77</span></span></aside>
+<div class="gd-body gd-prose"><h2>SONG TRACK TRANSPOSE</h2>
+<p>Besides the transpose of the whole pattern, a row can transpose single tracks: the six synth tracks and the six MIDI tracks.</p>
+<ol class="gd-steps"><li>Select the row and click <b class="gd-ui">More</b>.</li><li>Under <b class="gd-ui">Per track</b>, the INT line holds the synth tracks T1 to T6, the MIDI line the MIDI tracks M1 to M6.</li><li>Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> on a track to transpose it, in semitones. The track shows its value. The cell shows T.</li></ol>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A track transpose holds for that row only.</p></aside>
+</div></section>
+<section class="gd-sec" id="song-extra">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-77</span></span></aside>
+<div class="gd-body gd-prose"><h2>SONG EXTRA</h2>
+<p>A row can mute tracks and set a tempo of its own.</p>
+<h4 class="gd-h3">Mute tracks on a row</h4>
+<ol class="gd-steps"><li>Select the row and click <b class="gd-ui">More</b>.</li><li>Under <b class="gd-ui">Mutes</b>, click T1 to T6 for the synth tracks, M1 to M6 for the MIDI tracks. A muted track's key is dark. Click it again to unmute.</li><li>The cell shows M.</li></ol>
+<p>On the machine you set the mutes with the <kbd class="gd-key">[TRIG]</kbd> keys 1 to 6 and 9 to 14.</p>
+<h4 class="gd-h3">Set a tempo for a row</h4>
+<ol class="gd-steps"><li>Select the row. Beside <b class="gd-ui">Tempo</b>, <b class="gd-ui">Keep</b> is lit: the row plays at the tempo before it.</li><li>Click <b class="gd-ui">Keep</b>. The row takes the current tempo as its own, and <b class="gd-ui">Keep</b> goes out.</li><li>Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> to set the tempo, 30 to 300 BPM. The cell shows B.</li></ol>
+<p>To take the row's tempo off, click <b class="gd-ui">Keep</b> again.</p>
+</div></section>
+</article>
+<article class="gd-chapter" id="c18" style="page: c18">
+<div class="gd-runhead"><span>18. Routing</span><span>Monomachine Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">18</p><h1>Routing</h1>
+<p class="gd-cmeta">MM manual pp.1-81 to 1-86</p>
+</header>
+<div class="gd-intro gd-prose"><p>Routing is on the <b class="gd-ui">Mix</b> workspace. Press <kbd class="gd-key">[3]</kbd>, or click the <b class="gd-ui">Mix</b> tab. The six synth tracks have a strip each. Under the strips is the <b class="gd-ui">Routing</b> bar, and under it a drawing of the signal path: the tracks, the three buses AB, CD and EF, the outputs and the input jacks.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The Mix workspace"><span>Screenshot to come</span></div><figcaption>The Mix workspace</figcaption></figure>
+<p>Click a track in the drawing to select its strip. The lines under the drawing say what each bus carries and where it goes, for example AB: T1 + T2 › OUT A/B.</p></div>
+<section class="gd-sec" id="the-mixer">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-81</span></span></aside>
+<div class="gd-body gd-prose"><h2>THE MIXER</h2>
+<p>Each strip holds, from the top: the sound's trim values (AMP VOL, DIST, DSND), PAN, the LEVEL fader, the buses the track sends to, the input, and the <b class="gd-ui">M</b> and <b class="gd-ui">S</b> keys.</p>
+<p>The <b class="gd-ui">Out</b> keys <b class="gd-ui">AB</b>, <b class="gd-ui">CD</b> and <b class="gd-ui">EF</b> on a strip choose the buses the track feeds. A lit key means the track sends to that bus. A track can feed more than one bus.</p>
+<p>Tracks add into a bus in track order. An effect on a bus therefore hears only the tracks before it.</p>
+</div></section>
+<section class="gd-sec" id="fx-machines">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-81</span></span></aside>
+<div class="gd-body gd-prose"><h2>FX MACHINES</h2>
+<p>An effect machine needs an input and a trig to work. When you choose an effect machine for a track on <b class="gd-ui">Sound</b>, the editor sets its input and sets the amplitude envelope values DEC and REL to 127 so that the sound passes. The page tells you so. A trig on the track then opens the effect.</p>
+</div></section>
+<section class="gd-sec" id="audio-inputs">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-82</span></span></aside>
+<div class="gd-body gd-prose"><h2>AUDIO INPUTS</h2>
+<p>An effect track has an <b class="gd-ui">In</b> menu on its strip. The audio inputs are <b class="gd-ui">INP A</b>, <b class="gd-ui">INP B</b> and <b class="gd-ui">INP AB</b>. The drawing shows a dashed line from the input jack to the track.</p>
+<p>To use an effect as a first stage in a chain, give the track the machine <b class="gd-ui">THRU</b>. Choose it in the machine picker on <b class="gd-ui">Sound</b>.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A synth track has no input. Its strip reads &quot;synth · none&quot;.</p></aside>
+</div></section>
+<section class="gd-sec" id="neibor-routing">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-83</span></span></aside>
+<div class="gd-body gd-prose"><h2>NEIBOR ROUTING</h2>
+<p><b class="gd-ui">NEIBOR</b> is an input that takes the sound of the track before. The drawing shows an arrow from the neighbour. Effects can follow each other this way. Track 1 has no neighbour, so its menu has no NEIBOR.</p>
+</div></section>
+<section class="gd-sec" id="mix-bus-routing">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-84</span></span></aside>
+<div class="gd-body gd-prose"><h2>MIX BUS ROUTING</h2>
+<p><b class="gd-ui">BUS AB</b>, <b class="gd-ui">BUS CD</b> and <b class="gd-ui">BUS EF</b> are inputs that take what a bus carries. If the effect track also sends to the same bus, it replaces what was there: the line below the drawing reads &quot;INSERT&quot;. If it sends elsewhere, it takes a copy of the bus: a send. The line names the track that &quot;takes a copy&quot;.</p>
+</div></section>
+<section class="gd-sec" id="routing-modes">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-85,</span> <span>1-89</span></span></aside>
+<div class="gd-body gd-prose"><h2>ROUTING MODES</h2>
+<p>Click a mode on the <b class="gd-ui">Routing</b> bar. The field ROUTE on the second line of the LCD steps through them on a click. The <b class="gd-ui">Routing</b> card of the <b class="gd-ui">GLOBAL</b> panel has the same keys.</p>
+<ul class="gd-list"><li><b class="gd-ui">3xSTEREO</b>: the three buses go to the three stereo outputs, AB to A/B, CD to C/D and EF to E/F. This is the default.</li><li><b class="gd-ui">3xSTEREO + AB=MIX</b>: as 3xSTEREO, and CD and EF are also added to A/B.</li><li><b class="gd-ui">6xMONO</b>: each track goes to its own output, A to F. The buses are not sent out.</li></ul>
+</div></section>
+</article>
+<article class="gd-chapter" id="c19" style="page: c19">
+<div class="gd-runhead"><span>19. Global settings</span><span>Monomachine Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">19</p><h1>Global settings</h1>
+<p class="gd-cmeta">MM manual pp.1-87 to 1-111</p>
+</header>
+<div class="gd-intro gd-prose"><p>The machine keeps eight global slots. One is active. The settings are in the <b class="gd-ui">GLOBAL</b> panel. Click <b class="gd-ui">Global</b> in the top bar, or choose <b class="gd-ui">GLOBAL…</b> in the engine menu. Press <kbd class="gd-key">[ESC]</kbd> to close it.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The GLOBAL panel"><span>Screenshot to come</span></div><figcaption>The GLOBAL panel</figcaption></figure>
+<p>Every change is stored in the active slot and made active at once. The panel has the cards <b class="gd-ui">Control</b>, <b class="gd-ui">Sync</b> and <b class="gd-ui">Routing</b>.</p></div>
+<section class="gd-sec" id="global-slots">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-87</span></span></aside>
+<div class="gd-body gd-prose"><h2>GLOBAL SLOTS</h2>
+<p>The header of the panel holds the keys 1 to 8. The lit key is the active slot. Click another key to make that slot active.</p>
+<p><b class="gd-ui">Reset to defaults</b> writes the global the machine ships with into the active slot. The editor asks first.</p>
+<p>You cannot copy, paste or clear a global slot in the editor yet.</p>
+</div></section>
+<section class="gd-sec" id="turbo-menu">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-87,</span> <span>1-88</span></span></aside>
+<div class="gd-body gd-prose"><h2>TURBO MENU</h2>
+<p>The machine negotiates its MIDI speed with a cable. The editor has no cable to negotiate, so it has no turbo menu.</p>
+</div></section>
+<section class="gd-sec" id="audio">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-88,</span> <span>1-89</span></span></aside>
+<div class="gd-body gd-prose"><h2>AUDIO</h2>
+<h4 class="gd-h3">MASTER TUNE</h4>
+<p>The GLOBAL panel has no master tune yet.</p>
+<h4 class="gd-h3">ROUTING</h4>
+<p>The <b class="gd-ui">Routing</b> card sets the routing mode: 3xSTEREO, 3xSTEREO + AB=MIX or 6xMONO. It is the same setting as the <b class="gd-ui">Routing</b> bar on <b class="gd-ui">Mix</b>. See chapter 18.</p>
+</div></section>
+<section class="gd-sec" id="control">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-89,</span> <span>1-90,</span> <span>1-91,</span> <span>1-92,</span> <span>1-93</span></span></aside>
+<div class="gd-body gd-prose"><h2>CONTROL</h2>
+<h4 class="gd-h3">MIDI CHANNELS</h4>
+<p>The <b class="gd-ui">Control</b> card sets the channels the machine listens on.</p>
+<ul class="gd-list"><li><b class="gd-ui">Base channel</b>: OFF, or 1 to 16. Track t listens on the base channel plus t.</li><li><b class="gd-ui">Channel span</b>: how many tracks, counting from T1, have a channel of their own. 6 gives all of them.</li><li><b class="gd-ui">Auto track</b>: notes on this channel play the selected track.</li><li><b class="gd-ui">Multi trig</b>: notes on this channel play the tracks as the multi trig mode says (chapter 9).</li><li><b class="gd-ui">Multi map</b>: notes on this channel start patterns as the multi map says.</li></ul>
+<p>Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> to change a value. The base channel reads as a range, for example 1 to 6, when the span is more than one.</p>
+<p>A track has a channel only if its channel is 15 or lower. A base channel of 16 reaches no track. When a track has no channel of its own, the card says which tracks, and that mutes and notes cannot reach them. The editor then sends their sound values as kit dumps.</p>
+<h4 class="gd-h3">MORE ON THE MONOMACHINE MIDI FUNCTIONALITY</h4>
+<p>The machine takes NRPN control and uses program change to select patterns. Automation and MIDI from a DAW reach it as they reach the machine.</p>
+<h4 class="gd-h3">CONTROL OUT1</h4>
+<p>You cannot send the sequencer, the arpeggiator or the keyboard to the MIDI out of the machine in the editor yet.</p>
+<h4 class="gd-h3">CONTROL OUT2</h4>
+<p>The <b class="gd-ui">Sync</b> card holds two switches for what the machine sends. <b class="gd-ui">Tempo out</b> sends the MIDI clock. <b class="gd-ui">Ctrl out</b> sends MIDI start and stop. The <b class="gd-ui">Control</b> card has <b class="gd-ui">Prg change out</b>: choosing a pattern then sends a program change on the base channel.</p>
+<h4 class="gd-h3">CONTROL IN</h4>
+<ul class="gd-list"><li><b class="gd-ui">Tempo in</b>: INT uses the machine's own tempo. EXT follows the MIDI clock.</li><li><b class="gd-ui">Ctrl in</b>: ON makes the machine react to MIDI start, stop and continue.</li><li><b class="gd-ui">Prg change in</b>: reads BASE. The machine always takes a program change on its base channel, so you cannot change it.</li></ul>
+<p>In a DAW the plug-in sets <b class="gd-ui">Tempo in</b> to EXT and <b class="gd-ui">Ctrl in</b> to ON itself.</p>
+<h4 class="gd-h3">MULTI MAP EDIT</h4>
+<p>The multi map starts patterns from key ranges. It is on the <b class="gd-ui">Perform</b> workspace, in multi map mode. It is stored in the global slot.</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[4]</kbd>.</li><li>In the <b class="gd-ui">Keyboard</b> bar, click <b class="gd-ui">Multi map</b>.</li><li>The table lists the ranges from the lowest key. Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> beside a range's upper key to move the limit. The last range always ends at G-9.</li><li>Choose the pattern in the <b class="gd-ui">Pattern</b> list. <b class="gd-ui">CUR</b> plays the current pattern.</li><li>Set <b class="gd-ui">OFS</b>, the first step. <b class="gd-ui">LEN</b> is the number of steps and needs an offset first. <b class="gd-ui">TRN</b> is the transpose and <b class="gd-ui">TIM</b> the timing.</li><li>Click <b class="gd-ui">Split selected range</b> to cut a range in two. Click × to delete a range.</li></ol>
+<p>Bands on the keyboard show the ranges. A key you play shows the pattern it starts.</p>
+<p>The pattern list offers CUR and the patterns A01 to B16 only. The machine takes all 128.</p>
+</div></section>
+<section class="gd-sec" id="mechanical-settings">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-94</span></span></aside>
+<div class="gd-body gd-prose"><h2>MECHANICAL SETTINGS</h2>
+<p>Knob resolution, the velocity curve and the joystick mapping belong to the hardware. The editor has no setting for them.</p>
+</div></section>
+<section class="gd-sec" id="file">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-95,</span> <span>1-97</span></span></aside>
+<div class="gd-body gd-prose"><h2>FILE</h2>
+<h4 class="gd-h3">Export</h4>
+<p>The kit library and the pattern chooser each have an <b class="gd-ui">Export SysEx…</b> key. It writes every pattern, kit and song, and the global the editor holds, into one .syx file. The plug-in opens a save dialog.</p>
+<p>You cannot choose a range of slots to send.</p>
+<h4 class="gd-h3">Import</h4>
+<ol class="gd-steps"><li>Click <b class="gd-ui">Import SysEx…</b> in the kit library or the pattern chooser, or drop a .syx file on the window (macOS only).</li><li>The import window previews the file. It has a tab for each kind: Kits, Patterns, Songs, Globals and Other.</li><li>A slot grid shows the slots. A click leaves a slot out or takes it in again. Hold <kbd class="gd-key">[⇧]</kbd> and click to choose a range.</li><li>Click <b class="gd-ui">Import</b>. The window shows a bar. <b class="gd-ui">Stop</b> ends the import, <b class="gd-ui">Hide</b> puts the window away.</li><li>A report lists what the machine did with each slot.</li></ol>
+<p>Globals and other messages are off unless you tick them. Importing a global changes the channels the machine listens on. There is no undo, so use <b class="gd-ui">Export SysEx…</b> first.</p>
+<p>Files go into the slots they came from.</p>
+<p>You cannot choose a first slot to write to, and there is no mode that only verifies a file.</p>
+<h4 class="gd-h3">The machine's SYSEX RECV screen</h4>
+<p>The Monomachine takes a dump only on its SysEx receive screen. The editor opens it for you. With a real Monomachine over MIDI, the sync field on the second line of the LCD reads SEND and the number of waiting edits. Click it and follow the steps.</p>
+</div></section>
+<section class="gd-sec" id="digipro-manager">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-99</span></span></aside>
+<div class="gd-body gd-prose"><h2>DIGIPRO MANAGER</h2>
+<p>You cannot send, receive, rename or erase user waveforms in the editor.</p>
+</div></section>
+<section class="gd-sec" id="drive-settings">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-105,</span> <span>1-106,</span> <span>1-107</span></span></aside>
+<div class="gd-body gd-prose"><h2>+DRIVE SETTINGS</h2>
+<p>The +Drive, its snapshots and its Digibanks are hardware. The editor does not emulate them.</p>
+</div></section>
+<section class="gd-sec" id="midi-seq">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-108,</span> <span>1-109</span></span></aside>
+<div class="gd-body gd-prose"><h2>MIDI SEQ</h2>
+<p>The channel of each MIDI track, and the controller numbers CL1 to CL4, are on the <b class="gd-ui">MIDI page</b> of <b class="gd-ui">Sequence</b>. See chapter 16.</p>
+</div></section>
+</article>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

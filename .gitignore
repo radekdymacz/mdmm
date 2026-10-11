@@ -31,3 +31,8 @@ marketing/reels/node_modules/
 marketing/**/*.syx
 .remotion/
 __pycache__/
+
+# Elektron manuals: local reference only, never committed (public repo)
+doc/manuals/
+# Guide PDFs: made by scripts/mdmm-guide-pdf.sh at release, not kept in git
+site/public/guide/*.pdf

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>6. Stereo master effects · Machinedrum Editor guide</title>
+<meta name="description" content="The Rhythm Echo delay, Gate Box reverb, master EQ and Dynamix compressor on the Mix workspace, and how to lock them with control machines.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/md/06-stereo-master-effects/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261010">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>@page { @top-left { content: "6. Stereo master effects"; } }</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › <a href="/guide/md/">Machinedrum Editor</a> › Stereo master effects</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Chapters of the Machinedrum Editor guide">
+<p class="gd-side-title"><a href="/guide/md/">Machinedrum Editor guide</a></p>
+<ol class="gd-side-list"><li><a href="/guide/md/01-introduction-front-panel-and-connectors/">1. Introduction, front panel and connectors</a></li>
+<li><a href="/guide/md/02-lcd-user-interface-and-quick-start/">2. LCD user interface and quick start</a></li>
+<li><a href="/guide/md/03-sound-synthesis-kits/">3. Sound synthesis: kits</a></li>
+<li><a href="/guide/md/04-track-effects/">4. Track effects</a></li>
+<li><a href="/guide/md/05-routing-page/">5. Routing page</a></li>
+<li class="gd-side-cur"><a href="/guide/md/06-stereo-master-effects/" aria-current="page">6. Stereo master effects</a><ol class="gd-side-subs"><li><a href="#the-stereo-master-effect-system">THE STEREO MASTER EFFECT SYSTEM</a></li><li><a href="#the-rhythm-echo-delay">THE RHYTHM ECHO DELAY</a></li><li><a href="#the-gate-box-reverb">THE GATE BOX REVERB</a></li><li><a href="#master-eq">MASTER EQ</a></li><li><a href="#the-dynamix-dynamics-processor">THE DYNAMIX DYNAMICS PROCESSOR</a></li></ol></li>
+<li><a href="/guide/md/07-lfos/">7. LFOs</a></li>
+<li><a href="/guide/md/08-pattern-sequencer/">8. Pattern sequencer</a></li>
+<li><a href="/guide/md/09-song-mode/">9. Song mode</a></li>
+<li><a href="/guide/md/10-global-settings/">10. Global settings</a></li>
+<li><a href="/guide/md/11-sample-manager-uw-only/">11. Sample manager, UW only</a></li>
+<li><a href="/guide/md/12-early-start-up-menu/">12. Early start-up menu</a></li>
+<li><a href="/guide/md/13-technical-information-mki-vs-mkii/">13. Technical information, MKI vs MKII</a></li>
+<li><span class="gd-side-todo">14. Appendix A: machine reference <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">15. Appendix B: MIDI control reference <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">16. Appendix C: sysex reference <span class="gd-vh">(to come)</span></span></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">6</span><span class="gd-ctitle">Stereo master effects</span></h1><p class="gd-cmeta">MD manual pp.28-31</p></header>
+<div class="gd-intro gd-prose"><p>The stereo master effects are four effects that work on the main outputs. The Rhythm Echo and the Gate Box take signal from the tracks through their <b class="gd-ui">DEL</b> and <b class="gd-ui">REV</b> sends. The master EQ and Dynamix work on the final stereo output.</p></div>
+<section class="gd-sec" id="the-stereo-master-effect-system" aria-labelledby="the-stereo-master-effect-system-h">
+<div class="gd-body gd-prose"><h2 id="the-stereo-master-effect-system-h">THE STEREO MASTER EFFECT SYSTEM <a class="gd-anchor" href="#the-stereo-master-effect-system" aria-label="Link to THE STEREO MASTER EFFECT SYSTEM">#</a></h2>
+<p class="gd-ref">MD manual p.28</p>
+<p>The master effects are on the Mix workspace, below the track strips. A line above them shows the signal path: sends, Rhythm Echo, Gate Box, master EQ, Dynamix, main out. Tracks on the individual outputs A to F skip this chain.</p>
+<p>Each effect is a card with a name, a screen and eight value boxes. Drag a dot on the screen or a box to change a parameter.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The master effects"><span>Screenshot to come</span></div><figcaption>The master effects</figcaption></figure>
+<p>The master effects are part of the kit. Save the kit to keep your changes.</p>
+<p>You cannot lock the master effects on the Mix workspace. To change them from the sequencer, use a CTR machine on a track. The machines CTR-RE, CTR-GB, CTR-EQ and CTR-DX hold the parameters of the Rhythm Echo, the Gate Box, the master EQ and Dynamix. They make no sound. On the Sound workspace they show the same groups as the cards, and you lock their parameters in the lock lane like any other.</p>
+</div></section>
+<section class="gd-sec" id="the-rhythm-echo-delay" aria-labelledby="the-rhythm-echo-delay-h">
+<div class="gd-body gd-prose"><h2 id="the-rhythm-echo-delay-h">THE RHYTHM ECHO DELAY <a class="gd-anchor" href="#the-rhythm-echo-delay" aria-label="Link to THE RHYTHM ECHO DELAY">#</a></h2>
+<p class="gd-ref">MD manual p.29</p>
+<p>The card <b class="gd-ui">Rhythm Echo</b> is a delay in time with the tempo. Its sends come from the <b class="gd-ui">DEL</b> parameter of the tracks.</p>
+<table class="gd-table"><thead><tr><th>Parameter</th><th>What it does</th></tr></thead><tbody><tr><td><b class="gd-ui">TIME</b></td><td>the delay time, in 128th notes: 64 is two beats</td></tr><tr><td><b class="gd-ui">MOD</b></td><td>the depth of the modulation of the time</td></tr><tr><td><b class="gd-ui">MFRQ</b></td><td>the frequency of that modulation</td></tr><tr><td><b class="gd-ui">FB</b></td><td>the feedback</td></tr><tr><td><b class="gd-ui">FILTF</b></td><td>the base frequency of the filter in the feedback</td></tr><tr><td><b class="gd-ui">FILTW</b></td><td>the width of that filter</td></tr><tr><td><b class="gd-ui">MONO</b></td><td>the panning of the feedback: low values give a ping-pong echo, high values keep the stereo image</td></tr><tr><td><b class="gd-ui">LEV</b></td><td>the output level of the effect</td></tr></tbody></table>
+<p>The screen shows the repeats. Drag its dot sideways for <b class="gd-ui">TIME</b> and up for <b class="gd-ui">FB</b>. With <b class="gd-ui">FB</b> at 64 each repeat is as loud as the one before. Above 64 the repeats grow, and the screen says so.</p>
+</div></section>
+<section class="gd-sec" id="the-gate-box-reverb" aria-labelledby="the-gate-box-reverb-h">
+<div class="gd-body gd-prose"><h2 id="the-gate-box-reverb-h">THE GATE BOX REVERB <a class="gd-anchor" href="#the-gate-box-reverb" aria-label="Link to THE GATE BOX REVERB">#</a></h2>
+<p class="gd-ref">MD manual p.30</p>
+<p>The card <b class="gd-ui">Gate Box</b> is a reverb for percussion, with a gate. Its sends come from the <b class="gd-ui">REV</b> parameter of the tracks.</p>
+<table class="gd-table"><thead><tr><th>Parameter</th><th>What it does</th></tr></thead><tbody><tr><td><b class="gd-ui">DVOL</b></td><td>how much of the Rhythm Echo's output goes into the reverb</td></tr><tr><td><b class="gd-ui">PRED</b></td><td>the pre-delay</td></tr><tr><td><b class="gd-ui">DEC</b></td><td>the decay time, 0.5 to 3 seconds</td></tr><tr><td><b class="gd-ui">DAMP</b></td><td>the damping of the high frequencies</td></tr><tr><td><b class="gd-ui">HP</b></td><td>a high-pass filter on the output</td></tr><tr><td><b class="gd-ui">LP</b></td><td>a low-pass filter on the output</td></tr><tr><td><b class="gd-ui">GATE</b></td><td>the gate time; at 127 the gate is off</td></tr><tr><td><b class="gd-ui">LEV</b></td><td>the output level of the reverb</td></tr></tbody></table>
+<p>The screen shows the reverb tail. Its three dots set <b class="gd-ui">PRED</b>, <b class="gd-ui">DEC</b> and <b class="gd-ui">GATE</b>. The label under the screen reads &quot;reverb · gate off&quot; when <b class="gd-ui">GATE</b> is at 127.</p>
+</div></section>
+<section class="gd-sec" id="master-eq" aria-labelledby="master-eq-h">
+<div class="gd-body gd-prose"><h2 id="master-eq-h">MASTER EQ <a class="gd-anchor" href="#master-eq" aria-label="Link to MASTER EQ">#</a></h2>
+<p class="gd-ref">MD manual p.30</p>
+<p>The card <b class="gd-ui">Master EQ</b> has a low shelf, a high shelf and one parametric band. It shapes the final stereo output.</p>
+<table class="gd-table"><thead><tr><th>Parameter</th><th>What it does</th></tr></thead><tbody><tr><td><b class="gd-ui">LF</b>, <b class="gd-ui">LG</b></td><td>the frequency and gain of the low shelf</td></tr><tr><td><b class="gd-ui">HF</b>, <b class="gd-ui">HG</b></td><td>the frequency and gain of the high shelf</td></tr><tr><td><b class="gd-ui">PF</b>, <b class="gd-ui">PG</b></td><td>the centre frequency and gain of the parametric band</td></tr><tr><td><b class="gd-ui">PQ</b></td><td>the width of the parametric band; high values are narrow</td></tr><tr><td><b class="gd-ui">GAIN</b></td><td>the output gain of the main stereo out</td></tr></tbody></table>
+<p>The gains run from 0 to 127 in the boxes, with 64 flat. The screen shows the EQ curve. Each of its three dots sets a frequency sideways and a gain up or down.</p>
+</div></section>
+<section class="gd-sec" id="the-dynamix-dynamics-processor" aria-labelledby="the-dynamix-dynamics-processor-h">
+<div class="gd-body gd-prose"><h2 id="the-dynamix-dynamics-processor-h">THE DYNAMIX DYNAMICS PROCESSOR <a class="gd-anchor" href="#the-dynamix-dynamics-processor" aria-label="Link to THE DYNAMIX DYNAMICS PROCESSOR">#</a></h2>
+<p class="gd-ref">MD manual p.31</p>
+<p>The card <b class="gd-ui">Dynamix</b> is a compressor for percussion. It works on the main output.</p>
+<table class="gd-table"><thead><tr><th>Parameter</th><th>What it does</th></tr></thead><tbody><tr><td><b class="gd-ui">ATCK</b></td><td>the attack time of the level detector; long times let fast transients through</td></tr><tr><td><b class="gd-ui">REL</b></td><td>the release time</td></tr><tr><td><b class="gd-ui">TRHD</b></td><td>the threshold, where compression starts</td></tr><tr><td><b class="gd-ui">RTIO</b></td><td>the ratio</td></tr><tr><td><b class="gd-ui">KNEE</b></td><td>the softness of the change at the threshold; low values give a hard knee</td></tr><tr><td><b class="gd-ui">HP</b></td><td>a high-pass filter on the side chain, so bass does not trigger it</td></tr><tr><td><b class="gd-ui">OUTG</b></td><td>the output gain, to make up for the loss</td></tr><tr><td><b class="gd-ui">MIX</b></td><td>the balance of compressed and original signal; a high value bypasses the effect</td></tr></tbody></table>
+<p>The screen shows input against output. The dashed line is a signal that passes unchanged. Drag the first dot sideways for <b class="gd-ui">TRHD</b>. Drag the dot at the right end for <b class="gd-ui">RTIO</b>.</p>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/md/05-routing-page/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">5. Routing page</span></a><a href="/guide/md/07-lfos/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">7. LFOs</span></a></nav>
+</article>
+</div>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

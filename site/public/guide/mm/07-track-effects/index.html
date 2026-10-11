@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>7. Track effects · Monomachine Editor guide</title>
+<meta name="description" content="The amp, filter, equaliser, sample rate reducer and delay that every track has after its machine.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/mm/07-track-effects/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261010">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>@page { @top-left { content: "7. Track effects"; } }</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › <a href="/guide/mm/">Monomachine Editor</a> › Track effects</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Chapters of the Monomachine Editor guide">
+<p class="gd-side-title"><a href="/guide/mm/">Monomachine Editor guide</a></p>
+<ol class="gd-side-list"><li><a href="/guide/mm/01-introduction-philosophy-highlights/">1. Introduction, philosophy, highlights</a></li>
+<li><a href="/guide/mm/02-user-interface-and-connectors/">2. User interface and connectors</a></li>
+<li><a href="/guide/mm/03-the-lcd-user-interface/">3. The LCD user interface</a></li>
+<li><a href="/guide/mm/04-quick-start/">4. Quick start</a></li>
+<li><a href="/guide/mm/05-monomachine-overview/">5. Monomachine overview</a></li>
+<li><a href="/guide/mm/06-synthesis-arrangement-kits-and-machines/">6. Synthesis arrangement: kits and machines</a></li>
+<li class="gd-side-cur"><a href="/guide/mm/07-track-effects/" aria-current="page">7. Track effects</a><ol class="gd-side-subs"><li><a href="#level">LEVEL</a></li><li><a href="#amp-envelope">AMP ENVELOPE</a></li><li><a href="#distortion">DISTORTION</a></li><li><a href="#track-volume">TRACK VOLUME</a></li><li><a href="#pan">PAN</a></li><li><a href="#portamento">PORTAMENTO</a></li><li><a href="#filter">FILTER</a></li><li><a href="#filter-envelope">FILTER ENVELOPE</a></li><li><a href="#filter-tracking">FILTER TRACKING</a></li><li><a href="#eq">EQ</a></li><li><a href="#sample-rate-reduction">SAMPLE RATE REDUCTION</a></li><li><a href="#delay">DELAY</a></li></ol></li>
+<li><a href="/guide/mm/08-low-frequency-oscillators/">8. Low frequency oscillators</a></li>
+<li><a href="/guide/mm/09-additional-kit-settings/">9. Additional kit settings</a></li>
+<li><a href="/guide/mm/10-the-pattern-sequencer-pattern-operation/">10. The pattern sequencer: pattern operation</a></li>
+<li><a href="/guide/mm/11-composing-a-pattern/">11. Composing a pattern</a></li>
+<li><a href="/guide/mm/12-tempo/">12. Tempo</a></li>
+<li><a href="/guide/mm/13-parameter-locks/">13. Parameter locks</a></li>
+<li><a href="/guide/mm/14-advanced-sequencer-control/">14. Advanced sequencer control</a></li>
+<li><a href="/guide/mm/15-additional-sequencer-features/">15. Additional sequencer features</a></li>
+<li><a href="/guide/mm/16-the-midi-sequencer/">16. The MIDI sequencer</a></li>
+<li><a href="/guide/mm/17-the-song-mode/">17. The song mode</a></li>
+<li><a href="/guide/mm/18-routing/">18. Routing</a></li>
+<li><a href="/guide/mm/19-global-settings/">19. Global settings</a></li>
+<li><span class="gd-side-todo">20. Early startup menu, technical information <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">21. Appendix A: machine reference <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">22. Appendix B: MIDI control reference <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">23. Appendix C: SysEx reference <span class="gd-vh">(to come)</span></span></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">7</span><span class="gd-ctitle">Track effects</span></h1><p class="gd-cmeta">MM manual pp.1-26 to 1-34</p></header>
+<div class="gd-intro gd-prose"><p>The sound of a machine passes through the same chain on every track: amp, filter, equaliser, sample rate reduction and delay. The chain is the same for every machine, so these parameters mean the same on every track. All of them are on the <b class="gd-ui">Sound</b> workspace, in the groups under the machine's own. Select the track, press <kbd class="gd-key">[2]</kbd> and drag the values.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The amp, filter and effects groups"><span>Screenshot to come</span></div><figcaption>The amp, filter and effects groups</figcaption></figure>
+<p>A value box changes when you drag it, turn the wheel over it or press an arrow key on it. Double-click it for its default. Where a group has a picture, drag the dots in the picture to change the values they stand for.</p></div>
+<section class="gd-sec" id="level" aria-labelledby="level-h">
+<div class="gd-body gd-prose"><h2 id="level-h">LEVEL <a class="gd-anchor" href="#level" aria-label="Link to LEVEL">#</a></h2>
+<p class="gd-ref">MM manual p.1-26</p>
+<p>LEVEL is the track's mix level, at the end of its path. It is the <b class="gd-ui">LEVEL</b> fader of the track's strip in the <b class="gd-ui">Mix</b> workspace. It can neither be locked on a step nor moved by an LFO. To balance tracks against each other use LEVEL. For movement inside the sound use VOL.</p>
+</div></section>
+<section class="gd-sec" id="amp-envelope" aria-labelledby="amp-envelope-h">
+<div class="gd-body gd-prose"><h2 id="amp-envelope-h">AMP ENVELOPE <a class="gd-anchor" href="#amp-envelope" aria-label="Link to AMP ENVELOPE">#</a></h2>
+<p class="gd-ref">MM manual pp.1-26, 1-27</p>
+<p>The <b class="gd-ui">Envelope</b> group of the amp page holds four values.</p>
+<table class="gd-table"><thead><tr><th>Value</th><th>What it sets</th></tr></thead><tbody><tr><td>ATK</td><td>the attack: how long the level takes to rise after a trig</td></tr><tr><td>HOLD</td><td>how long the level stays up, before the decay starts</td></tr><tr><td>DEC</td><td>the decay: how long the level takes to fall</td></tr><tr><td>REL</td><td>the release: how long it falls after a NOTE OFF</td></tr></tbody></table>
+<p>ATK, DEC and REL are times. Each 8 more about doubles the time. ATK 64 reaches 90 percent of the level in about 0.14 seconds, and DEC 64 falls 20 dB in about 0.55 seconds. DEC 127 holds the level until the NOTE OFF, and REL 127 never fades. HOLD counts in steps of the pattern: HOLD 8 is one step, so it follows the tempo.</p>
+<p>The picture shows the shape as the machine plays it, with the release dashed. Drag its dots to set the values.</p>
+<aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>The <b class="gd-ui">Trig setup</b> plate in the <b class="gd-ui">Sequence</b> workspace draws the same envelope together with the portamento, and shows how long a gate really sounds in steps at the current tempo.</p></aside>
+</div></section>
+<section class="gd-sec" id="distortion" aria-labelledby="distortion-h">
+<div class="gd-body gd-prose"><h2 id="distortion-h">DISTORTION <a class="gd-anchor" href="#distortion" aria-label="Link to DISTORTION">#</a></h2>
+<p class="gd-ref">MM manual p.1-27</p>
+<p>DIST is in the <b class="gd-ui">Drive</b> group of the amp page. Drag the dot in its picture up or down, or use the value box. Above 0 it overloads the sound. Below 0 it adds headroom: the sound is quieter and cleaner.</p>
+</div></section>
+<section class="gd-sec" id="track-volume" aria-labelledby="track-volume-h">
+<div class="gd-body gd-prose"><h2 id="track-volume-h">TRACK VOLUME <a class="gd-anchor" href="#track-volume" aria-label="Link to TRACK VOLUME">#</a></h2>
+<p class="gd-ref">MM manual p.1-28</p>
+<p>VOL is the volume of the voice. It is in the <b class="gd-ui">Level · pan</b> group of the amp page, and it is the trim at the top of each strip in the <b class="gd-ui">Mix</b> workspace, as AMP VOL. VOL comes before LEVEL in the path. Unlike LEVEL you can lock it on a step and an LFO can move it.</p>
+</div></section>
+<section class="gd-sec" id="pan" aria-labelledby="pan-h">
+<div class="gd-body gd-prose"><h2 id="pan-h">PAN <a class="gd-anchor" href="#pan" aria-label="Link to PAN">#</a></h2>
+<p class="gd-ref">MM manual p.1-29</p>
+<p>PAN places the track in the stereo field, from L64 to R63. It is in the <b class="gd-ui">Level · pan</b> group and in each strip of the <b class="gd-ui">Mix</b> workspace, where you drag it sideways. Double-click it for the centre.</p>
+</div></section>
+<section class="gd-sec" id="portamento" aria-labelledby="portamento-h">
+<div class="gd-body gd-prose"><h2 id="portamento-h">PORTAMENTO <a class="gd-anchor" href="#portamento" aria-label="Link to PORTAMENTO">#</a></h2>
+<p class="gd-ref">MM manual p.1-29</p>
+<p>PORT sets how long the pitch glides from the note before to the next note. It is in the <b class="gd-ui">Glide</b> group of the amp page and in the <b class="gd-ui">Trig setup</b> plate of the <b class="gd-ui">Sequence</b> workspace. In the plate, <b class="gd-ui">Port</b> chooses when it glides: <b class="gd-ui">ALWAYS</b> glides to every note, and <b class="gd-ui">LEGATO</b> glides only between notes that overlap.</p>
+</div></section>
+<section class="gd-sec" id="filter" aria-labelledby="filter-h">
+<div class="gd-body gd-prose"><h2 id="filter-h">FILTER <a class="gd-anchor" href="#filter" aria-label="Link to FILTER">#</a></h2>
+<p class="gd-ref">MM manual p.1-30</p>
+<p>The filter of each track is a 24 dB filter built from a high-pass and a low-pass. The <b class="gd-ui">Filter</b> group of the filter page holds four values:</p>
+<table class="gd-table"><thead><tr><th>Value</th><th>What it sets</th></tr></thead><tbody><tr><td>BASE</td><td>the cutoff of the high-pass</td></tr><tr><td>WDTH</td><td>the gap from the high-pass up to the low-pass</td></tr><tr><td>HPQ</td><td>the resonance of the high-pass</td></tr><tr><td>LPQ</td><td>the resonance of the low-pass</td></tr></tbody></table>
+<p>In the picture, drag the dots sideways for BASE and WDTH and up for HPQ and LPQ. A dashed line shows where the filter envelope takes the filter.</p>
+</div></section>
+<section class="gd-sec" id="filter-envelope" aria-labelledby="filter-envelope-h">
+<div class="gd-body gd-prose"><h2 id="filter-envelope-h">FILTER ENVELOPE <a class="gd-anchor" href="#filter-envelope" aria-label="Link to FILTER ENVELOPE">#</a></h2>
+<p class="gd-ref">MM manual p.1-31</p>
+<p>The <b class="gd-ui">Filter env</b> group holds ATK and DEC, the attack and decay times of the filter envelope, and BOFS and WOFS, how far the envelope moves BASE and WDTH.</p>
+</div></section>
+<section class="gd-sec" id="filter-tracking" aria-labelledby="filter-tracking-h">
+<div class="gd-body gd-prose"><h2 id="filter-tracking-h">FILTER TRACKING <a class="gd-anchor" href="#filter-tracking" aria-label="Link to FILTER TRACKING">#</a></h2>
+<p class="gd-ref">MM manual p.1-31</p>
+<p>Both filters can follow the pitch of the notes. The switches are on the <b class="gd-ui">Perform</b> workspace, in the <b class="gd-ui">Assign</b> card.</p>
+<ol class="gd-steps"><li>Select the track with the numbered keys in the title of the <b class="gd-ui">Assign</b> card.</li><li>Click the <b class="gd-ui">KEY</b> tab.</li><li>Click <b class="gd-ui">HPF tracks keys</b> or <b class="gd-ui">LPF tracks keys</b>. A lit key means the filter follows the keys.</li></ol>
+</div></section>
+<section class="gd-sec" id="eq" aria-labelledby="eq-h">
+<div class="gd-body gd-prose"><h2 id="eq-h">EQ <a class="gd-anchor" href="#eq" aria-label="Link to EQ">#</a></h2>
+<p class="gd-ref">MM manual p.1-32</p>
+<p>The <b class="gd-ui">EQ</b> group holds EQF, the frequency of the equaliser band, and EQG, its gain. A negative EQG cuts the band and a positive one boosts it.</p>
+</div></section>
+<section class="gd-sec" id="sample-rate-reduction" aria-labelledby="sample-rate-reduction-h">
+<div class="gd-body gd-prose"><h2 id="sample-rate-reduction-h">SAMPLE RATE REDUCTION <a class="gd-anchor" href="#sample-rate-reduction" aria-label="Link to SAMPLE RATE REDUCTION">#</a></h2>
+<p class="gd-ref">MM manual p.1-32</p>
+<p>SRR, in its own group, reduces the sample rate of the track for a lo-fi sound. Drag its dot, or the value box.</p>
+</div></section>
+<section class="gd-sec" id="delay" aria-labelledby="delay-h">
+<div class="gd-body gd-prose"><h2 id="delay-h">DELAY <a class="gd-anchor" href="#delay" aria-label="Link to DELAY">#</a></h2>
+<p class="gd-ref">MM manual p.1-33</p>
+<p>Each track has its own delay, synchronised to the tempo. The <b class="gd-ui">Delay</b> group holds three values and the <b class="gd-ui">Delay filter</b> group two.</p>
+<table class="gd-table"><thead><tr><th>Value</th><th>What it sets</th></tr></thead><tbody><tr><td>DSND</td><td>the send into the delay. A negative value keeps the stereo image, a positive value is ping-pong, 0 is no delay</td></tr><tr><td>DTIM</td><td>the delay time, in 256th notes</td></tr><tr><td>DFB</td><td>the feedback. The editor warns above 64</td></tr><tr><td>DBAS</td><td>the base of the filter in the feedback path</td></tr><tr><td>DWID</td><td>the width of that filter</td></tr></tbody></table>
+<p>DSND is also in the trim row at the top of each strip in the <b class="gd-ui">Mix</b> workspace, with VOL and DIST.</p>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/mm/06-synthesis-arrangement-kits-and-machines/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">6. Synthesis arrangement: kits and machines</span></a><a href="/guide/mm/08-low-frequency-oscillators/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">8. Low frequency oscillators</span></a></nav>
+</article>
+</div>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

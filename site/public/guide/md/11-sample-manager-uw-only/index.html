@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11. Sample manager, UW only · Machinedrum Editor guide</title>
+<meta name="description" content="Load, name, hear and place samples in the ROM slots, and record into the RAM slots, on the UW machine.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/md/11-sample-manager-uw-only/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261010">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>@page { @top-left { content: "11. Sample manager, UW only"; } }</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › <a href="/guide/md/">Machinedrum Editor</a> › Sample manager, UW only</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Chapters of the Machinedrum Editor guide">
+<p class="gd-side-title"><a href="/guide/md/">Machinedrum Editor guide</a></p>
+<ol class="gd-side-list"><li><a href="/guide/md/01-introduction-front-panel-and-connectors/">1. Introduction, front panel and connectors</a></li>
+<li><a href="/guide/md/02-lcd-user-interface-and-quick-start/">2. LCD user interface and quick start</a></li>
+<li><a href="/guide/md/03-sound-synthesis-kits/">3. Sound synthesis: kits</a></li>
+<li><a href="/guide/md/04-track-effects/">4. Track effects</a></li>
+<li><a href="/guide/md/05-routing-page/">5. Routing page</a></li>
+<li><a href="/guide/md/06-stereo-master-effects/">6. Stereo master effects</a></li>
+<li><a href="/guide/md/07-lfos/">7. LFOs</a></li>
+<li><a href="/guide/md/08-pattern-sequencer/">8. Pattern sequencer</a></li>
+<li><a href="/guide/md/09-song-mode/">9. Song mode</a></li>
+<li><a href="/guide/md/10-global-settings/">10. Global settings</a></li>
+<li class="gd-side-cur"><a href="/guide/md/11-sample-manager-uw-only/" aria-current="page">11. Sample manager, UW only</a><ol class="gd-side-subs"><li><a href="#sample-manager">SAMPLE MANAGER</a></li><li><a href="#the-difference-between-rom-and-ram-machines">THE DIFFERENCE BETWEEN ROM AND RAM MACHINES</a></li><li><a href="#ram-to-rom-copy">RAM TO ROM COPY</a></li><li><a href="#general-sample-receive">GENERAL SAMPLE RECEIVE</a></li><li><a href="#specific-place-sample-receive">SPECIFIC PLACE SAMPLE RECEIVE</a></li><li><a href="#original-place-sample-receive">ORIGINAL PLACE SAMPLE RECEIVE</a></li><li><a href="#send-samples">SEND SAMPLES</a></li><li><a href="#erase-samples">ERASE SAMPLES</a></li></ol></li>
+<li><a href="/guide/md/12-early-start-up-menu/">12. Early start-up menu</a></li>
+<li><a href="/guide/md/13-technical-information-mki-vs-mkii/">13. Technical information, MKI vs MKII</a></li>
+<li><span class="gd-side-todo">14. Appendix A: machine reference <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">15. Appendix B: MIDI control reference <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">16. Appendix C: sysex reference <span class="gd-vh">(to come)</span></span></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">11</span><span class="gd-ctitle">Sample manager, UW only</span></h1><p class="gd-cmeta">MD manual pp.70-75</p></header>
+<div class="gd-intro gd-prose"><p>The sample manager is a feature of the UW models, which have sample memory. In the editor it is the <b class="gd-ui">Sampler</b> workspace. Press <kbd class="gd-key">[4]</kbd>, or click the <b class="gd-ui">Sampler</b> tab.</p>
+<p>The rail on the left lists the slots: four RAM slots and 48 ROM slots. The page shows the selected slot. On the second line of the LCD, <b class="gd-light">&lt;MEM&gt;</b> gives the share of the sample memory in use, <b class="gd-light">&lt;KIT&gt;</b> the number of tracks in the kit that play a ROM slot, and <b class="gd-light">&lt;SLOT&gt;</b> the selected slot.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The Sampler workspace"><span>Screenshot to come</span></div><figcaption>The Sampler workspace</figcaption></figure>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The Sampler needs the UW's ROM and RAM machines. With other firmware, or while the machine has not started, the page says so.</p></aside></div>
+<section class="gd-sec" id="sample-manager" aria-labelledby="sample-manager-h">
+<div class="gd-body gd-prose"><h2 id="sample-manager-h">SAMPLE MANAGER <a class="gd-anchor" href="#sample-manager" aria-label="Link to SAMPLE MANAGER">#</a></h2>
+<p class="gd-ref">MD manual pp.70, 71</p>
+<h4 class="gd-h3" id="the-slots">The slots</h4>
+<p>The ROM slots are in the rail as a grid of 48 keys. A key that is lit holds a sample the kit uses. A faint key is an empty slot. Point at a key to see its number, its name, its size and the tracks that play it.</p>
+<p>With a ROM slot selected, the page shows under it every ROM slot as a tile: its waveform, its number and name, and a key to hear it. An empty slot offers <b class="gd-ui">Load…</b>. Click a tile to select the slot.</p>
+<p>Point at the <b class="gd-light">&lt;MEM&gt;</b> field to see the figures behind it.</p>
+<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> The <b class="gd-light">&lt;MEM&gt;</b> percentage is worked out from the samples the editor reads. It is not the machine's own figure of memory left.</p>
+<h4 class="gd-h3" id="hear-a-sample">Hear a sample</h4>
+<p>Click the play key on a tile, or the play key by the waveform of the selected slot. The sample plays once, from the start, on the output of the plug-in. Click the key again to stop it. A line moves over the waveform as it plays.</p>
+<h4 class="gd-h3" id="name-a-sample">Name a sample</h4>
+<ol class="gd-steps"><li>Select the ROM slot.</li><li>Click <b class="gd-ui">Rename</b>.</li><li>Type a name of up to four letters and click <b class="gd-ui">Send name</b>.</li></ol>
+<p>The machine takes the new name. It never reports the names it holds, so the editor shows the names it has sent in this session, and the names of samples it reads from the emulated machine.</p>
+<h4 class="gd-h3" id="put-a-sample-on-a-track">Put a sample on a track</h4>
+<ol class="gd-steps"><li>Select a track.</li><li>Select the ROM slot on the <b class="gd-ui">Sampler</b> workspace.</li><li>Click <b class="gd-ui">Put on track</b>. The track now plays the sample.</li></ol>
+<p>Under it, the playback controls of the track that plays the slot set the pitch, the decay, the start and the end.</p>
+<h4 class="gd-h3" id="limits">Limits</h4>
+<p>The editor makes every sample it loads mono and 16-bit, at 44.1 kHz at most, and cuts it to the memory left.</p>
+<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> The editor takes WAV and AIFF files. It does not receive a sample sent over MIDI by another program.</p>
+<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot copy, clear, paste or undo a sample slot in the editor yet.</p>
+</div></section>
+<section class="gd-sec" id="the-difference-between-rom-and-ram-machines" aria-labelledby="the-difference-between-rom-and-ram-machines-h">
+<div class="gd-body gd-prose"><h2 id="the-difference-between-rom-and-ram-machines-h">THE DIFFERENCE BETWEEN ROM AND RAM MACHINES <a class="gd-anchor" href="#the-difference-between-rom-and-ram-machines" aria-label="Link to THE DIFFERENCE BETWEEN ROM AND RAM MACHINES">#</a></h2>
+<p class="gd-ref">MD manual p.71</p>
+<p>The ROM slots keep their samples when the power is off. A ROM machine plays a sample from a ROM slot. The rail marks the ROM slots &quot;kept&quot;.</p>
+<p>The RAM slots lose their samples at power-off. A RAM-R machine records into a RAM slot. A RAM-P machine plays what the slot holds. The rail marks the RAM slots &quot;lost at power-off&quot; and says for each whether it is live, frozen, capturing or not in the kit.</p>
+<p>To start sampling into a RAM slot:</p>
+<ol class="gd-steps"><li>Select a RAM slot in the rail.</li><li>In the <b class="gd-ui">Set up sampling</b> card, choose the recorder track and the player track with the <b class="gd-ui">‹</b> and <b class="gd-ui">›</b> keys.</li><li>Click <b class="gd-ui">Set up sampling</b>. The recorder takes the machine RAM-R and records the main mix. The player takes RAM-P and plays the slot. This is one undo step.</li><li>Press <kbd class="gd-key">[SPACE]</kbd>.</li><li>Click <b class="gd-ui">Capture next loop</b>. The recorder records one whole loop from the next start of the pattern, then the editor mutes it to keep the take.</li></ol>
+<p>Click <b class="gd-ui">Live</b> to record again on every loop. Click <b class="gd-ui">Freeze</b> to mute the recorder and keep the take. <b class="gd-ui">Main mix</b>, <b class="gd-ui">Input A</b>, <b class="gd-ui">Input B</b> and <b class="gd-ui">A + B</b> choose what the recorder takes.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: A RAM slot with a take"><span>Screenshot to come</span></div><figcaption>A RAM slot with a take</figcaption></figure>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A RAM slot holds only what its recorder records. You cannot load a file into it.</p></aside>
+</div></section>
+<section class="gd-sec" id="ram-to-rom-copy" aria-labelledby="ram-to-rom-copy-h">
+<div class="gd-body gd-prose"><h2 id="ram-to-rom-copy-h">RAM TO ROM COPY <a class="gd-anchor" href="#ram-to-rom-copy" aria-label="Link to RAM TO ROM COPY">#</a></h2>
+<p class="gd-ref">MD manual p.71</p>
+<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot copy a RAM slot to a ROM slot in the editor yet. Do it on the machine.</p>
+</div></section>
+<section class="gd-sec" id="general-sample-receive" aria-labelledby="general-sample-receive-h">
+<div class="gd-body gd-prose"><h2 id="general-sample-receive-h">GENERAL SAMPLE RECEIVE <a class="gd-anchor" href="#general-sample-receive" aria-label="Link to GENERAL SAMPLE RECEIVE">#</a></h2>
+<p class="gd-ref">MD manual p.72</p>
+<p>The machine takes a sample sent over MIDI at any time. The editor does not wait for a sender. You choose the file and the slot. See &quot;SPECIFIC PLACE SAMPLE RECEIVE&quot;.</p>
+</div></section>
+<section class="gd-sec" id="specific-place-sample-receive" aria-labelledby="specific-place-sample-receive-h">
+<div class="gd-body gd-prose"><h2 id="specific-place-sample-receive-h">SPECIFIC PLACE SAMPLE RECEIVE <a class="gd-anchor" href="#specific-place-sample-receive" aria-label="Link to SPECIFIC PLACE SAMPLE RECEIVE">#</a></h2>
+<p class="gd-ref">MD manual p.73</p>
+<ol class="gd-steps"><li>Select the ROM slot in the rail or on its tile.</li><li>Click <b class="gd-ui">Load sample…</b> or, on an empty tile, <b class="gd-ui">Load…</b>.</li><li>Choose a WAV or AIFF file.</li><li>A bar shows the sending. Click <b class="gd-ui">Stop</b> to cancel. When it ends, a message says the sample is loaded.</li></ol>
+<p>The sample replaces what the slot holds. The plug-in gives it a name of four letters from the file name.</p>
+</div></section>
+<section class="gd-sec" id="original-place-sample-receive" aria-labelledby="original-place-sample-receive-h">
+<div class="gd-body gd-prose"><h2 id="original-place-sample-receive-h">ORIGINAL PLACE SAMPLE RECEIVE <a class="gd-anchor" href="#original-place-sample-receive" aria-label="Link to ORIGINAL PLACE SAMPLE RECEIVE">#</a></h2>
+<p class="gd-ref">MD manual p.74</p>
+<p>Drop several WAV or AIFF files on the window with the <b class="gd-ui">Sampler</b> open. They go into ROM slots one after another, one file at a time.</p>
+<ol class="gd-steps"><li>Select the first ROM slot, or drop on the tile you want it to start from.</li><li>Drop the files. The editor asks &quot;Load 3 samples into ROM-05 to ROM-07?&quot; and tells you each replaces what its slot holds.</li><li>Click <b class="gd-ui">Load</b>.</li></ol>
+<p>ROM-48 is the last slot. Files past it are not loaded, and a message says how many. Drag and drop works on macOS only. On Windows and Linux, load the files one at a time with <b class="gd-ui">Load sample…</b>.</p>
+</div></section>
+<section class="gd-sec" id="send-samples" aria-labelledby="send-samples-h">
+<div class="gd-body gd-prose"><h2 id="send-samples-h">SEND SAMPLES <a class="gd-anchor" href="#send-samples" aria-label="Link to SEND SAMPLES">#</a></h2>
+<p class="gd-ref">MD manual p.74</p>
+<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot send a sample from the machine to a computer. The <b class="gd-ui">Send</b> key is greyed out, with the reason: the Machinedrum ignores requests for its samples.</p>
+</div></section>
+<section class="gd-sec" id="erase-samples" aria-labelledby="erase-samples-h">
+<div class="gd-body gd-prose"><h2 id="erase-samples-h">ERASE SAMPLES <a class="gd-anchor" href="#erase-samples" aria-label="Link to ERASE SAMPLES">#</a></h2>
+<p class="gd-ref">MD manual p.75</p>
+<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot erase one sample or all samples in the editor yet. Load a new sample into the slot to replace it.</p>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/md/10-global-settings/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">10. Global settings</span></a><a href="/guide/md/12-early-start-up-menu/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">12. Early start-up menu</span></a></nav>
+</article>
+</div>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

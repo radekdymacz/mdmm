@@ -3,6 +3,21 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-023 · Monomachine: a real MKII look (silver panel, bluish-white LCD with black text)
+
+- **From:** Discord tester M, 2026-10-11: on the Monomachine "the MKI/MKII button does nothing"; on the Machinedrum it changes the skin. Wants the Monomachine MKII look: silver, black and white, the MKII LCD's bluish-white background with black text.
+- **Why nothing changes today:** the MM plate key flips `data-plate` and enables the MKII-only machines, but `mmStudio.css` (~line 1017) gives MKI and MKII the same colours; only a small "MKII" print differs.
+- **The look (from a product photo of the SFX-60+ MKII):** brushed silver aluminium panel; a black glass window round the LCD and knobs with the red dot-matrix MONOMACHINE logo; a positive LCD, bluish-white background with black pixels; black keys, white ENTER / EXIT and track keys, a red COPY key; dark brown label bars under the keys with white text; red LEDs, yellow track LEDs; black knobs. Colours to be sampled from photos before building.
+- **Sampled 2026-10-11** (pixel averages from product photos; photo white balance varies, so treat as a starting point): SFX-60+ MKII (Vintage King): panel #e9e9e9, key area #ffffff, display window #010101, LCD ground #f2fcfb, LCD pixels #0e1a19, black keys #0a0a0a, white keys #fbf9f7, COPY #e33b21, knobs #010101. SFX-60 and SFX-6 MKI (Vintage Synth Explorer): panel #b2bcbe to #c4c3c3, window #010101 to #323232, LCD ground #b6dde1 to #cfdff0 (light blue), pixels #000000, COPY #f22518, knobs #323d2f (dark green-grey). Ours today (both plates): panel #d4d5d0, LCD #b9c4b0 (grey-green), ink #172014, bezel #0d0f0c, labels #a04d39.
+- **Status:** new, for 0.6.
+
+## I-022 · Type a parameter value
+
+- **From:** Discord tester M, 2026-10-11: "being able to type in specific parameter values", as Monomodule and other software instruments.
+- **Today:** no value box takes typing; double-click resets to the default (MM `mmMockup.js` ~4694, MD `mdDeskGestures.js` ~171).
+- **Idea:** a way to type a value into any parameter (both editors), without losing double-click = default. The gesture to be decided (for example Enter on a focused value, or a modifier + click).
+- **Status:** new, for 0.6.
+
 ## I-021 · An output meter and master volume in the LCD (both editors)
 
 - **From:** Radek, 2026-10-11.
@@ -141,6 +156,7 @@
 
 - **From:** Discord tester B, 2026-10-07.
 - **Idea:** a visual sign on the Sound page when a note arrives from a MIDI controller (which track was triggered).
+- **Also:** Discord tester M, 2026-10-11: light the on-screen keyboard's keys for notes played, as Ableton's (the Monomachine's Perform keyboard; B-062 is the stuck light).
 - **Status:** new.
 
 ## I-001 · Select steps, copy, paste and duplicate

@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keyboard shortcuts — MD + MM Editor guide</title>
+<meta name="description" content="Every key of both editors, built from the editors' own key maps.">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/keys/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MD + MM Editor">
+<meta property="og:title" content="MD + MM Editor — free editors for Machinedrum and Monomachine">
+<meta property="og:description" content="Free desktop editors for the Elektron Machinedrum and Monomachine. The real firmware, emulated, or your own machine over MIDI. VST3, AU and app for macOS (Intel and Apple silicon). Windows build, not tested.">
+<meta property="og:url" content="https://mdmm.dev/guide/keys/">
+<meta property="og:image" content="https://mdmm.dev/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Free editors for Machinedrum and Monomachine, beside a screenshot of the Machinedrum Editor's step grid and GEN bar.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="MD + MM Editor — free editors for Machinedrum and Monomachine">
+<meta name="twitter:description" content="Free desktop editors for the Elektron Machinedrum and Monomachine. VST3, AU and app for macOS (Intel and Apple silicon). Windows build, not tested.">
+<meta name="twitter:image" content="https://mdmm.dev/og.png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261010">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="opt" href="/#features">Features</a>
+      <a class="keep" href="/guide/">Guide</a>
+      <a class="opt" href="/#faq">FAQ</a>
+      <a class="disc" href="https://discord.gg/8xwXwBHbtn" aria-label="Discord community"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5h11a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7l-3 2.5V11.5H2.5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="5.5" cy="7.5" r="1" fill="currentColor"/><circle cx="8" cy="7.5" r="1" fill="currentColor"/><circle cx="10.5" cy="7.5" r="1" fill="currentColor"/></svg><span>Discord</span></a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › Keyboard shortcuts</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Keyboard shortcuts: sections">
+<p class="gd-side-title"><a href="/guide/">User guide</a></p>
+<ol class="gd-side-list"><li class="gd-side-cur"><a href="/guide/keys/" aria-current="page">Keyboard shortcuts</a></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/md/">Machinedrum Editor guide</a></li><li><a href="/guide/mm/">Monomachine Editor guide</a></li><li><a href="/guide/start/">Install and first start</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-ctitle">Keyboard shortcuts</span></h1></header>
+<div class="gd-intro gd-prose"><p>Press <kbd class="gd-key">[?]</kbd> in an editor for its own list, which is built from the same key map. <kbd class="gd-key">[⌘]</kbd> is Command, <kbd class="gd-key">[⌥]</kbd> is Option, <kbd class="gd-key">[⇧]</kbd> is Shift. On Windows, <kbd class="gd-key">[⌘]</kbd> is Ctrl and <kbd class="gd-key">[⌥]</kbd> is Alt. A plain letter acts on the selected track. <kbd class="gd-key">[⌥]</kbd> means all tracks. <b class="gd-ui">MD</b> means the Machinedrum Editor only, <b class="gd-ui">MM</b> the Monomachine Editor only.</p>
+<h4 class="gd-h3" id="selecting-steps-md">Selecting steps (MD)</h4>
+<p>Select one step or a block of steps across tracks, then copy, cut, paste or duplicate it. The selection is outlined and stays when you change pattern, so it is also where a paste goes. Each operation is one undo step. To copy one step to another: <kbd class="gd-key">[⌘]</kbd> click it, <kbd class="gd-key">[⌘]</kbd> <kbd class="gd-key">[C]</kbd>, <kbd class="gd-key">[⌘]</kbd> click the step it goes to, <kbd class="gd-key">[⌘]</kbd> <kbd class="gd-key">[V]</kbd> (or Copy and Paste on the LCD, which act on the selection while there is one). Right-click a step for its menu: trig, accent, slide, copy, cut, paste, duplicate, clear and the every 2nd / 4th fill. <kbd class="gd-key">[Delete]</kbd> clears only selected steps; Clr on the LCD clears the page shown. The tables below are made from the editors' own key maps, as the <kbd class="gd-key">[?]</kbd> list is.</p></div>
+<div class="guide gd-keytables">
+    <!-- keymap:begin: generated by scripts/keymap-export.js from both editors' key maps; do not edit by hand -->
+    <h3>Playing</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><th scope="row"><kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd></th><td>MD: Play the selected track: white keys C D E F G A B C D, from any workspace. ROM and RAM-P machines are pitched (PTCH, 3 steps a semitone; given back when the key is let go), others play at their own pitch. While recording: records the trig<br>MM: Play the selected synth track: white keys C D E F G A B C D, real notes on its MIDI channel, from any workspace. While live recording the machine records them</td></tr>
+      <tr><th scope="row"><kbd>Z</kbd> / <kbd>X</kbd></th><td>MD: Octave down / up, −2 to +2<br>MM: Octave down / up, −3 to +3</td></tr>
+      <tr><th scope="row"><kbd>C</kbd> / <kbd>V</kbd></th><td>Velocity down / up: 20 40 60 80 100 127</td></tr>
+      <tr><th scope="row"><kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd> <kbd>O</kbd> <kbd>P</kbd></th><td>MM: The black keys above them: C♯ D♯ F♯ G♯ A♯ C♯ D♯, so the two rows play every semitone</td></tr>
+    </tbody></table></div>
+
+    <h3>Selected track</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><th scope="row"><kbd>R</kbd></th><td>MD: Randomise the selected track: on Sound a fresh random sound (MUTATE, from the sound before the trial); everywhere else a new GEN variation, a new seed or random hits and rotation<br>MM: Randomise the selected track: on Sound a fresh random sound (MUTATE, from the sound before the trial); everywhere else a new GEN variation: a new seed, or random hits and rotation</td></tr>
+      <tr><th scope="row"><kbd>⌥</kbd> <kbd>←</kbd> / <kbd>→</kbd></th><td>MD: Sequence: rotate the selected track one step earlier / later: trigs, accents and locks, wrapping at the length. Presses while ⌥ is down are one undo step. The one Alt that is not "all": FUNCTION + arrows on the machine<br>MM: Sequence: rotate the selected track one step earlier / later: notes, slides and locks, wrapping at the length. Presses while ⌥ is down are one undo step. The one Alt that is not "all": FUNCTION + arrows on the machine</td></tr>
+      <tr><th scope="row"><kbd>M</kbd></th><td>Mute or unmute the selected track</td></tr>
+      <tr><th scope="row"><kbd>↑</kbd> / <kbd>↓</kbd></th><td>MD: Select the previous / next track (a focused value keeps ↑ / ↓ for itself). Sequence with selected steps: move the selection a track<br>MM: Select the previous / next track of the side shown (a focused value keeps ↑ / ↓ for itself). Sequence with selected steps: move the selection a track</td></tr>
+    </tbody></table></div>
+
+    <h3>All</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><th scope="row"><kbd>⌥</kbd> <kbd>R</kbd></th><td>MD: Randomise every track: on Sound the whole kit, everywhere else every track's GEN spec over the whole pattern<br>MM: Randomise every track: on Sound every synth track's sound, everywhere else every GEN spec of the side shown over the whole pattern</td></tr>
+      <tr><th scope="row"><kbd>0</kbd></th><td>Unmute and unsolo every track</td></tr>
+      <tr><th scope="row"><kbd>⌥</kbd> <kbd>Delete</kbd> / <kbd>Backspace</kbd></th><td>MD: Sequence: clear the whole pattern: every track's trigs and locks<br>MM: Sequence: clear the whole pattern: every track's notes, slides and locks (one undo step)</td></tr>
+      <tr><th scope="row"><kbd>⌥</kbd> <kbd>M</kbd></th><td>Mute every track; when none is audible, unmute every track</td></tr>
+    </tbody></table></div>
+
+    <h3>Transport</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><th scope="row"><kbd>Space</kbd></th><td>Play / stop</td></tr>
+      <tr><th scope="row"><kbd>⌥</kbd> <kbd>Space</kbd></th><td>MD: Live recording (RECORD + PLAY): Alt + play, the other Alt that is not "all"<br>MM: Live recording (RECORD + PLAY): Alt + play, the other Alt that is not "all". Again: recording off</td></tr>
+      <tr><th scope="row"><kbd>T</kbd> / <kbd>B</kbd> <small>(MM: <kbd>B</kbd>)</small></th><td>MD: Tap tempo (the average of the last taps; B as in the Monomachine Editor)<br>MM: Tap tempo (the average of the last taps; T plays F♯ here). On Sequence B is the piano roll's Draw: tap with ⇧B</td></tr>
+      <tr><th scope="row"><kbd>⇧</kbd> <kbd>B</kbd></th><td>Tap tempo: ⇧B taps on every workspace of both editors</td></tr>
+    </tbody></table></div>
+
+    <h3>Workspaces</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><th scope="row"><kbd>1</kbd></th><td>Sequence</td></tr>
+      <tr><th scope="row"><kbd>2</kbd></th><td>Sound</td></tr>
+      <tr><th scope="row"><kbd>3</kbd></th><td>Mix</td></tr>
+      <tr><th scope="row"><kbd>4</kbd></th><td>MD: Sampler<br>MM: Perform</td></tr>
+      <tr><th scope="row"><kbd>5</kbd></th><td>Song</td></tr>
+    </tbody></table></div>
+
+    <h3>Sequence</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><th scope="row"><kbd>Esc</kbd></th><td>Unmark the tracks marked for paste</td></tr>
+      <tr><th scope="row"><kbd>⌘</kbd> <kbd>X</kbd></th><td>Cut the selected steps (copy, then clear; one undo step)</td></tr>
+      <tr><th scope="row"><kbd>⌘</kbd> <kbd>D</kbd></th><td>Duplicate the selected steps right after themselves (the clipboard stays); again: once more</td></tr>
+      <tr><th scope="row"><kbd>⌘</kbd> <kbd>A</kbd></th><td>MD: Select every step of every track up to the length (then ⌘C copies the pattern as a block)<br>MM: Select every step of the six tracks shown (synth or MIDI) up to the length (then ⌘C copies them as a block)</td></tr>
+      <tr><th scope="row"><kbd>←</kbd> / <kbd>→</kbd></th><td>Move the selection a step earlier / later (one step selected: a cursor)</td></tr>
+      <tr><th scope="row"><kbd>⇧</kbd> <kbd>←</kbd> / <kbd>→</kbd></th><td>Extend the selection a step earlier / later</td></tr>
+      <tr><th scope="row"><kbd>Enter</kbd></th><td>MD: The selected steps' trigs on, or off when each has one (one undo step)<br>MM: A note on each empty selected step, or, when none is empty, the selected notes off (one undo step)</td></tr>
+      <tr><th scope="row"><kbd>Esc</kbd></th><td>Clear the step selection</td></tr>
+      <tr><th scope="row"><kbd>[</kbd> / <kbd>]</kbd></th><td>Previous / next page</td></tr>
+      <tr><th scope="row"><kbd>Delete</kbd> / <kbd>Backspace</kbd></th><td>Clear the selected steps; with none selected nothing (Clr clears the page shown, ⌥Delete the pattern). Song: delete the row</td></tr>
+      <tr><th scope="row"><kbd>B</kbd></th><td>MM: Piano roll: draw notes on / off (off: drag a box round notes to select them, drag them to move, double-click adds one). ⇧B taps the tempo here, B on the other workspaces</td></tr>
+    </tbody></table></div>
+
+    <h3>Song</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><th scope="row"><kbd>←</kbd> / <kbd>→</kbd></th><td>Previous / next row</td></tr>
+    </tbody></table></div>
+
+    <h3>Values</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><th scope="row"><kbd>↑</kbd> / <kbd>↓</kbd></th><td>MD: A focused value, tempo or bar: one step (⇧: fine or ×10)<br>MM: A focused value, tempo or bar: one step (⇧: ×10, tempo: fine)</td></tr>
+      <tr><th scope="row"><kbd>←</kbd> / <kbd>→</kbd></th><td>A focused value: one step</td></tr>
+    </tbody></table></div>
+
+    <h3>Anywhere</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><th scope="row"><kbd>⌘</kbd> <kbd>-</kbd></th><td>Page zoom: smaller (also in the editor's menu)</td></tr>
+      <tr><th scope="row"><kbd>⌘</kbd> <kbd>=</kbd></th><td>Page zoom: larger (⌘+ too)</td></tr>
+      <tr><th scope="row"><kbd>⌘</kbd> <kbd>0</kbd></th><td>Page zoom: back to 100 %</td></tr>
+      <tr><th scope="row"><kbd>Esc</kbd></th><td>Close the dialog</td></tr>
+      <tr><th scope="row"><kbd>⌘</kbd> <kbd>Z</kbd></th><td>Undo</td></tr>
+      <tr><th scope="row"><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>Z</kbd></th><td>Redo</td></tr>
+      <tr><th scope="row"><kbd>⌘</kbd> <kbd>Y</kbd></th><td>Redo</td></tr>
+      <tr><th scope="row"><kbd>⌘</kbd> <kbd>C</kbd></th><td>MD: Copy (Sequence: the selected steps, or the track page shown; Sound: the sound; Song: the row)<br>MM: Copy (Sequence: the selected steps, or the page shown of the track; Sound: the machine; Perform: the assign; Song: the row)</td></tr>
+      <tr><th scope="row"><kbd>⌘</kbd> <kbd>V</kbd></th><td>MD: Paste (Sequence: at the selected step, the block from its first step and track)<br>MM: Paste (Sequence: at the selected step, the block from its first step and track; into every track marked for paste)</td></tr>
+      <tr><th scope="row"><kbd>Esc</kbd></th><td>Close the GLOBAL settings</td></tr>
+      <tr><th scope="row"><kbd>,</kbd></th><td>AUDIO / MIDI settings (also in the engine menu)</td></tr>
+    </tbody></table></div>
+
+    <h3>Kit library, pattern chooser</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><th scope="row"><kbd>Enter / Space on KIT or the pattern</kbd></th><td>Open the kit library / pattern chooser</td></tr>
+      <tr><th scope="row"><kbd>Arrows</kbd></th><td>Move (kits: without loading)</td></tr>
+      <tr><th scope="row"><kbd>Enter</kbd></th><td>MD: Kits: load (a click loads too). Patterns: queue<br>MM: Kits: load (a click loads too; Alt+click only selects). Patterns: queue (⇧-click or Now: at once)</td></tr>
+      <tr><th scope="row"><kbd>A–H</kbd></th><td>Patterns: jump to a bank</td></tr>
+      <tr><th scope="row"><kbd>F2</kbd></th><td>Kits: rename (or double-click)</td></tr>
+      <tr><th scope="row"><kbd>Delete</kbd></th><td>Clear the slot</td></tr>
+      <tr><th scope="row"><kbd>⌘</kbd> <kbd>C / V</kbd></th><td>Copy / paste the slot</td></tr>
+      <tr><th scope="row"><kbd>⌘</kbd> <kbd>Z</kbd></th><td>Undo a paste, clear or rename</td></tr>
+      <tr><th scope="row"><kbd>Esc</kbd></th><td>Close</td></tr>
+    </tbody></table></div>
+
+    <h3>Help</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><th scope="row"><kbd>?</kbd></th><td>The keyboard view: what every key and gesture does (this)</td></tr>
+      <tr><th scope="row"><kbd>Esc</kbd></th><td>Close the keyboard view</td></tr>
+    </tbody></table></div>
+
+    <h3>Mouse: Steps</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><th scope="row">step</th><td>MD: Click: trig on / off. Drag: every step crossed becomes what the first became (one undo step)</td></tr>
+      <tr><th scope="row"><kbd>⇧</kbd> Page key</th><td>MD: Click: the previous page (a plain click: the next)</td></tr>
+      <tr><th scope="row">wheel on a step</th><td>MD: Move its lock in the lane's parameter, 4 a notch (⇧: 1)</td></tr>
+      <tr><th scope="row"><kbd>⌘</kbd> step</th><td>MD: Click: select the step (⌘V pastes there). Drag: select steps × tracks. Drag the selection: a copy where you let go</td></tr>
+      <tr><th scope="row"><kbd>⌘</kbd> <kbd>⇧</kbd> step</th><td>MD: Click: extend the selection to the step</td></tr>
+      <tr><th scope="row">step ruler</th><td>MD: Click or drag: select steps of the selected track (down over the grid: more tracks); ⇧-click extends</td></tr>
+      <tr><th scope="row">right-click a step</th><td>MD: The step menu: trig, accent, slide, copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (Ctrl-click on a Mac; the Menu key on a focused step)</td></tr>
+      <tr><th scope="row"><kbd>⇧</kbd> step</th><td>MD: Click: accent</td></tr>
+      <tr><th scope="row"><kbd>⌥</kbd> <kbd>⇧</kbd> step</th><td>MD: Click: slide</td></tr>
+    </tbody></table></div>
+
+    <h3>Mouse: Roll</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><th scope="row">drag in an empty place</th><td>MM: Select (Draw off): box notes; the selection takes them from the first trig to the last one's end. Drag the selection: move it</td></tr>
+      <tr><th scope="row">drag a note's end</th><td>MM: The note's length (a NOTE OFF where it ends; a MIDI note's LEN, 6 a step); new notes get it too. Up to the track's next trig, past the pattern's end onto its start</td></tr>
+      <tr><th scope="row"><kbd>⌘</kbd> step</th><td>MM: Click (roll or trig rows): select the step (⌘V pastes there). Drag: select steps. Drag the selection: a copy where you let go</td></tr>
+      <tr><th scope="row"><kbd>⌘</kbd> <kbd>⇧</kbd> step</th><td>MM: Click: extend the selection to the step (on another track's roll: the tracks between too)</td></tr>
+      <tr><th scope="row">step ruler</th><td>MM: Click or drag: select steps of the selected track; ⇧-click extends</td></tr>
+      <tr><th scope="row">right-click a step</th><td>MM: The step menu: note on / off, NOTE OFF, trigless, slide, a chord note (roll), copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (Ctrl-click on a Mac)</td></tr>
+      <tr><th scope="row"><kbd>⇧</kbd> roll</th><td>MM: Click: a chord note on the step</td></tr>
+      <tr><th scope="row">roll</th><td>MM: Draw on (B): click an empty step: a note there, as long as the Len key says; drag it up or down for its pitch, sideways to paint that note on every empty step crossed (the last one as long as the Len key says; one undo step). Draw off: double-click</td></tr>
+      <tr><th scope="row"><kbd>⌥</kbd> roll</th><td>MM: Click: delete a note, the note before it keeps its length (drag on: every step crossed loses its notes, one undo step), or a NOTE OFF on an empty step</td></tr>
+    </tbody></table></div>
+
+    <h3>Mouse: Lock lane</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><th scope="row">lock lane</th><td>Drag over the bars: lock the lane's parameter on each step with a trig</td></tr>
+      <tr><th scope="row"><kbd>⇧</kbd> lock lane</th><td>Drag: a ramp, a straight line from the press to the release (one undo step)</td></tr>
+      <tr><th scope="row"><kbd>⌥</kbd> lock lane</th><td>Drag: erase locks</td></tr>
+      <tr><th scope="row"><kbd>⌥</kbd> lock lane clear</th><td>Click: clear every lock of the track (all its parameters)</td></tr>
+      <tr><th scope="row">wheel on a lock step</th><td>MM: Move its lock in the lane's parameter, 4 a notch (⇧: 1)</td></tr>
+    </tbody></table></div>
+
+    <h3>Mouse: GEN bar</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><th scope="row">GEN value</th><td>Click: +1; ⇧-click: −1; drag up or down, or the wheel (⇧: 10)</td></tr>
+      <tr><th scope="row">R key</th><td>MD: Click: randomise the selected track, as R<br>MM: Click: randomise the selected track, as R (⌥-click: every track)</td></tr>
+      <tr><th scope="row"><kbd>⌥</kbd> GEN value</th><td>MD: Change a GEN value: every track's spec, the whole pattern (one pattern change, one undo step per run)<br>MM: Change a GEN value: every track of the side shown, the whole pattern (one undo step per run)</td></tr>
+      <tr><th scope="row"><kbd>⌥</kbd> R key</th><td>MD: Click: randomise every track (Sound: the whole kit; MIDI and CTR tracks are left alone, VOL is kept)<br>MM: Click: randomise every track (Sound: every synth track; VOL and TUNE stay)</td></tr>
+    </tbody></table></div>
+
+    <h3>Mouse: Tracks</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><th scope="row">M / S key</th><td>Click: mute / solo that track</td></tr>
+      <tr><th scope="row"><kbd>⇧</kbd> track header</th><td>Click: mark the track for paste; ⌘V then pastes into every marked track (one undo step)</td></tr>
+      <tr><th scope="row"><kbd>⇧</kbd> M key</th><td>Click: prepare that track's mute (+ / X); applied when ⇧ is let go</td></tr>
+      <tr><th scope="row">drag M / S keys</th><td>Mute (solo) or unmute every track the drag crosses, as the first key became</td></tr>
+    </tbody></table></div>
+
+    <h3>Mouse: Values</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><th scope="row">value</th><td>Drag up / down or sideways: change it, a value a pixel</td></tr>
+      <tr><th scope="row"><kbd>⇧</kbd> value</th><td>Drag: fine, a quarter as fast</td></tr>
+      <tr><th scope="row">wheel on a value</th><td>One step a notch (⇧: 10)</td></tr>
+      <tr><th scope="row">double-click a value</th><td>MD: Back to its default (64; VOL 100)<br>MM: Back to its default (64; a list's first entry)</td></tr>
+      <tr><th scope="row"><kbd>⌥</kbd> drag a value</th><td>MD: Control All: move that knob on every track (FUNCTION + knob on the machine)<br>MM: Control All: move that value on every synth track (an editor feature; the Monomachine has no such key)</td></tr>
+    </tbody></table></div>
+
+    <h3>Mouse: Top bar</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><th scope="row">tempo</th><td>Drag up or down: the tempo, half a BPM a pixel (⇧: a tenth)</td></tr>
+      <tr><th scope="row"><kbd>⌥</kbd> CLR</th><td>MD: Click: clear the whole pattern, every track's trigs and locks (one undo step)<br>MM: Click: clear the whole pattern, every track's notes, slides and locks (one undo step)</td></tr>
+      <tr><th scope="row">GLOBAL key</th><td>The machine's own settings, kept in its memory: MIDI channels, sync and the rest (also the engine menu: GLOBAL…)</td></tr>
+    </tbody></table></div>
+
+    <h3>Mouse: LCD</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><th scope="row">LCD value</th><td>MD: Click: its next value; ⇧-click the previous one. LEN, SPD, SONG: drag up or down to step through them<br>MM: Click: its next value; ⇧-click the previous one; the wheel steps through them. SWING and PTRN: drag up or down</td></tr>
+      <tr><th scope="row"><kbd>⌥</kbd> LEN</th><td>MD: Click or drag: the pattern's inner length instead of its total</td></tr>
+    </tbody></table></div>
+
+    <h3>Mouse: Song</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><th scope="row"><kbd>⇧</kbd> row value − / +</th><td>Click: ten at a time</td></tr>
+      <tr><th scope="row">drag a pattern pad or a row</th><td>Onto the arrangement: a new row there, or the row moved</td></tr>
+    </tbody></table></div>
+
+    <h3>Mouse: Sampler</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><th scope="row">drag a chop step</th><td>MD: Up or down: where its slice starts</td></tr>
+      <tr><th scope="row"><kbd>⌥</kbd> chop step</th><td>MD: Click: play its slice backwards</td></tr>
+      <tr><th scope="row"><kbd>⇧</kbd> chop step</th><td>MD: Click: a retrig on it</td></tr>
+    </tbody></table></div>
+
+    <h3>Mouse: Library</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><th scope="row">kit slot</th><td>Click: load it (⌥-click: only select it). Double-click: rename</td></tr>
+      <tr><th scope="row"><kbd>⇧</kbd> pattern slot</th><td>Click: go there at once, not at the end of the pattern</td></tr>
+      <tr><th scope="row">drag a slot onto another</th><td>Copy it there</td></tr>
+    </tbody></table></div>
+
+    <h3>Mouse: Anywhere</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><th scope="row">right-click</th><td>The editor's menu: zoom and window size, updates, the log folder, Developer</td></tr>
+    </tbody></table></div>
+    <!-- keymap:end -->
+</div>
+</article>
+</div>
+</div>
+</main>
+
+<footer class="foot">
+  <div class="wrap grid">
+    <p><b>MD + MM Editor</b> <span data-version></span> · Machinedrum Editor and Monomachine Editor<br>A NativeKloud Consulting project — <a href="https://nativekloud.com">nativekloud.com</a></p>
+    <p><b>Free software</b> under the <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPL-3</a>. <a href="https://github.com/radekdymacz/mdmm">Source</a> · <a href="https://github.com/radekdymacz/mdmm/releases">All releases</a></p>
+    <p><b>Credits.</b> Built on <a href="https://github.com/joelanders/gearmulator-md-mm">gearmulator-md-mm</a> by joelanders (the Machinedrum and Monomachine emulation) and <a href="https://github.com/dsp56300/gearmulator">Gearmulator</a> by The Usual Suspects (dsp56300). Thanks to Elektron for the instruments.</p>
+    <p class="legal"><a href="/guide/">Guide</a> · <a href="/releases/">Release notes</a> · <a href="/terms/">Terms</a> · <a href="/privacy/">Privacy</a> · <a href="/refunds/">Refunds</a> · <a href="/contact/">Contact</a> · <a href="https://discord.gg/8xwXwBHbtn">Discord</a> · <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#114;&#97;&#100;&#101;&#107;&#100;&#121;&#109;&#97;&#99;&#122;&#64;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;">&#114;&#97;&#100;&#101;&#107;&#100;&#121;&#109;&#97;&#99;&#122;&#64;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;</a></p>
+    <p><b>Trademarks.</b> Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This project is independent and not affiliated with or endorsed by Elektron, joelanders or The Usual Suspects. No firmware is included. No cookies, no analytics, no third-party scripts.</p>
+  </div>
+</footer>
+
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>
