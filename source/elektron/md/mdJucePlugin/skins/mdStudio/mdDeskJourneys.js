@@ -1304,10 +1304,10 @@ const MdJourneys = (() => {
 	const whatTicked = () => $all("#dlg .what input[data-wid]:checked").map(x => x.dataset.wid);
 	/* the dialog's ticks made to want (each box clicked as a person would) */
 	const whatTick = (u, want) => { for (const x of $all("#dlg .what input[data-wid]")) if (!x.disabled && x.checked !== want.includes(x.dataset.wid)) u.click(x); };
-	/* shot: the snapshot of the menu (shot + "-menu") and of the dialog it opens (Journey.snapshot: the guide's pictures) */
+	/* shot(menu): the snapshots of the menu and of the dialog it opens (Journey.snapshot: the guide's pictures) */
 	const whatPick = (verb, shot) => ({ say: `click ▾ beside COPY CLR PASTE, then ${verb[0].toUpperCase() + verb.slice(1)}…`,
-		act: async u => { u.click("[data-secwhat]"); await until(() => DeskMenu.shown, 1500); if (shot) Journey.snapshot(shot + "-menu"); u.click(`#deskmenu [data-mid="${verb}"]`);
-			if (shot && await until(whatShown, 1500)) Journey.snapshot(shot); },
+		act: async u => { u.click("[data-secwhat]"); await until(() => DeskMenu.shown, 1500); if (shot) shot(true); u.click(`#deskmenu [data-mid="${verb}"]`);
+			if (shot && await until(whatShown, 1500)) shot(false); },
 		screen: () => ok(whatShown() && $1("#dlg .what h3")?.textContent.toLowerCase() === verb + " what", "dialog " + ($1("#dlg h3")?.textContent || "none")) });
 	const lfoOf = t => { const k = kit()?.tracks[t]; return k ? { ...k.lfo, spd: k.routing.slice(5) } : null; };
 	const copyWhat = {
@@ -1323,12 +1323,12 @@ const MdJourneys = (() => {
 				const on = trigsOf(c.a).filter(s => s < V.len); c.s0 = on[0]; c.s1 = on[1];
 				u.click(cell(c.a, c.s0), { shift: true }); await sleep(300); u.click(cell(c.a, c.s1), { alt: true, shift: true }); },
 				machine: c => ok(flagsOf(c.a, "accent").includes(c.s0) && flagsOf(c.a, "slide").includes(c.s1), `accent ${flagsOf(c.a, "accent")} slide ${flagsOf(c.a, "slide")}`), within: 4000 },
-			whatPick("copy", "md-copy-what"),
+			whatPick("copy", m => m ? Journey.snapshot("md-copy-what-menu") : Journey.snapshot("md-copy-what")),
 			{ say: "tick Trigs, Accent, Slide and Machine + sound (nothing else), click Copy", act: u => { whatTick(u, ["trigs", "accent", "slide", "sound"]); u.click("#dlg [data-wgo]"); },
 				screen: () => ok(!whatShown(), "still open"),
 				machine: c => ok(V.clipboard.track && V.clipboard.track.t === c.a && same(V.clipboard.track.what, ["trigs", "accent", "slide", "sound"]), "clipboard " + JSON.stringify(V.clipboard.track)), within: 4000 },
 			{ say: "pick the other track on the rail", act: (u, c) => u.click(rail(c.b)), screen: c => ok(S.sel === c.b, "selected " + S.sel) },
-			{ ...whatPick("paste", "md-paste-what"), screen: c => ok(whatShown() && same($all("#dlg [data-wto][aria-pressed=true]").map(b => +b.dataset.wto), [c.b])
+			{ ...whatPick("paste", m => m ? Journey.snapshot("md-paste-what-menu") : Journey.snapshot("md-paste-what")), screen: c => ok(whatShown() && same($all("#dlg [data-wto][aria-pressed=true]").map(b => +b.dataset.wto), [c.b])
 				&& $1("#dlg [data-wgo]")?.textContent === "Paste into 1 track" && same(whatTicked(), ["trigs", "accent", "slide", "sound"])
 				&& $1('#dlg input[data-wid="locks"]')?.disabled, "keys " + $all("#dlg [data-wto][aria-pressed=true]").map(b => b.dataset.wto) + ", ticked " + whatTicked()) },
 			{ say: "click Paste into 1 track: the trigs, their marks and the sound land on it", act: u => u.click("#dlg [data-wgo]"),
