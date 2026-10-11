@@ -329,8 +329,14 @@ stage_ctest() {
 		esac
 	done
 	rm -f "${junit}"
+	# test_*_AU loads the AU from the registry by its codes, not by path: this build's bundles go where macOS looks for
+	# the run (as 7b), or the test finds an installed copy with the same codes or none (the codes changed in 0.5.1)
+	if [ -d "${PRODUCTS}/AU" ]; then
+		if ! au_swap_in; then stage_end FAIL "" "${AU_PROBLEM}"; au_swap_out; return; fi
+	fi
 	run_box 10800 "${log}" ctest --test-dir "${BUILD}" -C Release -j4 --output-on-failure --no-tests=error \
 		--timeout 900 --output-junit "${junit}" -E "${CTEST_EXCLUDE}" || status=$?
+	au_swap_out
 	for item in ${TOLERATED_SKIPS[@]+"${TOLERATED_SKIPS[@]}"}; do args+=(--tolerate "${item}"); done
 	local judged=0
 	answer="$(gate_py junit "${junit}" ${args[@]+"${args[@]}"})" || judged=1

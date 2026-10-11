@@ -26,11 +26,19 @@ namespace mmDesk
 		MuteWindow,		// FUNCTION + BANK GROUP: the MUTE window
 		Trig9, Trig10, Trig11, Trig12, Trig13, Trig14,	// TRIG 9-14: the MIDI tracks in the MUTE window
 		LiveRecord,		// hold RECORD, press PLAY: LIVE RECORDING
-		BankGroup		// [BANK GROUP]: A-D / E-H (MM-P8, before a chain or pick in the other half)
+		BankGroup,		// [BANK GROUP]: A-D / E-H (MM-P8, before a chain or pick in the other half)
+		Transpose,		// FUNCTION + BANK B: the TRANSPOSE screen (B-060)
+		Track1, Track2, Track3, Track4, Track5, Track6,	// [TRACK 1-6]: the track in focus (B-060)
+		KnobUp, KnobDown	// DATA ENTRY A one value step up or down: four pulses, as the menus take them (MM-P1, B-060)
 	};
 
-	// Keys pressed with another held: FUNCTION for Global and MuteWindow, RECORD for LiveRecord.
-	constexpr bool isChord(const Key _k) { return _k == Key::Global || _k == Key::MuteWindow || _k == Key::LiveRecord; }
+	// Keys pressed with another held: FUNCTION for Global, MuteWindow and Transpose, RECORD for LiveRecord.
+	constexpr bool isChord(const Key _k) { return _k == Key::Global || _k == Key::MuteWindow || _k == Key::LiveRecord || _k == Key::Transpose; }
+	// DATA ENTRY A turned, not a key: g_knobPulses encoder pulses, each its own panel state.
+	constexpr bool isKnob(const Key _k) { return _k == Key::KnobUp || _k == Key::KnobDown; }
+	constexpr int g_knobPulses = 4;
+	// The panel states a key takes (each held 10 ms): down and up, a chord's four, a knob's pulses.
+	constexpr int keyStates(const Key _k) { return isChord(_k) ? 4 : isKnob(_k) ? g_knobPulses : 2; }
 	// The key held for a chord.
 	constexpr bool heldIsRecord(const Key _k) { return _k == Key::LiveRecord; }
 

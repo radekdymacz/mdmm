@@ -6,7 +6,9 @@
 //                                        (B-050), ampenv (B-049: the amp envelope the editor draws is the firmware's),
 //                                        notelength (I-010: the piano roll's note lengths, stored and played),
 //                                        kitlink (B-053: the kit a pick of an A-D or E-H pattern plays), reclock
-//                                        (live recording: the step a value sent locks)
+//                                        (live recording: the step a value sent locks), transpose (B-060: a transpose
+//                                        edited while playing is heard at once), trnprobe (B-060's measurements: what
+//                                        applies a dumped transpose while the pattern plays)
 //
 // Exits 77 (skip) without arguments.
 
@@ -82,6 +84,10 @@ namespace
 		case K::BankGroup: return C::BankGroup;
 		case K::Trig9: case K::Trig10: case K::Trig11: case K::Trig12: case K::Trig13: case K::Trig14:
 			return static_cast<C>(static_cast<int>(C::Trigger1) + 8 + (static_cast<int>(_k) - static_cast<int>(K::Trig9)));
+		case K::Transpose: return C::BankB;	// with FUNCTION
+		case K::Track1: case K::Track2: case K::Track3: case K::Track4: case K::Track5: case K::Track6:
+			return static_cast<C>(static_cast<int>(C::Track1) + (static_cast<int>(_k) - static_cast<int>(K::Track1)));
+		case K::KnobUp: case K::KnobDown: return std::nullopt;	// an encoder, not a key (pressKeys)
 		}
 		return std::nullopt;
 	}
@@ -153,14 +159,27 @@ namespace
 		}
 
 		// Keys on the machine's panel: the desk's (the emulator engine) or the person's (HW MIDI tests).
+		std::vector<mmDesk::Key> keysPressed;	// every key the desk (or a test) pressed, in order (B-060)
+
 		bool userKeys(const std::vector<mmDesk::Key>& _keys)
 		{
+			keysPressed.insert(keysPressed.end(), _keys.begin(), _keys.end());
 			uint64_t at = std::max(m.now(), panel.empty() ? 0 : panel.back().first) + 64;
 			const auto hold = static_cast<uint64_t>(g_rate / 100);	// 10 ms
 			const auto fn = *md::panelPacket(g_mm, md::PanelControl::Function);
 			const auto rec = *md::panelPacket(g_mm, md::PanelControl::Record);
 			for(const auto k : _keys)
 			{
+				if(mmDesk::isKnob(k))
+				{
+					const auto knobA = *md::panelEncoderCommand(g_mm, md::PanelEncoder::DataEntryA);
+					for(int i = 0; i < mmDesk::g_knobPulses; ++i)
+					{
+						panel.emplace_back(at, md::PanelPacket{knobA, static_cast<uint8_t>(k == mmDesk::Key::KnobUp ? 0x01 : 0xff)});
+						at += hold;
+					}
+					continue;
+				}
 				const auto c = control(k);
 				const auto pk = *md::panelPacket(g_mm, *c);
 				if(mmDesk::isChord(k))
@@ -3572,6 +3591,346 @@ namespace
 	}
 }
 
+namespace
+{
+	// B-060 rig: the pattern that plays emptied (16 steps, 120 BPM), T1 a held sine (GND-SIN, DEC 127) with a C-4 on
+	// every 4th step, M1 a C-4 on the same steps (its notes on the MIDI out). Returns the slot.
+	int transposeRig(Rig& r, int& g, const int _st = 0)
+	{
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		while(r.desk->loaded() < 288)
+			r.run(100);
+		r.run(1500);
+		const int slot = r.desk->currentPattern();
+		r.msg("{\"op\":\"clearPattern\",\"g\":" + std::to_string(++g) + ",\"p\":" + std::to_string(slot) + "}");
+		r.run(3000);
+		r.msg("{\"op\":\"length\",\"g\":" + std::to_string(++g) + ",\"p\":" + std::to_string(slot) + ",\"v\":16}");
+		r.run(3000);
+		r.msg(R"({"op":"tempo","bpm":120})");
+		r.run(100);
+		r.msg("{\"op\":\"machine\",\"g\":" + std::to_string(++g) + ",\"k\":" + std::to_string(r.desk->currentKit()) + ",\"t\":" + std::to_string(_st) + ",\"model\":1,\"keepFx\":false}");
+		r.run(1500);
+		auto k = *r.desk->workingKit();
+		k.tracks[static_cast<size_t>(_st)].pages[0][7] = 64;
+		k.tracks[static_cast<size_t>(_st)].pages[1] = {0, 0, 127, 0, 0, 110, 64, 0};
+		k.tracks[static_cast<size_t>(_st)].pages[2] = {0, 127, 0, 0, 0, 0, 64, 64};
+		k.tracks[static_cast<size_t>(_st)].pages[3] = {64, 64, 0, 0, 64, 0, 0, 0};
+		for(size_t pg = 4; pg < 7; ++pg)
+			k.tracks[static_cast<size_t>(_st)].pages[pg][7] = 0;
+		for(int pg = 0; pg < 7; ++pg)
+			for(int i = 0; i < 8; ++i)
+			{
+				r.msg("{\"op\":\"param\",\"g\":" + std::to_string(++g) + ",\"k\":" + std::to_string(r.desk->currentKit()) + ",\"t\":" + std::to_string(_st) + ",\"page\":" + std::to_string(pg)
+					+ ",\"i\":" + std::to_string(i) + ",\"v\":" + std::to_string(k.tracks[static_cast<size_t>(_st)].pages[static_cast<size_t>(pg)][static_cast<size_t>(i)]) + "}");
+				r.run(30);
+			}
+		r.run(1500);
+		std::string steps, steps2;
+		for(const int s : {0, 4, 8, 12})
+		{
+			steps += std::string(steps.empty() ? "" : ",") + "[" + std::to_string(s) + R"(,{"n":[60],"a":1,"f":1,"l":1}])";
+			steps2 += std::string(steps2.empty() ? "" : ",") + "[" + std::to_string(s + 2) + R"(,{"n":[64],"a":1,"f":1,"l":1}])";
+		}
+		r.msg("{\"op\":\"steps\",\"g\":" + std::to_string(++g) + ",\"p\":" + std::to_string(slot) + ",\"from\":0,\"to\":16,\"rows\":[{\"t\":" + std::to_string(_st) + R"(,"steps":[)" + steps
+			+ R"(],"slide":[]},{"t":6,"steps":[)" + steps + R"(],"slide":[]},{"t":7,"steps":[)" + steps2 + R"(],"slide":[]}]})");
+		r.run(6000);
+		return slot;
+	}
+
+	// The pitch T1 plays now (the last 60 ms of the output) and the last note M1 sent on the MIDI out.
+	struct Heard { double hz = 0; int m1 = -1; };
+
+	// B-060: a transpose edited while the pattern plays is heard at once, as on the machine's panel. The OS 1.32B takes a
+	// dump's transposes at the next PLAY only (transposeProbe); the desk then turns the TRANSPOSE knob one step and
+	// back (mmDesk::applyTransposeKeys). T1 a held sine (its pitch from the output), M1 and M2 notes on the MIDI out.
+	void transposeLive(const Bytes& _rom)
+	{
+		std::puts("transpose while playing (B-060)");
+		Rig r(_rom);
+		int g = 9700;
+		const int slot = transposeRig(r, g, 0);
+		std::map<int, int> notes;	// MIDI channel -> the last note on
+		r.m.onMidi = [&](const synthLib::SMidiEvent& _e)
+		{
+			if((_e.a & 0xf0) == 0x90 && _e.c > 0)
+				notes[_e.a & 0x0f] = _e.b;
+		};
+		const auto hz = [&]
+		{
+			const auto& l = r.m.left();
+			const size_t n = g_rate / 10;
+			return l.size() > n ? frequency(l, l.size() - n, n) : 0.0;
+		};
+		const auto focus = [&]
+		{
+			int f = -1;
+			r.tap = [&](const Bytes& _b) { if(const auto x = ed::parseMmStatusResponse(_b); x && x->param == ed::MmStatus::AudioTrack) f = x->value; };
+			r.out.push_back(ed::mmStatusRequest(ed::MmStatus::AudioTrack));
+			for(int i = 0; i < 50 && f < 0; ++i)
+				r.run(20);
+			r.tap = nullptr;
+			return f;
+		};
+		const auto trn = [&](const std::string& _args) { r.msg("{\"op\":\"transpose\",\"g\":" + std::to_string(++g) + ",\"p\":" + std::to_string(slot) + "," + _args + "}"); };
+		// what plays 2.5 s after an edit (a trig every 500 ms; the dump, the knob and a pass of 16 steps fit in it)
+		const auto after = [&] { r.run(2500); };
+		const auto semis = [](const double _hz, const double _ref) { return _ref > 0 && _hz > 0 ? 12.0 * std::log2(_hz / _ref) : -99.0; };
+		// the channels M1 and M2 send on (the MIDI page's), from the notes before any transpose
+		r.msg(R"({"op":"play"})");
+		r.run(2500);
+		const double base = hz();
+		int m1 = -1, m2 = -1;
+		for(const auto& [ch, n] : notes)
+		{
+			if(n == 60)
+				m1 = ch;
+			else if(n == 64)
+				m2 = ch;
+		}
+		check(base > 200 && base < 320 && m1 >= 0 && m2 >= 0, "playing: T1 " + std::to_string(static_cast<int>(base)) + " Hz, M1 on channel " + std::to_string(m1 + 1)
+			+ ", M2 on " + std::to_string(m2 + 1));
+		if(m1 < 0 || m2 < 0)
+			return;
+		const auto heard = [&](const double _semis, const int _m1, const int _m2, const std::string& _what)
+		{
+			const double s = semis(hz(), base);
+			check(std::fabs(s - _semis) < 0.6 && notes[m1] == _m1 && notes[m2] == _m2, _what + ": heard without a stop (T1 " + (s > -98 ? std::to_string(std::lround(s)) : std::string("?"))
+				+ " semitones, M1 " + std::to_string(notes[m1]) + ", M2 " + std::to_string(notes[m2]) + "; want " + std::to_string(static_cast<int>(_semis)) + ", "
+				+ std::to_string(_m1) + ", " + std::to_string(_m2) + ")");
+		};
+		const auto stillPlaying = [&]
+		{
+			const int a = r.tel.step.load();
+			r.run(300);
+			check(r.tel.step.load() != a, "  and the pattern plays on");
+		};
+
+		trn("\"t\":0,\"v\":7");
+		after();
+		heard(7, 60, 64, "T1 transpose +7");
+		trn("\"t\":6,\"v\":-5");
+		after();
+		heard(7, 55, 64, "M1 transpose -5");
+		trn("\"v\":3");
+		after();
+		heard(10, 58, 67, "PAT +3 (every track)");
+		stillPlaying();
+		// the track in focus stays: T3 in focus, T1 edited
+		r.userKeys({mmDesk::Key::Track3});
+		r.run(300);
+		check(focus() == 2, "T3 in focus");
+		trn("\"t\":0,\"v\":-2");
+		after();
+		heard(1, 58, 67, "T1 transpose -2 with T3 in focus");
+		check(focus() == 2, "  and T3 is still in focus");
+		r.userKeys({mmDesk::Key::Track1});
+		r.run(300);
+		// the panel on the MIDI sequencer (FUNCTION + TRIG SELECT; SET STATUS 0x21): TRACK n then picks MIDI track n
+		r.out.push_back(ed::mmSetStatus(ed::MmStatus::MidiSeq, 1));
+		r.run(300);
+		trn("\"t\":0,\"v\":-3");
+		trn("\"t\":6,\"v\":-6");
+		after();
+		heard(0, 57, 67, "T1 -3 and M1 -6 with the MIDI sequencer on the panel");
+		trn("\"t\":0,\"v\":-2");
+		trn("\"t\":6,\"v\":-5");
+		after();
+		r.out.push_back(ed::mmSetStatus(ed::MmStatus::MidiSeq, 0));
+		r.run(300);
+		// a scale: MAJ in D (C-4 one semitone up is not in D major: what plays is the firmware's rounding, so it is
+		// compared with what a start plays, the same transposes stored)
+		trn("\"t\":0,\"scale\":2,\"key\":2");
+		after();
+		const double scaled = semis(hz(), base);
+		// the ends of the range: the knob goes one step and back from the inside, so nothing is clamped
+		trn("\"t\":7,\"v\":63");
+		after();
+		trn("\"t\":1,\"v\":-64");
+		after();
+		stillPlaying();
+		r.msg(R"({"op":"stop"})");
+		r.run(600);
+		const auto pressed = r.keysPressed.size();
+		trn("\"t\":0,\"v\":5");
+		r.run(2500);
+		check(std::count(r.keysPressed.begin() + static_cast<std::ptrdiff_t>(pressed), r.keysPressed.end(), mmDesk::Key::Transpose) == 0,
+			"stopped: no TRANSPOSE keys (PLAY takes the stored transposes)");
+		trn("\"t\":0,\"v\":-2");
+		r.run(2500);
+		r.msg(R"({"op":"play"})");
+		r.run(2500);
+		check(std::fabs(semis(hz(), base) - scaled) < 0.6, "the scale (MAJ, key D) as a start plays it: " + std::to_string(std::lround(scaled)) + " semitones while playing, "
+			+ std::to_string(std::lround(semis(hz(), base))) + " after a start");
+		r.msg(R"({"op":"stop"})");
+		r.run(500);
+		const auto mem = patternInMemory(r, slot);
+		check(mem && mem->transpose.track[0] == -2 && mem->transpose.scale[0] == 2 && mem->transpose.key[0] == 2 && mem->midiTranspose.track[0] == -5
+			&& mem->midiTranspose.track[1] == 63 && mem->transpose.track[1] == -64 && mem->patternTranspose == 3,
+			"stored as edited, the knob's step and back left nothing (T1 " + (mem ? std::to_string(mem->transpose.track[0]) + " MAJ " + std::to_string(mem->transpose.key[0])
+				+ ", M1 " + std::to_string(mem->midiTranspose.track[0]) + ", M2 " + std::to_string(mem->midiTranspose.track[1]) + ", T2 " + std::to_string(mem->transpose.track[1])
+				+ ", PAT " + std::to_string(mem->patternTranspose) : std::string("not read")) + ")");
+		r.m.onMidi = nullptr;
+	}
+
+	// B-060 probe (prints, checks nothing): what makes the machine play a transpose a dump stored while the pattern plays.
+	// T<MM_TRN_T + 1> a held sine (default T2; its pitch from the output), M1 and M2 notes on the MIDI out, after each
+	// step the track in focus (status 0x22). E1-E6: the TRANSPOSE knob one step and back on the track in focus, with a
+	// TRACK key, for PAT, for another track's MIDI transpose, at +40 / -30, with a scale. Measured 2026-10-11: a dump
+	// alone, SET STATUS pattern, LOAD PATTERN of the slot, the TRANSPOSE or ARP screen opened alone and a TRACK key apply
+	// nothing until the next PLAY; the knob applies Tn and Mn (with PAT, scale, key) of the track number in focus.
+	void transposeProbe(const Bytes& _rom)
+	{
+		std::puts("transpose probe (B-060)");
+		Rig r(_rom);
+		int g = 9600;
+		const int st = std::getenv("MM_TRN_T") ? std::atoi(std::getenv("MM_TRN_T")) : 1;
+		const int slot = transposeRig(r, g, st);
+		std::map<int, int> notes;	// MIDI channel -> the last note on
+		r.m.onMidi = [&](const synthLib::SMidiEvent& _e)
+		{
+			if((_e.a & 0xf0) == 0x90 && _e.c > 0)
+				notes[_e.a & 0x0f] = _e.b;
+		};
+		const auto hz = [&]
+		{
+			const auto& l = r.m.left();
+			const size_t n = g_rate / 10;
+			return l.size() > n ? frequency(l, l.size() - n, n) : 0.0;
+		};
+		const auto heard = [&]
+		{
+			std::string m;
+			for(const auto& [ch, n] : notes)
+				m += " ch" + std::to_string(ch + 1) + ":" + std::to_string(n);
+			char b[64];
+			std::snprintf(b, sizeof(b), "T%d %6.1f Hz ", st + 1, hz());
+			return std::string(b) + m;
+		};
+		const auto focus = [&]
+		{
+			int f = -1;
+			r.tap = [&](const Bytes& _b) { if(const auto x = ed::parseMmStatusResponse(_b); x && x->param == ed::MmStatus::AudioTrack) f = x->value; };
+			r.out.push_back(ed::mmStatusRequest(ed::MmStatus::AudioTrack));
+			for(int i = 0; i < 50 && f < 0; ++i)
+				r.run(20);
+			r.tap = nullptr;
+			return f;
+		};
+		const auto settle = [&](const char* _what)
+		{
+			r.run(2200);	// one pass and a bit: every step's note again
+			std::printf("    %-60s %s  (focus T%d, recv %s)\n", _what, heard().c_str(), focus() + 1, r.desk->recvState().c_str());
+		};
+		const auto at = [&] { return std::max(r.m.now(), r.panel.empty() ? 0 : r.panel.back().first) + 64; };
+		const auto chord = [&](const md::PanelControl _held, const md::PanelControl _key)
+		{
+			md::PanelRowState rows;
+			const auto h = *md::panelPacket(g_mm, _held), k = *md::panelPacket(g_mm, _key);
+			uint64_t t = at();
+			for(const auto x : {rows.press(h), rows.press(k), rows.release(k), rows.release(h)})
+			{
+				r.panel.emplace_back(t, x);
+				t += g_rate / 100;
+			}
+		};
+		const auto key = [&](const md::PanelControl _key)
+		{
+			const auto k = *md::panelPacket(g_mm, _key);
+			const uint64_t t = at();
+			r.panel.emplace_back(t, k);
+			r.panel.emplace_back(t + g_rate / 100, md::PanelPacket{k.row, 0});
+		};
+		const auto knob = [&](const int _knob, const int _steps)
+		{
+			const auto cmd = *md::panelEncoderCommand(g_mm, static_cast<md::PanelEncoder>(_knob));
+			uint64_t t = at();
+			for(int i = 0; i < 4 * std::abs(_steps); ++i)
+			{
+				r.panel.emplace_back(t, md::PanelPacket{cmd, static_cast<uint8_t>(_steps > 0 ? 0x01 : 0xff)});
+				t += g_rate / 100;
+			}
+		};
+		// the TRANSPOSE screen, TRACK n for each track named (none: the one in focus), knob A one step and back, EXIT
+		const auto nudge = [&](const std::vector<int>& _tracks)
+		{
+			chord(md::PanelControl::Function, md::PanelControl::BankB);
+			if(_tracks.empty())
+			{
+				knob(0, 1);
+				knob(0, -1);
+			}
+			for(const int t : _tracks)
+			{
+				key(static_cast<md::PanelControl>(static_cast<int>(md::PanelControl::Track1) + t));
+				knob(0, 1);
+				knob(0, -1);
+			}
+			key(md::PanelControl::Exit);
+			r.run(300);
+		};
+		const auto trn = [&](const int _t, const int _v)
+		{
+			if(_t < 0)
+				r.msg("{\"op\":\"transpose\",\"g\":" + std::to_string(++g) + ",\"p\":" + std::to_string(slot) + ",\"v\":" + std::to_string(_v) + "}");
+			else
+				r.msg("{\"op\":\"transpose\",\"g\":" + std::to_string(++g) + ",\"p\":" + std::to_string(slot) + ",\"t\":" + std::to_string(_t) + ",\"v\":" + std::to_string(_v) + "}");
+		};
+		r.msg(R"({"op":"play"})");
+		settle("playing");
+		std::printf("  E1: T%d and M%d +7 by dump, nudge on the track in focus\n", st + 1, st + 1);
+		trn(st, 7);
+		trn(st + 6, 7);
+		settle("dump taken");
+		nudge({});
+		settle("nudged (focus)");
+		std::printf("  E2: T%d and M%d -5 by dump, nudge with TRACK %d\n", st + 1, st + 1, st + 1);
+		trn(st, -5);
+		trn(st + 6, -5);
+		settle("dump taken");
+		nudge({st});
+		settle("nudged (TRACK key)");
+		key(md::PanelControl::Track1);
+		r.run(200);
+		std::printf("  E3: PAT +3 by dump, nudge on T1\n");
+		trn(-1, 3);
+		settle("dump taken");
+		nudge({0});
+		settle("nudged on T1");
+		std::printf("  E4: M2 +7 (and M1 -2) by dump, nudge on T1\n");
+		trn(7, 7);
+		trn(6, -2);
+		settle("dump taken");
+		nudge({0});
+		settle("nudged on T1");
+		nudge({1});
+		settle("nudged on T2");
+		std::printf("  E5: T%d +40 and M%d -30 by dump, nudge on it\n", st + 1, st + 1);
+		trn(st, 40);
+		trn(st + 6, -30);
+		settle("dump taken");
+		nudge({st});
+		settle("nudged");
+		std::printf("  E6: T%d +2, scale MAJ key D by dump, nudge on it\n", st + 1);
+		trn(st, 2);
+		r.msg("{\"op\":\"transpose\",\"g\":" + std::to_string(++g) + ",\"p\":" + std::to_string(slot) + ",\"t\":" + std::to_string(st) + ",\"scale\":2,\"key\":2}");
+		settle("dump taken");
+		nudge({st});
+		settle("nudged");
+		r.msg(R"({"op":"stop"})");
+		r.run(600);
+		r.msg(R"({"op":"play"})");
+		settle("stopped and played again");
+		r.msg(R"({"op":"stop"})");
+		r.run(500);
+		if(const auto mem = patternInMemory(r, slot))
+			std::printf("  stored: T%d %d scale %d key %d, M1 %d M2 %d M%d %d PAT %d\n", st + 1, mem->transpose.track[st], mem->transpose.scale[st], mem->transpose.key[st],
+				mem->midiTranspose.track[0], mem->midiTranspose.track[1], st + 1, mem->midiTranspose.track[st], mem->patternTranspose);
+		r.m.onMidi = nullptr;
+	}
+}
+
 int main(const int _argc, char** _argv)
 {
 	std::setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -3672,6 +4031,10 @@ int main(const int _argc, char** _argv)
 			recLock(rom);
 		if(only == "lenprobe")
 			midiLenProbe(rom);
+		if(only == "trnprobe")
+			transposeProbe(rom);
+		if(only == "transpose")
+			transposeLive(rom);
 		check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 		std::printf("%s (%d failures)\n", g_failures ? "FAIL" : "PASS", g_failures);
 		return g_failures ? 1 : 0;

@@ -132,7 +132,7 @@ namespace mmDesk
 			return false;
 		size_t states = 0;
 		for(const auto k : _keys)
-			states += isChord(k) ? 4 : 2;
+			states += static_cast<size_t>(keyStates(k));
 		m_keysUntilMs = std::max(m_keysUntilMs, now()) + static_cast<double>(states) * g_keyStateMs + g_keysMarginMs;
 		return true;
 	}

@@ -119,6 +119,10 @@ function(mdmm_add_lib_tests _dir)
 		# the output, M1's LEN on the MIDI out)
 		add_test(NAME mmNoteLengthFirmwareTest COMMAND mmDeskFirmwareTest ${GEARMULATOR_MM_ROM} notelength)
 		set_tests_properties(mmNoteLengthFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
+		# B-060: a transpose edited while the pattern plays is heard at once (T1's pitch from the output, M1 and M2 on the
+		# MIDI out), the stored values as edited
+		add_test(NAME mmTransposeLiveFirmwareTest COMMAND mmDeskFirmwareTest ${GEARMULATOR_MM_ROM} transpose)
+		set_tests_properties(mmTransposeLiveFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
 	endif()
 	# B-031 on the Monomachine: the backup from MM_SYX, the ROM from GEARMULATOR_MM_FIRMWARE_BIN; skipped without them.
 	add_test(NAME mmSyxPickFirmwareTest COMMAND mmDeskFirmwareTest --env syxpick)
