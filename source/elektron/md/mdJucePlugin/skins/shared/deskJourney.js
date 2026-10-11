@@ -657,6 +657,81 @@ const Journey = (() => {
 			else if (c.orig !== 0) await hands.drag("#volf", [[0, c.orig > 0 ? -3 : 3], [0, -2 * c.orig]], {}, { click: false });
 		}
 	}];
+	/* B-061, B-065, B-066: the top bar and the LCD on every workspace, at every window size the page is laid out in.
+	   fitJourneys(prefix, workspaces): [<prefix>-fit-workspaces]. For each view (a window size, and the text floor of a page
+	   zoomed out: WebKit raises text under 9 points on screen, so at 60 % a 9 px text is laid out at 15 px; the page tier
+	   resizes its window, gmView, and the floor is emulated here the same way, see raiseFloor) it visits every workspace
+	   and fails when a key of the top bar (CPU meter, GLOBAL, MKI/MKII ...) is not wholly in the window, when a slot of the
+	   LCD's second row is cut, or when the LCD's box is another size on another workspace. The CPU meter and the output
+	   strip are fed as the plug-in does (a standalone has them already); the tidy puts the window back. */
+	const fitViews = [
+		{ name: "1440", width: 1440, floor: 0 }, { name: "1280", width: 1280, floor: 0 }, { name: "1920", width: 1920, floor: 0 }, { name: "2560", width: 2560, floor: 0 },
+		{ name: "1440-zoom-90", width: 1440, floor: 10.1 }, { name: "1440-zoom-75", width: 1440, floor: 12 }, { name: "1440-zoom-60", width: 1440, floor: 15 }
+	];
+	/* the text floor of a page zoomed out, as WebKit applies it (its "smart minimum": a text that was specified at 9 px or more
+	   and would show under 9 points is laid out at 9 points, a smaller one, the 8 px labels, is left alone): every text laid
+	   out at 9 px or more but under floor px becomes floor px (inline, !important, remembered in data-fit-fs); floor 0
+	   puts every text back. Called again when the page redrew. */
+	let floorNow = 0;
+	const raiseFloor = floor => {
+		const root = document.querySelector("header.top") || document.body;
+		if (floor !== floorNow) {
+			for (const e of root.querySelectorAll("[data-fit-fs]")) { e.style.removeProperty("font-size"); if (e.dataset.fitFs) e.style.setProperty("font-size", e.dataset.fitFs); delete e.dataset.fitFs; }
+			floorNow = floor;
+		}
+		if (!floor) return;
+		const todo = [];
+		for (const e of root.querySelectorAll("*")) { if (e.dataset.fitFs !== undefined || (!e.textContent.trim() && !e.children.length)) continue; const fs = parseFloat(getComputedStyle(e).fontSize); if (fs >= 8.99 && fs < floor) todo.push([e, e.style.getPropertyValue("font-size")]); }
+		for (const [e, old] of todo) { e.dataset.fitFs = old; e.style.setProperty("font-size", floor + "px", "important"); }
+	};
+	const topKeysOut = () => [...document.querySelectorAll(".top button")].filter(b => { const r = b.getBoundingClientRect(); return r.width > 0 && (r.right > innerWidth + 0.5 || r.left < -0.5); });
+	/* the slots of the LCD's second row that are cut: a slot's right edge past the row's, or its text wider than its box */
+	/* the bar's three groups (brand and workspaces, the LCD, the Setup keys) must not overlap each other */
+	const groupsOverlap = () => { const g = ["header.top .left", "header.top .midgrp", "header.top .rightgrp"].map(q => document.querySelector(q)).filter(Boolean).map(e => ({ n: e.className.split(" ")[0], r: e.getBoundingClientRect() }));
+		const out = []; for (let i = 1; i < g.length; i++) if (g[i].r.left < g[i - 1].r.right - 0.5) out.push(`${g[i - 1].n} ..${Math.round(g[i - 1].r.right)} over ${g[i].n} ${Math.round(g[i].r.left)}..`); return out; };
+	const lcdRow2Cut = () => {
+		const row = $q(".lcdpanel .row2"), l2 = $q("#lcd2"), cut = [];
+		if (!row || !l2) return ["no second row"];
+		const lim = l2.getBoundingClientRect().right;
+		for (const s of l2.children) { const r = s.getBoundingClientRect(); if (r.width > 0 && (r.right > lim + 0.5 || s.scrollWidth > s.clientWidth + 1)) cut.push((s.dataset.l2 || s.textContent.trim().slice(0, 12)) + " ..." + Math.round(r.right) + " of " + Math.round(lim)); }
+		if (l2.scrollWidth > l2.clientWidth + 1 && !cut.length) cut.push("row 2 scrolls " + (l2.scrollWidth - l2.clientWidth) + " px");
+		const panel = $q(".lcdpanel").getBoundingClientRect();
+		for (const e of row.children) { const r = e.getBoundingClientRect(); if (r.width > 0 && r.right > panel.right + 0.5) cut.push(e.id || e.className); }
+		return cut;
+	};
+	const fitJourneys = (prefix, workspaces) => [{
+		name: `${prefix}-fit-workspaces`, proves: [],
+		steps: [{ say: "every workspace at every window size and text floor: the top bar's keys wholly in the window, every slot of the LCD's second row visible, the LCD one size",
+			act: async (hands, c) => {
+				const resize = typeof window.gmView === "function";
+				const views = resize ? fitViews : [{ name: "this window", width: innerWidth, floor: 0 }];
+				c.report = []; c.boxes = {}; c.start = $q("#tabs [aria-selected=true]")?.dataset.ws || workspaces[0];
+				if (typeof CpuMeter !== "undefined" && !$q("#cpumeter")) CpuMeter.update({ type: "cpuLoad", state: "running", load: 0.35, worst: 0.55, realtime: 3.1, sampleRate: 48000, blockSize: 256 });
+				if (typeof DeskVolume !== "undefined" && !$q("#volf")) DeskVolume.update({ type: "outputLevel", peakL: 0.2, peakR: 0.2, clip: false, gainDb: 0 });
+				const keepHook = typeof TopFit !== "undefined" ? TopFit.onShow : null;
+				try {
+				for (const v of views) {
+					if (typeof TopFit !== "undefined") TopFit.onShow = () => raiseFloor(v.floor);
+					if (resize) { window.gmView(v.width, 924); await until(() => innerWidth === v.width, 3000); }
+					for (const w of workspaces) {
+						hands.click(`#tabs [data-ws="${w}"]`); await until(() => $q(`#tabs [data-ws="${w}"]`).getAttribute("aria-selected") === "true", 3000);
+						await sleep(250); raiseFloor(v.floor); window.dispatchEvent(new Event("resize")); await sleep(250); raiseFloor(v.floor); await sleep(100);
+						const keys = topKeysOut(), over = groupsOverlap(), cut = lcdRow2Cut(), r = $q(".lcdpanel").getBoundingClientRect();
+						Bridge.log(`MEASURE fit ${prefix} ${v.name} ${w} width ${innerWidth} floor ${v.floor} fit ${typeof TopFit !== "undefined" ? JSON.stringify(TopFit.report()).replace(/"workspaces":\[[^\]]*\],?/, "") : "-"} classes ${$q("header.top")?.className} overflows ${typeof TopFit !== "undefined" && TopFit.overflows()} lcd ${r.width.toFixed(1)} x ${r.height.toFixed(1)} keys out [${keys.map(b => b.id || b.textContent.trim()).join(",")}] row2 cut [${cut.join("; ")}] overlap [${over.join("; ")}]`);
+						if (keys.length) c.report.push(`${v.name} ${w}: top bar keys out: ${keys.map(b => (b.id || b.textContent.trim()) + " ..." + Math.round(b.getBoundingClientRect().right) + " of " + innerWidth).join(", ")}`);
+						if (over.length) c.report.push(`${v.name} ${w}: the top bar overlaps itself: ${over.join(", ")}`);
+						if (cut.length) c.report.push(`${v.name} ${w}: LCD row 2 cut: ${cut.join("; ")}`);
+						(c.boxes[v.name] = c.boxes[v.name] || {})[w] = [r.width, r.height];
+					}
+					raiseFloor(0);
+				}
+				} finally { if (typeof TopFit !== "undefined") TopFit.onShow = keepHook; raiseFloor(0); }
+				for (const [name, b] of Object.entries(c.boxes)) { const first = Object.values(b)[0];
+					for (const [w, s] of Object.entries(b)) if (Math.abs(s[0] - first[0]) > 0.6 || Math.abs(s[1] - first[1]) > 0.6) c.report.push(`${name} ${w}: the LCD is ${s[0].toFixed(1)} x ${s[1].toFixed(1)}, ${Object.keys(b)[0]} ${first[0].toFixed(1)} x ${first[1].toFixed(1)}`); }
+			},
+			screen: c => ok(!c.report.length, c.report.slice(0, 6).join(" | ") + (c.report.length > 6 ? ` (+${c.report.length - 6})` : "")), within: 1000 }],
+		async tidy(hands, c) { raiseFloor(0); if (typeof window.gmView === "function") window.gmView(1440, 924); hands.click(`#tabs [data-ws="${c.start || workspaces[0]}"]`); }
+	}];
 	const onScreen = () => document.visibilityState === "visible" ? null : "the editor window is not on screen (display asleep or covered): its canvases are not drawn";
 	/* for needs: real key events through the operating system (u.osKey) exist in the macOS plug-in only */
 	const osKeyPath = () => osKeys() ? null : "no way in for real key events here (the macOS plug-in has one, mdOsKeys.h)";
@@ -733,5 +808,5 @@ const Journey = (() => {
 			{ name: `${prefix}-shots-views`, proves: [], needs: () => location.search.includes(`${prefix}-shots`) ? null : "screenshots only when asked by name", steps: views.map(v => step(v, true)) }
 		];
 	}
-	return { run, demo, ok, sleep, until, u, TIERS, tierOf, onScreen, osKeyPath, menu, editorMenuJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, snapshot, safari15Diff, viewJourneys };
+	return { run, demo, ok, sleep, until, u, TIERS, tierOf, onScreen, osKeyPath, menu, editorMenuJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, fitJourneys, snapshot, safari15Diff, viewJourneys };
 })();

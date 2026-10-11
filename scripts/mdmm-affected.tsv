@@ -14,6 +14,7 @@
 # --- the pages
 source/elektron/md/mdJucePlugin/skins/shared/deskCpu*	deskCpuPageTest	-	-	*-top-cpu-meter	no	2 2c 7d
 source/elektron/md/mdJucePlugin/skins/shared/deskVolume*	deskVolumePageTest	-	-	*-lcd-volume	no	2 2c 7d
+source/elektron/md/mdJucePlugin/skins/shared/deskTopFit*	-	-	*-fit-workspaces	-	no	2 2c 7d
 source/elektron/md/mdJucePlugin/skins/shared/deskAudio*	-	-	-	*-audio-panel	no	2 2c 7d
 source/elektron/md/mdJucePlugin/skins/shared/deskBoot*	-	-	-	*-boot-card,*-engine-rom-card	no	2 2c 7d
 source/elektron/md/mdJucePlugin/skins/shared/deskDrop*	deskDropPageTest	-	-	*-drop-*	no	2 2c 7d
