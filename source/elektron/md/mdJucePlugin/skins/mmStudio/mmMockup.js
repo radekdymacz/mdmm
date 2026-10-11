@@ -79,7 +79,7 @@ const note=(n,bits=[1,1,1])=>({n:Array.isArray(n)?n:[n],a:bits[0],f:bits[1],l:bi
 
 const S={ws:"seq",sel:0,side:"int",len:32,mult:"1X",swingAmt:58,playing:false,step:-1,bpm:120,pat:0,kit:0,kitState:"clean",queued:null,trigSel:"ALL",
  lane:"FLT.1",lanePage:"FLT",locks:new Map(),patTrn:64,routing:"3xSTEREO+AB=MIX",glob:{slot:0,base:0,span:6,auto:8,multiTrig:6,multiMap:7,clockIn:false,transportIn:false},plate:"mk2",engine:"emu",pend:0,patSent:"live",rec:false,
- mode:"normal",songs:{names:["DEMO SONG",...Array(23).fill("EMPTY")],slot:0,current:0},multi:{mode:0,splitKey:60,splitTrack:3,timing:4},menv:{ATK:0,DEC:127,SUS:127,REL:127,PORT:0},kbOct:3,
+ mode:"normal",songs:{names:["DEMO SONG","ACID LIVE","VOCODER JAM",...Array(21).fill("")],rows:[8,20,7,...Array(21).fill(0)],slot:0,current:0},multi:{mode:0,splitKey:60,splitTrack:3,timing:4},menv:{ATK:0,DEC:127,SUS:127,REL:127,PORT:0},kbOct:3,
  mmap:[{hi:47,pat:0,ofs:0,len:0,trn:64,tim:4},{hi:59,pat:1,ofs:0,len:16,trn:64,tim:4},{hi:71,pat:0,ofs:0,len:0,trn:69,tim:4},{hi:127,pat:2,ofs:8,len:8,trn:64,tim:1}],mmapSel:1,
  gmutes:null,rollLo:36,ghost:true,asTab:"JOY RL",joy:{x:0,y:0},
  /* whether the machine takes input (machine.input); null while no host has said (the standalone
@@ -522,7 +522,7 @@ function mmPaint(steps,a,b,mode,n){const out=[];for(let s=Math.min(a,b);s<=Math.
 const MM_SEAM={
  "host":[
   "ownsClock","engineLabels","notes","start","commit","intent","library","undo","redo","history","togglePlay",
-  "selectPattern","kit","tempo","mutes","keyMode","record","songSlot","chain","chainClear","seqMode","loadSong","waiting",
+  "selectPattern","kit","tempo","mutes","keyMode","record","chain","chainClear","seqMode","loadSong","saveSong","waiting",
   "sendNow","playKey","keyUp","noteOn","noteOff","joy","learning","learnTarget","learnBind","modulators",
   "engine","chooseRom","removeRom","romManage","syxChoose","syxExport","syxStart","syxStop","revealRom",
   "recheck","firstRun","bootScreen","renderPst","menu","audioDoc","audioSend","audioMeter","globalSlot"],
@@ -609,8 +609,9 @@ function demoRebase(step){if(window.MMDemoHost)window.MMDemoHost.rebase(step)}
                                       is the machine's audio mode
      record(live)                     the RECORD key: the host picks GRID or LIVE RECORDING, or off; live
                                       (Alt+Space): LIVE RECORDING, also when stopped
-     songSlot(slot), loadSong(slot)   the Song workspace edits another of the 24 songs; LOAD SONG makes it
-                                      the machine's
+     loadSong(slot)                   LOAD SONG: the song slots' Load makes slot the machine's song, the one
+                                      the Song workspace edits
+     saveSong()                       SAVE SONG: the machine's song into its slot (the song slots' Save)
      chain(patterns), chainClear()    MM-P8: the Song palette's CHAIN: the machine's own pattern chain (one
                                       bank, each pattern once, played in order and looped), and its end; what
                                       the machine then plays comes back through MMView.show
@@ -982,6 +983,203 @@ const KeyView = (() => {
 		return { draw, reset() { st.held.clear(); st.clicked = ""; st.query = ""; }, state: st };
 	}
 	return { layout, capsOf, model, html, mount, codeOf };
+})();
+
+/* ---- shared/deskSongSlots.js ---- */
+"use strict";
+/* The Song page's song slots (0.6 wave 1, doc/modern-ux/DESIGN-machine-menus.md §2, Song): a column of the machine's
+   songs on the left of the workspace, the same concept and the same keys on both editors (MD 32 songs, MM 24), so the
+   markup and the gestures are here once. The page gives the model and takes the actions (host); the document commands
+   behind them are the library's (songCopy, songPaste, songCopyTo, songClear, songRename; deskCore/deskEdits.h) and the
+   machine's (the load and the save).
+     host.model()   {count, nameMax, cur, edited, playing, clip, note, slots: [{loaded, name, rows}]}
+                    cur: the song the machine holds (and the right side edits), edited: its edits are not loaded yet,
+                    playing: the machine cannot load, clip: the slot a song was copied from or null, note: markup the
+                    page adds under the chip (the HW MIDI's "Reload song")
+     host.load(slot)  host.save()  host.saveTo(slot, name)  host.copy(slot)  host.paste(slot)  host.clear(slot)
+     host.rename(slot, name)  host.copyTo(from, to)  host.redraw()
+   A click selects a slot, it loads nothing: Load does (and Enter). The page calls html() for the column, afterRender()
+   once the markup is in, and busy() to hold a render while a name is typed or a slot dragged. */
+const SongSlots = (() => {
+	let host = null, sel = null, lastCur = null, naming = null, drag = null, refocus = false;
+	const nn = i => String(i + 1).padStart(2, "0");
+	const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+	/* names: the machines take 7-bit characters, the editor keeps to the safe set the kit names use */
+	const BAD = /[^A-Z0-9 \-.\/+&!?'#*():]/g;
+	const clean = (v, max) => String(v).toUpperCase().replace(BAD, "").slice(0, max);
+	const COLS = 2;
+	const doc = () => typeof document !== "undefined" ? document : null;
+	const column = () => doc()?.querySelector(".songlib");
+
+	const empty = (s, i, m) => !!s && s.loaded && !s.name && !s.rows && i !== m.cur;
+	const label = (s, i, m) => !s || !s.loaded ? "…" : s.name || (s.rows ? "(no name)" : i === m.cur ? "(no name)" : "EMPTY");
+
+	function slotHtml(s, i, m) {
+		const cur = i === m.cur, ed = cur && m.edited, emp = empty(s, i, m), loaded = !!s && s.loaded;
+		const tip = `Song ${nn(i)} ${loaded ? (s.name || (s.rows ? "(no name)" : "(empty)")) : "(loading)"}${loaded && s.rows ? " · " + s.rows + " rows" : ""}`
+			+ `${cur ? " · the machine's song, " + (ed ? "edited here: the machine loads the edits when it is stopped" : "loaded") : ""}. `
+			+ "Click selects it (Load or Enter loads it); double-click or F2 renames; drag onto another slot to copy.";
+		const nm = naming && naming.slot === i
+			? `<input class="lsin" id="slin" maxlength="${m.nameMax}" value="${esc(naming.text)}" aria-label="${naming.mode === "saveas" ? "Name of the song saved to slot " + nn(i) : "Song name"}, up to ${m.nameMax} characters" spellcheck="false" autocomplete="off">`
+			: esc(label(s, i, m));
+		const draggable = loaded && !(naming && naming.slot === i) && !(emp);
+		return `<button class="ls ss${emp ? " empty" : ""}${cur ? " cur" : ""}${ed ? " edited" : ""}" data-ss="${i}" draggable="${draggable}" aria-selected="${i === sel}" title="${esc(tip)}">`
+			+ `<span class="lsh"><b>${nn(i)}</b>${cur ? `<em><i class="led${ed ? " on" : ""}"></i>${ed ? "ed" : "ok"}</em>` : ""}</span><span class="lsn">${nm}</span>`
+			+ `<span class="lsl">${loaded && s.rows ? s.rows + " rows" : ""}</span></button>`;
+	}
+
+	/* the column; called right before the page puts it in (it notes whether the focus is in it now) */
+	function html() {
+		const m = host.model(), a = doc()?.activeElement;
+		if (a && a.closest && a.closest(".songlib")) refocus = true;
+		if (sel == null || m.cur !== lastCur) { sel = m.cur; lastCur = m.cur; }
+		sel = Math.max(0, Math.min(m.count - 1, sel));
+		const s = m.slots[sel], cur = m.slots[m.cur], loaded = !!s && s.loaded, same = sel === m.cur;
+		const dis = c => c ? " disabled" : "";
+		const chip = `${nn(m.cur)} ${esc(cur && cur.loaded ? cur.name || "(no name)" : "…")} · ${m.edited ? "EDITED" : "LOADED"}`;
+		const clipTip = m.clip != null ? `Paste song ${nn(m.clip)} into ${nn(sel)}. ` : "Copy a song first. ";
+		return `<aside class="songlib card" aria-label="Songs"><header><h3>Songs</h3><span>${m.count} slots</span></header>
+ <div class="sltop"><span class="lcdchip" title="The machine's song: the one the arrangement edits. ${m.edited ? "Edited here: the machine loads the edits when it is stopped." : "The machine has loaded what is shown."}">${chip}</span></div>${m.note || ""}
+ <div class="slacts"><span class="sgrp"><button data-sa="load"${dis(same || !loaded || m.playing)} title="${same ? "That is the machine's song. " : m.playing ? "The machine loads another song only when it is stopped. " : ""}LOAD SONG: the machine plays this song in SONG mode (Enter)">Load</button>`
+			+ `<button class="cream" data-sa="save" title="SAVE SONG: the machine's song into its slot, with its name">Save</button>`
+			+ `<button data-sa="saveas"${dis(same || !loaded)} title="${same ? "The selected slot is the machine's song: Save stores it. " : ""}The machine's song, with a name, into slot ${nn(sel)}">Save to…</button></span>`
+			+ `<span class="sgrp"><button data-sa="copy"${dis(!loaded)} title="Copy the song (Cmd+C)">Copy</button><button data-sa="paste"${dis(m.clip == null || !loaded)} title="${esc(clipTip)}(Cmd+V)">Paste</button>`
+			+ `<button class="danger" data-sa="clear"${dis(!loaded || empty(s, sel, m))} title="Clear the song: its rows and its name are removed (Delete)">Clear</button><button data-sa="rename"${dis(!loaded)} title="Rename the song (F2 or double-click)">Rename</button></span></div>
+ <div class="libgrid songs" role="listbox" aria-label="${m.count} song slots">${m.slots.map((x, i) => slotHtml(x, i, m)).join("")}</div>
+ <div class="slfoot note">Arrows · Enter loads · F2 renames · drag a slot onto another = copy. The song being edited is always the one on the right.</div></aside>`;
+	}
+	function afterRender() {
+		const c = column(); if (!c) return;
+		const inp = c.querySelector("#slin");
+		/* a page that renders while a name is typed (the MM's does not hold) keeps what was typed: naming.text */
+		if (inp) { inp.focus({ preventScroll: true }); if (naming.fresh) inp.select(); else inp.setSelectionRange(inp.value.length, inp.value.length); return; }
+		if (!refocus) return;
+		refocus = false;
+		const el = c.querySelector(".ls[aria-selected=true]"); if (!el) return;
+		el.focus({ preventScroll: true });
+		const g = c.querySelector(".libgrid");
+		if (g && g.scrollHeight > g.clientHeight) { const a = el.getBoundingClientRect(), b = g.getBoundingClientRect(); if (a.top < b.top) g.scrollTop -= b.top - a.top + 6; else if (a.bottom > b.bottom) g.scrollTop += a.bottom - b.bottom + 6; }
+	}
+	/* a render is held while a name is typed or a slot is dragged */
+	const busy = () => !!naming || !!drag;
+
+	const select = (i, focus = true) => { sel = i; refocus = refocus || focus; host.redraw(); };
+	function startNaming(slot, mode) {
+		const m = host.model(), s = m.slots[slot], cur = m.slots[m.cur];
+		if (!s || !s.loaded) return;
+		sel = slot; refocus = true;
+		naming = { slot, mode, fresh: true, text: mode === "saveas" ? (cur && cur.name) || "" : s.name || "" };
+		host.redraw();
+	}
+	function finishNaming(ok) {
+		if (!naming) return;
+		const n = naming, m = host.model(), v = clean(doc()?.querySelector("#slin")?.value ?? n.text, m.nameMax).trimEnd();
+		naming = null; refocus = true;
+		if (ok) {
+			if (n.mode === "saveas") host.saveTo(n.slot, v);
+			else if (v !== (m.slots[n.slot]?.name || "")) host.rename(n.slot, v);
+		}
+		host.redraw();
+	}
+	function act(a) {
+		const m = host.model(), s = m.slots[sel], loaded = !!s && s.loaded;
+		refocus = true;
+		if (a === "load") { if (sel !== m.cur && loaded && !m.playing) host.load(sel); }
+		else if (a === "save") host.save();
+		else if (a === "saveas") { if (sel !== m.cur) startNaming(sel, "saveas"); }
+		else if (a === "copy") { if (loaded) host.copy(sel); }
+		else if (a === "paste") { if (m.clip != null && loaded) host.paste(sel); }
+		else if (a === "clear") { if (loaded && !empty(s, sel, m)) host.clear(sel); }
+		else if (a === "rename") startNaming(sel, "rename");
+	}
+	const inColumn = () => { const a = doc()?.activeElement; return !naming && !!a && !!a.closest && !!a.closest(".songlib") && !a.closest("input"); };
+	function move(key) {
+		const m = host.model(), d = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -COLS, ArrowDown: COLS }[key] || 0;
+		select((sel + d + m.count) % m.count);
+	}
+
+	/* ----- mouse ----- */
+	const dc = doc();
+	if (dc) {
+		dc.addEventListener("click", e => {
+			if (!host || e.target.closest?.("#slin")) return;
+			const c = e.target.closest?.(".songlib"); if (!c) return;
+			const a = e.target.closest("[data-sa]"); if (a) { if (!a.disabled) act(a.dataset.sa); return; }
+			const s = e.target.closest("[data-ss]"); if (s) { if (naming) finishNaming(true); select(+s.dataset.ss); }
+		});
+		dc.addEventListener("dblclick", e => {
+			const s = host && e.target.closest?.(".songlib [data-ss]");
+			if (s && !e.target.closest("#slin")) startNaming(+s.dataset.ss, "rename");
+		});
+		dc.addEventListener("keydown", e => {
+			if (e.target.id !== "slin") return;
+			if (e.key === "Enter" || e.key === "Escape") { e.preventDefault(); finishNaming(e.key === "Enter"); }
+			e.stopImmediatePropagation();
+		}, true);
+		dc.addEventListener("input", e => {
+			if (e.target.id !== "slin") return;
+			const i = e.target, at = i.selectionStart, v = clean(i.value, host.model().nameMax);
+			if (v !== i.value) { i.value = v; i.setSelectionRange(Math.min(at, v.length), Math.min(at, v.length)); }
+			if (naming) { naming.text = v; naming.fresh = false; }
+		});
+		dc.addEventListener("focusout", e => {
+			if (e.target.id === "slin" && naming) setTimeout(() => { if (naming && doc().activeElement?.id !== "slin") finishNaming(true); }, 0);
+		});
+		/* a slot dragged onto another is a copy (the library's songCopyTo) */
+		dc.addEventListener("dragstart", e => {
+			const s = host && e.target.closest?.(".songlib .ls[data-ss]"); if (!s) return;
+			drag = { from: +s.dataset.ss }; s.classList.add("dragging"); e.dataTransfer.effectAllowed = "copy";
+			try { e.dataTransfer.setData("text/plain", String(drag.from)); } catch (_) { }
+		});
+		const target = el => drag && el.closest?.(".songlib .ls[data-ss]");
+		dc.addEventListener("dragover", e => {
+			if (!drag) return; const t = target(e.target);
+			dc.querySelectorAll(".songlib .ls.over").forEach(x => x !== t && x.classList.remove("over"));
+			if (!t) return; e.preventDefault(); e.dataTransfer.dropEffect = "copy"; t.classList.add("over");
+		});
+		dc.addEventListener("drop", e => {
+			if (!drag) return; const t = target(e.target), d = drag; drag = null; if (!t) return;
+			e.preventDefault(); const to = +t.dataset.ss; sel = to; refocus = true;
+			if (to !== d.from) host.copyTo(d.from, to);
+			host.redraw();
+		});
+		dc.addEventListener("dragend", () => { if (!drag && !dc.querySelector(".songlib .dragging")) return; drag = null; host.redraw(); });
+	}
+
+	/* ----- keys: the column's own while a slot has the focus (the library's way: a capture handler, so they come before
+	   the page's row keys; the entries below only say what they do). ⌘C and ⌘V may come as the copy and paste events
+	   instead of keys (deskKeys.js, B-015). ----- */
+	const dialogOpen = () => (typeof Modal !== "undefined" && Modal.top && !!Modal.top()) || doc()?.getElementById("dlg")?.hidden === false;
+	if (dc) {
+		dc.addEventListener("keydown", e => {
+			if (!host || e.altKey || !inColumn() || dialogOpen()) return;
+			const mod = Modifiers.cmd(e), k = e.key; let h = true;
+			if (!mod && !e.shiftKey && /^Arrow/.test(k)) move(k);
+			else if (!mod && k === "Enter") act("load");
+			else if (!mod && k === "F2") act("rename");
+			else if (!mod && (k === "Delete" || k === "Backspace")) act("clear");
+			else if (mod && !e.shiftKey && (k === "c" || k === "C")) act("copy");
+			else if (mod && !e.shiftKey && (k === "v" || k === "V")) act("paste");
+			else h = false;
+			if (h) { e.preventDefault(); e.stopImmediatePropagation(); }
+		}, true);
+		for (const [type, a] of [["copy", "copy"], ["paste", "paste"]]) dc.addEventListener(type, e => {
+			if (!host || !inColumn() || dialogOpen()) return;
+			e.preventDefault(); e.stopImmediatePropagation(); act(a);
+		}, true);
+	}
+	if (typeof Keys !== "undefined") {
+		const doc1 = (id, keys, mod, does) => Keys.bind({ id, scope: "song", keys, mod, group: "Song", does });
+		doc1("song-slot-move", ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"], "", "Song slots (a slot has the focus): move the selection");
+		doc1("song-slot-load", ["Enter"], "", "Song slots: load the selected song (LOAD SONG, only while stopped)");
+		doc1("song-slot-rename", ["F2"], "", "Song slots: rename the selected song");
+		doc1("song-slot-copy", ["C"], "cmd", "Song slots: copy the selected song");
+		doc1("song-slot-paste", ["V"], "cmd", "Song slots: paste the song into the selected slot");
+		doc1("song-slot-clear", ["Delete", "Backspace"], "", "Song slots: clear the selected song");
+		Keys.bind({ id: "song-slot-drag", scope: "song", area: "Song", keys: ["drag a song slot onto another"], mod: "", group: "Song", does: "Copies the song into that slot" });
+	}
+
+	return { init(h) { host = h; }, html, afterRender, busy, select, get sel() { return sel; }, get naming() { return naming; } };
 })();
 
 /* ---- shared/deskTogglePaint.js ---- */
@@ -4067,16 +4265,19 @@ function songSteps(){let n=0;S.song.forEach(r=>{if(!r.type)n+=rowLen(r)*r.rep});
 function songTime(){const sec=songSteps()*60/S.bpm/4;return`${Math.floor(sec/60)}:${String(Math.round(sec%60)).padStart(2,"0")}`}
 function loopOf(i){return S.song.findIndex((r,k)=>r.type==="loop"&&k>i&&r.to<=i)}
 const hasTtr=r=>r.ttr&&r.ttr.some(v=>v!==64);
-/* the song to edit: any of the 24; LOAD SONG makes it the machine's (only while stopped) */
-function songPick(){const g=S.songs;if(!g)return"";const nn=i=>String(i+1).padStart(2,"0");
- return`<span class="songpick"><select id="songsel" aria-label="Song to edit">${g.names.map((n,i)=>`<option value="${i}"${i===g.slot?" selected":""}>S${nn(i)} ${n}${i===g.current?" · on the machine":""}</option>`).join("")}</select>
-  <button id="songload"${g.slot===g.current?" disabled":""} title="LOAD SONG: the machine plays this song in song mode. Only while stopped.">Load on the machine</button></span>`}
-/* ===== Chain (MM-P8, as the Machinedrum Editor's Song): one palette, two ways to play its pads. ARRANGE adds
-   to the song; CHAIN numbers the pads into the machine's own chain (hold BANK, press the TRIG keys; manual
-   1-46: one bank, each pattern once, loops), sent at once. The header says what the machine plays (playsOf).
-   The machine's chain comes from the host (MMView.show: machine.desk.chain, song mode); on its own the
-   example engine plays it at the pattern ends (chainWrap). */
-S.songPick="arrange";S.chainDraft=[];S.chainTimer=0;S.chainSent=false;
+/* ===== One palette and one switch, PATTERN · CHAIN · SONG (0.6, as the Machinedrum Editor's Song; MM-P8 for the
+   chain): what the machine plays and what a pad click does. PATTERN: the pad goes to that pattern (queued, ⇧: now;
+   the machine is in pattern mode). CHAIN: the pad is numbered into the machine's own chain (hold BANK, press the TRIG
+   keys; manual 1-46: one bank, each pattern once, loops), sent at once. SONG: the pad is added after the selected row
+   (the machine is in song mode). A key sets the machine's mode too (seqMode); a mode the machine reports moves the
+   switch (songModeSync). The machine's chain comes from the host (MMView.show: machine.desk.chain, song mode); on its
+   own the example engine plays it at the pattern ends (chainWrap). */
+S.songPick=null;S.songModeSeen=undefined;S.chainDraft=[];S.chainTimer=0;S.chainSent=false;
+const SONG_PICKS=[["pattern","Pattern"],["chain","Chain"],["song","Song"]];
+function songModeSync(){const sm=!!S.plays.songMode,ch=!!S.plays.chain?.active;
+ if(!SONG_PICKS.some(([k])=>k===S.songPick))S.songPick=sm?"song":ch?"chain":"pattern";
+ if(S.songModeSeen!==sm){S.songModeSeen=sm;if(sm)S.songPick="song";else if(S.songPick==="song")S.songPick=ch?"chain":"pattern"}}
+function songPickSet(v){S.songPick=v;const want=v==="song";if(!!S.plays.songMode!==want)seqMode(want);render()}
 S.plays={chain:null,songMode:false,song:0};
 const nn2=i=>String(i+1).padStart(2,"0");
 /* what the machine plays: in song mode the song (the Monomachine keeps a chain there but plays the song,
@@ -4100,11 +4301,9 @@ function chainSoon(){clearTimeout(S.chainTimer);
   else if((c&&c.active)||S.chainSent){clearChain();S.chainSent=false}},150)}
 function chainFooter(){const c=S.plays.chain,bn="ABCDEFGH"[S.bank],d=S.chainDraft;
  const known=!!c||!window.MMHost,active=!!(c&&c.active&&c.patterns.length),list=active?c.patterns:[],at=list.indexOf(S.pat),next=active?list[(at+1)%list.length]:null;
- /* what plays is the What plays card's (whatPlays); here: the pads' own state and the gestures */
+ /* what plays is the line above the pads (playsText); here: the pads' own state and the gestures */
  const state=!canChain()?NA.chains:!known?"The chain is not readable on this engine.":S.plays.songMode&&active?"Song mode: the machine plays the song; PATTERN or a new chain switches it to pattern mode.":active?`The machine plays the chain${at>=0&&S.playing?`: now ${patName(S.pat)}, next ${patName(next)}`:""}.`:"";
  return chainRows(d,bn,active,state)}
-/* the PATTERN | SONG switch, as the machine reports it (lit: S.plays.songMode); big in the What plays card */
-function seqModeKeys(){return`<span class="seg seqmode" title="PATTERN: the machine plays the pattern (and its chain). SONG: it plays the song. What is lit is what the machine reports">${[["pattern","PATTERN",false],["song","SONG",true]].map(([k,l,v])=>`<button data-seqmode="${k}" aria-pressed="${S.plays.songMode===v}"><span>${l}</span></button>`).join("")}</span>`}
 function chainRows(d,bn,active,state){
  return`<div class="chainfoot">${state?`<div class="irow"><span class="ilab"></span><span class="note">${state}</span></div>`:""}
   <div class="irow"><span class="ilab"></span><span class="chainacts"><button data-chain="undo"${d.length?"":" disabled"} title="Takes the last pad out and chains the rest at once">Back</button><button class="danger" data-chain="clear"${active||d.length?"":" disabled"} title="BANK + the TRIG key of the pattern that plays: the machine's way to end a chain. The pads start over">Clear</button></span>
@@ -4131,28 +4330,24 @@ function markSongRow(force){const st=document.getElementById("arrstate");if(st&&
  const pl=document.getElementById("songPlays");if(pl)pl.textContent=playsText();if(S.ws!=="song")return;
  $$(".scell.ph").forEach(c=>c.classList.remove("ph"));if(row>=0)document.querySelector(`.scell[data-i="${row}"]`)?.classList.add("ph");
  $$(".durbar .db").forEach(d=>{const i=+d.dataset.i;d.classList.toggle("past",row>=0&&i<row);d.classList.toggle("now",i===row)})}
-/* (a) What plays: the PATTERN | SONG switch first, then one live line from the machine */
-function whatPlays(plays){const tip={chain:"The machine plays its own chain (live, one bank, loops). Clear it in CHAIN, or pick a pattern.",song:"SONG mode: the machine plays the stored song.",pattern:"PATTERN mode: the machine plays this pattern and stays on it."}[plays.kind];
- return`<section class="card whatplays ${S.plays.songMode?"song":"pattern"}"><header><h3>What plays</h3></header>
-   <div class="modebig">${seqModeKeys()}</div>
-   <div class="chainrow playsline"><span class="lcdchip playschip ${plays.kind}" id="songPlays" title="${tip}">${playsText()}</span></div></section>`}
-/* (b) the song itself: the one to edit, and LOAD SONG */
-function songCard(){return`<section class="card songslot"><header><h3>Song</h3>${songPick()||`<span class="lcdchip">SONG ${nn2(S.songSlot??0)}</span>`}</header><div class="irow"><span class="note">${songRows()} rows · ${Math.round(songSteps()/16)} bars · ${songTime()}</span></div></section>`}
-document.addEventListener("click",e=>{const b=e.target.closest?.("[data-seqmode]");if(b)seqMode(b.dataset.seqmode==="song")});
 function chainPad(p){const n=S.chainDraft.indexOf(p),d=S.chainDraft;if(n>=0)d.splice(n,1);else if(d.length<16)d.push(p);render();chainSoon()}
 function chainAct(a){if(a==="undo"){S.chainDraft.pop();render();chainSoon();return}
  clearTimeout(S.chainTimer);S.chainDraft=[];render();if(S.plays.chain?.active||S.chainSent){clearChain();S.chainSent=false}}
-function renderSong(){S.songSel=Math.max(0,Math.min(S.songSel,S.song.length-1));const sel=S.song[S.songSel]||S.song[0],chain=S.songPick==="chain",plays=playsOf();
+function renderSong(){songModeSync();S.songSel=Math.max(0,Math.min(S.songSel,S.song.length-1));const sel=S.song[S.songSel]||S.song[0],pick=S.songPick,chain=pick==="chain",plays=playsOf();
  /* a chain is one bank's: another bank starts the draft over */
  S.chainDraft=S.chainDraft.filter(p=>p>>4===S.bank);
  const pad=p=>{const info=`${patName(p)}<small>${hasPat(p)?patLen(p):"empty"}</small>`;
+  if(pick==="pattern")return`<button class="padd ${hasPat(p)?"has":""}${p===S.pat?" cur":""}${p===S.queued&&p!==S.pat?" q":""}" data-patgo="${p}" title="${patName(p)}: click queues it (⇧-click: now). Playing, the machine switches at the pattern end.">${info}</button>`;
   if(!chain)return`<button class="padd ${hasPat(p)?"has":""} ${!sel.type&&sel.pat===p?"cur":""}" data-addpat="${p}" draggable="true" title="Drag into the arrangement. Click adds after the selected row.">${info}</button>`;
   const n=S.chainDraft.indexOf(p);
   return`<button class="padd ${hasPat(p)?"has":""}${n>=0?" in":""}" data-chainpad="${p}" title="${patName(p)}${n>=0?": number "+(n+1)+" in the chain. Click takes it out, and the machine plays the rest.":". Click adds it: the machine plays the chain at once."}">${info}${n>=0?`<em>${n+1}</em>`:""}</button>`};
- const palette=`<div class="banks">${[..."ABCDEFGH"].map((b,k)=>`<button class="bank ${k===S.bank?"on":""}" data-bank="${k}"><i class="led"></i>${b}</button>`).join("")}</div>
+ const hint={pattern:"A pad click goes to that pattern (queued; ⇧-click now). The machine plays patterns.",song:`A pad click adds a row after row ${String(S.songSel+1).padStart(3,"0")} (or drag it onto the grid). The machine plays the song.`}[pick]||"";
+ const tip={chain:"The machine plays its own chain (live, one bank, loops). Clear it in CHAIN, or pick a pattern.",song:"SONG mode: the machine plays the stored song.",pattern:"PATTERN mode: the machine plays this pattern and stays on it."}[plays.kind];
+ const palette=`<div class="chainrow playsline"><span class="lcdchip playschip ${plays.kind}" id="songPlays" title="${tip}">${playsText()}</span></div>
+  <div class="banks">${[..."ABCDEFGH"].map((b,k)=>`<button class="bank ${k===S.bank?"on":""}" data-bank="${k}"><i class="led"></i>${b}</button>`).join("")}</div>
   <div class="pgridp">${Array.from({length:16},(_,k)=>pad(S.bank*16+k)).join("")}</div>
-  ${chain?chainFooter():`<p class="note pnote">Click adds after row ${String(S.songSel+1).padStart(3,"0")} · drag onto the grid</p>`}`;
- const head=`<header class="phead"><h3>Patterns</h3><span class="seg" data-set="songpick" title="ARRANGE: a click adds the pattern to the song. CHAIN: a click numbers it into the machine's chain.">${[["arrange","Arrange"],["chain","Chain"]].map(([v,t])=>`<button data-v="${v}" aria-pressed="${S.songPick===v}">${t}</button>`).join("")}</span></header>`;
+  ${chain?chainFooter():`<p class="note pnote">${hint}</p>`}`;
+ const head=`<header class="phead"><div class="pmodekeys" data-set="songpick" role="group" aria-label="What the machine plays, and what a pad click does">${SONG_PICKS.map(([v,t])=>`<button class="pkey" data-v="${v}" aria-pressed="${pick===v}"><i class="led"></i><span>${t}</span></button>`).join("")}<span class="note">what plays, what a pad click does</span></div></header>`;
  let insp="";
  if(!sel.type){const L=patLen(sel.pat),o=sel.ofs||0,ln=rowLen(sel),tt=sel.ttr||T64(),trn=(sel.trn??64)-64;
   insp=`<div class="irow"><span class="ilab">Row</span><span class="lcdchip">${String(S.songSel+1).padStart(3,"0")} · ${patName(sel.pat)}</span><span class="stepper"><button data-step="pat" data-d="-1" aria-label="Previous pattern">‹</button><button data-step="pat" data-d="1" aria-label="Next pattern">›</button></span></div>
@@ -4171,8 +4366,8 @@ function renderSong(){S.songSel=Math.max(0,Math.min(S.songSel,S.song.length-1));
    ${sel.type==="loop"?`<div class="irow"><span class="ilab">Times</span><span class="stepper"><button data-step="count" data-d="-1">−</button><b class="mono">${sel.count===Infinity?"∞":sel.count}</b><button data-step="count" data-d="1">+</button></span><button class="ptog ${sel.count===Infinity?"on":""}" data-inf="1"><i class="led"></i>Forever</button></div>`:""}
    <div class="irow"><span class="ilab"></span><span class="note">${sel.type==="loop"?"Loops nest. Loops also stretch a part past the 64-step pattern limit.":sel.type==="jump"?"Jumps the song pointer forward.":"Pauses until you pick a row to go on from."}</span></div>`;
  const lines=Math.ceil(200/16);
- $("#main").innerHTML=`<div class="songui lay2 ${S.plays.songMode?"songmode":"patmode"}${S.plays.songMode&&S.playing?" songplaying":""}"><div class="songleft">${whatPlays(plays)}${songCard()}<section class="card ${chain?"chainmode":""}">${head}${palette}</section>
-   <section class="card"><header><h3>Selected row</h3><span class="rowacts"><button data-rowact="up" title="Move left">←</button><button data-rowact="down" title="Move right">→</button><button data-rowact="dup">Duplicate</button><button data-rowact="loop">Add loop</button><button data-rowact="del" class="danger">Delete</button></span></header><div class="insp">${insp}</div></section></div>
+ $("#main").innerHTML=`<div class="songui lay2 withlib ${S.plays.songMode?"songmode":"patmode"}${S.plays.songMode&&S.playing?" songplaying":""}">${SongSlots.html()}<div class="songleft"><section class="card whatplays ${S.plays.songMode?"song":"pattern"} ${chain?"chainmode":""}">${head}${palette}</section>
+   ${pick==="song"?`<section class="card"><header><h3>Selected row</h3><span class="rowacts"><button data-rowact="up" title="Move left">←</button><button data-rowact="down" title="Move right">→</button><button data-rowact="dup">Duplicate</button><button data-rowact="loop">Add loop</button><button data-rowact="del" class="danger">Delete</button></span></header><div class="insp">${insp}</div></section>`:""}</div>
   <section class="card arrcard"><header><h3>Arrangement</h3><span class="arrstate" id="arrstate">${arrState()}</span><span class="note" title="${S.song.length} of 200 rows · T track transpose · M mutes · B tempo · ~ part">${S.song.length} of 200 rows · T track transpose · M mutes · B tempo</span></header>
    <div class="durbar" title="Song shape by time (length × repeats); in SONG mode it fills up to the row that plays">${S.song.map((r,i)=>r.type?`<i class="db dbm" data-i="${i}"></i>`:`<i class="db ${i===S.songSel?"sel":""}" data-row="${i}" data-i="${i}" style="flex:${rowLen(r)*r.rep} 1 0"></i>`).join("")}</div>
    <div class="slotgrid" id="tl">${Array.from({length:lines},(_,line)=>`<span class="sglab">${String(line*16+1).padStart(3,"0")}</span>${Array.from({length:16},(_,c)=>{const i=line*16+c,r=S.song[i];if(i>=200)return`<span></span>`;
@@ -4181,7 +4376,30 @@ function renderSong(){S.songSel=Math.max(0,Math.min(S.songSel,S.song.length-1));
      const txt=r.type==="end"?"END":r.type==="loop"?`↺${String(r.to+1).padStart(3,"0")}`:r.type==="jump"?`→${String(r.to+1).padStart(3,"0")}`:r.type==="halt"?"HALT":patName(r.pat);
      const sub=r.type==="loop"?(r.count===Infinity?"∞":"×"+r.count):!r.type?`${r.rep>1?"×"+r.rep:""}${(r.trn??64)!==64?" "+((r.trn-64)>0?"+":"")+(r.trn-64):""}${hasTtr(r)?" T":""}${r.mutes?.length?" M":""}${r.bpm?" B":""}${r.ofs||r.len?"~":""}`:"";
      return`<button class="${cls}" data-row="${i}" data-i="${i}" draggable="${r.type==="end"?"false":"true"}" title="Row ${String(i+1).padStart(3,"0")}${r.type?"":" · "+patName(r.pat)+" ×"+r.rep+" · "+rowLen(r)+" steps"}"><b>${txt}</b><small>${sub}</small></button>`}).join("")}`).join("")}</div></section></div>`;
- markSongRow(true)}
+ markSongRow(true);SongSlots.afterRender()}
+/* The song slots (deskSongSlots.js, shared with the Machinedrum Editor): the host. The 24 songs are the machine's
+   documents (S.songs: the host's view, MmView.songsOf; on its own the example's). Load is LOAD SONG, Save SAVE SONG
+   (the song the machine holds, into its slot), the rest the library's slot ops (songCopy, songPaste, songCopyTo,
+   songClear, songRename: HOST.library, the core asks before one loses something). A slot write is a dump through
+   SYSEX RECV (hardware: SEND n). On its own the example engine keeps the names and row counts. */
+const songNote=()=>`<div class="slnote note">${songRows()} rows · ${Math.round(songSteps()/16)} bars · ${songTime()}${S.songs?.edited&&S.plays.songMode&&S.playing?" · edits heard from the next start":""}</div>`;
+function demoSong(op,a){const g=S.songs,put=(s,from,name)=>{g.names[s]=name??g.names[from];g.rows[s]=g.rows[from];g.loaded[s]=true};
+ if(op==="songCopy")S.songClip=a.s;else if(op==="songPaste")put(a.s,S.songClip);else if(op==="songCopyTo")put(a.to,a.from,a.name);
+ else if(op==="songClear"){g.names[a.s]="";g.rows[a.s]=0}else if(op==="songRename")g.names[a.s]=a.name;render()}
+function songLib(op,a){if(HOST.library){if(op==="songCopy")S.songClip=a.s;return HOST.library(op,a)}demoSong(op,a)}
+S.songClip=null;
+SongSlots.init({
+ model:()=>{const g=S.songs||{names:[],rows:[],loaded:[]};return{count:24,nameMax:14,cur:g.current??0,edited:!!g.edited,playing:!!S.playing,clip:S.songClip,note:songNote(),
+  slots:Array.from({length:24},(_,i)=>g.loaded&&g.loaded[i]===false?{loaded:false}:{loaded:true,name:g.names[i]||"",rows:g.rows?.[i]||0})}},
+ load:s=>{if(HOST.loadSong)return HOST.loadSong(s);S.songs.current=s;S.songs.slot=s;S.songSlot=s;render();toast("LOAD SONG: the machine plays song "+nn2(s)+" in song mode (only while stopped).")},
+ save:()=>{if(HOST.saveSong)return HOST.saveSong();toast("SAVE SONG: the machine stores its song in slot "+nn2(S.songs.current)+".")},
+ saveTo:(s,name)=>songLib("songCopyTo",{from:S.songs.current,to:s,name}),
+ copy:s=>songLib("songCopy",{s}),paste:s=>songLib("songPaste",{s}),clear:s=>songLib("songClear",{s}),
+ rename:(s,name)=>songLib("songRename",{s,name}),copyTo:(from,to)=>songLib("songCopyTo",{from,to}),
+ redraw:()=>render()});
+document.addEventListener("click",e=>{if(S.ws!=="song")return;
+ const pk=e.target.closest?.('[data-set="songpick"] button[data-v]');if(pk){songPickSet(pk.dataset.v);return}
+ const pg=e.target.closest?.("[data-patgo]");if(pg){goPattern(+pg.dataset.patgo,e.shiftKey)}});
 /* a row as the song's intent: rowSet of the selected row (the page's row; the host makes the song's) */
 function editRow(i=S.songSel){edit("rowSet",{i,row:S.song[i]})}
 /* the page's rows after a move or a removal: loop and jump targets follow their rows (map: old place -> new), a HALT
@@ -4724,7 +4942,6 @@ document.addEventListener("click",e=>{
   if(k==="ltrig"){editTrack(S.sel,()=>{V(sg.parentElement.dataset.l)[2]=+v});render();return}
   if(k==="routing"){S.routing=v;edit("routing",{v});render();return}
   if(k==="mtmode"){S.multi.mode=+v;edit("multiTrig",{mode:+v});render();return}if(k==="astab"){S.asTab=v;render();return}if(k==="astrk"){S.sel=+v;render();return}
-  if(k==="songpick"){S.songPick=v;render();return}
   if(k==="loopkind"){const r=S.song[S.songSel];r.type=v;if(v==="halt")r.to=S.songSel;if(v==="jump"&&r.to<=S.songSel)r.to=Math.min(S.song.length-1,S.songSel+1);if(v==="loop"){if(!r.count)r.count=2;if(r.to>=S.songSel)r.to=Math.max(0,S.songSel-1)}editRow();render();return}}
  const at=e.target.closest("[data-arptrig]");if(at){const a=trk(S.sel).arp,k=at.dataset.arptrig;a[k]=a[k]?0:1;edit("arp",{t:S.sel,field:"trigs",v:(a.amp?1:0)|(a.flt?2:0)|(a.lfo?4:0)});render();return}
  const lg=e.target.closest("[data-leg]");if(lg){const l=trk(S.sel).leg,k=lg.dataset.leg;l[k]=l[k]?0:1;edit("legato",{t:S.sel,env:{amp:"amp",flt:"filter",lfo:"lfo"}[k],on:!!l[k]});render();return}
@@ -4778,12 +4995,10 @@ document.addEventListener("click",e=>{
  if(e.target.closest("#platekey")){setPlate(S.plate==="mk1"?"mk2":"mk1");return}
  if(e.target.closest("#play")){togglePlay();return}
  if(e.target.closest("#rec")){if(HOST.record)return HOST.record();S.rec=!S.rec;renderTop();if(S.rec)toast("GRID RECORD on. On the machine: hold a trig to see its note, turn a knob to lock it. Here: just click and draw.");return}
- if(e.target.closest("#songload")){if(HOST.loadSong)return HOST.loadSong(S.songs.slot);S.songs.current=S.songs.slot;render();toast("LOAD SONG: the machine plays song "+String(S.songs.slot+1).padStart(2,"0")+" in song mode (only while stopped).");return}
  if(e.target.closest("#patPrev")){goPattern((S.queued??S.pat)-1);return}
  if(e.target.closest("#patNext")){goPattern((S.queued??S.pat)+1);return}});
 document.addEventListener("change",e=>{const id=e.target.id,v=e.target.value,tr=trk(S.sel);
  if(id==="romfile"){checkRom(e.target.files[0]);return}
- if(id==="songsel"){if(HOST.songSlot)return HOST.songSlot(+v);S.songs.slot=+v;S.songSlot=+v;render();return}
  if(id==="engsel"){const btn=document.querySelector(".lcdeng");if(v==="global"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;openGlobal();return}if(v==="audio"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;openAudio();return}if(v==="rom"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;if(HOST.romManage)HOST.romManage();else firstRun();return}
   S.engine=v;S.pend=0;renderPst();if(HOST.engine)HOST.engine(v);else startEngine(v);return}
  let m=id.match(/^lp(\d)$/);if(m){editTrack(S.sel,()=>{const l=V("LF"+m[1]);l[0]=+v;l[1]=0});render();return}
