@@ -89,11 +89,12 @@ no journey yet); **not testable** (why). "—": the editor has no such feature.
 | Feature | Machinedrum | Monomachine |
 |---|---|---|
 | Trigs / notes by click (MM: piano roll) | md-seq-first-beat PASS | mm-seq-first-beat PASS |
-| Drag-paint steps, one undo step (MM: SLIDE lane; the roll: a new note dragged sideways paints, Alt-drag erases, 2026-10-05) | md-seq-paint-undo PASS | mm-seq-slide-paint PASS, mm-seq-roll-paint PASS (paint, erase, each one undo step) |
+| Drag-paint steps, one undo step (MM: Slide under the roll paints the step columns, wave 3; the roll: a new note dragged sideways paints, Alt-drag erases, 2026-10-05) | md-seq-paint-undo PASS | mm-seq-trig-types PASS, mm-seq-roll-paint PASS (paint, erase, each one undo step) |
 | Piano roll note length (I-010, 0.5 slice 3): Draw at 1/16, a note and its NOTE OFF; the Len key at 1/8, a note two steps long; a note's end dragged to the next note (its NOTE OFF goes, Len 3/16); undo | — | mm-roll-draw-length PASS (2026-10-10) |
 | Piano roll Draw off (I-007, slice 3): B, a box round a note selects it with its NOTE OFF, a drag moves both, Delete, B again, undo | — | mm-roll-box-move PASS (2026-10-10; the first run found a 1/16 note on narrow columns pressed as its end: the end zone is now at most a third of the bar) |
 | A MIDI note's length is its LEN, 6 a step (slice 3, measured): a 1/16 note is LEN 6, its end dragged to three steps locks LEN 18 | — | mm-roll-midi-len PASS (2026-10-10) |
-| Accent (Shift-click), slide (Alt-click) | md-seq-accent-slide PASS | — (MM: SLIDE lane, above) |
+| Accent (Shift-click), slide (Alt-click) | md-seq-accent-slide PASS | — (MM: Slide under the roll, above) |
+| Trig types: Trig · Accent · Swing · Slide (MD, with All tracks · This track), Note · Slide · Swing (MM), Esc back (wave 3) | md-seq-trig-types PASS | mm-seq-trig-types PASS |
 | Lock lane: pick a parameter, draw locks, clear | md-seq-lock-lane PASS | mm-seq-lock-lane PASS |
 | Lock lane ramp (Shift-drag), erase (Alt-drag), wheel on a step | md-seq-lock-ramp-erase-wheel PASS | mm-seq-lock-ramp-erase-wheel PASS |
 | Pages: ALL, PAGE, [ ] | md-seq-pages PASS | mm-seq-pages PASS |

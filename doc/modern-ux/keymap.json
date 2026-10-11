@@ -2,6 +2,81 @@
 	"about": "Both editors' key maps (scripts/keymap-export.js; doc/modern-ux/DESIGN-keymap.md). Generated: do not edit.",
 	"md": [
 		{
+			"id": "song-slot-move",
+			"scope": "song",
+			"keys": [
+				"ArrowLeft",
+				"ArrowRight",
+				"ArrowUp",
+				"ArrowDown"
+			],
+			"mod": "",
+			"group": "Song",
+			"does": "Song slots (a slot has the focus): move the selection"
+		},
+		{
+			"id": "song-slot-load",
+			"scope": "song",
+			"keys": [
+				"Enter"
+			],
+			"mod": "",
+			"group": "Song",
+			"does": "Song slots: load the selected song (LOAD SONG, only while stopped)"
+		},
+		{
+			"id": "song-slot-rename",
+			"scope": "song",
+			"keys": [
+				"F2"
+			],
+			"mod": "",
+			"group": "Song",
+			"does": "Song slots: rename the selected song"
+		},
+		{
+			"id": "song-slot-copy",
+			"scope": "song",
+			"keys": [
+				"C"
+			],
+			"mod": "cmd",
+			"group": "Song",
+			"does": "Song slots: copy the selected song"
+		},
+		{
+			"id": "song-slot-paste",
+			"scope": "song",
+			"keys": [
+				"V"
+			],
+			"mod": "cmd",
+			"group": "Song",
+			"does": "Song slots: paste the song into the selected slot"
+		},
+		{
+			"id": "song-slot-clear",
+			"scope": "song",
+			"keys": [
+				"Delete",
+				"Backspace"
+			],
+			"mod": "",
+			"group": "Song",
+			"does": "Song slots: clear the selected song"
+		},
+		{
+			"id": "song-slot-drag",
+			"scope": "song",
+			"keys": [
+				"drag a song slot onto another"
+			],
+			"mod": "",
+			"group": "Song",
+			"does": "Copies the song into that slot",
+			"area": "Song"
+		},
+		{
 			"id": "keys-help",
 			"scope": "any",
 			"keys": [
@@ -363,6 +438,18 @@
 			"group": "Kit library, pattern chooser",
 			"does": "Copy it there",
 			"area": "Library"
+		},
+		{
+			"id": "trig-type",
+			"scope": "seq",
+			"keys": [
+				"Escape"
+			],
+			"mod": "",
+			"group": "Sequence",
+			"does": "Back to Trig after Accent, Swing or Slide: a click on a step paints trigs again",
+			"short": "Trig",
+			"dispatched": true
 		},
 		{
 			"id": "randomise-track",
@@ -1351,6 +1438,81 @@
 	],
 	"mm": [
 		{
+			"id": "song-slot-move",
+			"scope": "song",
+			"keys": [
+				"ArrowLeft",
+				"ArrowRight",
+				"ArrowUp",
+				"ArrowDown"
+			],
+			"mod": "",
+			"group": "Song",
+			"does": "Song slots (a slot has the focus): move the selection"
+		},
+		{
+			"id": "song-slot-load",
+			"scope": "song",
+			"keys": [
+				"Enter"
+			],
+			"mod": "",
+			"group": "Song",
+			"does": "Song slots: load the selected song (LOAD SONG, only while stopped)"
+		},
+		{
+			"id": "song-slot-rename",
+			"scope": "song",
+			"keys": [
+				"F2"
+			],
+			"mod": "",
+			"group": "Song",
+			"does": "Song slots: rename the selected song"
+		},
+		{
+			"id": "song-slot-copy",
+			"scope": "song",
+			"keys": [
+				"C"
+			],
+			"mod": "cmd",
+			"group": "Song",
+			"does": "Song slots: copy the selected song"
+		},
+		{
+			"id": "song-slot-paste",
+			"scope": "song",
+			"keys": [
+				"V"
+			],
+			"mod": "cmd",
+			"group": "Song",
+			"does": "Song slots: paste the song into the selected slot"
+		},
+		{
+			"id": "song-slot-clear",
+			"scope": "song",
+			"keys": [
+				"Delete",
+				"Backspace"
+			],
+			"mod": "",
+			"group": "Song",
+			"does": "Song slots: clear the selected song"
+		},
+		{
+			"id": "song-slot-drag",
+			"scope": "song",
+			"keys": [
+				"drag a song slot onto another"
+			],
+			"mod": "",
+			"group": "Song",
+			"does": "Copies the song into that slot",
+			"area": "Song"
+		},
+		{
 			"id": "keys-help",
 			"scope": "any",
 			"keys": [
@@ -1669,6 +1831,18 @@
 			"group": "Sequence",
 			"does": "The note's length (a NOTE OFF where it ends; a MIDI note's LEN, 6 a step); new notes get it too. Up to the track's next trig, past the pattern's end onto its start",
 			"area": "Roll"
+		},
+		{
+			"id": "trig-type",
+			"scope": "seq",
+			"keys": [
+				"Escape"
+			],
+			"mod": "",
+			"group": "Sequence",
+			"does": "Back to Note after Slide or Swing: a click on the roll writes notes again",
+			"short": "Note",
+			"dispatched": true
 		},
 		{
 			"id": "piano-run",

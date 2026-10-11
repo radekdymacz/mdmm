@@ -137,6 +137,7 @@ namespace mdDesk
 		c.set("songRow", _clip.songRow.has_value());
 		c.set("kit", _clip.kit ? Value(static_cast<int>(_clip.kit->position)) : Value());
 		c.set("pattern", _clip.pattern ? Value(static_cast<int>(_clip.pattern->position)) : Value());
+		c.set("song", _clip.song ? Value(static_cast<int>(_clip.song->position)) : Value());
 		return c;
 	}
 
@@ -240,8 +241,11 @@ namespace mdDesk
 			{"redo", Owner::Core, Gate::Input, -1, {}, "", CoreOp::Redo},
 			{"set", Owner::Core, Gate::Input, -1, {{"kind", ArgType::Text, 0, 0, false, deskCore::kindNames<MdModel>()}, {"doc", ArgType::Object}}, "a whole document as the intent", CoreOp::Set},
 			{"trig", Owner::Core, Gate::Input, P, {p, t, step, on}, "a trig on or off (toggles without on)"},
-			{"accent", Owner::Core, Gate::Input, P, {p, t, step, on}, ""},
+			{"accent", Owner::Core, Gate::Input, P, {p, t, step, on}, "on: set or clear (a paint), else it toggles; the pattern-wide row while EDIT ALL is on"},
 			{"slide", Owner::Core, Gate::Input, P, {p, t, step, on}, ""},
+			{"swingStep", Owner::Core, Gate::Input, P, {p, t, step, on}, "a step on the swing row (its trig swings by the pattern's amount); on: set or clear, else it toggles"},
+			{"markMode", Owner::Core, Gate::Input, P, {p, {"mark", ArgType::Text, 0, 0, false, {"accent", "slide", "swing"}}, {"all", ArgType::Bool}},
+				"the pattern's EDIT ALL for accent, slide or swing: all = one row for every track, else each track's own (both rows are kept)"},
 			{"lock", Owner::Core, Gate::Input, P, {p, t, i24, step, {"v", ArgType::IntegerOrNull, 0, 127}}, "a parameter lock; v null clears it"},
 			{"clearLane", Owner::Core, Gate::Input, P, {p, t, i24}, ""},
 			{"clearLocks", Owner::Core, Gate::Input, P, {p, t}, "every lock of a track (Alt + the lock lane's clear key)"},
@@ -287,6 +291,12 @@ namespace mdDesk
 			{"kitCopyTo", Owner::Core, Gate::Input, K, {slot("from", DocKind::Kit), slot("to", DocKind::Kit)}, "", CoreOp::Edit, g_library},
 			{"kitClear", Owner::Core, Gate::Input, K, {k}, "", CoreOp::Edit, g_library},
 			{"kitRename", Owner::Core, Gate::Input, K, {k, {"name", ArgType::Text}}, "", CoreOp::Edit, g_library},
+			{"songCopy", Owner::Core, Gate::Input, S, {s}, "the song slots", CoreOp::Edit, g_library},
+			{"songPaste", Owner::Core, Gate::Input, S, {s}, "", CoreOp::Edit, g_library},
+			{"songCopyTo", Owner::Core, Gate::Input, S, {slot("from", DocKind::Song), slot("to", DocKind::Song), opt({"name", ArgType::Text})},
+				"drag-copy; with a name: Save to... (the song, named, into another slot)", CoreOp::Edit, g_library},
+			{"songClear", Owner::Core, Gate::Input, S, {s}, "", CoreOp::Edit, g_library},
+			{"songRename", Owner::Core, Gate::Input, S, {s, {"name", ArgType::Text}}, "a song's name (16 characters)", CoreOp::Edit, g_library},
 			{"rowSet", Owner::Core, Gate::Input, S, {s, row, {"row", ArgType::Object}}, "song rows"},
 			{"rowInsert", Owner::Core, Gate::Input, S, {s, row, {"row", ArgType::Object, 0, 0, true}}, ""},
 			{"rowDelete", Owner::Core, Gate::Input, S, {s, row}, ""},
@@ -316,6 +326,7 @@ namespace mdDesk
 			{"chainClear", Owner::Machine, Gate::Input, -1, {}, ""},
 			{"globalSlot", Owner::Machine, Gate::Input, -1, {slot("slot", DocKind::Global)}, "the active GLOBAL slot"},
 			{"selectSong", Owner::Machine, Gate::Input, -1, {s}, "LOAD SONG (stopped)"},
+			{"saveSong", Owner::Machine, Gate::Input, -1, {opt(s)}, "SAVE SONG: the machine's song into its slot (the current one without s)"},
 			{"reloadSong", Owner::Machine, Gate::Input, -1, {}, "stop, load, play"},
 			{"sampleName", Owner::Machine, Gate::Input, -1, {{"slot", ArgType::Integer, 0, 47}, {"name", ArgType::Text}}, "0x73"},
 			{"sampleCancel", Owner::Machine, Gate::None, -1, {}, "stop the sample on its way to a ROM slot (SDS CANCEL); the file is chosen with chooseSample"},

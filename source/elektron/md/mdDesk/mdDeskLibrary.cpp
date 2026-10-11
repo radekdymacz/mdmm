@@ -19,6 +19,7 @@ namespace mdDesk
 	{
 		std::string kitLabel(const int _k) { return "K" + std::string(_k < 9 ? "0" : "") + std::to_string(_k + 1); }
 		std::string patternLabel(const int _p) { return ed::mdPatternName(static_cast<unsigned>(_p)); }
+		std::string songLabel(const int _s) { return "S" + std::string(_s < 9 ? "0" : "") + std::to_string(_s + 1); }
 
 		std::string kitName(const ed::MdKit& _k)
 		{
@@ -117,9 +118,52 @@ namespace mdDesk
 			[](const Document& _d, const int) { return Document(emptyPattern(std::get<ed::MdPattern>(_d))); },
 			": no trigs or locks", asStored, [](const EditContext&, int) { return false; }, nullptr, problemsOf};
 
+		// A song's name: 7-bit printable, upper case, at most the name's bytes (the bytes after the NUL are the firmware's).
+		std::optional<Document> songRenamed(const Document& _d, const std::string& _name, std::string& _error)
+		{
+			if(_name.size() > ed::MdSong::g_nameSize)
+			{
+				_error = "A song name has at most 16 characters";
+				return {};
+			}
+			auto renamed = std::get<ed::MdSong>(_d);
+			renamed.name.fill(0);
+			for(size_t i = 0; i < _name.size(); ++i)
+			{
+				const auto c = static_cast<unsigned char>(_name[i]);
+				if(c < 0x20 || c > 0x7e)
+				{
+					_error = "name: 7-bit printable characters only";
+					return {};
+				}
+				renamed.name[i] = static_cast<uint8_t>(std::toupper(c));
+			}
+			return Document(renamed);
+		}
+
+		const Shelf g_songs{
+			DocKind::Song, "s", "song", songLabel,
+			[](const Documents& _docs, const EditContext&, const int _s) { return stored(_docs, DocKind::Song, _s); },
+			[](const Clipboard& _c) { return _c.song ? std::optional<Document>(*_c.song) : std::nullopt; },
+			[](Clipboard& _c, const Document& _d) { _c.song = std::get<ed::MdSong>(_d); },
+			"Copy a song first",
+			[](const int _s, const Document& _d) { return "Copied " + songLabel(_s) + " " + songNameText(std::get<ed::MdSong>(_d)); },
+			[](const Document& _d) { return songNameText(std::get<ed::MdSong>(_d)); },
+			[](const Document& _src, const Document& _dst, const int _slot)
+			{
+				auto s = std::get<ed::MdSong>(_src);
+				const auto& dst = std::get<ed::MdSong>(_dst);
+				s.position = static_cast<uint8_t>(_slot);
+				s.version = dst.version;
+				s.revision = dst.revision;
+				return Document(s);
+			},
+			[](const Document& _d, const int _slot) { return Document(emptySong(std::get<ed::MdSong>(_d), static_cast<uint8_t>(_slot))); },
+			": no rows, no name", asStored, [](const EditContext&, int) { return false; }, songRenamed, problemsOf};
+
 		const Shelf* shelfOf(const int _kind)
 		{
-			for(const auto* s : {&g_kits, &g_patterns})
+			for(const auto* s : {&g_kits, &g_patterns, &g_songs})
 				if(static_cast<int>(s->kind) == _kind)
 					return s;
 			return nullptr;
@@ -144,6 +188,34 @@ namespace mdDesk
 			k.muteGroups[t] = ed::MdKit::g_noGroup;
 		}
 		return k;
+	}
+
+	ed::MdSong emptySong(const ed::MdSong& _like, const uint8_t _slot)
+	{
+		auto s = _like;
+		s.position = _slot;
+		s.name.fill(0);
+		s.rows = {ed::MdSongRow{}};	// END
+		return s;
+	}
+
+	std::string songNameText(const ed::MdSong& _song)
+	{
+		std::string n;
+		for(const auto c : _song.name)
+		{
+			if(!c)
+				break;
+			if(c < 0x20 || c > 0x7e)
+				return {};
+			n += static_cast<char>(c);
+		}
+		return n;
+	}
+
+	bool isEmptySong(const ed::MdSong& _song)
+	{
+		return songNameText(_song).empty() && _song.rows.size() == 1 && _song.rows[0].pattern == ed::MdSongRow::g_endRow;
 	}
 
 	ed::MdPattern emptyPattern(const ed::MdPattern& _like)

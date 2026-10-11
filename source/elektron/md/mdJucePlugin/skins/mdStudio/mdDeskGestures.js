@@ -172,12 +172,15 @@ main.addEventListener("dblclick", e => { const el = e.target.closest(".pc[data-g
 main.addEventListener("keydown", e => { const el = e.target.closest("[data-g]"); if (!el) return; const d = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1, PageUp: 10, PageDown: -10 }[e.key]; if (d == null) return; e.preventDefault(); setV(el, getV(el) + d * (e.shiftKey ? 10 : 1)); });
 
 /* ===== Steps: a drag across them paints them (P7): the first step decides (on or off) and every step the pointer
-   crosses becomes that, one undo step for the whole drag. A click is a one-step paint. ===== */
+   crosses becomes that, one undo step for the whole drag. A click is a one-step paint. With a trig type other than
+   Trig (wave 3) the paint is that mark, on the steps with a trig. ===== */
 function paintStep(el) {
 	const p = Held.as("paint"); if (!p) return;
 	const i = +el.dataset.t, s = +el.dataset.s, t = V.tracks[i], k = i + ":" + s;
 	if (p.done.has(k)) return;
 	Held.with("paint", { done: new Set(p.done).add(k) });
+	/* a trig type other than Trig (mdDeskSeq.js trigTypes): the drag paints that mark on the steps with a trig */
+	if (p.mark) { if (t[p.mark.set].has(s) !== p.on) setMark(p.mark, i, s, p.on); return; }
 	if (t.trigs[s] === p.on) return;
 	const w = [[["tracks", i, "trigs", s], p.on]];
 	if (!p.on) w.push([["tracks", i, "acc", s], false], [["tracks", i, "slide", s], false], ...clearStep(i, s));
@@ -189,8 +192,9 @@ main.addEventListener("pointerdown", e => {
 	const st = e.target.closest("#seq .st"); if (!st || e.button !== 0 || e.shiftKey || e.altKey || e.metaKey || e.ctrlKey || V.rec) return;
 	if (!V.loaded) { toast("The pattern is not loaded yet."); return; }
 	clearSel();	/* a plain press on a step paints, and ends the selection (DESIGN-step-selection.md §3) */
-	const i = +st.dataset.t, s = +st.dataset.s;
-	Held.begin("paint", { on: !V.tracks[i].trigs[s], done: new Set(), first: i });
+	const i = +st.dataset.t, s = +st.dataset.s, mark = TT_MARK[S.tt];
+	if (mark && !V.tracks[i].trigs[s]) { toast(`A ${mark.name.toLowerCase()} needs a trig: step ${s + 1} of track ${i + 1} has none.`); e.preventDefault(); return; }
+	Held.begin("paint", { on: mark ? !V.tracks[i][mark.set].has(s) : !V.tracks[i].trigs[s], mark, done: new Set(), first: i });
 	Gesture.begin(); grabPointer(main, e); e.preventDefault();
 	paintStep(st);
 }, true);

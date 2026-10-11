@@ -32,8 +32,8 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.5 | PLAY (second press pauses) | Start / pause | ✅ | Play key: ⇧-click or ⇧Space pauses (▶ blinks, the position holds), ▶ goes on; the ▶ menu (right-click or its ▾) | Pause and Continue are MIDI Stop and Continue on both engines (P1, P1b): with CTRL IN off the machine takes neither, and the editor says so. | 3 |
 | p.5 | STOP; double STOP silences all voices | Stop, panic | ✅ | Panic: ⌘. or the ▶ menu's Panic (the machine's STOP pressed twice) | Over HW MIDI there is no panic: no MIDI message silences the Machinedrum (P5); the menu entry is off and says why. | 1 |
 | p.5 | STOP + PLAY restarts from the top | Restart | 🟡 | Stop then Play | Same result in two clicks. | – |
-| p.5 | PATTERN/SONG key | Switch sequencer mode | ✅ | Song page: PATTERN / SONG switch; LCD PLAY value | seqMode command. | 2 |
-| p.5 | KIT key (kit menu) / FUNCTION + KIT (song menu) | Open kit / song menus | 🟡 | Kit: library popover. Song: song stepper on Song page | No song menu (see §10). | – |
+| p.5 | PATTERN/SONG key | Switch sequencer mode | ✅ | Song page: PATTERN · CHAIN · SONG keys; LCD PLAY value | seqMode command. | 3 |
+| p.5 | KIT key (kit menu) / FUNCTION + KIT (song menu) | Open kit / song menus | ✅ | Kit: library popover. Song: the Songs column on the Song page (Load, Save, Save to…, Copy, Paste, Clear, Rename) | The song menu is the Songs column (0.6). | – |
 | p.5 | TRIG keys 1-16 | Play tracks, place notes, pick patterns | ✅ | Step grid; piano keys A-L play the selected track | Right-click a step for its menu. | 2 |
 | p.5 | SCALE SETUP key (page switch) | Pick pattern page | ✅ | Page key and page LEDs above the grid, [ and ] | ALL view shows every step. | 1 |
 | p.5 | <PATTERN PAGE> LEDs; MKI LEDs | Page indicator | ✅ | Page LEDs (four) in Sequence | MKI 32-step LEDs: see §13. | – |
@@ -177,12 +177,12 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.45 | Minimise mute window | Compact HUD | ➖ |  | Always visible. | – |
 | p.45 | Mutes persist across patterns and modes | Behaviour | ✅ | Machine memory |  | – |
 | p.45 | Accent amount 0-15 | ACCENT level | ✅ | LCD ACC |  | – |
-| p.45 | Accent trigs per step | Accent pattern | ✅ | Shift-click a step | Honours EDIT ALL; no toggle for ALL vs per track. | 2 |
-| p.45 | Accent pattern ALL vs per-track edit | EDIT ALL toggle | 🟡 | Marks follow the pattern's flag | No control to change the flag. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. | – |
+| p.45 | Accent trigs per step | Accent pattern | ✅ | Shift-click a step; Accent in the trig types under the grid, then click or drag steps | Honours EDIT ALL (All tracks · This track in the trig types). | 2 |
+| p.45 | Accent pattern ALL vs per-track edit | EDIT ALL toggle | ✅ | Sequence: choose Accent, Swing or Slide in the trig types under the grid, then All tracks or This track | The pattern's EDIT ALL per mark (markMode). Measured (gapProbesFirmwareTest p7): any nonzero flag is ALL and reaches every track; there is no per-track take setting, so the design's track dots are not built. | 1 |
 | p.46 | Copy / paste / clear accent pattern or track | Accent clipboard | 🟡 | Selection copy includes accents | No separate accent window. | – |
 | p.46 | Swing amount 50-80 % | SWING level | ✅ | LCD SWG |  | – |
-| p.46 | Swing step pattern (which steps swing) | Swing trigs | ❌ | None | Swing marks are in the document; no editor. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. | – |
-| p.46 | Per-track swing | Swing tracks | ❌ | None |  | – |
+| p.46 | Swing step pattern (which steps swing) | Swing trigs | ✅ | Sequence: Swing in the trig types under the grid, then click or drag steps with a trig; a teal mark on the step | swingStep; a swing mark needs a trig, as accent and slide. | 1 |
+| p.46 | Per-track swing | Swing tracks | ✅ | Sequence: Swing in the trig types, This track: each track's own swing steps | All tracks share the SWG amount, as on the machine. | 1 |
 | p.47 | Copy / paste / clear swing | Swing clipboard | 🟡 | Selection copy includes swing marks |  | – |
 | p.47 | Parameter locks, grid: hold TRIG + knob | Lock a value | ✅ | Lock lane: drag over a step; parameter keys | 64 budget meter on LCD. | 2 |
 | p.48 | View a step's locks (hold TRIG) | Inspect | ✅ | Lock lane shows each step's value; chips show counts |  | 1 |
@@ -191,15 +191,15 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.48 | Locks only play in EXTENDED, kept in CLASSIC | Behaviour | ✅ | Lane greyed in CLASSIC |  | – |
 | p.48 | Live-recorded locks (move a value while recording) | Live locks | ✅ | REC and move a value | Locks next unplayed trig. | – |
 | p.48 | Remove live locks (EXIT + knob) | Erase live locks | ❌ | None | Erase in the lane afterwards. | – |
-| p.49 | Slide trigs (ALL and per track) | Parameter slide | 🟡 | Alt+Shift-click a step | Honours EDIT ALL; no toggle. | 1 |
+| p.49 | Slide trigs (ALL and per track) | Parameter slide | ✅ | Alt+Shift-click a step; Slide in the trig types under the grid, then click or drag steps; All tracks or This track |  | 2 |
 | p.50 | Copy / paste / clear slide | Slide clipboard | 🟡 | Selection copy includes slides |  | – |
 
 ## 9. Song mode (pp.51-56)
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
-| p.51 | Song capacity: 256 rows, 32 songs | Limits | ✅ | Song page: row count; song stepper |  | – |
-| p.51 | Load song | LOAD SONG | ✅ | Song stepper (< >), LCD SONG; loads when stopped |  | – |
+| p.51 | Song capacity: 256 rows, 32 songs | Limits | ✅ | Song page: Songs column (32 slots); row count |  | – |
+| p.51 | Load song | LOAD SONG | ✅ | Songs column: select a slot, Load (Enter); LCD SONG; loads when stopped |  | 1 |
 | p.52 | Play, pause, stop a song | Transport | ✅ | Play key: play, pause (⇧-click, ⇧Space), stop; in SONG mode as in pattern mode |  | 2 |
 | p.52 | Move song pointer to a row; start from a row | Navigate, transport | ✅ | Song: ▶ From here on the selected row, or Enter (SONG mode, the song position, Continue) | A LOOP or JUMP before the row cannot be counted through: the editor says so (start the song and let it play there). | 1 |
 | p.52 | Playing row shown, repeats left | Playhead | 🟡 | Playing row marked in the arrangement | Turns left not shown. | 1 |
@@ -213,8 +213,8 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.55 | Song jump | JUMP | ✅ | Command: Jump |  | – |
 | p.55 | Song halt | HALT | ✅ | Command: Halt |  | – |
 | p.55 | Song mute per row | MUT | ✅ | Song > More > Mutes |  | 1 |
-| p.56 | Save song, choose slot, name it | SAVE SONG | ❌ | None | Edits are written into the current slot at once. No name field. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. | – |
-| p.56 | Copy, paste, clear, undo of song slots | Song library | ❌ | None | Only rows have a clipboard. | – |
+| p.56 | Save song, choose slot, name it | SAVE SONG | ✅ | Songs column: Save (SAVE SONG 0x6D), Save to… with a name, Rename (F2) | Edits are still written into the slot at once; Save is the machine's SAVE SONG. A name has 16 characters. | 1 |
+| p.56 | Copy, paste, clear, undo of song slots | Song library | ✅ | Songs column: Copy, Paste, Clear, drag a slot onto another; Cmd+Z | Library slot ops songCopy, songPaste, songCopyTo, songClear, songRename; asks before writing over a song. | 1 |
 | p.52 | Song position pointer from MIDI | SPP | ➖ |  | Firmware follows host. | – |
 | p.52 | Song bar counter | Header counter | ✅ | Song: rows, bars, time | Estimate. | – |
 
@@ -384,7 +384,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.C-3 | Pattern dump 0x67 / request 0x68 | Pattern | ✅ | Whole page |  | – |
 | p.C-3 | Song dump 0x69 / request 0x6a; load song 0x6c | Song | ✅ | Song page |  | – |
 | p.C-3 | Set receive position 0x6b | SPEC receive | ❌ | None | See §10. | – |
-| p.C-3 | Save song 0x6d | Song save | ❌ | None | Rows are written as dumps instead. | – |
+| p.C-3 | Save song 0x6d | Song save | ✅ | Songs column: Save | saveSong; edits are still written as dumps. | – |
 | p.C-3 | Status request / set / response 0x70-0x72 | Mode, slots | ✅ | PATTERN / SONG switch; MODE |  | – |
 | p.C-4 | TurboMIDI speed messages 0x10-0x17 | Fast transfer | ➖ |  | Not needed. | – |
 
@@ -392,13 +392,13 @@ Method: manual read in full; claims checked against the page files (`source/elek
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 228 |
-| 🟡 Partial | 32 |
-| ❌ No | 20 |
+| ✅ Yes | 236 |
+| 🟡 Partial | 29 |
+| ❌ No | 15 |
 | ➖ Not applicable | 16 |
 | Total | 296 |
 
-Of the 280 applicable rows, 228 are fully covered, 32 partly, 20 not at all.
+Of the 280 applicable rows, 236 are fully covered, 29 partly, 15 not at all.
 
 ### Top gaps (our UI), most important first
 

@@ -28,6 +28,7 @@
 | P6 | MD: does `mdfactorybaseline` hold the factory data | No: it is the sample flash. A machine booted with no patch RAM holds the factory kits, patterns, songs and globals, the same at every boot | wave 6 |
 | P1b | After the panel's PLAY: does MIDI Stop + Continue pause, and is PLAY while playing a pause | MIDI Stop + Continue goes on from the step on both, pattern and song mode. The panel's PLAY pauses; PLAY again goes on in pattern mode, starts the row again in song mode | wave 2 |
 | P5 MM | MM: what silences held notes | CC 123 lets them go (as note offs: the release rings); CC 120 and MIDI Stop do nothing; the panel's STOP lets them go too | wave 2 |
+| P7 | MD: which tracks take the EDIT ALL row (`gapProbesFirmwareTest p7`) | Every track. `editAll` is a flag (any nonzero is ALL), not a track mask; per track only the own row counts | wave 3 |
 
 ## P1: Song Position Pointer and Continue
 
@@ -226,3 +227,18 @@ is dumped again; a stored kit and pattern are changed and the machine boots agai
 the user's own ROM and read its dumps (the same every time), or restart the emulated machine with an empty patch RAM.
 Whether an empty patch RAM keeps the user's samples in the sample flash was not measured; check it before the reset
 takes that route.
+
+## P7: MD EDIT ALL, which tracks take the pattern-wide row (wave 3, 2026-10-11)
+
+`gapProbesFirmwareTest <MD ROM> - p7`: a sine on track 1, one trig on step 1, accent amount 15, the accent fields set by a
+pattern dump, LOAD PATTERN, PLAY, the level of the first 300 ms (plain 0.172, accented 0.212).
+
+- EDIT ALL 1 with the pattern-wide row on step 1 accents the trig, whatever the track's own row holds; the own row alone
+  does nothing.
+- EDIT ALL 0: only the track's own row counts; the pattern-wide row and another track's row do nothing.
+- `editAll` 0x0002 (a mask without track 1) and 0xFFFF both accent track 1 and are read back as sent: the field is a
+  flag (any nonzero is ALL), not a track mask.
+
+So ALL reaches every track and there is no per-track setting of which tracks take the row. Wave 3 builds the EDIT ALL
+switch (`markMode`, All tracks · This track) and leaves out the design's track dots (`markTrack`): there is nothing in
+the pattern for them to set.

@@ -117,7 +117,7 @@ The machine's [ENTER/YES] and [EXIT/NO] confirm and cancel. The editor asks in d
 The arrow keys of the machine move the cursor and set the octave of the TRIG keys. In the editor {key:value-left-right} and {key:value-up-down} step a focused value, and {key:octave-down} and {key:octave-up} set the octave of the note keys.
 
 ## BANK KEYS
-<!-- rows: MM-035 MM-036 MM-037 MM-038 @55c1d2 -->
+<!-- rows: MM-035 MM-036 MM-037 MM-038 @8d122e -->
 
 The machine's BANK GROUP and BANK keys choose the pattern bank. The pattern chooser shows all eight banks A to H at once. Press {key:lib-bank} inside it to jump to a bank.
 
@@ -126,8 +126,8 @@ The machine's BANK GROUP and BANK keys choose the pattern bank. The pattern choo
 The keys that open the secondary windows, ARP, TRANSPOSE, SWING and SLIDE, are as follows.
 
 - **Arp** and **Transpose** are tabs of the dock in the **Sequence** workspace. The **Sound** workspace has keys that go to them.
-- Swing is a lane of the **Sequence** workspace and the <SWG> field of the LCD's second line.
-- Slide is a lane of the **Sequence** workspace, the row marked Slide.
+- Swing is the **Swing** key under the roll of the **Sequence** workspace, and the <SWG> field of the LCD's second line.
+- Slide is the **Slide** key under the roll of the **Sequence** workspace.
 
 ## RECORD, PLAY AND STOP
 <!-- rows: MM-039 MM-040 MM-041 MM-042 MM-043 MM-044 @e9dc9e -->

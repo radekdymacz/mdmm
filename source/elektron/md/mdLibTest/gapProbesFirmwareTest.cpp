@@ -3,7 +3,7 @@
 // Discovery harness in the style of mdP4ProbeFirmwareTest and mmEditorProbeFirmwareTest: it measures and prints a
 // RESULT line per question; the checks only guard that the rig itself works (the machine boots, plays, answers).
 //
-//   gapProbesFirmwareTest <MD ROM> <MM ROM> [p1|p1md|p1mm|p2|p2panel|p3|p4|p5|p6|p6b|all]
+//   gapProbesFirmwareTest <MD ROM> <MM ROM> [p1|p1md|p1mm|p2|p2panel|p3|p4|p5|p6|p6b|p7|all]
 //   gapProbesFirmwareTest <MD ROM> <MM ROM> explore md|mm "<key,key,...>"     (prints the LCD after the keys)
 //
 // "-" for a ROM skips that machine; "--env" takes it from GEARMULATOR_MD_FIRMWARE_BIN / GEARMULATOR_MM_FIRMWARE_BIN. Exits 77
@@ -1074,6 +1074,88 @@ namespace
 		result("P5mm", answers.empty() ? "no scenario silenced the voices" : "silent after: " + answers);
 	}
 
+	// ---- P7: the MD's EDIT ALL marks: which tracks a pattern-wide accent reaches (wave 3, the track dots) -------------
+	// A sine on track 1, one trig on step 1, accent amount 15; each scenario is a pattern dump (A01) with the accent
+	// fields set, LOAD PATTERN, PLAY, the level of the first 300 ms, STOP. An accented trig is louder than the plain one.
+	// Measured 2026-10-11: any nonzero editAll is ALL (0x0002, a mask without track 1, still accents track 1), the
+	// pattern-wide row then reaches the track whatever its own row holds, and per track only the own row counts. So
+	// there is no per-track "takes the ALL row" setting to edit: ALL means every track.
+
+	void p7(const Bytes& _rom)
+	{
+		std::puts("== P7 MD: EDIT ALL accent: which tracks take the pattern-wide row; is editAll a flag or a track mask");
+		Rig r(_rom, false);
+		const auto base = ed::decodeMdPattern(r->request(ed::mdPatternRequest(0), ed::g_mdPatternDump));
+		require(base.has_value(), "no pattern A01");
+		for(uint8_t t = 0; t < 1; ++t)	// track 1: CCs 16-39 on the base channel (track 2's level drifted between runs: not used)
+		{
+			r->send(ed::mdAssignMachine(t, *ed::mdMachineModel("GND-SIN"), ed::MdMachineInit::SynthesisEffectsRouting));
+			r.run(100);
+			const uint8_t b = static_cast<uint8_t>(16 + 24 * t);
+			r->send({0xb0, static_cast<uint8_t>(b + 0), 40});	// PTCH
+			r->send({0xb0, static_cast<uint8_t>(b + 1), 90});	// DEC
+			r->send({0xb0, static_cast<uint8_t>(b + 2), 0});	// RAMP
+			r.run(100);
+		}
+		struct Scenario
+		{
+			const char* name;
+			uint32_t editAll;
+			uint64_t all;
+			uint64_t own;		// the track's own accent row
+			uint64_t other;		// the other tracks' own rows
+		};
+		const Scenario scenarios[] = {
+			{"no accent (EDIT ALL 1, every row empty)", 1, 0, 0, 0},
+			{"EDIT ALL 1, pattern-wide step 1, own rows empty", 1, 1, 0, 0},
+			{"EDIT ALL 1, pattern-wide empty, own row step 1", 1, 0, 1, 0},
+			{"EDIT ALL 0, pattern-wide step 1, own row empty", 0, 1, 0, 0},
+			{"EDIT ALL 0, own row step 1", 0, 0, 1, 0},
+			{"EDIT ALL 0, another track's own row step 1", 0, 0, 0, 1},
+			{"editAll 0x0002 (a mask without track 1), pattern-wide step 1", 2, 1, 0, 0},
+			{"editAll 0xFFFF, pattern-wide step 1", 0xffff, 1, 0, 0},
+		};
+		std::string line;
+		for(const size_t track : {size_t(0)})
+		{
+			double plain = 0;
+			for(const auto& sc : scenarios)
+			{
+				auto p = *base;
+				p.position = 0;
+				p.length = 16;
+				p.trigs.fill(0);
+				p.lockMasks.fill(0);
+				p.lockedRows = 0;
+				p.trigs[track] = 1;
+				p.accentAmount = 15;
+				p.accentEditAll = sc.editAll;
+				p.accentPattern = sc.all;
+				for(size_t t = 0; t < 16; ++t)
+					p.trackAccent[t] = t == track ? sc.own : sc.other;
+				halt(r);
+				r->send(ed::encodeMdPattern(p));
+				r.run(300);
+				r.loadPattern(0);
+				const auto back = ed::decodeMdPattern(r->request(ed::mdPatternRequest(0), ed::g_mdPatternDump));
+				key(r, md::PanelControl::Play, 30, 0);
+				const auto from = r->left().size();
+				r.run(300);
+				const double level = rms(r->left(), r->right(), from, r->left().size());
+				halt(r);
+				if(sc.editAll == 1 && !sc.all && !sc.own)
+					plain = level;
+				const bool louder = plain > 0 && level > plain * 1.15;
+				std::printf("  track %zu, %-62s level %.5f%s (editAll read back %u)\n", track + 1, sc.name, level, louder ? "   ACCENTED" : "",
+					back ? back->accentEditAll : 9999u);
+				if(louder)
+					line += "t" + std::to_string(track + 1) + ": " + sc.name + "; ";
+			}
+			check(plain > 1e-4, "the rig: track " + std::to_string(track + 1) + " sounds (" + std::to_string(plain) + ")");
+		}
+		result("P7", line.empty() ? "no scenario accented" : "accented: " + line);
+	}
+
 	// ---- P6: does the factory baseline hold the factory kits, patterns, songs and globals --------------------------------------
 
 	const uint8_t* findBytes(const Bytes& _hay, const Bytes& _needle, const size_t _from = 0)
@@ -1591,7 +1673,7 @@ int main(const int _argc, char** _argv)
 	std::setvbuf(stdout, nullptr, _IOLBF, 0);
 	if(_argc < 3)
 	{
-		std::puts("usage: gapProbesFirmwareTest <MD ROM|-> <MM ROM|-> [p1|p1md|p1mm|p2|p2panel|p3|p4|p5|p6|p6b|all|explore md|mm keys]");
+		std::puts("usage: gapProbesFirmwareTest <MD ROM|-> <MM ROM|-> [p1|p1md|p1mm|p2|p2panel|p3|p4|p5|p6|p6b|p7|all|explore md|mm keys]");
 		return 77;
 	}
 	try
@@ -1647,6 +1729,8 @@ int main(const int _argc, char** _argv)
 			p6(mdRom);
 		if(!mdRom.empty() && (want("p6") || only == "p6b"))
 			p6b(mdRom);
+		if(!mdRom.empty() && want("p7"))
+			p7(mdRom);
 		if(!mdRom.empty() && (want("p1") || only == "p1md"))
 			p1(mdRom, false);
 		if(!mmRom.empty() && (want("p1") || only == "p1mm"))
