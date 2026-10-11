@@ -26,12 +26,12 @@ source/elektron/md/mdJucePlugin/skins/mdStudio/*	L:Page	-	md-*	-	no
 source/elektron/md/mdJucePlugin/skins/mmStudio/*	L:Page	-	mm-*	-	no
 source/elektron/md/mdJucePlugin/skins/*	-	-	-	-	no
 # --- the core and the machines' models (no emulator)
-source/elektron/md/deskCore/*	deskCoreTest|mdDeskTest|mmDeskTest|deskWire	mdDeskFirmwareTest|mmDeskFirmwareTest	*	-	no
+source/elektron/md/deskCore/*	deskCoreTest|mdDeskTest|mmDeskTest|deskWire	mdIntentCasesFirmwareTest|mmIntentCasesFirmwareTest	*	-	no
 source/elektron/md/deskHost/*	deskCoreTest|mdDeskTest|mmDeskTest	-	*	-	no
 source/elektron/md/deskStubHost/*	-	-	*	-	no
-source/elektron/md/mdDesk/*	mdDeskTest|mdDataLinkTest	mdDeskFirmwareTest	md-*	-	no
-source/elektron/md/mmDesk/*	mmDeskTest	mmDeskFirmwareTest	mm-*	-	no
-source/elektron/md/mdDataLink/*	mdDataLinkTest|mdDeskTest	mdDeskFirmwareTest	md-*	-	no
+source/elektron/md/mdDesk/*	mdDeskTest|mdDataLinkTest	mdIntentCasesFirmwareTest	md-*	-	no
+source/elektron/md/mmDesk/*	mmDeskTest	mmIntentCasesFirmwareTest|mmDeskFirmwareTest	mm-*	-	no
+source/elektron/md/mdDataLink/*	mdDataLinkTest|mdDeskTest	mdIntentCasesFirmwareTest	md-*	-	no
 source/elektron/md/deskWire/*	deskWire	-	-	*-engine-hw-*	no
 source/elektron/md/elektronData/*	elektronData|mmData|mmConvert|syxImport|mdDeskTest|mmDeskTest	mdSyxPick|mmSyxPick	*	-	no
 source/elektron/md/mdmmUpdate/*	mdmmUpdate|mdmmReleaseScripts	-	-	-	no
@@ -49,6 +49,7 @@ source/baseLib/*	baseLib	-	-	-	no
 source/jucePlugin*/*	midiLearn	-	-	*-boot-card	no
 source/juceRml*/*	juceRml	-	-	-	no
 # --- what holds no code the tests run
+doc/modern-ux/intent-cases.json	mdDeskTest|mmDeskTest|mmViewPageTest	mdIntentCasesFirmwareTest|mmIntentCasesFirmwareTest	*	-	no
 doc/modern-ux/*.schema.json	mdDeskTest|mmDeskTest	-	*	-	no
 doc/*	-	-	-	-	no
 marketing/*	-	-	-	-	no
