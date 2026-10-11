@@ -152,7 +152,9 @@ namespace
 					&& h.getDspProducer().dsp().getJitCmpmFix() == on(md::SpeedUpLever::Cmpm)
 					&& h.getDspMixer().getPeriph().getEssi0().getAudioInputs().singleThreaded() == on(md::SpeedUpLever::LinkRings)
 					&& h.getDspProducer().getPeriph().getEssi0().getAudioInputs().singleThreaded() == on(md::SpeedUpLever::LinkRings)
-					&& h.getDspMixer().getPeriph().getEssi1().getAudioOutputs().singleThreaded() == on(md::SpeedUpLever::LinkRings);
+					&& h.getDspMixer().getPeriph().getEssi1().getAudioOutputs().singleThreaded() == on(md::SpeedUpLever::LinkRings)
+					&& h.getDspMixer().dsp().getNopGateInstructions() == on(md::SpeedUpLever::NopGate)
+					&& h.getDspProducer().dsp().getNopGateInstructions() == on(md::SpeedUpLever::NopGate);
 				if(!check(ok, (std::string(name) + ": the lever switch " + lever.key + " does not act alone").c_str()))
 					return false;
 			}
