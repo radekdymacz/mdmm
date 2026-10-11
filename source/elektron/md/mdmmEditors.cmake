@@ -95,5 +95,8 @@ endif()
 
 if(BUILD_TESTING)
 	include(mdLibTest/mdmmTests.cmake)
+	if(NOT WIN32)
+		add_subdirectory(deskStubHost)	# the page tier's host: the real core and a fake machine (doc/release/DEV-CYCLE.md)
+	endif()
 	add_subdirectory(upstreamTests)	# the tests the fork carries for upstream's code (bridge, synthLib)
 endif()

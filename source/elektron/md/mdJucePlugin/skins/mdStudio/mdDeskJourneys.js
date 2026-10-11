@@ -693,7 +693,10 @@ const MdJourneys = (() => {
 			{ say: "click Copy", act: u => u.click('#libpop [data-la="copy"]'), machine: c => ok(V.clipboard.kit === c.src, "clipboard " + V.clipboard.kit) },
 			libSelect(c => { c.dst = [...Array(64).keys()].reverse().find(k => k !== V.kit && k !== c.src && kitLoaded(k) && kitName(k) !== kitName(c.src)); c.d0 = JSON.stringify(Docs.kits[c.dst]); return c.dst; }),
 			/* the paste and its undo each wait for the desk to be idle first (the library reads its slots in the background) */
-			{ say: "click Paste", act: async u => { await until(idle, 8000); u.click('#libpop [data-la="paste"]'); }, machine: c => ok(kitName(c.dst) === kitName(c.src) && same(Docs.kits[c.dst].tracks.map(t => t.machine), Docs.kits[c.src].tracks.map(t => t.machine)), "slot " + kitName(c.dst)), screen: c => ok($1(ks(c.dst))?.textContent.includes(kitName(c.src).trim()), "tile " + $1(ks(c.dst))?.textContent), within: 12000 },
+			/* a slot that holds a kit is asked about first (the plug-in's overwriteSlot): Overwrite. Unanswered, the question
+			   left the slot as it was (the 0.5.1 gate's "flake" when the slot chosen held a kit) */
+			{ say: "click Paste (Overwrite when asked)", act: async u => { await until(idle, 8000); u.click('#libpop [data-la="paste"]');
+				if (await until(() => dlgShown() && !!dlgButton("Overwrite"), 1500)) u.click(dlgButton("Overwrite")); }, machine: c => ok(kitName(c.dst) === kitName(c.src) && same(Docs.kits[c.dst].tracks.map(t => t.machine), Docs.kits[c.src].tracks.map(t => t.machine)), "slot " + kitName(c.dst)), screen: c => ok($1(ks(c.dst))?.textContent.includes(kitName(c.src).trim()), "tile " + $1(ks(c.dst))?.textContent), within: 12000 },
 			{ say: "press Cmd+Z (the library open): the slot is back", act: async u => { await until(idle, 8000); u.key("z", { cmd: true }); }, machine: c => ok(JSON.stringify(Docs.kits[c.dst]) === c.d0, "slot " + kitName(c.dst)), within: 12000 },
 			esc
 		]
