@@ -1906,6 +1906,31 @@
         },
         {
           "type": "object",
+          "description": "0.6 (GLOBAL › Map editor › LEARN, I-002): a note on that reached the plug-in from outside (the host's MIDI in or a MIDI input port), as it came: ch 0-15, note, vel 1-127. Sent on the next step (every 20 ms or so) while the page is up; a burst past 16 a step, or past the plug-in's queue, is dropped. The page's own keyboard is not in it.",
+          "required": ["type", "ch", "note", "vel"],
+          "properties": {
+            "type": {
+              "const": "midiIn"
+            },
+            "ch": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 15
+            },
+            "note": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            },
+            "vel": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 127
+            }
+          }
+        },
+        {
+          "type": "object",
           "description": "I-021: the LCD's output meter and volume, every 250 ms while the page is up: peakL and peakR, the largest sample of the main output's left and right since the previous message, after the volume (linear, 1 = 0 dBFS; 0 when the audio does not run or the channel is not enabled); clip, whether a sample of any output (main and extra) was above 0 dBFS in that time; gainDb, the volume (the plug-in's output gain after the emulation, -60 to +6 dB in 0.1 dB steps; null when it is off). Set with the outputGain command.",
           "required": ["type", "peakL", "peakR", "clip", "gainDb"],
           "properties": {

@@ -56,6 +56,8 @@ namespace pluginLib
 
 	void Processor::addMidiEvent(const synthLib::SMidiEvent& _ev)
 	{
+		if(_ev.source == synthLib::MidiEventSource::Host || _ev.source == synthLib::MidiEventSource::Physical)
+			midiInReceived(_ev);
 		if(m_externalMidi.takeIn(_ev))	// an editor's HW MIDI (externalMidi.h)
 			return;
 		// Process through MIDI Learn translator first
