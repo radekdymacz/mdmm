@@ -4,6 +4,8 @@
 
 #include "deskCore/deskNotes.h"
 
+#include "elektronData/mmPattern.h"
+
 #include <algorithm>
 #include <cstdint>
 #include <map>
@@ -72,6 +74,54 @@ namespace mmDesk
 		if(!_patternPlays || _kitPlays < 0 || _kitPlays > 127 || _linkAfter != _linkBefore || _linkAfter == _kitPlays)
 			return std::nullopt;
 		return static_cast<uint8_t>(_kitPlays);
+	}
+
+	// ---- B-060: a transpose edited while the pattern plays ----
+	// Measured on the OS 1.32B (mmDeskFirmwareTest transpose): a dump of the pattern that plays stores its transposes
+	// (a synth or MIDI track's TRACK, SCALE and KEY, the pattern's PAT), but the sequencer goes on with the ones it took
+	// at PLAY until the next start. No SysEx, CC or LOAD PATTERN of the slot applies them, nor the TRANSPOSE screen
+	// opened alone. Turning its TRACK knob (DATA ENTRY A) does, at once, for the track number in focus: synth track n
+	// and MIDI track n, with PAT, SCALE and KEY, as the pattern holds them. So one step there and back applies what the
+	// dump stored and stores nothing new.
+
+	// The track numbers (bit n: synth track n and MIDI track n) whose transposes _after moves against _before; a
+	// changed PAT moves all six.
+	inline uint8_t transposesMoved(const elektronData::MmPattern& _before, const elektronData::MmPattern& _after)
+	{
+		if(_before.patternTranspose != _after.patternTranspose)
+			return 0x3f;
+		uint8_t moved = 0;
+		for(size_t n = 0; n < 6; ++n)
+			for(const auto* x : {&_before.transpose, &_before.midiTranspose})
+			{
+				const auto& y = x == &_before.transpose ? _after.transpose : _after.midiTranspose;
+				if(x->track[n] != y.track[n] || x->scale[n] != y.scale[n] || x->key[n] != y.key[n])
+					moved = static_cast<uint8_t>(moved | (1 << n));
+			}
+		return moved;
+	}
+
+	// The keys that make the machine play the transposes of _p for the track numbers in _tracks: TRANSPOSE (FUNCTION +
+	// BANK B), for each TRACK n and the knob one step there and back (down first when a value is above zero, so neither
+	// end of the range clamps it), TRACK _focus again when it is known (0-5; the TRACK keys move the focus), EXIT.
+	inline std::vector<Key> applyTransposeKeys(const uint8_t _tracks, const elektronData::MmPattern& _p, const int _focus)
+	{
+		std::vector<Key> keys{Key::Transpose};
+		for(int n = 0; n < 6; ++n)
+		{
+			if(!((_tracks >> n) & 1))
+				continue;
+			keys.push_back(static_cast<Key>(static_cast<int>(Key::Track1) + n));
+			const bool down = std::max(_p.transpose.track[static_cast<size_t>(n)], _p.midiTranspose.track[static_cast<size_t>(n)]) > 0;
+			keys.push_back(down ? Key::KnobDown : Key::KnobUp);
+			keys.push_back(down ? Key::KnobUp : Key::KnobDown);
+		}
+		if(keys.size() == 1)
+			return {};
+		if(_focus >= 0 && _focus < 6)
+			keys.push_back(static_cast<Key>(static_cast<int>(Key::Track1) + _focus));
+		keys.push_back(Key::Exit);
+		return keys;
 	}
 
 	// ---- RECORD: the current pattern read back while the machine records ----

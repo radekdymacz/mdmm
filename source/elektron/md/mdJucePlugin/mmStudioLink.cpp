@@ -52,6 +52,10 @@ namespace mdJucePlugin
 			case K::BankGroup: return C::BankGroup;
 			case K::Trig9: case K::Trig10: case K::Trig11: case K::Trig12: case K::Trig13: case K::Trig14:
 				return static_cast<C>(static_cast<int>(C::Trigger1) + 8 + (static_cast<int>(_k) - static_cast<int>(K::Trig9)));
+			case K::Transpose: return C::BankB;	// with FUNCTION
+			case K::Track1: case K::Track2: case K::Track3: case K::Track4: case K::Track5: case K::Track6:
+				return static_cast<C>(static_cast<int>(C::Track1) + (static_cast<int>(_k) - static_cast<int>(K::Track1)));
+			case K::KnobUp: case K::KnobDown: return std::nullopt;	// an encoder, not a key (pressKeys)
 			}
 			return std::nullopt;
 		}
@@ -139,8 +143,18 @@ namespace mdJucePlugin
 		std::vector<md::PanelPacket> states;
 		const auto fn = md::panelPacket(md::MachineModel::Monomachine, md::PanelControl::Function);
 		const auto rec = md::panelPacket(md::MachineModel::Monomachine, md::PanelControl::Record);
+		const auto knobA = md::panelEncoderCommand(md::MachineModel::Monomachine, md::PanelEncoder::DataEntryA);
 		for(const auto k : _keys)
 		{
+			if(mmDesk::isKnob(k))
+			{
+				// DATA ENTRY A: one pulse a state (B-060)
+				if(!knobA)
+					return false;
+				for(int i = 0; i < mmDesk::g_knobPulses; ++i)
+					states.push_back({*knobA, static_cast<uint8_t>(k == mmDesk::Key::KnobUp ? 0x01 : 0xff)});
+				continue;
+			}
 			const auto c = control(k);
 			const auto pk = c ? md::panelPacket(md::MachineModel::Monomachine, *c) : std::nullopt;
 			if(!pk || !fn || !rec)
