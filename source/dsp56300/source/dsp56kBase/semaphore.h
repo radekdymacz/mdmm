@@ -124,6 +124,12 @@ namespace dsp56k
 				m_sem.wait();
 		}
 
+		// Sets the count; only while nothing waits (RingBuffer::setSingleThreaded).
+		void reset(const int _count)
+		{
+			m_count.store(_count, std::memory_order_release);
+		}
+
 		void wait(const uint32_t _count)
 		{
 			const int count = static_cast<int>(_count);

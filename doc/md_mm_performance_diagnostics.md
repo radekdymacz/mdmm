@@ -102,6 +102,10 @@ off they are all off whatever these say.
 | `GEARMULATOR_MDMM_L4_CYCLE=0` | L4, the poll loops over several blocks (the MD's codec wait at p:3c) |
 | `GEARMULATOR_MDMM_L4_PORTC=0` | L4, the poll loops on Port C, the block sync from the other DSP (MD p:bb, MM p:195), of either kind above |
 | `GEARMULATOR_MDMM_CMPM=0` | the CMPM fix |
+| `GEARMULATOR_MDMM_LINK_RINGS=0` | the rings between the two DSPs and the codec output ring skip their semaphores (both ends run on one thread) |
+| `GEARMULATOR_MDMM_UC_IDLE_PROBE=0` | the ColdFire's idle skip (L1) is tried right after its wait branch, not at every 16th step |
+| `GEARMULATOR_MDMM_UC_QUIET=0` | while no ColdFire input waits, its steps skip the per-step input tests |
+| `GEARMULATOR_MDMM_NOP_GATE=0` | L4's silent-voice skip is called only when the next due leaves room (Machinedrum) |
 
 One more environment variable is older than the speed-ups and unrelated to them:
 

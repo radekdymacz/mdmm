@@ -312,6 +312,9 @@ namespace md
 		}
 		BASELIB_NOINLINE void deliverInterrupts();
 		uint32_t idleSelfBranchInstructions(uint32_t _maxCycles);
+		// The instruction just run was BRA.B -2 (0x60fe): the one shape idleSelfBranchInstructions can skip. A cheap
+		// test that tells the scheduler when a probe can pay (SpeedUpLever::UcIdleProbe).
+		bool lastInstructionWasSelfBranch() const;
 		void advanceIdleSelfBranch(uint32_t _instructions);
 		void decodePanelByte(uint8_t _byte);
 		void serviceExternalIrq4();

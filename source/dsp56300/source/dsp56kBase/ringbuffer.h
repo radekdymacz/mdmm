@@ -32,8 +32,29 @@ namespace dsp56k
 			, m_readCount(_other.m_readCount.load(std::memory_order_relaxed))
 			, m_readSem(std::move(_other.m_readSem))
 			, m_writeSem(std::move(_other.m_writeSem))
+			, m_singleThreaded(_other.m_singleThreaded)
 		{
 		}
+
+		// Both ends on one thread (the MD/MM scheduler runs both DSPs on one thread): the semaphores, which only
+		// park a thread until the other end moves, are skipped, two atomic read-modify-writes per push and per pop.
+		// Nothing can wait in this mode (a wait would park the only thread), so going back resynchronises their
+		// counts from the ring's fill level. Same contents, same order either way. Call it with no concurrent access.
+		void setSingleThreaded(const bool _on)
+		{
+			if constexpr (Lock)
+			{
+				if(_on == m_singleThreaded)
+					return;
+				m_singleThreaded = _on;
+				if(!_on)
+				{
+					m_readSem.reset(static_cast<int>(size()));
+					m_writeSem.reset(static_cast<int>(C - size()));
+				}
+			}
+		}
+		bool singleThreaded() const { return m_singleThreaded; }
 
 		constexpr static size_t capacity()	{ return C; }
 		bool empty() const					{ return loadReadAcq() == loadWriteAcq(); }
@@ -45,28 +66,28 @@ namespace dsp56k
 		{
 	//		assert( m_usage < C && "ring buffer is already full!" );
 
-			m_writeSem.wait();
+			if(syncs()) m_writeSem.wait();
 
 			m_data[wrapCounter(loadWriteRlx())] = _val;
 
 			// usage need to be incremented AFTER data has been written, otherwise, reader thread would read incomplete data
 			incWriteCount(1);
 
-			m_readSem.notify();
+			if(syncs()) m_readSem.notify();
 		}
 
 		void push_back( T&& _val )
 		{
 	//		assert( m_usage < C && "ring buffer is already full!" );
 
-			m_writeSem.wait();
+			if(syncs()) m_writeSem.wait();
 
 			m_data[wrapCounter(loadWriteRlx())] = std::move(_val);
 
 			// usage need to be incremented AFTER data has been written, otherwise, reader thread would read incomplete data
 			incWriteCount(1);
 
-			m_readSem.notify();
+			if(syncs()) m_readSem.notify();
 		}
 
 		template<typename TFunc>
@@ -74,14 +95,14 @@ namespace dsp56k
 		{
 	//		assert( m_usage < C && "ring buffer is already full!" );
 
-			m_writeSem.wait();
+			if(syncs()) m_writeSem.wait();
 
 			_fillEntry(m_data[wrapCounter(loadWriteRlx())]);
 
 			// usage need to be incremented AFTER data has been written, otherwise, reader thread would read incomplete data
 			incWriteCount(1);
 
-			m_readSem.notify();
+			if(syncs()) m_readSem.notify();
 		}
 
 		template<typename TFunc>
@@ -89,7 +110,7 @@ namespace dsp56k
 		{
 	//		assert( m_usage < C && "ring buffer is already full!" );
 
-			m_writeSem.wait(static_cast<uint32_t>(_count));
+			if(syncs()) m_writeSem.wait(static_cast<uint32_t>(_count));
 
 			for (size_t i=0; i<_count; ++i)
 				_fillEntry(i, m_data[wrapCounter(loadWriteRlx())]);
@@ -97,26 +118,26 @@ namespace dsp56k
 			// usage need to be incremented AFTER data has been written, otherwise, reader thread would read incomplete data
 			incWriteCount(_count);
 
-			m_readSem.notify(static_cast<uint32_t>(_count));
+			if(syncs()) m_readSem.notify(static_cast<uint32_t>(_count));
 		}
 
 		template<typename TFunc>
 		void pop_front(const TFunc& _readCallback)
 		{
-			m_readSem.wait();
+			if(syncs()) m_readSem.wait();
 
 			_readCallback(front());
 	//		assert( !empty() && "ring buffer is already empty!" );
 
 			incReadCount(1);
 
-			m_writeSem.notify();
+			if(syncs()) m_writeSem.notify();
 		}
 
 		template<typename TFunc>
 		void pop_front(const size_t _count, const TFunc& _readCallback)
 		{
-			m_readSem.wait(static_cast<uint32_t>(_count));
+			if(syncs()) m_readSem.wait(static_cast<uint32_t>(_count));
 
 			for (size_t i=0; i<_count; ++i)
 			{
@@ -124,19 +145,19 @@ namespace dsp56k
 				incReadCount(1);
 			}
 
-			m_writeSem.notify(static_cast<uint32_t>(_count));
+			if(syncs()) m_writeSem.notify(static_cast<uint32_t>(_count));
 		}
 
 		T pop_front()
 		{
-			m_readSem.wait();
+			if(syncs()) m_readSem.wait();
 
 			T res = std::move(front());
 	//		assert( !empty() && "ring buffer is already empty!" );
 
 			incReadCount(1);
 
-			m_writeSem.notify();
+			if(syncs()) m_writeSem.notify();
 
 			return res;
 		}
@@ -238,6 +259,15 @@ namespace dsp56k
 
 		Sem					m_readSem;
 		Sem					m_writeSem;
+		bool				m_singleThreaded = false;	// setSingleThreaded
+
+		bool syncs() const
+		{
+			if constexpr (Lock)
+				return !m_singleThreaded;
+			else
+				return false;
+		}
 
 	public:
 		static void test()
