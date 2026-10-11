@@ -261,12 +261,12 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Clear note parameter locks 1-50 | Clear locks of one note, undoable | Clear locks | 🟡 | Lane Alt-drag per parameter; Alt + lane clear for a track; a selected step's Delete clears the step whole | No key for the locks of one step alone | – |
 | Track page copy 1-51 | Copy a page to another page | Page copy | ✅ | LCD COPY on the page shown (no step selected), PASTE on another page; or select the steps | Steps, slides and locks (`130-main.js` secAction) | – |
 | Clear track page 1-51 | Clear a page | Page clear | ✅ | CLR with a page shown |  | 1 |
-| Track copy 1-52 | Track data to another track incl. machine, arp, transpose, swing, slide | Track copy | 🟡 | Select a track's steps (drag the step ruler), Cmd+C, Cmd+V on another track; Cmd+A takes all six; machine through Sound COPY; Shift-click track headers marks tracks to paste into | Steps, slides and locks, not machine in the same copy, and not arp / transpose / swing | – |
-| Clear track 1-53 | Clear a track | Track clear | 🟡 | Select the track's steps with the ruler and Delete; Alt + lane clear for locks | No single clear-this-track key; the LCD CLR clears the page shown | – |
+| Track copy 1-52 | Track data to another track incl. machine, arp, transpose, swing, slide | Track copy | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (⌘⇧C, ⌘⇧V): notes, melody, slide, swing, locks, arp, transpose, machine + sound in one copy; Paste lights the tracks (synth onto synth, MIDI onto MIDI); one undo step |  | 1 |
+| Clear track 1-53 | Clear a track | Track clear | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (⌘⇧⌫): tick Notes (or any parts) of the selected track; Cmd+Z |  | 1 |
 | Pattern copy 1-53 | Whole pattern incl. kit link and MIDI tracks | Pattern copy | ✅ | Pattern chooser Copy / Paste, drag a slot |  | – |
 | Clear pattern 1-54 | Clear all, keep kit link | Pattern clear | ✅ | Alt + CLR, chooser Clear | Keeps the kit link | 2 |
-| Super copy 1-54 | Choose what to copy (melody, machine) | Super copy | ❌ | – | A step selection copies a block of tracks and steps, but not a chosen part of them (no melody-only copy) | – |
-| Super clear 1-55 | Choose what to clear | Super clear | ❌ | – | Separate clears exist (steps, locks, pattern, machine) | – |
+| Super copy 1-54 | Choose what to copy (melody, machine) | Super copy | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (⌘⇧C, ⌘⇧V): Melody pastes the pitches onto the trigs already there; Machine + sound the machine |  | 1 |
+| Super clear 1-55 | Choose what to clear | Super clear | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (⌘⇧⌫): tick the parts to clear; Cmd+Z | Melody leaves the trigs without a pitch; swing goes back to every second 16th; arp to OFF. | 1 |
 
 ## 12. Tempo (1-55 to 1-57)
 
@@ -315,7 +315,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Arpeggiator 1-62 | PLAY TRUE, UP, DOWN, CYCLE, RND | Direction | ✅ | Arp Play keys |  | – |
 | Arpeggiator 1-62 | RNGE | Octave range | ✅ | Arp RNGE |  | 1 |
 | Arpeggiator 1-62 | OJMP | Octave jump | ✅ | Arp OJMP | Low bit / upper bits split, see mapping note 6 | – |
-| Arpeggiator 1-62 | Copy, clear, paste, undo arp | Arp clipboard | ❌ | – | Page undo only | – |
+| Arpeggiator 1-62 | Copy, clear, paste, undo arp | Arp clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Arp ticked): copy, paste, clear (back to OFF); Cmd+Z |  | 1 |
 | Arp envelope switches 1-62 | AMP, FLT, LFO trigging (not on MIDI) | Arp trigs | ✅ | Arp Trig keys | Disabled on MIDI tracks | – |
 | Arp rhythm and offset 1-63 | Up to 16 steps, on / off | Rhythm | ✅ | 16-cell strip: click mutes |  | – |
 | Arp rhythm and offset 1-63 | Note offset per step | Offset | ✅ | Drag a cell up / down (+/-24) |  | – |
@@ -326,9 +326,9 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Transpose 1-64 | KEY for MAJ / MIN | Key | ✅ | Click the keyboard picture |  | – |
 | Swing 1-64 | Amount 50-80 %, per pattern | Swing | ✅ | LCD SWG |  | – |
 | Swing track 1-65 | Per-track swing steps, default every second 16th | Swing track | ✅ | SWING row | Drag paints | – |
-| Swing 1-65 | Copy, clear, paste, undo swing track | Swing clipboard | ❌ | – |  | – |
+| Swing 1-65 | Copy, clear, paste, undo swing track | Swing clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Swing ticked): copy, paste, clear; Cmd+Z |  | 1 |
 | Slide 1-66 | Slide track per track | Slide | ✅ | SLIDE row; lock lane draws the glide |  | 2 |
-| Slide 1-66 | Copy, clear, paste, undo slide | Slide clipboard | ❌ | – |  | – |
+| Slide 1-66 | Copy, clear, paste, undo slide | Slide clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Slide ticked): copy, paste, clear; Cmd+Z |  | 1 |
 | Mute mode 1-67 | Mute window, 6 + 6 | Mutes | ✅ | Perform > Mutes; rail M | MIDI mutes through the MUTE window keys | 2 |
 | Mute mode 1-67 | Held changes until FUNCTION released | Prepared mutes | ✅ | Shift + M prepares, applies on release |  | 1 |
 | Mute mode 1-68 | Minimise the window | Small window | ➖ | – | Page | – |
@@ -531,9 +531,9 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 298 |
-| 🟡 | 32 |
-| ❌ | 21 |
+| ✅ | 305 |
+| 🟡 | 30 |
+| ❌ | 16 |
 | ➖ | 34 |
 | Total | 385 |
 

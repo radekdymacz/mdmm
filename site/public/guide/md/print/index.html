@@ -514,7 +514,10 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.34</span></span></aside>
 <div class="gd-body gd-prose"><h2>COPY, PASTE, CLEAR AND UNDO</h2>
 <p>The LFO is part of the track's sound. Copy and paste on the Sound workspace take the machine, its values, its level and its LFO together: see &quot;Copy machine&quot; in chapter 3. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take an edit back.</p>
-<p>You cannot copy or clear an LFO on its own in the editor.</p>
+<p>To copy, paste or clear the LFO alone:</p>
+<ol class="gd-steps"><li>On the <b class="gd-ui">Sound</b> workspace, select the track.</li><li>Click <b class="gd-ui">⋯</b> at the right of the LFO card's title. A menu opens.</li><li>Choose <b class="gd-ui">Copy LFO</b>. The shapes, the target, <b class="gd-light">&lt;UPDTE&gt;</b>, <b class="gd-light">&lt;SPD&gt;</b>, <b class="gd-light">&lt;DEPTH&gt;</b> and <b class="gd-light">&lt;SHMIX&gt;</b> are copied.</li><li>Select another track, click <b class="gd-ui">⋯</b> and choose <b class="gd-ui">Paste LFO</b>. The LFO of that track becomes the copy.</li><li>Choose <b class="gd-ui">Clear LFO</b> to set an LFO back to its start: no shapes, the first parameter of its own track, <b class="gd-light">&lt;FREE&gt;</b>, <b class="gd-light">&lt;SPD&gt;</b> 64, <b class="gd-light">&lt;DEPTH&gt;</b> and <b class="gd-light">&lt;SHMIX&gt;</b> 0.</li></ol>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>An LFO that moved a parameter of its own track moves the same parameter of the track it is pasted on. An LFO that moved another track keeps that target.</p></aside>
+<p>The LFO is also a part of <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> and <b class="gd-ui">Clear…</b> in the LCD's <b class="gd-ui">▾</b> menu: see &quot;Track copy&quot; in chapter 8.</p>
 <p>LFO settings are stored in the kit. Save the kit to keep them.</p>
 </div></section>
 </article>
@@ -652,7 +655,11 @@
 <div class="gd-body gd-prose"><h2>TRACK COPY</h2>
 <ol class="gd-steps"><li>Select the track by its header. Drag across the step numbers above the grid, from the first step to the last.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>.</li><li>Select another track. <kbd class="gd-key">[⌘]</kbd>-click its first step.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>.</li></ol>
 <p>To paste into several tracks at once, click their headers with <kbd class="gd-key">[⇧]</kbd> held. The headers are marked. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd> then fills every marked track, as one undo step. Press <kbd class="gd-key">[ESC]</kbd> to take the marks off.</p>
-<p>The machine copies the sound and the LFO of the track with its notes. The editor copies steps and locks. Copy the sound on the <b class="gd-ui">Sound</b> workspace.</p>
+<p>To choose what goes with the track, as the machine's SUPER COPY does:</p>
+<ol class="gd-steps"><li>Select the track.</li><li>Click <b class="gd-ui">▾</b> at the right of <b class="gd-light">&lt;COPY&gt;</b> <b class="gd-light">&lt;CLR&gt;</b> <b class="gd-light">&lt;PASTE&gt;</b> on the LCD, then <b class="gd-ui">Copy…</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[C]</kbd>. The <b class="gd-ui">Copy what</b> window opens.</li><li>Tick the parts to copy. <b class="gd-ui">Pattern</b> has <b class="gd-ui">Trigs</b>, <b class="gd-ui">Accent</b>, <b class="gd-ui">Swing</b>, <b class="gd-ui">Slide</b> and <b class="gd-ui">Locks</b>, each with the number of steps it holds. <b class="gd-ui">Kit</b> has <b class="gd-ui">Machine + sound</b> and <b class="gd-ui">LFO</b>.</li><li>Click <b class="gd-ui">Copy</b>. Every step of the track is copied, not only the page you see.</li><li>Select the track to paste into. Click <b class="gd-ui">▾</b>, then <b class="gd-ui">Paste…</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[V]</kbd>.</li><li>The parts copied are ticked. Untick any you do not want. Under <b class="gd-ui">To tracks</b> the selected track is lit, or the tracks marked with <kbd class="gd-key">[⇧]</kbd>. Click a track key to light or unlight it.</li><li>Click <b class="gd-ui">Paste into 1 track</b> (the key says how many). Each lit track takes the ticked parts.</li></ol>
+<p>The paste is one undo step: press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take it back. The window remembers what you ticked the last time.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Locks land only on steps that hold a trig. The result line says how many were left out.</p></aside>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: Copy what"><span>Screenshot to come</span></div><figcaption>Copy what</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="clear-track">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.41</span></span></aside>
@@ -660,6 +667,9 @@
 <ol class="gd-steps"><li>Select the track.</li><li>Click <b class="gd-ui">All</b> so that every step shows, then click <b class="gd-light">&lt;CLR&gt;</b>.</li></ol>
 <p>Or select all the steps of the track by the step numbers and press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd>.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>With no steps selected, <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> does nothing and a message says so.</p></aside>
+<p>To clear only some parts of the track, as the machine's SUPER CLEAR does:</p>
+<ol class="gd-steps"><li>Select the track.</li><li>Click <b class="gd-ui">▾</b> at the right of <b class="gd-light">&lt;COPY&gt;</b> <b class="gd-light">&lt;CLR&gt;</b> <b class="gd-light">&lt;PASTE&gt;</b>, then <b class="gd-ui">Clear…</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[BACKSPACE]</kbd>.</li><li>Tick the parts to clear and click <b class="gd-ui">Clear</b>. Clearing <b class="gd-ui">Trigs</b> clears their locks too. <b class="gd-ui">Machine + sound</b> sets the sound's values to neutral and keeps the machine.</li></ol>
+<p>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take the clear back.</p>
 </div></section>
 <section class="gd-sec" id="track-page-copy">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.42</span></span></aside>
@@ -705,7 +715,8 @@
 <p>If the pattern's accent is shared by all tracks, the accent goes on the step of every track, and the step legend says &quot;(all)&quot;.</p>
 <figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The accent of a step"><span>Screenshot to come</span></div><figcaption>The accent of a step</figcaption></figure>
 <p>The editor cannot change a pattern between one accent for all tracks and an accent for each track. It follows the setting the pattern has.</p>
-<p>A selection copy takes the accents with the steps. The editor has no separate accent window to copy, paste or clear them.</p>
+<p>To copy, paste or clear the accents of a track, tick <b class="gd-ui">Accent</b> in <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> or <b class="gd-ui">Clear…</b> of the LCD's <b class="gd-ui">▾</b> menu (see &quot;Track copy&quot;). A selection copy also takes the accents with the steps.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>While the accent is shared by all tracks, a paste or a clear of <b class="gd-ui">Accent</b> changes it for every track.</p></aside>
 </div></section>
 <section class="gd-sec" id="swing">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.46,</span> <span>47</span></span></aside>
@@ -713,7 +724,8 @@
 <p>Swing delays every second step. Click <b class="gd-light">&lt;SWG&gt;</b> on the LCD, or drag or scroll on it, to set it from 50 to 80 percent. Click with <kbd class="gd-key">[⇧]</kbd> to go down.</p>
 <p>You cannot choose which steps swing in the editor yet.</p>
 <p>You cannot give a track a swing of its own in the editor yet.</p>
-<p>There is no swing window in the editor, so there are no swing marks to copy, paste or clear.</p>
+<p>Tick <b class="gd-ui">Swing</b> in <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> or <b class="gd-ui">Clear…</b> of the LCD's <b class="gd-ui">▾</b> menu to copy, paste or clear the swing steps of a track (see &quot;Track copy&quot;).</p>
+<p>You cannot mark swing steps in the editor yet, so a copy takes the swing steps the track already holds.</p>
 </div></section>
 <section class="gd-sec" id="parameter-locks">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.47,</span> <span>48</span></span></aside>
@@ -744,7 +756,7 @@
 <ol class="gd-steps"><li>Click a step with a trig, with <kbd class="gd-key">[⇧]</kbd> and <kbd class="gd-key">[⌥]</kbd> held. The step shows a slide mark.</li><li>Do the same again to take it off.</li></ol>
 <p>If slides are shared by all tracks, the slide goes on the step of every track, and the step legend says &quot;(all)&quot;.</p>
 <p>The editor cannot change a pattern between slides for all tracks and slides for each track. It follows the setting the pattern has.</p>
-<p>A selection copy takes the slides with the steps. The editor has no separate slide window to copy, paste or clear them.</p>
+<p>To copy, paste or clear the slides of a track, tick <b class="gd-ui">Slide</b> in <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> or <b class="gd-ui">Clear…</b> of the LCD's <b class="gd-ui">▾</b> menu (see &quot;Track copy&quot;). A selection copy also takes the slides with the steps.</p>
 </div></section>
 </article>
 <article class="gd-chapter" id="c9" style="page: c9">
