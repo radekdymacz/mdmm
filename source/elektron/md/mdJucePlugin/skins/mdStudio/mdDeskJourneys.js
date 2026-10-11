@@ -668,7 +668,8 @@ const MdJourneys = (() => {
 		},
 		steps: [
 			go("sampler"),
-			{ say: "click a ROM slot's play key: it plays", act: async (u, c) => { const k = $all(".slotk.rom.has")[0]; if (!k) throw new Error("no ROM sample"); u.click(k); await sleep(400); results.length = 0; const b = $all("[data-aud]").find(x => !x.disabled); if (!b) throw new Error("no play key"); c.key = b.dataset.aud;
+			{ say: "click a ROM slot's play key: it plays", act: async (u, c) => { /* a ROM slot that holds a sample (the bank's), played by a track of the kit or not (.has: played by one) */
+				const s = (Docs.samples?.rom || []).find(x => x && !x.empty); const k = s && ($1(`.slotk.rom[data-slot="ROM${s.slot}"]`) || $all(".slotk.rom.has")[0]); if (!k) throw new Error("no ROM sample"); u.click(k); await sleep(400); results.length = 0; const b = $all("[data-aud]").find(x => !x.disabled); if (!b) throw new Error("no play key"); c.key = b.dataset.aud;
 				/* the key shown playing at any moment of the audition (a short sample may end before one read after it) */
 				const shown = () => $all("[data-aud]").some(x => x.dataset.aud === c.key && x.getAttribute("aria-pressed") === "true");
 				c.shown = false; const watch = new MutationObserver(() => { if (shown()) c.shown = true; });
