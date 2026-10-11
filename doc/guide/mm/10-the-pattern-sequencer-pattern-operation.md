@@ -27,14 +27,14 @@ Press [ESC] to close the chooser.
 ### PATTERN CHAINING
 <!-- rows: MM-165 @833213 -->
 
-A chain plays patterns of one bank one after the other, each once, and then starts again. You build a chain on the **Song** workspace, in the same **Patterns** card that builds a song.
+A chain plays patterns of one bank one after the other, each once, and then starts again. You build a chain on the **Song** workspace, on the same pattern palette that builds a song.
 
 1. Press {key:workspace-5}.
-2. In the **Patterns** card, click **Chain**.
+2. Click **CHAIN** over the pattern palette.
 3. Click a bank, A to H.
 4. Click the pads in the order to play. Each pad shows its number in the chain, up to 16.
 
-The machine plays the chain as soon as there are two pads. If it plays, the chain starts at the end of the pattern that plays. If it is stopped, [SPACE] starts it at the first pad. The **What plays** card reads CHAIN and the patterns in order, for example CHAIN A03»A05.
+The machine plays the chain as soon as there are two pads. If it plays, the chain starts at the end of the pattern that plays. If it is stopped, [SPACE] starts it at the first pad. The line over the bank letters reads CHAIN and the patterns in order, for example CHAIN A03»A05.
 
 - Click a numbered pad to take it out of the chain.
 - **Back** takes out the last pad.
@@ -44,7 +44,7 @@ Choosing a pattern from the pattern field or the chooser also ends the chain. Ed
 
 NOTE: A chain holds the patterns of one bank. Choosing another bank starts the list again.
 
-NOTE: In song mode the machine plays the song, not the chain. Click **PATTERN** in **What plays**, or choose a new chain, to leave song mode.
+NOTE: In song mode the machine plays the song, not the chain. Click **PATTERN** or **CHAIN** over the palette to leave song mode.
 
 ### SCALE SETUP
 <!-- rows: MM-166 MM-167 MM-168 MM-169 MM-170 @cb30c1 -->
