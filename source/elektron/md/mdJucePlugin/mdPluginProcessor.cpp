@@ -2,6 +2,8 @@
 #include "mdBackgroundRun.h"	// first: the JUCE plug-in headers define Component as a macro
 #endif
 #include "mdPluginProcessor.h"
+
+#include <chrono>
 #include "juceUiLib/messageBox.h"
 #include "juceUiLib/messageRoute.h"
 #include "mdDeskHost.h"
@@ -878,9 +880,32 @@ namespace mdJucePlugin
 	void AudioPluginAudioProcessor::processBlockStarted(const int _frames, const bool _bypassed)
 	{
 		if(_bypassed)
+		{
 			m_boot.counters.onBypassed(_frames);
-		else
-			m_boot.counters.onBlock(_frames, isNonRealtime());
+			m_cpuMeter.onBypassed();
+			return;
+		}
+		m_boot.counters.onBlock(_frames, isNonRealtime());
+		m_blockStartNs = cpuClockNs();
+	}
+
+	// I-018: the block's time against its budget (mdCpuLoad.h): two clock reads and a few relaxed atomic adds
+	void AudioPluginAudioProcessor::processBlockEnded(const int _frames)
+	{
+		// the host's rate (a host that called prepareToPlay alone sets only the plug-in's: a plain member read)
+		const double rate = getSampleRate() > 0 ? getSampleRate() : static_cast<double>(getPlugin().getHostSamplerate());
+		m_cpuMeter.onBlock(cpuClockNs() - m_blockStartNs, _frames, rate, isNonRealtime());
+	}
+
+	uint64_t AudioPluginAudioProcessor::cpuClockNs()
+	{
+		return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+			std::chrono::steady_clock::now().time_since_epoch()).count());
+	}
+
+	cpuLoad::Reading AudioPluginAudioProcessor::cpuLoadReading()
+	{
+		return m_cpuSmoother.add(m_cpuMeter.take(), juce::Time::getMillisecondCounterHiRes());
 	}
 
 	// B-035: once a second, what the host does with the audio and how far the machine got (mdBootDiagnostics.h)
@@ -902,6 +927,10 @@ namespace mdJucePlugin
 			s.cycles = hw.hostCurrentCycle();
 			s.dspBooted = (hw.getDspMixer().booted() ? 1 : 0) + (hw.getDspProducer().booted() ? 1 : 0);
 			s.firmwareMidiReady = hw.isFirmwareMidiReady();
+			s.machine = true;
+			s.speedUps = device->speedUps();
+			s.leversOff = device->speedUpLeversOff();
+			s.exactEssi = device->exactEssiTiming();
 		});
 		if(m_desk && m_desk->session())
 			s.lifecycle = m_desk->session()->lifecycleName();

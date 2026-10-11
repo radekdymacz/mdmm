@@ -25,7 +25,8 @@
 
 - **From:** Radek, 2026-10-11, testing 0.5.0 in Ableton Live ("add a CPU meter somewhere around here", next to SETUP and the version).
 - **Idea:** a small meter in the top bar's SETUP corner showing how much of the audio deadline the emulation uses (the share of each audio block's real-time budget spent rendering, smoothed, with the worst recent block marked), so a user sees headroom and drop-out risk without the DAW's meter, and testers can compare Developer > Speed-ups on and off at a glance. A click opens the performance details (realtime ratio, buffer, sample rate, Rosetta). The data exists: the session record's render timing and the boot lines' realtime ratio.
-- **Status:** planned for 0.5.1.
+- **Built for 0.5.1** (branch `feat/cpu-meter`): `CPU ▮▮▯ 23 %` after the version in the Setup label, both editors, plug-in and standalone. The share is processBlock's whole call (the emulation, the resampler, MIDI) against each block's budget (frames / sample rate), smoothed over 0.5 s; a red tick marks the worst single block of the last 3 s (the bar turns orange from 70 %, red when a block was over 100 %). With no audio it says STOPPED, BYPASS, RENDER or NO AUDIO instead of 0 %. A click opens the details: average, worst block, machine speed (realtime ratio), the host's rate and block size, the speed-ups (all on, off, or which are off; L3), native or Rosetta. Cost: two clock reads and a few relaxed atomic adds a block (about 35 ns on an M-series Mac), no lock, no allocation; the page gets a `cpuLoad` message every 250 ms (mdCpuLoad.h, mdDeskSession.cpp, skins/shared/deskCpu.js; data-contract.md).
+- **Status:** built for 0.5.1, waiting for Radek's play test.
 
 ## I-017 · Drag and drop files onto the editor
 
