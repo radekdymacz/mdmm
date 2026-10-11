@@ -82,7 +82,7 @@ NOTE: A slot is written as a song dump, which the Monomachine takes only on SYSE
 NOTE: A song stores which patterns it plays, not the patterns themselves. Change a pattern and every row that uses it plays the changed pattern.
 
 ## SONG PLAY
-<!-- rows: MM-256 MM-257 @119392 -->
+<!-- rows: MM-256 MM-257 @ac8d5e -->
 
 In song mode the machine plays the song from row 001, row by row, to its END row.
 
@@ -95,12 +95,19 @@ In song mode the machine plays the song from row 001, row by row, to its END row
 
 You can go to pattern mode and back while the song plays. Click **PATTERN**: the machine plays a pattern and holds its place in the song. Click **SONG** and the song goes on from that place.
 
-On the machine [PLAY] pauses a song that plays, and [STOP] stops it. {gap:MM-256}The editor has no pause yet: {key:play-stop} starts and stops.{/gap}
+On the machine [PLAY] pauses a song that plays, and [STOP] stops it. In the editor hold [⇧] and click the play key, or press {key:pause}: the song holds its row and step, and the play key blinks. Click the play key to go on from there. {key:play-stop} stops.
 
 ## SONG TRANSPORT
-<!-- rows: MM-258 MM-259 @611a19 -->
+<!-- rows: MM-258 MM-259 @e81f47 -->
 
-On the machine you move the song pointer to another row while the song plays, and the song goes on from there when the current row ends. {gap:MM-258}You cannot move the song pointer from the editor yet.{/gap}
+On the machine you move the song pointer to another row while the song plays, and the song goes on from there when the current row ends. In the editor you start the song from the row instead:
+
+1. Click the row's cell in the **Arrangement**.
+2. Click **▶ From here** in the **Selected row** card, or press {key:song-play-from}.
+
+The machine goes to SONG mode if it was in pattern mode and plays the song from the first step of that row. The editor sends the machine a MIDI song position, the steps of the rows before it, and then Continue.
+
+NOTE: The Monomachine takes a song position only with <TRANSPORT> set to ACCEPT (GLOBAL, CONTROL IN; the factory setting is IGNORE). The first time, the editor asks to set it, then plays from the row. A loop, jump or halt row before the chosen row cannot be counted through: the editor says so.
 
 The editor shows where the song is. While the song plays, the **Arrangement** marks the row that plays and the bar above the grid fills up to it. The mark comes from the machine itself, so it follows repeats, loops and jumps.
 
@@ -209,9 +216,9 @@ The editor writes each edit into the song on the machine. An edit made while the
 NOTE: With a real Monomachine over MIDI, edits wait until the machine takes them. The sync field at the right of the LCD, which normally reads Sync, reads SEND and the number of edits that wait. Click it and follow the steps.
 
 ## SONG EDIT TRANSPORT
-<!-- rows: MM-270 MM-271 @d12f40 -->
+<!-- rows: MM-270 MM-271 @e6529f -->
 
-On the machine you start the song from any row: select the row and press [ENTER/YES]. {gap:MM-270}You cannot start the song from a chosen row in the editor yet.{/gap}
+On the machine you start the song from any row: select the row and press [ENTER/YES]. In the editor select the row and press {key:song-play-from}, or click **▶ From here** (see "SONG TRANSPORT").
 
 The machine shows the song position in bars and beats. The editor shows the length of the whole song instead, in the **Songs** column and on the LCD. {gap:MM-271}There is no live bar and beat counter in the editor yet.{/gap}
 
@@ -245,7 +252,7 @@ On the machine a loop becomes a jump when you set its row after the loop. In the
 3. Click **−** or **+** beside **Jump to** to set the row to go to. The cell reads → and that row.
 
 ## SONG HALT
-<!-- rows: MM-274 MM-258 @bf8f31 -->
+<!-- rows: MM-274 MM-258 @5babd9 -->
 
 A halt row stops the song where it stands. The song waits there until you choose a row to go on from.
 
@@ -254,7 +261,7 @@ On the machine a loop becomes a halt when it points at itself. In the editor you
 1. Select a command row, or add one with **Add loop**.
 2. Under **Command**, click **HALT**. The cell reads HALT.
 
-{gap:MM-258}The editor cannot choose the row to go on from yet. Use the song transport of the machine.{/gap}
+To go on after a halt, start the song from a row before it with **▶ From here**. A row after the halt cannot be counted to: start it on the machine.
 
 ## SONG TRACK TRANSPOSE
 <!-- rows: MM-264 @df7281 -->

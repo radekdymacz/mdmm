@@ -2,6 +2,7 @@
 // against a scripted machine (no firmware). The firmware smoke test is
 // mdLibTest/mmDeskFirmwareTest.
 
+#include "mmDeskTransport.h"
 #include "mmDesk.h"
 #include "mmDeskMachine.h"
 #include "mmIntentCases.h"
@@ -195,7 +196,7 @@ namespace
 		std::map<std::pair<uint8_t, uint8_t>, Bytes> slots;
 		mmDesk::Screen screenWord = mmDesk::Screen::Main;
 		int keysPressed = 0;
-		uint8_t pattern = 3, kit = 5, global = 0;
+		uint8_t pattern = 3, kit = 5, global = 0, songMode = 0;
 		std::vector<uint8_t> activations;	// every SET ACTIVE GLOBAL (0x56) taken, in order
 		uint32_t recvTaken = 0;	// dumps taken on SYSEX RECV (the RECV count, RAM 0x26a3c4)
 		bool slow = false;		// dumps stay on their way (inFlight) until taken by hand
@@ -245,9 +246,14 @@ namespace
 				pattern = _m[7];	// LOAD PATTERN while stopped: the machine switches at once
 				return;
 			}
+			if(cmd == 0x71 && _m.size() > 9 && _m[7] == 0x10)
+			{
+				songMode = _m[8];	// SET STATUS: SONG or PATTERN mode
+				return;
+			}
 			if(cmd == 0x70)
 			{
-				const uint8_t v = _m[7] == 0x04 ? pattern : _m[7] == 0x02 ? kit : _m[7] == 0x01 ? global : 0;
+				const uint8_t v = _m[7] == 0x04 ? pattern : _m[7] == 0x02 ? kit : _m[7] == 0x01 ? global : _m[7] == 0x10 ? songMode : 0;
 				replies.push_back({0xf0, 0, 0x20, 0x3c, 3, 0, 0x72, _m[7], v, 0xf7});
 			}
 		}
@@ -1495,6 +1501,210 @@ void chains()
 // The executable spec (deskCore::contract, shared with the Machinedrum's): every published message
 // against the contract, the contract's machine document against what was published, $defs/command
 // generated from the tables (mmDeskTest --write-schema), the adapter's functions against the table.
+// Wave 2: pause, resume, play from a song row, panic, the tempo nudge (doc/modern-ux/PROBES-manual-gaps.md P1, P5 MM).
+void transport()
+{
+	std::puts("the transport: pause, play from a row, panic, nudge");
+	{
+		ed::MmSong s;
+		const auto set = [&](const size_t _i, const uint8_t _p, const uint8_t _len, const uint8_t _reps)
+		{
+			auto& b = s.rows[_i].bytes;
+			b.fill(0);
+			b[ed::mmSongRow::g_pattern] = _p;
+			b[ed::mmSongRow::g_length] = _len;
+			b[ed::mmSongRow::g_repeats] = _reps;
+		};
+		set(0, 0, 8, 0);
+		set(1, 1, 4, 1);
+		set(2, 2, 16, 0);
+		set(3, ed::MmSong::g_loop, 0, 1);
+		s.rows[3].bytes[ed::mmSongRow::g_target] = 1;
+		set(4, 3, 16, 0);
+		set(5, ed::MmSong::g_end, 0, 0);
+		check(mmDesk::songPositionOf(s, 0).sixteenths == 0 && mmDesk::songPositionOf(s, 1).sixteenths == 8, "song position: rows 1 and 2");
+		check(mmDesk::songPositionOf(s, 2).sixteenths == 16, "row 3: 8 + 4 played twice");
+		check(!mmDesk::songPositionOf(s, 3).refused.empty() && mmDesk::songPositionOf(s, 4).refused.find("LOOP") != std::string::npos,
+			"a LOOP row and a row after it: refused");
+		check(!mmDesk::songPositionOf(s, 5).refused.empty(), "END: refused");
+	}
+
+	const auto build = [](FakeMachine& _m)
+	{
+		for(uint8_t s = 0; s < 128; ++s)
+		{
+			_m.slots[{0x67, s}] = ed::encodeMmPattern(emptyPattern(s));
+			ed::MmKit k;
+			k.position = s;
+			k.machines.fill(1);
+			k.trigPos.fill(0xff);
+			_m.slots[{0x52, s}] = ed::encodeMmKit(k);
+		}
+		for(uint8_t s = 0; s < 24; ++s)
+		{
+			ed::MmSong so;
+			so.position = s;
+			for(size_t r = 0; r < so.rows.size(); ++r)
+			{
+				auto& b = so.rows[r].bytes;
+				b[ed::mmSongRow::g_pattern] = r < 3 ? static_cast<uint8_t>(r) : ed::MmSong::g_end;
+				b[ed::mmSongRow::g_length] = r == 1 ? 4 : 8;
+				b[ed::mmSongRow::g_repeats] = r == 1 ? 1 : 0;
+				b[ed::mmSongRow::g_tempo] = b[ed::mmSongRow::g_tempo + 1] = 0xff;
+			}
+			_m.slots[{0x69, s}] = ed::encodeMmSong(so);
+		}
+		for(uint8_t s = 0; s < 8; ++s)
+		{
+			ed::MmGlobal g = ed::mmFactoryGlobal(s);
+			g.transportIn = 0;
+			_m.slots[{0x50, s}] = ed::encodeMmGlobal(g);
+		}
+	};
+	FakeMachine m;
+	build(m);
+	double now = 0;
+	std::vector<Value> page;
+	std::vector<Bytes> midi, sysex;
+	std::vector<mmDesk::Key> keys;
+	mmDesk::Desk::Port port;
+	port.device.sendSysex = [&](const Bytes& _b) { sysex.push_back(_b); m.take(_b); };
+	port.device.sendParam = [](uint8_t, uint8_t, uint8_t, uint8_t) {};
+	port.device.sendNrpn = [](uint8_t, uint8_t, uint8_t) {};
+	port.device.sendMidi = [&](const Bytes& _b) { midi.push_back(_b); };
+	port.device.pressKeys = [&](const std::vector<mmDesk::Key>& _k)
+	{
+		if(mmDesk::RecvSession::isEnterMacro(_k))
+			m.screenWord = mmDesk::Screen::GlobalEdit;
+		else if(_k == mmDesk::RecvSession::exitKeys())
+			m.screenWord = mmDesk::Screen::Main;
+		else
+			keys.insert(keys.end(), _k.begin(), _k.end());
+		return true;
+	};
+	port.toPage = [&](const Value& _v) { page.push_back(_v); g_published.push_back(_v); };
+	port.device.nowMs = [&] { return now; };
+	const auto last = [&](const char* _type) -> const Value*
+	{
+		for(auto it = page.rbegin(); it != page.rend(); ++it)
+			if(it->find("type")->asString() == _type)
+				return &*it;
+		return nullptr;
+	};
+	const auto ok = [&] { const auto* r = last("result"); return r && r->find("ok")->asBool(); };
+	const auto error = [&] { const auto* r = last("result"); const auto* e = r ? r->find("errors") : nullptr;
+		return e && e->isArray() && !e->asArray().empty() ? e->asArray()[0].asString() : std::string(); };
+	bool running = false;
+	const auto runDesk = [&](mmDesk::Desk& _d, const double _ms, const bool _wire)
+	{
+		for(double t = 0; t < _ms; t += 10)
+		{
+			now += 10;
+			if(!_wire)
+			{
+				mmDesk::Telemetry tel = screen(m.screenWord);
+				tel.recvCount = m.recvTaken;
+				tel.running = running;
+				tel.step = running ? static_cast<int>(now / 125) % 16 : 0;
+				tel.tempo = 120 * 24;
+				_d.onTelemetry(tel);
+			}
+			_d.tick();
+			auto replies = std::move(m.replies);
+			m.replies.clear();
+			for(const auto& r : replies)
+				_d.onDeviceSysex(r);
+		}
+	};
+
+	{
+		mmDesk::Desk d(port);
+		const auto msg = [&](const std::string& _json) { d.onPageMessage(*ed::json::parse(_json)); };
+		msg(R"({"op":"ready"})");
+		d.setProbe(mmDesk::Desk::Probe::Running);
+		runDesk(d, 4000, false);
+		check(d.documents().songs.count(0) && !d.documents().globals.empty(), "the emulator: the song and the globals read");
+		const auto* can = last("machine")->find("doc")->find("capabilities")->find("can");
+		check(can->find("panic")->asBool() && can->find("playFrom")->asBool(), "the emulator can panic and play from a row");
+		running = true;
+		runDesk(d, 300, false);
+		keys.clear();
+		msg(R"({"op":"pause","id":1})");
+		check(ok() && keys == std::vector<mmDesk::Key>{mmDesk::Key::Play}, "pause while playing: the panel's PLAY, no question (the machine's own pause)");
+		running = false;
+		runDesk(d, 300, false);
+		msg(R"({"op":"resume","id":2})");
+		check(ok() && keys.size() == 2 && keys.back() == mmDesk::Key::Play, "resume: PLAY again");
+		keys.clear();
+		midi.clear();
+		msg(R"({"op":"panic","id":3})");
+		bool cc123 = midi.size() == 6;
+		for(size_t c = 0; c < midi.size(); ++c)
+			cc123 = cc123 && midi[c] == Bytes{static_cast<uint8_t>(0xb0 | c), 123, 0};
+		check(ok() && cc123 && keys == std::vector<mmDesk::Key>{mmDesk::Key::Stop, mmDesk::Key::Stop},
+			"panic: All Notes Off on the six track channels, then STOP twice");
+
+		// play from row 3: TRANSPORT IN is IGNORE, so it asks; confirmed, ACCEPT goes out as the active global
+		page.clear();
+		msg(R"({"op":"playFrom","i":2,"id":4})");
+		check(last("ask") && last("ask")->find("ask")->asString() == "transportIgnore", "play from a row with TRANSPORT IGNORE: asks to set ACCEPT");
+		msg(R"({"op":"playFrom","i":2,"id":5,"force":true})");
+		check(ok(), "confirmed: accepted");
+		runDesk(d, 6000, false);
+		const auto g = ed::decodeMmGlobal(m.slots[{0x50, m.global}]);
+		check(g && g->transportIn == 1, "the active global now says TRANSPORT ACCEPT");
+		running = true;
+		runDesk(d, 200, false);
+		midi.clear();
+		page.clear();
+		msg(R"({"op":"playFrom","i":2,"id":6})");
+		check(ok() && !last("ask") && midi == std::vector<Bytes>{{0xfc}}, "again with ACCEPT, while playing: MIDI Stop first");
+		running = false;
+		runDesk(d, 1000, false);	// stopped once the step stood still for three steps (watchStep)
+		check(midi.size() == 3 && midi[1] == Bytes{0xf2, 16, 0} && midi[2] == Bytes{0xfb},
+			"stopped, SONG mode asked for and answered: the song position of row 3 (16 steps) and Continue");
+		check(std::any_of(sysex.begin(), sysex.end(), [](const Bytes& _b) { return _b == ed::mmSetStatus(ed::MmStatus::SongMode, 1); }),
+			"SONG mode was set first");
+
+		// the nudge: 10 % off while held, back at the release
+		sysex.clear();
+		msg(R"({"op":"nudge","pct":-10,"id":7})");
+		runDesk(d, 100, false);
+		msg(R"({"op":"nudge","pct":0,"id":8})");
+		runDesk(d, 100, false);
+		const auto slower = ed::mmSetTempo(108), back = ed::mmSetTempo(120);
+		check(std::any_of(sysex.begin(), sysex.end(), [&](const Bytes& _b) { return _b == slower; }) && sysex.back() == back,
+			"nudge -10 %: 108 BPM while held, 120 at the release");
+	}
+
+	{
+		// A wire: pause is MIDI Stop, which asks for ACCEPT first
+		FakeMachine w;
+		build(w);
+		m = w;
+		mmDesk::Desk d(port, mmDesk::wireProfile());
+		const auto msg = [&](const std::string& _json) { d.onPageMessage(*ed::json::parse(_json)); };
+		msg(R"({"op":"ready"})");
+		runDesk(d, 6000, true);
+		page.clear();
+		midi.clear();
+		keys.clear();
+		msg(R"({"op":"pause","id":10})");
+		check(last("ask") && last("ask")->find("ask")->asString() == "transportIgnore" && midi.empty(), "HW, TRANSPORT IGNORE: pause asks first");
+		auto g = *ed::decodeMmGlobal(m.slots[{0x50, m.global}]);
+		g.transportIn = 1;
+		d.onDeviceSysex(ed::encodeMmGlobal(g));
+		runDesk(d, 100, true);
+		msg(R"({"op":"pause","id":11})");
+		msg(R"({"op":"resume","id":12})");
+		check(ok() && keys.empty() && midi == std::vector<Bytes>{{0xfc}, {0xfb}}, "HW, ACCEPT: pause is MIDI Stop, resume MIDI Continue");
+		midi.clear();
+		msg(R"({"op":"panic","id":13})");
+		check(ok() && midi.size() == 7 && midi.back() == Bytes{0xfc}, "HW panic: All Notes Off on each track channel, then MIDI Stop");
+	}
+	(void)error;
+}
+
 void checkContract(const bool _write)
 {
 	namespace contract = deskCore::contract;
@@ -1788,6 +1998,7 @@ int main(const int _argc, char** _argv)
 	asksAndErrors();
 	stuckDelivery();
 	chains();
+	transport();
 	memoryFields();
 	intentCases::run();
 	checkContract(false);

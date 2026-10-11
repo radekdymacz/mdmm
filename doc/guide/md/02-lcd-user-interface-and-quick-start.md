@@ -4,7 +4,7 @@
 The LCD sits in the middle of the top bar. It shows the state of the machine: the engine, the transport, the tempo, the position, the pattern, the kit and the lock count. A second line holds values that depend on the workspace. Most fields are also controls.
 
 ## THE LCD USER INTERFACE
-<!-- rows: MD-027 MD-028 MD-029 MD-030 MD-031 MD-032 MD-033 @e82d05 -->
+<!-- rows: MD-027 MD-028 MD-029 MD-030 MD-031 MD-032 MD-033 @9fd72e -->
 
 ![The LCD](shot:md-lcd)
 
@@ -45,7 +45,7 @@ On the Sequence workspace the four page LEDs beside the **Page** key show the sa
 
 **REC** and the Play key have LEDs. The Play key shows ▶ while the machine is stopped and ■ while it plays. **REC** is lit during live recording.
 
-{gap:MD-029}The LCD has no pause state, because the editor has no pause.{/gap}
+While the machine is paused the Play key blinks and **Position** keeps the step the pause holds. The Play key then continues.
 
 ### Kit
 

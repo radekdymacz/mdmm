@@ -61,6 +61,7 @@ namespace mdJucePlugin
 			{
 				m_link.sendMidi(static_cast<uint8_t>((_v ? 0x90 : 0x80) | (_ch & 0x0f)), _n & 0x7f, _v & 0x7f);
 			};
+			p.sendMidi = [this](const std::vector<uint8_t>& _m) { m_link.sendShort(_m); };
 			p.nowMs = [] { return nowMs(); };
 			return p;
 		}

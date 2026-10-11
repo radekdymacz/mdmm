@@ -38,6 +38,9 @@ function(mdmm_add_lib_tests _dir)
 	# DEV-CYCLE: the Machinedrum's intent cases (doc/modern-ux/intent-cases.json, "md") through the desk to the firmware
 	add_test(NAME mdIntentCasesFirmwareTest COMMAND mdDeskFirmwareTest --env intentcases)
 	set_tests_properties(mdIntentCasesFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 900)
+	# wave 2: pause, resume, play from a song row, panic and the tempo nudge through the desk to the firmware
+	add_test(NAME mdTransportFirmwareTest COMMAND mdDeskFirmwareTest --env transport)
+	set_tests_properties(mdTransportFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
 	add_test(NAME mdSyxPickFirmwareTest COMMAND mdDeskFirmwareTest --env syxpick)
 	set_tests_properties(mdSyxPickFirmwareTest PROPERTIES
 		LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1200)
@@ -139,6 +142,8 @@ function(mdmm_add_lib_tests _dir)
 	# DEV-CYCLE: the Monomachine's intent cases (doc/modern-ux/intent-cases.json, "mm") through the desk to the firmware
 	add_test(NAME mmIntentCasesFirmwareTest COMMAND mmDeskFirmwareTest --env intentcases)
 	set_tests_properties(mmIntentCasesFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 900)
+	add_test(NAME mmTransportFirmwareTest COMMAND mmDeskFirmwareTest --env transport)
+	set_tests_properties(mmTransportFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
 	add_test(NAME mmSyxPickFirmwareTest COMMAND mmDeskFirmwareTest --env syxpick)
 	set_tests_properties(mmSyxPickFirmwareTest PROPERTIES
 		LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1200)

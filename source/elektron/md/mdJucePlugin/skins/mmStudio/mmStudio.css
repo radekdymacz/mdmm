@@ -2411,6 +2411,36 @@ header.top.tf3 .row2 .lcdsec{padding:0 3px!important}
 /* tf4: line 2's slots are as wide as their text (the Monomachine gives each a width in characters, for the PAT / SONG switch not to move them) */
 header.top.tf4 .lcdpanel .lcd2 .l2{width:auto!important}
 header.top.tf4 .row2 .lcd2{gap:5px!important}
+/* The transport beyond PLAY and STOP (deskTransport.js, both editors): the paused ▶ key, the ▾ that opens its menu without a
+   right-click, the tempo field while its pop-up is open, and the TEMPO pop-up (doc/modern-ux/mockup-next/next.css). */
+.lcdt{position:relative}
+.lcdt .lt.paused{animation:blink .8s steps(2) infinite}
+.lcdt .ltmore{all:unset;cursor:pointer;position:absolute;right:1px;bottom:1px;width:11px;height:11px;display:flex;align-items:center;justify-content:center;font:9px/1 var(--mono,ui-monospace,monospace);color:var(--ink);opacity:.75;border-radius:2px}
+.lcdt .ltmore:hover,.lcdt .ltmore:focus-visible{opacity:1;background:color-mix(in srgb,var(--ink) 18%,transparent)}
+.lcdpanel .f.tempof{background:color-mix(in srgb,var(--ink) 12%,transparent);border-radius:2px}
+.tempopop{position:fixed;z-index:62;width:390px;box-sizing:border-box;display:grid;gap:10px;padding:12px 14px;background:var(--plate);color:var(--body,var(--print));border:2px solid var(--print);border-radius:6px;box-shadow:0 18px 40px rgba(0,0,0,.35);font:13px var(--sans,system-ui,sans-serif)}
+.tempopop::before{content:"";position:absolute;top:-8px;left:var(--ax,40px);width:12px;height:12px;background:var(--plate);border-left:2px solid var(--print);border-top:2px solid var(--print);transform:rotate(45deg)}
+.tempopop .th1{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--rule,color-mix(in srgb,var(--print) 25%,transparent));padding-bottom:8px}
+.tempopop .th1 .cap{margin-right:auto;font:600 11px var(--sans,system-ui,sans-serif);letter-spacing:.14em;text-transform:uppercase}
+.tempopop .note{color:var(--print2,inherit);font-size:12px}
+.tempopop .bpmrow{display:flex;align-items:center;gap:8px}
+.tempopop .bpmbig{font:26px var(--pix,monospace);background:var(--lcd);color:var(--ink);padding:6px 10px;border-radius:3px;min-width:6ch;text-align:right}
+.tempopop .bpmrow small{font:600 11px var(--sans,system-ui,sans-serif);letter-spacing:.14em;color:var(--print2,inherit)}
+.tempopop button{white-space:nowrap;height:30px;padding:0 10px;font:600 11px var(--sans,system-ui,sans-serif);letter-spacing:.12em;text-transform:uppercase}
+.tempopop button:disabled{opacity:.45;cursor:not-allowed}
+.tempopop .sq{width:30px;padding:0;font:600 16px var(--mono,monospace)}
+.tempopop .tap{margin-left:auto;height:38px;width:64px}
+.tempopop .nudging{background:var(--led,#d33);color:#fff}
+.tempopop .tr kbd{font:400 10px var(--mono,monospace);opacity:.7;margin-left:4px}
+.tempopop .tr{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--print2,inherit)}
+.tempopop .tr .ilab{min-width:58px}
+.tempopop .tr .hold{font:11px var(--mono,monospace);color:var(--print3,inherit);margin-left:auto}
+.tempopop .tsync .tglob{margin-left:auto}
+.tempopop .tsync .seg{display:inline-flex;gap:2px}
+.tempopop .tsync .seg button[aria-pressed=true]{background:var(--print);color:var(--plate)}
+.tempopop label.tr{cursor:pointer}
+.tempopop label.tr input{accent-color:var(--led)}
+.tempopop .tnote{font-size:12px;color:var(--print3,inherit);line-height:1.35;border-top:1px solid var(--rule,color-mix(in srgb,var(--print) 25%,transparent));padding-top:7px}
 /* I-021: the output meter and volume at the LCD's right end (skins/shared/deskVolume.js, loaded by the plug-in's page) */
 /* I-021: the stereo output meter and volume at the LCD's right end (deskVolume.js), both editors: a column of about 30 px,
    both LCD rows tall, made at the plug-in's first outputLevel message (the panel gets .hasvol then, so the LCD's grid has

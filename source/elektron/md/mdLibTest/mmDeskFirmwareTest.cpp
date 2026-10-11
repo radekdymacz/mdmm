@@ -129,6 +129,8 @@ namespace
 				if(const auto b = deskWire::note(_ch, _n, _v))
 					out.push_back(*b);
 			};
+			// wave 2: MIDI Stop, Continue, the song position and All Notes Off, in order with the rest
+			port.device.sendMidi = [this](const Bytes& _b) { out.push_back(_b); };
 			port.device.pressKeys = [this](const std::vector<mmDesk::Key>& _keys) { return userKeys(_keys); };
 			port.device.pressBankTrigs = [this](const uint8_t _b, const std::vector<uint8_t>& _t) { return userBankTrigs(_b, _t); };
 			port.device.nowMs = [this] { return ms(); };
@@ -327,7 +329,7 @@ namespace
 					else
 					{
 						e.a = b[0];
-						e.b = b[1];
+						e.b = b.size() > 1 ? b[1] : 0;
 						e.c = b.size() > 2 ? b[2] : 0;
 					}
 					m.hardware().sendMidi(e);
@@ -724,6 +726,115 @@ namespace
 	// machine plays. Song 24: A02, A03 x2, A04 (8 steps each), a LOOP (forever), END; SONG mode, PLAY: at the middle of
 	// each pass the row's pattern is the pattern the machine reports, a row played twice shows twice, the loop goes
 	// back.
+	// Wave 2 (doc/modern-ux/PROBES-manual-gaps.md P1, P5 MM): the transport's commands through the desk on the firmware.
+	// Pause and resume (the panel's PLAY), play from a song row (TRANSPORT ACCEPT asked for and set, then the song position
+	// and Continue), panic (All Notes Off and STOP), the tempo nudge.
+	void transport(const Bytes& _rom)
+	{
+		std::puts("transport: pause, play from a row, panic, nudge");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		while(r.desk->loaded() < 288)
+			r.run(100);
+		const auto pageRow = [&]
+		{
+			for(auto it = r.page.rbegin(); it != r.page.rend(); ++it)
+				if(it->find("type")->asString() == "telemetry")
+				{
+					const auto* sr = it->find("songRow");
+					return sr && sr->isNumber() ? static_cast<int>(sr->asNumber()) : -1;
+				}
+			return -1;
+		};
+		const auto ok = [&] { const auto v = r.lastResult(); return v.isObject() && v.find("ok")->asBool(); };
+		// what the page is told (the RAM flag, or the step moving: watchStep)
+		const auto playing = [&]
+		{
+			for(auto it = r.page.rbegin(); it != r.page.rend(); ++it)
+				if(it->find("type")->asString() == "telemetry")
+					return it->find("playing")->asBool();
+			return false;
+		};
+
+		// pause in PATTERN mode: the step holds, PLAY again goes on from it
+		r.msg(R"({"op":"seqMode","song":false})");
+		r.run(800);
+		r.msg(R"({"op":"play"})");
+		r.run(1200);
+		check(r.tel.running.load() == 1, "PLAY: it plays");
+		r.msg(R"({"op":"pause"})");
+		r.run(300);
+		const int held = r.tel.step.load();
+		r.run(600);
+		std::printf("  paused at step %d, 600 ms later %d (running %d)\n", held + 1, r.tel.step.load() + 1, r.tel.running.load());
+		check(ok() && r.tel.running.load() == 0 && r.tel.step.load() == held, "pause: it stops and the step holds");
+		r.msg(R"({"op":"resume"})");
+		std::vector<int> trace;
+		for(int i = 0; i < 10; ++i)
+		{
+			r.run(40);
+			trace.push_back(r.tel.step.load());
+		}
+		std::string tr;
+		for(const int x : trace)
+			tr += " " + std::to_string(x + 1);
+		std::printf("  resumed, the step every 40 ms:%s\n", tr.c_str());
+		check(ok() && playing() && (trace.front() == held || trace.front() == held + 1) && trace.back() != held,
+			"resume: it plays on from the held step");
+		r.msg(R"({"op":"stop"})");
+		r.run(400);
+		r.msg(R"({"op":"stop"})");
+		r.run(400);
+
+		// play from row 3 of song 24 (rows of 8 steps: row 1 once, row 2 twice, row 3)
+		auto s = *r.desk->song(23);
+		const auto row = [&](const size_t _i, const uint8_t _pattern, const uint8_t _repeats)
+		{
+			auto& b = s.rows[_i].bytes;
+			b = {};
+			b[ed::mmSongRow::g_pattern] = _pattern;
+			b[ed::mmSongRow::g_repeats] = _repeats;
+			b[ed::mmSongRow::g_length] = _pattern < 0xfe ? 8 : 0;
+			b[ed::mmSongRow::g_tempo] = b[ed::mmSongRow::g_tempo + 1] = 0xff;
+		};
+		row(0, 1, 0); row(1, 2, 1); row(2, 3, 0); row(3, 4, 0); row(4, ed::MmSong::g_end, 0);
+		r.msg(R"({"op":"set","kind":"song","doc":)" + ed::json::write(ed::mmSongToJson(s)) + "}");
+		r.run(1500);
+		r.msg(R"({"op":"loadSong","s":23})");
+		r.run(1500);
+		// TRANSPORT IN is IGNORE as booted: the question sets ACCEPT, and the command goes by itself once the machine has
+		// applied it (made active after SYSEX RECV)
+		r.msgConfirmed(R"({"op":"playFrom","i":2})");
+		check(ok(), "play from row 3, confirmed: accepted");
+		const auto active = [&] { return r.desk->global(static_cast<uint8_t>(std::max(0, r.machineGlobal) & 7)); };
+		for(int i = 0; i < 1500 && !playing(); ++i)
+			r.run(10);
+		check(active() && active()->transportIn == 1, "the confirmed question set TRANSPORT ACCEPT in the active global");
+		r.run(400);
+		const int seen = pageRow();
+		const auto machineDoc = lastMachine(r);
+		const auto* song = machineDoc.isObject() ? machineDoc.find("song") : nullptr;
+		std::printf("  playing from row %d (page), step %d\n", seen + 1, r.tel.step.load() + 1);
+		check(seen == 2 && playing() && song && song->find("songMode")->asBool(), "it plays song 24 from row 3 in SONG mode, by itself after the question");
+
+		// panic while it plays: STOP (twice) with All Notes Off on the track channels
+		r.msg(R"({"op":"panic"})");
+		r.run(600);
+		check(ok() && !playing(), "panic: it stops");
+
+		// the nudge
+		const int base = r.tel.tempo.load();
+		r.msg(R"({"op":"nudge","pct":10})");
+		r.run(400);
+		const int up = r.tel.tempo.load();
+		r.msg(R"({"op":"nudge","pct":0})");
+		r.run(400);
+		std::printf("  tempo %.2f, nudged %.2f, back %.2f BPM\n", base / 24.0, up / 24.0, r.tel.tempo.load() / 24.0);
+		check(std::abs(up - static_cast<int>(std::lround(base * 1.1))) <= 1 && r.tel.tempo.load() == base, "nudge +10 %: faster while held, back at the release");
+	}
+
 	void songRowPlayhead(const Bytes& _rom)
 	{
 		std::puts("song row: the Song page's playhead");
@@ -4162,6 +4273,8 @@ int main(const int _argc, char** _argv)
 			hostClock(rom);
 		if(only.empty() || only == "songrow")
 			songRowPlayhead(rom);
+		if(only.empty() || only == "transport")
+			transport(rom);
 		if(only.empty() || only == "patterns")
 			patterns(rom);
 		if(only.empty() || only == "library")

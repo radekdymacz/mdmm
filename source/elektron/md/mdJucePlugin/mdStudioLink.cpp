@@ -89,12 +89,12 @@ namespace mdJucePlugin
 
 	void StudioLink::sendChannel(const Bytes& _message) const
 	{
-		if(_message.size() != 3)
+		if(_message.empty() || _message.size() > 3 || _message[0] < 0x80 || _message[0] == 0xf0)
 			return;
 		synthLib::SMidiEvent event(synthLib::MidiEventSource::Editor);
 		event.a = _message[0];
-		event.b = _message[1];
-		event.c = _message[2];
+		event.b = _message.size() > 1 ? _message[1] : 0;
+		event.c = _message.size() > 2 ? _message[2] : 0;
 		m_processor.addMidiEvent(event);
 	}
 
