@@ -7,11 +7,14 @@
 
 #include "mdPluginProcessor.h"
 #include "mdDeskHost.h"
+#include "mdProcessArch.h"
+#include "mdLib/mdSpeedUpLevers.h"
 
 #include "synthLib/midiTypes.h"
 
 #include "juce_core/juce_core.h"
 #include <algorithm>
+#include <cmath>
 #include <array>
 
 namespace mdJucePlugin
@@ -41,6 +44,47 @@ namespace mdJucePlugin
 		m.set("bypassed", static_cast<double>(b.last().bypassed));
 		m.set("blocksPerSecond", b.rate().known ? b.rate().blocksPerSecond : 0.0);
 		m.set("realtime", b.rate().known && b.last().blocks > 0 ? Value(b.rate().realtime) : Value());
+		return m;
+	}
+
+	elektronData::json::Value cpuLoadOf(AudioPluginAudioProcessor& _processor)
+	{
+		using Value = elektronData::json::Value;
+		const auto r = _processor.cpuLoadReading();
+		const auto& b = _processor.bootDiagnostics();
+		const auto& s = b.last();
+		const auto round3 = [](const double _v) { return std::round(_v * 1000.0) / 1000.0; };
+		const bool running = r.state == cpuLoad::State::Running;
+		auto m = Value::object();
+		m.set("type", "cpuLoad");
+		m.set("state", cpuLoad::stateName(r.state));
+		m.set("load", running ? Value(round3(r.load)) : Value());
+		m.set("worst", running ? Value(round3(r.worst)) : Value());
+		m.set("realtime", b.sampled() && b.rate().known && s.blocks > 0 ? Value(round3(b.rate().realtime)) : Value());
+		m.set("sampleRate", s.sampleRate > 0 ? s.sampleRate : 0.0);
+		m.set("blockSize", s.blockSize > 0 ? s.blockSize : 0);
+		m.set("plugin", !juce::JUCEApplicationBase::isStandaloneApp());
+		// the speed-ups as the machine runs them (the boot sample reads them under its lock once a second)
+		auto off = Value::array();
+		if(s.machine && s.speedUps)
+			for(const auto& l : md::speedUpLevers())
+				if(s.leversOff & md::bit(l.lever))
+					off.push(l.key);
+		m.set("speedUps", !s.machine ? "unknown" : !s.speedUps ? "off" : off.asArray().empty() ? "on" : "some");
+		m.set("leversOff", std::move(off));
+		m.set("exactEssi", s.machine && s.speedUps && s.exactEssi);
+		// what the next session starts with (the settings file; the menu's switches write it)
+		auto saved = Value::object();
+		saved.set("legacyEmulation", _processor.savedLegacyEmulation());
+		auto savedOff = Value::array();
+		for(const auto& l : md::speedUpLevers())
+			if(_processor.savedSpeedUpLeversOff() & md::bit(l.lever))
+				savedOff.push(l.key);
+		saved.set("leversOff", std::move(savedOff));
+		m.set("saved", std::move(saved));
+		const auto& arch = processArch::current();
+		m.set("translated", arch.translated);
+		m.set("arch", processArch::describe(arch));
 		return m;
 	}
 

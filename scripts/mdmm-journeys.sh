@@ -28,7 +28,8 @@
 # holding the .vst3 bundles (default bin/plugins/Release/VST3), MDMM_VST3_HOST the host's binary (default: built into
 # temp/vst3EditorHost by scripts/macos/build_vst3_host.sh when missing), MDMM_JOURNEY_TIMEOUT seconds per editor
 # (default 900), MDMM_JOURNEY_OUT the report folder (default temp/journeys/<date-time>: each editor's page log,
-# app output and the merged report.txt), MDMM_JOURNEY_VERBOSE=1 prints every step line too, MDMM_JOURNEY_PERF=1
+# app output, the merged report.txt and each sandbox's settings file as config.xml), MDMM_JOURNEY_CONFIG_MD /
+# MDMM_JOURNEY_CONFIG_MM a settings file to start from instead of the person's, MDMM_JOURNEY_VERBOSE=1 prints every step line too, MDMM_JOURNEY_PERF=1
 # records the audio callbacks (GEARMULATOR_RT_INSTRUMENTATION=1: overruns, slow callbacks) into performance-*.jsonl in
 # the report folder, MDMM_VST3_STATE=standalone starts the VST3 from the standalone's saved state (the filterState of
 # the person's settings, read only) instead of none, MDMM_JOURNEY_FRONT=0 does not bring the standalone to the front
@@ -117,6 +118,10 @@ run_unit() {
 	mkdir -p "$DROOT/Gearmulator Preview/$MACHINE/roms" "$DROOT/Gearmulator Preview/$MACHINE/config" "$SHOME/Library/Application Support" "$SHOME/Library/Caches"
 	ln -s "$ROM" "$DROOT/Gearmulator Preview/$MACHINE/roms/$(basename "$ROM")"
 	C="$DATA/config/$MACHINE Editor.xml"
+	# MDMM_JOURNEY_CONFIG_MD / _MM: another settings file to start from (e.g. a tester's, with old keys such as
+	# legacySimStepping beside legacyEmulation), copied into the sandbox like the person's
+	if [ "$M" = MD ] && [ -n "${MDMM_JOURNEY_CONFIG_MD:-}" ]; then C=$MDMM_JOURNEY_CONFIG_MD; fi
+	if [ "$M" = MM ] && [ -n "${MDMM_JOURNEY_CONFIG_MM:-}" ]; then C=$MDMM_JOURNEY_CONFIG_MM; fi
 	if [ -f "$C" ]; then
 		sed -e "s/\"skinDisplayName\" val=\"[^\"]*\"/\"skinDisplayName\" val=\"$SKIN\"/" -e "s/\"skinFile\" val=\"[^\"]*\"/\"skinFile\" val=\"$SKIN.rml\"/" \
 			"$C" > "$DROOT/Gearmulator Preview/$MACHINE/config/$MACHINE Editor.xml"
@@ -172,6 +177,8 @@ run_unit() {
 	for f in "$DROOT/Gearmulator Preview/$MACHINE/logs/"performance-*.jsonl; do
 		[ -f "$f" ] && cp "$f" "$UNIT/"
 	done
+	# the sandbox's settings as the editor left them (the speed-up switches it saved, I-018)
+	[ -f "$DROOT/Gearmulator Preview/$MACHINE/config/$MACHINE Editor.xml" ] && cp "$DROOT/Gearmulator Preview/$MACHINE/config/$MACHINE Editor.xml" "$UNIT/config.xml"
 	echo "$RESULT $t" > "$UNIT/result"
 	rm -rf "$BOX"
 	trap - INT TERM

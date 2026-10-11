@@ -43,12 +43,12 @@ per cent less, because the one thing that stays on is the `processUC` gating, pa
 cannot change anything, so it has no switch). **Both positions produce the same audio, bit for bit**, checked on
 both firmwares (audio, RAM, SRAM, loader RAM, patch RAM and MIDI out are compared); only the host CPU differs.
 
-- **Menu: Developer > Speed-ups off (legacy emulation, slower).** Ticked is the old
-  emulation. The choice applies at once, without restarting, and is kept in the plug-in's settings (key
-  `legacyEmulation`) and across project loads.
+- **Menu: Developer > Speed-ups (faster, same sound).** Ticked (the default) the speed-ups run; unticked is the
+  old, slower emulation, and the items under Speed-ups (each) are then greyed and unticked. The choice applies at once, without restarting, and is kept in the plug-in's settings (key
+  `legacyEmulation`, true when they are off) and across project loads.
 - **`GEARMULATOR_MDMM_SPEEDUPS=0`** starts every new session with the speed-ups off. Set it as an
   environment variable **before starting the host**; remove it to go back to the default (on). It only sets the
-  starting position: a ticked menu item also starts a session with the speed-ups off, and the menu can
+  starting position: an unticked menu item also starts a session with the speed-ups off, and the menu can
   change either at run time.
 
 Everything the speed-ups switch turns off:
@@ -114,6 +114,16 @@ One more environment variable is older than the speed-ups and unrelated to them:
 
 If a problem goes away with the speed-ups off, send the performance report from a capture with them off
 and one with them on.
+
+## The CPU meter (I-018)
+
+The top bar's CPU meter (after the version in the Setup label) is always on and needs no capture: it shows the share of
+each audio block's real-time budget (frames / sample rate) the editor's processBlock spends, smoothed over half a
+second, with the worst single block of the last 3 s marked. A block over 100 % was late (a click). Click it for the
+realtime ratio, the host's rate and block size, the speed-ups' state and Rosetta, and the Speed-ups switch and
+Speed-ups (each) themselves (the Developer menu's entries), so a tester compares them at the meter. The share is of one
+core's time for this editor's audio, not of the whole computer. It measures the same span as the capture's synth time, by two clock reads a block
+(`mdJucePlugin/mdCpuLoad.h`), and never takes the synth lock.
 
 ## Contents and interpretation
 

@@ -67,6 +67,11 @@ namespace mdJucePlugin
 	// processor has a second's sample; nothing before.
 	std::optional<elektronData::json::Value> audioRunOf(AudioPluginAudioProcessor& _processor);
 	constexpr double g_audioRunMs = 1000;
+	// I-018: the CPU meter's reading for the top bar ({"type":"cpuLoad", ...}): the share of the audio blocks'
+	// budget processBlock spends, smoothed, the worst block of the last seconds, and the details the meter's popover
+	// shows (realtime ratio, rate and block size, the speed-ups, Rosetta). A few times a second while the page is up.
+	elektronData::json::Value cpuLoadOf(AudioPluginAudioProcessor& _processor);
+	constexpr double g_cpuLoadMs = 250;
 
 	// P7: a model's SysEx import traits (mdSessionMd.cpp, mdSessionMm.cpp): the documents' type, the
 	// file's and the desk's documents, one document as the contract's JSON, and what may be imported.
@@ -362,6 +367,9 @@ namespace mdJucePlugin
 			if(m_desk->pageSeen() && due(t, g_audioRunMs) && (static_cast<double>(t) * g_stepMs < 60000 || !ready))
 				if(auto a = audioRunOf(processor()))
 					toPage(*a);
+			// I-018: the CPU meter in the top bar (no lock: atomics read on this thread, mdCpuLoad.h)
+			if(m_desk->pageSeen() && due(t, g_cpuLoadMs))
+				toPage(cpuLoadOf(processor()));
 			// B-030: the host's tempo (a DAW's playhead, also while it is stopped) for the LCD's TEMPO
 			if(m_desk->pageSeen() && due(t, g_hostTempoMs))
 				if(const auto bpm = m_hostTempo.next(hostBpmOf(processor())))

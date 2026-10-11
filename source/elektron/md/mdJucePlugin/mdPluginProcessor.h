@@ -2,6 +2,7 @@
 
 #include "jucePluginEditorLib/pluginProcessor.h"
 #include "mdBootDiagnostics.h"
+#include "mdCpuLoad.h"
 #include "mdLib/mdtypes.h"
 #include "synthLib/performanceReport.h"
 
@@ -60,6 +61,10 @@ namespace mdJucePlugin
 		// B-035: the host's audio calls counted, the start-up log's lines and the rates (mdBootDiagnostics.h)
 		void processBlockStarted(int _frames, bool _bypassed) override;
 		BootDiagnostics& bootDiagnostics() { return m_boot; }
+		// I-018: the CPU meter (mdCpuLoad.h): processBlock timed on the audio thread, read and smoothed here (message
+		// thread, a few times a second: the session's cpuLoad message)
+		void processBlockEnded(int _frames) override;
+		cpuLoad::Reading cpuLoadReading();
 		// Tester switch (doc/md_mm_performance_diagnostics.md): run the emulation as before the step 1
 		// speed-ups (md::Device::setSpeedUps). Identical audio, more host CPU. Kept in the plug-in's config.
 		void setLegacyEmulation(bool _legacy);
@@ -72,6 +77,12 @@ namespace mdJucePlugin
 		// its sound; acts only with the speed-ups on. Off by default; kept in the plug-in's config.
 		void setExactEssiTiming(bool _on);
 		bool isExactEssiTiming();
+		// I-018: the speed-up switches as saved in the plug-in's settings (what the next session starts with)
+		bool savedLegacyEmulation();
+		// I-018: one line in the start-up log for every speed-up switch change: the machine's state, why (_via: menu,
+		// settings at start, env) and what the settings file holds now
+		void logSpeedUps(const char* _via);
+		uint32_t savedSpeedUpLeversOff();
 		// The Machinedrum/Monomachine Editors' setup and session (mdDeskHost.h, doc/modern-ux/UPSTREAM.md).
 		class DeskHost* getDeskHost() const { return m_desk.get(); }
 
@@ -117,10 +128,16 @@ namespace mdJucePlugin
 		bool m_ramRecordingModeChunkSeen = false;
 		std::atomic<double> m_hostBpm{0.0};
 		BootDiagnostics m_boot;
+		cpuLoad::Meter m_cpuMeter;
+		cpuLoad::Smoother m_cpuSmoother;	// message thread
+		uint64_t m_blockStartNs = 0;		// audio thread
+		static uint64_t cpuClockNs();
 		void recordBoot();
 		double m_lastBootRecordMs = 0;	// when recordBoot last ran
 		const double m_bootStartMs = juce::Time::getMillisecondCounterHiRes();
 		std::string m_bootRom;
+		// the speed-ups as last written to the log (logSpeedUps): -1 none yet; else on | levers << 1 | L3 << 31
+		int64_t m_loggedSpeedUps = -1;
 		std::unique_ptr<class DeskHost> m_desk;
 		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPluginAudioProcessor)
 	};

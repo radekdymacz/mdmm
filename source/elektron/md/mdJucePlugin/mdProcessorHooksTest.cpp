@@ -11,6 +11,7 @@
 #include "baseLib/binarystream.h"
 #include "jucePluginLib/controller.h"
 #include "jucePluginLib/processor.h"
+#include "jucePluginEditorLib/editorPopupMenu.h"
 #include "jucePluginLib/types.h"
 #include "synthLib/plugin.h"
 #include "synthLib/resampler.h"
@@ -278,6 +279,41 @@ namespace
 	}
 }
 
+// I-018: the editor's menu as a native popup (jucePluginEditorLib::toPopupMenu, the fallback with no page up): every
+// entry that can run has an item ID of its own, because JUCE's popup never triggers an item whose ID is 0 (a click on
+// Developer > Speed-ups closed the menu and ran nothing).
+void verifyNativeMenuEntriesCanBeTriggered()
+{
+	juceRmlUi::Menu developer;
+	developer.addEntry("Speed-ups (faster, same sound)", true, [] {});
+	juceRmlUi::Menu levers;
+	levers.addEntry("L1", true, [] {});
+	levers.addEntry("L11", true, [] {});
+	developer.addSubMenu("Speed-ups (each)", std::move(levers));
+	juceRmlUi::Menu root;
+	root.addEntry("Open Log Folder", [] {});
+	root.addSeparator();
+	root.addSubMenu("Developer", std::move(developer));
+	std::vector<int> ids;
+	const std::function<void(const juce::PopupMenu&)> walk = [&](const juce::PopupMenu& _m)
+	{
+		for(juce::PopupMenu::MenuItemIterator it(_m); it.next();)
+		{
+			const auto& item = it.getItem();
+			if(item.subMenu)
+				walk(*item.subMenu);
+			else if(!item.isSeparator)
+			{
+				require(item.itemID != 0 && item.action != nullptr, "native menu entry '" + item.text.toStdString() + "' has an ID and an action");
+				ids.push_back(item.itemID);
+			}
+		}
+	};
+	walk(jucePluginEditorLib::toPopupMenu(root));
+	std::sort(ids.begin(), ids.end());
+	require(ids.size() == 4 && std::adjacent_find(ids.begin(), ids.end()) == ids.end(), "native menu entries have IDs of their own");
+}
+
 int main()
 {
 	const juce::ScopedJuceInitialiser_GUI juce;
@@ -287,6 +323,7 @@ int main()
 		verifyNoMidiLearnTranslatorWhileMappingIsOff(md::MachineModel::Machinedrum);
 		verifyNoMidiLearnTranslatorWhileMappingIsOff(md::MachineModel::Monomachine);
 		verifyOldRemoteDeviceStateLoadsLocal();
+		verifyNativeMenuEntriesCanBeTriggered();
 		std::cout << "mdProcessorHooksTest: PASS\n";
 		return 0;
 	}

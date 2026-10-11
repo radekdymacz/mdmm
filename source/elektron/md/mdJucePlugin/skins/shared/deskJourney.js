@@ -382,6 +382,148 @@ const Journey = (() => {
 			if (menu.on()) closeDeskMenu();
 		}
 	});
+	/* I-018: the CPU meter (deskCpu.js), both editors: beside the version in the Setup label, it reads a share while the
+	   audio runs, moves while the machine plays, and a click opens its details (a menu of notes) under it; Esc closes them.
+	   cpuMeterJourneys(prefix): [<prefix>-top-cpu-meter, <prefix>-shots-cpu (asked by name: the meter and its details as
+	   snapshots, scripts/mdmm-snap.py)]. The transport is the page's own PLAY key (#play, both editors). */
+	const cpu = {
+		el: () => $q(".setgroup .grplabel #cpumeter"),
+		playing: () => $q("#play")?.getAttribute("aria-pressed") === "true",
+		panel: () => $q('#deskmenu:not([hidden]) .mpanel[data-cpu="1"]'),
+		notes: () => [...($q('#deskmenu .mpanel[data-cpu="1"]')?.querySelectorAll(".mnote") || [])].map(n => n.textContent),
+		says: () => { const m = cpu.el(); return m ? `${m.dataset.state} "${m.querySelector(".cpuval")?.textContent}"` : "no meter"; },
+		async play(hands, c) { if (!cpu.playing()) { hands.click("#play"); c.started = true; await until(cpu.playing, 4000); } },
+		async stop(hands, c) { if (c.started && cpu.playing()) { hands.click("#play"); await until(() => !cpu.playing(), 4000); } c.started = false; }
+	};
+	/* Developer › Speed-ups and Speed-ups (each), both editors: each choice turns what the machine runs (read back
+	   from the plug-in: the cpuLoad message's speedUps and leversOff, which the processor reads from the device under its
+	   lock once a second) and the menu's tick, both ways. speedUpsMenuJourney(prefix): the umbrella from on to off to on
+	   (from off: off, on, off), then every lever off and on again with the umbrella on. The tidy puts all back. */
+	const speed = {
+		ticked: id => $q(menu.id(id))?.getAttribute("aria-checked") === "true",
+		enabled: id => !!$q(menu.id(id)) && !$q(menu.id(id)).disabled,
+		legacy: () => !speed.ticked("speed-ups"),
+		machine: () => { const m = CpuMeter.last; return m ? m.speedUps : "no reading"; },
+		leverOff: key => !!(CpuMeter.last && (CpuMeter.last.leversOff || []).includes(key)),
+		/* the settings file's (what the next session starts with) */
+		savedLegacy: () => !!(CpuMeter.last && CpuMeter.last.saved && CpuMeter.last.saved.legacyEmulation),
+		savedLeverOff: key => !!(CpuMeter.last && CpuMeter.last.saved && (CpuMeter.last.saved.leversOff || []).includes(key)),
+		/* the CPU details' own entries (deskCpu.js: the editor menu's, under the notes) */
+		cpuItem: label => [...document.querySelectorAll('#deskmenu .mpanel[data-cpu="1"] [data-mi]')].find(b => (b.querySelector("span")?.textContent || "").trim() === label),
+		cpuOpen: async hands => { if (menu.on()) closeDeskMenu(); await sleep(200); hands.click("#cpumeter");
+			if (!await until(() => !!speed.cpuItem("Speed-ups"), 3000)) throw new Error("no Speed-ups entry in the CPU details"); },
+		keys: () => [...document.querySelectorAll('#deskmenu [data-mid^="speedup-"]')].map(b => b.dataset.mid).filter(x => x !== "speedup-levers"),
+		/* the Developer submenu (and the levers' one) as the plug-in sends it now */
+		open: async (hands, levers) => { if (menu.on()) closeDeskMenu(); await until(() => !$q("#modalbg") || $q("#modalbg").hidden, 2000); await sleep(150); await menu.via(hands, levers ? ["developer", "speedup-levers"] : ["developer"]);
+			if (!await until(() => !!$q(menu.id(levers ? "speedup-L1" : "speed-ups")), 2000)) throw new Error("no speed-ups entry in Developer"); },
+		pick: async (hands, id, levers) => { await speed.open(hands, levers); hands.click(menu.id(id)); await until(() => !menu.on(), 2000); }
+	};
+	const speedUpsMenuJourney = prefix => {
+		const toggle = (n, want) => ({ say: `choose Speed-ups (${n}): the machine's speed-ups and the menu's tick turn`,
+			act: async (hands, c) => { c.want = want(c); await speed.pick(hands, "speed-ups");
+				await until(() => (speed.machine() === "off") === c.want, 4000);
+				await speed.open(hands); c.tick = speed.legacy(); closeDeskMenu(); },
+			screen: c => ok(c.tick === c.want, `ticked ${c.tick}, wanted ${c.want}`),
+			machine: c => ok((c.want ? speed.machine() === "off" : speed.machine() !== "off" && speed.machine() !== "unknown") && speed.savedLegacy() === c.want,
+				`the machine runs speed-ups ${speed.machine()}, saved legacyEmulation ${speed.savedLegacy()}`), within: 4000 });
+		/* the same from the CPU meter's details: its "Speed-ups" entry (ticked when on) */
+		const cpuToggle = (n, want) => ({ say: `in the CPU meter's details, choose Speed-ups (${n}): the machine, the settings and the details' tick follow`,
+			act: async (hands, c) => { c.want = want(c); await speed.cpuOpen(hands);
+				const b = speed.cpuItem("Speed-ups"); b.setAttribute("data-journey", "sw"); hands.click('[data-journey="sw"]');
+				await until(() => (speed.machine() === "off") === c.want, 4000);
+				/* the details open again by themselves with the new state */
+				await until(() => { const x = speed.cpuItem("Speed-ups"); return !!x && (x.getAttribute("aria-checked") === "true") === !c.want; }, 3000);
+				const x = speed.cpuItem("Speed-ups"); c.tick = x ? x.getAttribute("aria-checked") === "true" : null; },
+			screen: c => ok(c.tick === !c.want, `the details' Speed-ups ticked ${c.tick}, wanted ${!c.want}`),
+			machine: c => ok((c.want ? speed.machine() === "off" : speed.machine() !== "off") && speed.savedLegacy() === c.want,
+				`the machine runs speed-ups ${speed.machine()}, saved legacyEmulation ${speed.savedLegacy()}`), within: 4000 });
+		return {
+			name: `${prefix}-dev-speedups`,
+			needs: () => typeof CpuMeter === "undefined" ? "no CPU meter (its cpuLoad message carries the machine's speed-ups)" : null,
+			steps: [
+				{ say: "open Developer: Speed-ups, ticked when the machine runs them", act: async (hands, c) => { await speed.open(hands); c.legacy0 = speed.legacy(); closeDeskMenu(); },
+					machine: c => ok((speed.machine() === "off") === c.legacy0, `ticked ${c.legacy0}, the machine ${speed.machine()}`), within: 4000 },
+				toggle("first", c => !c.legacy0), toggle("again", c => c.legacy0), toggle("a third time", c => !c.legacy0), toggle("back", c => c.legacy0),
+				cpuToggle("first", c => !c.legacy0), cpuToggle("back", c => c.legacy0),
+				{ say: "in the CPU meter's details, Speed-ups (each)… lists every lever; L1 off there and on again (the machine and the settings follow)",
+					act: async (hands, c) => {
+						if (speed.machine() === "off") { await speed.pick(hands, "speed-ups"); await until(() => speed.machine() !== "off", 4000); }
+						c.res = [];
+						for (const on of [false, true]) {
+							await speed.cpuOpen(hands);
+							const each = speed.cpuItem("Speed-ups (each)…"); each.setAttribute("data-journey", "each"); hands.click('[data-journey="each"]');
+							if (!await until(() => !!$q('#deskmenu [data-mid="speedup-L1"]'), 2000)) throw new Error("no levers under Speed-ups (each)…");
+							c.levers = document.querySelectorAll('#deskmenu .mpanel[data-lv="1"] [data-mid^="speedup-"]').length;
+							hands.click('#deskmenu [data-mid="speedup-L1"]');
+							const okm = await until(() => speed.leverOff("L1") === !on && speed.savedLeverOff("L1") === !on, 4000);
+							c.res.push(`L1 ${on ? "on" : "off"}: ${okm ? "ok" : "machine " + speed.leverOff("L1") + " saved " + speed.savedLeverOff("L1")}`);
+						}
+						if (menu.on()) closeDeskMenu();
+					},
+					screen: c => ok(c.levers >= 8 && c.res.every(x => /ok$/.test(x)), `${c.levers} levers; ${c.res.join("; ")}`), within: 1000 },
+				{ say: "with the speed-ups on: each lever in Speed-ups (each) off, then on again (the tick and the machine's levers)",
+					act: async (hands, c) => {
+						if (speed.machine() === "off") { await speed.pick(hands, "speed-ups"); await until(() => speed.machine() !== "off", 4000); }
+						await speed.open(hands, true); const ids = speed.keys(); closeDeskMenu();
+						c.bad = []; c.n = ids.length;
+						for (const id of ids) {
+							const key = id.slice("speedup-".length);
+							for (const on of [false, true]) {
+								await speed.pick(hands, id, true);
+								const machineOk = await until(() => speed.leverOff(key) === !on && speed.savedLeverOff(key) === !on, 4000);
+								await speed.open(hands, true); const t = speed.ticked(id), en = speed.enabled(id); closeDeskMenu();
+								if (!machineOk || t !== on || !en) c.bad.push(`${key} ${on ? "on" : "off"}: tick ${t}, enabled ${en}, machine ${machineOk ? "ok" : "levers off " + (CpuMeter.last.leversOff || []).join("+") + ", saved " + ((CpuMeter.last.saved || {}).leversOff || []).join("+")}`);
+							}
+						}
+					},
+					screen: c => ok(c.n >= 8 && !c.bad.length, c.n + " levers; " + c.bad.join("; ")), within: 1000 }
+			],
+			async tidy(hands, c) {
+				if (menu.on()) closeDeskMenu();
+				if (c.legacy0 === undefined) return;
+				try {
+					await speed.open(hands); const now = speed.legacy(); closeDeskMenu();
+					if (now !== c.legacy0) await speed.pick(hands, "speed-ups");
+				} catch (_) { if (menu.on()) closeDeskMenu(); }
+			}
+		};
+	};
+	const cpuMeterJourneys = prefix => [{
+		name: `${prefix}-top-cpu-meter`,
+		steps: [
+			{ say: "the CPU meter sits after the version in the Setup label and reads a share of the audio blocks' time",
+				screen: () => { const m = cpu.el(), r = m && m.getBoundingClientRect();
+					return ok(!!m && r.width > 0 && r.height > 0 && m.dataset.state === "running" && /^\d+ %$/.test(m.querySelector(".cpuval").textContent)
+						&& (!$q(".setgroup .grplabel .aboutver") || $q(".setgroup .grplabel .aboutver").compareDocumentPosition(m) & 4), cpu.says()); } },
+			{ say: "every key of the top bar is inside the window (the Setup keys last, at the right)",
+				screen: () => { const out = [...document.querySelectorAll(".top button")].filter(b => { const r = b.getBoundingClientRect(); return r.width > 0 && (r.right > innerWidth + 0.5 || r.left < -0.5); });
+					return ok(!out.length, out.map(b => (b.id || b.textContent.trim()) + " at " + Math.round(b.getBoundingClientRect().right) + " of " + innerWidth).join(", ")); } },
+			{ say: "press PLAY: while the machine plays, the meter moves (its share read every 250 ms for 3 s)",
+				act: async (hands, c) => { await cpu.play(hands, c); c.loads = []; for (let i = 0; i < 12; i++) { await sleep(250); c.loads.push(cpu.el()?.dataset.load || ""); } },
+				screen: c => ok(cpu.playing() && c.loads.every(x => x !== "") && new Set(c.loads).size >= 2, `playing ${cpu.playing()}, shares ${(c.loads || []).join(",")}`) },
+			{ say: "click the meter: its details open under it (average, worst block, machine speed, rate and block, speed-ups, native or Rosetta)",
+				act: hands => { if (menu.on()) closeDeskMenu(); hands.click("#cpumeter"); },
+				screen: () => { const p = cpu.panel(), n = cpu.notes(), m = cpu.el();
+					const under = p && m && p.getBoundingClientRect().top >= m.getBoundingClientRect().bottom - 1;
+					return ok(!!p && under && /^Average: \d+ %/.test(n[0] || "") && /^Worst block: \d+ %/.test(n[1] || "") && n.some(x => / Hz/.test(x))
+						&& n.some(x => /^Speed-ups: /.test(x)) && n.some(x => /^(Runs natively|Rosetta)/.test(x)), p ? (under ? "" : "not under the meter: ") + n.join(" | ") : "no details"); } },
+			{ say: "they follow the meter while open: still open a second later, the same lines", act: () => sleep(1000),
+				screen: () => ok(!!cpu.panel() && /^Average: \d+ %/.test(cpu.notes()[0] || ""), cpu.notes().join(" | ") || "closed") },
+			{ say: "press Esc: the details close", act: hands => hands.key("Escape"), screen: () => ok(!menu.on(), "still open") },
+			{ say: "press STOP", act: (hands, c) => cpu.stop(hands, c), screen: () => ok(!cpu.playing(), "still playing") }
+		],
+		async tidy(hands, c) { if (menu.on()) closeDeskMenu(); await cpu.stop(hands, c); }
+	}, {
+		name: `${prefix}-shots-cpu`, needs: () => location.search.includes(`${prefix}-shots-cpu`) ? null : "screenshots only when asked by name",
+		steps: [
+			{ say: "the meter while the machine plays", act: async (hands, c) => { await cpu.play(hands, c); await sleep(2500); snapshot(`${prefix}-cpu-meter`); },
+				screen: () => ok(cpu.el()?.dataset.state === "running", cpu.says()) },
+			{ say: "its details", act: async hands => { hands.click("#cpumeter"); await until(() => !!cpu.panel(), 2000); await sleep(600); snapshot(`${prefix}-cpu-details`); },
+				screen: () => ok(!!cpu.panel(), "no details") },
+			{ say: "Esc, stop", act: async (hands, c) => { hands.key("Escape"); await until(() => !menu.on(), 2000); await sleep(200); await cpu.stop(hands, c); } }
+		],
+		async tidy(hands, c) { if (menu.on()) closeDeskMenu(); await cpu.stop(hands, c); }
+	}];
 	const onScreen = () => document.visibilityState === "visible" ? null : "the editor window is not on screen (display asleep or covered): its canvases are not drawn";
 	/* for needs: real key events through the operating system (u.osKey) exist in the macOS plug-in only */
 	const osKeyPath = () => osKeys() ? null : "no way in for real key events here (the macOS plug-in has one, mdOsKeys.h)";
@@ -456,5 +598,5 @@ const Journey = (() => {
 			{ name: `${prefix}-shots-views`, needs: () => location.search.includes(`${prefix}-shots`) ? null : "screenshots only when asked by name", steps: views.map(v => step(v, true)) }
 		];
 	}
-	return { run, demo, ok, sleep, until, u, onScreen, osKeyPath, menu, editorMenuJourney, snapshot, safari15Diff, viewJourneys };
+	return { run, demo, ok, sleep, until, u, onScreen, osKeyPath, menu, editorMenuJourney, cpuMeterJourneys, speedUpsMenuJourney, snapshot, safari15Diff, viewJourneys };
 })();

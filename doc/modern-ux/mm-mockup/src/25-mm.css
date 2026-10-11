@@ -247,3 +247,6 @@ body.dockother #rail .railparams>:is(.lpspace,.pagetabs,.pkcol),body.dockother #
 .th.selt{box-shadow:inset 3px 0 0 var(--print)}
 .th.selt.marked{box-shadow:inset 3px 0 0 var(--print),inset 0 0 0 2px var(--led)}
 .lcdsec button.onsel{opacity:1;text-decoration:underline;text-underline-offset:2px}
+/* I-018: the CPU meter beside the version (skins/shared/deskCpu.js, loaded by the plug-in's page) */
+/* @include shared/deskCpu.css */
+/* @include shared/deskTopFit.css */

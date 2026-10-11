@@ -139,26 +139,27 @@ namespace mdJucePlugin
 				}, {}, mode == md::RamRecordingMode::Original, available));
 		}
 		// For testers: tells in minutes whether a problem comes from the speed-ups of the emulation.
-		// Same audio either way; ticked is the slower emulation of before.
+		// Same audio either way; ticked (the default) means the speed-ups run, unticked is the slower emulation of before.
 		developer.push_back(separator());
 		const bool legacyEmulation = processor.isLegacyEmulation();
-		developer.push_back(action("legacy-emulation", "Speed-ups off (legacy emulation, slower)",
-			[&processor, legacyEmulation]
+		developer.push_back(action("speed-ups", "Speed-ups (faster, same sound)",
+			[&processor]
 			{
-				processor.setLegacyEmulation(!legacyEmulation);
-			}, {}, legacyEmulation));
-		// The same one lever at a time (ticked: on), to find which one a CPU difference comes from. Greyed out while
-		// the speed-ups are off.
+				// what the machine runs now, not when the menu was built: the macOS menu bar may show an older build
+				processor.setLegacyEmulation(!processor.isLegacyEmulation());
+			}, {}, !legacyEmulation));
+		// The same one lever at a time (ticked: on), to find which one a CPU difference comes from. Greyed out and
+		// unticked while the speed-ups are off (nothing shows a tick for what is not running).
 		{
 			const uint32_t leversOff = processor.getSpeedUpLeversOff();
 			std::vector<editorMenu::Item> levers;
 			for(const auto& lever : md::speedUpLevers())
 			{
 				const uint32_t b = md::bit(lever.lever);
-				levers.push_back(action(std::string("speedup-") + lever.key, lever.label, [&processor, leversOff, b]
+				levers.push_back(action(std::string("speedup-") + lever.key, lever.label, [&processor, b]
 					{
-						processor.setSpeedUpLeversOff(leversOff ^ b);
-					}, {}, !(leversOff & b), !legacyEmulation));
+						processor.setSpeedUpLeversOff(processor.getSpeedUpLeversOff() ^ b);
+					}, {}, !legacyEmulation && !(leversOff & b), !legacyEmulation));
 			}
 			developer.push_back(submenu("speedup-levers", "Speed-ups (each)", std::move(levers)));
 		}
@@ -168,9 +169,9 @@ namespace mdJucePlugin
 		{
 			const bool exactEssi = processor.isExactEssiTiming();
 			developer.push_back(action("exact-essi-timing", "Exact MD audio timing (experimental, changes the sound)",
-				[&processor, exactEssi]
+				[&processor]
 				{
-					processor.setExactEssiTiming(!exactEssi);
+					processor.setExactEssiTiming(!processor.isExactEssiTiming());
 				}, {}, exactEssi, !legacyEmulation));
 		}
 		m.items.push_back(submenu("developer", "Developer", std::move(developer)));

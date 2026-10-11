@@ -83,8 +83,8 @@ check(/DeskMenu\.wantsEditor\(e\)/.test(read("../mdStudio/mdDeskLive.js"))
 /* the wiring: both pages ask for the menu and draw the answer; the MM page has the file; the window answers it */
 const R = path.join(HERE, "../../../../../..");
 const live = read("../mdStudio/mdDeskLive.js"), adapter = read("../mmStudio/mmAdapter.js");
-check(/op: "openMenu"/.test(live) && /m\.type === "editorMenu"\) DeskMenu\.showEditor/.test(live), "the Machinedrum page asks for the menu and draws the answer");
-check(/send\(\{ op: "openMenu" \}\)/.test(adapter) && /m\.type === "editorMenu"\) DeskMenu\.showEditor/.test(adapter), "the Monomachine page too");
+check(/op: "openMenu"/.test(live) && /m\.type === "editorMenu" && !CpuMeter\.takeMenu\(m\)\) DeskMenu\.showEditor/.test(live), "the Machinedrum page asks for the menu and draws the answer (unless the CPU meter asked for it, I-018)");
+check(/send\(\{ op: "openMenu" \}\)/.test(adapter) && /m\.type === "editorMenu"\) \{ if \(!CpuMeter\.takeMenu\(m\)\) DeskMenu\.showEditor/.test(adapter), "the Monomachine page too");
 check(/\$SHARED\/deskMenu\.js/.test(fs.readFileSync(path.join(R, "doc/modern-ux/mm-mockup/build.sh"), "utf8")), "the Monomachine page loads deskMenu.js (build.sh)");
 check(/<script src="deskMenu\.js"><\/script>/.test(read("../mdStudio/mdStudio.html")), "the Machinedrum page loads deskMenu.js");
 check(/\["#deskmenu", "menu", "closeDeskMenu"\]/.test(read("deskModal.js")), "the modal layer knows it (Esc, a click outside)");

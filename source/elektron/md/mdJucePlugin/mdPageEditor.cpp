@@ -505,6 +505,23 @@ namespace mdJucePlugin
 			return;
 		}
 		auto m = editorMenu::toJson(state->menu(), m_menuActions);
+		m_menuIds.assign(m_menuActions.size(), std::string());
+		const std::function<void(const elektronData::json::Value&)> ids = [&](const elektronData::json::Value& _items)
+		{
+			if(!_items.isArray())
+				return;
+			for(const auto& i : _items.asArray())
+			{
+				const auto* n = i.find("n");
+				const auto* id = i.find("id");
+				if(n && n->isNumber() && id && id->isString() && static_cast<size_t>(n->asNumber()) < m_menuIds.size())
+					m_menuIds[static_cast<size_t>(n->asNumber())] = id->asString();
+				if(const auto* sub = i.find("items"))
+					ids(*sub);
+			}
+		};
+		if(const auto* items = m.find("items"))
+			ids(*items);
 		m.set("type", "editorMenu");
 		m.set("menu", ++m_menuSerial);
 		m_page->send(std::move(m));
@@ -513,8 +530,16 @@ namespace mdJucePlugin
 
 	void PageEditor::pickMenu(const int _menu, const size_t _n)
 	{
+		// I-018: every pick in the start-up log, also one that is not run (a speed-up switch that did nothing)
+		auto& boot = dynamic_cast<AudioPluginAudioProcessor&>(getProcessor()).bootDiagnostics();
+		const auto id = _n < m_menuIds.size() ? m_menuIds[_n] : std::string("?");
 		if(_menu != m_menuSerial || _n >= m_menuActions.size())
+		{
+			boot.note("editor menu: pick " + std::to_string(_n) + " (" + id + ") of menu " + std::to_string(_menu) + " not run: the menu shown is "
+				+ std::to_string(m_menuSerial) + ", " + std::to_string(m_menuActions.size()) + " entries");
 			return;	// an older menu's entry (a newer one was sent since): nothing
+		}
+		boot.note("editor menu: pick " + std::to_string(_n) + " (" + id + ") of menu " + std::to_string(_menu));
 		auto action = m_menuActions[_n];
 		m_menuActions.clear();	// one choice a menu
 		++m_menuSerial;

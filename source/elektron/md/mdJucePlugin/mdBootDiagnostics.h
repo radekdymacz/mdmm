@@ -49,6 +49,12 @@ namespace mdJucePlugin
 		bool firmwareMidiReady = false;
 		std::string lifecycle;		// the desk's (deskCore::lifecycleName)
 		std::string rom;			// the ROM file the machine runs, or "none"
+		// I-018: the emulation's switches as the machine runs them (read under the lock this sample takes anyway, so the
+		// CPU meter's details never take the synth lock): md::Device::speedUps, speedUpLeversOff, exactEssiTiming
+		bool machine = false;		// a machine ran (else the three below are defaults)
+		bool speedUps = true;
+		uint32_t leversOff = 0;
+		bool exactEssi = false;
 	};
 
 	// The rates between two samples. Pure.
@@ -77,6 +83,8 @@ namespace mdJucePlugin
 		void record(const BootSample& _s);
 		// The editor's start-up log (B-022): the lines so far are written into it, the next ones as they come.
 		void setLog(const juce::File& _file);
+		// A line of its own in the same log, at any time (message thread): what changed and why (I-018: the speed-ups)
+		void note(const std::string& _line) { write(_line); }
 
 		const BootSample& last() const { return m_last; }
 		const BootRate& rate() const { return m_rate; }

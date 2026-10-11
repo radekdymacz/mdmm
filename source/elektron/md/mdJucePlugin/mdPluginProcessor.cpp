@@ -2,6 +2,9 @@
 #include "mdBackgroundRun.h"	// first: the JUCE plug-in headers define Component as a macro
 #endif
 #include "mdPluginProcessor.h"
+
+#include <chrono>
+#include <cstdlib>
 #include "juceUiLib/messageBox.h"
 #include "juceUiLib/messageRoute.h"
 #include "mdDeskHost.h"
@@ -878,9 +881,32 @@ namespace mdJucePlugin
 	void AudioPluginAudioProcessor::processBlockStarted(const int _frames, const bool _bypassed)
 	{
 		if(_bypassed)
+		{
 			m_boot.counters.onBypassed(_frames);
-		else
-			m_boot.counters.onBlock(_frames, isNonRealtime());
+			m_cpuMeter.onBypassed();
+			return;
+		}
+		m_boot.counters.onBlock(_frames, isNonRealtime());
+		m_blockStartNs = cpuClockNs();
+	}
+
+	// I-018: the block's time against its budget (mdCpuLoad.h): two clock reads and a few relaxed atomic adds
+	void AudioPluginAudioProcessor::processBlockEnded(const int _frames)
+	{
+		// the host's rate (a host that called prepareToPlay alone sets only the plug-in's: a plain member read)
+		const double rate = getSampleRate() > 0 ? getSampleRate() : static_cast<double>(getPlugin().getHostSamplerate());
+		m_cpuMeter.onBlock(cpuClockNs() - m_blockStartNs, _frames, rate, isNonRealtime());
+	}
+
+	uint64_t AudioPluginAudioProcessor::cpuClockNs()
+	{
+		return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+			std::chrono::steady_clock::now().time_since_epoch()).count());
+	}
+
+	cpuLoad::Reading AudioPluginAudioProcessor::cpuLoadReading()
+	{
+		return m_cpuSmoother.add(m_cpuMeter.take(), juce::Time::getMillisecondCounterHiRes());
 	}
 
 	// B-035: once a second, what the host does with the audio and how far the machine got (mdBootDiagnostics.h)
@@ -902,6 +928,10 @@ namespace mdJucePlugin
 			s.cycles = hw.hostCurrentCycle();
 			s.dspBooted = (hw.getDspMixer().booted() ? 1 : 0) + (hw.getDspProducer().booted() ? 1 : 0);
 			s.firmwareMidiReady = hw.isFirmwareMidiReady();
+			s.machine = true;
+			s.speedUps = device->speedUps();
+			s.leversOff = device->speedUpLeversOff();
+			s.exactEssi = device->exactEssiTiming();
 		});
 		if(m_desk && m_desk->session())
 			s.lifecycle = m_desk->session()->lifecycleName();
@@ -912,6 +942,17 @@ namespace mdJucePlugin
 		}
 		s.rom = m_bootRom;
 		m_boot.record(s);
+		// I-018: the speed-ups the machine runs, logged when they differ from the last line: at start (the settings or
+		// the environment), and anything that changed them without a menu action
+		if(s.machine)
+		{
+			const auto now = static_cast<int64_t>(s.speedUps ? 1 : 0) | (static_cast<int64_t>(s.leversOff) << 1) | (static_cast<int64_t>(s.exactEssi ? 1 : 0) << 31);
+			if(now != m_loggedSpeedUps)
+			{
+				const auto* env = std::getenv("GEARMULATOR_MDMM_SPEEDUPS");
+				logSpeedUps(m_loggedSpeedUps < 0 ? (env && std::string(env) == "0" ? "start, env GEARMULATOR_MDMM_SPEEDUPS=0" : "start, settings") : "changed, not by the menu");
+			}
+		}
 	}
 
 	void AudioPluginAudioProcessor::timerCallback()
@@ -979,6 +1020,33 @@ namespace mdJucePlugin
 			if(auto* const device = dynamic_cast<md::Device*>(_device))
 				device->setSpeedUps(!_legacy);
 		});
+		logSpeedUps("menu");
+	}
+
+	void AudioPluginAudioProcessor::logSpeedUps(const char* _via)
+	{
+		bool known = false, on = true, essi = false;
+		uint32_t off = 0;
+		getPlugin().withDeviceLocked([&](synthLib::Device* const _device)
+		{
+			if(const auto* device = dynamic_cast<const md::Device*>(_device))
+			{
+				known = true;
+				on = device->speedUps();
+				off = device->speedUpLeversOff();
+				essi = device->exactEssiTiming();
+			}
+		});
+		std::string levers;
+		for(const auto& l : md::speedUpLevers())
+			if(off & md::bit(l.lever))
+				levers += (levers.empty() ? "" : "+") + std::string(l.key);
+		m_loggedSpeedUps = known ? (static_cast<int64_t>(on ? 1 : 0) | (static_cast<int64_t>(off) << 1) | (static_cast<int64_t>(essi ? 1 : 0) << 31)) : -1;
+		const auto file = juce::File(juce::String::fromUTF8(getConfigFile().c_str()));
+		m_boot.note(std::string("speed-ups: ") + (!known ? "no machine" : on ? "on" : "off") + (levers.empty() ? "" : ", levers off " + levers)
+			+ (essi ? ", L3 on" : "") + " (" + _via + "), saved legacyEmulation=" + (savedLegacyEmulation() ? "1" : "0")
+			+ " speedUpLeversOff=" + std::to_string(savedSpeedUpLeversOff()) + " exactEssiTiming=" + (getConfig().getBoolValue(g_exactEssiTimingKey, false) ? "1" : "0")
+			+ " in " + file.getFileName().toStdString() + (file.existsAsFile() ? "" : " (no file)"));
 	}
 
 	void AudioPluginAudioProcessor::setExactEssiTiming(const bool _on)
@@ -990,6 +1058,7 @@ namespace mdJucePlugin
 			if(auto* const device = dynamic_cast<md::Device*>(_device))
 				device->setExactEssiTiming(_on);
 		});
+		logSpeedUps("menu");
 	}
 
 	bool AudioPluginAudioProcessor::isExactEssiTiming()
@@ -1010,6 +1079,17 @@ namespace mdJucePlugin
 			if(auto* const device = dynamic_cast<md::Device*>(_device))
 				device->setSpeedUpLeversOff(_off);
 		});
+		logSpeedUps("menu");
+	}
+
+	bool AudioPluginAudioProcessor::savedLegacyEmulation()
+	{
+		return getConfig().getBoolValue(g_legacyEmulationKey, false);
+	}
+
+	uint32_t AudioPluginAudioProcessor::savedSpeedUpLeversOff()
+	{
+		return static_cast<uint32_t>(getConfig().getIntValue(g_speedUpLeversOffKey, 0)) & md::g_allSpeedUpLevers;
 	}
 
 	uint32_t AudioPluginAudioProcessor::getSpeedUpLeversOff()

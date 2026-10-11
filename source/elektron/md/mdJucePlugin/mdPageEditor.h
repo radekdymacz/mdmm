@@ -105,5 +105,6 @@ namespace mdJucePlugin
 		bool m_rosettaOffered = false;	// offerRosettaNotice ran for this window
 		int m_menuSerial = 0;							// the editor's menu last sent to the page (editorMenu's menu)
 		std::vector<std::function<void()>> m_menuActions;	// its entries' actions, by their n
+		std::vector<std::string> m_menuIds;	// their ids, by their n (the start-up log's pick lines)
 	};
 }
