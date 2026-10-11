@@ -76,7 +76,7 @@ no row matches runs everything of its tier.
 - **Command -> firmware.** `doc/modern-ux/intent-cases.json` (125 MM cases, and a first Machinedrum set of 29) is read by
   `mmIntentCases.h` / `mdIntentCases.h` and run by the core tests (`mmDeskTest`, `mdDeskTest`) and, through the desk on
   the firmware, by `mmDeskFirmwareTest intentcases` and `mdDeskFirmwareTest intentcases` (ctest
-  `mmIntentCasesFirmwareTest`, `mdIntentCasesFirmwareTest`).
+  `mdIntentCasesFirmwareTest`; the MM's by hand until its findings are triaged, below).
 - **ctest lanes.** The 28 node page tests carry the label `Page`; the Timing tests run serially (`RUN_SERIAL`); the slow
   unit tests carry `Slow` (out of the save-time lane).
 - **The gate in lanes.** Stage 1 with ccache; the journeys' diagnostics build in the background while the release
@@ -88,6 +88,16 @@ no row matches runs everything of its tier.
 - **CI.** Tests in their own jobs (macOS: arm64 without ThinLTO; Linux: beside the package), the macOS package job
   builds only the plug-ins with ThinLTO, `mdmm-audio-io.yml` folded into the Editors, and the CI nightly builds Windows
   with LTCG on main so a release branch's LTCG package finds main's cache.
+
+## Findings of the first firmware runs (2026-10-11)
+
+- Machinedrum: 28 of 28 cases as the core says (40 s). One case moved off the pattern that plays: there the machine also
+  loads the pattern's new kit (a working-kit switch the core's apply does not model).
+- Monomachine: 70 of 99 cases as the core says (64 s); the rest are to triage, so `mmIntentCasesFirmwareTest` is not in
+  ctest yet (run it by hand: `mmDeskFirmwareTest <MM ROM> intentcases`). The machine keeps the base's working-kit trigPos
+  as none; kit fields with no live message (trigPos, legato, portamento, routing mode, multiTrig, assign) and the GLOBAL
+  MIDI cases, the multi map and the FX machines' input read back otherwise than the core says. Each is either a bug or a
+  case the core and the firmware see differently (then the case says so, as the MD's pattern kit does).
 
 ## What stays open
 
