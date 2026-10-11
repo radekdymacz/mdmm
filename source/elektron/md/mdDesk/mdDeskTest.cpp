@@ -8,6 +8,7 @@
 #include "mdDeskLibrary.h"
 #include "mdDeskKeys.h"
 #include "mdDeskMachine.h"
+#include "mdIntentCases.h"
 
 #include "deskCore/deskContract.h"
 #include "deskCore/deskKinds.h"
@@ -2633,6 +2634,68 @@ namespace
 		check(gaps.empty(), "every machine command of the table has its adapter function, and no other; every ask is a command");
 	}
 
+	// The Machinedrum's edit intents as data (doc/modern-ux/intent-cases.json, "md"; mdIntentCases.h): each case's
+	// commands through apply on the base documents, the documents after compared whole with the base plus the case's
+	// "after" values; a refused case names a part of the error. The firmware runs the same cases (DEV-CYCLE.md).
+	void testIntentCases()
+	{
+		namespace ic = mdDesk::intentCases;
+		std::string problem;
+		const auto cases = ic::load(MDDESK_INTENT_CASES, problem);
+		check(cases.has_value(), problem.empty() ? "the Machinedrum's intent cases load" : problem);
+		if(!cases)
+			return;
+		std::vector<std::string> errors;
+		const auto docs = ic::documents(cases->base, errors);
+		check(docs.has_value(), errors.empty() ? "the base documents read" : "the base documents read: " + errors.front());
+		if(!docs)
+			return;
+		size_t ran = 0;
+		for(const auto& c : cases->cases)
+		{
+			const auto name = c.find("name")->asString();
+			auto d = *docs;
+			Clipboard clip;
+			std::vector<std::string> refusedWith;
+			for(const auto& command : ic::commandsOf(c))
+			{
+				const auto r = apply(d, command, clip, cases->context);
+				if(r.clipboard)
+					clip = *r.clipboard;
+				if(!r.errors.empty())
+				{
+					refusedWith = r.errors;
+					break;
+				}
+				for(const auto& ch : r.changes)
+					d.set(ch.after);
+			}
+			++ran;
+			if(const auto* want = c.find("refused"))
+			{
+				bool named = false;
+				for(const auto& e : refusedWith)
+					named = named || e.find(want->asString()) != std::string::npos;
+				check(named, "md intent refused: " + name + (refusedWith.empty() ? " (taken)" : " (" + refusedWith.front() + ")"));
+				continue;
+			}
+			if(!refusedWith.empty())
+			{
+				check(false, "md intent " + name + ": refused, " + refusedWith.front());
+				continue;
+			}
+			const auto want = ic::expected(*cases, c, problem);
+			if(!want)
+			{
+				check(false, "md intent " + name + ": " + problem);
+				continue;
+			}
+			const auto diff = ic::differences(ic::written(d), ic::written(*want));
+			check(diff.empty(), "md intent " + name + diff);
+		}
+		check(ran >= 20, "every Machinedrum intent case ran (" + std::to_string(ran) + ")");
+	}
+
 	// The desk holds whichever adapter the engine gives it (P6): a fake with no protocol at all
 	// gets the page's documents, its edits and its machine commands through the same core.
 	class FakeMdAdapter final : public deskCore::AdapterBase<MdModel, MdAdapter>
@@ -2928,6 +2991,7 @@ int main(const int _argc, char** _argv)
 	testKeyMapping();
 	testNotes();
 	testFakeAdapter();
+	testIntentCases();
 	checkContract(false);
 	if(g_failures)
 	{

@@ -42,7 +42,8 @@ if(BUILD_TESTING)
 	target_link_libraries(mdDeskTest PRIVATE mdDesk deskHost)
 	target_compile_definitions(mdDeskTest PRIVATE MDDESK_SCHEMA="${CMAKE_CURRENT_SOURCE_DIR}/../../../../doc/modern-ux/md-data-contract.schema.json")
 	target_compile_definitions(mdDeskTest PRIVATE
-		MDDESK_TESTDATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../elektronData/testdata")
+		MDDESK_TESTDATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../elektronData/testdata"
+		MDDESK_INTENT_CASES="${CMAKE_CURRENT_SOURCE_DIR}/../../../../doc/modern-ux/intent-cases.json")
 	add_test(NAME mdDeskTest COMMAND mdDeskTest)
 	set_tests_properties(mdDeskTest PROPERTIES LABELS "UnitTest")
 	set_property(TARGET mdDeskTest PROPERTY FOLDER "Elektron/test")
