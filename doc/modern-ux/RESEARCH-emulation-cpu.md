@@ -116,7 +116,7 @@ The hottest ~200-byte JIT region in the first profile (18 % of JIT time) is bloc
 
 - The machine was loaded during most runs (load average 4-118, other agents and Ableton). CPU % figures are noisy. Instruction counts are reliable.
 - Only two firmwares and two workloads. SysEx dumps, kit loads, UW recording, TurboMIDI and song mode were not run.
-- Not measured: Windows, Linux, Intel Macs, a real plugin host callback, and quiet-machine wall time for most levers.
+- Not measured: Windows, Linux, Intel Macs, and quiet-machine wall time for most levers. The plug-in host callback: see "In a plug-in host, lever by lever".
 - Prototypes, not products: L4 used hard-coded loop addresses; L7 used a vector whitelist (unsafe).
 - Not explained: why janne808's profile shows 15 % JIT time where ours shows 38.8 %; Joe's MD callback overruns with PR #20.
 - Not read: Discord, Joe's private notes, Reddit.
@@ -509,6 +509,43 @@ Also seen: a probe that corrupted flash at sector 6 of a project and loaded it h
 the device lock: the ColdFire pushed into DSP1's full host-port ring (`RingBuffer<..., true>`), which blocks, on the
 thread that would drain it. Not reproduced with a real project; a non-blocking push there (drop and count) would turn
 such a hang into a wrong note.
+
+## In a plug-in host, lever by lever (2026-10-11, branch perf/per-lever-switches)
+
+A report from Ableton Live said the speed-ups seemed to cost CPU there. Measured with the per-lever switches
+(doc/md_mm_performance_diagnostics.md, "Switches for testers") in `latency_host` driving the VST3 as a DAW does: 48 kHz,
+fixed blocks of 128 and 512, a time-constraint (real-time) thread paced to the wall clock, the plug-in's own
+processBlock (resampler, MIDI clock from the host transport); per callback the thread's CPU time, retired instructions and
+cycles (new columns in its blocks CSV). MD stopped with notes, MD playing (the host transport starts its sequencer), MM
+stopped with notes (the host transport does not start the MM). Window 11-18 s, two ABBA rounds, medians; a loaded Mac
+(load 10-120). Dev build (no PGO).
+
+Cycles per callback against all on (+ = that lever off costs more, i.e. the lever saves):
+
+| Off | MD 128 stopped | MD 128 playing | MD 512 stopped | MD 512 playing | MM 128 | MM 512 |
+|---|---|---|---|---|---|---|
+| all (umbrella) | +31.4 % | +29.5 % | +32.5 % | +30.2 % | +41.6 % | +43.9 % |
+| L1 | +5.8 | +4.7 | +5.8 | +5.4 | +4.6 | +3.7 |
+| L11 | +4.7 | +3.6 | +3.5 | +4.3 | +6.8 | +5.5 |
+| L2b | +1.7 | +2.2 | +2.0 | +1.5 | -0.2 | -2.0 |
+| L5 | +10.6 | +11.1 | +9.9 | +11.1 | +10.6 | +9.4 |
+| L4 NOP | +4.0 | +3.0 | +4.7 | +3.7 | +15.2 | +15.9 |
+| L4 one-block polls | -0.6 | +1.2 | -0.7 | +0.8 | +5.1 | +5.7 |
+| L4 multi-block polls | +6.9 | +6.9 | +7.7 | +8.5 | +0.8 | -1.3 |
+| L4 Port C polls | +5.2 | +4.6 | +4.4 | +6.0 | +2.6 | 0.0 |
+| CMPM fix | +0.8 | -1.2 | -1.6 | -0.2 | -0.6 | -0.5 |
+
+Retired instructions say the same with less noise (umbrella +34-35 % MD, +48-49 % MM). No lever costs more than it
+saves in the host path: L2b does nothing on the MM (it is MD-only), the CMPM fix is a fix, not a saving, and the one-block
+DMA polls are within noise on the MD (-0.1 to -0.7 % instructions stopped, +1 % playing) and save 5-10 % on the MM, so
+they stay on. The shipped 0.5.0 VST3 (PGO) in the same host, four ABBA rounds: off costs +28-30 % cycles (MD) and
++43-47 % (MM), in every one of the 24 pairs. Toggling the switch at run time leaves no trace: after off and on again the
+cost per callback equals on from the start (and the reverse).
+
+What does move: the clock. The cycles per second of CPU time ranged 2.5-3.9 GHz between runs on this Mac, which moves
+the time per callback (what a DAW's meter shows) by ±20 % with no change in the work; one lever off measured -18 % CPU
+time at -0.7 % cycles. A DAW's CPU meter therefore only compares positions when read over several toggles under the same
+load. Also note the menu item is "Speed-ups off": ticked means the slower, legacy emulation.
 
 ## 6. Sources
 
