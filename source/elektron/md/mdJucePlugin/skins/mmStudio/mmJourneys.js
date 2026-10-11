@@ -1648,7 +1648,7 @@ const MmJourneys = (() => {
 		name: "mm-song-play-from", proves: ["MM-258", "MM-270", "MM-256"],
 		steps: [
 			go("song"),
-			{ say: "the song the machine plays, Arrange; click row 3, then ▶ From here: the question to set TRANSPORT IN to ACCEPT", act: async (u, c) => { c.m0 = machine().song?.songMode === true; c.slot0 = S().songs?.slot; if (S().songs?.slot !== machine().song?.current) await choose(u, "songsel", machine().song?.current ?? 0); u.click('[data-set="songpick"] button[data-v="arrange"]'); await sleep(200); u.click('.scell[data-i="2"]'); await sleep(150); u.click('[data-rowact="from"]'); },
+			{ say: "the song the machine plays, Arrange; click row 3, then ▶ From here: the question to set TRANSPORT IN to ACCEPT", act: async (u, c) => { c.m0 = machine().song?.songMode === true; c.slot0 = S().songs?.slot; if (S().songs?.slot !== machine().song?.current) await choose(u, "songsel", machine().song?.current ?? 0); u.click('[data-set="songpick"] button[data-v="song"]'); await sleep(200); u.click('.scell[data-i="2"]'); await sleep(150); u.click('[data-rowact="from"]'); },
 				screen: () => ok(dlgShown() && !!dlgButton("Set TRANSPORT to ACCEPT"), "no question"), within: 4000 },
 			{ say: "confirm: ACCEPT goes to the machine, then the song plays from row 3 by itself, in SONG mode", act: u => u.click(dlgButton("Set TRANSPORT to ACCEPT")),
 				machine: () => ok(playing() && tele.last.songRow === 2 && machine().song?.songMode === true, "row " + (tele.last?.songRow + 1) + ", playing " + playing() + ", song mode " + machine().song?.songMode + ", TRANSPORT IN " + I().doc("global", machine().global?.current ?? 0)?.controlIn?.transport), within: 20000 },

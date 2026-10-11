@@ -1394,7 +1394,7 @@ const MdJourneys = (() => {
 		name: "md-song-play-from", proves: ["MD-146", "MD-145"],
 		steps: [
 			go("song"),
-			{ say: "click row 3 of the arrangement, then ▶ From here: the machine plays the song from row 3, in SONG mode", act: async (u, c) => { c.m0 = machineState().songMode === true; u.click('.scell[data-i="2"]'); await sleep(150); u.click('[data-rowact="from"]'); },
+			{ say: "click row 3 of the arrangement, then ▶ From here: the machine plays the song from row 3, in SONG mode", act: async (u, c) => { c.m0 = machineState().songMode === true; u.click('[data-set="songpick"] button[data-v="song"]'); await until(() => !!$1('[data-rowact="from"]'), 4000); u.click('.scell[data-i="2"]'); await sleep(150); u.click('[data-rowact="from"]'); },
 				screen: () => ok(V.songMode === true && V.playing, "song mode " + V.songMode + ", playing " + V.playing),
 				machine: () => ok(playing() && tele.last.songRow === 2, "row " + (tele.last?.songRow + 1) + ", playing " + playing()), within: 8000 },
 			{ say: "click row 2 and press Enter: from row 2", act: async u => { u.click('.scell[data-i="1"]'); await sleep(150); document.activeElement?.blur?.(); u.key("Enter"); },
