@@ -138,6 +138,15 @@ namespace mdJucePlugin
 		return true;
 	}
 
+	bool MmStudioLink::sendShort(const Bytes& _message) const
+	{
+		if(_message.empty() || _message.size() > 3 || _message[0] < 0x80 || _message[0] == 0xf0)
+			return false;
+		m_processor.addMidiEvent(synthLib::SMidiEvent(synthLib::MidiEventSource::Editor, _message[0], _message.size() > 1 ? _message[1] : 0,
+			_message.size() > 2 ? _message[2] : 0));
+		return true;
+	}
+
 	bool MmStudioLink::pressKeys(const std::vector<mmDesk::Key>& _keys) const
 	{
 		std::vector<md::PanelPacket> states;

@@ -41,6 +41,7 @@ namespace mmDesk
 			if(const auto m = deskWire::note(_ch, _note, _vel))
 				_wire.send(*m);
 		};
+		p.sendMidi = [&_wire](const std::vector<uint8_t>& _m) { _wire.send(_m); };
 		p.baseChannel = [&_channel](const uint8_t _ch) { _channel = _ch; };
 		p.nowMs = std::move(_nowMs);
 		return p;
