@@ -158,6 +158,8 @@ namespace pluginLib
 		virtual void processBpm(float _bpm) {}
 		// A hook: every audio callback the host makes, as it starts (audio thread; _bypassed: processBlockBypassed).
 		virtual void processBlockStarted(int /*_frames*/, bool /*_bypassed*/) {}
+		// A hook: processBlock (not the bypassed one) is about to return (audio thread; I-018, the editors' CPU meter).
+		virtual void processBlockEnded(int /*_frames*/) {}
 
 		bool rebootDevice();
 

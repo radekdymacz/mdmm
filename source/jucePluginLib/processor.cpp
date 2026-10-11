@@ -880,6 +880,7 @@ namespace pluginLib
 		// path remains bounded and free of this lock/parsing work.
 		if(isNonRealtime())
 			getController().processOfflineControllerWork();
+		processBlockEnded(numSamples);
 	}
 
 	void Processor::processBlockBypassed(juce::AudioBuffer<float>& _buffer, juce::MidiBuffer& _midiMessages)

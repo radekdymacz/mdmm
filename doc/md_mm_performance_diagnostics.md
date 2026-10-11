@@ -111,6 +111,15 @@ One more environment variable is older than the speed-ups and unrelated to them:
 If a problem goes away with the speed-ups off, send the performance report from a capture with them off
 and one with them on.
 
+## The CPU meter (I-018)
+
+The top bar's CPU meter (after the version in the Setup label) is always on and needs no capture: it shows the share of
+each audio block's real-time budget (frames / sample rate) the editor's processBlock spends, smoothed over half a
+second, with the worst single block of the last 3 s marked. A block over 100 % was late (a click). Click it for the
+realtime ratio, the host's rate and block size, the speed-ups' state and Rosetta, so a tester can compare Developer >
+Speed-ups on and off at a glance. It measures the same span as the capture's synth time, by two clock reads a block
+(`mdJucePlugin/mdCpuLoad.h`), and never takes the synth lock.
+
 ## Contents and interpretation
 
 The file is JSON Lines: every complete line is independently parseable JSON.

@@ -1095,6 +1095,8 @@ const MdJourneys = (() => {
 	/* I-008: the editor's menu (shared/deskJourney.js editorMenuJourney: a submenu by the keyboard, a zoom step and
 	   Updates › Check Daily by the pointer, each read back from the plug-in) */
 	const editorMenuJ = Journey.editorMenuJourney("md-top-editor-menu", "Machinedrum Editor");
+	/* I-018: the CPU meter beside the version and its details (shared/deskJourney.js cpuMeterJourneys) */
+	const cpuJs = Journey.cpuMeterJourneys("md");
 	const menu = Journey.menu;
 	/* the same menu as screenshots for a design review (scripts/mdmm-shots.sh with MDMM_SHOTS_JOURNEY=md-shots-menu) */
 	const shotsMenu = {
@@ -1122,6 +1124,7 @@ const MdJourneys = (() => {
 			close: async u => { $1('#syxpop [data-syxgo="close"]')?.click(); await sleep(200); await esc1(u); } },
 		{ name: "keys", open: u => { document.activeElement?.blur?.(); u.key("?", { shift: true }); }, close: esc1 },
 		{ name: "menu", open: u => menu.via(u), close: async () => closeDeskMenu() },
+		{ name: "cpu", open: u => u.click("#cpumeter"), close: async () => closeDeskMenu() },
 		{ name: "step-menu", open: async u => { u.click(tab("seq")); await sleep(300); const t = soundTracks().find(x => trigsOf(x).length) ?? soundTrack(); u.rightClick(cell(t, trigsOf(t)[0] ?? 0)); }, close: async () => closeDeskMenu() },
 		{ name: "rom-card", open: u => u.pick("engsel", "rom"), close: async u => { u.click('#bootcard [data-bootrom="close"]'); await sleep(300); } }
 	]);
@@ -1177,7 +1180,7 @@ const MdJourneys = (() => {
 		libDialog, kitCopy, kitRename, kitClear, patGo, patClear, dialogEsc,
 		globalJ, globalRouting, globalMapNote, audioPanel, romCard, notePlay,
 		lockRamp, pasteMany, mutScope, songInspector, songDrag, ramView, setupChop, panBox, hwNoMachine, syxImportJ,
-		syxImportMute, globalReset, shotsGlobal, shotsSound, shots, shotsSong, shotsImport, editorMenuJ, shotsMenu,
+		syxImportMute, globalReset, shotsGlobal, shotsSound, shots, shotsSong, shotsImport, editorMenuJ, shotsMenu, ...cpuJs,
 		dropSyxJ, dropSampleJ, ...viewJs];
 
 	/* ---------- demos: journeys played for a camera (doc/modern-ux/DEMO-VIDEOS.md) ---------- */

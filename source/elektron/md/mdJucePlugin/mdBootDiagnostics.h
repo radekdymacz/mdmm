@@ -49,6 +49,12 @@ namespace mdJucePlugin
 		bool firmwareMidiReady = false;
 		std::string lifecycle;		// the desk's (deskCore::lifecycleName)
 		std::string rom;			// the ROM file the machine runs, or "none"
+		// I-018: the emulation's switches as the machine runs them (read under the lock this sample takes anyway, so the
+		// CPU meter's details never take the synth lock): md::Device::speedUps, speedUpLeversOff, exactEssiTiming
+		bool machine = false;		// a machine ran (else the three below are defaults)
+		bool speedUps = true;
+		uint32_t leversOff = 0;
+		bool exactEssi = false;
 	};
 
 	// The rates between two samples. Pure.

@@ -300,6 +300,17 @@ seconds per wall second from its MCU cycles; `null` before the first block). The
 a plug-in got no block in 5 s, or when `realtime` is below 0.95. The same values go into the editor's
 start-up log once a second for the first 30 s (`mdBootDiagnostics.h`), in the app and in a DAW.
 
+**The CPU meter (I-018).** `{"type":"cpuLoad","state","load","worst","realtime","sampleRate","blockSize","plugin","speedUps","leversOff","exactEssi","translated","arch"}`
+every 250 ms while the page is up: `load` is the share of the audio blocks' real-time budget (frames / sample rate) the
+host's processBlock call spends, smoothed over about half a second, `worst` the largest single block's share in the last
+3 s (1 = the whole budget; both `null` unless `state` is `running`). `state` is `none` before the first block, `stopped`
+when blocks stopped coming for 0.5 s (the host stopped the engine), `bypassed` or `offline` (only bypassed or offline
+blocks). The rest is the popover's: `realtime` (as `audioRun`'s), the host's `sampleRate` and `blockSize`, `speedUps`
+(`on`, `off`, `some`: `leversOff` names those off, by their environment variable's suffix; `unknown` with no machine),
+`exactEssi` (L3), `translated` and `arch` (Rosetta: `process x86_64 on arm64, translated`). Measured on the audio thread
+with two clock reads and a few relaxed atomic adds a block (`mdJucePlugin/mdCpuLoad.h`); the speed-ups are read under
+the lock the start-up sample takes once a second anyway, so the meter never takes the synth lock.
+
 **The host's tempo (B-030).** In a DAW the plug-in sends `{"type":"host","bpm","follows"}`:
 the host's tempo as its playhead reports it (also while the host's transport is stopped),
 when it changed (by 0.01 BPM) or a page is new; `follows` is true in a DAW (the plug-in

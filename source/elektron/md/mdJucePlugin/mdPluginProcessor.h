@@ -2,6 +2,7 @@
 
 #include "jucePluginEditorLib/pluginProcessor.h"
 #include "mdBootDiagnostics.h"
+#include "mdCpuLoad.h"
 #include "mdLib/mdtypes.h"
 #include "synthLib/performanceReport.h"
 
@@ -60,6 +61,10 @@ namespace mdJucePlugin
 		// B-035: the host's audio calls counted, the start-up log's lines and the rates (mdBootDiagnostics.h)
 		void processBlockStarted(int _frames, bool _bypassed) override;
 		BootDiagnostics& bootDiagnostics() { return m_boot; }
+		// I-018: the CPU meter (mdCpuLoad.h): processBlock timed on the audio thread, read and smoothed here (message
+		// thread, a few times a second: the session's cpuLoad message)
+		void processBlockEnded(int _frames) override;
+		cpuLoad::Reading cpuLoadReading();
 		// Tester switch (doc/md_mm_performance_diagnostics.md): run the emulation as before the step 1
 		// speed-ups (md::Device::setSpeedUps). Identical audio, more host CPU. Kept in the plug-in's config.
 		void setLegacyEmulation(bool _legacy);
@@ -117,6 +122,10 @@ namespace mdJucePlugin
 		bool m_ramRecordingModeChunkSeen = false;
 		std::atomic<double> m_hostBpm{0.0};
 		BootDiagnostics m_boot;
+		cpuLoad::Meter m_cpuMeter;
+		cpuLoad::Smoother m_cpuSmoother;	// message thread
+		uint64_t m_blockStartNs = 0;		// audio thread
+		static uint64_t cpuClockNs();
 		void recordBoot();
 		double m_lastBootRecordMs = 0;	// when recordBoot last ran
 		const double m_bootStartMs = juce::Time::getMillisecondCounterHiRes();

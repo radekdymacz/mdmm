@@ -382,6 +382,52 @@ const Journey = (() => {
 			if (menu.on()) closeDeskMenu();
 		}
 	});
+	/* I-018: the CPU meter (deskCpu.js), both editors: beside the version in the Setup label, it reads a share while the
+	   audio runs, moves while the machine plays, and a click opens its details (a menu of notes) under it; Esc closes them.
+	   cpuMeterJourneys(prefix): [<prefix>-top-cpu-meter, <prefix>-shots-cpu (asked by name: the meter and its details as
+	   snapshots, scripts/mdmm-snap.py)]. The transport is the page's own PLAY key (#play, both editors). */
+	const cpu = {
+		el: () => $q(".setgroup .grplabel #cpumeter"),
+		playing: () => $q("#play")?.getAttribute("aria-pressed") === "true",
+		panel: () => $q('#deskmenu:not([hidden]) .mpanel[data-cpu="1"]'),
+		notes: () => [...($q('#deskmenu .mpanel[data-cpu="1"]')?.querySelectorAll(".mnote") || [])].map(n => n.textContent),
+		says: () => { const m = cpu.el(); return m ? `${m.dataset.state} "${m.querySelector(".cpuval")?.textContent}"` : "no meter"; },
+		async play(hands, c) { if (!cpu.playing()) { hands.click("#play"); c.started = true; await until(cpu.playing, 4000); } },
+		async stop(hands, c) { if (c.started && cpu.playing()) { hands.click("#play"); await until(() => !cpu.playing(), 4000); } c.started = false; }
+	};
+	const cpuMeterJourneys = prefix => [{
+		name: `${prefix}-top-cpu-meter`,
+		steps: [
+			{ say: "the CPU meter sits after the version in the Setup label and reads a share of the audio blocks' time",
+				screen: () => { const m = cpu.el(), r = m && m.getBoundingClientRect();
+					return ok(!!m && r.width > 0 && r.height > 0 && m.dataset.state === "running" && /^\d+ %$/.test(m.querySelector(".cpuval").textContent)
+						&& (!$q(".setgroup .grplabel .aboutver") || $q(".setgroup .grplabel .aboutver").compareDocumentPosition(m) & 4), cpu.says()); } },
+			{ say: "press PLAY: while the machine plays, the meter moves (its share read every 250 ms for 3 s)",
+				act: async (hands, c) => { await cpu.play(hands, c); c.loads = []; for (let i = 0; i < 12; i++) { await sleep(250); c.loads.push(cpu.el()?.dataset.load || ""); } },
+				screen: c => ok(cpu.playing() && c.loads.every(x => x !== "") && new Set(c.loads).size >= 2, `playing ${cpu.playing()}, shares ${(c.loads || []).join(",")}`) },
+			{ say: "click the meter: its details open under it (average, worst block, machine speed, rate and block, speed-ups, native or Rosetta)",
+				act: hands => { if (menu.on()) closeDeskMenu(); hands.click("#cpumeter"); },
+				screen: () => { const p = cpu.panel(), n = cpu.notes(), m = cpu.el();
+					const under = p && m && p.getBoundingClientRect().top >= m.getBoundingClientRect().bottom - 1;
+					return ok(!!p && under && /^Average: \d+ %/.test(n[0] || "") && /^Worst block: \d+ %/.test(n[1] || "") && n.some(x => / Hz/.test(x))
+						&& n.some(x => /^Speed-ups: /.test(x)) && n.some(x => /^(Runs natively|Rosetta)/.test(x)), p ? (under ? "" : "not under the meter: ") + n.join(" | ") : "no details"); } },
+			{ say: "they follow the meter while open: still open a second later, the same lines", act: () => sleep(1000),
+				screen: () => ok(!!cpu.panel() && /^Average: \d+ %/.test(cpu.notes()[0] || ""), cpu.notes().join(" | ") || "closed") },
+			{ say: "press Esc: the details close", act: hands => hands.key("Escape"), screen: () => ok(!menu.on(), "still open") },
+			{ say: "press STOP", act: (hands, c) => cpu.stop(hands, c), screen: () => ok(!cpu.playing(), "still playing") }
+		],
+		async tidy(hands, c) { if (menu.on()) closeDeskMenu(); await cpu.stop(hands, c); }
+	}, {
+		name: `${prefix}-shots-cpu`, needs: () => location.search.includes(`${prefix}-shots-cpu`) ? null : "screenshots only when asked by name",
+		steps: [
+			{ say: "the meter while the machine plays", act: async (hands, c) => { await cpu.play(hands, c); await sleep(2500); snapshot(`${prefix}-cpu-meter`); },
+				screen: () => ok(cpu.el()?.dataset.state === "running", cpu.says()) },
+			{ say: "its details", act: async hands => { hands.click("#cpumeter"); await until(() => !!cpu.panel(), 2000); await sleep(600); snapshot(`${prefix}-cpu-details`); },
+				screen: () => ok(!!cpu.panel(), "no details") },
+			{ say: "Esc, stop", act: async (hands, c) => { hands.key("Escape"); await until(() => !menu.on(), 2000); await sleep(200); await cpu.stop(hands, c); } }
+		],
+		async tidy(hands, c) { if (menu.on()) closeDeskMenu(); await cpu.stop(hands, c); }
+	}];
 	const onScreen = () => document.visibilityState === "visible" ? null : "the editor window is not on screen (display asleep or covered): its canvases are not drawn";
 	/* for needs: real key events through the operating system (u.osKey) exist in the macOS plug-in only */
 	const osKeyPath = () => osKeys() ? null : "no way in for real key events here (the macOS plug-in has one, mdOsKeys.h)";
@@ -456,5 +502,5 @@ const Journey = (() => {
 			{ name: `${prefix}-shots-views`, needs: () => location.search.includes(`${prefix}-shots`) ? null : "screenshots only when asked by name", steps: views.map(v => step(v, true)) }
 		];
 	}
-	return { run, demo, ok, sleep, until, u, onScreen, osKeyPath, menu, editorMenuJourney, snapshot, safari15Diff, viewJourneys };
+	return { run, demo, ok, sleep, until, u, onScreen, osKeyPath, menu, editorMenuJourney, cpuMeterJourneys, snapshot, safari15Diff, viewJourneys };
 })();

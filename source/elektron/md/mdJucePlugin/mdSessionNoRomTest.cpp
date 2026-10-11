@@ -256,6 +256,24 @@ int main(const int _argc, char** const _argv)
 		const auto r = mdJucePlugin::BootRate::between(a, b);
 		check(r.known && r.blocksPerSecond == 172 && r.realtime == 0.5, "a second's rates: 172 blocks, the machine at 0.5x real time");
 	}
+	// I-018: the CPU meter's reading reaches the page while the host runs the audio
+	{
+		std::string state;
+		double load = -1;
+		for(int i = 0; i < 20 && load < 0; ++i)
+		{
+			for(const auto& m : published)
+				if(str(m, "type") == "cpuLoad")
+				{
+					state = str(m, "state");
+					if(const auto* l = m.find("load"); l && l->isNumber())
+						load = l->asNumber();
+				}
+			if(load < 0)
+				pump(100);
+		}
+		check(state == "running" && load >= 0, "the page gets the CPU meter's reading (cpuLoad " + state + ", load " + std::to_string(load) + ")");
+	}
 
 	// The project the app was opened with is kept while there is no ROM (saving must not overwrite it
 	// with the stand-in's empty state) and nothing is saved when there was none.
