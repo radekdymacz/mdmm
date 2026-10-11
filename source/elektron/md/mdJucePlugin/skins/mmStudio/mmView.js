@@ -469,12 +469,14 @@ const MmView = (() => {
 
 	/* ---------------- which document an op edits ----------------
 	   the kit that plays (k), the active global (nothing to name), a song (s: the one the Song workspace edits), the
-	   library's stored slots (the command names them), else the pattern that plays (p) */
+	   library's stored slots (the command names them), a track's parts (p and k), else the pattern that plays (p) */
 	const OPS = {
 		kit: ["level", "route", "input", "param", "trigPos", "legato", "portamento", "machine", "clearSound", "copySound", "pasteSound", "params",
 			"assign", "multiEnv", "multiTrig", "kitName"],
 		global: ["routing", "midiTrack", "globalMidi", "globalReset", "multiMap", "multiMapSplit", "multiMapDelete"],
 		song: ["rowSet", "rowInsert", "rowDelete", "rowMove", "copyRow", "pasteRow"],
+		/* COPY / PASTE / CLEAR what (0.6): the pattern that plays (p) and the kit that plays (k) */
+		track: ["trackCopy", "trackPaste", "trackClear"],
 		library: ["patCopy", "patPaste", "patCopyTo", "patClear", "kitCopy", "kitPaste", "kitCopyTo", "kitClear", "kitRename",
 			"songCopy", "songPaste", "songCopyTo", "songClear", "songRename"]
 	};

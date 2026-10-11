@@ -1,5 +1,6 @@
 #pragma once
 
+#include "deskCore/deskEdits.h"
 #include "deskCore/deskRef.h"
 
 #include "elektronData/json.h"
@@ -113,8 +114,26 @@ namespace mdDesk
 				return model == _o.model && params == _o.params && level == _o.level && lfo == _o.lfo;
 			}
 		};
+		// A track's parts (trackCopy: COPY what, the machine's SUPER COPY): its values over the whole track, of the
+		// parts it copied (trackParts below).
+		struct Track
+		{
+			uint64_t trigs = 0, accent = 0, swing = 0, slide = 0;
+			std::map<uint8_t, std::map<uint8_t, uint8_t>> locks;	// param -> step -> value
+			uint32_t model = 0;
+			std::array<uint8_t, elektronData::MdKit::g_paramsPerTrack> params{};
+			uint8_t level = 0;
+			elektronData::MdLfo lfo;
+
+			bool operator==(const Track& _o) const
+			{
+				return trigs == _o.trigs && accent == _o.accent && swing == _o.swing && slide == _o.slide && locks == _o.locks
+					&& model == _o.model && params == _o.params && level == _o.level && lfo == _o.lfo;
+			}
+		};
 		std::optional<Steps> steps;
 		std::optional<Sound> sound;
+		std::optional<deskCore::trackParts::Clip<Track>> track;
 		std::optional<elektronData::json::Value> songRow;	// contract row
 		std::optional<elektronData::MdKit> kit;				// the kit library (P4)
 		std::optional<elektronData::MdPattern> pattern;		// the pattern chooser (P4)
@@ -122,8 +141,8 @@ namespace mdDesk
 
 		bool operator==(const Clipboard& _o) const
 		{
-			return steps == _o.steps && sound == _o.sound && songRow == _o.songRow && kit == _o.kit && pattern == _o.pattern
-				&& song == _o.song;
+			return steps == _o.steps && sound == _o.sound && track == _o.track && songRow == _o.songRow && kit == _o.kit
+				&& pattern == _o.pattern && song == _o.song;
 		}
 	};
 
@@ -172,6 +191,12 @@ namespace mdDesk
 	// cannot be read without saving the kit.
 	const std::array<uint8_t, 24>& neutralTrackValues();
 	uint8_t neutralTrackLevel();
+
+	// The parts of a track COPY / PASTE / CLEAR what names (trackCopy, trackPaste, trackClear; deskCore/deskEdits.h
+	// trackParts), in the order the page shows them: the pattern's trigs, accent, swing, slide and locks, the kit's
+	// machine and sound (model, synthesis, effects and routing values but the LFO's three, level) and LFO (its
+	// settings and SPD, DEPTH, SHMIX).
+	const std::vector<deskCore::trackParts::Part>& trackParts();
 
 	// Step helpers shared with the page: the accent/slide set a step toggle edits,
 	// which is pattern-wide when the pattern's "edit all" flag is set.

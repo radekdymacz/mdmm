@@ -1187,6 +1187,93 @@ const SongSlots = (() => {
 	return { init(h) { host = h; }, html, afterRender, busy, select, get sel() { return sel; }, get naming() { return naming; } };
 })();
 
+/* ---- shared/deskWhat.js ---- */
+"use strict";
+/* COPY / PASTE / CLEAR what (0.6 wave 4, doc/modern-ux/DESIGN-machine-menus.md 2): the machine's SUPER COPY and SUPER
+   CLEAR, both editors. The LCD's COPY CLR PASTE keep acting as they do; the small ▾ beside them opens Copy… Paste…
+   Clear…, each a dialog of ticks grouped as the machine keeps the data (PATTERN, KIT) and, for Paste, the tracks it
+   goes into. The ticks are remembered (per editor and per verb, in this browser). One command goes out:
+   trackCopy / trackPaste / trackClear {t | to, what} (deskEdits.h trackParts), one undo step. The dialog is the
+   question: Paste and Clear write only from its key. Each page builds the dialog's data (its parts, counts, tracks,
+   what its engine says) and sends the command; this file is the dialog, the menu and the remembered ticks.
+
+   open(o): o = {verb: "copy"|"paste"|"clear", editor: "md"|"mm", src, srcNote, fine?,
+     groups: [{name, note?, info?, items: [{id, label, n?, why?}]}]  (why: the item cannot be ticked, and the reason)
+     to?: [{t, label, name, on, why?}]  (Paste: the target tracks; why: this track cannot take it)
+     defaults: [ids ticked the first time], done: (what, to) => void}
+   menu(el, run): the ▾'s menu under el; run(verb) opens that verb's dialog.
+   label(verb, what, to): the go key's words. ticked(editor, verb, ids, defaults): the remembered ticks among ids. */
+const What = (() => {
+	const VERBS = {
+		copy: { title: "Copy what", go: () => "Copy", fine: "Ticks are remembered. The machine's SUPER COPY.", key: "⌘⇧C" },
+		paste: { title: "Paste what", go: (n) => n > 1 ? `Paste into ${n} tracks` : n === 1 ? "Paste into 1 track" : "Paste", fine: "Ticks are remembered. Pastes into every lit track.", key: "⌘⇧V" },
+		clear: { title: "Clear what", go: () => "Clear", fine: "Ticks are remembered. The machine's SUPER CLEAR. ⌘Z undoes it.", key: "⌘⇧⌫" }
+	};
+	const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+	const store = (editor, verb) => "deskWhat." + editor + "." + verb;
+	/* the ticks of a verb as this browser remembers them (none: the defaults), among the ids offered */
+	function ticked(editor, verb, ids, defaults) {
+		let saved = null;
+		try { saved = JSON.parse(localStorage.getItem(store(editor, verb)) || "null"); } catch (_) { saved = null; }
+		const list = Array.isArray(saved) ? saved : defaults || [];
+		return ids.filter(id => list.includes(id));
+	}
+	function remember(editor, verb, ids) { try { localStorage.setItem(store(editor, verb), JSON.stringify(ids)); } catch (_) { } }
+	const label = (verb, what, to) => VERBS[verb].go(to ? to.length : 0);
+
+	/* the dialog's markup (pure): ticks by group, the target tracks, the go key and Cancel */
+	function html(o, on) {
+		const V = VERBS[o.verb];
+		const item = it => `<label class="${it.why ? "dis" : ""}"${it.why ? ` title="${esc(it.why)}"` : ""}><input type="checkbox" data-wid="${esc(it.id)}"${on.includes(it.id) && !it.why ? " checked" : ""}${it.why ? " disabled" : ""}> <span>${esc(it.label)}</span>${it.n != null && it.n !== "" ? `<small>${esc(it.n)}</small>` : ""}</label>`;
+		const groups = o.groups.map(g => `<div class="whatgrp"><h4>${esc(g.name)}<small>${esc(g.note || "")}</small></h4><div class="whatgrid">${g.items.map(item).join("")}</div>${g.info ? `<p class="whatinfo">${esc(g.info)}</p>` : ""}</div>`).join("");
+		const to = o.to ? `<div class="whatsrc whatto"><span class="ilab">To tracks</span><span class="to" role="group" aria-label="The tracks to paste into">${o.to.map(x =>
+			`<button type="button" data-wto="${x.t}" aria-pressed="${!!x.on && !x.why}"${x.why ? ` disabled title="${esc(x.why)}"` : ` title="${esc(x.name)}"`}>${esc(x.label)}</button>`).join("")}</span></div>` : "";
+		return `<div class="dlgbox what" role="dialog" aria-modal="true" aria-label="${esc(V.title)}"><h3>${esc(V.title)}</h3>
+			<div class="whatsrc"><span class="ilab">${o.verb === "paste" ? "From" : "Track"}</span><span class="lcdchip">${esc(o.src)}</span><span>${esc(o.srcNote || "")}</span></div>
+			${groups}${to}<p class="fine">${esc(o.fine || V.fine)}</p>
+			<div class="btnrow"><button class="${o.verb === "clear" ? "danger" : "cream"}" data-dlg="0" data-wgo="1">${esc(label(o.verb, [], o.to ? o.to.filter(x => x.on && !x.why) : null))}</button><button data-dlg="1">Cancel</button></div></div>`;
+	}
+	/* what the dialog says now: the ticked parts and the lit tracks */
+	function read(d) {
+		return { what: [...d.querySelectorAll("input[data-wid]:checked")].map(x => x.dataset.wid),
+			to: [...d.querySelectorAll("[data-wto][aria-pressed=true]")].map(x => +x.dataset.wto) };
+	}
+	let cur = null;
+	/* the go key: off while nothing is ticked (or no track lit), its words say how many tracks */
+	function sync(d) {
+		if (!cur) return;
+		const r = read(d), go = d.querySelector("[data-wgo]"); if (!go) return;
+		go.textContent = label(cur.verb, r.what, cur.to ? r.to : null);
+		go.disabled = !r.what.length || (!!cur.to && !r.to.length);
+	}
+	function open(o) {
+		const ids = o.groups.flatMap(g => g.items.filter(it => !it.why).map(it => it.id));
+		const on = ticked(o.editor, o.verb, ids, o.defaults);
+		const run = () => { const d = document.querySelector("#dlg"), r = read(d); cur = null; remember(o.editor, o.verb, r.what); o.done(r.what, r.to); };
+		Dlg.show({ key: "what", draw: () => {
+			const d = document.querySelector("#dlg");
+			cur = o; d.dataset.first = ""; d.innerHTML = html(o, on); d._btns = [["", "", run], ["Cancel", "", () => { cur = null; }]];
+			d.hidden = false; sync(d);
+		} });
+	}
+	const isOpen = () => !!cur && !document.querySelector("#dlg")?.hidden;
+	/* the target keys toggle; a tick changes the go key (capture: before the pages' own click routers) */
+	if (typeof document !== "undefined") {
+		document.addEventListener("click", e => {
+			const b = e.target.closest?.("#dlg .what [data-wto]"); if (!b || b.disabled) return;
+			e.stopPropagation(); b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") !== "true"); sync(document.querySelector("#dlg"));
+		}, true);
+		document.addEventListener("change", e => { if (e.target.closest?.("#dlg .what")) sync(document.querySelector("#dlg")); }, true);
+	}
+	function menu(el, run) {
+		const r = el.getBoundingClientRect();
+		DeskMenu.open([{ id: "copy", label: "Copy…", key: VERBS.copy.key, run: () => run("copy") }, { id: "paste", label: "Paste…", key: VERBS.paste.key, run: () => run("paste") },
+			{ id: "clear", label: "Clear…", key: VERBS.clear.key, run: () => run("clear") }, "-",
+			{ note: "Choose what of the selected track: the machine's SUPER COPY and SUPER CLEAR" }], Math.max(4, r.right - 230), r.bottom + 4, { title: "Copy / paste / clear what" });
+	}
+	return { open, menu, html, read, ticked, remember, label, isOpen, VERBS };
+})();
+
 /* ---- shared/deskTogglePaint.js ---- */
 "use strict";
 /* A drag across toggle keys (the M and S keys), one module for both editors (skins/shared/): pure, values in,
@@ -3570,6 +3657,41 @@ StepSel.bind(Keys,{seqKeys:()=>seqKeys(),has:()=>!!S.stepSel,selKeys,cut:selCut,
   "step-extend":"Click: extend the selection to the step (on another track's roll: the tracks between too)",
   "ruler-select":"Click or drag: select steps of the selected track; ⇧-click extends",
   "step-menu":"The step menu: note on / off, NOTE OFF, trigless, slide, a chord note (roll), copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (Ctrl-click on a Mac)"}});
+
+/* ---- 78-what.js ---- */
+/* ===== COPY / PASTE / CLEAR what (0.6 wave 4; the dialog, the ▾ menu and the remembered ticks are shared/deskWhat.js) =====
+   The selected track's parts as the Monomachine keeps them: PATTERN (notes, melody, slide, swing, locks, arp, transpose:
+   every step of the pattern, the track's settings in it) and KIT (machine + sound, a synth track's). One intent each,
+   trackCopy / trackPaste / trackClear (mmDesk::trackParts), one undo step; the page shows the result's documents. A synth
+   track's parts paste onto synth tracks, a MIDI track's onto MIDI tracks. WCLIP: the page's note of what was copied. */
+const MM_WHAT=[["notes","Notes","pat"],["melody","Melody","pat"],["slide","Slide","pat"],["swing","Swing","pat"],["locks","Locks","pat"],["arp","Arp","pat"],["transpose","Transpose","pat"],["sound","Machine + sound","kit"]];
+let WCLIP=null;
+/* what each step part of track t holds now (arp and transpose are settings: no number) */
+function whatCounts(t){const tr=trk(t),st=tr.steps.filter(x=>x&&!x.off);let locks=0;
+ for(const[k,m] of S.locks)if(+k.split("|")[0]===t)locks+=m.size;
+ return{notes:st.length,melody:st.filter(x=>x.n&&x.n.length).length,slide:tr.slide.size,swing:tr.swing.size,locks}}
+const whatName=t=>tLabel(t)+" "+trk(t).m;
+function whatOpen(verb){
+ const t=S.sel,clip=WCLIP;
+ if(verb==="paste"&&!clip){toast("Copy a track's parts first: ▾ Copy… on the LCD.");return}
+ const counts=verb==="paste"?clip.counts:whatCounts(t),midi=verb==="paste"?clip.midi:isMidiT(t);
+ const why=id=>verb==="paste"&&!clip.what.includes(id)?"Not copied: Copy… did not tick it":id==="sound"&&midi?"A MIDI track has no machine: sound is a synth track's":"";
+ const item=([id,label])=>({id,label,n:counts[id]!=null?String(counts[id]):"",why:why(id)});
+ const groups=[{name:"Pattern",note:patName(S.pat),info:NA.recvSession||"",items:MM_WHAT.filter(p=>p[2]==="pat").map(item)},
+  {name:"Kit",note:kitName(S.kit),info:NA.workingKitMemory||"",items:MM_WHAT.filter(p=>p[2]==="kit").map(item)}];
+ const marked=S.marks&&S.marks.size?[...S.marks]:[t];
+ What.open({verb,editor:"mm",groups,src:whatName(verb==="paste"?clip.t:t),
+  srcNote:verb==="paste"?"copied from "+tLabel(clip.t):"pattern "+patName(S.pat)+" · all steps",
+  to:verb==="paste"?Array.from({length:12},(_,i)=>({t:i,label:tLabel(i),name:whatName(i),on:marked.includes(i),
+   why:isMidiT(i)!==clip.midi?(clip.midi?"A MIDI track's parts paste onto MIDI tracks":"A synth track's parts paste onto synth tracks"):""})):null,
+  defaults:verb==="copy"?["notes","slide","swing","locks"]:verb==="paste"?clip.what:["locks"],
+  done:(what,to)=>{
+   if(verb==="copy"){WCLIP={t,what,midi:isMidiT(t),counts:whatCounts(t)};edit("trackCopy",{t,what});return}
+   if(verb==="paste")edit("trackPaste",{to,what});else edit("trackClear",{t,what});commit()}})}
+addEventListener("click",e=>{const m=e.target.closest?.("[data-secwhat]");if(m){e.preventDefault();e.stopImmediatePropagation();What.menu(m,whatOpen)}},true);
+Keys.bind({id:"copy-what",short:"Copy what",scope:"any",keys:["C"],mod:"cmd+shift",group:"Anywhere",does:"Copy what: choose which parts of the selected track to copy (the machine's SUPER COPY)",run:()=>whatOpen("copy")});
+Keys.bind({id:"paste-what",short:"Paste what",scope:"any",keys:["V"],mod:"cmd+shift",group:"Anywhere",does:"Paste what: choose which copied parts go into which tracks",run:()=>whatOpen("paste")});
+Keys.bind({id:"clear-what",short:"Clear what",scope:"any",keys:["Backspace"],mod:"cmd+shift",group:"Anywhere",does:"Clear what: choose which parts of the selected track to clear (the machine's SUPER CLEAR)",run:()=>whatOpen("clear")});
 
 /* ---- 80-notes.js ---- */
 

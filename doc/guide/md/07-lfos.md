@@ -75,10 +75,20 @@ An LFO can also move several parameters of a machine at once, one parameter for 
 NOTE: The screens draw each LFO on its own. The editor does not draw the sum of two LFOs on one target.
 
 ## COPY, PASTE, CLEAR AND UNDO
-<!-- rows: MD-086 @4c3d1f -->
+<!-- rows: MD-086 @ff03e0 -->
 
 The LFO is part of the track's sound. Copy and paste on the Sound workspace take the machine, its values, its level and its LFO together: see "Copy machine" in chapter 3. Press {key:undo} to take an edit back.
 
-{gap:MD-086}You cannot copy or clear an LFO on its own in the editor.{/gap}
+To copy, paste or clear the LFO alone:
+
+1. On the **Sound** workspace, select the track.
+2. Click **⋯** at the right of the LFO card's title. A menu opens.
+3. Choose **Copy LFO**. The shapes, the target, <UPDTE>, <SPD>, <DEPTH> and <SHMIX> are copied.
+4. Select another track, click **⋯** and choose **Paste LFO**. The LFO of that track becomes the copy.
+5. Choose **Clear LFO** to set an LFO back to its start: no shapes, the first parameter of its own track, <FREE>, <SPD> 64, <DEPTH> and <SHMIX> 0.
+
+NOTE: An LFO that moved a parameter of its own track moves the same parameter of the track it is pasted on. An LFO that moved another track keeps that target.
+
+The LFO is also a part of **Copy…**, **Paste…** and **Clear…** in the LCD's **▾** menu: see "Track copy" in chapter 8.
 
 LFO settings are stored in the kit. Save the kit to keep them.

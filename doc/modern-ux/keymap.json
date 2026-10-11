@@ -1402,6 +1402,42 @@
 			"does": "Close"
 		},
 		{
+			"id": "copy-what",
+			"scope": "any",
+			"keys": [
+				"C"
+			],
+			"mod": "cmd+shift",
+			"group": "Anywhere",
+			"does": "Copy what: choose which parts of the selected track to copy (the machine's SUPER COPY)",
+			"short": "Copy what",
+			"dispatched": true
+		},
+		{
+			"id": "paste-what",
+			"scope": "any",
+			"keys": [
+				"V"
+			],
+			"mod": "cmd+shift",
+			"group": "Anywhere",
+			"does": "Paste what: choose which copied parts go into which tracks",
+			"short": "Paste what",
+			"dispatched": true
+		},
+		{
+			"id": "clear-what",
+			"scope": "any",
+			"keys": [
+				"Backspace"
+			],
+			"mod": "cmd+shift",
+			"group": "Anywhere",
+			"does": "Clear what: choose which parts of the selected track to clear (the machine's SUPER CLEAR)",
+			"short": "Clear what",
+			"dispatched": true
+		},
+		{
 			"id": "global-key",
 			"scope": "any",
 			"keys": [
@@ -2271,6 +2307,42 @@
 			"group": "Sequence",
 			"does": "The step menu: note on / off, NOTE OFF, trigless, slide, a chord note (roll), copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (Ctrl-click on a Mac)",
 			"area": "Roll"
+		},
+		{
+			"id": "copy-what",
+			"scope": "any",
+			"keys": [
+				"C"
+			],
+			"mod": "cmd+shift",
+			"group": "Anywhere",
+			"does": "Copy what: choose which parts of the selected track to copy (the machine's SUPER COPY)",
+			"short": "Copy what",
+			"dispatched": true
+		},
+		{
+			"id": "paste-what",
+			"scope": "any",
+			"keys": [
+				"V"
+			],
+			"mod": "cmd+shift",
+			"group": "Anywhere",
+			"does": "Paste what: choose which copied parts go into which tracks",
+			"short": "Paste what",
+			"dispatched": true
+		},
+		{
+			"id": "clear-what",
+			"scope": "any",
+			"keys": [
+				"Backspace"
+			],
+			"mod": "cmd+shift",
+			"group": "Anywhere",
+			"does": "Clear what: choose which parts of the selected track to clear (the machine's SUPER CLEAR)",
+			"short": "Clear what",
+			"dispatched": true
 		},
 		{
 			"id": "global-key",
