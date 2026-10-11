@@ -446,22 +446,24 @@ int main()
 		const auto factoryFlash = factory->copyFlashData();
 		const auto factoryPatch = factory->getUC().copyPatchRam();
 
+		// The projects' own flash bytes are in the sample area: the loader puts the ROM's bytes back in the OS's
+		// sectors (B-054, md::restoreFirmwareSectors).
 		auto flashA = factoryFlash;
 		auto patchA = factoryPatch;
-		flashA[6 * md::g_uwFlashSectorSize + 111] ^= 0x21;
+		flashA[0x56 * md::g_uwFlashSectorSize + 111] ^= 0x21;
 		patchA.front() ^= 0x31;
 		const auto stateA = mdPluginState(patchA, flashA, factoryFlash, rom);
 		const auto completeStateA = mdCompletePluginState(patchA, flashA, rom);
 
 		auto flashB = factoryFlash;
 		auto patchB = factoryPatch;
-		flashB[10 * md::g_uwFlashSectorSize + 222] ^= 0x42;
+		flashB[0x5a * md::g_uwFlashSectorSize + 222] ^= 0x42;
 		patchB.back() ^= 0x52;
 		const auto stateB = mdPluginState(patchB, flashB, factoryFlash, rom);
 
 		auto flashC = factoryFlash;
 		auto patchC = factoryPatch;
-		flashC[12 * md::g_uwFlashSectorSize + 333] ^= 0x63;
+		flashC[0x5c * md::g_uwFlashSectorSize + 333] ^= 0x63;
 		patchC[patchC.size() / 2] ^= 0x73;
 		const auto stateC = mdPluginState(patchC, flashC, factoryFlash, rom);
 
@@ -642,9 +644,9 @@ int main()
 			"malformed state failure did not retain an actionable diagnostic");
 
 		auto wrongFactory = factoryFlash;
-		wrongFactory[2 * md::g_uwFlashSectorSize + 17] ^= 0x41;
+		wrongFactory[0x52 * md::g_uwFlashSectorSize + 17] ^= 0x41;
 		auto wrongProject = wrongFactory;
-		wrongProject[14 * md::g_uwFlashSectorSize + 91] ^= 0x24;
+		wrongProject[0x5e * md::g_uwFlashSectorSize + 91] ^= 0x24;
 		const auto rejectedState = mdPluginState(factoryPatch, wrongProject,
 			wrongFactory, rom);
 		Harness rejected;
