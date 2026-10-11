@@ -1041,6 +1041,16 @@ namespace mdJucePlugin
 		});
 	}
 
+	bool AudioPluginAudioProcessor::savedLegacyEmulation()
+	{
+		return getConfig().getBoolValue(g_legacyEmulationKey, false);
+	}
+
+	uint32_t AudioPluginAudioProcessor::savedSpeedUpLeversOff()
+	{
+		return static_cast<uint32_t>(getConfig().getIntValue(g_speedUpLeversOffKey, 0)) & md::g_allSpeedUpLevers;
+	}
+
 	uint32_t AudioPluginAudioProcessor::getSpeedUpLeversOff()
 	{
 		return getPlugin().withDeviceLocked([](synthLib::Device* const _device) -> uint32_t

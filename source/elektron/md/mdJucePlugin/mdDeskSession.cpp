@@ -73,6 +73,15 @@ namespace mdJucePlugin
 		m.set("speedUps", !s.machine ? "unknown" : !s.speedUps ? "off" : off.asArray().empty() ? "on" : "some");
 		m.set("leversOff", std::move(off));
 		m.set("exactEssi", s.machine && s.speedUps && s.exactEssi);
+		// what the next session starts with (the settings file; the menu's switches write it)
+		auto saved = Value::object();
+		saved.set("legacyEmulation", _processor.savedLegacyEmulation());
+		auto savedOff = Value::array();
+		for(const auto& l : md::speedUpLevers())
+			if(_processor.savedSpeedUpLeversOff() & md::bit(l.lever))
+				savedOff.push(l.key);
+		saved.set("leversOff", std::move(savedOff));
+		m.set("saved", std::move(saved));
 		const auto& arch = processArch::current();
 		m.set("translated", arch.translated);
 		m.set("arch", processArch::describe(arch));

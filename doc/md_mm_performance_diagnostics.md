@@ -120,8 +120,9 @@ and one with them on.
 The top bar's CPU meter (after the version in the Setup label) is always on and needs no capture: it shows the share of
 each audio block's real-time budget (frames / sample rate) the editor's processBlock spends, smoothed over half a
 second, with the worst single block of the last 3 s marked. A block over 100 % was late (a click). Click it for the
-realtime ratio, the host's rate and block size, the speed-ups' state and Rosetta, so a tester can compare Developer >
-Speed-ups on and off at a glance. It measures the same span as the capture's synth time, by two clock reads a block
+realtime ratio, the host's rate and block size, the speed-ups' state and Rosetta, and the Speed-ups switch and
+Speed-ups (each) themselves (the Developer menu's entries), so a tester compares them at the meter. The share is of one
+core's time for this editor's audio, not of the whole computer. It measures the same span as the capture's synth time, by two clock reads a block
 (`mdJucePlugin/mdCpuLoad.h`), and never takes the synth lock.
 
 ## Contents and interpretation
