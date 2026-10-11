@@ -200,7 +200,7 @@
    {"name": "rotate", "command": {"op": "rotate", "p": 0, "t": 3, "by": 1}, "after": [["pattern", ["tracks", 3, "trigs"], [3, 7]]]},
    {"name": "length", "command": {"op": "length", "p": 0, "v": 32}, "after": [["pattern", ["length"], 32]]},
    {"name": "accent amount", "command": {"op": "accentAmount", "p": 0, "v": 5}, "after": [["pattern", ["accentAmount"], 42]], "about": "the command's 0-15 is the dump's 0-127 (5 -> 42)"},
-   {"name": "pattern kit", "command": {"op": "patternKit", "p": 0, "v": 5}, "after": [["pattern", ["kit"], 5]]},
+   {"name": "pattern kit", "command": {"op": "patternKit", "p": 3, "v": 5}, "after": [["pattern3", ["kit"], 5]], "about": "on A04, not the pattern that plays: there the machine also loads the kit"},
    {"name": "generator rows", "command": {"op": "steps", "p": 0, "rows": [{"t": 4, "on": [0, 3, 6]}]}, "after": [["pattern", ["tracks", 4, "trigs"], [0, 3, 6]]]},
    {"name": "clear steps", "command": {"op": "clearSteps", "p": 0, "t": 3, "from": 0, "to": 4}, "after": [["pattern", ["tracks", 3, "trigs"], [6]]]},
    {"name": "copy and paste steps", "commands": [{"op": "copySteps", "p": 0, "t": 3, "from": 0, "to": 8}, {"op": "pasteSteps", "p": 0, "t": 5, "from": 8}], "after": [["pattern", ["tracks", 5, "trigs"], [10, 14]]]},

@@ -162,6 +162,51 @@ namespace mmDesk::intentCases
 		return diff;
 	}
 
+	// The base documents as _d holds them (each named document's kind and slot; one it does not hold is left out): on the
+	// firmware, what the machine kept of the base, which the cases are then compared against (it may keep a field
+	// otherwise than the core does: a finding, said, not a failure of every case after it)
+	inline std::map<std::string, Value> named(const Documents& _d, const std::map<std::string, Value>& _base)
+	{
+		namespace ed = elektronData;
+		std::map<std::string, Value> out;
+		for(const auto& [name, doc] : _base)
+		{
+			const auto kind = kindOf(name, doc);
+			const auto* s = doc.find("slot");
+			const auto slot = static_cast<uint8_t>(s && s->isNumber() ? s->asNumber() : 0);
+			if(kind == "workingKit")
+			{
+				if(_d.working)
+					out[name] = ed::mmKitToJson(_d.working->kit);
+			}
+			else if(kind == "pattern")
+			{
+				const auto it = _d.patterns.find(slot);
+				if(it != _d.patterns.end())
+					out[name] = ed::mmPatternToJson(it->second);
+			}
+			else if(kind == "kit")
+			{
+				const auto it = _d.kits.find(slot);
+				if(it != _d.kits.end())
+					out[name] = ed::mmKitToJson(it->second);
+			}
+			else if(kind == "song")
+			{
+				const auto it = _d.songs.find(slot);
+				if(it != _d.songs.end())
+					out[name] = ed::mmSongToJson(it->second);
+			}
+			else if(kind == "global")
+			{
+				const auto it = _d.globals.find(slot);
+				if(it != _d.globals.end())
+					out[name] = ed::mmGlobalToJson(it->second);
+			}
+		}
+		return out;
+	}
+
 	// a case's commands, in order
 	inline std::vector<Value> commandsOf(const Value& _case)
 	{
