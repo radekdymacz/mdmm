@@ -9,7 +9,8 @@
 //                                        (live recording: the step a value sent locks), transpose (B-060: a transpose
 //                                        edited while playing is heard at once), trnprobe (B-060's measurements: what
 //                                        applies a dumped transpose while the pattern plays), intentcases (the intent
-//                                        cases of doc/modern-ux/intent-cases.json through the desk, read back from the machine)
+//                                        cases of doc/modern-ux/intent-cases.json through the desk, read back from the machine),
+//                                        steprec (0.6 wave 7: LIVE RECORDING's erase and STEP RECORDING)
 //
 // Exits 77 (skip) without arguments.
 
@@ -90,6 +91,8 @@ namespace
 		case K::Track1: case K::Track2: case K::Track3: case K::Track4: case K::Track5: case K::Track6:
 			return static_cast<C>(static_cast<int>(C::Track1) + (static_cast<int>(_k) - static_cast<int>(K::Track1)));
 		case K::KnobUp: case K::KnobDown: return std::nullopt;	// an encoder, not a key (pressKeys)
+		case K::StepRecord: return C::Record;	// with STOP held
+		case K::ExitDown: case K::ExitUp: return C::Exit;
 		}
 		return std::nullopt;
 	}
@@ -188,9 +191,15 @@ namespace
 				}
 				const auto c = control(k);
 				const auto pk = *md::panelPacket(g_mm, *c);
+				if(mmDesk::isHalf(k))
+				{
+					panel.emplace_back(at, mmDesk::isRelease(k) ? md::PanelPacket{pk.row, 0} : pk);
+					at += hold;
+					continue;
+				}
 				if(mmDesk::isChord(k))
 				{
-					const auto held = mmDesk::heldIsRecord(k) ? rec : fn;
+					const auto held = mmDesk::heldIsRecord(k) ? rec : mmDesk::heldIsStop(k) ? *md::panelPacket(g_mm, md::PanelControl::Stop) : fn;
 					md::PanelRowState rows;
 					for(const auto st : {rows.press(held), rows.press(pk), rows.release(pk), rows.release(held)})
 					{
@@ -280,6 +289,7 @@ namespace
 			t.tempo = tel.tempo.load();
 			t.mutes = tel.mutes.load();
 			t.recording = tel.recording.load();
+			t.stepCursor = tel.stepCursor.load();
 			t.bankGroup = tel.bankGroup.load();
 			t.songRow = tel.songRow.load();
 			t.chainKnown = tel.readChain(t.chain.active, t.chain.next, t.chain.patterns);
@@ -729,6 +739,109 @@ namespace
 	// Wave 2 (doc/modern-ux/PROBES-manual-gaps.md P1, P5 MM): the transport's commands through the desk on the firmware.
 	// Pause and resume (the panel's PLAY), play from a song row (TRANSPORT ACCEPT asked for and set, then the song position
 	// and Continue), panic (All Notes Off and STOP), the tempo nudge.
+	// 0.6 wave 7 through the desk (manual 1-49, 1-50; mmEditorProbeFirmwareTest recording): LIVE RECORDING's erase
+	// (EXIT held: the focus track's notes go as they pass, the other tracks stay) and STEP RECORDING (STOP + RECORD: a
+	// note writes the cursor's step and moves on, RIGHT and LEFT move, ENTER clears), the page's commands read back.
+	void stepRecording(const Bytes& _rom)
+	{
+		std::puts("steprec: live erase and step recording");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		while(r.desk->loaded() < 288)
+			r.run(100);
+		constexpr uint8_t slot = 66;
+		auto p = *r.desk->pattern(slot);
+		p.length = 16;
+		for(auto* m : {&p.amp, &p.filter, &p.lfo, &p.noteOff, &p.midiTrig, &p.midiNoteOff, &p.pitch, &p.chord, &p.midiNote, &p.slide, &p.midiSlide})
+			m->fill(0);
+		for(auto& n : p.notes)
+			n.fill(ed::MmPattern::g_noNote);
+		for(auto& m : p.lockMasks)
+			m.fill(0);
+		for(auto& row : p.lockRows)
+			row.fill(ed::MmPattern::g_noLock);
+		p.lockRowCount = 0;
+		p.chordNotes.fill(0xffff);
+		p.chordNoteCount = 0;
+		p.midiNotes.fill(0xffff);
+		p.midiNoteCount = 0;
+		for(uint8_t t = 0; t < 2; ++t)
+			for(uint8_t st = 0; st < 16; ++st)
+			{
+				for(auto* m : {&p.pitch, &p.amp, &p.filter, &p.lfo})
+					(*m)[t] |= ed::mmStepBit(st);
+				p.notes[t][st] = 48;
+			}
+		r.msg(R"({"op":"set","kind":"pattern","doc":)" + ed::json::write(ed::mmPatternToJson(p)) + "}");
+		r.run(2000);
+		r.msgConfirmed(R"({"op":"select","p":66})");
+		r.run(500);
+		const auto ok = [&] { const auto v = r.lastResult(); return v.isObject() && v.find("ok")->asBool(); };
+		const auto trigs = [&](const uint8_t _t) { const auto q = *r.desk->pattern(slot); int n = 0; for(size_t st = 0; st < 16; ++st) n += ed::mmStepSet(q.pitch[_t], st); return n; };
+		const auto telemetry = [&]
+		{
+			for(auto it = r.page.rbegin(); it != r.page.rend(); ++it)
+				if(it->find("type")->asString() == "telemetry")
+					return *it;
+			return Value();
+		};
+		const auto stepAt = [&] { const auto t = telemetry(); const auto* v = t.find("stepAt"); return v && v->isNumber() ? static_cast<int>(v->asNumber()) : -1; };
+
+		// LIVE RECORDING, then Delete held on T1 for about four steps
+		r.msg(R"({"op":"play"})");
+		r.run(1000);
+		r.msg(R"({"op":"record","mode":"live"})");
+		r.run(600);
+		check(r.tel.recording.load() == 2, "LIVE RECORDING on");
+		r.msg(R"({"op":"liveErase","t":0,"on":true})");
+		check(ok(), "liveErase on taken");
+		r.run(500);
+		r.msg(R"({"op":"liveErase","t":0,"on":false})");
+		r.run(2500);
+		const int t1 = trigs(0), t2 = trigs(1);
+		std::printf("  after the erase: T1 %d of 16 notes, T2 %d of 16\n", t1, t2);
+		check(t1 < 16 && t1 >= 8, "T1 lost the notes that played while Delete was held (read back while recording)");
+		check(t2 == 16, "T2 kept all its notes");
+		r.msg(R"({"op":"record","mode":"off"})");
+		r.run(800);
+		r.msg(R"({"op":"stop"})");
+		r.run(600);
+		check(r.tel.recording.load() == 0, "recording off");
+
+		// STEP RECORDING on T2
+		r.msg(R"({"op":"record","mode":"step","t":1})");
+		r.run(800);
+		check(r.tel.recording.load() == 3 && telemetry().find("record")->asString() == std::string("step"), "STEP RECORDING on (RAM 0x2bff05), the telemetry says step");
+		check(stepAt() == 0, "the cursor on step 1 (" + std::to_string(stepAt()) + ")");
+		r.msg(R"({"op":"noteOn","t":1,"vel":100,"pitch":12})");
+		r.run(120);
+		r.msg(R"({"op":"noteOff","t":1,"pitch":12})");
+		r.run(400);
+		check(stepAt() == 1, "a note moves the cursor on (" + std::to_string(stepAt()) + ")");
+		r.msg(R"({"op":"stepKey","key":"right"})");
+		r.run(300);
+		check(stepAt() == 2, "RIGHT: on, a rest (" + std::to_string(stepAt()) + ")");
+		r.msg(R"({"op":"stepKey","key":"left"})");
+		r.run(300);
+		check(stepAt() == 1, "LEFT: back (" + std::to_string(stepAt()) + ")");
+		r.msg(R"({"op":"stepKey","key":"clear"})");
+		r.run(300);
+		check(stepAt() == 2, "clear: on (" + std::to_string(stepAt()) + ")");
+		r.run(1500);
+		{
+			const auto q = *r.desk->pattern(slot);
+			check(ed::mmStepSet(q.pitch[1], 0) && q.notes[1][0] == 60, "the played note is on T2 step 1 (read back: " + std::to_string(q.notes[1][0]) + ")");
+			check(!ed::mmStepSet(q.pitch[1], 1), "the cleared step 2 is empty");
+			check(ed::mmStepSet(q.pitch[1], 2) && q.notes[1][2] == 48, "the rest left step 3 as it was");
+			check(trigs(0) == t1, "T1 untouched");
+		}
+		r.msg(R"({"op":"record","mode":"off"})");
+		r.run(800);
+		check(r.tel.recording.load() == 0 && stepAt() == -1, "off: RECORD leaves STEP RECORDING, no cursor");
+	}
+
 	void transport(const Bytes& _rom)
 	{
 		std::puts("transport: pause, play from a row, panic, nudge");
@@ -4275,6 +4388,8 @@ int main(const int _argc, char** _argv)
 			songRowPlayhead(rom);
 		if(only.empty() || only == "transport")
 			transport(rom);
+		if(only.empty() || only == "steprec")
+			stepRecording(rom);
 		if(only.empty() || only == "patterns")
 			patterns(rom);
 		if(only.empty() || only == "library")

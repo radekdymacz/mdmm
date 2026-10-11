@@ -2617,6 +2617,63 @@ namespace
 	// Wave 2 (doc/modern-ux/PROBES-manual-gaps.md P1, P5): the transport's commands through the desk on the firmware.
 	// Pause and resume (MIDI Stop and Continue), play from a song row (SONG mode, the song position, Continue), panic (STOP
 	// twice), the tempo nudge (0x61, the global document untouched).
+	// 0.6 wave 7: erase while live recording (manual p.40) through the desk: liveErase holds EXIT/NO and the track's
+	// TRIG key until off; the firmware removes the track's trigs that play meanwhile, the other tracks keep theirs, and
+	// the page's pattern document shows it after (mdEditorProbeFirmwareTest liveerase measured the keys).
+	void liveErase(const Bytes& _rom, const std::string& _romName)
+	{
+		std::puts("liveerase: hold Delete while live recording");
+		Rig rig(_rom, _romName);
+		rig.page(R"({"op":"ready"})");
+		rig.runUntil([&] { return rig.desk().isInputReady() && rig.desk().linkState().pattern && rig.desk().linkState().kit; }, 8000);
+		auto& m = rig.machine();
+		auto& desk = rig.desk();
+		const auto pattern = *desk.linkState().pattern;
+		rig.runUntil([&] { return desk.documents().patterns.count(pattern) > 0 && !desk.isBusy(); }, 10000);
+		auto p = *rig.readPattern(pattern);
+		p.length = 16;
+		for(uint8_t t = 12; t < 14; ++t)
+			for(uint8_t st = 0; st < 64; ++st)
+				p = ed::withTrig(p, t, st, st < 16);
+		rig.page(R"({"op":"set","id":1,"kind":"pattern","doc":)" + ed::json::write(ed::patternToJson(p)) + "}");
+		check(resultOk(rig), "the pattern set");
+		rig.runUntil([&] { return !desk.isBusy(); }, 8000);
+		rig.run(1000);
+		const auto count = [&](const ed::MdPattern& _p, const int _t) { int n = 0; for(size_t st = 0; st < 16; ++st) n += ed::hasTrig(_p, _t, st); return n; };
+		check(rig.runUntil([&] { const auto q = rig.readPattern(pattern); return q && count(*q, 13) == 16; }, 8000), "track 14 has a trig on every step");
+		const auto recording = [&] { return rig.pageTelemetry().recording; };
+		rig.page("{\"op\":\"select\",\"p\":" + std::to_string(pattern) + ",\"id\":8}");
+		rig.run(1500);
+		rig.page(R"({"op":"liveErase","t":13,"on":true,"id":2})");
+		check(rig.lastResult() && !rig.lastResult()->find("ok")->asBool(), "liveErase refused while not recording");
+		rig.page(R"({"op":"record","id":3})");
+		check(rig.runUntil(recording, 1500), "live recording starts");
+		rig.runUntil([&] { return m.playhead() == 2; }, 3000);
+		rig.page(R"({"op":"liveErase","t":13,"on":true,"id":4})");
+		check(resultOk(rig), "liveErase on: EXIT/NO and TRIG 14 down");
+		rig.runUntil([&] { return m.playhead() == 7; }, 3000);
+		rig.page(R"({"op":"liveErase","t":13,"on":false,"id":5})");
+		check(resultOk(rig), "liveErase off: both let go");
+		rig.runUntil([&] { return m.playhead() == 12; }, 3000);
+		rig.page(R"({"op":"record","id":6})");
+		check(rig.runUntil([&] { return !recording(); }, 1500), "REC again leaves recording");
+		rig.page(R"({"op":"stop","id":7})");
+		rig.run(1500);
+		rig.runUntil([&] { return !desk.isBusy(); }, 4000);
+		// the desk's own read-back (a request of the test's would race the desk's while it reads back)
+		const auto after = desk.documents().patterns.at(pattern);
+		const int t14 = count(after, 13), t13 = count(after, 12);
+		std::printf("  after: track 14 %d of 16 trigs, track 13 %d of 16\n", t14, t13);
+		check(t14 < 16 && t14 >= 9, "track 14 lost the trigs that played while Delete was held");
+		check(t13 == 16, "track 13 kept its trigs");
+		const bool shown = rig.runUntil([&]
+		{
+			const auto d = rig.pageDoc("pattern", pattern);
+			return d && static_cast<int>(d->find("tracks")->asArray()[13].find("trigs")->asArray().size()) == t14;
+		}, 4000);
+		check(shown, "the page's pattern document shows the erase");
+	}
+
 	void transport(const Bytes& _rom, const std::string& _romName)
 	{
 		std::puts("transport: pause, play from a row, panic, nudge");
@@ -4345,6 +4402,13 @@ int main(const int _argc, char** _argv)
 			globalReset(rom, romPath);
 			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 			std::printf("mdDeskFirmwareTest factoryglobal: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
+			return g_failures ? 1 : 0;
+		}
+		if(mode == "liveerase")
+		{
+			liveErase(rom, romPath);
+			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
+			std::printf("mdDeskFirmwareTest liveerase: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
 			return g_failures ? 1 : 0;
 		}
 		if(mode == "transport")
