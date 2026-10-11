@@ -15,7 +15,7 @@ Each of the twelve tracks has its own arpeggiator, six synth tracks and six MIDI
 The light notes in the roll show what the arpeggiator plays.
 
 ### ARPEGGIATOR BASIC SETTINGS
-<!-- rows: MM-216 MM-217 MM-218 MM-219 MM-220 MM-221 @d8ccac -->
+<!-- rows: MM-216 MM-217 MM-218 MM-219 MM-220 MM-221 @f107b1 -->
 
 - **SPD** is the speed. 6 is a sixteenth note.
 - **RNGE** is the number of octaves the run covers.
@@ -30,7 +30,7 @@ The light notes in the roll show what the arpeggiator plays.
 
 **Play** keys: **TRUE** plays the notes in the order of the chord, **UP** from low to high, **DOWN** from high to low, **CYCLE** up and then down, and **RND** in a random order. With RND the roll draws the notes outlined, because the pitches vary.
 
-{gap:MM-221}You cannot copy, clear or paste an arpeggiator, and you cannot undo one on its own. {key:undo} undoes the page's last edit.{/gap}
+To copy, paste or clear the arpeggiator of a track, tick **Arp** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu (chapter 11, "Super copy"). A clear turns it off. Press {key:undo} to take each back.
 
 ### ARPEGGIATOR ENVELOPE TRIGGING SWITCHES
 <!-- rows: MM-222 @9388c0 -->
@@ -69,7 +69,7 @@ For MAJ and MIN, click a key of the keyboard picture to set the root key. With *
 Swing delays every other sixteenth note. The **SWG** field of the LCD sets the amount for the pattern, from 50 to 80 %. Drag the field up or down, or scroll over it.
 
 ### THE SWING TRACK
-<!-- rows: MM-231 MM-232 @70d0e0 -->
+<!-- rows: MM-231 MM-232 @3247aa -->
 
 The keys **Note**, **Slide** and **Swing** under the roll say what a click on the roll does. **Note** writes notes, as always. With **Swing** lit, a click chooses the steps that swing:
 
@@ -80,10 +80,10 @@ The keys **Note**, **Slide** and **Swing** under the roll say what a click on th
 
 Each track has its own swing steps. The marks show for the selected track.
 
-{gap:MM-232}You cannot copy, clear or paste a swing row, or undo it on its own.{/gap}
+To copy, paste or clear the swing row of a track, tick **Swing** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu (chapter 11, "Super copy"). A clear sets it back to every second 16th step. Press {key:undo} to take each back.
 
 ## SLIDE
-<!-- rows: MM-233 MM-234 @b9afee -->
+<!-- rows: MM-233 MM-234 @bc431d -->
 
 A slide makes a locked value glide to the next lock instead of jumping.
 
@@ -94,7 +94,7 @@ A slide makes a locked value glide to the next lock instead of jumping.
 
 The right-click menu has **Slide** too. In the lock lane the glide is drawn from one lock to the next.
 
-{gap:MM-234}You cannot copy, clear or paste a slide row, or undo it on its own.{/gap}
+To copy, paste or clear the slide row of a track, tick **Slide** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu (chapter 11, "Super copy"). Press {key:undo} to take each back.
 
 ## THE MUTE MODE
 <!-- rows: MM-235 MM-236 MM-238 @3849f5 -->

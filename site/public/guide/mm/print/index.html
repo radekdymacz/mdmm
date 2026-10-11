@@ -837,13 +837,13 @@
 <div class="gd-body gd-prose"><h2>TRACK COPY</h2>
 <ol class="gd-steps"><li>Drag across the whole step ruler to select all the steps of the selected track.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>.</li><li>Click the target track in the rail, then click the first step of the ruler.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>.</li></ol>
 <p>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[A]</kbd> to select the six tracks shown, and paste them as a block. To copy the machine of a track, use <b class="gd-ui">Copy</b> and <b class="gd-ui">Paste</b> on the <b class="gd-ui">Sound</b> workspace.</p>
-<p>A track copy takes the steps, slides and locks. It does not take the machine, the arpeggiator, the transpose or the swing in the same copy.</p>
+<p>To copy a whole track with its machine, its arpeggiator, its transpose and its swing in one copy, use <b class="gd-ui">Copy…</b> in the LCD's <b class="gd-ui">▾</b> menu: see &quot;Super copy&quot;.</p>
 </div></section>
 <section class="gd-sec" id="clear-track">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-53</span></span></aside>
 <div class="gd-body gd-prose"><h2>CLEAR TRACK</h2>
 <p>Select all the steps of the track with the ruler and press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd>. To clear every lock of the track, hold <kbd class="gd-key">[⌥]</kbd> and click the bin in the lane header.</p>
-<p>There is no key that clears a track whole. <b class="gd-ui">Clr</b> clears the page shown.</p>
+<p>To clear the whole track, or only some of its parts, use <b class="gd-ui">Clear…</b> in the LCD's <b class="gd-ui">▾</b> menu: see &quot;Super clear&quot;. <b class="gd-ui">Clr</b> clears the page shown.</p>
 </div></section>
 <section class="gd-sec" id="pattern-copy">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-53</span></span></aside>
@@ -862,12 +862,18 @@
 <section class="gd-sec" id="super-copy">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-54</span></span></aside>
 <div class="gd-body gd-prose"><h2>SUPER COPY</h2>
-<p>You cannot choose which part of a track is copied, for example the melody only. A selection copies a block of tracks and steps whole.</p>
+<p>Super copy copies the parts of a track you choose, over every step of the pattern.</p>
+<ol class="gd-steps"><li>Select the track in the rail.</li><li>Click <b class="gd-ui">▾</b> at the right of <b class="gd-light">&lt;COPY&gt;</b> <b class="gd-light">&lt;CLR&gt;</b> <b class="gd-light">&lt;PASTE&gt;</b> on the LCD, then <b class="gd-ui">Copy…</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[C]</kbd>. The <b class="gd-ui">Copy what</b> window opens.</li><li>Tick the parts. <b class="gd-ui">Pattern</b> has <b class="gd-ui">Notes</b>, <b class="gd-ui">Melody</b>, <b class="gd-ui">Slide</b>, <b class="gd-ui">Swing</b>, <b class="gd-ui">Locks</b>, <b class="gd-ui">Arp</b> and <b class="gd-ui">Transpose</b>. <b class="gd-ui">Kit</b> has <b class="gd-ui">Machine + sound</b> (a synth track's).</li><li>Click <b class="gd-ui">Copy</b>.</li><li>Select the track to paste into. Click <b class="gd-ui">▾</b>, then <b class="gd-ui">Paste…</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[V]</kbd>.</li><li>The parts copied are ticked. Under <b class="gd-ui">To tracks</b> the selected track is lit, or the tracks marked for paste. Click a track key to light or unlight it.</li><li>Click <b class="gd-ui">Paste into 1 track</b> (the key says how many). The paste is one undo step.</li></ol>
+<p><b class="gd-ui">Notes</b> takes the trigs, the envelope trigs, the NOTE OFFs and the pitches. <b class="gd-ui">Melody</b> takes only the pitches: they go onto the trigs the target track already holds, and a step with no trig stays empty.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A synth track's parts paste onto synth tracks, a MIDI track's parts onto MIDI tracks. The keys of the other kind are off. Locks land only on steps that hold a trig.</p></aside>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: Copy what"><span>Screenshot to come</span></div><figcaption>Copy what</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="super-clear">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-55</span></span></aside>
 <div class="gd-body gd-prose"><h2>SUPER CLEAR</h2>
-<p>You cannot choose which part of a track is cleared. Clear the steps, the locks, the pattern or the machine one at a time.</p>
+<ol class="gd-steps"><li>Select the track in the rail.</li><li>Click <b class="gd-ui">▾</b> at the right of <b class="gd-light">&lt;COPY&gt;</b> <b class="gd-light">&lt;CLR&gt;</b> <b class="gd-light">&lt;PASTE&gt;</b>, then <b class="gd-ui">Clear…</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[BACKSPACE]</kbd>.</li><li>Tick the parts to clear and click <b class="gd-ui">Clear</b>.</li></ol>
+<p>Clearing <b class="gd-ui">Notes</b> clears their locks too. <b class="gd-ui">Melody</b> leaves the trigs without a pitch. <b class="gd-ui">Swing</b> goes back to every second 16th step, as in a new pattern. <b class="gd-ui">Arp</b> turns the arpeggiator off and keeps its settings. <b class="gd-ui">Machine + sound</b> makes the track GND-SIN.</p>
+<p>The window remembers what you ticked the last time. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take the clear back.</p>
 </div></section>
 </article>
 <article class="gd-chapter" id="c12" style="page: c12">
@@ -991,7 +997,7 @@
 <p><b class="gd-ui">Mode</b> keys:</p>
 <ul class="gd-list"><li><b class="gd-ui">OFF</b>: the track plays the base note of each trig.</li><li><b class="gd-ui">KEY</b>: the arpeggiator runs while keys are held and plays only the held notes.</li><li><b class="gd-ui">SID</b>: it needs two or more notes. They stay in the cycle after you release them, until a new chord.</li><li><b class="gd-ui">ADD</b>: it starts on the first note. Each extra key joins while one key is held.</li></ul>
 <p><b class="gd-ui">Play</b> keys: <b class="gd-ui">TRUE</b> plays the notes in the order of the chord, <b class="gd-ui">UP</b> from low to high, <b class="gd-ui">DOWN</b> from high to low, <b class="gd-ui">CYCLE</b> up and then down, and <b class="gd-ui">RND</b> in a random order. With RND the roll draws the notes outlined, because the pitches vary.</p>
-<p>You cannot copy, clear or paste an arpeggiator, and you cannot undo one on its own. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> undoes the page's last edit.</p>
+<p>To copy, paste or clear the arpeggiator of a track, tick <b class="gd-ui">Arp</b> in <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> or <b class="gd-ui">Clear…</b> of the LCD's <b class="gd-ui">▾</b> menu (chapter 11, &quot;Super copy&quot;). A clear turns it off. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take each back.</p>
 <h4 class="gd-h3">ARPEGGIATOR ENVELOPE TRIGGING SWITCHES</h4>
 <p>The <b class="gd-ui">Trig</b> keys <b class="gd-ui">AMP</b>, <b class="gd-ui">FLT</b> and <b class="gd-ui">LFO</b> choose which envelopes the arpeggiator's notes fire again. A MIDI track has no envelopes, so the keys read &quot;none on MIDI&quot;.</p>
 <h4 class="gd-h3">ARPEGGIATOR RHYTHM AND OFFSET TRACK</h4>
@@ -1015,7 +1021,7 @@
 <p>The keys <b class="gd-ui">Note</b>, <b class="gd-ui">Slide</b> and <b class="gd-ui">Swing</b> under the roll say what a click on the roll does. <b class="gd-ui">Note</b> writes notes, as always. With <b class="gd-ui">Swing</b> lit, a click chooses the steps that swing:</p>
 <ol class="gd-steps"><li>Click <b class="gd-ui">Swing</b> under the roll. The key lights.</li><li>Click anywhere in a step's column of the roll. A teal mark at the foot of the roll shows that the step swings. It comes late by the amount of <b class="gd-ui">SWG</b>. Click the column again to take the swing off.</li><li>Drag across columns to paint every step you cross. The first step decides: on or off. The drag is one undo step.</li><li>Press <kbd class="gd-key">[ESC]</kbd>, or click <b class="gd-ui">Note</b>, to write notes again.</li></ol>
 <p>Each track has its own swing steps. The marks show for the selected track.</p>
-<p>You cannot copy, clear or paste a swing row, or undo it on its own.</p>
+<p>To copy, paste or clear the swing row of a track, tick <b class="gd-ui">Swing</b> in <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> or <b class="gd-ui">Clear…</b> of the LCD's <b class="gd-ui">▾</b> menu (chapter 11, &quot;Super copy&quot;). A clear sets it back to every second 16th step. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take each back.</p>
 </div></section>
 <section class="gd-sec" id="slide">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-66</span></span></aside>
@@ -1023,7 +1029,7 @@
 <p>A slide makes a locked value glide to the next lock instead of jumping.</p>
 <ol class="gd-steps"><li>Click <b class="gd-ui">Slide</b> under the roll.</li><li>Click a step's column of the roll. A triangle at the foot of the roll marks the step that slides. Click again to take it off.</li><li>Drag across columns to paint slides on every step you cross, in one undo step.</li><li>Press <kbd class="gd-key">[ESC]</kbd> to write notes again.</li></ol>
 <p>The right-click menu has <b class="gd-ui">Slide</b> too. In the lock lane the glide is drawn from one lock to the next.</p>
-<p>You cannot copy, clear or paste a slide row, or undo it on its own.</p>
+<p>To copy, paste or clear the slide row of a track, tick <b class="gd-ui">Slide</b> in <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> or <b class="gd-ui">Clear…</b> of the LCD's <b class="gd-ui">▾</b> menu (chapter 11, &quot;Super copy&quot;). Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take each back.</p>
 </div></section>
 <section class="gd-sec" id="the-mute-mode">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-67,</span> <span>1-68</span></span></aside>
