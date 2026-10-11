@@ -577,3 +577,22 @@ External:
 - ColdFire: https://github.com/mamedev/mame/blob/master/src/devices/cpu/m68000/mcf5206e.cpp; https://github.com/mamedev/mame/blob/master/src/mame/elektron/elektronmono.cpp; https://github.com/m-dwyer/digikit; https://github.com/irpina/digiemu
 - Apple: https://developer.apple.com/documentation/apple-silicon/porting-just-in-time-compilers-to-apple-silicon; https://bluecataudio.com/Blog/?p=5268
 - Seen only as search snippets (pages blocked, figures unverified): Dolphin progress report 2512, HQEMU papers, GCC bug 94369.
+
+
+## Profile after 0.5.0 (2026-10-11)
+
+Main at 980e1ee7f (0.5.0 + B-052/B-054), shipped configuration (ThinLTO, DSP optimisation, committed PGO) with symbols; in-process sampler on the emulation thread (CPU time only), 3 runs per phase, ±0.5 points; cross-checked with macOS `sample`. Denominator: the whole emulation thread (in this build DSP2 runs inside DSP1's serial-port callback, so `advance()` inclusive is no longer the right base).
+
+| Bucket (% of thread) | MD stopped | MD playing | MM stopped | MM playing |
+|---|---|---|---|---|
+| JIT generated code (both DSPs + dispatcher) | 49.6 | 54.6 | 44.5 | 46.1 |
+| Peripheral tick + access | 27.8 | 23.5 | 20.1 | 18.5 |
+| Scheduler glue | 6.0 | 6.0 | 9.2 | 9.1 |
+| ColdFire (Musashi, loop, SIM, memory decode) | 7.8 | 10.1 | 18.1 | 17.9 |
+| MIDI/SysEx ingress polling | 1.4 | 1.8 | 2.6 | 2.5 |
+| L4 fast-forward calls | 4.4 | 0.5 | 1.2 | 0.3 |
+
+- **Both machines are DSP-bound.** DSP work is ~87 % of the MD's thread and 68-69 % of the MM's. The MM is not ColdFire-bound: the ColdFire's own code is ~24 % of its thread (Musashi/memory ~18 %); the old "39.7 % inclusive" counted DSP catch-ups and glue as ColdFire.
+- **Compared with §2.1 (2026-10-08):** the JIT share is now 44-55 % (was 36-39 %, partly a denominator change); MD glue ~6 (was ~15); MD ColdFire 8-10 (was ~13); MM UC 24.5 (was 29-33). With speed-ups off the old thread split reproduces within 2-3 points.
+- **Largest single idle item:** the MD's DSP2 silent-voice stub when stopped (10.9 % JIT + 4.0 % `fastForwardNopLoop`); L3 would cut it but changes the sound.
+- **Next bit-exact levers by pool (est. gain):** one "ColdFire work pending" word instead of per-step input checks (3-4 % MM, 1.5-2 % MD); L2a inline due test in the `execUntilCycles` trampoline (2-3 % MD, 1.5-2 % MM); cheaper MD NOP-loop fast-forward (1.5-3 % MD stopped); ColdFire memory decode fast path (1.5-2.5 % MM); peripheral micro-work (1-3 %, low confidence); mode-change check inlined (0.5-1 %); `std::function` callbacks to direct calls (0.5-1 %). Together about 6-9 % MD, 7-10 % MM. Long bet: better JIT code generation (each 10 % = 4.5-5.5 points).
