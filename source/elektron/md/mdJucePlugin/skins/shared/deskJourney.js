@@ -410,13 +410,15 @@ const Journey = (() => {
 		savedLeverOff: key => !!(CpuMeter.last && CpuMeter.last.saved && (CpuMeter.last.saved.leversOff || []).includes(key)),
 		/* the CPU details' own entries (deskCpu.js: the editor menu's, under the notes) */
 		cpuItem: label => [...document.querySelectorAll('#deskmenu .mpanel[data-cpu="1"] [data-mi]')].find(b => (b.querySelector("span")?.textContent || "").trim() === label),
-		/* the details may open again by themselves after a switch (deskCpu.js), later on a slow page: closed until they stay */
-		cpuOpen: async hands => { for (let i = 0; i < 3; i++) { if (menu.on()) closeDeskMenu(); await until(() => !$q("#modalbg") || $q("#modalbg").hidden, 2000); await sleep(300); if (!menu.on()) break; }
+		/* no menu up: the CPU details open again by themselves after a switch (deskCpu.js), later on a slow page, so they
+		   are closed until they stay closed */
+		closed: async () => { for (let i = 0; i < 4; i++) { if (menu.on()) closeDeskMenu(); await until(() => !$q("#modalbg") || $q("#modalbg").hidden, 2000); await sleep(300); if (!menu.on()) break; } },
+		cpuOpen: async hands => { await speed.closed();
 			hands.click("#cpumeter");
 			if (!await until(() => !!speed.cpuItem("Speed-ups"), 3000)) throw new Error("no Speed-ups entry in the CPU details"); },
 		keys: () => [...document.querySelectorAll('#deskmenu [data-mid^="speedup-"]')].map(b => b.dataset.mid).filter(x => x !== "speedup-levers"),
 		/* the Developer submenu (and the levers' one) as the plug-in sends it now */
-		open: async (hands, levers) => { if (menu.on()) closeDeskMenu(); await until(() => !$q("#modalbg") || $q("#modalbg").hidden, 2000); await sleep(150); await menu.via(hands, levers ? ["developer", "speedup-levers"] : ["developer"]);
+		open: async (hands, levers) => { await speed.closed(); await menu.via(hands, levers ? ["developer", "speedup-levers"] : ["developer"]);
 			if (!await until(() => !!$q(menu.id(levers ? "speedup-L1" : "speed-ups")), 2000)) throw new Error("no speed-ups entry in Developer"); },
 		pick: async (hands, id, levers) => { await speed.open(hands, levers); hands.click(menu.id(id)); await until(() => !menu.on(), 2000); }
 	};
