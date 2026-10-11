@@ -27,7 +27,7 @@
 # <preview>/<machine>/roms), MDMM_GATE_PREVIEW (default ~/Documents/Gearmulator Preview), MDMM_GATE_MD_CACHE (the
 # Machinedrum factory cache), MDMM_GATE_MM_PATCH (the Monomachine factory patch RAM), MDMM_GATE_FIXTURES (the SysEx
 # fixtures, default <preview>/fixtures/sysex), MDMM_GATE_JOBS (build jobs), MDMM_GATE_GOLDEN_JOBS (golden runs at
-# once), MDMM_GATE_JOURNEY_ARGS (options for mdmm-journeys.sh, default --host both --jobs 4 --tier machine), MDMM_GATE_CCACHE=0 (stage 1
+# once), MDMM_GATE_JOURNEY_ARGS (options for mdmm-journeys.sh, default --host both --jobs 6 --tier machine), MDMM_GATE_CCACHE=0 (stage 1
 # without ccache),
 # MDMM_GATE_COMPONENTS_DIR (where the AU bundles are installed), MDMM_GATE_SOAK_SECONDS (6c, default 600),
 # MDMM_GATE_SOAK_WARMUP (seconds not judged, default 30), MDMM_GATE_SOAK_LOCK_US (a synth lock wait that fails it,
@@ -98,7 +98,7 @@ GATE_MIN_SCENARIOS="md-busy md-factory md-song mm-a01 mm-busy mm-song"	# a golde
 JOBS="${MDMM_GATE_JOBS:-$(sysctl -n hw.ncpu 2>/dev/null || echo 4)}"
 # four editors at once (--jobs implies --background: the standalone's output is zeroed, silence); the standalone runs the
 # machine journeys (the page journeys are stage 2c's, decision 2026-10-11), the VST3 host the host journeys only
-JOURNEY_ARGS="${MDMM_GATE_JOURNEY_ARGS:---host both --jobs 4 --tier machine}"
+JOURNEY_ARGS="${MDMM_GATE_JOURNEY_ARGS:---host both --jobs 6 --tier machine}"
 SOAK_SECONDS="${MDMM_GATE_SOAK_SECONDS:-600}"
 SOAK_WARMUP="${MDMM_GATE_SOAK_WARMUP:-30}"
 SOAK_LOCK_US="${MDMM_GATE_SOAK_LOCK_US:-1000}"
@@ -385,24 +385,32 @@ direct_run() {	# <label> <timeout> <ERE the log must match> <command...>: one fi
 stage_direct() {
 	stage_begin "2b" "Firmware tests ctest cannot run"
 	have_roms both || { stage_end FAIL "" "${MISSING_WHAT}"; return; }
-	sandbox_new direct
-	local bad=0 notes="" tool
+	local bad=0 notes="" tool mmtool mdtool
 	# mmDeskFirmwareTest has a ctest entry, but its 400 s limit is too short and without -DGEARMULATOR_MM_ROM it only
-	# skips; mdDeskFirmwareTest is its Machinedrum twin and has none. Both end with a "PASS (n failure...)" line.
-	tool="$(find_tool mmDeskFirmwareTest)"
-	if [ -n "${tool}" ]; then
-		direct_run mmDeskFirmwareTest 3600 '^PASS \(0 failures\)' "${tool}" "${MM_ROM}" || bad=1
-	else
-		DIRECT_NOTE="mmDeskFirmwareTest not built"; bad=1
-	fi
-	notes="${DIRECT_NOTE}"
-	tool="$(find_tool mdDeskFirmwareTest)"
-	if [ -n "${tool}" ]; then
-		direct_run mdDeskFirmwareTest 3600 '^mdDeskFirmwareTest: PASS \(0 failure\(s\)\)' "${tool}" "${MD_ROM}" || bad=1
-	else
-		DIRECT_NOTE="mdDeskFirmwareTest not built"; bad=1
-	fi
-	notes="${notes}; ${DIRECT_NOTE}"
+	# skips; mdDeskFirmwareTest is its Machinedrum twin and has none. Both end with a "PASS (n failure...)" line. The two
+	# run at once, each in a sandbox of its own (their result and note in a file: a subshell's variables stay there).
+	mmtool="$(find_tool mmDeskFirmwareTest)"; mdtool="$(find_tool mdDeskFirmwareTest)"
+	(
+		sandbox_new direct-mm
+		if [ -n "${mmtool}" ]; then direct_run mmDeskFirmwareTest 3600 '^PASS \(0 failures\)' "${mmtool}" "${MM_ROM}"; s=$?
+		else DIRECT_NOTE="mmDeskFirmwareTest not built"; s=1; fi
+		printf '%s\t%s\n' "${s}" "${DIRECT_NOTE}" > "${OUT}/logs/2b-mm.result"
+	) &
+	local mmpid=$!
+	(
+		sandbox_new direct-md
+		if [ -n "${mdtool}" ]; then direct_run mdDeskFirmwareTest 3600 '^mdDeskFirmwareTest: PASS \(0 failure\(s\)\)' "${mdtool}" "${MD_ROM}"; s=$?
+		else DIRECT_NOTE="mdDeskFirmwareTest not built"; s=1; fi
+		printf '%s\t%s\n' "${s}" "${DIRECT_NOTE}" > "${OUT}/logs/2b-md.result"
+	) &
+	wait "${mmpid}" $!
+	local s note
+	for m in mm md; do
+		IFS=$'\t' read -r s note < "${OUT}/logs/2b-${m}.result" 2> /dev/null || { s=1; note="${m}DeskFirmwareTest: no result"; }
+		[ "${s}" = 0 ] || bad=1
+		notes="${notes:+${notes}; }${note}"
+	done
+	sandbox_new direct
 	tool="$(find_tool mdSysexLifecycleTest)"
 	if [ -z "${tool}" ]; then
 		if [ "${QUICK}" = 1 ]; then
@@ -1029,13 +1037,24 @@ if [ "${BUILD_OK}" = 1 ] && [ "${QUICK}" != 1 ] && [ "${SKIP_PLUGIN}" != 1 ] && 
 	info_set lanes 2
 	journeys_build_start
 fi
+# Lane 1's stages run at once, each in a subshell with its console in a file, shown in stage order when all are done:
+# 2 (ctest), 2c (page tier), 2b (the desk smoke tests) and 3, 4, 5 in turn. None opens an audio device or measures time;
+# each has a sandbox of its own. The stage's result line goes to stages.tsv as it ends (one short append each).
+lane1() {
+	local pids="" s
+	wanted 2 && { ( stage_ctest ) > "${OUT}/logs/lane-2.out" 2>&1 & pids+=" $!"; }
+	wanted 2c && { ( stage_page ) > "${OUT}/logs/lane-2c.out" 2>&1 & pids+=" $!"; }
+	wanted 2b && { ( stage_direct ) > "${OUT}/logs/lane-2b.out" 2>&1 & pids+=" $!"; }
+	( wanted 3 && stage_romload; wanted 4 && stage_sysex; wanted 5 && { stage_goldens; note_goldens_state; } ) \
+		> "${OUT}/logs/lane-345.out" 2>&1 &
+	pids+=" $!"
+	echo "    lane 1: stages 2, 2c, 2b and 3-5 at once"
+	for s in ${pids}; do wait "${s}"; done
+	for s in 2 2c 2b 345; do [ -f "${OUT}/logs/lane-${s}.out" ] && cat "${OUT}/logs/lane-${s}.out"; done
+	return 0
+}
 if [ "${BUILD_OK}" = 1 ]; then
-	wanted 2 && stage_ctest
-	wanted 2c && stage_page
-	wanted 2b && stage_direct
-	wanted 3 && stage_romload
-	wanted 4 && stage_sysex
-	wanted 5 && { stage_goldens; note_goldens_state; }
+	lane1
 else
 	for pair in "2:ctest, every registered test" "2c:Page journeys (page tier, no ROM)" "2b:Firmware tests ctest cannot run" \
 		"3:ROM loading" "4:SysEx round trip" "5:Playing goldens" "5b:CPU bench sanity" "6a:Real-time work while editing (rt-check)"; do
