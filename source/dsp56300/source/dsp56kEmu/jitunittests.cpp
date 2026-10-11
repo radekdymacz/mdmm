@@ -684,7 +684,9 @@ namespace dsp56k
 		struct Case { uint32_t instructionTarget; uint32_t cycleDeadline; };
 		const Case cases[] = {{100000, 0}, {13, 0}, {1234, 0}, {100000, 333}, {61, 17}, {7, 4093}};
 
-		enum class Mode { Legacy, Off, On };
+		// OnWithoutPureReads and OnWithoutPolls: the fast-forward on but the kinds that cover these loops left out
+		// (DSP::setIdleFastForwardParts, the per-lever tester switches): nothing may be skipped either.
+		enum class Mode { Legacy, Off, On, OnWithoutPureReads, OnWithoutPolls };
 
 		for(const auto& program : programs)
 		{
@@ -722,7 +724,11 @@ namespace dsp56k
 					testPeripheralsX.getPortD().hostWrite(0);
 
 					testDsp.setPC(program.base);
-					testDsp.setIdleFastForward(_mode == Mode::On);
+					testDsp.setIdleFastForward(_mode != Mode::Legacy && _mode != Mode::Off);
+					if(_mode == Mode::OnWithoutPureReads)
+						testDsp.setIdleFastForwardParts(DSP::IdleFastForwardAll & ~DSP::IdleFastForwardPureReads);
+					else if(_mode == Mode::OnWithoutPolls)
+						testDsp.setIdleFastForwardParts(DSP::IdleFastForwardNopLoops | DSP::IdleFastForwardPureReads);
 					testPeripheralsX.resetDelayCycles(testDsp.getInstructionCounter(), c.instructionTarget);
 					if(c.cycleDeadline)
 						testPeripheralsX.setCycleDeadline(c.cycleDeadline);
@@ -771,6 +777,8 @@ namespace dsp56k
 				verify(run(Mode::Legacy) == legacy);
 				verify(run(Mode::Off) == legacy);
 				verify(run(Mode::On) == legacy);
+				verify(run(Mode::OnWithoutPureReads) == legacy);
+				verify(run(Mode::OnWithoutPolls) == legacy);
 			}
 
 			verify(program.idle == (skippedTotal > 0));

@@ -50,9 +50,9 @@ namespace dsp56k
 			_dsp->fastForwardNopLoop(_instructionsPerTurn, _cyclesPerTurn, _turnsPerExit);
 		}
 
-		void callFastForwardPollLoop(DSP* _dsp, const uint32_t _instructionsPerTurn, const uint32_t _cyclesPerTurn)
+		void callFastForwardPollLoop(DSP* _dsp, const uint32_t _instructionsPerTurn, const uint32_t _cyclesPerTurn, const uint32_t _pureRead)
 		{
-			_dsp->fastForwardPollLoop(_instructionsPerTurn, _cyclesPerTurn);
+			_dsp->fastForwardPollLoop(_instructionsPerTurn, _cyclesPerTurn, _pureRead != 0);
 		}
 
 		// The ops an idle poll loop may hold besides its final branch: register-only ALU work that does not take the
@@ -233,7 +233,7 @@ namespace dsp56k
 		m_asm.bind(noDeadline);
 	}
 
-	bool JitBlock::isIdlePollLoop(const JitBlockInfo& _info, const TWord _pc, const bool _isFastInterrupt, const std::set<TWord>& _loopEnds) const
+	bool JitBlock::isIdlePollLoop(const JitBlockInfo& _info, const TWord _pc, const bool _isFastInterrupt, const std::set<TWord>& _loopEnds, bool* _pureRead) const
 	{
 		// A block that ends in a conditional branch to its own start, and whose turns repeat each other: it reads only
 		// DMA registers, writes no memory, and no register it reads carries a value from the turn before (every one
@@ -280,6 +280,10 @@ namespace dsp56k
 			else if(!isPollLoopBodyOp(instA, instB, opA, opB, m_config.pollLoopPureReads))
 			{
 				return false;
+			}
+			else if(_pureRead && isPureRegisterRead(instA, instB, opA, opB, m_config.pollLoopPureReads))
+			{
+				*_pureRead = true;
 			}
 
 			trackPollLoopRegisters(carried, writtenSoFar, instA, instB, opA);
@@ -357,6 +361,7 @@ namespace dsp56k
 		auto writtenSoFar = RegisterMask::None;
 		auto carried = RegisterMask::None;
 		bool hasPc = false;
+		bool pureRead = false;
 		uint32_t instructions = 0;
 		uint32_t cycles = 0;
 
@@ -392,6 +397,10 @@ namespace dsp56k
 			{
 				return false;
 			}
+			else
+			{
+				pureRead |= isPureRegisterRead(op.instA, op.instB, op.opA, op.opB, m_config.pollLoopPureReads);
+			}
 
 			trackPollLoopRegisters(carried, writtenSoFar, op.instA, op.instB, op.opA);
 
@@ -408,6 +417,7 @@ namespace dsp56k
 		_cycle.end = end;
 		_cycle.instructions = instructions;
 		_cycle.cycles = cycles;
+		_cycle.pureRead = pureRead;
 
 		// the id: a hash of the words, so that a block made from other words never passes the marker on
 		uint32_t id = 2166136261u;
@@ -921,7 +931,8 @@ namespace dsp56k
 
 		assert(_rt.getEncodedCycleCount() >= _rt.getEncodedInstructionCount());
 
-		if(isIdlePollLoop(info, _pc, isFastInterrupt, _loopEnds))
+		bool pollLoopPureRead = false;
+		if(isIdlePollLoop(info, _pc, isFastInterrupt, _loopEnds, &pollLoopPureRead))
 		{
 			// The last op branched: if back to this block, its next turns repeat this one (DSP::fastForwardPollLoop).
 			// Gate as for the NOP loops, here with one turn: the call only runs when a turn fits before the stop and
@@ -940,9 +951,11 @@ namespace dsp56k
 				const FuncArg r0(*this, 0);
 				const FuncArg r1(*this, 1);
 				const FuncArg r2(*this, 2);
+				const FuncArg r3(*this, 3);
 				mem().makeDspPtr(r0);
 				m_asm.mov(r32(r1), asmjit::Imm(_rt.getEncodedInstructionCount()));
 				m_asm.mov(r32(r2), asmjit::Imm(_rt.getEncodedCycleCount()));
+				m_asm.mov(r32(r3), asmjit::Imm(pollLoopPureRead ? 1 : 0));
 				stack().call(asmjit::func_as_ptr(&callFastForwardPollLoop));
 			}
 			m_asm.bind(noCall);

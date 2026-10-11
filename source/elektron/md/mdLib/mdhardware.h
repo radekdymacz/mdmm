@@ -18,6 +18,7 @@
 #include "mdrom.h"
 #include "mdscheduledmidi.h"
 #include "mdstate.h"
+#include "mdSpeedUpLevers.h"
 #include "mdsysextransfer.h"
 #include "mdturbomidi.h"
 #include "mdtransportdiagnostics.h"
@@ -257,22 +258,27 @@ namespace md
 		//   and the JIT's cmpm fix (dsp56k::DSP::setJitCmpmFix: cmpm with the other accumulator as source no
 		//   longer leaves |S| in it; the firmwares never run that form, so it changes nothing they do).
 		// Off, every one runs the code it replaced: the same machine state, bit for bit, at a higher host CPU.
-		// On is the default. L3 has its own opt-in switch (setExactEssiTiming) and acts only with these on. GEARMULATOR_MDMM_SPEEDUPS=0 turns them off at construction. The finer
-		// GEARMULATOR_MDMM_SIM_DEFERRAL=0 turns off L5 alone (read once; it keeps L5 off whatever is set
-		// here). The deferred processUC gating and inline exec of L5 have no switch: they only skip work
+		// On is the default. L3 has its own opt-in switch (setExactEssiTiming) and acts only with these on.
+		// GEARMULATOR_MDMM_SPEEDUPS=0 turns them off at construction. Each one also has its own switch
+		// (setSpeedUpLeversOff, mdSpeedUpLevers.h; GEARMULATOR_MDMM_<lever>=0, and the older
+		// GEARMULATOR_MDMM_SIM_DEFERRAL=0 for L5): a lever in that mask stays off while the umbrella is on.
+		// The deferred processUC gating and inline exec of L5 have no switch: they only skip work
 		// that cannot change state. Call under the owning Plugin device lock, like the other control
 		// operations.
 		void setSpeedUps(const bool _on)
 		{
 			m_speedUps = _on;
-			m_uc.setMemoryFastLane(_on);
-			m_uc.getSim().setDeferStepping(_on && m_simDeferral);
-			applyEssiCycleDeadlines();
-			m_dspMixer.dsp().setIdleFastForward(_on);
-			m_dspProducer.dsp().setIdleFastForward(_on);
-			m_dspMixer.dsp().setJitCmpmFix(_on);
-			m_dspProducer.dsp().setJitCmpmFix(_on);
+			applySpeedUps();
 		}
+		// The levers (SpeedUpLever bits) to keep off while the umbrella is on. Same locking as setSpeedUps.
+		void setSpeedUpLeversOff(const uint32_t _off)
+		{
+			m_speedUpLeversOff = _off & g_allSpeedUpLevers;
+			applySpeedUps();
+		}
+		uint32_t speedUpLeversOff() const { return m_speedUpLeversOff; }
+		// a lever acting now: the umbrella on and the lever not switched off alone
+		bool speedUpLeverOn(const SpeedUpLever _lever) const { return m_speedUps && !(m_speedUpLeversOff & bit(_lever)); }
 		bool speedUps() const { return m_speedUps; }
 		// L3, opt-in and off by default, separate from the speed-ups because it changes the Machinedrum's audio: its
 		// serial clock wakes the DSPs at the exact cycle of the next slot (TransportPolicy::exactEssiCycleDeadlinesL3;
@@ -436,11 +442,14 @@ namespace md
 		// Cycle-bounded DSP background slices (GEARMULATOR_MDMM_BOUNDED_JIT=0: the
 		// instruction-by-instruction loop). Not part of the speed-ups switch.
 		bool     m_schedBoundedJit = true;
-		// The step 1 speed-ups switch (setSpeedUps). L1 and L2b read it here; L11 and L5 live in the
-		// Microcontroller and the Sim, which setSpeedUps drives. m_simDeferral is the separate
-		// GEARMULATOR_MDMM_SIM_DEFERRAL switch for L5 alone, fixed at construction.
+		// The speed-ups switch (setSpeedUps) and the levers kept off alone (setSpeedUpLeversOff). L1 and L2b
+		// read them here (m_leverL1, m_leverL2b, set by applySpeedUps); L11, L5, L4 and the CMPM fix live in the
+		// Microcontroller, the Sim and the DSPs, which applySpeedUps drives.
+		void     applySpeedUps();
 		bool     m_speedUps = true;
-		bool     m_simDeferral = true;
+		uint32_t m_speedUpLeversOff = 0;
+		bool     m_leverL1 = true;
+		bool     m_leverL2b = true;
 		bool     m_exactEssiTiming = false;	// L3 opt-in (setExactEssiTiming)
 		std::array<RealtimeHostAudioInputTimeline, 2> m_hostAudioInput;
 		std::array<int64_t, 2> m_hostAudioInputClockOrigin{};

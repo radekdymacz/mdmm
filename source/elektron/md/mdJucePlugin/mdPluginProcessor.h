@@ -64,6 +64,10 @@ namespace mdJucePlugin
 		// speed-ups (md::Device::setSpeedUps). Identical audio, more host CPU. Kept in the plug-in's config.
 		void setLegacyEmulation(bool _legacy);
 		bool isLegacyEmulation();
+		// The speed-ups one by one (md::Device::setSpeedUpLeversOff, md::SpeedUpLever bits): the levers kept off
+		// while the speed-ups are on. Same audio. Kept in the plug-in's config (key speedUpLeversOff).
+		void setSpeedUpLeversOff(uint32_t _off);
+		uint32_t getSpeedUpLeversOff();
 		// L3's opt-in (md::Device::setExactEssiTiming): exact serial-port timing on the Machinedrum, which changes
 		// its sound; acts only with the speed-ups on. Off by default; kept in the plug-in's config.
 		void setExactEssiTiming(bool _on);
