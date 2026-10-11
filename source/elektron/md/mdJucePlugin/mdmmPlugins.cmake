@@ -44,7 +44,8 @@ list(APPEND SOURCES
 	mdPageEditor.cpp mdPageEditor.h mdPageZoom.h mdEditorMenu.h mdNoticeBook.h mdDroppedFiles.h
 	mdRomInstall.cpp mdRomInstall.h
 	mdSettingsMigration.cpp mdSettingsMigration.h
-	mdSessionMd.cpp mdSessionMm.cpp mdSessions.h
+	mdSessionMd.cpp mdSessionMm.cpp mdSessions.h mdSyxSession.h mdSyxWork.h
+	mdFactorySource.cpp mdFactorySource.h
 	mdStudioLink.cpp mdStudioLink.h
 	mdWebPageHost.cpp mdWebPageHost.h
 	mmStudioLink.cpp mmStudioLink.h
