@@ -1019,9 +1019,8 @@ BUILD_OK=0
 # Lane 1, the release tree's functional stages (2 to 5, then 7a-7c), while lane 2 builds the journeys' diagnostics tree
 # in the background; then 7d; then the timing stages (5b, 6a, 6b, 6c) alone on a quiet Mac. A stage's verdict does not
 # depend on the order.
-LANES=0
 if [ "${BUILD_OK}" = 1 ] && [ "${QUICK}" != 1 ] && [ "${SKIP_PLUGIN}" != 1 ] && [ "${SKIP_JOURNEYS}" != 1 ] && wanted 7d; then
-	LANES=1
+	info_set lanes 2
 	journeys_build_start
 fi
 if [ "${BUILD_OK}" = 1 ]; then
