@@ -898,6 +898,12 @@ namespace mdJucePlugin
 		m_cpuMeter.onBlock(cpuClockNs() - m_blockStartNs, _frames, rate, isNonRealtime());
 	}
 
+	// I-021: the output meter: one pass over the enabled outputs a block, three compare-exchanges (mdOutputLevel.h)
+	void AudioPluginAudioProcessor::processBlockOutput(const synthLib::TAudioOutputs& _outputs, const size_t _frames)
+	{
+		m_outputMeter.onBlock(_outputs, _frames);
+	}
+
 	uint64_t AudioPluginAudioProcessor::cpuClockNs()
 	{
 		return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(

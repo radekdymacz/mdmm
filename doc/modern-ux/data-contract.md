@@ -311,6 +311,17 @@ blocks). The rest is the popover's: `realtime` (as `audioRun`'s), the host's `sa
 with two clock reads and a few relaxed atomic adds a block (`mdJucePlugin/mdCpuLoad.h`); the speed-ups are read under
 the lock the start-up sample takes once a second anyway, so the meter never takes the synth lock.
 
+**The output meter and volume (I-021).** `{"type":"outputLevel","peakL","peakR","clip","gainDb"}` every 250 ms while the
+page is up: `peakL` and `peakR`, the largest sample of the main output's left and right since the previous message,
+after the volume (linear, 1 = 0 dBFS; 0 when no audio ran or the channel is not enabled); `clip`, whether a sample of
+any output (main and extra) was above 0 dBFS in that time; `gainDb`, the volume in dB (-60 to +6 in 0.1 dB steps,
+`null` when it is off). The page sets it with `{"op":"outputGain","db"}` (-60 to 6; -60 is off): the plug-in layer's
+output gain (`pluginLib::Processor::applyOutputGain`), after the emulation, on every output bus, ramped across the
+next block, so the emulated machine and its own volume settings are untouched (the goldens do not see it). It is saved
+with the project (the GAIN chunk) and so with the standalone's state. Measured on the audio thread with one pass over
+the enabled outputs and three lock-free maxima a block (`mdJucePlugin/mdOutputLevel.h`); no lock, no allocation.
+Not a host-automatable parameter (see IDEAS.md I-021).
+
 **The host's tempo (B-030).** In a DAW the plug-in sends `{"type":"host","bpm","follows"}`:
 the host's tempo as its playhead reports it (also while the host's transport is stopped),
 when it changed (by 0.01 BPM) or a page is new; `follows` is true in a DAW (the plug-in

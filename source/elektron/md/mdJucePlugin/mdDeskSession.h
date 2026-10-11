@@ -72,6 +72,13 @@ namespace mdJucePlugin
 	// shows (realtime ratio, rate and block size, the speed-ups, Rosetta). A few times a second while the page is up.
 	elektronData::json::Value cpuLoadOf(AudioPluginAudioProcessor& _processor);
 	constexpr double g_cpuLoadMs = 250;
+	// I-021: the LCD's output meter and volume ({"type":"outputLevel","peakL","peakR","clip","gainDb"}): the main
+	// output's left and right peaks since the last one, after the output gain, whether any output clipped, and the gain
+	// in dB (null: off). As often as cpuLoad.
+	elektronData::json::Value outputLevelOf(AudioPluginAudioProcessor& _processor);
+	// I-021: the page's volume (outputGain {db}): the processor's output gain (mdOutputLevel.h's range)
+	void setOutputGainDb(AudioPluginAudioProcessor& _processor, double _db);
+	constexpr double g_outputLevelMs = 250;
 
 	// P7: a model's SysEx import traits (mdSessionMd.cpp, mdSessionMm.cpp): the documents' type, the
 	// file's and the desk's documents, one document as the contract's JSON, and what may be imported.
@@ -320,6 +327,11 @@ namespace mdJucePlugin
 			case Action::SyxImport: syxImport(_message); break;
 			case Action::SyxCancel: m_syx.cancel(); toPage(m_syx.progress()); reply(_message, true, "Import stopped."); break;
 			case Action::Midi: onMidi(_message); break;
+			case Action::OutputGain:
+				// the next outputLevel message (within g_outputLevelMs) brings the gain back to the page
+				setOutputGainDb(processor(), _message.find("db")->asNumber());
+				reply(_message, true, "");
+				break;
 			case Action::LearnStart:
 			case Action::LearnAdd:
 			case Action::LearnSetCc:
@@ -370,6 +382,9 @@ namespace mdJucePlugin
 			// I-018: the CPU meter in the top bar (no lock: atomics read on this thread, mdCpuLoad.h)
 			if(m_desk->pageSeen() && due(t, g_cpuLoadMs))
 				toPage(cpuLoadOf(processor()));
+			// I-021: the LCD's output meter and volume (no lock: one atomic swap, mdOutputLevel.h)
+			if(m_desk->pageSeen() && due(t, g_outputLevelMs))
+				toPage(outputLevelOf(processor()));
 			// B-030: the host's tempo (a DAW's playhead, also while it is stopped) for the LCD's TEMPO
 			if(m_desk->pageSeen() && due(t, g_hostTempoMs))
 				if(const auto bpm = m_hostTempo.next(hostBpmOf(processor())))
