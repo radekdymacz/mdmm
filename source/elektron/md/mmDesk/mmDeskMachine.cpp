@@ -253,16 +253,17 @@ namespace mmDesk
 			m_lastStatusMs = _now;
 			requestStatus();
 		}
-		pumpRecv(_now);
-		pumpTranspose(_view);
-		pumpTransport(_now);
-		pumpChain();
-		pumpSongReload(_now);
+		// a slot to make active goes before the SYSEX RECV macro may start (its cursor goes to that slot, B-062)
 		if(m_activateGlobal >= 0 && (m_profile.wire || m_recv.state() == RecvSession::State::Idle))
 		{
 			sendActiveGlobal(m_activateGlobal);
 			m_activateGlobal = -1;
 		}
+		pumpRecv(_now);
+		pumpTranspose(_view);
+		pumpTransport(_now);
+		pumpChain();
+		pumpSongReload(_now);
 		pumpLoads(_now);
 		if(m_restoreKit >= 0)
 			restoreWorkingKit(_view);

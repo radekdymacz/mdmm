@@ -83,8 +83,8 @@ namespace
 		check(out.keys == mmDesk::RecvSession::enterMacro() && r.state() == mmDesk::RecvSession::State::Entering, "from the main screen: the macro");
 		out = r.tick(400, screen(mmDesk::Screen::Global));
 		check(out.sends.empty(), "no send before SYSEX RECV");
-		out = r.tick(700, screen(mmDesk::Screen::GlobalEdit));
-		out = r.tick(710, screen(mmDesk::Screen::GlobalEdit));
+		out = r.tick(850, screen(mmDesk::Screen::GlobalEdit));
+		out = r.tick(860, screen(mmDesk::Screen::GlobalEdit));
 		check(out.sends.size() == 1 && r.parked(), "parked: the dump goes out");
 		out = r.tick(1500, screen(mmDesk::Screen::GlobalEdit));
 		check(out.keys.empty() && r.parked(), "stays parked while quiet for less than the idle time");
@@ -100,7 +100,20 @@ namespace
 		for(double t = 4700; t < 40000 && r.state() != mmDesk::RecvSession::State::Failed; t += 100)
 			r.tick(t, screen(mmDesk::Screen::Main));
 		check(r.state() == mmDesk::RecvSession::State::Failed, "a screen that never comes fails after three tries");
-		check(mmDesk::RecvSession::enterMacro().size() == 29, "the macro is 29 keys (GLOBAL counts as one)");
+		check(mmDesk::RecvSession::enterMacro().size() == 36, "the macro is 36 keys with GLOBAL 1 active (GLOBAL counts as one)");
+		{
+			// B-062: on the SLOT screen the cursor goes to the active global before ENTER (ENTER on another slot makes
+			// it active): GLOBAL 7 is two to the right of slot 1, one row down
+			const auto k = mmDesk::RecvSession::enterMacro(6);
+			const std::vector<mmDesk::Key> slot7{mmDesk::Key::Global, mmDesk::Key::Up, mmDesk::Key::Up, mmDesk::Key::Up, mmDesk::Key::Left,
+				mmDesk::Key::Left, mmDesk::Key::Left, mmDesk::Key::Left, mmDesk::Key::Right, mmDesk::Key::Right, mmDesk::Key::Down, mmDesk::Key::Enter};
+			check(k.size() == 39 && std::equal(slot7.begin(), slot7.end(), k.begin()), "GLOBAL 7 active: the cursor to slot 7, then ENTER");
+			mmDesk::RecvSession g;
+			g.activeGlobal = 6;
+			g.want({0xf0, 3, 0xf7});
+			check(g.tick(10, screen(mmDesk::Screen::Main)).keys == k, "the session presses the active global's macro");
+			check(mmDesk::RecvSession::isEnterMacro(k) && !mmDesk::RecvSession::isEnterMacro(mmDesk::RecvSession::exitKeys()), "isEnterMacro knows it");
+		}
 
 		// Release review A1: a screen that never comes is given up (the tags say whose dumps they were) and the
 		// panel is left alone; so is a dump that waits while telemetry is never valid.
@@ -296,7 +309,7 @@ namespace
 		port.device.pressKeys = [&](const std::vector<mmDesk::Key>& _k)
 		{
 			m.keysPressed += static_cast<int>(_k.size());
-			if(_k == mmDesk::RecvSession::enterMacro())
+			if(mmDesk::RecvSession::isEnterMacro(_k))
 				m.screenWord = mmDesk::Screen::GlobalEdit;
 			else if(_k == mmDesk::RecvSession::exitKeys())
 				m.screenWord = mmDesk::Screen::Main;
@@ -350,8 +363,8 @@ namespace
 		const auto doc = ed::json::write(ed::mmPatternToJson(p));
 		msg(R"({"op":"set","id":7,"kind":"pattern","doc":)" + doc + "}");
 		check(lastResult().find("ok")->asBool(), "set pattern accepted");
-		run(800);
-		check(m.keysPressed >= 28 && d.recvParked(), "the desk drove the machine to SYSEX RECV");
+		run(1000);
+		check(m.keysPressed >= 36 && d.recvParked(), "the desk drove the machine to SYSEX RECV");
 		auto stored = p;
 		stored.kit = m.kit;	// B-053: the dump of the pattern that plays links the kit that plays
 		check(m.slots[{0x67, 3}] == ed::encodeMmPattern(stored), "the machine holds the edited pattern");
@@ -656,7 +669,7 @@ void kitAfterPatternDump(const uint8_t _link3 = 5)
 	port.device.sendNrpn = [](uint8_t, uint8_t, uint8_t) {};
 	port.device.pressKeys = [&](const std::vector<mmDesk::Key>& _k)
 	{
-		if(_k == mmDesk::RecvSession::enterMacro())
+		if(mmDesk::RecvSession::isEnterMacro(_k))
 			m.screenWord = mmDesk::Screen::GlobalEdit;
 		else if(_k == mmDesk::RecvSession::exitKeys())
 			m.screenWord = mmDesk::Screen::Main;
@@ -799,7 +812,7 @@ void transposeWhilePlaying()
 	port.device.sendNrpn = [](uint8_t, uint8_t, uint8_t) {};
 	port.device.pressKeys = [&](const std::vector<mmDesk::Key>& _k)
 	{
-		if(_k == mmDesk::RecvSession::enterMacro())
+		if(mmDesk::RecvSession::isEnterMacro(_k))
 			m.screenWord = mmDesk::Screen::GlobalEdit;
 		else if(_k == mmDesk::RecvSession::exitKeys() || (!_k.empty() && _k.back() == mmDesk::Key::Exit))
 			m.screenWord = mmDesk::Screen::Main;
