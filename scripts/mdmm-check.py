@@ -180,7 +180,9 @@ def unit_tests(runner, plan, tier, tests, targets):
 	for n in selected:
 		for arg in tests[n]["command"]:
 			for part in arg.split("="):
-				if part.startswith(BUILD) and os.path.basename(part) in targets:
+				# a program of the tree (its file, or a bundle's): never a folder or a utility target such as "test"
+				if part.startswith(BUILD) and os.path.basename(part) in targets and os.path.basename(part) not in ("test", "all", "install") \
+						and not os.path.isdir(part):
 					build.add(os.path.basename(part))
 	if build:
 		runner.run(f"build {len(build)} test program(s)", ["cmake", "--build", BUILD, "--target", *sorted(build)],
@@ -314,6 +316,16 @@ def main():
 						"GEARMULATOR_DATA_ROOT": os.path.join(BUILD, "build-data") + "/"})
 			else:
 				runner.note("firmware tests", "skipped: no ROM here")
+			# the Monomachine's intent cases on the firmware: not in ctest until their findings are triaged (DEV-CYCLE.md);
+			# run here, their count said, not judged
+			if all(roms.values()) and any("mmIntentCases" in f for f in plan.firmware) and not runner.dry:
+				tool = os.path.join(BUILD, "source/elektron/md/mdLibTest/mmDeskFirmwareTest")
+				runner.run("build mmDeskFirmwareTest", ["cmake", "--build", BUILD, "--target", "mmDeskFirmwareTest"])
+				t0 = time.time()
+				out = subprocess.run([tool, roms["mm"], "intentcases"], capture_output=True, text=True,
+					env={**os.environ, "GEARMULATOR_DATA_ROOT": os.path.join(BUILD, "build-data") + "/"}).stdout
+				line = next((l.strip() for l in out.split("\n") if "cases as the core says" in l), "no count")
+				runner.steps.append(("MM intent cases on the firmware (not judged)", line, time.time() - t0))
 		if plan.machine:
 			if all(roms.values()):
 				editor, sel = editors_of(plan.machine)

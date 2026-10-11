@@ -12,8 +12,8 @@ no ROM on the shipped files ([FOUNDATION.md](../modern-ux/FOUNDATION.md), CI sta
 **The order.** Stage 1 builds the release tree (with ccache when it is installed, `brew install ccache`;
 `MDMM_GATE_CCACHE=0`: without). Then lane 1 runs that tree's functional stages at once (2, 2c, 2b with its two desk
 smoke tests at once, and 3, 4, 5 in turn; each console shown in stage order when all are done) while lane 2 builds the
-journeys' diagnostics tree in the background (niced, half the cores) and 7a to 7c run in the foreground; then 7d (four
-editors at once);
+journeys' diagnostics tree in the background (niced, half the cores) and 7a to 7c run in the foreground (a full run
+swaps the AU bundles in once and holds them for stage 2's AU tests and 7b-7c); then 7d (four editors at once);
 then the timing stages (5b, 6a, 6b, 6c) alone, on a quiet Mac. Do not edit the gate script while it runs (bash reads
 it as it goes).
 
@@ -35,6 +35,9 @@ It prints one line per stage while it runs, ends with the table below, writes th
 others. The last thing a green run prints is the manual step it cannot do (Updater end to end, below).
 
 ## Timings
+
+**2026-10-11, the lanes:** 21.6 minutes on a warm tree (stage 1 3 min; lane 1 with 7a-7c 7.5 min, its long pole 2b at
+7.5 min; 7d 5.2 min; 5b, 6a, 6b 6 min). The table below is the one-at-a-time run of 2026-10-09.
 
 Measured on 2026-10-09 on a 12-core M4 Pro with other work running (load 25 to 200), so an idle Mac is faster and a busy one slower:
 
