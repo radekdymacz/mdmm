@@ -157,6 +157,19 @@ namespace md
 		m_exactEssiTiming = exactEssi != nullptr && std::strcmp(exactEssi, "1") == 0;
 		const auto* const speedUps = std::getenv("GEARMULATOR_MDMM_SPEEDUPS");
 		setSpeedUps(speedUps == nullptr || std::strcmp(speedUps, "0") != 0);
+		// The DSP core's accuracy fixes (dsp56k::DSP::setAccuracyFixes and the fine ESSI catch-up limit), found by
+		// G1-Emu: off by default because each can change what the firmware does, and so the goldens.
+		// GEARMULATOR_MDMM_DSP_FIXES=1 turns them on at construction, before either DSP runs, to compare.
+		const auto* const dspFixes = std::getenv("GEARMULATOR_MDMM_DSP_FIXES");
+		m_dspAccuracyFixes = dspFixes != nullptr && std::strcmp(dspFixes, "1") == 0;
+		if(m_dspAccuracyFixes)
+		{
+			for(auto* d : {&m_dspMixer, &m_dspProducer})
+			{
+				d->dsp().setAccuracyFixes(true);
+				d->getPeriph().getEssiClock().setFineCatchUpLimit(64);
+			}
+		}
 
 		if(!m_rom->isValid())
 			return;

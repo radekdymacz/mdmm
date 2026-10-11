@@ -56,8 +56,8 @@
 // HI08 windows are never read, reads there have side effects.
 // Compare those hashes across builds; compare the per-frame costs as medians of a few paired runs (old, new, old, new).
 // --golden compares the hashes and counts with the entry of the goldens file for (ROM fingerprint, scenario, outputs,
-// GEARMULATOR_MDMM_SPEEDUPS position (on, off, or on+exact-essi with GEARMULATOR_MDMM_EXACT_ESSI=1 on the MD), seconds
-// per phase) and exits 1 on any difference, field by field; with --record
+// GEARMULATOR_MDMM_SPEEDUPS position (on, off, or on+exact-essi with GEARMULATOR_MDMM_EXACT_ESSI=1 on the MD; any of
+// them +dsp-fixes with GEARMULATOR_MDMM_DSP_FIXES=1), seconds per phase) and exits 1 on any difference, field by field; with --record
 // it writes or replaces that entry instead (the file keeps the others). The goldens hold hashes, counts and, as
 // information only, the instruction figures and guest cycles of the recording run: nothing from the firmware.
 // --wav writes the hashed stream (stopped, the press, playing; left and right) as a 32-bit float WAV at 44.1 kHz, for
@@ -790,8 +790,18 @@ int main(const int _argc, char** _argv)
 		const bool speedUps = m.hardware().speedUps();
 		// The position the goldens are keyed by: "on", "off", or "on+exact-essi" when L3 is opted in
 		// (GEARMULATOR_MDMM_EXACT_ESSI=1) on the Machinedrum; on the Monomachine L3 changes nothing, so it stays "on".
-		const std::string position = !speedUps ? "off"
-			: (!mm && m.hardware().exactEssiTimingActive()) ? "on+exact-essi" : "on";
+		// GEARMULATOR_MDMM_DSP_FIXES=1 (the DSP core's accuracy fixes) adds "+dsp-fixes": they may change the audio,
+		// so that run keys its own goldens rather than failing against the legacy ones.
+		const std::string position = std::string(!speedUps ? "off"
+			: (!mm && m.hardware().exactEssiTimingActive()) ? "on+exact-essi" : "on")
+			+ (m.hardware().dspAccuracyFixes() ? "+dsp-fixes" : "");
+		// DSP code writing to program memory that has compiled code (dsp56k::DSP::getPMemWritesAfterCompile): each
+		// destroys a block and marks the address volatile for good. Printed per phase and in total, never compared.
+		const auto pMemWrites = [&]
+		{
+			return m.hardware().getDspMixer().dsp().getPMemWritesAfterCompile()
+				+ m.hardware().getDspProducer().dsp().getPMemWritesAfterCompile();
+		};
 		const auto fingerprint = m.hardware().firmwareFingerprint();
 		uint64_t combined = g_fnvOffset;
 
@@ -821,6 +831,7 @@ int main(const int _argc, char** _argv)
 			const size_t first = m.left().size();
 			const uint64_t ucFirst = m.hardware().hostCurrentCycle();
 			const uint64_t movesFirst = capture.moves();
+			const uint64_t pMemWritesFirst = pMemWrites();
 			const double cpuFirst = threadCpuSeconds();
 			m.run(seconds * 1000.0);
 			const double cpu = threadCpuSeconds() - cpuFirst;
@@ -848,6 +859,7 @@ int main(const int _argc, char** _argv)
 			line.count("nonsilent_frames", nonsilent);
 			line.count("playhead_moves", capture.moves() - movesFirst);
 			line.info("instr_median_per_frame", "%.0f", median(m.blockMInstr) * 1e6 / g_block);
+			line.info("pmem_writes_after_compile", "%.0f", static_cast<double>(pMemWrites() - pMemWritesFirst));
 			if(allOutputs)
 			{
 				Capture::Hashes each{};
@@ -906,6 +918,21 @@ int main(const int _argc, char** _argv)
 			return 2;
 		}
 
+		{
+			auto& mixer = m.hardware().getDspMixer().dsp();
+			auto& producer = m.hardware().getDspProducer().dsp();
+			std::printf("%s DSP program-memory writes over compiled code since boot: DSP1 %llu, DSP2 %llu%s\n", name,
+				static_cast<unsigned long long>(mixer.getPMemWritesAfterCompile()),
+				static_cast<unsigned long long>(producer.getPMemWritesAfterCompile()),
+				m.hardware().dspAccuracyFixes() ? " (DSP accuracy fixes on)" : "");
+			if(mixer.getJit().hasFailed() || producer.getJit().hasFailed())
+			{
+				std::printf("mdmmPerfGateTest: FAIL (the DSP JIT could not generate a block: DSP1 %llu at $%x, DSP2 %llu at $%x)\n",
+					static_cast<unsigned long long>(mixer.getJit().getFailureCount()), mixer.getJit().getFailurePC(),
+					static_cast<unsigned long long>(producer.getJit().getFailureCount()), producer.getJit().getFailurePC());
+				return 1;
+			}
+		}
 		if(playingMoves == 0)
 		{
 			std::printf("mdmmPerfGateTest: FAIL (%s did not play: its step never moved in the playing phase)\n", name);
