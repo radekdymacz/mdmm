@@ -4,10 +4,14 @@
 # temporary folder.
 #
 # Up to 0.3.1 the plug-ins were called {{OLD_NAME}}.vst3 / .component (and a standalone app could carry that name
-# too). Installer never removes a file a new package no longer has, so without this a DAW lists the editor twice:
-# same plug-in codes, two bundles. Before {{NEW_PATH}} is installed this removes what is left under the old name,
-# {{OLD_PATH}}, and the bundle at {{NEW_PATH}} itself when the executable inside is not "{{APP_NAME}}" (built before
-# the rename: the old executable would otherwise stay inside the new bundle and break its signature).
+# too). Installer never removes a file a new package no longer has, so without this a DAW lists our editor twice.
+# Before {{NEW_PATH}} is installed this removes what is left of OUR old versions under the old name, {{OLD_PATH}},
+# and the bundle at {{NEW_PATH}} itself when the executable inside is not "{{APP_NAME}}" (built before the rename:
+# the old executable would otherwise stay inside the new bundle and break its signature).
+#
+# {{OLD_NAME}} is also the name of the original Gearmulator plug-ins (joelanders' builds, upstream Gearmulator's
+# identifier). Up to 0.5.x the editors shared their plug-in codes, so this removed those too; since then the editors
+# have their own (scripts/mdmm-product.env), the two can be installed side by side, and the original ones stay.
 #
 # Where it looks, relative to each root: the install location ($2: "/" for all users, the home folder for
 # "Install for me only") and the home folders of the person installing: $HOME, the person at the console, and
@@ -15,29 +19,27 @@
 # people to copy the plug-ins into ~/Library/Audio/Plug-Ins by hand: those copies have no receipt. Other users'
 # home folders are never touched.
 #
-# What it removes, never anything else: a bundle at exactly that path (not a symbolic link) that is ours:
+# What it removes, never anything else: a bundle at exactly that path (not a symbolic link) that is provably ours:
 #   - it carries the editor's bundle identifier (0.3.1 and later), or
-#   - it carries upstream Gearmulator's (0.3.0 and earlier), for the plug-ins only (old_id_counts below). They
-#     share our plug-in codes, so a DAW would clash between upstream's bundle and ours anyway; a standalone app
-#     of upstream's is somebody's own copy and stays, or
 #   - our package's receipt lists it.
+# Upstream Gearmulator's identifier (our 0.3.0 and earlier, and every original Gearmulator MD / MM) is not enough:
+# such a bundle may be the original plug-in. Only at {{NEW_PATH}} itself (our name) does it count.
 #
-# The Audio Unit also by its codes (B-048), at any name: a .component directly in the Components folder of each
-# root above that registers our subtype and manufacturer ({{AU_SUBTYPE}} {{AU_MANUFACTURER}}) is removed when it is
-# ours by the same test (our identifier, upstream's old one, or our receipt). macOS keeps one Audio Unit per code
-# and is said to prefer the higher version; the old builds (0.1.0-alpha, the fork's preview builds) say 2.2.9, the
-# editors 0.x, so a left-over old AU at any name can win and a DAW opens the old panel instead of the editor. A
-# bundle with our codes and a foreign identifier stays (the log says so).
+# The Audio Unit also by its codes, at any name: a .component directly in the Components folder of each root above
+# that registers this editor's subtype and manufacturer ({{AU_SUBTYPE}} {{AU_MANUFACTURER}}), or the ones it had up to
+# 0.5.x ({{LEGACY_AU_SUBTYPE}} {{LEGACY_AU_MANUFACTURER}}, B-048), is removed when it is ours by the same test (our
+# identifier or our receipt). A bundle with those codes and another identifier stays (the log says so).
 # It always exits 0: an old copy it cannot remove must not stop the install. What it did goes to the install log.
 
 old_path="{{OLD_PATH}}"
 new_path="{{NEW_PATH}}"
 bundle_id="{{BUNDLE_ID}}"
 old_bundle_id="{{OLD_BUNDLE_ID}}"
-old_id_counts="{{OLD_ID_COUNTS}}"
 receipt_id="{{RECEIPT_ID}}"
 au_subtype="{{AU_SUBTYPE}}"
 au_manufacturer="{{AU_MANUFACTURER}}"
+legacy_au_subtype="{{LEGACY_AU_SUBTYPE}}"
+legacy_au_manufacturer="{{LEGACY_AU_MANUFACTURER}}"
 executable="{{APP_NAME}}"
 plistbuddy="{{PLISTBUDDY}}"
 pkgutil="{{PKGUTIL}}"
@@ -89,7 +91,7 @@ consider() {
     fi
     accept_old=1
   else
-    accept_old="${old_id_counts}"
+    accept_old=0
   fi
   if is_ours "${bundle}" "${root}" "${rel}" "${accept_old}"; then
     echo "Removing the old ${bundle}"
@@ -99,7 +101,7 @@ consider() {
   fi
 }
 
-# registers_our_codes BUNDLE: its Info.plist lists an Audio Unit with our subtype and manufacturer.
+# registers_our_codes BUNDLE: its Info.plist lists an Audio Unit with our subtype and manufacturer, current or old.
 registers_our_codes() {
   i=0
   while [ "${i}" -lt 8 ]; do
@@ -107,12 +109,14 @@ registers_our_codes() {
     [ -n "${sub}" ] || return 1
     man="$(plist_value "$1" "AudioComponents:${i}:manufacturer")"
     [ "${sub}" = "${au_subtype}" ] && [ "${man}" = "${au_manufacturer}" ] && return 0
+    [ -n "${legacy_au_subtype}" ] && [ "${sub}" = "${legacy_au_subtype}" ] \
+      && [ "${man}" = "${legacy_au_manufacturer}" ] && return 0
     i=$((i + 1))
   done
   return 1
 }
 
-# consider_codes ROOT: every other .component in ROOT's Components folder that registers our codes.
+# consider_codes ROOT: every other .component in ROOT's Components folder that registers our codes (current or old).
 consider_codes() {
   [ -n "${au_subtype}" ] && [ -n "${au_manufacturer}" ] || return 0
   root="${1%/}"
@@ -126,11 +130,11 @@ consider_codes() {
       continue
     fi
     registers_our_codes "${bundle}" || continue
-    if is_ours "${bundle}" "${root}" "${rel}" 1; then
+    if is_ours "${bundle}" "${root}" "${rel}" 0; then
       echo "Removing the old ${bundle}: it registers this Audio Unit's codes"
       /bin/rm -rf -- "${bundle}"
     else
-      echo "Leaving ${bundle} alone: it registers this Audio Unit's codes, but it is not the editor's"
+      echo "Leaving ${bundle} alone: it registers this Audio Unit's codes (or the old ones), but it is not the editor's"
     fi
   done
 }
