@@ -28,3 +28,11 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 1. MD: paint Swing, Accent and Slide with the keys under the grid; switch All tracks / This track; Esc goes back to Trig; one undo per drag.
 2. MM: Slide and Swing drags on the roll's Note · Slide · Swing row, then one undo; Esc.
 3. MD: paint swing on a step, remove the trig, add it again (B-070: no swing mark should flash back).
+
+## Transport (wave 2)
+
+1. Both: ⇧-click ▶ (or ⇧Space) pauses, ▶ goes on from the same step, in a pattern and in a song.
+2. The ▾ on ▶: Play/Stop, Pause/Continue, Record, Panic. Panic (⌘.) silences hanging notes.
+3. Click the tempo: −/+, TAP, hold +10 % / −10 % (also - and =), Change on release; ⌥-drag the tempo. A plain drag still works as before; in a DAW the tempo stays locked.
+4. Song page: select a row, ▶ From here (or Enter).
+5. MM on real hardware: the question to set TRANSPORT IN = ACCEPT, then pause, continue and play from a row.
