@@ -1408,7 +1408,7 @@ const MmJourneys = (() => {
 	/* I-008: the editor's menu (shared/deskJourney.js editorMenuJourney), as the Machinedrum's */
 	const editorMenuJ = Journey.editorMenuJourney("mm-top-editor-menu", "Monomachine Editor");
 	/* I-018: the CPU meter beside the version and its details, as the Machinedrum's */
-	const cpuJs = Journey.cpuMeterJourneys("mm");
+	const cpuJs = [...Journey.cpuMeterJourneys("mm"), Journey.speedUpsMenuJourney("mm")];
 	const all = [bootCard, firstBeat, spaceKey, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys,
 		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff,
 		poly, multiTrig, multiMap, kbPlay, songRows, songPicker, songChain, kitLoad, kitCopy, patGo, dialogEsc,

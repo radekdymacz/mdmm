@@ -113,7 +113,7 @@ list(APPEND SOURCES
 	skins/shared/deskCompat.js skins/shared/deskCompatTest.js
 	skins/shared/deskZoom.js
 	skins/shared/deskAbout.js skins/shared/deskAboutTest.js
-	skins/shared/deskCpu.js skins/shared/deskCpu.css skins/shared/deskCpuTest.js)
+	skins/shared/deskCpu.js skins/shared/deskCpu.css skins/shared/deskCpuTest.js skins/shared/deskTopFit.css)
 
 # P6: the editors' diagnostics (the log of the web view, the window chrome and the session's
 # state, and the pages' self-tests: mdDeskSelfTest.js, mmSelfTest.js) observe the editors. Off by

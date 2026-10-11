@@ -1700,7 +1700,7 @@
         {
           "type": "object",
           "description": "I-018: the CPU meter in the top bar, a few times a second while the page is up: the share of each audio block's real-time budget the host's processBlock call spends (load: smoothed over about half a second; worst: the largest single block in the last 3 s; 1 = the whole budget; null unless running), whether the host runs the audio (state: none before the first block, stopped when blocks stopped coming, bypassed, offline while it renders), and the popover's details: the machine's speed (realtime), the host's rate and block size, the speed-ups as the machine runs them (on, off, some: leversOff names the ones off; unknown with no machine), L3 (exactEssi) and whether the editor runs translated (Rosetta).",
-          "required": ["type", "state", "load", "worst", "realtime", "sampleRate", "blockSize", "plugin", "speedUps", "leversOff", "exactEssi", "translated", "arch"],
+          "required": ["type", "state", "load", "worst", "realtime", "sampleRate", "blockSize", "plugin", "speedUps", "leversOff", "exactEssi", "translated", "arch", "saved"],
           "properties": {
             "type": {
               "const": "cpuLoad"
@@ -1748,6 +1748,22 @@
             },
             "arch": {
               "type": "string"
+            },
+            "saved": {
+              "type": "object",
+              "description": "The speed-up switches as saved in the plug-in's settings (what the next session starts with): legacyEmulation (the speed-ups off), leversOff (by their environment variable's suffix).",
+              "required": ["legacyEmulation", "leversOff"],
+              "properties": {
+                "legacyEmulation": {
+                  "type": "boolean"
+                },
+                "leversOff": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
             }
           }
         },

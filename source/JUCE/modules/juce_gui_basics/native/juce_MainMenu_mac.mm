@@ -129,6 +129,9 @@ public:
         // weird side-effects which messed-up keyboard focus when switching between windows. By creating
         // a new menu and replacing the old one with it, that problem seems to be avoided..
         NSMenu* menu = [[NSMenu alloc] initWithTitle: juceStringToNS (name)];
+        // mdmm: keep the delegate the first build gave it (addTopLevelMenu), so the menu is built again each time it
+        // opens (menuNeedsUpdate); without it a top-level menu kept the items and ticks of its last rebuild
+        [menu setDelegate: (id<NSMenuDelegate>) callback];
 
         for (PopupMenu::MenuItemIterator iter (menuToCopy); iter.next();)
             addMenuItem (iter, menu, menuId, topLevelIndex);

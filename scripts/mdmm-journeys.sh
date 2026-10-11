@@ -172,6 +172,8 @@ run_unit() {
 	for f in "$DROOT/Gearmulator Preview/$MACHINE/logs/"performance-*.jsonl; do
 		[ -f "$f" ] && cp "$f" "$UNIT/"
 	done
+	# the sandbox's settings as the editor left them (the speed-up switches it saved, I-018)
+	[ -f "$DROOT/Gearmulator Preview/$MACHINE/config/$MACHINE Editor.xml" ] && cp "$DROOT/Gearmulator Preview/$MACHINE/config/$MACHINE Editor.xml" "$UNIT/config.xml"
 	echo "$RESULT $t" > "$UNIT/result"
 	rm -rf "$BOX"
 	trap - INT TERM

@@ -281,3 +281,4 @@ img,svg,canvas{-webkit-user-drag:none}
 .f.hosttempo small::after{content:"DAW";margin-left:5px;padding:0 3px;border-radius:2px;background:var(--ink);color:var(--lcd);font:8px var(--pix);vertical-align:1px}
 /* I-018: the CPU meter beside the version (skins/shared/deskCpu.js) */
 /* @include shared/deskCpu.css */
+/* @include shared/deskTopFit.css */

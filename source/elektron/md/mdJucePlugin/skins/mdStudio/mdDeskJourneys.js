@@ -1096,7 +1096,7 @@ const MdJourneys = (() => {
 	   Updates › Check Daily by the pointer, each read back from the plug-in) */
 	const editorMenuJ = Journey.editorMenuJourney("md-top-editor-menu", "Machinedrum Editor");
 	/* I-018: the CPU meter beside the version and its details (shared/deskJourney.js cpuMeterJourneys) */
-	const cpuJs = Journey.cpuMeterJourneys("md");
+	const cpuJs = [...Journey.cpuMeterJourneys("md"), Journey.speedUpsMenuJourney("md")];
 	const menu = Journey.menu;
 	/* the same menu as screenshots for a design review (scripts/mdmm-shots.sh with MDMM_SHOTS_JOURNEY=md-shots-menu) */
 	const shotsMenu = {

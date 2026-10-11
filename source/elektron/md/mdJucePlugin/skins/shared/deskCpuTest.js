@@ -26,7 +26,8 @@ global.document = {
 	querySelector: sel => (sel === ".setgroup .grplabel" ? label : null),
 	createElement: tag => node(tag)
 };
-global.DeskMenu = { open: (items, x, y, opts) => { menuOpened = { items, x, y, opts }; } };
+const realMenu = require("./deskMenu.js").DeskMenu;
+global.DeskMenu = { open: (items, x, y, opts) => { menuOpened = { items, x, y, opts }; }, fromEditor: realMenu.fromEditor };
 const CpuMeter = require("./deskCpu.js");
 
 const base = { type: "cpuLoad", realtime: 1, sampleRate: 48000, blockSize: 256, plugin: true, speedUps: "on", leversOff: [], exactEssi: false,
@@ -77,8 +78,36 @@ check(m.querySelector(".cpuval").textContent === "25 %" && m.querySelector(".cpu
 CpuMeter.update(msg({ state: "stopped", load: null, worst: null }));
 check(m.querySelector(".cpuval").textContent === "STOPPED" && m.querySelector(".cpuworst").hidden === true && m.dataset.load === "", "stopped: the word, no mark");
 m.listeners.click({ stopPropagation() { } });
-check(menuOpened && menuOpened.opts.title && menuOpened.items.every(i => typeof i.note === "string") && menuOpened.x === 900 && menuOpened.y === 44,
-	"a click opens the details under the meter, as notes");
+check(menuOpened && /one core/.test(menuOpened.opts.title) && menuOpened.items.every(i => typeof i.note === "string") && menuOpened.x === 900 && menuOpened.y === 44,
+	"a click opens the details under the meter, as notes, titled for one core");
+check(menuOpened.items.some(i => /40 % means 40 % of one core's time for this editor's audio, not of the whole computer/.test(i.note) && /does not cause clicks/.test(i.note)),
+	"the details say what the share is of: one core's time for this editor's audio");
+
+/* the speed-up entries of the plug-in's menu (an editorMenu message), in the details */
+const editorMenu = { type: "editorMenu", menu: 7, title: "Machinedrum Editor 0.5.1", items: [
+	{ kind: "action", id: "zoom-in", label: "Zoom", n: 0 },
+	{ kind: "submenu", id: "developer", label: "Developer", items: [
+		{ kind: "action", id: "perf", label: "Start Performance Capture", n: 1 },
+		{ kind: "action", id: "legacy-emulation", label: "Speed-ups off (legacy emulation, slower)", checked: true, n: 2 },
+		{ kind: "submenu", id: "speedup-levers", label: "Speed-ups (each)", enabled: false, items: [
+			{ kind: "action", id: "speedup-L1", label: "L1", checked: true, enabled: false, n: 3 }] },
+		{ kind: "action", id: "exact-essi-timing", label: "Exact MD audio timing", checked: false, enabled: false, n: 4 }] }] };
+const picks = [];
+const items = CpuMeter.speedItems(editorMenu, n => picks.push(n));
+check(items.length === 3 && items[0].label === "Speed-ups" && items[0].checked === false && items[1].label === "Speed-ups (each)…" && items[1].items.length === 1
+	&& items[2].id === "exact-essi-timing", "the switch (ticked when the speed-ups are on), Speed-ups (each)… and L3: " + items.map(i => `${i.label}=${i.checked}`).join(", "));
+items[0].run();
+check(picks.join() === "2", "choosing Speed-ups picks the editor menu's own entry (the same action, the same saved setting)");
+check(CpuMeter.speedItems({ items: [] }, () => { }).length === 0, "no Developer entries: none");
+const sent = [];
+CpuMeter.connect(c => sent.push(c));
+menuOpened = null;
+CpuMeter.open();
+check(sent.length === 1 && sent[0].op === "openMenu" && !menuOpened, "connected, a click asks the plug-in for its menu first");
+check(CpuMeter.takeMenu(editorMenu) === true && menuOpened && menuOpened.items.some(i => i.label === "Speed-ups"), "its answer shows the details with the speed-up entries");
+check(CpuMeter.takeMenu(editorMenu) === false, "an editor menu nobody asked the meter for is the editor's (a right-click)");
+menuOpened.items.find(i => i.label === "Speed-ups").run();
+check(sent.some(c => c.op === "menuPick" && c.menu === 7 && c.n === 2), "the pick goes to the plug-in as the editor menu's (menuPick)");
 check(CpuMeter.last.state === "stopped", "CpuMeter.last is the last message");
 
 /* the wiring */
@@ -91,6 +120,8 @@ for (const css of ["../mdStudio/mdDesk.css", "../mmStudio/mmStudio.css"])
 	check(read(css).includes(".grplabel .cpumeter{"), `${path.basename(css)} has the meter's stylesheet`);
 const own = read("deskCpu.css");
 check(!/color-mix|:has\(/.test(own), "its stylesheet has no color-mix or :has (an older WebKit)");
+check(!/--led|--rec|--trig|--lcd|\bred\b|#[0-9a-f]{3,6}\b/i.test(own), "no red or warning colour: only the page's ink and plate");
+check(/\.cpuval\{display:none/.test(own) && /:hover \.cpuval/.test(own) && /\.open \.cpuval/.test(own), "the number shows on hover and while the details are open only");
 check(!/\?\?=|\|\|=|&&=|\.at\(|#[a-z]\w*\s*[;=(]/.test(read("deskCpu.js")), "its script is ES2020 (no logical assignment, .at(), private fields)");
 for (const schema of ["md-data-contract.schema.json", "mm-data-contract.schema.json"]) {
 	const s = JSON.parse(fs.readFileSync(path.join(HERE, "../../../../../../doc/modern-ux", schema), "utf8"));

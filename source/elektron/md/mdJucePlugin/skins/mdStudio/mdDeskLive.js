@@ -187,7 +187,9 @@ document.addEventListener("contextmenu", e => {
 	if (!DeskMenu.wantsEditor(e)) return;
 	e.preventDefault(); openEditorMenu(e.clientX, e.clientY);
 });
-Bridge.onMessage(m => { if (m.type === "editorMenu") DeskMenu.showEditor(m, editorMenuAt.x, editorMenuAt.y, c => Bridge.send(c)); });
+/* I-018: the CPU meter's details ask for the same menu (its speed-up entries) */
+CpuMeter.connect(c => Bridge.send(c));
+Bridge.onMessage(m => { if (m.type === "editorMenu" && !CpuMeter.takeMenu(m)) DeskMenu.showEditor(m, editorMenuAt.x, editorMenuAt.y, c => Bridge.send(c)); });
 
 /* The pattern chain (manual p.37) is made in the Song page's palette, CHAIN (mdDeskSong.js renderSong,
    chainFooter); what the machine plays (playsOf) shows in its header. A new chain or sequencer mode

@@ -30,6 +30,8 @@
 	const V = () => window.MMView;			// the mockup's view: after it ran
 	const C = () => MmConvert;
 	const send = (msg, opt) => Bridge.send(msg, opt);
+	/* I-018: the CPU meter's details ask for the editor menu too (its speed-up entries) */
+	if (typeof CpuMeter !== "undefined") CpuMeter.connect(c => send(c));
 	const log = t => Bridge.log(t);
 	/* documents are JSON values: equal when their members are */
 	function sameValue(a, b) {
@@ -644,7 +646,7 @@
 			else if (m.type === "romInstall") { V().bootRom(m); V().toast(m.text); }
 			else if (m.type === "romInfo") onRomInfo(m);
 			else if (m.type === "notice") onNotice(m);
-			else if (m.type === "editorMenu") DeskMenu.showEditor(m, menuAt.x, menuAt.y, c => send(c));
+			else if (m.type === "editorMenu") { if (!CpuMeter.takeMenu(m)) DeskMenu.showEditor(m, menuAt.x, menuAt.y, c => send(c)); }
 			else if (m.type === "syxPreview") V().syxPreview(m);
 			else if (m.type === "syxProgress") V().syxProgress(m);
 			else if (m.type === "syxExport") V().toast(m.text);

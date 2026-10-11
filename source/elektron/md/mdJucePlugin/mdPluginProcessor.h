@@ -77,6 +77,9 @@ namespace mdJucePlugin
 		// its sound; acts only with the speed-ups on. Off by default; kept in the plug-in's config.
 		void setExactEssiTiming(bool _on);
 		bool isExactEssiTiming();
+		// I-018: the speed-up switches as saved in the plug-in's settings (what the next session starts with)
+		bool savedLegacyEmulation();
+		uint32_t savedSpeedUpLeversOff();
 		// The Machinedrum/Monomachine Editors' setup and session (mdDeskHost.h, doc/modern-ux/UPSTREAM.md).
 		class DeskHost* getDeskHost() const { return m_desk.get(); }
 
