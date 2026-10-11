@@ -9,10 +9,12 @@ without one, the full gate) ([CLAUDE.md](../../CLAUDE.md),
 Releases; [marketing/LAUNCH-CHECKLIST.md](../../marketing/LAUNCH-CHECKLIST.md)); the tag's CI then repeats the part that needs
 no ROM on the shipped files ([FOUNDATION.md](../modern-ux/FOUNDATION.md), CI start tests).
 
-**The order.** Stage 1 builds the release tree (with ccache when it is installed; `MDMM_GATE_CCACHE=0`: without). Then two
-lanes: lane 1 runs that tree's functional stages (2, 2c, 2b, 3, 4, 5, then 7a to 7c) while lane 2 builds the journeys'
-diagnostics tree in the background (niced, half the cores); then 7d; then the timing stages (5b, 6a, 6b, 6c) alone, on
-a quiet Mac.
+**The order.** Stage 1 builds the release tree (with ccache when it is installed, `brew install ccache`;
+`MDMM_GATE_CCACHE=0`: without). Then lane 1 runs that tree's functional stages at once (2, 2c, 2b with its two desk
+smoke tests at once, and 3, 4, 5 in turn; each console shown in stage order when all are done) while lane 2 builds the
+journeys' diagnostics tree in the background (niced, half the cores); then 7a to 7c; then 7d (six editors at once);
+then the timing stages (5b, 6a, 6b, 6c) alone, on a quiet Mac. Do not edit the gate script while it runs (bash reads
+it as it goes).
 
 ```sh
 scripts/mdmm-local-gate.sh                       # the release gate: everything; plan on about two and a half hours (timings below)
@@ -68,7 +70,7 @@ Measured on 2026-10-09 on a 12-core M4 Pro with other work running (load 25 to 2
 | 7a VST3 start with firmware | `pluginTester -verify-audio-buses -blocks 256` per machine with the ROM (the check of `verify_mdmm_package.sh`), and `-blocks 16 -verify-audio-buses -automation-smoke` without one (`build_mdmm.sh`) | a device-start error, a short run, a non-zero exit |
 | 7b auval | `auval -v` on each built AU, with no ROM, as `smoke_mdmm.sh` runs it in CI | `auval` fails |
 | 7c pluginval | `scripts/mdmm-pluginval.sh`: pluginval 1.0.4 (pinned, `scripts/pluginval.env`) at strictness 5 and 8 on the VST3 and the AU, with the firmware in its own scratch data root | a run fails, or the AU was not validated |
-| 7d User journeys | a diagnostics build in its own tree (`scripts/mdmm-dev.sh`, `temp/local-gate/build-diag`, lane 2), then `scripts/mdmm-journeys.sh --host both --jobs 4 --tier machine both`: the machine journeys (firmware, playing, recording, sampler, SysEx, drops, engine cards, OS keys, WebKit's layout) in the standalones and the host journeys in the VST3 host, clicked as a person does, on the firmware, silent (below); the page journeys are 2c's. `MDMM_JOURNEY_PERF=1` records the audio thread during those edits and the summary quotes it, not judged | a journey fails, the editor ends early, or a journey is skipped because its window was not drawing |
+| 7d User journeys | a diagnostics build in its own tree (`scripts/mdmm-dev.sh`, `temp/local-gate/build-diag`, lane 2), then `scripts/mdmm-journeys.sh --host both --jobs 6 --tier machine both`: the machine journeys (firmware, playing, recording, sampler, SysEx, drops, engine cards, OS keys, WebKit's layout) in the standalones and the host journeys in the VST3 host, clicked as a person does, on the firmware, silent (below); the page journeys are 2c's. `MDMM_JOURNEY_PERF=1` records the audio thread during those edits and the summary quotes it, not judged | a journey fails, the editor ends early, or a journey is skipped because its window was not drawing |
 | M1 Updater end to end | **manual**, see below | never red; the summary lists it as open |
 
 What it does not prove: a signed and notarised build (CI's job, [SIGNING.md](SIGNING.md)), Gatekeeper on a downloaded
@@ -98,7 +100,7 @@ shipped files.
 `…` is `~/Documents/Gearmulator Preview` (`MDMM_GATE_PREVIEW`). The ROMs must be the pinned release images
 (`scripts/macos/check_mdmm_core_capacity.py` checks their SHA-256). Other settings: `MDMM_GATE_JOBS` (build jobs, default
 all cores), `MDMM_GATE_GOLDEN_JOBS` (golden runs at once, default 4), `MDMM_GATE_JOURNEY_ARGS` (default
-`--host both --jobs 4 --tier machine`), `MDMM_GATE_CCACHE=0` (stage 1 without ccache), `MDMM_GATE_SOAK_SECONDS` (6c, default 600, the
+`--host both --jobs 6 --tier machine`), `MDMM_GATE_CCACHE=0` (stage 1 without ccache), `MDMM_GATE_SOAK_SECONDS` (6c, default 600, the
 most the capture and the host allow), `MDMM_GATE_SOAK_WARMUP` (seconds at the start that are listed but not judged, default 30),
 `MDMM_GATE_SOAK_LOCK_US` (a synth lock wait that fails the soak, default 1000), `MDMM_GATE_ALLOW_UNMUTED=1` (run a stage
 that opens an audio device although the output could not be muted), `MDMM_GATE_SCENARIOS` (extra golden scenarios when
