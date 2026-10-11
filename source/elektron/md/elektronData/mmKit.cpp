@@ -3,6 +3,8 @@
 #include "mmDump.h"
 #include "mmLayout.h"
 
+#include <algorithm>
+
 namespace elektronData
 {
 	namespace
@@ -65,6 +67,47 @@ namespace elektronData
 		for(size_t i = 0; i < sizeof(g_new); ++i)
 			_kit.name[i] = static_cast<uint8_t>(g_new[i]);
 		return _kit;
+	}
+
+	namespace
+	{
+		constexpr uint8_t g_inputBus = 0x08;
+		constexpr uint8_t g_inputAudio = 0x10;
+
+		uint16_t busWord(const MmKit& _kit) { return static_cast<uint16_t>((_kit.x1cd[1] << 8) | _kit.x1cd[2]); }
+	}
+
+	std::optional<uint8_t> mmKitInput(const MmKit& _kit, const size_t _track)
+	{
+		const auto r = _kit.routing[_track];
+		if(r & g_inputBus)
+		{
+			const auto bus = (busWord(_kit) >> (2 * _track)) & 3;
+			return static_cast<uint8_t>(3 + (bus ? bus : 1));
+		}
+		if(r & g_inputAudio)
+			return static_cast<uint8_t>((r >> 6) & 3);
+		return std::nullopt;
+	}
+
+	void mmSetKitInput(MmKit& _kit, const size_t _track, const std::optional<uint8_t> _input)
+	{
+		uint8_t r = mmRoutingOutputs(_kit.routing[_track]);
+		uint16_t bus = 0;
+		if(_input && *_input >= 4)
+		{
+			r |= g_inputBus;
+			bus = static_cast<uint16_t>(std::min<int>(*_input, 6) - 3);
+		}
+		else if(_input)
+			r |= static_cast<uint8_t>(g_inputAudio | ((*_input & 3) << 6));
+		_kit.routing[_track] = r;
+		if(!_input)
+			return;	// none: the bus word stays (0x5C on a machine that takes no input leaves it)
+		const auto shift = 2 * _track;
+		const auto word = static_cast<uint16_t>((busWord(_kit) & ~(3u << shift)) | (bus << shift));
+		_kit.x1cd[1] = static_cast<uint8_t>(word >> 8);
+		_kit.x1cd[2] = static_cast<uint8_t>(word & 0xff);
 	}
 
 	std::vector<uint8_t> mmKitRaw(const MmKit& _kit)

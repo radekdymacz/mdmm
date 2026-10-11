@@ -1055,17 +1055,29 @@ namespace mmDesk
 			return _k;
 		}
 
+		// as the firmware's 0x5C: on a machine that takes no input (not an FX machine) it clears the input too (measured,
+		// mmEditorProbeFirmwareTest inputs)
 		std::optional<MmKit> route(MmKit _k, const In& _in)
 		{
-			auto& r = _k.routing[static_cast<size_t>(_in.a.integer("t"))];
-			r = ed::mmRouting(static_cast<uint8_t>(_in.a.integer("out")), ed::mmRoutingInput(r));
+			const auto t = static_cast<size_t>(_in.a.integer("t"));
+			ed::mmSetKitOutputs(_k, t, static_cast<uint8_t>(_in.a.integer("out")));
+			if(const auto* m = ed::mmMachine(_k.machines[t]); !m || !m->fx)
+				ed::mmSetKitInput(_k, t, std::nullopt);
 			return _k;
 		}
 
+		// Only an FX machine takes an input: the firmware's 0x5C sets nothing else on another machine (measured,
+		// mmEditorProbeFirmwareTest inputs)
 		std::optional<MmKit> input(MmKit _k, const In& _in)
 		{
-			auto& r = _k.routing[static_cast<size_t>(_in.a.integer("t"))];
-			r = ed::mmRouting(ed::mmRoutingOutputs(r), static_cast<uint8_t>(_in.a.integer("v")));
+			const auto t = static_cast<size_t>(_in.a.integer("t"));
+			const auto* m = ed::mmMachine(_k.machines[t]);
+			if(!m || !m->fx)
+			{
+				_in.a.error("only an FX machine takes an input; " + trackName(static_cast<int>(t)) + " is " + (m ? m->name : std::string("?")));
+				return {};
+			}
+			ed::mmSetKitInput(_k, t, static_cast<uint8_t>(_in.a.integer("v")));
 			return _k;
 		}
 
@@ -1175,7 +1187,7 @@ namespace mmDesk
 					_k.tracks[_t].pages[pg] = neutralPage(pg);
 			if(m && m->fx && !(was && was->fx))
 			{
-				_k.routing[_t] = ed::mmRouting(ed::mmRoutingOutputs(_k.routing[_t]), _t == 0 ? 3 : 0);
+				ed::mmSetKitInput(_k, _t, static_cast<uint8_t>(_t == 0 ? 3 : 0));
 				_k.tracks[_t].pages[1][2] = 127;
 				_k.tracks[_t].pages[1][3] = 127;
 			}
@@ -1641,7 +1653,8 @@ namespace mmDesk
 			for(uint8_t pg = 1; pg < 7; ++pg)
 				k.tracks[t].pages[pg] = neutralPage(pg);
 			k.levels[t] = 100;
-			k.routing[t] = ed::mmRouting(1, 0);	// bus AB, the neighbour
+			ed::mmSetKitOutputs(k, t, 1);	// bus AB, no input (GND-SIN takes none)
+			ed::mmSetKitInput(k, t, std::nullopt);
 			k.trigPos[t] = MmKit::g_noTrigPos;
 		}
 		return k;

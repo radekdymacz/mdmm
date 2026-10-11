@@ -18,9 +18,15 @@ namespace elektronData
 	//              (NRPN 0x40-0x45: ATK DEC SUS REL PORT, one more; the same on every track in the
 	//              factory set), 2 unknown bytes (kept)
 	//   0x1c1   6  machines (0x5B ids, live)
-	//   0x1c7   6  routing (0x5C, live): output buses in bits 0-2 (AB 1, CD 2, EF 4), input in
-	//              bits 3-5 (0 NEIGHBOR, 1 INP A, 2 INP B, 3 INP A+B, 4-6 BUS AB/CD/EF; FX machines)
-	//   0x1cd   3  unknown (kept)
+	//   0x1c7   6  routing (0x5C, live; measured, mmEditorProbeFirmwareTest inputs): output buses in bits 0-2
+	//              (AB 1, CD 2, EF 4); bit 3: the input is a mix bus (which: the bus word at 0x1ce); bit 4: an
+	//              audio input, bits 6-7 which (0 NEIGHBOR, 1 INP A, 2 INP B, 3 INP A+B); neither: no input
+	//              chosen (a fresh machine; an FX machine then hears no input). 0x5C on a machine that is not an FX
+	//              machine sets the outputs and clears the input bits (the bus word stays); assigning a machine (0x5B,
+	//              with or without its init) keeps the routing. mmKitInput / mmSetKitInput read and write it.
+	//   0x1cd   1  unknown (kept)
+	//   0x1ce   2  the input bus word (big-endian): track t's bus in bits 2t-2t+1 (1 AB, 2 CD, 3 EF; 0 when its
+	//              input is not a bus); the other bits unknown (kept). Held in x1cd[1..2]
 	//   0x1d0   1  JOY mirror, bit per track (ASSIGN JOY R/L MIRR, panel, MM-P4)
 	//   0x1d1   1  unknown (kept)
 	//   0x1d2  72  ASSIGN pages, 6 tracks x 6 sources x 2 rows (panel)
@@ -92,11 +98,18 @@ namespace elektronData
 
 	std::vector<uint8_t> mmKitRequest(uint8_t _slot);
 
+	// A track's output buses (bits AB 1, CD 2, EF 4) from its routing byte.
 	inline uint8_t mmRoutingOutputs(const uint8_t _routing) { return _routing & 7; }
-	inline uint8_t mmRoutingInput(const uint8_t _routing) { return (_routing >> 3) & 7; }
-	inline uint8_t mmRouting(const uint8_t _outputs, const uint8_t _input)
+	// A track's input as the page names it (0 NEIGHBOR, 1 INP A, 2 INP B, 3 INP A+B, 4-6 BUS AB/CD/EF), from its routing
+	// byte and the bus word; nullopt: none chosen (see the layout above).
+	std::optional<uint8_t> mmKitInput(const MmKit& _kit, size_t _track);
+	// Sets it as the firmware's 0x5C stores it (nullopt: none, as 0x5C leaves a machine that takes no input: the bus
+	// word stays); the outputs stay.
+	void mmSetKitInput(MmKit& _kit, size_t _track, std::optional<uint8_t> _input);
+	// Sets a track's output buses; the input stays.
+	inline void mmSetKitOutputs(MmKit& _kit, const size_t _track, const uint8_t _outputs)
 	{
-		return static_cast<uint8_t>((_outputs & 7) | ((_input & 7) << 3));
+		_kit.routing[_track] = static_cast<uint8_t>((_kit.routing[_track] & ~7) | (_outputs & 7));
 	}
 
 	// The working kit in patch RAM: the raw payload at this CPU address.

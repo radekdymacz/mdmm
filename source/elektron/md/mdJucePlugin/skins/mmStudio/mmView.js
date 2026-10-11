@@ -207,7 +207,9 @@ const MmView = (() => {
 	const rotStep = (s, by, len) => ((s + by) % len + len) % len;
 	const WRITES = {
 		level: (v, c) => [[["tracks", c.t, "lev"], c.v]],
-		route: (v, c) => [[["tracks", c.t, "out"], { AB: !!(c.out & 1), CD: !!(c.out & 2), EF: !!(c.out & 4) }]],
+		/* as the core (0x5C): a machine that takes no input has none after it */
+		route: (v, c) => [[["tracks", c.t, "out"], { AB: !!(c.out & 1), CD: !!(c.out & 2), EF: !!(c.out & 4) }]]
+			.concat(c.t < 6 && !isFx(v.tracks[c.t].m) ? [[["tracks", c.t, "inp"], INPUTS[0]]] : []),
 		input: (v, c) => [[["tracks", c.t, "inp"], INPUTS[c.v] ?? INPUTS[0]]],
 		param: (v, c) => c.t < 6 ? [[["tracks", c.t, "v", PAGES[c.page], c.i], C().valueToPage(v.tracks[c.t].m, PAGES[c.page], c.i, c.v)]]
 			: [[["midi", c.t - 6, "v", "MID", c.i], c.v]],

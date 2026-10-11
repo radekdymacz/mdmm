@@ -143,14 +143,16 @@ namespace elektronData
 			const auto base = "tracks[" + std::to_string(t) + "]";
 			p.range(_kit.levels[t], 0, 127, "levels[" + std::to_string(t) + "]");
 			p.check(mmMachine(_kit.machines[t]) != nullptr, base + ".machine " + std::to_string(_kit.machines[t]) + " is not an OS 1.32 machine");
-			p.range(mmRoutingInput(_kit.routing[t]), 0, 6, base + ".input");
-			p.check(_kit.routing[t] < 0x40, base + ".routing uses bits 0-5 only");
+			if(const auto in = mmKitInput(_kit, t))
+				p.range(*in, 0, 6, base + ".input");
 			for(size_t pg = 0; pg < 7; ++pg)
 				for(size_t i = 0; i < 8; ++i)
 					p.range(_kit.tracks[t].pages[pg][i], 0, 127, base + ".pages[" + std::to_string(pg) + "][" + std::to_string(i) + "]");
 			for(size_t i = 0; i < 8; ++i)
 				p.range(_kit.tracks[t].midi[i], 0, 127, base + ".pages[7][" + std::to_string(i) + "]");
 			p.check(_kit.trigPos[t] == MmKit::g_noTrigPos || _kit.trigPos[t] < 6, base + ".trigPos must be a track or none");
+			// OS 1.32B keeps a track's TRIG POS on itself as none (measured, mmDeskFirmwareTest intentcases)
+			p.check(_kit.trigPos[t] != t, base + ".trigPos must be another track");
 			for(size_t i = 0; i < 12; ++i)
 			{
 				p.range(_kit.assignPage[t][i], 0, 127, base + ".assign.page");

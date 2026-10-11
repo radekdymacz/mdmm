@@ -440,10 +440,17 @@
           "description": "bits AB 1, CD 2, EF 4"
         },
         "input": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 6,
-          "description": "0 NEIGHBOR 1 INP A 2 INP B 3 INP A+B 4-6 BUS AB/CD/EF"
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 6
+            }
+          ],
+          "description": "0 NEIGHBOR 1 INP A 2 INP B 3 INP A+B 4-6 BUS AB/CD/EF; null: none chosen (a machine just assigned on the panel; an FX machine then hears no input). Only an FX machine takes one"
         },
         "pages": {
           "type": "array",
