@@ -16,13 +16,11 @@ in an emulator. It installs three things, and you can leave any of them out unde
 <li><b>{{APP_NAME}}.vst3</b> into <code>Library/Audio/Plug-Ins/VST3</code></li>
 <li><b>{{APP_NAME}}.component</b> (Audio Unit) into <code>Library/Audio/Plug-Ins/Components</code></li>
 </ul>
-<p>Upgrading from 0.3.1 or earlier? The plug-ins were called <b>{{OLD_NAME}}</b> then. The
-installer removes the old-named ones (<code>{{OLD_NAME}}.vst3</code>, <code>.component</code> and
-<code>.app</code>) in the folders it installs into and in your own home folder, whether it or
-you put them there, so a DAW does not list the editor twice. It only removes copies it
-recognises as this editor's. DAW projects that used them open with {{APP_NAME}}: the plug-in
-is the same one under its new name. If you leave a part out under <b>Customize</b>, delete that
-part's old copy yourself.</p>
+<p>{{APP_NAME}} has its own plug-in identity, so the original <b>{{OLD_NAME}}</b> plug-in
+can stay installed beside it: the installer leaves it alone, and each opens as itself. A DAW
+project saved with 0.5.x or earlier needs {{APP_NAME}} inserted again once. Old copies of this
+editor (called {{OLD_NAME}} up to 0.3.1) are removed when the installer can tell they are the
+editor's own.</p>
 
 <h2>For all users, or for you only</h2>
 <p>At <b>Destination Select</b> (or <b>Change Install Location…</b>) you choose:</p>

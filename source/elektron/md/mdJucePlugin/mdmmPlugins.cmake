@@ -201,11 +201,30 @@ foreach(_mdmmLine ${_mdmmProductLines})
 	string(REGEX MATCH "^(MDMM_[A-Z_]+)=\"(.*)\"$" _mdmmMatch "${_mdmmLine}")
 	set(${CMAKE_MATCH_1} "${CMAKE_MATCH_2}")
 endforeach()
-foreach(_mdmmKey MDMM_PRODUCT_NAME_MD MDMM_PRODUCT_NAME_MM MDMM_VENDOR MDMM_WEBSITE MDMM_LEGACY_NAME_MD MDMM_LEGACY_NAME_MM)
+foreach(_mdmmKey MDMM_PRODUCT_NAME_MD MDMM_PRODUCT_NAME_MM MDMM_VENDOR MDMM_WEBSITE MDMM_LEGACY_NAME_MD MDMM_LEGACY_NAME_MM
+		MDMM_AU_SUBTYPE_MD MDMM_AU_SUBTYPE_MM MDMM_AU_MANUFACTURER
+		MDMM_LEGACY_AU_SUBTYPE_MD MDMM_LEGACY_AU_SUBTYPE_MM MDMM_LEGACY_AU_MANUFACTURER)
 	if(NOT ${_mdmmKey})
 		message(FATAL_ERROR "${_mdmmKey} missing from ${_mdmmProductEnv}")
 	endif()
 endforeach()
+# The plug-in identity (the AU codes, and from them the VST3 class IDs): JUCE wants four characters, the plug-in
+# code with exactly one upper-case letter (the first, for GarageBand), the manufacturer with at least one (Apple
+# keeps the all-lower-case ones). It must not be the codes up to 0.5.x, the original Gearmulator MD / MM's (B-048).
+foreach(_mdmmKey MDMM_AU_SUBTYPE_MD MDMM_AU_SUBTYPE_MM)
+	if(NOT "${${_mdmmKey}}" MATCHES "^[A-Z][a-z0-9][a-z0-9][a-z0-9]$")
+		message(FATAL_ERROR "${_mdmmKey} (${${_mdmmKey}}) is not one upper-case letter and three lower-case letters or digits")
+	endif()
+endforeach()
+if(NOT "${MDMM_AU_MANUFACTURER}" MATCHES "^[A-Za-z0-9][A-Za-z0-9][A-Za-z0-9][A-Za-z0-9]$" OR NOT "${MDMM_AU_MANUFACTURER}" MATCHES "[A-Z]")
+	message(FATAL_ERROR "MDMM_AU_MANUFACTURER (${MDMM_AU_MANUFACTURER}) is not four letters or digits with an upper-case one")
+endif()
+if("${MDMM_AU_SUBTYPE_MD}" STREQUAL "${MDMM_AU_SUBTYPE_MM}")
+	message(FATAL_ERROR "the two editors' AU subtypes are the same (${MDMM_AU_SUBTYPE_MD})")
+endif()
+if("${MDMM_AU_MANUFACTURER}" STREQUAL "${MDMM_LEGACY_AU_MANUFACTURER}")
+	message(FATAL_ERROR "MDMM_AU_MANUFACTURER is still the old ${MDMM_LEGACY_AU_MANUFACTURER} (the original Gearmulator plug-ins' code)")
+endif()
 unset(_mdmmProductEnv)
 unset(_mdmmProductLines)
 unset(_mdmmLine)
@@ -216,7 +235,7 @@ unset(_mdmmKey)
 # - the app icons (doc/modern-ux/icons, built with build-icons.sh);
 # - the maker a DAW shows (AU "Future Native Audio: Machinedrum Editor", the VST3 vendor, the Windows file details)
 #   instead of upstream's "Gearmulator Preview". The data folder keeps that name (mdPluginProcessor.cpp,
-#   g_dataFolderVendor), and the VST3 class IDs and AU codes come from GmPv + Tmdr/Tmno, not from names;
+#   g_dataFolderVendor), and the VST3 class IDs and AU codes come from the codes below, not from names;
 # - the microphone prompt's text;
 # - the LV2 URI as it was with the old product name (it would otherwise follow the name).
 foreach(_mdmmTarget md mm)
@@ -241,6 +260,13 @@ unset(_mdmmUpper)
 set(GEARMULATOR_PLUGIN_BUNDLE_ID_mdJucePlugin "com.nativekloud.machinedrum-editor")
 set(GEARMULATOR_PLUGIN_BUNDLE_ID_mmJucePlugin "com.nativekloud.monomachine-editor")
 
+# The editors' own manufacturer code (scripts/mdmm-product.env, MDMM_AU_MANUFACTURER) instead of upstream's GmPv,
+# through juce.cmake's hook; the plug-in codes (MDMM_AU_SUBTYPE_MD / _MM) are createJucePlugin's argument in this
+# folder's CMakeLists.txt. Together they are the AU's codes and the VST3 class IDs: their own, so the original
+# Gearmulator MD / MM (GmPv Tmdr / Tmno) can stay installed beside the editors (B-048).
+set(GEARMULATOR_PLUGIN_MANUFACTURER_CODE_mdJucePlugin "${MDMM_AU_MANUFACTURER}")
+set(GEARMULATOR_PLUGIN_MANUFACTURER_CODE_mmJucePlugin "${MDMM_AU_MANUFACTURER}")
+
 function(mdmm_plugin_targets)
 	foreach(plugin_target mdJucePlugin mmJucePlugin)
 		target_link_libraries(${plugin_target} PRIVATE elektronData mdDataLink mdDesk mmDesk deskHost deskWire)
@@ -257,6 +283,9 @@ function(mdmm_plugin_targets)
 			# the editor menu's first line and the standalone's About box (mdAbout.h)
 			"MDMM_VENDOR=\"${MDMM_VENDOR}\""
 			"MDMM_WEBSITE=\"${MDMM_WEBSITE}\""
+			# the plug-in codes the processor reports (mdPluginProcessor.cpp, makeProcessorProperties)
+			"MDMM_AU_SUBTYPE_MD=\"${MDMM_AU_SUBTYPE_MD}\""
+			"MDMM_AU_SUBTYPE_MM=\"${MDMM_AU_SUBTYPE_MM}\""
 			MDMM_DIAGNOSTICS=$<BOOL:${gearmulator_MDMM_DIAGNOSTICS}>
 			MDMM_EDITFLOW_DRIVER=$<BOOL:${gearmulator_MDMM_EDITFLOW_DRIVER}>)
 
@@ -689,6 +718,20 @@ function(mdmm_plugin_targets)
 		set_tests_properties(mdMachineMidiOutFirmwareTest_${m} PROPERTIES
 			LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 400)
 	endforeach()
+
+	# The built bundles carry the identity in scripts/mdmm-product.env (the AU codes, the VST3 class IDs that follow
+	# from them, the bundle identifiers) and not the codes up to 0.5.x, the original Gearmulator MD / MM's (B-048).
+	# Read-only: it looks at the products folder, installs nothing (no auval: that needs the AU registered).
+	find_package(Python3 COMPONENTS Interpreter QUIET)
+	if(Python3_Interpreter_FOUND AND TARGET mdJucePlugin_VST3 AND TARGET mmJucePlugin_VST3)
+		set(_mdmmIdentityArgs "${GEARMULATOR_JUCE_PRODUCTS_ROOT}/$<CONFIG>")
+		if(APPLE AND TARGET mdJucePlugin_AU AND TARGET mmJucePlugin_AU)
+			list(APPEND _mdmmIdentityArgs --require-au)
+		endif()
+		add_test(NAME mdmmIdentityTest COMMAND ${Python3_EXECUTABLE}
+			${CMAKE_CURRENT_SOURCE_DIR}/../../../../scripts/check_mdmm_plugin_ids.py ${_mdmmIdentityArgs})
+		set_tests_properties(mdmmIdentityTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+	endif()
 endfunction()
 
 cmake_language(DEFER CALL mdmm_plugin_targets)
