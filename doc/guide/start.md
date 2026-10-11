@@ -63,7 +63,7 @@ Each editor has five workspaces. Switch with the tabs, or with the keys [1] to [
 
 | Workspace | What it shows |
 |---|---|
-| [1] Sequence | A piano roll with slide and swing rows, and a lock lane. Draw notes of the length you pick (1/16, 1/8 …) and drag their ends; with Draw off ([B]), box notes to select and move them. |
+| [1] Sequence | A piano roll with slide and swing marks along its foot, and a lock lane. Draw notes of the length you pick (1/16, 1/8 …) and drag their ends; with Draw off ([B]), box notes to select and move them. |
 | [2] Sound | One track's sound, grouped by function. |
 | [3] Mix | Channel strips with pan, amp volume, distortion and delay send, one level fader, and the routing into the buses. |
 | [4] Perform | Keyboard modes, multi trig, multi map, multi envelope, assign and mutes. |

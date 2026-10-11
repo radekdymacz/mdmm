@@ -702,17 +702,25 @@
 <div class="gd-body gd-prose"><h2>ACCENT TRACK</h2>
 <p>An accent makes a step louder. The accent amount sets how much louder.</p>
 <ul class="gd-list"><li>Click <b class="gd-light">&lt;ACC&gt;</b> on the LCD, or drag or scroll on it, to set the amount from 0 to 15. Click with <kbd class="gd-key">[⇧]</kbd> to go down.</li><li>Click a step with <kbd class="gd-key">[⇧]</kbd> held to put an accent on it. The step needs a trig. Do the same again to take it off.</li></ul>
-<p>If the pattern's accent is shared by all tracks, the accent goes on the step of every track, and the step legend says &quot;(all)&quot;.</p>
+<h4 class="gd-h3">The trig types</h4>
+<p>The keys <b class="gd-ui">Trig</b>, <b class="gd-ui">Accent</b>, <b class="gd-ui">Swing</b> and <b class="gd-ui">Slide</b> in the bar under the grid say what a click on a step paints. They are the machine's accent, swing and slide windows (FUNCTION + B/F, C/G and D/H). The lit key is the one in use.</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">Accent</b>. The key lights.</li><li>Click a step with a trig. It gets an accent. Click it again to take the accent off.</li><li>Drag across steps to paint accents on every step with a trig that you cross. The first step decides: on or off. The drag is one undo step.</li><li>Press <kbd class="gd-key">[ESC]</kbd>, or click <b class="gd-ui">Trig</b>, to paint trigs again.</li></ol>
+<p>A step without a trig takes no accent. The editor says so.</p>
+<h4 class="gd-h3">All tracks or this track</h4>
+<p>A pattern holds one accent row for all tracks and one for each track. With <b class="gd-ui">Accent</b> lit, <b class="gd-ui">All tracks</b> and <b class="gd-ui">This track</b> show over the keys.</p>
+<ul class="gd-list"><li><b class="gd-ui">All tracks</b>: an accent on a step accents that step on every track. The step legend says &quot;(all)&quot;.</li><li><b class="gd-ui">This track</b>: each track has its own accents. Click the steps of the track you want.</li></ul>
+<p>The pattern keeps both rows. Switch back and the other row is there again. This is the machine's <kbd class="gd-key">[RIGHT]</kbd> key in the accent window. Each of accent, swing and slide has its own setting.</p>
 <figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The accent of a step"><span>Screenshot to come</span></div><figcaption>The accent of a step</figcaption></figure>
-<p>The editor cannot change a pattern between one accent for all tracks and an accent for each track. It follows the setting the pattern has.</p>
 <p>A selection copy takes the accents with the steps. The editor has no separate accent window to copy, paste or clear them.</p>
 </div></section>
 <section class="gd-sec" id="swing">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.46,</span> <span>47</span></span></aside>
 <div class="gd-body gd-prose"><h2>SWING</h2>
-<p>Swing delays every second step. Click <b class="gd-light">&lt;SWG&gt;</b> on the LCD, or drag or scroll on it, to set it from 50 to 80 percent. Click with <kbd class="gd-key">[⇧]</kbd> to go down.</p>
-<p>You cannot choose which steps swing in the editor yet.</p>
-<p>You cannot give a track a swing of its own in the editor yet.</p>
+<p>Swing delays the steps of the swing row. Click <b class="gd-light">&lt;SWG&gt;</b> on the LCD, or drag or scroll on it, to set the amount from 50 to 80 percent. Click with <kbd class="gd-key">[⇧]</kbd> to go down. At 50 percent nothing swings.</p>
+<p>To choose which steps swing:</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">Swing</b> in the bar under the grid.</li><li>Click a step with a trig. A teal mark shows on it: the step swings. Click it again to take the swing off.</li><li>Drag across steps to paint swing on every step with a trig that you cross.</li><li>Press <kbd class="gd-key">[ESC]</kbd> to paint trigs again.</li></ol>
+<p>With <b class="gd-ui">All tracks</b> the swing row is shared: a mark on a step swings that step on every track. With <b class="gd-ui">This track</b> each track has its own swing steps. Every track uses the same <b class="gd-light">&lt;SWG&gt;</b> amount.</p>
+<aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>Swing only the hi-hats for a feel apart from the rest of the pattern.</p></aside>
 <p>There is no swing window in the editor, so there are no swing marks to copy, paste or clear.</p>
 </div></section>
 <section class="gd-sec" id="parameter-locks">
@@ -742,8 +750,8 @@
 <div class="gd-body gd-prose"><h2>PARAMETER LOCK SLIDE</h2>
 <p>A slide glides the value of a lock from the previous step to this one, instead of jumping.</p>
 <ol class="gd-steps"><li>Click a step with a trig, with <kbd class="gd-key">[⇧]</kbd> and <kbd class="gd-key">[⌥]</kbd> held. The step shows a slide mark.</li><li>Do the same again to take it off.</li></ol>
-<p>If slides are shared by all tracks, the slide goes on the step of every track, and the step legend says &quot;(all)&quot;.</p>
-<p>The editor cannot change a pattern between slides for all tracks and slides for each track. It follows the setting the pattern has.</p>
+<p>You can also click <b class="gd-ui">Slide</b> in the bar under the grid. Then a click or a drag on steps with a trig paints slides. Press <kbd class="gd-key">[ESC]</kbd> to paint trigs again.</p>
+<p>With <b class="gd-ui">Slide</b> lit, choose <b class="gd-ui">All tracks</b> or <b class="gd-ui">This track</b>. With <b class="gd-ui">All tracks</b> the slide goes on the step of every track, and the step legend says &quot;(all)&quot;. With <b class="gd-ui">This track</b> each track has its own slides.</p>
 <p>A selection copy takes the slides with the steps. The editor has no separate slide window to copy, paste or clear them.</p>
 </div></section>
 </article>
