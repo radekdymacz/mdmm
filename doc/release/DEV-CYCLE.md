@@ -104,8 +104,8 @@ no row matches runs everything of its tier.
 - Machinedrum: 28 of 28 cases as the core says (40 s). One case moved off the pattern that plays: there the machine also
   loads the pattern's new kit (a working-kit switch the core's apply does not model).
 - Monomachine: 70 of 99 cases as the core says at first (64 s). Triaged on `fix/mm-intent-cases`: two editor bugs
-  (B-062: the SYSEX RECV key macro made GLOBAL 6 active whenever another than GLOBAL 1 was, which took 11 GLOBAL, MIDI
-  and multi map cases; B-063: an FX machine's input was read and dumped in a form the firmware does not keep, 5 cases),
+  (B-067: the SYSEX RECV key macro made GLOBAL 6 active whenever another than GLOBAL 1 was, which took 11 GLOBAL, MIDI
+  and multi map cases; B-068: an FX machine's input was read and dumped in a form the firmware does not keep, 5 cases),
   the cases' base kit had a TRIG POS on its own track (the firmware keeps it as none (measured; kits that hold one still load), 5 cases
   followed from it), and 10 cases where the machine does more than the core's documents say, now in the case as
   `kitSlot`: a kit field with no live message (TRIG POS, legato, portamento, ASSIGN, MULTI TRIG) goes as a dump into

@@ -52,7 +52,7 @@ namespace mmDesk
 		};
 
 		// The path: GLOBAL, the SLOT screen's cursor to the active global, ENTER (its EDIT menu), cursor to a known
-		// place, FILE, SYSEX RECV, ORIG. ENTER on another slot would make that one active (B-062).
+		// place, FILE, SYSEX RECV, ORIG. ENTER on another slot would make that one active (B-067).
 		static std::vector<Key> enterMacro(uint8_t _activeGlobal = 0);
 		// _keys are the macro for one of the eight slots (the fakes' check)
 		static bool isEnterMacro(const std::vector<Key>& _keys);
@@ -71,7 +71,7 @@ namespace mmDesk
 		// a panel key pressed now is lost (measured, mmDeskFirmwareTest parked); once taken, keys work on SYSEX RECV.
 		bool taking() const { return parked() && m_taken - m_recvBase < m_sentParked; }
 
-		int activeGlobal = 0;		// the GLOBAL slot that is active (0-7): the macro's cursor goes there (B-062)
+		int activeGlobal = 0;		// the GLOBAL slot that is active (0-7): the macro's cursor goes there (B-067)
 		double idleMs = 3000;		// parked and quiet this long -> leave
 		double timeoutMs = 3000;	// a screen that does not come -> retry
 		int maxFailures = 2;		// failed tries (each three attempts, then a pause) before the queue is given up
