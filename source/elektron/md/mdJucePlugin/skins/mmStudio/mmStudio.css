@@ -2418,7 +2418,7 @@ header.top.tf4 .row2 .lcd2{gap:5px!important}
    across both, a 0 dB tick, the clip mark on top. Only the LCD's ink and ground (opacity for the fainter parts, no
    colour mixing, no parent selector: an older WebKit, deskCompat.js); a clip is the top mark filled, never a warning
    colour. The readout while the volume changes is the LCD's tip (.lcdtip, deskLcd.css). */
-.lcdgroup .lcdpanel.hasvol{grid-template-columns:repeat(6,auto) auto!important}
+.lcdgroup .lcdpanel.hasvol{grid-template-columns:repeat(6,auto) max-content!important}
 .lcdgroup .lcdpanel.hasvol>.row2{grid-column:2/-2!important}
 .lcdpanel .volf{grid-column:-2/-1;grid-row:1/-1;align-self:stretch;display:flex;flex-direction:column;align-items:center;gap:2px;box-sizing:border-box;
  width:30px;min-height:0;padding:0 6px;border-left:var(--lrule,1px solid var(--ink));cursor:ns-resize;touch-action:none;outline:none;color:var(--ink)}
