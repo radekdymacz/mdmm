@@ -252,3 +252,4 @@ body.dockother #rail .railparams>:is(.lpspace,.pagetabs,.pkcol),body.dockother #
 /* @include shared/deskTopFit.css */
 /* I-021: the output meter and volume at the LCD's right end (skins/shared/deskVolume.js, loaded by the plug-in's page) */
 /* @include shared/deskVolume.css */
+/* @include shared/deskSongSlots.css */
