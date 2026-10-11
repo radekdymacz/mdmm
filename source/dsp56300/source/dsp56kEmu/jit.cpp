@@ -344,6 +344,9 @@ namespace dsp56k
 		{
 			if (it.second->getBlock(pMemWriteAddr))
 			{
+				// counted for the perf gate: does a firmware rewrite compiled code while it runs? (G1-Emu found the
+				// G1 does on every patch load, and that the marks below then slow its JIT down for good)
+				m_dsp.countPMemWriteAfterCompile();
 				m_volatileP.insert(pMemWriteAddr);
 				break;
 			}

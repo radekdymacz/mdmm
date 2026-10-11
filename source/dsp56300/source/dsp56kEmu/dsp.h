@@ -135,6 +135,8 @@ namespace dsp56k
 		uint64_t						m_fastForwardCycleLimit = 0;
 		uint64_t						m_fastForwardedTurns = 0;
 		bool							m_jitCmpmFix = true;
+		bool							m_accuracyFixes = false;
+		uint64_t						m_pMemWritesAfterCompile = 0;
 
 		Opcodes							m_opcodes;
 
@@ -500,6 +502,22 @@ namespace dsp56k
 		// The MD/MM speed-ups switch drives it, so that "off" is the legacy emulation exactly. Read at run time.
 		void setJitCmpmFix(const bool _on) { m_jitCmpmFix = _on; }
 		const bool& getJitCmpmFix() const { return m_jitCmpmFix; }
+		// Fixes that make the emulation follow the DSP56300 manual where it did not, found by G1-Emu (animatek/G1-Emu,
+		// GPL-3, cmake/Dsp56300.cmake) on the Nord Modular G1. Off by default because each can change what a firmware
+		// does, and so the MD/MM goldens; GEARMULATOR_MDMM_DSP_FIXES=1 turns them on to compare. With them on:
+		// - GT and LE are Z + (N ^ V) == 0 and != 0 in the JIT (x86-64 tested the parity of Z, N, V, wrong with Z = 1
+		//   and N != V; AArch64 tested the sum for exactly 1, wrong for LE in the same case),
+		// - MOVE X:aa and Y:aa (short absolute) take one cycle, not two,
+		// - host commands (external interrupts) are collected whenever an interrupt is picked, not only on the idle
+		//   path, so a DSP kept busy by its own interrupts still sees them,
+		// - an idle ESSI on the fine schedule owes at most 64 periods when it wakes, not its whole idle time.
+		// Set it before the DSP first runs: the JIT reads it when it compiles a block.
+		void setAccuracyFixes(const bool _on);
+		bool getAccuracyFixes() const { return m_accuracyFixes; }
+		// How many times DSP code wrote to program memory that had compiled code (Jit::checkPMemWrite). Each such
+		// write destroys the block and marks the address volatile for good, which keeps later blocks there small.
+		uint64_t getPMemWritesAfterCompile() const { return m_pMemWritesAfterCompile; }
+		void countPMemWriteAfterCompile() { ++m_pMemWritesAfterCompile; }
 
 		uint64_t getFastForwardedTurns() const { return m_fastForwardedTurns; }	// all loop turns skipped so far
 		const uint64_t& getFastForwardCycleLimit() const { return m_fastForwardCycleLimit; }	// read by the JIT

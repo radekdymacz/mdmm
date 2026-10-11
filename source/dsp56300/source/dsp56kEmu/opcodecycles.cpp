@@ -24,10 +24,15 @@ namespace dsp56k
 
 	static_assert(validateCycles());
 
-	uint32_t calcCycles(const Instruction _inst, const TWord _pc, const TWord _op, const TWord _extMemAddress, const TWord _extMemWaitStates)
+	uint32_t calcCycles(const Instruction _inst, const TWord _pc, const TWord _op, const TWord _extMemAddress, const TWord _extMemWaitStates, const bool _accuracyFixes)
 	{
 		if(_inst == Invalid)
 			return 0;
+
+		// A short absolute address adds nothing to a move (G1-Emu found the table's two cycles: a firmware filled to
+		// its cycle budget went past it). No pru/lab/lim applies to these two forms.
+		if(_accuracyFixes && (_inst == Movex_aa || _inst == Movey_aa))
+			return 1;
 
 		const auto& cycles = g_cycles[static_cast<uint32_t>(_inst)];
 
@@ -69,10 +74,10 @@ namespace dsp56k
 		return c;
 	}
 
-	uint32_t calcCycles(const Instruction _instA, const Instruction _instB, const TWord _pc, const TWord _op, const TWord _extMemAddress, const TWord _extMemWaitStates)
+	uint32_t calcCycles(const Instruction _instA, const Instruction _instB, const TWord _pc, const TWord _op, const TWord _extMemAddress, const TWord _extMemWaitStates, const bool _accuracyFixes)
 	{
-		const auto cyclesA = calcCycles(_instA, _pc, _op, _extMemAddress, _extMemWaitStates);
-		const auto cyclesB = calcCycles(_instB, _pc, _op, _extMemAddress, _extMemWaitStates);
+		const auto cyclesA = calcCycles(_instA, _pc, _op, _extMemAddress, _extMemWaitStates, _accuracyFixes);
+		const auto cyclesB = calcCycles(_instB, _pc, _op, _extMemAddress, _extMemWaitStates, _accuracyFixes);
 
 		return std::max(cyclesA, cyclesB);
 	}

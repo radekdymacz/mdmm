@@ -5,6 +5,7 @@
 #include "dsp56kBase/dspassert.h"
 
 #include "jitops.h"
+#include "dsp.h"
 #include "asmjit/core/operand.h"
 
 namespace dsp56k
@@ -131,6 +132,13 @@ namespace dsp56k
 
 				m_asm.eor(dst, dst, r.get());
 				ccr_getBitValue(r, CCRB_Z);
+				if(m_block.dsp().getAccuracyFixes())
+				{
+					// (N ^ V) + Z is 0, 1 or 2: LE is "not 0" (DSP::setAccuracyFixes)
+					m_asm.adds(dst, dst, r.get());
+					return asmjit::arm::CondCode::kNotZero;
+				}
+				// legacy: exactly 1, which is wrong when Z = 1 and N != V
 				m_asm.add(dst, dst, r.get());
 				m_asm.cmp(dst, asmjit::Imm(1));
 				return asmjit::arm::CondCode::kZero;

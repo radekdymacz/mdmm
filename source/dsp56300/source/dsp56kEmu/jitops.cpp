@@ -425,7 +425,7 @@ namespace dsp56k
 		Instruction instB;
 		m_block.dsp().opcodes().getInstructionTypes(opA, instA, instB);
 
-		return dsp56k::calcCycles(instA, instB, _pc, opA, m_block.dsp().memory().getBridgedMemoryAddress(), 1);
+		return dsp56k::calcCycles(instA, instB, _pc, opA, m_block.dsp().memory().getBridgedMemoryAddress(), 1, m_block.dsp().getAccuracyFixes());
 	}
 
 	void JitOps::errNotImplemented(TWord op)

@@ -35,6 +35,12 @@ namespace dsp56k
 			{
 				if (!e.finePeriod)
 					continue;
+				if (m_fineCatchUpLimit)
+				{
+					const uint64_t maxCatchUp = static_cast<uint64_t>(e.finePeriod) * m_fineCatchUpLimit;
+					if (static_cast<uint64_t>(ic - e.fineLastClock) > maxCatchUp)
+						e.fineLastClock = ic - maxCatchUp;
+				}
 				while (static_cast<uint64_t>(ic - e.fineLastClock) >= e.finePeriod)
 				{
 					e.fineLastClock += e.finePeriod;

@@ -44,7 +44,7 @@ namespace dsp56k
 		case CCCC_NotNormalized:	return (SRT_Z | SRT_U | SRT_E) != 0;			// NN			Not normalized
 
 		case CCCC_GreaterThan:		return (SRT_Z + (SRT_N != SRT_V)) == 0;			// GT			Greater than
-		case CCCC_LessEqual:		return (SRT_Z + (SRT_N != SRT_V)) == 1;			// LE			Less than or equal
+		case CCCC_LessEqual:		return (SRT_Z + (SRT_N != SRT_V)) != 0;			// LE			Less than or equal (Z = 1 and N != V make 2)
 		}
 		assert( 0 && "unreachable" );
 		return false;

@@ -42,6 +42,12 @@ namespace dsp56k
 		// tick. Zero preserves the existing base-plus-divider clock.
 		void setEsaiFinePeriod(Esxi* _esai, uint32_t _finePeriod);
 		void setExactCycleDeadlineEnabled(bool _enabled) { m_exactCycleDeadlineEnabled = _enabled; }
+		// An ESSI on the fine schedule that sat idle (nothing served the clock) owes the core every period of that time
+		// when it wakes, emitted in one call: millions of frames after a long idle, enough to fill a link ring and stall
+		// (G1-Emu, nmedit's korg.pch). A real port does not queue the frames of the time it was off. Non-zero: an anchor
+		// more than this many periods behind is put back to it (G1-Emu uses 64). 0, the default: no limit.
+		void setFineCatchUpLimit(uint32_t _periods) { m_fineCatchUpLimit = _periods; }
+		uint32_t getFineCatchUpLimit() const { return m_fineCatchUpLimit; }
 		bool isExactCycleDeadlineEnabled() const { return m_exactCycleDeadlineEnabled; }
 		bool usesExactCycleDeadline() const;
 		uint32_t getNextCycleDeadline() const { return m_nextCycleDeadline; }
@@ -118,6 +124,7 @@ namespace dsp56k
 		// fine-schedule loop (and provably byte-identical) whenever fine-link mode is unused.
 		bool m_hasFineEsais = false;
 		bool m_exactCycleDeadlineEnabled = false;
+		uint32_t m_fineCatchUpLimit = 0;
 	};
 
 	class EsaiClock : public EsxiClock

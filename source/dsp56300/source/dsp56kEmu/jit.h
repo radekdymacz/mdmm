@@ -118,6 +118,17 @@ namespace dsp56k
 		JitTrampoline& getTrampoline() { return m_trampoline; }
 		const CowMemory& getDispatchTemplate() const { return m_dispatchTemplate; }
 
+		// A block the JIT could not generate (asmjit out of memory, code generation failing). The DSP cannot run
+		// that address any more; the host should report it and stop the device. Sticky: the first PC is kept.
+		void setFailure(const TWord _pc) { if(!m_failureCount++) m_failurePC = _pc; }
+		bool hasFailed() const { return m_failureCount != 0; }
+		TWord getFailurePC() const { return m_failurePC; }
+		uint64_t getFailureCount() const { return m_failureCount; }
+
+		// Test hook: from the n-th block emitted on (1 = the first), emitting fails as asmjit failing would. 0: never.
+		void setFailEmitsFrom(const uint64_t _n) { m_failEmitsFrom = _n; m_emitAttempts = 0; }
+		bool shouldFailEmit() { ++m_emitAttempts; return m_failEmitsFrom && m_emitAttempts >= m_failEmitsFrom; }
+
 	private:
 		void checkPMemWrite() noexcept;
 
@@ -136,6 +147,10 @@ namespace dsp56k
 
 		CowMemory m_dispatchTemplate;
 		std::set<TWord> m_volatileP;
+		TWord m_failurePC = 0;
+		uint64_t m_failureCount = 0;
+		uint64_t m_failEmitsFrom = 0;
+		uint64_t m_emitAttempts = 0;
 		std::map<TWord, TWord> m_loops;
 		std::set<TWord> m_loopEnds;
 
