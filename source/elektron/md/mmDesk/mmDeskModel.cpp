@@ -448,8 +448,15 @@ namespace mmDesk
 			{"muteMidi", Owner::Machine, Gate::Input, -1, {t6, {"on", ArgType::Bool, 0, 0, true}},
 				"a MIDI sequencer track's mute (the MUTE window: FUNCTION + BANK GROUP, TRIG 9-14)"},
 			{"poly", Owner::Machine, Gate::Input, -1, {{"on", ArgType::Bool}}, "POLY, the machine's audio mode (SET STATUS 0x20)"},
-			{"record", Owner::Machine, Gate::Input, -1, {{"mode", ArgType::Text, 0, 0, false, {"off", "grid", "live"}}},
-				"GRID RECORDING (RECORD), LIVE RECORDING (RECORD + PLAY) or off"},
+			{"record", Owner::Machine, Gate::Input, -1, {{"mode", ArgType::Text, 0, 0, false, {"off", "grid", "live", "step"}},
+				{"t", ArgType::Integer, 0, 5, true}},
+				"GRID RECORDING (RECORD), LIVE RECORDING (RECORD + PLAY), STEP RECORDING (STOP + RECORD) or off; t: the track in"
+				" focus first (TRACK t), the one STEP RECORDING writes (again while in it: only the focus)"},
+			// 0.6 wave 7 (manual 1-49, 1-50; mmEditorProbeFirmwareTest recording)
+			{"liveErase", Owner::Machine, Gate::Input, -1, {t6, {"on", ArgType::Bool}},
+				"LIVE RECORDING: EXIT held (on) or let go: track t's notes go as they play (TRACK t first)"},
+			{"stepKey", Owner::Machine, Gate::Input, -1, {{"key", ArgType::Text, 0, 0, false, {"left", "right", "clear"}}},
+				"STEP RECORDING: LEFT (a step back), RIGHT (on, a rest) or ENTER (clear the step, on)"},
 			{"hwSend", Owner::Machine, Gate::Input, -1, {}, "HW MIDI: the machine is on SYSEX RECV; send the dumps that wait for it"},
 			{"followHost", Owner::Machine, Gate::Input, -1, {}, "in a DAW: the active GLOBAL follows the host's clock and transport"},
 			{"globalSlot", Owner::Machine, Gate::Input, -1, {deskCore::slotArg<MmModel>("slot", Kind::Global)}, "the active GLOBAL slot (SET ACTIVE GLOBAL 0x56)"},

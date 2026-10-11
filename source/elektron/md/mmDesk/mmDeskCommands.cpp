@@ -167,7 +167,7 @@ namespace mmDesk
 			{"saveKit", &MmMachine::cmdSaveKit}, {"loadSong", &MmMachine::cmdLoadSong}, {"saveSong", &MmMachine::cmdSaveSong},
 			{"tempo", &MmMachine::cmdTempo}, {"play", &MmMachine::cmdPlay}, {"stop", &MmMachine::cmdStop},
 			{"mute", &MmMachine::cmdMute}, {"seqMode", &MmMachine::cmdSeqMode}, {"followHost", &MmMachine::cmdFollowHost}, {"muteMidi", &MmMachine::cmdMuteMidi},
-			{"poly", &MmMachine::cmdPoly}, {"record", &MmMachine::cmdRecord}, {"hwSend", &MmMachine::cmdHwSend},
+			{"poly", &MmMachine::cmdPoly}, {"record", &MmMachine::cmdRecord}, {"liveErase", &MmMachine::cmdLiveErase}, {"stepKey", &MmMachine::cmdStepKey}, {"hwSend", &MmMachine::cmdHwSend},
 			{"chain", &MmMachine::cmdChain}, {"chainClear", &MmMachine::cmdChainClear},
 			{"noteOn", &MmMachine::cmdNoteOn}, {"noteOff", &MmMachine::cmdNoteOff}, {"globalSlot", &MmMachine::cmdGlobalSlot},
 			{"pause", &MmMachine::cmdPause}, {"resume", &MmMachine::cmdResume}, {"playFrom", &MmMachine::cmdPlayFrom},

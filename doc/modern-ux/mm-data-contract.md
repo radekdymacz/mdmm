@@ -255,6 +255,13 @@ if(pattern)
 
 `mmDataCorpusTest [--json <dir>] <dir>` checks byte-exact, JSON-exact and valid on every MM dump under a directory.
 
+**Recording (0.6 wave 7).** `record` (telemetry) is also `step`: STEP RECORDING (STOP held + RECORD, manual 1-50;
+RAM 0x2bff05, `mmEditorProbeFirmwareTest recording`), with `stepAt`, the step the next note writes (RAM 0x2bff09).
+`record {mode: "step", t}` enters it with TRACK t in focus (it writes that track only); again while in it, it only
+moves the focus. `stepKey {key}` is LEFT, RIGHT (a rest) or ENTER (clear the step). `liveErase {t, on}` holds EXIT while
+LIVE RECORDING plays: the machine erases track t's notes as they pass (manual 1-49). All of them are the machine's keys:
+refused over HW MIDI (the `gridRecord` capability's reason).
+
 **Song playhead (0.3.5).** `songRow` (telemetry) is the song row the Monomachine plays, one byte at
 RAM 0x2bdba1 (`md::MmTelemetry::g_songRowAddress`; found with `mmEditorProbeFirmwareTest songrow`,
 checked by `mmDeskFirmwareTest songrow`: at every pass the row's pattern is the one the machine
