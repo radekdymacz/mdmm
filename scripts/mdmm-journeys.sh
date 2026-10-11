@@ -3,12 +3,12 @@
 # Machinedrum Editor, the Monomachine Editor or both with GEARMULATOR_MDSTUDIO_SELFTEST / GEARMULATOR_MMSTUDIO_SELFTEST
 # set to the journeys asked for, waits for "JOURNEYS DONE" in the page's log, prints a line per journey and exits
 # non-zero on any FAIL, a timeout or a missing build or ROM.
-#   scripts/mdmm-journeys.sh [--host standalone|vst3|both] [--tier page|machine|host|all] [--background] [--jobs N]
-#                            [md|mm|both] [selector]
+#   scripts/mdmm-journeys.sh [--host standalone|vst3|both] [--tier page|machine|host|all] [--vst3-tier T]
+#                            [--background] [--jobs N] [md|mm|both] [selector]
 #     selector: journey (all, the default), journey-seq-*, journey-md-lib-*,mm-mix-* (comma-separated, * any)
 #     --host: the standalone apps (the default), the VST3s in the minimal host scripts/vst3EditorHost, or both
-#     --tier: only the journeys of that tier (skins/shared/deskJourney.js TIERS, doc/release/DEV-CYCLE.md): page,
-#       machine (machine and host), host, or all. Default: the standalone all, the VST3 host only host (the page is the
+#     --tier: the standalone's journeys of that tier (skins/shared/deskJourney.js TIERS, doc/release/DEV-CYCLE.md): page,
+#       machine (machine and host), host, or all (the default). --vst3-tier: the VST3 host's, default host (the page is the
 #       same in both hosts; decision 2026-10-11). The page journeys also run without the editor: scripts/mdmm-page.mjs
 #     --jobs N: N editors at once, each playing every N-th of the chosen journeys (the selector's "@k/N" shard,
 #       skins/shared/deskJourney.js); one report at the end. Implies --background. About one core per editor.
@@ -45,6 +45,7 @@ set -u
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 HOSTS=standalone
 TIER=""
+VST3_TIER=host
 BACKGROUND=0
 JOBS=1
 while [ $# -gt 0 ]; do
@@ -55,6 +56,8 @@ while [ $# -gt 0 ]; do
 		--jobs=*) JOBS=${1#--jobs=}; shift ;;
 		--tier) TIER=${2:-}; shift 2 ;;
 		--tier=*) TIER=${1#--tier=}; shift ;;
+		--vst3-tier) VST3_TIER=${2:-}; shift 2 ;;
+		--vst3-tier=*) VST3_TIER=${1#--vst3-tier=}; shift ;;
 		--background) BACKGROUND=1; shift ;;
 		*) break ;;
 	esac
@@ -66,15 +69,16 @@ VST3S=${MDMM_VST3_DIR:-"$ROOT/bin/plugins/Release/VST3"}
 TIMEOUT=${MDMM_JOURNEY_TIMEOUT:-900}
 OUT=${MDMM_JOURNEY_OUT:-"$ROOT/temp/journeys/$(date +%Y%m%d-%H%M%S)"}
 case "$SEL" in journey*) ;; *) SEL="journey-$SEL" ;; esac
-USAGE="usage: $0 [--host standalone|vst3|both] [--tier page|machine|host|all] [--background] [--jobs N] [md|mm|both] [journey|journey-<names>]"
+USAGE="usage: $0 [--host standalone|vst3|both] [--tier page|machine|host|all] [--vst3-tier page|machine|host|all] [--background] [--jobs N] [md|mm|both] [journey|journey-<names>]"
 case "$WHICH" in md|mm|both) ;; *) echo "$USAGE" >&2; exit 2 ;; esac
 case "$HOSTS" in standalone|vst3|both) ;; *) echo "$USAGE" >&2; exit 2 ;; esac
 case "$JOBS" in ''|*[!0-9]*|0) echo "$USAGE" >&2; exit 2 ;; esac
 case "$TIER" in ''|page|machine|host|all) ;; *) echo "$USAGE" >&2; exit 2 ;; esac
+case "$VST3_TIER" in page|machine|host|all) ;; *) echo "$USAGE" >&2; exit 2 ;; esac
 case "$SEL" in *@*) echo "the selector takes no @shard: --jobs makes the shards" >&2; exit 2 ;; esac
 case "$SEL" in *~*) echo "the selector takes no ~tier: use --tier" >&2; exit 2 ;; esac
-# the tier a host runs: --tier, else all in the standalone and the host journeys only in the VST3 host
-tier_of() { t=$TIER; [ -n "$t" ] || { [ "$1" = vst3 ] && t=host || t=all; }; [ "$t" = all ] && t=""; echo "$t"; }
+# the tier a host runs: the standalone --tier (all), the VST3 host --vst3-tier (host)
+tier_of() { if [ "$1" = vst3 ]; then t=$VST3_TIER; else t=${TIER:-all}; fi; [ "$t" = all ] && t=""; echo "$t"; }
 # several editors at once can neither all be in front nor all play to the audio device
 [ "$JOBS" -gt 1 ] && BACKGROUND=1
 mkdir -p "$OUT"

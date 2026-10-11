@@ -27,7 +27,8 @@
 # <preview>/<machine>/roms), MDMM_GATE_PREVIEW (default ~/Documents/Gearmulator Preview), MDMM_GATE_MD_CACHE (the
 # Machinedrum factory cache), MDMM_GATE_MM_PATCH (the Monomachine factory patch RAM), MDMM_GATE_FIXTURES (the SysEx
 # fixtures, default <preview>/fixtures/sysex), MDMM_GATE_JOBS (build jobs), MDMM_GATE_GOLDEN_JOBS (golden runs at
-# once), MDMM_GATE_JOURNEY_ARGS (options for mdmm-journeys.sh, default --host both --jobs 4),
+# once), MDMM_GATE_JOURNEY_ARGS (options for mdmm-journeys.sh, default --host both --jobs 4 --tier machine), MDMM_GATE_CCACHE=0 (stage 1
+# without ccache),
 # MDMM_GATE_COMPONENTS_DIR (where the AU bundles are installed), MDMM_GATE_SOAK_SECONDS (6c, default 600),
 # MDMM_GATE_SOAK_WARMUP (seconds not judged, default 30), MDMM_GATE_SOAK_LOCK_US (a synth lock wait that fails it,
 # default 1000), MDMM_GATE_ALLOW_UNMUTED=1 (run 7d although the output cannot be muted), MDMM_GATE_SCENARIOS (extra
@@ -95,9 +96,9 @@ FIXTURES="${MDMM_GATE_FIXTURES:-${PREVIEW}/fixtures/sysex}"
 GOLDENS="${MDMM_GATE_GOLDENS:-${ROOT}/source/elektron/md/mdLibTest/goldens/mdmm-goldens.json}"
 GATE_MIN_SCENARIOS="md-busy md-factory md-song mm-a01 mm-busy mm-song"	# a goldens file must cover at least these
 JOBS="${MDMM_GATE_JOBS:-$(sysctl -n hw.ncpu 2>/dev/null || echo 4)}"
-# four editors at once (--jobs implies --background: the standalone's output is zeroed, silence); the VST3 host runs only
-# the host journeys (mdmm-journeys.sh --tier, decision 2026-10-11)
-JOURNEY_ARGS="${MDMM_GATE_JOURNEY_ARGS:---host both --jobs 4}"
+# four editors at once (--jobs implies --background: the standalone's output is zeroed, silence); the standalone runs the
+# machine journeys (the page journeys are stage 2c's, decision 2026-10-11), the VST3 host the host journeys only
+JOURNEY_ARGS="${MDMM_GATE_JOURNEY_ARGS:---host both --jobs 4 --tier machine}"
 SOAK_SECONDS="${MDMM_GATE_SOAK_SECONDS:-600}"
 SOAK_WARMUP="${MDMM_GATE_SOAK_WARMUP:-30}"
 SOAK_LOCK_US="${MDMM_GATE_SOAK_LOCK_US:-1000}"
@@ -258,6 +259,17 @@ stage_build() {
 	else
 		flags+=(-Dgearmulator_BUILD_JUCEPLUGIN=ON -Dgearmulator_BUILD_JUCEPLUGIN_VST3=ON
 			-Dgearmulator_BUILD_JUCEPLUGIN_AU=ON -Dgearmulator_BUILD_JUCEPLUGIN_Standalone=ON)
+	fi
+	# ccache when it is installed (MDMM_GATE_CCACHE=0: off): the compiles of a tree built before come from the cache
+	# (scripts/mdmm-dev.sh's settings: paths relative to the checkout); the ThinLTO links still run
+	if [ "${MDMM_GATE_CCACHE:-1}" = 1 ] && command -v ccache > /dev/null 2>&1; then
+		local launcher
+		launcher="/usr/bin/env;CCACHE_BASEDIR=${ROOT};CCACHE_SLOPPINESS=include_file_mtime,include_file_ctime,time_macros,pch_defines;CCACHE_COMPILERCHECK=%compiler% -v;$(command -v ccache)"
+		flags+=(-DCMAKE_C_COMPILER_LAUNCHER="${launcher}" -DCMAKE_CXX_COMPILER_LAUNCHER="${launcher}"
+			-DCMAKE_OBJC_COMPILER_LAUNCHER="${launcher}" -DCMAKE_OBJCXX_COMPILER_LAUNCHER="${launcher}")
+		info_set ccache 1
+	else
+		flags+=(-DCMAKE_C_COMPILER_LAUNCHER= -DCMAKE_CXX_COMPILER_LAUNCHER= -DCMAKE_OBJC_COMPILER_LAUNCHER= -DCMAKE_OBJCXX_COMPILER_LAUNCHER=)
 	fi
 	# JUCE runs each VST3 while it builds it: that load gets a data root inside the build tree (no ROM in it).
 	mkdir -p "${home}/Documents"
@@ -828,15 +840,33 @@ stage_pluginval() {
 	fi
 }
 
+# The journeys need the page's self-tests, which only a diagnostics build has (-Dgearmulator_MDMM_DIAGNOSTICS=ON):
+# scripts/mdmm-dev.sh builds one in its own tree, its products kept out of the checkout's bin/. Lane 2 of the gate: it
+# starts in the background (niced, half the cores) as soon as the release tree is built, while lane 1 runs that tree's
+# stages; stage 7d waits for it. DIAG_PID: the build's process, DIAG_STATUS its file (the exit status once done).
+DIAG_PID=""; DIAG_STATUS="${OUT}/logs/7d-diagnostics-build.status"
+journeys_build_start() {
+	local build_log="${LOG_DIR}/7d-diagnostics-build.log"
+	rm -f "${DIAG_STATUS}"
+	( gate_run --timeout 7200 --log "${build_log}" -- MDMM_DEV_BUILD="${DIAG_BUILD}" MDMM_DEV_JOBS="$(( (JOBS + 1) / 2 ))" \
+		MDMM_DEV_ARGS="-DGEARMULATOR_JUCE_PRODUCTS_ROOT=${DIAG_BUILD}/products" nice -n 10 "${DEV_CMD}" build
+	  echo $? > "${DIAG_STATUS}" ) > /dev/null 2>&1 &
+	DIAG_PID=$!
+	echo "    lane 2: the journeys' diagnostics build started in the background (log ${build_log})"
+}
+journeys_build_wait() {	# 0 when the diagnostics build is there (started now when it was not)
+	[ -n "${DIAG_PID}" ] || journeys_build_start
+	wait "${DIAG_PID}" 2> /dev/null
+	DIAG_PID=""
+	[ "$(cat "${DIAG_STATUS}" 2> /dev/null)" = 0 ]
+}
+
 stage_journeys() {
 	stage_begin "7d" "User journeys, both editors"
 	have_roms both || { stage_end FAIL "" "${MISSING_WHAT}"; return; }
 	local log="${LOG_DIR}/7d-journeys.log" build_log="${LOG_DIR}/7d-diagnostics-build.log"
 	local report status=0 answer muted_note="" notes capture
-	# The journeys need the page's self-tests, which only a diagnostics build has (-Dgearmulator_MDMM_DIAGNOSTICS=ON):
-	# scripts/mdmm-dev.sh builds one in its own tree, its products kept out of the checkout's bin/.
-	gate_run --timeout 7200 --log "${build_log}" -- MDMM_DEV_BUILD="${DIAG_BUILD}" \
-		MDMM_DEV_ARGS="-DGEARMULATOR_JUCE_PRODUCTS_ROOT=${DIAG_BUILD}/products" "${DEV_CMD}" build \
+	journeys_build_wait \
 		|| { stage_end FAIL "" "the diagnostics build failed (${build_log})"; show_tail "${build_log}" 20; return; }
 	rm -rf "${OUT}/journeys"
 	# Silence: the standalones open the audio device (the VST3 host plays to none). --background zeroes the
@@ -880,6 +910,21 @@ stage_journeys() {
 	else
 		stage_end FAIL "" "no report (exit ${status}); log ${log}${muted_note:+; ${muted_note}}"
 		show_tail "${log}" 12
+	fi
+}
+
+# 2c. the page journeys in the page tier (scripts/mdmm-page.mjs: headless Chrome, the real core behind a fake machine)
+stage_page() {
+	stage_begin "2c" "Page journeys (page tier, no ROM)"
+	local log="${LOG_DIR}/2c-page.log" status=0 totals stub="${BUILD}/source/elektron/md/deskStubHost/deskStubHost"
+	[ -x "${stub}" ] || { stage_end FAIL "" "no deskStubHost in ${BUILD} (BUILD_TESTING on a POSIX host builds it)"; return; }
+	gate_run --timeout 1800 --log "${log}" -- MDMM_STUB_HOST="${stub}" MDMM_PAGE_OUT="${OUT}/page" \
+		node "${ROOT}/scripts/mdmm-page.mjs" --jobs 4 both || status=$?
+	totals="$(grep '^PAGE JOURNEYS:' "${log}" | tail -n 1 | sed 's/^PAGE JOURNEYS: //')"
+	if [ "${status}" = 0 ]; then
+		stage_end PASS "${totals}"
+	else
+		stage_end FAIL "${totals}" "$(grep -E '^JOURNEY [^ ]+ FAIL|^FAIL' "${log}" | head -n 3 | cut -c1-200 | tr '\n' ';'); report ${OUT}/page/report.txt"
 	fi
 }
 
@@ -971,17 +1016,24 @@ stage_inputs
 if wanted 1; then stage_build; else STAGE_RESULT=SKIP; fi
 BUILD_OK=0
 { [ "${STAGE_RESULT}" = PASS ] || [ "${STAGE_RESULT}" = SKIP ]; } && BUILD_OK=1
+# Lane 1, the release tree's functional stages (2 to 5, then 7a-7c), while lane 2 builds the journeys' diagnostics tree
+# in the background; then 7d; then the timing stages (5b, 6a, 6b, 6c) alone on a quiet Mac. A stage's verdict does not
+# depend on the order.
+LANES=0
+if [ "${BUILD_OK}" = 1 ] && [ "${QUICK}" != 1 ] && [ "${SKIP_PLUGIN}" != 1 ] && [ "${SKIP_JOURNEYS}" != 1 ] && wanted 7d; then
+	LANES=1
+	journeys_build_start
+fi
 if [ "${BUILD_OK}" = 1 ]; then
 	wanted 2 && stage_ctest
+	wanted 2c && stage_page
 	wanted 2b && stage_direct
 	wanted 3 && stage_romload
 	wanted 4 && stage_sysex
 	wanted 5 && { stage_goldens; note_goldens_state; }
-	wanted 5b && stage_bench
-	wanted 6a && stage_rt
 else
-	for pair in "2:ctest, every registered test" "2b:Firmware tests ctest cannot run" "3:ROM loading" \
-		"4:SysEx round trip" "5:Playing goldens" "5b:CPU bench sanity" "6a:Real-time work while editing (rt-check)"; do
+	for pair in "2:ctest, every registered test" "2c:Page journeys (page tier, no ROM)" "2b:Firmware tests ctest cannot run" \
+		"3:ROM loading" "4:SysEx round trip" "5:Playing goldens" "5b:CPU bench sanity" "6a:Real-time work while editing (rt-check)"; do
 		stage_begin "${pair%%:*}" "${pair#*:}"
 		stage_end FAIL "" "not run: the build failed"
 	done
@@ -998,27 +1050,40 @@ leave_out() {	# <reason> <FAIL|SKIP>: every stage of the plug-in group, not run
 	done
 	IFS=$' \t\n'
 }
-if [ -n "${ONLY}" ]; then
-	wanted 6b && [ "${QUICK}" != 1 ] && stage_capacity
-	wanted 6c && [ "${QUICK}" != 1 ] && stage_soak
-	wanted 7a && [ "${QUICK}" != 1 ] && stage_vst3_start
-	wanted 7b && [ "${QUICK}" != 1 ] && stage_auval
-	wanted 7c && [ "${QUICK}" != 1 ] && stage_pluginval
-	au_swap_out
-	wanted 7d && [ "${QUICK}" != 1 ] && stage_journeys
-elif [ "${QUICK}" = 1 ]; then
-	leave_out "--quick builds no plug-ins" SKIP
-elif [ "${SKIP_PLUGIN}" = 1 ]; then
-	leave_out "--skip-plugin" SKIP
-elif [ "${BUILD_OK}" = 0 ]; then
-	leave_out "not run: the build failed" FAIL
-else
+timing_stages() {	# lane 3: alone, on a quiet Mac (the journeys and every build are done)
+	[ "${BUILD_OK}" = 1 ] || return 0
+	wanted 5b && stage_bench
+	wanted 6a && stage_rt
+	[ "${QUICK}" = 1 ] && return 0
+	if [ -n "${ONLY}" ]; then
+		wanted 6b && stage_capacity
+		wanted 6c && stage_soak
+		return 0
+	fi
+	[ "${SKIP_PLUGIN}" = 1 ] && return 0
 	stage_capacity
 	if [ "${SKIP_SOAK}" = 1 ]; then
 		cannot_run "6c soak" "off by default (--soak runs it, 21 minutes)"
 	else
 		stage_soak
 	fi
+}
+if [ -n "${ONLY}" ]; then
+	wanted 7a && [ "${QUICK}" != 1 ] && stage_vst3_start
+	wanted 7b && [ "${QUICK}" != 1 ] && stage_auval
+	wanted 7c && [ "${QUICK}" != 1 ] && stage_pluginval
+	au_swap_out
+	wanted 7d && [ "${QUICK}" != 1 ] && stage_journeys
+	timing_stages
+elif [ "${QUICK}" = 1 ]; then
+	timing_stages
+	leave_out "--quick builds no plug-ins" SKIP
+elif [ "${SKIP_PLUGIN}" = 1 ]; then
+	timing_stages
+	leave_out "--skip-plugin" SKIP
+elif [ "${BUILD_OK}" = 0 ]; then
+	leave_out "not run: the build failed" FAIL
+else
 	stage_vst3_start
 	stage_auval
 	stage_pluginval
@@ -1028,7 +1093,9 @@ else
 	else
 		stage_journeys
 	fi
+	timing_stages
 fi
+[ -n "${DIAG_PID}" ] && wait "${DIAG_PID}" 2> /dev/null
 au_swap_out
 stage_updater
 
