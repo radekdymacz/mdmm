@@ -1574,7 +1574,7 @@ const MmJourneys = (() => {
 	const whatTicked = () => $all("#dlg .what input[data-wid]:checked").map(x => x.dataset.wid);
 	const whatTick = (u, want) => { for (const x of $all("#dlg .what input[data-wid]")) if (!x.disabled && x.checked !== want.includes(x.dataset.wid)) u.click(x); };
 	const whatPick = (verb, shot) => ({ say: `click ▾ beside COPY CLR PASTE, then ${verb[0].toUpperCase() + verb.slice(1)}…`,
-		act: async u => { u.click("[data-secwhat]"); await until(() => DeskMenu.shown, 1500); u.click(`#deskmenu [data-mid="${verb}"]`); if (shot && await until(whatShown, 1500)) Journey.snapshot(shot); },
+		act: async u => { u.click("[data-secwhat]"); await until(() => DeskMenu.shown, 1500); u.click(`#deskmenu [data-mid="${verb}"]`); if (shot && await until(whatShown, 1500)) shot(false); },
 		screen: () => ok(whatShown() && $1("#dlg .what h3")?.textContent.toLowerCase() === verb + " what", "dialog " + ($1("#dlg h3")?.textContent || "none")) });
 	const trackOf = t => patDoc()?.tracks[t];
 	const partsOf = t => { const x = trackOf(t); return x && JSON.stringify([x.trig, x.amp, x.notes, x.slide, x.swing, x.arp, x.transpose]); };
@@ -1586,11 +1586,11 @@ const MmJourneys = (() => {
 				c.a = [0, 1, 2, 3, 4, 5].find(t => trigsOf(t).length) ?? 0; c.b = [0, 1, 2, 3, 4, 5].find(t => t !== c.a && partsOf(t) !== partsOf(c.a)) ?? (c.a + 1) % 6;
 				c.pb = partsOf(c.b); c.kb = kitT(c.b); if (S().side === "midi") u.click('[data-side="int"]'); u.click(rail(c.a)); },
 				screen: c => ok(S().sel === c.a, "selected " + S().sel), machine: c => ok(trigsOf(c.a).length > 0, "no notes") },
-			whatPick("copy", "mm-copy-what"),
+			whatPick("copy", m => m || Journey.snapshot("mm-copy-what")),
 			{ say: "tick Notes, Slide, Swing, Arp, Transpose and Machine + sound, click Copy", act: u => { whatTick(u, ["notes", "slide", "swing", "arp", "transpose", "sound"]); u.click("#dlg [data-wgo]"); },
 				screen: () => ok(!whatShown(), "still open") },
 			{ say: "pick the other track", act: (u, c) => u.click(rail(c.b)), screen: c => ok(S().sel === c.b, "selected " + S().sel) },
-			{ ...whatPick("paste", "mm-paste-what"), screen: c => ok(whatShown() && same($all("#dlg [data-wto][aria-pressed=true]").map(b => +b.dataset.wto), [c.b])
+			{ ...whatPick("paste", m => m || Journey.snapshot("mm-paste-what")), screen: c => ok(whatShown() && same($all("#dlg [data-wto][aria-pressed=true]").map(b => +b.dataset.wto), [c.b])
 				&& $all("#dlg [data-wto]").filter(b => +b.dataset.wto >= 6).every(b => b.disabled), "keys " + $all("#dlg [data-wto][aria-pressed=true]").map(b => b.dataset.wto)) },
 			{ say: "click Paste into 1 track: its notes, slide, swing, arp, transpose and machine are the first track's", act: u => u.click("#dlg [data-wgo]"),
 				machine: c => { const a = trackOf(c.a), b = trackOf(c.b); return ok(a && b && same(b.trig, a.trig) && same(b.notes, a.notes) && same(b.slide, a.slide) && same(b.swing, a.swing)
