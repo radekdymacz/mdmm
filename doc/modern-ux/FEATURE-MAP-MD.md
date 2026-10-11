@@ -1,8 +1,8 @@
 # Machinedrum manual vs our editor: feature map
 
-Manual: Machinedrum SPS-1 / SPS-1UW MKII user's manual, OS 1.53, rev J (2010), 122 PDF pages; page numbers are the printed ones. Date: 2026-10-10. Code state: `main` at the time of writing.
+Manual: Machinedrum SPS-1 / SPS-1UW MKII user's manual, OS 1.53, rev J (2010), 122 PDF pages; page numbers are the printed ones. Date: 2026-10-10, re-checked 2026-10-11 against `main` at 0.5.0+ (`7abb268cb`).
 
-The question per row: **does our web page (the Machinedrum Editor) offer this?** The page is the only UI: the shipped editor has no emulated front panel or LCD (`mdEditorPages.h`). The firmware runs underneath, so some functions work when the page, MIDI or SysEx asks, or on a real machine's panel via the HW MIDI engine. That is only noted in the last column.
+The question per row: **does our web page (the Machinedrum Editor) offer this?** The page is the only UI: the shipped editor has no emulated front panel or LCD (`mdEditorPages.h`). The firmware runs underneath, so some functions work when the page, MIDI or SysEx asks, or by the firmware on its own. The editor has no route to the machine's panel: over HW MIDI it can send only Start and Stop. Where the real machine's own panel has a function the page lacks, the last column says so.
 
 Our UI column: ✅ Yes (own control) · 🟡 Partial · ❌ No · ➖ Not applicable (hardware only, such as power or the LEVEL meter's jacks).
 
@@ -26,7 +26,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.5 | RECORD key (grid record on/off) | Toggle grid edit | ➖ | Grid is always editable | The step grid needs no mode. |
 | p.5 | RECORD + PLAY (live recording) | Live record | ✅ | REC button, Alt+Space | LCD top bar. |
 | p.5 | PLAY (second press pauses) | Start / pause | 🟡 | Play/Stop button, Space | Play and stop only; no pause. |
-| p.5 | STOP; double STOP silences all voices | Stop, panic | 🟡 | Play/Stop button | No panic key. Double STOP: the firmware supports it; only a real machine's panel can do it today. |
+| p.5 | STOP; double STOP silences all voices | Stop, panic | 🟡 | Play/Stop button | No panic key. Double STOP is a function of the machine's own panel; the editor cannot send it (over HW MIDI it can send only Start and Stop). |
 | p.5 | STOP + PLAY restarts from the top | Restart | 🟡 | Stop then Play | Same result in two clicks. |
 | p.5 | PATTERN/SONG key | Switch sequencer mode | ✅ | Song page: PATTERN / SONG switch; LCD PLAY value | seqMode command. |
 | p.5 | KIT key (kit menu) / FUNCTION + KIT (song menu) | Open kit / song menus | 🟡 | Kit: library popover. Song: song stepper on Song page | No song menu (see §10). |
@@ -138,7 +138,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.36 | Tempo: integer and decimal steps | Tempo screen | ✅ | LCD tempo drag (Shift = 0.1) | Arrow keys step it when focused. |
 | p.36 | FUNCTION held: tempo changes on release | Delayed change | ❌ | None |  |
 | p.36 | Temporary +/-10 % tempo shift (LEFT/RIGHT) | Turntable sync | ❌ | None | The firmware does it from its own panel. The editor has no route to it today: over HW MIDI the editor can send only Start and Stop. |
-| p.36 | Tap tempo | FUNCTION + TEMPO | ✅ | T or B key | keymap.json tap-tempo. |
+| p.36 | Tap tempo | FUNCTION + TEMPO | ✅ | T, B or Shift+B | keymap.json tap-tempo, tap-tempo-shift. Shift+B taps on every workspace of both editors. |
 | p.36 | External sync, EXT shown | MIDI clock follow | ✅ | Global > Sync > Tempo in; host tempo marked on LCD | DAW follows host. |
 | p.37 | Pattern selection (8 banks x 16) | A01-H16 | ✅ | Pattern chooser; prev/next arrows |  |
 | p.37 | Uninitialised patterns shown by LEDs | Which are empty | ✅ | Pattern chooser: EMPTY slots |  |
@@ -218,9 +218,9 @@ Method: manual read in full; claims checked against the page files (`source/elek
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes |
 |---|---|---|---|---|---|
-| p.57 | 8 global slots | Switch set-up | ✅ | GLOBAL panel: slot buttons 1-8 |  |
+| p.57 | 8 global slots | Switch set-up | ✅ | GLOBAL panel: slot buttons 1-8 | Also Reset to defaults (shared panel with the Monomachine Editor). |
 | p.57 | Turbo menu (speed negotiation) | TurboMIDI | ➖ |  | Emulator and wire use their own pacing. |
-| p.59 | Base channel (1-4 ... 13-16, OFF) | MIDI channels | ✅ | GLOBAL > Control |  |
+| p.59 | Base channel (1-4 ... 13-16, OFF) | MIDI channels | ✅ | GLOBAL > Control | A mute or note refused because the base channel is OFF shows a notice with one key, Give each track its own channel (channels 1-4). |
 | p.59 | Map editor: group TRACK | Note to track | ✅ | GLOBAL > Map editor, 16 track keys |  |
 | p.59 | Map editor: group PAT A-H | Note to pattern | ✅ | GLOBAL > Map a note |  |
 | p.60 | Map editor: group CTRL (start, stop) | Note to transport | ✅ | GLOBAL > Map a note |  |
@@ -270,7 +270,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 |---|---|---|---|---|---|
 | p.79 | Test mode | Self test | ➖ |  |  |
 | p.79 | Empty reset | Clear all | ❌ | None | Per-slot clear only. |
-| p.79 | Factory reset | Presets | ❌ | None | Re-import a .syx instead. |
+| p.79 | Factory reset | Presets | ❌ | None | Re-import a .syx instead. GLOBAL > Reset to defaults restores only the active global. |
 | p.79 | Soft reset | Reload samples | ❌ | None | Restart the editor. |
 | p.79 | MIDI upgrade / send upgrade | OS update | ➖ |  | Firmware fixed to OS 1.63. |
 
@@ -375,7 +375,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.C-2 | Set track routing 0x5c | Outputs | ✅ | Mix OUT; GLOBAL Routing |  |
 | p.C-2 | Echo / gate / EQ / dynamix params 0x5d-0x60 | Master FX | ✅ | Mix cards |  |
 | p.C-3 | Set tempo 0x61; set LFO 0x62 | Tempo, LFO | ✅ | LCD tempo; Sound LFO |  |
-| p.C-3 | Reset MIDI note map 0x64 | Defaults | ❌ | None | Set each note by hand. |
+| p.C-3 | Reset MIDI note map 0x64 | Defaults | 🟡 | GLOBAL > Reset to defaults | Resets the whole active global (note map, channels, sync, routing) to the one the machine ships with, asked first; no map-only reset. |
 | p.C-3 | Trig group 0x65; mute group 0x66 | Relations | ✅ | Sound > Relations |  |
 | p.C-3 | Pattern dump 0x67 / request 0x68 | Pattern | ✅ | Whole page |  |
 | p.C-3 | Song dump 0x69 / request 0x6a; load song 0x6c | Song | ✅ | Song page |  |
@@ -389,12 +389,12 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | Status | Rows |
 |---|---|
 | ✅ Yes | 220 |
-| 🟡 Partial | 35 |
-| ❌ No | 25 |
+| 🟡 Partial | 36 |
+| ❌ No | 24 |
 | ➖ Not applicable | 16 |
 | Total | 296 |
 
-Of the 280 applicable rows, 220 are fully covered, 35 partly, 25 not at all.
+Of the 280 applicable rows, 220 are fully covered, 36 partly, 24 not at all.
 
 ### Top gaps (our UI), most important first
 
@@ -402,7 +402,7 @@ Of the 280 applicable rows, 220 are fully covered, 35 partly, 25 not at all.
 2. **Sample manager**: no send, erase, RAM to ROM copy, or sample clipboard (§11). The first and last are blocked by the machine; erase and clipboard are not.
 3. **Per-track LEVEL (LEV)**: the knob and its meter have no control; the command exists in the desk (§1, §2).
 4. **Swing pattern and per-track swing**: only the amount is editable (§8).
-5. **Sysex send and receive control**: export is all-or-nothing, no ranges; no specific-place receive; verify is not a dry run (§10).
+5. **Sysex send and receive control**: export is all-or-nothing, no ranges; no specific-place receive; verify is not a dry run (§10). The MIDI note map can only be reset with the whole global (Reset to defaults), not alone (§16).
 6. **Machine preview before loading** in the picker (§2).
 7. **Live-record erase** (EXIT + TRIG, EXIT + knob) and the tempo helpers (delayed change, +/-10 % nudge) (§8).
 8. **Trig in A/B pad settings** are shown but cannot be edited (§10).

@@ -1,0 +1,253 @@
+/* Review mockup (DESIGN-machine-menus.md): the additions of the "machine's menus" layout, on top of the approved
+   mockups. Only the page's own tokens (--plate --print --rule --lcd --ink --key --led --cream …) so both plates and
+   both editors read alike. --nx is the review colour: it marks what is new and is not part of the design. */
+:root{--nx:#2f7fe0}
+
+/* ---------- header: unchanged; the ▾ beside COPY CLR PASTE, a paused play key, the tempo while TEMPO is open ---------- */
+.lcdt .lt.paused{animation:blink .8s steps(2) infinite}
+.lcdsec .secmore{flex:none!important;padding:0 4px!important;opacity:1!important}
+.lcdpanel .f.tempof{background:color-mix(in srgb,var(--ink) 12%,transparent);border-radius:2px}
+.skey .led.on{background:var(--led)!important;box-shadow:0 0 6px 1px var(--led)!important}
+
+/* ---------- the GLOBAL page: the whole workspace area, a head with the 8 slots, the settings cards ---------- */
+.gpage{display:grid;gap:14px;align-content:start;padding:4px 2px 16px}
+.gphead{display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-bottom:2px solid var(--print);padding-bottom:10px}
+.gpname{font:600 24px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase;color:var(--print)}
+.gphead .gslots{display:flex;gap:4px}
+.gphead .gslots button{width:34px;height:30px;padding:0;font:500 13px var(--mono)}
+.gphead .gslots button[aria-pressed=true]{background:var(--cream);color:var(--creamtext)}
+.gpkeys{display:flex;gap:4px}
+.gphead button:not(.gslots button),.gpage .acts button,.songlib .slacts button,.gpage .mini{height:30px;padding:0 12px;font:600 11px var(--sans);letter-spacing:.14em;text-transform:uppercase;white-space:nowrap}
+.gpage .mini{height:22px;padding:0 8px;font-size:10px}
+.gphead .note{margin-right:auto;font-size:13px}
+.gphead .danger:hover,.songlib .danger:hover{background:var(--rec);color:#fff}
+.gpgrid{display:grid;gap:22px 28px;align-items:start}
+.gpgrid.settings{grid-template-columns:repeat(3,minmax(0,1fr))}
+.gpgrid.settings .wide{grid-column:span 2}
+.gpgrid .card{gap:10px}
+.gpgrid .grow2{display:flex;align-items:center;gap:10px;min-height:32px}
+.gpgrid .grow2 .ilab{min-width:120px}
+.gpage .cardnote{font-size:13px;color:var(--print3);line-height:1.4;margin:0}
+.gpage .acts{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.gpage .tag{font:600 10px var(--sans);letter-spacing:.14em;text-transform:uppercase;padding:2px 6px;border-radius:2px;box-shadow:inset 0 0 0 1px var(--print2);color:var(--print2);white-space:nowrap}
+.gpage .learn{width:8px;height:8px;border-radius:50%;display:inline-block;box-shadow:inset 0 0 0 1.5px currentColor;margin-left:6px;vertical-align:middle;opacity:.8}
+.gpage .learn.on{background:var(--led);box-shadow:0 0 5px 1px var(--led);opacity:1}
+.gpage .chans{display:grid;grid-template-columns:auto repeat(6,minmax(0,1fr));gap:4px 6px;align-items:center;font:12px var(--mono)}
+.gpage .chans b{font-weight:500;text-align:center;padding:4px 0;background:var(--plate3);box-shadow:inset 0 0 0 1px var(--rule);border-radius:2px;color:var(--print)}
+.gpage .chans b.off{color:var(--print3);background:transparent}
+.gpage .chans .rl{font:600 10px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--print2);padding-right:6px}
+.gpage .card.flash{animation:nxflash 1.2s 2}
+@keyframes nxflash{50%{box-shadow:0 0 0 3px var(--led)}}
+.gpage .stepper b{min-width:5ch;text-align:center}
+
+/* ---------- Song: the song slots column ---------- */
+.songui.withlib{grid-template-columns:300px minmax(320px,400px) minmax(0,1fr)!important}
+.songlib{border-top:0!important;padding-top:0!important;display:grid;gap:10px;align-content:start;padding-right:16px!important;border-right:2px solid var(--print)}
+.songlib .slacts{display:flex;gap:4px;flex-wrap:wrap}
+.songlib .slacts button{height:26px;padding:0 9px}
+.songlib .libgrid.songs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+.songlib .ls{padding:4px 7px}
+.songlib .lsn{height:16px;line-height:16px}
+.songlib .slfoot{font-size:12px;line-height:1.4}
+.scell.pfrom,.sblk.pfrom{outline:2px solid var(--led)!important;outline-offset:1px}
+
+/* ---------- Sequence: the trig-type selector (what a click paints) ---------- */
+:root{--swg:#15a39a}
+.ttrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;height:30px;margin-bottom:4px}
+.ttrow .ilab{min-width:0}
+.ttkeys{display:flex;gap:4px}
+.ttk{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;background:var(--key);color:var(--keytext);font:600 11px var(--sans);letter-spacing:.14em;text-transform:uppercase;box-shadow:inset 0 -2px 0 rgba(0,0,0,.35);border-radius:3px}
+.ttk small{font:500 9px var(--mono);letter-spacing:0;opacity:.6}
+.ttk .led{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.18)}
+.ttk[aria-checked=true] .led{background:var(--led);box-shadow:0 0 6px 1px var(--led)}
+.ttk[aria-checked=true]{background:var(--key2)}
+.ttk .ttm{display:inline-block;width:12px;height:9px;border-radius:1px}
+.ttk.trig .ttm{background:linear-gradient(var(--led),var(--led)) center/80% 3px no-repeat}
+.ttk.acc .ttm{background:linear-gradient(var(--led),var(--led)) center/100% 7px no-repeat}
+.ttk.sld .ttm{background:linear-gradient(135deg,transparent 55%,var(--keytext) 55%)}
+.ttk.swg .ttm{background:linear-gradient(60deg,transparent 42%,var(--swg) 42%,var(--swg) 62%,transparent 62%)}
+.ttall button{padding:1px 6px!important;font-size:11px!important}
+.ttrow .note{font-size:12px}
+.st.on.sw::before{content:"";position:absolute;left:4px;bottom:4px;width:9px;height:9px;background:linear-gradient(60deg,transparent 40%,var(--swg) 40%,var(--swg) 64%,transparent 64%)}
+.st.on.sw.lk::before{left:4px}
+.st{position:relative}
+html[data-tt=acc] #seq .st,html[data-tt=swg] #seq .st,html[data-tt=sld] #seq .st{cursor:cell}
+html[data-tt=swg] #seq .st:not(.sw){opacity:.82}
+.th.ttdot{position:relative}
+.th .takes{position:absolute;right:-7px;top:50%;transform:translateY(-50%);width:9px;height:9px;padding:0;border-radius:50%;background:transparent;box-shadow:inset 0 0 0 1.5px var(--print2);z-index:2}
+.th .takes[aria-pressed=true]{background:var(--swg);box-shadow:0 0 0 1px var(--plate)}
+html[data-tt=acc] .th .takes[aria-pressed=true]{background:var(--led)}
+html[data-tt=sld] .th .takes[aria-pressed=true]{background:var(--print)}
+/* MM: the same selector above the roll; slide and swing as marks along the roll's foot */
+.tlane.sld,.tlane.swg{display:none!important}
+.rollmk{position:absolute;bottom:2px;height:9px;pointer-events:none;z-index:3}
+.rollmk.sld{background:linear-gradient(135deg,transparent 52%,var(--print) 52%)}
+.rollmk.swg{background:linear-gradient(60deg,transparent 40%,var(--swg) 40%,var(--swg) 64%,transparent 64%)}
+html[data-tt=sld] .nlane.big,html[data-tt=swg] .nlane.big{cursor:cell}
+
+/* ---------- Mix: LEV above VOL ---------- */
+.levk{display:grid;grid-template-columns:1fr 5px;gap:4px;align-items:center;height:30px;padding:2px 5px;border-radius:2px;box-shadow:inset 0 0 0 1px var(--rule);cursor:ns-resize}
+.levk small{font:600 9px var(--sans);letter-spacing:.14em;color:var(--print2);display:block;line-height:1}
+.levk b{font:500 12px var(--mono);color:var(--print);line-height:1.2}
+.levk .levbar{height:100%;background:var(--plate3);border-radius:1px;position:relative;overflow:hidden;box-shadow:inset 0 0 0 1px var(--rule)}
+.levk .levbar i{position:absolute;left:0;right:0;bottom:0;background:var(--print)}
+
+/* ---------- Sound: the LFO card menu, the machine picker's audition ---------- */
+.lfocard header .lfomenu{height:22px;padding:0 8px;font:600 12px var(--mono);margin-left:8px}
+.mk{position:relative}
+.mk .aud{position:absolute;right:4px;top:4px;width:18px;height:18px;font-size:8px;line-height:18px;text-align:center;border-radius:50%;background:var(--plate3);color:var(--print);box-shadow:inset 0 0 0 1px var(--rule);cursor:pointer}
+.mk.auditioning{outline:2px solid var(--led);outline-offset:1px}
+.mk.auditioning .aud{background:var(--led);color:#fff;box-shadow:none}
+.audbar{grid-column:1/-1;display:flex;gap:8px;align-items:center;padding:8px 10px;border-radius:3px;background:var(--lcd);color:var(--ink);font:11px var(--pix);text-transform:uppercase}
+.audbar span{margin-right:auto}
+.audbar kbd{font:10px var(--mono);padding:2px 5px;border-radius:2px;box-shadow:inset 0 0 0 1px var(--ink);text-transform:none}
+.audhint{grid-column:1/-1;font-size:12px}
+
+/* ---------- TEMPO window: a small panel under the tempo value ---------- */
+.tempopop{position:fixed;z-index:62;width:390px;display:grid;gap:10px;padding:12px 14px;background:var(--plate);color:var(--body,var(--print));border:2px solid var(--print);border-radius:6px;box-shadow:0 18px 40px rgba(0,0,0,.35)}
+.tempopop::before{content:"";position:absolute;top:-8px;left:var(--ax,40px);width:12px;height:12px;background:var(--plate);border-left:2px solid var(--print);border-top:2px solid var(--print);transform:rotate(45deg)}
+.tempopop .th1{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--rule);padding-bottom:8px}
+.tempopop .th1 .cap{margin-right:auto}
+.tempopop .bpmrow{display:flex;align-items:center;gap:8px}
+.tempopop .bpmbig{font:26px var(--pix);background:var(--lcd);color:var(--ink);padding:6px 10px;border-radius:3px;min-width:6ch;text-align:right}
+.tempopop .bpmrow small{font:600 11px var(--sans);letter-spacing:.14em;color:var(--print2)}
+.tempopop button{white-space:nowrap;height:30px;padding:0 10px;font:600 11px var(--sans);letter-spacing:.12em;text-transform:uppercase}
+.tempopop .sq{width:30px;padding:0;font:600 16px var(--mono)}
+.tempopop .tap{margin-left:auto;height:38px;width:64px}
+.tempopop .tap kbd,.tempopop .tr kbd{font:400 10px var(--mono);opacity:.7;margin-left:4px}
+.tempopop .tr{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--print2)}
+.tempopop .tr .ilab{min-width:58px}
+.tempopop .tr .hold{font:11px var(--mono);color:var(--print3);margin-left:auto}
+.tempopop label.tr{cursor:pointer}
+.tempopop label.tr input{accent-color:var(--led)}
+.tempopop .tnote{font-size:12px;color:var(--print3);line-height:1.35;border-top:1px solid var(--rule);padding-top:7px}
+.tempopop .nudging{background:var(--print);color:var(--plate)}
+
+/* ---------- the "what" dialog (COPY / CLEAR / PASTE what) ---------- */
+.dlgbox.what{max-width:560px;gap:12px}
+.dlgbox.what h3{margin:0;font:600 14px var(--sans);letter-spacing:.18em;text-transform:uppercase}
+.dlgbox.what .src{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--print2)}
+.dlgbox.what .src .lcdchip{font-size:11px}
+.dlgbox.what .whatgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 18px}
+.dlgbox.what label{display:flex;gap:9px;align-items:center;font:500 14px var(--sans);color:var(--print)}
+.dlgbox.what label small{font:11px var(--mono);color:var(--print3);margin-left:auto}
+.dlgbox.what input{accent-color:var(--led);width:15px;height:15px}
+.dlgbox.what .to{display:flex;gap:3px;flex-wrap:wrap;align-items:center}
+.dlgbox.what .to button{width:26px;height:24px;padding:0;font:500 11px var(--mono)}
+.dlgbox.what .to button[aria-pressed=true]{background:var(--cream);color:var(--creamtext)}
+.dlgbox.what .fine{font-size:12px;color:var(--print3);line-height:1.4;margin:0}
+.dlgbox.what .btnrow{justify-content:flex-end}
+
+/* ---------- MM: step recording on the roll ---------- */
+.lcdt .lt.rec.step{background:var(--ink)!important;color:var(--lcd)!important;animation:none!important}
+.lcdt .lt.rec .stepm{font:9px var(--pix);margin-left:2px}
+.steprec{display:flex;gap:10px;align-items:center;padding:6px 10px;margin:0 0 6px;border-radius:3px;background:var(--lcd);color:var(--ink);font:11px var(--pix);text-transform:uppercase}
+.steprec span{margin-right:auto}
+.steprec kbd{font:10px var(--mono);padding:2px 5px;border-radius:2px;box-shadow:inset 0 0 0 1px var(--ink);text-transform:none}
+.stepcur{position:absolute;pointer-events:none;z-index:5;border:2px solid var(--led);box-shadow:0 0 0 1px var(--plate),0 0 10px 1px var(--led);border-radius:2px;animation:blink 1s steps(2) infinite}
+.stepcur::after{content:attr(data-l);position:absolute;top:-17px;left:-2px;font:9px var(--pix);background:var(--led);color:#fff;padding:2px 4px;border-radius:2px;white-space:nowrap}
+.rollsel{position:absolute;pointer-events:none;z-index:4;background:color-mix(in srgb,var(--led) 18%,transparent);border:1.5px dashed var(--led);border-radius:2px}
+
+/* ---------- the toast with a key (B-026 "Set channels…") ---------- */
+.nxtoast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:70;display:flex;gap:14px;align-items:center;background:var(--lcd);color:var(--ink);font:12px var(--pix);padding:8px 8px 8px 16px;border-radius:3px;box-shadow:0 10px 24px rgba(0,0,0,.3);max-width:calc(100vw - 32px)}
+.nxtoast button{all:unset;cursor:pointer;font:11px var(--pix);text-transform:uppercase;padding:6px 10px;border-radius:2px;background:var(--ink);color:var(--lcd)}
+.nxtoast .x{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+
+/* ---------- the REVIEW strip (not part of the design) ---------- */
+.nxrev{position:fixed;left:12px;bottom:12px;z-index:200;width:300px;max-height:calc(100vh - 24px);display:grid;grid-template-rows:auto minmax(0,1fr) auto;background:#fbfbf8;color:#1d1e1b;border:2px solid var(--nx);border-radius:6px;box-shadow:0 14px 34px rgba(0,0,0,.35);font:500 13px/1.3 var(--sans)}
+.nxrev.min{width:auto;grid-template-rows:auto}
+.nxrev.min .nxlist,.nxrev.min .nxnote{display:none}
+.nxrev .nxh{display:flex;align-items:center;gap:8px;padding:6px 8px 6px 10px;border-bottom:1px solid #d7d8d2}
+.nxrev.min .nxh{border-bottom:0}
+.nxrev .nxh b{font:600 12px var(--sans);letter-spacing:.2em;color:var(--nx);margin-right:auto}
+.nxrev button{all:unset;cursor:pointer;box-sizing:border-box}
+.nxrev .nxh button{font:600 10px var(--sans);letter-spacing:.14em;text-transform:uppercase;padding:3px 7px;border-radius:3px;box-shadow:inset 0 0 0 1px #c4c5bf;color:#3a3b36}
+.nxrev .nxh button[aria-pressed=true]{background:var(--nx);color:#fff;box-shadow:none}
+.nxrev .nxlist{overflow:auto;padding:4px;display:grid;gap:1px;align-content:start}
+.nxrev .nxlist .grp{font:600 10px var(--sans);letter-spacing:.18em;text-transform:uppercase;color:#8d8e87;padding:7px 6px 2px}
+.nxrev .nxlist button{display:grid;grid-template-columns:22px 1fr;gap:6px;padding:4px 6px;border-radius:3px;font:500 13px var(--sans)}
+.nxrev .nxlist button small{font:10px var(--mono);color:#8d8e87;text-align:right}
+.nxrev .nxlist button:hover{background:#ecece6}
+.nxrev .nxlist button[aria-current=true]{background:var(--nx);color:#fff}
+.nxrev .nxlist button[aria-current=true] small{color:#dfe9fb}
+.nxrev .nxnote{padding:7px 10px 9px;border-top:1px solid #d7d8d2;font:400 12px/1.4 var(--mono);color:#3a3b36;min-height:52px}
+.nxrev .nxnote b{font-weight:500;color:var(--nx)}
+html.nxchg .nx{outline:1.5px dashed var(--nx)!important;outline-offset:2px}
+html.nxchg .nxi{box-shadow:inset 0 0 0 1.5px var(--nx)!important}
+@media print{.nxrev{display:none}}
+.songlib .libgrid.songs{max-height:calc(100vh - 330px);overflow:auto;align-content:start;padding:2px}
+.songlib .ls{grid-template-columns:auto 1fr;column-gap:8px;align-items:center;padding:4px 7px}
+.songlib .ls .lsh{grid-row:1/3}
+.songlib .ls .lsl{grid-column:2;min-height:0}
+.songui.withlib>.songlib{align-self:start!important;align-content:start!important;grid-template-rows:none!important;height:auto!important;grid-row:1/-1}
+
+/* ---------- the SysEx panel (deskSyx): Export with kinds and ranges, Import's PLACE row ---------- */
+.syx-export .sxall,.syx-export .sxlist{display:grid;gap:2px;padding:0 2px}
+.syx-export .sxall{border-bottom:2px solid var(--print);padding-bottom:4px}
+.sxrow{display:grid;grid-template-columns:18px 110px 210px 1fr auto;gap:12px;align-items:center;padding:8px 6px;border-bottom:1px solid var(--rule);font-size:14px;color:var(--print);cursor:pointer}
+.sxrow b{font:600 13px var(--sans);letter-spacing:.14em;text-transform:uppercase}
+.sxrow small{font:12px var(--mono);color:var(--print3)}
+.sxrow input{accent-color:var(--led);width:15px;height:15px}
+.sxrow input:disabled+b{opacity:.5}
+.sxrng{display:flex;gap:6px;align-items:center;font:12px var(--mono);color:var(--print2)}
+.sxv{height:24px;padding:0 8px;font:500 12px var(--mono);letter-spacing:0;cursor:ns-resize}
+.sxrow .tag,.sxplace .tag{font:600 10px var(--sans);letter-spacing:.14em;text-transform:uppercase;padding:2px 6px;border-radius:2px;box-shadow:inset 0 0 0 1px var(--print2);color:var(--print2)}
+.sxplace{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:8px 2px;border-top:1px solid var(--rule)}
+.sxplace .ilab{min-width:0}
+.sxplace .note{font-size:13px}
+.sxfirst{font:12px var(--mono);color:var(--print2);display:flex;gap:6px;align-items:center}
+.sxrow .tag,.sxplace .tag,.gpage .tag{background:transparent!important;color:var(--print2)!important;box-shadow:inset 0 0 0 1px var(--print2)!important}
+.seg.pmode{gap:6px}.seg.pmode button{font-size:13px!important;padding:3px 6px!important;letter-spacing:.14em}
+.songleft .pnote{font-size:12px;margin:2px 0 0}
+.dlgbox.what .whatgrp{display:grid;gap:6px;border-top:1px solid var(--rule);padding-top:8px}
+.dlgbox.what .whatgrp h4{margin:0;display:flex;gap:10px;align-items:baseline;font:600 11px var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--print2)}
+.dlgbox.what .whatgrp h4 small{font:11px var(--mono);letter-spacing:0;text-transform:none;color:var(--print3)}
+.dlgbox.what label small{font:12px var(--mono);color:var(--print2);margin-left:auto}
+.gpage .chans b.chip{background:transparent!important;box-shadow:none!important;border-radius:10px;padding:2px 0;font:500 13px var(--mono);color:var(--print)}
+.gpage .chans b.chip::before{content:"CH ";font-size:10px;color:var(--print3)}
+.gpage .chans b.chip.off{color:var(--print3)}
+
+/* round 2: pressed PAINT and mode keys = the workspace key's light "on" plate */
+.ttk[aria-checked=true]{background:var(--cream)!important;color:var(--creamtext)!important;box-shadow:inset 0 -2px 0 rgba(0,0,0,.2)!important}
+.ttk[aria-checked=true] small{opacity:.7}
+.ttk.sld[aria-checked=true] .ttm{background:linear-gradient(135deg,transparent 55%,var(--creamtext) 55%)}
+.legend i.lg.sw{background-image:linear-gradient(var(--led),var(--led)),linear-gradient(60deg,transparent 40%,var(--swg) 40%,var(--swg) 64%,transparent 64%);background-size:62% 3px,9px 9px;background-position:center 2px,3px 5px}
+.rollcol{position:absolute;top:0;bottom:0;pointer-events:none;z-index:2;background:color-mix(in srgb,var(--swg) 16%,transparent);box-shadow:inset 0 0 0 1.5px var(--swg)}
+html[data-tt=sld] .rollcol{background:color-mix(in srgb,var(--print) 10%,transparent);box-shadow:inset 0 0 0 1.5px var(--print2)}
+.pmodekeys{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-start;width:100%}
+.pmodekeys .pkey{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;background:var(--key);color:var(--keytext);font:600 13px var(--sans);letter-spacing:.16em;text-transform:uppercase;border-radius:3px;box-shadow:inset 0 -2px 0 rgba(0,0,0,.35)}
+.pmodekeys .pkey .led{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.2)}
+.pmodekeys .pkey[aria-checked=true]{background:var(--cream);color:var(--creamtext);box-shadow:inset 0 -2px 0 rgba(0,0,0,.2)}
+.pmodekeys .pkey[aria-checked=true] .led{background:var(--led);box-shadow:0 0 6px 1px var(--led)}
+.pmodekeys .note{font-size:12px;margin-left:6px}
+.songui.withlib{grid-template-columns:330px minmax(340px,410px) minmax(0,1fr)!important}
+.songlib .slacts{display:flex;gap:8px;flex-wrap:wrap}
+.songlib .sgrp{display:flex;gap:3px}
+.songlib .slacts button{height:26px;padding:0 7px;font-size:10px;letter-spacing:.1em}
+.songlib .slacts button:disabled{opacity:.35;cursor:default}
+.songlib .ls.empty{background:transparent!important;box-shadow:none!important;border:1px dashed var(--rule);color:var(--print3);opacity:.7}
+.songlib .ls.empty .lsh b{font-weight:400}
+.chainfoot .note,.songleft .chainacts+.note{font-size:12px}
+.songui.withlib{grid-template-columns:366px minmax(340px,400px) minmax(0,1fr)!important}
+.songlib .slacts{flex-wrap:nowrap;gap:10px}
+.songlib .slacts button{padding:0 6px;letter-spacing:.06em}
+/* round 3: the legend under the grid (MD) and the row under the roll (MM) are the PAINT selector */
+.ttlegend{gap:10px!important;align-items:center}
+.ttlegend .ttkeys,.ttunder .ttkeys{display:flex;gap:4px}
+.ttlegend .ttk,.ttunder .ttk{height:24px;padding:0 9px 0 5px;gap:6px;background:transparent;color:var(--print2);box-shadow:inset 0 0 0 1px var(--rule)!important;font:500 13px var(--sans);letter-spacing:0;text-transform:none;border-radius:3px}
+.ttlegend .ttk:hover,.ttunder .ttk:hover{background:var(--plate3)}
+.ttlegend .ttk[aria-checked=true],.ttunder .ttk[aria-checked=true]{background:var(--cream)!important;color:var(--creamtext)!important;box-shadow:inset 0 -2px 0 rgba(0,0,0,.2)!important}
+.ttlegend .ttk i.lg{margin:0}
+.ttlegend .lgplain{display:inline-flex;gap:6px;align-items:center;margin-left:4px}
+.ttlegend .ttall{margin-left:6px}
+.ttunder{height:30px;margin:4px 0 0;padding-left:50px}
+.ttunder .ttk .ttm{display:inline-block;width:12px;height:9px}
+.ttunder .note{font-size:12px}
+/* final review: one-line GLOBAL head; audition ▶ only where it matters; Export ALL hides the kinds */
+.gphead{flex-wrap:nowrap!important;white-space:nowrap}
+.gphead .gpsp{flex:1 1 auto}
+.gphead .gpname{font-size:22px}
+.mk .aud{opacity:0;transition:opacity .1s}
+.mk:hover .aud,.mk:focus-visible .aud,.mk:focus .aud,.mk.auditioning .aud{opacity:1}
+.syx-export.sxallon .sxlist{display:none}
+.syx-export .sxv{display:inline-block;padding:3px 8px;font:500 12px var(--mono);background:var(--plate3);box-shadow:inset 0 0 0 1px var(--rule);border-radius:2px;cursor:ns-resize;color:var(--print)}

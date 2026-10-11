@@ -1,6 +1,6 @@
 # Feature map: Monomachine manual against the Monomachine Editor
 
-Manual: Monomachine SFX-6 / SFX-60 / SFX-60 MKII / SFX-60+ MKII user's manual, OS 1.32, rev H (`doc/manuals/monomachine-manual.pdf`, 158 pages). Date of this map: 2026-10-10. Code read: `main` at 0.4.0 (`ec0fbce63`).
+Manual: Monomachine SFX-6 / SFX-60 / SFX-60 MKII / SFX-60+ MKII user's manual, OS 1.32, rev H (`doc/manuals/monomachine-manual.pdf`, 158 pages). Date of this map: 2026-10-10, re-checked 2026-10-11. Code read: `main` at 0.5.0+ (`7abb268cb`; first written against 0.4.0, `ec0fbce63`).
 
 **The question per row:** does our web page (the editor, not the firmware's LCD or panel) let the person do this?
 
@@ -11,9 +11,9 @@ Manual: Monomachine SFX-6 / SFX-60 / SFX-60 MKII / SFX-60+ MKII user's manual, O
 - ❌ No: the page has no control for it.
 - ➖ N/A: hardware only (power, jacks, rack, test mode) or not a function of an editor.
 
-**Notes column** says how the firmware side stands. The shipped product has no emulated front panel or LCD: the page is the only UI (`mdEditorPages.h`; the panel skin `mmSfx60` is out of the build). The editor presses panel keys itself where it must (PLAY, STOP, RECORD, the MUTE window, BANK + TRIG for chains, SYSEX RECV). So "firmware does it" means the real OS does the work once the page, MIDI or a SysEx dump asks. On the HW MIDI engine the real machine's own panel can do what the page cannot.
+**Notes column** says how the firmware side stands. The shipped product has no emulated front panel or LCD: the page is the only UI (`mdEditorPages.h`; the panel skin `mmSfx60` is out of the build). The editor presses panel keys itself where it must (PLAY, STOP, RECORD, the MUTE window, BANK + TRIG for chains, SYSEX RECV). So "firmware does it" means the real OS does the work once the page, MIDI or a SysEx dump asks. The editor has no route to the machine's own panel: over HW MIDI it can send only Start and Stop.
 
-"Where" names the workspace (Sequence, Sound, Mix, Perform, Song; Control is hidden unless the plug-in enables MIDI mapping) or the header (LCD fields, kit library, pattern chooser, SysEx panel, AUDIO / MIDI panel). Every claim marked ✅ or 🟡 was checked in the page source (`doc/modern-ux/mm-mockup/src/*`, built into `skins/mmStudio/mmMockup.js`, plus `mmAdapter.js`) and the desk (`mmDesk/mmDeskModel.cpp` command table, `mmDeskEdit.cpp`, `mmDeskCommands.cpp`). The older `mm-manual-mapping.md` was design-time and is stale in places (chaining, rotate, tap tempo and live recording are now built).
+"Where" names the workspace (Sequence, Sound, Mix, Perform, Song; Control is hidden unless the plug-in enables MIDI mapping) or the header (LCD fields, kit library, pattern chooser, SysEx panel, AUDIO / MIDI panel). Every claim marked ✅ or 🟡 was checked in the page source (`doc/modern-ux/mm-mockup/src/*`, built into `skins/mmStudio/mmMockup.js`, plus `mmAdapter.js`) and the desk (`mmDesk/mmDeskModel.cpp` command table, `mmDeskEdit.cpp`, `mmDeskCommands.cpp`). The older `mm-manual-mapping.md` was design-time and is stale in places (chaining, rotate, tap tempo, live recording, step selection and the GLOBAL panel are now built).
 
 Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 
@@ -48,10 +48,10 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Front panel 1-4 | 6 TRACK keys, mute / unmute (FUNCTION) | Mute a track | ✅ | M key per track, Perform > Mutes, key M | Shift + M prepares mutes |
 | Front panel 1-4 | 6 TRACK LED colours | Active, muted, in focus | 🟡 | Rail row dims when muted, selected row lit | |
 | Front panel 1-4 | 7 TEMPO key, tempo window | Tempo screen | ✅ | LCD > TEMPO (drag, arrows) | |
-| Front panel 1-4 | 7 Tap tempo (FUNCTION + TEMPO) | Tap | ✅ | Key B | |
+| Front panel 1-4 | 7 Tap tempo (FUNCTION + TEMPO) | Tap | ✅ | Key B (off Sequence), Shift+B on every workspace | On Sequence B is the piano roll's Draw, so tap with Shift+B |
 | Front panel 1-4 | 8 FUNCTION key (secondary functions) | Modifier | ➖ | – | Replaced by Alt, Shift, Cmd and buttons |
 | Front panel 1-4 | 9 KIT / SONG key | Kit menu or song menu | ✅ | LCD > KIT (kit library); Song workspace | |
-| Front panel 1-4 | 9 GLOBAL (FUNCTION + KIT / SONG) | Global menu | ❌ | – | The AUDIO / MIDI panel has a GLOBAL link, but it is hidden: no global panel exists |
+| Front panel 1-4 | 9 GLOBAL (FUNCTION + KIT / SONG) | Global menu | ✅ | Top bar GLOBAL key; GLOBAL... in the engine menu | One panel shared with the Machinedrum Editor: 8 slots, MIDI channels, sync, routing, Reset to defaults. See section 19 |
 | Front panel 1-5 | 10 TRIG keys as keyboard | Play notes | ✅ | Home-row keys A-L and W-P, on-screen keyboard (Perform), roll keys | |
 | Front panel 1-5 | 10 Velocity 80, or 127 with FUNCTION | Key velocity | ✅ | Keys C / V (20 40 60 80 100 127) | |
 | Front panel 1-5 | 10 TRIG keys edit notes in grid mode | Step trigs | ✅ | Roll click, ENV dots | |
@@ -117,7 +117,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Live recording 1-13 | Record notes in real time, quantised | Live record | ✅ | Alt + Space, record key | Quantising done by firmware |
 | Live recording 1-13 | Erase with EXIT while notes sound | Live erase | ❌ | – | Not in the page |
 | Parameter locks 1-13 | Lock a value on a step | P-lock | ✅ | Lock lane (draw bars), wheel on a step | |
-| Parameter locks 1-14 | Record locks live by turning a knob | Live lock | 🟡 | Value boxes while live recording | Firmware records; the page does not mark the step getting the lock |
+| Parameter locks 1-14 | Record locks live by turning a knob | Live lock | ✅ | Value boxes while live recording; the step that gets the lock is marked | OS 1.32B locks the step that plays when the value arrives, a trigless step included; the page lights that cell and the lane bar for 3 s. MIDI page (NRPN) values are not marked |
 | Parameter locks 1-14 | Remove one lock; remove all locks of a trig | Clear locks | 🟡 | Lane: Alt-drag erases one parameter's steps; delete note clears its locks | No single "clear all locks of this one step" key |
 
 ## 5. Monomachine overview (1-15, 1-16)
@@ -242,10 +242,10 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes |
 |---|---|---|---|---|---|
-| Grid recording 1-47 | Trig on / off | Step trig | ✅ | Roll click | |
+| Grid recording 1-47 | Trig on / off | Step trig | ✅ | Roll click with Draw on (B); double-click with Draw off, ENV dots | A new note lasts the Len key's draw length (NOTE OFF on synth tracks, LEN on MIDI tracks) |
 | Grid recording 1-48 | Pitch of a trig | Note | ✅ | Roll vertical position | |
 | Grid recording 1-48 | Octave shift (FUNCTION + arrows) | Octave | ✅ | Roll drag; wheel + Shift = octave | |
-| Grid recording 1-48 | NOTE OFF trig | Note off | ✅ | Alt-click; drag bar end | |
+| Grid recording 1-48 | NOTE OFF trig | Note off | ✅ | Alt-click; drag bar end | A note also ends where it was drawn (draw length) |
 | Grid recording 1-48 | Chords | Chord | ✅ | Shift-click in the roll | Same-length notes on MIDI tracks |
 | Grid recording 1-49 | Rotate trigs and locks (FUNCTION + arrows) | Rotate | ✅ | Alt + Left / Right | `rotate` op |
 | Grid recording 1-49 | Copy / clear / paste act on the track in grid mode | Scope | ✅ | LCD COPY / CLR / PASTE | Page shown of the selected track |
@@ -253,12 +253,12 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Live recording 1-49 | Chords recorded | Live chords | 🟡 | Played one key at a time | |
 | Live recording 1-49 | Erase with EXIT | Live erase | ❌ | – | |
 | Step recording 1-50 | Step-by-step input | Step rec | ❌ | – | Roll painting is the page's way |
-| Note copy 1-50 | Copy one trig with locks to another step | Note copy | ❌ | – | Selection and drop-copy not built (I-001) |
-| Clear note parameter locks 1-50 | Clear locks of one note, undoable | Clear locks | 🟡 | Lane Alt-drag per parameter; Alt + lane clear for a track | No per-step "all locks" key |
-| Track page copy 1-51 | Copy a page to another page | Page copy | 🟡 | COPY on page shown, PASTE on another page | When "All" is on it copies every step |
+| Note copy 1-50 | Copy one trig with locks to another step | Note copy | ✅ | Select a step (Cmd-click, Cmd-drag, ruler), Cmd+C / V, Cmd-drag drops a copy, Cmd+D, step menu (right-click) | Copy carries notes, NOTE OFFs, envelope trigs, slide and locks; synth steps paste onto synth tracks, MIDI onto MIDI |
+| Clear note parameter locks 1-50 | Clear locks of one note, undoable | Clear locks | 🟡 | Lane Alt-drag per parameter; Alt + lane clear for a track | Step menu Clear / Delete removes the selected steps with their locks; no locks-only clear of one step |
+| Track page copy 1-51 | Copy a page to another page | Page copy | ✅ | Cmd+C with nothing selected copies the page shown; Cmd+V on another page; Shift-click headers = paste to many | COPY PAGE then PASTE PAGE stays a page operation. Copied steps (a selection) paste only those steps (B-057) |
 | Clear track page 1-51 | Clear a page | Page clear | ✅ | CLR with a page shown | |
-| Track copy 1-52 | Track data to another track incl. machine, arp, transpose, swing, slide | Track copy | 🟡 | Page copy with "All" copies steps, slide and locks; machine through Sound COPY | No single whole-track copy, and not arp / transpose / swing |
-| Clear track 1-53 | Clear a track | Track clear | 🟡 | CLR with "All"; Alt + lane clear for locks | |
+| Track copy 1-52 | Track data to another track incl. machine, arp, transpose, swing, slide | Track copy | 🟡 | Select the track's steps (ruler drag, ALL view, Cmd+A for the six), Cmd+C, Cmd+V; machine through Sound COPY | Copies notes, slides and locks of one track or a block of tracks; not arp, transpose or swing |
+| Clear track 1-53 | Clear a track | Track clear | 🟡 | Select the track's steps, Delete; Alt + lane clear for locks; Alt + Delete = whole pattern | Delete clears only the selection and says so when none is selected |
 | Pattern copy 1-53 | Whole pattern incl. kit link and MIDI tracks | Pattern copy | ✅ | Pattern chooser Copy / Paste, drag a slot | |
 | Clear pattern 1-54 | Clear all, keep kit link | Pattern clear | ✅ | Alt + CLR, chooser Clear | Keeps the kit link |
 | Super copy 1-54 | Choose what to copy (melody, machine) | Super copy | ❌ | – | No melody copy |
@@ -272,8 +272,8 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Tempo screen 1-56 | Integer and decimal tempo | Edit tempo | ✅ | Drag, arrows, Shift = 0.1 | 30-300 BPM |
 | Tempo screen 1-56 | Delay change until FUNCTION released | Delayed change | ❌ | – | |
 | Tempo screen 1-56 | Temporary +/-10 % shift | Nudge | ❌ | – | |
-| Tap tempo 1-56 | Average of taps | Tap | ✅ | Key B | |
-| External synchronisation 1-56 | Internal or external MIDI clock; EXT shown | Sync | 🟡 | In a DAW the machine follows the host automatically (`followHost`) | No switch for TEMPO SYNC; see Control In |
+| Tap tempo 1-56 | Average of taps | Tap | ✅ | Key B (off Sequence), Shift+B everywhere | |
+| External synchronisation 1-56 | Internal or external MIDI clock; EXT shown | Sync | ✅ | GLOBAL > Sync > Tempo in (INT / EXT); automatic in a DAW (`followHost`) | |
 | Tempo 1-57 | Songs store tempo changes | Song tempo | ✅ | Song row Tempo | |
 
 ## 13. Parameter locks (1-57, 1-58)
@@ -284,10 +284,10 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Locks in grid mode 1-57 | Click a knob to lock its current value | Lock to current | 🟡 | Lane draw sets any value | No "lock current" click |
 | Locks in grid mode 1-57 | View locks of a step | View | ✅ | Lane shows bars per parameter | |
 | Locks in grid mode 1-57 | Remove one / all locks of a step | Remove | 🟡 | See section 11 | |
-| Locks in grid mode 1-57 | Note copy and paste | Note copy | ❌ | – | |
+| Locks in grid mode 1-57 | Note copy and paste | Note copy | ✅ | Selection and step menu | See section 11 |
 | Locks 1-58 | 62 locked parameters per pattern, pooled | Lock budget | ✅ | LCD LOCKS nn/62; lane budget | Blocks a 63rd |
 | Locks 1-58 | Parameter locked once can hold a value on every step | Lane | ✅ | Lock lane | |
-| Locks in live recording 1-58 | Locks recorded while turning knobs | Live locks | 🟡 | Firmware records | Marker for the target step is missing |
+| Locks in live recording 1-58 | Locks recorded while turning knobs | Live locks | ✅ | Value boxes; the target step is marked | See section 4 |
 | Locks in live recording 1-58 | Edit afterwards in grid mode | Fine tune | ✅ | Lock lane | |
 
 ## 14. Advanced sequencer control (1-58 to 1-60)
@@ -328,7 +328,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Mute mode 1-67 | Mute window, 6 + 6 | Mutes | ✅ | Perform > Mutes; rail M | MIDI mutes through the MUTE window keys |
 | Mute mode 1-67 | Held changes until FUNCTION released | Prepared mutes | ✅ | Shift + M prepares, applies on release | |
 | Mute mode 1-68 | Minimise the window | Small window | ➖ | – | Page |
-| Mute mode 1-68 | Mutes are global and remembered | Persistence | ✅ | Machine holds them | Refused when channel span is 0 (B-026) |
+| Mute mode 1-68 | Mutes are global and remembered | Persistence | ✅ | Machine holds them | A mute refused for lack of a MIDI channel shows a notice with one key (Give each track its own channel: span 6, base 1 when needed); GLOBAL > Control (B-026, B-051) |
 | Poly mode 1-69 | Six voices on the track in focus | Poly | ✅ | Perform > Poly | |
 
 ## 16. The MIDI sequencer (1-70 to 1-72)
@@ -395,21 +395,21 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes |
 |---|---|---|---|---|---|
-| Global slots 1-87 | 8 global slots; select, copy, paste, clear | Global slots | ❌ | – | The core holds all 8; the page has no global panel (MM-PARITY) |
+| Global slots 1-87 | 8 global slots; select, copy, paste, clear | Global slots | 🟡 | GLOBAL panel: slot keys 1-8, Reset to defaults | Select a slot (SET ACTIVE GLOBAL 0x56) and reset the active one to the factory global (asked first). No copy, paste or clear of slots |
 | Turbo menu 1-87, 1-88 | TURBO negotiate speed | MIDI speed | ➖ | – | The emulator's own transfers use it internally; no cable to negotiate |
-| Audio > Master tune 1-88 | 440.0 Hz default | Master tune | ❌ | – | Value is in the global document only |
+| Audio > Master tune 1-88 | 440.0 Hz default | Master tune | ❌ | – | In the global document only; not in the GLOBAL panel |
 | Audio > Routing 1-89 | Three routing modes | Routing | ✅ | Mix routing bar | |
-| Control > MIDI channels 1-89 | Base channel | Base | ❌ | – | Shown as text only; mutes are refused if span is 0 and nothing in the page fixes it |
-| Control > MIDI channels 1-90 | Channel span | Span | ❌ | – | |
-| Control > MIDI channels 1-90 | Multi trig channel | Multi trig ch | ❌ | – | Page text says 7 |
-| Control > MIDI channels 1-90 | Multi map channel | Multi map ch | ❌ | – | Page text says 8 |
-| Control > MIDI channels 1-90 | Auto track channel | Auto ch | ❌ | – | Page text says 9 |
+| Control > MIDI channels 1-89 | Base channel | Base | ✅ | GLOBAL > Control > Base channel (OFF, 1-16) | Track t listens on base + t while t < span |
+| Control > MIDI channels 1-90 | Channel span | Span | ✅ | GLOBAL > Control > Channel span (0-16) | 0: no track has a channel; the panel warns which tracks are out |
+| Control > MIDI channels 1-90 | Multi trig channel | Multi trig ch | ✅ | GLOBAL > Control > Multi trig | |
+| Control > MIDI channels 1-90 | Multi map channel | Multi map ch | ✅ | GLOBAL > Control > Multi map | |
+| Control > MIDI channels 1-90 | Auto track channel | Auto ch | ✅ | GLOBAL > Control > Auto track | |
 | MIDI functionality 1-90 | NRPN control, program change selects pattern | MIDI in | ➖ | – | Firmware; automation and DAW MIDI reach it |
-| Control out 1 1-91 | SEQUENCER, ARP, KEYBOARD to INT / OUT / INT+OUT | Output routing | ❌ | – | |
-| Control out 2 1-92 | TRANSPORT, MIDI CLOCK, PRG CHANGE out | Output control | ❌ | – | Machine MIDI out reaches the host since 0.4.0 |
-| Control in 1-92 | TEMPO SYNC internal / external | Sync | 🟡 | Automatic in a DAW (`followHost`) | No switch |
-| Control in 1-92 | TRANSPORT ACCEPT / IGNORE | Transport in | 🟡 | Asked once when PLAY needs it; automatic in a DAW | |
-| Control in 1-93 | PRG CHANGE in | Program change in | ❌ | – | |
+| Control out 1 1-91 | SEQUENCER, ARP, KEYBOARD to INT / OUT / INT+OUT | Output routing | ❌ | – | Not decoded in the global; not in the panel |
+| Control out 2 1-92 | TRANSPORT, MIDI CLOCK, PRG CHANGE out | Output control | ✅ | GLOBAL > Sync > Tempo out, Ctrl out; GLOBAL > Control > Prg change out | Measured on OS 1.32B: clock out, Start/Stop out, program change out are three bytes of the global. Machine MIDI out reaches the host since 0.4.0 |
+| Control in 1-92 | TEMPO SYNC internal / external | Sync | ✅ | GLOBAL > Sync > Tempo in | A DAW sets EXT itself |
+| Control in 1-92 | TRANSPORT ACCEPT / IGNORE | Transport in | ✅ | GLOBAL > Sync > Ctrl in | A DAW turns it on itself |
+| Control in 1-93 | PRG CHANGE in | Program change in | ➖ | GLOBAL > Control > Prg change in shows BASE | Measured: the machine always takes a program change on its base channel; no setting turns it off |
 | Multi map edit 1-93 | Ranges, upper key, insert / delete | Key ranges | ✅ | Perform > Multi map table, Split, delete | |
 | Multi map edit 1-93 | PAT (CUR or pattern) | Pattern | 🟡 | Pattern select | The list offers CUR and A01-B16 only (32 patterns); the machine takes all 128 |
 | Multi map edit 1-93 | OFS, LEN | Offset, length | ✅ | OFS, LEN boxes | |
@@ -419,7 +419,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Mechanical settings 1-94 | Joystick mapping TIGHT / FULL | Joystick | ➖ | – | Hardware joystick |
 | File 1-95 | Sysex send: ALL, KIT, PAT+KIT, SONG+PAT+KIT with ranges | Send dumps | 🟡 | Right-click menu > export all as one .syx | No range choice |
 | File 1-97 | Sysex receive: ORIG, SPEC, VERF | Receive dumps | 🟡 | SysEx import panel: choose slots, preview, report | ORIG-style (original positions); no SPEC start slot and no VERF-only mode |
-| File 1-95, 1-97 | Needs the machine on SYSEX RECV | Receive session | ✅ | Editor drives it itself; pattern field shows RECV / SEND n | HW MIDI: user opens the screen |
+| File 1-95, 1-97 | Needs the machine on SYSEX RECV | Receive session | ✅ | Editor drives it itself; pattern field shows RECV / SEND n | Over HW MIDI the editor sends only Start and Stop, so it cannot open the machine's receive screen |
 | DigiPRO manager 1-99 | Send, receive, erase, rename user waveforms; copy between Digibanks | Waveform manager | ❌ | – | MKII only |
 | +Drive settings 1-105 | Quick mode, format | +Drive | ➖ | – | Not emulated |
 | Snapshot manager 1-106 | Load, save, rename, erase, lock snapshots | +Drive | ➖ | – | |
@@ -432,7 +432,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes |
 |---|---|---|---|---|---|
 | Test mode 1-110 | Hardware self test, joystick calibration | Test | ➖ | – | |
-| Empty reset 1-110 | Clear kits, patterns, songs, globals | Reset | 🟡 | Clear single slots in the libraries; Alt + CLR for a pattern | No "clear everything" key |
+| Empty reset 1-110 | Clear kits, patterns, songs, globals | Reset | 🟡 | Clear single slots in the libraries; Alt + CLR for a pattern | GLOBAL > Reset to defaults restores the active global only. No "clear everything" key |
 | Factory reset 1-110 | Restore factory data | Reset | ❌ | – | Remove and add the ROM or import the factory .syx |
 | Soft reset 1-111 | Restart keeping data | Restart | ➖ | – | Reopen the editor |
 | MIDI upgrade, send upgrade 1-111, 1-112 | OS update over MIDI | OS update | ➖ | – | The editor loads the OS 1.32B image |
@@ -472,7 +472,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes |
 |---|---|---|---|---|---|
-| Channels B-1 | Base channel + 0..5 per track | Track channels | 🟡 | Keys and kbd use them; not editable | See Control > MIDI channels |
+| Channels B-1 | Base channel + 0..5 per track | Track channels | ✅ | GLOBAL > Control (base channel, span) | Keys and keyboard use them |
 | Note on / off B-1 | Trig amp, filter, LFO; note off releases | Notes | ✅ | On-screen keyboard, home row, roll keys | `noteOn` / `noteOff` |
 | Multi trig channel B-2 | All track, split, seq start, seq transpose | Multi trig notes | ✅ | Perform keyboard | |
 | Multi map channel B-2 | Triggers patterns | Multi map notes | ✅ | Perform keyboard | |
@@ -499,11 +499,11 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes |
 |---|---|---|---|---|---|
-| 0x50 / 0x51 Global dump, request C-1 | Global slot data | Global | 🟡 | Read for routing, mutes, MIDI seq, multi map; written for those only | No page for the rest |
+| 0x50 / 0x51 Global dump, request C-1 | Global slot data | Global | 🟡 | GLOBAL panel; SysEx import | Read and written: MIDI channels, control in / out, routing, multi map, mutes, MIDI seq. Not edited: master tune, CONTROL OUT 1 |
 | 0x52 / 0x53 Kit dump, request C-1 | Kit data | Kit | ✅ | Kit library, SysEx panel | |
 | 0x54 Unused C-1 | – | – | ➖ | – | |
 | 0x55 Set current kit name C-1 | Live kit rename | Kit name | ✅ | Kit library Rename (current kit) | |
-| 0x56 Set active global C-1 | Choose global slot | Global select | ❌ | – | Used internally only |
+| 0x56 Set active global C-1 | Choose global slot | Global select | ✅ | GLOBAL slot keys | SET ACTIVE GLOBAL after SYSEX RECV |
 | 0x57 Load pattern C-2 | Switch pattern | LOAD PATTERN | ✅ | Pattern chooser | |
 | 0x58 / 0x59 Load / save kit C-2 | Kit load, save | LOAD / SAVE KIT | ✅ | Kit library | |
 | 0x5B Assign machine C-2 | Machine and init mode | Machine | ✅ | Machine picker | |
@@ -527,22 +527,21 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 278 |
-| 🟡 | 38 |
-| ❌ | 35 |
-| ➖ | 34 |
+| ✅ | 295 |
+| 🟡 | 32 |
+| ❌ | 23 |
+| ➖ | 35 |
 | Total | 385 |
-
 
 ### Top gaps, ranked (our UI)
 
-1. **No GLOBAL panel at all (1-87 to 1-93).** Eight global slots, master tune, all five MIDI channels, CONTROL IN / OUT (tempo sync, transport, program change, clock out) cannot be set. After B-026 the page refuses a mute or note for a track outside CHANNEL SPAN and the person has no way to fix it in the editor. The core already holds `MmGlobal`; it needs a panel and global edit ops. Sizes in MM-PARITY-2026-10-09.md.
-2. **No step selection, note copy, drop-copy, step menu (1-50, 1-52).** Whole-track copy, single-note copy with locks and melody copy are missing (I-001, keymap K7).
-3. **No DigiPRO user waveform manager (1-99 to 1-104, 0x5D / 0x5E).** MKII machines can pick waveforms 1-64 but the user cannot send, receive, rename or erase them.
-4. **Step recording and live-record erase (1-50, 1-49) are not in the page.** Live recording works; the target step of a live lock is not marked.
-5. **Super copy / super clear (1-54, 1-55).** Not built, including melody copy.
-6. **Song: no pointer jump or play-from-row (1-75, 1-77), no SAVE SONG, song-slot copy or rename (1-74).** The page shows the playing row but cannot set it.
-7. **SysEx file functions are partial (1-95 to 1-98).** Export is all-in-one; there is no ranged send, no SPEC write position and no VERIFY-only receive.
-8. **Transport details (1-5, 1-56).** No pause, no double-STOP rewind and all-notes-off, no +/-10 % tempo nudge, no delayed tempo change, no panic (CC 120).
-9. **Arpeggiator, swing and slide have no copy / clear / paste / undo of their own (1-62, 1-65, 1-66).** Page undo only.
-10. **Reset functions (1-110).** No empty reset or factory reset from the editor; the page cannot show or open the UNDO KIT slot.
+1. **No DigiPRO user waveform manager (1-99 to 1-104, 0x5D / 0x5E).** MKII machines can pick waveforms 1-64 but the user cannot send, receive, rename or erase them.
+2. **Song: no pointer jump or play-from-row (1-75, 1-77), no SAVE SONG, song-slot copy or rename (1-74).** The page shows the playing row but cannot set it.
+3. **Step recording and live-record erase (1-50, 1-49) are not in the page.** Live recording works and now marks the step that gets a live lock.
+4. **Super copy / super clear (1-54, 1-55), and whole-track copy or clear that takes arp, transpose and swing along (1-52, 1-53).** Selection copies notes, slides and locks only; locks-only clear of one step is missing (1-50).
+5. **GLOBAL leftovers (1-87, 1-88, 1-91).** The panel has the 8 slots, all MIDI channels, CONTROL IN and OUT 2 and Reset to defaults. Missing: master tune, CONTROL OUT 1 (sequencer, arp, keyboard to INT / OUT; not decoded), copy / paste / clear of a slot.
+6. **SysEx file functions are partial (1-95 to 1-98).** Export is all-in-one; there is no ranged send, no SPEC write position and no VERIFY-only receive.
+7. **Transport details (1-5, 1-56).** No pause, no double-STOP rewind and all-notes-off, no +/-10 % tempo nudge, no delayed tempo change, no panic (CC 120).
+8. **Arpeggiator, swing and slide have no copy / clear / paste / undo of their own (1-62, 1-65, 1-66).** Page undo only.
+9. **Reset functions (1-110).** No empty reset or factory reset of everything (the GLOBAL panel resets the active global only); the page cannot show or open the UNDO KIT slot.
+10. **Multi map pattern list (1-93)** offers CUR and A01-B16 only; the machine takes all 128.
