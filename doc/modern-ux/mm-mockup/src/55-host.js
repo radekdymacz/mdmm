@@ -24,8 +24,9 @@
                                       is the machine's audio mode
      record(live)                     the RECORD key: the host picks GRID or LIVE RECORDING, or off; live
                                       (Alt+Space): LIVE RECORDING, also when stopped
-     songSlot(slot), loadSong(slot)   the Song workspace edits another of the 24 songs; LOAD SONG makes it
-                                      the machine's
+     loadSong(slot)                   LOAD SONG: the song slots' Load makes slot the machine's song, the one
+                                      the Song workspace edits
+     saveSong()                       SAVE SONG: the machine's song into its slot (the song slots' Save)
      chain(patterns), chainClear()    MM-P8: the Song palette's CHAIN: the machine's own pattern chain (one
                                       bank, each pattern once, played in order and looped), and its end; what
                                       the machine then plays comes back through MMView.show

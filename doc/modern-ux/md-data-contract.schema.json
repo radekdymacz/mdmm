@@ -1267,6 +1267,10 @@
             },
             "pattern": {
               "type": ["integer", "null"]
+            },
+            "song": {
+              "description": "The song slot a song copy was taken from (0.6); null when none.",
+              "type": ["integer", "null"]
             }
           }
         },
@@ -4158,6 +4162,147 @@
         },
         {
           "type": "object",
+          "description": "core: the song slots",
+          "required": ["op", "s"],
+          "properties": {
+            "op": {
+              "const": "songCopy"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "s": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 31
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core",
+          "required": ["op", "s"],
+          "properties": {
+            "op": {
+              "const": "songPaste"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "s": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 31
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core: drag-copy; with a name: Save to... (the song, named, into another slot)",
+          "required": ["op", "from", "to"],
+          "properties": {
+            "op": {
+              "const": "songCopyTo"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "from": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 31
+            },
+            "to": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 31
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core",
+          "required": ["op", "s"],
+          "properties": {
+            "op": {
+              "const": "songClear"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "s": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 31
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core: a song's name (16 characters)",
+          "required": ["op", "s", "name"],
+          "properties": {
+            "op": {
+              "const": "songRename"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "s": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 31
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "description": "core: song rows",
           "required": ["op", "s", "i", "row"],
           "properties": {
@@ -4845,6 +4990,32 @@
           "properties": {
             "op": {
               "const": "selectSong"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "s": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 31
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "machine: SAVE SONG: the machine's song into its slot (the current one without s)",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "saveSong"
             },
             "id": {
               "type": "integer"

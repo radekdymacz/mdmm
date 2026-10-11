@@ -63,10 +63,14 @@ const MmView = (() => {
 	});
 	const mapPage = memo(g => g.multiMap ? C().mapToPage(g) : undefined);
 
-	/* the 24 songs for the Song workspace's picker: names, the one edited and the machine's */
-	function songsOf(docs, slot, current) {
-		const names = Array.from({ length: SONGS }, (_, i) => { const s = docs.songs[i]; return s ? (C().kitEmpty(s) ? "EMPTY" : C().kitName(s)) : "…"; });
-		return { names, slot, current };
+	/* the 24 songs for the Song workspace's slots (deskSongSlots.js): each one's name ("" none), rows before END and
+	   whether it is read yet; the one edited, the machine's, and whether its edits wait for a LOAD SONG */
+	function songsOf(docs, slot, current, edited) {
+		const at = i => docs.songs[i];
+		const names = Array.from({ length: SONGS }, (_, i) => at(i) && !C().kitEmpty(at(i)) ? C().kitName(at(i)) : "");
+		const rows = Array.from({ length: SONGS }, (_, i) => at(i) ? at(i).rows.filter(r => r.kind !== "end").length : 0);
+		const loaded = Array.from({ length: SONGS }, (_, i) => !!at(i));
+		return { names, rows, loaded, slot, current, edited };
 	}
 	/* the machine's own mutes, T1-T6 then M1-M6 (null: not known) */
 	function mutesOf(m) {
@@ -94,7 +98,7 @@ const MmView = (() => {
 			v.poly = m.poly ?? null;
 			v.mutes = mutesOf(m);
 			v.plays = { chain: m.desk?.chain ?? null, songMode: m.song?.songMode === true, song: m.song?.current ?? 0 };
-			v.songs = songsOf(docs, song, slotIn(m, "song"));
+			v.songs = songsOf(docs, song, slotIn(m, "song"), m.song?.reloadNeeded === true);
 		}
 		const global = glob != null ? docs.globals[glob] || null : null;
 		/* B-030: in a DAW whose clock the machine follows (its global: CONTROL IN TEMPO SYNC external, set by the
@@ -350,7 +354,8 @@ const MmView = (() => {
 		})
 	};
 	/* the library's slot ops change stored slots: the result brings them (the library's own setters) */
-	for (const op of ["patCopy", "patPaste", "patCopyTo", "patClear", "kitCopy", "kitPaste", "kitCopyTo", "kitClear", "kitRename"]) WRITES[op] = () => [];
+	for (const op of ["patCopy", "patPaste", "patCopyTo", "patClear", "kitCopy", "kitPaste", "kitCopyTo", "kitClear", "kitRename",
+		"songCopy", "songPaste", "songCopyTo", "songClear", "songRename"]) WRITES[op] = () => [];
 	const MENV = ["ATK", "DEC", "SUS", "REL", "PORT"];
 	/* a step of the view as the step intent's value: null, {off:true} or {n, a, f, l, notrig} */
 	function stepVal(st) {
@@ -470,7 +475,8 @@ const MmView = (() => {
 			"assign", "multiEnv", "multiTrig", "kitName"],
 		global: ["routing", "midiTrack", "globalMidi", "globalReset", "multiMap", "multiMapSplit", "multiMapDelete"],
 		song: ["rowSet", "rowInsert", "rowDelete", "rowMove", "copyRow", "pasteRow"],
-		library: ["patCopy", "patPaste", "patCopyTo", "patClear", "kitCopy", "kitPaste", "kitCopyTo", "kitClear", "kitRename"]
+		library: ["patCopy", "patPaste", "patCopyTo", "patClear", "kitCopy", "kitPaste", "kitCopyTo", "kitClear", "kitRename",
+			"songCopy", "songPaste", "songCopyTo", "songClear", "songRename"]
 	};
 	const KIND = new Map(Object.entries(OPS).flatMap(([kind, ops]) => ops.map(op => [op, kind])));
 	const kindOf = op => KIND.get(op) || "pattern";

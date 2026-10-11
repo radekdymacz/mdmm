@@ -474,12 +474,6 @@
 				: mode === "live" ? "LIVE RECORDING: play the keyboard; the notes are recorded to the nearest step."
 				: "GRID RECORDING on the machine: its TRIG keys write steps; the editor reads them back.") });
 		},
-		/* the Song workspace: another of the 24 songs to edit; LOAD SONG makes it the machine's */
-		songSlot(slot) {
-			songEdit = slot === cur("song") ? null : slot;
-			if (!DOCS.songs[slot]) send({ op: "load", kind: "song", slot });
-			refresh();
-		},
 		/* MM-P8: the machine's pattern chain (the Song palette's CHAIN), and its end */
 		chain(patterns) {
 			send({ op: "chain", patterns }, { onResult: r => { if (!r.ok) V().toast(r.errors[0] || "The machine did not take the chain."); } });
@@ -492,7 +486,13 @@
 			send({ op: "chainClear" }, { onResult: r => { if (!r.ok) V().toast(r.errors[0] || "The chain did not end."); } });
 		},
 		loadSong(slot) {
+			songEdit = null;
 			send({ op: "loadSong", s: slot }, { onResult: r => V().toast(r.ok ? `S${String(slot + 1).padStart(2, "0")} is the machine's song now.` : r.errors[0]) });
+		},
+		/* 0.6: SAVE SONG, the song the machine holds into its slot (the core asks first when the desk's edits are not
+		   loaded yet, and offers to load them) */
+		saveSong() {
+			send({ op: "saveSong" }, { onResult: r => V().toast(r.ok ? r.note || "Saved." : r.errors[0]) });
 		},
 		/* HW MIDI: what waits for the machine's SYSEX RECV, and the person says it is there */
 		waiting() { return machine?.recv?.waiting || 0; },
