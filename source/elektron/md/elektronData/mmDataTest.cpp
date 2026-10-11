@@ -157,11 +157,26 @@ namespace
 		ed::MmKit k;
 		for(auto& m : k.machines) m = 1;
 		k.trigPos.fill(ed::MmKit::g_noTrigPos);
-		k.routing[3] = ed::mmRouting(2, 1);
+		ed::mmSetKitOutputs(k, 3, 2);
+		ed::mmSetKitInput(k, 3, 1);
+		ed::mmSetKitOutputs(k, 4, 5);
+		ed::mmSetKitInput(k, 4, 6);
 		errors.clear();
 		const auto kitBack = ed::mmKitFromJson(ed::mmKitToJson(k), errors);
 		check(kitBack && *kitBack == k, "kit -> JSON -> kit");
-		check(ed::mmRoutingOutputs(k.routing[3]) == 2 && ed::mmRoutingInput(k.routing[3]) == 1, "routing packs outputs and input");
+		// as the firmware's 0x5C stores them (mmEditorProbeFirmwareTest inputs): INP A on T4 is 0x52, BUS EF on T5 0x0d
+		// with bus 3 in the bus word's bits 8-9
+		check(k.routing[3] == 0x52 && ed::mmRoutingOutputs(k.routing[3]) == 2 && ed::mmKitInput(k, 3) == 1, "INP A: routing 0x52");
+		check(k.routing[4] == 0x0d && k.x1cd[1] == 0x03 && k.x1cd[2] == 0x00 && ed::mmKitInput(k, 4) == 6, "BUS EF: routing 0x0d, bus 3 for T5");
+		ed::mmSetKitInput(k, 4, 0);
+		check(k.routing[4] == 0x15 && k.x1cd[1] == 0 && ed::mmKitInput(k, 4) == 0, "NEIGHBOR: routing 0x15, the bus cleared");
+		check(!ed::mmKitInput(k, 0) && ed::mmKitToJson(k).find("tracks")->asArray()[0].find("input")->isNull(), "no input chosen: null");
+		ed::mmSetKitInput(k, 4, 5);
+		ed::mmSetKitInput(k, 4, std::nullopt);
+		check(k.routing[4] == 0x05 && k.x1cd[1] == 0x02 && !ed::mmKitInput(k, 4), "none: the input bits go, the bus word stays (as 0x5C on a synth machine)");
+		errors.clear();
+		const auto stale = ed::mmKitFromJson(ed::mmKitToJson(k), errors);
+		check(stale && *stale == k, "and goes through JSON as it is");
 		k.machines[0] = 42;
 		check(!ed::validate(k).empty(), "an unknown machine is refused");
 

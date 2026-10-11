@@ -29,6 +29,7 @@
 #include "elektronData/mmCommands.h"
 #include "elektronData/mmGlobal.h"
 #include "elektronData/mmKit.h"
+#include "elektronData/mmMachines.h"
 #include "elektronData/mmPattern.h"
 #include "elektronData/mmSong.h"
 
@@ -622,7 +623,14 @@ namespace
 			case 0x6d: return;
 			case 0x5b: if(_m.size() >= 11 && v < 6) m_working.machines[v] = _m[8]; return;
 			case 0x61: if(_m.size() >= 10) m_tempo = (v << 7) | _m[8]; return;	// TEMPO, BPM x 24
-			case 0x5c: if(_m.size() >= 11 && v < 6) m_working.routing[v] = _m[8]; return;
+			case 0x5c:	// the outputs, and an FX machine's input (any other's cleared), as OS 1.32B stores them (elektronData::mmSetKitInput)
+				if(_m.size() >= 11 && v < 6)
+				{
+					ed::mmSetKitOutputs(m_working, v, _m[8]);
+					const auto* mach = ed::mmMachine(m_working.machines[v]);
+					ed::mmSetKitInput(m_working, v, mach && mach->fx ? std::optional<uint8_t>(_m[9]) : std::nullopt);
+				}
+				return;
 			case 0x55: for(size_t i = 0; i < m_working.name.size(); ++i) m_working.name[i] = 7 + i < _m.size() - 1 ? _m[7 + i] : 0; return;
 			case 0x70:
 			{
@@ -660,7 +668,7 @@ namespace
 
 		bool press(const std::vector<mmDesk::Key>& _keys)
 		{
-			if(_keys == mmDesk::RecvSession::enterMacro())
+			if(mmDesk::RecvSession::isEnterMacro(_keys))
 			{
 				m_screen = mmDesk::Screen::GlobalEdit;
 				return true;

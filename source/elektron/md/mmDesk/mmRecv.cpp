@@ -2,15 +2,33 @@
 
 namespace mmDesk
 {
-	std::vector<Key> RecvSession::enterMacro()
+	// B-067: GLOBAL opens the SLOT screen with its cursor where it was left; ENTER opens the EDIT menu of the active
+	// slot only, on any other it makes that slot active (measured, mmEditorProbeFirmwareTest globalactive). So the
+	// cursor goes to the active slot first: up to the slot rows (TURBO is below them), left to slot 1, then over
+	// (4 a row) and down. The arrows stop at the edges (no wrap: Left from slot 1 stays there).
+	std::vector<Key> RecvSession::enterMacro(const uint8_t _activeGlobal)
 	{
-		std::vector<Key> k{Key::Global, Key::Enter};
+		const int slot = _activeGlobal & 7;
+		std::vector<Key> k{Key::Global};
+		for(int i = 0; i < 3; ++i) k.push_back(Key::Up);
+		for(int i = 0; i < 4; ++i) k.push_back(Key::Left);
+		for(int i = 0; i < slot % 4; ++i) k.push_back(Key::Right);
+		for(int i = 0; i < slot / 4; ++i) k.push_back(Key::Down);
+		k.push_back(Key::Enter);
 		for(int i = 0; i < 4; ++i) k.push_back(Key::Left);
 		for(int i = 0; i < 8; ++i) k.push_back(Key::Up);
 		k.insert(k.end(), {Key::Down, Key::Down, Key::Right});
 		for(int i = 0; i < 8; ++i) k.push_back(Key::Up);
 		k.insert(k.end(), {Key::Down, Key::Enter, Key::Right, Key::Enter});
 		return k;
+	}
+
+	bool RecvSession::isEnterMacro(const std::vector<Key>& _keys)
+	{
+		for(uint8_t g = 0; g < 8; ++g)
+			if(_keys == enterMacro(g))
+				return true;
+		return false;
 	}
 
 	std::vector<Key> RecvSession::exitKeys()
@@ -101,7 +119,7 @@ namespace mmDesk
 			}
 			if(onMain)
 			{
-				out.keys = enterMacro();
+				out.keys = enterMacro(activeGlobal);
 				go(State::Entering, now);
 			}
 			else
@@ -115,7 +133,7 @@ namespace mmDesk
 				break;
 			if(onMain)
 			{
-				out.keys = enterMacro();
+				out.keys = enterMacro(activeGlobal);
 				go(State::Entering, now);
 			}
 			else if(now - m_since > timeoutMs)
