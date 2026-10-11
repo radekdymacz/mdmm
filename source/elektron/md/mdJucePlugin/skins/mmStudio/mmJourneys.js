@@ -817,7 +817,12 @@ const MmJourneys = (() => {
 		steps: [
 			go("seq"), sel(0),
 			{ say: "press R until the notes change", act: async (u, c) => { c.p0 = pat0(); blur(); for (let i = 0; i < 5; i++) { u.key("r"); if (await until(() => pat0() !== c.p0, 4000)) break; } }, machine: c => ok(pat0() !== c.p0, "unchanged"), within: 15000 },
-			{ say: "click GEN's Hits value (a Euclid spec) or Density", act: (u, c) => { c.p1 = pat0(); u.click($1('#genband .gv[data-gv="k"]') ? '#genband .gv[data-gv="k"]' : '#genband .gv[data-gv="dens"]'); }, machine: c => ok(pat0() !== c.p1, "unchanged"), within: 15000 },
+			/* one up, or one down (Shift-click) when R rolled it to its top: Hits stops at Steps, Density at 100 (the page
+			   tier's one failure in the dev-cycle gate run) */
+			{ say: "click GEN's Hits value (a Euclid spec) or Density (Shift-click when it is at its top)", act: (u, c) => { c.p1 = pat0();
+				const num = q => parseInt($1(q)?.getAttribute("aria-valuenow") || "0", 10), euclid = !!$1('#genband .gv[data-gv="k"]');
+				const q = euclid ? '#genband .gv[data-gv="k"]' : '#genband .gv[data-gv="dens"]', top = euclid ? num('#genband .gv[data-gv="n"]') : 100;
+				u.click(q, { shift: num(q) >= top }); }, machine: c => ok(pat0() !== c.p1, "unchanged"), within: 15000 },
 			{ ...undoKey, say: "press Cmd+Z: the whole run in one step", act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(pat0() === c.p0, "pattern not back"), within: 15000 }
 		],
 		async tidy(u, c) { if (c.p0) await undoUntil(u, () => pat0() === c.p0, 3); }
