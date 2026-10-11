@@ -20,3 +20,5 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 3. Copy, select another slot, Paste; drag one slot onto another.
 4. Select a fourth slot, Save to…, name it; then Save.
 5. Clear a slot (it asks), then Cmd+Z. Switch between PATTERN, CHAIN and SONG.
+6. A slot that holds a song: the Overwrite and Clear questions. MD: Save while the edits are not loaded yet ("Load the edits, then save").
+7. MM on real hardware: Save to… (it waits as SEND n).
