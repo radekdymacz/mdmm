@@ -244,6 +244,7 @@ img,svg,canvas{-webkit-user-drag:none}
 /* K2 (DESIGN-keymap.md): the LCD's COPY CLR PASTE while they act on the selected steps: underlined, as the
    selection is outlined (mdDeskComforts.js secLabels) */
 .lcdsec button.onsel{opacity:1;text-decoration:underline;text-underline-offset:2px}
+/* @include shared/deskSongSlots.css */
 /* 0.3.5, the Song page's left column by hierarchy (mdDeskSong.js): (a) What plays: the PATTERN | SONG switch, big,
    and one live line from the machine; (b) the song; (c) the palette; (d) the selected row. The mode is lit by what
    the machine reports; the arrangement is framed in red while the song plays, and looks as ever otherwise */
