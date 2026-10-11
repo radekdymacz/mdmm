@@ -4,6 +4,22 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-068 · Monomachine: an FX machine's input reads back as another (INP A for BUS AB)
+
+- **From:** the MM intent cases on the firmware (`mmDeskFirmwareTest <MM ROM> intentcases`, doc/release/DEV-CYCLE.md), 2026-10-11.
+- **What happens:** IN on the Mix page set to BUS AB snaps to INP A once the machine reads it back; NEIGHBOR and INP A+B read back as INP B. A kit dump the editor sent (a setting with no live message) wrote its own form of the input, which the machine does not read as that input.
+- **Cause (measured, `mmEditorProbeFirmwareTest <MM ROM> inputs`, 0x5C on every track):** the editor read the input from bits 3-5 of the track's routing byte. OS 1.32B keeps it otherwise: bit 4 an audio input with bits 6-7 which (NEIGHBOR, INP A, INP B, INP A+B), bit 3 a mix bus with the bus in a word at kit offset 0x1ce (2 bits a track), neither: no input (a fresh machine; an FX machine then hears no audio input, measured with `mmAudioFirmwareTest --input`). 0x5C on a machine that is not an FX machine sets its outputs and clears its input; assigning a machine keeps the routing.
+- **Fix (`fix/mm-intent-cases`):** `elektronData::mmKitInput` / `mmSetKitInput` read and write the firmware's form; the contract's `input` may be null (none chosen); `input` on a machine that is not an FX machine is refused (the page only offers IN for FX machines); `route` on such a machine clears its input, as 0x5C does; the desk sends 0x5C only where it makes the track what the edit says, else the kit dump. The Mix page's IN select shows "none" for an FX machine with no input chosen (it showed NEIGHBOR, INP A on T1). Tests: mmDataTest (the bytes as measured), the intent cases on the firmware (input of an FX machine, the machine edits that set NEIGHBOR and INP A+B).
+- **Status:** fixed on `fix/mm-intent-cases`. Kits stored by an older editor version with the old form read as no input (or another input) until IN is set again.
+
+## B-067 · Monomachine: an edit makes GLOBAL 6 the active global (when another than GLOBAL 1 was)
+
+- **From:** the MM intent cases on the firmware (`mmDeskFirmwareTest <MM ROM> intentcases`), 2026-10-11: every GLOBAL edit read back unchanged; the machine said GLOBAL 6 was active.
+- **What happens:** with GLOBAL 2 to 8 active, the first edit that goes as a dump (a pattern, a song, a kit setting without a live message) makes GLOBAL 6 active: the machine then listens on GLOBAL 6's MIDI channels, and the GLOBAL page edits GLOBAL 6.
+- **Cause (measured, `mmEditorProbeFirmwareTest <MM ROM> globalactive`):** the editor opens SYSEX RECV with panel keys: GLOBAL, ENTER, ... GLOBAL opens the SLOT screen with its cursor where it was left; ENTER opens the EDIT menu only on the active slot, on any other it makes that slot active and stays. The macro then moved the cursor over the slots and pressed ENTER twice more (GLOBAL 5, then 6).
+- **Fix (`fix/mm-intent-cases`):** the macro moves the cursor to the active global first (up, left to slot 1, then over and down), then ENTER (`RecvSession::enterMacro(activeGlobal)`); a GLOBAL slot still to be made active is sent before the macro starts. Tests: `mmDeskFirmwareTest <MM ROM> factoryglobal` (a pattern edit with GLOBAL 3 active: GLOBAL 3 stays; GLOBAL 6 without the fix), mmDeskTest (the macro for GLOBAL 7).
+- **Status:** fixed on `fix/mm-intent-cases`.
+
 ## B-061 · Machinedrum: in a small window the top bar's Setup keys run past the window's right edge
 
 - **From:** the journeys `md-top-cpu-meter` and `md-lcd-volume`, 2026-10-11, in `--background` runs (both hosts) while cutting 0.5.1; they pass at full size.

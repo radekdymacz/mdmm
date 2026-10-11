@@ -4,6 +4,7 @@
 
 #include "elektronData/mmCommands.h"
 #include "elektronData/mmDump.h"
+#include "elektronData/mmMachines.h"
 #include "elektronData/mmPattern.h"
 
 #include <utility>
@@ -15,15 +16,34 @@ namespace mmDesk
 
 	namespace
 	{
-		// The kit fields a live SysEx, CC or NRPN reaches (everything else needs a dump): a track's values and level only
-		// on its own MIDI channel, the MIDI page and MULTI ENV only on the base channel (B-051).
-		ed::MmKit liveFields(ed::MmKit _k, const ChannelReach& _reach)
+		bool isFx(const ed::MmKit& _k, const size_t _t)
+		{
+			const auto* m = ed::mmMachine(_k.machines[_t]);
+			return m && m->fx;
+		}
+
+		// A track's routing goes live (0x5C) when 0x5C makes it what _to holds: on an FX machine it always sets an input,
+		// on any other machine it clears it (measured, mmEditorProbeFirmwareTest inputs). Otherwise (an FX machine with
+		// no input chosen, another with one) it goes in the kit dump.
+		bool routingLive(const ed::MmKit& _to, const size_t _t)
+		{
+			return isFx(_to, _t) == ed::mmKitInput(_to, _t).has_value();
+		}
+
+		// The kit fields a live SysEx, CC or NRPN reaches when the kit becomes _to (everything else needs a dump): a
+		// track's values and level only on its own MIDI channel, the MIDI page and MULTI ENV only on the base channel
+		// (B-051), the outputs and an FX machine's input as routingLive says.
+		ed::MmKit liveFields(ed::MmKit _k, const ed::MmKit& _to, const ChannelReach& _reach)
 		{
 			_k.name = {};
 			_k.machines = {};
-			_k.routing = {};
 			for(size_t t = 0; t < _k.tracks.size(); ++t)
 			{
+				if(routingLive(_to, t))
+				{
+					ed::mmSetKitInput(_k, t, 0);	// the routing byte and the track's bits of the bus word: 0x5C's
+					_k.routing[t] = 0;
+				}
 				if(_reach.track[t])
 				{
 					_k.levels[t] = 0;
@@ -188,13 +208,13 @@ namespace mmDesk
 	{
 		sendKitLive(_from, _to, _reach);
 		// What no live message reaches: a kit dump to the current slot, then LOAD KIT. Paced as every dump (latest wins).
-		if(ed::mmKitRaw(liveFields(_from, _reach)) != ed::mmKitRaw(liveFields(_to, _reach)))
+		if(ed::mmKitRaw(liveFields(_from, _to, _reach)) != ed::mmKitRaw(liveFields(_to, _to, _reach)))
 		{
 			auto k = _to;
 			k.position = static_cast<uint8_t>(m_curKit);
 			const Ref slot{Kind::Kit, k.position};
 			loadKitAfter(slot, pushDump(slot, ed::encodeMmKit(k)));
-			const bool channel = ed::mmKitRaw(liveFields(_from, {})) == ed::mmKitRaw(liveFields(_to, {}));
+			const bool channel = ed::mmKitRaw(liveFields(_from, _to, {})) == ed::mmKitRaw(liveFields(_to, _to, {}));
 			_notes.push_back(channel ? "Written to the kit slot and loaded (the track has no MIDI channel of its own in the active global)."
 				: "Written to the kit slot and loaded (no live SysEx for this setting).");
 		}
@@ -215,8 +235,10 @@ namespace mmDesk
 			const bool machine = _from.machines[t] != _to.machines[t];
 			if(machine)
 				m_port.sendSysex(ed::mmAssignMachine(t, _to.machines[t], 0));
-			if(_from.routing[t] != _to.routing[t])
-				m_port.sendSysex(ed::mmSetRouting(t, ed::mmRoutingOutputs(_to.routing[t]), ed::mmRoutingInput(_to.routing[t])));
+			const auto input = ed::mmKitInput(_to, t);
+			const bool outputs = ed::mmRoutingOutputs(_from.routing[t]) != ed::mmRoutingOutputs(_to.routing[t]);
+			if(routingLive(_to, t) && (outputs || ed::mmKitInput(_from, t) != input))
+				m_port.sendSysex(ed::mmSetRouting(t, ed::mmRoutingOutputs(_to.routing[t]), input.value_or(0)));
 			if(_reach.track[t])
 			{
 				if(_from.levels[t] != _to.levels[t])
@@ -470,6 +492,9 @@ namespace mmDesk
 		// on SYSEX RECV until the stream is quiet, or the machine would leave it before the dump arrives
 		if(m_recv.parked() && m_stream.sending(_now))
 			m_recv.touch();
+		// B-067: the macro's cursor goes to the active global (ENTER on another slot would make it active)
+		if(activeSlot() >= 0)
+			m_recv.activeGlobal = activeSlot() & 7;
 		auto out = m_recv.tick(_now, m_tel);
 		if(!out.keys.empty() && m_port.pressKeys)
 			m_port.pressKeys(out.keys);

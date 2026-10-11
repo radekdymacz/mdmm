@@ -31,6 +31,7 @@
 
 #include "elektronData/mmCommands.h"
 #include "elektronData/mmGlobal.h"
+#include "elektronData/mmJson.h"
 #include "elektronData/mmKit.h"
 #include "elektronData/mmMachines.h"
 #include "elektronData/mmPattern.h"
@@ -692,6 +693,218 @@ namespace
 	}
 
 	// Where does the kit that plays live? (like MD P3: patch RAM 0x70000a)
+	// The kit fields the intent cases read back otherwise (doc/release/DEV-CYCLE.md): 0x5C's input byte, a track's
+	// TRIG POS on itself, read from the working kit in patch RAM (g_mmWorkingKitAddress) after each message.
+	void inputsMode(const Bytes& _rom)
+	{
+		auto m = boot(_rom);
+		const auto working = [&]
+		{
+			const auto patch = m->hardware().copyPatchRam();
+			const auto off = elektronData::g_mmWorkingKitAddress - 0x700000;
+			const Bytes raw(patch.begin() + off, patch.begin() + off + elektronData::MmKit::g_rawSize);
+			return *elektronData::mmKitFromRaw(raw, 0);
+		};
+		const auto show = [&](const char* _what)
+		{
+			const auto k = working();
+			std::printf("%-36s", _what);
+			for(int t = 0; t < 6; ++t)
+				std::printf(" T%d m%02d out%d in%d tp%02x", t + 1, k.machines[t], elektronData::mmRoutingOutputs(k.routing[t]), elektronData::mmKitInput(k, t).value_or(9), k.trigPos[t]);
+			std::printf("\n");
+			static Bytes last;
+			const auto raw = elektronData::mmKitRaw(k);
+			if(!last.empty())
+				std::printf("    raw diff:%s\n", diffText(last, raw, 40).c_str());
+			last = raw;
+		};
+		show("booted");
+		m->send(mmCommand(0x5b, {1, 13, 1}));
+		m->run(300);
+		show("T2 FX-REVERB (init)");
+		for(uint8_t v = 0; v < 7; ++v)
+		{
+			m->send(elektronData::mmSetRouting(1, 5, v));
+			m->run(200);
+			char b[64];
+			std::snprintf(b, sizeof(b), "0x5C T2 out 5 in %d", v);
+			show(b);
+		}
+		for(uint8_t v = 0; v < 7; ++v)
+		{
+			m->send(elektronData::mmSetRouting(0, 6, v));
+			m->run(200);
+			char b[64];
+			std::snprintf(b, sizeof(b), "0x5C T1 (synth) out 6 in %d", v);
+			show(b);
+		}
+		m->send(mmCommand(0x5b, {2, 15, 1}));
+		m->run(300);
+		show("T3 FX-CHORUS (init)");
+		m->send(mmCommand(0x5b, {0, 13, 1}));
+		m->run(300);
+		show("T1 FX-REVERB (init)");
+		m->send(mmCommand(0x5b, {3, 15, 0}));
+		m->run(300);
+		show("T4 FX-CHORUS (no init)");
+		m->send(elektronData::mmSetRouting(3, 1, 3));
+		m->run(200);
+		show("0x5C T4 out 1 in 3");
+		// every track an FX machine, every input on each: the routing bytes and x1cd
+		for(uint8_t t = 0; t < 6; ++t)
+		{
+			m->send(mmCommand(0x5b, {t, 13, 1}));
+			m->run(300);
+		}
+		const auto bytes = [&](const char* _what)
+		{
+			const auto raw = elektronData::mmKitRaw(working());
+			std::printf("%-24s", _what);
+			for(size_t i = 0x1c7; i <= 0x1d0; ++i)
+				std::printf(" %02x", raw[i]);
+			std::printf("\n");
+		};
+		bytes("all FX (init)");
+		m->send(elektronData::mmSetRouting(0, 1, 5));
+		m->run(200);
+		bytes("T1 FX in 5 (bus CD)");
+		m->send(mmCommand(0x5b, {0, 6, 0}));
+		m->run(300);
+		bytes("T1 DPRO-WAVE (no init)");
+		m->send(elektronData::mmSetRouting(0, 2, 5));
+		m->run(200);
+		bytes("T1 synth 0x5C out 2 in 5");
+		m->send(mmCommand(0x5b, {0, 13, 1}));
+		m->run(300);
+		bytes("T1 FX-REVERB (init)");
+		m->send(elektronData::mmSetRouting(0, 1, 1));
+		m->run(200);
+		bytes("T1 FX in 1 (INP A)");
+		m->send(mmCommand(0x5b, {0, 6, 1}));
+		m->run(300);
+		bytes("T1 DPRO-WAVE (init)");
+		if(std::getenv("PROBE_SHORT"))
+			return;
+		for(uint8_t t = 0; t < 6; ++t)
+			for(uint8_t v : {4, 5, 6, 0, 1, 2, 3, 6})
+			{
+				m->send(elektronData::mmSetRouting(t, 1, v));
+				m->run(200);
+				char b[64];
+				std::snprintf(b, sizeof(b), "T%d in %d", t + 1, v);
+				bytes(b);
+			}
+	}
+
+	// Which bytes of a global dump change the active global the machine reports (doc/release/DEV-CYCLE.md, the intent
+	// cases' base global made GLOBAL 6 active): slot 1's own image with the intent cases' global's bytes from a range,
+	// stored on SYSEX RECV, made active (0x56), then status.
+	void globalActiveMode(const Bytes& _rom, const std::string& _cases)
+	{
+		const auto text = load(_cases);
+		const auto file = elektronData::json::parse(std::string(text.begin(), text.end()));
+		require(file.has_value(), "the intent cases parse");
+		std::vector<std::string> errors;
+		const auto target = elektronData::mmGlobalFromJson(*file->find("mm")->find("docs")->find("global"), errors);
+		require(target.has_value(), "the base global reads");
+		const auto want = elektronData::mmGlobalRaw(*target);
+		const auto attempt = [&](const size_t _from, const size_t _to)
+		{
+			auto m = boot(_rom);
+			auto raw = rawPayload(dump(*m, 0x50, 1));
+			for(size_t i = _from; i < _to; ++i)
+				raw[i] = want[i];
+			md::test::enterMmReceive(m->hardware(), false);
+			m->send(elektronData::encodeMmGlobal(*elektronData::mmGlobalFromRaw(raw, 1)));
+			m->run(200);
+			md::test::exitMenus(m->hardware());
+			m->run(300);
+			m->send(elektronData::mmSetActiveGlobal(1));
+			m->run(300);
+			const int active = status(*m, 0x01);
+			std::printf("bytes 0x%03zx-0x%03zx from the base: active global %d\n", _from, _to, active);
+			return active;
+		};
+		if(std::getenv("PROBE_MACRO"))
+		{
+			auto m = boot(_rom);
+			m->send(elektronData::mmSetActiveGlobal(static_cast<uint8_t>(std::atoi(std::getenv("PROBE_MACRO")))));
+			m->run(300);
+			using C = md::PanelControl;
+			const auto step = [&](const char* _what, const C _c, const bool _chord)
+			{
+				_chord ? chord(*m, _c, 20, 60) : key(*m, _c, 20, 60);
+				m->run(100);
+				char b[64];
+				std::snprintf(b, sizeof(b), "%s (global %d)", _what, status(*m, 0x01));
+				printLcd(*m, b);
+			};
+			printLcd(*m, "start");
+			step("FUNCTION+KIT", C::Kit, true);
+			step("ENTER", C::Enter, false);
+			for(int i = 0; i < 4; ++i) step("LEFT", C::Left, false);
+			for(int i = 0; i < 8; ++i) step("UP", C::Up, false);
+			step("DOWN", C::Down, false);
+			step("DOWN", C::Down, false);
+			step("RIGHT", C::Right, false);
+			for(int i = 0; i < 8; ++i) step("UP", C::Up, false);
+			step("DOWN", C::Down, false);
+			step("ENTER", C::Enter, false);
+			step("RIGHT", C::Right, false);
+			step("ENTER", C::Enter, false);
+			return;
+		}
+		{
+			auto m = boot(_rom);
+			const auto say = [&](const char* _what) { std::printf("%-32s status global %d kit %d pattern %d\n", _what, status(*m, 0x01), status(*m, 0x02), status(*m, 0x04)); };
+			say("booted");
+			for(const uint8_t g : {0, 1, 2, 3, 4, 5, 6, 7})
+			{
+				m->send(elektronData::mmSetActiveGlobal(g));
+				m->run(300);
+				char b[48];
+				std::snprintf(b, sizeof(b), "0x56 %d", g);
+				say(b);
+				md::test::enterMmReceive(m->hardware(), false);
+				m->run(200);
+				std::snprintf(b, sizeof(b), "  SYSEX RECV (lcd %s)", "");
+				say(b);
+				md::test::exitMenus(m->hardware());
+				m->run(300);
+				say("  out of RECV");
+			}
+			m->send(elektronData::mmSetActiveGlobal(1));
+			m->run(300);
+			say("0x56 1");
+			for(const uint8_t p : {0, 0, 1, 5, 0})
+			{
+				m->send(mmCommand(0x57, {p}));
+				m->run(1200);
+				char b[40];
+				std::snprintf(b, sizeof(b), "0x57 %d (LOAD PATTERN)", p);
+				say(b);
+			}
+			m->send(elektronData::mmSetActiveGlobal(1));
+			m->run(300);
+			say("0x56 1 again");
+			m->send(mmCommand(0x57, {0}));
+			m->run(1200);
+			say("0x57 0 again");
+			m->send(elektronData::mmSetActiveGlobal(3));
+			m->run(300);
+			say("0x56 3");
+			m->send(mmCommand(0x57, {0}));
+			m->run(1200);
+			say("0x57 0");
+			return;
+		}
+		attempt(0, 0);
+		attempt(0, want.size());
+		const std::vector<std::pair<size_t, size_t>> fields{{0, 5}, {5, 7}, {7, 10}, {10, 13}, {13, 18}, {18, 24}, {24, 48}, {48, 54}, {54, 60}, {60, 252}, {252, 253}, {253, 262}, {262, 264}};
+		for(const auto& f : fields)
+			attempt(f.first, f.second);
+	}
+
 	void workKitMode(const Bytes& _rom)
 	{
 		auto m = boot(_rom);
@@ -1330,7 +1543,8 @@ namespace
 		{
 			_k.levels[t] = static_cast<uint8_t>(_r.in(0, 127));
 			_k.machines[t] = machines[static_cast<size_t>(_r.in(0, static_cast<int>(machines.size()) - 1))].id;
-			_k.routing[t] = ed::mmRouting(static_cast<uint8_t>(_r.in(0, 7)), static_cast<uint8_t>(_r.in(0, 6)));
+			ed::mmSetKitOutputs(_k, t, static_cast<uint8_t>(_r.in(0, 7)));
+			ed::mmSetKitInput(_k, t, static_cast<uint8_t>(_r.in(0, 6)));
 			for(auto& pg : _k.tracks[t].pages) for(auto& v : pg) v = static_cast<uint8_t>(_r.in(0, 127));
 			for(auto& v : _k.tracks[t].midi) v = static_cast<uint8_t>(_r.in(0, 127));
 			for(auto& v : _k.assignPage[t]) v = static_cast<uint8_t>(_r.in(0, 8));
@@ -2233,6 +2447,8 @@ int main(const int _argc, char** _argv)
 		else if(mode == "recvcount") recvCountMode(rom);
 		else if(mode == "burst") burstMode(rom);
 		else if(mode == "workkit") workKitMode(rom);
+		else if(mode == "inputs") inputsMode(rom);
+		else if(mode == "globalactive") globalActiveMode(rom, dir);
 		else if(mode == "queue") queueMode(rom);
 		else if(mode == "boot") bootMode(rom);
 		else if(mode == "screens") screensMode(rom);

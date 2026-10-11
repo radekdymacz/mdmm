@@ -76,7 +76,7 @@ no row matches runs everything of its tier.
 - **Command -> firmware.** `doc/modern-ux/intent-cases.json` (125 MM cases, and a first Machinedrum set of 29) is read by
   `mmIntentCases.h` / `mdIntentCases.h` and run by the core tests (`mmDeskTest`, `mdDeskTest`) and, through the desk on
   the firmware, by `mmDeskFirmwareTest intentcases` and `mdDeskFirmwareTest intentcases` (ctest
-  `mdIntentCasesFirmwareTest`; the MM's by hand until its findings are triaged, below).
+  `mdIntentCasesFirmwareTest` and `mmIntentCasesFirmwareTest`).
 - **ctest lanes.** The 28 node page tests carry the label `Page`; the Timing tests run serially (`RUN_SERIAL`); the slow
   unit tests carry `Slow` (out of the save-time lane).
 - **The gate in lanes.** Stage 1 with ccache; the journeys' diagnostics build in the background while the release
@@ -103,11 +103,15 @@ no row matches runs everything of its tier.
 
 - Machinedrum: 28 of 28 cases as the core says (40 s). One case moved off the pattern that plays: there the machine also
   loads the pattern's new kit (a working-kit switch the core's apply does not model).
-- Monomachine: 70 of 99 cases as the core says (64 s); the rest are to triage, so `mmIntentCasesFirmwareTest` is not in
-  ctest yet (run it by hand: `mmDeskFirmwareTest <MM ROM> intentcases`). The machine keeps the base's working-kit trigPos
-  as none; kit fields with no live message (trigPos, legato, portamento, routing mode, multiTrig, assign) and the GLOBAL
-  MIDI cases, the multi map and the FX machines' input read back otherwise than the core says. Each is either a bug or a
-  case the core and the firmware see differently (then the case says so, as the MD's pattern kit does).
+- Monomachine: 70 of 99 cases as the core says at first (64 s). Triaged on `fix/mm-intent-cases`: two editor bugs
+  (B-067: the SYSEX RECV key macro made GLOBAL 6 active whenever another than GLOBAL 1 was, which took 11 GLOBAL, MIDI
+  and multi map cases; B-068: an FX machine's input was read and dumped in a form the firmware does not keep, 5 cases),
+  the cases' base kit had a TRIG POS on its own track (the firmware keeps it as none (measured; kits that hold one still load), 5 cases
+  followed from it), and 10 cases where the machine does more than the core's documents say, now in the case as
+  `kitSlot`: a kit field with no live message (TRIG POS, legato, portamento, ASSIGN, MULTI TRIG) goes as a dump into
+  the slot of the kit that plays and LOAD KIT, so that slot holds the working kit after (`stores`); a paste into that
+  slot is loaded too (`loads`). The test also waits for the base global's MIDI channels to settle. Now 99 of 99, and
+  `mmIntentCasesFirmwareTest` is in ctest (about 1 min).
 
 ## What stays open
 
