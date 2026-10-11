@@ -23,9 +23,11 @@ namespace md
 		L4Cycle	= 1u << 6,	// L4: poll loops over several blocks skipped (the MD's p:3c)
 		L4PortC	= 1u << 7,	// L4: poll loops on the Port C data register (block sync, MD p:bb, MM p:195)
 		Cmpm	= 1u << 8,	// the JIT's cmpm fix
+		// the small wins of 0.6 (RESEARCH-emulation-cpu.md, "Small wins (0.6)")
+		LinkRings	= 1u << 9,	// the rings between the DSPs and the codec output ring skip their semaphores
 	};
 
-	constexpr uint32_t g_allSpeedUpLevers = 0x1ffu;
+	constexpr uint32_t g_allSpeedUpLevers = 0x3ffu;
 
 	constexpr uint32_t bit(const SpeedUpLever _lever) { return static_cast<uint32_t>(_lever); }
 
@@ -36,9 +38,9 @@ namespace md
 		const char* label;		// the Developer menu's
 	};
 
-	inline const std::array<SpeedUpLeverInfo, 9>& speedUpLevers()
+	inline const std::array<SpeedUpLeverInfo, 10>& speedUpLevers()
 	{
-		static const std::array<SpeedUpLeverInfo, 9> levers{{
+		static const std::array<SpeedUpLeverInfo, 10> levers{{
 			{SpeedUpLever::L1,		"L1",		"L1 UC idle skip: inputs tested once per batch"},
 			{SpeedUpLever::L11,		"L11",		"L11 ColdFire memory fast lane"},
 			{SpeedUpLever::L2b,		"L2B",		"L2b MD DSP catch-ups in one entry"},
@@ -48,6 +50,7 @@ namespace md
 			{SpeedUpLever::L4Cycle,	"L4_CYCLE",	"L4 skip multi-block poll loops (MD p:3c)"},
 			{SpeedUpLever::L4PortC,	"L4_PORTC",	"L4 skip Port C block-sync polls"},
 			{SpeedUpLever::Cmpm,	"CMPM",		"CMPM fix"},
+			{SpeedUpLever::LinkRings,	"LINK_RINGS",	"DSP link rings without semaphores (one thread)"},
 		}};
 		return levers;
 	}
