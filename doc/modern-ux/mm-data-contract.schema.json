@@ -863,6 +863,18 @@
             },
             "programChange": {
               "$ref": "#/$defs/byte"
+            },
+            "sequencer": {
+              "description": "CONTROL OUT1 SEQUENCER (0.6, PROBES-manual-gaps.md P2): 0 INT, 1 OUT, 2 INT+OUT. Missing in documents from before: then hidden.x07 holds the three bytes.",
+              "$ref": "#/$defs/byte"
+            },
+            "arp": {
+              "description": "CONTROL OUT1 ARP: 0 INT, 1 OUT, 2 INT+OUT.",
+              "$ref": "#/$defs/byte"
+            },
+            "keyboard": {
+              "description": "CONTROL OUT1 KEYBOARD: 0 INT, 1 OUT, 2 INT+OUT.",
+              "$ref": "#/$defs/byte"
             }
           }
         },
@@ -2794,7 +2806,7 @@
         },
         {
           "type": "object",
-          "description": "core: GLOBAL › MIDI: the active global's channels (0-15, null OFF; base + t is track t's while t < span), CONTROL IN (clockIn: TEMPO SYNC EXT MIDI CLK, transportIn: TRANSPORT ACCEPT) and OUT (clock, Start/Stop, program change)",
+          "description": "core: GLOBAL › MIDI: the active global's channels (0-15, null OFF; base + t is track t's while t < span), CONTROL IN (clockIn: TEMPO SYNC EXT MIDI CLK, transportIn: TRANSPORT ACCEPT), OUT2 (clock, Start/Stop, program change) and OUT1 (sequencerOut, arpOut, keyboardOut: 0 INT, 1 OUT, 2 INT+OUT)",
           "required": ["op"],
           "properties": {
             "op": {
@@ -2877,13 +2889,54 @@
             },
             "programChangeOut": {
               "type": ["boolean", "integer"]
+            },
+            "sequencerOut": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "arpOut": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "keyboardOut": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2
             }
           },
           "additionalProperties": false
         },
         {
           "type": "object",
-          "description": "core: GLOBAL › Reset to defaults: the active global becomes the one the machine ships with (measured, mmDeskFirmwareTest factoryglobal)",
+          "description": "core: GLOBAL › AUDIO › MASTER TUNE: tenths of Hz, 400.0 to 499.9 Hz as the panel sets it (4400 = 440.0 Hz; gapProbesFirmwareTest p8)",
+          "required": ["op", "v"],
+          "properties": {
+            "op": {
+              "const": "masterTune"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "v": {
+              "type": "integer",
+              "minimum": 4000,
+              "maximum": 4999
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core: GLOBAL › Clear: the active global becomes the one the machine ships with (measured, mmDeskFirmwareTest factoryglobal)",
           "required": ["op"],
           "properties": {
             "op": {
@@ -4672,6 +4725,58 @@
             },
             "name": {
               "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core: GLOBAL › Copy: the global into the clipboard",
+          "required": ["op", "slot"],
+          "properties": {
+            "op": {
+              "const": "globalCopy"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "slot": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 7
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core: GLOBAL › Paste: the clipboard's global into this slot (its position kept)",
+          "required": ["op", "slot"],
+          "properties": {
+            "op": {
+              "const": "globalPaste"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "slot": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 7
             }
           },
           "additionalProperties": false
