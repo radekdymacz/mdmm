@@ -283,9 +283,10 @@ namespace deskCore
 	}
 
 	// ---- the library: slot actions over a model's kinds (DESIGN-UNIFY.md 4.2) ----
-	// One shelf a kind of slot (the kits, the patterns): what differs between them and between the machines is data
-	// here (the shelf's functions), the actions are the same. Commands: <kit|pat>Copy {k|p}, Paste {k|p}, CopyTo {from,
-	// to}, Clear {k|p}, kitRename {k, name}. The command table has checked the arguments. A slot write is validated and
+	// One shelf a kind of slot (the kits, the patterns, the songs): what differs between them and between the machines
+	// is data here (the shelf's functions), the actions are the same. Commands: <kit|pat|song>Copy {k|p|s}, Paste
+	// {k|p|s}, CopyTo {from, to} (songCopyTo may carry a name: "Save to..."), Clear {k|p|s}, kitRename {k, name},
+	// songRename {s, name}. The command table has checked the arguments. A slot write is validated and
 	// is no change when it is the same; asking before it loses something is the machine's (its review).
 	namespace library
 	{
@@ -374,15 +375,29 @@ namespace deskCore
 		}
 
 		// Writes _src into slot _target; _verb says how the user did it.
+		// _name (a copy that names its target: songCopyTo "Save to...") is the target's name after the write.
 		template<typename M>
-		void place(const Lib<M>& _l, const std::optional<typename M::Document>& _src, const int _target, const char* _verb)
+		void place(const Lib<M>& _l, const std::optional<typename M::Document>& _src, const int _target, const char* _verb,
+			const std::string* _name = nullptr)
 		{
 			const auto dst = _l.at(_target);
 			if(!dst || !_src)
 				return;
 			const auto src = _l.shelf.stored(*_src);
-			_l.r.note = std::string(_verb) + _l.shelf.title(src) + " into " + _l.shelf.label(_target);
-			_l.put(*dst, _l.shelf.placed(src, *dst, _target));
+			auto placed = _l.shelf.placed(src, *dst, _target);
+			if(_name && _l.shelf.renamed)
+			{
+				std::string error;
+				const auto named = _l.shelf.renamed(placed, *_name, error);
+				if(!named)
+				{
+					_l.r.errors.push_back(error);
+					return;
+				}
+				placed = *named;
+			}
+			_l.r.note = std::string(_verb) + _l.shelf.title(_name ? placed : src) + " into " + _l.shelf.label(_target);
+			_l.put(*dst, std::move(placed));
 		}
 
 		template<typename M>
@@ -403,7 +418,9 @@ namespace deskCore
 				_l.r.errors.emplace_back("That is the same slot");
 				return;
 			}
-			place(_l, _l.from(from), to, "Copied ");
+			const auto* name = _l.command.find("name");
+			const auto text = name && name->isString() ? name->asString() : std::string();
+			place(_l, _l.from(from), to, "Copied ", name && name->isString() ? &text : nullptr);
 		}
 
 		template<typename M>
@@ -448,7 +465,8 @@ namespace deskCore
 			static const std::map<std::string, Action> a{
 				{"kitCopy", Action::Copy}, {"kitPaste", Action::Paste}, {"kitCopyTo", Action::CopyTo}, {"kitClear", Action::Clear},
 				{"kitRename", Action::Rename}, {"patCopy", Action::Copy}, {"patPaste", Action::Paste}, {"patCopyTo", Action::CopyTo},
-				{"patClear", Action::Clear}};
+				{"patClear", Action::Clear}, {"songCopy", Action::Copy}, {"songPaste", Action::Paste}, {"songCopyTo", Action::CopyTo},
+				{"songClear", Action::Clear}, {"songRename", Action::Rename}};
 			return a;
 		}
 		inline std::vector<std::string> ops()
