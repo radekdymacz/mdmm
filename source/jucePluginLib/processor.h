@@ -189,6 +189,9 @@ namespace pluginLib
 		// A hook: processBlock's outputs after the output gain (audio thread; I-021, the editors' output meter). Null
 		// pointers are outputs the host did not enable.
 		virtual void processBlockOutput(const synthLib::TAudioOutputs& /*_outputs*/, size_t /*_frames*/) {}
+		// A hook: a MIDI message from outside (the host's MIDI in or a physical port) as addMidiEvent takes it, before it
+		// is routed (audio thread for the host's, the MIDI thread for a port's; 0.6, the editors' midiIn message).
+		virtual void midiInReceived(const synthLib::SMidiEvent& /*_ev*/) {}
 
 		bool rebootDevice();
 
