@@ -6,6 +6,9 @@
    mix, song, sampler, lib, global, audio, engine, dialog (doc/modern-ux/JOURNEYS.md lists them against the features). */
 const MdJourneys = (() => {
 	const { ok, sleep, until } = Journey;
+	/* a tapped tempo against the journey's own clock: 5 % (a busy Mac moves the key events by tens of ms against it; the
+	   page tier runs beside the gate's other stages) */
+	const tapSlack = want => Math.max(1.5, want * 0.05);
 	const $1 = q => document.querySelector(q), $all = q => [...document.querySelectorAll(q)];
 	const desk = () => machineState().desk || {};
 	const pat = () => Docs.patterns[currentPatternSlot()];
@@ -116,7 +119,7 @@ const MdJourneys = (() => {
 				   journey right after another one, as in a shard of the page tier, measured the gap between them) */
 				if (typeof TAP !== "undefined" && TAP.length) await sleep(2100);
 				const at = []; for (let i = 0; i < 5; i++) { at.push(performance.now()); u.key(m.shift ? key.toUpperCase() : key, m); await sleep(500); } c.want = Math.round(60000 / ((at[4] - at[0]) / 4) * 10) / 10; c.note = `taps ${Math.round((at[4] - at[0]) / 4)} ms apart: ${c.want} BPM`; },
-				screen: c => ok(Math.abs(V.bpm - c.want) <= 1.5 && Math.abs(parseFloat($1("#bpm").textContent) - V.bpm) < 0.06, "BPM " + V.bpm + ", want " + c.want), machine: c => ok(Math.abs(Docs.global.tempo - c.want) <= 1.5, "tempo " + Docs.global.tempo + ", want " + c.want) }
+				screen: c => ok(Math.abs(V.bpm - c.want) <= tapSlack(c.want) && Math.abs(parseFloat($1("#bpm").textContent) - V.bpm) < 0.06, "BPM " + V.bpm + ", want " + c.want), machine: c => ok(Math.abs(Docs.global.tempo - c.want) <= tapSlack(c.want), "tempo " + Docs.global.tempo + ", want " + c.want) }
 		],
 		async tidy(u, c) { if (c.b0 != null) cmd("tempo", { bpm: c.b0 }); await sleep(500); }
 	});
