@@ -111,7 +111,11 @@ const MdJourneys = (() => {
 	const tapWith = (name, key, m = {}) => ({
 		name,
 		steps: [
-			{ say: `tap ${m.shift ? "Shift+" : ""}${key.toUpperCase()} five times, about 0.5 s apart`, act: async (u, c) => { c.b0 = Docs.global.tempo; document.activeElement?.blur?.(); const at = []; for (let i = 0; i < 5; i++) { at.push(performance.now()); u.key(m.shift ? key.toUpperCase() : key, m); await sleep(500); } c.want = Math.round(60000 / ((at[4] - at[0]) / 4) * 10) / 10; c.note = `taps ${Math.round((at[4] - at[0]) / 4)} ms apart: ${c.want} BPM`; },
+			{ say: `tap ${m.shift ? "Shift+" : ""}${key.toUpperCase()} five times, about 0.5 s apart`, act: async (u, c) => { c.b0 = Docs.global.tempo; document.activeElement?.blur?.();
+				/* a new run of taps: the page counts a tap less than 2 s after the last one into the same average (a tap
+				   journey right after another one, as in a shard of the page tier, measured the gap between them) */
+				if (typeof TAP !== "undefined" && TAP.length) await sleep(2100);
+				const at = []; for (let i = 0; i < 5; i++) { at.push(performance.now()); u.key(m.shift ? key.toUpperCase() : key, m); await sleep(500); } c.want = Math.round(60000 / ((at[4] - at[0]) / 4) * 10) / 10; c.note = `taps ${Math.round((at[4] - at[0]) / 4)} ms apart: ${c.want} BPM`; },
 				screen: c => ok(Math.abs(V.bpm - c.want) <= 1.5 && Math.abs(parseFloat($1("#bpm").textContent) - V.bpm) < 0.06, "BPM " + V.bpm + ", want " + c.want), machine: c => ok(Math.abs(Docs.global.tempo - c.want) <= 1.5, "tempo " + Docs.global.tempo + ", want " + c.want) }
 		],
 		async tidy(u, c) { if (c.b0 != null) cmd("tempo", { bpm: c.b0 }); await sleep(500); }
