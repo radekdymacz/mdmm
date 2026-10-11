@@ -1,6 +1,6 @@
 /* ===== GLOBAL: the machine's own settings (B-051, ROADMAP F3; a page since 0.6) =====
    The Machinedrum Editor's GLOBAL page, one implementation for both editors (skins/shared/deskGlobal.js: the slots,
-   Reset to defaults, the footer, the controls); this is the Monomachine's host of it. S.glob is the active global
+   Copy · Paste · Clear, the controls); this is the Monomachine's host of it. S.glob is the active global
    as the page shows it (MmView's globPage: a channel 0-15, null OFF); a change is the globalMidi intent (the routing
    mode: routing), stored in the active slot and made active; a slot key is HOST.globalSlot (SET ACTIVE GLOBAL).
    Measured on OS 1.32B (mmDeskFirmwareTest spanprobe, globalprobe): track t listens on base + t while t < CHANNEL SPAN

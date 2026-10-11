@@ -74,7 +74,7 @@ NOTE: In a DAW the host sets the tempo. The field is marked and refuses an edit,
 The machine's [FUNCTION] key gives the other keys a second job. The editor has no such key. The second jobs are separate controls on the page, or they follow a modifier key of your computer. Hold [⌥] and the keys it changes say what they do then: <CLR> becomes the clear of the whole pattern, for example.
 
 ## KIT AND SONG KEYS
-<!-- rows: MM-025 MM-026 @ec2007 -->
+<!-- rows: MM-025 MM-026 @d2a720 -->
 
 On the machine [KIT] opens the kit menu. In the editor click the <KIT> field of the LCD to open the kit library. Chapter 6 describes it. The **Song** workspace ({key:workspace-5}) is the song menu: see chapter 17.
 
@@ -84,9 +84,7 @@ On the machine [KIT] opens the kit menu. In the editor click the <KIT> field of 
 - choose **GLOBAL…** in the engine menu, the drop-down at the left of the LCD;
 - press the GLOBAL link in the **AUDIO / MIDI** panel.
 
-The panel holds eight global slots and the Control, Sync and Routing settings. {key:close-global} closes it.
-
-Master tune is not on the GLOBAL panel yet.
+The GLOBAL page opens under the header. It holds the eight global slots and the Control, Sync, Routing, Audio and Control out 1 settings, the master tune among them. {key:close-global} goes back to the workspace. Chapter 19 describes it.
 
 ## TRIG KEYS
 <!-- rows: MM-027 MM-028 MM-029 MM-030 @7a3fc9 -->
