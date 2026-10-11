@@ -2,19 +2,19 @@
 /* ===== Sequence (synth tracks) and MIDI SEQ (MIDI tracks) =====
    One object per step: a trig that carries its pitch (or chord), its NOTE OFF type,
    its envelope trig flags and its parameter locks. The overview shows every track;
-   the note lane edits the selected track's trigs by pitch. Under it only the per-track
-   SLIDE and SWING rows. The MIDI sequencer is its own workspace with the same editor. */
-S.page=0;S.viewAll=true;S.follow=false;S.dock="locks";	/* P7: all steps by default; PAGE pages, ALL goes back */
+   the note lane edits the selected track's trigs by pitch. Under it the ENV row and the
+   trig types (slide and swing are marks along the foot of the roll). The MIDI sequencer is its own workspace with the same editor. */
+S.page=0;S.viewAll=true;S.follow=false;S.dock="locks";S.tt="note";	/* P7: all steps by default; PAGE pages, ALL goes back */
 const pages16=()=>Math.ceil(S.len/16);
 function vis(){if(S.viewAll)return[0,S.len];S.page=Math.min(S.page,pages16()-1);return[S.page*16,Math.min(S.len,S.page*16+16)]}
 function steps(){const[a,b]=vis();return Array.from({length:b-a},(_,k)=>a+k)}
 /* ALL shows 64 steps in the width: columns may shrink below 18 px there (no horizontal scroll at 1280 px).
-   One 50 px gutter on the LEFT of every row, as a DAW's piano roll: the roll's keys, the A F L / SLIDE / SWING
-   names, the lock lane's scale and the dock panels' scale all sit in it, so the step columns line up. */
+   One 50 px gutter on the LEFT of every row, as a DAW's piano roll: the roll's keys, the A F L name, the lock lane's scale and the dock panels' scale all sit in it, so the step columns line up. */
 function cols(){return`50px repeat(${steps().length},minmax(${S.viewAll?0:18}px,1fr))`}
 const gapC=s=>s%16===0&&s!==vis()[0]?"gap":"";
 /* MD Editor Sequence layout: rail = tracks + SYNTH/MIDI + lock parameter; main = page keys, ruler,
-   ONE piano roll for the selected track (the height of the MD's 16-row grid), ENV/SLIDE/SWING rows, lock lane. */
+   ONE piano roll for the selected track (the height of the MD's 16-row grid), the ENV row, the trig types (Note ·
+   Slide · Swing, wave 3: slide and swing are marks along the foot of the roll), lock lane. */
 const ROLL_H=16*28+15*3;
 function th(t){const tr=trk(t),polyOff=S.mode==="poly"&&t!==S.sel&&t<6;return`<div class="th ${t===S.sel?"sel":""} ${S.ws==="seq"&&S.marks?.has(t)?"marked":""} ${trackSel(t)} ${audible(t)?"":"off"} ${polyOff?"poly-off":""}" data-sel="${t}">
  <div class="threw"><div class="sw"></div><div class="n ${t<6?"":"fill"}">${t<6?t+1:"M"+(t-5)}</div><div class="nm${S.ws==="seq"&&S.gen?" tagged":""}" title="${tr.name}"><b>${t<6?tr.m.replace("SWAVE-","SW-"):"CH"+String(tr.ch).padStart(2,"0")}</b>${S.ws==="seq"&&S.gen?`<i class="gtag" title="${genTip(t)}">${genTag(genSpec(t))}</i>`:""}</div>
@@ -41,13 +41,13 @@ function setRecLock(l){S.recLock=l||null;const key=l?l.t+":"+l.pid+":"+l.s:"";
  if(key&&key!==recLockKey)toast(`Locks ${tLabel(l.t)} ${pidLabel(l.t,l.pid)} on step ${l.s+1}: the step that plays when the value arrives.`);
  recLockKey=key;setTimeout(markRecLock,20)}
 function renderSeq(){const t=S.sel,tr=trk(t),midi=isMidiT(t);dockOf(t);
- const rows=[["env",midi?"VEL":"Env"],["sld","Slide"],["swg","Swing"]];
+ const rows=[["env",midi?"VEL":"Env"]];
  let h=`<div class="scroll" id="seqscroll"><div class="mstack ${S.viewAll?"all":""}" id="seq"><div class="mrowg ruler" style="grid-template-columns:${cols()}"><div class="rul"></div>${steps().map(s=>`<div class="rul ${gapC(s)} ${rulSel(s)}" data-s="${s}">${s%4===0?s+1:""}</div>`).join("")}</div>
-  <div class="nlane big"><canvas class="roll" data-ed="lane" data-t="${t}" data-big="1" title="${ROLL_TIP(t)}" aria-label="${ROLL_TIP(t)}"></canvas></div>
+  <div class="nlane big"><canvas class="roll" data-ed="lane" data-t="${t}" data-big="1" title="${ROLL_TIP(t)}" aria-label="${ROLL_TIP(t)}"></canvas>${rollMarks(t)}</div>
   <div class="tlanes" id="tlanes">${rows.map(([k,lab])=>{if(k==="env"&&midi)return`<div class="tlane env" style="grid-template-columns:${cols()}" title="Velocity per note (VEL, lockable)"><span class="tlab">VEL</span>${steps().map(s=>{const st=tr.steps[s];const v=st&&!st.off?velOf(t,s):null;return`<span class="tc envc ${gapC(s)} ${v==null?"na":""}">${v!=null?`<i class="velbar" style="--v:${v/127*100}%" title="VEL ${v}"></i>`:""}</span>`}).join("")}</div>`;
-   return`<div class="tlane ${k}" style="grid-template-columns:${cols()}" title="${{env:"Which envelopes this trig fires: AMP (red), FILTER (yellow), LFO (green), the manual's trig tracks. No dots = trigless.",sld:"Slide: a locked value glides to its next lock",swg:"Swing: these steps come late by the pattern's swing amount"}[k]}"><span class="tlab">${k==="env"?`<small class="envlab">A F L</small>`:lab}</span>${steps().map(s=>{const st=tr.steps[s];
-    if(k==="env"){const ok=st&&!st.off;return`<span class="tc envc ${gapC(s)} ${ok?"":"na"} ${cellSel(s)}" data-s="${s}">${ok?["a","f","l"].map(b=>`<button class="d ${b} ${st[b]?"on":""}" data-env="${b}" data-s="${s}" aria-pressed="${!!st[b]}" aria-label="${{a:"AMP",f:"FILTER",l:"LFO"}[b]} trig step ${s+1}"></button>`).join(""):""}</span>`}
-    const on=k==="sld"?tr.slide.has(s):tr.swing.has(s);return`<button class="tc ${on?"on":""} ${gapC(s)} ${cellSel(s)}" data-tl="${k}" data-s="${s}" aria-pressed="${on}" aria-label="${lab} step ${s+1}"></button>`}).join("")}</div>`}).join("")}</div></div></div>
+   return`<div class="tlane ${k}" style="grid-template-columns:${cols()}" title="Which envelopes this trig fires: AMP (red), FILTER (yellow), LFO (green), the manual's trig tracks. No dots = trigless."><span class="tlab"><small class="envlab">A F L</small></span>${steps().map(s=>{const st=tr.steps[s],ok=st&&!st.off;
+    return`<span class="tc envc ${gapC(s)} ${ok?"":"na"} ${cellSel(s)}" data-s="${s}">${ok?["a","f","l"].map(b=>`<button class="d ${b} ${st[b]?"on":""}" data-env="${b}" data-s="${s}" aria-pressed="${!!st[b]}" aria-label="${{a:"AMP",f:"FILTER",l:"LFO"}[b]} trig step ${s+1}"></button>`).join(""):""}</span>`}).join("")}</div>`}).join("")}</div></div></div>
+ ${trigTypeRow(t)}
  ${genBarHtml()}
  <div class="lanewrap"><div class="lanetop">${S.dock==="locks"?`<span class="cap">Lock lane · ${tLabel(t)} ${midi?"CH"+String(tr.ch).padStart(2,"0"):tr.m} · <b id="lanename">${pidLabel(t,S.lane)}</b> <span class="lanescale" id="lanescale"></span></span>
   <span class="lockbudget" id="lockbudget"></span><span class="lanehelp" title="Draw across the bars to lock this parameter per step. Alt-drag erases. Shift-drag draws a ramp, a straight line from where you press to where you let go. The wheel over a step with a trig moves its lock (Shift: fine). Hatched steps have no trig, so they cannot hold a lock. Dashed line = kit value. A slide step glides to the next lock.">Draw to lock · ⇧ ramp · alt erases</span>`:(()=>{const[h,hl]=dockHelp(t,S.dock);return`<span class="cap">${DOCKN[S.dock]} · ${tLabel(t)} ${midi?"CH"+String(tr.ch).padStart(2,"0"):tr.m}</span><span class="lockbudget dkread" id="dkread">${dockRead(t,S.dock)}</span><span class="lanehelp dkhelp" title="${dkAttr(hl)}">${h}</span>`})()}${dockTabs(t)}</div>
@@ -105,7 +105,6 @@ function clickStep(t,s,e){const tr=trk(t),st=tr.steps[s];
  else if(e.altKey&&!isMidiT(t)){if(!st||st.off)tr.steps[s]={n:[lastNote(t,s)],a:0,f:0,l:0};else{const k=stepKind(st);Object.assign(st,k==="full"?{a:0,f:0,l:0}:{a:1,f:1,l:1})}}
  else{if(st&&!st.off){tr.steps[s]=null;clearStepLocks(t,s)}else tr.steps[s]=note(lastNote(t,s))}
  editStep(t,s);renderTop();if(t!==S.sel){S.sel=t;autoRange(t);render()}else rerenderSeq()}
-function clickTl(k,s){const tr=trk(S.sel),set=k==="sld"?tr.slide:tr.swing,on=!set.has(s);on?set.add(s):set.delete(s);edit(k==="sld"?"slide":"swingStep",{t:S.sel,s,on});rerenderSeq()}
 function clickEnv(b,s){const t=S.sel,st=trk(t).steps[s];if(!st||st.off)return;st[b]=st[b]?0:1;if(!st.n&&!st.a&&!st.f&&!st.l){trk(t).steps[s]=null;clearStepLocks(t,s)}editStep(t,s);rerenderSeq()}
 let laneDraw=null;
 function laneAt(e){const lane=$("#lane");if(!lane)return;if(laneDraw.ramp){rampAt(e);return}const el=document.elementFromPoint(e.clientX,e.clientY)?.closest(".lb");if(!el||!lane.contains(el))return;
@@ -294,3 +293,28 @@ function rollUp(){const d=rollDrag;rollDrag=null;if(d?.mode==="key"){if(d.n!=nul
  if(d.mode==="len"){editSpan(t,d.touched,d.lock);if(d.L){setRollLen(d.L);toast(`${tLabel(t)} step ${d.s+1}: ${MmRoll.say(d.L)}${d.L<d.want?" (the next trig ends it)":""}; new notes get it too.`)}rerenderSeq();return}
  if(d.touched)editSpan(t,d.touched,d.lock);else editStep(t,d.s);
  rerenderSeq()}
+
+/* ===== The trig types (wave 3, DESIGN-machine-menus.md §2, Sequence MM; mockup-next mm-12): Note · Slide · Swing in the row
+   under the roll, where the SLIDE and SWING rows were. The lit key (S.tt) is what a click paints: Note, the roll as ever;
+   Slide or Swing, the whole step column under the pointer, for the selected track (the MM keeps both per track: no EDIT
+   ALL). The marks sit along the foot of the roll: slide a triangle at the left of the step, swing a teal slant at its
+   right. Esc back to Note. ===== */
+const TT_ROW=[["note","Note"],["sld","Slide"],["swg","Swing"]];
+function ttSet(tr,k){return k==="sld"?tr.slide:tr.swing}
+function rollMarks(t){const tr=trk(t);return`<div class="rollmarks mrowg" aria-hidden="true" style="grid-template-columns:${cols()}"><span></span>${steps().map(s=>`<span class="rm${tr.slide.has(s)?" sld":""}${tr.swing.has(s)?" swg":""}" data-rm="${s}"><i class="m1"></i><i class="m2"></i></span>`).join("")}</div>`}
+function trigTypeRow(t){const tt=S.tt||"note";
+ return`<div class="ttrow ttunder"><span class="ttkeys" role="radiogroup" aria-label="What a click on the roll paints">${TT_ROW.map(([id,n])=>`<button class="ttk ${id}" role="radio" data-tt="${id}" aria-checked="${tt===id}" title="${id==="note"?"A click on the roll writes notes (Esc comes back here)":`A click on a step's column paints ${n.toLowerCase()} for ${tLabel(t)}; a drag paints every column it crosses (one undo step)`}"><i class="led"></i><span>${n}</span><em class="ttm"></em></button>`).join("")}</span><span class="note">${tt==="note"?"Slide and swing are the marks along the foot of the roll":"Click a step's column to paint "+(tt==="sld"?"slide":"swing")+" · Esc: Note"}</span></div>`}
+function setTrigType(k){S.tt=k;document.documentElement.dataset.tt=k;rerenderSeq()}
+/* the step under x: the foot marks' columns */
+function ttStepAt(x){for(const c of $$("#seq .rollmarks [data-rm]")){const r=c.getBoundingClientRect();if(x>=r.left-1.5&&x<=r.right+1.5)return+c.dataset.rm}return null}
+let ttPaint=null;
+function ttAt(x){if(!ttPaint)return;const s=ttStepAt(x);if(s==null||ttPaint.done.has(s))return;ttPaint.done.add(s);const tr=trk(S.sel),set=ttSet(tr,ttPaint.k);
+ if(ttPaint.on==null)ttPaint.on=!set.has(s);if(set.has(s)===ttPaint.on)return;ttPaint.on?set.add(s):set.delete(s);edit(ttPaint.k==="sld"?"slide":"swingStep",{t:S.sel,s,on:ttPaint.on});
+ const c=$(`#seq .rollmarks [data-rm="${s}"]`);if(c)c.classList.toggle(ttPaint.k,ttPaint.on);ttPaint.moved=true}
+function ttHover(x){$$("#seq .rollmarks .hov").forEach(c=>c.classList.remove("hov"));if(x==null||!S.tt||S.tt==="note")return;const s=ttStepAt(x);if(s!=null)$(`#seq .rollmarks [data-rm="${s}"]`)?.classList.add("hov")}
+addEventListener("pointerdown",e=>{if(!S.tt||S.tt==="note"||S.ws!=="seq"||e.button!==0||!e.target.closest?.("#seq .nlane.big"))return;e.preventDefault();e.stopImmediatePropagation();ttPaint={k:S.tt,on:null,done:new Set()};ttAt(e.clientX)},true);
+addEventListener("pointermove",e=>{if(ttPaint){if(e.buttons===0&&e.pointerType==="mouse"){ttEnd();return}ttAt(e.clientX);return}ttHover(e.target.closest?.("#seq .nlane.big")?e.clientX:null)},true);
+function ttEnd(){if(!ttPaint)return;const p=ttPaint;ttPaint=null;commit();if(p.moved)rerenderSeq()}
+addEventListener("pointerup",ttEnd,true);addEventListener("pointercancel",ttEnd,true);
+document.addEventListener("click",e=>{const k=e.target.closest(".ttrow [data-tt]");if(k)setTrigType(k.dataset.tt)});
+Keys.bind({id:"trig-type",short:"Note",scope:"seq",keys:["Escape"],group:"Sequence",does:"Back to Note after Slide or Swing: a click on the roll writes notes again",when:()=>S.ws==="seq"&&!!S.tt&&S.tt!=="note",run:()=>setTrigType("note")});

@@ -69,16 +69,30 @@ For MAJ and MIN, click a key of the keyboard picture to set the root key. With *
 Swing delays every other sixteenth note. The **SWG** field of the LCD sets the amount for the pattern, from 50 to 80 %. Drag the field up or down, or scroll over it.
 
 ### THE SWING TRACK
-<!-- rows: MM-231 MM-232 @f6bdf1 -->
+<!-- rows: MM-231 MM-232 @3247aa -->
 
-The **Swing** row under the roll chooses the steps that swing. A lit cell comes late by the amount of **SWG**. Click a cell to switch it. Drag across cells to paint them. Each track has its own swing row.
+The keys **Note**, **Slide** and **Swing** under the roll say what a click on the roll does. **Note** writes notes, as always. With **Swing** lit, a click chooses the steps that swing:
+
+1. Click **Swing** under the roll. The key lights.
+2. Click anywhere in a step's column of the roll. A teal mark at the foot of the roll shows that the step swings. It comes late by the amount of **SWG**. Click the column again to take the swing off.
+3. Drag across columns to paint every step you cross. The first step decides: on or off. The drag is one undo step.
+4. Press {key:trig-type}, or click **Note**, to write notes again.
+
+Each track has its own swing steps. The marks show for the selected track.
 
 To copy, paste or clear the swing row of a track, tick **Swing** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu (chapter 11, "Super copy"). A clear sets it back to every second 16th step. Press {key:undo} to take each back.
 
 ## SLIDE
-<!-- rows: MM-233 MM-234 @1ac791 -->
+<!-- rows: MM-233 MM-234 @bc431d -->
 
-A slide makes a locked value glide to the next lock instead of jumping. The **Slide** row under the roll marks the steps that slide. Click a cell, or drag across cells. A slide needs a note on its step. The right-click menu has **Slide** too. In the lock lane the glide is drawn from one lock to the next.
+A slide makes a locked value glide to the next lock instead of jumping.
+
+1. Click **Slide** under the roll.
+2. Click a step's column of the roll. A triangle at the foot of the roll marks the step that slides. Click again to take it off.
+3. Drag across columns to paint slides on every step you cross, in one undo step.
+4. Press {key:trig-type} to write notes again.
+
+The right-click menu has **Slide** too. In the lock lane the glide is drawn from one lock to the next.
 
 To copy, paste or clear the slide row of a track, tick **Slide** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu (chapter 11, "Super copy"). Press {key:undo} to take each back.
 

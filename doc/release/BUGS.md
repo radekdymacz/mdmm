@@ -4,6 +4,14 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-070 · Machinedrum: a swing mark can flash back on a step whose trig was just removed
+
+- **From:** the wave 3 review, 2026-10-12.
+- **What happens:** paint Swing on a step, remove its trig: for a moment the swing mark shows again, until the core's result arrives and the view corrects itself.
+- **Cause:** the page's optimistic write on a trig removal clears the step's accent and slide but not its swing; the core clears all three.
+- **Should:** the optimistic write clears swing too.
+- **Status:** open, for 0.6 (polish pass).
+
 ## B-069 · Machinedrum: the GLOBAL panel's Trig in A / B card shows its values under the wrong names
 
 - **From:** the gap probes (`gapProbesFirmwareTest <MD ROM> - p3`, doc/modern-ux/PROBES-manual-gaps.md P3), 2026-10-11.
