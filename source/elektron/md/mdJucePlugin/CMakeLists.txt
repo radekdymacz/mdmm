@@ -375,7 +375,7 @@ if(BUILD_TESTING)
 	endif()
 	add_test(NAME mdProjectStateRestoreTest COMMAND mdProjectStateRestoreTest)
 	set_tests_properties(mdProjectStateRestoreTest PROPERTIES
-		LABELS "Integration;FirmwareTest"
+		LABELS "Integration;FirmwareTest;Slow"
 		SKIP_RETURN_CODE 77
 		TIMEOUT 600)
 	set_property(TARGET mdProjectStateRestoreTest PROPERTY FOLDER "Elektron/test")

@@ -1,0 +1,62 @@
+# What a change touches: which checks scripts/mdmm-check.sh runs for it (doc/release/DEV-CYCLE.md). One row per path
+# pattern, read top to bottom: the first row a path matches is the one for it.
+# Columns (tab separated, "-" for none):
+#   path      a glob on the path from the checkout (* any run of characters, also /)
+#   ctest     unit tests: a ctest -R regex, or L:<label> (L:Page: the node page tests), or "all" (every unit test)
+#   firmware  firmware tests for the branch check (ctest -R regex; they need the ROMs)
+#   page      page journeys (scripts/mdmm-page.mjs selector: md-*, mm-*, * both editors)
+#   machine   machine journeys for the branch check (scripts/mdmm-journeys.sh --tier machine selector, ROMs needed)
+#   goldens   yes: the change can change the sound (emulation code): the playing goldens run
+# A path no row matches runs every unit test and every page journey (the safe default).
+# path	ctest	firmware	page	machine	goldens
+# --- the pages
+source/elektron/md/mdJucePlugin/skins/shared/deskCpu*	deskCpuPageTest	-	-	*-top-cpu-meter	no
+source/elektron/md/mdJucePlugin/skins/shared/deskVolume*	deskVolumePageTest	-	-	*-lcd-volume	no
+source/elektron/md/mdJucePlugin/skins/shared/deskAudio*	-	-	-	*-audio-panel	no
+source/elektron/md/mdJucePlugin/skins/shared/deskBoot*	-	-	-	*-boot-card,*-engine-rom-card	no
+source/elektron/md/mdJucePlugin/skins/shared/deskDrop*	deskDropPageTest	-	-	*-drop-*	no
+source/elektron/md/mdJucePlugin/skins/shared/deskSyx*	deskSyxPageTest	-	-	*-lib-syx-*	no
+source/elektron/md/mdJucePlugin/skins/shared/deskCompat*	deskCompatPageTest	-	*	*-old-webkit	no
+source/elektron/md/mdJucePlugin/skins/shared/deskJourney*	deskJourneyTiersPageTest	-	*	-	no
+source/elektron/md/mdJucePlugin/skins/shared/*	L:Page	-	*	-	no
+source/elektron/md/mdJucePlugin/skins/mdStudio/mdDeskSampler*	L:Page	-	md-sampler-*	md-sampler-*	no
+source/elektron/md/mdJucePlugin/skins/mdStudio/mdDeskSong*	L:Page	-	md-song-*	md-song-*	no
+source/elektron/md/mdJucePlugin/skins/mdStudio/mdDeskSeq*	L:Page	-	md-seq-*,md-gen-*	md-seq-*	no
+source/elektron/md/mdJucePlugin/skins/mdStudio/*	L:Page	-	md-*	-	no
+source/elektron/md/mdJucePlugin/skins/mmStudio/*	L:Page	-	mm-*	-	no
+source/elektron/md/mdJucePlugin/skins/*	-	-	-	-	no
+# --- the core and the machines' models (no emulator)
+source/elektron/md/deskCore/*	deskCoreTest|mdDeskTest|mmDeskTest|deskWire	mdDeskFirmwareTest|mmDeskFirmwareTest	*	-	no
+source/elektron/md/deskHost/*	deskCoreTest|mdDeskTest|mmDeskTest	-	*	-	no
+source/elektron/md/deskStubHost/*	-	-	*	-	no
+source/elektron/md/mdDesk/*	mdDeskTest|mdDataLinkTest	mdDeskFirmwareTest	md-*	-	no
+source/elektron/md/mmDesk/*	mmDeskTest	mmDeskFirmwareTest	mm-*	-	no
+source/elektron/md/mdDataLink/*	mdDataLinkTest|mdDeskTest	mdDeskFirmwareTest	md-*	-	no
+source/elektron/md/deskWire/*	deskWire	-	-	*-engine-hw-*	no
+source/elektron/md/elektronData/*	elektronData|mmData|mmConvert|syxImport|mdDeskTest|mmDeskTest	mdSyxPick|mmSyxPick	*	-	no
+source/elektron/md/mdmmUpdate/*	mdmmUpdate|mdmmReleaseScripts	-	-	-	no
+# --- the emulation: the machines themselves
+source/elektron/md/mdLib/*	mdLib|mdRam|mdUart|mdState|mdSequencer|mdFlash|mdAudio|mdMidi|mdHostRx|mdIdle|mdTransport|mdSds|mdTurbo|mdMemory|mmSine|mmDigiPro|mmSysex	mdSessionFirmwareTest|mmBootFirmwareTest|mdAudioFirmwareTest|mmAudioFirmwareTest	-	*-boot-card	yes
+source/elektron/md/mdLibTest/goldens/*	-	-	-	-	yes
+source/elektron/md/mdLibTest/*	mdLib|mdRam|mdUart|mdState|mdSequencer|mdFlash|mdAudio|mdMidi|mdHostRx|mdIdle|mdTransport|mdSds|mdTurbo|mdMemory|mmSine|mmDigiPro|mmSysex|deskWirePort	-	-	-	no
+source/dsp56300/*	dsp56300|dsp56k|ringBuffer|semaphore|sharedAudio|cowMemory|pagedArray	mdAudioFirmwareTest|mmAudioFirmwareTest	-	-	yes
+source/mc68k/*	mc68k	mdSessionFirmwareTest|mmBootFirmwareTest	-	*-boot-card	yes
+source/elektron/md/pgo/*	-	-	-	-	yes
+# --- the plug-in (JUCE, the window, the host side)
+source/elektron/md/mdJucePlugin/*	mdPageBridge|mdEditorMenu|mdDroppedFiles|mdAbout|mdCpuLoad|mdOutputLevel|mdDeskSetupState|mdSessionNoRom|mdRomInstall|mdSettingsMigration|mdProcessArch|mdRosettaNotice|mdWindow|mdAudioIo|mdAutomation|mdFrontPanel|mdMachineMidiOut|mdLcd|mdStandalone|mdPanelRendering|mdProcessorHooks|mdmmIdentity	mdSessionFirmwareTest|mdFirstStartFirmwareTest	-	journey	no
+source/synthLib/*	synthLib|midiRouting|midiOutput	-	-	*-boot-card,*-keys-space-play	yes
+source/baseLib/*	baseLib	-	-	-	no
+source/jucePlugin*/*	midiLearn	-	-	*-boot-card	no
+source/juceRml*/*	juceRml	-	-	-	no
+# --- what holds no code the tests run
+doc/modern-ux/*.schema.json	mdDeskTest|mmDeskTest	-	*	-	no
+doc/*	-	-	-	-	no
+marketing/*	-	-	-	-	no
+site/*	-	-	-	-	no
+*.md	-	-	-	-	no
+scripts/mdmm-page.mjs	-	-	*	-	no
+scripts/mdmm-check*	-	-	-	-	no
+scripts/mdmm-affected.tsv	-	-	-	-	no
+scripts/mdmm-journeys.sh	-	-	-	journey	no
+scripts/*	-	-	-	-	no
+.github/*	-	-	-	-	no

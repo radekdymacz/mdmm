@@ -30,6 +30,6 @@ if(BUILD_TESTING)
 	if(Python3_Interpreter_FOUND)
 		add_test(NAME mdmmReleaseScriptsTest
 			COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../../../../scripts/release/test_release_scripts.py)
-		set_tests_properties(mdmmReleaseScriptsTest PROPERTIES LABELS "UnitTest" TIMEOUT 120)
+		set_tests_properties(mdmmReleaseScriptsTest PROPERTIES LABELS "UnitTest;Slow" TIMEOUT 120)
 	endif()
 endif()
