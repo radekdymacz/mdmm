@@ -30,10 +30,10 @@ command only clears extended attributes from the {{PRODUCT_NAME_MD}} and
 {{PRODUCT_NAME_MM}} bundles in the extracted folder; it does not copy or delete
 plug-ins.
 
-Side by side with the original Gearmulator plug-ins: since the release after
-0.5.x the editors have their own plug-in identity (Future Native Audio), so the
-original {{LEGACY_NAME_MD}} and {{LEGACY_NAME_MM}} plug-ins can stay installed
-next to them; each opens as itself. A DAW project saved with 0.5.x or earlier
+Side by side with the original Gearmulator plug-ins: since 0.5.1 the editors
+have their own plug-in identity (Future Native Audio), so the original
+{{LEGACY_NAME_MD}} and {{LEGACY_NAME_MM}} plug-ins can stay installed
+next to them; each opens as itself. A DAW project saved with 0.5.0 or earlier
 does not find the editor under its old identity: insert the editor again once
 in that project.
 
