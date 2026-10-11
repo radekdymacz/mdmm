@@ -4,6 +4,22 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-058 · Journeys on a copy of the person's settings: a personal GLOBAL fails the mute and note journeys
+
+- **From:** Radek, 2026-10-11, after a backup import: the journeys copy the person's standalone settings (the emulated machine's memory) by default, and that machine may hold a personal or imported global.
+- **What happens:** the copied Monomachine held GLOBAL 1 with CHANNEL SPAN 0 (base 1): every mute was refused ("T1 has no MIDI channel of its own"), so mm-keys-mute, mm-mix-level-mute, mm-mix-shift-mutes and mm-global-reset failed; with fresh settings they pass.
+- **Fix (0.5.1, `fix/0.5.1-paste-journeys`):** before its first journey each editor resets the active GLOBAL of its sandboxed machine through the GLOBAL panel's own Reset to defaults (`globalReset`), waits for the factory read-back and logs it (`JOURNEYS before: GLOBAL 1 reset to the factory settings ...: was span 0, ..., now span 6, ...`); on the Monomachine the gesture is committed at once, so a journey's first edit and its undo never take the reset with them. The person's own settings and data root are never written (the sandbox is the journeys' own). md-keys-mute and mm-global-channels now also hold when the person's kit has a RAM recorder (0 leaves it muted, by design) or the pattern has track 3 muted.
+- **Still failing with copied settings, the same with and without the reset (not the global):** md-seq-fill-every (the fill lands at steps 31-32 of a long pattern, the step is not lit on the page shown), md-sampler-audition ("no ROM sample": the copied machine's ROM slots are empty), md-lib-kit-copy-paste-undo (the kit picked to paste onto shows CAS3, a name already there), md-sampler-setup-undo (three Cmd+Z leave RAM-R2 / RAM-P2), mm-top-pattern-next and mm-seq-queue-while-playing (`#patNext is covered by span.patrow`: the LCD's pattern row covers the › key with this pattern, to check by hand: a layout bug a person could meet too). md-song-row-inspector failed once and passed alone. All pass with `MDMM_JOURNEY_SETTINGS=fresh`.
+- **Status:** the GLOBAL part fixed on `fix/0.5.1-paste-journeys`; the rest open.
+
+## B-057 · Monomachine: pasting copied steps with nothing selected cleared the rest of the page
+
+- **From:** Radek, 2026-10-11 (decision A: as the Machinedrum).
+- **What happens:** a copied selection (one track's steps or a block) pasted with Cmd+V and no step selected, or into the tracks marked for paste (Shift-click headers), put the copied steps at the page's first step and cleared every step after them to the end of the visible page; a copied block was refused with nothing selected.
+- **Cause:** the page sent `pasteSteps` with `to` = the end of the page (the PASTE PAGE form), and the core clears `[from, to)` past the block.
+- **Fix (0.5.1, `fix/0.5.1-paste-journeys`):** copied steps paste without `to`: only the copied steps land (at the page's first step of the selected track, or of each marked track), the rest stays, as on the Machinedrum. COPY PAGE then PASTE PAGE (nothing selected when copying) stays a page operation. Checks: two intent cases run by mmDeskTest (without `to` the rest of the track stays; with `to` it is cleared), mmViewTest (the intents the page sends), the journeys mm-seq-paste-many (now a four-step selection) and mm-seq-paste-steps-keeps-page (new); both fail on the 0.5.0 page.
+- **Status:** fixed on `fix/0.5.1-paste-journeys` for 0.5.1.
+
 ## B-056 · Monomachine: the GEN bar's R and Defaults cut off when the page is zoomed below 100 %
 
 - **From:** the journey `mm-shots-sound`, 2026-10-10, in a `--background` run (it passed in the slice 5 run, at full size).
