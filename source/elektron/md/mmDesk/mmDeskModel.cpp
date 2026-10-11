@@ -420,6 +420,12 @@ namespace mmDesk
 			{"modSet", Owner::Setup, Gate::None, -1, {{"doc", ArgType::Object}}, "the app modulators (mm-desk/modulators)"},
 			// ---- the machine ----
 			{"seqMode", Owner::Machine, Gate::Input, -1, {{"song", ArgType::Bool}}, "PATTERN or SONG mode (SET STATUS 0x10), read back from the machine's status"},
+			// wave 2 (doc/modern-ux/PROBES-manual-gaps.md P1, P5 MM)
+			{"pause", Owner::Machine, Gate::Input, -1, {}, "PLAY while playing (the panel) or MIDI Stop (a wire, TRANSPORT ACCEPT): the machine holds its step"},
+			{"resume", Owner::Machine, Gate::Input, -1, {}, "PLAY while paused (the panel) or MIDI Continue (a wire): it plays on from that step"},
+			{"playFrom", Owner::Machine, Gate::Input, -1, {{"i", ArgType::Integer, 0, 199}}, "play the current song from row i: SONG mode, a Song Position Pointer (the steps of the rows before it), Continue (TRANSPORT ACCEPT)"},
+			{"panic", Owner::Machine, Gate::Input, -1, {}, "every note off: CC 123 on each track's channel, then STOP"},
+			{"nudge", Owner::Machine, Gate::Input, -1, {{"pct", ArgType::Integer, -10, 10}}, "the tempo pct % off while held, 0 = back (TEMPO, LEFT / RIGHT held); not stored"},
 			{"mute", Owner::Machine, Gate::Input, -1, {t6, {"on", ArgType::Bool, 0, 0, true}}, "a synth track's mute"},
 			// MM-P4
 			{"muteMidi", Owner::Machine, Gate::Input, -1, {t6, {"on", ArgType::Bool, 0, 0, true}},

@@ -900,7 +900,7 @@
         },
         "can": {
           "type": "object",
-          "required": ["transport", "panelKeys", "recvSession", "lcd", "workingKitMemory", "telemetry", "midiMutes", "poly", "multiTrig", "multiMap", "portamento", "gridRecord", "chains"],
+          "required": ["transport", "panelKeys", "recvSession", "lcd", "workingKitMemory", "telemetry", "midiMutes", "poly", "multiTrig", "multiMap", "portamento", "gridRecord", "chains", "panic", "playFrom"],
           "additionalProperties": true,
           "properties": {
             "transport": {
@@ -941,6 +941,14 @@
             },
             "chains": {
               "type": "boolean"
+            },
+            "panic": {
+              "type": "boolean",
+              "description": "Wave 2: the panic key (every voice off) works on this engine."
+            },
+            "playFrom": {
+              "type": "boolean",
+              "description": "Wave 2: a song can be played from a row (MIDI Stop, a Song Position Pointer and Continue into the machine)."
             }
           }
         },
@@ -4810,6 +4818,121 @@
             },
             "song": {
               "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "machine: PLAY while playing (the panel) or MIDI Stop (a wire, TRANSPORT ACCEPT): the machine holds its step",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "pause"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "machine: PLAY while paused (the panel) or MIDI Continue (a wire): it plays on from that step",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "resume"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "machine: play the current song from row i: SONG mode, a Song Position Pointer (the steps of the rows before it), Continue (TRANSPORT ACCEPT)",
+          "required": ["op", "i"],
+          "properties": {
+            "op": {
+              "const": "playFrom"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "i": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 199
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "machine: every note off: CC 123 on each track's channel, then STOP",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "panic"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "machine: the tempo pct % off while held, 0 = back (TEMPO, LEFT / RIGHT held); not stored",
+          "required": ["op", "pct"],
+          "properties": {
+            "op": {
+              "const": "nudge"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "pct": {
+              "type": "integer",
+              "minimum": -10,
+              "maximum": 10
             }
           },
           "additionalProperties": false
