@@ -3,10 +3,10 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
-## I-020 · LCD-only mini view: double-click the LCD to shrink the editor to just the LCD
+## I-020 · LCD-only mini view: a minimise icon in the top-right corner shrinks the editor to just the LCD
 
 - **From:** a tester on Discord, 2026-10-11 (feature request); Radek: "great idea".
-- **Idea:** double-click the LCD and the editor window shrinks to the LCD alone (its own strip: the machine's screen with pattern, kit and tempo). Double-click again, or Esc, restores the full editor at its previous size. Handy in a DAW with many plug-ins open: the editor stays visible but takes almost no room.
+- **Idea:** a small minimise icon in the top bar's right corner (beside SETUP) shrinks the editor window to the LCD alone (its own strip: the machine's screen with pattern, kit and tempo). The same icon on the mini view, or Esc, restores the full editor at its previous size. Not a double-click on the LCD (Radek, 2026-10-11): the LCD keeps its own clicks and drags. Handy in a DAW with many plug-ins open: the editor stays visible but takes almost no room.
 - **Shape:** both editors, plug-in and standalone; the page switches to a compact layout and asks the window for the LCD's size (the plug-in editor resizes itself; hosts that refuse a resize keep the full size and the page just centres the LCD); the mini size and state are remembered per instance; the LCD keeps its clicks (tempo drag, pattern ‹ ›) in mini view. Check how Logic, Ableton and the standalone handle a plug-in shrinking itself.
 - **Status:** new.
 
