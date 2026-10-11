@@ -2485,6 +2485,36 @@ header.top.tf4 .row2 .lcd2{gap:5px!important}
 .padd.q{animation:blink .8s steps(2) infinite}
 @media (prefers-reduced-motion:reduce){.padd.q{animation:none}}
 .whatplays .playsline{display:flex;min-width:0;margin-bottom:8px}
+/* 0.6 wave 4: COPY / PASTE / CLEAR what (skins/shared/deskWhat.js) */
+/* COPY / PASTE / CLEAR what (deskWhat.js, both editors): the ▾ beside the LCD's COPY CLR PASTE, the dialog's ticks
+   grouped PATTERN and KIT, the target tracks, and the Sound page's LFO ⋯ (Machinedrum). The page's tokens (light and
+   dark, MK1 and MK2); plain colours and rgba only (deskCompat.js) */
+.lcdsec .secmore{flex:none!important;padding:0 3px!important;opacity:1}
+.dlgbox.what{max-width:560px;min-width:min(440px,calc(100vw - 48px));gap:12px}
+.dlgbox.what h3{margin:0;font:600 14px var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--print)}
+.dlgbox.what .whatsrc{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--print2)}
+.dlgbox.what .whatsrc .ilab{min-width:64px}
+.dlgbox.what .whatsrc .lcdchip{font-size:11px}
+.dlgbox.what .whatgrp{display:grid;gap:6px;border-top:1px solid var(--rule);padding-top:8px}
+.dlgbox.what .whatgrp h4{margin:0;display:flex;gap:10px;align-items:baseline;font:600 11px var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--print2)}
+.dlgbox.what .whatgrp h4 small{font:11px var(--mono);letter-spacing:0;text-transform:none;color:var(--print3)}
+.dlgbox.what .whatgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 18px}
+.dlgbox.what label{display:flex;gap:9px;align-items:center;font:500 14px var(--sans);color:var(--print);cursor:pointer}
+.dlgbox.what label.dis{opacity:.45;cursor:default}
+.dlgbox.what label small{font:12px var(--mono);color:var(--print2);margin-left:auto}
+.dlgbox.what input{accent-color:var(--led);width:15px;height:15px;margin:0}
+.dlgbox.what .whatinfo{margin:0;font-size:12px;line-height:1.4;color:var(--print3)}
+.dlgbox.what .whatto{border-top:1px solid var(--rule);padding-top:8px}
+.dlgbox.what .to{display:flex;gap:3px;flex-wrap:wrap;align-items:center}
+.dlgbox.what .to button{min-width:26px;height:24px;padding:0 4px;font:500 11px var(--mono)}
+.dlgbox.what .to button[aria-pressed=true]{background:var(--cream);color:var(--creamtext)}
+.dlgbox.what .to button[disabled]{opacity:.35;cursor:default}
+.dlgbox.what .fine{font-size:12px;color:var(--print3);line-height:1.4;margin:0}
+.dlgbox.what .btnrow{justify-content:flex-end}
+.dlgbox.what .btnrow button[disabled]{opacity:.45;cursor:default}
+.sg>header.hasmenu{justify-content:flex-start}
+.sg>header.hasmenu>span{margin-left:auto}
+.sg>header .lfomenu{flex:none;height:20px;padding:0 7px;font:600 12px var(--mono);line-height:18px;align-self:center}
 
 /* ===== The real machine's states (not in the mockup) ===== */
 .statusline,.errline{margin:6px 0 0;padding:6px 10px;border-radius:3px;font:12px var(--pix);text-transform:uppercase}
