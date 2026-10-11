@@ -63,7 +63,8 @@ const SongSlots = (() => {
 	function afterRender() {
 		const c = column(); if (!c) return;
 		const inp = c.querySelector("#slin");
-		if (inp) { inp.focus({ preventScroll: true }); inp.select(); return; }
+		/* a page that renders while a name is typed (the MM's does not hold) keeps what was typed: naming.text */
+		if (inp) { inp.focus({ preventScroll: true }); if (naming.fresh) inp.select(); else inp.setSelectionRange(inp.value.length, inp.value.length); return; }
 		if (!refocus) return;
 		refocus = false;
 		const el = c.querySelector(".ls[aria-selected=true]"); if (!el) return;
@@ -79,7 +80,7 @@ const SongSlots = (() => {
 		const m = host.model(), s = m.slots[slot], cur = m.slots[m.cur];
 		if (!s || !s.loaded) return;
 		sel = slot; refocus = true;
-		naming = { slot, mode, text: mode === "saveas" ? (cur && cur.name) || "" : s.name || "" };
+		naming = { slot, mode, fresh: true, text: mode === "saveas" ? (cur && cur.name) || "" : s.name || "" };
 		host.redraw();
 	}
 	function finishNaming(ok) {
@@ -131,6 +132,7 @@ const SongSlots = (() => {
 			if (e.target.id !== "slin") return;
 			const i = e.target, at = i.selectionStart, v = clean(i.value, host.model().nameMax);
 			if (v !== i.value) { i.value = v; i.setSelectionRange(Math.min(at, v.length), Math.min(at, v.length)); }
+			if (naming) { naming.text = v; naming.fresh = false; }
 		});
 		dc.addEventListener("focusout", e => {
 			if (e.target.id === "slin" && naming) setTimeout(() => { if (naming && doc().activeElement?.id !== "slin") finishNaming(true); }, 0);
