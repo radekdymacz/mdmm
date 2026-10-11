@@ -1943,7 +1943,7 @@ img,svg,canvas{-webkit-user-drag:none}
 .dlgbox.what .btnrow button[disabled]{opacity:.45;cursor:default}
 .sg>header.hasmenu{justify-content:flex-start}
 .sg>header.hasmenu>span{margin-left:auto}
-.sg>header .lfomenu{flex:none;height:20px;padding:0 7px;font:600 12px var(--mono);line-height:18px;align-self:center}
+.sg>header .lfomenu{flex:none;height:16px;min-height:0;margin:-4px 0;padding:0 7px;font:600 12px var(--mono);line-height:14px;align-self:center}
 /* 0.3.5, the Song page's left column by hierarchy (mdDeskSong.js): (a) What plays: the PATTERN | SONG switch, big,
    and one live line from the machine; (b) the song; (c) the palette; (d) the selected row. The mode is lit by what
    the machine reports; the arrangement is framed in red while the song plays, and looks as ever otherwise */
