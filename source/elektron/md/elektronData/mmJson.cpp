@@ -674,6 +674,20 @@ namespace elektronData
 
 	// ---- kit ----
 
+	// B-063: the routing bytes and the bus word as outputs + input make them (mmSetKitInput over the kit's own bus word)
+	std::array<uint8_t, 8> mmCanonicalRouting(const MmKit& _k)
+	{
+		auto c = _k;
+		for(size_t t = 0; t < MmKit::g_tracks; ++t)
+			mmSetKitInput(c, t, mmKitInput(_k, t));
+		std::array<uint8_t, 8> r{};
+		for(size_t t = 0; t < MmKit::g_tracks; ++t)
+			r[t] = c.routing[t];
+		r[6] = c.x1cd[1];
+		r[7] = c.x1cd[2];
+		return r;
+	}
+
 	Value mmKitToJsonV1(const MmKit& _k)
 	{
 		Value v = header("mm-desk/kit", _k.position, _k.version, _k.revision);
@@ -724,6 +738,19 @@ namespace elektronData
 		Value hidden = Value::object();
 		hidden.set("x1cd", hex(_k.x1cd));
 		hidden.set("x1d1", _k.x1d1);
+		{
+			// what the routing bytes and the bus word hold beyond outputs + input (not a form 0x5C writes: a dump made
+			// so), XOR the form they make; only when there is any, so the value goes through JSON unchanged
+			const auto c = mmCanonicalRouting(_k);
+			std::array<uint8_t, 8> x{};
+			bool any = false;
+			for(size_t t = 0; t < MmKit::g_tracks; ++t)
+				any |= (x[t] = static_cast<uint8_t>(_k.routing[t] ^ c[t])) != 0;
+			any |= (x[6] = static_cast<uint8_t>(_k.x1cd[1] ^ c[6])) != 0;
+			any |= (x[7] = static_cast<uint8_t>(_k.x1cd[2] ^ c[7])) != 0;
+			if(any)
+				hidden.set("routingX", hex(x));
+		}
 		v.set("hidden", std::move(hidden));
 		return v;
 	}
@@ -805,6 +832,15 @@ namespace elektronData
 		// the inputs over the bus word x1cd holds (an input names its bus there)
 		for(size_t t = 0; t < MmKit::g_tracks; ++t)
 			mmSetKitInput(k, t, inputs[t]);
+		if(hidden.get("routingX", false))
+		{
+			std::array<uint8_t, 8> x{};
+			hidden.hexBytes("routingX", x);
+			for(size_t t = 0; t < MmKit::g_tracks; ++t)
+				k.routing[t] ^= x[t];
+			k.x1cd[1] ^= x[6];
+			k.x1cd[2] ^= x[7];
+		}
 		if(_errors.size() != before)
 			return std::nullopt;
 		for(const auto& e : validate(k))

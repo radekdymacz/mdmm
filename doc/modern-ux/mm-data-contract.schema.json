@@ -622,6 +622,10 @@
             },
             "x1d1": {
               "$ref": "#/$defs/byte"
+            },
+            "routingX": {
+              "$ref": "#/$defs/hex",
+              "description": "8 bytes, only when not zero: what the 6 routing bytes and the input bus word (0x1ce) hold beyond outputs and input, XOR the form those make (a kit dumped in a form 0x5C does not write)"
             }
           },
           "required": ["format"]

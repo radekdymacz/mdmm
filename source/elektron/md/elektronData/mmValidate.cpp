@@ -151,8 +151,6 @@ namespace elektronData
 			for(size_t i = 0; i < 8; ++i)
 				p.range(_kit.tracks[t].midi[i], 0, 127, base + ".pages[7][" + std::to_string(i) + "]");
 			p.check(_kit.trigPos[t] == MmKit::g_noTrigPos || _kit.trigPos[t] < 6, base + ".trigPos must be a track or none");
-			// OS 1.32B keeps a track's TRIG POS on itself as none (measured, mmDeskFirmwareTest intentcases)
-			p.check(_kit.trigPos[t] != t, base + ".trigPos must be another track");
 			for(size_t i = 0; i < 12; ++i)
 			{
 				p.range(_kit.assignPage[t][i], 0, 127, base + ".assign.page");
