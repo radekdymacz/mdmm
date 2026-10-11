@@ -119,7 +119,7 @@ namespace
 		return {
 			productName(_model), g_dataFolderVendor, compiled.isSynth,
 			compiled.wantsMidiInput, compiled.producesMidiOut, compiled.isMidiEffect,
-			_model == md::MachineModel::Monomachine ? "Tmno" : "Tmdr",
+			_model == md::MachineModel::Monomachine ? MDMM_AU_SUBTYPE_MM : MDMM_AU_SUBTYPE_MD,	// scripts/mdmm-product.env
 			compiled.lv2Uri, compiled.binaryData, dataFolderName(_model),
 			{0}, {0, 2, 4}, mdJucePlugin::editorConfigFileName(_model)
 		};
