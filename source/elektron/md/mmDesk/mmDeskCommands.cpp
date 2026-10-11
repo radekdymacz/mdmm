@@ -15,7 +15,7 @@ namespace mmDesk
 	const std::map<std::string, MmMachine::Handler>& MmMachine::askers()
 	{
 		static const std::map<std::string, Handler> map{{"loadKit", &MmMachine::askLoadKit}, {"saveKit", &MmMachine::askSaveKit},
-			{"select", &MmMachine::askSelect}, {"play", &MmMachine::askPlay}};
+			{"select", &MmMachine::askSelect}, {"play", &MmMachine::askPlay}, {"saveSong", &MmMachine::askSaveSong}};
 		return map;
 	}
 
@@ -91,6 +91,26 @@ namespace mmDesk
 			return ok();
 		return ask("overwriteSlot", "Overwrite <b>" + kitLabel(_view, k) + "</b> with the kit that plays, <b>" + kitLabel(_view, m_curKit)
 			+ "</b>? The machine keeps the overwritten kit in its UNDO KIT.", "Overwrite");
+	}
+
+	// SAVE SONG stores the song the machine holds. The desk's edits are dumps into the slot and the machine loads them
+	// only when it is stopped in SONG mode (pumpSongReload), so until then it would store its older song over them:
+	// asked first, with the way that loses nothing (load the edits, then save) when the machine is stopped.
+	Outcome MmMachine::askSaveSong(const Value& _command, const Documents&)
+	{
+		const auto s = num(_command, "s", m_curSong);
+		if(!m_songReloadNeeded || s != m_curSong || s < 0)
+			return ok();
+		auto o = ask("overwriteSlot", "<b>S" + std::string(s < 9 ? "0" : "") + std::to_string(s + 1) + "</b> was edited here and the machine has not loaded the edits yet:"
+			" saving now stores the song the machine holds, without them.", "Save the machine's song");
+		if(!m_playing)
+		{
+			Value load = Value::object();
+			load.set("op", "loadSong");
+			load.set("s", s);
+			o.ask->alternatives.push_back({"Load the edits, then save", {std::move(load)}});
+		}
+		return o;
 	}
 
 	// Over MIDI PLAY is MIDI Start, which the machine ignores with CONTROL IN TRANSPORT IGNORE (the
