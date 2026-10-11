@@ -35,7 +35,7 @@ const SHAPES = ["Triangle", "Saw", "Square", "Linear decay", "Exp decay", "Rando
 /* ===== State (P6): the UI's own store here; the machine's data is the view V (mdDeskModel.js,
    deriveView), a value replaced on every document ===== */
 const S = { ws: "seq", sel: 0, lane: "FLTF", page: 0, viewAll: true, follow: false, step: -1, soloSet: new Set(), userMutes: new Set(),
-	songSel: 0, bank: 0, songZoom: "fit", smpSlot: "RAM1", chopTrack: null, capture: {}, keepFx: true, plate: "mk1" };
+	songSel: 0, bank: 0, songZoom: "fit", smpSlot: "RAM1", chopTrack: null, capture: {}, keepFx: true, plate: "mk1", tt: "trig" };
 S.ctl = { learn: false, learnT: null, sel: null, selT: null, addT: 1 };
 /* MIDI mapping (the CONTROL workspace and LEARN) is hidden until the plug-in's learn document says
    "enabled" (mdmm::midiMappingEnabled, deskHost.h). Off: no tab, no LEARN key, the keys do nothing. */
