@@ -271,11 +271,13 @@ window.MMDiagnostics = {};
 			host.intent("multiMap", { i: 0, ofs: r0.ofs ? r0.ofs - 1 : 255, len: r0.len, trn: r0.trn - 64, tim: r0.tim }); host.commit();
 			await w; }
 		});
-		await check("another song than the machine's (S24), from the picker", async () => {
+		await check("another song than the machine's (S24), loaded from the song slots", async () => {
 			V().goWs("song"); await sleep(300);
-			const sel = $("#songsel");
-			if (!sel) throw new Error("no song picker");
-			sel.value = "23"; sel.dispatchEvent(new Event("change", { bubbles: true }));
+			if (!$('[data-ss="23"]')) throw new Error("no song slots");
+			const until = async (f, ms) => { const end = Date.now() + ms; while (Date.now() < end) { if (f()) return true; await sleep(50); } return false; };
+			{ const w = until(() => machine()?.song?.current === 23, 15000);
+			host.loadSong(23);
+			if (!await w) throw new Error("LOAD SONG 24 not taken"); }
 			await sleep(500);
 			const before = s.song.length;
 			{ const w = docIs("song", 23, d => d.rows.length === before + 1 && d.rows[0].pattern === 7);
@@ -284,7 +286,8 @@ window.MMDiagnostics = {};
 			{ const w = docIs("song", 23, d => d.rows.length === before);
 			s.song.splice(0, 1); host.intent("rowDelete", { i: 0 }); host.commit();
 			await w; }
-			host.songSlot(CUR.song);
+			host.loadSong(CUR.song);
+			await until(() => machine()?.song?.current === CUR.song, 15000);
 			V().goWs("seq");
 			return `${before} rows`;
 		});
@@ -430,19 +433,19 @@ window.MMDiagnostics = {};
 			return seen.join("; ");
 		});
 		await check("all steps by default, and the page fits the window", async () => {
-			const n = $$('.tc[data-tl="sld"]').length, de = document.documentElement, lane = $("#lanescroll")?.getBoundingClientRect();
+			const n = $$("#seq .rollmarks [data-rm]").length, de = document.documentElement, lane = $("#lanescroll")?.getBoundingClientRect();
 			const note = `${n} of ${s.len} steps, page ${de.scrollHeight} / window ${innerHeight}, lock lane bottom ${lane ? Math.round(lane.bottom) : "?"}`;
 			if (n !== s.len || de.scrollHeight > innerHeight + 1 || !lane || lane.bottom > innerHeight) throw new Error(note);
 			return note;
 		});
-		await check("a drag paints SLIDE steps on, then off, one undo step each", async () => {
-			V().goWs("seq"); await sleep(600);
-			const p = cur().pat, q = st => $(`.tc[data-tl="sld"][data-s="${st}"]`);
+		await check("with Slide chosen a drag across the roll paints slide steps on, then off, one undo step each", async () => {
+			V().goWs("seq"); await sleep(600); $('.ttrow [data-tt="sld"]').click(); await sleep(400);
+			const p = cur().pat, roll = () => $("#seq canvas.roll[data-big]"), q = st => $(`#seq .rollmarks [data-rm="${st}"]`);
 			const free = [...Array(s.len - 3).keys()].find(st => [0, 1, 2, 3].every(k => !s.tracks[s.sel].slide.has(st + k)));
 			if (free == null) throw new Error("no four free SLIDE steps");
 			const run = [free, free + 1, free + 2, free + 3];
-			const pe = (type, el, o = {}) => { const r = el.getBoundingClientRect(); return new PointerEvent(type, Object.assign({ bubbles: true, cancelable: true, pointerId: 8, pointerType: "mouse", button: 0, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }, o)); };
-			const drag = steps => { q(steps[0]).dispatchEvent(pe("pointerdown", q(steps[0]), { buttons: 1 })); for (const st of steps.slice(1)) $("#main").dispatchEvent(pe("pointermove", q(st), { buttons: 1 })); const l = q(steps[steps.length - 1]); l.dispatchEvent(pe("pointerup", l, { buttons: 0 })); l.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 1 })); };
+			const pe = (type, st, o = {}) => { const r = q(st).getBoundingClientRect(), c = roll().getBoundingClientRect(); return new PointerEvent(type, Object.assign({ bubbles: true, cancelable: true, pointerId: 8, pointerType: "mouse", button: 0, clientX: r.left + r.width / 2, clientY: c.bottom - 6 }, o)); };
+			const drag = steps => { roll().dispatchEvent(pe("pointerdown", steps[0], { buttons: 1 })); for (const st of steps.slice(1)) roll().dispatchEvent(pe("pointermove", st, { buttons: 1 })); roll().dispatchEvent(pe("pointerup", steps[steps.length - 1], { buttons: 0 })); };
 			const slides = d => d.tracks[s.sel].slide || [];
 			const u0 = machine().history?.undoCount || 0;
 			drag(run);
@@ -453,6 +456,7 @@ window.MMDiagnostics = {};
 			await waitFor(m => m.type === "doc" && m.kind === "pattern" && m.slot === p && !m.pending && !run.some(st => slides(m.doc).includes(st)), 15000).catch(() => { throw new Error("not read back off"); });
 			await sleep(800);
 			const u2 = machine().history?.undoCount || 0;
+			$('.ttrow [data-tt="note"]')?.click();
 			if (u1 !== u0 + 1 || u2 !== u1 + 1) throw new Error(`undo steps ${u0} -> ${u1} -> ${u2}`);
 			return `steps ${free + 1}-${free + 4}, undo steps ${u0} -> ${u1} -> ${u2}`;
 		});

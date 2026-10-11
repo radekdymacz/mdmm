@@ -12,16 +12,19 @@ function songSteps(){let n=0;S.song.forEach(r=>{if(!r.type)n+=rowLen(r)*r.rep});
 function songTime(){const sec=songSteps()*60/S.bpm/4;return`${Math.floor(sec/60)}:${String(Math.round(sec%60)).padStart(2,"0")}`}
 function loopOf(i){return S.song.findIndex((r,k)=>r.type==="loop"&&k>i&&r.to<=i)}
 const hasTtr=r=>r.ttr&&r.ttr.some(v=>v!==64);
-/* the song to edit: any of the 24; LOAD SONG makes it the machine's (only while stopped) */
-function songPick(){const g=S.songs;if(!g)return"";const nn=i=>String(i+1).padStart(2,"0");
- return`<span class="songpick"><select id="songsel" aria-label="Song to edit">${g.names.map((n,i)=>`<option value="${i}"${i===g.slot?" selected":""}>S${nn(i)} ${n}${i===g.current?" · on the machine":""}</option>`).join("")}</select>
-  <button id="songload"${g.slot===g.current?" disabled":""} title="LOAD SONG: the machine plays this song in song mode. Only while stopped.">Load on the machine</button></span>`}
-/* ===== Chain (MM-P8, as the Machinedrum Editor's Song): one palette, two ways to play its pads. ARRANGE adds
-   to the song; CHAIN numbers the pads into the machine's own chain (hold BANK, press the TRIG keys; manual
-   1-46: one bank, each pattern once, loops), sent at once. The header says what the machine plays (playsOf).
-   The machine's chain comes from the host (MMView.show: machine.desk.chain, song mode); on its own the
-   example engine plays it at the pattern ends (chainWrap). */
-S.songPick="arrange";S.chainDraft=[];S.chainTimer=0;S.chainSent=false;
+/* ===== One palette and one switch, PATTERN · CHAIN · SONG (0.6, as the Machinedrum Editor's Song; MM-P8 for the
+   chain): what the machine plays and what a pad click does. PATTERN: the pad goes to that pattern (queued, ⇧: now;
+   the machine is in pattern mode). CHAIN: the pad is numbered into the machine's own chain (hold BANK, press the TRIG
+   keys; manual 1-46: one bank, each pattern once, loops), sent at once. SONG: the pad is added after the selected row
+   (the machine is in song mode). A key sets the machine's mode too (seqMode); a mode the machine reports moves the
+   switch (songModeSync). The machine's chain comes from the host (MMView.show: machine.desk.chain, song mode); on its
+   own the example engine plays it at the pattern ends (chainWrap). */
+S.songPick=null;S.songModeSeen=undefined;S.chainDraft=[];S.chainTimer=0;S.chainSent=false;
+const SONG_PICKS=[["pattern","Pattern"],["chain","Chain"],["song","Song"]];
+function songModeSync(){const sm=!!S.plays.songMode,ch=!!S.plays.chain?.active;
+ if(!SONG_PICKS.some(([k])=>k===S.songPick))S.songPick=sm?"song":ch?"chain":"pattern";
+ if(S.songModeSeen!==sm){S.songModeSeen=sm;if(sm)S.songPick="song";else if(S.songPick==="song")S.songPick=ch?"chain":"pattern"}}
+function songPickSet(v){S.songPick=v;const want=v==="song";if(!!S.plays.songMode!==want)seqMode(want);render()}
 S.plays={chain:null,songMode:false,song:0};
 const nn2=i=>String(i+1).padStart(2,"0");
 /* what the machine plays: in song mode the song (the Monomachine keeps a chain there but plays the song,
@@ -45,11 +48,9 @@ function chainSoon(){clearTimeout(S.chainTimer);
   else if((c&&c.active)||S.chainSent){clearChain();S.chainSent=false}},150)}
 function chainFooter(){const c=S.plays.chain,bn="ABCDEFGH"[S.bank],d=S.chainDraft;
  const known=!!c||!window.MMHost,active=!!(c&&c.active&&c.patterns.length),list=active?c.patterns:[],at=list.indexOf(S.pat),next=active?list[(at+1)%list.length]:null;
- /* what plays is the What plays card's (whatPlays); here: the pads' own state and the gestures */
+ /* what plays is the line above the pads (playsText); here: the pads' own state and the gestures */
  const state=!canChain()?NA.chains:!known?"The chain is not readable on this engine.":S.plays.songMode&&active?"Song mode: the machine plays the song; PATTERN or a new chain switches it to pattern mode.":active?`The machine plays the chain${at>=0&&S.playing?`: now ${patName(S.pat)}, next ${patName(next)}`:""}.`:"";
  return chainRows(d,bn,active,state)}
-/* the PATTERN | SONG switch, as the machine reports it (lit: S.plays.songMode); big in the What plays card */
-function seqModeKeys(){return`<span class="seg seqmode" title="PATTERN: the machine plays the pattern (and its chain). SONG: it plays the song. What is lit is what the machine reports">${[["pattern","PATTERN",false],["song","SONG",true]].map(([k,l,v])=>`<button data-seqmode="${k}" aria-pressed="${S.plays.songMode===v}"><span>${l}</span></button>`).join("")}</span>`}
 function chainRows(d,bn,active,state){
  return`<div class="chainfoot">${state?`<div class="irow"><span class="ilab"></span><span class="note">${state}</span></div>`:""}
   <div class="irow"><span class="ilab"></span><span class="chainacts"><button data-chain="undo"${d.length?"":" disabled"} title="Takes the last pad out and chains the rest at once">Back</button><button class="danger" data-chain="clear"${active||d.length?"":" disabled"} title="BANK + the TRIG key of the pattern that plays: the machine's way to end a chain. The pads start over">Clear</button></span>
@@ -76,28 +77,24 @@ function markSongRow(force){const st=document.getElementById("arrstate");if(st&&
  const pl=document.getElementById("songPlays");if(pl)pl.textContent=playsText();if(S.ws!=="song")return;
  $$(".scell.ph").forEach(c=>c.classList.remove("ph"));if(row>=0)document.querySelector(`.scell[data-i="${row}"]`)?.classList.add("ph");
  $$(".durbar .db").forEach(d=>{const i=+d.dataset.i;d.classList.toggle("past",row>=0&&i<row);d.classList.toggle("now",i===row)})}
-/* (a) What plays: the PATTERN | SONG switch first, then one live line from the machine */
-function whatPlays(plays){const tip={chain:"The machine plays its own chain (live, one bank, loops). Clear it in CHAIN, or pick a pattern.",song:"SONG mode: the machine plays the stored song.",pattern:"PATTERN mode: the machine plays this pattern and stays on it."}[plays.kind];
- return`<section class="card whatplays ${S.plays.songMode?"song":"pattern"}"><header><h3>What plays</h3></header>
-   <div class="modebig">${seqModeKeys()}</div>
-   <div class="chainrow playsline"><span class="lcdchip playschip ${plays.kind}" id="songPlays" title="${tip}">${playsText()}</span></div></section>`}
-/* (b) the song itself: the one to edit, and LOAD SONG */
-function songCard(){return`<section class="card songslot"><header><h3>Song</h3>${songPick()||`<span class="lcdchip">SONG ${nn2(S.songSlot??0)}</span>`}</header><div class="irow"><span class="note">${songRows()} rows · ${Math.round(songSteps()/16)} bars · ${songTime()}</span></div></section>`}
-document.addEventListener("click",e=>{const b=e.target.closest?.("[data-seqmode]");if(b)seqMode(b.dataset.seqmode==="song")});
 function chainPad(p){const n=S.chainDraft.indexOf(p),d=S.chainDraft;if(n>=0)d.splice(n,1);else if(d.length<16)d.push(p);render();chainSoon()}
 function chainAct(a){if(a==="undo"){S.chainDraft.pop();render();chainSoon();return}
  clearTimeout(S.chainTimer);S.chainDraft=[];render();if(S.plays.chain?.active||S.chainSent){clearChain();S.chainSent=false}}
-function renderSong(){S.songSel=Math.max(0,Math.min(S.songSel,S.song.length-1));const sel=S.song[S.songSel]||S.song[0],chain=S.songPick==="chain",plays=playsOf();
+function renderSong(){songModeSync();S.songSel=Math.max(0,Math.min(S.songSel,S.song.length-1));const sel=S.song[S.songSel]||S.song[0],pick=S.songPick,chain=pick==="chain",plays=playsOf();
  /* a chain is one bank's: another bank starts the draft over */
  S.chainDraft=S.chainDraft.filter(p=>p>>4===S.bank);
  const pad=p=>{const info=`${patName(p)}<small>${hasPat(p)?patLen(p):"empty"}</small>`;
+  if(pick==="pattern")return`<button class="padd ${hasPat(p)?"has":""}${p===S.pat?" cur":""}${p===S.queued&&p!==S.pat?" q":""}" data-patgo="${p}" title="${patName(p)}: click queues it (⇧-click: now). Playing, the machine switches at the pattern end.">${info}</button>`;
   if(!chain)return`<button class="padd ${hasPat(p)?"has":""} ${!sel.type&&sel.pat===p?"cur":""}" data-addpat="${p}" draggable="true" title="Drag into the arrangement. Click adds after the selected row.">${info}</button>`;
   const n=S.chainDraft.indexOf(p);
   return`<button class="padd ${hasPat(p)?"has":""}${n>=0?" in":""}" data-chainpad="${p}" title="${patName(p)}${n>=0?": number "+(n+1)+" in the chain. Click takes it out, and the machine plays the rest.":". Click adds it: the machine plays the chain at once."}">${info}${n>=0?`<em>${n+1}</em>`:""}</button>`};
- const palette=`<div class="banks">${[..."ABCDEFGH"].map((b,k)=>`<button class="bank ${k===S.bank?"on":""}" data-bank="${k}"><i class="led"></i>${b}</button>`).join("")}</div>
+ const hint={pattern:"A pad click goes to that pattern (queued; ⇧-click now). The machine plays patterns.",song:`A pad click adds a row after row ${String(S.songSel+1).padStart(3,"0")} (or drag it onto the grid). The machine plays the song.`}[pick]||"";
+ const tip={chain:"The machine plays its own chain (live, one bank, loops). Clear it in CHAIN, or pick a pattern.",song:"SONG mode: the machine plays the stored song.",pattern:"PATTERN mode: the machine plays this pattern and stays on it."}[plays.kind];
+ const palette=`<div class="chainrow playsline"><span class="lcdchip playschip ${plays.kind}" id="songPlays" title="${tip}">${playsText()}</span></div>
+  <div class="banks">${[..."ABCDEFGH"].map((b,k)=>`<button class="bank ${k===S.bank?"on":""}" data-bank="${k}"><i class="led"></i>${b}</button>`).join("")}</div>
   <div class="pgridp">${Array.from({length:16},(_,k)=>pad(S.bank*16+k)).join("")}</div>
-  ${chain?chainFooter():`<p class="note pnote">Click adds after row ${String(S.songSel+1).padStart(3,"0")} · drag onto the grid</p>`}`;
- const head=`<header class="phead"><h3>Patterns</h3><span class="seg" data-set="songpick" title="ARRANGE: a click adds the pattern to the song. CHAIN: a click numbers it into the machine's chain.">${[["arrange","Arrange"],["chain","Chain"]].map(([v,t])=>`<button data-v="${v}" aria-pressed="${S.songPick===v}">${t}</button>`).join("")}</span></header>`;
+  ${chain?chainFooter():`<p class="note pnote">${hint}</p>`}`;
+ const head=`<header class="phead"><div class="pmodekeys" data-set="songpick" role="group" aria-label="What the machine plays, and what a pad click does">${SONG_PICKS.map(([v,t])=>`<button class="pkey" data-v="${v}" aria-pressed="${pick===v}"><i class="led"></i><span>${t}</span></button>`).join("")}<span class="note">what plays, what a pad click does</span></div></header>`;
  let insp="";
  if(!sel.type){const L=patLen(sel.pat),o=sel.ofs||0,ln=rowLen(sel),tt=sel.ttr||T64(),trn=(sel.trn??64)-64;
   insp=`<div class="irow"><span class="ilab">Row</span><span class="lcdchip">${String(S.songSel+1).padStart(3,"0")} · ${patName(sel.pat)}</span><span class="stepper"><button data-step="pat" data-d="-1" aria-label="Previous pattern">‹</button><button data-step="pat" data-d="1" aria-label="Next pattern">›</button></span></div>
@@ -116,8 +113,8 @@ function renderSong(){S.songSel=Math.max(0,Math.min(S.songSel,S.song.length-1));
    ${sel.type==="loop"?`<div class="irow"><span class="ilab">Times</span><span class="stepper"><button data-step="count" data-d="-1">−</button><b class="mono">${sel.count===Infinity?"∞":sel.count}</b><button data-step="count" data-d="1">+</button></span><button class="ptog ${sel.count===Infinity?"on":""}" data-inf="1"><i class="led"></i>Forever</button></div>`:""}
    <div class="irow"><span class="ilab"></span><span class="note">${sel.type==="loop"?"Loops nest. Loops also stretch a part past the 64-step pattern limit.":sel.type==="jump"?"Jumps the song pointer forward.":"Pauses until you pick a row to go on from."}</span></div>`;
  const lines=Math.ceil(200/16);
- $("#main").innerHTML=`<div class="songui lay2 ${S.plays.songMode?"songmode":"patmode"}${S.plays.songMode&&S.playing?" songplaying":""}"><div class="songleft">${whatPlays(plays)}${songCard()}<section class="card ${chain?"chainmode":""}">${head}${palette}</section>
-   <section class="card"><header><h3>Selected row</h3><span class="rowacts"><button data-rowact="from" title="Play the song from this row (Enter): SONG mode, the row from its first step">▶ From here</button><button data-rowact="up" title="Move left">←</button><button data-rowact="down" title="Move right">→</button><button data-rowact="dup">Duplicate</button><button data-rowact="loop">Add loop</button><button data-rowact="del" class="danger">Delete</button></span></header><div class="insp">${insp}</div></section></div>
+ $("#main").innerHTML=`<div class="songui lay2 withlib ${S.plays.songMode?"songmode":"patmode"}${S.plays.songMode&&S.playing?" songplaying":""}">${SongSlots.html()}<div class="songleft"><section class="card whatplays ${S.plays.songMode?"song":"pattern"} ${chain?"chainmode":""}">${head}${palette}</section>
+   ${pick==="song"?`<section class="card"><header><h3>Selected row</h3><span class="rowacts"><button data-rowact="from" title="Play the song from this row (Enter): SONG mode, the row from its first step">▶ From here</button><button data-rowact="up" title="Move left">←</button><button data-rowact="down" title="Move right">→</button><button data-rowact="dup">Duplicate</button><button data-rowact="loop">Add loop</button><button data-rowact="del" class="danger">Delete</button></span></header><div class="insp">${insp}</div></section>`:""}</div>
   <section class="card arrcard"><header><h3>Arrangement</h3><span class="arrstate" id="arrstate">${arrState()}</span><span class="note" title="${S.song.length} of 200 rows · T track transpose · M mutes · B tempo · ~ part">${S.song.length} of 200 rows · T track transpose · M mutes · B tempo</span></header>
    <div class="durbar" title="Song shape by time (length × repeats); in SONG mode it fills up to the row that plays">${S.song.map((r,i)=>r.type?`<i class="db dbm" data-i="${i}"></i>`:`<i class="db ${i===S.songSel?"sel":""}" data-row="${i}" data-i="${i}" style="flex:${rowLen(r)*r.rep} 1 0"></i>`).join("")}</div>
    <div class="slotgrid" id="tl">${Array.from({length:lines},(_,line)=>`<span class="sglab">${String(line*16+1).padStart(3,"0")}</span>${Array.from({length:16},(_,c)=>{const i=line*16+c,r=S.song[i];if(i>=200)return`<span></span>`;
@@ -126,7 +123,30 @@ function renderSong(){S.songSel=Math.max(0,Math.min(S.songSel,S.song.length-1));
      const txt=r.type==="end"?"END":r.type==="loop"?`↺${String(r.to+1).padStart(3,"0")}`:r.type==="jump"?`→${String(r.to+1).padStart(3,"0")}`:r.type==="halt"?"HALT":patName(r.pat);
      const sub=r.type==="loop"?(r.count===Infinity?"∞":"×"+r.count):!r.type?`${r.rep>1?"×"+r.rep:""}${(r.trn??64)!==64?" "+((r.trn-64)>0?"+":"")+(r.trn-64):""}${hasTtr(r)?" T":""}${r.mutes?.length?" M":""}${r.bpm?" B":""}${r.ofs||r.len?"~":""}`:"";
      return`<button class="${cls}" data-row="${i}" data-i="${i}" draggable="${r.type==="end"?"false":"true"}" title="Row ${String(i+1).padStart(3,"0")}${r.type?"":" · "+patName(r.pat)+" ×"+r.rep+" · "+rowLen(r)+" steps"}"><b>${txt}</b><small>${sub}</small></button>`}).join("")}`).join("")}</div></section></div>`;
- markSongRow(true)}
+ markSongRow(true);SongSlots.afterRender()}
+/* The song slots (deskSongSlots.js, shared with the Machinedrum Editor): the host. The 24 songs are the machine's
+   documents (S.songs: the host's view, MmView.songsOf; on its own the example's). Load is LOAD SONG, Save SAVE SONG
+   (the song the machine holds, into its slot), the rest the library's slot ops (songCopy, songPaste, songCopyTo,
+   songClear, songRename: HOST.library, the core asks before one loses something). A slot write is a dump through
+   SYSEX RECV (hardware: SEND n). On its own the example engine keeps the names and row counts. */
+const songNote=()=>`<div class="slnote note">${songRows()} rows · ${Math.round(songSteps()/16)} bars · ${songTime()}${S.songs?.edited&&S.plays.songMode&&S.playing?" · edits heard from the next start":""}</div>`;
+function demoSong(op,a){const g=S.songs,put=(s,from,name)=>{g.names[s]=name??g.names[from];g.rows[s]=g.rows[from];g.loaded[s]=true};
+ if(op==="songCopy")S.songClip=a.s;else if(op==="songPaste")put(a.s,S.songClip);else if(op==="songCopyTo")put(a.to,a.from,a.name);
+ else if(op==="songClear"){g.names[a.s]="";g.rows[a.s]=0}else if(op==="songRename")g.names[a.s]=a.name;render()}
+function songLib(op,a){if(HOST.library){if(op==="songCopy")S.songClip=a.s;return HOST.library(op,a)}demoSong(op,a)}
+S.songClip=null;
+SongSlots.init({
+ model:()=>{const g=S.songs||{names:[],rows:[],loaded:[]};return{count:24,nameMax:14,cur:g.current??0,edited:!!g.edited,playing:!!S.playing,clip:S.songClip,note:songNote(),
+  slots:Array.from({length:24},(_,i)=>g.loaded&&g.loaded[i]===false?{loaded:false}:{loaded:true,name:g.names[i]||"",rows:g.rows?.[i]||0})}},
+ load:s=>{if(HOST.loadSong)return HOST.loadSong(s);S.songs.current=s;S.songs.slot=s;S.songSlot=s;render();toast("LOAD SONG: the machine plays song "+nn2(s)+" in song mode (only while stopped).")},
+ save:()=>{if(HOST.saveSong)return HOST.saveSong();toast("SAVE SONG: the machine stores its song in slot "+nn2(S.songs.current)+".")},
+ saveTo:(s,name)=>songLib("songCopyTo",{from:S.songs.current,to:s,name}),
+ copy:s=>songLib("songCopy",{s}),paste:s=>songLib("songPaste",{s}),clear:s=>songLib("songClear",{s}),
+ rename:(s,name)=>songLib("songRename",{s,name}),copyTo:(from,to)=>songLib("songCopyTo",{from,to}),
+ redraw:()=>render()});
+document.addEventListener("click",e=>{if(S.ws!=="song")return;
+ const pk=e.target.closest?.('[data-set="songpick"] button[data-v]');if(pk){songPickSet(pk.dataset.v);return}
+ const pg=e.target.closest?.("[data-patgo]");if(pg){goPattern(+pg.dataset.patgo,e.shiftKey)}});
 /* a row as the song's intent: rowSet of the selected row (the page's row; the host makes the song's) */
 function editRow(i=S.songSel){edit("rowSet",{i,row:S.song[i]})}
 /* the page's rows after a move or a removal: loop and jump targets follow their rows (map: old place -> new), a HALT

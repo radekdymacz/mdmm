@@ -195,7 +195,7 @@
 <p>The machine's BANK GROUP and BANK keys choose the pattern bank. The pattern chooser shows all eight banks A to H at once. Press <kbd class="gd-key">[A–H]</kbd> inside it to jump to a bank.</p>
 <p><kbd class="gd-key">[FUNCTION]</kbd> + <kbd class="gd-key">[BANK GROUP]</kbd> opens the mute window: it is the <b class="gd-ui">Mutes</b> card in <b class="gd-ui">Perform</b>, and the prepared mutes described above.</p>
 <p>The keys that open the secondary windows, ARP, TRANSPOSE, SWING and SLIDE, are as follows.</p>
-<ul class="gd-list"><li><b class="gd-ui">Arp</b> and <b class="gd-ui">Transpose</b> are tabs of the dock in the <b class="gd-ui">Sequence</b> workspace. The <b class="gd-ui">Sound</b> workspace has keys that go to them.</li><li>Swing is a lane of the <b class="gd-ui">Sequence</b> workspace and the <b class="gd-light">&lt;SWG&gt;</b> field of the LCD's second line.</li><li>Slide is a lane of the <b class="gd-ui">Sequence</b> workspace, the row marked Slide.</li></ul>
+<ul class="gd-list"><li><b class="gd-ui">Arp</b> and <b class="gd-ui">Transpose</b> are tabs of the dock in the <b class="gd-ui">Sequence</b> workspace. The <b class="gd-ui">Sound</b> workspace has keys that go to them.</li><li>Swing is the <b class="gd-ui">Swing</b> key under the roll of the <b class="gd-ui">Sequence</b> workspace, and the <b class="gd-light">&lt;SWG&gt;</b> field of the LCD's second line.</li><li>Slide is the <b class="gd-ui">Slide</b> key under the roll of the <b class="gd-ui">Sequence</b> workspace.</li></ul>
 </div></section>
 <section class="gd-sec" id="record-play-and-stop">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-5</span></span></aside>
@@ -730,13 +730,13 @@
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A pattern is linked to a kit and loads it. On the OS 1.32B, only a pattern in banks A to D loads its linked kit. In banks E to H the kit that played goes on.</p></aside>
 <p>Press <kbd class="gd-key">[ESC]</kbd> to close the chooser.</p>
 <h4 class="gd-h3">PATTERN CHAINING</h4>
-<p>A chain plays patterns of one bank one after the other, each once, and then starts again. You build a chain on the <b class="gd-ui">Song</b> workspace, in the same <b class="gd-ui">Patterns</b> card that builds a song.</p>
-<ol class="gd-steps"><li>Press <kbd class="gd-key">[5]</kbd>.</li><li>In the <b class="gd-ui">Patterns</b> card, click <b class="gd-ui">Chain</b>.</li><li>Click a bank, A to H.</li><li>Click the pads in the order to play. Each pad shows its number in the chain, up to 16.</li></ol>
-<p>The machine plays the chain as soon as there are two pads. If it plays, the chain starts at the end of the pattern that plays. If it is stopped, <kbd class="gd-key">[SPACE]</kbd> starts it at the first pad. The <b class="gd-ui">What plays</b> card reads CHAIN and the patterns in order, for example CHAIN A03»A05.</p>
+<p>A chain plays patterns of one bank one after the other, each once, and then starts again. You build a chain on the <b class="gd-ui">Song</b> workspace, on the same pattern palette that builds a song.</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[5]</kbd>.</li><li>Click <b class="gd-ui">CHAIN</b> over the pattern palette.</li><li>Click a bank, A to H.</li><li>Click the pads in the order to play. Each pad shows its number in the chain, up to 16.</li></ol>
+<p>The machine plays the chain as soon as there are two pads. If it plays, the chain starts at the end of the pattern that plays. If it is stopped, <kbd class="gd-key">[SPACE]</kbd> starts it at the first pad. The line over the bank letters reads CHAIN and the patterns in order, for example CHAIN A03»A05.</p>
 <ul class="gd-list"><li>Click a numbered pad to take it out of the chain.</li><li><b class="gd-ui">Back</b> takes out the last pad.</li><li><b class="gd-ui">Clear</b> ends the chain.</li></ul>
 <p>Choosing a pattern from the pattern field or the chooser also ends the chain. Editing the patterns of a chain does not.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A chain holds the patterns of one bank. Choosing another bank starts the list again.</p></aside>
-<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>In song mode the machine plays the song, not the chain. Click <b class="gd-ui">PATTERN</b> in <b class="gd-ui">What plays</b>, or choose a new chain, to leave song mode.</p></aside>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>In song mode the machine plays the song, not the chain. Click <b class="gd-ui">PATTERN</b> or <b class="gd-ui">CHAIN</b> over the palette to leave song mode.</p></aside>
 <h4 class="gd-h3">SCALE SETUP</h4>
 <p>The scale of a pattern is its length and its speed. Both are on the second line of the LCD while <b class="gd-ui">Sequence</b> is open.</p>
 <p>#### Length</p>
@@ -1012,13 +1012,17 @@
 <div class="gd-body gd-prose"><h2>SWING</h2>
 <p>Swing delays every other sixteenth note. The <b class="gd-ui">SWG</b> field of the LCD sets the amount for the pattern, from 50 to 80 %. Drag the field up or down, or scroll over it.</p>
 <h4 class="gd-h3">THE SWING TRACK</h4>
-<p>The <b class="gd-ui">Swing</b> row under the roll chooses the steps that swing. A lit cell comes late by the amount of <b class="gd-ui">SWG</b>. Click a cell to switch it. Drag across cells to paint them. Each track has its own swing row.</p>
+<p>The keys <b class="gd-ui">Note</b>, <b class="gd-ui">Slide</b> and <b class="gd-ui">Swing</b> under the roll say what a click on the roll does. <b class="gd-ui">Note</b> writes notes, as always. With <b class="gd-ui">Swing</b> lit, a click chooses the steps that swing:</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">Swing</b> under the roll. The key lights.</li><li>Click anywhere in a step's column of the roll. A teal mark at the foot of the roll shows that the step swings. It comes late by the amount of <b class="gd-ui">SWG</b>. Click the column again to take the swing off.</li><li>Drag across columns to paint every step you cross. The first step decides: on or off. The drag is one undo step.</li><li>Press <kbd class="gd-key">[ESC]</kbd>, or click <b class="gd-ui">Note</b>, to write notes again.</li></ol>
+<p>Each track has its own swing steps. The marks show for the selected track.</p>
 <p>You cannot copy, clear or paste a swing row, or undo it on its own.</p>
 </div></section>
 <section class="gd-sec" id="slide">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-66</span></span></aside>
 <div class="gd-body gd-prose"><h2>SLIDE</h2>
-<p>A slide makes a locked value glide to the next lock instead of jumping. The <b class="gd-ui">Slide</b> row under the roll marks the steps that slide. Click a cell, or drag across cells. A slide needs a note on its step. The right-click menu has <b class="gd-ui">Slide</b> too. In the lock lane the glide is drawn from one lock to the next.</p>
+<p>A slide makes a locked value glide to the next lock instead of jumping.</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">Slide</b> under the roll.</li><li>Click a step's column of the roll. A triangle at the foot of the roll marks the step that slides. Click again to take it off.</li><li>Drag across columns to paint slides on every step you cross, in one undo step.</li><li>Press <kbd class="gd-key">[ESC]</kbd> to write notes again.</li></ol>
+<p>The right-click menu has <b class="gd-ui">Slide</b> too. In the lock lane the glide is drawn from one lock to the next.</p>
 <p>You cannot copy, clear or paste a slide row, or undo it on its own.</p>
 </div></section>
 <section class="gd-sec" id="the-mute-mode">
@@ -1079,34 +1083,49 @@
 </header>
 <div class="gd-intro gd-prose"><p>The song mode plays patterns in a set order. Each row of a song names a pattern and how it plays: how many times, transposed or not, the whole pattern or a part of it, with some tracks muted, at a tempo of its own. Command rows loop back, jump forward or halt the song. Use a song for a finished arrangement, or for a set of loops to play live.</p>
 <p>The Monomachine holds 24 songs. A song has up to 200 rows.</p>
-<p>In the editor the song mode is the <b class="gd-ui">Song</b> workspace. Press <kbd class="gd-key">[5]</kbd>, or click the <b class="gd-ui">Song</b> tab. The left column holds, from the top: <b class="gd-ui">What plays</b>, the <b class="gd-ui">Song</b> card, the <b class="gd-ui">Patterns</b> palette and the <b class="gd-ui">Selected row</b>. On the right, the <b class="gd-ui">Arrangement</b> shows every row of the song as a cell, 16 cells to a line.</p>
+<p>In the editor the song mode is the <b class="gd-ui">Song</b> workspace. Press <kbd class="gd-key">[5]</kbd>, or click the <b class="gd-ui">Song</b> tab. The <b class="gd-ui">Songs</b> column on the left holds the 24 song slots. The middle column holds the <b class="gd-ui">PATTERN</b>, <b class="gd-ui">CHAIN</b> and <b class="gd-ui">SONG</b> keys over the pattern palette, and in song mode the <b class="gd-ui">Selected row</b>. On the right, the <b class="gd-ui">Arrangement</b> shows every row of the song as a cell, 16 cells to a line.</p>
 <figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The Song workspace"><span>Screenshot to come</span></div><figcaption>The Song workspace</figcaption></figure>
 <p>The machine plays the song. The editor writes the song into the machine and shows what the machine reports: the mode, the row that plays and the tempo.</p>
+<p>The three keys over the palette say what the machine plays and what a click on a pad does:</p>
+<ul class="gd-list"><li><b class="gd-ui">PATTERN</b>: the machine is in pattern mode. A pad click goes to that pattern.</li><li><b class="gd-ui">CHAIN</b>: the machine is in pattern mode and a pad click adds the pattern to its chain.</li><li><b class="gd-ui">SONG</b>: the machine is in song mode. A pad click adds a row to the song.</li></ul>
 <p>To put the machine in song mode:</p>
-<ol class="gd-steps"><li>Click <b class="gd-ui">SONG</b> in the <b class="gd-ui">What plays</b> card.</li><li>The switch lights <b class="gd-ui">SONG</b> when the machine reports song mode. The line under it reads the song number and its row count, for example SONG 01 · 65 rows · stopped.</li></ol>
+<ol class="gd-steps"><li>Click <b class="gd-ui">SONG</b>.</li><li>The key lights when the machine reports song mode. The line over the bank letters reads the song number and its row count, for example SONG 01 · 65 rows · stopped.</li></ol>
 <p>On the machine you press <kbd class="gd-key">[PATTERN/SONG]</kbd>. In the editor you can also click <b class="gd-light">&lt;PLAY&gt;</b> on the second line of the LCD, on every workspace: it reads PAT in pattern mode and SONG in song mode, and each click switches.</p></div>
 <section class="gd-sec" id="load-song">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-73</span></span></aside>
 <div class="gd-body gd-prose"><h2>LOAD SONG</h2>
-<p>Loading a song makes it the song the machine plays in song mode. The editor keeps two things apart: the song you edit and the song the machine holds. You can edit any of the 24 songs while the machine plays another.</p>
-<ol class="gd-steps"><li>Stop the machine. Press <kbd class="gd-key">[SPACE]</kbd> if it plays.</li><li>Open the song menu in the <b class="gd-ui">Song</b> card. It lists the songs S01 to S24 by name. The song the machine holds is marked &quot;on the machine&quot;.</li><li>Choose a song. The <b class="gd-ui">Arrangement</b> shows its rows. The machine still holds the song it had.</li><li>Click <b class="gd-ui">Load on the machine</b>. The machine loads the song, and the menu marks it &quot;on the machine&quot;.</li></ol>
-<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The machine loads a song only while it is stopped. While it plays, the editor refuses the load and says so.</p></aside>
-<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p><b class="gd-ui">Load on the machine</b> is greyed out while the song shown is already the one the machine holds.</p></aside>
+<p>Loading a song makes it the song the machine plays in song mode, and the song the <b class="gd-ui">Arrangement</b> shows. Its slot is lit in the <b class="gd-ui">Songs</b> column, and the chip at the top of the column reads its number and name.</p>
+<ol class="gd-steps"><li>Stop the machine. Press <kbd class="gd-key">[SPACE]</kbd> if it plays.</li><li>Click a slot in the <b class="gd-ui">Songs</b> column. The slot is selected. The machine still holds its song.</li><li>Click <b class="gd-ui">Load</b>, or press <kbd class="gd-key">[ENTER]</kbd>. The machine loads the song, and its slot is lit.</li></ol>
+<p>Each slot shows its number, its name and its rows. An empty slot reads EMPTY and is drawn faint. Press the arrow keys to move the selection while a slot has the focus.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The machine loads a song only while it is stopped. While it plays, <b class="gd-ui">Load</b> is greyed out.</p></aside>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p><b class="gd-ui">Load</b> is greyed out while the selected slot is already the one the machine holds.</p></aside>
 </div></section>
 <section class="gd-sec" id="save-song">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-74</span></span></aside>
 <div class="gd-body gd-prose"><h2>SAVE SONG</h2>
-<p>On the machine you edit a song and then save it into one of the 24 slots, with a name. The editor works differently. It edits the slot itself: each change goes into the slot you chose in the <b class="gd-ui">Song</b> card as you make it. There is no separate save, and nothing is lost when you load another song.</p>
-<p>You cannot name a song or save it into another slot in the editor yet.</p>
-<p>You cannot copy, paste or clear a whole song slot in the editor yet. Rows can be copied one at a time: see &quot;Copy, paste and undo&quot; under SONG EDITING.</p>
+<p>The editor writes each edit into the slot of the song the machine holds as you make it. <b class="gd-ui">Save</b> is the machine's SAVE SONG: the machine stores the song it holds into that slot, with its name.</p>
+<h4 class="gd-h3">Save a song</h4>
+<ol class="gd-steps"><li>Click <b class="gd-ui">Save</b>.</li><li>If the machine has not loaded your latest edits yet, the editor asks first. Click <b class="gd-ui">Load the edits, then save</b> to store the song as you see it.</li></ol>
+<h4 class="gd-h3">Save a song into another slot, with a name</h4>
+<ol class="gd-steps"><li>Select an empty slot, or a slot to write over, in the <b class="gd-ui">Songs</b> column.</li><li>Click <b class="gd-ui">Save to…</b>. The slot shows a name field with the name of the machine's song.</li><li>Type a name, up to 14 characters, and press <kbd class="gd-key">[RETURN]</kbd>. Press <kbd class="gd-key">[ESC]</kbd> to cancel.</li></ol>
+<p>The slot now holds the song, with the new name. The machine still holds the song it had.</p>
+<h4 class="gd-h3">Name a song</h4>
+<ol class="gd-steps"><li>Select the slot.</li><li>Click <b class="gd-ui">Rename</b>, press <kbd class="gd-key">[F2]</kbd>, or double-click the slot.</li><li>Type the name and press <kbd class="gd-key">[RETURN]</kbd>.</li></ol>
+<p>Names are in capitals. The editor keeps to letters, digits, spaces and a few signs.</p>
+<h4 class="gd-h3">Copy, paste and clear a slot</h4>
+<ol class="gd-steps"><li>Select a slot and click <b class="gd-ui">Copy</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>.</li><li>Select another slot and click <b class="gd-ui">Paste</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>. The slot holds a copy of the song, with its name.</li></ol>
+<p>You can also drag a slot onto another. The song is copied there.</p>
+<p>To empty a slot, select it and click <b class="gd-ui">Clear</b>, or press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd>. The rows and the name are removed. The slot reads EMPTY.</p>
+<p>When a paste, a copy or <b class="gd-ui">Clear</b> would write over a song, the editor asks first. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to undo a paste, a copy, a name or a clear.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A slot is written as a song dump, which the Monomachine takes only on SYSEX RECV. With a real Monomachine over MIDI the write waits: the sync field of the LCD reads SEND and the number of writes that wait.</p></aside>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A song stores which patterns it plays, not the patterns themselves. Change a pattern and every row that uses it plays the changed pattern.</p></aside>
 </div></section>
 <section class="gd-sec" id="song-play">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-75</span></span></aside>
 <div class="gd-body gd-prose"><h2>SONG PLAY</h2>
 <p>In song mode the machine plays the song from row 001, row by row, to its END row.</p>
-<ol class="gd-steps"><li>Click <b class="gd-ui">SONG</b> in <b class="gd-ui">What plays</b>, or click <b class="gd-light">&lt;PLAY&gt;</b> on the LCD until it reads SONG.</li><li>Press <kbd class="gd-key">[SPACE]</kbd>. The song plays. The <b class="gd-ui">Arrangement</b> header reads Playing and the arrangement is framed.</li><li>Read what plays in <b class="gd-ui">What plays</b>: SONG 01 · row 017 of 65 · B01 means song 01, row 017 of 65 rows, pattern B01. The pattern field of the LCD reads the song and the row in the same way.</li><li>Press <kbd class="gd-key">[SPACE]</kbd> again to stop.</li></ol>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: What plays, in song mode"><span>Screenshot to come</span></div><figcaption>What plays, in song mode</figcaption></figure>
+<ol class="gd-steps"><li>Click <b class="gd-ui">SONG</b> over the palette, or click <b class="gd-light">&lt;PLAY&gt;</b> on the LCD until it reads SONG.</li><li>Press <kbd class="gd-key">[SPACE]</kbd>. The song plays. The <b class="gd-ui">Arrangement</b> header reads Playing and the arrangement is framed.</li><li>Read what plays on the line over the bank letters: SONG 01 · row 017 of 65 · B01 means song 01, row 017 of 65 rows, pattern B01. The pattern field of the LCD reads the song and the row in the same way.</li><li>Press <kbd class="gd-key">[SPACE]</kbd> again to stop.</li></ol>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: What plays, in song mode: the line over the bank letters"><span>Screenshot to come</span></div><figcaption>What plays, in song mode: the line over the bank letters</figcaption></figure>
 <p>You can go to pattern mode and back while the song plays. Click <b class="gd-ui">PATTERN</b>: the machine plays a pattern and holds its place in the song. Click <b class="gd-ui">SONG</b> and the song goes on from that place.</p>
 <p>On the machine <kbd class="gd-key">[PLAY]</kbd> pauses a song that plays, and <kbd class="gd-key">[STOP]</kbd> stops it. In the editor hold <kbd class="gd-key">[⇧]</kbd> and click the play key, or press <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[SPACE]</kbd>: the song holds its row and step, and the play key blinks. Click the play key to go on from there. <kbd class="gd-key">[SPACE]</kbd> stops.</p>
 </div></section>
@@ -1133,7 +1152,7 @@
 <ul class="gd-list"><li>Click a cell in the <b class="gd-ui">Arrangement</b>.</li><li>Press <kbd class="gd-key">[←]</kbd> or <kbd class="gd-key">[→]</kbd> for the row before or after.</li><li>Click a bar in the time bar above the grid. Each bar is as long as its row plays.</li></ul>
 <p>The last row of every song is END. The song stops there.</p>
 <h4 class="gd-h3">Add patterns</h4>
-<ol class="gd-steps"><li>In the <b class="gd-ui">Patterns</b> card, make sure <b class="gd-ui">Arrange</b> is lit.</li><li>Click a bank, A to H. The pads show its 16 patterns, each with its length, or &quot;empty&quot;.</li><li>Click a pad. A new row with that pattern goes in after the selected row, and becomes the selected row.</li></ol>
+<ol class="gd-steps"><li>Click <b class="gd-ui">SONG</b> over the pattern palette.</li><li>Click a bank, A to H. The pads show its 16 patterns, each with its length, or &quot;empty&quot;.</li><li>Click a pad. A new row with that pattern goes in after the selected row, and becomes the selected row.</li></ol>
 <p>You can also drag a pad onto the <b class="gd-ui">Arrangement</b>. Drop it on a cell and that row plays the new pattern. Drop it on the free cell after the last row and a new row goes in before END.</p>
 <h4 class="gd-h3">Set a row</h4>
 <ol class="gd-steps"><li>Select the row.</li><li>Click <b class="gd-ui">‹</b> or <b class="gd-ui">›</b> to step to the pattern before or after.</li><li>Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> beside <b class="gd-ui">Repeat</b> to set how many times the row plays, 1 to 64.</li><li>Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> beside <b class="gd-ui">Transpose</b> to transpose all the tracks of the pattern for this row, in semitones.</li></ol>
@@ -1155,7 +1174,7 @@
 <p>The marks under a pattern name say what else the row does.</p>
 <table class="gd-table"><thead><tr><th>Mark</th><th>Meaning</th></tr></thead><tbody><tr><td>×4</td><td>the row plays four times</td></tr><tr><td>+5, −7</td><td>the row's transpose, in semitones</td></tr><tr><td>T</td><td>single tracks are transposed</td></tr><tr><td>M</td><td>tracks are muted</td></tr><tr><td>B</td><td>the row has a tempo of its own</td></tr><tr><td>~</td><td>the row plays part of its pattern</td></tr></tbody></table>
 <p>On the machine a T replaces the TRN value. The editor shows both.</p>
-<p>The <b class="gd-ui">Arrangement</b> header counts the rows, out of 200. The <b class="gd-ui">Song</b> card shows the song's rows, its length in bars and its playing time at the current tempo. On the Song workspace the LCD's second line shows the same: SONG, ROWS, BARS and TIME.</p>
+<p>The <b class="gd-ui">Arrangement</b> header counts the rows, out of 200. The line under the chip in the <b class="gd-ui">Songs</b> column shows the song's rows, its length in bars and its playing time at the current tempo. On the Song workspace the LCD's second line shows the same: SONG, ROWS, BARS and TIME.</p>
 <h4 class="gd-h3">When the machine hears an edit</h4>
 <p>The editor writes each edit into the song on the machine. An edit made while the machine is stopped plays at the next start. An edit made while the song plays is heard from the next start of the song. An edit made in pattern mode is there when you switch to song mode.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>With a real Monomachine over MIDI, edits wait until the machine takes them. The sync field at the right of the LCD, which normally reads Sync, reads SEND and the number of edits that wait. Click it and follow the steps.</p></aside>
@@ -1164,7 +1183,7 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-77</span></span></aside>
 <div class="gd-body gd-prose"><h2>SONG EDIT TRANSPORT</h2>
 <p>On the machine you start the song from any row: select the row and press <kbd class="gd-key">[ENTER/YES]</kbd>. In the editor select the row and press <kbd class="gd-key">[ENTER]</kbd>, or click <b class="gd-ui">▶ From here</b> (see &quot;SONG TRANSPORT&quot;).</p>
-<p>The machine shows the song position in bars and beats. The editor shows the length of the whole song instead, in the <b class="gd-ui">Song</b> card and on the LCD. There is no live bar and beat counter in the editor yet.</p>
+<p>The machine shows the song position in bars and beats. The editor shows the length of the whole song instead, in the <b class="gd-ui">Songs</b> column and on the LCD. There is no live bar and beat counter in the editor yet.</p>
 </div></section>
 <section class="gd-sec" id="song-loops">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-78</span></span></aside>

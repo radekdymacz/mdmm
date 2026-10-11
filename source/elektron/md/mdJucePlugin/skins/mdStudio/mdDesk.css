@@ -1878,6 +1878,42 @@ img,svg,canvas{-webkit-user-drag:none}
 /* K2 (DESIGN-keymap.md): the LCD's COPY CLR PASTE while they act on the selected steps: underlined, as the
    selection is outlined (mdDeskComforts.js secLabels) */
 .lcdsec button.onsel{opacity:1;text-decoration:underline;text-underline-offset:2px}
+/* The Song page's song slots (deskSongSlots.js) and the PATTERN · CHAIN · SONG keys of its one palette (0.6 wave 1,
+   doc/modern-ux/DESIGN-machine-menus.md §2, Song). Both editors: the same classes, the page's own tokens. */
+.songui.withlib{grid-template-columns:366px minmax(340px,400px) minmax(0,1fr)!important}
+@media (max-width:1100px){.songui.withlib{grid-template-columns:minmax(0,1fr)!important}}
+.songlib{border-top:0!important;padding-top:0!important;display:grid;gap:10px;align-content:start;padding-right:16px!important;border-right:2px solid var(--print)}
+.songui.withlib>.songlib{align-self:start!important;align-content:start!important;grid-template-rows:none!important;height:auto!important;grid-row:1/-1}
+.songlib .sltop{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.songlib .sltop .lcdchip{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.songlib .slnote{font-size:12px;line-height:1.4}
+.songlib .songwarn{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.songlib .slacts{display:flex;flex-wrap:nowrap;gap:10px}
+.songlib .sgrp{display:flex;gap:3px}
+.songlib .slacts button{height:26px;padding:0 6px;font:600 10px var(--sans);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.songlib .slacts button:disabled{opacity:.35;cursor:default}
+.songlib .danger:hover{background:var(--rec);color:#fff}
+.songlib .libgrid.songs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;max-height:calc(100vh - 330px);overflow:auto;align-content:start;padding:2px}
+.songlib .ls{grid-template-columns:auto 1fr;column-gap:8px;align-items:center;padding:4px 7px}
+.songlib .ls .lsh{grid-row:1/3}
+.songlib .ls .lsl{grid-column:2;min-height:0}
+.songlib .lsn{height:16px;line-height:16px}
+.songlib .lsin{width:100%;min-width:0;box-sizing:border-box;font:500 12px var(--mono);text-transform:uppercase;height:16px;padding:0 2px}
+.songlib .ls.empty{background:transparent!important;box-shadow:none!important;border:1px dashed var(--rule);color:var(--print3);opacity:.7}
+.songlib .ls.empty .lsh b{font-weight:400}
+.songlib .ss.edited .lsh .led{animation:blink 1s steps(2) infinite}
+@media (prefers-reduced-motion:reduce){.songlib .ss.edited .lsh .led{animation:none}}
+.songlib .slfoot{font-size:12px;line-height:1.4}
+/* the palette's keys: what the machine plays and what a pad click does */
+.pmodekeys{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-start;width:100%}
+.pmodekeys .pkey{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;background:var(--key);color:var(--keytext);font:600 13px var(--sans);letter-spacing:.16em;text-transform:uppercase;border-radius:3px;box-shadow:inset 0 -2px 0 rgba(0,0,0,.35)}
+.pmodekeys .pkey .led{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.2)}
+.pmodekeys .pkey[aria-pressed=true]{background:var(--cream);color:var(--creamtext);box-shadow:inset 0 -2px 0 rgba(0,0,0,.2)}
+.pmodekeys .pkey[aria-pressed=true] .led{background:var(--led);box-shadow:0 0 6px 1px var(--led)}
+.pmodekeys .note{font-size:12px;margin-left:6px}
+.padd.q{animation:blink .8s steps(2) infinite}
+@media (prefers-reduced-motion:reduce){.padd.q{animation:none}}
+.whatplays .playsline{display:flex;min-width:0;margin-bottom:8px}
 /* 0.3.5, the Song page's left column by hierarchy (mdDeskSong.js): (a) What plays: the PATTERN | SONG switch, big,
    and one live line from the machine; (b) the song; (c) the palette; (d) the selected row. The mode is lit by what
    the machine reports; the arrangement is framed in red while the song plays, and looks as ever otherwise */
@@ -1888,8 +1924,6 @@ img,svg,canvas{-webkit-user-drag:none}
 .whatplays .playsline{display:flex;min-width:0}
 .whatplays .playsline .playschip{flex:1;min-width:0;margin:0;overflow:hidden;text-overflow:ellipsis;font:13px var(--pix);padding:7px 10px}
 .whatplays.song .playsline .playschip{box-shadow:inset 0 0 0 2px var(--led)}
-.songslot header{flex-wrap:wrap;align-items:center}
-.songslot .stepper .lcdchip{min-width:72px;text-align:center}
 .arrcard .arrstate{font:11px var(--pix);text-transform:uppercase;letter-spacing:.06em;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .arrcard .arrstate:empty{display:none}
 .songplaying .arrcard .arrstate::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--led);box-shadow:0 0 6px 1px var(--led)}
@@ -2015,7 +2049,7 @@ header.top.tf4 .row2 .lcd2{gap:5px!important}
    across both, a 0 dB tick, the clip mark on top. Only the LCD's ink and ground (opacity for the fainter parts, no
    colour mixing, no parent selector: an older WebKit, deskCompat.js); a clip is the top mark filled, never a warning
    colour. The readout while the volume changes is the LCD's tip (.lcdtip, deskLcd.css). */
-.lcdgroup .lcdpanel.hasvol{grid-template-columns:repeat(6,auto) auto!important}
+.lcdgroup .lcdpanel.hasvol{grid-template-columns:repeat(6,auto) max-content!important}
 .lcdgroup .lcdpanel.hasvol>.row2{grid-column:2/-2!important}
 .lcdpanel .volf{grid-column:-2/-1;grid-row:1/-1;align-self:stretch;display:flex;flex-direction:column;align-items:center;gap:2px;box-sizing:border-box;
  width:30px;min-height:0;padding:0 6px;border-left:var(--lrule,1px solid var(--ink));cursor:ns-resize;touch-action:none;outline:none;color:var(--ink)}
@@ -2046,3 +2080,27 @@ header.top.tf4 .row2 .lcd2{gap:5px!important}
 .lcdpanel .volf .volzero{left:-3px}
 }
 @media (prefers-reduced-motion:reduce){.lcdpanel .volf .volfill{transition:none}}
+
+/* Wave 3, the trig types (DESIGN-machine-menus.md §2; mockup-next md-13): Trig · Accent · Swing · Slide in the bar
+   under the grid, the lit one is what a click paints; All tracks · This track (EDIT ALL) beside them; swing is a teal
+   slant on the step */
+:root{--swg:#15a39a}
+.ttlegend{flex:none}
+.ttlegend .gbl::after{order:1}
+.ttlegend .ttkeys{gap:3px}
+.ttlegend .ttk{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 6px 0 4px;background:transparent;color:var(--print2);box-shadow:inset 0 0 0 1px var(--rule);font:500 11px var(--sans);letter-spacing:0;text-transform:none;border-radius:3px}
+.ttlegend .ttk:hover{background:var(--plate2)}
+.ttlegend .ttk[aria-checked=true]{background:var(--cream);color:var(--creamtext);box-shadow:inset 0 -2px 0 rgba(0,0,0,.2)}
+.ttlegend .ttk i.lg{width:13px;height:13px;margin:0;border-radius:2px;display:inline-block;position:relative;background-color:var(--key);background-repeat:no-repeat;background-image:linear-gradient(var(--led),var(--led));background-position:center 2px;background-size:62% 3px}
+.ttlegend .ttk i.lg.acc{background-size:88% 6px}
+.ttlegend .ttk i.lg.sl{background-image:linear-gradient(var(--led),var(--led)),linear-gradient(135deg,transparent 60%,rgba(255,255,255,.3) 60%);background-size:62% 3px,100% 100%;background-position:center 2px,0 0}
+.ttlegend .ttk i.lg.sw,.glegpop i.lg.sw{background-image:linear-gradient(var(--led),var(--led)),linear-gradient(60deg,transparent 40%,var(--swg) 40%,var(--swg) 64%,transparent 64%);background-size:62% 3px,8px 8px;background-position:center 2px,2px 5px}
+.ttlegend .ttall{order:2;display:flex;gap:2px;margin-left:-2px}
+.ttlegend .ttall button{height:14px;padding:0 4px;font:600 9px var(--sans);letter-spacing:.06em;text-transform:uppercase;border-radius:2px;background:transparent;color:var(--print2);box-shadow:inset 0 0 0 1px var(--rule)}
+.ttlegend .ttall button[aria-pressed=true]{background:var(--cream);color:var(--creamtext);box-shadow:none}
+.st.on.sw{background-image:linear-gradient(var(--led),var(--led)),linear-gradient(60deg,transparent 40%,var(--swg) 40%,var(--swg) 64%,transparent 64%);background-size:62% 5px,9px 9px;background-position:center 5px,4px calc(100% - 4px)}
+.st.on.acc.sw{background-size:88% 9px,9px 9px}
+.st.on.sl.sw{background-image:linear-gradient(var(--led),var(--led)),linear-gradient(60deg,transparent 40%,var(--swg) 40%,var(--swg) 64%,transparent 64%),linear-gradient(135deg,transparent 62%,rgba(255,255,255,.18) 62%);background-size:62% 5px,9px 9px,100% 100%;background-position:center 5px,4px calc(100% - 4px),0 0}
+.st.on.acc.sl.sw{background-size:88% 9px,9px 9px,100% 100%}
+html[data-tt=acc] #seq .st,html[data-tt=swg] #seq .st,html[data-tt=sld] #seq .st{cursor:cell}
+html[data-tt=acc] #seq .st:not(.on),html[data-tt=swg] #seq .st:not(.on),html[data-tt=sld] #seq .st:not(.on){cursor:not-allowed}

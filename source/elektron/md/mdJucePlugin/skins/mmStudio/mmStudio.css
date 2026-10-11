@@ -2448,7 +2448,7 @@ header.top.tf4 .row2 .lcd2{gap:5px!important}
    across both, a 0 dB tick, the clip mark on top. Only the LCD's ink and ground (opacity for the fainter parts, no
    colour mixing, no parent selector: an older WebKit, deskCompat.js); a clip is the top mark filled, never a warning
    colour. The readout while the volume changes is the LCD's tip (.lcdtip, deskLcd.css). */
-.lcdgroup .lcdpanel.hasvol{grid-template-columns:repeat(6,auto) auto!important}
+.lcdgroup .lcdpanel.hasvol{grid-template-columns:repeat(6,auto) max-content!important}
 .lcdgroup .lcdpanel.hasvol>.row2{grid-column:2/-2!important}
 .lcdpanel .volf{grid-column:-2/-1;grid-row:1/-1;align-self:stretch;display:flex;flex-direction:column;align-items:center;gap:2px;box-sizing:border-box;
  width:30px;min-height:0;padding:0 6px;border-left:var(--lrule,1px solid var(--ink));cursor:ns-resize;touch-action:none;outline:none;color:var(--ink)}
@@ -2479,6 +2479,67 @@ header.top.tf4 .row2 .lcd2{gap:5px!important}
 .lcdpanel .volf .volzero{left:-3px}
 }
 @media (prefers-reduced-motion:reduce){.lcdpanel .volf .volfill{transition:none}}
+/* The Song page's song slots (deskSongSlots.js) and the PATTERN · CHAIN · SONG keys of its one palette (0.6 wave 1,
+   doc/modern-ux/DESIGN-machine-menus.md §2, Song). Both editors: the same classes, the page's own tokens. */
+.songui.withlib{grid-template-columns:366px minmax(340px,400px) minmax(0,1fr)!important}
+@media (max-width:1100px){.songui.withlib{grid-template-columns:minmax(0,1fr)!important}}
+.songlib{border-top:0!important;padding-top:0!important;display:grid;gap:10px;align-content:start;padding-right:16px!important;border-right:2px solid var(--print)}
+.songui.withlib>.songlib{align-self:start!important;align-content:start!important;grid-template-rows:none!important;height:auto!important;grid-row:1/-1}
+.songlib .sltop{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.songlib .sltop .lcdchip{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.songlib .slnote{font-size:12px;line-height:1.4}
+.songlib .songwarn{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.songlib .slacts{display:flex;flex-wrap:nowrap;gap:10px}
+.songlib .sgrp{display:flex;gap:3px}
+.songlib .slacts button{height:26px;padding:0 6px;font:600 10px var(--sans);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.songlib .slacts button:disabled{opacity:.35;cursor:default}
+.songlib .danger:hover{background:var(--rec);color:#fff}
+.songlib .libgrid.songs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;max-height:calc(100vh - 330px);overflow:auto;align-content:start;padding:2px}
+.songlib .ls{grid-template-columns:auto 1fr;column-gap:8px;align-items:center;padding:4px 7px}
+.songlib .ls .lsh{grid-row:1/3}
+.songlib .ls .lsl{grid-column:2;min-height:0}
+.songlib .lsn{height:16px;line-height:16px}
+.songlib .lsin{width:100%;min-width:0;box-sizing:border-box;font:500 12px var(--mono);text-transform:uppercase;height:16px;padding:0 2px}
+.songlib .ls.empty{background:transparent!important;box-shadow:none!important;border:1px dashed var(--rule);color:var(--print3);opacity:.7}
+.songlib .ls.empty .lsh b{font-weight:400}
+.songlib .ss.edited .lsh .led{animation:blink 1s steps(2) infinite}
+@media (prefers-reduced-motion:reduce){.songlib .ss.edited .lsh .led{animation:none}}
+.songlib .slfoot{font-size:12px;line-height:1.4}
+/* the palette's keys: what the machine plays and what a pad click does */
+.pmodekeys{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-start;width:100%}
+.pmodekeys .pkey{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;background:var(--key);color:var(--keytext);font:600 13px var(--sans);letter-spacing:.16em;text-transform:uppercase;border-radius:3px;box-shadow:inset 0 -2px 0 rgba(0,0,0,.35)}
+.pmodekeys .pkey .led{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.2)}
+.pmodekeys .pkey[aria-pressed=true]{background:var(--cream);color:var(--creamtext);box-shadow:inset 0 -2px 0 rgba(0,0,0,.2)}
+.pmodekeys .pkey[aria-pressed=true] .led{background:var(--led);box-shadow:0 0 6px 1px var(--led)}
+.pmodekeys .note{font-size:12px;margin-left:6px}
+.padd.q{animation:blink .8s steps(2) infinite}
+@media (prefers-reduced-motion:reduce){.padd.q{animation:none}}
+.whatplays .playsline{display:flex;min-width:0;margin-bottom:8px}
+
+/* Wave 3, the trig types (DESIGN-machine-menus.md §2; mockup-next mm-12): Note · Slide · Swing in the row under the roll,
+   where the SLIDE and SWING rows were; slide and swing are marks along the foot of the roll */
+:root{--swg:#15a39a}
+.ttrow.ttunder{display:flex;align-items:center;gap:12px;height:30px;margin:4px 0 0;padding-left:50px;flex:none}
+.ttunder .ttkeys{display:flex;gap:4px}
+.ttunder .ttk{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px 0 7px;background:transparent;color:var(--print2);box-shadow:inset 0 0 0 1px var(--rule);font:500 13px var(--sans);letter-spacing:0;text-transform:none;border-radius:3px}
+.ttunder .ttk:hover{background:var(--plate3)}
+.ttunder .ttk[aria-checked=true]{background:var(--cream);color:var(--creamtext);box-shadow:inset 0 -2px 0 rgba(0,0,0,.2)}
+.ttunder .ttk .led{width:6px;height:6px;border-radius:50%;background:rgba(127,127,127,.3)}
+.ttunder .ttk[aria-checked=true] .led{background:var(--led);box-shadow:0 0 6px 1px var(--led)}
+.ttunder .ttk .ttm{display:inline-block;width:12px;height:9px}
+.ttunder .ttk.note .ttm{background:linear-gradient(var(--led),var(--led)) center/80% 3px no-repeat}
+.ttunder .ttk.sld .ttm{background:linear-gradient(135deg,transparent 55%,currentColor 55%)}
+.ttunder .ttk.swg .ttm{background:linear-gradient(60deg,transparent 42%,var(--swg) 42%,var(--swg) 62%,transparent 62%)}
+.ttunder .note{font-size:12px;color:var(--print2)}
+.rollmarks{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none;align-items:stretch;z-index:2}
+.rollmarks .rm{position:relative}
+.rollmarks .rm i{position:absolute;bottom:3px;height:9px;width:min(11px,calc(50% - 3px));display:none}
+.rollmarks .rm .m1{left:2px;background:linear-gradient(135deg,transparent 52%,var(--print) 52%)}
+.rollmarks .rm .m2{right:2px;background:linear-gradient(60deg,transparent 40%,var(--swg) 40%,var(--swg) 64%,transparent 64%)}
+.rollmarks .rm.sld .m1,.rollmarks .rm.swg .m2{display:block}
+.rollmarks .rm.hov{background:color-mix(in srgb,var(--swg) 16%,transparent);box-shadow:inset 0 0 0 1.5px var(--swg)}
+html[data-tt=sld] .rollmarks .rm.hov{background:color-mix(in srgb,var(--print) 10%,transparent);box-shadow:inset 0 0 0 1.5px var(--print2)}
+html[data-tt=sld] #seq .nlane.big canvas.roll,html[data-tt=swg] #seq .nlane.big canvas.roll{cursor:cell}
 
 /* ===== The real machine's states (not in the mockup) ===== */
 .statusline,.errline{margin:6px 0 0;padding:6px 10px;border-radius:3px;font:12px var(--pix);text-transform:uppercase}
@@ -2506,8 +2567,6 @@ header.top.tf4 .row2 .lcd2{gap:5px!important}
 .whatplays .playsline{display:flex;min-width:0}
 .whatplays .playsline .playschip{flex:1;min-width:0;margin:0;overflow:hidden;text-overflow:ellipsis;font:13px var(--pix);padding:7px 10px}
 .whatplays.song .playsline .playschip{box-shadow:inset 0 0 0 2px var(--led)}
-.songslot header{flex-wrap:wrap;align-items:center}
-.songslot .songpick{display:inline-flex;gap:6px;flex-wrap:wrap}
 .arrcard .arrstate{font:11px var(--pix);text-transform:uppercase;letter-spacing:.06em;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .songplaying .arrcard .arrstate::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--led);box-shadow:0 0 6px 1px var(--led)}
 .songplaying .arrcard .arrstate{color:var(--print)}

@@ -67,7 +67,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Front panel 1-5 | 14 BANK GROUP A-D / E-H | Bank group | ✅ | Pattern chooser shows all 8 banks |  | – |
 | Front panel 1-5 | 14 MUTE MODE (FUNCTION + BANK GROUP) | Mute window | ✅ | Perform > Mutes |  | – |
 | Front panel 1-5 | 15 BANK keys A-H | Pattern bank | ✅ | Pattern chooser |  | – |
-| Front panel 1-5 | 15 BANK secondary: ARP, TRANSPOSE, SWING, SLIDE | Track settings windows | ✅ | Sequence dock > Arp, Transpose; SWING and SLIDE rows; LCD SWG |  | – |
+| Front panel 1-5 | 15 BANK secondary: ARP, TRANSPOSE, SWING, SLIDE | Track settings windows | ✅ | Sequence dock > Arp, Transpose; Slide and Swing under the roll; LCD SWG |  | – |
 | Front panel 1-5 | 16 REC key (grid recording) | Grid mode on / off | 🟡 | LCD record key | Stopped = grid record; the page's step editing does not need it | 1 |
 | Front panel 1-5 | 16 PLAY (pause on second press) | Start, pause | ✅ | LCD play key: ⇧-click or ⇧Space pauses (▶ blinks, the position holds), ▶ goes on; the ▶ menu (right-click or its ▾) | Over HW MIDI pause and Continue need GLOBAL › CONTROL IN › TRANSPORT = ACCEPT; the editor asks to set it. | 3 |
 | Front panel 1-5 | 16 STOP; STOP twice rewinds and silences | Stop, reset | ✅ | Panic: ⌘. or the ▶ menu's Panic (All Notes Off on each track's channel, then STOP twice) |  | 3 |
@@ -325,9 +325,9 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Transpose 1-64 | SCALE ---, FIX, MAJ, MIN | Scale | ✅ | Transpose Scale keys |  | – |
 | Transpose 1-64 | KEY for MAJ / MIN | Key | ✅ | Click the keyboard picture |  | – |
 | Swing 1-64 | Amount 50-80 %, per pattern | Swing | ✅ | LCD SWG |  | – |
-| Swing track 1-65 | Per-track swing steps, default every second 16th | Swing track | ✅ | SWING row | Drag paints | – |
+| Swing track 1-65 | Per-track swing steps, default every second 16th | Swing track | ✅ | Sequence: Swing under the roll, then click or drag the step columns; marks along the roll's foot | Drag paints, one undo step | 1 |
 | Swing 1-65 | Copy, clear, paste, undo swing track | Swing clipboard | ❌ | – |  | – |
-| Slide 1-66 | Slide track per track | Slide | ✅ | SLIDE row; lock lane draws the glide |  | 2 |
+| Slide 1-66 | Slide track per track | Slide | ✅ | Sequence: Slide under the roll, then click or drag the step columns; marks along the roll's foot; lock lane draws the glide |  | 2 |
 | Slide 1-66 | Copy, clear, paste, undo slide | Slide clipboard | ❌ | – |  | – |
 | Mute mode 1-67 | Mute window, 6 + 6 | Mutes | ✅ | Perform > Mutes; rail M | MIDI mutes through the MUTE window keys | 2 |
 | Mute mode 1-67 | Held changes until FUNCTION released | Prepared mutes | ✅ | Shift + M prepares, applies on release |  | 1 |
@@ -355,13 +355,13 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
-| Song mode 1-73 | Enter song mode | Mode switch | ✅ | Song > What plays; LCD PLAY |  | 1 |
-| Song mode 1-73 | 24 songs, 200 rows | Capacity | ✅ | Song picker, 200 cells |  | 1 |
-| Load song 1-73 | Load a song slot | LOAD SONG | ✅ | Song > "Load on the machine" | Only while stopped | 2 |
-| Save song 1-74 | Save and name a song | SAVE SONG | ❌ | – | `saveSong` is in the desk, not in the page. Row edits go into the slot as dumps | – |
-| Save song 1-74 | Copy, paste, clear, undo a song slot | Song slots | ❌ | – | Rows can be copied (`copyRow`) | – |
+| Song mode 1-73 | Enter song mode | Mode switch | ✅ | Song > SONG key; LCD PLAY |  | 2 |
+| Song mode 1-73 | 24 songs, 200 rows | Capacity | ✅ | Songs column (24 slots), 200 cells |  | 1 |
+| Load song 1-73 | Load a song slot | LOAD SONG | ✅ | Songs column: select a slot, Load (Enter) | Only while stopped | 3 |
+| Save song 1-74 | Save and name a song | SAVE SONG | ✅ | Songs column: Save (SAVE SONG 0x6D), Save to… with a name, Rename (F2) | Edits still go into the slot as dumps (SYSEX RECV); a name has 14 characters. | 1 |
+| Save song 1-74 | Copy, paste, clear, undo a song slot | Song slots | ✅ | Songs column: Copy, Paste, Clear, drag a slot onto another; Cmd+Z | Library slot ops songCopy, songPaste, songCopyTo, songClear, songRename; asks before writing over a song. | 1 |
 | Song play 1-75 | Play, pause, stop | Transport | ✅ | Play key: play, pause (⇧-click, ⇧Space), stop; in SONG mode as in pattern mode |  | 2 |
-| Song play 1-75 | Switch to pattern mode and back; pointer held | Mode toggle | ✅ | PATTERN / SONG switch |  | 2 |
+| Song play 1-75 | Switch to pattern mode and back; pointer held | Mode toggle | ✅ | PATTERN · CHAIN · SONG keys |  | 3 |
 | Song transport 1-75 | Move the song pointer to a row and continue | Jump to row | ✅ | Song: ▶ From here on the selected row, or Enter (SONG mode, the song position, Continue) | Needs TRANSPORT IN = ACCEPT (factory IGNORE): the editor asks to set it, then plays. The row starts at its first step (P1). | 1 |
 | Song transport 1-75 | Song pointer position over MIDI | SPP | ➖ | – | Firmware, via global transport setting | – |
 | Song editing 1-76 | ROW count | Rows | ✅ | Arrangement grid |  | – |
@@ -517,7 +517,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | 0x61 Set tempo C-2 | Tempo | Tempo | ✅ | LCD TEMPO | 30-300 BPM | – |
 | 0x67 / 0x68 Pattern dump, request C-3 | Pattern data | Pattern | ✅ | All sequence edits, chooser |  | – |
 | 0x69 / 0x6A Song dump, request C-3 | Song data | Song | ✅ | Song workspace |  | – |
-| 0x6C / 0x6D Load / save song C-3 | Song slot | Load song | 🟡 | Load only | Save not in the page | – |
+| 0x6C / 0x6D Load / save song C-3 | Song slot | Load song | ✅ | Songs column: Load, Save | loadSong 0x6C, saveSong 0x6D. | – |
 | 0x70-0x72 Status request, set, response C-3, C-4 | Slot, mode, poly, tracks | Status | ✅ | Pattern / song mode, poly, kit state |  | – |
 | TurboMIDI speed messages C-4, C-5 | Speed negotiation | Turbo | ➖ | – | Cable protocol | – |
 
@@ -531,9 +531,9 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 305 |
-| 🟡 | 28 |
-| ❌ | 18 |
+| ✅ | 308 |
+| 🟡 | 27 |
+| ❌ | 16 |
 | ➖ | 34 |
 | Total | 385 |
 
