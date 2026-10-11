@@ -1686,6 +1686,11 @@ namespace md
 			d->setIdleFastForward((parts & ~dsp56k::DSP::IdleFastForwardPureReads) != 0);
 			d->setJitCmpmFix(cmpm);
 		}
+		// Both ends of these rings run on the scheduler thread: no semaphores (dsp56k::RingBuffer::setSingleThreaded)
+		const bool linkRings = speedUpLeverOn(SpeedUpLever::LinkRings);
+		m_dspMixer.getPeriph().getEssi0().getAudioInputs().setSingleThreaded(linkRings);
+		m_dspProducer.getPeriph().getEssi0().getAudioInputs().setSingleThreaded(linkRings);
+		m_dspMixer.getPeriph().getEssi1().getAudioOutputs().setSingleThreaded(linkRings);
 	}
 
 	void Hardware::applyEssiCycleDeadlines()
