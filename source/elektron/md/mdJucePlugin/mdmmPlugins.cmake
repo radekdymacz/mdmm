@@ -179,7 +179,8 @@ set(MM_NODE_TESTS "skins/mmStudio/mmConvertTest.js" "skins/mmStudio/mmKeysTest.j
 set(SHARED_NODE_TESTS "skins/shared/deskGenTest.js" "skins/shared/deskOverlayTest.js" "skins/shared/deskBridgeTest.js"
 	"skins/shared/deskTogglePaintTest.js" "skins/shared/deskSelectTest.js" "skins/shared/deskKeysTest.js" "skins/shared/deskModalTest.js" "skins/shared/deskMenuTest.js" "skins/shared/deskCompatTest.js"
 	"skins/shared/deskKeymapTest.js" "skins/shared/deskKeyViewTest.js" "skins/shared/deskAboutTest.js" "skins/shared/deskCpuTest.js" "skins/shared/deskVolumeTest.js"
-	"skins/shared/deskSyxTest.js" "skins/shared/deskDropTest.js" "skins/shared/deskSoundLayoutTest.js")
+	"skins/shared/deskSyxTest.js" "skins/shared/deskDropTest.js" "skins/shared/deskSoundLayoutTest.js"
+	"skins/shared/deskJourneyTiersTest.js")
 foreach(test ${MD_NODE_TESTS} ${MD_SELF_TESTS} ${MM_SELF_TESTS} ${MM_NODE_TESTS} ${SHARED_NODE_TESTS} ${MD_SHARED_PAGE_FILES})
 	if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${test}")
 		message(FATAL_ERROR "${test} is not there: update the editors' test lists in ${CMAKE_CURRENT_LIST_FILE}")
@@ -580,68 +581,71 @@ function(mdmm_plugin_targets)
 	find_program(GEARMULATOR_NODE node)
 	if(GEARMULATOR_NODE)
 		add_test(NAME mdDeskModelPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/mdStudio/mdDeskModelTest.js)
-		set_tests_properties(mdDeskModelPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+		set_tests_properties(mdDeskModelPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# the generators (DESIGN-generators.md): pure, pinned; the shared ones, then the MD's roles and mutation
 		add_test(NAME deskGenPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskGenTest.js)
-		set_tests_properties(deskGenPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+		set_tests_properties(deskGenPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		add_test(NAME mdDeskGenPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/mdStudio/mdDeskGenTest.js)
-		set_tests_properties(mdDeskGenPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+		set_tests_properties(mdDeskGenPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# the shared document store and optimistic layers (DESIGN-UNIFY.md phase 0)
 		# the page bridge's transport (BridgeTransport in skins/shared/deskBridge.js): URLs and pieces
 		add_test(NAME deskBridgePageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskBridgeTest.js)
-		set_tests_properties(deskBridgePageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+		set_tests_properties(deskBridgePageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		add_test(NAME deskOverlayPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskOverlayTest.js)
-		set_tests_properties(deskOverlayPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+		set_tests_properties(deskOverlayPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# the drag across the M and S keys (both editors): which keys a drag changes
 		add_test(NAME deskTogglePaintPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskTogglePaintTest.js)
-		set_tests_properties(deskTogglePaintPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+		set_tests_properties(deskTogglePaintPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# the keys' one gating rule (both editors): no page shortcut behind an open dialog or panel
 		add_test(NAME deskKeysPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskKeysTest.js)
-		set_tests_properties(deskKeysPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+		set_tests_properties(deskKeysPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# both editors' key maps as data (DESIGN-keymap.md K0): ids, the MD / MM parity, doc/modern-ux/keymap.json and the guide's tables
 		add_test(NAME deskKeymapPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskKeymapTest.js)
-		set_tests_properties(deskKeymapPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+		set_tests_properties(deskKeymapPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# the keyboard view (K-view): every dispatched key drawn in its layer, legends per OS, page filter, search, piano
 		add_test(NAME deskKeyViewPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskKeyViewTest.js)
-		set_tests_properties(deskKeyViewPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+		set_tests_properties(deskKeyViewPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# the question dialog's queue (both editors): nothing replaces it, a plug-in notice is always answered
 		add_test(NAME deskModalPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskModalTest.js)
-		set_tests_properties(deskModalPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+		set_tests_properties(deskModalPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# the SysEx import panel (both editors): the machine's slot grids, the counts, Shift-click ranges, the report per slot
 		add_test(NAME deskSyxPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskSyxTest.js)
-		set_tests_properties(deskSyxPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+		set_tests_properties(deskSyxPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# files dropped on the window (both editors): what each kind becomes, in order, the ROM's question, the notes,
 		# the frame
 		add_test(NAME deskDropPageTest
 			COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskDropTest.js)
-		set_tests_properties(deskDropPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+		set_tests_properties(deskDropPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# I-008: the menu drawn in the page (placement, keys, the editor menu's message and picks) and its wiring
 		add_test(NAME deskMenuPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskMenuTest.js)
-		set_tests_properties(deskMenuPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+		set_tests_properties(deskMenuPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# the pages on an older WebKit (B-001, macOS 12): the stylesheets without color-mix() and :focus-visible
 		add_test(NAME deskCompatPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskCompatTest.js)
-		set_tests_properties(deskCompatPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+		set_tests_properties(deskCompatPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# selected steps (both editors, DESIGN-step-selection.md): the selection as a value, the select gesture, the keys, the step menu
 		add_test(NAME deskSelectPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskSelectTest.js)
-		set_tests_properties(deskSelectPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+		set_tests_properties(deskSelectPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# 0.5 slice 5: the Sound page's rows and the GEN / MUTATE bars, one source for both editors
 		add_test(NAME deskSoundLayoutPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskSoundLayoutTest.js)
-		set_tests_properties(deskSoundLayoutPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+		set_tests_properties(deskSoundLayoutPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# the version both pages show is the one this build compiles in (MDMM_EDITOR_VERSION)
 		add_test(NAME deskAboutPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskAboutTest.js ${MDMM_EDITOR_VERSION})
-		set_tests_properties(deskAboutPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+		set_tests_properties(deskAboutPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# I-018: the CPU meter (what it shows for each state, the details' lines, the meter beside the version, its wiring)
 		add_test(NAME deskCpuPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskCpuTest.js)
-		set_tests_properties(deskCpuPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+		set_tests_properties(deskCpuPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# I-021: the LCD's output meter and volume (the meter's ballistics, the volume's drag, wheel and reset, its wiring)
 		add_test(NAME deskVolumePageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskVolumeTest.js)
-		set_tests_properties(deskVolumePageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+		set_tests_properties(deskVolumePageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# the MD page's wiring on its own scripts: solo and the machine's mutes, renders held by a gesture, prepared mutes
 		add_test(NAME mdDeskPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/mdStudio/mdDeskPageTest.js)
-		set_tests_properties(mdDeskPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+		set_tests_properties(mdDeskPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
+		# where each journey runs (deskJourney.js TIERS: page, machine, host) and the selector's ~tiers (doc/release/DEV-CYCLE.md)
+		add_test(NAME deskJourneyTiersPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskJourneyTiersTest.js)
+		set_tests_properties(deskJourneyTiersPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# the Monomachine page's documents and view (DESIGN-UNIFY.md phase 1): the derived view, echoes by command id
 		add_test(NAME mmViewPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/mmStudio/mmViewTest.js)
-		set_tests_properties(mmViewPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+		set_tests_properties(mmViewPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 	endif()
 
 	# P4: the editor's setup (MDSK chunk) round-trips with the plug-in state.

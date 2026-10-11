@@ -30,10 +30,14 @@ function(mdmm_add_lib_tests _dir)
 	# working kit). Manual: needs a user-supplied ROM.
 	add_executable(mdDeskFirmwareTest ${_dir}/mdDeskFirmwareTest.cpp ${_dir}/mdFirmwareSession.h ${_dir}/contractCheck.h)
 	target_link_libraries(mdDeskFirmwareTest PRIVATE mdLib mdDesk deskWire)
-	target_compile_definitions(mdDeskFirmwareTest PRIVATE MDDESK_SCHEMA="${_dir}/../../../../doc/modern-ux/md-data-contract.schema.json")
+	target_compile_definitions(mdDeskFirmwareTest PRIVATE MDDESK_SCHEMA="${_dir}/../../../../doc/modern-ux/md-data-contract.schema.json"
+		MDDESK_INTENT_CASES="${_dir}/../../../../doc/modern-ux/intent-cases.json")
 	set_property(TARGET mdDeskFirmwareTest PROPERTY FOLDER "Elektron/test")
 	# B-031: the user's own backup imported, then patterns picked while and after it runs. The backup from MD_SYX
 	# (never in the repo), the ROM from GEARMULATOR_MD_FIRMWARE_BIN; skipped without them (the local gate gives both).
+	# DEV-CYCLE: the Machinedrum's intent cases (doc/modern-ux/intent-cases.json, "md") through the desk to the firmware
+	add_test(NAME mdIntentCasesFirmwareTest COMMAND mdDeskFirmwareTest --env intentcases)
+	set_tests_properties(mdIntentCasesFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 900)
 	add_test(NAME mdSyxPickFirmwareTest COMMAND mdDeskFirmwareTest --env syxpick)
 	set_tests_properties(mdSyxPickFirmwareTest PROPERTIES
 		LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1200)
@@ -102,7 +106,8 @@ function(mdmm_add_lib_tests _dir)
 	# (SYSEX RECV session, pattern/kit/song delivery, queue). Manual: needs a ROM.
 	add_executable(mmDeskFirmwareTest ${_dir}/mmDeskFirmwareTest.cpp ${_dir}/mdFirmwareSession.h)
 	target_link_libraries(mmDeskFirmwareTest PRIVATE mdLib mmDesk deskWire)
-	target_compile_definitions(mmDeskFirmwareTest PRIVATE MMDESK_SCHEMA="${_dir}/../../../../doc/modern-ux/mm-data-contract.schema.json")
+	target_compile_definitions(mmDeskFirmwareTest PRIVATE MMDESK_SCHEMA="${_dir}/../../../../doc/modern-ux/mm-data-contract.schema.json"
+		MMDESK_INTENT_CASES="${_dir}/../../../../doc/modern-ux/intent-cases.json")
 	set_property(TARGET mmDeskFirmwareTest PROPERTY FOLDER "Elektron/test")
 	# -DGEARMULATOR_MM_ROM=<OS 1.32B image> runs it in ctest; without it the test skips.
 	add_test(NAME mmDeskFirmwareTest COMMAND mmDeskFirmwareTest ${GEARMULATOR_MM_ROM})
@@ -124,6 +129,9 @@ function(mdmm_add_lib_tests _dir)
 		add_test(NAME mmTransposeLiveFirmwareTest COMMAND mmDeskFirmwareTest ${GEARMULATOR_MM_ROM} transpose)
 		set_tests_properties(mmTransposeLiveFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
 	endif()
+	# DEV-CYCLE: the intent cases (doc/modern-ux/intent-cases.json) through the desk to the firmware, read back. Not in ctest
+	# yet: on 2026-10-11 the firmware kept 29 of the 99 non-refusal cases otherwise than the core (findings to triage,
+	# doc/release/DEV-CYCLE.md); run it by hand: mmDeskFirmwareTest <MM ROM> intentcases
 	# B-031 on the Monomachine: the backup from MM_SYX, the ROM from GEARMULATOR_MM_FIRMWARE_BIN; skipped without them.
 	add_test(NAME mmSyxPickFirmwareTest COMMAND mmDeskFirmwareTest --env syxpick)
 	set_tests_properties(mmSyxPickFirmwareTest PROPERTIES

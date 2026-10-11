@@ -2,15 +2,26 @@
 
 `scripts/mdmm-local-gate.sh` says red or green for a release candidate, on the Mac that has the firmware. GitHub CI
 never has a ROM, so it proves that the editors start and show their page, and nothing about a machine actually
-running. The gate does the rest. **It runs green before a release is tagged** ([CLAUDE.md](../../CLAUDE.md), Releases;
-[marketing/LAUNCH-CHECKLIST.md](../../marketing/LAUNCH-CHECKLIST.md)); the tag's CI then repeats the part that needs no ROM
-on the shipped files ([FOUNDATION.md](../modern-ux/FOUNDATION.md), CI start tests).
+running. The gate does the rest. **It runs in full on main by hand** (`scripts/mdmm-full-gate.sh`: Claude runs it when the Mac is quiet, at the start of
+a release or after a big merge; no scheduled job, [DEV-CYCLE.md](DEV-CYCLE.md)), and **a release is tagged on the last
+green full gate on main plus the gate stages its diff touches** (`scripts/mdmm-full-gate.sh --plan` prints the command;
+without one, the full gate) ([CLAUDE.md](../../CLAUDE.md),
+Releases; [marketing/LAUNCH-CHECKLIST.md](../../marketing/LAUNCH-CHECKLIST.md)); the tag's CI then repeats the part that needs
+no ROM on the shipped files ([FOUNDATION.md](../modern-ux/FOUNDATION.md), CI start tests).
+
+**The order.** Stage 1 builds the release tree (with ccache when it is installed, `brew install ccache`;
+`MDMM_GATE_CCACHE=0`: without). Then lane 1 runs that tree's functional stages at once (2, 2c, 2b with its two desk
+smoke tests at once, and 3, 4, 5 in turn; each console shown in stage order when all are done) while lane 2 builds the
+journeys' diagnostics tree in the background (niced, half the cores) and 7a to 7c run in the foreground (a full run
+swaps the AU bundles in once and holds them for stage 2's AU tests and 7b-7c); then 7d (four editors at once);
+then the timing stages (5b, 6a, 6b, 6c) alone, on a quiet Mac. Do not edit the gate script while it runs (bash reads
+it as it goes).
 
 ```sh
 scripts/mdmm-local-gate.sh                       # the release gate: everything; plan on about two and a half hours (timings below)
 scripts/mdmm-local-gate.sh --quick               # no plug-ins, no window: stages 1 to 6a, for working on the emulator
 scripts/mdmm-local-gate.sh --soak                # everything plus the soak (6c: 21 minutes of play; off by default)
-scripts/mdmm-local-gate.sh --skip-journeys       # everything but the user journeys (8 to 16 minutes)
+scripts/mdmm-local-gate.sh --skip-journeys       # everything but the user journeys (7d)
 scripts/mdmm-local-gate.sh --skip-plugin         # build the plug-ins, but leave out 6b, 6c (the soak) and stage 7
 scripts/mdmm-local-gate.sh --record-goldens      # record the playing goldens instead of comparing (see Goldens)
 scripts/mdmm-local-gate.sh --build <dir> --out <dir>
@@ -25,6 +36,9 @@ others. The last thing a green run prints is the manual step it cannot do (Updat
 
 ## Timings
 
+**2026-10-11, the lanes:** 21.6 minutes on a warm tree (stage 1 3 min; lane 1 with 7a-7c 7.5 min, its long pole 2b at
+7.5 min; 7d 5.2 min; 5b, 6a, 6b 6 min). The table below is the one-at-a-time run of 2026-10-09.
+
 Measured on 2026-10-09 on a 12-core M4 Pro with other work running (load 25 to 200), so an idle Mac is faster and a busy one slower:
 
 | Stage | Time |
@@ -38,7 +52,8 @@ Measured on 2026-10-09 on a 12-core M4 Pro with other work running (load 25 to 2
 | 6c soak | 21 min (two machines, 10 minutes of play each) |
 | 7a, 7b | under a minute |
 | 7c pluginval | not measured here: the first run downloads pluginval |
-| 7d journeys | diagnostics build 6 min (first time), VST3 host build a few minutes (first time), then 8 to 16 min in the background |
+| 2c page journeys | about 1 min (133 journeys, 4 pages per editor; 2026-10-11) |
+| 7d journeys | diagnostics build 6 min (first time; since 2026-10-11 in the background while lane 1 runs), VST3 host build a few minutes (first time), then the machine and host journeys at 4 at once (0.5.1, before: 32 min, every journey in both hosts, one at a time) |
 
 ## What it proves
 
@@ -47,6 +62,7 @@ Measured on 2026-10-09 on a 12-core M4 Pro with other work running (load 25 to 2
 | 0 Inputs | the ROMs, the SysEx fixtures; sha256 of the ROMs goes into the summary | a ROM or the fixtures are missing, or a ROM is not an 8 MiB image |
 | 1 Build as shipped | `cmake` + Ninja: Release, this Mac's architecture, ThinLTO for mdLib and the DSP (`GEARMULATOR_MDMM_APPLE_THINLTO=ON`, `GEARMULATOR_MDMM_APPLE_OPTIMIZE_DSP=ON`), the committed PGO profile (`GEARMULATOR_MDMM_APPLE_PGO_MODE=committed`, [CI.md](CI.md) "PGO"; the stage line says `PGO committed`, or STALE with the folders that changed since training, or NOT applied with the reason), `BUILD_TESTING=ON`, the JUCE plug-ins on (VST3, AU, Standalone), the Xcode toolchain and SDK (`SDKROOT`); then `cmake --build` of everything and of the targets that are not in "all" (the list of `scripts/macos/build_mdmm.sh`); the cache is read back with `scripts/macos/write_mdmm_receipt.py --validate-build-optimization` | it does not build, a registered test has no program, or the cache is not the optimised one |
 | 2 ctest | `ctest -j4 --output-on-failure --output-junit` over every registered test, in a sandbox, with `GEARMULATOR_REQUIRE_FIRMWARE_TESTS=1` and `MD_AUTOMATION_REQUIRE_FIRMWARE=1`, so a firmware test that skips is a failure; `MD_SYX` and `MM_SYX` are given, so `syxImportFileTest` runs on a real backup. The JUnit file gives executed, failed and skipped tests **by name** (the summary snippet of `scripts/linux/build_mdmm.sh`) | a test fails or times out, or any test skips that is not named in `TOLERATED_SKIPS` (empty) |
+| 2c Page journeys | `scripts/mdmm-page.mjs --jobs 4 both`: every page journey of both editors in headless Chrome on the release tree's `deskStubHost` (the real core, a fake machine; no ROM), every command checked against the contract ([DEV-CYCLE.md](DEV-CYCLE.md)) | a journey fails, a command is outside the contract, a page error |
 | 2b Firmware tests ctest cannot run | `mmDeskFirmwareTest <MM ROM>` (it has a ctest entry, but its 400 s limit is too short, and without `-DGEARMULATOR_MM_ROM` it only skips), its twin `mdDeskFirmwareTest <MD ROM>` (no ctest entry), and `mdSysexLifecycleTest <MD ROM> <MD cache> <MM ROM> <MM patch RAM>` when both fixtures exist. Each must print its pass line | a pass line is missing or the program fails |
 | 3 ROM loading | `mdmmRomLoadTest <ROM>` per ROM: the image is recognised by its fingerprint, boots and answers SysEx; a truncated and a garbage image are refused. The fingerprints it prints go into the summary | the machine does not boot or the negative cases are accepted |
 | 4 SysEx round trip | `mdmmSysexRoundTripTest <ROM> <md or mm> <fixtures...>` (`md*.syx` for the Machinedrum, `mm*.syx` for the Monomachine): a full dump goes into a fresh machine as the editors import a file and comes back byte for byte; real backups document by document | any difference |
@@ -58,7 +74,7 @@ Measured on 2026-10-09 on a 12-core M4 Pro with other work running (load 25 to 2
 | 7a VST3 start with firmware | `pluginTester -verify-audio-buses -blocks 256` per machine with the ROM (the check of `verify_mdmm_package.sh`), and `-blocks 16 -verify-audio-buses -automation-smoke` without one (`build_mdmm.sh`) | a device-start error, a short run, a non-zero exit |
 | 7b auval | `auval -v` on each built AU, with no ROM, as `smoke_mdmm.sh` runs it in CI | `auval` fails |
 | 7c pluginval | `scripts/mdmm-pluginval.sh`: pluginval 1.0.4 (pinned, `scripts/pluginval.env`) at strictness 5 and 8 on the VST3 and the AU, with the firmware in its own scratch data root | a run fails, or the AU was not validated |
-| 7d User journeys | a diagnostics build in its own tree (`scripts/mdmm-dev.sh`, `temp/local-gate/build-diag`), then `scripts/mdmm-journeys.sh --host both --background both`: the page clicked as a person does, both editors, standalone and VST3, on the firmware, silent (below); `MDMM_JOURNEY_PERF=1` records the audio thread during those edits and the summary quotes it, not judged | a journey fails, the editor ends early, or a journey is skipped because its window was not drawing |
+| 7d User journeys | a diagnostics build in its own tree (`scripts/mdmm-dev.sh`, `temp/local-gate/build-diag`, lane 2), then `scripts/mdmm-journeys.sh --host both --jobs 4 --tier machine both`: the machine journeys (firmware, playing, recording, sampler, SysEx, drops, engine cards, OS keys, WebKit's layout) in the standalones and the host journeys in the VST3 host, clicked as a person does, on the firmware, silent (below); the page journeys are 2c's. `MDMM_JOURNEY_PERF=1` records the audio thread during those edits and the summary quotes it, not judged | a journey fails, the editor ends early, or a journey is skipped because its window was not drawing |
 | M1 Updater end to end | **manual**, see below | never red; the summary lists it as open |
 
 What it does not prove: a signed and notarised build (CI's job, [SIGNING.md](SIGNING.md)), Gatekeeper on a downloaded
@@ -72,7 +88,7 @@ shipped files.
 - **One architecture.** The release is universal (`arm64;x86_64`); the gate builds this Mac's architecture. The x86_64 slice is never executed here.
 - **Not packaged, not signed.** `scripts/macos/build_mdmm.sh` configures, builds, signs, packages and verifies in one go and insists on all of it, so the gate repeats only its configure flags (same optimisation, same deployment target 10.13, `XCODE_VERSION` 16 for the cache) in its own tree and reads the cache back with the script the release uses. Nothing is installed, nothing is quarantined.
 - **The profile is not retrained.** The gate builds with the committed profile as CI does. When stage 1 says the profile is STALE, retrain it before the tag (`scripts/macos/train_mdmm_pgo.sh`, about 3 minutes, needs the ROMs), commit the two files and re-run stage 1 and 5 (`MDMM_GATE_ONLY=...`): a stale profile still builds and plays bit-exact, it only loses part of its gain.
-- **No ccache.** A cold gate build is the full tree (9 minutes on the 12-core M4 Pro, with the Mac busy); a second run reuses `temp/local-gate/build`, so only what changed is built (7 minutes after a change to the emulator, which relinks everything that uses mdLib with ThinLTO).
+- **ccache** (when installed): the compiles of a tree built before come from the cache; the ThinLTO links still run. A second run reuses `temp/local-gate/build`, so only what changed is built.
 
 ## Inputs, and where they live
 
@@ -88,7 +104,7 @@ shipped files.
 `…` is `~/Documents/Gearmulator Preview` (`MDMM_GATE_PREVIEW`). The ROMs must be the pinned release images
 (`scripts/macos/check_mdmm_core_capacity.py` checks their SHA-256). Other settings: `MDMM_GATE_JOBS` (build jobs, default
 all cores), `MDMM_GATE_GOLDEN_JOBS` (golden runs at once, default 4), `MDMM_GATE_JOURNEY_ARGS` (default
-`--host both --background`; add `--jobs 4` to run them in about 6 minutes), `MDMM_GATE_SOAK_SECONDS` (6c, default 600, the
+`--host both --jobs 4 --tier machine`), `MDMM_GATE_CCACHE=0` (stage 1 without ccache), `MDMM_GATE_SOAK_SECONDS` (6c, default 600, the
 most the capture and the host allow), `MDMM_GATE_SOAK_WARMUP` (seconds at the start that are listed but not judged, default 30),
 `MDMM_GATE_SOAK_LOCK_US` (a synth lock wait that fails the soak, default 1000), `MDMM_GATE_ALLOW_UNMUTED=1` (run a stage
 that opens an audio device although the output could not be muted), `MDMM_GATE_SCENARIOS` (extra golden scenarios when

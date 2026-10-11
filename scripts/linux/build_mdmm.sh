@@ -85,7 +85,8 @@ if unexpected:
 	junit="${build_dir}/ctest-junit.xml"
 	rm -f "${junit}"
 	ctest_status=0
-	ctest --test-dir "${build_dir}" -C "${config}" --output-on-failure --timeout 600 --no-tests=error \
+	# in parallel (the Timing tests are RUN_SERIAL: ctest runs them alone)
+	ctest --test-dir "${build_dir}" -C "${config}" -j "${parallel}" --output-on-failure --timeout 600 --no-tests=error \
 		--output-junit "${junit}" -E "${exclude}" || ctest_status=$?
 	# What ran, so that a quiet pass cannot hide tests that did not (a test that skips itself exits as skipped).
 	python3 -c '

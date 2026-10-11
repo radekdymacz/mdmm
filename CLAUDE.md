@@ -9,13 +9,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Read first:** doc/modern-ux/FOUNDATION.md (the layers; how to add an engine, document kind, command, workspace or dialog; "Build and check"), doc/modern-ux/DESIGN-P6-simple-core.md (why), doc/modern-ux/UPSTREAM.md (history: how the fork lived on top of upstream until 0.5).
 - **Where:** source/elektron/md/: elektronData, deskCore, deskHost, deskWire, mdDesk, mmDesk, mdDataLink, mdmmUpdate, mdLib (the emulated machines), mdJucePlugin (plug-ins, bridge, skins/ page files), mdLibTest, upstreamTests (our tests for the shared synthLib code). Version: `MDMM_EDITOR_VERSION` in mdJucePlugin/mdmmPlugins.cmake; product names: scripts/mdmm-product.env.
 - **Build:** `scripts/mdmm-dev.sh configure|build [target...]|tests|stats` (tree temp/dev, ccache, diagnostics on). Release packages: scripts/macos/build_mdmm.sh, scripts/linux/build_mdmm.sh, scripts/windows/build_mdmm.ps1. CMake 3.22 or newer.
-- **Check:** `scripts/mdmm-dev.sh tests` (`ctest -E "Plugin|_AU|VST|FirmwareTest"`); **before a tag `scripts/mdmm-local-gate.sh` green** (the firmware-backed gate CI cannot run: doc/release/LOCAL-GATE.md); firmware tests need your ROM (`GEARMULATOR_MD_FIRMWARE_BIN`, `GEARMULATOR_MM_FIRMWARE_BIN`); scripts/mdmm-journeys.sh, scripts/mdmm-pluginval.sh.
+- **Check:** `scripts/mdmm-check.sh` (by what changed, below), `scripts/mdmm-dev.sh tests` (every unit test); **a release rests on the last green full gate on main plus the stages its diff touches** (`scripts/mdmm-full-gate.sh --plan`; the gate: doc/release/LOCAL-GATE.md); firmware tests need your ROM (`GEARMULATOR_MD_FIRMWARE_BIN`, `GEARMULATOR_MM_FIRMWARE_BIN`); scripts/mdmm-page.mjs (page journeys, no ROM), scripts/mdmm-journeys.sh, scripts/mdmm-pluginval.sh.
 - **Floats:** Release builds are `-Ofast` (`/fp:fast`): `std::isfinite`/`std::isnan` can fold to constants. Use `baseLib::isFinite` and put code that must see NaN on `-fno-fast-math` (examples: source/elektron/md/elektronData/CMakeLists.txt).
 - **Emulation CPU:** the plan and measured results are in doc/modern-ux/RESEARCH-emulation-cpu.md. Every speed-up is bit-exact, on by default and behind one umbrella switch (`GEARMULATOR_MDMM_SPEEDUPS=0`, or Developer > Speed-ups, ticked = on); anything that changes the sound is opt-in and off by default (L3: `GEARMULATOR_MDMM_EXACT_ESSI=1`). macOS release builds use a committed PGO profile (retrain with scripts/macos/train_mdmm_pgo.sh when the build says stale). Switches: doc/md_mm_performance_diagnostics.md, "Switches for testers".
 - **Status and plan:** doc/ROADMAP.md (decisions, CPU plan, the 1.0 gate and what is left); the current release's plan in doc/release/PLAN-0.x.md.
 - **Plug-in identity:** set once in scripts/mdmm-product.env (AU `FNAu` with `Mded`/`Mmed` since 0.5.1, so the original Gearmulator MD/MM plug-ins can be installed beside the editors). Changing it orphans saved DAW projects: only with Radek's decision.
 - **Submodules:** only freetype and lunasvg remain, pinned to their own upstream projects (unmodified third-party code we never change); everything we change is a plain folder.
-- **Releases:** `release/0.x.y` branches are merged into `main`; run `scripts/mdmm-local-gate.sh` green before tagging; the tag `mdmm-v0.x.y` runs .github/workflows/mdmm-editors-release.yml; notes in doc/release/vX.Y.Z.md; bugs and ideas in doc/release/BUGS.md and IDEAS.md (testers are never named).
+- **Releases:** `release/0.x.y` branches are merged into `main`; before tagging, the last green full gate on main plus the gate stages of the diff since (`scripts/mdmm-full-gate.sh --plan`), or the full `scripts/mdmm-local-gate.sh`; the tag `mdmm-v0.x.y` runs .github/workflows/mdmm-editors-release.yml; notes in doc/release/vX.Y.Z.md; bugs and ideas in doc/release/BUGS.md and IDEAS.md (testers are never named).
 
 ## Sister product: xox-plocks
 
@@ -84,16 +84,17 @@ via HDI08.
 
 MIDI Learn: doc/midilearn/. Upstream's long AI notes (`.github/copilot-instructions.md`: Jenkins, YouTrack, the other synths) were deleted in 0.5; they are in the tag `pre-cleanup-0.5`.
 
-## Development lifecycle (since 0.4.0; details: doc/release/CI.md)
+## Development lifecycle (since 2026-10-11; details: doc/release/DEV-CYCLE.md, doc/release/CI.md)
 
-Four levels. Use the lowest one that answers the question; never stack them without Radek asking.
+What changed decides what runs (`scripts/mdmm-affected.tsv`). Use the lowest tier that answers the question.
 
-1. **Dev loop (minutes).** A branch, `scripts/mdmm-dev.sh play md|mm` (builds one standalone and opens it), Radek plays and accepts, merge to main. No test suites. One targeted test for the code just changed is fine (seconds).
-2. **Fast local check (a few minutes).** Claude runs it by itself when it thinks a change is good to go, before it says so, and when Radek asks. Pick by what changed: emulation code: the bit-exact goldens (`mdmmPerfGateTest <ROM> md|mm 8 --golden source/elektron/md/mdLibTest/goldens/mdmm-goldens.json`); page or desk code: the journeys of that area in the background, silent (`scripts/mdmm-journeys.sh --background --jobs 4 both '<selector>'`); shared code: the unit tests (`scripts/mdmm-dev.sh tests`). Windows-only code: push a `feat/windows-*` branch, CI builds it.
-3. **Full local test (once per release).** `scripts/mdmm-local-gate.sh` on a quiet Mac with the ROMs. The 21-minute soak is off by default: `--soak` only when a report points at drop-outs over time. A failed stage: fix, then re-run only it (`MDMM_GATE_ONLY=<stage>`).
-4. **Release CI (once per release).** Push `release/0.x.y`: the full suite on macOS, Windows and Linux runs once. Tag the tested branch head (the tag reuses that build), merge to main, push, then publish the release yourself when the files are attached (no draft left) and ask Radek to deploy the site at once (the Discord post waits for the page). Push to main only runs one light Linux job; nobody waits for it. Every night at 02:00 UTC (04:00 Polish summer time) the full suite runs on main if main changed: check it at the start of a session.
+0. **Save (seconds).** `scripts/mdmm-check.sh --save`, or `--watch` once: the page contract and the unit tests of what changed.
+1. **Did I break it (under 2 minutes).** `scripts/mdmm-check.sh`: tier 0, every test of what changed, the page journeys of that area (headless Chrome on the real core, no ROM: `scripts/mdmm-page.mjs`), one golden per machine when emulation code changed. Claude runs it by itself before it says a change is good; then `scripts/mdmm-dev.sh play md|mm`, Radek plays and accepts, merge to main.
+2. **Branch check (under 10 minutes, in the background).** `scripts/mdmm-check.sh --branch` when desk or emulator code changed: every unit test and page journey, the firmware tests (the intent cases through the desk) and the machine journeys of that area, every golden for emulation code. Windows-only code: push a `feat/windows-*` branch, CI builds it.
+3. **Full gate on main, by hand.** Claude runs `scripts/mdmm-full-gate.sh` when the Mac is quiet: at the start of a release, after a big merge (`--status`: the last runs). No scheduled job (Radek, 2026-10-11). The CI nightly still runs the full CI.
+4. **Release.** `scripts/mdmm-full-gate.sh --plan` names the last green full gate on main and prints the gate stages the diff since needs (`MDMM_GATE_ONLY=...`); without one in the branch's history: the full gate. Push `release/0.x.y` (the full CI once), tag the tested head, merge to main, push, publish when the files are attached, ask Radek to deploy the site at once (the Discord post waits for the page).
 
-Do not add audits or verification rounds before a cut unless asked.
+Journeys have a tier (`deskJourney.js` TIERS): page journeys run in the page tier, machine journeys in the editor, the VST3 host runs only the host ones. Do not add audits or verification rounds before a cut unless asked.
 
 ## Community: the mdmm.dev Discord server
 

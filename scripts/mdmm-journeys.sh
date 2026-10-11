@@ -3,9 +3,13 @@
 # Machinedrum Editor, the Monomachine Editor or both with GEARMULATOR_MDSTUDIO_SELFTEST / GEARMULATOR_MMSTUDIO_SELFTEST
 # set to the journeys asked for, waits for "JOURNEYS DONE" in the page's log, prints a line per journey and exits
 # non-zero on any FAIL, a timeout or a missing build or ROM.
-#   scripts/mdmm-journeys.sh [--host standalone|vst3|both] [--background] [--jobs N] [md|mm|both] [selector]
+#   scripts/mdmm-journeys.sh [--host standalone|vst3|both] [--tier page|machine|host|all] [--vst3-tier T]
+#                            [--background] [--jobs N] [md|mm|both] [selector]
 #     selector: journey (all, the default), journey-seq-*, journey-md-lib-*,mm-mix-* (comma-separated, * any)
 #     --host: the standalone apps (the default), the VST3s in the minimal host scripts/vst3EditorHost, or both
+#     --tier: the standalone's journeys of that tier (skins/shared/deskJourney.js TIERS, doc/release/DEV-CYCLE.md): page,
+#       machine (machine and host), host, or all (the default). --vst3-tier: the VST3 host's, default host (the page is the
+#       same in both hosts; decision 2026-10-11). The page journeys also run without the editor: scripts/mdmm-page.mjs
 #     --jobs N: N editors at once, each playing every N-th of the chosen journeys (the selector's "@k/N" shard,
 #       skins/shared/deskJourney.js); one report at the end. Implies --background. About one core per editor.
 #     --background (macOS): the editor never takes the focus nor comes to the front: an accessory app, its window
@@ -40,6 +44,8 @@ set -u
 . "$(cd "$(dirname "$0")" && pwd)/mdmm-product.env"	# the product names: the apps, their executables and caches
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 HOSTS=standalone
+TIER=""
+VST3_TIER=host
 BACKGROUND=0
 JOBS=1
 while [ $# -gt 0 ]; do
@@ -48,6 +54,10 @@ while [ $# -gt 0 ]; do
 		--host=*) HOSTS=${1#--host=}; shift ;;
 		--jobs) JOBS=${2:-}; shift 2 ;;
 		--jobs=*) JOBS=${1#--jobs=}; shift ;;
+		--tier) TIER=${2:-}; shift 2 ;;
+		--tier=*) TIER=${1#--tier=}; shift ;;
+		--vst3-tier) VST3_TIER=${2:-}; shift 2 ;;
+		--vst3-tier=*) VST3_TIER=${1#--vst3-tier=}; shift ;;
 		--background) BACKGROUND=1; shift ;;
 		*) break ;;
 	esac
@@ -59,11 +69,16 @@ VST3S=${MDMM_VST3_DIR:-"$ROOT/bin/plugins/Release/VST3"}
 TIMEOUT=${MDMM_JOURNEY_TIMEOUT:-900}
 OUT=${MDMM_JOURNEY_OUT:-"$ROOT/temp/journeys/$(date +%Y%m%d-%H%M%S)"}
 case "$SEL" in journey*) ;; *) SEL="journey-$SEL" ;; esac
-USAGE="usage: $0 [--host standalone|vst3|both] [--background] [--jobs N] [md|mm|both] [journey|journey-<names>]"
+USAGE="usage: $0 [--host standalone|vst3|both] [--tier page|machine|host|all] [--vst3-tier page|machine|host|all] [--background] [--jobs N] [md|mm|both] [journey|journey-<names>]"
 case "$WHICH" in md|mm|both) ;; *) echo "$USAGE" >&2; exit 2 ;; esac
 case "$HOSTS" in standalone|vst3|both) ;; *) echo "$USAGE" >&2; exit 2 ;; esac
 case "$JOBS" in ''|*[!0-9]*|0) echo "$USAGE" >&2; exit 2 ;; esac
+case "$TIER" in ''|page|machine|host|all) ;; *) echo "$USAGE" >&2; exit 2 ;; esac
+case "$VST3_TIER" in page|machine|host|all) ;; *) echo "$USAGE" >&2; exit 2 ;; esac
 case "$SEL" in *@*) echo "the selector takes no @shard: --jobs makes the shards" >&2; exit 2 ;; esac
+case "$SEL" in *~*) echo "the selector takes no ~tier: use --tier" >&2; exit 2 ;; esac
+# the tier a host runs: the standalone --tier (all), the VST3 host --vst3-tier (host)
+tier_of() { if [ "$1" = vst3 ]; then t=$VST3_TIER; else t=${TIER:-all}; fi; [ "$t" = all ] && t=""; echo "$t"; }
 # several editors at once can neither all be in front nor all play to the audio device
 [ "$JOBS" -gt 1 ] && BACKGROUND=1
 mkdir -p "$OUT"
@@ -201,12 +216,12 @@ for H in standalone vst3; do
 done
 [ -n "$UNITS" ] || exit 1
 
-echo "== journeys: $SEL, $(echo $UNITS | wc -w | tr -d ' ') editor run(s), $JOBS at once$( [ "$BACKGROUND" = 1 ] && echo ", in the background"); report: $OUT"
+echo "== journeys: $SEL$( [ -n "$TIER" ] && echo " ($TIER)" ), $(echo $UNITS | wc -w | tr -d ' ') editor run(s), $JOBS at once$( [ "$BACKGROUND" = 1 ] && echo ", in the background"); report: $OUT"
 START=$(date +%s)
 PIDS=""
 for u in $UNITS; do
 	M=${u%%:*}; rest=${u#*:}; H=${rest%%:*}; k=${rest#*:}
-	sel=$SEL; [ "$JOBS" -gt 1 ] && sel="$SEL@$k/$JOBS"
+	sel=$SEL; t=$(tier_of "$H"); [ -n "$t" ] && sel="$sel~$t"; [ "$JOBS" -gt 1 ] && sel="$sel@$k/$JOBS"
 	dir="$OUT/$(echo $M | tr A-Z a-z)-$H$( [ "$JOBS" -gt 1 ] && echo "-$k")"
 	# a free slot: wait on the PIDs started (never on a process name)
 	while [ "$(echo $PIDS | wc -w)" -ge "$JOBS" ]; do
@@ -231,7 +246,8 @@ for u in $UNITS; do
 	dir="$OUT/$(echo $M | tr A-Z a-z)-$H$( [ "$JOBS" -gt 1 ] && echo "-$k")"
 	machine_vars "$M"
 	{
-		echo "== $NAME ($H)$( [ "$JOBS" -gt 1 ] && echo ", shard $k/$JOBS")"
+		t=$(tier_of "$H")
+		echo "== $NAME ($H$( [ -n "$t" ] && echo ", $t journeys"))$( [ "$JOBS" -gt 1 ] && echo ", shard $k/$JOBS")"
 		if [ -f "$dir/journeys.txt" ]; then
 			if [ "${MDMM_JOURNEY_VERBOSE:-0}" = 1 ]; then cat "$dir/journeys.txt"
 			else grep -E "JOURNEY [^ ]+ (PASS|FAIL|SKIP)|JOURNEYS (start|before|DONE)" "$dir/journeys.txt"; fi

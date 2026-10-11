@@ -63,6 +63,8 @@ add_test(NAME sharedAudioReducerTest COMMAND sharedAudioReducerTest)
 add_executable(ringBufferTest ringbuffer_test.cpp)
 target_link_libraries(ringBufferTest PRIVATE dsp56kBase)
 add_test(NAME ringBufferTest COMMAND ringBufferTest)
+# 13-15 s: out of the save-time lane (ctest -LE "Timing|Slow", doc/release/DEV-CYCLE.md)
+set_tests_properties(ringBufferTest PROPERTIES LABELS "UnitTest;Slow")
 
 add_executable(semaphoreTest semaphore_test.cpp)
 target_link_libraries(semaphoreTest PRIVATE dsp56kBase)

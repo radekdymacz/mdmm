@@ -922,6 +922,15 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
         type=binary_flag,
         metavar="0|1",
     )
+    # 0: the package build ran no unit or plug-in tests (CI's test job ran them on another tree, doc/release/DEV-CYCLE.md)
+    parser.add_argument(
+        "--tests-run",
+        nargs="?",
+        const=True,
+        default=True,
+        type=binary_flag,
+        metavar="0|1",
+    )
     parser.add_argument("--expected-source-tuple")
     parser.add_argument("--allow-untracked-root", type=pathlib.Path, action="append", default=[])
     parser.add_argument("--validate-build-root", type=pathlib.Path)
@@ -1075,7 +1084,7 @@ def main() -> None:
         **final_commits,
         "source_tree_clean": True,
         "firmware_included": False,
-        "tests_run": True,
+        "tests_run": args.tests_run,
         "firmware_tests_required": args.firmware_tests_required,
         "release_approved": False,
         "release_acceptance": acceptance,

@@ -19,6 +19,7 @@
 #include "mdDesk/mdDeskKeys.h"
 #include "mdDesk/mdDeskLibrary.h"
 #include "mdDesk/mdDeskWirePort.h"
+#include "mdDesk/mdIntentCases.h"
 #include "deskCore/deskPacer.h"
 #include "deskWire/mdWire.h"
 
@@ -3896,6 +3897,142 @@ namespace
 		_rig.page(R"({"op":"stop"})");
 		_rig.run(300);
 	}
+
+	// DEV-CYCLE (doc/release/DEV-CYCLE.md): the Machinedrum's intent cases (doc/modern-ux/intent-cases.json, "md") on the
+	// firmware, table driven, as mmDeskFirmwareTest intentcases: the base documents onto the machine (the page's "set",
+	// read back), each case's commands through the desk, the documents read back compared with the case's after (what
+	// the core's apply makes of them: mdDeskTest). Only what the last case changed is put back. MDDESK_INTENT_ONLY=<text>.
+	void intentCasesOnFirmware(Rig& _rig)
+	{
+		namespace ic = mdDesk::intentCases;
+		auto& desk = _rig.desk();
+		std::puts("== intentcases: the Machinedrum's intent cases on the firmware");
+		std::string problem;
+		const auto cases = ic::load(MDDESK_INTENT_CASES, problem);
+		check(cases.has_value(), problem.empty() ? "the intent cases load" : problem);
+		if(!cases)
+			return;
+		std::vector<std::string> errors;
+		const auto base = ic::documents(cases->base, errors);
+		check(base.has_value(), errors.empty() ? "the base documents read" : "the base documents read: " + errors.front());
+		if(!base)
+			return;
+		auto baseText = ic::written(*base);
+		auto machine = *cases;	// the base as the machine holds it, once it took it (below)
+		const auto settle = [&](const double _ms)
+		{
+			_rig.run(200);
+			const bool done = _rig.runUntil([&] { return !desk.isBusy() && !desk.coreState().anyPending(); }, _ms);
+			_rig.run(200);
+			return done;
+		};
+		const auto restore = [&]
+		{
+			const auto now = ic::written(desk.documents());
+			std::vector<std::string> names;
+			for(const auto& [name, doc] : machine.base)
+				if(name != "workingKit")
+					names.push_back(name);
+			names.push_back("workingKit");
+			size_t sent = 0;
+			for(const auto& name : names)
+			{
+				if(!machine.base.count(name))
+					continue;
+				const auto& doc = machine.base.at(name);
+				const auto kind = ic::kindOf(name, doc);
+				const auto key = kind == "workingKit" || kind == "global" ? kind : kind + " " + std::to_string(static_cast<int>(doc.find("slot")->asNumber()));
+				if(now.count(key) && baseText.count(key) && now.at(key) == baseText.at(key))
+					continue;
+				Value m = Value::object();
+				m.set("op", "set");
+				m.set("kind", kind);
+				m.set("doc", doc);
+				_rig.pageConfirmed(ed::json::write(m));
+				++sent;
+			}
+			return sent;
+		};
+		_rig.page(R"({"op":"ready"})");
+		_rig.runUntil([&] { return desk.isReady() && desk.documents().kits.size() == 64 && desk.documents().patterns.size() == 128 && !desk.isBusy(); }, 60000);
+		_rig.page(R"({"op":"globalSlot","slot":)" + std::to_string(static_cast<int>(cases->base.at("global").find("slot")->asNumber())) + "}");
+		settle(5000);
+		_rig.pageConfirmed(R"({"op":"select","p":0})");
+		settle(5000);
+		restore();
+		settle(30000);
+		_rig.pageConfirmed(R"({"op":"kitLoad","k":)" + std::to_string(cases->context.currentKit.value_or(0)) + "}");
+		settle(5000);
+		restore();
+		check(settle(30000), "the base documents are on the machine");
+		// what the machine kept of the base: the cases are compared against it (a field it keeps otherwise is a finding,
+		// said here, not a failure of every case)
+		{
+			const auto diff = ic::differences(ic::written(desk.documents()), baseText);
+			std::printf("  %s%s\n", diff.empty() ? "the machine holds the base documents as sent" : "NOTE the machine keeps the base otherwise:", diff.c_str());
+			machine.base = ic::named(desk.documents(), cases->base);
+			std::vector<std::string> e;
+			if(const auto d = ic::documents(machine.base, e))
+				baseText = ic::written(*d);
+		}
+		const char* only = std::getenv("MDDESK_INTENT_ONLY");
+		size_t ran = 0, same = 0;
+		const auto t0 = _rig.machine().now();
+		for(const auto& c : cases->cases)
+		{
+			const auto name = c.find("name")->asString();
+			if(only && *only && name.find(only) == std::string::npos)
+				continue;
+			// a refusal is the core's alone (its tests prove it, with a fresh clipboard each; the desk's clipboard here
+			// carries over from the cases before)
+			if(c.find("refused"))
+				continue;
+			if(restore())
+				settle(20000);
+			auto before = machine;
+			before.base = ic::named(desk.documents(), cases->base);
+			std::vector<std::string> refusedWith;
+			// as the page sends them: a question the desk asks (overwriteSlot) is answered with its confirm
+			for(const auto& cmd : ic::commandsOf(c))
+			{
+				_rig.pageConfirmed(ed::json::write(cmd));
+				if(const auto& r = _rig.lastResult(); r && r->find("ok") && !r->find("ok")->asBool())
+					for(const auto& e : r->find("errors")->asArray())
+						refusedWith.push_back(e.asString());
+				_rig.run(50);
+			}
+			const bool settled = settle(20000);
+			++ran;
+			if(const auto* want = c.find("refused"))
+			{
+				bool named = false;
+				for(const auto& e : refusedWith)
+					named = named || e.find(want->asString()) != std::string::npos;
+				check(named, "refused: " + name + (refusedWith.empty() ? " (taken)" : " (" + refusedWith.front() + ")"));
+				same += named;
+				continue;
+			}
+			if(!refusedWith.empty())
+			{
+				check(false, name + ": refused, " + refusedWith.front());
+				continue;
+			}
+			// against what the machine held just before this case (a field an earlier case left otherwise, and the restore
+			// could not put back, is that case's finding, not this one's)
+			const auto want = ic::expected(before, c, problem);
+			if(!want)
+			{
+				check(false, name + ": " + problem);
+				continue;
+			}
+			const auto diff = ic::differences(ic::written(desk.documents()), ic::written(*want));
+			check(diff.empty() && settled, name + (settled ? "" : " (still waiting for the machine)") + diff);
+			same += diff.empty() && settled;
+		}
+		std::printf("  %zu of %zu cases as the core says, %.0f s of machine time\n", same, ran, static_cast<double>(_rig.machine().now() - t0) / g_rate);
+		check(ran > 0, "a case ran");
+	}
+
 }
 
 int main(const int _argc, char** _argv)
@@ -3909,7 +4046,7 @@ int main(const int _argc, char** _argv)
 	{
 		std::puts("usage: mdDeskFirmwareTest <MD-1.63-ROM> "
 			"[probe|hw|p4|tweak|sampler|keepedits|machine|recordermix|samples|gen|hostclock|songrow|playload|syxexport|"
-			"syximport|syxpick|keymap]");
+			"syximport|syxpick|keymap|intentcases]");
 		std::puts("       mdDeskFirmwareTest --env syxpick   (ctest: the ROM from GEARMULATOR_MD_FIRMWARE_BIN, the "
 			"backup from MD_SYX)");
 		return 77;
@@ -3981,6 +4118,14 @@ int main(const int _argc, char** _argv)
 			syxImport(rom, romPath, _argc > 3 ? _argv[3] : std::getenv("MD_SYX") ? std::getenv("MD_SYX") : "");
 			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 			std::printf("mdDeskFirmwareTest syximport: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
+			return g_failures ? 1 : 0;
+		}
+		if(mode == "intentcases")
+		{
+			Rig rig(rom, romPath);
+			intentCasesOnFirmware(rig);
+			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
+			std::printf("mdDeskFirmwareTest intentcases: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
 			return g_failures ? 1 : 0;
 		}
 		if(mode == "tweak")
