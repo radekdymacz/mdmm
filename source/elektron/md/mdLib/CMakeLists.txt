@@ -15,6 +15,7 @@ set(SOURCES
 	mdflash.cpp mdflash.h
 	mdfrontpanel.cpp mdfrontpanel.h
 	mdhardware.cpp mdhardware.h
+	mdSpeedUpLevers.h
 	mdhostclock.h
 	mdmc.cpp mdmc.h
 	mdmemorymap.h

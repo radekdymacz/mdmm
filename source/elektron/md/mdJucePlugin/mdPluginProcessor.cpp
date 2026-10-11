@@ -79,6 +79,8 @@ namespace
 	constexpr auto g_legacyEmulationKey = "legacyEmulation";
 	// L3's opt-in (setExactEssiTiming): true runs the Machinedrum's serial ports on exact cycle deadlines.
 	constexpr auto g_exactEssiTimingKey = "exactEssiTiming";
+	// The speed-ups kept off one by one (setSpeedUpLeversOff): md::SpeedUpLever bits, 0 by default.
+	constexpr auto g_speedUpLeversOffKey = "speedUpLeversOff";
 
 	const char* productName(const md::MachineModel _model)
 	{
@@ -943,6 +945,9 @@ namespace mdJucePlugin
 		d->setRamRecordingMode(getRamRecordingMode());
 		if(getConfig().getBoolValue(g_legacyEmulationKey, false))
 			d->setSpeedUps(false);
+		// the levers off in the settings, besides any the environment turned off
+		if(const auto off = static_cast<uint32_t>(getConfig().getIntValue(g_speedUpLeversOffKey, 0)) & md::g_allSpeedUpLevers)
+			d->setSpeedUpLeversOff(d->speedUpLeversOff() | off);
 		if(getConfig().getBoolValue(g_exactEssiTimingKey, false))
 			d->setExactEssiTiming(true);
 #ifdef __APPLE__
@@ -993,6 +998,26 @@ namespace mdJucePlugin
 		{
 			const auto* const device = dynamic_cast<const md::Device*>(_device);
 			return device && device->exactEssiTiming();
+		});
+	}
+
+	void AudioPluginAudioProcessor::setSpeedUpLeversOff(const uint32_t _off)
+	{
+		getConfig().setValue(g_speedUpLeversOffKey, static_cast<int>(_off & md::g_allSpeedUpLevers));
+		getConfig().saveIfNeeded();
+		getPlugin().withDeviceLocked([_off](synthLib::Device* const _device)
+		{
+			if(auto* const device = dynamic_cast<md::Device*>(_device))
+				device->setSpeedUpLeversOff(_off);
+		});
+	}
+
+	uint32_t AudioPluginAudioProcessor::getSpeedUpLeversOff()
+	{
+		return getPlugin().withDeviceLocked([](synthLib::Device* const _device) -> uint32_t
+		{
+			const auto* const device = dynamic_cast<const md::Device*>(_device);
+			return device ? device->speedUpLeversOff() : 0u;
 		});
 	}
 

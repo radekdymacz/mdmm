@@ -6,6 +6,7 @@
 #include "mdEditorPages.h"
 #include "mdPageEditor.h"
 #include "mdPluginProcessor.h"
+#include "mdLib/mdSpeedUpLevers.h"
 #include "mdProductSkinPolicy.h"
 #include "mdStandaloneRendererPolicy.h"
 
@@ -146,6 +147,21 @@ namespace mdJucePlugin
 			{
 				processor.setLegacyEmulation(!legacyEmulation);
 			}, {}, legacyEmulation));
+		// The same one lever at a time (ticked: on), to find which one a CPU difference comes from. Greyed out while
+		// the speed-ups are off.
+		{
+			const uint32_t leversOff = processor.getSpeedUpLeversOff();
+			std::vector<editorMenu::Item> levers;
+			for(const auto& lever : md::speedUpLevers())
+			{
+				const uint32_t b = md::bit(lever.lever);
+				levers.push_back(action(std::string("speedup-") + lever.key, lever.label, [&processor, leversOff, b]
+					{
+						processor.setSpeedUpLeversOff(leversOff ^ b);
+					}, {}, !(leversOff & b), !legacyEmulation));
+			}
+			developer.push_back(submenu("speedup-levers", "Speed-ups (each)", std::move(levers)));
+		}
 		// L3, opt-in, Machinedrum only: its serial ports on exact cycle deadlines. Changes the sound; only acts while
 		// the speed-ups are on (greyed out otherwise).
 		if(processor.getModel() == md::MachineModel::Machinedrum)

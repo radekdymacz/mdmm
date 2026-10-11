@@ -331,7 +331,7 @@ namespace dsp56k
 
 	void DSP::fastForwardNopLoop(const uint32_t _instructionsPerTurn, const uint32_t _cyclesPerTurn, const uint32_t _turnsPerExit) noexcept
 	{
-		if(!m_idleFastForward || !m_fastForwardCycleLimit)
+		if(!m_idleFastForward || !m_fastForwardCycleLimit || !(m_idleFastForwardParts & IdleFastForwardNopLoops))
 			return;
 
 		// a pending interrupt is taken at the next boundary, so that boundary must be reached by running
@@ -378,9 +378,11 @@ namespace dsp56k
 		m_fastForwardedTurns += turns;
 	}
 
-	void DSP::fastForwardPollLoop(const uint32_t _instructionsPerTurn, const uint32_t _cyclesPerTurn) noexcept
+	void DSP::fastForwardPollLoop(const uint32_t _instructionsPerTurn, const uint32_t _cyclesPerTurn, const bool _pureRead) noexcept
 	{
 		if(!m_idleFastForward || !m_fastForwardCycleLimit || !_instructionsPerTurn || !_cyclesPerTurn)
+			return;
+		if(!(m_idleFastForwardParts & IdleFastForwardPollLoops) || (_pureRead && !(m_idleFastForwardParts & IdleFastForwardPureReads)))
 			return;
 
 		// a block below P:$100 that just ran as a fast interrupt is no loop
@@ -411,6 +413,8 @@ namespace dsp56k
 	void DSP::fastForwardPollCycle(const JitPollCycle& _cycle) noexcept
 	{
 		if(!m_idleFastForward || !m_fastForwardCycleLimit || !_cycle.instructions || !_cycle.cycles)
+			return;
+		if(!(m_idleFastForwardParts & IdleFastForwardPollCycles) || (_cycle.pureRead && !(m_idleFastForwardParts & IdleFastForwardPureReads)))
 			return;
 
 		if(m_interruptFunc != m_execPeripheralsFunc || m_processingMode != Default)

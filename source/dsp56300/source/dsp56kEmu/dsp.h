@@ -133,6 +133,7 @@ namespace dsp56k
 		// stops (0: unknown, nothing is skipped). execUntilCycles publishes its target; a host loop that runs exec()
 		// block by block publishes its own with ScopedFastForwardLimit.
 		bool							m_idleFastForward = false;
+		uint32_t						m_idleFastForwardParts = IdleFastForwardAll;	// see setIdleFastForwardParts
 		uint64_t						m_fastForwardCycleLimit = 0;
 		uint64_t						m_fastForwardedTurns = 0;
 		// The straight-turn marker of a poll loop that spans several blocks (fastForwardPollCycle): the loop's id and
@@ -507,6 +508,21 @@ namespace dsp56k
 		// Idle fast-forward of DO loops whose body is only NOPs (JitConfig::nopLoopFastForward). Off by default.
 		void setIdleFastForward(const bool _on) { m_idleFastForward = _on; }
 		bool getIdleFastForward() const { return m_idleFastForward; }
+		// Which kinds of idle loop the fast-forward skips while it is on (a tester's switch per kind; all by default):
+		// NOP-only DO bodies (fastForwardNopLoop), one-block poll loops (fastForwardPollLoop), poll loops over several
+		// blocks (fastForwardPollCycle), and poll loops that hold a read of a host's pure register (JitConfig::
+		// pollLoopPureReads) of either poll kind. A kind left out runs as with the fast-forward off: the same state,
+		// bit for bit. Read at run time, no recompile.
+		enum IdleFastForwardPart : uint32_t
+		{
+			IdleFastForwardNopLoops		= 1u << 0,
+			IdleFastForwardPollLoops	= 1u << 1,
+			IdleFastForwardPollCycles	= 1u << 2,
+			IdleFastForwardPureReads	= 1u << 3,
+			IdleFastForwardAll			= 0xfu
+		};
+		void setIdleFastForwardParts(const uint32_t _parts) { m_idleFastForwardParts = _parts; }
+		uint32_t getIdleFastForwardParts() const { return m_idleFastForwardParts; }
 		// The JIT's cmpm with the other accumulator as source compares on a copy (true, the default) or, as the
 		// emulation before the fix did, leaves |S| in the source's live register for the rest of the block (false).
 		// The MD/MM speed-ups switch drives it, so that "off" is the legacy emulation exactly. Read at run time.
@@ -555,7 +571,7 @@ namespace dsp56k
 		// registers from it, so each repeats this turn exactly and branches back again: they change nothing but the two
 		// counters. The block returns to the dispatcher after every turn; the turns are skipped up to the last
 		// boundary at which the dispatcher's tests all pass (as in fastForwardNopLoop).
-		ASMJIT_NOINLINE void fastForwardPollLoop(uint32_t _instructionsPerTurn, uint32_t _cyclesPerTurn) noexcept;
+		ASMJIT_NOINLINE void fastForwardPollLoop(uint32_t _instructionsPerTurn, uint32_t _cyclesPerTurn, bool _pureRead = false) noexcept;
 
 		// Called by the head block of a poll loop of several blocks (JitBlock::findPollCycle) when it is entered and the
 		// marker says the turn that just ended was straight: entered at the head, through every block of the loop in

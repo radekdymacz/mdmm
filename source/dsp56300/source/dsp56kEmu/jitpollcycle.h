@@ -17,6 +17,7 @@ namespace dsp56k
 		uint32_t id = 0;				// hash of head and words, never 0: the marker's upper half (DSP::m_pollCycleMarker)
 		uint32_t instructions = 0;		// per straight turn
 		uint32_t cycles = 0;			// per straight turn, as the blocks count them
+		bool pureRead = false;			// a turn reads one of JitConfig::pollLoopPureReads (DSP::IdleFastForwardPureReads)
 
 		uint64_t marker(const TWord _pc) const { return (static_cast<uint64_t>(id) << 32) | _pc; }
 	};
