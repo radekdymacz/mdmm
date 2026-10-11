@@ -2,7 +2,7 @@
 // user-supplied ROM). Discovery harness: it finds and measures, the smoke test
 // (mdDeskFirmwareTest) checks.
 //
-//   mdEditorProbeFirmwareTest <ROM> [workkit|liverec|samples|sds]
+//   mdEditorProbeFirmwareTest <ROM> [workkit|liverec|liveerase|samples|sds]
 //   mdEditorProbeFirmwareTest <ROM> samplemap <dir>                 P9: flash, patch RAM and DSP2 dumps around SDS imports
 //   mdEditorProbeFirmwareTest <ROM> rammap <dir> <LEN> <frames>     P9: DSP2 memory before/after a RAM-R1 take
 //
@@ -354,6 +354,84 @@ namespace
 						std::printf("  lock track %u param %u step %u = %u\n", t + 1, prm, s + 1, *v);
 		check(ed::hasTrig(after, 15, 4) || ed::hasTrig(after, 15, 5), "TRIG key recorded on track 16");
 		check(ed::hasTrig(after, 14, 8) || ed::hasTrig(after, 14, 9), "MIDI note recorded on track 15");
+	}
+
+
+	// 0.6 wave 7: erase while live recording (manual p.40): hold EXIT/NO and a TRIG key; the track's trigs
+	// go for the part of the pattern that plays while both are held. And EXIT alone.
+	void liveErase(const Bytes& _rom)
+	{
+		std::puts("== probe: live recording erase (EXIT + TRIG)");
+		Machine m(_rom, g_romName);
+		const int patSlot = status(m, ed::MdStatus::Pattern);
+		require(patSlot >= 0, "status");
+		auto p = *readPattern(m, static_cast<uint8_t>(patSlot));
+		p.length = 16;
+		for(uint8_t t = 0; t < 3; ++t)
+			for(uint8_t s = 0; s < 64; ++s)
+				p = ed::withTrig(p, t, s, s < 16);
+		m.send(ed::encodeMdPattern(p));
+		m.run(200);
+		const auto show = [&](const char* _what)
+		{
+			const auto q = *readPattern(m, static_cast<uint8_t>(patSlot));
+			for(uint8_t t = 0; t < 3; ++t)
+			{
+				std::printf("  %-24s track %u:", _what, t + 1);
+				for(uint8_t s = 0; s < 16; ++s)
+					std::printf("%c", ed::hasTrig(q, t, s) ? 'x' : '.');
+				std::printf("\n");
+			}
+			return q;
+		};
+		show("start");
+		const auto waitStep = [&](const uint8_t _step)
+		{
+			for(int i = 0; i < 200000 && m.playhead() != _step; ++i)
+				m.step();
+		};
+		rawPanel(m, 0x22, 0x02);
+		rawPanel(m, 0x22, 0x06);
+		rawPanel(m, 0x22, 0x02);
+		rawPanel(m, 0x22, 0x00);
+		m.run(200);
+		// Track 1: EXIT down, TRIG 1 down over steps 5-8, both up.
+		waitStep(3);
+		rawPanel(m, 0x23, 0x10, 5);
+		rawPanel(m, 0x20, 0x01, 1);
+		waitStep(8);
+		rawPanel(m, 0x20, 0x00, 1);
+		rawPanel(m, 0x23, 0x00, 5);
+		// Track 2: EXIT alone over steps 10-13.
+		waitStep(9);
+		rawPanel(m, 0x23, 0x10, 1);
+		waitStep(13);
+		rawPanel(m, 0x23, 0x00, 5);
+		// Track 3: TRIG 3 first, then EXIT, over 12-15 (the other order).
+		waitStep(11);
+		rawPanel(m, 0x20, 0x04, 1);
+		rawPanel(m, 0x23, 0x10, 1);
+		waitStep(15);
+		rawPanel(m, 0x23, 0x00, 1);
+		rawPanel(m, 0x20, 0x00, 5);
+		waitStep(1);
+		m.panel(md::PanelControl::Stop);
+		m.run(300);
+		const auto q = show("after");
+		// Measured (OS 1.63): track 1 .xxx.....xxxxxxx, track 2 untouched, track 3 xxxxxxxxxxxx.... (the step that
+		// plays as the keys go down or up may go too).
+		bool t1 = true, t2 = true, t3 = true;
+		for(uint8_t s = 0; s < 16; ++s)
+		{
+			if(s >= 4 && s <= 7) t1 = t1 && !ed::hasTrig(q, 0, s);
+			if(s >= 10) t1 = t1 && ed::hasTrig(q, 0, s);
+			t2 = t2 && ed::hasTrig(q, 1, s);
+			if(s >= 12) t3 = t3 && !ed::hasTrig(q, 2, s);
+			if(s < 11) t3 = t3 && ed::hasTrig(q, 2, s);
+		}
+		check(t1, "EXIT + TRIG 1 held over steps 5-8 erased track 1 there");
+		check(t2, "EXIT alone erases nothing");
+		check(t3, "TRIG 3 then EXIT erases too (either order)");
 	}
 
 	// Second take: which knob moves become locks? The manual: the selected track's
@@ -997,6 +1075,8 @@ int main(const int _argc, char** _argv)
 			playingFlag(rom);
 		if(only.empty() || only == "recknobs")
 			recordKnobs(rom);
+		if(only == "liveerase")
+			liveErase(rom);
 		if(only.empty() || only == "liverec" || only == "livelocks")
 			liveLocks(rom);
 		std::printf("%s (%d failures)\n", g_failures ? "FAIL" : "PASS", g_failures);
