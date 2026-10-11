@@ -31,6 +31,10 @@ namespace dsp56k
 		// It skips whole turns at run time when the DSP allows it (DSP::fastForwardNopLoop, DSP::setIdleFastForward);
 		// with that switch off the call returns at once and the loop runs as it always did.
 		bool nopLoopFastForward = false;
+		// And test the peripherals' instruction target in that call's inline gate too, while DSP::setNopGateInstructions
+		// is on (a byte read at run time). For hosts whose next peripheral due is usually an instruction count; where it
+		// is a cycle deadline the cycle tests suffice and the extra test only costs.
+		bool nopLoopGateInstructions = false;
 
 		// Emit the idle fast-forward call at the end of a block that polls a DMA register and branches back to itself,
 		// and whose turns repeat the same state (JitBlock::isIdlePollLoop, DSP::fastForwardPollLoop). Switched as above.

@@ -149,7 +149,12 @@ namespace
 					&& h.getDspProducer().dsp().getIdleFastForwardParts() == parts
 					&& h.getDspMixer().dsp().getIdleFastForward()
 					&& h.getDspMixer().dsp().getJitCmpmFix() == on(md::SpeedUpLever::Cmpm)
-					&& h.getDspProducer().dsp().getJitCmpmFix() == on(md::SpeedUpLever::Cmpm);
+					&& h.getDspProducer().dsp().getJitCmpmFix() == on(md::SpeedUpLever::Cmpm)
+					&& h.getDspMixer().getPeriph().getEssi0().getAudioInputs().singleThreaded() == on(md::SpeedUpLever::LinkRings)
+					&& h.getDspProducer().getPeriph().getEssi0().getAudioInputs().singleThreaded() == on(md::SpeedUpLever::LinkRings)
+					&& h.getDspMixer().getPeriph().getEssi1().getAudioOutputs().singleThreaded() == on(md::SpeedUpLever::LinkRings)
+					&& h.getDspMixer().dsp().getNopGateInstructions() == on(md::SpeedUpLever::NopGate)
+					&& h.getDspProducer().dsp().getNopGateInstructions() == on(md::SpeedUpLever::NopGate);
 				if(!check(ok, (std::string(name) + ": the lever switch " + lever.key + " does not act alone").c_str()))
 					return false;
 			}
@@ -157,7 +162,8 @@ namespace
 			h.setSpeedUps(false);
 			ok = !h.speedUpLeverOn(md::SpeedUpLever::L1) && !h.getUC().memoryFastLane()
 				&& !h.getUC().getSim().deferStepping() && !h.getDspMixer().dsp().getIdleFastForward()
-				&& h.getDspMixer().dsp().getIdleFastForwardParts() == 0 && !h.getDspMixer().dsp().getJitCmpmFix();
+				&& h.getDspMixer().dsp().getIdleFastForwardParts() == 0 && !h.getDspMixer().dsp().getJitCmpmFix()
+				&& !h.getDspMixer().getPeriph().getEssi0().getAudioInputs().singleThreaded();
 			if(!check(ok, (std::string(name) + ": the speed-ups switch off leaves a lever on").c_str()))
 				return false;
 		}

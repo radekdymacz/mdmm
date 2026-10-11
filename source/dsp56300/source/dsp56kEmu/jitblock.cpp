@@ -202,21 +202,30 @@ namespace dsp56k
 		}
 	}
 
-	void JitBlock::emitFastForwardGate(const asmjit::Label& _skip, const uint64_t _cyclesAhead, const uint64_t _instructionsAhead)
+	void JitBlock::emitFastForwardGate(const asmjit::Label& _skip, const uint64_t _cyclesAhead, const uint64_t _instructionsAhead, const bool* _instructionTestOn)
 	{
 		// Skip the call unless _cyclesAhead more cycles stay below the run's stop and the peripherals' cycle deadline,
-		// and, when given, _instructionsAhead more instructions below the peripherals' instruction target.
+		// and, when given, _instructionsAhead more instructions below the peripherals' instruction target (only while
+		// *_instructionTestOn, when that is given: a switch read at run time).
 		// Signed compares: a limit of 0 (none published, or the fast-forward off) always skips.
 		const auto* periph = m_dsp.getPeriph(0);
 		const RegGP value(*this);
 		const RegGP horizon(*this);
 		if(_instructionsAhead)
 		{
+			const auto noInstructionTest = m_asm.newLabel();
+			if(_instructionTestOn)
+			{
+				mem().mov(r32(value), *reinterpret_cast<const uint8_t*>(_instructionTestOn));
+				m_asm.test_(r32(value));
+				m_asm.jz(noInstructionTest);
+			}
 			mem().mov(r64(horizon), m_dsp.getInstructionCounter());
 			m_asm.add(r64(horizon), asmjit::Imm(_instructionsAhead));
 			mem().mov(r64(value), *reinterpret_cast<const uint64_t*>(periph->getTargetClockPtr()));
 			m_asm.cmp(r64(value), r64(horizon));
 			m_asm.jle(_skip);
+			m_asm.bind(noInstructionTest);
 		}
 		mem().mov(r64(horizon), m_dsp.getCycles());
 		m_asm.add(r64(horizon), asmjit::Imm(_cyclesAhead));
@@ -731,7 +740,12 @@ namespace dsp56k
 			// tests everything again, exactly; this only saves calls that could not skip anything. Signed compares:
 			// a limit of 0 (none published, or the fast-forward off) fails the first test.
 			const auto noCall = m_asm.newLabel();
-			emitFastForwardGate(noCall, static_cast<uint64_t>(m_config.maxDoIterations) * info.cycleCount);
+			// With the instruction target in the gate too (JitConfig::nopLoopGateInstructions, DSP::setNopGateInstructions):
+			// without exact cycle deadlines (the Machinedrum's default) the next due is an instruction count, which the
+			// cycle tests do not see.
+			emitFastForwardGate(noCall, static_cast<uint64_t>(m_config.maxDoIterations) * info.cycleCount,
+				m_config.nopLoopGateInstructions ? static_cast<uint64_t>(m_config.maxDoIterations) * info.memSize : 0,
+				&m_dsp.getNopGateInstructions());
 			{
 				const RegGP lc(*this);
 				mem().mov(r32(lc), reinterpret_cast<const uint32_t&>(m_dsp.regs().lc.var));

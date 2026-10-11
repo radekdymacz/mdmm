@@ -134,6 +134,7 @@ namespace dsp56k
 		// block by block publishes its own with ScopedFastForwardLimit.
 		bool							m_idleFastForward = false;
 		uint32_t						m_idleFastForwardParts = IdleFastForwardAll;	// see setIdleFastForwardParts
+		bool							m_nopGateInstructions = false;	// see setNopGateInstructions
 		uint64_t						m_fastForwardCycleLimit = 0;
 		uint64_t						m_fastForwardedTurns = 0;
 		// The straight-turn marker of a poll loop that spans several blocks (fastForwardPollCycle): the loop's id and
@@ -528,6 +529,10 @@ namespace dsp56k
 		};
 		void setIdleFastForwardParts(const uint32_t _parts) { m_idleFastForwardParts = _parts; }
 		uint32_t getIdleFastForwardParts() const { return m_idleFastForwardParts; }
+		// The NOP-loop fast-forward's inline gate also tests the peripherals' instruction target before it calls
+		// fastForwardNopLoop (a call that could skip nothing is saved; the call tests everything again). Read by the JIT.
+		void setNopGateInstructions(const bool _on) { m_nopGateInstructions = _on; }
+		const bool& getNopGateInstructions() const { return m_nopGateInstructions; }
 		// The JIT's cmpm with the other accumulator as source compares on a copy (true, the default) or, as the
 		// emulation before the fix did, leaves |S| in the source's live register for the rest of the block (false).
 		// The MD/MM speed-ups switch drives it, so that "off" is the legacy emulation exactly. Read at run time.
