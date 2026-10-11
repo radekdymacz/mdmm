@@ -226,6 +226,21 @@ namespace mmDesk::intentCases
 		return d;
 	}
 
+	// What the machine does beyond the core's documents to the slot of the kit that plays (the case's kitSlot, measured on
+	// OS 1.32B, the firmware run only): "stores", the slot holds the working kit after (a field no live message reaches is
+	// written there and loaded); "loads", the working kit is the slot after (a write into it is loaded too)
+	inline void onMachine(Documents& _d, const Value& _case)
+	{
+		const auto* k = _case.find("kitSlot");
+		if(!k || !k->isString() || !_d.working)
+			return;
+		const auto slot = _d.working->kit.position;
+		if(k->asString() == "stores")
+			_d.kits[slot] = _d.working->kit;
+		else if(k->asString() == "loads" && _d.kits.count(slot))
+			_d.working->kit = elektronData::mmKitAsLoaded(_d.kits.at(slot));
+	}
+
 	// the file's MM cases; nullopt with the problem when they do not load
 	inline std::optional<Cases> load(const std::string& _path, std::string& _problem)
 	{
