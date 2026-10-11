@@ -267,7 +267,13 @@ namespace mdDesk
 				_in.errors.push_back("Step " + std::to_string(*s + 1) + " of " + trackName(t) + " has no trig");
 				return {};
 			}
-			toggleBit(bitsOf(_p, _m, t), size_t(*s));
+			// on: set or clear (a paint across steps); without it the mark toggles
+			auto& bits = bitsOf(_p, _m, t);
+			const auto bit = uint64_t{1} << size_t(*s);
+			if(const auto on = _in.a.flag("on"))
+				bits = *on ? bits | bit : bits & ~bit;
+			else
+				toggleBit(bits, size_t(*s));
 			if(_p.*_m.editAll)
 				_in.note = "Pattern-wide " + std::string(_m.name) + " (EDIT ALL is on)";
 			return _p;
@@ -275,6 +281,18 @@ namespace mdDesk
 
 		std::optional<ed::MdPattern> accent(ed::MdPattern _p, const In& _in) { return toggleMark(std::move(_p), _in, g_accent); }
 		std::optional<ed::MdPattern> slide(ed::MdPattern _p, const In& _in) { return toggleMark(std::move(_p), _in, g_slide); }
+		std::optional<ed::MdPattern> swingStep(ed::MdPattern _p, const In& _in) { return toggleMark(std::move(_p), _in, g_swing); }
+
+		// The pattern's EDIT ALL of one mark (FUNCTION + B/F, C/G or D/H, then [RIGHT] on the machine): all = one
+		// pattern-wide row every track takes (any nonzero flag is ALL: gapProbesFirmwareTest p7), else each track's own.
+		// Both rows stay in the pattern, as on the machine: switching back shows the other row again.
+		std::optional<ed::MdPattern> markMode(ed::MdPattern _p, const In& _in)
+		{
+			const auto& mark = _in.a.text("mark");
+			const Mark& m = mark == "accent" ? g_accent : mark == "slide" ? g_slide : g_swing;
+			_p.*m.editAll = *_in.a.flag("all") ? 1 : 0;
+			return _p;
+		}
 
 		std::optional<ed::MdPattern> lock(ed::MdPattern _p, const In& _in)
 		{
@@ -752,7 +770,7 @@ namespace mdDesk
 		const Edits<ed::MdPattern>& patternEdits()
 		{
 			static const Edits<ed::MdPattern> edits{
-				{"trig", trig}, {"accent", accent}, {"slide", slide}, {"lock", lock}, {"clearLane", clearLane},
+				{"trig", trig}, {"accent", accent}, {"slide", slide}, {"swingStep", swingStep}, {"markMode", markMode}, {"lock", lock}, {"clearLane", clearLane},
 				{"length", length}, {"totalLength", totalLength}, {"speed", speed}, {"swing", swing},
 				{"accentAmount", accentAmount}, {"patternKit", patternKit}, {"clearSteps", clearSteps},
 				{"clearLocks", clearLocks}, {"clearPattern", clearPattern}, {"steps", steps}, {"rotate", rotate}, {"doublePattern", doublePattern}, {"copySteps", copySteps}, {"pasteSteps", pasteSteps}, {"copyStepsTo", copyStepsTo}};

@@ -11,7 +11,7 @@ function steps() { const [a, b] = vis(); return Array.from({ length: b - a }, (_
 function cols() { return S.viewAll ? `repeat(${steps().length},minmax(0,1fr))` : `repeat(${steps().length},minmax(18px,1fr))`; }
 function stepCls(i, s) {
 	const t = V.tracks[i], c = ["st"]; if (s % 4 === 0) c.push("q"); if (s % 16 === 0 && s !== vis()[0]) c.push("gap"); if (s >= V.length) c.push("past");
-	if (t.trigs[s]) { c.push("on"); if (t.acc.has(s)) c.push("acc"); if (t.slide.has(s)) c.push("sl"); if (stepLocked(i, s)) c.push("lk"); }
+	if (t.trigs[s]) { c.push("on"); if (t.acc.has(s)) c.push("acc"); if (t.slide.has(s)) c.push("sl"); if (t.swing.has(s)) c.push("sw"); if (stepLocked(i, s)) c.push("lk"); }
 	if (inSel(i, s)) c.push("selx");
 	return c.join(" ");	/* the play position is the soft playhead (#phcol), not a class on the cells (B-014) */
 }
@@ -19,15 +19,46 @@ function stepCls(i, s) {
 /* the step gestures, behind a small ? key at the right of the bar under the grid (a click: the list of keys) */
 function stepLegend() {
 	const row = (cls, what, how) => `<span>${cls != null ? `<i class="lg on ${cls}"></i>` : `<i class="lg none"></i>`}<b>${what}</b>${how}</span>`;
-	return `<span class="steplegend"><button class="glegkey" id="steplegend" aria-label="Step gestures" aria-describedby="steplegpop">?</button><span class="legend glegpop" id="steplegpop" role="tooltip">${row("", "Trig", "click")}${row("acc", "Accent", "shift-click" + (V.accAll ? " (all)" : ""))}${row("sl", "Slide", "alt-shift-click" + (V.slideAll ? " (all)" : ""))}${row("lk", "Has locks", "a lock on the step")}${row(null, "Select", "⌘-click a step, ⌘-drag steps, or drag in the step numbers; ⌘⇧-click extends; then ⌘C ⌘X ⌘V ⌘D, Delete, Esc. ⌘-drag the selection: a copy")}${row(null, "Menu", "right-click a step: trig, accent, slide, copy, paste, duplicate, clear, fill every 2nd / 4th")}<small>? the keyboard and every gesture</small></span></span>`;
+	return `<span class="steplegend"><button class="glegkey" id="steplegend" aria-label="Step gestures" aria-describedby="steplegpop">?</button><span class="legend glegpop" id="steplegpop" role="tooltip">${row("", "Trig", "click")}${row("acc", "Accent", "shift-click" + (V.accAll ? " (all)" : ""))}${row("sl", "Slide", "alt-shift-click" + (V.slideAll ? " (all)" : ""))}${row("sw", "Swing", "choose Swing in the trig types, then click" + (V.swingAll ? " (all)" : ""))}${row("lk", "Has locks", "a lock on the step")}${row(null, "Select", "⌘-click a step, ⌘-drag steps, or drag in the step numbers; ⌘⇧-click extends; then ⌘C ⌘X ⌘V ⌘D, Delete, Esc. ⌘-drag the selection: a copy")}${row(null, "Menu", "right-click a step: trig, accent, slide, copy, paste, duplicate, clear, fill every 2nd / 4th")}<small>? the keyboard and every gesture</small></span></span>`;
 }
+/* The trig types (wave 3, DESIGN-machine-menus.md §2): Trig · Accent · Swing · Slide in the bar under the grid say what a
+   click on a step paints, as the machine's FUNCTION + B/F, C/G, D/H windows say what its TRIG keys do. The lit key is
+   S.tt. With Accent, Swing or Slide: All tracks · This track, the pattern's EDIT ALL for that mark (markMode). Esc goes
+   back to Trig. ⇧-click (accent) and ⌥⇧-click (slide) work in any type. A mark needs a trig, as before. */
+const TT_MARK = {
+	acc: { edit: "accent", set: "acc", all: "accAll", mark: "accent", name: "Accent", fn: "B/F" },
+	swg: { edit: "swingStep", set: "swing", all: "swingAll", mark: "swing", name: "Swing", fn: "C/G" },
+	sld: { edit: "slide", set: "slide", all: "slideAll", mark: "slide", name: "Slide", fn: "D/H" }
+};
+function trigTypes() {
+	const tt = S.tt || "trig", m = TT_MARK[tt];
+	const tip = { trig: "A click paints trigs (Esc comes back here)", acc: "A click paints accent: the machine's FUNCTION + B/F. ⇧-click still paints accent in any type",
+		swg: "A click paints swing, the steps the SWG amount delays: the machine's FUNCTION + C/G", sld: "A click paints slide, a lock that glides to the next: the machine's FUNCTION + D/H. ⌥⇧-click still paints slide in any type" };
+	const key = (id, name, ic) => `<button class="ttk ${id}" role="radio" data-tt="${id}" aria-checked="${tt === id}" title="${tip[id]}"><i class="lg on ${ic}"></i><span>${name}</span></button>`;
+	const all = m ? !!V[m.all] : null;
+	return `<span class="gbg ttlegend" id="ttlegend"><span class="gbl">Trig type${m ? `<span class="ttall" role="group" aria-label="EDIT ALL" title="The pattern's EDIT ALL for ${m.name.toLowerCase()} (the machine's FUNCTION + ${m.fn}, then [RIGHT]): one ${m.name.toLowerCase()} row every track takes, or each track's own. Both rows stay in the pattern"><button data-ttall="1" aria-pressed="${all}">All tracks</button><button data-ttall="0" aria-pressed="${!all}">This track</button></span>` : ""}</span>`
+		+ `<span class="gbc ttkeys" role="radiogroup" aria-label="What a click on a step paints">${key("trig", "Trig", "")}${key("acc", "Accent", "acc")}${key("swg", "Swing", "sw")}${key("sld", "Slide", "sl")}</span></span>`;
+}
+/* the view writes of a mark set on one step: every track with a trig there while EDIT ALL is on, else the track's own */
+function markWrites(m, i, s, on) {
+	const ts = V[m.all] ? V.tracks.map((_, j) => j).filter(j => V.tracks[j].trigs[s]) : [i];
+	return ts.map(j => [["tracks", j, m.set, s], on]);
+}
+/* a mark on one step, set or cleared (a paint's step, a key's click); false when the step has no trig */
+function setMark(m, i, s, on) {
+	if (!V.tracks[i].trigs[s]) return false;
+	cmd(m.edit, { p: V.pat, t: i, s, on }, undefined, markWrites(m, i, s, on));
+	if (V[m.all]) V.tracks.forEach((_, j) => refreshRow(j)); else refreshRow(i);
+	return true;
+}
+function setTrigType(tt) { S.tt = tt; document.documentElement.dataset.tt = tt; render(); }
 function pageCtl() { return `<span class="pagectl seqpage"><button class="pgkey" id="pgkey" ${pages16() < 2 ? "disabled" : ""} title="Next page. Shift-click = previous. Keys [ and ].">Page</button><span class="pleds" aria-hidden="true">${[0, 1, 2, 3].map(k => `<span class="pl ${k < pages16() ? "" : "na"} ${!S.viewAll && k === S.page ? "cur" : ""}" data-plp="${k}"><i class="led"></i></span>`).join("")}</span><button class="ptog ${S.viewAll ? "on" : ""}" id="pgall" aria-pressed="${S.viewAll}" title="Show all steps"><i class="led"></i>All</button><button class="ptog ${S.follow ? "on" : ""}" id="pgfollow" aria-pressed="${S.follow}" title="Page follows the play position"><i class="led"></i>Fol</button></span>`; }
 function renderSeq() {
 	document.documentElement.classList.toggle("viewall", !!S.viewAll);
 	let h = `<div class="panel ${V.mode === "CLASSIC" ? "classic" : ""}" id="seqp"><div class="scroll" id="seqscroll"><div class="seq" id="seq">
   <div class="r" style="grid-template-columns:${cols()}">${steps().map(s => `<div class="rul ${s % 16 === 0 && s !== vis()[0] ? "gap" : ""}${S.stepSel && s >= S.stepSel.from && s < S.stepSel.to ? " selx" : ""}" data-s="${s}">${s % 4 === 0 ? s + 1 : ""}</div>`).join("")}</div>`;
 	V.tracks.forEach((t, i) => { h += `<div class="r ${i === S.sel ? "sel" : ""} ${audible(i) ? "" : "off"}" data-row="${i}" style="grid-template-columns:${cols()};--c:${FAMC[t.fam]}">${steps().map(s => `<button class="${stepCls(i, s)}" data-t="${i}" data-s="${s}" aria-label="Track ${i + 1} step ${s + 1}" aria-pressed="${t.trigs[s]}"></button>`).join("")}</div>`; });
-	h += `</div></div><div class="genbar"><div class="genband" id="genband">${genStripHtml()}</div><span class="gdiv" aria-hidden="true"></span>${stepLegend()}${pageCtl()}</div><div class="lanewrap"><div class="lanetop"><span class="cap">Lock lane · ${S.sel + 1} ${V.tracks[S.sel].name} · <b id="lanename">${laneLabel(V.tracks[S.sel].m, S.lane, Cat)}</b> <span class="lanescale">${bipLane() ? "L 64 · centre · R 63" : "0–127"}</span></span><span class="lockbudget" id="lockbudget"></span>${V.mode === "CLASSIC" ? `<span class="warnline" title="Locks stay in the pattern but do nothing until you switch to EXTENDED.">CLASSIC: locks muted</span>` : ""}<span class="lanehelp" title="Draw across the bars to lock this parameter per step. Alt-drag erases. Shift-drag draws a ramp, a straight line from where you press to where you let go. The wheel over a step with a trig moves its lock (Shift: fine). Hatched steps have no trig, so they cannot hold a lock. Dashed line = kit value.">Draw to lock · ⇧ ramp · alt erases</span></div>
+	h += `</div></div><div class="genbar"><div class="genband" id="genband">${genStripHtml()}</div><span class="gdiv" aria-hidden="true"></span>${trigTypes()}${stepLegend()}${pageCtl()}</div><div class="lanewrap"><div class="lanetop"><span class="cap">Lock lane · ${S.sel + 1} ${V.tracks[S.sel].name} · <b id="lanename">${laneLabel(V.tracks[S.sel].m, S.lane, Cat)}</b> <span class="lanescale">${bipLane() ? "L 64 · centre · R 63" : "0–127"}</span></span><span class="lockbudget" id="lockbudget"></span>${V.mode === "CLASSIC" ? `<span class="warnline" title="Locks stay in the pattern but do nothing until you switch to EXTENDED.">CLASSIC: locks muted</span>` : ""}<span class="lanehelp" title="Draw across the bars to lock this parameter per step. Alt-drag erases. Shift-drag draws a ramp, a straight line from where you press to where you let go. The wheel over a step with a trig moves its lock (Shift: fine). Hatched steps have no trig, so they cannot hold a lock. Dashed line = kit value.">Draw to lock · ⇧ ramp · alt erases</span></div>
 </div>
   <div class="scroll" id="lanescroll"><div class="lane" id="lane" style="grid-template-columns:${cols()}"></div></div></div>`;
 	$("#main").innerHTML = h; renderLane(); syncScroll();
@@ -75,6 +106,8 @@ function clickSteps(e) {
 	if (!e.shiftKey && !e.altKey && e.detail > 0) return true;
 	/* ⌥ alone on a step was select until 0.3.3; ⌥ is FUNCTION (every track) now: say where select went */
 	if (e.altKey && !e.shiftKey) { toast(Modifiers.say("Select is ⌘-click now (⌘-drag a block); ⌥ means every track. Right-click a step for its menu.")); return true; }
+	const m = TT_MARK[S.tt];
+	if (m && !e.shiftKey && !e.altKey) { if (!setMark(m, i, s, !t[m.set].has(s))) toast(`A ${m.name.toLowerCase()} needs a trig: step ${s + 1} of track ${i + 1} has none.`); if (i !== S.sel) select(i); return true; }
 	if (e.altKey && t.trigs[s]) cmd("slide", { p: V.pat, t: i, s }, undefined, [[["tracks", i, "slide", s], !t.slide.has(s)]]);
 	else if (e.shiftKey && t.trigs[s]) cmd("accent", { p: V.pat, t: i, s }, undefined, [[["tracks", i, "acc", s], !t.acc.has(s)]]);
 	else {
@@ -94,9 +127,13 @@ function clickLane(e) {
 /* the page control (Sequence and the Sampler's RAM steps) and the step gestures' ? key */
 function clickPage(e) {
 	if (e.target.closest("#steplegend")) { toggleKeys(true); return true; }
+	const tk = e.target.closest("#ttlegend [data-tt]"); if (tk) { setTrigType(tk.dataset.tt); return true; }
+	const ta = e.target.closest("#ttlegend [data-ttall]"); if (ta) { const m = TT_MARK[S.tt], all = ta.dataset.ttall === "1"; if (m && all !== !!V[m.all]) cmd("markMode", { p: V.pat, mark: m.mark, all }, undefined, [[[m.all], all]]); render(); return true; }
 	const pgk2 = e.target.closest("#pgkey"); if (pgk2 && !pgk2.disabled) { const n = pages16(); S.viewAll = false; S.page = (S.page + (e.shiftKey ? -1 : 1) + n) % n; render(); return true; }
 	const plp = e.target.closest(".pl[data-plp]"); if (plp && !plp.classList.contains("na")) { S.page = +plp.dataset.plp; S.viewAll = false; render(); return true; }
 	if (e.target.closest("#pgall")) { S.viewAll = !S.viewAll; render(); return true; }
 	if (e.target.closest("#pgfollow")) { S.follow = !S.follow; render(); return true; }
 	return false;
 }
+Keys.bind({ id: "trig-type", short: "Trig", scope: "seq", keys: ["Escape"], group: "Sequence", does: "Back to Trig after Accent, Swing or Slide: a click on a step paints trigs again",
+	when: () => S.ws === "seq" && S.tt !== "trig", run: () => setTrigType("trig") });

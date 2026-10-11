@@ -629,6 +629,37 @@ namespace
 		check(!run(docs, cmd(R"({"op":"steps","p":1,"rows":[{"t":2,"on":[1]},{"t":2,"on":[2]}]})"), clip).errors.empty(), "steps: a track in two rows is refused");
 		check(!run(docs, cmd(R"({"op":"steps","p":1,"rows":[{"t":2,"on":[1],"acc":[2]}]})"), clip).errors.empty(), "steps: an accent without a trig is refused");
 		check(!run(docs, cmd(R"({"op":"steps","p":1,"rows":[]})"), clip).errors.empty(), "steps: no rows is refused");
+
+		// Wave 3, the trig types: swingStep, markMode, accent / slide with on (a paint sets, it does not toggle).
+		{
+			auto d3 = docs;
+			auto& q = d3.patterns[1];
+			q.trigs[2] |= 1u << 4;
+			q.trigs[2] &= ~(uint64_t{1} << 5);
+			q.accentEditAll = q.slideEditAll = q.swingEditAll = 0;
+			q.trackSwing[2] = q.trackAccent[2] = q.swingPattern = 0;
+			r = run(d3, cmd(R"({"op":"swingStep","p":1,"t":2,"s":4,"on":true})"), clip);
+			check(r.errors.empty() && pat(r).trackSwing[2] == (1u << 4) && pat(r).swingPattern == 0, "swingStep: the track's own swing row (EDIT ALL off)");
+			r = run(d3, cmd(R"({"op":"swingStep","p":1,"t":2,"s":5,"on":true})"), clip);
+			check(!r.errors.empty() && r.errors[0].find("no trig") != std::string::npos, "swingStep: a step without a trig is refused, as accent and slide");
+			q.trackAccent[2] = 1u << 4;
+			r = run(d3, cmd(R"({"op":"accent","p":1,"t":2,"s":4,"on":true})"), clip);
+			check(r.errors.empty() && (r.changes.empty() || pat(r).trackAccent[2] == (1u << 4)), "accent on: true keeps an accent that is on (a paint, not a toggle)");
+			r = run(d3, cmd(R"({"op":"accent","p":1,"t":2,"s":4,"on":false})"), clip);
+			check(r.errors.empty() && pat(r).trackAccent[2] == 0, "accent on: false clears it");
+			r = run(d3, cmd(R"({"op":"accent","p":1,"t":2,"s":4})"), clip);
+			check(r.errors.empty() && pat(r).trackAccent[2] == 0, "accent without on toggles");
+			r = run(d3, cmd(R"({"op":"markMode","p":1,"mark":"swing","all":true})"), clip);
+			check(r.errors.empty() && pat(r).swingEditAll == 1 && pat(r).accentEditAll == 0 && pat(r).trackSwing == q.trackSwing, "markMode: swing EDIT ALL on, the tracks' own rows kept");
+			q.swingEditAll = 1;
+			r = run(d3, cmd(R"({"op":"swingStep","p":1,"t":2,"s":4,"on":true})"), clip);
+			check(r.errors.empty() && pat(r).swingPattern == (1u << 4) && pat(r).trackSwing[2] == 0 && r.note.find("EDIT ALL") != std::string::npos,
+				"swingStep with EDIT ALL: the pattern-wide row, said in the note");
+			r = run(d3, cmd(R"({"op":"markMode","p":1,"mark":"slide","all":true})"), clip);
+			check(r.errors.empty() && pat(r).slideEditAll == 1 && pat(r).accentEditAll == 0, "markMode: slide for all tracks, accent untouched");
+			check(run(d3, cmd(R"({"op":"markMode","p":1,"mark":"slide","all":false})"), clip).changes.empty(), "markMode: the flag it has already is no change");
+			check(!run(d3, cmd(R"({"op":"markMode","p":1,"mark":"trig","all":true})"), clip).errors.empty(), "markMode: only accent, slide or swing");
+		}
 		check(!run(docs, cmd(R"({"op":"steps","p":1,"rows":[{"t":16,"on":[]}]})"), clip).errors.empty(), "steps: track 17 is refused");
 
 		// params: one working-kit change, a CC for each value that changed and nothing else.
