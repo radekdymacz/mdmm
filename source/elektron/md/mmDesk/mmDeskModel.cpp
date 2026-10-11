@@ -293,6 +293,7 @@ namespace mmDesk
 		const Arg row{"i", ArgType::Integer, 0, 199};
 		const auto slotP = [](const char* _name) { return deskCore::slotArg<MmModel>(_name, Kind::Pattern); };
 		const auto slotK = [](const char* _name) { return deskCore::slotArg<MmModel>(_name, Kind::Kit); };
+		const auto slotS = [](const char* _name) { return deskCore::slotArg<MmModel>(_name, Kind::Song); };
 		const Arg k = deskCore::slotArg<MmModel>("k", Kind::Kit);
 		const Arg t12{"t", ArgType::Integer, 0, 11};
 		const Arg step{"s", ArgType::Integer, 0, 63};
@@ -405,6 +406,12 @@ namespace mmDesk
 			{"kitCopyTo", Owner::Core, Gate::Input, K, {slotK("from"), slotK("to")}, "", CoreOp::Edit, g_library},
 			{"kitClear", Owner::Core, Gate::Input, K, {k}, "", CoreOp::Edit, g_library},
 			{"kitRename", Owner::Core, Gate::Input, K, {k, {"name", ArgType::Text}}, "a stored kit's name (kitName renames the kit that plays)", CoreOp::Edit, g_library},
+			{"songCopy", Owner::Core, Gate::Input, S, {s}, "the song slots", CoreOp::Edit, g_library},
+			{"songPaste", Owner::Core, Gate::Input, S, {s}, "", CoreOp::Edit, g_library},
+			{"songCopyTo", Owner::Core, Gate::Input, S, {slotS("from"), slotS("to"), {"name", ArgType::Text, 0, 0, true}},
+				"drag-copy; with a name: Save to... (the song, named, into another slot)", CoreOp::Edit, g_library},
+			{"songClear", Owner::Core, Gate::Input, S, {s}, "", CoreOp::Edit, g_library},
+			{"songRename", Owner::Core, Gate::Input, S, {s, {"name", ArgType::Text}}, "a song's name (14 characters)", CoreOp::Edit, g_library},
 			// ---- the machine ----
 			{"load", Owner::Machine, Gate::Input, -1, {{"kind", ArgType::Text, 0, 0, false, deskCore::kindNames<MmModel>(true)}, {"slot", ArgType::Integer, 0, static_cast<double>(deskCore::maxLoadableSlots<MmModel>() - 1)}}, "read a document now"},
 			{"select", Owner::Machine, Gate::Input, -1, {p, {"now", ArgType::Bool, 0, 0, true}},

@@ -1376,6 +1376,15 @@ namespace
 		wire.clear();
 		desk.onPageMessage(cmd(R"({"op":"selectSong","s":3,"id":8})"));
 		check(ok() && !wire.empty() && wire[0] == ed::mdLoadSong(3) && desk.linkState().song == 3, "LOAD SONG 4 when stopped");
+
+		// 0.6 song slots: SAVE SONG (0x6D) into the current song's slot, or the slot named.
+		check(ed::mdSaveSong(5) == std::vector<uint8_t>{0xf0, 0x00, 0x20, 0x3c, 0x02, 0x00, 0x6d, 0x05, 0xf7}, "SAVE SONG 6 is F0 00 20 3C 02 00 6D 05 F7");
+		wire.clear();
+		desk.onPageMessage(cmd(R"({"op":"saveSong","id":9})"));
+		check(ok() && !wire.empty() && wire[0] == ed::mdSaveSong(3), "saveSong without s: SAVE SONG into the current song's slot");
+		wire.clear();
+		desk.onPageMessage(cmd(R"({"op":"saveSong","s":7,"id":10})"));
+		check(ok() && !wire.empty() && wire[0] == ed::mdSaveSong(7) && desk.linkState().song == 7, "saveSong s: SAVE SONG into that slot, which becomes the current song");
 	}
 
 	// DESIGN-edit-flow.md: a lock lane drawn at 60 edits a second: at most 5 dumps a second, one read-back.
@@ -1864,6 +1873,8 @@ namespace
 		check(!nextLockStep(p, 3, 5), "a track without trigs: none");
 	}
 
+	void testSongSlots();
+
 	// P4: the kit library and pattern chooser as pure slot edits.
 	void testLibrary()
 	{
@@ -1908,6 +1919,49 @@ namespace
 			&& std::all_of(cleared.trigs.begin(), cleared.trigs.end(), [](const uint64_t _t) { return !_t; }), "pattern clear: no trigs, length and kit link kept");
 		r = run(docs, cmd("{\"op\":\"patCopyTo\",\"from\":" + std::to_string(pat.position) + ",\"to\":20}"), clip);
 		check(r.errors.empty() && r.changes.empty(), "copying an identical pattern changes nothing");
+		testSongSlots();
+	}
+
+	// 0.6 wave 1: the song slots (the library's actions over the songs shelf).
+	void testSongSlots()
+	{
+		Documents docs;
+		ed::MdSong first;
+		first.position = 0;
+		first.name = {'F', 'I', 'R', 'S', 'T'};
+		first.rows = {ed::MdSongRow{3, 0, 1, 0, 0x0005, ed::MdSongRow::g_noTempo, 0, 16}, ed::MdSongRow{}};
+		auto second = emptySong(first, 1);
+		docs.songs[0] = first;
+		docs.songs[1] = second;
+		docs.songs[2] = emptySong(first, 2);
+		docs.songs[2].name = {'O', 'L', 'D'};
+		Clipboard clip;
+		check(isEmptySong(second) && !isEmptySong(first) && !isEmptySong(docs.songs[2]), "a song is empty with no name and no row but END");
+		check(!run(docs, cmd(R"({"op":"songPaste","s":1})"), clip).errors.empty(), "song paste needs a copy first");
+		auto r = run(docs, cmd(R"({"op":"songCopy","s":0})"), clip);
+		check(r.errors.empty() && r.clipboard && r.clipboard->song && r.clipboard->song->name[0] == 'F', "song copy: the clipboard holds the song");
+		clip = *r.clipboard;
+		r = run(docs, cmd(R"({"op":"songPaste","s":1})"), clip);
+		check(r.errors.empty() && r.changes.size() == 1 && r.changes[0].ref().kind == DocKind::Song && r.changes[0].ref().slot == 1
+				&& std::get<ed::MdSong>(r.changes[0].after).position == 1 && std::get<ed::MdSong>(r.changes[0].after).rows == first.rows,
+			"song paste: the rows and name written into S02");
+		r = run(docs, cmd(R"({"op":"songCopyTo","from":0,"to":2})"), clip);
+		check(r.errors.empty() && r.changes.size() == 1 && std::get<ed::MdSong>(r.changes[0].after).position == 2, "song drag-copy: a slot write");
+		r = run(docs, cmd(R"({"op":"songCopyTo","from":0,"to":1,"name":"saved as"})"), clip);
+		check(r.errors.empty() && r.changes.size() == 1 && songNameText(std::get<ed::MdSong>(r.changes[0].after)) == "SAVED AS"
+				&& std::get<ed::MdSong>(r.changes[0].after).rows == first.rows,
+			"Save to...: the song, named, written into another slot (upper case)");
+		check(!run(docs, cmd(R"({"op":"songCopyTo","from":0,"to":0})"), clip).errors.empty(), "song copy onto itself refused");
+		check(!run(docs, cmd(R"({"op":"songCopyTo","from":0,"to":1,"name":"seventeen chars !!"})"), clip).errors.empty(), "a name of more than 16 characters is refused");
+		r = run(docs, cmd(R"({"op":"songClear","s":2})"), clip);
+		check(r.changes.size() == 1 && isEmptySong(std::get<ed::MdSong>(r.changes[0].after)) && std::get<ed::MdSong>(r.changes[0].after).position == 2,
+			"song clear: no name, the END row alone");
+		r = run(docs, cmd(R"({"op":"songRename","s":0,"name":"dub set"})"), clip);
+		check(r.changes.size() == 1 && songNameText(std::get<ed::MdSong>(r.changes[0].after)) == "DUB SET"
+				&& std::get<ed::MdSong>(r.changes[0].after).rows == first.rows,
+			"song rename: the dump written back with the new name, the rows as they were");
+		check(run(docs, cmd(R"({"op":"songRename","s":0,"name":"FIRST"})"), clip).changes.empty(), "renaming to the same name changes nothing");
+		check(!run(docs, cmd(R"({"op":"songClear","s":9})"), clip).errors.empty(), "a song that is not loaded is refused");
 	}
 
 	// P4: HW MIDI link states.
