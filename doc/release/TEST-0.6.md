@@ -22,3 +22,9 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 5. Clear a slot (it asks), then Cmd+Z. Switch between PATTERN, CHAIN and SONG.
 6. A slot that holds a song: the Overwrite and Clear questions. MD: Save while the edits are not loaded yet ("Load the edits, then save").
 7. MM on real hardware: Save to… (it waits as SEND n).
+
+## Trig types and marks (wave 3)
+
+1. MD: paint Swing, Accent and Slide with the keys under the grid; switch All tracks / This track; Esc goes back to Trig; one undo per drag.
+2. MM: Slide and Swing drags on the roll's Note · Slide · Swing row, then one undo; Esc.
+3. MD: paint swing on a step, remove the trig, add it again (B-070: no swing mark should flash back).
