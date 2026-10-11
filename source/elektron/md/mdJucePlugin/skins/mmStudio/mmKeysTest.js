@@ -40,9 +40,9 @@ const run = list.filter(b => b.run), name = b => `${Keys.label(b)} (${b.group})`
 
 /* ---- rule: no ⇧ chords, ⌘ only for the standard edit keys ---- */
 /* the standard edit keys, and the selection's (K7, as the Machinedrum Editor: ⌘X ⌘D ⌘A, ⇧← ⇧→ extend) */
-const STD_CMD = new Set(["cmd KeyZ", "cmd+shift KeyZ", "cmd KeyY", "cmd KeyC", "cmd KeyV", "cmd KeyX", "cmd KeyD", "cmd KeyA", "shift ArrowLeft", "shift ArrowRight", "shift KeyB"]);
+const STD_CMD = new Set(["cmd KeyZ", "cmd+shift KeyZ", "cmd KeyY", "cmd KeyC", "cmd KeyV", "cmd KeyX", "cmd KeyD", "cmd KeyA", "shift ArrowLeft", "shift ArrowRight", "shift KeyB", "cmd+shift KeyC", "cmd+shift KeyV", "cmd+shift Backspace"]);
 const badMod = run.filter(b => ids(b).some(id => { const m = b.mod || ""; return m.includes("shift") && !STD_CMD.has(m + " " + id) || m.includes("cmd") && !STD_CMD.has(m + " " + id); }));
-check(!badMod.length, "no ⇧ or ⌘ commands but ⇧B (tap tempo), ⌘Z ⌘⇧Z ⌘Y ⌘C ⌘V, the selection's ⌘X ⌘D ⌘A ⇧← ⇧→" + (badMod.length ? ": " + badMod.map(name).join(", ") : ""));
+check(!badMod.length, "no ⇧ or ⌘ commands but ⇧B (tap tempo), ⌘Z ⌘⇧Z ⌘Y ⌘C ⌘V ⌘⇧C ⌘⇧V ⌘⇧⌫, the selection's ⌘X ⌘D ⌘A ⇧← ⇧→" + (badMod.length ? ": " + badMod.map(name).join(", ") : ""));
 
 /* ---- rule: no two dispatched entries on one key and modifiers, unless both are conditional and known exclusive ---- */
 /* Escape: each closes what is open (the help, a dialog, LEARN, the paste marks, the selection, GLOBAL), one at a time;
