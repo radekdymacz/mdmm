@@ -27,7 +27,7 @@
 # <preview>/<machine>/roms), MDMM_GATE_PREVIEW (default ~/Documents/Gearmulator Preview), MDMM_GATE_MD_CACHE (the
 # Machinedrum factory cache), MDMM_GATE_MM_PATCH (the Monomachine factory patch RAM), MDMM_GATE_FIXTURES (the SysEx
 # fixtures, default <preview>/fixtures/sysex), MDMM_GATE_JOBS (build jobs), MDMM_GATE_GOLDEN_JOBS (golden runs at
-# once), MDMM_GATE_JOURNEY_ARGS (options for mdmm-journeys.sh, default --host both --jobs 6 --tier machine), MDMM_GATE_CCACHE=0 (stage 1
+# once), MDMM_GATE_JOURNEY_ARGS (options for mdmm-journeys.sh, default --host both --jobs 4 --tier machine), MDMM_GATE_CCACHE=0 (stage 1
 # without ccache),
 # MDMM_GATE_COMPONENTS_DIR (where the AU bundles are installed), MDMM_GATE_SOAK_SECONDS (6c, default 600),
 # MDMM_GATE_SOAK_WARMUP (seconds not judged, default 30), MDMM_GATE_SOAK_LOCK_US (a synth lock wait that fails it,
@@ -98,7 +98,7 @@ GATE_MIN_SCENARIOS="md-busy md-factory md-song mm-a01 mm-busy mm-song"	# a golde
 JOBS="${MDMM_GATE_JOBS:-$(sysctl -n hw.ncpu 2>/dev/null || echo 4)}"
 # four editors at once (--jobs implies --background: the standalone's output is zeroed, silence); the standalone runs the
 # machine journeys (the page journeys are stage 2c's, decision 2026-10-11), the VST3 host the host journeys only
-JOURNEY_ARGS="${MDMM_GATE_JOURNEY_ARGS:---host both --jobs 6 --tier machine}"
+JOURNEY_ARGS="${MDMM_GATE_JOURNEY_ARGS:---host both --jobs 4 --tier machine}"
 SOAK_SECONDS="${MDMM_GATE_SOAK_SECONDS:-600}"
 SOAK_WARMUP="${MDMM_GATE_SOAK_WARMUP:-30}"
 SOAK_LOCK_US="${MDMM_GATE_SOAK_LOCK_US:-1000}"
@@ -1040,21 +1040,30 @@ fi
 # Lane 1's stages run at once, each in a subshell with its console in a file, shown in stage order when all are done:
 # 2 (ctest), 2c (page tier), 2b (the desk smoke tests) and 3, 4, 5 in turn. None opens an audio device or measures time;
 # each has a sandbox of its own. The stage's result line goes to stages.tsv as it ends (one short append each).
-lane1() {
-	local pids="" s
-	wanted 2 && { ( stage_ctest ) > "${OUT}/logs/lane-2.out" 2>&1 & pids+=" $!"; }
-	wanted 2c && { ( stage_page ) > "${OUT}/logs/lane-2c.out" 2>&1 & pids+=" $!"; }
-	wanted 2b && { ( stage_direct ) > "${OUT}/logs/lane-2b.out" 2>&1 & pids+=" $!"; }
+# A full run also runs 7a-7c (no audio device, no timing) in the foreground while lane 1 runs.
+L1_PIDS=""
+lane1_start() {
+	wanted 2 && { ( stage_ctest ) > "${OUT}/logs/lane-2.out" 2>&1 & L1_PIDS+=" $!"; }
+	wanted 2c && { ( stage_page ) > "${OUT}/logs/lane-2c.out" 2>&1 & L1_PIDS+=" $!"; }
+	wanted 2b && { ( stage_direct ) > "${OUT}/logs/lane-2b.out" 2>&1 & L1_PIDS+=" $!"; }
 	( wanted 3 && stage_romload; wanted 4 && stage_sysex; wanted 5 && { stage_goldens; note_goldens_state; } ) \
 		> "${OUT}/logs/lane-345.out" 2>&1 &
-	pids+=" $!"
-	echo "    lane 1: stages 2, 2c, 2b and 3-5 at once"
-	for s in ${pids}; do wait "${s}"; done
+	L1_PIDS+=" $!"
+	echo "    lane 1: stages 2, 2c, 2b and 3-5 at once, in the background"
+}
+lane1_wait() {
+	local s
+	[ -n "${L1_PIDS}" ] || return 0
+	for s in ${L1_PIDS}; do wait "${s}"; done
+	L1_PIDS=""
+	echo "    lane 1 done:"
 	for s in 2 2c 2b 345; do [ -f "${OUT}/logs/lane-${s}.out" ] && cat "${OUT}/logs/lane-${s}.out"; done
 	return 0
 }
 if [ "${BUILD_OK}" = 1 ]; then
-	lane1
+	lane1_start
+	# only a full run goes on to 7a-7c while lane 1 runs; every other waits for it here
+	{ [ -z "${ONLY}" ] && [ "${QUICK}" != 1 ] && [ "${SKIP_PLUGIN}" != 1 ]; } || lane1_wait
 else
 	for pair in "2:ctest, every registered test" "2c:Page journeys (page tier, no ROM)" "2b:Firmware tests ctest cannot run" \
 		"3:ROM loading" "4:SysEx round trip" "5:Playing goldens" "5b:CPU bench sanity" "6a:Real-time work while editing (rt-check)"; do
@@ -1112,6 +1121,7 @@ else
 	stage_auval
 	stage_pluginval
 	au_swap_out	# the AU bundles are done with: the owner's own are back before the journeys start
+	lane1_wait
 	if [ "${SKIP_JOURNEYS}" = 1 ]; then
 		stage_skip "7d" "User journeys, both editors" "--skip-journeys"
 	else
@@ -1119,6 +1129,7 @@ else
 	fi
 	timing_stages
 fi
+lane1_wait
 [ -n "${DIAG_PID}" ] && wait "${DIAG_PID}" 2> /dev/null
 au_swap_out
 stage_updater
