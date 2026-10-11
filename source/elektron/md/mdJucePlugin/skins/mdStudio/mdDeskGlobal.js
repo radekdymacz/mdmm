@@ -18,7 +18,7 @@ const GTIP={
  local:"OFF: the TRIG keys and the sequencer do not play the internal sounds. Stored in the global; its effect could not be verified in the emulator",
  map:"The note that plays each track. A key maps one function: choosing a used key frees it elsewhere",
  mapNote:"A note mapped to a pattern (A01-H16, GROUP PAT A-H on the machine) or to START / STOP (GROUP CTRL). Pick the note, then what it plays",
- inputs:"The external inputs as trig pads. Shown as stored; they need pads on the inputs, so they are not verified here" };
+ inputs:"The external inputs as trig pads, as stored. Dest: the track a pulse plays, or - for none. What they do needs pads on the inputs, so that is not verified here" };
 /* the cards of the shared GLOBAL panel (skins/shared/deskGlobal.js draws the frame: the slots, Reset to defaults, the footer) */
 function mdGlobalCards(G){
  const tog=GlobalUi.tog,step=GlobalUi.step;
@@ -40,7 +40,7 @@ function mdGlobalCards(G){
    <div class="grow2"><span class="ilab">Ctrl out</span>${tog("ctrlOut",G.ctrlOut,GTIP.ctrlOut)}</div></section>
   <section class="card"><header><h3>Trig in A / B</h3><span>external pads<span class="gnv" title="${GTIP.inputs}">not verified</span></span></header>
    <div class="ginputs" title="${GTIP.inputs}"><span></span><span>Gate</span><span>Sens</span><span>Vmin</span><span>Vmax</span><span>Dest</span>
-    ${["A","B"].map((x,i)=>`<span>${x}</span>`+[0,2,4,6,8].map(k=>`<b>${G.inputs[k+i]}</b>`).join("")).join("")}</div></section>
+    ${["A","B"].map((x,i)=>`<span>${x}</span>`+[2,4,6,8].map(k=>`<b>${G.inputs[k+i]}</b>`).join("")+`<b>${G.inputs[i]<16?"T"+(G.inputs[i]+1):"-"}</b>`).join("")}</div></section>
   <section class="card wide"><header><h3>Map editor</h3><span>MIDI notes → tracks and patterns</span></header>
    <div class="grow2"><span class="ilab">Pattern trig</span><span class="seg" title="${GTIP.trig}">${["gate","start","que"].map((m,i)=>`<button data-ga="trig" data-v="${i}" aria-pressed="${G.trigMode===m}">${m.toUpperCase()}</button>`).join("")}</span><span class="note" title="${pats.join(" ")}">${pats.length?pats.length+" notes play patterns or the transport: "+pats.slice(0,6).join(" ")+(pats.length>6?" …":""):"No notes play patterns."}</span></div>
    <div class="grow2" title="${GTIP.mapNote}"><span class="ilab">Map a note</span><span class="stepper"><button data-ga="mapnote" data-d="-1" aria-label="Lower note">‹</button><b class="mono">${NOTE(GP.note)}</b><button data-ga="mapnote" data-d="1" aria-label="Higher note">›</button></span><select id="gmapsel" data-gsel="map" aria-label="What ${NOTE(GP.note)} plays">${tgts.map(v=>`<option value="${v==null?"":v}"${v===cur?" selected":""}>${KTGT(v)}</option>`).join("")}</select></div>

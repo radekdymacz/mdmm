@@ -66,7 +66,11 @@ namespace elektronData
 	//    selects A02, 47 B16, 143 H16; GROUP PAT A-H), 144 = START, 145 = STOP (GROUP CTRL), 255 = "--". The firmware
 	//    stores every byte as sent; 146-254 had no effect (a 2008 backup holds targets up to 47).
 	//  - localControl: stored; no effect on TRIG keys was seen in the emulator (not verified).
-	//  - inputSettings: TRIG IN A/B (GATE, SENS, VMIN, VMAX, DEST in the manual); not verified.
+	//  - inputSettings: TRIG IN A/B, A and B interleaved: [0] DEST A, [1] DEST B, [2] GATE A, [3] GATE B, [4] SENS A,
+	//    [5] SENS B, [6] VMIN A, [7] VMIN B, [8] VMAX A, [9] VMAX B. GATE, SENS, VMIN, VMAX 0-127; DEST 0-15 a track,
+	//    16 none (the knob runs 16, 0 ... 15). Factory: DEST 16, GATE 1, SENS 0, VMIN 0, VMAX 127. A SysEx global
+	//    with other values is kept and shown on the TRIG IN screen once its slot is active (gapProbesFirmwareTest p3,
+	//    doc/modern-ux/PROBES-manual-gaps.md P3).
 	namespace mdGlobalBits
 	{
 		constexpr uint8_t g_tempoInExternal = 0x01;

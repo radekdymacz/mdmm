@@ -33,7 +33,7 @@ The **Channel** keys 1 to 16 set the MIDI channel of the track.
 NOTE: The LFOs of a MIDI track are shared with the synth track of the same number.
 
 ## COMPARISON
-<!-- rows: MM-248 MM-249 MM-250 @a56710 -->
+<!-- rows: MM-248 MM-249 MM-250 @788e19 -->
 
 A MIDI track has no trig tracks, so its row under the roll shows the velocity in place of the envelope dots. It has an arpeggiator without envelope switches, swing, slide and transpose, in the same tabs as a synth track.
 
