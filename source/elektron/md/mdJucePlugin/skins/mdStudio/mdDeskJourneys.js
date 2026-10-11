@@ -452,7 +452,10 @@ const MdJourneys = (() => {
 			go("seq"),
 			{ say: "pick a drum track and click Defaults", act: async (u, c) => { c.t = [...Array(16).keys()].find(t => genRole(V.tracks[t].m) === "kick") ?? soundTrack(); c.p0 = trigsOf(c.t); u.click(rail(c.t)); await sleep(200); u.click('#genband [data-gen="fill"]'); }, machine: c => ok(genSpec(c.t).kind !== "keep" && idle(), "keep") },
 			{ say: "press R until the rhythm changes", act: async (u, c) => { c.p1 = trigsOf(c.t); document.activeElement?.blur?.(); for (let i = 0; i < 5; i++) { u.key("r"); if (await until(() => !same(trigsOf(c.t), c.p1) && idle(), 2500)) break; } }, machine: c => ok(!same(trigsOf(c.t), c.p1), "unchanged"), screen: c => ok(gridShows(c.t), "grid differs") },
-			{ say: "click GEN's Hits value: one more hit", act: (u, c) => { c.p2 = trigsOf(c.t); const g = $1('#genband .gv[data-gv="k"]'); if (!g) throw new Error("not a Euclid spec: " + JSON.stringify(genSpec(c.t))); u.click(g); }, machine: c => ok(!same(trigsOf(c.t), c.p2), "unchanged") },
+			/* one more hit, or one fewer when R rolled every step a hit (Hits stops at Steps: a click changes nothing; the
+			   page tier's one failure in three runs) */
+			{ say: "click GEN's Hits value: one more hit (Shift-click: one fewer, when every step is a hit)", act: (u, c) => { c.p2 = trigsOf(c.t); const g = $1('#genband .gv[data-gv="k"]'); if (!g) throw new Error("not a Euclid spec: " + JSON.stringify(genSpec(c.t)));
+				const sp = genSpec(c.t); u.click(g, { shift: sp.k >= sp.n }); }, machine: c => ok(!same(trigsOf(c.t), c.p2), "unchanged") },
 			{ ...undoKey, say: "press Cmd+Z: the whole run goes in one step", machine: c => ok(same(trigsOf(c.t), c.p0), "pattern " + trigsOf(c.t).join(",")), within: 8000 }
 		],
 		async tidy(u, c) { for (let i = 0; i < 3 && c.p0 && !same(trigsOf(c.t), c.p0); i++) { u.click("#undo"); await sleep(800); } }
