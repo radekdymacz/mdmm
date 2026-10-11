@@ -18,8 +18,8 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.4 | CLASSIC/EXTENDED key | Switch editing mode | ✅ | LCD line 2: MODE (click) | mdDeskTop.js l2step 'mode'. |
 | p.4 | FUNCTION key (secondary functions) | Modifier for everything | 🟡 | Alt key, or FN key in top bar | Alt = 'all tracks'; the machine's FUNCTION combos are mapped one by one below. |
 | p.4 | BANK key and A/E, B/F, C/G, D/H keys | Pick a pattern bank and pattern | ✅ | Pattern chooser (click Pattern in the LCD; keys A-H) | mdDeskLibrary.js. |
-| p.4 | ENTER/YES, EXIT/NO, arrow keys | Menu navigation | ➖ | Not needed | Every menu is a native control. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. |
-| p.5 | LEVEL knob (per-track overall gain) | LEV, cannot be locked or LFO'd | ❌ | None | The desk has a 'level' command, but no page control uses it. Use VOL on Mix instead. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. |
+| p.4 | ENTER/YES, EXIT/NO, arrow keys | Menu navigation | ➖ | Not needed | Every menu is a native control. The firmware does it from its own panel. The editor has no route to it today: over HW MIDI the editor can send only Start and Stop. |
+| p.5 | LEVEL knob (per-track overall gain) | LEV, cannot be locked or LFO'd | ❌ | None | The desk has a 'level' command, but no page control uses it. Use VOL on Mix instead. The firmware does it from its own panel. The editor has no route to it today: over HW MIDI the editor can send only Start and Stop. |
 | p.5 | TEMPO key | Open tempo screen | ✅ | LCD: Tempo (drag), T key to tap | See §9. |
 | p.5 | DATA ENTRY knobs (A-H), pressed = coarse | Eight parameter knobs | ✅ | Value boxes on Sound and Mix; drag, wheel, Shift = fine | Wheel notch 1, Shift 10. |
 | p.5 | SYNTHESIS/EFFECTS/ROUTING toggle | Switch knob page | ✅ | Sound page shows all three as groups | No page toggle; all pages in one view. |
@@ -53,7 +53,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.9 | Windows over the main screen, icon help, EXIT closes | Layer edit | ➖ | Popovers close with Esc |  |
 | p.10 | Load a kit and trig tracks (quick start) | Basic play | ✅ | Kit library; step grid; piano keys | See §4. |
 | p.10 | Accelerated knob editing (pressed knob) | Coarse step | ✅ | Wheel with Shift = 10; Shift-drag = fine |  |
-| p.11 | Hear a machine before loading it (EDIT KIT preview) | Preview default sound | ❌ | None | Machine picker loads the machine at once; Undo takes it back. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. |
+| p.11 | Hear a machine before loading it (EDIT KIT preview) | Preview default sound | ❌ | None | Machine picker loads the machine at once; Undo takes it back. The firmware does it from its own panel. The editor has no route to it today: over HW MIDI the editor can send only Start and Stop. |
 
 ## 3. Sound synthesis: kits (pp.13-21)
 
@@ -64,7 +64,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.15 | Kits not linked to a pattern marked with a star | Unused-kit marker | ✅ | Kit library slot name ends with * | EXTENDED only. |
 | p.15 | Save kit and choose slot | SAVE KIT | ✅ | Kit library: Save, Save as Knn | UNDO KIT keeps the overwritten kit. |
 | p.15 | Name a kit (letters, high-score picker) | Kit name | ✅ | Kit library: Rename (F2 / double-click), 16 chars | Typing replaces the wheel. |
-| p.16 | UNDO KIT (kit list entry 0) | Restore lost kit | 🟡 | Editor undo (Cmd+Z); Reload | The machine's UNDO KIT is kept but not listed as a slot. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. |
+| p.16 | UNDO KIT (kit list entry 0) | Restore lost kit | 🟡 | Editor undo (Cmd+Z); Reload | The machine's UNDO KIT is kept but not listed as a slot. The firmware does it from its own panel. The editor has no route to it today: over HW MIDI the editor can send only Start and Stop. |
 | p.16 | Copy kit and paste to slot | Kit copy | ✅ | Kit library: Copy, Paste, drag onto slot (Cmd+C/V) |  |
 | p.17 | Clear kit | CLEAR KIT | 🟡 | Kit library: Clear | Writes an empty kit (GND-EMPTY, neutral values); the machine's own clear may leave other values. |
 | p.17 | Undo paste / clear kit | Undo | ✅ | Cmd+Z |  |
@@ -137,7 +137,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.35 | EXTENDED mode (kit link, locks) | Pattern recalls its kit | ✅ | LCD MODE = EXT; Pattern chooser shows Knn |  |
 | p.36 | Tempo: integer and decimal steps | Tempo screen | ✅ | LCD tempo drag (Shift = 0.1) | Arrow keys step it when focused. |
 | p.36 | FUNCTION held: tempo changes on release | Delayed change | ❌ | None |  |
-| p.36 | Temporary +/-10 % tempo shift (LEFT/RIGHT) | Turntable sync | ❌ | None | The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. |
+| p.36 | Temporary +/-10 % tempo shift (LEFT/RIGHT) | Turntable sync | ❌ | None | The firmware does it from its own panel. The editor has no route to it today: over HW MIDI the editor can send only Start and Stop. |
 | p.36 | Tap tempo | FUNCTION + TEMPO | ✅ | T or B key | keymap.json tap-tempo. |
 | p.36 | External sync, EXT shown | MIDI clock follow | ✅ | Global > Sync > Tempo in; host tempo marked on LCD | DAW follows host. |
 | p.37 | Pattern selection (8 banks x 16) | A01-H16 | ✅ | Pattern chooser; prev/next arrows |  |
@@ -174,10 +174,10 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.45 | Mutes persist across patterns and modes | Behaviour | ✅ | Machine memory |  |
 | p.45 | Accent amount 0-15 | ACCENT level | ✅ | LCD ACC |  |
 | p.45 | Accent trigs per step | Accent pattern | ✅ | Shift-click a step | Honours EDIT ALL; no toggle for ALL vs per track. |
-| p.45 | Accent pattern ALL vs per-track edit | EDIT ALL toggle | 🟡 | Marks follow the pattern's flag | No control to change the flag. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. |
+| p.45 | Accent pattern ALL vs per-track edit | EDIT ALL toggle | 🟡 | Marks follow the pattern's flag | No control to change the flag. The firmware does it from its own panel. The editor has no route to it today: over HW MIDI the editor can send only Start and Stop. |
 | p.46 | Copy / paste / clear accent pattern or track | Accent clipboard | 🟡 | Selection copy includes accents | No separate accent window. |
 | p.46 | Swing amount 50-80 % | SWING level | ✅ | LCD SWG |  |
-| p.46 | Swing step pattern (which steps swing) | Swing trigs | ❌ | None | Swing marks are in the document; no editor. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. |
+| p.46 | Swing step pattern (which steps swing) | Swing trigs | ❌ | None | Swing marks are in the document; no editor. The firmware does it from its own panel. The editor has no route to it today: over HW MIDI the editor can send only Start and Stop. |
 | p.46 | Per-track swing | Swing tracks | ❌ | None |  |
 | p.47 | Copy / paste / clear swing | Swing clipboard | 🟡 | Selection copy includes swing marks |  |
 | p.47 | Parameter locks, grid: hold TRIG + knob | Lock a value | ✅ | Lock lane: drag over a step; parameter keys | 64 budget meter on LCD. |
@@ -197,7 +197,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.51 | Song capacity: 256 rows, 32 songs | Limits | ✅ | Song page: row count; song stepper |  |
 | p.51 | Load song | LOAD SONG | ✅ | Song stepper (< >), LCD SONG; loads when stopped |  |
 | p.52 | Play, pause, stop a song | Transport | 🟡 | Play/Stop button | No pause. |
-| p.52 | Move song pointer to a row; start from a row | Navigate, transport | ❌ | None | Click on a row only selects it for editing. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. |
+| p.52 | Move song pointer to a row; start from a row | Navigate, transport | ❌ | None | Click on a row only selects it for editing. The firmware does it from its own panel. The editor has no route to it today: over HW MIDI the editor can send only Start and Stop. |
 | p.52 | Playing row shown, repeats left | Playhead | 🟡 | Playing row marked in the arrangement | Turns left not shown. |
 | p.52 | STOP holds, second STOP to start | Stop behaviour | ❌ | None |  |
 | p.53 | Song editor: pattern, REP, BPM, offset, length, mute | EDIT SONG | ✅ | Song > Selected row; arrangement grid |  |
@@ -209,7 +209,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.55 | Song jump | JUMP | ✅ | Command: Jump |  |
 | p.55 | Song halt | HALT | ✅ | Command: Halt |  |
 | p.55 | Song mute per row | MUT | ✅ | Song > More > Mutes |  |
-| p.56 | Save song, choose slot, name it | SAVE SONG | ❌ | None | Edits are written into the current slot at once. No name field. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. |
+| p.56 | Save song, choose slot, name it | SAVE SONG | ❌ | None | Edits are written into the current slot at once. No name field. The firmware does it from its own panel. The editor has no route to it today: over HW MIDI the editor can send only Start and Stop. |
 | p.56 | Copy, paste, clear, undo of song slots | Song library | ❌ | None | Only rows have a clipboard. |
 | p.52 | Song position pointer from MIDI | SPP | ➖ |  | Firmware follows host. |
 | p.52 | Song bar counter | Header counter | ✅ | Song: rows, bars, time | Estimate. |
@@ -231,7 +231,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.61 | Program change channel | Channel | ✅ | GLOBAL > Prg channel |  |
 | p.61 | Encoder resolution 24 / 32 (MKII) | MECH SETTINGS | ➖ |  | No knobs. |
 | p.62 | Output routing, tracks to A-F or MAIN | OUTPUT | ✅ | GLOBAL > Routing; Mix OUT key |  |
-| p.63 | Trig in A/B: GATE, SENS, VMIN, VMAX, DEST | External pads | 🟡 | GLOBAL > Trig in A / B (read-only table) | Shown as stored, not editable. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. |
+| p.63 | Trig in A/B: GATE, SENS, VMIN, VMAX, DEST | External pads | 🟡 | GLOBAL > Trig in A / B (read-only table) | Shown as stored, not editable. The firmware does it from its own panel. The editor has no route to it today: over HW MIDI the editor can send only Start and Stop. |
 | p.64 | Sysex send all data | Backup | 🟡 | Engine menu: Export SysEx (every document) | One file; no range. |
 | p.66 | Global sysex send (all or one slot) | Send globals | 🟡 | Export SysEx | No single-slot send. |
 | p.66 | Song + pattern (+ kit) sysex send, range | Send songs | 🟡 | Export SysEx | No range. |
@@ -260,7 +260,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.71 | Slot list with sizes, memory left | POS/SIZE | 🟡 | Sampler: 48 ROM tiles with waveform and length; MEM on LCD | Memory is slot count, not DSP percent. |
 | p.71 | Sample names / rename | Name slot | ✅ | Sampler: Rename (sent as 0x73) | Names the machine reports are shown when readable. |
 | p.71 | Copy / clear / paste / undo in sample manager | Slot clipboard | ❌ | None |  |
-| p.71 | RAM to ROM copy | Keep a take | ❌ | Disabled with reason | The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. |
+| p.71 | RAM to ROM copy | Keep a take | ❌ | Disabled with reason | The firmware does it from its own panel. The editor has no route to it today: over HW MIDI the editor can send only Start and Stop. |
 | p.70 | Sample limits (4-48 kHz, mono, 12-bit playback) | Rules | ✅ | Plug-in converts on load |  |
 | p.71 | ROM vs RAM machines | Concept | ✅ | Sampler workspace |  |
 

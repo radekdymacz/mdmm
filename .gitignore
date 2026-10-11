@@ -31,3 +31,6 @@ marketing/reels/node_modules/
 marketing/**/*.syx
 .remotion/
 __pycache__/
+
+# Elektron manuals stay local (public repo)
+doc/manuals/
