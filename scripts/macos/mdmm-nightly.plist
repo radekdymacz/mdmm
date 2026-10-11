@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- The nightly full gate on main (scripts/mdmm-nightly.sh, doc/release/DEV-CYCLE.md): a launchd job of the user, at
+     02:30 (at the next wake when the Mac slept through it). A template: scripts/mdmm-nightly.sh --install prints the
+     commands that fill in __ROOT__ (the checkout) and __HOME__ and install it. -->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.futurenativeaudio.mdmm-nightly</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/bash</string>
+		<string>__ROOT__/scripts/mdmm-nightly.sh</string>
+	</array>
+	<key>WorkingDirectory</key>
+	<string>__ROOT__</string>
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Hour</key>
+		<integer>2</integer>
+		<key>Minute</key>
+		<integer>30</integer>
+	</dict>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+		<key>HOME</key>
+		<string>__HOME__</string>
+	</dict>
+	<key>StandardOutPath</key>
+	<string>__ROOT__/temp/nightly/launchd.log</string>
+	<key>StandardErrorPath</key>
+	<string>__ROOT__/temp/nightly/launchd.log</string>
+	<key>LowPriorityIO</key>
+	<false/>
+	<key>ProcessType</key>
+	<string>Standard</string>
+</dict>
+</plist>

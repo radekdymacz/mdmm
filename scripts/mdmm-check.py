@@ -18,7 +18,10 @@ GOLDENS = os.path.join(ROOT, "source/elektron/md/mdLibTest/goldens/mdmm-goldens.
 # never in a unit lane: the firmware tests (ROM), the plug-in bundles' tests, the AU and VST packaging checks
 NOT_UNIT_LABELS = "FirmwareTest|PluginTest"
 NOT_UNIT_NAMES = "_AU|VST|Plugin_|PluginTest"
-DEFAULT_ROW = {"path": "(no row)", "ctest": "all", "firmware": "-", "page": "*", "machine": "-", "goldens": "no"}
+COLUMNS = ["path", "ctest", "firmware", "page", "machine", "goldens", "gate"]
+DEFAULT_ROW = {"path": "(no row)", "ctest": "all", "firmware": "-", "page": "*", "machine": "-", "goldens": "no", "gate": "all"}
+# every stage of the local gate, in its order (scripts/mdmm-local-gate.sh)
+GATE_STAGES = ["1", "2", "2c", "2b", "3", "4", "5", "7a", "7b", "7c", "7d", "5b", "6a", "6b"]
 
 
 def say(text):
@@ -33,9 +36,9 @@ def load_map():
 			if not line or line.startswith("#"):
 				continue
 			cols = line.split("\t")
-			if len(cols) != 6:
-				raise SystemExit(f"{MAP}: a row without 6 columns: {line!r}")
-			rows.append(dict(zip(["path", "ctest", "firmware", "page", "machine", "goldens"], cols)))
+			if len(cols) != len(COLUMNS):
+				raise SystemExit(f"{MAP}: a row without {len(COLUMNS)} columns: {line!r}")
+			rows.append(dict(zip(COLUMNS, cols)))
 	return rows
 
 
@@ -210,8 +213,29 @@ def goldens_quick(runner):
 		runner.run(f"golden {m} (one, 8 s)", [tool, roms[m], m, "8", "--golden", GOLDENS])
 
 
+def gate_plan(base, rows):
+	"""the local gate's stages for what changed between _base (the last green nightly) and HEAD: MDMM_GATE_ONLY"""
+	files = sorted(f for f in git("diff", "--name-only", base, "HEAD") if f)
+	stages = {"1"}
+	for f in files:
+		r = row_for(f, rows)
+		if r["gate"] == "all":
+			stages = set(GATE_STAGES)
+			break
+		if r["gate"] != "-":
+			stages |= set(r["gate"].split())
+	for f in files:
+		say(f"# {f} -> {row_for(f, rows)['gate']}")
+	print(" ".join(s for s in GATE_STAGES if s in stages))
+	return 0
+
+
 def main():
 	args = sys.argv[1:]
+	if args[:1] == ["--gate-plan"]:
+		if len(args) < 2:
+			raise SystemExit("--gate-plan <commit>: the stages for HEAD since that commit")
+		return gate_plan(args[1], load_map())
 	tier, dry, files, watch = "quick", False, None, False
 	while args:
 		a = args.pop(0)
