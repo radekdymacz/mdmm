@@ -14,6 +14,12 @@ commit). Earlier, on `test/user-journeys`: Machinedrum 60 of 62 (2 skipped, wind
 2026-10-10, `feat/mm-piano-roll` (0.5 MM slice 3), MM OS 1.32B, in the background with fresh settings: `mm-roll-*` and
 `mm-seq-*` 24/24 after the fix noted in the roll rows (the first run 23/24).
 
+2026-10-11, `fix/0.5.1-paste-journeys`, MD OS 1.63, MM OS 1.32B, standalone, in the background, two at once: fresh
+settings MD 78/78 and MM 94/94 (18 skipped: window covered); copied settings 165 of 172, the 7 failures the same with
+and without the new GLOBAL reset (doc/release/BUGS.md B-058). Since then every run resets the active GLOBAL to the
+factory settings before its first journey (`JOURNEYS before:` in the report): the copied MM machine held CHANNEL
+SPAN 0, which failed every MM mute journey.
+
 Status: **PASS**; **FAIL** with the bug (below); **SKIP** (needs the window on screen); **not covered** (reachable,
 no journey yet); **not testable** (why). "—": the editor has no such feature.
 
@@ -21,12 +27,12 @@ no journey yet); **not testable** (why). "—": the editor has no such feature.
 
 | | Machinedrum | Monomachine | Both |
 |---|---|---|---|
-| Features in the inventory (one row a feature; "—" rows not counted) | 82 | 86 | 168 |
-| Covered by a journey | 71 | 76 | 147 |
-| of which PASS | 71 | 76 | 147 |
+| Features in the inventory (one row a feature; "—" rows not counted) | 83 | 87 | 170 |
+| Covered by a journey | 71 | 77 | 148 |
+| of which PASS | 71 | 77 | 148 |
 | of which FAIL (product bug) | 0 | 0 | 0 |
 | of which SKIP here (window covered) | 0 | 0 | 0 |
-| Not covered yet (reachable through the page) | 0 | 0 | 0 |
+| Not covered yet (reachable through the page) | 1 | 0 | 1 |
 | Not testable through the page (file chooser, hardware, DAW, hidden by design) | 11 | 10 | 21 |
 
 ## Start-up, ROM, engine
@@ -97,7 +103,8 @@ no journey yet); **not testable** (why). "—": the editor has no such feature.
 | Every-N fill (the step menu: MD since K3, MM since K7) | md-seq-fill-every PASS | mm-seq-fill-every PASS (2026-10-10, the step menu) |
 | Rotate (Alt+← →) | md-seq-rotate PASS | mm-seq-rotate PASS |
 | A rotate run ends when Alt is seen up in any event: the next rotate is its own undo step (2026-10-05) | md-seq-rotate-undo PASS | mm-seq-rotate-undo PASS (2026-10-10); mm-seq-roll-paint PASS (after mm-seq-rotate, its paint and erase are their own undo steps) |
-| Paste to many marked tracks (Shift-click headers) | md-seq-paste-many PASS | mm-seq-paste-many PASS |
+| Paste to many marked tracks (Shift-click headers) | md-seq-paste-many PASS | mm-seq-paste-many PASS (2026-10-11: a copied four-step selection, each marked track keeps the rest of its page, decision A; FAIL on the 0.5.0 page) |
+| Copied steps pasted with nothing selected: only the copied steps, the rest of the page kept (MM decision A, 0.5.1; the MD's paste always did) | not covered (its page sends no "to") | mm-seq-paste-steps-keeps-page PASS (2026-10-11; FAIL on the 0.5.0 page: the rest of the page cleared) |
 | Live recording (REC / Alt+Space) | md-seq-live-record PASS | mm-seq-live-record PASS |
 | GRID RECORDING (MM RECORD stopped) | — | mm-seq-grid-record PASS (bug 4, fixed; see note 2) |
 | LEN on LCD line 2 | — | mm-seq-len PASS |
