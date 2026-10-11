@@ -67,9 +67,9 @@ def release_selection(
         for architecture in SUPPORTED_MACOS_ARCHITECTURES
         if architecture in requested
     )
-    if pgo_mode not in {"none", "use"}:
+    if pgo_mode not in {"none", "use", "committed"}:
         raise RuntimeError(
-            "GEARMULATOR_MDMM_APPLE_PGO_MODE must be none or use for product builds"
+            "GEARMULATOR_MDMM_APPLE_PGO_MODE must be none, use or committed for product builds"
         )
     if pgo_mode == "use":
         if len(architectures) != 1:
@@ -86,7 +86,8 @@ def release_selection(
             if not pgo_provenance.is_file():
                 raise RuntimeError(f"PGO provenance does not exist: {pgo_provenance}")
     elif pgo_profile is not None or pgo_provenance is not None:
-        raise RuntimeError("PGO inputs were supplied while PGO mode is none")
+        # committed: the profile and its record are the repository's (source/elektron/md/pgo).
+        raise RuntimeError(f"PGO inputs were supplied while PGO mode is {pgo_mode}")
 
     architecture_label = "Universal" if len(architectures) == 2 else architectures[0]
     pgo_suffix = "-PGO" if pgo_mode == "use" else ""
@@ -230,19 +231,37 @@ def release_optimization(
         )
 
     pgo_mode = cache.get("GEARMULATOR_MDMM_APPLE_PGO_MODE", "none")
-    if pgo_mode not in {"none", "use"}:
+    if pgo_mode not in {"none", "use", "committed"}:
         raise RuntimeError(
-            f"release artifacts require PGO mode none or use; found {pgo_mode!r}"
+            f"release artifacts require PGO mode none, use or committed; found {pgo_mode!r}"
         )
     applied_pgo_mode = cache.get(
         "GEARMULATOR_MDMM_APPLE_OPTIMIZATION_APPLIED_PGO_MODE", ""
     )
+    pgo_details: dict[str, object] = {}
+    if pgo_mode == "committed" and applied_pgo_mode == "none":
+        # The committed profile could not be used (missing, or no llvm-profdata): the build fell back to the
+        # ThinLTO build and said why. The receipt says the same.
+        pgo_mode = "none"
+        pgo_details["pgo_fallback"] = cache.get(
+            "GEARMULATOR_MDMM_APPLE_PGO_FALLBACK", "committed profile not applied"
+        )
     if applied_pgo_mode != pgo_mode:
         raise RuntimeError(
             f"configured PGO mode {pgo_mode!r} was not applied; found {applied_pgo_mode!r}"
         )
     profile_sha256 = None
-    if pgo_mode == "use":
+    if pgo_mode == "committed":
+        # One profile, trained on arm64 and kept in the repository, for every slice: clang applies the counts of
+        # each function whose hash matches and ignores the rest. The record is the text profile's SHA-256 and
+        # the profiled folders that changed since training.
+        profile_sha256 = cache.get("GEARMULATOR_MDMM_APPLE_PGO_COMMITTED_SHA256", "")
+        _require_sha256(profile_sha256, "committed PGO profile")
+        if not cache.get("GEARMULATOR_MDMM_APPLE_OPTIMIZATION_APPLIED_PROFILE_SHA256", ""):
+            raise RuntimeError("generated build did not apply the committed PGO profile")
+        stale = cache.get("GEARMULATOR_MDMM_APPLE_PGO_STALE", "")
+        pgo_details["pgo_stale"] = [folder for folder in stale.split(";") if folder]
+    elif pgo_mode == "use":
         if len(architectures) != 1:
             raise RuntimeError(
                 "one PGO profile cannot qualify a universal build; build and record each "
@@ -271,6 +290,7 @@ def release_optimization(
             "dsp_optimization": True,
             "pgo_mode": pgo_mode,
             "profile_sha256": profile_sha256,
+            **pgo_details,
         }
     return {
         "compiler": compiler,
@@ -450,42 +470,27 @@ def require_clean(
         )
 
 
-def submodule_commit(source: pathlib.Path, name: str) -> str:
-    relative = pathlib.PurePosixPath(
-        git(source, "config", "-f", ".gitmodules", "--get", f"submodule.{name}.path")
-    )
-    if relative.is_absolute() or ".." in relative.parts:
-        raise RuntimeError(f"unsafe path for submodule {name}: {relative}")
+def owned_tree(source: pathlib.Path, relative: str) -> str:
+    """The Git tree id of a folder we own (dsp56300, mc68k, JUCE: submodules until 0.5, plain folders since).
 
-    checkout = (source / pathlib.Path(*relative.parts)).resolve()
-    try:
-        checkout.relative_to(source)
-    except ValueError as error:
-        raise RuntimeError(f"submodule {name} resolves outside the source tree: {checkout}") from error
-
-    expected = git(source, "rev-parse", f"HEAD:{relative.as_posix()}")
-    actual_root = pathlib.Path(git(checkout, "rev-parse", "--show-toplevel")).resolve()
-    if actual_root != checkout:
-        raise RuntimeError(
-            f"submodule {name} is not initialized at {relative} "
-            f"(Git resolved it to {actual_root})"
-        )
-
-    actual = git(checkout, "rev-parse", "HEAD")
-    if actual != expected:
-        raise RuntimeError(
-            f"submodule {name} checkout does not match the parent gitlink: "
-            f"expected {expected}, found {actual}"
-        )
-    return actual
+    It names the folder's committed content exactly; the clean-tree check covers uncommitted changes in it.
+    """
+    path = pathlib.PurePosixPath(relative)
+    if path.is_absolute() or ".." in path.parts:
+        raise RuntimeError(f"unsafe path for an owned folder: {relative}")
+    entry = git(source, "ls-tree", "HEAD", "--", path.as_posix())
+    if not entry.split() or entry.split()[1] != "tree":
+        raise RuntimeError(f"{relative} is not a folder of this repository at HEAD: {entry or 'absent'}")
+    return git(source, "rev-parse", f"HEAD:{path.as_posix()}")
 
 
 def source_tuple(source: pathlib.Path) -> dict[str, str]:
     return {
         "source_commit": git(source, "rev-parse", "HEAD"),
-        "dsp56300_commit": submodule_commit(source, "source/dsp56300"),
-        "mc68k_commit": submodule_commit(source, "source/mc68k"),
-        "juce_commit": submodule_commit(source, "source/JUCE"),
+        # the tree ids of the folders we own (they were submodule commits up to 0.4)
+        "dsp56300_commit": owned_tree(source, "source/dsp56300"),
+        "mc68k_commit": owned_tree(source, "source/mc68k"),
+        "juce_commit": owned_tree(source, "source/JUCE"),
     }
 
 

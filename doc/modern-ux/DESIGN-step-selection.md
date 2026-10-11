@@ -113,7 +113,22 @@ brings.
 - `mdDeskKeysTest.js`: ⌘X and ⌘D join the allowed ⌘ keys.
 - Journey `journey-seq-select-copy-paste` (`mdDeskJourneys.js`): on the firmware.
 
-## 7. The Monomachine Editor (not built)
+## 7. The Monomachine Editor (built 2026-10-10, branch `feat/mm-step-selection`)
+
+As planned below, with the Machinedrum's code shared rather than copied: the selection's value, gesture, keys and
+step menu order are `skins/shared/deskSelect.js` (`StepSel`), where a block lands in the core is
+`deskCore/deskBlocks.h`. The Monomachine's own: `mmDesk/mmDeskEdit.cpp` (`Clipboard::Steps` as rows, each synth or
+MIDI; `n` on `copySteps` / `clearSteps`; `copyStepsTo`; a paste stops at the length and at M6, a row lands only on a
+track of its kind, the steps under it lose their old locks), `mmView.js` (the same writes, nine intent cases), and
+the mockup's `77-select.js`. The gesture is ⌘ as on the Machinedrum (DESIGN-keymap.md D1): ⌘-click or ⌘-drag in the
+piano roll or a trig row, the step ruler without a modifier, ⌘⇧-click extends (on another track's roll: the tracks
+between too, since the roll shows one track), ⌘-drag of the selection drops a copy; ↑ ↓ move it a track within the
+side shown, ⌘A takes the six tracks shown. The fill moved from ⌘-click to the step menu (right-click in the roll or a
+trig row), whose marks are the Monomachine's: note on / off, NOTE OFF, trigless, slide, and a chord note at the pitch
+right-clicked. Delete takes only the selection (D3). Swing stays out of a block on the Monomachine (as its page copy
+always did: swing is the pattern's groove, a track of its own).
+
+The plan, as written before:
 
 The MM page is the generated mockup (`doc/modern-ux/mm-mockup/src/`, synced by `sync-mmstudio-skin.py`); the same
 model needs, in order:
@@ -126,3 +141,19 @@ model needs, in order:
    deletes a note, ⌥-drag erases in the piano roll). The ruler drag (candidate A) works on both pages unchanged, so the
    MM gets it first; a modifier for one step there is an open question for the owner (⌘-click is the fill on both).
 3. The seam (`53-seam.js`) needs no new host call: the ops are `edit(op, args)` intents.
+
+## 8. The Monomachine piano roll with Draw off (0.5 slice 3, branch `feat/mm-piano-roll`, I-007)
+
+The roll has a draw mode (B on Sequence, or the Draw key beside PAGE; on by default, kept per viewer). With it off a
+plain press in the roll selects instead of drawing, and the selection is still `StepSel` (`77-select.js`, `70-seq.js`):
+
+- a drag in an empty place draws a box (steps × pitches); on release the selection is the steps from the first boxed
+  note's trig to the last one's end, its closing NOTE OFF in (`MmRoll.span`, `58-roll.js`), so a copy carries where
+  each note ends; a box with no note selects its steps; a click without a drag clears the selection;
+- a press on a note selects that note's steps (⇧: the selection grows to it); dragging it across the steps moves the
+  selection (`selMoveTo`: `copyStepsTo` then `clearSteps` of what it left, one gesture, one undo step), up or down
+  changes the note's pitch; ⌘-drag still drops a copy (§7);
+- a double-click in an empty place adds a note of the draw length.
+
+The keys and the step menu are §7's. A clear, a cut or a move leaves the note before the selection its length (a NOTE
+OFF where it ended, `selKeeps`), as a deleted note does in the roll (I-010).

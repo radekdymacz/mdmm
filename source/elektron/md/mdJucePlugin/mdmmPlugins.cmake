@@ -7,7 +7,7 @@
 
 # The Machinedrum and Monomachine Editors have their own release version, apart from
 # Gearmulator's (the bundles, the AU version, the installers and the site use it).
-set(MDMM_EDITOR_VERSION 0.4.0)
+set(MDMM_EDITOR_VERSION 0.5.0)
 string(REPLACE "." ";" _mdmmVersionParts "${MDMM_EDITOR_VERSION}")
 list(GET _mdmmVersionParts 0 _mdmmVersionMajor)
 list(GET _mdmmVersionParts 1 _mdmmVersionMinor)
@@ -79,6 +79,7 @@ list(APPEND SOURCES
 	skins/mmStudio/mmConvertTest.js
 	skins/mmStudio/mmKeysTest.js
 	skins/mmStudio/mmGenTest.js
+	skins/mmStudio/mmRollTest.js
 	skins/mmStudio/mmSoundTest.js
 	skins/mmStudio/mmSelfTest.js
 	skins/mmStudio/mmJourneys.js
@@ -93,6 +94,7 @@ list(APPEND SOURCES
 	skins/mdStudio/mdDeskLibrary.js
 	skins/mdStudio/mdDeskKeys.js
 	skins/mdStudio/mdDeskGlobal.js
+	skins/shared/deskGlobal.js skins/shared/deskGlobal.css
 	skins/mdStudio/mdDeskAudio.js
 	skins/shared/deskModal.js skins/shared/deskModal.css skins/shared/deskModalTest.js skins/shared/deskMenu.js skins/shared/deskMenuTest.js
 	skins/shared/deskCaps.js
@@ -104,9 +106,10 @@ list(APPEND SOURCES
 	skins/shared/deskDrop.js skins/shared/deskDropTest.js
 	skins/shared/deskDocs.js
 	skins/shared/deskOverlay.js skins/shared/deskOverlayTest.js
-	skins/shared/deskGen.js skins/shared/deskGenTest.js
+	skins/shared/deskGen.js skins/shared/deskGenTest.js skins/shared/deskGenBar.js skins/shared/deskGenBar.css skins/shared/deskSoundLayout.js skins/shared/deskSoundLayoutTest.js skins/shared/deskSound.css
 	skins/shared/deskKeys.js skins/shared/deskKeysTest.js skins/shared/deskKeymapTest.js skins/shared/deskKeyView.js skins/shared/deskKeyView.css skins/shared/deskKeyViewTest.js
 	skins/shared/deskTogglePaint.js skins/shared/deskTogglePaintTest.js
+	skins/shared/deskSelect.js skins/shared/deskSelectTest.js
 	skins/shared/deskCompat.js skins/shared/deskCompatTest.js
 	skins/shared/deskZoom.js
 	skins/shared/deskAbout.js skins/shared/deskAboutTest.js)
@@ -139,9 +142,9 @@ option(MDMM_INSTALL_DEV_PLUGINS "Copy the built editors to ~/Library/Audio/Plug-
 # mmMockup.js (sync-mmstudio-skin.py) but for the bridge.
 set(MD_SHARED_PAGE_FILES
 	"skins/shared/deskModal.js" "skins/shared/deskMenu.js" "skins/shared/deskCaps.js" "skins/shared/deskBoot.js" "skins/shared/deskSyx.js" "skins/shared/deskBridge.js"
-	"skins/shared/deskDrop.js" "skins/shared/deskDocs.js" "skins/shared/deskOverlay.js" "skins/shared/deskGen.js"
-	"skins/shared/deskKeys.js" "skins/shared/deskKeyView.js" "skins/shared/deskTogglePaint.js"
-	"skins/shared/deskAudio.js" "skins/shared/deskCompat.js" "skins/shared/deskZoom.js" "skins/shared/deskAbout.js")
+	"skins/shared/deskDrop.js" "skins/shared/deskDocs.js" "skins/shared/deskOverlay.js" "skins/shared/deskGen.js" "skins/shared/deskGenBar.js" "skins/shared/deskSoundLayout.js"
+	"skins/shared/deskKeys.js" "skins/shared/deskKeyView.js" "skins/shared/deskTogglePaint.js" "skins/shared/deskSelect.js"
+	"skins/shared/deskAudio.js" "skins/shared/deskGlobal.js" "skins/shared/deskCompat.js" "skins/shared/deskZoom.js" "skins/shared/deskAbout.js")
 file(GLOB MD_SKIN_ASSETS CONFIGURE_DEPENDS
 	"skins/mdStudio/*.rml" "skins/mdStudio/*.html" "skins/mdStudio/mdDesk.css" "skins/mdStudio/*.js"
 	"skins/mdStudio/fonts/*.woff2" "skins/mdStudio/fonts/*.ttf")
@@ -166,15 +169,15 @@ set(MD_NODE_TESTS "skins/mdStudio/mdDeskModelTest.js" "skins/mdStudio/mdDeskGenT
 set(MD_SELF_TESTS "skins/mdStudio/mdDeskSelfTest.js" "skins/shared/deskAudioSelfTest.js"
 	"skins/mdStudio/mdDeskJourneys.js" "skins/shared/deskJourney.js")
 set(MM_SELF_TESTS "skins/mmStudio/mmSelfTest.js" "skins/mmStudio/mmJourneys.js" "skins/shared/deskJourney.js")
-# the MM glob names its page files, so its node tests (mmConvertTest.js, mmKeysTest.js, mmGenTest.js, mmSoundTest.js,
+# the MM glob names its page files, so its node tests (mmConvertTest.js, mmKeysTest.js, mmGenTest.js, mmRollTest.js, mmSoundTest.js,
 # mmViewTest.js and its fixture) never ship; checked to be there
-set(MM_NODE_TESTS "skins/mmStudio/mmConvertTest.js" "skins/mmStudio/mmKeysTest.js" "skins/mmStudio/mmGenTest.js" "skins/mmStudio/mmSoundTest.js"
+set(MM_NODE_TESTS "skins/mmStudio/mmConvertTest.js" "skins/mmStudio/mmKeysTest.js" "skins/mmStudio/mmGenTest.js" "skins/mmStudio/mmRollTest.js" "skins/mmStudio/mmSoundTest.js"
 	"skins/mmStudio/mmViewTest.js" "skins/mmStudio/mmViewFixture.json")
 # the shared page files' node tests (never in a glob, so never shipped); checked to be there
 set(SHARED_NODE_TESTS "skins/shared/deskGenTest.js" "skins/shared/deskOverlayTest.js" "skins/shared/deskBridgeTest.js"
-	"skins/shared/deskTogglePaintTest.js" "skins/shared/deskKeysTest.js" "skins/shared/deskModalTest.js" "skins/shared/deskMenuTest.js" "skins/shared/deskCompatTest.js"
+	"skins/shared/deskTogglePaintTest.js" "skins/shared/deskSelectTest.js" "skins/shared/deskKeysTest.js" "skins/shared/deskModalTest.js" "skins/shared/deskMenuTest.js" "skins/shared/deskCompatTest.js"
 	"skins/shared/deskKeymapTest.js" "skins/shared/deskKeyViewTest.js" "skins/shared/deskAboutTest.js"
-	"skins/shared/deskSyxTest.js" "skins/shared/deskDropTest.js")
+	"skins/shared/deskSyxTest.js" "skins/shared/deskDropTest.js" "skins/shared/deskSoundLayoutTest.js")
 foreach(test ${MD_NODE_TESTS} ${MD_SELF_TESTS} ${MM_SELF_TESTS} ${MM_NODE_TESTS} ${SHARED_NODE_TESTS} ${MD_SHARED_PAGE_FILES})
 	if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${test}")
 		message(FATAL_ERROR "${test} is not there: update the editors' test lists in ${CMAKE_CURRENT_LIST_FILE}")
@@ -198,11 +201,30 @@ foreach(_mdmmLine ${_mdmmProductLines})
 	string(REGEX MATCH "^(MDMM_[A-Z_]+)=\"(.*)\"$" _mdmmMatch "${_mdmmLine}")
 	set(${CMAKE_MATCH_1} "${CMAKE_MATCH_2}")
 endforeach()
-foreach(_mdmmKey MDMM_PRODUCT_NAME_MD MDMM_PRODUCT_NAME_MM MDMM_VENDOR MDMM_WEBSITE MDMM_LEGACY_NAME_MD MDMM_LEGACY_NAME_MM)
+foreach(_mdmmKey MDMM_PRODUCT_NAME_MD MDMM_PRODUCT_NAME_MM MDMM_VENDOR MDMM_WEBSITE MDMM_LEGACY_NAME_MD MDMM_LEGACY_NAME_MM
+		MDMM_AU_SUBTYPE_MD MDMM_AU_SUBTYPE_MM MDMM_AU_MANUFACTURER
+		MDMM_LEGACY_AU_SUBTYPE_MD MDMM_LEGACY_AU_SUBTYPE_MM MDMM_LEGACY_AU_MANUFACTURER)
 	if(NOT ${_mdmmKey})
 		message(FATAL_ERROR "${_mdmmKey} missing from ${_mdmmProductEnv}")
 	endif()
 endforeach()
+# The plug-in identity (the AU codes, and from them the VST3 class IDs): JUCE wants four characters, the plug-in
+# code with exactly one upper-case letter (the first, for GarageBand), the manufacturer with at least one (Apple
+# keeps the all-lower-case ones). It must not be the codes up to 0.5.x, the original Gearmulator MD / MM's (B-048).
+foreach(_mdmmKey MDMM_AU_SUBTYPE_MD MDMM_AU_SUBTYPE_MM)
+	if(NOT "${${_mdmmKey}}" MATCHES "^[A-Z][a-z0-9][a-z0-9][a-z0-9]$")
+		message(FATAL_ERROR "${_mdmmKey} (${${_mdmmKey}}) is not one upper-case letter and three lower-case letters or digits")
+	endif()
+endforeach()
+if(NOT "${MDMM_AU_MANUFACTURER}" MATCHES "^[A-Za-z0-9][A-Za-z0-9][A-Za-z0-9][A-Za-z0-9]$" OR NOT "${MDMM_AU_MANUFACTURER}" MATCHES "[A-Z]")
+	message(FATAL_ERROR "MDMM_AU_MANUFACTURER (${MDMM_AU_MANUFACTURER}) is not four letters or digits with an upper-case one")
+endif()
+if("${MDMM_AU_SUBTYPE_MD}" STREQUAL "${MDMM_AU_SUBTYPE_MM}")
+	message(FATAL_ERROR "the two editors' AU subtypes are the same (${MDMM_AU_SUBTYPE_MD})")
+endif()
+if("${MDMM_AU_MANUFACTURER}" STREQUAL "${MDMM_LEGACY_AU_MANUFACTURER}")
+	message(FATAL_ERROR "MDMM_AU_MANUFACTURER is still the old ${MDMM_LEGACY_AU_MANUFACTURER} (the original Gearmulator plug-ins' code)")
+endif()
 unset(_mdmmProductEnv)
 unset(_mdmmProductLines)
 unset(_mdmmLine)
@@ -213,7 +235,7 @@ unset(_mdmmKey)
 # - the app icons (doc/modern-ux/icons, built with build-icons.sh);
 # - the maker a DAW shows (AU "Future Native Audio: Machinedrum Editor", the VST3 vendor, the Windows file details)
 #   instead of upstream's "Gearmulator Preview". The data folder keeps that name (mdPluginProcessor.cpp,
-#   g_dataFolderVendor), and the VST3 class IDs and AU codes come from GmPv + Tmdr/Tmno, not from names;
+#   g_dataFolderVendor), and the VST3 class IDs and AU codes come from the codes below, not from names;
 # - the microphone prompt's text;
 # - the LV2 URI as it was with the old product name (it would otherwise follow the name).
 foreach(_mdmmTarget md mm)
@@ -238,6 +260,13 @@ unset(_mdmmUpper)
 set(GEARMULATOR_PLUGIN_BUNDLE_ID_mdJucePlugin "com.nativekloud.machinedrum-editor")
 set(GEARMULATOR_PLUGIN_BUNDLE_ID_mmJucePlugin "com.nativekloud.monomachine-editor")
 
+# The editors' own manufacturer code (scripts/mdmm-product.env, MDMM_AU_MANUFACTURER) instead of upstream's GmPv,
+# through juce.cmake's hook; the plug-in codes (MDMM_AU_SUBTYPE_MD / _MM) are createJucePlugin's argument in this
+# folder's CMakeLists.txt. Together they are the AU's codes and the VST3 class IDs: their own, so the original
+# Gearmulator MD / MM (GmPv Tmdr / Tmno) can stay installed beside the editors (B-048).
+set(GEARMULATOR_PLUGIN_MANUFACTURER_CODE_mdJucePlugin "${MDMM_AU_MANUFACTURER}")
+set(GEARMULATOR_PLUGIN_MANUFACTURER_CODE_mmJucePlugin "${MDMM_AU_MANUFACTURER}")
+
 function(mdmm_plugin_targets)
 	foreach(plugin_target mdJucePlugin mmJucePlugin)
 		target_link_libraries(${plugin_target} PRIVATE elektronData mdDataLink mdDesk mmDesk deskHost deskWire)
@@ -254,6 +283,9 @@ function(mdmm_plugin_targets)
 			# the editor menu's first line and the standalone's About box (mdAbout.h)
 			"MDMM_VENDOR=\"${MDMM_VENDOR}\""
 			"MDMM_WEBSITE=\"${MDMM_WEBSITE}\""
+			# the plug-in codes the processor reports (mdPluginProcessor.cpp, makeProcessorProperties)
+			"MDMM_AU_SUBTYPE_MD=\"${MDMM_AU_SUBTYPE_MD}\""
+			"MDMM_AU_SUBTYPE_MM=\"${MDMM_AU_SUBTYPE_MM}\""
 			MDMM_DIAGNOSTICS=$<BOOL:${gearmulator_MDMM_DIAGNOSTICS}>
 			MDMM_EDITFLOW_DRIVER=$<BOOL:${gearmulator_MDMM_EDITFLOW_DRIVER}>)
 
@@ -262,9 +294,8 @@ function(mdmm_plugin_targets)
 		# and of what links it, so a bump rebuilt both plug-ins whole, JUCE's modules included. They go to the files
 		# that use them instead: the format wrappers (VST3, AU, Standalone: the versions hosts read), the two of
 		# ours that name JucePlugin_VersionString (mdPluginProcessor.cpp, mdStandaloneApp.cpp through
-		# standaloneApp.h; mdRecordMenu.cpp is in the _Standalone target) and upstream's serverPlugin.cpp (the
-		# bridge's plug-in description, bridge/client/plugin.h). A file that names them without having them does
-		# not compile.
+		# standaloneApp.h; mdRecordMenu.cpp is in the _Standalone target). A file that names them without having
+		# them does not compile.
 		set(_mdmmJuceVersionDefinitions "")
 		set(_mdmmVersionDefinition "^(JucePlugin_Version(String|Code)?|PluginVersion(Major|Minor|Patch))=")
 		foreach(_mdmmProperty COMPILE_DEFINITIONS INTERFACE_COMPILE_DEFINITIONS)
@@ -293,7 +324,7 @@ function(mdmm_plugin_targets)
 		endforeach()
 	endforeach()
 	# both plug-ins have the same version; their shared files are compiled once per plug-in with these
-	set_property(SOURCE mdPluginProcessor.cpp mdStandaloneApp.cpp serverPlugin.cpp
+	set_property(SOURCE mdPluginProcessor.cpp mdStandaloneApp.cpp
 		APPEND PROPERTY COMPILE_DEFINITIONS ${_mdmmJuceVersionDefinitions})
 	unset(_mdmmJuceVersionDefinitions)
 	unset(_mdmmDefinitions)
@@ -425,20 +456,6 @@ function(mdmm_plugin_targets)
 	add_test(NAME mdProcessorHooksTest COMMAND mdProcessorHooksTest)
 	set_tests_properties(mdProcessorHooksTest PROPERTIES LABELS "UnitTest;AudioIo" TIMEOUT 120)
 	set_property(TARGET mdProcessorHooksTest PROPERTY FOLDER "Elektron/test")
-
-	# upstreamTests/mcpServerTest.cpp: the MCP server above the HTTP layer (stop() wakes an SSE client's wait, a slow
-	# tool does not hold up tools/list, send_note's duration is clamped). Its JSON values are juce::var, so it is built
-	# here, with juce_core; it needs no plug-in.
-	set(_mdmmMcp ${CMAKE_CURRENT_SOURCE_DIR}/../../../mcpServerLib)
-	add_executable(mcpServerTest ../upstreamTests/mcpServerTest.cpp ../upstreamTests/loopbackClient.h
-		${_mdmmMcp}/mcpServer.cpp ${_mdmmMcp}/mcpServer.h ${_mdmmMcp}/httpServer.cpp ${_mdmmMcp}/httpServer.h)
-	target_link_libraries(mcpServerTest PRIVATE networkLib juce::juce_core)
-	target_compile_definitions(mcpServerTest PRIVATE
-		JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1 JUCE_STANDALONE_APPLICATION=1 JUCE_USE_CURL=0)
-	add_test(NAME mcpServerTest COMMAND mcpServerTest)
-	set_tests_properties(mcpServerTest PROPERTIES LABELS "UnitTest" TIMEOUT 120)
-	set_property(TARGET mcpServerTest PROPERTY FOLDER "Tests")
-	unset(_mdmmMcp)
 
 	add_executable(mdRomInstallTest mdRomInstallTest.cpp mdRomInstall.cpp)
 	target_include_directories(mdRomInstallTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
@@ -587,6 +604,12 @@ function(mdmm_plugin_targets)
 		# the pages on an older WebKit (B-001, macOS 12): the stylesheets without color-mix() and :focus-visible
 		add_test(NAME deskCompatPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskCompatTest.js)
 		set_tests_properties(deskCompatPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+		# selected steps (both editors, DESIGN-step-selection.md): the selection as a value, the select gesture, the keys, the step menu
+		add_test(NAME deskSelectPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskSelectTest.js)
+		set_tests_properties(deskSelectPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+		# 0.5 slice 5: the Sound page's rows and the GEN / MUTATE bars, one source for both editors
+		add_test(NAME deskSoundLayoutPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskSoundLayoutTest.js)
+		set_tests_properties(deskSoundLayoutPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
 		# the version both pages show is the one this build compiles in (MDMM_EDITOR_VERSION)
 		add_test(NAME deskAboutPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskAboutTest.js ${MDMM_EDITOR_VERSION})
 		set_tests_properties(deskAboutPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
@@ -695,6 +718,20 @@ function(mdmm_plugin_targets)
 		set_tests_properties(mdMachineMidiOutFirmwareTest_${m} PROPERTIES
 			LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 400)
 	endforeach()
+
+	# The built bundles carry the identity in scripts/mdmm-product.env (the AU codes, the VST3 class IDs that follow
+	# from them, the bundle identifiers) and not the codes up to 0.5.x, the original Gearmulator MD / MM's (B-048).
+	# Read-only: it looks at the products folder, installs nothing (no auval: that needs the AU registered).
+	find_package(Python3 COMPONENTS Interpreter QUIET)
+	if(Python3_Interpreter_FOUND AND TARGET mdJucePlugin_VST3 AND TARGET mmJucePlugin_VST3)
+		set(_mdmmIdentityArgs "${GEARMULATOR_JUCE_PRODUCTS_ROOT}/$<CONFIG>")
+		if(APPLE AND TARGET mdJucePlugin_AU AND TARGET mmJucePlugin_AU)
+			list(APPEND _mdmmIdentityArgs --require-au)
+		endif()
+		add_test(NAME mdmmIdentityTest COMMAND ${Python3_EXECUTABLE}
+			${CMAKE_CURRENT_SOURCE_DIR}/../../../../scripts/check_mdmm_plugin_ids.py ${_mdmmIdentityArgs})
+		set_tests_properties(mdmmIdentityTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+	endif()
 endfunction()
 
 cmake_language(DEFER CALL mdmm_plugin_targets)

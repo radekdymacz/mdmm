@@ -3,13 +3,17 @@
 // Port here drives an emulated machine. Manual: needs a user-supplied ROM.
 //
 //   mmDeskFirmwareTest <MM-ROM> [only]   only one part, e.g. machine (B-027: a machine change stays), pianoroll
-//                                        (B-050), ampenv (B-049: the amp envelope the editor draws is the firmware's)
+//                                        (B-050), ampenv (B-049: the amp envelope the editor draws is the firmware's),
+//                                        notelength (I-010: the piano roll's note lengths, stored and played),
+//                                        kitlink (B-053: the kit a pick of an A-D or E-H pattern plays), reclock
+//                                        (live recording: the step a value sent locks)
 //
 // Exits 77 (skip) without arguments.
 
 #include "contractCheck.h"
 #include "mdFirmwareSession.h"
 
+#include "elektronData/factoryGlobals.h"
 #include "elektronData/mmCommands.h"
 #include "elektronData/mmJson.h"
 #include "elektronData/mmKit.h"
@@ -24,6 +28,7 @@
 #include <functional>
 
 #include "mmDesk/mmDesk.h"
+#include "mmDesk/mmDeskModel.h"
 #include "mmDesk/mmDeskWirePort.h"
 #include "mmDesk/mmRecv.h"
 
@@ -37,6 +42,7 @@
 #include <fstream>
 #include <map>
 #include <set>
+#include <sstream>
 
 using namespace mdFirmwareSession;
 namespace ed = elektronData;
@@ -127,6 +133,10 @@ namespace
 				// the pattern the machine reports (to the desk's status polls), whatever the desk makes of it (B-031)
 				if(const auto s = ed::parseMmStatusResponse(_b); s && s->param == ed::MmStatus::Pattern)
 					machinePattern = s->value;
+				else if(s && s->param == ed::MmStatus::Kit)
+					machineKit = s->value;
+				if(tap)
+					tap(_b);
 				if(!hw)
 					replies.push_back(_b);
 				else if(!unplugged)
@@ -224,7 +234,9 @@ namespace
 		}};
 
 		std::vector<Bytes> replies;
+		std::function<void(const Bytes&)> tap;	// every SysEx the machine sends, for a test's own read (patternInMemory)
 		int machinePattern = -1;	// the last status reply's pattern
+		int machineKit = -1;		// the last status reply's kit (B-053)
 		size_t bytesSent = 0, dumpsSent = 0, ccsSent = 0;	// B-014: what the desk sent the machine
 		double ms() const { return m.now() * 1000.0 / g_rate; }
 
@@ -2562,6 +2574,312 @@ namespace
 
 namespace
 {
+	// B-051: an imported global with no channel for a track (CHANNEL SPAN 0, or the base channel OFF, as in a 2008
+	// backup) leaves the editor's sound values on T2-T6 unheard: they went as CCs on the track's channel. A sound edit
+	// must reach the machine (its memory) whatever the global's MIDI channels, and must not land on another track.
+	// The globals go in as an import does (SyxJob: the dump, then 0x56 for the active one); MM_SYX adds the user's own
+	// backup's globals, read in place (never copied).
+	void importGlobals(Rig& _r, const Bytes& _file, const std::string& _name)
+	{
+		mdJucePlugin::SyxJob<MmSyxTraits> job;
+		job.open(_file, _name, machineDocs(*_r.desk), {_r.desk->currentPattern(), _r.desk->currentKit(), _r.desk->currentSong(), _r.desk->currentGlobal()});
+		_r.desk->setSysexTap([&job](const Bytes& _m) { job.onMachineSysex(_m); });
+		const auto why = job.start({"global"}, {}, machineDocs(*_r.desk));
+		check(why.empty(), "the import of the globals starts" + (why.empty() ? std::string() : ": " + why));
+		const auto t0 = _r.ms();
+		while(job.running() && _r.ms() - t0 < 120000)
+		{
+			if(_r.desk->isInputReady())
+				if(auto p = job.step(_r.desk->machine(), _r.ms(), false))
+					g_contract(*p);
+			_r.run(10);
+		}
+		_r.desk->setSysexTap({});
+		_r.run(2000);
+	}
+
+	// B-051, F3: the global the machine ships with (every slot of a fresh machine is elektronData::mmFactoryGlobal; FACTORY_PRINT=1
+	// prints it raw), GLOBAL › Reset to defaults (span 0, base 4 and TEMPO SYNC changed, then globalReset: the factory global
+	// reads back, a mute reaches T1-T6), and the slot keys (globalSlot: the machine says the slot is active).
+	void factoryGlobal(const Bytes& _rom)
+	{
+		std::puts("factory global, Reset to defaults, the slot keys (B-051, F3)");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		const auto tLoad = r.ms();
+		while(r.desk->loaded() < 288 && r.ms() - tLoad < 60000)
+			r.run(100);
+		r.run(1000);
+		for(uint8_t s = 0; s < ed::MmGlobal::g_slots; ++s)
+		{
+			const auto g = r.desk->global(s);
+			if(g && std::getenv("FACTORY_PRINT"))
+			{
+				const auto raw = ed::mmGlobalRaw(*g);
+				std::printf("  MM factory global %d raw:", s + 1);
+				for(size_t i = 0; i < raw.size(); ++i) std::printf("%s0x%02x,", i % 16 ? " " : "\n    ", raw[i]);
+				std::printf("\n");
+			}
+			std::string diff;
+			if(g)
+			{
+				const auto a = ed::mmGlobalRaw(*g), b = ed::mmGlobalRaw(ed::mmFactoryGlobal(s));
+				for(size_t i = 0; i < a.size() && diff.size() < 120; ++i)
+					if(a[i] != b[i]) { char x[24]; std::snprintf(x, sizeof x, " %03zx:%02x/%02x", i, a[i], b[i]); diff += x; }
+				if(g->version != 3 || g->revision != 1) diff += " format " + std::to_string(g->version) + "." + std::to_string(g->revision);
+			}
+			check(g && *g == ed::mmFactoryGlobal(s), "global " + std::to_string(s + 1) + " of a fresh machine is elektronData::mmFactoryGlobal" + diff);
+		}
+		const auto cur = static_cast<uint8_t>(r.desk->currentGlobal());
+		r.msg(R"({"op":"globalMidi","g":7301,"span":0,"base":3,"clockIn":true})");
+		r.run(6000);
+		const auto g = r.desk->global(cur);
+		check(g && g->channelSpan == 0 && g->baseChannel == 3 && g->tempoSync == 1, "span 0, base 4, TEMPO SYNC EXT read back");
+		r.msg(R"({"op":"globalReset","g":7302})");
+		check(r.lastResult().find("ok")->asBool(), "globalReset taken");
+		r.run(6000);
+		const auto back = r.desk->global(cur);
+		check(back && *back == ed::mmFactoryGlobal(cur), "the active global reads back as the factory global (GLOBAL " + std::to_string(cur + 1) + ")");
+		r.run(7000);	// the channels settle (ChannelReach)
+		int landed = 0;
+		for(int t = 0; t < 6; ++t)
+		{
+			r.msg("{\"op\":\"mute\",\"t\":" + std::to_string(t) + ",\"on\":true}");
+			r.run(600);
+			landed += ((r.tel.mutes.load() >> t) & 1) == 1;
+			r.msg("{\"op\":\"mute\",\"t\":" + std::to_string(t) + ",\"on\":false}");
+			r.run(600);
+		}
+		check(landed == 6, "after the reset a mute reaches each of T1-T6 (" + std::to_string(landed) + " of 6)");
+		// the slot keys: GLOBAL 3 active, then back
+		const int to = cur == 2 ? 3 : 2;
+		r.msg("{\"op\":\"globalSlot\",\"slot\":" + std::to_string(to) + "}");
+		r.run(3000);
+		check(r.desk->currentGlobal() == to && r.desk->global(static_cast<uint8_t>(to)).has_value(), "globalSlot: GLOBAL " + std::to_string(to + 1) + " is active, read");
+		r.msg("{\"op\":\"globalSlot\",\"slot\":" + std::to_string(cur) + "}");
+		r.run(3000);
+		check(r.desk->currentGlobal() == cur, "and back to GLOBAL " + std::to_string(cur + 1));
+	}
+
+	// B-051, F3, measuring: what the global's undecoded bytes do (x07-x11, x30-x35, the 6 "control" bytes x36-x3b). Each byte
+	// set to 1 (0 when it is not 0; GPROBE_VAL another value), the global made active, then: the machine's MIDI out while it
+	// plays 1 s (clock F8, Start FA, Stop FC), a pattern picked (program change out), and a program change sent in on
+	// each channel (does the pattern follow).
+	void globalProbe(const Bytes& _rom)
+	{
+		std::puts("global probe (undecoded bytes)");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		const auto tLoad = r.ms();
+		while(r.desk->loaded() < 288 && r.ms() - tLoad < 60000)
+			r.run(100);
+		r.run(1000);
+		const auto cur = static_cast<uint8_t>(r.desk->currentGlobal());
+		const auto g0 = *r.desk->global(cur);
+		const auto raw0 = ed::mmGlobalRaw(g0);
+		std::printf("  factory raw:");
+		for(size_t i = 0; i < raw0.size(); ++i) std::printf("%s%02x", i % 32 ? " " : "\n   ", raw0[i]);
+		std::printf("\n");
+		int f8 = 0, fa = 0, fc = 0, pcs = 0, pcCh = -1, pcV = -1;
+		r.m.onMidi = [&](const synthLib::SMidiEvent& _e)
+		{
+			if(_e.a == 0xf8) ++f8; else if(_e.a == 0xfa) ++fa; else if(_e.a == 0xfc) ++fc;
+			else if((_e.a & 0xf0) == 0xc0) { ++pcs; pcCh = _e.a & 15; pcV = _e.b; }
+		};
+		const auto measure = [&](const char* _what)
+		{
+			f8 = fa = fc = pcs = 0; pcCh = pcV = -1;
+			r.msg(R"({"op":"play"})"); r.run(1000); r.msg(R"({"op":"stop"})"); r.run(600);
+			const int p0 = r.desk->currentPattern();
+			r.msg("{\"op\":\"select\",\"p\":" + std::to_string(p0 == 3 ? 4 : 3) + "}"); r.run(800);
+			const int pcOut = pcs, outCh = pcCh;
+			// program change in: on each channel in turn, a pattern the machine is not on
+			int inCh = -1;
+			for(int ch = 0; ch < 16 && inCh < 0; ++ch)
+			{
+				const int want = 10 + ch, before = r.desk->currentPattern();
+				r.out.push_back({static_cast<uint8_t>(0xc0 | ch), static_cast<uint8_t>(want)});
+				r.run(400);
+				if(r.desk->currentPattern() == want && before != want) inCh = ch;
+			}
+			std::printf("  %-22s clock out %3d, start %d, stop %d; PC out %d (ch %d); PC in: %s\n", _what, f8, fa, fc, pcOut, outCh + 1,
+				inCh < 0 ? "no" : ("ch " + std::to_string(inCh + 1)).c_str());
+			r.msg(R"({"op":"select","p":0})"); r.run(800);
+		};
+		measure("as booted");
+		std::vector<size_t> cand;
+		for(size_t i = 0x07; i < 0x12; ++i) cand.push_back(i);
+		for(size_t i = 0x30; i < 0x3c; ++i) cand.push_back(i);
+		if(const char* only = std::getenv("GPROBE_BYTES")) { cand.clear(); for(const char* q = only; *q;) { cand.push_back(std::strtoul(q, const_cast<char**>(&q), 16)); if(*q == ',') ++q; } }
+		for(const auto i : cand)
+		{
+			auto raw = raw0;
+			raw[i] = raw0[i] ? 0 : 1;
+			if(const char* v = std::getenv("GPROBE_VAL")) raw[i] = static_cast<uint8_t>(std::strtoul(v, nullptr, 16));
+			if(const char* also = std::getenv("GPROBE_ALSO"))	// "0c=1": another byte set with it
+				raw[std::strtoul(also, nullptr, 16)] = static_cast<uint8_t>(std::strtoul(std::strchr(also, '=') + 1, nullptr, 16));
+			r.msg(R"({"op":"set","kind":"global","doc":)" + ed::json::write(ed::mmGlobalToJson(*ed::mmGlobalFromRaw(raw, cur))) + "}");
+			r.run(5000);
+			char what[40];
+			std::snprintf(what, sizeof what, "byte %02zx %02x -> %02x:", i, raw0[i], raw[i]);
+			measure(what);
+			r.msg(R"({"op":"set","kind":"global","doc":)" + ed::json::write(ed::mmGlobalToJson(g0)) + "}");
+			r.run(5000);
+		}
+		r.m.onMidi = nullptr;
+	}
+
+	// B-051, measuring: which track a CC on each MIDI channel reaches, under a global with these channels (SPAN_PROBE=
+	// "base,span" 0-based, e.g. "12,6" or "0,0"). Prints a line per channel: the track whose AMP value moved.
+	void channelProbe(const Bytes& _rom)
+	{
+		const std::string spec = std::getenv("SPAN_PROBE") ? std::getenv("SPAN_PROBE") : "0,6";
+		const int base = std::atoi(spec.c_str()), span = std::atoi(spec.substr(spec.find(',') + 1).c_str());
+		std::printf("channel probe: base %d span %d\n", base, span);
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		const auto tLoad = r.ms();
+		while(r.desk->loaded() < 288 && r.ms() - tLoad < 60000)
+			r.run(100);
+		const auto cur = static_cast<uint8_t>(r.desk->currentGlobal());
+		ed::MmDocuments docs;
+		auto g = r.desk->documents().globals.at(cur);
+		g.baseChannel = static_cast<uint8_t>(base);
+		g.channelSpan = static_cast<uint8_t>(span);
+		docs.globals[cur] = g;
+		importGlobals(r, ed::writeSyx(docs), "probe");
+		r.run(5000);
+		for(uint8_t ch = 0; ch < 16; ++ch)
+		{
+			const auto before = workingKitInMemory(r);
+			uint8_t v = static_cast<uint8_t>(50 + ch);
+			while(std::any_of(before->tracks.begin(), before->tracks.end(), [&](const auto& _t) { return _t.pages[1][3] == v; }))
+				v = static_cast<uint8_t>((v + 1) & 127);
+			r.out.push_back({static_cast<uint8_t>(0xb0 | ch), 59, v});	// AMP page index 3
+			r.run(300);
+			const auto after = workingKitInMemory(r);
+			std::string hit;
+			for(size_t t = 0; t < 6; ++t)
+				if(after->tracks[t].pages[1][3] != before->tracks[t].pages[1][3])
+					hit += " T" + std::to_string(t + 1);
+			std::printf("    channel %2d (0-based %2d):%s\n", ch + 1, ch, hit.empty() ? " -" : hit.c_str());
+		}
+	}
+
+	void channelSpan(const Bytes& _rom)
+	{
+		std::puts("sound edits whatever the MIDI channels (B-051)");
+		struct Variant { std::string name; std::function<void(ed::MmGlobal&)> change; Bytes file; };
+		std::vector<Variant> variants{
+			{"CHANNEL SPAN 0", [](ed::MmGlobal& _g) { _g.channelSpan = 0; }, {}},
+			{"base channel OFF", [](ed::MmGlobal& _g) { _g.baseChannel = 127; }, {}},
+			{"base channel 13, span 6", [](ed::MmGlobal& _g) { _g.baseChannel = 12; _g.channelSpan = 6; }, {}},
+		};
+		if(const char* path = std::getenv("MM_SYX"); path && *path)
+		{
+			std::ifstream in(path, std::ios::binary);
+			if(in)
+				variants.push_back({"the backup's globals (MM_SYX)", {}, Bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>())});
+		}
+		const std::string only = std::getenv("SPAN_ONLY") ? std::getenv("SPAN_ONLY") : "";	// a part of a variant's name
+		for(const auto& v : variants)
+		{
+			if(!only.empty() && v.name.find(only) == std::string::npos)
+				continue;
+			std::printf("  %s\n", v.name.c_str());
+			Rig r(_rom);
+			r.msg(R"({"op":"ready"})");
+			r.desk->setProbe(mmDesk::Desk::Probe::Running);
+			r.run(600);
+			const auto tLoad = r.ms();
+			while(r.desk->loaded() < 288 && r.ms() - tLoad < 60000)
+				r.run(100);
+			r.run(1000);
+			if(v.change)
+			{
+				const auto cur = static_cast<uint8_t>(r.desk->currentGlobal());
+				ed::MmDocuments docs;
+				auto g = r.desk->documents().globals.at(cur);
+				v.change(g);
+				docs.globals[cur] = g;
+				importGlobals(r, ed::writeSyx(docs), v.name);
+			}
+			else
+				importGlobals(r, v.file, v.name);
+			const auto& gs = r.desk->documents().globals;
+			const auto gi = gs.find(static_cast<uint8_t>(r.desk->currentGlobal()));
+			check(gi != gs.end(), "the active global is read back");
+			if(gi == gs.end())
+				continue;
+			std::printf("    active global %d: base channel %d, span %d, auto %d, multi trig %d, multi map %d\n", gi->first + 1, gi->second.baseChannel,
+				gi->second.channelSpan, gi->second.autoChannel, gi->second.multiTrigChannel, gi->second.multiMapChannel);
+			const auto k = std::to_string(r.desk->currentKit());
+			int gesture = 5100;
+			for(int t = 0; t < 6; ++t)
+			{
+				const auto before = workingKitInMemory(r);
+				if(!before)
+				{
+					check(false, "the kit that plays is in memory");
+					break;
+				}
+				const int want = (before->tracks[static_cast<size_t>(t)].pages[1][3] + 41) % 128;
+				const int level = (before->levels[static_cast<size_t>(t)] + 23) % 128;
+				r.msg("{\"op\":\"param\",\"g\":" + std::to_string(++gesture) + ",\"k\":" + k + ",\"t\":" + std::to_string(t)
+					+ ",\"page\":1,\"i\":3,\"v\":" + std::to_string(want) + "}");
+				r.msg("{\"op\":\"level\",\"g\":" + std::to_string(++gesture) + ",\"k\":" + k + ",\"t\":" + std::to_string(t)
+					+ ",\"v\":" + std::to_string(level) + "}");
+				r.run(4000);
+				const auto after = workingKitInMemory(r);
+				const int got = after ? after->tracks[static_cast<size_t>(t)].pages[1][3] : -1;
+				const int gotLevel = after ? after->levels[static_cast<size_t>(t)] : -1;
+				std::string others;
+				for(size_t o = 0; after && o < 6; ++o)
+					if(static_cast<int>(o) != t && (after->tracks[o].pages[1][3] != before->tracks[o].pages[1][3] || after->levels[o] != before->levels[o]))
+						others += " T" + std::to_string(o + 1);
+				check(got == want && gotLevel == level, v.name + ": T" + std::to_string(t + 1) + "'s AMP value and level reach the machine (memory "
+					+ std::to_string(got) + "/" + std::to_string(gotLevel) + ", sent " + std::to_string(want) + "/" + std::to_string(level) + ")");
+				check(others.empty(), v.name + ": T" + std::to_string(t + 1) + "'s edit changes no other track" + (others.empty() ? "" : " (changed:" + others + ")"));
+				const auto w = r.desk->workingKit();
+				check(w && after && ed::mmKitRaw(*w) == ed::mmKitRaw(*after), v.name + ": the page's kit is the machine's");
+			}
+			// MULTI ENV: NRPN on the base channel (the track in the MSB), every track's
+			if(const auto before = workingKitInMemory(r))
+			{
+				const int want = (before->tracks[0].multiEnv[1] + 29) % 128;
+				r.msg("{\"op\":\"multiEnv\",\"g\":" + std::to_string(++gesture) + ",\"k\":" + k + ",\"i\":1,\"v\":" + std::to_string(want) + "}");
+				r.run(4000);
+				const auto after = workingKitInMemory(r);
+				const bool all = after && std::all_of(after->tracks.begin(), after->tracks.end(), [&](const auto& _t) { return _t.multiEnv[1] == want; });
+				check(all, v.name + ": a MULTI ENV value reaches every track (memory T1 " + std::to_string(after ? after->tracks[0].multiEnv[1] : -1)
+					+ ", sent " + std::to_string(want) + ")");
+			}
+			// the mute: CC 3 on the track's channel, refused with the reason where there is none (B-026)
+			for(int t = 0; t < 6; ++t)
+			{
+				const bool channel = ed::mmTrackChannel(gi->second, static_cast<uint8_t>(t)).has_value();
+				r.msg("{\"op\":\"mute\",\"t\":" + std::to_string(t) + ",\"on\":true}");
+				const bool taken = r.lastResult().find("ok")->asBool();
+				r.run(600);
+				const bool landed = ((r.tel.mutes.load() >> t) & 1) == 1;
+				check(taken == channel && landed == channel && (r.tel.mutes.load() & ~(1 << t) & 0x3f) == 0, v.name + ": T" + std::to_string(t + 1) + "'s mute "
+					+ (channel ? "lands" : "is refused, nothing muted") + " (" + (taken ? "taken" : "refused") + ", machine mutes "
+					+ std::to_string(r.tel.mutes.load()) + ")");
+				r.msg("{\"op\":\"mute\",\"t\":" + std::to_string(t) + ",\"on\":false}");
+				r.run(600);
+			}
+		}
+	}
+}
+
+namespace
+{
 	// B-049: the AMPLIFICATION envelope the editor draws (the catalogue's ampEnvelope, from ed::mmAmpAttackMs,
 	// mmAmpHoldSixteenths, mmAmpFallMs) is the one the firmware plays. GND-SIN on track 1, the filter open, one note;
 	// the output's level (RMS over 10 ms) against the level of a note with ATK 0 DEC 127 (the reference).
@@ -2729,6 +3047,531 @@ namespace
 	}
 }
 
+namespace
+{
+	// The pattern slot as the machine stores it: its own dump (request 0x68), not the desk's copy.
+	std::optional<ed::MmPattern> patternInMemory(Rig& _r, const int _slot)
+	{
+		std::optional<ed::MmPattern> got;
+		_r.tap = [&](const Bytes& _b)
+		{
+			if(!got && _b.size() > 7 && _b[6] == 0x67)
+				got = ed::decodeMmPattern(_b);
+		};
+		_r.out.push_back(ed::mmPatternRequest(static_cast<uint8_t>(_slot)));
+		for(int i = 0; i < 150 && !got; ++i)
+			_r.run(20);
+		_r.tap = nullptr;
+		return got;
+	}
+
+	std::string stepList(const uint64_t _mask, const size_t _len)
+	{
+		std::string s;
+		for(size_t i = 0; i < _len; ++i)
+			if(ed::mmStepSet(_mask, i))
+				s += (s.empty() ? "" : " ") + std::to_string(i + 1);
+		return s.empty() ? "-" : s;
+	}
+
+	// I-010 (0.5, the piano roll's note length): what the roll writes for a note of a length is what the machine
+	// stores and plays. A synth track has no LEN: the roll ends a note with a NOTE OFF trig where it ends (on the
+	// step after its last; past the pattern's end on the step it reaches when the pattern goes round), so a note of
+	// L steps is its trig and a NOTE OFF L steps later. The pattern is sent as the roll sends a drawn note (op steps),
+	// read back from the machine (its own dump) and played: each gate (GND-SIN, ATK 0, DEC 127 = holds until the NOTE
+	// OFF, REL 0) is measured from the output's level. A MIDI track has LEN (the MIDI page, lockable per step): each
+	// LEN measured on the machine's MIDI out, NOTE ON to NOTE OFF; LEN 127 plays until a NOTE OFF trig.
+	void noteLength(const Bytes& _rom)
+	{
+		std::puts("note length (I-010)");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		while(r.desk->loaded() < 288)
+			r.run(100);
+		r.run(1500);
+		// the pattern that plays (its own kit: a pattern dump reloads it, B-027), emptied, 32 steps
+		const int slot = r.desk->currentPattern(), len = 32;
+		r.msg("{\"op\":\"clearPattern\",\"g\":9390,\"p\":" + std::to_string(slot) + "}");
+		r.run(3000);
+		r.msg("{\"op\":\"length\",\"g\":9391,\"p\":" + std::to_string(slot) + ",\"v\":" + std::to_string(len) + "}");
+		r.run(3000);
+		r.msg(R"({"op":"tempo","bpm":120})");
+		r.run(100);
+		// T1's sound as the Sound page sets it: GND-SIN, ATK 0 HOLD 0
+		// DEC 127 (holds until the NOTE OFF) REL 0, the filter open, no delay, no LFO
+		int g = 9400;
+		r.msg("{\"op\":\"machine\",\"g\":" + std::to_string(++g) + ",\"k\":" + std::to_string(r.desk->currentKit()) + ",\"t\":0,\"model\":1,\"keepFx\":false}");
+		r.run(1500);
+		auto k = *r.desk->workingKit();
+		k.tracks[0].pages[0][7] = 64;
+		k.tracks[0].pages[1] = {0, 0, 127, 0, 0, 110, 64, 0};
+		k.tracks[0].pages[2] = {0, 127, 0, 0, 0, 0, 64, 64};
+		k.tracks[0].pages[3] = {64, 64, 0, 0, 64, 0, 0, 0};
+		for(size_t pg = 4; pg < 7; ++pg)
+			k.tracks[0].pages[pg][7] = 0;
+		for(int pg = 0; pg < 7; ++pg)
+			for(int i = 0; i < 8; ++i)
+			{
+				r.msg("{\"op\":\"param\",\"g\":" + std::to_string(++g) + ",\"k\":" + std::to_string(r.desk->currentKit()) + ",\"t\":0,\"page\":" + std::to_string(pg)
+					+ ",\"i\":" + std::to_string(i) + ",\"v\":" + std::to_string(k.tracks[0].pages[static_cast<size_t>(pg)][static_cast<size_t>(i)]) + "}");
+				r.run(30);
+			}
+		r.run(1500);
+		{
+			const auto mem = workingKitInMemory(r);
+			check(mem && mem->machines[0] == 1 && mem->tracks[0].pages[1] == k.tracks[0].pages[1], "the machine plays the test sound: T1 GND-SIN, ATK 0 HOLD 0 DEC 127 REL 0");
+		}
+
+		// the roll's notes: {step, steps long}; the last one runs past the end, its NOTE OFF on step 3
+		struct Drawn { int s, len, note; };
+		const std::vector<Drawn> synth{{4, 1, 48}, {7, 2, 50}, {11, 4, 52}, {17, 8, 53}, {28, 6, 55}};
+		std::string steps;
+		for(const auto& d : synth)
+		{
+			steps += std::string(steps.empty() ? "" : ",") + "[" + std::to_string(d.s) + R"(,{"n":[)" + std::to_string(d.note) + R"(],"a":1,"f":1,"l":1}])";
+			steps += ",[" + std::to_string((d.s + d.len) % len) + R"(,{"off":true}])";
+		}
+		// M1: LEN locked per note (the MIDI page's LEN, page 7 parameter 0), and a LEN 127 note ended by a NOTE OFF trig
+		struct Midi { int s, lenValue, note; };
+		const std::vector<Midi> midi{{0, 8, 60}, {2, 16, 62}, {6, 4, 64}, {8, 1, 65}, {10, 32, 67}, {16, 126, 69}, {24, 127, 71}};
+		const std::vector<int> midiOffs{13, 30};	// LEN 32 on step 11 cut by a NOTE OFF on 14; LEN 127 on step 25 ended on 31
+		std::string mSteps, mLocks;
+		for(const auto& d : midi)
+		{
+			mSteps += std::string(mSteps.empty() ? "" : ",") + "[" + std::to_string(d.s) + R"(,{"n":[)" + std::to_string(d.note) + R"(],"a":1,"f":1,"l":1}])";
+			mLocks += std::string(mLocks.empty() ? "" : ",") + "[7,0," + std::to_string(d.s) + "," + std::to_string(d.lenValue) + "]";
+		}
+		for(const int o : midiOffs)
+			mSteps += ",[" + std::to_string(o) + R"(,{"off":true}])";
+		r.msg("{\"op\":\"steps\",\"g\":9501,\"p\":" + std::to_string(slot) + R"(,"from":0,"to":32,"rows":[{"t":0,"steps":[)" + steps + R"(],"slide":[]},{"t":6,"steps":[)" + mSteps
+			+ R"(],"slide":[],"locks":[)" + mLocks + "]}]}");
+		r.run(6000);
+		const auto res = r.lastResult();
+		check(res.find("ok") && res.find("ok")->asBool(), "the roll's steps are taken: " + ed::json::write(res));
+
+		{
+			const auto kitNow = workingKitInMemory(r);
+			check(kitNow && kitNow->machines[0] == 1 && kitNow->tracks[0].pages[1] == k.tracks[0].pages[1], "after the roll's edit the machine still plays the test sound (B-027; T1 AMP "
+				+ (kitNow ? std::to_string(kitNow->tracks[0].pages[1][0]) + " " + std::to_string(kitNow->tracks[0].pages[1][1]) + " " + std::to_string(kitNow->tracks[0].pages[1][2]) + " "
+					+ std::to_string(kitNow->tracks[0].pages[1][3]) : std::string("?")) + ", machine " + (kitNow ? std::to_string(kitNow->machines[0]) : std::string("?")) + ")");
+		}
+		// stored: the machine's own dump of the slot
+		const auto mem = patternInMemory(r, slot);
+		check(!!mem, "the machine sends the pattern back");
+		if(!mem)
+			return;
+		uint64_t wantTrig = 0, wantOff = 0;
+		for(const auto& d : synth)
+		{
+			wantTrig |= ed::mmStepBit(static_cast<size_t>(d.s));
+			wantOff |= ed::mmStepBit(static_cast<size_t>((d.s + d.len) % len));
+		}
+		check(mem->pitch[0] == wantTrig && mem->amp[0] == wantTrig && mem->noteOff[0] == wantOff, "T1 stored: trigs on steps " + stepList(mem->pitch[0], len)
+			+ ", NOTE OFF on " + stepList(mem->noteOff[0], len) + " (want " + stepList(wantTrig, len) + " / " + stepList(wantOff, len) + ")");
+		bool notesOk = true;
+		for(const auto& d : synth)
+			notesOk = notesOk && mem->notes[0][static_cast<size_t>(d.s)] == d.note;
+		check(notesOk, "T1 stored: each note's pitch");
+		uint64_t wantMidi = 0;
+		for(const auto& d : midi)
+			wantMidi |= ed::mmStepBit(static_cast<size_t>(d.s));
+		check(mem->midiTrig[0] == wantMidi && mem->midiNoteOff[0] == (ed::mmStepBit(13) | ed::mmStepBit(30)), "M1 stored: trigs on " + stepList(mem->midiTrig[0], len)
+			+ ", NOTE OFF on " + stepList(mem->midiNoteOff[0], len));
+		{
+			const auto row = ed::mmLockRow(*mem, ed::MmLockParam{0, 7, 0});
+			bool ok = row >= 0;
+			for(const auto& d : midi)
+				ok = ok && mem->lockRows[static_cast<size_t>(row)][static_cast<size_t>(d.s)] == d.lenValue;
+			check(ok, "M1 stored: each note's LEN lock");
+		}
+
+		// played: the level, one value a ms; the MIDI out, NOTE ON and NOTE OFF frames per note
+		std::map<int, std::pair<uint64_t, uint64_t>> midiOut;	// note -> on, off (the last pass)
+		bool counting = false;
+		r.m.onMidi = [&](const synthLib::SMidiEvent& _e)
+		{
+			if(!counting)
+				return;
+			const auto st = _e.a & 0xf0;
+			if(st == 0x90 && _e.c > 0)
+				midiOut[_e.b] = {r.m.now(), 0};
+			else if((st == 0x80 || (st == 0x90 && _e.c == 0)) && midiOut.count(_e.b) && !midiOut[_e.b].second)
+				midiOut[_e.b].second = r.m.now();
+		};
+		r.msg(R"({"op":"play"})");
+		int last = -1, passes = 0;
+		uint64_t pass2 = 0, pass3 = 0;
+		while(passes < 3 || last < 6)
+		{
+			r.run(2);
+			const int st = r.tel.step.load();
+			if(st == last || st < 0 || st >= len)
+				continue;
+			if(st == 0 && last != 0)
+			{
+				++passes;
+				if(passes == 2)
+				{
+					pass2 = r.m.now();
+					counting = true;
+				}
+				if(passes == 3)
+					pass3 = r.m.now();
+			}
+			last = st;
+		}
+		r.msg(R"({"op":"stop"})");
+		r.run(500);
+		r.m.onMidi = nullptr;
+		const double stepMs = 125.0;	// 120 BPM, 1X
+		const double passMs = (pass3 - pass2) * 1000.0 / g_rate;
+		check(std::fabs(passMs - len * stepMs) < 25, "a pass is " + std::to_string(static_cast<int>(passMs)) + " ms (32 steps of 125 ms)");
+		const auto& l = r.m.left();
+		const size_t w = g_rate / 1000;
+		std::vector<double> lvl;
+		// 20 ms windows (C-3 is 7.6 ms a period), one a ms, centred: an edge is where the level crosses half
+		for(size_t i = static_cast<size_t>(pass2); i + 10 * w < l.size(); i += w)
+			lvl.push_back(rmsAt(l, i >= 10 * w ? i - 10 * w : 0, 20 * w));
+		double ref = 0;
+		for(const double v : lvl)
+			ref = std::max(ref, v);
+		check(ref > 1e-6, "T1 sounds");
+		if(std::getenv("MMDESK_TRACE"))
+			for(size_t i = 0; i < lvl.size() && i < 4200; i += 10)
+				std::printf("    %5zu ms %.4f %s\n", i, lvl[i] / ref, std::string(static_cast<size_t>(lvl[i] / ref * 40), '#').c_str());
+		// the gates of the second pass, in order: rising and falling through half the level
+		std::vector<std::pair<double, double>> gates;
+		bool on = !lvl.empty() && lvl[0] >= 0.5 * ref;
+		double from = 0;
+		for(size_t i = 1; i < lvl.size(); ++i)
+		{
+			const bool now = lvl[i] >= 0.5 * ref;
+			if(now && !on)
+				from = static_cast<double>(i);
+			else if(!now && on && from > 0)
+				gates.emplace_back(from, static_cast<double>(i));
+			on = now;
+		}
+		std::string got;
+		for(const auto& g : gates)
+			got += (got.empty() ? "" : ", ") + std::to_string(static_cast<int>(g.second - g.first)) + " ms";
+		std::printf("  T1 gates of the second pass: %s; %.0f Hz in the note of step 18\n", got.c_str(),
+			frequency(l, static_cast<size_t>(pass2 + static_cast<uint64_t>(17 * stepMs + 300) * g_rate / 1000), g_rate / 5));
+		check(gates.size() >= synth.size(), "T1: " + std::to_string(synth.size()) + " gates in the pass (" + std::to_string(gates.size()) + ")");
+		for(size_t i = 0; i < synth.size() && i < gates.size(); ++i)
+		{
+			const double ms = gates[i].second - gates[i].first, want = synth[i].len * stepMs;
+			// 20 ms: the level's window (20 ms, centred) and REL 0's fall (about 12 ms to -20 dB) lengthen a gate by some 13 ms
+			check(std::fabs(ms - want) <= 20, "T1 note on step " + std::to_string(synth[i].s + 1) + ", drawn " + std::to_string(synth[i].len) + " step"
+				+ (synth[i].len > 1 ? "s" : "") + ": sounds " + std::to_string(static_cast<int>(ms)) + " ms (" + std::to_string(static_cast<int>(want)) + ")");
+			if(i + 1 < synth.size() && i + 1 < gates.size())
+			{
+				// the trig to trig distance, to show the gate starts where the roll draws it
+				const double gap = gates[i + 1].first - gates[i].first, wantGap = (synth[i + 1].s - synth[i].s) * stepMs;
+				check(std::fabs(gap - wantGap) <= 20, "  and the next note starts " + std::to_string(static_cast<int>(gap)) + " ms later (" + std::to_string(static_cast<int>(wantGap)) + ")");
+			}
+		}
+		// M1: LEN ticks (6 a step), or less when the track's next trig or a NOTE OFF trig comes first; LEN 127 until one
+		for(size_t i = 0; i < midi.size(); ++i)
+		{
+			const auto& d = midi[i];
+			int next = len + midi[0].s;
+			for(size_t j = i + 1; j < midi.size(); ++j)
+				next = std::min(next, midi[j].s);
+			for(const int o : midiOffs)
+				if(o > d.s)
+					next = std::min(next, o);
+			const double want = d.lenValue >= 127 ? (next - d.s) * stepMs : std::min(d.lenValue * stepMs / 6, (next - d.s) * stepMs);
+			const auto it = midiOut.find(d.note);
+			const bool seen = it != midiOut.end() && it->second.second > it->second.first;
+			const double ms = seen ? (it->second.second - it->second.first) * 1000.0 / g_rate : -1;
+			check(seen && std::fabs(ms - want) <= 6, "M1 LEN " + std::to_string(d.lenValue) + " on step " + std::to_string(d.s + 1) + ": NOTE ON to NOTE OFF "
+				+ std::to_string(static_cast<int>(std::lround(ms))) + " ms on the MIDI out (" + std::to_string(static_cast<int>(std::lround(want))) + ": "
+				+ (d.lenValue >= 127 ? "to the NOTE OFF" : want < d.lenValue * stepMs / 6 ? "cut where the next trig or NOTE OFF is" : std::to_string(d.lenValue) + " ticks") + ")");
+		}
+	}
+}
+
+namespace
+{
+	// I-010 probe: MIDI LEN values against the length the machine plays (NOTE ON to NOTE OFF on its MIDI out), in ticks
+	// of 24 a quarter note (6 a step at 1X). A MIDI track's next trig ends the note before it, so the notes are spaced:
+	// one every `spacing` steps of a 64-step pattern, each with its own note number and LEN lock.
+	// MM_LENPROBE="bpm spacing v1 v2 ..." picks what is probed (default: 120 BPM, 12 steps apart, 1-126).
+	void midiLenProbe(const Bytes& _rom)
+	{
+		std::puts("MIDI LEN probe (I-010)");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		while(r.desk->loaded() < 288)
+			r.run(100);
+		auto p = *r.desk->pattern(64);
+		p.length = 64;
+		r.msg(R"({"op":"set","kind":"pattern","doc":)" + ed::json::write(ed::mmPatternToJson(p)) + "}");
+		r.run(1500);
+		r.msgConfirmed(R"({"op":"select","p":64})");
+		r.run(300);
+		int bpm = 120, spacing = 12;
+		std::vector<int> values;
+		if(const char* e = std::getenv("MM_LENPROBE"))
+		{
+			std::istringstream in(e);
+			in >> bpm >> spacing;
+			for(int v; in >> v;)
+				values.push_back(v);
+		}
+		if(values.empty())
+			for(int v = 1; v <= 126; ++v)
+				values.push_back(v);
+		r.msg("{\"op\":\"tempo\",\"bpm\":" + std::to_string(bpm) + "}");
+		r.run(100);
+		const double tickMs = 60000.0 / bpm / 24;
+		const int per = (64 + spacing - 1) / spacing;
+		int g = 9600;
+		std::string line;
+		for(size_t at = 0; at < values.size(); at += static_cast<size_t>(per))
+		{
+			std::string st, lk;
+			std::map<int, int> noteOf;	// note -> value
+			for(int k = 0; k < per && at + static_cast<size_t>(k) < values.size(); ++k)
+			{
+				const int s = k * spacing, v = values[at + static_cast<size_t>(k)], n = 30 + k;
+				noteOf[n] = v;
+				st += std::string(st.empty() ? "" : ",") + "[" + std::to_string(s) + R"(,{"n":[)" + std::to_string(n) + R"(],"a":1,"f":1,"l":1}])";
+				lk += std::string(lk.empty() ? "" : ",") + "[7,0," + std::to_string(s) + "," + std::to_string(v) + "]";
+			}
+			r.msg("{\"op\":\"steps\",\"g\":" + std::to_string(++g) + R"(,"p":64,"from":0,"to":64,"rows":[{"t":6,"steps":[)" + st + R"(],"slide":[],"locks":[)" + lk + "]}]}");
+			r.run(5000);
+			std::map<int, std::pair<uint64_t, uint64_t>> out;
+			bool counting = false;
+			r.m.onMidi = [&](const synthLib::SMidiEvent& _e)
+			{
+				const auto t = _e.a & 0xf0;
+				if(t == 0x90 && _e.c > 0 && counting && !out.count(_e.b))
+					out[_e.b] = {r.m.now(), 0};
+				else if((t == 0x80 || (t == 0x90 && _e.c == 0)) && out.count(_e.b) && !out[_e.b].second)
+					out[_e.b].second = r.m.now();
+			};
+			r.msg(R"({"op":"play"})");
+			int last = -1, passes = 0;
+			while(passes < 3)
+			{
+				r.run(2);
+				const int s = r.tel.step.load();
+				if(s == last || s < 0)
+					continue;
+				if(s == 0 && last != 0)
+					counting = ++passes == 2;
+				last = s;
+			}
+			r.msg(R"({"op":"stop"})");
+			r.run(600);
+			r.m.onMidi = nullptr;
+			for(const auto& [n, v] : noteOf)
+			{
+				const auto it = out.find(n);
+				const double ticks = it != out.end() && it->second.second > it->second.first ? (it->second.second - it->second.first) * 1000.0 / g_rate / tickMs : -1;
+				char b[32];
+				std::snprintf(b, sizeof(b), " %d:%.1f", v, ticks);
+				line += b;
+			}
+			std::printf("  %d BPM, LEN:ticks%s\n", bpm, line.c_str());
+			line.clear();
+		}
+	}
+}
+
+namespace
+{
+	// B-053: the kit the machine plays after a pattern pick, and after a roll edit of the pattern picked. Measured on the
+	// OS 1.32B: a pick in banks A-D (LOAD PATTERN 0x57 or the panel) loads the kit the pattern links, a pick in banks E-H
+	// loads none (the kit that played goes on). The editor asks before an A-D pick that loses the kit's unsaved edits,
+	// not before an E-H pick; a roll edit of the E-H pattern (its dump; the firmware loads the kit a dump of the
+	// pattern that plays links, B-027) keeps the kit that plays and its edits.
+	void kitLink(const Bytes& _rom)
+	{
+		std::puts("kit link (B-053)");
+		Rig r(_rom);
+		const int& statusKit = r.machineKit;
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		while(r.desk->loaded() < 288)
+			r.run(100);
+		r.run(1500);
+		const auto linkOf = [&](const int _p) { const auto p = r.desk->pattern(static_cast<uint8_t>(_p)); return p ? static_cast<int>(p->kit) : -1; };
+		const auto memKit = [&] { const auto k = workingKitInMemory(r); return k ? static_cast<int>(k->position) : -1; };
+		const auto asks = [&](const size_t _from)
+		{
+			std::string a;
+			for(size_t i = _from; i < r.page.size(); ++i)
+				if(r.page[i].find("type")->asString() == "ask")
+					a += (a.empty() ? "" : ", ") + r.page[i].find("ask")->asString();
+			return a;
+		};
+		require(r.desk->currentPattern() == 0 && r.desk->currentKit() == 0 && memKit() == 0, "A01 plays K001");
+		require(linkOf(1) == 1 && linkOf(64) != 0, "A02 links K002, E01 another kit than K001 (the emulator's own memory)");
+		std::printf("  E01 links K%03d\n", linkOf(64) + 1);
+
+		// K001 edited: T1's first AMP value
+		const auto mem0 = workingKitInMemory(r);
+		const int value = mem0->tracks[0].pages[1][0] == 40 ? 41 : 40;
+		r.msg("{\"op\":\"param\",\"g\":9601,\"k\":0,\"t\":0,\"page\":1,\"i\":0,\"v\":" + std::to_string(value) + "}");
+		r.run(1500);
+		const auto edited = [&] { const auto k = workingKitInMemory(r); return k && k->position == 0 && k->tracks[0].pages[1][0] == value; };
+		require(edited(), "the edit is in the kit that plays");
+
+		// an E-H pick: the machine keeps K001, nothing to ask
+		auto from = r.page.size();
+		r.msgConfirmed(R"({"op":"select","p":64})");	// confirmed if asked: the test goes on as a person would
+		r.run(1500);
+		check(asks(from).empty(), "picking E01 asks nothing (the machine loads no kit for E-H): " + asks(from));
+		check(r.machinePattern == 64 && statusKit == 0 && memKit() == 0 && r.desk->currentKit() == 0 && edited(),
+			"E01 picked: the machine plays K001 with its edit, and the editor says so (status kit " + std::to_string(statusKit) + ", memory "
+				+ std::to_string(memKit()) + ", desk " + std::to_string(r.desk->currentKit()) + ")");
+
+		// a roll edit of E01: its dump; the machine still plays K001 with its edit
+		r.msg(R"({"op":"steps","g":9602,"p":64,"from":0,"to":16,"rows":[{"t":0,"steps":[[4,{"n":[48],"a":1,"f":1,"l":1}]],"slide":[]}]})");
+		r.run(6000);
+		check(memKit() == 0 && r.desk->currentKit() == 0 && statusKit == 0, "after the roll edit of E01 the machine still plays K001 (memory "
+			+ std::to_string(memKit()) + ", status " + std::to_string(statusKit) + ")");
+		check(edited(), "and K001's unsaved edit is still there (B-027's restore)");
+		const auto e01 = patternInMemory(r, 64);
+		check(e01 && e01->notes[0][4] == 48 && e01->kit == 0, "E01 holds the note and now links K001, the kit that plays");
+		check(linkOf(64) == 0, "the editor shows E01 linking K001");
+
+		// an A-D pick that links another kit: asked (the edit is lost), then the machine plays K002
+		from = r.page.size();
+		r.msgConfirmed(R"({"op":"select","p":1})");
+		check(asks(from) == "discardKit", "picking A02 (K002) with K001 edited asks first: " + asks(from));
+		r.run(1500);
+		check(statusKit == 1 && memKit() == 1 && r.desk->currentKit() == 1, "A02 picked: the machine and the editor play K002");
+	}
+}
+
+namespace
+{
+	// recLock (MM parity, manual 1-49 / 1-57): while LIVE RECORDING, a kit value the editor sends (a CC on the track's
+	// channel) becomes a parameter lock on the step that plays when it arrives, a step without a trig too (measured:
+	// steps 1-6 of a pattern with trigs on 1, 5, 9, 13). The desk names that step (machine.desk.recLock) and the
+	// machine's pattern then holds the lock there. MM_RECLOCK="step page index" moves it (default "2 2 1": FILTER's
+	// second value on step 3).
+	void recLock(const Bytes& _rom)
+	{
+		std::puts("recLock (live recording)");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		while(r.desk->loaded() < 288)
+			r.run(100);
+		const uint8_t slot = static_cast<uint8_t>(r.desk->currentPattern());
+		auto p = *r.desk->pattern(slot);
+		p.length = 16;
+		for(auto* m : {&p.amp, &p.filter, &p.lfo, &p.noteOff, &p.midiTrig, &p.midiNoteOff, &p.pitch, &p.chord, &p.midiNote, &p.slide, &p.midiSlide})
+			m->fill(0);
+		for(auto& n : p.notes)
+			n.fill(ed::MmPattern::g_noNote);
+		for(auto& m : p.lockMasks)
+			m.fill(0);
+		for(auto& row : p.lockRows)
+			row.fill(ed::MmPattern::g_noLock);
+		p.lockRowCount = 0;
+		p.chordNotes.fill(0xffff);
+		p.chordNoteCount = 0;
+		p.midiNotes.fill(0xffff);
+		p.midiNoteCount = 0;
+		for(const uint8_t st : {0, 4, 8, 12})
+		{
+			for(auto* m : {&p.pitch, &p.amp, &p.filter, &p.lfo})
+				(*m)[0] |= ed::mmStepBit(st);
+			p.notes[0][st] = 48;
+		}
+		r.msg(R"({"op":"set","kind":"pattern","doc":)" + ed::json::write(ed::mmPatternToJson(p)) + "}");
+		r.run(3000);
+		int atStep = 2, page = 2, index = 1;
+		if(const char* e = std::getenv("MM_RECLOCK"))
+		{
+			std::istringstream in(e);
+			in >> atStep >> page >> index;
+		}
+		r.msg(R"({"op":"tempo","bpm":60})");
+		r.msg(R"({"op":"play"})");
+		r.run(1000);
+		r.msg(R"({"op":"record","mode":"live"})");
+		r.run(300);
+		std::printf("  recording %d\n", r.tel.recording.load());
+		int guard = 0;
+		while(r.tel.step.load() != 15 && guard++ < 2000)
+			r.run(5);
+		while(r.tel.step.load() != atStep && guard++ < 4000)
+			r.run(2);
+		const auto k = *r.desk->workingKit();
+		const int was = k.tracks[0].pages[static_cast<size_t>(page)][static_cast<size_t>(index)], v = was > 60 ? was - 30 : was + 30;
+		std::printf("  at step %d (index %d): T1 page %d value %d: %d -> %d\n", r.tel.step.load() + 1, r.tel.step.load(), page, index, was, v);
+		const int sentAt = r.tel.step.load();
+		r.msg("{\"op\":\"param\",\"g\":9701,\"k\":" + std::to_string(r.desk->currentKit()) + ",\"t\":0,\"page\":" + std::to_string(page) + ",\"i\":" + std::to_string(index)
+			+ ",\"v\":" + std::to_string(v) + "}");
+		r.run(50);
+		const auto named = [&]() -> std::optional<std::pair<int, int>>
+		{
+			const Value* doc = nullptr;
+			for(auto it = r.page.rbegin(); it != r.page.rend() && !doc; ++it)
+				if(it->find("type")->asString() == "machine")
+					doc = it->find("doc");
+			const auto* d = doc ? doc->find("desk") : nullptr;
+			const auto* l = d ? d->find("recLock") : nullptr;
+			if(!l || !l->isObject())
+				return std::nullopt;
+			return std::make_pair(static_cast<int>(l->find("param")->asNumber()), static_cast<int>(l->find("step")->asNumber()));
+		};
+		const auto said = named();
+		check(said && said->first == page * 8 + index && said->second == sentAt, "the desk names the step that plays: step " + std::to_string(sentAt + 1)
+			+ (said ? " (said " + std::to_string(said->second + 1) + ")" : " (nothing said)"));
+		r.run(3500);
+		check(!named(), "and stops naming it after about 3 s");
+		r.msg(R"({"op":"record","mode":"off"})");
+		r.run(800);
+		r.msg(R"({"op":"stop"})");
+		r.run(1000);
+		const auto q = patternInMemory(r, slot);
+		if(!q)
+		{
+			std::puts("  no pattern read");
+			return;
+		}
+		std::printf("  T1 masks pitch %s amp %s filter %s lfo %s\n", stepList(q->pitch[0], 16).c_str(), stepList(q->amp[0], 16).c_str(), stepList(q->filter[0], 16).c_str(),
+			stepList(q->lfo[0], 16).c_str());
+		std::printf("  lock rows %d:", q->lockRowCount);
+		for(int i = 0; i < q->lockRowCount; ++i)
+		{
+			std::printf(" [row %d mask t%d:", i, 0);
+			for(size_t st = 0; st < 16; ++st)
+				if(q->lockRows[static_cast<size_t>(i)][st] != ed::MmPattern::g_noLock)
+					std::printf(" s%zu=%d", st + 1, q->lockRows[static_cast<size_t>(i)][st]);
+			std::printf("]");
+		}
+		std::puts("");
+		for(uint8_t pg = 0; pg < 7; ++pg)
+			for(uint8_t i = 0; i < 8; ++i)
+			{
+				const auto row = ed::mmLockRow(*q, {0, pg, i});
+				if(row >= 0)
+					std::printf("  T1 page %d value %d locked (row %d)\n", pg, i, row);
+			}
+		const auto row = ed::mmLockRow(*q, {0, static_cast<uint8_t>(page), static_cast<uint8_t>(index)});
+		int landed = -1;
+		for(size_t st = 0; row >= 0 && st < 16 && landed < 0; ++st)
+			if(q->lockRows[static_cast<size_t>(row)][st] == v)
+				landed = static_cast<int>(st);
+		check(said && landed == said->second, "the machine locked the step the desk named (step " + std::to_string(landed + 1) + ")");
+	}
+}
+
 int main(const int _argc, char** _argv)
 {
 	std::setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -2804,6 +3647,14 @@ int main(const int _argc, char** _argv)
 			recording(rom);
 		if(only.empty() || only == "parked")
 			parkedKeys(rom);
+		if(only.empty() || only == "span")
+			channelSpan(rom);
+		if(only == "spanprobe")
+			channelProbe(rom);
+		if(only == "globalprobe")
+			globalProbe(rom);
+		if(only.empty() || only == "factoryglobal")
+			factoryGlobal(rom);
 		if(only == "machine")
 		{
 			machineStays(rom);
@@ -2813,6 +3664,14 @@ int main(const int _argc, char** _argv)
 			pianoRollKeepsSound(rom);
 		if(only == "ampenv")
 			ampEnvelope(rom);
+		if(only == "notelength")
+			noteLength(rom);
+		if(only.empty() || only == "kitlink")
+			kitLink(rom);
+		if(only.empty() || only == "reclock")
+			recLock(rom);
+		if(only == "lenprobe")
+			midiLenProbe(rom);
 		check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 		std::printf("%s (%d failures)\n", g_failures ? "FAIL" : "PASS", g_failures);
 		return g_failures ? 1 : 0;

@@ -183,12 +183,15 @@ other synth keeps upstream's. `sign_mdmm.sh` refuses to sign, and
 `build_mdmm_pkg.sh` to package, a bundle with any other identifier;
 `verify_mdmm_signed.sh` and `verify_mdmm_pkg_install.sh` check it.
 
-What does **not** change, so DAW projects and saved state still load:
+What the bundle identifier does **not** change: the VST3 class IDs and the AU
+codes, which JUCE derives from the manufacturer code and the plug-in code, never
+from the bundle identifier. Up to 0.5.x those were upstream's `GmPv` with
+`Tmdr` / `Tmno`, the same as the original Gearmulator MD / MM (B-048); since the
+release after 0.5.x they are Future Native Audio's own, `FNAu` with `Mded` /
+`Mmed`, set in `scripts/mdmm-product.env` (`MDMM_AU_*`; the full list of class
+IDs is in CLEANUP-BASELINE.md, "Shipped identities"). A DAW project saved with
+0.5.x or earlier needs the editor inserted again once. What stays:
 
-- the VST3 class IDs, which JUCE derives from the manufacturer code `GmPv` and
-  the plug-in code `Tmdr` / `Tmno`, never from the bundle identifier
-  (`ABCDEF019182FAEB476D5076546D6472` is the MD processor);
-- the AU type, subtype and manufacturer (`aumu Tmdr GmPv`, `aumu Tmno GmPv`);
 - the plug-in state format, and the data folder
   `~/Documents/Gearmulator Preview/<Machinedrum|Monomachine>/` with its
   `roms/`.

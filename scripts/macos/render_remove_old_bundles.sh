@@ -7,7 +7,7 @@
 #
 # build_mdmm_pkg.sh calls it for each component of each package; scripts/release/test_release_scripts.py calls it
 # with stand-ins for the macOS tools and runs the result against a temporary folder. Everything comes from
-# scripts/mdmm-product.env: the product and the old names, the two bundle identifiers.
+# scripts/mdmm-product.env: the product and the old names, the two bundle identifiers, the AU codes (current and old).
 #
 # MDMM_RENDER_PLISTBUDDY, _PKGUTIL, _STAT and _DSCL replace the absolute paths of the macOS tools the script
 # calls when it runs on a Mac (for the test only; the packaging never sets them).
@@ -25,28 +25,34 @@ template="${script_dir}/pkg-resources/remove-old-bundles"
 
 case "${machine}" in
   md) app_name="${MDMM_PRODUCT_NAME_MD}"; old_name="${MDMM_LEGACY_NAME_MD}"
-      bundle_id="${MDMM_BUNDLE_ID_MD}"; old_bundle_id="${MDMM_LEGACY_BUNDLE_ID_MD}"; au_subtype="${MDMM_AU_SUBTYPE_MD}" ;;
+      bundle_id="${MDMM_BUNDLE_ID_MD}"; old_bundle_id="${MDMM_LEGACY_BUNDLE_ID_MD}"; au_subtype="${MDMM_AU_SUBTYPE_MD}"
+      legacy_au_subtype="${MDMM_LEGACY_AU_SUBTYPE_MD}" ;;
   mm) app_name="${MDMM_PRODUCT_NAME_MM}"; old_name="${MDMM_LEGACY_NAME_MM}"
-      bundle_id="${MDMM_BUNDLE_ID_MM}"; old_bundle_id="${MDMM_LEGACY_BUNDLE_ID_MM}"; au_subtype="${MDMM_AU_SUBTYPE_MM}" ;;
+      bundle_id="${MDMM_BUNDLE_ID_MM}"; old_bundle_id="${MDMM_LEGACY_BUNDLE_ID_MM}"; au_subtype="${MDMM_AU_SUBTYPE_MM}"
+      legacy_au_subtype="${MDMM_LEGACY_AU_SUBTYPE_MM}" ;;
   *) echo "unknown machine: ${machine} (use md or mm)" >&2; exit 2 ;;
 esac
 # The package identifiers (the Installer receipts' names) are not the bundles': build_mdmm_pkg.sh.
 identifier="com.nativekloud.mdmm.${machine}"
 
-# old_id_counts: whether a bundle at the old name that carries upstream Gearmulator's identifier is ours. For the
-# plug-ins it is (same plug-in codes: a DAW would clash anyway); for the app it is not (a copy of upstream's own).
+# A bundle at the old name that carries upstream Gearmulator's identifier is never taken for ours: the original
+# Gearmulator MD / MM carry it too and, with the editors' own plug-in codes, may stay beside them.
 case "${kind}" in
-  app)  kind_text="standalone app"; extension="app"; folder="Applications"; old_id_counts=0 ;;
-  vst3) kind_text="VST3"; extension="vst3"; folder="Library/Audio/Plug-Ins/VST3"; old_id_counts=1 ;;
-  au)   kind_text="Audio Unit"; extension="component"; folder="Library/Audio/Plug-Ins/Components"; old_id_counts=1 ;;
+  app)  kind_text="standalone app"; extension="app"; folder="Applications" ;;
+  vst3) kind_text="VST3"; extension="vst3"; folder="Library/Audio/Plug-Ins/VST3" ;;
+  au)   kind_text="Audio Unit"; extension="component"; folder="Library/Audio/Plug-Ins/Components" ;;
   *) echo "unknown component: ${kind} (use app, vst3 or au)" >&2; exit 2 ;;
 esac
-# The AU only (B-048): its codes, to find an old copy of ours at any name in the folder. Empty for the app and VST3.
+# The AU only (B-048): its codes, current and up to 0.5.x, to find an old copy of ours at any name in the folder.
+# Empty for the app and VST3.
 au_manufacturer=""
+legacy_au_manufacturer=""
 if [[ "${kind}" == au ]]; then
   au_manufacturer="${MDMM_AU_MANUFACTURER}"
+  legacy_au_manufacturer="${MDMM_LEGACY_AU_MANUFACTURER}"
 else
   au_subtype=""
+  legacy_au_subtype=""
 fi
 old_path="${folder}/${old_name}.${extension}"
 new_path="${folder}/${app_name}.${extension}"
@@ -62,14 +68,19 @@ for value in "${app_name}" "${old_name}" "${old_path}" "${new_path}"; do
   fi
 done
 code_re='^([A-Za-z0-9]{4})?$'
-for value in "${au_subtype}" "${au_manufacturer}"; do
+for value in "${au_subtype}" "${au_manufacturer}" "${legacy_au_subtype}" "${legacy_au_manufacturer}"; do
   if [[ ! "${value}" =~ ${code_re} ]]; then
     echo "refusing an AU code that is not four letters or digits: ${value}" >&2
     exit 3
   fi
 done
-if [[ "${kind}" == au && ( -z "${au_subtype}" || -z "${au_manufacturer}" ) ]]; then
-  echo "the AU codes are missing from scripts/mdmm-product.env" >&2
+if [[ "${kind}" == au && ( -z "${au_subtype}" || -z "${au_manufacturer}" || -z "${legacy_au_subtype}"
+      || -z "${legacy_au_manufacturer}" ) ]]; then
+  echo "the AU codes (current and old) are missing from scripts/mdmm-product.env" >&2
+  exit 3
+fi
+if [[ "${kind}" == au && "${au_subtype}${au_manufacturer}" == "${legacy_au_subtype}${legacy_au_manufacturer}" ]]; then
+  echo "the AU codes equal the old ones (the original Gearmulator plug-ins'): nothing would tell them apart" >&2
   exit 3
 fi
 for value in "${bundle_id}" "${old_bundle_id}" "${receipt_id}"; do
@@ -96,10 +107,11 @@ sed -e "s|{{KIND}}|${kind_text}|g" \
     -e "s|{{NEW_PATH}}|${new_path}|g" \
     -e "s|{{BUNDLE_ID}}|${bundle_id}|g" \
     -e "s|{{OLD_BUNDLE_ID}}|${old_bundle_id}|g" \
-    -e "s|{{OLD_ID_COUNTS}}|${old_id_counts}|g" \
     -e "s|{{RECEIPT_ID}}|${receipt_id}|g" \
     -e "s|{{AU_SUBTYPE}}|${au_subtype}|g" \
     -e "s|{{AU_MANUFACTURER}}|${au_manufacturer}|g" \
+    -e "s|{{LEGACY_AU_SUBTYPE}}|${legacy_au_subtype}|g" \
+    -e "s|{{LEGACY_AU_MANUFACTURER}}|${legacy_au_manufacturer}|g" \
     -e "s|{{PLISTBUDDY}}|${plistbuddy}|g" \
     -e "s|{{PKGUTIL}}|${pkgutil}|g" \
     -e "s|{{STAT}}|${stat_tool}|g" \

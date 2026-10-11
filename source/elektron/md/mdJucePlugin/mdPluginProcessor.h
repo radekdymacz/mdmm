@@ -28,13 +28,8 @@ namespace mdJucePlugin
 
 	    AudioPluginAudioProcessor();
 		explicit AudioPluginAudioProcessor(md::MachineModel _model);
-		AudioPluginAudioProcessor(md::MachineModel _model, bool _allowMcpServer);
-		AudioPluginAudioProcessor(md::MachineModel _model, EphemeralConfig,
-			bool _allowMcpServer = false);
-		// The MCP server (upstream's AI-tool remote control) is off in the editors since 0.5: nothing of ours uses it,
-		// and an open local port is risk without value (doc/release/PLAN-0.5.md).
-		AudioPluginAudioProcessor(md::MachineModel _model,
-			std::vector<uint8_t> _initialPatchRam, bool _allowMcpServer = false);
+		AudioPluginAudioProcessor(md::MachineModel _model, EphemeralConfig);
+		AudioPluginAudioProcessor(md::MachineModel _model, std::vector<uint8_t> _initialPatchRam);
 	    ~AudioPluginAudioProcessor() override;
 
 		md::MachineModel getModel() const { return m_model; }
@@ -69,12 +64,15 @@ namespace mdJucePlugin
 		// speed-ups (md::Device::setSpeedUps). Identical audio, more host CPU. Kept in the plug-in's config.
 		void setLegacyEmulation(bool _legacy);
 		bool isLegacyEmulation();
+		// L3's opt-in (md::Device::setExactEssiTiming): exact serial-port timing on the Machinedrum, which changes
+		// its sound; acts only with the speed-ups on. Off by default; kept in the plug-in's config.
+		void setExactEssiTiming(bool _on);
+		bool isExactEssiTiming();
 		// The Machinedrum/Monomachine Editors' setup and session (mdDeskHost.h, doc/modern-ux/UPSTREAM.md).
 		class DeskHost* getDeskHost() const { return m_desk.get(); }
 
 	    jucePluginEditorLib::PluginEditorState* createEditorState() override;
 	    synthLib::Device* createDevice() override;
-		void getRemoteDeviceParams(synthLib::DeviceCreateParams& _params) const override;
 
 	    pluginLib::Controller* createController() override;
 		// MIDI mapping switched off (deskHost::midiMappingEnabled): no translator, so no learn code on the MIDI threads
@@ -91,8 +89,7 @@ namespace mdJucePlugin
 		static BusesProperties createBusesProperties();
 		bool isBusesLayoutSupported(const BusesLayout& _layout) const override;
 		AudioPluginAudioProcessor(md::MachineModel _model,
-			std::vector<uint8_t> _initialPatchRam, bool _allowMcpServer,
-			bool _ephemeralConfig,
+			std::vector<uint8_t> _initialPatchRam, bool _ephemeralConfig,
 			std::optional<std::string> _deviceHomePath = std::nullopt);
 		bool serviceDeferredStateRestore();
 		bool serviceStateRestoreFailure();

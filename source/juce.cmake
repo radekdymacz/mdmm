@@ -1,16 +1,9 @@
 option(${CMAKE_PROJECT_NAME}_BUILD_JUCEPLUGIN "Build Juce plugins" on)
-option(${CMAKE_PROJECT_NAME}_BUILD_FX_PLUGIN "Build FX plugin variants" off)
 
-option(${CMAKE_PROJECT_NAME}_BUILD_JUCEPLUGIN_VST2 "Build VST2 version of Juce plugins" on)
 option(${CMAKE_PROJECT_NAME}_BUILD_JUCEPLUGIN_VST3 "Build VST3 version of Juce plugins" on)
-option(${CMAKE_PROJECT_NAME}_BUILD_JUCEPLUGIN_CLAP "Build CLAP version of Juce plugins" on)
-option(${CMAKE_PROJECT_NAME}_BUILD_JUCEPLUGIN_LV2 "Build LV2 version of Juce plugins" off)
 option(${CMAKE_PROJECT_NAME}_BUILD_JUCEPLUGIN_AU "Build AU version of Juce plugins" on)
 option(${CMAKE_PROJECT_NAME}_BUILD_JUCEPLUGIN_Standalone "Build Standalone version of Juce plugins" off)
 
-set(USE_CLAP ${${CMAKE_PROJECT_NAME}_BUILD_JUCEPLUGIN_CLAP})
-set(USE_LV2 ${${CMAKE_PROJECT_NAME}_BUILD_JUCEPLUGIN_LV2})
-set(USE_VST2 ${${CMAKE_PROJECT_NAME}_BUILD_JUCEPLUGIN_VST2})
 set(USE_VST3 ${${CMAKE_PROJECT_NAME}_BUILD_JUCEPLUGIN_VST3})
 set(USE_AU ${${CMAKE_PROJECT_NAME}_BUILD_JUCEPLUGIN_AU})
 set(USE_Standalone ${${CMAKE_PROJECT_NAME}_BUILD_JUCEPLUGIN_Standalone})
@@ -27,31 +20,11 @@ if(USE_AU AND APPLE)
 	set_property(TARGET PluginFormat_AU PROPERTY FOLDER CustomTargets)
 endif()
 
-if(USE_VST2 AND JUCE_GLOBAL_VST2_SDK_PATH)
-    list(APPEND juce_formats VST)
-	list(APPEND plugin_formats VST2)
-	add_custom_target(PluginFormat_VST2)
-	set_property(TARGET PluginFormat_VST2 PROPERTY FOLDER CustomTargets)
-endif()
-
 if(USE_VST3)
     list(APPEND juce_formats VST3)
 	list(APPEND plugin_formats VST3)
 	add_custom_target(PluginFormat_VST3)
 	set_property(TARGET PluginFormat_VST3 PROPERTY FOLDER CustomTargets)
-endif()
-
-if(USE_LV2)
-    list(APPEND juce_formats LV2)
-    list(APPEND plugin_formats LV2)
-	add_custom_target(PluginFormat_LV2)
-	set_property(TARGET PluginFormat_LV2 PROPERTY FOLDER CustomTargets)
-endif()
-
-if(USE_CLAP)
-    list(APPEND plugin_formats CLAP)
-	add_custom_target(PluginFormat_CLAP)
-	set_property(TARGET PluginFormat_CLAP PROPERTY FOLDER CustomTargets)
 endif()
 
 if(USE_Standalone)
@@ -60,9 +33,6 @@ if(USE_Standalone)
 	add_custom_target(PluginFormat_Standalone)
 	set_property(TARGET PluginFormat_Standalone PROPERTY FOLDER CustomTargets)
 endif()
-
-add_custom_target(ServerPlugins)
-set_property(TARGET ServerPlugins PROPERTY FOLDER CustomTargets)
 
 add_library(juce_plugin_modules STATIC)
 
@@ -130,6 +100,12 @@ macro(createJucePlugin targetName productName isSynth plugin4CC binaryDataProjec
 	else()
 		set(pluginBundleId "local.gearmulator.preview.${productNameIdentifier}")
 	endif()
+	# A product can own its manufacturer code (GEARMULATOR_PLUGIN_MANUFACTURER_CODE_<target>); the others keep GmPv.
+	if(DEFINED GEARMULATOR_PLUGIN_MANUFACTURER_CODE_${targetName})
+		set(pluginManufacturerCode "${GEARMULATOR_PLUGIN_MANUFACTURER_CODE_${targetName}}")
+	else()
+		set(pluginManufacturerCode GmPv)
+	endif()
 	juce_add_plugin(${targetName}
 		# VERSION ...                                     # Set this if the plugin version is different to the project version
 		# ICON_BIG ...                                    # ICON_* arguments specify a path to an image file to use as an icon for the Standalone
@@ -144,7 +120,7 @@ macro(createJucePlugin targetName productName isSynth plugin4CC binaryDataProjec
 		COPY_PLUGIN_AFTER_BUILD FALSE                     # Should the plugin be installed to a default location after building?
 		MICROPHONE_PERMISSION_ENABLED TRUE               # Standalone exposes the physical stereo input
 		MICROPHONE_PERMISSION_TEXT "Gearmulator uses audio input for processing external instruments."
-		PLUGIN_MANUFACTURER_CODE GmPv                     # A four-character manufacturer id with at least one upper-case character
+		PLUGIN_MANUFACTURER_CODE ${pluginManufacturerCode} # A four-character manufacturer id with at least one upper-case character
 		PLUGIN_CODE ${plugin4CC}                          # A unique four-character plugin id with exactly one upper-case character
 		PRODUCTS_FOLDER "${GEARMULATOR_JUCE_PRODUCTS_ROOT}/$<CONFIG>"
 		                                                  # GarageBand 10.3 requires the first letter to be upper-case, and the remaining letters to be lower-case
@@ -165,7 +141,7 @@ macro(createJucePlugin targetName productName isSynth plugin4CC binaryDataProjec
 	set_property(TARGET ${targetName} PROPERTY
 		ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/shared-code/$<CONFIG>")
 
-	target_sources(${targetName} PRIVATE ${SOURCES} serverPlugin.cpp)
+	target_sources(${targetName} PRIVATE ${SOURCES})
 
 	source_group("source" FILES ${SOURCES})
 
@@ -193,13 +169,6 @@ macro(createJucePlugin targetName productName isSynth plugin4CC binaryDataProjec
 		createMacSetupScript(${productName})
 	endif()
 
-	set(clapFeatures "")
-	if(${isSynth})
-		list(APPEND clapFeatures instrument synthesizer)
-	else()
-		list(APPEND clapFeatures audio-effect synthesizer multi-effects)
-	endif()
-
 	if(TARGET ${targetName}_rc_lib)
 		set_property(TARGET ${targetName}_rc_lib PROPERTY FOLDER ${targetName})
 	endif()
@@ -208,25 +177,8 @@ macro(createJucePlugin targetName productName isSynth plugin4CC binaryDataProjec
 		set_property(TARGET ${binaryDataProject} PROPERTY FOLDER ${targetName})
 	endif()
 
-	if(USE_CLAP)
-		clap_juce_extensions_plugin(TARGET ${targetName}
-			CLAP_ID "com.theusualsuspects.${plugin4CC}"
-			CLAP_FEATURES ${clapFeatures}
-			CLAP_SUPPORT_URL "https://dsp56300.wordpress.com"
-			CLAP_MANUAL_URL "https://dsp56300.wordpress.com"
-			CLAP_USE_JUCE_PARAMETER_RANGES "DISCRETE"
-			)
-		set_property(TARGET ${targetName}_CLAP PROPERTY FOLDER ${targetName})
-		add_dependencies(${targetName}_All ${targetName}_CLAP)
-		add_dependencies(PluginFormat_CLAP ${targetName}_CLAP)
-	endif()
-
 	if(UNIX AND NOT APPLE)
 		target_link_libraries(${targetName} PUBLIC -static-libgcc -static-libstdc++)
-	endif()
-
-	if(USE_VST2)
-		add_dependencies(PluginFormat_VST2 ${targetName}_VST)
 	endif()
 
 	if(USE_VST3)
@@ -247,56 +199,17 @@ macro(createJucePlugin targetName productName isSynth plugin4CC binaryDataProjec
 		add_dependencies(PluginFormat_VST3 ${targetName}_VST3)
 	endif()
 
-	if(MSVC OR APPLE)
-		if(USE_VST2 AND JUCE_GLOBAL_VST2_SDK_PATH)
-			install(TARGETS ${targetName}_VST DESTINATION . COMPONENT ${productName}-VST2)
-			if(APPLE)
-				installMacSetupScript(. ${productName}-VST2)
-			endif()
-		endif()
-		if(USE_AU AND APPLE)
-			install(TARGETS ${targetName}_AU DESTINATION . COMPONENT ${productName}-AU)
-			installMacSetupScript(. ${productName}-AU)
-		endif()
-		if(USE_CLAP)
-			install(TARGETS ${targetName}_CLAP DESTINATION . COMPONENT ${productName}-CLAP)
-			if(APPLE)
-				installMacSetupScript(. ${productName}-CLAP)
-			endif()
-		endif()
-	elseif(UNIX)
-		if(USE_VST2 AND JUCE_GLOBAL_VST2_SDK_PATH)
-			install(TARGETS ${targetName}_VST LIBRARY DESTINATION lib/vst/ COMPONENT ${productName}-VST2)
-		endif()
-		if(USE_CLAP)
-			install(TARGETS ${targetName}_CLAP LIBRARY DESTINATION lib/clap/ COMPONENT ${productName}-CLAP)
-		endif()
+	if(USE_AU AND APPLE)
+		install(TARGETS ${targetName}_AU DESTINATION . COMPONENT ${productName}-AU)
+		installMacSetupScript(. ${productName}-AU)
 	endif()
 
+	# processorPropertiesInit.h reads the LV2 URI (LV2 itself is not built)
 	target_compile_definitions(${targetName} PUBLIC JucePlugin_Lv2Uri="$<TARGET_PROPERTY:${targetName},JUCE_LV2URI>")
-	
-	if(USE_LV2)
-		get_target_property(lv2OutputFolder ${targetName}_LV2 ARCHIVE_OUTPUT_DIRECTORY)
-		if(MSVC)
-			set(pattern "*.dll")
-		else()
-			set(pattern "*.so")
-		endif()
-		if(MSVC OR APPLE)
-			set(dest .)
-		else()
-			set(dest lib/lv2/)
-		endif()
-		install(DIRECTORY ${lv2OutputFolder}/${productName}.lv2 DESTINATION ${dest} COMPONENT ${productName}-LV2 FILES_MATCHING PATTERN ${pattern} PATTERN "*.ttl")
-		if(APPLE)
-			installMacSetupScript(${dest} ${productName}-LV2)
-		endif()
-		add_dependencies(PluginFormat_LV2 ${targetName}_LV2)
-	endif()
 
 	if(USE_AU AND APPLE AND ${isSynth})
 		add_test(NAME ${targetName}_AU_Validate COMMAND ${CMAKE_COMMAND} 
-			-DIDCOMPANY=GmPv
+			-DIDCOMPANY=${pluginManufacturerCode}
 			-DIDPLUGIN=${plugin4CC}
 			-DBINDIR=${CMAKE_BINARY_DIR}
 			-DCOMPONENT_NAME=${productName}
@@ -309,23 +222,12 @@ macro(createJucePlugin targetName productName isSynth plugin4CC binaryDataProjec
 		add_dependencies(PluginFormat_Standalone ${targetName}_Standalone)
 	endif()
 
-	if(USE_VST2)
-		addPluginTest(${targetName}_VST)
-	endif()
 	if(USE_VST3)
 		addPluginTest(${targetName}_VST3)
 	endif()
 	if(USE_AU AND APPLE AND ${isSynth})	# Apparently FX AU plugins are not supported by juce audio plugin host
 		addPluginTest(${targetName}_AU)
 	endif()
-	if(USE_LV2)
-		addPluginTest(${targetName}_LV2)
-	endif()
-
-	# CLAP hosting is not currently supported by the clap-juce-extensions
-#	if(USE_CLAP)
-#		addPluginTest(${targetName}_CLAP)
-#	endif()
 
 	set_target_properties(${targetName} PROPERTIES TUS_PRODUCT_NAME "${productName}")
 	set_target_properties(${targetName} PROPERTIES TUS_PLUGIN_FORMATS "${juce_formats}")
@@ -335,66 +237,5 @@ macro(createJucePlugin targetName productName isSynth plugin4CC binaryDataProjec
 	if(${isSynth})
 		tus_exportTarget(${targetName})
 	endif()
-
-	# ---------- add changelog to each plugin ----------
-	tus_registerChangelog(${targetName})
-
-	foreach(format IN LISTS plugin_formats)
-		string(REPLACE "FX" "" productNameClean ${productName})
-		install(FILES "${CMAKE_SOURCE_DIR}/doc/changelog_split/changelog_${productNameClean}.txt"
-			DESTINATION .
-			COMPONENT ${productName}-${format})
-	endforeach()
-
-	# --------- Server Plugin ---------
-
-	set(serverTarget ${productNameIdentifier}ServerPlugin)
-
-	add_library(${serverTarget} SHARED)
-
-	target_compile_definitions(${serverTarget} PUBLIC 
-		PluginName="${productName}"
-		PluginVersionMajor=${CMAKE_PROJECT_VERSION_MAJOR}
-		PluginVersionMinor=${CMAKE_PROJECT_VERSION_MINOR}
-		PluginVersionPatch=${CMAKE_PROJECT_VERSION_PATCH}
-		Plugin4CC="${plugin4CC}"
-	)
-	target_sources(${serverTarget} PRIVATE serverPlugin.cpp)
-	target_link_libraries(${serverTarget} ${synthLibProject} bridgeClient)
-	set_property(TARGET ${serverTarget} PROPERTY FOLDER ${targetName})
-
-	# build plugins to the "plugins" dir of the server binary output dir
-	get_target_property(serverOutputDir bridgeServer BINARY_DIR)
-
-	if(NOT serverOutputDir)
-		get_target_property(serverOutputDir bridgeServer RUNTIME_OUTPUT_DIRECTORY)
-	endif()
-	
-	if(serverOutputDir)
-		set_property(TARGET ${serverTarget} PROPERTY RUNTIME_OUTPUT_DIRECTORY "${serverOutputDir}/plugins")
-		set_property(TARGET ${serverTarget} PROPERTY LIBRARY_OUTPUT_DIRECTORY "${serverOutputDir}/plugins")
-
-		get_property(isMultiConfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
-		
-		if(isMultiConfig)
-			set_property(TARGET ${serverTarget} PROPERTY RUNTIME_OUTPUT_DIRECTORY_DEBUG "${serverOutputDir}/Debug/plugins")
-			set_property(TARGET ${serverTarget} PROPERTY RUNTIME_OUTPUT_DIRECTORY_RELEASE "${serverOutputDir}/Release/plugins")
-			set_property(TARGET ${serverTarget} PROPERTY LIBRARY_OUTPUT_DIRECTORY_DEBUG "${serverOutputDir}/Debug/plugins")
-			set_property(TARGET ${serverTarget} PROPERTY LIBRARY_OUTPUT_DIRECTORY_RELEASE "${serverOutputDir}/Release/plugins")
-		endif()
-	endif()
-
-	install(TARGETS ${serverTarget} 
-		RUNTIME DESTINATION plugins/ COMPONENT DSPBridgeServer 
-		LIBRARY DESTINATION plugins/ COMPONENT DSPBridgeServer)
-
-	add_dependencies(ServerPlugins ${serverTarget})
 endmacro()
 
-macro(createJucePluginWithFX targetName productName plugin4CCSynth plugin4CCFX binaryDataProject synthLibProject)
-	createJucePlugin(${targetName} "${productName}" TRUE "${plugin4CCSynth}" ${binaryDataProject} ${synthLibProject})
-
-	if(${CMAKE_PROJECT_NAME}_BUILD_FX_PLUGIN)
-		createJucePlugin(${targetName}_FX "${productName}FX" FALSE "${plugin4CCFX}" ${binaryDataProject} ${synthLibProject})
-	endif()
-endmacro()

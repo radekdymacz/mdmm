@@ -47,16 +47,15 @@ document.getElementById("main").addEventListener("pointermove", e => {
 });
 document.addEventListener("pointerup", () => { const d = Held.end("chop"); if (d) { d.c.dataset.moved = d.moved ? "1" : ""; Gesture.end(); } });
 
-/* ===== GEN and MUTATE values: dragged up or down, the wheel ===== */
+/* ===== GEN and MUTATE values: dragged up or down (their clicks, wheel and arrows: shared/deskGenBar.js) ===== */
 document.addEventListener("pointerdown", e => { const v = e.target.closest(".gv[data-gv]"); if (!v || e.button !== 0) return; Held.begin("gv", { v, y: e.clientY, k: v.dataset.gv, acc: 0 }); delete v.dataset.dragged; grabPointer(v, e); });
 document.addEventListener("pointermove", e => {
 	const g = Held.as("gv"); if (!g) return; const d = Math.trunc((g.y - e.clientY) / 6) - g.acc; if (!d) return;
-	Held.with("gv", { acc: g.acc + d }); g.v.dataset.dragged = "1"; genVal(g.k, d * (g.k === "dens" || g.k === "amt" || g.k === "racc" ? 2 : 1));
+	Held.with("gv", { acc: g.acc + d }); g.v.dataset.dragged = "1"; genVal(g.k, d * gvDragStep(g.k));
 	/* the bar was drawn again: the value's new element */
 	const n = document.querySelector(`.gv[data-gv="${g.k}"]`); if (n) { n.dataset.dragged = "1"; Held.with("gv", { v: n }); }
 });
 document.addEventListener("pointerup", () => { const g = Held.end("gv"); if (!g) return; const k = g.k; setTimeout(() => { const n = document.querySelector(`.gv[data-gv="${k}"]`); if (n) delete n.dataset.dragged; }, 0); });
-document.addEventListener("wheel", e => { const v = e.target.closest(".gv[data-gv]"); if (!v) return; e.preventDefault(); genVal(v.dataset.gv, ((e.deltaY || e.deltaX) < 0 ? 1 : -1) * (e.shiftKey ? 10 : 1)); }, { passive: false });
 
 /* ===== Rotate (mdDeskComforts.js): the presses while Alt is down are one run, one undo step ===== */
 addEventListener("keyup", e => { if (e.key === "Alt") Held.end("rotate"); }, true);
@@ -221,10 +220,7 @@ function selCell(e, d) {
 	const r = el?.closest("#seq .rul[data-s]"); return r ? { t: d.at.t, s: +r.dataset.s } : null;
 }
 /* where a dragged selection lands: moved by the drag, within the tracks and the steps shown */
-function selDropAt(d) {
-	const x = S.stepSel, t = clamp(x.t + d.at.t - d.from.t, 0, 16 - x.n), from = clamp(x.from + d.at.s - d.from.s, 0, V.len - 1);
-	return { t, n: x.n, from, to: Math.min(from + x.to - x.from, V.len) };
-}
+function selDropAt(d) { return StepSel.dropAt(S.stepSel, d, V.len, TRACKS); }
 main.addEventListener("pointerdown", e => {
 	if (e.button !== 0 || V.rec || S.ws !== "seq") return;
 	const st = e.target.closest("#seq .st"), ru = e.target.closest("#seq .rul[data-s]");
@@ -240,7 +236,8 @@ document.addEventListener("pointermove", e => {
 	if (e.buttons === 0 && e.pointerType === "mouse") { endSelect(); return; }
 	const c = selCell(e, d); if (!c || (c.t === d.at.t && c.s === d.at.s)) return;
 	const n = Held.with("select", { at: c, moved: true });
-	if (n.drop) syncSel(selDropAt(n)); else { S.stepSel = selBetween(n.from, n.at); syncSel(); }
+	const w = StepSel.during(n, S.stepSel, V.len, TRACKS);
+	if (w.ghost) syncSel(w.ghost); else { S.stepSel = w.sel; syncSel(); }
 });
 function endSelect() {
 	const d = Held.end("select"); if (!d) return;
@@ -248,9 +245,9 @@ function endSelect() {
 		const eat = e => { e.stopPropagation(); e.preventDefault(); };
 		addEventListener("click", eat, { capture: true, once: true }); setTimeout(() => removeEventListener("click", eat, true), 0);
 	}
-	if (d.drop && d.moved) { const g = selDropAt(d); syncSel(); selCopyTo(g.t, g.from); return; }
-	const x = S.stepSel;
-	const sel = d.extend && !d.moved && x ? selExtend(x, d.at) : selBetween(d.from, d.at);
+	const r = StepSel.end(d, S.stepSel, V.len, TRACKS);
+	if (r.drop) { syncSel(); selCopyTo(r.drop.t, r.drop.from); return; }
+	const sel = r.sel;
 	setSel(sel);
 	if (sel.t !== S.sel && sel.n === 1) select(sel.t);
 	toast(`Selected ${selSay(sel)} · ⌘C copy · ⌘X cut · ⌘V paste here · ⌘D duplicate · Delete (or Copy, Clr, Paste above) · right-click: more`);

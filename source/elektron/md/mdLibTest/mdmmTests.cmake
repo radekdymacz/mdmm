@@ -115,6 +115,10 @@ function(mdmm_add_lib_tests _dir)
 		set_tests_properties(mmAmpEnvelopeFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
 		add_test(NAME mmKitEditsStayFirmwareTest COMMAND mmDeskFirmwareTest ${GEARMULATOR_MM_ROM} machine)
 		set_tests_properties(mmKitEditsStayFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 900)
+		# I-010: the piano roll's note lengths as the machine stores them (its own dump) and plays them (T1's gates from
+		# the output, M1's LEN on the MIDI out)
+		add_test(NAME mmNoteLengthFirmwareTest COMMAND mmDeskFirmwareTest ${GEARMULATOR_MM_ROM} notelength)
+		set_tests_properties(mmNoteLengthFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
 	endif()
 	# B-031 on the Monomachine: the backup from MM_SYX, the ROM from GEARMULATOR_MM_FIRMWARE_BIN; skipped without them.
 	add_test(NAME mmSyxPickFirmwareTest COMMAND mmDeskFirmwareTest --env syxpick)
@@ -129,6 +133,14 @@ function(mdmm_add_lib_tests _dir)
 	add_test(NAME deskWirePortTest COMMAND deskWirePortTest)
 	set_tests_properties(deskWirePortTest PROPERTIES LABELS "UnitTest;Midi")
 	set_property(TARGET deskWirePortTest PROPERTY FOLDER "Elektron/test")
+
+	# P9: the sample list is copied raw on the audio thread (no allocation) and built by its reader (RESEARCH-emulation-cpu.md,
+	# "Around the core"). Needs GEARMULATOR_MD_FIRMWARE_BIN; skips without it.
+	add_executable(mdSampleScanFirmwareTest ${_dir}/mdSampleScanFirmwareTest.cpp)
+	target_link_libraries(mdSampleScanFirmwareTest PRIVATE mdLib)
+	add_test(NAME mdSampleScanFirmwareTest COMMAND mdSampleScanFirmwareTest)
+	set_tests_properties(mdSampleScanFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
+	set_property(TARGET mdSampleScanFirmwareTest PROPERTY FOLDER "Elektron/test")
 
 	# A state save captured under the plug-in's lock and encoded after it (codex review 2026-10, item 3): the
 	# table-driven CRC-32, and the capture's bytes against the encoder's (the firmware part needs

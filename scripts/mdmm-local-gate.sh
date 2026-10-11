@@ -250,18 +250,13 @@ stage_build() {
 	flags=(-DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="${ARCH}" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13
 		-DCMAKE_OSX_SYSROOT="${SDKROOT}" -DXCODE_VERSION="${XCODE_VERSION:-16}"
 		-DGEARMULATOR_MDMM_APPLE_THINLTO=ON -DGEARMULATOR_MDMM_APPLE_OPTIMIZE_DSP=ON
-		-DGEARMULATOR_MDMM_APPLE_PGO_MODE=none -DGEARMULATOR_MDMM_APPLE_PGO_PROFILE=
-		-DGEARMULATOR_JUCE_PRODUCTS_ROOT="${BUILD}/products" -DBUILD_TESTING=ON
-		-Dgearmulator_BUILD_FX_PLUGIN=OFF -Dgearmulator_SYNTH_ELEKTRON=ON -Dgearmulator_SYNTH_OSIRUS=OFF
-		-Dgearmulator_SYNTH_OSTIRUS=OFF -Dgearmulator_SYNTH_VAVRA=OFF -Dgearmulator_SYNTH_XENIA=OFF
-		-Dgearmulator_SYNTH_NODALRED2X=OFF -Dgearmulator_SYNTH_JE8086=OFF)
+		-DGEARMULATOR_MDMM_APPLE_PGO_MODE=committed -DGEARMULATOR_MDMM_APPLE_PGO_PROFILE=
+		-DGEARMULATOR_JUCE_PRODUCTS_ROOT="${BUILD}/products" -DBUILD_TESTING=ON)
 	if [ "${QUICK}" = 1 ]; then
 		flags+=(-Dgearmulator_BUILD_JUCEPLUGIN=OFF)
 	else
-		flags+=(-Dgearmulator_BUILD_JUCEPLUGIN=ON -Dgearmulator_BUILD_JUCEPLUGIN_VST2=OFF
-			-Dgearmulator_BUILD_JUCEPLUGIN_VST3=ON -Dgearmulator_BUILD_JUCEPLUGIN_CLAP=OFF
-			-Dgearmulator_BUILD_JUCEPLUGIN_LV2=OFF -Dgearmulator_BUILD_JUCEPLUGIN_AU=ON
-			-Dgearmulator_BUILD_JUCEPLUGIN_Standalone=ON)
+		flags+=(-Dgearmulator_BUILD_JUCEPLUGIN=ON -Dgearmulator_BUILD_JUCEPLUGIN_VST3=ON
+			-Dgearmulator_BUILD_JUCEPLUGIN_AU=ON -Dgearmulator_BUILD_JUCEPLUGIN_Standalone=ON)
 	fi
 	# JUCE runs each VST3 while it builds it: that load gets a data root inside the build tree (no ROM in it).
 	mkdir -p "${home}/Documents"
@@ -303,6 +298,14 @@ stage_build() {
 	local built
 	built="$(cache_value CMAKE_BUILD_TYPE:STRING) ${ARCH}, ThinLTO $(cache_value GEARMULATOR_MDMM_APPLE_THINLTO:BOOL)"
 	built+=", DSP optimisation $(cache_value GEARMULATOR_MDMM_APPLE_OPTIMIZE_DSP:BOOL)"
+	# The committed PGO profile (L6): applied, stale (retrain: scripts/macos/train_mdmm_pgo.sh) or missing.
+	built+=", PGO $(cache_value GEARMULATOR_MDMM_APPLE_OPTIMIZATION_APPLIED_PGO_MODE:INTERNAL)"
+	if [ -n "$(cache_value GEARMULATOR_MDMM_APPLE_PGO_FALLBACK:INTERNAL)" ]; then
+		built+=" (NOT applied: $(cache_value GEARMULATOR_MDMM_APPLE_PGO_FALLBACK:INTERNAL))"
+	elif [ -n "$(cache_value GEARMULATOR_MDMM_APPLE_PGO_STALE:INTERNAL)" ]; then
+		built+=" (STALE for $(cache_value GEARMULATOR_MDMM_APPLE_PGO_STALE:INTERNAL): retrain before the tag,"
+		built+=" scripts/macos/train_mdmm_pgo.sh)"
+	fi
 	if [ "${QUICK}" = 1 ]; then built+=", NO plug-ins (--quick)"; fi
 	stage_end PASS "${built}; ${registered}"
 }
@@ -479,6 +482,7 @@ golden_one() {
 	local log extra=() status=0 verdict detail
 	log="${OUT}/goldens/${index}.log"
 	[ "${speedups}" = off ] && extra=(GEARMULATOR_MDMM_SPEEDUPS=0)
+	[ "${speedups}" = on+exact-essi ] && extra=(GEARMULATOR_MDMM_EXACT_ESSI=1)	# L3's opt-in, own goldens
 	local flags=(--scenario "${scenario}" --outputs "${outputs}" --golden "${GOLDENS}")
 	[ "${mode}" = record ] && flags+=(--record)
 	run_box 1800 "${log}" ${extra[@]+"${extra[@]}"} "${PERF}" "$(rom_for "${model}")" "${model}" "${seconds}" \
@@ -572,7 +576,7 @@ BANNER
 		sed 's/;*$//')"
 	if [ "${bad}" = 0 ] && [ "${total}" -gt 0 ]; then
 		equal="${pass} of ${total} runs equal their golden"
-		stage_end PASS "${equal} (scenarios x stereo/all x speed-ups on/off, bit-exact)"
+		stage_end PASS "${equal} (scenarios x stereo/all x speed-ups on/off, plus the L3 opt-in where recorded; each bit-exact to its golden)"
 	else
 		stage_end FAIL "${pass} of ${total} runs equal their golden" "${notes:-no runs}; logs ${OUT}/goldens"
 	fi
@@ -938,6 +942,8 @@ record_identity() {
 	info_set build_dir "${BUILD}"; info_set arch "${ARCH}"; info_set started "${STARTED}"
 	info_set thinlto "$(cache_value GEARMULATOR_MDMM_APPLE_THINLTO:BOOL)"
 	info_set dsp_optimised "$(cache_value GEARMULATOR_MDMM_APPLE_OPTIMIZE_DSP:BOOL)"
+	info_set pgo "$(cache_value GEARMULATOR_MDMM_APPLE_OPTIMIZATION_APPLIED_PGO_MODE:INTERNAL)"
+	info_set pgo_stale "$(cache_value GEARMULATOR_MDMM_APPLE_PGO_STALE:INTERNAL)"
 	info_set build_type "$(cache_value CMAKE_BUILD_TYPE:STRING)"
 	info_set host "$(sysctl -n machdep.cpu.brand_string 2> /dev/null || uname -m)"
 	info_set macos "$(sw_vers -productVersion 2> /dev/null || echo ?)"

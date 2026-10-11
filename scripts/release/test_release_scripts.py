@@ -4,9 +4,11 @@
 The RFC 8032 vectors, the signing statement, latest.json with and without the key, the key check against
 updateKey.h, and the site's version line. Uses a throw-away test key, never a release key.
 
-Also the macOS installer's clean-up of the old Gearmulator MD / MM bundles (scripts/macos/pkg-resources/
-remove-old-bundles, B-032): the name list in scripts/mdmm-product.env, and the rendered script run against
-a temporary folder with stand-ins for the macOS tools. It never touches the real /Library or home folder.
+Also the plug-in identity (scripts/mdmm-product.env: the AU codes the build and the installer use, not the codes
+up to 0.5.x that the original Gearmulator MD / MM share, B-048), and the macOS installer's clean-up of old copies of
+the editors (scripts/macos/pkg-resources/remove-old-bundles, B-032): the name list in scripts/mdmm-product.env, and
+the rendered script run against a temporary folder with stand-ins for the macOS tools. It never touches the real
+/Library or home folder. The built bundles' codes: scripts/check_mdmm_plugin_ids.py (ctest mdmmIdentityTest).
 """
 
 import base64
@@ -172,16 +174,17 @@ AU_COMPONENTS = ('<key>AudioComponents</key>\n<array>\n<dict>\n<key>type</key>\n
 EXPECT = {
     "md": {"new": "Machinedrum Editor", "old": "Gearmulator MD", "id": "com.nativekloud.machinedrum-editor",
            "old_id": "local.gearmulator.preview.GearmulatorMD", "other_old": "Gearmulator MM",
-           "subtype": "Tmdr", "other_subtype": "Tmno"},
+           "subtype": "Mded", "other_subtype": "Mmed", "legacy_subtype": "Tmdr"},
     "mm": {"new": "Monomachine Editor", "old": "Gearmulator MM", "id": "com.nativekloud.monomachine-editor",
            "old_id": "local.gearmulator.preview.GearmulatorMM", "other_old": "Gearmulator MD",
-           "subtype": "Tmno", "other_subtype": "Tmdr"},
+           "subtype": "Mmed", "other_subtype": "Mded", "legacy_subtype": "Tmno"},
 }
-AU_MANUFACTURER = "GmPv"
-KINDS = {  # kind -> (folder below the install root, bundle extension, may the old upstream identifier remove it)
-    "app": ("Applications", "app", False),
-    "vst3": ("Library/Audio/Plug-Ins/VST3", "vst3", True),
-    "au": ("Library/Audio/Plug-Ins/Components", "component", True),
+AU_MANUFACTURER = "FNAu"  # Future Native Audio's own (RND-4X uses it too)
+LEGACY_AU_MANUFACTURER = "GmPv"  # up to 0.5.x, and the original Gearmulator MD / MM's
+KINDS = {  # kind -> (folder below the install root, bundle extension)
+    "app": ("Applications", "app"),
+    "vst3": ("Library/Audio/Plug-Ins/VST3", "vst3"),
+    "au": ("Library/Audio/Plug-Ins/Components", "component"),
 }
 
 env_file = read_env(os.path.join(REPO, "scripts", "mdmm-product.env"))
@@ -195,17 +198,42 @@ for machine, e in EXPECT.items():
 with open(os.path.join(REPO, "source", "elektron", "md", "mdJucePlugin", "mdmmPlugins.cmake")) as f:
     cmake_text = f.read()
 # The AU codes the preinstall looks for (B-048) are the build's: the env file, the plug-ins' CMakeLists, juce.cmake.
-check(env_file.get("MDMM_AU_MANUFACTURER") == AU_MANUFACTURER, "the product env file's AU manufacturer is GmPv")
+check(env_file.get("MDMM_AU_MANUFACTURER") == AU_MANUFACTURER,
+      "the product env file's AU manufacturer is %s" % AU_MANUFACTURER)
+check(env_file.get("MDMM_LEGACY_AU_MANUFACTURER") == LEGACY_AU_MANUFACTURER,
+      "the product env file's old AU manufacturer is %s" % LEGACY_AU_MANUFACTURER)
 with open(os.path.join(REPO, "source", "elektron", "md", "mdJucePlugin", "CMakeLists.txt")) as f:
     plugins_cmake = f.read()
 with open(os.path.join(REPO, "source", "juce.cmake")) as f:
-    check(re.search(r"PLUGIN_MANUFACTURER_CODE %s\b" % AU_MANUFACTURER, f.read()) is not None,
-          "juce.cmake's manufacturer code is the env file's")
+    juce_cmake = f.read()
+# The build takes the codes from the env file: juce.cmake's hook, set by mdmmPlugins.cmake; the plug-in codes are
+# createJucePlugin's argument.
+check(re.search(r"PLUGIN_MANUFACTURER_CODE \$\{pluginManufacturerCode\}", juce_cmake) is not None
+      and "-DIDCOMPANY=${pluginManufacturerCode}" in juce_cmake,
+      "juce.cmake takes the manufacturer code (and auval's) from the per-target hook")
 for machine, e in EXPECT.items():
+    check(re.search(r'set\(GEARMULATOR_PLUGIN_MANUFACTURER_CODE_%sJucePlugin "\$\{MDMM_AU_MANUFACTURER\}"\)' % machine,
+                    cmake_text) is not None,
+          "%s: mdmmPlugins.cmake sets the manufacturer code from the env file" % machine)
     check(env_file.get("MDMM_AU_SUBTYPE_" + machine.upper()) == e["subtype"],
           "%s: the product env file's AU subtype is %s" % (machine, e["subtype"]))
-    check(re.search(r'createJucePlugin\(%sJucePlugin "[^"]*" TRUE "%s"' % (machine, e["subtype"]), plugins_cmake)
-          is not None, "%s: the build's plug-in code is the env file's AU subtype" % machine)
+    check(env_file.get("MDMM_LEGACY_AU_SUBTYPE_" + machine.upper()) == e["legacy_subtype"],
+          "%s: the product env file's old AU subtype is %s" % (machine, e["legacy_subtype"]))
+    check(re.search(r'createJucePlugin\(%sJucePlugin "[^"]*" TRUE "\$\{MDMM_AU_SUBTYPE_%s\}"'
+                    % (machine, machine.upper()), plugins_cmake) is not None,
+          "%s: the build's plug-in code is the env file's AU subtype" % machine)
+# The old codes are gone from the build: the shipped targets, the processor, the editor (the test probes keep theirs:
+# they are never installed). The built bundles: scripts/check_mdmm_plugin_ids.py.
+with open(os.path.join(REPO, "source", "elektron", "md", "mdJucePlugin", "mdPluginProcessor.cpp")) as f:
+    processor_cpp = f.read()
+with open(os.path.join(REPO, "source", "jucePluginEditorLib", "pluginEditor.cpp")) as f:
+    editor_cpp = f.read()
+shipped_lines = "\n".join(l for l in plugins_cmake.splitlines() if "createJucePlugin(" in l)
+for old in ("Tmdr", "Tmno", "GmPv"):
+    check(old not in shipped_lines and old not in processor_cpp and old not in editor_cpp
+          and ('"%s"' % old) not in cmake_text,
+          "the old code %s is not in the editors' build or code" % old)
+check("PLUGIN_MANUFACTURER_CODE GmPv" not in juce_cmake, "juce.cmake no longer hard-codes GmPv for every target")
 for machine, e in EXPECT.items():
     found = re.search(r'GEARMULATOR_PLUGIN_BUNDLE_ID_%sJucePlugin "([^"]+)"' % machine, cmake_text)
     check(found is not None and found.group(1) == e["id"],
@@ -238,7 +266,8 @@ if (os.name == "posix" and os.path.exists("/bin/sh") and os.path.exists("/usr/bi
         print("  (the property-list reader: %s)"
               % ("the real PlistBuddy" if os.path.exists(real_plistbuddy) else "a stand-in"))
 
-        def make_bundle(root, folder, name, ext, identifier, executable, link_to=None, au_subtype=None):
+        def make_bundle(root, folder, name, ext, identifier, executable, link_to=None, au_subtype=None,
+                        au_manufacturer=AU_MANUFACTURER):
             path = os.path.join(root, folder, "%s.%s" % (name, ext))
             os.makedirs(os.path.dirname(path), exist_ok=True)
             if link_to:
@@ -247,13 +276,13 @@ if (os.name == "posix" and os.path.exists("/bin/sh") and os.path.exists("/usr/bi
             os.makedirs(os.path.join(path, "Contents", "MacOS"))
             with open(os.path.join(path, "Contents", "Info.plist"), "w") as f:
                 f.write(PLIST % (identifier, executable,
-                                 AU_COMPONENTS % (au_subtype, AU_MANUFACTURER) if au_subtype else ""))
+                                 AU_COMPONENTS % (au_subtype, au_manufacturer) if au_subtype else ""))
             with open(os.path.join(path, "Contents", "MacOS", executable), "w") as f:
                 f.write("x")
             return path
 
         for machine, e in EXPECT.items():
-            for kind, (folder, ext, old_id_counts) in KINDS.items():
+            for kind, (folder, ext) in KINDS.items():
                 label = "%s %s" % (machine, kind)
                 script = os.path.join(tmp, "preinstall-%s-%s" % (machine, kind))
                 r = subprocess.run([os.path.join(MACOS, "render_remove_old_bundles.sh"), machine, kind, script],
@@ -315,21 +344,23 @@ if (os.name == "posix" and os.path.exists("/bin/sh") and os.path.exists("/usr/bi
                       "%s: the current, the other machine's, unrelated, other-path and other users' bundles stay"
                       % label)
 
-                # ---- upstream's identifier (0.3.0 and earlier) at the exact old path
+                # ---- upstream's identifier at the exact old path: the original Gearmulator plug-in (or our 0.3.0
+                # and earlier, which nothing tells apart from it). Since the editors have their own codes it stays,
+                # beside the editor, with the old codes it registers.
                 case2 = os.path.join(tmp, "case2-" + label.replace(" ", "-"))
                 root2, home2 = os.path.join(case2, "root"), os.path.join(case2, "home")
                 os.makedirs(root2)
                 os.makedirs(home2)
-                a = make_bundle(root2, folder, e["old"], ext, e["old_id"], e["old"])
-                b = make_bundle(home2, folder, e["old"], ext, e["old_id"], e["old"])
+                a = make_bundle(root2, folder, e["old"], ext, e["old_id"], e["old"], au_subtype=e["legacy_subtype"],
+                                au_manufacturer=LEGACY_AU_MANUFACTURER)
+                b = make_bundle(home2, folder, e["old"], ext, e["old_id"], e["old"], au_subtype=e["legacy_subtype"],
+                                au_manufacturer=LEGACY_AU_MANUFACTURER)
+                beside = make_bundle(root2, folder, e["new"], ext, e["id"], e["new"], au_subtype=e["subtype"])
                 r = run_script(root2, home2)
-                if old_id_counts:
-                    check(not os.path.exists(a) and not os.path.exists(b),
-                          "%s: a copy with upstream's identifier is removed, in the root and in the home folder"
-                          % label)
-                else:
-                    check(os.path.exists(a) and os.path.exists(b),
-                          "%s: a copy with upstream's identifier stays (an app of upstream's own)" % label)
+                check(r.returncode == 0 and os.path.exists(a) and os.path.exists(b) and os.path.exists(beside),
+                      "%s: the original Gearmulator plug-in (upstream's identifier, old codes) stays beside the "
+                      "editor, in the root and in the home folder" % label)
+                check("Removing" not in r.stdout, "%s: nothing is removed next to the original plug-in" % label)
 
                 # ---- somebody else's bundle at the old name, a symbolic link, a plain file
                 case3 = os.path.join(tmp, "case3-" + label.replace(" ", "-"))
@@ -392,35 +423,48 @@ if (os.name == "posix" and os.path.exists("/bin/sh") and os.path.exists("/usr/bi
                 check(r.returncode == 0 and os.path.exists(unreadable),
                       "%s: without a property-list reader nothing is removed, and the exit is 0" % label)
 
-                # ---- B-048: an old copy at another name that registers our AU codes (the AU only)
+                # ---- B-048: an old copy of ours at another name that registers our AU codes, current or up to
+                # 0.5.x (the AU only); the original Gearmulator plug-in at any name stays
                 case9 = os.path.join(tmp, "case9-" + label.replace(" ", "-"))
                 root9, home9 = os.path.join(case9, "root"), os.path.join(case9, "home")
+                receipts9 = os.path.join(case9, "receipts")
                 os.makedirs(root9)
                 os.makedirs(home9)
-                renamed_old = make_bundle(root9, folder, "MD preview", ext, e["old_id"], e["old"],
-                                          au_subtype=e["subtype"])
+                os.makedirs(receipts9)
                 renamed_ours = make_bundle(home9, folder, "Copy of " + e["new"], ext, e["id"], e["new"],
                                            au_subtype=e["subtype"])
+                renamed_ours_old = make_bundle(root9, folder, "Old " + e["new"], ext, e["id"], e["new"],
+                                               au_subtype=e["legacy_subtype"], au_manufacturer=LEGACY_AU_MANUFACTURER)
+                listed_old = make_bundle(root9, folder, "Listed preview", ext, "com.example.unknown", e["old"],
+                                         au_subtype=e["legacy_subtype"], au_manufacturer=LEGACY_AU_MANUFACTURER)
+                with open(os.path.join(receipts9, "com.nativekloud.mdmm.%s.%s" % (machine, kind)), "w") as f:
+                    f.write("%s/Listed preview.%s\n" % (folder, ext))
+                original9 = make_bundle(root9, folder, "MD preview", ext, e["old_id"], e["old"],
+                                        au_subtype=e["legacy_subtype"], au_manufacturer=LEGACY_AU_MANUFACTURER)
+                original_new_codes9 = make_bundle(root9, folder, "MD preview new", ext, e["old_id"], e["old"],
+                                                  au_subtype=e["subtype"])
                 current9 = make_bundle(root9, folder, e["new"], ext, e["id"], e["new"], au_subtype=e["subtype"])
                 foreign9 = make_bundle(root9, folder, "Somebody's", ext, "com.example.somebody-else", "x",
                                        au_subtype=e["subtype"])
                 other9 = make_bundle(root9, folder, "Other machine preview", ext, e["old_id"], e["old"],
                                      au_subtype=e["other_subtype"])
                 plain9 = make_bundle(root9, folder, "No codes", ext, e["old_id"], e["old"])
-                deeper9 = make_bundle(root9, folder + "/sub", "MD preview", ext, e["old_id"], e["old"],
+                deeper9 = make_bundle(root9, folder + "/sub", "Old " + e["new"], ext, e["id"], e["new"],
                                       au_subtype=e["subtype"])
-                r = run_script(root9, home9)
+                r = run_script(root9, home9, receipts=receipts9)
                 check(r.returncode == 0, "%s: exit 0 with AU-coded copies around (%s)" % (label, r.stderr.strip()))
+                ours9 = (renamed_ours, renamed_ours_old, listed_old)
                 if kind == "au":
-                    check(not os.path.exists(renamed_old) and not os.path.exists(renamed_ours),
-                          "%s: an old copy of ours at another name that registers our codes is removed, in the "
-                          "root and in the home folder" % label)
+                    check(not any(os.path.exists(p) for p in ours9),
+                          "%s: an old copy of ours at another name that registers our codes (current or up to 0.5.x, "
+                          "our identifier or our receipt) is removed, in the root and in the home folder" % label)
                 else:
-                    check(os.path.exists(renamed_old) and os.path.exists(renamed_ours),
-                          "%s: no search by AU codes outside the AU" % label)
-                check(all(os.path.exists(p) for p in (current9, foreign9, other9, plain9, deeper9)),
-                      "%s: the current AU, a foreign one with our codes, the other machine's, one without codes and "
-                      "one a folder deeper stay" % label)
+                    check(all(os.path.exists(p) for p in ours9), "%s: no search by AU codes outside the AU" % label)
+                check(all(os.path.exists(p) for p in (current9, foreign9, other9, plain9, deeper9, original9,
+                                                      original_new_codes9)),
+                      "%s: the current AU, the original Gearmulator plug-in (old or new codes, upstream's identifier), "
+                      "a foreign one with our codes, the other machine's, one without codes and one a folder deeper "
+                      "stay" % label)
 
                 # ---- nothing there at all
                 case8 = os.path.join(tmp, "case8-" + label.replace(" ", "-"))

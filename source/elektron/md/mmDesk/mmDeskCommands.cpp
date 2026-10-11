@@ -69,7 +69,8 @@ namespace mmDesk
 			chain.ask->details.set("p", p);
 		}
 		const auto it = _view.patterns.find(static_cast<uint8_t>(p));
-		if(it == _view.patterns.end() || static_cast<int>(it->second.kit) == m_curKit || kitState(_view) != deskCore::KitState::Edited)
+		// B-053: only a pick in banks A-D loads the kit it links (pickLoadsKit)
+		if(it == _view.patterns.end() || !pickLoadsKit(p) || static_cast<int>(it->second.kit) == m_curKit || kitState(_view) != deskCore::KitState::Edited)
 			return chain;
 		Outcome o = ask("discardKit", "<b>" + ed::mmPatternName(static_cast<uint8_t>(p)) + "</b> uses kit <b>" + kitLabel(_view, it->second.kit)
 			+ "</b>. Your edits to <b>" + kitLabel(_view, m_curKit) + "</b> are not saved on the machine and will be lost.", "Switch and lose edits");
@@ -147,7 +148,7 @@ namespace mmDesk
 			{"mute", &MmMachine::cmdMute}, {"seqMode", &MmMachine::cmdSeqMode}, {"followHost", &MmMachine::cmdFollowHost}, {"muteMidi", &MmMachine::cmdMuteMidi},
 			{"poly", &MmMachine::cmdPoly}, {"record", &MmMachine::cmdRecord}, {"hwSend", &MmMachine::cmdHwSend},
 			{"chain", &MmMachine::cmdChain}, {"chainClear", &MmMachine::cmdChainClear},
-			{"noteOn", &MmMachine::cmdNoteOn}, {"noteOff", &MmMachine::cmdNoteOff}};
+			{"noteOn", &MmMachine::cmdNoteOn}, {"noteOff", &MmMachine::cmdNoteOff}, {"globalSlot", &MmMachine::cmdGlobalSlot}};
 		return map;
 	}
 
@@ -295,11 +296,11 @@ namespace mmDesk
 			pushDump(ref, ed::encodeMmGlobal(accept));
 			return ok("TRANSPORT ACCEPT waits for SYSEX RECV (SEND in the pattern field). Press PLAY again once it is in.");
 		}
-		if(m_reactivateGlobal && m_curGlobal >= 0)
+		if(m_reactivateGlobal && activeSlot() >= 0)
 		{
 			// HW MIDI: the active global was written while the machine was on SYSEX RECV, which applies
 			// it only when made active again (P7): now, before MIDI Start
-			m_port.sendSysex(ed::mmSetActiveGlobal(static_cast<uint8_t>(m_curGlobal & 7)));
+			sendActiveGlobal(activeSlot() & 7);
 			m_reactivateGlobal = false;
 		}
 		if(!pressKeys({Key::Play}))
@@ -356,18 +357,31 @@ namespace mmDesk
 		return ok(song ? "SONG mode: the machine plays the song." : "PATTERN mode: the machine plays the pattern.");
 	}
 
+	// B-051, F3: the GLOBAL page's slot keys: SET ACTIVE GLOBAL (0x56, not while the machine is on SYSEX RECV), then the
+	// machine says which is active (status) and the editor reads that slot when it does not know it
+	Outcome MmMachine::cmdGlobalSlot(const Value& _m, const Documents&)
+	{
+		const auto slot = static_cast<uint8_t>(num(_m, "slot") & 7);
+		m_chosenGlobal = slot;
+		m_chosenSentMs = -1;
+		if(m_profile.wire || m_recv.state() == RecvSession::State::Idle)
+			sendActiveGlobal(slot);
+		else
+			m_activateGlobal = slot;	// over any re-activation of the old active global still waiting
+		m_port.sendSysex(ed::mmStatusRequest(ed::MmStatus::Global));
+		if(!known({Kind::Global, slot}))
+			request({Kind::Global, slot}, true);
+		return ok("GLOBAL " + std::to_string(slot + 1) + " is active");
+	}
+
 	Outcome MmMachine::cmdMute(const Value& _m, const Documents& _view)
 	{
 		const auto t = num(_m, "t");
 		// B-026: a mute is the track's CC on the machine's channels: none when the base channel is OFF, and then the
 		// page must not show a mute the machine never took
-		if(const auto* g = activeGlobal(_view, m_curGlobal); g && g->baseChannel > 15)
-			return refuse("The machine's MIDI base channel is OFF (GLOBAL " + std::to_string(g->position + 1)
-				+ "): it takes no mutes, notes or sound values over MIDI. GLOBAL › MIDI › CHANNELS on the machine.");
-		else if(g && (t >= g->channelSpan || g->baseChannel + t > 15))
-			// measured with a 2008 backup's global (CHANNEL SPAN 0): T3's mute CC muted T1
-			return refuse("T" + std::to_string(t + 1) + " has no MIDI channel of its own: CHANNEL SPAN is " + std::to_string(g->channelSpan)
-				+ " (GLOBAL › MIDI › CHANNELS), so the machine takes no mute for it over MIDI.");
+		// measured with a 2008 backup's global (CHANNEL SPAN 0): T3's mute CC muted T1 (elektronData::mmTrackChannel)
+		if(const auto why = noChannelReason(_view, t); !why.empty())
+			return refuse(why);
 		const bool mute = flag(_m, "on");
 		m_port.sendParam(static_cast<uint8_t>(t), 8, 0, mute ? 1 : 0);
 		m_expectMute[static_cast<size_t>(t)] = deskCore::FieldExpectation<bool>::sent(mute, clock());
