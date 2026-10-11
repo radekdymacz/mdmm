@@ -651,13 +651,18 @@ const MdJourneys = (() => {
 		]
 	};
 	const audition = {
-		/* quarantined (2026-10-11, doc/release/DEV-CYCLE.md): a fresh sandbox has no UW sample (B-012), so it fails in 3 of
-		   4 runs; it comes back with a sample fixture in the sandbox */
-		name: "md-sampler-audition", needs: () => "quarantined: no sample fixture in the sandbox yet (B-012)",
+		/* a machine with no UW sample in its ROM slots (a fresh sandbox, B-012) has nothing to audition: skipped, not failed
+		   (the 0.5.1 gate failed it in 3 of 4 runs for that) */
+		name: "md-sampler-audition", needs: () => Docs.samples && !(Docs.samples.rom || []).some(s => s && !s.empty) ? "no UW sample in the ROM slots (a fresh sandbox, B-012)" : null,
 		steps: [
 			go("sampler"),
-			{ say: "click a ROM slot's play key: it plays", act: async (u, c) => { const k = $all(".slotk.rom.has")[0]; if (!k) throw new Error("no ROM sample"); u.click(k); await sleep(400); results.length = 0; const b = $all("[data-aud]").find(x => !x.disabled); if (!b) throw new Error("no play key"); c.key = b.dataset.aud; u.click(b);
-				await until(() => results.some(r => r.heard === "audition" && r.state === "playing"), 4000); await sleep(30); c.shown = $all("[data-aud]").some(x => x.dataset.aud === c.key && x.getAttribute("aria-pressed") === "true"); },
+			{ say: "click a ROM slot's play key: it plays", act: async (u, c) => { const k = $all(".slotk.rom.has")[0]; if (!k) throw new Error("no ROM sample"); u.click(k); await sleep(400); results.length = 0; const b = $all("[data-aud]").find(x => !x.disabled); if (!b) throw new Error("no play key"); c.key = b.dataset.aud;
+				/* the key shown playing at any moment of the audition (a short sample may end before one read after it) */
+				const shown = () => $all("[data-aud]").some(x => x.dataset.aud === c.key && x.getAttribute("aria-pressed") === "true");
+				c.shown = false; const watch = new MutationObserver(() => { if (shown()) c.shown = true; });
+				watch.observe(document.body, { attributes: true, attributeFilter: ["aria-pressed"], childList: true, subtree: true });
+				try { u.click(b); await until(() => results.some(r => r.heard === "audition" && r.state === "playing"), 4000); await sleep(30); if (shown()) c.shown = true; }
+				finally { watch.disconnect(); } },
 				machine: () => ok(results.some(r => r.heard === "audition" && r.state === "playing"), "no audition"), screen: c => ok(c.shown, "the play key was not shown playing") }
 		],
 		async tidy() { if (typeof Aud !== "undefined" && Aud) cmd("auditionStop", {}); }

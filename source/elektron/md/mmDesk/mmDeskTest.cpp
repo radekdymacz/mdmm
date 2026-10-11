@@ -729,6 +729,132 @@ void kitPickRules()
 	check(!mmDesk::dumpKeepsKit(true, -1, 63, 63), "the kit that plays not known: as it is");
 }
 
+// B-060: the OS 1.32B plays a dumped transpose from its next start; the TRANSPOSE knob, one step and back on each track
+// number it moves, applies it at once (mmDeskFirmwareTest transpose).
+void transposeRules()
+{
+	std::puts("B-060: the transposes a pattern edit moves, and the keys that apply them");
+	using K = mmDesk::Key;
+	ed::MmPattern a;
+	auto b = a;
+	check(mmDesk::transposesMoved(a, b) == 0, "nothing moved: no track");
+	b.transpose.track[1] = 5;
+	b.midiTranspose.key[3] = 2;
+	check(mmDesk::transposesMoved(a, b) == 0x0a, "T2's TRACK and M4's KEY: track numbers 2 and 4");
+	b = a;
+	b.transpose.scale[5] = 2;
+	check(mmDesk::transposesMoved(a, b) == 0x20, "T6's SCALE: track number 6");
+	b = a;
+	b.patternTranspose = -3;
+	check(mmDesk::transposesMoved(a, b) == 0x3f, "PAT: all six");
+	b = a;
+	b.transpose.track[1] = 63;
+	b.midiTranspose.track[3] = -64;
+	const auto k = mmDesk::applyTransposeKeys(0x0a, b, 0);
+	check(k == std::vector<K>{K::Transpose, K::Track2, K::KnobDown, K::KnobUp, K::Track4, K::KnobUp, K::KnobDown, K::Track1, K::Exit},
+		"TRANSPOSE, each TRACK and the knob there and back from the inside (63: down first, -64: up first), the focus again, EXIT");
+	check(mmDesk::applyTransposeKeys(0x01, a, -1) == std::vector<K>{K::Transpose, K::Track1, K::KnobUp, K::KnobDown, K::Exit}, "the focus not known: none pressed again");
+	check(mmDesk::applyTransposeKeys(0, a, 2).empty(), "no track: no keys");
+	check(mmDesk::isChord(K::Transpose) && mmDesk::keyStates(K::Transpose) == 4 && mmDesk::keyStates(K::KnobUp) == mmDesk::g_knobPulses
+		&& mmDesk::keyStates(K::Track3) == 2, "TRANSPOSE is FUNCTION + BANK B; the knob is four pulses, a TRACK key down and up");
+}
+
+// B-060 on a scripted machine: a transpose edit of the pattern that plays, while it plays, is followed by the TRANSPOSE
+// keys once its dump is taken; stopped, or an edit of another pattern, presses none.
+void transposeWhilePlaying()
+{
+	std::puts("B-060: a transpose edit while the pattern plays");
+	FakeMachine m;
+	for(uint8_t s = 0; s < 128; ++s)
+	{
+		auto p = emptyPattern(s);
+		p.kit = 5;
+		m.slots[{0x67, s}] = ed::encodeMmPattern(p);
+		ed::MmKit k;
+		k.position = s;
+		k.machines.fill(1);
+		k.trigPos.fill(0xff);
+		m.slots[{0x52, s}] = ed::encodeMmKit(k);
+	}
+	for(uint8_t s = 0; s < 24; ++s)
+	{
+		ed::MmSong so;
+		so.position = s;
+		so.rows[0].bytes[0] = 0xff;
+		so.rows[0].bytes[ed::mmSongRow::g_tempo] = so.rows[0].bytes[ed::mmSongRow::g_tempo + 1] = 0xff;
+		m.slots[{0x69, s}] = ed::encodeMmSong(so);
+	}
+	for(uint8_t s = 0; s < 8; ++s)
+	{
+		ed::MmGlobal g;
+		g.position = s;
+		m.slots[{0x50, s}] = ed::encodeMmGlobal(g);
+	}
+	double now = 0;
+	bool playing = true;
+	std::vector<std::vector<mmDesk::Key>> transposeKeys;	// each press that opened TRANSPOSE
+	mmDesk::Desk::Port port;
+	port.device.sendSysex = [&](const Bytes& _b) { m.take(_b); };
+	port.device.sendParam = [](uint8_t, uint8_t, uint8_t, uint8_t) {};
+	port.device.sendNrpn = [](uint8_t, uint8_t, uint8_t) {};
+	port.device.pressKeys = [&](const std::vector<mmDesk::Key>& _k)
+	{
+		if(_k == mmDesk::RecvSession::enterMacro())
+			m.screenWord = mmDesk::Screen::GlobalEdit;
+		else if(_k == mmDesk::RecvSession::exitKeys() || (!_k.empty() && _k.back() == mmDesk::Key::Exit))
+			m.screenWord = mmDesk::Screen::Main;
+		if(!_k.empty() && _k[0] == mmDesk::Key::Transpose)
+			transposeKeys.push_back(_k);
+		return true;
+	};
+	port.toPage = [&](const Value& _v) { g_published.push_back(_v); };
+	port.device.nowMs = [&] { return now; };
+	mmDesk::Desk d(port);
+	const auto run = [&](const double _ms)
+	{
+		for(double t = 0; t < _ms; t += 10)
+		{
+			now += 10;
+			mmDesk::Telemetry tel = screen(m.screenWord);
+			tel.recvCount = m.recvTaken;
+			tel.running = playing;
+			d.onTelemetry(tel);
+			d.tick();
+			auto replies = std::move(m.replies);
+			m.replies.clear();
+			for(const auto& r : replies)
+				d.onDeviceSysex(r);
+		}
+	};
+	const auto msg = [&](const std::string& _json) { d.onPageMessage(*ed::json::parse(_json)); };
+	msg(R"({"op":"ready"})");
+	d.setProbe(mmDesk::Desk::Probe::Running);
+	run(600);
+	for(int i = 0; i < 1000 && !d.pattern(4); ++i)
+		run(10);	// the library's background read
+	check(d.currentPattern() == 3, "pattern 3 plays");
+	msg(R"({"op":"transpose","g":1,"p":3,"t":1,"v":5})");
+	run(2000);
+	check(ed::decodeMmPattern(m.slots[{0x67, 3}])->transpose.track[1] == 5, "the dump taken on SYSEX RECV");
+	using K = mmDesk::Key;
+	check(transposeKeys.size() == 1 && transposeKeys[0] == std::vector<K>{K::Transpose, K::Track2, K::KnobDown, K::KnobUp, K::Track1, K::Exit},
+		"then TRANSPOSE, TRACK 2, the knob down and up, TRACK 1 (the focus the machine reports), EXIT");
+	msg(R"({"op":"transpose","g":2,"p":3,"v":-2})");
+	run(2000);
+	check(transposeKeys.size() == 2 && std::count(transposeKeys[1].begin(), transposeKeys[1].end(), K::KnobUp) == 6, "PAT: all six track numbers");
+	msg(R"({"op":"transpose","g":3,"p":4,"t":0,"v":3})");
+	run(2000);
+	check(ed::decodeMmPattern(m.slots[{0x67, 4}])->transpose.track[0] == 3 && transposeKeys.size() == 2, "another pattern's transpose: no keys");
+	msg(R"({"op":"length","g":4,"p":3,"v":32})");
+	run(2000);
+	check(transposeKeys.size() == 2, "another edit of the pattern that plays: no keys");
+	playing = false;
+	run(500);
+	msg(R"({"op":"transpose","g":5,"p":3,"t":1,"v":-7})");
+	run(2000);
+	check(ed::decodeMmPattern(m.slots[{0x67, 3}])->transpose.track[1] == -7 && transposeKeys.size() == 2, "stopped: no keys (PLAY takes the stored transposes)");
+}
+
 // LOAD KIT of a never-written slot (name byte 0 is 0xff) plays it as NEW KIT (measured, mmDeskFirmwareTest p4).
 void kitAsLoaded()
 {
@@ -1605,6 +1731,8 @@ int main(const int _argc, char** _argv)
 	kitAfterPatternDump();
 	kitAfterPatternDump(9);
 	kitPickRules();
+	transposeRules();
+	transposeWhilePlaying();
 	modulators();
 	asksAndErrors();
 	stuckDelivery();

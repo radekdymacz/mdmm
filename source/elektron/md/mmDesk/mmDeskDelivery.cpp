@@ -126,8 +126,16 @@ namespace mmDesk
 			const auto keep = dumpKeepsKit(static_cast<int>(ref.slot) == m_curPattern, m_curKit, before ? before->kit : pattern.kit, pattern.kit);
 			if(keep)
 				pattern.kit = *keep;
+			// B-060: the machine plays a dumped transpose from its next start; the TRANSPOSE knob applies it at once
+			const bool moved = before && static_cast<int>(ref.slot) == m_curPattern && transposesMoved(*before, pattern);
+			if(moved && machineState())
+				m_trnWanted = static_cast<uint8_t>(m_trnWanted | transposesMoved(*before, pattern));
 			pushDump(ref, ed::encodeMmPattern(pattern));
-			return ok(keep ? "The pattern now links " + kitLabel(_view, *keep) + ", the kit that plays (the machine loaded no kit when it was picked)." : "");
+			std::string note = keep ? "The pattern now links " + kitLabel(_view, *keep) + ", the kit that plays (the machine loaded no kit when it was picked)." : "";
+			if(moved && m_playing && !machineState())
+				note += std::string(note.empty() ? "" : " ") + "Heard from the next start: over MIDI the Monomachine plays a pattern's new transpose"
+					" when it starts again (TRANSPOSE on its panel applies it at once).";
+			return ok(note);
 		}
 		case Kind::Song:
 			pushDump(ref, ed::encodeMmSong(std::get<ed::MmSong>(_change.after)));
@@ -246,6 +254,46 @@ namespace mmDesk
 			m_reloadsPending = std::max(0, m_reloadsPending - 1);
 			m_restoreKit = kit;
 		}, clock());
+	}
+
+	void MmMachine::transposeFollows()
+	{
+		if(!m_trnWanted)
+			return;
+		m_stream.after([this, tracks = std::exchange(m_trnWanted, uint8_t{0})] { m_trnDue = static_cast<uint8_t>(m_trnDue | tracks); }, clock());
+	}
+
+	// B-060: the transposes the dumps stored, played at once (applyTransposeKeys). After the last dump of the pattern
+	// that plays (none queued behind it, none waiting on SYSEX RECV, the machine took it) and with the track in focus
+	// asked for, to give it back. Stopped, the next PLAY takes them anyway.
+	void MmMachine::pumpTranspose(const Documents& _view)
+	{
+		if(!m_trnDue)
+			return;
+		const auto it = m_curPattern >= 0 ? _view.patterns.find(static_cast<uint8_t>(m_curPattern)) : _view.patterns.end();
+		if(!m_playing || !machineState() || it == _view.patterns.end())
+		{
+			m_trnDue = 0;
+			m_focusAskedMs = -1;
+			return;
+		}
+		if(const auto* p = m_pushes.find({Kind::Pattern, static_cast<uint8_t>(m_curPattern)}); p && (p->parked || p->slot.next()))
+			return;
+		if(m_trnWanted || m_recv.queued() || m_recv.taking() || now() < m_keysUntilMs)
+			return;
+		if(m_focusAskedMs < 0)
+		{
+			m_port.sendSysex(ed::mmStatusRequest(ed::MmStatus::AudioTrack));
+			m_focusAskedMs = clock();
+			return;
+		}
+		const bool known = m_focusSeenMs >= m_focusAskedMs;
+		if(!known && clock() - m_focusAskedMs < g_focusWaitMs)
+			return;
+		if(!pressKeys(applyTransposeKeys(m_trnDue, it->second, known ? m_focus : -1)))
+			return;
+		m_trnDue = 0;
+		m_focusAskedMs = -1;
 	}
 
 	// The machine loaded the kit that plays from its slot: what the editor shows of it (its unsaved edits, and those
@@ -438,7 +486,10 @@ namespace mmDesk
 			if(auto* push = m_pushes.find(ref); push && push->parked)
 				push->parked = false;
 			if(ref.kind == Kind::Pattern && static_cast<int>(ref.slot) == m_curPattern)
+			{
 				reloadFollows(s.bytes);
+				transposeFollows();
+			}
 		}
 		// The machine never showed SYSEX RECV: the session dropped what it held. Those pushes fail (the
 		// page shows the error, the edit is no longer pending) and the document is read again.

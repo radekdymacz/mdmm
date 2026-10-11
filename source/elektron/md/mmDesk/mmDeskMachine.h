@@ -151,6 +151,11 @@ namespace mmDesk
 		// followed by the edits.
 		void reloadFollows(const Bytes& _patternDump);
 		void restoreWorkingKit(const Documents& _view);
+		// B-060: a dump of the pattern that plays went on the wire; the transposes it moves are applied once the
+		// machine took it (pumpTranspose: the TRANSPOSE knob, applyTransposeKeys), while it plays, where the editor has
+		// the panel.
+		void transposeFollows();
+		void pumpTranspose(const Documents& _view);
 		void onDump(const Ref& _ref, const Bytes& _sysex);
 		void onStatus(uint8_t _param, uint8_t _value);
 		void kitSwitched(int _from, int _to);
@@ -285,6 +290,14 @@ namespace mmDesk
 		// at cable speed while playing): pressed once it is free (pumpTransport), the newest wins, given up after a while
 		std::optional<Key> m_pendingTransport;
 		double m_pendingTransportMs = 0;
+		// B-060: track numbers (transposesMoved) whose transposes the next dump of the pattern that plays moves, and
+		// those of dumps on the wire, applied once the machine took them; the track in focus (status 0x22) to go back to
+		uint8_t m_trnWanted = 0;
+		uint8_t m_trnDue = 0;
+		int m_focus = -1;
+		double m_focusAskedMs = -1;
+		double m_focusSeenMs = -1e9;
+		static constexpr double g_focusWaitMs = 300;
 		// The keyboard's sounding notes (pressNote / releaseNotes)
 		SoundingNotes m_notes;
 	};
