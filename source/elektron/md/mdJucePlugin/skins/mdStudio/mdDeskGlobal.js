@@ -22,7 +22,7 @@ const GTIP={
  inputs:"TRIG IN A and B: the external inputs as trig pads (GLOBAL > ROUTING on the machine). Gate, Sens, Vmin, Vmax 0-127; Dest: the track a pulse plays, or - for none. Click − or + (Shift: 10 at a time). The emulator has no trig inputs, so what they do is not verified here",
  learn:"LEARN: click, then play a note on a MIDI keyboard: that note plays this track (any channel). Click again to stop",
  resetMap:"Back to Elektron's note map (the machine's own: tracks from C2, patterns from E4), asked first; Undo brings yours back" };
-/* the cards of the shared GLOBAL panel (skins/shared/deskGlobal.js draws the frame: the slots, Reset to defaults, the footer) */
+/* the cards of the shared GLOBAL page (skins/shared/deskGlobal.js draws the frame: the head with the slots, Copy · Paste · Clear) */
 function mdGlobalCards(G){
  const tog=GlobalUi.tog,step=GlobalUi.step;
  const trackKey=t=>{const n=G.keymap.indexOf(t);return`<div class="gmk key${n<0?" none":""}" title="${GTIP.map}"><small>TRACK ${t+1}<button class="glearn" data-ga="learn" data-t="${t}" aria-pressed="${GP.learn===t}" aria-label="LEARN track ${t+1}" title="${GTIP.learn}"></button></small><span class="stepper"><button data-ga="map" data-t="${t}" data-d="-1" aria-label="Lower note">‹</button><b>${n<0?"--":NOTE(n)}</b><button data-ga="map" data-t="${t}" data-d="1" aria-label="Higher note">›</button></span></div>`};
