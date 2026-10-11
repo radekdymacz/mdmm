@@ -547,6 +547,47 @@ the time per callback (what a DAW's meter shows) by ±20 % with no change in the
 time at -0.7 % cycles. A DAW's CPU meter therefore only compares positions when read over several toggles under the same
 load. Also note the menu item is "Speed-ups off": ticked means the slower, legacy emulation.
 
+## Small wins (0.6) (2026-10-11, branch perf/small-wins)
+
+The rule of ROADMAP §8 ("Small wins count"): bit-exact (goldens 30/30), at least 0.5 % of host instructions or
+cycles per frame on one machine and phase, no cost above 0.3 % on another, simple, behind the speed-ups switch with
+its own lever switch. Measured on `mdmmPerfGateTest md|mm 8` (md-busy, mm-a01, stereo), release configuration (arm64,
+ThinLTO, DSP optimisation, the committed PGO profile, stale for the changed functions), one binary per build with the
+lever turned off by its environment variable: leave-one-out rounds (all on, each lever off, all on; the order reversed
+every other round), each off run paired with its round's two all-on runs; 6-12 rounds; medians of the per-round
+ratios. A loaded Mac (load 9-100): instructions are the steady measure, cycles move ±3 % per pair (the same binary
+with no change measured -1.1 % / -1.3 % on the MM), so a cycle figure counts only when its rounds agree.
+
+Change of host work per frame with the lever on (instructions / cycles; - = saves):
+
+| Lever (switch) | MD stopped | MD playing | MM stopped | MM playing | Bit-exact | Taken | Why |
+|---|---|---|---|---|---|---|---|
+| Inter-DSP link rings without semaphores (`LINK_RINGS`, n=12) | -0.3 / -0.1 % | -0.3 / -0.3 % | -0.35 / -0.7 % | -0.35 / -1.9 % | yes | **yes** | MM playing -1.9 % cycles (IQR -2.9 to -0.7); no cost elsewhere. Two atomic RMWs per push and per pop on rings whose ends share one thread |
+| L10's immediate idle probe (`UC_IDLE_PROBE`, n=12) | -0.5 / -0.7 % | -0.6 / -1.8 % | -0.5 / -3.2 % | -0.7 / -4.4 % | yes | **yes** | probe the BRA.B -2 skip right after the branch (`ir == 0x60fe`), not every 16th step |
+| ColdFire "nothing waits" slices (`UC_QUIET`, n=12) | -3.1 / -1.3 % | -3.5 / -2.0 % | -6.5 / -5.3 % | -6.5 / -5.0 % | yes | **yes** | the profile's "work pending" item: inputs tested once per slice, up to the next scheduled MIDI event |
+| NOP-loop gate tests the instruction target, MD only (`NOP_GATE`, n=8 / 4) | -0.4 / -0.9 % | 0.0 / -0.8 % | 0 (code unchanged) | 0 (code unchanged) | yes | **yes** | MD stopped -0.9 % cycles, every round negative; emitted on the MM it cost +0.6 % / +0.3 % cycles, so it is MD only (`JitConfig::nopLoopGateInstructions`) |
+| NOP-loop fast-forward with shifts for divisions (n=6) | +0.4 / +1.3 % | 0.0 / +1.5 % | +0.1 / -2.0 % | -0.1 / -1.7 % | yes | no | costs the MD; udiv is one instruction, the shift path adds branches |
+| L2a inline due test in the `execUntilCycles` trampoline (n=6) | -0.1 / +3.3 % | -0.1 / +2.6 % | +0.1 / +0.1 % | 0.0 / -1.9 % | yes | no | costs the MD cycles (three more callee-saved registers, a longer loop); confirms §3.10's 0.0 % |
+| JIT mode check skipped while M0-M7 and SR are unchanged (n=6) | -0.1 / -0.1 % | 0.0 / 0.0 % | 0.0 / -0.2 % | +0.2 / +0.2 % | yes | no | nothing to gain: `funcRunCheckModeChange`'s cost is the extra trampoline entry, not the mode build |
+| maxInstructionsPerBlock 64 (A4; 1024 also tried) | -0.3 % | -0.3 % | -0.3 % | +0.2 % | **no** (9-10 of 20 golden fields differ, every scenario) | no | block boundaries move the peripheral runs |
+| `-mcpu=apple-m1` for the arm64 slice (C1) | 0 | 0 | 0 | 0 | yes | no | Apple clang's default arm64 target CPU already is `apple-m1`; `-mcpu=apple-m1` and even `-mtune=apple-m4` emit byte-identical code (mdhardware.cpp compared). The x86_64 slice and PGO are untouched |
+| ColdFire fast-lane window order (A1) | – | – | – | – | – | no | steady state per frame: MD main RAM 20, SRAM 10 accesses; MM main RAM 40, SRAM 49. SRAM first would save about 9 compares a frame on the MM (< 0.01 %) |
+| Native 32-bit SRAM reads on the MM (A2) | – | – | – | – | – | already done | L11 does it: 52 32-bit reads a frame take the lane, 1.3 are split (HI08 and patch RAM, which must stay two 16-bit accesses) |
+| Cache `mc68k_get_instance`, direct immediate pointer (profile item d) | – | – | – | – | – | no | the instance is one load from the core struct; immediate fetches already go through a page cache (two compares and a load) |
+| Cache the trampoline's interrupt-function pointer (A3) | – | – | – | – | – | no | the pointer changes at run time (DSP C++ code and JIT blocks write it, jitops_helper.cpp), so it must be reloaded; one L1 load |
+| 56-bit MAC code on arm64 (C3) | – | – | – | – | – | no change | already minimal: `smull` and one `add` with a shifted operand (the 48-bit product fits; no `smulh`) |
+| L9 per-peripheral gating | – | – | – | – | – | not built | pool 1.6-2 % of samples before any overlap; gating HDI08 hides its host-command completion and every re-arm site: not simple |
+| L10 HI08 poll skip | – | – | – | – | – | not built | needs a ColdFire loop detector and proof that the DSP catch-up is a no-op: not simple; its immediate probe is `UC_IDLE_PROBE` |
+| `std::function` callbacks to direct calls (profile item f) | – | – | – | – | – | not built | the profile's self time is the bodies of the link callbacks; the indirection is two predicted branches a call, under 0.5 % |
+| **The four taken, together (n=6)** | **-4.3 / -4.2 %** | **-4.3 / -3.7 %** | **-7.1 / -7.9 %** | **-7.3 / -8.3 %** | yes | | all four off against all on |
+
+Gates of every taken lever: the committed goldens 30/30 with it on and off; `mdLibTest` (each lever's switch acts
+alone), `mdIdleSelfBranchTest`, `mdIdleSchedulerFirmwareTest`, `mdTransportScorecardTest`, `mdMidiTimingTest`,
+`mdHostRxFirmwareTest`, `mdAudioFirmwareTest`, `mdUwFirmwareTest`, `mdSessionFirmwareTest`,
+`mdPanelReadinessFirmwareTest`, `mdAutomationMidiTest`, `mdMachineMidiOutTest`, `mdTurboMidiFirmwareTest md`,
+`mdSdsFirmwareTest --generated-mixed`, `mdPatternLiveEditFirmwareTest`, `mmBootFirmwareTest`, `mmAudioFirmwareTest`;
+the DSP core's `ringBufferTest` and JIT unit tests. Rejected levers' patches are kept outside the repo.
+
 ## 6. Sources
 
 Internal (repo, read only):
