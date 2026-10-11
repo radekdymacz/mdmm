@@ -27,7 +27,7 @@
 # <preview>/<machine>/roms), MDMM_GATE_PREVIEW (default ~/Documents/Gearmulator Preview), MDMM_GATE_MD_CACHE (the
 # Machinedrum factory cache), MDMM_GATE_MM_PATCH (the Monomachine factory patch RAM), MDMM_GATE_FIXTURES (the SysEx
 # fixtures, default <preview>/fixtures/sysex), MDMM_GATE_JOBS (build jobs), MDMM_GATE_GOLDEN_JOBS (golden runs at
-# once), MDMM_GATE_JOURNEY_ARGS (options for mdmm-journeys.sh, default --host both --background),
+# once), MDMM_GATE_JOURNEY_ARGS (options for mdmm-journeys.sh, default --host both --jobs 4),
 # MDMM_GATE_COMPONENTS_DIR (where the AU bundles are installed), MDMM_GATE_SOAK_SECONDS (6c, default 600),
 # MDMM_GATE_SOAK_WARMUP (seconds not judged, default 30), MDMM_GATE_SOAK_LOCK_US (a synth lock wait that fails it,
 # default 1000), MDMM_GATE_ALLOW_UNMUTED=1 (run 7d although the output cannot be muted), MDMM_GATE_SCENARIOS (extra
@@ -95,8 +95,9 @@ FIXTURES="${MDMM_GATE_FIXTURES:-${PREVIEW}/fixtures/sysex}"
 GOLDENS="${MDMM_GATE_GOLDENS:-${ROOT}/source/elektron/md/mdLibTest/goldens/mdmm-goldens.json}"
 GATE_MIN_SCENARIOS="md-busy md-factory md-song mm-a01 mm-busy mm-song"	# a goldens file must cover at least these
 JOBS="${MDMM_GATE_JOBS:-$(sysctl -n hw.ncpu 2>/dev/null || echo 4)}"
-# --background: the standalone's output is zeroed (silence)
-JOURNEY_ARGS="${MDMM_GATE_JOURNEY_ARGS:---host both --background}"
+# four editors at once (--jobs implies --background: the standalone's output is zeroed, silence); the VST3 host runs only
+# the host journeys (mdmm-journeys.sh --tier, decision 2026-10-11)
+JOURNEY_ARGS="${MDMM_GATE_JOURNEY_ARGS:---host both --jobs 4}"
 SOAK_SECONDS="${MDMM_GATE_SOAK_SECONDS:-600}"
 SOAK_WARMUP="${MDMM_GATE_SOAK_WARMUP:-30}"
 SOAK_LOCK_US="${MDMM_GATE_SOAK_LOCK_US:-1000}"
