@@ -116,6 +116,7 @@ namespace elektronData
 		constexpr uint8_t g_trackRoutingId = 0x5c;
 		constexpr uint8_t g_tempoId = 0x61;
 		constexpr uint8_t g_lfoId = 0x62;
+		constexpr uint8_t g_resetNoteMapId = 0x64;
 		constexpr uint8_t g_trigGroupId = 0x65;
 		constexpr uint8_t g_muteGroupId = 0x66;
 		constexpr uint8_t g_kitNameId = 0x55;
@@ -167,5 +168,10 @@ namespace elektronData
 	std::vector<uint8_t> mdSetTempo(const uint16_t _tempo)
 	{
 		return command(g_tempoId, {static_cast<uint8_t>((_tempo >> 7) & 0x7f), static_cast<uint8_t>(_tempo & 0x7f)});
+	}
+
+	std::vector<uint8_t> mdResetNoteMap()
+	{
+		return command(g_resetNoteMapId, {});
 	}
 }

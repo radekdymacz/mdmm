@@ -284,8 +284,8 @@ namespace deskCore
 
 	// ---- the library: slot actions over a model's kinds (DESIGN-UNIFY.md 4.2) ----
 	// One shelf a kind of slot (the kits, the patterns, the songs): what differs between them and between the machines
-	// is data here (the shelf's functions), the actions are the same. Commands: <kit|pat|song>Copy {k|p|s}, Paste
-	// {k|p|s}, CopyTo {from, to} (songCopyTo may carry a name: "Save to..."), Clear {k|p|s}, kitRename {k, name},
+	// is data here (the shelf's functions), the actions are the same. Commands: <kit|pat|song|global>Copy {k|p|s|slot}, Paste
+	// {k|p|s|slot}, CopyTo {from, to} (songCopyTo may carry a name: "Save to..."), Clear {k|p|s}, kitRename {k, name},
 	// songRename {s, name}. The command table has checked the arguments. A slot write is validated and
 	// is no change when it is the same; asking before it loses something is the machine's (its review).
 	namespace library
@@ -466,7 +466,7 @@ namespace deskCore
 				{"kitCopy", Action::Copy}, {"kitPaste", Action::Paste}, {"kitCopyTo", Action::CopyTo}, {"kitClear", Action::Clear},
 				{"kitRename", Action::Rename}, {"patCopy", Action::Copy}, {"patPaste", Action::Paste}, {"patCopyTo", Action::CopyTo},
 				{"patClear", Action::Clear}, {"songCopy", Action::Copy}, {"songPaste", Action::Paste}, {"songCopyTo", Action::CopyTo},
-				{"songClear", Action::Clear}, {"songRename", Action::Rename}};
+				{"songClear", Action::Clear}, {"songRename", Action::Rename}, {"globalCopy", Action::Copy}, {"globalPaste", Action::Paste}};
 			return a;
 		}
 		inline std::vector<std::string> ops()

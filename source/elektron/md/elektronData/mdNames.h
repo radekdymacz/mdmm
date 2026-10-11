@@ -24,6 +24,10 @@ namespace elektronData
 	// A track's level is kit parameter index 24 in the editor's commands (after the 24 values).
 	constexpr uint8_t g_mdLevelIndex = 24;
 	// The GLOBAL settings the editor sets by name (globalSet).
-	constexpr std::array<const char*, 11> g_mdGlobalFields{"baseChannel", "tempoIn", "ctrlIn", "tempoOut", "ctrlOut",
-		"programChangeIn", "programChangeOut", "localControl", "programChangeChannel", "trigMode", "keymap"};
+	// trigIn: TRIG IN A or B (input 0, 1), one of g_mdTrigInParams (0.6, PROBES-manual-gaps.md P3); resetMap: the map
+	// editor back to Elektron's note map (the factory global's, as SysEx 0x64 leaves it).
+	constexpr std::array<const char*, 13> g_mdGlobalFields{"baseChannel", "tempoIn", "ctrlIn", "tempoOut", "ctrlOut",
+		"programChangeIn", "programChangeOut", "localControl", "programChangeChannel", "trigMode", "keymap", "trigIn", "resetMap"};
+	// TRIG IN A / B's five settings, in the order of the global's interleaved inputSettings bytes (A at 2i, B at 2i + 1).
+	constexpr std::array<const char*, 5> g_mdTrigInParams{"dest", "gate", "sens", "vmin", "vmax"};
 }
