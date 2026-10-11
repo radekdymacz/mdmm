@@ -87,7 +87,10 @@
 
     <h3>Transport</h3>
     <div class="tablewrap"><table><tbody>
-      <tr><th scope="row"><kbd>Space</kbd></th><td>Play / stop</td></tr>
+      <tr><th scope="row"><kbd>⇧</kbd> <kbd>Space</kbd></th><td>Pause: the machine holds its step; again (or ▶) goes on from it, STOP ends it (also ⇧-click ▶)</td></tr>
+      <tr><th scope="row"><kbd>⌘</kbd> <kbd>.</kbd></th><td>MD: Panic: every voice off (the machine's STOP twice)<br>MM: Panic: every note off (All Notes Off on each track's channel) and STOP</td></tr>
+      <tr><th scope="row"><kbd>-</kbd> / <kbd>=</kbd></th><td>Hold: the tempo 10 % slower (-) or faster (=) while held, as the TEMPO menu's nudge</td></tr>
+      <tr><th scope="row"><kbd>Space</kbd></th><td>Play / stop (paused: go on from the step)</td></tr>
       <tr><th scope="row"><kbd>⌥</kbd> <kbd>Space</kbd></th><td>MD: Live recording (RECORD + PLAY): Alt + play, the other Alt that is not "all"<br>MM: Live recording (RECORD + PLAY): Alt + play, the other Alt that is not "all". Again: recording off</td></tr>
       <tr><th scope="row"><kbd>T</kbd> / <kbd>B</kbd> <small>(MM: <kbd>B</kbd>)</small></th><td>MD: Tap tempo (the average of the last taps; B as in the Monomachine Editor)<br>MM: Tap tempo (the average of the last taps; T plays F♯ here). On Sequence B is the piano roll's Draw: tap with ⇧B</td></tr>
       <tr><th scope="row"><kbd>⇧</kbd> <kbd>B</kbd></th><td>Tap tempo: ⇧B taps on every workspace of both editors</td></tr>
@@ -119,6 +122,7 @@
 
     <h3>Song</h3>
     <div class="tablewrap"><table><tbody>
+      <tr><th scope="row"><kbd>Enter</kbd></th><td>Play the song from the selected row (▶ From here)</td></tr>
       <tr><th scope="row"><kbd>←</kbd> / <kbd>→</kbd></th><td>Previous / next row</td></tr>
     </tbody></table></div>
 
@@ -225,6 +229,10 @@
     <h3>Mouse: Top bar</h3>
     <div class="tablewrap"><table><tbody>
       <tr><th scope="row">tempo</th><td>Drag up or down: the tempo, half a BPM a pixel (⇧: a tenth)</td></tr>
+      <tr><th scope="row">right-click ▶</th><td>MD: The transport menu: Play / Stop, Pause / Continue, Record, Panic (also the ▾ in the key's corner)<br>MM: The transport menu: Play / Stop, Pause / Continue, Live record, Panic (also the ▾ in the key's corner)</td></tr>
+      <tr><th scope="row"><kbd>⇧</kbd> ▶</th><td>Click: pause; ▶ again goes on from the step</td></tr>
+      <tr><th scope="row">tempo</th><td>MD: Click (no drag): the TEMPO window: − / +, TAP, nudge, change on release<br>MM: Click (no drag): the TEMPO window: − / +, TAP, nudge, change on release, INT / EXT</td></tr>
+      <tr><th scope="row"><kbd>⌥</kbd> tempo</th><td>Drag: the tempo changes when you let go (FUNCTION held on the machine)</td></tr>
       <tr><th scope="row"><kbd>⌥</kbd> CLR</th><td>MD: Click: clear the whole pattern, every track's trigs and locks (one undo step)<br>MM: Click: clear the whole pattern, every track's notes, slides and locks (one undo step)</td></tr>
       <tr><th scope="row">GLOBAL key</th><td>The machine's own settings, kept in its memory: MIDI channels, sync and the rest (also the engine menu: GLOBAL…)</td></tr>
     </tbody></table></div>
