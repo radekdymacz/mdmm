@@ -92,6 +92,14 @@ Lever names (L1-L14) and gates are those of [RESEARCH-emulation-cpu.md](modern-u
 
 Expected end point of steps 2-6 (research): MD playing ~28.5 %, MM ~36.8 % of one core — about a third less.
 
+**Small wins for 0.6 (2026-10-11, branch perf/small-wins; the §8 rule):** taken, each bit-exact with its own switch:
+`LINK_RINGS`, `UC_IDLE_PROBE`, `UC_QUIET`, `NOP_GATE`; together MD -4.3 % / -4.2 % (stopped, instructions / cycles)
+and -4.3 % / -3.7 % (playing), MM -7.1 % / -7.9 % and -7.3 % / -8.3 % host work per frame. Measured and not taken:
+NOP fast-forward shifts, L2a, a JIT mode-check cache, maxInstructionsPerBlock 64 (not bit-exact), `-mcpu=apple-m1`
+(already the default), the fast-lane window order, L9, L10's HI08 poll skip. Table and reasons:
+[RESEARCH-emulation-cpu.md](modern-ux/RESEARCH-emulation-cpu.md), "Small wins (0.6)". The PGO profile should be
+retrained before the release that ships them.
+
 ### 4.3 Sleep when silent: definition before code
 
 "Stopped, silent, no MIDI" is not enough. The emulator must keep running while any of these holds: audio input
