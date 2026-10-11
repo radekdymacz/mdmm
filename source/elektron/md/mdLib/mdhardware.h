@@ -180,6 +180,7 @@ namespace md
 		Dsp& getDspMixer()    { return m_dspMixer; }	// DSP1, index 0 (main/output)
 
 		void processUC();
+		void processUCQuiet();		// processUC when no input waits (UC_QUIET, schedStep)
 		void processAudio(uint32_t _frames, uint32_t _latency);
 		void processAudio(const synthLib::TAudioOutputs& _outputs, uint32_t _frames, uint32_t _latency);
 		void processAudio(const synthLib::TAudioInputs& _inputs,
@@ -451,6 +452,7 @@ namespace md
 		bool     m_leverL1 = true;
 		bool     m_leverL2b = true;
 		bool     m_leverUcIdleProbe = true;
+		bool     m_leverUcQuiet = true;
 		bool     m_exactEssiTiming = false;	// L3 opt-in (setExactEssiTiming)
 		std::array<RealtimeHostAudioInputTimeline, 2> m_hostAudioInput;
 		std::array<int64_t, 2> m_hostAudioInputClockOrigin{};

@@ -26,9 +26,10 @@ namespace md
 		// the small wins of 0.6 (RESEARCH-emulation-cpu.md, "Small wins (0.6)")
 		LinkRings	= 1u << 9,	// the rings between the DSPs and the codec output ring skip their semaphores
 		UcIdleProbe	= 1u << 10,	// the UC idle skip is probed right after a BRA.B -2, not at every 16th step
+		UcQuiet		= 1u << 11,	// a UC slice with no input waiting skips the per-step input tests
 	};
 
-	constexpr uint32_t g_allSpeedUpLevers = 0x7ffu;
+	constexpr uint32_t g_allSpeedUpLevers = 0xfffu;
 
 	constexpr uint32_t bit(const SpeedUpLever _lever) { return static_cast<uint32_t>(_lever); }
 
@@ -39,9 +40,9 @@ namespace md
 		const char* label;		// the Developer menu's
 	};
 
-	inline const std::array<SpeedUpLeverInfo, 11>& speedUpLevers()
+	inline const std::array<SpeedUpLeverInfo, 12>& speedUpLevers()
 	{
-		static const std::array<SpeedUpLeverInfo, 11> levers{{
+		static const std::array<SpeedUpLeverInfo, 12> levers{{
 			{SpeedUpLever::L1,		"L1",		"L1 UC idle skip: inputs tested once per batch"},
 			{SpeedUpLever::L11,		"L11",		"L11 ColdFire memory fast lane"},
 			{SpeedUpLever::L2b,		"L2B",		"L2b MD DSP catch-ups in one entry"},
@@ -53,6 +54,7 @@ namespace md
 			{SpeedUpLever::Cmpm,	"CMPM",		"CMPM fix"},
 			{SpeedUpLever::LinkRings,	"LINK_RINGS",	"DSP link rings without semaphores (one thread)"},
 			{SpeedUpLever::UcIdleProbe,	"UC_IDLE_PROBE",	"UC idle skip probed right after BRA.B -2"},
+			{SpeedUpLever::UcQuiet,		"UC_QUIET",		"UC steps without input tests while none waits"},
 		}};
 		return levers;
 	}
