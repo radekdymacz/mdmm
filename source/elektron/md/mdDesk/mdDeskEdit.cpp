@@ -932,6 +932,238 @@ namespace mdDesk
 			return edits;
 		}
 
+		// ---- a track's parts: COPY / PASTE / CLEAR what (the machine's SUPER COPY and SUPER CLEAR; deskCore/deskEdits.h
+		// trackParts). The whole track: every step of the pattern (all 64, as the machine copies a track), and the kit
+		// that plays for the sound and the LFO ----
+
+		using deskCore::trackParts::Mask;
+		using TrackHome = deskCore::trackParts::Home;
+		enum TrackPart : size_t { PartTrigs, PartAccent, PartSwing, PartSlide, PartLocks, PartSound, PartLfo };
+		bool has(const Mask _m, const TrackPart _p) { return (_m & deskCore::trackParts::bit(_p)) != 0; }
+
+		// SPD, DEPTH, SHMIX: kit parameters of the routing page that belong to the LFO part, not the sound.
+		bool lfoParam(const size_t _i)
+		{
+			for(const auto& p : ed::g_mdLfoParams)
+				if(p.index == _i)
+					return true;
+			return false;
+		}
+
+		uint64_t markBits(const ed::MdPattern& _p, const Mark& _m, const size_t _t)
+		{
+			return _p.*_m.editAll ? _p.*_m.all : (_p.*_m.perTrack)[_t & 15];
+		}
+
+		constexpr std::array<std::pair<TrackPart, const Mark*>, 3> g_markParts{{{PartAccent, &g_accent}, {PartSwing, &g_swing}, {PartSlide, &g_slide}}};
+		uint64_t Clipboard::Track::* markField(const TrackPart _p)
+		{
+			return _p == PartAccent ? &Clipboard::Track::accent : _p == PartSwing ? &Clipboard::Track::swing : &Clipboard::Track::slide;
+		}
+
+		std::string trackNameOf(const int _t) { return trackName(size_t(_t)); }
+
+		std::string trackRefuse(Mask, int, int) { return {}; }
+
+		void trackTake(const ed::MdPattern* _p, const ed::MdKit* _k, const int _t, Mask, Clipboard::Track& _v)
+		{
+			const auto t = size_t(_t);
+			if(_p)
+			{
+				_v.trigs = _p->trigs[t];
+				for(const auto& [part, mark] : g_markParts)
+					_v.*markField(part) = markBits(*_p, *mark, t);
+				for(uint8_t param = 0; param < ed::MdKit::g_paramsPerTrack; ++param)
+					for(uint8_t s = 0; s < ed::MdPattern::g_maxSteps; ++s)
+						if(const auto v = ed::lockValue(*_p, t, param, s))
+							_v.locks[param][s] = *v;
+			}
+			if(_k)
+			{
+				_v.model = _k->models[t];
+				_v.params = _k->params[t];
+				_v.level = _k->levels[t];
+				_v.lfo = _k->lfos[t];
+			}
+		}
+
+		// Locks need a trig: the ones on steps of track _t without one go.
+		ed::MdPattern withoutTriglessLocks(ed::MdPattern _p, const size_t _t)
+		{
+			for(size_t param = 0; param < ed::MdKit::g_paramsPerTrack; ++param)
+				for(size_t s = 0; s < ed::MdPattern::g_maxSteps; ++s)
+					if(!ed::hasTrig(_p, _t, s) && ed::lockValue(_p, _t, param, s))
+						_p = ed::withoutLock(_p, _t, param, s);
+			return _p;
+		}
+
+		void trackPut(ed::MdPattern* _p, ed::MdKit* _k, const Clipboard::Track& _v, const int _from, const int _to, const Mask _m,
+			std::vector<std::string>& _skipped)
+		{
+			const auto t = size_t(_to);
+			if(_p)
+			{
+				auto& p = *_p;
+				if(has(_m, PartTrigs))
+				{
+					p.trigs[t] = _v.trigs;
+					p = withoutTriglessLocks(std::move(p), t);
+				}
+				// A mark with EDIT ALL on is the pattern's, shared by every track (bitsOf).
+				for(const auto& [part, mark] : g_markParts)
+					if(has(_m, part))
+						bitsOf(p, *mark, t) = _v.*markField(part);
+				if(has(_m, PartLocks))
+				{
+					p = withoutTrackLocks(std::move(p), t);
+					size_t noTrig = 0, full = 0;
+					for(const auto& [param, steps] : _v.locks)
+						for(const auto& [s, v] : steps)
+						{
+							if(!ed::hasTrig(p, t, s))
+							{
+								++noTrig;
+								continue;
+							}
+							if(const auto locked = ed::withLock(p, t, param, s, v))
+								p = *locked;
+							else
+								++full;
+						}
+					if(noTrig)
+						_skipped.push_back(trackName(t) + ": " + std::to_string(noTrig) + " lock(s) left out, on steps without a trig");
+					if(full)
+						_skipped.push_back(trackName(t) + ": " + std::to_string(full) + " lock(s) left out: all 64 locked parameters are in use");
+				}
+			}
+			if(_k)
+			{
+				auto& k = *_k;
+				if(has(_m, PartSound))
+				{
+					k.models[t] = _v.model;
+					for(size_t i = 0; i < ed::MdKit::g_paramsPerTrack; ++i)
+						if(!lfoParam(i))
+							k.params[t][i] = _v.params[i];
+					k.levels[t] = _v.level;
+				}
+				if(has(_m, PartLfo))
+				{
+					// An LFO that modulated its own track modulates the track it lands on.
+					k.lfos[t] = _v.lfo;
+					if(_v.lfo.track == _from)
+						k.lfos[t].track = uint8_t(t);
+					for(const auto& lp : ed::g_mdLfoParams)
+						k.params[t][lp.index] = _v.params[lp.index];
+				}
+			}
+		}
+
+		void trackClear(ed::MdPattern* _p, ed::MdKit* _k, const int _t, const Mask _m)
+		{
+			const auto t = size_t(_t);
+			if(_p)
+			{
+				auto& p = *_p;
+				// a lock needs a trig: clearing the trigs takes the locks too
+				if(has(_m, PartTrigs) || has(_m, PartLocks))
+					p = withoutTrackLocks(std::move(p), t);
+				if(has(_m, PartTrigs))
+					p.trigs[t] = 0;
+				for(const auto& [part, mark] : g_markParts)
+					if(has(_m, part))
+						bitsOf(p, *mark, t) = 0;
+			}
+			if(_k)
+			{
+				auto& k = *_k;
+				if(has(_m, PartSound))
+				{
+					// as clearSound: the machine's own defaults are in the firmware; the machine stays
+					for(size_t i = 0; i < ed::MdKit::g_paramsPerTrack; ++i)
+						if(!lfoParam(i))
+							k.params[t][i] = g_neutral[i];
+					k.levels[t] = g_neutralLevel;
+				}
+				if(has(_m, PartLfo))
+				{
+					auto& l = k.lfos[t];
+					l.track = uint8_t(t);
+					l.param = l.shape1 = l.shape2 = l.update = 0;
+					for(const auto& lp : ed::g_mdLfoParams)
+						k.params[t][lp.index] = g_neutral[lp.index];
+				}
+			}
+		}
+
+		using TrackSpec = deskCore::trackParts::Spec<ed::MdPattern, ed::MdKit, Clipboard::Track>;
+		const TrackSpec& trackSpec()
+		{
+			static const TrackSpec spec{trackParts(), int(ed::MdPattern::g_tracks), trackNameOf, trackRefuse, trackTake, trackPut, trackClear};
+			return spec;
+		}
+
+		// trackCopy, trackPaste, trackClear: the pattern (p) and the kit that plays (k) the named parts need, the run
+		// (deskCore), then one change a document it changed (one undo step).
+		EditResult applyTrack(const Documents& _docs, const Value& _command, Clipboard& _clipboard, const EditContext& _context)
+		{
+			namespace tp = deskCore::trackParts;
+			EditResult r;
+			const auto& op = _command.find("op")->asString();
+			const auto mask = tp::parse(_command.find("what"), trackParts(), r.errors);
+			if(!mask)
+				return r;
+			const Args args(_command, r.errors);
+			std::optional<ed::MdPattern> pattern;
+			std::optional<ed::MdKit> kit;
+			if(tp::touches(*mask, trackParts(), TrackHome::Pattern))
+			{
+				if(const auto p = args.integer("p"))
+				{
+					if(const auto it = _docs.patterns.find(uint8_t(*p)); it != _docs.patterns.end())
+						pattern = it->second;
+					else
+						r.errors.push_back("pattern " + ed::mdPatternName(unsigned(*p)) + " is not loaded yet");
+				}
+			}
+			if(tp::touches(*mask, trackParts(), TrackHome::Kit))
+			{
+				if(const auto k = args.integer("k"))
+				{
+					if(!_context.currentKit || *_context.currentKit != *k)
+						r.errors.push_back("kit " + std::to_string(*k + 1) + " is not the kit that plays: " + op + " edits the working kit of the kit that plays");
+					else if(const auto* w = _docs.workingKitOf(uint8_t(*k)))
+						kit = *w;
+					else
+						r.errors.push_back("the working kit of kit " + std::to_string(*k + 1) + " is not loaded yet");
+				}
+			}
+			if(!r.errors.empty())
+				return r;
+			const auto before = pattern;
+			const auto kitBefore = kit;
+			if(!tp::run(tp::actions().at(op), _command, *mask, pattern ? &*pattern : nullptr, kit ? &*kit : nullptr, _clipboard.track, trackSpec(),
+				r.errors, r.note))
+			{
+				r.note.clear();
+				return r;
+			}
+			std::vector<Change> changes;
+			if(pattern && !(*pattern == *before))
+				changes.push_back({Document(*before), Document(*pattern)});
+			if(kit && !(*kit == *kitBefore))
+				changes.push_back({Document(WorkingKit{*kitBefore}), Document(WorkingKit{*kit})});
+			for(const auto& c : changes)
+				if(auto problems = problemsOf(c.after); !problems.empty())
+				{
+					r.errors = std::move(problems);
+					r.note.clear();
+					return r;
+				}
+			r.changes = std::move(changes);
+			return r;
+		}
+
 		// ---- song (edited as contract rows, so row semantics stay in mdJson; the row ops are deskCore's, shared
 		// with the Monomachine: deskCore/deskEdits.h) ----
 
@@ -1246,6 +1478,8 @@ namespace mdDesk
 	std::vector<std::string> editOps()
 	{
 		std::vector<std::string> ops = libraryOps();
+		for(const auto& op : deskCore::trackParts::ops())
+			ops.push_back(op);
 		const auto add = [&ops](const auto& _edits)
 		{
 			for(const auto& [op, fn] : _edits)
@@ -1283,10 +1517,19 @@ namespace mdDesk
 		// Values in, values out: the clipboard the command leaves is returned, not changed in place.
 		auto clipboard = _clipboard;
 		result = row->group == g_library ? applyLibrary(_docs, _command, *row, clipboard, _context)
+			: row->group == g_track ? applyTrack(_docs, _command, clipboard, _context)
 			: applyEdit(_docs, _command, *row, clipboard, _context);
 		if(result.errors.empty() && !(clipboard == _clipboard))
 			result.clipboard = std::move(clipboard);
 		return result;
+	}
+
+	const std::vector<deskCore::trackParts::Part>& trackParts()
+	{
+		using H = deskCore::trackParts::Home;
+		static const std::vector<deskCore::trackParts::Part> parts{{"trigs", H::Pattern}, {"accent", H::Pattern}, {"swing", H::Pattern},
+			{"slide", H::Pattern}, {"locks", H::Pattern}, {"sound", H::Kit}, {"lfo", H::Kit}};
+		return parts;
 	}
 
 	bool controlAllReaches(const uint32_t _model, const size_t _index)

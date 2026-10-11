@@ -138,6 +138,27 @@ namespace mdDesk
 		c.set("kit", _clip.kit ? Value(static_cast<int>(_clip.kit->position)) : Value());
 		c.set("pattern", _clip.pattern ? Value(static_cast<int>(_clip.pattern->position)) : Value());
 		c.set("song", _clip.song ? Value(static_cast<int>(_clip.song->position)) : Value());
+		// COPY what: the track and the parts it copied, with what they hold (the paste dialog's numbers)
+		Value track;
+		if(_clip.track)
+		{
+			const auto& v = _clip.track->values;
+			const auto bits = [](uint64_t _b) { int n = 0; for(; _b; _b &= _b - 1) ++n; return n; };
+			int locks = 0;
+			for(const auto& [param, steps] : v.locks)
+				locks += static_cast<int>(steps.size());
+			track = Value::object();
+			track.set("t", _clip.track->t);
+			track.set("what", deskCore::trackParts::names(_clip.track->what, trackParts()));
+			Value counts = Value::object();
+			counts.set("trigs", bits(v.trigs));
+			counts.set("accent", bits(v.accent));
+			counts.set("swing", bits(v.swing));
+			counts.set("slide", bits(v.slide));
+			counts.set("locks", locks);
+			track.set("counts", std::move(counts));
+		}
+		c.set("track", std::move(track));
 		return c;
 	}
 
@@ -233,6 +254,7 @@ namespace mdDesk
 		const Arg on{"on", ArgType::Bool, 0, 0, true};
 		const Arg row{"i", ArgType::Integer, 0, 255};
 		const Arg any{"v", ArgType::Any, 0, 0, true};
+		const Arg what{"what", ArgType::Array};	// a track's parts by name (mdDesk::trackParts)
 		const auto opt = [](Arg _a) { _a.optional = true; return _a; };
 		static const CommandTable table({
 			// ---- the core: documents ----
@@ -266,6 +288,14 @@ namespace mdDesk
 			{"copyStepsTo", Owner::Core, Gate::Input, P, {p, t, rows, {"from", ArgType::Integer, 0, 63}, {"to", ArgType::Integer, 1, 64},
 				{"at", ArgType::Integer, 0, 63}, {"dt", ArgType::Integer, 0, 15, true}},
 				"a block of steps copied within the pattern to step at of track dt (its own track without dt), the clipboard untouched: duplicate, Alt-drag"},
+			{"trackCopy", Owner::Core, Gate::Input, P, {opt(p), opt(k), t, what},
+				"COPY what (the machine's SUPER COPY): the named parts of track t into the clipboard, over the whole track: trigs, accent, swing, slide,"
+				" locks (pattern p) and sound, lfo (the kit that plays, k)", CoreOp::Edit, g_track},
+			{"trackPaste", Owner::Core, Gate::Input, P, {opt(p), opt(k), {"to", ArgType::Array}, what},
+				"PASTE what: the clipboard's named parts onto every track of to (tracks 0-15), one undo step", CoreOp::Edit, g_track},
+			{"trackClear", Owner::Core, Gate::Input, P, {opt(p), opt(k), t, what},
+				"CLEAR what (the machine's SUPER CLEAR): the named parts of track t: trigs (and their locks), accent, swing, slide, locks;"
+				" sound to neutral values, the LFO to its start", CoreOp::Edit, g_track},
 			{"patCopy", Owner::Core, Gate::Input, P, {p}, "the pattern chooser", CoreOp::Edit, g_library},
 			{"patPaste", Owner::Core, Gate::Input, P, {p}, "", CoreOp::Edit, g_library},
 			{"patCopyTo", Owner::Core, Gate::Input, P, {slot("from", DocKind::Pattern), slot("to", DocKind::Pattern)}, "drag-copy", CoreOp::Edit, g_library},

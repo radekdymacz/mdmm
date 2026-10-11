@@ -3648,6 +3648,121 @@
         },
         {
           "type": "object",
+          "description": "core: COPY what (the machine's SUPER COPY): the named parts of track t into the clipboard, over the whole track: notes, melody, slide, swing, locks, arp, transpose (pattern p) and sound (the kit that plays, k; a synth track's)",
+          "required": ["op", "t", "what"],
+          "properties": {
+            "op": {
+              "const": "trackCopy"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "p": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            },
+            "k": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            },
+            "t": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 11
+            },
+            "what": {
+              "type": "array"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core: PASTE what: the clipboard's named parts onto every track of to (0-11, tracks of the copied track's kind), one undo step",
+          "required": ["op", "to", "what"],
+          "properties": {
+            "op": {
+              "const": "trackPaste"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "p": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            },
+            "k": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            },
+            "to": {
+              "type": "array"
+            },
+            "what": {
+              "type": "array"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core: CLEAR what (the machine's SUPER CLEAR): the named parts of track t: notes (and their locks), melody (the trigs pitchless), slide, swing (every second 16th), locks, arp (OFF), transpose (0), sound (GND-SIN)",
+          "required": ["op", "t", "what"],
+          "properties": {
+            "op": {
+              "const": "trackClear"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "p": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            },
+            "k": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            },
+            "t": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 11
+            },
+            "what": {
+              "type": "array"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "description": "core: a track's machine (model: its SysEx 0x5B id): its SYN page starts at the machine's defaults; without keepFx (default on) the other pages too",
           "required": ["op", "k", "t", "model"],
           "properties": {
