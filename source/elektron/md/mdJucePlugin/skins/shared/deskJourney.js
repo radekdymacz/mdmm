@@ -265,6 +265,22 @@ const Journey = (() => {
 		log(`JOURNEY ${j.name} ${reason ? "FAIL " + reason : "PASS"}`);
 		return !reason;
 	}
+	/* Whatever an earlier journey left open (a dialog, a panel, the editor menu or the CPU details: the modal layer's
+	   stack, deskModal.js) is closed before the next one, by Esc as a person would, and said: what was closed, or what
+	   stays open. Without it one journey's open details covered the next journeys' controls (0.5.1 gate: md-dev-speedups
+	   then md-lcd-volume). The start-up card is not closed here (only the machine closes it). */
+	async function closeLeftOpen() {
+		const open = () => typeof Modal === "undefined" ? [] : Modal.open().filter(id => id !== "bootcard");
+		const was = open(); if (!was.length) return "";
+		for (let i = 0; i < 6 && open().length; i++) {
+			const n = open().length;
+			if (Modal.top() === "deskmenu" && typeof closeDeskMenu === "function") closeDeskMenu(); else u.key("Escape");
+			await until(() => open().length < n, 600);
+		}
+		await sleep(100);
+		const still = open();
+		return `closed what was left open: ${was.join(", ")}${still.length ? `; still open: ${still.join(", ")}` : ""}`;
+	}
 	/* page: {log, ready: async () => true when the machine takes input, prepare: async (u) => what it did (optional,
 	   once, after ready and before the first journey: logged "JOURNEYS before: ..."), between: async (u) => the page's
 	   neutral state before each journey, context: () => what the page last said (its toast, its error line), added to a
@@ -285,6 +301,8 @@ const Journey = (() => {
 		}
 		for (const j of list.filter(j => !j.boot)) {
 			try { if (page.between) await page.between(u); } catch (e) { log(`JOURNEY ${j.name} before: ${e.message}`); }
+			const left = await closeLeftOpen();
+			if (left) log(`JOURNEY ${j.name} before: ${left}`);
 			count(await runOne(j, log, page.context));
 		}
 		log(`JOURNEYS DONE ${passed}/${list.length - skipped}${skipped ? `, ${skipped} skipped` : ""}`);
@@ -410,11 +428,19 @@ const Journey = (() => {
 		savedLeverOff: key => !!(CpuMeter.last && CpuMeter.last.saved && (CpuMeter.last.saved.leversOff || []).includes(key)),
 		/* the CPU details' own entries (deskCpu.js: the editor menu's, under the notes) */
 		cpuItem: label => [...document.querySelectorAll('#deskmenu .mpanel[data-cpu="1"] [data-mi]')].find(b => (b.querySelector("span")?.textContent || "").trim() === label),
-		cpuOpen: async hands => { if (menu.on()) closeDeskMenu(); await sleep(200); hands.click("#cpumeter");
+		/* the menu closed and staying closed: a choice in the CPU details opens them again by themselves a moment later
+		   (deskCpu.js: openMenu, then the plug-in's answer), so one close can lose that race and leave them over the
+		   meter (0.5.1 gate: "#cpumeter is covered by #modalbg") */
+		shut: async () => { for (let i = 0; i < 8; i++) { if (menu.on()) closeDeskMenu();
+			if (!await until(() => menu.on(), 500) && (!$q("#modalbg") || $q("#modalbg").hidden)) return; }
+			throw new Error("the menu keeps opening again"); },
+		/* the CPU details with their speed-up entries: the ones open already (they reopen after a choice), else opened */
+		cpuOpen: async hands => { if (cpu.panel() && speed.cpuItem("Speed-ups")) return;
+			await speed.shut(); hands.click("#cpumeter");
 			if (!await until(() => !!speed.cpuItem("Speed-ups"), 3000)) throw new Error("no Speed-ups entry in the CPU details"); },
 		keys: () => [...document.querySelectorAll('#deskmenu [data-mid^="speedup-"]')].map(b => b.dataset.mid).filter(x => x !== "speedup-levers"),
 		/* the Developer submenu (and the levers' one) as the plug-in sends it now */
-		open: async (hands, levers) => { if (menu.on()) closeDeskMenu(); await until(() => !$q("#modalbg") || $q("#modalbg").hidden, 2000); await sleep(150); await menu.via(hands, levers ? ["developer", "speedup-levers"] : ["developer"]);
+		open: async (hands, levers) => { await speed.shut(); await menu.via(hands, levers ? ["developer", "speedup-levers"] : ["developer"]);
 			if (!await until(() => !!$q(menu.id(levers ? "speedup-L1" : "speed-ups")), 2000)) throw new Error("no speed-ups entry in Developer"); },
 		pick: async (hands, id, levers) => { await speed.open(hands, levers); hands.click(menu.id(id)); await until(() => !menu.on(), 2000); }
 	};
@@ -443,7 +469,8 @@ const Journey = (() => {
 			steps: [
 				{ say: "open Developer: Speed-ups, ticked when the machine runs them", act: async (hands, c) => { await speed.open(hands); c.legacy0 = speed.legacy(); closeDeskMenu(); },
 					machine: c => ok((speed.machine() === "off") === c.legacy0, `ticked ${c.legacy0}, the machine ${speed.machine()}`), within: 4000 },
-				toggle("first", c => !c.legacy0), toggle("again", c => c.legacy0), toggle("a third time", c => !c.legacy0), toggle("back", c => c.legacy0),
+				/* each switch once each way (four menu toggles made 2026-10-11's 40-60 s journey; once each way finds the same) */
+				toggle("first", c => !c.legacy0), toggle("back", c => c.legacy0),
 				cpuToggle("first", c => !c.legacy0), cpuToggle("back", c => c.legacy0),
 				{ say: "in the CPU meter's details, Speed-ups (each)… lists every lever; L1 off there and on again (the machine and the settings follow)",
 					act: async (hands, c) => {

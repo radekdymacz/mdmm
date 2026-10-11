@@ -30,6 +30,10 @@ const MdJourneys = (() => {
 	const lit = t => V.tracks[t].trigs.map((on, s) => on ? s : -1).filter(s => s >= 0 && s < V.len);
 	const gridShows = t => lit(t).every(s => pressed(cell(t, s))) && $all(`#seq .st[data-t="${t}"][aria-pressed="true"]`).length === lit(t).length;
 	const mutes = () => sorted(desk().mutes || []);
+	/* the machine's mutes read back and still: the desk idle and the same mutes for 400 ms (at most 6 s) */
+	const settledMutes = async () => { const end = performance.now() + 6000; let last = "", since = performance.now();
+		while (performance.now() < end) { const m = JSON.stringify(mutes()); if (m !== last || !idle()) { last = m; since = performance.now(); } else if (performance.now() - since >= 400) return true; await sleep(50); }
+		return false; };
 	/* a track the person would pick: a sound on it (not empty, not MIDI, CTR or input, not a recorder) */
 	const soundTracks = () => [...Array(16).keys()].filter(i => !/^(GND-EMPTY|MID-|CTR-|INP-)/.test(V.tracks[i].m) && !machineFacts(V.tracks[i].m, Cat).recorder);
 	const soundTrack = () => soundTracks()[0] ?? 0;
@@ -560,8 +564,11 @@ const MdJourneys = (() => {
 		name: "md-mix-ms-off",
 		steps: [
 			go("seq"),
-			{ say: "mute two tracks on the rail", act: async (u, c) => { c.ts = [0, 1]; for (const i of c.ts) { if (!mutes().includes(i)) u.click(`#rail .th[data-sel="${i}"] .ms.m`); await sleep(150); } }, machine: c => ok(c.ts.every(i => mutes().includes(i)), "machine mutes " + mutes()) },
-			{ say: "click M/S off", act: u => u.click("#allon"), machine: () => ok(!mutes().length, "machine mutes " + mutes()), screen: () => ok($1("#allon").disabled, "M/S off still on") }
+			{ say: "mute two tracks on the rail", act: async (u, c) => { c.ts = [0, 1]; for (const i of c.ts) { if (!mutes().includes(i)) u.click(`#rail .th[data-sel="${i}"] .ms.m`); await until(() => mutes().includes(i), 3000); } }, machine: c => ok(c.ts.every(i => mutes().includes(i)), "machine mutes " + mutes()) },
+			/* M/S off unmutes the mutes the page knows when it is clicked: a mute still on its way back from the machine (an
+			   earlier journey's) would stay, so it is clicked once the read-back has settled (the desk idle, the mutes the same
+			   for 400 ms), not after a fixed wait */
+			{ say: "click M/S off", act: async u => { await settledMutes(); u.click("#allon"); }, machine: () => ok(!mutes().length, "machine mutes " + mutes()), screen: () => ok($1("#allon").disabled, "M/S off still on"), within: 8000 }
 		]
 	};
 	const fader = {
@@ -636,12 +643,14 @@ const MdJourneys = (() => {
 				screen: () => ok(/VOL 0/.test($1(".recmix")?.textContent || ""), "no VOL 0 note on the Source card"), within: 8000 },
 			{ say: "click Input A: the recorder's VOL comes back", act: u => u.click('[data-recsrc="a"]'), machine: c => ok(kitVals(c.r)[pidx(c.r, "VOL", "rt")] === c.vol0 && kitVals(c.r)[pidx(c.r, "MLEV", "syn")] === 0, "VOL " + kitVals(c.r)[pidx(c.r, "VOL", "rt")]), within: 8000 },
 			{ say: "click Main mix: VOL 0 again", act: u => u.click('[data-recsrc="main"]'), machine: c => ok(kitVals(c.r)[pidx(c.r, "VOL", "rt")] === 0, "VOL " + kitVals(c.r)[pidx(c.r, "VOL", "rt")]), within: 8000 },
-			{ ...undoKey, say: "press Cmd+Z three times: as before the set-up", act: async u => { for (let k = 0; k < 3; k++) { u.key("z", { cmd: true }); await sleep(900); } },
+			{ ...undoKey, say: "press Cmd+Z three times: as before the set-up", act: async u => { for (let k = 0; k < 3; k++) { const u0 = V.undoCount; await until(idle, 4000); u.key("z", { cmd: true }); await until(() => V.undoCount < u0, 4000); } },
 				machine: c => ok(same([kit().tracks[c.r].machine, kit().tracks[c.p].machine], c.m0) && kitVals(c.r)[pidx(c.r, "VOL", "rt")] === c.vol0, `tracks ${kit().tracks[c.r].machine} ${kit().tracks[c.p].machine}, VOL ${kitVals(c.r)[pidx(c.r, "VOL", "rt")]}`), within: 10000 }
 		]
 	};
 	const audition = {
-		name: "md-sampler-audition", needs: Journey.onScreen,
+		/* quarantined (2026-10-11, doc/release/DEV-CYCLE.md): a fresh sandbox has no UW sample (B-012), so it fails in 3 of
+		   4 runs; it comes back with a sample fixture in the sandbox */
+		name: "md-sampler-audition", needs: () => "quarantined: no sample fixture in the sandbox yet (B-012)",
 		steps: [
 			go("sampler"),
 			{ say: "click a ROM slot's play key: it plays", act: async (u, c) => { const k = $all(".slotk.rom.has")[0]; if (!k) throw new Error("no ROM sample"); u.click(k); await sleep(400); results.length = 0; const b = $all("[data-aud]").find(x => !x.disabled); if (!b) throw new Error("no play key"); c.key = b.dataset.aud; u.click(b);
@@ -683,8 +692,9 @@ const MdJourneys = (() => {
 			libSelect(c => (c.src = [...Array(64).keys()].find(k => k !== V.kit && !kitEmpty(k) && kitName(k)))),
 			{ say: "click Copy", act: u => u.click('#libpop [data-la="copy"]'), machine: c => ok(V.clipboard.kit === c.src, "clipboard " + V.clipboard.kit) },
 			libSelect(c => { c.dst = [...Array(64).keys()].reverse().find(k => k !== V.kit && k !== c.src && kitLoaded(k) && kitName(k) !== kitName(c.src)); c.d0 = JSON.stringify(Docs.kits[c.dst]); return c.dst; }),
-			{ say: "click Paste", act: u => u.click('#libpop [data-la="paste"]'), machine: c => ok(kitName(c.dst) === kitName(c.src) && same(Docs.kits[c.dst].tracks.map(t => t.machine), Docs.kits[c.src].tracks.map(t => t.machine)), "slot " + kitName(c.dst)), screen: c => ok($1(ks(c.dst))?.textContent.includes(kitName(c.src).trim()), "tile " + $1(ks(c.dst))?.textContent), within: 8000 },
-			{ ...undoKey, say: "press Cmd+Z (the library open): the slot is back", machine: c => ok(JSON.stringify(Docs.kits[c.dst]) === c.d0, "slot " + kitName(c.dst)), within: 8000 },
+			/* the paste and its undo each wait for the desk to be idle first (the library reads its slots in the background) */
+			{ say: "click Paste", act: async u => { await until(idle, 8000); u.click('#libpop [data-la="paste"]'); }, machine: c => ok(kitName(c.dst) === kitName(c.src) && same(Docs.kits[c.dst].tracks.map(t => t.machine), Docs.kits[c.src].tracks.map(t => t.machine)), "slot " + kitName(c.dst)), screen: c => ok($1(ks(c.dst))?.textContent.includes(kitName(c.src).trim()), "tile " + $1(ks(c.dst))?.textContent), within: 12000 },
+			{ say: "press Cmd+Z (the library open): the slot is back", act: async u => { await until(idle, 8000); u.key("z", { cmd: true }); }, machine: c => ok(JSON.stringify(Docs.kits[c.dst]) === c.d0, "slot " + kitName(c.dst)), within: 12000 },
 			esc
 		]
 	};
