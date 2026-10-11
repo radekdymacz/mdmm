@@ -61,7 +61,7 @@ function page() {
 	const src = FILES.map(f => fs.readFileSync(f, "utf8").replace(/^"use strict";/, "") + (/mmAdapter/.test(f) ? hold : "")).join("\n;\n")
 		+ "\n;__start();\nreturn { S: () => S, Overlay, MmView, docStore, storeDoc, MM_SEAM, Dlg, Banner, mockup: { " +
 			"mutApply, genLive, genEnd, setMachine, songAction, secAction, setSel, clearSel, selCut, selDuplicate, selTrigs, selMark, selMove, selGrow, stepMenuItems, Keys, HOST, " +
-			"rollAdd, rollLen, rollRemove, editSpan, setRollDraw, setRollLen, selMoveTo, selClear, rollBoxed, noteSpans } };";
+			"rollAdd, rollLen, rollRemove, editSpan, setRollDraw, setRollLen, selMoveTo, selClear, rollBoxed, noteSpans, vis } };";
 	const out = new Function("scope", "with (scope) {\n" + src + "\n}")(scope);
 	const run = () => { for (let n = 0; timers.length && n < 10000; n++) timers.shift()(); };
 	run();
@@ -461,6 +461,29 @@ const result = (m, ok = true, errors = []) => ({ type: "result", id: m.id, op: m
 	M.clearSel();
 	M.Keys.byId("delete").run();
 	check(!take().length && !S.stepSel, "Delete with nothing selected clears nothing (D3)");
+	/* 0.5.1, decision A: copied steps (a selection) pasted with nothing selected, or into marked tracks, put down only
+	   the copied steps (no "to": the core pastes the block's own length), as the Machinedrum; COPY PAGE stays a page */
+	M.setSel({ t: 0, n: 1, from: 2, to: 4 }); M.secAction("copy"); take(); M.clearSel();
+	const [va, vb] = M.vis();
+	S.sel = 1; M.secAction("paste");
+	o = take();
+	check(o.length === 1 && args(o[0]) === `pasteSteps {"t":1,"from":${va}}`, "two copied steps, nothing selected, ⌘V: pasteSteps of the block alone at the page's first step, no \"to\": " + o.map(args).join("; "));
+	S.marks.add(2); S.marks.add(3); M.secAction("paste");
+	o = take();
+	check(o.length === 2 && args(o[0]) === `pasteSteps {"t":2,"from":${va}}` && args(o[1]) === `pasteSteps {"t":3,"from":${va}}`, "into two marked tracks: the block alone on each, no \"to\": " + o.map(args).join("; "));
+	S.marks.clear();
+	M.setSel({ t: 0, n: 2, from: 0, to: 2 }); M.secAction("copy"); take(); M.clearSel();
+	S.sel = 3; M.secAction("paste");
+	o = take();
+	check(o.length === 1 && args(o[0]) === `pasteSteps {"t":3,"from":${va}}`, "a copied block of two tracks, nothing selected: pasteSteps from the selected track, its own size: " + o.map(args).join("; "));
+	S.sel = 0; M.secAction("copy"); take();
+	S.sel = 2; M.secAction("paste");
+	o = take();
+	check(o.length === 1 && args(o[0]) === `pasteSteps {"t":2,"from":${va},"to":${vb}}`, "COPY PAGE (nothing selected) then ⌘V: still the page, \"to\" its end: " + o.map(args).join("; "));
+	S.marks.add(4); M.secAction("paste");
+	o = take();
+	check(o.length === 1 && args(o[0]) === `pasteSteps {"t":4,"from":${va},"to":${vb}}`, "a copied page into a marked track: the page: " + o.map(args).join("; "));
+	S.marks.clear();
 	M.setSel({ t: 0, n: 1, from: 0, to: 2 }); S.tracks[0].steps[0] = null; S.tracks[0].steps[1] = null;
 	M.selTrigs();
 	o = take();

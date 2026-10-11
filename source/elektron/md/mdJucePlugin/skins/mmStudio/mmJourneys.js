@@ -680,17 +680,54 @@ const MmJourneys = (() => {
 			{ say: "press Alt+←: back", act: u => u.key("ArrowLeft", { alt: true }), machine: c => ok(same(trigsOf(c.t), c.t0), "notes " + trigsOf(c.t).join(",")), within: 15000 }
 		]
 	};
+	/* 0.5.1, decision A (as the Machinedrum): copied steps (a selection) pasted with no step selected, or into marked
+	   tracks, put down only the copied steps; the rest of the page stays. The block: the page's first four steps. */
+	const blk = () => { const a = vis()[0]; return { a, b: Math.min(a + 4, S().len), end: Math.min(vis()[1], S().len) }; };
+	const inBlk = (s, k) => s >= k.a && s < k.b;
+	const blockOf = (t, k) => trigsOf(t).filter(s => inBlk(s, k)).map(s => s - k.a);
+	const restOf = (t, k) => trigsOf(t).filter(s => !inBlk(s, k));
+	/* a synth track with a note in the block, and the others with a note on the page past it (the ones a page paste
+	   would clear) first */
+	function pickBlock(c, n) {
+		const k = c.k = blk(), syn = [0, 1, 2, 3, 4, 5];
+		c.a = syn.find(t => blockOf(t, k).length) ?? 0;
+		c.src = blockOf(c.a, k);
+		/* first the tracks with notes past the block whose block differs from the copied one */
+		const score = t => (trigsOf(t).some(s => s >= k.b && s < k.end) ? 2 : 0) + (same(blockOf(t, k), c.src) ? 0 : 1);
+		c.bs = syn.filter(t => t !== c.a).sort((x, y) => score(y) - score(x) || x - y).slice(0, n); c.b0 = c.bs.map(trigsOf); c.rest0 = c.bs.map(t => restOf(t, k));
+		c.note = `T${c.a + 1} steps ${k.a + 1}-${k.b} (${c.src.map(s => s + 1).join(",") || "no notes"}) onto ${c.bs.map(t => "T" + (t + 1) + " (" + (c.rest0[c.bs.indexOf(t)].filter(s => s >= k.b && s < k.end).length) + " later notes on the page)").join(" ")}`;
+	}
+	const copyBlock = { say: "pick a synth track with notes, Cmd-drag over the page's first four steps in the roll, press Cmd+C, then Escape: copied, nothing selected",
+		act: async (u, c) => { if (S().side === "midi") u.click('[data-side="int"]'); u.click(rail(c.a)); await sleep(300); if (S().stepSel) clearSel();
+			await dragRoll(u, c.a, [c.k.a, c.k.a + 2, c.k.b - 1], { cmd: true }); await sleep(200); c.sel = JSON.stringify(S().stepSel); blur(); u.key("c", { cmd: true }); await sleep(300); u.key("Escape"); },
+		screen: c => ok(c.sel === JSON.stringify({ t: c.a, n: 1, from: c.k.a, to: c.k.b }) && !S().stepSel, "selection was " + c.sel + ", now " + JSON.stringify(S().stepSel)) };
+	/* the pastes taken (their results: the core's documents hold them), then each target: the copied block, the rest kept */
+	const pasted = c => results.filter(r => r.op === "pasteSteps" && r.ok).length >= c.bs.length;
+	const keptAll = c => pasted(c) && c.bs.every((t, i) => same(blockOf(t, c.k), c.src) && same(restOf(t, c.k), c.rest0[i]));
+	const sayAll = c => c.bs.map(t => `T${t + 1} ${trigsOf(t).join(",")}`).join("; ");
+	const pasteKeeps = {
+		name: "mm-seq-paste-steps-keeps-page",
+		steps: [
+			go("seq"),
+			{ say: "choose the tracks", act: (u, c) => { if (S().len < 8) throw new Error("the pattern is shorter than 8 steps"); pickBlock(c, 1); }, screen: c => ok(c.bs.length === 1, "no other track") },
+			copyBlock,
+			{ say: "pick the other track and press Cmd+V: the four copied steps on its page's first four, the rest of its page as before", act: async (u, c) => { u.click(rail(c.bs[0])); await sleep(300); results.length = 0; blur(); u.key("v", { cmd: true }); },
+				machine: c => ok(keptAll(c), sayAll(c) + (pasted(c) ? "" : "; no pasteSteps result yet") + " (before " + c.b0.map(x => x.join(",")).join("; ") + ")"), within: 15000 },
+			{ ...undoKey, say: "press Cmd+Z: as before", act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(same(trigsOf(c.bs[0]), c.b0[0]), sayAll(c)), within: 15000 }
+		],
+		async tidy(u, c) { if (S().stepSel) clearSel(); if (c.bs) await undoUntil(u, () => c.bs.every((t, k) => same(trigsOf(t), c.b0[k])), 3); }
+	};
 	const pasteMany = {
 		name: "mm-seq-paste-many",
 		steps: [
 			go("seq"),
-			/* no step selected: Cmd+C copies the page (with a selection it copies the selected steps) */
-			{ say: "pick a track with notes and press Cmd+C (no step selected: the page)", act: async (u, c) => { if (S().stepSel) clearSel(); c.a = [0, 1, 2, 3, 4, 5].find(t => trigsOf(t).length) ?? 0; c.bs = [0, 1, 2, 3, 4, 5].filter(t => t !== c.a && !same(trigsOf(t), trigsOf(c.a))).slice(0, 2); c.b0 = c.bs.map(trigsOf); c.ta = trigsOf(c.a); u.click(rail(c.a)); await sleep(200); blur(); u.key("c", { cmd: true }); }, screen: () => ok(/COPY PAGE/.test($1("#toast")?.textContent || ""), "toast " + $1("#toast")?.textContent) },
+			{ say: "choose the tracks", act: (u, c) => { if (S().len < 8) throw new Error("the pattern is shorter than 8 steps"); pickBlock(c, 2); }, screen: c => ok(c.bs.length === 2, "no two other tracks") },
+			copyBlock,
 			{ say: "Shift-click two other headers: marked", act: async (u, c) => { for (const t of c.bs) { u.click(rail(t), { shift: true }); await sleep(150); } }, screen: c => ok(c.bs.every(t => $1(`#rail .th[data-sel="${t}"]`)?.classList.contains("marked")), "not marked") },
-			{ say: "press Cmd+V: both get the notes", act: u => { blur(); u.key("v", { cmd: true }); }, machine: c => ok(c.bs.every(t => same(trigsOf(t), c.ta)), c.bs.map(t => `T${t + 1} ${trigsOf(t).join(",")}`).join("; ")), within: 20000 },
-			{ ...undoKey, say: "press Cmd+Z once: both are back", act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(c.bs.every((t, k) => same(trigsOf(t), c.b0[k])), c.bs.map(t => `T${t + 1} ${trigsOf(t).join(",")}`).join("; ")), within: 20000 }
+			{ say: "press Cmd+V: both get the four copied steps, the rest of their pages as before", act: u => { results.length = 0; blur(); u.key("v", { cmd: true }); }, machine: c => ok(keptAll(c), sayAll(c) + (pasted(c) ? "" : "; no pasteSteps result yet")), within: 20000 },
+			{ ...undoKey, say: "press Cmd+Z once: both are back", act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(c.bs.every((t, k) => same(trigsOf(t), c.b0[k])), sayAll(c)), within: 20000 }
 		],
-		async tidy(u, c) { if (S().marks?.size) u.key("Escape"); if (c.bs) await undoUntil(u, () => c.bs.every((t, k) => same(trigsOf(t), c.b0[k])), 3); }
+		async tidy(u, c) { if (S().marks?.size) u.key("Escape"); if (S().stepSel) clearSel(); if (c.bs) await undoUntil(u, () => c.bs.every((t, k) => same(trigsOf(t), c.b0[k])), 3); }
 	};
 	const liveRec = {
 		name: "mm-seq-live-record",
@@ -1271,8 +1308,9 @@ const MmJourneys = (() => {
 				machine: c => { c.s0 = gSpan(); return ok(c.s0 != null, "no global"); } },
 			{ say: "click − beside Channel span down to 0: no track has a channel, the panel says so", act: u => spanTo(u, 0),
 				machine: () => ok(gSpan() === 0, "span " + gSpan()), screen: () => ok(($1("#globpop .gwarn")?.textContent || "").startsWith("No track has a MIDI channel of its own"), "warning: " + ($1("#globpop .gwarn")?.textContent || "none")), within: 20000 },
-			{ say: "press Escape, click track 3's M on the rail: refused, nothing muted, the notice offers the fix", act: async (u, c) => { u.key("Escape"); await sleep(200); u.click(tab("seq")); await sleep(300); c.m0 = synthMutes(); u.click('#rail .th[data-sel="2"] .ms.m'); },
-				machine: c => ok(same(synthMutes(), c.m0), "machine mutes " + synthMutes()), screen: () => ok(dlgShown() && !!dlgButton("Give each track its own channel") && !pressed('#rail .th[data-sel="2"] .ms.m'), "notice " + dlgShown()), within: 8000 },
+			{ say: "press Escape, click track 3's M on the rail: refused, nothing muted, the notice offers the fix", act: async (u, c) => { u.key("Escape"); await sleep(200); u.click(tab("seq")); await sleep(300); c.m0 = synthMutes(); c.t3 = synthMuted(2); c.lit0 = pressed('#rail .th[data-sel="2"] .ms.m'); u.click('#rail .th[data-sel="2"] .ms.m'); },
+				/* the M key as it was (a person's pattern may have track 3 muted already) */
+				machine: c => ok(same(synthMutes(), c.m0), "machine mutes " + synthMutes()), screen: c => ok(dlgShown() && !!dlgButton("Give each track its own channel") && pressed('#rail .th[data-sel="2"] .ms.m') === c.lit0, `notice ${dlgShown()}, its key ${!!dlgButton("Give each track its own channel")}, M ${pressed('#rail .th[data-sel="2"] .ms.m')} (was ${c.lit0})`), within: 8000 },
 			{ say: "click Close", act: u => u.click(dlgButton("Close")), screen: () => ok(!dlgShown(), "notice open") },
 			go("mix"),
 			{ say: "drag track 3's PAN bar: the machine takes it (a kit dump, no channel)", act: async (u, c) => { c.p0 = wk().tracks[2].pages[1][6]; const d = c.p0 > 64 ? -1 : 1; await u.drag(strip(2, ".pc.pan"), [[d * 8, 0], [d * 16, 0], [d * 24, 0]]); },
@@ -1280,14 +1318,15 @@ const MmJourneys = (() => {
 			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(wk().tracks[2].pages[1][6] === c.p0, "PAN " + wk().tracks[2].pages[1][6]), within: 15000 },
 			{ say: "click track 3's M again, then Give each track its own channel: CHANNEL SPAN 6", act: async u => { u.click(tab("seq")); await sleep(300); u.click('#rail .th[data-sel="2"] .ms.m'); if (await until(dlgShown, 4000)) u.click(dlgButton("Give each track its own channel")); },
 				machine: () => ok(gSpan() === 6, "span " + gSpan()), screen: () => ok(!dlgShown(), "notice open"), within: 20000 },
-			{ say: "wait for the channels, click track 3's M: it mutes", act: async u => { await sleep(7000); u.click('#rail .th[data-sel="2"] .ms.m'); },
-				machine: () => ok(synthMuted(2), "machine mutes " + synthMutes()), within: 8000 },
-			{ say: "click M again", act: u => u.click('#rail .th[data-sel="2"] .ms.m'), machine: () => ok(!synthMuted(2), "machine mutes " + synthMutes()) }
+			{ say: "wait for the channels, click track 3's M: it mutes (unmutes when it was muted)", act: async u => { await sleep(7000); u.click('#rail .th[data-sel="2"] .ms.m'); },
+				machine: c => ok(synthMuted(2) === !c.t3, "machine mutes " + synthMutes()), within: 8000 },
+			{ say: "click M again", act: u => u.click('#rail .th[data-sel="2"] .ms.m'), machine: c => ok(synthMuted(2) === c.t3, "machine mutes " + synthMutes()) }
 		],
 		async tidy(u, c) {
+			if (dlgShown()) { u.key("Escape"); await sleep(200); }
 			if (c.s0 != null && gSpan() !== c.s0) { if ($1("#globpop").hidden) { u.click("#globkey"); await sleep(300); } await spanTo(u, c.s0); await until(() => gSpan() === c.s0, 15000); }
 			if (!$1("#globpop").hidden) u.key("Escape");
-			if (synthMuted(2)) u.click('#rail .th[data-sel="2"] .ms.m');
+			if (c.t3 != null && synthMuted(2) !== c.t3) u.click('#rail .th[data-sel="2"] .ms.m');
 		}
 	};
 	/* B-051, F3: GLOBAL › Reset to defaults (asked first), and the slot keys */
@@ -1371,7 +1410,7 @@ const MmJourneys = (() => {
 		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff,
 		poly, multiTrig, multiMap, kbPlay, songRows, songPicker, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
-		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, liveRec, genKeys, mutScope,
+		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, genKeys, mutScope,
 		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
 		blackKeys, rollPaint, rollDrawLength, rollBoxMove, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, dropSyxJ, globalChannels, globalReset, globalSlot, shotsGlobal, genBarFit, shotsSound, ...viewJs];
 
@@ -1390,9 +1429,28 @@ const MmJourneys = (() => {
 			done(true);
 		}));
 	}
+	/* Before the first journey: the active GLOBAL reset to the factory settings, through the GLOBAL panel's own Reset to
+	   defaults (DeskGlobal.host.reset: globalReset), and read back. The journeys run on a copy of the person's settings
+	   (scripts/mdmm-journeys.sh), whose machine may hold a personal or imported global (CHANNEL SPAN 0 after a backup
+	   import: no track mutes, no note reaches a track); the journeys assume the factory MIDI channels. */
+	async function prepare() {
+		const n = machine().global?.current ?? 0, say = g => g ? `span ${g.channels?.span}, base ${g.channels?.base}, clock out ${g.controlOut?.clock}` : "not read";
+		await until(() => !!gDoc(), 20000);
+		const was = say(gDoc());
+		results.length = 0;
+		DeskGlobal.host.reset();
+		/* its own undo step: the gesture ends here, so a journey's first edit (and its undo) never takes the reset with it */
+		commit();
+		await until(() => results.some(r => r.op === "globalReset"), 20000);
+		const r = results.find(r => r.op === "globalReset");
+		if (!r || !r.ok) return `GLOBAL ${n + 1} not reset (${r ? (r.errors || []).join("; ") : "no answer"}); the journeys run on it as it is (${was})`;
+		const back = await until(() => gDoc()?.channels?.span === 6 && gDoc()?.channels?.base === 0, 20000);
+		await sleep(1500);
+		return `GLOBAL ${n + 1} reset to the factory settings (GLOBAL › Reset to defaults): was ${was}, now ${say(gDoc())}${back ? "" : " (not read back yet)"}`;
+	}
 	/* what the page last told the person: its toast and its error line */
 	const context = () => [...[["toast", $1("#toast")], ["error", $1("#errline")]].filter(([, e]) => e && !e.hidden && e.textContent.trim()).map(([k, e]) => `${k} "${e.textContent.trim().slice(0, 160)}"`),
 		...results.filter(r => r.ok === false).slice(-3).map(r => `refused ${r.op}: ${(r.errors || []).join("; ")}`)].join(", ");
-	if (/[?&]selftest=journey/.test(location.search)) addEventListener("load", () => Journey.run(all, { log: t => Bridge.log(t), ready, between, context }));
+	if (/[?&]selftest=journey/.test(location.search)) addEventListener("load", () => Journey.run(all, { log: t => Bridge.log(t), ready, prepare, between, context }));
 	return { all };
 })();

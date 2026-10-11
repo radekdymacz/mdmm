@@ -265,8 +265,10 @@ const Journey = (() => {
 		log(`JOURNEY ${j.name} ${reason ? "FAIL " + reason : "PASS"}`);
 		return !reason;
 	}
-	/* page: {log, ready: async () => true when the machine takes input, between: async (u) => the page's neutral
-	   state before each journey, context: () => what the page last said (its toast, its error line), added to a FAIL} */
+	/* page: {log, ready: async () => true when the machine takes input, prepare: async (u) => what it did (optional,
+	   once, after ready and before the first journey: logged "JOURNEYS before: ..."), between: async (u) => the page's
+	   neutral state before each journey, context: () => what the page last said (its toast, its error line), added to a
+	   FAIL} */
 	async function run(all, page) {
 		const list = wanted(all); if (!list) return;
 		const log = page.log;
@@ -277,6 +279,10 @@ const Journey = (() => {
 		/* a journey about the start itself ({boot: true}) runs from the page's start, before the machine is ready */
 		for (const j of list.filter(j => j.boot)) count(await runOne(j, log, page.context));
 		if (!await page.ready()) { log(`JOURNEYS DONE ${passed}/${list.length} (the machine was not ready)`); return; }
+		/* the machine's own state the journeys rely on, put right once before the first (prepare: what it did, in words) */
+		if (page.prepare && list.some(j => !j.boot)) {
+			try { log(`JOURNEYS before: ${await page.prepare(u)}`); } catch (e) { log(`JOURNEYS before: could not prepare: ${e.message}`); }
+		}
 		for (const j of list.filter(j => !j.boot)) {
 			try { if (page.between) await page.between(u); } catch (e) { log(`JOURNEY ${j.name} before: ${e.message}`); }
 			count(await runOne(j, log, page.context));
