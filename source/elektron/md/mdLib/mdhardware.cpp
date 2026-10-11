@@ -1076,6 +1076,16 @@ namespace md
 		m_schedUcCyclesDone += deltaCycles;
 	}
 
+	void Hardware::processUCQuiet()
+	{
+		// processUC with nothing to deliver and no SysEx transfer on the wire (UC_QUIET in schedStep): the host
+		// pump test and the step.
+		if(m_schedulerHostPumpDirty.load(std::memory_order_acquire)
+			|| m_dspMixer.hasDeferredHostRx() || m_dspProducer.hasDeferredHostRx())
+			pumpDsp2HostRequest();
+		m_schedUcCyclesDone += m_uc.exec();
+	}
+
 	bool Hardware::ucInputPending() const
 	{
 		return m_scheduledMidi.ready(m_schedUcCyclesDone) || m_panelIn.hasPending()
@@ -1432,10 +1442,22 @@ namespace md
 			const uint64_t clampStop = m_schedUcCyclesDone + clampCycles;
 			const uint64_t sliceEnd = firstUcCycleAtFrame(subTarget, ucPerFrame);
 
+			// UC_QUIET: when no ColdFire input waits as the slice starts, the steps before the next scheduled MIDI
+			// event take processUCQuiet. Every other input source is filled only by producers under the device lock
+			// (as L1's batch relies on), so none can appear inside the slice; the steps after the event, or every
+			// step when something waits, take the full processUC.
+			uint64_t quietUntil = 0;
+			if(m_leverUcQuiet && !m_pendingFlashRestoreActive.load(std::memory_order_acquire)
+				&& !m_panelIn.hasPending() && !midiIngressPending())
+				quietUntil = m_scheduledMidi.empty() ? UINT64_MAX : m_scheduledMidi.front().cycle;
+
 			uint32_t probeCount = 0;
 			do
 			{
-			processUC();
+			if(m_schedUcCyclesDone < quietUntil)
+				processUCQuiet();
+			else
+				processUC();
 			// Probe periodically within the existing UC slice; the steps in between
 			// only test the end of the slice. A pending host word/wake, restore or
 			// MIDI transfer disables skipping.
@@ -1673,6 +1695,7 @@ namespace md
 		m_leverL1 = speedUpLeverOn(SpeedUpLever::L1);
 		m_leverL2b = speedUpLeverOn(SpeedUpLever::L2b);
 		m_leverUcIdleProbe = speedUpLeverOn(SpeedUpLever::UcIdleProbe);
+		m_leverUcQuiet = speedUpLeverOn(SpeedUpLever::UcQuiet);
 		m_uc.setMemoryFastLane(speedUpLeverOn(SpeedUpLever::L11));
 		m_uc.getSim().setDeferStepping(speedUpLeverOn(SpeedUpLever::L5));
 		applyEssiCycleDeadlines();
