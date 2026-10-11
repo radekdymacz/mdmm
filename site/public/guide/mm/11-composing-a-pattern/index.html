@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11. Composing a pattern · Monomachine Editor guide</title>
+<meta name="description" content="Write notes in the piano roll or record them live, and copy, move and clear notes, pages, tracks and patterns.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/mm/11-composing-a-pattern/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261010">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>@page { @top-left { content: "11. Composing a pattern"; } }</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › <a href="/guide/mm/">Monomachine Editor</a> › Composing a pattern</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Chapters of the Monomachine Editor guide">
+<p class="gd-side-title"><a href="/guide/mm/">Monomachine Editor guide</a></p>
+<ol class="gd-side-list"><li><a href="/guide/mm/01-introduction-philosophy-highlights/">1. Introduction, philosophy, highlights</a></li>
+<li><a href="/guide/mm/02-user-interface-and-connectors/">2. User interface and connectors</a></li>
+<li><a href="/guide/mm/03-the-lcd-user-interface/">3. The LCD user interface</a></li>
+<li><a href="/guide/mm/04-quick-start/">4. Quick start</a></li>
+<li><a href="/guide/mm/05-monomachine-overview/">5. Monomachine overview</a></li>
+<li><a href="/guide/mm/06-synthesis-arrangement-kits-and-machines/">6. Synthesis arrangement: kits and machines</a></li>
+<li><a href="/guide/mm/07-track-effects/">7. Track effects</a></li>
+<li><a href="/guide/mm/08-low-frequency-oscillators/">8. Low frequency oscillators</a></li>
+<li><a href="/guide/mm/09-additional-kit-settings/">9. Additional kit settings</a></li>
+<li><a href="/guide/mm/10-the-pattern-sequencer-pattern-operation/">10. The pattern sequencer: pattern operation</a></li>
+<li class="gd-side-cur"><a href="/guide/mm/11-composing-a-pattern/" aria-current="page">11. Composing a pattern</a><ol class="gd-side-subs"><li><a href="#recording-preparations">RECORDING PREPARATIONS</a></li><li><a href="#grid-recording">GRID RECORDING</a></li><li><a href="#live-recording">LIVE RECORDING</a></li><li><a href="#step-recording">STEP RECORDING</a></li><li><a href="#note-copy">NOTE COPY</a></li><li><a href="#clear-note-parameter-locks">CLEAR NOTE PARAMETER LOCKS</a></li><li><a href="#track-page-copy">TRACK PAGE COPY</a></li><li><a href="#clear-track-page">CLEAR TRACK PAGE</a></li><li><a href="#track-copy">TRACK COPY</a></li><li><a href="#clear-track">CLEAR TRACK</a></li><li><a href="#pattern-copy">PATTERN COPY</a></li><li><a href="#clear-pattern">CLEAR PATTERN</a></li><li><a href="#super-copy">SUPER COPY</a></li><li><a href="#super-clear">SUPER CLEAR</a></li></ol></li>
+<li><a href="/guide/mm/12-tempo/">12. Tempo</a></li>
+<li><a href="/guide/mm/13-parameter-locks/">13. Parameter locks</a></li>
+<li><a href="/guide/mm/14-advanced-sequencer-control/">14. Advanced sequencer control</a></li>
+<li><a href="/guide/mm/15-additional-sequencer-features/">15. Additional sequencer features</a></li>
+<li><a href="/guide/mm/16-the-midi-sequencer/">16. The MIDI sequencer</a></li>
+<li><a href="/guide/mm/17-the-song-mode/">17. The song mode</a></li>
+<li><a href="/guide/mm/18-routing/">18. Routing</a></li>
+<li><a href="/guide/mm/19-global-settings/">19. Global settings</a></li>
+<li><span class="gd-side-todo">20. Early startup menu, technical information <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">21. Appendix A: machine reference <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">22. Appendix B: MIDI control reference <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">23. Appendix C: SysEx reference <span class="gd-vh">(to come)</span></span></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">11</span><span class="gd-ctitle">Composing a pattern</span></h1><p class="gd-cmeta">MM manual pp.1-47 to 1-55</p></header>
+<div class="gd-intro gd-prose"><p>You write a pattern on the <b class="gd-ui">Sequence</b> workspace. Press <kbd class="gd-key">[1]</kbd>, or click the <b class="gd-ui">Sequence</b> tab. The rail on the left holds the tracks. The piano roll in the middle shows the notes of the selected track, one column to a step. Under the roll are the rows for the envelope trigs, slide and swing, and under them the lock lane.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The Sequence workspace"><span>Screenshot to come</span></div><figcaption>The Sequence workspace</figcaption></figure></div>
+<section class="gd-sec" id="recording-preparations" aria-labelledby="recording-preparations-h">
+<div class="gd-body gd-prose"><h2 id="recording-preparations-h">RECORDING PREPARATIONS <a class="gd-anchor" href="#recording-preparations" aria-label="Link to RECORDING PREPARATIONS">#</a></h2>
+<p class="gd-ref">MM manual p.1-47</p>
+<p>On the machine you select a kit, a track and the trig tracks before you record. In the editor you only select the track.</p>
+<ol class="gd-steps"><li>Click a track in the rail, or press <kbd class="gd-key">[↑]</kbd> or <kbd class="gd-key">[↓]</kbd> to move to the track before or after.</li><li>Click <b class="gd-ui">Synth</b> under the rail for the six synth tracks, or <b class="gd-ui">MIDI</b> for the six MIDI tracks.</li></ol>
+<p>The roll shows the selected track. The field SEQ on the second line of the LCD also switches between SYNTH and MIDI.</p>
+</div></section>
+<section class="gd-sec" id="grid-recording" aria-labelledby="grid-recording-h">
+<div class="gd-body gd-prose"><h2 id="grid-recording-h">GRID RECORDING <a class="gd-anchor" href="#grid-recording" aria-label="Link to GRID RECORDING">#</a></h2>
+<p class="gd-ref">MM manual pp.1-47, 1-48, 1-49</p>
+<p>On the machine you step through the grid with the trig keys. In the editor you draw the notes in the piano roll.</p>
+<h4 class="gd-h3" id="write-notes">Write notes</h4>
+<ol class="gd-steps"><li>Make sure <b class="gd-ui">Draw</b> is lit above the roll. Press <kbd class="gd-key">[B]</kbd> to turn it on or off.</li><li>Click the <b class="gd-ui">Len</b> key to choose the length a new note gets: 1/16, 1/8, 1/4, 1/2 or 1 bar. Click for the next length. Hold <kbd class="gd-key">[⇧]</kbd> and click for the one before.</li><li>Click an empty step at the pitch you want. A note of that length goes in.</li><li>To change the pitch, drag the note up or down.</li><li>To fill steps, drag sideways. Every empty step the pointer crosses gets the note.</li></ol>
+<p>A drag, a paint or a run of rotates is one undo step. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> takes it back whole.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>With <b class="gd-ui">Draw</b> dark, a drag in an empty place draws a box round notes and selects them, and a double-click adds a note.</p></aside>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The piano roll"><span>Screenshot to come</span></div><figcaption>The piano roll</figcaption></figure>
+<p>The roll shows a range of pitches. Scroll the wheel over it to move the range. Hold <kbd class="gd-key">[⇧]</kbd> to move it an octave at a time. On a synth track the keys at the left of the roll play the pitch.</p>
+<h4 class="gd-h3" id="note-length-and-note-off">Note length and NOTE OFF</h4>
+<p>Drag the end of a note to set its length. New notes take the length too. On a synth track a note sounds until the next NOTE OFF or the next trig of the track, so the editor writes a NOTE OFF where the note ends. On a MIDI track the editor writes the note's LEN, 6 to a step. A note can be drawn up to the next trig of its track. It can run past the end of the pattern onto its start, and the roll draws that part lighter.</p>
+<p>To set a NOTE OFF by hand, hold <kbd class="gd-key">[⌥]</kbd> and click an empty step. A NOTE OFF is a yellow mark.</p>
+<p>To delete a note, hold <kbd class="gd-key">[⌥]</kbd> and click it. The note before it keeps its length. Drag on with <kbd class="gd-key">[⌥]</kbd> held to delete every step the pointer crosses.</p>
+<h4 class="gd-h3" id="chords">Chords</h4>
+<p>Hold <kbd class="gd-key">[⇧]</kbd> and click the step at another pitch. The step holds a chord note. A chord on a MIDI track has one length for all its notes. A synth track plays a chord through its arpeggiator (chapter 15) or in poly mode.</p>
+<h4 class="gd-h3" id="rotate">Rotate</h4>
+<p>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[←]</kbd> or <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[→]</kbd> to move all the notes, slides and locks of the selected track one step earlier or later. They wrap round at the length of the pattern.</p>
+<h4 class="gd-h3" id="copy-clear-and-paste-on-the-lcd">Copy, clear and paste on the LCD</h4>
+<p>The LCD keys <b class="gd-ui">Copy</b>, <b class="gd-ui">Clr</b> and <b class="gd-ui">Paste</b> act on the selected track. With no steps selected they act on the page shown (see &quot;Track page copy&quot;). With steps selected they act on the selection (see &quot;Note copy&quot;).</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The machine also has a GRID RECORDING state. When the machine is stopped, <b class="gd-ui">●</b> on the LCD turns it on, and the machine's own trig keys write steps. The editor reads the steps back. You do not need it to write notes.</p></aside>
+</div></section>
+<section class="gd-sec" id="live-recording" aria-labelledby="live-recording-h">
+<div class="gd-body gd-prose"><h2 id="live-recording-h">LIVE RECORDING <a class="gd-anchor" href="#live-recording" aria-label="Link to LIVE RECORDING">#</a></h2>
+<p class="gd-ref">MM manual p.1-49</p>
+<p>Live recording records the notes you play while the pattern runs.</p>
+<ol class="gd-steps"><li>Select a synth track.</li><li>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[SPACE]</kbd>. The machine starts to play and to record. While the machine already plays, you can also click <b class="gd-ui">●</b> on the LCD.</li><li>Play the computer keys: the white keys A to L and the black keys W E T Y U O P. Z and X move the octave, C and V the velocity.</li><li>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[SPACE]</kbd> again, or click <b class="gd-ui">●</b>, to stop recording.</li></ol>
+<p>The machine records each note on the step nearest to it. The notes appear in the roll.</p>
+<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> The editor records one key at a time. Draw a chord with <kbd class="gd-key">[⇧]</kbd>-click in the roll.</p>
+<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot erase notes with a key while you record in the editor yet. Delete them in the roll.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Wait until live recording stops before you select steps or open the step menu. The editor refuses them while it records.</p><p>Values you turn while the pattern records are locked. See &quot;Parameter locks in live recording mode&quot; in chapter 13.</p></aside>
+</div></section>
+<section class="gd-sec" id="step-recording" aria-labelledby="step-recording-h">
+<div class="gd-body gd-prose"><h2 id="step-recording-h">STEP RECORDING <a class="gd-anchor" href="#step-recording" aria-label="Link to STEP RECORDING">#</a></h2>
+<p class="gd-ref">MM manual p.1-50</p>
+<p>Notes are entered in the editor by drawing them in the piano roll. The editor has no step recording yet.</p>
+</div></section>
+<section class="gd-sec" id="note-copy" aria-labelledby="note-copy-h">
+<div class="gd-body gd-prose"><h2 id="note-copy-h">NOTE COPY <a class="gd-anchor" href="#note-copy" aria-label="Link to NOTE COPY">#</a></h2>
+<p class="gd-ref">MM manual p.1-50</p>
+<p>You copy notes with a selection of steps. A selection holds steps of one track or of several tracks.</p>
+<ol class="gd-steps"><li>Hold <kbd class="gd-key">[⌘]</kbd> and click a step in the roll or in the trig rows to select it. Hold <kbd class="gd-key">[⌘]</kbd> and drag to select a run of steps. A drag over the step ruler above the roll selects steps of the selected track without a key. Hold <kbd class="gd-key">[⇧]</kbd> and click the ruler to extend the selection.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>, or click <b class="gd-ui">Copy</b> on the LCD.</li><li>Select the step to copy to.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>, or click <b class="gd-ui">Paste</b>. The copy goes in with its first step on the selected step.</li></ol>
+<p>Notes, NOTE OFFs, envelope trigs, slides and locks go along. Other keys on a selection:</p>
+<table class="gd-table"><thead><tr><th>Key</th><th>Does</th></tr></thead><tbody><tr><td><kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[X]</kbd></td><td>copy, then clear</td></tr><tr><td><kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[D]</kbd></td><td>put a copy right after the selection; again for another</td></tr><tr><td><kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[A]</kbd></td><td>select every step of the six tracks shown</td></tr><tr><td><kbd class="gd-key">[←]</kbd> or <kbd class="gd-key">[→]</kbd></td><td>move the selection one step</td></tr><tr><td><kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[←]</kbd> or <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[→]</kbd></td><td>extend the selection one step</td></tr><tr><td><kbd class="gd-key">[ESC]</kbd></td><td>clear the selection</td></tr></tbody></table>
+<p>Drag the selection with <kbd class="gd-key">[⌘]</kbd> held to drop a copy where you let go. A dashed frame shows where it lands. With <b class="gd-ui">Draw</b> dark, drag the selected notes in the roll without <kbd class="gd-key">[⌘]</kbd> to move them.</p>
+<p>Right-click a step for the step menu: note on or off, NOTE OFF, trigless, slide, a chord note, copy, cut, paste here, duplicate, clear, and fill every 2nd or 4th step from the one you clicked. Synth steps paste onto synth tracks, MIDI steps onto MIDI tracks.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p><kbd class="gd-key">[⌘]</kbd> is <kbd class="gd-key">[CTRL]</kbd> on Windows and Linux.</p></aside>
+</div></section>
+<section class="gd-sec" id="clear-note-parameter-locks" aria-labelledby="clear-note-parameter-locks-h">
+<div class="gd-body gd-prose"><h2 id="clear-note-parameter-locks-h">CLEAR NOTE PARAMETER LOCKS <a class="gd-anchor" href="#clear-note-parameter-locks" aria-label="Link to CLEAR NOTE PARAMETER LOCKS">#</a></h2>
+<p class="gd-ref">MM manual p.1-50</p>
+<p>To clear the locks of one parameter on some steps, hold <kbd class="gd-key">[⌥]</kbd> and drag across the bars in the lock lane. Click the bin in the lane header to clear all the locks of that parameter. Hold <kbd class="gd-key">[⌥]</kbd> and click the bin to clear every lock of the track. A selected step cleared with <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> loses its note and its locks together.</p>
+<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> There is no key that clears the locks of one step and keeps its note.</p>
+</div></section>
+<section class="gd-sec" id="track-page-copy" aria-labelledby="track-page-copy-h">
+<div class="gd-body gd-prose"><h2 id="track-page-copy-h">TRACK PAGE COPY <a class="gd-anchor" href="#track-page-copy" aria-label="Link to TRACK PAGE COPY">#</a></h2>
+<p class="gd-ref">MM manual pp.1-49, 1-51</p>
+<p>A page is the 16 steps shown while <b class="gd-ui">Page</b> is on. While <b class="gd-ui">All</b> is lit, the page is the whole pattern. With no steps selected, the LCD keys copy and paste the page shown of the selected track.</p>
+<ol class="gd-steps"><li>Show the page to copy.</li><li>Click <b class="gd-ui">Copy</b> on the LCD. The steps, slides and locks of the page are copied.</li><li>Show the page to paste into. It can be on another track of the same kind.</li><li>Click <b class="gd-ui">Paste</b>.</li></ol>
+<p>Pages paste between synth tracks or between MIDI tracks, not between the two. A lock for a parameter the target machine does not have is skipped, and the page says how many.</p>
+<p>To paste into several tracks at once, hold <kbd class="gd-key">[⇧]</kbd> and click the tracks in the rail. The marked tracks light. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>. The page goes into every marked track as one undo step. Press <kbd class="gd-key">[ESC]</kbd> to unmark.</p>
+</div></section>
+<section class="gd-sec" id="clear-track-page" aria-labelledby="clear-track-page-h">
+<div class="gd-body gd-prose"><h2 id="clear-track-page-h">CLEAR TRACK PAGE <a class="gd-anchor" href="#clear-track-page" aria-label="Link to CLEAR TRACK PAGE">#</a></h2>
+<p class="gd-ref">MM manual p.1-51</p>
+<p>Click <b class="gd-ui">Clr</b> on the LCD with no steps selected. The notes, slides and locks of the page shown on the selected track go. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> takes it back.</p>
+</div></section>
+<section class="gd-sec" id="track-copy" aria-labelledby="track-copy-h">
+<div class="gd-body gd-prose"><h2 id="track-copy-h">TRACK COPY <a class="gd-anchor" href="#track-copy" aria-label="Link to TRACK COPY">#</a></h2>
+<p class="gd-ref">MM manual p.1-52</p>
+<ol class="gd-steps"><li>Drag across the whole step ruler to select all the steps of the selected track.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>.</li><li>Click the target track in the rail, then click the first step of the ruler.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>.</li></ol>
+<p>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[A]</kbd> to select the six tracks shown, and paste them as a block. To copy the machine of a track, use <b class="gd-ui">Copy</b> and <b class="gd-ui">Paste</b> on the <b class="gd-ui">Sound</b> workspace.</p>
+<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> A track copy takes the steps, slides and locks. It does not take the machine, the arpeggiator, the transpose or the swing in the same copy.</p>
+</div></section>
+<section class="gd-sec" id="clear-track" aria-labelledby="clear-track-h">
+<div class="gd-body gd-prose"><h2 id="clear-track-h">CLEAR TRACK <a class="gd-anchor" href="#clear-track" aria-label="Link to CLEAR TRACK">#</a></h2>
+<p class="gd-ref">MM manual p.1-53</p>
+<p>Select all the steps of the track with the ruler and press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd>. To clear every lock of the track, hold <kbd class="gd-key">[⌥]</kbd> and click the bin in the lane header.</p>
+<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> There is no key that clears a track whole. <b class="gd-ui">Clr</b> clears the page shown.</p>
+</div></section>
+<section class="gd-sec" id="pattern-copy" aria-labelledby="pattern-copy-h">
+<div class="gd-body gd-prose"><h2 id="pattern-copy-h">PATTERN COPY <a class="gd-anchor" href="#pattern-copy" aria-label="Link to PATTERN COPY">#</a></h2>
+<p class="gd-ref">MM manual p.1-53</p>
+<p>A pattern copy takes the whole pattern: the notes, locks, MIDI notes, the arpeggiator, transpose, swing and slide, and the link to the kit.</p>
+<ol class="gd-steps"><li>Open the pattern chooser: click the pattern field of the LCD.</li><li>Click the slot to copy, then <b class="gd-ui">Copy</b>.</li><li>Click the target slot, then <b class="gd-ui">Paste</b>.</li></ol>
+<p>You can also drag a slot onto another slot to copy it there.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A pattern paste goes through the machine's SYSEX RECV. The editor does that by itself. With a real Monomachine over MIDI the sync field on the second line of the LCD shows SEND and the number of waiting edits. See chapter 19, &quot;File&quot;.</p></aside>
+</div></section>
+<section class="gd-sec" id="clear-pattern" aria-labelledby="clear-pattern-h">
+<div class="gd-body gd-prose"><h2 id="clear-pattern-h">CLEAR PATTERN <a class="gd-anchor" href="#clear-pattern" aria-label="Link to CLEAR PATTERN">#</a></h2>
+<p class="gd-ref">MM manual p.1-54</p>
+<p>In the pattern chooser, click the slot and then <b class="gd-ui">Clear</b>. Or, on <b class="gd-ui">Sequence</b>, press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[BACKSPACE]</kbd>.</p>
+<p>Both clear the notes and locks of every track. The pattern keeps its link to the kit, as on the machine.</p>
+</div></section>
+<section class="gd-sec" id="super-copy" aria-labelledby="super-copy-h">
+<div class="gd-body gd-prose"><h2 id="super-copy-h">SUPER COPY <a class="gd-anchor" href="#super-copy" aria-label="Link to SUPER COPY">#</a></h2>
+<p class="gd-ref">MM manual p.1-54</p>
+<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot choose which part of a track is copied, for example the melody only. A selection copies a block of tracks and steps whole.</p>
+</div></section>
+<section class="gd-sec" id="super-clear" aria-labelledby="super-clear-h">
+<div class="gd-body gd-prose"><h2 id="super-clear-h">SUPER CLEAR <a class="gd-anchor" href="#super-clear" aria-label="Link to SUPER CLEAR">#</a></h2>
+<p class="gd-ref">MM manual p.1-55</p>
+<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot choose which part of a track is cleared. Clear the steps, the locks, the pattern or the machine one at a time.</p>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/mm/10-the-pattern-sequencer-pattern-operation/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">10. The pattern sequencer: pattern operation</span></a><a href="/guide/mm/12-tempo/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">12. Tempo</span></a></nav>
+</article>
+</div>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>7. LFOs · Machinedrum Editor guide</title>
+<meta name="description" content="The sixteen LFOs of a kit: choose a target, a shape, a speed and a depth, and layer them to move a sound.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/md/07-lfos/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261010">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>@page { @top-left { content: "7. LFOs"; } }</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › <a href="/guide/md/">Machinedrum Editor</a> › LFOs</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Chapters of the Machinedrum Editor guide">
+<p class="gd-side-title"><a href="/guide/md/">Machinedrum Editor guide</a></p>
+<ol class="gd-side-list"><li><a href="/guide/md/01-introduction-front-panel-and-connectors/">1. Introduction, front panel and connectors</a></li>
+<li><a href="/guide/md/02-lcd-user-interface-and-quick-start/">2. LCD user interface and quick start</a></li>
+<li><a href="/guide/md/03-sound-synthesis-kits/">3. Sound synthesis: kits</a></li>
+<li><a href="/guide/md/04-track-effects/">4. Track effects</a></li>
+<li><a href="/guide/md/05-routing-page/">5. Routing page</a></li>
+<li><a href="/guide/md/06-stereo-master-effects/">6. Stereo master effects</a></li>
+<li class="gd-side-cur"><a href="/guide/md/07-lfos/" aria-current="page">7. LFOs</a><ol class="gd-side-subs"><li><a href="#lfo-edit">LFO EDIT</a></li><li><a href="#shp1-and-shp2">SHP1 AND SHP2</a></li><li><a href="#updte">UPDTE</a></li><li><a href="#speed">SPEED</a></li><li><a href="#depth">DEPTH</a></li><li><a href="#shmix">SHMIX</a></li><li><a href="#layering-lfos">LAYERING LFOS</a></li><li><a href="#copy-paste-clear-and-undo">COPY, PASTE, CLEAR AND UNDO</a></li></ol></li>
+<li><a href="/guide/md/08-pattern-sequencer/">8. Pattern sequencer</a></li>
+<li><a href="/guide/md/09-song-mode/">9. Song mode</a></li>
+<li><a href="/guide/md/10-global-settings/">10. Global settings</a></li>
+<li><a href="/guide/md/11-sample-manager-uw-only/">11. Sample manager, UW only</a></li>
+<li><a href="/guide/md/12-early-start-up-menu/">12. Early start-up menu</a></li>
+<li><a href="/guide/md/13-technical-information-mki-vs-mkii/">13. Technical information, MKI vs MKII</a></li>
+<li><span class="gd-side-todo">14. Appendix A: machine reference <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">15. Appendix B: MIDI control reference <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">16. Appendix C: sysex reference <span class="gd-vh">(to come)</span></span></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">7</span><span class="gd-ctitle">LFOs</span></h1><p class="gd-cmeta">MD manual pp.32-34</p></header>
+<div class="gd-intro gd-prose"><p>Each kit has 16 LFOs, one for each track. An LFO moves one parameter of one track, up and down, in time with the tempo. By default an LFO moves a parameter of its own track.</p>
+<p>On the Sound workspace the LFO of the selected track fills the last row. Select another track in the rail to edit its LFO. The row holds three groups: <b class="gd-ui">LFO shape</b>, <b class="gd-ui">LFO motion</b> and <b class="gd-ui">LFO target</b>. The title of the first reads LFO and the track number, for example LFO 3 shape.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The LFO row"><span>Screenshot to come</span></div><figcaption>The LFO row</figcaption></figure></div>
+<section class="gd-sec" id="lfo-edit" aria-labelledby="lfo-edit-h">
+<div class="gd-body gd-prose"><h2 id="lfo-edit-h">LFO EDIT <a class="gd-anchor" href="#lfo-edit" aria-label="Link to LFO EDIT">#</a></h2>
+<p class="gd-ref">MD manual p.32</p>
+<p>On the machine you hold FUNCTION and press the SYNTHESIS, EFFECTS and ROUTING key to open the LFO edit window. In the editor the LFO row is always on the Sound workspace, so there is no window to open.</p>
+<h4 class="gd-h3" id="target">Target</h4>
+<p>The group <b class="gd-ui">LFO target</b> has two menus.</p>
+<ol class="gd-steps"><li>Open the first menu and choose the track the LFO moves. Entries read T1 and the track's sound.</li><li>Open the second menu and choose the parameter. It lists the synthesis, effects and routing parameters of that track.</li></ol>
+<p>To move another LFO, choose that LFO's track and then <b class="gd-ui">LFOS</b>, <b class="gd-ui">LFOD</b> or <b class="gd-ui">LFOM</b>. These are its speed, depth and mix. The machine applies its own rule for which LFO may move which.</p>
+<p>When you choose another track, the parameter stays if the new track has it. If not, the first parameter of the new track is chosen.</p>
+</div></section>
+<section class="gd-sec" id="shp1-and-shp2" aria-labelledby="shp1-and-shp2-h">
+<div class="gd-body gd-prose"><h2 id="shp1-and-shp2-h">SHP1 AND SHP2 <a class="gd-anchor" href="#shp1-and-shp2" aria-label="Link to SHP1 AND SHP2">#</a></h2>
+<p class="gd-ref">MD manual p.32</p>
+<p>The group <b class="gd-ui">LFO shape</b> has two rows of shape keys. <b class="gd-ui">SHP1</b> and <b class="gd-ui">SHP2</b> each choose one of six shapes: triangle, saw, square, linear decay, exponential decay and random.</p>
+<p><b class="gd-ui">SHP2</b> shows the same six shapes inverted.</p>
+<p>Click a key to choose a shape. The screen shows one cycle of the LFO. The solid line is the mix of the two shapes. The faint lines are the shapes themselves.</p>
+</div></section>
+<section class="gd-sec" id="updte" aria-labelledby="updte-h">
+<div class="gd-body gd-prose"><h2 id="updte-h">UPDTE <a class="gd-anchor" href="#updte" aria-label="Link to UPDTE">#</a></h2>
+<p class="gd-ref">MD manual p.32</p>
+<p>The group <b class="gd-ui">LFO motion</b> has the <b class="gd-ui">UPDTE</b> keys.</p>
+<ul class="gd-list"><li><b class="gd-ui">FREE</b>: the LFO runs on and never restarts.</li><li><b class="gd-ui">TRIG</b>: the LFO restarts on every trig of its track.</li><li><b class="gd-ui">HOLD</b>: the LFO holds the value it has when the track is trigged, until the next trig.</li></ul>
+<p>An LFO restarts only when its own track is trigged.</p>
+</div></section>
+<section class="gd-sec" id="speed" aria-labelledby="speed-h">
+<div class="gd-body gd-prose"><h2 id="speed-h">SPEED <a class="gd-anchor" href="#speed" aria-label="Link to SPEED">#</a></h2>
+<p class="gd-ref">MD manual p.32</p>
+<p><b class="gd-ui">SPD</b> is the speed of the LFO, in 1/128 notes of the tempo. Drag the <b class="gd-ui">SPD</b> box, or the dot on the screen of <b class="gd-ui">LFO motion</b> sideways.</p>
+<p>The screen shows the LFO across one bar of the track. The ticks mark the restarts of <b class="gd-ui">TRIG</b>.</p>
+</div></section>
+<section class="gd-sec" id="depth" aria-labelledby="depth-h">
+<div class="gd-body gd-prose"><h2 id="depth-h">DEPTH <a class="gd-anchor" href="#depth" aria-label="Link to DEPTH">#</a></h2>
+<p class="gd-ref">MD manual p.33</p>
+<p><b class="gd-ui">DEPTH</b> is how much the LFO moves the parameter. Drag the <b class="gd-ui">DEPTH</b> box, or the dot on the screen of <b class="gd-ui">LFO motion</b> upward. The dashed line on the screen shows the depth.</p>
+</div></section>
+<section class="gd-sec" id="shmix" aria-labelledby="shmix-h">
+<div class="gd-body gd-prose"><h2 id="shmix-h">SHMIX <a class="gd-anchor" href="#shmix" aria-label="Link to SHMIX">#</a></h2>
+<p class="gd-ref">MD manual p.33</p>
+<p><b class="gd-ui">SHMIX</b> balances the two shapes. At 0 the LFO uses <b class="gd-ui">SHP1</b> only. At 127 it uses <b class="gd-ui">SHP2</b> only. Drag the <b class="gd-ui">SHMIX</b> box, or the dot on the screen of <b class="gd-ui">LFO shape</b> sideways.</p>
+<p><b class="gd-ui">SPD</b>, <b class="gd-ui">DEPTH</b> and <b class="gd-ui">SHMIX</b> are also the routing parameters <b class="gd-ui">LFOS</b>, <b class="gd-ui">LFOD</b> and <b class="gd-ui">LFOM</b>. See chapter 5.</p>
+</div></section>
+<section class="gd-sec" id="layering-lfos" aria-labelledby="layering-lfos-h">
+<div class="gd-body gd-prose"><h2 id="layering-lfos-h">LAYERING LFOS <a class="gd-anchor" href="#layering-lfos" aria-label="Link to LAYERING LFOS">#</a></h2>
+<p class="gd-ref">MD manual p.34</p>
+<p>If the LFOs of two tracks have the same target, their outputs add. You can build slow and fast movements on one parameter this way.</p>
+<ol class="gd-steps"><li>Select the first track and set its LFO target.</li><li>Select a second track and choose the same track and parameter as its LFO target.</li></ol>
+<p>An LFO can also move several parameters of a machine at once, one parameter for each track's LFO.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The screens draw each LFO on its own. The editor does not draw the sum of two LFOs on one target.</p></aside>
+</div></section>
+<section class="gd-sec" id="copy-paste-clear-and-undo" aria-labelledby="copy-paste-clear-and-undo-h">
+<div class="gd-body gd-prose"><h2 id="copy-paste-clear-and-undo-h">COPY, PASTE, CLEAR AND UNDO <a class="gd-anchor" href="#copy-paste-clear-and-undo" aria-label="Link to COPY, PASTE, CLEAR AND UNDO">#</a></h2>
+<p class="gd-ref">MD manual p.34</p>
+<p>The LFO is part of the track's sound. Copy and paste on the Sound workspace take the machine, its values, its level and its LFO together: see &quot;Copy machine&quot; in chapter 3. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take an edit back.</p>
+<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot copy or clear an LFO on its own in the editor.</p>
+<p>LFO settings are stored in the kit. Save the kit to keep them.</p>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/md/06-stereo-master-effects/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">6. Stereo master effects</span></a><a href="/guide/md/08-pattern-sequencer/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">8. Pattern sequencer</span></a></nav>
+</article>
+</div>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

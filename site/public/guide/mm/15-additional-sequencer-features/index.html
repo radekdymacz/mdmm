@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>15. Additional sequencer features · Monomachine Editor guide</title>
+<meta name="description" content="Arpeggiator, transpose, swing, slide, the mute window and poly mode.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/mm/15-additional-sequencer-features/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261010">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>@page { @top-left { content: "15. Additional sequencer features"; } }</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › <a href="/guide/mm/">Monomachine Editor</a> › Additional sequencer features</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Chapters of the Monomachine Editor guide">
+<p class="gd-side-title"><a href="/guide/mm/">Monomachine Editor guide</a></p>
+<ol class="gd-side-list"><li><a href="/guide/mm/01-introduction-philosophy-highlights/">1. Introduction, philosophy, highlights</a></li>
+<li><a href="/guide/mm/02-user-interface-and-connectors/">2. User interface and connectors</a></li>
+<li><a href="/guide/mm/03-the-lcd-user-interface/">3. The LCD user interface</a></li>
+<li><a href="/guide/mm/04-quick-start/">4. Quick start</a></li>
+<li><a href="/guide/mm/05-monomachine-overview/">5. Monomachine overview</a></li>
+<li><a href="/guide/mm/06-synthesis-arrangement-kits-and-machines/">6. Synthesis arrangement: kits and machines</a></li>
+<li><a href="/guide/mm/07-track-effects/">7. Track effects</a></li>
+<li><a href="/guide/mm/08-low-frequency-oscillators/">8. Low frequency oscillators</a></li>
+<li><a href="/guide/mm/09-additional-kit-settings/">9. Additional kit settings</a></li>
+<li><a href="/guide/mm/10-the-pattern-sequencer-pattern-operation/">10. The pattern sequencer: pattern operation</a></li>
+<li><a href="/guide/mm/11-composing-a-pattern/">11. Composing a pattern</a></li>
+<li><a href="/guide/mm/12-tempo/">12. Tempo</a></li>
+<li><a href="/guide/mm/13-parameter-locks/">13. Parameter locks</a></li>
+<li><a href="/guide/mm/14-advanced-sequencer-control/">14. Advanced sequencer control</a></li>
+<li class="gd-side-cur"><a href="/guide/mm/15-additional-sequencer-features/" aria-current="page">15. Additional sequencer features</a><ol class="gd-side-subs"><li><a href="#the-arpeggiator">THE ARPEGGIATOR</a></li><li><a href="#transpose">TRANSPOSE</a></li><li><a href="#swing">SWING</a></li><li><a href="#slide">SLIDE</a></li><li><a href="#the-mute-mode">THE MUTE MODE</a></li><li><a href="#poly-mode">POLY MODE</a></li></ol></li>
+<li><a href="/guide/mm/16-the-midi-sequencer/">16. The MIDI sequencer</a></li>
+<li><a href="/guide/mm/17-the-song-mode/">17. The song mode</a></li>
+<li><a href="/guide/mm/18-routing/">18. Routing</a></li>
+<li><a href="/guide/mm/19-global-settings/">19. Global settings</a></li>
+<li><span class="gd-side-todo">20. Early startup menu, technical information <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">21. Appendix A: machine reference <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">22. Appendix B: MIDI control reference <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">23. Appendix C: SysEx reference <span class="gd-vh">(to come)</span></span></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">15</span><span class="gd-ctitle">Additional sequencer features</span></h1><p class="gd-cmeta">MM manual pp.1-61 to 1-69</p></header>
+<div class="gd-intro gd-prose"><p>The arpeggiator and transpose are tabs in the header of the lock lane on <b class="gd-ui">Sequence</b>: <b class="gd-ui">Arp</b> and <b class="gd-ui">Transpose</b>. Click a tab to show its keys in the rail and its values and picture under the roll. Swing and slide are rows under the roll.</p></div>
+<section class="gd-sec" id="the-arpeggiator" aria-labelledby="the-arpeggiator-h">
+<div class="gd-body gd-prose"><h2 id="the-arpeggiator-h">THE ARPEGGIATOR <a class="gd-anchor" href="#the-arpeggiator" aria-label="Link to THE ARPEGGIATOR">#</a></h2>
+<p class="gd-ref">MM manual pp.1-61, 1-62, 1-63</p>
+<p>Each of the twelve tracks has its own arpeggiator, six synth tracks and six MIDI tracks. A pattern holds all twelve. The arpeggiator turns the chord notes of a trig into a run of notes.</p>
+<ol class="gd-steps"><li>Select a track and click <b class="gd-ui">Arp</b>.</li><li>Write a chord: hold <kbd class="gd-key">[⇧]</kbd> and click the steps at the other pitches in the roll.</li><li>Set the mode and the other values below.</li></ol>
+<p>The light notes in the roll show what the arpeggiator plays.</p>
+<h4 class="gd-h3" id="arpeggiator-basic-settings">ARPEGGIATOR BASIC SETTINGS</h4>
+<ul class="gd-list"><li><b class="gd-ui">SPD</b> is the speed. 6 is a sixteenth note.</li><li><b class="gd-ui">RNGE</b> is the number of octaves the run covers.</li><li><b class="gd-ui">OJMP</b> is the octave jump.</li></ul>
+<p><b class="gd-ui">Mode</b> keys:</p>
+<ul class="gd-list"><li><b class="gd-ui">OFF</b>: the track plays the base note of each trig.</li><li><b class="gd-ui">KEY</b>: the arpeggiator runs while keys are held and plays only the held notes.</li><li><b class="gd-ui">SID</b>: it needs two or more notes. They stay in the cycle after you release them, until a new chord.</li><li><b class="gd-ui">ADD</b>: it starts on the first note. Each extra key joins while one key is held.</li></ul>
+<p><b class="gd-ui">Play</b> keys: <b class="gd-ui">TRUE</b> plays the notes in the order of the chord, <b class="gd-ui">UP</b> from low to high, <b class="gd-ui">DOWN</b> from high to low, <b class="gd-ui">CYCLE</b> up and then down, and <b class="gd-ui">RND</b> in a random order. With RND the roll draws the notes outlined, because the pitches vary.</p>
+<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot copy, clear or paste an arpeggiator, and you cannot undo one on its own. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> undoes the page's last edit.</p>
+<h4 class="gd-h3" id="arpeggiator-envelope-trigging-switches">ARPEGGIATOR ENVELOPE TRIGGING SWITCHES</h4>
+<p>The <b class="gd-ui">Trig</b> keys <b class="gd-ui">AMP</b>, <b class="gd-ui">FLT</b> and <b class="gd-ui">LFO</b> choose which envelopes the arpeggiator's notes fire again. A MIDI track has no envelopes, so the keys read &quot;none on MIDI&quot;.</p>
+<h4 class="gd-h3" id="arpeggiator-rhythm-and-offset-track">ARPEGGIATOR RHYTHM AND OFFSET TRACK</h4>
+<p>Under the values is a strip of 16 cells. It repeats while the arpeggiator runs.</p>
+<ul class="gd-list"><li>Click a cell to mute it or to switch it on again.</li><li>Drag a cell up or down to give its note an offset from minus 24 to plus 24 semitones.</li><li>Click a cell past the end, or a key of the <b class="gd-ui">LEN</b> row under the strip, to set the length of the strip from 1 to 16.</li></ul>
+</div></section>
+<section class="gd-sec" id="transpose" aria-labelledby="transpose-h">
+<div class="gd-body gd-prose"><h2 id="transpose-h">TRANSPOSE <a class="gd-anchor" href="#transpose" aria-label="Link to TRANSPOSE">#</a></h2>
+<p class="gd-ref">MM manual pp.1-63, 1-64</p>
+<p>Transpose changes the pitch of the notes while they play. The programmed notes stay as they are. Click <b class="gd-ui">Transpose</b>.</p>
+<ol class="gd-steps"><li>Set <b class="gd-ui">TRACK</b>, the transpose of the selected track, by dragging the box. The value runs from −64 to +63 semitones.</li><li>Set <b class="gd-ui">PAT · all</b>, the transpose of the whole pattern. All tracks follow it.</li><li>Under <b class="gd-ui">Scale</b> choose <b class="gd-ui">---</b>, <b class="gd-ui">FIX</b>, <b class="gd-ui">MAJ</b> or <b class="gd-ui">MIN</b>.</li></ol>
+<p>The line above the keyboard picture says what the track plays, for example plays +5 semitones.</p>
+<ul class="gd-list"><li><b class="gd-ui">---</b>: no scale. The transposes of the track, the pattern, the song and the multi trig add up. Any note can sound.</li><li><b class="gd-ui">FIX</b>: only the track transpose acts. Use it for drums and effects.</li><li><b class="gd-ui">MAJ</b> and <b class="gd-ui">MIN</b>: transposed notes stay in the major or minor scale of the key. Keys outside the scale are hatched, in the picture and in the roll.</li></ul>
+<p>For MAJ and MIN, click a key of the keyboard picture to set the root key. With <b class="gd-ui">---</b> and <b class="gd-ui">FIX</b>, a click on a key sets the track transpose so that C plays that key, upward from C. Hold <kbd class="gd-key">[⌥]</kbd> and click to go down to it. The note also sounds while you hold the button.</p>
+</div></section>
+<section class="gd-sec" id="swing" aria-labelledby="swing-h">
+<div class="gd-body gd-prose"><h2 id="swing-h">SWING <a class="gd-anchor" href="#swing" aria-label="Link to SWING">#</a></h2>
+<p class="gd-ref">MM manual pp.1-64, 1-65</p>
+<p>Swing delays every other sixteenth note. The <b class="gd-ui">SWG</b> field of the LCD sets the amount for the pattern, from 50 to 80 %. Drag the field up or down, or scroll over it.</p>
+<h4 class="gd-h3" id="the-swing-track">THE SWING TRACK</h4>
+<p>The <b class="gd-ui">Swing</b> row under the roll chooses the steps that swing. A lit cell comes late by the amount of <b class="gd-ui">SWG</b>. Click a cell to switch it. Drag across cells to paint them. Each track has its own swing row.</p>
+<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot copy, clear or paste a swing row, or undo it on its own.</p>
+</div></section>
+<section class="gd-sec" id="slide" aria-labelledby="slide-h">
+<div class="gd-body gd-prose"><h2 id="slide-h">SLIDE <a class="gd-anchor" href="#slide" aria-label="Link to SLIDE">#</a></h2>
+<p class="gd-ref">MM manual p.1-66</p>
+<p>A slide makes a locked value glide to the next lock instead of jumping. The <b class="gd-ui">Slide</b> row under the roll marks the steps that slide. Click a cell, or drag across cells. A slide needs a note on its step. The right-click menu has <b class="gd-ui">Slide</b> too. In the lock lane the glide is drawn from one lock to the next.</p>
+<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot copy, clear or paste a slide row, or undo it on its own.</p>
+</div></section>
+<section class="gd-sec" id="the-mute-mode" aria-labelledby="the-mute-mode-h">
+<div class="gd-body gd-prose"><h2 id="the-mute-mode-h">THE MUTE MODE <a class="gd-anchor" href="#the-mute-mode" aria-label="Link to THE MUTE MODE">#</a></h2>
+<p class="gd-ref">MM manual pp.1-67, 1-68</p>
+<p>Mutes are global: they do not belong to the pattern. The machine holds them.</p>
+<ul class="gd-list"><li>Click <b class="gd-ui">M</b> on a track in the rail, or on the <b class="gd-ui">Mix</b> workspace, to mute it. Click <b class="gd-ui">S</b> to solo it.</li><li>Press <kbd class="gd-key">[M]</kbd> to mute or unmute the selected track.</li><li>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[M]</kbd> to mute every track. When none is audible, it unmutes every track.</li><li>Press <kbd class="gd-key">[0]</kbd>, or click <b class="gd-ui">M/S off</b> in the rail, to unmute and unsolo everything.</li><li>Drag across <b class="gd-ui">M</b> or <b class="gd-ui">S</b> keys to set every track you cross as the first one became.</li></ul>
+<p>The <b class="gd-ui">Perform</b> workspace has a <b class="gd-ui">Mutes</b> card with all twelve tracks, T1 to T6 and M1 to M6. A lit key means the track is audible.</p>
+<h4 class="gd-h3" id="prepare-mutes">Prepare mutes</h4>
+<p>To change several mutes together, hold <kbd class="gd-key">[⇧]</kbd> and click the <b class="gd-ui">M</b> keys. Each marked key shows + or X for the change to come. When you let go of <kbd class="gd-key">[⇧]</kbd> the changes happen together.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A mute acts on notes. A sound that already plays rings out.</p><p>A MIDI track needs a MIDI channel of its own to be muted over MIDI. If it has none, the page says so and offers <b class="gd-ui">Give each track its own channel</b>. That sets the channel span of the global to 6.</p></aside>
+<h4 class="gd-h3" id="minimising-the-mute-window">MINIMISING THE MUTE WINDOW</h4>
+<p>The mute window of the machine is a screen of its own. The editor has no such window, so there is nothing to minimise.</p>
+</div></section>
+<section class="gd-sec" id="poly-mode" aria-labelledby="poly-mode-h">
+<div class="gd-body gd-prose"><h2 id="poly-mode-h">POLY MODE <a class="gd-anchor" href="#poly-mode" aria-label="Link to POLY MODE">#</a></h2>
+<p class="gd-ref">MM manual p.1-69</p>
+<p>In poly mode all six engines play the track in focus, with six voices.</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[4]</kbd>.</li><li>In the <b class="gd-ui">Keyboard</b> bar, click <b class="gd-ui">Poly</b>.</li></ol>
+<p>The other five tracks are off until you leave poly mode. The page says so, and the rail marks the tracks that are off.</p>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/mm/14-advanced-sequencer-control/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">14. Advanced sequencer control</span></a><a href="/guide/mm/16-the-midi-sequencer/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">16. The MIDI sequencer</span></a></nav>
+</article>
+</div>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

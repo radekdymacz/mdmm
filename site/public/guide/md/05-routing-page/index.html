@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>5. Routing page · Machinedrum Editor guide</title>
+<meta name="description" content="Distortion, volume, pan, the delay and reverb sends and the LFO controls of each track, on the Sound and Mix workspaces.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/md/05-routing-page/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261010">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>@page { @top-left { content: "5. Routing page"; } }</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › <a href="/guide/md/">Machinedrum Editor</a> › Routing page</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Chapters of the Machinedrum Editor guide">
+<p class="gd-side-title"><a href="/guide/md/">Machinedrum Editor guide</a></p>
+<ol class="gd-side-list"><li><a href="/guide/md/01-introduction-front-panel-and-connectors/">1. Introduction, front panel and connectors</a></li>
+<li><a href="/guide/md/02-lcd-user-interface-and-quick-start/">2. LCD user interface and quick start</a></li>
+<li><a href="/guide/md/03-sound-synthesis-kits/">3. Sound synthesis: kits</a></li>
+<li><a href="/guide/md/04-track-effects/">4. Track effects</a></li>
+<li class="gd-side-cur"><a href="/guide/md/05-routing-page/" aria-current="page">5. Routing page</a><ol class="gd-side-subs"><li><a href="#distortion">DISTORTION</a></li><li><a href="#volume">VOLUME</a></li><li><a href="#pan">PAN</a></li><li><a href="#delay-send">DELAY SEND</a></li><li><a href="#reverb-send">REVERB SEND</a></li><li><a href="#lfo-control">LFO CONTROL</a></li></ol></li>
+<li><a href="/guide/md/06-stereo-master-effects/">6. Stereo master effects</a></li>
+<li><a href="/guide/md/07-lfos/">7. LFOs</a></li>
+<li><a href="/guide/md/08-pattern-sequencer/">8. Pattern sequencer</a></li>
+<li><a href="/guide/md/09-song-mode/">9. Song mode</a></li>
+<li><a href="/guide/md/10-global-settings/">10. Global settings</a></li>
+<li><a href="/guide/md/11-sample-manager-uw-only/">11. Sample manager, UW only</a></li>
+<li><a href="/guide/md/12-early-start-up-menu/">12. Early start-up menu</a></li>
+<li><a href="/guide/md/13-technical-information-mki-vs-mkii/">13. Technical information, MKI vs MKII</a></li>
+<li><span class="gd-side-todo">14. Appendix A: machine reference <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">15. Appendix B: MIDI control reference <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">16. Appendix C: sysex reference <span class="gd-vh">(to come)</span></span></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">5</span><span class="gd-ctitle">Routing page</span></h1><p class="gd-cmeta">MD manual pp.25-27</p></header>
+<div class="gd-intro gd-prose"><p>The routing parameters set how a track's sound goes through the distortion, the volume and pan, and on to the effect buses. They are part of the kit.</p>
+<p>There are two places to set them:</p>
+<ul class="gd-list"><li>On the Sound workspace they are groups of the second row, after the track effects: <b class="gd-ui">Drive</b>, <b class="gd-ui">Level · pan</b> and <b class="gd-ui">Sends</b>. A small word at the right of the first one names the machine's ROUTING page.</li><li>On the Mix workspace each track has a strip with its <b class="gd-ui">VOL</b> fader and the <b class="gd-ui">PAN</b>, <b class="gd-ui">DIST</b>, <b class="gd-ui">DEL</b> and <b class="gd-ui">REV</b> boxes.</li></ul>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: A strip on the Mix workspace"><span>Screenshot to come</span></div><figcaption>A strip on the Mix workspace</figcaption></figure>
+<p>To lock a routing parameter to a step, open the Sequence workspace and click its key in the lock lane, in the row of keys labelled <b class="gd-ui">Routing</b>.</p></div>
+<section class="gd-sec" id="distortion" aria-labelledby="distortion-h">
+<div class="gd-body gd-prose"><h2 id="distortion-h">DISTORTION <a class="gd-anchor" href="#distortion" aria-label="Link to DISTORTION">#</a></h2>
+<p class="gd-ref">MD manual p.25</p>
+<p><b class="gd-ui">DIST</b> controls the distortion of the track. It acts after the track effects and before the volume and pan.</p>
+<p>The group <b class="gd-ui">Drive</b> shows input against output. The dashed line is a clean signal. Drag the dot to set <b class="gd-ui">DIST</b>. On the Mix workspace use the <b class="gd-ui">DIST</b> box of the strip.</p>
+</div></section>
+<section class="gd-sec" id="volume" aria-labelledby="volume-h">
+<div class="gd-body gd-prose"><h2 id="volume-h">VOLUME <a class="gd-anchor" href="#volume" aria-label="Link to VOLUME">#</a></h2>
+<p class="gd-ref">MD manual p.25</p>
+<p><b class="gd-ui">VOL</b> is the volume of the track. It is separate from the overall gain of the track and, unlike it, can be locked and moved by an LFO.</p>
+<p>On the Mix workspace <b class="gd-ui">VOL</b> is the fader of the strip. Drag the fader, or press <kbd class="gd-key">[↑]</kbd> or <kbd class="gd-key">[↓]</kbd> while it has focus. Double-click it to set 100. On the Sound workspace <b class="gd-ui">VOL</b> is in the group <b class="gd-ui">Level · pan</b>.</p>
+</div></section>
+<section class="gd-sec" id="pan" aria-labelledby="pan-h">
+<div class="gd-body gd-prose"><h2 id="pan-h">PAN <a class="gd-anchor" href="#pan" aria-label="Link to PAN">#</a></h2>
+<p class="gd-ref">MD manual p.26</p>
+<p><b class="gd-ui">PAN</b> places the track in the stereo field of the main outputs. It shows -64 for hard left to +63 for hard right, and 0 for the centre.</p>
+<p>On the Sound workspace the group <b class="gd-ui">Level · pan</b> has one dot: sideways sets <b class="gd-ui">PAN</b>, upward sets <b class="gd-ui">VOL</b>. On the Mix workspace use the <b class="gd-ui">PAN</b> box.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>PAN has no effect on a track that goes to an individual output, A to F. The Mix workspace still shows its value.</p></aside>
+</div></section>
+<section class="gd-sec" id="delay-send" aria-labelledby="delay-send-h">
+<div class="gd-body gd-prose"><h2 id="delay-send-h">DELAY SEND <a class="gd-anchor" href="#delay-send" aria-label="Link to DELAY SEND">#</a></h2>
+<p class="gd-ref">MD manual p.26</p>
+<p><b class="gd-ui">DEL</b> sets how much of the track goes to the Rhythm Echo, the delay of the master effects.</p>
+<p>On the Sound workspace the group <b class="gd-ui">Sends</b> has two bars, one for <b class="gd-ui">DEL</b> and one for <b class="gd-ui">REV</b>. Drag the dot on a bar. On the Mix workspace use the <b class="gd-ui">DEL</b> box.</p>
+<p>A track on an individual output, A to F, has no delay. Its <b class="gd-ui">DEL</b> box is greyed on the Mix workspace, with a note, and the value is kept.</p>
+</div></section>
+<section class="gd-sec" id="reverb-send" aria-labelledby="reverb-send-h">
+<div class="gd-body gd-prose"><h2 id="reverb-send-h">REVERB SEND <a class="gd-anchor" href="#reverb-send" aria-label="Link to REVERB SEND">#</a></h2>
+<p class="gd-ref">MD manual p.27</p>
+<p><b class="gd-ui">REV</b> sets how much of the track goes to the Gate Box, the reverb of the master effects. It is set in the same places as <b class="gd-ui">DEL</b>.</p>
+<p>A track on an individual output has no reverb. Its <b class="gd-ui">REV</b> box is greyed in the same way.</p>
+</div></section>
+<section class="gd-sec" id="lfo-control" aria-labelledby="lfo-control-h">
+<div class="gd-body gd-prose"><h2 id="lfo-control-h">LFO CONTROL <a class="gd-anchor" href="#lfo-control" aria-label="Link to LFO CONTROL">#</a></h2>
+<p class="gd-ref">MD manual p.27</p>
+<p>The three routing parameters <b class="gd-ui">LFOS</b>, <b class="gd-ui">LFOD</b> and <b class="gd-ui">LFOM</b> are the speed, depth and mix of the track's LFO. They are the same kit values as <b class="gd-ui">SPD</b>, <b class="gd-ui">DEPTH</b> and <b class="gd-ui">SHMIX</b> in the LFO group of the Sound workspace, so the LFO group holds all three. Chapter 7 describes the LFO.</p>
+<p>When you lock <b class="gd-ui">LFOS</b>, <b class="gd-ui">LFOD</b> or <b class="gd-ui">LFOM</b> on a step, the lock also shows on the box of the LFO group.</p>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/md/04-track-effects/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">4. Track effects</span></a><a href="/guide/md/06-stereo-master-effects/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">6. Stereo master effects</span></a></nav>
+</article>
+</div>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

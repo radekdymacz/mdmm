@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4. Quick start · Monomachine Editor guide</title>
+<meta name="description" content="Pick a pattern, play it, play the keyboard, draw notes, record live and lock a value on a step.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/mm/04-quick-start/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261010">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>@page { @top-left { content: "4. Quick start"; } }</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › <a href="/guide/mm/">Monomachine Editor</a> › Quick start</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Chapters of the Monomachine Editor guide">
+<p class="gd-side-title"><a href="/guide/mm/">Monomachine Editor guide</a></p>
+<ol class="gd-side-list"><li><a href="/guide/mm/01-introduction-philosophy-highlights/">1. Introduction, philosophy, highlights</a></li>
+<li><a href="/guide/mm/02-user-interface-and-connectors/">2. User interface and connectors</a></li>
+<li><a href="/guide/mm/03-the-lcd-user-interface/">3. The LCD user interface</a></li>
+<li class="gd-side-cur"><a href="/guide/mm/04-quick-start/" aria-current="page">4. Quick start</a><ol class="gd-side-subs"><li><a href="#selecting-and-playing">SELECTING AND PLAYING</a></li><li><a href="#playing-in-multi-trig">PLAYING IN MULTI TRIG</a></li><li><a href="#exploring-a-pattern">EXPLORING A PATTERN</a></li><li><a href="#grid-recording">GRID RECORDING</a></li><li><a href="#live-recording">LIVE RECORDING</a></li><li><a href="#parameter-locks">PARAMETER LOCKS</a></li></ol></li>
+<li><a href="/guide/mm/05-monomachine-overview/">5. Monomachine overview</a></li>
+<li><a href="/guide/mm/06-synthesis-arrangement-kits-and-machines/">6. Synthesis arrangement: kits and machines</a></li>
+<li><a href="/guide/mm/07-track-effects/">7. Track effects</a></li>
+<li><a href="/guide/mm/08-low-frequency-oscillators/">8. Low frequency oscillators</a></li>
+<li><a href="/guide/mm/09-additional-kit-settings/">9. Additional kit settings</a></li>
+<li><a href="/guide/mm/10-the-pattern-sequencer-pattern-operation/">10. The pattern sequencer: pattern operation</a></li>
+<li><a href="/guide/mm/11-composing-a-pattern/">11. Composing a pattern</a></li>
+<li><a href="/guide/mm/12-tempo/">12. Tempo</a></li>
+<li><a href="/guide/mm/13-parameter-locks/">13. Parameter locks</a></li>
+<li><a href="/guide/mm/14-advanced-sequencer-control/">14. Advanced sequencer control</a></li>
+<li><a href="/guide/mm/15-additional-sequencer-features/">15. Additional sequencer features</a></li>
+<li><a href="/guide/mm/16-the-midi-sequencer/">16. The MIDI sequencer</a></li>
+<li><a href="/guide/mm/17-the-song-mode/">17. The song mode</a></li>
+<li><a href="/guide/mm/18-routing/">18. Routing</a></li>
+<li><a href="/guide/mm/19-global-settings/">19. Global settings</a></li>
+<li><span class="gd-side-todo">20. Early startup menu, technical information <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">21. Appendix A: machine reference <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">22. Appendix B: MIDI control reference <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">23. Appendix C: SysEx reference <span class="gd-vh">(to come)</span></span></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">4</span><span class="gd-ctitle">Quick start</span></h1><p class="gd-cmeta">MM manual pp.1-11 to 1-14</p></header>
+<div class="gd-intro gd-prose"><p>This chapter takes you through the first things you do with the machine: choose a pattern, hear it, change it and record into it. Each part gives the steps in the editor and says where they differ from the Monomachine's panel. The editor must be running with the firmware image loaded, and the LCD must show the kit and the pattern.</p></div>
+<section class="gd-sec" id="selecting-and-playing" aria-labelledby="selecting-and-playing-h">
+<div class="gd-body gd-prose"><h2 id="selecting-and-playing-h">SELECTING AND PLAYING <a class="gd-anchor" href="#selecting-and-playing" aria-label="Link to SELECTING AND PLAYING">#</a></h2>
+<p class="gd-ref">MM manual p.1-11</p>
+<p>A pattern recalls the kit it was saved with. When you pick a pattern, the machine loads its kit.</p>
+<ol class="gd-steps"><li>Click the <b class="gd-light">&lt;PATTERN&gt;</b> field in the LCD. The pattern chooser opens: 8 banks, A to H, of 16 patterns.</li><li>Click a pattern. Stopped, the machine switches at once. Playing, it queues the pattern and starts it when the current pattern ends. The name in the LCD blinks while it waits.</li><li>To switch at once while the machine plays, hold <kbd class="gd-key">[⇧]</kbd> and click, or click <b class="gd-ui">Now</b>.</li><li>Press <kbd class="gd-key">[SPACE]</kbd>. The machine plays and the <b class="gd-light">&lt;POSITION&gt;</b> field counts.</li></ol>
+<p>You can also step through patterns with the <b class="gd-ui">‹</b> and <b class="gd-ui">›</b> keys beside the name.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The pattern chooser"><span>Screenshot to come</span></div><figcaption>The pattern chooser</figcaption></figure>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The OS loads the kit of a pattern only for the patterns in banks A to D. In banks E to H the kit that played stays. When you pick an A to D pattern with kit edits that are not saved, the editor asks first and offers to save the kit, to switch and let the machine keep the edits in its UNDO KIT, or to cancel.</p></aside>
+<p>Press <kbd class="gd-key">[SPACE]</kbd> again to stop.</p>
+</div></section>
+<section class="gd-sec" id="playing-in-multi-trig" aria-labelledby="playing-in-multi-trig-h">
+<div class="gd-body gd-prose"><h2 id="playing-in-multi-trig-h">PLAYING IN MULTI TRIG <a class="gd-anchor" href="#playing-in-multi-trig" aria-label="Link to PLAYING IN MULTI TRIG">#</a></h2>
+<p class="gd-ref">MM manual p.1-12</p>
+<p>In multi trig mode one source plays all six tracks. To use it:</p>
+<ol class="gd-steps"><li>Go to the <b class="gd-ui">Perform</b> workspace (<kbd class="gd-key">[4]</kbd>).</li><li>In the <b class="gd-ui">Keyboard</b> card, click <b class="gd-ui">Multi trig</b>.</li><li>Click or drag across the on-screen keyboard. Every track plays the note. The lamps below the keyboard flash for each track that sounds.</li></ol>
+<p>Multi trig takes its notes on MIDI channel 7. Chapter 5 describes the other keyboard modes.</p>
+</div></section>
+<section class="gd-sec" id="exploring-a-pattern" aria-labelledby="exploring-a-pattern-h">
+<div class="gd-body gd-prose"><h2 id="exploring-a-pattern-h">EXPLORING A PATTERN <a class="gd-anchor" href="#exploring-a-pattern" aria-label="Link to EXPLORING A PATTERN">#</a></h2>
+<p class="gd-ref">MM manual p.1-12</p>
+<p>Play the pattern and listen to each track.</p>
+<ol class="gd-steps"><li>Click a track in the rail to select it.</li><li>Press <kbd class="gd-key">[M]</kbd> to mute it, or <b class="gd-ui">S</b> in its rail row to solo it.</li><li>Go to the <b class="gd-ui">Sound</b> workspace (<kbd class="gd-key">[2]</kbd>) and drag the values of the track. The sound changes as you drag.</li><li>Play the track from your keyboard with <kbd class="gd-key">[A S D F G H J K L]</kbd>.</li></ol>
+<p>The piano roll plays the pitch of a note when you click it.</p>
+</div></section>
+<section class="gd-sec" id="grid-recording" aria-labelledby="grid-recording-h">
+<div class="gd-body gd-prose"><h2 id="grid-recording-h">GRID RECORDING <a class="gd-anchor" href="#grid-recording" aria-label="Link to GRID RECORDING">#</a></h2>
+<p class="gd-ref">MM manual pp.1-12, 1-13</p>
+<p>In grid recording you place notes on the steps of a pattern one by one. The machine does this with the TRIG keys. In the editor you draw in the piano roll of the <b class="gd-ui">Sequence</b> workspace.</p>
+<ol class="gd-steps"><li>Go to the <b class="gd-ui">Sequence</b> workspace (<kbd class="gd-key">[1]</kbd>) and select a track.</li><li>If you want the pattern's own kit, open the kit library and load it: click <b class="gd-light">&lt;KIT&gt;</b>, choose a kit, click <b class="gd-ui">Load</b>. Chapter 6 describes the library.</li><li>Check that <b class="gd-ui">Draw</b> is lit. Press <kbd class="gd-key">[B]</kbd> to switch it.</li><li>Click an empty step in the roll. A note goes on it, as long as the <b class="gd-ui">Len</b> key says.</li><li>Drag the new note up or down to change its pitch.</li></ol>
+<p>To paint the same note on several steps, drag sideways. The steps you cross get the note. A drag is one undo step.</p>
+<p>To place a note off, which stops the sound at a step, hold <kbd class="gd-key">[⌥]</kbd> and click an empty step. You can also drag the end of a note: the note's length is the distance to its NOTE OFF.</p>
+<p>For a chord note on a step, hold <kbd class="gd-key">[⇧]</kbd> and click the roll there. Right-click a step for the step menu (Ctrl-click on a Mac). It offers a note on or off, NOTE OFF, trigless, slide and a chord note.</p>
+</div></section>
+<section class="gd-sec" id="live-recording" aria-labelledby="live-recording-h">
+<div class="gd-body gd-prose"><h2 id="live-recording-h">LIVE RECORDING <a class="gd-anchor" href="#live-recording" aria-label="Link to LIVE RECORDING">#</a></h2>
+<p class="gd-ref">MM manual p.1-13</p>
+<p>In live recording you play the keys while the pattern runs, and the machine writes the notes to the steps that play. The firmware quantises them.</p>
+<ol class="gd-steps"><li>Select the track to record.</li><li>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[SPACE]</kbd>. The machine starts if it was stopped, and the record light comes on. Clicking the record key while the machine plays does the same.</li><li>Play with <kbd class="gd-key">[A S D F G H J K L]</kbd> or the on-screen keyboard.</li><li>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[SPACE]</kbd> again to stop recording.</li></ol>
+<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot erase notes while recording, as the machine does with <kbd class="gd-key">[EXIT]</kbd>. Clear steps in the roll instead.</p>
+</div></section>
+<section class="gd-sec" id="parameter-locks" aria-labelledby="parameter-locks-h">
+<div class="gd-body gd-prose"><h2 id="parameter-locks-h">PARAMETER LOCKS <a class="gd-anchor" href="#parameter-locks" aria-label="Link to PARAMETER LOCKS">#</a></h2>
+<p class="gd-ref">MM manual pp.1-13, 1-14</p>
+<p>A parameter lock gives one parameter a value of its own for one step.</p>
+<h4 class="gd-h3" id="lock-a-value">Lock a value</h4>
+<ol class="gd-steps"><li>In the <b class="gd-ui">Sequence</b> workspace, click a page tab in the rail, for example FLT.</li><li>Click the parameter, for example BASE. The lock lane under the roll now edits it.</li><li>Drag over the bars of the lane. Each step with a trig gets a lock with the value where you dragged.</li><li>To draw a straight line of values, hold <kbd class="gd-key">[⇧]</kbd> and drag.</li><li>To set a locked value from the keys, turn the wheel over a lock step. Each notch is 4, and <kbd class="gd-key">[⇧]</kbd> makes it 1.</li></ol>
+<p>The <b class="gd-light">&lt;LOCKS&gt;</b> field of the LCD counts the locks of the pattern, out of 62.</p>
+<h4 class="gd-h3" id="lock-live">Lock live</h4>
+<p>While live recording plays, turn a value on the <b class="gd-ui">Sound</b> workspace. The machine records the value as a lock on the step that plays when the value arrives. The editor marks that step in the trig row and in the lock lane, for about three seconds, and a note says which value it locked.</p>
+<h4 class="gd-h3" id="remove-locks">Remove locks</h4>
+<ul class="gd-list"><li>Hold <kbd class="gd-key">[⌥]</kbd> and drag over the lane to erase the locks of one parameter.</li><li>The clear key in the rail header clears the locks of the parameter you are looking at. Hold <kbd class="gd-key">[⌥]</kbd> and click it to clear every lock of the track.</li><li>Select a step and press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd>. The step loses its note, its slide and its locks together.</li></ul>
+<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot remove the locks of a step and keep its note yet.</p>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/mm/03-the-lcd-user-interface/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">3. The LCD user interface</span></a><a href="/guide/mm/05-monomachine-overview/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">5. Monomachine overview</span></a></nav>
+</article>
+</div>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

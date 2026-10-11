@@ -7,7 +7,7 @@
      screen   (c) => true, or what was seen instead: what the page shows afterwards
      machine  (c) => true, or what was seen instead: what the plug-in's documents (the firmware's read-back) say
      within   how long the two may take to agree (ms, default 6000)
-   A journey is {name, steps, tidy, boot, needs}: needs (optional) () => why it cannot run here, or null (it is then
+   A journey is {name, proves, steps, tidy, boot, needs}: proves (read by scripts/mdmm-features-check.mjs, never by the runner) lists the feature rows it proves, ["MD-107"]; [] for a journey of the page itself (boot, focus, layout, screenshots); needs (optional) () => why it cannot run here, or null (it is then
    logged "JOURNEY <name> SKIP <why>", neither passed nor failed); tidy (async, optional) puts back what the steps changed and runs pass or
    fail; boot: true runs it from the page's start, before the machine takes input (the start-up card).
    One runner (Journey.run) plays them in order, logs a line per step, then "JOURNEY <name> PASS|FAIL <reason>"
@@ -396,8 +396,8 @@ const Journey = (() => {
 		titled: product => ok(menu.on() && new RegExp(product + " \\d").test($q("#deskmenu .mtitle")?.textContent || "") && !!$q(menu.id("developer")),
 			"no editor menu: " + ($q("#deskmenu .mtitle")?.textContent || "(none)"))
 	};
-	const editorMenuJourney = (name, product) => ({
-		name,
+	const editorMenuJourney = (name, product, o = {}) => ({
+		name, proves: o.proves,
 		steps: [
 			{ say: "right-click the header's empty part: the editor's menu, its title the editor and version", act: hands => { if (menu.on()) closeDeskMenu(); hands.rightClick(menu.at); },
 				screen: () => menu.titled(product) },
@@ -729,8 +729,8 @@ const Journey = (() => {
 		const verdict = { say: "every view as here", screen: c => { const k = Object.keys(c.diffs || {});
 			return ok(!k.length, k.map(n => `${n}: ${c.diffs[n].length} boxes laid out otherwise by WebKit 15 (${c.diffs[n].slice(0, 3).join("; ")})`).join(" | ")); } };
 		return [
-			{ name: `${prefix}-old-webkit`, needs: () => typeof DeskCompat === "undefined" || !DeskCompat.safari15 ? "no DeskCompat.safari15" : null, steps: [...views.map(v => step(v, false)), verdict] },
-			{ name: `${prefix}-shots-views`, needs: () => location.search.includes(`${prefix}-shots`) ? null : "screenshots only when asked by name", steps: views.map(v => step(v, true)) }
+			{ name: `${prefix}-old-webkit`, proves: [], needs: () => typeof DeskCompat === "undefined" || !DeskCompat.safari15 ? "no DeskCompat.safari15" : null, steps: [...views.map(v => step(v, false)), verdict] },
+			{ name: `${prefix}-shots-views`, proves: [], needs: () => location.search.includes(`${prefix}-shots`) ? null : "screenshots only when asked by name", steps: views.map(v => step(v, true)) }
 		];
 	}
 	return { run, demo, ok, sleep, until, u, TIERS, tierOf, onScreen, osKeyPath, menu, editorMenuJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, snapshot, safari15Diff, viewJourneys };
