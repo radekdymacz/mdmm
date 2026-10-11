@@ -3,6 +3,13 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-019 · Trigless locks on the Machinedrum (as the Monomachine Editor has)
+
+- **From:** Radek, 2026-10-11, after a Discord conversation: the Monomachine Editor already offers a trigless step (a step that carries only parameter locks, no note; step menu "trigless"); the Machinedrum Editor does not.
+- **Idea:** offer the same on the Machinedrum, for the next release, **only if OS 1.63 supports it**. Today a Machinedrum lock lives in the lock lane and needs a trig on its step.
+- **First:** a firmware probe (mdDeskFirmwareTest section): write a lock on a step without a trig the way the MD's own pattern format allows (if it has a bit or slot for it), read the pattern back from the machine's memory, and check by ear and by the output whether the machine applies the lock without playing a note. If OS 1.63 cannot, say so in the guide and close the idea (custom firmware such as X.13 may differ: I-016).
+- **Status:** new; the probe decides.
+
 ## I-018 · A CPU meter in the editor's top bar (both editors)
 
 - **From:** Radek, 2026-10-11, testing 0.5.0 in Ableton Live ("add a CPU meter somewhere around here", next to SETUP and the version).
