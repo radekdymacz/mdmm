@@ -37,7 +37,7 @@ const enums = { tempoMultipliers: ["1X", "2X", "3/4X", "3/2X"], masterFx: ["rhyt
 const catalogue = { schema: "md-desk/machines", version: 1, machines: [], enums };
 const caps = { engine: "emu", label: "EMU OS 1.63", about: "",
 	can: { transport: true, panelKeys: true, liveRecord: true, chains: false, lcd: true, workingKitMemory: true, mutesFromMemory: true, sampleNames: true, modulators: true,
-		sampleAudio: true, sampleLoad: true },
+		sampleAudio: true, sampleLoad: true, panic: true, playFrom: true },
 	reasons: { chains: "keys only" }, values: { dumps: "direct" } };
 const docs = (extra = {}) => ({ patterns: { 5: pattern }, kits: { 3: kit("STORED") }, songs: {}, global: null, catalogue, telemetry: null,
 	workingKit: null, sources: { "kit:3": "dump" },
