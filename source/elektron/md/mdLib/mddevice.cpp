@@ -134,6 +134,7 @@ namespace md
 			loadInitialPatchRam(_params, m_model, _initialPatchRam), m_frontPanelPublisher,
 			initialFlash.flash, initialFlash.cache);
 		m_speedUps = m_hardware->speedUps();
+		m_speedUpLeversOff = m_hardware->speedUpLeversOff();
 		m_exactEssiTiming = m_hardware->exactEssiTiming();
 	}
 
@@ -306,6 +307,7 @@ namespace md
 		}
 		transaction->m_prepared->m_hardware->requestRamRecordingMode(m_ramRecordingMode);
 		transaction->m_prepared->m_hardware->setSpeedUps(m_speedUps);
+		transaction->m_prepared->m_hardware->setSpeedUpLeversOff(m_speedUpLeversOff);
 		transaction->m_prepared->m_hardware->setExactEssiTiming(m_exactEssiTiming);
 		if(transaction->m_prepared->m_hardware->isProjectStateRestorePending())
 		{
@@ -466,6 +468,7 @@ namespace md
 		const auto clockPercent = getDspClockPercent();
 		_prepared.m_hardware->requestRamRecordingMode(m_ramRecordingMode);
 		_prepared.m_hardware->setSpeedUps(m_speedUps);
+		_prepared.m_hardware->setSpeedUpLeversOff(m_speedUpLeversOff);
 		_prepared.m_hardware->setExactEssiTiming(m_exactEssiTiming);
 		_prepared.m_hardware->getDspMixer().getPeriph().getEssiClock()
 			.setSpeedPercent(clockPercent);
@@ -512,6 +515,15 @@ namespace md
 			m_hardware->setSpeedUps(_on);
 		if(m_deferredPreparedState && m_deferredPreparedState->m_hardware)
 			m_deferredPreparedState->m_hardware->setSpeedUps(_on);
+	}
+
+	void Device::setSpeedUpLeversOff(const uint32_t _off)
+	{
+		m_speedUpLeversOff = _off & g_allSpeedUpLevers;
+		if(m_hardware)
+			m_hardware->setSpeedUpLeversOff(m_speedUpLeversOff);
+		if(m_deferredPreparedState && m_deferredPreparedState->m_hardware)
+			m_deferredPreparedState->m_hardware->setSpeedUpLeversOff(m_speedUpLeversOff);
 	}
 
 	bool Device::commitDeferredStateRestore(PreparedState& _prepared,

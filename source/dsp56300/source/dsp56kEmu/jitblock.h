@@ -46,7 +46,7 @@ namespace dsp56k
 		static void getInfo(JitBlockInfo& _info, const DSP& _dsp, TWord _pc, const JitConfig& _config, const PagedArray<JitCacheEntry>& _cache, const std::set<TWord>& _volatileP, const std::map<TWord, TWord>& _loopStarts, const std::set<TWord>& _loopEnds);
 
 		bool isNopLoopBody(const JitBlockInfo& _info, TWord _pc, bool _isFastInterrupt) const;
-		bool isIdlePollLoop(const JitBlockInfo& _info, TWord _pc, bool _isFastInterrupt, const std::set<TWord>& _loopEnds) const;
+		bool isIdlePollLoop(const JitBlockInfo& _info, TWord _pc, bool _isFastInterrupt, const std::set<TWord>& _loopEnds, bool* _pureRead = nullptr) const;
 		bool findPollCycle(JitPollCycle& _cycle, TWord _pc, const std::map<TWord, TWord>& _loopStarts, const std::set<TWord>& _loopEnds) const;
 		void emitFastForwardGate(const asmjit::Label& _skip, uint64_t _cyclesAhead, uint64_t _instructionsAhead = 0);
 		bool emit(JitBlockRuntimeData& _rt, JitBlockChain* _chain, TWord _pc, const PagedArray<JitCacheEntry>& _cache, const std::set<TWord>& _volatileP, const std::map<TWord, TWord>& _loopStarts, const std::set<TWord>& _loopEnds, bool _profilingSupport);

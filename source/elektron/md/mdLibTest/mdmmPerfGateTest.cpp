@@ -57,7 +57,8 @@
 // Compare those hashes across builds; compare the per-frame costs as medians of a few paired runs (old, new, old, new).
 // --golden compares the hashes and counts with the entry of the goldens file for (ROM fingerprint, scenario, outputs,
 // GEARMULATOR_MDMM_SPEEDUPS position (on, off, or on+exact-essi with GEARMULATOR_MDMM_EXACT_ESSI=1 on the MD), seconds
-// per phase) and exits 1 on any difference, field by field; with --record
+// per phase; a speed-up turned off alone, GEARMULATOR_MDMM_<lever>=0, still counts as on: each is bit-exact, so it must
+// equal that entry) and exits 1 on any difference, field by field; with --record
 // it writes or replaces that entry instead (the file keeps the others). The goldens hold hashes, counts and, as
 // information only, the instruction figures and guest cycles of the recording run: nothing from the firmware.
 // --wav writes the hashed stream (stopped, the press, playing; left and right) as a 32-bit float WAV at 44.1 kHz, for

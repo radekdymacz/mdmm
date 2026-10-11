@@ -33,7 +33,8 @@ this on later launches. The context menu can stop an environment-started capture
 ## Switches for testers
 
 The editors run the emulated Machinedrum and Monomachine faster than they used to (the emulation CPU work, steps 1
-and 2). There are two switches. With nothing set, every speed-up is on and the experimental L3 is off.
+and 2). There are three switches: all the speed-ups at once, each speed-up alone, and the experimental L3. With
+nothing set, every speed-up is on and L3 is off.
 
 **The speed-ups switch** turns all the speed-ups off at once (and one emulator fix that came with them), so you can
 find out in minutes whether a CPU problem, a click or a timing difference comes from them. Off, the emulation is the
@@ -79,14 +80,33 @@ affected. It acts only while the speed-ups are on.
   is L3 on; applies at once, kept in the plug-in's settings (key `exactEssiTiming`) and across project loads.
 - **`GEARMULATOR_MDMM_EXACT_ESSI=1`** starts every new session with L3 on.
 
-Two finer environment variables exist for narrowing a problem down further. Both are environment
-variables only:
+**One switch per speed-up.** To find out which speed-up a difference comes from, each one can be turned off alone
+while the others stay on. Every one is bit-exact on its own, so any mix of them gives the same audio, RAM and MIDI as
+all on (checked against the goldens with each one off alone); only the host CPU differs. With the speed-ups switch
+off they are all off whatever these say.
 
-- **`GEARMULATOR_MDMM_SIM_DEFERRAL=0`** turns off L5 alone (timers and UART transmitters stepped after
-  every instruction). It also holds when the menu leaves the speed-ups on.
-- **`GEARMULATOR_MDMM_BOUNDED_JIT=0`** is older than the speed-ups and unrelated to them: it runs the DSP
-  background slices instruction by instruction instead of in cycle-bounded entries. The speed-ups switch
-  does not change it, and it does not change L2b.
+- **Menu: Developer > Speed-ups (each)**, in both editors: one item per speed-up, ticked is on (the default). The
+  choice applies at once and is kept in the plug-in's settings (key `speedUpLeversOff`, a bit mask, 0 = all on) and
+  across project loads. Greyed out while the speed-ups switch is off.
+- **Environment variables**, set before starting the host; each `=0` turns that one off at the start of every
+  session (together with any the menu turned off):
+
+| Variable | Speed-up |
+|---|---|
+| `GEARMULATOR_MDMM_L1=0` | L1, the idle skip tests its inputs once per batch |
+| `GEARMULATOR_MDMM_L11=0` | L11, the ColdFire memory fast lane |
+| `GEARMULATOR_MDMM_L2B=0` | L2b, the Machinedrum DSP catch-ups in one entry (the Monomachine never uses it) |
+| `GEARMULATOR_MDMM_L5=0` | L5, timers and UART transmitters stepped at their events (`GEARMULATOR_MDMM_SIM_DEFERRAL=0`, the older name, still works) |
+| `GEARMULATOR_MDMM_L4_NOP=0` | L4, the silent-voice NOP loops |
+| `GEARMULATOR_MDMM_L4_POLL=0` | L4, the one-block DMA poll loops (MM p:17f and p:18d, MD p:cf) |
+| `GEARMULATOR_MDMM_L4_CYCLE=0` | L4, the poll loops over several blocks (the MD's codec wait at p:3c) |
+| `GEARMULATOR_MDMM_L4_PORTC=0` | L4, the poll loops on Port C, the block sync from the other DSP (MD p:bb, MM p:195), of either kind above |
+| `GEARMULATOR_MDMM_CMPM=0` | the CMPM fix |
+
+One more environment variable is older than the speed-ups and unrelated to them:
+
+- **`GEARMULATOR_MDMM_BOUNDED_JIT=0`** runs the DSP background slices instruction by instruction instead of in
+  cycle-bounded entries. The speed-ups switch does not change it, and it does not change L2b.
 
 If a problem goes away with the speed-ups off, send the performance report from a capture with them off
 and one with them on.

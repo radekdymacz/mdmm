@@ -156,6 +156,10 @@ namespace md
 		// Requires the owning Plugin device lock.
 		void setSpeedUps(bool _on);
 		bool speedUps() const { return m_speedUps; }
+		// The levers kept off alone while the speed-ups are on (Hardware::setSpeedUpLeversOff, SpeedUpLever bits;
+		// GEARMULATOR_MDMM_<lever>=0 at start). Kept across restores like the speed-ups. Same lock.
+		void setSpeedUpLeversOff(uint32_t _off);
+		uint32_t speedUpLeversOff() const { return m_speedUpLeversOff; }
 		// L3's opt-in, off by default (Hardware::setExactEssiTiming; GEARMULATOR_MDMM_EXACT_ESSI=1 starts it on).
 		// Kept across restores like the speed-ups. Requires the owning Plugin device lock.
 		void setExactEssiTiming(bool _on);
@@ -268,6 +272,7 @@ namespace md
 		bool m_nativeProgramChangesEnabled = true;
 		RamRecordingMode m_ramRecordingMode = RamRecordingMode::Original;
 		bool m_speedUps = true;
+		uint32_t m_speedUpLeversOff = 0;
 		bool m_exactEssiTiming = false;
 		std::string m_mdFlashCacheFilename;
 		uint64_t m_hardwareEpoch = 0;

@@ -98,7 +98,7 @@ namespace
 	bool testDefaultSwitches()
 	{
 		if(std::getenv("GEARMULATOR_MDMM_SPEEDUPS") || std::getenv("GEARMULATOR_MDMM_EXACT_ESSI")
-			|| std::getenv("GEARMULATOR_MDMM_SIM_DEFERRAL"))
+			|| md::speedUpLeversOffFromEnvironment())
 		{
 			std::cout << "default switches: SKIP (set in the environment)\n";
 			return true;
@@ -130,6 +130,35 @@ namespace
 				&& h.getDspMixer().getPeriph().getEssiClock().isExactCycleDeadlineEnabled() == mm
 				&& !h.getDspMixer().dsp().getIdleFastForward() && !h.getDspMixer().dsp().getJitCmpmFix();
 			if(!check(ok, (std::string(name) + ": L3 or the speed-ups switch does not reach the DSPs").c_str()))
+				return false;
+			// each lever alone: off with the umbrella on, and the umbrella off still turns everything off
+			h.setExactEssiTiming(false);
+			h.setSpeedUps(true);
+			for(const auto& lever : md::speedUpLevers())
+			{
+				h.setSpeedUpLeversOff(md::bit(lever.lever));
+				const auto parts = h.getDspMixer().dsp().getIdleFastForwardParts();
+				const auto on = [&](const md::SpeedUpLever _l) { return lever.lever != _l; };
+				ok = h.speedUpLeverOn(md::SpeedUpLever::L1) == on(md::SpeedUpLever::L1)
+					&& h.getUC().memoryFastLane() == on(md::SpeedUpLever::L11)
+					&& h.getUC().getSim().deferStepping() == on(md::SpeedUpLever::L5)
+					&& ((parts & dsp56k::DSP::IdleFastForwardNopLoops) != 0) == on(md::SpeedUpLever::L4Nop)
+					&& ((parts & dsp56k::DSP::IdleFastForwardPollLoops) != 0) == on(md::SpeedUpLever::L4Poll)
+					&& ((parts & dsp56k::DSP::IdleFastForwardPollCycles) != 0) == on(md::SpeedUpLever::L4Cycle)
+					&& ((parts & dsp56k::DSP::IdleFastForwardPureReads) != 0) == on(md::SpeedUpLever::L4PortC)
+					&& h.getDspProducer().dsp().getIdleFastForwardParts() == parts
+					&& h.getDspMixer().dsp().getIdleFastForward()
+					&& h.getDspMixer().dsp().getJitCmpmFix() == on(md::SpeedUpLever::Cmpm)
+					&& h.getDspProducer().dsp().getJitCmpmFix() == on(md::SpeedUpLever::Cmpm);
+				if(!check(ok, (std::string(name) + ": the lever switch " + lever.key + " does not act alone").c_str()))
+					return false;
+			}
+			h.setSpeedUpLeversOff(0);
+			h.setSpeedUps(false);
+			ok = !h.speedUpLeverOn(md::SpeedUpLever::L1) && !h.getUC().memoryFastLane()
+				&& !h.getUC().getSim().deferStepping() && !h.getDspMixer().dsp().getIdleFastForward()
+				&& h.getDspMixer().dsp().getIdleFastForwardParts() == 0 && !h.getDspMixer().dsp().getJitCmpmFix();
+			if(!check(ok, (std::string(name) + ": the speed-ups switch off leaves a lever on").c_str()))
 				return false;
 		}
 		return true;

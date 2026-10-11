@@ -149,10 +149,9 @@ namespace md
 		// background DSP slices.
 		const auto* const boundedJit = std::getenv("GEARMULATOR_MDMM_BOUNDED_JIT");
 		m_schedBoundedJit = boundedJit == nullptr || std::strcmp(boundedJit, "0") != 0;
-		// The step 1 speed-ups (setSpeedUps), on by default: "0" runs the code they replaced.
-		// GEARMULATOR_MDMM_SIM_DEFERRAL=0 turns off the SIM's event-driven stepping (L5) alone.
-		const auto* const simDeferral = std::getenv("GEARMULATOR_MDMM_SIM_DEFERRAL");
-		m_simDeferral = simDeferral == nullptr || std::strcmp(simDeferral, "0") != 0;
+		// The speed-ups (setSpeedUps), on by default: "0" runs the code they replaced. GEARMULATOR_MDMM_<lever>=0
+		// turns one off alone (mdSpeedUpLevers.h; GEARMULATOR_MDMM_SIM_DEFERRAL=0 is L5's older name).
+		m_speedUpLeversOff = speedUpLeversOffFromEnvironment();
 		const auto* const exactEssi = std::getenv("GEARMULATOR_MDMM_EXACT_ESSI");
 		m_exactEssiTiming = exactEssi != nullptr && std::strcmp(exactEssi, "1") == 0;
 		const auto* const speedUps = std::getenv("GEARMULATOR_MDMM_SPEEDUPS");
@@ -1485,7 +1484,7 @@ namespace md
 								|| m_midiSysexTransfer.ownsMidiWire();
 						};
 						uint32_t instructions = 0;
-						if(m_speedUps)
+						if(m_leverL1)
 						{
 							// L1: the external inputs are tested once for the whole batch, not at
 							// each omitted instruction: Plugin::process holds the device lock for the
@@ -1637,7 +1636,7 @@ namespace md
 		// same blocks with the same checks before each, minus one trampoline entry per block (L2b;
 		// with the speed-ups off, setSpeedUps, the MD keeps the per-block loop too).
 		const bool s_mmBp = isMonomachine();
-		if(!s_mmBp && m_speedUps)
+		if(!s_mmBp && m_leverL2b)
 			d.dsp().execUntilCycles(std::min(targetCyc, clampStop));
 		else
 		{
@@ -1661,6 +1660,28 @@ namespace md
 				++score.stoppedByBackpressure;
 			else
 				++score.unexpectedShort;);
+	}
+
+	void Hardware::applySpeedUps()
+	{
+		m_leverL1 = speedUpLeverOn(SpeedUpLever::L1);
+		m_leverL2b = speedUpLeverOn(SpeedUpLever::L2b);
+		m_uc.setMemoryFastLane(speedUpLeverOn(SpeedUpLever::L11));
+		m_uc.getSim().setDeferStepping(speedUpLeverOn(SpeedUpLever::L5));
+		applyEssiCycleDeadlines();
+		// L4 by kind of loop (dsp56k::DSP::setIdleFastForwardParts); the fast-forward itself is on while any is
+		uint32_t parts = 0;
+		if(speedUpLeverOn(SpeedUpLever::L4Nop))		parts |= dsp56k::DSP::IdleFastForwardNopLoops;
+		if(speedUpLeverOn(SpeedUpLever::L4Poll))	parts |= dsp56k::DSP::IdleFastForwardPollLoops;
+		if(speedUpLeverOn(SpeedUpLever::L4Cycle))	parts |= dsp56k::DSP::IdleFastForwardPollCycles;
+		if(speedUpLeverOn(SpeedUpLever::L4PortC))	parts |= dsp56k::DSP::IdleFastForwardPureReads;
+		const bool cmpm = speedUpLeverOn(SpeedUpLever::Cmpm);
+		for(auto* d : {&m_dspMixer.dsp(), &m_dspProducer.dsp()})
+		{
+			d->setIdleFastForwardParts(parts);
+			d->setIdleFastForward((parts & ~dsp56k::DSP::IdleFastForwardPureReads) != 0);
+			d->setJitCmpmFix(cmpm);
+		}
 	}
 
 	void Hardware::applyEssiCycleDeadlines()
@@ -1725,7 +1746,7 @@ namespace md
 		const bool bpGate = isMonomachine();
 		// Same split as in schedCatchUpDsp: the MM keeps its per-block backpressure loop, the MD
 		// runs the catch-up under one execUntilCycles entry (L2b, with the speed-ups on).
-		if(!bpGate && m_speedUps)
+		if(!bpGate && m_leverL2b)
 			d.dsp().execUntilCycles(std::min(targetCyc, clampStop));
 		else
 		{
