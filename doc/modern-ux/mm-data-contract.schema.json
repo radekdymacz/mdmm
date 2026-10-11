@@ -1686,10 +1686,16 @@
                   "type": "null"
                 },
                 {
-                  "enum": ["off", "grid", "live"]
+                  "enum": ["off", "grid", "live", "step"]
                 }
               ],
-              "description": "MM-P4: the recording mode (RAM): GRID RECORDING, LIVE RECORDING or off; null where the engine cannot read it."
+              "description": "MM-P4: the recording mode (RAM): GRID RECORDING, LIVE RECORDING, STEP RECORDING (0.6, RAM 0x2bff05) or off; null where the engine cannot read it."
+            },
+            "stepAt": {
+              "type": ["integer", "null"],
+              "minimum": 0,
+              "maximum": 63,
+              "description": "0.6: STEP RECORDING's cursor, the step the next note writes (RAM 0x2bff09, 0-based); null when not step recording."
             },
             "songRow": {
               "type": ["integer", "null"],
@@ -5277,7 +5283,7 @@
         },
         {
           "type": "object",
-          "description": "machine: GRID RECORDING (RECORD), LIVE RECORDING (RECORD + PLAY) or off",
+          "description": "machine: GRID RECORDING (RECORD), LIVE RECORDING (RECORD + PLAY), STEP RECORDING (STOP + RECORD) or off; t: the track in focus first (TRACK t), the one STEP RECORDING writes (again while in it: only the focus)",
           "required": ["op", "mode"],
           "properties": {
             "op": {
@@ -5295,7 +5301,66 @@
             },
             "mode": {
               "type": "string",
-              "enum": ["off", "grid", "live"]
+              "enum": ["off", "grid", "live", "step"]
+            },
+            "t": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "machine: LIVE RECORDING: EXIT held (on) or let go: track t's notes go as they play (TRACK t first)",
+          "required": ["op", "t", "on"],
+          "properties": {
+            "op": {
+              "const": "liveErase"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "t": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "on": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "machine: STEP RECORDING: LEFT (a step back), RIGHT (on, a rest) or ENTER (clear the step, on)",
+          "required": ["op", "key"],
+          "properties": {
+            "op": {
+              "const": "stepKey"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "key": {
+              "type": "string",
+              "enum": ["left", "right", "clear"]
             }
           },
           "additionalProperties": false

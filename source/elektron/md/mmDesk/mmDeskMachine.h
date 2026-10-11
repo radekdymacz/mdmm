@@ -167,6 +167,8 @@ namespace mmDesk
 		void pumpSequence(double _now);
 		// RECORD: the current pattern read back while the machine records (true: the mode changed).
 		bool readWhileRecording(double _now);
+		// liveErase: EXIT let go if it is down (true then).
+		bool releaseExit();
 		// LIVE RECORDING: a kit value the editor sends (a CC) is recorded by the firmware as a lock on the step that plays
 		// when it arrives (measured, mmDeskFirmwareTest reclock); the desk names that step for about 3 s (machine.desk.recLock).
 		void noteRecLock(const elektronData::MmKit& _before, const elektronData::MmKit& _after, const ChannelReach& _reach);
@@ -195,6 +197,8 @@ namespace mmDesk
 		deskCore::Outcome cmdMuteMidi(const Value&, const Documents&);
 		deskCore::Outcome cmdPoly(const Value&, const Documents&);
 		deskCore::Outcome cmdRecord(const Value&, const Documents&);
+		deskCore::Outcome cmdLiveErase(const Value&, const Documents&);
+		deskCore::Outcome cmdStepKey(const Value&, const Documents&);
 		deskCore::Outcome cmdHwSend(const Value&, const Documents&);
 		// Wave 2 (mmDeskTransport.cpp): pause, resume, play from a song row, panic, the tempo nudge.
 		deskCore::Outcome cmdPause(const Value&, const Documents&);
@@ -295,6 +299,8 @@ namespace mmDesk
 		deskCore::FieldExpectation<bool> m_expectPoly;
 		deskCore::FieldExpectation<int> m_expectTempo;
 		RecordReads m_recordReads;		// RECORD's read-backs (watchRecord)
+		bool m_exitHeld = false;		// liveErase: EXIT is down on the panel
+		int m_stepCursorSent = -1;		// STEP RECORDING: the cursor the last transport message said
 		struct RecLock { int track = 0, param = 0, step = 0; double atMs = 0; };
 		std::optional<RecLock> m_recLock;	// the step the last value sent while LIVE RECORDING locks (noteRecLock)
 		int m_queuedPattern = -1;
