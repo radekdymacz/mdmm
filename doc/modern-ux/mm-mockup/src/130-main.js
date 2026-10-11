@@ -153,7 +153,7 @@ function endDrag(e){trnUp();if(cord){cordEnd(e);return}if(rollDrag)rollUp();if(a
    is heard on the whole document, a move with no button down ends it too, and so does leaving the window. */
 document.addEventListener("pointerup",endDrag);document.addEventListener("pointercancel",endDrag);
 window.addEventListener("blur",()=>{if(dragging())endDrag({clientX:-1,clientY:-1})});
-const dragging=()=>!!(drag||active||laneDraw||arpDrag||joyDrag||splitDrag||rollDrag||selDrag||kbDown||cord);
+const dragging=()=>!!(drag||active||laneDraw||arpDrag||joyDrag||splitDrag||rollDrag||selDrag||kbDown||cord||trnHeld);
 function joyAt(e){const r=$("#joy").getBoundingClientRect();S.joy={x:clamp((e.clientX-r.left)/r.width*2-1,-1,1),y:clamp(1-(e.clientY-r.top)/r.height*2,-1,1)};const k=$("#knobj");k.style.left=(50+S.joy.x*42)+"%";k.style.top=(50-S.joy.y*42)+"%";
  const tr=S.tracks[asgT()],A=tr.assign,rows=A.tabs[S.asTab];const amt=S.asTab==="JOY U"?Math.max(0,S.joy.y):S.asTab==="JOY D"?Math.max(0,-S.joy.y):A.mirr?S.joy.x:Math.max(0,S.joy.x);
  $("#kbinfo")&&($("#kbinfo").textContent=rows.map(r=>`${LPAGES[r.pg]} ${destNames(asgT(),r.pg)[r.d]} ${Math.round((r.add-64)*amt)>=0?"+":""}${Math.round((r.add-64)*amt)}`).join(" · "));tx();if(HOST.joy)HOST.joy(S.joy)}
