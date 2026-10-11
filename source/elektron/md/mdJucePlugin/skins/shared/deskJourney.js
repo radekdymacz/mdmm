@@ -410,7 +410,9 @@ const Journey = (() => {
 		savedLeverOff: key => !!(CpuMeter.last && CpuMeter.last.saved && (CpuMeter.last.saved.leversOff || []).includes(key)),
 		/* the CPU details' own entries (deskCpu.js: the editor menu's, under the notes) */
 		cpuItem: label => [...document.querySelectorAll('#deskmenu .mpanel[data-cpu="1"] [data-mi]')].find(b => (b.querySelector("span")?.textContent || "").trim() === label),
-		cpuOpen: async hands => { if (menu.on()) closeDeskMenu(); await sleep(200); hands.click("#cpumeter");
+		/* the details may open again by themselves after a switch (deskCpu.js), later on a slow page: closed until they stay */
+		cpuOpen: async hands => { for (let i = 0; i < 3; i++) { if (menu.on()) closeDeskMenu(); await until(() => !$q("#modalbg") || $q("#modalbg").hidden, 2000); await sleep(300); if (!menu.on()) break; }
+			hands.click("#cpumeter");
 			if (!await until(() => !!speed.cpuItem("Speed-ups"), 3000)) throw new Error("no Speed-ups entry in the CPU details"); },
 		keys: () => [...document.querySelectorAll('#deskmenu [data-mid^="speedup-"]')].map(b => b.dataset.mid).filter(x => x !== "speedup-levers"),
 		/* the Developer submenu (and the levers' one) as the plug-in sends it now */
@@ -558,7 +560,14 @@ const Journey = (() => {
 				screen: () => ok(DeskVolume.gain === 0 && vol.el().getAttribute("aria-valuetext") === "0.0 dB", vol.says()),
 				machine: () => ok(vol.follows(0), vol.says()) },
 			{ say: "drag it down 12 px: -6 dB, the readout under the LCD says so while it changes",
-				act: async (hands, c) => { await hands.drag("#volf", [[0, 4], [0, 8], [0, 12]], {}, { click: false, settle: 50 }); c.tip = vol.tip(); },
+				act: async (hands, c) => {
+					/* every text the readout shows during and just after the drag (a slow page can hide it again, 900 ms after
+					   the last change, before a read after the drag) */
+					c.tips = []; const see = () => { const t = vol.tip(); if (t) c.tips.push(t); };
+					const watch = new MutationObserver(see); document.querySelectorAll(".voltip").forEach(t => watch.observe(t, { attributes: true, childList: true, characterData: true, subtree: true }));
+					try { await hands.drag("#volf", [[0, 4], [0, 8], [0, 12]], {}, { click: false, settle: 50 }); see(); await until(() => c.tips.includes("Volume -6.0 dB"), 600); }
+					finally { watch.disconnect(); }
+					c.tip = c.tips.includes("Volume -6.0 dB") ? "Volume -6.0 dB" : (c.tips[c.tips.length - 1] || ""); },
 				screen: c => ok(DeskVolume.gain === -6 && c.tip === "Volume -6.0 dB", `${vol.says()}, readout "${c.tip}"`),
 				machine: () => ok(vol.follows(-6), vol.says()) },
 			{ say: "the readout goes a moment after", act: () => sleep(1200), screen: () => ok(!vol.tip(), `still "${vol.tip()}"`) },
