@@ -142,7 +142,7 @@ const Journey = (() => {
 			   even when a redraw replaced the element pressed (a synthetic pointer has no real capture) */
 			let captured = null; const cap0 = Element.prototype.setPointerCapture;
 			Element.prototype.setPointerCapture = function () { captured = this; };
-			let at = a;
+			let at = a, up = null;
 			const target = () => o.captured === false ? (document.elementFromPoint(at.x, at.y) || document.body)
 				: captured && captured.isConnected ? captured : down.isConnected ? down : document.body;
 			try {
@@ -155,10 +155,12 @@ const Journey = (() => {
 					pe("pointermove", target(), at.x, at.y, m, 1); me("mousemove", over, at.x, at.y, m, 1);
 					await sleep(o.stepMs ?? 30);
 				}
-				const up = target();
+				up = target();
 				pe("pointerup", up, at.x, at.y, m, 0); me("mouseup", up, at.x, at.y, m, 0);
 			} finally { Element.prototype.setPointerCapture = cap0; Pointer.down(at.x, at.y, false); }
-			if (o.click !== false) me("click", document.elementFromPoint(at.x, at.y) || document.body, at.x, at.y, m, 0);
+			/* the click a browser sends after a press and release: to the nearest element holding both the one pressed and the
+			   one released (a drag that ends elsewhere clicks their common parent, never the element under the end point) */
+			if (o.click !== false) { let c = down.isConnected ? down : up; while (c && up && !c.contains(up)) c = c.parentElement; me("click", c || document.body, at.x, at.y, m, 0); }
 			await sleep(o.settle ?? 150);
 		},
 		/* an HTML drag and drop (draggable=true): dragstart on the source, dragover and drop on the target, dragend,
