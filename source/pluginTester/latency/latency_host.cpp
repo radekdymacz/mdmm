@@ -8,6 +8,7 @@
 #include <thread>
 #include <vector>
 #include <cstdlib>
+#include <ctime>
 #include <limits>
 #if JUCE_MAC
 #include <mach/mach.h>
@@ -17,13 +18,41 @@
 #endif
 
 struct Event { int64_t sample; juce::MidiMessage message; };
-struct BlockRecord { int64_t sample; int size; double lateMs; double renderMs; int latency; };
+struct BlockRecord { int64_t sample; int size; double lateMs; double renderMs; int latency; double cpuMs; uint64_t instructions; uint64_t cycles; };
 
 struct TestPlayHead final : juce::AudioPlayHead
 {
     PositionInfo position;
     juce::Optional<PositionInfo> getPosition() const override { return position; }
 };
+
+// the render thread's CPU time (what the callback cost it, without the time it was not running), 0 where unknown
+int64_t threadCpuNanoseconds()
+{
+#if JUCE_MAC
+    return (int64_t)clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID);
+#elif JUCE_LINUX
+    timespec t{};
+    if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t) != 0) return 0;
+    return (int64_t)t.tv_sec * 1000000000 + t.tv_nsec;
+#else
+    return 0;
+#endif
+}
+
+#if JUCE_MAC
+extern "C" int thread_selfcounts(int _type, void* _buf, size_t _bytes);
+#endif
+// the render thread's retired instructions and cycles so far (macOS: the same counters as mdmmPerfGateTest; they do
+// not move with the computer's load), 0 where unknown
+void threadCounts(uint64_t& _instructions, uint64_t& _cycles)
+{
+    _instructions = _cycles = 0;
+#if JUCE_MAC
+    uint64_t counts[2] = {0, 0};
+    if (thread_selfcounts(1, counts, sizeof(counts)) == 0) { _instructions = counts[0]; _cycles = counts[1]; }
+#endif
+}
 
 juce::var memorySnapshot()
 {
@@ -283,14 +312,20 @@ int main(int argc, char** argv)
                 playhead.position.setTimeSignature(juce::AudioPlayHead::TimeSignature{4, 4});
                 playhead.position.setIsPlaying(stage > 0 && stage < 4);
             }
+            uint64_t instrBefore, cyclesBefore, instrAfter, cyclesAfter;
+            threadCounts(instrBefore, cyclesBefore);
+            const auto cpuBefore = threadCpuNanoseconds();
             const auto before = Clock::now();
             instance->processBlock(audio, midi);
             const auto after = Clock::now();
+            const auto cpuAfter = threadCpuNanoseconds();
+            threadCounts(instrAfter, cyclesAfter);
             for (int ch = 0; ch < 2; ++ch) capture.copyFrom(ch, (int)start, audio, ch, 0, count);
             blocks.push_back({start, count,
                 std::chrono::duration<double, std::milli>(arrived-due).count(),
                 std::chrono::duration<double, std::milli>(after-before).count(),
-                instance->getLatencySamples()});
+                instance->getLatencySamples(), (cpuAfter - cpuBefore) / 1.0e6,
+                instrAfter - instrBefore, cyclesAfter - cyclesBefore});
             if (transport && transportStage > 0 && transportStage < 4)
                 transportPpq += count * transportBpm / (60 * rate);
             start += count;
@@ -331,10 +366,11 @@ int main(int argc, char** argv)
         if(!inputWriter || !inputWriter->writeFromAudioSampleBuffer(inputCapture,0,(int)total)) return 1;
     }
     juce::FileOutputStream csv(juce::File(prefix + ".blocks.csv"));
-    csv.writeText("sample,count,late_ms,render_ms,reported_latency_samples\n", false, false, nullptr);
+    csv.writeText("sample,count,late_ms,render_ms,reported_latency_samples,cpu_ms,instructions,cycles\n", false, false, nullptr);
     for (const auto& b : blocks) {
         auto row = juce::String((juce::int64)b.sample) + "," + juce::String(b.size) + ","
-            + juce::String(b.lateMs, 6) + "," + juce::String(b.renderMs, 6) + "," + juce::String(b.latency) + "\n";
+            + juce::String(b.lateMs, 6) + "," + juce::String(b.renderMs, 6) + "," + juce::String(b.latency) + "," + juce::String(b.cpuMs, 6)
+            + "," + juce::String((juce::int64)b.instructions) + "," + juce::String((juce::int64)b.cycles) + "\n";
         csv.writeText(row, false, false, nullptr);
     }
     juce::DynamicObject::Ptr receipt = new juce::DynamicObject();
