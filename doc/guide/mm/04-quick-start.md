@@ -4,7 +4,7 @@
 This chapter takes you through the first things you do with the machine: choose a pattern, hear it, change it and record into it. Each part gives the steps in the editor and says where they differ from the Monomachine's panel. The editor must be running with the firmware image loaded, and the LCD must show the kit and the pattern.
 
 ## SELECTING AND PLAYING
-<!-- rows: MM-070 MM-071 MM-072 @b13a2b -->
+<!-- rows: MM-070 MM-071 MM-072 @630393 -->
 
 A pattern recalls the kit it was saved with. When you pick a pattern, the machine loads its kit.
 
@@ -12,6 +12,7 @@ A pattern recalls the kit it was saved with. When you pick a pattern, the machin
 2. Click a pattern. Stopped, the machine switches at once. Playing, it queues the pattern and starts it when the current pattern ends. The name in the LCD blinks while it waits.
 3. To switch at once while the machine plays, hold [⇧] and click, or click **Now**.
 4. Press {key:play-stop}. The machine plays and the <POSITION> field counts.
+5. Press {key:pause} to pause, and again to go on. Press {key:play-stop} to stop.
 
 You can also step through patterns with the **‹** and **›** keys beside the name.
 
