@@ -3,6 +3,12 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-018 · A CPU meter in the editor's top bar (both editors)
+
+- **From:** Radek, 2026-10-11, testing 0.5.0 in Ableton Live ("add a CPU meter somewhere around here", next to SETUP and the version).
+- **Idea:** a small meter in the top bar's SETUP corner showing how much of the audio deadline the emulation uses (the share of each audio block's real-time budget spent rendering, smoothed, with the worst recent block marked), so a user sees headroom and drop-out risk without the DAW's meter, and testers can compare Developer > Speed-ups on and off at a glance. A click opens the performance details (realtime ratio, buffer, sample rate, Rosetta). The data exists: the session record's render timing and the boot lines' realtime ratio.
+- **Status:** planned for 0.5.1.
+
 ## I-017 · Drag and drop files onto the editor
 
 - **From:** Radek, 2026-10-09.
