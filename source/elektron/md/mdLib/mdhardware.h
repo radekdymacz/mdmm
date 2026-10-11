@@ -274,6 +274,9 @@ namespace md
 			m_dspProducer.dsp().setJitCmpmFix(_on);
 		}
 		bool speedUps() const { return m_speedUps; }
+		// GEARMULATOR_MDMM_DSP_FIXES=1 at construction (see the constructor); no runtime switch, the JIT reads it when it
+		// compiles a block
+		bool dspAccuracyFixes() const { return m_dspAccuracyFixes; }
 		// L3, opt-in and off by default, separate from the speed-ups because it changes the Machinedrum's audio: its
 		// serial clock wakes the DSPs at the exact cycle of the next slot (TransportPolicy::exactEssiCycleDeadlinesL3;
 		// the Monomachine always runs so). Acts only while the speed-ups are on. GEARMULATOR_MDMM_EXACT_ESSI=1 turns
@@ -440,6 +443,7 @@ namespace md
 		// Microcontroller and the Sim, which setSpeedUps drives. m_simDeferral is the separate
 		// GEARMULATOR_MDMM_SIM_DEFERRAL switch for L5 alone, fixed at construction.
 		bool     m_speedUps = true;
+		bool     m_dspAccuracyFixes = false;
 		bool     m_simDeferral = true;
 		bool     m_exactEssiTiming = false;	// L3 opt-in (setExactEssiTiming)
 		std::array<RealtimeHostAudioInputTimeline, 2> m_hostAudioInput;
