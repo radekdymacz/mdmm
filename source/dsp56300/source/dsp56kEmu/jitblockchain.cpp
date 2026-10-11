@@ -154,7 +154,14 @@ namespace dsp56k
 			}
 		}
 
-		emit(_pc);
+		if(!emit(_pc))
+		{
+			// Nothing was generated, so the "create" stub is still in place: executing it would call create() again,
+			// without end, until the stack overflows and takes the host with it (G1-Emu #17). Return instead; the
+			// JIT keeps the failure (Jit::hasFailed) for the host to report.
+			m_jit.setFailure(_pc);
+			return;
+		}
 		if(_execute)
 			exec(_pc);
 	}
@@ -317,7 +324,8 @@ namespace dsp56k
 
 		create(_pc, false);
 
-		if (!canBeDefaultExecuted(_pc))
+		// not generated (see create): the parent calls the stub instead of linking to it
+		if (!m_jitCache[_pc].block || !canBeDefaultExecuted(_pc))
 			return nullptr;
 
 		// if the block covers any volatile P, do not return it as a child block. If this block is recreated because
@@ -333,6 +341,9 @@ namespace dsp56k
 
 	JitBlockRuntimeData* JitBlockChain::emit(TWord _pc)
 	{
+		if(m_jit.shouldFailEmit())
+			return nullptr;
+
 		auto* emitter = m_jit.acquireEmitter(_pc);
 
 //		m_logger->addFlags(asmjit::FormatFlags::kHexImms | /*asmjit::FormatFlags::kHexOffsets |*/ asmjit::FormatFlags::kMachineCode);

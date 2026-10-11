@@ -393,7 +393,7 @@ namespace dsp56k
 
 			numWords += opLen;
 			++numInstructions;
-			numCycles += calcCycles(instA, instB, pc, opA, _dsp.memory().getBridgedMemoryAddress(), 1);
+			numCycles += calcCycles(instA, instB, pc, opA, _dsp.memory().getBridgedMemoryAddress(), 1, _dsp.getAccuracyFixes());
 
 			if(getLoopEndAddr(_info.loopEnd, instA, pc, opB))
 				_info.loopBegin = pc;

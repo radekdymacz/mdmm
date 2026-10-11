@@ -2,6 +2,8 @@
 
 #include "dsp.h"
 
+#include <algorithm>
+
 #include <atomic>
 #include <chrono>
 #include <cstdio>
@@ -167,6 +169,14 @@ namespace dsp56k
 
 	void DSP::execInterrupts()
 	{
+		// Host commands (external interrupts) otherwise reach the pending queue only in execPeripherals, which runs
+		// when no internal interrupt can be serviced: a DSP that finds its next sample interrupt pending at every RTI
+		// never gets there and a host command waits for ever (G1-Emu #4). With the accuracy fixes they are also
+		// collected here and queue behind what is already pending, as the chip arbitrates them. Same thread as
+		// execPeripherals, the only other reader of that ring.
+		if(m_accuracyFixes)
+			processExternalInterrupts();
+
 		// M3 hardening: never read front() on an empty queue. execInterrupts is entered via
 		// m_interruptFunc == dspExecInterrupts, which is normally set only when an interrupt is
 		// pending; but the WAIT cooperative-yield path and a masked-then-drained interrupt can leave
@@ -1476,6 +1486,14 @@ namespace dsp56k
 			injectInterrupt(m_pendingExternalInterrupts.pop_front());
 	}
 
+	void DSP::setAccuracyFixes(const bool _on)
+	{
+		m_accuracyFixes = _on;
+		// the interpreter caches cycle counts per address; the JIT reads the flag when it compiles a block
+		if(!m_opcodeCycleCache.empty())
+			std::fill(m_opcodeCycleCache.begin(), m_opcodeCycleCache.end(), static_cast<uint8_t>(0));
+	}
+
 	uint32_t DSP::calcOpcodeCycles(const TWord _pc) const
 	{
 		TWord opA;
@@ -1484,7 +1502,7 @@ namespace dsp56k
 		Instruction instA;
 		Instruction instB;
 		m_opcodes.getInstructionTypes(opA, instA, instB);
-		return dsp56k::calcCycles(instA, instB, _pc, opA, mem.getBridgedMemoryAddress(), 1);
+		return dsp56k::calcCycles(instA, instB, _pc, opA, mem.getBridgedMemoryAddress(), 1, m_accuracyFixes);
 	}
 
 	uint8_t DSP::getOpcodeCycles(const TWord _pc)

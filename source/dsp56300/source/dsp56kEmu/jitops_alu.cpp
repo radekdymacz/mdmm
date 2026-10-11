@@ -1385,7 +1385,34 @@ namespace dsp56k
 
 		AluReg aluD(m_block, ab);
 
-		// D/2: arithmetic shift right by 1, maintaining 56-bit format
+		if(m_block.dsp().getAccuracyFixes())
+		{
+			// The code below shifts as if the accumulator were right-aligned; left-aligned (g_leftAlignedAlu, every
+			// build) its shifts drop the top byte, so SUBR lost bits 48 to 55 of the result (dsp56kJitDiff found it).
+			// This is ADDR's form with a subtraction, flags as the interpreter has them: Z from the result, C when
+			// bit 55 changed, E, U and N lazily, V and S untouched.
+			const RegGP old(m_block);
+			m_asm.mov(r64(old), r64(aluD.get()));
+
+			aluExtendTo64(aluD);
+			m_asm.sar(aluD, asmjit::Imm(1));
+			aluRestoreFrom64(aluD);		// discards the bit shifted out, left-aligned or not
+
+			{
+				AluRef aluS(m_block, ab ? 0 : 1, true, false);
+				m_asm.sub(aluD, aluS.get());
+			}
+			if constexpr (!g_leftAlignedAlu)
+				m_dspRegs.mask56(aluD);
+
+			m_asm.xor_(old, aluD.get());
+			copyBitToCCR(old, 55 + g_aluBitOffset, CCRB_C);
+
+			ccr_dirty(ab, aluD, static_cast<CCRMask>(CCR_E | CCR_N | CCR_U | CCR_Z));
+			return;
+		}
+
+		// legacy (the MD/MM goldens): D/2: arithmetic shift right by 1, maintaining 56-bit format
 		m_asm.sal(aluD, asmjit::Imm(8));
 		m_asm.sar(aluD, asmjit::Imm(1));
 		m_asm.shr(aluD, asmjit::Imm(8));

@@ -5,6 +5,7 @@
 #include "dsp56kBase/dspassert.h"
 
 #include "jitops.h"
+#include "dsp.h"
 #include "asmjit/core/operand.h"
 
 namespace dsp56k
@@ -21,6 +22,23 @@ namespace dsp56k
 			m_ccrRead |= _mask;
 			updateDirtyCCR(_mask);
 			m_asm.test(m_dspRegs.getSR(JitDspRegs::Read).r32(), asmjit::Imm(_mask));
+		};
+
+		// ZF = ((N ^ V) | Z) == 0, for GT and LE (DSP::setAccuracyFixes). N is two bits above V and Z sits between
+		// them: move N down to V's bit, keep only that bit, xor with SR (V's bit is now N ^ V, Z's bit is Z), test both.
+		auto zOrNXorVTest = [&]()
+		{
+			static_assert(CCRB_N == CCRB_V + 2 && CCRB_Z == CCRB_V + 1);
+			constexpr auto mask = static_cast<CCRMask>(CCR_Z | CCR_N | CCR_V);
+			m_ccrRead |= mask;
+			updateDirtyCCR(mask);
+			const RegGP t(m_block);
+			const auto sr = m_dspRegs.getSR(JitDspRegs::Read).r32();
+			m_asm.mov(r32(t.get()), sr);
+			m_asm.shr(r32(t.get()), asmjit::Imm(CCRB_N - CCRB_V));
+			m_asm.and_(r32(t.get()), asmjit::Imm(CCR_V));
+			m_asm.xor_(r32(t.get()), sr);
+			m_asm.test(r32(t.get()), asmjit::Imm(CCR_V | CCR_Z));
 		};
 
 		auto ccrBitTest = [&](const CCRBit _bit)
@@ -86,12 +104,24 @@ namespace dsp56k
 		case CCCC_GreaterThan:										// GT			Greater than
 			{
 				// (SRB_Z + (SRB_N != SRB_V)) == 0
+				if(m_block.dsp().getAccuracyFixes())
+				{
+					zOrNXorVTest();
+					return asmjit::x86::CondCode::kZero;
+				}
+				// legacy: the parity of Z, N and V, which is wrong when Z = 1 and N != V (two bits set: even)
 				ccrMaskTest(static_cast<CCRMask>(CCR_Z | CCR_N | CCR_V));
 				return asmjit::x86::CondCode::kParityEven;
 			}
 		case CCCC_LessEqual:										// LE			Less than or equal
 			{
-				// (SRB_Z + (SRB_N != SRB_V)) == 1
+				// (SRB_Z + (SRB_N != SRB_V)) != 0
+				if(m_block.dsp().getAccuracyFixes())
+				{
+					zOrNXorVTest();
+					return asmjit::x86::CondCode::kNotZero;
+				}
+				// legacy: the parity of Z, N and V, which is wrong when Z = 1 and N != V
 				ccrMaskTest(static_cast<CCRMask>(CCR_Z | CCR_N | CCR_V));
 				return asmjit::x86::CondCode::kParityOdd;
 			}

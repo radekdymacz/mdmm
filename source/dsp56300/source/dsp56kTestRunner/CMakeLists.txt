@@ -16,6 +16,16 @@ target_link_libraries(dsp56kEssiOnDemandTests PRIVATE dsp56kEmu)
 add_test(NAME dsp56300_essiOnDemandTests COMMAND dsp56kEssiOnDemandTests)
 set_tests_properties(dsp56300_essiOnDemandTests PROPERTIES LABELS "UnitTest;dsp56300")
 
+add_executable(dsp56kAccuracyFixesTests accuracyFixesTests.cpp)
+target_link_libraries(dsp56kAccuracyFixesTests PRIVATE dsp56kEmu)
+add_test(NAME dsp56300_accuracyFixesTests COMMAND dsp56kAccuracyFixesTests)
+set_tests_properties(dsp56300_accuracyFixesTests PROPERTIES LABELS "UnitTest;dsp56300")
+
+add_executable(dsp56kJitDiff jitDiff.cpp)
+target_link_libraries(dsp56kJitDiff PRIVATE dsp56kEmu)
+add_test(NAME dsp56300_jitDiffSelftest COMMAND dsp56kJitDiff --selftest)
+set_tests_properties(dsp56300_jitDiffSelftest PROPERTIES LABELS "UnitTest;dsp56300" TIMEOUT 300)
+
 add_executable(dsp56kAccumulatorTests)
 
 target_sources(dsp56kAccumulatorTests PRIVATE accumulatorTests.cpp manualAccumulatorTests.cpp)

@@ -327,6 +327,8 @@ namespace dsp56k
 		OpcodeCycles{Parallel,			0, 0, 0, 0}
 	};
 
-	uint32_t calcCycles(Instruction _inst, TWord _pc, TWord _op, TWord _extMemAddress, TWord _extMemWaitStates);
-	uint32_t calcCycles(Instruction _instA, Instruction _instB, TWord _pc, TWord _op, TWord _extMemAddress, TWord _extMemWaitStates);
+	// _accuracyFixes: MOVE X:aa / Y:aa take one cycle, as the DSP56300 family manual has them, not the table's two
+	// (DSP::setAccuracyFixes).
+	uint32_t calcCycles(Instruction _inst, TWord _pc, TWord _op, TWord _extMemAddress, TWord _extMemWaitStates, bool _accuracyFixes = false);
+	uint32_t calcCycles(Instruction _instA, Instruction _instB, TWord _pc, TWord _op, TWord _extMemAddress, TWord _extMemWaitStates, bool _accuracyFixes = false);
 }
