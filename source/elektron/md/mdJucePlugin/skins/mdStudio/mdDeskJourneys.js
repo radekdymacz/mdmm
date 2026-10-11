@@ -1133,7 +1133,7 @@ const MdJourneys = (() => {
 	/* I-018: the CPU meter beside the version and its details (shared/deskJourney.js cpuMeterJourneys) */
 	const cpuJs = [...Journey.cpuMeterJourneys("md"), Journey.speedUpsMenuJourney("md")];
 	/* I-021: the stereo output meter and volume at the LCD's right end (shared/deskJourney.js volumeJourneys) */
-	const volJs = Journey.volumeJourneys("md");
+	const volJs = [...Journey.volumeJourneys("md"), ...Journey.fitJourneys("md", ["seq", "sound", "mix", "sampler", "song"])];
 	const menu = Journey.menu;
 	/* the same menu as screenshots for a design review (scripts/mdmm-shots.sh with MDMM_SHOTS_JOURNEY=md-shots-menu) */
 	const shotsMenu = {
