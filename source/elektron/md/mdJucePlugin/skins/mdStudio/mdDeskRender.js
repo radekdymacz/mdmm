@@ -64,6 +64,7 @@ Bridge.onMessage(m => {
 	case "host": Docs.host = m; scheduleRender(); break;
 	case "audioRun": Boot.audio(m); break;
 	case "cpuLoad": CpuMeter.update(m); break;
+	case "outputLevel": DeskVolume.update(m); break;
 	case "result": if (m.op === "followHost" && !m.ok) hostRefused(m); break;
 	case "setup": { const before = knobCcs().join(); Docs.setup = m.doc; if (knobCcs().join() !== before && S.ws === "control") scheduleRender(); break; }
 	case "mod": {

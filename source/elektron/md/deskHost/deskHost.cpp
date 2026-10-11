@@ -124,6 +124,10 @@ namespace deskHost
 			row("audioSet", {set, act, device, on, channel, value}, "change one audio or MIDI setting (set), or do something (do)",
 				Action::AudioSet, Actor::Window),
 			row("audioMeter", {on}, "", Action::AudioMeter, Actor::Window),
+			row("outputGain", {{"db", ArgType::Number, -60, 6}},
+				"the editor's volume in dB (I-021: the LCD's output meter): the plug-in's output gain on every output, after the "
+				"emulation (the machine's own volume is untouched); -60 is off; saved with the project and the standalone's state",
+				Action::OutputGain),
 		});
 		return table;
 	}

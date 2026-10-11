@@ -68,7 +68,7 @@ m = open(SRC + body_file).read()
 # mmSelfTest.js before the mockup: the self-tests, in the plug-in only with the diagnostics (an empty
 # script otherwise); it sets window.MMDiagnostics, where the mockup puts what only tests may touch.
 # deskJourney.js and mmJourneys.js last: the user journeys, diagnostics builds only too (FOUNDATION.md, Build and check).
-SCRIPTS = ['deskBridge.js', 'deskZoom.js', 'deskAbout.js', 'deskCpu.js', 'deskDocs.js', 'deskOverlay.js', 'deskDrop.js',
+SCRIPTS = ['deskBridge.js', 'deskZoom.js', 'deskAbout.js', 'deskCpu.js', 'deskVolume.js', 'deskDocs.js', 'deskOverlay.js', 'deskDrop.js',
            'mmAdapter.js', 'mmSelfTest.js', 'mmMockup.js', 'mmConvert.js', 'mmView.js',
            'deskJourney.js', 'mmJourneys.js']
 page = '''<!doctype html>

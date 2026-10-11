@@ -189,6 +189,8 @@ document.addEventListener("contextmenu", e => {
 });
 /* I-018: the CPU meter's details ask for the same menu (its speed-up entries) */
 CpuMeter.connect(c => Bridge.send(c));
+/* I-021: the LCD's volume sends outputGain (a drag's values keyed, one a frame) */
+DeskVolume.connect((c, o) => Bridge.send(c, o));
 Bridge.onMessage(m => { if (m.type === "editorMenu" && !CpuMeter.takeMenu(m)) DeskMenu.showEditor(m, editorMenuAt.x, editorMenuAt.y, c => Bridge.send(c)); });
 
 /* The pattern chain (manual p.37) is made in the Song page's palette, CHAIN (mdDeskSong.js renderSong,

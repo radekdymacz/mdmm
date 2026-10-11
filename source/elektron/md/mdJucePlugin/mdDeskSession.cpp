@@ -88,6 +88,26 @@ namespace mdJucePlugin
 		return m;
 	}
 
+	elektronData::json::Value outputLevelOf(AudioPluginAudioProcessor& _processor)
+	{
+		using Value = elektronData::json::Value;
+		const auto p = _processor.takeOutputPeaks();
+		const auto db = outputLevel::dbOfGain(_processor.getOutputGain());
+		const auto round4 = [](const float _v) { return std::round(static_cast<double>(_v) * 10000.0) / 10000.0; };
+		auto m = Value::object();
+		m.set("type", "outputLevel");
+		m.set("peakL", round4(p.left));
+		m.set("peakR", round4(p.right));
+		m.set("clip", outputLevel::clipped(p.all));
+		m.set("gainDb", db ? Value(*db) : Value());
+		return m;
+	}
+
+	void setOutputGainDb(AudioPluginAudioProcessor& _processor, const double _db)
+	{
+		_processor.setOutputGain(outputLevel::gainOfDb(_db));
+	}
+
 	pluginLib::Processor& pluginProcessorOf(AudioPluginAudioProcessor& _processor)
 	{
 		return _processor;

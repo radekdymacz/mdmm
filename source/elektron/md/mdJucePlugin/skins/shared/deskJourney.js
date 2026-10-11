@@ -524,6 +524,62 @@ const Journey = (() => {
 		],
 		async tidy(hands, c) { if (menu.on()) closeDeskMenu(); await cpu.stop(hands, c); }
 	}];
+	/* I-021: the stereo output meter and volume at the LCD's right end (deskVolume.js), both editors. volumeJourneys(prefix):
+	   [<prefix>-lcd-volume]. The volume is checked against the plug-in (its outputLevel message's gainDb, the processor's
+	   output gain read back); the tidy puts back the volume the person had (by a drag, the page's own control). */
+	const vol = {
+		el: () => $q(".lcdgroup .lcdpanel #volf"),
+		plugin: () => DeskVolume.last && "gainDb" in DeskVolume.last ? DeskVolume.last.gainDb : "no reading",
+		tip: () => [...document.querySelectorAll(".voltip")].find(t => !t.hidden)?.textContent || "",
+		/* the volume from its plug-in reading, within 2.5 s */
+		follows: want => until(() => DeskVolume.last && DeskVolume.last.gainDb === want && DeskVolume.gain === want, 2500),
+		says: () => `page ${DeskVolume.gain}, plug-in ${vol.plugin()}`
+	};
+	const volumeJourneys = prefix => [{
+		name: `${prefix}-lcd-volume`,
+		steps: [
+			{ say: "the meter sits at the LCD's right end, both rows tall, two bars and the volume line; every key of the top bar is in the window",
+				screen: () => { const v = vol.el(), p = $q(".lcdgroup .lcdpanel");
+					if (!v || !p) return ok(false, "no strip");
+					const r = v.getBoundingClientRect(), l = p.getBoundingClientRect();
+					const out = [...document.querySelectorAll(".top button")].filter(b => { const q = b.getBoundingClientRect(); return q.width > 0 && (q.right > innerWidth + 0.5 || q.left < -0.5); });
+					return ok(l.right - r.right < 10 && r.width >= 18 && r.width <= 32 && r.height >= 0.6 * l.height && v.querySelectorAll(".volbar").length === 2 && !!v.querySelector(".volcap") && !out.length,
+						`strip ${Math.round(r.left)}..${Math.round(r.right)} x ${Math.round(r.height)} in LCD ..${Math.round(l.right)} x ${Math.round(l.height)}; outside: ${out.map(b => b.id || b.textContent.trim()).join(", ")}`); } },
+			{ say: "double-click it: 0 dB, in the plug-in too",
+				act: (hands, c) => { c.orig = DeskVolume.gain; hands.dblclick("#volf"); },
+				screen: () => ok(DeskVolume.gain === 0 && vol.el().getAttribute("aria-valuetext") === "0.0 dB", vol.says()),
+				machine: async () => ok(await vol.follows(0), vol.says()) },
+			{ say: "drag it down 12 px: -6 dB, the readout under the LCD says so while it changes",
+				act: async (hands, c) => { await hands.drag("#volf", [[0, 4], [0, 8], [0, 12]], {}, { click: false, settle: 50 }); c.tip = vol.tip(); },
+				screen: c => ok(DeskVolume.gain === -6 && c.tip === "Volume -6.0 dB", `${vol.says()}, readout "${c.tip}"`),
+				machine: async () => ok(await vol.follows(-6), vol.says()) },
+			{ say: "the readout goes a moment after", act: () => sleep(1200), screen: () => ok(!vol.tip(), `still "${vol.tip()}"`) },
+			{ say: "scroll up one notch: -5 dB", act: hands => hands.wheel("#volf", 1),
+				screen: () => ok(DeskVolume.gain === -5, vol.says()), machine: async () => ok(await vol.follows(-5), vol.says()) },
+			{ say: "drag it to the foot: off", act: hands => hands.drag("#volf", [[0, 60], [0, 160]], {}, { click: false }),
+				screen: () => ok(DeskVolume.gain === null && vol.el().classList.contains("off"), vol.says()),
+				machine: async () => ok(await vol.follows(null), vol.says()) },
+			{ say: "double-click: 0 dB again", act: hands => hands.dblclick("#volf"),
+				screen: () => ok(DeskVolume.gain === 0, vol.says()), machine: async () => ok(await vol.follows(0), vol.says()) },
+			{ say: "press PLAY: the plug-in sends the left and right peaks every 250 ms and the bars follow them (a background standalone is silent: its output is zeroed before the volume)",
+				act: async (hands, c) => { await cpu.play(hands, c); c.seen = []; for (let i = 0; i < 12; i++) { await sleep(250); const m = DeskVolume.last;
+					c.seen.push(m ? [m.peakL, m.peakR, $q("#volf .volL")?.dataset.level, $q("#volf .volR")?.dataset.level].join("/") : "none"); } },
+				screen: c => { const m = DeskVolume.last, moved = c.seen.some(x => /^[\d.]+\/[\d.]+\/[\d.]+\/[\d.]+$/.test(x) && x.split("/").some(v => +v > 0));
+					const quietStandalone = CpuMeter.last && CpuMeter.last.plugin === false;
+					return ok(cpu.playing() && !!m && typeof m.peakL === "number" && typeof m.peakR === "number" && (moved || quietStandalone),
+						`${moved ? "levels" : quietStandalone ? "silent (standalone, background run?)" : "no level"}: ${c.seen.join(" ")}`); } },
+			{ say: "press STOP", act: (hands, c) => cpu.stop(hands, c), screen: () => ok(!cpu.playing(), "still playing") }
+		],
+		async tidy(hands, c) {
+			await cpu.stop(hands, c);
+			/* the person's volume back, by the strip itself: 2 px a dB from 0 dB (or to the foot when it was off) */
+			if (c.orig === undefined || c.orig === DeskVolume.gain) return;
+			hands.dblclick("#volf");
+			await sleep(100);
+			if (c.orig === null) await hands.drag("#volf", [[0, 80], [0, 200]], {}, { click: false });
+			else if (c.orig !== 0) await hands.drag("#volf", [[0, c.orig > 0 ? -3 : 3], [0, -2 * c.orig]], {}, { click: false });
+		}
+	}];
 	const onScreen = () => document.visibilityState === "visible" ? null : "the editor window is not on screen (display asleep or covered): its canvases are not drawn";
 	/* for needs: real key events through the operating system (u.osKey) exist in the macOS plug-in only */
 	const osKeyPath = () => osKeys() ? null : "no way in for real key events here (the macOS plug-in has one, mdOsKeys.h)";
@@ -598,5 +654,5 @@ const Journey = (() => {
 			{ name: `${prefix}-shots-views`, needs: () => location.search.includes(`${prefix}-shots`) ? null : "screenshots only when asked by name", steps: views.map(v => step(v, true)) }
 		];
 	}
-	return { run, demo, ok, sleep, until, u, onScreen, osKeyPath, menu, editorMenuJourney, cpuMeterJourneys, speedUpsMenuJourney, snapshot, safari15Diff, viewJourneys };
+	return { run, demo, ok, sleep, until, u, onScreen, osKeyPath, menu, editorMenuJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, snapshot, safari15Diff, viewJourneys };
 })();

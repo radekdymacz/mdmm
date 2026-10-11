@@ -99,9 +99,35 @@ namespace pluginLib
 
 		void readGain(baseLib::BinaryStream& _s);
 
+		// The output gain on every output (I-021: the editors' volume in the LCD). A change is ramped across the block,
+		// from the gain the previous block ended on to the one set now, so moving it (the page's volume, the
+		// standalone's fade on quit) never steps. Audio thread.
 		template<size_t N> void applyOutputGain(std::array<float*, N>& _buffers, const size_t _numSamples)
 		{
-			applyGain(_buffers, _numSamples, getOutputGain());
+			if(!_numSamples)
+				return;
+			const float target = getOutputGain();
+			const float from = m_appliedOutputGain;
+			m_appliedOutputGain = target;
+			if(from == target)
+			{
+				applyGain(_buffers, _numSamples, target);
+				return;
+			}
+			applyGainRamp(_buffers, _numSamples, from, target);
+		}
+
+		// _from to _to in equal steps, the last sample at _to
+		template<size_t N> static void applyGainRamp(std::array<float*, N>& _buffers, const size_t _numSamples, const float _from, const float _to)
+		{
+			const float step = (_to - _from) / static_cast<float>(_numSamples);
+			for(float* buf : _buffers)
+			{
+				if(!buf)
+					continue;
+				for(size_t i = 0; i < _numSamples; ++i)
+					buf[i] *= i + 1 == _numSamples ? _to : _from + step * static_cast<float>(i + 1);
+			}
 		}
 
 		template<size_t N> static void applyGain(std::array<float*, N>& _buffers, const size_t _numSamples, const float _gain)
@@ -160,6 +186,9 @@ namespace pluginLib
 		virtual void processBlockStarted(int /*_frames*/, bool /*_bypassed*/) {}
 		// A hook: processBlock (not the bypassed one) is about to return (audio thread; I-018, the editors' CPU meter).
 		virtual void processBlockEnded(int /*_frames*/) {}
+		// A hook: processBlock's outputs after the output gain (audio thread; I-021, the editors' output meter). Null
+		// pointers are outputs the host did not enable.
+		virtual void processBlockOutput(const synthLib::TAudioOutputs& /*_outputs*/, size_t /*_frames*/) {}
 
 		bool rebootDevice();
 
@@ -254,6 +283,7 @@ namespace pluginLib
 		static_assert(std::atomic<float>::is_always_lock_free,
 			"Realtime output gain publication requires lock-free float atomics");
 		std::atomic<float> m_outputGain{1.0f};
+		float m_appliedOutputGain = 1.0f;	// audio thread: the gain the last block ended on (applyOutputGain)
 		float m_inputGain = 1.0f;
 		uint32_t m_dspClockPercent = 100;
 		float m_preferredDeviceSamplerate = 0.0f;

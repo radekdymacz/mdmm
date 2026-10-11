@@ -2380,6 +2380,44 @@ body.dockother #rail .railparams>:is(.lpspace,.pagetabs,.pkcol),body.dockother #
 .syncf{padding:0 5px!important;width:calc(8ch + 21px)!important}
 .row2 .lcdsec{padding:0 4px!important}
 }
+/* I-021: the output meter and volume at the LCD's right end (skins/shared/deskVolume.js, loaded by the plug-in's page) */
+/* I-021: the stereo output meter and volume at the LCD's right end (deskVolume.js), both editors: a column of about 30 px,
+   both LCD rows tall, made at the plug-in's first outputLevel message (the panel gets .hasvol then, so the LCD's grid has
+   a seventh column only with the strip in it). Two thin bars (left, right) with their peak hold lines, one volume line
+   across both, a 0 dB tick, the clip mark on top. Only the LCD's ink and ground (opacity for the fainter parts, no
+   colour mixing, no parent selector: an older WebKit, deskCompat.js); a clip is the top mark filled, never a warning
+   colour. The readout while the volume changes is the LCD's tip (.lcdtip, deskLcd.css). */
+.lcdgroup .lcdpanel.hasvol{grid-template-columns:repeat(6,auto) auto!important}
+.lcdgroup .lcdpanel.hasvol>.row2{grid-column:2/-2!important}
+.lcdpanel .volf{grid-column:-2/-1;grid-row:1/-1;align-self:stretch;display:flex;flex-direction:column;align-items:center;gap:2px;box-sizing:border-box;
+ width:30px;min-height:0;padding:0 6px;border-left:var(--lrule,1px solid var(--ink));cursor:ns-resize;touch-action:none;outline:none;color:var(--ink)}
+.lcdpanel .volf:focus-visible{box-shadow:inset 0 0 0 1px var(--ink);border-radius:2px}
+.lcdpanel .volf i{display:block;font-style:normal}
+.lcdpanel .volf .volclip{flex:none;width:13px;height:4px;box-sizing:border-box;border:1px solid var(--ink);opacity:.35;border-radius:1px}
+.lcdpanel .volf.clip .volclip{background:var(--ink);opacity:1}
+.lcdpanel .volf .volbars{position:relative;flex:1;min-height:0;display:flex;gap:3px}
+.lcdpanel .volf .volbar{position:relative;width:5px;box-sizing:border-box;border:1px solid var(--ink);border-radius:1px}
+.lcdpanel .volf .volfill{position:absolute;left:0;right:0;bottom:0;height:0;background:var(--ink);opacity:.45;transition:height .25s linear}
+.lcdpanel .volf .volhold{position:absolute;left:0;right:0;height:1px;margin-bottom:-1px;bottom:0;background:var(--ink)}
+.lcdpanel .volf .volhold[hidden]{display:none}
+.lcdpanel .volf .volzero{position:absolute;left:-4px;width:2px;height:1px;margin-bottom:-1px;bottom:90.9%;background:var(--ink)}
+/* the volume: one line across both bars, past their edges, with the LCD's ground around it so it reads over a full bar */
+.lcdpanel .volf .volcap{position:absolute;left:-3px;right:-3px;height:2px;margin-bottom:-1px;bottom:90.9%;background:var(--ink);box-shadow:0 0 0 1px var(--lcd)}
+.lcdpanel .volf.off .volcap{opacity:.5}
+.lcdpanel .volf.drag .volcap,.lcdpanel .volf:hover .volcap{height:3px;margin-bottom:-2px}
+.voltip{white-space:nowrap;font-variant-numeric:tabular-nums}
+/* up to 1500 px a narrower strip (20 px, bars 4 px), so the Machinedrum's top bar still fits at 1280 and 1440 px: its LCD
+   has no spare width there (the second row is already cut), and the fields' text keeps its size (deskTopFit.css; the
+   journeys *-top-cpu-meter and *-lcd-volume check every key is in the window) */
+@media (max-width:1500px){
+.lcdpanel .volf{width:20px;padding:0 4px}
+.lcdpanel .volf .volbars{gap:2px}
+.lcdpanel .volf .volbar{width:4px}
+.lcdpanel .volf .volclip{width:10px}
+.lcdpanel .volf .volcap{left:-2px;right:-2px}
+.lcdpanel .volf .volzero{left:-3px}
+}
+@media (prefers-reduced-motion:reduce){.lcdpanel .volf .volfill{transition:none}}
 
 /* ===== The real machine's states (not in the mockup) ===== */
 .statusline,.errline{margin:6px 0 0;padding:6px 10px;border-radius:3px;font:12px var(--pix);text-transform:uppercase}
