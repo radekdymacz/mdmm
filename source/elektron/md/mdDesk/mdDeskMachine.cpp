@@ -506,6 +506,9 @@ namespace mdDesk
 				if(op != "songRename" && !isEmptySong(std::get<ed::MdSong>(c.before)))
 					add(ask("overwriteSlot", "Write over <b>" + songLabel(_view, ref.slot) + "</b>? What it holds is replaced.", "Overwrite"));
 			}
+			else if(library && ref.kind == DocKind::Global)
+				add(ask("overwriteSlot", "Paste over <b>GLOBAL " + std::to_string(ref.slot + 1) + "</b>? Its MIDI channels, sync, map,"
+					" trig inputs and routing are replaced (Undo brings them back).", "Paste"));
 			else if(library && ref.kind == DocKind::Kit && !emptyKit(std::get<ed::MdKit>(c.before)))
 				add(ask("overwriteSlot", "Write over <b>" + kitLabel(_view, ref.slot) + "</b>? What it holds is replaced.", "Overwrite"));
 			else if(library && ref.kind == DocKind::Pattern && anyTrig(std::get<ed::MdPattern>(c.before)))

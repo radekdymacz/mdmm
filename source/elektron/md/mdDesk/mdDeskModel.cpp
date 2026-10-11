@@ -138,6 +138,7 @@ namespace mdDesk
 		c.set("kit", _clip.kit ? Value(static_cast<int>(_clip.kit->position)) : Value());
 		c.set("pattern", _clip.pattern ? Value(static_cast<int>(_clip.pattern->position)) : Value());
 		c.set("song", _clip.song ? Value(static_cast<int>(_clip.song->position)) : Value());
+		c.set("global", _clip.global ? Value(static_cast<int>(_clip.global->position)) : Value());
 		return c;
 	}
 
@@ -307,8 +308,12 @@ namespace mdDesk
 			{"tempo", Owner::Core, Gate::Input, G, {{"bpm", ArgType::Number, 30, 300}}, ""},
 			{"extended", Owner::Core, Gate::Input, G, {{"on", ArgType::Bool}}, "EXTENDED or CLASSIC"},
 			{"globalSet", Owner::Core, Gate::Input, G, {{"field", ArgType::Text, 0, 0, false, list(ed::g_mdGlobalFields)}, opt(on), any, {"note", ArgType::Integer, 0, 127, true},
-				{"target", ArgType::IntegerOrNull, 0, ed::MdGlobal::g_keymapStop, true}}, "a GLOBAL setting by name"},
-			{"globalReset", Owner::Core, Gate::Input, G, {}, "GLOBAL › Reset to defaults: the active global becomes the one the machine ships with (measured, mdDeskFirmwareTest factoryglobal)"},
+				{"target", ArgType::IntegerOrNull, 0, ed::MdGlobal::g_keymapStop, true}, {"input", ArgType::Integer, 0, 1, true},
+				{"param", ArgType::Text, 0, 0, true, list(ed::g_mdTrigInParams)}},
+				"a GLOBAL setting by name (keymap: note, target; trigIn: input 0 A 1 B, param, v; resetMap: Elektron's note map)"},
+			{"globalReset", Owner::Core, Gate::Input, G, {}, "GLOBAL › Clear: the active global becomes the one the machine ships with (measured, mdDeskFirmwareTest factoryglobal)"},
+			{"globalCopy", Owner::Core, Gate::Input, G, {slot("slot", DocKind::Global)}, "GLOBAL › Copy: the global into the clipboard", CoreOp::Edit, g_library},
+			{"globalPaste", Owner::Core, Gate::Input, G, {slot("slot", DocKind::Global)}, "GLOBAL › Paste: the clipboard's global into this slot (its position kept)", CoreOp::Edit, g_library},
 			// ---- the machine ----
 			{"load", Owner::Machine, Gate::Midi, -1, {{"kind", ArgType::Text, 0, 0, false, deskCore::kindNames<MdModel>(true)}, {"slot", ArgType::Integer, 0, static_cast<double>(deskCore::maxLoadableSlots<MdModel>() - 1)}}, "read a document now"},
 			{"select", Owner::Machine, Gate::Input, -1, {p, {"now", ArgType::Bool, 0, 0, true}},
