@@ -98,7 +98,7 @@ You can go to pattern mode and back while the song plays. Click **PATTERN**: the
 On the machine [PLAY] pauses a song that plays, and [STOP] stops it. {gap:MM-256}The editor has no pause yet: {key:play-stop} starts and stops.{/gap}
 
 ## SONG TRANSPORT
-<!-- rows: MM-258 MM-259 @b9a055 -->
+<!-- rows: MM-258 MM-259 @611a19 -->
 
 On the machine you move the song pointer to another row while the song plays, and the song goes on from there when the current row ends. {gap:MM-258}You cannot move the song pointer from the editor yet.{/gap}
 
@@ -245,7 +245,7 @@ On the machine a loop becomes a jump when you set its row after the loop. In the
 3. Click **−** or **+** beside **Jump to** to set the row to go to. The cell reads → and that row.
 
 ## SONG HALT
-<!-- rows: MM-274 MM-258 @437fe0 -->
+<!-- rows: MM-274 MM-258 @bf8f31 -->
 
 A halt row stops the song where it stands. The song waits there until you choose a row to go on from.
 

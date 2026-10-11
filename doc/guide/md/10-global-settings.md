@@ -98,7 +98,7 @@ In the **Routing** card the sixteen keys show the output of each track: MAIN, or
 You can also click **OUT** on the strip of the track in the **Mix** workspace. Delay and reverb sends reach only the main outputs, so a track on an individual output keeps those values but does not use them.
 
 ## TRIG
-<!-- rows: MD-175 @ec091c -->
+<!-- rows: MD-175 @32b1b8 -->
 
 The two trig inputs of the machine turn the pulses of a pad into notes. The **Trig in A / B** card shows what the global holds for each input: **Gate**, **Sens**, **Vmin**, **Vmax** and **Dest**.
 

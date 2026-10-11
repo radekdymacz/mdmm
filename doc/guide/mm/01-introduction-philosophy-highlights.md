@@ -24,7 +24,7 @@ The machine's main features, and where each one is in the editor:
 ![The Sound workspace](shot:mm-sound-workspace)
 
 ## DIGIPRO USER WAVEFORMS
-<!-- rows: MM-010 @63906e -->
+<!-- rows: MM-010 @b0daf9 -->
 
 The DigiPRO machines of an MKII play 64 waveforms, and the MKII lets you load your own. {gap:MM-010}The editor picks a waveform from 1 to 64 in the wave fields of the DigiPRO machines, but it cannot send, receive, rename or erase user waveforms yet.{/gap}
 

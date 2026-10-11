@@ -2489,6 +2489,9 @@ function renderSub(){const t=S.sel,tr=trk(t);let h="";
  /* 0.3.5, every workspace: PATTERN or SONG mode, as the machine reports it; a click switches (the Song page's switch) */
  h+=L2("seqmode","PLAY",S.plays.songMode?"SONG":"PAT","What the machine plays: PAT (the pattern and its chain) or SONG (the song). Click to switch; it shows what the machine reports.",1,9);
  $("#lcd2").innerHTML=h}
+/* B-061, B-065, B-066 (skins/shared/deskTopFit.js): the LCD is as wide as the widest line 2 of any workspace asks, and the top bar
+   tightens until its keys fit; it draws each workspace's line 2 in turn (nothing is painted between) and puts the shown one back */
+if(typeof TopFit!=="undefined")TopFit.connect({workspaces:()=>$$("#tabs button[data-ws]").map(b=>b.dataset.ws),current:()=>S.ws,show:ws=>{S.ws=ws;renderSub()}});
 /* B-030: an edit of the tempo while the DAW sets it is refused with a word (drag, arrows, tap) */
 function tempoLocked(){if(!S.hostTempo)return false;toast("The DAW sets the tempo. Change it there.");return true}
 

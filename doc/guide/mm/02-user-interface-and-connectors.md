@@ -130,7 +130,7 @@ The keys that open the secondary windows, ARP, TRANSPOSE, SWING and SLIDE, are a
 - Slide is a lane of the **Sequence** workspace, the row marked Slide.
 
 ## RECORD, PLAY AND STOP
-<!-- rows: MM-039 MM-040 MM-041 MM-042 MM-043 MM-044 @07f714 -->
+<!-- rows: MM-039 MM-040 MM-041 MM-042 MM-043 MM-044 @49431b -->
 
 The record and play keys are at the top right of the LCD.
 

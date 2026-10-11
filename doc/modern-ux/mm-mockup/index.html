@@ -2380,6 +2380,37 @@ body.dockother #rail .railparams>:is(.lpspace,.pagetabs,.pkcol),body.dockother #
 .syncf{padding:0 5px!important;width:calc(8ch + 21px)!important}
 .row2 .lcdsec{padding:0 4px!important}
 }
+/* B-061, B-065, B-066: the measured fit (deskTopFit.js). The script puts tf1, then tf2, then tf3 on the header (each step
+   keeps the ones before it) until every key of the top bar is inside the window, with the LCD as wide as its widest
+   second row on any workspace asks, so the LCD is one size on every workspace. A page zoomed below 100 % (a window
+   under 1440 x 720 points) has its 9 to 15 px text raised by WebKit to 9 points on screen, so the same CSS width holds
+   less there: the steps are for that, not media queries. Plain values only (an older WebKit, deskCompat.js). */
+/* the slots of line 2 never shrink (a cut slot is a slot the fit counts, not one that squeezes) */
+.lcdpanel .lcd2 .l2{flex:none!important}
+/* line 2 asks the LCD for no width of its own: the LCD is as wide as its first row and the fit say (deskTopFit.js) */
+.lcdpanel .row2{width:0;min-width:100%}
+/* tf1: the LCD sits between the two key groups, not in the window's middle (the side columns no longer take equal room) */
+header.top.tf1{grid-template-columns:auto auto auto!important;justify-content:space-between!important}
+/* tf2: gaps and key padding */
+header.top.tf2{column-gap:10px!important}
+header.top.tf2 .left,header.top.tf2 .rightgrp{gap:10px!important}
+header.top.tf2 .tabs>button{min-width:0!important;padding-left:5px!important;padding-right:5px!important;letter-spacing:.04em!important}
+header.top.tf2 .setkeys button{min-width:0!important;padding-left:5px!important;padding-right:5px!important;letter-spacing:.04em!important}
+header.top.tf2 .lcdpanel .f{padding:0 5px!important}
+header.top.tf2 .row2 .lcd2{gap:9px!important;padding:0 6px!important}
+/* tf3: the tightest */
+header.top.tf3{column-gap:8px!important}
+header.top.tf3 .left,header.top.tf3 .rightgrp{gap:8px!important}
+header.top.tf3 .tabs>button{padding-left:4px!important;padding-right:4px!important;letter-spacing:.02em!important}
+header.top.tf3 .setkeys button{padding-left:4px!important;padding-right:4px!important;letter-spacing:.02em!important}
+header.top.tf3 .lcdpanel .f{padding:0 4px!important}
+header.top.tf3 .lcdpanel small,header.top.tf3 .lcdsec button,header.top.tf3 .l2 small{letter-spacing:0!important}
+header.top.tf3 .row2 .lcd2{gap:6px!important;padding:0 5px!important}
+header.top.tf3 .lcdgroup .lcdpanel .syncf{width:calc(6ch + 12px)!important;padding:0 4px!important}
+header.top.tf3 .row2 .lcdsec{padding:0 3px!important}
+/* tf4: line 2's slots are as wide as their text (the Monomachine gives each a width in characters, for the PAT / SONG switch not to move them) */
+header.top.tf4 .lcdpanel .lcd2 .l2{width:auto!important}
+header.top.tf4 .row2 .lcd2{gap:5px!important}
 /* I-021: the output meter and volume at the LCD's right end (skins/shared/deskVolume.js, loaded by the plug-in's page) */
 /* I-021: the stereo output meter and volume at the LCD's right end (deskVolume.js), both editors: a column of about 30 px,
    both LCD rows tall, made at the plug-in's first outputLevel message (the panel gets .hasvol then, so the LCD's grid has
@@ -4957,6 +4988,9 @@ function renderSub(){const t=S.sel,tr=trk(t);let h="";
  /* 0.3.5, every workspace: PATTERN or SONG mode, as the machine reports it; a click switches (the Song page's switch) */
  h+=L2("seqmode","PLAY",S.plays.songMode?"SONG":"PAT","What the machine plays: PAT (the pattern and its chain) or SONG (the song). Click to switch; it shows what the machine reports.",1,9);
  $("#lcd2").innerHTML=h}
+/* B-061, B-065, B-066 (skins/shared/deskTopFit.js): the LCD is as wide as the widest line 2 of any workspace asks, and the top bar
+   tightens until its keys fit; it draws each workspace's line 2 in turn (nothing is painted between) and puts the shown one back */
+if(typeof TopFit!=="undefined")TopFit.connect({workspaces:()=>$$("#tabs button[data-ws]").map(b=>b.dataset.ws),current:()=>S.ws,show:ws=>{S.ws=ws;renderSub()}});
 /* B-030: an edit of the tempo while the DAW sets it is refused with a word (drag, arrows, tap) */
 function tempoLocked(){if(!S.hostTempo)return false;toast("The DAW sets the tempo. Change it there.");return true}
 
