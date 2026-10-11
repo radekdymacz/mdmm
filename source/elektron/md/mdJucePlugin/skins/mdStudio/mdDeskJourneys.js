@@ -404,7 +404,9 @@ const MdJourneys = (() => {
 			{ say: "press M: the track is muted", act: (u, c) => { c.m0 = mutes(); document.activeElement?.blur?.(); u.key("m"); }, screen: c => ok(pressed(`#rail .th[data-sel="${c.t}"] .ms.m`), "M not lit"), machine: c => ok(mutes().includes(c.t), "machine mutes " + mutes()) },
 			{ say: "press M again", act: u => u.key("m"), machine: c => ok(same(mutes(), c.m0), "machine mutes " + mutes()) },
 			{ say: "press Alt+M: every track muted", act: u => u.key("m", { alt: true }), machine: () => ok(mutes().length === 16, "machine mutes " + mutes()), screen: () => ok($all("#rail .ms.m").every(b => b.getAttribute("aria-pressed") === "true"), "not every M lit") },
-			{ say: "press 0: every track unmuted", act: u => u.key("0"), machine: () => ok(!mutes().length, "machine mutes " + mutes()), screen: () => ok($all("#rail .ms.m").every(b => b.getAttribute("aria-pressed") === "false"), "an M lit") }
+			/* a RAM recorder's mute is its freeze: 0 leaves it alone (soloKeep), so a person's kit with a recorder keeps that one muted */
+			{ say: "press 0: every track unmuted (a RAM recorder left alone)", act: u => u.key("0"), machine: () => ok(!mutes().filter(i => !soloKeep().has(i)).length, "machine mutes " + mutes().join(",") + " (recorders " + [...soloKeep()].join(",") + ")"),
+				screen: () => ok($all("#rail .ms.m").every(b => b.getAttribute("aria-pressed") === "false" || soloKeep().has(+b.closest("[data-sel]")?.dataset.sel)), "an M lit") }
 		]
 	};
 	const liveRec = {
@@ -1757,10 +1759,29 @@ const MdJourneys = (() => {
 		await sleep(1500);
 		return up;
 	}
+	/* Before the first journey: the active GLOBAL reset to the factory settings, through the GLOBAL panel's own Reset to
+	   defaults (DeskGlobal.host.reset: globalReset), and read back. The journeys run on a copy of the person's settings
+	   (scripts/mdmm-journeys.sh), whose machine may hold a personal or imported global (another base channel: the
+	   keyboard's notes miss the tracks); the journeys assume the factory one. */
+	async function prepare() {
+		const say = g => g ? `base ${g.baseChannel}, tempo out ${g.control?.tempoOut}` : "not read";
+		await until(() => !!Docs.global, 20000);
+		const n = Docs.global?.slot, was = say(Docs.global);
+		results.length = 0;
+		DeskGlobal.host.reset();
+		await until(() => results.some(r => r.op === "globalReset"), 20000);
+		const r = results.find(r => r.op === "globalReset");
+		const slot = n != null ? `GLOBAL ${n + 1}` : "the active GLOBAL";
+		if (!r || !r.ok) return `${slot} not reset (${r ? (r.errors || []).join("; ") : "no answer"}); the journeys run on it as it is (${was})`;
+		const back = await until(() => Docs.global?.baseChannel === 0 && Docs.global?.control?.tempoOut === false, 20000);
+		await until(idle, 10000);
+		await sleep(1000);
+		return `${slot} reset to the factory settings (GLOBAL › Reset to defaults): was ${was}, now ${say(Docs.global)}${back ? "" : " (not read back yet)"}`;
+	}
 	/* what the page last told the person: its toast and its error line */
 	const context = () => [...[["toast", $1("#toast")], ["error", $1("#errline")]].filter(([, e]) => e && !e.hidden && e.textContent.trim()).map(([k, e]) => `${k} "${e.textContent.trim().slice(0, 160)}"`),
 		...results.filter(r => r.ok === false).slice(-3).map(r => `refused ${r.op}: ${(r.errors || []).join("; ")}`)].join(", ");
-	if (/[?&]selftest=journey/.test(location.search)) setTimeout(() => Journey.run(all, { log: t => Bridge.log(t), ready, between, context }), 0);
+	if (/[?&]selftest=journey/.test(location.search)) setTimeout(() => Journey.run(all, { log: t => Bridge.log(t), ready, prepare, between, context }), 0);
 	if (/[?&]selftest=demo/.test(location.search)) setTimeout(() => Journey.demo(demos, { log: t => Bridge.log(t), ready, between, context }), 0);
 	return { all, demos };
 })();

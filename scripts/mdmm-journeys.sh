@@ -224,7 +224,7 @@ for u in $UNITS; do
 		echo "== $NAME ($H)$( [ "$JOBS" -gt 1 ] && echo ", shard $k/$JOBS")"
 		if [ -f "$dir/journeys.txt" ]; then
 			if [ "${MDMM_JOURNEY_VERBOSE:-0}" = 1 ]; then cat "$dir/journeys.txt"
-			else grep -E "JOURNEY [^ ]+ (PASS|FAIL|SKIP)|JOURNEYS (start|DONE)" "$dir/journeys.txt"; fi
+			else grep -E "JOURNEY [^ ]+ (PASS|FAIL|SKIP)|JOURNEYS (start|before|DONE)" "$dir/journeys.txt"; fi
 			echo "   log: $dir/page.log"
 		fi
 		read -r result secs < "$dir/result" 2>/dev/null || result=ENDED
