@@ -1,7 +1,7 @@
 
 /* ===== Undo / redo: the host's, one step per gesture (the plug-in's core; on its own the demo host's snapshots,
    54-demo.js). A gesture ends on the events below, unless a drag, a hold or a GEN run or MUTATE trial holds it. ===== */
-function commit(){if(laneDraw||rollDrag||selDrag||drag||active||arpDrag||paint||rotHold)return;genStale();if(genHeld())return;if(HOST.commit)HOST.commit()}
+function commit(){if(laneDraw||rollDrag||selDrag||drag||active||arpDrag||paint||ttPaint||rotHold)return;genStale();if(genHeld())return;if(HOST.commit)HOST.commit()}
 function undo(){genEnd();if(HOST.undo)HOST.undo()}
 function redo(){genEnd();if(HOST.redo)HOST.redo()}
 ["pointerup","keyup","click","change"].forEach(ev=>document.addEventListener(ev,()=>setTimeout(commit,0)));
@@ -98,13 +98,12 @@ document.addEventListener("pointermove",e=>{if(!msPaint)return;if(e.buttons===0&
 function endMsPaint(){if(!msPaint)return;msPaint=null;setTimeout(()=>{msClickEaten=false},0)}
 document.addEventListener("pointerup",endMsPaint);document.addEventListener("pointercancel",endMsPaint);addEventListener("blur",endMsPaint);
 addEventListener("click",e=>{if(!msClickEaten)return;msClickEaten=false;e.stopImmediatePropagation();e.preventDefault()},true);
-/* P7: a drag across the SLIDE, SWING or envelope steps paints them: the first step decides on or off,
+/* P7: a drag across the envelope steps paints them: the first step decides on or off,
    and the drag is one edit (one undo step). A click is a one-step paint. */
 let paint=null;
-function paintAt(el){if(!paint||!el)return;const s=+el.dataset.s,k=el.dataset.tl||el.dataset.env,key=k+":"+s;if(k!==paint.k||paint.done.has(key))return;paint.done.add(key);
+function paintAt(el){if(!paint||!el)return;const s=+el.dataset.s,k=el.dataset.env,key=k+":"+s;if(k!==paint.k||paint.done.has(key))return;paint.done.add(key);
  const tr=trk(S.sel);
- if(el.dataset.tl){const set=k==="sld"?tr.slide:tr.swing;if(set.has(s)===paint.on)return;paint.on?set.add(s):set.delete(s);edit(k==="sld"?"slide":"swingStep",{t:S.sel,s,on:paint.on})}
- else{const st=tr.steps[s];if(!st||st.off||!!st[k]===paint.on)return;st[k]=paint.on?1:0;if(!st.n&&!st.a&&!st.f&&!st.l){tr.steps[s]=null;clearStepLocks(S.sel,s)}editStep(S.sel,s)}
+ const st=tr.steps[s];if(!st||st.off||!!st[k]===paint.on)return;st[k]=paint.on?1:0;if(!st.n&&!st.a&&!st.f&&!st.l){tr.steps[s]=null;clearStepLocks(S.sel,s)}editStep(S.sel,s);
  el.classList.toggle("on",paint.on);el.setAttribute("aria-pressed",paint.on);paint.moved=true}
 function endPaint(){if(!paint)return;const p=paint;paint=null;if(p.moved)rerenderSeq()}
 document.addEventListener("pointerup",endPaint);document.addEventListener("pointercancel",endPaint);addEventListener("blur",endPaint);
@@ -112,8 +111,8 @@ document.addEventListener("pointerup",endPaint);document.addEventListener("point
 let drag=null,joyDrag=null,splitDrag=null,arpDrag=null;
 const main=$("#main");
 main.addEventListener("pointerdown",e=>{
- const pc=e.button===0&&!e.shiftKey&&!e.altKey&&!e.metaKey&&!e.ctrlKey&&!S.learn&&e.target.closest(".tc[data-tl],.tlane [data-env]");
- if(pc){const s=+pc.dataset.s,tr=trk(S.sel),k=pc.dataset.tl||pc.dataset.env;const on=pc.dataset.tl?!(k==="sld"?tr.slide:tr.swing).has(s):!tr.steps[s]?.[k];paint={k,on,done:new Set()};try{main.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();paintAt(pc);return}
+ const pc=e.button===0&&!e.shiftKey&&!e.altKey&&!e.metaKey&&!e.ctrlKey&&!S.learn&&e.target.closest(".tlane [data-env]");
+ if(pc){const s=+pc.dataset.s,tr=trk(S.sel),k=pc.dataset.env;const on=!tr.steps[s]?.[k];paint={k,on,done:new Set()};try{main.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();paintAt(pc);return}
  if(S.learn){const el=e.target.closest(".pc[data-g]");if(el&&(PAGES.includes(el.dataset.g)||el.dataset.g==="MID")){e.preventDefault();e.stopPropagation();const t=el.dataset.t!=null?+el.dataset.t:S.sel;S.learnT={t,pid:el.dataset.g+"."+el.dataset.n};toast(`Target: ${tLabel(t)} ${pidLabel(t,S.learnT.pid)}. Now press 1-8 for a knob.`);if(HOST.learnTarget)HOST.learnTarget({...S.learnT});return}}
  const h=e.target.closest(".lfohandle");if(h){cordStart(e,h);return}
  const pk=e.button===0&&e.target.closest('canvas[data-ed="dktrn"]');if(pk){trnDown(pk,e);e.preventDefault();return}
@@ -126,7 +125,7 @@ main.addEventListener("pointerdown",e=>{
  if(e.target.closest("#splitm")){splitDrag=true;$("#splitm").setPointerCapture(e.pointerId);e.preventDefault();return}
  const key=e.target.closest(".kb [data-key]");if(key){kbDown=true;$("#kb").setPointerCapture(e.pointerId);playKey(+key.dataset.key);e.preventDefault()}});
 main.addEventListener("pointermove",e=>{
- if(paint){if(e.buttons===0&&e.pointerType==="mouse"){endPaint();return}paintAt(document.elementFromPoint(e.clientX,e.clientY)?.closest(".tc[data-tl],.tlane [data-env]"));return}
+ if(paint){if(e.buttons===0&&e.pointerType==="mouse"){endPaint();return}paintAt(document.elementFromPoint(e.clientX,e.clientY)?.closest(".tlane [data-env]"));return}
  if(e.buttons===0&&e.pointerType==="mouse"&&dragging()){endDrag(e);return}
  if(cord){cordMove(e);return}
  const roll=e.target.closest?.("canvas.roll")||(rollDrag&&$("#roll"));if(roll&&(rollDrag||e.target===roll)){rollMove(roll,e);if(rollDrag)return}
@@ -181,7 +180,6 @@ document.addEventListener("click",e=>{
  const sd=e.target.closest("[data-side]");if(sd){setSide(sd.dataset.side);return}
  const dk=e.target.closest("[data-dock]");if(dk){S.dock=dk.dataset.dock;rerenderSeq();return}
  const sdk=e.target.closest("[data-snddock]");if(sdk){S.dock=sdk.dataset.snddock;goWs("seq");return}
- const tl=e.target.closest(".tc[data-tl]");if(tl){if(e.detail>0)return;clickTl(tl.dataset.tl,+tl.dataset.s);return}
  const nd=e.target.closest("[data-node]");if(nd){S.sel=+nd.dataset.node;render();return}
  const sel=e.target.closest("[data-sel]");if(sel&&!e.target.closest("button,select,.pc,.fader")){select(+sel.dataset.sel);return}
  const lp=e.target.closest("[data-lpage]");if(lp){S.lanePage=lp.dataset.lpage;const n=pnames(S.sel,S.lanePage);S.lane=S.lanePage+"."+Math.max(0,trackLockPids(S.sel).filter(x=>x.startsWith(S.lanePage+".")).map(x=>+x.split(".")[1])[0]??0);if(!n.length){S.lane="FLT.1";S.lanePage="FLT"}render();return}
