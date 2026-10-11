@@ -92,7 +92,7 @@ function playFromRow(i = S.songSel) {
 Keys.bind({ id: "pause", short: "Pause", scope: "any", keys: ["Space"], code: "Space", mod: "shift", group: "Transport", does: "Pause: the machine holds its step; again (or ▶) goes on from it, STOP ends it (also ⇧-click ▶)", run: () => pauseToggle() });
 Keys.bind({ id: "panic", short: "Panic", scope: "any", keys: ["."], mod: "cmd", group: "Transport", does: "Panic: every voice off (the machine's STOP twice)", run: () => panicNow() });
 Keys.bind({ id: "tempo-nudge", short: "Nudge", scope: "any", keys: ["-", "="], group: "Transport", does: "Hold: the tempo 10 % slower (-) or faster (=) while held, as the TEMPO menu's nudge", when: () => kbOn(), run: e => DeskTransport.nudgeKey(e.key, TEMPO_HOST) });
-Keys.bind({ id: "song-play-from", short: "From here", scope: "song", keys: ["Enter"], group: "Song", does: "Play the song from the selected row (▶ From here)", when: () => kbOn() && S.ws === "song", run: () => playFromRow() });
+Keys.bind({ id: "song-play-from", short: "From here", scope: "song", keys: ["Enter"], group: "Song", does: "Play the song from the selected row (▶ From here)", when: () => kbOn() && S.ws === "song" && !document.activeElement?.closest?.(".songlib,[data-rowact]"), run: () => playFromRow() });
 [
 	["transport-menu", "any", "Top bar", ["right-click ▶"], "", "Transport", "The transport menu: Play / Stop, Pause / Continue, Record, Panic (also the ▾ in the key's corner)"],
 	["pause-click", "any", "Top bar", ["▶"], "shift", "Transport", "Click: pause; ▶ again goes on from the step"],
