@@ -54,3 +54,6 @@
 .ginputs .stepper button{width:18px;height:22px;padding:0;min-width:0}
 .ginputs .stepper b{min-width:3ch;text-align:center;font-weight:500}
 .gpage .stepper b{min-width:5ch;text-align:center}
+/* a row's note (the map editor's "16 notes play patterns …"): one line of a fixed height, so a glyph from a fallback
+   font (→) cannot make the row taller while the fonts settle (md-old-webkit measured 38 px against 32) */
+.globgrid .grow2 .note{line-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
