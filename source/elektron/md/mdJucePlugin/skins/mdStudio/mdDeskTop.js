@@ -163,9 +163,6 @@ function renderSub() {
 	h += L2("seqmode", "PLAY", V.songMode === true ? "SONG" : V.songMode === false ? "PAT" : "—", "What the machine plays: PAT (the pattern and its chain) or SONG (the song). Click to switch; it shows what the machine reports.", 1);
 	$("#lcd2").innerHTML = h;
 }
-/* B-061, B-065, B-066 (shared/deskTopFit.js): the LCD is as wide as the widest line 2 of any workspace asks, and the top bar
-   tightens until its keys fit; it draws each workspace's line 2 in turn (nothing is painted between) and puts the shown one back */
-TopFit.connect({ workspaces: () => $$("#tabs button[data-ws]").map(b => b.dataset.ws), current: () => S.ws, show: ws => { S.ws = ws; (typeof renderSub0 === "function" ? renderSub0 : renderSub)(); }, done: () => renderSub() });
 /* LCD line 2 editing: a click or the wheel steps a value (a drag of any of them: mdDeskGestures.js) */
 function l2step(k, d, alt) {
 	if (k === "len") { if (alt) cmd("length", { p: V.pat, v: ((V.length - 1 + d + V.len) % V.len) + 1 }); else { const o = [16, 32, 48, 64], v = o[(o.indexOf(V.len) + d + 4) % 4]; cmd("totalLength", { p: V.pat, v }, undefined, [[["len"], v]]); } }
