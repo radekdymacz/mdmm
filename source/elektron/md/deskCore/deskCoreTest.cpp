@@ -5,6 +5,7 @@
 #include "deskChain.h"
 #include "deskCore.h"
 #include "deskDesk.h"
+#include "deskEdits.h"
 #include "deskLoadQueue.h"
 #include "deskMod.h"
 #include "deskNotes.h"
@@ -14,6 +15,7 @@
 #include "deskSongRow.h"
 #include "deskWorkingCopy.h"
 
+#include <array>
 #include <cstdio>
 #include <string>
 #include <variant>
@@ -563,6 +565,81 @@ namespace
 		const auto sw = switched(r.next);
 		check(sw.seed && !sw.image && !sw.expect.any(), "another kit plays: nothing of the old one holds");
 	}
+
+	// COPY / PASTE / CLEAR what (deskEdits.h trackParts): the parts by name, the paste targets, and one run over a toy
+	// machine whose track is a pattern value and a kit value.
+	void trackPartsTest()
+	{
+		std::puts("track parts");
+		namespace tp = deskCore::trackParts;
+		using elektronData::json::parse;
+		static const std::vector<tp::Part> parts{{"trigs", tp::Home::Pattern}, {"locks", tp::Home::Pattern}, {"sound", tp::Home::Kit}};
+		std::vector<std::string> errors;
+		const auto both = parse(R"(["sound","trigs"])");
+		const auto m = tp::parse(&*both, parts, errors);
+		check(m && *m == (tp::bit(0) | tp::bit(2)) && errors.empty(), "what: names, in any order, make the mask");
+		check(tp::touches(*m, parts, tp::Home::Kit) && tp::touches(*m, parts, tp::Home::Pattern)
+			&& !tp::touches(tp::bit(1), parts, tp::Home::Kit), "what a mask touches: the pattern, the kit");
+		check(tp::say(tp::bit(0) | tp::bit(1) | tp::bit(2), parts) == "trigs, locks and sound" && tp::say(tp::bit(1), parts) == "locks",
+			"the note's words, in the machine's order");
+		const auto twice = parse(R"(["trigs","trigs"])"), unknown = parse(R"(["notes"])"), none = parse("[]");
+		check(!tp::parse(&*twice, parts, errors) && !tp::parse(&*unknown, parts, errors) && !tp::parse(&*none, parts, errors) && errors.size() == 3,
+			"what: a part twice, an unknown part, or none is refused");
+		errors.clear();
+		const auto to = parse("[3,5]"), dup = parse("[3,3]"), out = parse("[16]");
+		const auto ts = tp::targets(&*to, 16, errors);
+		check(ts && *ts == std::vector<int>{3, 5} && !tp::targets(&*dup, 16, errors) && !tp::targets(&*out, 16, errors) && errors.size() == 2,
+			"to: tracks in range, each once");
+
+		struct Values
+		{
+			int trigs = 0, locks = 0, sound = 0;
+			bool operator==(const Values& _o) const { return trigs == _o.trigs && locks == _o.locks && sound == _o.sound; }
+		};
+		struct Track { int trigs = 0, locks = 0; };
+		using Pattern = std::array<Track, 4>;
+		using Kit = std::array<int, 4>;
+		const tp::Spec<Pattern, Kit, Values> spec{parts, 4, [](int _t) { return "track " + std::to_string(_t + 1); },
+			[](tp::Mask, int _from, int _t) { return _t == 3 && _from != 3 ? std::string("track 4 takes nothing") : std::string(); },
+			[](const Pattern* _p, const Kit* _k, int _t, tp::Mask, Values& _v)
+			{
+				if(_p) { _v.trigs = (*_p)[size_t(_t)].trigs; _v.locks = (*_p)[size_t(_t)].locks; }
+				if(_k) _v.sound = (*_k)[size_t(_t)];
+			},
+			[](Pattern* _p, Kit* _k, const Values& _v, int, int _t, tp::Mask _m, std::vector<std::string>& _skipped)
+			{
+				if(_p && (_m & tp::bit(0))) (*_p)[size_t(_t)].trigs = _v.trigs;
+				if(_p && (_m & tp::bit(1))) (*_p)[size_t(_t)].locks = _v.locks;
+				if(_k && (_m & tp::bit(2))) (*_k)[size_t(_t)] = _v.sound;
+				if(_t == 2) _skipped.emplace_back("track 3: one left out");
+			},
+			[](Pattern* _p, Kit* _k, int _t, tp::Mask _m)
+			{
+				if(_p && (_m & tp::bit(0))) (*_p)[size_t(_t)].trigs = 0;
+				if(_k && (_m & tp::bit(2))) (*_k)[size_t(_t)] = 0;
+			}};
+		Pattern pat{};
+		pat[0] = {7, 3};
+		Kit kit{9, 0, 0, 0};
+		std::optional<tp::Clip<Values>> clip;
+		std::string note;
+		const auto copy = parse(R"({"op":"trackCopy","t":0})");
+		check(tp::run(tp::Action::Copy, *copy, tp::bit(0) | tp::bit(2), &pat, &kit, clip, spec, errors, note) && clip && clip->t == 0
+			&& clip->what == (tp::bit(0) | tp::bit(2)) && note == "Copied the trigs and sound of track 1", "copy: the parts named, the track, the note");
+		const auto paste = parse(R"({"op":"trackPaste","to":[1,2]})");
+		check(tp::run(tp::Action::Paste, *paste, tp::bit(0) | tp::bit(2), &pat, &kit, clip, spec, errors, note) && pat[1].trigs == 7 && pat[2].trigs == 7
+			&& pat[1].locks == 0 && kit[1] == 9 && kit[2] == 9 && note == "Pasted the trigs and sound of track 1 into track 2 and track 3. track 3: one left out",
+			"paste: every target takes the parts; what was left out is said");
+		check(!tp::run(tp::Action::Paste, *paste, tp::bit(1), &pat, &kit, clip, spec, errors, note) && errors.back() == "Not copied from track 1: locks",
+			"paste: a part that was not copied is refused");
+		const auto paste4 = parse(R"({"op":"trackPaste","to":[1,3]})");
+		const auto before = pat;
+		check(!tp::run(tp::Action::Paste, *paste4, tp::bit(0), &pat, &kit, clip, spec, errors, note) && errors.back() == "track 4 takes nothing"
+			&& pat[1].trigs == before[1].trigs, "paste: one target the machine refuses refuses it all, before anything moves");
+		const auto clear = parse(R"({"op":"trackClear","t":1})");
+		check(tp::run(tp::Action::Clear, *clear, tp::bit(0), &pat, static_cast<Kit*>(nullptr), clip, spec, errors, note) && pat[1].trigs == 0 && kit[1] == 9
+			&& note == "Cleared the trigs of track 2", "clear: the parts named only");
+	}
 }
 
 int main()
@@ -570,6 +647,7 @@ int main()
 	songRowHeard();
 	workingCopy();
 	noteIntent();
+	trackPartsTest();
 	{
 		Outcome a, b, none;
 		a.ask = Ask{"breakChain", "ends the chain", "Go", Value::object(), {}};

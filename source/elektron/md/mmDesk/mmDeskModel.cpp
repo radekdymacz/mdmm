@@ -302,6 +302,8 @@ namespace mmDesk
 		const Arg i8{"i", ArgType::Integer, 0, 7};
 		const Arg from{"from", ArgType::Integer, 0, 63}, to{"to", ArgType::Integer, 1, 64};
 		const Arg rows{"n", ArgType::Integer, 1, 12, true};	// a block's tracks from t (a selection, steps x tracks)
+		const Arg pOpt = deskCore::slotArg<MmModel>("p", Kind::Pattern, true);
+		const Arg what{"what", ArgType::Array};	// a track's parts by name (mmDesk::trackParts)
 		static const CommandTable table({
 			// ---- the core: documents ----
 			{"ready", Owner::Core, Gate::None, -1, {}, "the page is up: everything is published once more", CoreOp::Ready},
@@ -364,6 +366,14 @@ namespace mmDesk
 				" of its kind (synth or MIDI); to (a page): [from, to) is cleared past the block"},
 			{"copyStepsTo", Owner::Core, Gate::Input, P, {p, t12, rows, from, to, {"at", ArgType::Integer, 0, 63}, {"dt", ArgType::Integer, 0, 11, true}},
 				"a block of steps copied within the pattern to step at of track dt (its own track without dt), the clipboard untouched: duplicate, the ⌘-drag"},
+			{"trackCopy", Owner::Core, Gate::Input, P, {pOpt, kOpt, t12, what},
+				"COPY what (the machine's SUPER COPY): the named parts of track t into the clipboard, over the whole track: notes, melody, slide,"
+				" swing, locks, arp, transpose (pattern p) and sound (the kit that plays, k; a synth track's)", CoreOp::Edit, g_track},
+			{"trackPaste", Owner::Core, Gate::Input, P, {pOpt, kOpt, {"to", ArgType::Array}, what},
+				"PASTE what: the clipboard's named parts onto every track of to (0-11, tracks of the copied track's kind), one undo step", CoreOp::Edit, g_track},
+			{"trackClear", Owner::Core, Gate::Input, P, {pOpt, kOpt, t12, what},
+				"CLEAR what (the machine's SUPER CLEAR): the named parts of track t: notes (and their locks), melody (the trigs pitchless), slide,"
+				" swing (every second 16th), locks, arp (OFF), transpose (0), sound (GND-SIN)", CoreOp::Edit, g_track},
 			// ---- the edit intents: Sound and Perform (the kit that plays) ----
 			{"machine", Owner::Core, Gate::Input, W, {k, t6, {"model", ArgType::Integer, 0, 255}, {"keepFx", ArgType::Bool, 0, 0, true}},
 				"a track's machine (model: its SysEx 0x5B id): its SYN page starts at the machine's defaults; without keepFx (default on) the other pages too"},
