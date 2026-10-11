@@ -79,6 +79,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Not verified:** the "higher version wins" rule on this Mac (a stand-in old AU was not put in the plug-in folder); a real package run.
 - **Ask the user:** `ls` of `/Library/Audio/Plug-Ins/Components` and `~/Library/Audio/Plug-Ins/Components`, and the version Live shows for the AU.
 - **Status:** cause found (an old install); installer fix on fix/au-old-ui, waiting on review and the user's folder list.
+- **Follow-up (2026-10-11, branch feat/fna-plugin-ids):** the editors get their own plug-in identity, so the clash is gone at its root rather than by removing bundles: AU `aumu Mded FNAu` / `aumu Mmed FNAu` (Future Native Audio's manufacturer code, as RND-4X), and the VST3 class IDs that follow (`scripts/mdmm-product.env`, checked on the built bundles by `scripts/check_mdmm_plugin_ids.py`). The original Gearmulator MD / MM keep `GmPv Tmdr / Tmno` and may stay installed beside the editors; the installer no longer removes them (only bundles provably ours: our identifier or our receipt). Projects saved with 0.5.x or earlier need the editor inserted again once.
 
 ## B-047 · Windows CI: bridgeLibTest and the machine MIDI out tests crash
 

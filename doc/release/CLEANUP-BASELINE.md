@@ -113,6 +113,31 @@ DAW and an old project find the plug-ins by; none may change.
   `mdPluginProcessor.cpp`); LV2 URI `http://theusualsuspects.lv2/GearmulatorMD|MM` (LV2 is not shipped).
 - **Version:** 0.4.0 (`CFBundleShortVersionString`).
 
+### 4a. Plug-in identity after 0.5.x (changed on purpose, 2026-10-11, branch `feat/fna-plugin-ids`)
+
+The AU codes and VST3 class IDs above were upstream's (`GmPv`) and the same as the original Gearmulator MD / MM
+builds (joelanders' `release/md-mm-alpha`: `createJucePlugin(... "Tmdr" ...)`, `PLUGIN_MANUFACTURER_CODE GmPv`,
+`JUCE_VST3_CAN_REPLACE_VST2=0`, version 2.2.9), so macOS kept one of the two Audio Units and a host one of the two
+VST3 classes (B-048). Radek's decision: the editors get Future Native Audio's own identity, so the original
+plug-ins can stay installed beside them. Set in `scripts/mdmm-product.env` (`MDMM_AU_*`, the old ones as
+`MDMM_LEGACY_AU_*`), read by `mdmmPlugins.cmake` (plug-in code, and the manufacturer through `juce.cmake`'s
+`GEARMULATOR_PLUGIN_MANUFACTURER_CODE_<target>` hook) and the packaging scripts; the built bundles are checked by
+`scripts/check_mdmm_plugin_ids.py` (ctest `mdmmIdentityTest`). Read from the built bundles (`bin/plugins/Release`):
+
+- **AU:** Machinedrum `aumu` / `Mded` / `FNAu`, Monomachine `aumu` / `Mmed` / `FNAu` (`FNAu` is the company's
+  manufacturer code, also RND-4X's); names unchanged (`Future Native Audio: Machinedrum Editor` / `...: Monomachine
+  Editor`).
+- **VST3 class IDs** (JUCE: `ABCDEF01` + a fixed word + the hex of manufacturer and plug-in code):
+
+  | | Processor (Audio Module) | Controller | Plugin Compatibility |
+  |---|---|---|---|
+  | MD | `ABCDEF019182FAEB464E41754D646564` | `ABCDEF011234ABCD464E41754D646564` | `ABCDEF01C0DEF00D464E41754D646564` |
+  | MM | `ABCDEF019182FAEB464E41754D6D6564` | `ABCDEF011234ABCD464E41754D6D6564` | `ABCDEF01C0DEF00D464E41754D6D6564` |
+
+- **Unchanged:** the bundle identifiers, the product and bundle names, the state format, the data folder.
+- **Consequence:** a DAW project saved with 0.5.x or earlier no longer finds the editor; it is inserted again once.
+- **Test probes** (`mdProgramChangeProbe`, `...LegacyProbe`, `mdAudioProbePlugin`: never installed) keep `GmPv`.
+
 ## 5. Size and build time
 
 Lines of C, C++ and Objective-C (all lines, tracked files):
