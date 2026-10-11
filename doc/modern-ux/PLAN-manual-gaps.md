@@ -33,5 +33,6 @@
 | 6 | **SysEx and reset** | export kinds and ranges (`exportSyx {kinds, ranges}`), import SPECIFIC (`placeAt`) with the landing preview and the overwrite warning, VERIFY ONLY (`checkOnly`), Reset machine… (empty; MD factory after P6); MM DigiPRO kind after P4 | P (parts) | M |
 | 7 | **Recording** | live-record erase (hold Delete), MM step recording | – | M |
 | 8 | **MD sound and mix** | LEV on Mix (the existing `level`), machine audition in the picker | – | S |
+| 9 | **MM Perform: see and set up** (B-061) | Poly visible in the track rail (the focus track marked as six voices, the others shown silent) and a one-line hint on the Keyboard card; filter key tracking shown and switched in the Sound page's Filter group (the same `assign` hpf / lpf switch as Perform > Assign > KEY, not a second control); the Multi envelope card says it shapes multi-trig notes only and offers to switch the keyboard mode when it has no effect. Journeys prove the sound: six voices, key tracking off changes the filter, the envelope shapes multi-trig notes. Mock in mockup-next with the other waves | – | S-M |
 
-Order: P and 1 at once; then 2, 3, 4 (separate lanes); then 5, 6, 7, 8. At most 3 agents at once.
+Order: P and 1 at once; then 2, 3, 4 (separate lanes); then 5, 6, 7, 8, 9. At most 3 agents at once.
