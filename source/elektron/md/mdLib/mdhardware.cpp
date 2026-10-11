@@ -1711,6 +1711,7 @@ namespace md
 			d->setIdleFastForwardParts(parts);
 			d->setIdleFastForward((parts & ~dsp56k::DSP::IdleFastForwardPureReads) != 0);
 			d->setJitCmpmFix(cmpm);
+			d->setNopGateInstructions(speedUpLeverOn(SpeedUpLever::NopGate));
 		}
 		// Both ends of these rings run on the scheduler thread: no semaphores (dsp56k::RingBuffer::setSingleThreaded)
 		const bool linkRings = speedUpLeverOn(SpeedUpLever::LinkRings);
