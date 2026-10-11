@@ -8,7 +8,11 @@
 - **From:** Radek, 2026-10-11, after a Discord conversation: the Monomachine Editor already offers a trigless step (a step that carries only parameter locks, no note; step menu "trigless"); the Machinedrum Editor does not.
 - **Idea:** offer the same on the Machinedrum, for the next release, **only if OS 1.63 supports it**. Today a Machinedrum lock lives in the lock lane and needs a trig on its step.
 - **First:** a firmware probe (mdDeskFirmwareTest section): write a lock on a step without a trig the way the MD's own pattern format allows (if it has a bit or slot for it), read the pattern back from the machine's memory, and check by ear and by the output whether the machine applies the lock without playing a note. If OS 1.63 cannot, say so in the guide and close the idea (custom firmware such as X.13 may differ: I-016).
-- **Status:** new; the probe decides.
+- **Probe (2026-10-11, `mdP4ProbeFirmwareTest <ROM> trigless`, OS 1.63):** track 1 a GND-SIN with the longest decay (it sounds through all 16 steps), the other tracks GND-EMPTY; each pattern sent as a SysEx dump (as the editor sends it), read back, played two loops, loop 2 measured step by step.
+  - **The format holds it:** there is no trigless bit; a lock is a value in its (track, parameter) row, 0xff = none, and nothing ties it to the trig bits. A lock on a step without a trig (VOL 0 or PTCH 127 on step 5, trigs on 1 and 9) is kept: the read-back has the lock, the lock mask bit and the trigs unchanged.
+  - **The machine does not play it:** with the lock on trigless step 5 the sustaining sine is unchanged on steps 5-8 (rms 0.099 with and without the VOL 0 lock; pitch 245 Hz with and without the PTCH 127 lock), and it does not carry to the next note (step 9 rms and pitch as without the lock). No note starts at a trigless locked step (trig on step 1 only, VOL 0 locked on step 9: no onset, steps 9-16 as without the lock, ratio 0.999). The control with a trig on step 5 applies the same locks at once (VOL 0: rms 0.000 on steps 6-8; PTCH 127: 10 kHz).
+  - **The front panel cannot make one:** grid recording, TRIG 5 held on an empty step and knob A turned sets a trig on step 5 with the lock.
+- **Status:** not supported by OS 1.63 (closed). The user guide says a Machinedrum lock needs a trig. Custom firmware such as X.13 may differ (I-016).
 
 ## I-018 · A CPU meter in the editor's top bar (both editors)
 

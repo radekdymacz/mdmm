@@ -2,7 +2,8 @@
 // user-supplied ROM). Discovery harness: it finds and measures; the smoke test
 // (mdDeskFirmwareTest) checks.
 //
-//   mdP4ProbeFirmwareTest <ROM> [boot|keys|chain|mutes|library]
+//   mdP4ProbeFirmwareTest <ROM> [boot|keys|chain|mutes|library|trigless ...]
+//   trigless: I-019, does OS 1.63 play a lock on a step without a trig (doc/release/IDEAS.md)
 //
 // Exits 77 (skip) without arguments.
 
@@ -12,6 +13,7 @@
 #include "elektronData/mdGlobal.h"
 #include "elektronData/mdJson.h"
 #include "elektronData/mdKit.h"
+#include "elektronData/mdMachines.h"
 #include "elektronData/mdPattern.h"
 #include "elektronData/mdSong.h"
 #include "elektronData/mdWorkingKit.h"
@@ -21,6 +23,7 @@
 #include "mdLib/mdsequencerstate.h"
 
 #include <algorithm>
+#include <cmath>
 #include <functional>
 #include <cstring>
 #include <map>
@@ -420,6 +423,176 @@ namespace
 				if(ed::hasTrig(after, 14, st)) std::printf(" %u", st + 1);
 			std::printf("\n");
 		}
+	}
+
+	// ---- I-019: trigless locks. Does OS 1.63 keep and play a lock on a step without a trig? ----
+	// Track 1 a GND-SIN with the longest decay (it sounds through all 16 steps), every other track silent.
+	// Each case: a pattern sent by SysEx (as the editor sends it), read back, played two loops; per-step
+	// energy and onsets of loop 2 compared with the baseline (trigs on steps 1 and 9, no lock).
+	struct StepAudio
+	{
+		std::array<double, 16> rms{};	// whole step
+		std::array<double, 16> head{};	// the first 12 ms of the step
+		std::array<double, 16> tail{};	// the last 12 ms of the step
+		std::array<double, 16> zc{};	// zero crossings per second over the step (left)
+	};
+
+	StepAudio playTwoLoops(Machine& _m)
+	{
+		std::vector<std::pair<uint64_t, int>> ph;	// (frame, playhead) when it changes
+		const auto from = _m.now();
+		const auto base = _m.left().size();
+		_m.onBlock = [&] { const int p = _m.playhead(); if(ph.empty() || ph.back().second != p) ph.emplace_back(_m.now() - g_block, p); };
+		press(_m, md::PanelControl::Play);
+		_m.run(16 * 125.0 * 2 + 600);
+		_m.onBlock = nullptr;
+		stopMachine(_m);
+		_m.run(400);
+		// The second time the playhead reaches 0 starts loop 2.
+		std::vector<uint64_t> starts(17, 0);
+		int loop = 0;
+		size_t i = 0;
+		for(; i < ph.size(); ++i)
+			if(ph[i].second == 0 && i > 0 && ph[i - 1].second == 15 && ++loop == 1)
+				break;
+		require(i < ph.size(), "loop 2 not found");
+		for(int s = 0; s < 16 && i < ph.size(); ++i)
+			if(ph[i].second == s)
+				starts[static_cast<size_t>(s++)] = ph[i].first;
+		starts[16] = starts[15] + (starts[15] - starts[14]);
+		StepAudio a;
+		const auto& L = _m.left();
+		const auto& R = _m.right();
+		const auto at = [&](const uint64_t _f) { return static_cast<size_t>(base + (_f - from)); };
+		const auto rms = [&](const size_t _a, const size_t _b)
+		{
+			double e = 0;
+			for(size_t k = _a; k < _b && k < L.size(); ++k) e += L[k] * L[k] + R[k] * R[k];
+			return std::sqrt(e / double(std::max<size_t>(1, _b - _a)));
+		};
+		const size_t w = g_rate * 12 / 1000;
+		for(size_t s = 0; s < 16; ++s)
+		{
+			const auto a0 = at(starts[s]), a1 = at(starts[s + 1]);
+			a.rms[s] = rms(a0, a1);
+			a.head[s] = rms(a0, a0 + w);
+			a.tail[s] = rms(a1 - w, a1);
+			size_t z = 0;
+			for(size_t k = a0 + 1; k < a1 && k < L.size(); ++k) z += (L[k - 1] < 0) != (L[k] < 0);
+			a.zc[s] = z * double(g_rate) / 2.0 / double(a1 - a0);
+		}
+		return a;
+	}
+
+	void printSteps(const char* _label, const StepAudio& _a)
+	{
+		std::printf("  %-34s rms ", _label);
+		for(const auto v : _a.rms) std::printf("%5.3f ", v);
+		std::printf("\n  %-34s head", "");
+		for(const auto v : _a.head) std::printf("%5.3f ", v);
+		std::printf("\n  %-34s Hz  ", "");
+		for(const auto v : _a.zc) std::printf("%5.0f ", v);
+		std::printf("\n");
+	}
+
+	void trigless(const Bytes& _rom)
+	{
+		std::puts("== probe I-019: a lock on a step without a trig (OS 1.63)");
+		Machine m(_rom, g_romName);
+		const int patSlot = status(m, ed::MdStatus::Pattern);
+		const int kitSlot = status(m, ed::MdStatus::Kit);
+		auto kit = *readKit(m, static_cast<uint8_t>(kitSlot));
+		const auto modelOf = [](const char* _name) { for(uint32_t id = 0; id < 256; ++id) if(ed::mdMachineName(id) == _name) return id; return 0u; };
+		for(size_t t = 0; t < 16; ++t)
+		{
+			kit.models[t] = modelOf(t == 0 ? "GND-SIN" : "GND-EMPTY");
+			kit.params[t].fill(0);
+			kit.params[t][10] = 64; kit.params[t][11] = 64;	// EQF, EQG flat
+			kit.params[t][13] = 127;							// FLTW open
+			kit.params[t][17] = 100; kit.params[t][18] = 64;	// VOL, PAN centre
+			kit.levels[t] = 127;
+			kit.trigGroups[t] = kit.muteGroups[t] = ed::MdKit::g_noGroup;
+		}
+		kit.params[0][0] = 40;	// PTCH
+		kit.params[0][1] = 127;	// DEC: the longest
+		m.send(ed::encodeMdKit(kit));
+		m.send(ed::mdLoadKit(static_cast<uint8_t>(kitSlot)));
+		m.run(300);
+		std::printf("  pattern slot %d, kit slot %d, track 1 %s\n", patSlot, kitSlot, ed::mdMachineName(kit.models[0]).c_str());
+
+		auto clean = *readPattern(m, static_cast<uint8_t>(patSlot));
+		clean.length = 16; clean.scale = 0; clean.tempoMultiplier = 0; clean.kit = static_cast<uint8_t>(kitSlot);
+		clean.accentPattern = clean.slidePattern = clean.swingPattern = 0;
+		clean.trackAccent = clean.trackSlide = clean.trackSwing = {};
+		for(uint8_t t = 0; t < 16; ++t)
+		{
+			clean.trigs[t] = 0;
+			for(uint8_t p = 0; p < 24; ++p)
+				if(ed::lockRowIndex(clean, t, p))
+					clean = ed::withoutLockRow(clean, t, p);
+		}
+		const auto withTrigs = [&](std::initializer_list<int> _steps) { auto p = clean; for(const int s : _steps) p = ed::withTrig(p, 0, size_t(s - 1), true); return p; };
+		const auto lock = [](const ed::MdPattern& _p, const int _param, const int _step, const int _v) { return *ed::withLock(_p, 0, size_t(_param), size_t(_step - 1), uint8_t(_v)); };
+
+		const auto run = [&](const char* _label, const ed::MdPattern& _p, const int _param, const int _step)
+		{
+			m.send(ed::encodeMdPattern(_p));
+			m.send(ed::mdLoadPattern(static_cast<uint8_t>(patSlot)));
+			m.run(300);
+			const auto back = readPattern(m, static_cast<uint8_t>(patSlot));
+			std::string kept = "no lock asked";
+			if(_param >= 0)
+			{
+				const auto v = back ? ed::lockValue(*back, 0, size_t(_param), size_t(_step - 1)) : std::nullopt;
+				kept = v ? "kept " + std::to_string(*v) : "NOT kept";
+			}
+			std::string trigs;
+			for(int s = 0; back && s < 16; ++s) if(ed::hasTrig(*back, 0, size_t(s))) trigs += " " + std::to_string(s + 1);
+			std::printf("  %s: read back: trigs%s; lock on step %d %s; lock mask %08x\n", _label, trigs.c_str(), _step, kept.c_str(), back ? back->lockMasks[0] : 0);
+			const auto a = playTwoLoops(m);
+			printSteps(_label, a);
+			return a;
+		};
+
+		const auto A = run("A trigs 1,9", withTrigs({1, 9}), -1, 0);
+		const auto B = run("B trigs 1,9 + VOL=0 on step 5", lock(withTrigs({1, 9}), 17, 5, 0), 17, 5);
+		const auto C = run("C trigs 1,5,9 + VOL=0 on step 5", lock(withTrigs({1, 5, 9}), 17, 5, 0), 17, 5);
+		const auto D = run("D trigs 1,9 + PTCH=127 on step 5", lock(withTrigs({1, 9}), 0, 5, 127), 0, 5);
+		const auto E = run("E trigs 1,5,9 + PTCH=127 on step 5", lock(withTrigs({1, 5, 9}), 0, 5, 127), 0, 5);
+		const auto F = run("F trig 1 only + VOL=0 on step 9", lock(withTrigs({1}), 17, 9, 0), 17, 9);
+		const auto G = run("G trig 1 only", withTrigs({1}), -1, 0);
+
+		const auto rel = [](const double _a, const double _b) { return _b > 1e-6 ? _a / _b : 0.0; };
+		std::printf("  step 5-8 rms B/A %.3f, C/A %.3f; step 9 rms B/A %.3f, C/A %.3f\n",
+			rel(B.rms[5], A.rms[5]), rel(C.rms[5], A.rms[5]), rel(B.rms[8], A.rms[8]), rel(C.rms[8], A.rms[8]));
+		std::printf("  step 5 pitch A %.0f Hz, D %.0f Hz, E %.0f Hz; step 9 pitch A %.0f, D %.0f, E %.0f\n",
+			A.zc[4], D.zc[4], E.zc[4], A.zc[8], D.zc[8], E.zc[8]);
+		std::printf("  step 9 head G %.4f F %.4f (an onset at step 9 without a trig?); steps 9-16 rms F/G %.3f\n",
+			G.head[8], F.head[8], rel(F.rms[10], G.rms[10]));
+
+		// The front panel: grid recording (RECORD stopped), TRIG 5 held on an empty step, knob A turned.
+		m.send(ed::encodeMdPattern(withTrigs({1, 9})));
+		m.send(ed::mdLoadPattern(static_cast<uint8_t>(patSlot)));
+		m.send(ed::mdSetStatus(ed::MdStatus::Track, 0));
+		m.run(300);
+		press(m, md::PanelControl::Record);
+		m.run(200);
+		const auto t5 = *md::panelPacket(md::MachineModel::Machinedrum, md::PanelControl::Trigger5);
+		m.hardware().trySendPanelEvent(t5.row, t5.mask);
+		m.run(150);
+		for(int i = 0; i < 10; ++i) { m.hardware().trySendPanelEvent(0x30, 0x01); m.run(20); }
+		m.run(150);
+		m.hardware().trySendPanelEvent(t5.row, 0);
+		m.run(200);
+		press(m, md::PanelControl::Record);
+		m.run(200);
+		// Store to memory is what a dump reads; the working pattern is dumped by the request.
+		const auto panel = *readPattern(m, static_cast<uint8_t>(patSlot));
+		std::string trigs;
+		for(int s = 0; s < 16; ++s) if(ed::hasTrig(panel, 0, size_t(s))) trigs += " " + std::to_string(s + 1);
+		const auto pv = ed::lockValue(panel, 0, 0, 4);
+		std::printf("  panel: grid rec, TRIG 5 held on an empty step, knob A +10: trigs%s; PTCH lock on step 5: %s\n",
+			trigs.c_str(), pv ? std::to_string(*pv).c_str() : "none");
 	}
 
 	// ---- P5: the GLOBAL settings bytes, by behaviour ----
@@ -1596,6 +1769,8 @@ int main(const int _argc, char** _argv)
 			flagUse(rom);
 		if(only == "bootui")
 			bootUi(rom, _argc > 3 ? patchRamFromState(_argv[3], rom) : Bytes{});
+		if(only == "trigless")
+			trigless(rom);
 		if(only == "lockwindow")
 		{
 			lockWindow(rom, false);
