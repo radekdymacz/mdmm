@@ -10,7 +10,7 @@ function renderTop() {
 	const lkk = $("#learnkey"); if (lkk) { lkk.setAttribute("aria-pressed", S.ctl.learn); lkk.classList.toggle("on", S.ctl.learn); }
 	const pk = $("#platekey"); if (pk) pk.querySelector("span").textContent = S.plate === "mk2" ? "MKII" : "MKI";
 	const n = V.locks.size, m = $("#meter"); $("#lockn").textContent = String(n).padStart(2, "0") + "/64"; m.className = "f meter" + (n >= 64 ? " full" : n >= 52 ? " warn" : ""); syncLockBudget();
-	$("#bpm").textContent = (+V.bpm).toFixed(1);
+	$("#bpm").textContent = (+shownBpm()).toFixed(1);
 	/* B-030: the host's tempo (in a DAW the machine follows): marked, and not edited here */
 	const bf = $("#bpm").parentElement; bf.classList.toggle("hosttempo", !!V.hostTempo);
 	$("#bpm").title = V.hostTempo ? "The DAW's tempo: the machine follows the host. Change it in the DAW." : "Drag up or down";
@@ -29,7 +29,11 @@ function renderTop() {
 	$("#undo").disabled = !V.canUndo; $("#redo").disabled = !V.canRedo; syncUndoCounts();
 	secLabels();	/* COPY CLR PASTE: the selected steps, or the workspace's own (mdDeskComforts.js) */
 	/* One key: PLAY while stopped, STOP while playing (the icon follows the machine). */
-	$("#play").setAttribute("aria-pressed", V.playing); $("#playico").textContent = V.playing ? "■" : "▶"; $("#play").setAttribute("aria-label", V.playing ? "Stop" : "Play");
+	$("#play").setAttribute("aria-pressed", V.playing); $("#playico").textContent = V.playing ? "■" : "▶"; $("#play").setAttribute("aria-label", V.playing ? "Stop" : S.paused ? "Continue" : "Play");
+	/* wave 2: paused, ▶ blinks and goes on from the step it holds (mdDeskTransport.js) */
+	$("#play").classList.toggle("paused", !!S.paused);
+	$("#play").title = S.paused ? "Paused: ▶ goes on from the step (⇧Space); STOP in the menu ends it" : "Play / stop (Space). ⇧-click: pause. Right-click or ▾: Pause, Record, Panic";
+	if (DeskTransport.tempoShown()) DeskTransport.refreshTempo();
 	$("#rec").setAttribute("aria-pressed", !!V.rec); $("#recled").classList.toggle("on", !!V.rec);
 	$("#rec").title = V.rec ? "Live recording: click a track's steps to play it, move a value to lock it. A moved value locks the track's next trig whose step has not started yet (the editor marks it). REC again: stop recording, keep playing (Alt+Space)" : "Live recording, as RECORD + PLAY on the machine (Alt+Space: Alt + play)";
 	document.body.classList.toggle("liverec", !!V.rec);
@@ -112,14 +116,15 @@ function renderEngine() {
    CAP_INFO: capabilities the page shows no control for (they say how the machine is read). The
    sync script checks both lists against the contract's capability names. */
 const CAP_CONTROLS = {
-	transport: "#play,#rec",
+	transport: "#play,#rec,#playmore",
+	playFrom: '[data-rowact="from"]',
 	liveRecord: "#rec",
 	chains: "[data-chainpad]",
 	sampleNames: "[data-rename]",
 	sampleLoad: "[data-smpload]",
 	sampleAudio: "[data-aud]",
 	modulators: '[data-addsrc],[data-delsrc],[data-srcshape],[data-minv],[data-mdel],#maddl,[data-set="srcrate"] button,[data-set="lcurve"] button,.pc[data-g="src"],.pc[data-g="link"]' };
-const CAP_INFO = ["panelKeys", "lcd", "workingKitMemory", "mutesFromMemory"];
+const CAP_INFO = ["panelKeys", "lcd", "workingKitMemory", "mutesFromMemory", "panic"];
 /* one routine for both editors (skins/shared/deskCaps.js): this page's look is a disabled control whose own tooltip
    comes back when it is allowed again */
 function markCapabilities() {
@@ -236,6 +241,8 @@ function onTelemetry(m) {
 	/* the transport is derived from the telemetry document (transportOf): a new view when it changed */
 	const wasPlaying = V.playing, wasRec = V.rec, tp = transportOf(Docs);
 	if (tp.playing !== wasPlaying || tp.rec !== wasRec) { Base = deriveView(Docs, S); V = view(); }
+	/* the machine plays again (PLAY, or its own panel): the pause is over */
+	if (V.playing && S.paused) { S.paused = null; renderTop(); }
 	if (V.rec !== wasRec) { renderTop(); if (V.rec) toast("Live recording: click a track's steps to play it, move a value to lock it."); }
 	S.step = V.playing ? m.step : -1;
 	markSongRow();
@@ -278,7 +285,11 @@ function movePH() {
 }
 
 /* POSITION: bar.step of the machine's playhead (a 16-step bar), --.-- when stopped. */
-function setPos() { const p = $("#pos"); if (p) p.textContent = V.playing && S.step >= 0 ? String(Math.floor(S.step / 16) + 1).padStart(2, "0") + "." + String(S.step % 16 + 1).padStart(2, "0") : "--.--"; }
+function setPos() {
+	/* paused: the step the pause holds */
+	const at = V.playing && S.step >= 0 ? S.step : S.paused && S.paused.step >= 0 ? S.paused.step : -1;
+	const p = $("#pos"); if (p) p.textContent = at >= 0 ? String(Math.floor(at / 16) + 1).padStart(2, "0") + "." + String(at % 16 + 1).padStart(2, "0") : "--.--";
+}
 function setPlate(v) { S.plate = v; document.documentElement.dataset.plate = v; try { localStorage.setItem("mddesk.plate", v); } catch (_) { } renderTop(); redraw(); }
 (() => { let v = null; try { v = localStorage.getItem("mddesk.plate"); } catch (_) { } if (!v) v = matchMedia("(prefers-color-scheme: dark)").matches ? "mk2" : "mk1"; S.plate = v; document.documentElement.dataset.plate = v; })();
 
@@ -295,7 +306,7 @@ function clickEdit(e) {
 function clickTop(e) {
 	const tb = e.target.closest("#tabs button"); if (tb) { if (tb.dataset.ws === "control" && !S.mapping) return true; S.ws = tb.dataset.ws; render(); return true; }
 	if (e.target.closest("#platekey")) { setPlate(S.plate === "mk2" ? "mk1" : "mk2"); return true; }
-	if (e.target.closest("#play")) { cmd(V.playing ? "stop" : "play"); return true; }
+	if (e.target.closest("#play")) { if (e.shiftKey) pauseToggle(); else playButton(); return true; }
 	if (e.target.closest("#rec")) { cmd("record"); return true; }
 	if (e.target.closest("#patPrev")) { goPattern((V.queued ?? V.pat) - 1); return true; }
 	if (e.target.closest("#patNext")) { goPattern((V.queued ?? V.pat) + 1); return true; }

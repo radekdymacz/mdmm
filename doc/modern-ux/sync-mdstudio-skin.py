@@ -83,9 +83,9 @@ for a, b in HONEST:
 # APP is the page's own app, one file a concern (mdDeskApp.js says what each holds), in load order: each only
 # defines at load, and mdDeskRender.js (last) renders the page and says it is ready.
 APP = ['mdDeskApp.js', 'mdDeskSoundGroups.js', 'mdDeskTop.js', 'mdDeskSeq.js', 'mdDeskSound.js', 'mdDeskEditors.js', 'mdDeskMix.js',
-       'mdDeskSampler.js', 'mdDeskSong.js', 'mdDeskPicker.js', 'mdDeskControl.js', 'mdDeskGenUi.js', 'mdDeskComforts.js', 'mdDeskSelect.js', 'mdDeskRom.js',
+       'mdDeskSampler.js', 'mdDeskSong.js', 'mdDeskPicker.js', 'mdDeskControl.js', 'mdDeskGenUi.js', 'mdDeskComforts.js', 'mdDeskSelect.js', 'mdDeskRom.js', 'mdDeskTransport.js',
        'mdDeskGestures.js', 'mdDeskRender.js']
-SCRIPTS = ['deskModal.js', 'deskMenu.js', 'deskCaps.js', 'deskBoot.js', 'deskSyx.js', 'deskBridge.js', 'deskDrop.js',
+SCRIPTS = ['deskModal.js', 'deskMenu.js', 'deskTransport.js', 'deskCaps.js', 'deskBoot.js', 'deskSyx.js', 'deskBridge.js', 'deskDrop.js',
            'deskZoom.js', 'deskAbout.js', 'deskCpu.js', 'deskVolume.js', 'deskTopFit.js', 'deskDocs.js', 'deskOverlay.js', 'mdDeskModel.js', 'deskGen.js',
            'mdDeskGen.js', 'deskGenBar.js', 'deskSoundLayout.js',
            'deskKeys.js', 'deskKeyView.js', 'mdDeskKeys.js', 'mdDeskMod.js', 'deskTogglePaint.js', 'deskSelect.js'] + APP + ['mdDeskLive.js', 'mdDeskLibrary.js', 'deskGlobal.js', 'mdDeskGlobal.js', 'deskAudio.js', 'mdDeskAudio.js',

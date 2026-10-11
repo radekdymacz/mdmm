@@ -429,6 +429,12 @@
 		redo() { send({ op: "redo" }, { onResult: r => r.ok ? V().toast(r.note || "Redo") : V().toast(r.errors[0]) }); },
 		history() { const h = machine?.history; return { undo: h?.undoCount || 0, redo: h?.redoCount || 0 }; },
 		togglePlay() { if (V().engReady()) send({ op: V().playing() ? "stop" : "play" }); },
+		/* wave 2: pause, resume, stop, panic, playFrom {i}, nudge {pct}; what the machine says comes as a toast (a question,
+		   TRANSPORT ACCEPT, is the "ask" message) */
+		transport(op, args, done) {
+			if (!V().engReady()) { if (done) done(false); return; }
+			send(Object.assign({ op }, args || {}), { onResult: r => { if (!r.ok) V().toast(r.errors[0]); else if (r.note && op !== "nudge") V().toast(r.note); if (done) done(!!r.ok); } });
+		},
 		selectPattern(p, nowFlag) { send({ op: "select", p, now: !!nowFlag }, { onResult: noteOf }); },
 		/* the kit keys: plain commands; the plug-in asks when something would be lost */
 		kit(op, k) {

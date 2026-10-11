@@ -259,8 +259,12 @@ window.addEventListener("blur", () => { if (Held.as("select")) endSelect(); });
 (() => {
 	const b = $("#bpm");
 	const set = v => { if (hostTempoRefused()) return; const bpm = clamp(Math.round(v * 10) / 10, 30, 300); cmd("tempo", { bpm }, "tempo", [[["bpm"], bpm]]); renderTop(); };
-	b.addEventListener("pointerdown", e => { if (hostTempoRefused()) return; Held.begin("bpm", { y: e.clientY, v: V.bpm }); Gesture.begin(); grabPointer(b, e); });
-	b.addEventListener("pointermove", e => { const d = Held.as("bpm"); if (!d) return; if (e.buttons === 0 && e.pointerType === "mouse") { Held.end("bpm"); Gesture.end(); return; } const v = d.v + (d.y - e.clientY) * (e.shiftKey ? .1 : .5); if (Math.abs(v - V.bpm) >= .05) set(v); });
-	b.addEventListener("pointerup", () => { Held.end("bpm"); Gesture.end(); });
+	/* wave 2, change on release (the TEMPO window's tick, or ⌥ held at the press): the LCD shows the drag, the tempo goes at the release */
+	const release = () => { const d = Held.as("bpm"); Held.end("bpm"); if (d && d.late && S.tempoDraft != null) { const v = S.tempoDraft; S.tempoDraft = null; set(v); } else S.tempoDraft = null; Gesture.end(); };
+	b.addEventListener("pointerdown", e => { if (hostTempoRefused()) return; Held.begin("bpm", { y: e.clientY, v: V.bpm, late: e.altKey || DeskTransport.delayed() }); Gesture.begin(); grabPointer(b, e); });
+	b.addEventListener("pointermove", e => { const d = Held.as("bpm"); if (!d) return; if (e.buttons === 0 && e.pointerType === "mouse") { release(); return; } const v = d.v + (d.y - e.clientY) * (e.shiftKey ? .1 : .5);
+		if (d.late) { const t = clamp(Math.round(v * 10) / 10, 30, 300); if (t !== S.tempoDraft) { S.tempoDraft = t; renderTop(); } return; }
+		if (Math.abs(v - V.bpm) >= .05) set(v); });
+	b.addEventListener("pointerup", () => release());
 	b.addEventListener("keydown", e => { const k = { ArrowUp: 1, ArrowDown: -1 }[e.key]; if (!k) return; e.preventDefault(); set(V.bpm + k * (e.shiftKey ? .1 : 1)); });
 })();
