@@ -169,9 +169,12 @@ jobs:
         with:
           path: ${{ runner.temp }}/ccache
           key: ccache-v1-linux-x64-gcc13-2204-tests-${{ github.ref_name }}-${{ github.run_id }}
+          # the package job's cache next: the same compiles but the tests' (a first run of this job starts warm)
           restore-keys: |
             ccache-v1-linux-x64-gcc13-2204-tests-${{ github.ref_name }}-
             ccache-v1-linux-x64-gcc13-2204-tests-main-
+            ccache-v1-linux-x64-gcc13-2204-${{ github.ref_name }}-
+            ccache-v1-linux-x64-gcc13-2204-main-
 
       - name: Build and run the unit tests
         run: |
