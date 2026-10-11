@@ -450,6 +450,7 @@ namespace md
 		uint32_t m_speedUpLeversOff = 0;
 		bool     m_leverL1 = true;
 		bool     m_leverL2b = true;
+		bool     m_leverUcIdleProbe = true;
 		bool     m_exactEssiTiming = false;	// L3 opt-in (setExactEssiTiming)
 		std::array<RealtimeHostAudioInputTimeline, 2> m_hostAudioInput;
 		std::array<int64_t, 2> m_hostAudioInputClockOrigin{};
