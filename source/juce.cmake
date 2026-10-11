@@ -100,6 +100,12 @@ macro(createJucePlugin targetName productName isSynth plugin4CC binaryDataProjec
 	else()
 		set(pluginBundleId "local.gearmulator.preview.${productNameIdentifier}")
 	endif()
+	# A product can own its manufacturer code (GEARMULATOR_PLUGIN_MANUFACTURER_CODE_<target>); the others keep GmPv.
+	if(DEFINED GEARMULATOR_PLUGIN_MANUFACTURER_CODE_${targetName})
+		set(pluginManufacturerCode "${GEARMULATOR_PLUGIN_MANUFACTURER_CODE_${targetName}}")
+	else()
+		set(pluginManufacturerCode GmPv)
+	endif()
 	juce_add_plugin(${targetName}
 		# VERSION ...                                     # Set this if the plugin version is different to the project version
 		# ICON_BIG ...                                    # ICON_* arguments specify a path to an image file to use as an icon for the Standalone
@@ -114,7 +120,7 @@ macro(createJucePlugin targetName productName isSynth plugin4CC binaryDataProjec
 		COPY_PLUGIN_AFTER_BUILD FALSE                     # Should the plugin be installed to a default location after building?
 		MICROPHONE_PERMISSION_ENABLED TRUE               # Standalone exposes the physical stereo input
 		MICROPHONE_PERMISSION_TEXT "Gearmulator uses audio input for processing external instruments."
-		PLUGIN_MANUFACTURER_CODE GmPv                     # A four-character manufacturer id with at least one upper-case character
+		PLUGIN_MANUFACTURER_CODE ${pluginManufacturerCode} # A four-character manufacturer id with at least one upper-case character
 		PLUGIN_CODE ${plugin4CC}                          # A unique four-character plugin id with exactly one upper-case character
 		PRODUCTS_FOLDER "${GEARMULATOR_JUCE_PRODUCTS_ROOT}/$<CONFIG>"
 		                                                  # GarageBand 10.3 requires the first letter to be upper-case, and the remaining letters to be lower-case
@@ -203,7 +209,7 @@ macro(createJucePlugin targetName productName isSynth plugin4CC binaryDataProjec
 
 	if(USE_AU AND APPLE AND ${isSynth})
 		add_test(NAME ${targetName}_AU_Validate COMMAND ${CMAKE_COMMAND} 
-			-DIDCOMPANY=GmPv
+			-DIDCOMPANY=${pluginManufacturerCode}
 			-DIDPLUGIN=${plugin4CC}
 			-DBINDIR=${CMAKE_BINARY_DIR}
 			-DCOMPONENT_NAME=${productName}

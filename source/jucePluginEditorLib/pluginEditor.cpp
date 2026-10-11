@@ -411,12 +411,11 @@ namespace jucePluginEditorLib
 
 		if(!m_processor.getConfig().getBoolValue("disclaimerSeen", false))
 		{
-			const auto& plugin4CC = m_processor.getProperties().plugin4CC;
-			const auto firmwareNotice = plugin4CC == "Tmdr" || plugin4CC == "Tmno"
-				? "Do NOT discuss firmware or ROMs in Discord. "
-				  "Do not request or share files or download links, "
-				  "or ask for help obtaining or installing firmware.\n\n"
-				: "";
+			// The Machinedrum and Monomachine Editors are the only products built from this code (their plug-in
+			// codes are in scripts/mdmm-product.env), so the firmware notice is everyone's.
+			const auto* firmwareNotice = "Do NOT discuss firmware or ROMs in Discord. "
+				"Do not request or share files or download links, "
+				"or ask for help obtaining or installing firmware.\n\n";
 
 			const juce::MessageBoxOptions options = juce::MessageBoxOptions::makeOptionsOk(juce::MessageBoxIconType::WarningIcon, m_processor.getProperties().name,
 				juce::String(firmwareNotice) +
