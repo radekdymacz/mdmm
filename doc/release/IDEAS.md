@@ -3,6 +3,13 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-021 · An output meter and master volume in the LCD (both editors)
+
+- **From:** Radek, 2026-10-11.
+- **Idea:** a small level meter in the LCD (beside LOCKS / COPY CLR PASTE) showing the editor's whole output, which is also its master volume: drag it (or scroll) to set the plug-in's output gain, double-click for 0 dB. One gain for the whole plug-in output (main and the extra outputs alike), applied after the emulation in the plug-in layer, so the emulated machine and its own volume settings are untouched (the goldens measure the emulator's output and stay bit-exact). Peak hold and a clip mark; saved with the project and the standalone's settings; automatable as a plug-in parameter if cheap.
+- **To decide:** whether it replaces or follows the machine's own master volume (MD: the hardware VOLUME knob is not in the firmware; MM: check), and the meter's ballistics.
+- **Status:** new.
+
 ## I-020 · LCD-only mini view: a minimise icon in the LCD's top-right corner shrinks the editor to just the LCD
 
 - **From:** a tester on Discord, 2026-10-11 (feature request); Radek: "great idea".
