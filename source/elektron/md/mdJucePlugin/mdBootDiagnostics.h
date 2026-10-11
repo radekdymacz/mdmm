@@ -83,6 +83,8 @@ namespace mdJucePlugin
 		void record(const BootSample& _s);
 		// The editor's start-up log (B-022): the lines so far are written into it, the next ones as they come.
 		void setLog(const juce::File& _file);
+		// A line of its own in the same log, at any time (message thread): what changed and why (I-018: the speed-ups)
+		void note(const std::string& _line) { write(_line); }
 
 		const BootSample& last() const { return m_last; }
 		const BootRate& rate() const { return m_rate; }
