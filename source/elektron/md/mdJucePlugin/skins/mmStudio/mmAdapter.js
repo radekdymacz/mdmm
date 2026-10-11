@@ -32,6 +32,8 @@
 	const send = (msg, opt) => Bridge.send(msg, opt);
 	/* I-018: the CPU meter's details ask for the editor menu too (its speed-up entries) */
 	if (typeof CpuMeter !== "undefined") CpuMeter.connect(c => send(c));
+	/* I-021: the LCD's volume sends outputGain */
+	if (typeof DeskVolume !== "undefined") DeskVolume.connect((c, o) => send(c, o));
 	const log = t => Bridge.log(t);
 	/* documents are JSON values: equal when their members are */
 	function sameValue(a, b) {
@@ -634,6 +636,7 @@
 		else if (m.type === "host") { hostTempo = m; refresh(); }
 		else if (m.type === "audioRun") Boot.audio(m);
 		else if (m.type === "cpuLoad") CpuMeter.update(m);
+		else if (m.type === "outputLevel") DeskVolume.update(m);
 		else if (m.type === "lcd") { lcdBits = Uint8Array.from(atob(m.bits || ""), c => c.charCodeAt(0)); showLcd(); }
 		else if (m.type === "mod") onMod(m);
 		else if (m.type === "catalogue") onCatalogue(m.doc);

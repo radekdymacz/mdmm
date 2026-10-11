@@ -282,3 +282,5 @@ img,svg,canvas{-webkit-user-drag:none}
 /* I-018: the CPU meter beside the version (skins/shared/deskCpu.js) */
 /* @include shared/deskCpu.css */
 /* @include shared/deskTopFit.css */
+/* I-021: the output meter and volume at the LCD's right end (skins/shared/deskVolume.js) */
+/* @include shared/deskVolume.css */

@@ -844,6 +844,7 @@ namespace pluginLib
 		getPlugin().process(inputs, outputs, numSamples, bpm, ppqPos, isPlaying, ppqKnown);
 
 		applyOutputGain(outputs, numSamples);
+		processBlockOutput(outputs, static_cast<size_t>(numSamples));
 
 		m_midiOut.clear();
 		getPlugin().getMidiOut(m_midiOut);

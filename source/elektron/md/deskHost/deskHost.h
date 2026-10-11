@@ -50,7 +50,8 @@ namespace deskHost
 		// a ROM dropped on the window (its drop message's number and the file's): installed as a chosen one
 		DropRom,
 		DropSyx,			// a .syx dropped on the window: its import preview, as a chosen one's
-		DropSample			// a sample dropped on the window: into a UW ROM slot, as a chosen one
+		DropSample,			// a sample dropped on the window: into a UW ROM slot, as a chosen one
+		OutputGain			// I-021: the editor's volume (the plug-in's output gain, after the emulation)
 	};
 
 	// Who acts on a row: the session (it outlives the window) or the window (the menu and the
