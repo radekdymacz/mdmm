@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MD + MM Editor 0.5.1 release notes</title>
+<meta name="description" content="A release on top of 0.5.0: a CPU meter and an output meter with a master volume, less emulation work, fixes from your reports, and the editors&#x27; own plug-in identity.">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/releases/0.5.1/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MD + MM Editor">
+<meta property="og:title" content="MD + MM Editor 0.5.1 release notes">
+<meta property="og:description" content="A release on top of 0.5.0: a CPU meter and an output meter with a master volume, less emulation work, fixes from your reports, and the editors&#x27; own plug-in identity.">
+<meta property="og:url" content="https://mdmm.dev/releases/0.5.1/">
+<meta property="og:image" content="https://mdmm.dev/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Free editors for Machinedrum and Monomachine, beside a screenshot of the Machinedrum Editor's step grid and GEN bar.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="MD + MM Editor 0.5.1 release notes">
+<meta name="twitter:description" content="A release on top of 0.5.0: a CPU meter and an output meter with a master volume, less emulation work, fixes from your reports, and the editors&#x27; own plug-in identity.">
+<meta name="twitter:image" content="https://mdmm.dev/og.png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261010">
+<script src="/assets/theme.js?v=20261008"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="opt" href="/#features">Features</a>
+      <a class="keep" href="/guide/">Guide</a>
+      <a class="opt" href="/#faq">FAQ</a>
+      <a class="disc" href="https://discord.gg/8xwXwBHbtn" aria-label="Discord community"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5h11a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7l-3 2.5V11.5H2.5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="5.5" cy="7.5" r="1" fill="currentColor"/><circle cx="8" cy="7.5" r="1" fill="currentColor"/><circle cx="10.5" cy="7.5" r="1" fill="currentColor"/></svg><span>Discord</span></a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="checkout legalpage guide">
+  <div class="wrap">
+    <span class="eyebrow">Release notes</span>
+    <h1>Machinedrum Editor + Monomachine Editor 0.5.1</h1>
+<p><small>Released 2026-10-11</small></p>
+<p>A release on top of <a href="/releases/0.5.0/">0.5.0</a>: a CPU meter and an output meter with a master volume, less emulation work, fixes from your reports, and the editors' own plug-in identity.</p>
+<p>Screenshots, features and FAQ: <b><a href="https://mdmm.dev">https://mdmm.dev</a></b> · User guide: <b><a href="https://mdmm.dev/guide/">https://mdmm.dev/guide/</a></b></p>
+<h2>Read this first: insert the editor again in old DAW projects</h2>
+<ul>
+<li><b>The editors have their own plug-in identity now</b> (both editors, macOS, Windows, Linux). Up to 0.5.0 the editors used the same Audio Unit codes and VST3 IDs as the original Gearmulator Machinedrum and Monomachine plug-ins, so a Mac or a DAW could keep only one of the two, and sometimes opened the wrong one (B-048). From 0.5.1 the editors are registered as Future Native Audio plug-ins. You can install the original Gearmulator MD and MM beside the editors; each opens as itself, and the installer leaves the originals alone.
+</li>
+<li><b>A DAW project saved with 0.5.0 or earlier does not find the editor.</b> Open the project, insert the Machinedrum Editor or the Monomachine Editor again on its track, once, and save the project. Your machine's memory (patterns, kits, songs, globals) is not in the DAW project and is not lost. The standalone apps are not affected.
+</li>
+</ul>
+<h2>New</h2>
+<ul>
+<li><b>A CPU meter in the top bar</b> (both editors, plug-in and standalone, I-018). After the version, a small bar shows how much of each audio block's time the editor uses, smoothed over half a second, with a mark for the worst block of the last 3 seconds. A block over its time shows as a thicker, hatched bar. Hover for the number. A click opens the details: average, worst block, machine speed, the host's sample rate and block size, which speed-ups are on, native or Rosetta, and the speed-up switches, so you can compare them there. The top bar still fits at 1280 px wide.
+</li>
+<li><b>An output meter and master volume at the LCD's right end</b> (both editors, plug-in and standalone, I-021). Two thin bars show the left and right output after the volume, each with a peak line, and a clip mark at the top that lights when any output went over 0 dBFS (a click clears it). The volume is the line across both bars: drag it up or down (Shift for fine steps), scroll, or double-click for 0 dB; at the foot it is off. The dB value shows under the LCD while you change it. The volume is saved with the DAW project and in the standalone. It is applied after the emulation, so the machine's sound is not changed. It is not a host-automatable parameter.
+</li>
+<li><b>Developer &gt; Speed-ups (faster, same sound)</b> (both editors). The speed-ups switch is now a positive tick: ticked means the speed-ups run (the default). <b>Developer &gt; Speed-ups (each)</b> turns one speed-up off at a time while the others stay on, for testers who want to find which one changes something; each one also has an environment switch (doc/md_mm_performance_diagnostics.md, "Switches for testers"). While the main switch is off, the single switches are grey.
+</li>
+<li><b>The native editor menu works</b> (both editors). The menu shown when the page is not up closed without doing anything when you picked an entry. Every entry now does what it says. Every speed-up switch change and every menu pick is a line in the start-up log.
+</li>
+</ul>
+<h2>Faster</h2>
+<ul>
+<li><b>Less emulation work</b> (both editors). Four more small bit-exact changes: the DSP link rings and the codec output ring no longer use semaphores (both ends are on one thread), the ColdFire's idle-loop skip is tested right after its branch, a ColdFire slice with no input waiting skips the per-step input tests, and the Machinedrum's NOP-loop skip also tests the instruction target. Host work per audio frame against 0.5.0's code: the Machinedrum about 4 % less, the Monomachine about 7 to 8 % less, stopped and playing. The sound is the same, bit for bit. Each one has its own switch under <b>Developer &gt; Speed-ups (each)</b>.
+</li>
+<li><b>The macOS profile (PGO) is trained again</b> on this code, so the macOS build uses it for every changed function.
+</li>
+</ul>
+<h2>Fixes</h2>
+<ul>
+<li><b>Monomachine: a transpose changed while the pattern plays is heard at once</b> (B-060). A tester on Discord said a transpose took effect only after STOP and PLAY; on the real machine it acts at once. The machine stores a transpose that comes over SysEx, but its sequencer keeps the transposes it took at PLAY. While the pattern plays, the editor now applies the change as the machine's own panel does (the TRANSPOSE screen's TRACK knob), for each track the edit changed, and goes back to the track that was in focus. Stopped, nothing extra happens: PLAY takes the new value. On a real Monomachine over MIDI this is not possible: the edit's note says it is heard from the next start, or press TRANSPOSE on the machine.
+</li>
+<li><b>Monomachine: a held key of the transpose keyboard no longer keeps sounding when the window loses focus</b> (B-059). With the mouse button down on a key of the Sequence dock's transpose keyboard, leaving the window left the note on, and with the arpeggiator on the track went on playing. Leaving the window, or a move with no button, now ends the note. A tester on Discord saw the editor "play by itself" when its window was deactivated; we could not reproduce that as told, and this was the one way we found.
+</li>
+<li><b>Monomachine: pasting copied steps with nothing selected keeps the rest of the page</b> (B-057). Pasting puts down only the copied steps, from the page's first step, as on the Machinedrum. COPY PAGE then PASTE PAGE still copies the whole page.
+</li>
+<li><b>A project with a damaged flash image no longer hangs the emulation</b> (both editors, B-054). A DSP that stops on bad code is now set aside and the rest of the machine runs on, and a host port that nobody reads no longer blocks. When it loads a project, the editor puts the ROM's own bytes back in any flash sector of the operating system that does not match the ROM; the sample area stays as the project holds it. A running firmware never reaches any of this: the sound is the same, bit for bit.
+</li>
+<li><b>The start-up card's animation skipped now and then in a test</b> (B-052). This was the test, not the editor: its audio thread ran without pause and kept the message thread waiting. The test now paces its audio as a DAW does. No change in the editor.
+</li>
+</ul>
+<h2>Tips</h2>
+<ul>
+<li><b>Both editors open at once in Ableton Live:</b> Live shows only the selected track's plug-in windows while <b>Auto-Hide Plug-In Windows</b> is on, so picking the Machinedrum track hides the Monomachine Editor and the other way round. In Live › Settings › Plug-Ins, turn <b>Multiple Plug-In Windows</b> on and <b>Auto-Hide Plug-In Windows</b> off. The user guide says this too.
+</li>
+</ul>
+<h2>Known</h2>
+<ul>
+<li><b>Machinedrum: in a small window the top bar's right end is cut</b> (B-061). In a window smaller than about 1440 x 720 the page is zoomed out, the web view makes small text larger, and the CPU meter, GLOBAL and MKI/MKII can run past the right edge. Make the window larger.
+</li>
+<li><b>Machinedrum: a lock on a step without a trig is kept but not played</b> (I-019). OS 1.63 does this on the real machine too; the guide says a Machinedrum lock needs a trig.
+</li>
+<li><b>Monomachine GLOBAL: master tune is not on the page yet</b>, and some bytes of the global are still not decoded.
+</li>
+<li><b>Machinedrum: a pattern pick during a SysEx import asks about unsaved kit edits you never made</b> (B-045). It goes away when the import finishes.
+</li>
+<li><b>Monomachine: a LOOP row in a song written by the editor goes back to row 1</b> (B-038).
+</li>
+<li><b>Drag and drop works on macOS only</b> (I-017). On Windows and Linux, use the buttons.
+</li>
+<li><b>The update banner still offers Download (the site), never Update.</b> Installing from inside the app waits for our update signing key (I-005).
+</li>
+</ul>
+<h2>For developers</h2>
+<ul>
+<li><b>Plug-in identity</b> is set once in <code>scripts/mdmm-product.env</code>: AU manufacturer <code>FNAu</code>, subtypes <code>Mded</code> (Machinedrum) and <code>Mmed</code> (Monomachine), VST3 class IDs from them. The old codes stay in the file for the installer and the tests only. <code>scripts/check_mdmm_plugin_ids.py</code> (ctest <code>mdmmIdentityTest</code>) checks the built AU and VST3 against the file and fails on the old codes.
+</li>
+<li><b>Journeys reset GLOBAL first</b> (B-058). Before its first journey each editor resets the active global of its sandboxed machine to the factory settings, so a personal or imported global (CHANNEL SPAN 0, another base channel) no longer fails the mute and note journeys. The person's own settings are never written. <code>MDMM_JOURNEY_CONFIG_MD</code> / <code>_MM</code> start the sandbox from another settings file.
+</li>
+<li><b>New journeys:</b> <code>*-top-cpu-meter</code>, <code>*-dev-speedups</code>, <code>*-lcd-volume</code>, <code>mm-seq-transpose-playing</code>, <code>mm-seq-transpose-key-blur</code>, <code>mm-top-leave-window-stopped</code>, <code>mm-seq-paste-steps-keeps-page</code>. New firmware tests: <code>mmTransposeLiveFirmwareTest</code>, <code>mdDamagedFlashFirmwareTest</code>.
+</li>
+<li><b>One switch per speed-up:</b> <code>GEARMULATOR_MDMM_&lt;lever&gt;=0</code> (L1, L11, L2B, L5, L4_NOP, L4_POLL, L4_CYCLE, L4_PORTC, CMPM, and the four new ones LINK_RINGS, UC_IDLE_PROBE, UC_QUIET, NOP_GATE); <code>GEARMULATOR_MDMM_SPEEDUPS=0</code> still turns all off. Measurements: doc/modern-ux/RESEARCH-emulation-cpu.md, "Small wins (0.6)".
+</li>
+</ul>
+<h2>Platforms</h2>
+<ul>
+<li>macOS 12 or later (Intel and Apple silicon), not signed by Apple yet: the first install needs <b>Open Anyway</b> (on macOS 12 to 14: right-click the installer &gt; <b>Open</b>).
+</li>
+<li>Windows x64 and Linux x64: not tested by a person yet. Feedback welcome: <a href="https://mdmm.dev/contact/">https://mdmm.dev/contact/</a>
+</li>
+</ul>
+    <p><a href="/releases/">All release notes</a> · <a href="/get/">Download</a></p>
+  </div>
+</main>
+
+<footer class="foot">
+  <div class="wrap grid">
+    <p><b>MD + MM Editor</b> <span data-version></span> · Machinedrum Editor and Monomachine Editor<br>A NativeKloud Consulting project — <a href="https://nativekloud.com">nativekloud.com</a></p>
+    <p><b>Free software</b> under the <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPL-3</a>. <a href="https://github.com/radekdymacz/mdmm">Source</a> · <a href="https://github.com/radekdymacz/mdmm/releases">All releases</a></p>
+    <p><b>Credits.</b> Built on <a href="https://github.com/joelanders/gearmulator-md-mm">gearmulator-md-mm</a> by joelanders (the Machinedrum and Monomachine emulation) and <a href="https://github.com/dsp56300/gearmulator">Gearmulator</a> by The Usual Suspects (dsp56300). Thanks to Elektron for the instruments.</p>
+    <p class="legal"><a href="/guide/">Guide</a> · <a href="/releases/">Release notes</a> · <a href="/terms/">Terms</a> · <a href="/privacy/">Privacy</a> · <a href="/refunds/">Refunds</a> · <a href="/contact/">Contact</a> · <a href="https://discord.gg/8xwXwBHbtn">Discord</a> · <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#114;&#97;&#100;&#101;&#107;&#100;&#121;&#109;&#97;&#99;&#122;&#64;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;">&#114;&#97;&#100;&#101;&#107;&#100;&#121;&#109;&#97;&#99;&#122;&#64;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;</a></p>
+    <p><b>Trademarks.</b> Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This project is independent and not affiliated with or endorsed by Elektron, joelanders or The Usual Suspects. No firmware is included. No cookies, no analytics, no third-party scripts.</p>
+  </div>
+</footer>
+
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+</body>
+</html>
