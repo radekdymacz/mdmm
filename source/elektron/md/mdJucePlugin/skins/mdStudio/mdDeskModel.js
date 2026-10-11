@@ -242,7 +242,7 @@ function deriveView(docs, ui) {
 		input: !!M.input, midi: !!M.midi, caps,
 		clipboard: Object.assign({ steps: false, sound: false, songRow: false, kit: null, pattern: null, song: null }, M.clipboard || {}),
 		canUndo: !!hist.undo, canRedo: !!hist.redo, undoCount: hist.undoCount || 0, redoCount: hist.redoCount || 0,
-		songReload: !!(M.song && M.song.reloadNeeded), len: 16, length: 16, mult: "1X", swing: 50, accAmt: 0, accAll: false, slideAll: false };
+		songReload: !!(M.song && M.song.reloadNeeded), len: 16, length: 16, mult: "1X", swing: 50, accAmt: 0, accAll: false, slideAll: false, swingAll: false };
 	/* B-030: in a DAW whose clock the machine follows (its global: TEMPO IN external, set by the plug-in), the tempo
 	   is the host's: TEMPO shows it (also while the host is stopped) and is not edited here */
 	const H = docs.host;
@@ -261,15 +261,16 @@ function deriveView(docs, ui) {
 		v.accAmt = accentDisplay(P.accentAmount);
 		v.accAll = P.accent.editAll === 1;
 		v.slideAll = P.slide.editAll === 1;
+		v.swingAll = P.swing.editAll === 1;
 	}
-	const accAll = P ? stepSet(P.accent.steps) : new Set(), slideAll = P ? stepSet(P.slide.steps) : new Set();
+	const accAll = P ? stepSet(P.accent.steps) : new Set(), slideAll = P ? stepSet(P.slide.steps) : new Set(), swingAll = P ? stepSet(P.swing.steps) : new Set();
 	v.tracks = Array.from({ length: 16 }, (_, i) => {
 		const kt = K ? K.tracks[i] : null;
 		const m = kt ? kt.machine || "GND-EMPTY" : "GND-EMPTY";
 		const a = slots(m, cat);
 		const t = { name: nameOf(m, cat), m, model: kt ? kt.model : 0, fam: famOf(m, cat), syn: {}, fx: {}, rt: {}, level: kt ? kt.level : 0,
 			mute: soloing ? !!(ui.userMutes && ui.userMutes.has(i)) : mutes.has(i), solo: soloing && ui.soloSet.has(i), out: G ? (G.routing[i] === "MAIN" ? "MAIN" : G.routing[i]) : "MAIN",
-			trigs: Array(64).fill(false), acc: new Set(), slide: new Set(), muteGroup: kt ? kt.muteGroup : null, trigGroup: kt ? kt.trigGroup : null };
+			trigs: Array(64).fill(false), acc: new Set(), slide: new Set(), swing: new Set(), muteGroup: kt ? kt.muteGroup : null, trigGroup: kt ? kt.trigGroup : null };
 		if (kt) {
 			a.forEach((n, j) => {
 				if (!n) return;
@@ -286,6 +287,7 @@ function deriveView(docs, ui) {
 			for (const s of pt.trigs) t.trigs[s] = true;
 			t.acc = v.accAll ? new Set([...accAll].filter(s => t.trigs[s])) : stepSet(pt.accent);
 			t.slide = v.slideAll ? new Set([...slideAll].filter(s => t.trigs[s])) : stepSet(pt.slide);
+			t.swing = v.swingAll ? new Set([...swingAll].filter(s => t.trigs[s])) : stepSet(pt.swing);
 		}
 		return t;
 	});

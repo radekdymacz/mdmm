@@ -217,6 +217,27 @@ const MdJourneys = (() => {
 			{ say: "Cmd+Z three times: back to an empty step", act: async u => { for (let i = 0; i < 3; i++) { u.key("z", { cmd: true }); await sleep(500); } }, machine: c => ok(!trigsOf(c.t).includes(c.s), "trig still there"), screen: c => ok(!pressed(cell(c.t, c.s)), "still lit") }
 		]
 	};
+	/* wave 3: the trig types under the grid (DESIGN-machine-menus.md §2): Swing paints swing steps, EDIT ALL from the page, Slide by
+	   a plain click, Esc back to Trig */
+	const trigTypesJ = {
+		name: "md-seq-trig-types", proves: ["MD-128", "MD-131", "MD-132", "MD-141"],
+		steps: [
+			go("seq"), sel(() => soundTrack()),
+			{ say: "drag across two empty steps: two trigs", act: async (u, c) => { c.u0 = V.undoCount; c.e0 = [pat().accent.editAll, pat().slide.editAll, pat().swing.editAll]; const f = freeSteps(c.t, 2, 9); c.s = f[0]; c.s2 = f[1]; await u.drag(cell(c.t, c.s), [cell(c.t, c.s2)]); },
+				machine: c => ok(trigsOf(c.t).includes(c.s) && trigsOf(c.t).includes(c.s2), "pattern " + trigsOf(c.t).join(",")) },
+			{ say: "click Swing in the trig types", act: u => u.click('#ttlegend [data-tt="swg"]'), screen: () => ok(S.tt === "swg" && $1('#ttlegend [data-tt="swg"]').getAttribute("aria-checked") === "true" && !!$1('#ttlegend [data-ttall]'), "type " + S.tt) },
+			{ say: "click This track: the track's own swing row", act: u => u.click('#ttlegend [data-ttall="0"]'), machine: () => ok(pat().swing.editAll === 0, "swing editAll " + pat().swing.editAll) },
+			{ say: "drag across the two trigs: both swing", act: async (u, c) => { c.w0 = flagsOf(c.t, "swing"); await u.drag(cell(c.t, c.s), [cell(c.t, c.s2)]); },
+				screen: c => ok($1(cell(c.t, c.s)).classList.contains("sw") && $1(cell(c.t, c.s2)).classList.contains("sw"), "no swing mark"),
+				machine: c => ok([c.s, c.s2].every(s => flagsOf(c.t, "swing").includes(s) !== c.w0.includes(c.s)), "swing " + flagsOf(c.t, "swing").join(",")) },
+			{ say: "click All tracks: EDIT ALL on", act: u => u.click('#ttlegend [data-ttall="1"]'), screen: () => ok($1('#ttlegend [data-ttall="1"]').getAttribute("aria-pressed") === "true", "not pressed"), machine: () => ok(pat().swing.editAll === 1, "swing editAll " + pat().swing.editAll) },
+			{ say: "click Slide, then click the first trig: a slide", act: async (u, c) => { u.click('#ttlegend [data-tt="sld"]'); await sleep(300); c.l0 = V.slideAll ? (pat().slide.steps || []).includes(c.s) : flagsOf(c.t, "slide").includes(c.s); u.click(cell(c.t, c.s)); },
+				screen: c => ok($1(cell(c.t, c.s)).classList.contains("sl") !== c.l0, "slide mark unchanged"),
+				machine: c => ok((V.slideAll ? (pat().slide.steps || []).includes(c.s) : flagsOf(c.t, "slide").includes(c.s)) !== c.l0, "slide " + flagsOf(c.t, "slide").join(",")) },
+			{ say: "press Escape: back to Trig", act: u => u.key("Escape"), screen: () => ok(S.tt === "trig" && $1('#ttlegend [data-tt="trig"]').getAttribute("aria-checked") === "true" && !$1('#ttlegend [data-ttall]'), "type " + S.tt) }
+		],
+		async tidy(u, c) { if (S.tt !== "trig") setTrigType("trig"); for (let i = 0; i < 12 && c.u0 != null && V.undoCount > c.u0; i++) { u.key("z", { cmd: true }); await sleep(500); } }
+	};
 	const lockLane = {
 		name: "md-seq-lock-lane", proves: ["MD-003", "MD-134", "MD-135", "MD-136"],
 		steps: [
@@ -1380,7 +1401,7 @@ const MdJourneys = (() => {
 		]
 	};
 	const all = [bootCard, firstBeat, spaceTransport, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
-		paintUndo, accentSlide, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec,
+		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec,
 		genJourney("md-gen-mutate-undo", false, { proves: [] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: [] }), genKeys,
 		shapeSound, arrows, machinePick, soundCopy, editorDrag, controlAll, globalKey, songModeJ,
 		mixSolo, shiftMutes, allOff, fader, outKey, masterFx,

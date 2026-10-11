@@ -440,6 +440,18 @@
 			"area": "Library"
 		},
 		{
+			"id": "trig-type",
+			"scope": "seq",
+			"keys": [
+				"Escape"
+			],
+			"mod": "",
+			"group": "Sequence",
+			"does": "Back to Trig after Accent, Swing or Slide: a click on a step paints trigs again",
+			"short": "Trig",
+			"dispatched": true
+		},
+		{
 			"id": "randomise-track",
 			"scope": "any",
 			"keys": [
@@ -1761,6 +1773,18 @@
 			"group": "Sequence",
 			"does": "The note's length (a NOTE OFF where it ends; a MIDI note's LEN, 6 a step); new notes get it too. Up to the track's next trig, past the pattern's end onto its start",
 			"area": "Roll"
+		},
+		{
+			"id": "trig-type",
+			"scope": "seq",
+			"keys": [
+				"Escape"
+			],
+			"mod": "",
+			"group": "Sequence",
+			"does": "Back to Note after Slide or Swing: a click on the roll writes notes again",
+			"short": "Note",
+			"dispatched": true
 		},
 		{
 			"id": "piano-run",

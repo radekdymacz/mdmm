@@ -310,35 +310,58 @@ The mutes are the machine's. The editor reads them from the machine's memory, wh
 On the machine you can minimise the mute window. In the editor the keys are always on the page.
 
 ## ACCENT TRACK
-<!-- rows: MD-126 MD-127 MD-128 MD-129 @cc32be -->
+<!-- rows: MD-126 MD-127 MD-128 MD-129 @84254c -->
 
 An accent makes a step louder. The accent amount sets how much louder.
 
 - Click <ACC> on the LCD, or drag or scroll on it, to set the amount from 0 to 15. Click with [⇧] to go down.
 - Click a step with [⇧] held to put an accent on it. The step needs a trig. Do the same again to take it off.
 
-If the pattern's accent is shared by all tracks, the accent goes on the step of every track, and the step legend says "(all)".
+### The trig types
+
+The keys **Trig**, **Accent**, **Swing** and **Slide** in the bar under the grid say what a click on a step paints. They are the machine's accent, swing and slide windows (FUNCTION + B/F, C/G and D/H). The lit key is the one in use.
+
+1. Click **Accent**. The key lights.
+2. Click a step with a trig. It gets an accent. Click it again to take the accent off.
+3. Drag across steps to paint accents on every step with a trig that you cross. The first step decides: on or off. The drag is one undo step.
+4. Press {key:trig-type}, or click **Trig**, to paint trigs again.
+
+A step without a trig takes no accent. The editor says so.
+
+### All tracks or this track
+
+A pattern holds one accent row for all tracks and one for each track. With **Accent** lit, **All tracks** and **This track** show over the keys.
+
+- **All tracks**: an accent on a step accents that step on every track. The step legend says "(all)".
+- **This track**: each track has its own accents. Click the steps of the track you want.
+
+The pattern keeps both rows. Switch back and the other row is there again. This is the machine's [RIGHT] key in the accent window. Each of accent, swing and slide has its own setting.
 
 ![The accent of a step](shot:md-accent)
-
-{gap:MD-128}The editor cannot change a pattern between one accent for all tracks and an accent for each track. It follows the setting the pattern has.{/gap}
 
 To copy, paste or clear the accents of a track, tick **Accent** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu (see "Track copy"). A selection copy also takes the accents with the steps.
 
 NOTE: While the accent is shared by all tracks, a paste or a clear of **Accent** changes it for every track.
 
 ## SWING
-<!-- rows: MD-130 MD-131 MD-132 MD-133 @8e1c31 -->
+<!-- rows: MD-130 MD-131 MD-132 MD-133 @18fe9f -->
 
-Swing delays every second step. Click <SWG> on the LCD, or drag or scroll on it, to set it from 50 to 80 percent. Click with [⇧] to go down.
+Swing delays the steps of the swing row. Click <SWG> on the LCD, or drag or scroll on it, to set the amount from 50 to 80 percent. Click with [⇧] to go down. At 50 percent nothing swings.
 
-{gap:MD-131}You cannot choose which steps swing in the editor yet.{/gap}
+To choose which steps swing:
 
-{gap:MD-132}You cannot give a track a swing of its own in the editor yet.{/gap}
+1. Click **Swing** in the bar under the grid.
+2. Click a step with a trig. A teal mark shows on it: the step swings. Click it again to take the swing off.
+3. Drag across steps to paint swing on every step with a trig that you cross.
+4. Press {key:trig-type} to paint trigs again.
+
+With **All tracks** the swing row is shared: a mark on a step swings that step on every track. With **This track** each track has its own swing steps. Every track uses the same <SWG> amount.
+
+TIP: Swing only the hi-hats for a feel apart from the rest of the pattern.
 
 Tick **Swing** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu to copy, paste or clear the swing steps of a track (see "Track copy").
 
-{gap:MD-133}You cannot mark swing steps in the editor yet, so a copy takes the swing steps the track already holds.{/gap}
+NOTE: With **All tracks** the swing row is the pattern's, so a paste or a clear of **Swing** changes it for every track.
 
 ## PARAMETER LOCKS
 <!-- rows: MD-134 MD-135 MD-136 MD-137 MD-138 @994b26 -->
@@ -381,15 +404,15 @@ While you record live, a value you move is locked.
 {gap:MD-140}You cannot remove a lock while recording live in the editor yet. Erase it in the lock lane afterwards.{/gap}
 
 ## PARAMETER LOCK SLIDE
-<!-- rows: MD-141 MD-142 @f2bb3f -->
+<!-- rows: MD-141 MD-142 @97d5ee -->
 
 A slide glides the value of a lock from the previous step to this one, instead of jumping.
 
 1. Click a step with a trig, with [⇧] and [⌥] held. The step shows a slide mark.
 2. Do the same again to take it off.
 
-If slides are shared by all tracks, the slide goes on the step of every track, and the step legend says "(all)".
+You can also click **Slide** in the bar under the grid. Then a click or a drag on steps with a trig paints slides. Press {key:trig-type} to paint trigs again.
 
-{gap:MD-141}The editor cannot change a pattern between slides for all tracks and slides for each track. It follows the setting the pattern has.{/gap}
+With **Slide** lit, choose **All tracks** or **This track**. With **All tracks** the slide goes on the step of every track, and the step legend says "(all)". With **This track** each track has its own slides.
 
 To copy, paste or clear the slides of a track, tick **Slide** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu (see "Track copy"). A selection copy also takes the slides with the steps.
