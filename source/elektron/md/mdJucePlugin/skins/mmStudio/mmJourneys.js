@@ -1490,7 +1490,7 @@ const MmJourneys = (() => {
 	/* I-018: the CPU meter beside the version and its details, as the Machinedrum's */
 	const cpuJs = [...Journey.cpuMeterJourneys("mm"), Journey.speedUpsMenuJourney("mm")];
 	/* I-021: the output meter and volume at the LCD's right end, as the Machinedrum's */
-	const volJs = Journey.volumeJourneys("mm");
+	const volJs = [...Journey.volumeJourneys("mm"), ...Journey.fitJourneys("mm", ["seq", "sound", "mix", "perform", "song"])];
 	const all = [bootCard, firstBeat, spaceKey, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff,
 		poly, multiTrig, multiMap, kbPlay, songRows, songPicker, songChain, kitLoad, kitCopy, patGo, dialogEsc,

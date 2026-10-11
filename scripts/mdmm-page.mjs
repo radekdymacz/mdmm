@@ -13,7 +13,7 @@
 //     selector: as scripts/mdmm-journeys.sh (journey, journey-seq-*, journey-md-lib-*,mm-mix-*); default journey
 //     --tier: the journeys of that tier (skins/shared/deskJourney.js TIERS); default page
 //     --jobs N: N pages per editor at once, each with its own host, each every N-th journey (default 2)
-// Environment: MDMM_CHROME (Chrome's binary), MDMM_STUB_HOST (deskStubHost's binary; default: the newest under temp/),
+// Environment: MDMM_CHROME (Chrome's binary), MDMM_CHROME_ARGS (more Chrome flags, space separated), MDMM_STUB_HOST (deskStubHost's binary; default: the newest under temp/),
 // MDMM_PAGE_OUT (the report folder, default temp/page/<date-time>). Prints the JOURNEY lines and a total; exits 1 on any
 // FAIL, a page that never said JOURNEYS DONE, a command outside the contract or a page error.
 import { spawn } from "node:child_process";
@@ -120,7 +120,7 @@ const PORT = server.address().port;
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), "mdmm-page-chrome-"));
 const chrome = spawn(CHROME, ["--headless=new", "--remote-debugging-port=0", `--user-data-dir=${profile}`, "--no-first-run", "--no-default-browser-check",
 	"--disable-background-timer-throttling", "--disable-renderer-backgrounding", "--disable-backgrounding-occluded-windows", "--hide-scrollbars",
-	"--mute-audio", "--window-size=1440,924", "about:blank"], { stdio: ["ignore", "ignore", "pipe"] });
+	"--mute-audio", "--window-size=1440,924", ...(process.env.MDMM_CHROME_ARGS ? process.env.MDMM_CHROME_ARGS.split(" ") : []), "about:blank"], { stdio: ["ignore", "ignore", "pipe"] });
 let chromeErr = "";
 chrome.stderr.on("data", d => { chromeErr += d; });
 const wsUrl = await new Promise((resolve, reject) => {
@@ -180,6 +180,9 @@ function runUnit(ed, selector, dir) {
 		sid = (await send("Target.attachToTarget", { targetId, flatten: true })).sessionId;
 		sessions.set(sid, (method, p) => {
 			if (method === "Runtime.bindingCalled" && p.name === "__mdmmPost") { try { fromPage(JSON.parse(p.payload)); } catch (e) { log("post: " + e.message); } }
+			/* a journey that visits window sizes (the fit journeys): __mdmmView({width, height}) resizes the page's viewport */
+			else if (method === "Runtime.bindingCalled" && p.name === "__mdmmView") { try { const v = JSON.parse(p.payload);
+				send("Emulation.setDeviceMetricsOverride", { width: v.width, height: v.height, deviceScaleFactor: 1, mobile: false }, sid).catch(e => log("view: " + e.message)); } catch (e) { log("view: " + e.message); } }
 			else if (method === "Runtime.consoleAPICalled") {
 				const a = p.args.map(x => x.value !== undefined ? x.value : x.description || "");
 				const text = a[0] === "[desk]" ? String(a.slice(1).join(" ")) : a.join(" ");
@@ -201,7 +204,8 @@ function runUnit(ed, selector, dir) {
 		await send("Runtime.enable", {}, sid);
 		await send("Page.enable", {}, sid);
 		await send("Runtime.addBinding", { name: "__mdmmPost" }, sid);
-		await send("Page.addScriptToEvaluateOnNewDocument", { source: "window.gmDev = b => __mdmmPost(JSON.stringify(b));" }, sid);
+		await send("Runtime.addBinding", { name: "__mdmmView" }, sid);
+		await send("Page.addScriptToEvaluateOnNewDocument", { source: "window.gmDev = b => __mdmmPost(JSON.stringify(b)); window.gmView = (width, height) => __mdmmView(JSON.stringify({ width, height }));" }, sid);
 		await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 924, deviceScaleFactor: 1, mobile: false }, sid);
 		await send("Emulation.setFocusEmulationEnabled", { enabled: true }, sid);
 		const page = ed === "md" ? "md/mdStudio.html" : "mm/mmStudio.html";
