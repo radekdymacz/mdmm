@@ -64,7 +64,7 @@ const SongSlots = (() => {
 		const c = column(); if (!c) return;
 		const inp = c.querySelector("#slin");
 		/* a page that renders while a name is typed (the MM's does not hold) keeps what was typed: naming.text */
-		if (inp) { inp.focus({ preventScroll: true }); if (naming.fresh) inp.select(); else inp.setSelectionRange(inp.value.length, inp.value.length); return; }
+		if (inp && naming) { inp.focus({ preventScroll: true }); if (naming.fresh) inp.select(); else inp.setSelectionRange(inp.value.length, inp.value.length); return; }
 		if (!refocus) return;
 		refocus = false;
 		const el = c.querySelector(".ls[aria-selected=true]"); if (!el) return;
