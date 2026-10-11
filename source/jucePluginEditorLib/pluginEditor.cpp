@@ -6,7 +6,6 @@
 
 #include "settings.h"
 #include "settingsDspAudio.h"
-#include "settingsDspBridge.h"
 #include "settingsGui.h"
 #include "settingsMidi.h"
 #include "settingsMidiLearn.h"
@@ -412,12 +411,11 @@ namespace jucePluginEditorLib
 
 		if(!m_processor.getConfig().getBoolValue("disclaimerSeen", false))
 		{
-			const auto& plugin4CC = m_processor.getProperties().plugin4CC;
-			const auto firmwareNotice = plugin4CC == "Tmdr" || plugin4CC == "Tmno"
-				? "Do NOT discuss firmware or ROMs in Discord. "
-				  "Do not request or share files or download links, "
-				  "or ask for help obtaining or installing firmware.\n\n"
-				: "";
+			// The Machinedrum and Monomachine Editors are the only products built from this code (their plug-in
+			// codes are in scripts/mdmm-product.env), so the firmware notice is everyone's.
+			const auto* firmwareNotice = "Do NOT discuss firmware or ROMs in Discord. "
+				"Do not request or share files or download links, "
+				"or ask for help obtaining or installing firmware.\n\n";
 
 			const juce::MessageBoxOptions options = juce::MessageBoxOptions::makeOptionsOk(juce::MessageBoxIconType::WarningIcon, m_processor.getProperties().name,
 				juce::String(firmwareNotice) +
@@ -830,7 +828,6 @@ namespace jucePluginEditorLib
 		_plugins.push_back(std::make_unique<SettingsMidi>(getProcessor()));
 		_plugins.push_back(std::make_unique<SettingsMidiLearn>(getProcessor()));
 		_plugins.push_back(std::make_unique<SettingsDspAudio>(getProcessor()));
-		_plugins.push_back(std::make_unique<SettingsDspBridge>(getProcessor()));
 	}
 
 	std::string Editor::getSettingsTemplateSuffix() const

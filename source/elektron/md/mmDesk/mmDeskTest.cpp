@@ -11,6 +11,7 @@
 
 #include "elektronData/mmCommands.h"
 #include "elektronData/mmDump.h"
+#include "elektronData/factoryGlobals.h"
 #include "elektronData/mmJson.h"
 #include "elektronData/mmValidate.h"
 
@@ -180,7 +181,8 @@ namespace
 		std::map<std::pair<uint8_t, uint8_t>, Bytes> slots;
 		mmDesk::Screen screenWord = mmDesk::Screen::Main;
 		int keysPressed = 0;
-		uint8_t pattern = 3, kit = 5;
+		uint8_t pattern = 3, kit = 5, global = 0;
+		std::vector<uint8_t> activations;	// every SET ACTIVE GLOBAL (0x56) taken, in order
 		uint32_t recvTaken = 0;	// dumps taken on SYSEX RECV (the RECV count, RAM 0x26a3c4)
 		bool slow = false;		// dumps stay on their way (inFlight) until taken by hand
 		int recording = -1;		// the recording mode the telemetry says (-1 unknown)
@@ -218,6 +220,12 @@ namespace
 					replies.push_back(it->second);
 				return;
 			}
+			if(cmd == 0x56 && _m.size() > 7)
+			{
+				global = _m[7];
+				activations.push_back(_m[7]);
+				return;
+			}
 			if(cmd == 0x57 && _m.size() > 7)
 			{
 				pattern = _m[7];	// LOAD PATTERN while stopped: the machine switches at once
@@ -225,7 +233,7 @@ namespace
 			}
 			if(cmd == 0x70)
 			{
-				const uint8_t v = _m[7] == 0x04 ? pattern : _m[7] == 0x02 ? kit : 0;
+				const uint8_t v = _m[7] == 0x04 ? pattern : _m[7] == 0x02 ? kit : _m[7] == 0x01 ? global : 0;
 				replies.push_back({0xf0, 0, 0x20, 0x3c, 3, 0, 0x72, _m[7], v, 0xf7});
 			}
 		}
@@ -343,7 +351,9 @@ namespace
 		check(lastResult().find("ok")->asBool(), "set pattern accepted");
 		run(800);
 		check(m.keysPressed >= 28 && d.recvParked(), "the desk drove the machine to SYSEX RECV");
-		check(m.slots[{0x67, 3}] == ed::encodeMmPattern(p), "the machine holds the edited pattern");
+		auto stored = p;
+		stored.kit = m.kit;	// B-053: the dump of the pattern that plays links the kit that plays
+		check(m.slots[{0x67, 3}] == ed::encodeMmPattern(stored), "the machine holds the edited pattern");
 		run(300);
 		check(d.lastRoundTripMs() > 0, "read back and confirmed");
 		run(3500);
@@ -441,6 +451,62 @@ namespace
 			none.setProbe(mmDesk::Desk::Probe::Running);
 			none.onPageMessage(*ed::json::parse(R"({"op":"noteOn","id":27,"t":0,"vel":100,"pitch":0})"));
 			check(!lastResult().find("ok")->asBool(), "noteOn: an engine without notes refuses");
+		}
+
+		// B-051: CHANNEL SPAN 0 in the active global (GLOBAL › MIDI on the page): no track has a MIDI channel of its own.
+		// A sound value goes as a kit dump to the slot (then LOAD KIT), never as a CC another track might take; mutes and
+		// notes are refused with the reason. Back to 6: CCs again.
+		{
+			msg(R"({"op":"globalMidi","id":40,"span":0})");
+			check(lastResult().find("ok")->asBool(), ("globalMidi: CHANNEL SPAN 0 taken " + error()).c_str());
+			run(4000);
+			const auto* g = d.documents().globals.count(0) ? &d.documents().globals.at(0) : nullptr;
+			check(g && g->channelSpan == 0 && m.slots[{0x50, 0}] == ed::encodeMmGlobal(*g), "the machine's global holds CHANNEL SPAN 0");
+			params.clear();
+			const auto kitDumps = m.seen[0x52];
+			msg(R"({"op":"param","id":41,"k":5,"t":2,"page":1,"i":3,"v":99})");
+			check(lastResult().find("ok")->asBool(), ("param on T3 taken " + error()).c_str());
+			run(4000);
+			check(params.empty(), "span 0: no CC for T3's value");
+			check(m.seen[0x52] > kitDumps && ed::decodeMmKit(m.slots[{0x52, 5}])->tracks[2].pages[1][3] == 99, "span 0: T3's value reaches the kit slot as a dump");
+			msg(R"({"op":"mute","id":42,"t":2,"on":true})");
+			check(!lastResult().find("ok")->asBool() && error().find("no MIDI channel of its own") != std::string::npos, "span 0: T3's mute is refused with the reason");
+			const auto n0 = notes.size();
+			msg(R"({"op":"noteOn","id":43,"t":0,"vel":90,"pitch":7})");
+			check(!lastResult().find("ok")->asBool() && notes.size() == n0, "span 0: no note for T1");
+			msg(R"({"op":"globalMidi","id":44,"span":6})");
+			run(4000);
+			params.clear();
+			msg(R"({"op":"param","id":45,"k":5,"t":2,"page":1,"i":3,"v":98})");
+			run(500);
+			check(params.size() == 1 && std::get<0>(params[0]) == 2 && std::get<3>(params[0]) == 98, "span 6: T3's value is its CC again");
+		}
+
+		// The 0.5.0 gate (mm-global-slot): another GLOBAL slot made active while a dump of the active one is on its way
+		// on SYSEX RECV. Its read-back makes the slot active again once RECV is left; that must be the one chosen, not
+		// the old one over it.
+		{
+			run(4000);
+			check(d.currentGlobal() == 0 && !d.recvParked(), "GLOBAL 1 active, RECV left");
+			m.slow = true;
+			msg(R"({"op":"globalMidi","id":46,"span":5})");
+			for(int i = 0; i < 200 && m.inFlight.empty(); ++i)
+				run(10);
+			check(d.recvParked() && !m.inFlight.empty(), "an edit of GLOBAL 1: its dump on its way on SYSEX RECV");
+			m.activations.clear();
+			msg(R"({"op":"globalSlot","id":47,"slot":1})");
+			check(lastResult().find("ok")->asBool() && m.activations.empty(), ("GLOBAL 2 chosen: waits for RECV to be left " + error()).c_str());
+			m.slow = false;
+			for(auto& b : std::exchange(m.inFlight, {}))
+				m.take(b);
+			run(6000);
+			std::string order;
+			for(const auto a : m.activations) order += " " + std::to_string(a + 1);
+			order += "; machine " + std::to_string(m.global + 1) + ", desk " + std::to_string(d.currentGlobal() + 1);
+			check(m.global == 1 && d.currentGlobal() == 1, ("GLOBAL 2 stays active after GLOBAL 1's read-back (0x56:" + order + ")").c_str());
+			msg(R"({"op":"globalSlot","id":48,"slot":0})");
+			run(2000);
+			check(m.global == 0 && d.currentGlobal() == 0, "back to GLOBAL 1");
 		}
 	}
 }
@@ -547,14 +613,14 @@ void watchSteps()
 // B-027: the Monomachine loads the kit a pattern links when it takes a dump of the pattern that plays (measured,
 // mmDeskFirmwareTest machine), so the unsaved edits of the kit that plays go again once the dump is in: here a machine
 // change, its 0x5B a second time. A dump of another pattern reloads nothing.
-void kitAfterPatternDump()
+void kitAfterPatternDump(const uint8_t _link3 = 5)
 {
-	std::puts("B-027: the kit's edits after a dump of the pattern that plays");
+	std::printf("B-027: the kit's edits after a dump of the pattern that plays%s\n", _link3 != 5 ? " (B-053: it links another kit)" : "");
 	FakeMachine m;
 	for(uint8_t s = 0; s < 128; ++s)
 	{
 		auto p = emptyPattern(s);
-		p.kit = 5;	// the kit that plays
+		p.kit = s == 3 ? _link3 : 5;	// the kit that plays; B-053: pattern 3 may link another (an E-H pick loads none)
 		m.slots[{0x67, s}] = ed::encodeMmPattern(p);
 		ed::MmKit k;
 		k.position = s;
@@ -624,6 +690,19 @@ void kitAfterPatternDump()
 	msg(R"({"op":"step","g":2,"p":3,"t":2,"s":7,"v":{"n":[60],"a":1,"f":1,"l":1}})");
 	run(2000);
 	check(ed::decodeMmPattern(m.slots[{0x67, 3}])->notes[2][7] == 60, "the step's dump taken on SYSEX RECV");
+	check(ed::decodeMmPattern(m.slots[{0x67, 3}])->kit == 5, "the dump links the kit that plays (B-053: else the machine loads the linked kit)");
+	if(_link3 != 5)
+	{
+		check(d.pattern(3) && d.pattern(3)->kit == 5, "the read-back shows the pattern linking the kit that plays");
+		const auto relinkOk = d.pattern(3);
+		auto changed = *relinkOk;
+		changed.kit = 9;
+		// a link the person changes is the person's: the dump keeps it (the machine loads that kit)
+		msg(R"({"op":"set","kind":"pattern","doc":)" + ed::json::write(ed::mmPatternToJson(changed)) + "}");
+		run(2000);
+		check(ed::decodeMmPattern(m.slots[{0x67, 3}])->kit == 9, "a link the edit changes is sent as it is");
+		return;
+	}
 	check(machines.size() == 2 && machines[1] == machines[0],
 		"then the machine change again, after the dump (the machine reloaded the kit)");
 	for(int i = 0; i < 1000 && !d.pattern(4); ++i)
@@ -633,6 +712,20 @@ void kitAfterPatternDump()
 	run(2000);
 	check(ed::decodeMmPattern(m.slots[{0x67, 4}])->notes[2][7] == 60 && machines.size() == sent,
 		"a dump of another pattern: nothing again");
+}
+
+// B-053: the OS 1.32B loads a pattern's kit on a pick in banks A-D only (mmDeskFirmwareTest kitlink); a dump of the pattern
+// that plays links the kit that plays unless the edit changed the link.
+void kitPickRules()
+{
+	std::puts("B-053: the kit a pick or a dump makes the machine play");
+	check(mmDesk::pickLoadsKit(0) && mmDesk::pickLoadsKit(63) && !mmDesk::pickLoadsKit(64) && !mmDesk::pickLoadsKit(127) && !mmDesk::pickLoadsKit(-1),
+		"A01-D16 load their kit, E01-H16 none");
+	check(mmDesk::dumpKeepsKit(true, 0, 63, 63) == std::optional<uint8_t>(0), "the pattern that plays, linking another kit: the kit that plays");
+	check(!mmDesk::dumpKeepsKit(true, 0, 0, 0), "it links the kit that plays: as it is");
+	check(!mmDesk::dumpKeepsKit(true, 0, 63, 5), "the edit changes the link: as it is");
+	check(!mmDesk::dumpKeepsKit(false, 0, 63, 63), "another pattern: as it is");
+	check(!mmDesk::dumpKeepsKit(true, -1, 63, 63), "the kit that plays not known: as it is");
 }
 
 // LOAD KIT of a never-written slot (name byte 0 is 0xff) plays it as NEW KIT (measured, mmDeskFirmwareTest p4).
@@ -1426,9 +1519,11 @@ namespace intentCases
 			auto d = *docs;
 			mmDesk::Clipboard clip;
 			std::vector<std::string> refusedWith;
+			std::string note;	// the last command's result note
 			for(const auto& cmd : commands)
 			{
 				const auto r = mmDesk::apply(d, cmd, clip, context);
+				note = r.note;
 				if(r.clipboard)
 					clip = *r.clipboard;
 				if(!r.errors.empty())
@@ -1453,6 +1548,9 @@ namespace intentCases
 				check(false, (name + ": refused, " + refusedWith.front()).c_str());
 				continue;
 			}
+			// note: a part of what the result says (what a paste left out)
+			if(const auto* wantNote = c.find("note"))
+				check(note.find(wantNote->asString()) != std::string::npos, (name + ": the note says \"" + wantNote->asString() + "\" (" + note + ")").c_str());
 			auto expectJson = base;
 			std::vector<std::string> e2;
 			const auto expected = patch(expectJson, *c.find("after")) ? documents(expectJson, e2) : std::nullopt;
@@ -1607,6 +1705,11 @@ void memoryFields()
 
 int main(const int _argc, char** _argv)
 {
+	if(_argc > 2 && std::string(_argv[1]) == "--factory-global")	// B-051: the factory global of a slot as the contract writes it
+	{
+		std::puts(ed::json::write(ed::mmGlobalToJson(ed::mmFactoryGlobal(static_cast<uint8_t>(std::atoi(_argv[2]) & 7)))).c_str());
+		return 0;
+	}
 	if(_argc > 1 && std::string(_argv[1]) == "--write-schema")
 	{
 		checkContract(true);
@@ -1620,6 +1723,8 @@ int main(const int _argc, char** _argv)
 	watchSteps();
 	kitAsLoaded();
 	kitAfterPatternDump();
+	kitAfterPatternDump(9);
+	kitPickRules();
 	modulators();
 	asksAndErrors();
 	stuckDelivery();

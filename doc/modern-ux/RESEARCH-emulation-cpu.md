@@ -128,7 +128,7 @@ Gains are % of today's emulation-thread CPU, after overlap with the levers befor
 | Rank | Lever | Verdict | MD stop | MD play | MM stop | MM play | Bit-exact | Effort |
 |---|---|---|---|---|---|---|---|---|
 | 1 | L4 DSP idle-loop fast-forward | confirmed (prototype) | 12 | 6 | 15 | 6 | yes, proven | days to weeks |
-| 2 | L6 PGO in release builds | confirmed (measured) | 9 today, ×0.92 at the end | 9 | 10 | 11 | must re-check | days |
+| 2 | L6 PGO in release builds | shipped (perf/pgo, "L6 measured") | 9 today, ×0.92 at the end; measured ×0.924 after step 2 | 7 | 5.5 | 5 | yes, goldens 24 + 6 | days |
 | 3 | L1 UC idle skip: check inputs once | confirmed (measured) | 5 | 5 | 3 | 3 | yes, measured | hours |
 | 4 | L3 MD exact serial-port deadlines | confirmed, smaller | 6 | 3 | 0 | 0 | no, audio changes once | hours plus days of tests |
 | 5 | L5 lean ColdFire loop | weakened | 3 | 3 | 6 | 6 | by design | days |
@@ -159,6 +159,54 @@ Gains are % of today's emulation-thread CPU, after overlap with the levers befor
 - **Risk.** A universal macOS binary cannot use PGO (`optimization.cmake:155-158`), so the package must be split per architecture. Each mdLib change makes the profile stale, and the build then fails (`:193-194`). Training needs ROMs, so CI cannot do it. -Ofast float code may change bits: compare renders.
 - **After the other levers.** PGO helps only C++, not JIT code, so the factor falls to about 0.91-0.94.
 - **Cheapest experiment.** Done. Next: repeat after step 1, run `scripts/macos/check_mdmm_core_capacity.py` on an arm64 PGO build, diff the audio.
+
+#### L6 measured (2026-10-10, shipped on branch perf/pgo)
+
+- **Design.** One profile, trained on this Mac (arm64) with the ROMs, committed as LLVM's text profile
+  (`source/elektron/md/pgo/mdmm-macos.proftext`, 9184 functions, 1.5 MB, 130 KB compressed; `mdmm-macos.json` records
+  the commit, the git tree of each profiled folder, the compiler and the workload). The build converts it with its
+  own `llvm-profdata` (text is the one format every version reads, so a profile from Xcode 26 works on CI's Xcode 16)
+  and applies it to both slices of the universal build (`GEARMULATOR_MDMM_APPLE_PGO_MODE=committed`, the default of
+  `build_mdmm.sh`, CI and the local gate). This replaces the per-architecture split the risk above called for: clang
+  matches counts per function hash, so the x86_64 slice uses every function it shares with arm64 (in a universal
+  build only 15 functions, the architecture-specific ones, reported mismatched) and compiles the rest as before.
+  Stale (a profiled folder changed since training) only warns: changed functions get no data. Missing: warns, ThinLTO
+  only. CI never trains, so it never needs a ROM. Rejected: a fixture-free training workload (the hot paths are the
+  firmware's own loops through the JIT, the ColdFire core and the scheduler; a synthetic program would train other
+  branches), and the indexed `.profdata` (its format version is the compiler's, and Apple's clang refuses newer ones).
+- **No firmware in it.** `scripts/macos/mdmm_pgo_profile.py check` parses every line as profile data (a symbol name,
+  a decimal number, a comment or header; nothing else is accepted), and scans the file for any run of 31 bytes or more
+  of either ROM (16-byte chunks of the ROM indexed, every offset of the profile looked up): none. CI repeats the parse
+  on every build; the training script runs both before it writes the file. Local function names carry only the file's
+  base name (`audio.cpp:...`), so no path of this Mac is in it either.
+- **libc++.** A third of the counts are in small libc++ functions whose names carry libc++'s version
+  (`B8ne200100`). The build renames that tag to its own SDK's version, so CI's older libc++ keeps them; a function
+  whose body changed is still rejected by its hash.
+- **Workload.** `mdmmPerfGateTest` for every scenario (md-busy, md-factory, md-song, mm-a01, mm-busy, mm-song), all
+  outputs, 8 s stopped then 8 s playing, speed-ups as shipped: about 75 s of six parallel runs.
+- **Bit-exact.** The committed goldens, all 24 plus the 6 exact-ESSI entries, PASS on the arm64 PGO build. The x86_64
+  slice is built with the profile but cannot be run on this Mac (no Rosetta); CI's start tests and pluginval run on
+  the universal package.
+- **Gain.** Release configuration (ThinLTO, DSP libraries), arm64, `mdmmPerfGateTest md|mm 8` (md-busy, mm-a01,
+  stereo, speed-ups on), 6 paired ABBA rounds of the plain ThinLTO build against the PGO build, on a loaded Mac
+  (load 20-46: the pairing, not the absolute values, is the measurement). Medians of the per-round ratio PGO / ThinLTO:
+
+  | | host cycles per frame | retired host instructions per frame | thread CPU |
+  |---|---|---|---|
+  | MD stopped | ×0.924 (0.915-0.932) | ×0.939 | ×0.925 |
+  | MD playing | ×0.928 (0.915-0.954) | ×0.945 | ×0.925 |
+  | MM stopped | ×0.943 (0.904-0.969) | ×0.922 | ×0.941 |
+  | MM playing | ×0.948 (0.926-0.955) | ×0.929 | ×0.944 |
+
+  About 7.5 % less on the Machinedrum and 5-6 % on the Monomachine, on top of steps 1 and 2: inside the ×0.91-0.94
+  expected above and over the 5 % gate of §5. Measured on the local toolchain only; CI's build (macos-15, Xcode 16.4,
+  run 38061313333, all jobs green) converted the same profile, renamed libc++ ne200100 to ne190102 and reported 15
+  of the profiled functions mismatched over both slices, the same count as the local universal build, so it applies
+  the same counts.
+- **Not done.** Windows: MSVC's `.pgd` belongs to the exact instrumented build and toolset, so a profile trained
+  elsewhere cannot be reused in CI; the way there is clang-cl with this same text profile (a compiler change for the
+  Windows build, its own project). Linux: GCC cannot read LLVM profiles (same answer, clang). Not measured: the plug-in
+  in a host (`check_mdmm_core_capacity.py`), the x86_64 slice.
 
 ### 3.3 L1 — UC idle skip: check the inputs once per batch (confirmed twice)
 
@@ -290,6 +338,130 @@ Step 1 measured (2026-10-09, `cba2ace1f`, M4 Pro, `mdmmPerfGateTest`): the shipp
 
 Do L3 first, then L4 (signature table first, generic detector later), then L9 and L10. Do L7 last, only if its measured residual is ≥ 1.5 %.
 
+Step 2 measured (2026-10-10, branch `perf/step2`, M4 Pro under other load, `mdmmPerfGateTest` md-busy / mm-a01,
+speed-ups on, medians of 4 paired ABBA rounds; host instructions and cycles per frame, each row against the row
+before it):
+
+| Lever | Commit | MD stopped | MD playing | MM stopped | MM playing | Bit-exact |
+|---|---|---|---|---|---|---|
+| Upstream 7d69d7a9 (loop-end assert) | not taken | – | – | – | – | – |
+| Upstream e8989e41 (serial-status poll fast-forward) | not taken | – | – | – | – | – |
+| CMPM JIT fix | `79f2ee6e2` | 0 | 0 | 0 | 0 | yes (goldens 24/24) |
+| L3 exact MD ESSI deadlines | `fcb7a9b11` | −2.0 % / −5.1 % | −1.0 % / −5.7 % | 0 | 0 | MD no (by design), MM yes |
+| L4 NOP stubs | `438b8c882` | −5.3 % / −5.4 % | −0.4 % / +0.8 % | −14.0 % / −15.1 % | 0.0 % / +0.4 % | yes |
+| L4 DMA poll loops (movep) | `c93d9098c` | 0 | 0 | −4.4 % / −3.5 % | −7.2 % / −3.7 % | yes |
+| L4 DMA bit-test polls (jset) | `990f85436` | −3.4 % / −2.9 % | −3.4 % / −2.8 % | 0 | 0 | yes |
+| **Step 2 against main (step 1), with L3 (as first built)** | | **−9.3 % / −12.3 %** | **−3.7 % / −6.5 %** | **−17.7 % / −17.7 %** | **−7.3 % / −5.7 %** | MD changes (L3) |
+
+**Shipped shape (Radek, 2026-10-10): no lever that changes the sound is on by default.** Every bit-exact lever (step 1,
+L4, the CMPM fix) sits under the speed-ups switch and is on by default; off is the legacy emulation exactly, CMPM
+bug included. L3 stays in the code, **opt-in and off by default** (`GEARMULATOR_MDMM_EXACT_ESSI=1` or Developer >
+"Exact MD audio timing (experimental, changes the sound)", config key `exactEssiTiming`), acting only with the
+speed-ups on; its goldens have their own keys (`speedups-on+exact-essi`, MD only). Measured on the final branch
+(main merged in), same method:
+
+| Configuration | MD stopped | MD playing | MM stopped | MM playing | Bit-exact |
+|---|---|---|---|---|---|
+| **Default (step 2 without L3) against main** | **−4.9 % / −3.7 %** | **−2.9 % / −2.8 %** | **−17.9 % / −18.7 %** | **−7.4 % / −6.2 %** | yes, committed goldens 24/24 both positions |
+| L3 opted in, on top of the default | −5.1 % / −7.4 % | −1.4 % / −3.2 % | 0 | 0 | no (MD, by design) |
+
+Without L3 the MD gains less from L4's NOP stubs: the skips are bounded by the next peripheral due, and without L3
+the MD's dues are several times closer together (the halving instruction delays of §3.4).
+
+Notes:
+- **Upstream batch.** 7d69d7a9 only relaxes an `assert` (Debug builds); no gain, skipped. e8989e41 widens the
+  ESAI/ESSI status-poll fast-forward to TDE/RDF and brclr/brset: a probe on the JIT saw no block in either firmware
+  (all six golden scenarios) that tests an ESSI or ESAI status register at all, so it cannot change anything here;
+  skipped. (It also fixes `op_Jset_qq` passing `Jclr_qq` as its template argument; harmless for our firmwares.)
+- **CMPM.** `cmpm S,D` with S the other accumulator took |S| in its live JIT register (A became |A| for the rest of
+  the block). Fixed with a unit test, behind the speed-ups switch (`DSP::setJitCmpmFix`, read at run time: off writes
+  |S| back as before). A probe saw only `cmpm y0,b` (MM p:9c1) in our firmwares, whose source is a
+  temporary, so nothing changes (goldens 24/24).
+- **L3** changes the MD's audio, RAM, SRAM and MIDI-out timing (playhead moves and MIDI event counts equal; the
+  firmware tests and `plocktiming-strict` pass with it). Radek listened and kept it, then decided that nothing that
+  changes the sound ships on by default: L3 is opt-in (above), and its goldens are recorded under their own keys.
+- **L4** is two mechanisms, both bit-exact by construction (they skip only block executions after which the
+  dispatcher would find nothing due, and land on a boundary where it still finds nothing): NOP-only DO bodies
+  (`JitConfig::nopLoopFastForward`, `DSP::fastForwardNopLoop`) and self-looping blocks that poll a DMA register
+  and repeat their own state (`JitConfig::pollLoopFastForward`, `JitBlock::isIdlePollLoop`, `DSP::fastForwardPollLoop`).
+  An inline test in the block calls only when a whole block fits before the stop and the deadline: an unconditional
+  call cost +3.9 % cycles with the switch off. Not covered at first: the Port C polls (MD p:bb, MM p:195; their reads
+  go through Hardware's edge logic) and the MD's DDR0 poll at p:3c, a loop of five two-word blocks below P:$100.
+  Both are covered since, without L7: "L4 finished" below.
+- **L7** is not bit-exact by nature (block boundaries move), so it is outside "each bit-exact" and was not done.
+  **L9** was measured, not built: on the step 2 build `HDI08::exec`, `Timers::exec` and `Dma::exec` together are
+  about 1.6 % (MD playing) and 2 % (MM playing) of samples, below the kill line of §3.7 (3 % / 2 %) before any
+  overlap. **L10** was not started (1–2.5 % forecast, within the noise of these runs).
+- (With L3, as first built.) Against the forecast table in §1 (after step 2: 63 / 71 / 67 / 75.5 % of the shipped cost), chaining step 1's
+  figures (0.85 / 0.84 / 0.81 / 0.79) with step 2's cycles (0.88 / 0.94 / 0.82 / 0.94) gives roughly 75 % (MD
+  stopped), 79 % (MD playing), 67 % (MM stopped) and 75 % (MM playing). The MM is on the forecast; the MD is behind it
+  because its idle time is in the Port C and p:3c polls that L4 could not reach yet (now covered, with less than
+  hoped: "L4 finished" below). Approximate: different runs, a loaded machine.
+
+#### L4 finished: the two Machinedrum waits (2026-10-10, branch `perf/l4-sync-waits`)
+
+**Go/no-go, measured first.** Exact counts from a per-block hook (a scratch build, not committed; the hashes with the
+hook equal the goldens), `mdmmPerfGateTest md 8` (md-busy), per audio frame (352,832 frames per phase), on main
+(`49a3a7aff`, speed-ups on, L3 off):
+
+| | MD stopped | MD playing |
+|---|---|---|
+| DSP1 p:3c-43 (DDR0 poll, five blocks: 3c, 3f, 40, 42, 43; 6 instructions, 17 cycles a turn): block runs, DSP cycles | 134.7 of 299, 458 (19.9 %) | 135.1 of 302, 460 (19.9 %) |
+| DSP2 p:bb-bf (Port C bit 1 poll, three blocks: bb, bd, bf; 4 instructions, 9 cycles a turn): block runs, DSP cycles | 230.0 of 341, 690 (30.0 %) | 233.2 of 320, 700 (30.1 %) |
+| Block runs a perfect skip saves (every turn but one between two peripheral dues), p:3c + p:bb | 101.9 + 203.0 | 103.5 + 205.0 |
+| Host cycles per skipped block (calibrated on the jset poll skip at p:cf, 4 ABBA rounds of it off and on) | 13.7 | 14.1 |
+| Estimate if both were skipped perfectly (of 28.0 k / 29.7 k host cycles per frame) | 5.0 % + 9.9 % = **14.9 %** | 4.9 % + 9.7 % = **14.6 %** |
+
+Over the 8 % line: go. The MM has the same kind of Port C wait at DSP2 p:195, one block above P:$100 (27.9 / 50.7
+skippable block runs per frame stopped / playing: about 1 % of the MM).
+
+**Design.** No block boundary moves (not L7), so both levers keep the goldens:
+- *Poll loops over several blocks* (`JitConfig::pollCycleFastForward`, `JitBlock::findPollCycle`,
+  `DSP::fastForwardPollCycle`, `jitpollcycle.h`). Found from the opcodes in P memory, from each block: a head, the
+  ops `isIdlePollLoop` allows, conditional branches out of the loop (its exits) and a branch back to the head; the
+  turns must repeat (no register read before the turn writes it). Each block of the loop passes a marker on (the
+  loop's id, a hash of its words, and the next block's address) when it went on in the loop, and clears it otherwise;
+  a peripheral run, an interrupt, a PC set from outside and the start of a run clear it too. When the marker comes
+  round to the head, the last turn was straight and nothing could change what it read since: the head (before its own
+  turn, where no host register is live, so the call is cheap) skips the turns that fit before the next due, the run's
+  stop and the cycle deadline, as `fastForwardPollLoop` does. A gate in the head calls only when a whole turn fits.
+  Needs `linkJitBlocks` off (the MD/MM's setting): the skip lands on dispatcher boundaries.
+- *Pure registers* (`JitConfig::pollLoopPureReads`): addresses whose repeated reads return the same value and change
+  nothing more than the first, until a peripheral run or the end of the run. mdLib declares Port C data
+  (`$ffffbd`): the pin follows DSP1's writes, and the MD's on-demand link releases a pending edge on the first read
+  only; DSP1 runs only in DSP2's peripheral runs (the link callbacks) or between DSP2's runs. Port D is not pure (it
+  follows the reading DSP's counter). Read by `movep` (pp and qq forms) or by `move x:>abs`. With them the MD's p:bb
+  (three blocks, the loop machinery above) and the MM's p:195 (one block, `isIdlePollLoop`) are covered.
+- Why the gain is below the estimate (about 7 % of the 15 % in cycles): after every peripheral due the loop must run
+  one straight turn again before it may skip (a due may change what it reads), and the MD's dues are about 43 DSP
+  cycles apart (without L3): a 17-cycle turn at p:3c leaves room to skip about one turn in two and a half. The
+  Port C turn (9 cycles) loses less.
+
+| Lever | Commit | MD stopped | MD playing | MM stopped | MM playing | Bit-exact |
+|---|---|---|---|---|---|---|
+| L4 poll loops over several blocks (MD p:3c) | `4c7be9f22` | −1.8 % / −1.9 % | −1.9 % / −2.4 % | −0.4 % / −0.5 % | −0.9 % / −2.0 % | yes (goldens 30/30) |
+| L4 Port C declared pure (MD p:bb, MM p:195), against the row before | `5068b4e47` | −8.0 % / −5.4 % | −7.5 % / −5.1 % | −2.1 % / −0.9 % | −3.6 % / −2.4 % | yes (goldens 30/30) |
+| **Both against main** | | **−9.5 % / −7.0 %** | **−9.1 % / −6.5 %** | **−2.4 % / −2.1 %** | **−4.4 % / −3.6 %** | yes |
+
+Measured as in "Step 2 measured" (host instructions / cycles per frame, `mdmmPerfGateTest` md-busy / mm-a01, stereo,
+speed-ups on, release configuration: ThinLTO, the committed PGO profile, arm64), medians of 4 paired ABBA rounds
+against the build before it on a loaded Mac (load 3-20). The committed PGO profile (fresh on main) goes stale with these levers for
+`source/dsp56300/source/dsp56kEmu` and `source/elektron/md/mdLib` (the build warns; the changed functions get no
+profile data; the gains above were measured that way) and should be retrained before the release that ships them
+(`scripts/macos/train_mdmm_pgo.sh`).
+
+Gates, each lever: the committed goldens 30/30 (MD and MM, all scenarios, stereo and six outputs, speed-ups on and
+off, and the MD's exact-ESSI keys); the firmware tests `mdIdleSelfBranchTest`, `mdIdleSchedulerFirmwareTest`,
+`mdTransportScorecardTest`, `mdAudioFirmwareTest`, `mdMidiTimingTest` (+ firmware), `mdHostRxTimingTest` (+
+firmware), `mdUwFirmwareTest`, `mmSineFirmwareTest`, `mmSineMidiFirmwareTest`, `mmDigiproFirmwareTest` (+ ensemble)
+green; the JIT unit tests `pollCycleFastForward` (the MD's p:3c words at p:3c and at p:100, exits back to the head
+and into the middle, the polled register moved by the host between runs and by a DMA transfer inside a run; the
+state after every slice equal without the code, off and on) and a carried-register loop that must never skip;
+`pollPortFastForward` (the MD's p:bb and the MM's p:195 words, Port C moved by the host; the same loops on Port D,
+not declared, must never skip).
+Broken on purpose, the test fails: without the clear on a peripheral run, and without the clear at the start of a
+run.
+
 | Gate | Pass condition |
 |---|---|
 | L3 audio change | Radek signs off after a 16 s listening A/B; new reference hashes recorded; `mdRuntimeTest.cpp:76` updated |
@@ -311,6 +483,32 @@ Ship PGO for the arm64 slice (L6). Then decide on the codegen pass (L13b). Consi
 | Release | start tests, pluginval and auval on the shipped files |
 
 End point if all gates pass: about 57 % / 64 % (MD) and 60 % / 68 % (MM) of today's shipped cost (§1).
+
+## Around the core: the audio thread outside the emulation (2026-10-10, branch perf/audio-thread-spikes)
+
+A read-only review listed six suspected costs on the plug-in's audio thread outside the emulated chips, with estimates
+only. Each was measured on main (8919a8e1c) before anything changed: the processor path with a scratch probe (the real
+`AudioPluginAudioProcessor`, `RealtimeInstrumentation`'s lock-wait and resampler counters, `thread_selfcounts`
+instructions, an `operator new` counter), the emulation with `mdmmPerfGateTest` in paired runs. M4 Pro, loaded
+(load average 4-23), so times are maxima over many runs or paired medians and instructions are the steady measure.
+
+| # | Claimed | Measured | Done | Bit-exact |
+|---|---|---|---|---|
+| 1 | A save copies ~9 MB under the lock the audio thread needs, 1-3 ms | Capture under the lock (`beginStateCapture`, 60 saves each): MD 0.14 ms median, 0.15 p90, MM 0.05 ms, the same with user data; the first save of a session 0.6 ms once (fresh pages). Audio thread's longest lock wait while saving every 15 ms: 0.27-0.49 ms MD, 0.24 ms MM | Not fixed: below the 0.5 ms bar | - |
+| 2 | The editor's sample list is read on the audio thread for 52 blocks, allocating | Real: a slot a block, 143 allocations (3.2 MB) on the audio thread, a slot up to 128 us (3.1 M instructions), median 16 us, ~0.85 ms in all (factory samples; a long RAM-R recording more, a word at a time) | Fixed: the audio thread copies the raw memory (25 blocks, median 4 us, at most 13 us, no allocation); the reader builds the list (~1 ms, message thread); `a81e1e4be`, `mdSampleScanFirmwareTest` | the list is equal (`MdSampleBank ==`) |
+| 3 | Opening a project runs a second machine on the audio thread | Only when the factory cache does not exist yet (first run, or deleted) and the project holds user samples: 5,279 blocks (15 s) with both machines, the candidate 1.34 ms a 128-frame block on top of the live 1 ms, at most 6.9 ms in one block. With the cache (every later run): no second machine, the swap is O(1), the audio thread's lock wait at most 0.37 ms; the fresh machine's first blocks cost up to 3.4x (its JIT warming up, as at start-up) | Not fixed: once per installation; moving the candidate to a worker means a second owner of a Hardware the device lock guards (its switches, the save capture, cancel) | - |
+| 4 | At 48 kHz: 8 copies of large tables, all 6 outputs and silent inputs resampled | Real: libresample built its 544 KiB filter per channel (8 per instance, 4.8 MB). Resampler's own time 32-34 us a 128-frame block (device ~1.3 ms). Skipping the 4 unused outputs would save ~7 us more (0.5 %), the silent inputs ~0.4 us | Fixed: one filter per process: 19-20 us a block (-40 %), 0.34 MB; `e20c08b23`, `synthLibResamplerFilterTest`. Skipping buses not done: a bus enabled later could not be bit-exact, for 0.5 % | outputs bit-identical, latency unchanged |
+| 5 | The DSP-to-DSP link uses thread-safe queues on one thread | Lock-free rings (`Audio` rings `Lock=false`), 9 pairs: instructions MD -0.5 %, MM -0.7 %; host cycles MD -0.3 / +1.5 %, MM -1.2 % (paired medians, within the noise of +-5 %) | Not fixed: not shown to be 0.5 % of host time; the core's `Audio` rings serve every DSP user | goldens PASS |
+| 6 | Every patch-memory access takes a lock | The lock is taken 0.68-0.76 times a frame (MD), 1.25-1.32 (MM); the ColdFire's other slow accesses 15 (MD), 40-43 (MM). Without the lock: instructions -0.1 to -0.3 % (noise) | Not fixed: not measurable | - |
+
+Checks on the branch: goldens 30/30 (24 + the 6 exact-ESSI keys, both speed-ups positions), `scripts/mdmm-dev.sh
+tests` 122/122, the processor firmware tests (`mdProjectStateRestoreTest`, `mdSessionFirmwareTest`,
+`mdFirstStartFirmwareTest`), pluginval 5 and 8 on the Machinedrum VST3.
+
+Also seen: a probe that corrupted flash at sector 6 of a project and loaded it hung the audio thread for good, holding
+the device lock: the ColdFire pushed into DSP1's full host-port ring (`RingBuffer<..., true>`), which blocks, on the
+thread that would drain it. Not reproduced with a real project; a non-blocking push there (drop and count) would turn
+such a hang into a wrong note.
 
 ## 6. Sources
 

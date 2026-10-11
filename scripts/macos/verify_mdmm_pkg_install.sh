@@ -10,8 +10,8 @@
 # With no arguments it checks both. It needs no sudo. For each machine it finds
 # where it is installed (/ for all users, the home folder for you only; both at
 # once is reported, since a DAW then lists two), and checks the Installer
-# receipts, that the three bundles are there with valid signatures, that no
-# bundle under the old (0.3.1) names is left beside them, and that the
+# receipts, that the three bundles are there with valid signatures, that none of ours
+# under the old (0.3.1) names is left beside them, and that the
 # installed Audio Unit passes auval under the product name.
 #
 # auval loads the AU in this process. Set GEARMULATOR_DATA_ROOT to an empty
@@ -38,10 +38,10 @@ fail() {
 
 for machine in "${machines[@]}"; do
   case "${machine}" in
-    md) app="${MDMM_PRODUCT_NAME_MD}"; legacy="${MDMM_LEGACY_NAME_MD}"; subtype="Tmdr"
-        bundle_id="${MDMM_BUNDLE_ID_MD}"; legacy_id="${MDMM_LEGACY_BUNDLE_ID_MD}" ;;
-    mm) app="${MDMM_PRODUCT_NAME_MM}"; legacy="${MDMM_LEGACY_NAME_MM}"; subtype="Tmno"
-        bundle_id="${MDMM_BUNDLE_ID_MM}"; legacy_id="${MDMM_LEGACY_BUNDLE_ID_MM}" ;;
+    md) app="${MDMM_PRODUCT_NAME_MD}"; legacy="${MDMM_LEGACY_NAME_MD}"; subtype="${MDMM_AU_SUBTYPE_MD}"
+        bundle_id="${MDMM_BUNDLE_ID_MD}" ;;
+    mm) app="${MDMM_PRODUCT_NAME_MM}"; legacy="${MDMM_LEGACY_NAME_MM}"; subtype="${MDMM_AU_SUBTYPE_MM}"
+        bundle_id="${MDMM_BUNDLE_ID_MM}" ;;
     *) echo "unknown machine: ${machine} (use md or mm)" >&2; exit 2 ;;
   esac
   id="com.nativekloud.mdmm.${machine}"	# the receipts' (package) identifier, not the bundles'
@@ -72,18 +72,18 @@ for machine in "${machines[@]}"; do
       fi
     done
 
-    # The installer removes the bundles under the old names (scripts/macos/pkg-resources/remove-old-bundles):
-    # a plug-in with either of our identifiers (the old one is upstream Gearmulator's, with the same plug-in
-    # codes), an app with the editor's own.
+    # The installer removes the bundles under the old names that are ours (scripts/macos/pkg-resources/
+    # remove-old-bundles): the editor's own identifier. One with upstream Gearmulator's identifier may be the
+    # original Gearmulator plug-in, which has its own codes and may stay beside the editor.
     for old in \
         "${root}/Library/Audio/Plug-Ins/VST3/${legacy}.vst3" \
         "${root}/Library/Audio/Plug-Ins/Components/${legacy}.component" \
         "${root}/Applications/${legacy}.app"; do
       old_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "${old}/Contents/Info.plist" 2>/dev/null || true)"
-      if [[ "${old_id}" == "${bundle_id}" || ( "${old_id}" == "${legacy_id}" && "${old}" != *.app ) ]]; then
+      if [[ "${old_id}" == "${bundle_id}" ]]; then
         fail "the old ${old} is still installed beside ${app}: the DAW lists it twice"
       elif [[ -e "${old}" ]]; then
-        echo "note: ${old} is there, not ours (${old_id:-no identifier}); left alone"
+        echo "note: ${old} is there, not provably ours (${old_id:-no identifier}); left alone"
       fi
     done
 
@@ -121,16 +121,16 @@ for machine in "${machines[@]}"; do
   done
 
   auval_log="$(mktemp "${TMPDIR:-/tmp}/mdmm-auval.XXXXXX")"
-  if auval -v aumu "${subtype}" GmPv >"${auval_log}" 2>&1 \
+  if auval -v aumu "${subtype}" "${MDMM_AU_MANUFACTURER}" >"${auval_log}" 2>&1 \
       && grep -q "AU VALIDATION SUCCEEDED" "${auval_log}"; then
-    echo "ok  auval aumu ${subtype} GmPv: AU VALIDATION SUCCEEDED"
+    echo "ok  auval aumu ${subtype} ${MDMM_AU_MANUFACTURER}: AU VALIDATION SUCCEEDED"
     grep -qF "AudioUnit Name: ${app}" "${auval_log}" \
-      || fail "auval aumu ${subtype} GmPv: the AU is not named ${app} ($(grep -m1 'AudioUnit Name:' "${auval_log}" || true))"
+      || fail "auval aumu ${subtype} ${MDMM_AU_MANUFACTURER}: the AU is not named ${app} ($(grep -m1 'AudioUnit Name:' "${auval_log}" || true))"
     grep -qF "Manufacturer String: ${MDMM_VENDOR}" "${auval_log}" \
-      || fail "auval aumu ${subtype} GmPv: the maker is not ${MDMM_VENDOR} ($(grep -m1 'Manufacturer String:' "${auval_log}" || true))"
+      || fail "auval aumu ${subtype} ${MDMM_AU_MANUFACTURER}: the maker is not ${MDMM_VENDOR} ($(grep -m1 'Manufacturer String:' "${auval_log}" || true))"
   else
     tail -40 "${auval_log}" >&2
-    fail "auval aumu ${subtype} GmPv did not succeed (log: ${auval_log})"
+    fail "auval aumu ${subtype} ${MDMM_AU_MANUFACTURER} did not succeed (log: ${auval_log})"
     continue
   fi
   rm -f "${auval_log}"

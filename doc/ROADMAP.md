@@ -70,8 +70,11 @@ Lever names (L1-L14) and gates are those of [RESEARCH-emulation-cpu.md](modern-u
 
 ### 4.1 Baseline first
 
-- L1, L11, L2b and L5 have landed in Radek's local checkout (with a legacy-emulation switch for comparison); they are
-  not on `origin/main` yet. They are part of the research's step 1, so they must not be counted again.
+- **Status after 0.5.0 (2026-10-11):** step 1 (L1, L11, L2b, L5) shipped in 0.4.0; step 2 (L4 idle-loop skips incl.
+  the Port C and multi-block waits, the CMPM fix) and L6 PGO (macOS) shipped in 0.5.0, all bit-exact and on by
+  default; L3 is in the code as an opt-in that changes the MD's sound (off by default). Measured 0.5.0 against
+  0.4.0: MD -19 % / -16 %, MM -27 % / -18 % host work per frame (stopped / playing). Step 1 must not be counted
+  again.
 - Before any new lever: a fresh baseline on the current code (`mdCpuBenchTest` / `mmCpuBenchTest`, host cycles per
   frame, `scripts/mdmm-rt-check.sh`, core capacity), MD and MM, stopped and playing. Every figure below is relative
   to that baseline, never to the old 44.4 / 54.1.
@@ -80,12 +83,12 @@ Lever names (L1-L14) and gates are those of [RESEARCH-emulation-cpu.md](modern-u
 
 | Step | Work | Audio | Expected (from research) | Status / when |
 |---|---|---|---|---|
-| 1 | Clean-up (D2), time-boxed to 3 days; keep shared diagnostics, test tools and build dependencies | – | 0 % | around the 1.0 work |
+| 1 | Clean-up (D2), time-boxed to 3 days; keep shared diagnostics, test tools and build dependencies | – | 0 % | **done in 0.5.0** (−48 % of our code outside the owned cores) |
 | 2 | Rest of research step 1: the upstream batch (§3); evaluate (not adopt) joelanders' DSP PR #20, which saw unexplained callback overruns | bit-exact gate | step 1 total ≈ 0.87 of baseline, minus what has landed | before 1.0 if each passes its gate |
-| 3 | Silent-voice skip (part of L4) on MM and on MD as a prototype; benchmark it on its own. On MD most of L4's gain depends on L3 (step 5) | bit-exact gate (DSP state hash at every due) | MD small without L3; MM ~6-15 % | measure, then decide |
+| 3 | Silent-voice skip (part of L4) on MM and on MD as a prototype; benchmark it on its own. On MD most of L4's gain depends on L3 (step 5) | bit-exact gate (DSP state hash at every due) | MD small without L3; MM ~6-15 % | **done in 0.5.0** (L4 with the poll and wait loops) |
 | 4 | Sleep when silent (see 4.3) | behaviour change: acceptance tests required | idle instances near 0 % (unmeasured) | only if 4.3 passes; else after 1.0 |
-| 5 | L3 exact MD serial-port deadlines, then full L4, L9, L10 | L3 changes MD audio once (first trigger ~24 ms later, no hardware reference): a separate correctness decision, timing check against a real MD, listening A/B, Radek signs off | MD ≈ 0.65 / 0.73 (stopped / playing), MM ≈ 0.69 / 0.77 of baseline | after 1.0 |
-| 6 | L6 PGO (arm64 slice), huge pages, no virtual calls on the bus | must render bit-identically to ThinLTO | ≥ 5 % or drop | after 1.0 |
+| 5 | L3 exact MD serial-port deadlines (**in 0.5.0 as an opt-in, off by default**), then L9, L10 (measured below the kill line in 0.5.0) | L3 changes MD audio once (first trigger ~24 ms later, no hardware reference): a separate correctness decision, timing check against a real MD, listening A/B, Radek signs off | MD ≈ 0.65 / 0.73 (stopped / playing), MM ≈ 0.69 / 0.77 of baseline | after 1.0 |
+| 6 | L6 PGO (arm64 slice), huge pages, no virtual calls on the bus | must render bit-identically to ThinLTO | ≥ 5 % or drop | **PGO done in 0.5.0 (macOS)**; the rest after 1.0 |
 
 Expected end point of steps 2-6 (research): MD playing ~28.5 %, MM ~36.8 % of one core — about a third less.
 
@@ -137,7 +140,7 @@ reached at all.
   accents, slides, copy/paste at every level, cued pattern changes), songs, chains, mutes, tap tempo, GLOBAL,
   the sampler (SDS send, RAM chops), SysEx import/export and DAW automation are native.
   [GAP-REVIEW.md](modern-ux/GAP-REVIEW.md) (2026-09-27) is mostly superseded.
-- **Monomachine Editor: core complete; editing comfort and globals behind.** All 22 machines, the piano roll,
+- **Monomachine Editor: at the Machinedrum Editor's level since 0.5.0** (GLOBAL, step selection, piano roll, Sound/GEN/MUTATE shared with the MD). Before that: core complete; editing comfort and globals behind. All 22 machines, the piano roll,
   AMP/FLT/LFO trig tracks, the arpeggiator, the 6 MIDI tracks, songs, chains, mutes, the multi map and
   import/export are native. Detail: [MM-PARITY-2026-10-09.md](modern-ux/MM-PARITY-2026-10-09.md).
 - **Beyond the hardware (both):** undo everywhere, every track on one grid, drawn lock lanes, GEN and MUTATE,
@@ -149,14 +152,14 @@ reached at all.
 |---|---|---|---|---|
 | F1 | HW MIDI proven on a real MD **and** a real MM, separately: connect/reconnect, edits both ways, mutes, transport, transfers, imported globals; Windows MIDI (B-037). FR-09 is the MD demo only | both | L | before 1.0 |
 | F2 | Stability: MM crackle (B-036), Windows blank window/freeze (B-029, B-035), Linux blank window (B-033), CPU in Live (B-005), save/autosave stalls (B-034). Gate in §7 | both | L | before 1.0 |
-| F3 | GLOBAL page: MIDI channels, 8 global slots, master tune (a wrong channel span blocks mutes with no fix in the editor, B-026), plus any CONTROL IN/OUT setting F1 needs | MM | L | before 1.0 |
-| F4 | Step selection, step menu and keyboard shortcuts, as in the MD editor (I-001) | MM | L | before 1.0 |
+| F3 | GLOBAL page: done in 0.5.0 (B-051): the MD's panel, shared: the 8 slots, MIDI channels, program change, sync in and out, routing mode, Reset to defaults. Left: master tune; the global's still undecoded bytes (0x07-0x09, 0x0d-0x11, 0x30-0x35, the six CONTROL bytes 0x36-0x3b: no MIDI effect found) | MM | S | before 1.0 |
+| F4 | ~~Step selection, step menu and keyboard shortcuts, as in the MD editor (I-001)~~ done in 0.5.0 | MM | L | done |
 | F5 | Song management: names, copy, clear, save-as, a song library (I-011); the MM song LOOP target (B-038) | both | M | B-038 before 1.0, the rest 1.x |
 | F6 | CTR-AL kits: the guide lists a limit no code enforces; test on the firmware, then fix or drop it | MD | S-M | before 1.0 |
 | F7 | Per-step swing trigs; EDIT ALL toggles for accent, slide and swing | MD | S-M | 1.x |
 | F8 | Sample manager: RAM→ROM copy, erase a slot, export a sample to WAV | MD | M | 1.x |
 | F9 | Sync and control not needed by F1: the rest of CONTROL IN/OUT, clock, program change (MM); trig in A/B editable (MD); pattern change and master FX from the DAW | both | M | 1.x |
-| F10 | Piano roll: a clear note-length handle (I-010), draw mode and box select (I-007) | MM | M | 1.x |
+| F10 | ~~Piano roll: a clear note-length handle (I-010), draw mode and box select (I-007)~~ done in 0.5.0 | MM | M | done |
 | F11 | Track copy, super copy, melody copy | MM | M | 1.x |
 | F12 | Projects: save and load a whole set in the standalone (the +Drive equivalent) | both | M | 1.x |
 | F13 | The Control / MIDI Learn workspace, now hidden | both | M-L | later |

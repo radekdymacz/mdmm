@@ -133,10 +133,13 @@ namespace mmDesk
 		m_reactivateGlobal = false;
 		m_poly = -1;
 		m_recordReads = {};
+		m_recLock.reset();
 		m_expectMute = {};
 		m_expectPoly = {};
 		m_expectTempo = {};
 		m_curPattern = m_curKit = m_curSong = m_curGlobal = m_songMode = m_queuedPattern = -1;
+		m_chosenGlobal = -1;
+		m_chosenSentMs = -1;
 		m_sequence.clear();
 		m_chain.drop();
 		m_keysUntilMs = -1e9;
@@ -197,8 +200,8 @@ namespace mmDesk
 		// B-026: a dump of the active global is stored, not applied, until its slot is made active (0x56): without it
 		// the machine keeps its old channels while every document says the new ones. As after the editor's own global
 		// writes, once SYSEX RECV is left.
-		if(_message.size() > 9 && _message[0] == 0xf0 && _message[6] == 0x50 && m_curGlobal >= 0 && _message[9] == m_curGlobal)
-			m_activateGlobal = m_curGlobal;
+		if(_message.size() > 9 && _message[0] == 0xf0 && _message[6] == 0x50 && activeSlot() >= 0 && _message[9] == activeSlot())
+			m_activateGlobal = activeSlot();
 		return {};
 	}
 
@@ -222,6 +225,14 @@ namespace mmDesk
 	}
 
 
+	// SET ACTIVE GLOBAL (0x56); the editor's choice is timed from here (m_chosenSentMs)
+	void MmMachine::sendActiveGlobal(const int _slot)
+	{
+		m_port.sendSysex(ed::mmSetActiveGlobal(static_cast<uint8_t>(_slot & 7)));
+		if(_slot == m_chosenGlobal)
+			m_chosenSentMs = clock();
+	}
+
 	void MmMachine::tick(const double _now, const Documents& _view)
 	{
 		// 0.3.4: cable speed only while the sequencer plays
@@ -244,7 +255,7 @@ namespace mmDesk
 		pumpSongReload(_now);
 		if(m_activateGlobal >= 0 && (m_profile.wire || m_recv.state() == RecvSession::State::Idle))
 		{
-			m_port.sendSysex(ed::mmSetActiveGlobal(static_cast<uint8_t>(m_activateGlobal)));
+			sendActiveGlobal(m_activateGlobal);
 			m_activateGlobal = -1;
 		}
 		pumpLoads(_now);
@@ -345,6 +356,16 @@ namespace mmDesk
 		else
 			desk.set("chain", Value());
 		desk.set("bankGroup", m_tel.bankGroup);
+		if(m_recLock)
+		{
+			Value l = Value::object();
+			l.set("track", m_recLock->track);
+			l.set("param", m_recLock->param);
+			l.set("step", m_recLock->step);
+			desk.set("recLock", std::move(l));
+		}
+		else
+			desk.set("recLock", Value());
 		d.set("desk", std::move(desk));
 		Value r = Value::object();
 		r.set("state", manualDumps() ? (m_manual.empty() ? "idle" : "waitingUser") : m_recv.stateName());

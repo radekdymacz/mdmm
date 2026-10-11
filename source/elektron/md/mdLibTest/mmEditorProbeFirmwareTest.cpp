@@ -21,6 +21,9 @@
 //   screens    the firmware's screen word across screens
 //   lab <script>      MM-P1 layout lab: panel/MIDI actions with dump diffs (see labMode)
 //   program <dir>     MM-P1 programmed corpus: random valid dumps through SYSEX RECV, read back
+//   ampenv "<atk,hold,dec,rel,gateMs> ..."   B-049: the AMP envelope one note plays (GND-SIN; AMPENV_MACHINE another
+//                     machine id, AMPENV_BPM a tempo, AMPENV_TAIL ms after the NOTE OFF, AMPENV_REF_FIRST the first
+//                     case's level as 100 %, AMPENV_TRACE the level every 50 ms)
 // Exits 77 (skip) without arguments.
 
 #include "mdFirmwareSession.h"

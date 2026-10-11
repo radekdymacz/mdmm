@@ -1,51 +1,51 @@
 {
   "schema": 1,
-  "version": "0.4.0",
-  "tag": "mdmm-v0.4.0",
+  "version": "0.5.0",
+  "tag": "mdmm-v0.5.0",
   "date": "2026-10-10",
-  "notes": "https://github.com/radekdymacz/gearmulator-md-mm/releases/tag/mdmm-v0.4.0",
+  "notes": "https://github.com/radekdymacz/gearmulator-md-mm/releases/tag/mdmm-v0.5.0",
   "page": "https://mdmm.dev/get/",
   "assets": {
     "mac": {
       "md": {
         "name": "Machinedrum-Editor-macOS.pkg",
-        "url": "https://github.com/radekdymacz/gearmulator-md-mm/releases/download/mdmm-v0.4.0/Machinedrum-Editor-macOS.pkg",
-        "size": 41823028,
-        "sha256": "72e7affc693427f82c298ee69fba3e3d438cd2a8da1a51a53065ae70e1813764"
+        "url": "https://github.com/radekdymacz/gearmulator-md-mm/releases/download/mdmm-v0.5.0/Machinedrum-Editor-macOS.pkg",
+        "size": 41194548,
+        "sha256": "b677e3974c5f518aa005438ffdc049ca53f43f44abd62028473ad38163edf937"
       },
       "mm": {
         "name": "Monomachine-Editor-macOS.pkg",
-        "url": "https://github.com/radekdymacz/gearmulator-md-mm/releases/download/mdmm-v0.4.0/Monomachine-Editor-macOS.pkg",
-        "size": 41967827,
-        "sha256": "868f653f01291defdbefd81e47fe0a2dfe7f1d7856845400f438afce51768657"
+        "url": "https://github.com/radekdymacz/gearmulator-md-mm/releases/download/mdmm-v0.5.0/Monomachine-Editor-macOS.pkg",
+        "size": 41484805,
+        "sha256": "e2682f5ebf7d68f2756df99b7c06645ef2da43482e13d657307a7933949d8b75"
       }
     },
     "win": {
       "md": {
         "name": "Machinedrum-Editor-Windows-x64-not-tested.zip",
-        "url": "https://github.com/radekdymacz/gearmulator-md-mm/releases/download/mdmm-v0.4.0/Machinedrum-Editor-Windows-x64-not-tested.zip",
-        "size": 21756066,
-        "sha256": "3a6f4903bfbe3fc5ed5f4d8e799ea47a0aad26b151316dd71372281671ba25f7"
+        "url": "https://github.com/radekdymacz/gearmulator-md-mm/releases/download/mdmm-v0.5.0/Machinedrum-Editor-Windows-x64-not-tested.zip",
+        "size": 21282643,
+        "sha256": "38603d608a2499dfcf234eaebb15f44c7facc94edd495c14104a8583f8ecc170"
       },
       "mm": {
         "name": "Monomachine-Editor-Windows-x64-not-tested.zip",
-        "url": "https://github.com/radekdymacz/gearmulator-md-mm/releases/download/mdmm-v0.4.0/Monomachine-Editor-Windows-x64-not-tested.zip",
-        "size": 21797428,
-        "sha256": "37139fcabc2a37dd8963e447b2e3925338ae699d2dac27338166f99e583bfddb"
+        "url": "https://github.com/radekdymacz/gearmulator-md-mm/releases/download/mdmm-v0.5.0/Monomachine-Editor-Windows-x64-not-tested.zip",
+        "size": 21362167,
+        "sha256": "b5a21267e908d69d18ceaabc7fb10e586b3360d2a7ab38ac16f68aad361cbc53"
       }
     },
     "linux": {
       "md": {
         "name": "Machinedrum-Editor-Linux-x64-not-tested.tar.gz",
-        "url": "https://github.com/radekdymacz/gearmulator-md-mm/releases/download/mdmm-v0.4.0/Machinedrum-Editor-Linux-x64-not-tested.tar.gz",
-        "size": 23874713,
-        "sha256": "fb96bfad3b47f9227ff63265f1c5df5d965a28e83f23236514d0d683fbd0baf2"
+        "url": "https://github.com/radekdymacz/gearmulator-md-mm/releases/download/mdmm-v0.5.0/Machinedrum-Editor-Linux-x64-not-tested.tar.gz",
+        "size": 23296365,
+        "sha256": "1370f7a47a761b721a2bdc7193695b2516ac92f80761e09f53fd750243e398f7"
       },
       "mm": {
         "name": "Monomachine-Editor-Linux-x64-not-tested.tar.gz",
-        "url": "https://github.com/radekdymacz/gearmulator-md-mm/releases/download/mdmm-v0.4.0/Monomachine-Editor-Linux-x64-not-tested.tar.gz",
-        "size": 23920005,
-        "sha256": "5cb406f52dc83262aca80b354d4a24f39f560f3ce3811768e8545bc3bb334577"
+        "url": "https://github.com/radekdymacz/gearmulator-md-mm/releases/download/mdmm-v0.5.0/Monomachine-Editor-Linux-x64-not-tested.tar.gz",
+        "size": 23388836,
+        "sha256": "3cf4f3f2407ee7393a1c9c1c3c85445c82ba8c922868c0977506e08d7aa2b3c3"
       }
     }
   }

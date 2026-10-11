@@ -77,6 +77,8 @@ namespace
 
 	// The tester switch for the step 1 speed-ups (setLegacyEmulation): true runs the code they replaced.
 	constexpr auto g_legacyEmulationKey = "legacyEmulation";
+	// L3's opt-in (setExactEssiTiming): true runs the Machinedrum's serial ports on exact cycle deadlines.
+	constexpr auto g_exactEssiTimingKey = "exactEssiTiming";
 
 	const char* productName(const md::MachineModel _model)
 	{
@@ -117,7 +119,7 @@ namespace
 		return {
 			productName(_model), g_dataFolderVendor, compiled.isSynth,
 			compiled.wantsMidiInput, compiled.producesMidiOut, compiled.isMidiEffect,
-			_model == md::MachineModel::Monomachine ? "Tmno" : "Tmdr",
+			_model == md::MachineModel::Monomachine ? MDMM_AU_SUBTYPE_MM : MDMM_AU_SUBTYPE_MD,	// scripts/mdmm-product.env
 			compiled.lv2Uri, compiled.binaryData, dataFolderName(_model),
 			{0}, {0, 2, 4}, mdJucePlugin::editorConfigFileName(_model)
 		};
@@ -400,31 +402,24 @@ namespace mdJucePlugin
 	}
 
 	AudioPluginAudioProcessor::AudioPluginAudioProcessor(const md::MachineModel _model,
-		const bool _allowMcpServer)
-		: AudioPluginAudioProcessor(_model, std::vector<uint8_t>{}, _allowMcpServer)
+		std::vector<uint8_t> _initialPatchRam) :
+		AudioPluginAudioProcessor(_model, std::move(_initialPatchRam), false)
 	{
 	}
 
 	AudioPluginAudioProcessor::AudioPluginAudioProcessor(const md::MachineModel _model,
-		std::vector<uint8_t> _initialPatchRam, const bool _allowMcpServer) :
-		AudioPluginAudioProcessor(_model, std::move(_initialPatchRam), _allowMcpServer, false)
-	{
-	}
-
-	AudioPluginAudioProcessor::AudioPluginAudioProcessor(const md::MachineModel _model,
-		EphemeralConfig _config, const bool _allowMcpServer) :
-		AudioPluginAudioProcessor(_model, std::vector<uint8_t>{}, _allowMcpServer, true,
+		EphemeralConfig _config) :
+		AudioPluginAudioProcessor(_model, std::vector<uint8_t>{}, true,
 			std::move(_config.deviceHomePath))
 	{
 	}
 
 	AudioPluginAudioProcessor::AudioPluginAudioProcessor(const md::MachineModel _model,
-		std::vector<uint8_t> _initialPatchRam, const bool _allowMcpServer,
-		const bool _ephemeralConfig,
+		std::vector<uint8_t> _initialPatchRam, const bool _ephemeralConfig,
 		std::optional<std::string> _deviceHomePath) :
 		Processor(createBusesProperties(),
 			prepareConfig(_model, _ephemeralConfig), makeProcessorProperties(_model),
-			_allowMcpServer, _ephemeralConfig
+			_ephemeralConfig
 				? jucePluginEditorLib::Processor::ConfigMode::Ephemeral
 				: jucePluginEditorLib::Processor::ConfigMode::Persistent)
 		, m_model(_model)
@@ -948,6 +943,8 @@ namespace mdJucePlugin
 		d->setRamRecordingMode(getRamRecordingMode());
 		if(getConfig().getBoolValue(g_legacyEmulationKey, false))
 			d->setSpeedUps(false);
+		if(getConfig().getBoolValue(g_exactEssiTimingKey, false))
+			d->setExactEssiTiming(true);
 #ifdef __APPLE__
 		// a background run of the journeys on a person's Mac (mdBackgroundRun.h): the standalone's audio runs as
 		// ever, timing and all, but nothing reaches their speakers
@@ -979,6 +976,26 @@ namespace mdJucePlugin
 		});
 	}
 
+	void AudioPluginAudioProcessor::setExactEssiTiming(const bool _on)
+	{
+		getConfig().setValue(g_exactEssiTimingKey, _on);
+		getConfig().saveIfNeeded();
+		getPlugin().withDeviceLocked([_on](synthLib::Device* const _device)
+		{
+			if(auto* const device = dynamic_cast<md::Device*>(_device))
+				device->setExactEssiTiming(_on);
+		});
+	}
+
+	bool AudioPluginAudioProcessor::isExactEssiTiming()
+	{
+		return getPlugin().withDeviceLocked([](synthLib::Device* const _device)
+		{
+			const auto* const device = dynamic_cast<const md::Device*>(_device);
+			return device && device->exactEssiTiming();
+		});
+	}
+
 	bool AudioPluginAudioProcessor::isLegacyEmulation()
 	{
 		return getPlugin().withDeviceLocked([](synthLib::Device* const _device)
@@ -997,20 +1014,6 @@ namespace mdJucePlugin
 			const auto* const device = dynamic_cast<const md::Device*>(_device);
 			return device && device->supportsRamRecordingMode();
 		});
-	}
-
-	void AudioPluginAudioProcessor::getRemoteDeviceParams(synthLib::DeviceCreateParams& _params) const
-	{
-		Processor::getRemoteDeviceParams(_params);
-		_params.customData = md::deviceCustomData(m_model);
-
-		auto rom = md::RomLoader::findROM(m_model);
-
-		if(rom.isValid())
-		{
-			_params.romData.assign(rom.data().begin(), rom.data().end());
-			_params.romName = rom.getFilename();
-		}
 	}
 
 	pluginLib::Controller* AudioPluginAudioProcessor::createController()

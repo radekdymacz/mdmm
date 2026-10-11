@@ -104,15 +104,17 @@ const MdJourneys = (() => {
 		]
 	};
 	/* T taps; so does B, the Monomachine Editor's tap key (T is a black key there) */
-	const tapWith = (name, key) => ({
+	const tapWith = (name, key, m = {}) => ({
 		name,
 		steps: [
-			{ say: `tap ${key.toUpperCase()} five times, about 0.5 s apart`, act: async (u, c) => { c.b0 = Docs.global.tempo; document.activeElement?.blur?.(); const at = []; for (let i = 0; i < 5; i++) { at.push(performance.now()); u.key(key); await sleep(500); } c.want = Math.round(60000 / ((at[4] - at[0]) / 4) * 10) / 10; c.note = `taps ${Math.round((at[4] - at[0]) / 4)} ms apart: ${c.want} BPM`; },
+			{ say: `tap ${m.shift ? "Shift+" : ""}${key.toUpperCase()} five times, about 0.5 s apart`, act: async (u, c) => { c.b0 = Docs.global.tempo; document.activeElement?.blur?.(); const at = []; for (let i = 0; i < 5; i++) { at.push(performance.now()); u.key(m.shift ? key.toUpperCase() : key, m); await sleep(500); } c.want = Math.round(60000 / ((at[4] - at[0]) / 4) * 10) / 10; c.note = `taps ${Math.round((at[4] - at[0]) / 4)} ms apart: ${c.want} BPM`; },
 				screen: c => ok(Math.abs(V.bpm - c.want) <= 1.5 && Math.abs(parseFloat($1("#bpm").textContent) - V.bpm) < 0.06, "BPM " + V.bpm + ", want " + c.want), machine: c => ok(Math.abs(Docs.global.tempo - c.want) <= 1.5, "tempo " + Docs.global.tempo + ", want " + c.want) }
 		],
 		async tidy(u, c) { if (c.b0 != null) cmd("tempo", { bpm: c.b0 }); await sleep(500); }
 	});
 	const tapTempo = tapWith("md-keys-tap-tempo", "t"), tapTempoB = tapWith("md-keys-tap-tempo-b", "b");
+	/* Radek 2026-10-10: ⇧B taps in both editors (the Monomachine Editor's B is the piano roll's Draw on Sequence) */
+	const tapTempoShift = tapWith("md-keys-tap-tempo-shift", "b", { shift: true });
 	const patStep = {
 		name: "md-top-pattern-next",
 		steps: [
@@ -402,7 +404,9 @@ const MdJourneys = (() => {
 			{ say: "press M: the track is muted", act: (u, c) => { c.m0 = mutes(); document.activeElement?.blur?.(); u.key("m"); }, screen: c => ok(pressed(`#rail .th[data-sel="${c.t}"] .ms.m`), "M not lit"), machine: c => ok(mutes().includes(c.t), "machine mutes " + mutes()) },
 			{ say: "press M again", act: u => u.key("m"), machine: c => ok(same(mutes(), c.m0), "machine mutes " + mutes()) },
 			{ say: "press Alt+M: every track muted", act: u => u.key("m", { alt: true }), machine: () => ok(mutes().length === 16, "machine mutes " + mutes()), screen: () => ok($all("#rail .ms.m").every(b => b.getAttribute("aria-pressed") === "true"), "not every M lit") },
-			{ say: "press 0: every track unmuted", act: u => u.key("0"), machine: () => ok(!mutes().length, "machine mutes " + mutes()), screen: () => ok($all("#rail .ms.m").every(b => b.getAttribute("aria-pressed") === "false"), "an M lit") }
+			/* a RAM recorder's mute is its freeze: 0 leaves it alone (soloKeep), so a person's kit with a recorder keeps that one muted */
+			{ say: "press 0: every track unmuted (a RAM recorder left alone)", act: u => u.key("0"), machine: () => ok(!mutes().filter(i => !soloKeep().has(i)).length, "machine mutes " + mutes().join(",") + " (recorders " + [...soloKeep()].join(",") + ")"),
+				screen: () => ok($all("#rail .ms.m").every(b => b.getAttribute("aria-pressed") === "false" || soloKeep().has(+b.closest("[data-sel]")?.dataset.sel)), "an M lit") }
 		]
 	};
 	const liveRec = {
@@ -751,6 +755,20 @@ const MdJourneys = (() => {
 			esc
 		]
 	};
+	/* B-051, F3: GLOBAL › Reset to defaults (the shared panel): asked first, then the factory global read back */
+	const globalReset = {
+		name: "md-global-reset",
+		steps: [
+			{ say: "open GLOBAL, click TEMPO OUT ON and base channel +", act: async u => { await u.pick("engsel", "global"); await sleep(300); u.click(tog("tempoOut", true)); await sleep(300); u.click('#globpop [data-ga="base"][data-d="1"]'); },
+				machine: () => ok(Docs.global?.control?.tempoOut === true && Docs.global.baseChannel !== 0, "tempoOut " + Docs.global?.control?.tempoOut + ", base " + Docs.global?.baseChannel), within: 10000 },
+			{ say: "click Reset to defaults: it asks", act: u => u.click('#globpop [data-ga="reset"]'), screen: () => ok(dlgShown() && /Reset GLOBAL \d to the factory settings/.test($1("#dlg").textContent), "no question") },
+			{ say: "click Reset: the factory global, read back, on the page", act: u => u.click(dlgButton("Reset")),
+				machine: () => ok(Docs.global?.control?.tempoOut === false && Docs.global.baseChannel === 0, "tempoOut " + Docs.global?.control?.tempoOut + ", base " + Docs.global?.baseChannel),
+				screen: () => ok(pressed(tog("tempoOut", false)), "TEMPO OUT not OFF"), within: 10000 },
+			esc
+		],
+		async tidy(u) { if (dlgShown()) u.click(dlgButton("Cancel")); if (!$1("#globpop").hidden) u.key("Escape"); }
+	};
 	const globalRouting = {
 		name: "md-global-routing",
 		steps: [
@@ -1047,6 +1065,17 @@ const MdJourneys = (() => {
 		steps: [...songPlayheadSteps(name => Bridge.log("SHOT " + name)).map(s => s.act && /SHOT|shot/.test(String(s.act)) ? Object.assign({}, s, { hold: 2500 }) : s), { say: "done", act: () => Bridge.log("SHOT done") }], tidy: songPlayheadTidy };
 	/* the SysEx import panel as screenshots for a design review (scripts/mdmm-shots.sh with MDMM_SHOTS_JOURNEY=md-shots-import
 	   and GEARMULATOR_MDMM_SYX_FILE): the preview's tabs, then kits, patterns and songs imported (importing, the report) */
+	/* B-051: the GLOBAL panel as a screenshot (scripts/mdmm-shots.sh with MDMM_SHOTS_JOURNEY=md-shots-global) */
+	const shotsGlobal = { name: "md-shots-global", needs: () => !/md-shots/.test(location.search) ? "screenshots only when asked by name" : null,
+		steps: [{ say: "open GLOBAL", act: async u => { await u.pick("engsel", "global"); await sleep(800); shot("global-md"); }, screen: () => ok(!$1("#globpop").hidden, "closed"), hold },
+			{ say: "Esc", act: u => { u.key("Escape"); shot("done"); } }] };
+	/* 0.5 slice 5: the Sound page and the GEN bar as screenshots, beside the Monomachine Editor's (mm-shots-sound) */
+	const shotsSound = { name: "md-shots-sound", needs: () => !/md-shots/.test(location.search) ? "screenshots only when asked by name" : null,
+		steps: [go("sound"), sel(() => soundTrack()),
+			{ say: "the Sound page", act: async () => { await sleep(800); shot("sound-md"); Journey.snapshot("sound-md"); Bridge.log("MEASURE sound-md screens " + [...document.querySelectorAll(".snd .sg>.plot")].map(e => Math.round(e.getBoundingClientRect().height)).join(" ") + " page " + Math.round(document.querySelector(".snd").scrollHeight) + "/" + Math.round(document.querySelector("#main").clientHeight)); }, hold },
+			go("seq"),
+			{ say: "the GEN bar", act: async () => { await sleep(800); shot("gen-md"); Journey.snapshot("gen-md"); }, hold },
+			{ say: "done", act: () => shot("done") }] };
 	const shotsImport = { name: "md-shots-import", needs: () => !/md-shots/.test(location.search) ? "screenshots only when asked by name" : syxImportJ.needs(),
 		steps: [
 			openKits,
@@ -1079,6 +1108,23 @@ const MdJourneys = (() => {
 		],
 		async tidy() { if (menu.on()) closeDeskMenu(); }
 	};
+	/* B-054: every view, as macOS 12's WebKit 15 lays it out (Journey.viewJourneys: md-old-webkit in every run,
+	   md-shots-views for scripts/mdmm-snap.py --safari15) */
+	const ws = (name, extra) => ({ name, open: async u => { u.click(tab(name)); await until(() => S.ws === name, 3000); if (extra) await extra(u); } });
+	const esc1 = async u => { u.key("Escape"); await sleep(200); };
+	const viewJs = Journey.viewJourneys("md", [
+		ws("seq"), ws("sound", async u => { u.click(rail(soundTrack())); }), ws("mix"), ws("sampler"), ws("song"),
+		{ name: "kits", open: u => u.click("#kitf"), close: esc1 },
+		{ name: "patterns", open: u => u.click("#pat"), close: esc1 },
+		{ name: "global", open: u => u.pick("engsel", "global"), close: esc1 },
+		{ name: "audio", needs: () => { const o = $1('#engsel option[value="audio"]'); return o && !o.hidden && !o.disabled ? null : "no AUDIO / MIDI here (the plug-in in a host)"; }, open: u => u.pick("engsel", "audio"), close: esc1 },
+		{ name: "syx-import", needs: syxImportJ.needs, open: async u => { u.click("#kitf"); await sleep(300); u.click('#libpop [data-syx="import"]'); await until(() => syxKitIds().length > 0, 8000); },
+			close: async u => { $1('#syxpop [data-syxgo="close"]')?.click(); await sleep(200); await esc1(u); } },
+		{ name: "keys", open: u => { document.activeElement?.blur?.(); u.key("?", { shift: true }); }, close: esc1 },
+		{ name: "menu", open: u => menu.via(u), close: async () => closeDeskMenu() },
+		{ name: "step-menu", open: async u => { u.click(tab("seq")); await sleep(300); const t = soundTracks().find(x => trigsOf(x).length) ?? soundTrack(); u.rightClick(cell(t, trigsOf(t)[0] ?? 0)); }, close: async () => closeDeskMenu() },
+		{ name: "rom-card", open: u => u.pick("engsel", "rom"), close: async u => { u.click('#bootcard [data-bootrom="close"]'); await sleep(300); } }
+	]);
 	/* ---------- files dropped on the window (FOUNDATION.md, "Files dropped on the window") ---------- */
 	/* A drop from the Finder cannot be played from the page. The run's own files are dropped at a point of the page
 	   through the window's drop path from the native side on ("dropfiles <x> <y> syx|wav" in the page's log,
@@ -1122,7 +1168,7 @@ const MdJourneys = (() => {
 					within: 90000 }
 		]
 	};
-	const all = [bootCard, firstBeat, spaceTransport, tempoDrag, tapTempo, tapTempoB, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
+	const all = [bootCard, firstBeat, spaceTransport, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
 		paintUndo, accentSlide, lockLane, pagesJ, copyPaste, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec,
 		genJourney("md-gen-mutate-undo", false), genJourney("md-gen-defaults-mutate-undo", true), genKeys,
 		shapeSound, arrows, machinePick, soundCopy, editorDrag, controlAll, globalKey, songModeJ,
@@ -1131,8 +1177,8 @@ const MdJourneys = (() => {
 		libDialog, kitCopy, kitRename, kitClear, patGo, patClear, dialogEsc,
 		globalJ, globalRouting, globalMapNote, audioPanel, romCard, notePlay,
 		lockRamp, pasteMany, mutScope, songInspector, songDrag, ramView, setupChop, panBox, hwNoMachine, syxImportJ,
-		syxImportMute, shots, shotsSong, shotsImport, editorMenuJ, shotsMenu,
-		dropSyxJ, dropSampleJ];
+		syxImportMute, globalReset, shotsGlobal, shotsSound, shots, shotsSong, shotsImport, editorMenuJ, shotsMenu,
+		dropSyxJ, dropSampleJ, ...viewJs];
 
 	/* ---------- demos: journeys played for a camera (doc/modern-ux/DEMO-VIDEOS.md) ---------- */
 	/* Not in `all`: ?selftest=journey never runs them; ?selftest=demo-md-<name> does (Journey.demo), at a person's pace
@@ -1713,10 +1759,29 @@ const MdJourneys = (() => {
 		await sleep(1500);
 		return up;
 	}
+	/* Before the first journey: the active GLOBAL reset to the factory settings, through the GLOBAL panel's own Reset to
+	   defaults (DeskGlobal.host.reset: globalReset), and read back. The journeys run on a copy of the person's settings
+	   (scripts/mdmm-journeys.sh), whose machine may hold a personal or imported global (another base channel: the
+	   keyboard's notes miss the tracks); the journeys assume the factory one. */
+	async function prepare() {
+		const say = g => g ? `base ${g.baseChannel}, tempo out ${g.control?.tempoOut}` : "not read";
+		await until(() => !!Docs.global, 20000);
+		const n = Docs.global?.slot, was = say(Docs.global);
+		results.length = 0;
+		DeskGlobal.host.reset();
+		await until(() => results.some(r => r.op === "globalReset"), 20000);
+		const r = results.find(r => r.op === "globalReset");
+		const slot = n != null ? `GLOBAL ${n + 1}` : "the active GLOBAL";
+		if (!r || !r.ok) return `${slot} not reset (${r ? (r.errors || []).join("; ") : "no answer"}); the journeys run on it as it is (${was})`;
+		const back = await until(() => Docs.global?.baseChannel === 0 && Docs.global?.control?.tempoOut === false, 20000);
+		await until(idle, 10000);
+		await sleep(1000);
+		return `${slot} reset to the factory settings (GLOBAL › Reset to defaults): was ${was}, now ${say(Docs.global)}${back ? "" : " (not read back yet)"}`;
+	}
 	/* what the page last told the person: its toast and its error line */
 	const context = () => [...[["toast", $1("#toast")], ["error", $1("#errline")]].filter(([, e]) => e && !e.hidden && e.textContent.trim()).map(([k, e]) => `${k} "${e.textContent.trim().slice(0, 160)}"`),
 		...results.filter(r => r.ok === false).slice(-3).map(r => `refused ${r.op}: ${(r.errors || []).join("; ")}`)].join(", ");
-	if (/[?&]selftest=journey/.test(location.search)) setTimeout(() => Journey.run(all, { log: t => Bridge.log(t), ready, between, context }), 0);
+	if (/[?&]selftest=journey/.test(location.search)) setTimeout(() => Journey.run(all, { log: t => Bridge.log(t), ready, prepare, between, context }), 0);
 	if (/[?&]selftest=demo/.test(location.search)) setTimeout(() => Journey.demo(demos, { log: t => Bridge.log(t), ready, between, context }), 0);
 	return { all, demos };
 })();

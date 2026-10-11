@@ -69,8 +69,8 @@ juce_add_binary_data(mmJucePlugin_BinaryData SOURCES
 	${COMMON_ASSETS} "tus_settings_gui_Monomachine.rml"
 	"tus_settings_dspaudio_Monomachine.rml" ${MM_SKIN_ASSETS})
 
-createJucePlugin(mdJucePlugin "${MDMM_PRODUCT_NAME_MD}" TRUE "Tmdr" mdJucePlugin_BinaryData mdLib)
-createJucePlugin(mmJucePlugin "${MDMM_PRODUCT_NAME_MM}" TRUE "Tmno" mmJucePlugin_BinaryData mdLib)
+createJucePlugin(mdJucePlugin "${MDMM_PRODUCT_NAME_MD}" TRUE "${MDMM_AU_SUBTYPE_MD}" mdJucePlugin_BinaryData mdLib)
+createJucePlugin(mmJucePlugin "${MDMM_PRODUCT_NAME_MM}" TRUE "${MDMM_AU_SUBTYPE_MM}" mmJucePlugin_BinaryData mdLib)
 
 # MD/MM expose an optional stereo input to plug-in hosts. Starting the
 # standalone with that input active makes CoreAudio combine the built-in input
@@ -210,6 +210,9 @@ if(BUILD_TESTING)
 		# its GEN and MUTATE on MM data (skins/mmStudio/mmGenTest.js: the shared generators skins/shared/deskGen.js, 52-gen.js)
 		add_test(NAME mmGenTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/mmStudio/mmGenTest.js)
 		set_tests_properties(mmGenTest PROPERTIES LABELS "UnitTest")
+		# the piano roll's note lengths as the firmware plays them (skins/mmStudio/mmRollTest.js, the mockup's 58-roll.js, I-010)
+		add_test(NAME mmRollTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/mmStudio/mmRollTest.js)
+		set_tests_properties(mmRollTest PROPERTIES LABELS "UnitTest")
 		# its Sound page by function: every machine's knobs in exactly one group (skins/mmStudio/mmSoundTest.js, 85-sound-groups.js)
 		add_test(NAME mmSoundTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/mmStudio/mmSoundTest.js)
 		set_tests_properties(mmSoundTest PROPERTIES LABELS "UnitTest")

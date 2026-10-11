@@ -265,8 +265,10 @@ const Journey = (() => {
 		log(`JOURNEY ${j.name} ${reason ? "FAIL " + reason : "PASS"}`);
 		return !reason;
 	}
-	/* page: {log, ready: async () => true when the machine takes input, between: async (u) => the page's neutral
-	   state before each journey, context: () => what the page last said (its toast, its error line), added to a FAIL} */
+	/* page: {log, ready: async () => true when the machine takes input, prepare: async (u) => what it did (optional,
+	   once, after ready and before the first journey: logged "JOURNEYS before: ..."), between: async (u) => the page's
+	   neutral state before each journey, context: () => what the page last said (its toast, its error line), added to a
+	   FAIL} */
 	async function run(all, page) {
 		const list = wanted(all); if (!list) return;
 		const log = page.log;
@@ -277,6 +279,10 @@ const Journey = (() => {
 		/* a journey about the start itself ({boot: true}) runs from the page's start, before the machine is ready */
 		for (const j of list.filter(j => j.boot)) count(await runOne(j, log, page.context));
 		if (!await page.ready()) { log(`JOURNEYS DONE ${passed}/${list.length} (the machine was not ready)`); return; }
+		/* the machine's own state the journeys rely on, put right once before the first (prepare: what it did, in words) */
+		if (page.prepare && list.some(j => !j.boot)) {
+			try { log(`JOURNEYS before: ${await page.prepare(u)}`); } catch (e) { log(`JOURNEYS before: could not prepare: ${e.message}`); }
+		}
 		for (const j of list.filter(j => !j.boot)) {
 			try { if (page.between) await page.between(u); } catch (e) { log(`JOURNEY ${j.name} before: ${e.message}`); }
 			count(await runOne(j, log, page.context));
@@ -345,8 +351,12 @@ const Journey = (() => {
 		steps: [
 			{ say: "right-click the header's empty part: the editor's menu, its title the editor and version", act: hands => { if (menu.on()) closeDeskMenu(); hands.rightClick(menu.at); },
 				screen: () => menu.titled(product) },
-			{ say: "Esc, then right-click the track rail (outside the header, no menu of its own): the editor's menu there too",
-				act: async hands => { hands.key("Escape"); await until(() => !menu.on(), 1000); hands.rightClick("#rail", {}, 0.5, 0.97); },
+			/* the rail is on Sequence and Sound, not on Mix, Song or Control (where an earlier journey may have left the page) */
+			{ say: "Esc, then right-click the track rail (outside the header, no menu of its own; on Sequence when the workspace shown has no rail): the editor's menu there too",
+				act: async hands => { hands.key("Escape"); await until(() => !menu.on(), 1000);
+					const shown = () => { const r = $q("#rail"); return !!r && !r.hidden && r.getBoundingClientRect().height > 0; };
+					if (!shown()) { hands.click('#tabs [data-ws="seq"]'); if (!await until(shown, 3000)) throw new Error("no track rail on Sequence"); }
+					hands.rightClick("#rail", {}, 0.5, 0.97); },
 				screen: () => menu.titled(product) },
 			{ say: "focus Zoom, press →: its submenu, its first entry focused", act: (hands, c) => { c.z0 = menu.zoomSays(); $q(menu.id("zoom")).focus(); hands.key("ArrowRight"); },
 				screen: () => ok(DeskMenu.depth() === 2 && document.activeElement?.closest?.(".mpanel")?.dataset.lv === "1" && $q(menu.id("zoom")).getAttribute("aria-expanded") === "true",
@@ -375,5 +385,76 @@ const Journey = (() => {
 	const onScreen = () => document.visibilityState === "visible" ? null : "the editor window is not on screen (display asleep or covered): its canvases are not drawn";
 	/* for needs: real key events through the operating system (u.osKey) exist in the macOS plug-in only */
 	const osKeyPath = () => osKeys() ? null : "no way in for real key events here (the macOS plug-in has one, mdOsKeys.h)";
-	return { run, demo, ok, sleep, until, u, onScreen, osKeyPath, menu, editorMenuJourney };
+	/* The page as it looks now, for a screenshot taken outside the editor (scripts/mdmm-snap.py renders it in headless
+	   Chrome, where macOS gives the shell no Screen Recording): the DOM with each canvas's drawing as its background,
+	   the form values as attributes, the window's size; logged in pieces as "SNAP <name> <i>/<n> <text>". */
+	function snapshot(name) {
+		const doc = document.documentElement.cloneNode(true), live = [...document.querySelectorAll("canvas")], copies = [...doc.querySelectorAll("canvas")];
+		live.forEach((c, i) => { try { const d = c.width && c.height ? c.toDataURL() : ""; if (d && copies[i]) copies[i].style.backgroundImage = `url(${d})`, copies[i].style.backgroundSize = "100% 100%"; } catch (_) { } });
+		const liveSel = [...document.querySelectorAll("select")], copySel = [...doc.querySelectorAll("select")];
+		liveSel.forEach((x, i) => { const c = copySel[i]; if (c) [...c.options].forEach((o, k) => k === x.selectedIndex ? o.setAttribute("selected", "") : o.removeAttribute("selected")); });
+		doc.querySelectorAll("script").forEach(x => x.remove());
+		doc.setAttribute("data-snap-size", innerWidth + "x" + innerHeight);
+		doc.querySelector("body")?.setAttribute("style", (document.body.getAttribute("style") || "") + `;--snapzoom:${document.body.style.zoom || ""}`);
+		const text = JSON.stringify("<!doctype html>\n" + doc.outerHTML), size = 120000, n = Math.ceil(text.length / size);
+		for (let i = 0; i < n; i++) Bridge.log(`SNAP ${name} ${i + 1}/${n} ${text.slice(i * size, (i + 1) * size)}`);
+	}
+	/* B-054: the page as macOS 12's WebKit 15 lays it out, measured in this engine. Every <style> is read as WebKit 15
+	   reads it (DeskCompat.safari15: no subgrid, no :has(), the colour rewrite), the boxes measured, the stylesheets
+	   put back. What moved or changed size is listed, outermost first (an element inside one already listed and
+	   moved with it is left out): [] when the old engine lays the page out as this one. */
+	async function safari15Diff(slack = 2, tries = 3) {
+		const all = [...document.body.querySelectorAll("*")].filter(e => !e.closest("#journey-pointer"));
+		const boxes = () => all.map(e => { const r = e.getClientRects().length ? e.getBoundingClientRect() : null; return r && [r.left, r.top, r.width, r.height]; });
+		/* two frames and the fonts (a stylesheet read again declares its fonts again) */
+		const frame = async () => { await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); if (document.fonts) await document.fonts.ready; await sleep(60); };
+		const before = boxes(), sheets = [...document.querySelectorAll("style")], kept = sheets.map(x => x.textContent);
+		let after;
+		try { sheets.forEach(x => { x.textContent = DeskCompat.safari15(x.textContent); }); await frame(); after = boxes(); }
+		finally { sheets.forEach((x, i) => { x.textContent = kept[i]; }); await frame(); }
+		/* the page drew itself again meanwhile (its elements replaced): measure again */
+		if (all.some(e => !e.isConnected) && tries > 1) { await sleep(400); return safari15Diff(slack, tries - 1); }
+		const moved = [], seen = new Map();
+		all.forEach((e, i) => {
+			const a = before[i], b = after[i];
+			if (!a && !b) return;
+			if (!a || !b) { moved.push([e, b ? "shown" : "gone"]); seen.set(e, null); return; }
+			const d = b.map((v, k) => Math.round(v - a[k]));
+			if (d.every(v => Math.abs(v) <= slack)) return;
+			seen.set(e, d);
+			/* one already listed holds it and it only moved along (same size, same shift) */
+			for (let p = e.parentElement; p; p = p.parentElement) if (seen.has(p)) { const q = seen.get(p); if (!q || (Math.abs(d[2]) <= slack && Math.abs(d[3]) <= slack) || (q[0] === d[0] && q[1] === d[1])) return; }
+			moved.push([e, `${Math.round(a[2])}x${Math.round(a[3])} at ${Math.round(a[0])},${Math.round(a[1])} -> ${Math.round(b[2])}x${Math.round(b[3])} at ${Math.round(b[0])},${Math.round(b[1])}`]);
+		});
+		return moved.map(([e, what]) => describe(e) + " " + what);
+	}
+	/* Every view of an editor, two journeys from one list of {name, open(u, c), close(u, c), wait}:
+	     <prefix>-old-webkit   in every run: each view laid out as WebKit 15 does is the same as here (safari15Diff)
+	     <prefix>-shots-views  asked by name only: each view as a snapshot (scripts/mdmm-snap.py [--safari15] [--size])
+	   A view that cannot open here (needs) is skipped. */
+	function viewJourneys(prefix, views) {
+		/* each view: open, look, close (in one step, so the next view starts from a closed page); every view's
+		   differences are logged ("OLDWEBKIT <view> ...") and the last step fails on any of them */
+		const step = (v, shots) => ({ say: v.name, act: async (u, c) => {
+			c.diffs = c.diffs || {};
+			const why = v.needs ? v.needs() : null;
+			if (why) { Bridge.log(`OLDWEBKIT ${prefix}-${v.name} skipped: ${why}`); return; }
+			try {
+				await v.open(u, c); await sleep(v.wait ?? 700);
+				if (shots) snapshot(`${prefix}-${v.name}`);
+				else {
+					const d = await safari15Diff();
+					if (d.length) c.diffs[v.name] = d;
+					Bridge.log(`OLDWEBKIT ${prefix}-${v.name} ${d.length ? d.length + ": " + d.join("; ") : "same"}`);
+				}
+			} finally { if (v.close) { await v.close(u, c); await sleep(300); } }
+		} });
+		const verdict = { say: "every view as here", screen: c => { const k = Object.keys(c.diffs || {});
+			return ok(!k.length, k.map(n => `${n}: ${c.diffs[n].length} boxes laid out otherwise by WebKit 15 (${c.diffs[n].slice(0, 3).join("; ")})`).join(" | ")); } };
+		return [
+			{ name: `${prefix}-old-webkit`, needs: () => typeof DeskCompat === "undefined" || !DeskCompat.safari15 ? "no DeskCompat.safari15" : null, steps: [...views.map(v => step(v, false)), verdict] },
+			{ name: `${prefix}-shots-views`, needs: () => location.search.includes(`${prefix}-shots`) ? null : "screenshots only when asked by name", steps: views.map(v => step(v, true)) }
+		];
+	}
+	return { run, demo, ok, sleep, until, u, onScreen, osKeyPath, menu, editorMenuJourney, snapshot, safari15Diff, viewJourneys };
 })();

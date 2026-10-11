@@ -17,6 +17,9 @@
 # skin set) and its own home for everything macOS keeps under ~/Library (CFFIXED_USER_HOME, which NSHomeDirectory
 # and so JUCE follow; HOME does not move it): the standalone's settings (a copy of the person's, which hold the
 # machine's memory the journeys write to; MDMM_JOURNEY_SETTINGS=fresh starts without), the page's log, WebKit's data.
+# Before its first journey each editor resets the active GLOBAL of that sandboxed machine to the factory settings
+# (the GLOBAL panel's Reset to defaults; logged "JOURNEYS before: ..."): a copied machine may hold a personal or
+# imported global (CHANNEL SPAN 0, another base channel) that the mute and note journeys cannot work with.
 # Nothing is backed up or restored because nothing of the person's is written: two runs at once, or a run beside the
 # person's own editor, cannot touch ~/Library/Application Support/<editor>.settings or
 # ~/Documents/Gearmulator Preview/*/config.
@@ -224,7 +227,7 @@ for u in $UNITS; do
 		echo "== $NAME ($H)$( [ "$JOBS" -gt 1 ] && echo ", shard $k/$JOBS")"
 		if [ -f "$dir/journeys.txt" ]; then
 			if [ "${MDMM_JOURNEY_VERBOSE:-0}" = 1 ]; then cat "$dir/journeys.txt"
-			else grep -E "JOURNEY [^ ]+ (PASS|FAIL|SKIP)|JOURNEYS (start|DONE)" "$dir/journeys.txt"; fi
+			else grep -E "JOURNEY [^ ]+ (PASS|FAIL|SKIP)|JOURNEYS (start|before|DONE)" "$dir/journeys.txt"; fi
 			echo "   log: $dir/page.log"
 		fi
 		read -r result secs < "$dir/result" 2>/dev/null || result=ENDED

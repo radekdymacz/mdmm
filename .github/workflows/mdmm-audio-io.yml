@@ -13,7 +13,6 @@ on:
       - "source/3rdparty/**"
       - "source/JUCE"
       - "source/baseLib/**"
-      - "source/bridge/**"
       - "source/dsp56300"
       - "source/dsp56300/**"
       - "source/elektron/CMakeLists.txt"
@@ -28,10 +27,7 @@ on:
       - "source/juceRmlPlugin/**"
       - "source/juceRmlUi/**"
       - "source/juceUiLib/**"
-      - "source/mcpServerLib/**"
-      - "source/networkLib/**"
       - "source/pluginTester/**"
-      - "source/ptypes/**"
       - "source/mc68k"
       - "source/mc68k/**"
       - "scripts/macos/build_mdmm.sh"
@@ -52,7 +48,6 @@ on:
       - "source/3rdparty/**"
       - "source/JUCE"
       - "source/baseLib/**"
-      - "source/bridge/**"
       - "source/dsp56300"
       - "source/dsp56300/**"
       - "source/elektron/CMakeLists.txt"
@@ -67,10 +62,7 @@ on:
       - "source/juceRmlPlugin/**"
       - "source/juceRmlUi/**"
       - "source/juceUiLib/**"
-      - "source/mcpServerLib/**"
-      - "source/networkLib/**"
       - "source/pluginTester/**"
-      - "source/ptypes/**"
       - "source/mc68k"
       - "source/mc68k/**"
       - "scripts/macos/build_mdmm.sh"
@@ -123,13 +115,6 @@ jobs:
           -DGEARMULATOR_MSVC_EMBED_DEBUG_INFO=ON
           -DBUILD_TESTING=ON
           -Dgearmulator_BUILD_JUCEPLUGIN=OFF
-          -Dgearmulator_SYNTH_ELEKTRON=ON
-          -Dgearmulator_SYNTH_OSIRUS=OFF
-          -Dgearmulator_SYNTH_OSTIRUS=OFF
-          -Dgearmulator_SYNTH_VAVRA=OFF
-          -Dgearmulator_SYNTH_XENIA=OFF
-          -Dgearmulator_SYNTH_NODALRED2X=OFF
-          -Dgearmulator_SYNTH_JE8086=OFF
 
       - name: Build headless audio tests
         run: >-
@@ -185,19 +170,9 @@ jobs:
           -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13
           -DBUILD_TESTING=ON
           -Dgearmulator_BUILD_JUCEPLUGIN=ON
-          -Dgearmulator_BUILD_JUCEPLUGIN_CLAP=OFF
-          -Dgearmulator_BUILD_JUCEPLUGIN_VST2=OFF
           -Dgearmulator_BUILD_JUCEPLUGIN_VST3=ON
-          -Dgearmulator_BUILD_JUCEPLUGIN_LV2=OFF
           -Dgearmulator_BUILD_JUCEPLUGIN_AU=OFF
           -Dgearmulator_BUILD_JUCEPLUGIN_Standalone=OFF
-          -Dgearmulator_SYNTH_ELEKTRON=ON
-          -Dgearmulator_SYNTH_OSIRUS=OFF
-          -Dgearmulator_SYNTH_OSTIRUS=OFF
-          -Dgearmulator_SYNTH_VAVRA=OFF
-          -Dgearmulator_SYNTH_XENIA=OFF
-          -Dgearmulator_SYNTH_NODALRED2X=OFF
-          -Dgearmulator_SYNTH_JE8086=OFF
 
       - name: Build processor and artifact tests
         run: >-

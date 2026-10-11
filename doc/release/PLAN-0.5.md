@@ -57,6 +57,42 @@ In small slices, one commit each, each checked before the next (build, unit test
   three synthLib audio-thread fixes, the resampler latency).
 - Watch: upstream's new ColdFire V2 / MCF5206e model (the MD/MM main chip).
 
+## Monomachine at the Machinedrum's level (decided 2026-10-10: 0.5 = clean-up + MM parity)
+
+The gap list is [MM-PARITY-2026-10-09.md](../modern-ux/MM-PARITY-2026-10-09.md); the port order is
+[MM-PORT-PLAN.md](../modern-ux/MM-PORT-PLAN.md). On top of the clean-up, in this order:
+
+| # | Slice | Size |
+|---|---|---|
+| 1 | GLOBAL: the top-bar key and panel; MIDI channels first (B-051: an imported global left tracks without a channel, so sound edits were lost), then control in/out, master tune | M |
+| 2 | Step selection, ⌘C/V/X/D/A, move and extend, ⌘-drag copy, the step menu, fill moved to the menu, Delete and the LCD COPY/CLR/PASTE on the selection | M-L |
+| 3 | Piano roll: note length like Ableton/Digitakt (I-010), draw toggle and box select (I-007) | M |
+| 4 | The live-recording lock marker, the keyboard view's missing tips, the MD journeys the MM lacks | S-M |
+| 5 | The Sound page layout and GEN/MUTATE as on the MD, where the parity list marks them "a" (built on `feat/mm-slice5`: one source for both, MM-PARITY-2026-10-09.md §2b) | M |
+
+## Emulation CPU step 2 (in 0.5, Radek 2026-10-10)
+
+On top of the clean-up, each lever alone, behind the speed-ups switch, gated by the goldens
+([RESEARCH-emulation-cpu.md](../modern-ux/RESEARCH-emulation-cpu.md) §3, §5):
+
+| # | Lever | Gain (estimate) | Gate |
+|---|---|---|---|
+| 1 | Upstream batch: DSP loop-end check, serial-poll fast-forward (`7d69d7a9`, `e8989e41`) | ~5 % | bit-exact |
+| 2 | CMPM JIT fix (helica1 review: `cmpm a,b` turns A into \|A\|) | correctness | goldens; if they change, Radek listens |
+| 3 | L3: exact MD ESSI deadlines | ~10 % MD | changes MD audio once: Radek's listening sign-off |
+| 4 | L4: DSP idle-loop fast-forward (after L3; the NOP stubs first). Finished on perf/l4-sync-waits: the MD's two waits (p:3c over five blocks, the Port C sync at p:bb) estimated 14.6-14.9 % if skipped perfectly (go); measured, bit-exact, both levers against main: MD −7.0 % / −6.5 % host cycles (stopped / playing), MM −2.1 % / −3.6 %; retrain the PGO profile before the release (RESEARCH "L4 finished") | ~10-15 % | bit-exact against the L3 goldens |
+| 5 | L7, L9, L10: scheduler glue | ~5 % | bit-exact |
+| 6 | PGO in the release build: committed profile, both macOS slices, done on perf/pgo (RESEARCH "L6 measured") | MD −7.5 %, MM −5.5 % (measured) | goldens 24 + 6 equal; retrain when stale (CI.md "PGO") |
+| 7 | Try: render ahead (helica1), opt-in, with real-time priority and the audio workgroup | DAW thread lighter | delayed output equal |
+
+Around the core (branch `perf/audio-thread-spikes`, RESEARCH "Around the core"): of six suspected audio-thread
+costs outside the chips, two were real and are fixed bit-exact: the editor's sample list (built on the audio thread
+with 143 allocations, a slot up to 128 us: now a raw copy, at most 13 us a block, built by the reader) and the
+resampler's filter at host rates other than 44.1 kHz (8 copies per instance: now one per process, -40 % of the
+resampler's time). Measured and left: the save's lock hold (0.14 ms), the second machine during a first-run restore
+(once per installation; a worker thread is the fix if testers report crackle on the first project), the link queues
+and the patch-RAM lock (under 0.5 %).
+
 ## User fixes beside it
 
 From the Discord cross-check of 2026-10-10:
