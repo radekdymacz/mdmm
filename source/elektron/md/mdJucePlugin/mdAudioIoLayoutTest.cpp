@@ -647,9 +647,19 @@ namespace
 		require(processor.getOutputGain() == lowGain,
 			"Processor output gain setter did not publish its value");
 
-		std::array<float, 64> samples;
+		// I-021: a change is ramped across the next block (no step), from the gain before to the new one, on every
+		// output; the block after it is at the new gain throughout
+		std::array<float, 64> samples, extra;
 		samples.fill(1.0f);
-		std::array<float*, 1> outputs{samples.data()};
+		extra.fill(1.0f);
+		std::array<float*, 2> outputs{samples.data(), extra.data()};
+		processor.applyOutputGain(outputs, samples.size());
+		bool falls = true;
+		for(size_t i = 1; i < samples.size(); ++i)
+			falls = falls && samples[i] < samples[i - 1] && samples[i - 1] - samples[i] < 0.02f;
+		require(samples.front() < 1.0f && samples.front() > 0.98f && samples.back() == lowGain && falls && extra == samples,
+			"Processor did not ramp the output gain across the block to the published gain on every output");
+		samples.fill(1.0f);
 		processor.applyOutputGain(outputs, samples.size());
 		require(std::all_of(samples.begin(), samples.end(), [](const float value)
 		{

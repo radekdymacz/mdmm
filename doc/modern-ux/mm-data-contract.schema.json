@@ -1769,6 +1769,32 @@
         },
         {
           "type": "object",
+          "description": "I-021: the LCD's output meter and volume, every 250 ms while the page is up: peakL and peakR, the largest sample of the main output's left and right since the previous message, after the volume (linear, 1 = 0 dBFS; 0 when the audio does not run or the channel is not enabled); clip, whether a sample of any output (main and extra) was above 0 dBFS in that time; gainDb, the volume (the plug-in's output gain after the emulation, -60 to +6 dB in 0.1 dB steps; null when it is off). Set with the outputGain command.",
+          "required": ["type", "peakL", "peakR", "clip", "gainDb"],
+          "properties": {
+            "type": {
+              "const": "outputLevel"
+            },
+            "peakL": {
+              "type": "number",
+              "minimum": 0
+            },
+            "peakR": {
+              "type": "number",
+              "minimum": 0
+            },
+            "clip": {
+              "type": "boolean"
+            },
+            "gainDb": {
+              "type": ["number", "null"],
+              "minimum": -60,
+              "maximum": 6
+            }
+          }
+        },
+        {
+          "type": "object",
           "description": "B-035: how the host runs the plug-in's audio, once a second while the machine starts and for the first minute: the host's audio calls (blocks, bypassed ones apart) and the machine's speed (realtime: machine seconds per wall second, null before the first block). The start-up card says when a plug-in gets no audio, or the machine is slower than real time.",
           "required": ["type", "plugin", "seconds", "blocks", "bypassed", "blocksPerSecond", "realtime"],
           "properties": {
@@ -5819,6 +5845,32 @@
             },
             "on": {
               "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: the editor's volume in dB (I-021: the LCD's output meter): the plug-in's output gain on every output, after the emulation (the machine's own volume is untouched); -60 is off; saved with the project and the standalone's state",
+          "required": ["op", "db"],
+          "properties": {
+            "op": {
+              "const": "outputGain"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "db": {
+              "type": "number",
+              "minimum": -60,
+              "maximum": 6
             }
           },
           "additionalProperties": false

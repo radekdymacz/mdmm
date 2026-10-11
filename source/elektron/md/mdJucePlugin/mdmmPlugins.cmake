@@ -37,7 +37,7 @@ list(APPEND SOURCES
 	mdEditorPages.cpp mdEditorPages.h
 	mdDeskHost.cpp mdDeskHost.h
 	mdStandaloneApp.cpp
-	mdBootDiagnostics.cpp mdBootDiagnostics.h mdCpuLoad.h
+	mdBootDiagnostics.cpp mdBootDiagnostics.h mdCpuLoad.h mdOutputLevel.h
 	mdProcessArch.cpp mdProcessArch.h mdRosettaNotice.h
 	mdDeskSession.cpp mdDeskSession.h
 	mdMidiLearnCommands.cpp mdMidiLearnCommands.h
@@ -113,7 +113,8 @@ list(APPEND SOURCES
 	skins/shared/deskCompat.js skins/shared/deskCompatTest.js
 	skins/shared/deskZoom.js
 	skins/shared/deskAbout.js skins/shared/deskAboutTest.js
-	skins/shared/deskCpu.js skins/shared/deskCpu.css skins/shared/deskCpuTest.js skins/shared/deskTopFit.css)
+	skins/shared/deskCpu.js skins/shared/deskCpu.css skins/shared/deskCpuTest.js skins/shared/deskTopFit.css
+	skins/shared/deskVolume.js skins/shared/deskVolume.css skins/shared/deskVolumeTest.js)
 
 # P6: the editors' diagnostics (the log of the web view, the window chrome and the session's
 # state, and the pages' self-tests: mdDeskSelfTest.js, mmSelfTest.js) observe the editors. Off by
@@ -145,7 +146,7 @@ set(MD_SHARED_PAGE_FILES
 	"skins/shared/deskModal.js" "skins/shared/deskMenu.js" "skins/shared/deskCaps.js" "skins/shared/deskBoot.js" "skins/shared/deskSyx.js" "skins/shared/deskBridge.js"
 	"skins/shared/deskDrop.js" "skins/shared/deskDocs.js" "skins/shared/deskOverlay.js" "skins/shared/deskGen.js" "skins/shared/deskGenBar.js" "skins/shared/deskSoundLayout.js"
 	"skins/shared/deskKeys.js" "skins/shared/deskKeyView.js" "skins/shared/deskTogglePaint.js" "skins/shared/deskSelect.js"
-	"skins/shared/deskAudio.js" "skins/shared/deskGlobal.js" "skins/shared/deskCompat.js" "skins/shared/deskZoom.js" "skins/shared/deskAbout.js" "skins/shared/deskCpu.js")
+	"skins/shared/deskAudio.js" "skins/shared/deskGlobal.js" "skins/shared/deskCompat.js" "skins/shared/deskZoom.js" "skins/shared/deskAbout.js" "skins/shared/deskCpu.js" "skins/shared/deskVolume.js")
 file(GLOB MD_SKIN_ASSETS CONFIGURE_DEPENDS
 	"skins/mdStudio/*.rml" "skins/mdStudio/*.html" "skins/mdStudio/mdDesk.css" "skins/mdStudio/*.js"
 	"skins/mdStudio/fonts/*.woff2" "skins/mdStudio/fonts/*.ttf")
@@ -158,7 +159,7 @@ file(GLOB MM_SKIN_ASSETS CONFIGURE_DEPENDS
 	# the older-WebKit rewrite (B-001), first in the page's <head>; the page's zoom keys
 	"skins/shared/deskCompat.js" "skins/shared/deskZoom.js"
 	# the version the page shows (0.3.4), the CPU meter beside it (I-018)
-	"skins/shared/deskAbout.js" "skins/shared/deskCpu.js"
+	"skins/shared/deskAbout.js" "skins/shared/deskCpu.js" "skins/shared/deskVolume.js"
 	# files dropped on the window (macOS): what the page does with them
 	"skins/shared/deskDrop.js")
 # The tests are not the page, named one by one, not by a file-name pattern: the node tests never
@@ -177,7 +178,7 @@ set(MM_NODE_TESTS "skins/mmStudio/mmConvertTest.js" "skins/mmStudio/mmKeysTest.j
 # the shared page files' node tests (never in a glob, so never shipped); checked to be there
 set(SHARED_NODE_TESTS "skins/shared/deskGenTest.js" "skins/shared/deskOverlayTest.js" "skins/shared/deskBridgeTest.js"
 	"skins/shared/deskTogglePaintTest.js" "skins/shared/deskSelectTest.js" "skins/shared/deskKeysTest.js" "skins/shared/deskModalTest.js" "skins/shared/deskMenuTest.js" "skins/shared/deskCompatTest.js"
-	"skins/shared/deskKeymapTest.js" "skins/shared/deskKeyViewTest.js" "skins/shared/deskAboutTest.js" "skins/shared/deskCpuTest.js"
+	"skins/shared/deskKeymapTest.js" "skins/shared/deskKeyViewTest.js" "skins/shared/deskAboutTest.js" "skins/shared/deskCpuTest.js" "skins/shared/deskVolumeTest.js"
 	"skins/shared/deskSyxTest.js" "skins/shared/deskDropTest.js" "skins/shared/deskSoundLayoutTest.js")
 foreach(test ${MD_NODE_TESTS} ${MD_SELF_TESTS} ${MM_SELF_TESTS} ${MM_NODE_TESTS} ${SHARED_NODE_TESTS} ${MD_SHARED_PAGE_FILES})
 	if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${test}")
@@ -485,6 +486,13 @@ function(mdmm_plugin_targets)
 	set_tests_properties(mdCpuLoadTest PROPERTIES LABELS "UnitTest")
 	set_property(TARGET mdCpuLoadTest PROPERTY FOLDER "Elektron/test")
 
+	# I-021: the LCD's output meter and volume (mdOutputLevel.h, pure: the volume's range, a block's peak, the meter)
+	add_executable(mdOutputLevelTest mdOutputLevelTest.cpp mdOutputLevel.h)
+	target_link_libraries(mdOutputLevelTest PRIVATE Threads::Threads)
+	add_test(NAME mdOutputLevelTest COMMAND mdOutputLevelTest)
+	set_tests_properties(mdOutputLevelTest PROPERTIES LABELS "UnitTest")
+	set_property(TARGET mdOutputLevelTest PROPERTY FOLDER "Elektron/test")
+
 	add_executable(mdProcessArchTest mdProcessArchTest.cpp mdProcessArch.cpp)
 	# the diagnostics builds' GEARMULATOR_MDMM_FAKE_ROSETTA
 	target_compile_definitions(mdProcessArchTest PRIVATE MDMM_DIAGNOSTICS=1)
@@ -625,6 +633,9 @@ function(mdmm_plugin_targets)
 		# I-018: the CPU meter (what it shows for each state, the details' lines, the meter beside the version, its wiring)
 		add_test(NAME deskCpuPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskCpuTest.js)
 		set_tests_properties(deskCpuPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
+		# I-021: the LCD's output meter and volume (the meter's ballistics, the volume's drag, wheel and reset, its wiring)
+		add_test(NAME deskVolumePageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskVolumeTest.js)
+		set_tests_properties(deskVolumePageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
 		# the MD page's wiring on its own scripts: solo and the machine's mutes, renders held by a gesture, prepared mutes
 		add_test(NAME mdDeskPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/mdStudio/mdDeskPageTest.js)
 		set_tests_properties(mdDeskPageTest PROPERTIES LABELS "UnitTest" TIMEOUT 60)
