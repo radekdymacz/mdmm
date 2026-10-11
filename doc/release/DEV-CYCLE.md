@@ -106,7 +106,7 @@ no row matches runs everything of its tier.
 - Monomachine: 70 of 99 cases as the core says at first (64 s). Triaged on `fix/mm-intent-cases`: two editor bugs
   (B-062: the SYSEX RECV key macro made GLOBAL 6 active whenever another than GLOBAL 1 was, which took 11 GLOBAL, MIDI
   and multi map cases; B-063: an FX machine's input was read and dumped in a form the firmware does not keep, 5 cases),
-  the cases' base kit had a TRIG POS on its own track (the firmware keeps it as none; now refused by validation, 5 cases
+  the cases' base kit had a TRIG POS on its own track (the firmware keeps it as none (measured; kits that hold one still load), 5 cases
   followed from it), and 10 cases where the machine does more than the core's documents say, now in the case as
   `kitSlot`: a kit field with no live message (TRIG POS, legato, portamento, ASSIGN, MULTI TRIG) goes as a dump into
   the slot of the kit that plays and LOAD KIT, so that slot holds the working kit after (`stores`); a paste into that

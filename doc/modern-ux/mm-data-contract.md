@@ -234,7 +234,7 @@ is IGNORE; confirmed, it writes TRANSPORT ACCEPT (a global dump, so it waits for
 | Document | Limit |
 |---|---|
 | pattern | slot 0-127; length 2-64; multiplier 0-3; kit 0-127; swing 0-30; transposes -64..63; scale 0-3, key 0-11; arp play 0-4, mode 0-3, range 0-8, length 1-16, trigs 0-7; notes 0-127 (a note on a step without its trig is kept: OS 1.32B takes it, old backups hold it); **lock rows = locked parameters ≤ 62**, lock values 0-127; MIDI notes ≤ 400, chord notes ≤ 192, tracks 0-5 |
-| kit | slot 0-127; levels and page values 0-127; an OS 1.32 machine; input 0-6 or none; trigPos another track or none; assign page/dest 0-127 |
+| kit | slot 0-127; levels and page values 0-127; an OS 1.32 machine; input 0-6 or none; trigPos a track or none (OS 1.32B keeps one on its own track as none: measured); assign page/dest 0-127 |
 | song | slot 0-23; pattern 0-127, LOOP or END; pattern rows: repeats 0-63, 1 ≤ length ≤ 64, offset < length, tempo 30-300 or keep; loops: target < 200 |
 | global | slot 0-7; channels 0-15 or off; span 0-16 (0 in an OS 1.x backup); routing mode 0-2 |
 
