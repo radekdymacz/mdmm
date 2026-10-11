@@ -82,7 +82,11 @@ function globSend(f, v) {
 	else cmd("globalSet", { field: f, v });
 }
 Bridge.onMessage(m => {
-	if (GP.open && (m.type === "doc" && m.kind === "global" || m.type === "machine" || m.type === "result" && !m.ok)) setTimeout(drawGlobal, 20);
+	/* the machine document only when Copy filled the clipboard (Paste comes on): it comes often, a redraw each time would
+	   replace the page under the pointer */
+	const clip = m.type === "machine" ? m.doc?.clipboard?.global ?? null : GP.clip;
+	if (GP.open && (m.type === "doc" && m.kind === "global" || m.type === "result" && !m.ok || clip !== GP.clip)) setTimeout(drawGlobal, 20);
+	GP.clip = clip;
 	/* LEARN (0.6): the next note played on a MIDI keyboard (the plug-in's midiIn) maps to the armed track */
 	if (m.type === "midiIn" && GP.open && GP.learn != null) {
 		const t = GP.learn; GP.learn = null;
