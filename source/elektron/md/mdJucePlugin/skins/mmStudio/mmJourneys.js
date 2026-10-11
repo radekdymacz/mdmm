@@ -1499,15 +1499,15 @@ const MmJourneys = (() => {
 			if (c.t3 != null && synthMuted(2) !== c.t3) u.click('#rail .th[data-sel="2"] .ms.m');
 		}
 	};
-	/* B-051, F3: GLOBAL › Reset to defaults (asked first), and the slot keys */
+	/* B-051, F3: GLOBAL › Clear (Reset to defaults until 0.6; asked first), and the slot keys */
 	const gDoc = () => I().doc("global", machine().global?.current ?? 0);
 	const globalReset = {
 		name: "mm-global-reset", proves: ["MM-285", "MM-290", "MM-296"],
 		steps: [
 			{ say: "open GLOBAL, click Tempo out OFF and Channel span −", act: async (u, c) => { c.slot = machine().global?.current ?? 0; u.click("#globkey"); await sleep(300); u.click('#globpop [data-ga="tempoOut"][data-v="0"]'); await sleep(300); u.click('#globpop [data-ga="span"][data-d="-1"]'); },
 				machine: () => ok(gDoc()?.controlOut?.clock === 0 && gDoc()?.channels?.span === 5, "clock out " + gDoc()?.controlOut?.clock + ", span " + gDoc()?.channels?.span), within: 20000 },
-			{ say: "click Reset to defaults: it asks", act: u => u.click('#globpop [data-ga="reset"]'), screen: () => ok(dlgShown() && /Reset GLOBAL \d to the factory settings/.test($1("#dlg").textContent), "no question") },
-			{ say: "click Reset: the factory global, read back, on the page", act: u => u.click(dlgButton("Reset")),
+			{ say: "click Clear: it asks", act: u => u.click('#globpop [data-ga="reset"]'), screen: () => ok(dlgShown() && /Clear GLOBAL \d\? .* factory settings/.test($1("#dlg").textContent), "no question") },
+			{ say: "click Clear in the question: the factory global, read back, on the page", act: u => u.click(dlgButton("Clear")),
 				machine: () => ok(gDoc()?.controlOut?.clock === 1 && gDoc()?.channels?.span === 6 && gDoc()?.channels?.base === 0, "clock out " + gDoc()?.controlOut?.clock + ", span " + gDoc()?.channels?.span),
 				screen: () => ok(pressed('#globpop [data-ga="tempoOut"][data-v="1"]'), "Tempo out not ON"), within: 20000 }
 		],
@@ -1521,6 +1521,54 @@ const MmJourneys = (() => {
 			{ say: "click the first slot again", act: (u, c) => u.click(`#globpop .gslots [data-v="${c.s0}"]`), machine: c => ok(machine().global?.current === c.s0, "active " + machine().global?.current), within: 15000 }
 		],
 		async tidy(u, c) { if (c.s0 != null && machine().global?.current !== c.s0) { if ($1("#globpop").hidden) { u.click("#globkey"); await sleep(300); } u.click(`#globpop .gslots [data-v="${c.s0}"]`); await until(() => machine().global?.current === c.s0, 8000); } if (!$1("#globpop").hidden) u.key("Escape"); }
+	};
+	/* 0.6 (DESIGN-machine-menus.md §2, mm-06): GLOBAL is a page under the header, as wide as it; a workspace tab goes back */
+	const globalPage = {
+		name: "mm-global-page", proves: ["MM-026"],
+		steps: [
+			{ say: "click GLOBAL: the page under the header, as wide, the head on one line", act: u => u.click("#globkey"),
+				screen: () => { const p = $1("#globpop").getBoundingClientRect(), h = $1("header.top").getBoundingClientRect(), hd = $1("#globpop .gphead").getBoundingClientRect();
+					return ok(!$1("#globpop").hidden && p.top >= h.bottom - 1 && Math.abs(p.width - h.width) < 2 && hd.height < 48 && !!$1('#globpop [data-ga="copy"]') && !!$1('#globpop [data-ga="tune"]') && $all('#globpop [data-ga="out1"]').length === 9,
+						`page ${Math.round(p.top)}/${Math.round(h.bottom)} ${Math.round(p.width)}/${Math.round(h.width)}, head ${Math.round(hd.height)} px`); } },
+			{ say: "click the Mix tab: the page goes, Mix shows", act: u => u.click(tab("mix")), screen: () => $1("#globpop").hidden && !pressed("#globkey") ? onTab("mix") : ok(false, "page still open") }
+		],
+		async tidy(u) { if (!$1("#globpop").hidden) u.key("Escape"); u.click(tab("seq")); await sleep(200); }
+	};
+	/* 0.6: Copy and Paste of the active global (globalCopy, globalPaste), asked before the paste, one undo step */
+	const globalCopyPaste = {
+		name: "mm-global-copy-paste", proves: ["MM-285"],
+		steps: [
+			{ say: "open GLOBAL, click Copy: Paste is on", act: async (u, c) => { c.slot = machine().global?.current ?? 0; c.c0 = gDoc()?.controlOut?.clock; u.click("#globkey"); await sleep(300); u.click('#globpop [data-ga="copy"]'); },
+				screen: () => ok(!$1('#globpop [data-ga="paste"]')?.disabled, "Paste off"), machine: c => ok(c.c0 != null, "no global") },
+			{ say: "click Tempo out the other way", act: (u, c) => u.click(`#globpop [data-ga="tempoOut"][data-v="${c.c0 ? 0 : 1}"]`), machine: c => ok(gDoc()?.controlOut?.clock === (c.c0 ? 0 : 1), "clock out " + gDoc()?.controlOut?.clock), within: 20000 },
+			{ say: "click Paste: it asks", act: u => u.click('#globpop [data-ga="paste"]'), screen: () => ok(dlgShown() && /Paste over GLOBAL \d/.test($1("#dlg").textContent), "no question"), within: 6000 },
+			{ say: "click Paste in the question: the copied global is back", act: u => u.click(dlgButton("Paste")), machine: c => ok(gDoc()?.controlOut?.clock === c.c0, "clock out " + gDoc()?.controlOut?.clock), within: 20000 },
+			{ ...undoKey, say: "press Cmd+Z: the paste is undone", machine: c => ok(gDoc()?.controlOut?.clock === (c.c0 ? 0 : 1), "clock out " + gDoc()?.controlOut?.clock), within: 20000 }
+		],
+		async tidy(u, c) { if (dlgShown()) u.click(dlgButton("Cancel")); if (c.c0 != null && gDoc()?.controlOut?.clock !== c.c0) { if ($1("#globpop").hidden) { u.click("#globkey"); await sleep(300); } u.click(`#globpop [data-ga="tempoOut"][data-v="${c.c0}"]`); await until(() => gDoc()?.controlOut?.clock === c.c0, 15000); } if (!$1("#globpop").hidden) u.key("Escape"); }
+	};
+	/* 0.6: AUDIO › MASTER TUNE (masterTune: tenths of Hz) and CONTROL OUT1 (PROBES-manual-gaps.md P2) on the GLOBAL page */
+	const globalTune = {
+		name: "mm-global-tune", proves: ["MM-287", "MM-369"],
+		steps: [
+			{ say: "open GLOBAL, click + beside Master tune: 0.1 Hz up", act: async (u, c) => { c.t0 = gDoc()?.masterTune; u.click("#globkey"); await sleep(300); u.click('#globpop [data-ga="tune"][data-d="1"]'); },
+				machine: c => ok(gDoc()?.masterTune === c.t0 + 1, "tune " + gDoc()?.masterTune), screen: c => ok(($1('#globpop [data-ga="tune"][data-d="1"]')?.previousElementSibling?.textContent || "") === ((c.t0 + 1) / 10).toFixed(1) + " Hz", "shows " + $1('#globpop [data-ga="tune"][data-d="1"]')?.previousElementSibling?.textContent), within: 20000 },
+			{ say: "Shift-click −: 1 Hz down", act: u => u.click('#globpop [data-ga="tune"][data-d="-1"]', { shift: true }), machine: c => ok(gDoc()?.masterTune === c.t0 - 9, "tune " + gDoc()?.masterTune), within: 20000 },
+			{ ...undoKey, say: "press Cmd+Z twice: the tune as before", act: async u => { u.key("z", { cmd: true }); await sleep(500); u.key("z", { cmd: true }); }, machine: c => ok(gDoc()?.masterTune === c.t0, "tune " + gDoc()?.masterTune), within: 20000 }
+		],
+		async tidy(u) { if (!$1("#globpop").hidden) u.key("Escape"); }
+	};
+	const globalControlOut = {
+		name: "mm-global-control-out", proves: ["MM-295", "MM-250"],
+		steps: [
+			{ say: "open GLOBAL, click OUT for Sequencer: the global says so, the page warns the tracks play no sound", act: async (u, c) => { c.o0 = gDoc()?.controlOut?.sequencer; u.click("#globkey"); await sleep(300); u.click('#globpop [data-ga="out1"][data-k="sequencerOut"][data-v="1"]'); },
+				machine: () => ok(gDoc()?.controlOut?.sequencer === 1, "sequencer " + gDoc()?.controlOut?.sequencer),
+				screen: () => ok(pressed('#globpop [data-ga="out1"][data-k="sequencerOut"][data-v="1"]') && /Sequencer plays no sound here/.test($1("#globpop").textContent), "warning: " + ($all("#globpop .gwarn").map(w => w.textContent).join(" | ") || "none")), within: 20000 },
+			{ say: "click INT+OUT for Keyboard, then INT for Sequencer: no warning", act: async u => { u.click('#globpop [data-ga="out1"][data-k="keyboardOut"][data-v="2"]'); await sleep(400); u.click('#globpop [data-ga="out1"][data-k="sequencerOut"][data-v="0"]'); },
+				machine: () => ok(gDoc()?.controlOut?.sequencer === 0 && gDoc()?.controlOut?.keyboard === 2, "sequencer " + gDoc()?.controlOut?.sequencer + ", keyboard " + gDoc()?.controlOut?.keyboard),
+				screen: () => ok(!/plays no sound here/.test($1("#globpop").textContent), "a warning"), within: 20000 }
+		],
+		async tidy(u, c) { if (c.o0 != null && gDoc()?.controlOut?.sequencer !== c.o0) { if ($1("#globpop").hidden) { u.click("#globkey"); await sleep(300); } u.click(`#globpop [data-ga="out1"][data-k="sequencerOut"][data-v="${c.o0}"]`); await until(() => gDoc()?.controlOut?.sequencer === c.o0, 15000); } if (!$1("#globpop").hidden) u.key("Escape"); }
 	};
 	/* B-051: the GLOBAL panel as a screenshot (scripts/mdmm-shots.sh with MDMM_SHOTS_JOURNEY=mm-shots-global) */
 	const shotsGlobal = { name: "mm-shots-global", proves: [], needs: () => !/mm-shots/.test(location.search) ? "screenshots only when asked by name" : null,
@@ -1587,7 +1635,7 @@ const MmJourneys = (() => {
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, genKeys, mutScope,
 		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
-		blackKeys, rollPaint, rollDrawLength, rollBoxMove, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, dropSyxJ, globalChannels, globalReset, globalSlot, shotsGlobal, genBarFit, shotsSound, ...viewJs, ...cpuJs, ...volJs];
+		blackKeys, rollPaint, rollDrawLength, rollBoxMove, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, ...viewJs, ...cpuJs, ...volJs];
 
 	async function between(u) {
 		for (let i = 0; i < 3 && dlgShown(); i++) { u.key("Escape"); await sleep(200); }

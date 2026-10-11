@@ -52,7 +52,7 @@ const Keys = (() => {
 	   pressed, ["step"]), keys: ["Z"], mod: "cmd"|"alt"|"shift"|"cmd+shift"|"", group, does (text, or () => text when it shows state), when?: () => bool,
 	   run?: e => void, field?: true, hidden?: true (dispatched, but another entry describes it in the ? overlay),
 	   modal?: "keyspop" (it also runs while that dialog is the top one; every other entry is off while one is open)
-	     or "panel" (it also runs over any panel: the library, GLOBAL, AUDIO / MIDI; never over a question),
+	     or "panel" (it also runs over any panel: the library, AUDIO / MIDI, and the GLOBAL page; never over a question),
 	   code?: "KeyR" (matched on the physical key, e.code: with Alt or Cmd held macOS types another character)} */
 	function bind(entry) { list.push(Object.assign({ mod: "", when: null, field: false }, entry)); }
 	const modOf = e => Modifiers.of(e);
@@ -63,7 +63,7 @@ const Keys = (() => {
 	   free(): no dialog open and no text field focused, the rule of the keys that play and act on tracks. */
 	const modalTop = () => typeof Modal !== "undefined" && Modal.top ? Modal.top() : null;
 	const modalKind = () => typeof Modal !== "undefined" && Modal.kind ? Modal.kind() : null;
-	const passes = (b, top) => b.modal === top || (b.modal === "panel" && modalKind() === "panel");
+	const passes = (b, top) => b.modal === top || (b.modal === "panel" && (modalKind() === "panel" || modalKind() === "page"));
 	const free = () => !modalTop() && !document.activeElement?.closest?.("input,select,textarea,[contenteditable]");
 	/* The keys that reached the page, newest last ("cmd+C", "shift+?", "Space"): every keydown (noted first, before a
 	   dialog keeps it from the shortcuts) and every edit command taken as its key (below). The key probe's text. */
