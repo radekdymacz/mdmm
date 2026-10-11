@@ -2356,9 +2356,9 @@ body.dockother #rail .railparams>:is(.lpspace,.pagetabs,.pkcol),body.dockother #
  font:500 9px/1 var(--mono,ui-monospace,monospace);letter-spacing:0;text-transform:none;color:var(--print);white-space:nowrap;border-radius:2px}
 .grplabel .cpumeter:focus-visible{outline:2px solid var(--print);outline-offset:1px}
 .grplabel .cpumeter .cpulab{opacity:.7;letter-spacing:.06em}
-.grplabel .cpumeter .cpubar{position:relative;display:inline-block;width:24px;height:6px;border:1px solid var(--print);border-radius:1px;overflow:visible;background:var(--plate3)}
+.grplabel .cpumeter .cpubar{position:relative;display:inline-block;width:24px;height:6px;border:1px solid var(--print);border-radius:1px;overflow:hidden;background:var(--plate3)}
 .grplabel .cpumeter .cpufill{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--print);opacity:.5;transition:width .2s linear}
-.grplabel .cpumeter .cpuworst{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;left:0;background:var(--print);box-shadow:0 0 0 1px var(--plate)}
+.grplabel .cpumeter .cpuworst{position:absolute;top:0;bottom:0;width:1px;margin-left:-1px;left:0;background:var(--print)}
 .grplabel .cpumeter .cpuworst[hidden]{display:none}
 .grplabel .cpumeter .cpuval{display:none;position:absolute;right:0;top:15px;z-index:5;padding:2px 4px;border:1px solid var(--print);border-radius:2px;background:var(--plate);
  color:var(--print);font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:0;pointer-events:none}
