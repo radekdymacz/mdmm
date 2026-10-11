@@ -4,7 +4,7 @@
   🟡 rows of [FEATURE-MAP-MD.md](FEATURE-MAP-MD.md) and [FEATURE-MAP-MM.md](FEATURE-MAP-MM.md), checked against main at
   0.5.0. In `doc/release/PLAN-0.6.md` this is **slice 8, "build the gaps, wave by wave"**; the design review stood in
   for most of slice 7's triage (the exceptions are §4 of the design).
-- Each wave: one branch from main, both editors where both have the feature, its journeys (with `proves:` once the
+- Each wave: one branch from `feat/0.6-features` (the 0.6 integration branch; merged back there, and the branch goes to `release/0.6.0` then main), both editors where both have the feature, its journeys (with `proves:` once the
   0.6 feature data exists), its FEATURE-MAP rows flipped, played and accepted by Radek (dev loop), merged.
 - Checks: level 2 of CLAUDE.md's lifecycle only (the area's journeys in the background, unit tests for shared code,
   `--write-schema` + `page_contract_check.py`). Implementation by subagents; the coordinator briefs and reviews.
@@ -33,7 +33,7 @@
 | 6 | **SysEx and reset** | export kinds and ranges (`exportSyx {kinds, ranges}`), import SPECIFIC (`placeAt`) with the landing preview and the overwrite warning, VERIFY ONLY (`checkOnly`), Reset machine… (empty; MD factory after P6); MM DigiPRO kind after P4 | P (parts) | M |
 | 7 | **Recording** | live-record erase (hold Delete), MM step recording | – | M |
 | 8 | **MD sound and mix** | LEV on Mix (the existing `level`), machine audition in the picker | – | S |
-| 9 | **MM Perform: see and set up** (B-061) | Poly visible in the track rail (the focus track marked as six voices, the others shown silent) and a one-line hint on the Keyboard card; filter key tracking shown and switched in the Sound page's Filter group (the same `assign` hpf / lpf switch as Perform > Assign > KEY, not a second control); the Multi envelope card says it shapes multi-trig notes only and offers to switch the keyboard mode when it has no effect. Journeys prove the sound: six voices, key tracking off changes the filter, the envelope shapes multi-trig notes. Mock in mockup-next with the other waves | – | S-M |
+| 9 | **MM Perform: see and set up** (B-064) | Poly visible in the track rail (the focus track marked as six voices, the others shown silent) and a one-line hint on the Keyboard card; filter key tracking shown and switched in the Sound page's Filter group (the same `assign` hpf / lpf switch as Perform > Assign > KEY, not a second control); the Multi envelope card says it shapes multi-trig notes only and offers to switch the keyboard mode when it has no effect. Journeys prove the sound: six voices, key tracking off changes the filter, the envelope shapes multi-trig notes. Mock in mockup-next with the other waves | – | S-M |
 | 10 | **MM MKII look** (I-023) | The Monomachine's MKI / MKII plate key changes the whole look, as on the Machinedrum: MKII = brushed silver panel, black window round the LCD with the red dot logo, a positive LCD (bluish-white ground, black pixels), black keys with white ENTER / EXIT and track keys, a red COPY key, dark brown label bars, red and yellow LEDs (sampled from product photos). MKI keeps today's look. The plate key says what it does (tooltip, the toast names the look) so the switch is found; both editors' plate keys behave the same. Light and dark both. Mock in mockup-next with the other waves | – | M |
 
 Order: P and 1 at once; then 2, 3, 4 (separate lanes); then 5, 6, 7, 8, 9, 10. At most 3 agents at once.

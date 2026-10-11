@@ -10,6 +10,11 @@
 
 Done before that order was set: slices 1 to 4, the guide's chapters 1-13 (MD) and 1-19 (MM).
 
+## Execution (started 2026-10-11, after 0.5.1 and the dev-cycle work)
+
+- Integration branch `feat/0.6-features` (rebased on main 249ba623a; the old history is `backup/0.6-before-rebase`). Each piece of work: its own branch and worktree from it, checks by doc/release/DEV-CYCLE.md (tier 1 before Radek plays, tier 2 before a merge), Radek plays and accepts, merged back into `feat/0.6-features`.
+- At most 3 agents at once. Batch 1: wave P (probes), wave 1 (song slots; continues the paused worktrees), the fit fix (B-061, B-065, B-066). Then waves 2-4, then 5-8, then 9-10 (mock-ups to Radek first), slice 5 journeys and the appendices alongside.
+
 ## Summary
 
 - **0.5.x carries the CPU work** (0.5.1, 0.5.2, 0.5.3: the levers of [RESEARCH-emulation-cpu.md](../modern-ux/RESEARCH-emulation-cpu.md), each on its own). 0.6 has no CPU work.
@@ -101,7 +106,7 @@ Order of work: 1 → 2 → (3 and 4 at once) → (5 and 6 at once) → 7 → (8 
 
 ## From testers (in 0.6)
 
-- B-064: Monomachine Poly, filter key tracking and the Multi envelope: easy to see and set up, journeys that prove the sound. Wave 9 of doc/modern-ux/PLAN-manual-gaps.md (branch docs/manual-feature-map).
+- B-064: Monomachine Poly, filter key tracking and the Multi envelope: easy to see and set up, journeys that prove the sound. Wave 9 of doc/modern-ux/PLAN-manual-gaps.md.
 - B-063: window resizing (waiting for the tester's host and screenshots).
 - B-062: the Perform keyboard's stuck key light; I-002: light keys for MIDI in.
 - B-065: the LCD keeps one size on every workspace. B-061 (from 0.5.1, now also a user report): the top bar's MKI / MKII key cut off at the right edge; fit the bar as the MM GEN bar does, on both editors. B-066 (0.5.1 regression): the LCD's PLAY value cut off on the MM. One measured fit for the top bar and LCD row 2 fixes B-061, B-065 and B-066, with a journey that checks every slot and key on every workspace.
