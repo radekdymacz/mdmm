@@ -65,7 +65,7 @@ no row matches runs everything of its tier.
   history, the library and the read-back are the real code. Every command the page sends is checked against the contract
   schema and recorded. Its fixture: the committed test dumps, 16-step patterns, kits named KIT nn, four-row songs,
   factory globals. All 133 page journeys of both editors pass in about a minute at `--jobs 4`.
-- **Journey tiers.** `deskJourney.js` `TIERS`: 10 host journeys, 29 machine journeys, every other one a page journey; a
+- **Journey tiers.** `deskJourney.js` `TIERS`: 10 host journeys, 32 machine journeys (the tap tempo ones too: they time key presses), every other one a page journey; a
   selector's `~page`, `~machine`, `~host`. `mdmm-journeys.sh --tier` (the standalone, default all) and `--vst3-tier`
   (default host). `deskJourneyTiersTest.js` keeps the table on real names.
 - **Journey fixes.** The runner closes what an earlier journey left open (and logs it); the speed-ups journey waits for

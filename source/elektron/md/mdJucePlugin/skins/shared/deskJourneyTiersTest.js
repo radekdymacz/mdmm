@@ -17,6 +17,7 @@ for (const f of ["../mdStudio/mdDeskJourneys.js", "../mmStudio/mmJourneys.js", "
 	const t = fs.readFileSync(path.join(__dirname, f), "utf8");
 	for (const m of t.matchAll(/name: *[`"](?:md-|mm-|\$\{prefix\}-)([\w-]+)[`"]/g)) names.add(m[1]);
 	for (const m of t.matchAll(/(?:editorMenuJourney|viewJourneys)\("(?:md|mm)-?([\w-]*)"/g)) if (m[1]) names.add(m[1]);
+	for (const m of t.matchAll(/tapWith\("(?:md|mm)-([\w-]+)"/g)) names.add(m[1]);	/* tapWith(name, key): the tap tempo journeys */
 }
 names.add("old-webkit"); names.add("shots-views");	/* viewJourneys(prefix): <prefix>-old-webkit, <prefix>-shots-views */
 const listed = [...J.TIERS.host, ...J.TIERS.machine];

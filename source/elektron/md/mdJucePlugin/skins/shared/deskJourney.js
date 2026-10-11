@@ -228,7 +228,8 @@ const Journey = (() => {
 	              answers (decision 2026-10-11: the firmware's side is proven by the command -> firmware tests and the
 	              machine journeys), so it runs in the page tier (scripts/mdmm-page.mjs: headless Chrome, a stub host)
 	     machine  needs the firmware or the native editor: boot, playing, recording, the sampler, SysEx and file drops,
-	              the engine and ROM cards, real OS keys, the audio panel, WebKit's own layout
+	              the engine and ROM cards, real OS keys, the audio panel, WebKit's own layout; and tap tempo (it times
+	              key presses, so it runs where nothing else does)
 	     host     a machine journey that also depends on the plug-in host (standalone or VST3): the only ones the VST3
 	              host runs (decision 2026-10-11) */
 	const TIERS = {
@@ -237,7 +238,10 @@ const Journey = (() => {
 		machine: ["seq-first-beat", "seq-queue-while-playing", "seq-live-record", "seq-grid-record", "sampler-setup-undo", "sampler-audition",
 			"sampler-ram-view", "sampler-setup-chop", "lib-syx-import", "lib-syx-import-mute", "song-mode", "keys-play-notes", "keys-black-keys",
 			"perform-keyboard", "engine-hw-no-machine", "global-tempo-out", "audio-panel", "drop-syx", "drop-sample", "old-webkit",
-			"sound-machine-stays", "shots", "shots-cpu", "shots-global", "shots-import", "shots-menu", "shots-song", "shots-sound", "shots-views"]
+			"sound-machine-stays",
+			/* they time key presses against the journey's clock: in the page tier, beside the gate's busy lane 1, the page
+			   and the journey's clock drifted apart by several per cent (2026-10-11) */
+			"keys-tap-tempo", "keys-tap-tempo-b", "keys-tap-tempo-shift", "shots", "shots-cpu", "shots-global", "shots-import", "shots-menu", "shots-song", "shots-sound", "shots-views"]
 	};
 	const tierOf = j => j.tier || Object.keys(TIERS).find(k => TIERS[k].includes(j.name.replace(/^(md|mm)-/, ""))) || "page";
 	/* a selector's "~tiers" (journey~page, journey-seq-*~machine): page; machine (machine and host); host; any of
