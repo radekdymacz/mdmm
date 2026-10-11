@@ -10,7 +10,8 @@ fix paid the price of a release. This file is the rule since 0.4.0.
 2. `scripts/mdmm-check.sh` (tiers 0-2, [DEV-CYCLE.md](DEV-CYCLE.md)): what changed decides what runs, from seconds (a
    page file) to under 2 minutes (the page journeys of that area, no ROM).
 3. `scripts/mdmm-dev.sh play md` (or `mm`): builds that one standalone and opens it. Radek plays with it and accepts it.
-4. Merge to main. The nightly gate runs it on this Mac that night.
+4. Merge to main. After a big merge (and at the start of a release) Claude runs the full gate on main when the Mac is quiet
+   (`scripts/mdmm-full-gate.sh`).
 
 ## What CI runs
 
@@ -19,7 +20,7 @@ fix paid the price of a release. This file is the rule since 0.4.0.
 | Push to `main` | One light job in the background: automation core, Linux, unit tests, no memory checker. Nobody waits for it. |
 | Push to `release/0.*` | The full suite once: Editors on macOS, Windows (LTCG, what ships) and Linux, each with its tests in a job of their own beside the package (macOS: an arm64 tree without ThinLTO; the package job links only the plug-ins with ThinLTO), core with ASan/UBSan and the transport diagnostics, shared controller. A newer push cancels the older run. (The audio I/O workflow is folded into the Editors' test jobs.) |
 | Tag `mdmm-v*` on the tested release-branch commit | Finds that branch run and reuses its packages: makes the installers, tests them, attaches them. No second build. |
-| Nightly, 02:00 UTC (04:00 Polish summer time) | The full suite on main, only if main changed in the last 24 hours (`mdmm-nightly.yml`), Windows with LTCG so main's sccache holds what a release branch builds. Nobody waits; a red run is there in the morning. On this Mac the local gate runs that night too (`scripts/mdmm-nightly.sh`, [LOCAL-GATE.md](LOCAL-GATE.md)). |
+| Nightly, 02:00 UTC (04:00 Polish summer time) | The full suite on main, only if main changed in the last 24 hours (`mdmm-nightly.yml`), Windows with LTCG so main's sccache holds what a release branch builds. Nobody waits; a red run is there in the morning. The local gate is not scheduled: it runs by hand ([LOCAL-GATE.md](LOCAL-GATE.md)). |
 | By hand | Every workflow has Run workflow; the release installers have a dry run. |
 
 Off: upstream's Elektron workflows (disabled in Actions), the per-push installer dry run.
@@ -30,9 +31,9 @@ Off: upstream's Elektron workflows (disabled in Actions), the per-push installer
    If the emulation changed since the PGO profile was trained (the build says "stale", below), retrain it on the
    branch first: `scripts/macos/train_mdmm_pgo.sh`, then commit the two files it writes.
 2. Push the branch. The full CI runs once.
-3. The local gate: `scripts/mdmm-nightly.sh --plan` names the last green nightly and prints the gate command for the
-   stages the diff since touches (`MDMM_GATE_ONLY=...`); run it. Without a green nightly in the branch's history, the
-   full `scripts/mdmm-local-gate.sh`.
+3. The local gate: `scripts/mdmm-full-gate.sh --plan` names the last green full gate on main and prints the gate command
+   for the stages the diff since touches (`MDMM_GATE_ONLY=...`); run it. Without a green full gate in the branch's
+   history, the full `scripts/mdmm-local-gate.sh`.
 4. A failure: fix it, push, and re-run only the failed stage (`MDMM_GATE_ONLY=<stage>`; in Actions, Re-run failed jobs).
 5. Tag the branch head (`git tag -a mdmm-v0.x.y -m "Machinedrum Editor + Monomachine Editor 0.x.y"`) and push the tag.
    The tag must be on the commit CI tested, or it builds again.

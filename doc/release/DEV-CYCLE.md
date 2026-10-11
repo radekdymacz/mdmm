@@ -15,7 +15,7 @@ journeys (7d) 32 minutes, one editor at a time, the VST3 host replaying the stan
 CI to green 26.5 minutes, the macOS package job the critical path (two slices, ThinLTO links of the plug-ins and of the
 test programs). Bugs B-001 to B-058: about 35 found by testers and Radek, 6 by journeys, 5 by the firmware tests, 3 by
 CI's start tests; the goldens, rt-check, core capacity, soak, pluginval and auval logged none (they guard the CPU work:
-kept, run nightly and when emulation code changes). The 0.5.1 gate's failures were a cascade (md-dev-speedups left the
+kept, run in the full gate and when emulation code changes). The 0.5.1 gate's failures were a cascade (md-dev-speedups left the
 CPU details open over md-lcd-volume), a journey that needs a sample the sandbox does not have (md-sampler-audition), and
 read-back timing (md-mix-ms-off, md-sampler-setup-undo, md-lib-kit-copy-paste-undo: that one an unanswered Overwrite
 question).
@@ -34,8 +34,9 @@ question).
 1. **A page journey's "machine" check means the core's documents.** The page tier runs the page journeys without a ROM:
    their `machine:` checks read the documents the core publishes. The firmware side is proven by the table-driven
    command -> firmware tests (the intent cases) and the machine journeys.
-2. **The full local gate runs nightly on Radek's Mac** from a local schedule (launchd, not a GitHub runner). A release
-   needs a green nightly on main plus the gate stages its diff touches.
+2. **The full local gate runs on main, apart from a release.** The proposal had it nightly from a local schedule;
+   Radek then chose no scheduled job: Claude runs it by hand when the Mac is quiet (at the start of a release, after a
+   big merge). A release needs the last green full gate on main plus the gate stages its diff touches.
 3. **The VST3 host runs only the host-specific journeys.**
 
 And: no release after 0.5.1 until this is done.
@@ -47,8 +48,8 @@ And: no release after 0.5.1 until this is done.
 | 0 Save | each save, or by hand | `scripts/mdmm-check.sh --save` (`--watch`: on every save) | the pages against the contract and their mockups, the unit tests of what changed (built first), without the Slow and Timing ones | under 30 s | 2 s (a page file), 4 s (a desk file, rebuilt from ccache) |
 | 1 Did I break it | before Radek plays a build, before a merge | `scripts/mdmm-check.sh` | tier 0 with every test of what changed, the page journeys of that area, one golden per machine when emulation code changed | under 2 min | 18 s (a sequencer page change: 28 unit tests, 18 page journeys) |
 | 2 Branch check | before a merge, in the background, when desk or emulator code changed | `scripts/mdmm-check.sh --branch` | every unit test, every page journey, the firmware tests and the machine journeys of the area, every golden when emulation changed | under 10 min | to measure |
-| 3 Nightly | each night on main | `scripts/mdmm-nightly.sh` (launchd) | the full local gate, the soak on Sundays | nobody waits | to measure |
-| 4 Release | cut from a commit with a green nightly | `scripts/mdmm-nightly.sh --plan`, then the command it prints | the gate stages the diff since that nightly touches (`MDMM_GATE_ONLY`), the release CI, the tag | about 30 min, mostly CI | to measure |
+| 3 Full gate on main | by hand, on a quiet Mac: the start of a release, after a big merge | `scripts/mdmm-full-gate.sh` (`--soak` for the soak) | the full local gate | nobody waits | to measure |
+| 4 Release | from main after a green full gate | `scripts/mdmm-full-gate.sh --plan`, then the command it prints | the gate stages the diff since that run touches (`MDMM_GATE_ONLY`), the release CI, the tag | about 30 min, mostly CI | to measure |
 
 What changed decides what runs: `scripts/mdmm-affected.tsv`, one row per path pattern (the first one a path matches):
 unit tests, firmware tests, page journeys, machine journeys, goldens, and the gate stages a release runs for it. A path
@@ -81,9 +82,9 @@ no row matches runs everything of its tier.
 - **The gate in lanes.** Stage 1 with ccache; the journeys' diagnostics build in the background while the release
   tree's stages run; the new stage 2c (the page tier); 7d the standalone's machine journeys and the VST3 host's host
   journeys at `--jobs 4`; the timing stages (5b, 6a, 6b, 6c) last, alone.
-- **The nightly.** `scripts/mdmm-nightly.sh`: main as origin has it, in its own worktree (`temp/nightly/main`), on a
-  quiet Mac on mains power, `history.tsv` and `last-green`, a notification when red. `--install` prints the launchd
-  commands (`scripts/macos/mdmm-nightly.plist`, 02:30); it is installed by hand.
+- **The full gate on main.** `scripts/mdmm-full-gate.sh`: main as origin has it, in its own worktree
+  (`temp/full-gate/main`), refused on a busy Mac, `history.tsv` and `last-green`; `--plan` the release rule, `--status`
+  the last runs. No scheduled job.
 - **CI.** Tests in their own jobs (macOS: arm64 without ThinLTO; Linux: beside the package), the macOS package job
   builds only the plug-ins with ThinLTO, `mdmm-audio-io.yml` folded into the Editors, and the CI nightly builds Windows
   with LTCG on main so a release branch's LTCG package finds main's cache.

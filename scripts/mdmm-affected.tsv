@@ -7,8 +7,8 @@
 #   page      page journeys (scripts/mdmm-page.mjs selector: md-*, mm-*, * both editors)
 #   machine   machine journeys for the branch check (scripts/mdmm-journeys.sh --tier machine selector, ROMs needed)
 #   goldens   yes: the change can change the sound (emulation code): the playing goldens run
-#   gate      the local gate's stages a release runs for it on top of the last green nightly (scripts/mdmm-nightly.sh
-#             --plan; MDMM_GATE_ONLY), "all" for every stage; stage 1, the build, always runs
+#   gate      the local gate's stages a release runs for it on top of the last green full gate on main
+#             (scripts/mdmm-full-gate.sh --plan; MDMM_GATE_ONLY), "all" for every stage; stage 1, the build, always runs
 # A path no row matches runs every unit test and every page journey (the safe default), and every gate stage.
 # path	ctest	firmware	page	machine	goldens	gate
 # --- the pages
