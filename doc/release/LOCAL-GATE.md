@@ -2,9 +2,10 @@
 
 `scripts/mdmm-local-gate.sh` says red or green for a release candidate, on the Mac that has the firmware. GitHub CI
 never has a ROM, so it proves that the editors start and show their page, and nothing about a machine actually
-running. The gate does the rest. **It runs every night on main** (`scripts/mdmm-nightly.sh`, from launchd on this Mac:
-[DEV-CYCLE.md](DEV-CYCLE.md)), and **a release is tagged on a green nightly plus the gate stages its diff touches**
-(`scripts/mdmm-nightly.sh --plan` prints the command; without a green nightly, the full gate) ([CLAUDE.md](../../CLAUDE.md),
+running. The gate does the rest. **It runs in full on main by hand** (`scripts/mdmm-full-gate.sh`: Claude runs it when the Mac is quiet, at the start of
+a release or after a big merge; no scheduled job, [DEV-CYCLE.md](DEV-CYCLE.md)), and **a release is tagged on the last
+green full gate on main plus the gate stages its diff touches** (`scripts/mdmm-full-gate.sh --plan` prints the command;
+without one, the full gate) ([CLAUDE.md](../../CLAUDE.md),
 Releases; [marketing/LAUNCH-CHECKLIST.md](../../marketing/LAUNCH-CHECKLIST.md)); the tag's CI then repeats the part that needs
 no ROM on the shipped files ([FOUNDATION.md](../modern-ux/FOUNDATION.md), CI start tests).
 

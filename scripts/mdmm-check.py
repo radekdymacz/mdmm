@@ -214,7 +214,7 @@ def goldens_quick(runner):
 
 
 def gate_plan(base, rows):
-	"""the local gate's stages for what changed between _base (the last green nightly) and HEAD: MDMM_GATE_ONLY"""
+	"""the local gate's stages for what changed between _base (the last green full gate on main) and HEAD: MDMM_GATE_ONLY"""
 	files = sorted(f for f in git("diff", "--name-only", base, "HEAD") if f)
 	stages = {"1"}
 	for f in files:
