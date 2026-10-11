@@ -113,7 +113,10 @@ headless, and the gate checks that instead of assuming it:
   every window, and its standalone zeroes its output after the machine made it (`md::DeskDevice::setSilentOutput`): the audio
   device still runs, so the emulation keeps its timing, but nothing is sent to it, whichever output your saved audio setup names. The journeys use a copy of your settings; on this Mac they name no input device (`audioInputDeviceName` is empty, `shouldMuteInput` is 1)
   and JUCE's standalone does not open one by default (`mdAudioIoLayoutTest` pins that). If your saved setup ever names an input, start the gate with
-  `MDMM_JOURNEY_SETTINGS=fresh` in the environment (no copy of your settings). The gate never opens a microphone or an input. A real "null" output device does not exist
+  `MDMM_JOURNEY_SETTINGS=fresh` in the environment (no copy of your settings). Before its first journey each editor resets the
+  active GLOBAL of its sandboxed machine to the factory settings through the GLOBAL panel's Reset to defaults (the report's
+  `JOURNEYS before:` line says what it was): a copied machine may hold a personal or imported global (CHANNEL SPAN 0 after a
+  backup import) that fails the mute and note journeys. Your own settings and data root are never written. The gate never opens a microphone or an input. A real "null" output device does not exist
   in JUCE or macOS (no device means no callbacks, and the emulation is driven by them), so the zeroed output is the quiet choice.
 - **Muted as well, whatever the setup.** For 7d (and for `updater-manual.sh run`) `output muted true` is set with `osascript`, the
   previous muted state and volume remembered in `temp/local-gate/audio-state.txt`, and put back after the stage, on Ctrl-C, on

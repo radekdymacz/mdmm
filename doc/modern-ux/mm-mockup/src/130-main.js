@@ -13,6 +13,12 @@ let CLIP=null;
 /* the copied page into track t's steps a..b (its notes, slides and locks); the locks of parameters its machine has not are skipped (their count) */
 function pastePage(t,a,b){const tr=trk(t);for(let i=a;i<b;i++){tr.steps[i]=CLIP.steps[i-a]&&JSON.parse(JSON.stringify(CLIP.steps[i-a]));tr.slide.delete(i);clearStepLocks(t,i)}CLIP.slide.forEach(x=>{if(x+a<b)tr.slide.add(x+a)});
  let skip=0;CLIP.locks.forEach(([pid,st])=>{if(!pname(t,pid)){skip++;return}st.forEach(([s,v])=>{if(s+a<b)setLock(t,pid,s+a,v,true)})});return skip}
+/* copied steps (a selection: one track's or a block's, not COPY PAGE) pasted with no step selected: their first step on
+   step a of track t, only the copied steps, as the Machinedrum pastes; the rest of the page stays (no "to": the core
+   puts the block down, its own length). False (and why) when no row lands on a track of its kind. */
+function pasteCopied(t,a){const land=StepSel.landing(clipSize(),t,a,SEL_TRACKS,S.len);
+ if(!CLIP.rows.slice(0,land.n).some((r,k)=>r.midi===isMidiT(t+k))){toast("Synth steps paste onto synth tracks, MIDI steps onto MIDI tracks.");return false}
+ edit("pasteSteps",{t,from:a});toast(`Pasted ${CLIP.rows.length>1?CLIP.rows.length+" tracks, ":""}${land.to-land.from} step(s) at step ${a+1} of ${tLabel(t)}.`);return true}
 /* ASSIGN's rows of a track as intents: page, dest and add of each tab's two rows, and its switches */
 function editAssign(t,A){Object.entries(A.tabs).forEach(([tab,rows])=>rows.forEach((r,row)=>edit("assign",{t,src:ASRC[tab],row,page:r.pg,dest:r.d,add:r.add-64})));
  edit("assign",{t,mirror:!!A.mirr,hpf:!!A.hpf,lpf:!!A.lpf})}
@@ -21,9 +27,9 @@ function secAction(kind){const t=S.sel,tr=trk(t);
   /* a selection of steps (77-select.js) is what copy and clear take, and where paste puts the copied block (the marked tracks take a paste first) */
   if(S.stepSel&&(kind!=="paste"||!S.marks.size)&&(kind==="copy"?selCopy():kind==="clear"?selClear():selPaste()))return;
   const[a,b]=vis(),where=`${tLabel(t)}, steps ${a+1}–${b}`;
-  if(kind==="copy"){CLIP=clipOf({t,n:1,from:a,to:b});edit("copySteps",{t,from:a,to:b});toast("COPY PAGE: "+where+".");return}
+  if(kind==="copy"){CLIP=Object.assign(clipOf({t,n:1,from:a,to:b}),{whole:true});edit("copySteps",{t,from:a,to:b});toast("COPY PAGE: "+where+".");return}
   if(kind==="clear"){for(let i=a;i<b;i++){tr.steps[i]=null;tr.slide.delete(i);clearStepLocks(t,i)}edit("clearSteps",{t,from:a,to:b});render();toast("CLEAR PAGE: "+where+".");return}
-  if(kind==="paste"){if(S.marks.size){pasteToMany();return}if(CLIP?.type!=="page"){toast("Copy a track page first.");return}if(CLIP.midi!==isMidiT(t)){toast("Track pages paste between synth tracks or between MIDI tracks.");return}
+  if(kind==="paste"){if(S.marks.size){pasteToMany();return}if(CLIP?.rows&&!CLIP.whole){pasteCopied(t,a);return}if(CLIP?.type!=="page"){toast("Copy a track page first.");return}if(CLIP.midi!==isMidiT(t)){toast("Track pages paste between synth tracks or between MIDI tracks.");return}
    const skip=pastePage(t,a,b);edit("pasteSteps",{t,from:a,to:b});render();toast("PASTE PAGE into "+where+"."+(skip?" "+skip+" lock(s) skipped: this machine has no such parameter.":""));return}}
  if(S.ws==="sound"&&!isMidiT(t)){if(kind==="copy"){CLIP={type:"machine",m:tr.m,v:JSON.parse(JSON.stringify(tr.v))};edit("copySound",{t});toast("COPY MACHINE: "+tr.m+" and all seven DATA pages.");return}
   if(kind==="clear"){tr.m="GND-SIN";tr.name=machName("GND-SIN");tr.v={SYN:synDefaults("GND-SIN"),AMP:[...DEFV.AMP],FLT:[...DEFV.FLT],EFX:[...DEFV.EFX],LF1:[...DEFV.LFO],LF2:[...DEFV.LFO],LF3:[...DEFV.LFO]};edit("clearSound",{t});render();toast("CLEAR MACHINE: "+tLabel(t)+" is GND-SIN again.");return}

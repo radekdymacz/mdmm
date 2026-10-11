@@ -68,15 +68,18 @@ function doublePattern(){const len=S.len;if(len*2>64){toast(`A pattern of ${len}
  for(const m of S.locks.values()){for(let s=len;s<2*len;s++)m.delete(s);for(const[s,v] of[...m])if(s<len)m.set(s+len,v)}
  S.len=len*2;edit("doublePattern",{});render();toast(`Doubled ${patName(S.pat)}: ${len} to ${len*2} steps, the new half a copy.`)}
 
-/* ---- paste to many: ⇧-click track headers to mark them, then ⌘V pastes the copied page into each one (from the
-   page shown), one gesture. A plain click on a header, or Esc, unmarks them. (S.multi is MULTI TRIG here.) ---- */
+/* ---- paste to many: ⇧-click track headers to mark them, then ⌘V pastes what was copied into each one (from the
+   page shown), one gesture: a copied page (COPY PAGE) as a page, copied steps (a selection) as only those steps, the
+   rest of each page kept (the Machinedrum's paste). A plain click on a header, or Esc, unmarks them. (S.multi is
+   MULTI TRIG here.) ---- */
 S.marks=new Set();
 function markToggle(t){S.marks.has(t)?S.marks.delete(t):S.marks.add(t);renderRail();const l=[...S.marks].sort((a,b)=>a-b).map(tLabel).join(" ");toast(S.marks.size?`⌘V pastes into ${l}`:"No tracks marked for paste")}
 document.addEventListener("click",e=>{const th=e.target.closest("#rail .th[data-sel]");if(!th||e.target.closest("button,select,.pc,.fader")||S.ws!=="seq")return;
  if(e.shiftKey){e.preventDefault();e.stopImmediatePropagation();markToggle(+th.dataset.sel);return}if(S.marks.size)S.marks.clear()},true);
-function pasteToMany(){const[a,b]=vis();if(CLIP?.type!=="page"){toast("Copy a track page first.");return}const ts=[...S.marks].sort((x,y)=>x-y),ok=ts.filter(t=>isMidiT(t)===CLIP.midi);
- ok.forEach(t=>{pastePage(t,a,b);edit("pasteSteps",{t,from:a,to:b})});if(ok.length)render()
- toast((ok.length?`Pasted steps ${a+1}–${b} into ${ok.map(tLabel).join(" ")} (one undo step).`:"")+(ok.length<ts.length?` ${ts.length-ok.length} marked track(s) skipped: pages paste between synth tracks or between MIDI tracks.`:""))}
+function pasteToMany(){const[a,b]=vis();if(!CLIP?.rows){toast("Copy a track page or some steps first.");return}const ts=[...S.marks].sort((x,y)=>x-y),ok=ts.filter(t=>isMidiT(t)===CLIP.rows[0].midi);
+ const n=CLIP.whole?b-a:Math.min(CLIP.length,S.len-a);
+ ok.forEach(t=>{if(CLIP.whole){pastePage(t,a,b);edit("pasteSteps",{t,from:a,to:b})}else edit("pasteSteps",{t,from:a})});if(ok.length)render()
+ toast((ok.length?`Pasted steps ${a+1}–${a+n} into ${ok.map(tLabel).join(" ")} (one undo step).`:"")+(ok.length<ts.length?` ${ts.length-ok.length} marked track(s) skipped: steps paste between synth tracks or between MIDI tracks.`:""))}
 
 /* ---- mutes from the keys: M the selected track, Alt+M every track (any audible: mute all; none: unmute all), 0
    unmutes and unsolos every track (also the rail's M/S OFF key). MIDI tracks only where the engine mutes them. ---- */
