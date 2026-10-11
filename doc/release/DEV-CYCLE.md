@@ -71,7 +71,7 @@ no row matches runs everything of its tier.
 - **Journey fixes.** The runner closes what an earlier journey left open (and logs it); the speed-ups journey waits for
   the CPU details to stay closed and toggles each switch once each way; a click after a drag goes where a browser sends
   it (the common parent of the pressed and released element); waits on the read-back instead of fixed sleeps;
-  md-sampler-audition quarantined until the sandbox has a sample; md-lib-kit-copy-paste-undo answers Overwrite;
+  md-sampler-audition skipped (not failed) when the machine has no UW sample (with 0.5.1's fix: it watches the play key); md-lib-kit-copy-paste-undo answers Overwrite;
   md-gen-keys-r takes one hit away when R rolled every step a hit (Hits stops at Steps).
 - **Command -> firmware.** `doc/modern-ux/intent-cases.json` (125 MM cases, and a first Machinedrum set of 29) is read by
   `mmIntentCases.h` / `mdIntentCases.h` and run by the core tests (`mmDeskTest`, `mdDeskTest`) and, through the desk on
@@ -95,4 +95,4 @@ no row matches runs everything of its tier.
   journeys need the editor.
 - More Machinedrum intent cases (the commands the journeys use first), and the page side of them (the MM's are in
   `mmViewTest.js`).
-- md-sampler-audition comes back with a sample fixture in the journeys' sandbox.
+- A sample fixture in the journeys' sandbox, so md-sampler-audition runs there too.

@@ -4,7 +4,7 @@ _Z18mc68k_get_instanceP15m68ki_cpu_core_
 # Num Counters:
 1
 # Counter Values:
-2986613233
+2980084257
 
 _ZN2md10FrontPanel11processByteEh
 # Func Hash:
@@ -207,6 +207,14 @@ _ZN2md13PanelRowState7releaseERKNS_11PanelPacketE
 4
 4
 
+_ZN2md13speedUpLeversEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+6
+
 _ZN2md14HostAudioQueueILm2ELm65536EE4dropEm
 # Func Hash:
 1160280
@@ -392,12 +400,12 @@ _ZN2md15Microcontroller15advanceAfterCpuEj
 # Num Counters:
 6
 # Counter Values:
-1781268137
+1774747324
 27013779
-1756116651
-1754254358
-1767940738
-1756116651
+1749595838
+1747733545
+1761419925
+1749595838
 
 _ZN2md15Microcontroller15decodePanelByteEh
 # Func Hash:
@@ -520,7 +528,7 @@ _ZN2md15Microcontroller21advanceIdleSelfBranchEj
 # Num Counters:
 1
 # Counter Values:
-2447729
+2455892
 
 _ZN2md15Microcontroller26idleSelfBranchInstructionsEj
 # Func Hash:
@@ -528,46 +536,46 @@ _ZN2md15Microcontroller26idleSelfBranchInstructionsEj
 # Num Counters:
 40
 # Counter Values:
-104025236
-101575886
-2449350
-2449350
-2449350
-2449350
-2449350
-2449350
-2449350
-2449350
-2449350
-2449350
-2449350
-2449350
-2449350
-2449350
-2449350
-2449350
-2449350
-2449350
-2903354
-2449350
-2903354
-2903354
-2903354
-2903354
-2903354
-2903354
-2903354
-2903354
-2903354
-2903354
-2903354
-2903354
-104025236
-2903354
-4898700
-2225771
+3100271
+637443
+2462828
+2462828
+2462828
+2462828
+2462828
+2462828
+2462828
+2462828
+2462828
+2462828
+2462828
+2462828
+2462828
+2462828
+2462828
+2462828
+2462828
+2462828
+3100271
+2462828
+3100271
+3100271
+3100271
+3100271
+3100271
+3100271
+3100271
+3100271
+3100271
+3100271
+3100271
+3100271
+3100271
+3100271
+4925656
+2234031
 0
-2447729
+2455892
 
 _ZN2md15Microcontroller29setPanelLedTransitionCallbackENSt3__18functionIFvhhyEEE
 # Func Hash:
@@ -583,7 +591,7 @@ _ZN2md15Microcontroller4execEv
 # Num Counters:
 1
 # Counter Values:
-1778820408
+1772291432
 
 _ZN2md15Microcontroller5read8Ej
 # Func Hash:
@@ -708,10 +716,10 @@ _ZN2md15Microcontroller9readImm16Ej
 # Num Counters:
 16
 # Counter Values:
-2068781602
-2037086038
-2068781602
-2037086038
+2062266104
+2030570540
+2062266104
+2030570540
 0
 31695564
 31695564
@@ -991,6 +999,17 @@ _ZN2md22HostAudioInputTimelineILm65536EE5resetEx
 # Counter Values:
 12
 
+_ZN2md31speedUpLeversOffFromEnvironmentEv
+# Func Hash:
+1452610840765528
+# Num Counters:
+4
+# Counter Values:
+6
+78
+0
+0
+
 _ZN2md3Dsp10pumpHostRxEm
 # Func Hash:
 185316999436022872
@@ -1006,12 +1025,14 @@ _ZN2md3Dsp10pumpHostRxEm
 
 _ZN2md3Dsp11onUCRxEmptyEb
 # Func Hash:
-15819332329951454175
+12361970422839254450
 # Num Counters:
-12
+14
 # Counter Values:
 3176955
 778248
+4601
+4601
 4601
 4601
 4601
@@ -1045,26 +1066,31 @@ _ZN2md3Dsp13hostTxBacklogEv
 
 _ZN2md3Dsp14writeWordToDspEj
 # Func Hash:
-37336152
+40032902975137297
 # Num Counters:
-4
+7
 # Counter Values:
 51372353
 35952366
 35952366
 35952366
+35952366
+35952366
+0
 
 _ZN2md3Dsp15hdiSendIrqToDSPEh
 # Func Hash:
-14559692643321106970
+1514066373142901813
 # Num Counters:
-9
+11
 # Counter Values:
 2453242
 2453242
 1016737
 1016737
 1016737
+20116809
+20116809
 20116809
 20117193
 20116809
@@ -1105,12 +1131,14 @@ _ZN2md3Dsp18hdiTransferUCtoDSPEj
 
 _ZN2md3Dsp22waitForHostCommandIdleEv
 # Func Hash:
-187543166884885592
+11766891390511646839
 # Num Counters:
-5
+7
 # Counter Values:
 2453242
 2419394
+972256
+972256
 972256
 972256
 972256
@@ -1138,7 +1166,7 @@ _ZN2md3Dsp3dspEv
 # Num Counters:
 1
 # Counter Values:
-1371599563
+1371599551
 
 _ZN2md3Dsp5hdi08Ev
 # Func Hash:
@@ -1146,7 +1174,7 @@ _ZN2md3Dsp5hdi08Ev
 # Num Counters:
 1
 # Counter Values:
-907238420
+814178791
 
 _ZN2md3Dsp9getPeriphEv
 # Func Hash:
@@ -1154,11 +1182,11 @@ _ZN2md3Dsp9getPeriphEv
 # Num Counters:
 1
 # Counter Values:
-194300563
+194300581
 
 _ZN2md3DspC2ERNS_8HardwareERN5mc68k5Hdi08Ej
 # Func Hash:
-11617433600415981793
+9009305303192355546
 # Num Counters:
 11
 # Counter Values:
@@ -1281,10 +1309,10 @@ _ZN2md3Sim15ticksUntilMatchERKNS0_5TimerE
 # Num Counters:
 4
 # Counter Values:
-20283057
-4131786
+20310013
+4145264
 6
-16063498
+16076976
 
 _ZN2md3Sim16armTransmitReadyEj
 # Func Hash:
@@ -1484,8 +1512,8 @@ _ZN2md3Sim4execEj
 # Num Counters:
 2
 # Counter Values:
-1781268137
-1780883186
+1774747324
+1774362373
 
 _ZN2md3Sim4stepEj
 # Func Hash:
@@ -1632,6 +1660,14 @@ _ZN2md3SimC2Ev
 # Counter Values:
 6
 
+_ZN2md3bitENS_12SpeedUpLeverE
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+84
+
 _ZN2md7RomDataILj8388608EE4dataEv
 # Func Hash:
 24
@@ -1663,12 +1699,10 @@ _ZN2md7initRomERKNSt3__16vectorIhNS0_9allocatorIhEEEERKNS0_12basic_stringIcNS0_1
 
 _ZN2md8Hardware11setSpeedUpsEb
 # Func Hash:
-14
+0
 # Num Counters:
-3
+1
 # Counter Values:
-6
-6
 6
 
 _ZN2md8Hardware12processAudioERKNSt3__15arrayIPfLm12EEEjj
@@ -1692,16 +1726,42 @@ _ZN2md8Hardware12processAudioEjj
 411612
 0
 
+_ZN2md8Hardware13applySpeedUpsEv
+# Func Hash:
+13473040841167166494
+# Num Counters:
+6
+# Counter Values:
+6
+6
+6
+6
+6
+12
+
 _ZN2md8Hardware14deliverUcInputEv
 # Func Hash:
 2894218762953873
 # Num Counters:
 4
 # Counter Values:
-2274694
+2247859
 156
 156
-2274538
+2247703
+
+_ZN2md8Hardware14processUCQuietEv
+# Func Hash:
+171766929
+# Num Counters:
+6
+# Counter Values:
+1769872242
+64516083
+1764451440
+1705356159
+1764475867
+1764451440
 
 _ZN2md8Hardware15pumpMidiIngressEv
 # Func Hash:
@@ -1709,7 +1769,7 @@ _ZN2md8Hardware15pumpMidiIngressEv
 # Num Counters:
 13
 # Counter Values:
-2274538
+2247703
 0
 0
 0
@@ -1719,20 +1779,21 @@ _ZN2md8Hardware15pumpMidiIngressEv
 0
 54
 0
-2274718
-2274484
+2247883
+2247649
 0
 
 _ZN2md8Hardware15schedCatchUpDspEj
 # Func Hash:
-17204381146124379739
+17952195975334286054
 # Num Counters:
-19
+20
 # Counter Values:
 168409332
 2022
 0
 111346208
+0
 3
 0
 141055824
@@ -1774,7 +1835,7 @@ _ZN2md8Hardware17pumpScheduledMidiEv
 # Num Counters:
 27
 # Counter Values:
-2274694
+2247859
 0
 0
 0
@@ -1872,9 +1933,9 @@ _ZN2md8Hardware19queueHostAudioInputEj
 
 _ZN2md8Hardware20schedCatchUpDspToDspEjj
 # Func Hash:
-18034733562302416556
+7289135688907175452
 # Num Counters:
-23
+24
 # Counter Values:
 307326987
 94342090
@@ -1884,6 +1945,7 @@ _ZN2md8Hardware20schedCatchUpDspToDspEjj
 212984897
 0
 132662628
+0
 0
 0
 95769632
@@ -2036,24 +2098,24 @@ _ZN2md8Hardware9processUCEv
 # Num Counters:
 12
 # Counter Values:
-1778820402
-2274694
-1778820402
-2274694
-64535748
-1773396580
-1714284654
-1773421018
-1773396580
+2419184
+2247859
+2419184
+2247859
+19665
+2416164
+2399519
+2416175
+2416164
 0
-1778820402
+2419184
 0
 
 _ZN2md8Hardware9schedStepEv
 # Func Hash:
-8803321040392757726
+387575641825707733
 # Num Counters:
-73
+87
 # Counter Values:
 9991605
 19983210
@@ -2062,6 +2124,10 @@ _ZN2md8Hardware9schedStepEv
 83679
 12
 9949761
+9949761
+9949761
+9949782
+9949782
 9949782
 7411609
 14823218
@@ -2079,50 +2145,60 @@ _ZN2md8Hardware9schedStepEv
 3340213
 145858
 3813860
-1775006542
-1664905144
-113915258
-100650925
-142648
-142648
-142648
-142648
-142648
-142648
-143247
-142648
-143247
-143247
-104965319
-104965912
-104965912
-104965912
-108756592
-104965912
-108760667
-108756592
-108945696
-108760667
-108945696
-108945696
-108945696
-108945696
-53773050
-4969562
-142082
-593
-104025236
+3811703
+3813704
+3811703
+3813860
+3813704
+3813860
+3813860
+3811703
+1768477566
+1769872242
+1730592159
+1772291426
+41699267
+4856634
+23442
+23442
+23442
+23442
+23442
+23442
+24096
+23442
+24096
+24096
+4840135
+4840773
+4840773
+4840773
+41558864
+4840773
+41558864
+41558864
+41699267
+41558864
+41699267
+41699267
+41699267
+41699267
+1919210
+0
+22582
+638
+3100271
 0
 0
-140660
-104025236
+21234
+3100271
 0
 0
 0
-2447729
+2455892
 0
-1775006542
-1775006542
+1768477566
+1768477566
 2747080
 32768
 6031887
@@ -2139,9 +2215,9 @@ _ZN2md8HardwareC1ERKNSt3__16vectorIhNS1_9allocatorIhEEEERKNS1_12basic_stringIcNS
 
 _ZN2md8HardwareC2ERKNSt3__16vectorIhNS1_9allocatorIhEEEERKNS1_12basic_stringIcNS1_11char_traitsIcEENS3_IcEEEENS_12MachineModelES7_NS1_10shared_ptrINS_19FrontPanelPublisherEEES7_S7_RKNS_18FlashSectorOverlayES7_
 # Func Hash:
-2443303242508823555
+4372700201098911688
 # Num Counters:
-39
+37
 # Counter Values:
 6
 3
@@ -2160,8 +2236,6 @@ _ZN2md8HardwareC2ERKNSt3__16vectorIhNS1_9allocatorIhEEEERKNS1_12basic_stringIcNS
 3
 3
 3
-0
-0
 0
 0
 0
@@ -2411,8 +2485,8 @@ _ZN5mc68k20endianSwap16IfLittleEt
 # Num Counters:
 2
 # Counter Values:
-2244631896
-2244631896
+2238116398
+2238116398
 
 _ZN5mc68k20endianSwap32IfLittleEj
 # Func Hash:
@@ -2964,7 +3038,7 @@ _ZN5mc68k5Mc68k11getCpuStateEv
 # Num Counters:
 1
 # Counter Values:
-1888577099
+1781123158
 
 _ZN5mc68k5Mc68k15execInstructionEv
 # Func Hash:
@@ -2972,7 +3046,7 @@ _ZN5mc68k5Mc68k15execInstructionEv
 # Num Counters:
 1
 # Counter Values:
-1778820408
+1772291432
 
 _ZN5mc68k5Mc68k15injectInterruptEhh
 # Func Hash:
@@ -3107,7 +3181,7 @@ _ZN5mc68k9memoryOps4readIN2md15MicrocontrollerEtLb1EEET0_RT_j
 # Num Counters:
 9
 # Counter Values:
-2066316806
+2059787830
 0
 0
 0
@@ -3115,7 +3189,7 @@ _ZN5mc68k9memoryOps4readIN2md15MicrocontrollerEtLb1EEET0_RT_j
 0
 0
 0
-2066316806
+2059787830
 
 _ZN5mc68k9memoryOps5read8IN2md15MicrocontrollerELb0EEEhRT_j
 # Func Hash:
@@ -3176,8 +3250,8 @@ _ZN5mc68k9memoryOps6read16IN2md15MicrocontrollerELb1EEEtRT_j
 # Num Counters:
 4
 # Counter Values:
-2066316806
-2066316806
+2059787830
+2059787830
 0
 0
 
@@ -3287,7 +3361,7 @@ _ZN6asmjit9_abi_1_1016OperandSignature10fromOpTypeENS0_11OperandTypeE
 # Num Counters:
 1
 # Counter Values:
-599785
+599866
 
 _ZN6asmjit9_abi_1_1016OperandSignature12fromRegGroupENS0_8RegGroupE
 # Func Hash:
@@ -3303,7 +3377,7 @@ _ZN6asmjit9_abi_1_1016OperandSignature13fromPredicateEj
 # Num Counters:
 1
 # Counter Values:
-346068
+346119
 
 _ZN6asmjit9_abi_1_1016OperandSignature15fromMemBaseTypeENS0_7RegTypeE
 # Func Hash:
@@ -3311,7 +3385,7 @@ _ZN6asmjit9_abi_1_1016OperandSignature15fromMemBaseTypeENS0_7RegTypeE
 # Num Counters:
 1
 # Counter Values:
-161041
+161059
 
 _ZN6asmjit9_abi_1_1016OperandSignature16fromMemIndexTypeENS0_7RegTypeE
 # Func Hash:
@@ -3335,7 +3409,7 @@ _ZN6asmjit9_abi_1_1016OperandSignature8setFieldILj4278190080ELj24EEEvj
 # Num Counters:
 1
 # Counter Values:
-150069
+150087
 
 _ZN6asmjit9_abi_1_1016OperandSignature8setFieldILj507904ELj14EEEvj
 # Func Hash:
@@ -3447,7 +3521,7 @@ _ZN6asmjit9_abi_1_103ImmC2IPKvvEERKT_j
 # Num Counters:
 1
 # Counter Values:
-19345
+19357
 
 _ZN6asmjit9_abi_1_103ImmC2IPKyvEERKT_j
 # Func Hash:
@@ -3463,7 +3537,7 @@ _ZN6asmjit9_abi_1_103ImmC2IivEERKT_j
 # Num Counters:
 1
 # Counter Values:
-164013
+164046
 
 _ZN6asmjit9_abi_1_103ImmC2IjvEERKT_j
 # Func Hash:
@@ -3495,7 +3569,7 @@ _ZN6asmjit9_abi_1_103ImmC2IyvEERKT_j
 # Num Counters:
 1
 # Counter Values:
-5809
+5815
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE1bENS0_3arm8CondCodeERKNS0_5LabelE
 # Func Hash:
@@ -3503,7 +3577,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE1bENS0_3arm8CondCodeERK
 # Num Counters:
 1
 # Counter Values:
-9109
+9121
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE1bERKNS0_5LabelE
 # Func Hash:
@@ -3519,7 +3593,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3addERKNS0_3arm2GpES8_R
 # Num Counters:
 1
 # Counter Values:
-33739
+33745
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3addERKNS0_3arm2GpES8_S8_
 # Func Hash:
@@ -3599,7 +3673,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3cmpERKNS0_3arm2GpES8_
 # Num Counters:
 1
 # Counter Values:
-19476
+19482
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3eonERKNS0_3arm2GpES8_S8_RKNS0_3ImmE
 # Func Hash:
@@ -3631,7 +3705,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3ldrERKNS0_3arm2GpERKNS
 # Num Counters:
 1
 # Counter Values:
-82431
+82443
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3ldrERKNS0_3arm3VecERKNS5_3MemE
 # Func Hash:
@@ -3679,7 +3753,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3movERKNS0_3arm2GpERKNS
 # Num Counters:
 1
 # Counter Values:
-71145
+71190
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3movERKNS0_3arm2GpES8_
 # Func Hash:
@@ -3799,7 +3873,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE3tstERKNS0_3arm2GpES8_
 # Num Counters:
 1
 # Counter Values:
-5405
+5411
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE4addsERKNS0_3arm2GpES8_S8_
 # Func Hash:
@@ -3895,7 +3969,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE4ldrbERKNS0_3arm2GpERKN
 # Num Counters:
 1
 # Counter Values:
-5540
+5546
 
 _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE4negsERKNS0_3arm2GpES8_
 # Func Hash:
@@ -3999,7 +4073,7 @@ _ZN6asmjit9_abi_1_103a6416EmitterExplicitTINS1_7BuilderEE8_emitterEv
 # Num Counters:
 1
 # Counter Values:
-614479
+614572
 
 _ZN6asmjit9_abi_1_103arm2GpC2ERKNS0_16OperandSignatureEj
 # Func Hash:
@@ -4007,7 +4081,7 @@ _ZN6asmjit9_abi_1_103arm2GpC2ERKNS0_16OperandSignatureEj
 # Num Counters:
 1
 # Counter Values:
-1831456
+1831459
 
 _ZN6asmjit9_abi_1_103arm2GpC2ERKS2_
 # Func Hash:
@@ -4015,7 +4089,7 @@ _ZN6asmjit9_abi_1_103arm2GpC2ERKS2_
 # Num Counters:
 1
 # Counter Values:
-867946
+867979
 
 _ZN6asmjit9_abi_1_103arm2GpC2Ev
 # Func Hash:
@@ -4031,7 +4105,7 @@ _ZN6asmjit9_abi_1_103arm3GpWC2Ej
 # Num Counters:
 1
 # Counter Values:
-532422
+532473
 
 _ZN6asmjit9_abi_1_103arm3GpWC2Ev
 # Func Hash:
@@ -4047,7 +4121,7 @@ _ZN6asmjit9_abi_1_103arm3GpXC2ERKS2_
 # Num Counters:
 1
 # Counter Values:
-239745
+239778
 
 _ZN6asmjit9_abi_1_103arm3GpXC2Ej
 # Func Hash:
@@ -4055,7 +4129,7 @@ _ZN6asmjit9_abi_1_103arm3GpXC2Ej
 # Num Counters:
 1
 # Counter Values:
-1136540
+1136492
 
 _ZN6asmjit9_abi_1_103arm3GpXC2Ev
 # Func Hash:
@@ -4095,7 +4169,7 @@ _ZN6asmjit9_abi_1_103arm3MemC2ERKNS0_7BaseRegEiNS0_16OperandSignatureE
 # Num Counters:
 1
 # Counter Values:
-154970
+154988
 
 _ZN6asmjit9_abi_1_103arm3MemC2ERKS2_
 # Func Hash:
@@ -4103,7 +4177,7 @@ _ZN6asmjit9_abi_1_103arm3MemC2ERKS2_
 # Num Counters:
 1
 # Counter Values:
-4476
+4482
 
 _ZN6asmjit9_abi_1_103arm3MemC2Ev
 # Func Hash:
@@ -4111,7 +4185,7 @@ _ZN6asmjit9_abi_1_103arm3MemC2Ev
 # Num Counters:
 1
 # Counter Values:
-74740
+74752
 
 _ZN6asmjit9_abi_1_103arm3MemaSERKS2_
 # Func Hash:
@@ -4143,7 +4217,7 @@ _ZN6asmjit9_abi_1_103arm3RegC2ERKNS0_16OperandSignatureEj
 # Num Counters:
 1
 # Counter Values:
-3869006
+3869009
 
 _ZN6asmjit9_abi_1_103arm3RegC2ERKS2_
 # Func Hash:
@@ -4151,7 +4225,7 @@ _ZN6asmjit9_abi_1_103arm3RegC2ERKS2_
 # Num Counters:
 1
 # Counter Values:
-2227819
+2227852
 
 _ZN6asmjit9_abi_1_103arm3RegC2Ev
 # Func Hash:
@@ -4247,7 +4321,7 @@ _ZN6asmjit9_abi_1_107BaseMem7setSizeEj
 # Num Counters:
 1
 # Counter Values:
-150069
+150087
 
 _ZN6asmjit9_abi_1_107BaseMem8setIndexERKNS0_7BaseRegE
 # Func Hash:
@@ -4271,7 +4345,7 @@ _ZN6asmjit9_abi_1_107BaseMem9setOffsetEx
 # Num Counters:
 1
 # Counter Values:
-118629
+118635
 
 _ZN6asmjit9_abi_1_107BaseMemC2ERKNS0_16OperandSignatureEjji
 # Func Hash:
@@ -4279,7 +4353,7 @@ _ZN6asmjit9_abi_1_107BaseMemC2ERKNS0_16OperandSignatureEjji
 # Num Counters:
 1
 # Counter Values:
-160993
+161011
 
 _ZN6asmjit9_abi_1_107BaseMemC2ERKS1_
 # Func Hash:
@@ -4287,7 +4361,7 @@ _ZN6asmjit9_abi_1_107BaseMemC2ERKS1_
 # Num Counters:
 1
 # Counter Values:
-4476
+4482
 
 _ZN6asmjit9_abi_1_107BaseMemC2Ev
 # Func Hash:
@@ -4295,7 +4369,7 @@ _ZN6asmjit9_abi_1_107BaseMemC2Ev
 # Num Counters:
 1
 # Counter Values:
-74740
+74752
 
 _ZN6asmjit9_abi_1_107BaseMemaSERKS1_
 # Func Hash:
@@ -4311,7 +4385,7 @@ _ZN6asmjit9_abi_1_107BaseRegC2ERKNS0_16OperandSignatureEj
 # Num Counters:
 1
 # Counter Values:
-4330590
+4330593
 
 _ZN6asmjit9_abi_1_107BaseRegC2ERKS1_
 # Func Hash:
@@ -4319,7 +4393,7 @@ _ZN6asmjit9_abi_1_107BaseRegC2ERKS1_
 # Num Counters:
 1
 # Counter Values:
-2227819
+2227852
 
 _ZN6asmjit9_abi_1_107OperandC2ENS0_7Globals5Init_ERKNS0_16OperandSignatureEjjj
 # Func Hash:
@@ -4327,7 +4401,7 @@ _ZN6asmjit9_abi_1_107OperandC2ENS0_7Globals5Init_ERKNS0_16OperandSignatureEjjj
 # Num Counters:
 1
 # Counter Values:
-4929785
+4929869
 
 _ZN6asmjit9_abi_1_107Section6bufferEv
 # Func Hash:
@@ -4343,7 +4417,7 @@ _ZN6asmjit9_abi_1_108BaseInst16composeARMInstIdEjNS0_3arm8CondCodeE
 # Num Counters:
 1
 # Counter Values:
-9109
+9121
 
 _ZN6asmjit9_abi_1_108Operand_2asINS0_3arm3GpXEEERT_v
 # Func Hash:
@@ -4634,7 +4708,7 @@ _ZN6dsp56k10JitEmitter2jzERKN6asmjit9_abi_1_105LabelE
 # Num Counters:
 1
 # Counter Values:
-6219
+6225
 
 _ZN6dsp56k10JitEmitter3addERKN6asmjit9_abi_1_103arm2GpERKNS2_3ImmE
 # Func Hash:
@@ -4642,7 +4716,7 @@ _ZN6dsp56k10JitEmitter3addERKN6asmjit9_abi_1_103arm2GpERKNS2_3ImmE
 # Num Counters:
 1
 # Counter Values:
-102
+108
 
 _ZN6dsp56k10JitEmitter3addERKN6asmjit9_abi_1_103arm2GpES6_
 # Func Hash:
@@ -4691,7 +4765,7 @@ _ZN6dsp56k10JitEmitter3jleERKN6asmjit9_abi_1_105LabelE
 # Num Counters:
 1
 # Counter Values:
-1190
+1196
 
 _ZN6dsp56k10JitEmitter3jmpERKN6asmjit9_abi_1_105LabelE
 # Func Hash:
@@ -4715,7 +4789,7 @@ _ZN6dsp56k10JitEmitter3movERKN6asmjit9_abi_1_103arm2GpERKNS3_3MemE
 # Num Counters:
 1
 # Counter Values:
-58856
+58868
 
 _ZN6dsp56k10JitEmitter3movERKN6asmjit9_abi_1_103arm3MemERKNS3_2GpE
 # Func Hash:
@@ -4942,7 +5016,7 @@ _ZN6dsp56k10JitEmitter5test_ERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 1
 # Counter Values:
-2896
+2902
 
 _ZN6dsp56k10JitEmitter5test_ERKN6asmjit9_abi_1_103arm2GpERKNS2_3ImmE
 # Func Hash:
@@ -5058,7 +5132,7 @@ _ZN6dsp56k10PushGPRegs4pushERKN6asmjit9_abi_1_103arm2GpE
 2
 # Counter Values:
 7817
-2038
+2047
 
 _ZN6dsp56k10PushGPRegsC2ERNS_8JitBlockE
 # Func Hash:
@@ -5130,7 +5204,7 @@ _ZN6dsp56k10RingBufferIN8synthLib10SMidiEventELm16384ELb1ELb1EE11wrapCounterEm
 # Num Counters:
 1
 # Counter Values:
-2417834
+2271793
 
 _ZN6dsp56k10RingBufferIN8synthLib10SMidiEventELm16384ELb1ELb1EE12incReadCountEm
 # Func Hash:
@@ -5154,22 +5228,26 @@ _ZN6dsp56k10RingBufferIN8synthLib10SMidiEventELm16384ELb1ELb1EE5frontEv
 # Num Counters:
 1
 # Counter Values:
-2417600
+2271559
 
 _ZN6dsp56k10RingBufferIN8synthLib10SMidiEventELm16384ELb1ELb1EE9pop_frontEv
 # Func Hash:
-24
+706810029144
 # Num Counters:
-1
+3
 # Counter Values:
+234
+234
 234
 
 _ZN6dsp56k10RingBufferIN8synthLib10SMidiEventELm16384ELb1ELb1EE9push_backERKS2_
 # Func Hash:
-0
+11043906705
 # Num Counters:
-1
+3
 # Counter Values:
+234
+234
 234
 
 _ZN6dsp56k10RingBufferIN8synthLib10SMidiEventELm16384ELb1ELb1EEC2Ev
@@ -5212,6 +5290,17 @@ _ZN6dsp56k10RingBufferINS_5Audio5FrameINSt3__15arrayIjLm4EEEEELm32768ELb1ELb0EE1
 # Counter Values:
 183896576
 
+_ZN6dsp56k10RingBufferINS_5Audio5FrameINSt3__15arrayIjLm4EEEEELm32768ELb1ELb0EE17setSingleThreadedEb
+# Func Hash:
+17249030344167970659
+# Num Counters:
+4
+# Counter Values:
+12
+12
+0
+0
+
 _ZN6dsp56k10RingBufferINS_5Audio5FrameINSt3__15arrayIjLm4EEEEELm32768ELb1ELb0EE5frontEv
 # Func Hash:
 24
@@ -5222,19 +5311,23 @@ _ZN6dsp56k10RingBufferINS_5Audio5FrameINSt3__15arrayIjLm4EEEEELm32768ELb1ELb0EE5
 
 _ZN6dsp56k10RingBufferINS_5Audio5FrameINSt3__15arrayIjLm4EEEEELm32768ELb1ELb0EE9pop_frontEv
 # Func Hash:
-24
+706810029144
 # Num Counters:
-1
+3
 # Counter Values:
 183895524
+0
+0
 
 _ZN6dsp56k10RingBufferINS_5Audio5FrameINSt3__15arrayIjLm4EEEEELm32768ELb1ELb0EE9push_backEOS6_
 # Func Hash:
-0
+11043906705
 # Num Counters:
-1
+3
 # Counter Values:
 183896576
+1536
+1536
 
 _ZN6dsp56k10RingBufferINS_5Audio5FrameINSt3__15arrayIjLm4EEEEELm32768ELb1ELb0EEC2Ev
 # Func Hash:
@@ -5276,6 +5369,17 @@ _ZN6dsp56k10RingBufferINS_5Audio5FrameINSt3__15arrayIjLm6EEEEELm32768ELb1ELb0EE1
 # Counter Values:
 9075484
 
+_ZN6dsp56k10RingBufferINS_5Audio5FrameINSt3__15arrayIjLm6EEEEELm32768ELb1ELb0EE17setSingleThreadedEb
+# Func Hash:
+17249030344167970659
+# Num Counters:
+4
+# Counter Values:
+6
+6
+0
+0
+
 _ZN6dsp56k10RingBufferINS_5Audio5FrameINSt3__15arrayIjLm6EEEEELm32768ELb1ELb0EE5frontEv
 # Func Hash:
 24
@@ -5286,19 +5390,23 @@ _ZN6dsp56k10RingBufferINS_5Audio5FrameINSt3__15arrayIjLm6EEEEELm32768ELb1ELb0EE5
 
 _ZN6dsp56k10RingBufferINS_5Audio5FrameINSt3__15arrayIjLm6EEEEELm32768ELb1ELb0EE9pop_frontEv
 # Func Hash:
-24
+706810029144
 # Num Counters:
-1
+3
 # Counter Values:
 9075484
+0
+0
 
 _ZN6dsp56k10RingBufferINS_5Audio5FrameINSt3__15arrayIjLm6EEEEELm32768ELb1ELb0EE9push_backERKS6_
 # Func Hash:
-0
+11043906705
 # Num Counters:
-1
+3
 # Counter Values:
 9075484
+0
+0
 
 _ZN6dsp56k10RingBufferINS_5Audio5FrameINSt3__15arrayIjLm6EEEEELm32768ELb1ELb0EEC2Ev
 # Func Hash:
@@ -5366,11 +5474,13 @@ _ZN6dsp56k10RingBufferINSt3__15arrayIjLm6EEELm32768ELb0ELb0EE5frontEv
 
 _ZN6dsp56k10RingBufferINSt3__15arrayIjLm6EEELm32768ELb0ELb0EE9pop_frontEv
 # Func Hash:
-24
+706810029144
 # Num Counters:
-1
+3
 # Counter Values:
 4390525
+0
+0
 
 _ZN6dsp56k10RingBufferINSt3__15arrayIjLm6EEELm32768ELb0ELb0EEC2Ev
 # Func Hash:
@@ -5422,18 +5532,22 @@ _ZN6dsp56k10RingBufferIjLm1024ELb1ELb1EE5frontEv
 
 _ZN6dsp56k10RingBufferIjLm1024ELb1ELb1EE9pop_frontEv
 # Func Hash:
-24
+706810029144
 # Num Counters:
-1
+3
 # Counter Values:
+3047815
+3047815
 3047815
 
 _ZN6dsp56k10RingBufferIjLm1024ELb1ELb1EE9push_backERKj
 # Func Hash:
-0
+11043906705
 # Num Counters:
-1
+3
 # Counter Values:
+3047815
+3047815
 3047815
 
 _ZN6dsp56k10RingBufferIjLm1024ELb1ELb1EEC2Ev
@@ -5486,18 +5600,22 @@ _ZN6dsp56k10RingBufferIjLm32ELb1ELb1EE5frontEv
 
 _ZN6dsp56k10RingBufferIjLm32ELb1ELb1EE9pop_frontEv
 # Func Hash:
-24
+706810029144
 # Num Counters:
-1
+3
 # Counter Values:
+2453242
+2453242
 2453242
 
 _ZN6dsp56k10RingBufferIjLm32ELb1ELb1EE9push_backERKj
 # Func Hash:
-0
+11043906705
 # Num Counters:
-1
+3
 # Counter Values:
+2453242
+2453242
 2453242
 
 _ZN6dsp56k10RingBufferIjLm32ELb1ELb1EEC2Ev
@@ -5550,18 +5668,22 @@ _ZN6dsp56k10RingBufferIjLm8192ELb1ELb1EE5frontEv
 
 _ZN6dsp56k10RingBufferIjLm8192ELb1ELb1EE9pop_frontEv
 # Func Hash:
-24
+706810029144
 # Num Counters:
-1
+3
 # Counter Values:
+53771064
+53771064
 53771064
 
 _ZN6dsp56k10RingBufferIjLm8192ELb1ELb1EE9push_backERKj
 # Func Hash:
-0
+11043906705
 # Num Counters:
-1
+3
 # Counter Values:
+53771064
+53771064
 53771064
 
 _ZN6dsp56k10RingBufferIjLm8192ELb1ELb1EEC2Ev
@@ -6248,22 +6370,6 @@ _ZN6dsp56k12MemoryBufferD2Ev
 1
 # Counter Values:
 12
-
-_ZN6dsp56k12NopSemaphore4waitEj
-# Func Hash:
-0
-# Num Counters:
-1
-# Counter Values:
-8781053
-
-_ZN6dsp56k12NopSemaphore6notifyEj
-# Func Hash:
-0
-# Num Counters:
-1
-# Counter Values:
-8781053
 
 _ZN6dsp56k12NopSemaphoreC2Ej
 # Func Hash:
@@ -8070,7 +8176,7 @@ _ZN6dsp56k13getFieldValueILNS_11InstructionE158ELNS_5FieldE39EEEjj
 # Num Counters:
 1
 # Counter Values:
-15947
+15956
 
 _ZN6dsp56k13getFieldValueILNS_11InstructionE158ELNS_5FieldE39ELS2_50EEEjj
 # Func Hash:
@@ -8078,7 +8184,7 @@ _ZN6dsp56k13getFieldValueILNS_11InstructionE158ELNS_5FieldE39ELS2_50EEEjj
 # Num Counters:
 1
 # Counter Values:
-929
+938
 
 _ZN6dsp56k13getFieldValueILNS_11InstructionE158ELNS_5FieldE50EEEjj
 # Func Hash:
@@ -8086,7 +8192,7 @@ _ZN6dsp56k13getFieldValueILNS_11InstructionE158ELNS_5FieldE50EEEjj
 # Num Counters:
 1
 # Counter Values:
-17465
+17474
 
 _ZN6dsp56k13getFieldValueILNS_11InstructionE158ELNS_5FieldE60EEEjj
 # Func Hash:
@@ -8094,7 +8200,7 @@ _ZN6dsp56k13getFieldValueILNS_11InstructionE158ELNS_5FieldE60EEEjj
 # Num Counters:
 1
 # Counter Values:
-7210
+7219
 
 _ZN6dsp56k13getFieldValueILNS_11InstructionE158ELNS_5FieldE9EEEjj
 # Func Hash:
@@ -8950,7 +9056,7 @@ _ZN6dsp56k13getFieldValueILNS_11InstructionE184ELNS_5FieldE40EEEjj
 # Num Counters:
 1
 # Counter Values:
-578
+632
 
 _ZN6dsp56k13getFieldValueILNS_11InstructionE184ELNS_5FieldE51EEEjj
 # Func Hash:
@@ -8958,7 +9064,7 @@ _ZN6dsp56k13getFieldValueILNS_11InstructionE184ELNS_5FieldE51EEEjj
 # Num Counters:
 1
 # Counter Values:
-578
+632
 
 _ZN6dsp56k13getFieldValueILNS_11InstructionE184ELNS_5FieldE60EEEjj
 # Func Hash:
@@ -8966,7 +9072,7 @@ _ZN6dsp56k13getFieldValueILNS_11InstructionE184ELNS_5FieldE60EEEjj
 # Num Counters:
 1
 # Counter Values:
-706
+760
 
 _ZN6dsp56k13getFieldValueILNS_11InstructionE185ELNS_5FieldE13EEEjj
 # Func Hash:
@@ -8982,7 +9088,7 @@ _ZN6dsp56k13getFieldValueILNS_11InstructionE185ELNS_5FieldE43EEEjj
 # Num Counters:
 1
 # Counter Values:
-18
+24
 
 _ZN6dsp56k13getFieldValueILNS_11InstructionE185ELNS_5FieldE43ELS2_44EEEjj
 # Func Hash:
@@ -8990,7 +9096,7 @@ _ZN6dsp56k13getFieldValueILNS_11InstructionE185ELNS_5FieldE43ELS2_44EEEjj
 # Num Counters:
 1
 # Counter Values:
-18
+24
 
 _ZN6dsp56k13getFieldValueILNS_11InstructionE185ELNS_5FieldE44EEEjj
 # Func Hash:
@@ -8998,7 +9104,7 @@ _ZN6dsp56k13getFieldValueILNS_11InstructionE185ELNS_5FieldE44EEEjj
 # Num Counters:
 1
 # Counter Values:
-18
+24
 
 _ZN6dsp56k13getFieldValueILNS_11InstructionE185ELNS_5FieldE60EEEjj
 # Func Hash:
@@ -9006,7 +9112,7 @@ _ZN6dsp56k13getFieldValueILNS_11InstructionE185ELNS_5FieldE60EEEjj
 # Num Counters:
 1
 # Counter Values:
-18
+24
 
 _ZN6dsp56k13getFieldValueILNS_11InstructionE189ELNS_5FieldE34EEEjj
 # Func Hash:
@@ -9841,8 +9947,8 @@ _ZN6dsp56k14JitStackHelper13isNonVolatileERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 3
 # Counter Values:
-69728
-813030
+69719
+812922
 2634
 
 _ZN6dsp56k14JitStackHelper13isNonVolatileERKN6asmjit9_abi_1_103arm4VecVE
@@ -9861,7 +9967,7 @@ _ZN6dsp56k14JitStackHelper15registerFuncArgEj
 # Num Counters:
 1
 # Counter Values:
-10449
+10482
 
 _ZN6dsp56k14JitStackHelper17blockMustPreserveERKN6asmjit9_abi_1_103arm2GpE
 # Func Hash:
@@ -9895,7 +10001,7 @@ _ZN6dsp56k14JitStackHelper17unregisterFuncArgEj
 # Num Counters:
 1
 # Counter Values:
-10449
+10482
 
 _ZN6dsp56k14JitStackHelper3popERKN6asmjit9_abi_1_103arm3GpXE
 # Func Hash:
@@ -10591,7 +10697,7 @@ _ZN6dsp56k16Peripherals563037getHI08Ev
 # Num Counters:
 1
 # Counter Values:
-907238432
+814178803
 
 _ZN6dsp56k16Peripherals563038getEssi0Ev
 # Func Hash:
@@ -10599,7 +10705,7 @@ _ZN6dsp56k16Peripherals563038getEssi0Ev
 # Num Counters:
 1
 # Counter Values:
-444005436
+444005448
 
 _ZN6dsp56k16Peripherals563038getEssi1Ev
 # Func Hash:
@@ -10607,7 +10713,7 @@ _ZN6dsp56k16Peripherals563038getEssi1Ev
 # Num Counters:
 1
 # Counter Values:
-12061609
+12061615
 
 _ZN6dsp56k16Peripherals563038getPortCEv
 # Func Hash:
@@ -11721,7 +11827,7 @@ _ZN6dsp56k18dspExecPeripheralsINS_16Peripherals56303ENS_14PeripheralsNopEEEvPNS_
 # Num Counters:
 1
 # Counter Values:
-3216150957
+3222234673
 
 _ZN6dsp56k19JitBlockRuntimeData12clearParentsEv
 # Func Hash:
@@ -11944,7 +12050,7 @@ _ZN6dsp56k22SpscSemaphoreWithCount4waitEv
 # Num Counters:
 2
 # Counter Values:
-504487778
+118546246
 0
 
 _ZN6dsp56k22SpscSemaphoreWithCount6notifyEv
@@ -11953,7 +12059,7 @@ _ZN6dsp56k22SpscSemaphoreWithCount6notifyEv
 # Num Counters:
 2
 # Counter Values:
-504487778
+118546246
 0
 
 _ZN6dsp56k22SpscSemaphoreWithCountC2Ei
@@ -15858,8 +15964,8 @@ _ZN6dsp56k3DSP10execPeriphINS_16Peripherals56303ENS_14PeripheralsNopEEEvv
 # Num Counters:
 2
 # Counter Values:
-3216150957
-2291851091
+3222234673
+2297934807
 
 _ZN6dsp56k3DSP11execJitImplILb0EEEvv
 # Func Hash:
@@ -15984,25 +16090,27 @@ _ZN6dsp56k3DSP16clearOpcodeCacheEj
 
 _ZN6dsp56k3DSP18fastForwardNopLoopEjjj
 # Func Hash:
-3727215101078950604
+6646844042038254296
 # Num Counters:
-15
+17
 # Counter Values:
-384248397
+247772274
 0
-384248397
-384248397
-547353
+247772274
+247772274
+247772274
+247772274
+501102
 0
 0
-383701044
-383701044
-383701044
-383701044
-383701044
-383701044
+247271172
+247271172
+247271172
+247271172
+247271172
+247271172
 46475254
-138345736
+7999580
 
 _ZN6dsp56k3DSP18setIdleFastForwardEb
 # Func Hash:
@@ -16012,11 +16120,11 @@ _ZN6dsp56k3DSP18setIdleFastForwardEb
 # Counter Values:
 12
 
-_ZN6dsp56k3DSP19fastForwardPollLoopEjj
+_ZN6dsp56k3DSP19fastForwardPollLoopEjjb
 # Func Hash:
-8282130866429689041
+6266013759483017504
 # Num Counters:
-13
+17
 # Counter Values:
 58818518
 0
@@ -16026,6 +16134,10 @@ _ZN6dsp56k3DSP19fastForwardPollLoopEjj
 58818518
 58818518
 58818518
+0
+58818518
+10816061
+0
 117965
 58700553
 58700553
@@ -16042,9 +16154,9 @@ _ZN6dsp56k3DSP19pollCycleHeadCyclesEv
 
 _ZN6dsp56k3DSP20fastForwardPollCycleERKNS_12JitPollCycleE
 # Func Hash:
-6800227412122704447
+6546892315255271391
 # Num Counters:
-17
+21
 # Counter Values:
 69912669
 0
@@ -16054,6 +16166,10 @@ _ZN6dsp56k3DSP20fastForwardPollCycleERKNS_12JitPollCycleE
 69912669
 69912669
 69912669
+0
+69912669
+36293644
+0
 0
 69912669
 69912669
@@ -16091,6 +16207,14 @@ _ZN6dsp56k3DSP22ScopedFastForwardLimitD2Ev
 # Counter Values:
 150598635
 
+_ZN6dsp56k3DSP22setNopGateInstructionsEb
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+12
+
 _ZN6dsp56k3DSP23injectExternalInterruptEj
 # Func Hash:
 185220037697934545
@@ -16098,9 +16222,17 @@ _ZN6dsp56k3DSP23injectExternalInterruptEj
 4
 # Counter Values:
 2453242
+2453242
 0
 0
+
+_ZN6dsp56k3DSP23setIdleFastForwardPartsEj
+# Func Hash:
 0
+# Num Counters:
+1
+# Counter Values:
+12
 
 _ZN6dsp56k3DSP25pollCycleHeadInstructionsEv
 # Func Hash:
@@ -16129,6 +16261,14 @@ _ZN6dsp56k3DSP27execDefaultPreventInterruptEv
 3041225
 
 _ZN6dsp56k3DSP28setInterruptServicedCallbackENSt3__18functionIFvjEEE
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+12
+
+_ZN6dsp56k3DSP34setExternalInterruptAbortPredicateENSt3__18functionIFbvEEE
 # Func Hash:
 0
 # Num Counters:
@@ -16167,7 +16307,7 @@ _ZN6dsp56k3DSP4regsEv
 # Num Counters:
 1
 # Counter Values:
-122527662
+122527680
 
 _ZN6dsp56k3DSP5setPCERKNS_7RegTypeIiLj24EEE
 # Func Hash:
@@ -17011,7 +17151,7 @@ _ZN6dsp56k5Audio14getAudioInputsEv
 # Num Counters:
 1
 # Counter Values:
-716753539
+716753551
 
 _ZN6dsp56k5Audio15getAudioOutputsEv
 # Func Hash:
@@ -17019,7 +17159,7 @@ _ZN6dsp56k5Audio15getAudioOutputsEv
 # Num Counters:
 1
 # Counter Values:
-11968422
+11968428
 
 _ZN6dsp56k5Audio17setReadRxCallbackENSt3__18functionIFvRyRNS0_5FrameINS1_5arrayIjLm4EEEEEEEE
 # Func Hash:
@@ -20743,10 +20883,10 @@ _ZN6dsp56k6Jitmem13pointerOffsetEPKvS2_
 # Num Counters:
 4
 # Counter Values:
-160155
+160173
 33146
-160155
-127009
+160173
+127027
 
 _ZN6dsp56k6Jitmem15makeRelativePtrEPKvS2_RKN6asmjit9_abi_1_103arm3GpXEm
 # Func Hash:
@@ -20754,24 +20894,24 @@ _ZN6dsp56k6Jitmem15makeRelativePtrEPKvS2_RKN6asmjit9_abi_1_103arm3GpXEm
 # Num Counters:
 18
 # Counter Values:
-143518
+143536
 5416
 16573
 92790
-121286
+121298
 92790
-28496
-25839
-25317
+28508
+25845
+25329
 3179
 3179
 5836
 3179
-22660
-22660
-22660
-22660
-2900
+22666
+22666
+22666
+22666
+2912
 
 _ZN6dsp56k6Jitmem18assignFuncArgsImplESt16initializer_listIN6asmjit9_abi_1_103arm2GpEES6_PKvPFvS8_jS5_S5_E
 # Func Hash:
@@ -20801,7 +20941,7 @@ _ZN6dsp56k6Jitmem7makePtrERKN6asmjit9_abi_1_103arm3GpXEj
 # Num Counters:
 1
 # Counter Values:
-144046
+144064
 
 _ZN6dsp56k6Jitmem9MemoryRef5resetEv
 # Func Hash:
@@ -20911,10 +21051,10 @@ _ZN6dsp56k6PushGPC2ERNS_8JitBlockERKN6asmjit9_abi_1_103arm3GpXE
 # Num Counters:
 4
 # Counter Values:
-10449
-8411
-8411
-2038
+10482
+8435
+8435
+2047
 
 _ZN6dsp56k6PushGPD2Ev
 # Func Hash:
@@ -20922,8 +21062,8 @@ _ZN6dsp56k6PushGPD2Ev
 # Num Counters:
 2
 # Counter Values:
-10449
-2038
+10482
+2047
 
 _ZN6dsp56k6RegXMMC2ERNS_8JitBlockEbb
 # Func Hash:
@@ -22018,7 +22158,7 @@ _ZN6dsp56k7FuncArgC2ERNS_8JitBlockERKj
 # Num Counters:
 1
 # Counter Values:
-10449
+10482
 
 _ZN6dsp56k7FuncArgD2Ev
 # Func Hash:
@@ -22026,7 +22166,7 @@ _ZN6dsp56k7FuncArgD2Ev
 # Num Counters:
 1
 # Counter Values:
-10449
+10482
 
 _ZN6dsp56k7Opcodes12getRegistersERNS_12RegisterMaskES2_jNS_11InstructionES3_
 # Func Hash:
@@ -22281,7 +22421,7 @@ _ZN6dsp56k7isValidERKN6asmjit9_abi_1_103arm3MemE
 # Num Counters:
 1
 # Counter Values:
-23886
+23904
 
 _ZN6dsp56k8BitfieldIjNS_4Essi10RegCRAbitsELm24EEC2Ej
 # Func Hash:
@@ -22681,7 +22821,7 @@ _ZN6dsp56k8JitBlock10dspRegPoolEv
 # Num Counters:
 1
 # Counter Values:
-602218
+602269
 
 _ZN6dsp56k8JitBlock11lockScratchEv
 # Func Hash:
@@ -22749,14 +22889,15 @@ _ZN6dsp56k8JitBlock18increaseCycleCountERKN6asmjit9_abi_1_107OperandE
 # Counter Values:
 7177
 
-_ZN6dsp56k8JitBlock19emitFastForwardGateERKN6asmjit9_abi_1_105LabelEyy
+_ZN6dsp56k8JitBlock19emitFastForwardGateERKN6asmjit9_abi_1_105LabelEyyPKb
 # Func Hash:
-42129
+11042104401
 # Num Counters:
-2
+3
 # Counter Values:
 57
-12
+18
+6
 
 _ZN6dsp56k8JitBlock20markPeripheralAccessEv
 # Func Hash:
@@ -22781,7 +22922,7 @@ _ZN6dsp56k8JitBlock3dspEv
 # Num Counters:
 1
 # Counter Values:
-434680
+434698
 
 _ZN6dsp56k8JitBlock3memEv
 # Func Hash:
@@ -22789,7 +22930,7 @@ _ZN6dsp56k8JitBlock3memEv
 # Num Counters:
 1
 # Counter Values:
-122188
+122206
 
 _ZN6dsp56k8JitBlock4asm_Ev
 # Func Hash:
@@ -22797,18 +22938,19 @@ _ZN6dsp56k8JitBlock4asm_Ev
 # Num Counters:
 1
 # Counter Values:
-331000
+331030
 
 _ZN6dsp56k8JitBlock4emitERNS_19JitBlockRuntimeDataEPNS_13JitBlockChainEjRKNS_10PagedArrayINS_13JitCacheEntryELm1024EEERKNSt3__13setIjNSA_4lessIjEENSA_9allocatorIjEEEERKNSA_3mapIjjSD_NSE_INSA_4pairIKjjEEEEEESI_b
 # Func Hash:
-15846635001480305914
+7657541205783091939
 # Num Counters:
-112
+114
 # Counter Values:
 7174
 1994
 1994
 12
+6
 7174
 1994
 0
@@ -22841,6 +22983,7 @@ _ZN6dsp56k8JitBlock4emitERNS_19JitBlockRuntimeDataEPNS_13JitBlockChainEjRKNS_10P
 0
 0
 33
+3
 51
 12
 650
@@ -22940,7 +23083,7 @@ _ZN6dsp56k8JitBlock5stackEv
 # Num Counters:
 1
 # Counter Values:
-375591
+375657
 
 _ZN6dsp56k8JitBlock6gpPoolEv
 # Func Hash:
@@ -23110,10 +23253,10 @@ _ZN6dsp56k8PushRegsIN6asmjit9_abi_1_103arm3GpXEE4pushERKS4_
 # Num Counters:
 4
 # Counter Values:
-5779
+5770
 2634
-5779
-3145
+5770
+3136
 
 _ZN6dsp56k8PushRegsIN6asmjit9_abi_1_103arm3GpXEEC2ERNS_8JitBlockE
 # Func Hash:
@@ -23130,7 +23273,7 @@ _ZN6dsp56k8PushRegsIN6asmjit9_abi_1_103arm3GpXEED2Ev
 2
 # Counter Values:
 2634
-3145
+3136
 
 _ZN6dsp56k8PushRegsIN6asmjit9_abi_1_103arm4VecVEE4pushERKS4_
 # Func Hash:
@@ -24172,7 +24315,7 @@ _ZNK2md11TimedHostRx7pendingEv
 # Num Counters:
 1
 # Counter Values:
-4189842770
+4042385287
 
 _ZNK2md14FixedByteQueueILm256EE5emptyEv
 # Func Hash:
@@ -24180,7 +24323,7 @@ _ZNK2md14FixedByteQueueILm256EE5emptyEv
 # Num Counters:
 1
 # Counter Values:
-1882988286
+9354600
 
 _ZNK2md14FixedByteQueueILm256EE7tryPeekERh
 # Func Hash:
@@ -24188,8 +24331,8 @@ _ZNK2md14FixedByteQueueILm256EE7tryPeekERh
 # Num Counters:
 2
 # Counter Values:
-2274538
-2274538
+2247703
+2247703
 
 _ZNK2md14HostAudioQueueILm2ELm65536EE4sizeEv
 # Func Hash:
@@ -24247,15 +24390,23 @@ _ZNK2md15Microcontroller26copyFlashDataRangeRealtimeEPhmm
 384
 384
 
+_ZNK2md15Microcontroller28lastInstructionWasSelfBranchEv
+# Func Hash:
+1567
+# Num Counters:
+1
+# Counter Values:
+1772291426
+
 _ZNK2md15PanelInputQueue10hasPendingEv
 # Func Hash:
 6354976
 # Num Counters:
 3
 # Counter Values:
-1885120332
-1885120020
-1885120020
+11581174
+11580706
+11580706
 
 _ZNK2md15TransportPolicy26exactEssiCycleDeadlinesForEb
 # Func Hash:
@@ -24280,19 +24431,19 @@ _ZNK2md17TurboMidiTransfer12ownsMidiWireEv
 # Num Counters:
 13
 # Counter Values:
-3771181262
-3771181262
-3771181262
-3771181262
-3771181262
-3771181262
-3771181262
-3771181262
-3771181262
-3771181262
-3771181262
-3771181262
-3771181262
+21088756
+21088756
+21088756
+21088756
+21088756
+21088756
+21088756
+21088756
+21088756
+21088756
+21088756
+21088756
+21088756
 
 _ZNK2md18ScheduledMidiQueueILm16384EE5emptyEv
 # Func Hash:
@@ -24300,7 +24451,7 @@ _ZNK2md18ScheduledMidiQueueILm16384EE5emptyEv
 # Num Counters:
 1
 # Counter Values:
-1885120332
+11579017
 
 _ZNK2md18ScheduledMidiQueueILm16384EE5readyEy
 # Func Hash:
@@ -24308,7 +24459,7 @@ _ZNK2md18ScheduledMidiQueueILm16384EE5readyEy
 # Num Counters:
 3
 # Counter Values:
-1781095096
+4667043
 0
 0
 
@@ -24339,7 +24490,7 @@ _ZNK2md21RealtimeMidiByteQueueILm64EE4sizeEv
 # Num Counters:
 1
 # Counter Values:
-1880571100
+7083455
 
 _ZNK2md21RealtimeMidiByteQueueILm64EE7tryPeekERh
 # Func Hash:
@@ -24364,7 +24515,7 @@ _ZNK2md3Dsp17hasDeferredHostRxEv
 # Num Counters:
 1
 # Counter Values:
-3893277834
+3745820351
 
 _ZNK2md3Dsp6bootedEv
 # Func Hash:
@@ -24373,6 +24524,14 @@ _ZNK2md3Dsp6bootedEv
 1
 # Counter Values:
 149818019
+
+_ZNK2md3Dsp6haltedEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+458337782
 
 _ZNK2md3Sim12eventHorizonEv
 # Func Hash:
@@ -24460,7 +24619,7 @@ _ZNK2md3Sim19needsInterruptCheckEv
 # Num Counters:
 1
 # Counter Values:
-1811121990
+1804614655
 
 _ZNK2md3Sim20cyclesUntilNextEventEv
 # Func Hash:
@@ -24483,7 +24642,7 @@ _ZNK2md3Sim20externalIrq4AssertedEv
 # Num Counters:
 1
 # Counter Values:
-1773747552
+1767240217
 
 _ZNK2md3Sim20panelCharacterCyclesEv
 # Func Hash:
@@ -24500,18 +24659,18 @@ _ZNK2md3Sim25cyclesUntilTimerInterruptEjjj
 # Num Counters:
 12
 # Counter Values:
-4898700
+4925656
 0
-4898700
-4898700
-4898700
-4898700
-4898700
-4898700
+4925656
+4925656
+4925656
+4925656
+4925656
+4925656
 0
 0
-4898700
-4898700
+4925656
+4925656
 
 _ZNK2md3Sim25panelTransmitTimingActiveEv
 # Func Hash:
@@ -24529,9 +24688,9 @@ _ZNK2md3Sim27cyclesUntilNextUartTransmitEv
 # Num Counters:
 3
 # Counter Values:
-2449350
-215439
-8468
+2462828
+220557
+8568
 
 _ZNK2md3Sim29cyclesUntilNextTimerInterruptEv
 # Func Hash:
@@ -24539,8 +24698,8 @@ _ZNK2md3Sim29cyclesUntilNextTimerInterruptEv
 # Num Counters:
 2
 # Counter Values:
-2449350
-2346308
+2462828
+2359198
 
 _ZNK2md3Sim5reg16Ej
 # Func Hash:
@@ -24548,7 +24707,7 @@ _ZNK2md3Sim5reg16Ej
 # Num Counters:
 1
 # Counter Values:
-77663053
+77716965
 
 _ZNK2md3Sim8icrLevelEj
 # Func Hash:
@@ -24588,7 +24747,7 @@ _ZNK2md3Sim9imrMaskedEj
 # Num Counters:
 1
 # Counter Values:
-44952852
+44979808
 
 _ZNK2md7RomDataILj8388608EE4dataEv
 # Func Hash:
@@ -24621,7 +24780,17 @@ _ZNK2md8Hardware13isMonomachineEv
 # Num Counters:
 1
 # Counter Values:
-1480711751
+1408495772
+
+_ZNK2md8Hardware14speedUpLeverOnENS_12SpeedUpLeverE
+# Func Hash:
+99226
+# Num Counters:
+3
+# Counter Values:
+84
+84
+84
 
 _ZNK2md8Hardware14ucInputPendingEv
 # Func Hash:
@@ -24629,11 +24798,11 @@ _ZNK2md8Hardware14ucInputPendingEv
 # Num Counters:
 5
 # Counter Values:
-1778820402
-1778820246
-1776545708
-1778820402
-1778820246
+2419184
+2419028
+171325
+2419184
+2419028
 
 _ZNK2md8Hardware16hostCurrentCycleEv
 # Func Hash:
@@ -24660,15 +24829,15 @@ _ZNK2md8Hardware18midiIngressPendingEv
 # Num Counters:
 9
 # Counter Values:
-1781094940
-1776545864
-1776545864
-1776545864
-1776545864
-1776545972
-1776545864
-1781094940
-1776545972
+8480591
+3983184
+3983184
+3983184
+3983184
+3983346
+3983184
+8480591
+3983346
 
 _ZNK2md8Hardware21exactEssiTimingActiveEv
 # Func Hash:
@@ -24731,6 +24900,14 @@ _ZNK5mc68k5Hdi0810rxDataSizeEv
 1
 # Counter Values:
 165980967
+
+_ZNK5mc68k5Mc68k11getCpuStateEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+1772291426
 
 _ZNK5mc68k5Mc68k9getCyclesEv
 # Func Hash:
@@ -24850,7 +25027,7 @@ _ZNK6asmjit9_abi_1_1016OperandSignature11memBaseTypeEv
 # Num Counters:
 1
 # Counter Values:
-118701
+118707
 
 _ZNK6asmjit9_abi_1_1016OperandSignature4bitsEv
 # Func Hash:
@@ -24882,7 +25059,7 @@ _ZNK6asmjit9_abi_1_1016OperandSignature7regTypeEv
 # Num Counters:
 1
 # Counter Values:
-183726
+183744
 
 _ZNK6asmjit9_abi_1_1016OperandSignature8getFieldILj248ELj3EEEjv
 # Func Hash:
@@ -24890,7 +25067,7 @@ _ZNK6asmjit9_abi_1_1016OperandSignature8getFieldILj248ELj3EEEjv
 # Num Counters:
 1
 # Counter Values:
-302427
+302451
 
 _ZNK6asmjit9_abi_1_1016OperandSignature8getFieldILj7ELj0EEEjv
 # Func Hash:
@@ -24906,7 +25083,7 @@ _ZNK6asmjit9_abi_1_1016OperandSignatureanEj
 # Num Counters:
 1
 # Counter Values:
-24934
+24952
 
 _ZNK6asmjit9_abi_1_1016OperandSignatureeqERKS1_
 # Func Hash:
@@ -24914,7 +25091,7 @@ _ZNK6asmjit9_abi_1_1016OperandSignatureeqERKS1_
 # Num Counters:
 1
 # Counter Values:
-12945207
+12946944
 
 _ZNK6asmjit9_abi_1_1016OperandSignatureeqEj
 # Func Hash:
@@ -24930,7 +25107,7 @@ _ZNK6asmjit9_abi_1_1016OperandSignatureneEj
 # Num Counters:
 1
 # Counter Values:
-1901913
+1901922
 
 _ZNK6asmjit9_abi_1_1016OperandSignatureorERKS1_
 # Func Hash:
@@ -24938,7 +25115,7 @@ _ZNK6asmjit9_abi_1_1016OperandSignatureorERKS1_
 # Num Counters:
 1
 # Counter Values:
-686123
+686210
 
 _ZNK6asmjit9_abi_1_103Imm5valueEv
 # Func Hash:
@@ -24954,7 +25131,7 @@ _ZNK6asmjit9_abi_1_103arm2Gp1wEv
 # Num Counters:
 1
 # Counter Values:
-532422
+532473
 
 _ZNK6asmjit9_abi_1_103arm2Gp1xEv
 # Func Hash:
@@ -24962,7 +25139,7 @@ _ZNK6asmjit9_abi_1_103arm2Gp1xEv
 # Num Counters:
 1
 # Counter Values:
-1136540
+1136492
 
 _ZNK6asmjit9_abi_1_103arm3Reg5isGpWEv
 # Func Hash:
@@ -25034,7 +25211,7 @@ _ZNK6asmjit9_abi_1_107BaseMem13isOffset64BitEv
 # Num Counters:
 1
 # Counter Values:
-118653
+118659
 
 _ZNK6asmjit9_abi_1_107BaseMem6baseIdEv
 # Func Hash:
@@ -25059,7 +25236,7 @@ _ZNK6asmjit9_abi_1_107BaseMem7hasBaseEv
 # Num Counters:
 1
 # Counter Values:
-23886
+23904
 
 _ZNK6asmjit9_abi_1_107BaseMem8baseTypeEv
 # Func Hash:
@@ -25067,7 +25244,7 @@ _ZNK6asmjit9_abi_1_107BaseMem8baseTypeEv
 # Num Counters:
 1
 # Counter Values:
-118701
+118707
 
 _ZNK6asmjit9_abi_1_107BaseReg13baseSignatureEv
 # Func Hash:
@@ -25091,7 +25268,7 @@ _ZNK6asmjit9_abi_1_107BaseReg4typeEv
 # Num Counters:
 1
 # Counter Values:
-183726
+183744
 
 _ZNK6asmjit9_abi_1_107BaseReg5isVecEv
 # Func Hash:
@@ -25115,7 +25292,7 @@ _ZNK6asmjit9_abi_1_107BaseReg7isValidEv
 # Num Counters:
 1
 # Counter Values:
-1878027
+1878018
 
 _ZNK6asmjit9_abi_1_107Support5ArrayINS0_16OperandSignatureELm32EEixINS0_7RegTypeEEERKS3_RKT_
 # Func Hash:
@@ -25147,7 +25324,7 @@ _ZNK6asmjit9_abi_1_108Operand_2asINS0_3arm3GpXEEERKT_v
 # Num Counters:
 1
 # Counter Values:
-205056
+205089
 
 _ZNK6asmjit9_abi_1_108Operand_2asINS0_3arm4VecVEEERKT_v
 # Func Hash:
@@ -25163,7 +25340,7 @@ _ZNK6asmjit9_abi_1_108Operand_2idEv
 # Num Counters:
 1
 # Counter Values:
-1873215
+1873236
 
 _ZNK6asmjit9_abi_1_108Operand_5isImmEv
 # Func Hash:
@@ -25179,7 +25356,7 @@ _ZNK6asmjit9_abi_1_108Operand_6equalsERKS1_
 # Num Counters:
 1
 # Counter Values:
-12766050
+12767787
 
 _ZNK6asmjit9_abi_1_108Operand_6opTypeEv
 # Func Hash:
@@ -25195,7 +25372,7 @@ _ZNK6asmjit9_abi_1_108Operand_eqERKS1_
 # Num Counters:
 1
 # Counter Values:
-1692028
+1692052
 
 _ZNK6asmjit9_abi_1_108Operand_neERKS1_
 # Func Hash:
@@ -25786,7 +25963,7 @@ _ZNK6dsp56k10RingBufferIN8synthLib10SMidiEventELm16384ELb1ELb1EE11loadReadAcqEv
 # Num Counters:
 1
 # Counter Values:
-1885263346
+11602879
 
 _ZNK6dsp56k10RingBufferIN8synthLib10SMidiEventELm16384ELb1ELb1EE11loadReadRlxEv
 # Func Hash:
@@ -25794,7 +25971,7 @@ _ZNK6dsp56k10RingBufferIN8synthLib10SMidiEventELm16384ELb1ELb1EE11loadReadRlxEv
 # Num Counters:
 1
 # Counter Values:
-2417600
+2271559
 
 _ZNK6dsp56k10RingBufferIN8synthLib10SMidiEventELm16384ELb1ELb1EE12loadWriteAcqEv
 # Func Hash:
@@ -25802,7 +25979,7 @@ _ZNK6dsp56k10RingBufferIN8synthLib10SMidiEventELm16384ELb1ELb1EE12loadWriteAcqEv
 # Num Counters:
 1
 # Counter Values:
-1885263346
+11602879
 
 _ZNK6dsp56k10RingBufferIN8synthLib10SMidiEventELm16384ELb1ELb1EE12loadWriteRlxEv
 # Func Hash:
@@ -25818,7 +25995,16 @@ _ZNK6dsp56k10RingBufferIN8synthLib10SMidiEventELm16384ELb1ELb1EE5emptyEv
 # Num Counters:
 1
 # Counter Values:
-1885263346
+11602879
+
+_ZNK6dsp56k10RingBufferIN8synthLib10SMidiEventELm16384ELb1ELb1EE5syncsEv
+# Func Hash:
+172590737
+# Num Counters:
+2
+# Counter Values:
+936
+936
 
 _ZNK6dsp56k10RingBufferINS_5Audio5FrameINSt3__15arrayIjLm4EEEEELm32768ELb1ELb0EE11loadReadAcqEv
 # Func Hash:
@@ -25876,6 +26062,15 @@ _ZNK6dsp56k10RingBufferINS_5Audio5FrameINSt3__15arrayIjLm4EEEEELm32768ELb1ELb0EE
 # Counter Values:
 536900772
 
+_ZNK6dsp56k10RingBufferINS_5Audio5FrameINSt3__15arrayIjLm4EEEEELm32768ELb1ELb0EE5syncsEv
+# Func Hash:
+172590737
+# Num Counters:
+2
+# Counter Values:
+735584200
+735584200
+
 _ZNK6dsp56k10RingBufferINS_5Audio5FrameINSt3__15arrayIjLm6EEEEELm32768ELb1ELb0EE11loadReadAcqEv
 # Func Hash:
 24
@@ -25925,6 +26120,15 @@ _ZNK6dsp56k10RingBufferINS_5Audio5FrameINSt3__15arrayIjLm6EEEEELm32768ELb1ELb0EE
 1
 # Counter Values:
 21043906
+
+_ZNK6dsp56k10RingBufferINS_5Audio5FrameINSt3__15arrayIjLm6EEEEELm32768ELb1ELb0EE5syncsEv
+# Func Hash:
+172590737
+# Num Counters:
+2
+# Counter Values:
+36301936
+36301936
 
 _ZNK6dsp56k10RingBufferINSt3__15arrayIjLm2EEELm65536ELb0ELb0EE11loadReadAcqEv
 # Func Hash:
@@ -26006,6 +26210,15 @@ _ZNK6dsp56k10RingBufferINSt3__15arrayIjLm6EEELm32768ELb0ELb0EE5emptyEv
 # Counter Values:
 4459130
 
+_ZNK6dsp56k10RingBufferINSt3__15arrayIjLm6EEELm32768ELb0ELb0EE5syncsEv
+# Func Hash:
+172570129
+# Num Counters:
+2
+# Counter Values:
+17562106
+0
+
 _ZNK6dsp56k10RingBufferIjLm1024ELb1ELb1EE11loadReadAcqEv
 # Func Hash:
 24
@@ -26046,13 +26259,22 @@ _ZNK6dsp56k10RingBufferIjLm1024ELb1ELb1EE5emptyEv
 # Counter Values:
 6874230
 
+_ZNK6dsp56k10RingBufferIjLm1024ELb1ELb1EE5syncsEv
+# Func Hash:
+172590737
+# Num Counters:
+2
+# Counter Values:
+12191260
+12191260
+
 _ZNK6dsp56k10RingBufferIjLm32ELb1ELb1EE11loadReadAcqEv
 # Func Hash:
 24
 # Num Counters:
 1
 # Counter Values:
-927531708
+929984950
 
 _ZNK6dsp56k10RingBufferIjLm32ELb1ELb1EE11loadReadRlxEv
 # Func Hash:
@@ -26062,25 +26284,31 @@ _ZNK6dsp56k10RingBufferIjLm32ELb1ELb1EE11loadReadRlxEv
 # Counter Values:
 2453242
 
-_ZNK6dsp56k10RingBufferIjLm32ELb1ELb1EE11waitNotFullEv
-# Func Hash:
-11045769361
-# Num Counters:
-3
-# Counter Values:
-2453242
-2453242
-0
-
 _ZNK6dsp56k10RingBufferIjLm32ELb1ELb1EE12loadWriteAcqEv
 # Func Hash:
 24
 # Num Counters:
 1
 # Counter Values:
-927531708
+929984950
 
 _ZNK6dsp56k10RingBufferIjLm32ELb1ELb1EE12loadWriteRlxEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+2453242
+
+_ZNK6dsp56k10RingBufferIjLm32ELb1ELb1EE4fullEv
+# Func Hash:
+1566
+# Num Counters:
+1
+# Counter Values:
+2453242
+
+_ZNK6dsp56k10RingBufferIjLm32ELb1ELb1EE4sizeEv
 # Func Hash:
 24
 # Num Counters:
@@ -26096,13 +26324,22 @@ _ZNK6dsp56k10RingBufferIjLm32ELb1ELb1EE5emptyEv
 # Counter Values:
 927531708
 
+_ZNK6dsp56k10RingBufferIjLm32ELb1ELb1EE5syncsEv
+# Func Hash:
+172590737
+# Num Counters:
+2
+# Counter Values:
+9812968
+9812968
+
 _ZNK6dsp56k10RingBufferIjLm8192ELb1ELb1EE11loadReadAcqEv
 # Func Hash:
 24
 # Num Counters:
 1
 # Counter Values:
-3611797132
+3518737503
 
 _ZNK6dsp56k10RingBufferIjLm8192ELb1ELb1EE11loadReadRlxEv
 # Func Hash:
@@ -26128,7 +26365,7 @@ _ZNK6dsp56k10RingBufferIjLm8192ELb1ELb1EE12loadWriteAcqEv
 # Num Counters:
 1
 # Counter Values:
-3611797132
+3518737503
 
 _ZNK6dsp56k10RingBufferIjLm8192ELb1ELb1EE12loadWriteRlxEv
 # Func Hash:
@@ -26148,13 +26385,21 @@ _ZNK6dsp56k10RingBufferIjLm8192ELb1ELb1EE12waitNotEmptyEv
 2398711
 0
 
+_ZNK6dsp56k10RingBufferIjLm8192ELb1ELb1EE4fullEv
+# Func Hash:
+1566
+# Num Counters:
+1
+# Counter Values:
+51372353
+
 _ZNK6dsp56k10RingBufferIjLm8192ELb1ELb1EE4sizeEv
 # Func Hash:
 24
 # Num Counters:
 1
 # Counter Values:
-210041655
+261414008
 
 _ZNK6dsp56k10RingBufferIjLm8192ELb1ELb1EE5emptyEv
 # Func Hash:
@@ -26162,7 +26407,16 @@ _ZNK6dsp56k10RingBufferIjLm8192ELb1ELb1EE5emptyEv
 # Num Counters:
 1
 # Counter Values:
-3401755477
+3257323495
+
+_ZNK6dsp56k10RingBufferIjLm8192ELb1ELb1EE5syncsEv
+# Func Hash:
+172590737
+# Num Counters:
+2
+# Counter Values:
+215084256
+215084256
 
 _ZNK6dsp56k12FunctorAndSD3getILj0ELj0EEEMNS_3DSPEFvjEv
 # Func Hash:
@@ -26234,7 +26488,7 @@ _ZNK6dsp56k12IPeripherals14getTargetClockEv
 # Num Counters:
 1
 # Counter Values:
-512314266
+375884394
 
 _ZNK6dsp56k12IPeripherals14getTargetCycleEv
 # Func Hash:
@@ -26250,7 +26504,7 @@ _ZNK6dsp56k12IPeripherals16hasCycleDeadlineEv
 # Num Counters:
 1
 # Counter Values:
-512314323
+375884451
 
 _ZNK6dsp56k12IPeripherals17getTargetClockPtrEv
 # Func Hash:
@@ -26258,7 +26512,7 @@ _ZNK6dsp56k12IPeripherals17getTargetClockPtrEv
 # Num Counters:
 1
 # Counter Values:
-24
+30
 
 _ZNK6dsp56k12IPeripherals5isDueEyy
 # Func Hash:
@@ -26266,8 +26520,8 @@ _ZNK6dsp56k12IPeripherals5isDueEyy
 # Num Counters:
 4
 # Counter Values:
-3216150957
-2449731089
+3222234673
+2455814805
 761153825
 157879998
 
@@ -26317,7 +26571,7 @@ _ZNK6dsp56k12JitScopedReg3getEv
 # Num Counters:
 1
 # Counter Values:
-301432
+301474
 
 _ZNK6dsp56k12JitScopedReg5blockEv
 # Func Hash:
@@ -26963,7 +27217,7 @@ _ZNK6dsp56k13JitDspRegPool10makeDspPtrEPKvm
 # Num Counters:
 1
 # Counter Values:
-124135
+124153
 
 _ZNK6dsp56k13JitDspRegPool10makeDspPtrIhLj5EEEN6asmjit9_abi_1_103arm3MemERKNS_7RegTypeIT_XT0_EEE
 # Func Hash:
@@ -27027,9 +27281,9 @@ _ZNK6dsp56k13JitDspRegPool12RegisterListIN6asmjit9_abi_1_103arm2GpEE6isUsedERKS5
 # Num Counters:
 3
 # Counter Values:
-44691
-2641052
-4187
+44724
+2642846
+4196
 
 _ZNK6dsp56k13JitDspRegPool12RegisterListINS0_8SpillRegEE6isFullEv
 # Func Hash:
@@ -27248,7 +27502,7 @@ _ZNK6dsp56k13JitDspRegPool7isInUseERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 1
 # Counter Values:
-44691
+44724
 
 _ZNK6dsp56k13JitDspRegPool7isInUseERKN6asmjit9_abi_1_103arm4VecVE
 # Func Hash:
@@ -27472,10 +27726,10 @@ _ZNK6dsp56k14JitStackHelper13isUsedFuncArgERKN6asmjit9_abi_1_103arm2GpE
 # Counter Values:
 7817
 5668
-5614
-2038
-5143
-2038
+5578
+2047
+5170
+2047
 
 _ZNK6dsp56k14JitStackHelper14pushedRegCountEv
 # Func Hash:
@@ -28110,6 +28364,14 @@ _ZNK6dsp56k3DSP17isInterruptMaskedEj
 3047815
 406537
 
+_ZNK6dsp56k3DSP19isHaltedAtInvalidPCEv
+# Func Hash:
+1566
+# Num Counters:
+1
+# Counter Values:
+458337782
+
 _ZNK6dsp56k3DSP19isPeripheralAddressEj
 # Func Hash:
 706932708894
@@ -28136,9 +28398,17 @@ _ZNK6dsp56k3DSP21getInstructionCounterEv
 # Num Counters:
 1
 # Counter Values:
-1060381882
+1060381888
 
 _ZNK6dsp56k3DSP22getExecPeripheralsFuncEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+12
+
+_ZNK6dsp56k3DSP22getNopGateInstructionsEv
 # Func Hash:
 24
 # Num Counters:
@@ -28491,6 +28761,14 @@ _ZNK6dsp56k5Audio5FrameINSt3__15arrayIjLm6EEEEixEm
 # Counter Values:
 210568681
 
+_ZNK6dsp56k5HDI0810dataRXFullEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+51372353
+
 _ZNK6dsp56k5HDI0812m_callbackRxMUlvE_clEv
 # Func Hash:
 0
@@ -28614,7 +28892,7 @@ _ZNK6dsp56k5HDI085hasTXEv
 # Num Counters:
 1
 # Counter Values:
-344796654
+200364672
 
 _ZNK6dsp56k5HDI086rxDataEv
 # Func Hash:
@@ -28646,7 +28924,7 @@ _ZNK6dsp56k5RegGP3getEv
 # Num Counters:
 1
 # Counter Values:
-198877
+198919
 
 _ZNK6dsp56k5RegGPcvRKN6asmjit9_abi_1_103arm3GpXEEv
 # Func Hash:
@@ -28654,7 +28932,7 @@ _ZNK6dsp56k5RegGPcvRKN6asmjit9_abi_1_103arm3GpXEEv
 # Num Counters:
 1
 # Counter Values:
-132013
+132055
 
 _ZNK6dsp56k6AluReg3getEv
 # Func Hash:
@@ -29651,7 +29929,7 @@ _ZNK6dsp56k6Jitmem11makeBasePtrERKN6asmjit9_abi_1_103arm3GpXEPKvm
 # Num Counters:
 1
 # Counter Values:
-16699
+16711
 
 _ZNK6dsp56k6Jitmem11writePeriphENS_8EMemAreaERKjRKNS_8DspValueE
 # Func Hash:
@@ -29992,7 +30270,7 @@ _ZNK6dsp56k6Jitmem3movERKN6asmjit9_abi_1_103arm2GpERKh
 # Num Counters:
 1
 # Counter Values:
-57
+63
 
 _ZNK6dsp56k6Jitmem3movERKN6asmjit9_abi_1_103arm2GpERKj
 # Func Hash:
@@ -30008,7 +30286,7 @@ _ZNK6dsp56k6Jitmem3movERKN6asmjit9_abi_1_103arm2GpERKy
 # Num Counters:
 1
 # Counter Values:
-282
+294
 
 _ZNK6dsp56k6Jitmem3movERjRKNS_8DspValueE
 # Func Hash:
@@ -30033,15 +30311,15 @@ _ZNK6dsp56k6Jitmem3movILm1EEEvRKN6asmjit9_abi_1_103arm2GpERKNS4_3MemE
 # Num Counters:
 10
 # Counter Values:
-5540
+5546
 0
 0
 0
 0
-5540
+5546
 0
 0
-5540
+5546
 0
 
 _ZNK6dsp56k6Jitmem3movILm1EEEvRKN6asmjit9_abi_1_103arm3MemERKNS4_2GpE
@@ -30150,14 +30428,14 @@ _ZNK6dsp56k6Jitmem3movILm8EEEvRKN6asmjit9_abi_1_103arm2GpERKNS4_3MemE
 # Num Counters:
 10
 # Counter Values:
-9069
+9081
 0
 0
 0
 0
-9069
+9081
 0
-9069
+9081
 0
 0
 
@@ -30192,8 +30470,8 @@ _ZNK6dsp56k6Jitmem7makePtrERKN6asmjit9_abi_1_103arm3GpXEPKvj
 # Num Counters:
 2
 # Counter Values:
-4539
-4413
+4557
+4419
 
 _ZNK6dsp56k6Jitmem9MemoryRef7isValidEv
 # Func Hash:
@@ -30253,7 +30531,7 @@ _ZNK6dsp56k6Memory4sizeENS_8EMemAreaE
 # Num Counters:
 1
 # Counter Values:
-457807435
+916145217
 
 _ZNK6dsp56k6Memory5sizePEv
 # Func Hash:
@@ -30261,7 +30539,7 @@ _ZNK6dsp56k6Memory5sizePEv
 # Num Counters:
 1
 # Counter Values:
-7211
+458344993
 
 _ZNK6dsp56k6Memory6sizeXYEv
 # Func Hash:
@@ -30285,7 +30563,7 @@ _ZNK6dsp56k6PushGPcvRKN6asmjit9_abi_1_103arm3GpXEEv
 # Num Counters:
 1
 # Counter Values:
-10449
+10482
 
 _ZNK6dsp56k6RegXMM3getEv
 # Func Hash:
@@ -30385,7 +30663,7 @@ _ZNK6dsp56k7RegTypeIiLj24EE6toWordEv
 # Num Counters:
 1
 # Counter Values:
-1255611004
+1713948786
 
 _ZNK6dsp56k8BitfieldIjNS_4Essi10RegCRAbitsELm24EEcvRKjEv
 # Func Hash:
@@ -30609,7 +30887,7 @@ _ZNK6dsp56k8DspValue9getDspRegEv
 
 _ZNK6dsp56k8JitBlock13findPollCycleERNS_12JitPollCycleEjRKNSt3__13mapIjjNS3_4lessIjEENS3_9allocatorINS3_4pairIKjjEEEEEERKNS3_3setIjS6_NS7_IjEEEE
 # Func Hash:
-17116750916494264484
+7352997581016042264
 # Num Counters:
 39
 # Counter Values:
@@ -30674,11 +30952,11 @@ _ZNK6dsp56k8JitBlock13isNopLoopBodyERKNS_12JitBlockInfoEjb
 941
 884
 
-_ZNK6dsp56k8JitBlock14isIdlePollLoopERKNS_12JitBlockInfoEjbRKNSt3__13setIjNS4_4lessIjEENS4_9allocatorIjEEEE
+_ZNK6dsp56k8JitBlock14isIdlePollLoopERKNS_12JitBlockInfoEjbRKNSt3__13setIjNS4_4lessIjEENS4_9allocatorIjEEEEPb
 # Func Hash:
-6061039148041032645
+13255245439046723408
 # Num Counters:
-23
+26
 # Counter Values:
 7174
 0
@@ -30703,6 +30981,9 @@ _ZNK6dsp56k8JitBlock14isIdlePollLoopERKNS_12JitBlockInfoEjbRKNSt3__13setIjNS4_4l
 170
 137
 0
+3
+33
+3
 
 _ZNK6dsp56k8JitBlock17getAddressingModeEj
 # Func Hash:
@@ -30894,13 +31175,29 @@ _ZNKSt16initializer_listIN6asmjit9_abi_1_103arm3RegEE5beginB8ne200100Ev
 # Counter Values:
 52852
 
+_ZNKSt16initializer_listIPN6dsp56k3DSPEE3endB8ne200100Ev
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+6
+
+_ZNKSt16initializer_listIPN6dsp56k3DSPEE5beginB8ne200100Ev
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+6
+
 _ZNKSt16initializer_listIjE3endB8ne200100Ev
 # Func Hash:
 24
 # Num Counters:
 1
 # Counter Values:
-926749228
+926762706
 
 _ZNKSt16initializer_listIjE5beginB8ne200100Ev
 # Func Hash:
@@ -30908,7 +31205,7 @@ _ZNKSt16initializer_listIjE5beginB8ne200100Ev
 # Num Counters:
 1
 # Counter Values:
-926749228
+926762706
 
 _ZNKSt3__110__function12__alloc_funcIZN6dsp56k6JitOps16jumpIfBitTestMemILNS2_11InstructionE131ELNS2_8JumpModeE1ELNS2_16ExpectedBitValueE1EEEvjEUlvE_NS_9allocatorIS8_EEFvvEE15__get_allocatorB8ne200100Ev
 # Func Hash:
@@ -31185,7 +31482,7 @@ _ZNKSt3__110__identityclB8ne200100IRKjEEOT_S5_
 # Num Counters:
 1
 # Counter Values:
-5545799538
+5545799607
 
 _ZNKSt3__110__identityclB8ne200100IRN6asmjit9_abi_1_103arm4VecVEEEOT_S8_
 # Func Hash:
@@ -31807,7 +32104,7 @@ _ZNKSt3__111__wrap_iterIPKjE4baseB8ne200100Ev
 # Num Counters:
 1
 # Counter Values:
-1710
+2055
 
 _ZNKSt3__111__wrap_iterIPKjEplB8ne200100El
 # Func Hash:
@@ -31815,7 +32112,7 @@ _ZNKSt3__111__wrap_iterIPKjEplB8ne200100El
 # Num Counters:
 1
 # Counter Values:
-342
+411
 
 _ZNKSt3__111__wrap_iterIPN6asmjit9_abi_1_103arm3RegEE4baseB8ne200100Ev
 # Func Hash:
@@ -32166,7 +32463,7 @@ _ZNKSt3__113__atomic_baseIN2md22MidiSysexTransferStateELb0EE4loadB8ne200100ENS_1
 # Num Counters:
 3
 # Counter Values:
-3771181262
+21088756
 0
 0
 
@@ -32176,7 +32473,7 @@ _ZNKSt3__113__atomic_baseIbLb0EE4loadB8ne200100ENS_12memory_orderE
 # Num Counters:
 3
 # Counter Values:
-5963794477
+4050185285
 0
 0
 
@@ -32214,7 +32511,7 @@ _ZNKSt3__113__atomic_baseImLb0EE4loadB8ne200100ENS_12memory_orderE
 # Num Counters:
 3
 # Counter Values:
-23323326054
+11900592543
 0
 0
 
@@ -33129,6 +33426,30 @@ _ZNKSt3__15arrayIN2md15PanelInputQueue4SlotELm512EE4sizeB8ne200100Ev
 # Counter Values:
 3702
 
+_ZNKSt3__15arrayIN2md16SpeedUpLeverInfoELm13EE3endB8ne200100Ev
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+6
+
+_ZNKSt3__15arrayIN2md16SpeedUpLeverInfoELm13EE4dataB8ne200100Ev
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+12
+
+_ZNKSt3__15arrayIN2md16SpeedUpLeverInfoELm13EE5beginB8ne200100Ev
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+6
+
 _ZNKSt3__15arrayIN2md22HostAudioInputTimelineILm65536EEELm2EE4sizeB8ne200100Ev
 # Func Hash:
 24
@@ -33143,7 +33464,7 @@ _ZNKSt3__15arrayIN2md3Sim4UartELm2EEixB8ne200100Em
 # Num Counters:
 1
 # Counter Values:
-41643503
+41670459
 
 _ZNKSt3__15arrayIN2md3Sim5TimerELm2EE3endB8ne200100Ev
 # Func Hash:
@@ -33175,7 +33496,7 @@ _ZNKSt3__15arrayIN2md3Sim5TimerELm2EEixB8ne200100Em
 # Num Counters:
 1
 # Counter Values:
-4898700
+4925656
 
 _ZNKSt3__15arrayIN6dsp56k10DmaChannelELm6EE4sizeB8ne200100Ev
 # Func Hash:
@@ -33543,7 +33864,7 @@ _ZNKSt3__15arrayIbLm2EEixB8ne200100Em
 # Num Counters:
 1
 # Counter Values:
-4898700
+4925656
 
 _ZNKSt3__15arrayIhLm2EEixB8ne200100Em
 # Func Hash:
@@ -33583,7 +33904,7 @@ _ZNKSt3__15arrayIhLm65536EEixB8ne200100Em
 # Num Counters:
 1
 # Counter Values:
-242624334
+242759114
 
 _ZNKSt3__15arrayIhLm8EE4sizeB8ne200100Ev
 # Func Hash:
@@ -33599,7 +33920,7 @@ _ZNKSt3__15arrayIjLm3EEixB8ne200100Em
 # Num Counters:
 1
 # Counter Values:
-457807435
+916145217
 
 _ZNKSt3__15arrayIjLm4EEixB8ne200100Em
 # Func Hash:
@@ -33889,7 +34210,7 @@ _ZNKSt3__16__lessIvvEclB8ne200100IPKN6dsp56k7PoolRegES6_EEbRKT_RKT0_
 # Num Counters:
 1
 # Counter Values:
-238
+208
 
 _ZNKSt3__16__lessIvvEclB8ne200100IddEEbRKT_RKT0_
 # Func Hash:
@@ -33897,7 +34218,7 @@ _ZNKSt3__16__lessIvvEclB8ne200100IddEEbRKT_RKT0_
 # Num Counters:
 1
 # Counter Values:
-113870983
+12946018
 
 _ZNKSt3__16__lessIvvEclB8ne200100IiiEEbRKT_RKT0_
 # Func Hash:
@@ -33913,7 +34234,7 @@ _ZNKSt3__16__lessIvvEclB8ne200100IjjEEbRKT_RKT0_
 # Num Counters:
 1
 # Counter Values:
-3002294417
+3002326591
 
 _ZNKSt3__16__lessIvvEclB8ne200100IllEEbRKT_RKT0_
 # Func Hash:
@@ -33937,7 +34258,7 @@ _ZNKSt3__16__lessIvvEclB8ne200100IyyEEbRKT_RKT0_
 # Num Counters:
 1
 # Counter Values:
-1158401359
+885422189
 
 _ZNKSt3__16__treeINS_12__value_typeIPvmEENS_19__map_value_compareIS2_S3_NS_4lessIS2_EELb1EEENS_9allocatorIS3_EEE10__end_nodeB8ne200100Ev
 # Func Hash:
@@ -34357,7 +34678,7 @@ _ZNKSt3__16vectorIN2md18ScheduledMidiQueueILm16384EE5EntryENS_9allocatorIS4_EEE5
 # Num Counters:
 1
 # Counter Values:
-1885120332
+11579017
 
 _ZNKSt3__16vectorIN2md18ScheduledMidiQueueILm16384EE5EntryENS_9allocatorIS4_EEE8capacityB8ne200100Ev
 # Func Hash:
@@ -35771,7 +36092,7 @@ _ZNKSt3__16vectorIhNS_9allocatorIhEEE4sizeB8ne200100Ev
 # Num Counters:
 1
 # Counter Values:
-76766829
+76713159
 
 _ZNKSt3__16vectorIhNS_9allocatorIhEEE5beginB8ne200100Ev
 # Func Hash:
@@ -35787,7 +36108,7 @@ _ZNKSt3__16vectorIhNS_9allocatorIhEEE5emptyB8ne200100Ev
 # Num Counters:
 1
 # Counter Values:
-2437910
+2291869
 
 _ZNKSt3__16vectorIhNS_9allocatorIhEEE8capacityB8ne200100Ev
 # Func Hash:
@@ -35811,7 +36132,7 @@ _ZNKSt3__16vectorIhNS_9allocatorIhEEEixB8ne200100Em
 # Num Counters:
 1
 # Counter Values:
-6843201
+6762696
 
 _ZNKSt3__16vectorIjNS_9allocatorIjEEE11__make_iterB8ne200100EPKj
 # Func Hash:
@@ -35819,7 +36140,7 @@ _ZNKSt3__16vectorIjNS_9allocatorIjEEE11__make_iterB8ne200100EPKj
 # Num Counters:
 1
 # Counter Values:
-1026
+1233
 
 _ZNKSt3__16vectorIjNS_9allocatorIjEEE11__recommendB8ne200100Em
 # Func Hash:
@@ -35861,7 +36182,7 @@ _ZNKSt3__16vectorIjNS_9allocatorIjEEE3endB8ne200100Ev
 # Num Counters:
 1
 # Counter Values:
-684
+822
 
 _ZNKSt3__16vectorIjNS_9allocatorIjEEE4sizeB8ne200100Ev
 # Func Hash:
@@ -35877,7 +36198,7 @@ _ZNKSt3__16vectorIjNS_9allocatorIjEEE5beginB8ne200100Ev
 # Num Counters:
 1
 # Counter Values:
-342
+411
 
 _ZNKSt3__16vectorIjNS_9allocatorIjEEE5emptyB8ne200100Ev
 # Func Hash:
@@ -35885,7 +36206,7 @@ _ZNKSt3__16vectorIjNS_9allocatorIjEEE5emptyB8ne200100Ev
 # Num Counters:
 1
 # Counter Values:
-7839
+8073
 
 _ZNKSt3__16vectorIjNS_9allocatorIjEEE8capacityB8ne200100Ev
 # Func Hash:
@@ -37525,7 +37846,7 @@ _ZNSt3__110__function12__value_funcIFbvEE9__as_baseB8ne200100EPv
 # Num Counters:
 1
 # Counter Values:
-9
+21
 
 _ZNSt3__110__function12__value_funcIFbvEEC2B8ne200100Ev
 # Func Hash:
@@ -37541,8 +37862,8 @@ _ZNSt3__110__function12__value_funcIFbvEED2B8ne200100Ev
 # Num Counters:
 3
 # Counter Values:
-69
-18
+81
+42
 0
 
 _ZNSt3__110__function12__value_funcIFbvEEaSB8ne200100EDn
@@ -37551,7 +37872,7 @@ _ZNSt3__110__function12__value_funcIFbvEEaSB8ne200100EDn
 # Num Counters:
 3
 # Counter Values:
-9
+21
 0
 0
 
@@ -37561,9 +37882,9 @@ _ZNSt3__110__function12__value_funcIFbvEEaSB8ne200100EOS3_
 # Num Counters:
 3
 # Counter Values:
-9
+21
 0
-9
+21
 
 _ZNSt3__110__function12__value_funcIFhRKN5mc68k4PortEhEED2B8ne200100Ev
 # Func Hash:
@@ -38865,7 +39186,7 @@ _ZNSt3__110__function6__baseIFbvEEC2B8ne200100Ev
 # Num Counters:
 1
 # Counter Values:
-18
+42
 
 _ZNSt3__110__function6__baseIFhRKN5mc68k4PortEhEEC2B8ne200100Ev
 # Func Hash:
@@ -41368,7 +41689,7 @@ _ZNSt3__111__wrap_iterIPKjEC2B8ne200100ES2_
 # Num Counters:
 1
 # Counter Values:
-1026
+1233
 
 _ZNSt3__111__wrap_iterIPKjEpLB8ne200100El
 # Func Hash:
@@ -41376,7 +41697,7 @@ _ZNSt3__111__wrap_iterIPKjEpLB8ne200100El
 # Num Counters:
 1
 # Counter Values:
-342
+411
 
 _ZNSt3__111__wrap_iterIPN6asmjit9_abi_1_103arm2GpEEC2B8ne200100ES5_
 # Func Hash:
@@ -42080,7 +42401,7 @@ _ZNSt3__112__to_addressB8ne200100IKjEEPT_S3_
 # Num Counters:
 1
 # Counter Values:
-1050
+1257
 
 _ZNSt3__112__to_addressB8ne200100IMN6dsp56k3DSPEFvjEEEPT_S6_
 # Func Hash:
@@ -42224,7 +42545,7 @@ _ZNSt3__112__to_addressB8ne200100INS_11__wrap_iterIPKjEELi0EEEu7__decayIDTclsr19
 # Num Counters:
 1
 # Counter Values:
-1026
+1233
 
 _ZNSt3__112__to_addressB8ne200100INS_11__wrap_iterIPN6dsp56k14JitStackHelper9PushedRegEEELi0EEEu7__decayIDTclsr19__to_address_helperIT_EE6__callclsr3stdE7declvalIRKS7_EEEEES9_
 # Func Hash:
@@ -42782,7 +43103,7 @@ _ZNSt3__113__atomic_baseIiLb1EE9fetch_addB8ne200100EiNS_12memory_orderE
 # Num Counters:
 1
 # Counter Values:
-504487778
+118546246
 
 _ZNSt3__113__atomic_baseIiLb1EE9fetch_subB8ne200100EiNS_12memory_orderE
 # Func Hash:
@@ -42790,7 +43111,7 @@ _ZNSt3__113__atomic_baseIiLb1EE9fetch_subB8ne200100EiNS_12memory_orderE
 # Num Counters:
 1
 # Counter Values:
-504487778
+118546246
 
 _ZNSt3__113__atomic_baseIiLb1EEC2B8ne200100Ei
 # Func Hash:
@@ -42957,7 +43278,7 @@ _ZNSt3__113__rewrap_iterB8ne200100INS_11__wrap_iterIPKjEES3_NS_18__unwrap_iter_i
 # Num Counters:
 1
 # Counter Values:
-342
+411
 
 _ZNSt3__113__rewrap_iterB8ne200100INS_11__wrap_iterIPPN6dsp56k10DmaChannelEEES5_NS_18__unwrap_iter_implIS6_Lb1EEEEET_S9_T0_
 # Func Hash:
@@ -43140,7 +43461,7 @@ _ZNSt3__113__unwrap_iterB8ne200100INS_11__wrap_iterIPKjEENS_18__unwrap_iter_impl
 # Num Counters:
 1
 # Counter Values:
-684
+822
 
 _ZNSt3__113__unwrap_iterB8ne200100INS_11__wrap_iterIPN6dsp56k14JitStackHelper9PushedRegEEENS_18__unwrap_iter_implIS6_Lb1EEELi0EEEDTclsrT0_8__unwrapclsr3stdE7declvalIT_EEEESA_
 # Func Hash:
@@ -45066,7 +45387,7 @@ _ZNSt3__114numeric_limitsIiE3maxB8ne200100Ev
 # Num Counters:
 1
 # Counter Values:
-160155
+160173
 
 _ZNSt3__114numeric_limitsIiE3minB8ne200100Ev
 # Func Hash:
@@ -45074,7 +45395,7 @@ _ZNSt3__114numeric_limitsIiE3minB8ne200100Ev
 # Num Counters:
 1
 # Counter Values:
-160155
+160173
 
 _ZNSt3__114numeric_limitsIjE3maxB8ne200100Ev
 # Func Hash:
@@ -45122,7 +45443,7 @@ _ZNSt3__114pointer_traitsINS_11__wrap_iterIPKjEEE10to_addressB8ne200100ES4_
 # Num Counters:
 1
 # Counter Values:
-1026
+1233
 
 _ZNSt3__114pointer_traitsINS_11__wrap_iterIPN6dsp56k14JitStackHelper9PushedRegEEEE10to_addressB8ne200100ES6_
 # Func Hash:
@@ -48244,7 +48565,7 @@ _ZNSt3__117__cxx_atomic_loadB8ne200100IN2md22MidiSysexTransferStateEEET_PKNS_22_
 # Num Counters:
 1
 # Counter Values:
-3771181262
+21088756
 
 _ZNSt3__117__cxx_atomic_loadB8ne200100IbEET_PKNS_22__cxx_atomic_base_implIS1_EENS_12memory_orderE
 # Func Hash:
@@ -48252,7 +48573,7 @@ _ZNSt3__117__cxx_atomic_loadB8ne200100IbEET_PKNS_22__cxx_atomic_base_implIS1_EEN
 # Num Counters:
 1
 # Counter Values:
-5963794477
+4050185285
 
 _ZNSt3__117__cxx_atomic_loadB8ne200100IiEET_PKNS_22__cxx_atomic_base_implIS1_EENS_12memory_orderE
 # Func Hash:
@@ -48276,7 +48597,7 @@ _ZNSt3__117__cxx_atomic_loadB8ne200100ImEET_PKNS_22__cxx_atomic_base_implIS1_EEN
 # Num Counters:
 1
 # Counter Values:
-23323326054
+11900592543
 
 _ZNSt3__117__cxx_atomic_loadB8ne200100IyEET_PKNS_22__cxx_atomic_base_implIS1_EENS_12memory_orderE
 # Func Hash:
@@ -48957,7 +49278,7 @@ _ZNSt3__118__unwrap_iter_implINS_11__wrap_iterIPKjEELb1EE8__rewrapB8ne200100ES4_
 # Num Counters:
 1
 # Counter Values:
-342
+411
 
 _ZNSt3__118__unwrap_iter_implINS_11__wrap_iterIPKjEELb1EE8__unwrapB8ne200100ES4_
 # Func Hash:
@@ -48965,7 +49286,7 @@ _ZNSt3__118__unwrap_iter_implINS_11__wrap_iterIPKjEELb1EE8__unwrapB8ne200100ES4_
 # Num Counters:
 1
 # Counter Values:
-684
+822
 
 _ZNSt3__118__unwrap_iter_implINS_11__wrap_iterIPN6dsp56k14JitStackHelper9PushedRegEEELb1EE8__unwrapB8ne200100ES6_
 # Func Hash:
@@ -50182,7 +50503,7 @@ _ZNSt3__119__to_address_helperINS_11__wrap_iterIPKjEEvE6__callB8ne200100ERKS4_
 # Num Counters:
 1
 # Counter Values:
-1026
+1233
 
 _ZNSt3__119__to_address_helperINS_11__wrap_iterIPN6dsp56k14JitStackHelper9PushedRegEEEvE6__callB8ne200100ERKS6_
 # Func Hash:
@@ -50557,7 +50878,7 @@ _ZNSt3__121__is_pointer_in_rangeB8ne200100IN6dsp56k7PoolRegES2_Li0EEEbPKT_S5_PKT
 0
 0
 0
-115
+85
 0
 
 _ZNSt3__121__libcpp_operator_newB8ne200100IMN6dsp56k3DSPEFvjEEEPvm
@@ -51150,7 +51471,7 @@ _ZNSt3__122__cxx_atomic_fetch_addB8ne200100IiEET_PNS_22__cxx_atomic_base_implIS1
 # Num Counters:
 1
 # Counter Values:
-504487778
+118546246
 
 _ZNSt3__122__cxx_atomic_fetch_addB8ne200100ImEET_PNS_22__cxx_atomic_base_implIS1_EES1_NS_12memory_orderE
 # Func Hash:
@@ -51174,7 +51495,7 @@ _ZNSt3__122__cxx_atomic_fetch_subB8ne200100IiEET_PNS_22__cxx_atomic_base_implIS1
 # Num Counters:
 1
 # Counter Values:
-504487778
+118546246
 
 _ZNSt3__122__cxx_atomic_fetch_subB8ne200100ImEET_PNS_22__cxx_atomic_base_implIS1_EES1_NS_12memory_orderE
 # Func Hash:
@@ -51465,7 +51786,7 @@ _ZNSt3__123__libcpp_numeric_limitsIiLb1EE3maxB8ne200100Ev
 # Num Counters:
 1
 # Counter Values:
-160155
+160173
 
 _ZNSt3__123__libcpp_numeric_limitsIiLb1EE3minB8ne200100Ev
 # Func Hash:
@@ -51473,7 +51794,7 @@ _ZNSt3__123__libcpp_numeric_limitsIiLb1EE3minB8ne200100Ev
 # Num Counters:
 1
 # Counter Values:
-160155
+160173
 
 _ZNSt3__123__libcpp_numeric_limitsIjLb1EE3maxB8ne200100Ev
 # Func Hash:
@@ -53786,7 +54107,7 @@ _ZNSt3__13minB8ne200100IdEERKT_S3_S3_
 # Num Counters:
 1
 # Counter Values:
-113870983
+12946018
 
 _ZNSt3__13minB8ne200100IdNS_6__lessIvvEEEERKT_S5_S5_T0_
 # Func Hash:
@@ -53794,7 +54115,7 @@ _ZNSt3__13minB8ne200100IdNS_6__lessIvvEEEERKT_S5_S5_T0_
 # Num Counters:
 2
 # Counter Values:
-113870983
+12946018
 450953
 
 _ZNSt3__13minB8ne200100IjEERKT_S3_S3_
@@ -53803,7 +54124,7 @@ _ZNSt3__13minB8ne200100IjEERKT_S3_S3_
 # Num Counters:
 1
 # Counter Values:
-229265573
+229297747
 
 _ZNSt3__13minB8ne200100IjEET_St16initializer_listIS1_E
 # Func Hash:
@@ -53819,8 +54140,8 @@ _ZNSt3__13minB8ne200100IjNS_6__lessIvvEEEERKT_S5_S5_T0_
 # Num Counters:
 2
 # Counter Values:
-229265573
-79756320
+229297747
+79762063
 
 _ZNSt3__13minB8ne200100IlEERKT_S3_S3_
 # Func Hash:
@@ -53862,7 +54183,7 @@ _ZNSt3__13minB8ne200100IyEERKT_S3_S3_
 # Num Counters:
 1
 # Counter Values:
-1158381700
+885402530
 
 _ZNSt3__13minB8ne200100IyNS_6__lessIvvEEEERKT_S5_S5_T0_
 # Func Hash:
@@ -53870,8 +54191,8 @@ _ZNSt3__13minB8ne200100IyNS_6__lessIvvEEEERKT_S5_S5_T0_
 # Num Counters:
 2
 # Counter Values:
-1158381700
-490341200
+885402530
+353798026
 
 _ZNSt3__13setIjNS_4lessIjEENS_9allocatorIjEEE5clearB8ne200100Ev
 # Func Hash:
@@ -53963,7 +54284,7 @@ _ZNSt3__14findB8ne200100INS_11__wrap_iterIPKjEEjEET_S5_S5_RKT0_
 # Num Counters:
 1
 # Counter Values:
-342
+411
 
 _ZNSt3__14findB8ne200100INS_11__wrap_iterIPPN6dsp56k10DmaChannelEEEPKS3_EET_S9_S9_RKT0_
 # Func Hash:
@@ -54739,7 +55060,7 @@ _ZNSt3__14sizeB8ne200100IN6asmjit9_abi_1_103arm3GpXELm8EEEmRAT0__KT_
 # Num Counters:
 1
 # Counter Values:
-13542
+13497
 
 _ZNSt3__14sizeB8ne200100ISt16initializer_listIN6asmjit9_abi_1_103arm3RegEEEEDTcldtfp_4sizeEERKT_
 # Func Hash:
@@ -55031,7 +55352,7 @@ _ZNSt3__15arrayIKPN6dsp56k12IPeripheralsELm2EEixB8ne200100Em
 # Num Counters:
 1
 # Counter Values:
-6492508921
+6362162765
 
 _ZNSt3__15arrayIN2md11PanelPacketELm128EEixB8ne200100Em
 # Func Hash:
@@ -55143,7 +55464,7 @@ _ZNSt3__15arrayIN6asmjit9_abi_1_103arm3GpXELm32EEixB8ne200100Em
 # Num Counters:
 1
 # Counter Values:
-6290
+6272
 
 _ZNSt3__15arrayIN6asmjit9_abi_1_103arm3RegELm32EEixB8ne200100Em
 # Func Hash:
@@ -55279,7 +55600,7 @@ _ZNSt3__15arrayIN8synthLib10SMidiEventELm16384EEixB8ne200100Em
 # Num Counters:
 1
 # Counter Values:
-2417834
+2271793
 
 _ZNSt3__15arrayINS0_INS0_IhLm64EEELm8EEELm2EE3endB8ne200100Ev
 # Func Hash:
@@ -56306,9 +56627,9 @@ _ZNSt3__16__findB8ne200100IPKjS2_jNS_10__identityEEET_S4_T0_RKT1_RT2_
 # Num Counters:
 3
 # Counter Values:
-342
-342
-21
+411
+411
+36
 
 _ZNSt3__16__findB8ne200100IPPN6dsp56k10DmaChannelES4_PKS2_NS_10__identityEEET_S8_T0_RKT1_RT2_
 # Func Hash:
@@ -61250,8 +61571,8 @@ _ZNSt3__16vectorIjNS_9allocatorIjEEE26__add_alignment_assumptionB8ne200100IPjLi0
 # Num Counters:
 2
 # Counter Values:
-1026
-1026
+1233
+1233
 
 _ZNSt3__16vectorIjNS_9allocatorIjEEE26__swap_out_circular_bufferERNS_14__split_bufferIjRS2_EE
 # Func Hash:
@@ -61719,7 +62040,7 @@ _ZNSt3__18__invokeB8ne200100IRNS_10__identityEJRKjEEEDTclclsr3stdE7declvalIT_EEs
 # Num Counters:
 1
 # Counter Values:
-5545799538
+5545799607
 
 _ZNSt3__18__invokeB8ne200100IRNS_10__identityEJRN6asmjit9_abi_1_103arm4VecVEEEEDTclclsr3stdE7declvalIT_EEspclsr3stdE7declvalIT0_EEEEOS8_DpOS9_
 # Func Hash:
@@ -62015,7 +62336,7 @@ _ZNSt3__18functionIFbvEED2Ev
 # Num Counters:
 1
 # Counter Values:
-69
+81
 
 _ZNSt3__18functionIFbvEEaSEOS2_
 # Func Hash:
@@ -62023,7 +62344,7 @@ _ZNSt3__18functionIFbvEEaSEOS2_
 # Num Counters:
 1
 # Counter Values:
-9
+21
 
 _ZNSt3__18functionIFhRKN5mc68k4PortEhEED2Ev
 # Func Hash:
@@ -65975,7 +66296,7 @@ _ZNSt3__1eqB8ne200100IPKjEEbRKNS_11__wrap_iterIT_EES7_
 # Num Counters:
 1
 # Counter Values:
-342
+411
 
 _ZNSt3__1eqB8ne200100IPN6asmjit9_abi_1_103arm3RegEEEbRKNS_11__wrap_iterIT_EESA_
 # Func Hash:
@@ -66421,7 +66742,7 @@ _ZNSt3__1neB8ne200100IPKjEEbRKNS_11__wrap_iterIT_EES7_
 # Num Counters:
 1
 # Counter Values:
-342
+411
 
 _ZNSt3__1neB8ne200100IPN6asmjit9_abi_1_103arm3RegEEEbRKNS_11__wrap_iterIT_EESA_
 # Func Hash:
@@ -66518,6 +66839,16 @@ _ZNSt3__1plB8ne200100IcNS_11char_traitsIcEENS_9allocatorIcEEEENS_12basic_stringI
 1
 # Counter Values:
 2769
+
+_ZZN2md31speedUpLeversOffFromEnvironmentEvENKUlPKcE_clES1_
+# Func Hash:
+6350879
+# Num Counters:
+3
+# Counter Values:
+84
+0
+0
 
 _ZZN6dsp56k12getRegistersERNS_12RegisterMaskES1_NS_11InstructionEjENKUlNS_5FieldEE0_clES3_
 # Func Hash:
@@ -67464,7 +67795,7 @@ disasm.cpp:_ZN6dsp56kL13getFieldValueERKNS_9FieldInfoEj
 # Num Counters:
 1
 # Counter Values:
-3884
+3866
 
 disasm.cpp:_ZN6dsp56kL8hasFieldERKNS_10OpcodeInfoENS_5FieldE
 # Func Hash:
@@ -67554,10 +67885,10 @@ dsp.cpp:_ZZN6dsp56k3DSP18fastForwardNopLoopEjjjENK3$_0clEyyy
 # Num Counters:
 2
 # Counter Values:
-813877342
-805902128
+541017598
+540344326
 
-dsp.cpp:_ZZN6dsp56k3DSP19fastForwardPollLoopEjjENK3$_0clEyyy
+dsp.cpp:_ZZN6dsp56k3DSP19fastForwardPollLoopEjjbENK3$_0clEyyy
 # Func Hash:
 99164
 # Num Counters:
@@ -69022,8 +69353,8 @@ jitblock.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At0IxEEjT_
 # Num Counters:
 2
 # Counter Values:
-27332
-27332
+27371
+27371
 
 jitblock.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At1IxEEjT_
 # Func Hash:
@@ -69031,7 +69362,7 @@ jitblock.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At1IxEEjT_
 # Num Counters:
 2
 # Counter Values:
-27332
+27371
 0
 
 jitblock.cpp:_ZN6asmjit9_abi_1_107SupportL13ptr_cast_implIPvPFvPN6dsp56k3DSPEPKNS4_12JitPollCycleEEEET_T0_
@@ -69042,21 +69373,13 @@ jitblock.cpp:_ZN6asmjit9_abi_1_107SupportL13ptr_cast_implIPvPFvPN6dsp56k3DSPEPKN
 # Counter Values:
 12
 
-jitblock.cpp:_ZN6asmjit9_abi_1_107SupportL13ptr_cast_implIPvPFvPN6dsp56k3DSPEjjEEET_T0_
-# Func Hash:
-24
-# Num Counters:
-1
-# Counter Values:
-33
-
 jitblock.cpp:_ZN6asmjit9_abi_1_107SupportL13ptr_cast_implIPvPFvPN6dsp56k3DSPEjjjEEET_T0_
 # Func Hash:
 24
 # Num Counters:
 1
 # Counter Values:
-12
+45
 
 jitblock.cpp:_ZN6asmjit9_abi_1_10L11func_as_ptrIPFvPN6dsp56k3DSPEPKNS2_12JitPollCycleEEEEPvT_
 # Func Hash:
@@ -69066,21 +69389,13 @@ jitblock.cpp:_ZN6asmjit9_abi_1_10L11func_as_ptrIPFvPN6dsp56k3DSPEPKNS2_12JitPoll
 # Counter Values:
 12
 
-jitblock.cpp:_ZN6asmjit9_abi_1_10L11func_as_ptrIPFvPN6dsp56k3DSPEjjEEEPvT_
-# Func Hash:
-24
-# Num Counters:
-1
-# Counter Values:
-33
-
 jitblock.cpp:_ZN6asmjit9_abi_1_10L11func_as_ptrIPFvPN6dsp56k3DSPEjjjEEEPvT_
 # Func Hash:
 24
 # Num Counters:
 1
 # Counter Values:
-12
+45
 
 jitblock.cpp:_ZN6dsp56k12_GLOBAL__N_113isDmaRegisterEj
 # Func Hash:
@@ -69195,22 +69510,22 @@ jitblock.cpp:_ZN6dsp56k12_GLOBAL__N_118isPureRegisterReadENS_11InstructionES1_jj
 # Num Counters:
 16
 # Counter Values:
-7839
-903
-7839
-6936
-342
-256
+8073
+948
+8073
+7125
+411
+310
 64
-192
-192
-9
+246
+246
+15
 0
-1365
+1374
 1224
-929
-141
-5306
+938
+150
+5426
 
 jitblock.cpp:_ZN6dsp56k12_GLOBAL__N_122callFastForwardNopLoopEPNS_3DSPEjjj
 # Func Hash:
@@ -69218,7 +69533,7 @@ jitblock.cpp:_ZN6dsp56k12_GLOBAL__N_122callFastForwardNopLoopEPNS_3DSPEjjj
 # Num Counters:
 1
 # Counter Values:
-384248397
+247772274
 
 jitblock.cpp:_ZN6dsp56k12_GLOBAL__N_122isPollLoopImmediateAluENS_11InstructionE
 # Func Hash:
@@ -69250,9 +69565,9 @@ jitblock.cpp:_ZN6dsp56k12_GLOBAL__N_122trackPollLoopRegistersERNS_12RegisterMask
 54
 6
 
-jitblock.cpp:_ZN6dsp56k12_GLOBAL__N_123callFastForwardPollLoopEPNS_3DSPEjj
+jitblock.cpp:_ZN6dsp56k12_GLOBAL__N_123callFastForwardPollLoopEPNS_3DSPEjjj
 # Func Hash:
-0
+32
 # Num Counters:
 1
 # Counter Values:
@@ -69303,7 +69618,7 @@ jitblock.cpp:_ZN6dsp56kL13getFieldValueERKNS_9FieldInfoEj
 # Num Counters:
 1
 # Counter Values:
-5475
+5700
 
 jitblock.cpp:_ZN6dsp56kL3r32ERKN6asmjit9_abi_1_103arm2GpE
 # Func Hash:
@@ -69311,7 +69626,7 @@ jitblock.cpp:_ZN6dsp56kL3r32ERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 1
 # Counter Values:
-15768
+15813
 
 jitblock.cpp:_ZN6dsp56kL3r64ERKN6asmjit9_abi_1_103arm2GpE
 # Func Hash:
@@ -69319,7 +69634,7 @@ jitblock.cpp:_ZN6dsp56kL3r64ERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 1
 # Counter Values:
-18941
+18971
 
 jitblock.cpp:_ZZN6dsp56k8JitBlock4emitERNS_19JitBlockRuntimeDataEPNS_13JitBlockChainEjRKNS_10PagedArrayINS_13JitCacheEntryELm1024EEERKNSt3__13setIjNSA_4lessIjEENSA_9allocatorIjEEEERKNSA_3mapIjjSD_NSE_INSA_4pairIKjjEEEEEESI_bENK3$_0clERKN6asmjit9_abi_1_105LabelERKNST_3arm3GpWES10_S10_
 # Func Hash:
@@ -69806,7 +70121,7 @@ jitmem.cpp:_ZN6asmjit9_abi_1_103armL3ptrERKNS1_2GpEi
 # Num Counters:
 1
 # Counter Values:
-144046
+144064
 
 jitmem.cpp:_ZN6asmjit9_abi_1_107SupportL10isPowerOf2IjEEbT_
 # Func Hash:
@@ -69824,8 +70139,8 @@ jitmem.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At0IxEEjT_
 # Num Counters:
 2
 # Counter Values:
-34674
-34674
+34686
+34686
 
 jitmem.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At1IxEEjT_
 # Func Hash:
@@ -69833,7 +70148,7 @@ jitmem.cpp:_ZN6asmjit9_abi_1_107SupportL12unpackU32At1IxEEjT_
 # Num Counters:
 2
 # Counter Values:
-34674
+34686
 0
 
 jitmem.cpp:_ZN6asmjit9_abi_1_107SupportL13ptr_cast_implIPvPFjPN6dsp56k3DSPEjjNS4_11InstructionEEEET_T0_
@@ -69858,7 +70173,7 @@ jitmem.cpp:_ZN6asmjit9_abi_1_107SupportL15bitMaskFromBoolIjbEET_T0_
 # Num Counters:
 1
 # Counter Values:
-118629
+118635
 
 jitmem.cpp:_ZN6asmjit9_abi_1_10L11func_as_ptrIPFjPN6dsp56k3DSPEjjNS2_11InstructionEEEEPvT_
 # Func Hash:
@@ -69890,7 +70205,7 @@ jitmem.cpp:_ZN6dsp56kL3r32ERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 1
 # Counter Values:
-131750
+131756
 
 jitmem.cpp:_ZN6dsp56kL3r64ERKN6asmjit9_abi_1_103arm2GpE
 # Func Hash:
@@ -69898,7 +70213,7 @@ jitmem.cpp:_ZN6dsp56kL3r64ERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 1
 # Counter Values:
-34543
+34573
 
 jitmem.cpp:_ZZN6dsp56k6Jitmem14assignFuncArgsIRZNKS0_11writePeriphENS_8EMemAreaERKjRKNS_8DspValueEE3$_0EEvSt16initializer_listIN6asmjit9_abi_1_103arm2GpEESF_OT_ENKUlPKvjSE_SE_E_clESJ_jSE_SE_
 # Func Hash:
@@ -72298,7 +72613,7 @@ jitstackhelper.cpp:_ZN6dsp56kL3r64ERKN6asmjit9_abi_1_103arm2GpE
 # Num Counters:
 1
 # Counter Values:
-865858
+865750
 
 jitstackhelper.cpp:_ZZN6dsp56k14JitStackHelper11pushAllUsedEPN6asmjit9_abi_1_108BaseNodeEENK3$_0clERKNS2_3arm3RegE
 # Func Hash:
@@ -72372,9 +72687,9 @@ m68k_execute_one
 # Num Counters:
 3
 # Counter Values:
-1778820408
+1772291432
 6
-1778820402
+1772291426
 
 m68k_init
 # Func Hash:
@@ -72409,7 +72724,7 @@ m68k_read_immediate_16
 # Num Counters:
 1
 # Counter Values:
-2066316806
+2059787830
 
 m68k_read_immediate_32
 # Func Hash:
@@ -72844,7 +73159,7 @@ m68kcpu.c:m68ki_check_interrupts
 # Num Counters:
 3
 # Counter Values:
-1778820402
+1772291426
 0
 1093609
 
@@ -72902,7 +73217,7 @@ m68kcpu.c:m68ki_read_imm_16
 # Num Counters:
 1
 # Counter Values:
-1778820402
+1772291426
 
 m68kcpu.c:m68ki_read_imm_32
 # Func Hash:
@@ -73727,8 +74042,8 @@ m68kops.c:m68k_op_bra_8
 # Num Counters:
 2
 # Counter Values:
-63645136
-48228243
+57116160
+41699267
 
 m68kops.c:m68k_op_bset_32_s_d
 # Func Hash:
@@ -75737,7 +76052,7 @@ m68kops.c:m68ki_branch_8
 # Num Counters:
 1
 # Counter Values:
-63645136
+57116160
 
 m68kops.c:m68ki_cf_bcc
 # Func Hash:
@@ -76099,7 +76414,7 @@ mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc6
 # Counter Values:
 14384
 
-mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_4NS_9allocatorIS9_EEFvvEE15__get_allocatorB8ne200100Ev
+mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_4NS_9allocatorIS9_EEFbvEE15__get_allocatorB8ne200100Ev
 # Func Hash:
 24
 # Num Counters:
@@ -76107,7 +76422,7 @@ mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc6
 # Counter Values:
 12
 
-mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_4NS_9allocatorIS9_EEFvvEE8__targetB8ne200100Ev
+mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_4NS_9allocatorIS9_EEFbvEE8__targetB8ne200100Ev
 # Func Hash:
 24
 # Num Counters:
@@ -76115,7 +76430,23 @@ mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc6
 # Counter Values:
 12
 
-mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_5NS_9allocatorIS9_EEFvbEE15__get_allocatorB8ne200100Ev
+mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_5NS_9allocatorIS9_EEFvvEE15__get_allocatorB8ne200100Ev
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+12
+
+mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_5NS_9allocatorIS9_EEFvvEE8__targetB8ne200100Ev
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+12
+
+mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_6NS_9allocatorIS9_EEFvbEE15__get_allocatorB8ne200100Ev
 # Func Hash:
 24
 # Num Counters:
@@ -76123,7 +76454,7 @@ mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc6
 # Counter Values:
 24
 
-mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_5NS_9allocatorIS9_EEFvbEE8__targetB8ne200100Ev
+mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_6NS_9allocatorIS9_EEFvbEE8__targetB8ne200100Ev
 # Func Hash:
 24
 # Num Counters:
@@ -76131,7 +76462,7 @@ mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc6
 # Counter Values:
 24
 
-mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_6NS_9allocatorIS9_EEFvjEE15__get_allocatorB8ne200100Ev
+mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_7NS_9allocatorIS9_EEFvjEE15__get_allocatorB8ne200100Ev
 # Func Hash:
 24
 # Num Counters:
@@ -76139,7 +76470,7 @@ mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc6
 # Counter Values:
 48
 
-mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_6NS_9allocatorIS9_EEFvjEE8__targetB8ne200100Ev
+mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_7NS_9allocatorIS9_EEFvjEE8__targetB8ne200100Ev
 # Func Hash:
 24
 # Num Counters:
@@ -76147,7 +76478,7 @@ mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc6
 # Counter Values:
 48
 
-mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_7NS_9allocatorIS9_EEFvhEE15__get_allocatorB8ne200100Ev
+mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_8NS_9allocatorIS9_EEFvhEE15__get_allocatorB8ne200100Ev
 # Func Hash:
 24
 # Num Counters:
@@ -76155,7 +76486,7 @@ mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc6
 # Counter Values:
 36
 
-mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_7NS_9allocatorIS9_EEFvhEE8__targetB8ne200100Ev
+mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_8NS_9allocatorIS9_EEFvhEE8__targetB8ne200100Ev
 # Func Hash:
 24
 # Num Counters:
@@ -76163,7 +76494,7 @@ mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc6
 # Counter Values:
 36
 
-mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_8NS_9allocatorIS9_EEFhhEE15__get_allocatorB8ne200100Ev
+mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_9NS_9allocatorIS9_EEFhhEE15__get_allocatorB8ne200100Ev
 # Func Hash:
 24
 # Num Counters:
@@ -76171,7 +76502,7 @@ mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc6
 # Counter Values:
 36
 
-mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_8NS_9allocatorIS9_EEFhhEE8__targetB8ne200100Ev
+mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_9NS_9allocatorIS9_EEFhhEE8__targetB8ne200100Ev
 # Func Hash:
 24
 # Num Counters:
@@ -76179,7 +76510,7 @@ mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc6
 # Counter Values:
 36
 
-mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_9NS_9allocatorIS9_EEFvvEE15__get_allocatorB8ne200100Ev
+mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE4$_10NS_9allocatorIS9_EEFvvEE15__get_allocatorB8ne200100Ev
 # Func Hash:
 24
 # Num Counters:
@@ -76187,7 +76518,7 @@ mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc6
 # Counter Values:
 36
 
-mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_9NS_9allocatorIS9_EEFvvEE8__targetB8ne200100Ev
+mddsp.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE4$_10NS_9allocatorIS9_EEFvvEE8__targetB8ne200100Ev
 # Func Hash:
 24
 # Num Counters:
@@ -76243,7 +76574,7 @@ mddsp.cpp:_ZNKSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi0
 # Counter Values:
 14384
 
-mddsp.cpp:_ZNKSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_4NS_9allocatorIS9_EEFvvEE7__cloneEPNS0_6__baseISC_EE
+mddsp.cpp:_ZNKSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_4NS_9allocatorIS9_EEFbvEE7__cloneEPNS0_6__baseISC_EE
 # Func Hash:
 0
 # Num Counters:
@@ -76251,7 +76582,15 @@ mddsp.cpp:_ZNKSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi0
 # Counter Values:
 12
 
-mddsp.cpp:_ZNKSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_5NS_9allocatorIS9_EEFvbEE7__cloneEPNS0_6__baseISC_EE
+mddsp.cpp:_ZNKSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_5NS_9allocatorIS9_EEFvvEE7__cloneEPNS0_6__baseISC_EE
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+12
+
+mddsp.cpp:_ZNKSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_6NS_9allocatorIS9_EEFvbEE7__cloneEPNS0_6__baseISC_EE
 # Func Hash:
 0
 # Num Counters:
@@ -76259,7 +76598,7 @@ mddsp.cpp:_ZNKSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi0
 # Counter Values:
 24
 
-mddsp.cpp:_ZNKSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_6NS_9allocatorIS9_EEFvjEE7__cloneEPNS0_6__baseISC_EE
+mddsp.cpp:_ZNKSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_7NS_9allocatorIS9_EEFvjEE7__cloneEPNS0_6__baseISC_EE
 # Func Hash:
 0
 # Num Counters:
@@ -76267,7 +76606,7 @@ mddsp.cpp:_ZNKSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi0
 # Counter Values:
 48
 
-mddsp.cpp:_ZNKSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_7NS_9allocatorIS9_EEFvhEE7__cloneEPNS0_6__baseISC_EE
+mddsp.cpp:_ZNKSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_8NS_9allocatorIS9_EEFvhEE7__cloneEPNS0_6__baseISC_EE
 # Func Hash:
 0
 # Num Counters:
@@ -76275,7 +76614,7 @@ mddsp.cpp:_ZNKSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi0
 # Counter Values:
 36
 
-mddsp.cpp:_ZNKSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_8NS_9allocatorIS9_EEFhhEE7__cloneEPNS0_6__baseISC_EE
+mddsp.cpp:_ZNKSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_9NS_9allocatorIS9_EEFhhEE7__cloneEPNS0_6__baseISC_EE
 # Func Hash:
 0
 # Num Counters:
@@ -76283,7 +76622,7 @@ mddsp.cpp:_ZNKSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi0
 # Counter Values:
 36
 
-mddsp.cpp:_ZNKSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_9NS_9allocatorIS9_EEFvvEE7__cloneEPNS0_6__baseISC_EE
+mddsp.cpp:_ZNKSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE4$_10NS_9allocatorIS9_EEFvvEE7__cloneEPNS0_6__baseISC_EE
 # Func Hash:
 0
 # Num Counters:
@@ -76369,7 +76708,7 @@ mddsp.cpp:_ZNSt3__110__function10__not_nullB8ne200100IZN2md3DspC1ERNS2_8Hardware
 # Num Counters:
 1
 # Counter Values:
-6
+12
 
 mddsp.cpp:_ZNSt3__110__function10__not_nullB8ne200100IZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_5EEbRKT_
 # Func Hash:
@@ -76377,7 +76716,7 @@ mddsp.cpp:_ZNSt3__110__function10__not_nullB8ne200100IZN2md3DspC1ERNS2_8Hardware
 # Num Counters:
 1
 # Counter Values:
-12
+6
 
 mddsp.cpp:_ZNSt3__110__function10__not_nullB8ne200100IZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_6EEbRKT_
 # Func Hash:
@@ -76404,6 +76743,14 @@ mddsp.cpp:_ZNSt3__110__function10__not_nullB8ne200100IZN2md3DspC1ERNS2_8Hardware
 12
 
 mddsp.cpp:_ZNSt3__110__function10__not_nullB8ne200100IZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_9EEbRKT_
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+12
+
+mddsp.cpp:_ZNSt3__110__function10__not_nullB8ne200100IZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE4$_10EEbRKT_
 # Func Hash:
 24
 # Num Counters:
@@ -76603,7 +76950,31 @@ mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68
 # Counter Values:
 7174
 
-mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_4NS_9allocatorIS9_EEFvvEE7destroyB8ne200100Ev
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_4NS_9allocatorIS9_EEFbvEE7destroyB8ne200100Ev
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+24
+
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_4NS_9allocatorIS9_EEFbvEEC2B8ne200100EOS9_OSB_
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+12
+
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_4NS_9allocatorIS9_EEFbvEEC2B8ne200100ERKS9_RKSB_
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+12
+
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_5NS_9allocatorIS9_EEFvvEE7destroyB8ne200100Ev
 # Func Hash:
 0
 # Num Counters:
@@ -76611,7 +76982,7 @@ mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68
 # Counter Values:
 18
 
-mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_4NS_9allocatorIS9_EEFvvEEC2B8ne200100EOS9_OSB_
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_5NS_9allocatorIS9_EEFvvEEC2B8ne200100EOS9_OSB_
 # Func Hash:
 0
 # Num Counters:
@@ -76619,7 +76990,7 @@ mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68
 # Counter Values:
 6
 
-mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_4NS_9allocatorIS9_EEFvvEEC2B8ne200100ERKS9_RKSB_
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_5NS_9allocatorIS9_EEFvvEEC2B8ne200100ERKS9_RKSB_
 # Func Hash:
 0
 # Num Counters:
@@ -76627,7 +76998,7 @@ mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_4NS_9allocatorIS9_EEFvvEEclB8ne200100Ev
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_5NS_9allocatorIS9_EEFvvEEclB8ne200100Ev
 # Func Hash:
 24
 # Num Counters:
@@ -76635,7 +77006,7 @@ mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68
 # Counter Values:
 1695436
 
-mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_5NS_9allocatorIS9_EEFvbEE7destroyB8ne200100Ev
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_6NS_9allocatorIS9_EEFvbEE7destroyB8ne200100Ev
 # Func Hash:
 0
 # Num Counters:
@@ -76643,7 +77014,7 @@ mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68
 # Counter Values:
 36
 
-mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_5NS_9allocatorIS9_EEFvbEEC2B8ne200100EOS9_OSB_
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_6NS_9allocatorIS9_EEFvbEEC2B8ne200100EOS9_OSB_
 # Func Hash:
 0
 # Num Counters:
@@ -76651,7 +77022,7 @@ mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_5NS_9allocatorIS9_EEFvbEEC2B8ne200100ERKS9_RKSB_
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_6NS_9allocatorIS9_EEFvbEEC2B8ne200100ERKS9_RKSB_
 # Func Hash:
 0
 # Num Counters:
@@ -76659,7 +77030,7 @@ mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68
 # Counter Values:
 24
 
-mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_5NS_9allocatorIS9_EEFvbEEclB8ne200100EOb
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_6NS_9allocatorIS9_EEFvbEEclB8ne200100EOb
 # Func Hash:
 24
 # Num Counters:
@@ -76667,7 +77038,7 @@ mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68
 # Counter Values:
 3176955
 
-mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_6NS_9allocatorIS9_EEFvjEE7destroyB8ne200100Ev
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_7NS_9allocatorIS9_EEFvjEE7destroyB8ne200100Ev
 # Func Hash:
 0
 # Num Counters:
@@ -76675,7 +77046,7 @@ mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68
 # Counter Values:
 60
 
-mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_6NS_9allocatorIS9_EEFvjEEC2B8ne200100EOS9_OSB_
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_7NS_9allocatorIS9_EEFvjEEC2B8ne200100EOS9_OSB_
 # Func Hash:
 0
 # Num Counters:
@@ -76683,7 +77054,7 @@ mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_6NS_9allocatorIS9_EEFvjEEC2B8ne200100ERKS9_RKSB_
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_7NS_9allocatorIS9_EEFvjEEC2B8ne200100ERKS9_RKSB_
 # Func Hash:
 0
 # Num Counters:
@@ -76691,7 +77062,7 @@ mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68
 # Counter Values:
 48
 
-mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_6NS_9allocatorIS9_EEFvjEEclB8ne200100EOj
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_7NS_9allocatorIS9_EEFvjEEclB8ne200100EOj
 # Func Hash:
 24
 # Num Counters:
@@ -76699,7 +77070,7 @@ mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68
 # Counter Values:
 1830
 
-mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_7NS_9allocatorIS9_EEFvhEE7destroyB8ne200100Ev
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_8NS_9allocatorIS9_EEFvhEE7destroyB8ne200100Ev
 # Func Hash:
 0
 # Num Counters:
@@ -76707,7 +77078,7 @@ mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68
 # Counter Values:
 48
 
-mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_7NS_9allocatorIS9_EEFvhEEC2B8ne200100EOS9_OSB_
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_8NS_9allocatorIS9_EEFvhEEC2B8ne200100EOS9_OSB_
 # Func Hash:
 0
 # Num Counters:
@@ -76715,7 +77086,7 @@ mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_7NS_9allocatorIS9_EEFvhEEC2B8ne200100ERKS9_RKSB_
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_8NS_9allocatorIS9_EEFvhEEC2B8ne200100ERKS9_RKSB_
 # Func Hash:
 0
 # Num Counters:
@@ -76723,7 +77094,7 @@ mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68
 # Counter Values:
 36
 
-mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_7NS_9allocatorIS9_EEFvhEEclB8ne200100EOh
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_8NS_9allocatorIS9_EEFvhEEclB8ne200100EOh
 # Func Hash:
 24
 # Num Counters:
@@ -76731,7 +77102,7 @@ mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68
 # Counter Values:
 2453242
 
-mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_8NS_9allocatorIS9_EEFhhEE7destroyB8ne200100Ev
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_9NS_9allocatorIS9_EEFhhEE7destroyB8ne200100Ev
 # Func Hash:
 0
 # Num Counters:
@@ -76739,7 +77110,7 @@ mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68
 # Counter Values:
 48
 
-mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_8NS_9allocatorIS9_EEFhhEEC2B8ne200100EOS9_OSB_
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_9NS_9allocatorIS9_EEFhhEEC2B8ne200100EOS9_OSB_
 # Func Hash:
 0
 # Num Counters:
@@ -76747,7 +77118,7 @@ mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_8NS_9allocatorIS9_EEFhhEEC2B8ne200100ERKS9_RKSB_
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_9NS_9allocatorIS9_EEFhhEEC2B8ne200100ERKS9_RKSB_
 # Func Hash:
 0
 # Num Counters:
@@ -76755,7 +77126,7 @@ mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68
 # Counter Values:
 36
 
-mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_8NS_9allocatorIS9_EEFhhEEclB8ne200100EOh
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_9NS_9allocatorIS9_EEFhhEEclB8ne200100EOh
 # Func Hash:
 24
 # Num Counters:
@@ -76763,7 +77134,7 @@ mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68
 # Counter Values:
 48145041
 
-mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_9NS_9allocatorIS9_EEFvvEE7destroyB8ne200100Ev
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE4$_10NS_9allocatorIS9_EEFvvEE7destroyB8ne200100Ev
 # Func Hash:
 0
 # Num Counters:
@@ -76771,7 +77142,7 @@ mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68
 # Counter Values:
 48
 
-mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_9NS_9allocatorIS9_EEFvvEEC2B8ne200100EOS9_OSB_
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE4$_10NS_9allocatorIS9_EEFvvEEC2B8ne200100EOS9_OSB_
 # Func Hash:
 0
 # Num Counters:
@@ -76779,7 +77150,7 @@ mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_9NS_9allocatorIS9_EEFvvEEC2B8ne200100ERKS9_RKSB_
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE4$_10NS_9allocatorIS9_EEFvvEEC2B8ne200100ERKS9_RKSB_
 # Func Hash:
 0
 # Num Counters:
@@ -76787,7 +77158,7 @@ mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68
 # Counter Values:
 36
 
-mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_9NS_9allocatorIS9_EEFvvEEclB8ne200100Ev
+mddsp.cpp:_ZNSt3__110__function12__alloc_funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE4$_10NS_9allocatorIS9_EEFvvEEclB8ne200100Ev
 # Func Hash:
 24
 # Num Counters:
@@ -76825,6 +77196,14 @@ mddsp.cpp:_ZNSt3__110__function12__value_funcIFbvEEC1B8ne200100IZN2md3DspC1ERNS5
 # Counter Values:
 9
 
+mddsp.cpp:_ZNSt3__110__function12__value_funcIFbvEEC1B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_4Li0EEEOT_
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+12
+
 mddsp.cpp:_ZNSt3__110__function12__value_funcIFbvEEC2B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_0NS_9allocatorISC_EEEEOT_RKT0_
 # Func Hash:
 185255492737119313
@@ -76839,6 +77218,20 @@ mddsp.cpp:_ZNSt3__110__function12__value_funcIFbvEEC2B8ne200100IZN2md3DspC1ERNS5
 0
 0
 
+mddsp.cpp:_ZNSt3__110__function12__value_funcIFbvEEC2B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_4NS_9allocatorISC_EEEEOT_RKT0_
+# Func Hash:
+185255492737119313
+# Num Counters:
+7
+# Counter Values:
+12
+12
+12
+0
+0
+0
+0
+
 mddsp.cpp:_ZNSt3__110__function12__value_funcIFhhEEC1B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_2Li0EEEOT_
 # Func Hash:
 0
@@ -76847,7 +77240,7 @@ mddsp.cpp:_ZNSt3__110__function12__value_funcIFhhEEC1B8ne200100IZN2md3DspC1ERNS5
 # Counter Values:
 6
 
-mddsp.cpp:_ZNSt3__110__function12__value_funcIFhhEEC1B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_8Li0EEEOT_
+mddsp.cpp:_ZNSt3__110__function12__value_funcIFhhEEC1B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_9Li0EEEOT_
 # Func Hash:
 0
 # Num Counters:
@@ -76869,7 +77262,7 @@ mddsp.cpp:_ZNSt3__110__function12__value_funcIFhhEEC2B8ne200100IZN2md3DspC1ERNS5
 0
 0
 
-mddsp.cpp:_ZNSt3__110__function12__value_funcIFhhEEC2B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_8NS_9allocatorISC_EEEEOT_RKT0_
+mddsp.cpp:_ZNSt3__110__function12__value_funcIFhhEEC2B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_9NS_9allocatorISC_EEEEOT_RKT0_
 # Func Hash:
 185255492737119313
 # Num Counters:
@@ -76883,7 +77276,7 @@ mddsp.cpp:_ZNSt3__110__function12__value_funcIFhhEEC2B8ne200100IZN2md3DspC1ERNS5
 0
 0
 
-mddsp.cpp:_ZNSt3__110__function12__value_funcIFvbEEC1B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_5Li0EEEOT_
+mddsp.cpp:_ZNSt3__110__function12__value_funcIFvbEEC1B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_6Li0EEEOT_
 # Func Hash:
 0
 # Num Counters:
@@ -76891,7 +77284,7 @@ mddsp.cpp:_ZNSt3__110__function12__value_funcIFvbEEC1B8ne200100IZN2md3DspC1ERNS5
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__110__function12__value_funcIFvbEEC2B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_5NS_9allocatorISC_EEEEOT_RKT0_
+mddsp.cpp:_ZNSt3__110__function12__value_funcIFvbEEC2B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_6NS_9allocatorISC_EEEEOT_RKT0_
 # Func Hash:
 185255492737119313
 # Num Counters:
@@ -76913,7 +77306,7 @@ mddsp.cpp:_ZNSt3__110__function12__value_funcIFvhEEC1B8ne200100IZN2md3Dsp23setHo
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__110__function12__value_funcIFvhEEC1B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_7Li0EEEOT_
+mddsp.cpp:_ZNSt3__110__function12__value_funcIFvhEEC1B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_8Li0EEEOT_
 # Func Hash:
 0
 # Num Counters:
@@ -76935,7 +77328,7 @@ mddsp.cpp:_ZNSt3__110__function12__value_funcIFvhEEC2B8ne200100IZN2md3Dsp23setHo
 0
 0
 
-mddsp.cpp:_ZNSt3__110__function12__value_funcIFvhEEC2B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_7NS_9allocatorISC_EEEEOT_RKT0_
+mddsp.cpp:_ZNSt3__110__function12__value_funcIFvhEEC2B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_8NS_9allocatorISC_EEEEOT_RKT0_
 # Func Hash:
 185255492737119313
 # Num Counters:
@@ -76957,7 +77350,7 @@ mddsp.cpp:_ZNSt3__110__function12__value_funcIFvjEEC1B8ne200100IZN2md3Dsp17onDsp
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__110__function12__value_funcIFvjEEC1B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_6Li0EEEOT_
+mddsp.cpp:_ZNSt3__110__function12__value_funcIFvjEEC1B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_7Li0EEEOT_
 # Func Hash:
 0
 # Num Counters:
@@ -76979,7 +77372,7 @@ mddsp.cpp:_ZNSt3__110__function12__value_funcIFvjEEC2B8ne200100IZN2md3Dsp17onDsp
 0
 0
 
-mddsp.cpp:_ZNSt3__110__function12__value_funcIFvjEEC2B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_6NS_9allocatorISC_EEEEOT_RKT0_
+mddsp.cpp:_ZNSt3__110__function12__value_funcIFvjEEC2B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_7NS_9allocatorISC_EEEEOT_RKT0_
 # Func Hash:
 185255492737119313
 # Num Counters:
@@ -77001,7 +77394,7 @@ mddsp.cpp:_ZNSt3__110__function12__value_funcIFvvEEC1B8ne200100IZN2md3DspC1ERNS5
 # Counter Values:
 3
 
-mddsp.cpp:_ZNSt3__110__function12__value_funcIFvvEEC1B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_4Li0EEEOT_
+mddsp.cpp:_ZNSt3__110__function12__value_funcIFvvEEC1B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_5Li0EEEOT_
 # Func Hash:
 0
 # Num Counters:
@@ -77009,7 +77402,7 @@ mddsp.cpp:_ZNSt3__110__function12__value_funcIFvvEEC1B8ne200100IZN2md3DspC1ERNS5
 # Counter Values:
 6
 
-mddsp.cpp:_ZNSt3__110__function12__value_funcIFvvEEC1B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_9Li0EEEOT_
+mddsp.cpp:_ZNSt3__110__function12__value_funcIFvvEEC1B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE4$_10Li0EEEOT_
 # Func Hash:
 0
 # Num Counters:
@@ -77031,7 +77424,7 @@ mddsp.cpp:_ZNSt3__110__function12__value_funcIFvvEEC2B8ne200100IZN2md3DspC1ERNS5
 0
 0
 
-mddsp.cpp:_ZNSt3__110__function12__value_funcIFvvEEC2B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_4NS_9allocatorISC_EEEEOT_RKT0_
+mddsp.cpp:_ZNSt3__110__function12__value_funcIFvvEEC2B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_5NS_9allocatorISC_EEEEOT_RKT0_
 # Func Hash:
 185255492737119313
 # Num Counters:
@@ -77045,7 +77438,7 @@ mddsp.cpp:_ZNSt3__110__function12__value_funcIFvvEEC2B8ne200100IZN2md3DspC1ERNS5
 0
 0
 
-mddsp.cpp:_ZNSt3__110__function12__value_funcIFvvEEC2B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE3$_9NS_9allocatorISC_EEEEOT_RKT0_
+mddsp.cpp:_ZNSt3__110__function12__value_funcIFvvEEC2B8ne200100IZN2md3DspC1ERNS5_8HardwareERN5mc68k5Hdi08EjE4$_10NS_9allocatorISC_EEEEOT_RKT0_
 # Func Hash:
 185255492737119313
 # Num Counters:
@@ -77251,7 +77644,31 @@ mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08
 # Counter Values:
 7174
 
-mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_4NS_9allocatorIS9_EEFvvEE7destroyEv
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_4NS_9allocatorIS9_EEFbvEE7destroyEv
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+24
+
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_4NS_9allocatorIS9_EEFbvEEC2B8ne200100EOS9_OSB_
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+12
+
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_4NS_9allocatorIS9_EEFbvEEC2B8ne200100ERKS9_RKSB_
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+12
+
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_5NS_9allocatorIS9_EEFvvEE7destroyEv
 # Func Hash:
 0
 # Num Counters:
@@ -77259,7 +77676,7 @@ mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08
 # Counter Values:
 18
 
-mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_4NS_9allocatorIS9_EEFvvEEC2B8ne200100EOS9_OSB_
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_5NS_9allocatorIS9_EEFvvEEC2B8ne200100EOS9_OSB_
 # Func Hash:
 0
 # Num Counters:
@@ -77267,7 +77684,7 @@ mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08
 # Counter Values:
 6
 
-mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_4NS_9allocatorIS9_EEFvvEEC2B8ne200100ERKS9_RKSB_
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_5NS_9allocatorIS9_EEFvvEEC2B8ne200100ERKS9_RKSB_
 # Func Hash:
 0
 # Num Counters:
@@ -77275,7 +77692,7 @@ mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_4NS_9allocatorIS9_EEFvvEEclEv
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_5NS_9allocatorIS9_EEFvvEEclEv
 # Func Hash:
 24
 # Num Counters:
@@ -77283,7 +77700,7 @@ mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08
 # Counter Values:
 1695436
 
-mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_5NS_9allocatorIS9_EEFvbEE7destroyEv
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_6NS_9allocatorIS9_EEFvbEE7destroyEv
 # Func Hash:
 0
 # Num Counters:
@@ -77291,7 +77708,7 @@ mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08
 # Counter Values:
 36
 
-mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_5NS_9allocatorIS9_EEFvbEEC2B8ne200100EOS9_OSB_
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_6NS_9allocatorIS9_EEFvbEEC2B8ne200100EOS9_OSB_
 # Func Hash:
 0
 # Num Counters:
@@ -77299,7 +77716,7 @@ mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_5NS_9allocatorIS9_EEFvbEEC2B8ne200100ERKS9_RKSB_
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_6NS_9allocatorIS9_EEFvbEEC2B8ne200100ERKS9_RKSB_
 # Func Hash:
 0
 # Num Counters:
@@ -77307,7 +77724,7 @@ mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08
 # Counter Values:
 24
 
-mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_5NS_9allocatorIS9_EEFvbEEclEOb
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_6NS_9allocatorIS9_EEFvbEEclEOb
 # Func Hash:
 24
 # Num Counters:
@@ -77315,7 +77732,7 @@ mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08
 # Counter Values:
 3176955
 
-mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_6NS_9allocatorIS9_EEFvjEE7destroyEv
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_7NS_9allocatorIS9_EEFvjEE7destroyEv
 # Func Hash:
 0
 # Num Counters:
@@ -77323,7 +77740,7 @@ mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08
 # Counter Values:
 60
 
-mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_6NS_9allocatorIS9_EEFvjEEC2B8ne200100EOS9_OSB_
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_7NS_9allocatorIS9_EEFvjEEC2B8ne200100EOS9_OSB_
 # Func Hash:
 0
 # Num Counters:
@@ -77331,7 +77748,7 @@ mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_6NS_9allocatorIS9_EEFvjEEC2B8ne200100ERKS9_RKSB_
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_7NS_9allocatorIS9_EEFvjEEC2B8ne200100ERKS9_RKSB_
 # Func Hash:
 0
 # Num Counters:
@@ -77339,7 +77756,7 @@ mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08
 # Counter Values:
 48
 
-mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_6NS_9allocatorIS9_EEFvjEEclEOj
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_7NS_9allocatorIS9_EEFvjEEclEOj
 # Func Hash:
 24
 # Num Counters:
@@ -77347,7 +77764,7 @@ mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08
 # Counter Values:
 1830
 
-mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_7NS_9allocatorIS9_EEFvhEE7destroyEv
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_8NS_9allocatorIS9_EEFvhEE7destroyEv
 # Func Hash:
 0
 # Num Counters:
@@ -77355,7 +77772,7 @@ mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08
 # Counter Values:
 48
 
-mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_7NS_9allocatorIS9_EEFvhEEC2B8ne200100EOS9_OSB_
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_8NS_9allocatorIS9_EEFvhEEC2B8ne200100EOS9_OSB_
 # Func Hash:
 0
 # Num Counters:
@@ -77363,7 +77780,7 @@ mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_7NS_9allocatorIS9_EEFvhEEC2B8ne200100ERKS9_RKSB_
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_8NS_9allocatorIS9_EEFvhEEC2B8ne200100ERKS9_RKSB_
 # Func Hash:
 0
 # Num Counters:
@@ -77371,7 +77788,7 @@ mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08
 # Counter Values:
 36
 
-mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_7NS_9allocatorIS9_EEFvhEEclEOh
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_8NS_9allocatorIS9_EEFvhEEclEOh
 # Func Hash:
 24
 # Num Counters:
@@ -77379,7 +77796,7 @@ mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08
 # Counter Values:
 2453242
 
-mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_8NS_9allocatorIS9_EEFhhEE7destroyEv
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_9NS_9allocatorIS9_EEFhhEE7destroyEv
 # Func Hash:
 0
 # Num Counters:
@@ -77387,7 +77804,7 @@ mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08
 # Counter Values:
 48
 
-mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_8NS_9allocatorIS9_EEFhhEEC2B8ne200100EOS9_OSB_
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_9NS_9allocatorIS9_EEFhhEEC2B8ne200100EOS9_OSB_
 # Func Hash:
 0
 # Num Counters:
@@ -77395,7 +77812,7 @@ mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_8NS_9allocatorIS9_EEFhhEEC2B8ne200100ERKS9_RKSB_
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_9NS_9allocatorIS9_EEFhhEEC2B8ne200100ERKS9_RKSB_
 # Func Hash:
 0
 # Num Counters:
@@ -77403,7 +77820,7 @@ mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08
 # Counter Values:
 36
 
-mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_8NS_9allocatorIS9_EEFhhEEclEOh
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_9NS_9allocatorIS9_EEFhhEEclEOh
 # Func Hash:
 24
 # Num Counters:
@@ -77411,7 +77828,7 @@ mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08
 # Counter Values:
 48145041
 
-mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_9NS_9allocatorIS9_EEFvvEE7destroyEv
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE4$_10NS_9allocatorIS9_EEFvvEE7destroyEv
 # Func Hash:
 0
 # Num Counters:
@@ -77419,7 +77836,7 @@ mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08
 # Counter Values:
 48
 
-mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_9NS_9allocatorIS9_EEFvvEEC2B8ne200100EOS9_OSB_
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE4$_10NS_9allocatorIS9_EEFvvEEC2B8ne200100EOS9_OSB_
 # Func Hash:
 0
 # Num Counters:
@@ -77427,7 +77844,7 @@ mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_9NS_9allocatorIS9_EEFvvEEC2B8ne200100ERKS9_RKSB_
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE4$_10NS_9allocatorIS9_EEFvvEEC2B8ne200100ERKS9_RKSB_
 # Func Hash:
 0
 # Num Counters:
@@ -77435,7 +77852,7 @@ mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08
 # Counter Values:
 36
 
-mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_9NS_9allocatorIS9_EEFvvEEclEv
+mddsp.cpp:_ZNSt3__110__function6__funcIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE4$_10NS_9allocatorIS9_EEFvvEEclEv
 # Func Hash:
 24
 # Num Counters:
@@ -77467,7 +77884,7 @@ mddsp.cpp:_ZNSt3__110__invoke_rB8ne200100IhJRZN2md3DspC1ERNS1_8HardwareERN5mc68k
 # Counter Values:
 66438696
 
-mddsp.cpp:_ZNSt3__110__invoke_rB8ne200100IhJRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_8hEEET_DpOT0_
+mddsp.cpp:_ZNSt3__110__invoke_rB8ne200100IhJRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_9hEEET_DpOT0_
 # Func Hash:
 24
 # Num Counters:
@@ -77499,7 +77916,7 @@ mddsp.cpp:_ZNSt3__110__invoke_rB8ne200100IvJRZN2md3DspC1ERNS1_8HardwareERN5mc68k
 # Counter Values:
 89933517
 
-mddsp.cpp:_ZNSt3__110__invoke_rB8ne200100IvJRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_4EEET_DpOT0_
+mddsp.cpp:_ZNSt3__110__invoke_rB8ne200100IvJRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_5EEET_DpOT0_
 # Func Hash:
 24
 # Num Counters:
@@ -77507,7 +77924,7 @@ mddsp.cpp:_ZNSt3__110__invoke_rB8ne200100IvJRZN2md3DspC1ERNS1_8HardwareERN5mc68k
 # Counter Values:
 1695436
 
-mddsp.cpp:_ZNSt3__110__invoke_rB8ne200100IvJRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_5bEEET_DpOT0_
+mddsp.cpp:_ZNSt3__110__invoke_rB8ne200100IvJRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_6bEEET_DpOT0_
 # Func Hash:
 24
 # Num Counters:
@@ -77515,7 +77932,7 @@ mddsp.cpp:_ZNSt3__110__invoke_rB8ne200100IvJRZN2md3DspC1ERNS1_8HardwareERN5mc68k
 # Counter Values:
 3176955
 
-mddsp.cpp:_ZNSt3__110__invoke_rB8ne200100IvJRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_6jEEET_DpOT0_
+mddsp.cpp:_ZNSt3__110__invoke_rB8ne200100IvJRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_7jEEET_DpOT0_
 # Func Hash:
 24
 # Num Counters:
@@ -77523,7 +77940,7 @@ mddsp.cpp:_ZNSt3__110__invoke_rB8ne200100IvJRZN2md3DspC1ERNS1_8HardwareERN5mc68k
 # Counter Values:
 1830
 
-mddsp.cpp:_ZNSt3__110__invoke_rB8ne200100IvJRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_7hEEET_DpOT0_
+mddsp.cpp:_ZNSt3__110__invoke_rB8ne200100IvJRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_8hEEET_DpOT0_
 # Func Hash:
 24
 # Num Counters:
@@ -77531,7 +77948,7 @@ mddsp.cpp:_ZNSt3__110__invoke_rB8ne200100IvJRZN2md3DspC1ERNS1_8HardwareERN5mc68k
 # Counter Values:
 2453242
 
-mddsp.cpp:_ZNSt3__110__invoke_rB8ne200100IvJRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_9EEET_DpOT0_
+mddsp.cpp:_ZNSt3__110__invoke_rB8ne200100IvJRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE4$_10EEET_DpOT0_
 # Func Hash:
 24
 # Num Counters:
@@ -77653,7 +78070,15 @@ mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorINS_10__function6__funcIZ
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorINS_10__function6__funcIZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_4NS1_ISB_EEFvvEEEEEEC2B8ne200100Ev
+mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorINS_10__function6__funcIZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_4NS1_ISB_EEFbvEEEEEEC2B8ne200100Ev
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+12
+
+mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorINS_10__function6__funcIZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_5NS1_ISB_EEFvvEEEEEEC2B8ne200100Ev
 # Func Hash:
 0
 # Num Counters:
@@ -77661,7 +78086,7 @@ mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorINS_10__function6__funcIZ
 # Counter Values:
 6
 
-mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorINS_10__function6__funcIZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_5NS1_ISB_EEFvbEEEEEEC2B8ne200100Ev
+mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorINS_10__function6__funcIZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_6NS1_ISB_EEFvbEEEEEEC2B8ne200100Ev
 # Func Hash:
 0
 # Num Counters:
@@ -77669,7 +78094,7 @@ mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorINS_10__function6__funcIZ
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorINS_10__function6__funcIZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_6NS1_ISB_EEFvjEEEEEEC2B8ne200100Ev
+mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorINS_10__function6__funcIZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_7NS1_ISB_EEFvjEEEEEEC2B8ne200100Ev
 # Func Hash:
 0
 # Num Counters:
@@ -77677,7 +78102,7 @@ mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorINS_10__function6__funcIZ
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorINS_10__function6__funcIZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_7NS1_ISB_EEFvhEEEEEEC2B8ne200100Ev
+mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorINS_10__function6__funcIZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_8NS1_ISB_EEFvhEEEEEEC2B8ne200100Ev
 # Func Hash:
 0
 # Num Counters:
@@ -77685,7 +78110,7 @@ mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorINS_10__function6__funcIZ
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorINS_10__function6__funcIZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_8NS1_ISB_EEFhhEEEEEEC2B8ne200100Ev
+mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorINS_10__function6__funcIZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_9NS1_ISB_EEFhhEEEEEEC2B8ne200100Ev
 # Func Hash:
 0
 # Num Counters:
@@ -77693,7 +78118,7 @@ mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorINS_10__function6__funcIZ
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorINS_10__function6__funcIZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_9NS1_ISB_EEFvvEEEEEEC2B8ne200100Ev
+mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorINS_10__function6__funcIZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE4$_10NS1_ISB_EEFvvEEEEEEC2B8ne200100Ev
 # Func Hash:
 0
 # Num Counters:
@@ -77755,7 +78180,7 @@ mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorIZN2md3DspC1ERNS2_8Hardwa
 # Num Counters:
 1
 # Counter Values:
-12
+24
 
 mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_5EEEC2B8ne200100Ev
 # Func Hash:
@@ -77763,7 +78188,7 @@ mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorIZN2md3DspC1ERNS2_8Hardwa
 # Num Counters:
 1
 # Counter Values:
-24
+12
 
 mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_6EEEC2B8ne200100Ev
 # Func Hash:
@@ -77790,6 +78215,14 @@ mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorIZN2md3DspC1ERNS2_8Hardwa
 24
 
 mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE3$_9EEEC2B8ne200100Ev
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+24
+
+mddsp.cpp:_ZNSt3__116__non_trivial_ifILb1ENS_9allocatorIZN2md3DspC1ERNS2_8HardwareERN5mc68k5Hdi08EjE4$_10EEEC2B8ne200100Ev
 # Func Hash:
 0
 # Num Counters:
@@ -77871,7 +78304,7 @@ mddsp.cpp:_ZNSt3__128__invoke_void_return_wrapperIhLb0EE6__callB8ne200100IJRZN2m
 # Counter Values:
 66438696
 
-mddsp.cpp:_ZNSt3__128__invoke_void_return_wrapperIhLb0EE6__callB8ne200100IJRZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE3$_8hEEEhDpOT_
+mddsp.cpp:_ZNSt3__128__invoke_void_return_wrapperIhLb0EE6__callB8ne200100IJRZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE3$_9hEEEhDpOT_
 # Func Hash:
 24
 # Num Counters:
@@ -77903,7 +78336,7 @@ mddsp.cpp:_ZNSt3__128__invoke_void_return_wrapperIvLb1EE6__callB8ne200100IJRZN2m
 # Counter Values:
 89933517
 
-mddsp.cpp:_ZNSt3__128__invoke_void_return_wrapperIvLb1EE6__callB8ne200100IJRZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE3$_4EEEvDpOT_
+mddsp.cpp:_ZNSt3__128__invoke_void_return_wrapperIvLb1EE6__callB8ne200100IJRZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE3$_5EEEvDpOT_
 # Func Hash:
 0
 # Num Counters:
@@ -77911,7 +78344,7 @@ mddsp.cpp:_ZNSt3__128__invoke_void_return_wrapperIvLb1EE6__callB8ne200100IJRZN2m
 # Counter Values:
 1695436
 
-mddsp.cpp:_ZNSt3__128__invoke_void_return_wrapperIvLb1EE6__callB8ne200100IJRZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE3$_5bEEEvDpOT_
+mddsp.cpp:_ZNSt3__128__invoke_void_return_wrapperIvLb1EE6__callB8ne200100IJRZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE3$_6bEEEvDpOT_
 # Func Hash:
 0
 # Num Counters:
@@ -77919,7 +78352,7 @@ mddsp.cpp:_ZNSt3__128__invoke_void_return_wrapperIvLb1EE6__callB8ne200100IJRZN2m
 # Counter Values:
 3176955
 
-mddsp.cpp:_ZNSt3__128__invoke_void_return_wrapperIvLb1EE6__callB8ne200100IJRZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE3$_6jEEEvDpOT_
+mddsp.cpp:_ZNSt3__128__invoke_void_return_wrapperIvLb1EE6__callB8ne200100IJRZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE3$_7jEEEvDpOT_
 # Func Hash:
 0
 # Num Counters:
@@ -77927,7 +78360,7 @@ mddsp.cpp:_ZNSt3__128__invoke_void_return_wrapperIvLb1EE6__callB8ne200100IJRZN2m
 # Counter Values:
 1830
 
-mddsp.cpp:_ZNSt3__128__invoke_void_return_wrapperIvLb1EE6__callB8ne200100IJRZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE3$_7hEEEvDpOT_
+mddsp.cpp:_ZNSt3__128__invoke_void_return_wrapperIvLb1EE6__callB8ne200100IJRZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE3$_8hEEEvDpOT_
 # Func Hash:
 0
 # Num Counters:
@@ -77935,7 +78368,7 @@ mddsp.cpp:_ZNSt3__128__invoke_void_return_wrapperIvLb1EE6__callB8ne200100IJRZN2m
 # Counter Values:
 2453242
 
-mddsp.cpp:_ZNSt3__128__invoke_void_return_wrapperIvLb1EE6__callB8ne200100IJRZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE3$_9EEEvDpOT_
+mddsp.cpp:_ZNSt3__128__invoke_void_return_wrapperIvLb1EE6__callB8ne200100IJRZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE4$_10EEEvDpOT_
 # Func Hash:
 0
 # Num Counters:
@@ -77991,7 +78424,7 @@ mddsp.cpp:_ZNSt3__18__invokeB8ne200100IRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi0
 # Counter Values:
 7174
 
-mddsp.cpp:_ZNSt3__18__invokeB8ne200100IRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_4JEEEDTclclsr3stdE7declvalIT_EEspclsr3stdE7declvalIT0_EEEEOSA_DpOSB_
+mddsp.cpp:_ZNSt3__18__invokeB8ne200100IRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_5JEEEDTclclsr3stdE7declvalIT_EEspclsr3stdE7declvalIT0_EEEEOSA_DpOSB_
 # Func Hash:
 24
 # Num Counters:
@@ -77999,7 +78432,7 @@ mddsp.cpp:_ZNSt3__18__invokeB8ne200100IRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi0
 # Counter Values:
 1695436
 
-mddsp.cpp:_ZNSt3__18__invokeB8ne200100IRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_5JbEEEDTclclsr3stdE7declvalIT_EEspclsr3stdE7declvalIT0_EEEEOSA_DpOSB_
+mddsp.cpp:_ZNSt3__18__invokeB8ne200100IRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_6JbEEEDTclclsr3stdE7declvalIT_EEspclsr3stdE7declvalIT0_EEEEOSA_DpOSB_
 # Func Hash:
 24
 # Num Counters:
@@ -78007,7 +78440,7 @@ mddsp.cpp:_ZNSt3__18__invokeB8ne200100IRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi0
 # Counter Values:
 3176955
 
-mddsp.cpp:_ZNSt3__18__invokeB8ne200100IRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_6JjEEEDTclclsr3stdE7declvalIT_EEspclsr3stdE7declvalIT0_EEEEOSA_DpOSB_
+mddsp.cpp:_ZNSt3__18__invokeB8ne200100IRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_7JjEEEDTclclsr3stdE7declvalIT_EEspclsr3stdE7declvalIT0_EEEEOSA_DpOSB_
 # Func Hash:
 24
 # Num Counters:
@@ -78015,7 +78448,7 @@ mddsp.cpp:_ZNSt3__18__invokeB8ne200100IRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi0
 # Counter Values:
 1830
 
-mddsp.cpp:_ZNSt3__18__invokeB8ne200100IRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_7JhEEEDTclclsr3stdE7declvalIT_EEspclsr3stdE7declvalIT0_EEEEOSA_DpOSB_
+mddsp.cpp:_ZNSt3__18__invokeB8ne200100IRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_8JhEEEDTclclsr3stdE7declvalIT_EEspclsr3stdE7declvalIT0_EEEEOSA_DpOSB_
 # Func Hash:
 24
 # Num Counters:
@@ -78023,7 +78456,7 @@ mddsp.cpp:_ZNSt3__18__invokeB8ne200100IRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi0
 # Counter Values:
 2453242
 
-mddsp.cpp:_ZNSt3__18__invokeB8ne200100IRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_8JhEEEDTclclsr3stdE7declvalIT_EEspclsr3stdE7declvalIT0_EEEEOSA_DpOSB_
+mddsp.cpp:_ZNSt3__18__invokeB8ne200100IRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_9JhEEEDTclclsr3stdE7declvalIT_EEspclsr3stdE7declvalIT0_EEEEOSA_DpOSB_
 # Func Hash:
 24
 # Num Counters:
@@ -78031,7 +78464,7 @@ mddsp.cpp:_ZNSt3__18__invokeB8ne200100IRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi0
 # Counter Values:
 48145041
 
-mddsp.cpp:_ZNSt3__18__invokeB8ne200100IRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_9JEEEDTclclsr3stdE7declvalIT_EEspclsr3stdE7declvalIT0_EEEEOSA_DpOSB_
+mddsp.cpp:_ZNSt3__18__invokeB8ne200100IRZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE4$_10JEEEDTclclsr3stdE7declvalIT_EEspclsr3stdE7declvalIT0_EEEEOSA_DpOSB_
 # Func Hash:
 24
 # Num Counters:
@@ -78063,6 +78496,14 @@ mddsp.cpp:_ZNSt3__18functionIFbvEEC2IZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08Ej
 # Counter Values:
 9
 
+mddsp.cpp:_ZNSt3__18functionIFbvEEC2IZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_4vEET_
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+12
+
 mddsp.cpp:_ZNSt3__18functionIFhhEEC2IZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_2vEET_
 # Func Hash:
 0
@@ -78071,7 +78512,7 @@ mddsp.cpp:_ZNSt3__18functionIFhhEEC2IZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08Ej
 # Counter Values:
 6
 
-mddsp.cpp:_ZNSt3__18functionIFhhEEC2IZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_8vEET_
+mddsp.cpp:_ZNSt3__18functionIFhhEEC2IZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_9vEET_
 # Func Hash:
 0
 # Num Counters:
@@ -78079,7 +78520,7 @@ mddsp.cpp:_ZNSt3__18functionIFhhEEC2IZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08Ej
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__18functionIFvbEEC2IZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_5vEET_
+mddsp.cpp:_ZNSt3__18functionIFvbEEC2IZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_6vEET_
 # Func Hash:
 0
 # Num Counters:
@@ -78095,7 +78536,7 @@ mddsp.cpp:_ZNSt3__18functionIFvhEEC2IZN2md3Dsp23setHostPumpWakeCallbackERKNS0_IF
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__18functionIFvhEEC2IZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_7vEET_
+mddsp.cpp:_ZNSt3__18functionIFvhEEC2IZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_8vEET_
 # Func Hash:
 0
 # Num Counters:
@@ -78111,7 +78552,7 @@ mddsp.cpp:_ZNSt3__18functionIFvjEEC2IZN2md3Dsp17onDspBootFinishedEvE3$_0vEET_
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__18functionIFvjEEC2IZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_6vEET_
+mddsp.cpp:_ZNSt3__18functionIFvjEEC2IZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_7vEET_
 # Func Hash:
 0
 # Num Counters:
@@ -78127,7 +78568,7 @@ mddsp.cpp:_ZNSt3__18functionIFvvEEC2IZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08Ej
 # Counter Values:
 3
 
-mddsp.cpp:_ZNSt3__18functionIFvvEEC2IZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_4vEET_
+mddsp.cpp:_ZNSt3__18functionIFvvEEC2IZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_5vEET_
 # Func Hash:
 0
 # Num Counters:
@@ -78135,7 +78576,7 @@ mddsp.cpp:_ZNSt3__18functionIFvvEEC2IZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08Ej
 # Counter Values:
 6
 
-mddsp.cpp:_ZNSt3__18functionIFvvEEC2IZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE3$_9vEET_
+mddsp.cpp:_ZNSt3__18functionIFvvEEC2IZN2md3DspC1ERNS4_8HardwareERN5mc68k5Hdi08EjE4$_10vEET_
 # Func Hash:
 0
 # Num Counters:
@@ -78210,7 +78651,15 @@ mddsp.cpp:_ZNSt3__19allocatorINS_10__function6__funcIZN2md3DspC1ERNS3_8HardwareE
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__19allocatorINS_10__function6__funcIZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE3$_4NS0_ISA_EEFvvEEEEC2B8ne200100ISA_EERKNS0_IT_EE
+mddsp.cpp:_ZNSt3__19allocatorINS_10__function6__funcIZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE3$_4NS0_ISA_EEFbvEEEEC2B8ne200100ISA_EERKNS0_IT_EE
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+12
+
+mddsp.cpp:_ZNSt3__19allocatorINS_10__function6__funcIZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE3$_5NS0_ISA_EEFvvEEEEC2B8ne200100ISA_EERKNS0_IT_EE
 # Func Hash:
 0
 # Num Counters:
@@ -78218,7 +78667,7 @@ mddsp.cpp:_ZNSt3__19allocatorINS_10__function6__funcIZN2md3DspC1ERNS3_8HardwareE
 # Counter Values:
 6
 
-mddsp.cpp:_ZNSt3__19allocatorINS_10__function6__funcIZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE3$_5NS0_ISA_EEFvbEEEEC2B8ne200100ISA_EERKNS0_IT_EE
+mddsp.cpp:_ZNSt3__19allocatorINS_10__function6__funcIZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE3$_6NS0_ISA_EEFvbEEEEC2B8ne200100ISA_EERKNS0_IT_EE
 # Func Hash:
 0
 # Num Counters:
@@ -78226,7 +78675,7 @@ mddsp.cpp:_ZNSt3__19allocatorINS_10__function6__funcIZN2md3DspC1ERNS3_8HardwareE
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__19allocatorINS_10__function6__funcIZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE3$_6NS0_ISA_EEFvjEEEEC2B8ne200100ISA_EERKNS0_IT_EE
+mddsp.cpp:_ZNSt3__19allocatorINS_10__function6__funcIZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE3$_7NS0_ISA_EEFvjEEEEC2B8ne200100ISA_EERKNS0_IT_EE
 # Func Hash:
 0
 # Num Counters:
@@ -78234,7 +78683,7 @@ mddsp.cpp:_ZNSt3__19allocatorINS_10__function6__funcIZN2md3DspC1ERNS3_8HardwareE
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__19allocatorINS_10__function6__funcIZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE3$_7NS0_ISA_EEFvhEEEEC2B8ne200100ISA_EERKNS0_IT_EE
+mddsp.cpp:_ZNSt3__19allocatorINS_10__function6__funcIZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE3$_8NS0_ISA_EEFvhEEEEC2B8ne200100ISA_EERKNS0_IT_EE
 # Func Hash:
 0
 # Num Counters:
@@ -78242,7 +78691,7 @@ mddsp.cpp:_ZNSt3__19allocatorINS_10__function6__funcIZN2md3DspC1ERNS3_8HardwareE
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__19allocatorINS_10__function6__funcIZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE3$_8NS0_ISA_EEFhhEEEEC2B8ne200100ISA_EERKNS0_IT_EE
+mddsp.cpp:_ZNSt3__19allocatorINS_10__function6__funcIZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE3$_9NS0_ISA_EEFhhEEEEC2B8ne200100ISA_EERKNS0_IT_EE
 # Func Hash:
 0
 # Num Counters:
@@ -78250,7 +78699,7 @@ mddsp.cpp:_ZNSt3__19allocatorINS_10__function6__funcIZN2md3DspC1ERNS3_8HardwareE
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__19allocatorINS_10__function6__funcIZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE3$_9NS0_ISA_EEFvvEEEEC2B8ne200100ISA_EERKNS0_IT_EE
+mddsp.cpp:_ZNSt3__19allocatorINS_10__function6__funcIZN2md3DspC1ERNS3_8HardwareERN5mc68k5Hdi08EjE4$_10NS0_ISA_EEFvvEEEEC2B8ne200100ISA_EERKNS0_IT_EE
 # Func Hash:
 0
 # Num Counters:
@@ -78360,15 +78809,15 @@ mddsp.cpp:_ZNSt3__19allocatorIZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_4EC
 # Num Counters:
 1
 # Counter Values:
-6
+12
 
-mddsp.cpp:_ZNSt3__19allocatorIZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_4EC2B8ne200100INS_10__function6__funcIS8_S9_FvvEEEEERKNS0_IT_EE
+mddsp.cpp:_ZNSt3__19allocatorIZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_4EC2B8ne200100INS_10__function6__funcIS8_S9_FbvEEEEERKNS0_IT_EE
 # Func Hash:
 0
 # Num Counters:
 1
 # Counter Values:
-6
+12
 
 mddsp.cpp:_ZNSt3__19allocatorIZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_5EC2B8ne200100Ev
 # Func Hash:
@@ -78376,15 +78825,15 @@ mddsp.cpp:_ZNSt3__19allocatorIZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_5EC
 # Num Counters:
 1
 # Counter Values:
-12
+6
 
-mddsp.cpp:_ZNSt3__19allocatorIZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_5EC2B8ne200100INS_10__function6__funcIS8_S9_FvbEEEEERKNS0_IT_EE
+mddsp.cpp:_ZNSt3__19allocatorIZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_5EC2B8ne200100INS_10__function6__funcIS8_S9_FvvEEEEERKNS0_IT_EE
 # Func Hash:
 0
 # Num Counters:
 1
 # Counter Values:
-12
+6
 
 mddsp.cpp:_ZNSt3__19allocatorIZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_6EC2B8ne200100Ev
 # Func Hash:
@@ -78394,7 +78843,7 @@ mddsp.cpp:_ZNSt3__19allocatorIZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_6EC
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__19allocatorIZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_6EC2B8ne200100INS_10__function6__funcIS8_S9_FvjEEEEERKNS0_IT_EE
+mddsp.cpp:_ZNSt3__19allocatorIZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_6EC2B8ne200100INS_10__function6__funcIS8_S9_FvbEEEEERKNS0_IT_EE
 # Func Hash:
 0
 # Num Counters:
@@ -78410,7 +78859,7 @@ mddsp.cpp:_ZNSt3__19allocatorIZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_7EC
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__19allocatorIZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_7EC2B8ne200100INS_10__function6__funcIS8_S9_FvhEEEEERKNS0_IT_EE
+mddsp.cpp:_ZNSt3__19allocatorIZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_7EC2B8ne200100INS_10__function6__funcIS8_S9_FvjEEEEERKNS0_IT_EE
 # Func Hash:
 0
 # Num Counters:
@@ -78426,7 +78875,7 @@ mddsp.cpp:_ZNSt3__19allocatorIZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_8EC
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__19allocatorIZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_8EC2B8ne200100INS_10__function6__funcIS8_S9_FhhEEEEERKNS0_IT_EE
+mddsp.cpp:_ZNSt3__19allocatorIZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_8EC2B8ne200100INS_10__function6__funcIS8_S9_FvhEEEEERKNS0_IT_EE
 # Func Hash:
 0
 # Num Counters:
@@ -78442,7 +78891,23 @@ mddsp.cpp:_ZNSt3__19allocatorIZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_9EC
 # Counter Values:
 12
 
-mddsp.cpp:_ZNSt3__19allocatorIZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_9EC2B8ne200100INS_10__function6__funcIS8_S9_FvvEEEEERKNS0_IT_EE
+mddsp.cpp:_ZNSt3__19allocatorIZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE3$_9EC2B8ne200100INS_10__function6__funcIS8_S9_FhhEEEEERKNS0_IT_EE
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+12
+
+mddsp.cpp:_ZNSt3__19allocatorIZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE4$_10EC2B8ne200100Ev
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+12
+
+mddsp.cpp:_ZNSt3__19allocatorIZN2md3DspC1ERNS1_8HardwareERN5mc68k5Hdi08EjE4$_10EC2B8ne200100INS_10__function6__funcIS8_S9_FvvEEEEERKNS0_IT_EE
 # Func Hash:
 0
 # Num Counters:
@@ -78503,7 +78968,7 @@ mddsp.cpp:_ZZN2md3DspC1ERNS_8HardwareERN5mc68k5Hdi08EjENK3$_3clEj
 # Counter Values:
 7174
 
-mddsp.cpp:_ZZN2md3DspC1ERNS_8HardwareERN5mc68k5Hdi08EjENK3$_4clEv
+mddsp.cpp:_ZZN2md3DspC1ERNS_8HardwareERN5mc68k5Hdi08EjENK3$_5clEv
 # Func Hash:
 0
 # Num Counters:
@@ -78511,7 +78976,7 @@ mddsp.cpp:_ZZN2md3DspC1ERNS_8HardwareERN5mc68k5Hdi08EjENK3$_4clEv
 # Counter Values:
 1695436
 
-mddsp.cpp:_ZZN2md3DspC1ERNS_8HardwareERN5mc68k5Hdi08EjENK3$_5clEb
+mddsp.cpp:_ZZN2md3DspC1ERNS_8HardwareERN5mc68k5Hdi08EjENK3$_6clEb
 # Func Hash:
 0
 # Num Counters:
@@ -78519,7 +78984,7 @@ mddsp.cpp:_ZZN2md3DspC1ERNS_8HardwareERN5mc68k5Hdi08EjENK3$_5clEb
 # Counter Values:
 3176955
 
-mddsp.cpp:_ZZN2md3DspC1ERNS_8HardwareERN5mc68k5Hdi08EjENK3$_6clEj
+mddsp.cpp:_ZZN2md3DspC1ERNS_8HardwareERN5mc68k5Hdi08EjENK3$_7clEj
 # Func Hash:
 42129
 # Num Counters:
@@ -78528,7 +78993,7 @@ mddsp.cpp:_ZZN2md3DspC1ERNS_8HardwareERN5mc68k5Hdi08EjENK3$_6clEj
 1830
 12
 
-mddsp.cpp:_ZZN2md3DspC1ERNS_8HardwareERN5mc68k5Hdi08EjENK3$_7clEh
+mddsp.cpp:_ZZN2md3DspC1ERNS_8HardwareERN5mc68k5Hdi08EjENK3$_8clEh
 # Func Hash:
 0
 # Num Counters:
@@ -78536,7 +79001,7 @@ mddsp.cpp:_ZZN2md3DspC1ERNS_8HardwareERN5mc68k5Hdi08EjENK3$_7clEh
 # Counter Values:
 2453242
 
-mddsp.cpp:_ZZN2md3DspC1ERNS_8HardwareERN5mc68k5Hdi08EjENK3$_8clEh
+mddsp.cpp:_ZZN2md3DspC1ERNS_8HardwareERN5mc68k5Hdi08EjENK3$_9clEh
 # Func Hash:
 24
 # Num Counters:
@@ -78544,7 +79009,7 @@ mddsp.cpp:_ZZN2md3DspC1ERNS_8HardwareERN5mc68k5Hdi08EjENK3$_8clEh
 # Counter Values:
 48145041
 
-mddsp.cpp:_ZZN2md3DspC1ERNS_8HardwareERN5mc68k5Hdi08EjENK3$_9clEv
+mddsp.cpp:_ZZN2md3DspC1ERNS_8HardwareERN5mc68k5Hdi08EjENK4$_10clEv
 # Func Hash:
 0
 # Num Counters:
@@ -78609,11 +79074,13 @@ mdhardware.cpp:_ZN2md15renderHostAudioILm32768EZNS_8Hardware12processAudioEjjE3$
 
 mdhardware.cpp:_ZN6dsp56k10RingBufferINSt3__15arrayIjLm6EEELm32768ELb0ELb0EE12emplace_backIZN2md8Hardware21schedDrainCodecOutputEvE3$_0EEvRKT_
 # Func Hash:
-0
+11043906705
 # Num Counters:
-1
+3
 # Counter Values:
 4390528
+0
+0
 
 mdhardware.cpp:_ZNKSt3__110__function12__alloc_funcIZN2md8Hardware19mdLinkWindowFlushedEvE3$_0NS_9allocatorIS4_EEFjvEE15__get_allocatorB8ne200100Ev
 # Func Hash:
@@ -81137,12 +81604,12 @@ mdhardware.cpp:_ZZN2md8Hardware15pumpMidiIngressEvENK3$_1clEv
 # Num Counters:
 32
 # Counter Values:
-2274718
+2247883
 0
 0
 234
 0
-2274514
+2247679
 0
 0
 204
@@ -81152,18 +81619,18 @@ mdhardware.cpp:_ZZN2md8Hardware15pumpMidiIngressEvENK3$_1clEv
 204
 204
 204
-2274514
-2274514
-2274514
-2274514
-2274514
-2274514
-2274718
-2274514
-2294755
-2294143
+2247679
+2247679
+2247679
+2247679
+2247679
+2247679
+2247883
+2247679
+2267920
+2267308
 0
-2274484
+2247649
 19659
 204
 204
@@ -81210,15 +81677,15 @@ mdhardware.cpp:_ZZN2md8Hardware9schedStepEvENK3$_0clEv
 # Num Counters:
 10
 # Counter Values:
-104025236
-104025236
-104025236
-104025236
-104025236
-104025236
-104025236
-104025236
-140660
+3100271
+3100271
+3100271
+3100271
+3100271
+3100271
+3100271
+3100271
+21234
 0
 
 mdhardware.cpp:_ZZN2md8HardwareC1ERKNSt3__16vectorIhNS1_9allocatorIhEEEERKNS1_12basic_stringIcNS1_11char_traitsIcEENS3_IcEEEENS_12MachineModelES7_NS1_10shared_ptrINS_19FrontPanelPublisherEEES7_S7_RKNS_18FlashSectorOverlayES7_ENK3$_0clEh
@@ -81444,7 +81911,7 @@ mdmc.cpp:_ZN2md12_GLOBAL__N_18loadBe16EPKh
 # Num Counters:
 1
 # Counter Values:
-2112949924
+2106434426
 
 mdmc.cpp:_ZN2md12_GLOBAL__N_18loadBe32EPKh
 # Func Hash:

@@ -29,7 +29,9 @@ const MmJourneys = (() => {
 	const tele = { last: null, steps: [] }, results = [], sent = [];
 	/* what the page hands the plug-in (for what has no read-back: live notes) */
 	const notesOn = [];	/* the pitches the keyboard sent (noteOn), newest last */
-	{ const send0 = Bridge.send; Bridge.send = (m, o) => { sent.push(m.op); if (sent.length > 50) sent.shift(); if (m.op === "noteOn") { notesOn.push(m.pitch); if (notesOn.length > 50) notesOn.shift(); } return send0(m, o); }; }
+	const midiSent = [];	/* the raw MIDI the keyboard and the joystick sent (op midi), newest last */
+	{ const send0 = Bridge.send; Bridge.send = (m, o) => { sent.push(m.op); if (sent.length > 50) sent.shift(); if (m.op === "noteOn") { notesOn.push(m.pitch); if (notesOn.length > 50) notesOn.shift(); }
+		if (m.op === "midi") { midiSent.push(m.b); if (midiSent.length > 50) midiSent.shift(); } return send0(m, o); }; }
 	Bridge.onMessage(m => {
 		if (m.type === "telemetry") { tele.last = m; if (m.playing) { tele.steps.push(m.step); if (tele.steps.length > 64) tele.steps.shift(); } }
 		if (m.type === "result") { results.push(m); if (results.length > 50) results.shift(); }
@@ -226,6 +228,71 @@ const MmJourneys = (() => {
 			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(patDoc().tracks[0].transpose === c.t0, "transpose " + patDoc().tracks[0].transpose), within: 15000 }
 		],
 		async tidy(u) { if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); }
+	};
+
+	/* B-059: what the page plays ends when its window stops being the key window (a deactivated window gets no pointerup
+	   and no keyup; WebKit tells the page with a blur), and leaving the window starts nothing. pressOnly: a mouse button
+	   pressed on the element and kept down. */
+	const pressOnly = (el, fx = 0.5, fy = 0.5) => {
+		const r = el.getBoundingClientRect(), x = r.left + r.width * fx, y = r.top + r.height * fy, t = document.elementFromPoint(x, y);
+		const o = { bubbles: true, cancelable: true, composed: true, pointerId: 1, pointerType: "mouse", isPrimary: true, button: 0, buttons: 1, clientX: x, clientY: y, view: window };
+		t.dispatchEvent(new PointerEvent("pointerdown", o)); t.dispatchEvent(new MouseEvent("mousedown", o));
+	};
+	const leaveWindow = () => { window.dispatchEvent(new Event("blur")); document.dispatchEvent(new Event("visibilitychange")); };
+	const noteOffSent = () => midiSent.some(b => (b[0] & 0xf0) === 0x80 || ((b[0] & 0xf0) === 0x90 && b[2] === 0));
+	const trnKeyBlur = {
+		name: "mm-seq-transpose-key-blur",
+		steps: [
+			go("seq"), sel(0),
+			{ say: "open Transpose and keep the mouse down on the G key of its keyboard: its note plays", act: async (u, c) => { u.click('[data-dock="trn"]'); await sleep(300); c.t0 = patDoc().tracks[0].transpose; sent.length = 0;
+				const cv = $1('#dkvis canvas[data-ed="dktrn"]'), r = cv.getBoundingClientRect(), k = ED.dktrn.keys(r.width, r.height).find(x => x.n === 7);
+				pressOnly(cv, (k.x + k.w / 2) / r.width, (k.y + k.h * 0.85) / r.height); },
+				machine: () => ok(sent.includes("noteOn"), "sent " + sent.join(",")) },
+			{ say: "the window stops being the key window (no mouse up comes): the note ends", act: () => { sent.length = 0; leaveWindow(); },
+				machine: () => ok(sent.includes("noteOff"), "no note off: sent " + (sent.join(",") || "nothing")) },
+			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(patDoc().tracks[0].transpose === c.t0, "transpose " + patDoc().tracks[0].transpose), within: 15000 }
+		],
+		async tidy(u) { if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); }
+	};
+	/* B-060: a transpose edited while the pattern plays: the plug-in applies it with the machine's TRANSPOSE knob, one
+	   step and back (mmDeskFirmwareTest transpose hears it); read again afterwards, the pattern holds what was edited */
+	const trnPlaying = {
+		name: "mm-seq-transpose-playing",
+		steps: [
+			go("seq"), sel(0),
+			{ say: "open Transpose and press PLAY", act: async (u, c) => { u.click('[data-dock="trn"]'); await sleep(300); c.t0 = patDoc().tracks[0].transpose; if (!S().playing) u.click("#play"); },
+				machine: () => ok(!!tele.last?.playing, "not playing"), within: 8000 },
+			{ say: "click the E key of the transpose keyboard while it plays", act: async (u, c) => { const cv = $1('#dkvis canvas[data-ed="dktrn"]'), r = cv.getBoundingClientRect(), k = ED.dktrn.keys(r.width, r.height).find(x => x.n === 4);
+				u.click(cv, {}, (k.x + k.w / 2) / r.width, (k.y + k.h * 0.85) / r.height); c.v = S().tracks[0].tr.TRACK - 64; },
+				machine: c => ok(patDoc().tracks[0].transpose === c.v, `transpose ${patDoc().tracks[0].transpose}, want ${c.v}`), within: 15000 },
+			{ say: "a few seconds on, the pattern read again: it holds the transpose edited and still plays", act: async (u, c) => { await sleep(4000); c.n = results.length; Bridge.send({ op: "load", kind: "pattern", slot: cur() }); await sleep(1500); },
+				machine: c => ok(patDoc().tracks[0].transpose === c.v && !!tele.last?.playing, `transpose ${patDoc().tracks[0].transpose}, want ${c.v}, playing ${tele.last?.playing}`), within: 10000 },
+			{ say: "STOP, then Cmd+Z", act: async u => { u.click("#play"); await until(() => !S().playing, 3000); blur(); u.key("z", { cmd: true }); },
+				machine: c => ok(patDoc().tracks[0].transpose === c.t0, "transpose " + patDoc().tracks[0].transpose), within: 15000 }
+		],
+		async tidy(u) { if (S().playing) u.click("#play"); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); }
+	};
+	const leaveStopped = {
+		name: "mm-top-leave-window-stopped",
+		steps: [
+			go("seq"),
+			{ say: "stopped, a home-row key down (A: T1 plays), the Perform keyboard's key and the joystick held: the window stops being the key window",
+				act: async (u, c) => { if (S().playing) { u.click("#play"); await until(() => !S().playing, 3000); } sel(0).act(u, c); blur();
+					sent.length = 0; midiSent.length = 0;
+					document.dispatchEvent(new KeyboardEvent("keydown", { key: "a", code: "KeyA", bubbles: true, cancelable: true }));
+					u.click(tab("perform")); await until(() => !!$1(".kb [data-key]"), 3000);
+					pressOnly($1('.kb .w[data-key="60"]') || $1(".kb .w[data-key]"));
+					await sleep(300);
+					c.on = sent.includes("noteOn") && midiSent.some(b => (b[0] & 0xf0) === 0x90 && b[2] > 0);
+					sent.length = 0; midiSent.length = 0;
+					leaveWindow(); },
+				machine: c => ok(c.on && sent.includes("noteOff") && noteOffSent(), `notes on ${c.on}; after: sent ${sent.join(",") || "nothing"}, midi ${JSON.stringify(midiSent)}`) },
+			{ say: "for 3 s the machine stays stopped and the page sends no PLAY", act: async c => { await sleep(3000); },
+				machine: () => ok(!tele.last?.playing && !S().playing && !sent.includes("play"), `playing ${tele.last?.playing}, sent ${sent.join(",") || "nothing"}`) },
+			{ say: "the keys come up where the window is again: nothing more plays", act: () => { document.dispatchEvent(new KeyboardEvent("keyup", { key: "a", code: "KeyA", bubbles: true })); },
+				machine: () => ok(!tele.last?.playing, "playing") }
+		],
+		async tidy(u) { u.click(tab("seq")); }
 	};
 
 	/* ---------- generators ---------- */
@@ -1411,7 +1478,7 @@ const MmJourneys = (() => {
 	const cpuJs = [...Journey.cpuMeterJourneys("mm"), Journey.speedUpsMenuJourney("mm")];
 	/* I-021: the output meter and volume at the LCD's right end, as the Machinedrum's */
 	const volJs = Journey.volumeJourneys("mm");
-	const all = [bootCard, firstBeat, spaceKey, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys,
+	const all = [bootCard, firstBeat, spaceKey, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff,
 		poly, multiTrig, multiMap, kbPlay, songRows, songPicker, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
