@@ -167,6 +167,12 @@ reached at all.
 | F15 | TurboMIDI for bulk transfers to a real machine | both | L | later |
 | F16 | Small wishes: turn off the unsaved-kit warning (I-009), show incoming notes (I-002), follow the last-played track (I-003) | both | S each | later |
 
+Spin-off (2026-10-11): the grid and lock lanes as a separate paid MIDI-out sequencer for any machine, asked for by a
+tester. Its own private repo (`FutureNativeAudio/xox-plocks`, local `audio/xox-plocks`); nothing here changes for it.
+The grid features stay equal on both sides by copying code and ideas both ways, never by forking: a grid feature
+shipped here updates its row in `audio/xox-plocks/PARITY.md`.
+It may copy only page and deskCore files Radek wrote alone (its VENDOR.md), never the GPL code of this repo.
+
 ### To verify
 
 - CTR-AL (F6): no code refuses it; needs a firmware test.
