@@ -47,9 +47,9 @@ And: no release after 0.5.1 until this is done.
 |---|---|---|---|---|---|
 | 0 Save | each save, or by hand | `scripts/mdmm-check.sh --save` (`--watch`: on every save) | the pages against the contract and their mockups, the unit tests of what changed (built first), without the Slow and Timing ones | under 30 s | 2 s (a page file), 4 s (a desk file, rebuilt from ccache) |
 | 1 Did I break it | before Radek plays a build, before a merge | `scripts/mdmm-check.sh` | tier 0 with every test of what changed, the page journeys of that area, one golden per machine when emulation code changed | under 2 min | 18 s (a sequencer page change: 28 unit tests, 18 page journeys) |
-| 2 Branch check | before a merge, in the background, when desk or emulator code changed | `scripts/mdmm-check.sh --branch` | every unit test, every page journey, the firmware tests and the machine journeys of the area, every golden when emulation changed | under 10 min | to measure |
-| 3 Full gate on main | by hand, on a quiet Mac: the start of a release, after a big merge | `scripts/mdmm-full-gate.sh` (`--soak` for the soak) | the full local gate | nobody waits | to measure |
-| 4 Release | from main after a green full gate | `scripts/mdmm-full-gate.sh --plan`, then the command it prints | the gate stages the diff since that run touches (`MDMM_GATE_ONLY`), the release CI, the tag | about 30 min, mostly CI | to measure |
+| 2 Branch check | before a merge, in the background, when desk or emulator code changed | `scripts/mdmm-check.sh --branch` | every unit test, every page journey, the firmware tests and the machine journeys of the area, every golden when emulation changed | under 10 min | 2.6 min (a desk file: 123 unit tests, 136 page journeys, the MM intent cases on the firmware) |
+| 3 Full gate on main | by hand, on a quiet Mac: the start of a release, after a big merge | `scripts/mdmm-full-gate.sh` (`--soak` for the soak) | the full local gate | under 30 min | 21.6 min (warm tree; 0.5.1: 62 min) |
+| 4 Release | from main after a green full gate | `scripts/mdmm-full-gate.sh --plan`, then the command it prints | the gate stages the diff since that run touches (`MDMM_GATE_ONLY`), the release CI, the tag | about 30 min, mostly CI | the stages of the diff |
 
 What changed decides what runs: `scripts/mdmm-affected.tsv`, one row per path pattern (the first one a path matches):
 unit tests, firmware tests, page journeys, machine journeys, goldens, and the gate stages a release runs for it. A path
@@ -88,6 +88,16 @@ no row matches runs everything of its tier.
 - **CI.** Tests in their own jobs (macOS: arm64 without ThinLTO; Linux: beside the package), the macOS package job
   builds only the plug-ins with ThinLTO, `mdmm-audio-io.yml` folded into the Editors, and the CI nightly builds Windows
   with LTCG on main so a release branch's LTCG package finds main's cache.
+
+## Measured (2026-10-11, M4 Pro, 12 cores)
+
+| | Before (0.5.1) | After |
+|---|---|---|
+| Full local gate | 62 min (+35 for a re-run) | 21.6 min, warm tree (build 3 min; lane 1 7.5 min with 7a-7c beside it; 7d 5.2 min; timing stages 6 min). A cold tree adds about 6 min: ccache is not installed on this Mac (`brew install ccache`) |
+| Journeys in the gate (7d) | 32 min, 362 runs one at a time | 5.2 min: 65 machine and host journeys at 4 at once (and 2c, the page tier, 136 journeys in 1.5 min inside lane 1) |
+| Page journeys, both editors | in the app only | 49-68 s, headless (6 or 4 pages per editor) |
+| Unit tests (no firmware) | 4.6 min in ctest with the firmware ones | 5 s without Timing and Slow, 16 s all, at -j12 |
+| Tier 0 / 1 / 2 | - | 2-4 s / 18 s / 2.6 min |
 
 ## Findings of the first firmware runs (2026-10-11)
 
