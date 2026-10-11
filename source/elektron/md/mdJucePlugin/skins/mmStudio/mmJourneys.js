@@ -633,7 +633,7 @@ const MmJourneys = (() => {
 		name: "mm-keys-tap-tempo",
 		steps: [
 			go("mix"),
-			{ say: "tap B five times, about 0.5 s apart (T is a black key on the Monomachine Editor): the tempo follows, Draw stays as it was", act: async (u, c) => { c.b0 = machine().tempo; c.d0 = S().rollDraw; blur(); const at = []; for (let i = 0; i < 5; i++) { at.push(performance.now()); u.key("b"); await sleep(500); } c.want = Math.round(60000 / ((at[4] - at[0]) / 4) * 10) / 10; c.note = c.want + " BPM"; },
+			{ say: "tap B five times, about 0.5 s apart (T is a black key on the Monomachine Editor): the tempo follows, Draw stays as it was", act: async (u, c) => { c.b0 = machine().tempo; c.d0 = S().rollDraw; blur(); if (typeof TAP !== "undefined" && TAP.length) await sleep(2100); /* a new run of taps (the page joins taps less than 2 s apart) */ const at = []; for (let i = 0; i < 5; i++) { at.push(performance.now()); u.key("b"); await sleep(500); } c.want = Math.round(60000 / ((at[4] - at[0]) / 4) * 10) / 10; c.note = c.want + " BPM"; },
 				screen: c => ok(Math.abs(S().bpm - c.want) <= 1.5 && S().rollDraw === c.d0, "BPM " + S().bpm + ", want " + c.want + ", Draw " + S().rollDraw), machine: c => ok(Math.abs(machine().tempo - c.want) <= 1.5, "tempo " + machine().tempo + ", want " + c.want), within: 8000 }
 		],
 		async tidy(u, c) { if (c.b0 != null) { const d = c.b0 > machine().tempo ? -1 : 1; await u.drag("#bpm", [[0, d * 2 * (c.b0 - machine().tempo)]]); } if (c.d0 != null && S().rollDraw !== c.d0) setRollDraw(c.d0); }
@@ -1344,7 +1344,7 @@ const MmJourneys = (() => {
 		name: "mm-keys-tap-tempo-shift",
 		steps: [
 			go("seq"),
-			{ say: "on Sequence tap Shift+B five times, about 0.5 s apart: the tempo follows, Draw stays as it was", act: async (u, c) => { c.b0 = machine().tempo; c.d0 = S().rollDraw; blur(); const at = []; for (let i = 0; i < 5; i++) { at.push(performance.now()); u.key("B", { shift: true }); await sleep(500); } c.want = Math.round(60000 / ((at[4] - at[0]) / 4) * 10) / 10; c.note = c.want + " BPM"; },
+			{ say: "on Sequence tap Shift+B five times, about 0.5 s apart: the tempo follows, Draw stays as it was", act: async (u, c) => { c.b0 = machine().tempo; c.d0 = S().rollDraw; blur(); if (typeof TAP !== "undefined" && TAP.length) await sleep(2100); /* a new run of taps (the page joins taps less than 2 s apart) */ const at = []; for (let i = 0; i < 5; i++) { at.push(performance.now()); u.key("B", { shift: true }); await sleep(500); } c.want = Math.round(60000 / ((at[4] - at[0]) / 4) * 10) / 10; c.note = c.want + " BPM"; },
 				screen: c => ok(Math.abs(S().bpm - c.want) <= 1.5 && S().rollDraw === c.d0, "BPM " + S().bpm + ", want " + c.want + ", Draw " + S().rollDraw), machine: c => ok(Math.abs(machine().tempo - c.want) <= 1.5, "tempo " + machine().tempo + ", want " + c.want), within: 8000 }
 		],
 		async tidy(u, c) { if (c.b0 != null) { const d = c.b0 > machine().tempo ? -1 : 1; await u.drag("#bpm", [[0, d * 2 * (c.b0 - machine().tempo)]]); } }

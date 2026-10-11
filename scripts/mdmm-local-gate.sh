@@ -131,6 +131,7 @@ AU_INSTALLED=(); AU_ASIDE=(); AU_ACTIVE=0; AU_PROBLEM=""
 
 au_swap_in() {	# put this build's AU bundles where macOS looks, the owner's own set aside until au_swap_out
 	local name built installed
+	[ "${AU_ACTIVE}" = 1 ] && return 0	# in already (held for the run's parallel part, AU_HELD)
 	if [ -d "${AU_SWAP_DIR}" ] && [ -n "$(ls -A "${AU_SWAP_DIR}" 2>/dev/null)" ]; then
 		AU_PROBLEM="${AU_SWAP_DIR} still holds components an earlier run set aside (it was killed): move them back"
 		AU_PROBLEM+=" into ${COMPONENTS} by hand, then run again"
@@ -156,8 +157,12 @@ au_swap_in() {	# put this build's AU bundles where macOS looks, the owner's own 
 	return 0
 }
 
+# AU_HELD=1: a full run swaps once for lane 1 (stage 2's AU tests) and 7b-7c, which run at the same time; the stages'
+# own au_swap_out then does nothing, and the run (or the exit) puts the owner's components back
+AU_HELD=0
 au_swap_out() {	# remove what au_swap_in installed, put the owner's own back. Safe to call twice
 	[ "${AU_ACTIVE}" = 1 ] || return 0
+	[ "${AU_HELD}" = 1 ] && [ "${1:-}" != release ] && return 0
 	local item
 	for item in ${AU_INSTALLED[@]+"${AU_INSTALLED[@]}"}; do rm -rf "${item}"; done
 	for item in ${AU_ASIDE[@]+"${AU_ASIDE[@]}"}; do
@@ -181,7 +186,7 @@ on_exit() {
 	local status=$?
 	trap - EXIT
 	kill_descendants $$
-	au_swap_out
+	au_swap_out release
 	output_restore
 	if [ "${FINISHED}" != 1 ]; then
 		info_set aborted 1
@@ -1061,6 +1066,10 @@ lane1_wait() {
 	return 0
 }
 if [ "${BUILD_OK}" = 1 ]; then
+	# a full run: the AU bundles swapped in once, held for stage 2 (in lane 1) and 7b-7c beside it
+	if [ -z "${ONLY}" ] && [ "${QUICK}" != 1 ] && [ "${SKIP_PLUGIN}" != 1 ] && [ -d "${PRODUCTS}/AU" ]; then
+		au_swap_in && AU_HELD=1
+	fi
 	lane1_start
 	# only a full run goes on to 7a-7c while lane 1 runs; every other waits for it here
 	{ [ -z "${ONLY}" ] && [ "${QUICK}" != 1 ] && [ "${SKIP_PLUGIN}" != 1 ]; } || lane1_wait
@@ -1120,8 +1129,9 @@ else
 	stage_vst3_start
 	stage_auval
 	stage_pluginval
-	au_swap_out	# the AU bundles are done with: the owner's own are back before the journeys start
 	lane1_wait
+	AU_HELD=0
+	au_swap_out	# the AU bundles are done with: the owner's own are back before the journeys start
 	if [ "${SKIP_JOURNEYS}" = 1 ]; then
 		stage_skip "7d" "User journeys, both editors" "--skip-journeys"
 	else
@@ -1131,6 +1141,7 @@ else
 fi
 lane1_wait
 [ -n "${DIAG_PID}" ] && wait "${DIAG_PID}" 2> /dev/null
+AU_HELD=0
 au_swap_out
 stage_updater
 
