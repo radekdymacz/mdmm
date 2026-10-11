@@ -4,6 +4,14 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-061 · Machinedrum: in a small window the top bar's Setup keys run past the window's right edge
+
+- **From:** the journeys `md-top-cpu-meter` and `md-lcd-volume`, 2026-10-11, in `--background` runs (both hosts) while cutting 0.5.1; they pass at full size.
+- **What happens:** in the background runs' small window (the page zoomed out, 1440 CSS px wide) the CPU meter, GLOBAL and MKI/MKII end at 1520-1558 px. The CPU meter (I-018) and the output strip (I-021, 20 px there) made the bar wider; the cut was not measured before them.
+- **Cause:** as B-056: a window under 1440 x 720 points zooms the page below 100 % (mdPageZoom.h) and WebKit raises 9 to 15 px text to its minimum logical font size (15 px in that window), so the same CSS width holds less. At 100 % the bar fits at 1280 and 1440 px (the journeys pass in a full-size window).
+- **For 0.5.1:** the journeys check the bar's fit only where 9 px text is laid out at 9 px (`topOut`, shared/deskJourney.js) and say so in the step's note otherwise. Not fixed in the page: a measured tightening as the MM's GEN bar has (76-gen.js `genBarFit`) would do it.
+- **Status:** open (0.6).
+
 ## B-060 · Monomachine: a transpose changed while playing is heard only after STOP and PLAY
 
 - **From:** a tester on Discord, 2026-10-11: Monomachine Editor 0.5.0, plug-in in a DAW. "Transpose only takes effect when I stop and play again. On the real MM transpose acts immediately."
