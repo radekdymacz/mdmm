@@ -65,6 +65,10 @@ namespace mmDesk
 		// A MIDI note into the machine on MIDI channel _channel (0-15): note on at _velocity 1-127, note off
 		// at 0 (the page's keyboard, noteOn). Unset: this engine cannot play notes.
 		std::function<void(uint8_t _channel, uint8_t _note, uint8_t _velocity)> sendNote;
+		// A short MIDI message straight into the machine (1 to 3 bytes: MIDI Stop, Continue, a Song Position Pointer, a
+		// channel mode CC), after what was sent before it: the pause and the play from a song row over MIDI, the panic
+		// (doc/modern-ux/PROBES-manual-gaps.md P1, P5). Unset: this engine cannot.
+		std::function<void(const Bytes&)> sendMidi;
 		std::function<double()> nowMs;
 	};
 

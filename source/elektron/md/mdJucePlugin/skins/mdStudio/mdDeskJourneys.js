@@ -1319,7 +1319,91 @@ const MdJourneys = (() => {
 					within: 90000 }
 		]
 	};
-	const all = [bootCard, firstBeat, spaceTransport, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
+
+	/* ---------- wave 2: the transport beyond PLAY and STOP (doc/modern-ux/DESIGN-machine-menus.md §2) ---------- */
+	const opsSent = [];	/* the ops the page sent, newest last (a tempo sent once, at the release) */
+	{ const send0 = Bridge.send; Bridge.send = (m, o) => { opsSent.push(m.op); if (opsSent.length > 80) opsSent.shift(); return send0(m, o); }; }
+	const paused = () => $1("#play")?.classList.contains("paused");
+	const playing = () => !!tele.last?.playing;
+	const stopAll = async u => { if (S.paused || V.playing) { u.click("#play"); await sleep(200); } if (V.playing) { u.click("#play"); await until(() => !playing(), 3000); } };
+	const pauseJ = {
+		name: "md-top-pause", proves: ["MD-014", "MD-029", "MD-148"],
+		steps: [
+			{ say: "press PLAY", act: u => { tele.steps = []; u.click("#play"); }, machine: () => ok(playing() && new Set(tele.steps).size >= 3, "telemetry " + tele.steps.join(",")), within: 6000 },
+			{ say: "⇧-click ▶: it pauses, ▶ blinks, the position stays", act: (u, c) => u.click("#play", { shift: true }),
+				screen: c => ok(paused() && /^\d\d\.\d\d$/.test(c.pos = $1("#pos").textContent), "paused " + paused() + ", POSITION " + $1("#pos").textContent),
+				machine: () => ok(!playing(), "still playing"), within: 3000 },
+			{ say: "wait: the step holds", act: async (u, c) => { c.held = S.paused?.step; await sleep(600); }, screen: c => ok(paused() && $1("#pos").textContent === c.pos, "POSITION " + $1("#pos").textContent + ", was " + c.pos),
+				machine: () => ok(!playing(), "it moved on") },
+			{ say: "click ▶: it goes on from the step it held", act: u => { tele.steps = []; u.click("#play"); },
+				screen: () => ok(!paused() && V.playing, "paused " + paused()),
+				machine: c => ok(playing() && tele.steps.length >= 2 && (tele.steps[0] === c.held || tele.steps[0] === c.held + 1), `steps after ${c.held + 1}: ${tele.steps.map(s => s + 1).join(",")}`), within: 4000 },
+			{ say: "⇧Space: paused again", act: u => { document.activeElement?.blur?.(); u.key(" ", { shift: true }); }, screen: () => ok(paused(), "not paused"), machine: () => ok(!playing(), "playing"), within: 3000 },
+			{ say: "⇧Space again: it plays on", act: u => u.key(" ", { shift: true }), screen: () => ok(!paused() && V.playing, "paused " + paused()), machine: () => ok(playing(), "not playing"), within: 3000 },
+			{ say: "⇧-click ▶, then STOP from the ▾ menu: the pause ends, the position goes", act: async u => { u.click("#play", { shift: true }); await until(paused, 2000); u.click("#playmore"); await until(() => !!$1('#deskmenu [data-mid="play"]'), 2000); u.click('#deskmenu [data-mid="play"]'); },
+				screen: () => ok(!paused() && !V.playing && $1("#pos").textContent === "--.--", "POSITION " + $1("#pos").textContent), machine: () => ok(!playing(), "playing"), within: 3000 }
+		],
+		async tidy(u) { await stopAll(u); }
+	};
+	const panicJ = {
+		name: "md-top-panic", proves: ["MD-015"],
+		steps: [
+			{ say: "press PLAY", act: u => u.click("#play"), machine: () => ok(playing(), "not playing"), within: 6000 },
+			{ say: "click the ▾ in the ▶ key's corner: the transport menu, Panic in it", act: u => u.click("#playmore"),
+				screen: () => ok(!!$1('#deskmenu [data-mid="panic"]') && !$1('#deskmenu [data-mid="panic"]').disabled && !!$1('#deskmenu [data-mid="pause"]') && !!$1('#deskmenu [data-mid="record"]'), "menu " + ($1("#deskmenu")?.textContent || "none")), within: 2000 },
+			{ say: "click Panic: every voice off, the machine stops (its STOP twice)", act: u => u.click('#deskmenu [data-mid="panic"]'),
+				screen: () => ok(!$1('#deskmenu [data-mid="panic"]') && !V.playing, "playing " + V.playing), machine: () => ok(!playing() && results.some(r => r.op === "panic" && r.ok), "playing " + playing()), within: 3000 },
+			{ say: "PLAY, then right-click ▶: the same menu", act: async u => { u.click("#play"); await until(playing, 4000); u.rightClick("#play"); },
+				screen: () => ok(!!$1('#deskmenu [data-mid="panic"]'), "no menu"), within: 2000 },
+			{ say: "press Escape: it closes; ⌘.: panic, it stops", act: async u => { u.key("Escape"); await until(() => !$1('#deskmenu [data-mid="panic"]'), 1000); document.activeElement?.blur?.(); u.key(".", { cmd: true }); },
+				machine: () => ok(!playing(), "playing"), screen: () => ok(!V.playing && !$1("#deskmenu [data-mid]"), "menu or play"), within: 3000 }
+		],
+		async tidy(u) { if (typeof closeDeskMenu === "function") closeDeskMenu(); await stopAll(u); }
+	};
+	const tempoWindowJ = {
+		name: "md-top-tempo-window", proves: ["MD-009", "MD-091"],
+		steps: [
+			{ say: "click the tempo on the LCD (no drag): the TEMPO window", act: (u, c) => { c.b0 = Docs.global.tempo; u.click("#bpm"); },
+				screen: () => ok(!!$1("#tempopop") && $1("#tpv")?.textContent === (+V.bpm).toFixed(1), "pop-up " + ($1("#tpv")?.textContent || "none")), within: 2000 },
+			{ say: "click +: one BPM faster", act: u => u.click('#tempopop [data-tp="1"]'),
+				screen: c => ok(parseFloat($1("#tpv").textContent) === lcdBpm(c.b0 + 1) && parseFloat($1("#bpm").textContent) === lcdBpm(c.b0 + 1), "window " + $1("#tpv").textContent + ", LCD " + $1("#bpm").textContent),
+				machine: c => ok(Math.abs(Docs.global.tempo - (c.b0 + 1)) < 0.05, "tempo " + Docs.global.tempo), within: 4000 },
+			{ say: "click −: back", act: u => u.click('#tempopop [data-tp="-1"]'), machine: c => ok(Math.abs(Docs.global.tempo - c.b0) < 0.05, "tempo " + Docs.global.tempo), within: 4000 },
+			{ say: "hold +10 %: 10 % faster while held (the LCD says it), nothing stored", act: (u, c) => { c.n = opsSent.length; const b = $1('#tempopop [data-tp="n+"]'); b.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1, pointerType: "mouse", isPrimary: true })); },
+				screen: c => ok(parseFloat($1("#bpm").textContent) === DeskTransport.nudged(c.b0, 10) && parseFloat($1("#tpv").textContent) === DeskTransport.nudged(c.b0, 10), "LCD " + $1("#bpm").textContent),
+				machine: c => ok(results.some(r => r.op === "nudge" && r.ok) && Math.abs(Docs.global.tempo - c.b0) < 0.05, "nudge " + JSON.stringify(results.filter(r => r.op === "nudge").slice(-1))), within: 3000 },
+			{ say: "let go: back to the tempo it was", act: () => $1('#tempopop [data-tp="n+"]').dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1, pointerType: "mouse", isPrimary: true })),
+				screen: c => ok(parseFloat($1("#bpm").textContent) === lcdBpm(c.b0), "LCD " + $1("#bpm").textContent), machine: c => ok(Math.abs(Docs.global.tempo - c.b0) < 0.05 && opsSent.slice(c.n).filter(o => o === "nudge").length === 2, "tempo " + Docs.global.tempo + ", sent " + opsSent.slice(c.n).join(",")), within: 3000 },
+			{ say: "press Escape: it closes; the key = held and let go nudges too", act: async (u, c) => { u.key("Escape"); await sleep(100); c.n = opsSent.length; document.activeElement?.blur?.(); u.key("="); },
+				screen: () => ok(!$1("#tempopop"), "still open"), machine: c => ok(opsSent.slice(c.n).filter(o => o === "nudge").length === 2, "sent " + opsSent.slice(c.n).join(",")), within: 2000 }
+		],
+		async tidy() { DeskTransport.closeTempo(); }
+	};
+	const tempoReleaseJ = {
+		name: "md-top-tempo-release", proves: ["MD-090"],
+		steps: [
+			{ say: "⌥-drag the tempo up: the LCD follows, the tempo goes once, at the release", act: async (u, c) => { c.b0 = Docs.global.tempo; c.n = opsSent.length; await u.drag("#bpm", [[0, -6], [0, -12], [0, -18], [0, -24]], { alt: true }); },
+				screen: c => ok(parseFloat($1("#bpm").textContent) === lcdBpm(V.bpm) && V.bpm > c.b0, "LCD " + $1("#bpm").textContent),
+				machine: c => ok(Docs.global.tempo > c.b0 && opsSent.slice(c.n).filter(o => o === "tempo").length === 1, "tempo " + Docs.global.tempo + ", sent " + opsSent.slice(c.n).join(",")), within: 4000 },
+			{ say: "in the TEMPO window tick Change on release, close it, drag down as far: one tempo again", act: async (u, c) => { u.click("#bpm"); await until(() => !!$1("#tpdelay"), 2000); if (!$1("#tpdelay").checked) u.click("#tpdelay"); u.key("Escape"); await sleep(100); c.b1 = Docs.global.tempo; c.n = opsSent.length; await u.drag("#bpm", [[0, 6], [0, 12], [0, 18], [0, 24]]); },
+				machine: c => ok(Math.abs(Docs.global.tempo - c.b0) < 0.05 && opsSent.slice(c.n).filter(o => o === "tempo").length === 1, "tempo " + Docs.global.tempo + " (was " + c.b0 + "), sent " + opsSent.slice(c.n).join(",")), within: 4000 }
+		],
+		async tidy(u, c) { DeskTransport.setDelayed(false); DeskTransport.closeTempo(); if (c.b0 != null && Math.abs(Docs.global.tempo - c.b0) >= 0.05) cmd("tempo", { bpm: c.b0 }); await sleep(300); }
+	};
+	const playFromJ = {
+		name: "md-song-play-from", proves: ["MD-146", "MD-145"],
+		steps: [
+			go("song"),
+			{ say: "click row 3 of the arrangement, then ▶ From here: the machine plays the song from row 3, in SONG mode", act: async (u, c) => { c.m0 = machineState().songMode === true; u.click('[data-set="songpick"] button[data-v="song"]'); await until(() => !!$1('[data-rowact="from"]'), 4000); u.click('.scell[data-i="2"]'); await sleep(150); u.click('[data-rowact="from"]'); },
+				screen: () => ok(V.songMode === true && V.playing, "song mode " + V.songMode + ", playing " + V.playing),
+				machine: () => ok(playing() && tele.last.songRow === 2, "row " + (tele.last?.songRow + 1) + ", playing " + playing()), within: 8000 },
+			{ say: "click row 2 and press Enter: from row 2", act: async u => { u.click('.scell[data-i="1"]'); await sleep(150); document.activeElement?.blur?.(); u.key("Enter"); },
+				machine: () => ok(playing() && tele.last.songRow === 1, "row " + (tele.last?.songRow + 1)), within: 8000 }
+		],
+		async tidy(u, c) { await stopAll(u); if (!c.m0 && machineState().songMode === true) { cmd("seqMode", { song: false }); await sleep(800); } }
+	};
+
+	const all = [bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
 		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec,
 		genJourney("md-gen-mutate-undo", false, { proves: [] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: [] }), genKeys,
 		shapeSound, arrows, machinePick, soundCopy, editorDrag, controlAll, globalKey, songModeJ,

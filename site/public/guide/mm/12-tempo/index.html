@@ -72,11 +72,13 @@
 <section class="gd-sec" id="the-tempo-screen" aria-labelledby="the-tempo-screen-h">
 <div class="gd-body gd-prose"><h2 id="the-tempo-screen-h">THE TEMPO SCREEN <a class="gd-anchor" href="#the-tempo-screen" aria-label="Link to THE TEMPO SCREEN">#</a></h2>
 <p class="gd-ref">MM manual p.1-56</p>
-<p>The editor has no tempo screen. You set the tempo in the <b class="gd-ui">Tempo</b> field itself, from 30 to 300 BPM.</p>
+<p>You set the tempo in the <b class="gd-ui">Tempo</b> field itself, from 30 to 300 BPM, or in the <b class="gd-ui">TEMPO</b> window that a click on the field opens.</p>
 <ul class="gd-list"><li>Drag the field up or down. Each pixel is half a BPM. Hold <kbd class="gd-key">[⇧]</kbd> to change it a tenth of a BPM at a time.</li><li>Click the field and press <kbd class="gd-key">[↑]</kbd> or <kbd class="gd-key">[↓]</kbd> to change it by 1 BPM. Hold <kbd class="gd-key">[⇧]</kbd> for a tenth.</li></ul>
 <p>The decimal part is kept, so 120.5 is a tempo.</p>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot hold a tempo change back until a key is released in the editor.</p>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> There is no key that shifts the tempo by 10 % for a moment.</p>
+<p>Click the field without dragging to open the <b class="gd-ui">TEMPO</b> window, the machine's tempo screen:</p>
+<ul class="gd-list"><li><b class="gd-ui">−</b> and <b class="gd-ui">+</b> change the tempo by 1 BPM, or a tenth with <kbd class="gd-key">[⇧]</kbd>.</li><li><b class="gd-ui">TAP</b> taps the tempo.</li><li><b class="gd-ui">NUDGE</b> shifts the tempo for a moment, as <kbd class="gd-key">[LEFT]</kbd> and <kbd class="gd-key">[RIGHT]</kbd> on the machine. Press and hold <b class="gd-ui">−10 %</b> or <b class="gd-ui">+10 %</b>. The tempo is 10 % slower or faster while you hold it, and goes back when you let go. The keys <kbd class="gd-key">[-]</kbd> or <kbd class="gd-key">[=]</kbd> do the same while held.</li><li><b class="gd-ui">Change on release</b> holds a dragged tempo back until you let go of the field, as <kbd class="gd-key">[FUNCTION]</kbd> held does on the machine. The field shows the new tempo while you drag and the machine takes it at the release.</li><li><b class="gd-ui">Sync</b> <b class="gd-ui">INT</b> and <b class="gd-ui">EXT</b> choose the machine's own tempo or MIDI clock, as <b class="gd-light">&lt;TEMPO IN&gt;</b> in GLOBAL. <b class="gd-ui">Sync in GLOBAL</b> opens the GLOBAL panel.</li></ul>
+<p>Press <kbd class="gd-key">[Esc]</kbd> or click outside the window to close it.</p>
+<aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>Hold <kbd class="gd-key">[⌥]</kbd> while you drag the field to change the tempo at the release once, without the tick.</p></aside>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>In a DAW the machine follows the tempo of the DAW and the field refuses edits. The page says &quot;The DAW sets the tempo. Change it there.&quot;</p></aside>
 </div></section>
 <section class="gd-sec" id="tap-tempo" aria-labelledby="tap-tempo-h">
@@ -91,6 +93,7 @@
 <p class="gd-ref">MM manual p.1-56</p>
 <p>The machine runs on its own clock or follows a MIDI clock. The setting is in the <b class="gd-ui">GLOBAL</b> panel.</p>
 <ol class="gd-steps"><li>Click <b class="gd-ui">Global</b> in the top bar.</li><li>In the <b class="gd-ui">Sync</b> card, click <b class="gd-ui">EXT</b> beside <b class="gd-ui">Tempo in</b> to follow a MIDI clock, or <b class="gd-ui">INT</b> for the machine's own tempo.</li><li>Click <b class="gd-ui">ON</b> beside <b class="gd-ui">Ctrl in</b> if the machine should also follow MIDI start and stop.</li></ol>
+<p>The <b class="gd-ui">Sync</b> keys <b class="gd-ui">INT</b> and <b class="gd-ui">EXT</b> of the <b class="gd-ui">TEMPO</b> window set <b class="gd-ui">Tempo in</b> too.</p>
 <p>In a DAW you set nothing. The plug-in sets <b class="gd-ui">Tempo in</b> to EXT and <b class="gd-ui">Ctrl in</b> to ON itself, and the machine follows the host. See chapter 19, &quot;Control out 2&quot; and &quot;Control in&quot;, for the other settings of the card.</p>
 </div></section>
 <nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/mm/11-composing-a-pattern/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">11. Composing a pattern</span></a><a href="/guide/mm/13-parameter-locks/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">13. Parameter locks</span></a></nav>

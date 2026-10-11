@@ -18,6 +18,10 @@ namespace deskWire
 		constexpr uint8_t g_controlChange = 0xb0;
 		constexpr uint8_t g_start = 0xfa;		// realtime: Start
 		constexpr uint8_t g_stop = 0xfc;		// realtime: Stop
+		constexpr uint8_t g_continue = 0xfb;	// realtime: Continue (plays on from where Stop held it)
+		constexpr uint8_t g_songPosition = 0xf2;	// system common: Song Position Pointer, 14 bits LSB first
+		constexpr uint16_t g_maxSongPosition = 0x3fff;
+		constexpr uint8_t g_allNotesOff = 123;	// channel mode CC: All Notes Off
 		// NRPN: parameter number MSB, LSB, then the value as data entry MSB.
 		constexpr uint8_t g_nrpnMsb = 99;
 		constexpr uint8_t g_nrpnLsb = 98;
@@ -57,6 +61,21 @@ namespace deskWire
 	{
 		return {controlChange(_channel, midi::g_nrpnMsb, _msb), controlChange(_channel, midi::g_nrpnLsb, _lsb),
 			controlChange(_channel, midi::g_dataEntry, _value)};
+	}
+
+	// The realtime and system common messages a pause and a play from a song row use (doc/modern-ux/PROBES-manual-gaps.md
+	// P1: both machines hold their step at Stop and go on from it at Continue; a song position then Continue plays from
+	// it).
+	inline Bytes stopMessage() { return {midi::g_stop}; }
+	inline Bytes continueMessage() { return {midi::g_continue}; }
+
+	// Song Position Pointer: _sixteenths MIDI beats (a sixteenth note each: one step at the machines' 1X speed) since the
+	// start; nothing past the 14 bits it holds.
+	inline std::optional<Bytes> songPosition(const int _sixteenths)
+	{
+		if(_sixteenths < 0 || _sixteenths > midi::g_maxSongPosition)
+			return std::nullopt;
+		return Bytes{midi::g_songPosition, static_cast<uint8_t>(_sixteenths & 0x7f), static_cast<uint8_t>((_sixteenths >> 7) & 0x7f)};
 	}
 
 	// The panel keys a MIDI wire has: PLAY and STOP as realtime Start and Stop. Keyed by the key

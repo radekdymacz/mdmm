@@ -1581,7 +1581,84 @@ const MmJourneys = (() => {
 	const cpuJs = [...Journey.cpuMeterJourneys("mm"), Journey.speedUpsMenuJourney("mm")];
 	/* I-021: the output meter and volume at the LCD's right end, as the Machinedrum's */
 	const volJs = [...Journey.volumeJourneys("mm"), ...Journey.fitJourneys("mm", ["seq", "sound", "mix", "perform", "song"])];
-	const all = [bootCard, firstBeat, spaceKey, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
+
+	/* ---------- wave 2: the transport beyond PLAY and STOP (doc/modern-ux/DESIGN-machine-menus.md §2) ---------- */
+	const paused = () => $1("#play")?.classList.contains("paused");
+	const playing = () => !!tele.last?.playing;
+	const stopAll = async u => { if (S().paused || S().playing) { u.click("#play"); await sleep(200); } if (S().playing) { u.click("#play"); await until(() => !playing(), 3000); } };
+	const pauseJ = {
+		name: "mm-top-pause", proves: ["MM-040", "MM-065", "MM-072", "MM-256"],
+		steps: [
+			{ say: "press PLAY", act: u => { tele.steps = []; u.click("#play"); }, machine: () => ok(playing() && new Set(tele.steps).size >= 3, "telemetry " + tele.steps.join(",")), within: 6000 },
+			{ say: "⇧-click ▶: it pauses, ▶ blinks, the position stays", act: u => u.click("#play", { shift: true }),
+				screen: c => ok(paused() && /^\d\d\.\d\d$/.test(c.pos = $1("#pos").textContent), "paused " + paused() + ", POSITION " + $1("#pos").textContent),
+				machine: () => ok(!playing(), "still playing"), within: 3000 },
+			{ say: "wait: the step holds", act: async (u, c) => { c.held = S().paused?.step; await sleep(700); }, screen: c => ok(paused() && $1("#pos").textContent === c.pos, "POSITION " + $1("#pos").textContent + ", was " + c.pos),
+				machine: () => ok(!playing(), "it moved on") },
+			{ say: "click ▶: it goes on from the step it held", act: u => { tele.steps = []; u.click("#play"); },
+				screen: () => ok(!paused() && S().playing, "paused " + paused()),
+				machine: c => ok(playing() && tele.steps.length >= 2 && (tele.steps[0] === c.held || tele.steps[0] === c.held + 1), `steps after ${c.held + 1}: ${tele.steps.map(s => s + 1).join(",")}`), within: 4000 },
+			{ say: "⇧Space: paused again; ⇧Space: it plays on", act: async u => { blur(); u.key(" ", { shift: true }); await until(paused, 2000); u.key(" ", { shift: true }); },
+				screen: () => ok(!paused() && S().playing, "paused " + paused()), machine: () => ok(playing(), "not playing"), within: 4000 },
+			{ say: "⇧-click ▶, then Stop from the ▾ menu: the pause ends, the position goes", act: async u => { u.click("#play", { shift: true }); await until(paused, 2000); u.click("#playmore"); await until(() => !!$1('#deskmenu [data-mid="play"]'), 2000); u.click('#deskmenu [data-mid="play"]'); },
+				screen: () => ok(!paused() && !S().playing && $1("#pos").textContent === "--.--", "POSITION " + $1("#pos").textContent), machine: () => ok(!playing(), "playing"), within: 3000 }
+		],
+		async tidy(u) { await stopAll(u); }
+	};
+	const panicJ = {
+		name: "mm-top-panic", proves: ["MM-041", "MM-361"],
+		steps: [
+			{ say: "press PLAY", act: u => u.click("#play"), machine: () => ok(playing(), "not playing"), within: 6000 },
+			{ say: "click the ▾ in the ▶ key's corner: the transport menu, Panic in it", act: u => u.click("#playmore"),
+				screen: () => ok(!!$1('#deskmenu [data-mid="panic"]') && !$1('#deskmenu [data-mid="panic"]').disabled && !!$1('#deskmenu [data-mid="record"]'), "menu " + ($1("#deskmenu")?.textContent || "none")), within: 2000 },
+			{ say: "click Panic: every note off and STOP", act: u => u.click('#deskmenu [data-mid="panic"]'),
+				screen: () => ok(!$1('#deskmenu [data-mid="panic"]') && !S().playing, "playing " + S().playing), machine: () => ok(!playing() && results.some(r => r.op === "panic" && r.ok), "playing " + playing()), within: 3000 },
+			{ say: "PLAY, then right-click ▶: the same menu; Escape closes it; ⌘.: panic", act: async u => { u.click("#play"); await until(playing, 4000); u.rightClick("#play"); await until(() => !!$1('#deskmenu [data-mid="panic"]'), 2000); u.key("Escape"); await until(() => !$1('#deskmenu [data-mid="panic"]'), 1000); blur(); u.key(".", { cmd: true }); },
+				machine: () => ok(!playing(), "playing"), screen: () => ok(!S().playing && !$1("#deskmenu [data-mid]"), "menu or play"), within: 3000 }
+		],
+		async tidy(u) { if (typeof closeDeskMenu === "function") closeDeskMenu(); await stopAll(u); }
+	};
+	const tempoWindowJ = {
+		name: "mm-top-tempo-window", proves: ["MM-194", "MM-196", "MM-198"],
+		steps: [
+			{ say: "click the tempo on the LCD (no drag): the TEMPO window", act: (u, c) => { c.b0 = machine().tempo; u.click("#bpm"); },
+				screen: () => ok(!!$1("#tempopop") && $1("#tpv")?.textContent === S().bpm.toFixed(1) && !!$1('#tempopop [data-tp="sync:int"]'), "pop-up " + ($1("#tpv")?.textContent || "none")), within: 2000 },
+			{ say: "click +: one BPM faster", act: u => u.click('#tempopop [data-tp="1"]'),
+				screen: c => ok(parseFloat($1("#bpm").textContent) === lcdBpm(c.b0 + 1), "LCD " + $1("#bpm").textContent), machine: c => ok(Math.abs(machine().tempo - (c.b0 + 1)) < 0.05, "tempo " + machine().tempo), within: 4000 },
+			{ say: "click −: back", act: u => u.click('#tempopop [data-tp="-1"]'), machine: c => ok(Math.abs(machine().tempo - c.b0) < 0.05, "tempo " + machine().tempo), within: 4000 },
+			{ say: "hold −10 %: the machine 10 % slower while held", act: () => $1('#tempopop [data-tp="n-"]').dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1, pointerType: "mouse", isPrimary: true })),
+				machine: c => ok(Math.abs(machine().tempo - DeskTransport.nudged(c.b0, -10)) < 0.05, "tempo " + machine().tempo), screen: c => ok(parseFloat($1("#bpm").textContent) === DeskTransport.nudged(c.b0, -10), "LCD " + $1("#bpm").textContent), within: 4000 },
+			{ say: "let go: back to the tempo it was", act: () => $1('#tempopop [data-tp="n-"]').dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1, pointerType: "mouse", isPrimary: true })),
+				machine: c => ok(Math.abs(machine().tempo - c.b0) < 0.05, "tempo " + machine().tempo), within: 4000 },
+			{ say: "click EXT: the machine follows MIDI clock (GLOBAL › Sync › Tempo in); INT: its own tempo again", act: async u => { u.click('#tempopop [data-tp="sync:ext"]'); await until(() => I().doc("global", machine().global?.current ?? 0)?.controlIn?.tempoSync === 1, 6000); u.click('#tempopop [data-tp="sync:int"]'); },
+				machine: () => ok(I().doc("global", machine().global?.current ?? 0)?.controlIn?.tempoSync === 0, "tempo sync " + I().doc("global", machine().global?.current ?? 0)?.controlIn?.tempoSync), within: 8000 },
+			{ say: "press Escape: it closes", act: u => u.key("Escape"), screen: () => ok(!$1("#tempopop"), "still open") }
+		],
+		async tidy() { DeskTransport.closeTempo(); }
+	};
+	const tempoReleaseJ = {
+		name: "mm-top-tempo-release", proves: ["MM-195"],
+		steps: [
+			{ say: "⌥-drag the tempo up: the LCD follows, the machine's tempo changes at the release", act: async (u, c) => { c.b0 = machine().tempo; c.n = sent.length; await u.drag("#bpm", [[0, -6], [0, -12], [0, -18], [0, -24]], { alt: true }); },
+				machine: c => ok(machine().tempo > c.b0 && sent.slice(c.n).filter(o => o === "tempo").length === 1, "tempo " + machine().tempo + ", sent " + sent.slice(c.n).join(",")), within: 4000 }
+		],
+		async tidy(u, c) { if (c.b0 != null && Math.abs(machine().tempo - c.b0) >= 0.05) HOST.tempo(c.b0); await sleep(300); }
+	};
+	const playFromJ = {
+		name: "mm-song-play-from", proves: ["MM-258", "MM-270", "MM-256"],
+		steps: [
+			go("song"),
+			{ say: "the song the machine plays, Arrange; click row 3, then ▶ From here: the question to set TRANSPORT IN to ACCEPT", act: async (u, c) => { c.m0 = machine().song?.songMode === true; c.slot0 = S().songs?.slot; if (S().songs?.slot !== machine().song?.current) await choose(u, "songsel", machine().song?.current ?? 0); u.click('[data-set="songpick"] button[data-v="song"]'); await sleep(200); u.click('.scell[data-i="2"]'); await sleep(150); u.click('[data-rowact="from"]'); },
+				screen: () => ok(dlgShown() && !!dlgButton("Set TRANSPORT to ACCEPT"), "no question"), within: 4000 },
+			{ say: "confirm: ACCEPT goes to the machine, then the song plays from row 3 by itself, in SONG mode", act: u => u.click(dlgButton("Set TRANSPORT to ACCEPT")),
+				machine: () => ok(playing() && tele.last.songRow === 2 && machine().song?.songMode === true, "row " + (tele.last?.songRow + 1) + ", playing " + playing() + ", song mode " + machine().song?.songMode + ", TRANSPORT IN " + I().doc("global", machine().global?.current ?? 0)?.controlIn?.transport), within: 20000 },
+			{ say: "click row 2 and press Enter: from row 2", act: async u => { u.click('.scell[data-i="1"]'); await sleep(150); blur(); u.key("Enter"); },
+				machine: () => ok(playing() && tele.last.songRow === 1, "row " + (tele.last?.songRow + 1)), within: 8000 }
+		],
+		async tidy(u, c) { await stopAll(u); if (!c.m0 && machine().song?.songMode === true) { u.click('[data-seqmode="pattern"]'); await sleep(1500); } }
+	};
+
+	const all = [bootCard, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff,
 		poly, multiTrig, multiMap, kbPlay, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,

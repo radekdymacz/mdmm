@@ -295,6 +295,16 @@ namespace
 		s.due(1000, f);
 		d = s.due(1600, f);
 		check(d.size() == 1 && d[0].afterTimeout, "a fact that never comes: the timeout goes on, and says so");
+		// wave 2: SONG mode as a fact (a status reply to an earlier poll is no sign the mode took)
+		s.start({{Act::Load, 1, Wait::SongModeIs, 1, 2000}, {Act::Play}});
+		f = {};
+		f.songMode = 0;
+		check(s.due(0, f).size() == 1, "the mode is asked for at once");
+		f.statusReplies = 7;
+		check(s.due(100, f).empty(), "a status reply alone does not go on");
+		f.songMode = 1;
+		d = s.due(150, f);
+		check(d.size() == 1 && d[0].action == Act::Play && !d[0].afterTimeout, "the machine says SONG: go on");
 	}
 
 	void commands()

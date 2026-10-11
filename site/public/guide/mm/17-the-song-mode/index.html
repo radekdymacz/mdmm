@@ -107,12 +107,15 @@
 <ol class="gd-steps"><li>Click <b class="gd-ui">SONG</b> over the palette, or click <b class="gd-light">&lt;PLAY&gt;</b> on the LCD until it reads SONG.</li><li>Press <kbd class="gd-key">[SPACE]</kbd>. The song plays. The <b class="gd-ui">Arrangement</b> header reads Playing and the arrangement is framed.</li><li>Read what plays on the line over the bank letters: SONG 01 · row 017 of 65 · B01 means song 01, row 017 of 65 rows, pattern B01. The pattern field of the LCD reads the song and the row in the same way.</li><li>Press <kbd class="gd-key">[SPACE]</kbd> again to stop.</li></ol>
 <figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: What plays, in song mode: the line over the bank letters"><span>Screenshot to come</span></div><figcaption>What plays, in song mode: the line over the bank letters</figcaption></figure>
 <p>You can go to pattern mode and back while the song plays. Click <b class="gd-ui">PATTERN</b>: the machine plays a pattern and holds its place in the song. Click <b class="gd-ui">SONG</b> and the song goes on from that place.</p>
-<p>On the machine <kbd class="gd-key">[PLAY]</kbd> pauses a song that plays, and <kbd class="gd-key">[STOP]</kbd> stops it. The editor has no pause yet: <kbd class="gd-key">[SPACE]</kbd> starts and stops.</p>
+<p>On the machine <kbd class="gd-key">[PLAY]</kbd> pauses a song that plays, and <kbd class="gd-key">[STOP]</kbd> stops it. In the editor hold <kbd class="gd-key">[⇧]</kbd> and click the play key, or press <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[SPACE]</kbd>: the song holds its row and step, and the play key blinks. Click the play key to go on from there. <kbd class="gd-key">[SPACE]</kbd> stops.</p>
 </div></section>
 <section class="gd-sec" id="song-transport" aria-labelledby="song-transport-h">
 <div class="gd-body gd-prose"><h2 id="song-transport-h">SONG TRANSPORT <a class="gd-anchor" href="#song-transport" aria-label="Link to SONG TRANSPORT">#</a></h2>
 <p class="gd-ref">MM manual p.1-75</p>
-<p>On the machine you move the song pointer to another row while the song plays, and the song goes on from there when the current row ends. You cannot move the song pointer from the editor yet.</p>
+<p>On the machine you move the song pointer to another row while the song plays, and the song goes on from there when the current row ends. In the editor you start the song from the row instead:</p>
+<ol class="gd-steps"><li>Click the row's cell in the <b class="gd-ui">Arrangement</b>.</li><li>Click <b class="gd-ui">▶ From here</b> in the <b class="gd-ui">Selected row</b> card, or press <kbd class="gd-key">[ENTER]</kbd>.</li></ol>
+<p>The machine goes to SONG mode if it was in pattern mode and plays the song from the first step of that row. The editor sends the machine a MIDI song position, the steps of the rows before it, and then Continue.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The Monomachine takes a song position only with <b class="gd-light">&lt;TRANSPORT&gt;</b> set to ACCEPT (GLOBAL, CONTROL IN; the factory setting is IGNORE). The first time, the editor asks to set it, then plays from the row. A loop, jump or halt row before the chosen row cannot be counted through: the editor says so.</p></aside>
 <p>The editor shows where the song is. While the song plays, the <b class="gd-ui">Arrangement</b> marks the row that plays and the bar above the grid fills up to it. The mark comes from the machine itself, so it follows repeats, loops and jumps.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A song plays to its END row and stops. A loop set to play forever never reaches the end.</p><p>A row with a tempo of its own sets the tempo of the machine when it plays.</p><p>The machine sends and follows MIDI song position by itself. The editor does not change that.</p></aside>
 </div></section>
@@ -156,7 +159,7 @@
 <section class="gd-sec" id="song-edit-transport" aria-labelledby="song-edit-transport-h">
 <div class="gd-body gd-prose"><h2 id="song-edit-transport-h">SONG EDIT TRANSPORT <a class="gd-anchor" href="#song-edit-transport" aria-label="Link to SONG EDIT TRANSPORT">#</a></h2>
 <p class="gd-ref">MM manual p.1-77</p>
-<p>On the machine you start the song from any row: select the row and press <kbd class="gd-key">[ENTER/YES]</kbd>. You cannot start the song from a chosen row in the editor yet.</p>
+<p>On the machine you start the song from any row: select the row and press <kbd class="gd-key">[ENTER/YES]</kbd>. In the editor select the row and press <kbd class="gd-key">[ENTER]</kbd>, or click <b class="gd-ui">▶ From here</b> (see &quot;SONG TRANSPORT&quot;).</p>
 <p>The machine shows the song position in bars and beats. The editor shows the length of the whole song instead, in the <b class="gd-ui">Songs</b> column and on the LCD. There is no live bar and beat counter in the editor yet.</p>
 </div></section>
 <section class="gd-sec" id="song-loops" aria-labelledby="song-loops-h">
@@ -181,7 +184,7 @@
 <p>A halt row stops the song where it stands. The song waits there until you choose a row to go on from.</p>
 <p>On the machine a loop becomes a halt when it points at itself. In the editor you choose the command.</p>
 <ol class="gd-steps"><li>Select a command row, or add one with <b class="gd-ui">Add loop</b>.</li><li>Under <b class="gd-ui">Command</b>, click <b class="gd-ui">HALT</b>. The cell reads HALT.</li></ol>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> The editor cannot choose the row to go on from yet. Use the song transport of the machine.</p>
+<p>To go on after a halt, start the song from a row before it with <b class="gd-ui">▶ From here</b>. A row after the halt cannot be counted to: start it on the machine.</p>
 </div></section>
 <section class="gd-sec" id="song-track-transpose" aria-labelledby="song-track-transpose-h">
 <div class="gd-body gd-prose"><h2 id="song-track-transpose-h">SONG TRACK TRANSPOSE <a class="gd-anchor" href="#song-track-transpose" aria-label="Link to SONG TRACK TRANSPOSE">#</a></h2>

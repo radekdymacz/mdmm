@@ -38,7 +38,7 @@ Each slot shows its number, its name and its rows. An empty slot reads EMPTY and
 NOTE: The machine loads a song only while it is stopped. While it plays, **Load** is greyed out.
 
 ## PLAYING A SONG
-<!-- rows: MD-145 MD-147 MD-160 MD-161 @4a10bb -->
+<!-- rows: MD-145 MD-147 MD-160 MD-161 @193495 -->
 
 In song mode the machine plays the song from the first row, row by row, to the END row.
 
@@ -57,16 +57,23 @@ The line under the chip in the **Songs** column gives the length of the song as 
 
 When the host sends a song position, the machine follows it. The editor has no control for this.
 
-{gap:MD-145}You cannot pause a song in the editor. [PLAY] starts and stops it.{/gap}
+To pause a song, hold [⇧] and click the Play key, or press {key:pause}. The song holds its row and step. Click the Play key to go on from there.
 
 {gap:MD-147}The editor does not show how many turns of a repeat are left.{/gap}
 
 ## NAVIGATING A SONG
-<!-- rows: MD-146 @74e5c2 -->
+<!-- rows: MD-146 @12c625 -->
 
 Click a cell of the arrangement to select that row. Press {key:song-row} to move to the previous or next row. A selected row is the one you edit.
 
-{gap:MD-146}Selecting a row does not move the song pointer. You cannot start the song from a chosen row in the editor yet.{/gap}
+To start the song from a row:
+
+1. Click the row's cell in the arrangement.
+2. Click **▶ From here** in the **Selected row** card, or press {key:song-play-from}.
+
+The machine goes to SONG mode if it was in pattern mode and plays the song from the first step of that row. The editor sends the machine a MIDI song position, the steps of the rows before it, and then Continue.
+
+NOTE: A loop or jump row before the chosen row cannot be counted through. The editor says so; start the song and let it play to the row. The machine's <CTRL IN> must be on.
 
 ## SONG EDITING
 <!-- rows: MD-149 MD-150 MD-151 MD-152 @a11beb -->
@@ -145,9 +152,13 @@ A row can play a part of its pattern, from a step you choose and for a number of
 The cell of a row with a part shows ~.
 
 ## SONG TRANSPORT
-<!-- rows: MD-148 @c42d16 -->
+<!-- rows: MD-148 @2af1b3 -->
 
-{gap:MD-148}On the machine, [STOP] holds the song and a second [STOP] starts it. The editor has no such key. {key:play-stop} plays and stops.{/gap}
+On the machine [STOP] holds the song where it is, and [PLAY] goes on from there. In the editor:
+
+1. Hold [⇧] and click the Play key, or press {key:pause}. The song holds its position. The Play key blinks.
+2. Click the Play key to go on from that position.
+3. To stop the song from the hold, choose **Stop** in the transport menu (right-click the Play key, or click its ▾).
 
 ## SONG LOOP
 <!-- rows: MD-154 @0fc513 -->

@@ -26,6 +26,8 @@
 | P4 | MM DigiPRO 0x5D / 0x5E on the emulator | 0x5E returns a used waveform byte for byte, nothing for an empty one. 0x5D is taken only on DIGIPRO MGR > RECEIVE | wave 6 |
 | P5 | MD: what Stop twice over MIDI does | Nothing. No MIDI message silences the voices. Only the panel STOP pressed twice does | wave 2 |
 | P6 | MD: does `mdfactorybaseline` hold the factory data | No: it is the sample flash. A machine booted with no patch RAM holds the factory kits, patterns, songs and globals, the same at every boot | wave 6 |
+| P1b | After the panel's PLAY: does MIDI Stop + Continue pause, and is PLAY while playing a pause | MIDI Stop + Continue goes on from the step on both, pattern and song mode. The panel's PLAY pauses; PLAY again goes on in pattern mode, starts the row again in song mode | wave 2 |
+| P5 MM | MM: what silences held notes | CC 123 lets them go (as note offs: the release rings); CC 120 and MIDI Stop do nothing; the panel's STOP lets them go too | wave 2 |
 | P7 | MD: which tracks take the EDIT ALL row (`gapProbesFirmwareTest p7`) | Every track. `editAll` is a flag (any nonzero is ALL), not a track mask; per track only the own row counts | wave 3 |
 
 ## P1: Song Position Pointer and Continue
@@ -71,6 +73,29 @@ the tempo from MIDI clock, and (MD) with CTRL IN off, (MM) with TRANSPORT IN = A
 of steps × plays of the rows before it, then Continue (not Start). On the MD this also reaches a step inside a row. On
 the MM both need TRANSPORT IN = ACCEPT: the editor must say so or set it (the GLOBAL page already has the field).
 `deskWire.h` needs the Continue and SPP builders (PLAN-manual-gaps.md, "Facts").
+
+## P1b: a pause after the panel's PLAY (wave 2)
+
+**Question.** The editor starts the emulated machine with the panel's PLAY; P1 started it with the song position and
+Continue. Does MIDI Stop + Continue still go on from the step, and is the panel's PLAY while playing the machine's pause?
+
+**Method.** `p1b` (`p1bmd`, `p1bmm`): panel PLAY, 700 ms, then a pause (MIDI Stop, or the panel's PLAY), 800 ms, then
+a resume (MIDI Continue; the song position of the held step and Continue; the panel's PLAY), the playhead and the song
+row read every 20 ms. Pattern mode, then song mode with rows of 8 steps. The MM with TRANSPORT IN = ACCEPT.
+
+**Answer.** Both machines the same:
+
+- MIDI Stop holds the step; MIDI Continue goes on from it, in pattern and song mode, after the panel's PLAY too.
+- The panel's PLAY while playing holds the step. The panel's PLAY again goes on in pattern mode (from the next step),
+  but in song mode it starts the row again from its first step. MIDI Continue after it goes on from the step.
+- The song position of the held step before Continue changes nothing in pattern mode; in song mode on the MD it lands
+  on row 1 (the position counts from the song's start, not the row's).
+- The MM's RAM flag that says it plays stays 0 after a MIDI Continue or the panel's PLAY out of a pause, while the step
+  moves: the editor's "playing" is the flag or the step moving (`watchStep`), so the page is told right.
+
+**For wave 2.** Pause on the MD is MIDI Stop and Continue on both engines (CTRL IN on). On the MM emulator the pause is
+the panel's PLAY (no setting needed) and the resume MIDI Continue where TRANSPORT IN is ACCEPT, else the panel's PLAY.
+Over HW MIDI the MM's pause and resume need ACCEPT.
 
 ## P2: MM CONTROL OUT 1
 
@@ -164,6 +189,21 @@ again; the mute CCs.
 
 **For wave 2.** Panic (⌘.) on the emulator presses the panel STOP twice. Over HW MIDI the MD has no panic message; the
 editor can only send Stop (which stops the sequencer but lets tails ring) and say so.
+
+## P5 MM: what silences the Monomachine's held notes (wave 2)
+
+**Question.** The Monomachine Editor's panic: which message lets go of every note?
+
+**Method.** `p5mm`: a note held (note on, no note off) on each of the six track channels (1-6 as booted), then one
+action and the RMS 100-500 ms and 500-900 ms after it; "silent" is below 5 % of the level before.
+
+**Answer.** Nothing is silent within 500 ms: the voices release as they would at their note off. CC 123 (All Notes Off)
+on the six channels does what the note offs do (0.077 -> 0.011 -> 0.005); CC 120 (All Sound Off) and MIDI Stop (once or
+twice) do nothing (0.054 after, as the control); the panel's STOP once or twice lets the notes go too (twice: 0.0002 in
+the second window).
+
+**For wave 2.** Panic on the MM sends CC 123 on each track's channel, then STOP (the panel's twice on the emulator,
+MIDI Stop over a cable).
 
 ## P6: MD factory data
 

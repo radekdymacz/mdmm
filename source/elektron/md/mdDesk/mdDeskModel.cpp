@@ -333,6 +333,12 @@ namespace mdDesk
 			{"play", Owner::Machine, Gate::Input, -1, {}, ""},
 			{"stop", Owner::Machine, Gate::Input, -1, {}, ""},
 			{"seqMode", Owner::Machine, Gate::Input, -1, {{"song", ArgType::Bool}}, "PATTERN or SONG mode (SET STATUS 0x10), read back from the machine's status"},
+			// wave 2 (doc/modern-ux/PROBES-manual-gaps.md P1, P5)
+			{"pause", Owner::Machine, Gate::Input, -1, {}, "MIDI Stop: the machine holds its step (CTRL IN on)"},
+			{"resume", Owner::Machine, Gate::Input, -1, {}, "MIDI Continue: it plays on from the step a pause held"},
+			{"playFrom", Owner::Machine, Gate::Input, -1, {row}, "play the current song from row i: SONG mode, a Song Position Pointer (the steps of the rows before it), Continue"},
+			{"panic", Owner::Machine, Gate::Input, -1, {}, "every voice off: the panel's STOP twice (no MIDI message silences the Machinedrum)"},
+			{"nudge", Owner::Machine, Gate::Input, -1, {{"pct", ArgType::Integer, -10, 10}}, "the tempo pct % off while held, 0 = back (TEMPO, LEFT / RIGHT held); not stored, no undo step"},
 			{"mute", Owner::Machine, Gate::Input, -1, {t, on}, ""},
 			{"followHost", Owner::Machine, Gate::Input, -1, {}, "in a DAW: the active GLOBAL follows the host's clock and transport"},
 			// ---- the editor's setup ----

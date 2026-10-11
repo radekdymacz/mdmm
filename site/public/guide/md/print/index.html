@@ -117,8 +117,11 @@
 <p>There is no record mode to switch on. The step grid is always open for editing, so the machine's RECORD key has no counterpart.</p>
 <p>To record live, click <b class="gd-ui">REC</b> or press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[SPACE]</kbd>. Click the steps of a track to play and record it, and move a value to lock it. Click <b class="gd-ui">REC</b> again to stop recording and go on playing.</p>
 <p>Press <kbd class="gd-key">[SPACE]</kbd> to start. The key shows ▶ while the machine is stopped and ■ while it plays. Press it again to stop.</p>
-<p>The editor has no pause. The key starts and stops only.</p>
-<p>The editor has no panic key that silences every voice with a double press of stop.</p>
+<p>On the machine a second press of <kbd class="gd-key">[PLAY]</kbd> pauses. In the editor you pause with <kbd class="gd-key">[⇧]</kbd>:</p>
+<ol class="gd-steps"><li>Hold <kbd class="gd-key">[⇧]</kbd> and click the Play key, or press <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[SPACE]</kbd>. The machine holds its step. The Play key blinks and <b class="gd-light">&lt;POSITION&gt;</b> keeps the step.</li><li>Click the Play key, or press <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[SPACE]</kbd> again. The machine goes on from the step it held.</li><li>To end the pause instead, choose <b class="gd-ui">Stop</b> in the transport menu. <b class="gd-light">&lt;POSITION&gt;</b> reads --.--.</li></ol>
+<p>The transport menu has Play or Stop, Pause or Continue, Record and Panic, each with its key. Right-click the Play key to open it, or click the small ▾ in the key's corner.</p>
+<p>On the machine a double press of <kbd class="gd-key">[STOP]</kbd> silences every voice. In the editor this is <b class="gd-ui">Panic</b>: press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[.]</kbd>, or choose <b class="gd-ui">Panic</b> in the transport menu. The editor presses the machine's <kbd class="gd-key">[STOP]</kbd> twice, and the machine stops.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Pause and Continue reach the machine as MIDI Stop and Continue, so the machine's <b class="gd-light">&lt;CTRL IN&gt;</b> must be on (GLOBAL, MIDI). Over a MIDI cable there is no panic: no MIDI message silences the Machinedrum. Press <kbd class="gd-key">[STOP]</kbd> twice on the machine.</p></aside>
 <p>There is no key that restarts the pattern from the top while it plays. Stop, then play.</p>
 <h4 class="gd-h3">Pattern or song</h4>
 <p>The LCD's second line has a <b class="gd-ui">PLAY</b> field on every workspace. It reads PAT in pattern mode and SONG in song mode, and each click switches. On the Song workspace the <b class="gd-ui">PATTERN</b> and <b class="gd-ui">SONG</b> keys over the pattern palette do the same. The field shows what the machine reports.</p>
@@ -176,7 +179,7 @@
 <p>On the Sequence workspace the four page LEDs beside the <b class="gd-ui">Page</b> key show the same thing as the machine's four pattern-page boxes: the page that plays is lit.</p>
 <h4 class="gd-h3">Transport</h4>
 <p><b class="gd-ui">REC</b> and the Play key have LEDs. The Play key shows ▶ while the machine is stopped and ■ while it plays. <b class="gd-ui">REC</b> is lit during live recording.</p>
-<p>The LCD has no pause state, because the editor has no pause.</p>
+<p>While the machine is paused the Play key blinks and <b class="gd-ui">Position</b> keeps the step the pause holds. The Play key then continues.</p>
 <h4 class="gd-h3">Kit</h4>
 <p><b class="gd-ui">Kit</b> shows the kit number and name, for example K01 WAREHOUSE. The chip beside the label reads <b class="gd-ui">saved</b> when the kit on the machine is the one stored in its slot, and <b class="gd-ui">edited</b> when you have changed it since. Click the field to open the kit library.</p>
 <h4 class="gd-h3">Pattern</h4>
@@ -544,8 +547,11 @@
 <p>The <b class="gd-light">&lt;TEMPO&gt;</b> field in the LCD is the tempo window of the machine. It reads in beats per minute with one decimal. The range is 30 to 300.</p>
 <ul class="gd-list"><li>Drag the field up or down. A pixel is half a beat per minute. Hold <kbd class="gd-key">[⇧]</kbd> and a pixel is a tenth.</li><li>With the field focused, press the up and down arrow keys: one beat per minute, or a tenth with <kbd class="gd-key">[⇧]</kbd>.</li></ul>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The tempo you set is the machine's global tempo. It does not belong to one pattern.</p></aside>
-<p>The machine applies a tempo change when you let go of <kbd class="gd-key">[FUNCTION]</kbd>. The editor has no such key. The tempo changes as you drag.</p>
-<p>You cannot shift the tempo up or down by 10 percent for a moment in the editor yet.</p>
+<p>Click the field without dragging to open the <b class="gd-ui">TEMPO</b> window. It holds what the machine's TEMPO menu holds:</p>
+<ul class="gd-list"><li><b class="gd-ui">−</b> and <b class="gd-ui">+</b> change the tempo by one beat per minute, or a tenth with <kbd class="gd-key">[⇧]</kbd>.</li><li><b class="gd-ui">TAP</b> taps the tempo, as <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[B]</kbd> does.</li><li><b class="gd-ui">NUDGE</b> shifts the tempo for a moment, as <kbd class="gd-key">[LEFT]</kbd> and <kbd class="gd-key">[RIGHT]</kbd> on the machine. Press and hold <b class="gd-ui">−10 %</b> or <b class="gd-ui">+10 %</b>. The tempo is 10 % slower or faster while you hold it, and goes back when you let go. The keys <kbd class="gd-key">[-]</kbd> or <kbd class="gd-key">[=]</kbd> do the same while held.</li><li><b class="gd-ui">Change on release</b> holds a dragged tempo back until you let go of the field, as <kbd class="gd-key">[FUNCTION]</kbd> held does on the machine. The field shows the new tempo while you drag and the machine takes it at the release.</li><li><b class="gd-ui">Sync</b> says whether the tempo comes from the machine or from MIDI clock. <b class="gd-ui">Sync in GLOBAL</b> opens the GLOBAL page.</li></ul>
+<p>Press <kbd class="gd-key">[Esc]</kbd> or click outside the window to close it.</p>
+<aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>Hold <kbd class="gd-key">[⌥]</kbd> while you drag the field to change the tempo at the release once, without the tick.</p></aside>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A nudge is not stored. The tempo of the global stays as it was.</p></aside>
 </div></section>
 <section class="gd-sec" id="tap-tempo">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.36</span></span></aside>
@@ -788,14 +794,17 @@
 <p>You can go to pattern mode and back while the song plays. Click <b class="gd-ui">PATTERN</b>: the machine plays a pattern. Click <b class="gd-ui">SONG</b> to play the song again.</p>
 <p>The line under the chip in the <b class="gd-ui">Songs</b> column gives the length of the song as rows, bars and playing time at the current tempo. The time is an estimate. The LCD shows the same as <b class="gd-light">&lt;ROWS&gt;</b>, <b class="gd-light">&lt;BARS&gt;</b> and <b class="gd-light">&lt;TIME&gt;</b> on the second line of the Song workspace.</p>
 <p>When the host sends a song position, the machine follows it. The editor has no control for this.</p>
-<p>You cannot pause a song in the editor. <kbd class="gd-key">[PLAY]</kbd> starts and stops it.</p>
+<p>To pause a song, hold <kbd class="gd-key">[⇧]</kbd> and click the Play key, or press <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[SPACE]</kbd>. The song holds its row and step. Click the Play key to go on from there.</p>
 <p>The editor does not show how many turns of a repeat are left.</p>
 </div></section>
 <section class="gd-sec" id="navigating-a-song">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.52</span></span></aside>
 <div class="gd-body gd-prose"><h2>NAVIGATING A SONG</h2>
 <p>Click a cell of the arrangement to select that row. Press <kbd class="gd-key">[←]</kbd> or <kbd class="gd-key">[→]</kbd> to move to the previous or next row. A selected row is the one you edit.</p>
-<p>Selecting a row does not move the song pointer. You cannot start the song from a chosen row in the editor yet.</p>
+<p>To start the song from a row:</p>
+<ol class="gd-steps"><li>Click the row's cell in the arrangement.</li><li>Click <b class="gd-ui">▶ From here</b> in the <b class="gd-ui">Selected row</b> card, or press <kbd class="gd-key">[ENTER]</kbd>.</li></ol>
+<p>The machine goes to SONG mode if it was in pattern mode and plays the song from the first step of that row. The editor sends the machine a MIDI song position, the steps of the rows before it, and then Continue.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A loop or jump row before the chosen row cannot be counted through. The editor says so; start the song and let it play to the row. The machine's <b class="gd-light">&lt;CTRL IN&gt;</b> must be on.</p></aside>
 </div></section>
 <section class="gd-sec" id="song-editing">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.53</span></span></aside>
@@ -834,7 +843,8 @@
 <section class="gd-sec" id="song-transport">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.52</span></span></aside>
 <div class="gd-body gd-prose"><h2>SONG TRANSPORT</h2>
-<p>On the machine, <kbd class="gd-key">[STOP]</kbd> holds the song and a second <kbd class="gd-key">[STOP]</kbd> starts it. The editor has no such key. <kbd class="gd-key">[SPACE]</kbd> plays and stops.</p>
+<p>On the machine <kbd class="gd-key">[STOP]</kbd> holds the song where it is, and <kbd class="gd-key">[PLAY]</kbd> goes on from there. In the editor:</p>
+<ol class="gd-steps"><li>Hold <kbd class="gd-key">[⇧]</kbd> and click the Play key, or press <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[SPACE]</kbd>. The song holds its position. The Play key blinks.</li><li>Click the Play key to go on from that position.</li><li>To stop the song from the hold, choose <b class="gd-ui">Stop</b> in the transport menu (right-click the Play key, or click its ▾).</li></ol>
 </div></section>
 <section class="gd-sec" id="song-loop">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.54</span></span></aside>

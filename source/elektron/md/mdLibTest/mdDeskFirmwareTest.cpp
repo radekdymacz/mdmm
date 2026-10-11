@@ -143,6 +143,8 @@ namespace
 				if(const auto b = deskWire::md::note(_ch, _n, _v))
 					m_out.push_back(*b);
 			};
+			// wave 2: MIDI Stop, Continue and the song position, in order with the rest
+			port.device.sendMidi = [this](const Bytes& _b) { m_out.push_back(_b); };
 			port.device.baseChannel = [this](const uint8_t _ch) { m_channel = _ch; };
 			port.toPage = [this](const Value& _m) { g_contract(_m); onPage(_m); };
 			port.device.nowMs = [this] { return ms(m_machine.now()); };
@@ -2612,6 +2614,111 @@ namespace
 	// machine plays. A song A02, A03 x2, A04, LOOP to row 2 (forever), END, short patterns, SONG mode, PLAY: at
 	// the middle of each pattern pass the row's pattern is the pattern that plays, and the rows go 1 2 2 3, then
 	// round the loop 2 2 3 2 2 3 (one-based). The page marks a row only while the machine plays in SONG mode.
+	// Wave 2 (doc/modern-ux/PROBES-manual-gaps.md P1, P5): the transport's commands through the desk on the firmware.
+	// Pause and resume (MIDI Stop and Continue), play from a song row (SONG mode, the song position, Continue), panic (STOP
+	// twice), the tempo nudge (0x61, the global document untouched).
+	void transport(const Bytes& _rom, const std::string& _romName)
+	{
+		std::puts("transport: pause, play from a row, panic, nudge");
+		Rig rig(_rom, _romName);
+		rig.page(R"({"op":"ready"})");
+		rig.runUntil([&] { return rig.desk().isInputReady() && rig.desk().linkState().pattern; }, 5000);
+		auto& m = rig.machine();
+		const auto base = rig.readPattern(0);
+		require(base.has_value(), "no pattern A01");
+		for(uint8_t s = 1; s < 5; ++s)
+		{
+			auto p = *base;
+			p.position = s;
+			p.length = 8;
+			p.trigs.fill(0);
+			p.lockMasks.fill(0);
+			p.trigs[s] = 0x11;
+			m.send(ed::encodeMdPattern(p));
+		}
+		ed::MdSong song;
+		song.position = 6;
+		const auto row = [](const uint8_t _pattern, const uint8_t _repeats)
+		{
+			ed::MdSongRow r;
+			r.pattern = _pattern;
+			r.repeats = _repeats;
+			r.end = 8;
+			return r;
+		};
+		// rows of 8 steps: row 1 once, row 2 twice, rows 3 and 4 once
+		song.rows = {row(1, 0), row(2, 1), row(3, 0), row(4, 0), row(ed::MdSongRow::g_endRow, 0)};
+		m.send(ed::encodeMdSong(song));
+		m.send(ed::mdLoadSong(6));
+		rig.run(300);
+		rig.page(R"({"op":"load","kind":"song","slot":6,"id":1})");
+		rig.runUntil([&] { return rig.desk().documents().songs.count(6) && rig.desk().linkState().song == 6; }, 5000);
+		const auto ok = [&] { const auto& r = rig.lastResult(); return r && r->find("ok")->asBool(); };
+
+		// pause in PATTERN mode
+		rig.page(R"({"op":"seqMode","song":false,"id":2})");
+		rig.run(500);
+		rig.page(R"({"op":"play","id":3})");
+		rig.runUntil([&] { return rig.pageTelemetry().playing; }, 3000);
+		rig.run(700);
+		rig.page(R"({"op":"pause","id":4})");
+		check(ok(), "pause: taken");
+		rig.run(300);
+		const int held = m.playhead();
+		rig.run(600);
+		std::printf("  paused at step %d, 600 ms later %d (the page: playing %d)\n", held + 1, m.playhead() + 1, rig.pageTelemetry().playing);
+		check(!rig.pageTelemetry().playing && m.playhead() == held, "pause (MIDI Stop): it stops and the step holds");
+		rig.page(R"({"op":"resume","id":5})");
+		// the playhead every 40 ms: the held step first, then on from it (the pattern may wrap)
+		std::vector<int> trace;
+		for(int i = 0; i < 10; ++i)
+		{
+			rig.run(40);
+			trace.push_back(m.playhead());
+		}
+		std::string tr;
+		for(const int x : trace)
+			tr += " " + std::to_string(x + 1);
+		std::printf("  resumed, the step every 40 ms:%s\n", tr.c_str());
+		check(ok() && rig.pageTelemetry().playing && trace.front() == held && trace.back() != held, "resume: it plays on from the held step");
+
+		// play from row 3 while it plays in PATTERN mode: MIDI Stop, SONG mode, the song position (24) and Continue
+		rig.page(R"({"op":"playFrom","i":2,"id":6})");
+		check(ok(), "play from row 3: taken");
+		// MIDI Stop, SONG mode once the machine says so, then the song position and Continue
+		rig.runUntil([&] { return rig.desk().linkState().songMode == true; }, 4000);
+		rig.runUntil([&] { return rig.pageTelemetry().playing; }, 2000);
+		rig.run(150);
+		const int seen = rig.pageTelemetry().songRow;
+		rig.run(200);
+		const auto t = rig.pageTelemetry();
+		std::printf("  from row 3: the page is told row %d, step %d, song mode %d\n", t.songRow + 1, t.step + 1,
+			rig.desk().linkState().songMode.value_or(false));
+		check(seen == 2 && t.playing && rig.desk().linkState().songMode == true, "it plays song 7 from row 3, in SONG mode");
+
+		// panic: STOP twice; the machine stops
+		rig.page(R"({"op":"panic","id":7})");
+		rig.runUntil([&] { return !rig.pageTelemetry().playing; }, 3000);
+		check(ok() && !rig.pageTelemetry().playing, "panic: STOP twice, it stops");
+
+		// the nudge: the machine's tempo 10 % up while held, back after; the global document keeps its tempo
+		const auto tempo = rig.desk().documents().global->tempo;
+		const auto activeTempo = [&]
+		{
+			const auto g = ed::decodeMdGlobal(m.request(ed::mdGlobalRequest(rig.desk().linkState().globalSlot.value_or(0)), 0x50));
+			return g ? static_cast<int>(g->tempo) : -1;
+		};
+		rig.page(R"({"op":"nudge","pct":10,"id":8})");
+		rig.run(400);
+		const int up = activeTempo();
+		rig.page(R"({"op":"nudge","pct":0,"id":9})");
+		rig.run(400);
+		const int back = activeTempo();
+		std::printf("  tempo %.2f, nudged %.2f, back %.2f BPM\n", tempo / 24.0, up / 24.0, back / 24.0);
+		check(std::abs(up - static_cast<int>(std::lround(tempo * 1.1))) <= 1 && back == tempo && rig.desk().documents().global->tempo == tempo,
+			"nudge +10 %: faster while held, back at the release, nothing stored");
+	}
+
 	void songRow(const Bytes& _rom, const std::string& _romName)
 	{
 		std::puts("song row: the Song page's playhead");
@@ -4238,6 +4345,13 @@ int main(const int _argc, char** _argv)
 			globalReset(rom, romPath);
 			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 			std::printf("mdDeskFirmwareTest factoryglobal: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
+			return g_failures ? 1 : 0;
+		}
+		if(mode == "transport")
+		{
+			transport(rom, romPath);
+			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
+			std::printf("mdDeskFirmwareTest transport: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
 			return g_failures ? 1 : 0;
 		}
 		if(mode == "songrow")

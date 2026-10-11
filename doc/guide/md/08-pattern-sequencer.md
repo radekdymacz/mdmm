@@ -28,7 +28,7 @@ To change the mode:
 In CLASSIC the lock lane is greyed and says "CLASSIC: locks muted". The pattern chooser and the kit library say which mode is on. In EXTENDED the chooser shows the kit of each pattern as K01 to K64.
 
 ## TEMPO
-<!-- rows: MD-089 MD-090 MD-091 @d4a6b0 -->
+<!-- rows: MD-089 MD-090 MD-091 @01793b -->
 
 The <TEMPO> field in the LCD is the tempo window of the machine. It reads in beats per minute with one decimal. The range is 30 to 300.
 
@@ -37,9 +37,19 @@ The <TEMPO> field in the LCD is the tempo window of the machine. It reads in bea
 
 NOTE: The tempo you set is the machine's global tempo. It does not belong to one pattern.
 
-{gap:MD-090}The machine applies a tempo change when you let go of [FUNCTION]. The editor has no such key. The tempo changes as you drag.{/gap}
+Click the field without dragging to open the **TEMPO** window. It holds what the machine's TEMPO menu holds:
 
-{gap:MD-091}You cannot shift the tempo up or down by 10 percent for a moment in the editor yet.{/gap}
+- **−** and **+** change the tempo by one beat per minute, or a tenth with [⇧].
+- **TAP** taps the tempo, as {key:tap-tempo-shift} does.
+- **NUDGE** shifts the tempo for a moment, as [LEFT] and [RIGHT] on the machine. Press and hold **−10 %** or **+10 %**. The tempo is 10 % slower or faster while you hold it, and goes back when you let go. The keys {key:tempo-nudge} do the same while held.
+- **Change on release** holds a dragged tempo back until you let go of the field, as [FUNCTION] held does on the machine. The field shows the new tempo while you drag and the machine takes it at the release.
+- **Sync** says whether the tempo comes from the machine or from MIDI clock. **Sync in GLOBAL** opens the GLOBAL page.
+
+Press [Esc] or click outside the window to close it.
+
+TIP: Hold [⌥] while you drag the field to change the tempo at the release once, without the tick.
+
+NOTE: A nudge is not stored. The tempo of the global stays as it was.
 
 ## TAP TEMPO
 <!-- rows: MD-092 @2f9724 -->
