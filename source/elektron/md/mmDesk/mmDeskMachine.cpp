@@ -143,6 +143,10 @@ namespace mmDesk
 		m_sequence.clear();
 		m_chain.drop();
 		m_keysUntilMs = -1e9;
+		m_trnWanted = m_trnDue = 0;
+		m_focus = -1;
+		m_focusAskedMs = -1;
+		m_focusSeenMs = -1e9;
 		m_notes = {};
 		startedOver();
 	}
@@ -250,6 +254,7 @@ namespace mmDesk
 			requestStatus();
 		}
 		pumpRecv(_now);
+		pumpTranspose(_view);
 		pumpTransport(_now);
 		pumpChain();
 		pumpSongReload(_now);
