@@ -691,6 +691,66 @@ namespace
 	}
 
 
+
+	// ---- P1b (wave 2): a pause after the panel's PLAY ---------------------------------------------------------------------
+	// The editor starts the emulated machine with the panel's PLAY. Does MIDI Stop + Continue then go on from the step (P1
+	// started it with the song position and Continue), and is the panel's PLAY while playing a pause? Pattern and song mode.
+	void p1pause(const Bytes& _rom, const bool _mm)
+	{
+		std::printf("== P1b %s: pause after the panel's PLAY\n", _mm ? "MM" : "MD");
+		Rig r(_rom, _mm);
+		if(_mm)
+		{
+			mmSetupSong(r);
+			mmSetGlobal(r, [](ed::MmGlobal& _g) { _g.transportIn = 1; });
+		}
+		else
+			mdSetupSong(r);
+		std::string answer;
+		for(const bool song : {false, true})
+		{
+			r.setSongMode(song);
+			if(!song)
+				r.loadPattern(0);
+			struct Way
+			{
+				const char* name;
+				std::function<void()> pause, resume;
+			};
+			int held = -1;
+			const std::vector<Way> ways{
+				{"MIDI STOP, MIDI CONTINUE", [&] { r->send({0xfc}); }, [&] { r->send({0xfb}); }},
+				{"MIDI STOP, the song position of the held step, MIDI CONTINUE", [&] { r->send({0xfc}); },
+					[&] { r->send({0xf2, static_cast<uint8_t>(held & 0x7f), static_cast<uint8_t>(held >> 7)}); r->send({0xfb}); }},
+				{"panel PLAY, panel PLAY", [&] { key(r, md::PanelControl::Play); }, [&] { key(r, md::PanelControl::Play); }},
+				{"panel PLAY, MIDI CONTINUE", [&] { key(r, md::PanelControl::Play); }, [&] { r->send({0xfb}); }},
+			};
+			for(const auto& w : ways)
+			{
+				halt(r);
+				r.run(200);
+				key(r, md::PanelControl::Play);
+				r.run(700);
+				const int a = r.step(), ra = r.row();
+				w.pause();
+				r.run(300);
+				const int b = r.step(), rb = r.row();
+				r.run(500);
+				const int c = r.step();
+				held = b;
+				w.resume();
+				const auto after = watch(r, 300);
+				const bool holds = b == c, goesOn = after.stepMoved && after.step0 == c;
+				std::printf("  %s %-58s playing %d/%d, paused %d/%d, 500 ms later %d (%s); resumed: %s%s\n", song ? "SONG   " : "PATTERN", w.name, a, ra, b, rb, c,
+					holds ? "held" : "moving", fmt(after).c_str(), holds && goesOn ? "   PAUSE" : "");
+				if(holds && goesOn)
+					answer += std::string(song ? "song: " : "pattern: ") + w.name + "; ";
+			}
+		}
+		halt(r);
+		result(_mm ? "P1b MM" : "P1b MD", answer.empty() ? "no way paused and went on from the step" : "pauses: " + answer);
+	}
+
 	// ---- P3: MD TRIG IN A / B (the global's ten input bytes) -------------------------------------------------------------
 
 	std::string diffGlobal(const ed::MdGlobal& _a, const ed::MdGlobal& _b)
@@ -939,6 +999,79 @@ namespace
 		check(controlTail > 1e-3, "the rig: the control scenario keeps sounding (" + std::to_string(controlTail) + ")");
 		(void)panelTail;
 		result("P5", answers.empty() ? "no scenario silenced the voices" : "silent after: " + answers);
+	}
+
+	// ---- P5 MM (wave 2): what silences the Monomachine's voices -----------------------------------------------------------------
+	// Six notes held (note on, no note off) on the six track channels (1-6 as booted), then one action and the level after it.
+
+	void p5mm(const Bytes& _rom)
+	{
+		std::puts("== P5 MM: held notes on the six tracks, what silences them");
+		Rig r(_rom, true);
+		r.setSongMode(false);
+		const auto hold = [&] {
+			for(uint8_t c = 0; c < 6; ++c)
+				r->send({static_cast<uint8_t>(0x90 | c), static_cast<uint8_t>(48 + 3 * c), 110});
+		};
+		const auto release = [&] {
+			for(uint8_t c = 0; c < 6; ++c)
+				r->send({static_cast<uint8_t>(0x80 | c), static_cast<uint8_t>(48 + 3 * c), 0});
+		};
+		const auto level = [&](const double _afterMs, const double _windowMs) {
+			r.run(_afterMs);
+			const auto from = r->left().size();
+			r.run(_windowMs);
+			return rms(r->left(), r->right(), from, r->left().size());
+		};
+		const auto ccAll = [&](const uint8_t _cc) {
+			for(uint8_t c = 0; c < 6; ++c)
+				r->send({static_cast<uint8_t>(0xb0 | c), _cc, 0});
+		};
+		struct Scenario
+		{
+			std::string name;
+			bool playing;
+			std::function<void()> action;
+		};
+		const std::vector<Scenario> scenarios{
+			{"nothing (control: the held notes go on)", false, [] {}},
+			{"note off for the held notes (control)", false, [&] { release(); }},
+			{"MIDI STOP (0xFC) once", false, [&] { r->send({0xfc}); }},
+			{"MIDI STOP x2", false, [&] { r->send({0xfc}); r->send({0xfc}); }},
+			{"CC 123 (all notes off) on channels 1-6", false, [&] { ccAll(123); }},
+			{"CC 120 (all sound off) on channels 1-6", false, [&] { ccAll(120); }},
+			{"CC 120 + CC 123 on channels 1-6", false, [&] { ccAll(120); ccAll(123); }},
+			{"panel STOP once", false, [&] { key(r, md::PanelControl::Stop, 30, 0); }},
+			{"panel STOP twice", false, [&] { key(r, md::PanelControl::Stop, 30, 10); key(r, md::PanelControl::Stop, 30, 0); }},
+			{"playing, panel STOP twice", true, [&] { key(r, md::PanelControl::Stop, 30, 10); key(r, md::PanelControl::Stop, 30, 0); }},
+			{"playing, CC 120 + CC 123 on channels 1-6", true, [&] { ccAll(120); ccAll(123); }},
+		};
+		double control = 0;
+		std::string answers;
+		for(const auto& sc : scenarios)
+		{
+			halt(r);
+			release();
+			ccAll(123);
+			r.run(1500);
+			if(sc.playing)
+				key(r, md::PanelControl::Play);
+			hold();
+			const double before = level(300, 200);
+			sc.action();
+			const double d1 = level(100, 400);
+			const double d2 = level(0, 400);
+			const bool silent = before > 1e-4 && d1 < before * 0.05;
+			std::printf("  %-48s before %.5f -> after %.5f, then %.5f%s\n", sc.name.c_str(), before, d1, d2, silent ? "   SILENT" : "");
+			if(sc.name.rfind("nothing", 0) == 0)
+				control = d1;
+			if(silent)
+				answers += sc.name + "; ";
+		}
+		release();
+		ccAll(123);
+		check(control > 1e-3, "the rig: the control scenario keeps sounding (" + std::to_string(control) + ")");
+		result("P5mm", answers.empty() ? "no scenario silenced the voices" : "silent after: " + answers);
 	}
 
 	// ---- P6: does the factory baseline hold the factory kits, patterns, songs and globals --------------------------------------
@@ -1508,6 +1641,8 @@ int main(const int _argc, char** _argv)
 			p4(mmRom);
 		if(!mdRom.empty() && want("p5"))
 			p5(mdRom);
+		if(!mmRom.empty() && (want("p5") || only == "p5mm"))
+			p5mm(mmRom);
 		if(!mdRom.empty() && want("p6"))
 			p6(mdRom);
 		if(!mdRom.empty() && (want("p6") || only == "p6b"))
@@ -1516,6 +1651,10 @@ int main(const int _argc, char** _argv)
 			p1(mdRom, false);
 		if(!mmRom.empty() && (want("p1") || only == "p1mm"))
 			p1(mmRom, true);
+		if(!mdRom.empty() && (want("p1") || only == "p1b" || only == "p1bmd"))
+			p1pause(mdRom, false);
+		if(!mmRom.empty() && (want("p1") || only == "p1b" || only == "p1bmm"))
+			p1pause(mmRom, true);
 		std::printf("gapProbesFirmwareTest: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
 		return g_failures ? 1 : 0;
 	}
