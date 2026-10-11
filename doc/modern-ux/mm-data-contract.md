@@ -89,7 +89,7 @@ NOTE OFF.
 | `tracks[t].machine` | the 0x5B id; `machineName` is the manual's name. 22 machines; DPRO-DDRW (32) and DPRO-DENS (33) are MKII only | live |
 | `tracks[t].pages[8][8]` | SYN AMP FLT EFX LF1 LF2 LF3 (CC 48-119) and the MIDI page (LEN VEL PB PCHG CC1-4). The parameter names are `mmParamName`, read from the firmware's own screens | live, panel |
 | `tracks[t].outputs` | bus bits AB 1, CD 2, EF 4 (0x5C) | live |
-| `tracks[t].input` | 0 NEIGHBOR, 1 INP A, 2 INP B, 3 INP A+B, 4-6 BUS AB/CD/EF. Used by FX machines | factory set, 0x5C |
+| `tracks[t].input` | 0 NEIGHBOR, 1 INP A, 2 INP B, 3 INP A+B, 4-6 BUS AB/CD/EF; null: none chosen (as the panel leaves a track it assigns a machine to; an FX machine then hears no input). Only FX machines take one: `input` on another machine is refused (0x5C sets only its outputs). Stored as the firmware's 0x5C does: routing byte bit 3 a bus (which: the bus word at 0x1ce), bit 4 an audio input in bits 6-7 (elektronData `mmKitInput`) | factory set, 0x5C |
 | `tracks[t].assign` | ASSIGN: `page`, `dest`, `add` for 6 sources x 2 rows: JOY R/L, JOY L, JOY U, JOY D, VELOCITY, KEY TRACKING. `add` is signed | panel (knobs A-H, every tab) |
 | `tracks[t].trigPos` | TRIG POS: the track that forwards its notes, `null` = --- | panel |
 | `trackMasks` | per-track bits: JOY mirror (0x1d0), key tracking HPF / LPF, PORTAMENTO (set = ALWAYS, clear = ONLY LEGATO), LEGATO AMP / FLT / LFO. **Corrected in MM-P4:** MM-P1 had inferred mirror/hpf/lpf at 0x2aa-0x2ac; the panel shows 0x2aa LPF, 0x2ab HPF, 0x2ac PORTAMENTO | panel (every bit) |
@@ -234,7 +234,7 @@ is IGNORE; confirmed, it writes TRANSPORT ACCEPT (a global dump, so it waits for
 | Document | Limit |
 |---|---|
 | pattern | slot 0-127; length 2-64; multiplier 0-3; kit 0-127; swing 0-30; transposes -64..63; scale 0-3, key 0-11; arp play 0-4, mode 0-3, range 0-8, length 1-16, trigs 0-7; notes 0-127 (a note on a step without its trig is kept: OS 1.32B takes it, old backups hold it); **lock rows = locked parameters ≤ 62**, lock values 0-127; MIDI notes ≤ 400, chord notes ≤ 192, tracks 0-5 |
-| kit | slot 0-127; levels and page values 0-127; an OS 1.32 machine; input 0-6; trigPos a track or none; assign page/dest 0-127 |
+| kit | slot 0-127; levels and page values 0-127; an OS 1.32 machine; input 0-6 or none; trigPos another track or none; assign page/dest 0-127 |
 | song | slot 0-23; pattern 0-127, LOOP or END; pattern rows: repeats 0-63, 1 ≤ length ≤ 64, offset < length, tempo 30-300 or keep; loops: target < 200 |
 | global | slot 0-7; channels 0-15 or off; span 0-16 (0 in an OS 1.x backup); routing mode 0-2 |
 

@@ -688,7 +688,8 @@ namespace elektronData
 			const auto* info = mmMachine(_k.machines[t]);
 			o.set("machineName", info ? info->name : "?");
 			o.set("outputs", mmRoutingOutputs(_k.routing[t]));
-			o.set("input", mmRoutingInput(_k.routing[t]));
+			const auto input = mmKitInput(_k, t);
+			o.set("input", input ? Value(static_cast<int>(*input)) : Value());
 			Value pages = Value::array();
 			for(const auto& pg : tr.pages)
 				pages.push(numbers(pg));
@@ -734,6 +735,7 @@ namespace elektronData
 		if(!in.schema("mm-desk/kit"))
 			return std::nullopt;
 		MmKit k;
+		std::array<std::optional<uint8_t>, MmKit::g_tracks> inputs{};
 		readHeader(in, k, MmKit::g_slots);
 		in.name(k.name);
 		in.integers("levels", k.levels, 0, 255);
@@ -747,8 +749,13 @@ namespace elektronData
 			{
 				uint8_t outputs = 0, input = 0;
 				tr.integer("outputs", outputs, 0, 7);
-				tr.integer("input", input, 0, 7);
-				k.routing[t] = mmRouting(outputs, input);
+				mmSetKitOutputs(k, t, outputs);
+				const auto* in = tr.get("input");
+				if(in && !in->isNull())
+				{
+					tr.integer("input", input, 0, 6);
+					inputs[t] = input;
+				}
 			}
 			const auto pages = tr.child("pages");
 			if(pages.size() != 8)
@@ -795,6 +802,9 @@ namespace elektronData
 		const auto hidden = in.child("hidden");
 		hidden.hexBytes("x1cd", k.x1cd);
 		hidden.integer("x1d1", k.x1d1, 0, 255);
+		// the inputs over the bus word x1cd holds (an input names its bus there)
+		for(size_t t = 0; t < MmKit::g_tracks; ++t)
+			mmSetKitInput(k, t, inputs[t]);
 		if(_errors.size() != before)
 			return std::nullopt;
 		for(const auto& e : validate(k))
