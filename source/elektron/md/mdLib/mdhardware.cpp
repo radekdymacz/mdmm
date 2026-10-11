@@ -1439,7 +1439,9 @@ namespace md
 			// Probe periodically within the existing UC slice; the steps in between
 			// only test the end of the slice. A pending host word/wake, restore or
 			// MIDI transfer disables skipping.
-			if((probeCount++ & 15u) != 0)
+			// UC_IDLE_PROBE: right after the branch the skip can take (the skip is exact, so starting it at once
+			// changes only the host work); with the lever off, every 16th step.
+			if(m_leverUcIdleProbe ? !m_uc.lastInstructionWasSelfBranch() : (probeCount++ & 15u) != 0)
 				continue;
 			// The Monomachine path skips its ColdFire idle loop (BRA.B -2) in
 			// chunks. The Machinedrum idles the same way, but only while neither
@@ -1670,6 +1672,7 @@ namespace md
 	{
 		m_leverL1 = speedUpLeverOn(SpeedUpLever::L1);
 		m_leverL2b = speedUpLeverOn(SpeedUpLever::L2b);
+		m_leverUcIdleProbe = speedUpLeverOn(SpeedUpLever::UcIdleProbe);
 		m_uc.setMemoryFastLane(speedUpLeverOn(SpeedUpLever::L11));
 		m_uc.getSim().setDeferStepping(speedUpLeverOn(SpeedUpLever::L5));
 		applyEssiCycleDeadlines();
