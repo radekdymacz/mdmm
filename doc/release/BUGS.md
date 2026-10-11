@@ -4,6 +4,14 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-069 · Machinedrum: the GLOBAL panel's Trig in A / B card shows its values under the wrong names
+
+- **From:** the gap probes (`gapProbesFirmwareTest <MD ROM> - p3`, doc/modern-ux/PROBES-manual-gaps.md P3), 2026-10-11.
+- **What happens:** the card read the global's ten input bytes as five for A, then five for B, in the order Gate, Sens, Vmin, Vmax, Dest. The factory global showed for A: Gate 16, Sens 1, Vmin 0, Vmax 0, Dest 127.
+- **Cause (measured on MD OS 1.63):** the bytes are A and B interleaved: DEST A, DEST B, GATE A, GATE B, SENS A, SENS B, VMIN A, VMIN B, VMAX A, VMAX B. DEST 0-15 is a track, 16 none.
+- **Fix (`feat/0.6-probes`):** the card takes each column from its byte and shows Dest as the track (T4) or -. The factory global now reads Gate 1, Sens 0, Vmin 0, Vmax 127, Dest -.
+- **Status:** fixed on `feat/0.6-probes`. Editing the card is wave 5.
+
 ## B-068 · Monomachine: an FX machine's input reads back as another (INP A for BUS AB)
 
 - **From:** the MM intent cases on the firmware (`mmDeskFirmwareTest <MM ROM> intentcases`, doc/release/DEV-CYCLE.md), 2026-10-11.
