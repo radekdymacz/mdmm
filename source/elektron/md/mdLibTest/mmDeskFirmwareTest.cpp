@@ -143,6 +143,8 @@ namespace
 					machinePattern = s->value;
 				else if(s && s->param == ed::MmStatus::Kit)
 					machineKit = s->value;
+				else if(s && s->param == ed::MmStatus::Global)
+					machineGlobal = s->value;
 				if(tap)
 					tap(_b);
 				if(!hw)
@@ -258,6 +260,7 @@ namespace
 		std::function<void(const Bytes&)> tap;	// every SysEx the machine sends, for a test's own read (patternInMemory)
 		int machinePattern = -1;	// the last status reply's pattern
 		int machineKit = -1;		// the last status reply's kit (B-053)
+		int machineGlobal = -1;		// the last status reply's active global (B-062)
 		size_t bytesSent = 0, dumpsSent = 0, ccsSent = 0;	// B-014: what the desk sent the machine
 		double ms() const { return m.now() * 1000.0 / g_rate; }
 
@@ -2679,6 +2682,17 @@ namespace
 		r.msg("{\"op\":\"globalSlot\",\"slot\":" + std::to_string(to) + "}");
 		r.run(3000);
 		check(r.desk->currentGlobal() == to && r.desk->global(static_cast<uint8_t>(to)).has_value(), "globalSlot: GLOBAL " + std::to_string(to + 1) + " is active, read");
+		// B-062: a dump on SYSEX RECV with GLOBAL 3 active: the RECV macro opens that global's EDIT menu (it pressed
+		// ENTER on whichever slot the SLOT screen's cursor was on, which made GLOBAL 6 active)
+		{
+			const auto p = static_cast<uint8_t>((std::max(0, r.desk->currentPattern()) + 9) % 128);
+			const auto len = r.desk->pattern(p) && r.desk->pattern(p)->length == 32 ? 48 : 32;
+			r.msg("{\"op\":\"length\",\"g\":7303,\"p\":" + std::to_string(p) + ",\"v\":" + std::to_string(len) + "}");
+			r.run(9000);
+			check(r.desk->pattern(p) && r.desk->pattern(p)->length == len, "a pattern edit on SYSEX RECV with GLOBAL " + std::to_string(to + 1) + " active reads back");
+			check(r.machineGlobal == to && r.desk->currentGlobal() == to, "and GLOBAL " + std::to_string(to + 1) + " stays active (the machine says GLOBAL "
+				+ std::to_string(r.machineGlobal + 1) + ", the desk " + std::to_string(r.desk->currentGlobal() + 1) + ")");
+		}
 		r.msg("{\"op\":\"globalSlot\",\"slot\":" + std::to_string(cur) + "}");
 		r.run(3000);
 		check(r.desk->currentGlobal() == cur, "and back to GLOBAL " + std::to_string(cur + 1));
@@ -3671,6 +3685,9 @@ namespace
 		settle(10000);
 		restore();
 		check(settle(60000), "the base documents are on the machine");
+		// the base global's MIDI channels are the machine's now: the desk sends no channel message for a while after they
+		// change (B-051, ChannelReach), and the first live cases would go as kit dumps
+		r.run(7000);
 		// what the machine kept of the base: the cases are compared against it (a field it keeps otherwise is a finding,
 		// said here, not a failure of every case)
 		{
@@ -3727,12 +3744,13 @@ namespace
 			}
 			// against what the machine held just before this case (a field an earlier case left otherwise, and the restore
 			// could not put back, is that case's finding, not this one's)
-			const auto want = ic::expected(before, c, problem);
+			auto want = ic::expected(before, c, problem);
 			if(!want)
 			{
 				check(false, name + ": " + problem);
 				continue;
 			}
+			ic::onMachine(*want, c);
 			const auto diff = ic::differences(ic::written(r.desk->documents()), ic::written(*want));
 			check(diff.empty() && settled, name + (settled ? "" : " (still waiting for the machine)") + diff);
 			same += diff.empty() && settled;
