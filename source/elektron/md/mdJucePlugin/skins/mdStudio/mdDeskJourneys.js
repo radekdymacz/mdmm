@@ -644,8 +644,13 @@ const MdJourneys = (() => {
 		name: "md-sampler-audition", needs: Journey.onScreen,
 		steps: [
 			go("sampler"),
-			{ say: "click a ROM slot's play key: it plays", act: async (u, c) => { const k = $all(".slotk.rom.has")[0]; if (!k) throw new Error("no ROM sample"); u.click(k); await sleep(400); results.length = 0; const b = $all("[data-aud]").find(x => !x.disabled); if (!b) throw new Error("no play key"); c.key = b.dataset.aud; u.click(b);
-				await until(() => results.some(r => r.heard === "audition" && r.state === "playing"), 4000); await sleep(30); c.shown = $all("[data-aud]").some(x => x.dataset.aud === c.key && x.getAttribute("aria-pressed") === "true"); },
+			{ say: "click a ROM slot's play key: it plays", act: async (u, c) => { const k = $all(".slotk.rom.has")[0]; if (!k) throw new Error("no ROM sample"); u.click(k); await sleep(400); results.length = 0; const b = $all("[data-aud]").find(x => !x.disabled); if (!b) throw new Error("no play key"); c.key = b.dataset.aud;
+				/* the key shown playing at any moment of the audition (a short sample may end before one read after it) */
+				const shown = () => $all("[data-aud]").some(x => x.dataset.aud === c.key && x.getAttribute("aria-pressed") === "true");
+				c.shown = false; const watch = new MutationObserver(() => { if (shown()) c.shown = true; });
+				watch.observe(document.body, { attributes: true, attributeFilter: ["aria-pressed"], childList: true, subtree: true });
+				try { u.click(b); await until(() => results.some(r => r.heard === "audition" && r.state === "playing"), 4000); await sleep(30); if (shown()) c.shown = true; }
+				finally { watch.disconnect(); } },
 				machine: () => ok(results.some(r => r.heard === "audition" && r.state === "playing"), "no audition"), screen: c => ok(c.shown, "the play key was not shown playing") }
 		],
 		async tidy() { if (typeof Aud !== "undefined" && Aud) cmd("auditionStop", {}); }
