@@ -14,7 +14,8 @@
    and at the end "JOURNEYS DONE <passed>/<run>". The editors' pages pass their journeys and a ready test
    (mdDeskJourneys.js, mmJourneys.js). Chosen by ?selftest=journey (all) or journey-<names>: comma-separated,
    * matches any run of characters (journey-seq-*, journey-md-seq-first-beat,md-mix-*); "@k/n" after either takes every
-   n-th of those, from the k-th (journey@2/4: scripts/mdmm-journeys.sh --jobs 4 gives each of its editors a share).
+   n-th of those, from the k-th (journey@2/4: scripts/mdmm-journeys.sh --jobs 4 gives each of its editors a share);
+   "~<tiers>" before it keeps the journeys of those tiers (journey~host, journey-seq-*~page; TIERS below).
    Demos (doc/modern-ux/DEMO-VIDEOS.md) are journeys too, played for a camera: ?selftest=demo-<names> (demo-md-*) runs
    them through Journey.demo at a person's pace, with a drawn pointer that glides to each control and rings on a click,
    and a key cap for each key. A step may also have caption (a line for the video, logged with its time) and hold (ms
@@ -219,6 +220,28 @@ const Journey = (() => {
 		choose(q, value) { const e = el(q); e.focus(); e.value = String(value); e.dispatchEvent(new Event("input", { bubbles: true })); e.dispatchEvent(new Event("change", { bubbles: true })); }
 	};
 
+	/* ---------- where each journey runs (doc/release/DEV-CYCLE.md) ---------- */
+	/* Every journey has a tier, as data, by its name without "md-" / "mm-" (both editors share the names):
+	     page     the default: the page and the documents only. Its "machine" checks read the documents, which the core
+	              answers (decision 2026-10-11: the firmware's side is proven by the command -> firmware tests and the
+	              machine journeys), so it runs in the page tier (scripts/mdmm-page.mjs: headless Chrome, a stub host)
+	     machine  needs the firmware or the native editor: boot, playing, recording, the sampler, SysEx and file drops,
+	              the engine and ROM cards, real OS keys, the audio panel, WebKit's own layout
+	     host     a machine journey that also depends on the plug-in host (standalone or VST3): the only ones the VST3
+	              host runs (decision 2026-10-11) */
+	const TIERS = {
+		host: ["boot-card", "keys-space-play", "seq-os-copy-paste", "keys-os-help", "dev-speedups", "top-cpu-meter", "lcd-volume",
+			"top-editor-menu", "engine-rom-card", "song-playhead"],
+		machine: ["seq-first-beat", "seq-queue-while-playing", "seq-live-record", "seq-grid-record", "sampler-setup-undo", "sampler-audition",
+			"sampler-ram-view", "sampler-setup-chop", "lib-syx-import", "lib-syx-import-mute", "song-mode", "keys-play-notes", "keys-black-keys",
+			"perform-keyboard", "engine-hw-no-machine", "global-tempo-out", "audio-panel", "drop-syx", "drop-sample", "old-webkit",
+			"sound-machine-stays", "shots", "shots-cpu", "shots-global", "shots-import", "shots-menu", "shots-song", "shots-sound", "shots-views"]
+	};
+	const tierOf = j => j.tier || Object.keys(TIERS).find(k => TIERS[k].includes(j.name.replace(/^(md|mm)-/, ""))) || "page";
+	/* a selector's "~tiers" (journey~page, journey-seq-*~machine): page; machine (machine and host); host; any of
+	   several joined by "+" */
+	const inTier = (j, want) => want.split("+").some(w => w === "machine" ? tierOf(j) !== "page" : tierOf(j) === w);
+
 	/* ---------- the runner ---------- */
 	/* the journeys (what: "journey") or demos ("demo") this page was asked for: null when none */
 	function wanted(all, what = "journey") {
@@ -228,7 +251,10 @@ const Journey = (() => {
 		   from the k-th, so the n editors share them without a list of names */
 		const shard = kind.match(/@(\d+)\/(\d+)$/);
 		if (shard) kind = kind.slice(0, shard.index);
-		const take = list => shard ? list.filter((_, i) => i % +shard[2] === +shard[1] - 1) : list;
+		/* "~tiers" before it: only the journeys of those tiers */
+		const tier = kind.match(/~([a-z+]+)$/);
+		if (tier) kind = kind.slice(0, tier.index);
+		const take = list => { if (tier) list = list.filter(j => inTier(j, tier[1])); return shard ? list.filter((_, i) => i % +shard[2] === +shard[1] - 1) : list; };
 		if (kind === what) return take(all);
 		const pats = kind.slice(what.length).replace(/^-/, "").split(",").filter(Boolean).map(p => new RegExp("^" + p.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") + "$"));
 		/* a name matches whole, or without its "demo-" and its "md-"/"mm-" (demo-md-groove: md-groove, groove) */
@@ -681,5 +707,5 @@ const Journey = (() => {
 			{ name: `${prefix}-shots-views`, needs: () => location.search.includes(`${prefix}-shots`) ? null : "screenshots only when asked by name", steps: views.map(v => step(v, true)) }
 		];
 	}
-	return { run, demo, ok, sleep, until, u, onScreen, osKeyPath, menu, editorMenuJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, snapshot, safari15Diff, viewJourneys };
+	return { run, demo, ok, sleep, until, u, TIERS, tierOf, onScreen, osKeyPath, menu, editorMenuJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, snapshot, safari15Diff, viewJourneys };
 })();
