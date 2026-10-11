@@ -86,7 +86,7 @@ APP = ['mdDeskApp.js', 'mdDeskSoundGroups.js', 'mdDeskTop.js', 'mdDeskSeq.js', '
        'mdDeskSampler.js', 'mdDeskSong.js', 'mdDeskPicker.js', 'mdDeskControl.js', 'mdDeskGenUi.js', 'mdDeskComforts.js', 'mdDeskSelect.js', 'mdDeskRom.js',
        'mdDeskGestures.js', 'mdDeskRender.js']
 SCRIPTS = ['deskModal.js', 'deskMenu.js', 'deskCaps.js', 'deskBoot.js', 'deskSyx.js', 'deskBridge.js', 'deskDrop.js',
-           'deskZoom.js', 'deskAbout.js', 'deskDocs.js', 'deskOverlay.js', 'mdDeskModel.js', 'deskGen.js',
+           'deskZoom.js', 'deskAbout.js', 'deskCpu.js', 'deskDocs.js', 'deskOverlay.js', 'mdDeskModel.js', 'deskGen.js',
            'mdDeskGen.js', 'deskGenBar.js', 'deskSoundLayout.js',
            'deskKeys.js', 'deskKeyView.js', 'mdDeskKeys.js', 'mdDeskMod.js', 'deskTogglePaint.js', 'deskSelect.js'] + APP + ['mdDeskLive.js', 'mdDeskLibrary.js', 'deskGlobal.js', 'mdDeskGlobal.js', 'deskAudio.js', 'mdDeskAudio.js',
            'deskAudioSelfTest.js', 'mdDeskSelfTest.js', 'deskJourney.js', 'mdDeskJourneys.js']

@@ -2346,11 +2346,45 @@ body.dockother #rail .railparams>:is(.lpspace,.pagetabs,.pkcol),body.dockother #
 .th.selt{box-shadow:inset 3px 0 0 var(--print)}
 .th.selt.marked{box-shadow:inset 3px 0 0 var(--print),inset 0 0 0 2px var(--led)}
 .lcdsec button.onsel{opacity:1;text-decoration:underline;text-underline-offset:2px}
+/* I-018: the CPU meter beside the version (skins/shared/deskCpu.js, loaded by the plug-in's page) */
+/* I-018: the CPU meter beside the version in the Setup group's label (deskCpu.js), both editors. Only the page's own
+   ink and plate (--print --plate --plate3 --mono: light and dark, MK1 and MK2 alike), never a warning colour: a block
+   over its budget shows by the bar's shape (thicker edge, hatched fill). The number shows on hover and while the details
+   are open, over the bar, so the label never moves. Plain colours only (no colour mixing, no parent selector: an older
+   WebKit, deskCompat.js). The details are a menu (deskModal.css .deskmenu). */
+.grplabel .cpumeter{all:unset;box-sizing:border-box;position:relative;display:inline-flex;align-items:center;gap:3px;margin-left:.5em;padding:0 1px;height:13px;cursor:pointer;
+ font:500 9px/1 var(--mono,ui-monospace,monospace);letter-spacing:0;text-transform:none;color:var(--print);white-space:nowrap;border-radius:2px}
+.grplabel .cpumeter:focus-visible{outline:2px solid var(--print);outline-offset:1px}
+.grplabel .cpumeter .cpulab{opacity:.7;letter-spacing:.06em}
+.grplabel .cpumeter .cpubar{position:relative;display:inline-block;width:24px;height:6px;border:1px solid var(--print);border-radius:1px;overflow:hidden;background:var(--plate3)}
+.grplabel .cpumeter .cpufill{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--print);opacity:.5;transition:width .2s linear}
+.grplabel .cpumeter .cpuworst{position:absolute;top:0;bottom:0;width:1px;margin-left:-1px;left:0;background:var(--print)}
+.grplabel .cpumeter .cpuworst[hidden]{display:none}
+.grplabel .cpumeter .cpuval{display:none;position:absolute;right:0;top:15px;z-index:5;padding:2px 4px;border:1px solid var(--print);border-radius:2px;background:var(--plate);
+ color:var(--print);font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:0;pointer-events:none}
+.grplabel .cpumeter:hover .cpuval,.grplabel .cpumeter.open .cpuval,.grplabel .cpumeter:focus-visible .cpuval{display:block}
+.grplabel .cpumeter[data-level="high"] .cpufill{opacity:.8}
+.grplabel .cpumeter[data-level="over"] .cpubar{border-width:2px;height:8px}
+.grplabel .cpumeter[data-level="over"] .cpufill{opacity:1;background:repeating-linear-gradient(135deg,var(--print) 0 2px,var(--plate3) 2px 3px)}
+.grplabel .cpumeter[data-level="idle"] .cpubar{opacity:.4}
+.grplabel .cpumeter[data-level="idle"] .cpuval{letter-spacing:.06em}
+.deskmenu .cpupanel .mnote{opacity:.85;white-space:normal}
+@media (prefers-reduced-motion:reduce){.grplabel .cpumeter .cpufill{transition:none}}
+/* I-018: the top bar fits at 1280 CSS px (both editors): below 1400 px the workspace and Setup keys are narrower and the
+   LCD's second row is tighter, so every Setup key (UNDO REDO GLOBAL MKI/MKII) stays in the window. 1440 px and wider: as
+   designed. Plain values only (an older WebKit, deskCompat.js). */
+@media (max-width:1400px){
+#tabs button{min-width:50px!important;padding-left:7px!important;padding-right:7px!important}
+.setkeys button{min-width:40px!important;padding-left:7px!important;padding-right:7px!important}
+.row2 .lcd2{gap:5px!important;padding:0 5px!important}
+.syncf{padding:0 5px!important;width:calc(8ch + 21px)!important}
+.row2 .lcdsec{padding:0 4px!important}
+}
 </style>
 <div class="app">
   <header class="top">
     <div class="left">
-      <div class="brand" aria-label="Monomachine Editor"><b>MONOMACHINE</b><small class="ed">Editor</small></div>
+      <div class="brand" aria-label="Monomachine Editor" title="Monomachine Editor"><b>MM</b><small class="ed">Editor</small></div>
     <div class="wsgroup"><span class="grplabel">Workspace</span>
     <nav class="tabs" role="tablist" id="tabs">
       <button role="tab" data-ws="seq"><i class="led"></i><span>Sequence</span><small>1</small></button>

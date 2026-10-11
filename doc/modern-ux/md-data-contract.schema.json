@@ -1828,6 +1828,76 @@
         },
         {
           "type": "object",
+          "description": "I-018: the CPU meter in the top bar, a few times a second while the page is up: the share of each audio block's real-time budget the host's processBlock call spends (load: smoothed over about half a second; worst: the largest single block in the last 3 s; 1 = the whole budget; null unless running), whether the host runs the audio (state: none before the first block, stopped when blocks stopped coming, bypassed, offline while it renders), and the popover's details: the machine's speed (realtime), the host's rate and block size, the speed-ups as the machine runs them (on, off, some: leversOff names the ones off; unknown with no machine), L3 (exactEssi) and whether the editor runs translated (Rosetta).",
+          "required": ["type", "state", "load", "worst", "realtime", "sampleRate", "blockSize", "plugin", "speedUps", "leversOff", "exactEssi", "translated", "arch", "saved"],
+          "properties": {
+            "type": {
+              "const": "cpuLoad"
+            },
+            "state": {
+              "enum": ["none", "running", "stopped", "bypassed", "offline"]
+            },
+            "load": {
+              "type": ["number", "null"],
+              "minimum": 0
+            },
+            "worst": {
+              "type": ["number", "null"],
+              "minimum": 0
+            },
+            "realtime": {
+              "type": ["number", "null"],
+              "minimum": 0
+            },
+            "sampleRate": {
+              "type": "number",
+              "minimum": 0
+            },
+            "blockSize": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "plugin": {
+              "type": "boolean"
+            },
+            "speedUps": {
+              "enum": ["on", "off", "some", "unknown"]
+            },
+            "leversOff": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "exactEssi": {
+              "type": "boolean"
+            },
+            "translated": {
+              "type": "boolean"
+            },
+            "arch": {
+              "type": "string"
+            },
+            "saved": {
+              "type": "object",
+              "description": "The speed-up switches as saved in the plug-in's settings (what the next session starts with): legacyEmulation (the speed-ups off), leversOff (by their environment variable's suffix).",
+              "required": ["legacyEmulation", "leversOff"],
+              "properties": {
+                "legacyEmulation": {
+                  "type": "boolean"
+                },
+                "leversOff": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
           "description": "B-035: how the host runs the plug-in's audio, once a second while the machine starts and for the first minute: the host's audio calls (blocks, bypassed ones apart) and the machine's speed (realtime: machine seconds per wall second, null before the first block). The start-up card says when a plug-in gets no audio, or the machine is slower than real time.",
           "required": ["type", "plugin", "seconds", "blocks", "bypassed", "blocksPerSecond", "realtime"],
           "properties": {

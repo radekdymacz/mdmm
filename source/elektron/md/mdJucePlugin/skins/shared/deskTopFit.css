@@ -1,0 +1,10 @@
+/* I-018: the top bar fits at 1280 CSS px (both editors): below 1400 px the workspace and Setup keys are narrower and the
+   LCD's second row is tighter, so every Setup key (UNDO REDO GLOBAL MKI/MKII) stays in the window. 1440 px and wider: as
+   designed. Plain values only (an older WebKit, deskCompat.js). */
+@media (max-width:1400px){
+#tabs button{min-width:50px!important;padding-left:7px!important;padding-right:7px!important}
+.setkeys button{min-width:40px!important;padding-left:7px!important;padding-right:7px!important}
+.row2 .lcd2{gap:5px!important;padding:0 5px!important}
+.syncf{padding:0 5px!important;width:calc(8ch + 21px)!important}
+.row2 .lcdsec{padding:0 4px!important}
+}
