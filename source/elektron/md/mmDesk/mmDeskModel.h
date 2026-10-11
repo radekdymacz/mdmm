@@ -141,10 +141,12 @@ namespace mmDesk
 		std::optional<elektronData::json::Value> songRow;	// a contract row
 		std::optional<elektronData::MmKit> kit;				// the kit library
 		std::optional<elektronData::MmPattern> pattern;		// the pattern library
+		std::optional<elektronData::MmSong> song;			// the song slots (0.6)
 
 		bool operator==(const Clipboard& _o) const
 		{
-			return steps == _o.steps && sound == _o.sound && songRow == _o.songRow && kit == _o.kit && pattern == _o.pattern;
+			return steps == _o.steps && sound == _o.sound && songRow == _o.songRow && kit == _o.kit && pattern == _o.pattern
+				&& song == _o.song;
 		}
 	};
 
@@ -181,6 +183,11 @@ namespace mmDesk
 	// transposes and kit link stay). What the machine's own CLEAR leaves is not known.
 	elektronData::MmKit emptyKit(const elektronData::MmKit& _like, uint8_t _slot);
 	elektronData::MmPattern emptyPattern(const elektronData::MmPattern& _like);
+	// The song slots (songClear): the END row alone and no name. A slot the library shows as empty: no name (or the
+	// firmware's unused mark) and no row but END. A song's name as text.
+	elektronData::MmSong emptySong(const elektronData::MmSong& _like, uint8_t _slot);
+	bool songIsEmpty(const elektronData::MmSong& _song);
+	std::string songNameText(const elektronData::MmSong& _song);
 	// A slot the library shows as empty: a kit without a name (or the firmware's unused mark), a pattern without a trig.
 	bool kitIsEmpty(const elektronData::MmKit& _kit);
 	bool patternHasTrigs(const elektronData::MmPattern& _pattern);
