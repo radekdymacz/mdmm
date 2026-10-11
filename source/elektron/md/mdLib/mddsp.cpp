@@ -119,6 +119,9 @@ namespace md
 		// Compile the idle fast-forward call into NOP-only DO loop bodies (the silent-voice stubs). Whether it skips
 		// anything is the speed-ups switch's (L4, Hardware::setSpeedUps); off, the call returns at once.
 		config.nopLoopFastForward = true;
+		// The Machinedrum's dues are mostly instruction counts (without L3): its NOP-loop gate tests that target too
+		// (SpeedUpLever::NopGate). The Monomachine's are exact cycle deadlines: the extra test would only cost.
+		config.nopLoopGateInstructions = !m_hardware.isMonomachine();
 		// And into the blocks that poll a DMA register in a loop of their own (JitBlock::isIdlePollLoop: the MM's
 		// p:17f and p:18d, the MD's jset #23,x:DCR0,* at p:cf). Same switch.
 		config.pollLoopFastForward = true;

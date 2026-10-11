@@ -499,6 +499,11 @@ namespace md
 #endif
 	}
 
+	bool Microcontroller::lastInstructionWasSelfBranch() const
+	{
+		return getCpuState()->ir == 0x60fe;
+	}
+
 	void Microcontroller::advanceIdleSelfBranch(const uint32_t _instructions)
 	{
 		// The qualified branch changes no registers or memory. Its previous
