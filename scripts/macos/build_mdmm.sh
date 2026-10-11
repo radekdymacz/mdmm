@@ -11,6 +11,8 @@ output_dir_input="${3:-${source_dir}/artifacts/macos-mdmm-universal}"
 build_dir="$(python3 -c 'import pathlib, sys; print(pathlib.Path(sys.argv[1]).resolve())' "${build_dir_input}")"
 output_dir="$(python3 -c 'import pathlib, sys; print(pathlib.Path(sys.argv[1]).resolve())' "${output_dir_input}")"
 require_firmware_tests="${GEARMULATOR_REQUIRE_FIRMWARE_TESTS:-1}"
+# 0: the package only, no unit or plug-in tests (CI's package job; its test job runs them). Firmware tests need them.
+package_tests="${GEARMULATOR_MDMM_PACKAGE_TESTS:-1}"
 md_firmware_bin="${GEARMULATOR_MD_FIRMWARE_BIN:-}"
 mm_firmware_bin="${GEARMULATOR_MM_FIRMWARE_BIN:-}"
 release_architectures_input="${GEARMULATOR_MDMM_MACOS_ARCHITECTURES:-arm64;x86_64}"
@@ -94,6 +96,10 @@ python3 "${script_dir}/write_mdmm_receipt.py" \
   --validate-output-root "${output_dir_input}"
 if [[ "${require_firmware_tests}" != "0" && "${require_firmware_tests}" != "1" ]]; then
   echo "GEARMULATOR_REQUIRE_FIRMWARE_TESTS must be 0 or 1" >&2
+  exit 2
+fi
+if [[ "${package_tests}" != "0" && "${package_tests}" != "1" ]] || [[ "${package_tests}" == "0" && "${require_firmware_tests}" == "1" ]]; then
+  echo "GEARMULATOR_MDMM_PACKAGE_TESTS must be 0 or 1, and 1 when the firmware tests are required" >&2
   exit 2
 fi
 if [[ "${require_firmware_tests}" == "1" ]]; then
@@ -209,45 +215,15 @@ cmake --build "${build_dir}" --parallel 4 --target \
   mdJucePlugin_Standalone \
   mmJucePlugin_Standalone \
   pluginTester \
-  latency_host \
-  baseLibBinaryStreamTest \
-  synthLibAudioTest \
-  synthLibMidiQueueTest \
-  mdLibTest \
-  mdStateTest \
-  mdStateCaptureTest \
-  synthLibStateCaptureTest \
-  mdMemoryFastLaneTest \
-  mdFlashTest \
-  mdUwFirmwareTest \
-  mdAudioQueueTest \
-  mdAudioFirmwareTest \
-  mdAudioIoLayoutTest \
-  mdProcessorHooksTest \
-  mdWindowsPolicyTest \
-  mdMachineMidiOutTest \
-  mdProcessArchTest \
-  mdRosettaNoticeTest \
-  mdDroppedFilesTest \
-  mdWebFileDropTest \
-  mdProjectStateRestoreTest \
-  mdAudioProbePlugin_VST3 \
-  vst3ProgramChangeTest \
-  mdProgramChangeProbe_VST3 \
-  mdStandaloneRendererPolicyTest \
-  mdPanelRenderingTest \
-  juceRmlMouseInputTest \
-  mdFrontPanelPresentationTest \
-  mdFirmwareImageTest \
-  mc68kColdFireDivideTest
+  latency_host
 
-HOME="${build_runtime_home}" GEARMULATOR_DATA_ROOT="${build_runtime_data}" \
-cmake --build "${build_dir}" --parallel 4 --target \
-  midiOutputDispatcherTest \
-  mdAutomationMidiTest \
-  mdAutomationParameterTest \
-  mdProgramChangeFirmwareTest \
-  mdAutomationRobustnessTest
+# The unit and plug-in tests (scripts/macos/mdmm_unit_tests.sh, the list CI's test job runs too). CI's package job
+# leaves them out (GEARMULATOR_MDMM_PACKAGE_TESTS=0): its test job builds them on arm64 without ThinLTO, in parallel,
+# so the package's ThinLTO links are the plug-ins' only (doc/release/DEV-CYCLE.md).
+if [[ "${package_tests}" == "1" ]]; then
+  HOME="${build_runtime_home}" GEARMULATOR_DATA_ROOT="${build_runtime_data}" \
+    GEARMULATOR_REQUIRE_FIRMWARE_TESTS="${require_firmware_tests}" "${script_dir}/mdmm_unit_tests.sh" "${build_dir}"
+fi
 
 if [[ "${require_firmware_tests}" == "1" ]]; then
   HOME="${build_runtime_home}" GEARMULATOR_DATA_ROOT="${build_runtime_data}" \
@@ -255,47 +231,6 @@ if [[ "${require_firmware_tests}" == "1" ]]; then
     mdAutomationFirmwareTest \
     mdAutomationSoakTest
 fi
-
-# deskDropPageTest runs under node: CMake registers it only when node is on the PATH, and the loop fails without it.
-for test_name in \
-  baseLibBinaryStreamTest \
-  synthLibAudioTest \
-  synthLibMidiQueueTest \
-  mdLibTests \
-  mdStateTest \
-  mdStateCaptureTest \
-  synthLibStateCaptureTest \
-  mdMemoryFastLaneTest \
-  mdFlashTest \
-  mdStandaloneRendererPolicyTest \
-  mdPanelRenderingTest \
-  juceRmlMouseInputTest \
-  mdFrontPanelPresentationTests \
-  mdAudioQueueTest \
-  mdAudioIoLayoutTest \
-  mdProcessorHooksTest \
-  mdWindowsPolicyTest \
-  mdMachineMidiOutTest \
-  mdProcessArchTest \
-  mdRosettaNoticeTest \
-  mdDroppedFilesTest \
-  mdWebFileDropTest \
-  deskDropPageTest \
-  mdAudioProbePluginVST3IdentityTest \
-  mdVst3ProgramChangeTest \
-  mdVst3ProgramChangeOptOutTest \
-  mdJucePlugin_VST3ProgramChangeTest \
-  mmJucePlugin_VST3ProgramChangeTest \
-  mdFirmwareImageTest \
-  mc68kColdFireDivideTest \
-  midiOutputDispatcherTest \
-  mdAutomationMidiTest \
-  mdAutomationParameterTest \
-  mdAutomationArchitectureTest; do
-  HOME="${build_runtime_home}" GEARMULATOR_DATA_ROOT="${build_runtime_data}" \
-    ctest --test-dir "${build_dir}" -C Release --output-on-failure \
-      --no-tests=error --tests-regex "^${test_name}$"
-done
 
 if [[ "${require_firmware_tests}" == "1" ]]; then
   HOME="${build_runtime_home}" GEARMULATOR_DATA_ROOT="${build_runtime_data}" \
@@ -322,11 +257,6 @@ if [[ "${require_firmware_tests}" == "1" ]]; then
     ctest --test-dir "${build_dir}" -C Release --output-on-failure \
       --no-tests=error \
       --tests-regex '^(mdAutomationFirmwareTest|mdProgramChangeFirmwareTest|mdAutomationRobustnessTest|mdAutomationSoakTest)$'
-else
-  HOME="${build_runtime_home}" GEARMULATOR_DATA_ROOT="${build_runtime_data}" \
-    ctest --test-dir "${build_dir}" -C Release --output-on-failure \
-      --no-tests=error \
-      --tests-regex '^(mdUwFirmwareTest|mdAudioFirmwareTest)$'
 fi
 
 # Private fixtures are no longer needed after the firmware-backed executables
@@ -493,6 +423,7 @@ python3 "${script_dir}/write_mdmm_receipt.py" \
   --allow-untracked-root "${archive}" \
   --allow-untracked-root "${output_dir}/.gearmulator-mdmm-release-root" \
   --firmware-tests-required "${require_firmware_tests}" \
+  --tests-run "${package_tests}" \
   --build-cache "${build_dir}/CMakeCache.txt" \
   "${expected_architecture_args[@]}" \
   --expected-products-root "${build_dir}/products" \

@@ -27,7 +27,8 @@
 # <preview>/<machine>/roms), MDMM_GATE_PREVIEW (default ~/Documents/Gearmulator Preview), MDMM_GATE_MD_CACHE (the
 # Machinedrum factory cache), MDMM_GATE_MM_PATCH (the Monomachine factory patch RAM), MDMM_GATE_FIXTURES (the SysEx
 # fixtures, default <preview>/fixtures/sysex), MDMM_GATE_JOBS (build jobs), MDMM_GATE_GOLDEN_JOBS (golden runs at
-# once), MDMM_GATE_JOURNEY_ARGS (options for mdmm-journeys.sh, default --host both --background),
+# once), MDMM_GATE_JOURNEY_ARGS (options for mdmm-journeys.sh, default --host both --jobs 4 --tier machine), MDMM_GATE_CCACHE=0 (stage 1
+# without ccache),
 # MDMM_GATE_COMPONENTS_DIR (where the AU bundles are installed), MDMM_GATE_SOAK_SECONDS (6c, default 600),
 # MDMM_GATE_SOAK_WARMUP (seconds not judged, default 30), MDMM_GATE_SOAK_LOCK_US (a synth lock wait that fails it,
 # default 1000), MDMM_GATE_ALLOW_UNMUTED=1 (run 7d although the output cannot be muted), MDMM_GATE_SCENARIOS (extra
@@ -95,8 +96,9 @@ FIXTURES="${MDMM_GATE_FIXTURES:-${PREVIEW}/fixtures/sysex}"
 GOLDENS="${MDMM_GATE_GOLDENS:-${ROOT}/source/elektron/md/mdLibTest/goldens/mdmm-goldens.json}"
 GATE_MIN_SCENARIOS="md-busy md-factory md-song mm-a01 mm-busy mm-song"	# a goldens file must cover at least these
 JOBS="${MDMM_GATE_JOBS:-$(sysctl -n hw.ncpu 2>/dev/null || echo 4)}"
-# --background: the standalone's output is zeroed (silence)
-JOURNEY_ARGS="${MDMM_GATE_JOURNEY_ARGS:---host both --background}"
+# four editors at once (--jobs implies --background: the standalone's output is zeroed, silence); the standalone runs the
+# machine journeys (the page journeys are stage 2c's, decision 2026-10-11), the VST3 host the host journeys only
+JOURNEY_ARGS="${MDMM_GATE_JOURNEY_ARGS:---host both --jobs 4 --tier machine}"
 SOAK_SECONDS="${MDMM_GATE_SOAK_SECONDS:-600}"
 SOAK_WARMUP="${MDMM_GATE_SOAK_WARMUP:-30}"
 SOAK_LOCK_US="${MDMM_GATE_SOAK_LOCK_US:-1000}"
@@ -129,6 +131,7 @@ AU_INSTALLED=(); AU_ASIDE=(); AU_ACTIVE=0; AU_PROBLEM=""
 
 au_swap_in() {	# put this build's AU bundles where macOS looks, the owner's own set aside until au_swap_out
 	local name built installed
+	[ "${AU_ACTIVE}" = 1 ] && return 0	# in already (held for the run's parallel part, AU_HELD)
 	if [ -d "${AU_SWAP_DIR}" ] && [ -n "$(ls -A "${AU_SWAP_DIR}" 2>/dev/null)" ]; then
 		AU_PROBLEM="${AU_SWAP_DIR} still holds components an earlier run set aside (it was killed): move them back"
 		AU_PROBLEM+=" into ${COMPONENTS} by hand, then run again"
@@ -154,8 +157,12 @@ au_swap_in() {	# put this build's AU bundles where macOS looks, the owner's own 
 	return 0
 }
 
+# AU_HELD=1: a full run swaps once for lane 1 (stage 2's AU tests) and 7b-7c, which run at the same time; the stages'
+# own au_swap_out then does nothing, and the run (or the exit) puts the owner's components back
+AU_HELD=0
 au_swap_out() {	# remove what au_swap_in installed, put the owner's own back. Safe to call twice
 	[ "${AU_ACTIVE}" = 1 ] || return 0
+	[ "${AU_HELD}" = 1 ] && [ "${1:-}" != release ] && return 0
 	local item
 	for item in ${AU_INSTALLED[@]+"${AU_INSTALLED[@]}"}; do rm -rf "${item}"; done
 	for item in ${AU_ASIDE[@]+"${AU_ASIDE[@]}"}; do
@@ -179,7 +186,7 @@ on_exit() {
 	local status=$?
 	trap - EXIT
 	kill_descendants $$
-	au_swap_out
+	au_swap_out release
 	output_restore
 	if [ "${FINISHED}" != 1 ]; then
 		info_set aborted 1
@@ -257,6 +264,17 @@ stage_build() {
 	else
 		flags+=(-Dgearmulator_BUILD_JUCEPLUGIN=ON -Dgearmulator_BUILD_JUCEPLUGIN_VST3=ON
 			-Dgearmulator_BUILD_JUCEPLUGIN_AU=ON -Dgearmulator_BUILD_JUCEPLUGIN_Standalone=ON)
+	fi
+	# ccache when it is installed (MDMM_GATE_CCACHE=0: off): the compiles of a tree built before come from the cache
+	# (scripts/mdmm-dev.sh's settings: paths relative to the checkout); the ThinLTO links still run
+	if [ "${MDMM_GATE_CCACHE:-1}" = 1 ] && command -v ccache > /dev/null 2>&1; then
+		local launcher
+		launcher="/usr/bin/env;CCACHE_BASEDIR=${ROOT};CCACHE_SLOPPINESS=include_file_mtime,include_file_ctime,time_macros,pch_defines;CCACHE_COMPILERCHECK=%compiler% -v;$(command -v ccache)"
+		flags+=(-DCMAKE_C_COMPILER_LAUNCHER="${launcher}" -DCMAKE_CXX_COMPILER_LAUNCHER="${launcher}"
+			-DCMAKE_OBJC_COMPILER_LAUNCHER="${launcher}" -DCMAKE_OBJCXX_COMPILER_LAUNCHER="${launcher}")
+		info_set ccache 1
+	else
+		flags+=(-DCMAKE_C_COMPILER_LAUNCHER= -DCMAKE_CXX_COMPILER_LAUNCHER= -DCMAKE_OBJC_COMPILER_LAUNCHER= -DCMAKE_OBJCXX_COMPILER_LAUNCHER=)
 	fi
 	# JUCE runs each VST3 while it builds it: that load gets a data root inside the build tree (no ROM in it).
 	mkdir -p "${home}/Documents"
@@ -372,24 +390,32 @@ direct_run() {	# <label> <timeout> <ERE the log must match> <command...>: one fi
 stage_direct() {
 	stage_begin "2b" "Firmware tests ctest cannot run"
 	have_roms both || { stage_end FAIL "" "${MISSING_WHAT}"; return; }
-	sandbox_new direct
-	local bad=0 notes="" tool
+	local bad=0 notes="" tool mmtool mdtool
 	# mmDeskFirmwareTest has a ctest entry, but its 400 s limit is too short and without -DGEARMULATOR_MM_ROM it only
-	# skips; mdDeskFirmwareTest is its Machinedrum twin and has none. Both end with a "PASS (n failure...)" line.
-	tool="$(find_tool mmDeskFirmwareTest)"
-	if [ -n "${tool}" ]; then
-		direct_run mmDeskFirmwareTest 3600 '^PASS \(0 failures\)' "${tool}" "${MM_ROM}" || bad=1
-	else
-		DIRECT_NOTE="mmDeskFirmwareTest not built"; bad=1
-	fi
-	notes="${DIRECT_NOTE}"
-	tool="$(find_tool mdDeskFirmwareTest)"
-	if [ -n "${tool}" ]; then
-		direct_run mdDeskFirmwareTest 3600 '^mdDeskFirmwareTest: PASS \(0 failure\(s\)\)' "${tool}" "${MD_ROM}" || bad=1
-	else
-		DIRECT_NOTE="mdDeskFirmwareTest not built"; bad=1
-	fi
-	notes="${notes}; ${DIRECT_NOTE}"
+	# skips; mdDeskFirmwareTest is its Machinedrum twin and has none. Both end with a "PASS (n failure...)" line. The two
+	# run at once, each in a sandbox of its own (their result and note in a file: a subshell's variables stay there).
+	mmtool="$(find_tool mmDeskFirmwareTest)"; mdtool="$(find_tool mdDeskFirmwareTest)"
+	(
+		sandbox_new direct-mm
+		if [ -n "${mmtool}" ]; then direct_run mmDeskFirmwareTest 3600 '^PASS \(0 failures\)' "${mmtool}" "${MM_ROM}"; s=$?
+		else DIRECT_NOTE="mmDeskFirmwareTest not built"; s=1; fi
+		printf '%s\t%s\n' "${s}" "${DIRECT_NOTE}" > "${OUT}/logs/2b-mm.result"
+	) &
+	local mmpid=$!
+	(
+		sandbox_new direct-md
+		if [ -n "${mdtool}" ]; then direct_run mdDeskFirmwareTest 3600 '^mdDeskFirmwareTest: PASS \(0 failure\(s\)\)' "${mdtool}" "${MD_ROM}"; s=$?
+		else DIRECT_NOTE="mdDeskFirmwareTest not built"; s=1; fi
+		printf '%s\t%s\n' "${s}" "${DIRECT_NOTE}" > "${OUT}/logs/2b-md.result"
+	) &
+	wait "${mmpid}" $!
+	local s note
+	for m in mm md; do
+		IFS=$'\t' read -r s note < "${OUT}/logs/2b-${m}.result" 2> /dev/null || { s=1; note="${m}DeskFirmwareTest: no result"; }
+		[ "${s}" = 0 ] || bad=1
+		notes="${notes:+${notes}; }${note}"
+	done
+	sandbox_new direct
 	tool="$(find_tool mdSysexLifecycleTest)"
 	if [ -z "${tool}" ]; then
 		if [ "${QUICK}" = 1 ]; then
@@ -833,15 +859,33 @@ stage_pluginval() {
 	fi
 }
 
+# The journeys need the page's self-tests, which only a diagnostics build has (-Dgearmulator_MDMM_DIAGNOSTICS=ON):
+# scripts/mdmm-dev.sh builds one in its own tree, its products kept out of the checkout's bin/. Lane 2 of the gate: it
+# starts in the background (niced, half the cores) as soon as the release tree is built, while lane 1 runs that tree's
+# stages; stage 7d waits for it. DIAG_PID: the build's process, DIAG_STATUS its file (the exit status once done).
+DIAG_PID=""; DIAG_STATUS="${OUT}/logs/7d-diagnostics-build.status"
+journeys_build_start() {
+	local build_log="${LOG_DIR}/7d-diagnostics-build.log"
+	rm -f "${DIAG_STATUS}"
+	( gate_run --timeout 7200 --log "${build_log}" -- MDMM_DEV_BUILD="${DIAG_BUILD}" MDMM_DEV_JOBS="$(( (JOBS + 1) / 2 ))" \
+		MDMM_DEV_ARGS="-DGEARMULATOR_JUCE_PRODUCTS_ROOT=${DIAG_BUILD}/products" nice -n 10 "${DEV_CMD}" build
+	  echo $? > "${DIAG_STATUS}" ) > /dev/null 2>&1 &
+	DIAG_PID=$!
+	echo "    lane 2: the journeys' diagnostics build started in the background (log ${build_log})"
+}
+journeys_build_wait() {	# 0 when the diagnostics build is there (started now when it was not)
+	[ -n "${DIAG_PID}" ] || journeys_build_start
+	wait "${DIAG_PID}" 2> /dev/null
+	DIAG_PID=""
+	[ "$(cat "${DIAG_STATUS}" 2> /dev/null)" = 0 ]
+}
+
 stage_journeys() {
 	stage_begin "7d" "User journeys, both editors"
 	have_roms both || { stage_end FAIL "" "${MISSING_WHAT}"; return; }
 	local log="${LOG_DIR}/7d-journeys.log" build_log="${LOG_DIR}/7d-diagnostics-build.log"
 	local report status=0 answer muted_note="" notes capture
-	# The journeys need the page's self-tests, which only a diagnostics build has (-Dgearmulator_MDMM_DIAGNOSTICS=ON):
-	# scripts/mdmm-dev.sh builds one in its own tree, its products kept out of the checkout's bin/.
-	gate_run --timeout 7200 --log "${build_log}" -- MDMM_DEV_BUILD="${DIAG_BUILD}" \
-		MDMM_DEV_ARGS="-DGEARMULATOR_JUCE_PRODUCTS_ROOT=${DIAG_BUILD}/products" "${DEV_CMD}" build \
+	journeys_build_wait \
 		|| { stage_end FAIL "" "the diagnostics build failed (${build_log})"; show_tail "${build_log}" 20; return; }
 	rm -rf "${OUT}/journeys"
 	# Silence: the standalones open the audio device (the VST3 host plays to none). --background zeroes the
@@ -885,6 +929,21 @@ stage_journeys() {
 	else
 		stage_end FAIL "" "no report (exit ${status}); log ${log}${muted_note:+; ${muted_note}}"
 		show_tail "${log}" 12
+	fi
+}
+
+# 2c. the page journeys in the page tier (scripts/mdmm-page.mjs: headless Chrome, the real core behind a fake machine)
+stage_page() {
+	stage_begin "2c" "Page journeys (page tier, no ROM)"
+	local log="${LOG_DIR}/2c-page.log" status=0 totals stub="${BUILD}/source/elektron/md/deskStubHost/deskStubHost"
+	[ -x "${stub}" ] || { stage_end FAIL "" "no deskStubHost in ${BUILD} (BUILD_TESTING on a POSIX host builds it)"; return; }
+	gate_run --timeout 1800 --log "${log}" -- MDMM_STUB_HOST="${stub}" MDMM_PAGE_OUT="${OUT}/page" \
+		node "${ROOT}/scripts/mdmm-page.mjs" --jobs 4 both || status=$?
+	totals="$(grep '^PAGE JOURNEYS:' "${log}" | tail -n 1 | sed 's/^PAGE JOURNEYS: //')"
+	if [ "${status}" = 0 ]; then
+		stage_end PASS "${totals}"
+	else
+		stage_end FAIL "${totals}" "$(grep -E '^JOURNEY [^ ]+ FAIL|^FAIL' "${log}" | head -n 3 | cut -c1-200 | tr '\n' ';'); report ${OUT}/page/report.txt"
 	fi
 }
 
@@ -976,17 +1035,47 @@ stage_inputs
 if wanted 1; then stage_build; else STAGE_RESULT=SKIP; fi
 BUILD_OK=0
 { [ "${STAGE_RESULT}" = PASS ] || [ "${STAGE_RESULT}" = SKIP ]; } && BUILD_OK=1
+# Lane 1, the release tree's functional stages (2 to 5, then 7a-7c), while lane 2 builds the journeys' diagnostics tree
+# in the background; then 7d; then the timing stages (5b, 6a, 6b, 6c) alone on a quiet Mac. A stage's verdict does not
+# depend on the order.
+if [ "${BUILD_OK}" = 1 ] && [ "${QUICK}" != 1 ] && [ "${SKIP_PLUGIN}" != 1 ] && [ "${SKIP_JOURNEYS}" != 1 ] && wanted 7d; then
+	info_set lanes 2
+	journeys_build_start
+fi
+# Lane 1's stages run at once, each in a subshell with its console in a file, shown in stage order when all are done:
+# 2 (ctest), 2c (page tier), 2b (the desk smoke tests) and 3, 4, 5 in turn. None opens an audio device or measures time;
+# each has a sandbox of its own. The stage's result line goes to stages.tsv as it ends (one short append each).
+# A full run also runs 7a-7c (no audio device, no timing) in the foreground while lane 1 runs.
+L1_PIDS=""
+lane1_start() {
+	wanted 2 && { ( stage_ctest ) > "${OUT}/logs/lane-2.out" 2>&1 & L1_PIDS+=" $!"; }
+	wanted 2c && { ( stage_page ) > "${OUT}/logs/lane-2c.out" 2>&1 & L1_PIDS+=" $!"; }
+	wanted 2b && { ( stage_direct ) > "${OUT}/logs/lane-2b.out" 2>&1 & L1_PIDS+=" $!"; }
+	( wanted 3 && stage_romload; wanted 4 && stage_sysex; wanted 5 && { stage_goldens; note_goldens_state; } ) \
+		> "${OUT}/logs/lane-345.out" 2>&1 &
+	L1_PIDS+=" $!"
+	echo "    lane 1: stages 2, 2c, 2b and 3-5 at once, in the background"
+}
+lane1_wait() {
+	local s
+	[ -n "${L1_PIDS}" ] || return 0
+	for s in ${L1_PIDS}; do wait "${s}"; done
+	L1_PIDS=""
+	echo "    lane 1 done:"
+	for s in 2 2c 2b 345; do [ -f "${OUT}/logs/lane-${s}.out" ] && cat "${OUT}/logs/lane-${s}.out"; done
+	return 0
+}
 if [ "${BUILD_OK}" = 1 ]; then
-	wanted 2 && stage_ctest
-	wanted 2b && stage_direct
-	wanted 3 && stage_romload
-	wanted 4 && stage_sysex
-	wanted 5 && { stage_goldens; note_goldens_state; }
-	wanted 5b && stage_bench
-	wanted 6a && stage_rt
+	# a full run: the AU bundles swapped in once, held for stage 2 (in lane 1) and 7b-7c beside it
+	if [ -z "${ONLY}" ] && [ "${QUICK}" != 1 ] && [ "${SKIP_PLUGIN}" != 1 ] && [ -d "${PRODUCTS}/AU" ]; then
+		au_swap_in && AU_HELD=1
+	fi
+	lane1_start
+	# only a full run goes on to 7a-7c while lane 1 runs; every other waits for it here
+	{ [ -z "${ONLY}" ] && [ "${QUICK}" != 1 ] && [ "${SKIP_PLUGIN}" != 1 ]; } || lane1_wait
 else
-	for pair in "2:ctest, every registered test" "2b:Firmware tests ctest cannot run" "3:ROM loading" \
-		"4:SysEx round trip" "5:Playing goldens" "5b:CPU bench sanity" "6a:Real-time work while editing (rt-check)"; do
+	for pair in "2:ctest, every registered test" "2c:Page journeys (page tier, no ROM)" "2b:Firmware tests ctest cannot run" \
+		"3:ROM loading" "4:SysEx round trip" "5:Playing goldens" "5b:CPU bench sanity" "6a:Real-time work while editing (rt-check)"; do
 		stage_begin "${pair%%:*}" "${pair#*:}"
 		stage_end FAIL "" "not run: the build failed"
 	done
@@ -1003,37 +1092,56 @@ leave_out() {	# <reason> <FAIL|SKIP>: every stage of the plug-in group, not run
 	done
 	IFS=$' \t\n'
 }
-if [ -n "${ONLY}" ]; then
-	wanted 6b && [ "${QUICK}" != 1 ] && stage_capacity
-	wanted 6c && [ "${QUICK}" != 1 ] && stage_soak
-	wanted 7a && [ "${QUICK}" != 1 ] && stage_vst3_start
-	wanted 7b && [ "${QUICK}" != 1 ] && stage_auval
-	wanted 7c && [ "${QUICK}" != 1 ] && stage_pluginval
-	au_swap_out
-	wanted 7d && [ "${QUICK}" != 1 ] && stage_journeys
-elif [ "${QUICK}" = 1 ]; then
-	leave_out "--quick builds no plug-ins" SKIP
-elif [ "${SKIP_PLUGIN}" = 1 ]; then
-	leave_out "--skip-plugin" SKIP
-elif [ "${BUILD_OK}" = 0 ]; then
-	leave_out "not run: the build failed" FAIL
-else
+timing_stages() {	# lane 3: alone, on a quiet Mac (the journeys and every build are done)
+	[ "${BUILD_OK}" = 1 ] || return 0
+	wanted 5b && stage_bench
+	wanted 6a && stage_rt
+	[ "${QUICK}" = 1 ] && return 0
+	if [ -n "${ONLY}" ]; then
+		wanted 6b && stage_capacity
+		wanted 6c && stage_soak
+		return 0
+	fi
+	[ "${SKIP_PLUGIN}" = 1 ] && return 0
 	stage_capacity
 	if [ "${SKIP_SOAK}" = 1 ]; then
 		cannot_run "6c soak" "off by default (--soak runs it, 21 minutes)"
 	else
 		stage_soak
 	fi
+}
+if [ -n "${ONLY}" ]; then
+	wanted 7a && [ "${QUICK}" != 1 ] && stage_vst3_start
+	wanted 7b && [ "${QUICK}" != 1 ] && stage_auval
+	wanted 7c && [ "${QUICK}" != 1 ] && stage_pluginval
+	au_swap_out
+	wanted 7d && [ "${QUICK}" != 1 ] && stage_journeys
+	timing_stages
+elif [ "${QUICK}" = 1 ]; then
+	timing_stages
+	leave_out "--quick builds no plug-ins" SKIP
+elif [ "${SKIP_PLUGIN}" = 1 ]; then
+	timing_stages
+	leave_out "--skip-plugin" SKIP
+elif [ "${BUILD_OK}" = 0 ]; then
+	leave_out "not run: the build failed" FAIL
+else
 	stage_vst3_start
 	stage_auval
 	stage_pluginval
+	lane1_wait
+	AU_HELD=0
 	au_swap_out	# the AU bundles are done with: the owner's own are back before the journeys start
 	if [ "${SKIP_JOURNEYS}" = 1 ]; then
 		stage_skip "7d" "User journeys, both editors" "--skip-journeys"
 	else
 		stage_journeys
 	fi
+	timing_stages
 fi
+lane1_wait
+[ -n "${DIAG_PID}" ] && wait "${DIAG_PID}" 2> /dev/null
+AU_HELD=0
 au_swap_out
 stage_updater
 

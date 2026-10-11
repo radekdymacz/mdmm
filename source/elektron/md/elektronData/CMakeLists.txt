@@ -107,7 +107,7 @@ if(BUILD_TESTING)
 		set(mm_skin "${CMAKE_CURRENT_SOURCE_DIR}/../mdJucePlugin/skins/mmStudio")
 		add_test(NAME mmConvertTest COMMAND ${CMAKE_COMMAND} -DTOOL=$<TARGET_FILE:mmDataCorpusTest> -DNODE=${GEARMULATOR_NODE}
 			-DSKIN=${mm_skin} -DOUT=${CMAKE_CURRENT_BINARY_DIR}/mmConvertTest "-DCORPUS=${mm_convert_corpus}" -P ${mm_skin}/mmConvertTest.cmake)
-		set_tests_properties(mmConvertTest PROPERTIES LABELS "UnitTest")
+		set_tests_properties(mmConvertTest PROPERTIES LABELS "UnitTest;Page")
 	endif()
 	if(ELEKTRONDATA_CORPUS_DIR)
 		add_test(NAME elektronDataLocalCorpusTest COMMAND elektronDataCorpusTest ${ELEKTRONDATA_CORPUS_DIR})

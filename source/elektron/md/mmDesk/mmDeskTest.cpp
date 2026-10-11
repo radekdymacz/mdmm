@@ -4,6 +4,7 @@
 
 #include "mmDesk.h"
 #include "mmDeskMachine.h"
+#include "mmIntentCases.h"
 
 #include "deskCore/deskContract.h"
 #include "deskCore/deskKinds.h"
@@ -1508,147 +1509,32 @@ void checkContract(const bool _write)
 // after are compared whole with the base plus the case's "after" values; a refused case names a part of the error.
 namespace intentCases
 {
-	// _root's member at _path (object keys and array indices), made where it is missing; nullptr when the path crosses a value
-	Value* at(Value& _root, const Value& _path)
-	{
-		Value* v = &_root;
-		for(const auto& k : _path.asArray())
-		{
-			if(k.isString())
-			{
-				if(!v->isObject())
-					return nullptr;
-				auto* next = v->find(k.asString());
-				v = next ? next : &v->set(k.asString(), Value());
-			}
-			else
-			{
-				const auto i = static_cast<size_t>(k.asNumber());
-				if(!v->isArray() || i >= v->asArray().size())
-					return nullptr;
-				v = &v->asArray()[i];
-			}
-		}
-		return v;
-	}
-	// [kind, path, value] entries set on the documents by kind
-	bool patch(std::map<std::string, Value>& _docs, const Value& _entries)
-	{
-		for(const auto& e : _entries.asArray())
-		{
-			const auto& a = e.asArray();
-			auto* v = at(_docs[a[0].asString()], a[1]);
-			if(!v)
-				return false;
-			*v = a[2];
-		}
-		return true;
-	}
-	// the documents as the core holds them (and, back to JSON, in the contract's one form). A document's name in the
-	// cases is its kind ("pattern", "workingKit", "global", "song") or, for another slot of the library, any name
-	// ("kit5"); its schema says what it is.
-	std::optional<mmDesk::Documents> documents(const std::map<std::string, Value>& _json, std::vector<std::string>& _errors)
-	{
-		mmDesk::Documents d;
-		for(const auto& [name, doc] : _json)
-		{
-			const auto schema = doc.find("schema") ? doc.find("schema")->asString() : std::string();
-			if(name == "workingKit")
-			{
-				if(auto k = ed::mmKitFromJson(doc, _errors))
-					d.working = mmDesk::WorkingKit{*k};
-			}
-			else if(schema == "mm-desk/pattern")
-			{
-				if(auto p = ed::mmPatternFromJson(doc, _errors))
-				{
-					for(const auto& problem : ed::validate(*p))
-						_errors.push_back(name + ": " + problem);
-					d.patterns[p->position] = *p;
-				}
-			}
-			else if(schema == "mm-desk/kit")
-			{
-				if(auto k = ed::mmKitFromJson(doc, _errors))
-					d.kits[k->position] = *k;
-			}
-			else if(schema == "mm-desk/song")
-			{
-				if(auto x = ed::mmSongFromJson(doc, _errors))
-					d.songs[x->position] = *x;
-			}
-			else if(schema == "mm-desk/global")
-			{
-				if(auto g = ed::mmGlobalFromJson(doc, _errors))
-					d.globals[g->position] = *g;
-			}
-			else
-				_errors.push_back(name + ": no schema");
-		}
-		return _errors.empty() ? std::optional<mmDesk::Documents>(d) : std::nullopt;
-	}
-	std::map<std::string, std::string> written(const mmDesk::Documents& _d)
-	{
-		std::map<std::string, std::string> out;
-		for(const auto& [slot, p] : _d.patterns)
-			out["pattern " + std::to_string(slot)] = ed::json::write(ed::mmPatternToJson(p));
-		for(const auto& [slot, k] : _d.kits)
-			out["kit " + std::to_string(slot)] = ed::json::write(ed::mmKitToJson(k));
-		for(const auto& [slot, x] : _d.songs)
-			out["song " + std::to_string(slot)] = ed::json::write(ed::mmSongToJson(x));
-		for(const auto& [slot, g] : _d.globals)
-			out["global " + std::to_string(slot)] = ed::json::write(ed::mmGlobalToJson(g));
-		if(_d.working)
-			out["workingKit"] = ed::json::write(ed::mmKitToJson(_d.working->kit));
-		return out;
-	}
-	// the first place two JSON texts differ, for the failure line
-	std::string firstDiff(const std::string& _a, const std::string& _b)
-	{
-		size_t i = 0;
-		while(i < _a.size() && i < _b.size() && _a[i] == _b[i])
-			++i;
-		const auto from = i > 60 ? i - 60 : 0;
-		return "..." + _a.substr(from, 100) + "\n       expected ..." + _b.substr(from, 100);
-	}
+	using namespace mmDesk::intentCases;
 
 	void run()
 	{
 		std::puts("edit intents (doc/modern-ux/intent-cases.json)");
-		std::ifstream in(MMDESK_INTENT_CASES);
-		const auto file = ed::json::parse(std::string{std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()});
-		check(file.has_value(), "the intent cases load");
-		if(!file)
+		std::string problem;
+		const auto cases = load(MMDESK_INTENT_CASES, problem);
+		check(cases.has_value(), problem.empty() ? "the intent cases load" : problem.c_str());
+		if(!cases)
 			return;
-		const auto& mm = *file->find("mm");
-		std::map<std::string, Value> base;
-		for(const auto& [kind, doc] : mm.find("docs")->asObject())
-			base[kind] = doc;
-		check(patch(base, *mm.find("given")), "the cases' given values are on the documents");
 		std::vector<std::string> errors;
-		const auto docs = documents(base, errors);
+		const auto docs = documents(cases->base, errors);
 		check(docs.has_value(), errors.empty() ? "the base documents read" : ("the base documents read: " + errors.front()).c_str());
 		if(!docs)
 			return;
-		mmDesk::EditContext context;
-		context.currentKit = static_cast<int>(mm.find("context")->find("kit")->asNumber());
-		context.currentGlobal = static_cast<int>(mm.find("context")->find("global")->asNumber());
 		size_t ran = 0;
-		for(const auto& c : mm.find("cases")->asArray())
+		for(const auto& c : cases->cases)
 		{
 			const auto name = c.find("name")->asString();
-			std::vector<Value> commands;
-			if(const auto* one = c.find("command"))
-				commands.push_back(*one);
-			else
-				commands = c.find("commands")->asArray();
 			auto d = *docs;
 			mmDesk::Clipboard clip;
 			std::vector<std::string> refusedWith;
 			std::string note;	// the last command's result note
-			for(const auto& cmd : commands)
+			for(const auto& cmd : commandsOf(c))
 			{
-				const auto r = mmDesk::apply(d, cmd, clip, context);
+				const auto r = mmDesk::apply(d, cmd, clip, cases->context);
 				note = r.note;
 				if(r.clipboard)
 					clip = *r.clipboard;
@@ -1677,19 +1563,13 @@ namespace intentCases
 			// note: a part of what the result says (what a paste left out)
 			if(const auto* wantNote = c.find("note"))
 				check(note.find(wantNote->asString()) != std::string::npos, (name + ": the note says \"" + wantNote->asString() + "\" (" + note + ")").c_str());
-			auto expectJson = base;
-			std::vector<std::string> e2;
-			const auto expected = patch(expectJson, *c.find("after")) ? documents(expectJson, e2) : std::nullopt;
-			if(!expected)
+			const auto want = expected(*cases, c, problem);
+			if(!want)
 			{
-				check(false, (name + ": its after values make no valid documents" + (e2.empty() ? "" : ": " + e2.front())).c_str());
+				check(false, (name + ": " + problem).c_str());
 				continue;
 			}
-			const auto got = written(d), want = written(*expected);
-			std::string diff;
-			for(const auto& [kind, text] : want)
-				if(!got.count(kind) || got.at(kind) != text)
-					diff += "\n       " + kind + ": " + (got.count(kind) ? firstDiff(got.at(kind), text) : std::string("missing"));
+			const auto diff = differences(written(d), written(*want));
 			check(diff.empty(), (name + diff).c_str());
 		}
 		check(ran >= 50, "every case ran");

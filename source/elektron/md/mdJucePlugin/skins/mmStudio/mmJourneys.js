@@ -6,6 +6,9 @@
    Names: mm-<area>-<what>, the areas as the Machinedrum's (doc/modern-ux/JOURNEYS.md), and perform. */
 const MmJourneys = (() => {
 	const { ok, sleep, until } = Journey;
+	/* a tapped tempo against the journey's own clock: 5 % (a busy Mac moves the key events by tens of ms against it; the
+	   page tier runs beside the gate's other stages) */
+	const tapSlack = want => Math.max(1.5, want * 0.05);
 	const $1 = q => document.querySelector(q), $all = q => [...document.querySelectorAll(q)];
 	const S = () => window.MMDiagnostics.S, I = () => window.MMPage.inspect();
 	const machine = () => I().machine || {};
@@ -90,7 +93,12 @@ const MmJourneys = (() => {
 				c.note = `track ${c.t + 1} steps ${c.steps.map(s => s + 1).join(" ")}, note ${c.n}`;
 			}, screen: c => ok(c.steps.every(s => S().tracks[c.t].steps[s]?.n?.includes(c.n)), "roll shows " + c.steps.map(s => JSON.stringify(S().tracks[c.t].steps[s]?.n || null)).join(",")),
 				machine: c => ok(c.steps.every(s => trigsOf(c.t).includes(s)), "pattern trigs " + trigsOf(c.t).join(",")), within: 15000 },
-			{ say: "press PLAY (pressed again when the plug-in says the panel is busy: the clicks' dumps are on their way, B-014)", act: async (u, c) => { tele.steps = []; results.length = 0; u.click("#play");
+			/* PLAY once the clicks' dumps are in: the SYSEX RECV session idle and nothing on its way (machine.recv), so the
+			   panel takes the key; a fixed wait lost the race on a busy Mac (0.5.1 gate, dev-cycle 7d at 4 editors) */
+			{ say: "press PLAY when the clicks' dumps are in (pressed again if the plug-in still says the panel is busy, B-014)", act: async (u, c) => {
+				const recv = () => I().machine?.recv || {};
+				if (!await until(() => recv().state === "idle" && !recv().sending, 30000)) c.note = `SYSEX RECV ${recv().state}, ${recv().sending} sending`;
+				tele.steps = []; results.length = 0; u.click("#play");
 				for (let i = 0; i < 5 && await until(() => results.some(r => r.op === "play" && r.ok === false), 1500); i++) { c.note = "the plug-in said the panel was busy (SYSEX RECV); pressed again"; results.length = 0; await sleep(1500); u.click("#play"); } }, screen: () => ok(/^\d\d\.\d\d$/.test($1("#pos").textContent), "POSITION " + $1("#pos").textContent), machine: () => ok(new Set(tele.steps).size >= 4, "telemetry steps " + tele.steps.join(",")), within: 20000 },
 			{ say: "press STOP", act: u => u.click("#play"), screen: () => ok($1("#pos").textContent === "--.--", "POSITION " + $1("#pos").textContent), machine: () => ok(tele.last && !tele.last.playing, "still playing") }
 		],
@@ -185,7 +193,7 @@ const MmJourneys = (() => {
 		name: "mm-seq-lock-lane",
 		steps: [
 			go("seq"),
-			{ say: "pick a track with notes, the Locks tab", act: async (u, c) => { c.t = [0, 1, 2, 3, 4, 5].find(t => trigsOf(t).length >= 2) ?? 0; u.click(rail(c.t)); await sleep(200); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); }, screen: c => ok(S().sel === c.t && !!$1("#lane"), "no lane"), machine: c => ok(trigsOf(c.t).length >= 2, "fewer than two notes") },
+			{ say: "pick a track with notes, the Locks tab", act: async (u, c) => { c.t = [0, 1, 2, 3, 4, 5].find(t => trigsOf(t).length >= 2) ?? 0; await until(() => !!$1(rail(c.t)), 3000); u.click(rail(c.t)); await sleep(200); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); }, screen: c => ok(S().sel === c.t && !!$1("#lane"), "no lane"), machine: c => ok(trigsOf(c.t).length >= 2, "fewer than two notes") },
 			{ say: "draw across the lane over the notes", act: async (u, c) => { c.lane = S().lane; [c.pg, c.pi] = [PAGES.indexOf(c.lane.split(".")[0]), +c.lane.split(".")[1]]; c.on = trigsOf(c.t).filter(s => s < S().len).slice(0, 4); await u.drag(`#lane .lb[data-s="${c.on[0]}"]`, c.on.slice(1).map(s => `#lane .lb[data-s="${s}"]`), {}, { fy: 0.3 }); c.note = `${c.lane} on ${c.on.map(s => s + 1).join(" ")}`; },
 				machine: c => { const l = (patDoc().locks || []).find(x => x.track === c.t && x.page === c.pg && x.param === c.pi); return ok(l && c.on.every(s => l.steps.some(([x]) => x === s)), "locks " + JSON.stringify(l)); }, within: 15000 },
 			{ say: "click the lane's clear key", act: u => u.click("#clearLane"), machine: c => ok(!(patDoc().locks || []).some(x => x.track === c.t && x.page === c.pg && x.param === c.pi), "locks left"), within: 15000 }
@@ -633,8 +641,8 @@ const MmJourneys = (() => {
 		name: "mm-keys-tap-tempo",
 		steps: [
 			go("mix"),
-			{ say: "tap B five times, about 0.5 s apart (T is a black key on the Monomachine Editor): the tempo follows, Draw stays as it was", act: async (u, c) => { c.b0 = machine().tempo; c.d0 = S().rollDraw; blur(); const at = []; for (let i = 0; i < 5; i++) { at.push(performance.now()); u.key("b"); await sleep(500); } c.want = Math.round(60000 / ((at[4] - at[0]) / 4) * 10) / 10; c.note = c.want + " BPM"; },
-				screen: c => ok(Math.abs(S().bpm - c.want) <= 1.5 && S().rollDraw === c.d0, "BPM " + S().bpm + ", want " + c.want + ", Draw " + S().rollDraw), machine: c => ok(Math.abs(machine().tempo - c.want) <= 1.5, "tempo " + machine().tempo + ", want " + c.want), within: 8000 }
+			{ say: "tap B five times, about 0.5 s apart (T is a black key on the Monomachine Editor): the tempo follows, Draw stays as it was", act: async (u, c) => { c.b0 = machine().tempo; c.d0 = S().rollDraw; blur(); if (typeof TAP !== "undefined" && TAP.length) await sleep(2100); /* a new run of taps (the page joins taps less than 2 s apart) */ const at = []; for (let i = 0; i < 5; i++) { at.push(performance.now()); u.key("b"); await sleep(500); } c.want = Math.round(60000 / ((at[4] - at[0]) / 4) * 10) / 10; c.note = c.want + " BPM"; },
+				screen: c => ok(Math.abs(S().bpm - c.want) <= tapSlack(c.want) && S().rollDraw === c.d0, "BPM " + S().bpm + ", want " + c.want + ", Draw " + S().rollDraw), machine: c => ok(Math.abs(machine().tempo - c.want) <= tapSlack(c.want), "tempo " + machine().tempo + ", want " + c.want), within: 8000 }
 		],
 		async tidy(u, c) { if (c.b0 != null) { const d = c.b0 > machine().tempo ? -1 : 1; await u.drag("#bpm", [[0, d * 2 * (c.b0 - machine().tempo)]]); } if (c.d0 != null && S().rollDraw !== c.d0) setRollDraw(c.d0); }
 	};
@@ -817,7 +825,12 @@ const MmJourneys = (() => {
 		steps: [
 			go("seq"), sel(0),
 			{ say: "press R until the notes change", act: async (u, c) => { c.p0 = pat0(); blur(); for (let i = 0; i < 5; i++) { u.key("r"); if (await until(() => pat0() !== c.p0, 4000)) break; } }, machine: c => ok(pat0() !== c.p0, "unchanged"), within: 15000 },
-			{ say: "click GEN's Hits value (a Euclid spec) or Density", act: (u, c) => { c.p1 = pat0(); u.click($1('#genband .gv[data-gv="k"]') ? '#genband .gv[data-gv="k"]' : '#genband .gv[data-gv="dens"]'); }, machine: c => ok(pat0() !== c.p1, "unchanged"), within: 15000 },
+			/* one up, or one down (Shift-click) when R rolled it to its top: Hits stops at Steps, Density at 100 (the page
+			   tier's one failure in the dev-cycle gate run) */
+			{ say: "click GEN's Hits value (a Euclid spec) or Density (Shift-click when it is at its top)", act: (u, c) => { c.p1 = pat0();
+				const num = q => parseInt($1(q)?.getAttribute("aria-valuenow") || "0", 10), euclid = !!$1('#genband .gv[data-gv="k"]');
+				const q = euclid ? '#genband .gv[data-gv="k"]' : '#genband .gv[data-gv="dens"]', top = euclid ? num('#genband .gv[data-gv="n"]') : 100;
+				u.click(q, { shift: num(q) >= top }); }, machine: c => ok(pat0() !== c.p1, "unchanged"), within: 15000 },
 			{ ...undoKey, say: "press Cmd+Z: the whole run in one step", act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(pat0() === c.p0, "pattern not back"), within: 15000 }
 		],
 		async tidy(u, c) { if (c.p0) await undoUntil(u, () => pat0() === c.p0, 3); }
@@ -1339,8 +1352,8 @@ const MmJourneys = (() => {
 		name: "mm-keys-tap-tempo-shift",
 		steps: [
 			go("seq"),
-			{ say: "on Sequence tap Shift+B five times, about 0.5 s apart: the tempo follows, Draw stays as it was", act: async (u, c) => { c.b0 = machine().tempo; c.d0 = S().rollDraw; blur(); const at = []; for (let i = 0; i < 5; i++) { at.push(performance.now()); u.key("B", { shift: true }); await sleep(500); } c.want = Math.round(60000 / ((at[4] - at[0]) / 4) * 10) / 10; c.note = c.want + " BPM"; },
-				screen: c => ok(Math.abs(S().bpm - c.want) <= 1.5 && S().rollDraw === c.d0, "BPM " + S().bpm + ", want " + c.want + ", Draw " + S().rollDraw), machine: c => ok(Math.abs(machine().tempo - c.want) <= 1.5, "tempo " + machine().tempo + ", want " + c.want), within: 8000 }
+			{ say: "on Sequence tap Shift+B five times, about 0.5 s apart: the tempo follows, Draw stays as it was", act: async (u, c) => { c.b0 = machine().tempo; c.d0 = S().rollDraw; blur(); if (typeof TAP !== "undefined" && TAP.length) await sleep(2100); /* a new run of taps (the page joins taps less than 2 s apart) */ const at = []; for (let i = 0; i < 5; i++) { at.push(performance.now()); u.key("B", { shift: true }); await sleep(500); } c.want = Math.round(60000 / ((at[4] - at[0]) / 4) * 10) / 10; c.note = c.want + " BPM"; },
+				screen: c => ok(Math.abs(S().bpm - c.want) <= tapSlack(c.want) && S().rollDraw === c.d0, "BPM " + S().bpm + ", want " + c.want + ", Draw " + S().rollDraw), machine: c => ok(Math.abs(machine().tempo - c.want) <= tapSlack(c.want), "tempo " + machine().tempo + ", want " + c.want), within: 8000 }
 		],
 		async tidy(u, c) { if (c.b0 != null) { const d = c.b0 > machine().tempo ? -1 : 1; await u.drag("#bpm", [[0, d * 2 * (c.b0 - machine().tempo)]]); } }
 	};

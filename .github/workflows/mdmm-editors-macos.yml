@@ -5,9 +5,13 @@ name: MD/MM Editors macOS
 # mdmm-editors.yml on every push (and by mdmm-editors-release.yml when no tested build of the tag's commit exists).
 #
 #   build     the fixture-free universal package, once: scripts/macos/build_mdmm.sh with the release
-#             settings (ThinLTO, the committed PGO profile, arm64 + x86_64, unit and plug-in tests, package check),
-#             on Ninja with ccache. Its
-#             zip (artifact macos-mdmm-universal) is what the start test below and the release installers use.
+#             settings (ThinLTO, the committed PGO profile, arm64 + x86_64, package check), on Ninja with ccache,
+#             the plug-ins and their hosts only (GEARMULATOR_MDMM_PACKAGE_TESTS=0): its ThinLTO links are the
+#             plug-ins', no test program's. Its zip (artifact macos-mdmm-universal) is what the start test below and
+#             the release installers use.
+#   tests     the unit and plug-in tests (scripts/macos/mdmm_unit_tests.sh, the list the package build runs locally,
+#             plus the cores and the node page tests) on an arm64 tree without ThinLTO, in parallel with the build
+#             (doc/release/DEV-CYCLE.md); its own ccache.
 #   installers unsigned .pkg + .dmg from that zip (the release's script): an artifact minutes after the build.
 #   vst3host  the start test's minimal VST3 host (scripts/vst3EditorHost), beside the build.
 #   smoke     on a clean macos-14 and macos-15: starts each standalone and each VST3 (in the host) of that zip with
@@ -24,7 +28,7 @@ permissions:
 
 jobs:
   build:
-    name: macOS universal package (fixture-free, ccache)
+    name: macOS universal package (ThinLTO, PGO, ccache)
     # The release installers have always been built on macos-15 (Xcode 16): the one build per push is the one the
     # release packages, so it is built there.
     runs-on: macos-15
@@ -83,6 +87,8 @@ jobs:
       - name: Build, test and package MD/MM
         env:
           GEARMULATOR_REQUIRE_FIRMWARE_TESTS: "0"
+          # the tests are the tests job's (below), on a tree without ThinLTO
+          GEARMULATOR_MDMM_PACKAGE_TESTS: "0"
           GEARMULATOR_MDMM_MACOS_ARCHITECTURES: "arm64;x86_64"
           # The profile committed in source/elektron/md/pgo (trained locally with the ROMs; CI never has them), for
           # both slices; a stale or missing profile only warns (doc/release/CI.md, "PGO").
@@ -118,6 +124,73 @@ jobs:
           path: artifacts/macos-mdmm/Gearmulator-Elektron-macOS-*.zip
           if-no-files-found: error
           retention-days: 14
+
+  tests:
+    name: macOS unit and plug-in tests (arm64, no ThinLTO, ccache)
+    runs-on: macos-15
+    timeout-minutes: 90
+    env:
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_COMPILERCHECK: "%compiler% -v"
+      CCACHE_SLOPPINESS: "include_file_mtime,include_file_ctime,time_macros,pch_defines"
+      CCACHE_MAXSIZE: 2G
+      CCACHE_COMPRESS: "true"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: recursive
+
+      - name: Install ccache and Ninja
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_CLEANUP: "1"
+        run: |
+          brew install ccache ninja
+          echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> "${GITHUB_ENV}"
+
+      - name: Restore the compiler cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/ccache
+          key: ccache-v1-macos15-arm64-tests-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            ccache-v1-macos15-arm64-tests-${{ github.ref_name }}-
+            ccache-v1-macos15-arm64-tests-main-
+
+      - name: Configure (arm64, Release, no ThinLTO, no PGO)
+        run: |
+          set -euo pipefail
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_OBJC_COMPILER_LAUNCHER=ccache -DCMAKE_OBJCXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DXCODE_VERSION=16 \
+            -DGEARMULATOR_MDMM_APPLE_THINLTO=OFF -DGEARMULATOR_MDMM_APPLE_PGO_MODE=none \
+            -DBUILD_TESTING=ON -Dgearmulator_BUILD_JUCEPLUGIN=ON -Dgearmulator_BUILD_JUCEPLUGIN_VST3=ON \
+            -Dgearmulator_BUILD_JUCEPLUGIN_AU=ON -Dgearmulator_BUILD_JUCEPLUGIN_Standalone=ON
+
+      - name: Build and run the tests
+        env:
+          GEARMULATOR_REQUIRE_FIRMWARE_TESTS: "0"
+          MDMM_UNIT_TESTS_MORE: "1"
+        run: |
+          set -euo pipefail
+          ccache --zero-stats > /dev/null
+          home="${RUNNER_TEMP}/test-home"
+          mkdir -p "${home}/Documents"
+          HOME="${home}" GEARMULATOR_DATA_ROOT="${home}/Documents/" ./scripts/macos/mdmm_unit_tests.sh build
+
+      - name: Compiler cache statistics
+        if: always()
+        run: |
+          { echo "### ccache (macOS tests, arm64)"; echo '```'; ccache --show-stats; echo '```'; } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Save the compiler cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/ccache
+          key: ccache-v1-macos15-arm64-tests-${{ github.ref_name }}-${{ github.run_id }}
 
   # The two installers and two disk images of this push, unsigned (ad-hoc), made by the script the release uses
   # (scripts/macos/package_mdmm_installers.sh) from the zip above: downloadable as soon as this job ends, without
