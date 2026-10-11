@@ -132,7 +132,7 @@ for (const css of ["../mdStudio/mdDesk.css", "../mmStudio/mmStudio.css"])
 const own = read("deskVolume.css");
 check(!/color-mix|:has\(/.test(own), "its stylesheet has no color-mix or :has (an older WebKit)");
 check(!/--led|--rec|--trig|--print|\bred\b|#[0-9a-f]{3,6}\b/i.test(own), "only the LCD's ink (and its ground under the cap): no warning colour");
-check(/hasvol\{grid-template-columns:repeat\(6,auto\) auto!important\}/.test(own) && /hasvol>\.row2\{grid-column:2\/-2!important\}/.test(own) && /grid-row:1\/-1/.test(own),
+check(/hasvol\{grid-template-columns:repeat\(6,auto\) max-content!important\}/.test(own) && /hasvol>\.row2\{grid-column:2\/-2!important\}/.test(own) && /grid-row:1\/-1/.test(own),
 	"a seventh LCD column, both rows tall; the second row ends before it");
 check(!/\?\?=|\|\|=|&&=|\.at\(|#[a-z]\w*\s*[;=(]/.test(read("deskVolume.js")), "its script is ES2020 (no logical assignment, .at(), private fields)");
 for (const schema of ["md-data-contract.schema.json", "mm-data-contract.schema.json"]) {
