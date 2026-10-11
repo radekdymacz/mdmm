@@ -1376,6 +1376,15 @@ namespace
 		wire.clear();
 		desk.onPageMessage(cmd(R"({"op":"selectSong","s":3,"id":8})"));
 		check(ok() && !wire.empty() && wire[0] == ed::mdLoadSong(3) && desk.linkState().song == 3, "LOAD SONG 4 when stopped");
+
+		// 0.6 song slots: SAVE SONG (0x6D) into the current song's slot, or the slot named.
+		check(ed::mdSaveSong(5) == std::vector<uint8_t>{0xf0, 0x00, 0x20, 0x3c, 0x02, 0x00, 0x6d, 0x05, 0xf7}, "SAVE SONG 6 is F0 00 20 3C 02 00 6D 05 F7");
+		wire.clear();
+		desk.onPageMessage(cmd(R"({"op":"saveSong","id":9})"));
+		check(ok() && !wire.empty() && wire[0] == ed::mdSaveSong(3), "saveSong without s: SAVE SONG into the current song's slot");
+		wire.clear();
+		desk.onPageMessage(cmd(R"({"op":"saveSong","s":7,"id":10})"));
+		check(ok() && !wire.empty() && wire[0] == ed::mdSaveSong(7) && desk.linkState().song == 7, "saveSong s: SAVE SONG into that slot, which becomes the current song");
 	}
 
 	// DESIGN-edit-flow.md: a lock lane drawn at 60 edits a second: at most 5 dumps a second, one read-back.
