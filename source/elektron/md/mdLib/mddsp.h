@@ -56,6 +56,11 @@ namespace md
 		dsp56k::Peripherals56303& getPeriph() { return m_periphX; }
 
 		bool     booted() const { return m_schedRunnable.load(std::memory_order_acquire); }
+		// B-054: the DSP's PC left P memory (a damaged firmware image): it runs nothing and no time passes for it,
+		// so nothing may wait on its cycles. The scheduler parks it; the ColdFire's words to it are dropped.
+		bool     halted() const { return m_dsp.isHaltedAtInvalidPC(); }
+		// Words and host commands from the ColdFire dropped because this DSP stopped taking them (B-054).
+		uint64_t droppedHostWords() const { return m_droppedHostWords; }
 		void onDspBootFinished();
 
 		// Continuously drain this DSP's HOTX into the UC-facing HI08 receive queue, bounded so the
@@ -76,6 +81,7 @@ namespace md
 		void    dispatchHostCommandInterrupt(uint8_t _vba);
 		uint8_t hdiUcReadIsr(uint8_t _isr);
 		bool    hdiTransferDSPtoUC();
+		void    dropHostWord();
 
 		Hardware&        m_hardware;
 		mc68k::Hdi08&    m_hdiUC;			// ColdFire-facing HI08 register file (owned by the Microcontroller)
@@ -94,6 +100,7 @@ namespace md
 		std::atomic<bool> m_schedRunnable{false};
 
 		uint64_t m_mmHostTxCycle = 0;
+		uint64_t m_droppedHostWords = 0;
 		TimedHostRx m_timedHostRx;
 
 	};

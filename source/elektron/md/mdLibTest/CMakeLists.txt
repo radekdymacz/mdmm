@@ -315,3 +315,11 @@ if(BUILD_TESTING)
 	set_tests_properties(mdTurboMidiUnitTest mdSdsTransferTest PROPERTIES FIXTURES_SETUP MdSysexTransport)
 	set_property(TEST mdLibTests mdAudioQueueTest APPEND PROPERTY FIXTURES_REQUIRED MdSysexTransport)
 endif()
+
+# B-054: a damaged flash image must not hang the emulation (the host-port push from the ColdFire into a full DSP
+# receive queue). Needs the MD OS 1.63 ROM (GEARMULATOR_MD_FIRMWARE_BIN); skips (77) without.
+add_executable(mdDamagedFlashFirmwareTest damagedFlashFirmwareTest.cpp)
+target_link_libraries(mdDamagedFlashFirmwareTest PRIVATE mdLib)
+add_test(NAME mdDamagedFlashFirmwareTest COMMAND mdDamagedFlashFirmwareTest)
+set_tests_properties(mdDamagedFlashFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
+set_property(TARGET mdDamagedFlashFirmwareTest PROPERTY FOLDER "Elektron")

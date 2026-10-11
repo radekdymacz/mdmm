@@ -1,5 +1,7 @@
 #include "mddsp.h"
 
+#include <cstdio>
+
 #include "mdhardware.h"
 #include "mdtransportpolicy.h"
 
@@ -155,6 +157,15 @@ namespace md
 		m_periphX.getEssi0().writeEmptyAudioIn(64);
 		m_periphX.getEssi1().writeEmptyAudioIn(64);
 
+		// B-054: the host-command ring (32 deep) is emptied by this DSP only, on this thread: a push into a full
+		// one would wait for good. Asked only when the ring is full (never with a running firmware): drop the
+		// command, counted, instead.
+		m_dsp.setExternalInterruptAbortPredicate([this]
+		{
+			dropHostWord();
+			return true;
+		});
+
 		hdi08().setRXRateLimit(0);
 		hdi08().setTransmitDataAlwaysEmpty(false);
 
@@ -288,7 +299,7 @@ namespace md
 			while(!hdi08().hasTX()
 				&& (!m_hardware.isMonomachine() || (!m_timedHostRx.pending() && m_hdiUC.canReceiveData()))
 				&& (hdi08().hostCommandBusy() || dsp().hasPendingInterrupts())
-				&& m_dsp.getCycles() < clampStop)
+				&& m_dsp.getCycles() < clampStop && !halted())
 				m_dsp.exec();
 #if MD_TRANSPORT_DIAGNOSTICS
 			const bool workComplete = hdi08().hasTX()
@@ -325,14 +336,30 @@ namespace md
 		const uint64_t startCycle = m_dsp.getCycles();
 		const uint64_t clampStop = startCycle
 			+ schedInlineClamp(m_hardware.getModel());
-		while(hdi08().hasRXData() && m_dsp.getCycles() < clampStop)
+		while(hdi08().hasRXData() && m_dsp.getCycles() < clampStop && !halted())
 			m_dsp.exec();
 #if MD_TRANSPORT_DIAGNOSTICS
 		m_hardware.recordInlineHdi08Run(m_index, startCycle, clampStop,
 			!hdi08().hasRXData());
 #endif
+		// B-054: the receive ring blocks a push while it is full, and only this thread empties it: a DSP that stopped
+		// reading (halted, or running garbage from a damaged flash image) would hang the emulation, and the audio
+		// thread with the device lock, for good. A word that finds the ring full is dropped and counted instead. A
+		// running firmware never gets there: the loop above drains the one word ahead of it.
+		if(hdi08().dataRXFull())
+		{
+			dropHostWord();
+			return;
+		}
 		hdi08().writeRX(&_word, 1);
-		return;
+	}
+
+	void Dsp::dropHostWord()
+	{
+		const auto n = ++m_droppedHostWords;
+		if(n == 1 || (n & (n - 1)) == 0)	// the first, then at each power of two: a log line, not a flood
+			std::fprintf(stderr, "[md] DSP%u stopped reading its host port: %llu word(s) from the ColdFire dropped%s\n",
+				m_index + 1, static_cast<unsigned long long>(n), halted() ? " (the DSP is halted)" : "");
 	}
 
 	void Dsp::waitForHostCommandIdle()
@@ -345,7 +372,7 @@ namespace md
 		const uint64_t startCycle = m_dsp.getCycles();
 		const uint64_t clampStop = startCycle
 			+ schedInlineClamp(m_hardware.getModel());
-		while(hdi08().hostCommandBusy() && m_dsp.getCycles() < clampStop)
+		while(hdi08().hostCommandBusy() && m_dsp.getCycles() < clampStop && !halted())
 			m_dsp.exec();
 #if MD_TRANSPORT_DIAGNOSTICS
 		m_hardware.recordInlineHdi08Run(m_index, startCycle, clampStop,
@@ -381,7 +408,7 @@ namespace md
 			const uint64_t startCycle = m_dsp.getCycles();
 			const uint64_t clampStop = startCycle
 				+ schedInlineClamp(m_hardware.getModel()) * 4;
-			while(!hdi08().rxData().empty() && m_dsp.getCycles() < clampStop)
+			while(!hdi08().rxData().empty() && m_dsp.getCycles() < clampStop && !halted())
 				m_dsp.exec();
 #if MD_TRANSPORT_DIAGNOSTICS
 			m_hardware.recordInlineHdi08Run(m_index, startCycle, clampStop,
