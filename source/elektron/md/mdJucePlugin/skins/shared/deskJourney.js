@@ -272,7 +272,7 @@ const Journey = (() => {
 		const c = c0 || {}, n = j.steps.length;
 		let reason = "";
 		/* what the journey needs that this run may not have (the window on screen): it is skipped, not failed */
-		const missing = j.needs ? j.needs() : null;
+		const missing = j.needs ? await j.needs() : null;	/* may be async: what it needs may still be on its way */
 		if (missing) { log(`JOURNEY ${j.name} SKIP ${missing}`); return "skip"; }
 		for (let i = 0; i < n && !reason; i++) {
 			const st = j.steps[i], t0 = performance.now(), head = `JOURNEY ${j.name} ${i + 1}/${n}`;
