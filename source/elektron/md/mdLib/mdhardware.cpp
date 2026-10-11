@@ -1371,9 +1371,11 @@ namespace md
 				m_schedDspOriginCycles[i]   = d.dsp().getCycles();
 			}
 		}
-		// A DSP that is not yet runnable is parked at the target so it is never chosen as the laggard.
-		double dsp1Pos = m_schedDspOriginLatched[0] ? schedDspFramePos(0) : target;
-		double dsp2Pos = m_schedDspOriginLatched[1] ? schedDspFramePos(1) : target;
+		// A DSP that is not yet runnable is parked at the target so it is never chosen as the laggard. So is one
+		// that halted (B-054: its PC left P memory, a damaged firmware image): its cycles stand still, and waiting
+		// for them would run this loop for good on the audio thread, holding the device lock.
+		double dsp1Pos = m_schedDspOriginLatched[0] && !m_dspMixer.halted() ? schedDspFramePos(0) : target;
+		double dsp2Pos = m_schedDspOriginLatched[1] && !m_dspProducer.halted() ? schedDspFramePos(1) : target;
 
 		// MM host traffic is a flow-controlled lossless stream. Park a backlogged
 		// DSP slice until the UC drains below
@@ -1609,6 +1611,8 @@ namespace md
 			return;									// not yet rate-locked (still booting) - nothing to catch up
 		}
 		auto& d = (i == 0) ? m_dspMixer : m_dspProducer;
+		if(d.halted())
+			return;									// B-054: no time passes for a halted DSP (schedStep)
 
 		if(m_schedUcCyclesDone <= m_schedDspOriginUcCycles[i])
 		{
@@ -1698,6 +1702,8 @@ namespace md
 			return;
 		}
 		auto& d = (c == 0) ? m_dspMixer : m_dspProducer;
+		if(d.halted())
+			return;									// B-054: see schedCatchUpDsp
 		const double producerPos = schedDspFramePos(p);
 		const double deltaFrames = producerPos - m_schedDspOriginFrame[c];
 		if(deltaFrames <= 0.0)

@@ -90,6 +90,14 @@ namespace md
 	bool decodeState(DecodedState& _decoded, const std::vector<uint8_t>& _state,
 		const std::vector<uint8_t>& _romBaseline,
 		MachineModel _expectedModel, synthLib::StateType _expectedType);
+	// B-054: Machinedrum OS 1.63 never writes the flash below its sample area (0x000000-0x1fffff: the OS, its boot
+	// blocks; measured: the factory initialization, SDS imports and the UW firmware test write 0x2c0000-0x7bffff
+	// only), so a project's flash sector there is the ROM's. One that is not was damaged after the firmware wrote
+	// it (a broken save, a crafted file: its CRC is the stored bytes'), and the firmware would run it: garbage
+	// code, a halted DSP, a hang. Puts the ROM's bytes back in each such sector of _overlay; returns how many.
+	constexpr uint32_t g_mdFirmwareFlashEnd = 0x200000;
+	size_t restoreFirmwareSectors(FlashSectorOverlay& _overlay, const std::vector<uint8_t>& _romBaseline);
+
 	bool applyFlashOverlay(std::vector<uint8_t>& _flashData,
 		const FlashSectorOverlay& _overlay,
 		const std::vector<uint8_t>& _factoryFlashBaseline,

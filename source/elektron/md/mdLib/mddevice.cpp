@@ -394,6 +394,10 @@ namespace md
 				return fail("The Machinedrum project payload is corrupt, incompatible, or belongs to different firmware.");
 			patchRam = std::move(decoded.patchRam);
 			containsFlash = decoded.containsFlash;
+			// B-054: the firmware's own sectors come from the ROM, whatever the project holds there.
+			if(containsFlash)
+				if(const auto n = restoreFirmwareSectors(decoded.flashOverlay, stateRom.data()))
+					std::fprintf(stderr, "[MD] the project's flash image had %zu damaged firmware sector(s): restored from the ROM\n", n);
 			auto factory = loadInitialMdFlash(stateRom,
 				mdFlashCacheFilename(_context->m_homePath, _context->m_model));
 			if(factory.cache.empty() && !_factoryFlash.cache.empty())

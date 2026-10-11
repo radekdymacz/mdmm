@@ -254,6 +254,34 @@ namespace
 			"legacy Monomachine state remains patch-only");
 	}
 
+	// B-054: a project's sector below the sample area (the OS) that is not the ROM's was damaged: the loader puts
+	// the ROM's bytes back there and leaves the sample sectors as the project holds them.
+	void testFirmwareSectorsRestored()
+	{
+		std::vector<uint8_t> rom(md::g_romSize);
+		for(size_t i = 0; i < rom.size(); ++i)
+			rom[i] = static_cast<uint8_t>((i * 7u) ^ (i >> 11));
+		auto flash = rom;
+		constexpr size_t os = 6, sample = 0x30;
+		flash[os * md::g_uwFlashSectorSize + 100] ^= 0x5a;				// damage in the OS
+		flash[sample * md::g_uwFlashSectorSize + 5] ^= 0x33;			// a sample the user recorded
+		std::vector<uint8_t> state;
+		md::DecodedState decoded;
+		check(md::encodeState(state, makePatchRam(), flash, rom, rom, md::MachineModel::Machinedrum,
+			synthLib::StateTypeGlobal) && md::decodeState(decoded, state, rom, md::MachineModel::Machinedrum,
+			synthLib::StateTypeGlobal), "a state with a damaged OS sector decodes (its CRC is the stored bytes')");
+		check(md::restoreFirmwareSectors(decoded.flashOverlay, rom) == 1, "one damaged firmware sector restored");
+		std::vector<uint8_t> applied;
+		check(md::applyFlashOverlay(applied, decoded.flashOverlay, rom, rom), "the overlay applies");
+		auto expected = flash;
+		std::copy_n(rom.begin() + os * md::g_uwFlashSectorSize, md::g_uwFlashSectorSize,
+			expected.begin() + os * md::g_uwFlashSectorSize);
+		check(applied == expected, "the OS sector is the ROM's, the sample sector the project's");
+		check(md::restoreFirmwareSectors(decoded.flashOverlay, rom) == 0, "an image whose firmware is the ROM's: nothing to do");
+		check(md::g_mdFirmwareFlashEnd == 0x200000 && md::g_mdFirmwareFlashEnd <= 0x2c0000,
+			"the firmware's area ends below every sector OS 1.63 writes (0x2c0000-0x7bffff)");
+	}
+
 	void testFactoryCache()
 	{
 		std::vector<uint8_t> rom(md::g_romSize, 0xff);
@@ -355,6 +383,7 @@ int main()
 	testKnownFingerprints();
 	testSparseProjectState();
 	testMonomachineUserFlashState();
+	testFirmwareSectorsRestored();
 	testFactoryCache();
 	testCacheFilePublication();
 	std::printf("\n%s (%d failures)\n", g_failures == 0 ? "OK" : "FAILED",

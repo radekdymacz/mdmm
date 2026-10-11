@@ -208,6 +208,11 @@ namespace dsp56k
 
 		TReg24	getPC							() const									{ return reg.pc; }
 
+		// The PC left valid P memory: onInvalidPC() halted this DSP and exec() runs nothing (and no cycles pass)
+		// until something moves the PC back. A host that steps the DSP on its own thread must stop waiting on its
+		// cycles then (B-054, md::Hardware), or it waits for good.
+		bool	isHaltedAtInvalidPC				() const									{ return reg.pc.toWord() >= mem.sizeP(); }
+
 		ASMJIT_FORCE_INLINE void exec() noexcept
 		{
 			if(g_useJIT)
