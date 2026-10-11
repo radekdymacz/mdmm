@@ -252,6 +252,12 @@ namespace
 		check(of(P::Running, true, A::Unseen) == Lifecycle::Animating, "replied, telemetry not looked at: not ready");
 		check(of(P::Running, true, A::Running) == Lifecycle::Animating, "the start-up animation runs");
 		check(of(P::Running, true, A::Over) == Lifecycle::Ready, "animation over: ready");
+		// B-052: the lifecycle is what the facts say now. A first reply read after the animation ended goes from
+		// booting straight to ready: right (the machine takes input), and the page's start-up card shows "animating"
+		// as "booting" anyway. The facts must be read while the animation runs to show it: the session's step needs
+		// the device lock for them (mdFirstStartFirmwareTest paces its audio as a host does).
+		check(of(P::Running, false, A::Running) == Lifecycle::Booting && of(P::Running, true, A::Running) == Lifecycle::Animating
+			&& of(P::Running, true, A::Over) == Lifecycle::Ready, "the first reply during the animation: animating, after it: ready");
 		check(of(P::Running, true, A::Absent) == Lifecycle::Ready, "no telemetry: the first reply is all there is");
 		check(of(P::Wire, false, A::Absent, 100) == Lifecycle::HwConnecting, "HW: waiting for the first reply");
 		check(of(P::Wire, false, A::Absent, 5100) == Lifecycle::HwLost, "HW: nothing for 5 s");

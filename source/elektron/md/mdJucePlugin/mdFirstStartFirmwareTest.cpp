@@ -19,6 +19,7 @@
 #include "juce_audio_utils/juce_audio_utils.h"
 #include "synthLib/romLoader.h"
 
+#include <algorithm>
 #include <atomic>
 #if JUCE_MAC
 #include <CoreFoundation/CoreFoundation.h>
@@ -75,6 +76,7 @@ namespace
 		int romSamples = 0;						// ROM slots in the samples document the page holds
 		int romFilled = 0;						// ... that hold a sample
 		bool ready = false;
+		double longestLockWaitMs = 0;			// the longest this (message) thread waited for the device lock
 
 		std::string heldText() const
 		{
@@ -100,9 +102,9 @@ namespace
 		}
 	};
 
-	// One start: a processor on the device home, the page attached, until the machine has taken input for 10 s and the
-	// page holds the samples (or 90 s passed without them; at most 420 s in all: a loaded computer runs the emulator
-	// slower than real time).
+	// One start: a processor on the device home, the page attached, the audio paced at real time, until the machine has
+	// taken input for 10 s and the page holds the samples (or 90 s passed without them; at most 420 s in all: a loaded
+	// computer runs the emulator slower than real time).
 	Start start(const juce::File& _home)
 	{
 		mdJucePlugin::AudioPluginAudioProcessor::EphemeralConfig config;
@@ -115,11 +117,25 @@ namespace
 		{
 			juce::AudioBuffer<float> buf(ap.getTotalNumOutputChannels(), 128);
 			juce::MidiBuffer midi;
+			// B-052: one block per block's time, as a host calls it. Blocks back to back (this test before 0.5.1)
+			// hold the device lock nearly all the time; macOS's mutex is not fair, so the message thread waited up
+			// to 1.9 s for it, the session's steps came seconds apart and the machine, at 2.5x real time, ended its
+			// 9.4 s start-up animation (3.7 s of wall time) before the desk had seen it take MIDI. A late-running
+			// block is not made up with a burst (a host drops it).
+			const auto blockTime = std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+				std::chrono::duration<double>(128.0 / 44100.0));
+			auto due = std::chrono::steady_clock::now();
 			while(run)
 			{
 				midi.clear();
 				buf.clear();
-				ap.processBlock(buf, midi);	// as fast as it goes: machine time, not wall time, is what the checks wait for
+				ap.processBlock(buf, midi);
+				due += blockTime;
+				const auto now = std::chrono::steady_clock::now();
+				if(due > now)
+					std::this_thread::sleep_until(due);
+				else if(now - due > std::chrono::milliseconds(100))
+					due = now;
 			}
 		});
 
@@ -180,11 +196,15 @@ namespace
 		while(std::chrono::steady_clock::now() < end)
 		{
 			pump(50);
-			const void* now = processor->getPlugin().withDeviceLocked([](synthLib::Device* _d) -> const void*
+			const auto asked = std::chrono::steady_clock::now();
+			auto got = asked;
+			const void* now = processor->getPlugin().withDeviceLocked([&got](synthLib::Device* _d) -> const void*
 			{
+				got = std::chrono::steady_clock::now();
 				auto* d = dynamic_cast<md::DeskDevice*>(_d);
 				return d ? &d->getHardware() : nullptr;
 			});
+			s.longestLockWaitMs = std::max(s.longestLockWaitMs, std::chrono::duration<double, std::milli>(got - asked).count());
 			if(now && now != machine)
 			{
 				machine = now;
@@ -210,8 +230,16 @@ namespace
 		processor.reset();
 		std::printf("  lifecycle: %s; %d LCD frames (%d while loading); %d machine(s); %d reset(s); %.0f s\n", s.sequence().c_str(), s.lcd,
 			s.lcdWhileLoading, s.machines, s.resets, std::chrono::duration<double>(std::chrono::steady_clock::now() - began).count());
+		std::printf("  the message thread waited at most %.0f ms for the device lock\n", s.longestLockWaitMs);
 		std::printf("  the page holds: %s; %d ROM sample slot(s), %d filled\n", s.heldText().c_str(), s.romSamples, s.romFilled);
 		return s;
+	}
+
+	// B-052: the session sees the machine take MIDI on the message thread, which needs the device lock: a wait as long
+	// as the animation (9.4 s of machine time) hides it. Said with the animation's check, so a failure explains itself.
+	std::string lockNote(const Start& _s)
+	{
+		return " (the message thread waited at most " + std::to_string(static_cast<int>(_s.longestLockWaitMs)) + " ms for the device lock)";
 	}
 }
 
@@ -238,7 +266,7 @@ int main()
 	check(first.machines == 2, "the processor started the machine again after the flash was prepared");
 	check(!first.lifecycles.empty() && first.lifecycles.front() == "loading", "the page sees the preparation first");
 	check(first.count("loading") == 1 && first.count("booting") == 1 && first.count("animating") == 1,
-		"one preparation, then one start with one animation");
+		"one preparation, then one start with one animation" + lockNote(first));
 	check(first.lcdWhileLoading == 0, "no LCD from the machine that is being prepared");
 	check(first.lcd > 0, "the start-up card shows the LCD of the start that stays");
 	check(cache.existsAsFile(), "the factory cache is kept (the editor did not disturb the preparation)");
@@ -249,7 +277,7 @@ int main()
 	check(next.ready, "the machine takes input");
 	check(next.machines == 1, "no second start");
 	check(next.count("loading") == 0, "no preparation");
-	check(next.count("booting") == 1 && next.count("animating") == 1, "one start with one animation");
+	check(next.count("booting") == 1 && next.count("animating") == 1, "one start with one animation" + lockNote(next));
 	check(next.held.count("samples") && next.romSamples == 48, "the page holds the samples document, 48 ROM slots");
 	check(first.held == next.held && first.romFilled == next.romFilled,
 		"the first start's page holds what the next start's does: " + first.heldText());
