@@ -88,13 +88,13 @@ const editorMenu = { type: "editorMenu", menu: 7, title: "Machinedrum Editor 0.5
 	{ kind: "action", id: "zoom-in", label: "Zoom", n: 0 },
 	{ kind: "submenu", id: "developer", label: "Developer", items: [
 		{ kind: "action", id: "perf", label: "Start Performance Capture", n: 1 },
-		{ kind: "action", id: "legacy-emulation", label: "Speed-ups off (legacy emulation, slower)", checked: true, n: 2 },
+		{ kind: "action", id: "speed-ups", label: "Speed-ups (faster, same sound)", checked: true, n: 2 },
 		{ kind: "submenu", id: "speedup-levers", label: "Speed-ups (each)", enabled: false, items: [
 			{ kind: "action", id: "speedup-L1", label: "L1", checked: true, enabled: false, n: 3 }] },
 		{ kind: "action", id: "exact-essi-timing", label: "Exact MD audio timing", checked: false, enabled: false, n: 4 }] }] };
 const picks = [];
 const items = CpuMeter.speedItems(editorMenu, n => picks.push(n));
-check(items.length === 3 && items[0].label === "Speed-ups" && items[0].checked === false && items[1].label === "Speed-ups (each)…" && items[1].items.length === 1
+check(items.length === 3 && items[0].label === "Speed-ups" && items[0].checked === true && items[1].label === "Speed-ups (each)…" && items[1].items.length === 1
 	&& items[2].id === "exact-essi-timing", "the switch (ticked when the speed-ups are on), Speed-ups (each)… and L3: " + items.map(i => `${i.label}=${i.checked}`).join(", "));
 items[0].run();
 check(picks.join() === "2", "choosing Speed-ups picks the editor menu's own entry (the same action, the same saved setting)");

@@ -71,16 +71,16 @@ const CpuMeter = (() => {
 		return lines;
 	}
 
-	/* the editor menu's speed-up entries (Developer: legacy-emulation, speedup-levers, exact-essi-timing) as items
-	   (pure): the switch shown as "Speed-ups" ticked when on, the levers as a submenu "Speed-ups (each)…" */
+	/* the editor menu's speed-up entries (Developer: speed-ups, speedup-levers, exact-essi-timing) as items
+	   (pure): the switch ("Speed-ups", ticked when on), the levers as a submenu "Speed-ups (each)…" */
 	function speedItems(m, pick) {
 		const dev = ((m && m.items) || []).find(x => x.id === "developer");
 		const kids = (dev && dev.items) || [];
-		const want = ["legacy-emulation", "speedup-levers", "exact-essi-timing"];
+		const want = ["speed-ups", "speedup-levers", "exact-essi-timing"];
 		const found = want.map(id => kids.find(x => x.id === id)).filter(Boolean);
 		if (!found.length || typeof DeskMenu === "undefined") return [];
 		return DeskMenu.fromEditor(found, pick).map(it => {
-			if (it.id === "legacy-emulation") return Object.assign({}, it, { label: "Speed-ups", checked: !it.checked });
+			if (it.id === "speed-ups") return Object.assign({}, it, { label: "Speed-ups" });
 			if (it.id === "speedup-levers") return Object.assign({}, it, { label: "Speed-ups (each)…" });
 			return it;
 		});

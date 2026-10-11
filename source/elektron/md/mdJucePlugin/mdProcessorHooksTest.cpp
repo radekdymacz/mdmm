@@ -281,11 +281,11 @@ namespace
 
 // I-018: the editor's menu as a native popup (jucePluginEditorLib::toPopupMenu, the fallback with no page up): every
 // entry that can run has an item ID of its own, because JUCE's popup never triggers an item whose ID is 0 (a click on
-// Developer > Speed-ups off closed the menu and ran nothing).
+// Developer > Speed-ups closed the menu and ran nothing).
 void verifyNativeMenuEntriesCanBeTriggered()
 {
 	juceRmlUi::Menu developer;
-	developer.addEntry("Speed-ups off (legacy emulation, slower)", true, [] {});
+	developer.addEntry("Speed-ups (faster, same sound)", true, [] {});
 	juceRmlUi::Menu levers;
 	levers.addEntry("L1", true, [] {});
 	levers.addEntry("L11", true, [] {});

@@ -395,14 +395,14 @@ const Journey = (() => {
 		async play(hands, c) { if (!cpu.playing()) { hands.click("#play"); c.started = true; await until(cpu.playing, 4000); } },
 		async stop(hands, c) { if (c.started && cpu.playing()) { hands.click("#play"); await until(() => !cpu.playing(), 4000); } c.started = false; }
 	};
-	/* Developer › Speed-ups off and Speed-ups (each), both editors: each choice turns what the machine runs (read back
+	/* Developer › Speed-ups and Speed-ups (each), both editors: each choice turns what the machine runs (read back
 	   from the plug-in: the cpuLoad message's speedUps and leversOff, which the processor reads from the device under its
 	   lock once a second) and the menu's tick, both ways. speedUpsMenuJourney(prefix): the umbrella from on to off to on
 	   (from off: off, on, off), then every lever off and on again with the umbrella on. The tidy puts all back. */
 	const speed = {
 		ticked: id => $q(menu.id(id))?.getAttribute("aria-checked") === "true",
 		enabled: id => !!$q(menu.id(id)) && !$q(menu.id(id)).disabled,
-		legacy: () => speed.ticked("legacy-emulation"),
+		legacy: () => !speed.ticked("speed-ups"),
 		machine: () => { const m = CpuMeter.last; return m ? m.speedUps : "no reading"; },
 		leverOff: key => !!(CpuMeter.last && (CpuMeter.last.leversOff || []).includes(key)),
 		/* the settings file's (what the next session starts with) */
@@ -415,12 +415,12 @@ const Journey = (() => {
 		keys: () => [...document.querySelectorAll('#deskmenu [data-mid^="speedup-"]')].map(b => b.dataset.mid).filter(x => x !== "speedup-levers"),
 		/* the Developer submenu (and the levers' one) as the plug-in sends it now */
 		open: async (hands, levers) => { if (menu.on()) closeDeskMenu(); await until(() => !$q("#modalbg") || $q("#modalbg").hidden, 2000); await sleep(150); await menu.via(hands, levers ? ["developer", "speedup-levers"] : ["developer"]);
-			if (!await until(() => !!$q(menu.id(levers ? "speedup-L1" : "legacy-emulation")), 2000)) throw new Error("no speed-ups entry in Developer"); },
+			if (!await until(() => !!$q(menu.id(levers ? "speedup-L1" : "speed-ups")), 2000)) throw new Error("no speed-ups entry in Developer"); },
 		pick: async (hands, id, levers) => { await speed.open(hands, levers); hands.click(menu.id(id)); await until(() => !menu.on(), 2000); }
 	};
 	const speedUpsMenuJourney = prefix => {
-		const toggle = (n, want) => ({ say: `choose Speed-ups off (${n}): the machine's speed-ups and the menu's tick turn`,
-			act: async (hands, c) => { c.want = want(c); await speed.pick(hands, "legacy-emulation");
+		const toggle = (n, want) => ({ say: `choose Speed-ups (${n}): the machine's speed-ups and the menu's tick turn`,
+			act: async (hands, c) => { c.want = want(c); await speed.pick(hands, "speed-ups");
 				await until(() => (speed.machine() === "off") === c.want, 4000);
 				await speed.open(hands); c.tick = speed.legacy(); closeDeskMenu(); },
 			screen: c => ok(c.tick === c.want, `ticked ${c.tick}, wanted ${c.want}`),
@@ -441,13 +441,13 @@ const Journey = (() => {
 			name: `${prefix}-dev-speedups`,
 			needs: () => typeof CpuMeter === "undefined" ? "no CPU meter (its cpuLoad message carries the machine's speed-ups)" : null,
 			steps: [
-				{ say: "open Developer: Speed-ups off, its tick as the machine runs", act: async (hands, c) => { await speed.open(hands); c.legacy0 = speed.legacy(); closeDeskMenu(); },
+				{ say: "open Developer: Speed-ups, ticked when the machine runs them", act: async (hands, c) => { await speed.open(hands); c.legacy0 = speed.legacy(); closeDeskMenu(); },
 					machine: c => ok((speed.machine() === "off") === c.legacy0, `ticked ${c.legacy0}, the machine ${speed.machine()}`), within: 4000 },
 				toggle("first", c => !c.legacy0), toggle("again", c => c.legacy0), toggle("a third time", c => !c.legacy0), toggle("back", c => c.legacy0),
 				cpuToggle("first", c => !c.legacy0), cpuToggle("back", c => c.legacy0),
 				{ say: "in the CPU meter's details, Speed-ups (each)… lists every lever; L1 off there and on again (the machine and the settings follow)",
 					act: async (hands, c) => {
-						if (speed.machine() === "off") { await speed.pick(hands, "legacy-emulation"); await until(() => speed.machine() !== "off", 4000); }
+						if (speed.machine() === "off") { await speed.pick(hands, "speed-ups"); await until(() => speed.machine() !== "off", 4000); }
 						c.res = [];
 						for (const on of [false, true]) {
 							await speed.cpuOpen(hands);
@@ -463,7 +463,7 @@ const Journey = (() => {
 					screen: c => ok(c.levers >= 8 && c.res.every(x => /ok$/.test(x)), `${c.levers} levers; ${c.res.join("; ")}`), within: 1000 },
 				{ say: "with the speed-ups on: each lever in Speed-ups (each) off, then on again (the tick and the machine's levers)",
 					act: async (hands, c) => {
-						if (speed.machine() === "off") { await speed.pick(hands, "legacy-emulation"); await until(() => speed.machine() !== "off", 4000); }
+						if (speed.machine() === "off") { await speed.pick(hands, "speed-ups"); await until(() => speed.machine() !== "off", 4000); }
 						await speed.open(hands, true); const ids = speed.keys(); closeDeskMenu();
 						c.bad = []; c.n = ids.length;
 						for (const id of ids) {
@@ -483,7 +483,7 @@ const Journey = (() => {
 				if (c.legacy0 === undefined) return;
 				try {
 					await speed.open(hands); const now = speed.legacy(); closeDeskMenu();
-					if (now !== c.legacy0) await speed.pick(hands, "legacy-emulation");
+					if (now !== c.legacy0) await speed.pick(hands, "speed-ups");
 				} catch (_) { if (menu.on()) closeDeskMenu(); }
 			}
 		};

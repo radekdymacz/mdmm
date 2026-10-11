@@ -43,12 +43,12 @@ per cent less, because the one thing that stays on is the `processUC` gating, pa
 cannot change anything, so it has no switch). **Both positions produce the same audio, bit for bit**, checked on
 both firmwares (audio, RAM, SRAM, loader RAM, patch RAM and MIDI out are compared); only the host CPU differs.
 
-- **Menu: Developer > Speed-ups off (legacy emulation, slower).** Ticked is the old
-  emulation. The choice applies at once, without restarting, and is kept in the plug-in's settings (key
-  `legacyEmulation`) and across project loads.
+- **Menu: Developer > Speed-ups (faster, same sound).** Ticked (the default) the speed-ups run; unticked is the
+  old, slower emulation, and the items under Speed-ups (each) are then greyed and unticked. The choice applies at once, without restarting, and is kept in the plug-in's settings (key
+  `legacyEmulation`, true when they are off) and across project loads.
 - **`GEARMULATOR_MDMM_SPEEDUPS=0`** starts every new session with the speed-ups off. Set it as an
   environment variable **before starting the host**; remove it to go back to the default (on). It only sets the
-  starting position: a ticked menu item also starts a session with the speed-ups off, and the menu can
+  starting position: an unticked menu item also starts a session with the speed-ups off, and the menu can
   change either at run time.
 
 Everything the speed-ups switch turns off:

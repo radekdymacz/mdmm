@@ -65,7 +65,7 @@ no journey yet); **not testable** (why). "—": the editor has no such feature.
 | Undo / Redo keys and Cmd+Z, Cmd+Shift+Z | md-top-undo-redo PASS | mm-top-undo-redo PASS |
 | The editor's menu in the page (I-008): right-click the header and the rail, submenu by keys, Zoom, Updates › Check Daily | md-top-editor-menu PASS | mm-top-editor-menu PASS |
 | The CPU meter beside the version (I-018): reads a share, every top-bar key in the window, moves while playing, a click opens its details, Esc closes them (2026-10-11, standalone and VST3) | md-top-cpu-meter PASS | mm-top-cpu-meter PASS |
-| Developer › Speed-ups off and Speed-ups (each), and the same from the CPU details: the machine, the saved setting and the tick follow, both ways, every lever (2026-10-11, standalone and VST3) | md-dev-speedups PASS | mm-dev-speedups PASS |
+| Developer › Speed-ups and Speed-ups (each), and the same from the CPU details: the machine, the saved setting and the tick follow, both ways, every lever (2026-10-11, standalone and VST3) | md-dev-speedups PASS | mm-dev-speedups PASS |
 | Undo works over the library | md-lib-kit-copy-paste-undo PASS | mm-lib-kit-copy-paste-undo PASS |
 | Questions: start on Cancel, Esc answers Cancel | md-dialog-esc-space-cancel PASS | mm-dialog-esc-cancel PASS |
 | Space presses the dialog's focused button (0.3.0) | md-dialog-esc-space-cancel PASS | mm-dialog-keys-behind PASS |
