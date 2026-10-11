@@ -1154,6 +1154,8 @@ const SongSlots = (() => {
 		dc.addEventListener("keydown", e => {
 			if (!host || e.altKey || !inColumn() || dialogOpen()) return;
 			const mod = Modifiers.cmd(e), k = e.key; let h = true;
+			/* Enter (and Delete) on a focused action button is that button's own, not the slot's Load/Clear */
+			if ((k === "Enter" || k === "Delete" || k === "Backspace") && doc().activeElement.closest("[data-sa]")) return;
 			if (!mod && !e.shiftKey && /^Arrow/.test(k)) move(k);
 			else if (!mod && k === "Enter") act("load");
 			else if (!mod && k === "F2") act("rename");
