@@ -28,7 +28,7 @@ The Machinedrum holds 32 songs. A song has up to 256 rows. The song you see in t
 NOTE: The machine loads a song only while it is stopped. While it plays, the editor refuses and says "Stop first".
 
 ## PLAYING A SONG
-<!-- rows: MD-145 MD-147 MD-160 MD-161 @281425 -->
+<!-- rows: MD-145 MD-147 MD-160 MD-161 @4a10bb -->
 
 In song mode the machine plays the song from the first row, row by row, to the END row.
 
@@ -52,7 +52,7 @@ When the host sends a song position, the machine follows it. The editor has no c
 {gap:MD-147}The editor does not show how many turns of a repeat are left.{/gap}
 
 ## NAVIGATING A SONG
-<!-- rows: MD-146 @3eff58 -->
+<!-- rows: MD-146 @74e5c2 -->
 
 Click a cell of the arrangement to select that row. Press {key:song-row} to move to the previous or next row. A selected row is the one you edit.
 
@@ -135,7 +135,7 @@ A row can play a part of its pattern, from a step you choose and for a number of
 The cell of a row with a part shows ~.
 
 ## SONG TRANSPORT
-<!-- rows: MD-148 @db2591 -->
+<!-- rows: MD-148 @c42d16 -->
 
 {gap:MD-148}On the machine, [STOP] holds the song and a second [STOP] starts it. The editor has no such key. {key:play-stop} plays and stops.{/gap}
 

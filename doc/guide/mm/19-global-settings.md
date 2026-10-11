@@ -55,7 +55,7 @@ A track has a channel only if its channel is 15 or lower. A base channel of 16 r
 The machine takes NRPN control and uses program change to select patterns. Automation and MIDI from a DAW reach it as they reach the machine.
 
 ### CONTROL OUT1
-<!-- rows: MM-295 @3a6aa9 -->
+<!-- rows: MM-295 @63f101 -->
 
 {gap:MM-295}You cannot send the sequencer, the arpeggiator or the keyboard to the MIDI out of the machine in the editor yet.{/gap}
 
@@ -122,7 +122,7 @@ Files go into the slots they came from.
 The Monomachine takes a dump only on its SysEx receive screen. The editor opens it for you. With a real Monomachine over MIDI, the sync field on the second line of the LCD reads SEND and the number of waiting edits. Click it and follow the steps.
 
 ## DIGIPRO MANAGER
-<!-- rows: MM-310 @c577a7 -->
+<!-- rows: MM-310 @cd7e9d -->
 
 {gap:MM-310}You cannot send, receive, rename or erase user waveforms in the editor.{/gap}
 
