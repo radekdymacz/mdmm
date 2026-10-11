@@ -230,8 +230,39 @@ def gate_plan(base, rows):
 	return 0
 
 
+def check_map(rows):
+	"""the map itself (ctest mdmmAffectedMapTest): columns, regexes, gate stages, goldens, and a few paths where they belong"""
+	problems = []
+	for r in rows:
+		for col in ("ctest", "firmware"):
+			v = r[col]
+			if v not in ("-", "all") and not v.startswith("L:"):
+				try:
+					re.compile(v)
+				except re.error as e:
+					problems.append(f"{r['path']}: {col} {v!r}: {e}")
+		if r["goldens"] not in ("yes", "no"):
+			problems.append(f"{r['path']}: goldens {r['goldens']!r}")
+		if r["gate"] not in ("-", "all") and set(r["gate"].split()) - set(GATE_STAGES):
+			problems.append(f"{r['path']}: unknown gate stages {sorted(set(r['gate'].split()) - set(GATE_STAGES))}")
+	for path, want in [("source/elektron/md/mdJucePlugin/skins/mdStudio/mdDeskSeq.js", "source/elektron/md/mdJucePlugin/skins/mdStudio/mdDeskSeq*"),
+			("source/elektron/md/mdLib/mdhardware.cpp", "source/elektron/md/mdLib/*"), ("source/dsp56300/source/dsp56kEmu/dsp.cpp", "source/dsp56300/*"),
+			("doc/release/CI.md", "doc/*"), ("README.md", "*.md"), ("nowhere/new.cpp", "(no row)")]:
+		got = row_for(path, rows)["path"]
+		if got != want:
+			problems.append(f"{path} takes {got}, not {want}")
+	if row_for("source/elektron/md/mdLib/x.cpp", rows)["goldens"] != "yes":
+		problems.append("emulation code must run the goldens")
+	for p in problems:
+		say("FAIL " + p)
+	say(f"mdmm-affected.tsv: {len(rows)} rows, " + ("PASS" if not problems else f"{len(problems)} problem(s)"))
+	return 1 if problems else 0
+
+
 def main():
 	args = sys.argv[1:]
+	if args[:1] == ["--check-map"]:
+		return check_map(load_map())
 	if args[:1] == ["--gate-plan"]:
 		if len(args) < 2:
 			raise SystemExit("--gate-plan <commit>: the stages for HEAD since that commit")
