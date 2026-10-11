@@ -189,6 +189,14 @@ Lower average CPU is not evidence of crackle-free playback; the stability gate i
 
 ## 8. Rules
 
+**Small wins count (Radek, 2026-10-11).** The big levers are in; from 0.6 we accumulate small ones. A change is
+taken when it is bit-exact (goldens 24/24 + the opt-in keys), measured on deterministic counters with paired runs
+and gains at least 0.5 % of host instructions or cycles per frame on one machine and phase without costing more
+than 0.3 % on another, stays simple (no new threads, no new protocol), and sits behind the speed-ups switch with its
+own per-lever switch. The old "≥ 5 % or drop" and research kill lines no longer apply to bit-exact changes; they still
+apply to anything that changes behaviour or sound.
+
+
 - Every optimisation passes the bit-exact gate (codec output, RAM and DSP-state hashes) unless it is marked as an
   audio or behaviour change. Marked changes (L3, L7, sleep when silent) need their own correctness decision,
   acceptance tests and Radek's sign-off.
