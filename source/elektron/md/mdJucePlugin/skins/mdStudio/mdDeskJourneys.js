@@ -624,11 +624,11 @@ const MdJourneys = (() => {
 		name: "md-song-chain", proves: ["MD-098"],
 		steps: [
 			go("song"),
-			{ say: "click Chain and pads A02, A03: the machine plays the chain", act: async u => { u.click('[data-set="songpick"] button[data-v="chain"]'); await sleep(200); u.click('[data-bank="0"]'); await sleep(200); u.click('[data-chainpad="1"]'); await sleep(100); u.click('[data-chainpad="2"]'); },
+			{ say: "click Chain and pads A02, A03: the machine plays the chain", act: async (u, c) => { c.m0 = V.songMode; u.click('[data-set="songpick"] button[data-v="chain"]'); await sleep(200); u.click('[data-bank="0"]'); await sleep(200); u.click('[data-chainpad="1"]'); await sleep(100); u.click('[data-chainpad="2"]'); },
 				machine: () => ok(desk().chain?.active && same(desk().chain.patterns, [1, 2]), "chain " + JSON.stringify(desk().chain)), screen: () => ok(/CHAIN/.test($1("#songPlays")?.textContent || ""), "header " + $1("#songPlays")?.textContent), within: 6000 },
 			{ say: "click Clear: the chain ends", act: u => u.click('[data-chain="clear"]'), machine: () => ok(!desk().chain?.active, "chain " + JSON.stringify(desk().chain)), within: 6000 }
 		],
-		async tidy(u, c) { if (desk().chain?.active) cmd("chainClear"); if (S.ws === "song") u.click('[data-set="songpick"] button[data-v="song"]'); }
+		async tidy(u, c) { if (desk().chain?.active) cmd("chainClear"); if (c.m0 === true && V.songMode !== true) { cmd("seqMode", { song: true }); await sleep(1000); } }
 	};
 
 	/* ---------- Sampler ---------- */
