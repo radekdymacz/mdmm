@@ -660,7 +660,12 @@ const MdJourneys = (() => {
 	const audition = {
 		/* a machine with no UW sample in its ROM slots (a fresh sandbox, B-012) has nothing to audition: skipped, not failed
 		   (the 0.5.1 gate failed it in 3 of 4 runs for that) */
-		name: "md-sampler-audition", needs: () => Docs.samples && !(Docs.samples.rom || []).some(s => s && !s.empty) ? "no UW sample in the ROM slots (a fresh sandbox, B-012)" : null,
+		name: "md-sampler-audition", needs: async () => {
+			const has = () => !!Docs.samples && (Docs.samples.rom || []).some(s => s && !s.empty);
+			/* the bank comes a moment after the machine is ready (the device reads it when its memory changed) */
+			await until(has, 8000);
+			return has() ? null : Docs.samples ? "no UW sample in the ROM slots (a fresh sandbox, B-012)" : "the sample bank was not read in 8 s";
+		},
 		steps: [
 			go("sampler"),
 			{ say: "click a ROM slot's play key: it plays", act: async (u, c) => { const k = $all(".slotk.rom.has")[0]; if (!k) throw new Error("no ROM sample"); u.click(k); await sleep(400); results.length = 0; const b = $all("[data-aud]").find(x => !x.disabled); if (!b) throw new Error("no play key"); c.key = b.dataset.aud;
