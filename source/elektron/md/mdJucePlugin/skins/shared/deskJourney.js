@@ -488,6 +488,13 @@ const Journey = (() => {
 			}
 		};
 	};
+	/* The top bar's keys outside the window ([] when all are in). Checked only where the page's text is as designed: on
+	   a page zoomed below 100 % (a window under 1440 x 720 points, the background runs' small window) WebKit raises 9 to
+	   15 px text to its minimum logical font size, so the same CSS width holds less (B-056, B-061) and the Machinedrum's
+	   top bar is cut there. textFloor: what a 9 px text is laid out at. */
+	const textFloor = () => { const x = document.createElement("span"); x.style.fontSize = "9px"; document.body.appendChild(x); const v = parseFloat(getComputedStyle(x).fontSize); x.remove(); return v; };
+	const topRaised = () => textFloor() > 9.05;
+	const topOut = () => topRaised() ? [] : [...document.querySelectorAll(".top button")].filter(b => { const r = b.getBoundingClientRect(); return r.width > 0 && (r.right > innerWidth + 0.5 || r.left < -0.5); });
 	const cpuMeterJourneys = prefix => [{
 		name: `${prefix}-top-cpu-meter`,
 		steps: [
@@ -496,7 +503,8 @@ const Journey = (() => {
 					return ok(!!m && r.width > 0 && r.height > 0 && m.dataset.state === "running" && /^\d+ %$/.test(m.querySelector(".cpuval").textContent)
 						&& (!$q(".setgroup .grplabel .aboutver") || $q(".setgroup .grplabel .aboutver").compareDocumentPosition(m) & 4), cpu.says()); } },
 			{ say: "every key of the top bar is inside the window (the Setup keys last, at the right)",
-				screen: () => { const out = [...document.querySelectorAll(".top button")].filter(b => { const r = b.getBoundingClientRect(); return r.width > 0 && (r.right > innerWidth + 0.5 || r.left < -0.5); });
+				act: (hands, c) => { if (topRaised()) c.note = `9 px text laid out at ${textFloor().toFixed(2)} px (page zoomed out): the fit is checked at 100 % only (B-061)`; },
+				screen: () => { const out = topOut();
 					return ok(!out.length, out.map(b => (b.id || b.textContent.trim()) + " at " + Math.round(b.getBoundingClientRect().right) + " of " + innerWidth).join(", ")); } },
 			{ say: "press PLAY: while the machine plays, the meter moves (its share read every 250 ms for 3 s)",
 				act: async (hands, c) => { await cpu.play(hands, c); c.loads = []; for (let i = 0; i < 12; i++) { await sleep(250); c.loads.push(cpu.el()?.dataset.load || ""); } },
@@ -531,8 +539,8 @@ const Journey = (() => {
 		el: () => $q(".lcdgroup .lcdpanel #volf"),
 		plugin: () => DeskVolume.last && "gainDb" in DeskVolume.last ? DeskVolume.last.gainDb : "no reading",
 		tip: () => [...document.querySelectorAll(".voltip")].find(t => !t.hidden)?.textContent || "",
-		/* the volume from its plug-in reading, within 2.5 s */
-		follows: want => until(() => DeskVolume.last && DeskVolume.last.gainDb === want && DeskVolume.gain === want, 2500),
+		/* the volume from its plug-in reading (a step's machine check is synchronous; the runner polls it) */
+		follows: want => !!DeskVolume.last && DeskVolume.last.gainDb === want && DeskVolume.gain === want,
 		says: () => `page ${DeskVolume.gain}, plug-in ${vol.plugin()}`
 	};
 	const volumeJourneys = prefix => [{
@@ -542,32 +550,35 @@ const Journey = (() => {
 				screen: () => { const v = vol.el(), p = $q(".lcdgroup .lcdpanel");
 					if (!v || !p) return ok(false, "no strip");
 					const r = v.getBoundingClientRect(), l = p.getBoundingClientRect();
-					const out = [...document.querySelectorAll(".top button")].filter(b => { const q = b.getBoundingClientRect(); return q.width > 0 && (q.right > innerWidth + 0.5 || q.left < -0.5); });
+					const out = topOut();
 					return ok(l.right - r.right < 10 && r.width >= 18 && r.width <= 32 && r.height >= 0.6 * l.height && v.querySelectorAll(".volbar").length === 2 && !!v.querySelector(".volcap") && !out.length,
 						`strip ${Math.round(r.left)}..${Math.round(r.right)} x ${Math.round(r.height)} in LCD ..${Math.round(l.right)} x ${Math.round(l.height)}; outside: ${out.map(b => b.id || b.textContent.trim()).join(", ")}`); } },
 			{ say: "double-click it: 0 dB, in the plug-in too",
 				act: (hands, c) => { c.orig = DeskVolume.gain; hands.dblclick("#volf"); },
 				screen: () => ok(DeskVolume.gain === 0 && vol.el().getAttribute("aria-valuetext") === "0.0 dB", vol.says()),
-				machine: async () => ok(await vol.follows(0), vol.says()) },
+				machine: () => ok(vol.follows(0), vol.says()) },
 			{ say: "drag it down 12 px: -6 dB, the readout under the LCD says so while it changes",
 				act: async (hands, c) => { await hands.drag("#volf", [[0, 4], [0, 8], [0, 12]], {}, { click: false, settle: 50 }); c.tip = vol.tip(); },
 				screen: c => ok(DeskVolume.gain === -6 && c.tip === "Volume -6.0 dB", `${vol.says()}, readout "${c.tip}"`),
-				machine: async () => ok(await vol.follows(-6), vol.says()) },
+				machine: () => ok(vol.follows(-6), vol.says()) },
 			{ say: "the readout goes a moment after", act: () => sleep(1200), screen: () => ok(!vol.tip(), `still "${vol.tip()}"`) },
 			{ say: "scroll up one notch: -5 dB", act: hands => hands.wheel("#volf", 1),
-				screen: () => ok(DeskVolume.gain === -5, vol.says()), machine: async () => ok(await vol.follows(-5), vol.says()) },
+				screen: () => ok(DeskVolume.gain === -5, vol.says()), machine: () => ok(vol.follows(-5), vol.says()) },
 			{ say: "drag it to the foot: off", act: hands => hands.drag("#volf", [[0, 60], [0, 160]], {}, { click: false }),
 				screen: () => ok(DeskVolume.gain === null && vol.el().classList.contains("off"), vol.says()),
-				machine: async () => ok(await vol.follows(null), vol.says()) },
+				machine: () => ok(vol.follows(null), vol.says()) },
 			{ say: "double-click: 0 dB again", act: hands => hands.dblclick("#volf"),
-				screen: () => ok(DeskVolume.gain === 0, vol.says()), machine: async () => ok(await vol.follows(0), vol.says()) },
+				screen: () => ok(DeskVolume.gain === 0, vol.says()), machine: () => ok(vol.follows(0), vol.says()) },
 			{ say: "press PLAY: the plug-in sends the left and right peaks every 250 ms and the bars follow them (a background standalone is silent: its output is zeroed before the volume)",
 				act: async (hands, c) => { await cpu.play(hands, c); c.seen = []; for (let i = 0; i < 12; i++) { await sleep(250); const m = DeskVolume.last;
 					c.seen.push(m ? [m.peakL, m.peakR, $q("#volf .volL")?.dataset.level, $q("#volf .volR")?.dataset.level].join("/") : "none"); } },
 				screen: c => { const m = DeskVolume.last, moved = c.seen.some(x => /^[\d.]+\/[\d.]+\/[\d.]+\/[\d.]+$/.test(x) && x.split("/").some(v => +v > 0));
 					const quietStandalone = CpuMeter.last && CpuMeter.last.plugin === false;
-					return ok(cpu.playing() && !!m && typeof m.peakL === "number" && typeof m.peakR === "number" && (moved || quietStandalone),
-						`${moved ? "levels" : quietStandalone ? "silent (standalone, background run?)" : "no level"}: ${c.seen.join(" ")}`); } },
+					/* a machine with nothing sounding (the VST3 host starts a factory machine, whose first pattern may be empty)
+					   gives 0 on every reading: the readings still come, the bars still read them */
+					const silent = c.seen.length && c.seen.every(x => x === "0/0/0/0");
+					return ok(cpu.playing() && !!m && typeof m.peakL === "number" && typeof m.peakR === "number" && (moved || quietStandalone || silent),
+						`${moved ? "levels" : quietStandalone ? "silent (standalone, background run?)" : silent ? "silent (nothing sounding)" : "no level"}: ${c.seen.join(" ")}`); } },
 			{ say: "press STOP", act: (hands, c) => cpu.stop(hands, c), screen: () => ok(!cpu.playing(), "still playing") }
 		],
 		async tidy(hands, c) {
@@ -602,7 +613,9 @@ const Journey = (() => {
 	   put back. What moved or changed size is listed, outermost first (an element inside one already listed and
 	   moved with it is left out): [] when the old engine lays the page out as this one. */
 	async function safari15Diff(slack = 2, tries = 3) {
-		const all = [...document.body.querySelectorAll("*")].filter(e => !e.closest("#journey-pointer"));
+		/* the live readouts (the output meter's bars and holds, the CPU meter's bar) move with the audio between the two
+		   measures: their insides are left out, their boxes stay */
+		const all = [...document.body.querySelectorAll("*")].filter(e => !e.closest("#journey-pointer") && !e.parentElement?.closest(".volf, #cpumeter"));
 		const boxes = () => all.map(e => { const r = e.getClientRects().length ? e.getBoundingClientRect() : null; return r && [r.left, r.top, r.width, r.height]; });
 		/* two frames and the fonts (a stylesheet read again declares its fonts again) */
 		const frame = async () => { await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); if (document.fonts) await document.fonts.ready; await sleep(60); };
