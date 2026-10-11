@@ -87,12 +87,12 @@ On the machine you hold a bank key for two seconds so that you can choose the pa
 A chain plays patterns of one bank in the order you pick them, and starts again at the first.
 
 1. Press {key:workspace-5} to open the **Song** workspace.
-2. In the **Patterns** card, click **Chain**.
+2. Click **CHAIN** over the pattern palette.
 3. Click a bank letter.
 4. Click the patterns in the order you want. Each pad shows its number in the chain. After the second pad the machine plays the chain at once. While it plays, the chain starts at the end of the pattern. While it is stopped, [PLAY] starts at the first pad.
 5. Click a numbered pad to take it out. **Back** takes out the last pad. **Clear** ends the chain.
 
-A chain holds up to 16 patterns of one bank, each pattern once. The **Patterns** card says which pattern plays now and which comes next. Choosing a pattern ends the chain. Editing the patterns in it does not.
+A chain holds up to 16 patterns of one bank, each pattern once. The palette says which pattern plays now and which comes next. Choosing a pattern ends the chain. Editing the patterns in it does not.
 
 NOTE: The **Chain** pads are disabled, with a reason, when the engine cannot read or set the chain.
 

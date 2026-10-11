@@ -6,7 +6,7 @@ The Machinedrum Editor runs the Elektron Machinedrum firmware (OS 1.63) behind o
 This chapter maps the machine's front panel and rear connectors to the page. Later chapters follow the manual's order and say how to do each job.
 
 ## FRONT PANEL
-<!-- rows: MD-001 MD-002 MD-003 MD-004 MD-005 MD-006 MD-007 MD-008 MD-009 MD-010 MD-011 MD-012 MD-013 MD-014 MD-015 MD-016 MD-017 MD-018 MD-019 MD-020 MD-021 @4afb2e -->
+<!-- rows: MD-001 MD-002 MD-003 MD-004 MD-005 MD-006 MD-007 MD-008 MD-009 MD-010 MD-011 MD-012 MD-013 MD-014 MD-015 MD-016 MD-017 MD-018 MD-019 MD-020 MD-021 @27e23a -->
 
 The page has three parts. The top bar holds the workspace tabs, the LCD and the Undo, Redo, GLOBAL and panel colour keys. The track rail runs down the left side. The workspace fills the rest.
 
@@ -135,15 +135,13 @@ Press {key:play-stop} to start. The key shows ▶ while the machine is stopped a
 
 ### Pattern or song
 
-The LCD's second line has a **PLAY** field on every workspace. It reads PAT in pattern mode and SONG in song mode, and each click switches. The Song workspace has the same switch. The field shows what the machine reports.
+The LCD's second line has a **PLAY** field on every workspace. It reads PAT in pattern mode and SONG in song mode, and each click switches. On the Song workspace the **PATTERN** and **SONG** keys over the pattern palette do the same. The field shows what the machine reports.
 
 ### Kits and songs
 
 Click the **Kit** field of the LCD to open the kit library. Chapter 3 describes it.
 
-The machine's song menu has no counterpart. On the Song workspace you step through the song slots with a stepper, and the machine loads the slot when it is stopped.
-
-{gap:MD-018}The editor has no song menu to save, name, copy or clear a song slot.{/gap}
+The machine's song menu is the **Songs** column of the Song workspace: load, save, save to another slot with a name, copy, paste, clear and rename. Chapter 9 describes it.
 
 ### TRIG keys
 

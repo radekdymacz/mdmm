@@ -1025,6 +1025,44 @@ void asksAndErrors()
 		msg(R"({"op":"patClear","p":1,"id":9,"g":53})");
 		check(result(9) && result(9)->find("ok")->asBool() == false && last("ask")->find("command")->find("op")->asString() != "patClear",
 			"a pattern not read yet: refused, no question");
+		{
+			// 0.6 wave 1: the song slots. S04 holds a song, S05 and S06 are empty; the library's ops over them.
+			ed::MmSong held;
+			held.position = 3;
+			held.name = {'H', 'E', 'L', 'D'};
+			held.rows[0].bytes[ed::mmSongRow::g_pattern] = 1;
+			held.rows[0].bytes[ed::mmSongRow::g_length] = 16;
+			held.rows[0].bytes[ed::mmSongRow::g_tempo] = held.rows[0].bytes[ed::mmSongRow::g_tempo + 1] = 0xff;
+			held.rows[1].bytes[ed::mmSongRow::g_pattern] = ed::MmSong::g_end;
+			held.rows[1].bytes[ed::mmSongRow::g_tempo] = held.rows[1].bytes[ed::mmSongRow::g_tempo + 1] = 0xff;
+			const auto none = mmDesk::emptySong(held, 4);
+			check(mmDesk::songIsEmpty(none) && !mmDesk::songIsEmpty(held), "a song slot is empty with no name and no row but END");
+			d.onDeviceSysex(ed::encodeMmSong(held));
+			d.onDeviceSysex(ed::encodeMmSong(none));
+			d.onDeviceSysex(ed::encodeMmSong(mmDesk::emptySong(held, 5)));
+			msg(R"({"op":"songPaste","s":4,"id":20,"g":60})");
+			check(result(20) && !result(20)->find("ok")->asBool(), "song paste: nothing copied");
+			msg(R"({"op":"songCopy","s":3,"id":21,"g":61})");
+			msg(R"({"op":"songPaste","s":4,"id":22,"g":61})");
+			check(result(22) && result(22)->find("ok")->asBool() && d.song(4) && d.song(4)->rows[0].pattern() == 1 && d.song(4)->name[0] == 'H' && d.song(4)->position == 4,
+				"song paste into an empty slot: no question, the song written there");
+			msg(R"({"op":"songRename","s":4,"name":"renamed","id":25,"g":64})");
+			check(result(25) && result(25)->find("ok")->asBool() && d.song(4)->name[0] == 'R', "a song renamed: no question");
+			msg(R"({"op":"songCopyTo","from":3,"to":4,"id":23,"g":62})");
+			const auto* over = last("ask");
+			check(over && over->find("ask")->asString() == "overwriteSlot" && over->find("command")->find("op")->asString() == "songCopyTo",
+				"a song written over one that holds something asks first (overwriteSlot)");
+			msg(R"({"op":"songCopyTo","from":3,"to":5,"name":"saved here","id":24,"g":63})");
+			check(result(24) && result(24)->find("ok")->asBool() && d.song(5) && d.song(5)->name[0] == 'S' && d.song(5)->name[6] == 'H' && d.song(5)->rows[0].pattern() == 1,
+				"Save to...: a named copy into an empty slot");
+			msg(R"({"op":"songClear","s":4,"id":26,"g":65})");
+			check(last("ask") && last("ask")->find("ask")->asString() == "clearSlot" && d.song(4)->rows[0].pattern() == 1, "song clear asks first (clearSlot)");
+			msg(R"({"op":"songClear","s":4,"id":27,"g":65,"force":true})");
+			check(result(27) && result(27)->find("ok")->asBool() && mmDesk::songIsEmpty(*d.song(4)), "with force: the song is empty");
+			msg(R"({"op":"songClear","s":5,"id":28,"g":66,"force":true})");
+			msg(R"({"op":"songClear","s":5,"id":29,"g":67})");
+			check(result(29) && result(29)->find("ok")->asBool(), "clearing an empty song asks nothing");
+		}
 		page.clear();
 		d.setProbe(mmDesk::Desk::Probe::Loading);
 		d.setProbe(mmDesk::Desk::Probe::Running);

@@ -252,6 +252,7 @@ body.dockother #rail .railparams>:is(.lpspace,.pagetabs,.pkcol),body.dockother #
 /* @include shared/deskTopFit.css */
 /* I-021: the output meter and volume at the LCD's right end (skins/shared/deskVolume.js, loaded by the plug-in's page) */
 /* @include shared/deskVolume.css */
+/* @include shared/deskSongSlots.css */
 
 /* Wave 3, the trig types (DESIGN-machine-menus.md §2; mockup-next mm-12): Note · Slide · Swing in the row under the roll,
    where the SLIDE and SWING rows were; slide and swing are marks along the foot of the roll */

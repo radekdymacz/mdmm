@@ -113,6 +113,16 @@ namespace mdDesk
 			return n.empty() ? "KIT " + std::to_string(_k.position + 1) : n;
 		}
 
+		// "S03 NAME": a song slot as the desk holds it.
+		std::string songLabel(const Documents& _view, const uint8_t _slot)
+		{
+			char k[8];
+			std::snprintf(k, sizeof(k), "S%02d", _slot + 1);
+			const auto it = _view.songs.find(_slot);
+			const auto name = it != _view.songs.end() ? songNameText(it->second) : std::string();
+			return std::string(k) + (name.empty() ? std::string() : " " + name);
+		}
+
 		// "K05 NAME": the kit that plays as it sounds, another slot as stored.
 		std::string kitLabel(const Documents& _view, const uint8_t _slot)
 		{
@@ -465,7 +475,8 @@ namespace mdDesk
 		const auto kit = currentKit();
 		const auto* row = MdModel::commands().find(deskCore::opOf(_command));
 		const bool library = row && row->group == g_library;
-		const bool clears = library && (deskCore::opOf(_command) == "kitClear" || deskCore::opOf(_command) == "patClear");
+		const auto op = deskCore::opOf(_command);
+		const bool clears = library && (op == "kitClear" || op == "patClear" || op == "songClear");
 		// Every question the changes raise, as one (the answer, force, answers them all).
 		Outcome o;
 		const auto add = [&o](Outcome _a) { o = deskCore::withAsk(std::move(o), _a); };
@@ -484,6 +495,17 @@ namespace mdDesk
 				add(ask("clearSlot", "Clear <b>" + kitLabel(_view, ref.slot) + "</b>? Every track becomes GND-EMPTY.", "Clear kit"));
 			else if(clears && ref.kind == DocKind::Pattern)
 				add(ask("clearSlot", "Clear <b>" + ed::mdPatternName(ref.slot) + "</b>? Its notes and locks are removed.", "Clear pattern"));
+			else if(clears && ref.kind == DocKind::Song)
+			{
+				if(!isEmptySong(std::get<ed::MdSong>(c.before)))
+					add(ask("clearSlot", "Clear <b>" + songLabel(_view, ref.slot) + "</b>? Its rows and its name are removed.", "Clear song"));
+			}
+			else if(library && ref.kind == DocKind::Song)
+			{
+				// a name alone loses nothing; a copy or a paste over a song that holds something does
+				if(op != "songRename" && !isEmptySong(std::get<ed::MdSong>(c.before)))
+					add(ask("overwriteSlot", "Write over <b>" + songLabel(_view, ref.slot) + "</b>? What it holds is replaced.", "Overwrite"));
+			}
 			else if(library && ref.kind == DocKind::Kit && !emptyKit(std::get<ed::MdKit>(c.before)))
 				add(ask("overwriteSlot", "Write over <b>" + kitLabel(_view, ref.slot) + "</b>? What it holds is replaced.", "Overwrite"));
 			else if(library && ref.kind == DocKind::Pattern && anyTrig(std::get<ed::MdPattern>(c.before)))
@@ -699,7 +721,7 @@ namespace mdDesk
 			{"reloadKit", &MdMachine::cmdReloadKit}, {"kitLoad", &MdMachine::cmdKitLoad}, {"kitSaveAs", &MdMachine::cmdKitSaveAs},
 			{"record", &MdMachine::cmdRecord}, {"recTrig", &MdMachine::cmdRecTrig}, {"noteOn", &MdMachine::cmdNoteOn}, {"noteOff", &MdMachine::cmdNoteOff}, {"chain", &MdMachine::cmdChain},
 			{"chainClear", &MdMachine::cmdChainClear}, {"globalSlot", &MdMachine::cmdGlobalSlot},
-			{"selectSong", &MdMachine::cmdSelectSong}, {"reloadSong", &MdMachine::cmdReloadSong},
+			{"selectSong", &MdMachine::cmdSelectSong}, {"reloadSong", &MdMachine::cmdReloadSong}, {"saveSong", &MdMachine::cmdSaveSong},
 			{"sampleName", &MdMachine::cmdSampleName}, {"sampleCancel", &MdMachine::cmdSampleCancel}, {"play", &MdMachine::cmdPlay}, {"stop", &MdMachine::cmdStop},
 			{"mute", &MdMachine::cmdMute}, {"followHost", &MdMachine::cmdFollowHost}, {"seqMode", &MdMachine::cmdSeqMode}};
 		return map;
@@ -726,7 +748,7 @@ namespace mdDesk
 	const std::map<std::string, MdMachine::Handler>& MdMachine::askers()
 	{
 		static const std::map<std::string, Handler> map{{"select", &MdMachine::askSelect}, {"kitLoad", &MdMachine::askKitLoad},
-			{"reloadKit", &MdMachine::askReloadKit}, {"kitSaveAs", &MdMachine::askKitSaveAs}};
+			{"reloadKit", &MdMachine::askReloadKit}, {"kitSaveAs", &MdMachine::askKitSaveAs}, {"saveSong", &MdMachine::askSaveSong}};
 		return map;
 	}
 
@@ -1167,6 +1189,40 @@ namespace mdDesk
 		m_session.loadSong(s);
 		load({DocKind::Song, s}, true);
 		return ok("Song " + std::to_string(s + 1) + " loaded");
+	}
+
+	// SAVE SONG stores the song the machine holds into a slot. The desk's edits are dumps into the slot and the machine
+	// loads them only when it is stopped (pumpSongReload), so until then it would store its older song over them: asked
+	// first, with the way that loses nothing (load the edits, then save) when the machine is stopped.
+	Outcome MdMachine::askSaveSong(const Value& _m, const Documents& _view)
+	{
+		const auto& st = m_session.state();
+		const auto s = intOf(_m, "s");
+		const int slot = s ? *s : st.song ? static_cast<int>(*st.song) : -1;
+		if(!st.songReloadNeeded || !st.song || slot != *st.song)
+			return ok();
+		auto o = ask("overwriteSlot", "<b>" + songLabel(_view, static_cast<uint8_t>(slot)) + "</b> was edited here and the machine has not loaded the edits yet:"
+			" saving now stores the song the machine holds, without them.", "Save the machine's song");
+		if(!m_telemetry.playing)
+		{
+			Value load = Value::object();
+			load.set("op", "selectSong");
+			load.set("s", slot);
+			o.ask->alternatives.push_back({"Load the edits, then save", {std::move(load)}});
+		}
+		return o;
+	}
+
+	Outcome MdMachine::cmdSaveSong(const Value& _m, const Documents&)
+	{
+		const auto& st = m_session.state();
+		const auto s = intOf(_m, "s");
+		const int slot = s ? *s : st.song ? static_cast<int>(*st.song) : -1;
+		if(slot < 0)
+			return refuse("The current song is not known yet");
+		m_session.saveSong(static_cast<uint8_t>(slot));
+		load({DocKind::Song, static_cast<uint8_t>(slot)}, true);
+		return ok("Saved song " + std::to_string(slot + 1) + " on the machine");
 	}
 
 	// P1: the playing song ignores dumps and LOAD SONG: stop, load, play, each when the machine

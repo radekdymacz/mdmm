@@ -271,11 +271,13 @@ window.MMDiagnostics = {};
 			host.intent("multiMap", { i: 0, ofs: r0.ofs ? r0.ofs - 1 : 255, len: r0.len, trn: r0.trn - 64, tim: r0.tim }); host.commit();
 			await w; }
 		});
-		await check("another song than the machine's (S24), from the picker", async () => {
+		await check("another song than the machine's (S24), loaded from the song slots", async () => {
 			V().goWs("song"); await sleep(300);
-			const sel = $("#songsel");
-			if (!sel) throw new Error("no song picker");
-			sel.value = "23"; sel.dispatchEvent(new Event("change", { bubbles: true }));
+			if (!$('[data-ss="23"]')) throw new Error("no song slots");
+			const until = async (f, ms) => { const end = Date.now() + ms; while (Date.now() < end) { if (f()) return true; await sleep(50); } return false; };
+			{ const w = until(() => machine()?.song?.current === 23, 15000);
+			host.loadSong(23);
+			if (!await w) throw new Error("LOAD SONG 24 not taken"); }
 			await sleep(500);
 			const before = s.song.length;
 			{ const w = docIs("song", 23, d => d.rows.length === before + 1 && d.rows[0].pattern === 7);
@@ -284,7 +286,8 @@ window.MMDiagnostics = {};
 			{ const w = docIs("song", 23, d => d.rows.length === before);
 			s.song.splice(0, 1); host.intent("rowDelete", { i: 0 }); host.commit();
 			await w; }
-			host.songSlot(CUR.song);
+			host.loadSong(CUR.song);
+			await until(() => machine()?.song?.current === CUR.song, 15000);
 			V().goWs("seq");
 			return `${before} rows`;
 		});
