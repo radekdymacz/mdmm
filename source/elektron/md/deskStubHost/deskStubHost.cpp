@@ -205,6 +205,8 @@ namespace
 			p.sendMute = [this](const uint8_t _t, const bool _on) { if(_t < 16) m_mutes = _on ? (m_mutes | (1 << _t)) : (m_mutes & ~(1 << _t)); };
 			p.sendNote = [](uint8_t, uint8_t, uint8_t) {};
 			p.pressKey = [this](const std::string& _k) { return press(_k); };
+			// DATA ENTRY: present (live recording needs it) but no knob page is reported, so Control All stays on CCs
+			p.turnKnob = [](uint8_t, int) { return true; };
 			p.sendMidi = [this](const Bytes& _m) { realtime(_m); };
 			p.nowMs = [] { return nowMs(); };
 			p.audition = [this](const ed::AuditionClip& _clip)
@@ -237,13 +239,17 @@ namespace
 					m_step = songLocate(++m_songPos).second;
 				else
 					m_step = (m_step + 1) % std::max<int>(1, m_patterns[m_pattern].length);
+				// wave 7: EXIT/NO and a TRIG key held while live recording: that track's trig on the step that plays goes
+				if(m_recording && m_exitHeld && m_heldTrig >= 0)
+					m_patterns[m_pattern] = ed::withTrig(m_patterns[m_pattern], static_cast<size_t>(m_heldTrig), static_cast<size_t>(m_step), false);
 			}
 			mdDesk::Telemetry t;
 			t.valid = true;
 			t.step = m_playing ? m_step : -1;
 			t.pattern = m_pattern;
 			t.playing = m_playing;
-			t.knobPage = 0;
+			t.recording = m_recording;
+			t.knobPage = -1;
 			t.bootAnimation = 0;
 			t.mutes = m_mutes;
 			t.chainKnown = true;
@@ -422,6 +428,33 @@ namespace
 
 		bool press(const std::string& _key)
 		{
+			// wave 7: keys held down and let go later (EXIT/NO, a TRIG key), a TRIG key recorded while live recording
+			if(_key.rfind("hold:", 0) == 0 || _key.rfind("release:", 0) == 0)
+			{
+				const bool down = _key[0] == 'h';
+				const auto name = _key.substr(down ? 5 : 8);
+				if(name == "exit")
+					m_exitHeld = down;
+				else if(name.rfind("trig", 0) == 0)
+					m_heldTrig = down ? std::atoi(name.c_str() + 4) - 1 : -1;
+				return true;
+			}
+			if(_key.rfind("trig", 0) == 0)
+			{
+				if(m_recording && m_playing)
+					m_patterns[m_pattern] = ed::withTrig(m_patterns[m_pattern], static_cast<size_t>(std::atoi(_key.c_str() + 4) - 1), static_cast<size_t>(m_step), true);
+				return true;
+			}
+			// REC while recording is PLAY: recording off, the pattern plays on (mdDeskMachine.cpp cmdRecord)
+			if(_key == "play" && m_recording)
+			{
+				m_recording = false;
+				return true;
+			}
+			if(_key == "recordPlay")
+				m_recording = true;
+			else if(_key == "stop")
+				m_recording = false;
 			// PLAY: starts; while playing it pauses, while paused it goes on (the machine's own pause)
 			if(_key == "play" && m_playing)
 			{
@@ -492,7 +525,8 @@ namespace
 		double m_auditionEnds = 0;
 		mdDesk::Chain m_chain;
 		uint8_t m_pattern = 0, m_kit = 0, m_song = 0, m_global = 0, m_track = 0;
-		bool m_songMode = false, m_playing = false, m_paused = false;
+		bool m_songMode = false, m_playing = false, m_paused = false, m_recording = false, m_exitHeld = false;
+		int m_heldTrig = -1;
 		int m_mutes = 0, m_step = 0, m_bankGroup = 0, m_songPos = 0;
 		double m_stepAt = 0, m_memoryAt = -1000;
 		std::vector<Bytes> m_replies;
@@ -600,10 +634,27 @@ namespace
 				}
 				return true;
 			};
-			p.sendNote = [](uint8_t, uint8_t, uint8_t) {};
+			// wave 7: STEP RECORDING writes a played note (any channel here) to the focus track at the cursor, and moves on
+			p.sendNote = [this](uint8_t, const uint8_t _note, const uint8_t _velocity)
+			{
+				if(m_recording != 3 || !_velocity || m_stepCursor < 0)
+					return;
+				setNote(m_focus, m_stepCursor, _note);
+				m_stepCursor = (m_stepCursor + 1) % std::max<int>(1, m_patterns[m_pattern].length);
+			};
 			p.sendMidi = [this](const Bytes& _m) { realtime(_m); };
 			p.nowMs = [] { return nowMs(); };
 			return p;
+		}
+
+		// a step of track _t: a note (0-127) or none (-1), as the machine's recordings write it (trigs and pitch)
+		void setNote(const int _t, const int _s, const int _note)
+		{
+			auto& p = m_patterns[m_pattern];
+			const auto bit = ed::mmStepBit(static_cast<size_t>(_s));
+			for(auto* m : {&p.amp, &p.filter, &p.lfo, &p.pitch})
+				(*m)[static_cast<size_t>(_t)] = _note >= 0 ? ((*m)[static_cast<size_t>(_t)] | bit) : ((*m)[static_cast<size_t>(_t)] & ~bit);
+			p.notes[static_cast<size_t>(_t)][static_cast<size_t>(_s)] = _note >= 0 ? static_cast<uint8_t>(_note) : ed::MmPattern::g_noNote;
 		}
 
 		void step(mmDesk::Desk& _desk)
@@ -618,6 +669,9 @@ namespace
 				m_stepAt = now;
 				m_step = m_songMode ? songLocate(++m_songPos).second : (m_step + 1) % 16;
 				++m_blocks;
+				// wave 7: EXIT held in LIVE RECORDING: the focus track's note on the step that plays goes
+				if(m_recording == 2 && m_exitHeld)
+					setNote(m_focus, m_step, -1);
 			}
 			mmDesk::Telemetry t;
 			t.valid = true;
@@ -629,7 +683,8 @@ namespace
 			t.recvActive = m_screen == mmDesk::Screen::GlobalEdit;
 			t.tempo = m_tempo;
 			t.mutes = m_mutes;
-			t.recording = 0;
+			t.recording = m_recording;
+			t.stepCursor = m_recording == 3 ? m_stepCursor : -1;
 			t.bankGroup = m_bankGroup;
 			t.chainKnown = true;
 			t.chain = m_chain;
@@ -806,6 +861,32 @@ namespace
 			}
 			for(const auto k : _keys)
 			{
+				using K = mmDesk::Key;
+				// wave 7: the recording modes as the machine's keys move them (mmEditorProbeFirmwareTest recording), the focus,
+				// EXIT held, STEP RECORDING's keys
+				if(k >= K::Track1 && k <= K::Track6)
+					m_focus = static_cast<int>(k) - static_cast<int>(K::Track1);
+				else if(k == K::ExitDown || k == K::ExitUp)
+					m_exitHeld = k == K::ExitDown;
+				else if(k == K::Record)
+					m_recording = m_recording == 0 ? 1 : m_recording == 2 ? 1 : 0;
+				else if(k == K::StepRecord)
+				{
+					m_recording = 3;
+					m_stepCursor = 0;
+					m_running = m_paused = false;
+				}
+				else if(m_recording == 3 && (k == K::Left || k == K::Right || k == K::Enter))
+				{
+					const int len = std::max<int>(1, m_patterns[m_pattern].length);
+					if(k == K::Enter)
+						setNote(m_focus, m_stepCursor, -1);
+					m_stepCursor = (m_stepCursor + (k == K::Left ? len - 1 : 1)) % len;
+				}
+				if(k == K::LiveRecord)
+					m_recording = 2;
+				else if(k == K::Stop && m_recording == 2)
+					m_recording = 0;
 				if(k == mmDesk::Key::BankGroup)
 					m_bankGroup = 1 - m_bankGroup;
 				// PLAY: starts; while playing it pauses, while paused it goes on (the machine's own pause)
@@ -847,6 +928,8 @@ namespace
 		uint8_t m_pattern = 0, m_kit = 0, m_song = 0, m_global = 0;
 		bool m_songMode = false, m_running = false, m_poly = false, m_paused = false;
 		int m_mutes = 0, m_step = 0, m_bankGroup = 0, m_tempo = 120 * 24, m_songPos = 0;
+		int m_recording = 0, m_stepCursor = 0, m_focus = 0;	// 0 off, 1 grid, 2 live, 3 step; the cursor; the track in focus
+		bool m_exitHeld = false;
 		uint64_t m_blocks = 0;
 		uint32_t m_recvTaken = 0;
 		mmDesk::Screen m_screen = mmDesk::Screen::Main;
