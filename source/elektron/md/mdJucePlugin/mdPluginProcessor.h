@@ -79,6 +79,9 @@ namespace mdJucePlugin
 		bool isExactEssiTiming();
 		// I-018: the speed-up switches as saved in the plug-in's settings (what the next session starts with)
 		bool savedLegacyEmulation();
+		// I-018: one line in the start-up log for every speed-up switch change: the machine's state, why (_via: menu,
+		// settings at start, env) and what the settings file holds now
+		void logSpeedUps(const char* _via);
 		uint32_t savedSpeedUpLeversOff();
 		// The Machinedrum/Monomachine Editors' setup and session (mdDeskHost.h, doc/modern-ux/UPSTREAM.md).
 		class DeskHost* getDeskHost() const { return m_desk.get(); }
@@ -133,6 +136,8 @@ namespace mdJucePlugin
 		double m_lastBootRecordMs = 0;	// when recordBoot last ran
 		const double m_bootStartMs = juce::Time::getMillisecondCounterHiRes();
 		std::string m_bootRom;
+		// the speed-ups as last written to the log (logSpeedUps): -1 none yet; else on | levers << 1 | L3 << 31
+		int64_t m_loggedSpeedUps = -1;
 		std::unique_ptr<class DeskHost> m_desk;
 		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPluginAudioProcessor)
 	};
