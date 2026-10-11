@@ -50,8 +50,9 @@ namespace mdJucePlugin
 		bool setMute(uint8_t _track, bool _muted) const;
 		// A note on (_velocity 1-127) or off (0) on MIDI channel _channel, editor-sourced, after what was sent before.
 		void sendNote(uint8_t _channel, uint8_t _note, uint8_t _velocity) const;
-		// A channel message (a CC) into the machine, editor-sourced, past the plug-in's parameters (the
-		// keyboard's held PTCH: no DAW sees it), after what was sent before.
+		// A short message into the machine (a CC, or 1-3 bytes of realtime or system common: MIDI Stop, Continue, a
+		// song position), editor-sourced, past the plug-in's parameters (the keyboard's held PTCH: no DAW sees it),
+		// after what was sent before.
 		void sendChannel(const Bytes& _message) const;
 		// Press and release a front-panel key: "play", "stop", "record", "recordPlay"
 		// (hold RECORD, press PLAY), "page", "trig1".."trig16". Local MD only.

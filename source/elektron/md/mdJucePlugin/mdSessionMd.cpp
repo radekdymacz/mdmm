@@ -60,6 +60,7 @@ namespace mdJucePlugin
 			};
 			p.baseChannel = [this](const uint8_t _ch) { m_channel = _ch; };
 			p.pressKey = [this](const std::string& _key) { return m_link.pressKey(_key); };
+			p.sendMidi = [this](const std::vector<uint8_t>& _m) { m_link.sendChannel(_m); };
 			p.turnKnob = [this](const uint8_t _e, const int _s) { return m_link.turnKnob(_e, _s); };
 			p.nowMs = [] { return nowMs(); };
 			p.audition = [this](const elektronData::AuditionClip& _clip) { return m_link.audition(_clip); };

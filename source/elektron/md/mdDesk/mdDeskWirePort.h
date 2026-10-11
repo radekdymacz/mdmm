@@ -38,6 +38,7 @@ namespace mdDesk
 				_wire.send(deskWire::Bytes{*b});
 			return b.has_value();
 		};
+		p.sendMidi = [&_wire](const std::vector<uint8_t>& _m) { _wire.send(_m); };
 		p.baseChannel = [&_channel](const uint8_t _ch) { _channel = _ch; };
 		p.nowMs = std::move(_nowMs);
 		return p;
