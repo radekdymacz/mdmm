@@ -211,7 +211,7 @@ To take locks off a step, use one of these:
 Press {key:undo} to take a clear back.
 
 ## TRACK COPY
-<!-- rows: MD-116 @c00352 -->
+<!-- rows: MD-116 @3ae6be -->
 
 1. Select the track by its header. Drag across the step numbers above the grid, from the first step to the last.
 2. Press {key:copy}.
@@ -220,10 +220,24 @@ Press {key:undo} to take a clear back.
 
 To paste into several tracks at once, click their headers with [⇧] held. The headers are marked. {key:paste} then fills every marked track, as one undo step. Press {key:unmark-paste} to take the marks off.
 
-{gap:MD-116}The machine copies the sound and the LFO of the track with its notes. The editor copies steps and locks. Copy the sound on the **Sound** workspace.{/gap}
+To choose what goes with the track, as the machine's SUPER COPY does:
+
+1. Select the track.
+2. Click **▾** at the right of <COPY> <CLR> <PASTE> on the LCD, then **Copy…**, or press {key:copy-what}. The **Copy what** window opens.
+3. Tick the parts to copy. **Pattern** has **Trigs**, **Accent**, **Swing**, **Slide** and **Locks**, each with the number of steps it holds. **Kit** has **Machine + sound** and **LFO**.
+4. Click **Copy**. Every step of the track is copied, not only the page you see.
+5. Select the track to paste into. Click **▾**, then **Paste…**, or press {key:paste-what}.
+6. The parts copied are ticked. Untick any you do not want. Under **To tracks** the selected track is lit, or the tracks marked with [⇧]. Click a track key to light or unlight it.
+7. Click **Paste into 1 track** (the key says how many). Each lit track takes the ticked parts.
+
+The paste is one undo step: press {key:undo} to take it back. The window remembers what you ticked the last time.
+
+NOTE: Locks land only on steps that hold a trig. The result line says how many were left out.
+
+![Copy what](shot:md-copy-what)
 
 ## CLEAR TRACK
-<!-- rows: MD-117 @b4c9b3 -->
+<!-- rows: MD-117 @9c11a2 -->
 
 1. Select the track.
 2. Click **All** so that every step shows, then click <CLR>.
@@ -231,6 +245,14 @@ To paste into several tracks at once, click their headers with [⇧] held. The h
 Or select all the steps of the track by the step numbers and press {key:delete}.
 
 NOTE: With no steps selected, {key:delete} does nothing and a message says so.
+
+To clear only some parts of the track, as the machine's SUPER CLEAR does:
+
+1. Select the track.
+2. Click **▾** at the right of <COPY> <CLR> <PASTE>, then **Clear…**, or press {key:clear-what}.
+3. Tick the parts to clear and click **Clear**. Clearing **Trigs** clears their locks too. **Machine + sound** sets the sound's values to neutral and keeps the machine.
+
+Press {key:undo} to take the clear back.
 
 ## TRACK PAGE COPY
 <!-- rows: MD-118 @804c6d -->
@@ -288,7 +310,7 @@ The mutes are the machine's. The editor reads them from the machine's memory, wh
 On the machine you can minimise the mute window. In the editor the keys are always on the page.
 
 ## ACCENT TRACK
-<!-- rows: MD-126 MD-127 MD-128 MD-129 @d1350a -->
+<!-- rows: MD-126 MD-127 MD-128 MD-129 @cc32be -->
 
 An accent makes a step louder. The accent amount sets how much louder.
 
@@ -301,10 +323,12 @@ If the pattern's accent is shared by all tracks, the accent goes on the step of 
 
 {gap:MD-128}The editor cannot change a pattern between one accent for all tracks and an accent for each track. It follows the setting the pattern has.{/gap}
 
-{gap:MD-129}A selection copy takes the accents with the steps. The editor has no separate accent window to copy, paste or clear them.{/gap}
+To copy, paste or clear the accents of a track, tick **Accent** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu (see "Track copy"). A selection copy also takes the accents with the steps.
+
+NOTE: While the accent is shared by all tracks, a paste or a clear of **Accent** changes it for every track.
 
 ## SWING
-<!-- rows: MD-130 MD-131 MD-132 MD-133 @b52534 -->
+<!-- rows: MD-130 MD-131 MD-132 MD-133 @8e1c31 -->
 
 Swing delays every second step. Click <SWG> on the LCD, or drag or scroll on it, to set it from 50 to 80 percent. Click with [⇧] to go down.
 
@@ -312,7 +336,9 @@ Swing delays every second step. Click <SWG> on the LCD, or drag or scroll on it,
 
 {gap:MD-132}You cannot give a track a swing of its own in the editor yet.{/gap}
 
-{gap:MD-133}There is no swing window in the editor, so there are no swing marks to copy, paste or clear.{/gap}
+Tick **Swing** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu to copy, paste or clear the swing steps of a track (see "Track copy").
+
+{gap:MD-133}You cannot mark swing steps in the editor yet, so a copy takes the swing steps the track already holds.{/gap}
 
 ## PARAMETER LOCKS
 <!-- rows: MD-134 MD-135 MD-136 MD-137 MD-138 @994b26 -->
@@ -355,7 +381,7 @@ While you record live, a value you move is locked.
 {gap:MD-140}You cannot remove a lock while recording live in the editor yet. Erase it in the lock lane afterwards.{/gap}
 
 ## PARAMETER LOCK SLIDE
-<!-- rows: MD-141 MD-142 @87dedf -->
+<!-- rows: MD-141 MD-142 @f2bb3f -->
 
 A slide glides the value of a lock from the previous step to this one, instead of jumping.
 
@@ -366,4 +392,4 @@ If slides are shared by all tracks, the slide goes on the step of every track, a
 
 {gap:MD-141}The editor cannot change a pattern between slides for all tracks and slides for each track. It follows the setting the pattern has.{/gap}
 
-{gap:MD-142}A selection copy takes the slides with the steps. The editor has no separate slide window to copy, paste or clear them.{/gap}
+To copy, paste or clear the slides of a track, tick **Slide** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu (see "Track copy"). A selection copy also takes the slides with the steps.
