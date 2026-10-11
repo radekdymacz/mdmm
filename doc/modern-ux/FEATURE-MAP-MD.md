@@ -24,13 +24,13 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.4 | BANK key and A/E, B/F, C/G, D/H keys | Pick a pattern bank and pattern | ✅ | Pattern chooser (click Pattern in the LCD; keys A-H) | mdDeskLibrary.js. | – |
 | p.4 | ENTER/YES, EXIT/NO, arrow keys | Menu navigation | ➖ | Not needed | Every menu is a native control. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. | – |
 | p.5 | LEVEL knob (per-track overall gain) | LEV, cannot be locked or LFO'd | ❌ | None | The desk has a 'level' command, but no page control uses it. Use VOL on Mix instead. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. | – |
-| p.5 | TEMPO key | Open tempo screen | ✅ | LCD: Tempo (drag), T key to tap | See §9. | 4 |
+| p.5 | TEMPO key | Open tempo screen | ✅ | LCD: Tempo (drag), T key to tap | See §9. | 5 |
 | p.5 | DATA ENTRY knobs (A-H), pressed = coarse | Eight parameter knobs | ✅ | Value boxes on Sound and Mix; drag, wheel, Shift = fine | Wheel notch 1, Shift 10. | 2 |
 | p.5 | SYNTHESIS/EFFECTS/ROUTING toggle | Switch knob page | ✅ | Sound page shows all three as groups | No page toggle; all pages in one view. | – |
 | p.5 | RECORD key (grid record on/off) | Toggle grid edit | ➖ | Grid is always editable | The step grid needs no mode. | – |
 | p.5 | RECORD + PLAY (live recording) | Live record | ✅ | REC button, Alt+Space | LCD top bar. | 1 |
-| p.5 | PLAY (second press pauses) | Start / pause | 🟡 | Play/Stop button, Space | Play and stop only; no pause. Measured (P1, doc/modern-ux/PROBES-manual-gaps.md): MIDI Stop holds the step and Continue goes on from it, in pattern and song mode. | 2 |
-| p.5 | STOP; double STOP silences all voices | Stop, panic | 🟡 | Play/Stop button | No panic key. Measured (P5): no MIDI message silences the voices (Stop once or twice, CC 120 and 123, reset, note offs, loads, mutes); only the panel STOP pressed twice does, which the emulator can press. | – |
+| p.5 | PLAY (second press pauses) | Start / pause | ✅ | Play key: ⇧-click or ⇧Space pauses (▶ blinks, the position holds), ▶ goes on; the ▶ menu (right-click or its ▾) | Pause and Continue are MIDI Stop and Continue on both engines (P1, P1b): with CTRL IN off the machine takes neither, and the editor says so. | 3 |
+| p.5 | STOP; double STOP silences all voices | Stop, panic | ✅ | Panic: ⌘. or the ▶ menu's Panic (the machine's STOP pressed twice) | Over HW MIDI there is no panic: no MIDI message silences the Machinedrum (P5); the menu entry is off and says why. | 1 |
 | p.5 | STOP + PLAY restarts from the top | Restart | 🟡 | Stop then Play | Same result in two clicks. | – |
 | p.5 | PATTERN/SONG key | Switch sequencer mode | ✅ | Song page: PATTERN / SONG switch; LCD PLAY value | seqMode command. | 2 |
 | p.5 | KIT key (kit menu) / FUNCTION + KIT (song menu) | Open kit / song menus | 🟡 | Kit: library popover. Song: song stepper on Song page | No song menu (see §10). | – |
@@ -49,7 +49,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 |---|---|---|---|---|---|---|
 | p.9 | Tempo display with one decimal | Show BPM | ✅ | LCD: Tempo |  | 1 |
 | p.9 | Four pattern-page boxes | Playback page | ✅ | Page LEDs; LCD Position |  | – |
-| p.9 | Transport symbols | Record/play/pause/stop | 🟡 | REC and Play LEDs | No pause state. | – |
+| p.9 | Transport symbols | Record/play/pause/stop | ✅ | Play key: blinks while paused; POSITION keeps the held step |  | 1 |
 | p.9 | Kit name and number | Current kit | ✅ | LCD: Kit with saved/edited chip |  | – |
 | p.9 | Synth, machine and page text | Focus info | ✅ | Sound: machine button, family; LCD line 2 |  | – |
 | p.9 | Level bar (overall volume of the track) | LEV meter | ❌ | None | See LEVEL knob. | – |
@@ -140,8 +140,8 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.35 | CLASSIC mode | Trigs only, no kit link | ✅ | LCD MODE = CLASSIC | Lock lane greyed; locks kept. | – |
 | p.35 | EXTENDED mode (kit link, locks) | Pattern recalls its kit | ✅ | LCD MODE = EXT; Pattern chooser shows Knn |  | – |
 | p.36 | Tempo: integer and decimal steps | Tempo screen | ✅ | LCD tempo drag (Shift = 0.1) | Arrow keys step it when focused. | – |
-| p.36 | FUNCTION held: tempo changes on release | Delayed change | ❌ | None |  | – |
-| p.36 | Temporary +/-10 % tempo shift (LEFT/RIGHT) | Turntable sync | ❌ | None | The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. | – |
+| p.36 | FUNCTION held: tempo changes on release | Delayed change | ✅ | TEMPO window (a click on the tempo): Change on release; ⌥-drag the tempo does it once |  | 1 |
+| p.36 | Temporary +/-10 % tempo shift (LEFT/RIGHT) | Turntable sync | ✅ | TEMPO window: −10 % / +10 % held, or the keys - and = held; back at the release, nothing stored |  | 1 |
 | p.36 | Tap tempo | FUNCTION + TEMPO | ✅ | T or B key; Shift+B on every workspace | keymap.json tap-tempo, tap-tempo-shift. On the Monomachine B is Draw on Sequence, so Shift+B is the one key both editors share. | 3 |
 | p.36 | External sync, EXT shown | MIDI clock follow | ✅ | Global > Sync > Tempo in; host tempo marked on LCD | DAW follows host. | – |
 | p.37 | Pattern selection (8 banks x 16) | A01-H16 | ✅ | Pattern chooser; prev/next arrows |  | 4 |
@@ -200,10 +200,10 @@ Method: manual read in full; claims checked against the page files (`source/elek
 |---|---|---|---|---|---|---|
 | p.51 | Song capacity: 256 rows, 32 songs | Limits | ✅ | Song page: row count; song stepper |  | – |
 | p.51 | Load song | LOAD SONG | ✅ | Song stepper (< >), LCD SONG; loads when stopped |  | – |
-| p.52 | Play, pause, stop a song | Transport | 🟡 | Play/Stop button | No pause. Measured (P1): MIDI Stop + Continue pauses and resumes a song. | 1 |
-| p.52 | Move song pointer to a row; start from a row | Navigate, transport | ❌ | None | Click on a row only selects it for editing. Measured (P1): Song Position Pointer (the steps of the rows before it) + Continue plays from that row and step in song mode. | – |
+| p.52 | Play, pause, stop a song | Transport | ✅ | Play key: play, pause (⇧-click, ⇧Space), stop; in SONG mode as in pattern mode |  | 2 |
+| p.52 | Move song pointer to a row; start from a row | Navigate, transport | ✅ | Song: ▶ From here on the selected row, or Enter (SONG mode, the song position, Continue) | A LOOP or JUMP before the row cannot be counted through: the editor says so (start the song and let it play there). | 1 |
 | p.52 | Playing row shown, repeats left | Playhead | 🟡 | Playing row marked in the arrangement | Turns left not shown. | 1 |
-| p.52 | STOP holds, second STOP to start | Stop behaviour | ❌ | None | No pause key. Measured (P1): MIDI Stop holds the position, Continue goes on. | – |
+| p.52 | STOP holds, second STOP to start | Stop behaviour | ✅ | Play key: ⇧-click pauses and holds the position; ▶ goes on, Stop in the ▶ menu ends it |  | 1 |
 | p.53 | Song editor: pattern, REP, BPM, offset, length, mute | EDIT SONG | ✅ | Song > Selected row; arrangement grid |  | 1 |
 | p.53 | Insert / remove step | FUNCTION + arrows | ✅ | Add by palette, Duplicate, Delete |  | 2 |
 | p.53 | Copy / paste / clear / undo rows | Row clipboard | ✅ | Cmd+C/V; Delete; Cmd+Z |  | 1 |
@@ -392,13 +392,13 @@ Method: manual read in full; claims checked against the page files (`source/elek
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 220 |
-| 🟡 Partial | 36 |
-| ❌ No | 24 |
+| ✅ Yes | 228 |
+| 🟡 Partial | 32 |
+| ❌ No | 20 |
 | ➖ Not applicable | 16 |
 | Total | 296 |
 
-Of the 280 applicable rows, 220 are fully covered, 36 partly, 24 not at all.
+Of the 280 applicable rows, 228 are fully covered, 32 partly, 20 not at all.
 
 ### Top gaps (our UI), most important first
 

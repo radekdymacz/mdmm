@@ -6,7 +6,7 @@ The Machinedrum Editor runs the Elektron Machinedrum firmware (OS 1.63) behind o
 This chapter maps the machine's front panel and rear connectors to the page. Later chapters follow the manual's order and say how to do each job.
 
 ## FRONT PANEL
-<!-- rows: MD-001 MD-002 MD-003 MD-004 MD-005 MD-006 MD-007 MD-008 MD-009 MD-010 MD-011 MD-012 MD-013 MD-014 MD-015 MD-016 MD-017 MD-018 MD-019 MD-020 MD-021 @4afb2e -->
+<!-- rows: MD-001 MD-002 MD-003 MD-004 MD-005 MD-006 MD-007 MD-008 MD-009 MD-010 MD-011 MD-012 MD-013 MD-014 MD-015 MD-016 MD-017 MD-018 MD-019 MD-020 MD-021 @5e2fda -->
 
 The page has three parts. The top bar holds the workspace tabs, the LCD and the Undo, Redo, GLOBAL and panel colour keys. The track rail runs down the left side. The workspace fills the rest.
 
@@ -127,9 +127,17 @@ To record live, click **REC** or press {key:record}. Click the steps of a track 
 
 Press {key:play-stop} to start. The key shows ▶ while the machine is stopped and ■ while it plays. Press it again to stop.
 
-{gap:MD-014}The editor has no pause. The key starts and stops only.{/gap}
+On the machine a second press of [PLAY] pauses. In the editor you pause with [⇧]:
 
-{gap:MD-015}The editor has no panic key that silences every voice with a double press of stop.{/gap}
+1. Hold [⇧] and click the Play key, or press {key:pause}. The machine holds its step. The Play key blinks and <POSITION> keeps the step.
+2. Click the Play key, or press {key:pause} again. The machine goes on from the step it held.
+3. To end the pause instead, choose **Stop** in the transport menu. <POSITION> reads --.--.
+
+The transport menu has Play or Stop, Pause or Continue, Record and Panic, each with its key. Right-click the Play key to open it, or click the small ▾ in the key's corner.
+
+On the machine a double press of [STOP] silences every voice. In the editor this is **Panic**: press {key:panic}, or choose **Panic** in the transport menu. The editor presses the machine's [STOP] twice, and the machine stops.
+
+NOTE: Pause and Continue reach the machine as MIDI Stop and Continue, so the machine's <CTRL IN> must be on (GLOBAL, MIDI). Over a MIDI cable there is no panic: no MIDI message silences the Machinedrum. Press [STOP] twice on the machine.
 
 {gap:MD-016}There is no key that restarts the pattern from the top while it plays. Stop, then play.{/gap}
 

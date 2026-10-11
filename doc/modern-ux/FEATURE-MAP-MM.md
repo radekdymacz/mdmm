@@ -69,8 +69,8 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Front panel 1-5 | 15 BANK keys A-H | Pattern bank | ✅ | Pattern chooser |  | – |
 | Front panel 1-5 | 15 BANK secondary: ARP, TRANSPOSE, SWING, SLIDE | Track settings windows | ✅ | Sequence dock > Arp, Transpose; SWING and SLIDE rows; LCD SWG |  | – |
 | Front panel 1-5 | 16 REC key (grid recording) | Grid mode on / off | 🟡 | LCD record key | Stopped = grid record; the page's step editing does not need it | 1 |
-| Front panel 1-5 | 16 PLAY (pause on second press) | Start, pause | 🟡 | LCD play key, Space | Toggle start / stop, no pause. Measured (P1, doc/modern-ux/PROBES-manual-gaps.md): MIDI Stop + Continue pauses and resumes when TRANSPORT IN is ACCEPT. | 2 |
-| Front panel 1-5 | 16 STOP; STOP twice rewinds and silences | Stop, reset | 🟡 | Same key | One press only; no rewind or all-notes-off key | 2 |
+| Front panel 1-5 | 16 PLAY (pause on second press) | Start, pause | ✅ | LCD play key: ⇧-click or ⇧Space pauses (▶ blinks, the position holds), ▶ goes on; the ▶ menu (right-click or its ▾) | Over HW MIDI pause and Continue need GLOBAL › CONTROL IN › TRANSPORT = ACCEPT; the editor asks to set it. | 3 |
+| Front panel 1-5 | 16 STOP; STOP twice rewinds and silences | Stop, reset | ✅ | Panic: ⌘. or the ▶ menu's Panic (All Notes Off on each track's channel, then STOP twice) |  | 3 |
 | Front panel 1-5 | 16 REC + PLAY = live recording | Live recording | ✅ | Alt + Space, record key while playing | `record` op | 1 |
 | Front panel 1-5 | 16 STOP + REC = step recording | Step recording | ❌ | – | Not in the page | – |
 | Front panel 1-5 | 16 Secondary: COPY, PASTE, CLEAR | Copy / paste / clear | ✅ | LCD COPY / CLR / PASTE, Cmd+C / V, Delete | Scope depends on the workspace; on Sequence it is the selected steps, else the page shown (`130-main.js` secAction) | 4 |
@@ -99,7 +99,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | LCD 1-10 | Level bar | Track level | ✅ | Mix LEVEL fader |  | 1 |
 | LCD 1-10 | Eight parameter circles with names | Data page | ✅ | Value boxes with names |  | – |
 | LCD 1-10 | Four boxes: playback position | Position | ✅ | LCD POSITION, page LEDs, playhead |  | – |
-| LCD 1-10 | Record / play / pause / stop symbols | Status | 🟡 | Record and play lamps | No pause state | – |
+| LCD 1-10 | Record / play / pause / stop symbols | Status | ✅ | Play key: blinks while paused; POSITION keeps the held step |  | 1 |
 | LCD 1-10 | Kit name and number | Current kit | ✅ | LCD KIT (saved / edited) |  | – |
 | LCD 1-10 | Pattern index A01-H16 | Current pattern | ✅ | LCD PATTERN |  | 1 |
 | LCD 1-10 | Machine of the track in focus | Machine | ✅ | Rail, Sound header |  | – |
@@ -111,7 +111,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 |---|---|---|---|---|---|---|
 | Selecting and playing 1-11 | Select a pattern; kit loads with it | Pattern pick | ✅ | LCD ‹ ›, chooser | Asks before losing kit edits | 2 |
 | Selecting and playing 1-11 | Pending pattern shown with arrow | Cued pattern | ✅ | Queued name blinks in the LCD |  | 1 |
-| Selecting and playing 1-11 | Play, pause, stop | Transport | 🟡 | Play key | See section 2 | – |
+| Selecting and playing 1-11 | Play, pause, stop | Transport | ✅ | Play key: play, pause (⇧-click, ⇧Space), stop |  | 1 |
 | Playing in multi trig 1-12 | Play MULTI TRIG from a keyboard | Multi trig | ✅ | Perform > Multi trig; MIDI channel 7 |  | – |
 | Exploring a pattern 1-12 | Try each track, tweak SYNTHESIS | Auditioning | ✅ | Sound; roll keys play the track |  | – |
 | Grid recording 1-12 | Load kit for the pattern | LOAD KIT | ✅ | Kit library |  | 1 |
@@ -273,11 +273,11 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
 | Tempo 1-55 | Global tempo, not stored in patterns | Global tempo | ✅ | LCD TEMPO |  | 1 |
-| Tempo screen 1-56 | Integer and decimal tempo | Edit tempo | ✅ | Drag, arrows, Shift = 0.1 | 30-300 BPM | – |
-| Tempo screen 1-56 | Delay change until FUNCTION released | Delayed change | ❌ | – |  | – |
-| Tempo screen 1-56 | Temporary +/-10 % shift | Nudge | ❌ | – |  | – |
+| Tempo screen 1-56 | Integer and decimal tempo | Edit tempo | ✅ | Drag, arrows, Shift = 0.1 | 30-300 BPM | 1 |
+| Tempo screen 1-56 | Delay change until FUNCTION released | Delayed change | ✅ | TEMPO window (a click on the tempo): Change on release; ⌥-drag the tempo does it once |  | 1 |
+| Tempo screen 1-56 | Temporary +/-10 % shift | Nudge | ✅ | TEMPO window: −10 % / +10 % held, or the keys - and = held; back at the release |  | 1 |
 | Tap tempo 1-56 | Average of taps | Tap | ✅ | Shift + B everywhere; B off Sequence | The last five taps are averaged; a pause of 2 s starts over | 2 |
-| External synchronisation 1-56 | Internal or external MIDI clock; EXT shown | Sync | ✅ | GLOBAL > Sync > Tempo in (INT / EXT); in a DAW the machine follows the host automatically (`followHost`) | See Control In | – |
+| External synchronisation 1-56 | Internal or external MIDI clock; EXT shown | Sync | ✅ | GLOBAL > Sync > Tempo in (INT / EXT); in a DAW the machine follows the host automatically (`followHost`) | See Control In | 1 |
 | Tempo 1-57 | Songs store tempo changes | Song tempo | ✅ | Song row Tempo |  | – |
 
 ## 13. Parameter locks (1-57, 1-58)
@@ -360,9 +360,9 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Load song 1-73 | Load a song slot | LOAD SONG | ✅ | Song > "Load on the machine" | Only while stopped | 2 |
 | Save song 1-74 | Save and name a song | SAVE SONG | ❌ | – | `saveSong` is in the desk, not in the page. Row edits go into the slot as dumps | – |
 | Save song 1-74 | Copy, paste, clear, undo a song slot | Song slots | ❌ | – | Rows can be copied (`copyRow`) | – |
-| Song play 1-75 | Play, pause, stop | Transport | 🟡 | Play key |  | – |
+| Song play 1-75 | Play, pause, stop | Transport | ✅ | Play key: play, pause (⇧-click, ⇧Space), stop; in SONG mode as in pattern mode |  | 2 |
 | Song play 1-75 | Switch to pattern mode and back; pointer held | Mode toggle | ✅ | PATTERN / SONG switch |  | 2 |
-| Song transport 1-75 | Move the song pointer to a row and continue | Jump to row | ❌ | – | Page shows the playing row (0.3.5) but cannot set it. Measured (P1): with TRANSPORT IN = ACCEPT, Song Position Pointer + Continue starts the row that holds the pointer (at its first step on the internal clock). | – |
+| Song transport 1-75 | Move the song pointer to a row and continue | Jump to row | ✅ | Song: ▶ From here on the selected row, or Enter (SONG mode, the song position, Continue) | Needs TRANSPORT IN = ACCEPT (factory IGNORE): the editor asks to set it, then plays. The row starts at its first step (P1). | 1 |
 | Song transport 1-75 | Song pointer position over MIDI | SPP | ➖ | – | Firmware, via global transport setting | – |
 | Song editing 1-76 | ROW count | Rows | ✅ | Arrangement grid |  | – |
 | Song editing 1-76 | PAT column, END mark | Pattern | ✅ | Pattern palette, drag, ‹ › |  | 3 |
@@ -374,7 +374,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Song editing 1-77 | XTRA: row BPM | Row tempo | ✅ | Row Tempo |  | – |
 | Song editing 1-77 | Insert / remove rows (FUNCTION + arrows) | Row edit | ✅ | Row Duplicate, Delete, Add loop, drag |  | 1 |
 | Song editing 1-77 | Copy, paste, clear, undo rows | Row clipboard | ✅ | LCD COPY / PASTE / CLR; page undo |  | – |
-| Song edit transport 1-77 | Start from any row (ENTER) | Play from row | ❌ | – |  | – |
+| Song edit transport 1-77 | Start from any row (ENTER) | Play from row | ✅ | Song: Enter on the selected row (▶ From here) |  | 1 |
 | Song edit transport 1-77 | Counter in bars and beats | Song time | 🟡 | Song header: rows, bars, time | Not a live counter | – |
 | Song loops 1-78 | Loop to a row, repeat count, nesting | Loop | ✅ | Row command LOOP |  | 1 |
 | Song jump 1-78 | Forward jump | Jump | ✅ | Row command JUMP |  | – |
@@ -490,7 +490,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | CC: filter B-3 | CC 72-79 | Filter page | ✅ | FLT values |  | – |
 | CC: effects B-3 | CC 80-87 | Effects page | ✅ | EFX values |  | – |
 | CC: LFO 1-3 B-3 | CC 88-95, 104-111, 112-119 | LFO pages | ✅ | LFO values |  | – |
-| CC: all notes off B-3 | CC 120 | Panic | ❌ | – | No panic key | – |
+| CC: all notes off B-3 | CC 120 | Panic | ✅ | Panic (⌘., the ▶ menu) sends All Notes Off (CC 123) on each track's channel | Measured (P5 MM): CC 120 does nothing on OS 1.32B; CC 123 lets held notes go as their note offs would. | 1 |
 | NRPN parameters B-5 | Track, parameter, value | NRPN | ✅ | MIDI page values go as NRPN 0x38-0x3F |  | – |
 | NRPN pitch B-5 | Pitch for a track | Pitch | ➖ | – | Firmware in; not used by the page | – |
 | NRPN note off, trig track B-5 | Release, trig A / L / F | Extra trigs | ➖ | – | Not sent; manual bit order erratum recorded | – |
@@ -531,9 +531,9 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 295 |
-| 🟡 | 33 |
-| ❌ | 23 |
+| ✅ | 305 |
+| 🟡 | 28 |
+| ❌ | 18 |
 | ➖ | 34 |
 | Total | 385 |
 
