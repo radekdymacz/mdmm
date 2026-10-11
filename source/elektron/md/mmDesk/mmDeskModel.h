@@ -142,11 +142,12 @@ namespace mmDesk
 		std::optional<elektronData::MmKit> kit;				// the kit library
 		std::optional<elektronData::MmPattern> pattern;		// the pattern library
 		std::optional<elektronData::MmSong> song;			// the song slots (0.6)
+		std::optional<elektronData::MmGlobal> global;		// the GLOBAL page's Copy (0.6)
 
 		bool operator==(const Clipboard& _o) const
 		{
 			return steps == _o.steps && sound == _o.sound && songRow == _o.songRow && kit == _o.kit && pattern == _o.pattern
-				&& song == _o.song;
+				&& song == _o.song && global == _o.global;
 		}
 	};
 

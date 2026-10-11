@@ -327,10 +327,13 @@ namespace mmDesk
 			{"globalMidi", Owner::Core, Gate::Input, G, {{"base", ArgType::IntegerOrNull, 0, 15, true}, {"span", ArgType::Integer, 0, 16, true},
 				{"auto", ArgType::IntegerOrNull, 0, 15, true}, {"multiTrig", ArgType::IntegerOrNull, 0, 15, true},
 				{"multiMap", ArgType::IntegerOrNull, 0, 15, true}, {"clockIn", ArgType::Bool, 0, 0, true}, {"transportIn", ArgType::Bool, 0, 0, true},
-				{"clockOut", ArgType::Bool, 0, 0, true}, {"transportOut", ArgType::Bool, 0, 0, true}, {"programChangeOut", ArgType::Bool, 0, 0, true}},
+				{"clockOut", ArgType::Bool, 0, 0, true}, {"transportOut", ArgType::Bool, 0, 0, true}, {"programChangeOut", ArgType::Bool, 0, 0, true},
+				{"sequencerOut", ArgType::Integer, 0, 2, true}, {"arpOut", ArgType::Integer, 0, 2, true}, {"keyboardOut", ArgType::Integer, 0, 2, true}},
 				"GLOBAL › MIDI: the active global's channels (0-15, null OFF; base + t is track t's while t < span), CONTROL IN"
-				" (clockIn: TEMPO SYNC EXT MIDI CLK, transportIn: TRANSPORT ACCEPT) and OUT (clock, Start/Stop, program change)"},
-			{"globalReset", Owner::Core, Gate::Input, G, {}, "GLOBAL › Reset to defaults: the active global becomes the one the machine ships with (measured, mmDeskFirmwareTest factoryglobal)"},
+				" (clockIn: TEMPO SYNC EXT MIDI CLK, transportIn: TRANSPORT ACCEPT), OUT2 (clock, Start/Stop, program change) and"
+				" OUT1 (sequencerOut, arpOut, keyboardOut: 0 INT, 1 OUT, 2 INT+OUT)"},
+			{"masterTune", Owner::Core, Gate::Input, G, {{"v", ArgType::Integer, 4000, 4999}}, "GLOBAL › AUDIO › MASTER TUNE: tenths of Hz, 400.0 to 499.9 Hz as the panel sets it (4400 = 440.0 Hz; gapProbesFirmwareTest p8)"},
+			{"globalReset", Owner::Core, Gate::Input, G, {}, "GLOBAL › Clear: the active global becomes the one the machine ships with (measured, mmDeskFirmwareTest factoryglobal)"},
 			// ---- the edit intents: Sequence (a pattern) ----
 			{"step", Owner::Core, Gate::Input, P, {p, t12, step, {"v", ArgType::Any}},
 				"a step's value: null empty, {off:true} a NOTE OFF, {n:[note...], a, f, l, notrig?} a trig (n: its pitch, chord notes after the base; a f l: AMP FILTER LFO)"},
@@ -412,6 +415,8 @@ namespace mmDesk
 				"drag-copy; with a name: Save to... (the song, named, into another slot)", CoreOp::Edit, g_library},
 			{"songClear", Owner::Core, Gate::Input, S, {s}, "", CoreOp::Edit, g_library},
 			{"songRename", Owner::Core, Gate::Input, S, {s, {"name", ArgType::Text}}, "a song's name (14 characters)", CoreOp::Edit, g_library},
+			{"globalCopy", Owner::Core, Gate::Input, G, {deskCore::slotArg<MmModel>("slot", Kind::Global)}, "GLOBAL › Copy: the global into the clipboard", CoreOp::Edit, g_library},
+			{"globalPaste", Owner::Core, Gate::Input, G, {deskCore::slotArg<MmModel>("slot", Kind::Global)}, "GLOBAL › Paste: the clipboard's global into this slot (its position kept)", CoreOp::Edit, g_library},
 			// ---- the machine ----
 			{"load", Owner::Machine, Gate::Input, -1, {{"kind", ArgType::Text, 0, 0, false, deskCore::kindNames<MmModel>(true)}, {"slot", ArgType::Integer, 0, static_cast<double>(deskCore::maxLoadableSlots<MmModel>() - 1)}}, "read a document now"},
 			{"select", Owner::Machine, Gate::Input, -1, {p, {"now", ArgType::Bool, 0, 0, true}},
