@@ -34,7 +34,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Highlights 1-2 | 18 tempo synced LFOs | 3 per track | ✅ | Sound > LFO 1-3 |  | – |
 | Highlights 1-2 | 12 arpeggiators | One per track, synth and MIDI | ✅ | Sequence dock > Arp |  | – |
 | Highlights 1-2 | Full real-time control | Every DATA value live | ✅ | Every value box, drag or wheel | Sent as CC while dragging | – |
-| Highlights 1-2 | DigiPRO user waveforms (MKII) | 64 user waveform slots | ❌ | – | The page can pick waveform 1-64 (WAV1, WAV2, WAVE) but cannot send, receive, rename or erase user waveforms | – |
+| Highlights 1-2 | DigiPRO user waveforms (MKII) | 64 user waveform slots | ❌ | – | The page can pick waveform 1-64 (WAV1, WAV2, WAVE) but cannot send, receive, rename or erase user waveforms. Measured (P4): a request (0x5E) returns a used waveform byte for byte; a dump (0x5D) is taken only on DIGIPRO MGR > RECEIVE. | – |
 | +Drive 1-3 | Snapshots, Digibanks, 8192 waveforms | Optional storage drive | ➖ | – | Not emulated, see section 19 | – |
 
 ## 2. User interface and connectors (1-4 to 1-9)
@@ -69,7 +69,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Front panel 1-5 | 15 BANK keys A-H | Pattern bank | ✅ | Pattern chooser |  | – |
 | Front panel 1-5 | 15 BANK secondary: ARP, TRANSPOSE, SWING, SLIDE | Track settings windows | ✅ | Sequence dock > Arp, Transpose; SWING and SLIDE rows; LCD SWG |  | – |
 | Front panel 1-5 | 16 REC key (grid recording) | Grid mode on / off | 🟡 | LCD record key | Stopped = grid record; the page's step editing does not need it | 1 |
-| Front panel 1-5 | 16 PLAY (pause on second press) | Start, pause | 🟡 | LCD play key, Space | Toggle start / stop, no pause | 2 |
+| Front panel 1-5 | 16 PLAY (pause on second press) | Start, pause | 🟡 | LCD play key, Space | Toggle start / stop, no pause. Measured (P1, doc/modern-ux/PROBES-manual-gaps.md): MIDI Stop + Continue pauses and resumes when TRANSPORT IN is ACCEPT. | 2 |
 | Front panel 1-5 | 16 STOP; STOP twice rewinds and silences | Stop, reset | 🟡 | Same key | One press only; no rewind or all-notes-off key | 2 |
 | Front panel 1-5 | 16 REC + PLAY = live recording | Live recording | ✅ | Alt + Space, record key while playing | `record` op | 1 |
 | Front panel 1-5 | 16 STOP + REC = step recording | Step recording | ❌ | – | Not in the page | – |
@@ -349,7 +349,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | MIDI page 1-71 | CC 1-4 | Controllers | ✅ | MIDI page CL / CC boxes |  | – |
 | Comparison 1-71 | No trig tracks; arp without switches; swing and slide; transpose | Differences | ✅ | Same docks |  | – |
 | Comparison 1-71 | MIDI page stored in the kit | Kit part | ✅ | Kit edits |  | – |
-| Comparison 1-71 | Internal tracks can send MIDI too | Internal MIDI out | ❌ | – | CONTROL OUT1 not editable | – |
+| Comparison 1-71 | Internal tracks can send MIDI too | Internal MIDI out | ❌ | – | CONTROL OUT1 not editable. Measured (P2): global bytes 0x07-0x09, 0 INT, 1 OUT, 2 INT+OUT. | – |
 
 ## 17. The song mode (1-73 to 1-80)
 
@@ -362,7 +362,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Save song 1-74 | Copy, paste, clear, undo a song slot | Song slots | ❌ | – | Rows can be copied (`copyRow`) | – |
 | Song play 1-75 | Play, pause, stop | Transport | 🟡 | Play key |  | – |
 | Song play 1-75 | Switch to pattern mode and back; pointer held | Mode toggle | ✅ | PATTERN / SONG switch |  | 2 |
-| Song transport 1-75 | Move the song pointer to a row and continue | Jump to row | ❌ | – | Page shows the playing row (0.3.5) but cannot set it | – |
+| Song transport 1-75 | Move the song pointer to a row and continue | Jump to row | ❌ | – | Page shows the playing row (0.3.5) but cannot set it. Measured (P1): with TRANSPORT IN = ACCEPT, Song Position Pointer + Continue starts the row that holds the pointer (at its first step on the internal clock). | – |
 | Song transport 1-75 | Song pointer position over MIDI | SPP | ➖ | – | Firmware, via global transport setting | – |
 | Song editing 1-76 | ROW count | Rows | ✅ | Arrangement grid |  | – |
 | Song editing 1-76 | PAT column, END mark | Pattern | ✅ | Pattern palette, drag, ‹ › |  | 3 |
@@ -409,7 +409,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Control > MIDI channels 1-90 | Multi map channel | Multi map ch | ✅ | GLOBAL > Control > Multi map |  | – |
 | Control > MIDI channels 1-90 | Auto track channel | Auto ch | ✅ | GLOBAL > Control > Auto track |  | – |
 | MIDI functionality 1-90 | NRPN control, program change selects pattern | MIDI in | ➖ | – | Firmware; automation and DAW MIDI reach it | – |
-| Control out 1 1-91 | SEQUENCER, ARP, KEYBOARD to INT / OUT / INT+OUT | Output routing | ❌ | – | Not on the GLOBAL page; these bytes of the global are not decoded | – |
+| Control out 1 1-91 | SEQUENCER, ARP, KEYBOARD to INT / OUT / INT+OUT | Output routing | ❌ | – | Not on the GLOBAL page. Measured (P2): global bytes 0x07 SEQUENCER, 0x08 ARP, 0x09 KEYBOARD; 0 INT, 1 OUT, 2 INT+OUT; factory INT, INT, INT+OUT. | – |
 | Control out 2 1-92 | TRANSPORT, MIDI CLOCK, PRG CHANGE out | Output control | ✅ | GLOBAL > Sync > Ctrl out, Tempo out; Control > Prg change out | `globalMidi` (clockOut, transportOut, programChangeOut). Machine MIDI out reaches the host since 0.4.0 | 1 |
 | Control in 1-92 | TEMPO SYNC internal / external | Sync | ✅ | GLOBAL > Sync > Tempo in (INT / EXT) | A DAW sets EXT itself (`followHost`) | – |
 | Control in 1-92 | TRANSPORT ACCEPT / IGNORE | Transport in | ✅ | GLOBAL > Sync > Ctrl in | A DAW turns it on itself; the page also asks once when PLAY needs it | – |
@@ -424,7 +424,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | File 1-95 | Sysex send: ALL, KIT, PAT+KIT, SONG+PAT+KIT with ranges | Send dumps | 🟡 | Right-click menu > export all as one .syx | No range choice | – |
 | File 1-97 | Sysex receive: ORIG, SPEC, VERF | Receive dumps | 🟡 | SysEx import panel: choose slots, preview, report | ORIG-style (original positions); no SPEC start slot and no VERF-only mode | 2 |
 | File 1-95, 1-97 | Needs the machine on SYSEX RECV | Receive session | ✅ | Editor drives it itself; pattern field shows RECV / SEND n | HW MIDI: user opens the screen | 2 |
-| DigiPRO manager 1-99 | Send, receive, erase, rename user waveforms; copy between Digibanks | Waveform manager | ❌ | – | MKII only | – |
+| DigiPRO manager 1-99 | Send, receive, erase, rename user waveforms; copy between Digibanks | Waveform manager | ❌ | – | MKII only. Measured (P4): send (0x5E, used waveforms only) and receive (0x5D on the RECEIVE screen) work on the emulator; rename, erase and copy were not probed. | – |
 | +Drive settings 1-105 | Quick mode, format | +Drive | ➖ | – | Not emulated | – |
 | Snapshot manager 1-106 | Load, save, rename, erase, lock snapshots | +Drive | ➖ | – |  | – |
 | Digibank manager 1-107 | Switch, rename, erase, lock banks | +Drive | ➖ | – |  | – |
@@ -503,7 +503,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
-| 0x50 / 0x51 Global dump, request C-1 | Global slot data | Global | 🟡 | Read and written for routing, MIDI channels, sync, MIDI seq, multi map | Master tune, CONTROL OUT 1 and some bytes are not decoded | – |
+| 0x50 / 0x51 Global dump, request C-1 | Global slot data | Global | 🟡 | Read and written for routing, MIDI channels, sync, MIDI seq, multi map | Master tune and some bytes are not decoded on the page; CONTROL OUT 1 is measured (P2, bytes 0x07-0x09) but not on the page. | – |
 | 0x52 / 0x53 Kit dump, request C-1 | Kit data | Kit | ✅ | Kit library, SysEx panel |  | – |
 | 0x54 Unused C-1 | – | – | ➖ | – |  | – |
 | 0x55 Set current kit name C-1 | Live kit rename | Kit name | ✅ | Kit library Rename (current kit) |  | – |
@@ -512,7 +512,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | 0x58 / 0x59 Load / save kit C-2 | Kit load, save | LOAD / SAVE KIT | ✅ | Kit library |  | – |
 | 0x5B Assign machine C-2 | Machine and init mode | Machine | ✅ | Machine picker |  | – |
 | 0x5C Set track routing C-2 | Output bus, input | Routing | ✅ | Mix |  | – |
-| 0x5D / 0x5E Digipro waveform dump, request C-2 | User waveforms | Waveforms | ❌ | – |  | – |
+| 0x5D / 0x5E Digipro waveform dump, request C-2 | User waveforms | Waveforms | ❌ | – | Measured (P4): a request (0x5E) returns a used waveform byte for byte, nothing for an empty one; a dump (0x5D) is taken only on DIGIPRO MGR > RECEIVE. | – |
 | 0x5E Set Gate box parameter C-2 | Reverb parameter | Reverb | ➖ | – | Not used; reverb values go as CC | – |
 | 0x61 Set tempo C-2 | Tempo | Tempo | ✅ | LCD TEMPO | 30-300 BPM | – |
 | 0x67 / 0x68 Pattern dump, request C-3 | Pattern data | Pattern | ✅ | All sequence edits, chooser |  | – |

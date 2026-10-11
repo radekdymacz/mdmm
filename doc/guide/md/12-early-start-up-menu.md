@@ -14,7 +14,7 @@ The test mode checks the hardware of the machine: its keys, knobs, memory and ou
 {gap:MD-203}You cannot empty the whole memory of the machine at once in the editor. You can clear a pattern, a kit, a song row or a sample slot one at a time.{/gap}
 
 ## FACTORY RESET
-<!-- rows: MD-204 @1ae846 -->
+<!-- rows: MD-204 @74a82a -->
 
 {gap:MD-204}You cannot reset the machine to its factory data in the editor. Import a factory .syx file instead. See "GENERAL SYSEX RECEIVE" in chapter 10.{/gap}
 

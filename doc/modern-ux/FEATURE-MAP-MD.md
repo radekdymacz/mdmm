@@ -29,8 +29,8 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.5 | SYNTHESIS/EFFECTS/ROUTING toggle | Switch knob page | ✅ | Sound page shows all three as groups | No page toggle; all pages in one view. | – |
 | p.5 | RECORD key (grid record on/off) | Toggle grid edit | ➖ | Grid is always editable | The step grid needs no mode. | – |
 | p.5 | RECORD + PLAY (live recording) | Live record | ✅ | REC button, Alt+Space | LCD top bar. | 1 |
-| p.5 | PLAY (second press pauses) | Start / pause | 🟡 | Play/Stop button, Space | Play and stop only; no pause. | 2 |
-| p.5 | STOP; double STOP silences all voices | Stop, panic | 🟡 | Play/Stop button | No panic key. Double STOP: the firmware supports it; only a real machine's panel can do it today. | – |
+| p.5 | PLAY (second press pauses) | Start / pause | 🟡 | Play/Stop button, Space | Play and stop only; no pause. Measured (P1, doc/modern-ux/PROBES-manual-gaps.md): MIDI Stop holds the step and Continue goes on from it, in pattern and song mode. | 2 |
+| p.5 | STOP; double STOP silences all voices | Stop, panic | 🟡 | Play/Stop button | No panic key. Measured (P5): no MIDI message silences the voices (Stop once or twice, CC 120 and 123, reset, note offs, loads, mutes); only the panel STOP pressed twice does, which the emulator can press. | – |
 | p.5 | STOP + PLAY restarts from the top | Restart | 🟡 | Stop then Play | Same result in two clicks. | – |
 | p.5 | PATTERN/SONG key | Switch sequencer mode | ✅ | Song page: PATTERN / SONG switch; LCD PLAY value | seqMode command. | 2 |
 | p.5 | KIT key (kit menu) / FUNCTION + KIT (song menu) | Open kit / song menus | 🟡 | Kit: library popover. Song: song stepper on Song page | No song menu (see §10). | – |
@@ -200,10 +200,10 @@ Method: manual read in full; claims checked against the page files (`source/elek
 |---|---|---|---|---|---|---|
 | p.51 | Song capacity: 256 rows, 32 songs | Limits | ✅ | Song page: row count; song stepper |  | – |
 | p.51 | Load song | LOAD SONG | ✅ | Song stepper (< >), LCD SONG; loads when stopped |  | – |
-| p.52 | Play, pause, stop a song | Transport | 🟡 | Play/Stop button | No pause. | 1 |
-| p.52 | Move song pointer to a row; start from a row | Navigate, transport | ❌ | None | Click on a row only selects it for editing. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. | – |
+| p.52 | Play, pause, stop a song | Transport | 🟡 | Play/Stop button | No pause. Measured (P1): MIDI Stop + Continue pauses and resumes a song. | 1 |
+| p.52 | Move song pointer to a row; start from a row | Navigate, transport | ❌ | None | Click on a row only selects it for editing. Measured (P1): Song Position Pointer (the steps of the rows before it) + Continue plays from that row and step in song mode. | – |
 | p.52 | Playing row shown, repeats left | Playhead | 🟡 | Playing row marked in the arrangement | Turns left not shown. | 1 |
-| p.52 | STOP holds, second STOP to start | Stop behaviour | ❌ | None |  | – |
+| p.52 | STOP holds, second STOP to start | Stop behaviour | ❌ | None | No pause key. Measured (P1): MIDI Stop holds the position, Continue goes on. | – |
 | p.53 | Song editor: pattern, REP, BPM, offset, length, mute | EDIT SONG | ✅ | Song > Selected row; arrangement grid |  | 1 |
 | p.53 | Insert / remove step | FUNCTION + arrows | ✅ | Add by palette, Duplicate, Delete |  | 2 |
 | p.53 | Copy / paste / clear / undo rows | Row clipboard | ✅ | Cmd+C/V; Delete; Cmd+Z |  | 1 |
@@ -235,7 +235,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.61 | Program change channel | Channel | ✅ | GLOBAL > Prg channel |  | – |
 | p.61 | Encoder resolution 24 / 32 (MKII) | MECH SETTINGS | ➖ |  | No knobs. | – |
 | p.62 | Output routing, tracks to A-F or MAIN | OUTPUT | ✅ | GLOBAL > Routing; Mix OUT key |  | 2 |
-| p.63 | Trig in A/B: GATE, SENS, VMIN, VMAX, DEST | External pads | 🟡 | GLOBAL > Trig in A / B (read-only table) | Shown as stored, not editable. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. | – |
+| p.63 | Trig in A/B: GATE, SENS, VMIN, VMAX, DEST | External pads | 🟡 | GLOBAL > Trig in A / B (read-only table) | Shown as stored, not editable. Measured (P3): the ten bytes, their order and ranges are known, and a SysEx global sets them. | – |
 | p.64 | Sysex send all data | Backup | 🟡 | Engine menu: Export SysEx (every document) | One file; no range. | – |
 | p.66 | Global sysex send (all or one slot) | Send globals | 🟡 | Export SysEx | No single-slot send. | – |
 | p.66 | Song + pattern (+ kit) sysex send, range | Send songs | 🟡 | Export SysEx | No range. | – |
@@ -274,7 +274,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 |---|---|---|---|---|---|---|
 | p.79 | Test mode | Self test | ➖ |  |  | – |
 | p.79 | Empty reset | Clear all | ❌ | None | Per-slot clear only. | – |
-| p.79 | Factory reset | Presets | ❌ | None | Re-import a .syx instead. | – |
+| p.79 | Factory reset | Presets | ❌ | None | Re-import a .syx instead. Measured (P6): the factory baseline holds the sample flash only; a machine booted with no patch RAM holds the factory kits, patterns, songs and globals, the same at every boot. | – |
 | p.79 | Soft reset | Reload samples | ❌ | None | Restart the editor. | – |
 | p.79 | MIDI upgrade / send upgrade | OS update | ➖ |  | Firmware fixed to OS 1.63. | – |
 
