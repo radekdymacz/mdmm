@@ -205,6 +205,7 @@ namespace
 			p.sendMute = [this](const uint8_t _t, const bool _on) { if(_t < 16) m_mutes = _on ? (m_mutes | (1 << _t)) : (m_mutes & ~(1 << _t)); };
 			p.sendNote = [](uint8_t, uint8_t, uint8_t) {};
 			p.pressKey = [this](const std::string& _k) { return press(_k); };
+			p.sendMidi = [this](const Bytes& _m) { realtime(_m); };
 			p.nowMs = [] { return nowMs(); };
 			p.audition = [this](const ed::AuditionClip& _clip)
 			{
@@ -232,7 +233,10 @@ namespace
 			if(m_playing && now - m_stepAt >= 125 * g_timeScale)	// 120 BPM, a 16th (wall time)
 			{
 				m_stepAt = now;
-				m_step = (m_step + 1) % std::max<int>(1, m_patterns[m_pattern].length);
+				if(m_songMode)
+					m_step = songLocate(++m_songPos).second;
+				else
+					m_step = (m_step + 1) % std::max<int>(1, m_patterns[m_pattern].length);
 			}
 			mdDesk::Telemetry t;
 			t.valid = true;
@@ -246,7 +250,7 @@ namespace
 			t.chain = m_chain;
 			t.bankGroup = m_bankGroup;
 			t.panelPending = 0;
-			t.songRow = m_songMode && m_playing ? 0 : -1;
+			t.songRow = m_songMode && m_playing ? songLocate(m_songPos).first : -1;
 			_desk.onTelemetry(t);
 			if(now - m_memoryAt >= 32)
 			{
@@ -372,16 +376,77 @@ namespace
 			}
 		}
 
-		bool press(const std::string& _key)
+		// the row and the step in it that _pos steps into the song play (rows' end - start times their plays; a LOOP, JUMP
+		// or END stops the count: the fixture's songs have none before their END)
+		std::pair<int, int> songLocate(const int _pos) const
 		{
-			if(_key == "play" || _key == "recordPlay")
+			const auto& song = m_songs[m_song];
+			int at = 0;
+			for(size_t i = 0; i < song.rows.size(); ++i)
+			{
+				const auto& r = song.rows[i];
+				if(ed::songRowKind(r, i) != ed::MdSongRowKind::Pattern)
+					break;
+				const int len = std::max(1, r.end - r.start), all = len * (r.repeats + 1);
+				if(_pos < at + all)
+					return {static_cast<int>(i), (_pos - at) % len};
+				at += all;
+			}
+			return {0, 0};
+		}
+
+		// wave 2: MIDI Stop holds the step, Continue goes on from it, a song position (stopped) sets where (P1; CTRL IN on)
+		void realtime(const Bytes& _m)
+		{
+			if(_m.empty())
+				return;
+			if(_m[0] == 0xfc && m_playing)
+			{
+				m_playing = false;
+				m_paused = true;
+			}
+			else if(_m[0] == 0xfb && !m_playing)
 			{
 				m_playing = true;
+				m_paused = false;
+				m_stepAt = nowMs();
+			}
+			else if(_m[0] == 0xf2 && _m.size() == 3 && !m_playing)
+			{
+				const int pos = _m[1] | (_m[2] << 7);
+				m_songPos = pos;
+				m_step = m_songMode ? songLocate(pos).second : pos % std::max<int>(1, m_patterns[m_pattern].length);
+				m_paused = true;
+			}
+		}
+
+		bool press(const std::string& _key)
+		{
+			// PLAY: starts; while playing it pauses, while paused it goes on (the machine's own pause)
+			if(_key == "play" && m_playing)
+			{
+				m_playing = false;
+				m_paused = true;
+			}
+			else if(_key == "play" && m_paused)
+			{
+				m_playing = true;
+				m_paused = false;
+				m_stepAt = nowMs();
+			}
+			else if(_key == "play" || _key == "recordPlay")
+			{
+				m_playing = true;
+				m_paused = false;
 				m_step = 0;
+				m_songPos = 0;
 				m_stepAt = nowMs();
 			}
 			else if(_key == "stop")
-				m_playing = false;
+			{
+				m_playing = m_paused = false;
+				m_step = m_songPos = 0;
+			}
 			else if(_key == "bankGroup")
 				m_bankGroup = 1 - m_bankGroup;
 			else if(_key.rfind("chain:", 0) == 0)	// chain:<bank>:<trig>,<trig>,...: BANK held, the TRIGs (mdDeskChain.cpp)
@@ -427,8 +492,8 @@ namespace
 		double m_auditionEnds = 0;
 		mdDesk::Chain m_chain;
 		uint8_t m_pattern = 0, m_kit = 0, m_song = 0, m_global = 0, m_track = 0;
-		bool m_songMode = false, m_playing = false;
-		int m_mutes = 0, m_step = 0, m_bankGroup = 0;
+		bool m_songMode = false, m_playing = false, m_paused = false;
+		int m_mutes = 0, m_step = 0, m_bankGroup = 0, m_songPos = 0;
 		double m_stepAt = 0, m_memoryAt = -1000;
 		std::vector<Bytes> m_replies;
 	};
@@ -536,6 +601,7 @@ namespace
 				return true;
 			};
 			p.sendNote = [](uint8_t, uint8_t, uint8_t) {};
+			p.sendMidi = [this](const Bytes& _m) { realtime(_m); };
 			p.nowMs = [] { return nowMs(); };
 			return p;
 		}
@@ -550,7 +616,7 @@ namespace
 			if(m_running && now - m_stepAt >= 125 * g_timeScale)
 			{
 				m_stepAt = now;
-				m_step = (m_step + 1) % 16;
+				m_step = m_songMode ? songLocate(++m_songPos).second : (m_step + 1) % 16;
 				++m_blocks;
 			}
 			mmDesk::Telemetry t;
@@ -567,6 +633,7 @@ namespace
 			t.bankGroup = m_bankGroup;
 			t.chainKnown = true;
 			t.chain = m_chain;
+			t.songRow = m_songMode ? (m_running ? songLocate(m_songPos).first : 0) : -1;
 			_desk.onTelemetry(t);
 			if(now - m_memoryAt >= 32)
 			{
@@ -666,6 +733,57 @@ namespace
 			}
 		}
 
+		// the row and the step in it that _pos steps into the song play (each row's length times its plays)
+		std::pair<int, int> songLocate(const int _pos) const
+		{
+			const auto& song = m_songs[m_song];
+			int at = 0;
+			for(size_t i = 0; i < song.rows.size(); ++i)
+			{
+				const auto& b = song.rows[i].bytes;
+				if(b[ed::mmSongRow::g_pattern] >= ed::MmSong::g_loop)
+					break;
+				const int len = std::max<int>(1, b[ed::mmSongRow::g_length]), all = len * (b[ed::mmSongRow::g_repeats] + 1);
+				if(_pos < at + all)
+					return {static_cast<int>(i), (_pos - at) % len};
+				at += all;
+			}
+			return {0, 0};
+		}
+
+		// wave 2: with TRANSPORT IN = ACCEPT, MIDI Stop holds the step, Continue goes on, a song position (stopped) sets where;
+		// in SONG mode the row that holds it starts at its first step (P1, internal clock). IGNORE: none of them does anything.
+		void realtime(const Bytes& _m)
+		{
+			if(_m.empty() || !m_globals[m_global & 7].transportIn)
+				return;
+			if(_m[0] == 0xfc && m_running)
+			{
+				m_running = false;
+				m_paused = true;
+			}
+			else if(_m[0] == 0xfb && !m_running)
+			{
+				m_running = true;
+				m_paused = false;
+				m_stepAt = nowMs();
+			}
+			else if(_m[0] == 0xf2 && _m.size() == 3 && !m_running)
+			{
+				const int pos = _m[1] | (_m[2] << 7);
+				if(m_songMode)
+				{
+					const auto [row, inRow] = songLocate(pos);
+					m_songPos = pos - inRow;
+					m_step = 0;
+					(void)row;
+				}
+				else
+					m_step = pos % 16;
+				m_paused = true;
+			}
+		}
+
 		bool press(const std::vector<mmDesk::Key>& _keys)
 		{
 			if(mmDesk::RecvSession::isEnterMacro(_keys))
@@ -690,14 +808,30 @@ namespace
 			{
 				if(k == mmDesk::Key::BankGroup)
 					m_bankGroup = 1 - m_bankGroup;
-				if(k == mmDesk::Key::Play || k == mmDesk::Key::LiveRecord)
+				// PLAY: starts; while playing it pauses, while paused it goes on (the machine's own pause)
+				if(k == mmDesk::Key::Play && m_running)
+				{
+					m_running = false;
+					m_paused = true;
+				}
+				else if(k == mmDesk::Key::Play && m_paused)
 				{
 					m_running = true;
-					m_step = 0;
+					m_paused = false;
+					m_stepAt = nowMs();
+				}
+				else if(k == mmDesk::Key::Play || k == mmDesk::Key::LiveRecord)
+				{
+					m_running = true;
+					m_paused = false;
+					m_step = m_songPos = 0;
 					m_stepAt = nowMs();
 				}
 				else if(k == mmDesk::Key::Stop)
-					m_running = false;
+				{
+					m_running = m_paused = false;
+					m_step = m_songPos = 0;
+				}
 				else if(k == mmDesk::Key::Exit)
 					m_screen = mmDesk::Screen::Main;
 			}
@@ -711,8 +845,8 @@ namespace
 		ed::MmKit m_working;
 		mmDesk::Chain m_chain;
 		uint8_t m_pattern = 0, m_kit = 0, m_song = 0, m_global = 0;
-		bool m_songMode = false, m_running = false, m_poly = false;
-		int m_mutes = 0, m_step = 0, m_bankGroup = 0, m_tempo = 120 * 24;
+		bool m_songMode = false, m_running = false, m_poly = false, m_paused = false;
+		int m_mutes = 0, m_step = 0, m_bankGroup = 0, m_tempo = 120 * 24, m_songPos = 0;
 		uint64_t m_blocks = 0;
 		uint32_t m_recvTaken = 0;
 		mmDesk::Screen m_screen = mmDesk::Screen::Main;
