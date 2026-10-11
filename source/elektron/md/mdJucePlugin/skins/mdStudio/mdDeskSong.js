@@ -89,7 +89,7 @@ function renderSong() {
    <div class="irow"><span class="ilab"></span><span class="note">${sel.type === "loop" ? "Loops can be nested. Forever loops are good live: pick the next row while it plays." : sel.type === "jump" ? "Jumps the song pointer to another row." : "Pauses playback until you pick a row to go on from."}</span></div>`;
 	const mode = (V.songMode === true ? "songmode" : V.songMode === false ? "patmode" : "") + (V.songMode === true && V.playing ? " songplaying" : "");
 	$("#main").innerHTML = `<div class="songui lay2 ${mode}"><div class="songleft">${whatPlays(plays)}${songCard()}<section class="card ${chain ? "chainmode" : ""}">${head}${palette}</section>
-   <section class="card"><header><h3>Selected row</h3><span class="rowacts"><button data-rowact="up" title="Move left">←</button><button data-rowact="down" title="Move right">→</button><button data-rowact="dup">Duplicate</button><button data-rowact="loop">Add loop</button><button data-rowact="del" class="danger">Delete</button></span></header><div class="insp">${insp}</div></section></div>
+   <section class="card"><header><h3>Selected row</h3><span class="rowacts"><button data-rowact="from" title="Play the song from this row (Enter): SONG mode, from its first step">▶ From here</button><button data-rowact="up" title="Move left">←</button><button data-rowact="down" title="Move right">→</button><button data-rowact="dup">Duplicate</button><button data-rowact="loop">Add loop</button><button data-rowact="del" class="danger">Delete</button></span></header><div class="insp">${insp}</div></section></div>
   <section class="card arrcard"><header><h3>Arrangement</h3><span class="arrstate" id="arrstate">${arrState()}</span><span class="note">${V.song.length} of 256 rows · drag patterns onto the grid · drag cells to move · Delete removes</span></header>
     <div class="durbar" title="Song shape by time (length × repeats); in SONG mode it fills up to the row that plays">${V.song.map((r, i) => r.type ? `<i class="db dbm" data-i="${i}"></i>` : `<i class="db ${i === S.songSel ? "sel" : ""}" data-row="${i}" data-i="${i}" style="flex:${rowLen(r) * r.rep} 1 0"></i>`).join("")}</div>
     <div class="slotgrid" id="tl">${Array.from({ length: 16 }, (_, line) => `<span class="sglab">${String(line * 16 + 1).padStart(3, "0")}</span>${Array.from({ length: 16 }, (_, c) => {
@@ -124,6 +124,7 @@ function songCard() {
 function arrState() { return V.songMode === true ? (V.playing ? "Playing" : "Song mode · stopped") : V.songMode === false ? "Pattern mode · song not playing" : ""; }
 function songAction(a) {
 	const i = S.songSel, r = V.song[i];
+	if (a === "from") { playFromRow(i); return; }
 	if (a === "del") { if (r.type === "end") return; songCmd("rowDelete", { i }); S.songSel = Math.max(0, Math.min(i, V.song.length - 2)); }
 	if (a === "dup" && !r.type) { songCmd("rowInsert", { i: i + 1, row: rowToContract(r, patLen) }); S.songSel = i + 1; }
 	if (a === "up" && i > 0 && r.type !== "end") { songCmd("rowMove", { from: i, to: i - 1 }); S.songSel = i - 1; }
