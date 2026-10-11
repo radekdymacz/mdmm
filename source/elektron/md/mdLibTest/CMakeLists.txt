@@ -62,9 +62,9 @@ add_executable(mdMidiTimingTest midiTimingTest.cpp)
 target_link_libraries(mdMidiTimingTest PRIVATE mdLib)
 add_test(NAME mdMidiTimingTest COMMAND mdMidiTimingTest)
 add_test(NAME mdMidiTimingFirmwareTest COMMAND mdMidiTimingTest --firmware)
-set_tests_properties(mdMidiTimingTest PROPERTIES LABELS "UnitTest;Midi;Timing" FIXTURES_SETUP MdMidiTiming)
+set_tests_properties(mdMidiTimingTest PROPERTIES LABELS "UnitTest;Midi;Timing" RUN_SERIAL TRUE FIXTURES_SETUP MdMidiTiming)
 set_tests_properties(mdMidiTimingFirmwareTest PROPERTIES
-	LABELS "Integration;FirmwareTest;Midi;Timing" SKIP_RETURN_CODE 77 TIMEOUT 90)
+	LABELS "Integration;FirmwareTest;Midi;Timing" RUN_SERIAL TRUE SKIP_RETURN_CODE 77 TIMEOUT 90)
 set_property(TARGET mdMidiTimingTest PROPERTY FOLDER "Elektron/test")
 add_dependencies(mdLibTest mdMidiTimingTest)
 
@@ -84,7 +84,7 @@ set_property(TARGET mdHostRxFirmwareTest PROPERTY FOLDER "Elektron/test")
 add_executable(mdIdleSelfBranchTest idleSelfBranchTest.cpp)
 target_link_libraries(mdIdleSelfBranchTest PRIVATE mdLib)
 add_test(NAME mdIdleSelfBranchTest COMMAND mdIdleSelfBranchTest)
-set_tests_properties(mdIdleSelfBranchTest PROPERTIES LABELS "UnitTest;Timing")
+set_tests_properties(mdIdleSelfBranchTest PROPERTIES LABELS "UnitTest;Timing" RUN_SERIAL TRUE)
 set_property(TARGET mdIdleSelfBranchTest PROPERTY FOLDER "Elektron/test")
 
 add_executable(mdIdleSchedulerFirmwareTest idleSchedulerFirmwareTest.cpp)
@@ -94,7 +94,7 @@ add_test(NAME mdIdleSchedulerFirmwareTest COMMAND mdIdleSchedulerFirmwareTest)
 # limit covered one model; retain all 384 cases with proportional hang-guard
 # headroom. This allocation-heavy fixture is not a realtime performance gate.
 set_tests_properties(mdIdleSchedulerFirmwareTest PROPERTIES
-	LABELS "Integration;FirmwareTest;Timing" SKIP_RETURN_CODE 77 TIMEOUT 240)
+	LABELS "Integration;FirmwareTest;Timing" RUN_SERIAL TRUE SKIP_RETURN_CODE 77 TIMEOUT 240)
 set_property(TARGET mdIdleSchedulerFirmwareTest PROPERTY FOLDER "Elektron/test")
 
 add_executable(mdPanelReadinessFirmwareTest panelReadinessFirmwareTest.cpp)
@@ -240,7 +240,7 @@ add_executable(mdTransportScorecardTest transportScorecardTest.cpp)
 target_link_libraries(mdTransportScorecardTest PRIVATE mdLib)
 add_test(NAME mdTransportScorecardTest COMMAND mdTransportScorecardTest)
 set_tests_properties(mdTransportScorecardTest PROPERTIES
-	LABELS "UnitTest;Timing" TIMEOUT 10 FIXTURES_SETUP MdTransportScorecard)
+	LABELS "UnitTest;Timing" RUN_SERIAL TRUE TIMEOUT 10 FIXTURES_SETUP MdTransportScorecard)
 set_property(TARGET mdTransportScorecardTest PROPERTY FOLDER "Elektron/test")
 if(BUILD_TESTING)
 	add_dependencies(mdLibTest mdTransportScorecardTest)
@@ -256,7 +256,7 @@ if(MD_TRANSPORT_DIAGNOSTICS)
 	add_test(NAME mdTransportScorecardFirmwareTest
 		COMMAND mdTransportScorecardFirmwareTest)
 	set_tests_properties(mdTransportScorecardFirmwareTest PROPERTIES
-		LABELS "Integration;FirmwareTest;Timing"
+		LABELS "Integration;FirmwareTest;Timing" RUN_SERIAL TRUE
 		SKIP_RETURN_CODE 77 TIMEOUT 180)
 	set_property(TARGET mdTransportScorecardFirmwareTest
 		PROPERTY FOLDER "Elektron/test")
