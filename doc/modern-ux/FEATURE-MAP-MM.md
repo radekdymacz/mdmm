@@ -67,7 +67,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Front panel 1-5 | 14 BANK GROUP A-D / E-H | Bank group | ✅ | Pattern chooser shows all 8 banks |  | – |
 | Front panel 1-5 | 14 MUTE MODE (FUNCTION + BANK GROUP) | Mute window | ✅ | Perform > Mutes |  | – |
 | Front panel 1-5 | 15 BANK keys A-H | Pattern bank | ✅ | Pattern chooser |  | – |
-| Front panel 1-5 | 15 BANK secondary: ARP, TRANSPOSE, SWING, SLIDE | Track settings windows | ✅ | Sequence dock > Arp, Transpose; SWING and SLIDE rows; LCD SWG |  | – |
+| Front panel 1-5 | 15 BANK secondary: ARP, TRANSPOSE, SWING, SLIDE | Track settings windows | ✅ | Sequence dock > Arp, Transpose; Slide and Swing under the roll; LCD SWG |  | – |
 | Front panel 1-5 | 16 REC key (grid recording) | Grid mode on / off | 🟡 | LCD record key | Stopped = grid record; the page's step editing does not need it | 1 |
 | Front panel 1-5 | 16 PLAY (pause on second press) | Start, pause | 🟡 | LCD play key, Space | Toggle start / stop, no pause. Measured (P1, doc/modern-ux/PROBES-manual-gaps.md): MIDI Stop + Continue pauses and resumes when TRANSPORT IN is ACCEPT. | 2 |
 | Front panel 1-5 | 16 STOP; STOP twice rewinds and silences | Stop, reset | 🟡 | Same key | One press only; no rewind or all-notes-off key | 2 |
@@ -325,9 +325,9 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Transpose 1-64 | SCALE ---, FIX, MAJ, MIN | Scale | ✅ | Transpose Scale keys |  | – |
 | Transpose 1-64 | KEY for MAJ / MIN | Key | ✅ | Click the keyboard picture |  | – |
 | Swing 1-64 | Amount 50-80 %, per pattern | Swing | ✅ | LCD SWG |  | – |
-| Swing track 1-65 | Per-track swing steps, default every second 16th | Swing track | ✅ | SWING row | Drag paints | – |
+| Swing track 1-65 | Per-track swing steps, default every second 16th | Swing track | ✅ | Sequence: Swing under the roll, then click or drag the step columns; marks along the roll's foot | Drag paints, one undo step | 1 |
 | Swing 1-65 | Copy, clear, paste, undo swing track | Swing clipboard | ❌ | – |  | – |
-| Slide 1-66 | Slide track per track | Slide | ✅ | SLIDE row; lock lane draws the glide |  | 2 |
+| Slide 1-66 | Slide track per track | Slide | ✅ | Sequence: Slide under the roll, then click or drag the step columns; marks along the roll's foot; lock lane draws the glide |  | 2 |
 | Slide 1-66 | Copy, clear, paste, undo slide | Slide clipboard | ❌ | – |  | – |
 | Mute mode 1-67 | Mute window, 6 + 6 | Mutes | ✅ | Perform > Mutes; rail M | MIDI mutes through the MUTE window keys | 2 |
 | Mute mode 1-67 | Held changes until FUNCTION released | Prepared mutes | ✅ | Shift + M prepares, applies on release |  | 1 |
