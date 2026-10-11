@@ -169,17 +169,29 @@ const MmJourneys = (() => {
 		],
 		async tidy(u) { if (tele.last?.record && tele.last.record !== "off") u.click("#rec"); }
 	};
+	/* wave 3 (DESIGN-machine-menus.md §2): Note · Slide · Swing under the roll; in Slide or Swing a drag across the roll's step
+	   columns paints that mark (one undo step), the marks sit along the roll's foot; Esc back to Note */
+	const swingsOf = t => (patDoc()?.tracks[t]?.swing || []).slice().sort((a, b) => a - b);
+	/* the roll canvas and where step s's column is on it (its foot), as fractions for the hands */
+	const rollFoot = s => { const c = $1("#seq canvas.roll[data-big]"), r = c.getBoundingClientRect(), m = $1(`#seq .rollmarks [data-rm="${s}"]`).getBoundingClientRect(); return { c, fx: (m.left + m.width / 2 - r.left) / r.width, fy: 0.97, x: m.left + m.width / 2 }; };
 	const slidePaint = {
-		name: "mm-seq-slide-paint", proves: ["MM-233"],
+		name: "mm-seq-trig-types", proves: ["MM-231", "MM-233"],
 		steps: [
 			go("seq"), sel(0),
-			{ say: "drag across four SLIDE steps: on, one undo step", act: async (u, c) => {
-				c.s0 = [...Array(S().len - 3).keys()].find(s => [0, 1, 2, 3].every(k => !slidesOf(0).includes(s + k))); if (c.s0 == null) throw new Error("no four free SLIDE steps");
+			{ say: "click Slide under the roll", act: u => u.click('.ttrow [data-tt="sld"]'), screen: () => ok(S().tt === "sld" && $1('.ttrow [data-tt="sld"]').getAttribute("aria-checked") === "true", "type " + S().tt) },
+			{ say: "drag across four step columns of the roll: slide on, one undo step", act: async (u, c) => {
+				c.s0 = [...Array(S().len - 3).keys()].find(s => [0, 1, 2, 3].every(k => !slidesOf(0).includes(s + k))); if (c.s0 == null) throw new Error("no four free slide steps");
 				c.run = [0, 1, 2, 3].map(k => c.s0 + k); c.u0 = machine().history?.undoCount || 0;
-				await u.drag(`.tc[data-tl="sld"][data-s="${c.s0}"]`, c.run.slice(1).map(s => `.tc[data-tl="sld"][data-s="${s}"]`));
-			}, machine: c => ok(c.run.every(s => slidesOf(0).includes(s)), "slides " + slidesOf(0).join(",")), screen: c => ok(c.run.every(s => S().tracks[0].slide.has(s)), "lane not lit"), within: 15000 },
-			{ say: "one undo step: Cmd+Z takes all four", act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(c.run.every(s => !slidesOf(0).includes(s)), "slides " + slidesOf(0).join(",")), within: 15000 }
-		]
+				const f = rollFoot(c.s0); await u.drag(f.c, c.run.slice(1).map(s => [rollFoot(s).x - f.x, 0]), {}, { fx: f.fx, fy: f.fy });
+			}, machine: c => ok(c.run.every(s => slidesOf(0).includes(s)), "slides " + slidesOf(0).join(",")),
+				screen: c => ok(c.run.every(s => $1(`#seq .rollmarks [data-rm="${s}"]`)?.classList.contains("sld")), "no slide marks"), within: 15000 },
+			{ say: "one undo step: Cmd+Z takes all four", act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(c.run.every(s => !slidesOf(0).includes(s)), "slides " + slidesOf(0).join(",")), within: 15000 },
+			{ say: "click Swing, then click a step's column: its swing flips", act: async (u, c) => { u.click('.ttrow [data-tt="swg"]'); await sleep(300); c.w = c.run[0]; c.w0 = swingsOf(0).includes(c.w); const f = rollFoot(c.w); u.click(f.c, {}, f.fx, f.fy); },
+				machine: c => ok(swingsOf(0).includes(c.w) !== c.w0, "swing " + swingsOf(0).join(",")), screen: c => ok($1(`#seq .rollmarks [data-rm="${c.w}"]`)?.classList.contains("swg") !== c.w0, "swing mark unchanged"), within: 15000 },
+			{ say: "press Escape: back to Note", act: u => u.key("Escape"), screen: () => ok(S().tt === "note" && $1('.ttrow [data-tt="note"]').getAttribute("aria-checked") === "true", "type " + S().tt) },
+			{ say: "Cmd+Z: the swing as before", act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(swingsOf(0).includes(c.w) === c.w0, "swing " + swingsOf(0).join(",")), within: 15000 }
+		],
+		async tidy(u) { if (S().tt && S().tt !== "note") $1('.ttrow [data-tt="note"]')?.click(); }
 	};
 	const lenKey = {
 		name: "mm-seq-len", proves: ["MM-166"],
@@ -1141,7 +1153,7 @@ const MmJourneys = (() => {
 	/* K7 (DESIGN-step-selection.md §7, the Machinedrum's md-seq-select-copy-paste): one note copied to another step of
 	   its track (the LCD's PASTE on the selection), then a block of two tracks duplicated and cleared with the LCD's CLR */
 	const inPat = s => s < S().len;
-	const selCells = () => $all("#seq .tlane .tc.selx[data-tl=\"sld\"]").map(e => +e.dataset.s);
+	const selCells = () => $all("#seq .tlane.env .tc.selx").map(e => +e.dataset.s);
 	const selectCopyPaste = {
 		name: "mm-seq-select-copy-paste", proves: ["MM-183"],
 		steps: [
