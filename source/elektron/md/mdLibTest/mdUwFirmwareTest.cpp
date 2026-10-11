@@ -569,8 +569,9 @@ static int runFirmwareTest(const char* const firmwarePath)
 	// user sectors pending until initialization completes, then apply them without
 	// allowing them into the factory cache.
 	auto projectFlash = initializedFlash;
-	projectFlash[6 * md::g_uwFlashSectorSize + 123] ^= 0x5a;
-	projectFlash[10 * md::g_uwFlashSectorSize + 321] ^= 0x33;
+	// in the sample area: the loader puts the ROM's bytes back in the OS's sectors (B-054)
+	projectFlash[0x56 * md::g_uwFlashSectorSize + 123] ^= 0x5a;
+	projectFlash[0x5a * md::g_uwFlashSectorSize + 321] ^= 0x33;
 	auto projectPatch = device.getHardware().copyPatchRam();
 	projectPatch.front() ^= 0x6d;
 	projectPatch.back() ^= 0x27;
@@ -711,9 +712,9 @@ static int runFirmwareTest(const char* const firmwarePath)
 	// Once a healthy baseline is live, a state tied to any other factory image
 	// must be rejected before it can replace that machine.
 	auto wrongFactory = initializedFlash;
-	wrongFactory[2 * md::g_uwFlashSectorSize + 17] ^= 0x41;
+	wrongFactory[0x52 * md::g_uwFlashSectorSize + 17] ^= 0x41;
 	auto wrongProjectFlash = wrongFactory;
-	wrongProjectFlash[12 * md::g_uwFlashSectorSize + 91] ^= 0x24;
+	wrongProjectFlash[0x5c * md::g_uwFlashSectorSize + 91] ^= 0x24;
 	std::vector<uint8_t> wrongFactoryState;
 	if(!md::encodeStateWithFactoryBaseline(wrongFactoryState, projectPatch,
 		wrongProjectFlash, wrongFactory, rom, md::MachineModel::Machinedrum,

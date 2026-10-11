@@ -491,6 +491,27 @@ namespace md
 		return true;
 	}
 
+	size_t restoreFirmwareSectors(FlashSectorOverlay& _overlay, const std::vector<uint8_t>& _romBaseline)
+	{
+		if(_romBaseline.size() != g_romSize
+			|| _overlay.data.size() != _overlay.sectors.size() * static_cast<size_t>(g_uwFlashSectorSize))
+			return 0;
+		size_t restored = 0;
+		for(size_t i = 0; i < _overlay.sectors.size(); ++i)
+		{
+			const auto offset = static_cast<size_t>(_overlay.sectors[i]) * g_uwFlashSectorSize;
+			if(offset >= g_mdFirmwareFlashEnd)
+				continue;
+			const auto rom = _romBaseline.begin() + static_cast<std::ptrdiff_t>(offset);
+			const auto data = _overlay.data.begin() + static_cast<std::ptrdiff_t>(i * g_uwFlashSectorSize);
+			if(std::equal(rom, rom + g_uwFlashSectorSize, data))
+				continue;
+			std::copy_n(rom, g_uwFlashSectorSize, data);
+			++restored;
+		}
+		return restored;
+	}
+
 	bool applyFlashOverlay(std::vector<uint8_t>& _flashData,
 		const FlashSectorOverlay& _overlay,
 		const std::vector<uint8_t>& _factoryFlashBaseline,
