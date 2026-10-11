@@ -89,7 +89,7 @@ namespace mdDesk
 		static const std::map<std::string, Handler>& handlers();
 
 		// What a sequence step does (deskCore::Sequencer, facts instead of fixed delays).
-		enum class Act : uint8_t { Stop, Play, RecordPlay, LoadSong, SelectPattern };
+		enum class Act : uint8_t { Stop, Play, RecordPlay, LoadSong, SelectPattern, MidiStop, SongMode, FromPosition };
 		using Pushes = deskCore::Pushes<DocRef, Document>;
 		// The firmware tweaks from its selected track, which must lead (controlAllLeads): the adapter
 		// selects one first (SET STATUS, then the machine's status says it is selected).
@@ -252,6 +252,16 @@ namespace mdDesk
 		deskCore::Outcome cmdMute(const Value&, const Documents&);
 		deskCore::Outcome cmdSeqMode(const Value&, const Documents&);
 		deskCore::Outcome cmdFollowHost(const Value&, const Documents&);
+		// Wave 2 (mdDeskTransport.cpp): pause, resume, play from a song row, panic, the tempo nudge.
+		deskCore::Outcome cmdPause(const Value&, const Documents&);
+		deskCore::Outcome cmdResume(const Value&, const Documents&);
+		deskCore::Outcome cmdPlayFrom(const Value&, const Documents&);
+		deskCore::Outcome cmdPanic(const Value&, const Documents&);
+		deskCore::Outcome cmdNudge(const Value&, const Documents&);
+		bool ctrlIn(const Documents& _view) const;
+		void runTransportAct(Act _act, int _arg);
+		// The tempo a nudge started from (BPM x 24), until it is let go.
+		std::optional<uint16_t> m_nudgeFrom;
 
 		const Profile m_profile;
 		Port m_port;

@@ -103,7 +103,7 @@ namespace mmDesk
 		deskCore::Outcome askSelect(const Value&, const Documents&);
 		deskCore::Outcome askPlay(const Value&, const Documents&);
 
-		enum class Act : uint8_t { Stop, Play, SelectPattern };
+		enum class Act : uint8_t { Stop, Play, SelectPattern, MidiStop, SongMode, FromPosition };
 		// A push is parked while its dump is queued on the RECV session (or waits for the person's SYSEX
 		// RECV, HW MIDI), not on the wire yet: a newer dump waits for it (PushPolicy::Mode::Held).
 		using Pushes = deskCore::Pushes<Ref, Bytes>;
@@ -195,6 +195,24 @@ namespace mmDesk
 		deskCore::Outcome cmdPoly(const Value&, const Documents&);
 		deskCore::Outcome cmdRecord(const Value&, const Documents&);
 		deskCore::Outcome cmdHwSend(const Value&, const Documents&);
+		// Wave 2 (mmDeskTransport.cpp): pause, resume, play from a song row, panic, the tempo nudge.
+		deskCore::Outcome cmdPause(const Value&, const Documents&);
+		deskCore::Outcome cmdResume(const Value&, const Documents&);
+		deskCore::Outcome cmdPlayFrom(const Value&, const Documents&);
+		deskCore::Outcome cmdPanic(const Value&, const Documents&);
+		deskCore::Outcome cmdNudge(const Value&, const Documents&);
+		deskCore::Outcome askPause(const Value&, const Documents&);
+		deskCore::Outcome askPlayFrom(const Value&, const Documents&);
+		deskCore::Outcome askTransport(const Documents& _view, const std::string& _what);
+		bool acceptTransport(const Value& _m, const Documents& _view, deskCore::Outcome& _out);
+		bool panelTransport() const;
+		void runTransportAct(Act _act, int _arg);
+		// The tempo a nudge started from (BPM x 24), until it is let go.
+		std::optional<int> m_nudgeFrom;
+		void pumpAfterAccept(double _now, const Documents& _view);
+		std::optional<Value> m_afterAccept;	// the command TRANSPORT ACCEPT was asked for, until the machine takes it
+		double m_afterAcceptMs = 0;
+		static constexpr double g_afterAcceptMs = 30000;
 		// MM-P8: pattern chaining as on the machine (hold BANK, press the TRIG keys; manual 1-46)
 		deskCore::Outcome cmdChain(const Value&, const Documents&);
 		deskCore::Outcome cmdChainClear(const Value&, const Documents&);

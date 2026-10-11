@@ -8,6 +8,7 @@
 #include "mdDeskLibrary.h"
 #include "mdDeskKeys.h"
 #include "mdDeskMachine.h"
+#include "mdDeskTransport.h"
 #include "mdIntentCases.h"
 
 #include "deskCore/deskContract.h"
@@ -1911,6 +1912,190 @@ namespace
 	}
 
 	// P4: HW MIDI link states.
+	// Wave 2: pause, resume, play from a song row, panic, the tempo nudge (doc/modern-ux/PROBES-manual-gaps.md P1, P5).
+	void testTransport()
+	{
+		const auto row = [](const uint8_t _pattern, const uint8_t _repeats, const uint8_t _start, const uint8_t _end, const uint8_t _target = 0)
+		{
+			ed::MdSongRow r;
+			r.pattern = _pattern;
+			r.repeats = _repeats;
+			r.start = _start;
+			r.end = _end;
+			r.target = _target;
+			return r;
+		};
+		ed::MdSong song;
+		song.rows = {row(1, 0, 0, 8), row(2, 1, 0, 4), row(3, 0, 2, 10), row(ed::MdSongRow::g_loopRow, 1, 0, 16, 1), row(4, 0, 0, 16),
+			row(ed::MdSongRow::g_endRow, 0, 0, 16)};
+		check(songPositionOf(song, 0).sixteenths == 0 && songPositionOf(song, 0).refused.empty(), "song position: row 1 is 0");
+		check(songPositionOf(song, 1).sixteenths == 8, "row 2: the 8 steps of row 1");
+		check(songPositionOf(song, 2).sixteenths == 16, "row 3: 8, then row 2's 4 steps played twice");
+		check(!songPositionOf(song, 3).refused.empty(), "a LOOP row is no place to start");
+		check(songPositionOf(song, 4).refused.find("LOOP") != std::string::npos, "a row after a LOOP: refused, the LOOP named");
+		check(!songPositionOf(song, 5).refused.empty() && !songPositionOf(song, 40).refused.empty(), "END and past the song: refused");
+
+		std::vector<std::vector<uint8_t>> wire, midi;
+		std::vector<std::string> keys;
+		std::vector<Value> page;
+		double now = 0;
+		Desk::Port port;
+		port.device.sendSysex = [&](const std::vector<uint8_t>& _b) { wire.push_back(_b); };
+		port.device.pressKey = [&](const std::string& _k) { keys.push_back(_k); return true; };
+		port.device.sendMidi = [&](const std::vector<uint8_t>& _b) { midi.push_back(_b); };
+		port.device.sendMute = [](uint8_t, bool) {};
+		port.toPage = [&](const Value& _m) { page.push_back(_m); g_published.push_back(_m); };
+		port.device.nowMs = [&] { return now; };
+		const auto last = [&](const char* _type) -> const Value*
+		{
+			for(auto it = page.rbegin(); it != page.rend(); ++it)
+				if(it->find("type")->asString() == _type)
+					return &*it;
+			return nullptr;
+		};
+		const auto ok = [&] { const auto* r = last("result"); return r && r->find("ok")->asBool(); };
+		const auto error = [&] { const auto* r = last("result"); const auto* e = r ? r->find("errors") : nullptr;
+			return e && e->isArray() && !e->asArray().empty() ? e->asArray()[0].asString() : std::string(); };
+		const auto can = [&](const char* _name)
+		{
+			const auto* m = last("machine");
+			return m && m->find("doc")->find("capabilities")->find("can")->find(_name)->asBool();
+		};
+		ed::MdGlobal global;
+		const auto serve = [&](Desk& _desk)
+		{
+			for(int round = 0; round < 4000; ++round)
+			{
+				auto sent = std::move(wire);
+				wire.clear();
+				for(const auto& m : sent)
+				{
+					if(m.size() != 9)
+						continue;
+					const auto s = m[7];
+					if(m == ed::mdKitRequest(s)) { ed::MdKit k; k.position = s; _desk.onDeviceSysex(ed::encodeMdKit(k)); }
+					else if(m == ed::mdPatternRequest(s)) { ed::MdPattern p; p.position = s; _desk.onDeviceSysex(ed::encodeMdPattern(p)); }
+					else if(m == ed::mdSongRequest(s)) { auto g = song; g.position = s; _desk.onDeviceSysex(ed::encodeMdSong(g)); }
+					else if(m == ed::mdGlobalRequest(s)) { auto g = global; g.position = s; _desk.onDeviceSysex(ed::encodeMdGlobal(g)); }
+				}
+				now += 20;
+				_desk.tick();
+				if(!_desk.isBusy() && _desk.documents().songs.size() == 32 && _desk.documents().global && wire.empty())
+					break;
+			}
+		};
+		const auto status = [&](Desk& _desk, const uint8_t _param, const uint8_t _value)
+		{
+			_desk.onDeviceSysex({0xf0, 0x00, 0x20, 0x3c, 0x02, 0x00, 0x72, _param, _value, 0xf7});
+		};
+
+		// The emulator: the panel's PLAY pauses and goes on; panic is STOP twice; play from a row is MIDI.
+		{
+			Desk desk(port);
+			Telemetry t;
+			t.valid = true;
+			t.bootAnimation = 0;
+			t.playing = true;
+			t.step = 5;
+			desk.onTelemetry(t);
+			desk.onPageMessage(cmd(R"({"op":"ready"})"));
+			status(desk, 0x04, 0);
+			status(desk, 0x02, 0);
+			status(desk, 0x08, 0);
+			status(desk, 0x01, 0);
+			status(desk, 0x10, 0);
+			desk.tick();
+			serve(desk);
+			check(desk.isInputReady() && desk.documents().songs.count(0) && desk.documents().global, "the emulator: ready, the song and global known");
+			check(can("panic") && can("playFrom"), "the emulator can panic and play from a row");
+			keys.clear();
+			midi.clear();
+			desk.onPageMessage(cmd(R"({"op":"pause","id":1})"));
+			check(ok() && keys.empty() && midi == std::vector<std::vector<uint8_t>>{{0xfc}}, "pause while playing: MIDI Stop (the panel's PLAY is no pause)");
+			t.playing = false;
+			desk.onTelemetry(t);
+			desk.onPageMessage(cmd(R"({"op":"pause","id":2})"));
+			check(!ok() && error().find("Nothing plays") != std::string::npos, "pause while stopped: refused");
+			desk.onPageMessage(cmd(R"({"op":"resume","id":3})"));
+			check(ok() && midi.size() == 2 && midi.back() == std::vector<uint8_t>{0xfb}, "resume: MIDI Continue");
+			keys.clear();
+			desk.onPageMessage(cmd(R"({"op":"panic","id":4})"));
+			check(ok() && keys == std::vector<std::string>{"stop", "stop"}, "panic: STOP twice (P5)");
+
+			// play from row 3 while playing in PATTERN mode: MIDI Stop, then SONG mode, then the position and Continue
+			t.playing = true;
+			desk.onTelemetry(t);
+			desk.tick();
+			midi.clear();
+			wire.clear();
+			desk.onPageMessage(cmd(R"({"op":"playFrom","i":2,"id":5})"));
+			check(ok() && midi == std::vector<std::vector<uint8_t>>{{0xfc}}, "play from row 3 while playing: MIDI Stop first");
+			now += 20;
+			desk.tick();
+			check(midi.size() == 1, "nothing more while it still plays");
+			t.playing = false;
+			desk.onTelemetry(t);
+			now += 20;
+			desk.tick();
+			check(std::any_of(wire.begin(), wire.end(), [](const std::vector<uint8_t>& _b) { return _b == ed::mdSetStatus(ed::MdStatus::SequencerMode, 1); }),
+				"stopped: SONG mode (SET STATUS)");
+			check(midi.size() == 1, "the position waits for the machine to say SONG");
+			status(desk, 0x01, 0);
+			now += 20;
+			desk.tick();
+			check(midi.size() == 1, "another status reply is no sign: it still waits");
+			status(desk, 0x10, 1);
+			now += 20;
+			desk.tick();
+			check(midi.size() == 3 && midi[1] == std::vector<uint8_t>{0xf2, 16, 0} && midi[2] == std::vector<uint8_t>{0xfb},
+				"then the song position of row 3 (16 steps) and Continue");
+			desk.onPageMessage(cmd(R"({"op":"playFrom","i":4,"id":6})"));
+			check(!ok() && error().find("LOOP") != std::string::npos, "a row after a LOOP is refused with the reason");
+
+			// the nudge: 10 % faster while held, then back; nothing stored
+			wire.clear();
+			const auto tempo = desk.documents().global->tempo;
+			desk.onPageMessage(cmd(R"({"op":"nudge","pct":10,"id":7})"));
+			now += 50;
+			desk.tick();
+			const auto faster = ed::mdSetTempo(static_cast<uint16_t>(std::lround(tempo * 1.1)));
+			check(ok() && std::any_of(wire.begin(), wire.end(), [&](const std::vector<uint8_t>& _b) { return _b == faster; }), "nudge +10 %: the tempo 10 % up");
+			desk.onPageMessage(cmd(R"({"op":"nudge","pct":10,"id":8})"));
+			desk.onPageMessage(cmd(R"({"op":"nudge","pct":0,"id":9})"));
+			now += 50;
+			desk.tick();
+			check(ok() && std::any_of(wire.begin(), wire.end(), [&](const std::vector<uint8_t>& _b) { return _b == ed::mdSetTempo(tempo); })
+				&& desk.documents().global->tempo == tempo, "let go: back to the stored tempo, the global document unchanged");
+		}
+
+		// A wire: Stop and Continue; no panic (no MIDI message silences the MD); CTRL IN off refuses.
+		{
+			Desk desk(port);
+			desk.setEngine(Desk::defaultAdapter(wireProfile(), port.device));
+			desk.onTelemetry(Telemetry{});
+			desk.onPageMessage(cmd(R"({"op":"ready"})"));
+			status(desk, 0x04, 0);
+			status(desk, 0x08, 0);
+			status(desk, 0x01, 0);
+			desk.tick();
+			serve(desk);
+			check(desk.isInputReady() && !can("panic") && can("playFrom"), "HW: no panic, play from a row");
+			midi.clear();
+			keys.clear();
+			desk.onPageMessage(cmd(R"({"op":"pause","id":10})"));
+			desk.onPageMessage(cmd(R"({"op":"resume","id":11})"));
+			check(ok() && keys.empty() && midi == std::vector<std::vector<uint8_t>>{{0xfc}, {0xfb}}, "HW: pause is MIDI Stop, resume MIDI Continue");
+			desk.onPageMessage(cmd(R"({"op":"panic","id":12})"));
+			check(!ok() && error().find("STOP twice") != std::string::npos, "HW: panic refused with the reason");
+			global.syncFlags = ed::mdGlobalBits::g_ctrlInOff;
+			desk.onDeviceSysex(ed::encodeMdGlobal(global));
+			desk.tick();
+			desk.onPageMessage(cmd(R"({"op":"pause","id":13})"));
+			check(!ok() && error().find("CTRL IN") != std::string::npos, "HW, CTRL IN off: pause refused, CTRL IN named");
+			global = {};
+		}
+	}
+
 	void testHardwareLink()
 	{
 		std::vector<Value> page;
@@ -2974,6 +3159,7 @@ int main(const int _argc, char** _argv)
 	testLockStep();
 	testLibrary();
 	testHardwareLink();
+	testTransport();
 	testGlobalSet();
 	testWorkingKitMemory();
 	testKnobRecorder();

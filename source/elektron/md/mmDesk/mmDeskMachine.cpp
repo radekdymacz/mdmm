@@ -159,6 +159,9 @@ namespace mmDesk
 		c.about = m_profile.about;
 		const bool panel = m_port.pressKeys && m_profile.panel;
 		c.set("transport", static_cast<bool>(m_port.pressKeys), "This engine has no transport.");
+		// wave 2: panic and play from a song row are MIDI into the machine (P1, P5 MM)
+		c.set("panic", static_cast<bool>(m_port.sendMidi), g_noPanic);
+		c.set("playFrom", static_cast<bool>(m_port.sendMidi), g_noPlayFrom);
 		c.set("panelKeys", panel, "The editor cannot press this machine's keys.");
 		c.set("recvSession", panel, "The Monomachine takes dumps only on GLOBAL › FILE › SYSEX RECV, and the editor cannot put it there:"
 			" put it there to send patterns, songs and globals.");
@@ -262,6 +265,7 @@ namespace mmDesk
 		pumpRecv(_now);
 		pumpTranspose(_view);
 		pumpTransport(_now);
+		pumpAfterAccept(_now, _view);
 		pumpChain();
 		pumpSongReload(_now);
 		pumpLoads(_now);
