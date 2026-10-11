@@ -54,6 +54,18 @@ int main()
 	check(t16.size() == 2 && t16[0].row == 0x21 && t16[0].mask == 0x80 && t16[1].mask == 0, "trig16 is TRIG key 16");
 	check(md::panelKeySequence(md::MachineModel::Machinedrum, "trig17").empty(), "no TRIG key 17");
 	check(md::panelKeySequence(md::MachineModel::Machinedrum, "page").size() == 2, "the page key");
+	// 0.6 wave 7: keys held down and let go later (live recording's erase): one state each
+	{
+		using md::panelKeySequence;
+		const auto mdm = md::MachineModel::Machinedrum;
+		const auto exitDown = panelKeySequence(mdm, "hold:exit"), exitUp = panelKeySequence(mdm, "release:exit");
+		check(exitDown.size() == 1 && exitDown[0] == *md::panelPacket(mdm, md::PanelControl::Exit), "hold:exit is EXIT down");
+		check(exitUp.size() == 1 && exitUp[0].row == exitDown[0].row && exitUp[0].mask == 0, "release:exit lets its row go");
+		const auto t14 = panelKeySequence(mdm, "hold:trig14");
+		check(t14.size() == 1 && t14[0] == *md::panelPacket(mdm, md::PanelControl::Trigger14), "hold:trig14 is TRIG 14 down");
+		check(panelKeySequence(mdm, "hold:trig17").empty() && panelKeySequence(mdm, "hold:trig").empty()
+			&& panelKeySequence(mdm, "hold:play").empty(), "no other keys are held");
+	}
 	// P4: a chain holds the bank key and the TRIG keys together, in order.
 	const auto ch = md::panelKeySequence(md::MachineModel::Machinedrum, "chain:1:2,9,0");
 	check(ch.size() == 7 && ch[0].row == 0x23 && ch[0].mask == 0x02 && ch[1].row == 0x20 && ch[1].mask == 0x04

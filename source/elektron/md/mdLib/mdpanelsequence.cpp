@@ -56,9 +56,21 @@ namespace md
 		if(hold || release)
 		{
 			const auto name = _key.substr(hold ? 5 : 8);
-			if(name != "function")
+			std::optional<PanelControl> held;
+			if(name == "function")
+				held = PanelControl::Function;
+			else if(name == "exit")
+				held = PanelControl::Exit;
+			else if(name.size() > 4 && name.compare(0, 4, "trig") == 0 && name.find_first_not_of("0123456789", 4) == std::string::npos
+				&& name.size() <= 6)
+			{
+				const int n = std::stoi(name.substr(4));
+				if(n >= 1 && n <= 16)
+					held = static_cast<PanelControl>(static_cast<int>(PanelControl::Trigger1) + n - 1);
+			}
+			if(!held)
 				return {};
-			const auto packet = panelPacket(_model, PanelControl::Function);
+			const auto packet = panelPacket(_model, *held);
 			if(!packet)
 				return {};
 			return {hold ? *packet : PanelPacket{packet->row, 0}};

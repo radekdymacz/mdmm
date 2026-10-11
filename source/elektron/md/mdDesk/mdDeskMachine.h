@@ -224,6 +224,9 @@ namespace mdDesk
 		deskCore::Outcome cmdKitSaveAs(const Value&, const Documents&);
 		deskCore::Outcome kitSwitchedBy(uint8_t _slot, bool _load);
 		deskCore::Outcome cmdRecord(const Value&, const Documents&);
+		deskCore::Outcome cmdLiveErase(const Value&, const Documents&);
+		// liveErase: EXIT/NO and the TRIG key let go if they are down.
+		void releaseErase();
 		deskCore::Outcome cmdRecTrig(const Value&, const Documents&);
 		deskCore::Outcome cmdNoteOn(const Value&, const Documents&);
 		deskCore::Outcome cmdNoteOff(const Value&, const Documents&);
@@ -309,6 +312,7 @@ namespace mdDesk
 		std::array<std::optional<SoundingNote>, 16> m_notes{};
 		KnobRecorder m_knobs;
 		std::optional<RecLock> m_recLock;
+		std::optional<uint8_t> m_erasing;	// liveErase: the track whose TRIG key is held with EXIT/NO
 		double m_recordPollMs = -1e9;
 		deskCore::Sequencer<Act> m_sequence;
 		TweakTurns m_tweak;
