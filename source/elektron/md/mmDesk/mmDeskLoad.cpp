@@ -222,6 +222,10 @@ namespace mmDesk
 		case ed::MmStatus::SongMode:
 			m_songMode = _value;
 			break;
+		case ed::MmStatus::AudioTrack:
+			m_focus = _value;
+			m_focusSeenMs = clock();
+			return;
 		case ed::MmStatus::Poly:
 			m_poly = _value;
 			m_expectPoly = m_expectPoly.observed(polyInMemory(), clock(), m_profile.settleMs);
