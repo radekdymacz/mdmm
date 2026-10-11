@@ -492,7 +492,7 @@ namespace mmDesk
 		// on SYSEX RECV until the stream is quiet, or the machine would leave it before the dump arrives
 		if(m_recv.parked() && m_stream.sending(_now))
 			m_recv.touch();
-		// B-062: the macro's cursor goes to the active global (ENTER on another slot would make it active)
+		// B-067: the macro's cursor goes to the active global (ENTER on another slot would make it active)
 		if(activeSlot() >= 0)
 			m_recv.activeGlobal = activeSlot() & 7;
 		auto out = m_recv.tick(_now, m_tel);

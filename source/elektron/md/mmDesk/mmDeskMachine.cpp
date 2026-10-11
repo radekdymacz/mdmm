@@ -253,7 +253,7 @@ namespace mmDesk
 			m_lastStatusMs = _now;
 			requestStatus();
 		}
-		// a slot to make active goes before the SYSEX RECV macro may start (its cursor goes to that slot, B-062)
+		// a slot to make active goes before the SYSEX RECV macro may start (its cursor goes to that slot, B-067)
 		if(m_activateGlobal >= 0 && (m_profile.wire || m_recv.state() == RecvSession::State::Idle))
 		{
 			sendActiveGlobal(m_activateGlobal);

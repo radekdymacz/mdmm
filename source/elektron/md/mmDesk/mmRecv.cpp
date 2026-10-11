@@ -2,7 +2,7 @@
 
 namespace mmDesk
 {
-	// B-062: GLOBAL opens the SLOT screen with its cursor where it was left; ENTER opens the EDIT menu of the active
+	// B-067: GLOBAL opens the SLOT screen with its cursor where it was left; ENTER opens the EDIT menu of the active
 	// slot only, on any other it makes that slot active (measured, mmEditorProbeFirmwareTest globalactive). So the
 	// cursor goes to the active slot first: up to the slot rows (TURBO is below them), left to slot 1, then over
 	// (4 a row) and down. The arrows stop at the edges (no wrap: Left from slot 1 stays there).

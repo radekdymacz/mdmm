@@ -674,7 +674,7 @@ namespace elektronData
 
 	// ---- kit ----
 
-	// B-063: the routing bytes and the bus word as outputs + input make them (mmSetKitInput over the kit's own bus word)
+	// B-068: the routing bytes and the bus word as outputs + input make them (mmSetKitInput over the kit's own bus word)
 	std::array<uint8_t, 8> mmCanonicalRouting(const MmKit& _k)
 	{
 		auto c = _k;

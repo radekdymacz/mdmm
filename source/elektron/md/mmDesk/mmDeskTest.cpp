@@ -102,7 +102,7 @@ namespace
 		check(r.state() == mmDesk::RecvSession::State::Failed, "a screen that never comes fails after three tries");
 		check(mmDesk::RecvSession::enterMacro().size() == 36, "the macro is 36 keys with GLOBAL 1 active (GLOBAL counts as one)");
 		{
-			// B-062: on the SLOT screen the cursor goes to the active global before ENTER (ENTER on another slot makes
+			// B-067: on the SLOT screen the cursor goes to the active global before ENTER (ENTER on another slot makes
 			// it active): GLOBAL 7 is two to the right of slot 1, one row down
 			const auto k = mmDesk::RecvSession::enterMacro(6);
 			const std::vector<mmDesk::Key> slot7{mmDesk::Key::Global, mmDesk::Key::Up, mmDesk::Key::Up, mmDesk::Key::Up, mmDesk::Key::Left,

@@ -108,7 +108,7 @@ const MmConvert = (() => {
 			return {
 				m, name: machName(m), v, lev: d.levels[t],
 				out: { AB: !!(x.outputs & 1), CD: !!(x.outputs & 2), EF: !!(x.outputs & 4) },
-				inp: INPUTS[x.input] ?? INPUTS[0], trigpos: x.trigPos ?? null, port: bit(M.portamento, t) ? 0 : 1,
+				inp: x.input == null ? null : INPUTS[x.input] ?? INPUTS[0], trigpos: x.trigPos ?? null, port: bit(M.portamento, t) ? 0 : 1,
 				leg: { amp: bit(M.legatoAmp, t), flt: bit(M.legatoFilter, t), lfo: bit(M.legatoLfo, t) },
 				assign: { mirr: !!bit(M.mirror, t), hpf: !!bit(M.hpf, t), lpf: !!bit(M.lpf, t), tabs }
 			};
