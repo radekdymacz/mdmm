@@ -28,3 +28,12 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 1. MD: paint Swing, Accent and Slide with the keys under the grid; switch All tracks / This track; Esc goes back to Trig; one undo per drag.
 2. MM: Slide and Swing drags on the roll's Note · Slide · Swing row, then one undo; Esc.
 3. MD: paint swing on a step, remove the trig, add it again (B-070: no swing mark should flash back).
+
+## GLOBAL page (wave 5, both editors)
+
+1. GLOBAL in the top bar: the page sits under the header, as wide; a workspace key, Esc and GLOBAL all go back.
+2. Copy, click another slot, Paste (it asks), Cmd+Z. Clear (the old Reset to defaults) asks, then Cmd+Z.
+3. MD: TRIG IN A / B: − / + on each value (Shift: 10), Dest runs -, T1 … T16.
+4. MD: a LEARN dot on a track, then play a note on a MIDI keyboard (the standalone's MIDI input; in a DAW the track's MIDI): the track takes the note. Reset map (it asks), Cmd+Z.
+5. MM: Master tune − / + (Shift: 1 Hz); listen to the pitch. Control out 1: Sequencer OUT silences the tracks (the line under the rows says so) and sends NRPN; back to INT.
+6. MM on real hardware: a master tune or Control out 1 change waits as SEND n.
