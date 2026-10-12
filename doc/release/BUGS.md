@@ -11,6 +11,14 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Fix (`fix/0.6-review-1`):** both screens draw fine stems: 2 px for a partial, dashed 1.5 px for the extended unison pair, the base 1.5 px and faint; the dots are the page's usual ones (`90-sound.js` `ED.uni`, `ED.sub`). Journey `mm-sound-unison-sub-fine` (the widest run of ink across each screen is at most 3 px).
 - **Status:** fixed on `fix/0.6-review-1`.
 
+## B-089 · Monomachine: the multi envelope's plot breaks at REL 127 (and DEC 0)
+
+- **From:** Radek's 0.6 review, 2026-10-12.
+- **What happens:** Perform, Multi envelope at ATK 73, DEC 0, SUS 127, REL 127: a line from the bottom left up to a dot near the top, a flat line, and the REL dot alone at the bottom right, off the curve. REL 127 (never fades) was not drawn as such.
+- **Cause:** the plot drew REL 127 as a flat line of a fixed width, but put the REL dot where a release of 127 would end, at the foot (`110-perform.js` `ED.menv`).
+- **Fix (`fix/0.6-review-1`):** the plot is an ADSR for every value: each stage its own slot (ATK rises to the top, DEC falls to SUS, a hold, REL falls to 0); REL 127 is ∞: the sustain runs on to the edge, dashed past its slot, marked ∞, the REL dot on it; dragging that dot past the end of its slot sets 127. Every dot is on the curve. Journey `mm-perform-menv-curve` (Radek's values and ATK 20 DEC 50 SUS 80 REL 40: the dots on the curve, inside the plot, the machine's multi envelope as typed). The envelope on the machine: `mmPerformSoundFirmwareTest` (below).
+- **Status:** fixed on `fix/0.6-review-1`.
+
 ## B-088 · Monomachine: swing marks on empty steps (the machine's data, not a bug)
 
 - **From:** Radek's 0.6 review, 2026-10-12 ("slide marks on every step", the teal marks: they are the swing marks).

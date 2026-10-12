@@ -7347,10 +7347,23 @@ function renderKb(){const[lo,hi]=kbRange(),whites=[];for(let n=lo;n<=hi;n++)if(!
  return h}
 function mapBands(){const[lo,hi]=kbRange(),whites=[];for(let n=lo;n<=hi;n++)if(!isBlack(n))whites.push(n);const ww=100/whites.length,xOf=n=>{let i=whites.findIndex(w=>w>=n);if(i<0)i=whites.length;return i*ww};let from=0;
  return S.mmap.map((r,i)=>{const a=Math.max(from,lo),b=Math.min(r.hi,hi);from=r.hi+1;if(b<lo||a>hi)return"";const x0=xOf(a),x1=xOf(b+1);return`<div class="band ${i===S.mmapSel?"sel":""}" data-band="${i}" style="left:${x0}%;width:${Math.max(2,x1-x0)}%">${r.pat<0?"CUR":patName(r.pat)}${r.trn!==0&&r.trn!==64?"":""}</div>`}).join("")}
-ED.menv={draw(g,W,H){const e=S.menv,ink=cssv("--ink"),T=18,B=H-10,y=v=>B-v*(B-T),a=e.ATK/127*W*.22,d=e.DEC/127*W*.24,s=e.SUS/127,r=e.REL>=127?W*.3:e.REL/127*W*.26,hold=W*.28;grid(g,W,H);
-  g.strokeStyle=ink;g.lineWidth=2.2;g.beginPath();g.moveTo(0,y(0));g.lineTo(a,y(1));g.lineTo(a+d,y(s));g.lineTo(a+d+hold,y(s));g.lineTo(Math.min(W,a+d+hold+r),e.REL>=127?y(s):y(0));g.stroke();label(g,"ADSR over all tracks"+(e.REL>=127?" · REL ∞":""))},
- handles(W,H){const e=S.menv,T=18,B=H-10,y=v=>B-v*(B-T),a=e.ATK/127*W*.22,d=e.DEC/127*W*.24,hold=W*.28;return[{x:Math.max(5,a),y:y(1),k:"ATK",drag:x=>e.ATK=clamp(Math.round(x/(W*.22)*127))},{x:a+d,y:y(e.SUS/127),k:"DEC · SUS",drag:(x,yy)=>{e.DEC=clamp(Math.round((x-a)/(W*.24)*127));e.SUS=clamp(Math.round((B-yy)/(B-T)*127))}},
-  {x:Math.min(W-6,a+d+hold+(e.REL/127*W*.26)),y:y(0)-4,k:"REL",drag:x=>e.REL=clamp(Math.round((x-a-d-hold)/(W*.26)*127))}]}};
+/* The multi envelope as an ADSR (review 1, 2026-10-12: the old one drew REL 127 as a flat line with its dot left at the
+   foot). Each stage has its own slot across the screen: ATK rises from 0 to the top, DEC falls to SUS, SUS holds, REL
+   falls to 0; REL 127 is ∞ (the level holds until the next note), drawn as the sustain running on to the edge, dashed
+   past its slot, with ∞. Every dot is on the curve. */
+const MENV_G=W=>({a:W*.22,d:W*.22,hold:W*.16,r:W*.3});
+function menvGeo(W,H){const e=S.menv,T=18,B=H-12,y=v=>B-v*(B-T),M=MENV_G(W),x0=4,ax=x0+e.ATK/127*M.a,dx=ax+e.DEC/127*M.d,s=e.SUS/127,hx=dx+M.hold,inf=e.REL>=127,rx=inf?hx+M.r:hx+e.REL/126*M.r;
+ return{e,T,B,y,M,x0,ax,dx,s,hx,rx,inf}}
+ED.menv={draw(g,W,H){const G=menvGeo(W,H),ink=cssv("--ink");grid(g,W,H);
+  g.strokeStyle=ink;g.lineWidth=2;g.lineJoin="round";g.beginPath();g.moveTo(G.x0,G.y(0));g.lineTo(G.ax,G.y(1));g.lineTo(G.dx,G.y(G.s));g.lineTo(G.hx,G.y(G.s));
+  if(G.inf){g.lineTo(G.rx,G.y(G.s));g.stroke();g.setLineDash([4,3]);g.beginPath();g.moveTo(G.rx,G.y(G.s));g.lineTo(W,G.y(G.s));g.stroke();g.setLineDash([]);
+   g.fillStyle=ink;g.font="13px Silkscreen, monospace";g.fillText("∞",Math.min(W-14,G.rx+6),G.y(G.s)+(G.s>.85?16:-6))}
+  else{g.lineTo(G.rx,G.y(0));g.stroke()}
+  g.strokeStyle=inkA(.35);g.lineWidth=1;g.setLineDash([2,3]);g.beginPath();g.moveTo(G.hx+.5,G.T);g.lineTo(G.hx+.5,G.B);g.stroke();g.setLineDash([]);
+  label(g,"ADSR over all tracks"+(G.inf?" · REL ∞":""))},
+ handles(W,H){const G=menvGeo(W,H),e=G.e;return[{x:Math.max(G.x0+2,G.ax),y:G.y(1),k:"ATK",drag:x=>e.ATK=clamp(Math.round((x-G.x0)/G.M.a*127))},
+  {x:G.dx,y:G.y(G.s),k:"DEC · SUS",drag:(x,yy)=>{e.DEC=clamp(Math.round((x-G.ax)/G.M.d*127));e.SUS=clamp(Math.round((G.B-yy)/(G.B-G.T)*127))}},
+  {x:G.rx,y:G.inf?G.y(G.s):G.y(0),k:G.inf?"REL ∞":"REL",drag:x=>{const v=(x-G.hx)/G.M.r*126;e.REL=v>=126.5?127:clamp(Math.round(v),0,126)}}]}};
 function asgT(){return S.sel<6?S.sel:S.sel-6}
 function renderPerform(){const pm=PMODES.find(p=>p[0]===S.mode),t=asgT(),tr=S.tracks[t],A=tr.assign,rows=A.tabs[S.asTab];
  const mtCtl=S.mode==="multi"?`<span class="seg" data-set="mtmode">${MTM.map((m,i)=>`<button data-v="${i}" aria-pressed="${S.multi.mode===i}">${m}</button>`).join("")}</span>

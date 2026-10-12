@@ -144,3 +144,4 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 ## Review 1 fixes (`fix/0.6-review-1`, Radek's 0.6 review, 2026-10-12)
 
 1. MM Sound, SWAVE-SAW: UNIW 127, UNIL 100, UNIX 80: the UNISON screen shows thin stems (dashed for the extended pair); SUB1, SUB2, SUBX up: thin stems on SUB too (B-090).
+2. MM Perform, Multi envelope: ATK 73, DEC 0, SUS 127, REL 127: up to the top, held to the edge with ∞, every dot on the line. REL 40: the release falls to the foot, its dot there. Drag the REL dot to the right end: REL 127 (B-089).
