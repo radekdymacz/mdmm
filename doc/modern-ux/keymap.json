@@ -1917,18 +1917,6 @@
 			"area": "Roll"
 		},
 		{
-			"id": "trig-type",
-			"scope": "seq",
-			"keys": [
-				"Escape"
-			],
-			"mod": "",
-			"group": "Sequence",
-			"does": "Back to Note after Slide or Swing: a click on the roll writes notes again",
-			"short": "Note",
-			"dispatched": true
-		},
-		{
 			"id": "piano-run",
 			"scope": "any",
 			"keys": [
@@ -2353,7 +2341,7 @@
 			],
 			"mod": "",
 			"group": "Sequence",
-			"does": "The step menu: note on / off, NOTE OFF, trigless, slide, a chord note (roll), copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (Ctrl-click on a Mac)",
+			"does": "The step menu: note on / off, NOTE OFF, a trigless trig, the envelopes a trig fires (Amp, Filter, LFO), slide, swing, a chord note (roll), copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (Ctrl-click on a Mac)",
 			"area": "Roll"
 		},
 		{

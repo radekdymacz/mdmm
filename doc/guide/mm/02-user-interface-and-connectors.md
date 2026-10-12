@@ -97,7 +97,7 @@ The sixteen TRIG keys play notes and set trigs. In the editor:
 - The on-screen keyboard in the **Perform** workspace plays notes by click or drag.
 - Clicking in the piano roll of the **Sequence** workspace plays the pitch.
 
-To set a trig on a step, as the TRIG keys do in grid mode, click the piano roll with Draw on, click a dot in the ENV row, or open the step menu (the ⋯ on a selected step, or a right-click).
+To set a trig on a step, as the TRIG keys do in grid mode, click the piano roll with Draw on, or open the step menu (the ⋯ on a selected step, or a right-click).
 
 On the machine, [BANK] + [TRIG] picks a pattern. In the editor click the <PATTERN> field of the LCD for the pattern chooser, or the **‹** and **›** keys beside it. Chapter 4 describes picking.
 
@@ -125,8 +125,8 @@ The machine's BANK GROUP and BANK keys choose the pattern bank. The pattern choo
 The keys that open the secondary windows, ARP, TRANSPOSE, SWING and SLIDE, are as follows.
 
 - **Arp** and **Transpose** are tabs of the dock in the **Sequence** workspace. The **Sound** workspace has keys that go to them.
-- Swing is the **Swing** key under the roll of the **Sequence** workspace, and the <SWG> field of the LCD's second line.
-- Slide is the **Slide** key under the roll of the **Sequence** workspace.
+- Swing is **Swing** in the step menu of the **Sequence** workspace, and the <SWG> field of the LCD's second line.
+- Slide is **Slide** in the step menu of the **Sequence** workspace.
 
 ## RECORD, PLAY AND STOP
 <!-- rows: MM-039 MM-040 MM-041 MM-042 MM-043 MM-044 @f9d2fa -->
@@ -170,9 +170,9 @@ The machine's [SCALE] key shows one page of 16 steps. In the editor press **Page
 [FUNCTION] + [SCALE] opens the scale set-up. In the editor its fields are in the LCD's second line on **Sequence**: <LEN> sets the pattern length and <SPD> the speed. Click a field to step it. Chapter 11 describes both.
 
 ## TRIG SELECT KEY
-<!-- rows: MM-047 MM-048 @ed5468 -->
+<!-- rows: MM-047 MM-048 @565969 -->
 
-On the machine [TRIG SELECT] chooses which trig track the TRIG keys edit: AMP, FILTER, LFO or ALL. In the editor each step has a row of three dots, A, F and L, in the **Sequence** workspace. A dot lights for each envelope the step fires. Click a dot to switch it. A step with no dots lit is trigless.
+On the machine [TRIG SELECT] chooses which trig track the TRIG keys edit: AMP, FILTER, LFO or ALL. In the editor you choose the envelopes of a trig in the step menu of the **Sequence** workspace: **Envelopes**, then **Amp**, **Filter** or **LFO**. On a selection it sets every trig in it. A note that fires only some envelopes shows their letters on its bar. A trig that fires none is trigless.
 
 [FUNCTION] + [TRIG SELECT] edits the MIDI tracks. In the editor use the **Synth** and **MIDI** keys in the track rail, or the <SEQ> field in the LCD, to change between the six synth tracks and the six MIDI tracks.
 

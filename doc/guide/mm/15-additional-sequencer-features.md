@@ -1,7 +1,7 @@
 # 15. Additional sequencer features
 <!-- summary: Arpeggiator, transpose, swing, slide, the mute window and poly mode. -->
 
-The arpeggiator and transpose are tabs in the header of the lock lane on **Sequence**: **Arp** and **Transpose**. Click a tab to show its keys in the rail and its values and picture under the roll. Swing and slide are rows under the roll.
+The arpeggiator and transpose are tabs in the header of the lock lane on **Sequence**: **Arp** and **Transpose**. Click a tab to show its keys in the rail and its values and picture under the roll. Swing and slide are in the step menu.
 
 ## THE ARPEGGIATOR
 <!-- rows: MM-215 @837d12 -->
@@ -64,35 +64,31 @@ The line above the keyboard picture says what the track plays, for example plays
 For MAJ and MIN, click a key of the keyboard picture to set the root key. With **---** and **FIX**, a click on a key sets the track transpose so that C plays that key, upward from C. Hold [⌥] and click to go down to it. The note also sounds while you hold the button.
 
 ## SWING
-<!-- rows: MM-230 @d00145 -->
+<!-- rows: MM-230 @f18ef4 -->
 
 Swing delays every other sixteenth note. The **SWG** field of the LCD sets the amount for the pattern, from 50 to 80 %. Drag the field up or down, or scroll over it.
 
 ### THE SWING TRACK
-<!-- rows: MM-231 MM-232 @3247aa -->
+<!-- rows: MM-231 MM-232 @3ab762 -->
 
-The keys **Note**, **Slide** and **Swing** under the roll say what a click on the roll does. **Note** writes notes, as always. With **Swing** lit, a click chooses the steps that swing:
+Each step of a track can swing. A step that swings comes late by the amount of **SWG**. Swing does something only on a step with a trig.
 
-1. Click **Swing** under the roll. The key lights.
-2. Click anywhere in a step's column of the roll. A teal mark at the foot of the roll shows that the step swings. It comes late by the amount of **SWG**. Click the column again to take the swing off.
-3. Drag across columns to paint every step you cross. The first step decides: on or off. The drag is one undo step.
-4. Press {key:trig-type}, or click **Note**, to write notes again.
+1. Right-click a step in the roll (Ctrl-click on a Mac), or select steps and click the ⋯ on the selection.
+2. Choose **Swing**. A tick shows when every selected step swings. On a selection it sets every step: on when one of them has it off, else off. It is one undo step.
+3. A small teal slant over a note shows that its trig swings.
 
-Each track has its own swing steps. The marks show for the selected track.
+Each track has its own swing steps. The marks show for the selected track. A new pattern swings every second 16th step, so most off beat notes carry the mark.
 
 To copy, paste or clear the swing row of a track, tick **Swing** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu (chapter 11, "Super copy"). A clear sets it back to every second 16th step. Press {key:undo} to take each back.
 
 ## SLIDE
-<!-- rows: MM-233 MM-234 @bc431d -->
+<!-- rows: MM-233 MM-234 @8006fc -->
 
-A slide makes a locked value glide to the next lock instead of jumping.
+A slide makes a locked value glide to the next lock instead of jumping. Without a lock on the step a slide does nothing. The glide of a pitch is PORTAMENTO, in the trig setup.
 
-1. Click **Slide** under the roll.
-2. Click a step's column of the roll. A triangle at the foot of the roll marks the step that slides. Click again to take it off.
-3. Drag across columns to paint slides on every step you cross, in one undo step.
-4. Press {key:trig-type} to write notes again.
-
-The step menu (the ⋯ on a selection, or a right-click) has **Slide** too. In the lock lane the glide is drawn from one lock to the next.
+1. Right-click a step in the roll, or select steps and click the ⋯ on the selection.
+2. Choose **Slide**. A tick shows when every selected step slides. On a selection it sets every step, in one undo step.
+3. A small ramp over a note shows a step that slides and holds a lock. In the lock lane the glide is drawn from one lock to the next.
 
 To copy, paste or clear the slide row of a track, tick **Slide** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu (chapter 11, "Super copy"). Press {key:undo} to take each back.
 

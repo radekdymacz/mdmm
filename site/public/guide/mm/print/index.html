@@ -176,7 +176,7 @@
 <div class="gd-body gd-prose"><h2>TRIG KEYS</h2>
 <p>The sixteen TRIG keys play notes and set trigs. In the editor:</p>
 <ul class="gd-list"><li>The keys <kbd class="gd-key">[A S D F G H J K L]</kbd> play the selected synth track, from any workspace. They are the white keys C to D. <kbd class="gd-key">[W E T Y U O P]</kbd> are the black keys above them.</li><li>Press <kbd class="gd-key">[Z]</kbd> or <kbd class="gd-key">[X]</kbd> to move the octave down or up, from −3 to +3. Press <kbd class="gd-key">[C]</kbd> or <kbd class="gd-key">[V]</kbd> to step the velocity through 20, 40, 60, 80, 100 and 127.</li><li>The on-screen keyboard in the <b class="gd-ui">Perform</b> workspace plays notes by click or drag.</li><li>Clicking in the piano roll of the <b class="gd-ui">Sequence</b> workspace plays the pitch.</li></ul>
-<p>To set a trig on a step, as the TRIG keys do in grid mode, click the piano roll with Draw on, click a dot in the ENV row, or open the step menu (the ⋯ on a selected step, or a right-click).</p>
+<p>To set a trig on a step, as the TRIG keys do in grid mode, click the piano roll with Draw on, or open the step menu (the ⋯ on a selected step, or a right-click).</p>
 <p>On the machine, <kbd class="gd-key">[BANK]</kbd> + <kbd class="gd-key">[TRIG]</kbd> picks a pattern. In the editor click the <b class="gd-light">&lt;PATTERN&gt;</b> field of the LCD for the pattern chooser, or the <b class="gd-ui">‹</b> and <b class="gd-ui">›</b> keys beside it. Chapter 4 describes picking.</p>
 </div></section>
 <section class="gd-sec" id="pattern-and-song-key">
@@ -197,7 +197,7 @@
 <p>The machine's BANK GROUP and BANK keys choose the pattern bank. The pattern chooser shows all eight banks A to H at once. Press <kbd class="gd-key">[A–H]</kbd> inside it to jump to a bank.</p>
 <p><kbd class="gd-key">[FUNCTION]</kbd> + <kbd class="gd-key">[BANK GROUP]</kbd> opens the mute window: it is the <b class="gd-ui">Mutes</b> card in <b class="gd-ui">Perform</b>, and the prepared mutes described above.</p>
 <p>The keys that open the secondary windows, ARP, TRANSPOSE, SWING and SLIDE, are as follows.</p>
-<ul class="gd-list"><li><b class="gd-ui">Arp</b> and <b class="gd-ui">Transpose</b> are tabs of the dock in the <b class="gd-ui">Sequence</b> workspace. The <b class="gd-ui">Sound</b> workspace has keys that go to them.</li><li>Swing is the <b class="gd-ui">Swing</b> key under the roll of the <b class="gd-ui">Sequence</b> workspace, and the <b class="gd-light">&lt;SWG&gt;</b> field of the LCD's second line.</li><li>Slide is the <b class="gd-ui">Slide</b> key under the roll of the <b class="gd-ui">Sequence</b> workspace.</li></ul>
+<ul class="gd-list"><li><b class="gd-ui">Arp</b> and <b class="gd-ui">Transpose</b> are tabs of the dock in the <b class="gd-ui">Sequence</b> workspace. The <b class="gd-ui">Sound</b> workspace has keys that go to them.</li><li>Swing is <b class="gd-ui">Swing</b> in the step menu of the <b class="gd-ui">Sequence</b> workspace, and the <b class="gd-light">&lt;SWG&gt;</b> field of the LCD's second line.</li><li>Slide is <b class="gd-ui">Slide</b> in the step menu of the <b class="gd-ui">Sequence</b> workspace.</li></ul>
 </div></section>
 <section class="gd-sec" id="record-play-and-stop">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-5</span></span></aside>
@@ -223,7 +223,7 @@
 <section class="gd-sec" id="trig-select-key">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-5</span></span></aside>
 <div class="gd-body gd-prose"><h2>TRIG SELECT KEY</h2>
-<p>On the machine <kbd class="gd-key">[TRIG SELECT]</kbd> chooses which trig track the TRIG keys edit: AMP, FILTER, LFO or ALL. In the editor each step has a row of three dots, A, F and L, in the <b class="gd-ui">Sequence</b> workspace. A dot lights for each envelope the step fires. Click a dot to switch it. A step with no dots lit is trigless.</p>
+<p>On the machine <kbd class="gd-key">[TRIG SELECT]</kbd> chooses which trig track the TRIG keys edit: AMP, FILTER, LFO or ALL. In the editor you choose the envelopes of a trig in the step menu of the <b class="gd-ui">Sequence</b> workspace: <b class="gd-ui">Envelopes</b>, then <b class="gd-ui">Amp</b>, <b class="gd-ui">Filter</b> or <b class="gd-ui">LFO</b>. On a selection it sets every trig in it. A note that fires only some envelopes shows their letters on its bar. A trig that fires none is trigless.</p>
 <p><kbd class="gd-key">[FUNCTION]</kbd> + <kbd class="gd-key">[TRIG SELECT]</kbd> edits the MIDI tracks. In the editor use the <b class="gd-ui">Synth</b> and <b class="gd-ui">MIDI</b> keys in the track rail, or the <b class="gd-light">&lt;SEQ&gt;</b> field in the LCD, to change between the six synth tracks and the six MIDI tracks.</p>
 </div></section>
 <section class="gd-sec" id="the-keyboard-sfx-6">
@@ -325,7 +325,7 @@
 <ol class="gd-steps"><li>Go to the <b class="gd-ui">Sequence</b> workspace (<kbd class="gd-key">[1]</kbd>) and select a track.</li><li>If you want the pattern's own kit, open the kit library and load it: click <b class="gd-light">&lt;KIT&gt;</b>, choose a kit, click <b class="gd-ui">Load</b>. Chapter 6 describes the library.</li><li>Check that <b class="gd-ui">Draw</b> is lit. Press <kbd class="gd-key">[B]</kbd> to switch it.</li><li>Click an empty step in the roll. A note goes on it, as long as the <b class="gd-ui">Len</b> key says.</li><li>Drag the new note up or down to change its pitch.</li></ol>
 <p>To paint the same note on several steps, drag sideways. The steps you cross get the note. A drag is one undo step.</p>
 <p>To place a note off, which stops the sound at a step, hold <kbd class="gd-key">[⌥]</kbd> and click an empty step. You can also drag the end of a note: the note's length is the distance to its NOTE OFF.</p>
-<p>For a chord note on a step, hold <kbd class="gd-key">[⇧]</kbd> and click the roll there. Right-click a step for the step menu (Ctrl-click on a Mac). It offers a note on or off, NOTE OFF, trigless, slide and a chord note.</p>
+<p>For a chord note on a step, hold <kbd class="gd-key">[⇧]</kbd> and click the roll there. Right-click a step for the step menu (Ctrl-click on a Mac). It offers a note on or off, NOTE OFF, a trigless trig, the envelopes a trig fires, slide, swing and a chord note.</p>
 </div></section>
 <section class="gd-sec" id="live-recording">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-13</span></span></aside>
@@ -363,7 +363,7 @@
 <section class="gd-sec" id="six-track-sequencing">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-15</span></span></aside>
 <div class="gd-body gd-prose"><h2>SIX TRACK SEQUENCING</h2>
-<p>A pattern holds the notes, the envelope trigs and the parameter locks of the six tracks. The <b class="gd-ui">Sequence</b> workspace edits them: a piano roll for notes, a row of A, F and L dots for the envelope trigs, and a lock lane for the parameters. Chapters 10 to 15 describe the sequencer.</p>
+<p>A pattern holds the notes, the envelope trigs and the parameter locks of the six tracks. The <b class="gd-ui">Sequence</b> workspace edits them: a piano roll for notes, with small marks on the notes for envelope trigs, slide, swing and locks, and a lock lane for the parameters. Chapters 10 to 15 describe the sequencer.</p>
 <figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The Sequence workspace"><span>Screenshot to come</span></div><figcaption>The Sequence workspace</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="midi-sequencing">
@@ -652,7 +652,7 @@
 <section class="gd-sec" id="lfo-trigs">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-37</span></span></aside>
 <div class="gd-body gd-prose"><h2>LFO TRIGS</h2>
-<p>The sequencer triggers the LFOs on its own. In the <b class="gd-ui">Sequence</b> workspace each step has a row of three dots, A, F and L. The L dot of a step triggers the LFOs of the track at that step. It matters for the TRIG, HOLD, ONE and HALF keys. Click the dot to switch it.</p>
+<p>The sequencer triggers the LFOs on its own. A trig with its LFO trig on triggers the LFOs of the track at that step. It matters for the TRIG, HOLD, ONE and HALF keys. In the <b class="gd-ui">Sequence</b> workspace right-click the step and choose <b class="gd-ui">Envelopes</b>, then <b class="gd-ui">LFO</b>, to switch it. A note without its LFO trig shows the letters of the envelopes it does fire.</p>
 </div></section>
 <section class="gd-sec" id="shared-lfos">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-35</span></span></aside>
@@ -830,7 +830,7 @@
 <p>Notes, NOTE OFFs, envelope trigs, slides and locks go along. Other keys on a selection:</p>
 <table class="gd-table"><thead><tr><th>Key</th><th>Does</th></tr></thead><tbody><tr><td><kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[X]</kbd></td><td>copy, then clear</td></tr><tr><td><kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[D]</kbd></td><td>put a copy right after the selection; again for another</td></tr><tr><td><kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[A]</kbd></td><td>select every step of the six tracks shown</td></tr><tr><td><kbd class="gd-key">[←]</kbd> or <kbd class="gd-key">[→]</kbd></td><td>move the selection one step</td></tr><tr><td><kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[←]</kbd> or <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[→]</kbd></td><td>extend the selection one step</td></tr><tr><td><kbd class="gd-key">[ESC]</kbd></td><td>clear the selection</td></tr></tbody></table>
 <p>Drag the selection with <kbd class="gd-key">[⌘]</kbd> held to drop a copy where you let go. A dashed frame shows where it lands. With <b class="gd-ui">Draw</b> dark, drag the selected notes in the roll without <kbd class="gd-key">[⌘]</kbd> to move them.</p>
-<p>Select a step or steps and click the small ⋯ on the selection for the step menu (a right-click on a step opens it too): note on or off, NOTE OFF, trigless, slide, a chord note, copy, cut, paste here, duplicate, clear, and fill every 2nd or 4th step from the one you clicked. Synth steps paste onto synth tracks, MIDI steps onto MIDI tracks.</p>
+<p>Select a step or steps and click the small ⋯ on the selection for the step menu (a right-click on a step opens it too): note on or off, NOTE OFF, a trigless trig, the envelopes (Amp, Filter, LFO), slide, swing, a chord note, copy, cut, paste here, duplicate, clear, and fill every 2nd or 4th step from the one you clicked. Synth steps paste onto synth tracks, MIDI steps onto MIDI tracks.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p><kbd class="gd-key">[⌘]</kbd> is <kbd class="gd-key">[CTRL]</kbd> on Windows and Linux.</p></aside>
 </div></section>
 <section class="gd-sec" id="clear-note-parameter-locks">
@@ -967,7 +967,7 @@
 <h4 class="gd-h3">Copy a note with its locks</h4>
 <p>The locks of a step go with the step when you copy it. See &quot;Note copy&quot; in chapter 11.</p>
 <h4 class="gd-h3">Slide</h4>
-<p>The <b class="gd-ui">Slide</b> row under the roll marks steps that glide. On a step with a slide, a locked value glides to the next lock instead of jumping. See &quot;Slide&quot; in chapter 15.</p>
+<p>A small ramp over a note marks a step that glides. Set it with <b class="gd-ui">Slide</b> in the step menu. On a step with a slide, a locked value glides to the next lock instead of jumping. See &quot;Slide&quot; in chapter 15.</p>
 </div></section>
 <section class="gd-sec" id="parameter-locks-in-live-recording-mode">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-58</span></span></aside>
@@ -985,23 +985,25 @@
 <section class="gd-sec" id="trig-tracks">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-58,</span> <span>1-59</span></span></aside>
 <div class="gd-body gd-prose"><h2>TRIG TRACKS</h2>
-<p>Every note on a synth track is a trig. A trig can fire the amplitude envelope (AMP), the filter envelope (FILTER), the LFO envelope (LFO), or any of them together. The machine keeps one trig track for each. The editor shows them in the <b class="gd-ui">ENV</b> row under the piano roll, with the label A F L. A MIDI track has no trig tracks, so its row shows the velocity (see chapter 16).</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The ENV row"><span>Screenshot to come</span></div><figcaption>The ENV row</figcaption></figure>
-<p>Each step with a note has three dots in the ENV row: AMP in red, FILTER in yellow and LFO in green. A lit dot means the trig fires that envelope.</p>
-<ul class="gd-list"><li>A note you draw in the roll fires all three envelopes.</li><li>Click a dot to switch that envelope off or on for the trig.</li><li>Drag across the dots of a row to switch a run of steps the same way.</li><li>A single trig has one dot lit: AMP only, FILTER only or LFO only.</li></ul>
-<p>The editor shows the trig colours as dots, one colour for each envelope. It does not show the machine's trig key lights.</p>
+<p>Every note on a synth track is a trig. A trig can fire the amplitude envelope (AMP), the filter envelope (FILTER), the LFO envelope (LFO), or any of them together. The machine keeps one trig track for each. In the editor you set them in the step menu. A MIDI track has no trig tracks (see chapter 16).</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: A trig's marks in the roll"><span>Screenshot to come</span></div><figcaption>A trig's marks in the roll</figcaption></figure>
+<p>A note you draw in the roll fires all three envelopes. To change that:</p>
+<ol class="gd-steps"><li>Right-click the step in the roll (Ctrl-click on a Mac), or select steps and click the ⋯ on the selection.</li><li>Choose <b class="gd-ui">Envelopes</b>. <b class="gd-ui">Amp</b>, <b class="gd-ui">Filter</b> and <b class="gd-ui">LFO</b> have a tick for each envelope the trig fires.</li><li>Click one to switch it. On a selection it switches every trig in it: on when one of them has it off, else off.</li></ol>
+<p>A note that fires only some envelopes shows their letters at the start of its bar: A, F and L. Where the bar is too narrow, three small ticks stand for them in the same order. A note that fires all three has no mark.</p>
+<ul class="gd-list"><li>A single trig fires one envelope only: AMP, FILTER or LFO.</li><li>A NOTE OFF has a small yellow lamp at the top of its step, as the machine's TRIG key light. Where it ends no note, OFF is written beside it.</li></ul>
+<p>The editor shows the trig colours as marks in the roll. It does not show the machine's trig key lights.</p>
 </div></section>
 <section class="gd-sec" id="trigless-trigs">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-59</span></span></aside>
 <div class="gd-body gd-prose"><h2>TRIGLESS TRIGS</h2>
 <p>A trigless trig fires no envelope. It is there to carry a pitch or locks.</p>
-<ul class="gd-list"><li>Switch all three dots of a step off, or</li><li>Right-click the step and choose <b class="gd-ui">Trigless (no envelope trigs)</b>. Choose it again to put the dots back.</li></ul>
-<p>The roll draws a trigless note as an outlined bar. The step menu works on a selection as well.</p>
+<ol class="gd-steps"><li>Right-click an empty step, or a note, and choose <b class="gd-ui">Trigless trig (locks only)</b>.</li><li>An empty step gets a trigless trig at the track's last pitch. A note keeps its pitch and loses its envelope trigs.</li><li>Draw the locks in the lock lane.</li></ol>
+<p>Choose <b class="gd-ui">Trigless trig</b> again to take it away, with its locks. The roll draws a trigless trig as a small hollow square in its step. Click or select it as any step. The step menu works on a selection as well.</p>
 </div></section>
 <section class="gd-sec" id="pitchless-trigs">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-59</span></span></aside>
 <div class="gd-body gd-prose"><h2>PITCHLESS TRIGS</h2>
-<p>A pitchless trig fires envelopes without a pitch of its own. The ENV row shows its dots, and the roll draws it as a dashed bar.</p>
+<p>A pitchless trig fires envelopes without a pitch of its own. The roll draws it as a dashed bar. Its envelopes are in the step menu, under <b class="gd-ui">Envelopes</b>.</p>
 </div></section>
 </article>
 <article class="gd-chapter" id="c15" style="page: c15">
@@ -1009,7 +1011,7 @@
 <header class="gd-chead"><p class="gd-cnum">15</p><h1>Additional sequencer features</h1>
 <p class="gd-cmeta">MM manual pp.1-61 to 1-69</p>
 </header>
-<div class="gd-intro gd-prose"><p>The arpeggiator and transpose are tabs in the header of the lock lane on <b class="gd-ui">Sequence</b>: <b class="gd-ui">Arp</b> and <b class="gd-ui">Transpose</b>. Click a tab to show its keys in the rail and its values and picture under the roll. Swing and slide are rows under the roll.</p></div>
+<div class="gd-intro gd-prose"><p>The arpeggiator and transpose are tabs in the header of the lock lane on <b class="gd-ui">Sequence</b>: <b class="gd-ui">Arp</b> and <b class="gd-ui">Transpose</b>. Click a tab to show its keys in the rail and its values and picture under the roll. Swing and slide are in the step menu.</p></div>
 <section class="gd-sec" id="the-arpeggiator">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-61,</span> <span>1-62,</span> <span>1-63</span></span></aside>
 <div class="gd-body gd-prose"><h2>THE ARPEGGIATOR</h2>
@@ -1042,17 +1044,16 @@
 <div class="gd-body gd-prose"><h2>SWING</h2>
 <p>Swing delays every other sixteenth note. The <b class="gd-ui">SWG</b> field of the LCD sets the amount for the pattern, from 50 to 80 %. Drag the field up or down, or scroll over it.</p>
 <h4 class="gd-h3">THE SWING TRACK</h4>
-<p>The keys <b class="gd-ui">Note</b>, <b class="gd-ui">Slide</b> and <b class="gd-ui">Swing</b> under the roll say what a click on the roll does. <b class="gd-ui">Note</b> writes notes, as always. With <b class="gd-ui">Swing</b> lit, a click chooses the steps that swing:</p>
-<ol class="gd-steps"><li>Click <b class="gd-ui">Swing</b> under the roll. The key lights.</li><li>Click anywhere in a step's column of the roll. A teal mark at the foot of the roll shows that the step swings. It comes late by the amount of <b class="gd-ui">SWG</b>. Click the column again to take the swing off.</li><li>Drag across columns to paint every step you cross. The first step decides: on or off. The drag is one undo step.</li><li>Press <kbd class="gd-key">[ESC]</kbd>, or click <b class="gd-ui">Note</b>, to write notes again.</li></ol>
-<p>Each track has its own swing steps. The marks show for the selected track.</p>
+<p>Each step of a track can swing. A step that swings comes late by the amount of <b class="gd-ui">SWG</b>. Swing does something only on a step with a trig.</p>
+<ol class="gd-steps"><li>Right-click a step in the roll (Ctrl-click on a Mac), or select steps and click the ⋯ on the selection.</li><li>Choose <b class="gd-ui">Swing</b>. A tick shows when every selected step swings. On a selection it sets every step: on when one of them has it off, else off. It is one undo step.</li><li>A small teal slant over a note shows that its trig swings.</li></ol>
+<p>Each track has its own swing steps. The marks show for the selected track. A new pattern swings every second 16th step, so most off beat notes carry the mark.</p>
 <p>To copy, paste or clear the swing row of a track, tick <b class="gd-ui">Swing</b> in <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> or <b class="gd-ui">Clear…</b> of the LCD's <b class="gd-ui">▾</b> menu (chapter 11, &quot;Super copy&quot;). A clear sets it back to every second 16th step. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take each back.</p>
 </div></section>
 <section class="gd-sec" id="slide">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-66</span></span></aside>
 <div class="gd-body gd-prose"><h2>SLIDE</h2>
-<p>A slide makes a locked value glide to the next lock instead of jumping.</p>
-<ol class="gd-steps"><li>Click <b class="gd-ui">Slide</b> under the roll.</li><li>Click a step's column of the roll. A triangle at the foot of the roll marks the step that slides. Click again to take it off.</li><li>Drag across columns to paint slides on every step you cross, in one undo step.</li><li>Press <kbd class="gd-key">[ESC]</kbd> to write notes again.</li></ol>
-<p>The step menu (the ⋯ on a selection, or a right-click) has <b class="gd-ui">Slide</b> too. In the lock lane the glide is drawn from one lock to the next.</p>
+<p>A slide makes a locked value glide to the next lock instead of jumping. Without a lock on the step a slide does nothing. The glide of a pitch is PORTAMENTO, in the trig setup.</p>
+<ol class="gd-steps"><li>Right-click a step in the roll, or select steps and click the ⋯ on the selection.</li><li>Choose <b class="gd-ui">Slide</b>. A tick shows when every selected step slides. On a selection it sets every step, in one undo step.</li><li>A small ramp over a note shows a step that slides and holds a lock. In the lock lane the glide is drawn from one lock to the next.</li></ol>
 <p>To copy, paste or clear the slide row of a track, tick <b class="gd-ui">Slide</b> in <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> or <b class="gd-ui">Clear…</b> of the LCD's <b class="gd-ui">▾</b> menu (chapter 11, &quot;Super copy&quot;). Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take each back.</p>
 </div></section>
 <section class="gd-sec" id="the-mute-mode">
@@ -1101,7 +1102,7 @@
 <section class="gd-sec" id="comparison">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-71</span></span></aside>
 <div class="gd-body gd-prose"><h2>COMPARISON</h2>
-<p>A MIDI track has no trig tracks, so its row under the roll shows the velocity in place of the envelope dots. It has an arpeggiator without envelope switches, swing, slide and transpose, in the same tabs as a synth track.</p>
+<p>A MIDI track has no trig tracks, so its row under the roll shows the velocity. The step menu has no envelopes or trigless trig for it. It has an arpeggiator without envelope switches, swing, slide and transpose, in the same tabs as a synth track.</p>
 <p>The MIDI page is stored in the kit, so edits of it are kit edits.</p>
 <p>The internal tracks can send MIDI too. On the <b class="gd-ui">GLOBAL</b> page, the <b class="gd-ui">Control out 1</b> card sends the notes of the sequencer, the arpeggiator or the keyboard to MIDI out, with or without the sound of the tracks. See chapter 19.</p>
 </div></section>
