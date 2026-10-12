@@ -1366,7 +1366,7 @@ namespace mdDesk
 			return _g;
 		}
 
-		// B-051, F3: GLOBAL › Reset to defaults: the global the machine ships with, measured (elektronData::mdFactoryGlobal)
+		// B-051, F3: GLOBAL › Clear: the global the machine ships with, measured (elektronData::mdFactoryGlobal)
 		std::optional<ed::MdGlobal> globalReset(ed::MdGlobal _g, const In&)
 		{
 			return ed::mdFactoryGlobal(_g.position);

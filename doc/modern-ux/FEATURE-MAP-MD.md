@@ -413,4 +413,4 @@ Of the 280 applicable rows, 244 are fully covered, 22 partly, 14 not at all.
 9. **Accent / slide ALL vs per-track flag** cannot be changed, only honoured (§8).
 10. **Pause, panic (double STOP), reset menu** (empty / factory / soft reset) (§1, §12).
 
-Extras the manual does not have (not counted): GEN rhythm generators, MUTATE, solo, step selection with cut, duplicate and select all, the step menu with fill every 2nd / 4th, the keyboard view (?), GLOBAL Reset to defaults, undo/redo across edits, app modulators, MIDI learn, HW MIDI engine, waveform editors for ROM/RAM samples.
+Extras the manual does not have (not counted): GEN rhythm generators, MUTATE, solo, step selection with cut, duplicate and select all, the step menu with fill every 2nd / 4th, the keyboard view (?), GLOBAL Clear, undo/redo across edits, app modulators, MIDI learn, HW MIDI engine, waveform editors for ROM/RAM samples.

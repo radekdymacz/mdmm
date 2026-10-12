@@ -196,7 +196,7 @@ no journey yet); **not testable** (why). "—": the editor has no such feature.
 | GLOBAL: a setting read back (TEMPO OUT) | md-global-tempo-out PASS | — (MM globals: the Perform and Mix journeys) |
 | GLOBAL › ROUTING fits its dialog, a route read back | md-global-routing PASS | — |
 | GLOBAL › MIDI: CHANNEL SPAN 0 refuses a track's mute (a notice with Give each track its own channel), its sound value still reaches the machine; the notice's key, then the mute lands (B-051) | — | mm-global-channels |
-| GLOBAL › Clear (Reset to defaults until 0.6): asked, then the factory global read back | md-global-reset | mm-global-reset |
+| GLOBAL › Clear: asked, then the factory global read back | md-global-reset | mm-global-reset |
 | GLOBAL as a page under the header (0.6): as wide as it, the head on one line; a workspace tab goes back | md-global-page | mm-global-page |
 | GLOBAL › Copy, a change, Paste (asked), Undo (0.6) | md-global-copy-paste | mm-global-copy-paste |
 | GLOBAL › TRIG IN A / B: Gate and Dest stepped, Undo (0.6, P3) | md-global-trig-in | — |

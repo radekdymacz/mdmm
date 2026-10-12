@@ -811,7 +811,7 @@ const MdJourneys = (() => {
 			esc
 		]
 	};
-	/* B-051, F3: GLOBAL › Clear (Reset to defaults until 0.6; the shared page): asked first, then the factory global read back */
+	/* B-051, F3: GLOBAL › Clear (the shared page): asked first, then the factory global read back */
 	const globalReset = {
 		name: "md-global-reset", proves: ["MD-164", "MD-187"],
 		steps: [
@@ -2153,7 +2153,7 @@ const MdJourneys = (() => {
 		const back = await until(() => Docs.global?.baseChannel === 0 && Docs.global?.control?.tempoOut === false, 20000);
 		await until(idle, 10000);
 		await sleep(1000);
-		return `${slot} reset to the factory settings (GLOBAL › Reset to defaults): was ${was}, now ${say(Docs.global)}${back ? "" : " (not read back yet)"}`;
+		return `${slot} reset to the factory settings (GLOBAL › Clear): was ${was}, now ${say(Docs.global)}${back ? "" : " (not read back yet)"}`;
 	}
 	/* what the page last told the person: its toast and its error line */
 	const context = () => [...[["toast", $1("#toast")], ["error", $1("#errline")]].filter(([, e]) => e && !e.hidden && e.textContent.trim()).map(([k, e]) => `${k} "${e.textContent.trim().slice(0, 160)}"`),

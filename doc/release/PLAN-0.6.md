@@ -25,7 +25,7 @@ and LCD fit (B-061, B-065, B-066), the volume-strip fix; the feature data, journ
 
 | Branch | State | Next step |
 |---|---|---|
-| `feat/0.6-global` (wave 5) | built, tier 2 green on its own base; review not done | merge `feat/0.6-features` into it (conflicts in generated files: regenerate with `node scripts/mdmm-guide.mjs`); review with care `jucePluginLib/processor.*` (the new `midiIn` note message: audio thread, callAsync guard, MIDI floods) and `deskModal` (new `page` kind); tier 2; merge. Decision for Radek at the end: "Reset to defaults" renamed **Clear** (the mock-up had both) |
+| `feat/0.6-global` (wave 5) | built, tier 2 green on its own base; review not done | merge `feat/0.6-features` into it (conflicts in generated files: regenerate with `node scripts/mdmm-guide.mjs`); review with care `jucePluginLib/processor.*` (the new `midiIn` note message: audio thread, callAsync guard, MIDI floods) and `deskModal` (new `page` kind); tier 2; merge. |
 | `feat/0.6-sysex` (wave 6) | core committed (c118e4fa7); page, journeys and mock-up in one unchecked WIP commit (d880b0c67) | finish the page and MD journeys, rows, guide; tier 1 and 2; review; merge |
 | `feat/0.6-recording` (wave 7) | probes, MD live erase, MM step recording and live erase in the core, firmware tests, stub host: 5 commits; page, journeys, rows and guide not done; its step 0 (tier 1 on the combined base after waves 2 + 4) has no recorded result | run step 0 on `feat/0.6-features`, then the page part, tiers, review, merge |
 
@@ -41,7 +41,7 @@ when several worktrees run firmware tests at once. Look at shared state between 
 
 **Open choices for Radek:** (1) skins true to the product photos on both editors (MD silver with a red LCD; MM MKI
 light-blue LCD, MKII bluish-white) or only the MM (wave 10); (2) the Discord reply to the 2026-10-11 tester report is
-drafted in the session, not posted; (3) Clear vs Reset to defaults (wave 5).
+drafted in the session, not posted.
 
 ## Execution (started 2026-10-11, after 0.5.1 and the dev-cycle work)
 
