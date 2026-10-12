@@ -1384,7 +1384,10 @@ const MmJourneys = (() => {
 			openImport,
 			{ say: "click Verify only: the slots are read and compared, nothing is written", act: (u, c) => { c.k0 = kitName(0); u.click('#syxpop [data-syxgo="verify"]'); },
 				screen: () => ok(/^Verify only: \d+ of \d+ the same/.test($1("#syxpop .syxsum")?.textContent || "") && /Nothing was written/.test($1("#syxpop .syxsum")?.textContent || ""), "progress: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
-				machine: c => ok(!window.gmDev || kitName(0) === c.k0, `K01 "${kitName(0)}" (before "${c.k0}")`), within: 60000 },
+				machine: c => ok(kitName(0) === c.k0, `K01 "${kitName(0)}" (before "${c.k0}")`), within: 60000 },
+			{ say: "the file's kits differ from the machine's: the grid marks them ≠ and the summary does not say all the same", act: () => {},
+				screen: () => { const outs = $all("#syxpop [data-syxout]").map(d => d.dataset.syxout), s = $1("#syxpop .syxsum")?.textContent || "", m = s.match(/(\d+) of (\d+) the same/);
+					return ok(outs.includes("differs") && !!m && +m[1] < +m[2], outs.join(" ") + " / " + s); } },
 			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") }
 		],
 		async tidy() { $1("#syxpop").hidden = true; }
@@ -1414,11 +1417,15 @@ const MmJourneys = (() => {
 				screen: () => ok(dlgShown() && !!dlgButton("Empty reset…") && !dlgButton("Factory reset…") && /factory data is not in the editor/.test($1("#dlg").textContent) && $1("#dlg .btnrow button:last-child")?.textContent === "Cancel", "the question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
 			{ say: "click Empty reset…: it asks a second time", act: u => u.click(dlgButton("Empty reset…")),
 				screen: () => ok(dlgShown() && !!dlgButton("Clear everything"), "second question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
-			{ say: "click Clear everything: the reset runs in the SysEx panel and reports", act: u => u.click(dlgButton("Clear everything")),
+			{ say: "click Clear everything: the reset runs in the SysEx panel and reports", act: (u, c) => { c.g0 = JSON.stringify(I().doc("global", machine().global?.current ?? 0)); u.click(dlgButton("Clear everything")); },
 				screen: () => ok(/Empty reset/.test($1("#syxpop .cap")?.textContent || "") && /cleared/.test($1("#syxpop .syxsum")?.textContent || ""), "panel: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
-				machine: () => { const named = [...Array(128).keys()].filter(k => (kitName(k) || "").trim()), trigs = [...Array(128).keys()].filter(p => (I().doc("pattern", p)?.tracks || []).some(t => (t.trig || []).length)),
+				machine: c => { const named = [...Array(128).keys()].filter(k => (kitName(k) || "").trim()), trigs = [...Array(128).keys()].filter(p => (I().doc("pattern", p)?.tracks || []).some(t => (t.trig || []).length)),
 					songs = [...Array(24).keys()].filter(s => (songOf(s)?.rows || []).length > 1);
-					return ok(!named.length && !trigs.length && !songs.length, `${named.length} kits named, ${trigs.length} patterns with trigs, ${songs.length} songs with rows`); }, within: 400000 },
+					/* the machine's own empty pattern (16 steps, 1x, kit 1, no swing), and the global as it was */
+					const odd = [...Array(128).keys()].filter(p => { const d = I().doc("pattern", p); return !d || d.length !== 16 || ![0, "1X", "1x"].includes(d.multiplier) || d.kit !== 0 || d.swingAmount !== 0; });
+					const g = JSON.stringify(I().doc("global", machine().global?.current ?? 0));
+					return ok(!named.length && !trigs.length && !songs.length && !odd.length && g === c.g0,
+						`${named.length} kits named, ${trigs.length} patterns with trigs, ${songs.length} songs with rows, ${odd.length} patterns not as the machine's empty one (${odd.slice(0, 2).map(p => { const d = I().doc("pattern", p); return JSON.stringify([d?.length, d?.multiplier, d?.kit, d?.swingAmount]); }).join(" ")}), global ${g === c.g0 ? "kept" : "changed"}`); }, within: 400000 },
 			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") }
 		],
 		async tidy() { if (dlgShown()) dlgButton("Cancel")?.click(); $1("#syxpop").hidden = true; }

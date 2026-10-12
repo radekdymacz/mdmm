@@ -1059,13 +1059,18 @@ const MdJourneys = (() => {
 		steps: [
 			{ say: "choose EXPORT SYSEX… in the engine menu: ALL is ticked, the kinds wait under it", act: u => u.pick("engsel", "export"),
 				screen: () => ok(!$1("#syxpop").hidden && $1("#syxpop").classList.contains("syx-export") && !!$1('#syxpop [data-sxk="all"]')?.checked && !!$1(syxValue("kit", "to")), "no export panel with ALL and the kit range"), within: 6000 },
-			{ say: "untick All: each kind with its range", act: u => u.click('#syxpop [data-sxk="all"]'),
-				screen: () => ok(!$1('#syxpop [data-sxk="kit"]')?.disabled && /^K64$/.test($1(syxValue("kit", "to"))?.textContent || "") && /^H16$/.test($1(syxValue("pattern", "to"))?.textContent || ""), "kits to " + $1(syxValue("kit", "to"))?.textContent) },
-			{ say: "⇧-click the kits' last slot twice (K62), untick Songs, tick Globals", act: async u => { u.click(syxValue("kit", "to"), { shift: true }); u.click(syxValue("kit", "to"), { shift: true }); await sleep(100); u.click('#syxpop [data-sxk="song"]'); u.click('#syxpop [data-sxk="global"]'); },
-				screen: () => ok($1(syxValue("kit", "to"))?.textContent === "K62" && !$1('#syxpop [data-sxk="song"]').checked && $1('#syxpop [data-sxk="global"]').checked
-					&& /Kits K01–K62 · Patterns A01–H16 · Globals/.test($1("#syxpop .syxsum")?.textContent || ""), "summary " + $1("#syxpop .syxsum")?.textContent) },
-			{ say: "click Save .syx…: just those are written", act: (u, c) => { c.n = syxNews.length; u.click('#syxpop [data-syxgo="save"]'); },
-				screen: c => { const m = syxNews.length > c.n && lastExport(); return ok(!!m && m.ok && /62 kits, 128 patterns, 1 global\./.test(m.text) && !/song/.test(m.text) && $1("#syxpop").hidden, m ? m.text : "no export yet"); }, within: 8000 }
+			{ say: "click Save .syx… with All: every document the editor holds", act: (u, c) => { c.n = syxNews.length; u.click('#syxpop [data-syxgo="save"]'); },
+				screen: c => { const m = syxNews.length > c.n && lastExport(); return ok(!!m && m.ok && /every document the editor holds \(\d+ kits?, \d+ patterns?, \d+ songs?, \d+ globals?\)/.test(m.text) && $1("#syxpop").hidden, m ? m.text : "no export yet"); }, within: 8000 },
+			{ say: "EXPORT SYSEX… again and untick All: each kind with its range", act: async u => { await u.pick("engsel", "export"); await until(() => !!$1(syxValue("kit", "to")), 6000); u.click('#syxpop [data-sxk="all"]'); },
+				screen: () => ok(!$1('#syxpop [data-sxk="kit"]')?.disabled && /^K64$/.test($1(syxValue("kit", "to"))?.textContent || "") && /^H16$/.test($1(syxValue("pattern", "to"))?.textContent || ""), "kits to " + $1(syxValue("kit", "to"))?.textContent), within: 6000 },
+			{ say: "⇧-click the kits' last slot twice (K62); wheel the songs to S01 to S02; tick Songs and Globals", act: async u => {
+				u.click(syxValue("kit", "to"), { shift: true }); u.click(syxValue("kit", "to"), { shift: true }); await sleep(100);
+				u.wheel(syxValue("song", "from"), -40); u.wheel(syxValue("song", "to"), -40); await sleep(100); u.wheel(syxValue("song", "to"), 1); await sleep(100);
+				if (!$1('#syxpop [data-sxk="song"]').checked) u.click('#syxpop [data-sxk="song"]'); u.click('#syxpop [data-sxk="global"]'); await sleep(100); },
+				screen: () => ok($1(syxValue("kit", "to"))?.textContent === "K62" && $1('#syxpop [data-sxk="song"]').checked && $1('#syxpop [data-sxk="global"]').checked
+					&& /Kits K01–K62 · Patterns A01–H16 · Songs S01–S02 · Globals/.test($1("#syxpop .syxsum")?.textContent || ""), "summary " + $1("#syxpop .syxsum")?.textContent) },
+			{ say: "click Save .syx…: just those are written, two songs among them", act: (u, c) => { c.n = syxNews.length; u.click('#syxpop [data-syxgo="save"]'); },
+				screen: c => { const m = syxNews.length > c.n && lastExport(); return ok(!!m && m.ok && /62 kits, 128 patterns, 2 songs, 1 global\./.test(m.text) && $1("#syxpop").hidden, m ? m.text : "no export yet"); }, within: 8000 }
 		],
 		async tidy() { $1("#syxpop").hidden = true; }
 	};
@@ -1076,7 +1081,10 @@ const MdJourneys = (() => {
 			openImport,
 			{ say: "click Verify only: the slots are read and compared, nothing is written", act: (u, c) => { c.k0 = kitName(0); u.click('#syxpop [data-syxgo="verify"]'); },
 				screen: () => ok(/^Verify only: \d+ of \d+ the same/.test($1("#syxpop .syxsum")?.textContent || "") && /Nothing was written/.test($1("#syxpop .syxsum")?.textContent || ""), "progress: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
-				machine: c => ok(!window.gmDev || kitName(0) === c.k0, `K01 "${kitName(0)}" (before "${c.k0}")`), within: 60000 },
+				machine: c => ok(kitName(0) === c.k0, `K01 "${kitName(0)}" (before "${c.k0}")`), within: 60000 },
+			{ say: "the file's kits differ from the machine's: the grid marks them ≠ and the summary does not say all the same", act: () => {},
+				screen: () => { const outs = $all("#syxpop [data-syxout]").map(d => d.dataset.syxout), s = $1("#syxpop .syxsum")?.textContent || "", m = s.match(/(\d+) of (\d+) the same/);
+					return ok(outs.includes("differs") && !!m && +m[1] < +m[2], outs.join(" ") + " / " + s); } },
 			{ say: "the grid marks what differs (≠) and what is the same (=)", act: () => {},
 				screen: () => ok($all("#syxpop [data-syxout]").length > 0 && $all("#syxpop [data-syxout]").every(d => ["same", "differs", "unknown", "no reply"].includes(d.dataset.syxout)), $all("#syxpop [data-syxout]").map(d => d.dataset.syxout).join(" ")) },
 			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") }
@@ -1117,10 +1125,13 @@ const MdJourneys = (() => {
 				screen: () => ok(dlgShown() && !!dlgButton("Empty reset…") && !!dlgButton("Factory reset…") && !!dlgButton("Export SysEx…") && $1("#dlg .btnrow button:last-child")?.textContent === "Cancel", "the question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
 			{ say: "click Empty reset…: it asks a second time", act: u => u.click(dlgButton("Empty reset…")),
 				screen: () => ok(dlgShown() && !!dlgButton("Clear everything") && /no undo/.test($1("#dlg").textContent), "second question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
-			{ say: "click Clear everything: the reset runs in the SysEx panel and reports", act: u => u.click(dlgButton("Clear everything")),
+			{ say: "click Clear everything: the reset runs in the SysEx panel and reports", act: (u, c) => { c.g0 = JSON.stringify(Docs.global); u.click(dlgButton("Clear everything")); },
 				screen: () => ok(/Empty reset/.test($1("#syxpop .cap")?.textContent || "") && /cleared/.test($1("#syxpop .syxsum")?.textContent || ""), "panel: " + ($1("#syxpop .cap")?.textContent || "") + " " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
-				machine: () => { const named = [...Array(64).keys()].filter(k => kitName(k)), trigs = [...Array(128).keys()].filter(p => (Docs.patterns[p]?.tracks || []).some(t => t.trigs.length)), songs = [...Array(32).keys()].filter(s => (Docs.songs[s]?.rows || []).length > 1);
-					return ok(!named.length && !trigs.length && !songs.length, `${named.length} kits named, ${trigs.length} patterns with trigs, ${songs.length} songs with rows`); }, within: 240000 },
+				machine: c => { const named = [...Array(64).keys()].filter(k => kitName(k)), trigs = [...Array(128).keys()].filter(p => (Docs.patterns[p]?.tracks || []).some(t => t.trigs.length)), songs = [...Array(32).keys()].filter(s => (Docs.songs[s]?.rows || []).length > 1);
+					/* the machine's own empty pattern (16 steps, 1x, kit 1, no swing), and the global as it was */
+					const odd = [...Array(128).keys()].filter(p => { const d = Docs.patterns[p]; return !d || d.length !== 16 || ![0, "1X"].includes(d.tempoMultiplier) || d.kit !== 0 || d.swingAmount !== 0; });
+					return ok(!named.length && !trigs.length && !songs.length && !odd.length && JSON.stringify(Docs.global) === c.g0,
+						`${named.length} kits named, ${trigs.length} patterns with trigs, ${songs.length} songs with rows, ${odd.length} patterns not as the machine's empty one (${odd.slice(0, 3).map(p => JSON.stringify([Docs.patterns[p]?.length, Docs.patterns[p]?.tempoMultiplier, Docs.patterns[p]?.kit, Docs.patterns[p]?.swingAmount])).join(" ")}), global ${JSON.stringify(Docs.global) === c.g0 ? "kept" : "changed"}`); }, within: 240000 },
 			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") }
 		],
 		async tidy() { if (dlgShown()) dlgButton("Cancel")?.click(); $1("#syxpop").hidden = true; }

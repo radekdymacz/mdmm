@@ -1,6 +1,7 @@
 // Wave 6: the Machinedrum's factory data from the user's own ROM (mdFactorySource.h, PROBES-manual-gaps.md P6b). The
 // reading runs on the class's own thread, as in the editor (a std::thread's stack is small: md::Hardware must not live
-// on it), and must give 64 kits, 128 patterns and 32 songs, the factory kits first. Needs the MD OS 1.63 ROM:
+// on it), and must give 64 kits, 128 patterns and 32 songs, the factory kits first; destroyed while it reads, it stops at
+// once. Needs the MD OS 1.63 ROM:
 //   GEARMULATOR_MD_FIRMWARE_BIN=<ROM> mdFactorySourceFirmwareTest
 // Exits 77 without it.
 
@@ -101,6 +102,26 @@ int main()
 		check(names == "TRX UW, EFM UW, E12 UW, P-I UW", "the factory kits first: " + names);
 	}
 	check(source.progress() == mdJucePlugin::MdFactorySource::g_total, "the progress counts every dump");
+
+	// the editor closes while the source reads: its destructor stops the thread, it does not wait for the dumps (at 0:
+	// while the second machine starts; at 40: between dump requests)
+	for(const int at : {0, 40})
+	{
+		auto early = std::make_unique<mdJucePlugin::MdFactorySource>();
+		early->start(rom, name);
+		const auto t1 = std::chrono::steady_clock::now();
+		if(at)
+			while(early->running() && early->progress() < at && std::chrono::steady_clock::now() - t1 < std::chrono::seconds(60))
+				std::this_thread::sleep_for(std::chrono::milliseconds(2));
+		else
+			std::this_thread::sleep_for(std::chrono::milliseconds(800));
+		const bool reading = early->running();
+		const auto t2 = std::chrono::steady_clock::now();
+		early.reset();
+		const auto ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t2).count();
+		std::printf("  destroyed %s (progress %d): %.0f ms\n", at ? "between dump requests" : "while it starts", at, ms);
+		check(reading && ms < 1000, std::string("the destructor returns at once ") + (at ? "while it reads dumps" : "while the second machine starts"));
+	}
 	std::printf(g_failures ? "%d FAILED\n" : "all ok\n", g_failures);
 	return g_failures ? 1 : 0;
 }
