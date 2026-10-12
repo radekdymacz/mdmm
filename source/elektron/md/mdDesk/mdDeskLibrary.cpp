@@ -3,6 +3,7 @@
 
 #include "deskCore/deskEdits.h"
 
+#include "elektronData/factoryGlobals.h"
 #include "elektronData/mdJson.h"
 #include "elektronData/mdValidate.h"
 
@@ -161,9 +162,33 @@ namespace mdDesk
 			[](const Document& _d, const int _slot) { return Document(emptySong(std::get<ed::MdSong>(_d), static_cast<uint8_t>(_slot))); },
 			": no rows, no name", asStored, [](const EditContext&, int) { return false; }, songRenamed, problemsOf};
 
+		// 0.6: the GLOBAL page's Copy and Paste (the machine's global slot menu): the active global, whole; a paste keeps
+		// the target's position and format bytes. Clear is GLOBAL's globalReset (the factory global).
+		std::string globalLabel(const int _g) { return "GLOBAL " + std::to_string(_g + 1); }
+
+		const Shelf g_globals{
+			DocKind::Global, "slot", "global", globalLabel,
+			[](const Documents& _docs, const EditContext&, const int _g) { return stored(_docs, DocKind::Global, _g); },
+			[](const Clipboard& _c) { return _c.global ? std::optional<Document>(*_c.global) : std::nullopt; },
+			[](Clipboard& _c, const Document& _d) { _c.global = std::get<ed::MdGlobal>(_d); },
+			"Copy a global first",
+			[](const int _g, const Document&) { return "Copied " + globalLabel(_g) + ": channels, sync, map, inputs and routing"; },
+			[](const Document& _d) { return globalLabel(std::get<ed::MdGlobal>(_d).position); },
+			[](const Document& _src, const Document& _dst, const int _slot)
+			{
+				auto g = std::get<ed::MdGlobal>(_src);
+				const auto& dst = std::get<ed::MdGlobal>(_dst);
+				g.position = static_cast<uint8_t>(_slot);
+				g.version = dst.version;
+				g.revision = dst.revision;
+				return Document(g);
+			},
+			[](const Document&, const int _slot) { return Document(ed::mdFactoryGlobal(static_cast<uint8_t>(_slot))); },
+			": the factory settings", asStored, [](const EditContext&, int) { return false; }, nullptr, problemsOf};
+
 		const Shelf* shelfOf(const int _kind)
 		{
-			for(const auto* s : {&g_kits, &g_patterns, &g_songs})
+			for(const auto* s : {&g_kits, &g_patterns, &g_songs, &g_globals})
 				if(static_cast<int>(s->kind) == _kind)
 					return s;
 			return nullptr;

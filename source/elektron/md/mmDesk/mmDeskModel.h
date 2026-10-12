@@ -166,11 +166,12 @@ namespace mmDesk
 		std::optional<elektronData::MmKit> kit;				// the kit library
 		std::optional<elektronData::MmPattern> pattern;		// the pattern library
 		std::optional<elektronData::MmSong> song;			// the song slots (0.6)
+		std::optional<elektronData::MmGlobal> global;		// the GLOBAL page's Copy (0.6)
 
 		bool operator==(const Clipboard& _o) const
 		{
 			return steps == _o.steps && sound == _o.sound && track == _o.track && songRow == _o.songRow && kit == _o.kit
-				&& pattern == _o.pattern && song == _o.song;
+				&& pattern == _o.pattern && song == _o.song && global == _o.global;
 		}
 	};
 
@@ -267,7 +268,13 @@ namespace mmDesk
 		// removed or re-meant; adding one keeps it.
 		static constexpr int contractVersion = 2;
 		// The Monomachine's page keeps no clipboard in the core.
-		static std::optional<elektronData::json::Value> clipboardDocument(const Clipboard&) { return {}; }
+		// 0.6: what the page reads of the clipboard: the GLOBAL page's Paste is on while a global is copied
+		static std::optional<elektronData::json::Value> clipboardDocument(const Clipboard& _clip)
+		{
+			auto c = elektronData::json::Value::object();
+			c.set("global", _clip.global ? elektronData::json::Value(static_cast<int>(_clip.global->position)) : elektronData::json::Value());
+			return c;
+		}
 		// The Monomachine Editor's command vocabulary.
 		static const Table& commands();
 		// P7: the active global as it must be for the machine to follow a DAW's tempo and transport (MIDI

@@ -2734,11 +2734,11 @@ namespace
 	}
 
 	// B-051, F3: the global the machine ships with (every slot of a fresh machine is elektronData::mmFactoryGlobal; FACTORY_PRINT=1
-	// prints it raw), GLOBAL › Reset to defaults (span 0, base 4 and TEMPO SYNC changed, then globalReset: the factory global
+	// prints it raw), GLOBAL › Clear (span 0, base 4 and TEMPO SYNC changed, then globalReset: the factory global
 	// reads back, a mute reaches T1-T6), and the slot keys (globalSlot: the machine says the slot is active).
 	void factoryGlobal(const Bytes& _rom)
 	{
-		std::puts("factory global, Reset to defaults, the slot keys (B-051, F3)");
+		std::puts("factory global, Clear, the slot keys (B-051, F3)");
 		Rig r(_rom);
 		r.msg(R"({"op":"ready"})");
 		r.desk->setProbe(mmDesk::Desk::Probe::Running);

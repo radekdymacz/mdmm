@@ -2557,7 +2557,7 @@ namespace
 	}
 
 	// B-051, F3: the global the machine ships with, read from a fresh machine (every slot): elektronData::mdFactoryGlobal
-	// must be it (GLOBAL › Reset to defaults writes it). FACTORY_PRINT=1 prints the dump as the C++ table.
+	// must be it (GLOBAL › Clear writes it). FACTORY_PRINT=1 prints the dump as the C++ table.
 	void factoryGlobal(const Bytes& _rom, const std::string& _romName)
 	{
 		std::puts("== the factory global");
@@ -2579,11 +2579,40 @@ namespace
 		}
 	}
 
-	// B-051, F3: GLOBAL › Reset to defaults. The base channel and TEMPO OUT changed, then globalReset: the active global
+	// 0.6, GLOBAL › Map editor › Reset map: SysEx 0x64 (Reset MIDI note map) leaves Elektron's note map, the factory
+	// global's (elektronData::mdFactoryGlobal), and nothing else of the global changes. The editor's Reset map writes that
+	// map in a global dump (globalSet resetMap, undoable), so the two must agree.
+	void resetNoteMap(const Bytes& _rom, const std::string& _romName)
+	{
+		std::puts("== Reset MIDI note map (0x64)");
+		Machine m(_rom, _romName);
+		auto g = ed::decodeMdGlobal(m.request(ed::mdGlobalRequest(0), ed::g_mdGlobalDump));
+		require(g.has_value(), "global 1 read");
+		g->position = 0;
+		for(size_t n = 0; n < 16; ++n)
+			g->keymap[n] = uint8_t(15 - n);	// notes 0-15 on the tracks backwards, the rest kept
+		g->keymap[60] = ed::MdGlobal::g_unmapped;
+		g->trigMode = 2;
+		m.send(ed::encodeMdGlobal(*g));
+		m.send(ed::mdSetActiveGlobal(0));
+		m.run(300);
+		const auto scrambled = ed::decodeMdGlobal(m.request(ed::mdGlobalRequest(0), ed::g_mdGlobalDump));
+		require(scrambled && scrambled->keymap == g->keymap, "the changed map is on the machine");
+		m.send(ed::mdResetNoteMap());
+		m.run(300);
+		const auto back = ed::decodeMdGlobal(m.request(ed::mdGlobalRequest(0), ed::g_mdGlobalDump));
+		require(back.has_value(), "global 1 read after 0x64");
+		check(back->keymap == ed::mdFactoryGlobal(0).keymap, "after 0x64 the map is the factory global's (the editor's Reset map)");
+		auto rest = *back;
+		rest.keymap = g->keymap;
+		check(rest == *scrambled, "0x64 changes the map only (TRIG mode and the rest kept)");
+	}
+
+	// B-051, F3: GLOBAL › Clear. The base channel and TEMPO OUT changed, then globalReset: the active global
 	// reads back as the factory one, and a mute reaches each of the 16 tracks.
 	void globalReset(const Bytes& _rom, const std::string& _romName)
 	{
-		std::puts("== GLOBAL › Reset to defaults");
+		std::puts("== GLOBAL › Clear");
 		Rig rig(_rom, _romName);
 		auto& desk = rig.desk();
 		rig.page(R"({"op":"ready"})");
@@ -4343,6 +4372,7 @@ int main(const int _argc, char** _argv)
 		{
 			factoryGlobal(rom, romPath);
 			globalReset(rom, romPath);
+			resetNoteMap(rom, romPath);
 			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 			std::printf("mdDeskFirmwareTest factoryglobal: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
 			return g_failures ? 1 : 0;
