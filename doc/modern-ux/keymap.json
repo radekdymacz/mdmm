@@ -738,6 +738,19 @@
 			"dispatched": true
 		},
 		{
+			"id": "live-erase",
+			"scope": "any",
+			"keys": [
+				"Delete",
+				"Backspace"
+			],
+			"mod": "",
+			"group": "Transport",
+			"does": "While live recording, hold: erase the selected track's trigs as they play (EXIT/NO + its TRIG key on the machine)",
+			"short": "Erase",
+			"dispatched": true
+		},
+		{
 			"id": "song-play-from",
 			"scope": "song",
 			"keys": [
@@ -2496,6 +2509,59 @@
 			"dispatched": true
 		},
 		{
+			"id": "live-erase",
+			"scope": "any",
+			"keys": [
+				"Delete",
+				"Backspace"
+			],
+			"mod": "",
+			"group": "Transport",
+			"does": "While live recording, hold: erase the selected track's notes as they play (EXIT held on the machine)",
+			"short": "Erase",
+			"dispatched": true
+		},
+		{
+			"id": "step-move",
+			"scope": "any",
+			"keys": [
+				"ArrowLeft",
+				"ArrowRight"
+			],
+			"mod": "",
+			"group": "Transport",
+			"does": "Step recording: ← a step back, → on (a rest); Delete clears the step, Esc: done",
+			"short": "Back / Rest",
+			"dispatched": true
+		},
+		{
+			"id": "step-clear",
+			"scope": "any",
+			"keys": [
+				"Delete",
+				"Backspace"
+			],
+			"mod": "",
+			"group": "Transport",
+			"does": "Step recording: clear the step under the cursor and move on",
+			"short": "Clear step",
+			"hidden": true,
+			"dispatched": true
+		},
+		{
+			"id": "step-done",
+			"scope": "any",
+			"keys": [
+				"Escape"
+			],
+			"mod": "",
+			"group": "Transport",
+			"does": "Step recording: done",
+			"short": "Done",
+			"hidden": true,
+			"dispatched": true
+		},
+		{
 			"id": "song-play-from",
 			"scope": "song",
 			"keys": [
@@ -2515,7 +2581,18 @@
 			],
 			"mod": "",
 			"group": "Transport",
-			"does": "The transport menu: Play / Stop, Pause / Continue, Live record, Panic (also the ▾ in the key's corner)",
+			"does": "The transport menu: Play / Stop, Pause / Continue, Live record, Step record, Panic (also the ▾ in the key's corner)",
+			"area": "Top bar"
+		},
+		{
+			"id": "step-record",
+			"scope": "any",
+			"keys": [
+				"REC"
+			],
+			"mod": "shift",
+			"group": "Transport",
+			"does": "Click (stopped): step recording; again (or Esc): done",
 			"area": "Top bar"
 		},
 		{

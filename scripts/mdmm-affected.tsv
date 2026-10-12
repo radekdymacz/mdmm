@@ -32,8 +32,8 @@ source/elektron/md/mdJucePlugin/skins/*	-	-	-	-	no	2 2c 7d
 source/elektron/md/deskCore/*	deskCoreTest|mdDeskTest|mmDeskTest|deskWire	mdIntentCasesFirmwareTest|mmIntentCasesFirmwareTest|mdTransportFirmwareTest|mmTransportFirmwareTest	*	-	no	2 2b 2c 4 7d
 source/elektron/md/deskHost/*	deskCoreTest|mdDeskTest|mmDeskTest	-	*	-	no	2 2b 2c 7d
 source/elektron/md/deskStubHost/*	-	-	*	-	no	2c
-source/elektron/md/mdDesk/*	mdDeskTest|mdDataLinkTest	mdIntentCasesFirmwareTest|mdTransportFirmwareTest	md-*	-	no	2 2b 2c 4 7d
-source/elektron/md/mmDesk/*	mmDeskTest	mmIntentCasesFirmwareTest|mmDeskFirmwareTest|mmTransportFirmwareTest	mm-*	-	no	2 2b 2c 4 7d
+source/elektron/md/mdDesk/*	mdDeskTest|mdDataLinkTest	mdIntentCasesFirmwareTest|mdTransportFirmwareTest|mdLiveEraseFirmwareTest	md-*	-	no	2 2b 2c 4 7d
+source/elektron/md/mmDesk/*	mmDeskTest	mmIntentCasesFirmwareTest|mmDeskFirmwareTest|mmTransportFirmwareTest|mmStepRecordFirmwareTest	mm-*	-	no	2 2b 2c 4 7d
 source/elektron/md/mdDataLink/*	mdDataLinkTest|mdDeskTest	mdIntentCasesFirmwareTest	md-*	-	no	2 2b 4 7d
 source/elektron/md/deskWire/*	deskWire	mdTransportFirmwareTest|mmTransportFirmwareTest	-	*-engine-hw-*	no	2 2b 7d
 source/elektron/md/elektronData/*	elektronData|mmData|mmConvert|syxImport|mdDeskTest|mmDeskTest	mdSyxPick|mmSyxPick	*	-	no	2 2b 2c 4

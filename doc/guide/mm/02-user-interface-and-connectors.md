@@ -128,7 +128,7 @@ The keys that open the secondary windows, ARP, TRANSPOSE, SWING and SLIDE, are a
 - Slide is the **Slide** key under the roll of the **Sequence** workspace.
 
 ## RECORD, PLAY AND STOP
-<!-- rows: MM-039 MM-040 MM-041 MM-042 MM-043 MM-044 @e9dc9e -->
+<!-- rows: MM-039 MM-040 MM-041 MM-042 MM-043 MM-044 @f9d2fa -->
 
 The record and play keys are at the top right of the LCD.
 
@@ -136,7 +136,7 @@ The record and play keys are at the top right of the LCD.
 - Click the record key while the machine is stopped to switch grid recording on. Editing steps on the page does not need it.
 - Press {key:record} to start live recording, the machine's [REC] + [PLAY]. Press it again to stop recording.
 
-Grid recording is not needed to edit steps with the mouse. {gap:MM-043}You cannot record by stepping through the pattern in the editor yet.{/gap}
+Grid recording is not needed to edit steps with the mouse. Hold [⇧] and click the record key while the machine is stopped to start step recording, the machine's [STOP] + [REC]. The key shows STEP. See "Step recording" in chapter 11.
 
 On the machine a second press of [PLAY] pauses. In the editor:
 

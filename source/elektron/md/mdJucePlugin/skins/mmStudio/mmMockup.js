@@ -639,7 +639,10 @@ function demoRebase(step){if(window.MMDemoHost)window.MMDemoHost.rebase(step)}
      globalSlot(n)                    GLOBAL's slot keys: make global slot n (0-7) the active one (B-051)
      transport(op, args, done)        wave 2, the transport beyond PLAY and STOP: op pause | resume | stop | panic |
                                       playFrom {i} (a song row) | nudge {pct} (the tempo pct % off while held, 0 =
-                                      back); done(ok) once the machine answered (128-transport.js)
+                                      back); done(ok) once the machine answered (128-transport.js). Wave 7: record
+                                      {mode: "step", t} (STEP RECORDING, TRACK t in focus), stepKey {key: left | right
+                                      | clear}, liveErase {t, on} (EXIT held while LIVE RECORDING plays); the host gives
+                                      the cursor back with setRecord(mode, stepAt)
    The view's side, for a host: window.MMView (130-main.js): values to read; show(view), the one
    writer of the state's document members (the machine's documents as the host derives them,
    DESIGN-UNIFY.md phase 1: the current pattern and kit, song, global, tempo, mutes, POLY, what
@@ -1931,8 +1934,8 @@ if (typeof module !== "undefined") module.exports = { DeskMenu };
    gives a host with its own commands.
      The ▶ menu (right-click ▶, or the ▾ in its corner, so nothing is only behind a right-click): Play / Stop, Pause /
      Continue, Record, Panic, each with its key. menuItems(state, host) is the list (pure); openMenu(x, y, state, host)
-     shows it (deskMenu.js). state: {playing, paused, rec, can: {pause, record, panic}, reasons: {name: words}}.
-     host: play(), stop(), pauseToggle(), record(), panic(), recordLabel. Paused, the first entry is Stop (it ends the
+     shows it (deskMenu.js). state: {playing, paused, rec, step, can: {pause, record, stepRecord, panic}, reasons: {name: words}}.
+     host: play(), stop(), pauseToggle(), record(), panic(), recordLabel, stepRecord() (optional: the MM's STEP RECORDING). Paused, the first entry is Stop (it ends the
      pause) and the second Continue.
      The TEMPO pop-up (the machine's TEMPO menu): BPM − / + (⇧: a tenth), TAP, NUDGE −10 % / +10 % while held (the keys -
      and = too), "Change on release" (the tempo drag sends at the release; ⌥-drag the tempo does it once), the sync line.
@@ -1956,6 +1959,8 @@ const DeskTransport = (() => {
 			{ id: "play", label: st.playing || st.paused ? "Stop" : "Play", key: "Space", enabled: can.transport !== false, run: () => st.playing || st.paused ? h.stop() : h.play() },
 			{ id: "pause", label: st.paused ? "Continue" : "Pause", key: "⇧Space", enabled: can.transport !== false && (st.playing || st.paused), run: () => h.pauseToggle() },
 			{ id: "record", label: h.recordLabel || "Record", key: "⌥Space", enabled: can.record !== false, run: () => h.record() },
+			/* wave 7, the Monomachine only (a host with stepRecord): STEP RECORDING, while stopped */
+			...(h.stepRecord ? [{ id: "steprecord", label: st.step ? "Step record: done" : "Step record", key: "⇧-click ●", enabled: can.stepRecord !== false && (!!st.step || !(st.playing || st.paused)), run: () => h.stepRecord() }] : []),
 			"-",
 			{ id: "panic", label: "Panic: all voices off", key: "⌘.", enabled: can.panic !== false, run: () => h.panic() }
 		];
@@ -2929,7 +2934,8 @@ function renderTop(){
  $("#play").setAttribute("aria-pressed",S.playing);$("#playico").textContent=S.playing?"■":"▶";$("#play").setAttribute("aria-label",S.playing?"Stop":S.paused?"Continue":"Play");
  /* wave 2: paused, ▶ blinks and goes on from the step it holds (128-transport.js) */
  $("#play").classList.toggle("paused",!!S.paused);$("#play").title=S.paused?"Paused: ▶ goes on from the step (⇧Space); STOP in the menu ends it":"Play / stop (Space). ⇧-click: pause. Right-click or ▾: Pause, Live record, Panic";
- if(typeof DeskTransport!=="undefined"&&DeskTransport.tempoShown())DeskTransport.refreshTempo();$("#rec").setAttribute("aria-pressed",!!S.rec);$("#recled").classList.toggle("on",!!S.rec);
+ if(typeof DeskTransport!=="undefined"&&DeskTransport.tempoShown())DeskTransport.refreshTempo();{const st=S.recMode==="step",rk=$("#rec");rk.setAttribute("aria-pressed",!!S.rec||st);$("#recled").classList.toggle("on",!!S.rec||st);rk.classList.toggle("step",st);
+ let m=rk.querySelector(".stepm");if(st&&!m)rk.insertAdjacentHTML("beforeend",'<span class="stepm">STEP</span>');else if(!st&&m)m.remove();if(S.ws==="seq"&&$("#seqscroll"))stepDraw()}
  renderPst();syncLockBudget()}
 /* line 2: fixed-width slots (as in the MD Editor v46), so values never push into COPY / CLR / PASTE */
 function L2(k,lab,val,title,ed,w=8,id=""){return`<span class="l2 ${ed?"ed":""}" style="width:${w}ch" ${k?`data-l2="${k}"`:""} ${title?`title="${title}"`:""}><small>${lab}</small><b ${id?`id="${id}"`:""}>${val}</b></span>`}
@@ -3104,7 +3110,7 @@ function renderSeq(){const t=S.sel,tr=trk(t),midi=isMidiT(t);dockOf(t);
  <div class="lanewrap"><div class="lanetop">${S.dock==="locks"?`<span class="cap">Lock lane · ${tLabel(t)} ${midi?"CH"+String(tr.ch).padStart(2,"0"):tr.m} · <b id="lanename">${pidLabel(t,S.lane)}</b> <span class="lanescale" id="lanescale"></span></span>
   <span class="lockbudget" id="lockbudget"></span><span class="lanehelp" title="Draw across the bars to lock this parameter per step. Alt-drag erases. Shift-drag draws a ramp, a straight line from where you press to where you let go. The wheel over a step with a trig moves its lock (Shift: fine). Hatched steps have no trig, so they cannot hold a lock. Dashed line = kit value. A slide step glides to the next lock.">Draw to lock · ⇧ ramp · alt erases</span>`:(()=>{const[h,hl]=dockHelp(t,S.dock);return`<span class="cap">${DOCKN[S.dock]} · ${tLabel(t)} ${midi?"CH"+String(tr.ch).padStart(2,"0"):tr.m}</span><span class="lockbudget dkread" id="dkread">${dockRead(t,S.dock)}</span><span class="lanehelp dkhelp" title="${dkAttr(hl)}">${h}</span>`})()}${dockTabs(t)}</div>
   ${S.dock==="locks"?dockBody(t):`<div class="dockbody" id="dock">${dockBody(t)}</div>`}</div>`;
- $("#main").innerHTML=h;document.body.classList.toggle("dockother",S.dock!=="locks");genBarFit();fitLane();renderLane();syncScroll();syncControls();alignLock();syncLockBudget();markRecLock()}
+ $("#main").innerHTML=h;document.body.classList.toggle("dockother",S.dock!=="locks");genBarFit();fitLane();renderLane();syncScroll();syncControls();alignLock();syncLockBudget();markRecLock();stepDraw()}
 /* as in the MD Editor: the rail's LOCK PARAMETER block starts on the line above the lock lane (the lane's top border, under the GEN bar) and ends at its bottom edge */
 function alignLock(){const rp=$("#rail .railparams"),lt=$(".lanetop"),ls=$("#lanescroll")||$("#main>.lanewrap>.dockbody");if(!rp||!lt||!ls||S.ws!=="seq")return;
  const roll=$("#seq canvas.roll[data-big]"),tb=rp.querySelector(".pagetabs");
@@ -3156,7 +3162,7 @@ function clickStep(t,s,e){const tr=trk(t),st=tr.steps[s];
  if(e.shiftKey){tr.steps[s]=st?.off?null:{off:1};if(!st?.off)clearStepLocks(t,s)}
  else if(e.altKey&&!isMidiT(t)){if(!st||st.off)tr.steps[s]={n:[lastNote(t,s)],a:0,f:0,l:0};else{const k=stepKind(st);Object.assign(st,k==="full"?{a:0,f:0,l:0}:{a:1,f:1,l:1})}}
  else{if(st&&!st.off){tr.steps[s]=null;clearStepLocks(t,s)}else tr.steps[s]=note(lastNote(t,s))}
- editStep(t,s);renderTop();if(t!==S.sel){S.sel=t;autoRange(t);render()}else rerenderSeq()}
+ editStep(t,s);renderTop();if(t!==S.sel){S.sel=t;stepFocus();autoRange(t);render()}else rerenderSeq()}
 function clickEnv(b,s){const t=S.sel,st=trk(t).steps[s];if(!st||st.off)return;st[b]=st[b]?0:1;if(!st.n&&!st.a&&!st.f&&!st.l){trk(t).steps[s]=null;clearStepLocks(t,s)}editStep(t,s);rerenderSeq()}
 let laneDraw=null;
 function laneAt(e){const lane=$("#lane");if(!lane)return;if(laneDraw.ramp){rampAt(e);return}const el=document.elementFromPoint(e.clientX,e.clientY)?.closest(".lb");if(!el||!lane.contains(el))return;
@@ -3369,7 +3375,7 @@ addEventListener("pointermove",e=>{if(ttPaint){if(e.buttons===0&&e.pointerType==
 function ttEnd(){if(!ttPaint)return;const p=ttPaint;ttPaint=null;commit();if(p.moved)rerenderSeq()}
 addEventListener("pointerup",ttEnd,true);addEventListener("pointercancel",ttEnd,true);
 document.addEventListener("click",e=>{const k=e.target.closest(".ttrow [data-tt]");if(k)setTrigType(k.dataset.tt)});
-Keys.bind({id:"trig-type",short:"Note",scope:"seq",keys:["Escape"],group:"Sequence",does:"Back to Note after Slide or Swing: a click on the roll writes notes again",when:()=>S.ws==="seq"&&!!S.tt&&S.tt!=="note",run:()=>setTrigType("note")});
+Keys.bind({id:"trig-type",short:"Note",scope:"seq",keys:["Escape"],group:"Sequence",does:"Back to Note after Slide or Swing: a click on the roll writes notes again",when:()=>S.ws==="seq"&&!!S.tt&&S.tt!=="note"&&!stepOn(),run:()=>setTrigType("note")});
 
 /* ---- 75-comforts.js ---- */
 /* ===== From the Machinedrum Editor (2026-10, MM-PORT-PLAN.md a-c): Alt as the global "all", the key map's
@@ -3861,8 +3867,8 @@ document.addEventListener("contextmenu",e=>{if(S.ws!=="seq"||!e.target.closest?.
  e.preventDefault();if(S.rec){toast("Wait until live recording stops.");return}stepMenu(c.t,c.s,c.pitch,e.clientX,e.clientY)});
 
 /* ---- the keys: both editors' (StepSel.bind); on Sequence while there is a selection, no dialog, and no other control has the focus ---- */
-const selKeys=()=>seqKeys()&&!!S.stepSel&&!document.activeElement?.closest?.("button:not(.tc),[role=button],[role=tab],[data-g],[data-gv],[role=slider],input,select,textarea");
-StepSel.bind(Keys,{seqKeys:()=>seqKeys(),has:()=>!!S.stepSel,selKeys,cut:selCut,duplicate:selDuplicate,trigs:selTrigs,deselect:clearSel,deselectWhen:()=>!S.marks.size,
+const selKeys=()=>seqKeys()&&!!S.stepSel&&!stepOn()&&!document.activeElement?.closest?.("button:not(.tc),[role=button],[role=tab],[data-g],[data-gv],[role=slider],input,select,textarea");
+StepSel.bind(Keys,{seqKeys:()=>seqKeys(),has:()=>!!S.stepSel,selKeys,cut:selCut,duplicate:selDuplicate,trigs:selTrigs,deselect:clearSel,deselectWhen:()=>!S.marks.size&&!stepOn(),
  selectAll:()=>{const t=side()[0];setSel({t,n:6,from:0,to:S.len});toast(Modifiers.say(`Selected ${selSay(S.stepSel)} · ⌘C copy · Delete clear · Esc`))},
  move:ds=>selMove(0,ds),grow:selGrow,area:"Roll",
  does:{"select-all":"Select every step of the six tracks shown (synth or MIDI) up to the length (then ⌘C copies them as a block)",
@@ -5332,8 +5338,8 @@ function stopNow(){const was=S.paused;S.paused=null;
 function panicNow(){if(NA.panic){toast(NA.panic);return}S.paused=null;
  if(HOST.transport)transportCmd("panic",{},()=>{});else{if(S.playing)togglePlay();toast("Panic: every note off.")}
  renderTop();setPos()}
-const TRANSPORT_HOST={recordLabel:"Live record",play:()=>playButton(),stop:()=>stopNow(),pauseToggle:()=>pauseToggle(),record:()=>liveRecord(),panic:()=>panicNow()};
-function transportMenu(x,y){DeskTransport.openMenu(x,y,{playing:S.playing,paused:!!S.paused,rec:!!S.rec,can:{transport:!NA.transport,record:true,panic:!NA.panic},reasons:{panic:NA.panic}},TRANSPORT_HOST)}
+const TRANSPORT_HOST={recordLabel:"Live record",stepRecord:()=>stepRecord(),play:()=>playButton(),stop:()=>stopNow(),pauseToggle:()=>pauseToggle(),record:()=>liveRecord(),panic:()=>panicNow()};
+function transportMenu(x,y){DeskTransport.openMenu(x,y,{playing:S.playing,paused:!!S.paused,rec:!!S.rec,step:stepOn(),can:{transport:!NA.transport,record:true,stepRecord:!NA.gridRecord,panic:!NA.panic},reasons:{panic:NA.panic,stepRecord:NA.gridRecord}},TRANSPORT_HOST)}
 document.addEventListener("contextmenu",e=>{if(!e.target.closest?.("#play"))return;e.preventDefault();e.stopImmediatePropagation();transportMenu(e.clientX,e.clientY)},true);
 document.addEventListener("click",e=>{const m=e.target.closest?.("#playmore");if(!m)return;e.preventDefault();e.stopImmediatePropagation();const r=m.getBoundingClientRect();transportMenu(r.left,r.bottom+2)},true);
 
@@ -5356,12 +5362,59 @@ function playFromRow(i=S.songSel){if(NA.playFrom){toast(NA.playFrom);return}cons
  S.paused=null;if(HOST.transport){transportCmd("playFrom",{i});return}
  toast(`Plays the song from row ${String(i+1).padStart(3,"0")}.`)}
 
+/* ===== Wave 7: recording on the Monomachine (manual 1-49, 1-50) =====
+   STEP RECORDING: ⇧-click REC (stopped; also the ▶ menu). The REC key shows STEP and a cursor marks the step on the roll
+   (no row of its own: the layout stays); the words are the toast's and the REC key's title. The machine writes the focus
+   track only: the selected synth track, moved when the selection changes (select(), 130-main.js). A note played (the home
+   row, the roll's keys) writes the step under the cursor and moves on; → a rest, ← back, Delete clears the step, Esc
+   done. A step selection is dropped when it starts, and the selection's keys stand aside while it runs (77-select.js).
+   The cursor is the machine's (S.stepAt, from the host).
+   Live erase: Delete held while LIVE RECORDING plays is EXIT held on the machine; the selected track's notes go as they
+   pass. Let go (or the window loses the keys): EXIT up. While held the page says so every 250 ms: the core lets EXIT go
+   when that stops (a page that went away while Delete was down). With a host each is HOST.transport(op, args); on its
+   own the example moves its own cursor. */
+const stepOn=()=>S.recMode==="step";
+function stepRecord(){
+ if(NA.gridRecord){toast(NA.gridRecord);return}
+ if(stepOn()){stepDone();return}
+ if(S.playing||S.paused){toast("Stop first: step recording starts while the machine is stopped.");return}
+ if(S.stepSel)clearSel();
+ const t=isMidiT(S.sel)?0:S.sel;S.stepT=t;
+ if(HOST.transport){transportCmd("record",{mode:"step",t});return}
+ setRecord("step",0);toast("STEP RECORDING: play a note to write it to the step, then the next. → a rest, ← back, Delete clears the step, Esc: done.")}
+function stepDone(){if(!stepOn())return;if(HOST.record){HOST.record();return}setRecord("off",-1)}
+function stepKey(key){
+ if(HOST.transport){transportCmd("stepKey",{key});return}
+ const n=Math.max(1,S.len);S.stepAt=(S.stepAt+(key==="left"?n-1:1))%n;stepDraw()}
+/* the focus follows the selection (synth tracks only: the machine step-records its six); called where the track changes */
+function stepFocus(){if(!stepOn()||isMidiT(S.sel)||S.stepT===S.sel)return;S.stepT=S.sel;if(HOST.transport)transportCmd("record",{mode:"step",t:S.sel})}
+/* the cursor on the roll (drawing only) */
+function stepDraw(){
+ $$(".stepcur").forEach(x=>x.remove());
+ if(!stepOn()||S.ws!=="seq")return;
+ const t=S.stepT??S.sel,at=S.stepAt,lane=$("#seq .nlane.big"),ru=at>=0?$(`#seq .ruler .rul[data-s="${at}"]`):null;
+ if(!lane||!ru)return;
+ const lr=lane.getBoundingClientRect(),r=ru.getBoundingClientRect();
+ lane.insertAdjacentHTML("beforeend",`<div class="stepcur" aria-hidden="true" data-l="${tLabel(t)} · STEP ${String(at+1).padStart(2,"0")}" style="left:${r.left-lr.left-1}px;width:${r.width+2}px"></div>`)}
+const ERASE={t:null,beat:0};
+function eraseDown(e){if(e.repeat||ERASE.t===S.sel||isMidiT(S.sel))return;ERASE.t=S.sel;document.body.classList.add("erasing");
+ if(!HOST.transport){toast(`Erasing ${tLabel(S.sel)}'s notes as they play, while Delete is held.`);return}
+ transportCmd("liveErase",{t:S.sel,on:true},ok=>{if(!ok)eraseUp()});
+ clearInterval(ERASE.beat);ERASE.beat=setInterval(()=>{if(ERASE.t!=null)transportCmd("liveErase",{t:ERASE.t,on:true})},250)}
+function eraseUp(){if(ERASE.t==null)return;const t=ERASE.t;ERASE.t=null;clearInterval(ERASE.beat);document.body.classList.remove("erasing");if(HOST.transport)transportCmd("liveErase",{t,on:false})}
+document.addEventListener("keyup",e=>{if(e.key==="Delete"||e.key==="Backspace")eraseUp()});addEventListener("blur",()=>eraseUp());
+
 /* ===== keys ===== */
 Keys.bind({id:"pause",short:"Pause",scope:"any",keys:["Space"],code:"Space",mod:"shift",group:"Transport",does:"Pause: the machine holds its step; again (or ▶) goes on from it, STOP ends it (also ⇧-click ▶)",run:()=>pauseToggle()});
 Keys.bind({id:"panic",short:"Panic",scope:"any",keys:["."],mod:"cmd",group:"Transport",does:"Panic: every note off (All Notes Off on each track's channel) and STOP",run:()=>panicNow()});
 Keys.bind({id:"tempo-nudge",short:"Nudge",scope:"any",keys:["-","="],group:"Transport",does:"Hold: the tempo 10 % slower (-) or faster (=) while held, as the TEMPO menu's nudge",when:()=>kbOn(),run:e=>DeskTransport.nudgeKey(e.key,TEMPO_HOST)});
+Keys.bind({id:"live-erase",short:"Erase",scope:"any",keys:["Delete","Backspace"],group:"Transport",does:"While live recording, hold: erase the selected track's notes as they play (EXIT held on the machine)",when:()=>S.recMode==="live"&&kbOn(),run:e=>eraseDown(e)});
+Keys.bind({id:"step-move",short:"Back / Rest",scope:"any",keys:["ArrowLeft","ArrowRight"],group:"Transport",does:"Step recording: ← a step back, → on (a rest); Delete clears the step, Esc: done",when:()=>stepOn()&&kbOn(),run:e=>stepKey(e.key==="ArrowLeft"?"left":"right")});
+Keys.bind({id:"step-clear",short:"Clear step",hidden:true,scope:"any",keys:["Delete","Backspace"],group:"Transport",does:"Step recording: clear the step under the cursor and move on",when:()=>stepOn()&&kbOn(),run:()=>stepKey("clear")});
+Keys.bind({id:"step-done",short:"Done",hidden:true,scope:"any",keys:["Escape"],group:"Transport",does:"Step recording: done",when:()=>stepOn()&&kbOn(),run:()=>stepDone()});
 Keys.bind({id:"song-play-from",short:"From here",scope:"song",keys:["Enter"],group:"Song",does:"Play the song from the selected row (▶ From here)",when:()=>kbOn()&&S.ws==="song"&&!document.activeElement?.closest?.(".songlib,[data-rowact]"),run:()=>playFromRow()});
-[["transport-menu","any","Top bar",["right-click ▶"],"","Transport","The transport menu: Play / Stop, Pause / Continue, Live record, Panic (also the ▾ in the key's corner)"],
+[["transport-menu","any","Top bar",["right-click ▶"],"","Transport","The transport menu: Play / Stop, Pause / Continue, Live record, Step record, Panic (also the ▾ in the key's corner)"],
+ ["step-record","any","Top bar",["REC"],"shift","Transport","Click (stopped): step recording; again (or Esc): done"],
  ["pause-click","any","Top bar",["▶"],"shift","Transport","Click: pause; ▶ again goes on from the step"],
  ["tempo-click","any","Top bar",["tempo"],"","Transport","Click (no drag): the TEMPO window: − / +, TAP, nudge, change on release, INT / EXT"],
  ["tempo-delayed","any","Top bar",["tempo"],"alt","Transport","Drag: the tempo changes when you let go (FUNCTION held on the machine)"]
@@ -5541,7 +5594,7 @@ function autoRange(t){const ns=trk(t).steps.flatMap(x=>x?.n||[]);if(!ns.length)r
 function setMapping(on){S.mapping=!!on;{const t=$("#tabs [data-ws=control]"),k=$("#learnkey");if(t)t.hidden=!on;if(k)k.hidden=!on}if(!on){S.learn=false;S.learnT=null;document.body.classList.remove("learn");if(S.ws==="control")S.ws="seq"}}
 function goWs(ws){if(ws==="control"&&!S.mapping)return;S.ws=ws;const t=S.sel%6+((ws==="seq"||ws==="sound")&&S.side==="midi"?6:0);select(t)}
 function setSide(sd){S.side=sd;select(S.sel%6+(sd==="midi"?6:0))}
-function select(t){S.sel=t;autoRange(t);const pg=S.lane.split(".")[0];if(isMidiT(t)){if(pg!=="MID"){S.lane="MID.1";S.lanePage="MID"}}else if(pg==="MID"||!pname(t,S.lane)){S.lane="FLT.1";S.lanePage="FLT"}render()}
+function select(t){S.sel=t;stepFocus();autoRange(t);const pg=S.lane.split(".")[0];if(isMidiT(t)){if(pg!=="MID"){S.lane="MID.1";S.lanePage="MID"}}else if(pg==="MID"||!pname(t,S.lane)){S.lane="FLT.1";S.lanePage="FLT"}render()}
 document.addEventListener("click",e=>{
  const mu=e.target.closest("[data-mute]"),so=e.target.closest("[data-solo]");
  if(mu||so){const i=+(mu||so).dataset[mu?"mute":"solo"],t=trk(i);if(mu&&e.shiftKey){ARMED.has(i)?ARMED.delete(i):ARMED.set(i,!t.mute);showArmed();return}if(mu)t.mute=!t.mute;else t.solo=!t.solo;tx();if(HOST.mutes)HOST.mutes();render();return}
@@ -5615,7 +5668,7 @@ document.addEventListener("click",e=>{
  const tb=e.target.closest("#tabs button");if(tb){goWs(tb.dataset.ws);return}
  if(e.target.closest("#platekey")){setPlate(S.plate==="mk1"?"mk2":"mk1");return}
  if(e.target.closest("#play")){if(e.shiftKey)pauseToggle();else playButton();return}
- if(e.target.closest("#rec")){if(HOST.record)return HOST.record();S.rec=!S.rec;renderTop();if(S.rec)toast("GRID RECORD on. On the machine: hold a trig to see its note, turn a knob to lock it. Here: just click and draw.");return}
+ if(e.target.closest("#rec")){if(e.shiftKey||stepOn()){stepRecord();return}if(HOST.record)return HOST.record();S.rec=!S.rec;renderTop();if(S.rec)toast("GRID RECORD on. On the machine: hold a trig to see its note, turn a knob to lock it. Here: just click and draw.");return}
  if(e.target.closest("#patPrev")){goPattern((S.queued??S.pat)-1);return}
  if(e.target.closest("#patNext")){goPattern((S.queued??S.pat)+1);return}});
 document.addEventListener("change",e=>{const id=e.target.id,v=e.target.value,tr=trk(S.sel);
@@ -5650,7 +5703,7 @@ Keys.bind({id:"play-stop",scope:"any",keys:["Space"],group:"Transport",does:"Pla
 Keys.bind({id:"record",scope:"any",keys:["Space"],code:"Space",mod:"alt",group:"Transport",does:"Live recording (RECORD + PLAY): Alt + play, the other Alt that is not \"all\". Again: recording off",run:()=>liveRecord()});
 ["seq","sound","mix","perform","song","control"].forEach((ws,i)=>Keys.bind({id:"workspace-"+(i+1),scope:"any",keys:[String(i+1)],group:"Workspaces",does:["Sequence","Sound","Mix","Perform","Song","Control"][i],mapping:ws==="control",when:ws==="control"?()=>S.mapping:null,run:()=>goWs(ws)}));
 Keys.bind({id:"page-prev-next",scope:"seq",keys:["[","]"],group:"Sequence",does:"Previous / next page",when:()=>S.ws==="seq"&&pages16()>1,run:e=>{const n=pages16();S.viewAll=false;S.page=(S.page+(e.key==="]"?1:-1)+n)%n;render()}});
-Keys.bind({id:"delete",scope:"seq song",keys:["Delete","Backspace"],group:"Sequence",does:"Clear the selected steps; with none selected nothing (Clr clears the page shown, ⌥Delete the pattern). Song: delete the row",when:()=>S.ws==="song"||S.ws==="seq",
+Keys.bind({id:"delete",scope:"seq song",keys:["Delete","Backspace"],group:"Sequence",does:"Clear the selected steps; with none selected nothing (Clr clears the page shown, ⌥Delete the pattern). Song: delete the row",when:()=>(S.ws==="song"||S.ws==="seq")&&S.recMode!=="step"&&S.recMode!=="live",
  run:()=>S.ws==="song"?songAction("del"):S.stepSel?secAction("clear"):toast(Modifiers.say("Nothing selected: ⌘-click or ⌘-drag steps first. Clr clears the page shown, ⌥Delete the whole pattern."))});
 Keys.bind({id:"clear-pattern",scope:"seq",keys:["Delete","Backspace"],mod:"alt",group:"All",does:"Sequence: clear the whole pattern: every track's notes, slides and locks (one undo step)",when:()=>S.ws==="seq",run:()=>clearPattern()});
 Keys.bind({id:"clr-key-all",scope:"any",area:"Top bar",keys:["CLR"],mod:"alt",group:"All",does:"Click: clear the whole pattern, every track's notes, slides and locks (one undo step)"});
@@ -5862,8 +5915,11 @@ function show(v,all){
  showLater=false;render();drawLib()}
 /* busy: a gesture, or a menu open (a render would close it under the person: the drawing waits for it, as for a drag) */
 const busyNow=()=>{try{return !!(S.genEnding||drag||laneDraw||rollDrag||selDrag||active||arpDrag||l2drag||joyDrag||splitDrag||cord||kbDown||paint)||menuOpen()}catch(_){return false}};
-/* RECORD as the machine is in it: "off" | "grid" | "live" */
-function setRecord(mode){const on=mode==="grid"||mode==="live";S.recMode=mode;if(!!S.rec!==on){S.rec=on;renderTop()}const b=$("#rec");if(b)b.title=mode==="live"?"LIVE RECORDING: notes you play are recorded. Click to stop recording.":mode==="grid"?"GRID RECORDING: the machine's TRIG keys write steps. Click to leave.":"RECORD: stopped = GRID RECORDING, playing = LIVE RECORDING (the keyboard's notes are recorded)."}
+/* RECORD as the machine is in it: "off" | "grid" | "live" | "step" (wave 7: STEP RECORDING, at = the step the next note
+   writes, -1 unknown) */
+function setRecord(mode,at=-1){const on=mode==="grid"||mode==="live",was=S.recMode;S.recMode=mode;S.stepAt=mode==="step"?at:-1;if(mode!=="step")S.stepT=null;if(mode!=="live")eraseUp();
+ if(!!S.rec!==on||(was==="step")!==(mode==="step"))renderTop();else if(mode==="step")stepDraw();
+ const b=$("#rec");if(b)b.title=mode==="step"?"STEP RECORDING: play a note to write the step under the cursor. → a rest, ← back, Delete clears the step. Click (or Esc): done.":mode==="live"?"LIVE RECORDING: notes you play are recorded; hold Delete to erase the selected track's notes as they play. Click to stop recording.":mode==="grid"?"GRID RECORDING: the machine's TRIG keys write steps. Click to leave.":"RECORD: stopped = GRID RECORDING, playing = LIVE RECORDING (the keyboard's notes are recorded). ⇧-click (stopped): STEP RECORDING."}
 /* an engine state's LCD label: [text, led "on" | "blink" | "off", tooltip] */
 function setEngineLabel(st,label){ENG[st]=label;if(S.eng===st)setEng(st)}
 /* a host's engine map ([{id, label, available, reason}]) in the engine menu, before the menu's own entries */

@@ -54,7 +54,10 @@
      globalSlot(n)                    GLOBAL's slot keys: make global slot n (0-7) the active one (B-051)
      transport(op, args, done)        wave 2, the transport beyond PLAY and STOP: op pause | resume | stop | panic |
                                       playFrom {i} (a song row) | nudge {pct} (the tempo pct % off while held, 0 =
-                                      back); done(ok) once the machine answered (128-transport.js)
+                                      back); done(ok) once the machine answered (128-transport.js). Wave 7: record
+                                      {mode: "step", t} (STEP RECORDING, TRACK t in focus), stepKey {key: left | right
+                                      | clear}, liveErase {t, on} (EXIT held while LIVE RECORDING plays); the host gives
+                                      the cursor back with setRecord(mode, stepAt)
    The view's side, for a host: window.MMView (130-main.js): values to read; show(view), the one
    writer of the state's document members (the machine's documents as the host derives them,
    DESIGN-UNIFY.md phase 1: the current pattern and kit, song, global, tempo, mutes, POLY, what

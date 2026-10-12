@@ -56,6 +56,8 @@ namespace mdJucePlugin
 			case K::Track1: case K::Track2: case K::Track3: case K::Track4: case K::Track5: case K::Track6:
 				return static_cast<C>(static_cast<int>(C::Track1) + (static_cast<int>(_k) - static_cast<int>(K::Track1)));
 			case K::KnobUp: case K::KnobDown: return std::nullopt;	// an encoder, not a key (pressKeys)
+			case K::StepRecord: return C::Record;	// with STOP held
+			case K::ExitDown: case K::ExitUp: return C::Exit;	// half a press each
 			}
 			return std::nullopt;
 		}
@@ -152,6 +154,7 @@ namespace mdJucePlugin
 		std::vector<md::PanelPacket> states;
 		const auto fn = md::panelPacket(md::MachineModel::Monomachine, md::PanelControl::Function);
 		const auto rec = md::panelPacket(md::MachineModel::Monomachine, md::PanelControl::Record);
+		const auto stop = md::panelPacket(md::MachineModel::Monomachine, md::PanelControl::Stop);
 		const auto knobA = md::panelEncoderCommand(md::MachineModel::Monomachine, md::PanelEncoder::DataEntryA);
 		for(const auto k : _keys)
 		{
@@ -166,12 +169,18 @@ namespace mdJucePlugin
 			}
 			const auto c = control(k);
 			const auto pk = c ? md::panelPacket(md::MachineModel::Monomachine, *c) : std::nullopt;
-			if(!pk || !fn || !rec)
+			if(!pk || !fn || !rec || !stop)
 				return false;
+			if(mmDesk::isHalf(k))
+			{
+				// a key held down for a while (EXIT while LIVE RECORDING erases), or let go
+				states.push_back(mmDesk::isRelease(k) ? md::PanelPacket{pk->row, 0} : *pk);
+				continue;
+			}
 			if(mmDesk::isChord(k))
 			{
-				// FUNCTION (or RECORD for LIVE RECORDING) held while the key goes down and up
-				const auto held = mmDesk::heldIsRecord(k) ? *rec : *fn;
+				// FUNCTION (RECORD for LIVE RECORDING, STOP for STEP RECORDING) held while the key goes down and up
+				const auto held = mmDesk::heldIsRecord(k) ? *rec : mmDesk::heldIsStop(k) ? *stop : *fn;
 				md::PanelRowState rows;
 				states.push_back(rows.press(held));
 				states.push_back(rows.press(*pk));
@@ -240,6 +249,7 @@ namespace mdJucePlugin
 		t.tempo = m_telemetry->tempo.load(std::memory_order_relaxed);
 		t.mutes = m_telemetry->mutes.load(std::memory_order_relaxed);
 		t.recording = m_telemetry->recording.load(std::memory_order_relaxed);
+		t.stepCursor = m_telemetry->stepCursor.load(std::memory_order_relaxed);
 		t.bankGroup = m_telemetry->bankGroup.load(std::memory_order_relaxed);
 		t.songRow = m_telemetry->songRow.load(std::memory_order_relaxed);
 		t.chainKnown = m_telemetry->readChain(t.chain.active, t.chain.next, t.chain.patterns);

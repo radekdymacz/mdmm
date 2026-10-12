@@ -726,7 +726,7 @@ namespace mdDesk
 		static const std::map<std::string, Handler> map{
 			{"load", &MdMachine::cmdLoad}, {"select", &MdMachine::cmdSelect}, {"saveKit", &MdMachine::cmdSaveKit},
 			{"reloadKit", &MdMachine::cmdReloadKit}, {"kitLoad", &MdMachine::cmdKitLoad}, {"kitSaveAs", &MdMachine::cmdKitSaveAs},
-			{"record", &MdMachine::cmdRecord}, {"recTrig", &MdMachine::cmdRecTrig}, {"noteOn", &MdMachine::cmdNoteOn}, {"noteOff", &MdMachine::cmdNoteOff}, {"chain", &MdMachine::cmdChain},
+			{"record", &MdMachine::cmdRecord}, {"liveErase", &MdMachine::cmdLiveErase}, {"recTrig", &MdMachine::cmdRecTrig}, {"noteOn", &MdMachine::cmdNoteOn}, {"noteOff", &MdMachine::cmdNoteOff}, {"chain", &MdMachine::cmdChain},
 			{"chainClear", &MdMachine::cmdChainClear}, {"globalSlot", &MdMachine::cmdGlobalSlot},
 			{"selectSong", &MdMachine::cmdSelectSong}, {"reloadSong", &MdMachine::cmdReloadSong}, {"saveSong", &MdMachine::cmdSaveSong},
 			{"sampleName", &MdMachine::cmdSampleName}, {"sampleCancel", &MdMachine::cmdSampleCancel}, {"play", &MdMachine::cmdPlay}, {"stop", &MdMachine::cmdStop},
@@ -983,6 +983,48 @@ namespace mdDesk
 			return ok("Live recording from step 1 (the Machinedrum starts it from STOP)");
 		}
 		return pressKey("recordPlay") ? ok("Live recording: play the tracks, turn the knobs") : refuse("No panel here");
+	}
+
+	// Erase while live recording (manual p.40): hold EXIT/NO and the track's TRIG key; the firmware removes the
+	// track's trigs for the part of the pattern that plays while both are down (mdEditorProbeFirmwareTest
+	// liveerase: either order; EXIT alone erases nothing). The keys stay down until off, another track, or the end
+	// of recording; what the firmware erased comes back with the pattern's read-back.
+	Outcome MdMachine::cmdLiveErase(const Value& _m, const Documents&)
+	{
+		if(!canLiveRecord())
+			return refuse(panelKeys() ? g_noLiveRecordTelemetry : g_noLiveRecordKeys);
+		if(!flagOf(_m, "on"))
+		{
+			releaseErase();
+			return ok();
+		}
+		if(!m_telemetry.recording)
+			return refuse("Not recording: erase works while live recording plays.");
+		const auto t = static_cast<uint8_t>(*intOf(_m, "t"));
+		m_eraseSeenMs = now();
+		if(m_erasing == t)
+			return ok();
+		if(m_erasing)
+			pressKey("release:trig" + std::to_string(*m_erasing + 1));
+		else if(!pressKey("hold:exit"))
+			return refuse("TRIG keys need the local emulated machine");
+		if(!pressKey("hold:trig" + std::to_string(t + 1)))
+		{
+			pressKey("release:exit");
+			m_erasing.reset();
+			return refuse("TRIG keys need the local emulated machine");
+		}
+		m_erasing = t;
+		return ok("Erasing track " + std::to_string(t + 1) + "'s trigs as they play, while Delete is held.");
+	}
+
+	void MdMachine::releaseErase()
+	{
+		if(!m_erasing)
+			return;
+		pressKey("release:trig" + std::to_string(*m_erasing + 1));
+		pressKey("release:exit");
+		m_erasing.reset();
 	}
 
 	// recTrig plays a track like its TRIG key, which the firmware records.
@@ -1794,6 +1836,8 @@ namespace mdDesk
 		{
 			m_knobs.reset();
 			m_recLock.reset();
+			if(!_t.recording)
+				releaseErase();
 			// The last recorded notes: read the pattern back.
 			if(!_t.recording && m_session.state().pattern)
 				load({DocKind::Pattern, *m_session.state().pattern}, true);
@@ -1861,6 +1905,8 @@ namespace mdDesk
 
 	void MdMachine::pageReady()
 	{
+		// a page that came back does not hold Delete
+		releaseErase();
 		if(m_profile.wire || m_probe == Probe::Running)
 		{
 			m_session.requestStatus();
@@ -1880,6 +1926,9 @@ namespace mdDesk
 		// 0.3.4: cable speed only while the sequencer plays (a machine without telemetry counts as playing)
 		m_out.setPlaying(!m_telemetry.valid || m_telemetry.playing, _now);
 		m_out.pump(_now);
+		// liveErase: no word from the page that Delete is still held: let the keys go
+		if(m_erasing && _now - m_eraseSeenMs > g_eraseQuietMs)
+			releaseErase();
 		// A sample on its way owns the wire: no status polls or loads meanwhile (their replies would come
 		// late and their timeouts would run out).
 		pumpSample(_now);

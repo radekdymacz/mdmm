@@ -245,6 +245,9 @@ namespace mmDesk
 		// 0.3.4: cable speed only while the sequencer plays
 		m_stream.setPlaying(m_playing, _now);
 		m_stream.pump(_now);
+		// liveErase: no word from the page that Delete is still held: EXIT up
+		if(m_exitHeld && _now - m_exitSeenMs > g_eraseQuietMs)
+			releaseExit();
 		pumpSequence(_now);
 		// The emulator takes requests once its start screen is gone; over HW MIDI the status polls
 		// are what finds the machine.
@@ -297,15 +300,19 @@ namespace mmDesk
 	{
 		if(!m_tel.valid)
 			return;
-		const auto due = telemetryDue(m_telemetryOut, m_tel.step, m_playing, _recordChanged, _now, g_telemetryMinMs);
+		// STEP RECORDING: the cursor (RAM) moves without the playhead; a move is news too
+		const int cursor = m_tel.recording == 3 ? m_tel.stepCursor : -1;
+		const auto due = telemetryDue(m_telemetryOut, m_tel.step, m_playing, _recordChanged || cursor != m_stepCursorSent, _now, g_telemetryMinMs);
 		if(!due)
 			return;
 		m_telemetryOut = *due;
-		static const char* modes[] = {"off", "grid", "live"};
+		m_stepCursorSent = cursor;
+		static const char* modes[] = {"off", "grid", "live", "step"};
 		Value t = Value::object();
 		t.set("step", m_tel.step);
 		t.set("playing", m_playing);
-		t.set("record", m_tel.recording < 0 || m_tel.recording > 2 ? Value() : Value(modes[m_tel.recording]));
+		t.set("record", m_tel.recording < 0 || m_tel.recording > 3 ? Value() : Value(modes[m_tel.recording]));
+		t.set("stepAt", cursor >= 0 ? Value(cursor) : Value());
 		const int row = m_songRow.update(m_tel.songRow, m_tel.step, m_playing);
 		t.set("songRow", row >= 0 ? Value(row) : Value());
 		publishTelemetry(std::move(t));
