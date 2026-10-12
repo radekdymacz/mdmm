@@ -1420,8 +1420,23 @@ namespace mdDesk
 			"names back over MIDI.");
 	}
 
+	// B-098 (the 0.6 e2e run, 2026-10-13): after the emulated machine starts, its working song (the one SONG mode plays) holds
+	// nothing until a LOAD SONG, although it reports the song slot it last had: factory memory, SONG mode, PLAY: no step
+	// moves; PLAY after LOAD SONG of that slot plays it (mdDeskFirmwareTest factorysong). Every Load on the page sends LOAD
+	// SONG, so only a play before any Load met it. Until the session has sent one, SONG mode and a song play load the
+	// current slot first (the editor's song edits always go into the slot, so nothing of the working song is lost).
+	bool MdMachine::songNotLoaded() const
+	{
+		return m_profile.memory && !m_session.songLoaded() && m_session.state().song && !m_telemetry.playing && canSendSysex();
+	}
+
 	Outcome MdMachine::cmdPlay(const Value&, const Documents& _view)
 	{
+		if(m_port.pressKey && m_session.state().songMode == true && songNotLoaded())
+		{
+			runSequence({{Act::LoadSong, *m_session.state().song, deskCore::Wait::StatusReply, 0, 1000}, {Act::Play}});
+			return ok();
+		}
 		if(!pressKey("play"))
 			return refuse("Transport keys need the local emulated machine");
 		// P7: a machine that follows the host's clock (in a DAW) plays with the host's transport
@@ -1482,6 +1497,8 @@ namespace mdDesk
 		if(!canSendSysex())
 			return refuse("This engine cannot send SysEx to the machine.");
 		const bool song = flagOf(_m, "song");
+		if(song && songNotLoaded())
+			m_session.loadSong(*m_session.state().song);	// B-098
 		sendSysex(ed::mdSetStatus(ed::MdStatus::SequencerMode, song ? 1 : 0));
 		sendSysex(ed::mdStatusRequest(ed::MdStatus::SequencerMode));
 		return ok(song ? "SONG mode: the machine plays the song." : "PATTERN mode: the machine plays the pattern.");

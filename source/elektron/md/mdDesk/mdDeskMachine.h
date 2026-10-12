@@ -174,6 +174,8 @@ namespace mdDesk
 		void pumpChain();
 		// 0.3.5: an edited current song is heard without Reload song (pumpSongReload)
 		void pumpSongReload(double _now);
+		// B-098: the emulated machine has not loaded a song since it started (its working song is empty)
+		bool songNotLoaded() const;
 		double m_songEditedMs = -1;
 		void load(const DocRef& _ref, bool _urgent);
 		void request(const DocRef& _ref);

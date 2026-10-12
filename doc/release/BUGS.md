@@ -4,6 +4,14 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-098 · Machinedrum: the first factory song does not play when it is the first thing played after a start
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`md-real-factory-songs` alone, fresh settings); the same as B-096 (Radek: first demo song, SONG mode, PLAY does nothing).
+- **What happens:** right after the editor starts, song 1 (UW DEMO) shows as loaded; SONG, then PLAY: nothing plays, and the row's From here does nothing either. Once any song was loaded with Load, it plays.
+- **Cause:** the emulated machine starts with an empty working song (the one SONG mode plays) while it reports song 1 as its song: measured through the desk on the firmware, factory memory, SONG mode, PLAY: no step moves; after LOAD SONG of that slot it plays. The page's Load sends LOAD SONG, so a song picked and loaded played; song 1 is already the machine's, so the e2e run (and a person) went straight to SONG and PLAY. Review 1's test loaded the song first and so passed.
+- **Fix (`fix/0.6-e2e-md`):** until the editor has sent a LOAD SONG since the machine started (`Session::songLoaded`), SONG mode, PLAY in SONG mode and From here first load the song the machine reports, while it is stopped (`MdMachine::songNotLoaded`; the emulated machine only: the editor's song edits always go into the slot, so nothing of the working song is lost). Test: `mdFactorySongFirmwareTest` (no Load: SONG then PLAY plays; a machine already in SONG mode at the start: PLAY plays, From here plays; then Load and PLAY), each failing without the fix; e2e `md-real-factory-songs` alone from fresh settings passes.
+- **Status:** fixed on `fix/0.6-e2e-md`; B-096 is very likely this (to confirm with Radek).
+
 ## B-097 · Both editors: a lock parameter key's count drawn over its name ("RTG·DIST")
 
 - **From:** Radek's 0.6 review, 2026-10-12 (Machinedrum, the Lock parameter panel, screenshot).
