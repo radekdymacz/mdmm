@@ -181,6 +181,19 @@ namespace
 		Clipboard clip;
 		auto r = run(docs, cmd(R"({"op":"totalLength","p":1,"v":48})"), clip);
 		check(r.errors.empty() && pat(r).scale == 2 && pat(r).length == 48, "total length sets scale and length");
+		{
+			// B-103: from 48 steps the machine's repeat runs in 32-step blocks: steps 49-64 are steps 17-32 again
+			auto d = fixtureDocs();
+			auto& q = d.patterns.at(1);
+			q.length = 48;
+			q.scale = 2;
+			q.trigs.fill(0);
+			for(const size_t st : {0, 20, 40})
+				q = ed::withTrig(q, 0, st, true);
+			const auto r2 = run(d, cmd(R"({"op":"totalLength","p":1,"v":64})"), clip);
+			check(r2.errors.empty() && pat(r2).trigs[0] == ((1ull << 0) | (1ull << 20) | (1ull << 40) | (1ull << 52))
+				&& r2.note.find("steps 17 to 32 repeat into steps 49 to 64") != std::string::npos, "48 -> 64 steps: steps 17-32 repeat into 49-64 (" + r2.note + ")");
+		}
 		r = run(docs, cmd(R"({"op":"totalLength","p":1,"v":20})"), clip);
 		check(!r.errors.empty() && r.changes.empty(), "total length 20 is refused");
 		r = run(docs, cmd(R"({"op":"length","p":1,"v":0})"), clip);

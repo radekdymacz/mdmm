@@ -2620,21 +2620,30 @@ const MdJourneys = (() => {
 		name: "md-seq-len-repeats", proves: ["MD-106"],
 		steps: [
 			go("seq"),
-			{ say: "a pattern with nothing past step 16 (› on the LCD until one), its LEN clicked round to 16", act: async (u, c) => {
-				c.p0 = currentPatternSlot(); c.moves = 0;
-				const fits = () => patDoc() && patDoc().tracks.every(t => t.trigs.every(s => s < 16)) && patDoc().tracks.some(t => t.trigs.length);
-				while (!fits() && c.moves < 12) { u.click("#patNext"); await confirmIfAsked(u); c.moves++; await until(() => !!patDoc() && currentPatternSlot() === (c.p0 + c.moves) % 128, 3000); await until(idle, 3000); }
+			/* B-103: the machine copies only when no track has a trig from the old end on, anywhere up to step 64, and LEN clicked
+			   round (32, 48, 64) copies into the later pages on the way up: so the pattern starts empty, LEN goes round to 16 on it,
+			   and the trigs are drawn on page 1 after */
+			{ say: "an empty pattern from the pattern chooser (none: Alt+Delete clears this one), its LEN clicked round to 16, three trigs drawn on page 1 of one track", within: 20000, act: async (u, c) => {
+				await until(() => Object.keys(Docs.patterns).length >= 128, 30000);
+				c.p0 = currentPatternSlot(); c.p = emptyPatternSlot();
+				if (c.p != null) { u.click("#pat"); await until(() => $all("#libpop .ps").length === 128, 4000); u.click(psq(c.p)); await confirmIfAsked(u); if (!$1("#libpop").hidden) u.key("Escape");
+					await until(() => currentPatternSlot() === c.p && !!patDoc(), 6000); await until(idle, 3000); }
 				c.n0 = V.undoCount;
+				if (c.p == null) { blur(); u.key("Delete", { alt: true }); await until(() => !hasTrigs(currentPatternSlot()), 4000); await until(idle, 3000); }
 				for (let i = 0; i < 4 && V.len !== 16; i++) { const was = V.len; u.click(l2("len")); await until(() => V.len !== was, 3000); await until(idle, 3000); }
+				c.t = soundTrack(); c.on = [0, 6, 11];
+				for (const st of c.on) { u.click(cell(c.t, st)); await sleep(150); }
+				await until(() => same(trigsOf(c.t), c.on), 4000); await until(idle, 3000);
 				c.before = patDoc().tracks.map(t => t.trigs.slice().sort((a, b) => a - b)); },
-				machine: () => ok(V.len === 16, "LEN " + V.len) },
+				machine: c => ok(V.len === 16 && same(trigsOf(c.t), c.on) && patDoc().tracks.every((t, i) => i === c.t || !t.trigs.length), `LEN ${V.len}, track ${c.t + 1} ${trigsOf(c.t)}`) },
 			{ say: "click LEN on the LCD: 32 steps, and steps 1 to 16 repeat into 17 to 32", act: u => u.click(l2("len")),
 				machine: c => { const d = patDoc(); const want = c.before.map(a => [...a, ...a.map(s => s + 16)]); const got = d?.tracks.map(t => t.trigs.slice().sort((a, b) => a - b));
-					return ok(d?.totalLength === 32 && same(got, want), `total ${d?.totalLength}, T1 ${JSON.stringify(got?.[0])} (want ${JSON.stringify(want[0])})`); },
-				screen: c => { const t = c.before.findIndex(a => a.length), s = c.before[t]?.[0]; return ok(V.len === 32 && pressed(cell(t, s + 16)), `LEN ${V.len}, track ${t + 1} step ${s + 17} ${pressed(cell(t, s + 16)) ? "lit" : "dark"}`); }, within: 6000 },
+					return ok(d?.totalLength === 32 && same(got, want), `total ${d?.totalLength}, T${c.t + 1} ${JSON.stringify(got?.[c.t])} (want ${JSON.stringify(want[c.t])})`); },
+				screen: c => ok(V.len === 32 && c.on.every(s => pressed(cell(c.t, s + 16))), `LEN ${V.len}, track ${c.t + 1} steps ${c.on.map(s => s + 17).join(" ")} ${c.on.map(s => pressed(cell(c.t, s + 16)) ? "lit" : "dark").join(" ")}`), within: 6000 },
 			{ ...undoKey, machine: c => ok(patDoc()?.totalLength === 16 && same(patDoc().tracks.map(t => t.trigs.slice().sort((a, b) => a - b)), c.before), "total " + patDoc()?.totalLength), within: 6000 }
 		],
-		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); for (let i = 0; i < (c.moves || 0); i++) { u.click("#patPrev"); await confirmIfAsked(u); await sleep(150); } }
+		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0);
+			if (c.p0 != null && currentPatternSlot() !== c.p0) { u.click("#pat"); await sleep(400); u.click(psq(c.p0)); await confirmIfAsked(u); await sleep(800); if (!$1("#libpop").hidden) u.key("Escape"); } }
 	};
 	/* MD-147: the playing song row's passes still to come (the machine's counter, telemetry songRepeats) */
 	const leftOf = () => $1("#tl .scell.ph")?.dataset.left;
