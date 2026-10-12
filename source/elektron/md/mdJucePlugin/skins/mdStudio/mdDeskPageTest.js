@@ -346,6 +346,21 @@ run(); { const before = P.renders; P.Held.begin("gv", {}); P.Held.end("gv"); run
 		all.run = runs[0]; one.run = runs[1];
 		check(P.Modifiers.fn === undefined && typeof P.Modifiers.setFn === "undefined", "no FN latch any more");
 	}
+	/* B-070: a trig removed takes its accent, slide and swing with it in the optimistic write (the core clears all
+	   three); its swing mark used to flash back until the core's result came. Also a cut: the block's swings go. */
+	{
+		P.Docs.patterns[5].tracks[3] = { trigs: [2, 5], accent: [2], slide: [2], swing: [2, 5] };
+		P.Docs.machine = machine({}); P.Overlay.clear(); P.S.tt = "trig"; P.S.sel = 3; P.setV(P.view()); sent.length = 0;
+		check(P.V.tracks[3].swing.has(2) && P.V.tracks[3].acc.has(2) && P.V.tracks[3].slide.has(2), "B-070: track 4 step 3 has a trig with swing, accent and slide");
+		P.clickSteps(stepEv(3, 2, { detail: 0 }));
+		const t4 = P.V.tracks[3];
+		check(last().op === "trig" && last().on === false, "B-070: the click removes the trig: " + args(last()));
+		check(!t4.trigs[2] && !t4.swing.has(2) && !t4.acc.has(2) && !t4.slide.has(2), "B-070: at once (before the core's answer) the step shows no swing, accent or slide");
+		check(t4.swing.has(5), "B-070: the swing on another step stays");
+		P.setSel({ t: 3, n: 1, from: 4, to: 6 }); sent.length = 0; P.selCut();
+		check(!P.V.tracks[3].trigs[5] && !P.V.tracks[3].swing.has(5), "B-070: a cut takes the swing of its steps too, at once");
+		P.clearSel(); P.Overlay.clear(); P.Docs.patterns[5].tracks[3] = { trigs: [], accent: [], slide: [], swing: [] }; P.setV(P.view());
+	}
 	delete P.Docs.patterns[5]; delete P.Docs.kits[3]; P.Overlay.clear(); P.setV(P.view());
 }
 

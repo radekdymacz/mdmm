@@ -130,6 +130,27 @@ namespace mdJucePlugin
 		return m;
 	}
 
+	elektronData::json::Value midiHeldOf(const midiIn::Notes& _notes)
+	{
+		auto m = elektronData::json::Value::object();
+		m.set("type", "midiHeld");
+		auto notes = elektronData::json::Value::array();
+		for(const auto& n : midiIn::list(_notes))
+		{
+			auto o = elektronData::json::Value::object();
+			o.set("ch", n.ch);
+			o.set("note", n.note);
+			notes.push(std::move(o));
+		}
+		m.set("notes", std::move(notes));
+		return m;
+	}
+
+	midiIn::Notes heldMidiNotesOf(AudioPluginAudioProcessor& _processor)
+	{
+		return _processor.heldMidiNotes();
+	}
+
 	void setOutputGainDb(AudioPluginAudioProcessor& _processor, const double _db)
 	{
 		_processor.setOutputGain(outputLevel::gainOfDb(_db));
@@ -334,11 +355,13 @@ namespace mdJucePlugin
 	PluginWire::PluginWire(AudioPluginAudioProcessor& _processor) : m_processor(_processor), m_wire(wireOf(_processor))
 	{
 		m_processor.getExternalMidi().set(true);
+		m_processor.midiInputsChanged();	// the held notes: from now on the machine's own MIDI comes in
 	}
 
 	PluginWire::~PluginWire()
 	{
 		m_processor.getExternalMidi().set(false);
+		m_processor.midiInputsChanged();
 	}
 
 	Availability midiOutAvailability(const DeskSession& _session)

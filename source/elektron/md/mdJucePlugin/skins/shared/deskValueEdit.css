@@ -1,0 +1,4 @@
+/* I-022: the field over a value box while a value is typed (deskValueEdit.js): the LCD's ink on the LCD's ground, over the
+   box it edits; refused input shows in the record colour until the next key */
+.vedit{position:fixed;z-index:9000;box-sizing:border-box;margin:0;padding:0 6px;border:1px solid var(--ink);border-radius:3px;background:var(--lcd);color:var(--ink);font:600 13px var(--mono);text-align:center;outline:none;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.vedit.bad{border-color:var(--rec);box-shadow:0 0 0 1px var(--rec),0 2px 8px rgba(0,0,0,.35)}

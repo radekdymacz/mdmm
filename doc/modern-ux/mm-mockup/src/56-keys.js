@@ -46,6 +46,7 @@ Keys.bind({id:"zoom-reset",short:"Zoom 100 %",scope:"any",keys:["0"],mod:"cmd",g
  ["value-fine","sound mix perform control","Values",["value"],"shift","Values","Drag: fine, a quarter as fast"],
  ["value-wheel","sound mix perform control","Values",["wheel on a value"],"","Values","One step a notch (⇧: 10)"],
  ["value-reset","sound mix perform control","Values",["double-click a value"],"","Values","Back to its default (64; a list's first entry)"],
+ ["value-type","sound mix perform control","Values",["value"],"cmd","Values","Click: type a value, then Enter (Esc: leave it as it was). Enter on a focused value does the same"],
  ["tempo-drag","any","Top bar",["tempo"],"","Transport","Drag up or down: the tempo, half a BPM a pixel (⇧: a tenth)"],
  ["lcd-value","any","LCD",["LCD value"],"","Anywhere","Click: its next value; ⇧-click the previous one; the wheel steps through them. SWING and PTRN: drag up or down"],
  ["header-menu","any","Anywhere",["right-click"],"","Anywhere","The editor's menu: zoom and window size, updates, the log folder, Developer"],

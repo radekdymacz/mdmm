@@ -543,6 +543,77 @@ const MmJourneys = (() => {
 		]
 	};
 
+	/* B-062, I-002: a key is lit while it is held, by the mouse, the computer keyboard or a MIDI keyboard (the plug-in's
+	   midiHeld), and dark when it is let go */
+	const litKeys = () => $all(".kb [data-key].dn, .kb [data-key].mi").map(k => +k.dataset.key).sort((a, b) => a - b).join(",");
+	const pdown = (q, type) => { const k = $1(q), r = k.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height * 0.8;
+		document.elementFromPoint(x, y).dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, composed: true, pointerId: 1, pointerType: "mouse", isPrimary: true, button: 0, buttons: type === "pointerdown" ? 1 : 0, clientX: x, clientY: y })); };
+	const kbKey = (type, key) => document.body.dispatchEvent(new KeyboardEvent(type, { key, code: "Key" + key.toUpperCase(), bubbles: true, cancelable: true }));
+	const kbLit = {
+		name: "mm-perform-keys-lit", proves: ["MM-050"],
+		steps: [
+			go("perform"),
+			{ say: "press a key with the mouse and hold it: it is lit", act: (u, c) => { blur(); c.k = $1('.kb .w[data-key="60"]') ? 60 : +$1(".kb .w[data-key]").dataset.key; pdown(`.kb [data-key="${c.k}"]`, "pointerdown"); },
+				screen: c => ok(litKeys() === String(c.k), "lit " + litKeys()) },
+			{ say: "let go: no key is lit (B-062)", act: (u, c) => pdown(`.kb [data-key="${c.k}"]`, "pointerup"), screen: () => ok(litKeys() === "", "lit " + litKeys()) },
+			{ say: "click a key: no key stays lit", act: (u, c) => u.click(`.kb [data-key="${c.k}"]`), screen: () => ok(litKeys() === "", "lit " + litKeys()) },
+			{ say: "hold A on the computer keyboard: its key (C3, octave 0) is lit while held", act: (u, c) => { blur(); c.a = KEYS_BASE + 12 * KB.oct; kbKey("keydown", "a"); },
+				screen: c => ok(!$1(`.kb [data-key="${c.a}"]`) || litKeys() === String(c.a), "lit " + litKeys()) },
+			{ say: "let go of A: dark", act: () => kbKey("keyup", "a"), screen: () => ok(litKeys() === "", "lit " + litKeys()) },
+			{ say: "a MIDI keyboard holds C4 and E4 on a channel the machine does not play (the plug-in's midiHeld): none lit", act: (u, c) => {
+				const g = globalNow()?.channels || {}, played = new Set([g.auto, g.multiTrig, g.multiMap, ...[0, 1, 2, 3, 4, 5].map(t => t < g.span && g.base + t <= 14 ? g.base + t : null)].filter(x => x != null && x < 16));
+				c.on = [...played][0]; c.off = [...Array(16).keys()].find(x => !played.has(x)); c.held = ns => window.gm.recv([{ type: "midiHeld", notes: ns.map(note => ({ ch: c.on, note })) }]);
+				if (c.on == null) throw new Error("the global plays no channel");
+				window.gm.recv([{ type: "midiHeld", notes: c.off == null ? [] : [{ ch: c.off, note: 60 }, { ch: c.off, note: 64 }] }]); },
+				screen: () => ok(litKeys() === "", "lit " + litKeys()) },
+			{ say: "on a channel the machine plays: both lit", act: (u, c) => c.held([60, 64]),
+				screen: () => ok(["60", "64"].every(n => !$1(`.kb [data-key="${n}"]`) || $1(`.kb [data-key="${n}"]`).classList.contains("mi")), "lit " + litKeys()) },
+			{ say: "the octave changes (the keyboard is drawn again): still lit", act: u => { u.click('[data-kboct="1"]'); u.click('[data-kboct="-1"]'); },
+				screen: () => ok(["60", "64"].every(n => !$1(`.kb [data-key="${n}"]`) || $1(`.kb [data-key="${n}"]`).classList.contains("mi")), "lit " + litKeys()) },
+			{ say: "it lets go of C4: only E4 lit", act: (u, c) => c.held([64]),
+				screen: () => ok(!$1('.kb [data-key="60"]')?.classList.contains("mi") && (!$1('.kb [data-key="64"]') || $1('.kb [data-key="64"]').classList.contains("mi")), "lit " + litKeys()) },
+			{ say: "and of E4: none lit", act: (u, c) => c.held([]), screen: () => ok(litKeys() === "", "lit " + litKeys()) }
+		],
+		async tidy() { window.gm.recv([{ type: "midiHeld", notes: [] }]); kbKey("keyup", "a"); }
+	};
+
+	/* I-022: a value typed: ⌘-click a value box, type, Enter (one edit, one undo step); a list box takes its names; past
+	   the end is refused and the field stays; Esc leaves it; Enter on the focused box opens it again; double-click is
+	   still the default */
+	const field = () => $1("input.vedit");
+	const typeIn = (u, text) => { const f = field(); if (!f) throw new Error("no value field"); f.value = text; u.key("Enter"); };
+	const typeValue = {
+		name: "mm-sound-type-value", proves: ["MM-015"],
+		steps: [
+			go("sound"), sel(0),
+			{ say: "⌘-click a filter value: a field over it with the value it shows", act: (u, c) => {
+				const el = $1('#main .pc[data-g="FLT"]') || $1('#main .pc[data-g="AMP"]'); if (!el) throw new Error("no FLT or AMP value");
+				c.g = el.dataset.g; c.i = +el.dataset.n; c.pg = PAGES.indexOf(c.g); c.q = `#main .pc[data-g="${c.g}"][data-n="${c.i}"]`;
+				c.v0 = wk().tracks[0].pages[c.pg][c.i]; c.txt0 = valueText(c.q); c.max = maxOf(ref(el)[2]); c.signed = !!ref(el)[2].signed;
+				u.click(c.q, { cmd: true }); },
+				screen: c => ok(!!field() && field().value === c.txt0 && document.activeElement === field(), "field " + field()?.value + ", shows " + c.txt0) },
+			{ say: "type a value and press Enter: the box shows it, the machine has it", act: (u, c) => { c.t1 = c.signed ? (c.txt0 === "+20" ? "-20" : "+20") : (c.txt0 === "100" ? "20" : "100"); typeIn(u, c.t1); },
+				screen: c => ok(!field() && valueText(c.q) === c.t1, "shows " + valueText(c.q)), machine: c => ok(wk().tracks[0].pages[c.pg][c.i] !== c.v0, "kit value " + wk().tracks[0].pages[c.pg][c.i]), within: 8000 },
+			{ say: "⌘-click it again and type 999: refused, the field stays, nothing sent", act: (u, c) => { c.v1 = wk().tracks[0].pages[c.pg][c.i]; u.click(c.q, { cmd: true }); typeIn(u, "999"); },
+				screen: c => ok(!!field() && field().classList.contains("bad") && valueText(c.q) === c.t1, "field " + field()?.className), machine: c => ok(wk().tracks[0].pages[c.pg][c.i] === c.v1, "kit value " + wk().tracks[0].pages[c.pg][c.i]) },
+			{ say: "press Esc: the field goes, the value as it was", act: u => u.key("Escape"), screen: c => ok(!field() && valueText(c.q) === c.t1 && document.activeElement === $1(c.q), "shows " + valueText(c.q)) },
+			{ say: "press Enter on the box (it has the focus): the field again", act: u => u.key("Enter"), screen: () => ok(!!field(), "no field") },
+			{ say: "press Esc, then double-click the box: its default, as before", act: (u, c) => { u.key("Escape"); u.dblclick(c.q); }, screen: c => ok(!field() && valueText(c.q) === (c.signed ? "0" : "64"), "shows " + valueText(c.q)), within: 8000 },
+			{ say: "Cmd+Z: the double-click undone", act: u => u.key("z", { cmd: true }), screen: c => ok(valueText(c.q) === c.t1, "shows " + valueText(c.q)), within: 8000 },
+			{ ...undoKey, say: "Cmd+Z once more: the typed value undone in one step", screen: c => ok(valueText(c.q) === c.txt0, "shows " + valueText(c.q)), machine: c => ok(wk().tracks[0].pages[c.pg][c.i] === c.v0, "kit value " + wk().tracks[0].pages[c.pg][c.i]), within: 8000 },
+			{ say: "⌘-click a value that shows names (a list) and type another of its names in small letters: that one", act: (u, c) => {
+				const el = $all('#main .pc[data-g]').find(e => PAGES.includes(e.dataset.g) && (ref(e)?.[2]?.en?.length || 0) > 2); if (!el) throw new Error("no value with names on Sound");
+				c.lg = el.dataset.g; c.li = +el.dataset.n; c.lq = `#main .pc[data-g="${c.lg}"][data-n="${c.li}"]`; c.lpg = PAGES.indexOf(c.lg); c.en = ref(el)[2].en;
+				c.l0 = wk().tracks[0].pages[c.lpg][c.li]; c.ltxt0 = valueText(c.lq); c.lt = c.en.find((x, k) => x !== c.ltxt0 && c.en.indexOf(x) === k && /[a-z]/i.test(x));
+				u.click(c.lq, { cmd: true }); typeIn(u, c.lt.toLowerCase()); },
+				screen: c => ok(!field() && valueText(c.lq) === c.lt, `${c.lg} ${c.li} shows ${valueText(c.lq)}, typed ${c.lt}`), machine: c => ok(wk().tracks[0].pages[c.lpg][c.li] !== c.l0, "kit value " + wk().tracks[0].pages[c.lpg][c.li]), within: 8000 },
+			{ say: "a name it does not have: refused, with its names", act: (u, c) => { u.click(c.lq, { cmd: true }); typeIn(u, "wobble"); },
+				screen: c => ok(!!field() && field().classList.contains("bad") && field().title.includes(c.en[0]), "title " + field()?.title) },
+			{ say: "Esc, then Cmd+Z: as it was", act: u => { u.key("Escape"); u.key("z", { cmd: true }); }, screen: c => ok(valueText(c.lq) === c.ltxt0, "shows " + valueText(c.lq)), machine: c => ok(wk().tracks[0].pages[c.lpg][c.li] === c.l0, "kit value " + wk().tracks[0].pages[c.lpg][c.li]), within: 8000 }
+		],
+		async tidy() { if (field()) ValueEdit.close(); }
+	};
+
 	/* ---------- Song ---------- */
 	const songDoc = () => I().doc("song", S().songs?.slot ?? machine().song?.current ?? 0);
 	const songRows = {
@@ -1971,7 +2042,7 @@ const MmJourneys = (() => {
 	};
 	const all = [bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff,
-		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
+		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, mutScope,
 		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,

@@ -155,7 +155,7 @@ The track takes the copied machine, values, level and LFO. The LFO now targets t
 All parameters of the track, its effects and its routing go back to neutral values, and its level goes to 100. The track keeps its machine. Press {key:undo} to take the clear back.
 
 ## MACHINE PARAMETER EDITING
-<!-- rows: MD-054 @f4ea1f -->
+<!-- rows: MD-054 @783241 -->
 
 The Sound workspace shows the selected track's parameters in groups. Each group has a title, a small screen and value boxes. Every knob of the machine sits in one group.
 
@@ -170,3 +170,5 @@ Machines without a picture, such as MIDI out, show only boxes and a line about w
 ![A machine's groups](shot:md-sound-groups)
 
 Hold [⌥] and drag a value to move the same knob on every track. This is Control All. MIDI and control machines are left out.
+
+TIP: To set an exact value, hold [⌘] and click the box, type the value and press [ENTER]. A box that shows a sign, such as **PAN**, takes -64 to +63. A value past the ends is refused: the field turns red and says the range, and stays open until you correct it or press [ESC]. Each typed value is one undo step.
