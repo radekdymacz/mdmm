@@ -222,20 +222,20 @@ Method: manual read in full; claims checked against the page files (`source/elek
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
-| p.57 | 8 global slots | Switch set-up | ✅ | GLOBAL panel (GLOBAL key in the top bar, or GLOBAL… in the engine menu): slot buttons 1-8 | Panel frame shared with the Monomachine Editor (skins/shared/deskGlobal.js). | – |
+| p.57 | 8 global slots | Switch set-up | ✅ | GLOBAL page (the GLOBAL key in the top bar, or GLOBAL… in the engine menu): slot keys 1-8; Copy · Paste · Clear of the active slot | Page shared with the Monomachine Editor (skins/shared/deskGlobal.js). Copy and Paste are the editor's (the machine's menu has none); Clear is the factory global. | 2 |
 | p.57 | Turbo menu (speed negotiation) | TurboMIDI | ➖ |  | Emulator and wire use their own pacing. | – |
 | p.59 | Base channel (1-4 ... 13-16, OFF) | MIDI channels | ✅ | GLOBAL > Control |  | 1 |
 | p.59 | Map editor: group TRACK | Note to track | ✅ | GLOBAL > Map editor, 16 track keys |  | – |
 | p.59 | Map editor: group PAT A-H | Note to pattern | ✅ | GLOBAL > Map a note |  | 1 |
 | p.60 | Map editor: group CTRL (start, stop) | Note to transport | ✅ | GLOBAL > Map a note |  | 1 |
 | p.60 | Map editor: TRIG GATE / START / QUE | Pattern trig mode | ✅ | GLOBAL > Pattern trig |  | – |
-| p.60 | Assign a note by playing it on a keyboard | MIDI learn of notes | ❌ | None | Choose the note with the stepper. | – |
+| p.60 | Assign a note by playing it on a keyboard | MIDI learn of notes | ✅ | GLOBAL > Map editor: the LEARN dot on a track's key, then play the note on a MIDI keyboard | Any channel; the note comes in through the plug-in's MIDI in (the host's or a port: the midiIn message). | 1 |
 | p.60 | Local control | LOCAL CTRL | ✅ | GLOBAL > Control | Marked 'not verified' in emulator. | – |
 | p.61 | Program change OFF / IN / OUT | PRG CHANGE | ✅ | GLOBAL > Prg change in / out |  | – |
 | p.61 | Program change channel | Channel | ✅ | GLOBAL > Prg channel |  | – |
 | p.61 | Encoder resolution 24 / 32 (MKII) | MECH SETTINGS | ➖ |  | No knobs. | – |
 | p.62 | Output routing, tracks to A-F or MAIN | OUTPUT | ✅ | GLOBAL > Routing; Mix OUT key |  | 2 |
-| p.63 | Trig in A/B: GATE, SENS, VMIN, VMAX, DEST | External pads | 🟡 | GLOBAL > Trig in A / B (read-only table) | Shown as stored, not editable. Measured (P3): the ten bytes, their order and ranges are known, and a SysEx global sets them. | – |
+| p.63 | Trig in A/B: GATE, SENS, VMIN, VMAX, DEST | External pads | ✅ | GLOBAL > Trig in A / B: Gate, Sens, Vmin, Vmax and Dest of each input (− / +, Shift: 10) | The bytes measured (P3). The emulator has no trig inputs, so what the values do to a pulse is not verified there. | 1 |
 | p.64 | Sysex send all data | Backup | ✅ | Engine menu: EXPORT SYSEX…, All ticked (the default): every kit, pattern, song and global the editor holds as one .syx |  | 1 |
 | p.66 | Global sysex send (all or one slot) | Send globals | ✅ | Export SysEx…: untick All, tick Globals, set the range G1 to G8 (one slot or all) |  | 1 |
 | p.66 | Song + pattern (+ kit) sysex send, range | Send songs | ✅ | Export SysEx…: untick All, tick Songs (and Patterns, Kits), each with its own range | The kinds are chosen one by one: a song range does not add its patterns by itself. | 1 |
@@ -379,7 +379,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.C-2 | Set track routing 0x5c | Outputs | ✅ | Mix OUT; GLOBAL Routing |  | – |
 | p.C-2 | Echo / gate / EQ / dynamix params 0x5d-0x60 | Master FX | ✅ | Mix cards |  | – |
 | p.C-3 | Set tempo 0x61; set LFO 0x62 | Tempo, LFO | ✅ | LCD tempo; Sound LFO |  | – |
-| p.C-3 | Reset MIDI note map 0x64 | Defaults | 🟡 | GLOBAL panel: Reset to defaults | Writes the whole factory global (note map, channels, sync), asked first (mdDeskEdit.cpp globalReset; skins/shared/deskGlobal.js). No note-map-only reset. | – |
+| p.C-3 | Reset MIDI note map 0x64 | Defaults | ✅ | GLOBAL > Map editor > Reset map (asked first; Undo) | Writes Elektron's map in a global dump: the map 0x64 leaves (mdDeskFirmwareTest factoryglobal checks both). | 1 |
 | p.C-3 | Trig group 0x65; mute group 0x66 | Relations | ✅ | Sound > Relations |  | – |
 | p.C-3 | Pattern dump 0x67 / request 0x68 | Pattern | ✅ | Whole page |  | – |
 | p.C-3 | Song dump 0x69 / request 0x6a; load song 0x6c | Song | ✅ | Song page |  | – |
@@ -392,13 +392,13 @@ Method: manual read in full; claims checked against the page files (`source/elek
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 250 |
-| 🟡 Partial | 18 |
-| ❌ No | 12 |
+| ✅ Yes | 253 |
+| 🟡 Partial | 16 |
+| ❌ No | 11 |
 | ➖ Not applicable | 16 |
 | Total | 296 |
 
-Of the 280 applicable rows, 250 are fully covered, 18 partly, 12 not at all.
+Of the 280 applicable rows, 253 are fully covered, 16 partly, 11 not at all.
 
 ### Top gaps (our UI), most important first
 
@@ -413,4 +413,4 @@ Of the 280 applicable rows, 250 are fully covered, 18 partly, 12 not at all.
 9. **Accent / slide ALL vs per-track flag** cannot be changed, only honoured (§8).
 10. **Pause, panic (double STOP), reset menu** (empty / factory / soft reset) (§1, §12).
 
-Extras the manual does not have (not counted): GEN rhythm generators, MUTATE, solo, step selection with cut, duplicate and select all, the step menu with fill every 2nd / 4th, the keyboard view (?), GLOBAL Reset to defaults, undo/redo across edits, app modulators, MIDI learn, HW MIDI engine, waveform editors for ROM/RAM samples.
+Extras the manual does not have (not counted): GEN rhythm generators, MUTATE, solo, step selection with cut, duplicate and select all, the step menu with fill every 2nd / 4th, the keyboard view (?), GLOBAL Clear, undo/redo across edits, app modulators, MIDI learn, HW MIDI engine, waveform editors for ROM/RAM samples.

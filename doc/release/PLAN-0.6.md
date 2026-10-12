@@ -18,16 +18,20 @@ agents at once; Radek tests the whole release at the end from doc/release/TEST-0
 markers: resolve, grep for `<<<<<<<`, then commit, as separate steps.
 
 **Merged into `feat/0.6-features`** (each reviewed, tier 2 green): wave P (probes, doc/modern-ux/PROBES-manual-gaps.md,
-B-069), wave 1 song slots, wave 2 transport, wave 3 trig types and marks, wave 4 copy / paste / clear what, the top-bar
+B-069), wave 1 song slots, wave 2 transport, wave 3 trig types and marks, wave 4 copy / paste / clear what, wave 5 GLOBAL page (2026-10-12, review fixes 4bcacdd4e), the top-bar
 and LCD fit (B-061, B-065, B-066), the volume-strip fix; the feature data, journey links and guide (slices 1-4).
 
 **Pushed, not merged** (each its own worktree under `audio/gearmulator-md-mm-wt/`):
 
 | Branch | State | Next step |
 |---|---|---|
-| `feat/0.6-global` (wave 5) | built, tier 2 green on its own base; review not done | merge `feat/0.6-features` into it (conflicts in generated files: regenerate with `node scripts/mdmm-guide.mjs`); review with care `jucePluginLib/processor.*` (the new `midiIn` note message: audio thread, callAsync guard, MIDI floods) and `deskModal` (new `page` kind); tier 2; merge. Decision for Radek at the end: "Reset to defaults" renamed **Clear** (the mock-up had both) |
 | `feat/0.6-sysex` (wave 6) | core committed (c118e4fa7); page, journeys and mock-up in one unchecked WIP commit (d880b0c67) | finish the page and MD journeys, rows, guide; tier 1 and 2; review; merge |
 | `feat/0.6-recording` (wave 7) | probes, MD live erase, MM step recording and live erase in the core, firmware tests, stub host: 5 commits; page, journeys, rows and guide not done; its step 0 (tier 1 on the combined base after waves 2 + 4) has no recorded result | run step 0 on `feat/0.6-features`, then the page part, tiers, review, merge |
+
+**Wave 11 (added 2026-10-12, I-024):** machine memory that stays for every new session, way A: one memory file per
+machine in the editor's user folder; a session with no project state starts from it; each save on the machine (kit,
+pattern, song, global) writes it; a DAW project still opens with its own memory; a menu item starts from factory memory;
+a setting turns it off. Two instances of one machine: the last save wins (say so in the guide). Branch `feat/0.6-memory`.
 
 **Not started:** wave 8 (MD LEV on Mix, machine audition), wave 9 (MM Perform: see and set up, B-064: mock-up and
 self-review against Radek's UI rules first), wave 10 (MM MKII look, I-023: colours sampled in IDEAS.md I-023; the

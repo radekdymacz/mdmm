@@ -3,29 +3,41 @@
 
 The global settings are the machine's own settings. They hold the MIDI channels, the map of notes to tracks and patterns, program change, the output of each track and the sync. They belong to the machine, not to a pattern or a kit.
 
-In the editor they sit in the **GLOBAL** panel.
+In the editor they sit on the **GLOBAL** page. The page covers the workspace under the header. The header stays as it is.
 
-![The GLOBAL panel](shot:md-global-panel)
+![The GLOBAL page](shot:md-global-panel)
 
 ## GLOBAL SETTINGS
-<!-- rows: MD-162 @a1609f -->
+<!-- rows: MD-162 @898b67 -->
 
 The machine keeps 8 globals. One is active. On the machine you open the settings with [FUNCTION] and [PATTERN/SONG].
 
-To open the panel:
+To open the page:
 
 1. Click **GLOBAL** in the top bar. Or choose **GLOBAL…** in the engine menu, the menu you open from the engine name on the LCD.
-2. The header reads GLOBAL and the number of the active global. The keys 1 to 8 are the 8 globals. The lit key is the active one.
+2. The page opens under the header. Its head reads GLOBAL and the number of the active global. The keys 1 to 8 are the 8 globals. The lit key is the active one.
 3. Click a key to make that global the active one.
-4. Press {key:close-global}, or click **GLOBAL** again, to close the panel. A click outside it closes it too.
+4. Press {key:close-global}, click **GLOBAL** again, or click the key at the right of the head, to go back to the workspace. A click on a workspace key goes to that workspace.
 
 Every change is stored in the active global and made active at once. There is nothing to save.
 
-To put the active global back to how the machine shipped, click **Reset to defaults**. The editor asks first. Click **Reset** to go on, or **Cancel**.
+The page has five cards: **Control**, **Sync**, **Trig in A / B**, **Map editor** and **Routing**.
 
-The panel has five cards: **Control**, **Sync**, **Trig in A / B**, **Map editor** and **Routing**.
+NOTE: A setting that the editor could not check on the emulated machine is marked "not verified" on the page.
 
-NOTE: A setting that the editor could not check on the emulated machine is marked "not verified" in the panel.
+### Copy, paste and clear a global
+
+The head has the keys **Copy**, **Paste** and **Clear**. They act on the active global.
+
+1. Click **Copy**. The editor keeps all the settings of the active global. **Paste** is now on.
+2. Click the key of another global to make it active.
+3. Click **Paste**. The editor asks first, because the settings of that global are replaced. Click **Paste** to go on, or **Cancel**.
+
+To put the active global back to how the machine shipped, click **Clear**. The editor asks first. Click **Clear** to go on, or **Cancel**.
+
+Undo takes back a paste or a clear, as any other edit.
+
+NOTE: The machine's own global menu has no copy or paste. In the editor you copy a whole global from one slot to another.
 
 ## TURBO MENU
 <!-- rows: MD-163 @8ce582 -->
@@ -42,7 +54,7 @@ In the **Control** card, click **−** or **+** beside **Base channel**. The val
 NOTE: When the global holds a base channel of OFF, the card reads OFF. The machine then takes no notes, mutes or sound values over MIDI, and the editor cannot play it.
 
 ## MAP EDITOR
-<!-- rows: MD-165 MD-166 MD-167 MD-168 MD-169 @6dc910 -->
+<!-- rows: MD-165 MD-166 MD-167 MD-168 MD-169 MD-289 @1d66e4 -->
 
 The map editor says which MIDI note plays what. A note can play a track, start a pattern, or start or stop the machine. The **Map editor** card has the sixteen track keys and the controls for the other notes.
 
@@ -65,7 +77,26 @@ Beside **Pattern trig**, click one of:
 - **START**: the pattern starts at once.
 - **QUE**: the pattern starts at the end of the pattern that plays.
 
-{gap:MD-169}You cannot give a note by playing it on a keyboard in the editor yet. Choose the note with the **‹** and **›** keys.{/gap}
+### Learn a note from a keyboard
+
+You can give a track its note by playing the note on a MIDI keyboard, as you do on the machine.
+
+1. Connect the keyboard to the MIDI input of the editor: the MIDI input of the standalone, or the MIDI track of the plug-in in your DAW.
+2. Click the round dot beside the name of a track key, for example TRACK 3. The dot lights. The head of the card reads LEARN and the track.
+3. Play a note on the keyboard. The note now plays the track, and the dot goes out. The key shows the note.
+
+Click the lit dot again to stop without a note. Going back to the workspace stops it too.
+
+NOTE: The editor takes the note on any MIDI channel.
+
+### Reset the map
+
+1. Click **Reset map** in the head of the **Map editor** card.
+2. The editor asks first. Click **Reset map** to go on, or **Cancel**.
+
+The map goes back to the one Elektron gives the machine: the tracks from C2, the patterns from E4. The rest of the global stays. Undo brings your map back.
+
+NOTE: It is the map that the SysEx message Reset MIDI note map leaves on the machine.
 
 ## LOCAL CONTROL
 <!-- rows: MD-170 @aaf210 -->
@@ -98,11 +129,16 @@ In the **Routing** card the sixteen keys show the output of each track: MAIN, or
 You can also click **OUT** on the strip of the track in the **Mix** workspace. Delay and reverb sends reach only the main outputs, so a track on an individual output keeps those values but does not use them.
 
 ## TRIG
-<!-- rows: MD-175 @32b1b8 -->
+<!-- rows: MD-175 @d7e7c3 -->
 
-The two trig inputs of the machine turn the pulses of a pad into notes. The **Trig in A / B** card shows what the global holds for each input: **Gate**, **Sens**, **Vmin**, **Vmax** and **Dest**.
+The two trig inputs of the machine turn the pulses of a pad into notes. On the machine they are in the ROUTING menu. The **Trig in A / B** card has a row for each input, **A** and **B**, with five values:
 
-{gap:MD-175}The card shows these values as they are stored. You cannot change them in the editor yet. They are marked "not verified".{/gap}
+- **Gate**, **Sens**, **Vmin** and **Vmax**: 0 to 127.
+- **Dest**: the track a pulse plays, T1 to T16, or - for none.
+
+To change a value, click **‹** or **›** beside it. Hold [⇧] and click to move it by 10. **Dest** runs from - to T1, T2 and up to T16, as the knob of the machine does.
+
+NOTE: The emulated machine has no trig inputs. The values are stored in the global and sent to a real machine, but what they do to a pulse could not be checked. The card is marked "not verified".
 
 ## ALL DATA SYSEX SEND
 <!-- rows: MD-176 @6e8617 -->

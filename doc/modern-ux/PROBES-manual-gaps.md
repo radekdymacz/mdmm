@@ -8,7 +8,7 @@
 
   ```sh
   scripts/mdmm-dev.sh build gapProbesFirmwareTest
-  temp/dev/source/elektron/md/mdLibTest/gapProbesFirmwareTest --env --env all   # or p1md p1mm p2 p2panel p3 p4 p5 p6 p6b
+  temp/dev/source/elektron/md/mdLibTest/gapProbesFirmwareTest --env --env all   # or p1md p1mm p2 p2panel p3 p4 p5 p6 p6b p7 p8
   ```
 
   `--env` takes the ROM from `GEARMULATOR_MD_FIRMWARE_BIN` / `GEARMULATOR_MM_FIRMWARE_BIN`; a path works too, `-`
@@ -29,6 +29,7 @@
 | P1b | After the panel's PLAY: does MIDI Stop + Continue pause, and is PLAY while playing a pause | MIDI Stop + Continue goes on from the step on both, pattern and song mode. The panel's PLAY pauses; PLAY again goes on in pattern mode, starts the row again in song mode | wave 2 |
 | P5 MM | MM: what silences held notes | CC 123 lets them go (as note offs: the release rings); CC 120 and MIDI Stop do nothing; the panel's STOP lets them go too | wave 2 |
 | P7 | MD: which tracks take the EDIT ALL row (`gapProbesFirmwareTest p7`) | Every track. `editAll` is a flag (any nonzero is ALL), not a track mask; per track only the own row counts | wave 3 |
+| P8 | MM: the range of GLOBAL > AUDIO > MASTER TUNE (`gapProbesFirmwareTest p8`, wave 5) | 4000 to 4999 tenths of Hz (400.0 to 499.9 Hz); UP / DOWN 1 Hz, RIGHT / LEFT 0.1 Hz | wave 5 |
 
 ## P1: Song Position Pointer and Continue
 
@@ -242,3 +243,14 @@ pattern dump, LOAD PATTERN, PLAY, the level of the first 300 ms (plain 0.172, ac
 So ALL reaches every track and there is no per-track setting of which tracks take the row. Wave 3 builds the EDIT ALL
 switch (`markMode`, All tracks · This track) and leaves out the design's track dots (`markTrack`): there is nothing in
 the pattern for them to set.
+
+## P8: MM MASTER TUNE, its range (wave 5, 2026-10-12)
+
+`gapProbesFirmwareTest - <MM ROM> p8`: the panel opens GLOBAL > AUDIO > MASTER TUNE (`f+kit,enter,right,enter`;
+`P8_NAV` for other keys) and the global's `masterTune` (bytes 0x106-0x107, tenths of Hz) is read after each key.
+
+- UP and DOWN move it 10 (1.0 Hz), RIGHT and LEFT 1 (0.1 Hz), from the factory 4400 (440.0 Hz).
+- DOWN 60 times stops at 4000 (400.0 Hz); UP 120 times stops at 4999 (499.9 Hz).
+
+So the editor's `masterTune` takes 4000 to 4999; a value the panel cannot reach is refused. What the tune does to the
+pitch was not measured (the machine's own setting, read back by `mmIntentCasesFirmwareTest`).
