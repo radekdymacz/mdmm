@@ -67,6 +67,8 @@ namespace mmDesk
 		deskCore::Outcome askFor(const Value& _command, const Documents& _view) override;
 		void onSysex(const Bytes& _message) override;
 		void tick(double _nowMs, const Documents& _view) override;
+		// a page that came back does not hold Delete: EXIT up
+		void pageReady() override { releaseExit(); }
 		Value state(const Documents& _view) const override;
 		Value status() const override;
 		deskCore::Capabilities capabilities() const override;
@@ -300,6 +302,11 @@ namespace mmDesk
 		deskCore::FieldExpectation<int> m_expectTempo;
 		RecordReads m_recordReads;		// RECORD's read-backs (watchRecord)
 		bool m_exitHeld = false;		// liveErase: EXIT is down on the panel
+		double m_exitSeenMs = 0;
+		int m_eraseTrack = -1;			// liveErase: the track in focus while EXIT is held		// liveErase: the page's last word that the key is still held
+		// liveErase: the page says the key is still held every 250 ms; without word for this long EXIT is let go (a page that
+		// went away, reloaded or died while Delete was held)
+		static constexpr double g_eraseQuietMs = 1000;
 		int m_stepCursorSent = -1;		// STEP RECORDING: the cursor the last transport message said
 		struct RecLock { int track = 0, param = 0, step = 0; double atMs = 0; };
 		std::optional<RecLock> m_recLock;	// the step the last value sent while LIVE RECORDING locks (noteRecLock)

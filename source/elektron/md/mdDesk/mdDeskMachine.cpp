@@ -1001,6 +1001,7 @@ namespace mdDesk
 		if(!m_telemetry.recording)
 			return refuse("Not recording: erase works while live recording plays.");
 		const auto t = static_cast<uint8_t>(*intOf(_m, "t"));
+		m_eraseSeenMs = now();
 		if(m_erasing == t)
 			return ok();
 		if(m_erasing)
@@ -1904,6 +1905,8 @@ namespace mdDesk
 
 	void MdMachine::pageReady()
 	{
+		// a page that came back does not hold Delete
+		releaseErase();
 		if(m_profile.wire || m_probe == Probe::Running)
 		{
 			m_session.requestStatus();
@@ -1923,6 +1926,9 @@ namespace mdDesk
 		// 0.3.4: cable speed only while the sequencer plays (a machine without telemetry counts as playing)
 		m_out.setPlaying(!m_telemetry.valid || m_telemetry.playing, _now);
 		m_out.pump(_now);
+		// liveErase: no word from the page that Delete is still held: let the keys go
+		if(m_erasing && _now - m_eraseSeenMs > g_eraseQuietMs)
+			releaseErase();
 		// A sample on its way owns the wire: no status polls or loads meanwhile (their replies would come
 		// late and their timeouts would run out).
 		pumpSample(_now);

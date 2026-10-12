@@ -50,40 +50,45 @@ function playFromRow(i=S.songSel){if(NA.playFrom){toast(NA.playFrom);return}cons
  toast(`Plays the song from row ${String(i+1).padStart(3,"0")}.`)}
 
 /* ===== Wave 7: recording on the Monomachine (manual 1-49, 1-50) =====
-   STEP RECORDING: ⇧-click REC (stopped; also the ▶ menu). The machine writes the focus track only: the selected synth
-   track, moved with the selection. A note played (the home row, the roll's keys) writes the step under the cursor and
-   moves on; → a rest, ← back, Delete clears the step, Esc done. The cursor is the machine's (S.stepAt, from the host).
+   STEP RECORDING: ⇧-click REC (stopped; also the ▶ menu). The REC key shows STEP and a cursor marks the step on the roll
+   (no row of its own: the layout stays); the words are the toast's and the REC key's title. The machine writes the focus
+   track only: the selected synth track, moved when the selection changes (select(), 130-main.js). A note played (the home
+   row, the roll's keys) writes the step under the cursor and moves on; → a rest, ← back, Delete clears the step, Esc
+   done. A step selection is dropped when it starts, and the selection's keys stand aside while it runs (77-select.js).
+   The cursor is the machine's (S.stepAt, from the host).
    Live erase: Delete held while LIVE RECORDING plays is EXIT held on the machine; the selected track's notes go as they
-   pass. Let go (or the window loses the keys): EXIT up. With a host each is HOST.transport(op, args); on its own the
-   example moves its own cursor. */
+   pass. Let go (or the window loses the keys): EXIT up. While held the page says so every 250 ms: the core lets EXIT go
+   when that stops (a page that went away while Delete was down). With a host each is HOST.transport(op, args); on its
+   own the example moves its own cursor. */
 const stepOn=()=>S.recMode==="step";
 function stepRecord(){
  if(NA.gridRecord){toast(NA.gridRecord);return}
  if(stepOn()){stepDone();return}
  if(S.playing||S.paused){toast("Stop first: step recording starts while the machine is stopped.");return}
+ if(S.stepSel)clearSel();
  const t=isMidiT(S.sel)?0:S.sel;S.stepT=t;
  if(HOST.transport){transportCmd("record",{mode:"step",t});return}
- setRecord("step",0);toast("STEP RECORDING: play a note to write it to the step, then the next. → a rest, ← back, Delete clears the step, Esc done.")}
+ setRecord("step",0);toast("STEP RECORDING: play a note to write it to the step, then the next. → a rest, ← back, Delete clears the step, Esc: done.")}
 function stepDone(){if(!stepOn())return;if(HOST.record){HOST.record();return}setRecord("off",-1)}
 function stepKey(key){
  if(HOST.transport){transportCmd("stepKey",{key});return}
  const n=Math.max(1,S.len);S.stepAt=(S.stepAt+(key==="left"?n-1:1))%n;stepDraw()}
-/* the focus follows the selection (synth tracks only: the machine step-records its six) */
+/* the focus follows the selection (synth tracks only: the machine step-records its six); called where the track changes */
 function stepFocus(){if(!stepOn()||isMidiT(S.sel)||S.stepT===S.sel)return;S.stepT=S.sel;if(HOST.transport)transportCmd("record",{mode:"step",t:S.sel})}
-/* the banner over the roll and the cursor on it */
+/* the cursor on the roll (drawing only) */
 function stepDraw(){
- $$(".steprec,.stepcur").forEach(x=>x.remove());
+ $$(".stepcur").forEach(x=>x.remove());
  if(!stepOn()||S.ws!=="seq")return;
- stepFocus();
  const t=S.stepT??S.sel,at=S.stepAt,lane=$("#seq .nlane.big"),ru=at>=0?$(`#seq .ruler .rul[data-s="${at}"]`):null;
- if(lane&&ru){const lr=lane.getBoundingClientRect(),r=ru.getBoundingClientRect();
-  lane.insertAdjacentHTML("beforeend",`<div class="stepcur" aria-hidden="true" data-l="STEP ${String(at+1).padStart(2,"0")}" style="left:${r.left-lr.left-1}px;width:${r.width+2}px"></div>`)}
- const where=isMidiT(S.sel)?"pick a synth track: the machine step-records T1 to T6":at>=0?`step ${at+1}: play a note to write it`:"play a note to write it";
- $("#seqscroll")?.insertAdjacentHTML("beforebegin",`<div class="steprec" role="status"><span>● Step recording · ${tLabel(t)} · ${where}</span><kbd>→</kbd> rest <kbd>←</kbd> back <kbd>Delete</kbd> clear step <kbd>Esc</kbd> done</div>`)}
-const ERASE={t:null};
+ if(!lane||!ru)return;
+ const lr=lane.getBoundingClientRect(),r=ru.getBoundingClientRect();
+ lane.insertAdjacentHTML("beforeend",`<div class="stepcur" aria-hidden="true" data-l="${tLabel(t)} · STEP ${String(at+1).padStart(2,"0")}" style="left:${r.left-lr.left-1}px;width:${r.width+2}px"></div>`)}
+const ERASE={t:null,beat:0};
 function eraseDown(e){if(e.repeat||ERASE.t===S.sel||isMidiT(S.sel))return;ERASE.t=S.sel;document.body.classList.add("erasing");
- if(HOST.transport)transportCmd("liveErase",{t:S.sel,on:true},ok=>{if(!ok)eraseUp()});else toast(`Erasing ${tLabel(S.sel)}'s notes as they play, while Delete is held.`)}
-function eraseUp(){if(ERASE.t==null)return;const t=ERASE.t;ERASE.t=null;document.body.classList.remove("erasing");if(HOST.transport)transportCmd("liveErase",{t,on:false})}
+ if(!HOST.transport){toast(`Erasing ${tLabel(S.sel)}'s notes as they play, while Delete is held.`);return}
+ transportCmd("liveErase",{t:S.sel,on:true},ok=>{if(!ok)eraseUp()});
+ clearInterval(ERASE.beat);ERASE.beat=setInterval(()=>{if(ERASE.t!=null)transportCmd("liveErase",{t:ERASE.t,on:true})},250)}
+function eraseUp(){if(ERASE.t==null)return;const t=ERASE.t;ERASE.t=null;clearInterval(ERASE.beat);document.body.classList.remove("erasing");if(HOST.transport)transportCmd("liveErase",{t,on:false})}
 document.addEventListener("keyup",e=>{if(e.key==="Delete"||e.key==="Backspace")eraseUp()});addEventListener("blur",()=>eraseUp());
 
 /* ===== keys ===== */

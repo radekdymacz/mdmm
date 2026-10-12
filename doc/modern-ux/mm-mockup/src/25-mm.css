@@ -281,12 +281,9 @@ body.dockother #rail .railparams>:is(.lpspace,.pagetabs,.pkcol),body.dockother #
 .rollmarks .rm.hov{background:color-mix(in srgb,var(--swg) 16%,transparent);box-shadow:inset 0 0 0 1.5px var(--swg)}
 html[data-tt=sld] .rollmarks .rm.hov{background:color-mix(in srgb,var(--print) 10%,transparent);box-shadow:inset 0 0 0 1.5px var(--print2)}
 html[data-tt=sld] #seq .nlane.big canvas.roll,html[data-tt=swg] #seq .nlane.big canvas.roll{cursor:cell}
-/* wave 7: STEP RECORDING (the REC key says STEP, a banner over the roll, the machine's cursor on it) and live erase */
+/* wave 7: STEP RECORDING (the REC key says STEP, the machine's cursor on the roll; no row of its own) and live erase */
 .lcdt .lt.rec.step{background:var(--ink)!important;color:var(--lcd)!important;animation:none!important}
 .lcdt .lt.rec .stepm{font:9px var(--pix);margin-left:2px}
-.steprec{display:flex;gap:10px;align-items:center;padding:6px 10px;margin:0 0 6px;border-radius:3px;background:var(--lcd);color:var(--ink);font:11px var(--pix);text-transform:uppercase}
-.steprec span{margin-right:auto}
-.steprec kbd{font:10px var(--mono);padding:2px 5px;border-radius:2px;box-shadow:inset 0 0 0 1px var(--ink);text-transform:none}
 #seq .nlane.big{position:relative}
 .stepcur{position:absolute;top:0;bottom:0;pointer-events:none;z-index:5;border:2px solid var(--led);box-shadow:0 0 0 1px var(--plate),0 0 10px 1px var(--led);border-radius:2px;animation:blink 1s steps(2) infinite}
 .stepcur::after{content:attr(data-l);position:absolute;top:2px;left:2px;font:9px var(--pix);background:var(--led);color:#fff;padding:2px 4px;border-radius:2px;white-space:nowrap}

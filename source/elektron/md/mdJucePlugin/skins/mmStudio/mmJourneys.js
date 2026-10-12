@@ -939,19 +939,23 @@ const MmJourneys = (() => {
 			go("seq"),
 			{ say: "pick a synth track whose first step is empty", act: (u, c) => { c.t = [0, 1, 2, 3, 4, 5].find(t => !trigsOf(t).includes(0)) ?? 0; c.p0 = trigsOf(c.t); u.click(rail(c.t)); }, screen: c => ok(S().sel === c.t, "selected " + S().sel),
 				machine: c => ok(!c.p0.includes(0), "every track has a note on step 1") },
-			{ say: "Shift-click RECORD (stopped): step recording, the cursor on step 1", act: u => { results.length = 0; if (S().playing) u.click("#play"); u.click("#rec", { shift: true }); },
+			{ say: "Cmd-drag over steps 5 to 7 of the roll: a step selection", act: async (u, c) => { if (S().stepSel) clearSel(); await dragRoll(u, c.t, [4, 6], { cmd: true }); }, screen: () => ok(!!S().stepSel, "nothing selected") },
+			{ say: "Shift-click RECORD (stopped): step recording, the cursor on step 1, the selection dropped, no new row above the roll", act: (u, c) => { results.length = 0; c.top = $1("#seqscroll")?.getBoundingClientRect().top; if (S().playing) u.click("#play"); u.click("#rec", { shift: true }); },
 				machine: () => ok(tele.last?.record === "step" && stepAt() === 0, `record ${tele.last?.record}, cursor ${stepAt()}; ${resultsSay()}`),
-				screen: () => ok(S().recMode === "step" && !!$1(".steprec") && !!$1(".stepcur") && $1("#rec").classList.contains("step"), "no banner, cursor or STEP key"), within: 8000 },
+				screen: c => ok(S().recMode === "step" && !S().stepSel && !!$1(".stepcur") && $1("#rec").classList.contains("step") && $1("#seqscroll")?.getBoundingClientRect().top === c.top,
+					`step ${S().recMode}, selection ${JSON.stringify(S().stepSel)}, cursor ${!!$1(".stepcur")}, roll top ${c.top} -> ${$1("#seqscroll")?.getBoundingClientRect().top}`), within: 8000 },
 			{ say: "press A: the note is written to step 1, the cursor moves on", act: u => { blur(); results.length = 0; u.key("a"); },
 				machine: c => ok(trigsOf(c.t).includes(0) && stepAt() === 1, `notes ${trigsOf(c.t).join(",")}, cursor ${stepAt()}; ${resultsSay()}`), within: 8000 },
 			{ say: "press →: a rest, the cursor on step 3", act: u => u.key("ArrowRight"), machine: c => ok(stepAt() === 2 && !trigsOf(c.t).includes(1), `cursor ${stepAt()}`), within: 5000 },
 			{ say: "press ← twice: back on step 1", act: async u => { u.key("ArrowLeft"); await until(() => stepAt() === 1, 3000); u.key("ArrowLeft"); },
-				machine: () => ok(stepAt() === 0, `cursor ${stepAt()}`), screen: () => ok($1(".stepcur")?.dataset.l === "STEP 01", "cursor shows " + $1(".stepcur")?.dataset.l), within: 6000 },
+				machine: () => ok(stepAt() === 0, `cursor ${stepAt()}`), screen: () => ok(/STEP 01$/.test($1(".stepcur")?.dataset.l || ""), "cursor shows " + $1(".stepcur")?.dataset.l), within: 6000 },
 			{ say: "press Delete: step 1 is cleared, the cursor moves on", act: u => u.key("Delete"), machine: c => ok(same(trigsOf(c.t), c.p0) && stepAt() === 1, `notes ${trigsOf(c.t).join(",")}, cursor ${stepAt()}`), within: 8000 },
-			{ say: "press Esc: done", act: u => u.key("Escape"), machine: () => ok(tele.last?.record === "off", "record " + tele.last?.record),
-				screen: () => ok(S().recMode !== "step" && !$1(".steprec") && !$1(".stepcur") && !$1("#rec").classList.contains("step"), "banner or cursor left"), within: 6000 }
+			{ say: "Cmd-drag over steps 5 to 7 while it records, then press ←: the cursor goes back, the selection stays", act: async (u, c) => { await dragRoll(u, c.t, [4, 6], { cmd: true }); c.sel = JSON.stringify(S().stepSel); blur(); u.key("ArrowLeft"); },
+				machine: () => ok(stepAt() === 0, `cursor ${stepAt()}`), screen: c => ok(!!S().stepSel && JSON.stringify(S().stepSel) === c.sel, `selection ${c.sel} -> ${JSON.stringify(S().stepSel)}`), within: 6000 },
+			{ say: "press Esc: done (not the selection's Esc)", act: u => u.key("Escape"), machine: () => ok(tele.last?.record === "off", "record " + tele.last?.record),
+				screen: () => ok(S().recMode !== "step" && !$1(".stepcur") && !$1("#rec").classList.contains("step"), "cursor or STEP left"), within: 6000 }
 		],
-		async tidy(u) { if (tele.last?.record === "step") u.key("Escape"); }
+		async tidy(u) { if (tele.last?.record === "step") u.key("Escape"); if (S().stepSel) clearSel(); }
 	};
 	const genKeys = {
 		name: "mm-gen-keys-r", proves: [],

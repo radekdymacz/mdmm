@@ -245,6 +245,9 @@ namespace mmDesk
 		// 0.3.4: cable speed only while the sequencer plays
 		m_stream.setPlaying(m_playing, _now);
 		m_stream.pump(_now);
+		// liveErase: no word from the page that Delete is still held: EXIT up
+		if(m_exitHeld && _now - m_exitSeenMs > g_eraseQuietMs)
+			releaseExit();
 		pumpSequence(_now);
 		// The emulator takes requests once its start screen is gone; over HW MIDI the status polls
 		// are what finds the machine.
