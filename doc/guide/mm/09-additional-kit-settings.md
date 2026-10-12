@@ -4,7 +4,7 @@
 Besides the sound of each track, a kit holds settings for how the tracks are played: what the joystick, the velocity and the key position control, which track a trig also plays, how the portamento and legato behave, and how a single keyboard drives several tracks. The assign settings and the multi trig, multi map and multi envelope settings are on the **Perform** workspace. Press {key:workspace-4}, or click the **Perform** tab. The trig track settings are on **Sequence**.
 
 ## ASSIGN
-<!-- rows: MM-145 MM-150 @2c11a7 -->
+<!-- rows: MM-145 MM-150 @30842b -->
 
 Assign lets a performance control move a parameter of the track. Each control has two rows. A row names a page, a parameter on that page, and an amount to add.
 
@@ -27,14 +27,14 @@ The LCD keys **Copy**, **Clr** and **Paste** act on all the assign tabs of the t
 **Clr** empties the tabs of the track. {key:undo} takes back a paste or a clear.
 
 ### JOYSTICK
-<!-- rows: MM-146 MM-147 @5531cf -->
+<!-- rows: MM-146 MM-147 @b29bc0 -->
 
 The tabs JOY RL, JOY U and JOY D hold the joystick's three directions: right and left together, up and down. Beside the rows the card shows a stick. Drag it with the pointer to try the assignment. It springs back to the middle when you let go.
 
 **MIRR** is on the JOY RL tab. When it is lit, a move to the left acts as the same move to the right with the sign reversed. When it is dark, only the right half of the movement acts.
 
 ### VELOCITY
-<!-- rows: MM-148 @768dff -->
+<!-- rows: MM-148 @3c8436 -->
 
 The VEL tab assigns the velocity of the notes you play to a parameter. The sequencer always plays its notes at velocity 100, so a velocity assign only responds to the keys.
 
@@ -46,7 +46,7 @@ The KEY tab assigns the key you played last to a parameter. The value is low for
 Two keys on this tab, **HPF tracks keys** and **LPF tracks keys**, switch the key tracking of the high-pass and low-pass filters. **KEY** in the title of the **Filter** group on **Sound** shows the two switches and opens this tab. Chapter 7 describes filter tracking.
 
 ## TRIG TRACK SETTINGS
-<!-- rows: MM-151 MM-152 MM-153 @71480c -->
+<!-- rows: MM-151 MM-152 MM-153 @b013d7 -->
 
 These settings belong to one track. They sit in the **Trig setup** tab, in the header of the lock lane on **Sequence**. A MIDI track has the **MIDI page** tab in its place (see chapter 16).
 
@@ -68,7 +68,7 @@ These settings belong to one track. They sit in the **Trig setup** tab, in the h
 The value boxes **ATK**, **HOLD**, **DEC** and **PORT** above the picture are the track's amp envelope and glide amount. The picture draws one gate and the glide between two notes. Drag its dots to change the values.
 
 ## MULTI TRIG
-<!-- rows: MM-154 MM-155 MM-156 MM-157 MM-158 MM-159 @40c3c4 -->
+<!-- rows: MM-154 MM-155 MM-156 MM-157 MM-158 MM-159 @93bbda -->
 
 In multi trig mode one source plays all six tracks, as a single large mono synth.
 
@@ -106,7 +106,7 @@ The first note you play starts the pattern. Later notes only transpose it, so th
 **SEQ START** and **SEQ TRNSP** show a **Timing** stepper. Click **−** or **+** to choose DIRECT, 1/16, 2/16, 4/16, 8/16, 16/16 or 32/16. With DIRECT the note acts at once. With another value it acts at the next division of that length, and the page says so when you play.
 
 ## MULTI ENV
-<!-- rows: MM-160 MM-161 @af3c11 -->
+<!-- rows: MM-160 MM-161 @ec5f0e -->
 
 The **Multi envelope** card holds an ADSR that acts on top of every track's own envelope. Notes on the multi trig channel set it going. What it shapes depends on the multi trig mode of the kit. The title of the card names the mode, and the line under the boxes says what the envelope does in it.
 
@@ -120,6 +120,6 @@ To hear the envelope from the editor, click **Multi trig** in the **Keyboard** c
 
 ![The multi envelope in ALL TRK](shot:mm-perform-menv)
 
-The five boxes are **ATK**, **DEC**, **SUS**, **REL** and **PORT**. PORT is the portamento for all tracks. The plot above them shows the envelope. Drag its dots to change ATK, DEC with SUS, and REL. A REL of 127 never fades, and the plot says so.
+The five boxes are **ATK**, **DEC**, **SUS**, **REL** and **PORT**. PORT is the portamento for all tracks. The plot above them shows the envelope: it rises for ATK, falls to the SUS level for DEC, holds, then falls to nothing for REL. Each dot sits on the curve. Drag them to change ATK, DEC with SUS, and REL. A REL of 127 never fades: the level runs on to the edge of the plot, marked ∞. Drag the REL dot to the end of its stage for 127.
 
 TIP: For no effect from the multi envelope, set ATK to 0, and DEC, SUS and REL to 127.

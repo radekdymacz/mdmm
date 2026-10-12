@@ -52,7 +52,7 @@ The locks of a step go with the step when you copy it. See "Note copy" in chapte
 
 ### Slide
 
-The **Slide** row under the roll marks steps that glide. On a step with a slide, a locked value glides to the next lock instead of jumping. See "Slide" in chapter 15.
+A small ramp over a note marks a step that glides. Set it with **Slide** in the step menu. On a step with a slide, a locked value glides to the next lock instead of jumping. See "Slide" in chapter 15.
 
 ## PARAMETER LOCKS IN LIVE RECORDING MODE
 <!-- rows: MM-207 MM-208 @b1f7b0 -->

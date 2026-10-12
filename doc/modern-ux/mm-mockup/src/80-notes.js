@@ -78,7 +78,7 @@ ED.dktrig={geo(W,H,c){const a=trk(S.sel).v.AMP,e=ampTimes(a)||{at:0,ho:0,de:Infi
   const need=clamp(Math.ceil(((inf?at+ho+2:tot)*1.12+.3)/4)*4,4,64),span=active&&active.c===c&&c._span?Math.max(c._span,need):need;c._span=span;
   const gw=clamp(Math.round(W*.26),170,300),x0=12,x1=W-gw-30,T=24,B=H-17;
   return{a,at,ho,de,inf,tot,span,x0,x1,T,B,X:s=>x0+s/span*(x1-x0),S:x=>(x-x0)/(x1-x0)*span,Y:v=>B-v*(B-T),g0:W-gw-8,g1:W-10}},
- draw(g,W,H,c){const G=this.geo(W,H,c),ink=cssv("--ink"),lcd=cssv("--lcd"),tr=trk(S.sel);g.font=SFONT;
+ draw(g,W,H,c){const G=this.geo(W,H,c),ink=cssv("--ink"),lcd=cssv("--scr"),tr=trk(S.sel);g.font=SFONT;
   /* the time axis: 0 = the trig, a tick and its number after each step (every 2nd or 4th when long) */
   const ev=G.span>32?4:G.span>16?2:1;g.fillStyle=inkA(.25);g.fillRect(G.x0,G.B,G.x1-G.x0,1);
   for(let k=1;k<=G.span;k++){const xa=Math.round(G.X(k));g.fillStyle=inkA(k%4?.07:.14);g.fillRect(xa,G.T-6,1,G.B-G.T+6);if(k%ev)continue;g.fillStyle=inkA(.4);g.fillRect(xa,G.B,1,4);g.fillStyle=inkA(.75);const tx=String(k);g.fillText(tx,xa-tx.length*2.5,H-3)}
@@ -119,7 +119,7 @@ ED.dktrn={geo(W,H){const T=22,B=H-6,kh=B-T,ww=clamp(Math.round(kh*.5),30,64);ret
  keyAt(c,e){const r=c.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,K=this.keys(r.width,r.height),hit=k=>x>=k.x&&x<k.x+k.w&&y>=k.y&&y<k.y+k.h;
   const k=K.find(k=>k.blk&&hit(k))||K.find(k=>!k.blk&&hit(k));return k?k.n:null},	/* 0-12: the upper C is 12 */
  shift(tr){return tr.tr.TRACK-64+(tr.tr.SCALE===1?0:S.patTrn-64)},
- draw(g,W,H){const G=this.geo(W,H),K=this.keys(W,H),tr=trk(S.sel),sc=tr.tr.SCALE,key=tr.tr.KEY,ink=cssv("--ink"),lcd=cssv("--lcd"),N=this.shift(tr),sv=sc>1;
+ draw(g,W,H){const G=this.geo(W,H),K=this.keys(W,H),tr=trk(S.sel),sc=tr.tr.SCALE,key=tr.tr.KEY,ink=cssv("--ink"),lcd=cssv("--scr"),N=this.shift(tr),sv=sc>1;
   const src=N<0?12:0,dst=src+(N%12===0&&N?(N>0?12:-12):N%12),cx=n=>{const k=K.find(k=>k.n===n);return k.x+k.w/2},kOf=n=>K.find(k=>k.n===n);g.font=SFONT;
   const hatch=k=>{g.save();g.beginPath();g.rect(k.x+1,k.y+1,k.w-2,k.h-2);g.clip();g.strokeStyle=inkA(.22);g.lineWidth=1;for(let d=-k.h;d<k.w;d+=5){g.beginPath();g.moveTo(k.x+d,k.y+k.h);g.lineTo(k.x+d+k.h,k.y);g.stroke()}g.restore()};
   K.filter(k=>!k.blk).forEach(k=>{if(sv&&!inScale(tr,k.n))hatch(k);g.strokeStyle=ink;g.lineWidth=1.2;g.strokeRect(k.x+.5,k.y+.5,k.w-1,k.h-1)});

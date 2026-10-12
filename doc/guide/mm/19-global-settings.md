@@ -1,7 +1,7 @@
 # 19. Global settings
 <!-- summary: The machine's own settings: MIDI channels, sync, routing, the multi map, and the SysEx import and export. -->
 
-The machine keeps eight global slots. One is active. The settings are on the **GLOBAL** page. Click **Global** in the top bar, or choose **GLOBAL…** in the engine menu. The page covers the workspace under the header. Press {key:close-global}, click **Global** again, or click a workspace key to go back.
+The machine keeps eight global slots. One is active. The settings are on the **GLOBAL** page. Click **Global** in the top bar, or choose **GLOBAL…** in the engine menu. The page opens over the workspace, which dims behind it. Press {key:close-global}, or click the key at the right of its head, to go back. A click beside the page does not close it.
 
 ![The GLOBAL page](shot:mm-global-panel)
 
@@ -44,7 +44,7 @@ The tune runs from 400.0 to 499.9 Hz, as on the machine.
 The **Routing** card sets the routing mode: 3xSTEREO, 3xSTEREO + AB=MIX or 6xMONO. It is the same setting as the **Routing** bar on **Mix**. See chapter 18.
 
 ## CONTROL
-<!-- rows: MM-289 MM-290 MM-291 MM-292 MM-293 @174c01 -->
+<!-- rows: MM-289 MM-290 MM-291 MM-292 MM-293 @eb5d2f -->
 
 ### MIDI CHANNELS
 
@@ -84,16 +84,16 @@ NOTE: With OUT the machine makes no sound of its own for that source. The card s
 The **Sync** card holds two switches for what the machine sends. **Tempo out** sends the MIDI clock. **Ctrl out** sends MIDI start and stop. The **Control** card has **Prg change out**: choosing a pattern then sends a program change on the base channel.
 
 ### CONTROL IN
-<!-- rows: MM-297 MM-298 MM-299 @441353 -->
+<!-- rows: MM-297 MM-298 MM-299 @d414dc -->
 
 - **Tempo in**: INT uses the machine's own tempo. EXT follows the MIDI clock.
 - **Ctrl in**: ON makes the machine react to MIDI start, stop and continue.
 - **Prg change in**: reads BASE. The machine always takes a program change on its base channel, so you cannot change it.
 
-In a DAW the plug-in sets **Tempo in** to EXT and **Ctrl in** to ON itself.
+In a DAW a new plug-in sets **Tempo in** to EXT and **Ctrl in** to ON itself. Set **Tempo in** to INT and the machine runs on its own clock there; the project keeps it.
 
 ### MULTI MAP EDIT
-<!-- rows: MM-300 MM-301 MM-302 MM-303 @7c3b38 -->
+<!-- rows: MM-300 MM-301 MM-302 MM-303 @a98cee -->
 
 The multi map starts patterns from key ranges. It is on the **Perform** workspace, in multi map mode. It is stored in the global slot.
 
@@ -133,7 +133,7 @@ NOTE: On the machine KIT, PAT+KIT and SONG+PAT+KIT take the kits and patterns wi
 1. Choose **IMPORT SYSEX…** in the engine menu, or drop a .syx file on the window (macOS only).
 2. The import window previews the file. It has a tab for each kind: Kits, Patterns, Songs, Globals and Other.
 3. A slot grid shows the slots. A click leaves a slot out or takes it in again. Hold [⇧] and click to choose a range.
-4. Click **Import**. The window shows a bar. **Stop** ends the import, **Hide** puts the window away.
+4. Click **Import**. The window shows a bar. **Stop** ends the import, **Hide** puts the window away. The import goes on: **IMPORT SYSEX…** in the engine menu shows the window again, with its report when it is done. While it runs, [ESC] and a click beside the window leave it open.
 5. A report lists what the machine did with each slot.
 
 Globals and other messages are off unless you tick them. Importing a global changes the channels the machine listens on. There is no undo, so use **Export SysEx…** first.
@@ -165,6 +165,6 @@ The DigiPRO manager of an MKII sends, receives, renames and erases user waveform
 The +Drive, its snapshots and its Digibanks are hardware. The editor does not emulate them.
 
 ## MIDI SEQ
-<!-- rows: MM-314 MM-315 @457d20 -->
+<!-- rows: MM-314 MM-315 @a7b5ee -->
 
 The channel of each MIDI track, and the controller numbers CL1 to CL4, are on the **MIDI page** of **Sequence**. See chapter 16.

@@ -386,7 +386,8 @@ namespace
 		check(m.screenWord == mmDesk::Screen::Main && !d.recvParked(), "left SYSEX RECV when idle");
 
 		// Bug 4 (the user journeys): a panel key pressed while the machine is still taking a dump on SYSEX RECV is lost
-		// (mmDeskFirmwareTest parked). RECORD then is refused as busy (it was answered ok), and taken once the dump is in.
+		// (mmDeskFirmwareTest parked). Review 1 (B-092): RECORD then waits for the panel, as PLAY and STOP do (0.3.4),
+		// and is pressed once the dump is in; RECORD again while it waits cancels it.
 		{
 			m.slow = true;
 			m.recording = 0;
@@ -397,9 +398,13 @@ namespace
 			check(d.recvParked() && !m.inFlight.empty(), "parked, the dump on its way");
 			const int keys0 = m.keysPressed;
 			msg(R"({"op":"record","mode":"grid"})");
-			const auto r1 = lastResult();
-			check(!r1.find("ok")->asBool() && r1.find("errors")->asArray()[0].asString() == "The panel is busy (SYSEX RECV); try again."
-				&& m.keysPressed == keys0, "RECORD while the dump is taken: refused as busy, no key pressed");
+			check(lastResult().find("ok")->asBool() && lastResult().find("note")->asString() == "The machine is taking an edit (SYSEX RECV): it follows in a moment."
+				&& m.keysPressed == keys0, "B-092: RECORD while the dump is taken: accepted, waits as PLAY does (no key yet)");
+			msg(R"({"op":"record","mode":"off"})");
+			check(lastResult().find("ok")->asBool() && lastResult().find("note")->asString() == "RECORD cancelled: it was waiting for the panel." && m.keysPressed == keys0,
+				"B-092: RECORD again while it waits: cancelled");
+			msg(R"({"op":"record","mode":"grid"})");
+			check(lastResult().find("ok")->asBool() && m.keysPressed == keys0, "RECORD again: waits");
 			// 0.3.4: PLAY then STOP now: accepted, they wait for the panel (the newest, STOP, goes once the dump is in)
 			msg(R"({"op":"play"})");
 			check(lastResult().find("ok")->asBool() && m.keysPressed == keys0, "PLAY while the dump is taken: accepted, waits (no key yet)");
@@ -409,10 +414,9 @@ namespace
 			for(auto& b : std::exchange(m.inFlight, {}))
 				m.take(b);
 			run(20);
-			check(m.keysPressed == keys0 + 1, "taken: the waiting STOP is pressed, once (PLAY is not)");
+			check(m.keysPressed == keys0 + 2, ("taken: the waiting STOP and the waiting RECORD are pressed, once each (PLAY is not): " + std::to_string(m.keysPressed - keys0)).c_str());
 			run(200);
-			msg(R"({"op":"record","mode":"grid"})");
-			check(lastResult().find("ok")->asBool() && m.keysPressed == keys0 + 2 && d.recvParked(), "taken: RECORD is pressed on SYSEX RECV");
+			check(m.keysPressed == keys0 + 2, "and nothing more");
 			m.recording = -1;
 			run(3500);
 		}

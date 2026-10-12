@@ -2,22 +2,23 @@
 /* The modal layer (P7): one modal system for every dialog of both editors, one file for both editors and
    both mockups (skins/shared/, its stylesheet deskModal.css). The dialogs keep their own open and close
    functions; this layer watches them (their hidden attribute) and gives every one the same behaviour:
-   centred on the window over a dimmed backdrop, focus inside it (Tab goes round), Esc and a click
-   outside by its kind, focus back where it was when it closes. Stacked: the newest is on top and only
-   it answers. The kinds, as data:
-     confirm  a question (the plug-in's asks, the first-run notice): Esc is its last key (Cancel, Close),
-              a click outside does nothing, the first focus is its last key (never the destructive one)
-     panel    a library, settings or list: Esc and a click outside close it (its own close function)
+   centred on the window over a dimmed backdrop, focus inside it (Tab goes round), Esc by its kind, focus back where it
+   was when it closes. Every dialog locks (Radek, review 1, 2026-10-12): a click outside never closes it (the box nudges);
+   it closes by its own keys (Cancel, Close, Done, OK, Esc) or Esc. While it works (an import, a reset: the dialog says
+   so with data-busy) Esc is refused too, so the work stays in sight. Stacked: the newest is on top and only it answers.
+   The kinds, as data:
+     confirm  a question (the plug-in's asks, the first-run notice): Esc is its last key (Cancel, Close), the first
+              focus is its last key (never the destructive one)
+     panel    a library, settings or list, the GLOBAL page (a modal again since review 1): Esc closes it (its own close
+              function)
      boot     the start-up card (deskBoot.js): nothing closes it but the machine becoming ready
-     menu     a context menu (deskMenu.js, K3): at the pointer, nothing dimmed, Esc and a click outside close it
-     page     a page over the workspace (0.6: GLOBAL): placed by its owner under the header, nothing dimmed, the header
-              stays clickable (its owner closes it on a click there), Esc closes it; the keys stay its own, as a panel's
+     menu     a context menu (deskMenu.js, K3): at the pointer, nothing dimmed, Esc and a click outside close it (a menu,
+              not a dialog: nothing in it runs)
    A listbox (the dropdowns) is not a modal: it stays at its button. */
 const Modal = (() => {
-	const KINDS = { confirm: { outside: false, focusLast: true, esc: true }, panel: { outside: true, focusLast: false, esc: true },
-		boot: { outside: false, focusLast: false, esc: false }, menu: { outside: true, focusLast: false, esc: true },
-		page: { outside: false, focusLast: false, esc: true } };
-	const DIALOGS = [["#dlg", "confirm", null], ["#libpop", "panel", "closeLib"], ["#globpop", "page", "closeGlobal"],
+	const KINDS = { confirm: { outside: false, focusLast: true, esc: true }, panel: { outside: false, focusLast: false, esc: true },
+		boot: { outside: false, focusLast: false, esc: false }, menu: { outside: true, focusLast: false, esc: true } };
+	const DIALOGS = [["#dlg", "confirm", null], ["#libpop", "panel", "closeLib"], ["#globpop", "panel", "closeGlobal"],
 		["#keyspop", "panel", "toggleKeys"], ["#audiopop", "panel", "closeAudio"], ["#machpop", "panel", "closePicker"], ["#bootcard", "boot", null],
 		["#syxpop", "panel", null], ["#deskmenu", "menu", "closeDeskMenu"]];
 	const stack = [];	// {el, kind, close, back}
@@ -29,7 +30,7 @@ const Modal = (() => {
 	const keys = d => [...box(d).querySelectorAll(FOCUSABLE)].filter(e => e.offsetParent !== null || e === document.activeElement);
 	function layer() {
 		if (!bg) { bg = document.createElement("div"); bg.id = "modalbg"; bg.className = "modalbg"; bg.hidden = true; document.body.appendChild(bg); }
-		bg.hidden = !stack.length || stack[stack.length - 1].kind === "page";	/* a page dims nothing and covers no header */
+		bg.hidden = !stack.length;
 		bg.classList.toggle("clear", stack.length > 0 && stack[stack.length - 1].kind === "menu");	/* a menu dims nothing */
 		stack.forEach((d, i) => { d.el.classList.add("modal"); d.el.style.setProperty("--mz", 60 + i * 2); });
 		if (stack.length) bg.style.setProperty("--mz", 59 + (stack.length - 1) * 2);
@@ -54,9 +55,12 @@ const Modal = (() => {
 		if (d.back && d.back.isConnected && !stack.length) d.back.focus({ preventScroll: true });
 		else if (stack.length) focusIn(stack[stack.length - 1]);
 	}
-	/* close the top one as its kind says: a confirm by its last key (the dialog's own handler runs) */
+	const nudge = d => { const b = box(d); b.classList.remove("nudge"); void b.offsetWidth; b.classList.add("nudge"); };
+	/* close the top one as its kind says: a confirm by its last key (the dialog's own handler runs); a dialog at work
+	   (data-busy) stays */
 	function dismiss(d) {
 		if (!KINDS[d.kind].esc) return;
+		if (d.el.dataset && d.el.dataset.busy) { nudge(d); return; }
 		if (d.kind === "confirm") { const b = d.el.querySelector(".btnrow button:last-child"); if (b) b.click(); else d.el.hidden = true; return; }
 		const f = d.close && window[d.close]; if (typeof f === "function") f(false); if (!d.el.hidden) d.el.hidden = true;
 	}
@@ -85,10 +89,10 @@ const Modal = (() => {
 		const outside = e.target === bg || (overlay(d.el) && e.target === d.el);
 		if (!outside) return;
 		e.preventDefault(); e.stopImmediatePropagation();
-		if (ev === "click") { if (KINDS[d.kind].outside) dismiss(d); else { const b = box(d); b.classList.remove("nudge"); void b.offsetWidth; b.classList.add("nudge"); } }
+		if (ev === "click") { if (KINDS[d.kind].outside) dismiss(d); else nudge(d); }
 	}, true);
 	/* focus that leaves the top dialog (a click on the page behind is stopped above) comes back */
-	document.addEventListener("focusin", e => { const d = top(); if (d && d.kind !== "page" && !d.el.contains(e.target) && e.target !== bg && !e.target.closest?.("#kpop")) focusIn(d); });
+	document.addEventListener("focusin", e => { const d = top(); if (d && !d.el.contains(e.target) && e.target !== bg && !e.target.closest?.("#kpop")) focusIn(d); });
 	if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", watch); else watch();
 	/* Tips: the LCD's titles show under the display, never over it (a native tooltip covers the fields) */
 	const tip = document.createElement("div"); tip.className = "lcdtip"; tip.hidden = true; tip.setAttribute("role", "tooltip"); document.body.appendChild(tip);

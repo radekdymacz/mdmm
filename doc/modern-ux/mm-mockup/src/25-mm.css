@@ -48,7 +48,10 @@ img,svg,canvas{-webkit-user-drag:none}
 /* @include shared/deskGenBar.css */
 .ws-seq #main>.genbar{flex:none;margin-top:4px}
 .ws-seq #main>.lanewrap{border-top:2px solid var(--print);margin-top:5px}
-#seq canvas.roll[data-big]{height:clamp(160px,calc(100vh - 552px),620px)!important}
+/* 2026-10-12: no trig type row and no A F L row under the roll (a trig's marks are on its note): the roll takes their
+   height; a MIDI track keeps its VEL row */
+#seq canvas.roll[data-big]{height:clamp(160px,calc(100vh - 494px),620px)!important}
+#seq.midi canvas.roll[data-big]{height:clamp(160px,calc(100vh - 518px),620px)!important}
 .genbar .pagectl .pleds{align-self:center}
 /* the piano roll's Draw key (B) and the length a new note gets (I-007, I-010), beside the page keys */
 .rollkeys{display:flex;align-items:center;gap:6px;flex:none;height:30px}
@@ -258,30 +261,8 @@ body.dockother #rail .railparams>:is(.lpspace,.pagetabs,.pkcol),body.dockother #
 /* 0.6 wave 4: COPY / PASTE / CLEAR what (skins/shared/deskWhat.js) */
 /* @include shared/deskWhat.css */
 
-/* Wave 3, the trig types (DESIGN-machine-menus.md §2; mockup-next mm-12): Note · Slide · Swing in the row under the roll,
-   where the SLIDE and SWING rows were; slide and swing are marks along the foot of the roll */
+/* the swing mark's teal (a trig's marks in the roll, 70-seq.js) */
 :root{--swg:#15a39a}
-.ttrow.ttunder{display:flex;align-items:center;gap:12px;height:30px;margin:4px 0 0;padding-left:50px;flex:none}
-.ttunder .ttkeys{display:flex;gap:4px}
-.ttunder .ttk{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px 0 7px;background:transparent;color:var(--print2);box-shadow:inset 0 0 0 1px var(--rule);font:500 13px var(--sans);letter-spacing:0;text-transform:none;border-radius:3px}
-.ttunder .ttk:hover{background:var(--plate3)}
-.ttunder .ttk[aria-checked=true]{background:var(--cream);color:var(--creamtext);box-shadow:inset 0 -2px 0 rgba(0,0,0,.2)}
-.ttunder .ttk .led{width:6px;height:6px;border-radius:50%;background:rgba(127,127,127,.3)}
-.ttunder .ttk[aria-checked=true] .led{background:var(--led);box-shadow:0 0 6px 1px var(--led)}
-.ttunder .ttk .ttm{display:inline-block;width:12px;height:9px}
-.ttunder .ttk.note .ttm{background:linear-gradient(var(--led),var(--led)) center/80% 3px no-repeat}
-.ttunder .ttk.sld .ttm{background:linear-gradient(135deg,transparent 55%,currentColor 55%)}
-.ttunder .ttk.swg .ttm{background:linear-gradient(60deg,transparent 42%,var(--swg) 42%,var(--swg) 62%,transparent 62%)}
-.ttunder .note{font-size:12px;color:var(--print2)}
-.rollmarks{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none;align-items:stretch;z-index:2}
-.rollmarks .rm{position:relative}
-.rollmarks .rm i{position:absolute;bottom:3px;height:9px;width:min(11px,calc(50% - 3px));display:none}
-.rollmarks .rm .m1{left:2px;background:linear-gradient(135deg,transparent 52%,var(--print) 52%)}
-.rollmarks .rm .m2{right:2px;background:linear-gradient(60deg,transparent 40%,var(--swg) 40%,var(--swg) 64%,transparent 64%)}
-.rollmarks .rm.sld .m1,.rollmarks .rm.swg .m2{display:block}
-.rollmarks .rm.hov{background:color-mix(in srgb,var(--swg) 16%,transparent);box-shadow:inset 0 0 0 1.5px var(--swg)}
-html[data-tt=sld] .rollmarks .rm.hov{background:color-mix(in srgb,var(--print) 10%,transparent);box-shadow:inset 0 0 0 1.5px var(--print2)}
-html[data-tt=sld] #seq .nlane.big canvas.roll,html[data-tt=swg] #seq .nlane.big canvas.roll{cursor:cell}
 /* wave 7: STEP RECORDING (the REC key says STEP, the machine's cursor on the roll; no row of its own) and live erase */
 .lcdt .lt.rec.step{background:var(--ink)!important;color:var(--lcd)!important;animation:none!important}
 .lcdt .lt.rec .stepm{font:9px var(--pix);margin-left:2px}
@@ -300,3 +281,6 @@ body.erasing .rail .th.sel{box-shadow:inset 0 0 0 2px var(--rec)!important}
 .menvsay b{font-weight:600}
 .menvsay .menvto{display:block;margin-top:2px}
 .lkey.ring{box-shadow:0 0 0 2px var(--led)}
+/* Review 1 (Radek, 2026-10-12): the big screens on the Machinedrum MKI's grey (--scr), not the LCD's colour; the top bar's
+   LCD and the small LCD chips keep --lcd */
+canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop,.edblank,.timeline,.timeline2{background:var(--scr)}

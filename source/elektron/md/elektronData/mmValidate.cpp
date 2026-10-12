@@ -107,19 +107,12 @@ namespace elektronData
 		// Trig kinds (MM-P2-RESULT §3): a step holds a trig (trig), fires envelopes
 		// (amp, filter, lfo) or both. Trigless = trig without envelopes; pitchless =
 		// trig without a note; an envelope-only step (TRIG SELECT) has no trig bit.
-		// Chords need the trig; a lock needs a trig or an envelope trig. A note without the trig is kept (0.3.5): a
-		// machine's own backup holds them (31 patterns of a 2008 Monomachine backup) and OS 1.32B takes and keeps them.
-		for(size_t t = 0; t < MmPattern::g_tracks; ++t)
-		{
-			for(size_t s = 0; s < MmPattern::g_steps; ++s)
-			{
-				const bool trig = mmStepSet(_pat.pitch[t], s);
-				p.check(trig || !mmStepSet(_pat.chord[t], s),
-					"tracks[" + std::to_string(t) + "] step " + std::to_string(s) + " has chord notes but no trig");
-				p.check(mmStepSet(_pat.midiTrig[t], s) || !mmStepSet(_pat.midiNote[t], s),
-					"midiTracks[" + std::to_string(t) + "] step " + std::to_string(s) + " has notes but no MIDI trig");
-			}
-		}
+		// A lock needs a trig or an envelope trig. A note without the trig is kept (0.3.5): a machine's own backup holds
+		// them (31 patterns of a 2008 Monomachine backup) and OS 1.32B takes and keeps them. So are chord notes without the
+		// trig, and a MIDI step's notes without its trig (review 1, B-093): LIVE RECORDING's erase takes a step's trig and
+		// envelope bits and leaves its chord bit and chord notes (measured, mmDeskFirmwareTest chorderase); the firmware
+		// plays nothing there. Refusing them refused every later edit of such a pattern. The core writes a step whole
+		// (mmDeskEdit setStep): a chord only with its trig.
 		for(size_t r = 0; r < params.size() && r < _pat.lockRowCount && r < MmPattern::g_lockRows; ++r)
 		{
 			const auto& lp = params[r];

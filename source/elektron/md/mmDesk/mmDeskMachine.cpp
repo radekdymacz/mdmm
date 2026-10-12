@@ -279,6 +279,7 @@ namespace mmDesk
 		}
 		pumpTranspose(_view);
 		pumpTransport(_now);
+		pumpRecord(_now);
 		pumpAfterAccept(_now, _view);
 		pumpChain();
 		pumpSongReload(_now);
@@ -437,6 +438,7 @@ namespace mmDesk
 		v.set("recv", m_recv.stateName());
 		v.set("parked", m_recv.parked());
 		v.set("roundTripMs", m_lastRoundTripMs);
+		v.set("hostClock", m_hostClock.on);
 		return v;
 	}
 }

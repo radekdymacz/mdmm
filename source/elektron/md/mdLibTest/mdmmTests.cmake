@@ -44,6 +44,9 @@ function(mdmm_add_lib_tests _dir)
 	# wave 7: erase while live recording (EXIT/NO + TRIG held) through the desk to the firmware
 	add_test(NAME mdLiveEraseFirmwareTest COMMAND mdDeskFirmwareTest --env liveerase)
 	set_tests_properties(mdLiveEraseFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
+	# review 1 (B-096): the factory song plays in SONG mode; in a DAW (TEMPO IN EXT) PLAY waits for the host's clock
+	add_test(NAME mdFactorySongFirmwareTest COMMAND mdDeskFirmwareTest --env factorysong)
+	set_tests_properties(mdFactorySongFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
 	add_test(NAME mdSyxPickFirmwareTest COMMAND mdDeskFirmwareTest --env syxpick)
 	set_tests_properties(mdSyxPickFirmwareTest PROPERTIES
 		LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1200)
@@ -153,6 +156,9 @@ function(mdmm_add_lib_tests _dir)
 	# 0.6 wave 9 (B-064): POLY, key tracking and the MULTI ENV through the desk, judged by the output
 	add_test(NAME mmPerformSoundFirmwareTest COMMAND mmDeskFirmwareTest --env perform)
 	set_tests_properties(mmPerformSoundFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
+	# review 1 (B-093): LIVE RECORDING's erase leaves chord notes without a trig; the pattern stays editable
+	add_test(NAME mmChordEraseFirmwareTest COMMAND mmDeskFirmwareTest --env chorderase)
+	set_tests_properties(mmChordEraseFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
 	add_test(NAME mmSyxPickFirmwareTest COMMAND mmDeskFirmwareTest --env syxpick)
 	set_tests_properties(mmSyxPickFirmwareTest PROPERTIES
 		LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1200)

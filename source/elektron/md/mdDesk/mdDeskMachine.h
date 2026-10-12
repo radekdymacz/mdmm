@@ -10,6 +10,7 @@
 
 #include "deskCore/deskAdapter.h"
 #include "deskCore/deskChain.h"
+#include "deskCore/deskHostClock.h"
 #include "deskCore/deskWorkingCopy.h"
 #include "deskCore/deskCore.h"
 #include "deskCore/deskLoadQueue.h"
@@ -262,6 +263,7 @@ namespace mdDesk
 		deskCore::Outcome cmdMute(const Value&, const Documents&);
 		deskCore::Outcome cmdSeqMode(const Value&, const Documents&);
 		deskCore::Outcome cmdFollowHost(const Value&, const Documents&);
+		deskCore::HostClock m_hostClock;	// review 1 (I-026): TEMPO IN is the host-clock switch
 		// Wave 2 (mdDeskTransport.cpp): pause, resume, play from a song row, panic, the tempo nudge.
 		deskCore::Outcome cmdPause(const Value&, const Documents&);
 		deskCore::Outcome cmdResume(const Value&, const Documents&);

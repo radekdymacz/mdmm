@@ -723,7 +723,7 @@ const Keys = (() => {
 	   free(): no dialog open and no text field focused, the rule of the keys that play and act on tracks. */
 	const modalTop = () => typeof Modal !== "undefined" && Modal.top ? Modal.top() : null;
 	const modalKind = () => typeof Modal !== "undefined" && Modal.kind ? Modal.kind() : null;
-	const passes = (b, top) => b.modal === top || (b.modal === "panel" && (modalKind() === "panel" || modalKind() === "page"));
+	const passes = (b, top) => b.modal === top || (b.modal === "panel" && modalKind() === "panel");
 	const free = () => !modalTop() && !document.activeElement?.closest?.("input,select,textarea,[contenteditable]");
 	/* The keys that reached the page, newest last ("cmd+C", "shift+?", "Space"): every keydown (noted first, before a
 	   dialog keeps it from the shortcuts) and every edit command taken as its key (below). The key probe's text. */
@@ -1609,7 +1609,7 @@ function drawKeys(){const pop=$("#keyspop");if(!pop)return;
 function toggleKeys(on){const pop=$("#keyspop");if(!pop)return;if(on??pop.hidden)drawKeys();else{pop.hidden=true;keyView?.reset()}}
 Keys.bind({id:"keys-help",short:"This view",scope:"any",keys:["?"],group:"Help",does:"The keyboard view: what every key and gesture does (this)",modal:"keyspop",run:()=>toggleKeys()});
 Keys.bind({id:"keys-help-close",short:"Close",scope:"any",keys:["Escape"],group:"Help",does:"Close the keyboard view",when:()=>!$("#keyspop").hidden,run:()=>toggleKeys(false)});
-document.addEventListener("click",e=>{const pop=$("#keyspop");if(!pop||pop.hidden)return;if(e.target.closest("[data-keysx]")||!pop.contains(e.target)){pop.hidden=true;keyView?.reset()}},true);
+document.addEventListener("click",e=>{const pop=$("#keyspop");if(!pop||pop.hidden)return;/* review 1: every modal locks: only its close key */if(e.target.closest("[data-keysx]")){pop.hidden=true;keyView?.reset()}},true);
 /* the page zoom keys (skins/shared/deskZoom.js takes them before the map), described, as the MD Editor's */
 Keys.bind({id:"zoom-out",short:"Zoom −",scope:"any",keys:["-"],mod:"cmd",group:"Anywhere",does:"Page zoom: smaller (also in the editor's menu)"});
 Keys.bind({id:"zoom-in",short:"Zoom +",scope:"any",keys:["="],mod:"cmd",group:"Anywhere",does:"Page zoom: larger (⌘+ too)"});
@@ -1703,22 +1703,23 @@ const MmRoll=(()=>{
 /* The modal layer (P7): one modal system for every dialog of both editors, one file for both editors and
    both mockups (skins/shared/, its stylesheet deskModal.css). The dialogs keep their own open and close
    functions; this layer watches them (their hidden attribute) and gives every one the same behaviour:
-   centred on the window over a dimmed backdrop, focus inside it (Tab goes round), Esc and a click
-   outside by its kind, focus back where it was when it closes. Stacked: the newest is on top and only
-   it answers. The kinds, as data:
-     confirm  a question (the plug-in's asks, the first-run notice): Esc is its last key (Cancel, Close),
-              a click outside does nothing, the first focus is its last key (never the destructive one)
-     panel    a library, settings or list: Esc and a click outside close it (its own close function)
+   centred on the window over a dimmed backdrop, focus inside it (Tab goes round), Esc by its kind, focus back where it
+   was when it closes. Every dialog locks (Radek, review 1, 2026-10-12): a click outside never closes it (the box nudges);
+   it closes by its own keys (Cancel, Close, Done, OK, Esc) or Esc. While it works (an import, a reset: the dialog says
+   so with data-busy) Esc is refused too, so the work stays in sight. Stacked: the newest is on top and only it answers.
+   The kinds, as data:
+     confirm  a question (the plug-in's asks, the first-run notice): Esc is its last key (Cancel, Close), the first
+              focus is its last key (never the destructive one)
+     panel    a library, settings or list, the GLOBAL page (a modal again since review 1): Esc closes it (its own close
+              function)
      boot     the start-up card (deskBoot.js): nothing closes it but the machine becoming ready
-     menu     a context menu (deskMenu.js, K3): at the pointer, nothing dimmed, Esc and a click outside close it
-     page     a page over the workspace (0.6: GLOBAL): placed by its owner under the header, nothing dimmed, the header
-              stays clickable (its owner closes it on a click there), Esc closes it; the keys stay its own, as a panel's
+     menu     a context menu (deskMenu.js, K3): at the pointer, nothing dimmed, Esc and a click outside close it (a menu,
+              not a dialog: nothing in it runs)
    A listbox (the dropdowns) is not a modal: it stays at its button. */
 const Modal = (() => {
-	const KINDS = { confirm: { outside: false, focusLast: true, esc: true }, panel: { outside: true, focusLast: false, esc: true },
-		boot: { outside: false, focusLast: false, esc: false }, menu: { outside: true, focusLast: false, esc: true },
-		page: { outside: false, focusLast: false, esc: true } };
-	const DIALOGS = [["#dlg", "confirm", null], ["#libpop", "panel", "closeLib"], ["#globpop", "page", "closeGlobal"],
+	const KINDS = { confirm: { outside: false, focusLast: true, esc: true }, panel: { outside: false, focusLast: false, esc: true },
+		boot: { outside: false, focusLast: false, esc: false }, menu: { outside: true, focusLast: false, esc: true } };
+	const DIALOGS = [["#dlg", "confirm", null], ["#libpop", "panel", "closeLib"], ["#globpop", "panel", "closeGlobal"],
 		["#keyspop", "panel", "toggleKeys"], ["#audiopop", "panel", "closeAudio"], ["#machpop", "panel", "closePicker"], ["#bootcard", "boot", null],
 		["#syxpop", "panel", null], ["#deskmenu", "menu", "closeDeskMenu"]];
 	const stack = [];	// {el, kind, close, back}
@@ -1730,7 +1731,7 @@ const Modal = (() => {
 	const keys = d => [...box(d).querySelectorAll(FOCUSABLE)].filter(e => e.offsetParent !== null || e === document.activeElement);
 	function layer() {
 		if (!bg) { bg = document.createElement("div"); bg.id = "modalbg"; bg.className = "modalbg"; bg.hidden = true; document.body.appendChild(bg); }
-		bg.hidden = !stack.length || stack[stack.length - 1].kind === "page";	/* a page dims nothing and covers no header */
+		bg.hidden = !stack.length;
 		bg.classList.toggle("clear", stack.length > 0 && stack[stack.length - 1].kind === "menu");	/* a menu dims nothing */
 		stack.forEach((d, i) => { d.el.classList.add("modal"); d.el.style.setProperty("--mz", 60 + i * 2); });
 		if (stack.length) bg.style.setProperty("--mz", 59 + (stack.length - 1) * 2);
@@ -1755,9 +1756,12 @@ const Modal = (() => {
 		if (d.back && d.back.isConnected && !stack.length) d.back.focus({ preventScroll: true });
 		else if (stack.length) focusIn(stack[stack.length - 1]);
 	}
-	/* close the top one as its kind says: a confirm by its last key (the dialog's own handler runs) */
+	const nudge = d => { const b = box(d); b.classList.remove("nudge"); void b.offsetWidth; b.classList.add("nudge"); };
+	/* close the top one as its kind says: a confirm by its last key (the dialog's own handler runs); a dialog at work
+	   (data-busy) stays */
 	function dismiss(d) {
 		if (!KINDS[d.kind].esc) return;
+		if (d.el.dataset && d.el.dataset.busy) { nudge(d); return; }
 		if (d.kind === "confirm") { const b = d.el.querySelector(".btnrow button:last-child"); if (b) b.click(); else d.el.hidden = true; return; }
 		const f = d.close && window[d.close]; if (typeof f === "function") f(false); if (!d.el.hidden) d.el.hidden = true;
 	}
@@ -1786,10 +1790,10 @@ const Modal = (() => {
 		const outside = e.target === bg || (overlay(d.el) && e.target === d.el);
 		if (!outside) return;
 		e.preventDefault(); e.stopImmediatePropagation();
-		if (ev === "click") { if (KINDS[d.kind].outside) dismiss(d); else { const b = box(d); b.classList.remove("nudge"); void b.offsetWidth; b.classList.add("nudge"); } }
+		if (ev === "click") { if (KINDS[d.kind].outside) dismiss(d); else nudge(d); }
 	}, true);
 	/* focus that leaves the top dialog (a click on the page behind is stopped above) comes back */
-	document.addEventListener("focusin", e => { const d = top(); if (d && d.kind !== "page" && !d.el.contains(e.target) && e.target !== bg && !e.target.closest?.("#kpop")) focusIn(d); });
+	document.addEventListener("focusin", e => { const d = top(); if (d && !d.el.contains(e.target) && e.target !== bg && !e.target.closest?.("#kpop")) focusIn(d); });
 	if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", watch); else watch();
 	/* Tips: the LCD's titles show under the display, never over it (a native tooltip covers the fields) */
 	const tip = document.createElement("div"); tip.className = "lcdtip"; tip.hidden = true; tip.setAttribute("role", "tooltip"); document.body.appendChild(tip);
@@ -2495,7 +2499,9 @@ const Boot = (() => {
    8 x 16, songs 2 x 16, globals 1-8), a slot that holds data on the machine with a lit dot, the one that plays now
    cream with ▶. A click on a slot leaves it out or takes it again, Shift-click a range. Three states, one footer:
    preview (Cancel, Import n), importing (the phases and a bar; Stop, Hide), report (per slot what the machine did,
-   the problems as a list; Done only).
+   the problems as a list; Done only). Review 1 (B-094, B-095): one size for the whole run (deskSyx.css), a slot's facts
+   in a line of the panel (no tooltip over Stop and Hide); at work Esc and a click outside keep it (data-busy); after
+   Hide the engine menu's entries show it again, with its report when the run ended meanwhile.
    0.6 (wave 6, DESIGN-machine-menus.md §2): the same panel exports too (ALL ticked by default; unticked, each kind with
    its range), the import gets its PLACE row (ORIGINAL, or SPECIFIC from a first slot per kind: the host previews again,
    each item at the slot it lands in, and the panel asks before an item lands on a slot that holds data) and VERIFY ONLY
@@ -2668,7 +2674,7 @@ const Syx = (() => {
 		const second = k === "pattern" && (!i.name || i.name === c.label) ? (i.kit != null ? "K" + nn(i.kit + 1) : "") : i.name || "—";
 		const cls = ["syxc", i.overwrites ? "over" : "fresh", i.plays ? "plays" : "", out ? "off" : "", i.readable === false ? "unread" : "", r && problem(r.outcome) ? "bad" : ""].filter(Boolean).join(" ");
 		const mark = r ? `<i class="syxo">${OUTCOME[r.outcome]?.[1] || "?"}</i>` : "";
-		return `<button type="button" class="${cls}" data-syxitem="${esc(id)}" data-syxname="${esc(i.name || "")}"${r ? ` data-syxout="${esc(r.outcome)}"` : ""} title="${esc(tip(k, i, out))}"><b>${i.plays ? "▶ " : ""}${c.label}</b><span>${esc(second)}</span>${mark}</button>`;
+		return `<button type="button" class="${cls}" data-syxitem="${esc(id)}" data-syxname="${esc(i.name || "")}"${r ? ` data-syxout="${esc(r.outcome)}"` : ""} data-syxtip="${esc(tip(k, i, out))}" aria-label="${esc(tip(k, i, out))}"><b>${i.plays ? "▶ " : ""}${c.label}</b><span>${esc(second)}</span>${mark}</button>`;
 	}
 	function pane(k) {
 		const list = last.items[k], g = layout(last.model, k, list);
@@ -2741,6 +2747,7 @@ const Syx = (() => {
 			<span class="note">${place.specific ? "The grid shows where each item lands. Each kind starts at its own first slot." : "Each item goes back to the slot it came from."}</span></div>`;
 	}
 	function drawExport() {
+		delete pop.dataset.busy;
 		pop.classList.add("syx-export"); pop.classList.toggle("sxallon", ex.all);
 		for (const st of ["preview", "error", "running", "report"]) pop.classList.remove("syx-" + st);
 		const f = ex.info?.kinds || {};
@@ -2761,9 +2768,12 @@ const Syx = (() => {
 		pop.classList.remove("syx-export", "sxallon");
 		if (!last) return;
 		for (const st of ["preview", "error", "running", "report"]) pop.classList.toggle("syx-" + st, st === state);
+		/* review 1 (B-094): at work, Esc does not close the panel (the modal layer reads data-busy); Hide does, and the
+		   engine menu shows it again (running()) */
+		if (state === "running") pop.dataset.busy = "1"; else delete pop.dataset.busy;
 		if (!last.ok) { pop.innerHTML = head() + `<p class="syxwhy">${esc(last.text)}</p><div class="syxfoot"><div class="syxmsg"></div><div class="btnrow"><button type="button" data-syxgo="close">Close</button></div></div>`; return; }
 		const list = state === "report" && problemsOnly && [...res.values()].some(r => problem(r.outcome));
-		pop.innerHTML = head() + tabs() + `<div class="syxbody">${list ? `<div class="syxpane">${problems()}</div>` : kindsIn().map(([k]) => pane(k)).join("")}</div>` + placeRow() + tools() + foot();
+		pop.innerHTML = head() + tabs() + `<div class="syxbody">${list ? `<div class="syxpane">${problems()}</div>` : kindsIn().map(([k]) => pane(k)).join("")}</div>` + `<p class="syxtipline" aria-hidden="true"></p>` + placeRow() + tools() + foot();
 		sums(); bar();
 	}
 	function sums() {
@@ -2808,7 +2818,7 @@ const Syx = (() => {
 		const pr = q(".sxplace"); if (pr) pr.outerHTML = placeRow();
 	}
 	function preview(m) {
-		mode = "import";
+		mode = "import"; unseen = false;
 		const again = placing && m.ok && last && last.ok && m.file === last.file && state === "preview";
 		placing = false; clearTimeout(placeW);
 		last = m; state = m.ok ? "preview" : "error"; skip = new Set(); anchor = null; res = new Map(); rep = null; picks = []; steps = []; lastProgress = null;
@@ -2870,7 +2880,10 @@ const Syx = (() => {
 			rep = { text: m.text, report: m.report };
 			res = outcomes(picks, m.report);
 			problemsOnly = [...res.values()].some(r => problem(r.outcome));
-			state = "report"; draw(); return;
+			state = "report"; draw();
+			/* hidden (Hide): the report waits for the engine menu, and the toast says so */
+			if (pop.hidden) { unseen = true; say(`${rep.text || "Done."} Import SysEx… in the engine menu shows the report.`); }
+			return;
 		}
 		if (m.running) { if (state !== "running") { state = "running"; draw(); } else bar(); return; }
 		if (state === "running") { state = "preview"; draw(); }	// the host refused or ended without a report
@@ -2886,6 +2899,9 @@ const Syx = (() => {
 		if (e.target.dataset?.syxgo === "problems") { problemsOnly = e.target.checked; draw(); }
 	});
 	/* a value (place, from, to): the wheel, a drag up or down, the arrow keys, as other values */
+	/* review 1 (B-095): a slot's facts in a line of the panel, not a tooltip (a tooltip covered Stop and Hide) */
+	pop.addEventListener("mouseover", e => { const l = q(".syxtipline"); if (!l) return; const it = e.target.closest?.("[data-syxtip]"); l.textContent = it ? it.dataset.syxtip : ""; });
+	pop.addEventListener("mouseleave", () => { const l = q(".syxtipline"); if (l) l.textContent = ""; });
 	pop.addEventListener("wheel", e => { const v = e.target.closest?.("[data-sxv]"); if (!v) return; e.preventDefault(); nudge(v, e.deltaY < 0 ? 1 : -1); }, { passive: false });
 	pop.addEventListener("keydown", e => {
 		const v = e.target.closest?.("[data-sxv]"); if (!v) return;
@@ -2957,7 +2973,7 @@ const Syx = (() => {
 		else if (a === "verify" && Syx.host && state === "preview") start(true);
 		else if (a === "stop" && Syx.host) Syx.host.stop();
 		else if (a === "help") { const h = q(".syxhelp"); h.hidden = !h.hidden; g.setAttribute("aria-expanded", String(!h.hidden)); }
-		else if (a === "close") pop.hidden = true;
+		else if (a === "close") { pop.hidden = true; if (state === "running") say(`${last?.reset ? "The reset" : "The import"} goes on: Import SysEx…, Export SysEx… or Reset machine… in the engine menu shows it again.`); }
 	});
 	/* the export panel: everything by default; the host's facts fill the kinds and their default ranges */
 	function openExport() {
@@ -2998,8 +3014,13 @@ const Syx = (() => {
 		Syx.host.ask(`${what}<br><br>What the machine holds now is lost: there is no undo. Export SysEx… first keeps a way back.`,
 			[[how === "empty" ? "Clear everything" : "Factory reset", "danger", () => Syx.host.reset(how)], ["Export SysEx…", "", openExport], ["Cancel", "cream", () => { }]]);
 	}
+	/* an import or a reset at work, its panel hidden (Hide): the engine menu's entries show it again rather than start
+	   another (review 1, B-094: a running job is never out of reach) */
+	let unseen = false;
+	function running() { return mode === "import" && (state === "running" || (state === "report" && unseen)) && !!last && last.ok; }
 	/* the engine menu's entries of the panel */
 	function menu(v) {
+		if ((v === "import" || v === "export" || v === "reset") && running()) { unseen = false; pop.hidden = false; draw(); return true; }
 		if (v === "import") { if (Syx.host) Syx.host.choose(); return true; }
 		if (v === "export") { openExport(); return true; }
 		if (v === "reset") { reset(); return true; }
@@ -3008,7 +3029,7 @@ const Syx = (() => {
 	/* an export's news (written, or the waveforms read so far) */
 	function exported(m) { say(m.text); return m; }
 	return {
-		preview, progress, exported, exportInfo, openExport, reset, menu, resetNews: m => say(m.text), host: null, model
+		preview, progress, exported, exportInfo, openExport: () => { if (running()) { unseen = false; pop.hidden = false; draw(); return; } openExport(); }, reset, menu, running, resetNews: m => say(m.text), host: null, model
 	};
 })();
 
@@ -3212,7 +3233,7 @@ function redraw(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;$$("canvas.
 function drawEd(c){const ed=ED[c.dataset.ed];if(!ed)return;const dpr=devicePixelRatio||1,W=c.clientWidth,H=c.clientHeight;if(!W)return;
  if(c.width!==Math.round(W*dpr)||c.height!==Math.round(H*dpr)){c.width=Math.round(W*dpr);c.height=Math.round(H*dpr)}
  const g=c.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,W,H);ed.draw(g,W,H,c);
- (ed.handles?.(W,H,c)||[]).forEach(h=>{const on=active&&active.c===c&&active.k===h.k;g.beginPath();g.arc(h.x,clamp(h.y,6,H-6),on?7:5.5,0,7);g.fillStyle=cssv("--lcd");g.fill();g.lineWidth=2.5;g.strokeStyle=cssv("--ink");g.stroke();
+ (ed.handles?.(W,H,c)||[]).forEach(h=>{const on=active&&active.c===c&&active.k===h.k;g.beginPath();g.arc(h.x,clamp(h.y,6,H-6),on?7:5.5,0,7);g.fillStyle=cssv("--scr");g.fill();g.lineWidth=2.5;g.strokeStyle=cssv("--ink");g.stroke();
   if(on){g.fillStyle=cssv("--ink");g.font="10px Silkscreen, monospace";g.fillText(h.k,Math.min(W-60,h.x+10),Math.max(14,h.y-10))}})}
 function nearest(c,e){const ed=ED[c.dataset.ed];if(!ed.handles)return null;const r=c.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;let best=null,bd=16;ed.handles(r.width,r.height,c).forEach(h=>{const d=Math.hypot(h.x-x,clamp(h.y,6,r.height-6)-y);if(d<bd){bd=d;best=h}});return best}
 const RND=[.35,-.7,.9,-.25,.55,-.9,.1,.7];
@@ -3225,9 +3246,10 @@ function shapeIcon(w){const pts=Array.from({length:25},(_,k)=>{const x=k/24;retu
 /* ===== Sequence (synth tracks) and MIDI SEQ (MIDI tracks) =====
    One object per step: a trig that carries its pitch (or chord), its NOTE OFF type,
    its envelope trig flags and its parameter locks. The overview shows every track;
-   the note lane edits the selected track's trigs by pitch. Under it the ENV row and the
-   trig types (slide and swing are marks along the foot of the roll). The MIDI sequencer is its own workspace with the same editor. */
-S.page=0;S.viewAll=true;S.follow=false;S.dock="locks";S.tt="note";	/* P7: all steps by default; PAGE pages, ALL goes back */
+   the note lane edits the selected track's trigs by pitch. What a trig has besides its note (the envelopes it fires,
+   slide, swing, locks; a trigless trig; a NOTE OFF) is a small mark on it in the roll, set in the step menu (2026-10-12,
+   Radek: "needs to be simple to use"). The MIDI sequencer is its own workspace with the same editor (its VEL row under the roll). */
+S.page=0;S.viewAll=true;S.follow=false;S.dock="locks";	/* P7: all steps by default; PAGE pages, ALL goes back */
 const pages16=()=>Math.ceil(S.len/16);
 function vis(){if(S.viewAll)return[0,S.len];S.page=Math.min(S.page,pages16()-1);return[S.page*16,Math.min(S.len,S.page*16+16)]}
 function steps(){const[a,b]=vis();return Array.from({length:b-a},(_,k)=>a+k)}
@@ -3236,8 +3258,8 @@ function steps(){const[a,b]=vis();return Array.from({length:b-a},(_,k)=>a+k)}
 function cols(){return`50px repeat(${steps().length},minmax(${S.viewAll?0:18}px,1fr))`}
 const gapC=s=>s%16===0&&s!==vis()[0]?"gap":"";
 /* MD Editor Sequence layout: rail = tracks + SYNTH/MIDI + lock parameter; main = page keys, ruler,
-   ONE piano roll for the selected track (the height of the MD's 16-row grid), the ENV row, the trig types (Note ·
-   Slide · Swing, wave 3: slide and swing are marks along the foot of the roll), lock lane. */
+   ONE piano roll for the selected track (the height of the MD's 16-row grid; a trig's marks on its note), a MIDI
+   track's VEL row, lock lane. */
 const ROLL_H=16*28+15*3;
 function th(t){const tr=trk(t),pt=S.polyT??S.sel,polyOff=S.mode==="poly"&&t!==pt&&t<6;return`<div class="th ${t===S.sel?"sel":""} ${S.ws==="seq"&&S.marks?.has(t)?"marked":""} ${trackSel(t)} ${audible(t)?"":"off"} ${polyOff?"poly-off":""}" data-sel="${t}">
  <div class="threw"><div class="sw"></div><div class="n ${t<6?"":"fill"}">${t<6?t+1:"M"+(t-5)}</div><div class="nm${S.ws==="seq"&&S.gen?" tagged":""}" title="${polyOff?"Silent in POLY":S.mode==="poly"&&t===pt?"POLY: six voices":tr.name}"><b>${t<6?tr.m.replace("SWAVE-","SW-"):"CH"+String(tr.ch).padStart(2,"0")}${S.mode==="poly"&&t===pt&&t<6?`<em class="x6">×6</em>`:""}</b>${S.ws==="seq"&&S.gen?`<i class="gtag" title="${genTip(t)}">${genTag(genSpec(t))}</i>`:""}</div>
@@ -3246,7 +3268,7 @@ function pageKeys(){return`<span class="pagectl rh"><button class="pgkey" id="pg
 function lockPicker(t){const midi=isMidiT(t),list=pagesOf(t),d=dockOf(t);if(!list.includes(S.lanePage))S.lanePage=list[0];
  return`<div class="railparams ${d==="locks"?"":"dockrail"}"><div class="rphead"><span class="cap">${DOCKN[d]}</span><button id="lockLane" class="iconkey" aria-label="Lock the current value on the selected steps" title="Lock ${pidLabel(t,S.lane)} at its current value on the selected steps (the machine: hold the trig, click the knob)"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M4 6.5V4.5a3 3 0 0 1 6 0v2M3 6.5h8v6H3z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></button><button id="clearLane" class="iconkey" aria-label="Clear these locks" title="Clear ${pidLabel(t,S.lane)} locks"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 4h10M5.5 4V2.5h3V4M3.5 4l.7 8h5.6l.7-8M6 6.5v3.5M8 6.5v3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
   <div class="lpspace"></div><div class="pagetabs" role="group" aria-label="DATA page">${midi?`<button data-lpage="MID" aria-pressed="true" style="grid-column:1/-1"><i class="led"></i>MIDI PAGE</button>`:PAGES.map(p=>{const n=trackLockPids(t).filter(x=>x.startsWith(p+".")).length;return`<button data-lpage="${p}" aria-pressed="${S.lanePage===p}" aria-label="${PAGEN[p]}${n?", "+n+" locked":""}"><i class="led ${n&&S.lanePage!==p?"g on":""}"></i>${p}</button>`}).join("")}</div>
-  <div class="pkcol">${pnames(t,S.lanePage).map((nm,i)=>{if(!nm)return`<span class="pk empty"></span>`;const pid=S.lanePage+"."+i,n=S.locks.get(lkKey(t,pid))?.size||0;return`<button class="pk ${n?"has":""}" data-lane="${pid}" aria-pressed="${pid===S.lane}" title="${n?n+" locked step"+(n>1?"s":""):"No locks yet"}">${nm}${n?`<i>${n}</i>`:""}</button>`}).join("")}${Array.from({length:8-pnames(t,S.lanePage).length},()=>`<span class="pk empty"></span>`).join("")}</div>${d==="locks"?"":`<div class="dockkeys" id="dockkeys">${dockKeys(t,d)}</div>`}</div>`}
+  <div class="pkcol">${pnames(t,S.lanePage).map((nm,i)=>{if(!nm)return`<span class="pk empty"></span>`;const pid=S.lanePage+"."+i,n=S.locks.get(lkKey(t,pid))?.size||0;return`<button class="pk ${n?"has":""}" data-lane="${pid}" aria-pressed="${pid===S.lane}" title="${n?n+" locked step"+(n>1?"s":""):"No locks yet"}"><span class="pkn">${nm}</span>${n?`<i>${n}</i>`:""}</button>`}).join("")}${Array.from({length:8-pnames(t,S.lanePage).length},()=>`<span class="pk empty"></span>`).join("")}</div>${d==="locks"?"":`<div class="dockkeys" id="dockkeys">${dockKeys(t,d)}</div>`}</div>`}
 function sideSw(){return`<div class="sidesw" role="group" aria-label="Sequencer side"><button data-side="int" aria-pressed="${S.side!=="midi"}" title="The six synth tracks"><i class="led"></i>Synth</button><button data-side="midi" aria-pressed="${S.side==="midi"}" title="The six MIDI sequencer tracks (FUNCTION + TRIG SELECT on the machine)"><i class="led"></i>MIDI</button></div>`}
 function renderRail(){const r=$("#rail"),withSide=S.ws==="seq"||S.ws==="sound";
  const anyMs=[...S.tracks,...S.midi].some(x=>x.mute||x.solo);
@@ -3264,13 +3286,9 @@ function setRecLock(l){S.recLock=l||null;const key=l?l.t+":"+l.pid+":"+l.s:"";
  if(key&&key!==recLockKey)toast(`Locks ${tLabel(l.t)} ${pidLabel(l.t,l.pid)} on step ${l.s+1}: the step that plays when the value arrives.`);
  recLockKey=key;setTimeout(markRecLock,20)}
 function renderSeq(){const t=S.sel,tr=trk(t),midi=isMidiT(t);dockOf(t);
- const rows=[["env",midi?"VEL":"Env"]];
- let h=`<div class="scroll" id="seqscroll"><div class="mstack ${S.viewAll?"all":""}" id="seq"><div class="mrowg ruler" style="grid-template-columns:${cols()}"><div class="rul"></div>${steps().map(s=>`<div class="rul ${gapC(s)} ${rulSel(s)}" data-s="${s}">${s%4===0?s+1:""}</div>`).join("")}</div>
-  <div class="nlane big"><canvas class="roll" data-ed="lane" data-t="${t}" data-big="1" title="${ROLL_TIP(t)}" aria-label="${ROLL_TIP(t)}"></canvas>${rollMarks(t)}</div>
-  <div class="tlanes" id="tlanes">${rows.map(([k,lab])=>{if(k==="env"&&midi)return`<div class="tlane env" style="grid-template-columns:${cols()}" title="Velocity per note (VEL, lockable)"><span class="tlab">VEL</span>${steps().map(s=>{const st=tr.steps[s];const v=st&&!st.off?velOf(t,s):null;return`<span class="tc envc ${gapC(s)} ${v==null?"na":""}">${v!=null?`<i class="velbar" style="--v:${v/127*100}%" title="VEL ${v}"></i>`:""}</span>`}).join("")}</div>`;
-   return`<div class="tlane ${k}" style="grid-template-columns:${cols()}" title="Which envelopes this trig fires: AMP (red), FILTER (yellow), LFO (green), the manual's trig tracks. No dots = trigless."><span class="tlab"><small class="envlab">A F L</small></span>${steps().map(s=>{const st=tr.steps[s],ok=st&&!st.off;
-    return`<span class="tc envc ${gapC(s)} ${ok?"":"na"} ${cellSel(s)}" data-s="${s}">${ok?["a","f","l"].map(b=>`<button class="d ${b} ${st[b]?"on":""}" data-env="${b}" data-s="${s}" aria-pressed="${!!st[b]}" aria-label="${{a:"AMP",f:"FILTER",l:"LFO"}[b]} trig step ${s+1}"></button>`).join(""):""}</span>`}).join("")}</div>`}).join("")}</div></div></div>
- ${trigTypeRow(t)}
+ let h=`<div class="scroll" id="seqscroll"><div class="mstack ${S.viewAll?"all":""} ${midi?"midi":""}" id="seq"><div class="mrowg ruler" style="grid-template-columns:${cols()}"><div class="rul"></div>${steps().map(s=>`<div class="rul ${gapC(s)} ${rulSel(s)}" data-s="${s}">${s%4===0?s+1:""}</div>`).join("")}</div>
+  <div class="nlane big"><canvas class="roll" data-ed="lane" data-t="${t}" data-big="1" title="${ROLL_TIP(t)}" aria-label="${ROLL_TIP(t)}"></canvas></div>
+  ${midi?`<div class="tlanes" id="tlanes"><div class="tlane env" style="grid-template-columns:${cols()}" title="Velocity per note (VEL, lockable)"><span class="tlab">VEL</span>${steps().map(s=>{const st=tr.steps[s];const v=st&&!st.off?velOf(t,s):null;return`<span class="tc envc ${gapC(s)} ${v==null?"na":""} ${cellSel(s)}" data-s="${s}">${v!=null?`<i class="velbar" style="--v:${v/127*100}%" title="VEL ${v}"></i>`:""}</span>`}).join("")}</div></div>`:""}</div></div>
  ${genBarHtml()}
  <div class="lanewrap"><div class="lanetop">${S.dock==="locks"?`<span class="cap">Lock lane · ${tLabel(t)} ${midi?"CH"+String(tr.ch).padStart(2,"0"):tr.m} · <b id="lanename">${pidLabel(t,S.lane)}</b> <span class="lanescale" id="lanescale"></span></span>
   <span class="lockbudget" id="lockbudget"></span><span class="lanehelp" title="Draw across the bars to lock this parameter per step. Alt-drag erases. Shift-drag draws a ramp, a straight line from where you press to where you let go. The wheel over a step with a trig moves its lock (Shift: fine). Hatched steps have no trig, so they cannot hold a lock. Dashed line = kit value. A slide step glides to the next lock.">Draw to lock · ⇧ ramp · alt erases</span>`:(()=>{const[h,hl]=dockHelp(t,S.dock);return`<span class="cap">${DOCKN[S.dock]} · ${tLabel(t)} ${midi?"CH"+String(tr.ch).padStart(2,"0"):tr.m}</span><span class="lockbudget dkread" id="dkread">${dockRead(t,S.dock)}</span><span class="lanehelp dkhelp" title="${dkAttr(hl)}">${h}</span>`})()}${dockTabs(t)}</div>
@@ -3328,7 +3346,6 @@ function clickStep(t,s,e){const tr=trk(t),st=tr.steps[s];
  else if(e.altKey&&!isMidiT(t)){if(!st||st.off)tr.steps[s]={n:[lastNote(t,s)],a:0,f:0,l:0};else{const k=stepKind(st);Object.assign(st,k==="full"?{a:0,f:0,l:0}:{a:1,f:1,l:1})}}
  else{if(st&&!st.off){tr.steps[s]=null;clearStepLocks(t,s)}else tr.steps[s]=note(lastNote(t,s))}
  editStep(t,s);renderTop();if(t!==S.sel){S.sel=t;stepFocus();autoRange(t);render()}else rerenderSeq()}
-function clickEnv(b,s){const t=S.sel,st=trk(t).steps[s];if(!st||st.off)return;st[b]=st[b]?0:1;if(!st.n&&!st.a&&!st.f&&!st.l){trk(t).steps[s]=null;clearStepLocks(t,s)}editStep(t,s);rerenderSeq()}
 let laneDraw=null;
 function laneAt(e){const lane=$("#lane");if(!lane)return;if(laneDraw.ramp){rampAt(e);return}const el=document.elementFromPoint(e.clientX,e.clientY)?.closest(".lb");if(!el||!lane.contains(el))return;
  const s=+el.dataset.s,t=S.sel,st=trk(t).steps[s];if(!st||st.off)return;const[pg,i]=S.lane.split("."),mx=maxOf(meta(t,pg,+i));const r=el.getBoundingClientRect();const v=clamp(Math.round((r.bottom-6-e.clientY)/(r.height-14)*mx),0,mx);
@@ -3371,17 +3388,19 @@ ED.lane={draw(g,W,H,c){const G=laneGeom(c),t=G.t,tr=trk(t),ink=cssv("--ink");if(
   noteSpans(t).forEach(sp=>{const r=spanX(G,sp);if(!r)return;const[x0,x1]=r,w=x1-x0,c0=G.col[sp.s];const va=midi?.4+.6*velOf(t,sp.s)/127:1;
    sp.n.forEach((n,k)=>{if(n<G.lo||n>G.hi)return;const y=G.y(n)+(G.big?1:.5),h=G.big?G.rh-2:Math.max(3,G.rh-1);
     if(k===0){if(sp.pitchless){g.setLineDash([4,3]);g.strokeStyle=ink;g.lineWidth=1.5;g.strokeRect(x0+.5,y+.5,w-1,h-1);g.setLineDash([])}
-     else if(sp.kind==="trigless"){g.strokeStyle=ink;g.lineWidth=G.big?2:1.5;g.strokeRect(x0+1,y+.5,w-2,h-1)}
-     else{const am=ampSteps(t),ea=sp.s+am,cA=ea<G.b?G.col[Math.max(G.a,Math.floor(ea))]:null;let xa=x1;if(ea<sp.e&&ea>=G.a&&cA)xa=cA.x0+(ea-Math.floor(ea))*(cA.x1-cA.x0);else if(ea<G.a)xa=x0;g.globalAlpha*=va;g.fillStyle=ink;g.fillRect(x0,y,Math.max(0,xa-x0),h);g.globalAlpha=audible(t)?1:.45;if(xa<x1){g.fillStyle=inkA(.3);g.fillRect(xa,y,x1-xa,h)}if(sp.kind==="part"&&G.big){g.fillStyle=cssv("--lcd");g.fillRect(x0+4,y+h/2-1,6,2)}}
-     if(c0&&!sp.clipR&&G.big&&!sp.wrap){g.fillStyle=cssv("--lcd");g.fillRect(x1-4,y+3,2,h-6)}
+     else if(sp.kind==="trigless"){if(G.big&&c0)rollTriglessBox(g,G,c0,n,ink);else{g.strokeStyle=ink;g.lineWidth=1.5;g.strokeRect(x0+1,y+.5,w-2,h-1)}}
+     else{const am=ampSteps(t),ea=sp.s+am,cA=ea<G.b?G.col[Math.max(G.a,Math.floor(ea))]:null;let xa=x1;if(ea<sp.e&&ea>=G.a&&cA)xa=cA.x0+(ea-Math.floor(ea))*(cA.x1-cA.x0);else if(ea<G.a)xa=x0;g.globalAlpha*=va;g.fillStyle=ink;g.fillRect(x0,y,Math.max(0,xa-x0),h);g.globalAlpha=audible(t)?1:.45;if(xa<x1){g.fillStyle=inkA(.3);g.fillRect(xa,y,x1-xa,h)}if(sp.kind==="part"&&G.big&&!midi)rollEnvMarks(g,x0,c0?Math.max(c0.x1,Math.min(x1,xa)):x1,y,h,sp.st)}
+     if(sp.kind!=="trigless"&&c0&&!sp.clipR&&G.big&&!sp.wrap){g.fillStyle=cssv("--scr");g.fillRect(x1-4,y+3,2,h-6)}
      /* a gate past the pattern's end goes on at its start (I-010): the same bar, lighter, its end the handle */
-     const wr=sp.wrap?spanX(G,{s:0,e:sp.wrap}):null;if(wr){g.globalAlpha*=va*.55;g.fillStyle=ink;g.fillRect(wr[0],y,wr[1]-wr[0],h);g.globalAlpha=audible(t)?1:.45;if(G.big){g.fillStyle=cssv("--lcd");g.fillRect(wr[1]-4,y+3,2,h-6)}}}
+     const wr=sp.wrap&&sp.kind!=="trigless"?spanX(G,{s:0,e:sp.wrap}):null;if(wr){g.globalAlpha*=va*.55;g.fillStyle=ink;g.fillRect(wr[0],y,wr[1]-wr[0],h);g.globalAlpha=audible(t)?1:.45;if(G.big){g.fillStyle=cssv("--scr");g.fillRect(wr[1]-4,y+3,2,h-6)}}}
     else if(midi){g.globalAlpha*=va;g.fillStyle=ink;g.fillRect(x0,y,w,h);g.globalAlpha=audible(t)?1:.45}else if(c0){const cw=c0.x1-c0.x0;g.strokeStyle=ink;g.lineWidth=G.big?1.5:1;g.strokeRect(c0.x0+.5,y+.5,cw-1,h-1);if(G.big){g.fillStyle=ink;g.beginPath();g.arc(c0.x0+cw/2,y+h/2,2.6,0,7);g.fill()}}});
-   if(c0&&stepLocked(t,sp.s)){g.fillStyle=ink;g.fillRect(c0.x0+2,1,5,G.big?4:3)}
+   if(G.big&&c0){const vis=sp.n.filter(n=>n>=G.lo&&n<=G.hi),top=vis.length?Math.max(...vis):null;
+    rollTopMarks(g,G,t,sp.s,c0.x0,c0.x1-c0.x0,top==null?7:sp.kind==="trigless"?G.y(top)+(G.rh-Math.max(5,Math.min(10,c0.x1-c0.x0-4,G.rh-4)))/2:G.y(top)+1)}
+   else if(c0&&stepLocked(t,sp.s)){g.fillStyle=ink;g.fillRect(c0.x0+2,1,5,3)}
    if(G.big&&c0&&sp.n[0]>=G.lo&&sp.n[0]<=G.hi){const lab=tr.m==="DPRO-BBOX"?BBOX[sp.n[0]]:tr.m==="VO-6"?(()=>{const v=S.locks.get(lkKey(t,"SYN.4"))?.get(sp.s);return v!=null?CONS[v]:null})():null;if(lab){g.fillStyle=ink;g.font="8px Silkscreen, monospace";g.fillText(lab,c0.x0+2,Math.max(9,G.y(sp.n[0])-2))}}
    if(G.big&&midi&&c0&&S.locks.get(lkKey(t,"MID.1"))?.has(sp.s)){g.fillStyle=ink;g.font="8px Silkscreen, monospace";g.fillText("V"+velOf(t,sp.s),c0.x0+2,G.y(sp.n[0])-2)}});
   /* NOTE OFFs: one that ends a note is where its bar ends (a faint line); one that ends nothing is marked */
-  G.vs.forEach(s=>{if(!tr.steps[s]?.off||!G.col[s])return;const x=G.col[s].x0,ends=MmRoll.before(tr.steps,S.len,s)!=null;g.fillStyle=ends?inkA(.25):ink;g.fillRect(x,0,ends?1:2,H);if(G.big&&!ends){g.font="8px Silkscreen, monospace";g.fillText("OFF",x+4,10)}});
+  G.vs.forEach(s=>{if(!tr.steps[s]?.off||!G.col[s])return;const x=G.col[s].x0,ends=MmRoll.before(tr.steps,S.len,s)!=null;g.fillStyle=ends?inkA(.25):ink;g.fillRect(x,0,ends?1:2,H);if(G.big){rollOffLamp(g,x,G.col[s].x1-x);if(!ends){g.fillStyle=ink;g.font="8px Silkscreen, monospace";g.fillText("OFF",x+3,19)}}});
   if(G.big&&S.rollBox&&S.rollBox.t===t){const b=S.rollBox,a0=Math.max(b.s0,G.a),a1=Math.min(b.s1,G.b-1),c0=G.col[a0],c1=G.col[a1];if(c0&&c1&&a1>=a0){const y0=G.y(Math.min(G.hi,b.n1)),y1=G.y(Math.max(G.lo,b.n0))+G.rh;g.save();g.fillStyle=inkA(.08);g.fillRect(c0.x0,y0,c1.x1-c0.x0,y1-y0);g.strokeStyle=ink;g.lineWidth=1.5;g.setLineDash([4,3]);g.strokeRect(c0.x0+.5,y0+.5,c1.x1-c0.x0-1,y1-y0-1);g.restore()}}
   
   g.globalAlpha=1}};
@@ -3392,7 +3411,7 @@ let rollDrag=null;
 const endZone=(x0,x1)=>Math.min(8,(x1-x0)/3);
 function laneHit(c,e){const G=laneGeom(c),r=c.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;let s=null;for(const k of G.vs){const q=G.col[k];if(q&&x>=q.x0-1.5&&x<=q.x1+1.5){s=k;break}}if(s==null)return null;
  const n=G.lo+G.rows-1-Math.floor((y-G.top)/G.rh),t=G.t;
- for(const sp of noteSpans(t)){const rr=spanX(G,sp);if(rr)for(let k=0;k<sp.n.length;k++){if(sp.n[k]!==n)continue;const c0=G.col[sp.s];const x1=k===0||isMidiT(t)?rr[1]:(c0?c0.x1:-1),x0=k===0||isMidiT(t)?rr[0]:(c0?c0.x0:-1);if(x>=x0&&x<=x1)return{s:sp.s,n,k,edge:k===0&&!sp.clipR&&x>x1-endZone(x0,x1),cell:s}}
+ for(const sp of noteSpans(t)){const rr=spanX(G,sp);if(rr)for(let k=0;k<sp.n.length;k++){if(sp.n[k]!==n)continue;const c0=G.col[sp.s];const whole=(k===0||isMidiT(t))&&sp.kind!=="trigless",x1=whole?rr[1]:(c0?c0.x1:-1),x0=whole?rr[0]:(c0?c0.x0:-1);if(x>=x0&&x<=x1)return{s:sp.s,n,k:sp.kind==="trigless"?0:k,edge:whole&&k===0&&!sp.clipR&&x>x1-endZone(x0,x1),cell:s}}
   /* the part of a gate past the pattern's end, at its start: its end sets the length */
   const wr=sp.wrap&&sp.n[0]===n?spanX(G,{s:0,e:sp.wrap}):null;if(wr&&x>=wr[0]&&x<=wr[1]&&x>wr[1]-endZone(wr[0],wr[1]))return{s:sp.s,n,k:0,edge:true,wrap:true,cell:s}}
  return{s,n,k:-1,cell:s}}
@@ -3517,30 +3536,33 @@ function rollUp(){const d=rollDrag;rollDrag=null;if(d?.mode==="key"){if(d.n!=nul
  if(d.touched)editSpan(t,d.touched,d.lock);else editStep(t,d.s);
  rerenderSeq()}
 
-/* ===== The trig types (wave 3, DESIGN-machine-menus.md §2, Sequence MM; mockup-next mm-12): Note · Slide · Swing in the row
-   under the roll, where the SLIDE and SWING rows were. The lit key (S.tt) is what a click paints: Note, the roll as ever;
-   Slide or Swing, the whole step column under the pointer, for the selected track (the MM keeps both per track: no EDIT
-   ALL). The marks sit along the foot of the roll: slide a triangle at the left of the step, swing a teal slant at its
-   right. Esc back to Note. ===== */
-const TT_ROW=[["note","Note"],["sld","Slide"],["swg","Swing"]];
-function ttSet(tr,k){return k==="sld"?tr.slide:tr.swing}
-function rollMarks(t){const tr=trk(t);return`<div class="rollmarks mrowg" aria-hidden="true" style="grid-template-columns:${cols()}"><span></span>${steps().map(s=>`<span class="rm${tr.slide.has(s)?" sld":""}${tr.swing.has(s)?" swg":""}" data-rm="${s}"><i class="m1"></i><i class="m2"></i></span>`).join("")}</div>`}
-function trigTypeRow(t){const tt=S.tt||"note";
- return`<div class="ttrow ttunder"><span class="ttkeys" role="radiogroup" aria-label="What a click on the roll paints">${TT_ROW.map(([id,n])=>`<button class="ttk ${id}" role="radio" data-tt="${id}" aria-checked="${tt===id}" title="${id==="note"?"A click on the roll writes notes (Esc comes back here)":`A click on a step's column paints ${n.toLowerCase()} for ${tLabel(t)}; a drag paints every column it crosses (one undo step)`}"><i class="led"></i><span>${n}</span><em class="ttm"></em></button>`).join("")}</span><span class="note">${tt==="note"?"Slide and swing are the marks along the foot of the roll":"Click a step's column to paint "+(tt==="sld"?"slide":"swing")+" · Esc: Note"}</span></div>`}
-function setTrigType(k){S.tt=k;document.documentElement.dataset.tt=k;rerenderSeq()}
-/* the step under x: the foot marks' columns */
-function ttStepAt(x){for(const c of $$("#seq .rollmarks [data-rm]")){const r=c.getBoundingClientRect();if(x>=r.left-1.5&&x<=r.right+1.5)return+c.dataset.rm}return null}
-let ttPaint=null;
-function ttAt(x){if(!ttPaint)return;const s=ttStepAt(x);if(s==null||ttPaint.done.has(s))return;ttPaint.done.add(s);const tr=trk(S.sel),set=ttSet(tr,ttPaint.k);
- if(ttPaint.on==null)ttPaint.on=!set.has(s);if(set.has(s)===ttPaint.on)return;ttPaint.on?set.add(s):set.delete(s);edit(ttPaint.k==="sld"?"slide":"swingStep",{t:S.sel,s,on:ttPaint.on});
- const c=$(`#seq .rollmarks [data-rm="${s}"]`);if(c)c.classList.toggle(ttPaint.k,ttPaint.on);ttPaint.moved=true}
-function ttHover(x){$$("#seq .rollmarks .hov").forEach(c=>c.classList.remove("hov"));if(x==null||!S.tt||S.tt==="note")return;const s=ttStepAt(x);if(s!=null)$(`#seq .rollmarks [data-rm="${s}"]`)?.classList.add("hov")}
-addEventListener("pointerdown",e=>{if(!S.tt||S.tt==="note"||S.ws!=="seq"||e.button!==0||!e.target.closest?.("#seq .nlane.big"))return;e.preventDefault();e.stopImmediatePropagation();ttPaint={k:S.tt,on:null,done:new Set()};ttAt(e.clientX)},true);
-addEventListener("pointermove",e=>{if(ttPaint){if(e.buttons===0&&e.pointerType==="mouse"){ttEnd();return}ttAt(e.clientX);return}ttHover(e.target.closest?.("#seq .nlane.big")?e.clientX:null)},true);
-function ttEnd(){if(!ttPaint)return;const p=ttPaint;ttPaint=null;commit();if(p.moved)rerenderSeq()}
-addEventListener("pointerup",ttEnd,true);addEventListener("pointercancel",ttEnd,true);
-document.addEventListener("click",e=>{const k=e.target.closest(".ttrow [data-tt]");if(k)setTrigType(k.dataset.tt)});
-Keys.bind({id:"trig-type",short:"Note",scope:"seq",keys:["Escape"],group:"Sequence",does:"Back to Note after Slide or Swing: a click on the roll writes notes again",when:()=>S.ws==="seq"&&!!S.tt&&S.tt!=="note"&&!stepOn(),run:()=>setTrigType("note")});
+/* ===== A trig's marks in the roll (2026-10-12, Radek: "needs to be simple to use"; temp/review-1/foot-design): no trig
+   type row, no A F L row, no foot marks. What a trig has besides its note is a small quiet mark on the note, shown only
+   where it does something, and set in the step menu (77-select.js):
+   - the envelopes it fires (the manual's trig tracks AMP, FILTER, LFO), only when not all three: three small ticks in
+     A F L order inside the bar's start, lit for the ones it fires (the letters where the bar has room)
+   - a trigless trig (no envelope: locks only): a small hollow square in its step
+   - over the note's top: a lock (a dot), a slide (a small ramp, only on a step with a lock: a slide glides a locked value
+     to its next lock, without a lock it does nothing), swing (a teal slant, only on a step with a trig: swing delays trigs)
+   - a NOTE OFF: the machine's yellow TRIG LED as a small lamp at the top of its step (OFF where it ends no note). ===== */
+const ENV3=[["a","A"],["f","F"],["l","L"]];
+function rollEnvMarks(g,x0,x1,y,h,st){const on=ENV3.filter(([k])=>st[k]),lcd=cssv("--scr");g.save();g.font="8px Silkscreen, monospace";
+ const word=on.map(([,L])=>L).join(""),tw=g.measureText(word).width;
+ if(x1-x0>=tw+12){g.fillStyle=lcd;g.fillText(word,x0+3,y+h/2+3)}
+ else{const tk=2,gap=1,hh=Math.max(4,Math.min(8,h-6)),yy=y+(h-hh)/2;ENV3.forEach(([k],i)=>{g.globalAlpha=st[k]?1:.35;g.fillStyle=lcd;g.fillRect(x0+2+i*(tk+gap),st[k]?yy:yy+hh-2,tk,st[k]?hh:2)})}
+ g.restore()}
+/* the marks over a trig's note: a lock dot, a slide ramp, a swing slant, left to right from its start */
+function rollTopMarks(g,G,t,s,x0,cw,yTop){const tr=trk(t),lk=stepLocked(t,s),sl=lk&&tr.slide.has(s),sw=tr.swing.has(s);if(!lk&&!sw)return;
+ const ink=cssv("--ink"),y1=Math.max(1,yTop-1),y0=y1-5;let x=x0+1;g.save();
+ if(lk){g.fillStyle=ink;g.beginPath();g.arc(x+2.5,y0+2.5,2.2,0,7);g.fill();x+=6}
+ if(sl){g.fillStyle=ink;g.beginPath();g.moveTo(x,y1);g.lineTo(x+6,y0);g.lineTo(x+6,y1);g.closePath();g.fill();x+=7}
+ if(sw&&x+4<=x0+cw+2){g.strokeStyle=cssv("--swg")||"#15a39a";g.lineWidth=2;g.beginPath();g.moveTo(x+.5,y0);g.lineTo(x+4,y1);g.stroke()}
+ g.restore()}
+/* a trigless trig: a small hollow square in its step, at its pitch (inside the rows shown) */
+function rollTriglessBox(g,G,c0,n,ink){const cw=c0.x1-c0.x0,sz=Math.max(5,Math.min(10,cw-4,G.rh-4)),nn=Math.max(G.lo,Math.min(G.hi,n)),y=G.y(nn)+(G.rh-sz)/2,x=c0.x0+(cw-sz)/2;
+ g.strokeStyle=ink;g.lineWidth=1.5;g.strokeRect(x+.75,y+.75,sz-1.5,sz-1.5);return{x,y,sz}}
+/* the NOTE OFF lamp: the machine's yellow TRIG LED */
+function rollOffLamp(g,x,cw){const sz=Math.max(4,Math.min(7,cw-4));g.save();g.fillStyle=cssv("--ledy")||"#e4c45c";g.strokeStyle=cssv("--ink");g.lineWidth=1;g.fillRect(x+2,2,sz,sz);g.strokeRect(x+2.5,2.5,sz-1,sz-1);g.restore()}
 
 /* ---- 75-comforts.js ---- */
 /* ===== From the Machinedrum Editor (2026-10, MM-PORT-PLAN.md a-c): Alt as the global "all", the key map's
@@ -3979,15 +4001,34 @@ function selTrigs(){const x=selShown();if(!x)return false;let on=false;
  for(let t=x.t;t<x.t+x.n;t++)for(let s=x.from;s<x.to;s++)if(!trk(t).steps[s])on=true;
  selSteps(x,(t,tr)=>{for(let s=x.from;s<x.to;s++){const st=tr.steps[s];if(on){if(!st)tr.steps[s]=note(lastNote(t,s))}else if(st&&!st.off){tr.steps[s]=null;tr.slide.delete(s);clearStepLocks(t,s)}}});
  return true}
-/* the step menu's marks: NOTE OFF on every selected step (off again when each is one), the envelope trigs off
-   (trigless) or on for every selected note, a slide on every selected step with a note (off when each has one) */
+/* the step menu's marks (since 2026-10-12 the only place they are set; the roll shows them on the notes, 70-seq.js):
+   NOTE OFF on every selected step (off again when each is one); a trigless trig on every selected step (an empty step
+   gets one at the track's last pitch, a note loses its envelope trigs) or, when each is one, they go (with their locks);
+   an envelope (AMP, FILTER, LFO: the trig tracks) on for every selected trig, off when each has it; a slide or swing on
+   every selected step, off when each has it (the machine keeps both per step, trig or not: they do something on a trig) */
 function selMark(kind){const x=selShown();if(!x)return false;const cells=[];
  for(let t=x.t;t<x.t+x.n;t++)for(let s=x.from;s<x.to;s++)cells.push([t,s,trk(t).steps[s]]);
  if(kind==="noteoff"){const on=cells.some(([,,st])=>!st?.off);selSteps(x,(t,tr)=>{for(let s=x.from;s<x.to;s++){tr.steps[s]=on?{off:1}:tr.steps[s]?.off?null:tr.steps[s];if(on){tr.slide.delete(s);clearStepLocks(t,s)}}});return true}
- const notes=cells.filter(([t,,st])=>st&&!st.off&&(kind!=="trigless"||!isMidiT(t)));
- if(!notes.length){toast(kind==="slide"?"No note to slide there: a slide needs a note.":"No synth note there: trigless is a synth track's note without its envelopes.");return true}
- if(kind==="trigless"){const on=notes.some(([,,st])=>stepKind(st)!=="trigless");selSteps(x,(t,tr)=>{for(const[nt,s,st] of notes)if(nt===t)Object.assign(st,on?{a:0,f:0,l:0}:{a:1,f:1,l:1})});return true}
- const on=notes.some(([t,s])=>!trk(t).slide.has(s));for(const[t,s] of notes)if(trk(t).slide.has(s)!==on){on?trk(t).slide.add(s):trk(t).slide.delete(s);edit("slide",{t,s,on})}rerenderSeq();return true}
+ if(kind==="trigless"){const syn=cells.filter(([t])=>!isMidiT(t));if(!syn.length){toast("A MIDI track has no trigless trigs (no envelopes).");return true}
+  const on=syn.some(([,,st])=>stepKind(st)!=="trigless");
+  selSteps(x,(t,tr)=>{if(isMidiT(t))return;for(let s=x.from;s<x.to;s++){const st=tr.steps[s];
+   if(on){if(!st||st.off)tr.steps[s]={n:[lastNote(t,s)],a:0,f:0,l:0};else Object.assign(st,{a:0,f:0,l:0})}
+   else if(stepKind(st)==="trigless"){tr.steps[s]=null;tr.slide.delete(s);clearStepLocks(t,s)}}});return true}
+ if(kind==="a"||kind==="f"||kind==="l"){const trigs=cells.filter(([t,,st])=>st&&!st.off&&!isMidiT(t));
+  if(!trigs.length){toast("No synth trig there: the envelopes are a synth trig's.");return true}
+  const on=trigs.some(([,,st])=>!st[kind]);selSteps(x,(t,tr)=>{for(const[nt,,st] of trigs)if(nt===t)st[kind]=on?1:0});return true}
+ if(kind==="slide"||kind==="swing"){const set=t=>kind==="slide"?trk(t).slide:trk(t).swing,on=cells.some(([t,s])=>!set(t).has(s));
+  for(const[t,s] of cells)if(set(t).has(s)!==on){on?set(t).add(s):set(t).delete(s);edit(kind==="slide"?"slide":"swingStep",{t,s,on})}
+  commit();rerenderSeq();return true}
+ return false}
+/* what the step menu ticks: true when every selected step (of those it applies to) has the mark */
+function selHas(kind){const x=selShown();if(!x)return false;const c=[];for(let t=x.t;t<x.t+x.n;t++)for(let s=x.from;s<x.to;s++)c.push([t,s,trk(t).steps[s]]);
+ if(kind==="noteoff")return c.every(([,,st])=>st?.off);
+ if(kind==="trigless"){const y=c.filter(([t])=>!isMidiT(t));return y.length>0&&y.every(([,,st])=>stepKind(st)==="trigless")}
+ if(kind==="slide")return c.every(([t,s])=>trk(t).slide.has(s));
+ if(kind==="swing")return c.every(([t,s])=>trk(t).swing.has(s));
+ const y=c.filter(([t,,st])=>st&&!st.off&&!isMidiT(t));return y.length>0&&y.every(([,,st])=>!!st[kind])}
+const selHasTrig=()=>{const x=selShown();if(!x)return false;for(let t=x.t;t<x.t+x.n;t++)for(let s=x.from;s<x.to;s++){const st=trk(t).steps[s];if(st&&!st.off&&!isMidiT(t))return true}return false};
 /* the step menu's chord note: the pitch right-clicked in the roll joins the step's notes */
 function selChord(t,s,pitch){const st=trk(t).steps[s];if(!st?.n||st.n.includes(pitch))return;st.n.push(pitch);editStep(t,s);rerenderSeq()}
 
@@ -4025,15 +4066,19 @@ function selMove(dt,ds){const x=S.stepSel;if(!x)return;const base=x.t<6?0:6,y=St
  setSel(y);if(x.n===1&&y.t!==S.sel)select(y.t);selToPage()}
 function selGrow(ds){const x=S.stepSel;if(!x)return;setSel(StepSel.grown(x,ds,S.len))}
 
-/* ===== the step menu (right-click a step in the roll or a trig row; Ctrl-click on a Mac): every step and selection
-   action with its key, the fill's home. On a selected step it acts on the selection, on another it selects that
-   step first. The Monomachine's marks: trig, NOTE OFF, trigless, slide, and in the roll a chord note at the pitch. ===== */
+/* ===== the step menu (right-click a step in the roll; Ctrl-click on a Mac; the ⋯ key; the Menu key): every step and
+   selection action with its key, the fill's home. On a selected step it acts on the selection, on another it selects
+   that step first. The Monomachine's marks, ticked when every selected step has them: note on / off, NOTE OFF, a
+   trigless trig, the envelopes a trig fires (AMP, FILTER, LFO), slide, swing, and in the roll a chord note at the
+   pitch; Clear locks after Clear. ===== */
 const keyOf=id=>StepSel.keyOf(Keys,id);
 function stepMenuItems(t,s,pitch){const x=S.stepSel,st=trk(t).steps[s],one=StepSel.one(x),midi=isMidiT(t);
  const marks=[{id:"sel-trigs",label:one?(st&&!st.off?"Note off":"Note on"):"Notes on / off",key:keyOf("sel-trigs"),run:()=>selTrigs()},
-  {id:"step-note-off",label:"NOTE OFF",key:"",run:()=>selMark("noteoff")},
-  ...(midi?[]:[{id:"step-trigless",label:"Trigless (no envelope trigs)",key:"",run:()=>selMark("trigless")}]),
-  {id:"step-slide",label:"Slide",key:"",run:()=>selMark("slide")},
+  {id:"step-note-off",label:"NOTE OFF",key:"",checked:selHas("noteoff"),run:()=>selMark("noteoff")},
+  ...(midi?[]:[{id:"step-trigless",label:"Trigless trig (locks only)",key:"",checked:selHas("trigless"),run:()=>selMark("trigless")},
+   {id:"step-env",label:"Envelopes",items:[["a","Amp"],["f","Filter"],["l","LFO"]].map(([k,n])=>({id:"step-env-"+k,label:n,key:"",checked:selHas(k),enabled:selHasTrig(),run:()=>selMark(k)}))}]),
+  {id:"step-slide",label:"Slide",key:"",checked:selHas("slide"),run:()=>selMark("slide")},
+  {id:"step-swing",label:"Swing",key:"",checked:selHas("swing"),run:()=>selMark("swing")},
   ...(one&&pitch!=null&&st?.n&&!st.n.includes(pitch)?[{id:"step-chord",label:`Chord note ${noteName(pitch)}`,key:keyOf("roll-chord"),run:()=>selChord(t,s,pitch)}]:[])];
  const items=StepSel.menuItems({marks,copy:()=>selCopy(),cut:()=>selCut(),paste:()=>selPaste(),canPaste:!!clipSize(),duplicate:()=>selDuplicate(),clear:()=>selClear(),
   fill:n=>fillEvery(t,s,n,pitch??lastNote(t,s)),key:keyOf});
@@ -4058,7 +4103,7 @@ StepSel.bind(Keys,{seqKeys:()=>seqKeys(),has:()=>!!S.stepSel,selKeys,cut:selCut,
   "step-select":"Click (roll or trig rows): select the step (⌘V pastes there). Drag: select steps. Drag the selection: a copy where you let go",
   "step-extend":"Click: extend the selection to the step (on another track's roll: the tracks between too)",
   "ruler-select":"Click or drag: select steps of the selected track; ⇧-click extends",
-  "step-menu":"The step menu: note on / off, NOTE OFF, trigless, slide, a chord note (roll), copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (Ctrl-click on a Mac)"}});
+  "step-menu":"The step menu: note on / off, NOTE OFF, a trigless trig, the envelopes a trig fires (Amp, Filter, LFO), slide, swing, a chord note (roll), copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (Ctrl-click on a Mac)"}});
 
 /* ---- 78-what.js ---- */
 /* ===== COPY / PASTE / CLEAR what (0.6 wave 4; the dialog, the ▾ menu and the remembered ticks are shared/deskWhat.js) =====
@@ -4176,7 +4221,7 @@ ED.dktrig={geo(W,H,c){const a=trk(S.sel).v.AMP,e=ampTimes(a)||{at:0,ho:0,de:Infi
   const need=clamp(Math.ceil(((inf?at+ho+2:tot)*1.12+.3)/4)*4,4,64),span=active&&active.c===c&&c._span?Math.max(c._span,need):need;c._span=span;
   const gw=clamp(Math.round(W*.26),170,300),x0=12,x1=W-gw-30,T=24,B=H-17;
   return{a,at,ho,de,inf,tot,span,x0,x1,T,B,X:s=>x0+s/span*(x1-x0),S:x=>(x-x0)/(x1-x0)*span,Y:v=>B-v*(B-T),g0:W-gw-8,g1:W-10}},
- draw(g,W,H,c){const G=this.geo(W,H,c),ink=cssv("--ink"),lcd=cssv("--lcd"),tr=trk(S.sel);g.font=SFONT;
+ draw(g,W,H,c){const G=this.geo(W,H,c),ink=cssv("--ink"),lcd=cssv("--scr"),tr=trk(S.sel);g.font=SFONT;
   /* the time axis: 0 = the trig, a tick and its number after each step (every 2nd or 4th when long) */
   const ev=G.span>32?4:G.span>16?2:1;g.fillStyle=inkA(.25);g.fillRect(G.x0,G.B,G.x1-G.x0,1);
   for(let k=1;k<=G.span;k++){const xa=Math.round(G.X(k));g.fillStyle=inkA(k%4?.07:.14);g.fillRect(xa,G.T-6,1,G.B-G.T+6);if(k%ev)continue;g.fillStyle=inkA(.4);g.fillRect(xa,G.B,1,4);g.fillStyle=inkA(.75);const tx=String(k);g.fillText(tx,xa-tx.length*2.5,H-3)}
@@ -4217,7 +4262,7 @@ ED.dktrn={geo(W,H){const T=22,B=H-6,kh=B-T,ww=clamp(Math.round(kh*.5),30,64);ret
  keyAt(c,e){const r=c.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,K=this.keys(r.width,r.height),hit=k=>x>=k.x&&x<k.x+k.w&&y>=k.y&&y<k.y+k.h;
   const k=K.find(k=>k.blk&&hit(k))||K.find(k=>!k.blk&&hit(k));return k?k.n:null},	/* 0-12: the upper C is 12 */
  shift(tr){return tr.tr.TRACK-64+(tr.tr.SCALE===1?0:S.patTrn-64)},
- draw(g,W,H){const G=this.geo(W,H),K=this.keys(W,H),tr=trk(S.sel),sc=tr.tr.SCALE,key=tr.tr.KEY,ink=cssv("--ink"),lcd=cssv("--lcd"),N=this.shift(tr),sv=sc>1;
+ draw(g,W,H){const G=this.geo(W,H),K=this.keys(W,H),tr=trk(S.sel),sc=tr.tr.SCALE,key=tr.tr.KEY,ink=cssv("--ink"),lcd=cssv("--scr"),N=this.shift(tr),sv=sc>1;
   const src=N<0?12:0,dst=src+(N%12===0&&N?(N>0?12:-12):N%12),cx=n=>{const k=K.find(k=>k.n===n);return k.x+k.w/2},kOf=n=>K.find(k=>k.n===n);g.font=SFONT;
   const hatch=k=>{g.save();g.beginPath();g.rect(k.x+1,k.y+1,k.w-2,k.h-2);g.clip();g.strokeStyle=inkA(.22);g.lineWidth=1;for(let d=-k.h;d<k.w;d+=5){g.beginPath();g.moveTo(k.x+d,k.y+k.h);g.lineTo(k.x+d+k.h,k.y);g.stroke()}g.restore()};
   K.filter(k=>!k.blk).forEach(k=>{if(sv&&!inScale(tr,k.n))hatch(k);g.strokeStyle=ink;g.lineWidth=1.2;g.strokeRect(k.x+.5,k.y+.5,k.w-1,k.h-1)});
@@ -4354,7 +4399,9 @@ function hashN(i){const x=Math.sin(i*127.1)*43758.5;return x-Math.floor(x)}
 /* SWAVE: the base saw with the unison pair at ±UNIW (UNIL), the extended pair at twice the width (UNIX) */
 ED.uni={geo(W,H){return{cx:W/2,sp:(W/2-12)/26,base:H-14,hh:H-36}},
  draw(g,W,H,c){const G=this.geo(W,H),ink=cssv("--ink");grid(g,W,H);
-  const bar=(semi,h,dash)=>{const x=G.cx+semi*G.sp;g.fillStyle=ink;g.globalAlpha=dash?.5:1;g.fillRect(x-3,G.base-h*G.hh,6,Math.max(1,h*G.hh));g.globalAlpha=1};
+  /* review 1 (2026-10-12): a fine stem per partial, 2 px as the other screens' lines (they were 6 px bars); dashed
+     for the extended pair */
+  const bar=(semi,h,dash)=>{const x=Math.round(G.cx+semi*G.sp)+.5;g.strokeStyle=ink;g.lineWidth=dash?1.5:2;g.setLineDash(dash?[3,3]:[]);g.beginPath();g.moveTo(x,G.base);g.lineTo(x,G.base-Math.max(1,h*G.hh));g.stroke();g.setLineDash([])};
   const uw=sv("UNIW")/127*12,ul=sv("UNIL")/127;bar(0,1);if(ul){bar(-uw,ul);bar(uw,ul)}
   if(ck(c).includes("UNIX")){const ux=Math.min(sv("UNIX"),sv("UNIL"))/127;if(ux){bar(-2*uw,ux,1);bar(2*uw,ux,1)}}
   label(g,`unison ±${Math.round(uw*10)/10} st`)},
@@ -4362,8 +4409,10 @@ ED.uni={geo(W,H){return{cx:W/2,sp:(W/2-12)/26,base:H-14,hh:H-36}},
 /* the subs: a sine one (SUB1) and two (SUB2) octaves down, a square one octave down (SUBX); the base faint */
 ED.sub={geo(W,H){return{x0:16,sp:(W-28)/27,base:H-16,hh:H-38}},
  bars(c){const k=ck(c);return k.map(n=>({n,semi:n==="SUB2"?-24:-12,dx:n==="SUBX"?-8:n==="SUB1"&&k.includes("SUBX")?8:0}))},
- draw(g,W,H,c){const G=this.geo(W,H),ink=cssv("--ink"),X=s=>G.x0+(s+25)*G.sp;grid(g,W,H);g.fillStyle=inkA(.3);g.fillRect(X(0)-3,G.base-G.hh,6,G.hh);
-  for(const b of this.bars(c)){const v=sv(b.n)/127,x=X(b.semi)+b.dx;g.fillStyle=ink;g.fillRect(x-3,G.base-v*G.hh,6,Math.max(1,v*G.hh));g.font=SFONT;g.fillText(b.n==="SUBX"?"SQ":b.n==="SUB2"?"-24":"-12",x-7,H-4)}
+ draw(g,W,H,c){const G=this.geo(W,H),ink=cssv("--ink"),X=s=>G.x0+(s+25)*G.sp;grid(g,W,H);
+  /* review 1: fine stems (2 px), the base 1 px and faint */
+  const stem=(x,h,w,c)=>{x=Math.round(x)+.5;g.strokeStyle=c;g.lineWidth=w;g.beginPath();g.moveTo(x,G.base);g.lineTo(x,G.base-Math.max(1,h));g.stroke()};stem(X(0),G.hh,1.5,inkA(.35));
+  for(const b of this.bars(c)){const v=sv(b.n)/127,x=X(b.semi)+b.dx;stem(x,v*G.hh,2,ink);g.fillStyle=ink;g.font=SFONT;g.fillText(b.n==="SUBX"?"SQ":b.n==="SUB2"?"-24":"-12",x-7,H-4)}
   g.font=SFONT;g.fillStyle=inkA(.6);g.fillText("BASE",X(0)-12,H-4);label(g,"subs below the base")},
  handles(W,H,c){const G=this.geo(W,H),X=s=>G.x0+(s+25)*G.sp;return this.bars(c).map(b=>({x:X(b.semi)+b.dx,y:G.base-sv(b.n)/127*G.hh,k:b.n,drag:(x,y)=>sset(b.n,(G.base-y)/G.hh*127)}))}};
 /* a pulse: SID's PW is the width; SWAVE's PW is signed, 0 = square, either end a spike. PWAD sweeps it (dashed) */
@@ -4379,7 +4428,7 @@ ED.sidwave={draw(g,W,H){const w=sv("WAVE"),pw=sv("PW")/127,ink=cssv("--ink");gri
 /* SWAVE-ENS / DPRO-DENS: the chord from one track, C plus PCH2-4 */
 ED.chord={draw(g,W,H){const ink=cssv("--ink"),offs=["PCH2","PCH3","PCH4"].map(p=>sv(p)).filter(v=>v).map(v=>v-64);const kw=(W-16)/15,y0=24,wh=H-30;let wx=8;grid(g,W,H);
   for(let k=0;k<25;k++){if([1,3,6,8,10].includes(k%12))continue;g.strokeStyle=ink;g.lineWidth=1;g.strokeRect(wx+.5,y0+.5,kw-1,wh-1);if(k===0||offs.includes(k)){g.fillStyle=ink;g.beginPath();g.arc(wx+kw/2,y0+wh-10,4.5,0,7);g.fill()}wx+=kw}
-  wx=8;for(let k=0;k<25;k++){if(![1,3,6,8,10].includes(k%12)){wx+=kw;continue}g.fillStyle=ink;g.fillRect(wx-kw*.3,y0,kw*.6,wh*.58);if(offs.includes(k)){g.fillStyle=cssv("--lcd");g.beginPath();g.arc(wx,y0+wh*.45,3.5,0,7);g.fill()}}
+  wx=8;for(let k=0;k<25;k++){if(![1,3,6,8,10].includes(k%12)){wx+=kw;continue}g.fillStyle=ink;g.fillRect(wx-kw*.3,y0,kw*.6,wh*.58);if(offs.includes(k)){g.fillStyle=cssv("--scr");g.beginPath();g.arc(wx,y0+wh*.45,3.5,0,7);g.fill()}}
   label(g,"C + "+(offs.length?offs.join(" "):"no other notes"))}};
 /* the ensemble's wave: saw through square to spikes (WAVE), PW mutates it; DPRO-DENS: one of the 64 waves */
 ED.enswave={draw(g,W,H){const ink=cssv("--ink"),m=trk(S.sel).m;grid(g,W,H);
@@ -4704,10 +4753,23 @@ function renderKb(){const[lo,hi]=kbRange(),whites=[];for(let n=lo;n<=hi;n++)if(!
  return h}
 function mapBands(){const[lo,hi]=kbRange(),whites=[];for(let n=lo;n<=hi;n++)if(!isBlack(n))whites.push(n);const ww=100/whites.length,xOf=n=>{let i=whites.findIndex(w=>w>=n);if(i<0)i=whites.length;return i*ww};let from=0;
  return S.mmap.map((r,i)=>{const a=Math.max(from,lo),b=Math.min(r.hi,hi);from=r.hi+1;if(b<lo||a>hi)return"";const x0=xOf(a),x1=xOf(b+1);return`<div class="band ${i===S.mmapSel?"sel":""}" data-band="${i}" style="left:${x0}%;width:${Math.max(2,x1-x0)}%">${r.pat<0?"CUR":patName(r.pat)}${r.trn!==0&&r.trn!==64?"":""}</div>`}).join("")}
-ED.menv={draw(g,W,H){const e=S.menv,ink=cssv("--ink"),T=18,B=H-10,y=v=>B-v*(B-T),a=e.ATK/127*W*.22,d=e.DEC/127*W*.24,s=e.SUS/127,r=e.REL>=127?W*.3:e.REL/127*W*.26,hold=W*.28;grid(g,W,H);
-  g.strokeStyle=ink;g.lineWidth=2.2;g.beginPath();g.moveTo(0,y(0));g.lineTo(a,y(1));g.lineTo(a+d,y(s));g.lineTo(a+d+hold,y(s));g.lineTo(Math.min(W,a+d+hold+r),e.REL>=127?y(s):y(0));g.stroke();label(g,"ADSR over all tracks"+(e.REL>=127?" · REL ∞":""))},
- handles(W,H){const e=S.menv,T=18,B=H-10,y=v=>B-v*(B-T),a=e.ATK/127*W*.22,d=e.DEC/127*W*.24,hold=W*.28;return[{x:Math.max(5,a),y:y(1),k:"ATK",drag:x=>e.ATK=clamp(Math.round(x/(W*.22)*127))},{x:a+d,y:y(e.SUS/127),k:"DEC · SUS",drag:(x,yy)=>{e.DEC=clamp(Math.round((x-a)/(W*.24)*127));e.SUS=clamp(Math.round((B-yy)/(B-T)*127))}},
-  {x:Math.min(W-6,a+d+hold+(e.REL/127*W*.26)),y:y(0)-4,k:"REL",drag:x=>e.REL=clamp(Math.round((x-a-d-hold)/(W*.26)*127))}]}};
+/* The multi envelope as an ADSR (review 1, 2026-10-12: the old one drew REL 127 as a flat line with its dot left at the
+   foot). Each stage has its own slot across the screen: ATK rises from 0 to the top, DEC falls to SUS, SUS holds, REL
+   falls to 0; REL 127 is ∞ (the level holds until the next note), drawn as the sustain running on to the edge, dashed
+   past its slot, with ∞. Every dot is on the curve. */
+const MENV_G=W=>({a:W*.22,d:W*.22,hold:W*.16,r:W*.3});
+function menvGeo(W,H){const e=S.menv,T=18,B=H-12,y=v=>B-v*(B-T),M=MENV_G(W),x0=4,ax=x0+e.ATK/127*M.a,dx=ax+e.DEC/127*M.d,s=e.SUS/127,hx=dx+M.hold,inf=e.REL>=127,rx=inf?hx+M.r:hx+e.REL/126*M.r;
+ return{e,T,B,y,M,x0,ax,dx,s,hx,rx,inf}}
+ED.menv={draw(g,W,H){const G=menvGeo(W,H),ink=cssv("--ink");grid(g,W,H);
+  g.strokeStyle=ink;g.lineWidth=2;g.lineJoin="round";g.beginPath();g.moveTo(G.x0,G.y(0));g.lineTo(G.ax,G.y(1));g.lineTo(G.dx,G.y(G.s));g.lineTo(G.hx,G.y(G.s));
+  if(G.inf){g.lineTo(G.rx,G.y(G.s));g.stroke();g.setLineDash([4,3]);g.beginPath();g.moveTo(G.rx,G.y(G.s));g.lineTo(W,G.y(G.s));g.stroke();g.setLineDash([]);
+   g.fillStyle=ink;g.font="13px Silkscreen, monospace";g.fillText("∞",Math.min(W-14,G.rx+6),G.y(G.s)+(G.s>.85?16:-6))}
+  else{g.lineTo(G.rx,G.y(0));g.stroke()}
+  g.strokeStyle=inkA(.35);g.lineWidth=1;g.setLineDash([2,3]);g.beginPath();g.moveTo(G.hx+.5,G.T);g.lineTo(G.hx+.5,G.B);g.stroke();g.setLineDash([]);
+  label(g,"ADSR over all tracks"+(G.inf?" · REL ∞":""))},
+ handles(W,H){const G=menvGeo(W,H),e=G.e;return[{x:Math.max(G.x0+2,G.ax),y:G.y(1),k:"ATK",drag:x=>e.ATK=clamp(Math.round((x-G.x0)/G.M.a*127))},
+  {x:G.dx,y:G.y(G.s),k:"DEC · SUS",drag:(x,yy)=>{e.DEC=clamp(Math.round((x-G.ax)/G.M.d*127));e.SUS=clamp(Math.round((G.B-yy)/(G.B-G.T)*127))}},
+  {x:G.rx,y:G.inf?G.y(G.s):G.y(0),k:G.inf?"REL ∞":"REL",drag:x=>{const v=(x-G.hx)/G.M.r*126;e.REL=v>=126.5?127:clamp(Math.round(v),0,126)}}]}};
 function asgT(){return S.sel<6?S.sel:S.sel-6}
 function renderPerform(){const pm=PMODES.find(p=>p[0]===S.mode),t=asgT(),tr=S.tracks[t],A=tr.assign,rows=A.tabs[S.asTab];
  const mtCtl=S.mode==="multi"?`<span class="seg" data-set="mtmode">${MTM.map((m,i)=>`<button data-v="${i}" aria-pressed="${S.multi.mode===i}">${m}</button>`).join("")}</span>
@@ -4840,10 +4902,11 @@ document.addEventListener("change",e=>{if(e.target.id==="lt"){S.ctl.addT=+e.targ
 
 /* ---- shared/deskGlobal.js ---- */
 "use strict";
-/* The GLOBAL page both editors share (B-051, F3; the Machinedrum Editor's v61 panel, P5, made shared; a page over the
-   workspace since 0.6, DESIGN-machine-menus.md §2): the machine's own settings, kept in its active global slot, opened by
-   the GLOBAL key in the top bar or GLOBAL… in the engine menu (and the AUDIO panel's link). The header stays; Esc, the
-   GLOBAL key or a click on the header goes back. This file is the frame and the controls: the head on one line (the
+/* The GLOBAL page both editors share (B-051, F3; the Machinedrum Editor's v61 panel, P5, made shared; 0.6 wave 5 made it
+   a page under the header, review 1 (Radek, 2026-10-12, B-091) a modal again: a dialog of the modal layer over a dimmed
+   backdrop, focus inside, its head and cards as the page had them): the machine's own settings, kept in its active
+   global slot, opened by the GLOBAL key in the top bar or GLOBAL… in the engine menu (and the AUDIO panel's link). Esc
+   or its back key closes it; a click outside does not (every modal locks). This file is the frame and the controls: the head on one line (the
    slot chip, the 8 slots: the active one lit, a click makes that one active; Copy · Paste · Clear, the machine's global
    slot menu), the cards' controls (GlobalUi), placing, the GLOBAL key's light. What a machine's global holds is its
    host's (DeskGlobal.host, set by mdDeskGlobal.js and the Monomachine mockup's 117-global.js):
@@ -4870,19 +4933,13 @@ function drawGlobal() {
 	if (!pop) return;
 	if (!GP.open || !H) { pop.hidden = true; pop.classList.remove("gpage"); return; }
 	pop.classList.add("gpage");
-	const G = H.view(), back = H.back ? H.back() : "", esc = `<button class="gpback" data-ga="close" title="Back${back ? " to " + back : ""} (Esc or GLOBAL)">Esc${back ? " · back to " + back : ""}</button>`;
-	if (!G) { pop.innerHTML = `<div class="gphead"><span class="gpname">Global</span><span class="note">Reading the global settings from the machine…</span><span class="gpsp"></span>${esc}</div>`; pop.hidden = false; placeGlobal(); return; }
+	const G = H.view(), back = H.back ? H.back() : "", esc = `<button class="gpback" data-ga="close" title="Back${back ? " to " + back : ""} (Esc)">Esc${back ? " · back to " + back : ""}</button>`;
+	if (!G) { pop.innerHTML = `<div class="gphead"><span class="gpname">Global</span><span class="note">Reading the global settings from the machine…</span><span class="gpsp"></span>${esc}</div>`; pop.hidden = false; return; }
 	const can = !H.canPaste || H.canPaste();
 	pop.innerHTML = `<div class="gphead" title="${H.menu} on the machine. Every change is stored in the active slot and made active at once."><span class="gpname">Global</span><span class="lcdchip">GLOBAL ${G.slot + 1}</span><span class="gslots" title="8 global setups; the lit one is active (SysEx 0x56). A click makes it active">${Array.from({ length: 8 }, (_, k) => `<button data-ga="slot" data-v="${k}" aria-pressed="${k === G.slot}">${k + 1}</button>`).join("")}</span>${H.copy ? `<span class="gpkeys"><button data-ga="copy" title="Copy GLOBAL ${G.slot + 1}: all its settings">Copy</button><button data-ga="paste"${can ? "" : " disabled"} title="${can ? `Paste the copied global into GLOBAL ${G.slot + 1} (asked first; Undo brings it back)` : "Copy a global first"}">Paste</button>` : `<span class="gpkeys">`}<button class="greset danger" data-ga="reset" title="${GRESET_TIP}">Clear</button></span><span class="gpsp"></span>${esc}</div>
  <div class="globgrid">${H.cards(G)}</div>`;
 	if (typeof enhanceSelects === "function") enhanceSelects(pop);
-	pop.hidden = false; placeGlobal();
-}
-/* under the header, as wide as it, down to the window's foot (the page scrolls inside) */
-function placeGlobal() {
-	const pop = document.getElementById("globpop"), hd = document.querySelector("header.top") || document.querySelector(".lcdpanel"), r = hd.getBoundingClientRect(), top = Math.max(16, r.bottom + 10);
-	pop.style.top = (top + scrollY) + "px"; pop.style.height = Math.max(240, innerHeight - top) + "px"; pop.style.maxHeight = "";
-	pop.style.left = (r.left + scrollX) + "px"; pop.style.width = r.width + "px";
+	pop.hidden = false;
 }
 function globKeyLit() { const k = document.getElementById("globkey"); if (k) { k.setAttribute("aria-pressed", String(GP.open)); k.classList.toggle("on", GP.open); const l = k.querySelector(".led"); if (l) l.classList.toggle("on", GP.open); } }
 function openGlobal() { if (typeof closeLib === "function") closeLib(false); GP.open = true; drawGlobal(); globKeyLit(); }
@@ -4900,34 +4957,16 @@ function globalClick(a) {
 	if (f === "paste") { if (!H.canPaste || H.canPaste()) H.paste(G); return; }
 	H.click(a, G);
 }
-/* No backdrop: a press outside the page closes it and goes no further (a step of the grid below must not take it); the header
-   (a workspace tab, the LCD, a key) is let through, the click there does what it does. The press, its release and its click
-   are one gesture: after the first is eaten, the rest of them are too (EAT), for a moment. */
-const GLOBAL_THROUGH = "#dlg,.kpop,#kpop,.lcdeng,.modalbg,#deskmenu", GLOBAL_HEADER = "header.top,.lcdpanel";
-let globEat = false;
-const globStop = e => { e.preventDefault(); e.stopPropagation(); };
-const globOutside = e => !document.getElementById("globpop").contains(e.target) && !(e.target.closest && e.target.closest(GLOBAL_THROUGH + "," + GLOBAL_HEADER));
-for (const ev of ["pointerdown", "mousedown", "pointerup", "mouseup"]) document.addEventListener(ev, e => {
-	if (globEat) { globStop(e); return; }
-	if (!GP.open || !globOutside(e)) return;
-	globStop(e); globEat = true; setTimeout(() => { globEat = false; }, 600);
-	if (ev === "pointerdown" || ev === "mousedown") closeGlobal();
-}, true);
 document.addEventListener("click", e => {
 	if (e.target.closest && e.target.closest("#globkey")) { GP.open ? closeGlobal() : openGlobal(); e.stopPropagation(); return; }
-	if (globEat) { globEat = false; globStop(e); return; }
 	if (!GP.open) return;
 	const pop = document.getElementById("globpop");
-	if (pop.contains(e.target)) { const a = e.target.closest("[data-ga]"); GP.shift = !!e.shiftKey; if (a) globalClick(a); return; }
-	if (e.target.closest && e.target.closest(GLOBAL_THROUGH)) return;
-	closeGlobal();
-	if (!(e.target.closest && e.target.closest(GLOBAL_HEADER))) globStop(e);
+	if (pop.contains(e.target)) { const a = e.target.closest("[data-ga]"); GP.shift = !!e.shiftKey; if (a) globalClick(a); }
 }, true);
 document.addEventListener("change", e => {
 	const s = e.target.closest && e.target.closest("#globpop [data-gsel]"), H = DeskGlobal.host;
 	if (s && H && H.change && H.view()) H.change(s, H.view());
 });
-addEventListener("resize", () => { if (GP.open) placeGlobal(); });
 Keys.bind({ id: "global-key", scope: "any", area: "Top bar", keys: ["GLOBAL key"], group: "Anywhere", does: "The GLOBAL page: the machine's own settings, kept in its memory: MIDI channels, sync and the rest (also the engine menu: GLOBAL…)" });
 Keys.bind({ id: "close-global", short: "Close", scope: "any", keys: ["Escape"], group: "Anywhere", does: "Back from the GLOBAL page to the workspace", when: () => GP.open, run: () => closeGlobal() });
 
@@ -4953,7 +4992,7 @@ const MM_GTIP={
  multiMap:"MULTI MAP: notes on this channel start patterns as the MULTI MAP says (Perform)",
  pcIn:"Measured: the machine always takes a program change on its base channel (it selects a pattern); no setting turns it off",
  pcOut:"Picking a pattern sends a program change on the base channel",
- tempoIn:"INTERNAL: its own tempo. EXTERNAL: follows MIDI clock. In a DAW the plug-in sets EXT itself (it follows the host)",
+ tempoIn:"INTERNAL: its own tempo. EXTERNAL: follows MIDI clock. In a DAW: EXT follows the DAW's tempo and transport (a new plug-in starts so); INT runs the machine on its own clock and tempo, kept with the project",
  ctrlIn:"React to MIDI Start, Stop and Continue. In a DAW the plug-in turns it on itself",
  tempoOut:"Send MIDI clock",ctrlOut:"Send MIDI Start and Stop",
  routing:"How the six tracks reach the outputs (also on Mix)",
@@ -5359,7 +5398,7 @@ function libAct(a){const k=LIB.sel,kit=LIB.open==="kit";
    copy:()=>kit?kitCopy(k):patCopy(k),paste:()=>kit?kitPaste(k):patPaste(k),clear:()=>kit?kitClear(k):patClear(k),go:()=>patGo(k,false),now:()=>patGo(k,true)})[a]?.()}
 
 /* ----- mouse ----- */
-document.addEventListener("click",e=>{if(!LIB.open)return;if($("#libpop").contains(e.target)||e.target.closest?.("#dlg,#kitf,#pat,#undo,#redo,#kpop"))return;closeLib(false)},true);
+/* review 1 (B-094): every modal locks: a click outside the library no longer closes it (Esc, its close key) */
 document.addEventListener("click",e=>{if(!LIB.open||!$("#libpop").contains(e.target)||e.target.closest?.("#lsin"))return;
  const a=e.target.closest("[data-la]");if(a){if(!a.disabled)libAct(a.dataset.la);return}
  /* a click loads the slot at once (LOAD KIT; over unsaved edits the machine asks first: Save and load, Load
@@ -5465,7 +5504,7 @@ function audioClick(a){const f=a.dataset.am;
  if(f==="midiIn"){audioSend({set:"midiInput",device:a.dataset.id,on:a.getAttribute("aria-pressed")!=="true"});return}}
 document.addEventListener("change",e=>{const s=e.target.closest?.("#audiopop select[data-am]");if(!s)return;const f=s.dataset.am,v=s.value;
  const cmd={driver:{set:"driver",device:v},output:{set:"output",device:v},input:{set:"input",device:v},rate:{set:"sampleRate",value:+v},buffer:{set:"bufferSize",value:+v},midiOut:{set:"midiOutput",device:v}}[f];if(cmd)audioSend(cmd)});
-document.addEventListener("click",e=>{if(!AP.open)return;const pop=$("#audiopop");if(pop.contains(e.target)){const a=e.target.closest("[data-am]");if(a&&a.tagName==="BUTTON")audioClick(a);return}if(!e.target.closest?.("#dlg,.kpop,#kpop,.lcdeng"))closeAudio()},true);
+document.addEventListener("click",e=>{if(!AP.open)return;const pop=$("#audiopop");if(pop.contains(e.target)){const a=e.target.closest("[data-am]");if(a&&a.tagName==="BUTTON")audioClick(a);return}/* review 1 (B-094): every modal locks: no close on a click outside */},true);
 document.addEventListener("keydown",e=>{if(e.target.closest?.("input,select,textarea")||e.metaKey||e.ctrlKey||e.altKey)return;
  if(AP.open&&e.key==="Escape"){e.preventDefault();e.stopImmediatePropagation();closeAudio();return}
  if(e.key===","&&(!$("#dlg")||$("#dlg").hidden)){e.preventDefault();e.stopImmediatePropagation();AP.open?closeAudio():openAudio()}},true);
@@ -5639,7 +5678,7 @@ Keys.bind({id:"song-play-from",short:"From here",scope:"song",keys:["Enter"],gro
 
 /* ===== Undo / redo: the host's, one step per gesture (the plug-in's core; on its own the demo host's snapshots,
    54-demo.js). A gesture ends on the events below, unless a drag, a hold or a GEN run or MUTATE trial holds it. ===== */
-function commit(){if(laneDraw||rollDrag||selDrag||drag||active||arpDrag||paint||ttPaint||rotHold)return;genStale();if(genHeld())return;if(HOST.commit)HOST.commit()}
+function commit(){if(laneDraw||rollDrag||selDrag||drag||active||arpDrag||rotHold)return;genStale();if(genHeld())return;if(HOST.commit)HOST.commit()}
 function undo(){genEnd();if(HOST.undo)HOST.undo()}
 function redo(){genEnd();if(HOST.redo)HOST.redo()}
 ["pointerup","keyup","click","change"].forEach(ev=>document.addEventListener(ev,()=>setTimeout(commit,0)));
@@ -5736,21 +5775,10 @@ document.addEventListener("pointermove",e=>{if(!msPaint)return;if(e.buttons===0&
 function endMsPaint(){if(!msPaint)return;msPaint=null;setTimeout(()=>{msClickEaten=false},0)}
 document.addEventListener("pointerup",endMsPaint);document.addEventListener("pointercancel",endMsPaint);addEventListener("blur",endMsPaint);
 addEventListener("click",e=>{if(!msClickEaten)return;msClickEaten=false;e.stopImmediatePropagation();e.preventDefault()},true);
-/* P7: a drag across the envelope steps paints them: the first step decides on or off,
-   and the drag is one edit (one undo step). A click is a one-step paint. */
-let paint=null;
-function paintAt(el){if(!paint||!el)return;const s=+el.dataset.s,k=el.dataset.env,key=k+":"+s;if(k!==paint.k||paint.done.has(key))return;paint.done.add(key);
- const tr=trk(S.sel);
- const st=tr.steps[s];if(!st||st.off||!!st[k]===paint.on)return;st[k]=paint.on?1:0;if(!st.n&&!st.a&&!st.f&&!st.l){tr.steps[s]=null;clearStepLocks(S.sel,s)}editStep(S.sel,s);
- el.classList.toggle("on",paint.on);el.setAttribute("aria-pressed",paint.on);paint.moved=true}
-function endPaint(){if(!paint)return;const p=paint;paint=null;if(p.moved)rerenderSeq()}
-document.addEventListener("pointerup",endPaint);document.addEventListener("pointercancel",endPaint);addEventListener("blur",endPaint);
 /* ===== Pointer input in the workspace ===== */
 let drag=null,joyDrag=null,splitDrag=null,arpDrag=null;
 const main=$("#main");
 main.addEventListener("pointerdown",e=>{
- const pc=e.button===0&&!e.shiftKey&&!e.altKey&&!e.metaKey&&!e.ctrlKey&&!S.learn&&e.target.closest(".tlane [data-env]");
- if(pc){const s=+pc.dataset.s,tr=trk(S.sel),k=pc.dataset.env;const on=!tr.steps[s]?.[k];paint={k,on,done:new Set()};try{main.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();paintAt(pc);return}
  if(S.learn){const el=e.target.closest(".pc[data-g]");if(el&&(PAGES.includes(el.dataset.g)||el.dataset.g==="MID")){e.preventDefault();e.stopPropagation();const t=el.dataset.t!=null?+el.dataset.t:S.sel;S.learnT={t,pid:el.dataset.g+"."+el.dataset.n};toast(`Target: ${tLabel(t)} ${pidLabel(t,S.learnT.pid)}. Now press 1-8 for a knob.`);if(HOST.learnTarget)HOST.learnTarget({...S.learnT});return}}
  const h=e.target.closest(".lfohandle");if(h){cordStart(e,h);return}
  const pk=e.button===0&&e.target.closest('canvas[data-ed="dktrn"]');if(pk){trnDown(pk,e);e.preventDefault();return}
@@ -5764,7 +5792,6 @@ main.addEventListener("pointerdown",e=>{
  if(e.target.closest("#splitm")){splitDrag=true;$("#splitm").setPointerCapture(e.pointerId);e.preventDefault();return}
  const key=e.target.closest(".kb [data-key]");if(key){kbDown=true;$("#kb").setPointerCapture(e.pointerId);playKey(+key.dataset.key);e.preventDefault()}});
 main.addEventListener("pointermove",e=>{
- if(paint){if(e.buttons===0&&e.pointerType==="mouse"){endPaint();return}paintAt(document.elementFromPoint(e.clientX,e.clientY)?.closest(".tlane [data-env]"));return}
  if(e.buttons===0&&e.pointerType==="mouse"&&dragging()){endDrag(e);return}
  if(cord){cordMove(e);return}
  const roll=e.target.closest?.("canvas.roll")||(rollDrag&&$("#roll"));if(roll&&(rollDrag||e.target===roll)){rollMove(roll,e);if(rollDrag)return}
@@ -5825,7 +5852,6 @@ document.addEventListener("click",e=>{
  const mu=e.target.closest("[data-mute]"),so=e.target.closest("[data-solo]");
  if(mu||so){const i=+(mu||so).dataset[mu?"mute":"solo"],t=trk(i);if(mu&&e.shiftKey){ARMED.has(i)?ARMED.delete(i):ARMED.set(i,!t.mute);showArmed();return}if(mu)t.mute=!t.mute;else t.solo=!t.solo;tx();if(HOST.mutes)HOST.mutes();render();return}
  const gm=e.target.closest("[data-gmute]");if(gm){const t=trk(+gm.dataset.gmute);t.mute=!t.mute;tx();if(HOST.mutes)HOST.mutes();render();return}
- const ev=e.target.closest("[data-env]");if(ev){if(e.detail>0)return;clickEnv(ev.dataset.env,+ev.dataset.s);return}	/* a mouse click was the paint gesture's */
  const sd=e.target.closest("[data-side]");if(sd){setSide(sd.dataset.side);return}
  const dk=e.target.closest("[data-dock]");if(dk){S.dock=dk.dataset.dock;rerenderSeq();return}
  const sdk=e.target.closest("[data-snddock]");if(sdk){S.dock=sdk.dataset.snddock;goWs("seq");return}
@@ -6154,7 +6180,7 @@ function show(v,all){
  if(busyNow()){showLater=true;return}
  showLater=false;render();drawLib()}
 /* busy: a gesture, or a menu open (a render would close it under the person: the drawing waits for it, as for a drag) */
-const busyNow=()=>{try{return !!(S.genEnding||drag||laneDraw||rollDrag||selDrag||active||arpDrag||l2drag||joyDrag||splitDrag||cord||kbDown||paint)||menuOpen()}catch(_){return false}};
+const busyNow=()=>{try{return !!(S.genEnding||drag||laneDraw||rollDrag||selDrag||active||arpDrag||l2drag||joyDrag||splitDrag||cord||kbDown)||menuOpen()}catch(_){return false}};
 /* RECORD as the machine is in it: "off" | "grid" | "live" | "step" (wave 7: STEP RECORDING, at = the step the next note
    writes, -1 unknown) */
 function setRecord(mode,at=-1){const on=mode==="grid"||mode==="live",was=S.recMode;S.recMode=mode;S.stepAt=mode==="step"?at:-1;if(mode!=="step")S.stepT=null;if(mode!=="live")eraseUp();

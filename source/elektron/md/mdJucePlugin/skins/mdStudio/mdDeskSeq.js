@@ -76,7 +76,10 @@ function renderLane() {
 	const pg = pages(tr.m, Cat); $("#chips").innerHTML = [["Synth", pg.s], ["Effects", pg.e], ["Routing", pg.r]].map(([lab, ps]) => {
 		return `<span class="plab">${lab}</span>` + ps.map(p => {
 			if (!p) return `<span class="pk empty"></span>`; const n = V.locks.get(lk(t, p))?.size || 0;
-			return `<button class="pk ${n ? "has" : ""}" data-lane="${p}" aria-pressed="${p === S.lane}" title="${n ? n + " locked step" + (n > 1 ? "s" : "") : "No locks yet"}">${laneLabel(tr.m, p, Cat)}${n ? `<i>${n}</i>` : ""}</button>`;
+			/* review 1 (B-097): the key says the parameter's name alone (its column says SYNTH, EFFECTS or ROUTING; the
+			   full name, SYN·DIST or RTG·DIST, in its tip); the count beside the name, never over it */
+			const full = laneLabel(tr.m, p, Cat), plain = full.replace(/^(SYN|RTG|FX)·/, "");
+			return `<button class="pk ${n ? "has" : ""}" data-lane="${p}" aria-pressed="${p === S.lane}" aria-label="${full}${n ? ", " + n + " locked" : ""}" title="${full}: ${n ? n + " locked step" + (n > 1 ? "s" : "") : "no locks yet"}"><span class="pkn">${plain}</span>${n ? `<i>${n}</i>` : ""}</button>`;
 		}).join("");
 	}).join("");
 	lane.innerHTML = steps().map(s => {

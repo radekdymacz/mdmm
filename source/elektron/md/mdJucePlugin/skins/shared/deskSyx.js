@@ -10,7 +10,9 @@
    8 x 16, songs 2 x 16, globals 1-8), a slot that holds data on the machine with a lit dot, the one that plays now
    cream with ▶. A click on a slot leaves it out or takes it again, Shift-click a range. Three states, one footer:
    preview (Cancel, Import n), importing (the phases and a bar; Stop, Hide), report (per slot what the machine did,
-   the problems as a list; Done only).
+   the problems as a list; Done only). Review 1 (B-094, B-095): one size for the whole run (deskSyx.css), a slot's facts
+   in a line of the panel (no tooltip over Stop and Hide); at work Esc and a click outside keep it (data-busy); after
+   Hide the engine menu's entries show it again, with its report when the run ended meanwhile.
    0.6 (wave 6, DESIGN-machine-menus.md §2): the same panel exports too (ALL ticked by default; unticked, each kind with
    its range), the import gets its PLACE row (ORIGINAL, or SPECIFIC from a first slot per kind: the host previews again,
    each item at the slot it lands in, and the panel asks before an item lands on a slot that holds data) and VERIFY ONLY
@@ -183,7 +185,7 @@ const Syx = (() => {
 		const second = k === "pattern" && (!i.name || i.name === c.label) ? (i.kit != null ? "K" + nn(i.kit + 1) : "") : i.name || "—";
 		const cls = ["syxc", i.overwrites ? "over" : "fresh", i.plays ? "plays" : "", out ? "off" : "", i.readable === false ? "unread" : "", r && problem(r.outcome) ? "bad" : ""].filter(Boolean).join(" ");
 		const mark = r ? `<i class="syxo">${OUTCOME[r.outcome]?.[1] || "?"}</i>` : "";
-		return `<button type="button" class="${cls}" data-syxitem="${esc(id)}" data-syxname="${esc(i.name || "")}"${r ? ` data-syxout="${esc(r.outcome)}"` : ""} title="${esc(tip(k, i, out))}"><b>${i.plays ? "▶ " : ""}${c.label}</b><span>${esc(second)}</span>${mark}</button>`;
+		return `<button type="button" class="${cls}" data-syxitem="${esc(id)}" data-syxname="${esc(i.name || "")}"${r ? ` data-syxout="${esc(r.outcome)}"` : ""} data-syxtip="${esc(tip(k, i, out))}" aria-label="${esc(tip(k, i, out))}"><b>${i.plays ? "▶ " : ""}${c.label}</b><span>${esc(second)}</span>${mark}</button>`;
 	}
 	function pane(k) {
 		const list = last.items[k], g = layout(last.model, k, list);
@@ -256,6 +258,7 @@ const Syx = (() => {
 			<span class="note">${place.specific ? "The grid shows where each item lands. Each kind starts at its own first slot." : "Each item goes back to the slot it came from."}</span></div>`;
 	}
 	function drawExport() {
+		delete pop.dataset.busy;
 		pop.classList.add("syx-export"); pop.classList.toggle("sxallon", ex.all);
 		for (const st of ["preview", "error", "running", "report"]) pop.classList.remove("syx-" + st);
 		const f = ex.info?.kinds || {};
@@ -276,9 +279,12 @@ const Syx = (() => {
 		pop.classList.remove("syx-export", "sxallon");
 		if (!last) return;
 		for (const st of ["preview", "error", "running", "report"]) pop.classList.toggle("syx-" + st, st === state);
+		/* review 1 (B-094): at work, Esc does not close the panel (the modal layer reads data-busy); Hide does, and the
+		   engine menu shows it again (running()) */
+		if (state === "running") pop.dataset.busy = "1"; else delete pop.dataset.busy;
 		if (!last.ok) { pop.innerHTML = head() + `<p class="syxwhy">${esc(last.text)}</p><div class="syxfoot"><div class="syxmsg"></div><div class="btnrow"><button type="button" data-syxgo="close">Close</button></div></div>`; return; }
 		const list = state === "report" && problemsOnly && [...res.values()].some(r => problem(r.outcome));
-		pop.innerHTML = head() + tabs() + `<div class="syxbody">${list ? `<div class="syxpane">${problems()}</div>` : kindsIn().map(([k]) => pane(k)).join("")}</div>` + placeRow() + tools() + foot();
+		pop.innerHTML = head() + tabs() + `<div class="syxbody">${list ? `<div class="syxpane">${problems()}</div>` : kindsIn().map(([k]) => pane(k)).join("")}</div>` + `<p class="syxtipline" aria-hidden="true"></p>` + placeRow() + tools() + foot();
 		sums(); bar();
 	}
 	function sums() {
@@ -323,7 +329,7 @@ const Syx = (() => {
 		const pr = q(".sxplace"); if (pr) pr.outerHTML = placeRow();
 	}
 	function preview(m) {
-		mode = "import";
+		mode = "import"; unseen = false;
 		const again = placing && m.ok && last && last.ok && m.file === last.file && state === "preview";
 		placing = false; clearTimeout(placeW);
 		last = m; state = m.ok ? "preview" : "error"; skip = new Set(); anchor = null; res = new Map(); rep = null; picks = []; steps = []; lastProgress = null;
@@ -385,7 +391,10 @@ const Syx = (() => {
 			rep = { text: m.text, report: m.report };
 			res = outcomes(picks, m.report);
 			problemsOnly = [...res.values()].some(r => problem(r.outcome));
-			state = "report"; draw(); return;
+			state = "report"; draw();
+			/* hidden (Hide): the report waits for the engine menu, and the toast says so */
+			if (pop.hidden) { unseen = true; say(`${rep.text || "Done."} Import SysEx… in the engine menu shows the report.`); }
+			return;
 		}
 		if (m.running) { if (state !== "running") { state = "running"; draw(); } else bar(); return; }
 		if (state === "running") { state = "preview"; draw(); }	// the host refused or ended without a report
@@ -401,6 +410,9 @@ const Syx = (() => {
 		if (e.target.dataset?.syxgo === "problems") { problemsOnly = e.target.checked; draw(); }
 	});
 	/* a value (place, from, to): the wheel, a drag up or down, the arrow keys, as other values */
+	/* review 1 (B-095): a slot's facts in a line of the panel, not a tooltip (a tooltip covered Stop and Hide) */
+	pop.addEventListener("mouseover", e => { const l = q(".syxtipline"); if (!l) return; const it = e.target.closest?.("[data-syxtip]"); l.textContent = it ? it.dataset.syxtip : ""; });
+	pop.addEventListener("mouseleave", () => { const l = q(".syxtipline"); if (l) l.textContent = ""; });
 	pop.addEventListener("wheel", e => { const v = e.target.closest?.("[data-sxv]"); if (!v) return; e.preventDefault(); nudge(v, e.deltaY < 0 ? 1 : -1); }, { passive: false });
 	pop.addEventListener("keydown", e => {
 		const v = e.target.closest?.("[data-sxv]"); if (!v) return;
@@ -472,7 +484,7 @@ const Syx = (() => {
 		else if (a === "verify" && Syx.host && state === "preview") start(true);
 		else if (a === "stop" && Syx.host) Syx.host.stop();
 		else if (a === "help") { const h = q(".syxhelp"); h.hidden = !h.hidden; g.setAttribute("aria-expanded", String(!h.hidden)); }
-		else if (a === "close") pop.hidden = true;
+		else if (a === "close") { pop.hidden = true; if (state === "running") say(`${last?.reset ? "The reset" : "The import"} goes on: Import SysEx…, Export SysEx… or Reset machine… in the engine menu shows it again.`); }
 	});
 	/* the export panel: everything by default; the host's facts fill the kinds and their default ranges */
 	function openExport() {
@@ -513,8 +525,13 @@ const Syx = (() => {
 		Syx.host.ask(`${what}<br><br>What the machine holds now is lost: there is no undo. Export SysEx… first keeps a way back.`,
 			[[how === "empty" ? "Clear everything" : "Factory reset", "danger", () => Syx.host.reset(how)], ["Export SysEx…", "", openExport], ["Cancel", "cream", () => { }]]);
 	}
+	/* an import or a reset at work, its panel hidden (Hide): the engine menu's entries show it again rather than start
+	   another (review 1, B-094: a running job is never out of reach) */
+	let unseen = false;
+	function running() { return mode === "import" && (state === "running" || (state === "report" && unseen)) && !!last && last.ok; }
 	/* the engine menu's entries of the panel */
 	function menu(v) {
+		if ((v === "import" || v === "export" || v === "reset") && running()) { unseen = false; pop.hidden = false; draw(); return true; }
 		if (v === "import") { if (Syx.host) Syx.host.choose(); return true; }
 		if (v === "export") { openExport(); return true; }
 		if (v === "reset") { reset(); return true; }
@@ -523,6 +540,6 @@ const Syx = (() => {
 	/* an export's news (written, or the waveforms read so far) */
 	function exported(m) { say(m.text); return m; }
 	return {
-		preview, progress, exported, exportInfo, openExport, reset, menu, resetNews: m => say(m.text), host: null, model
+		preview, progress, exported, exportInfo, openExport: () => { if (running()) { unseen = false; pop.hidden = false; draw(); return; } openExport(); }, reset, menu, running, resetNews: m => say(m.text), host: null, model
 	};
 })();
