@@ -222,6 +222,7 @@ PIDS=""
 for u in $UNITS; do
 	M=${u%%:*}; rest=${u#*:}; H=${rest%%:*}; k=${rest#*:}
 	sel=$SEL; t=$(tier_of "$H"); [ -n "$t" ] && sel="$sel~$t"; [ "$JOBS" -gt 1 ] && sel="$sel@$k/$JOBS"
+	[ "${MDMM_JOURNEY_E2E:-0}" = 1 ] && sel="$sel:e2e"	# the evidence run: a snapshot at each journey's proof moment (scripts/mdmm-e2e.sh)
 	dir="$OUT/$(echo $M | tr A-Z a-z)-$H$( [ "$JOBS" -gt 1 ] && echo "-$k")"
 	# a free slot: wait on the PIDs started (never on a process name)
 	while [ "$(echo $PIDS | wc -w)" -ge "$JOBS" ]; do

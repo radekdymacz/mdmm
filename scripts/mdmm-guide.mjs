@@ -44,12 +44,22 @@ function firstCell(machine, r) {
 // row id -> names of the journeys that prove it (their `proves:` fields; never stored in the JSON)
 const journeysOf = journeysByRow(readJourneys(root));
 
+// the end-to-end run's result for each row (doc/features/e2e-<machine>.json, written by scripts/mdmm-e2e.sh --write-data,
+// never by hand): the maps' E2E column, when the file is there
+const e2eOf = (machine) => {
+	const f = path.join(root, 'doc', 'features', `e2e-${machine}.json`);
+	return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null;
+};
+
 function tableBlock(machine, data, b) {
 	const out = [];
 	const pages = b.pages ? ` (${b.pages})` : '';
-	out.push(`## ${b.chapter}${pages}`, '', `| ${[...data.columns, 'Journeys'].join(' | ')} |`, `|${[...data.columns, 'Journeys'].map(() => '---').join('|')}|`);
+	const e2e = e2eOf(machine);
+	const cols = [...data.columns, 'Journeys', ...(e2e ? ['E2E'] : [])];
+	out.push(`## ${b.chapter}${pages}`, '', `| ${cols.join(' | ')} |`, `|${cols.map(() => '---').join('|')}|`);
 	for (const r of data.rows.filter((x) => x.chapter === b.chapter)) {
-		const cells = [firstCell(machine, r), r.function, r.machine, SYMBOL[r.status], r.where, r.notes, (journeysOf.get(r.id) || []).length || '–'];
+		const e = e2e && e2e.rows[r.id];
+		const cells = [firstCell(machine, r), r.function, r.machine, SYMBOL[r.status], r.where, r.notes, (journeysOf.get(r.id) || []).length || '–', ...(e2e ? [e ? `${e.result}${e.shot ? ` (${e.shot})` : ''}` : '–'] : [])];
 		out.push(`| ${cells.join(' | ')} |`);
 	}
 	return out;
@@ -148,16 +158,31 @@ function pngSize(file) {
 
 // the newest snapshot of a name: journeys' snapshots (scripts/mdmm-snap.py into temp/journeys/<run>/shots/ or
 // temp/shots/), or one kept in doc/features/shots/; a re-run of the journeys refreshes every picture
+// (the end-to-end run's, temp/evidence/<version>/shots/<name>.webp: 1440 px wide, scripts/mdmm-e2e.sh; a .png from
+// the older helpers works too)
 function newestSnapshot(name) {
 	const places = [path.join(root, 'doc', 'features', 'shots'), path.join(root, 'temp', 'shots')];
-	const runs = path.join(root, 'temp', 'journeys');
-	if (fs.existsSync(runs)) for (const d of fs.readdirSync(runs)) places.push(path.join(runs, d, 'shots'));
+	for (const base of ['journeys', 'evidence']) {
+		const runs = path.join(root, 'temp', base);
+		if (fs.existsSync(runs)) for (const d of fs.readdirSync(runs)) places.push(path.join(runs, d, 'shots'));
+	}
 	let best = null;
-	for (const dir of places) {
-		const f = path.join(dir, `${name}.png`);
+	for (const dir of places) for (const ext of ['webp', 'png']) {
+		const f = path.join(dir, `${name}.${ext}`);
 		if (fs.existsSync(f) && (!best || fs.statSync(f).mtimeMs > fs.statSync(best).mtimeMs)) best = f;
 	}
 	return best;
+}
+
+// width and height of a snapshot: a PNG (twice the page's size, the older helpers) or a WebP (the page's size)
+function snapSize(file) {
+	if (!file.endsWith('.webp')) return pngSize(file);
+	const b = fs.readFileSync(file);
+	const kind = b.toString('ascii', 12, 16);
+	if (kind === 'VP8 ') return { w: b.readUInt16LE(26) & 0x3fff, h: b.readUInt16LE(28) & 0x3fff };
+	if (kind === 'VP8X') return { w: 1 + b.readUIntLE(24, 3), h: 1 + b.readUIntLE(27, 3) };
+	if (kind === 'VP8L') { const v = b.readUInt32LE(21); return { w: 1 + (v & 0x3fff), h: 1 + ((v >> 14) & 0x3fff) }; }
+	throw new Error(`${file}: not a WebP`);
 }
 
 function shotHtml(machine, name, caption, web = false) {
@@ -168,9 +193,10 @@ function shotHtml(machine, name, caption, web = false) {
 	const snap = newestSnapshot(name);
 	if (snap) {
 		fs.mkdirSync(path.join(GUIDE, 'shots'), { recursive: true });
-		fs.copyFileSync(snap, path.join(GUIDE, 'shots', `${name}.png`));
-		const { w, h } = pngSize(snap);
-		return `<figure class="gd-shot">${zoom(`/guide/shots/${name}.png`, `<img src="/guide/shots/${name}.png" width="${w}" height="${h}" alt="${alt}" loading="lazy">`)}${cap}</figure>`;
+		const ext = path.extname(snap);
+		fs.copyFileSync(snap, path.join(GUIDE, 'shots', `${name}${ext}`));
+		const { w, h } = snapSize(snap);
+		return `<figure class="gd-shot">${zoom(`/guide/shots/${name}${ext}`, `<img src="/guide/shots/${name}${ext}" width="${w}" height="${h}" alt="${alt}" loading="lazy">`)}${cap}</figure>`;
 	}
 	const site = (size, ext) => path.join(root, 'site', 'public', 'shots', `${name}-${size}.${ext}`);
 	if (fs.existsSync(site(1440, 'png'))) {
