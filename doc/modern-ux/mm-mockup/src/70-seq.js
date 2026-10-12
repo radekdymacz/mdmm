@@ -104,7 +104,7 @@ function clickStep(t,s,e){const tr=trk(t),st=tr.steps[s];
  if(e.shiftKey){tr.steps[s]=st?.off?null:{off:1};if(!st?.off)clearStepLocks(t,s)}
  else if(e.altKey&&!isMidiT(t)){if(!st||st.off)tr.steps[s]={n:[lastNote(t,s)],a:0,f:0,l:0};else{const k=stepKind(st);Object.assign(st,k==="full"?{a:0,f:0,l:0}:{a:1,f:1,l:1})}}
  else{if(st&&!st.off){tr.steps[s]=null;clearStepLocks(t,s)}else tr.steps[s]=note(lastNote(t,s))}
- editStep(t,s);renderTop();if(t!==S.sel){S.sel=t;autoRange(t);render()}else rerenderSeq()}
+ editStep(t,s);renderTop();if(t!==S.sel){S.sel=t;stepFocus();autoRange(t);render()}else rerenderSeq()}
 function clickEnv(b,s){const t=S.sel,st=trk(t).steps[s];if(!st||st.off)return;st[b]=st[b]?0:1;if(!st.n&&!st.a&&!st.f&&!st.l){trk(t).steps[s]=null;clearStepLocks(t,s)}editStep(t,s);rerenderSeq()}
 let laneDraw=null;
 function laneAt(e){const lane=$("#lane");if(!lane)return;if(laneDraw.ramp){rampAt(e);return}const el=document.elementFromPoint(e.clientX,e.clientY)?.closest(".lb");if(!el||!lane.contains(el))return;
@@ -317,4 +317,4 @@ addEventListener("pointermove",e=>{if(ttPaint){if(e.buttons===0&&e.pointerType==
 function ttEnd(){if(!ttPaint)return;const p=ttPaint;ttPaint=null;commit();if(p.moved)rerenderSeq()}
 addEventListener("pointerup",ttEnd,true);addEventListener("pointercancel",ttEnd,true);
 document.addEventListener("click",e=>{const k=e.target.closest(".ttrow [data-tt]");if(k)setTrigType(k.dataset.tt)});
-Keys.bind({id:"trig-type",short:"Note",scope:"seq",keys:["Escape"],group:"Sequence",does:"Back to Note after Slide or Swing: a click on the roll writes notes again",when:()=>S.ws==="seq"&&!!S.tt&&S.tt!=="note",run:()=>setTrigType("note")});
+Keys.bind({id:"trig-type",short:"Note",scope:"seq",keys:["Escape"],group:"Sequence",does:"Back to Note after Slide or Swing: a click on the roll writes notes again",when:()=>S.ws==="seq"&&!!S.tt&&S.tt!=="note"&&!stepOn(),run:()=>setTrigType("note")});

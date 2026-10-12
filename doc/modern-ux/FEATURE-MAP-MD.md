@@ -408,7 +408,7 @@ Of the 280 applicable rows, 245 are fully covered, 22 partly, 13 not at all.
 4. **Swing pattern and per-track swing**: only the amount is editable (§8).
 5. **Sysex send and receive control**: export is all-or-nothing, no ranges; no specific-place receive; verify is not a dry run (§10). The note map can only be reset together with the rest of the global (§16).
 6. **Machine preview before loading** in the picker (§2).
-7. **Live-record erase** (EXIT + TRIG, EXIT + knob) and the tempo helpers (delayed change, +/-10 % nudge) (§8).
+7. **Live-record erase of locks** (EXIT + knob; EXIT + TRIG is Delete held since 0.6) and the tempo helpers (delayed change, +/-10 % nudge) (§8).
 8. **Trig in A/B pad settings** are shown but cannot be edited (§10).
 9. **Accent / slide ALL vs per-track flag** cannot be changed, only honoured (§8).
 10. **Pause, panic (double STOP), reset menu** (empty / factory / soft reset) (§1, §12).

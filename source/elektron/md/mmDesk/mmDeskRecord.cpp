@@ -59,12 +59,16 @@ namespace mmDesk
 		if(m_tel.recording != 2)
 			return refuse("Not live recording: erase works while LIVE RECORDING plays.");
 		const auto t = num(_m, "t", 0);
+		m_exitSeenMs = clock();
+		if(m_exitHeld && m_eraseTrack == t)
+			return ok();
 		std::vector<Key> keys{static_cast<Key>(static_cast<int>(Key::Track1) + t)};
 		if(!m_exitHeld)
 			keys.push_back(Key::ExitDown);
 		if(!pressKeys(keys))
 			return refuse(g_panelBusy);
 		m_exitHeld = true;
+		m_eraseTrack = t;
 		return ok("Erasing T" + std::to_string(t + 1) + "'s notes as they play, while Delete is held.");
 	}
 

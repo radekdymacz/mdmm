@@ -1397,6 +1397,23 @@ namespace
 		check(ok() && keys.size() == 6 && keys[4] == "release:trig6" && keys[5] == "release:exit", "off: both let go");
 		desk.onPageMessage(cmd(R"({"op":"liveErase","t":5,"on":false,"id":55})"));
 		check(ok() && keys.size() == 6, "off again: nothing pressed");
+		// the page says every 250 ms that Delete is still held; a page that goes quiet (closed, reloaded) lets the keys go
+		desk.onPageMessage(cmd(R"({"op":"liveErase","t":3,"on":true,"id":58})"));
+		for(int i = 0; i < 6; ++i)
+		{
+			now += 250;
+			desk.tick();
+			desk.onPageMessage(cmd(R"({"op":"liveErase","t":3,"on":true,"id":59})"));
+		}
+		check(keys.size() == 8, "held with the page's word every 250 ms: nothing let go, nothing pressed again");
+		now += 1100;
+		desk.tick();
+		check(keys.size() == 10 && keys[8] == "release:trig4" && keys[9] == "release:exit", "no word for over a second: both let go");
+		desk.onPageMessage(cmd(R"({"op":"liveErase","t":3,"on":true,"id":60})"));
+		keys.clear();
+		desk.onPageMessage(cmd(R"({"op":"ready"})"));
+		check(keys == std::vector<std::string>{"release:trig4", "release:exit"}, "the page (re)attached: both let go");
+		keys.resize(6);
 		desk.onPageMessage(cmd(R"({"op":"liveErase","t":1,"on":true,"id":56})"));
 		keys.clear();
 		desk.onPageMessage(cmd(R"({"op":"record","id":5})"));

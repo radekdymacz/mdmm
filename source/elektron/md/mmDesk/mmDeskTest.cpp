@@ -462,6 +462,22 @@ namespace
 			check(keysOf(R"({"op":"liveErase","t":3,"on":true})") == std::vector<K>{K::Track4}, "another track: the focus moves, EXIT stays down");
 			check(keysOf(R"({"op":"liveErase","t":3,"on":false})") == std::vector<K>{K::ExitUp}, "off: EXIT up");
 			check(keysOf(R"({"op":"liveErase","t":3,"on":false})").empty(), "off again: nothing");
+			// the page says every 250 ms that Delete is still held; a page that goes quiet (closed, reloaded) lets EXIT go
+			keysOf(R"({"op":"liveErase","t":2,"on":true})");
+			m.keyLog.clear();
+			for(int i = 0; i < 6; ++i)
+			{
+				run(250);
+				msg(R"({"op":"liveErase","t":2,"on":true})");
+			}
+			check(m.keyLog.empty(), "held with the page's word every 250 ms: nothing let go, nothing pressed again");
+			run(1200);
+			check(m.keyLog == std::vector<K>{K::ExitUp}, "no word for over a second: EXIT up");
+			keysOf(R"({"op":"liveErase","t":2,"on":true})");
+			m.keyLog.clear();
+			msg(R"({"op":"ready"})");
+			run(20);
+			check(m.keyLog == std::vector<K>{K::ExitUp}, "the page (re)attached: EXIT up");
 			keysOf(R"({"op":"liveErase","t":0,"on":true})");
 			m.keyLog.clear();
 			m.recording = 0;

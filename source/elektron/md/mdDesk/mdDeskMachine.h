@@ -287,7 +287,10 @@ namespace mdDesk
 		int m_reloadsPending = 0;
 		double m_reloadQueuedMs = 0;
 		static constexpr double g_reloadHoldMs = 10000;	// a reload not restored by then holds nothing any more
-		static constexpr double g_songReloadQuietMs = 300;	// a song edit, then this long before the song loads again
+		static constexpr double g_songReloadQuietMs = 300;
+		// liveErase: the page says the key is still held every 250 ms; without word for this long the keys are let go
+		// (a page that went away, reloaded or died while Delete was held)
+		static constexpr double g_eraseQuietMs = 1000;	// a song edit, then this long before the song loads again
 		bool reloadHolds() const { return m_reloadsPending > 0 && now() - m_reloadQueuedMs < g_reloadHoldMs; }
 
 		Probe m_probe = Probe::Running;
@@ -313,6 +316,7 @@ namespace mdDesk
 		KnobRecorder m_knobs;
 		std::optional<RecLock> m_recLock;
 		std::optional<uint8_t> m_erasing;	// liveErase: the track whose TRIG key is held with EXIT/NO
+		double m_eraseSeenMs = 0;			// liveErase: the page's last word that the key is still held
 		double m_recordPollMs = -1e9;
 		deskCore::Sequencer<Act> m_sequence;
 		TweakTurns m_tweak;

@@ -80,17 +80,21 @@ function playFromRow(i = S.songSel) {
 /* ===== erase while live recording (wave 7, manual p.40) =====
    Delete (or ⌫) held while live recording is EXIT/NO with the selected track's TRIG key held on the machine: the
    firmware takes that track's trigs off as they play. Let go (or the window loses the keys): both keys up. The core
-   lets them go by itself when recording ends. Key repeat is ignored; the rail's header of the track is marked. */
-const ERASE = { t: null };
+   lets them go by itself when recording ends, when the page comes back, and when the page has not said for a second that
+   the key is still held (the page says it every 250 ms: a page that went away while Delete was down lets go). Key repeat
+   is ignored; the rail's header of the track is marked. */
+const ERASE = { t: null, beat: 0 };
 function eraseDown(e) {
 	if (e.repeat || ERASE.t === S.sel) return;
 	ERASE.t = S.sel;
 	document.body.classList.add("erasing");
 	cmd("liveErase", { t: S.sel, on: true }, undefined, undefined, r => { if (!r.ok) eraseUp(); });
+	clearInterval(ERASE.beat);
+	ERASE.beat = setInterval(() => { if (ERASE.t != null) Bridge.send({ op: "liveErase", t: ERASE.t, on: true }); }, 250);
 }
 function eraseUp() {
 	if (ERASE.t == null) return;
-	const t = ERASE.t; ERASE.t = null;
+	const t = ERASE.t; ERASE.t = null; clearInterval(ERASE.beat);
 	document.body.classList.remove("erasing");
 	Bridge.send({ op: "liveErase", t, on: false });
 }

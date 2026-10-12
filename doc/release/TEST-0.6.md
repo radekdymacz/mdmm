@@ -57,6 +57,7 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 
 1. MD: select a track with trigs, start live recording (● or ⌥Space), hold Delete: the track's header is marked red and its trigs go as they play. Let go: the other tracks kept theirs.
 2. MM: the same with LIVE RECORDING (⌥Space): hold Delete, the selected track's notes go as they pass.
-3. MM: stopped, ⇧-click ● (or the ▶ menu's Step record): the key shows STEP, a banner and a red cursor on the roll. Play A S D: each note goes to the cursor's step and the cursor moves on. → leaves a rest, ← goes back, Delete clears the step, Esc (or ●) ends it.
-4. MM: while step recording, pick another synth track: the machine writes that track from the same step.
-5. MM on real hardware: step recording and live erase are refused with the reason (they need the machine's keys).
+3. MM: stopped, ⇧-click ● (or the ▶ menu's Step record): the key shows STEP and a red cursor on the roll (no new row above the roll). Play A S D: each note goes to the cursor's step and the cursor moves on. → leaves a rest, ← goes back, Delete clears the step, Esc (or ●) ends it.
+4. MM: while step recording, pick another synth track: the machine writes that track from the same step. With a step selection made first, ⇧-click ● drops it, and ← → Esc are step recording's.
+5. Both: hold Delete while live recording and close the editor window (or reload the page): the erase stops within a second.
+6. MM on real hardware: step recording and live erase are refused with the reason (they need the machine's keys).

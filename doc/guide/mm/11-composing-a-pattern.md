@@ -84,7 +84,7 @@ NOTE: Values you turn while the pattern records are locked. See "Parameter locks
 In step recording you play one note for each step, and the machine moves on by itself. The tempo does not matter.
 
 1. Stop the machine and select a synth track. The machine writes only this track.
-2. Hold [⇧] and click the record key, or choose **Step record** in the play key's menu. The record key shows STEP. A banner over the roll names the track and the step, and a red cursor marks the step on the roll.
+2. Hold [⇧] and click the record key, or choose **Step record** in the play key's menu. The record key shows STEP, and a red cursor on the roll marks the step, with the track and the step number.
 3. Play a note with the computer keys or the keys left of the roll. The machine writes it to the step under the cursor, and the cursor moves to the next step.
 4. Press {key:step-move} to move. → leaves a rest and moves on. ← goes a step back.
 5. Press {key:step-clear} to clear the step under the cursor. The cursor moves on.

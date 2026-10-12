@@ -540,7 +540,7 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 ### Top gaps, ranked (our UI)
 
 1. **No DigiPRO user waveform manager (1-99 to 1-104, 0x5D / 0x5E).** MKII machines can pick waveforms 1-64 but the user cannot send, receive, rename or erase them.
-2. **Step recording and live-record erase (1-50, 1-49) are not in the page.** Live recording works and marks the step that gets a lock; the roll's drawing is the page's way of entering notes.
+2. **Step recording and live-record erase (1-50, 1-49)** are in the page since 0.6 (wave 7): ⇧-click REC, and Delete held while live recording.
 3. **Song: no pointer jump or play-from-row (1-75, 1-77), no SAVE SONG, song-slot copy or rename (1-74).** The page shows the playing row but cannot set it; `saveSong` exists in the desk but no control uses it.
 4. **GLOBAL is mostly there, with holes (1-87, 1-88, 1-91).** Master tune, CONTROL OUT 1 (sequencer, arp, keyboard to INT / OUT), and copy / paste / clear of a global slot are missing; some bytes of the global are not decoded.
 5. **Super copy / super clear (1-54, 1-55) and whole-track copy (1-52).** A step selection copies steps, slides and locks of chosen tracks, but not a chosen part (melody only) and not arp, transpose or swing with it.
