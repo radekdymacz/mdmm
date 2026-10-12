@@ -2639,6 +2639,48 @@ namespace
 		check(r.desk->pattern(slot) && trigs() == 4, "the machine holds the four notes (read back)");
 	}
 
+	// The Machinedrum's B-098 checked on the Monomachine (2026-10-13): after a start, factory memory, SONG mode, PLAY
+	// before any Load plays the song it reports, as after a LOAD SONG of that slot (measured: the same rows, steps and
+	// level). The Monomachine does not have the Machinedrum's empty working song; this keeps it so.
+	void factorySong(const Bytes& _rom)
+	{
+		std::puts("factorysong");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		while(r.desk->loaded() < 288)
+			r.run(100);
+		const auto playFor = [&](const char* _what)
+		{
+			r.msg(R"({"op":"play"})");
+			std::string tr;
+			std::set<int> steps;
+			for(int i = 0; i < 30; ++i)
+			{
+				r.run(100);
+				steps.insert(r.tel.step.load());
+				if(i % 5 == 0)
+					tr += " " + std::to_string(r.tel.songRow.load()) + "/" + std::to_string(r.tel.step.load() + 1);
+			}
+			const double level = r.rms(2000);
+			std::printf("  %s: song %d, row/step every 500 ms:%s, %zu steps seen, rms %.4f\n", _what, r.desk->currentSong(), tr.c_str(), steps.size(), level);
+			r.msg(R"({"op":"stop"})");
+			r.run(400);
+			r.msg(R"({"op":"stop"})");
+			r.run(600);
+			return std::make_pair(steps.size(), level);
+		};
+		r.msg(R"({"op":"seqMode","song":true})");
+		r.run(1000);
+		const auto first = playFor("fresh start, SONG mode, PLAY");
+		r.msg(R"({"op":"loadSong","s":)" + std::to_string(std::max(0, r.desk->currentSong())) + "}");
+		r.run(1500);
+		const auto loaded = playFor("after LOAD SONG of that slot, PLAY");
+		check(loaded.first >= 8 && loaded.second > 0.002, "after LOAD SONG the song plays");
+		check(first.first >= 8 && first.second > loaded.second / 4, "(MD B-098) the first PLAY in SONG mode after a start plays the song");
+	}
+
 	void recording(const Bytes& _rom)
 	{
 		std::puts("recording");
@@ -5135,6 +5177,8 @@ int main(const int _argc, char** _argv)
 			chordErase(rom);
 		if(only.empty() || only == "undoplay")
 			undoPlay(rom);
+		if(only.empty() || only == "factorysong")
+			factorySong(rom);
 		check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 		std::printf("%s (%d failures)\n", g_failures ? "FAIL" : "PASS", g_failures);
 		return g_failures ? 1 : 0;
