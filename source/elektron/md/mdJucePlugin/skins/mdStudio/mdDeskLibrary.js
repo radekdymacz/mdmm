@@ -25,6 +25,7 @@ const KTIP = {
 	clear: "There is no CLEAR KIT over SysEx: the editor writes an empty kit (every track GND-EMPTY, neutral values, no name). What the machine's own CLEAR KIT leaves is not known",
 	rename: "The current kit: SysEx 0x55 renames the working kit; SAVE stores it. Other slots: their dump is written back with the new name",
 	reload: "LOAD KIT on the current slot (0x58): the edits are lost. The machine keeps them in its UNDO KIT",
+	undo: "The machine's UNDO KIT, the first entry of its kit list: the kit lost to the last LOAD KIT or overwrite. The editor opens KIT > LOAD KIT > UNDO KIT with the machine's keys: that kit plays again, unsaved, and the slot it came from becomes the current kit (measured). Unsaved edits of the kit that plays are lost",
 	drag: "Drag onto another slot to copy it (a kit dump into the target)" };
 const PTIP = {
 	go: "LOAD PATTERN (SysEx 0x57). While playing the machine switches at the pattern end. A chain ends here",
@@ -55,12 +56,12 @@ function drawKitLib() {
 	const k = LIB.sel, cur = V.kit, ed = V.kitState === "edited", empty = kitEmpty(k) && k !== cur, dis = c => c ? " disabled" : "", loaded = kitLoaded(k);
 	const n = Object.keys(Docs.kits).length;
 	return `<div class="libhead"><span class="cap">Kit library</span><span class="lcdchip">K${nn(cur)} ${escH(kDisp(cur) || "EMPTY")} · ${ed ? "edited" : "saved"}</span><span class="note">${V.mode === "EXTENDED" ? "EXTENDED: every pattern recalls its kit." : "CLASSIC: patterns do not recall kits."} 64 slots${n < 64 ? ` · reading ${n} of 64 from the machine` : ""}.</span><button class="libx" data-la="close" title="Close (Esc)">Esc</button></div>
- <div class="libacts"><div class="grp"><span class="ilab">Current K${nn(cur)}</span><button data-la="save" title="${KTIP.save}">Save</button><button class="danger" data-la="reload"${dis(!ed)} title="${KTIP.reload}">Reload</button></div>
+ <div class="libacts"><div class="grp"><span class="ilab">Current K${nn(cur)}</span><button data-la="save" title="${KTIP.save}">Save</button><button class="danger" data-la="reload"${dis(!ed)} title="${KTIP.reload}">Reload</button><button data-la="undokit"${dis(!canDo(V, "panelKeys"))} title="${escH(canDo(V, "panelKeys") ? KTIP.undo : V.caps.reasons.panelKeys || "The UNDO KIT needs the machine's keys.")}">UNDO KIT</button></div>
   <div class="grp"><span class="ilab">Slot K${nn(k)}</span><button data-la="saveas"${dis(k === cur)} title="${k === cur ? "This is the current slot: use Save. " : ""}${KTIP.saveas}">Save as K${nn(k)}</button>
   <button data-la="copy"${dis(!loaded)} title="${KTIP.copy} (Cmd+C)">Copy</button><button data-la="paste"${dis(V.clipboard.kit == null || !loaded)} title="${V.clipboard.kit != null ? "Paste K" + nn(V.clipboard.kit) + " " + escH(kDisp(V.clipboard.kit)) + ". " : "Copy a kit first. "}${KTIP.paste} (Cmd+V)">Paste</button>
   <button class="danger" data-la="clear"${dis(empty || !loaded)} title="${KTIP.clear} (Delete)">Clear</button><button data-la="rename"${dis(!loaded)} title="${KTIP.rename} (F2 or double-click)">Rename</button></div></div>
  <div class="libgrid kits" aria-label="64 kit slots">${Array.from({ length: 64 }, (_, i) => kitSlot(i)).join("")}</div>
- <div class="libfoot"><span>Click loads · arrows move, Enter loads · Alt+click selects · F2 or double-click renames · Delete clears · drag a slot onto another to copy · Cmd+Z undoes a paste, clear or rename · Esc closes</span><span class="fw" title="The machine keeps one UNDO KIT as the first entry of its kit list: the kit lost to the last load or overwrite. The editor's own undo works on top of it for slot writes; LOAD and SAVE are the machine's.">The machine also keeps an UNDO KIT</span></div>`;
+ <div class="libfoot"><span>Click loads · arrows move, Enter loads · Alt+click selects · F2 or double-click renames · Delete clears · drag a slot onto another to copy · Cmd+Z undoes a paste, clear or rename · Esc closes</span><span class="fw" title="The machine keeps one UNDO KIT as the first entry of its kit list: the kit lost to the last load or overwrite. UNDO KIT loads it. The editor's own undo works on top of it for slot writes; LOAD and SAVE are the machine's.">UNDO KIT: the kit lost last</span></div>`;
 }
 function patSlot(p) {
 	const cur = p === V.pat, q = p === V.queued && !cur, has = hasPat(p), ext = V.mode === "EXTENDED", k = patKitOf(p), loaded = !!Docs.patterns[p];
@@ -132,7 +133,7 @@ function patClear(p) {
 function patGo(p, now) { LIB.sel = p; if (p === V.pat && V.queued == null) { drawLib(true); return; } if (now) cmd("select", { p, now: true }); else goPattern(p); drawLib(true); }
 function libAct(a) {
 	const k = LIB.sel, kit = LIB.open === "kit";
-	({ close: () => closeLib(true), save: () => saveKit(), saveas: () => kitSaveAs(k), reload: kitReload, rename: () => startRename(k),
+	({ close: () => closeLib(true), save: () => saveKit(), saveas: () => kitSaveAs(k), reload: kitReload, undokit: () => cmd("loadUndoKit", {}), rename: () => startRename(k),
 		copy: () => kit ? kitCopy(k) : patCopy(k), paste: () => kit ? kitPaste(k) : patPaste(k), clear: () => kit ? kitClear(k) : patClear(k), go: () => patGo(k, false), now: () => patGo(k, true) })[a]?.();
 }
 

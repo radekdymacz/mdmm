@@ -31,7 +31,8 @@ namespace mmDesk
 		Track1, Track2, Track3, Track4, Track5, Track6,	// [TRACK 1-6]: the track in focus (B-060)
 		KnobUp, KnobDown,	// DATA ENTRY A one value step up or down: four pulses, as the menus take them (MM-P1, B-060)
 		StepRecord,		// hold STOP, press RECORD: STEP RECORDING (0.6 wave 7, manual 1-50)
-		ExitDown, ExitUp	// [EXIT/NO] held down, and let go later: LIVE RECORDING erases while it is held (manual 1-49)
+		ExitDown, ExitUp,	// [EXIT/NO] held down, and let go later: LIVE RECORDING erases while it is held (manual 1-49)
+		Kit				// [KIT/SONG] alone: the KIT window (0.6 wave 12: LOAD KIT > UNDO KIT, MM-102)
 	};
 
 	// Keys pressed with another held: FUNCTION for Global, MuteWindow and Transpose, RECORD for LiveRecord, STOP for

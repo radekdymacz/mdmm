@@ -58,6 +58,7 @@ namespace mdJucePlugin
 			case K::KnobUp: case K::KnobDown: return std::nullopt;	// an encoder, not a key (pressKeys)
 			case K::StepRecord: return C::Record;	// with STOP held
 			case K::ExitDown: case K::ExitUp: return C::Exit;	// half a press each
+			case K::Kit: return C::Kit;
 			}
 			return std::nullopt;
 		}

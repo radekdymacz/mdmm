@@ -338,3 +338,10 @@ machine but MID, CTR-8P and the master-effect CTR machines; ROUTING joins LFOS-L
 all); the SYNTHESIS pairs are per machine (TRX-BD RAMP-RDEC, TRX-SD BUMP-BENV and TONE-TUNE, the E12 machines RTRG-RTIM,
 none on ROM and RAM machines, ...). The table is `elektronData::mdMachineClips`; the probe checks it machine by machine.
 The same screens showed B-082: MID's ROUTING is CC5D CC5V CC6D CC6V PCHG LFOS LFOD LFOM.
+
+**W12b, the UNDO KIT (MD-043, MM-102).** Both machines keep it in patch RAM right after the working kit, in the same
+layout (MD 0x70046a, MM 0x7002e2). A SysEx LOAD KIT of 64 to 127 does not reach it (the MD ignores it, the MM loads
+those slots). The machine's own route, KIT > LOAD KIT, the list's first entry (00 UNDO KIT; the list opens on the current
+kit, so k + 1 times UP), loads it: the lost kit plays, unsaved, and the slot it came from becomes the current kit. The
+edits of the kit that played are not kept anywhere (the UNDO KIT stays as it was). LOAD KIT over unsaved edits and SAVE
+KIT over another slot put the lost kit there, as the manual says.

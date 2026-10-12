@@ -361,6 +361,8 @@ namespace mdDesk
 			{"saveKit", Owner::Machine, Gate::Input, -1, {}, "SAVE KIT to the current slot"},
 			{"reloadKit", Owner::Machine, Gate::Input, -1, {}, "LOAD KIT of the current slot"},
 			{"kitLoad", Owner::Machine, Gate::Input, -1, {k}, "LOAD KIT"},
+			{"loadUndoKit", Owner::Machine, Gate::Input, -1, {}, "KIT > LOAD KIT > UNDO KIT with the panel's keys: the kit last lost to a LOAD KIT"
+				" or an overwrite plays again, its own slot current, unsaved (MD-043, measured: gapProbesFirmwareTest w12undo)"},
 			{"kitSaveAs", Owner::Machine, Gate::Input, -1, {k}, "SAVE KIT n"},
 			{"record", Owner::Machine, Gate::Input, -1, {}, "REC as on the machine"},
 			{"recTrig", Owner::Machine, Gate::Input, -1, {t}, "a TRIG key while recording"},

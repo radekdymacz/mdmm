@@ -51,7 +51,7 @@ The kit that the save overwrites goes to the machine's UNDO KIT. The slot you sa
 Renaming the current kit changes the working kit, so you must save to store the name. Renaming another slot writes the name into that slot at once.
 
 ## UNDO KIT
-<!-- rows: MD-043 MD-046 @cf1002 -->
+<!-- rows: MD-043 MD-046 @e37b5b -->
 
 The machine keeps one UNDO KIT: the kit lost to your last load or save.
 
@@ -59,7 +59,15 @@ The editor has its own undo for slot changes. Press {key:lib-undo} in the kit li
 
 To throw away your edits to the current kit, click **Reload** in the kit library. It loads the slot again. **Reload** is off while the kit is saved.
 
-{gap:MD-043}The editor does not list the machine's UNDO KIT as a slot, so you cannot load it from the library.{/gap}
+To get back the kit lost to your last load or save:
+
+1. Open the kit library: click the **KIT** field on the LCD.
+2. Click **UNDO KIT**. The lost kit plays again, with its unsaved edits, and the slot it came from becomes the current kit.
+3. Click **Save** to keep it.
+
+If the current kit has unsaved edits, the editor asks first: the machine does not keep them when it loads the UNDO KIT.
+
+NOTE: The editor presses the machine's own keys (KIT, LOAD KIT, the first entry of the list). There is no MIDI message for the UNDO KIT, so with a real Machinedrum over MIDI the button is off: use the machine's kit list.
 
 ## COPY KIT
 <!-- rows: MD-044 @c067a1 -->

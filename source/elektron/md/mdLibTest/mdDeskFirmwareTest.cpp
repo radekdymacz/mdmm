@@ -1552,6 +1552,24 @@ namespace
 		_rig.run(300);
 		m.send(ed::mdLoadPattern(pat));
 		_rig.run(300);
+		// MD-043: LOAD KIT over the edit puts it in the machine's UNDO KIT; loadUndoKit (the panel's keys) brings it back,
+		// unsaved, in its own slot (gapProbesFirmwareTest w12undo)
+		{
+			const auto here = *desk.linkState().kit;
+			const uint8_t other = static_cast<uint8_t>(here == 41 ? 40 : 41);
+			_rig.pageConfirmed("{\"op\":\"kitName\",\"k\":" + std::to_string(here) + ",\"name\":\"UNDO TEST\",\"id\":976}");
+			settle();
+			_rig.pageConfirmed("{\"op\":\"kitLoad\",\"k\":" + std::to_string(other) + ",\"force\":true,\"id\":973}");
+			settle();
+			check(kitStatus() == other, "LOAD KIT of another slot over the renamed kit");
+			_rig.pageConfirmed(R"({"op":"loadUndoKit","force":true,"id":974})");
+			const bool back = _rig.runUntil([&] { return desk.linkState().kit == here && desk.documents().working && kitNameOf(desk.documents().working->kit) == "UNDO TEST"; }, 6000);
+			settle();
+			std::printf("  UNDO KIT: kit %d, working '%s'\n", kitStatus(), desk.documents().working ? kitNameOf(desk.documents().working->kit).c_str() : "?");
+			check(back && kitStatus() == here, "UNDO KIT: the renamed kit plays again in its own slot, and the editor follows");
+			_rig.pageConfirmed(R"({"op":"reloadKit","force":true,"id":975})");
+			settle();
+		}
 	}
 
 	// P4 HW MIDI against the emulated MD as the MIDI peer ("a real Machinedrum"): the desk has

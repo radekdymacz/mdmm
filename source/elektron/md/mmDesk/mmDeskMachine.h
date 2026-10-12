@@ -101,6 +101,8 @@ namespace mmDesk
 		static const std::map<std::string, Handler>& handlers();
 		static const std::map<std::string, Handler>& askers();
 		deskCore::Outcome askLoadKit(const Value&, const Documents&);
+		deskCore::Outcome askLoadUndoKit(const Value&, const Documents&);
+		deskCore::Outcome cmdLoadUndoKit(const Value&, const Documents&);
 		deskCore::Outcome askSaveKit(const Value&, const Documents&);
 		deskCore::Outcome askSelect(const Value&, const Documents&);
 		deskCore::Outcome askPlay(const Value&, const Documents&);

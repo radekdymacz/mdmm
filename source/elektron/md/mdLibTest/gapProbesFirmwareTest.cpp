@@ -2198,6 +2198,12 @@ namespace
 		r.run(500);
 		std::printf("  panel LOAD KIT > UNDO KIT: kit %d plays '%s', UNDO KIT image '%s'\n", r.status(0x02), name(wk).c_str(), name(undoAt).c_str());
 		line += "; panel load of UNDO KIT: kit " + std::to_string(r.status(0x02)) + " plays '" + name(wk) + "', undo image now '" + name(undoAt) + "'";
+		// the kit that plays has unsaved edits when the UNDO KIT is loaded: where do they go?
+		setName("UNDOTESTD");
+		keySeq(r, "kit,enter,up*" + std::to_string(r.status(0x02) + 1) + ",enter");
+		r.run(500);
+		std::printf("  edited (UNDOTESTD), then UNDO KIT again: kit %d plays '%s', UNDO KIT image '%s'\n", r.status(0x02), name(wk).c_str(), name(undoAt).c_str());
+		line += "; with unsaved edits (UNDOTESTD) UNDO KIT again: kit " + std::to_string(r.status(0x02)) + " plays '" + name(wk) + "', undo image '" + name(undoAt) + "'";
 		result(_mm ? "W12b MM undo kit" : "W12b MD undo kit", line);
 		if(std::getenv("W12_LCD"))
 			printLcd(r, "end");

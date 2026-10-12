@@ -450,6 +450,7 @@
 			else if (op === "reload") send({ op: "loadKit" }, { onResult: noteOf });
 			else if (op === "load") send({ op: "loadKit", k }, { onResult: noteOf });
 			else if (op === "saveAs") send({ op: "saveKit", k }, { onResult: noteOf });
+			else if (op === "undo") send({ op: "loadUndoKit" }, { onResult: noteOf });
 		},
 		/* the machine's tempo: shown at once (Overlay); the machine document says it from when the core took it
 		   until its memory does (deskCore::FieldExpectation) */

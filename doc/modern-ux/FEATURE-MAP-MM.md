@@ -151,7 +151,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Saving and naming 1-19 | SAVE KIT | Save | ✅ | Kit library Save, Save as |  | 1 |
 | Saving and naming 1-20 | Name a kit (11 characters) | Rename | ✅ | Kit library Rename, F2 |  | 1 |
 | Saving and naming 1-20 | "High score" character picker | Text entry | ➖ | – | Text field | – |
-| Undo kit 1-20 | UNDO KIT keeps lost edits | Safety slot | 🟡 | Dialogs name it; page undo on top | Firmware keeps the slot; no control to open it | – |
+| Undo kit 1-20 | UNDO KIT keeps lost edits | Safety slot | ✅ | Kit library: UNDO KIT (KIT > LOAD > UNDO KIT through the machine's keys; off over HW MIDI) | Measured: the lost kit plays again unsaved, its own slot current (gapProbesFirmwareTest w12undo) | 1 |
 | Copy kit 1-21 | Copy and paste kit slot | Kit copy | ✅ | Kit library Copy / Paste, drag a slot | Through SYSEX RECV | 1 |
 | Clear kit 1-21 | Clear kit slot | Kit clear | ✅ | Kit library Clear |  | 1 |
 | Assigning a machine 1-22 | SYNTH, MACHINE, MIX columns in EDIT KIT | Machine picker | ✅ | Sound > machine key |  | – |
@@ -531,8 +531,8 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 328 |
-| 🟡 | 22 |
+| ✅ | 329 |
+| 🟡 | 21 |
 | ❌ | 1 |
 | ➖ | 34 |
 | Total | 385 |

@@ -2049,7 +2049,27 @@ const MmJourneys = (() => {
 			{ ...undoKey, machine: c => ok(partsOf(c.a) === c.p0, "track " + partsOf(c.a)), within: 10000 }
 		]
 	};
-	const all = [bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
+	/* ---------- wave 12: the gaps (doc/release/PLAN-0.6.md, Gap triage) ---------- */
+	/* MM-102: the machine's UNDO KIT from the kit library (KIT > LOAD KIT > UNDO KIT with the machine's keys) */
+	const workName = () => MmConvert.kitName(wk() || {});
+	const kitEdited = () => machine().kit?.working === "edited";
+	const undoKitJ = {
+		name: "mm-lib-undo-kit", proves: ["MM-102"],
+		steps: [
+			openKits2,
+			{ say: "rename the kit that plays to UNDOJRNY (an unsaved edit)", act: async (u, c) => {
+				c.k0 = machine().kit.current; u.click(ks2(c.k0), { alt: true }); await sleep(150); u.click('#libpop [data-la="rename"]'); await sleep(250); u.type("#lsin", "UNDOJRNY"); await sleep(100); u.key("Enter"); await answer(u, c); },
+				machine: () => ok(workName().trim() === "UNDOJRNY" && kitEdited(), `working ${workName()}, ${machine().kit?.working}`), within: 25000 },
+			{ say: "click another kit and load it without saving: the machine keeps the edited kit as its UNDO KIT", act: async (u, c) => { c.k1 = otherSlot(); u.click(ks2(c.k1)); await answer(u, c); },
+				machine: c => ok(machine().kit.current === c.k1 && workName().trim() !== "UNDOJRNY", `kit ${machine().kit.current}, working ${workName()}`), within: 25000 },
+			{ say: "click UNDO KIT: the edited kit plays again, unsaved, in its own slot", act: async (u, c) => { u.click('#libpop [data-la="undokit"]'); await answer(u, c); },
+				machine: c => ok(machine().kit.current === c.k0 && workName().trim() === "UNDOJRNY" && kitEdited(), `kit ${machine().kit.current}, working ${workName()}, ${machine().kit?.working}`), within: 25000 },
+			{ say: "press Escape", act: u => u.key("Escape"), screen: () => ok($1("#libpop").hidden, "open") }
+		],
+		async tidy(u, c) { if (c.k0 == null) return; Bridge.send({ op: "loadKit", k: c.k0, force: true }); await until(() => machine().kit.current === c.k0, 6000); Bridge.send({ op: "loadKit", force: true }); await until(() => !kitEdited(), 8000); }
+	};
+	const wave12 = [undoKitJ];
+	const all = [...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,

@@ -106,7 +106,10 @@
 <div class="gd-body gd-prose"><h2 id="undo-kit-h">UNDO KIT <a class="gd-anchor" href="#undo-kit" aria-label="Link to UNDO KIT">#</a></h2>
 <p class="gd-ref">MM manual p.1-20</p>
 <p>The machine keeps one extra kit, the UNDO KIT, as the first entry of its kit list. It holds the kit lost to the last load or overwrite without saving. The dialogs of the editor name it when an action puts a kit there. The editor's own undo, <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd>, works on top of it.</p>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot open the UNDO KIT slot from the editor yet.</p>
+<p>To load it:</p>
+<ol class="gd-steps"><li>Open the kit library: click the <b class="gd-ui">KIT</b> field on the LCD.</li><li>Click <b class="gd-ui">UNDO KIT</b>. The lost kit plays again, with its unsaved edits, and the slot it came from becomes the current kit.</li><li>Click <b class="gd-ui">Save</b> to keep it.</li></ol>
+<p>If the current kit has unsaved edits, the editor asks first: the machine does not keep them when it loads the UNDO KIT.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The editor presses the machine's own keys (KIT, LOAD, the first entry of the list). There is no MIDI message for the UNDO KIT, so with a real Monomachine over MIDI the button is off: use the machine's kit list.</p></aside>
 </div></section>
 <section class="gd-sec" id="copy-kit" aria-labelledby="copy-kit-h">
 <div class="gd-body gd-prose"><h2 id="copy-kit-h">COPY KIT <a class="gd-anchor" href="#copy-kit" aria-label="Link to COPY KIT">#</a></h2>

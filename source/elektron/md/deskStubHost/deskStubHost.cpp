@@ -192,6 +192,8 @@ namespace
 				m_globals[g] = ed::mdFactoryGlobal(g);
 			m_kit = m_patterns[0].kit;
 			m_working = m_kits[m_kit];
+			m_undo = m_kits[(m_kit + 1) % 64];
+			m_undoSlot = static_cast<uint8_t>((m_kit + 1) % 64);
 		}
 
 		mdDesk::DevicePort port()
@@ -338,6 +340,12 @@ namespace
 		}
 		void loadKit(const uint8_t _k)
 		{
+			// MD-043: unsaved edits go to the UNDO KIT (manual p.16; gapProbesFirmwareTest w12undo)
+			if(!(m_working == m_kits[m_kit]))
+			{
+				m_undo = m_working;
+				m_undoSlot = m_kit;
+			}
 			m_kit = _k & 63;
 			m_working = m_kits[m_kit];
 		}
@@ -369,7 +377,8 @@ namespace
 			case 0x56: m_global = v & 7; return;	// SET ACTIVE GLOBAL (slice 5: MD-282)
 			case 0x57: loadPattern(v); return;
 			case 0x58: loadKit(v); return;
-			case 0x59: { auto k = m_working; k.position = v & 63; m_kits[v & 63] = k; m_kit = v & 63; return; }	// SAVE KIT
+			case 0x59: { if((v & 63) != m_kit) { m_undo = m_kits[v & 63]; m_undoSlot = v & 63; }	// the overwritten kit: the UNDO KIT
+				auto k = m_working; k.position = v & 63; m_kits[v & 63] = k; m_kit = v & 63; return; }	// SAVE KIT
 			case 0x6c: m_song = v & 31; return;
 			case 0x6d: return;	// SAVE SONG: the song is the slot already
 			case 0x51: reply(ed::encodeMdGlobal(m_globals[v & 7])); return;
@@ -477,6 +486,32 @@ namespace
 					m_heldKnob = down ? name[4] - 'A' : -1;
 				return true;
 			}
+			// MD-043: KIT > LOAD KIT, the list opens on the current kit, its first entry is the UNDO KIT
+			if(_key == "kit") { m_kitMenu = 1; return true; }
+			if(_key == "exit") { m_kitMenu = 0; return true; }
+			if(_key == "up" || _key == "down")
+			{
+				if(m_kitMenu == 2)
+					m_kitCursor = std::clamp(m_kitCursor + (_key == "up" ? -1 : 1), 0, 64);
+				return true;
+			}
+			if(_key == "enter")
+			{
+				if(m_kitMenu == 1) { m_kitMenu = 2; m_kitCursor = m_kit + 1; return true; }
+				if(m_kitMenu == 2)
+				{
+					if(m_kitCursor == 0)
+					{
+						m_kit = m_undoSlot;
+						m_working = m_undo;
+						m_working.position = m_undoSlot;
+					}
+					else
+						loadKit(static_cast<uint8_t>(m_kitCursor - 1));
+				}
+				m_kitMenu = 0;
+				return true;
+			}
 			if(_key.rfind("trig", 0) == 0)
 			{
 				if(m_recording && m_playing)
@@ -559,6 +594,9 @@ namespace
 		std::array<ed::MdSong, ed::MdSong::g_slots> m_songs;
 		std::array<ed::MdGlobal, ed::MdGlobal::g_slots> m_globals;
 		ed::MdKit m_working;
+		ed::MdKit m_undo;			// the UNDO KIT and the slot it came from
+		uint8_t m_undoSlot = 0;
+		int m_kitMenu = 0, m_kitCursor = 0;	// 1 the KIT window, 2 its LOAD KIT list
 		ed::MdSampleBank m_samples;
 		ed::AuditionStatus m_audition;
 		uint64_t m_auditionId = 0;
@@ -627,6 +665,8 @@ namespace
 				m_globals[g] = ed::mmFactoryGlobal(g);
 			m_kit = m_patterns[0].kit & 127;
 			m_working = m_kits[m_kit];
+			m_undoSlot = static_cast<uint8_t>((m_kit + 1) & 127);
+			m_undo = m_kits[m_undoSlot];
 		}
 
 		mmDesk::DevicePort port()
@@ -761,6 +801,12 @@ namespace
 	private:
 		void loadKit(const uint8_t _k)
 		{
+			// MM-102: unsaved edits go to the UNDO KIT (manual 1-20; gapProbesFirmwareTest w12undo)
+			if(!(m_working == m_kits[m_kit]))
+			{
+				m_undo = m_working;
+				m_undoSlot = m_kit;
+			}
 			m_kit = _k & 127;
 			m_working = m_kits[m_kit];
 		}
@@ -792,7 +838,8 @@ namespace
 			case 0x56: m_global = v & 7; return;
 			case 0x57: m_chain = {}; m_pattern = v & 127; loadKit(m_patterns[m_pattern].kit); return;
 			case 0x58: loadKit(v); return;
-			case 0x59: { auto k = m_working; k.position = v & 127; m_kits[v & 127] = k; m_kit = v & 127; return; }
+			case 0x59: { if((v & 127) != m_kit) { m_undo = m_kits[v & 127]; m_undoSlot = v & 127; }	// the overwritten kit: the UNDO KIT
+				auto k = m_working; k.position = v & 127; m_kits[v & 127] = k; m_kit = v & 127; return; }
 			case 0x6c: m_song = v % ed::MmSong::g_slots; return;
 			case 0x6d: return;
 			case 0x5e:	// a DigiPRO waveform: answered when used (waveforms 1 and 4 here), else nothing (P4)
@@ -916,6 +963,29 @@ namespace
 						m_mutes ^= 1 << (6 + static_cast<int>(k) - static_cast<int>(mmDesk::Key::Trig9));
 				return true;
 			}
+			// MM-102: KIT, its LOAD KIT list (opens on the current kit), the first entry is the UNDO KIT
+			if(!_keys.empty() && _keys[0] == mmDesk::Key::Kit)
+			{
+				int cursor = -1;
+				for(const auto k : _keys)
+				{
+					if(k == mmDesk::Key::Enter && cursor < 0)
+						cursor = m_kit + 1;
+					else if(k == mmDesk::Key::Up && cursor >= 0)
+						cursor = std::max(0, cursor - 1);
+					else if(k == mmDesk::Key::Down && cursor >= 0)
+						cursor = std::min(128, cursor + 1);
+					else if(k == mmDesk::Key::Enter && cursor == 0)
+					{
+						m_kit = m_undoSlot;
+						m_working = m_undo;
+						m_working.position = m_undoSlot;
+					}
+					else if(k == mmDesk::Key::Enter)
+						loadKit(static_cast<uint8_t>(cursor - 1));
+				}
+				return true;
+			}
 			for(const auto k : _keys)
 			{
 				using K = mmDesk::Key;
@@ -981,6 +1051,8 @@ namespace
 		std::array<ed::MmSong, ed::MmSong::g_slots> m_songs;
 		std::array<ed::MmGlobal, ed::MmGlobal::g_slots> m_globals;
 		ed::MmKit m_working;
+		ed::MmKit m_undo;			// the UNDO KIT and the slot it came from
+		uint8_t m_undoSlot = 1;
 		mmDesk::Chain m_chain;
 		uint8_t m_pattern = 0, m_kit = 0, m_song = 0, m_global = 0;
 		bool m_songMode = false, m_running = false, m_poly = false, m_paused = false;
