@@ -4,6 +4,28 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-095 · Both editors: the SysEx import panel changes size while it runs; a tooltip covers Stop
+
+- **From:** Radek's 0.6 review, 2026-10-12 (Machinedrum, screenshot).
+- **What happens:** while an import runs, the panel grows and shrinks as the kinds pass (Kits, Patterns, Songs: each its own grid), and Stop at the bottom right is cut off or covered by a slot's tooltip ("F08 · kit 38 · format 3.1 · into …").
+- **Cause:** the panel was as tall as its contents, the slot grid of the kind shown; each slot carried its facts as a native tooltip, which the browser places under the pointer.
+- **Fix (`fix/0.6-review-1`):** the panel (import, report, export, reset) has one size for its whole run, as big as the window allows up to 1120 x 820, the slots scroll inside it, the head and the footer always in view (`deskSyx.css`); a slot's facts show in a line of the panel when the pointer is on it, not as a tooltip (`deskSyx.js`). Journeys `md-syx-running-reach`, `mm-syx-running-reach` (the panel's box at the preview, while it runs and at the report: equal; Stop and Hide wholly inside it and on top).
+- **Status:** fixed on `fix/0.6-review-1`.
+
+## B-094 · Both editors: a click outside a dialog closes it, also while it works
+
+- **From:** Radek's 0.6 review, 2026-10-12: during a Clear or a SysEx import, a click outside lost the screen, and there was no way back to it (the work went on unseen).
+- **Cause:** the modal layer's `panel` kind closed on a click outside (the library, the keys, AUDIO / MIDI, the machine picker, the SysEx panel); some pages closed their dialog on an outside click of their own as well (the keys view, the libraries, AUDIO / MIDI). The SysEx panel closed on Esc while it imported, and its entries in the engine menu then started another import.
+- **Fix (`fix/0.6-review-1`, Radek's rule: every modal locks):** a click outside never closes a dialog, on both editors (its frame flashes instead); a dialog closes by its own keys or Esc; a dialog at work (`data-busy`: the SysEx panel importing or resetting) refuses Esc too. Its **Hide** key still puts it away; IMPORT SYSEX…, EXPORT SYSEX… or RESET MACHINE… in the engine menu then shows the same panel again (with its report when the run ended meanwhile, and a toast says so). The pages' own outside-click closers are gone (`deskModal.js`, `deskAudio.js`, `deskSyx.js`, `mdDeskKeys.js`, `mdDeskLibrary.js`, the MM mockup's `56-keys.js`, `125-lib.js`). Context menus still close on a click outside (a menu, not a dialog). Journeys `md-modal-lock`, `mm-modal-lock` (GLOBAL, a library, the keys, AUDIO / MIDI, Export SysEx, the machine picker, a question: a click outside keeps each open and on top, Esc closes it), `md-syx-running-reach`, `mm-syx-running-reach` (Esc and a click outside while it imports, Hide, back through the engine menu, the report).
+- **Status:** fixed on `fix/0.6-review-1`.
+
+## B-091 · Both editors: GLOBAL as a page under the header; back to a modal
+
+- **From:** Radek's 0.6 review, 2026-10-12: GLOBAL looked better as a modal.
+- **What changed:** wave 5 made GLOBAL a page under the header (the modal layer's `page` kind: nothing dimmed, closed by a click outside or on the header, which needed a workaround that ate the press below). It is a modal dialog again: centred over the dimmed backdrop, focus inside and kept there, Esc or its back key closes it; its head (slots, Copy · Paste · Clear) and cards are as the page had them. The `page` kind and the click-outside workaround are gone (`deskModal.js`, `deskGlobal.js`, `deskGlobal.css`, `deskKeys.js`).
+- **Tests:** journeys `md-global-page`, `mm-global-page` (a modal on top, the backdrop shown, centred, focus inside; Esc and the back key close it), `md-global-click-out`, `mm-global-click-out` (a press outside keeps it open and reaches nothing below).
+- **Status:** fixed on `fix/0.6-review-1`. Guide: md chapter 10, mm chapters 2 and 19.
+
 ## B-090 · Monomachine: the UNISON and SUB screens draw heavy bars
 
 - **From:** Radek's 0.6 review, 2026-10-12.

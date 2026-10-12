@@ -1864,30 +1864,64 @@ const MmJourneys = (() => {
 	const globalPage = {
 		name: "mm-global-page", proves: ["MM-026"],
 		steps: [
-			{ say: "click GLOBAL: the page under the header, as wide, the head on one line", act: u => u.click("#globkey"),
-				screen: () => { const p = $1("#globpop").getBoundingClientRect(), h = $1("header.top").getBoundingClientRect(), hd = $1("#globpop .gphead").getBoundingClientRect();
-					return ok(!$1("#globpop").hidden && p.top >= h.bottom - 1 && Math.abs(p.width - h.width) < 2 && hd.height < 48 && !!$1('#globpop [data-ga="copy"]') && !!$1('#globpop [data-ga="tune"]') && $all('#globpop [data-ga="out1"]').length === 9,
-						`page ${Math.round(p.top)}/${Math.round(h.bottom)} ${Math.round(p.width)}/${Math.round(h.width)}, head ${Math.round(hd.height)} px`); } },
-			{ say: "click the Mix tab: the page goes, Mix shows", act: u => u.click(tab("mix")), screen: () => $1("#globpop").hidden && !pressed("#globkey") ? onTab("mix") : ok(false, "page still open") }
+			{ say: "click GLOBAL: a modal over a dimmed backdrop (review 1, B-091), the head on one line, focus inside", act: u => u.click("#globkey"),
+				screen: () => { const p = $1("#globpop").getBoundingClientRect(), hd = $1("#globpop .gphead").getBoundingClientRect(), bg = $1("#modalbg");
+					return ok(!$1("#globpop").hidden && Modal.top() === "globpop" && !!bg && !bg.hidden && Math.abs(p.left + p.width / 2 - innerWidth / 2) < 3 && hd.height < 48 && $1("#globpop").contains(document.activeElement) && !!$1('#globpop [data-ga="copy"]') && !!$1('#globpop [data-ga="tune"]') && $all('#globpop [data-ga="out1"]').length === 9,
+						`open ${!$1("#globpop").hidden}, top ${Modal.top()}, backdrop ${bg && !bg.hidden}, centre ${Math.round(p.left + p.width / 2)}/${Math.round(innerWidth / 2)}, head ${Math.round(hd.height)} px, focus ${document.activeElement?.tagName}`); } },
+			{ say: "click its back key: GLOBAL closes, the workspace under it shows", act: u => u.click('#globpop [data-ga="close"]'), screen: () => ok($1("#globpop").hidden && !pressed("#globkey"), "still open") }
 		],
 		async tidy(u) { if (!$1("#globpop").hidden) u.key("Escape"); u.click(tab("seq")); await sleep(200); }
 	};
-	/* 0.6: GLOBAL has no backdrop; a press outside it closes it and reaches nothing below (the rail: no track picked) */
+	/* Review 1 (B-091, B-094): GLOBAL is a modal; a press outside it keeps it open and reaches nothing below (the rail: no
+	   track picked); Esc closes it */
 	const globalClickOut = {
 		name: "mm-global-click-out", proves: [],
 		steps: [
 			go("seq"), sel(0),
-			{ say: "open GLOBAL, then press another track on the rail below it (its press, release and click)", act: async (u, c) => {
+			{ say: "open GLOBAL, then press beside it (its press, release and click)", act: async (u, c) => {
 				c.p0 = trigsOf(0).join(","); c.u0 = machine().history?.undoCount || 0;
-				u.click("#globkey"); await sleep(300);
-				const e = $1(rail(2)), r = e.getBoundingClientRect();
-				const pressOn = (e, x, y) => { for (const [k, T] of [["pointerdown", PointerEvent], ["mousedown", MouseEvent], ["pointerup", PointerEvent], ["mouseup", MouseEvent], ["click", MouseEvent]])
-			e.dispatchEvent(new T(k, { bubbles: true, cancelable: true, composed: true, clientX: x, clientY: y, button: 0, buttons: k.endsWith("down") ? 1 : 0 })); };
-				pressOn(e, r.left + r.width / 2, r.top + r.height / 2); await sleep(300);
-			}, screen: () => ok($1("#globpop").hidden && !pressed("#globkey") && S().sel === 0, "page " + ($1("#globpop").hidden ? "closed" : "open") + ", track " + (S().sel + 1) + " selected"),
-				machine: c => ok(trigsOf(0).join(",") === c.p0 && (machine().history?.undoCount || 0) === c.u0, `pattern ${trigsOf(0).join(",")} (was ${c.p0}), undo steps ${c.u0} -> ${machine().history?.undoCount || 0}`) }
+				u.click("#globkey"); await sleep(300); c.under = Journey.pressOutside(); await sleep(300);
+			}, screen: c => ok(!$1("#globpop").hidden && Modal.top() === "globpop" && S().sel === 0, "GLOBAL " + ($1("#globpop").hidden ? "closed" : "open") + ", track " + (S().sel + 1) + " selected, pressed on " + c.under),
+				machine: c => ok(trigsOf(0).join(",") === c.p0 && (machine().history?.undoCount || 0) === c.u0, `pattern ${trigsOf(0).join(",")} (was ${c.p0}), undo steps ${c.u0} -> ${machine().history?.undoCount || 0}`) },
+			{ say: "press Escape: GLOBAL closes", act: u => u.key("Escape"), screen: () => ok($1("#globpop").hidden && !pressed("#globkey"), "still open") }
 		],
 		async tidy(u) { if (!$1("#globpop").hidden) u.key("Escape"); }
+	};
+	/* Review 1 (Radek, 2026-10-12, B-094): every modal locks: a click outside keeps each kind open, Esc closes it */
+	const modalLock = Journey.modalLockJourney("mm-modal-lock", [
+		{ name: "GLOBAL", sel: "#globpop", open: u => u.click("#globkey") },
+		{ name: "the kit library", sel: "#libpop", open: u => u.click("#kitf") },
+		{ name: "the keys", sel: "#keyspop", open: u => { blur(); u.key("?", { shift: true }); } },
+		{ name: "AUDIO / MIDI", sel: "#audiopop", open: u => { blur(); u.key(","); } },
+		{ name: "Export SysEx", sel: "#syxpop", open: u => u.pick("engsel", "export") },
+		{ name: "the machine picker", sel: "#machpop", open: async u => { u.click(tab("sound")); await sleep(300); u.click("#machbtn"); } },
+		{ name: "a question (Reset machine…)", sel: "#dlg", open: u => u.pick("engsel", "reset") }
+	]);
+	/* Review 1 (B-094, B-095): an import at work stays in reach and keeps one size: a click outside and Esc keep its
+	   panel; Hide hides it, the engine menu's IMPORT SYSEX… shows it again (not a new file), then Done. The panel's box is
+	   the same at the preview, while it runs and at the report; Stop and Hide inside it. It writes the file's kits: last in
+	   the list */
+	const syxRunningReach = {
+		name: "mm-syx-running-reach", proves: [], needs: () => syxWanted(),
+		steps: [
+			openImport,
+			{ say: "click Import; while it runs press Escape and click outside: the panel stays, one size, Stop and Hide inside it", act: async (u, c) => {
+				c.box = [Journey.boxOf("#syxpop")];
+				u.click('#syxpop [data-syxgo="start"]'); c.ran = await until(() => $1("#syxpop").classList.contains("syx-running"), 3000);
+				c.box.push(Journey.boxOf("#syxpop")); c.keys = Journey.keysInside("#syxpop", '#syxpop .syxfoot button');
+				/* at once (the page tier's import can be over in a few hundred ms): Esc while it still runs */
+				c.runningAtEsc = $1("#syxpop").classList.contains("syx-running") && !!$1("#syxpop").dataset.busy; u.key("Escape"); c.afterEsc = !$1("#syxpop").hidden;
+				c.under = Journey.pressOutside(); await sleep(200); c.afterClick = !$1("#syxpop").hidden; c.box.push(Journey.boxOf("#syxpop"));
+				Bridge.log(`JOURNEY ${"mm"}-syx-running-reach: Esc ${c.runningAtEsc ? "while it ran" : "after it ended"}`); },
+				screen: c => ok(c.ran && (!c.runningAtEsc || c.afterEsc) && c.afterClick && Modal.top() === "syxpop" && new Set(c.box).size === 1 && c.keys === "", `ran ${c.ran}, Esc while running ${c.runningAtEsc} -> open ${c.afterEsc}, after the click open ${c.afterClick} (on ${c.under}), boxes ${c.box.join(" | ")}, keys out ${c.keys}`) },
+			{ say: "click Hide (if it still runs), then IMPORT SYSEX… in the engine menu: the same panel again", act: async (u, c) => {
+				c.hid = false; const h = $1('#syxpop .btnrow [data-syxgo="close"]'); if ($1("#syxpop").classList.contains("syx-running") && h) { u.click(h); await sleep(200); c.hid = $1("#syxpop").hidden; }
+				u.pick("engsel", "import"); await sleep(400); },
+				screen: c => ok(!$1("#syxpop").hidden && ($1("#syxpop").classList.contains("syx-running") || $1("#syxpop").classList.contains("syx-report")), `hidden by Hide ${c.hid}; panel ${$1("#syxpop").hidden ? "hidden" : $1("#syxpop").className}`) },
+			{ say: "wait for the report: the same size; click Done", act: async (u, c) => { await until(() => $1("#syxpop").classList.contains("syx-report"), 120000); c.box.push(Journey.boxOf("#syxpop")); u.click('#syxpop [data-syxgo="close"]'); },
+				screen: c => ok($1("#syxpop").hidden && new Set(c.box).size === 1, "open " + !$1("#syxpop").hidden + ", boxes " + c.box.join(" | ")), within: 130000 }
+		],
+		async tidy(u) { if (!$1("#syxpop").hidden && !$1("#syxpop").dataset.busy) u.key("Escape"); }
 	};
 	/* 0.6: Copy and Paste of the active global (globalCopy, globalPaste), asked before the paste, one undo step */
 	const globalCopyPaste = {
@@ -3189,7 +3223,7 @@ const MmJourneys = (() => {
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, mutScope,
 		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
-		blackKeys, rollPaint, rollDrawLength, rollBoxMove, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxPlace, resetEmpty];
+		blackKeys, rollPaint, rollDrawLength, rollBoxMove, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxPlace, resetEmpty, syxRunningReach];
 
 	async function between(u) {
 		for (let i = 0; i < 3 && dlgShown(); i++) { u.key("Escape"); await sleep(200); }

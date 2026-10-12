@@ -3,7 +3,7 @@
 
 The global settings are the machine's own settings. They hold the MIDI channels, the map of notes to tracks and patterns, program change, the output of each track and the sync. They belong to the machine, not to a pattern or a kit.
 
-In the editor they sit on the **GLOBAL** page. The page covers the workspace under the header. The header stays as it is.
+In the editor they sit on the **GLOBAL** page. It opens over the workspace, which dims behind it.
 
 ![The GLOBAL page](shot:md-global-panel)
 
@@ -15,9 +15,9 @@ The machine keeps 8 globals. One is active. On the machine you open the settings
 To open the page:
 
 1. Click **GLOBAL** in the top bar. Or choose **GLOBAL…** in the engine menu, the menu you open from the engine name on the LCD.
-2. The page opens under the header. Its head reads GLOBAL and the number of the active global. The keys 1 to 8 are the 8 globals. The lit key is the active one.
+2. The page opens in the middle of the window. Its head reads GLOBAL and the number of the active global. The keys 1 to 8 are the 8 globals. The lit key is the active one.
 3. Click a key to make that global the active one.
-4. Press {key:close-global}, click **GLOBAL** again, or click the key at the right of the head, to go back to the workspace. A click on a workspace key goes to that workspace.
+4. Press {key:close-global}, or click the key at the right of the head, to go back to the workspace. A click beside the page does not close it.
 
 Every change is stored in the active global and made active at once. There is nothing to save.
 
@@ -54,7 +54,7 @@ In the **Control** card, click **−** or **+** beside **Base channel**. The val
 NOTE: When the global holds a base channel of OFF, the card reads OFF. The machine then takes no notes, mutes or sound values over MIDI, and the editor cannot play it.
 
 ## MAP EDITOR
-<!-- rows: MD-165 MD-166 MD-167 MD-168 MD-169 MD-289 @a81c64 -->
+<!-- rows: MD-165 MD-166 MD-167 MD-168 MD-169 MD-289 @4fcdd1 -->
 
 The map editor says which MIDI note plays what. A note can play a track, start a pattern, or start or stop the machine. The **Map editor** card has the sixteen track keys and the controls for the other notes.
 
@@ -101,14 +101,14 @@ The map goes back to the one Elektron gives the machine: the tracks from C2, the
 NOTE: It is the map that the SysEx message Reset MIDI note map leaves on the machine.
 
 ## LOCAL CONTROL
-<!-- rows: MD-170 @aaf210 -->
+<!-- rows: MD-170 @76712e -->
 
 Local control sets whether the keys and the sequencer of the machine play its own sounds. In the **Control** card, click **ON** or **OFF** beside **Local ctrl**. With OFF the keys and the sequencer do not play the internal sounds.
 
 NOTE: The panel marks this switch "not verified". The setting is stored in the global, but its effect could not be checked on the emulated machine.
 
 ## PROGRAM CHANGE
-<!-- rows: MD-171 MD-172 @905078 -->
+<!-- rows: MD-171 MD-172 @cbc544 -->
 
 In the **Control** card:
 
@@ -207,7 +207,7 @@ The machine takes SysEx at any time. In the editor you open the file first and c
 
 ![The SysEx import panel](shot:md-sysex-import)
 
-While the import runs, the panel shows three steps: **Read the slots**, **Send** and **Read back**, and a bar for each kind. Click **Stop** to cancel or **Hide** to put the panel away.
+While the import runs, the panel shows three steps: **Read the slots**, **Send** and **Read back**, and a bar for each kind. Click **Stop** to cancel or **Hide** to put the panel away. The import goes on: **IMPORT SYSEX…** in the engine menu shows the panel again, with its report when it is done. While it runs, [ESC] and a click beside the panel leave it open. The panel keeps one size from the preview to the report.
 
 At the end the panel gives a report, slot by slot:
 
@@ -227,7 +227,7 @@ NOTE: The import has no undo. A kit that plays, and has unsaved edits, can lose 
 NOTE: **Globals** and **Other** are off until you tick them. A global changes the MIDI channels the machine listens on, and so which tracks the editor can mute, play and edit live. The active global becomes active at once.
 
 ## ORIGINAL PLACE SYSEX RECEIVE
-<!-- rows: MD-182 @7b772b -->
+<!-- rows: MD-182 @73055c -->
 
 The import puts each item in the slot it came from, as the machine does with ORIG. This is the default: **Original place** is lit in the **Place** row under the grid.
 
@@ -266,7 +266,7 @@ The line at the foot says how many slots are the same. Nothing was written to th
 An import reads every item back as well. Its report lists the items that differ from the file, marked ≠.
 
 ## SYNC
-<!-- rows: MD-185 MD-186 MD-187 MD-188 @c3eccc -->
+<!-- rows: MD-185 MD-186 MD-187 MD-188 @100c38 -->
 
 The **Sync** card sets how the machine takes and sends the MIDI clock and the transport.
 

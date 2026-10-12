@@ -61,7 +61,7 @@ function audioClick(a){const f=a.dataset.am;
  if(f==="midiIn"){audioSend({set:"midiInput",device:a.dataset.id,on:a.getAttribute("aria-pressed")!=="true"});return}}
 document.addEventListener("change",e=>{const s=e.target.closest?.("#audiopop select[data-am]");if(!s)return;const f=s.dataset.am,v=s.value;
  const cmd={driver:{set:"driver",device:v},output:{set:"output",device:v},input:{set:"input",device:v},rate:{set:"sampleRate",value:+v},buffer:{set:"bufferSize",value:+v},midiOut:{set:"midiOutput",device:v}}[f];if(cmd)audioSend(cmd)});
-document.addEventListener("click",e=>{if(!AP.open)return;const pop=$("#audiopop");if(pop.contains(e.target)){const a=e.target.closest("[data-am]");if(a&&a.tagName==="BUTTON")audioClick(a);return}if(!e.target.closest?.("#dlg,.kpop,#kpop,.lcdeng"))closeAudio()},true);
+document.addEventListener("click",e=>{if(!AP.open)return;const pop=$("#audiopop");if(pop.contains(e.target)){const a=e.target.closest("[data-am]");if(a&&a.tagName==="BUTTON")audioClick(a);return}/* review 1 (B-094): every modal locks: no close on a click outside */},true);
 document.addEventListener("keydown",e=>{if(e.target.closest?.("input,select,textarea")||e.metaKey||e.ctrlKey||e.altKey)return;
  if(AP.open&&e.key==="Escape"){e.preventDefault();e.stopImmediatePropagation();closeAudio();return}
  if(e.key===","&&(!$("#dlg")||$("#dlg").hidden)){e.preventDefault();e.stopImmediatePropagation();AP.open?closeAudio():openAudio()}},true);

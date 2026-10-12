@@ -723,7 +723,7 @@ const Keys = (() => {
 	   free(): no dialog open and no text field focused, the rule of the keys that play and act on tracks. */
 	const modalTop = () => typeof Modal !== "undefined" && Modal.top ? Modal.top() : null;
 	const modalKind = () => typeof Modal !== "undefined" && Modal.kind ? Modal.kind() : null;
-	const passes = (b, top) => b.modal === top || (b.modal === "panel" && (modalKind() === "panel" || modalKind() === "page"));
+	const passes = (b, top) => b.modal === top || (b.modal === "panel" && modalKind() === "panel");
 	const free = () => !modalTop() && !document.activeElement?.closest?.("input,select,textarea,[contenteditable]");
 	/* The keys that reached the page, newest last ("cmd+C", "shift+?", "Space"): every keydown (noted first, before a
 	   dialog keeps it from the shortcuts) and every edit command taken as its key (below). The key probe's text. */
@@ -1609,7 +1609,7 @@ function drawKeys(){const pop=$("#keyspop");if(!pop)return;
 function toggleKeys(on){const pop=$("#keyspop");if(!pop)return;if(on??pop.hidden)drawKeys();else{pop.hidden=true;keyView?.reset()}}
 Keys.bind({id:"keys-help",short:"This view",scope:"any",keys:["?"],group:"Help",does:"The keyboard view: what every key and gesture does (this)",modal:"keyspop",run:()=>toggleKeys()});
 Keys.bind({id:"keys-help-close",short:"Close",scope:"any",keys:["Escape"],group:"Help",does:"Close the keyboard view",when:()=>!$("#keyspop").hidden,run:()=>toggleKeys(false)});
-document.addEventListener("click",e=>{const pop=$("#keyspop");if(!pop||pop.hidden)return;if(e.target.closest("[data-keysx]")||!pop.contains(e.target)){pop.hidden=true;keyView?.reset()}},true);
+document.addEventListener("click",e=>{const pop=$("#keyspop");if(!pop||pop.hidden)return;/* review 1: every modal locks: only its close key */if(e.target.closest("[data-keysx]")){pop.hidden=true;keyView?.reset()}},true);
 /* the page zoom keys (skins/shared/deskZoom.js takes them before the map), described, as the MD Editor's */
 Keys.bind({id:"zoom-out",short:"Zoom −",scope:"any",keys:["-"],mod:"cmd",group:"Anywhere",does:"Page zoom: smaller (also in the editor's menu)"});
 Keys.bind({id:"zoom-in",short:"Zoom +",scope:"any",keys:["="],mod:"cmd",group:"Anywhere",does:"Page zoom: larger (⌘+ too)"});
@@ -1703,22 +1703,23 @@ const MmRoll=(()=>{
 /* The modal layer (P7): one modal system for every dialog of both editors, one file for both editors and
    both mockups (skins/shared/, its stylesheet deskModal.css). The dialogs keep their own open and close
    functions; this layer watches them (their hidden attribute) and gives every one the same behaviour:
-   centred on the window over a dimmed backdrop, focus inside it (Tab goes round), Esc and a click
-   outside by its kind, focus back where it was when it closes. Stacked: the newest is on top and only
-   it answers. The kinds, as data:
-     confirm  a question (the plug-in's asks, the first-run notice): Esc is its last key (Cancel, Close),
-              a click outside does nothing, the first focus is its last key (never the destructive one)
-     panel    a library, settings or list: Esc and a click outside close it (its own close function)
+   centred on the window over a dimmed backdrop, focus inside it (Tab goes round), Esc by its kind, focus back where it
+   was when it closes. Every dialog locks (Radek, review 1, 2026-10-12): a click outside never closes it (the box nudges);
+   it closes by its own keys (Cancel, Close, Done, OK, Esc) or Esc. While it works (an import, a reset: the dialog says
+   so with data-busy) Esc is refused too, so the work stays in sight. Stacked: the newest is on top and only it answers.
+   The kinds, as data:
+     confirm  a question (the plug-in's asks, the first-run notice): Esc is its last key (Cancel, Close), the first
+              focus is its last key (never the destructive one)
+     panel    a library, settings or list, the GLOBAL page (a modal again since review 1): Esc closes it (its own close
+              function)
      boot     the start-up card (deskBoot.js): nothing closes it but the machine becoming ready
-     menu     a context menu (deskMenu.js, K3): at the pointer, nothing dimmed, Esc and a click outside close it
-     page     a page over the workspace (0.6: GLOBAL): placed by its owner under the header, nothing dimmed, the header
-              stays clickable (its owner closes it on a click there), Esc closes it; the keys stay its own, as a panel's
+     menu     a context menu (deskMenu.js, K3): at the pointer, nothing dimmed, Esc and a click outside close it (a menu,
+              not a dialog: nothing in it runs)
    A listbox (the dropdowns) is not a modal: it stays at its button. */
 const Modal = (() => {
-	const KINDS = { confirm: { outside: false, focusLast: true, esc: true }, panel: { outside: true, focusLast: false, esc: true },
-		boot: { outside: false, focusLast: false, esc: false }, menu: { outside: true, focusLast: false, esc: true },
-		page: { outside: false, focusLast: false, esc: true } };
-	const DIALOGS = [["#dlg", "confirm", null], ["#libpop", "panel", "closeLib"], ["#globpop", "page", "closeGlobal"],
+	const KINDS = { confirm: { outside: false, focusLast: true, esc: true }, panel: { outside: false, focusLast: false, esc: true },
+		boot: { outside: false, focusLast: false, esc: false }, menu: { outside: true, focusLast: false, esc: true } };
+	const DIALOGS = [["#dlg", "confirm", null], ["#libpop", "panel", "closeLib"], ["#globpop", "panel", "closeGlobal"],
 		["#keyspop", "panel", "toggleKeys"], ["#audiopop", "panel", "closeAudio"], ["#machpop", "panel", "closePicker"], ["#bootcard", "boot", null],
 		["#syxpop", "panel", null], ["#deskmenu", "menu", "closeDeskMenu"]];
 	const stack = [];	// {el, kind, close, back}
@@ -1730,7 +1731,7 @@ const Modal = (() => {
 	const keys = d => [...box(d).querySelectorAll(FOCUSABLE)].filter(e => e.offsetParent !== null || e === document.activeElement);
 	function layer() {
 		if (!bg) { bg = document.createElement("div"); bg.id = "modalbg"; bg.className = "modalbg"; bg.hidden = true; document.body.appendChild(bg); }
-		bg.hidden = !stack.length || stack[stack.length - 1].kind === "page";	/* a page dims nothing and covers no header */
+		bg.hidden = !stack.length;
 		bg.classList.toggle("clear", stack.length > 0 && stack[stack.length - 1].kind === "menu");	/* a menu dims nothing */
 		stack.forEach((d, i) => { d.el.classList.add("modal"); d.el.style.setProperty("--mz", 60 + i * 2); });
 		if (stack.length) bg.style.setProperty("--mz", 59 + (stack.length - 1) * 2);
@@ -1755,9 +1756,12 @@ const Modal = (() => {
 		if (d.back && d.back.isConnected && !stack.length) d.back.focus({ preventScroll: true });
 		else if (stack.length) focusIn(stack[stack.length - 1]);
 	}
-	/* close the top one as its kind says: a confirm by its last key (the dialog's own handler runs) */
+	const nudge = d => { const b = box(d); b.classList.remove("nudge"); void b.offsetWidth; b.classList.add("nudge"); };
+	/* close the top one as its kind says: a confirm by its last key (the dialog's own handler runs); a dialog at work
+	   (data-busy) stays */
 	function dismiss(d) {
 		if (!KINDS[d.kind].esc) return;
+		if (d.el.dataset && d.el.dataset.busy) { nudge(d); return; }
 		if (d.kind === "confirm") { const b = d.el.querySelector(".btnrow button:last-child"); if (b) b.click(); else d.el.hidden = true; return; }
 		const f = d.close && window[d.close]; if (typeof f === "function") f(false); if (!d.el.hidden) d.el.hidden = true;
 	}
@@ -1786,10 +1790,10 @@ const Modal = (() => {
 		const outside = e.target === bg || (overlay(d.el) && e.target === d.el);
 		if (!outside) return;
 		e.preventDefault(); e.stopImmediatePropagation();
-		if (ev === "click") { if (KINDS[d.kind].outside) dismiss(d); else { const b = box(d); b.classList.remove("nudge"); void b.offsetWidth; b.classList.add("nudge"); } }
+		if (ev === "click") { if (KINDS[d.kind].outside) dismiss(d); else nudge(d); }
 	}, true);
 	/* focus that leaves the top dialog (a click on the page behind is stopped above) comes back */
-	document.addEventListener("focusin", e => { const d = top(); if (d && d.kind !== "page" && !d.el.contains(e.target) && e.target !== bg && !e.target.closest?.("#kpop")) focusIn(d); });
+	document.addEventListener("focusin", e => { const d = top(); if (d && !d.el.contains(e.target) && e.target !== bg && !e.target.closest?.("#kpop")) focusIn(d); });
 	if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", watch); else watch();
 	/* Tips: the LCD's titles show under the display, never over it (a native tooltip covers the fields) */
 	const tip = document.createElement("div"); tip.className = "lcdtip"; tip.hidden = true; tip.setAttribute("role", "tooltip"); document.body.appendChild(tip);
@@ -2668,7 +2672,7 @@ const Syx = (() => {
 		const second = k === "pattern" && (!i.name || i.name === c.label) ? (i.kit != null ? "K" + nn(i.kit + 1) : "") : i.name || "—";
 		const cls = ["syxc", i.overwrites ? "over" : "fresh", i.plays ? "plays" : "", out ? "off" : "", i.readable === false ? "unread" : "", r && problem(r.outcome) ? "bad" : ""].filter(Boolean).join(" ");
 		const mark = r ? `<i class="syxo">${OUTCOME[r.outcome]?.[1] || "?"}</i>` : "";
-		return `<button type="button" class="${cls}" data-syxitem="${esc(id)}" data-syxname="${esc(i.name || "")}"${r ? ` data-syxout="${esc(r.outcome)}"` : ""} title="${esc(tip(k, i, out))}"><b>${i.plays ? "▶ " : ""}${c.label}</b><span>${esc(second)}</span>${mark}</button>`;
+		return `<button type="button" class="${cls}" data-syxitem="${esc(id)}" data-syxname="${esc(i.name || "")}"${r ? ` data-syxout="${esc(r.outcome)}"` : ""} data-syxtip="${esc(tip(k, i, out))}" aria-label="${esc(tip(k, i, out))}"><b>${i.plays ? "▶ " : ""}${c.label}</b><span>${esc(second)}</span>${mark}</button>`;
 	}
 	function pane(k) {
 		const list = last.items[k], g = layout(last.model, k, list);
@@ -2741,6 +2745,7 @@ const Syx = (() => {
 			<span class="note">${place.specific ? "The grid shows where each item lands. Each kind starts at its own first slot." : "Each item goes back to the slot it came from."}</span></div>`;
 	}
 	function drawExport() {
+		delete pop.dataset.busy;
 		pop.classList.add("syx-export"); pop.classList.toggle("sxallon", ex.all);
 		for (const st of ["preview", "error", "running", "report"]) pop.classList.remove("syx-" + st);
 		const f = ex.info?.kinds || {};
@@ -2761,9 +2766,12 @@ const Syx = (() => {
 		pop.classList.remove("syx-export", "sxallon");
 		if (!last) return;
 		for (const st of ["preview", "error", "running", "report"]) pop.classList.toggle("syx-" + st, st === state);
+		/* review 1 (B-094): at work, Esc does not close the panel (the modal layer reads data-busy); Hide does, and the
+		   engine menu shows it again (running()) */
+		if (state === "running") pop.dataset.busy = "1"; else delete pop.dataset.busy;
 		if (!last.ok) { pop.innerHTML = head() + `<p class="syxwhy">${esc(last.text)}</p><div class="syxfoot"><div class="syxmsg"></div><div class="btnrow"><button type="button" data-syxgo="close">Close</button></div></div>`; return; }
 		const list = state === "report" && problemsOnly && [...res.values()].some(r => problem(r.outcome));
-		pop.innerHTML = head() + tabs() + `<div class="syxbody">${list ? `<div class="syxpane">${problems()}</div>` : kindsIn().map(([k]) => pane(k)).join("")}</div>` + placeRow() + tools() + foot();
+		pop.innerHTML = head() + tabs() + `<div class="syxbody">${list ? `<div class="syxpane">${problems()}</div>` : kindsIn().map(([k]) => pane(k)).join("")}</div>` + `<p class="syxtipline" aria-hidden="true"></p>` + placeRow() + tools() + foot();
 		sums(); bar();
 	}
 	function sums() {
@@ -2808,7 +2816,7 @@ const Syx = (() => {
 		const pr = q(".sxplace"); if (pr) pr.outerHTML = placeRow();
 	}
 	function preview(m) {
-		mode = "import";
+		mode = "import"; unseen = false;
 		const again = placing && m.ok && last && last.ok && m.file === last.file && state === "preview";
 		placing = false; clearTimeout(placeW);
 		last = m; state = m.ok ? "preview" : "error"; skip = new Set(); anchor = null; res = new Map(); rep = null; picks = []; steps = []; lastProgress = null;
@@ -2870,7 +2878,10 @@ const Syx = (() => {
 			rep = { text: m.text, report: m.report };
 			res = outcomes(picks, m.report);
 			problemsOnly = [...res.values()].some(r => problem(r.outcome));
-			state = "report"; draw(); return;
+			state = "report"; draw();
+			/* hidden (Hide): the report waits for the engine menu, and the toast says so */
+			if (pop.hidden) { unseen = true; say(`${rep.text || "Done."} Import SysEx… in the engine menu shows the report.`); }
+			return;
 		}
 		if (m.running) { if (state !== "running") { state = "running"; draw(); } else bar(); return; }
 		if (state === "running") { state = "preview"; draw(); }	// the host refused or ended without a report
@@ -2886,6 +2897,9 @@ const Syx = (() => {
 		if (e.target.dataset?.syxgo === "problems") { problemsOnly = e.target.checked; draw(); }
 	});
 	/* a value (place, from, to): the wheel, a drag up or down, the arrow keys, as other values */
+	/* review 1 (B-095): a slot's facts in a line of the panel, not a tooltip (a tooltip covered Stop and Hide) */
+	pop.addEventListener("mouseover", e => { const l = q(".syxtipline"); if (!l) return; const it = e.target.closest?.("[data-syxtip]"); l.textContent = it ? it.dataset.syxtip : ""; });
+	pop.addEventListener("mouseleave", () => { const l = q(".syxtipline"); if (l) l.textContent = ""; });
 	pop.addEventListener("wheel", e => { const v = e.target.closest?.("[data-sxv]"); if (!v) return; e.preventDefault(); nudge(v, e.deltaY < 0 ? 1 : -1); }, { passive: false });
 	pop.addEventListener("keydown", e => {
 		const v = e.target.closest?.("[data-sxv]"); if (!v) return;
@@ -2957,7 +2971,7 @@ const Syx = (() => {
 		else if (a === "verify" && Syx.host && state === "preview") start(true);
 		else if (a === "stop" && Syx.host) Syx.host.stop();
 		else if (a === "help") { const h = q(".syxhelp"); h.hidden = !h.hidden; g.setAttribute("aria-expanded", String(!h.hidden)); }
-		else if (a === "close") pop.hidden = true;
+		else if (a === "close") { pop.hidden = true; if (state === "running") say(`${last?.reset ? "The reset" : "The import"} goes on: Import SysEx…, Export SysEx… or Reset machine… in the engine menu shows it again.`); }
 	});
 	/* the export panel: everything by default; the host's facts fill the kinds and their default ranges */
 	function openExport() {
@@ -2998,8 +3012,13 @@ const Syx = (() => {
 		Syx.host.ask(`${what}<br><br>What the machine holds now is lost: there is no undo. Export SysEx… first keeps a way back.`,
 			[[how === "empty" ? "Clear everything" : "Factory reset", "danger", () => Syx.host.reset(how)], ["Export SysEx…", "", openExport], ["Cancel", "cream", () => { }]]);
 	}
+	/* an import or a reset at work, its panel hidden (Hide): the engine menu's entries show it again rather than start
+	   another (review 1, B-094: a running job is never out of reach) */
+	let unseen = false;
+	function running() { return mode === "import" && (state === "running" || (state === "report" && unseen)) && !!last && last.ok; }
 	/* the engine menu's entries of the panel */
 	function menu(v) {
+		if ((v === "import" || v === "export" || v === "reset") && running()) { unseen = false; pop.hidden = false; draw(); return true; }
 		if (v === "import") { if (Syx.host) Syx.host.choose(); return true; }
 		if (v === "export") { openExport(); return true; }
 		if (v === "reset") { reset(); return true; }
@@ -3008,7 +3027,7 @@ const Syx = (() => {
 	/* an export's news (written, or the waveforms read so far) */
 	function exported(m) { say(m.text); return m; }
 	return {
-		preview, progress, exported, exportInfo, openExport, reset, menu, resetNews: m => say(m.text), host: null, model
+		preview, progress, exported, exportInfo, openExport: () => { if (running()) { unseen = false; pop.hidden = false; draw(); return; } openExport(); }, reset, menu, running, resetNews: m => say(m.text), host: null, model
 	};
 })();
 
@@ -4857,10 +4876,11 @@ document.addEventListener("change",e=>{if(e.target.id==="lt"){S.ctl.addT=+e.targ
 
 /* ---- shared/deskGlobal.js ---- */
 "use strict";
-/* The GLOBAL page both editors share (B-051, F3; the Machinedrum Editor's v61 panel, P5, made shared; a page over the
-   workspace since 0.6, DESIGN-machine-menus.md §2): the machine's own settings, kept in its active global slot, opened by
-   the GLOBAL key in the top bar or GLOBAL… in the engine menu (and the AUDIO panel's link). The header stays; Esc, the
-   GLOBAL key or a click on the header goes back. This file is the frame and the controls: the head on one line (the
+/* The GLOBAL page both editors share (B-051, F3; the Machinedrum Editor's v61 panel, P5, made shared; 0.6 wave 5 made it
+   a page under the header, review 1 (Radek, 2026-10-12, B-091) a modal again: a dialog of the modal layer over a dimmed
+   backdrop, focus inside, its head and cards as the page had them): the machine's own settings, kept in its active
+   global slot, opened by the GLOBAL key in the top bar or GLOBAL… in the engine menu (and the AUDIO panel's link). Esc
+   or its back key closes it; a click outside does not (every modal locks). This file is the frame and the controls: the head on one line (the
    slot chip, the 8 slots: the active one lit, a click makes that one active; Copy · Paste · Clear, the machine's global
    slot menu), the cards' controls (GlobalUi), placing, the GLOBAL key's light. What a machine's global holds is its
    host's (DeskGlobal.host, set by mdDeskGlobal.js and the Monomachine mockup's 117-global.js):
@@ -4887,19 +4907,13 @@ function drawGlobal() {
 	if (!pop) return;
 	if (!GP.open || !H) { pop.hidden = true; pop.classList.remove("gpage"); return; }
 	pop.classList.add("gpage");
-	const G = H.view(), back = H.back ? H.back() : "", esc = `<button class="gpback" data-ga="close" title="Back${back ? " to " + back : ""} (Esc or GLOBAL)">Esc${back ? " · back to " + back : ""}</button>`;
-	if (!G) { pop.innerHTML = `<div class="gphead"><span class="gpname">Global</span><span class="note">Reading the global settings from the machine…</span><span class="gpsp"></span>${esc}</div>`; pop.hidden = false; placeGlobal(); return; }
+	const G = H.view(), back = H.back ? H.back() : "", esc = `<button class="gpback" data-ga="close" title="Back${back ? " to " + back : ""} (Esc)">Esc${back ? " · back to " + back : ""}</button>`;
+	if (!G) { pop.innerHTML = `<div class="gphead"><span class="gpname">Global</span><span class="note">Reading the global settings from the machine…</span><span class="gpsp"></span>${esc}</div>`; pop.hidden = false; return; }
 	const can = !H.canPaste || H.canPaste();
 	pop.innerHTML = `<div class="gphead" title="${H.menu} on the machine. Every change is stored in the active slot and made active at once."><span class="gpname">Global</span><span class="lcdchip">GLOBAL ${G.slot + 1}</span><span class="gslots" title="8 global setups; the lit one is active (SysEx 0x56). A click makes it active">${Array.from({ length: 8 }, (_, k) => `<button data-ga="slot" data-v="${k}" aria-pressed="${k === G.slot}">${k + 1}</button>`).join("")}</span>${H.copy ? `<span class="gpkeys"><button data-ga="copy" title="Copy GLOBAL ${G.slot + 1}: all its settings">Copy</button><button data-ga="paste"${can ? "" : " disabled"} title="${can ? `Paste the copied global into GLOBAL ${G.slot + 1} (asked first; Undo brings it back)` : "Copy a global first"}">Paste</button>` : `<span class="gpkeys">`}<button class="greset danger" data-ga="reset" title="${GRESET_TIP}">Clear</button></span><span class="gpsp"></span>${esc}</div>
  <div class="globgrid">${H.cards(G)}</div>`;
 	if (typeof enhanceSelects === "function") enhanceSelects(pop);
-	pop.hidden = false; placeGlobal();
-}
-/* under the header, as wide as it, down to the window's foot (the page scrolls inside) */
-function placeGlobal() {
-	const pop = document.getElementById("globpop"), hd = document.querySelector("header.top") || document.querySelector(".lcdpanel"), r = hd.getBoundingClientRect(), top = Math.max(16, r.bottom + 10);
-	pop.style.top = (top + scrollY) + "px"; pop.style.height = Math.max(240, innerHeight - top) + "px"; pop.style.maxHeight = "";
-	pop.style.left = (r.left + scrollX) + "px"; pop.style.width = r.width + "px";
+	pop.hidden = false;
 }
 function globKeyLit() { const k = document.getElementById("globkey"); if (k) { k.setAttribute("aria-pressed", String(GP.open)); k.classList.toggle("on", GP.open); const l = k.querySelector(".led"); if (l) l.classList.toggle("on", GP.open); } }
 function openGlobal() { if (typeof closeLib === "function") closeLib(false); GP.open = true; drawGlobal(); globKeyLit(); }
@@ -4917,34 +4931,16 @@ function globalClick(a) {
 	if (f === "paste") { if (!H.canPaste || H.canPaste()) H.paste(G); return; }
 	H.click(a, G);
 }
-/* No backdrop: a press outside the page closes it and goes no further (a step of the grid below must not take it); the header
-   (a workspace tab, the LCD, a key) is let through, the click there does what it does. The press, its release and its click
-   are one gesture: after the first is eaten, the rest of them are too (EAT), for a moment. */
-const GLOBAL_THROUGH = "#dlg,.kpop,#kpop,.lcdeng,.modalbg,#deskmenu", GLOBAL_HEADER = "header.top,.lcdpanel";
-let globEat = false;
-const globStop = e => { e.preventDefault(); e.stopPropagation(); };
-const globOutside = e => !document.getElementById("globpop").contains(e.target) && !(e.target.closest && e.target.closest(GLOBAL_THROUGH + "," + GLOBAL_HEADER));
-for (const ev of ["pointerdown", "mousedown", "pointerup", "mouseup"]) document.addEventListener(ev, e => {
-	if (globEat) { globStop(e); return; }
-	if (!GP.open || !globOutside(e)) return;
-	globStop(e); globEat = true; setTimeout(() => { globEat = false; }, 600);
-	if (ev === "pointerdown" || ev === "mousedown") closeGlobal();
-}, true);
 document.addEventListener("click", e => {
 	if (e.target.closest && e.target.closest("#globkey")) { GP.open ? closeGlobal() : openGlobal(); e.stopPropagation(); return; }
-	if (globEat) { globEat = false; globStop(e); return; }
 	if (!GP.open) return;
 	const pop = document.getElementById("globpop");
-	if (pop.contains(e.target)) { const a = e.target.closest("[data-ga]"); GP.shift = !!e.shiftKey; if (a) globalClick(a); return; }
-	if (e.target.closest && e.target.closest(GLOBAL_THROUGH)) return;
-	closeGlobal();
-	if (!(e.target.closest && e.target.closest(GLOBAL_HEADER))) globStop(e);
+	if (pop.contains(e.target)) { const a = e.target.closest("[data-ga]"); GP.shift = !!e.shiftKey; if (a) globalClick(a); }
 }, true);
 document.addEventListener("change", e => {
 	const s = e.target.closest && e.target.closest("#globpop [data-gsel]"), H = DeskGlobal.host;
 	if (s && H && H.change && H.view()) H.change(s, H.view());
 });
-addEventListener("resize", () => { if (GP.open) placeGlobal(); });
 Keys.bind({ id: "global-key", scope: "any", area: "Top bar", keys: ["GLOBAL key"], group: "Anywhere", does: "The GLOBAL page: the machine's own settings, kept in its memory: MIDI channels, sync and the rest (also the engine menu: GLOBAL…)" });
 Keys.bind({ id: "close-global", short: "Close", scope: "any", keys: ["Escape"], group: "Anywhere", does: "Back from the GLOBAL page to the workspace", when: () => GP.open, run: () => closeGlobal() });
 
@@ -5376,7 +5372,7 @@ function libAct(a){const k=LIB.sel,kit=LIB.open==="kit";
    copy:()=>kit?kitCopy(k):patCopy(k),paste:()=>kit?kitPaste(k):patPaste(k),clear:()=>kit?kitClear(k):patClear(k),go:()=>patGo(k,false),now:()=>patGo(k,true)})[a]?.()}
 
 /* ----- mouse ----- */
-document.addEventListener("click",e=>{if(!LIB.open)return;if($("#libpop").contains(e.target)||e.target.closest?.("#dlg,#kitf,#pat,#undo,#redo,#kpop"))return;closeLib(false)},true);
+/* review 1 (B-094): every modal locks: a click outside the library no longer closes it (Esc, its close key) */
 document.addEventListener("click",e=>{if(!LIB.open||!$("#libpop").contains(e.target)||e.target.closest?.("#lsin"))return;
  const a=e.target.closest("[data-la]");if(a){if(!a.disabled)libAct(a.dataset.la);return}
  /* a click loads the slot at once (LOAD KIT; over unsaved edits the machine asks first: Save and load, Load
@@ -5482,7 +5478,7 @@ function audioClick(a){const f=a.dataset.am;
  if(f==="midiIn"){audioSend({set:"midiInput",device:a.dataset.id,on:a.getAttribute("aria-pressed")!=="true"});return}}
 document.addEventListener("change",e=>{const s=e.target.closest?.("#audiopop select[data-am]");if(!s)return;const f=s.dataset.am,v=s.value;
  const cmd={driver:{set:"driver",device:v},output:{set:"output",device:v},input:{set:"input",device:v},rate:{set:"sampleRate",value:+v},buffer:{set:"bufferSize",value:+v},midiOut:{set:"midiOutput",device:v}}[f];if(cmd)audioSend(cmd)});
-document.addEventListener("click",e=>{if(!AP.open)return;const pop=$("#audiopop");if(pop.contains(e.target)){const a=e.target.closest("[data-am]");if(a&&a.tagName==="BUTTON")audioClick(a);return}if(!e.target.closest?.("#dlg,.kpop,#kpop,.lcdeng"))closeAudio()},true);
+document.addEventListener("click",e=>{if(!AP.open)return;const pop=$("#audiopop");if(pop.contains(e.target)){const a=e.target.closest("[data-am]");if(a&&a.tagName==="BUTTON")audioClick(a);return}/* review 1 (B-094): every modal locks: no close on a click outside */},true);
 document.addEventListener("keydown",e=>{if(e.target.closest?.("input,select,textarea")||e.metaKey||e.ctrlKey||e.altKey)return;
  if(AP.open&&e.key==="Escape"){e.preventDefault();e.stopImmediatePropagation();closeAudio();return}
  if(e.key===","&&(!$("#dlg")||$("#dlg").hidden)){e.preventDefault();e.stopImmediatePropagation();AP.open?closeAudio():openAudio()}},true);
