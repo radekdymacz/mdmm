@@ -415,7 +415,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Control in 1-92 | TRANSPORT ACCEPT / IGNORE | Transport in | ✅ | GLOBAL > Sync > Ctrl in | A DAW turns it on itself; the page also asks once when PLAY needs it | – |
 | Control in 1-93 | PRG CHANGE in | Program change in | 🟡 | GLOBAL > Control > Prg change in, shown as BASE | Shown, not changeable: measured, the machine always takes it on the base channel | – |
 | Multi map edit 1-93 | Ranges, upper key, insert / delete | Key ranges | ✅ | Perform > Multi map table, Split, delete |  | 1 |
-| Multi map edit 1-93 | PAT (CUR or pattern) | Pattern | 🟡 | Pattern select | The list offers CUR and A01-B16 only (32 patterns); the machine takes all 128 | – |
+| Multi map edit 1-93 | PAT (CUR or pattern) | Pattern | ✅ | Perform › Multi map: a range's PAT list, CUR and A01-H16 | Measured: the firmware takes and keeps pattern 128 (H16) in a range (intent case on OS 1.32B) | 1 |
 | Multi map edit 1-93 | OFS, LEN | Offset, length | ✅ | OFS, LEN boxes |  | – |
 | Multi map edit 1-93 | TRN, TIM | Transpose, timing | ✅ | TRN, TIM boxes |  | – |
 | Mechanical settings 1-94 | Knob resolution (MKII) | Encoder resolution | ➖ | – | Hardware knobs | – |
@@ -531,8 +531,8 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 335 |
-| 🟡 | 15 |
+| ✅ | 336 |
+| 🟡 | 14 |
 | ❌ | 1 |
 | ➖ | 34 |
 | Total | 385 |
