@@ -72,3 +72,14 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 5. Both: hold Delete while live recording and close the editor window (or reload the page): the erase stops within a second.
 6. MM on real hardware: step recording and live erase are refused with the reason (they need the machine's keys).
 7. MD (MD-140, polish A): lock a value on a track's trigs (lock lane), start live recording, go to Sound, press that value and keep the mouse down, then hold Delete: the value and the track's header are marked red and that value's locks go as they play (the first step or two may stay while the editor selects the track and the knob page); the value does not move, the trigs and the other locks stay. Delete alone still erases trigs (after a moment: a value pressed just after Delete still wins); a value with no locks (a master effect on Mix) removes nothing and says so; letting the value go first stops the removal until Delete is let go; letting Delete go first leaves the value where it was until the mouse is let go. The MM has no such gesture (its manual removes locks in grid recording only).
+
+## MD sound and mix (wave 8, Machinedrum only)
+
+1. Mix: each strip has a **LEV** box above the VOL fader. Drag one, scroll the wheel over it, focus it and press ↑ ↓: the track gets louder or quieter while it plays, the box's bar follows. Double-click: 100. Undo takes each change back. LEV and VOL are separate values (VOL can be locked, LEV cannot).
+2. LEV of a track at 0: the track is silent; save the kit, load another and back: the level is kept.
+3. Sound: open the machine picker. Point at a machine: a red ▶ shows on its key. Click ▶: the machine goes on the track and the track plays once; the picker stays open and a line says "▶ machine · track n · was ...". Try several.
+4. Esc (or **Back**, or a click outside the picker): the old machine is back, with its sound as it was (also with "Keep effects + routing" off).
+5. Move with Tab to a machine and press Space: it plays. Enter (or **Keep**, or a click on the key): it stays. One ⌘Z takes the whole try-and-keep back to the machine before.
+6. An audition the machine refuses (start the editor and open the picker before the machine is ready, or base channel OFF): Esc undoes nothing of your earlier edits. ⌘Z while auditioning: the audition ends (no line, no "was"), Esc then changes nothing.
+7. Close the editor window (or reload the page) while a machine is being auditioned, open it again: the track has its old machine and values (while the window is closed the tried machine stays; it goes when the page loads again).
+8. ▶ on GND-EMPTY or a RAM recorder: the machine goes on the track, no note, a toast says why. During live recording an audition changes the machine but plays no note (no trig is recorded).

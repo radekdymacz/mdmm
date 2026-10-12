@@ -268,7 +268,7 @@ function deriveView(docs, ui) {
 		const kt = K ? K.tracks[i] : null;
 		const m = kt ? kt.machine || "GND-EMPTY" : "GND-EMPTY";
 		const a = slots(m, cat);
-		const t = { name: nameOf(m, cat), m, model: kt ? kt.model : 0, fam: famOf(m, cat), syn: {}, fx: {}, rt: {}, level: kt ? kt.level : 0,
+		const t = { name: nameOf(m, cat), m, model: kt ? kt.model : 0, fam: famOf(m, cat), syn: {}, fx: {}, rt: {}, level: kt ? kt.level : null,
 			mute: soloing ? !!(ui.userMutes && ui.userMutes.has(i)) : mutes.has(i), solo: soloing && ui.soloSet.has(i), out: G ? (G.routing[i] === "MAIN" ? "MAIN" : G.routing[i]) : "MAIN",
 			trigs: Array(64).fill(false), acc: new Set(), slide: new Set(), swing: new Set(), muteGroup: kt ? kt.muteGroup : null, trigGroup: kt ? kt.trigGroup : null };
 		if (kt) {
