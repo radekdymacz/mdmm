@@ -11,7 +11,7 @@
 #             Tier 0 with the Slow and Timing tests, the page journeys of that area (scripts/mdmm-page.mjs, no ROM),
 #             one playing golden per machine when emulation code changed (ROM)
 #   --branch  tier 2, before a merge, in the background (under 10 min): every unit test, every page journey, the
-#             firmware tests and the machine journeys of the area (scripts/mdmm-journeys.sh --tier machine), every
+#             firmware tests (their programs built first, so none runs stale) and the machine journeys of the area (scripts/mdmm-journeys.sh --tier machine), every
 #             golden when emulation code changed (the last three need the ROMs; skipped and said without them)
 #   --watch   tier 0 again each time a file under source/elektron, source/synthLib, source/baseLib, doc/modern-ux or
 #             scripts is saved (node's fs.watch; no fswatch or entr needed)
