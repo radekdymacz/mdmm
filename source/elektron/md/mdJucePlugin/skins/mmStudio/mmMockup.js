@@ -3878,6 +3878,8 @@ function selCopyTo(dt,at){const x=selShown();if(!x)return false;
  edit("copyStepsTo",Object.assign(selArgs(x),{at,dt}));setSel(StepSel.landing({tracks:x.n,length:x.to-x.from},dt,at,SEL_TRACKS,S.len));return true}
 function selDuplicate(){const x=selShown();return x?selCopyTo(x.t,x.to):false}
 function selClear(){const x=selShown();if(!x)return false;const keep=selKeeps(x);edit("clearSteps",selArgs(x));selKeep(keep);return true}
+/* MM-083, MM-184, MM-203: the selected steps' locks go, their notes stay (the machine's CLEAR NOTE LOCKS, TRIG + PLAY) */
+function selClearLocks(){const x=selShown();if(!x)return false;edit("clearStepLocks",selArgs(x));return true}
 /* I-010: a note before the selection that ran into it keeps its length when the selection is cleared: a NOTE OFF on
    the selection's first step with anything on it (where that note ended; on a MIDI track only when its LEN went that
    far). Read before the clear, put down after it (a step intent of its own, in the same gesture: one undo step). */
@@ -3957,8 +3959,11 @@ function stepMenuItems(t,s,pitch){const x=S.stepSel,st=trk(t).steps[s],one=StepS
   ...(midi?[]:[{id:"step-trigless",label:"Trigless (no envelope trigs)",key:"",run:()=>selMark("trigless")}]),
   {id:"step-slide",label:"Slide",key:"",run:()=>selMark("slide")},
   ...(one&&pitch!=null&&st?.n&&!st.n.includes(pitch)?[{id:"step-chord",label:`Chord note ${noteName(pitch)}`,key:keyOf("roll-chord"),run:()=>selChord(t,s,pitch)}]:[])];
- return StepSel.menuItems({marks,copy:()=>selCopy(),cut:()=>selCut(),paste:()=>selPaste(),canPaste:!!clipSize(),duplicate:()=>selDuplicate(),clear:()=>selClear(),
-  fill:n=>fillEvery(t,s,n,pitch??lastNote(t,s)),key:keyOf})}
+ const items=StepSel.menuItems({marks,copy:()=>selCopy(),cut:()=>selCut(),paste:()=>selPaste(),canPaste:!!clipSize(),duplicate:()=>selDuplicate(),clear:()=>selClear(),
+  fill:n=>fillEvery(t,s,n,pitch??lastNote(t,s)),key:keyOf});
+ /* MM-083: right after Clear, the locks alone */
+ const at=items.findIndex(x=>x&&x.id==="delete");items.splice(at+1,0,{id:"clear-step-locks",label:"Clear locks (keep the notes)",key:"",run:()=>selClearLocks()});
+ return items}
 function stepMenu(t,s,pitch,x,y){if(!inSel(t,s))setSel({t,n:1,from:s,to:s+1});
  DeskMenu.open(stepMenuItems(t,s,pitch),x,y,{title:StepSel.menuTitle(S.stepSel,t,s,selName)})}
 document.addEventListener("contextmenu",e=>{if(S.ws!=="seq"||!e.target.closest?.("#seq"))return;const c=selCellOf(e);if(!c||c.ruler)return;

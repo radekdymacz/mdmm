@@ -362,6 +362,8 @@ namespace mmDesk
 				{"v", ArgType::Integer, 0, 255}, {"i", ArgType::Integer, 0, 15, true}},
 				"ARPEGGIATOR, a field in firmware units (step i: 64 + offset, 255 muted)"},
 			{"clearSteps", Owner::Core, Gate::Input, P, {p, t12, rows, from, to}, "the steps, slides and locks in [from, to) of tracks t to t + n - 1 (n 1 without it)"},
+			{"clearStepLocks", Owner::Core, Gate::Input, P, {p, t12, rows, from, to},
+				"the locks of the steps in [from, to) of tracks t to t + n - 1, the notes kept (the machine's CLEAR NOTE LOCKS, MM-083)"},
 			{"copySteps", Owner::Core, Gate::Input, P, {p, t12, rows, from, to},
 				"a block of steps (tracks t to t + n - 1, steps [from, to)) into the clipboard: notes, NOTE OFFs, envelope trigs, slides, locks"},
 			{"pasteSteps", Owner::Core, Gate::Input, P, {p, t12, from, {"to", ArgType::Integer, 1, 64, true}},

@@ -3734,6 +3734,52 @@
         },
         {
           "type": "object",
+          "description": "core: the locks of the steps in [from, to) of tracks t to t + n - 1, the notes kept (the machine's CLEAR NOTE LOCKS, MM-083)",
+          "required": ["op", "p", "t", "from", "to"],
+          "properties": {
+            "op": {
+              "const": "clearStepLocks"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "p": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            },
+            "t": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 11
+            },
+            "n": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            },
+            "from": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 63
+            },
+            "to": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 64
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "description": "core: a block of steps (tracks t to t + n - 1, steps [from, to)) into the clipboard: notes, NOTE OFFs, envelope trigs, slides, locks",
           "required": ["op", "p", "t", "from", "to"],
           "properties": {

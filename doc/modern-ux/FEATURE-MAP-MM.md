@@ -122,7 +122,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Live recording 1-13 | Erase with EXIT while notes sound | Live erase | ✅ | Hold Delete while live recording: the selected track's notes go as they play |  | 1 |
 | Parameter locks 1-13 | Lock a value on a step | P-lock | ✅ | Lock lane (draw bars), wheel on a step |  | 2 |
 | Parameter locks 1-14 | Record locks live by turning a knob | Live lock | ✅ | Value boxes while live recording | The machine records; the page marks the step's cell and lock lane for about 3 s and says which value it locked (`70-seq.js` setRecLock) | – |
-| Parameter locks 1-14 | Remove one lock; remove all locks of a trig | Clear locks | 🟡 | Lane: Alt-drag erases one parameter's steps; a selected step's Delete or step-menu Clear takes its note, slide and locks together | No key that drops a step's locks and keeps its note | 1 |
+| Parameter locks 1-14 | Remove one lock; remove all locks of a trig | Clear locks | ✅ | Lane: Alt-drag erases one parameter's locks; a step's menu (right-click, or the Menu key on a focused step): Clear locks takes all its locks (or the selection's) and keeps the note | No key that drops a step's locks and keeps its note | 2 |
 
 ## 5. Monomachine overview (1-15, 1-16)
 
@@ -258,7 +258,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Live recording 1-49 | Erase with EXIT | Live erase | ✅ | Hold Delete while live recording |  | 1 |
 | Step recording 1-50 | Step-by-step input | Step rec | ✅ | Sequence: Shift-click REC; a played note writes the step under the cursor and moves on; → rest, ← back, Delete clears, Esc done |  | 1 |
 | Note copy 1-50 | Copy one trig with locks to another step | Note copy | ✅ | Sequence: Cmd-click a step (Ctrl on Windows and Linux), Cmd+C, select the target, Cmd+V; Cmd-drag drops a copy; Cmd+D duplicates | Notes, NOTE OFFs, envelope trigs, slides and locks go along (`77-select.js`, `copySteps`) | 5 |
-| Clear note parameter locks 1-50 | Clear locks of one note, undoable | Clear locks | 🟡 | Lane Alt-drag per parameter; Alt + lane clear for a track; a selected step's Delete clears the step whole | No key for the locks of one step alone | – |
+| Clear note parameter locks 1-50 | Clear locks of one note, undoable | Clear locks | ✅ | The step menu's Clear locks (keep the notes), on a step or a selection; one undo step | No key for the locks of one step alone | 1 |
 | Track page copy 1-51 | Copy a page to another page | Page copy | ✅ | LCD COPY on the page shown (no step selected), PASTE on another page; or select the steps | Steps, slides and locks (`130-main.js` secAction) | – |
 | Clear track page 1-51 | Clear a page | Page clear | ✅ | CLR with a page shown |  | 1 |
 | Track copy 1-52 | Track data to another track incl. machine, arp, transpose, swing, slide | Track copy | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (⌘⇧C, ⌘⇧V): notes, melody, slide, swing, locks, arp, transpose, machine + sound in one copy; Paste lights the tracks (synth onto synth, MIDI onto MIDI); one undo step |  | 1 |
@@ -287,7 +287,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Locks in grid mode 1-57 | Hold a trig, turn a knob | Lock | ✅ | Lane: draw; wheel; ramp with Shift |  | 1 |
 | Locks in grid mode 1-57 | Click a knob to lock its current value | Lock to current | 🟡 | Lane draw sets any value | No "lock current" click | – |
 | Locks in grid mode 1-57 | View locks of a step | View | ✅ | Lane shows bars per parameter |  | 1 |
-| Locks in grid mode 1-57 | Remove one / all locks of a step | Remove | 🟡 | See section 4 and section 11 |  | – |
+| Locks in grid mode 1-57 | Remove one / all locks of a step | Remove | ✅ | One lock: Alt-drag on the lane; all locks of a step: the step menu's Clear locks |  | 1 |
 | Locks in grid mode 1-57 | Note copy and paste | Note copy | ✅ | See section 11 | Locks travel with the copied step | – |
 | Locks 1-58 | 62 locked parameters per pattern, pooled | Lock budget | ✅ | LCD LOCKS nn/62; lane budget | Blocks a 63rd | – |
 | Locks 1-58 | Parameter locked once can hold a value on every step | Lane | ✅ | Lock lane |  | – |
@@ -531,8 +531,8 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 329 |
-| 🟡 | 21 |
+| ✅ | 332 |
+| 🟡 | 18 |
 | ❌ | 1 |
 | ➖ | 34 |
 | Total | 385 |

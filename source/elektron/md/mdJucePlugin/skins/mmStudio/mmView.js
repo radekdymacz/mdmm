@@ -298,6 +298,12 @@ const MmView = (() => {
 			for (let t = c.t; t < c.t + (c.n || 1); t++) for (let s = c.from; s < c.to; s++) out.push(...stepWrites(v, t, s, null), [[...trackPath(t), "slide", s], false]);
 			return out;
 		},
+		/* MM-083: the steps' locks go, their notes stay */
+		clearStepLocks: (v, c) => {
+			const out = [];
+			for (let t = c.t; t < c.t + (c.n || 1); t++) for (const k of keysOf(v, t)) for (const s of v.locks.get(k).keys()) if (s >= c.from && s < c.to) out.push([["locks", k, s], DELETE()]);
+			return out;
+		},
 		copySteps: () => [],
 		/* the core's clipboard; the page shows the paste from its own copy of it (clip: MmView.copied) */
 		pasteSteps: (v, c, clip) => clip && clip.kind === "steps" ? putWrites(v, clip, c.t, c.from, (c.to ?? c.from + clip.length) - c.from) : [],
