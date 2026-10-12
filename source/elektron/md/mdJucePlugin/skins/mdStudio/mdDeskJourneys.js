@@ -123,9 +123,9 @@ const MdJourneys = (() => {
 		],
 		async tidy(u, c) { if (c.b0 != null) cmd("tempo", { bpm: c.b0 }); await sleep(500); }
 	});
-	const tapTempo = tapWith("md-keys-tap-tempo", "t", { proves: ["MD-009", "MD-092"] }), tapTempoB = tapWith("md-keys-tap-tempo-b", "b", { proves: ["MD-009", "MD-092"] });
+	const tapTempo = tapWith("md-keys-tap-tempo", "t", { proves: ["MD-009", "MD-092", "MD-X20"] }), tapTempoB = tapWith("md-keys-tap-tempo-b", "b", { proves: ["MD-009", "MD-092", "MD-X20"] });
 	/* Radek 2026-10-10: ⇧B taps in both editors (the Monomachine Editor's B is the piano roll's Draw on Sequence) */
-	const tapTempoShift = tapWith("md-keys-tap-tempo-shift", "b", { shift: true, proves: ["MD-009", "MD-092"] });
+	const tapTempoShift = tapWith("md-keys-tap-tempo-shift", "b", { shift: true, proves: ["MD-009", "MD-092", "MD-X20"] });
 	const patStep = {
 		name: "md-top-pattern-next", proves: ["MD-094"],
 		steps: [
@@ -134,7 +134,7 @@ const MdJourneys = (() => {
 		]
 	};
 	const queuePattern = {
-		name: "md-seq-queue-while-playing", proves: ["MD-094", "MD-096"],
+		name: "md-seq-queue-while-playing", proves: ["MD-094", "MD-096", "MD-X21"],
 		steps: [
 			{ say: "press PLAY", act: (u, c) => { c.p0 = currentPatternSlot(); u.click("#play"); }, machine: () => ok(tele.last?.playing, "not playing"), within: 5000 },
 			{ say: "click › on the LCD: the next pattern is queued", act: async u => { u.click("#patNext"); await confirmIfAsked(u); }, machine: c => ok(desk().queued === c.p0 + 1 || currentPatternSlot() === c.p0 + 1, "queued " + desk().queued), screen: c => ok($1("#pat").textContent.includes(patName(c.p0 + 1)), "LCD " + $1("#pat").textContent), within: 3000 },
@@ -166,7 +166,7 @@ const MdJourneys = (() => {
 		]
 	};
 	const helpKeys = {
-		name: "md-keys-help", proves: [],
+		name: "md-keys-help", proves: ["MD-X18"],
 		steps: [
 			/* K-view (DESIGN-keymap.md): ? is a drawn keyboard from the key map, with the mouse's tricks, tips and the list */
 			{ say: "press ? on Sequence: the keyboard view", act: u => { if (S.ws !== "seq") u.click(tab("seq")); document.activeElement?.blur?.(); u.key("?", { shift: true }); },
@@ -182,7 +182,7 @@ const MdJourneys = (() => {
 		]
 	};
 	const undoRedo = {
-		name: "md-top-undo-redo", proves: ["MD-107"],
+		name: "md-top-undo-redo", proves: ["MD-107", "MD-X07"],
 		steps: [
 			go("seq"), sel(() => soundTrack()),
 			{ say: "click an empty step", act: (u, c) => { c.s = freeSteps(c.t, 1, 5)[0]; u.click(cell(c.t, c.s)); }, screen: c => ok(pressed(cell(c.t, c.s)), "not lit"), machine: c => ok(trigsOf(c.t).includes(c.s), "no trig") },
@@ -217,6 +217,15 @@ const MdJourneys = (() => {
 			{ say: "Cmd+Z three times: back to an empty step", act: async u => { for (let i = 0; i < 3; i++) { u.key("z", { cmd: true }); await sleep(500); } }, machine: c => ok(!trigsOf(c.t).includes(c.s), "trig still there"), screen: c => ok(!pressed(cell(c.t, c.s)), "still lit") }
 		]
 	};
+	/* B-100: the factory patterns hold EDIT ALL on for accent, slide and swing (one pattern-wide row every track takes; the
+	   page shows it on each track's trigs and says "Pattern-wide ... (EDIT ALL is on)"). A journey about a track's own marks
+	   sets This track first on the trig types, as a person does; each switch is one undo step, the journey's tidy takes it back. */
+	const MARKS = { acc: ["accent", "Accent"], sld: ["slide", "Slide"], swg: ["swing", "Swing"] };
+	const ownMarks = (...tts) => ({ say: `on the trig types, ${tts.map(k => MARKS[k][1]).join(", ")}: This track each (the track's own marks, EDIT ALL off), then Trig`,
+		act: async (u, c) => { if (c.n0 == null) c.n0 = V.undoCount; for (const k of tts) { u.click(`#ttlegend [data-tt="${k}"]`); await sleep(150);
+			if ($1('#ttlegend [data-ttall="0"]')?.getAttribute("aria-pressed") !== "true") { u.click('#ttlegend [data-ttall="0"]'); await until(() => pat()[MARKS[k][0]].editAll === 0, 4000); } }
+			u.click('#ttlegend [data-tt="trig"]'); },
+		screen: () => ok(S.tt === "trig", "type " + S.tt), machine: () => ok(tts.every(k => pat()[MARKS[k][0]].editAll === 0), tts.map(k => `${MARKS[k][0]} editAll ${pat()[MARKS[k][0]].editAll}`).join(", ")), within: 6000 });
 	/* wave 3: the trig types under the grid (DESIGN-machine-menus.md §2): Swing paints swing steps, EDIT ALL from the page, Slide by
 	   a plain click, Esc back to Trig */
 	const trigTypesJ = {
@@ -228,7 +237,8 @@ const MdJourneys = (() => {
 			{ say: "click Swing in the trig types", act: u => u.click('#ttlegend [data-tt="swg"]'), screen: () => ok(S.tt === "swg" && $1('#ttlegend [data-tt="swg"]').getAttribute("aria-checked") === "true" && !!$1('#ttlegend [data-ttall]'), "type " + S.tt) },
 			{ say: "click This track: the track's own swing row", act: u => u.click('#ttlegend [data-ttall="0"]'), machine: () => ok(pat().swing.editAll === 0, "swing editAll " + pat().swing.editAll) },
 			{ say: "drag across the two trigs: both swing", act: async (u, c) => { c.w0 = flagsOf(c.t, "swing"); await u.drag(cell(c.t, c.s), [cell(c.t, c.s2)]); },
-				screen: c => ok($1(cell(c.t, c.s)).classList.contains("sw") && $1(cell(c.t, c.s2)).classList.contains("sw"), "no swing mark"),
+				/* a drag sets or clears as its first step was (the track's own row may hold swing on these steps: B-088) */
+				screen: c => ok([c.s, c.s2].every(s => $1(cell(c.t, s)).classList.contains("sw") !== c.w0.includes(c.s)), `swing marks ${[c.s, c.s2].map(s => $1(cell(c.t, s)).classList.contains("sw"))}, before ${c.w0.includes(c.s)}`),
 				machine: c => ok([c.s, c.s2].every(s => flagsOf(c.t, "swing").includes(s) !== c.w0.includes(c.s)), "swing " + flagsOf(c.t, "swing").join(",")) },
 			{ say: "click All tracks: EDIT ALL on", act: u => u.click('#ttlegend [data-ttall="1"]'), screen: () => ok($1('#ttlegend [data-ttall="1"]').getAttribute("aria-pressed") === "true", "not pressed"), machine: () => ok(pat().swing.editAll === 1, "swing editAll " + pat().swing.editAll) },
 			{ say: "click Slide, then click the first trig: a slide", act: async (u, c) => { u.click('#ttlegend [data-tt="sld"]'); await sleep(300); c.l0 = V.slideAll ? (pat().slide.steps || []).includes(c.s) : flagsOf(c.t, "slide").includes(c.s); u.click(cell(c.t, c.s)); },
@@ -280,7 +290,7 @@ const MdJourneys = (() => {
 	/* DESIGN-step-selection.md, on ⌘ since K2 (DESIGN-keymap.md): one step copied to another step of its track (the LCD's
 	   PASTE acting on the selection), then a block duplicated and cleared with the LCD's CLR */
 	const selectCopyPaste = {
-		name: "md-seq-select-copy-paste", proves: ["MD-114"],
+		name: "md-seq-select-copy-paste", proves: ["MD-114", "MD-X10"],
 		steps: [
 			go("seq"), sel(() => soundTracks().find(t => t < 15 && trigsOf(t).some(s => s < Math.min(V.length, V.len))) ?? soundTrack()),
 			{ say: "Cmd-click a step with a trig: it is selected", act: (u, c) => {
@@ -309,7 +319,7 @@ const MdJourneys = (() => {
 	};
 	/* K3 (DESIGN-keymap.md): the step menu: an accent, a copy and a paste with the pointer only */
 	const stepMenuJ = {
-		name: "md-seq-step-menu", proves: ["MD-114", "MD-127"],
+		name: "md-seq-step-menu", proves: ["MD-114", "MD-127", "MD-X09"],
 		steps: [
 			go("seq"), sel(() => soundTrack()),
 			{ say: "click an empty step: a trig to work on", act: (u, c) => {
@@ -351,7 +361,7 @@ const MdJourneys = (() => {
 	const copyTrack = () => soundTracks().find(t => trigsOf(t).some(s => s < Math.min(V.length, V.len))) ?? soundTrack();
 	const oneStepCopied = () => ok(V.clipboard.stepsSize?.length === 1 && V.clipboard.stepsSize?.tracks === 1, "clipboard " + JSON.stringify(V.clipboard.stepsSize));
 	const osCopyPaste = {
-		name: "md-seq-os-copy-paste", proves: ["MD-114"], needs: Journey.osKeyPath,
+		name: "md-seq-os-copy-paste", proves: ["MD-114", "MD-X10"], needs: Journey.osKeyPath,
 		steps: [
 			go("seq"), sel(copyTrack), pickCopyStep,
 			{ say: "press Cmd+C on the keyboard (the operating system's way in)", act: async u => { document.activeElement?.blur?.(); await u.osKey("focus cmd+c"); },
@@ -366,7 +376,7 @@ const MdJourneys = (() => {
 		async tidy() { if (S.stepSel) clearSel(); }
 	};
 	const buttonsCopyPaste = {
-		name: "md-seq-copy-paste-buttons", proves: ["MD-114"],
+		name: "md-seq-copy-paste-buttons", proves: ["MD-114", "MD-X10"],
 		steps: [
 			go("seq"), sel(copyTrack), pickCopyStep,
 			{ say: "click Copy in the top bar: the selected step is copied", act: u => u.click('[data-sec="copy"]'), machine: oneStepCopied,
@@ -390,7 +400,7 @@ const MdJourneys = (() => {
 		]
 	};
 	const fillEveryJ = {
-		name: "md-seq-fill-every", proves: [],
+		name: "md-seq-fill-every", proves: ["MD-X09"],
 		steps: [
 			go("seq"), sel(() => soundTrack()),
 			{ say: "right-click an empty step, choose Fill every 2nd from here: every 2nd step from there comes on", act: async (u, c) => { c.t0 = trigsOf(c.t); c.s = [...Array(V.len).keys()].find(s => s >= V.len - 8 && !c.t0.includes(s)) ?? V.len - 8; if (S.stepSel) clearSel(); u.rightClick(cell(c.t, c.s)); await sleep(150); u.click('#deskmenu [data-mid="step-fill-2"]'); },
@@ -472,7 +482,8 @@ const MdJourneys = (() => {
 				machine: c => ok(trigsOf(c.t).length < c.p0.length, `${c.p0.length} -> ${trigsOf(c.t).length} trigs; results ${results.map(r => r.op + ":" + r.ok + (r.errors ? " " + r.errors.join(";") : "")).join(", ")}`), within: 10000 },
 			{ say: "let Delete go, click REC off, then STOP: the other tracks kept their trigs", act: async u => { keyEv("keyup", "Delete"); await sleep(300); u.click("#rec"); await sleep(500); if (V.playing) u.click("#play"); },
 				screen: () => ok(!document.body.classList.contains("erasing") && !V.rec && !V.playing, `REC ${V.rec}, playing ${V.playing}`),
-				machine: c => ok([...Array(16).keys()].filter(t => t !== c.t).map(trigsOf).every((a, k) => same(a, c.others[k])), "another track changed"), within: 8000 }
+				machine: c => { const ts = [...Array(16).keys()].filter(t => t !== c.t), bad = ts.filter((t, k) => !same(trigsOf(t), c.others[k]));
+					return ok(!bad.length, "another track changed: " + bad.map(t => `track ${t + 1} ${c.others[ts.indexOf(t)].join(",")} -> ${trigsOf(t).join(",")}`).join("; ") + `; track ${c.t + 1} ${c.p0.join(",")} -> ${trigsOf(c.t).join(",")}`); }, within: 8000 }
 		],
 		async tidy(u, c) { keyEv("keyup", "Delete"); if (V.rec) u.click("#rec"); if (V.playing) u.click("#play"); await sleep(600);
 			/* the erased trigs back, one click each (the machine's erase is not an undo step) */
@@ -551,7 +562,7 @@ const MdJourneys = (() => {
 		async tidy(u, c) { for (let i = 0; i < 3 && c.p0 && !same(trigsOf(c.t), c.p0); i++) { u.click("#undo"); await until(idle, 3000); await sleep(500); } }
 	});
 	const genKeys = {
-		name: "md-gen-keys-r", proves: [],
+		name: "md-gen-keys-r", proves: ["MD-X04"],
 		steps: [
 			go("seq"),
 			{ say: "pick a drum track and click Defaults", act: async (u, c) => { c.t = [...Array(16).keys()].find(t => genRole(V.tracks[t].m) === "kick") ?? soundTrack(); c.p0 = trigsOf(c.t); u.click(rail(c.t)); await sleep(200); u.click('#genband [data-gen="fill"]'); }, machine: c => ok(genSpec(c.t).kind !== "keep" && idle(), "keep") },
@@ -583,7 +594,7 @@ const MdJourneys = (() => {
 	const typeIn = (u, text) => { const f = field(); if (!f) throw new Error("no value field"); f.value = text; u.key("Enter"); };
 	const boxText = q => $1(`${q} b`)?.textContent;
 	const typeValue = {
-		name: "md-sound-type-value", proves: ["MD-010", "MD-054"],
+		name: "md-sound-type-value", proves: ["MD-010", "MD-054", "MD-X08"],
 		steps: [
 			go("sound"), sel(() => soundTrack()),
 			{ say: "⌘-click a synthesis value: a field over it with the value it shows", act: (u, c) => {
@@ -606,7 +617,7 @@ const MdJourneys = (() => {
 		async tidy() { if (field()) ValueEdit.close(); }
 	};
 	const arrows = {
-		name: "md-sound-value-keys", proves: ["MD-010", "MD-054"],
+		name: "md-sound-value-keys", proves: ["MD-010", "MD-054", "MD-X08"],
 		steps: [
 			go("sound"), sel(() => soundTrack()),
 			{ say: "focus an effects value and press ↑ three times", act: async (u, c) => { const el = $1('#main .pc[data-g="fx"]'); c.n = el.dataset.n; c.i = pidx(c.t, c.n, "fx"); c.v0 = kitVals(c.t)[c.i]; el.focus(); const d = c.v0 > 120 ? "ArrowDown" : "ArrowUp"; c.want = c.v0 + (d === "ArrowUp" ? 3 : -3); for (let k = 0; k < 3; k++) { u.key(d); await sleep(80); } },
@@ -706,7 +717,7 @@ const MdJourneys = (() => {
 
 	/* ---------- Mix ---------- */
 	const mixSolo = {
-		name: "md-mix-mute-solo", proves: ["MD-122"],
+		name: "md-mix-mute-solo", proves: ["MD-122", "MD-X06"],
 		steps: [
 			{ say: "click the Mix tab", act: u => u.click(tab("mix")), screen: () => onTab("mix") === true ? ok($all(".strip").length === 16, $all(".strip").length + " strips") : onTab("mix"), machine: () => ok(Array.isArray(desk().mutes), "no mutes read from the machine") },
 			{ say: "drag across four tracks' M keys", act: async (u, c) => {
@@ -890,7 +901,7 @@ const MdJourneys = (() => {
 	const openKits = { say: "click KIT on the LCD", act: u => u.click("#kitf"), screen: () => ok(!$1("#libpop").hidden && LIB.open === "kit", "closed") };
 	const otherKit = (c, not = []) => [...Array(64).keys()].reverse().find(k => k !== V.kit && !not.includes(k) && !kitEmpty(k) && kitLoaded(k) && kitName(k));
 	const kitCopy = {
-		name: "md-lib-kit-copy-paste-undo", proves: ["MD-044", "MD-046", "MD-279"],
+		name: "md-lib-kit-copy-paste-undo", proves: ["MD-044", "MD-046", "MD-279", "MD-X22"],
 		steps: [
 			openKits,
 			libSelect(c => (c.src = [...Array(64).keys()].find(k => k !== V.kit && !kitEmpty(k) && kitName(k)))),
@@ -906,7 +917,7 @@ const MdJourneys = (() => {
 		]
 	};
 	const kitRename = {
-		name: "md-lib-kit-rename-undo", proves: ["MD-042"],
+		name: "md-lib-kit-rename-undo", proves: ["MD-042", "MD-X22"],
 		steps: [
 			openKits,
 			libSelect(c => { const k = otherKit(c); c.n0 = kitName(k); return k; }),
@@ -917,7 +928,7 @@ const MdJourneys = (() => {
 		]
 	};
 	const kitClear = {
-		name: "md-lib-kit-clear-undo", proves: ["MD-045", "MD-046"],
+		name: "md-lib-kit-clear-undo", proves: ["MD-045", "MD-046", "MD-X22"],
 		steps: [
 			openKits,
 			libSelect(c => { const k = otherKit(c); c.d0 = JSON.stringify(Docs.kits[k]); return k; }),
@@ -936,7 +947,7 @@ const MdJourneys = (() => {
 	};
 	const psq = p => `#libpop .ps[data-ps="${p}"]`;
 	const patGo = {
-		name: "md-lib-pattern-go", proves: ["MD-094", "MD-283"],
+		name: "md-lib-pattern-go", proves: ["MD-094", "MD-283", "MD-X21"],
 		steps: [
 			{ say: "click the pattern on the LCD: 128 patterns", act: (u, c) => { c.p0 = currentPatternSlot(); u.click("#pat"); }, screen: () => ok(!$1("#libpop").hidden && $all("#libpop .ps").length === 128, $all("#libpop .ps").length + " slots"), machine: () => ok(Object.keys(Docs.patterns).length === 128, Object.keys(Docs.patterns).length + " read") },
 			{ say: "click another pattern (stopped: it switches)", act: async (u, c) => { c.p = (c.p0 + 2) % 128; u.click(psq(c.p)); await confirmIfAsked(u); }, machine: c => ok(currentPatternSlot() === c.p, "machine pattern " + currentPatternSlot()), screen: c => ok($1(psq(c.p))?.classList.contains("cur"), "not current"), within: 5000 },
@@ -1090,7 +1101,7 @@ const MdJourneys = (() => {
 	const watchLit = (c, q, cls) => { c.lit = new Set(); c.obs?.disconnect(); c.obs = new MutationObserver(rs => rs.forEach(r => { const e = r.target; if (e.matches?.(q) && e.classList.contains(cls)) c.lit.add(+(e.dataset.sel ?? e.dataset.act)); }));
 		c.obs.observe(document.body, { subtree: true, attributes: true, attributeFilter: ["class"] }); };
 	const noteLights = {
-		name: "md-sound-note-light", proves: ["MD-164", "MD-165"],
+		name: "md-sound-note-light", proves: ["MD-164", "MD-165", "MD-X14"],
 		steps: [
 			go("sound"),
 			{ say: "a MIDI keyboard plays track 3's note on another channel than the base: no track lights", act: async (u, c) => { c.g = Docs.global; c.n = c.g.keymap.indexOf(2); watchLit(c, "#rail .th", "hit"); window.gm.recv([{ type: "midiIn", ch: (c.g.baseChannel + 1) % 16, note: c.n, vel: 100 }]); await sleep(300); },
@@ -1130,7 +1141,7 @@ const MdJourneys = (() => {
 		]
 	};
 	const notePlay = {
-		name: "md-keys-play-notes", proves: ["MD-019"],
+		name: "md-keys-play-notes", proves: ["MD-019", "MD-X19"],
 		steps: [
 			go("seq"), sel(() => soundTrack()),
 			{ say: "press A on the keyboard: the track plays", act: u => { results.length = 0; document.activeElement?.blur?.(); u.key("a"); }, machine: () => ok(results.some(r => r.op === "noteOn" && r.ok), "results " + results.map(r => r.op + ":" + r.ok).join(",")) }
@@ -1156,7 +1167,7 @@ const MdJourneys = (() => {
 		async tidy(u, c) { await undoUntil(u, () => same(locksOf(c.t, c.i), c.l0)); }
 	};
 	const pasteMany = {
-		name: "md-seq-paste-many", proves: ["MD-118"],
+		name: "md-seq-paste-many", proves: ["MD-118", "MD-X10"],
 		steps: [
 			go("seq"),
 			{ say: "pick a track with trigs and press Cmd+C", act: async (u, c) => { const st = soundTracks(); c.a = st.find(t => trigsOf(t).length) ?? 0; c.bs = st.filter(t => t !== c.a && !same(trigsOf(t), trigsOf(c.a))).slice(0, 2); if (c.bs.length < 2) throw new Error("no two other tracks"); c.b0 = c.bs.map(trigsOf); c.ta = trigsOf(c.a); u.click(rail(c.a)); await sleep(200); document.activeElement?.blur?.(); u.key("c", { cmd: true }); }, machine: () => ok(V.clipboard.steps, "nothing copied") },
@@ -1167,7 +1178,7 @@ const MdJourneys = (() => {
 		async tidy(u, c) { if (S.multi?.size) { u.key("Escape"); await sleep(100); } if (c.bs) await undoUntil(u, () => c.bs.every((t, k) => same(trigsOf(t), c.b0[k])), 3); }
 	};
 	const mutScope = {
-		name: "md-gen-mutate-scope", proves: [],
+		name: "md-gen-mutate-scope", proves: ["MD-X05"],
 		steps: [
 			go("sound"), sel(() => soundTrack()),
 			{ say: "click MUTATE's Fx chip on and Syn off", act: async (u, c) => { c.scope0 = [...S.mut.scope]; c.amt0 = S.mut.amount; if (!S.mut.scope.has("fx")) u.click('#mutband [data-mutg="fx"]'); await sleep(100); if (S.mut.scope.has("syn")) u.click('#mutband [data-mutg="syn"]'); await sleep(100); },
@@ -1273,7 +1284,7 @@ const MdJourneys = (() => {
 	/* the report: the slots of a kind the machine did not take as in the file (every reported item carries its outcome) */
 	const syxNotTaken = kind => new Set($all(`#syxpop [data-syxitem^="${kind}:"][data-syxout]`).filter(d => d.dataset.syxout !== "taken").map(d => +d.dataset.syxitem.split(":")[1]));
 	const syxImportJ = {
-		name: "md-lib-syx-import", proves: ["MD-181"],
+		name: "md-lib-syx-import", proves: ["MD-181", "MD-X13"],
 		needs: () => new URLSearchParams(location.search).get("syxfile") ? null : "no .syx for the run (GEARMULATOR_MDMM_SYX_FILE)",
 		steps: [
 			{ say: "choose IMPORT SYSEX… in the engine menu: the file's preview", act: u => u.pick("engsel", "import"), screen: () => ok(!$1("#syxpop").hidden && syxKitIds().length > 0, "no preview with kits"), within: 8000 },
@@ -1304,7 +1315,7 @@ const MdJourneys = (() => {
 	const openImport = { say: "choose IMPORT SYSEX… in the engine menu: the file's preview", act: u => u.pick("engsel", "import"),
 		screen: () => ok(!$1("#syxpop").hidden && !$1("#syxpop").classList.contains("syx-export") && $all('#syxpop button[data-syxitem^="kit:"]').length > 0, "no preview with kits"), within: 8000 };
 	const syxExportKinds = {
-		name: "md-lib-syx-export-kinds", proves: ["MD-176", "MD-177", "MD-178", "MD-179", "MD-180"],
+		name: "md-lib-syx-export-kinds", proves: ["MD-176", "MD-177", "MD-178", "MD-179", "MD-180", "MD-X13"],
 		needs: () => window.gmDev ? null : "the save dialog: the page tier only",
 		steps: [
 			{ say: "choose EXPORT SYSEX… in the engine menu: ALL is ticked, the kinds wait under it", act: u => u.pick("engsel", "export"),
@@ -1325,7 +1336,7 @@ const MdJourneys = (() => {
 		async tidy() { $1("#syxpop").hidden = true; }
 	};
 	const syxVerify = {
-		name: "md-lib-syx-verify", proves: ["MD-184"],
+		name: "md-lib-syx-verify", proves: ["MD-184", "MD-X13"],
 		needs: syxWanted,
 		steps: [
 			openImport,
@@ -1342,7 +1353,7 @@ const MdJourneys = (() => {
 		async tidy() { $1("#syxpop").hidden = true; }
 	};
 	const syxPlace = {
-		name: "md-lib-syx-place", proves: ["MD-183", "MD-184"],
+		name: "md-lib-syx-place", proves: ["MD-183", "MD-184", "MD-X13"],
 		needs: syxWanted,
 		steps: [
 			openImport,
@@ -1513,7 +1524,7 @@ const MdJourneys = (() => {
 	};
 	const slotEl = s => `[data-ss="${s}"]`;
 	const songSlots = {
-		name: "md-song-slots", proves: ["MD-144", "MD-158", "MD-159", "MD-292", "MD-294"],
+		name: "md-song-slots", proves: ["MD-144", "MD-158", "MD-159", "MD-292", "MD-294", "MD-X22"],
 		steps: [
 			go("song"),
 			{ say: "stop; click an empty song slot: it is only selected, the machine's song stays", act: async (u, c) => {
@@ -1663,12 +1674,12 @@ const MdJourneys = (() => {
 		] };
 	/* I-008: the editor's menu (shared/deskJourney.js editorMenuJourney: a submenu by the keyboard, a zoom step and
 	   Updates › Check Daily by the pointer, each read back from the plug-in) */
-	const editorMenuJ = Journey.editorMenuJourney("md-top-editor-menu", "Machinedrum Editor", { proves: [] });
+	const editorMenuJ = Journey.editorMenuJourney("md-top-editor-menu", "Machinedrum Editor", { proves: ["MD-X17"] });
 	const memoryJ = Journey.memoryJourney("md-engine-memory", { proves: ["MD-X01"] });
 	/* I-018: the CPU meter beside the version and its details (shared/deskJourney.js cpuMeterJourneys) */
-	const cpuJs = [...Journey.cpuMeterJourneys("md"), Journey.speedUpsMenuJourney("md")];
+	const cpuJs = [...Journey.cpuMeterJourneys("md", { proves: ["MD-X15"] }), Journey.speedUpsMenuJourney("md", { proves: ["MD-X15"] })];
 	/* I-021: the stereo output meter and volume at the LCD's right end (shared/deskJourney.js volumeJourneys) */
-	const volJs = [...Journey.volumeJourneys("md"), ...Journey.fitJourneys("md", ["seq", "sound", "mix", "sampler", "song"])];
+	const volJs = [...Journey.volumeJourneys("md", { proves: ["MD-X16"] }), ...Journey.fitJourneys("md", ["seq", "sound", "mix", "sampler", "song"])];
 	const menu = Journey.menu;
 	/* the same menu as screenshots for a design review (scripts/mdmm-shots.sh with MDMM_SHOTS_JOURNEY=md-shots-menu) */
 	const shotsMenu = {
@@ -1709,7 +1720,7 @@ const MdJourneys = (() => {
 	const dropAt = (q, what) => { const r = $1(q).getBoundingClientRect();
 		Bridge.log(`dropfiles ${Math.round(r.left + r.width / 2)} ${Math.round(r.top + r.height / 2)} ${what}`); };
 	const dropSyxJ = {
-		name: "md-drop-syx", proves: ["MD-181"],
+		name: "md-drop-syx", proves: ["MD-181", "MD-X12"],
 		needs: () => new URLSearchParams(location.search).get("syxfile") ? null
 			: "no .syx for the run (GEARMULATOR_MDMM_SYX_FILE)",
 		steps: [
@@ -1724,7 +1735,7 @@ const MdJourneys = (() => {
 		async tidy(u) { if (!$1("#syxpop").hidden) u.key("Escape"); }
 	};
 	const dropSampleJ = {
-		name: "md-drop-sample", proves: ["MD-191"],
+		name: "md-drop-sample", proves: ["MD-191", "MD-X12"],
 		needs: () => new URLSearchParams(location.search).get("wavfile") ? null
 			: "no sample for the run (GEARMULATOR_MDMM_WAV_FILE)",
 		steps: [
@@ -1840,16 +1851,16 @@ const MdJourneys = (() => {
 		screen: () => ok(whatShown() && $1("#dlg .what h3")?.textContent.toLowerCase() === verb + " what", "dialog " + ($1("#dlg h3")?.textContent || "none")) });
 	const lfoOf = t => { const k = kit()?.tracks[t]; return k ? { ...k.lfo, spd: k.routing.slice(5) } : null; };
 	const copyWhat = {
-		name: "md-seq-copy-what", proves: ["MD-116", "MD-129", "MD-142"],
+		name: "md-seq-copy-what", proves: ["MD-116", "MD-129", "MD-142", "MD-X11"],
 		steps: [
-			go("seq"),
+			go("seq"), ownMarks("acc", "sld"),
 			{ say: "pick a track with two trigs or more, and another with a different machine", act: (u, c) => {
 				c.a = soundTracks().find(t => trigsOf(t).filter(s => s < V.len).length >= 2) ?? soundTrack();
 				c.b = soundTracks().find(t => t !== c.a && V.tracks[t].model !== V.tracks[c.a].model && !same(trigsOf(t), trigsOf(c.a))) ?? (c.a + 1) % 16;
 				c.tb = trigsOf(c.b); c.mb = kit()?.tracks[c.b].model; u.click(rail(c.a)); },
 				screen: c => ok(S.sel === c.a, "selected " + S.sel), machine: c => ok(trigsOf(c.a).length >= 2, "fewer than two trigs") },
 			{ say: "shift-click its first trig (an accent), alt-shift-click its second (a slide)", act: async (u, c) => {
-				const on = trigsOf(c.a).filter(s => s < V.len); c.s0 = on[0]; c.s1 = on[1];
+				const on = trigsOf(c.a).filter(s => s < V.len); c.s0 = on.find(s => !flagsOf(c.a, "accent").includes(s)) ?? on[0]; c.s1 = on.find(s => s !== c.s0 && !flagsOf(c.a, "slide").includes(s)) ?? on.find(s => s !== c.s0);
 				u.click(cell(c.a, c.s0), { shift: true }); await sleep(300); u.click(cell(c.a, c.s1), { alt: true, shift: true }); },
 				machine: c => ok(flagsOf(c.a, "accent").includes(c.s0) && flagsOf(c.a, "slide").includes(c.s1), `accent ${flagsOf(c.a, "accent")} slide ${flagsOf(c.a, "slide")}`), within: 4000 },
 			whatPick("copy", m => m ? Journey.snapshot("md-copy-what-menu") : Journey.snapshot("md-copy-what")),
@@ -1868,15 +1879,16 @@ const MdJourneys = (() => {
 				machine: c => ok(same(trigsOf(c.b), c.tb) && kit()?.tracks[c.b].model === c.mb, `trigs ${trigsOf(c.b)}, model ${kit()?.tracks[c.b].model}`), within: 8000 },
 			{ say: "Cmd+Z twice more: the accent and the slide go", act: async u => { u.key("z", { cmd: true }); await sleep(600); u.key("z", { cmd: true }); },
 				machine: c => ok(!flagsOf(c.a, "accent").includes(c.s0) && !flagsOf(c.a, "slide").includes(c.s1), `accent ${flagsOf(c.a, "accent")} slide ${flagsOf(c.a, "slide")}`), within: 8000 }
-		]
+		],
+		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); }
 	};
 	const clearWhat = {
-		name: "md-seq-clear-what", proves: ["MD-129", "MD-117"],
+		name: "md-seq-clear-what", proves: ["MD-129", "MD-117", "MD-X11"],
 		steps: [
-			go("seq"),
+			go("seq"), ownMarks("acc"),
 			{ say: "pick a track with trigs and shift-click its first trig: an accent", act: async (u, c) => {
 				c.a = soundTracks().find(t => trigsOf(t).filter(s => s < V.len).length >= 1) ?? soundTrack(); u.click(rail(c.a)); await sleep(200);
-				c.s0 = trigsOf(c.a).filter(s => s < V.len)[0]; c.t0 = trigsOf(c.a); u.click(cell(c.a, c.s0), { shift: true }); },
+				c.s0 = trigsOf(c.a).filter(s => s < V.len).find(s => !flagsOf(c.a, "accent").includes(s)) ?? trigsOf(c.a)[0]; c.t0 = trigsOf(c.a); u.click(cell(c.a, c.s0), { shift: true }); },
 				machine: c => ok(flagsOf(c.a, "accent").includes(c.s0), "accent " + flagsOf(c.a, "accent")), within: 4000 },
 			{ say: "press Cmd+Shift+Backspace: Clear what opens", act: u => { blur(); u.key("Backspace", { cmd: true, shift: true }); },
 				screen: () => ok(whatShown() && $1("#dlg .what h3")?.textContent === "Clear what" && $1("#dlg [data-wgo]")?.classList.contains("danger"), "dialog " + ($1("#dlg h3")?.textContent || "none")) },
@@ -1888,7 +1900,8 @@ const MdJourneys = (() => {
 			{ say: "Cmd+Z twice: the trigs and the accent are back", act: async u => { u.key("z", { cmd: true }); await sleep(600); u.key("z", { cmd: true }); },
 				machine: c => ok(same(trigsOf(c.a), c.t0) && flagsOf(c.a, "accent").includes(c.s0), `trigs ${trigsOf(c.a)}, accent ${flagsOf(c.a, "accent")}`), within: 8000 },
 			{ say: "Cmd+Z: the accent of the start goes too", act: u => u.key("z", { cmd: true }), machine: c => ok(!flagsOf(c.a, "accent").includes(c.s0), "accent " + flagsOf(c.a, "accent")), within: 6000 }
-		]
+		],
+		async tidy(u, c) { forgetWhat(); if (c.n0 != null) await undoTo(u, c.n0); }
 	};
 	const lfoMenuJ = {
 		name: "md-sound-lfo-menu", proves: ["MD-086"],
@@ -1986,7 +1999,7 @@ const MdJourneys = (() => {
 	};
 	/* MD-006, MD-095, MD-120, MD-088: the pattern chooser: banks A-H, the empty slots, copy and paste */
 	const chooserJ = {
-		name: "md-lib-pattern-chooser", proves: ["MD-006", "MD-095", "MD-120", "MD-291"],
+		name: "md-lib-pattern-chooser", proves: ["MD-006", "MD-095", "MD-120", "MD-291", "MD-X21"],
 		steps: [
 			{ say: "click the pattern on the LCD: the chooser shows the 8 banks of 16", act: (u, c) => { c.p0 = currentPatternSlot(); u.click("#pat"); }, screen: () => ok(!$1("#libpop").hidden && $all("#libpop .ps").length === 128 && $all("#libpop .lbank").length === 8, $all("#libpop .ps").length + " slots, " + $all("#libpop .lbank").length + " banks") },
 			{ say: "every slot without trigs says EMPTY, every other one its length and kit", screen: () => { const bad = $all("#libpop .ps").filter(b => { const p = +b.dataset.ps, t = b.querySelector("span").textContent; return hasPat(p) ? /EMPTY/.test(t) || !/^\d+/.test(t) || b.classList.contains("empty") : t !== "EMPTY" || !b.classList.contains("empty"); }).map(b => b.dataset.ps);
@@ -2345,7 +2358,7 @@ const MdJourneys = (() => {
 	};
 	/* MD-182: the SysEx import's default place is the file's own */
 	const syxOriginal = {
-		name: "md-lib-syx-original", proves: ["MD-182"],
+		name: "md-lib-syx-original", proves: ["MD-182", "MD-X13"],
 		needs: () => window.gmDev ? null : "the page tier opens its own file",
 		steps: [
 			openImport,
@@ -2464,9 +2477,12 @@ const MdJourneys = (() => {
 	const swingCopy = {
 		name: "md-seq-swing-copy", proves: ["MD-133"],
 		steps: [
-			go("seq"),
-			{ say: "pick two tracks that both have a trig on one step, choose the Swing trig type and click that step on the first: a swing mark", act: async (u, c) => { c.n0 = V.undoCount; const ts = soundTracks(); c.s = [...Array(Math.min(V.length, V.len)).keys()].find(s => ts.filter(t => trigsOf(t).includes(s)).length >= 2); if (c.s == null) throw new Error("no step with two trigs");
-					[c.a, c.b] = ts.filter(t => trigsOf(t).includes(c.s)); u.click(rail(c.a)); await sleep(200); u.click('#ttlegend [data-tt="swg"]'); await sleep(150); u.click(cell(c.a, c.s)); },
+			go("seq"), ownMarks("swg"),
+			{ say: "pick two tracks that both have a trig on one step, choose the Swing trig type and click that step on the first: a swing mark", act: async (u, c) => { const ts = soundTracks();
+					/* neither track's own swing row marks that step yet (a factory row may: B-088) */
+					const two = s => ts.filter(t => trigsOf(t).includes(s) && !flagsOf(t, "swing").includes(s));
+					c.s = [...Array(Math.min(V.length, V.len)).keys()].find(s => two(s).length >= 2); if (c.s == null) throw new Error("no step with two trigs and no swing");
+					[c.a, c.b] = two(c.s); u.click(rail(c.a)); await sleep(200); u.click('#ttlegend [data-tt="swg"]'); await sleep(150); u.click(cell(c.a, c.s)); },
 				machine: c => ok(flagsOf(c.a, "swing").includes(c.s) && !flagsOf(c.b, "swing").includes(c.s), `swing ${flagsOf(c.a, "swing")}`), within: 6000 },
 			{ ...whatPick("copy", () => { }), say: "click ▾ beside COPY CLR PASTE, then Copy…" },
 			{ say: "tick Swing alone and click Copy", act: u => { whatTick(u, ["swing"]); u.click("#dlg [data-wgo]"); }, machine: c => ok(V.clipboard.track && same(V.clipboard.track.what, ["swing"]), "clipboard " + JSON.stringify(V.clipboard.track)), within: 4000 },
@@ -2568,7 +2584,7 @@ const MdJourneys = (() => {
 	/* MD-043: the machine's UNDO KIT from the kit library (KIT > LOAD KIT > UNDO KIT with the machine's keys) */
 	const workingName = () => kitNameText(kitDocOf(Docs)?.name);
 	const undoKitJ = {
-		name: "md-lib-undo-kit", proves: ["MD-043"],
+		name: "md-lib-undo-kit", proves: ["MD-043", "MD-X07"],
 		steps: [
 			openKits,
 			{ say: "rename the kit that plays to UNDOJRNY (an unsaved edit)", act: async (u, c) => {
@@ -2604,21 +2620,30 @@ const MdJourneys = (() => {
 		name: "md-seq-len-repeats", proves: ["MD-106"],
 		steps: [
 			go("seq"),
-			{ say: "a pattern with nothing past step 16 (› on the LCD until one), its LEN clicked round to 16", act: async (u, c) => {
-				c.p0 = currentPatternSlot(); c.moves = 0;
-				const fits = () => patDoc() && patDoc().tracks.every(t => t.trigs.every(s => s < 16)) && patDoc().tracks.some(t => t.trigs.length);
-				while (!fits() && c.moves < 12) { u.click("#patNext"); await confirmIfAsked(u); c.moves++; await until(() => !!patDoc() && currentPatternSlot() === (c.p0 + c.moves) % 128, 3000); await until(idle, 3000); }
+			/* B-103: the machine copies only when no track has a trig from the old end on, anywhere up to step 64, and LEN clicked
+			   round (32, 48, 64) copies into the later pages on the way up: so the pattern starts empty, LEN goes round to 16 on it,
+			   and the trigs are drawn on page 1 after */
+			{ say: "an empty pattern from the pattern chooser (none: Alt+Delete clears this one), its LEN clicked round to 16, three trigs drawn on page 1 of one track", within: 20000, act: async (u, c) => {
+				await until(() => Object.keys(Docs.patterns).length >= 128, 30000);
+				c.p0 = currentPatternSlot(); c.p = emptyPatternSlot();
+				if (c.p != null) { u.click("#pat"); await until(() => $all("#libpop .ps").length === 128, 4000); u.click(psq(c.p)); await confirmIfAsked(u); if (!$1("#libpop").hidden) u.key("Escape");
+					await until(() => currentPatternSlot() === c.p && !!patDoc(), 6000); await until(idle, 3000); }
 				c.n0 = V.undoCount;
+				if (c.p == null) { blur(); u.key("Delete", { alt: true }); await until(() => !hasTrigs(currentPatternSlot()), 4000); await until(idle, 3000); }
 				for (let i = 0; i < 4 && V.len !== 16; i++) { const was = V.len; u.click(l2("len")); await until(() => V.len !== was, 3000); await until(idle, 3000); }
+				c.t = soundTrack(); c.on = [0, 6, 11];
+				for (const st of c.on) { u.click(cell(c.t, st)); await sleep(150); }
+				await until(() => same(trigsOf(c.t), c.on), 4000); await until(idle, 3000);
 				c.before = patDoc().tracks.map(t => t.trigs.slice().sort((a, b) => a - b)); },
-				machine: () => ok(V.len === 16, "LEN " + V.len) },
+				machine: c => ok(V.len === 16 && same(trigsOf(c.t), c.on) && patDoc().tracks.every((t, i) => i === c.t || !t.trigs.length), `LEN ${V.len}, track ${c.t + 1} ${trigsOf(c.t)}`) },
 			{ say: "click LEN on the LCD: 32 steps, and steps 1 to 16 repeat into 17 to 32", act: u => u.click(l2("len")),
 				machine: c => { const d = patDoc(); const want = c.before.map(a => [...a, ...a.map(s => s + 16)]); const got = d?.tracks.map(t => t.trigs.slice().sort((a, b) => a - b));
-					return ok(d?.totalLength === 32 && same(got, want), `total ${d?.totalLength}, T1 ${JSON.stringify(got?.[0])} (want ${JSON.stringify(want[0])})`); },
-				screen: c => { const t = c.before.findIndex(a => a.length), s = c.before[t]?.[0]; return ok(V.len === 32 && pressed(cell(t, s + 16)), `LEN ${V.len}, track ${t + 1} step ${s + 17} ${pressed(cell(t, s + 16)) ? "lit" : "dark"}`); }, within: 6000 },
+					return ok(d?.totalLength === 32 && same(got, want), `total ${d?.totalLength}, T${c.t + 1} ${JSON.stringify(got?.[c.t])} (want ${JSON.stringify(want[c.t])})`); },
+				screen: c => ok(V.len === 32 && c.on.every(s => pressed(cell(c.t, s + 16))), `LEN ${V.len}, track ${c.t + 1} steps ${c.on.map(s => s + 17).join(" ")} ${c.on.map(s => pressed(cell(c.t, s + 16)) ? "lit" : "dark").join(" ")}`), within: 6000 },
 			{ ...undoKey, machine: c => ok(patDoc()?.totalLength === 16 && same(patDoc().tracks.map(t => t.trigs.slice().sort((a, b) => a - b)), c.before), "total " + patDoc()?.totalLength), within: 6000 }
 		],
-		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); for (let i = 0; i < (c.moves || 0); i++) { u.click("#patPrev"); await confirmIfAsked(u); await sleep(150); } }
+		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0);
+			if (c.p0 != null && currentPatternSlot() !== c.p0) { u.click("#pat"); await sleep(400); u.click(psq(c.p0)); await confirmIfAsked(u); await sleep(800); if (!$1("#libpop").hidden) u.key("Escape"); } }
 	};
 	/* MD-147: the playing song row's passes still to come (the machine's counter, telemetry songRepeats) */
 	const leftOf = () => $1("#tl .scell.ph")?.dataset.left;
@@ -2649,9 +2674,134 @@ const MdJourneys = (() => {
 	};
 	const wave12 = [clipsJ, undoKitJ, stopQueuedJ, lenRepeatJ, songRepeatsJ];
 	const slice5 = [modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, kitNameSave, songCommands, playModeJ, pageLeds, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
-	const all = [...slice5, ...wave12, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
+	/* ---------- the end-to-end pass: factory content as a person uses it (scripts/mdmm-e2e.sh, doc/release/E2E.md) ---------- */
+	/* What the machine plays, as the page can see it: the transport and the step from the telemetry, the song row, the output's
+	   peaks (the plug-in's outputLevel, every 250 ms, since the last one). Not silent where sound is the point. */
+	const heard = { peak: 0 };
+	Bridge.onMessage(m => { if (m.type === "outputLevel") heard.peak = Math.max(heard.peak, m.peakL || 0, m.peakR || 0); });
+	/* play what is loaded for up to ms, until it has moved on `moves` steps (and, when asked, onto another song row): what was heard */
+	const playFor = async (u, ms, wantRows) => {
+		const r = { started: false, steps: new Set(), rows: new Set(), peak: 0 };
+		heard.peak = 0; tele.steps = [];
+		await until(idle, 8000);
+		u.click("#play");
+		r.started = await until(() => !!tele.last?.playing, 5000);
+		if (!r.started) { r.again = true; u.click("#play"); r.started = await until(() => !!tele.last?.playing, 5000); }	/* a person presses again */
+		const end = performance.now() + ms;
+		while (performance.now() < end) {
+			if (tele.last?.playing) { r.steps.add(tele.last.step); if (tele.last.songRow != null) r.rows.add(tele.last.songRow); }
+			if (r.steps.size >= 8 && heard.peak > 0.0002 && (!wantRows || r.rows.size >= 2)) break;
+			await sleep(60);
+		}
+		r.peak = heard.peak;
+		u.click("#play"); await until(() => !V.playing && !tele.last?.playing, 5000);
+		return r;
+	};
+	const hasTrigs = p => (Docs.patterns[p]?.tracks || []).some(t => t.trigs.length);
+	const songNames = () => Object.keys(Docs.songs).map(Number).filter(s => (Docs.songs[s]?.rows || []).some(r => r.kind === "pattern")).sort((a, b) => a - b);
+	const realSongs = {
+		name: "md-real-factory-songs", proves: ["MD-X02", "MD-X02"],
+		steps: [
+			go("song"),
+			{ say: "from factory memory: load each song that holds rows (click it, Load), SONG mode, PLAY: the machine starts, the step moves, the song moves on to a later row, the output is not silent, STOP stops it", within: 3000,
+				act: async (u, c) => {
+					await until(() => Object.keys(Docs.songs).length >= 32, 30000);
+					c.songs = songNames(); c.bad = []; c.good = []; c.s0 = V.songSlot; c.m0 = V.songMode;
+					if (!c.songs.length) throw new Error("no factory song holds rows");
+					for (const s of c.songs) {
+						Bridge.log(`E2E song ${s + 1}: loading (machine song ${songSlotOf(Docs) + 1}, playing ${!!V.playing})`);
+						await songTo(u, s);
+						Bridge.log(`E2E song ${s + 1}: loaded, song mode ${V.songMode}`);
+						u.click('[data-set="songpick"] button[data-v="song"]'); await until(() => V.songMode === true, 6000); await sleep(300);
+						Bridge.log(`E2E song ${s + 1}: SONG mode ${V.songMode}, dialog ${dlgShown()}, desk tx ${!!desk().tx}`);
+						const rows = (Docs.songs[s]?.rows || []).filter(r => r.kind === "pattern").length;
+						let r = await playFor(u, 10000, rows > 1);
+						if (!r.started) {	/* a person tries the row's From here next: said, so the finding is exact */
+							u.click('.scell[data-i="0"]'); await sleep(200); u.click('[data-rowact="from"]');
+							const via = await until(() => !!tele.last?.playing, 5000);
+							Bridge.log(`E2E song ${s + 1}: PLAY did not start it; From here ${via ? "did" : "did not either"}`);
+							if (via) { r = await playFor(u, 10000, rows > 1).then(x => x, () => r); u.click("#play"); }
+							r.viaFrom = via; if (V.playing) { u.click("#play"); await until(() => !V.playing, 4000); }
+						}
+						if (s === c.songs[0]) { Journey.snapshot("md-real-song-playing"); }
+						const why = [!r.started && `PLAY did not start it (pressed twice)${r.viaFrom === true ? ", From here did" : r.viaFrom === false ? ", From here did not either" : ""}`, r.again && r.started && "needed a second press of PLAY", r.started && r.steps.size < 4 && `only ${r.steps.size} steps moved`, r.peak <= 0.0002 && "silent", rows > 1 && r.rows.size < 2 && `stayed on row ${[...r.rows].join(",") || "?"}`, V.playing && "did not stop"].filter(Boolean);
+						Bridge.log(`E2E song ${s + 1}: ${rows} rows, ${r.steps.size} steps, rows ${[...r.rows].join(",")}, peak ${r.peak.toFixed(3)}${why.length ? " PROBLEM " + why.join(", ") : ""}`);
+						(why.length ? c.bad : c.good).push(why.length ? `song ${s + 1} (${rows} rows): ${why.join(", ")}` : s + 1);
+					}
+					if (c.bad.length && c.bad.every(b => /silent/.test(b))) c.bad.push("every song reads silent: the background run zeroes the output (run with GEARMULATOR_MDMM_BACKGROUND_METER=1, scripts/mdmm-e2e.sh)");
+					c.note = `${c.good.length} of ${c.songs.length} songs played: ${c.good.join(" ")}`;
+				}, screen: c => ok(!c.bad.length, c.bad.join("; ")) }
+		],
+		async tidy(u, c) { if (V.playing) u.click("#play"); if (c.m0 === false) { cmd("seqMode", { song: false }); await sleep(800); } if (c.s0 != null) await songTo(u, c.s0).catch(() => { }); }
+	};
+	const realPatterns = {
+		name: "md-real-factory-patterns", proves: ["MD-X03", "MD-X03"],
+		steps: [
+			{ say: "from factory memory: pick eight patterns that hold trigs, spread over the 128, one after the other, and PLAY each: the step moves through the pattern and the output is not silent", within: 3000,
+				act: async (u, c) => {
+					await until(() => Object.keys(Docs.patterns).length >= 128, 30000);
+					const withTrigs = [...Array(128).keys()].filter(hasTrigs);
+					c.picks = [...Array(8).keys()].map(k => withTrigs[Math.floor(k * withTrigs.length / 8)]).filter(p => p != null);
+					c.bad = []; c.good = []; c.p0 = currentPatternSlot();
+					if (!c.picks.length) throw new Error("no factory pattern holds trigs");
+					for (const p of c.picks) {
+						u.click("#pat"); await until(() => $all("#libpop .ps").length === 128, 4000); u.click(psq(p)); await confirmIfAsked(u);
+						if (!await until(() => currentPatternSlot() === p, 6000)) { c.bad.push(`pattern ${p + 1}: the machine stayed on ${currentPatternSlot() + 1}`); continue; }
+						if (!$1("#libpop").hidden) u.key("Escape");
+						await sleep(300);
+						const r = await playFor(u, 12000, false);
+						if (p === c.picks[0]) Journey.snapshot("md-real-pattern-playing");
+						const why = [!r.started && "did not start (pressed twice)", r.again && r.started && "needed a second press of PLAY", r.started && r.steps.size < 8 && `only ${r.steps.size} steps moved`, r.peak <= 0.0002 && "silent"].filter(Boolean);
+						Bridge.log(`E2E pattern ${p + 1}: ${r.steps.size} steps, peak ${r.peak.toFixed(3)}${why.length ? " PROBLEM " + why.join(", ") : ""}`);
+						(why.length ? c.bad : c.good).push(why.length ? `pattern ${p + 1}: ${why.join(", ")}` : p + 1);
+					}
+					c.note = `${c.good.length} of ${c.picks.length} patterns played: ${c.good.join(" ")}`;
+				}, screen: c => ok(!c.bad.length, c.bad.join("; ")) }
+		],
+		async tidy(u, c) { if (V.playing) u.click("#play"); if (c.p0 != null && currentPatternSlot() !== c.p0) { u.click("#pat"); await sleep(400); u.click(psq(c.p0)); await sleep(800); if (!$1("#libpop").hidden) u.key("Escape"); } }
+	};
+	/* What you draw is what plays: in an empty pattern four trigs are drawn, the machine plays them (steps move, the output is not
+	   silent); the pattern cleared, it plays silence; one undo and it plays them again. The page can read the transport and the
+	   output's peaks, not each trig the firmware fires: the peaks stand for "the trigs play". */
+	const playPeak = async (u, ms, skip) => {
+		heard.peak = 0; tele.steps = [];
+		await until(idle, 8000);
+		u.click("#play");
+		const started = await until(() => !!tele.last?.playing, 5000);
+		await sleep(skip); heard.peak = 0; await sleep(ms - skip);
+		const r = { started, peak: heard.peak, steps: new Set(tele.steps).size };
+		u.click("#play"); await until(() => !V.playing && !tele.last?.playing, 5000);
+		return r;
+	};
+	const emptyPatternSlot = () => [...Array(128).keys()].find(p => Docs.patterns[p] && !hasTrigs(p));
+	const realSequence = {
+		name: "md-real-sequence-plays", proves: ["MD-X24"],
+		steps: [
+			go("seq"),
+			{ say: "pick a pattern with no trigs in the pattern chooser", within: 20000,
+				act: async (u, c) => { await until(() => Object.keys(Docs.patterns).length >= 128, 30000); c.p0 = currentPatternSlot(); c.p = emptyPatternSlot(); if (c.p == null) throw new Error("no empty pattern");
+					u.click("#pat"); await until(() => $all("#libpop .ps").length === 128, 4000); u.click(psq(c.p)); await confirmIfAsked(u); if (!$1("#libpop").hidden) u.key("Escape"); },
+				machine: c => ok(currentPatternSlot() === c.p && !hasTrigs(c.p), "pattern " + currentPatternSlot()) },
+			sel(() => soundTrack()),
+			{ say: "click four steps on that track", act: async (u, c) => { c.steps = [0, 4, 8, 12]; for (const s of c.steps) { u.click(cell(c.t, s)); await sleep(150); } await sleep(300); Journey.snapshot("md-real-sequence-drawn"); },
+				machine: c => ok(c.steps.every(s => trigsOf(c.t).includes(s)) && idle(), `pattern has ${trigsOf(c.t).join(",")}`) },
+			{ say: "press PLAY for six seconds: the position moves through the pattern and the output is not silent", within: 3000,
+				act: async (u, c) => { c.on = await playPeak(u, 6000, 1500); }, machine: c => ok(c.on.started && c.on.steps >= 8 && c.on.peak > 0.0002, `started ${c.on.started}, ${c.on.steps} steps, peak ${c.on.peak.toFixed(4)}`) },
+			{ say: "press Alt+Delete: the pattern is cleared; PLAY: it moves and plays silence", within: 3000,
+				act: async (u, c) => { document.activeElement?.blur?.(); u.key("Delete", { alt: true }); await until(() => !hasTrigs(c.p) && idle(), 8000); await sleep(1500); c.off = await playPeak(u, 5000, 1500); Journey.snapshot("md-real-sequence-cleared"); },
+				machine: c => ok(c.off.started && c.off.steps >= 8 && c.off.peak < 0.0001, `started ${c.off.started}, ${c.off.steps} steps, peak ${c.off.peak.toFixed(4)}`) },
+			{ say: "press Cmd+Z once: the four trigs are back and play again", within: 3000,
+				act: async (u, c) => { u.key("z", { cmd: true }); await until(() => c.steps.every(s => trigsOf(c.t).includes(s)) && idle(), 8000); c.back = await playPeak(u, 6000, 1500); },
+				machine: c => ok(c.steps.every(s => trigsOf(c.t).includes(s)) && c.back.started && c.back.peak > 0.0002, `trigs ${trigsOf(c.t).join(",")}, peak ${c.back.peak.toFixed(4)}`) }
+		],
+		async tidy(u, c) { if (V.playing) u.click("#play"); for (let i = 0; i < 6 && c.t != null && c.p != null && hasTrigs(c.p); i++) { document.activeElement?.blur?.(); u.key("Delete", { alt: true }); await until(idle, 4000); await sleep(500); }
+			if (c.p0 != null && currentPatternSlot() !== c.p0) { u.click("#pat"); await sleep(400); u.click(psq(c.p0)); await sleep(800); if (!$1("#libpop").hidden) u.key("Escape"); } }
+	};
+	const e2eReal = [realSongs, realPatterns, realSequence];
+
+	const all = [...slice5, ...wave12, ...e2eReal, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
 		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
-		genJourney("md-gen-mutate-undo", false, { proves: [] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: [] }), genKeys,
+		genJourney("md-gen-mutate-undo", false, { proves: ["MD-X04", "MD-X05"] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: ["MD-X04"] }), genKeys,
 		shapeSound, typeValue, arrows, machinePick, machAudition, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,
 		mixSolo, shiftMutes, allOff, fader, lev, outKey, masterFx,
 		songArrange, songChain, songPlayhead, songSlots, songKeys, shotsSongSlots, samplerSlots, samplerSetup, audition,
@@ -3227,6 +3377,9 @@ const MdJourneys = (() => {
 		for (let i = 0; i < 3 && dlgShown(); i++) { u.key("Escape"); await sleep(200); }
 		if (LIB.open) { closeLib(false); await sleep(100); }
 		for (const q of ["#globpop", "#keyspop", "#audiopop", "#machpop", "#kpop"]) if ($1(q) && !$1(q).hidden) { u.key("Escape"); await sleep(150); }
+		/* the machine restarting (a journey that reset it: the start-up card is back): it is waited for, as a person waits, so
+		   the next journey does not meet a covered page (md-engine-memory, then md-top-cpu-meter ... in the 0.6 evidence run) */
+		if (!$1("#bootcard").hidden) { await until(() => $1("#bootcard").hidden, 120000); await sleep(1500); }
 		if (!$1("#bootcard").hidden) $1('#bootcard [data-bootrom="close"]')?.click();
 		if (V.rec) { u.click("#rec"); await sleep(300); }
 		if (V.playing) { u.click("#play"); await until(() => !V.playing, 3000); }

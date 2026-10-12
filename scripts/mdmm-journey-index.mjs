@@ -113,6 +113,24 @@ export function parseJourneys(src, machine, file) {
 		}
 		add(name, proves, m.index);
 	}
+	// the shared helpers that build journeys from a prefix: Journey.cpuMeterJourneys("md", { proves: ["MD-X15"] }) (the second
+	// argument is for this index only; the helper ignores it): the first journey they make proves what is named, the others nothing
+	const GENERATED = {
+		cpuMeterJourneys: (p) => [`${p}-top-cpu-meter`, `${p}-shots-cpu`],
+		speedUpsMenuJourney: (p) => [`${p}-dev-speedups`],
+		volumeJourneys: (p) => [`${p}-lcd-volume`],
+		fitJourneys: (p) => [`${p}-fit-workspaces`],
+	};
+	for (const m of code.matchAll(/\b(cpuMeterJourneys|speedUpsMenuJourney|volumeJourneys|fitJourneys)\(\s*"(\s*)"/g)) {
+		const open = m.index + m[1].length;
+		const a = m.index + m[0].indexOf('"');
+		const prefix = src.slice(a + 1, a + 1 + m[2].length);
+		const close = match.get(open);
+		let proves = [];
+		const inside = /\bproves\s*:\s*\[/.exec(code.slice(open, close));
+		if (inside) { const at = open + inside.index + inside[0].length - 1; proves = [...src.slice(at, match.get(at)).matchAll(/"([^"]+)"/g)].map((x) => x[1]); }
+		GENERATED[m[1]](prefix).forEach((n, i) => add(n, i === 0 ? proves : [], m.index));
+	}
 	// Journey.viewJourneys("md", [...]) builds two journeys that prove nothing
 	for (const m of code.matchAll(/\bviewJourneys\(\s*"(\s*)"/g)) {
 		const a = m.index + m[0].indexOf('"');
@@ -145,5 +163,7 @@ export function snapshotNames(root) {
 	const dirs = [path.join(root, 'source/elektron/md/mdJucePlugin/skins')];
 	const walk = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else if (e.name.endsWith('.js')) for (const m of fs.readFileSync(p, 'utf8').matchAll(/\bsnapshot\(\s*"([^"]+)"/g)) names.add(m[1]); } };
 	for (const d of dirs) if (fs.existsSync(d)) walk(d);
+	// the end-to-end run (scripts/mdmm-e2e.sh) snapshots every journey at its proof moment as e2e-<journey>
+	for (const j of readJourneys(root)) names.add(`e2e-${j.name}`);
 	return names;
 }

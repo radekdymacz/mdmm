@@ -98,6 +98,12 @@ int main()
 	check(b.state() == 0, "non-zero: over");
 	b.update(0, ms(10));
 	check(b.state() == 0, "one-shot: stays over");
+	md::BootAnimation early;
+	early.update(0x20, ms(10));
+	early.update(0x20, ms(5000));
+	check(early.state() == 1, "0x20 (a status request answered as the firmware took MIDI): the animation still runs");
+	early.update(0x27, ms(10));
+	check(early.state() == 0, "then the main screen: over");
 	md::BootAnimation late;
 	late.update(0x27, ms(10));
 	check(late.state() == 0, "already past the animation: over at once");

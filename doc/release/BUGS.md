@@ -4,6 +4,46 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-109 · Machinedrum: the first PLAY after start-up can do nothing
+
+- **From:** the 0.6 e2e work, 2026-10-13: `mdDeskFirmwareTest p4` ("the first PLAY after ready plays") failed on `feat/0.6-e2e` too; a first PLAY that does nothing is what users report.
+- **What happens:** the editor says the machine is ready about 30 ms after the firmware takes MIDI, while its start-up animation still runs for 10 to 14 s and ignores the panel's keys: PLAY is pressed and lost.
+- **Cause:** the start-up animation is over when main RAM 0x28998a turns non-zero (`md::BootAnimation`, P4). A status request answered at the instant the firmware takes MIDI leaves 0x20 there at once, with the animation still running (measured: 0x20 from the start, 0x27 at 11.9 s, PLAY first taken then; without that early request the byte stays 0 until 0x27). Whether the editor's first requests land at that instant is timing, so it happened on some starts only. The test also ran its boot on the blank-flash formatting run, which the plug-in shows as loading (B-003), not on the start the page sees.
+- **Fix (`fix/0.6-e2e-md`):** 0x20 is not the main screen (`BootAnimation::isMainScreen`); the 30 s timeout stays. `mdSequencerStateTest` (0x20 then 0x27); `mdDeskFirmwareTest p4` boots on the formatted flash, as the plug-in's second start, and the first PLAY after ready plays (input ready 13.8 s after MIDI; before the fix 33 ms, PLAY lost).
+- **Status:** fixed on `fix/0.6-e2e-md`.
+
+## B-103 · Machinedrum: a pattern made 64 steps long from 48 repeats the wrong steps
+
+- **From:** the 0.6 e2e run, 2026-10-13: `md-seq-len-repeats` fails ("total 32, T1 [0,8,14,16,22,32,40,46,48,56,62]", toast "As the machine does: the first 48 steps repeat into steps 49 to 64").
+- **What happens:** the journey clicked the LCD's LEN round to 16 (32, 48, 64, 16) on a factory pattern, then once more to 32, and expected steps 1-16 repeated into 17-32.
+- **Measured (the firmware's SCALE SETUP against the editor, `mdDeskFirmwareTest p4`):** a longer total length repeats the old steps only while no track has a trig from the old end on, anywhere up to step 64 (W12e). Going up 32 -> 48 -> 64 fills the later pages, so after LEN 16 the later pages hold steps and 16 -> 32 copies nothing: steps 17-32 are what was there. Editor and machine agreed on that; the journey's expectation was wrong. They did not agree on 48 -> 64: the machine repeats steps 17-32 into 49-64 (its repeat runs in 32-step blocks from 32 steps on), the editor repeated steps 1-16 ("the first 48 steps").
+- **Fix (`fix/0.6-e2e-md`):** the core's `totalLength` repeats in 16-step blocks from 16 steps and in 32-step blocks from 32 or 48 (trigs, marks, locks), and says which steps it repeated ("steps 17 to 32 repeat into steps 49 to 64"); `mdDeskTest` (48 -> 64), `mdDeskFirmwareTest p4` (a new case, the LCD's LEN clicked round 32 -> 48 -> 64 -> 16 -> 32 on the panel and in the editor: the same pattern read back, all 64 steps, marks and locks). The journey starts from an empty pattern (or clears one with Alt+Delete), clicks LEN round to 16, draws three trigs on page 1, then LEN 32: they repeat into 17-32; it passes on the firmware from fresh settings and on the page tier. PROBES-manual-gaps.md W12e has the 32-step blocks.
+- **Status:** fixed on `fix/0.6-e2e-md`.
+
+## B-101 · Machinedrum: live erase sets a trig on another track; "Push failed" after locks drawn just before REC
+
+- **From:** the 0.6 e2e run, 2026-10-13: `md-seq-live-erase` fails ("another track changed"); after `md-seq-live-unlock` the page shows the red banner "PUSH FAILED: THE MACHINE DID NOT READ BACK PATTERN A01. SHOWING WHAT IT HOLDS." (picture `e2e-md-seq-live-unlock`).
+- **What happens:** (1) Delete held while live recording erases the selected track's trigs as they play, and one trig appears on track 1 (track 9 erased: track 1 gained step 9; through the desk on the firmware, track 14 erased: track 1 gained step 14). (2) Locks drawn on the playing pattern and REC pressed at once: the editor reports a failed push although the machine holds the locks.
+- **Cause:** (1) the editor let the keys go in the order TRIG, then EXIT/NO. A TRIG key let go while EXIT/NO is still down sets a trig on the machine's selected track at the step of that key's number (measured: with EXIT/NO up first, nothing changes). A move of the erase to another track let a TRIG key go the same way. (2) The pattern's dump was still on its way when REC started: it went out while the machine recorded, and the machine then changed the pattern itself (the erased locks), so its read-back never equalled the dump and the push timed out as failed; such a dump also lands over what is being recorded.
+- **Fix (`fix/0.6-e2e-md`):** EXIT/NO goes up first, then the TRIG key; another track lets both go and presses both again (`MdMachine::releaseErase`, `cmdLiveErase`). REC waits until the playing pattern's push is on the machine (at most 3 s, `pumpRecordStart`). A read-back of the playing pattern after the machine recorded since the dump went out is the machine's truth, not a failed push (`onDumpReadBack`). Tests: `mdLiveEraseFirmwareTest` (the other tracks keep their trigs; every track keeps its trigs in the unlock case; new: locks drawn on the track with the most trigs, REC at once, the locks erased while recording: no page error, the locks that stay are the drawn ones, the editor shows the machine's pattern; the trig check fails with the old order, the push check with both changes undone), `mdDeskTest` (the key order); e2e `md-seq-live-erase` (its failure now names the tracks that changed) and `md-seq-live-unlock` pass from fresh settings, no banner.
+- **Status:** fixed on `fix/0.6-e2e-md`.
+
+## B-100 · Machinedrum: four sequence journeys fail on factory patterns (EDIT ALL on)
+
+- **From:** the 0.6 e2e run, 2026-10-13: `md-seq-trig-types`, `md-seq-swing-copy`, `md-seq-copy-what`, `md-seq-clear-what` fail on the firmware from fresh settings and pass on the page tier.
+- **What happens:** the factory patterns hold the pattern's EDIT ALL on for accent, slide and swing: one pattern-wide row every track takes. A shift-click is then a pattern-wide accent (the page says "Pattern-wide accent (EDIT ALL is on)"), which the journeys read in the track's own row; the swing journeys met the track's own swing row already set on the steps they picked (B-088) and a drag that clears.
+- **Checked, the page:** it handles EDIT ALL as the machine does: the grid shows a pattern-wide mark on every track that has a trig on that step, a click sets the pattern-wide row and says so, the trig types' All tracks / This track switch it (`markMode`), Clear what leaves pattern-wide marks and says so. A person on factory settings sees what the machine plays. Not a page bug.
+- **Fix (`fix/0.6-e2e-md`, the journeys):** a journey about a track's own marks first sets This track on the trig types for the marks it uses, as a person does (`ownMarks`; each switch an undo step its tidy takes back); the swing and copy journeys pick steps whose own row has no mark yet; the trig-types drag check follows the drag's set-or-clear. All four pass on the firmware from fresh settings and on the page tier.
+- **Status:** fixed on `fix/0.6-e2e-md`.
+
+## B-098 · Machinedrum: the first factory song does not play when it is the first thing played after a start
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`md-real-factory-songs` alone, fresh settings); the same as B-096 (Radek: first demo song, SONG mode, PLAY does nothing).
+- **What happens:** right after the editor starts, song 1 (UW DEMO) shows as loaded; SONG, then PLAY: nothing plays, and the row's From here does nothing either. Once any song was loaded with Load, it plays.
+- **Cause:** the emulated machine starts with an empty working song (the one SONG mode plays) while it reports song 1 as its song: measured through the desk on the firmware, factory memory, SONG mode, PLAY: no step moves; after LOAD SONG of that slot it plays. The page's Load sends LOAD SONG, so a song picked and loaded played; song 1 is already the machine's, so the e2e run (and a person) went straight to SONG and PLAY. Review 1's test loaded the song first and so passed.
+- **Fix (`fix/0.6-e2e-md`):** until the editor has sent a LOAD SONG since the machine started (`Session::songLoaded`), SONG mode, PLAY in SONG mode and From here first load the song the machine reports, while it is stopped (`MdMachine::songNotLoaded`; the emulated machine only: the editor's song edits always go into the slot, so nothing of the working song is lost). Test: `mdFactorySongFirmwareTest` (no Load: SONG then PLAY plays; a machine already in SONG mode at the start: PLAY plays, From here plays; then Load and PLAY), each failing without the fix; e2e `md-real-factory-songs` alone from fresh settings passes.
+- **Status:** fixed on `fix/0.6-e2e-md`; B-096 is very likely this (to confirm with Radek).
+
 ## B-097 · Both editors: a lock parameter key's count drawn over its name ("RTG·DIST")
 
 - **From:** Radek's 0.6 review, 2026-10-12 (Machinedrum, the Lock parameter panel, screenshot).

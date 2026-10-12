@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>16. Appendix C: sysex reference · Machinedrum Editor guide</title>
+<meta name="description" content="The system exclusive messages of the Machinedrum, and the part of the editor that sends or reads each.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/md/16-appendix-c-sysex-reference/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261010">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>@page { @top-left { content: "16. Appendix C: sysex reference"; } }</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › <a href="/guide/md/">Machinedrum Editor</a> › Appendix C: sysex reference</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Chapters of the Machinedrum Editor guide">
+<p class="gd-side-title"><a href="/guide/md/">Machinedrum Editor guide</a></p>
+<ol class="gd-side-list"><li><a href="/guide/md/01-introduction-front-panel-and-connectors/">1. Introduction, front panel and connectors</a></li>
+<li><a href="/guide/md/02-lcd-user-interface-and-quick-start/">2. LCD user interface and quick start</a></li>
+<li><a href="/guide/md/03-sound-synthesis-kits/">3. Sound synthesis: kits</a></li>
+<li><a href="/guide/md/04-track-effects/">4. Track effects</a></li>
+<li><a href="/guide/md/05-routing-page/">5. Routing page</a></li>
+<li><a href="/guide/md/06-stereo-master-effects/">6. Stereo master effects</a></li>
+<li><a href="/guide/md/07-lfos/">7. LFOs</a></li>
+<li><a href="/guide/md/08-pattern-sequencer/">8. Pattern sequencer</a></li>
+<li><a href="/guide/md/09-song-mode/">9. Song mode</a></li>
+<li><a href="/guide/md/10-global-settings/">10. Global settings</a></li>
+<li><a href="/guide/md/11-sample-manager-uw-only/">11. Sample manager, UW only</a></li>
+<li><a href="/guide/md/12-early-start-up-menu/">12. Early start-up menu</a></li>
+<li><a href="/guide/md/13-technical-information-mki-vs-mkii/">13. Technical information, MKI vs MKII</a></li>
+<li><a href="/guide/md/14-appendix-a-machine-reference/">14. Appendix A: machine reference</a></li>
+<li><a href="/guide/md/15-appendix-b-midi-control-reference/">15. Appendix B: MIDI control reference</a></li>
+<li class="gd-side-cur"><a href="/guide/md/16-appendix-c-sysex-reference/" aria-current="page">16. Appendix C: sysex reference</a><ol class="gd-side-subs"><li><a href="#kits">KITS</a></li><li><a href="#globals">GLOBALS</a></li><li><a href="#loading-and-saving">LOADING AND SAVING</a></li><li><a href="#note-map">NOTE MAP</a></li><li><a href="#sound-settings">SOUND SETTINGS</a></li><li><a href="#patterns-and-songs">PATTERNS AND SONGS</a></li><li><a href="#not-in-the-editor">NOT IN THE EDITOR</a></li></ol></li>
+<li><a href="/guide/md/17-beyond-the-hardware/">17. Beyond the hardware</a></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">16</span><span class="gd-ctitle">Appendix C: sysex reference</span></h1></header>
+<div class="gd-intro gd-prose"><p>The Machinedrum is also edited by system exclusive messages. A message has a number, which the machine's own appendix lists in hexadecimal. A dump carries a whole object, a kit, a pattern, a song or a global. A request asks the machine for one. The other messages change one thing, such as a tempo or a routing.</p>
+<p>You never send these by hand. The editor sends and reads them for you, and this chapter says where. The numbers are written for reference.</p></div>
+<section class="gd-sec" id="kits" aria-labelledby="kits-h">
+<div class="gd-body gd-prose"><h2 id="kits-h">KITS <a class="gd-anchor" href="#kits" aria-label="Link to KITS">#</a></h2>
+<p class="gd-ref">MD manual pp.C-1</p>
+<p>A kit dump is 0x52 and its request 0x53. The kit library and the whole page use them. A kit moves between the editor and the machine as a dump.</p>
+<p>Set kit name is 0x55. <b class="gd-ui">Rename</b> in the kit library sends it.</p>
+<p>To see the kit messages work:</p>
+<ol class="gd-steps"><li>Click <b class="gd-light">&lt;KIT&gt;</b> on the LCD. The kit library opens.</li><li>Alt-click a slot. It is selected, not loaded.</li><li>Click <b class="gd-ui">Copy</b>, Alt-click another slot and click <b class="gd-ui">Paste</b>. Answer <b class="gd-ui">Overwrite</b> when the editor asks. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> and the slot is back as it was.</li><li>Double-click the current kit, type a name and press <kbd class="gd-key">[Enter]</kbd>. The working kit is renamed and not saved yet.</li><li>Click <b class="gd-ui">Save</b>. The slot holds the new name.</li></ol>
+</div></section>
+<section class="gd-sec" id="globals" aria-labelledby="globals-h">
+<div class="gd-body gd-prose"><h2 id="globals-h">GLOBALS <a class="gd-anchor" href="#globals" aria-label="Link to GLOBALS">#</a></h2>
+<p class="gd-ref">MD manual pp.C-1</p>
+<p>A global dump is 0x50 and its request 0x51. The <b class="gd-ui">GLOBAL</b> panel shows the global the machine reported: its slot, its base channel and its sync settings.</p>
+<p>Set active global is 0x56. The slot keys in the <b class="gd-ui">GLOBAL</b> panel send it.</p>
+<ol class="gd-steps"><li>Choose <b class="gd-ui">GLOBAL…</b> in the engine menu.</li><li>Click another global slot key. The active global of the machine is that one.</li><li>Click the key of the first slot again to put it back.</li></ol>
+</div></section>
+<section class="gd-sec" id="loading-and-saving" aria-labelledby="loading-and-saving-h">
+<div class="gd-body gd-prose"><h2 id="loading-and-saving-h">LOADING AND SAVING <a class="gd-anchor" href="#loading-and-saving" aria-label="Link to LOADING AND SAVING">#</a></h2>
+<p class="gd-ref">MD manual pp.C-2, C-3</p>
+<p>Load pattern is 0x57, load kit is 0x58 and save kit is 0x59. The pattern chooser and the kit library send them.</p>
+<p>Save song is 0x6d. <b class="gd-ui">Save</b> in the Songs column sends it.</p>
+<ol class="gd-steps"><li>Click <b class="gd-light">&lt;KIT&gt;</b> on the LCD. Click another kit. It loads at once.</li><li>Alt-click a third kit. It is selected, not loaded.</li><li>Click <b class="gd-ui">Save as</b>. The editor asks before it overwrites. Click <b class="gd-ui">Overwrite</b> and the kit is saved into that slot.</li><li>Click the pattern on the LCD, then another pattern. With the machine stopped, it switches.</li></ol>
+</div></section>
+<section class="gd-sec" id="note-map" aria-labelledby="note-map-h">
+<div class="gd-body gd-prose"><h2 id="note-map-h">NOTE MAP <a class="gd-anchor" href="#note-map" aria-label="Link to NOTE MAP">#</a></h2>
+<p class="gd-ref">MD manual pp.C-2, C-3</p>
+<p>Set MIDI note mapping is 0x5a. The map editor in the <b class="gd-ui">GLOBAL</b> panel sends it when you change the note of a track.</p>
+<p>Reset MIDI note map is 0x64. <b class="gd-ui">Reset map</b> sends it. The editor asks first, and <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> takes it back.</p>
+</div></section>
+<section class="gd-sec" id="sound-settings" aria-labelledby="sound-settings-h">
+<div class="gd-body gd-prose"><h2 id="sound-settings-h">SOUND SETTINGS <a class="gd-anchor" href="#sound-settings" aria-label="Link to SOUND SETTINGS">#</a></h2>
+<p class="gd-ref">MD manual pp.C-2, C-3</p>
+<p>These messages change one part of the sound.</p>
+<ul class="gd-list"><li>Assign machine is 0x5b. The machine picker on the <b class="gd-ui">Sound</b> workspace sends it.</li><li>Set track routing is 0x5c. The <b class="gd-ui">OUT</b> key of a track on the <b class="gd-ui">Mix</b> workspace sends it, and so does the routing in the <b class="gd-ui">GLOBAL</b> panel.</li><li>The Rhythm Echo, Gate Box, Master EQ and Dynamix messages are 0x5d to 0x60. The cards of the <b class="gd-ui">Mix</b> workspace send them.</li><li>Set tempo is 0x61. Dragging the <b class="gd-light">&lt;TEMPO&gt;</b> field in the LCD sends it.</li><li>Set LFO is 0x62. The LFO cards of the <b class="gd-ui">Sound</b> workspace send it.</li><li>Trig group is 0x65 and mute group is 0x66. <b class="gd-ui">Mute</b> and <b class="gd-ui">Trig</b> in the relations of the <b class="gd-ui">Sound</b> workspace send them.</li></ul>
+</div></section>
+<section class="gd-sec" id="patterns-and-songs" aria-labelledby="patterns-and-songs-h">
+<div class="gd-body gd-prose"><h2 id="patterns-and-songs-h">PATTERNS AND SONGS <a class="gd-anchor" href="#patterns-and-songs" aria-label="Link to PATTERNS AND SONGS">#</a></h2>
+<p class="gd-ref">MD manual pp.C-3</p>
+<p>Pattern dump is 0x67 and its request 0x68. The editor uses them for the whole page, and the pattern chooser shows what they hold.</p>
+<p>Song dump is 0x69 and its request 0x6a. Load song is 0x6c. The <b class="gd-ui">Song</b> workspace uses them. A song slot you click is only selected. <b class="gd-ui">Load</b> puts the machine's song in the editor.</p>
+<p>Status request, set and response are 0x70 to 0x72. The editor reads the machine's mode with them. Click <b class="gd-light">&lt;PLAY&gt;</b> on the second line of the LCD and the machine's mode is SONG. Click it again to go back to PATTERN.</p>
+</div></section>
+<section class="gd-sec" id="not-in-the-editor" aria-labelledby="not-in-the-editor-h">
+<div class="gd-body gd-prose"><h2 id="not-in-the-editor-h">NOT IN THE EDITOR <a class="gd-anchor" href="#not-in-the-editor" aria-label="Link to NOT IN THE EDITOR">#</a></h2>
+<p class="gd-ref">MD manual pp.C-3, C-4</p>
+<p>Set receive position is 0x6b. The editor does not send it. When you import a SysEx file, the editor places the items itself.</p>
+<p>The TurboMIDI speed messages are 0x10 to 0x17. They belong to the hardware link and the editor has no control for them.</p>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/md/15-appendix-b-midi-control-reference/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">15. Appendix B: MIDI control reference</span></a><a href="/guide/md/17-beyond-the-hardware/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">17. Beyond the hardware</span></a></nav>
+</article>
+</div>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

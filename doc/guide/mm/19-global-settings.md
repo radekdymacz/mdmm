@@ -22,6 +22,13 @@ To clear the active slot, click **Clear**. The editor asks first. The slot then 
 
 Undo takes back a paste or a clear, as any other edit.
 
+![The GLOBAL page with its eight slot keys](shot:e2e-mm-global-slot)
+
+To clear a slot:
+
+1. Click **Clear**. The editor asks.
+2. Click **Clear** in the question. The slot holds the factory global again, and the page shows it.
+
 ## TURBO MENU
 <!-- rows: MM-286 @4ae36d -->
 
@@ -57,6 +64,13 @@ The **Control** card sets the channels the machine listens on.
 - **Multi map**: notes on this channel start patterns as the multi map says.
 
 Click **−** or **+** to change a value. The base channel reads as a range, for example 1 to 6, when the span is more than one.
+
+To see what a track without a channel looks like:
+
+1. Click **Global** in the top bar and click **−** beside **Channel span** down to 0. No track has a channel, and the page says so.
+2. Press {key:close-global}, and click **M** of a track on the rail. The editor refuses: nothing is muted, and the message offers the fix.
+3. Click **Give each track its own channel**. The span reads 6.
+4. Click **M** again. The track mutes.
 
 A track has a channel only if its channel is 15 or lower. A base channel of 16 reaches no track. When a track has no channel of its own, the card says which tracks, and that mutes and notes cannot reach them. The editor then sends their sound values as kit dumps.
 

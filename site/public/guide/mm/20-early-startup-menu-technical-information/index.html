@@ -55,10 +55,10 @@
 <li><a href="/guide/mm/17-the-song-mode/">17. The song mode</a></li>
 <li><a href="/guide/mm/18-routing/">18. Routing</a></li>
 <li><a href="/guide/mm/19-global-settings/">19. Global settings</a></li>
-<li class="gd-side-cur"><a href="/guide/mm/20-early-startup-menu-technical-information/" aria-current="page">20. Early startup menu, technical information</a><ol class="gd-side-subs"><li><a href="#test-mode">TEST MODE</a></li><li><a href="#empty-reset">EMPTY RESET</a></li><li><a href="#factory-reset">FACTORY RESET</a></li><li><a href="#soft-reset">SOFT RESET</a></li><li><a href="#midi-upgrade-send-upgrade">MIDI UPGRADE, SEND UPGRADE</a></li><li><a href="#mki-mkii-differences">MKI / MKII DIFFERENCES</a></li></ol></li>
-<li><span class="gd-side-todo">21. Appendix A: machine reference <span class="gd-vh">(to come)</span></span></li>
-<li><span class="gd-side-todo">22. Appendix B: MIDI control reference <span class="gd-vh">(to come)</span></span></li>
-<li><span class="gd-side-todo">23. Appendix C: SysEx reference <span class="gd-vh">(to come)</span></span></li>
+<li class="gd-side-cur"><a href="/guide/mm/20-early-startup-menu-technical-information/" aria-current="page">20. Early startup menu, technical information</a><ol class="gd-side-subs"><li><a href="#test-mode">TEST MODE</a></li><li><a href="#empty-reset">EMPTY RESET</a></li><li><a href="#factory-reset">FACTORY RESET</a></li><li><a href="#soft-reset">SOFT RESET</a></li><li><a href="#midi-upgrade-send-upgrade">MIDI UPGRADE, SEND UPGRADE</a></li><li><a href="#mki-mkii-differences">MKI / MKII DIFFERENCES</a></li><li><a href="#specifications">SPECIFICATIONS</a></li><li><a href="#credits-contact">CREDITS, CONTACT</a></li></ol></li>
+<li><a href="/guide/mm/21-appendix-a-machine-reference/">21. Appendix A: machine reference</a></li>
+<li><a href="/guide/mm/22-appendix-b-midi-control-reference/">22. Appendix B: MIDI control reference</a></li>
+<li><a href="/guide/mm/23-appendix-c-sysex-reference/">23. Appendix C: SysEx reference</a></li>
 <li><a href="/guide/mm/24-beyond-the-hardware/">24. Beyond the hardware</a></li></ol>
 <ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
 </nav>
@@ -74,7 +74,7 @@
 <div class="gd-body gd-prose"><h2 id="empty-reset-h">EMPTY RESET <a class="gd-anchor" href="#empty-reset" aria-label="Link to EMPTY RESET">#</a></h2>
 <p class="gd-ref">MM manual p.1-110</p>
 <p>The empty reset clears the memory of the machine.</p>
-<ol class="gd-steps"><li>Choose <b class="gd-ui">RESET MACHINE…</b> in the engine menu (the engine name at the left of the LCD). A question says what the reset clears. <b class="gd-ui">Cancel</b> is the default: <kbd class="gd-key">[ESC]</kbd> or a click outside answers it.</li><li>Click <b class="gd-ui">Empty reset…</b>. The editor asks a second time.</li><li>Click <b class="gd-ui">Clear everything</b>. The <b class="gd-ui">Empty reset</b> panel opens. The editor writes an empty kit, pattern and song into every slot through the SYSEX RECV screen, then reads each one back.</li><li>Read the report and click <b class="gd-ui">Done</b>.</li></ol>
+<ol class="gd-steps"><li>Choose <b class="gd-ui">RESET MACHINE…</b> in the engine menu (the engine name at the left of the LCD). A question says what the reset clears. <b class="gd-ui">Cancel</b> is the default: <kbd class="gd-key">[ESC]</kbd> answers it. A click beside the question does nothing.</li><li>Click <b class="gd-ui">Empty reset…</b>. The editor asks a second time.</li><li>Click <b class="gd-ui">Clear everything</b>. The <b class="gd-ui">Empty reset</b> panel opens. The editor writes an empty kit, pattern and song into every slot through the SYSEX RECV screen, then reads each one back.</li><li>Read the report and click <b class="gd-ui">Done</b>.</li></ol>
 <p>The globals stay. A global is reset in its own slot in GLOBAL (chapter 19).</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The reset has no undo. Click <b class="gd-ui">Export SysEx…</b> in the question first to keep a way back.</p><p>With a real Monomachine over MIDI, the machine must be on its SYSEX RECV screen. The sync field reads SEND and the number of waiting dumps until it is.</p></aside>
 </div></section>
@@ -99,9 +99,20 @@
 <p class="gd-ref">MM manual p.1-114</p>
 <p>The MKI and the MKII run the same OS. The MKII adds the user waveforms of the DigiPRO machines. The editor draws the panel of either model.</p>
 <ol class="gd-steps"><li>Click <b class="gd-ui">MKI</b> or <b class="gd-ui">MKII</b> at the right of the top bar. The panel changes to the other model: the MKI has a light-blue LCD, the MKII a bluish-white one.</li><li>Click it again to go back.</li></ol>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-mm-top-plate.webp" aria-label="Open the picture full size: The MKII panel"><img src="/guide/shots/e2e-mm-top-plate.webp" width="1440" height="923" alt="The MKII panel" loading="lazy"></a><figcaption>The MKII panel</figcaption></figure>
 <p>With MKI chosen, the machines that need the MKII are grey in the machine list.</p>
 </div></section>
-<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/mm/19-global-settings/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">19. Global settings</span></a><a href="/guide/mm/24-beyond-the-hardware/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">24. Beyond the hardware</span></a></nav>
+<section class="gd-sec" id="specifications" aria-labelledby="specifications-h">
+<div class="gd-body gd-prose"><h2 id="specifications-h">SPECIFICATIONS <a class="gd-anchor" href="#specifications" aria-label="Link to SPECIFICATIONS">#</a></h2>
+<p class="gd-ref">MM manual p.1-113</p>
+<p>The specifications of the hardware, its connectors, memory and sizes, belong to the machine. The editor lists none of them.</p>
+</div></section>
+<section class="gd-sec" id="credits-contact" aria-labelledby="credits-contact-h">
+<div class="gd-body gd-prose"><h2 id="credits-contact-h">CREDITS, CONTACT <a class="gd-anchor" href="#credits-contact" aria-label="Link to CREDITS, CONTACT">#</a></h2>
+<p class="gd-ref">MM manual pp.1-115, 1-116</p>
+<p>The credits and the contact of the manufacturer belong to the machine's manual. The editor shows its own version in the top bar and in the title of the editor's menu.</p>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/mm/19-global-settings/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">19. Global settings</span></a><a href="/guide/mm/21-appendix-a-machine-reference/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">21. Appendix A: machine reference</span></a></nav>
 </article>
 </div>
 </div>

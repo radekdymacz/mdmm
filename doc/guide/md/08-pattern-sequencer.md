@@ -25,7 +25,9 @@ To change the mode:
 1. Open the **Sequence** workspace.
 2. Click <MODE> on the second line of the LCD. It reads EXT or CLASSIC.
 
-In CLASSIC the lock lane is greyed and says "CLASSIC: locks muted". The pattern chooser and the kit library say which mode is on. In EXTENDED the chooser shows the kit of each pattern as K01 to K64.
+In CLASSIC the lock lane is greyed and says "CLASSIC: locks muted". The locks are all still there. The pattern chooser and the kit library say which mode is on. In EXTENDED the chooser shows the kit of each pattern as K01 to K64.
+
+![The pattern chooser in CLASSIC: no pattern shows a kit](shot:md-top-mode-classic)
 
 ## TEMPO
 <!-- rows: MD-089 MD-090 MD-091 @b68751 -->
@@ -104,6 +106,8 @@ A chain plays patterns of one bank in the order you pick them, and starts again 
 4. Click the patterns in the order you want. Each pad shows its number in the chain. After the second pad the machine plays the chain at once. While it plays, the chain starts at the end of the pattern. While it is stopped, [PLAY] starts at the first pad.
 5. Click a numbered pad to take it out. **Back** takes out the last pad. **Clear** ends the chain.
 
+![A chain of two patterns playing](shot:e2e-md-song-chain)
+
 A chain holds up to 16 patterns of one bank, each pattern once. The palette says which pattern plays now and which comes next. Choosing a pattern ends the chain. Editing the patterns in it does not.
 
 NOTE: The **Chain** pads are disabled, with a reason, when the engine cannot read or set the chain.
@@ -126,7 +130,9 @@ To sweep the filters of all tracks, hold [⌥] and drag the FLTF or FLTW value.
 To drop the tweaks of a kit and load its stored sound again:
 
 1. Click the kit name in the <KIT> field of the LCD. The kit library opens.
-2. Click **Reload** under **Current**. The button is available only when the kit has unsaved edits.
+2. Click **Reload** under **Current**. The button is available only when the kit has unsaved edits. The edits are lost and the kit is as stored.
+
+![The kit library with Reload](shot:md-kit-reload)
 
 The machine keeps the edits you lose in its UNDO KIT.
 
@@ -152,7 +158,9 @@ When you make the total longer, the editor does what the machine does: if no tra
 
 ### Speed
 
-Click <SPD> to step through the tempo multipliers 1X, 2X, 3/4X and 3/2X. Click with [⇧] to step back. You can also drag or scroll on it.
+Click <SPD> to step through the tempo multipliers 1X, 2X, 3/4X and 3/2X. Click with [⇧] to step back. You can also drag or scroll on it: three notches of the wheel walk the four speeds.
+
+![The scale fields on the LCD](shot:md-seq-scale)
 
 ## GRID RECORDING
 <!-- rows: MD-107 MD-108 MD-109 MD-110 @eb7b4b -->
@@ -230,6 +238,7 @@ To take locks off a step, use one of these:
 
 - Select the step and press {key:delete}, or choose **Clear** in the step menu. This clears the trig and its locks together.
 - Hold [⌥] and drag over the bars of the lock lane. This erases the locks it crosses and leaves the trigs.
+- Press {key:clear-what}, tick **Locks** only and click **Clear**. The locks of the track go and the trigs stay.
 - Click the bin key above the parameter keys to clear every lock of the parameter on this track. Hold [⌥] and it clears every lock of the track.
 
 Press {key:undo} to take a clear back.
@@ -329,6 +338,8 @@ To prepare mutes and apply them together, as the machine's mute window does:
 1. Hold [⇧] and click **M** on the tracks. Each track shows + for a track it will unmute or X for a track it will mute.
 2. Let go of [⇧]. All the changes apply at once.
 
+![Mutes prepared with the shift key: nothing is sent until you let go](shot:e2e-md-mix-shift-mutes)
+
 The mutes are the machine's. The editor reads them from the machine's memory, whoever set them, and they stay when you change pattern or switch between pattern and song mode. A solo is the editor's: it mutes the other tracks on the machine, and when you let the solo go it gives your mutes back.
 
 On the machine you can minimise the mute window. In the editor the keys are always on the page.
@@ -382,6 +393,8 @@ To choose which steps swing:
 With **All tracks** the swing row is shared: a mark on a step swings that step on every track. With **This track** each track has its own swing steps. Every track uses the same <SWG> amount.
 
 TIP: Swing only the hi-hats for a feel apart from the rest of the pattern.
+
+![The LCD with the accent and swing amounts, and the trig types under the grid](shot:md-seq-swing-accent)
 
 Tick **Swing** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu to copy, paste or clear the swing steps of a track (see "Track copy").
 

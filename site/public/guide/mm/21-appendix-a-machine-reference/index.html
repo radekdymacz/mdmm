@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>21. Appendix A: machine reference · Monomachine Editor guide</title>
+<meta name="description" content="Every machine you can put on a track, with the knobs of its synthesis page.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/mm/21-appendix-a-machine-reference/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261010">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>@page { @top-left { content: "21. Appendix A: machine reference"; } }</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › <a href="/guide/mm/">Monomachine Editor</a> › Appendix A: machine reference</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Chapters of the Monomachine Editor guide">
+<p class="gd-side-title"><a href="/guide/mm/">Monomachine Editor guide</a></p>
+<ol class="gd-side-list"><li><a href="/guide/mm/01-introduction-philosophy-highlights/">1. Introduction, philosophy, highlights</a></li>
+<li><a href="/guide/mm/02-user-interface-and-connectors/">2. User interface and connectors</a></li>
+<li><a href="/guide/mm/03-the-lcd-user-interface/">3. The LCD user interface</a></li>
+<li><a href="/guide/mm/04-quick-start/">4. Quick start</a></li>
+<li><a href="/guide/mm/05-monomachine-overview/">5. Monomachine overview</a></li>
+<li><a href="/guide/mm/06-synthesis-arrangement-kits-and-machines/">6. Synthesis arrangement: kits and machines</a></li>
+<li><a href="/guide/mm/07-track-effects/">7. Track effects</a></li>
+<li><a href="/guide/mm/08-low-frequency-oscillators/">8. Low frequency oscillators</a></li>
+<li><a href="/guide/mm/09-additional-kit-settings/">9. Additional kit settings</a></li>
+<li><a href="/guide/mm/10-the-pattern-sequencer-pattern-operation/">10. The pattern sequencer: pattern operation</a></li>
+<li><a href="/guide/mm/11-composing-a-pattern/">11. Composing a pattern</a></li>
+<li><a href="/guide/mm/12-tempo/">12. Tempo</a></li>
+<li><a href="/guide/mm/13-parameter-locks/">13. Parameter locks</a></li>
+<li><a href="/guide/mm/14-advanced-sequencer-control/">14. Advanced sequencer control</a></li>
+<li><a href="/guide/mm/15-additional-sequencer-features/">15. Additional sequencer features</a></li>
+<li><a href="/guide/mm/16-the-midi-sequencer/">16. The MIDI sequencer</a></li>
+<li><a href="/guide/mm/17-the-song-mode/">17. The song mode</a></li>
+<li><a href="/guide/mm/18-routing/">18. Routing</a></li>
+<li><a href="/guide/mm/19-global-settings/">19. Global settings</a></li>
+<li><a href="/guide/mm/20-early-startup-menu-technical-information/">20. Early startup menu, technical information</a></li>
+<li class="gd-side-cur"><a href="/guide/mm/21-appendix-a-machine-reference/" aria-current="page">21. Appendix A: machine reference</a><ol class="gd-side-subs"><li><a href="#swave-saw">SWAVE-SAW</a></li><li><a href="#swave-pulse">SWAVE-PULSE</a></li><li><a href="#swave-ens">SWAVE-ENS</a></li><li><a href="#sid-6581">SID 6581</a></li><li><a href="#dpro-wave">DPRO-WAVE</a></li><li><a href="#dpro-bbox">DPRO-BBOX</a></li><li><a href="#dpro-ddrw">DPRO-DDRW</a></li><li><a href="#dpro-dens">DPRO-DENS</a></li><li><a href="#fm-stat">FM+STAT</a></li><li><a href="#fm-par">FM+PAR</a></li><li><a href="#fm-dyn">FM+DYN</a></li><li><a href="#vo-6">VO-6</a></li><li><a href="#vo-6-tutorial">VO-6 TUTORIAL</a></li><li><a href="#gnd-gnd">GND-GND</a></li><li><a href="#gnd-sin">GND-SIN</a></li><li><a href="#gnd-nois">GND-NOIS</a></li><li><a href="#fx-thru">FX-THRU</a></li><li><a href="#fx-reverb">FX-REVERB</a></li><li><a href="#fx-chorus">FX-CHORUS</a></li><li><a href="#fx-dynamix">FX-DYNAMIX</a></li><li><a href="#fx-ringmod">FX-RINGMOD</a></li><li><a href="#fx-phaser">FX-PHASER</a></li><li><a href="#fx-flanger">FX-FLANGER</a></li></ol></li>
+<li><a href="/guide/mm/22-appendix-b-midi-control-reference/">22. Appendix B: MIDI control reference</a></li>
+<li><a href="/guide/mm/23-appendix-c-sysex-reference/">23. Appendix C: SysEx reference</a></li>
+<li><a href="/guide/mm/24-beyond-the-hardware/">24. Beyond the hardware</a></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">21</span><span class="gd-ctitle">Appendix A: machine reference</span></h1><p class="gd-cmeta">MM manual pp.A-1 to A-15</p></header>
+<div class="gd-intro gd-prose"><p>This appendix lists the machines of the Monomachine and the knobs each one gives the SYN page. You choose a machine in the machine picker of the <b class="gd-ui">Sound</b> workspace (chapter 6, &quot;ASSIGNING A MACHINE&quot;); the picker shows the same names, in families, and the pointer over a machine names its eight knobs. Every machine also has the AMP, FLT, EFX and the three LFO pages, which are the same for all of them. Two of the machines exist only on the MKII.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/mm-machine-picker.webp" aria-label="Open the picture full size: The machine picker"><img src="/guide/shots/mm-machine-picker.webp" width="1440" height="923" alt="The machine picker" loading="lazy"></a><figcaption>The machine picker</figcaption></figure></div>
+<section class="gd-sec" id="swave-saw" aria-labelledby="swave-saw-h">
+<div class="gd-body gd-prose"><h2 id="swave-saw-h">SWAVE-SAW <a class="gd-anchor" href="#swave-saw" aria-label="Link to SWAVE-SAW">#</a></h2>
+<p class="gd-ref">MM manual p.A-1</p>
+<p>Eight saw oscillators. <b class="gd-light">&lt;UNIL&gt;</b>, <b class="gd-light">&lt;UNIW&gt;</b> and <b class="gd-light">&lt;UNIX&gt;</b> set the unison, <b class="gd-light">&lt;SUBX&gt;</b>, <b class="gd-light">&lt;SUB1&gt;</b> and <b class="gd-light">&lt;SUB2&gt;</b> the sub oscillators and <b class="gd-light">&lt;TUNE&gt;</b> the pitch.</p>
+</div></section>
+<section class="gd-sec" id="swave-pulse" aria-labelledby="swave-pulse-h">
+<div class="gd-body gd-prose"><h2 id="swave-pulse-h">SWAVE-PULSE <a class="gd-anchor" href="#swave-pulse" aria-label="Link to SWAVE-PULSE">#</a></h2>
+<p class="gd-ref">MM manual p.A-2</p>
+<p>Pulse oscillators with unison and sub oscillators. <b class="gd-light">&lt;PW&gt;</b> sets the pulse width, <b class="gd-light">&lt;PWAD&gt;</b> and <b class="gd-light">&lt;PWRS&gt;</b> move it over time.</p>
+</div></section>
+<section class="gd-sec" id="swave-ens" aria-labelledby="swave-ens-h">
+<div class="gd-body gd-prose"><h2 id="swave-ens-h">SWAVE-ENS <a class="gd-anchor" href="#swave-ens" aria-label="Link to SWAVE-ENS">#</a></h2>
+<p class="gd-ref">MM manual p.A-2</p>
+<p>An ensemble of oscillators. <b class="gd-light">&lt;PCH2&gt;</b> to <b class="gd-light">&lt;PCH4&gt;</b> pitch the extra voices, <b class="gd-light">&lt;WAVE&gt;</b> picks the wave and <b class="gd-light">&lt;CHRL&gt;</b> and <b class="gd-light">&lt;CHRW&gt;</b> set the chorus.</p>
+</div></section>
+<section class="gd-sec" id="sid-6581" aria-labelledby="sid-6581-h">
+<div class="gd-body gd-prose"><h2 id="sid-6581-h">SID 6581 <a class="gd-anchor" href="#sid-6581" aria-label="Link to SID 6581">#</a></h2>
+<p class="gd-ref">MM manual p.A-3</p>
+<p>A model of the SID chip. <b class="gd-light">&lt;WAVE&gt;</b> picks the wave, <b class="gd-light">&lt;MOD&gt;</b> the modulation, <b class="gd-light">&lt;MSRC&gt;</b> and <b class="gd-light">&lt;MFRQ&gt;</b> its source and rate.</p>
+</div></section>
+<section class="gd-sec" id="dpro-wave" aria-labelledby="dpro-wave-h">
+<div class="gd-body gd-prose"><h2 id="dpro-wave-h">DPRO-WAVE <a class="gd-anchor" href="#dpro-wave" aria-label="Link to DPRO-WAVE">#</a></h2>
+<p class="gd-ref">MM manual p.A-4</p>
+<p>A wave player on the DigiPRO. <b class="gd-light">&lt;WAVE&gt;</b> picks the wave, <b class="gd-light">&lt;WP&gt;</b> shapes it, <b class="gd-light">&lt;SYNC&gt;</b> and <b class="gd-light">&lt;SFRQ&gt;</b> set oscillator sync.</p>
+</div></section>
+<section class="gd-sec" id="dpro-bbox" aria-labelledby="dpro-bbox-h">
+<div class="gd-body gd-prose"><h2 id="dpro-bbox-h">DPRO-BBOX <a class="gd-anchor" href="#dpro-bbox" aria-label="Link to DPRO-BBOX">#</a></h2>
+<p class="gd-ref">MM manual p.A-4</p>
+<p>The beat box, a set of 24 drum sounds played by key. <b class="gd-light">&lt;PTCH&gt;</b> sets the pitch, <b class="gd-light">&lt;STRT&gt;</b> the start point, <b class="gd-light">&lt;RTRG&gt;</b> and <b class="gd-light">&lt;RTIM&gt;</b> the retrigger.</p>
+</div></section>
+<section class="gd-sec" id="dpro-ddrw" aria-labelledby="dpro-ddrw-h">
+<div class="gd-body gd-prose"><h2 id="dpro-ddrw-h">DPRO-DDRW <a class="gd-anchor" href="#dpro-ddrw" aria-label="Link to DPRO-DDRW">#</a></h2>
+<p class="gd-ref">MM manual p.A-5</p>
+<p>A machine built on two waves. <b class="gd-light">&lt;WAV1&gt;</b> and <b class="gd-light">&lt;WAV2&gt;</b> pick them, <b class="gd-light">&lt;MIX&gt;</b> blends them and <b class="gd-light">&lt;TIME&gt;</b>, <b class="gd-light">&lt;BR1&gt;</b>, <b class="gd-light">&lt;WID&gt;</b> and <b class="gd-light">&lt;BR2&gt;</b> shape the draw between them.</p>
+</div></section>
+<section class="gd-sec" id="dpro-dens" aria-labelledby="dpro-dens-h">
+<div class="gd-body gd-prose"><h2 id="dpro-dens-h">DPRO-DENS <a class="gd-anchor" href="#dpro-dens" aria-label="Link to DPRO-DENS">#</a></h2>
+<p class="gd-ref">MM manual p.A-5</p>
+<p>A stack of voices from one wave. <b class="gd-light">&lt;PCH2&gt;</b> to <b class="gd-light">&lt;PCH4&gt;</b> pitch the extra voices and <b class="gd-light">&lt;CHRL&gt;</b> and <b class="gd-light">&lt;CHRW&gt;</b> set the chorus.</p>
+</div></section>
+<section class="gd-sec" id="fm-stat" aria-labelledby="fm-stat-h">
+<div class="gd-body gd-prose"><h2 id="fm-stat-h">FM+STAT <a class="gd-anchor" href="#fm-stat" aria-label="Link to FM+STAT">#</a></h2>
+<p class="gd-ref">MM manual p.A-6</p>
+<p>A static FM machine. <b class="gd-light">&lt;1FRQ&gt;</b>, <b class="gd-light">&lt;1FIN&gt;</b>, <b class="gd-light">&lt;1ENV&gt;</b> and <b class="gd-light">&lt;1FB&gt;</b> set the first operator, <b class="gd-light">&lt;2FRQ&gt;</b> and <b class="gd-light">&lt;2VOL&gt;</b> the second, <b class="gd-light">&lt;TONE&gt;</b> the tone.</p>
+</div></section>
+<section class="gd-sec" id="fm-par" aria-labelledby="fm-par-h">
+<div class="gd-body gd-prose"><h2 id="fm-par-h">FM+PAR <a class="gd-anchor" href="#fm-par" aria-label="Link to FM+PAR">#</a></h2>
+<p class="gd-ref">MM manual p.A-7</p>
+<p>A parallel FM machine. Three operators have a frequency and an envelope each, <b class="gd-light">&lt;TONE&gt;</b> sets the tone.</p>
+</div></section>
+<section class="gd-sec" id="fm-dyn" aria-labelledby="fm-dyn-h">
+<div class="gd-body gd-prose"><h2 id="fm-dyn-h">FM+DYN <a class="gd-anchor" href="#fm-dyn" aria-label="Link to FM+DYN">#</a></h2>
+<p class="gd-ref">MM manual p.A-7</p>
+<p>A dynamic FM machine. The first operator has frequency, frequency envelope, volume and volume envelope, the second frequency, envelope and feedback.</p>
+</div></section>
+<section class="gd-sec" id="vo-6" aria-labelledby="vo-6-h">
+<div class="gd-body gd-prose"><h2 id="vo-6-h">VO-6 <a class="gd-anchor" href="#vo-6" aria-label="Link to VO-6">#</a></h2>
+<p class="gd-ref">MM manual p.A-8</p>
+<p>A speech machine. <b class="gd-light">&lt;VOC1&gt;</b> and <b class="gd-light">&lt;VOC2&gt;</b> pick the vowels, <b class="gd-light">&lt;CONS&gt;</b> the consonant, <b class="gd-light">&lt;CLEN&gt;</b> its length and <b class="gd-light">&lt;CVOL&gt;</b> its volume.</p>
+</div></section>
+<section class="gd-sec" id="vo-6-tutorial" aria-labelledby="vo-6-tutorial-h">
+<div class="gd-body gd-prose"><h2 id="vo-6-tutorial-h">VO-6 TUTORIAL <a class="gd-anchor" href="#vo-6-tutorial" aria-label="Link to VO-6 TUTORIAL">#</a></h2>
+<p class="gd-ref">MM manual p.A-9</p>
+<p>VO-6 says a word when you lock its vowel and consonant on each note.</p>
+<ol class="gd-steps"><li>Click the <b class="gd-ui">Sound</b> tab and select track 3 on the rail.</li><li>Click the machine name and choose VO-6.</li><li>Click the <b class="gd-ui">Sequence</b> tab and select track 3 on the rail again.</li><li>Switch the piano roll's <b class="gd-ui">Draw</b> on.</li><li>Click five notes into the roll.</li></ol>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/mm-lock-lane.webp" aria-label="Open the picture full size: The lock lane"><img src="/guide/shots/mm-lock-lane.webp" width="1440" height="923" alt="The lock lane" loading="lazy"></a><figcaption>The lock lane</figcaption></figure>
+<ol class="gd-steps" start="6"><li>In the lock lane open the SYN page. Lock <b class="gd-light">&lt;CONS&gt;</b> on each note with the wheel, using M, N, M, SJ, N in that order.</li><li>Lock <b class="gd-light">&lt;VOC1&gt;</b> on each note with a drawn bar.</li></ol>
+<p>The roll names the consonant of each note. Play the pattern to hear the word.</p>
+</div></section>
+<section class="gd-sec" id="gnd-gnd" aria-labelledby="gnd-gnd-h">
+<div class="gd-body gd-prose"><h2 id="gnd-gnd-h">GND-GND <a class="gd-anchor" href="#gnd-gnd" aria-label="Link to GND-GND">#</a></h2>
+<p class="gd-ref">MM manual p.A-10</p>
+<p>Silence. The machine makes no sound.</p>
+</div></section>
+<section class="gd-sec" id="gnd-sin" aria-labelledby="gnd-sin-h">
+<div class="gd-body gd-prose"><h2 id="gnd-sin-h">GND-SIN <a class="gd-anchor" href="#gnd-sin" aria-label="Link to GND-SIN">#</a></h2>
+<p class="gd-ref">MM manual p.A-10</p>
+<p>A sine wave with <b class="gd-light">&lt;TUNE&gt;</b>. It is the machine of an empty track (chapter 6, &quot;CLEAR MACHINE&quot;).</p>
+</div></section>
+<section class="gd-sec" id="gnd-nois" aria-labelledby="gnd-nois-h">
+<div class="gd-body gd-prose"><h2 id="gnd-nois-h">GND-NOIS <a class="gd-anchor" href="#gnd-nois" aria-label="Link to GND-NOIS">#</a></h2>
+<p class="gd-ref">MM manual p.A-10</p>
+<p>Noise. <b class="gd-light">&lt;ST&gt;</b>, <b class="gd-light">&lt;RED&gt;</b> and <b class="gd-light">&lt;STON&gt;</b> shape it and <b class="gd-light">&lt;TUNE&gt;</b> sets the pitch.</p>
+</div></section>
+<section class="gd-sec" id="fx-thru" aria-labelledby="fx-thru-h">
+<div class="gd-body gd-prose"><h2 id="fx-thru-h">FX-THRU <a class="gd-anchor" href="#fx-thru" aria-label="Link to FX-THRU">#</a></h2>
+<p class="gd-ref">MM manual p.A-12</p>
+<p>A machine that passes its input through. <b class="gd-light">&lt;INP&gt;</b> picks the input.</p>
+</div></section>
+<section class="gd-sec" id="fx-reverb" aria-labelledby="fx-reverb-h">
+<div class="gd-body gd-prose"><h2 id="fx-reverb-h">FX-REVERB <a class="gd-anchor" href="#fx-reverb" aria-label="Link to FX-REVERB">#</a></h2>
+<p class="gd-ref">MM manual p.A-12</p>
+<p>A reverb. <b class="gd-light">&lt;DEC&gt;</b>, <b class="gd-light">&lt;DAMP&gt;</b> and <b class="gd-light">&lt;GATE&gt;</b> shape the tail, <b class="gd-light">&lt;MIX&gt;</b> blends it, <b class="gd-light">&lt;HP&gt;</b> and <b class="gd-light">&lt;LP&gt;</b> filter it, <b class="gd-light">&lt;INP&gt;</b> picks the input.</p>
+</div></section>
+<section class="gd-sec" id="fx-chorus" aria-labelledby="fx-chorus-h">
+<div class="gd-body gd-prose"><h2 id="fx-chorus-h">FX-CHORUS <a class="gd-anchor" href="#fx-chorus" aria-label="Link to FX-CHORUS">#</a></h2>
+<p class="gd-ref">MM manual p.A-13</p>
+<p>A chorus. <b class="gd-light">&lt;DEL&gt;</b>, <b class="gd-light">&lt;DEP&gt;</b> and <b class="gd-light">&lt;SPD&gt;</b> set delay, depth and speed, <b class="gd-light">&lt;FB&gt;</b> the feedback, <b class="gd-light">&lt;WID&gt;</b> the width, <b class="gd-light">&lt;LP&gt;</b> a filter, <b class="gd-light">&lt;MIX&gt;</b> the blend, <b class="gd-light">&lt;INP&gt;</b> the input.</p>
+</div></section>
+<section class="gd-sec" id="fx-dynamix" aria-labelledby="fx-dynamix-h">
+<div class="gd-body gd-prose"><h2 id="fx-dynamix-h">FX-DYNAMIX <a class="gd-anchor" href="#fx-dynamix" aria-label="Link to FX-DYNAMIX">#</a></h2>
+<p class="gd-ref">MM manual p.A-13</p>
+<p>A compressor. <b class="gd-light">&lt;ATK&gt;</b> and <b class="gd-light">&lt;REL&gt;</b> set the times, <b class="gd-light">&lt;THRS&gt;</b> the threshold, <b class="gd-light">&lt;RAT&gt;</b> the ratio, <b class="gd-light">&lt;GAIN&gt;</b> the make-up gain, <b class="gd-light">&lt;RMS&gt;</b> the detector, <b class="gd-light">&lt;MIX&gt;</b> the blend, <b class="gd-light">&lt;INP&gt;</b> the input.</p>
+</div></section>
+<section class="gd-sec" id="fx-ringmod" aria-labelledby="fx-ringmod-h">
+<div class="gd-body gd-prose"><h2 id="fx-ringmod-h">FX-RINGMOD <a class="gd-anchor" href="#fx-ringmod" aria-label="Link to FX-RINGMOD">#</a></h2>
+<p class="gd-ref">MM manual p.A-14</p>
+<p>A ring modulator. <b class="gd-light">&lt;WAVE&gt;</b> picks the wave, <b class="gd-light">&lt;EXT&gt;</b> the external input as the modulator, <b class="gd-light">&lt;MIX&gt;</b> the blend, <b class="gd-light">&lt;INP&gt;</b> the input.</p>
+</div></section>
+<section class="gd-sec" id="fx-phaser" aria-labelledby="fx-phaser-h">
+<div class="gd-body gd-prose"><h2 id="fx-phaser-h">FX-PHASER <a class="gd-anchor" href="#fx-phaser" aria-label="Link to FX-PHASER">#</a></h2>
+<p class="gd-ref">MM manual p.A-14</p>
+<p>A phaser. <b class="gd-light">&lt;CNTR&gt;</b> sets its centre, <b class="gd-light">&lt;DEP&gt;</b> and <b class="gd-light">&lt;SPD&gt;</b> the depth and speed, <b class="gd-light">&lt;FB&gt;</b> the feedback, <b class="gd-light">&lt;WID&gt;</b> the width, <b class="gd-light">&lt;MIX&gt;</b> the blend.</p>
+</div></section>
+<section class="gd-sec" id="fx-flanger" aria-labelledby="fx-flanger-h">
+<div class="gd-body gd-prose"><h2 id="fx-flanger-h">FX-FLANGER <a class="gd-anchor" href="#fx-flanger" aria-label="Link to FX-FLANGER">#</a></h2>
+<p class="gd-ref">MM manual pp.A-14, A-15</p>
+<p>A flanger. <b class="gd-light">&lt;DEL&gt;</b>, <b class="gd-light">&lt;DEP&gt;</b> and <b class="gd-light">&lt;SPD&gt;</b> set delay, depth and speed, <b class="gd-light">&lt;FB&gt;</b> the feedback, <b class="gd-light">&lt;WID&gt;</b> the width, <b class="gd-light">&lt;MIX&gt;</b> the blend, <b class="gd-light">&lt;INP&gt;</b> the input.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>An FX machine needs audio at its input. Chapter 6 says what the editor sets when you assign one.</p></aside>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/mm/20-early-startup-menu-technical-information/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">20. Early startup menu, technical information</span></a><a href="/guide/mm/22-appendix-b-midi-control-reference/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">22. Appendix B: MIDI control reference</span></a></nav>
+</article>
+</div>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

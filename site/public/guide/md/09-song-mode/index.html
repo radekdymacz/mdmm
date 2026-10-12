@@ -49,9 +49,9 @@
 <li><a href="/guide/md/11-sample-manager-uw-only/">11. Sample manager, UW only</a></li>
 <li><a href="/guide/md/12-early-start-up-menu/">12. Early start-up menu</a></li>
 <li><a href="/guide/md/13-technical-information-mki-vs-mkii/">13. Technical information, MKI vs MKII</a></li>
-<li><span class="gd-side-todo">14. Appendix A: machine reference <span class="gd-vh">(to come)</span></span></li>
-<li><span class="gd-side-todo">15. Appendix B: MIDI control reference <span class="gd-vh">(to come)</span></span></li>
-<li><span class="gd-side-todo">16. Appendix C: sysex reference <span class="gd-vh">(to come)</span></span></li>
+<li><a href="/guide/md/14-appendix-a-machine-reference/">14. Appendix A: machine reference</a></li>
+<li><a href="/guide/md/15-appendix-b-midi-control-reference/">15. Appendix B: MIDI control reference</a></li>
+<li><a href="/guide/md/16-appendix-c-sysex-reference/">16. Appendix C: sysex reference</a></li>
 <li><a href="/guide/md/17-beyond-the-hardware/">17. Beyond the hardware</a></li></ol>
 <ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
 </nav>
@@ -59,7 +59,7 @@
 <header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">9</span><span class="gd-ctitle">Song mode</span></h1><p class="gd-cmeta">MD manual pp.51-56</p></header>
 <div class="gd-intro gd-prose"><p>The song mode plays patterns in a set order. Each row of a song names a pattern and how it plays: how many times, the whole pattern or a part of it, with some tracks muted, at a tempo of its own. Command rows loop back, jump forward or halt the song.</p>
 <p>In the editor the song mode is the <b class="gd-ui">Song</b> workspace. Press <kbd class="gd-key">[5]</kbd>, or click the <b class="gd-ui">Song</b> tab. The <b class="gd-ui">Songs</b> column on the left holds the 32 song slots. The middle column holds the <b class="gd-ui">PATTERN</b>, <b class="gd-ui">CHAIN</b> and <b class="gd-ui">SONG</b> keys over the pattern palette, and in song mode the <b class="gd-ui">Selected row</b>. On the right, the <b class="gd-ui">Arrangement</b> shows every row of the song as a cell, 16 cells to a line.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The Song workspace"><span>Screenshot to come</span></div><figcaption>The Song workspace</figcaption></figure>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/md-song-workspace.webp" aria-label="Open the picture full size: The Song workspace"><img src="/guide/shots/md-song-workspace.webp" width="1440" height="923" alt="The Song workspace" loading="lazy"></a><figcaption>The Song workspace</figcaption></figure>
 <p>The machine plays the song. The editor writes the song into the machine and shows what the machine reports: the mode, the row that plays and the tempo.</p>
 <p>The three keys over the palette say what the machine plays and what a click on a pad does:</p>
 <ul class="gd-list"><li><b class="gd-ui">PATTERN</b>: the machine is in pattern mode. A pad click goes to that pattern.</li><li><b class="gd-ui">CHAIN</b>: the machine is in pattern mode and a pad click adds the pattern to its chain. See the pattern sequencer chapter.</li><li><b class="gd-ui">SONG</b>: the machine is in song mode. A pad click adds a row to the song.</li></ul>
@@ -73,6 +73,7 @@
 <ol class="gd-steps"><li>Stop the machine. Press <kbd class="gd-key">[SPACE]</kbd> if it plays.</li><li>Click a slot in the <b class="gd-ui">Songs</b> column. The slot is selected. The machine still holds its song.</li><li>Click <b class="gd-ui">Load</b>, or press <kbd class="gd-key">[ENTER]</kbd>. The machine loads the song, and its slot is lit.</li></ol>
 <p>You can also click <b class="gd-light">&lt;SONG&gt;</b> on the second line of the LCD, or drag or scroll on it, to load the next song. Click with <kbd class="gd-key">[⇧]</kbd> to go back.</p>
 <p>Each slot shows its number, its name and its rows. An empty slot reads EMPTY and is drawn faint. Press the arrow keys to move the selection while a slot has the focus.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-md-song-slots.webp" aria-label="Open the picture full size: The Songs column"><img src="/guide/shots/e2e-md-song-slots.webp" width="1440" height="923" alt="The Songs column" loading="lazy"></a><figcaption>The Songs column</figcaption></figure>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The machine loads a song only while it is stopped. While it plays, <b class="gd-ui">Load</b> is greyed out.</p></aside>
 </div></section>
 <section class="gd-sec" id="playing-a-song" aria-labelledby="playing-a-song-h">
@@ -80,13 +81,14 @@
 <p class="gd-ref">MD manual p.52</p>
 <p>In song mode the machine plays the song from the first row, row by row, to the END row.</p>
 <ol class="gd-steps"><li>Click <b class="gd-ui">SONG</b> over the palette, or click <b class="gd-light">&lt;PLAY&gt;</b> on the LCD until it reads SONG.</li><li>Press <kbd class="gd-key">[SPACE]</kbd>. The song plays. The <b class="gd-ui">Arrangement</b> header reads Playing and the arrangement is framed.</li><li>Read what plays on the line over the bank letters: SONG 01 · row 017 of 65 · B01 means song 01, row 017 of 65 rows, pattern B01. The <b class="gd-light">&lt;PATTERN&gt;</b> field of the LCD reads the song and the row, for example 01·017.</li><li>Press <kbd class="gd-key">[SPACE]</kbd> again to stop.</li></ol>
-<p>The playing row is marked in the arrangement, and the bar over it fills up to that row.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: What plays, in song mode: the line over the bank letters"><span>Screenshot to come</span></div><figcaption>What plays, in song mode: the line over the bank letters</figcaption></figure>
+<p>The playing row is marked in the arrangement, and the bar over it fills up to that row. When you press <kbd class="gd-key">[SPACE]</kbd> again, or the song ends, no row is marked.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/md-song-what-plays.webp" aria-label="Open the picture full size: What plays, in song mode: the line over the bank letters"><img src="/guide/shots/md-song-what-plays.webp" width="1440" height="923" alt="What plays, in song mode: the line over the bank letters" loading="lazy"></a><figcaption>What plays, in song mode: the line over the bank letters</figcaption></figure>
 <p>You can go to pattern mode and back while the song plays. Click <b class="gd-ui">PATTERN</b>: the machine plays a pattern. Click <b class="gd-ui">SONG</b> to play the song again.</p>
 <p>The line under the chip in the <b class="gd-ui">Songs</b> column gives the length of the song as rows, bars and playing time at the current tempo. The time is an estimate. The LCD shows the same as <b class="gd-light">&lt;ROWS&gt;</b>, <b class="gd-light">&lt;BARS&gt;</b> and <b class="gd-light">&lt;TIME&gt;</b> on the second line of the Song workspace.</p>
 <p>When the host sends a song position, the machine follows it. The editor has no control for this.</p>
 <p>To pause a song, hold <kbd class="gd-key">[⇧]</kbd> and click the Play key, or press <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[SPACE]</kbd>. The song holds its row and step. Click the Play key to go on from there.</p>
-<p>A row that repeats shows how many more times it plays, as the machine counts them. The playing row reads +2, +1, then last, and the line over the bank letters ends with 2 more, 1 more or last.</p>
+<p>A row that repeats shows how many more times it plays, as the machine counts them. The playing row reads +2, +1, then last, and the line over the bank letters ends with 2 more, 1 more or last. The next row shows no count.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-md-song-repeats-left.webp" aria-label="Open the picture full size: A row that repeats, playing its first pass"><img src="/guide/shots/e2e-md-song-repeats-left.webp" width="1440" height="923" alt="A row that repeats, playing its first pass" loading="lazy"></a><figcaption>A row that repeats, playing its first pass</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="navigating-a-song" aria-labelledby="navigating-a-song-h">
 <div class="gd-body gd-prose"><h2 id="navigating-a-song-h">NAVIGATING A SONG <a class="gd-anchor" href="#navigating-a-song" aria-label="Link to NAVIGATING A SONG">#</a></h2>
@@ -103,7 +105,7 @@
 <h4 class="gd-h3" id="add-patterns">Add patterns</h4>
 <p>The pattern palette shows the 128 patterns by bank. Click <b class="gd-ui">SONG</b> over it. Each pad gives the pattern's name and its length, or &quot;empty&quot;.</p>
 <ol class="gd-steps"><li>Click a bank letter.</li><li>Click a pad. The pattern goes into the song after the selected row, and the new row is selected.</li></ol>
-<p>You can also drag a pad onto the arrangement. It lands on the cell you drop it on.</p>
+<p>You can also drag a pad onto the arrangement. It lands on the cell you drop it on. Drop it on the empty end of the arrangement and the row is added at the end. The <b class="gd-light">&lt;BARS&gt;</b> count on the LCD goes up with each row.</p>
 <h4 class="gd-h3" id="set-how-a-row-plays">Set how a row plays</h4>
 <p>Select the row. The <b class="gd-ui">Selected row</b> card shows its values.</p>
 <ul class="gd-list"><li><b class="gd-ui">Row</b> shows the row number and the pattern. Click <b class="gd-ui">‹</b> or <b class="gd-ui">›</b> to choose another pattern.</li><li><b class="gd-ui">Repeat</b> sets how many times the row plays, 1 to 64.</li><li><b class="gd-ui">Tempo</b> reads <b class="gd-ui">Keep</b> while the row plays at the tempo before it. Click <b class="gd-ui">Keep</b> to give the row a tempo of its own, then click <b class="gd-ui">−</b> or <b class="gd-ui">+</b>, 30 to 300 beats per minute. Click <b class="gd-ui">Keep</b> again to take it off.</li></ul>
@@ -113,7 +115,8 @@
 <ul class="gd-list"><li><b class="gd-ui">←</b> and <b class="gd-ui">→</b> move the row one place.</li><li><b class="gd-ui">Duplicate</b> copies the row to the place after it.</li><li><b class="gd-ui">Add loop</b> adds a loop row. See &quot;SONG LOOP&quot;.</li><li><b class="gd-ui">Delete</b> removes the row.</li></ul>
 <p>You can also drag a cell to move it.</p>
 <h4 class="gd-h3" id="copy-paste-and-undo">Copy, paste and undo</h4>
-<p>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd> to copy the selected row. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd> to put it after the selected row. Press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> to delete the row. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to undo the last edit.</p>
+<p>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd> to copy the selected row. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd> to put it after the selected row. Press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> to delete the row. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to undo the last edit, and <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[Z]</kbd> to put it back.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-md-song-arrange-rows.webp" aria-label="Open the picture full size: Rows added and deleted in the arrangement"><img src="/guide/shots/e2e-md-song-arrange-rows.webp" width="1440" height="923" alt="Rows added and deleted in the arrangement" loading="lazy"></a><figcaption>Rows added and deleted in the arrangement</figcaption></figure>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A song holds 256 rows. The editor refuses a row past that.</p></aside>
 <h4 class="gd-h3" id="the-end-row">The END row</h4>
 <p>The last row of a song is END. The song stops there. New rows always go before it. The END row cannot be moved, duplicated or deleted.</p>
@@ -135,14 +138,15 @@
 <div class="gd-body gd-prose"><h2 id="song-transport-h">SONG TRANSPORT <a class="gd-anchor" href="#song-transport" aria-label="Link to SONG TRANSPORT">#</a></h2>
 <p class="gd-ref">MD manual p.52</p>
 <p>On the machine <kbd class="gd-key">[STOP]</kbd> holds the song where it is, and <kbd class="gd-key">[PLAY]</kbd> goes on from there. In the editor:</p>
-<ol class="gd-steps"><li>Hold <kbd class="gd-key">[⇧]</kbd> and click the Play key, or press <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[SPACE]</kbd>. The song holds its position. The Play key blinks.</li><li>Click the Play key to go on from that position.</li><li>To stop the song from the hold, choose <b class="gd-ui">Stop</b> in the transport menu (right-click the Play key, or click its ▾).</li></ol>
+<ol class="gd-steps"><li>Hold <kbd class="gd-key">[⇧]</kbd> and click the Play key, or press <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[SPACE]</kbd>. The song holds its position. The Play key blinks.</li><li>Click the Play key to go on from that position.</li><li>To stop the song from the hold, choose <b class="gd-ui">Stop</b> in the transport menu (right-click the Play key, or click its ▾). The hold ends and the position goes.</li></ol>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-md-top-pause.webp" aria-label="Open the picture full size: The Play key blinking while the song is held"><img src="/guide/shots/e2e-md-top-pause.webp" width="1440" height="923" alt="The Play key blinking while the song is held" loading="lazy"></a><figcaption>The Play key blinking while the song is held</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="song-loop" aria-labelledby="song-loop-h">
 <div class="gd-body gd-prose"><h2 id="song-loop-h">SONG LOOP <a class="gd-anchor" href="#song-loop" aria-label="Link to SONG LOOP">#</a></h2>
 <p class="gd-ref">MD manual p.54</p>
 <p>A loop row sends the song back to an earlier row, a set number of times. Loops keep a song short and its shape clear.</p>
 <ol class="gd-steps"><li>Select the last row of the part to repeat.</li><li>Click <b class="gd-ui">Add loop</b> in the header of the <b class="gd-ui">Selected row</b> card. A loop row goes in after it. Its cell reads ↺ and the row it goes back to.</li><li>Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> beside <b class="gd-ui">Back to</b> to set the first row of the part.</li><li>Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> beside <b class="gd-ui">Times</b> to set how many times the part plays, 2 to 64. Click <b class="gd-ui">Forever</b> for a loop that never ends. The cell shows ∞.</li></ol>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: A loop row"><span>Screenshot to come</span></div><figcaption>A loop row</figcaption></figure>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/md-song-loop.webp" aria-label="Open the picture full size: A loop row"><img src="/guide/shots/md-song-loop.webp" width="1440" height="923" alt="A loop row" loading="lazy"></a><figcaption>A loop row</figcaption></figure>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Loops can sit inside other loops.</p></aside>
 <aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>A loop that runs for ever is good live. Select the row you want next while it plays.</p></aside>
 </div></section>
@@ -180,7 +184,7 @@
 <ol class="gd-steps"><li>Select a slot and click <b class="gd-ui">Copy</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>.</li><li>Select another slot and click <b class="gd-ui">Paste</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>. The slot holds a copy of the song, with its name.</li></ol>
 <p>You can also drag a slot onto another. The song is copied there.</p>
 <p>To empty a slot, select it and click <b class="gd-ui">Clear</b>, or press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd>. The rows and the name are removed. The slot reads EMPTY.</p>
-<p>When a paste, a copy or <b class="gd-ui">Clear</b> would write over a song, the editor asks first. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to undo a paste, a copy, a name or a clear.</p>
+<p>When a paste, a copy or <b class="gd-ui">Clear</b> would write over a song, the editor asks first. Click <b class="gd-ui">Clear song</b> to answer the question of a clear: the slot is empty and quiet. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to undo a paste, a copy, a name or a clear, and <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[Z]</kbd> to do it again.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A song stores which patterns it plays, not the patterns themselves. Change a pattern and every row that uses it plays the changed pattern.</p></aside>
 </div></section>
 <nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/md/08-pattern-sequencer/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">8. Pattern sequencer</span></a><a href="/guide/md/10-global-settings/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">10. Global settings</span></a></nav>

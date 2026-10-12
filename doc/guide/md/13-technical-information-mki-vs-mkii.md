@@ -2,7 +2,7 @@
 <!-- summary: The limits of the machine as the editor keeps them, and where the editor differs for the MKI and MKII models. -->
 
 ## SPECIFICATIONS
-<!-- rows: MD-207 @ba18a7 -->
+<!-- rows: MD-207 @7f78c7 -->
 
 The editor keeps to the limits of the machine. It refuses what the machine cannot hold, and says why.
 
@@ -16,6 +16,8 @@ The editor keeps to the limits of the machine. It refuses what the machine canno
 | Globals | 8 |
 | Parameter locks | 64 locked parameters in a pattern |
 | Sample slots | 48 ROM slots and 4 RAM slots |
+
+![The limits as the editor shows them](shot:e2e-md-limits)
 
 ## DIFFERENCES BETWEEN THE MKI AND MKII MODELS
 <!-- rows: MD-208 MD-209 MD-210 @a63b4f -->
@@ -34,4 +36,7 @@ The editor's Sampler has 48 ROM slots and 4 RAM slots.
 
 ### Design
 
-The MKI machine is silver, the MKII black. The editor gives its panel either colour. Click **MKI** or **MKII** in the top bar to switch. The choice is kept for the next time. It changes the colour only.
+The MKI machine is silver, the MKII black. The editor gives its panel either colour. Click **MKI** or **MKII** in the top bar to switch.
+
+![The plate key in the top bar](shot:e2e-md-top-plate)
+ The choice is kept for the next time. It changes the colour only.

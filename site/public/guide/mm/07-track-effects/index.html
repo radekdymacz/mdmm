@@ -56,16 +56,16 @@
 <li><a href="/guide/mm/18-routing/">18. Routing</a></li>
 <li><a href="/guide/mm/19-global-settings/">19. Global settings</a></li>
 <li><a href="/guide/mm/20-early-startup-menu-technical-information/">20. Early startup menu, technical information</a></li>
-<li><span class="gd-side-todo">21. Appendix A: machine reference <span class="gd-vh">(to come)</span></span></li>
-<li><span class="gd-side-todo">22. Appendix B: MIDI control reference <span class="gd-vh">(to come)</span></span></li>
-<li><span class="gd-side-todo">23. Appendix C: SysEx reference <span class="gd-vh">(to come)</span></span></li>
+<li><a href="/guide/mm/21-appendix-a-machine-reference/">21. Appendix A: machine reference</a></li>
+<li><a href="/guide/mm/22-appendix-b-midi-control-reference/">22. Appendix B: MIDI control reference</a></li>
+<li><a href="/guide/mm/23-appendix-c-sysex-reference/">23. Appendix C: SysEx reference</a></li>
 <li><a href="/guide/mm/24-beyond-the-hardware/">24. Beyond the hardware</a></li></ol>
 <ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
 </nav>
 <article class="gd-article">
 <header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">7</span><span class="gd-ctitle">Track effects</span></h1><p class="gd-cmeta">MM manual pp.1-26 to 1-34</p></header>
 <div class="gd-intro gd-prose"><p>The sound of a machine passes through the same chain on every track: amp, filter, equaliser, sample rate reduction and delay. The chain is the same for every machine, so these parameters mean the same on every track. All of them are on the <b class="gd-ui">Sound</b> workspace, in the groups under the machine's own. Select the track, press <kbd class="gd-key">[2]</kbd> and drag the values.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The amp, filter and effects groups"><span>Screenshot to come</span></div><figcaption>The amp, filter and effects groups</figcaption></figure>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/mm-sound-effects.webp" aria-label="Open the picture full size: The amp, filter and effects groups"><img src="/guide/shots/mm-sound-effects.webp" width="1440" height="923" alt="The amp, filter and effects groups" loading="lazy"></a><figcaption>The amp, filter and effects groups</figcaption></figure>
 <p>A value box changes when you drag it, turn the wheel over it or press an arrow key on it. Double-click it for its default. Where a group has a picture, drag the dots in the picture to change the values they stand for.</p></div>
 <section class="gd-sec" id="level" aria-labelledby="level-h">
 <div class="gd-body gd-prose"><h2 id="level-h">LEVEL <a class="gd-anchor" href="#level" aria-label="Link to LEVEL">#</a></h2>
@@ -94,7 +94,9 @@
 <section class="gd-sec" id="pan" aria-labelledby="pan-h">
 <div class="gd-body gd-prose"><h2 id="pan-h">PAN <a class="gd-anchor" href="#pan" aria-label="Link to PAN">#</a></h2>
 <p class="gd-ref">MM manual p.1-29</p>
-<p>PAN places the track in the stereo field, from L64 to R63. It is in the <b class="gd-ui">Level · pan</b> group and in each strip of the <b class="gd-ui">Mix</b> workspace, where you drag it sideways. Double-click it for the centre.</p>
+<p>PAN places the track in the stereo field, from L64 to R63. It is in the <b class="gd-ui">Level · pan</b> group and in each strip of the <b class="gd-ui">Mix</b> workspace.</p>
+<ol class="gd-steps"><li>Click the <b class="gd-ui">Mix</b> tab, or press <kbd class="gd-key">[3]</kbd>.</li><li>Drag the <b class="gd-ui">PAN</b> bar of a strip sideways. The box at its right reads, for example, L28 or R28, and a red bar shows how far the track lies from the centre.</li><li>Double-click the bar for the centre.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to put the pan back where it was.</li></ol>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-mm-mix-pan-undo.webp" aria-label="Open the picture full size: The PAN bars of the strips in the Mix workspace"><img src="/guide/shots/e2e-mm-mix-pan-undo.webp" width="1440" height="923" alt="The PAN bars of the strips in the Mix workspace" loading="lazy"></a><figcaption>The PAN bars of the strips in the Mix workspace</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="portamento" aria-labelledby="portamento-h">
 <div class="gd-body gd-prose"><h2 id="portamento-h">PORTAMENTO <a class="gd-anchor" href="#portamento" aria-label="Link to PORTAMENTO">#</a></h2>
@@ -118,8 +120,8 @@
 <p class="gd-ref">MM manual p.1-31</p>
 <p>Both filters follow the pitch of the notes. With tracking off a filter stays where BASE and WDTH put it, whatever note plays: under a low LPF the high notes go quiet, and a high HPF lets them through.</p>
 <p>The title of the <b class="gd-ui">Filter</b> group shows the state: <b class="gd-ui">KEY</b> with a lamp for HPF and one for LPF, lit while that filter follows the notes. The label of the filter's screen says which filter is fixed. The switches are on the <b class="gd-ui">Perform</b> workspace, in the <b class="gd-ui">Assign</b> card.</p>
-<ol class="gd-steps"><li>Click <b class="gd-ui">KEY</b> in the title of the <b class="gd-ui">Filter</b> group. The <b class="gd-ui">Perform</b> workspace opens on the <b class="gd-ui">KEY</b> tab of the <b class="gd-ui">Assign</b> card, for the same track.</li><li>Click <b class="gd-ui">HPF tracks keys</b> or <b class="gd-ui">LPF tracks keys</b>. A lit key means the filter follows the keys.</li></ol>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: Key tracking in the Filter group"><span>Screenshot to come</span></div><figcaption>Key tracking in the Filter group</figcaption></figure>
+<ol class="gd-steps"><li>Click <b class="gd-ui">KEY</b> in the title of the <b class="gd-ui">Filter</b> group. The <b class="gd-ui">Perform</b> workspace opens on the <b class="gd-ui">KEY</b> tab of the <b class="gd-ui">Assign</b> card, for the same track.</li><li>Click <b class="gd-ui">HPF tracks keys</b> or <b class="gd-ui">LPF tracks keys</b>. A lit key means the filter follows the keys. Click it and the key goes dark: that filter stops following the notes, and the <b class="gd-ui">KEY</b> title of the <b class="gd-ui">Filter</b> group on <b class="gd-ui">Sound</b> shows it off.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to switch it on again.</li></ol>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/mm-sound-key-tracking.webp" aria-label="Open the picture full size: Key tracking in the Filter group"><img src="/guide/shots/mm-sound-key-tracking.webp" width="1440" height="923" alt="Key tracking in the Filter group" loading="lazy"></a><figcaption>Key tracking in the Filter group</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="eq" aria-labelledby="eq-h">
 <div class="gd-body gd-prose"><h2 id="eq-h">EQ <a class="gd-anchor" href="#eq" aria-label="Link to EQ">#</a></h2>

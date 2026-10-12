@@ -15,6 +15,9 @@ The **Assign** card follows the track selected in the rail. Its header shows the
 3. In a row, choose the page: SYN, AMP, FLT, EFX, LF1, LF2, LF3 or PTCH.
 4. Choose the destination. The list holds the parameters of that page for the machine on the track.
 5. Set **ADD**, from −64 to +63, by dragging the box up or down. Double-click it to return to 0.
+6. Press {key:undo} to take back the change.
+
+![The Assign card with the joystick](shot:e2e-mm-perform-assign)
 
 ### Copy, clear and paste an assign
 
@@ -62,6 +65,8 @@ These settings belong to one track. They sit in the **Trig setup** tab, in the h
 
 - **ALWAYS**: the track glides to every note.
 - **LEGATO**: the track glides only between notes that overlap.
+
+To change it, click the other **Port** key. {key:undo} takes the change back.
 
 **Legato** has three keys, **AMP**, **FLT** and **LFO**. A lit key means that envelope fires again when a note starts while the one before still sounds. With all three lit every note retriggers, which suits a bass. With all three dark the notes join smoothly, which suits a lead.
 
