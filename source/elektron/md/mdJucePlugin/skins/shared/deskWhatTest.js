@@ -33,9 +33,9 @@ What.remember("md", "copy", ["locks"]);
 check(JSON.stringify(What.ticked("md", "copy", ["trigs", "locks"], ["trigs"])) === '["locks"]' && JSON.stringify(What.ticked("mm", "copy", ["notes"], ["notes"])) === '["notes"]'
 	&& JSON.stringify(What.ticked("md", "clear", ["locks"], [])) === "[]", "remembered per editor and per verb");
 check(JSON.stringify(What.ticked("md", "copy", ["trigs", "swing"], ["trigs"])) === '["trigs"]' && JSON.stringify(What.ticked("md", "copy", ["swing"], ["trigs"])) === "[]",
-	"only the ids offered; none of the remembered ones offered: the defaults among them (B-082)");
+	"only the ids offered; none of the remembered ones offered: the defaults among them (B-085)");
 What.remember("md", "paste", ["trigs"]);
-check(JSON.stringify(What.ticked("md", "paste", ["swing"], ["swing"])) === '["swing"]', "B-082: a paste of Trigs remembered, Swing alone copied: Paste… ticks Swing");
+check(JSON.stringify(What.ticked("md", "paste", ["swing"], ["swing"])) === '["swing"]', "B-085: a paste of Trigs remembered, Swing alone copied: Paste… ticks Swing");
 What.remember("md", "paste", ["trigs", "swing"]);
 check(JSON.stringify(What.ticked("md", "paste", ["swing"], ["swing"])) === '["swing"]' && JSON.stringify(What.ticked("md", "paste", ["trigs", "swing", "slide"], ["slide"])) === '["trigs","swing"]', "remembered ones that are offered win over the defaults");
 global.localStorage = { getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } };

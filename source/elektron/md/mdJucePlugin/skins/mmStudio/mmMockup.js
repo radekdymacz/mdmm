@@ -1221,7 +1221,7 @@ const What = (() => {
 	const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 	const store = (editor, verb) => "deskWhat." + editor + "." + verb;
 	/* the ticks of a verb as this browser remembers them (none: the defaults), among the ids offered. When none of the
-	   remembered ones is offered, the defaults (B-082: Paste… after a paste of Trigs alone and a copy of Swing alone
+	   remembered ones is offered, the defaults (B-085: Paste… after a paste of Trigs alone and a copy of Swing alone
 	   opened with nothing ticked, its key off) */
 	function ticked(editor, verb, ids, defaults) {
 		let saved = null;
