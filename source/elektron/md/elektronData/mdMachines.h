@@ -23,8 +23,9 @@ namespace elektronData
 	// The 24 parameter names of a kit track holding this machine (manual
 	// Appendix A): SYNTHESIS 0-7, EFFECTS 8-15, ROUTING 16-23. An empty name is
 	// an unused slot. MID and CTR machines put their own controls on the effects
-	// and routing pages; the slot of MID's CC5D..PCHG within ROUTING is inferred
-	// (LFOS/LFOD/LFOM stay at 21-23, where every other machine keeps them).
+	// and routing pages; MID's ROUTING is CC5D CC5V CC6D CC6V PCHG LFOS LFOD LFOM and the
+	// master-effect CTR machines' ROUTING holds only LFOS LFOD LFOM (B-082, read off the
+	// machine's LCD); LFOS/LFOD/LFOM are at 21-23 on every machine.
 	using MdParamNames = std::array<const char*, 24>;
 	MdParamNames mdMachineParamNames(uint32_t _model);
 
