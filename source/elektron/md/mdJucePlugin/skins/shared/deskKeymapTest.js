@@ -40,7 +40,9 @@ const ONLY = {
 		"step-wheel-lock": "the MD's trig grid (the MM's lock lane: lockstep-wheel)", "step-accent": "MD accent (no accent on MM synth tracks)", "step-slide": "MD slide on a step (the MM's is a row)" },
 	mm: { "roll-draw": "the MM's piano roll (I-007)", "roll-box": "the piano roll", "roll-length": "the piano roll (I-010)", "roll-chord": "the piano roll", "roll-paint": "the piano roll",
 		"roll-erase": "the piano roll", "piano-black": "the MM's black keys (the MD's come with D6)", "lockstep-wheel": "the MM's lock lane steps", "learn-knob": "the MM's LEARN",
-		"tip-draw": "the piano roll's Draw", "tip-reclock": "the MM's live-recorded value locks the step that plays" }
+		"tip-draw": "the piano roll's Draw", "tip-reclock": "the MM's live-recorded value locks the step that plays",
+		"step-record": "STEP RECORDING (MM manual 1-50; the Machinedrum has none)", "step-move": "STEP RECORDING's cursor", "step-clear": "STEP RECORDING: clear the step",
+		"step-done": "STEP RECORDING: done" }
 };
 for (const [name, mine, other] of [["md", md, mm], ["mm", mm, md]]) {
 	const otherIds = new Set(other.map(e => e.id)), one = mine.filter(e => !otherIds.has(e.id)).map(e => e.id);

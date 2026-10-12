@@ -40,7 +40,7 @@ namespace mmDesk
 		if(!pressKeys(keys))
 			return refuse(g_panelBusy);
 		if(want == 3 && cur != 3)
-			return ok("STEP RECORDING: play a note to write it to the step, then the next. RIGHT: a rest, LEFT: back, Delete: clear the step.");
+			return ok("STEP RECORDING: play a note to write it to the step, then the next. → a rest, ← back, Delete clears the step, Esc: done.");
 		return ok();
 	}
 

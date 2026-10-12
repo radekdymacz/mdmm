@@ -77,6 +77,27 @@ function playFromRow(i = S.songSel) {
 	cmd("playFrom", { i });
 }
 
+/* ===== erase while live recording (wave 7, manual p.40) =====
+   Delete (or ⌫) held while live recording is EXIT/NO with the selected track's TRIG key held on the machine: the
+   firmware takes that track's trigs off as they play. Let go (or the window loses the keys): both keys up. The core
+   lets them go by itself when recording ends. Key repeat is ignored; the rail's header of the track is marked. */
+const ERASE = { t: null };
+function eraseDown(e) {
+	if (e.repeat || ERASE.t === S.sel) return;
+	ERASE.t = S.sel;
+	document.body.classList.add("erasing");
+	cmd("liveErase", { t: S.sel, on: true }, undefined, undefined, r => { if (!r.ok) eraseUp(); });
+}
+function eraseUp() {
+	if (ERASE.t == null) return;
+	const t = ERASE.t; ERASE.t = null;
+	document.body.classList.remove("erasing");
+	Bridge.send({ op: "liveErase", t, on: false });
+}
+const erasing = () => !!V.rec && kbOn();
+document.addEventListener("keyup", e => { if (e.key === "Delete" || e.key === "Backspace") eraseUp(); });
+addEventListener("blur", () => eraseUp());
+
 /* ===== the ▾ in the ▶ key's corner (the menu without a right-click) and the tempo's click ===== */
 (() => {
 	document.addEventListener("click", e => {
@@ -92,6 +113,7 @@ function playFromRow(i = S.songSel) {
 Keys.bind({ id: "pause", short: "Pause", scope: "any", keys: ["Space"], code: "Space", mod: "shift", group: "Transport", does: "Pause: the machine holds its step; again (or ▶) goes on from it, STOP ends it (also ⇧-click ▶)", run: () => pauseToggle() });
 Keys.bind({ id: "panic", short: "Panic", scope: "any", keys: ["."], mod: "cmd", group: "Transport", does: "Panic: every voice off (the machine's STOP twice)", run: () => panicNow() });
 Keys.bind({ id: "tempo-nudge", short: "Nudge", scope: "any", keys: ["-", "="], group: "Transport", does: "Hold: the tempo 10 % slower (-) or faster (=) while held, as the TEMPO menu's nudge", when: () => kbOn(), run: e => DeskTransport.nudgeKey(e.key, TEMPO_HOST) });
+Keys.bind({ id: "live-erase", short: "Erase", scope: "any", keys: ["Delete", "Backspace"], group: "Transport", does: "While live recording, hold: erase the selected track's trigs as they play (EXIT/NO + its TRIG key on the machine)", when: () => erasing(), run: e => eraseDown(e) });
 Keys.bind({ id: "song-play-from", short: "From here", scope: "song", keys: ["Enter"], group: "Song", does: "Play the song from the selected row (▶ From here)", when: () => kbOn() && S.ws === "song" && !document.activeElement?.closest?.(".songlib,[data-rowact]"), run: () => playFromRow() });
 [
 	["transport-menu", "any", "Top bar", ["right-click ▶"], "", "Transport", "The transport menu: Play / Stop, Pause / Continue, Record, Panic (also the ▾ in the key's corner)"],

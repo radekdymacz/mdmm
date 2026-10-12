@@ -910,6 +910,49 @@ const MmJourneys = (() => {
 		],
 		async tidy(u, c) { if (tele.last?.record && tele.last.record !== "off") u.click("#rec"); if (S().playing) u.click("#play"); await sleep(800); if (c.p0) await undoUntil(u, () => pat0() === c.p0, 3); }
 	};
+	/* wave 7 (manual 1-49, 1-50, doc/modern-ux/DESIGN-machine-menus.md §2). A held key is a keydown now and its keyup later
+	   (u.key presses and lets go at once). */
+	const keyEv = (type, key) => (document.activeElement && document.activeElement !== document.documentElement ? document.activeElement : document.body)
+		.dispatchEvent(new KeyboardEvent(type, { key, code: key, bubbles: true, cancelable: true, composed: true }));
+	const resultsSay = () => results.map(r => r.op + ":" + r.ok + (r.errors ? " " + r.errors.join(";") : "")).join(", ");
+	const liveErase = {
+		name: "mm-seq-live-erase", proves: ["MM-080", "MM-181"],
+		steps: [
+			go("seq"),
+			{ say: "pick the synth track with the most notes", act: (u, c) => { c.t = [0, 1, 2, 3, 4, 5].sort((a, b) => trigsOf(b).length - trigsOf(a).length)[0]; c.p0 = trigsOf(c.t); c.others = [0, 1, 2, 3, 4, 5].filter(t => t !== c.t).map(trigsOf); u.click(rail(c.t)); },
+				screen: c => ok(S().sel === c.t, "selected " + S().sel), machine: c => ok(c.p0.length > 0, "no notes on T" + (c.t + 1)) },
+			{ say: "press Alt+Space: live recording, playing", act: u => { blur(); results.length = 0; u.key(" ", { alt: true }, "Space"); },
+				machine: () => ok(tele.last?.record === "live" && tele.last?.playing, `record ${tele.last?.record}, playing ${tele.last?.playing}; ${resultsSay()}`), within: 8000 },
+			{ say: "hold Delete: the selected track's notes go as they play", act: () => { results.length = 0; blur(); keyEv("keydown", "Delete"); },
+				screen: () => ok(document.body.classList.contains("erasing"), "not marked as erasing"),
+				machine: c => ok(trigsOf(c.t).length < c.p0.length, `${c.p0.length} -> ${trigsOf(c.t).length} notes; ${resultsSay()}`), within: 10000 },
+			{ say: "let Delete go, click RECORD off, then STOP: the other tracks kept their notes", act: async u => { keyEv("keyup", "Delete"); await sleep(300); u.click("#rec"); await sleep(600); if (S().playing) u.click("#play"); },
+				screen: () => ok(!document.body.classList.contains("erasing"), "still marked"),
+				machine: c => ok(tele.last?.record === "off" && !tele.last?.playing && [0, 1, 2, 3, 4, 5].filter(t => t !== c.t).map(trigsOf).every((a, k) => same(a, c.others[k])), `record ${tele.last?.record}, playing ${tele.last?.playing}`), within: 8000 }
+		],
+		async tidy(u) { keyEv("keyup", "Delete"); if (tele.last?.record && tele.last.record !== "off") u.click("#rec"); await sleep(400); if (S().playing) u.click("#play"); }
+	};
+	const stepAt = () => tele.last?.stepAt;
+	const stepRec = {
+		name: "mm-seq-step-record", proves: ["MM-043", "MM-182"],
+		steps: [
+			go("seq"),
+			{ say: "pick a synth track whose first step is empty", act: (u, c) => { c.t = [0, 1, 2, 3, 4, 5].find(t => !trigsOf(t).includes(0)) ?? 0; c.p0 = trigsOf(c.t); u.click(rail(c.t)); }, screen: c => ok(S().sel === c.t, "selected " + S().sel),
+				machine: c => ok(!c.p0.includes(0), "every track has a note on step 1") },
+			{ say: "Shift-click RECORD (stopped): step recording, the cursor on step 1", act: u => { results.length = 0; if (S().playing) u.click("#play"); u.click("#rec", { shift: true }); },
+				machine: () => ok(tele.last?.record === "step" && stepAt() === 0, `record ${tele.last?.record}, cursor ${stepAt()}; ${resultsSay()}`),
+				screen: () => ok(S().recMode === "step" && !!$1(".steprec") && !!$1(".stepcur") && $1("#rec").classList.contains("step"), "no banner, cursor or STEP key"), within: 8000 },
+			{ say: "press A: the note is written to step 1, the cursor moves on", act: u => { blur(); results.length = 0; u.key("a"); },
+				machine: c => ok(trigsOf(c.t).includes(0) && stepAt() === 1, `notes ${trigsOf(c.t).join(",")}, cursor ${stepAt()}; ${resultsSay()}`), within: 8000 },
+			{ say: "press →: a rest, the cursor on step 3", act: u => u.key("ArrowRight"), machine: c => ok(stepAt() === 2 && !trigsOf(c.t).includes(1), `cursor ${stepAt()}`), within: 5000 },
+			{ say: "press ← twice: back on step 1", act: async u => { u.key("ArrowLeft"); await until(() => stepAt() === 1, 3000); u.key("ArrowLeft"); },
+				machine: () => ok(stepAt() === 0, `cursor ${stepAt()}`), screen: () => ok($1(".stepcur")?.dataset.l === "STEP 01", "cursor shows " + $1(".stepcur")?.dataset.l), within: 6000 },
+			{ say: "press Delete: step 1 is cleared, the cursor moves on", act: u => u.key("Delete"), machine: c => ok(same(trigsOf(c.t), c.p0) && stepAt() === 1, `notes ${trigsOf(c.t).join(",")}, cursor ${stepAt()}`), within: 8000 },
+			{ say: "press Esc: done", act: u => u.key("Escape"), machine: () => ok(tele.last?.record === "off", "record " + tele.last?.record),
+				screen: () => ok(S().recMode !== "step" && !$1(".steprec") && !$1(".stepcur") && !$1("#rec").classList.contains("step"), "banner or cursor left"), within: 6000 }
+		],
+		async tidy(u) { if (tele.last?.record === "step") u.key("Escape"); }
+	};
 	const genKeys = {
 		name: "mm-gen-keys-r", proves: [],
 		steps: [
@@ -1705,7 +1748,7 @@ const MmJourneys = (() => {
 		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff,
 		poly, multiTrig, multiMap, kbPlay, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
-		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, genKeys, mutScope,
+		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, mutScope,
 		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
 		blackKeys, rollPaint, rollDrawLength, rollBoxMove, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, dropSyxJ, globalChannels, globalReset, globalSlot, shotsGlobal, genBarFit, shotsSound, ...viewJs, ...cpuJs, ...volJs];
 
