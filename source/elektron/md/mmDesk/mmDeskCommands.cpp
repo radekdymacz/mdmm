@@ -390,7 +390,10 @@ namespace mmDesk
 		if(m_profile.wire || m_recv.state() == RecvSession::State::Idle)
 			sendActiveGlobal(slot);
 		else
-			m_activateGlobal = slot;	// over any re-activation of the old active global still waiting
+		{
+			m_chooseGlobal = slot;
+			m_activateGlobal = -1;	// over any re-activation of the old active global still waiting
+		}
 		m_port.sendSysex(ed::mmStatusRequest(ed::MmStatus::Global));
 		if(!known({Kind::Global, slot}))
 			request({Kind::Global, slot}, true);
