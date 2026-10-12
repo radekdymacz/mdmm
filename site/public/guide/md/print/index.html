@@ -637,7 +637,9 @@
 <ol class="gd-steps"><li>Press <kbd class="gd-key">[SPACE]</kbd>.</li><li>Click <b class="gd-ui">●</b> in the top bar, or press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[SPACE]</kbd> to start recording and playing in one press. The key lights.</li><li>Click the steps of a track, or press the keys A to L, which play the selected track. The track sounds and the machine writes the trig on the step it plays. The machine quantises it.</li><li>Click <b class="gd-ui">●</b> again to stop recording. The pattern goes on playing.</li></ol>
 <p>While recording is on, a click on a step plays the track, and the other edits of the pattern wait. A right-click on a step says &quot;Wait until live recording stops.&quot;</p>
 <figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: Live recording"><span>Screenshot to come</span></div><figcaption>Live recording</figcaption></figure>
-<p>You cannot take notes out while recording in the editor yet. Take them off in the grid afterwards.</p>
+<p>To take trigs out while recording, as the machine does with <kbd class="gd-key">[EXIT/NO]</kbd> and a <kbd class="gd-key">[TRIG]</kbd> key:</p>
+<ol class="gd-steps"><li>Select the track on the rail.</li><li>Hold <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd>. The track's header is marked red. The machine removes the track's trigs on each step that plays while the key is down.</li><li>Let the key go to stop erasing.</li></ol>
+<p>Only the selected track is erased. The erase ends by itself when recording stops.</p>
 </div></section>
 <section class="gd-sec" id="note-copy">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.40</span></span></aside>
@@ -1000,37 +1002,39 @@
 <section class="gd-sec" id="all-data-sysex-send">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.64</span></span></aside>
 <div class="gd-body gd-prose"><h2>ALL DATA SYSEX SEND</h2>
-<p>To save everything the editor holds as a SysEx file:</p>
-<ol class="gd-steps"><li>Click the kit name in the <b class="gd-light">&lt;KIT&gt;</b> field of the LCD, or the pattern name in the <b class="gd-light">&lt;PATTERN&gt;</b> field. The kit library or the pattern chooser opens.</li><li>Click <b class="gd-ui">Export SysEx…</b> in its header.</li><li>Choose where to put the file. The name starts as the product name and &quot;backup.syx&quot;, in your Documents folder.</li></ol>
-<p>The file holds every pattern, kit and song the editor has, and the global. It is one file.</p>
-<aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>Export before you import. The import has no undo, and the export keeps a way back.</p></aside>
-<p>You cannot choose a range of slots for the export yet.</p>
+<p>On the machine you send SysEx to another device. In the editor you write it to a .syx file on your computer.</p>
+<ol class="gd-steps"><li>Open the engine menu (the engine name at the left of the LCD) and choose <b class="gd-ui">EXPORT SYSEX…</b>. The <b class="gd-ui">Export SysEx</b> panel opens.</li><li><b class="gd-ui">All</b> is ticked. The line at the foot says how many kits, patterns, songs and globals the editor holds.</li><li>Click <b class="gd-ui">Save .syx…</b> and choose where to put the file. The name starts as the product name and &quot;backup.syx&quot;, in your Documents folder.</li></ol>
+<p>The file holds every pattern, kit and song the editor has, and the globals. It is one file.</p>
+<aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>Export before you import or reset. Neither has an undo, and the export keeps a way back.</p></aside>
 </div></section>
 <section class="gd-sec" id="global-sysex-send">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.66</span></span></aside>
 <div class="gd-body gd-prose"><h2>GLOBAL SYSEX SEND</h2>
-<p>The export of all data includes the global. You cannot send the global of one slot alone, or all the globals, in the editor yet.</p>
+<ol class="gd-steps"><li>Open <b class="gd-ui">Export SysEx…</b> as above and untick <b class="gd-ui">All</b>. Each kind shows its own row with a range.</li><li>Tick <b class="gd-ui">Globals</b>. Untick the kinds you do not want.</li><li>Set the first and the last global of the range. Click a value to step it up, <kbd class="gd-key">[⇧]</kbd>-click to step it down, or turn the wheel, drag up or down, or use the arrow keys. G1 to G1 sends one global, G1 to G8 sends them all.</li><li>Click <b class="gd-ui">Save .syx…</b>.</li></ol>
+<p>Globals are not ticked until you tick them. They hold the MIDI channels and the sync settings.</p>
 </div></section>
 <section class="gd-sec" id="song-pattern-kit-sysex-send">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.66</span></span></aside>
 <div class="gd-body gd-prose"><h2>SONG + PATTERN (+ KIT) SYSEX SEND</h2>
-<p>The export holds all the songs with all the patterns and kits. You cannot choose a range of songs in the editor yet.</p>
+<ol class="gd-steps"><li>Open <b class="gd-ui">Export SysEx…</b> and untick <b class="gd-ui">All</b>.</li><li>Tick <b class="gd-ui">Songs</b> and set the range of songs.</li><li>Tick <b class="gd-ui">Patterns</b> and <b class="gd-ui">Kits</b> too, with their ranges, if the file must play on its own.</li><li>Click <b class="gd-ui">Save .syx…</b>.</li></ol>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>On the machine a song send takes its patterns and kits with it. In the editor you choose each kind and its range. A kind with data is ticked from its first to its last used slot.</p></aside>
 </div></section>
 <section class="gd-sec" id="pattern-kit-sysex-send">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.66</span></span></aside>
 <div class="gd-body gd-prose"><h2>PATTERN (+ KIT) SYSEX SEND</h2>
-<p>The export holds all the patterns and kits. You cannot choose a range of patterns in the editor yet.</p>
+<ol class="gd-steps"><li>Open <b class="gd-ui">Export SysEx…</b> and untick <b class="gd-ui">All</b>.</li><li>Tick <b class="gd-ui">Patterns</b> and set the range, for example A01 to B16.</li><li>Tick <b class="gd-ui">Kits</b> and set their range if you want the kits of those patterns too.</li><li>Click <b class="gd-ui">Save .syx…</b>. The line at the foot names each kind and its range before you save.</li></ol>
 </div></section>
 <section class="gd-sec" id="kit-sysex-send">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.66</span></span></aside>
 <div class="gd-body gd-prose"><h2>KIT SYSEX SEND</h2>
-<p>The export holds all the kits. You cannot choose a range of kits in the editor yet.</p>
+<ol class="gd-steps"><li>Open <b class="gd-ui">Export SysEx…</b> and untick <b class="gd-ui">All</b>.</li><li>Tick <b class="gd-ui">Kits</b> only and set the range, for example K01 to K12.</li><li>Click <b class="gd-ui">Save .syx…</b>.</li></ol>
+<p>The editor writes the kits it holds. A message at the end says how many of each kind went into the file.</p>
 </div></section>
 <section class="gd-sec" id="general-sysex-receive">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.67</span></span></aside>
 <div class="gd-body gd-prose"><h2>GENERAL SYSEX RECEIVE</h2>
 <p>The machine takes SysEx at any time. In the editor you open the file first and choose what to send.</p>
-<ol class="gd-steps"><li>Click <b class="gd-ui">Import SysEx…</b> in the header of the kit library or the pattern chooser. Or drop the .syx file on the window. Drag and drop works on macOS only.</li><li>Choose the file. The <b class="gd-ui">Import SysEx</b> panel opens. Its header names the model and says &quot;full backup&quot; when the file is one.</li><li>Read the tabs: <b class="gd-ui">Kits</b>, <b class="gd-ui">Patterns</b>, <b class="gd-ui">Songs</b>, <b class="gd-ui">Globals</b> and <b class="gd-ui">Other</b>. A tab shows the slots of the machine as a grid, and the number of items of that kind in the file. Each tab has a box: tick it to send that kind.</li><li>A slot in the grid is marked when it overwrites a slot that holds data on the machine. A slot marked ▶ plays now. Click a slot to leave it out. Click it again to take it back. Click with <kbd class="gd-key">[⇧]</kbd> to change a range.</li><li>Click <b class="gd-ui">All</b>, <b class="gd-ui">Empty slots only</b> or <b class="gd-ui">None</b> to set the whole tab.</li><li>Read the line at the foot. It says how many slots on the machine are overwritten.</li><li>Click <b class="gd-ui">Import</b>. The button says how many items it sends.</li></ol>
+<ol class="gd-steps"><li>Choose <b class="gd-ui">IMPORT SYSEX…</b> in the engine menu. Or drop the .syx file on the window. Drag and drop works on macOS only.</li><li>Choose the file. The <b class="gd-ui">Import SysEx</b> panel opens. Its header names the model and says &quot;full backup&quot; when the file is one.</li><li>Read the tabs: <b class="gd-ui">Kits</b>, <b class="gd-ui">Patterns</b>, <b class="gd-ui">Songs</b>, <b class="gd-ui">Globals</b> and <b class="gd-ui">Other</b>. A tab shows the slots of the machine as a grid, and the number of items of that kind in the file. Each tab has a box: tick it to send that kind.</li><li>A slot in the grid is marked when it overwrites a slot that holds data on the machine. A slot marked ▶ plays now. Click a slot to leave it out. Click it again to take it back. Click with <kbd class="gd-key">[⇧]</kbd> to change a range.</li><li>Click <b class="gd-ui">All</b>, <b class="gd-ui">Empty slots only</b> or <b class="gd-ui">None</b> to set the whole tab.</li><li>Read the line at the foot. It says how many slots on the machine are overwritten.</li><li>Click <b class="gd-ui">Import</b>. The button says how many items it sends.</li></ol>
 <figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The SysEx import panel"><span>Screenshot to come</span></div><figcaption>The SysEx import panel</figcaption></figure>
 <p>While the import runs, the panel shows three steps: <b class="gd-ui">Read the slots</b>, <b class="gd-ui">Send</b> and <b class="gd-ui">Read back</b>, and a bar for each kind. Click <b class="gd-ui">Stop</b> to cancel or <b class="gd-ui">Hide</b> to put the panel away.</p>
 <p>At the end the panel gives a report, slot by slot:</p>
@@ -1042,18 +1046,24 @@
 <section class="gd-sec" id="original-place-sysex-receive">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.68</span></span></aside>
 <div class="gd-body gd-prose"><h2>ORIGINAL PLACE SYSEX RECEIVE</h2>
-<p>The import puts each item in the slot it came from, as the machine does with ORIG. This is how every import works in the editor.</p>
+<p>The import puts each item in the slot it came from, as the machine does with ORIG. This is the default: <b class="gd-ui">Original place</b> is lit in the <b class="gd-ui">Place</b> row under the grid.</p>
 </div></section>
 <section class="gd-sec" id="specific-place-sysex-receive">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.68</span></span></aside>
 <div class="gd-body gd-prose"><h2>SPECIFIC PLACE SYSEX RECEIVE</h2>
-<p>You cannot send an item to another slot than the one it came from. You can leave slots out of the import.</p>
+<p>With SPEC the machine writes the items from a slot you choose. In the editor each kind has its own first slot.</p>
+<ol class="gd-steps"><li>Open the file with <b class="gd-ui">Import SysEx…</b>.</li><li>Click <b class="gd-ui">Specific place</b> in the <b class="gd-ui">Place</b> row. A value appears for the kind of the tab shown, for example <b class="gd-ui">Kits from K01</b>. It starts at the file's first slot, so nothing moves yet.</li><li>Set the first slot: click it to step it up, <kbd class="gd-key">[⇧]</kbd>-click to step it down, or turn the wheel, drag or use the arrow keys. The grid moves the items to the slots they land in. Each item keeps its place after the first, gaps included. Hover over a slot to see where it came from in the file.</li><li>Choose another tab to set the first slot of that kind.</li><li>Click <b class="gd-ui">Import</b>. When an item lands on a slot that holds data, the editor asks first and names the slots. Click <b class="gd-ui">Import</b> in the question to go on, or <b class="gd-ui">Cancel</b>.</li></ol>
+<p>An item that would land past the last slot of the machine is not sent. <b class="gd-ui">Original place</b> puts every item back where it came from.</p>
 </div></section>
 <section class="gd-sec" id="sysex-verify">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.69</span></span></aside>
 <div class="gd-body gd-prose"><h2>SYSEX VERIFY</h2>
-<p>The import reads every item back after it sends it. The report lists the items that differ from the file, marked ≠.</p>
-<p>The import writes to the machine. You cannot compare a file with the machine without writing it.</p>
+<p>VERIFY compares a file with the machine and writes nothing.</p>
+<ol class="gd-steps"><li>Open the file with <b class="gd-ui">Import SysEx…</b> and choose the kinds and slots as for an import. <b class="gd-ui">Specific place</b> works here too.</li><li>Click <b class="gd-ui">Verify only</b>, beside <b class="gd-ui">Import</b>.</li><li>The editor reads each slot the items land in and compares it with the file. The bar shows how far it is.</li></ol>
+<p>The report marks each slot:</p>
+<table class="gd-table"><thead><tr><th>Mark</th><th>Meaning</th></tr></thead><tbody><tr><td>=</td><td>the same as the file</td></tr><tr><td>≠</td><td>different from the file</td></tr><tr><td>?</td><td>no answer</td></tr></tbody></table>
+<p>The line at the foot says how many slots are the same. Nothing was written to the machine.</p>
+<p>An import reads every item back as well. Its report lists the items that differ from the file, marked ≠.</p>
 </div></section>
 <section class="gd-sec" id="sync">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.75,</span> <span>76,</span> <span>77,</span> <span>78</span></span></aside>
@@ -1160,12 +1170,18 @@
 <section class="gd-sec" id="empty-reset">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.79</span></span></aside>
 <div class="gd-body gd-prose"><h2>EMPTY RESET</h2>
-<p>You cannot empty the whole memory of the machine at once in the editor. You can clear a pattern, a kit, a song row or a sample slot one at a time.</p>
+<p>The empty reset clears the memory of the machine. In the editor it is in the engine menu.</p>
+<ol class="gd-steps"><li>Choose <b class="gd-ui">RESET MACHINE…</b> in the engine menu (the engine name at the left of the LCD). A question says what each reset clears. <b class="gd-ui">Cancel</b> is the default: <kbd class="gd-key">[ESC]</kbd> or a click outside answers it.</li><li>Click <b class="gd-ui">Empty reset…</b>. The editor asks a second time.</li><li>Click <b class="gd-ui">Clear everything</b>. The <b class="gd-ui">Empty reset</b> panel opens. The editor writes an empty kit, pattern and song into every slot, then reads each one back.</li><li>Read the report and click <b class="gd-ui">Done</b>.</li></ol>
+<p>The globals and the samples stay. A global is reset in its own slot in GLOBAL (chapter 10).</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The reset has no undo. Click <b class="gd-ui">Export SysEx…</b> in the question first to keep a way back.</p></aside>
 </div></section>
 <section class="gd-sec" id="factory-reset">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.79</span></span></aside>
 <div class="gd-body gd-prose"><h2>FACTORY RESET</h2>
-<p>You cannot reset the machine to its factory data in the editor. Import a factory .syx file instead. See &quot;GENERAL SYSEX RECEIVE&quot; in chapter 10.</p>
+<p>The factory reset brings back the kits, patterns and songs the machine had when it left the factory. The editor takes them from your own ROM: it starts a second machine with it, in the background, and reads that machine's memory.</p>
+<ol class="gd-steps"><li>Choose <b class="gd-ui">RESET MACHINE…</b> in the engine menu.</li><li>Click <b class="gd-ui">Factory reset…</b>. The editor asks a second time.</li><li>Click <b class="gd-ui">Factory reset</b>. Preparing the factory data takes a few seconds. Then the <b class="gd-ui">Factory reset</b> panel sends every kit, pattern and song and reads each one back. This takes a few minutes.</li><li>Read the report and click <b class="gd-ui">Done</b>. Kits 1 to 4 are named TRX UW, EFM UW, E12 UW and P-I UW.</li></ol>
+<p>The globals and the samples stay. The reset has no undo: export first.</p>
+<aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>To bring back the whole factory memory at once, globals and samples too, click <b class="gd-ui">Start from factory memory…</b> in the same question. The machine restarts in a few seconds. See &quot;MACHINE MEMORY&quot; in chapter 17.</p></aside>
 </div></section>
 <section class="gd-sec" id="soft-reset">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.79</span></span></aside>
@@ -1212,12 +1228,11 @@
 <div class="gd-body gd-prose"><h2>MACHINE MEMORY</h2>
 <p>A Machinedrum keeps what you save when you switch it off: its kits, patterns, songs, globals and samples stay in its memory. The editor does the same. When you save on the machine, the editor writes the machine's memory to a file on your computer. A new session starts from that file.</p>
 <p>What counts as a save is what changes the machine's memory: SAVE KIT, a change to a pattern, SAVE SONG, a change to a global, a SysEx dump the machine takes in. It makes no difference whether you save in the editor or on the machine's own keys. The editor writes the file a second or two after the memory stops changing. Playing a pattern writes nothing.</p>
-<p>A new session is a new plug-in in a DAW project, a new DAW project, or the first start of the standalone editor. It starts with the memory you last saved.</p>
+<p>A new session is a new plug-in in a DAW project, a new DAW project, or a start of the standalone editor. It starts with the memory you last saved, wherever you saved it.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A DAW project keeps its own memory. When you open a saved project, the machine starts with the memory of that project, not with the file. A save you then make in that project goes to the file too.</p></aside>
-<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The standalone editor keeps its memory when you quit it and starts with it again. It reads the file only at its first start.</p></aside>
 <h4 class="gd-h3">Start from factory memory</h4>
-<ol class="gd-steps"><li>Open the engine menu, the drop-down at the left of the LCD.</li><li>Choose <b class="gd-ui">START FROM FACTORY MEMORY…</b>. The editor asks first.</li><li>Click <b class="gd-ui">Start from factory memory</b>. The machine restarts with its factory kits, patterns, songs and globals, and the saved memory file is deleted.</li></ol>
-<p>New sessions now start from factory memory until you save again.</p>
+<ol class="gd-steps"><li>Choose <b class="gd-ui">RESET MACHINE…</b> in the engine menu, the drop-down at the left of the LCD.</li><li>Click <b class="gd-ui">Start from factory memory…</b>. The editor asks a second time.</li><li>Click <b class="gd-ui">Start from factory memory</b>. The machine restarts with its factory memory, as on a new install, and the saved memory file is deleted. This takes a few seconds.</li></ol>
+<p>New sessions now start from factory memory until you save again. The reset has no undo: click <b class="gd-ui">Export SysEx…</b> in the question first to keep a way back.</p>
 <h4 class="gd-h3">Turn it off</h4>
 <p>Choose <b class="gd-ui">KEEP MEMORY: ON</b> in the engine menu. It reads <b class="gd-ui">KEEP MEMORY: OFF</b>, and new sessions start from factory memory. The editor no longer writes the file. The file stays, so when you turn it on again, new sessions start with the memory you saved before.</p>
 <h4 class="gd-h3">Two editors at once</h4>

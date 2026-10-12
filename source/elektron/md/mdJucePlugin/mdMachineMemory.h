@@ -212,6 +212,11 @@ namespace mdJucePlugin::machineMemory
 		bool m_based = false;
 	};
 
+	// Whether a state given to the plug-in is a project whose memory wins over the file: a DAW project's is; the
+	// standalone's own state (JUCE saves it when the app quits) is not (Radek, 2026-10-12: one memory for everything, like
+	// a real machine; with KEEP MEMORY on the standalone starts from the file, and keeps its own state when there is none).
+	inline bool stateIsProject(const bool _standalone) { return !_standalone; }
+
 	// How a session's memory starts (the processor's decision, pure): a project state wins; else the file when the
 	// setting is on.
 	enum class Start : uint8_t

@@ -1011,15 +1011,24 @@ html,body{min-width:1280px}
    Everything above this line is the Machinedrum Editor design system, unchanged.
    ===================================================================== */
 
-/* SFX-60 plate (MKI and MKII share it; the MKII only adds the "MKII" print).
-   Colours from the emulator's mmSfx60 panel skin: silver chassis, dark-grey print,
-   rust track labels, grey-green LCD in a black bezel, red / green / yellow trig LEDs. */
-:root,:root[data-plate="mk1"],:root[data-plate="mk2"]{
+/* SFX-60 plates, true to the product photos (doc/modern-ux/SKIN-COLOURS.md, I-023): the plate key chooses the look.
+   MKI (SFX-6 / SFX-60): cool silver chassis, black window, light-blue LCD with black pixels, dark green-grey keys
+   and knobs, rust label bars. MKII (SFX-6 / SFX-60+ MKII): warm silver, near-black window, bluish-white LCD with
+   black pixels, black keys and knobs, white keys, dusty red-brown label bars, red print. Both are light plates. */
+:root,:root[data-plate="mk1"]{
   color-scheme:light;
-  --plate:#d4d5d0;--plate2:#c8cac2;--plate3:#e2e1d9;--print:#383934;--print2:#56574f;--print3:#74756f;--rule:#aaaba5;--body:#292a26;
-  --key:#3a3b36;--key2:#4b4d47;--keytext:#efefe8;--keydim:#aeb0a8;--cream:#efefe8;--creamtext:#292a26;
-  --led:#e65d42;--ledoff:#7b4035;--ledg:#9fc568;--ledgoff:#56604b;--ledy:#e4c45c;--rec:#cf4f39;
-  --lcd:#b9c4b0;--ink:#172014;--bezel:#0d0f0c;--labfill:#a04d39;--labtext:#f0eee7;--knob:#3a3b36;--rust:#a04d39;
+  --plate:#cfd3d5;--plate2:#c3c8ca;--plate3:#dde1e3;--print:#2e3232;--print2:#4f5554;--print3:#6d7372;--rule:#a2a8ab;--body:#232727;
+  --key:#232b28;--key2:#323c38;--keytext:#eef0ee;--keydim:#a9b1ae;--cream:#e4e6e6;--creamtext:#232727;
+  --led:#f0331f;--ledoff:#7b4035;--ledg:#9fc568;--ledgoff:#56604b;--ledy:#e4c45c;--rec:#e8301e;
+  --lcd:#b6d2e8;--ink:#0d1626;--bezel:#060707;--labfill:#9a3820;--labtext:#f3eee9;--knob:#323d31;--rust:#9a3820;
+  --trig:var(--led);--oxblood:var(--rust);
+}
+:root[data-plate="mk2"]{
+  color-scheme:light;
+  --plate:#d2d1cc;--plate2:#c6c5c0;--plate3:#e0dfda;--print:#3b3a3c;--print2:#5a585a;--print3:#787577;--rule:#a8a6a1;--body:#262527;
+  --key:#1a1c22;--key2:#2a2d35;--keytext:#efeee8;--keydim:#a7a8ad;--cream:#ecebe4;--creamtext:#262527;
+  --led:#ff3b2f;--ledoff:#7a6e66;--ledg:#7fd13b;--ledgoff:#5d6656;--ledy:#e4c45c;--rec:#e2452a;
+  --lcd:#dfeaf1;--ink:#121b28;--bezel:#1c1a1d;--labfill:#84434d;--labtext:#f6eff0;--knob:#141416;--rust:#b8433d;
   --trig:var(--led);--oxblood:var(--rust);
 }
 html{scrollbar-gutter:stable}
@@ -1896,8 +1905,27 @@ body.deskmidi #main,body.deskmidi #rail{opacity:.3;pointer-events:none;transitio
 .syxbar{position:relative;height:20px;border-radius:3px;background:var(--ledoff);overflow:hidden}
 .syxbar i{position:absolute;left:0;top:0;bottom:0;background:var(--led);width:0;transition:width .2s}
 .syxbar span{position:relative;display:block;padding:0 8px;text-align:center;font:600 11px/20px var(--sans);letter-spacing:.06em;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.syxkeys{display:inline-flex;gap:6px;margin-left:auto}
-.syxkeys+.libx{margin-left:8px!important}
+/* 0.6 (wave 6): the export (ALL, or each kind with its range) and the import's PLACE row; a range or first slot is a
+   value (click, ⇧-click, wheel, drag, arrows) */
+.syx-export .sxall,.syx-export .sxlist{display:grid;gap:2px;padding:0 2px}
+.syx-export .sxall{border-bottom:2px solid var(--print);padding-bottom:4px}
+.syx-export.sxallon .sxlist{opacity:.45}
+.sxrow{display:grid;grid-template-columns:18px 110px 210px 1fr;gap:12px;align-items:center;padding:8px 6px;border-bottom:1px solid var(--rule);font:500 14px var(--sans);color:var(--print);cursor:pointer}
+.sxrow b{font:600 13px var(--sans);letter-spacing:.14em;text-transform:uppercase}
+.sxrow small{font:12px var(--mono);color:var(--print3)}
+.sxrow input{accent-color:var(--led);width:15px;height:15px;margin:0}
+.sxrow input:disabled+b{opacity:.5}
+.sxrng{display:flex;gap:6px;align-items:center;font:12px var(--mono);color:var(--print2)}
+.sxrng i{font-style:normal}
+.syxpop .sxv{display:inline-block;height:auto;padding:3px 8px;font:500 12px var(--mono);letter-spacing:0;background:var(--plate3);color:var(--print);box-shadow:inset 0 0 0 1px var(--rule);border-radius:2px;cursor:ns-resize;touch-action:none}
+.syxpop .sxv:focus-visible{outline:2px solid var(--print);outline-offset:1px}
+.sxplace{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:8px 2px 0;border-top:1px solid var(--rule)}
+.sxplace .ilab{font:600 11px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--print2)}
+.sxplace .seg{display:inline-flex;gap:6px}
+.sxplace .seg button{height:24px;padding:0 10px;font:600 11px var(--sans);letter-spacing:.12em;text-transform:uppercase}
+.sxplace .seg button[aria-pressed=true]{background:var(--cream,var(--lcd));color:var(--creamtext,var(--ink))}
+.sxplace .note{font:500 13px/1.35 var(--sans);color:var(--print2)}
+.sxfirst{display:flex;gap:6px;align-items:center;font:12px var(--mono);color:var(--print2)}
 /* The AUDIO / MIDI panel (P6, deskAudio.js), the plate's own keys, LEDs and dropdowns */
 .ampop{position:absolute;z-index:22;width:min(1180px,calc(100vw - 32px));display:grid;gap:10px;align-content:start;padding:14px;background:var(--plate);border:2px solid var(--print);border-radius:6px;box-shadow:0 18px 40px rgba(0,0,0,.35);overflow:auto;overscroll-behavior:contain;color:var(--print)}
 .ampop[hidden]{display:none}
@@ -2599,6 +2627,13 @@ header.top.tf4 .row2 .lcd2{gap:5px!important}
 .rollmarks .rm.hov{background:color-mix(in srgb,var(--swg) 16%,transparent);box-shadow:inset 0 0 0 1.5px var(--swg)}
 html[data-tt=sld] .rollmarks .rm.hov{background:color-mix(in srgb,var(--print) 10%,transparent);box-shadow:inset 0 0 0 1.5px var(--print2)}
 html[data-tt=sld] #seq .nlane.big canvas.roll,html[data-tt=swg] #seq .nlane.big canvas.roll{cursor:cell}
+/* wave 7: STEP RECORDING (the REC key says STEP, the machine's cursor on the roll; no row of its own) and live erase */
+.lcdt .lt.rec.step{background:var(--ink)!important;color:var(--lcd)!important;animation:none!important}
+.lcdt .lt.rec .stepm{font:9px var(--pix);margin-left:2px}
+#seq .nlane.big{position:relative}
+.stepcur{position:absolute;top:0;bottom:0;pointer-events:none;z-index:5;border:2px solid var(--led);box-shadow:0 0 0 1px var(--plate),0 0 10px 1px var(--led);border-radius:2px;animation:blink 1s steps(2) infinite}
+.stepcur::after{content:attr(data-l);position:absolute;top:2px;left:2px;font:9px var(--pix);background:var(--led);color:#fff;padding:2px 4px;border-radius:2px;white-space:nowrap}
+body.erasing .rail .th.sel{box-shadow:inset 0 0 0 2px var(--rec)!important}
 
 /* ===== The real machine's states (not in the mockup) ===== */
 .statusline,.errline{margin:6px 0 0;padding:6px 10px;border-radius:3px;font:12px var(--pix);text-transform:uppercase}

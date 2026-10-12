@@ -145,37 +145,39 @@
 <section class="gd-sec" id="all-data-sysex-send" aria-labelledby="all-data-sysex-send-h">
 <div class="gd-body gd-prose"><h2 id="all-data-sysex-send-h">ALL DATA SYSEX SEND <a class="gd-anchor" href="#all-data-sysex-send" aria-label="Link to ALL DATA SYSEX SEND">#</a></h2>
 <p class="gd-ref">MD manual p.64</p>
-<p>To save everything the editor holds as a SysEx file:</p>
-<ol class="gd-steps"><li>Click the kit name in the <b class="gd-light">&lt;KIT&gt;</b> field of the LCD, or the pattern name in the <b class="gd-light">&lt;PATTERN&gt;</b> field. The kit library or the pattern chooser opens.</li><li>Click <b class="gd-ui">Export SysEx…</b> in its header.</li><li>Choose where to put the file. The name starts as the product name and &quot;backup.syx&quot;, in your Documents folder.</li></ol>
-<p>The file holds every pattern, kit and song the editor has, and the global. It is one file.</p>
-<aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>Export before you import. The import has no undo, and the export keeps a way back.</p></aside>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot choose a range of slots for the export yet.</p>
+<p>On the machine you send SysEx to another device. In the editor you write it to a .syx file on your computer.</p>
+<ol class="gd-steps"><li>Open the engine menu (the engine name at the left of the LCD) and choose <b class="gd-ui">EXPORT SYSEX…</b>. The <b class="gd-ui">Export SysEx</b> panel opens.</li><li><b class="gd-ui">All</b> is ticked. The line at the foot says how many kits, patterns, songs and globals the editor holds.</li><li>Click <b class="gd-ui">Save .syx…</b> and choose where to put the file. The name starts as the product name and &quot;backup.syx&quot;, in your Documents folder.</li></ol>
+<p>The file holds every pattern, kit and song the editor has, and the globals. It is one file.</p>
+<aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>Export before you import or reset. Neither has an undo, and the export keeps a way back.</p></aside>
 </div></section>
 <section class="gd-sec" id="global-sysex-send" aria-labelledby="global-sysex-send-h">
 <div class="gd-body gd-prose"><h2 id="global-sysex-send-h">GLOBAL SYSEX SEND <a class="gd-anchor" href="#global-sysex-send" aria-label="Link to GLOBAL SYSEX SEND">#</a></h2>
 <p class="gd-ref">MD manual p.66</p>
-<p>The export of all data includes the global. You cannot send the global of one slot alone, or all the globals, in the editor yet.</p>
+<ol class="gd-steps"><li>Open <b class="gd-ui">Export SysEx…</b> as above and untick <b class="gd-ui">All</b>. Each kind shows its own row with a range.</li><li>Tick <b class="gd-ui">Globals</b>. Untick the kinds you do not want.</li><li>Set the first and the last global of the range. Click a value to step it up, <kbd class="gd-key">[⇧]</kbd>-click to step it down, or turn the wheel, drag up or down, or use the arrow keys. G1 to G1 sends one global, G1 to G8 sends them all.</li><li>Click <b class="gd-ui">Save .syx…</b>.</li></ol>
+<p>Globals are not ticked until you tick them. They hold the MIDI channels and the sync settings.</p>
 </div></section>
 <section class="gd-sec" id="song-pattern-kit-sysex-send" aria-labelledby="song-pattern-kit-sysex-send-h">
 <div class="gd-body gd-prose"><h2 id="song-pattern-kit-sysex-send-h">SONG + PATTERN (+ KIT) SYSEX SEND <a class="gd-anchor" href="#song-pattern-kit-sysex-send" aria-label="Link to SONG + PATTERN (+ KIT) SYSEX SEND">#</a></h2>
 <p class="gd-ref">MD manual p.66</p>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> The export holds all the songs with all the patterns and kits. You cannot choose a range of songs in the editor yet.</p>
+<ol class="gd-steps"><li>Open <b class="gd-ui">Export SysEx…</b> and untick <b class="gd-ui">All</b>.</li><li>Tick <b class="gd-ui">Songs</b> and set the range of songs.</li><li>Tick <b class="gd-ui">Patterns</b> and <b class="gd-ui">Kits</b> too, with their ranges, if the file must play on its own.</li><li>Click <b class="gd-ui">Save .syx…</b>.</li></ol>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>On the machine a song send takes its patterns and kits with it. In the editor you choose each kind and its range. A kind with data is ticked from its first to its last used slot.</p></aside>
 </div></section>
 <section class="gd-sec" id="pattern-kit-sysex-send" aria-labelledby="pattern-kit-sysex-send-h">
 <div class="gd-body gd-prose"><h2 id="pattern-kit-sysex-send-h">PATTERN (+ KIT) SYSEX SEND <a class="gd-anchor" href="#pattern-kit-sysex-send" aria-label="Link to PATTERN (+ KIT) SYSEX SEND">#</a></h2>
 <p class="gd-ref">MD manual p.66</p>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> The export holds all the patterns and kits. You cannot choose a range of patterns in the editor yet.</p>
+<ol class="gd-steps"><li>Open <b class="gd-ui">Export SysEx…</b> and untick <b class="gd-ui">All</b>.</li><li>Tick <b class="gd-ui">Patterns</b> and set the range, for example A01 to B16.</li><li>Tick <b class="gd-ui">Kits</b> and set their range if you want the kits of those patterns too.</li><li>Click <b class="gd-ui">Save .syx…</b>. The line at the foot names each kind and its range before you save.</li></ol>
 </div></section>
 <section class="gd-sec" id="kit-sysex-send" aria-labelledby="kit-sysex-send-h">
 <div class="gd-body gd-prose"><h2 id="kit-sysex-send-h">KIT SYSEX SEND <a class="gd-anchor" href="#kit-sysex-send" aria-label="Link to KIT SYSEX SEND">#</a></h2>
 <p class="gd-ref">MD manual p.66</p>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> The export holds all the kits. You cannot choose a range of kits in the editor yet.</p>
+<ol class="gd-steps"><li>Open <b class="gd-ui">Export SysEx…</b> and untick <b class="gd-ui">All</b>.</li><li>Tick <b class="gd-ui">Kits</b> only and set the range, for example K01 to K12.</li><li>Click <b class="gd-ui">Save .syx…</b>.</li></ol>
+<p>The editor writes the kits it holds. A message at the end says how many of each kind went into the file.</p>
 </div></section>
 <section class="gd-sec" id="general-sysex-receive" aria-labelledby="general-sysex-receive-h">
 <div class="gd-body gd-prose"><h2 id="general-sysex-receive-h">GENERAL SYSEX RECEIVE <a class="gd-anchor" href="#general-sysex-receive" aria-label="Link to GENERAL SYSEX RECEIVE">#</a></h2>
 <p class="gd-ref">MD manual p.67</p>
 <p>The machine takes SysEx at any time. In the editor you open the file first and choose what to send.</p>
-<ol class="gd-steps"><li>Click <b class="gd-ui">Import SysEx…</b> in the header of the kit library or the pattern chooser. Or drop the .syx file on the window. Drag and drop works on macOS only.</li><li>Choose the file. The <b class="gd-ui">Import SysEx</b> panel opens. Its header names the model and says &quot;full backup&quot; when the file is one.</li><li>Read the tabs: <b class="gd-ui">Kits</b>, <b class="gd-ui">Patterns</b>, <b class="gd-ui">Songs</b>, <b class="gd-ui">Globals</b> and <b class="gd-ui">Other</b>. A tab shows the slots of the machine as a grid, and the number of items of that kind in the file. Each tab has a box: tick it to send that kind.</li><li>A slot in the grid is marked when it overwrites a slot that holds data on the machine. A slot marked ▶ plays now. Click a slot to leave it out. Click it again to take it back. Click with <kbd class="gd-key">[⇧]</kbd> to change a range.</li><li>Click <b class="gd-ui">All</b>, <b class="gd-ui">Empty slots only</b> or <b class="gd-ui">None</b> to set the whole tab.</li><li>Read the line at the foot. It says how many slots on the machine are overwritten.</li><li>Click <b class="gd-ui">Import</b>. The button says how many items it sends.</li></ol>
+<ol class="gd-steps"><li>Choose <b class="gd-ui">IMPORT SYSEX…</b> in the engine menu. Or drop the .syx file on the window. Drag and drop works on macOS only.</li><li>Choose the file. The <b class="gd-ui">Import SysEx</b> panel opens. Its header names the model and says &quot;full backup&quot; when the file is one.</li><li>Read the tabs: <b class="gd-ui">Kits</b>, <b class="gd-ui">Patterns</b>, <b class="gd-ui">Songs</b>, <b class="gd-ui">Globals</b> and <b class="gd-ui">Other</b>. A tab shows the slots of the machine as a grid, and the number of items of that kind in the file. Each tab has a box: tick it to send that kind.</li><li>A slot in the grid is marked when it overwrites a slot that holds data on the machine. A slot marked ▶ plays now. Click a slot to leave it out. Click it again to take it back. Click with <kbd class="gd-key">[⇧]</kbd> to change a range.</li><li>Click <b class="gd-ui">All</b>, <b class="gd-ui">Empty slots only</b> or <b class="gd-ui">None</b> to set the whole tab.</li><li>Read the line at the foot. It says how many slots on the machine are overwritten.</li><li>Click <b class="gd-ui">Import</b>. The button says how many items it sends.</li></ol>
 <figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The SysEx import panel"><span>Screenshot to come</span></div><figcaption>The SysEx import panel</figcaption></figure>
 <p>While the import runs, the panel shows three steps: <b class="gd-ui">Read the slots</b>, <b class="gd-ui">Send</b> and <b class="gd-ui">Read back</b>, and a bar for each kind. Click <b class="gd-ui">Stop</b> to cancel or <b class="gd-ui">Hide</b> to put the panel away.</p>
 <p>At the end the panel gives a report, slot by slot:</p>
@@ -186,18 +188,24 @@
 <section class="gd-sec" id="original-place-sysex-receive" aria-labelledby="original-place-sysex-receive-h">
 <div class="gd-body gd-prose"><h2 id="original-place-sysex-receive-h">ORIGINAL PLACE SYSEX RECEIVE <a class="gd-anchor" href="#original-place-sysex-receive" aria-label="Link to ORIGINAL PLACE SYSEX RECEIVE">#</a></h2>
 <p class="gd-ref">MD manual p.68</p>
-<p>The import puts each item in the slot it came from, as the machine does with ORIG. This is how every import works in the editor.</p>
+<p>The import puts each item in the slot it came from, as the machine does with ORIG. This is the default: <b class="gd-ui">Original place</b> is lit in the <b class="gd-ui">Place</b> row under the grid.</p>
 </div></section>
 <section class="gd-sec" id="specific-place-sysex-receive" aria-labelledby="specific-place-sysex-receive-h">
 <div class="gd-body gd-prose"><h2 id="specific-place-sysex-receive-h">SPECIFIC PLACE SYSEX RECEIVE <a class="gd-anchor" href="#specific-place-sysex-receive" aria-label="Link to SPECIFIC PLACE SYSEX RECEIVE">#</a></h2>
 <p class="gd-ref">MD manual p.68</p>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot send an item to another slot than the one it came from. You can leave slots out of the import.</p>
+<p>With SPEC the machine writes the items from a slot you choose. In the editor each kind has its own first slot.</p>
+<ol class="gd-steps"><li>Open the file with <b class="gd-ui">Import SysEx…</b>.</li><li>Click <b class="gd-ui">Specific place</b> in the <b class="gd-ui">Place</b> row. A value appears for the kind of the tab shown, for example <b class="gd-ui">Kits from K01</b>. It starts at the file's first slot, so nothing moves yet.</li><li>Set the first slot: click it to step it up, <kbd class="gd-key">[⇧]</kbd>-click to step it down, or turn the wheel, drag or use the arrow keys. The grid moves the items to the slots they land in. Each item keeps its place after the first, gaps included. Hover over a slot to see where it came from in the file.</li><li>Choose another tab to set the first slot of that kind.</li><li>Click <b class="gd-ui">Import</b>. When an item lands on a slot that holds data, the editor asks first and names the slots. Click <b class="gd-ui">Import</b> in the question to go on, or <b class="gd-ui">Cancel</b>.</li></ol>
+<p>An item that would land past the last slot of the machine is not sent. <b class="gd-ui">Original place</b> puts every item back where it came from.</p>
 </div></section>
 <section class="gd-sec" id="sysex-verify" aria-labelledby="sysex-verify-h">
 <div class="gd-body gd-prose"><h2 id="sysex-verify-h">SYSEX VERIFY <a class="gd-anchor" href="#sysex-verify" aria-label="Link to SYSEX VERIFY">#</a></h2>
 <p class="gd-ref">MD manual p.69</p>
-<p>The import reads every item back after it sends it. The report lists the items that differ from the file, marked ≠.</p>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> The import writes to the machine. You cannot compare a file with the machine without writing it.</p>
+<p>VERIFY compares a file with the machine and writes nothing.</p>
+<ol class="gd-steps"><li>Open the file with <b class="gd-ui">Import SysEx…</b> and choose the kinds and slots as for an import. <b class="gd-ui">Specific place</b> works here too.</li><li>Click <b class="gd-ui">Verify only</b>, beside <b class="gd-ui">Import</b>.</li><li>The editor reads each slot the items land in and compares it with the file. The bar shows how far it is.</li></ol>
+<p>The report marks each slot:</p>
+<table class="gd-table"><thead><tr><th>Mark</th><th>Meaning</th></tr></thead><tbody><tr><td>=</td><td>the same as the file</td></tr><tr><td>≠</td><td>different from the file</td></tr><tr><td>?</td><td>no answer</td></tr></tbody></table>
+<p>The line at the foot says how many slots are the same. Nothing was written to the machine.</p>
+<p>An import reads every item back as well. Its report lists the items that differ from the file, marked ≠.</p>
 </div></section>
 <section class="gd-sec" id="sync" aria-labelledby="sync-h">
 <div class="gd-body gd-prose"><h2 id="sync-h">SYNC <a class="gd-anchor" href="#sync" aria-label="Link to SYNC">#</a></h2>

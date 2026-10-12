@@ -39,7 +39,10 @@ namespace deskHost
 		ChooseSyx,			// P7: the native file chooser for a .syx to import (its preview follows)
 		SyxImport,			// P7, B-019: send the previewed .syx to the machine as it is (the kinds and items chosen), read back, report
 		SyxCancel,
-		SyxExport,			// P7: the native save dialog, then every document the editor holds as one .syx
+		SyxExport,			// P7: the native save dialog, then the documents the editor holds as one .syx (0.6: kinds and ranges)
+		SyxPlace,			// 0.6: the open .syx's preview again, its items placed from a first slot per kind (SPECIFIC)
+		SyxExportInfo,		// 0.6: the export panel's facts (per kind: slots, held, used)
+		MachineReset,		// 0.6: Reset machine… (empty; the Machinedrum's factory reset from its own ROM)
 		RomInfo,			// the installed firmware: name, OS, size, where (answered with a romInfo message)
 		RemoveRom,			// delete the firmware from the editor's ROM folder (the page asked the user first)
 		NoticeAnswer,		// the button the user pressed on a notice (a message the plug-in has for the user)
@@ -53,7 +56,7 @@ namespace deskHost
 		DropSample,			// a sample dropped on the window: into a UW ROM slot, as a chosen one
 		OutputGain,			// I-021: the editor's volume (the plug-in's output gain, after the emulation)
 		MemoryKeep,			// I-024: KEEP MEMORY on or off (the machine memory file for new sessions)
-		MemoryFactory		// I-024: START FROM FACTORY MEMORY (the file goes; the page asked the user first)
+		MemoryFactory		// I-024: RESET MACHINE… > Start from factory memory (the file goes; the page asked the user first)
 	};
 
 	// Who acts on a row: the session (it outlives the window) or the window (the menu and the

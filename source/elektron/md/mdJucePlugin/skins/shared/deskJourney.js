@@ -238,7 +238,7 @@ const Journey = (() => {
 		machine: ["seq-first-beat", "seq-queue-while-playing", "seq-live-record", "seq-grid-record", "sampler-setup-undo", "sampler-audition",
 			"sampler-ram-view", "sampler-setup-chop", "lib-syx-import", "lib-syx-import-mute", "song-mode", "keys-play-notes", "keys-black-keys",
 			"perform-keyboard", "engine-hw-no-machine", "global-tempo-out", "audio-panel", "drop-syx", "drop-sample", "old-webkit",
-			"sound-machine-stays",
+			"sound-machine-stays", "engine-reset-factory",
 			/* they time key presses against the journey's clock: in the page tier, beside the gate's busy lane 1, the page
 			   and the journey's clock drifted apart by several per cent (2026-10-11) */
 			"keys-tap-tempo", "keys-tap-tempo-b", "keys-tap-tempo-shift", "shots", "shots-cpu", "shots-global", "shots-import", "shots-menu", "shots-song", "shots-sound", "shots-views"]
@@ -373,29 +373,34 @@ const Journey = (() => {
 		Pointer.on = false;
 		log(`DEMOS DONE ${passed}/${list.length}`);
 	}
-	/* I-024 (doc/modern-ux/DESIGN-machine-memory.md): the engine menu's machine memory entries, both editors: KEEP MEMORY
-	   turns off and on again (the plug-in's machineMemory says so, the entry's words follow), START FROM FACTORY MEMORY…
-	   asks first (Cancel changes nothing), then Start from factory memory sends it and the saved file is gone. That the
+	/* I-024 (doc/modern-ux/DESIGN-machine-memory.md): the machine memory, both editors. The engine menu's KEEP MEMORY
+	   turns off and on again (the plug-in's machineMemory says so, the entry's words follow); RESET MACHINE… offers Start
+	   from factory memory…, which asks again (Cancel changes nothing), then sends it and the saved file is gone. That the
 	   machine then starts from factory memory, and that a save is there in the next session, is
 	   mdMachineMemoryFirmwareTest's. */
 	const memoryJourney = (name, o = {}) => {
-		const opt = v => $q(`#engsel option[value="${v}"]`);
-		const keepSays = () => opt("memoryKeep")?.textContent || "";
+		const keep = () => $q('#engsel option[value="memoryKeep"]');
+		const keepSays = () => keep()?.textContent || "";
+		const saved = () => keep()?.dataset.saved;
 		const dlgOn = () => !!$q("#dlg") && !$q("#dlg").hidden;
 		const dlgKey = text => [...document.querySelectorAll("#dlg [data-dlg]")].find(b => b.textContent.trim() === text);
 		return {
 			name, proves: o.proves,
 			steps: [
-				{ say: "the engine menu has KEEP MEMORY: ON and START FROM FACTORY MEMORY…", act: () => {},
-					screen: () => ok(!!opt("memoryKeep") && !opt("memoryKeep").hidden && keepSays() === "KEEP MEMORY: ON" && !!opt("memoryFactory") && !opt("memoryFactory").hidden, keepSays() || "no entries") },
+				{ say: "the engine menu has KEEP MEMORY: ON, and no entry of its own for factory memory", act: () => {},
+					screen: () => ok(!!keep() && !keep().hidden && keepSays() === "KEEP MEMORY: ON" && !$q('#engsel option[value="memoryFactory"]'), keepSays() || "no entry") },
 				{ say: "choose KEEP MEMORY: it reads OFF", act: hands => hands.pick("engsel", "memoryKeep"), screen: () => ok(keepSays() === "KEEP MEMORY: OFF", keepSays()) },
 				{ say: "choose it again: ON", act: hands => hands.pick("engsel", "memoryKeep"), screen: () => ok(keepSays() === "KEEP MEMORY: ON", keepSays()) },
-				{ say: "choose START FROM FACTORY MEMORY…: the editor asks first", act: hands => hands.pick("engsel", "memoryFactory"),
+				{ say: "choose RESET MACHINE…: Start from factory memory… is one of its choices", act: hands => hands.pick("engsel", "reset"),
+					screen: () => ok(dlgOn() && !!dlgKey("Start from factory memory…"), "no choice") },
+				{ say: "click it: the editor asks again", act: hands => hands.click(dlgKey("Start from factory memory…")),
 					screen: () => ok(dlgOn() && !!dlgKey("Start from factory memory") && !!dlgKey("Cancel"), "no question") },
 				{ say: "Cancel: nothing happens, the saved memory stays", act: hands => hands.click(dlgKey("Cancel")),
-					screen: () => ok(!dlgOn() && opt("memoryFactory")?.dataset.saved === "1", "saved " + opt("memoryFactory")?.dataset.saved) },
-				{ say: "again, and Start from factory memory: the saved memory is gone", act: async hands => { await hands.pick("engsel", "memoryFactory"); await until(dlgOn, 2000); hands.click(dlgKey("Start from factory memory")); },
-					screen: () => ok(!dlgOn() && opt("memoryFactory")?.dataset.saved === "0", "saved " + opt("memoryFactory")?.dataset.saved) }
+					screen: () => ok(!dlgOn() && saved() === "1", "saved " + saved()) },
+				{ say: "again, and Start from factory memory: the saved memory is gone", act: async hands => {
+					await hands.pick("engsel", "reset"); await until(() => !!dlgKey("Start from factory memory…"), 2000); hands.click(dlgKey("Start from factory memory…"));
+					await until(() => !!dlgKey("Start from factory memory"), 2000); hands.click(dlgKey("Start from factory memory")); },
+					screen: () => ok(!dlgOn() && saved() === "0", "saved " + saved()) }
 			],
 			tidy: async hands => { if (dlgOn() && dlgKey("Cancel")) hands.click(dlgKey("Cancel")); if (keepSays() === "KEEP MEMORY: OFF") await hands.pick("engsel", "memoryKeep"); }
 		};

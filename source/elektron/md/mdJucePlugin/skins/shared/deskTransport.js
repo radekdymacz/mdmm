@@ -4,8 +4,8 @@
    gives a host with its own commands.
      The ▶ menu (right-click ▶, or the ▾ in its corner, so nothing is only behind a right-click): Play / Stop, Pause /
      Continue, Record, Panic, each with its key. menuItems(state, host) is the list (pure); openMenu(x, y, state, host)
-     shows it (deskMenu.js). state: {playing, paused, rec, can: {pause, record, panic}, reasons: {name: words}}.
-     host: play(), stop(), pauseToggle(), record(), panic(), recordLabel. Paused, the first entry is Stop (it ends the
+     shows it (deskMenu.js). state: {playing, paused, rec, step, can: {pause, record, stepRecord, panic}, reasons: {name: words}}.
+     host: play(), stop(), pauseToggle(), record(), panic(), recordLabel, stepRecord() (optional: the MM's STEP RECORDING). Paused, the first entry is Stop (it ends the
      pause) and the second Continue.
      The TEMPO pop-up (the machine's TEMPO menu): BPM − / + (⇧: a tenth), TAP, NUDGE −10 % / +10 % while held (the keys -
      and = too), "Change on release" (the tempo drag sends at the release; ⌥-drag the tempo does it once), the sync line.
@@ -29,6 +29,8 @@ const DeskTransport = (() => {
 			{ id: "play", label: st.playing || st.paused ? "Stop" : "Play", key: "Space", enabled: can.transport !== false, run: () => st.playing || st.paused ? h.stop() : h.play() },
 			{ id: "pause", label: st.paused ? "Continue" : "Pause", key: "⇧Space", enabled: can.transport !== false && (st.playing || st.paused), run: () => h.pauseToggle() },
 			{ id: "record", label: h.recordLabel || "Record", key: "⌥Space", enabled: can.record !== false, run: () => h.record() },
+			/* wave 7, the Monomachine only (a host with stepRecord): STEP RECORDING, while stopped */
+			...(h.stepRecord ? [{ id: "steprecord", label: st.step ? "Step record: done" : "Step record", key: "⇧-click ●", enabled: can.stepRecord !== false && (!!st.step || !(st.playing || st.paused)), run: () => h.stepRecord() }] : []),
 			"-",
 			{ id: "panic", label: "Panic: all voices off", key: "⌘.", enabled: can.panic !== false, run: () => h.panic() }
 		];

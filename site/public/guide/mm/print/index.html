@@ -36,6 +36,7 @@
 @page c17 { @top-left { content: "17. The song mode"; } }
 @page c18 { @top-left { content: "18. Routing"; } }
 @page c19 { @top-left { content: "19. Global settings"; } }
+@page c20 { @top-left { content: "20. Early startup menu, technical information"; } }
 @page c24 { @top-left { content: "24. Beyond the hardware"; } }
 </style>
 </head>
@@ -74,7 +75,7 @@
 <li><a href="#c17"><span class="gd-tnum">17</span><span class="gd-ttitle">The song mode</span><span class="gd-tsum">Arrange patterns into songs of up to 200 rows, with repeats, transposes, parts, mutes, tempo changes and loops.</span></a></li>
 <li><a href="#c18"><span class="gd-tnum">18</span><span class="gd-ttitle">Routing</span><span class="gd-tsum">Send tracks to the mix buses and outputs, feed effects from other tracks or the audio inputs, and choose the routing mode.</span></a></li>
 <li><a href="#c19"><span class="gd-tnum">19</span><span class="gd-ttitle">Global settings</span><span class="gd-tsum">The machine's own settings: MIDI channels, sync, routing, the multi map, and the SysEx import and export.</span></a></li>
-<li class="gd-tocome"><span class="gd-tnum">20</span><span class="gd-ttitle">Early startup menu, technical information</span><span class="gd-tsum">To come</span></li>
+<li><a href="#c20"><span class="gd-tnum">20</span><span class="gd-ttitle">Early startup menu, technical information</span><span class="gd-tsum">What the machine's startup menu does, and what to do in the editor instead.</span></a></li>
 <li class="gd-tocome"><span class="gd-tnum">21</span><span class="gd-ttitle">Appendix A: machine reference</span><span class="gd-tsum">To come</span></li>
 <li class="gd-tocome"><span class="gd-tnum">22</span><span class="gd-ttitle">Appendix B: MIDI control reference</span><span class="gd-tsum">To come</span></li>
 <li class="gd-tocome"><span class="gd-tnum">23</span><span class="gd-ttitle">Appendix C: SysEx reference</span><span class="gd-tsum">To come</span></li>
@@ -98,7 +99,7 @@
 <section class="gd-sec" id="digipro-user-waveforms">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-2</span></span></aside>
 <div class="gd-body gd-prose"><h2>DIGIPRO USER WAVEFORMS</h2>
-<p>The DigiPRO machines of an MKII play 64 waveforms, and the MKII lets you load your own. The editor picks a waveform from 1 to 64 in the wave fields of the DigiPRO machines, but it cannot send, receive, rename or erase user waveforms yet.</p>
+<p>The DigiPRO machines of an MKII play 64 waveforms, and the MKII lets you load your own. The editor picks a waveform from 1 to 64 in the wave fields of the DigiPRO machines. <b class="gd-ui">Export SysEx…</b> saves the user waveforms in a .syx file: see &quot;DIGIPRO MANAGER&quot; in chapter 19. You cannot send waveforms to the machine, rename or erase them in the editor.</p>
 <p>The <b class="gd-ui">MKII</b> key in the top bar switches the editor between the MKI and MKII plate. The MKII adds the user waveforms and the DigiPRO double draw and ensemble machines. On the MKI plate the machine picker greys those two machines out and says &quot;MKII only&quot;.</p>
 </div></section>
 <section class="gd-sec" id="conventions">
@@ -203,7 +204,7 @@
 <div class="gd-body gd-prose"><h2>RECORD, PLAY AND STOP</h2>
 <p>The record and play keys are at the top right of the LCD.</p>
 <ul class="gd-list"><li>Press <kbd class="gd-key">[SPACE]</kbd> or click the play key. The machine plays. Press it again to stop.</li><li>Click the record key while the machine is stopped to switch grid recording on. Editing steps on the page does not need it.</li><li>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[SPACE]</kbd> to start live recording, the machine's <kbd class="gd-key">[REC]</kbd> + <kbd class="gd-key">[PLAY]</kbd>. Press it again to stop recording.</li></ul>
-<p>Grid recording is not needed to edit steps with the mouse. You cannot record by stepping through the pattern in the editor yet.</p>
+<p>Grid recording is not needed to edit steps with the mouse. Hold <kbd class="gd-key">[⇧]</kbd> and click the record key while the machine is stopped to start step recording, the machine's <kbd class="gd-key">[STOP]</kbd> + <kbd class="gd-key">[REC]</kbd>. The key shows STEP. See &quot;Step recording&quot; in chapter 11.</p>
 <p>On the machine a second press of <kbd class="gd-key">[PLAY]</kbd> pauses. In the editor:</p>
 <ol class="gd-steps"><li>Hold <kbd class="gd-key">[⇧]</kbd> and click the play key, or press <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[SPACE]</kbd>. The machine holds its step. The play key blinks and <b class="gd-light">&lt;POSITION&gt;</b> keeps the step.</li><li>Click the play key, or press <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[SPACE]</kbd> again. The machine goes on from the step it held.</li><li>To end the pause instead, choose <b class="gd-ui">Stop</b> in the transport menu. <b class="gd-light">&lt;POSITION&gt;</b> reads --.--.</li></ol>
 <p>The transport menu has Play or Stop, Pause or Continue, Live record and Panic, each with its key. Right-click the play key to open it, or click the small ▾ in the key's corner.</p>
@@ -331,7 +332,7 @@
 <div class="gd-body gd-prose"><h2>LIVE RECORDING</h2>
 <p>In live recording you play the keys while the pattern runs, and the machine writes the notes to the steps that play. The firmware quantises them.</p>
 <ol class="gd-steps"><li>Select the track to record.</li><li>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[SPACE]</kbd>. The machine starts if it was stopped, and the record light comes on. Clicking the record key while the machine plays does the same.</li><li>Play with <kbd class="gd-key">[A S D F G H J K L]</kbd> or the on-screen keyboard.</li><li>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[SPACE]</kbd> again to stop recording.</li></ol>
-<p>You cannot erase notes while recording, as the machine does with <kbd class="gd-key">[EXIT]</kbd>. Clear steps in the roll instead.</p>
+<p>To erase while recording, hold <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd>, the machine's <kbd class="gd-key">[EXIT]</kbd>. The selected track's notes go on each step that plays while the key is down.</p>
 </div></section>
 <section class="gd-sec" id="parameter-locks">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-13,</span> <span>1-14</span></span></aside>
@@ -794,14 +795,17 @@
 <ol class="gd-steps"><li>Select a synth track.</li><li>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[SPACE]</kbd>. The machine starts to play and to record. While the machine already plays, you can also click <b class="gd-ui">●</b> on the LCD.</li><li>Play the computer keys: the white keys A to L and the black keys W E T Y U O P. Z and X move the octave, C and V the velocity.</li><li>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[SPACE]</kbd> again, or click <b class="gd-ui">●</b>, to stop recording.</li></ol>
 <p>The machine records each note on the step nearest to it. The notes appear in the roll.</p>
 <p>The editor records one key at a time. Draw a chord with <kbd class="gd-key">[⇧]</kbd>-click in the roll.</p>
-<p>You cannot erase notes with a key while you record in the editor yet. Delete them in the roll.</p>
+<p>To erase while you record, select the track and hold <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd>. This is the machine's <kbd class="gd-key">[EXIT]</kbd>. The notes of the track go on each step that plays while the key is down. The track's header is marked red. Let the key go to stop erasing.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Wait until live recording stops before you select steps or open the step menu. The editor refuses them while it records.</p></aside>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Values you turn while the pattern records are locked. See &quot;Parameter locks in live recording mode&quot; in chapter 13.</p></aside>
 </div></section>
 <section class="gd-sec" id="step-recording">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-50</span></span></aside>
 <div class="gd-body gd-prose"><h2>STEP RECORDING</h2>
-<p>Notes are entered in the editor by drawing them in the piano roll. The editor has no step recording yet.</p>
+<p>In step recording you play one note for each step, and the machine moves on by itself. The tempo does not matter.</p>
+<ol class="gd-steps"><li>Stop the machine and select a synth track. The machine writes only this track.</li><li>Hold <kbd class="gd-key">[⇧]</kbd> and click the record key, or choose <b class="gd-ui">Step record</b> in the play key's menu. The record key shows STEP, and a red cursor on the roll marks the step, with the track and the step number.</li><li>Play a note with the computer keys or the keys left of the roll. The machine writes it to the step under the cursor, and the cursor moves to the next step.</li><li>Press <kbd class="gd-key">[←]</kbd> or <kbd class="gd-key">[→]</kbd> to move. → leaves a rest and moves on. ← goes a step back.</li><li>Press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> to clear the step under the cursor. The cursor moves on.</li><li>Press <kbd class="gd-key">[ESC]</kbd>, or click the record key, to stop.</li></ol>
+<p>Select another synth track while step recording is on, and the machine records that track from the same step.</p>
+<p>You can also draw notes in the piano roll at any time.</p>
 </div></section>
 <section class="gd-sec" id="note-copy">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-50</span></span></aside>
@@ -1346,21 +1350,26 @@
 <section class="gd-sec" id="file">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-95,</span> <span>1-97</span></span></aside>
 <div class="gd-body gd-prose"><h2>FILE</h2>
+<p>On the machine the FILE menu sends and receives SysEx. In the editor you write a .syx file on your computer, and you open one to send it to the machine.</p>
 <h4 class="gd-h3">Export</h4>
-<p>The kit library and the pattern chooser each have an <b class="gd-ui">Export SysEx…</b> key. It writes every pattern, kit and song, and the global the editor holds, into one .syx file. The plug-in opens a save dialog.</p>
-<p>You cannot choose a range of slots to send.</p>
+<ol class="gd-steps"><li>Choose <b class="gd-ui">EXPORT SYSEX…</b> in the engine menu (the engine name at the left of the LCD). The <b class="gd-ui">Export SysEx</b> panel opens.</li><li><b class="gd-ui">All</b> is ticked: every kit, pattern, song and global the editor holds goes into one file, as the machine's ALL.</li><li>To choose, untick <b class="gd-ui">All</b>. Each kind has its row: <b class="gd-ui">Kits</b>, <b class="gd-ui">Patterns</b>, <b class="gd-ui">Songs</b>, <b class="gd-ui">Globals</b> and <b class="gd-ui">Waveforms</b>. Tick the kinds you want.</li><li>Set the first and the last slot of each kind. Click a value to step it up, <kbd class="gd-key">[⇧]</kbd>-click to step it down, or turn the wheel, drag up or down, or use the arrow keys. A kind with data starts from its first to its last used slot.</li><li>Click <b class="gd-ui">Save .syx…</b> and choose where to put the file. A message says what went into it.</li></ol>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>On the machine KIT, PAT+KIT and SONG+PAT+KIT take the kits and patterns with them. In the editor you tick each kind and set its range.</p></aside>
 <h4 class="gd-h3">Import</h4>
-<ol class="gd-steps"><li>Click <b class="gd-ui">Import SysEx…</b> in the kit library or the pattern chooser, or drop a .syx file on the window (macOS only).</li><li>The import window previews the file. It has a tab for each kind: Kits, Patterns, Songs, Globals and Other.</li><li>A slot grid shows the slots. A click leaves a slot out or takes it in again. Hold <kbd class="gd-key">[⇧]</kbd> and click to choose a range.</li><li>Click <b class="gd-ui">Import</b>. The window shows a bar. <b class="gd-ui">Stop</b> ends the import, <b class="gd-ui">Hide</b> puts the window away.</li><li>A report lists what the machine did with each slot.</li></ol>
+<ol class="gd-steps"><li>Choose <b class="gd-ui">IMPORT SYSEX…</b> in the engine menu, or drop a .syx file on the window (macOS only).</li><li>The import window previews the file. It has a tab for each kind: Kits, Patterns, Songs, Globals and Other.</li><li>A slot grid shows the slots. A click leaves a slot out or takes it in again. Hold <kbd class="gd-key">[⇧]</kbd> and click to choose a range.</li><li>Click <b class="gd-ui">Import</b>. The window shows a bar. <b class="gd-ui">Stop</b> ends the import, <b class="gd-ui">Hide</b> puts the window away.</li><li>A report lists what the machine did with each slot.</li></ol>
 <p>Globals and other messages are off unless you tick them. Importing a global changes the channels the machine listens on. There is no undo, so use <b class="gd-ui">Export SysEx…</b> first.</p>
-<p>Files go into the slots they came from.</p>
-<p>You cannot choose a first slot to write to, and there is no mode that only verifies a file.</p>
+<h4 class="gd-h3">Original and specific place</h4>
+<p>The <b class="gd-ui">Place</b> row under the grid has two keys. <b class="gd-ui">Original place</b>, the default, puts each item in the slot it came from, as ORIG.</p>
+<p><b class="gd-ui">Specific place</b> is SPEC. A value shows the first slot of the kind on the tab, for example <b class="gd-ui">Kits from K01</b>. Step it as any value. The grid moves the items to where they land, each kind from its own first slot. When an item lands on a slot that holds data, <b class="gd-ui">Import</b> asks first and names the slots. An item past the last slot is not sent.</p>
+<h4 class="gd-h3">Verify only</h4>
+<p><b class="gd-ui">Verify only</b>, beside <b class="gd-ui">Import</b>, is VERF. It writes nothing. The editor reads each slot the items land in and compares it with the file. The report marks = the same, ≠ different and ? no answer.</p>
 <h4 class="gd-h3">The machine's SYSEX RECV screen</h4>
 <p>The Monomachine takes a dump only on its SysEx receive screen. The editor opens it for you. With a real Monomachine over MIDI, the sync field on the second line of the LCD reads SEND and the number of waiting edits. Click it and follow the steps.</p>
 </div></section>
 <section class="gd-sec" id="digipro-manager">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-99</span></span></aside>
 <div class="gd-body gd-prose"><h2>DIGIPRO MANAGER</h2>
-<p>You cannot send, receive, rename or erase user waveforms in the editor.</p>
+<p>The DigiPRO manager of an MKII sends, receives, renames and erases user waveforms. The editor does the send: tick <b class="gd-ui">Waveforms</b> in <b class="gd-ui">Export SysEx…</b> and set the range W01 to W64. The editor asks the machine for each waveform and writes the ones it has into the file. An empty waveform answers nothing and is left out.</p>
+<p>You cannot send waveforms to the machine, rename or erase them in the editor.</p>
 </div></section>
 <section class="gd-sec" id="drive-settings">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-105,</span> <span>1-106,</span> <span>1-107</span></span></aside>
@@ -1373,6 +1382,43 @@
 <p>The channel of each MIDI track, and the controller numbers CL1 to CL4, are on the <b class="gd-ui">MIDI page</b> of <b class="gd-ui">Sequence</b>. See chapter 16.</p>
 </div></section>
 </article>
+<article class="gd-chapter" id="c20" style="page: c20">
+<div class="gd-runhead"><span>20. Early startup menu, technical information</span><span>Monomachine Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">20</p><h1>Early startup menu, technical information</h1>
+<p class="gd-cmeta">MM manual pp.1-110 to 1-116</p>
+</header>
+<div class="gd-intro gd-prose"><p>On the machine you hold a key while you switch it on to open the early startup menu. It holds the test mode, the resets and the OS upgrade. The editor starts the machine for you, with the OS you gave it, and has no such menu. The resets are in the engine menu instead.</p></div>
+<section class="gd-sec" id="test-mode">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-110</span></span></aside>
+<div class="gd-body gd-prose"><h2>TEST MODE</h2>
+<p>The test mode checks the hardware of the machine: its keys, knobs, joystick and outputs. The editor runs on the emulated machine and has nothing to test.</p>
+</div></section>
+<section class="gd-sec" id="empty-reset">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-110</span></span></aside>
+<div class="gd-body gd-prose"><h2>EMPTY RESET</h2>
+<p>The empty reset clears the memory of the machine.</p>
+<ol class="gd-steps"><li>Choose <b class="gd-ui">RESET MACHINE…</b> in the engine menu (the engine name at the left of the LCD). A question says what the reset clears. <b class="gd-ui">Cancel</b> is the default: <kbd class="gd-key">[ESC]</kbd> or a click outside answers it.</li><li>Click <b class="gd-ui">Empty reset…</b>. The editor asks a second time.</li><li>Click <b class="gd-ui">Clear everything</b>. The <b class="gd-ui">Empty reset</b> panel opens. The editor writes an empty kit, pattern and song into every slot through the SYSEX RECV screen, then reads each one back.</li><li>Read the report and click <b class="gd-ui">Done</b>.</li></ol>
+<p>The globals stay. A global is reset in its own slot in GLOBAL (chapter 19).</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The reset has no undo. Click <b class="gd-ui">Export SysEx…</b> in the question first to keep a way back.</p></aside>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>With a real Monomachine over MIDI, the machine must be on its SYSEX RECV screen. The sync field reads SEND and the number of waiting dumps until it is.</p></aside>
+</div></section>
+<section class="gd-sec" id="factory-reset">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-110</span></span></aside>
+<div class="gd-body gd-prose"><h2>FACTORY RESET</h2>
+<p>The editor holds no factory data of the Monomachine, so it offers no factory reset. The <b class="gd-ui">RESET MACHINE…</b> question says so. To get the factory kits and patterns back, import a factory .syx file. See &quot;FILE&quot; in chapter 19.</p>
+<p><b class="gd-ui">Start from factory memory…</b> in the same question restarts the machine as on a new install and deletes the saved machine memory. Its kits and patterns are those the emulated machine starts with, which are the factory ones only when the editor has the Monomachine's factory memory image. See &quot;MACHINE MEMORY&quot; in chapter 24.</p>
+</div></section>
+<section class="gd-sec" id="soft-reset">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-111</span></span></aside>
+<div class="gd-body gd-prose"><h2>SOFT RESET</h2>
+<p>The soft reset restarts the machine and keeps its data. In the editor, close the editor and open it again.</p>
+</div></section>
+<section class="gd-sec" id="midi-upgrade-send-upgrade">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-111,</span> <span>1-112</span></span></aside>
+<div class="gd-body gd-prose"><h2>MIDI UPGRADE, SEND UPGRADE</h2>
+<p>The OS upgrade runs on the real machine. The editor does not upgrade the OS. It runs the Monomachine OS 1.32B that you give it as a ROM.</p>
+</div></section>
+</article>
 <article class="gd-chapter" id="c24" style="page: c24">
 <div class="gd-runhead"><span>24. Beyond the hardware</span><span>Monomachine Editor</span></div>
 <header class="gd-chead"><p class="gd-cnum">24</p><h1>Beyond the hardware</h1>
@@ -1383,12 +1429,11 @@
 <div class="gd-body gd-prose"><h2>MACHINE MEMORY</h2>
 <p>A Monomachine keeps what you save when you switch it off: its kits, patterns, songs and globals stay in its memory. The editor does the same. When you save on the machine, the editor writes the machine's memory to a file on your computer. A new session starts from that file.</p>
 <p>What counts as a save is what changes the machine's memory: SAVE KIT, a change to a pattern, SAVE SONG, a change to a global, a SysEx dump the machine takes in. It makes no difference whether you save in the editor or on the machine's own keys. The editor writes the file a second or two after the memory stops changing. Playing a pattern writes nothing.</p>
-<p>A new session is a new plug-in in a DAW project, a new DAW project, or the first start of the standalone editor. It starts with the memory you last saved.</p>
+<p>A new session is a new plug-in in a DAW project, a new DAW project, or a start of the standalone editor. It starts with the memory you last saved, wherever you saved it.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A DAW project keeps its own memory. When you open a saved project, the machine starts with the memory of that project, not with the file. A save you then make in that project goes to the file too.</p></aside>
-<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The standalone editor keeps its memory when you quit it and starts with it again. It reads the file only at its first start.</p></aside>
 <h4 class="gd-h3">Start from factory memory</h4>
-<ol class="gd-steps"><li>Open the engine menu, the drop-down at the left of the LCD.</li><li>Choose <b class="gd-ui">START FROM FACTORY MEMORY…</b>. The editor asks first.</li><li>Click <b class="gd-ui">Start from factory memory</b>. The machine restarts with its factory kits, patterns, songs and globals, and the saved memory file is deleted.</li></ol>
-<p>New sessions now start from factory memory until you save again.</p>
+<ol class="gd-steps"><li>Choose <b class="gd-ui">RESET MACHINE…</b> in the engine menu, the drop-down at the left of the LCD.</li><li>Click <b class="gd-ui">Start from factory memory…</b>. The editor asks a second time.</li><li>Click <b class="gd-ui">Start from factory memory</b>. The machine restarts with its factory memory, as on a new install, and the saved memory file is deleted. This takes a few seconds.</li></ol>
+<p>New sessions now start from factory memory until you save again. The reset has no undo: click <b class="gd-ui">Export SysEx…</b> in the question first to keep a way back.</p>
 <h4 class="gd-h3">Turn it off</h4>
 <p>Choose <b class="gd-ui">KEEP MEMORY: ON</b> in the engine menu. It reads <b class="gd-ui">KEEP MEMORY: OFF</b>, and new sessions start from factory memory. The editor no longer writes the file. The file stays, so when you turn it on again, new sessions start with the memory you saved before.</p>
 <h4 class="gd-h3">Two editors at once</h4>

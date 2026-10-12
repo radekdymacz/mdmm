@@ -42,14 +42,16 @@ So the file holds what a project holds of the machine, and nothing more:
 
 At the start of a session (a plug-in instance or the standalone), once the machine has its ROM:
 
-1. A project state came (the DAW's `setStateInformation`, the standalone's saved state, a ROM-less project held and
-   handed over): **the project wins**, the file is not read.
+1. A DAW project state came (the DAW's `setStateInformation`, a ROM-less project held and handed over): **the project
+   wins**, the file is not read. The standalone's own state (JUCE saves it when the app quits) is no project (Radek,
+   2026-10-12: one memory for everything, like a real machine): with KEEP MEMORY on and a file there, the file replaces
+   it at the start (`machineMemory::stateIsProject`).
 2. Else, with the setting on and a file there: the file's payload goes to the machine the way a project's does
    (`synthLib::Plugin::setState`, the same restore path, the same cold boot).
 3. Else the machine starts from factory memory, as before.
 
-A project state that comes after the file was applied still replaces it (project wins, one extra restart). The
-standalone saves its own state when it quits, so it reads the file on its first start only.
+A project state that comes after the file was applied still replaces it (project wins, one extra restart). A standalone
+with no file yet keeps its own state.
 
 ## 3. When it is written
 
@@ -70,8 +72,11 @@ a sample loaded; from the panel or from the page alike). The editor watches the 
 
 ## 4. The controls
 
-- Engine menu: **START FROM FACTORY MEMORY…** asks first; Yes deletes the file and restarts the machine from factory
-  memory (a fresh machine's state, as on a new install). No right-click, no second place.
+- **RESET MACHINE… > Start from factory memory…** (wave 6's question, its third choice; asked a second time): deletes the
+  file and restarts the machine from factory memory (a fresh machine's state, as on a new install). One place, no
+  separate entry (Radek's rule). Chosen over making wave 6's Factory reset also clear the file: that reset keeps
+  globals and samples and exists on the Machinedrum only, while this one is the whole memory, on both machines, in
+  seconds; folding the file into it would leave the Monomachine without a way back and change what Factory reset means.
 - Engine menu: **KEEP MEMORY: ON / OFF** (the setting, in the editor's config, default on). Off: nothing is read or
   written; the file stays for when it is turned on again.
 - The page hears `{"type":"machineMemory", keep, saved, note}` on its ready and when it changes.
@@ -101,10 +106,7 @@ Monomachine's firmware changes 0x0ffd38-0x0ffd43 of its patch RAM (its stack) by
 now and then; those 4 KiB are left out of the look (`machineMemory::watchedPatchBytes`), else every session would write
 the file once with nothing saved. A save that changes only them is not written until something else changes.
 
-## 7. Open for Radek
+## 7. Decided (Radek, 2026-10-12)
 
-- Wave 6 (`feat/0.6-sysex`, not merged) adds RESET MACHINE… with Empty reset and the Machinedrum's Factory reset. START
-  FROM FACTORY MEMORY… is close to that Factory reset; once both are on `feat/0.6-features`, it becomes the third
-  choice of that question (one place, no duplicate) and MD-204 can point to it.
-- The standalone keeps its own state when it quits (JUCE's), so it reads the file on its first start only. The other
-  way would be to treat the standalone's saved state as no project and always start from the file.
+- The standalone starts from the file too (above, section 2).
+- Start from factory memory is a choice of RESET MACHINE… (section 4); the engine menu keeps KEEP MEMORY only.

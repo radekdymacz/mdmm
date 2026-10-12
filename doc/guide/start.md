@@ -73,7 +73,7 @@ Each editor has five workspaces. Switch with the tabs, or with the keys [1] to [
 
 - **GEN** (Sequence): a rhythm generator per track. [R] rolls a new variation, [⌥] [R] does every track. One undo step.
 - **MUTATE** (Sound): vary a sound at random, then undo it.
-- **Import SysEx…** and **Export SysEx**, in the kit and pattern libraries: open a `.syx` and choose what to import, or save a backup.
+- **IMPORT SYSEX…** and **EXPORT SYSEX…**, in the engine menu (the engine name at the left of the LCD): open a `.syx` and choose what to import, or save a backup.
 - In a library, drag a kit (or pattern) slot onto another to copy it.
 - **Set up sampling** (Machinedrum, Sampler): one card that sets up the recorder and the player.
 - **Transpose** (Monomachine, Perform): a clickable one-octave keyboard.

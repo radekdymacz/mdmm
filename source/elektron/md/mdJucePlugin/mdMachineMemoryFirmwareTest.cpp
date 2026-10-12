@@ -1,7 +1,7 @@
 // I-024 (wave 11 of 0.6): the machine memory that stays for every new session, on the real firmware
 // (doc/modern-ux/DESIGN-machine-memory.md). Session 1 saves a kit (its name set, then SAVE KIT, as the panel does) and the
-// memory file is written; a new session with no project state starts with that kit; a project state wins over the
-// file; START FROM FACTORY MEMORY deletes the file and the kit is the factory's again; a damaged file starts from
+// memory file is written; a new session with no project state starts with that kit; a DAW project state wins over the
+// file, the standalone's own state does not; Start from factory memory deletes the file and the kit is the factory's again; a damaged file starts from
 // factory memory, is moved aside and says so. It also measures the watch's look and a write.
 //   GEARMULATOR_MD_FIRMWARE_BIN=<ROM> mdMachineMemoryFirmwareTest md
 //   GEARMULATOR_MM_FIRMWARE_BIN=<ROM> mdMachineMemoryFirmwareTest mm
@@ -80,9 +80,10 @@ namespace
 	class Session
 	{
 	public:
-		explicit Session(const std::optional<Bytes>& _projectState = std::nullopt)
+		explicit Session(const std::optional<Bytes>& _projectState = std::nullopt, const bool _standalone = false)
 		{
 			Processor::EphemeralConfig config;
+			config.standaloneState = _standalone;
 			config.deviceHomePath = g_home.getFullPathName().toStdString() + "/";
 			config.machineMemoryFolder = g_memory.getFullPathName().toStdString() + "/";
 			processor = std::make_unique<Processor>(g_model, config);
@@ -310,7 +311,13 @@ int main(const int _argc, char** _argv)
 		check(readFile(memoryFile()) == savedFile, "opening the project leaves the file as it was");
 	}
 	{
-		std::puts(" session 4: START FROM FACTORY MEMORY");
+		std::puts(" session 3b: the standalone's own state (saved when it quit) does not win over the file");
+		Session s(factoryProject, true);
+		check(s.waitWatching(), "the machine starts");
+		check(s.kitName(slot) == name, "kit " + std::to_string(slot + 1) + " is the saved '" + name + "'");
+	}
+	{
+		std::puts(" session 4: start from factory memory");
 		Session s;
 		check(s.waitWatching(), "the machine starts");
 		check(s.kitName(slot) == name, "kit " + std::to_string(slot + 1) + " is the saved one first");

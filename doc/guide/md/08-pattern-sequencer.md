@@ -170,7 +170,7 @@ Press {key:rotate}. The selected track moves one step earlier or later. Its trig
 This is a feature of the MKI hardware. The editor offers the MKII model only (see chapter 13). Its **Page** control shows the pages as four lights, as described under GRID RECORDING.
 
 ## LIVE RECORDING
-<!-- rows: MD-112 MD-113 @6306a0 -->
+<!-- rows: MD-112 MD-113 @2668b2 -->
 
 In live recording you play the tracks and the machine puts the trigs on the steps.
 
@@ -183,7 +183,13 @@ While recording is on, a click on a step plays the track, and the other edits of
 
 ![Live recording](shot:md-live-recording)
 
-{gap:MD-113}You cannot take notes out while recording in the editor yet. Take them off in the grid afterwards.{/gap}
+To take trigs out while recording, as the machine does with [EXIT/NO] and a [TRIG] key:
+
+1. Select the track on the rail.
+2. Hold {key:live-erase}. The track's header is marked red. The machine removes the track's trigs on each step that plays while the key is down.
+3. Let the key go to stop erasing.
+
+Only the selected track is erased. The erase ends by itself when recording stops.
 
 ## NOTE COPY
 <!-- rows: MD-114 @ad7ba6 -->
