@@ -656,6 +656,36 @@ namespace
 			std::printf("  UNDO KIT: kit %d, %s\n", r.desk->currentKit(), kitWorking(r).c_str());
 			check(back() && kitWorking(r) == "edited", "UNDO KIT: K" + std::to_string(to + 1) + " plays again with its unsaved edit, and the editor follows");
 		}
+		// MM-102 at the top of the list: from K128 the route is 2 + 128 + 1 keys (about 262 panel states, more than the
+		// old queue of 128 held): an edit of K127, LOAD KIT K128, UNDO KIT brings K127 back with its edit
+		{
+			const auto loadTo = [&](const int _k)
+			{
+				r.msg(R"({"op":"loadKit","force":true,"k":)" + std::to_string(_k) + "}");
+				const auto t = r.ms();
+				while(r.desk->currentKit() != _k && r.ms() - t < 8000)
+					r.run(100);
+				r.run(800);
+			};
+			loadTo(126);
+			auto e = *r.desk->workingKit();
+			const auto w = static_cast<uint8_t>(e.tracks[0].pages[2][0] == 35 ? 36 : 35);
+			e.tracks[0].pages[2][0] = w;
+			r.msg(R"({"op":"set","id":13,"kind":"workingKit","doc":)" + ed::json::write(ed::mmKitToJson(e)) + "}");
+			r.run(800);
+			loadTo(127);
+			check(r.desk->currentKit() == 127, "LOAD KIT K128 over the edited K127");
+			r.msg(R"({"op":"loadUndoKit","id":14,"force":true})");
+			const bool taken = r.lastResult().isObject() && r.lastResult().find("ok")->asBool();
+			const auto t3 = r.ms();
+			const auto high = [&] { const auto wk = r.desk->workingKit(); return r.desk->currentKit() == 126 && wk && wk->tracks[0].pages[2][0] == w; };
+			while(!high() && r.ms() - t3 < 12000)
+				r.run(100);
+			r.run(1000);
+			std::printf("  UNDO KIT from K128: kit %d, %s\n", r.desk->currentKit(), kitWorking(r).c_str());
+			check(taken && high() && kitWorking(r) == "edited", "UNDO KIT from K128 (129 UP keys): K127 plays again with its unsaved edit");
+			loadTo(to);
+		}
 	}
 
 	// P7: loading a pattern (which loads its kit) leaves the kit that plays clean, and no question
@@ -820,6 +850,8 @@ namespace
 		r.msg(R"({"op":"record","mode":"live"})");
 		r.run(600);
 		check(r.tel.recording.load() == 2, "LIVE RECORDING on");
+		r.msg(R"({"op":"loadUndoKit","force":true})");
+		check(!ok() && r.tel.recording.load() == 2, "UNDO KIT is refused while recording (its keys would leave the kit list open)");
 		r.msg(R"({"op":"liveErase","t":0,"on":true})");
 		check(ok(), "liveErase on taken");
 		r.run(500);
