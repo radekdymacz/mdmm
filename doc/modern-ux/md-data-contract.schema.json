@@ -2817,6 +2817,53 @@
         },
         {
           "type": "object",
+          "description": "core: a trial of edits under the gesture g (the machine picker's audition)",
+          "required": ["op", "g"],
+          "properties": {
+            "op": {
+              "const": "trialBegin"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core: the trial g ends: kept, or its step taken back while it is the newest one",
+          "required": ["op", "g"],
+          "properties": {
+            "op": {
+              "const": "trialEnd"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "keep": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "description": "core: a whole document as the intent",
           "required": ["op", "kind", "doc"],
           "properties": {

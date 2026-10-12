@@ -30,6 +30,7 @@
 | P5 MM | MM: what silences held notes | CC 123 lets them go (as note offs: the release rings); CC 120 and MIDI Stop do nothing; the panel's STOP lets them go too | wave 2 |
 | P7 | MD: which tracks take the EDIT ALL row (`gapProbesFirmwareTest p7`) | Every track. `editAll` is a flag (any nonzero is ALL), not a track mask; per track only the own row counts | wave 3 |
 | P8 | MM: the range of GLOBAL > AUDIO > MASTER TUNE (`gapProbesFirmwareTest p8`, wave 5) | 4000 to 4999 tenths of Hz (400.0 to 499.9 Hz); UP / DOWN 1 Hz, RIGHT / LEFT 0.1 Hz | wave 5 |
+| P9 | MD: a machine assigned and its track's note right behind it (the picker's audition); the level CC (`gapProbesFirmwareTest p9`, wave 8) | The note plays the new machine, also with no gap after the SysEx; the old machine and its values again give the old sound; level CC 0 is silent, 64 about 0.4 and 127 about 1.6 of 100's loudness | wave 8 |
 
 ## P1: Song Position Pointer and Continue
 
@@ -254,3 +255,22 @@ the pattern for them to set.
 
 So the editor's `masterTune` takes 4000 to 4999; a value the panel cannot reach is refused. What the tune does to the
 pitch was not measured (the machine's own setting, read back by `mmIntentCasesFirmwareTest`).
+
+## P9: MD machine audition and LEV (wave 8, 2026-10-12)
+
+`gapProbesFirmwareTest <MD ROM> - p9` (about 20 s). Track 1, the default map (note 36 on channel 1). A machine is
+assigned as the desk's `machine` command does it (SysEx 0x5B with init SYNTHESIS, then the synthesis values as CCs) and
+the note follows after 0, 5, 20 or 100 ms; the loudness of the first 300 ms after the note says which machine played
+(GND-SIN tuned against GND-EMPTY, both ways).
+
+- Controls: GND-SIN 0.057, GND-EMPTY 0.0002.
+- 8 of 8 notes played the new machine, at every gap, 0 ms too: the firmware applies the SysEx before the note that
+  follows it in the stream. The desk never lets a note pass a SysEx (B-014), so the page sends the note when the
+  machine command's result comes.
+- The way back, as Undo delivers it (the old machine, then its values): 0.0563 before, 0.0006 while GND-EMPTY was on,
+  0.0564 after. The old sound comes back.
+- Level CC (8 + track on the base channel), against the note: 127 0.091, 100 0.056, 64 0.023, 32 0.006, 0 0.00001.
+  So LEV is a gain, silent at 0, about square in the value.
+
+RESULT P9: 8 of 8 notes played the new machine (also with no gap: SysEx then note in one stream); the old machine and
+its values again give the same sound; level CC 127: 0.09094, 100: 0.05631, 64: 0.02310, 32: 0.00577, 0: 0.00001.
