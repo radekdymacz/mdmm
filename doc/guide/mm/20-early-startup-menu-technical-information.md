@@ -18,7 +18,7 @@ The empty reset clears the memory of the machine.
 3. Click **Clear everything**. The **Empty reset** panel opens. The editor writes an empty kit, pattern and song into every slot through the SYSEX RECV screen, then reads each one back.
 4. Read the report and click **Done**.
 
-The globals stay. To reset a global, open GLOBAL and click **Reset to defaults**.
+The globals stay. A global is reset in its own slot in GLOBAL (chapter 19).
 
 NOTE: The reset has no undo. Click **Export SysEx…** in the question first to keep a way back.
 

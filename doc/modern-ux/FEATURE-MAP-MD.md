@@ -273,7 +273,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
 | p.79 | Test mode | Self test | ➖ |  |  | – |
-| p.79 | Empty reset | Clear all | ✅ | Engine menu: Reset machine… > Empty reset… (asked twice): every kit, pattern and song cleared, read back and reported in the SysEx panel | Globals and samples stay: GLOBAL > Reset to defaults resets a global. | 1 |
+| p.79 | Empty reset | Clear all | ✅ | Engine menu: Reset machine… > Empty reset… (asked twice): every kit, pattern and song cleared, read back and reported in the SysEx panel | Globals and samples stay: a global is reset in its slot in GLOBAL. | 1 |
 | p.79 | Factory reset | Presets | ✅ | Engine menu: Reset machine… > Factory reset… (asked twice): a second machine started from your ROM gives the factory kits, patterns and songs; sent, read back and reported | About a minute to prepare. Globals and samples stay. | 1 |
 | p.79 | Soft reset | Reload samples | ❌ | None | Restart the editor. | – |
 | p.79 | MIDI upgrade / send upgrade | OS update | ➖ |  | Firmware fixed to OS 1.63. | – |

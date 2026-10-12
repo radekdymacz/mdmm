@@ -1387,7 +1387,7 @@
 <div class="gd-body gd-prose"><h2>EMPTY RESET</h2>
 <p>The empty reset clears the memory of the machine.</p>
 <ol class="gd-steps"><li>Choose <b class="gd-ui">RESET MACHINE…</b> in the engine menu (the engine name at the left of the LCD). A question says what the reset clears. <b class="gd-ui">Cancel</b> is the default: <kbd class="gd-key">[ESC]</kbd> or a click outside answers it.</li><li>Click <b class="gd-ui">Empty reset…</b>. The editor asks a second time.</li><li>Click <b class="gd-ui">Clear everything</b>. The <b class="gd-ui">Empty reset</b> panel opens. The editor writes an empty kit, pattern and song into every slot through the SYSEX RECV screen, then reads each one back.</li><li>Read the report and click <b class="gd-ui">Done</b>.</li></ol>
-<p>The globals stay. To reset a global, open GLOBAL and click <b class="gd-ui">Reset to defaults</b>.</p>
+<p>The globals stay. A global is reset in its own slot in GLOBAL (chapter 19).</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The reset has no undo. Click <b class="gd-ui">Export SysEx…</b> in the question first to keep a way back.</p></aside>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>With a real Monomachine over MIDI, the machine must be on its SYSEX RECV screen. The sync field reads SEND and the number of waiting dumps until it is.</p></aside>
 </div></section>
