@@ -39,9 +39,9 @@ doc/guide/OPEN-FACTS.md, then `scripts/mdmm-full-gate.sh` on a quiet Mac and `re
 **Known flaky under parallel load** (pass alone): md-boot-card, md-song-mode, mm-top-pattern-next, the MD intent cases
 when several worktrees run firmware tests at once. Look at shared state between worktrees before the release gate.
 
-**Open choices for Radek:** (1) skins true to the product photos on both editors (MD silver with a red LCD; MM MKI
-light-blue LCD, MKII bluish-white) or only the MM (wave 10); (2) the Discord reply to the 2026-10-11 tester report is
-drafted in the session, not posted; (3) Clear vs Reset to defaults (wave 5).
+**Radek's choices (2026-10-12):** (1) skins true to the product photos on both editors (MD silver with a red LCD; MM MKI
+light-blue LCD, MKII bluish-white), built on their own branch `feat/0.6-skins` and compared side by side with the
+current skins before any merge; (2) no Discord reply for now; (3) wave 5 keeps the name **Clear**.
 
 ## Execution (started 2026-10-11, after 0.5.1 and the dev-cycle work)
 
