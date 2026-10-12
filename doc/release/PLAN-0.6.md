@@ -29,6 +29,11 @@ and LCD fit (B-061, B-065, B-066), the volume-strip fix; the feature data, journ
 | `feat/0.6-sysex` (wave 6) | core committed (c118e4fa7); page, journeys and mock-up in one unchecked WIP commit (d880b0c67) | finish the page and MD journeys, rows, guide; tier 1 and 2; review; merge |
 | `feat/0.6-recording` (wave 7) | probes, MD live erase, MM step recording and live erase in the core, firmware tests, stub host; `feat/0.6-features` merged in; step 0 (tier 1 on the combined base after waves 2 + 4, 2026-10-12): green in 231 s (125 unit tests, the page journeys of both editors, one golden per machine); page part, journeys, rows, guide and TEST-0.6.md done | review, merge |
 
+**Wave 11 (added 2026-10-12, I-024):** machine memory that stays for every new session, way A: one memory file per
+machine in the editor's user folder; a session with no project state starts from it; each save on the machine (kit,
+pattern, song, global) writes it; a DAW project still opens with its own memory; a menu item starts from factory memory;
+a setting turns it off. Two instances of one machine: the last save wins (say so in the guide). Branch `feat/0.6-memory`.
+
 **Not started:** wave 8 (MD LEV on Mix, machine audition), wave 9 (MM Perform: see and set up, B-064: mock-up and
 self-review against Radek's UI rules first), wave 10 (MM MKII look, I-023: colours sampled in IDEAS.md I-023; the
 Machinedrum photos also disagree with our MD skins, see the open choice below), slice 5 (journeys and snapshots for the
@@ -39,9 +44,9 @@ doc/guide/OPEN-FACTS.md, then `scripts/mdmm-full-gate.sh` on a quiet Mac and `re
 **Known flaky under parallel load** (pass alone): md-boot-card, md-song-mode, mm-top-pattern-next, the MD intent cases
 when several worktrees run firmware tests at once. Look at shared state between worktrees before the release gate.
 
-**Open choices for Radek:** (1) skins true to the product photos on both editors (MD silver with a red LCD; MM MKI
-light-blue LCD, MKII bluish-white) or only the MM (wave 10); (2) the Discord reply to the 2026-10-11 tester report is
-drafted in the session, not posted; (3) Clear vs Reset to defaults (wave 5).
+**Radek's choices (2026-10-12):** (1) skins true to the product photos on both editors (MD silver with a red LCD; MM MKI
+light-blue LCD, MKII bluish-white), built on their own branch `feat/0.6-skins` and compared side by side with the
+current skins before any merge; (2) no Discord reply for now; (3) wave 5 keeps the name **Clear**.
 
 ## Execution (started 2026-10-11, after 0.5.1 and the dev-cycle work)
 
