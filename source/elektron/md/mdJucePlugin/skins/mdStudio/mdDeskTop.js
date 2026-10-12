@@ -221,6 +221,9 @@ function hostRefused(m) {
    the arrangement cell, the time bar up to it, the What plays line and the LCD's pattern slot ===== */
 let songRowShown = -2;
 function songRowNow() { const t = Docs.telemetry; return V.songMode === true && V.playing && t && t.songRow != null && t.songRow >= 0 ? t.songRow : -1; }
+/* MD-147: the passes of the playing row still to come (telemetry songRepeats, the machine's counter), -1 unknown */
+function songLeftNow() { const t = Docs.telemetry; return songRowNow() >= 0 && t.songRepeats != null ? t.songRepeats : -1; }
+const leftText = n => n > 0 ? ` · ${n} more` : n === 0 ? " · last" : "";
 const nn3 = n => String(n + 1).padStart(3, "0");
 const songRows = () => V.song.filter(r => r.type !== "end").length;
 /* the What plays line: PATTERN B07 / SONG 01 · row 017 of 65 · B01 / CHAIN A03»A05 */
@@ -228,7 +231,7 @@ function playsText() {
 	const plays = playsOf(Docs);
 	if (plays.kind !== "song") return plays.label;
 	const row = songRowNow(), r = row >= 0 ? V.song[row] : null;
-	return `SONG ${String(V.songSlot + 1).padStart(2, "0")} · ` + (row >= 0 ? `row ${nn3(row)} of ${songRows()}${r && !r.type ? " · " + patName(r.pat) : ""}` : `${songRows()} rows · ${V.playing ? "…" : "stopped"}`);
+	return `SONG ${String(V.songSlot + 1).padStart(2, "0")} · ` + (row >= 0 ? `row ${nn3(row)} of ${songRows()}${r && !r.type ? " · " + patName(r.pat) + (r.rep > 1 ? leftText(songLeftNow()) : "") : ""}` : `${songRows()} rows · ${V.playing ? "…" : "stopped"}`);
 }
 /* the LCD's pattern slot reads SONG 01 · 017 in song mode */
 function songLcd() {
@@ -243,14 +246,14 @@ function markSongRow(force) {
 	const st = document.getElementById("arrstate");
 	if (st && st.textContent !== arrState()) st.textContent = arrState();
 	document.querySelector(".songui")?.classList.toggle("songplaying", V.songMode === true && V.playing);
-	const row = songRowNow();
-	if (row === songRowShown && !force) return;
-	songRowShown = row;
+	const row = songRowNow(), left = songLeftNow(), key = row + ":" + left;
+	if (key === songRowShown && !force) return;
+	songRowShown = key;
 	songLcd();
 	const pl = document.getElementById("songPlays"); if (pl) pl.textContent = playsText();
 	if (S.ws !== "song") return;
-	$$(".scell.ph").forEach(c => c.classList.remove("ph"));
-	if (row >= 0) document.querySelector(`.scell[data-i="${row}"]`)?.classList.add("ph");
+	$$(".scell.ph").forEach(c => { c.classList.remove("ph"); delete c.dataset.left; });
+	if (row >= 0) { const c = document.querySelector(`.scell[data-i="${row}"]`); if (c) { c.classList.add("ph"); if (V.song[row]?.rep > 1 && left >= 0) { c.dataset.left = left; } } }
 	$$(".durbar .db").forEach(d => { const i = +d.dataset.i; d.classList.toggle("past", row >= 0 && i < row); d.classList.toggle("now", i === row); });
 }
 
@@ -266,7 +269,8 @@ function onTelemetry(m) {
 	if (V.rec !== wasRec) { renderTop(); if (V.rec) toast("Live recording: click a track's steps to play it, move a value to lock it."); }
 	S.step = V.playing ? m.step : -1;
 	markSongRow();
-	if (wasPlaying !== V.playing) { renderTop(); $$(".ph").forEach(c => c.classList.remove("ph")); setPos(); phLast = -1; movePH(); }
+	/* the song row's mark is markSongRow's (just above): PLAY must not take it away until the row changes */
+	if (wasPlaying !== V.playing) { renderTop(); $$(".ph:not(.scell)").forEach(c => c.classList.remove("ph")); setPos(); phLast = -1; movePH(); }
 	const prev = lastStep; lastStep = S.step;
 	if (S.step === prev) return;
 	/* Capture next loop (UW): the recorder track plays (records) for one whole loop from the next

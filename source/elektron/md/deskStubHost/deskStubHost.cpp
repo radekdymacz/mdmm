@@ -300,6 +300,7 @@ namespace
 			t.bankGroup = m_bankGroup;
 			t.panelPending = 0;
 			t.songRow = m_songMode && m_playing ? songLocate(m_songPos).first : -1;
+			t.songRepeats = m_songMode && m_playing ? songRepeatsLeft(m_songPos) : -1;
 			_desk.onTelemetry(t);
 			if(now - m_memoryAt >= 32)
 			{
@@ -456,6 +457,24 @@ namespace
 				at += all;
 			}
 			return {0, 0};
+		}
+
+		// MD-147: the passes of the row at _pos still to come (the firmware's counter, counting down)
+		int songRepeatsLeft(const int _pos) const
+		{
+			const auto& song = m_songs[m_song];
+			int at = 0;
+			for(size_t i = 0; i < song.rows.size(); ++i)
+			{
+				const auto& r = song.rows[i];
+				if(ed::songRowKind(r, i) != ed::MdSongRowKind::Pattern)
+					break;
+				const int len = std::max(1, r.end - r.start), all = len * (r.repeats + 1);
+				if(_pos < at + all)
+					return r.repeats - (_pos - at) / len;
+				at += all;
+			}
+			return 0;
 		}
 
 		// wave 2: MIDI Stop holds the step, Continue goes on from it, a song position (stopped) sets where (P1; CTRL IN on)

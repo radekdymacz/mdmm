@@ -363,3 +363,8 @@ scale's steps into the new ones: trigs, accent, swing and locks (16 to 64: page 
 twice; LEN 20 in scale 32 to 48: the 32 steps, then page 1 again). A trig anywhere past the old scale (also past the new
 one) stops the copy. LEN alone copies nothing. `totalLength` in the core does the same; `mdDeskFirmwareTest p4`
 compares it with the panel's.
+
+**W12f, the MD song row's repeats (MD-147).** Main RAM 0x2b1901 counts the playing row's passes still to come, down by
+one a pass (REPEATS 3: 3, 2, 1, 0), and starts again at the next row; it is read with the row byte (0x2b18f5), at PLAY
+and at each pattern wrap (`md::SongPosition::g_repeatsAddress`, telemetry `songRepeats`; `mdDeskFirmwareTest songrow`
+checks it through a LOOP).
