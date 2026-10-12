@@ -219,7 +219,10 @@ function sendControl(el, v) {
 	if (d.g === "syn" || d.g === "fx" || d.g === "rt") sendParam(t, d.g, d.n, v);
 	else if (d.g === "lfo") sendLfo(t, d.n, v);
 	else if (d.g === "mfx") sendMfx(d.f, d.n, v);
+	else if (d.g === "lev") sendLevel(t, v);
 }
+/* LEV: the kit's level of track t (the machine's LEVEL knob; the kit that plays takes it at once as its level CC) */
+function sendLevel(t, v) { cmd("level", { k: V.kit, t, v }, "lev:" + t, [[["tracks", t, "level"], v]]); }
 function goPattern(p) {
 	p = (p + 128) % 128;
 	if (p === V.pat && V.queued == null) return;
@@ -245,6 +248,7 @@ function ref(el) {
 	const d = el.dataset, t = d.t != null ? +d.t : S.sel, tr = V.tracks[t];
 	switch (d.g) {
 	case "syn": return [tr.syn, d.n]; case "fx": return [tr.fx, d.n]; case "rt": return [tr.rt, d.n]; case "lfo": return [tr.lfo, d.n];
+	case "lev": return [tr, "level"];
 	case "mfx": return [V.mfx[d.f].v, d.n]; case "src": return [Mods.source(d.src), d.n]; case "link": return [Mods.doc.links[+d.li], d.n];
 	}
 }
