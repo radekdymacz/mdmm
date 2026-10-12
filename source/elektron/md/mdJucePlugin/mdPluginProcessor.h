@@ -114,6 +114,8 @@ namespace mdJucePlugin
 		// Changes whenever the status may have changed (any thread): the session republishes it to the page.
 		uint32_t machineMemoryVersion() const { return m_memoryVersion.load(std::memory_order_acquire); }
 		bool keepMachineMemory() const { return m_memoryKeep.load(std::memory_order_acquire); }
+		// The start's decision is made (the file's slots laid over, or not needed): tests wait for it
+		bool machineMemoryStarted() const { return m_memoryStartDone.load(); }
 		void setKeepMachineMemory(bool _keep);
 		// RESET MACHINE… > Start from factory memory: the file goes and the machine restarts from factory memory (a fresh machine's
 		// state, as on a new install). The page asked the user first. False with the reason in _note.
@@ -125,10 +127,11 @@ namespace mdJucePlugin
 		{
 			double lookLockMaxMs = 0, lookLockLastMs = 0, lookMs = 0, writeMs = 0;
 			uint32_t looks = 0, writes = 0, failedWrites = 0;
+			size_t lastSlots = 0;		// how many slots the last write merged in
 			size_t fileBytes = 0;
 		};
 		MachineMemoryCost machineMemoryCost() const;
-		// What this memory knows of the file (the stamp it holds the saves of, saves the file lacks): the "MMEM" chunk
+		// The saves this memory holds that the file lacks (the "MMEM" chunk of the standalone's state)
 		machineMemory::Mark machineMemoryMark() const;
 		// One last look now and a write when a save is not in the file yet (the instance going away, a state save)
 		void flushMachineMemory(bool _closing);
@@ -171,9 +174,20 @@ namespace mdJucePlugin
 		void serviceMachineMemoryStart();
 		void startMachineMemoryThread();
 		void stopMachineMemoryThread();
-		bool writeMachineMemory(uint64_t _epoch);
+		bool writeMachineMemory(const std::vector<machineMemory::Key>& _keys, const std::vector<uint8_t>& _base, const std::vector<uint8_t>& _patch,
+			const std::vector<uint8_t>& _sectors);
+		bool writeChanges(bool _withForced);
 		bool lookMachineMemory(uint64_t& _signature, uint64_t& _epoch);
+		bool rebaseMachineMemory(uint64_t _signature, uint64_t _epoch);
 		void serviceSampleStore();
+		void takeSampleSectors();
+		bool copyMachineFlash(std::vector<uint8_t>& _flash);
+		machineMemory::StoreFile readMemoryStore(bool& _ok, std::string& _note);
+		static bool writeMemoryFile(const juce::File& _file, const std::vector<uint8_t>& _bytes, std::string& _error);
+		std::string moveMemoryFileAside(std::string _text);
+		void showMachineMemoryNotice(const std::string& _text);
+		void factoryMemoryRefused();
+		void machineMemoryWillBeReplaced();
 		void machineMemoryUnusable(const std::string& _why);
 		void setMachineMemoryNote(std::string _note);
 		bool machineDeviceReady();
@@ -210,9 +224,12 @@ namespace mdJucePlugin
 		// I-024: machine memory. m_memoryFolder empty: off (an isolated test, or a processor no plug-in wrapper made)
 		std::string m_memoryFolder;
 		std::atomic<bool> m_projectStateSeen{false};	// a DAW project's state came this session (any thread)
-		std::optional<machineMemory::Mark> m_loadedMark;	// the last state's "MMEM" chunk (m_memoryMutex)
-		bool m_standaloneState = false;		// the state at the start is the standalone's own: the file wins over it
-		bool m_memoryStartDone = false;
+		std::optional<machineMemory::Mark> m_loadedMark;	// the last state's "MMEM" chunk, version 2 (m_memoryMutex)
+		bool m_standaloneState = false;		// the state at the start is the standalone's own: the file's slots are laid over it
+		std::atomic<bool> m_ownStateSeen{false};	// the standalone's own state came
+		std::atomic<uint64_t> m_memoryRomFingerprint{0};	// MD: the ROM's (the file's flash sectors belong to it)
+		std::atomic<uint64_t> m_factoryRestoreGeneration{0};	// Start from factory memory's restore, 0: none
+		std::atomic<bool> m_memoryStartDone{false};
 		std::atomic<uint64_t> m_memoryRestoreGeneration{0};	// the device's restore generation of the file's payload, 0: none
 		std::atomic<uint32_t> m_memoryVersion{1};
 		std::atomic<bool> m_memorySampleStored{false};	// machineMemorySampleStored, for the thread's next look

@@ -1,9 +1,11 @@
 #pragma once
 
 // I-024 (wave 11 of 0.6): the machine's memory that stays for every new session, like a real machine's battery-backed
-// memory (doc/modern-ux/DESIGN-machine-memory.md). Pure: the file's frame, what a save is, when to write and how a
-// session starts. The processor reads
-// and writes the file and runs the watch on its "machine memory" thread (mdPluginProcessor.cpp); mdMachineMemoryTest.
+// memory (doc/modern-ux/DESIGN-machine-memory.md). The file is a store of SAVED SLOTS: each save writes only the slots
+// it changed into it (read, merge, write), never the whole memory; a session with no project state starts from factory
+// memory (or the standalone's own) with the file's slots laid over it. Pure: the slot layout of each machine's patch
+// RAM, the file's frame, what changed, when to write and how a session starts. The processor reads and writes the file
+// and runs the watch on its "machine memory" thread (mdPluginProcessor.cpp); mdMachineMemoryTest.
 
 #include "mdLib/mdstate.h"
 #include "mdLib/mdtypes.h"
@@ -11,22 +13,27 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <map>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
 namespace mdJucePlugin::machineMemory
 {
-	// The file's name in the machine's data folder (<data folder>/memory/), and where an unusable one is moved.
+	// The file's name in the machine's data folder (<data folder>/memory/), where an unusable one is moved, and where a
+	// standalone's slots that the file replaced at its first start are kept (a state from before I-024)
 	constexpr const char* g_folder = "memory";
 	constexpr const char* g_fileName = "machine-memory.bin";
 	constexpr const char* g_unusableName = "machine-memory.unusable.bin";
+	constexpr const char* g_keptName = "machine-memory.standalone-kept.bin";
 
 	constexpr char g_magic[8] = {'M', 'D', 'M', 'M', 'M', 'E', 'M', '\0'};
-	constexpr uint32_t g_version = 1;
-	constexpr size_t g_headerSize = 32;
-	// Larger than any state of either machine (MD: 1 MiB patch RAM and at most 8 MiB of flash sectors with their
-	// headers; MM: 3 MiB), so a size field from a broken file never asks for gigabytes.
+	constexpr uint32_t g_version = 2;
+	constexpr size_t g_headerSize = 40;
+	constexpr size_t g_entryHeaderSize = 20;
+	// Larger than any store of either machine (MD: 1 MiB patch RAM and 6 MiB of sample flash; MM: 3 MiB), so a size
+	// field from a broken file never asks for gigabytes.
 	constexpr uint32_t g_maxPayload = 16u * 1024u * 1024u;
 
 	// The settings key of "KEEP MEMORY" (the editor's config, default on).
@@ -37,9 +44,10 @@ namespace mdJucePlugin::machineMemory
 		None,
 		Empty,		// no bytes
 		NotOurs,	// another file (the magic is not ours)
-		Version,	// a newer format than this editor reads
+		Version,	// another format than this editor reads (newer, or the 0.6 previews' whole-memory file)
 		Machine,	// the other machine's
-		Corrupt		// size or CRC wrong: a broken write, a damaged or crafted file
+		Corrupt,	// size or CRC wrong, an entry that names no slot: a broken write, a damaged or crafted file
+		Layout		// written for another slot layout than this editor knows
 	};
 
 	inline uint8_t machineByte(const md::MachineModel _model)
@@ -47,118 +55,212 @@ namespace mdJucePlugin::machineMemory
 		return _model == md::MachineModel::Monomachine ? 1 : 0;
 	}
 
+	// ---- The slot layout (measured on MD OS 1.63 and MM OS 1.32B: mdMachineMemoryFirmwareTest, MDMM_MEMORY_LAYOUT=1:
+	// a changed dump sent to slots 0, 1 and the last and the bytes it changed; the MM's dumps' raw payloads found in
+	// the patch RAM as they are)
+
+	struct Range
+	{
+		uint32_t begin;
+		uint32_t end;
+	};
+
+	enum class Kind : uint8_t
+	{
+		Kit = 1,
+		Pattern = 2,
+		Song = 3,
+		Global = 4,
+		Other = 5,	// watched patch RAM in no known slot, in 256-byte blocks (written when a save changes it)
+		Sector = 6	// a 64 KiB flash sector: the MD's sample flash (UW), the MM's DigiPRO user flash
+	};
+
+	struct Key
+	{
+		Kind kind = Kind::Kit;
+		uint32_t index = 0;
+		bool operator<(const Key& _o) const { return kind != _o.kind ? kind < _o.kind : index < _o.index; }
+		bool operator==(const Key& _o) const { return kind == _o.kind && index == _o.index; }
+	};
+
+	inline std::string describe(const Key& _k)
+	{
+		const char* n = "block";
+		switch(_k.kind)
+		{
+		case Kind::Kit: n = "kit"; break;
+		case Kind::Pattern: n = "pattern"; break;
+		case Kind::Song: n = "song"; break;
+		case Kind::Global: n = "global"; break;
+		case Kind::Other: n = "block"; break;
+		case Kind::Sector: n = "flash sector"; break;
+		}
+		return std::string(n) + " " + std::to_string(_k.index + 1);
+	}
+
+	struct Slot
+	{
+		Key key;
+		std::vector<Range> ranges;
+		uint32_t size = 0;
+		// Bytes another save changes as a side effect (offsets in the slot's bytes): a pattern's kit, which SAVE KIT and
+		// LOAD KIT set in the pattern that plays (measured: MD 0x94, MM 0x426). A change of these alone is merged byte by
+		// byte, so a kit saved in an old project does not bring back the rest of that project's pattern.
+		std::vector<uint32_t> links;
+	};
+
+	constexpr uint32_t g_otherBlock = 0x100;
+	constexpr uint32_t g_sectorSize = md::g_uwFlashSectorSize;	// 0x10000
+	// The MD's sample sectors (B-054: the OS writes only 0x2c0000-0x7bffff; every sector from 0x200000 up is kept)
+	constexpr uint32_t g_mdFirstSector = md::g_mdFirmwareFlashEnd / g_sectorSize;	// 32
+	constexpr uint32_t g_mdSectors = md::g_romSize / g_sectorSize;					// 128
+	constexpr uint32_t g_mmSectors = md::g_mmUserFlashStateSize / g_sectorSize;	// 32
+
+	// What a save never is: the working areas and bytes that move by themselves (the working kit and its copy, the
+	// working song, the last loaded pattern, the MD's byte that moves while it plays, the MM's stack). Knobs, CCs and
+	// automation land here.
+	inline std::vector<Range> unwatched(const md::MachineModel _model)
+	{
+		if(_model == md::MachineModel::Monomachine)
+			return {{0x000000, 0x00059c}, {0x016ae3, 0x016ae4}, {0x0e26e8, 0x0e39b8}, {0x0ffd38, 0x100000}};
+		return {{0x000000, 0x0008ca}, {0x0126ae, 0x0130be}, {0x0272be, 0x0272c0}, {0x07fff0, 0x07fff8}};
+	}
+
 	namespace detail
 	{
+		inline void addArray(std::vector<struct Slot>& _out, const Kind _kind, const uint32_t _count,
+			const std::vector<std::pair<uint32_t, uint32_t>>& _parts, const std::vector<uint32_t>& _links = {})	// (base, size = stride) per part
+		{
+			for(uint32_t i = 0; i < _count; ++i)
+			{
+				Slot s;
+				s.key = {_kind, i};
+				s.links = _links;
+				for(const auto& [base, size] : _parts)
+				{
+					s.ranges.push_back({base + i * size, base + (i + 1) * size});
+					s.size += size;
+				}
+				_out.push_back(std::move(s));
+			}
+		}
+
+		inline std::vector<Slot> build(const md::MachineModel _model)
+		{
+			std::vector<Slot> out;
+			if(_model == md::MachineModel::Monomachine)
+			{
+				addArray(out, Kind::Kit, 128, {{0x00059c, 0x2ba}});
+				addArray(out, Kind::Global, 8, {{0x0162a0, 0x108}});
+				addArray(out, Kind::Pattern, 128, {{0x016ae4, 0x1978}}, {0x426});
+				addArray(out, Kind::Song, 24, {{0x0e39b8, 0x12d0}});
+			}
+			else
+			{
+				addArray(out, Kind::Kit, 64, {{0x0008ca, 0x460}});
+				addArray(out, Kind::Global, 8, {{0x0120cc, 0xb2}});
+				addArray(out, Kind::Song, 32, {{0x0130be, 0xa10}});
+				// a UW pattern is three parts: its steps and locks, a 204-byte record, its extended part
+				addArray(out, Kind::Pattern, 128, {{0x0272c0, 0x896}, {0x06bdc0, 0xcc}, {0x080000, 0x90c}}, {0x94});
+			}
+			// every other watched byte: in 256-byte blocks
+			std::vector<uint8_t> taken(md::g_patchRamStateSize, 0);
+			for(const auto& s : out)
+				for(const auto& r : s.ranges)
+					std::fill(taken.begin() + r.begin, taken.begin() + r.end, uint8_t{1});
+			for(const auto& r : unwatched(_model))
+				std::fill(taken.begin() + r.begin, taken.begin() + r.end, uint8_t{1});
+			for(uint32_t b = 0; b < md::g_patchRamStateSize; b += g_otherBlock)
+			{
+				Slot s;
+				s.key = {Kind::Other, b / g_otherBlock};
+				for(uint32_t i = b; i < b + g_otherBlock; ++i)
+				{
+					if(taken[i])
+						continue;
+					if(!s.ranges.empty() && s.ranges.back().end == i)
+						++s.ranges.back().end;
+					else
+						s.ranges.push_back({i, i + 1});
+					++s.size;
+				}
+				if(s.size)
+					out.push_back(std::move(s));
+			}
+			return out;
+		}
+
+		inline void putU16(std::vector<uint8_t>& _out, const uint16_t _v)
+		{
+			_out.push_back(static_cast<uint8_t>(_v));
+			_out.push_back(static_cast<uint8_t>(_v >> 8));
+		}
 		inline void putU32(std::vector<uint8_t>& _out, const uint32_t _v)
 		{
 			for(int i = 0; i < 4; ++i)
 				_out.push_back(static_cast<uint8_t>(_v >> (8 * i)));
 		}
-
 		inline void putU64(std::vector<uint8_t>& _out, const uint64_t _v)
 		{
 			for(int i = 0; i < 8; ++i)
 				_out.push_back(static_cast<uint8_t>(_v >> (8 * i)));
 		}
-
-		inline uint64_t getU64(const std::vector<uint8_t>& _in, const size_t _at)
-		{
-			uint64_t v = 0;
-			for(int i = 0; i < 8; ++i)
-				v |= static_cast<uint64_t>(_in[_at + static_cast<size_t>(i)]) << (8 * i);
-			return v;
-		}
-
-		inline uint32_t getU32(const std::vector<uint8_t>& _in, const size_t _at)
+		inline uint32_t getU32(const uint8_t* _p)
 		{
 			uint32_t v = 0;
 			for(int i = 0; i < 4; ++i)
-				v |= static_cast<uint32_t>(_in[_at + static_cast<size_t>(i)]) << (8 * i);
+				v |= static_cast<uint32_t>(_p[i]) << (8 * i);
+			return v;
+		}
+		inline uint64_t getU64(const uint8_t* _p)
+		{
+			uint64_t v = 0;
+			for(int i = 0; i < 8; ++i)
+				v |= static_cast<uint64_t>(_p[i]) << (8 * i);
 			return v;
 		}
 	}
 
-	// The file: the frame (magic, version, machine, the payload's size, a CRC-32 of the stamp and the payload, the stamp),
-	// then the payload as the device state of a project's "MIDI" chunk (synthLib::Plugin::getState(StateTypeGlobal)).
-	// The stamp names this write (never 0): a standalone's own state that knows it holds the same saved memory.
-	inline std::vector<uint8_t> encode(const md::MachineModel _model, const uint64_t _stamp, const std::vector<uint8_t>& _payload)
+	// The patch RAM's slots of a machine, built once (known slots, then the other blocks)
+	inline const std::vector<Slot>& patchSlots(const md::MachineModel _model)
 	{
-		std::vector<uint8_t> out;
-		out.reserve(g_headerSize + _payload.size());
-		out.insert(out.end(), g_magic, g_magic + sizeof(g_magic));
-		detail::putU32(out, g_version);
-		out.push_back(machineByte(_model));
-		out.push_back(0);
-		out.push_back(0);
-		out.push_back(0);
-		detail::putU32(out, static_cast<uint32_t>(_payload.size()));
-		detail::putU32(out, 0);	// the CRC, below
-		detail::putU64(out, _stamp);
-		out.insert(out.end(), _payload.begin(), _payload.end());
-		const auto crc = md::crc32(out.data() + 24, out.size() - 24);
-		for(int i = 0; i < 4; ++i)
-			out[20 + static_cast<size_t>(i)] = static_cast<uint8_t>(crc >> (8 * i));
-		return out;
+		static const std::vector<Slot> mdSlots = detail::build(md::MachineModel::Machinedrum);
+		static const std::vector<Slot> mmSlots = detail::build(md::MachineModel::Monomachine);
+		return _model == md::MachineModel::Monomachine ? mmSlots : mdSlots;
 	}
 
-	struct Decoded
+	inline const Slot* findSlot(const md::MachineModel _model, const Key& _key)
 	{
-		Problem problem = Problem::Empty;
-		uint64_t stamp = 0;
-		std::vector<uint8_t> payload;
-	};
-
-	// The payload of a file of this machine, or why there is none. Never throws, reads nothing past the bytes.
-	inline Decoded decode(const std::vector<uint8_t>& _file, const md::MachineModel _model)
-	{
-		Decoded d;
-		if(_file.empty())
-			return d;
-		if(_file.size() < g_headerSize || std::memcmp(_file.data(), g_magic, sizeof(g_magic)) != 0)
+		static const auto index = [](const md::MachineModel _m)
 		{
-			d.problem = Problem::NotOurs;
-			return d;
-		}
-		if(detail::getU32(_file, 8) != g_version)
-		{
-			d.problem = Problem::Version;
-			return d;
-		}
-		if(_file[12] != machineByte(_model))
-		{
-			d.problem = Problem::Machine;
-			return d;
-		}
-		const auto size = detail::getU32(_file, 16);
-		if(_file[13] != 0 || _file[14] != 0 || _file[15] != 0 || size == 0 || size > g_maxPayload
-			|| _file.size() != g_headerSize + static_cast<size_t>(size)
-			|| detail::getU32(_file, 20) != md::crc32(_file.data() + 24, _file.size() - 24))
-		{
-			d.problem = Problem::Corrupt;
-			return d;
-		}
-		d.problem = Problem::None;
-		d.stamp = detail::getU64(_file, 24);
-		d.payload.assign(_file.begin() + static_cast<std::ptrdiff_t>(g_headerSize), _file.end());
-		return d;
+			std::map<Key, size_t> m;
+			const auto& s = patchSlots(_m);
+			for(size_t i = 0; i < s.size(); ++i)
+				m[s[i].key] = i;
+			return m;
+		};
+		static const auto mdIndex = index(md::MachineModel::Machinedrum);
+		static const auto mmIndex = index(md::MachineModel::Monomachine);
+		const auto& idx = _model == md::MachineModel::Monomachine ? mmIndex : mdIndex;
+		const auto it = idx.find(_key);
+		return it == idx.end() ? nullptr : &patchSlots(_model)[it->second];
 	}
 
-	// The notice's words for a file that cannot be used (the machine then starts from factory memory).
-	inline std::string describe(const Problem _p)
+	inline bool sectorValid(const md::MachineModel _model, const uint32_t _index)
 	{
-		switch(_p)
-		{
-		case Problem::None: return {};
-		case Problem::Empty: return "The saved machine memory is empty.";
-		case Problem::NotOurs: return "The saved machine memory is not a machine memory file.";
-		case Problem::Version: return "The saved machine memory was written by a newer version of the editor.";
-		case Problem::Machine: return "The saved machine memory belongs to the other machine.";
-		case Problem::Corrupt: return "The saved machine memory is damaged (an interrupted write, or the file was changed).";
-		}
-		return {};
+		return _model == md::MachineModel::Monomachine ? _index < g_mmSectors : _index >= g_mdFirstSector && _index < g_mdSectors;
 	}
 
-	// 64-bit FNV-1a, for the watch's looks (not stored anywhere)
+	// The size an entry of _key must have (0: no such slot)
+	inline uint32_t sizeOf(const md::MachineModel _model, const Key& _key)
+	{
+		if(_key.kind == Kind::Sector)
+			return sectorValid(_model, _key.index) ? g_sectorSize : 0;
+		const auto* s = findSlot(_model, _key);
+		return s ? s->size : 0;
+	}
+
+	// 64-bit FNV-1a, for the watch's looks and the layout's name
 	inline uint64_t hash(const uint8_t* _data, const size_t _size, uint64_t _h = 0xcbf29ce484222325ull)
 	{
 		for(size_t i = 0; i < _size; ++i)
@@ -169,27 +271,82 @@ namespace mdJucePlugin::machineMemory
 		return _h;
 	}
 
-	// What a save is (Radek, 2026-10-12): a kit, pattern, song or global stored into a slot, from the page or the machine's
-	// own keys. Knob moves, automation and unsaved edits of the kit that plays are none. The watch looks at the patch RAM
-	// but these ranges, measured on the firmware (mdMachineMemoryFirmwareTest's probe, MDMM_MEMORY_PROBE=1):
-	//   the working area at the bottom: the kit that plays with its unsaved edits, its second copy (what LOAD KIT and
-	//     SAVE KIT go through) and the current slot numbers; every knob, CC and automation lands here. The stored kit
-	//     slots start right after it (MD slot 1 at 0x8c8, 0x460 a kit; MM slot 1 at 0x5a2, 0x2b4 a kit);
-	//   the pattern that was loaded last (two bytes LOAD PATTERN writes, MD 0x272be, MM 0x16ae3): no save;
-	//   MD 0x7fff0-0x7fff7: a byte that moves while it plays; MM: the firmware's stack, the top 4 KiB (it changes by
-	//     itself, now and then).
-	// The file still holds the whole memory, as a project does: what the watch skips is written with the next save.
-	struct Range
+	// The layout's name in the file: a file of another layout is not laid over this machine's memory
+	inline uint32_t layoutId(const md::MachineModel _model)
 	{
-		uint32_t begin;
-		uint32_t end;
-	};
+		uint64_t h = 0xcbf29ce484222325ull;
+		for(const auto& s : patchSlots(_model))
+		{
+			uint8_t k[9] = {static_cast<uint8_t>(s.key.kind)};
+			for(int i = 0; i < 4; ++i)
+			{
+				k[1 + i] = static_cast<uint8_t>(s.key.index >> (8 * i));
+				k[5 + i] = static_cast<uint8_t>(s.size >> (8 * i));
+			}
+			h = hash(k, sizeof(k), h);
+			for(const auto& r : s.ranges)
+			{
+				uint8_t b[8];
+				for(int i = 0; i < 4; ++i)
+				{
+					b[i] = static_cast<uint8_t>(r.begin >> (8 * i));
+					b[4 + i] = static_cast<uint8_t>(r.end >> (8 * i));
+				}
+				h = hash(b, sizeof(b), h);
+			}
+		}
+		return static_cast<uint32_t>(h ^ (h >> 32));
+	}
 
-	inline std::vector<Range> unwatched(const md::MachineModel _model)
+	inline std::vector<uint8_t> slotBytes(const Slot& _slot, const std::vector<uint8_t>& _patch)
 	{
-		if(_model == md::MachineModel::Monomachine)
-			return {{0x000000, 0x0005a0}, {0x016ae3, 0x016ae5}, {0x0ff000, 0x100000}};
-		return {{0x000000, 0x0008c8}, {0x0272be, 0x0272c0}, {0x07fff0, 0x07fff8}};
+		std::vector<uint8_t> out;
+		out.reserve(_slot.size);
+		for(const auto& r : _slot.ranges)
+			out.insert(out.end(), _patch.begin() + r.begin, _patch.begin() + r.end);
+		return out;
+	}
+
+	inline void putSlot(const Slot& _slot, std::vector<uint8_t>& _patch, const std::vector<uint8_t>& _bytes)
+	{
+		size_t at = 0;
+		for(const auto& r : _slot.ranges)
+		{
+			std::copy(_bytes.begin() + static_cast<std::ptrdiff_t>(at), _bytes.begin() + static_cast<std::ptrdiff_t>(at + (r.end - r.begin)),
+				_patch.begin() + r.begin);
+			at += r.end - r.begin;
+		}
+	}
+
+	inline bool slotDiffers(const Slot& _slot, const std::vector<uint8_t>& _a, const std::vector<uint8_t>& _b)
+	{
+		for(const auto& r : _slot.ranges)
+			if(std::memcmp(_a.data() + r.begin, _b.data() + r.begin, r.end - r.begin) != 0)
+				return true;
+		return false;
+	}
+
+	// The patch RAM slots that differ between two memories (what saves changed since the base)
+	inline std::vector<Key> changedSlots(const md::MachineModel _model, const std::vector<uint8_t>& _base, const std::vector<uint8_t>& _now)
+	{
+		std::vector<Key> out;
+		if(_base.size() != md::g_patchRamStateSize || _now.size() != md::g_patchRamStateSize)
+			return out;
+		for(const auto& s : patchSlots(_model))
+			if(slotDiffers(s, _base, _now))
+				out.push_back(s.key);
+		return out;
+	}
+
+	// The flash sectors that differ between two copies (n at n x 64 KiB), within the machine's saved sectors
+	inline std::vector<Key> changedSectors(const md::MachineModel _model, const std::vector<uint8_t>& _base, const std::vector<uint8_t>& _now)
+	{
+		std::vector<Key> out;
+		const auto n = static_cast<uint32_t>(std::min(_base.size(), _now.size()) / g_sectorSize);
+		for(uint32_t i = 0; i < n; ++i)
+			if(sectorValid(_model, i) && std::memcmp(_base.data() + size_t{i} * g_sectorSize, _now.data() + size_t{i} * g_sectorSize, g_sectorSize) != 0)
+				out.push_back({Kind::Sector, i});
+		return out;
 	}
 
 	// The look's signature of what a save changes: the patch RAM but the unwatched ranges, then _more (the MM's user
@@ -210,10 +367,284 @@ namespace mdJucePlugin::machineMemory
 		return hash(_more, _moreSize, h);
 	}
 
-	// When to write. One look a second gives the memory's signature (its hash); the watch writes when the memory
+	// ---- The file: the saved slots
+
+	struct Entry
+	{
+		uint64_t savedAt = 0;			// when it was saved (ms since 1970)
+		std::vector<uint8_t> bytes;
+	};
+	using Store = std::map<Key, Entry>;
+
+	struct StoreFile
+	{
+		uint64_t romFingerprint = 0;	// MD: the ROM its flash sectors belong to (0: none)
+		Store slots;
+	};
+
+	// offset  size  field
+	// 0       8     magic "MDMMMEM\0"
+	// 8       4     format version (2)
+	// 12      1     machine: 0 Machinedrum, 1 Monomachine
+	// 13      3     zero
+	// 16      4     layout id (layoutId)
+	// 20      4     CRC-32 of everything from 24 on (md::crc32, as zlib's)
+	// 24      8     the MD ROM's fingerprint (its flash sectors belong to that ROM), else 0
+	// 32      4     entry count
+	// 36      4     payload size (everything after the header)
+	// 40      ...   entries: kind u8, zero u8, zero u16, index u32, saved at u64, size u32, then the bytes
+	inline std::vector<uint8_t> encode(const md::MachineModel _model, const StoreFile& _f)
+	{
+		std::vector<uint8_t> out;
+		size_t payload = 0;
+		for(const auto& [k, e] : _f.slots)
+			payload += g_entryHeaderSize + e.bytes.size();
+		out.reserve(g_headerSize + payload);
+		out.insert(out.end(), g_magic, g_magic + sizeof(g_magic));
+		detail::putU32(out, g_version);
+		out.push_back(machineByte(_model));
+		out.push_back(0);
+		out.push_back(0);
+		out.push_back(0);
+		detail::putU32(out, layoutId(_model));
+		detail::putU32(out, 0);	// the CRC, below
+		detail::putU64(out, _f.romFingerprint);
+		detail::putU32(out, static_cast<uint32_t>(_f.slots.size()));
+		detail::putU32(out, static_cast<uint32_t>(payload));
+		for(const auto& [k, e] : _f.slots)
+		{
+			out.push_back(static_cast<uint8_t>(k.kind));
+			out.push_back(0);
+			detail::putU16(out, 0);
+			detail::putU32(out, k.index);
+			detail::putU64(out, e.savedAt);
+			detail::putU32(out, static_cast<uint32_t>(e.bytes.size()));
+			out.insert(out.end(), e.bytes.begin(), e.bytes.end());
+		}
+		const auto crc = md::crc32(out.data() + 24, out.size() - 24);
+		for(int i = 0; i < 4; ++i)
+			out[20 + static_cast<size_t>(i)] = static_cast<uint8_t>(crc >> (8 * i));
+		return out;
+	}
+
+	struct Decoded
+	{
+		Problem problem = Problem::Empty;
+		StoreFile file;
+	};
+
+	// The saved slots of a file of this machine, or why there are none. Never throws, reads nothing past the bytes;
+	// every entry must name a slot of this layout, once, with its exact size.
+	inline Decoded decode(const std::vector<uint8_t>& _file, const md::MachineModel _model)
+	{
+		Decoded d;
+		if(_file.empty())
+			return d;
+		if(_file.size() < 16 || std::memcmp(_file.data(), g_magic, sizeof(g_magic)) != 0)
+		{
+			d.problem = Problem::NotOurs;
+			return d;
+		}
+		if(detail::getU32(_file.data() + 8) != g_version)
+		{
+			d.problem = Problem::Version;
+			return d;
+		}
+		if(_file.size() < g_headerSize)
+		{
+			d.problem = Problem::Corrupt;
+			return d;
+		}
+		if(_file[12] != machineByte(_model))
+		{
+			d.problem = Problem::Machine;
+			return d;
+		}
+		const auto payload = detail::getU32(_file.data() + 36);
+		if(_file[13] != 0 || _file[14] != 0 || _file[15] != 0 || payload > g_maxPayload
+			|| _file.size() != g_headerSize + static_cast<size_t>(payload)
+			|| detail::getU32(_file.data() + 20) != md::crc32(_file.data() + 24, _file.size() - 24))
+		{
+			d.problem = Problem::Corrupt;
+			return d;
+		}
+		if(detail::getU32(_file.data() + 16) != layoutId(_model))
+		{
+			d.problem = Problem::Layout;
+			return d;
+		}
+		StoreFile f;
+		f.romFingerprint = detail::getU64(_file.data() + 24);
+		const auto count = detail::getU32(_file.data() + 32);
+		size_t at = g_headerSize;
+		for(uint32_t i = 0; i < count; ++i)
+		{
+			if(_file.size() - at < g_entryHeaderSize)
+			{
+				d.problem = Problem::Corrupt;
+				return d;
+			}
+			const auto* p = _file.data() + at;
+			const bool kindOk = p[0] >= static_cast<uint8_t>(Kind::Kit) && p[0] <= static_cast<uint8_t>(Kind::Sector);
+			const Key k{static_cast<Kind>(kindOk ? p[0] : 1), detail::getU32(p + 4)};
+			const auto size = detail::getU32(p + 16);
+			if(!kindOk || p[1] != 0 || p[2] != 0 || p[3] != 0 || size == 0 || size != sizeOf(_model, k)
+				|| _file.size() - at - g_entryHeaderSize < size || f.slots.count(k))
+			{
+				d.problem = Problem::Corrupt;
+				return d;
+			}
+			Entry e;
+			e.savedAt = detail::getU64(p + 8);
+			e.bytes.assign(_file.begin() + static_cast<std::ptrdiff_t>(at + g_entryHeaderSize),
+				_file.begin() + static_cast<std::ptrdiff_t>(at + g_entryHeaderSize + size));
+			f.slots.emplace(k, std::move(e));
+			at += g_entryHeaderSize + size;
+		}
+		if(at != _file.size())
+		{
+			d.problem = Problem::Corrupt;
+			return d;
+		}
+		d.problem = Problem::None;
+		d.file = std::move(f);
+		return d;
+	}
+
+	// The notice's words for a file that cannot be used (its slots are not laid over the memory).
+	inline std::string describe(const Problem _p)
+	{
+		switch(_p)
+		{
+		case Problem::None: return {};
+		case Problem::Empty: return "The saved machine memory is empty.";
+		case Problem::NotOurs: return "The saved machine memory is not a machine memory file.";
+		case Problem::Version: return "The saved machine memory was written by another version of the editor.";
+		case Problem::Machine: return "The saved machine memory belongs to the other machine.";
+		case Problem::Corrupt: return "The saved machine memory is damaged (an interrupted write, or the file was changed).";
+		case Problem::Layout: return "The saved machine memory was written for another memory layout.";
+		}
+		return {};
+	}
+
+	// A save: the slots it changed, their bytes now, merged into the store (every other slot stays as it is).
+	// _sectors: the MD's whole flash or the MM's user flash (sector n at n x 64 KiB), for Sector keys.
+	inline void merge(Store& _store, const md::MachineModel _model, const std::vector<Key>& _keys, const std::vector<uint8_t>& _patch,
+		const std::vector<uint8_t>& _sectors, const uint64_t _savedAt)
+	{
+		for(const auto& k : _keys)
+		{
+			Entry e;
+			e.savedAt = _savedAt;
+			if(k.kind == Kind::Sector)
+			{
+				const size_t at = static_cast<size_t>(k.index) * g_sectorSize;
+				if(!sectorValid(_model, k.index) || _sectors.size() < at + g_sectorSize)
+					continue;
+				e.bytes.assign(_sectors.begin() + static_cast<std::ptrdiff_t>(at), _sectors.begin() + static_cast<std::ptrdiff_t>(at + g_sectorSize));
+			}
+			else
+			{
+				const auto* s = findSlot(_model, k);
+				if(!s || _patch.size() != md::g_patchRamStateSize)
+					continue;
+				e.bytes = slotBytes(*s, _patch);
+			}
+			_store[k] = std::move(e);
+		}
+	}
+
+	// A save of patch RAM slots with the memory they changed from: a slot whose change is in its link bytes alone, and
+	// that the store has, takes only those bytes; any other changed slot is taken whole.
+	inline void mergeSaved(Store& _store, const md::MachineModel _model, const std::vector<Key>& _keys, const std::vector<uint8_t>& _base,
+		const std::vector<uint8_t>& _patch, const std::vector<uint8_t>& _sectors, const uint64_t _savedAt)
+	{
+		std::vector<Key> whole;
+		for(const auto& k : _keys)
+		{
+			const auto* s = k.kind == Kind::Sector ? nullptr : findSlot(_model, k);
+			const auto it = _store.find(k);
+			if(!s || s->links.empty() || it == _store.end() || _base.size() != md::g_patchRamStateSize)
+			{
+				whole.push_back(k);
+				continue;
+			}
+			const auto before = slotBytes(*s, _base), now = slotBytes(*s, _patch);
+			bool linksOnly = true;
+			for(size_t i = 0; i < now.size() && linksOnly; ++i)
+				if(before[i] != now[i] && std::find(s->links.begin(), s->links.end(), static_cast<uint32_t>(i)) == s->links.end())
+					linksOnly = false;
+			if(!linksOnly)
+			{
+				whole.push_back(k);
+				continue;
+			}
+			for(const auto at : s->links)
+				if(at < now.size() && before[at] != now[at])
+					it->second.bytes[at] = now[at];
+			it->second.savedAt = _savedAt;
+		}
+		merge(_store, _model, whole, _patch, _sectors, _savedAt);
+	}
+
+	// The store laid over a memory: each saved slot's bytes in place, but the _skip ones (the standalone's own saves
+	// the file lacks). _sectors as for merge (null: none). Returns whether anything changed.
+	inline bool overlay(const Store& _store, const md::MachineModel _model, std::vector<uint8_t>& _patch, std::vector<uint8_t>* _sectors,
+		const std::set<Key>& _skip = {})
+	{
+		bool changed = false;
+		for(const auto& [k, e] : _store)
+		{
+			if(_skip.count(k))
+				continue;
+			if(k.kind == Kind::Sector)
+			{
+				const size_t at = static_cast<size_t>(k.index) * g_sectorSize;
+				if(!_sectors || _sectors->size() < at + g_sectorSize || e.bytes.size() != g_sectorSize)
+					continue;
+				if(std::memcmp(_sectors->data() + at, e.bytes.data(), g_sectorSize) != 0)
+				{
+					std::copy(e.bytes.begin(), e.bytes.end(), _sectors->begin() + static_cast<std::ptrdiff_t>(at));
+					changed = true;
+				}
+				continue;
+			}
+			const auto* s = findSlot(_model, k);
+			if(!s || e.bytes.size() != s->size || _patch.size() != md::g_patchRamStateSize)
+				continue;
+			if(slotBytes(*s, _patch) != e.bytes)
+			{
+				putSlot(*s, _patch, e.bytes);
+				changed = true;
+			}
+		}
+		return changed;
+	}
+
+	// The saved slots whose bytes differ from a memory's (a standalone state from before I-024 against the file)
+	inline std::vector<Key> conflicts(const Store& _store, const md::MachineModel _model, const std::vector<uint8_t>& _patch,
+		const std::vector<uint8_t>& _sectors)
+	{
+		std::vector<Key> out;
+		for(const auto& [k, e] : _store)
+		{
+			if(k.kind == Kind::Sector)
+			{
+				const size_t at = static_cast<size_t>(k.index) * g_sectorSize;
+				if(_sectors.size() >= at + g_sectorSize && std::memcmp(_sectors.data() + at, e.bytes.data(), g_sectorSize) != 0)
+					out.push_back(k);
+				continue;
+			}
+			const auto* s = findSlot(_model, k);
+			if(s && _patch.size() == md::g_patchRamStateSize && slotBytes(*s, _patch) != e.bytes)
+				out.push_back(k);
+		}
+		return out;
+	}
+
+	// ---- When to write. One look a second gives the memory's signature (its hash); the watch writes when the memory
 	// differs from what was last written and has been quiet for one look, or at the latest maxDelayMs after the first
-	// change while it keeps changing. A base is the memory a session has when the watch starts (after the machine
-	// started, a project or the file was restored, or a write).
+	// change while it keeps changing. The write itself takes only the slots that differ from the base.
 	class Watch
 	{
 	public:
@@ -260,14 +691,12 @@ namespace mdJucePlugin::machineMemory
 
 		void written(const uint64_t _signature) { base(_signature); m_soon = false; }
 
-		// Write at the next look that has a base, changed or not (KEEP MEMORY turned on again, a standalone's own saves
-		// the file does not have)
+		// Look for saves to write at the next look that has a base, changed or not (KEEP MEMORY turned on again)
 		void writeSoon() { m_soon = true; }
 		bool wantsWrite() const { return m_based && m_soon; }
 
-		// A change seen that is not written yet (the instance going away writes it).
+		// A change seen that is not written yet
 		bool pending() const { return m_based && (m_soon || m_seen != m_written); }
-		// A signature (a last look's) that differs from what was written
 		bool differs(const uint64_t _signature) const { return m_based && (m_soon || _signature != m_written); }
 
 	private:
@@ -284,24 +713,21 @@ namespace mdJucePlugin::machineMemory
 	// a real machine).
 	inline bool stateIsProject(const bool _standalone) { return !_standalone; }
 
-	// What a memory knows of the file (the processor's "MMEM" chunk, in the standalone's own state and in projects): the
-	// stamp of the file it holds the saves of (0: none) and whether it holds saves the file does not have (a write
-	// failed: no permission, disk full).
+	// What the standalone's own state knows of the file (its "MMEM" chunk, version 2; a DAW project's is never read):
+	// the saves it holds that the file lacks (a write failed, or KEEP MEMORY was off). At its next start they win over
+	// the file's slots and are written.
 	struct Mark
 	{
-		uint64_t stamp = 0;
-		bool unsaved = false;
+		std::vector<Key> pending;
 	};
 
 	// How a session's memory starts (the processor's decision, pure)
 	enum class Start : uint8_t
 	{
-		Wait,		// no machine with a ROM yet
+		Wait,		// no machine with a ROM (and, MD, its factory flash) yet
 		Project,	// a DAW project's state came: it is the memory
-		Off,		// KEEP MEMORY off, no folder (an isolated test), or no file: the memory the session has
-		File,		// the file's memory
-		Own,		// the standalone's own state: it holds the file's saves (the same stamp) and maybe unsaved edits of the
-					// kit that plays, or saves the file does not have (then it is written at once)
+		Off,		// KEEP MEMORY off, or no folder (an isolated test): the memory the session has
+		Overlay,	// the file's slots laid over the memory the session has (factory, or the standalone's own)
 	};
 
 	struct StartFacts
@@ -310,13 +736,8 @@ namespace mdJucePlugin::machineMemory
 		bool machineReady = false;
 		bool keep = true;
 		bool folder = true;
-		bool file = false;				// a usable file is there
-		uint64_t fileStamp = 0;
-		std::optional<Mark> own;		// the standalone's own state's mark (none: no own state, or one from before I-024)
 	};
 
-	// Never loses a save: the standalone's own state wins when it holds every save of the file (the same stamp) or saves
-	// the file lacks (unsaved); else the file is newer (another instance saved since), and its saves win.
 	inline Start startOf(const StartFacts& _f)
 	{
 		if(_f.projectState)
@@ -325,8 +746,6 @@ namespace mdJucePlugin::machineMemory
 			return Start::Off;
 		if(!_f.machineReady)
 			return Start::Wait;
-		if(_f.own && (_f.own->unsaved || (_f.file && _f.own->stamp == _f.fileStamp)))
-			return Start::Own;
-		return _f.file ? Start::File : Start::Off;
+		return Start::Overlay;
 	}
 }

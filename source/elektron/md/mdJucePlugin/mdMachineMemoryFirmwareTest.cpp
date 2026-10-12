@@ -10,6 +10,9 @@
 #include "mdPluginProcessor.h"
 #include "mdController.h"
 #include "mdMachineMemory.h"
+#include "mdDeskHost.h"
+#include "mdDeskSession.h"
+#include "elektronData/json.h"
 
 #include "mdLib/mddeskdevice.h"
 
@@ -17,6 +20,13 @@
 #include "elektronData/mdKit.h"
 #include "elektronData/mmCommands.h"
 #include "elektronData/mmKit.h"
+#include "elektronData/mdPattern.h"
+#include "elektronData/mdSong.h"
+#include "elektronData/mdGlobal.h"
+#include "elektronData/mmPattern.h"
+#include "elektronData/mmSong.h"
+#include "elektronData/mmGlobal.h"
+#include "elektronData/mmDump.h"
 
 #include "juce_audio_utils/juce_audio_utils.h"
 #include "synthLib/romLoader.h"
@@ -26,6 +36,9 @@
 #include <CoreFoundation/CoreFoundation.h>
 #endif
 #include <cstdio>
+#include <cmath>
+#include <set>
+#include <cstring>
 #ifndef _WIN32
 #include <sys/stat.h>
 #endif
@@ -129,6 +142,8 @@ namespace
 
 		~Session()
 		{
+			if(m_attached)
+				processor->getDeskHost()->session()->detach();
 			m_run = false;
 			m_audio.join();
 			static_cast<juce::AudioProcessor&>(*processor).releaseResources();
@@ -148,10 +163,15 @@ namespace
 		// The firmware takes MIDI and the watch has its base (a few looks after it holds still)
 		bool waitWatching(const int _ms = 120000)
 		{
+			// the start's decision (the file's slots laid over, a restore begun) comes first
+			if(!until([this] { return processor->machineMemoryStarted(); }, _ms))
+				return false;
+			pump(300);
 			const bool ready = until([this] { return firmwareReady(); }, _ms);
 			const auto looks = processor->machineMemoryCost().looks;
 			return ready && until([&] { return processor->machineMemoryCost().looks >= looks + 8; }, 90000);
 		}
+
 
 		void send(const Bytes& _sysex)
 		{
@@ -188,6 +208,30 @@ namespace
 				}, 4000);
 			}
 			return name;
+		}
+
+		// A dump the machine answers to _request: the first message _match accepts
+		Bytes dump(const Bytes& _request, const std::function<bool(const Bytes&)>& _match)
+		{
+			for(int attempt = 0; attempt < 3; ++attempt)
+			{
+				{
+					const std::lock_guard lock(m_mutex);
+					m_in.clear();
+				}
+				send(_request);
+				Bytes got;
+				until([&]
+				{
+					const std::lock_guard lock(m_mutex);
+					for(const auto& m : m_in)
+						if(_match(m)) { got = m; return true; }
+					return false;
+				}, 4000);
+				if(!got.empty())
+					return got;
+			}
+			return {};
 		}
 
 		// Name the kit that plays (an unsaved edit: no save)
@@ -270,6 +314,66 @@ namespace
 			});
 		}
 
+		// The sequencer's step (MD, MM), -1 unknown
+		int step()
+		{
+			return processor->getPlugin().withDeviceLocked([](synthLib::Device* _d)
+			{
+				auto* d = dynamic_cast<md::DeskDevice*>(_d);
+				if(!d)
+					return -1;
+				return d->getModel() == md::MachineModel::Machinedrum ? d->getSequencerTelemetry()->step.load() : d->getMmTelemetry()->step.load();
+			});
+		}
+
+		// The page: the editor's session driven as the page drives it (its messages), the answers kept
+		void page(const std::string& _json)
+		{
+			auto* session = processor->getDeskHost()->session();
+			if(!m_attached)
+			{
+				m_attached = true;
+				session->attach([this](const elektronData::json::Value& _m) { m_pageIn.push_back(elektronData::json::write(_m)); });
+				session->onPageMessage(*elektronData::json::parse(R"({"op":"ready"})"));
+				pump(500);
+			}
+			const auto v = elektronData::json::parse(_json);
+			if(!v) { std::printf("  page: bad json %s\n", _json.c_str()); return; }
+			session->onPageMessage(*v);
+			pump(300);
+		}
+
+		// The desk has read the machine (its lifecycle says ready)
+		bool deskReady(const int _ms = 120000)
+		{
+			return until([&] { return processor->getDeskHost()->session()->lifecycleName() == "ready"; }, _ms);
+		}
+
+		// A page message sent until the desk takes it (it reads a slot first when asked for one it has not read)
+		bool pageOk(const std::string& _json, const int _ms = 60000)
+		{
+			const auto end = juce::Time::getMillisecondCounterHiRes() + _ms;
+			while(juce::Time::getMillisecondCounterHiRes() < end)
+			{
+				m_pageIn.clear();
+				page(_json);
+				pump(700);
+				const auto r = lastPageResult();
+				if(r.find("\"ok\":true") != std::string::npos)
+					return true;
+				pump(1500);
+			}
+			return false;
+		}
+
+		std::string lastPageResult()
+		{
+			for(auto it = m_pageIn.rbegin(); it != m_pageIn.rend(); ++it)
+				if(it->find("\"result\"") != std::string::npos)
+					return it->substr(0, 300);
+			return {};
+		}
+
 		Bytes projectState()
 		{
 			juce::MemoryBlock block;
@@ -286,6 +390,8 @@ namespace
 	public:
 		std::atomic<bool> m_automate{false};
 	private:
+		bool m_attached = false;
+		std::vector<std::string> m_pageIn;
 		uint32_t m_autoStep = 0;
 		std::thread m_audio;
 		std::mutex m_mutex;
@@ -305,6 +411,67 @@ namespace
 
 	juce::File memoryFile() { return g_memory.getChildFile(mdJucePlugin::machineMemory::g_fileName); }
 
+	using Key = mdJucePlugin::machineMemory::Key;
+	using Kind = mdJucePlugin::machineMemory::Kind;
+
+	mdJucePlugin::machineMemory::Store fileStore();
+	bool fileHas(const Key& _k) { const auto st = fileStore(); return st.count(_k) != 0; }
+	bool fileHasKind(const Kind _k) { for(const auto& [k, e] : fileStore()) if(k.kind == _k) return true; return false; }
+	std::string fileKeys()
+	{
+		std::string out;
+		for(const auto& [k, e] : fileStore())
+			out += (out.empty() ? "" : ", ") + mdJucePlugin::machineMemory::describe(k);
+		return out.size() > 300 ? out.substr(0, 300) + "..." : out;
+	}
+
+	// Every slot of _before is in _after with the same bytes, but a pattern's link byte (its kit, which SAVE KIT sets
+	// in the pattern that plays)
+	bool keptExceptLinks(const mdJucePlugin::machineMemory::Store& _before, const mdJucePlugin::machineMemory::Store& _after)
+	{
+		for(const auto& [k, e] : _before)
+		{
+			if(!_after.count(k))
+				return false;
+			const auto& a = _after.at(k).bytes;
+			const auto* slot = mdJucePlugin::machineMemory::findSlot(g_model, k);
+			for(size_t i = 0; i < e.bytes.size(); ++i)
+				if(e.bytes[i] != a[i] && !(slot && std::find(slot->links.begin(), slot->links.end(), static_cast<uint32_t>(i)) != slot->links.end()))
+					return false;
+		}
+		return true;
+	}
+
+	// A state with its MMEM chunk made version 1: a standalone state from before the slot store (no marks)
+	Bytes oldState(Bytes _state)
+	{
+		for(size_t i = 0; i + 8 <= _state.size(); ++i)
+			if(std::memcmp(_state.data() + i, "MMEM", 4) == 0 && _state[i + 4] == 2 && !_state[i + 5] && !_state[i + 6] && !_state[i + 7])
+			{
+				_state[i + 4] = 1;
+				return _state;
+			}
+		return {};
+	}
+
+	// A short sine as a WAV file (a sample the page loads)
+	juce::File sineWav()
+	{
+		const auto f = juce::File::getSpecialLocation(juce::File::tempDirectory).getChildFile("mdMachineMemoryFirmwareTest-sine.wav");
+		f.deleteFile();
+		juce::WavAudioFormat wav;
+		std::unique_ptr<juce::OutputStream> out(f.createOutputStream().release());
+		std::unique_ptr<juce::AudioFormatWriter> w(wav.createWriterFor(out.get(), 44100.0, 1, 16, {}, 0));
+		if(!w)
+			return {};
+		out.release();
+		juce::AudioBuffer<float> b(1, 8820);
+		for(int i = 0; i < b.getNumSamples(); ++i)
+			b.setSample(0, i, 0.5f * std::sin(static_cast<float>(i) * 0.0627f));
+		w->writeFromAudioSampleBuffer(b, 0, b.getNumSamples());
+		return f;
+	}
+
 	Bytes readFile(const juce::File& _f)
 	{
 		juce::MemoryBlock mb;
@@ -312,6 +479,11 @@ namespace
 			return {};
 		const auto* b = static_cast<const uint8_t*>(mb.getData());
 		return Bytes(b, b + mb.getSize());
+	}
+
+	mdJucePlugin::machineMemory::Store fileStore()
+	{
+		return mdJucePlugin::machineMemory::decode(readFile(memoryFile()), g_model).file.slots;
 	}
 }
 
@@ -369,17 +541,139 @@ int main(const int _argc, char** _argv)
 			pump(1500); auto p10 = s.patch(); std::printf("  probe name + SAVE KIT 2:%s\n", Session::diff(p9, p10).c_str());
 			return 0;
 		}
+		if(std::getenv("MDMM_MEMORY_LAYOUT"))
+		{
+			// Where each slot sits in the patch RAM: a changed dump sent to slots 0, 1 and the last, the bytes it changed
+			using namespace elektronData;
+			auto probe = [&](const char* _what, const int _slot, const std::function<Bytes()>& _send)
+			{
+				const auto before = s.patch();
+				const auto msg = _send();
+				if(msg.empty()) { std::printf("  layout %s %d: no dump\n", _what, _slot); return; }
+				s.send(msg);
+				pump(1500);
+				const auto after = s.patch();
+				size_t lo = SIZE_MAX, hi = 0, n = 0;
+				for(size_t i = 0x1000; i < after.size(); ++i)
+					if(before[i] != after[i]) { lo = std::min(lo, i); hi = i; ++n; }
+				std::printf("  layout %s %d: %zu bytes changed, %06zx-%06zx;%s\n", _what, _slot, n, lo, hi, Session::diff(before, after).c_str());
+			};
+			auto mmRaw = [&](const uint8_t _cmd, const Bytes& _req, const int _slot) -> Bytes
+			{
+				const auto d = s.dump(_req, [&](const Bytes& m) { const auto u = unpackMmDump(m); return u && u->command == _cmd && u->position == _slot; });
+				auto u = unpackMmDump(d);
+				if(!u) return {};
+				for(size_t i = 0; i < u->raw.size(); i += 97)
+					u->raw[i] = static_cast<uint8_t>((u->raw[i] + 1 + _slot) & 0x7f);
+				u->raw.front() = static_cast<uint8_t>('A' + _slot);
+				u->raw.back() = static_cast<uint8_t>(u->raw.back() ^ 1);
+				return packMmDump(*u);
+			};
+			if(md)
+			{
+				for(const int k : {0, 1, 63})
+					probe("kit", k, [&] {
+						auto d = decodeMdKit(s.dump(mdKitRequest(static_cast<uint8_t>(k)), [&](const Bytes& m) { const auto x = decodeMdKit(m); return x && x->position == k; }));
+						if(!d) return Bytes{};
+						d->name = {}; d->name[0] = 'K'; d->name[1] = static_cast<uint8_t>('A' + k);
+						for(auto& g : d->muteGroups) g = static_cast<uint8_t>((g + 1) & 0x0f);
+						return encodeMdKit(*d); });
+				for(const int k : {0, 1, 127})
+					probe("pattern", k, [&] {
+						auto d = decodeMdPattern(s.dump(mdPatternRequest(static_cast<uint8_t>(k)), [&](const Bytes& m) { const auto x = decodeMdPattern(m); return x && x->position == k; }));
+						if(!d) return Bytes{};
+						d->trigs[0] ^= 0x0101010101010101ull * static_cast<uint64_t>(k + 1);
+						d->trackSwing[15] ^= 0x8000000000000001ull;
+						d->length = 64;
+						return encodeMdPattern(*d); });
+				for(const int k : {0, 1, 31})
+					probe("song", k, [&] {
+						auto d = decodeMdSong(s.dump(mdSongRequest(static_cast<uint8_t>(k)), [&](const Bytes& m) { const auto x = decodeMdSong(m); return x && x->position == k; }));
+						if(!d) return Bytes{};
+						d->name = {}; d->name[0] = 'S'; d->name[1] = static_cast<uint8_t>('A' + k);
+						MdSongRow r; r.pattern = 3; r.repeats = 1;
+						d->rows.insert(d->rows.begin(), r);
+						return encodeMdSong(*d); });
+				for(const int k : {0, 1, 7})
+					probe("global", k, [&] {
+						auto d = decodeMdGlobal(s.dump(mdGlobalRequest(static_cast<uint8_t>(k)), [&](const Bytes& m) { const auto x = decodeMdGlobal(m); return x && x->position == k; }));
+						if(!d) return Bytes{};
+						d->routing[0] = static_cast<uint8_t>((d->routing[0] + 1) % 6);
+						d->keymap[5] = static_cast<uint8_t>(20 + k);
+						d->trigMode = static_cast<uint8_t>((d->trigMode + 1) % 3);
+						return encodeMdGlobal(*d); });
+			}
+			else
+			{
+				// where each dump's raw payload sits in the patch RAM (all places it matches, whole or its first 64 bytes)
+				auto find = [&](const char* _what, const uint8_t _cmd, const Bytes& _req, const int _slot)
+				{
+					const auto d = s.dump(_req, [&](const Bytes& m) { const auto u = unpackMmDump(m); return u && u->command == _cmd && u->position == _slot; });
+					const auto u = unpackMmDump(d);
+					if(!u) { std::printf("  find %s %d: no dump\n", _what, _slot); return; }
+					const auto ram = s.patch();
+					std::string whole, head;
+					const size_t h = std::min<size_t>(64, u->raw.size());
+					for(size_t i = 0; i + u->raw.size() <= ram.size(); ++i)
+					{
+						if(std::memcmp(ram.data() + i, u->raw.data(), h) != 0) continue;
+						char b[24]; std::snprintf(b, sizeof b, " %06zx", i);
+						head += b;
+						if(std::memcmp(ram.data() + i, u->raw.data(), u->raw.size()) == 0) whole += b;
+					}
+					size_t best = 0, bestAt = 0;
+					for(size_t i = 0; i + 16 <= ram.size(); i += 1)
+					{
+						size_t n = 0;
+						while(n < u->raw.size() && i + n < ram.size() && ram[i + n] == u->raw[n]) ++n;
+						if(n > best) { best = n; bestAt = i; }
+					}
+					std::printf("  find %s %d (%zu bytes): whole at%s; head at%s; longest prefix %zu at %06zx\n", _what, _slot, u->raw.size(), whole.c_str(), head.substr(0, 200).c_str(), best, bestAt);
+				};
+				for(const int k : {0, 1, 2, 127}) find("kit", g_mmKitDump, mmKitRequest(static_cast<uint8_t>(k)), k);
+				for(const int k : {0, 1, 2, 127}) find("pattern", g_mmPatternDump, mmPatternRequest(static_cast<uint8_t>(k)), k);
+				for(const int k : {0, 1, 2, 23}) find("song", g_mmSongDump, mmSongRequest(static_cast<uint8_t>(k)), k);
+				for(const int k : {0, 1, 2, 7}) find("global", g_mmGlobalDump, mmGlobalRequest(static_cast<uint8_t>(k)), k);
+				for(const int k : {0, 1, 127})
+					probe("kit", k, [&] { return mmRaw(g_mmKitDump, mmKitRequest(static_cast<uint8_t>(k)), k); });
+				for(const int k : {0, 1, 127})
+					probe("pattern", k, [&] { return mmRaw(g_mmPatternDump, mmPatternRequest(static_cast<uint8_t>(k)), k); });
+				for(const int k : {0, 1, 23})
+					probe("song", k, [&] { return mmRaw(g_mmSongDump, mmSongRequest(static_cast<uint8_t>(k)), k); });
+				for(const int k : {0, 1, 7})
+					probe("global", k, [&] { return mmRaw(g_mmGlobalDump, mmGlobalRequest(static_cast<uint8_t>(k)), k); });
+			}
+			return 0;
+		}
 		factoryName = s.kitName(slot);
 		check(!factoryName.empty() && factoryName != name, "kit " + std::to_string(slot + 1) + " is the factory's: '" + factoryName + "'");
 		pump(1500);
 		check(s.processor->machineMemoryCost().writes == 0 && !memoryFile().existsAsFile(), "a start writes nothing (" + std::to_string(s.processor->machineMemoryCost().looks) + " looks)");
 		factoryProject = s.projectState();
-		// a DAW project playing with automation (CCs on every track's parameters) for 12 s, then a kit name edited: no save
-		s.transport(true);
+		// a DAW project playing with automation (CCs on every track's parameters) for 12 s: the pattern really plays
+		// (the Monomachine takes no MIDI Start by default, TRANSPORT ACCEPT off: PLAY from the page)
+		if(md)
+			s.transport(true);
+		else
+		{
+			check(s.deskReady(), "the editor has read the machine");
+			s.page(R"({"op":"play"})");
+		}
+		check(until([&] { return s.playing(); }, 5000), "the pattern plays");
+		std::set<int> steps;
 		s.m_automate = true;
-		pump(12500);
+		const auto t0 = juce::Time::getMillisecondCounterHiRes();
+		while(juce::Time::getMillisecondCounterHiRes() - t0 < 12500)
+		{
+			pump(100);
+			steps.insert(s.step());
+		}
 		s.m_automate = false;
-		s.transport(false);
+		check(s.playing() && steps.size() >= 8, "it played all along (" + std::to_string(steps.size()) + " steps seen)");
+		if(md)
+			s.transport(false);
+		else
+			s.page(R"({"op":"stop"})");
 		pump(1500);
 		check(s.processor->machineMemoryCost().writes == 0 && !memoryFile().existsAsFile(), "12 s of play with automation write nothing");
 		s.nameWorkingKit("UNSAVED");
@@ -389,43 +683,79 @@ int main(const int _argc, char** _argv)
 		check(s.kitName(slot) == name, "SAVE KIT stored '" + name + "'");
 		check(until([] { return memoryFile().existsAsFile(); }, 15000), "the save wrote the memory file");
 		pump(2500);
+		// SAVE KIT also sets the kit of the pattern that plays (stored in that pattern's slot, as on the machine)
+		check(fileHas({Kind::Kit, slot}) && fileStore().size() <= 2 && (fileStore().size() == 1 || fileHas({Kind::Pattern, 0})),
+			"the file holds that kit's slot (and the playing pattern's, whose kit it is) only: " + fileKeys());
 		const auto c = s.processor->machineMemoryCost();
 		std::printf("  cost: %u looks, look under the lock %.3f ms (worst %.3f), look with hash %.3f ms; %u writes, last %.2f ms, %zu bytes\n",
 			c.looks, c.lookLockLastMs, c.lookLockMaxMs, c.lookMs, c.writes, c.writeMs, c.fileBytes);
-		savedFile = readFile(memoryFile());
-		check(mdJucePlugin::machineMemory::decode(savedFile, g_model).problem == mdJucePlugin::machineMemory::Problem::None, "the file reads back");
 		const auto status = s.processor->machineMemoryStatus();
 		check(status.keep && status.available && status.saved && status.note.empty(), "the status says keep, saved, no note");
 	}
+	const uint8_t patSlot = 2, songSlot = 4;
 	{
-		std::puts(" session 2: no project state, starts from the file");
+		std::puts(" session 2: no project state, the file's slots over factory memory; page edits of a pattern, a song, a global");
 		Session s;
 		check(s.waitWatching(), "the machine starts");
 		check(s.kitName(slot) == name, "kit " + std::to_string(slot + 1) + " is the saved '" + name + "'");
 		pump(1500);
 		check(s.processor->machineMemoryCost().writes == 0, "starting from the file writes nothing");
-		// the sequencer playing is no save: the memory holds still (the Monomachine's stack aside, mdMachineMemory.h)
-		s.transport(true);
-		const bool played = until([&] { return s.playing(); }, 5000);
+		check(s.deskReady(), "the editor has read the machine");
+		s.page(R"({"op":"select","p":2,"now":true})");
+		if(md)
+			check(s.pageOk(R"({"op":"trig","p":2,"t":0,"s":3,"on":true})"), "a trig set from the page: " + s.lastPageResult());
+		else
+			check(s.pageOk(R"({"op":"step","p":2,"t":0,"s":3,"v":{"n":[60]}})"), "a step set from the page: " + s.lastPageResult());
+		check(s.pageOk(md ? R"({"op":"lock","p":2,"t":0,"i":0,"s":3,"v":77})" : R"({"op":"lock","p":2,"t":0,"page":1,"i":0,"s":3,"v":77})"),
+			"a lock set from the page: " + s.lastPageResult());
+		check(until([&] { return fileHas({Kind::Pattern, patSlot}); }, 60000), "a step and a lock of pattern 3 reach the file: " + fileKeys() + " (" + s.lastPageResult() + ")");
+		s.page(md ? R"({"op":"selectSong","s":4})" : R"({"op":"loadSong","s":4})");
+		check(s.pageOk(R"({"op":"songRename","s":4,"name":"MEMSONG"})"), "a song renamed from the page: " + s.lastPageResult());
+		check(until([&] { return fileHas({Kind::Song, songSlot}); }, 60000), "a song saved reaches the file: " + fileKeys() + " (" + s.lastPageResult() + ")");
+		if(md)
+			s.page(R"({"op":"globalSet","field":"tempoOut","on":true})");
+		else
+			s.page(R"({"op":"masterTune","v":4410})");
+		check(until([&] { return fileHasKind(Kind::Global); }, 60000), "a global edit reaches the file: " + fileKeys() + " (" + s.lastPageResult() + ")");
+		check(fileHas({Kind::Kit, slot}), "and the kit is still there");
+		if(md)
+		{
+			// a sample the page sends: written once the machine stored it (the flash held still)
+			const auto wav = sineWav();
+			s.processor->getDeskHost()->session()->loadSampleFile(5, wav);
+			check(until([&] { return fileHasKind(Kind::Sector); }, 90000), "a sample loaded reaches the file: " + fileKeys());
+		}
+		// the sequencer playing is no save
+		const auto writes = s.processor->machineMemoryCost().writes;
+		s.page(R"({"op":"play"})");
+		check(until([&] { return s.playing(); }, 5000), "it plays");
 		pump(12000);
-		std::printf("  played %d: %u writes in 12 s\n", played, s.processor->machineMemoryCost().writes);
-		check(!played || s.processor->machineMemoryCost().writes == 0, "12 s of play write nothing");
-		s.transport(false);
+		check(s.processor->machineMemoryCost().writes == writes, "12 s of play write nothing");
+		s.page(R"({"op":"stop"})");
 	}
+	savedFile = readFile(memoryFile());
 	{
-		std::puts(" session 3: a project state wins over the file");
+		std::puts(" session 3: a project state wins over the file; a save in it writes only its slot (D)");
 		Session s(factoryProject);
 		check(s.waitWatching(), "the machine starts");
 		check(s.kitName(slot) == factoryName, "kit " + std::to_string(slot + 1) + " is the project's '" + factoryName + "'");
 		pump(1500);
 		check(readFile(memoryFile()) == savedFile, "opening the project leaves the file as it was");
+		const auto before = fileStore();
+		s.saveKit(7, "PROJKIT");
+		check(until([&] { return fileHas({Kind::Kit, 7}); }, 15000), "the project's save reached the file");
+		const auto after = fileStore();
+		check(keptExceptLinks(before, after) && after.size() <= before.size() + 1,
+			"every other slot of the file is as it was (the playing pattern's kit aside): " + fileKeys());
 	}
 	{
-		std::puts(" session 3b: the standalone's own state (saved when it quit) does not win over the file");
+		std::puts(" session 3b: the standalone's own state gets the file's slots laid over it");
 		Session s(factoryProject, true);
 		check(s.waitWatching(), "the machine starts");
 		check(s.kitName(slot) == name, "kit " + std::to_string(slot + 1) + " is the saved '" + name + "'");
+		check(s.kitName(7) == "PROJKIT", "and kit 8, saved in a project");
 	}
+	savedFile = readFile(memoryFile());
 	{
 		std::puts(" session 3c: a DAW project's state that comes after the file was applied still wins");
 		Session s;
@@ -438,59 +768,69 @@ int main(const int _argc, char** _argv)
 		pump(1500);
 		check(readFile(memoryFile()) == savedFile, "and the file is as it was");
 	}
-	const uint8_t slotClose = 6, slotKeep = 7, slotFail = 8;
+	const uint8_t slotClose = 6, slotKeep = 9, slotFail = 10, slotReboot = 11;
 	{
 		std::puts(" session 3d: a save, then the instance closes at once (before the watch's next look)");
 		Session s;
 		check(s.waitWatching(), "the machine starts");
 		s.processor->setMachineMemoryLookMs(600000);
 		pump(300);
+		const auto writes = s.processor->machineMemoryCost().writes;
 		s.saveKit(slotClose, "CLOSED");
-		check(s.processor->machineMemoryCost().writes == 0, "no look since the save");
+		check(s.processor->machineMemoryCost().writes == writes, "no look since the save");
 	}
 	{
-		std::puts(" session 3e: the save made just before closing is there; KEEP MEMORY off, a save, on again");
+		std::puts(" session 3e: the save made just before closing is there; a save, then a reboot at once (E)");
 		Session s;
 		check(s.waitWatching(), "the machine starts");
 		check(s.kitName(slotClose) == "CLOSED", "kit " + std::to_string(slotClose + 1) + " is the one saved before the close");
+		s.processor->setMachineMemoryLookMs(600000);
+		pump(300);
+		s.saveKit(slotReboot, "REBOOTED");
+		check(s.processor->rebootDevice(), "the machine reboots (as MIDI panic, a ROM installed)");
+		s.processor->setMachineMemoryLookMs(100);
+		check(s.waitWatching(), "it runs again");
+		check(until([&] { return fileHas({Kind::Kit, slotReboot}); }, 15000), "the save made just before the reboot reached the file");
+	}
+	{
+		std::puts(" session 3f: KEEP MEMORY off from the start, a save, on again: merged, nothing replaced (A)");
+		Session s;
 		s.processor->setKeepMachineMemory(false);
+		check(s.waitWatching(), "the machine starts (no file read)");
+		check(s.kitName(slot) == factoryName, "KEEP MEMORY off: factory memory");
+		const auto before = fileStore();
 		s.saveKit(slotKeep, "OFFON");
 		pump(2000);
-		check(s.processor->machineMemoryCost().writes == 0, "KEEP MEMORY off: the save is not written");
+		check(fileStore().size() == before.size() && !fileHas({Kind::Kit, slotKeep}), "KEEP MEMORY off: the save is not written");
 		s.processor->setKeepMachineMemory(true);
-		check(until([&] { return s.processor->machineMemoryCost().writes >= 1; }, 5000), "on again: the memory is written at once");
-		if(md)
-		{
-			// the page's sample transfer ended (the desk's sampleLoad "done"): written once the flash is still (here no
-			// store follows, so at the latest after 30 s)
-			const auto writes = s.processor->machineMemoryCost().writes;
-			s.processor->machineMemorySampleStored();
-			pump(3000);
-			check(s.processor->machineMemoryCost().writes == writes, "a sample sent: no write while its store may still run");
-			check(until([&] { return s.processor->machineMemoryCost().writes > writes; }, 40000), "a sample sent is written");
-		}
+		check(until([&] { return fileHas({Kind::Kit, slotKeep}); }, 5000), "on again: the save is merged at once");
+		const auto after = fileStore();
+		check(keptExceptLinks(before, after) && after.size() >= before.size() + 1,
+			"every slot saved before is still there (the file was not replaced): " + fileKeys());
 	}
 	Bytes standaloneState;
 	{
-		std::puts(" session 3f: the standalone, an unsaved edit of the kit that plays");
+		std::puts(" session 3g: the standalone, an unsaved edit of the kit that plays");
 		Session s(std::nullopt, true);
 		check(s.waitWatching(), "the machine starts");
-		check(s.kitName(slotKeep) == "OFFON", "kit " + std::to_string(slotKeep + 1) + " (saved while KEEP MEMORY was off) is in the file");
+		check(s.kitName(slotKeep) == "OFFON", "kit " + std::to_string(slotKeep + 1) + " is in the file");
 		s.nameWorkingKit("WORKING");
 		pump(1500);
-		check(s.workingName() == "WORKING" && s.processor->machineMemoryCost().writes == 0, "the edit is no save");
+		const auto writes = s.processor->machineMemoryCost().writes;
+		check(s.workingName() == "WORKING", "the edit is there");
 		standaloneState = s.projectState();
-		check(s.processor->machineMemoryMark().stamp != 0 && !s.processor->machineMemoryMark().unsaved, "its state knows the file");
+		check(s.processor->machineMemoryMark().pending.empty() && s.processor->machineMemoryCost().writes == writes, "the edit is no save: nothing pending, nothing written");
 	}
 	{
-		std::puts(" session 3g: the standalone starts again: its own state holds every save of the file, so it stays");
+		std::puts(" session 3h: the standalone starts again: its unsaved edit stays, the saved slots come from the file");
 		Session s(standaloneState, true);
 		check(s.waitWatching(), "the machine starts");
 		check(s.workingName() == "WORKING", "the unsaved edit is still there ('" + s.workingName() + "')");
 		check(s.kitName(slotKeep) == "OFFON", "and the saves");
 	}
+	Bytes failedProject;
 	{
-		std::puts(" session 3h: a write that fails (a read-only folder): the stale file does not win at the next start");
+		std::puts(" session 3i: a write that fails (a read-only folder): the stale file does not win at the next start");
 		const auto before = readFile(memoryFile());
 		{
 			Session s(std::nullopt, true);
@@ -500,7 +840,10 @@ int main(const int _argc, char** _argv)
 			check(s.kitName(slotFail) == "ROFAIL", "SAVE KIT stored it ('" + s.kitName(slotFail) + "')");
 			check(until([&] { return s.processor->machineMemoryCost().failedWrites >= 1; }, 10000), "the write failed");
 			standaloneState = s.projectState();	// as the standalone saves its state when it quits
-			check(s.processor->machineMemoryMark().unsaved, "the state says it holds saves the file lacks");
+			const auto mark = s.processor->machineMemoryMark();
+			const bool named = std::find(mark.pending.begin(), mark.pending.end(), Key{Kind::Kit, slotFail}) != mark.pending.end();
+			check(named && mark.pending.size() <= 2, "the state names the slot the file lacks (and the playing pattern, whose kit it set): "
+				+ std::to_string(mark.pending.size()));
 		}	// the instance goes away with the folder still read-only: its last write fails too
 		setWritable(g_memory, true);
 		check(readFile(memoryFile()) == before, "the file is the stale one");
@@ -508,24 +851,73 @@ int main(const int _argc, char** _argv)
 	{
 		Session s(standaloneState, true);
 		check(s.waitWatching(), "the standalone starts again");
-		check(s.kitName(slotFail) == "ROFAIL", "its own state won: the save is there ('" + s.kitName(slotFail) + "')");
-		check(until([&] { return s.processor->machineMemoryCost().writes >= 1; }, 5000), "and it is written to the file at once");
+		check(s.kitName(slotFail) == "ROFAIL", "its own save won over the file's slot ('" + s.kitName(slotFail) + "')");
+		check(until([&] { return fileHas({Kind::Kit, slotFail}); }, 10000), "and it is written to the file at once");
+		check(s.kitName(slot) == name, "the file's other slots are there");
 	}
 	{
+		std::puts(" session 3j: a DAW project with a mark (a write had failed in it): the mark drives no write (B)");
+		{
+			Session s;
+			check(s.waitWatching(), "the machine starts");
+			setWritable(g_memory, false);
+			s.saveKit(12, "PROJFAIL");
+			check(until([&] { return s.processor->machineMemoryCost().failedWrites >= 1; }, 10000), "the write failed");
+			failedProject = s.projectState();
+			check(!s.processor->machineMemoryMark().pending.empty(), "the project names it");
+		}
+		setWritable(g_memory, true);
+		const auto before = readFile(memoryFile());
+		Session s(failedProject);
+		check(s.waitWatching(), "the project opens");
+		pump(3000);
+		check(s.processor->machineMemoryCost().writes == 0 && readFile(memoryFile()) == before, "nothing is written for the project's mark");
+	}
+	{
+		std::puts(" session 3k: a standalone state from before the slot store (C)");
+		Bytes old;
+		{
+			Session s(std::nullopt, true);
+			s.processor->setKeepMachineMemory(false);
+			check(s.waitWatching(), "the machine starts");
+			s.saveKit(slot, "OWNOLD");	// a slot the file has too
+			s.saveKit(13, "OWNONLY");	// a slot the file lacks
+			old = oldState(s.projectState());
+		}
+		check(!old.empty(), "an old state made");
+		g_memory.getChildFile(mdJucePlugin::machineMemory::g_keptName).deleteFile();
+		Session s(old, true);
+		check(s.waitWatching(), "the standalone starts with it");
+		check(s.kitName(slot) == name, "the file's slot replaced its own");
+		check(g_memory.getChildFile(mdJucePlugin::machineMemory::g_keptName).existsAsFile(), "its own slot was kept aside, not thrown away");
+		check(s.kitName(13) == "OWNONLY", "its slot the file lacks stays");
+		check(until([&] { return fileHas({Kind::Kit, 13}); }, 15000), "and is seeded into the file");
+	}
+	if(!md)
+	{
+		std::puts(" session 3l: a storage image loaded is a set of saves (E)");
 		Session s;
-		check(s.waitWatching(), "a new plug-in instance");
-		check(s.kitName(slotFail) == "ROFAIL", "has the save that failed to write at first ('" + s.kitName(slotFail) + "')");
+		check(s.waitWatching(), "the machine starts");
+		auto image = s.patch();
+		const auto* kit = mdJucePlugin::machineMemory::findSlot(g_model, {Kind::Kit, 20});
+		image[kit->ranges.front().begin] = 'I';
+		image[kit->ranges.front().begin + 1] = 'M';
+		const auto f = juce::File::getSpecialLocation(juce::File::tempDirectory).getChildFile("mdMachineMemoryFirmwareTest-image.bin");
+		f.replaceWithData(image.data(), image.size());
+		juce::String result;
+		check(s.processor->loadStorageImage(f, result), "the image loads: " + result.toStdString());
+		check(until([&] { return fileHas({Kind::Kit, 20}); }, 30000), "its changed kit reached the file: " + fileKeys());
 	}
 	savedFile = readFile(memoryFile());
 	{
-		std::puts(" session 4: start from factory memory");
+		std::puts(" session 4: start from factory memory (F: the file goes once the machine runs on it)");
 		Session s;
 		check(s.waitWatching(), "the machine starts");
 		check(s.kitName(slot) == name, "kit " + std::to_string(slot + 1) + " is the saved one first");
 		std::string note;
 		check(s.processor->startFromFactoryMemory(note), "factory memory: " + note);
-		check(!memoryFile().existsAsFile(), "the file is gone");
-		check(s.waitWatching(), "the machine starts again");
+		check(until([] { return !memoryFile().existsAsFile(); }, 60000), "the file is gone once the machine took it");
+		check(s.waitWatching(), "the machine runs again");
 		check(s.kitName(slot) == factoryName, "kit " + std::to_string(slot + 1) + " is the factory's again");
 		pump(2000);
 		check(!memoryFile().existsAsFile(), "and nothing wrote a file since");
@@ -542,20 +934,6 @@ int main(const int _argc, char** _argv)
 		check(status.note.find("damaged") != std::string::npos, "the note says why: " + status.note);
 		check(!memoryFile().existsAsFile() && g_memory.getChildFile(mdJucePlugin::machineMemory::g_unusableName).existsAsFile(),
 			"the damaged file was moved aside");
-	}
-	if(md)
-	{
-		std::puts(" session 6: the payload the machine refuses (another ROM's fingerprint)");
-		auto payload = mdJucePlugin::machineMemory::decode(savedFile, g_model).payload;
-		// the MD state's ROM fingerprint (md::encodeState, version 3/4: 8 bytes at 20 of the state, after the 2-byte envelope)
-		payload[2 + 20] ^= 0xff;
-		const auto file = mdJucePlugin::machineMemory::encode(g_model, 99, payload);
-		memoryFile().replaceWithData(file.data(), file.size());
-		Session s;
-		check(s.waitWatching(), "the machine starts");
-		check(until([&] { return !s.processor->machineMemoryStatus().note.empty(); }, 20000), "the note says why: " + s.processor->machineMemoryStatus().note);
-		check(s.kitName(slot) == factoryName, "kit " + std::to_string(slot + 1) + " is the factory's");
-		check(!memoryFile().existsAsFile(), "the refused file was moved aside");
 	}
 	g_memory.deleteRecursively();
 	std::printf("mdMachineMemoryFirmwareTest %s: %s\n", tag, g_failures ? "FAIL" : "PASS");
