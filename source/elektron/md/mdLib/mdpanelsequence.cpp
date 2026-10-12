@@ -68,6 +68,15 @@ namespace md
 				if(n >= 1 && n <= 16)
 					held = static_cast<PanelControl>(static_cast<int>(PanelControl::Trigger1) + n - 1);
 			}
+			// A DATA ENTRY knob's switch (knobA..knobH): EXIT/NO + a knob held removes that parameter's locks while live
+			// recording (MD manual p.48; mdEditorProbeFirmwareTest liveunlock).
+			if(!held && name.size() == 5 && name.compare(0, 4, "knob") == 0 && name[4] >= 'A' && name[4] <= 'H')
+			{
+				const auto knob = panelEncoderPressPacket(_model, static_cast<PanelEncoder>(name[4] - 'A'));
+				if(!knob)
+					return {};
+				return {hold ? *knob : PanelPacket{knob->row, 0}};
+			}
 			if(!held)
 				return {};
 			const auto packet = panelPacket(_model, *held);
