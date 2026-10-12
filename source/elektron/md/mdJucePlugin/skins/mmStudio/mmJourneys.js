@@ -29,16 +29,16 @@ const MmJourneys = (() => {
 	const dlgShown = () => !$1("#dlg").hidden;
 	const dlgButton = text => [...$1("#dlg").querySelectorAll("[data-dlg]")].find(b => b.textContent.trim() === text);
 	const rail = t => `#rail .th[data-sel="${t}"] .nm`;
-	const tele = { last: null, steps: [] }, results = [], sent = [];
+	const tele = { last: null, steps: [] }, results = [], sent = Journey.recent(50);
 	/* what the page hands the plug-in (for what has no read-back: live notes) */
 	const notesOn = [];	/* the pitches the keyboard sent (noteOn), newest last */
 	const midiSent = [];	/* the raw MIDI the keyboard and the joystick sent (op midi), newest last */
-	const polySent = [];	/* the poly commands ({on, t}), newest last (0.6 wave 9) */
+	const polySent = Journey.recent(20);	/* the poly commands ({on, t}), newest last (0.6 wave 9) */
 	const recSent = [];	/* the record commands ({mode, t}), newest last */
-	{ const send0 = Bridge.send; Bridge.send = (m, o) => { sent.push(m.op); if (sent.length > 50) sent.shift(); if (m.op === "noteOn") { notesOn.push(m.pitch); if (notesOn.length > 50) notesOn.shift(); }
+	{ const send0 = Bridge.send; Bridge.send = (m, o) => { sent.add(m.op); if (m.op === "noteOn") { notesOn.push(m.pitch); if (notesOn.length > 50) notesOn.shift(); }
 		if (m.op === "midi") { midiSent.push(m.b); if (midiSent.length > 50) midiSent.shift(); }
 		if (m.op === "record") { recSent.push({ mode: m.mode, t: m.t }); if (recSent.length > 20) recSent.shift(); }
-		if (m.op === "poly") { polySent.push({ on: m.on, t: m.t }); if (polySent.length > 20) polySent.shift(); } return send0(m, o); }; }
+		if (m.op === "poly") { polySent.add({ on: m.on, t: m.t }); } return send0(m, o); }; }
 	let wireSeq = 0;
 	const wireLog = [];	/* what the core handed the device edge, as the wire engine would encode it (the page tier's stub host: {type: "wire", kind, b, n}), newest last */
 	Bridge.onMessage(m => {
@@ -1010,7 +1010,13 @@ const MmJourneys = (() => {
 			go("seq"),
 			{ say: "pick the synth track with the most notes", act: (u, c) => { c.t = [0, 1, 2, 3, 4, 5].sort((a, b) => trigsOf(b).length - trigsOf(a).length)[0]; c.p0 = trigsOf(c.t); c.others = [0, 1, 2, 3, 4, 5].filter(t => t !== c.t).map(trigsOf); u.click(rail(c.t)); },
 				screen: c => ok(S().sel === c.t, "selected " + S().sel), machine: c => ok(c.p0.length > 0, "no notes on T" + (c.t + 1)) },
-			{ say: "press Alt+Space: live recording, playing", act: u => { blur(); results.length = 0; u.key(" ", { alt: true }, "Space"); },
+			/* once the panel is free: the SYSEX RECV session idle, nothing on its way. RECORD and the erase (EXIT) are refused
+			   while the panel takes a dump or leaves SYSEX RECV (mmDeskTest "Bug 4": a key pressed then is lost; PLAY and STOP
+			   wait instead). The journey before (mm-seq-fill-every's undo) left a dump going, and the session leaves 3 s after
+			   its last dump, so the record or the erase that followed met "The panel is busy" */
+			{ say: "press Alt+Space once the panel is free: live recording, playing", act: async (u, c) => { const recv = () => I().machine?.recv || {};
+					if (!await until(() => recv().state === "idle" && !recv().sending, 15000)) c.note = `SYSEX RECV ${recv().state}, ${recv().sending} sending`;
+					blur(); results.length = 0; u.key(" ", { alt: true }, "Space"); },
 				machine: () => ok(tele.last?.record === "live" && tele.last?.playing, `record ${tele.last?.record}, playing ${tele.last?.playing}; ${resultsSay()}`), within: 8000 },
 			{ say: "hold Delete: the selected track's notes go as they play", act: () => { results.length = 0; blur(); keyEv("keydown", "Delete"); },
 				screen: () => ok(document.body.classList.contains("erasing"), "not marked as erasing"),
@@ -1180,10 +1186,10 @@ const MmJourneys = (() => {
 				machine: () => ok(machine().poly === true && lastPoly().t === 4, `poly ${machine().poly}, sent ${JSON.stringify(lastPoly())}`), within: 8000 },
 			{ say: "on Sequence the rail marks track 5 ×6 and dims the others", act: u => u.click(tab("seq")),
 				screen: () => ok(!!$1('#rail .th[data-sel="4"] .x6') && $all("#rail .th.poly-off").length === 5, "rail " + $all("#rail .th.poly-off").length + " dimmed") },
-			{ say: "click MIDI and pick M2 on the rail: POLY stays on track 5 (a MIDI track has no voices)", act: async (u, c) => { c.n = polySent.length; u.click('[data-side="midi"]'); await sleep(200); u.click(rail(7)); await sleep(600); },
-				screen: () => ok(S().sel === 7, "selected " + S().sel), machine: c => ok(polySent.length === c.n && machine().focus === 4, `poly sent ${JSON.stringify(polySent.slice(c.n))}, focus ${machine().focus}`) },
-			{ say: "click Synth: the rail goes back to the POLY track, and no POLY command is sent (a side switch is no track pick)", act: async (u, c) => { c.n = polySent.length; u.click('[data-side="int"]'); await sleep(600); },
-				screen: () => ok(S().sel === 4 && S().polyT === 4, `selected ${S().sel}, POLY track ${S().polyT}`), machine: c => ok(polySent.length === c.n && machine().focus === 4, `poly sent ${JSON.stringify(polySent.slice(c.n))}, focus ${machine().focus}`) },
+			{ say: "click MIDI and pick M2 on the rail: POLY stays on track 5 (a MIDI track has no voices)", act: async (u, c) => { c.n = polySent.mark(); u.click('[data-side="midi"]'); await sleep(200); u.click(rail(7)); await sleep(600); },
+				screen: () => ok(S().sel === 7, "selected " + S().sel), machine: c => ok(!polySent.since(c.n).length && machine().focus === 4, `poly sent ${JSON.stringify(polySent.since(c.n))}, focus ${machine().focus}`) },
+			{ say: "click Synth: the rail goes back to the POLY track, and no POLY command is sent (a side switch is no track pick)", act: async (u, c) => { c.n = polySent.mark(); u.click('[data-side="int"]'); await sleep(600); },
+				screen: () => ok(S().sel === 4 && S().polyT === 4, `selected ${S().sel}, POLY track ${S().polyT}`), machine: c => ok(!polySent.since(c.n).length && machine().focus === 4, `poly sent ${JSON.stringify(polySent.since(c.n))}, focus ${machine().focus}`) },
 			{ say: "back on the synth tracks, the machine's TRACK 2 is pressed (here: its command, not the page's): the page follows, track 2 is POLY's and selected", act: async u => { u.click(rail(4)); await sleep(300); Bridge.send({ op: "poly", on: true, t: 1 }); },
 				screen: () => ok(S().sel === 1 && S().polyT === 1 && !!$1('#rail .th[data-sel="1"] .x6'), `selected ${S().sel}, POLY track ${S().polyT}`), machine: () => ok(machine().focus === 1, "focus " + machine().focus), within: 8000 },
 			{ say: "back on Perform, click Auto track: POLY off", act: async u => { u.click(tab("perform")); await sleep(300); u.click('[data-pmode="normal"]'); },
@@ -1278,7 +1284,7 @@ const MmJourneys = (() => {
 			{ say: "click More and mute track 1 for the row", act: async u => { if (!$1('[data-rowmute="0"]')) u.click("[data-rowmore]"); await sleep(250); u.click('[data-rowmute="0"]'); }, machine: c => ok((songDoc().rows[c.i].mutes & 1) === 1, "mutes " + songDoc().rows[c.i].mutes), within: 15000 },
 			{ say: "click Add loop: a loop row after it", act: u => u.click('[data-rowact="loop"]'), machine: c => ok(songDoc().rows[c.i + 1]?.kind === "loop", "row " + JSON.stringify(songDoc().rows[c.i + 1]?.kind)), within: 15000 }
 		],
-		async tidy(u, c) { if (S().songMore) u.click("[data-rowmore]"); if (c.r0) await undoUntil(u, () => JSON.stringify(songDoc()?.rows) === c.r0, 8); }
+		async tidy(u, c) { if (S().songMore && $1("[data-rowmore]")) u.click("[data-rowmore]"); if (c.r0) await undoUntil(u, () => JSON.stringify(songDoc()?.rows) === c.r0, 8); }
 	};
 	const songDrag = {
 		name: "mm-song-drag-drop", proves: ["MM-261"],
@@ -1999,8 +2005,8 @@ const MmJourneys = (() => {
 	const tempoReleaseJ = {
 		name: "mm-top-tempo-release", proves: ["MM-195"],
 		steps: [
-			{ say: "⌥-drag the tempo up: the LCD follows, the machine's tempo changes at the release", act: async (u, c) => { c.b0 = machine().tempo; sent.length = 0; await u.drag("#bpm", [[0, -6], [0, -12], [0, -18], [0, -24]], { alt: true }); },
-				machine: c => ok(machine().tempo > c.b0 && sent.filter(o => o === "tempo").length === 1, "tempo " + machine().tempo + ", sent " + sent.join(",")), within: 4000 }
+			{ say: "⌥-drag the tempo up: the LCD follows, the machine's tempo changes at the release", act: async (u, c) => { c.b0 = machine().tempo; c.n = sent.mark(); await u.drag("#bpm", [[0, -6], [0, -12], [0, -18], [0, -24]], { alt: true }); },
+				machine: c => ok(machine().tempo > c.b0 && sent.since(c.n).filter(o => o === "tempo").length === 1, "tempo " + machine().tempo + ", sent " + sent.since(c.n).join(",")), within: 4000 }
 		],
 		async tidy(u, c) { if (c.b0 != null && Math.abs(machine().tempo - c.b0) >= 0.05) HOST.tempo(c.b0); await sleep(300); }
 	};
@@ -2015,7 +2021,10 @@ const MmJourneys = (() => {
 			{ say: "click row 2 and press Enter: from row 2", act: async u => { u.click('.scell[data-i="1"]'); await sleep(150); blur(); u.key("Enter"); },
 				machine: () => ok(playing() && tele.last.songRow === 1, "row " + (tele.last?.songRow + 1)), within: 8000 }
 		],
-		async tidy(u, c) { await stopAll(u); if (!c.m0 && machine().song?.songMode === true) { u.click('[data-seqmode="pattern"]'); await sleep(1500); } }
+		/* back to PATTERN mode with the Song page's PATTERN key (the old [data-seqmode] key is gone since wave 1: the tidy
+		   threw, the machine stayed in SONG mode and the next journey found the LCD's pattern keys under the song row) */
+		async tidy(u, c) { await stopAll(u); if (!c.m0 && machine().song?.songMode === true) { if (S().ws !== "song") u.click(tab("song"));
+			u.click('[data-set="songpick"] button[data-v="pattern"]'); await until(() => machine().song?.songMode === false, 4000); } }
 	};
 
 	/* ---------- 0.6 wave 4: COPY / PASTE / CLEAR what (skins/shared/deskWhat.js, the mockup's 78-what.js) ---------- */
@@ -3131,7 +3140,12 @@ const MmJourneys = (() => {
 		if (!$1("#bootcard").hidden) $1('#bootcard [data-bootrom="close"]')?.click();
 		if (S().playing) { u.click("#play"); await until(() => !S().playing, 3000); }
 		if (S().mode && S().mode !== "normal" && S().ws === "perform") u.click('[data-pmode="normal"]');
+		/* PATTERN mode: a journey that left the machine in SONG mode left the LCD's pattern keys under the song row for the
+		   next one (mm-song-play-from, then mm-top-pattern-next). Said, so the journey that left it is found */
+		let said = "";
+		if (machine().song?.songMode === true) { Bridge.send({ op: "seqMode", song: false }); await until(() => machine().song?.songMode === false, 4000); said = "the machine was in SONG mode: PATTERN mode again"; }
 		await sleep(600);
+		return said;
 	}
 	function ready() {
 		return new Promise(done => window.MMPage.whenReady(async () => {
