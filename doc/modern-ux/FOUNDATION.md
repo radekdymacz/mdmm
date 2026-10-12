@@ -72,7 +72,7 @@ The MM steps are the same in `mmDesk/mmDeskModel.*` (`MmModel::kinds()`), `mmDes
 
    The row is `{op, owner, gate, kind, args, help, core, group}`:
    - `owner`: `Core` (documents), `Machine` (the adapter runs it) or `Setup` (the editor's setup, the modulators).
-   - `core` (for `Core`): `Edit` (a pure edit), `Set` (a whole document), `Ready`, `Undo`, `Redo`.
+   - `core` (for `Core`): `Edit` (a pure edit), `Set` (a whole document), `Ready`, `Undo`, `Redo`, `Trial` (`trialBegin` / `trialEnd {keep}`: edits under one gesture kept or taken back as a whole, taken back too when a page loads again (a reload, or a new editor window) and when the processor goes (detach); a trialEnd of another gesture changes nothing; the MD machine picker's audition).
    - `gate`: `None`, `Midi` or `Input`. It decides when the command waits for the lifecycle.
    - `args`: typed and ranged, text with its allowed values (`oneOf`), `Bytes` with a length; the router checks them before anything runs. The schema is closed: an undeclared argument is refused (only `id`, `g` and `force` are always allowed).
 

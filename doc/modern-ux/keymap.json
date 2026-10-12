@@ -452,6 +452,19 @@
 			"dispatched": true
 		},
 		{
+			"id": "picker-audition",
+			"scope": "sound",
+			"keys": [
+				"Space"
+			],
+			"mod": "",
+			"group": "Machine picker",
+			"does": "In the machine picker: hear the focused machine on the track; Enter keeps it, Esc puts the old one back",
+			"short": "Hear",
+			"modal": "machpop",
+			"dispatched": true
+		},
+		{
 			"id": "randomise-track",
 			"scope": "any",
 			"keys": [
