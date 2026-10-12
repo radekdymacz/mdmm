@@ -61,7 +61,7 @@ no row matches runs everything of its tier.
   them) in headless Chrome, driven over the DevTools protocol with node's own WebSocket (no npm package), `?dev=1`, and
   puts `deskStubHost` behind the bridge: the editors' real core (`mdDesk`, `mmDesk`) with a fake machine that speaks the
   firmware's SysEx (keeps the dumps, answers requests and status, LOAD PATTERN and KIT, SAVE KIT, the working kit from
-  memory, mutes, the transport, chains, the MM's SYSEX RECV and MUTE window, a small MD sample bank). Undo, refusals,
+  memory, mutes, the transport, chains, the MM's SYSEX RECV and MUTE window, a small MD sample bank). Since slice 5 (0.6) the Monomachine's fake also reports every message the core gives the device edge as `{type: "wire", kind, b, n}` (a CC, NRPN or note as deskWire encodes it on the global's base channel, a SysEx's first sixteen bytes and its length), so a page journey checks the CC number, channel, NRPN triple, note velocity and SysEx id the manual's Appendix B and C name; it also locks a value turned during live recording and keeps the working kit when a pattern recalls the kit that plays. Undo, refusals,
   history, the library and the read-back are the real code. Every command the page sends is checked against the contract
   schema and recorded. Its fixture: the committed test dumps, 16-step patterns, kits named KIT nn, four-row songs,
   factory globals. All 133 page journeys of both editors pass in about a minute at `--jobs 4`.
