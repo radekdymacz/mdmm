@@ -71,11 +71,16 @@ last and the bytes it changed; the Monomachine's dumps' raw payloads found byte 
 | Globals | 8 x 0xb2 from 0x0120cc | 8 x 0x108 from 0x0162a0 |
 | Songs | 32 x 0xa10 from 0x0130be | 24 x 0x12d0 from 0x0e39b8 |
 | Patterns | 128, three parts each: 0x896 from 0x0272c0, 0xcc from 0x06bdc0, 0x90c from 0x080000 | 128 x 0x1978 from 0x016ae4 |
-| Never a save (unwatched) | 0x000000-0x0008c9 (the kit that plays and its copy), 0x0126ae-0x0130bd (the working song), 0x0272be-0x0272bf (the pattern loaded last), 0x07fff0-0x07fff7 (moves while it plays) | 0x000000-0x00059b (the kit that plays and its copy), 0x016ae3 (the pattern loaded last), 0x0e26e8-0x0e39b7 (the working song), 0x0ffd38-0x0fffff (its stack) |
+| Never a save (unwatched) | 0x000000-0x0008c9 (the kit that plays and its copy), 0x0120ca-0x0120cb (the active global's number), 0x0126ae-0x0130bd (the working song), 0x0272be-0x0272bf (the pattern loaded last), 0x0723c0-0x0724bf (the 16 tracks' run state with their mutes, and the sequencer mode), 0x07fff0-0x07fff7 (moves while it plays) | 0x000000-0x00059b (the kit that plays and its copy), 0x01629c-0x01629f (the active global's number), 0x016ae3 (the pattern loaded last), 0x0e26e8-0x0e39b7 (the working song), 0x0ffd38-0x0fffff (its stack) |
+| A change alone is no save | the global's tempo (+0xa4, two bytes: the tempo knob, the host's tempo, a global made active); written with the global's next save | (the MM keeps its tempo elsewhere: no slot changes) |
 | Every other byte | in 256-byte "other" blocks, written when a save changes them | the same |
 
 Flash, in 64 KiB sectors: the Machinedrum's sample sectors (from 0x200000; B-054: the OS never writes below), the
 Monomachine's 2 MiB DigiPRO user flash. A storage of a sector is a save (below).
+
+The "other" blocks were probed too (`MDMM_MEMORY_OTHER=1`: idle, tempo, track select, song mode, the active global,
+the lock mode or POLY, mute CCs, play and stop, the editor reading the machine, a MIDI setting): the working state found
+there is in the unwatched rows above; a MIDI setting changes its global, as a save.
 
 What a kit save changes, measured: its slot, and the byte of the playing pattern that names its kit (the pattern is
 stored in place). LOAD KIT changes that byte too: on both machines the pattern remembers its kit, as on the hardware.
@@ -114,12 +119,14 @@ which the firmware handles inside the emulation; the stored slots change on ever
 The machines store pattern edits in the pattern's slot as they are made (no SAVE PATTERN), so a step or lock entered
 is a save. CCs from a DAW with live recording off change the working kit only.
 
-- A background thread ("machine memory", never the audio thread) looks once a second: under the plug-in's lock it
-  copies the 1 MiB patch RAM (the Monomachine also its 2 MiB user flash); the hash of the watched bytes is made after
-  the lock is released.
+- A background thread ("machine memory", never the audio thread) looks once a second: it copies the 1 MiB patch RAM
+  (the Monomachine also its 2 MiB user flash) in 64 KiB pieces, the plug-in's lock taken for each and released between
+  (each piece checks it is still the same machine), so the audio thread waits for one piece at most; the hash of the
+  watched bytes is made after. A save that lands while the pieces are taken changes the next look too, and a write
+  waits for two looks that agree.
 - When the watched memory differs from the last write and has been quiet for one look (10 s at the latest while it
   keeps changing), the slots that differ from the base (the memory at the start, or as last written) are merged into
-  the file: read it, put those slots in, write it to a temporary file in the same folder, flush it to the disk
+  the file, holding the file's lock (below): read it, put those slots in, write it to a temporary file in the same folder, flush it to the disk
   (`FileOutputStream::flush`: fsync on POSIX, FlushFileBuffers on Windows) and rename it over the old one
   (`juce::TemporaryFile`). A crash leaves the old file or the new one. The base takes the written slots.
 - A sample the page sends (Sampler, ROM-xx) is a save: when its transfer ends (the desk's `sampleLoad` "done") the
@@ -131,6 +138,11 @@ is a save. CCs from a DAW with live recording off change the working kit only.
   a memory replaced on purpose (`machineMemoryWillBeReplaced`: a project's state, the file's slots at the start,
   factory memory) writes the saves of the memory before first and then takes the new memory as the base once it holds
   still for a look; opening a project therefore writes nothing until something is saved in it.
+- **The file's lock.** Every read-merge-write, every move of the file and its deletion hold a lock on it: in the
+  process a mutex per file path (POSIX record locks belong to the process, so a second instance in it would get the
+  file lock too), and between processes `juce::InterProcessLock` (a lock file in the temporary folder, named by the
+  file's path hash), so a DAW's instances and the standalone never lose each other's saves. A lock not had within 10 s
+  refuses the write: its slots stay pending and are tried again.
 - **A storage image** (Monomachine, Load storage image…) is decided to be what it is on the machine: the battery memory
   replaced. Its slots that differ from the base are saves and go to the file.
 
@@ -146,7 +158,10 @@ What closes each way a save could be lost, and its test (mdMachineMemoryFirmware
 | A standalone state from before the slot store (C) | the file wins, the own slots that differ are kept aside, the slots the file lacks are seeded | 3k |
 | An old project, one kit saved (D) | only that kit's slot is merged | 3 |
 | A storage image (E) | its changed slots are saves | 3l (MM) |
-| Start from factory memory (F) | the file goes only once the new machine runs on factory memory | 4 |
+| Two instances saving other slots at the same time | the file's lock: every save of both is in the file | 3m |
+| The start's slots refused by the machine at once | the file stays as it is, the notice says so, the memory there stays the base (a pending save is still written after a restart) | 3n |
+| MD: samples saved with another ROM, a sample saved with this one | the other ROM's sectors go to `machine-memory.samples-<fingerprint>.bin` (never over another) first; if that cannot be written, nothing is replaced | 3o (MD) |
+| Start from factory memory (F) | the file goes only once the new machine runs on factory memory; refused: the file stays | 4, 3n |
 | Automation while a pattern plays | nothing is written (12.5 s of CCs on every track, the steps seen moving) | 1 |
 | A kit, a pattern step and lock, a song, a global, a sample (MD) from the page | each reaches the file as its slot | 2 |
 
@@ -169,20 +184,22 @@ What closes each way a save could be lost, and its test (mdMachineMemoryFirmware
 | Case | What happens |
 |---|---|
 | No file | factory memory, silently |
-| Not ours, wrong machine, another format version (the previews' whole-memory file), another layout, size or CRC wrong, an entry that names no slot (a broken write, a crafted file) | its slots are not used; the file is renamed `machine-memory.unusable.bin` (one kept) and the plug-in says so in a notice; the next save writes a new file |
-| MD: the samples were saved with another ROM | the sectors are not laid over; the other slots are; the next sample saved drops them |
+| Damaged (size or CRC wrong, an entry that names no slot), not ours, the previews' version 1 | its slots are not used; the file is renamed `machine-memory.unusable-<date-time>.bin` (never deleted, never over another) and the plug-in says so in a notice; the next save writes a new file (5, 5b) |
+| A newer editor's file, another layout, the other machine's | kept as it is and never written over: the notice says so and every save is refused (its slots stay pending) until the person moves the file or uses that editor (5c) |
+| The machine refuses the slots laid over (a restore that fails) | the file stays as it is; the notice says why; the session goes on with the memory it has |
+| MD: the samples were saved with another ROM | the sectors are not laid over; the other slots are; when a sample is saved with this ROM the old sectors are kept in their own file first (3o) |
 | No ROM | nothing is read until a ROM is installed; then as at a start |
-| Two instances of one machine | each merges its own saves; for one slot the last save wins (the guide says so) |
+| Two instances of one machine | each merges its own saves under the file's lock (section 3), so none is lost; for one slot the last save wins (the guide says so) |
 | Write fails (disk full, no permission) | the old file stays; the note says why; the slots stay pending (section 3) |
 
 ## 6. Cost (measured 2026-10-12, M4 Pro, mdMachineMemoryFirmwareTest at 10 looks a second, both machines at once)
 
 | | Machinedrum (OS 1.63) | Monomachine (OS 1.32B) |
 |---|---|---|
-| A look: the plug-in's lock held (the audio thread can wait this long, once a second) | 0.017 ms typical, 3.7 ms worst (under the test's load) | 0.047 ms typical, 0.77 ms worst |
+| A look: the plug-in's lock held, the longest piece (the audio thread can wait this long) | 0.03 ms typical, 0.11 ms worst | 0.002 ms typical, 0.43 ms worst (both under the test's load: two machines at once) |
 | A look with its hash, on the thread | about 2.4 ms | about 4.8 ms |
 | A write: read the file, merge the slots, temporary file, fsync, rename | 0.6 to 1.4 ms; one kit and the playing pattern's kit byte: a 6 KiB file | 0.5 to 0.8 ms; 7 KiB |
-| MD: the sample flash copied (at a new base and after a sample store, 6 MiB under the plug-in's lock) | about 1 ms | (none: the user flash is in every look) |
+| MD: the sample flash copied (at a new base and after a sample store, 6 MiB, one 64 KiB sector a lock) | under 0.1 ms a sector | (none: the user flash is in every look) |
 | Writes while idle or playing (12 s of play, automation on every track) | none | none |
 
 The first look allocates its buffers before it takes the lock; later looks copy into them. The file grows with what is
@@ -194,3 +211,6 @@ saved: a kit is about 1 KiB, an MD pattern about 4.4 KiB, an MM pattern 6.4 KiB,
 - Start from factory memory is a choice of RESET MACHINE… (section 4); the engine menu keeps KEEP MEMORY only.
 - Only a real save writes the file: a kit, pattern, song or global stored into a slot (section 3).
 - The file is a store of saved slots, merged on each save ("Why slots").
+- Decided by the editor, for Radek to confirm: a storage image counts as saves; the MD global's tempo alone is no save;
+  an old standalone state loses its differing slots to the file but keeps them aside; samples of another ROM are kept
+  in their own file.

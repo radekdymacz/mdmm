@@ -150,6 +150,26 @@ namespace
 			check(decode(encode(model, noSuch), model).problem == Problem::Corrupt, "an entry that names no slot is refused");
 			check(decode(encode(model, {}), model).problem == Problem::None, "an empty store is a store");
 		}
+		{
+			auto newer = encode(Model::Machinedrum, {});
+			newer[8] = 3;
+			const auto d = decode(newer, Model::Machinedrum);
+			check(d.problem == Problem::Version && d.version == 3 && !replaceable(d), "a newer editor's file is never replaced");
+			newer[8] = 1;
+			check(replaceable(decode(newer, Model::Machinedrum)), "the previews' version 1 may be moved aside");
+			auto other = encode(Model::Monomachine, {});
+			check(!replaceable(decode(other, Model::Machinedrum)), "the other machine's file is never replaced");
+		}
+		{
+			// the MD global's tempo alone is no save
+			const auto base = memoryOf(0);
+			auto now = base;
+			const auto* g = findSlot(Model::Machinedrum, {Kind::Global, 0});
+			now[g->ranges.front().begin + 0xa4] ^= 1;
+			check(changedSlots(Model::Machinedrum, base, now).empty(), "a tempo change alone is no save");
+			now[g->ranges.front().begin + 0xa0] ^= 1;
+			check(changedSlots(Model::Machinedrum, base, now).size() == 1, "with another global change it is");
+		}
 		check(decode({}, Model::Machinedrum).problem == Problem::Empty, "no bytes: empty");
 		check(decode({1, 2, 3}, Model::Machinedrum).problem == Problem::NotOurs, "a short file is not ours");
 		auto v1 = encode(Model::Machinedrum, {});

@@ -113,6 +113,8 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 15. Save a kit and at once use MIDI panic's restart (or install the ROM again): a new instance has the kit.
 16. MM: load a storage image: a new instance has the image's kits, patterns and songs that differ from what you had.
 17. Edit a pattern (a step, a lock), a song row and a global setting from the page: a new instance has each.
+18. Two instances (a DAW and the standalone, or two in one DAW): save different kits in both, quickly one after the other: a new instance has every one.
+19. MD: turn the tempo, change the active global, mute tracks: the file's date does not change.
 
 ## Polish B (B-070, B-062, I-002, I-022, both editors)
 

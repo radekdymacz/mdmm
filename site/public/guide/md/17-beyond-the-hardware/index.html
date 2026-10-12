@@ -72,9 +72,9 @@
 <h4 class="gd-h3" id="two-editors-at-once">Two editors at once</h4>
 <p>Two Machinedrum editors open at the same time, in one DAW project or in two, share the same file. Each writes the slots it saves and leaves the others. When two editors save the same slot, the last save wins.</p>
 <h4 class="gd-h3" id="when-the-file-cannot-be-used">When the file cannot be used</h4>
-<p>The file is written in one step, so a crash leaves the old memory or the new one. If the file is damaged or was written by another version of the editor, the machine starts from factory memory and the editor says so. It keeps the file beside the new one as machine-memory.unusable.bin, and your next save writes a new memory file.</p>
+<p>The file is written in one step, so a crash leaves the old memory or the new one. If the file is damaged, the machine starts from factory memory and the editor says so. It keeps the file beside the new one as machine-memory.unusable with the date and time in its name, and your next save writes a new memory file. If the file was written by a newer editor, the editor leaves it as it is and saves nothing over it. It says so; move the file away to save again.</p>
 <p>If the editor cannot write the file, because the disk is full or the folder is read only, it says so and keeps the old file. It tries again at your next save and when it closes. Your saves stay in the session. The standalone editor starts with them next time, not with the old file, and writes them then.</p>
-<p>The file is machine-memory.bin in the memory folder of the editor's data folder: Documents/Gearmulator Preview/Machinedrum/memory. It holds the slots you saved and the samples you loaded, nothing else. It holds no firmware.</p>
+<p>The file is machine-memory.bin in the memory folder of the editor's data folder: Documents/Gearmulator Preview/Machinedrum/memory. It holds the slots you saved and the samples you loaded, nothing else. Samples saved with another ROM are kept in a file of their own when you save a sample with this one. It holds no firmware.</p>
 </div></section>
 <nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/md/13-technical-information-mki-vs-mkii/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">13. Technical information, MKI vs MKII</span></a><span></span></nav>
 </article>
