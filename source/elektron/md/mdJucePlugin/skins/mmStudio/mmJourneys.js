@@ -143,10 +143,20 @@ const MmJourneys = (() => {
 		]
 	};
 	const plate = {
-		name: "mm-top-plate", proves: [],
+		name: "mm-top-plate", proves: ["MM-322"],
 		steps: [
-			{ say: "click the plate key", act: (u, c) => { c.p0 = document.documentElement.dataset.plate; u.click("#platekey"); }, screen: c => ok(document.documentElement.dataset.plate !== c.p0, "plate " + document.documentElement.dataset.plate) },
-			{ say: "click it again", act: u => u.click("#platekey"), screen: c => ok(document.documentElement.dataset.plate === c.p0, "plate " + document.documentElement.dataset.plate) }
+			/* MM-322 (wave 10): each plate is its own look, true to the product photos: MKI a light-blue LCD, MKII a bluish-white one */
+			{ say: "click the plate key: the other model, its own LCD colour and label", act: (u, c) => {
+				const root = document.documentElement;
+				c.p0 = root.dataset.plate; c.lcd0 = getComputedStyle(root).getPropertyValue("--lcd").trim(); c.key0 = $1("#platekey").textContent.trim(); u.click("#platekey");
+			}, screen: c => {
+				const root = document.documentElement, lcd = getComputedStyle(root).getPropertyValue("--lcd").trim(), key = $1("#platekey").textContent.trim();
+				return ok(root.dataset.plate !== c.p0 && lcd !== c.lcd0 && key !== c.key0, `plate ${root.dataset.plate}, LCD ${c.lcd0} -> ${lcd}, key ${c.key0} -> ${key}`);
+			} },
+			{ say: "click it again: the first look is back", act: u => u.click("#platekey"), screen: c => {
+				const root = document.documentElement, lcd = getComputedStyle(root).getPropertyValue("--lcd").trim();
+				return ok(root.dataset.plate === c.p0 && lcd === c.lcd0, `plate ${root.dataset.plate}, LCD ${lcd}`);
+			} }
 		]
 	};
 	const undoRedo = {

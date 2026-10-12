@@ -102,3 +102,7 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 4. MD (I-002): GLOBAL base channel set, play a mapped track note on a MIDI keyboard: the track's number on the rail glows a moment (on Mix: its LED). Another channel: nothing. While the sequencer plays, a note does not cut a trig's flash of the Mix LED short. In HW MIDI no note lights a track.
 5. Both (I-022): ⌘-click a value box (Ctrl-click on Windows): a field over it with its value, selected. Type a value, Enter: set; ⌘Z takes it back in one step. Type 999 or a word: refused, the field turns red and says the range (or the names), stays open; Esc leaves it. Tab to a value and press Enter: the field. Tab with a refused value keeps the field open; Enter on the tempo or a volume fader does what it did before. Double-click still sets the default, drag and wheel as before.
 6. Both (I-022): signed values (PAN, EQG): type -10 or +10. MD: where a box shows a unit beside its number, its text works too. MM lists: on an LFO's WAVE or PAGE type a name in small letters (saw, flt); MM PAN: L12, C or R5.
+
+## The gaps (wave 12, `feat/0.6-gaps`)
+
+1. MM (MM-322): click MKI / MKII at the right of the top bar: the LCD turns light blue (MKI) or bluish white (MKII), the toast names the model's LCD; on MKI the machine list greys the MKII-only machines.

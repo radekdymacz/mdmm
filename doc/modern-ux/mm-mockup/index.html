@@ -8581,8 +8581,8 @@ function polyFollows(){if(S.mode!=="poly"){S.polyT=null;return}
     selected: POLY stays where it is (MIDI tracks have no voices) */
  if(S.polyT==null||isMidiT(S.sel))return;const t=asgT();if(S.polyT===t)return;S.polyT=t;if(HOST.keyMode)HOST.keyMode("poly",t)}
 function setPlate(v){S.plate=v;document.documentElement.dataset.plate=v;try{localStorage.setItem("mmeditor.plate",v)}catch(_){}
- if(v==="mk1"){const bad=S.tracks.filter(t=>MACH[t.m].mk2);if(bad.length)toast(`MKI: ${bad.map(t=>t.m).join(", ")} needs a MKII. It would load as nothing on a MKI.`);else toast("MKI: no user waveforms, no DPRO-DDRW or DPRO-DENS. The plate looks the same.")}
- if(v==="mk2")toast("MKII: the same silver plate, plus user waveforms and the DigiPRO draw machines.");
+ if(v==="mk1"){const bad=S.tracks.filter(t=>MACH[t.m].mk2);if(bad.length)toast(`MKI: ${bad.map(t=>t.m).join(", ")} needs a MKII. It would load as nothing on a MKI.`);else toast("MKI: the light-blue LCD; no user waveforms, no DPRO-DDRW or DPRO-DENS.")}
+ if(v==="mk2")toast("MKII: the bluish-white LCD, plus user waveforms and the DigiPRO draw machines.");
  render();redraw()}
 (()=>{let v=null;try{v=localStorage.getItem("mmeditor.plate")}catch(_){}if(!["mk1","mk2"].includes(v))v="mk2";S.plate=v;document.documentElement.dataset.plate=v})();
 document.fonts&&document.fonts.ready.then(()=>{if(S.ws==="seq"){genBarFit();fitLane();drawSlides()}redraw();alignLock()});
