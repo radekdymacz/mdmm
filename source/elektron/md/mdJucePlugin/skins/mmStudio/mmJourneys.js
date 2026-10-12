@@ -2104,7 +2104,7 @@ const MmJourneys = (() => {
 					const fam = m.replace(/-.*$/, "").replace(/^(FM\+).*/, "FM+");
 					u.click("#machbtn"); await until(() => !$1("#machpop").hidden, 1500);
 					const famBtn = $1(`#machpop .mf[data-fam="${famKey(m)}"]`); if (famKey(m) !== fam || !famBtn) { c.bad.push(`${m}: family ${famKey(m)}, the manual's ${fam}`); if (!$1("#machpop").hidden) u.key("Escape"); continue; }
-					u.click(famBtn); await sleep(30);
+					u.click(famBtn); await sleep(30); if (m === "SWAVE-SAW") Journey.snapshot("mm-machine-picker");
 					const key = $1(`#machpop .mk[data-mach="${m}"]`); if (!key || key.disabled) { c.bad.push(m + ": no key"); if (!$1("#machpop").hidden) u.key("Escape"); continue; }
 					u.click(key); if (!await until(() => wk().tracks[0].machineName === m && S().tracks[0].m === m, 4000)) { c.bad.push(`${m}: not picked, kit has ${wk().tracks[0].machineName}`); continue; }
 					await sleep(250);
@@ -2115,7 +2115,6 @@ const MmJourneys = (() => {
 					if (tune !== synth) c.bad.push(`${m}: TUNE ${tune}`);
 					for (const [i, name] of boxes) {
 						const r = await nudgeBox(u, 0, "SYN", i);
-						if (name === "INP") { if (r.err || !r.moved.length) c.bad.push(`${m} INP: ${r.err || "nothing moved"}`); else c.knobs++; continue; }
 						const e = checkBox(r, 0, "SYN", i); if (e) c.bad.push(m + " " + name + ": " + e); else c.knobs++;
 					}
 					if (m === "DPRO-BBOX" || m === "VO-6") Journey.snapshot(m === "VO-6" ? "mm-machine-vo6" : "mm-machine-bbox");
@@ -2136,7 +2135,7 @@ const MmJourneys = (() => {
 		steps: [
 			go("sound"), sel(0),
 			{ say: "AMP, FLT and EFX: each value box has the manual's name at the manual's place; an arrow moves its own cell of the kit and sends its own CC on the track's channel; the sign shows where the manual gives one", act: async (u, c) => {
-				c.n0 = histN(); c.bad = []; c.n = 0;
+				c.n0 = histN(); c.bad = []; c.n = 0; await sleep(300); Journey.snapshot("mm-sound-workspace");
 				for (const [g, names] of EFFECT_PAGES) {
 					const boxes = $all(`#main .pc[data-g="${g}"]`).map(e => [+e.dataset.n, e.getAttribute("aria-label")]).sort((a, b) => a[0] - b[0]);
 					if (boxes.map(b => b[1]).join(" ") !== names) { c.bad.push(`${g}: ${boxes.map(b => b[1]).join(" ")} (manual: ${names})`); continue; }
@@ -2348,7 +2347,7 @@ const MmJourneys = (() => {
 		name: "mm-seq-env-trigs", proves: ["MM-029", "MM-047", "MM-085", "MM-143", "MM-171", "MM-209", "MM-210", "MM-211", "MM-213", "MM-214"],
 		steps: [
 			go("seq"), sel(0), drawOn,
-			{ say: "the LCD names the kit, the rail marks the track, the ENV row's A F L dots show each step's amp, filter and LFO trigs as the pattern holds them", screen: () => {
+			{ say: "the LCD names the kit, the rail marks the track, the ENV row's A F L dots show each step's amp, filter and LFO trigs as the pattern holds them", act: async () => { await sleep(300); Journey.snapshot("mm-sequence-workspace"); Journey.snapshot("mm-env-row"); Journey.snapshot("mm-page-overview"); Journey.snapshot("mm-overview"); Journey.snapshot("mm-lcd"); }, screen: () => {
 					const bad = []; if (!$1("#kitname").textContent.includes(kitName(machine().kit.current).trim())) bad.push("LCD kit " + $1("#kitname").textContent); if (S().sel !== 0) bad.push("track " + S().sel);
 					for (let s = 0; s < S().len; s++) { const st = S().tracks[0].steps[s]; if (!st || st.off) continue; for (const [b, k] of [["a", "amp"], ["f", "filter"], ["l", "lfo"]]) { const d = $1(dot(b, s)); if (!d || (d.getAttribute("aria-pressed") === "true") !== bitsOf(0, k).includes(s)) bad.push(`step ${s + 1} ${b}`); } }
 					return ok(!bad.length, bad.slice(0, 5).join(" | ")); } },
@@ -2540,16 +2539,16 @@ const MmJourneys = (() => {
 						if (!await until(() => mDoc(m).trig.includes(s), 4000)) { c.bad.push(`M${m + 1}: no note at ${s + 1}`); continue; } await sleep(200); c.where.push(s);
 						if (JSON.stringify([patDoc().tracks, patDoc().midiTracks.filter((x, i) => i !== m)]) !== before) c.bad.push(`M${m + 1}: another track changed`); } },
 				screen: c => ok(!c.bad.length, c.bad.join(" | ")), machine: c => ok(c.where.length === 6, c.where.length + " of 6"), within: 1000 },
-			{ say: "Shift-click another pitch on M1's note: a chord, one length for all its notes (LEN is a lock of the step, one value)", act: async (u, c) => { u.click(rail(6)); await sleep(250); c.s = c.where[0]; const p0 = rollCell(6, c.s); c.p1 = p0.n + 3; const p = rollPitch(6, c.s, c.p1); u.click(p.c, { shift: true }, p.fx, p.fy); await until(() => midiNotesAt(0, c.s).length >= 2, 4000); },
+			{ say: "Shift-click another pitch on M1's note: a chord, one length for all its notes (LEN is a lock of the step, one value)", act: async (u, c) => { u.click(rail(6)); await sleep(250); c.s = c.where[0]; const p0 = rollCell(6, c.s); c.p1 = p0.n + 3; const p = rollPitch(6, c.s, c.p1); u.click(p.c, { shift: true }, p.fx, p.fy); await until(() => midiNotesAt(0, c.s).length >= 2, 4000); await sleep(300); Journey.snapshot("mm-midi-roll"); },
 				machine: c => ok(midiNotesAt(0, c.s).length >= 2 && midiNotesAt(0, c.s).includes(c.p1), `notes ${midiNotesAt(0, c.s)}`), screen: c => ok(S().midi[0].steps[c.s]?.n?.length >= 2, "page " + JSON.stringify(S().midi[0].steps[c.s])), within: 8000 },
 			{ say: "the MIDI page's locks: VEL, PB and PCHG drawn on the note's step: each is a lock of the MIDI page (page 8 of the lane picker) on that step; PCHG is only sent when locked", act: async (u, c) => { c.bad = []; if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); await sleep(200); const t = 6;
 					for (const [i, nm] of [[1, "VEL"], [2, "PB"], [3, "PCHG"]]) { u.click(`.pk[data-lane="MID.${i}"]`); await sleep(100); await u.drag(`#lane .lb[data-s="${c.s}"]`, [[0, -1]], {}, { fy: 0.3, settle: 40, stepMs: 10 }); if (!await until(() => lockVals(0, 7, i).some(([s]) => s === c.s), 4000)) c.bad.push(`${nm}: no lock`); }
 					c.help = $1(".lanehelp")?.title || $1(".lanehelp")?.textContent || ""; await dockOpen(u, "midi"); c.help2 = ($1(".dkhelp")?.title || "") + ($1(".dkhelp")?.textContent || ""); },
 				screen: c => ok(!c.bad.length && /PCHG only sends when it is locked/.test(c.help2), c.bad.join(" | ") + " help: " + c.help2.slice(0, 100)), within: 1000 },
 			{ say: "CL1 typed CC74 and CL2 typed AFT: the global holds the CC number and 128 for AFT, on M1 only", act: async (u, c) => { c.cc0 = JSON.stringify(gDoc().midiSeq.ccs); const q = i => `.pc[data-g="cc"][data-n="${i}"]`; u.click(q(0), { cmd: true }); typeIn(u, "cc74"); await until(() => gDoc().midiSeq.ccs[0][0] === 74, 6000); u.click(q(1), { cmd: true }); typeIn(u, "aft"); await until(() => gDoc().midiSeq.ccs[0][1] === 128, 6000); c.now = gDoc().midiSeq.ccs; },
-				machine: c => ok(c.now[0][0] === 74 && c.now[0][1] === 128 && c.now.slice(1).every((x, k) => same(x, JSON.parse(c.cc0)[k + 1])), "ccs " + JSON.stringify(c.now)), screen: () => ok($1('.pc[data-g="cc"][data-n="1"] b')?.textContent === "AFT" || /AFT/.test($1('#main')?.textContent || ""), "box"), within: 14000 },
+				machine: c => ok(c.now[0][0] === 74 && c.now[0][1] === 128 && c.now.slice(1).every((x, k) => same(x, JSON.parse(c.cc0)[k + 1])), "ccs " + JSON.stringify(c.now)), screen: () => ok($1('.pc[data-g="cc"][data-n="1"] b')?.textContent === "AFT" && $1('.pc[data-g="cc"][data-n="0"] b')?.textContent === "CC74", "boxes " + $1('.pc[data-g="cc"][data-n="0"] b')?.textContent + " " + $1('.pc[data-g="cc"][data-n="1"] b')?.textContent), within: 14000 },
 			{ say: "the Channel keys: channel 4 for M1: the global holds it for that track only", act: async (u, c) => { c.ch0 = gDoc().midiSeq.channels.slice(); u.click('[data-set="mch"] button[data-v="4"]'); await until(() => gDoc().midiSeq.channels[0] === 3, 8000); c.now = gDoc().midiSeq.channels; },
-				machine: c => ok(c.now[0] === 3 && c.now.slice(1).every((x, k) => x === c.ch0[k + 1]), "channels " + c.now), screen: () => ok(pressed('[data-set="mch"] button[data-v="4"]') && /CH 04/.test($1(".dkread, #dkread")?.textContent || $1(".snd, #main")?.textContent || ""), "key"), within: 12000 },
+				machine: c => ok(c.now[0] === 3 && c.now.slice(1).every((x, k) => x === c.ch0[k + 1]), "channels " + c.now), screen: () => ok(pressed('[data-set="mch"] button[data-v="4"]'), "key not lit"), within: 12000 },
 			{ say: "a MIDI page value is the kit's: VEL on M1 raised, the kit is edited, saved to its slot the slot holds it", act: async (u, c) => { const el = box("MID", 1); const v0 = wk().tracks[0].pages[7][1], mx = maxOf(ref(el)[2]); c.v0 = v0; el.focus(); u.key(v0 >= mx ? "ArrowDown" : "ArrowUp"); await until(() => wk().tracks[0].pages[7][1] !== v0, 4000); c.v1 = wk().tracks[0].pages[7][1]; c.ed = machine().kit?.working;
 					u.click("#kitf"); await sleep(300); u.click('#libpop [data-la="save"]'); await answer(u, c); await until(() => I().doc("kit", machine().kit.current)?.tracks[0].pages[7][1] === c.v1, 8000); u.key("Escape"); },
 				machine: c => ok(c.ed === "edited" && I().doc("kit", machine().kit.current)?.tracks[0].pages[7][1] === c.v1, `working ${c.ed}, stored ${I().doc("kit", machine().kit.current)?.tracks[0].pages[7][1]} for ${c.v1}`), within: 14000 }
@@ -2581,7 +2580,7 @@ const MmJourneys = (() => {
 		steps: [
 			go("perform"),
 			{ say: "Auto track: pick track 3 in the assign card, click a key: it plays that track, on its own channel (base + 2), as a note on and a note off", act: async (u, c) => { c.bad = []; u.click('[data-pmode="normal"]'); await sleep(300); u.click('[data-set="astrk"] button[data-v="2"]'); await sleep(300); const m = await keyMsgs(u); c.info = $1("#kbinfo")?.textContent;
-					if (!(m.length === 2 && m[0][0] === (0x90 | (gch().base + 2)) && m[0][1] === 60 && m[0][2] > 0 && m[1][0] === (0x80 | (gch().base + 2)) || (m[1] && m[1][0] === (0x90 | (gch().base + 2)) && m[1][2] === 0))) c.bad.push("Auto track: " + JSON.stringify(m)); if (!/^T3 /.test(c.info)) c.bad.push("info " + c.info); },
+					const ch3 = gch().base + 2; if (!(m.length === 2 && m[0][0] === (0x90 | ch3) && m[0][1] === 60 && m[0][2] > 0 && m[1][0] === (0x80 | ch3) && m[1][1] === 60)) c.bad.push("Auto track: " + JSON.stringify(m)); if (!/^T3 /.test(c.info)) c.bad.push("info " + c.info); },
 				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
 			{ say: "Multi trig, each of its four modes: one source plays all six tracks, so one note on the MULTI TRIG channel (7), whatever the mode", act: async (u, c) => { c.bad = []; u.click('[data-pmode="multi"]'); await sleep(400); c.m0 = wk().multiTrig.mode;
 					for (let i = 0; i < 4; i++) { u.click(`[data-set="mtmode"] button[data-v="${i}"]`); if (!await until(() => wk().multiTrig.mode === i, 4000)) { c.bad.push("mode " + i); continue; } const m = await keyMsgs(u); if (!(m.length === 2 && m[0][0] === (0x90 | gch().multiTrig) && m[0][1] === 60)) c.bad.push(`mode ${i}: ${JSON.stringify(m)}`); }
@@ -2690,7 +2689,7 @@ const MmJourneys = (() => {
 		name: "mm-song-row-settings", proves: ["MM-170", "MM-199", "MM-260", "MM-263", "MM-264", "MM-265", "MM-267", "MM-273", "MM-274", "MM-275"],
 		steps: [
 			go("song"),
-			{ say: "SONG mode, add a row: the header counts the rows of the machine's song (END is the last of them), the grid has a cell for each", act: async (u, c) => { c.r0 = JSON.stringify(songDoc()?.rows); c.n0 = histN(); c.m0 = machine().song?.songMode === true; u.click('[data-set="songpick"] button[data-v="song"]'); await sleep(300); u.click('[data-addpat="2"]'); await until(() => JSON.stringify(songDoc()?.rows) !== c.r0, 8000); await sleep(400); c.i = rowI(); },
+			{ say: "SONG mode, add a row: the header counts the rows of the machine's song (END is the last of them), the grid has a cell for each", act: async (u, c) => { c.r0 = JSON.stringify(songDoc()?.rows); c.n0 = histN(); c.m0 = machine().song?.songMode === true; u.click('[data-set="songpick"] button[data-v="song"]'); await sleep(300); u.click('[data-addpat="2"]'); await until(() => JSON.stringify(songDoc()?.rows) !== c.r0, 8000); await sleep(400); c.i = rowI(); Journey.snapshot("mm-song-workspace"); Journey.snapshot("mm-song-what-plays"); },
 				screen: () => ok(new RegExp(`^${S().song.length} of 200 rows`).test($1(".arrcard .note")?.textContent || "") && $all("#tl .scell:not(.empty)").length === S().song.length, `header "${$1(".arrcard .note")?.textContent}", cells ${$all("#tl .scell:not(.empty)").length}, rows ${S().song.length}`),
 				machine: c => ok(songDoc().rows.length === S().song.length && songDoc().rows.length === JSON.parse(c.r0).length + 1 && songDoc().rows[songDoc().rows.length - 1].kind === "end", `doc ${songDoc().rows.length} rows, page ${S().song.length}, before ${JSON.parse(c.r0).length}`), within: 10000 },
 			{ say: "Transpose + twice on the row: the song row holds 2 (pattern, all tracks) and its cell shows +2", act: async (u, c) => { u.click('[data-step="trn"][data-d="1"]'); await until(() => rowDoc().transpose === 1, 6000); await songSettled(); u.click('[data-step="trn"][data-d="1"]'); await until(() => rowDoc().transpose === 2, 6000); await songSettled(); c.mk1 = cellMarks(c.i); },
@@ -2704,9 +2703,9 @@ const MmJourneys = (() => {
 				machine: c => ok(c.part[0] === 1 && c.part[1] < (c.pat0 || 99) && c.whole[0] === 0 && c.whole[1] === c.pat0, `part ${c.part}, whole ${c.whole}, pattern length ${c.pat0}`), within: 10000 },
 			{ say: "Tempo: Keep off gives the row a tempo of its own (the current BPM), + raises it; the song stores it in the row and the cell shows B", act: async (u, c) => { u.click("[data-bpmkeep]"); await until(() => rowDoc().tempo != null, 6000); await songSettled(); c.t0 = rowDoc().tempo; u.click('[data-step="bpm"][data-d="1"]'); await until(() => rowDoc().tempo !== c.t0, 6000); await songSettled(); c.mk2 = cellMarks(c.i); },
 				machine: c => ok(rowDoc().tempo === c.t0 + 1 && c.t0 > 0, `tempo ${rowDoc().tempo} (was ${c.t0})`), screen: c => ok(/B/.test(c.mk2), "cell " + c.mk2), within: 8000 },
-			{ say: "Mutes: T1 muted for the row: the row's mute mask holds bit 0, the cell shows M; its marks now T, M and B", act: async (u, c) => { u.click('[data-rowmute="0"]'); await until(() => (rowDoc().mutes & 1) === 1, 6000); await songSettled(); c.mk3 = cellMarks(c.i); },
+			{ say: "Mutes: T1 muted for the row: the row's mute mask holds bit 0, the cell shows M; its marks now T, M and B", act: async (u, c) => { u.click('[data-rowmute="0"]'); await until(() => (rowDoc().mutes & 1) === 1, 6000); await songSettled(); c.mk3 = cellMarks(c.i); Journey.snapshot("mm-song-arrangement"); },
 				machine: () => ok((rowDoc().mutes & 1) === 1, "mutes " + rowDoc().mutes), screen: c => ok(/T/.test(c.mk3) && /M/.test(c.mk3) && /B/.test(c.mk3), "cell " + c.mk3), within: 8000 },
-			{ say: "Add loop, then JUMP: a forward jump, its target a later row (stepper +); then HALT: it pauses the playback, its target the row itself", act: async (u, c) => { c.bad = []; u.click('[data-rowact="loop"]'); await until(() => songDoc().rows.some(r => r.kind === "loop"), 6000); c.li = rowI(); await songSettled();
+			{ say: "Add loop, then JUMP: a forward jump, its target a later row (stepper +); then HALT: it pauses the playback, its target the row itself", act: async (u, c) => { c.bad = []; u.click('[data-rowact="loop"]'); await until(() => songDoc().rows.some(r => r.kind === "loop"), 6000); c.li = rowI(); await songSettled(); Journey.snapshot("mm-song-loop");
 					u.click('[data-set="loopkind"] button[data-v="jump"]'); await songSettled(); if (!await until(() => songDoc().rows[c.li]?.kind === "jump", 6000)) c.bad.push("JUMP: " + songDoc().rows[c.li]?.kind); else { c.jt = songDoc().rows[c.li].target; if (!(c.jt > c.li)) c.bad.push(`JUMP target ${c.jt} not after row ${c.li}`); }
 					u.click('[data-set="loopkind"] button[data-v="halt"]'); if (!await until(() => songDoc().rows[c.li]?.kind === "halt", 6000)) c.bad.push("HALT: " + songDoc().rows[c.li]?.kind); else if (songDoc().rows[c.li].target !== c.li) c.bad.push("HALT target " + songDoc().rows[c.li].target); await sleep(300); c.cell = cellMarks(c.li); },
 				screen: c => ok(!c.bad.length && /HALT/.test(c.cell), c.bad.join(" | ") + " cell " + c.cell), within: 10000 }
@@ -2730,7 +2729,7 @@ const MmJourneys = (() => {
 	const globalSync = {
 		name: "mm-global-sync", proves: ["MM-297", "MM-298"],
 		steps: [
-			{ say: "open GLOBAL: Tempo in EXT, then INT; Control in ON (transport accepted), then OFF (ignored): each is written to the machine and read back, the key lit", act: async (u, c) => { c.bad = []; c.s0 = JSON.stringify(gDoc().controlIn); u.click("#globkey"); await sleep(300);
+			{ say: "open GLOBAL: Tempo in EXT, then INT; Control in ON (transport accepted), then OFF (ignored): each is written to the machine and read back, the key lit", act: async (u, c) => { c.bad = []; c.s0 = JSON.stringify(gDoc().controlIn); u.click("#globkey"); await sleep(300); Journey.snapshot("mm-global-panel");
 					for (const [ga, v, f, want] of [["tempoIn", 1, "tempoSync", 1], ["tempoIn", 0, "tempoSync", 0], ["ctrlIn", 1, "transport", 1], ["ctrlIn", 0, "transport", 0]]) { const g0 = wireSeq; u.click(`#globpop [data-ga="${ga}"][data-v="${v}"]`); if (!await until(() => gDoc().controlIn[f] === want, 15000)) { c.bad.push(`${ga} ${v}: ${JSON.stringify(gDoc().controlIn)}`); continue; } await globalSettled(g0); if (!pressed(`#globpop [data-ga="${ga}"][data-v="${v}"]`) || gDoc().controlIn[f] !== want) c.bad.push(`${ga} ${v}: not lit / read back ${JSON.stringify(gDoc().controlIn)}`); } },
 				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 }
 		],

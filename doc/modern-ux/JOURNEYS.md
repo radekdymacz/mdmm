@@ -302,3 +302,46 @@ Written 2026-10-12 from doc/features/unproved-md.md: each journey names the rows
 | md-seq-lock-budget | MD-137 |
 | md-seq-live-lock | MD-139 |
 | md-limits | MD-207 |
+
+## 0.6 slice 5: the Monomachine journeys for the rows that had none
+
+Written 2026-10-12 from doc/features/unproved-mm.md: 205 done rows had no journey, now every one of the 327 has at least one (`proves:`), all in the page tier (headless Chrome on the real core, `scripts/mdmm-page.mjs`), with the guide's pictures as snapshots. The page tier's stub host (deskStubHost) now also hands the page what the core gives the device edge as `{type: "wire"}` messages: each CC, NRPN and note as the wire engine encodes it (the base channel from the global, deskWire's encoders) and every SysEx's first sixteen bytes and length, so a journey checks the CC number, the channel, the NRPN triple, the note's velocity and the SysEx's id and slot against the manual's Appendix B and C, not only that something was sent. The stub also locks a value turned during live recording (MM-082, MM-207) and keeps the kit when a pattern recalls the kit that plays (the firmware's way: `mmDeskFirmwareTest machine`, "another pattern with the same kit"). Comparisons of lists are in the manual's order, never sorted; each knob's edit is checked against its own kit cell, only that cell, and its own CC.
+
+| Journey | Rows |
+|---|---|
+| mm-sound-machine-reference | MM-063, MM-091, MM-110, MM-111, MM-324 to MM-335, MM-337 to MM-346 (26) |
+| mm-sound-track-effects | MM-084, MM-092, MM-114 to MM-119, MM-121 to MM-127, MM-129 to MM-134 (21) |
+| mm-sound-lfo | MM-007, MM-135 to MM-142, MM-144 (10) |
+| mm-mix-buses | MM-005, MM-109, MM-276 to MM-284, MM-377 (12) |
+| mm-wire-cc | MM-289, MM-353 to MM-360, MM-362 (10) |
+| mm-seq-env-trigs | MM-029, MM-047, MM-085, MM-143, MM-171, MM-209, MM-210, MM-211, MM-213, MM-214 (10) |
+| mm-seq-pitch-keys | MM-028, MM-034, MM-074, MM-077, MM-173, MM-174, MM-176, MM-348 (8) |
+| mm-seq-locks | MM-017, MM-113, MM-205, MM-206, MM-208 (5) |
+| mm-seq-record-locks | MM-082, MM-207 (2) |
+| mm-seq-arp-setup | MM-008, MM-216, MM-218, MM-220, MM-222 to MM-225 (8) |
+| mm-seq-scale-setup | MM-046, MM-168, MM-169, MM-227 to MM-230 (7) |
+| mm-seq-trig-setup | MM-121, MM-151, MM-153, MM-161 (4) |
+| mm-midi-seq | MM-003, MM-048, MM-086, MM-242, MM-244 to MM-247, MM-249, MM-314, MM-315 (11) |
+| mm-midi-seq-docks | MM-248 (1) |
+| mm-perform-keys-channels | MM-073, MM-088, MM-089, MM-291, MM-292, MM-293, MM-349, MM-350, MM-351 (9) |
+| mm-perform-multi-setup | MM-154 to MM-159, MM-302, MM-303 (8) |
+| mm-perform-assign | MM-146, MM-147, MM-148, MM-150 (4) |
+| mm-perform-joystick-midi | MM-053, MM-352, MM-366 (3) |
+| mm-perform-menv-nrpn | MM-365 (1) |
+| mm-song-row-settings | MM-170, MM-199, MM-260, MM-263, MM-264, MM-265, MM-267, MM-273, MM-274, MM-275 (10) |
+| mm-song-rows-copy | MM-269 (1) |
+| mm-global-sync | MM-297, MM-298 (2) |
+| mm-seq-spell-word | MM-335, MM-336 (2) |
+| mm-seq-bbox-drums | MM-329 (1) |
+| mm-lib-pattern-chooser | MM-035, MM-037, MM-163, MM-189 (4) |
+| mm-lib-pattern-same-kit | MM-094 (1) |
+| mm-lib-kit-slots | MM-097, MM-098, MM-108 (3) |
+| mm-kit-parts | MM-093, MM-105, MM-106, MM-372 (4) |
+| mm-seq-copy-page | MM-185, MM-204 (2) |
+| mm-wire-sysex | MM-370, MM-374, MM-375, MM-376, MM-380 to MM-384 (9) |
+| mm-lcd-boxes | MM-064, MM-066, MM-068 (3) |
+| mm-perform-mutes | MM-036, MM-238 (2) |
+| mm-seq-six-tracks | MM-002, MM-006, MM-009 (3) |
+| mm-seq-bank-functions | MM-038 (1) |
+
+What the journeys found (no row went down): the manual's phaser page lists no INP, the machine has it (every FX machine takes an input), so mm-sound-machine-reference expects it; the Perform assign Copy and Paste take the five tabs' rows (R, U, D, VEL, KEY) and leave the two left-joystick rows alone (the editor has no box for them: MIRR makes them follow the right); PAN goes out as CC 62 only (the machine also answers the standard CC 10); the multi envelope's sixth NRPN (0x45) has no box on the page.
