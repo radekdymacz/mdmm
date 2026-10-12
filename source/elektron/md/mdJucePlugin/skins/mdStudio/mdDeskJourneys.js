@@ -2318,7 +2318,7 @@ const MdJourneys = (() => {
 		name: "md-song-commands", proves: ["MD-143", "MD-152", "MD-153", "MD-155", "MD-156", "MD-161", "MD-295"],
 		steps: [
 			go("song"),
-			{ say: "the page holds 32 songs of up to 256 rows, and the song ends with END", act: (u, c) => { c.r0 = JSON.stringify(songRows()); u.click('[data-set="songpick"] button[data-v="song"]'); Journey.snapshot("md-song-workspace"); },
+			{ say: "the page holds 32 songs of up to 256 rows, and the song ends with END", act: (u, c) => { c.r0 = JSON.stringify(songRows()); c.u0 = V.undoCount; u.click('[data-set="songpick"] button[data-v="song"]'); Journey.snapshot("md-song-workspace"); },
 				screen: () => ok($all("[data-ss]").length === 32 && /of 256 rows/.test($1(".arrcard .note")?.textContent || "") && [...$all("#tl .scell")].some(c => c.textContent.trim() === "END"), `${$all("[data-ss]").length} songs, "${$1(".arrcard .note")?.textContent.slice(0, 40)}"`),
 				machine: () => ok(Object.keys(Docs.songs).length === 32 && songRows().length >= 1 && Docs.songs[currentSongSlot()].rows.slice(-1)[0].kind === "end", "songs " + Object.keys(Docs.songs).length) },
 			{ say: "add a row (pad A01): the bar counter on the LCD goes up", act: async (u, c) => { c.b0 = +($1("#lcd2").innerText.match(/BARS\s*(\d+)/)?.[1]); c.n0 = songRows().length; u.click('[data-addpat="0"]'); await until(() => songRows().length === c.n0 + 1, 4000); c.i = S.songSel; await sleep(300); },
@@ -2329,7 +2329,7 @@ const MdJourneys = (() => {
 				machine: c => ok(songRows()[c.i + 1]?.kind === "jump", "row " + JSON.stringify(songRows()[c.i + 1])), screen: () => ok($1('[data-set="loopkind"] button[data-v="jump"]')?.getAttribute("aria-pressed") === "true", "JUMP not pressed"), within: 6000 },
 			{ say: "click HALT: the row is a halt", act: u => u.click('[data-set="loopkind"] button[data-v="halt"]'), machine: c => ok(songRows()[c.i + 1]?.kind === "halt", "row " + JSON.stringify(songRows()[c.i + 1])), within: 6000 }
 		],
-		async tidy(u, c) { if (S.songMore) u.click("[data-rowmore]"); if (c.r0) await undoUntil(u, () => JSON.stringify(songRows()) === c.r0, 10); }
+		async tidy(u, c) { if (S.songMore && $1("[data-rowmore]")) u.click("[data-rowmore]"); if (c.u0 != null) await undoTo(u, c.u0); if (c.r0) await undoUntil(u, () => JSON.stringify(songRows()) === c.r0, 10); }
 	};
 	/* MD-295: the PATTERN / SONG switch is the machine's status */
 	const playModeJ = {
