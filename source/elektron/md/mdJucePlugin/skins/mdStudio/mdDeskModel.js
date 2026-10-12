@@ -119,13 +119,14 @@ const patName = p => "ABCDEFGH"[p >> 4] + String((p & 15) + 1).padStart(2, "0");
 /* ---- the catalogue's enumerations (P6: the C++ tables, one source) ----
    outputs, masterFx (the kit's effect names), lfoFields (the lfo command's fields), lfoUpdates,
    lfoParams ({SPD, DEPTH, SHMIX}: kit parameter indexes), tempoMultipliers. The page pairs its own
-   words with them by position: its master effects echo gate eq dyn are masterFx in order, and its
+   words with them: its master effects echo gate eq dyn are the names rhythmEcho gateBox eq dynamix (B-081: not by position, the kit lists the gate box first), and its
    LFO fields TRCK PARAM SHP1 SHP2 UPDTE are lfoFields in order. Before the catalogue: empty. */
 const NO_ENUMS = Object.freeze({ outputs: [], masterFx: [], lfoFields: [], lfoUpdates: [], lfoParams: {}, tempoMultipliers: [] });
 const enumsOf = docs => (docs.catalogue && docs.catalogue.enums) || NO_ENUMS;
 const Enums = () => enumsOf(Docs);
 const MFX_IDS = ["echo", "gate", "eq", "dyn"], LFO_NAMES = ["TRCK", "PARAM", "SHP1", "SHP2", "UPDTE"];
-const mfxName = (id, E = Enums()) => E.masterFx[MFX_IDS.indexOf(id)];
+const MFX_NAMES = { echo: "rhythmEcho", gate: "gateBox", eq: "eq", dyn: "dynamix" };
+const mfxName = (id, E = Enums()) => E.masterFx.includes(MFX_NAMES[id]) ? MFX_NAMES[id] : undefined;
 const lfoField = (n, E = Enums()) => { const i = LFO_NAMES.indexOf(n); return i < 0 ? undefined : E.lfoFields[i]; };
 /* a tempo multiplier's factor: "3/4X" -> 0.75 */
 const multFactor = m => { const [a, b] = String(m || "1X").replace("X", "").split("/").map(Number); return b ? a / b : a || 1; };

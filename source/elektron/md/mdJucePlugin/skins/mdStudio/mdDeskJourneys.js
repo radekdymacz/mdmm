@@ -1945,7 +1945,223 @@ const MdJourneys = (() => {
 		],
 		async tidy(u, c) { for (let k = 0; k < 6 && c.v0 != null && kitVals(c.t)[c.i] !== c.v0; k++) { u.click("#undo"); await sleep(600); } }
 	};
-	const slice5 = [modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, quickJ, knobSteps];
+	/* ---- chapters 3 to 7: the Sound page, the effects, the routing page, the master effects, the LFOs, Appendix A ---- */
+	/* back to an undo count: Cmd+Z until the history is as long as it was (each step waits for the desk) */
+	const undoTo = async (u, n0) => { blur(); for (let i = 0; i < 300 && V.undoCount > n0; i++) { const was = V.undoCount; u.key("z", { cmd: true }); if (!await until(() => V.undoCount < was, 4000)) break; await until(idle, 4000); } };
+	/* the machines of Appendix A and the knobs the manual lists for each (from the feature data's rows) */
+	const MACHINE_KNOBS = new Map([
+		[["TRX-BD"], "PTCH DEC RAMP RDEC STRT NOIS HARM CLIP"],
+		[["TRX-B2"], "PTCH DEC RAMP HOLD TICK NOIS DIRT DIST"],
+		[["TRX-SD"], "PTCH DEC BUMP BENV SNAP TONE TUNE CLIP"],
+		[["TRX-XT", "TRX-XC"], "PTCH DEC RAMP RDEC DAMP DIST DTYP"],
+		[["TRX-CP"], "CLPY TONE HARD RICH RATE ROOM RSIZ RTUN"],
+		[["TRX-RS"], "PTCH DEC DIST"],
+		[["TRX-CB"], "PTCH DEC ENH DAMP TONE BUMP"],
+		[["TRX-CH", "TRX-OH"], "GAP DEC HPF LPF MTAL"],
+		[["TRX-CY"], "RICH DEC TOP TTUN SIZE PEAK"],
+		[["TRX-MA"], "ATT SUS REV DAMP RATL RTYP TONE HARD"],
+		[["TRX-CL"], "PTCH DEC DUAL ENH TUNE CLIC"],
+		[["EFM-BD"], "PTCH DEC RAMP RDEC MOD MFRQ MDEC MFB"],
+		[["EFM-SD"], "PTCH DEC NOISE NDEC MOD MFRQ MDEC HPF"],
+		[["EFM-XT"], "PTCH DEC RAMP RDEC MOD MFRQ MDEC CLIC"],
+		[["EFM-CP"], "PTCH DEC CLPS CDEC MOD MFRQ MDEC HPF"],
+		[["EFM-RS"], "PTCH DEC MOD HPF SNAR SPTC SDEC SMOD"],
+		[["EFM-CB"], "PTCH DEC SNAP FB MOD MFRQ MDEC"],
+		[["EFM-HH"], "PTCH DEC TREM TFRQ MOD MFRQ MDEC FB"],
+		[["EFM-CY"], "PTCH DEC FB HPF MOD MFRQ MDEC"],
+		[["E12-BD"], "PTCH DEC SNAP SPLEN START RTRG RTIM BEND"],
+		[["E12-SD"], "PTCH DEC HP RING STRT RTRG RTIM BEND"],
+		[["E12-HT", "E12-LT", "E12-CP", "E12-CB", "E12-CH", "E12-CC", "E12-TA", "E12-TR"], "PTCH DEC HP HPQ STRT RTRG RTIM BEND"],
+		[["E12-RS"], "PTCH DEC HP RRTL STRT RTRG RTIM BEND"],
+		[["E12-OH"], "PTCH DEC HP STOP STRT RTRG RTIM BEND"],
+		[["E12-RC"], "PTCH DEC HP BELL STRT RTRG RTIM BEND"],
+		[["E12-BR"], "PTCH DEC HP REAL STRT RTRG RTIM BEND"],
+		[["E12-SH"], "PTCH DEC HP SLEW STRT RTRG RTIM BEND"],
+		[["E12-BC"], "PTCH DEC HP BC STRT RTRG RTIM BEND"],
+		[["P-I-BD"], "PTCH DEC HARD HAMR TENS DAMP"],
+		[["P-I-SD"], "PTCH DEC HARD TENS RVOL RDEC RING"],
+		[["P-I-MT"], "PTCH DEC HARD HAMR TUNE DAMP SIZE POS"],
+		[["P-I-ML"], "PTCH DEC HARD TENS"],
+		[["P-I-MA"], "DEC GRNS GLEN SIZE HARD"],
+		[["P-I-RS"], "PTCH DEC HARD RING RVOL RDEC"],
+		[["P-I-HH"], "PTCH DEC CLSN RING AG AU BR CLOS"],
+		[["P-I-RC", "P-I-CC"], "PTCH DEC HARD RING AG AU BR GRAB"],
+		[["GND-SIN"], "PTCH DEC RAMP RDEC"],
+		[["GND-NS"], "DEC"],
+		[["GND-IM"], "UP UVAL DOWN DVAL"],
+		[["GND-EMPTY"], ""],
+		[["INP-GA", "INP-GB"], "VOL GATE ATCK HLD DEC"],
+		[["INP-FA", "INP-FB"], "ALEV GATE FATK FHLD FDEC FDPH FFRQ FQ"],
+		[["INP-EA", "INP-EB"], "AVOL AHLD ADEC FQ FDPH FHLD FDEC FFRQ"],
+		[["MID-01", "MID-02", "MID-03", "MID-04", "MID-05", "MID-06", "MID-07", "MID-08", "MID-09", "MID-10", "MID-11", "MID-12", "MID-13", "MID-14", "MID-15", "MID-16"], "NOTE N2 N3 LEN VEL PB MW AT"],
+		[["CTR-AL", "CTR-8P"], "P1 P2 P3 P4 P5 P6 P7 P8"],
+		[["CTR-RE"], "TIME MOD MFRQ FB FILTF FILTW MONO LEV"],
+		[["CTR-GB"], "DVOL PRED DEC DAMP HP LP GATE LEV"],
+		[["CTR-EQ"], "LF LG HF HG PF PG PQ GAIN"],
+		[["CTR-DX"], "ATCK REL TRHD RTIO KNEE HP OUTG MIX"],
+		[["ROM-01", "ROM-02", "ROM-03", "ROM-04", "ROM-05", "ROM-06", "ROM-07", "ROM-08", "ROM-09", "ROM-10", "ROM-11", "ROM-12", "ROM-13", "ROM-14", "ROM-15", "ROM-16", "ROM-17", "ROM-18", "ROM-19", "ROM-20", "ROM-21", "ROM-22", "ROM-23", "ROM-24", "ROM-25", "ROM-26", "ROM-27", "ROM-28", "ROM-29", "ROM-30", "ROM-31", "ROM-32", "ROM-33", "ROM-34", "ROM-35", "ROM-36", "ROM-37", "ROM-38", "ROM-39", "ROM-40", "ROM-41", "ROM-42", "ROM-43", "ROM-44", "ROM-45", "ROM-46", "ROM-47", "ROM-48", "RAM-P1", "RAM-P2", "RAM-P3", "RAM-P4"], "PTCH DEC HOLD BRR STRT END RTRG RTIM"]
+	].flatMap(([ks, v]) => ks.map(k => [k, v])));
+	const synNames = () => $all('#main .pc[data-g="syn"]').map(e => e.dataset.n.replace(/^SYN·/, "")).sort();
+	const sortedKnobs = t => t.split(" ").sort().join(" ");
+	/* MD-211 to MD-272, MD-274: every machine of Appendix A, picked on a track, shows the knobs the manual lists */
+	const machineReference = {
+		name: "md-sound-machine-reference", proves: ["MD-211", "MD-212", "MD-213", "MD-214", "MD-215", "MD-216", "MD-217", "MD-218", "MD-219", "MD-220", "MD-221", "MD-222", "MD-223",
+			"MD-224", "MD-225", "MD-226", "MD-227", "MD-228", "MD-229", "MD-230", "MD-231", "MD-232", "MD-233", "MD-234", "MD-235", "MD-236", "MD-237", "MD-238", "MD-239", "MD-240",
+			"MD-241", "MD-242", "MD-243", "MD-244", "MD-245", "MD-246", "MD-247", "MD-248", "MD-249", "MD-250", "MD-251", "MD-252", "MD-253", "MD-254", "MD-255", "MD-256",
+			"MD-257", "MD-258", "MD-259", "MD-260", "MD-261", "MD-262", "MD-263", "MD-264", "MD-265", "MD-266", "MD-267", "MD-268", "MD-269", "MD-270", "MD-271", "MD-272", "MD-274"],
+		steps: [
+			go("sound"), sel(() => soundTrack()),
+			{ say: "pick each machine of the catalogue on the track (its family, then its key): the Sound page shows the knobs the manual lists", act: async (u, c) => {
+				c.n0 = V.undoCount; c.m0 = V.tracks[c.t].m; c.bad = []; c.n = 0;
+				const shot = m => { if (m === "TRX-BD") Journey.snapshot("md-sound-groups"); else if (m === "E12-SD") Journey.snapshot("md-machine-e12"); else if (m === "ROM-01") Journey.snapshot("md-machine-rom"); else if (m === "CTR-RE") Journey.snapshot("md-machine-ctr"); };
+				for (const [m, want] of MACHINE_KNOBS) {
+					if (!Cat.byName[m]) { c.bad.push(m + ": not in the catalogue"); continue; }
+					if (V.tracks[c.t].m !== m) {
+						u.click("#machbtn"); await until(() => !$1("#machpop").hidden, 1500); u.click(`#machpop .mf[data-fam="${famKey(m, Cat)}"]`); await sleep(30);
+						const key = $1(`#machpop .mk[data-mach="${m}"]`); if (!key) { c.bad.push(m + ": no key in its family"); if (!$1("#machpop").hidden) u.key("Escape"); continue; }
+						u.click(key); await until(() => V.tracks[c.t].m === m, 4000); await until(idle, 4000); await sleep(40);
+					}
+					const got = synNames().join(" "), want2 = sortedKnobs(want);
+					if (V.tracks[c.t].m !== m) c.bad.push(m + ": not picked"); else if (got !== want2) c.bad.push(`${m}: ${got} (manual: ${want})`); else c.n++;
+					shot(m);
+				}
+				c.note = `${c.n} machines as the manual lists them`; },
+				screen: c => ok(!c.bad.length, c.bad.slice(0, 6).join(" | ") + (c.bad.length > 6 ? ` (+${c.bad.length - 6})` : "")), machine: c => ok(c.n >= 100, c.n + " machines checked"), within: 1000 }
+		],
+		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); }
+	};
+	/* MD-011, MD-056 to MD-064, MD-067 to MD-069: the three knob pages on one page, each track-effect and routing knob moves its kit value */
+	const trackEffects = {
+		name: "md-sound-track-effects", proves: ["MD-011", "MD-056", "MD-057", "MD-058", "MD-059", "MD-060", "MD-061", "MD-062", "MD-063", "MD-064", "MD-067", "MD-068", "MD-069"],
+		steps: [
+			go("sound"), sel(() => soundTrack()),
+			{ say: "the page shows synthesis, effects and routing knobs together", act: () => Journey.snapshot("md-sound-workspace"),
+				screen: () => ok($all('#main .pc[data-g="syn"]').length >= 1 && $all('#main .pc[data-g="fx"]').length === 8 && $all('#main .pc[data-g="rt"]').length >= 5, `syn ${$all('#main .pc[data-g="syn"]').length}, fx ${$all('#main .pc[data-g="fx"]').length}, rt ${$all('#main .pc[data-g="rt"]').length}`) },
+			{ say: "focus each effects knob and press an arrow: AMD AMF EQF EQG FLTF FLTW FLTQ SRR each move their own value in the kit", act: async (u, c) => {
+				c.n0 = V.undoCount; c.bad = []; c.k0 = kitVals(c.t).slice();
+				for (const n of ["AMD", "AMF", "EQF", "EQG", "FLTF", "FLTW", "FLTQ", "SRR"]) {
+					const el = $1(`#main .pc[data-g="fx"][data-n="${n}"]`), i = pidx(c.t, n, "fx"); if (!el || i < 0) { c.bad.push(n + ": no knob"); continue; }
+					const v0 = kitVals(c.t)[i], d = v0 > 120 ? "ArrowDown" : "ArrowUp", want = v0 + (d === "ArrowUp" ? 1 : -1); el.focus(); u.key(d);
+					if (!await until(() => kitVals(c.t)[i] === want, 3000)) c.bad.push(`${n}: ${kitVals(c.t)[i]} for ${want}`);
+					await until(idle, 3000);
+				} Journey.snapshot("md-track-effects"); },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
+			{ say: "the same for DIST, DEL and REV on the routing page, and for LFO speed, depth and mix (LFOS, LFOD, LFOM)", act: async (u, c) => {
+				c.bad = [];
+				const items = [["rt", "DIST", pidx(c.t, "DIST", "rt")], ["rt", "DEL", pidx(c.t, "DEL", "rt")], ["rt", "REV", pidx(c.t, "REV", "rt")], ["lfo", "SPD", 16 + 5], ["lfo", "DEPTH", 16 + 6], ["lfo", "SHMIX", 16 + 7]];
+				for (const [g, n, i] of items) {
+					const el = $1(`#main .pc[data-g="${g}"][data-n="${n}"]`); if (!el || i < 0) { c.bad.push(n + ": no knob"); continue; }
+					const v0 = kitVals(c.t)[i], d = v0 > 120 ? "ArrowDown" : "ArrowUp", want = v0 + (d === "ArrowUp" ? 1 : -1); el.focus(); u.key(d);
+					if (!await until(() => kitVals(c.t)[i] === want, 3000)) c.bad.push(`${n}: ${kitVals(c.t)[i]} for ${want}`);
+					await until(idle, 3000);
+				} },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 }
+		],
+		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); }
+	};
+	/* MD-101: a filter sweep on every track at once (Alt-drag FLTF) */
+	const filterSweep = {
+		name: "md-sound-filter-sweep", proves: ["MD-101"],
+		steps: [
+			go("sound"), sel(() => soundTrack()),
+			{ say: "Alt-drag the filter frequency: FLTF moves on every track that has it", act: async (u, c) => { c.n0 = V.undoCount; c.k0 = allKitVals(); const el = $1('#main .pc[data-g="fx"][data-n="FLTF"]'), d = getV(el) > 64 ? -1 : 1; el.focus(); await u.drag(el, [[d * 4, 0], [d * 8, 0], [d * 16, 0], [d * 24, 0]], { alt: true }); },
+				machine: c => { const i = pidx(c.t, "FLTF", "fx"); const moved = [...Array(16).keys()].filter(t => pidx(t, "FLTF", "fx") >= 0 && kitVals(t)[pidx(t, "FLTF", "fx")] !== c.k0[t][pidx(t, "FLTF", "fx")]).length; return ok(moved >= 4, moved + " tracks' FLTF moved"); }, within: 10000 },
+			{ say: "Cmd+Z: one step back for all", act: () => Journey.snapshot("md-filter-sweep"), ...undoKey, machine: c => ok(same(allKitVals(), c.k0), "not all back: " + kitDiff(c.k0, allKitVals())), within: 10000 }
+		],
+		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); }
+	};
+	/* MD-049, MD-050: the relations: a track's trig mutes, or trigs, another */
+	const relationsJ = {
+		name: "md-sound-relations", proves: ["MD-049", "MD-050"],
+		steps: [
+			go("sound"), sel(() => soundTrack()),
+			{ say: "choose a track in Mute: this track's trig mutes it", act: (u, c) => { c.n0 = V.undoCount; c.o = (c.t + 1) % 16; u.choose("#mg", c.o); },
+				screen: c => ok(V.tracks[c.t].muteGroup === c.o, "view " + V.tracks[c.t].muteGroup), machine: c => ok(kit().tracks[c.t].muteGroup === c.o, "kit " + kit().tracks[c.t].muteGroup), within: 6000 },
+			{ say: "choose another track in Trig: this track's trig also trigs it", act: (u, c) => { c.o2 = (c.t + 2) % 16; u.choose("#tg", c.o2); Journey.snapshot("md-relations"); },
+				screen: c => ok(V.tracks[c.t].trigGroup === c.o2 && V.tracks[c.t].muteGroup === c.o, `trig ${V.tracks[c.t].trigGroup}, mute ${V.tracks[c.t].muteGroup}`), machine: c => ok(kit().tracks[c.t].trigGroup === c.o2 && kit().tracks[c.t].muteGroup === c.o, `kit trig ${kit().tracks[c.t].trigGroup}, mute ${kit().tracks[c.t].muteGroup}`), within: 6000 },
+			{ say: "choose none in both: the relations go", act: u => { u.choose("#mg", ""); u.choose("#tg", ""); },
+				machine: c => ok(kit().tracks[c.t].muteGroup == null && kit().tracks[c.t].trigGroup == null, `kit trig ${kit().tracks[c.t].trigGroup}, mute ${kit().tracks[c.t].muteGroup}`), within: 6000 }
+		],
+		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); }
+	};
+	/* MD-048, MD-053: a machine kept with its effects and routing or not; clear a machine and undo */
+	const keepFxJ = {
+		name: "md-sound-keep-clear", proves: ["MD-048", "MD-053"],
+		steps: [
+			go("sound"), sel(() => soundTrack()),
+			{ say: "open the picker: Keep effects + routing is on", act: async (u, c) => { c.n0 = V.undoCount; c.m0 = V.tracks[c.t].m; c.k0 = JSON.stringify(kit().tracks[c.t]); u.click("#machbtn"); await sleep(200); },
+				screen: () => ok(!$1("#machpop").hidden && $1("#mpkeep")?.getAttribute("aria-pressed") === "true", "keep " + $1("#mpkeep")?.getAttribute("aria-pressed")) },
+			{ say: "pick another machine: its effects and routing are the track's old ones", act: async (u, c) => { u.click('#machpop .mf[data-fam="GND"]'); await sleep(150); c.m1 = $all("#machpop .mk").map(b => b.dataset.mach).find(m => m !== c.m0 && m !== "GND-EMPTY"); u.click(`#machpop .mk[data-mach="${c.m1}"]`); },
+				machine: c => { const a = JSON.parse(c.k0), b = kit().tracks[c.t]; return ok(b.machine === c.m1 && same(b.effects, a.effects) && same(b.routing, a.routing), `machine ${b.machine}, effects ${b.effects}, were ${a.effects}`); }, within: 6000 },
+			{ say: "open the picker and pick GND-EMPTY (no machine on the track): the track shows GND-EMPTY", act: async u => { u.click("#machbtn"); await sleep(200); u.click('#machpop .mf[data-fam="GND"]'); await sleep(150); u.click('#machpop .mk[data-mach="GND-EMPTY"]'); },
+				screen: c => ok(V.tracks[c.t].m === "GND-EMPTY", "view " + V.tracks[c.t].m), machine: c => ok(kit().tracks[c.t].machine === "GND-EMPTY", "kit " + kit().tracks[c.t].machine), within: 6000 },
+			{ say: "press Cmd+Z: the machine is back", act: () => { blur(); }, ...undoKey, screen: c => ok(V.tracks[c.t].m === c.m1, "view " + V.tracks[c.t].m), machine: c => ok(kit().tracks[c.t].machine === c.m1, "kit " + kit().tracks[c.t].machine), within: 6000 }
+		],
+		async tidy(u, c) { if (!$1("#machpop").hidden) closePicker(); if (c.n0 != null) await undoTo(u, c.n0); }
+	};
+	/* MD-071 to MD-074: the four master effects, every knob */
+	const masterCards = {
+		name: "md-mix-master-cards", proves: ["MD-071", "MD-072", "MD-073", "MD-074"],
+		steps: [
+			go("mix"),
+			{ say: "the Mix page has the Rhythm Echo, Gate Box, Master EQ and Dynamix cards", act: () => Journey.snapshot("md-master-effects"), screen: () => ok(["Rhythm Echo", "Gate Box", "Master EQ", "Dynamix"].every(n => $all("#main .card").some(c => c.textContent.includes(n))) || $all('#main .pc[data-g="mfx"]').length === 32, `${$all('#main .pc[data-g="mfx"]').length} knobs`) },
+			{ say: "drag each of the 32 knobs sideways: each moves its own value of its own master effect and no other", act: async (u, c) => {
+				c.n0 = V.undoCount; c.bad = []; const keys = { echo: "rhythmEcho", gate: "gateBox", eq: "eq", dyn: "dynamix" };
+				for (const el0 of $all('#main .pc[data-g="mfx"]')) {
+					const q = `#main .pc[data-g="mfx"][data-f="${el0.dataset.f}"][data-n="${el0.dataset.n}"]`, el = $1(q);
+					const f = keys[el.dataset.f], names = $all(`#main .pc[data-g="mfx"][data-f="${el.dataset.f}"]`).map(e => e.dataset.n), i = names.indexOf(el.dataset.n);
+					const before = JSON.stringify(kit().masterFx), v0 = kit().masterFx[f][i]; await nudge(u, el, v0, 24);
+					if (!await until(() => kit().masterFx[f][i] !== v0, 3000)) { c.bad.push(`${f} ${el.dataset.n}: stayed ${v0}`); continue; }
+					const now = JSON.parse(JSON.stringify(kit().masterFx)), was = JSON.parse(before); now[f][i] = was[f][i];
+					if (JSON.stringify(now) !== before) c.bad.push(`${f} ${el.dataset.n}: another value moved`);
+					await until(idle, 3000);
+				} },
+				screen: c => ok(!c.bad.length, c.bad.slice(0, 5).join(" | ")), within: 1000 }
+		],
+		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); }
+	};
+	/* MD-076 to MD-085: the LFO of a track: target, shapes, update, speed, depth, mix, two on one target */
+	const lfoJ = {
+		name: "md-sound-lfo", proves: ["MD-076", "MD-077", "MD-078", "MD-079", "MD-080", "MD-081", "MD-082", "MD-083", "MD-084", "MD-085"],
+		steps: [
+			go("sound"),
+			{ say: "pick a track, then another: each has its own LFO card, named by its track", act: async (u, c) => { c.n0 = V.undoCount; const ts = soundTracks(); c.a = ts[0]; c.b = ts[1]; u.click(rail(c.a)); await sleep(300); c.ta = $1('[data-sg="lshape"]')?.textContent || ""; u.click(rail(c.b)); await sleep(300); c.tb = $1('[data-sg="lshape"]')?.textContent || ""; },
+				screen: c => ok(c.ta.includes(`LFO ${c.a + 1} shape`) && c.tb.includes(`LFO ${c.b + 1} shape`), `"${c.ta.slice(0, 20)}" then "${c.tb.slice(0, 20)}"`) },
+			{ say: "choose another track in LFO target (the first list), then a parameter of it (the second)", act: async (u, c) => { c.tt = c.a; u.choose("#lfoT", c.tt); await sleep(200); c.pn = params(c.tt)[3]; u.choose("#lfoP", c.pn); Journey.snapshot("md-lfo"); },
+				screen: c => ok(V.tracks[c.b].lfo.TRCK === c.tt && V.tracks[c.b].lfo.PARAM === c.pn, `view ${V.tracks[c.b].lfo.TRCK} ${V.tracks[c.b].lfo.PARAM}`),
+				machine: c => ok(kit().tracks[c.b].lfo.track === c.tt && kit().tracks[c.b].lfo.param === params(c.tt).indexOf(c.pn), `kit ${JSON.stringify(kit().tracks[c.b].lfo)}`), within: 6000 },
+			{ say: "choose one of the LFO's own parameters (LFOS) of the same track as the target: an LFO on an LFO", act: async (u, c) => { const lp = params(c.tt).find(p => /^(LFOS|SPD)$/.test(p)) || params(c.tt).find(p => /LFO/.test(p)); c.lp = lp; if (lp) u.choose("#lfoP", lp); },
+				machine: c => ok(!c.lp || kit().tracks[c.b].lfo.param === params(c.tt).indexOf(c.lp), `kit param ${kit().tracks[c.b].lfo.param} for ${c.lp}`), within: 6000 },
+			{ say: "click each of the six SHP1 shapes, then each of the six SHP2 shapes (inverted): the kit follows each", act: async (u, c) => { c.bad = [];
+					for (const sl of ["SHP1", "SHP2"]) for (let i = 0; i < 6; i++) { u.click(`[data-slot="${sl}"][data-shape="${i}"]`); const f = sl === "SHP1" ? "shape1" : "shape2";
+						if (!await until(() => kit().tracks[c.b].lfo[f] === i && V.tracks[c.b].lfo[sl] === i && $1(`[data-slot="${sl}"][data-shape="${i}"]`)?.getAttribute("aria-pressed") === "true", 3000)) c.bad.push(`${sl} ${i}: kit ${kit().tracks[c.b].lfo[f]}`); await until(idle, 3000); } },
+				screen: c => ok(!c.bad.length && $all('[data-slot="SHP1"]').length === 6 && $all('[data-slot="SHP2"]').length === 6, c.bad.join(" | ")), within: 1000 },
+			{ say: "click FREE, TRIG and HOLD in the motion card: UPDTE follows", act: async (u, c) => { c.bad = []; for (const [i, n] of ["FREE", "TRIG", "HOLD"].entries()) { u.click(`[data-set="upd"] [data-v="${n}"]`); if (!await until(() => kit().tracks[c.b].lfo.update === i && V.tracks[c.b].lfo.UPDTE === n, 3000)) c.bad.push(`${n}: kit ${kit().tracks[c.b].lfo.update}`); await until(idle, 3000); } },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
+			{ say: "focus SPD, DEPTH and SHMIX in turn and press an arrow: each moves its routing value (LFOS, LFOD, LFOM)", act: async (u, c) => { c.bad = [];
+					for (const [n, i] of [["SPD", 5], ["DEPTH", 6], ["SHMIX", 7]]) { const el = $1(`#main .pc[data-g="lfo"][data-n="${n}"]`), v0 = kit().tracks[c.b].routing[i], d = v0 > 120 ? "ArrowDown" : "ArrowUp", want = v0 + (d === "ArrowUp" ? 1 : -1); el.focus(); u.key(d);
+						if (!await until(() => kit().tracks[c.b].routing[i] === want && +$1(`#main .pc[data-g="lfo"][data-n="${n}"] b`)?.textContent === want, 3000)) c.bad.push(`${n}: ${kit().tracks[c.b].routing[i]} for ${want}`); await until(idle, 3000); } },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
+			{ say: "give the first track's LFO the same target and parameter: two LFOs on one target, both kept", act: async (u, c) => { u.click(rail(c.a)); await sleep(300); u.choose("#lfoT", c.tt); await sleep(200); u.choose("#lfoP", c.lp || c.pn); },
+				machine: c => { const A = kit().tracks[c.a].lfo, B = kit().tracks[c.b].lfo; return ok(A.track === B.track && A.param === B.param && A.track === c.tt, `A ${A.track}/${A.param}, B ${B.track}/${B.param}`); }, within: 6000 }
+		],
+		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); }
+	};
+	/* MD-075, MD-267 to MD-270 are in the reference journey; MD-075: a CTR machine's knobs are locked from the lane */
+	const ctrLocks = {
+		name: "md-sound-ctr-locks", proves: ["MD-075"],
+		steps: [
+			go("sound"), sel(() => soundTrack()),
+			{ say: "pick CTR-RE (Control Rhythm Echo) on the track", act: async (u, c) => { c.n0 = V.undoCount; u.click("#machbtn"); await sleep(200); u.click('#machpop .mf[data-fam="CTR"]'); await sleep(150); u.click('#machpop .mk[data-mach="CTR-RE"]'); },
+				screen: c => ok(V.tracks[c.t].m === "CTR-RE" && synNames().join(" ") === sortedKnobs("TIME MOD MFRQ FB FILTF FILTW MONO LEV"), synNames().join(" ")), machine: c => ok(kit().tracks[c.t].machine === "CTR-RE", "kit " + kit().tracks[c.t].machine), within: 6000 },
+			go("seq"),
+			{ say: "click a trig on it, pick the TIME lock key and draw a lock over the trig", act: async (u, c) => { c.s = trigsOf(c.t).filter(s => s < V.len)[0] ?? freeSteps(c.t, 1)[0]; if (!trigsOf(c.t).includes(c.s)) { u.click(cell(c.t, c.s)); await sleep(300); } c.made = !trigsOf(c.t).includes(c.s);
+					u.click(rail(c.t)); await sleep(150); const k = $1('#chips .pk[data-lane="TIME"]'); c.i = pidx(c.t, "TIME"); u.click(k); await sleep(150); await u.drag(`#lane .lb[data-s="${c.s}"]`, [[0, 4]], {}, { fy: 0.3 }); },
+				machine: c => ok(locksOf(c.t, c.i).some(([x]) => x === c.s), "locks " + JSON.stringify(locksOf(c.t, c.i))), screen: c => ok(S.lane === "TIME", "lane " + S.lane), within: 8000 }
+		],
+		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); }
+	};
+	const slice5 = [modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks];
 	/* PROBE-START */
 	const probeJ = { name: "md-zz-probe", proves: [], steps: [{ say: "probe", act: async (u, c) => { let r; try { const src = await (await fetch("zzprobe.js")).text(); const AF = Object.getPrototypeOf(async function () { }).constructor; r = await new AF("u", "c", "results", "tele", "J", src)(u, c, results, tele, { soundTracks, trigsOf, kit, kitVals, desk, locksOf }); } catch (e) { r = "ERR " + e + " " + (e.stack || "").slice(0, 200); } Bridge.log("PROBE " + JSON.stringify(r)); } }] };
 	/* PROBE-END */
