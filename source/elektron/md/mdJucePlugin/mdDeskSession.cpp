@@ -113,6 +113,11 @@ namespace mdJucePlugin
 		return m;
 	}
 
+	void machineMemorySampleStoredOf(AudioPluginAudioProcessor& _processor)
+	{
+		_processor.machineMemorySampleStored();
+	}
+
 	elektronData::json::Value machineMemoryOf(AudioPluginAudioProcessor& _processor)
 	{
 		const auto s = _processor.machineMemoryStatus();
@@ -180,6 +185,10 @@ namespace mdJucePlugin
 
 	void DeskSession::toPage(const Value& _message) const
 	{
+		// I-024: a sample the page sent is a save once the machine stores it (written by the machine memory's watch)
+		if(const auto* type = _message.find("type"); type && type->isString() && type->asString() == "sampleLoad")
+			if(const auto* state = _message.find("state"); state && state->isString() && state->asString() == "done")
+				machineMemorySampleStoredOf(m_processor);
 		if(m_toPage)
 			m_toPage(_message);
 	}

@@ -164,6 +164,12 @@ namespace mdJucePlugin
 		uint32_t settleLooks = 0;
 		MachineMemoryCost cost;
 		std::vector<uint8_t> patch, userFlash;	// the look's copies
+		machineMemory::Mark mark;			// what this memory knows of the file (the "MMEM" chunk)
+		// MD: a sample the page sent was stored (machineMemorySampleStored): written once the flash is still
+		uint64_t flashMark = 0;				// the cycle of the last flash write (0: none since the start)
+		double flashChangedMs = 0;			// when that mark last moved
+		std::optional<double> sampleArmedMs;	// a sample sent, its flash store not written yet
+		uint64_t sampleArmMark = 0;
 	};
 
 	// The "machine memory" thread: one look a second (lookAtMachineMemory), never on the audio thread.
@@ -196,7 +202,7 @@ namespace mdJucePlugin
 	void AudioPluginAudioProcessor::setStateInformation(const void* _data, const int _size)
 	{
 		if(_size > 0 && machineMemory::stateIsProject(m_standaloneState))
-			m_projectStateSeen = true;	// I-024: a DAW project's memory wins over the machine memory file
+			m_projectStateSeen = true;	// I-024: a DAW project's memory wins over the machine memory file (also a late one)
 		if(!m_desk->holdState(_data, _size)) Processor::setStateInformation(_data, _size);
 	}
 
@@ -208,7 +214,15 @@ namespace mdJucePlugin
 
 	void AudioPluginAudioProcessor::saveChunkData(baseLib::BinaryStream& _stream)
 	{
+		// I-024: a save not yet in the machine memory file is written first, so the state below says what the file holds
+		flushMachineMemory(false);
 		jucePluginEditorLib::Processor::saveChunkData(_stream);
+		{
+			const auto mark = machineMemoryMark();
+			baseLib::ChunkWriter chunk(_stream, "MMEM", 1);
+			_stream.write(mark.stamp);
+			_stream.write(static_cast<uint8_t>(mark.unsaved ? 1 : 0));
+		}
 		if(m_model == md::MachineModel::Machinedrum)
 		{
 			baseLib::ChunkWriter chunk(_stream, "RAMF", 1);
@@ -235,6 +249,17 @@ namespace mdJucePlugin
 			(void)controller.restoreAutomationSnapshot(snapshot);
 		});
 		m_desk->addChunkReaders(_reader);
+		_reader.add("MMEM", 1, [this](baseLib::BinaryStream& _stream, uint32_t)
+		{
+			machineMemory::Mark mark;
+			mark.stamp = _stream.read<uint64_t>();
+			mark.unsaved = _stream.read<uint8_t>() != 0;
+			const std::lock_guard lock(m_memoryMutex);
+			m_loadedMark = mark;
+			// a project's memory: what it knows of the file (the standalone's start decides with it, serviceMachineMemoryStart)
+			if(m_memoryWatch)
+				m_memoryWatch->mark = mark;
+		});
 		_reader.add("RAMF", 1, [this](baseLib::BinaryStream& _stream, uint32_t)
 		{
 			m_ramRecordingModeChunkSeen = true;
@@ -252,6 +277,10 @@ namespace mdJucePlugin
 		const auto previous = getRamRecordingMode();
 		m_ramRecordingModeChunkSeen = false;
 		m_desk->beginProjectLoad();
+		{
+			const std::lock_guard lock(m_memoryMutex);
+			m_loadedMark.reset();	// a state from before I-024 knows nothing of the file
+		}
 		const bool result = jucePluginEditorLib::Processor::loadCustomData(_sourceBuffer);
 		if(!result)
 		{
@@ -1223,28 +1252,17 @@ namespace mdJucePlugin
 		m_memoryThread->startThread(juce::Thread::Priority::low);
 	}
 
+	// The thread is told to stop and waited for (never killed: it may hold the file or the plug-in's lock), then one last
+	// look writes a save it has not written yet.
 	void AudioPluginAudioProcessor::stopMachineMemoryThread()
 	{
 		if(!m_memoryThread)
 			return;
 		m_memoryThread->signalThreadShouldExit();
 		m_memoryThread->notify();
-		m_memoryThread->stopThread(10000);
+		(void)m_memoryThread->waitForThreadToExit(-1);
 		m_memoryThread.reset();
-		// a save seen and not yet written (the debounce's second look had not come): written now
-		uint64_t epoch = 0;
-		bool pending = false;
-		{
-			const std::lock_guard lock(m_memoryMutex);
-			pending = m_memoryWatch && m_memoryWatch->watch.pending() && m_memoryWatch->epoch && keepMachineMemory();
-			if(pending)
-				epoch = *m_memoryWatch->epoch;
-		}
-		if(pending)
-		{
-			const std::lock_guard lock(m_memoryMutex);
-			(void)writeMachineMemory(epoch);
-		}
+		flushMachineMemory(true);
 	}
 
 	void AudioPluginAudioProcessor::setMachineMemoryLookMs(const int _ms)
@@ -1292,6 +1310,12 @@ namespace mdJucePlugin
 		return m_memoryWatch ? m_memoryWatch->cost : MachineMemoryCost{};
 	}
 
+	machineMemory::Mark AudioPluginAudioProcessor::machineMemoryMark() const
+	{
+		const std::lock_guard lock(m_memoryMutex);
+		return m_memoryWatch ? m_memoryWatch->mark : machineMemory::Mark{};
+	}
+
 	void AudioPluginAudioProcessor::setKeepMachineMemory(const bool _keep)
 	{
 		getConfig().setValue(machineMemory::g_keepKey, _keep);
@@ -1299,18 +1323,16 @@ namespace mdJucePlugin
 		{
 			const std::lock_guard lock(m_memoryMutex);
 			m_memoryKeep.store(_keep, std::memory_order_release);
-			// on again: the memory of that moment is the base (nothing is written for turning it on)
-			if(m_memoryWatch)
-			{
-				m_memoryWatch->watch.reset();
-				m_memoryWatch->epoch.reset();
-				m_memoryWatch->settling.reset();
-			}
+			// on again: the file may be older than this memory (saves made while it was off): written at the next look
+			if(_keep && m_memoryWatch)
+				m_memoryWatch->watch.writeSoon();
 		}
+		if(m_memoryThread)
+			m_memoryThread->notify();
 		m_memoryVersion.fetch_add(1, std::memory_order_acq_rel);
 	}
 
-	// A file that cannot be used: moved aside (one kept), the session goes on with factory memory, the notice says why.
+	// A file that cannot be used: moved aside (one kept), the session goes on with the memory it has, the notice says why.
 	void AudioPluginAudioProcessor::machineMemoryUnusable(const std::string& _why)
 	{
 		std::string text = _why + " The machine starts from factory memory; your next save writes a new memory file.";
@@ -1332,48 +1354,77 @@ namespace mdJucePlugin
 			std::string(productName(m_model)) + " machine memory", text);
 	}
 
-	// At the start of a session (the timer, message thread): a project state wins; else the file, once the machine has
-	// its ROM. The file's payload is restored the way a project's is (synthLib::Plugin::setState).
+	// At the start of a session (the timer, message thread), once the machine has its ROM: a DAW project's state wins;
+	// else the file or the standalone's own state, whichever holds every save (machineMemory::startOf).
 	void AudioPluginAudioProcessor::serviceMachineMemoryStart()
 	{
 		if(m_memoryStartDone)
 			return;
-		const auto start = machineMemory::startOf(m_projectStateSeen, machineDeviceReady(), keepMachineMemory(),
-			!m_memoryFolder.empty());
+		machineMemory::StartFacts facts;
+		facts.projectState = m_projectStateSeen.load();
+		facts.keep = keepMachineMemory();
+		facts.folder = !m_memoryFolder.empty();
+		facts.machineReady = machineDeviceReady();
+		machineMemory::Decoded decoded;
+		const auto file = machineMemoryFile();
+		if(!facts.projectState && facts.keep && facts.folder && facts.machineReady && file.existsAsFile())
+		{
+			juce::MemoryBlock raw;
+			if(!file.loadFileAsData(raw))
+				machineMemoryUnusable("The saved machine memory could not be read (" + file.getFullPathName().toStdString() + ").");
+			else
+			{
+				const auto* bytes = static_cast<const uint8_t*>(raw.getData());
+				decoded = machineMemory::decode(std::vector<uint8_t>(bytes, bytes + raw.getSize()), m_model);
+				if(decoded.problem != machineMemory::Problem::None)
+					machineMemoryUnusable(machineMemory::describe(decoded.problem));
+				else
+				{
+					facts.file = true;
+					facts.fileStamp = decoded.stamp;
+				}
+			}
+		}
+		{
+			const std::lock_guard lock(m_memoryMutex);
+			facts.own = m_loadedMark;
+		}
+		const auto start = machineMemory::startOf(facts);
 		if(start == machineMemory::Start::Wait)
 			return;
 		m_memoryStartDone = true;
+		if(start == machineMemory::Start::Own)
+		{
+			// the standalone's own state holds every save of the file, and maybe saves the file lacks: those are written now
+			const std::lock_guard lock(m_memoryMutex);
+			m_memoryWatch->mark = *facts.own;
+			if(facts.own->unsaved)
+				m_memoryWatch->watch.writeSoon();
+			std::fprintf(stderr, "[MD] machine memory: the standalone's own state holds every save%s\n", facts.own->unsaved ? "; it is written to the file" : "");
+			return;
+		}
 		if(start != machineMemory::Start::File)
 			return;
-		const auto file = machineMemoryFile();
-		if(!file.existsAsFile())
-			return;
-		juce::MemoryBlock raw;
-		if(!file.loadFileAsData(raw))
-		{
-			machineMemoryUnusable("The saved machine memory could not be read (" + file.getFullPathName().toStdString() + ").");
-			return;
-		}
-		const auto* bytes = static_cast<const uint8_t*>(raw.getData());
-		const auto decoded = machineMemory::decode(std::vector<uint8_t>(bytes, bytes + raw.getSize()), m_model);
-		if(decoded.problem != machineMemory::Problem::None)
-		{
-			machineMemoryUnusable(machineMemory::describe(decoded.problem));
-			return;
-		}
 		bool restored = false;
 		{
 			const std::lock_guard lock(m_memoryMutex);	// no write while the machine changes to it
-			restored = getPlugin().setState(decoded.payload);
-			m_memoryRestoreGeneration = getPlugin().withDeviceLocked([](synthLib::Device* const _device)
+			const auto generation = [this]
 			{
-				const auto* const device = dynamic_cast<const md::Device*>(_device);
-				return device ? device->deferredStateGeneration() : uint64_t{0};
-			});
+				return getPlugin().withDeviceLocked([](synthLib::Device* const _device)
+				{
+					const auto* const device = dynamic_cast<const md::Device*>(_device);
+					return device ? device->deferredStateGeneration() : uint64_t{0};
+				});
+			};
+			const auto before = generation();
+			restored = getPlugin().setState(decoded.payload);
+			const auto after = generation();
+			// a refusal is reported by serviceStateRestoreFailure, by this generation (only when the restore began one)
+			m_memoryRestoreGeneration = after != before ? after : 0;
+			m_memoryWatch->mark = {decoded.stamp, false};
 		}
 		std::fprintf(stderr, "[MD] machine memory: started from %s (%zu bytes)%s\n", file.getFullPathName().toRawUTF8(),
 			decoded.payload.size(), restored ? "" : ", refused");
-		// a refusal is reported by serviceStateRestoreFailure (its generation is the file's)
 		if(hasController())
 			getController().onStateLoaded();
 		updateHostDisplay(juce::AudioProcessorListener::ChangeDetails().withNonParameterStateChanged(true));
@@ -1394,31 +1445,36 @@ namespace mdJucePlugin
 			_note = std::string("The machine could not be made again: ") + _e.what();
 			return false;
 		}
-		std::vector<uint8_t> state;
 		auto* const freshMachine = dynamic_cast<md::Device*>(fresh.get());
-		if(freshMachine && freshMachine->isValid())
+		if(!freshMachine || !freshMachine->isValid())
 		{
-			state = {1, synthLib::StateTypeGlobal};	// synthLib::Plugin's envelope (its g_stateVersion)
-			if(!freshMachine->getState(state, synthLib::StateTypeGlobal))
-			{
-				_note = "The factory memory could not be read.";
-				return false;
-			}
+			_note = "The machine needs its ROM to start from factory memory. Nothing was changed.";
+			return false;
 		}
-		bool restarted = state.empty();
+		std::vector<uint8_t> state{synthLib::g_stateVersion, synthLib::StateTypeGlobal};
+		if(!freshMachine->getState(state, synthLib::StateTypeGlobal))
+		{
+			_note = "The factory memory could not be read. Nothing was changed.";
+			return false;
+		}
 		{
 			const std::lock_guard lock(m_memoryMutex);
+			if(!getPlugin().setState(state))
+			{
+				_note = "The machine did not take the factory memory. Nothing was changed.";
+				return false;
+			}
 			const auto file = machineMemoryFile();
 			if(file != juce::File() && file.existsAsFile() && !file.deleteFile())
 			{
-				_note = "The machine memory file could not be deleted: " + file.getFullPathName().toStdString();
-				return false;
+				_note = "The machine starts from factory memory, but the machine memory file could not be deleted: " + file.getFullPathName().toStdString();
+				m_memoryWatch->watch.writeSoon();	// the old file must not win: the factory memory is written over it
 			}
-			if(!state.empty())
-				restarted = getPlugin().setState(state);
-			m_memoryWatch->watch.reset();
+			else
+				m_memoryWatch->watch = machineMemory::Watch{};	// nothing to write until the next save (no write soon left over)
 			m_memoryWatch->epoch.reset();
 			m_memoryWatch->settling.reset();
+			m_memoryWatch->mark = {};
 			m_memoryNote.clear();
 		}
 		fresh.reset();
@@ -1427,26 +1483,24 @@ namespace mdJucePlugin
 			getController().onStateLoaded();
 		updateHostDisplay(juce::AudioProcessorListener::ChangeDetails().withNonParameterStateChanged(true));
 		m_memoryVersion.fetch_add(1, std::memory_order_acq_rel);
-		std::fprintf(stderr, "[MD] machine memory: started from factory memory%s\n", restarted ? "" : " (the machine refused it)");
-		_note = restarted ? "The machine starts from factory memory." : "The machine memory file is gone, but the machine did not restart.";
-		return restarted;
+		std::fprintf(stderr, "[MD] machine memory: started from factory memory\n");
+		if(_note.empty())
+			_note = "The machine starts from factory memory.";
+		return true;
 	}
 
-	// One look (the thread): under the plug-in's lock a copy of the memory that a save changes (the patch RAM, the
-	// Monomachine's user flash, the Machinedrum's last flash write), then its hash; the watch decides on a write.
-	void AudioPluginAudioProcessor::lookAtMachineMemory()
+	// One look, with m_memoryMutex held: under the plug-in's lock a copy of the memory a save changes (the patch RAM, the
+	// Monomachine's user flash), then its signature (machineMemory::signature: the
+	// working area, knobs and automation left out). False: no machine to look at (none, starting, restoring).
+	bool AudioPluginAudioProcessor::lookMachineMemory(uint64_t& _signature, uint64_t& _epoch)
 	{
-		const std::lock_guard lock(m_memoryMutex);
+		uint64_t flashMark = 0;
 		auto& w = *m_memoryWatch;
-		if(!keepMachineMemory())
-			return;
-		// the buffers stay with the watch: no allocation under the lock after the first look
 		auto& patch = w.patch;
 		auto& userFlash = w.userFlash;
-		patch.reserve(md::g_patchRamStateSize);
+		patch.reserve(md::g_patchRamStateSize);	// no allocation under the lock after the first look
 		if(m_model == md::MachineModel::Monomachine)
 			userFlash.resize(md::g_mmUserFlashStateSize);
-		uint64_t flashMark = 0, epoch = 0;
 		bool ok = false;
 		const auto begin = std::chrono::steady_clock::now();
 		std::chrono::steady_clock::time_point held, released;
@@ -1462,8 +1516,12 @@ namespace mdJucePlugin
 				return;
 			if(m_model == md::MachineModel::Machinedrum)
 			{
-				// the file is written only once the factory flash is known, so its flash part is sparse (no ROM bytes)
-				if(!hw.factoryFlashBaseline())
+				// the file is written only once the factory flash is known, so its flash part is sparse (no ROM bytes); a first
+				// start that prepares its factory flash writes flash itself and is replaced by the processor (no save). The
+				// flash is no save of its own: OS 1.63 writes it by itself the first time the factory patterns play (measured:
+				// about 590 000 program and erase operations within 12 s, mdMachineMemoryFirmwareTest); the samples are written
+				// with the next save of a kit, pattern, song or global, as Radek's rule names them.
+				if(!hw.factoryFlashBaseline() || hw.isFactoryFlashInitializationExpected())
 					return;
 				auto& uc = hw.getUC();
 				flashMark = uc.flashDirty() ? uc.getCycles() - uc.flashIdleCycles() : 0;
@@ -1472,10 +1530,38 @@ namespace mdJucePlugin
 				md::memorymap::g_flashFull.offset(md::memorymap::g_mmUserFlash.begin), userFlash.size()))
 				return;
 			hw.copyPatchRamTo(patch);
-			epoch = device->hardwareEpoch();
+			_epoch = device->hardwareEpoch();
 			ok = true;
 		});
 		if(!ok)
+			return false;
+		const auto now = juce::Time::getMillisecondCounterHiRes();
+		if(flashMark != w.flashMark)
+		{
+			w.flashMark = flashMark;
+			w.flashChangedMs = now;
+		}
+		// the Monomachine's DigiPRO user waveforms are a save (they change only when one is stored)
+		const bool mm = m_model == md::MachineModel::Monomachine;
+		_signature = machineMemory::signature(m_model, patch, mm ? userFlash.data() : nullptr, mm ? userFlash.size() : 0);
+		// the time the audio thread could wait: from taking the lock to releasing it
+		const auto lockMs = std::chrono::duration<double, std::milli>(released - held).count();
+		w.cost.lookLockLastMs = lockMs;
+		w.cost.lookLockMaxMs = std::max(w.cost.lookLockMaxMs, lockMs);
+		w.cost.lookMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - begin).count();
+		++w.cost.looks;
+		return true;
+	}
+
+	// The thread's look: a save (the stored slots changed) is written once it held still for a look.
+	void AudioPluginAudioProcessor::lookAtMachineMemory()
+	{
+		const std::lock_guard lock(m_memoryMutex);
+		auto& w = *m_memoryWatch;
+		if(!keepMachineMemory())
+			return;
+		uint64_t signature = 0, epoch = 0;
+		if(!lookMachineMemory(signature, epoch))
 		{
 			w.watch.reset();
 			w.epoch.reset();
@@ -1483,22 +1569,11 @@ namespace mdJucePlugin
 			w.settleLooks = 0;
 			return;
 		}
-		auto signature = machineMemory::hash(patch.data(), machineMemory::watchedPatchBytes(m_model, patch.size()));
-		signature = machineMemory::hash(userFlash.data(), userFlash.size(), signature);
-		signature = machineMemory::hash(reinterpret_cast<const uint8_t*>(&flashMark), sizeof(flashMark), signature);
-		const auto end = std::chrono::steady_clock::now();
-		// the time the audio thread could wait: from taking the lock to releasing it (the wait for a block in progress
-		// before it is this thread's, not the audio thread's)
-		const auto lockMs = std::chrono::duration<double, std::milli>(released - held).count();
-		w.cost.lookLockLastMs = lockMs;
-		w.cost.lookLockMaxMs = std::max(w.cost.lookLockMaxMs, lockMs);
-		w.cost.lookMs = std::chrono::duration<double, std::milli>(end - begin).count();
-		++w.cost.looks;
 		// a new machine (the start, a restore, factory memory): its memory once it holds still for a look is the base,
 		// so starting or opening a project writes nothing
 		if(w.epoch != epoch)
 		{
-			if(w.settling != signature && w.settleLooks < 5)
+			if(w.settling != signature && w.settleLooks < 2)
 			{
 				w.settling = signature;
 				++w.settleLooks;
@@ -1508,30 +1583,97 @@ namespace mdJucePlugin
 			w.epoch = epoch;
 			w.settling.reset();
 			w.settleLooks = 0;
-			return;
+			if(!w.watch.wantsWrite() && !m_memorySampleStored.load())
+				return;
 		}
+		serviceSampleStore();
 		if(!w.watch.look(signature, juce::Time::getMillisecondCounterHiRes()))
 			return;
-		if(writeMachineMemory(epoch))
+		// written, or the file could not be written (no permission, disk full): tried again with the next save and when
+		// the instance closes (the mark says unsaved meanwhile), not at every look
+		const auto failed = w.cost.failedWrites;
+		if(writeMachineMemory(epoch) || w.cost.failedWrites != failed)
 			w.watch.written(signature);
 	}
 
-	// The full state, as a DAW save takes it (Plugin::getState: captured under the lock, encoded after it, B-034),
-	// framed and written to a temporary file in the folder, then renamed over the old one. Called with m_memoryMutex
-	// held by the thread, or alone when the thread has stopped.
+	// MD (with m_memoryMutex held, after a look): a sample the page sent is a save of a slot (ROM-xx), stored by the
+	// machine into its flash after the transfer ends. The flash itself is not watched (the OS writes it by itself while
+	// the factory patterns play); a sample sent from the page is written once the flash has been still for a second
+	// after its store began, or 30 s after the transfer at the latest. A sample sent by another program (SDS over MIDI)
+	// is written with the next save.
+	void AudioPluginAudioProcessor::serviceSampleStore()
+	{
+		auto& w = *m_memoryWatch;
+		const auto now = juce::Time::getMillisecondCounterHiRes();
+		if(m_memorySampleStored.exchange(false))
+		{
+			w.sampleArmedMs = now;
+			w.sampleArmMark = w.flashMark;
+		}
+		if(!w.sampleArmedMs)
+			return;
+		const bool stored = w.flashMark != w.sampleArmMark && now - w.flashChangedMs >= 1000.0;
+		if(!stored && now - *w.sampleArmedMs < 30000.0)
+			return;
+		w.sampleArmedMs.reset();
+		w.watch.writeSoon();
+	}
+
+	void AudioPluginAudioProcessor::machineMemorySampleStored()
+	{
+		m_memorySampleStored.store(true);
+		if(m_memoryThread)
+			m_memoryThread->notify();
+	}
+
+	// One last look now (the instance going away, the host saving its state): a save not written yet is written.
+	void AudioPluginAudioProcessor::flushMachineMemory(const bool _closing)
+	{
+		if(m_memoryFolder.empty() || !m_memoryWatch)
+			return;
+		const std::lock_guard lock(m_memoryMutex);
+		if(!keepMachineMemory())
+			return;
+		uint64_t signature = 0, epoch = 0;
+		if(!lookMachineMemory(signature, epoch) || m_memoryWatch->epoch != epoch)
+			return;
+		// closing after a write failed: one more try (the folder may be writable again)
+		if(_closing && m_memoryWatch->mark.unsaved)
+			m_memoryWatch->watch.writeSoon();
+		// closing: a sample sent and maybe not stored yet is written as it is (the close itself ends its store)
+		if(_closing && (m_memoryWatch->sampleArmedMs || m_memorySampleStored.exchange(false)))
+		{
+			m_memoryWatch->sampleArmedMs.reset();
+			m_memoryWatch->watch.writeSoon();
+		}
+		if(!m_memoryWatch->watch.differs(signature))
+			return;
+		if(writeMachineMemory(epoch))
+			m_memoryWatch->watch.written(signature);
+	}
+
+	// The full state, as a DAW save takes it: captured under one hold of the plug-in's lock together with the check that
+	// it is the machine the watch saw and no restore is under way, encoded after it (B-034); framed with a new stamp,
+	// written to a temporary file in the folder, flushed to the disk (fsync) and renamed over the old one. With
+	// m_memoryMutex held.
 	bool AudioPluginAudioProcessor::writeMachineMemory(const uint64_t _epoch)
 	{
 		const auto begin = std::chrono::steady_clock::now();
-		std::vector<uint8_t> state;
-		// the machine the watch saw, and no restore under way (else getState gives the requested state, not memory)
-		const bool same = getPlugin().withDeviceLocked([&](synthLib::Device* const _device)
+		std::unique_ptr<synthLib::Device::StateCapture> capture;
+		getPlugin().withDeviceLocked([&](synthLib::Device* const _device)
 		{
-			const auto* const device = dynamic_cast<const md::Device*>(_device);
-			return device && device->hardwareEpoch() == _epoch && !device->isProjectStateRestorePending();
+			auto* const device = dynamic_cast<md::Device*>(_device);
+			if(device && device->hardwareEpoch() == _epoch && !device->isProjectStateRestorePending())
+				capture = _device->beginStateCapture(synthLib::StateTypeGlobal);
 		});
-		if(!same || !getPlugin().getState(state, synthLib::StateTypeGlobal) || state.size() <= 2)
+		std::vector<uint8_t> state{synthLib::g_stateVersion, synthLib::StateTypeGlobal};
+		if(!capture || !capture->encode(state) || state.size() <= 2)
 			return false;
-		const auto bytes = machineMemory::encode(m_model, state);
+		capture.reset();
+		uint64_t stamp = 0;
+		while(stamp == 0)
+			stamp = static_cast<uint64_t>(juce::Time::currentTimeMillis()) << 20 ^ static_cast<uint64_t>(juce::Random::getSystemRandom().nextInt64());
+		const auto bytes = machineMemory::encode(m_model, stamp, state);
 		const auto file = machineMemoryFile();
 		std::string error;
 		const auto folder = file.getParentDirectory().createDirectory();
@@ -1543,7 +1685,7 @@ namespace mdJucePlugin
 			auto out = temporary.getFile().createOutputStream();
 			const bool wrote = out && out->openedOk() && out->write(bytes.data(), bytes.size());
 			if(out)
-				out->flush();
+				out->flush();	// FileOutputStream::flush: fsync (POSIX), FlushFileBuffers (Windows)
 			const bool streamOk = out && out->getStatus().wasOk();
 			out.reset();
 			if(!wrote || !streamOk || temporary.getFile().getSize() != static_cast<juce::int64>(bytes.size()))
@@ -1552,23 +1694,25 @@ namespace mdJucePlugin
 				error = "The machine memory file could not be replaced: " + file.getFullPathName().toStdString();
 		}
 		const auto ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - begin).count();
-		if(m_memoryWatch)
+		auto& w = *m_memoryWatch;
+		w.cost.writeMs = ms;
+		if(error.empty())
 		{
-			m_memoryWatch->cost.writeMs = ms;
-			if(error.empty())
-			{
-				++m_memoryWatch->cost.writes;
-				m_memoryWatch->cost.fileBytes = bytes.size();
-			}
+			++w.cost.writes;
+			w.cost.fileBytes = bytes.size();
+			w.mark = {stamp, false};
+		}
+		else
+		{
+			++w.cost.failedWrites;
+			w.mark.unsaved = true;	// the standalone's own state now holds saves the file lacks: it wins at its next start
 		}
 		const bool hadNote = !m_memoryNote.empty();
 		m_memoryNote = error;
 		if(!error.empty() && !m_memoryWriteWarned.exchange(true))
 			m_memoryWriteFailed.store(true, std::memory_order_release);	// the timer's notice, once a session
-		if(!error.empty() || hadNote)
+		if(!error.empty() || hadNote || w.cost.writes == 1)
 			m_memoryVersion.fetch_add(1, std::memory_order_acq_rel);
-		else if(m_memoryWatch && m_memoryWatch->cost.writes == 1)
-			m_memoryVersion.fetch_add(1, std::memory_order_acq_rel);	// "saved" may have changed
 		std::fprintf(stderr, "[MD] machine memory: %s (%zu bytes, %.2f ms)\n", error.empty() ? "written" : error.c_str(), bytes.size(), ms);
 		return error.empty();
 	}

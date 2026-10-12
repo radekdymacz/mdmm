@@ -80,6 +80,7 @@ namespace mdJucePlugin
 	// I-024: {"type":"machineMemory", keep, available, saved, note} for the engine menu's KEEP MEMORY and START FROM
 	// FACTORY MEMORY (doc/modern-ux/DESIGN-machine-memory.md)
 	elektronData::json::Value machineMemoryOf(AudioPluginAudioProcessor& _processor);
+	void machineMemorySampleStoredOf(AudioPluginAudioProcessor& _processor);
 	// I-021: the page's volume (outputGain {db}): the processor's output gain (mdOutputLevel.h's range)
 	void setOutputGainDb(AudioPluginAudioProcessor& _processor, double _db);
 	constexpr double g_outputLevelMs = 250;

@@ -19,6 +19,9 @@
 
 namespace synthLib
 {
+	// The envelope's first byte of a state from getState (then its StateType): setState refuses another version
+	constexpr uint8_t g_stateVersion = 1;
+
 	class Device;
 
 	class Plugin

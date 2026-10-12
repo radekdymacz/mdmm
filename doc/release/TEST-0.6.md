@@ -81,4 +81,9 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 5. KEEP MEMORY: OFF, save a kit, new instance: factory memory. Turn it ON again.
 6. Standalone: save a kit in a plug-in, then start the standalone (it has its own saved state): it starts with the saved memory, not its own. With KEEP MEMORY: OFF it starts with its own state again.
 7. The file: `~/Documents/Gearmulator Preview/<Machine>/memory/machine-memory.bin`. Damage it (change a byte): the next new instance says so, starts from factory memory and keeps `machine-memory.unusable.bin`.
-8. MD: load a sample into a UW slot, wait, new instance: the sample is there.
+8. MD: load a sample into a UW slot in the Sampler and save nothing else, wait until the machine has stored it, new instance: the sample is there.
+9. Only saves write: play a pattern in a DAW with automation on a few parameters for a minute, turn knobs, rename the kit that plays without SAVE KIT: the file's date does not change. SAVE KIT: it changes within two seconds.
+10. Save a kit and quit the standalone at once (Cmd+Q): start it again, and a new plug-in instance: both have the kit.
+11. Standalone: rename the kit that plays (no SAVE KIT), quit, start again: the name is still there. Quit it, save a kit in a plug-in, start the standalone again: it has the plug-in's save (the unsaved name is gone, as the guide says).
+12. KEEP MEMORY: OFF, SAVE KIT, KEEP MEMORY: ON: the file's date changes at once; a new instance has the kit.
+13. Make the memory folder read-only (`chmod 555`), SAVE KIT in the standalone: the editor says the file could not be written. Quit, `chmod 755`, start the standalone: the kit is there (not the old file's), and the file is written again.
