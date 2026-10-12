@@ -6,7 +6,7 @@ You write a pattern on the **Sequence** workspace. Press {key:workspace-1}, or c
 ![The Sequence workspace](shot:mm-sequence-workspace)
 
 ## RECORDING PREPARATIONS
-<!-- rows: MM-171 @1e2247 -->
+<!-- rows: MM-171 @32dbed -->
 
 On the machine you select a kit, a track and the trig tracks before you record. In the editor you only select the track.
 
@@ -16,7 +16,7 @@ On the machine you select a kit, a track and the trig tracks before you record. 
 The roll shows the selected track. The field SEQ on the second line of the LCD also switches between SYNTH and MIDI.
 
 ## GRID RECORDING
-<!-- rows: MM-172 MM-173 MM-174 MM-175 MM-176 MM-177 MM-178 @3c9174 -->
+<!-- rows: MM-172 MM-173 MM-174 MM-175 MM-176 MM-177 MM-178 @a4412d -->
 
 On the machine you step through the grid with the trig keys. In the editor you draw the notes in the piano roll.
 
@@ -76,6 +76,8 @@ To erase while you record, select the track and hold {key:live-erase}. This is t
 
 NOTE: Wait until live recording stops before you select steps or open the step menu. The editor refuses them while it records.
 
+NOTE: While the machine takes an edit on its SYSEX RECV screen, ● waits, as ▶ does: the LCD says the machine follows in a moment, and recording starts when the screen is free. Press ● again to cancel it.
+
 NOTE: Values you turn while the pattern records are locked. See "Parameter locks in live recording mode" in chapter 13.
 
 ## STEP RECORDING
@@ -134,7 +136,7 @@ The machine's CLEAR NOTE LOCKS clears the locks of one note and keeps the note:
 The notes stay. Press {key:undo} to get the locks back.
 
 ## TRACK PAGE COPY
-<!-- rows: MM-185 MM-178 @0a2cfa -->
+<!-- rows: MM-185 MM-178 @06846c -->
 
 A page is the 16 steps shown while **Page** is on. While **All** is lit, the page is the whole pattern. With no steps selected, the LCD keys copy and paste the page shown of the selected track.
 
@@ -172,7 +174,7 @@ Select all the steps of the track with the ruler and press {key:delete}. To clea
 To clear the whole track, or only some of its parts, use **Clear…** in the LCD's **▾** menu: see "Super clear". **Clr** clears the page shown.
 
 ## PATTERN COPY
-<!-- rows: MM-189 @e07ae0 -->
+<!-- rows: MM-189 @ffa0ae -->
 
 A pattern copy takes the whole pattern: the notes, locks, MIDI notes, the arpeggiator, transpose, swing and slide, and the link to the kit.
 

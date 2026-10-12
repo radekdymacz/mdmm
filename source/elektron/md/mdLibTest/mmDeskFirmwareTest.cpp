@@ -2492,15 +2492,12 @@ namespace
 		r.msg(R"({"op":"record","mode":"grid"})");
 		const auto first = r.lastResult();
 		std::printf("  RECORD while the dump is taken: %s\n", ed::json::write(first).c_str());
-		check(!first.find("ok")->asBool() && first.find("errors")->asArray()[0].asString() == "The panel is busy (SYSEX RECV); try again.",
-			"the desk refuses it as busy (it was answered ok and lost)");
+		check(first.find("ok")->asBool() && r.tel.recording.load() == 0, "review 1 (B-092): the desk takes it and waits, as PLAY does (nothing pressed yet)");
 		taken();
-		r.run(300);
-		r.msg(R"({"op":"record","mode":"grid"})");
-		const auto again = r.lastResult();
-		r.run(800);
-		std::printf("  RECORD once the dump is taken: %s, recording %d, recv %s\n", ed::json::write(again).c_str(), r.tel.recording.load(), r.desk->recvState().c_str());
-		check(again.find("ok")->asBool() && r.tel.recording.load() == 1, "once the dump is taken RECORD is taken: GRID RECORDING");
+		for(int i = 0; i < 30 && r.tel.recording.load() != 1; ++i)
+			r.run(100);
+		std::printf("  RECORD once the dump is taken: recording %d, recv %s\n", r.tel.recording.load(), r.desk->recvState().c_str());
+		check(r.tel.recording.load() == 1, "once the dump is taken the waiting RECORD is pressed: GRID RECORDING");
 		r.msg(R"({"op":"record","mode":"off"})");
 		r.run(800);
 		check(r.tel.recording.load() == 0, "GRID RECORDING off");

@@ -25,6 +25,13 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Fix (`fix/0.6-review-1`, Radek's rule: every modal locks):** a click outside never closes a dialog, on both editors (its frame flashes instead); a dialog closes by its own keys or Esc; a dialog at work (`data-busy`: the SysEx panel importing or resetting) refuses Esc too. Its **Hide** key still puts it away; IMPORT SYSEX…, EXPORT SYSEX… or RESET MACHINE… in the engine menu then shows the same panel again (with its report when the run ended meanwhile, and a toast says so). The pages' own outside-click closers are gone (`deskModal.js`, `deskAudio.js`, `deskSyx.js`, `mdDeskKeys.js`, `mdDeskLibrary.js`, the MM mockup's `56-keys.js`, `125-lib.js`). Context menus still close on a click outside (a menu, not a dialog). Journeys `md-modal-lock`, `mm-modal-lock` (GLOBAL, a library, the keys, AUDIO / MIDI, Export SysEx, the machine picker, a question: a click outside keeps each open and on top, Esc closes it), `md-syx-running-reach`, `mm-syx-running-reach` (Esc and a click outside while it imports, Hide, back through the engine menu, the report).
 - **Status:** fixed on `fix/0.6-review-1`.
 
+## B-092 · Monomachine: RECORD refused while the panel takes a dump; PLAY waits
+
+- **From:** Radek's 0.6 review, 2026-10-12 (coordinator's decision: RECORD waits like PLAY).
+- **What happens:** ● (or its key) while the machine takes a dump on SYSEX RECV, or leaves it: "The panel is busy (SYSEX RECV); try again." PLAY and STOP at that moment wait and go once the panel is free (0.3.4).
+- **Fix (`fix/0.6-review-1`):** RECORD waits the same way: the desk takes it, says what PLAY says ("The machine is taking an edit (SYSEX RECV): it follows in a moment."), and presses the keys of the mode asked for as soon as the panel is free (`pumpRecord`, worked out again from the mode the machine is in then), giving up after 10 s; ● again while it waits cancels it. The erase (Delete held) still needs the panel at once. The Machinedrum has no such refusal (no SYSEX RECV). Tests: `mmDeskTest` (Bug 4: RECORD waits, a second press cancels, the waiting STOP and RECORD are pressed once each), `mmDeskFirmwareTest parked` (on the firmware: RECORD during a dump, GRID RECORDING once it is taken). Guide: mm chapter 11.
+- **Status:** fixed on `fix/0.6-review-1`.
+
 ## B-093 · Monomachine: "tracks[4] step 24 has chord notes but no trig" on Sequence
 
 - **From:** Radek's 0.6 review, 2026-10-12 (installed build, Sequence, the lock lane open: the toast).

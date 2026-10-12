@@ -171,6 +171,8 @@ namespace mmDesk
 		bool current(const Ref& _r) const;
 		void pumpRecv(double _now);
 		void pumpTransport(double _now);
+		void pumpRecord(double _now);
+		deskCore::Outcome record(const Value& _m, bool _first);
 		void pumpSequence(double _now);
 		// RECORD: the current pattern read back while the machine records (true: the mode changed).
 		bool readWhileRecording(double _now);
@@ -329,6 +331,9 @@ namespace mmDesk
 		// 0.3.4: PLAY or STOP asked while the panel was busy (a dump on its way to SYSEX RECV, which the stream paces
 		// at cable speed while playing): pressed once it is free (pumpTransport), the newest wins, given up after a while
 		std::optional<Key> m_pendingTransport;
+		std::optional<Value> m_pendingRecord;	// review 1 (B-092): RECORD waiting for the panel (pumpRecord)
+		double m_pendingRecordMs = 0;
+		bool m_recordWaiting = false;
 		double m_pendingTransportMs = 0;
 		// B-060: track numbers (transposesMoved) whose transposes the next dump of the pattern that plays moves, and
 		// those of dumps on the wire, applied once the machine took them; the track in focus (status 0x22) to go back to
