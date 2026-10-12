@@ -548,4 +548,4 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 7. **Transport details (1-5, 1-56).** No pause, no double-STOP rewind and all-notes-off, no +/-10 % tempo nudge, no delayed tempo change, no panic (CC 120).
 8. **Arpeggiator, swing and slide have no copy / clear / paste / undo of their own (1-62, 1-65, 1-66).** Page undo only.
 9. **Lock helpers (1-14, 1-57).** No key that drops only the locks of one step and keeps its note, and no "lock the current value" click.
-10. **Reset functions (1-110).** No empty reset or factory reset from the editor (GLOBAL has Reset to defaults for one slot); the page cannot show or open the UNDO KIT slot.
+10. **Reset functions (1-110).** No empty reset or factory reset from the editor (GLOBAL has Clear for one slot); the page cannot show or open the UNDO KIT slot.

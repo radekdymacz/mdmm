@@ -2557,7 +2557,7 @@ namespace
 	}
 
 	// B-051, F3: the global the machine ships with, read from a fresh machine (every slot): elektronData::mdFactoryGlobal
-	// must be it (GLOBAL › Reset to defaults writes it). FACTORY_PRINT=1 prints the dump as the C++ table.
+	// must be it (GLOBAL › Clear writes it). FACTORY_PRINT=1 prints the dump as the C++ table.
 	void factoryGlobal(const Bytes& _rom, const std::string& _romName)
 	{
 		std::puts("== the factory global");
@@ -2608,11 +2608,11 @@ namespace
 		check(rest == *scrambled, "0x64 changes the map only (TRIG mode and the rest kept)");
 	}
 
-	// B-051, F3: GLOBAL › Reset to defaults. The base channel and TEMPO OUT changed, then globalReset: the active global
+	// B-051, F3: GLOBAL › Clear. The base channel and TEMPO OUT changed, then globalReset: the active global
 	// reads back as the factory one, and a mute reaches each of the 16 tracks.
 	void globalReset(const Bytes& _rom, const std::string& _romName)
 	{
-		std::puts("== GLOBAL › Reset to defaults");
+		std::puts("== GLOBAL › Clear");
 		Rig rig(_rom, _romName);
 		auto& desk = rig.desk();
 		rig.page(R"({"op":"ready"})");

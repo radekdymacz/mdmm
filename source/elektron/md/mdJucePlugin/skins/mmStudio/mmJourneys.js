@@ -1499,7 +1499,7 @@ const MmJourneys = (() => {
 			if (c.t3 != null && synthMuted(2) !== c.t3) u.click('#rail .th[data-sel="2"] .ms.m');
 		}
 	};
-	/* B-051, F3: GLOBAL › Clear (Reset to defaults until 0.6; asked first), and the slot keys */
+	/* B-051, F3: GLOBAL › Clear (asked first), and the slot keys */
 	const gDoc = () => I().doc("global", machine().global?.current ?? 0);
 	const globalReset = {
 		name: "mm-global-reset", proves: ["MM-285", "MM-290", "MM-296"],
@@ -1789,7 +1789,7 @@ const MmJourneys = (() => {
 		if (!r || !r.ok) return `GLOBAL ${n + 1} not reset (${r ? (r.errors || []).join("; ") : "no answer"}); the journeys run on it as it is (${was})`;
 		const back = await until(() => gDoc()?.channels?.span === 6 && gDoc()?.channels?.base === 0, 20000);
 		await sleep(1500);
-		return `GLOBAL ${n + 1} reset to the factory settings (GLOBAL › Reset to defaults): was ${was}, now ${say(gDoc())}${back ? "" : " (not read back yet)"}`;
+		return `GLOBAL ${n + 1} reset to the factory settings (GLOBAL › Clear): was ${was}, now ${say(gDoc())}${back ? "" : " (not read back yet)"}`;
 	}
 	/* what the page last told the person: its toast and its error line */
 	const context = () => [...[["toast", $1("#toast")], ["error", $1("#errline")]].filter(([, e]) => e && !e.hidden && e.textContent.trim()).map(([k, e]) => `${k} "${e.textContent.trim().slice(0, 160)}"`),
