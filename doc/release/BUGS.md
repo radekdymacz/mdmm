@@ -4,6 +4,20 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-081 · Machinedrum: the Rhythm Echo and Gate Box cards on the Mix page show and edit each other's values
+
+- **From:** slice 5 (the master effects journey), 2026-10-12.
+- **What happens:** the kit lists its master effects as gate box, rhythm echo, EQ, dynamix (the firmware's dump order, `mdNames.h`). The page paired its own cards (echo, gate, EQ, dyn) with that list by position, so the Rhythm Echo card showed the Gate Box's eight values and its knobs edited them (and the Gate Box card the echo's). EQ and Dynamix were right.
+- **Should:** each card reads and writes its own effect.
+- **Status:** fixed in slice 5 (`mfxName` pairs by name, `mdDeskModel.js`); `md-mix-master-cards` moves each of the 32 knobs and checks the value of its own effect moved and no other.
+
+## B-080 · Machinedrum: four E12 machines show another machine's parameter names
+
+- **From:** slice 5 (the machine reference journey), 2026-10-12.
+- **What happens:** on the Sound page E12-LT (low tom) shows RRTL where the manual has HPQ; E12-RS (rim shot) shows HPQ where the manual has RRTL; E12-OH (open hi-hat) shows HPQ where the manual has STOP; E12-CC (crash) shows STOP where the manual has HPQ (Appendix A, pages A-6 and A-7). The names sat on the wrong machines in `elektronData/mdMachines.cpp`.
+- **Should:** each E12 machine lists the knobs the manual lists.
+- **Status:** fixed in slice 5 (four names swapped back); `md-sound-machine-reference` checks every machine against the manual's list. Values and SysEx are untouched: only the labels of the fourth knob moved.
+
 ## B-070 · Machinedrum: a swing mark can flash back on a step whose trig was just removed
 
 - **From:** the wave 3 review, 2026-10-12.

@@ -211,7 +211,30 @@ namespace
 			p.sendNote = [](uint8_t, uint8_t, uint8_t) {};
 			p.pressKey = [this](const std::string& _k) { return press(_k); };
 			// DATA ENTRY: present (live recording needs it) but no knob page is reported, so Control All stays on CCs
-			p.turnKnob = [](uint8_t, int) { return true; };
+			p.turnKnob = [this](const uint8_t _knob, const int _d)
+			{
+				// live recording: a DATA ENTRY turn moves the selected track's value on the knob page and locks the next trig
+				// of that track with it (manual p.48; slice 5: MD-139)
+				if(m_recording && m_playing && _knob < 8 && m_knobPage >= 0 && m_knobPage < 3)
+				{
+					const size_t i = static_cast<size_t>(m_knobPage) * 8 + _knob;
+					const int v = std::clamp(static_cast<int>(m_working.params[m_track][i]) + _d, 0, 127);
+					m_working.params[m_track][i] = static_cast<uint8_t>(v);
+					const auto& pat = m_patterns[m_pattern];
+					const size_t len = std::max<size_t>(1, pat.length);
+					for(size_t k = 1; k <= len; ++k)
+					{
+						const size_t st = (static_cast<size_t>(m_step) + k) % len;
+						if((pat.trigs[m_track] >> st) & 1)
+						{
+							if(const auto locked = ed::withLock(pat, m_track, i, st, static_cast<uint8_t>(v)))
+								m_patterns[m_pattern] = *locked;
+							break;
+						}
+					}
+				}
+				return true;
+			};
 			p.sendMidi = [this](const Bytes& _m) { realtime(_m); };
 			p.nowMs = [] { return nowMs(); };
 			p.audition = [this](const ed::AuditionClip& _clip)
@@ -301,7 +324,7 @@ namespace
 			case 0x04: return m_pattern;
 			case 0x08: return m_song;
 			case 0x10: return m_songMode ? 1 : 0;
-			case 0x20: return 1;	// extended locks
+			case 0x20: return m_globals[m_global].extendedMode ? 1 : 0;	// extended locks: the active global's
 			case 0x22: return m_track;
 			default: return 0;
 			}
@@ -338,10 +361,12 @@ namespace
 				case 0x04: loadPattern(_m[8]); break;
 				case 0x08: m_song = _m[8] & 31; break;
 				case 0x10: m_songMode = _m[8] != 0; break;
+				case 0x20: m_globals[m_global].extendedMode = _m[8] != 0 ? 1 : 0; break;	// CLASSIC / EXTENDED (slice 5: MD-004)
 				case 0x22: m_track = _m[8] & 15; break;
 				default: break;
 				}
 				return;
+			case 0x56: m_global = v & 7; return;	// SET ACTIVE GLOBAL (slice 5: MD-282)
 			case 0x57: loadPattern(v); return;
 			case 0x58: loadKit(v); return;
 			case 0x59: { auto k = m_working; k.position = v & 63; m_kits[v & 63] = k; m_kit = v & 63; return; }	// SAVE KIT
