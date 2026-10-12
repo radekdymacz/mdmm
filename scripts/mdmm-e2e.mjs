@@ -46,7 +46,7 @@ function readRun(dir) {
 	const files = [];
 	const walk = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) {
 		const p = path.join(d, e.name);
-		if (e.isDirectory()) walk(p); else if (e.name === 'journeys.txt') files.push(p); } };
+		if (e.isDirectory()) walk(p); else if (e.name === 'journeys.txt' || e.name === 'report.txt') files.push(p); } };
 	walk(dir);
 	for (const f of files) {
 		for (const line of fs.readFileSync(f, 'utf8').split('\n')) {
@@ -156,7 +156,10 @@ h1,h2,h3{margin:1.2em 0 .4em} table{border-collapse:collapse;width:100%} td,th{b
 .b{color:#fff;border-radius:4px;padding:1px 6px;font-size:12px;font-weight:600} .why{color:#656d76;font-size:12px} .ok{color:#1a7f37} .bad{color:#cf222e}
 details.j{margin:2px 0 2px 12px} code{font-size:12px} pre{background:#f0f2f4;padding:8px;overflow:auto} img{border:1px solid #d0d7de;border-radius:4px;margin:2px}
 .def{display:inline-block;vertical-align:top;width:380px;margin:6px;font-size:12px}</style>`,
-`<h1>End-to-end evidence, ${esc(data.md.run.version)} (${esc(data.md.run.date)})</h1><pre>${esc(lines.join('\n'))}</pre>`];
+`<h1>End-to-end evidence, ${esc(data.md.run.version)} (${esc(data.md.run.date)})</h1>`];
+/* summary.html (written by hand after a run: the morning summary, the findings with their pictures) goes first */
+try { html.push(fs.readFileSync(path.join(out, 'summary.html'), 'utf8')); } catch { /* none */ }
+html.push(`<h2>Counts</h2><pre>${esc(lines.join('\n'))}</pre>`);
 
 html.push(`<h2>Red items (${reds.length})</h2><p class="why">Failures, stub-only, missing and skipped done rows, and rows that pass with no picture.</p><table><tr><th>Result<th>Row<th>Chapter<th>Function<th>Why<th>Picture</tr>${redRows(reds)}</table>`);
 if (review.length) html.push(`<h2>Screenshot review: defects (${review.length})</h2>${review.map((r) => `<div class="def"><b>${esc(r.severity || '')}</b> ${esc(r.shot)}: ${esc(r.defect)}<br>${img(r.shot, 360)}</div>`).join('')}`);

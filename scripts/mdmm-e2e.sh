@@ -63,7 +63,8 @@ PY
 fi
 PAGEARGS=()
 if [ $PAGE = 1 ]; then
-	node scripts/mdmm-page.mjs --jobs 2 --out "$OUT/page" "$WHICH" "$SEL" > "$OUT/page.log" 2>&1
+	cmake --build "$ROOT/temp/dev" --target deskStubHost > "$OUT/stubhost-build.log" 2>&1 || { echo "deskStubHost did not build: $OUT/stubhost-build.log"; exit 1; }
+	MDMM_STUB_HOST="$ROOT/temp/dev/source/elektron/md/deskStubHost/deskStubHost" node scripts/mdmm-page.mjs --jobs 2 --out "$OUT/page" "$WHICH" "$SEL" > "$OUT/page.log" 2>&1
 	tail -2 "$OUT/page.log"
 	PAGEARGS=(--page "$OUT/page")
 fi
