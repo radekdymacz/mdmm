@@ -189,6 +189,35 @@ namespace elektronData
 	// One document as a message, e.g. to send a plan item; empty when the file does not hold it.
 	std::vector<uint8_t> syxMessage(const SyxFile& _file, const SyxItem& _item);
 
+	// A part of what the editor holds (0.6, the machine's SYSEX SEND with a range): per kind the slots from..to
+	// (inclusive, from 0); a kind not in the selection is left out. Slots the documents do not hold are not made up.
+	struct SyxRange
+	{
+		uint8_t from = 0;
+		uint8_t to = 0;
+	};
+	using SyxSelection = std::map<SyxKind, SyxRange>;
+	MdDocuments syxSelect(const MdDocuments& _documents, const SyxSelection& _selection);
+	MmDocuments syxSelect(const MmDocuments& _documents, const SyxSelection& _selection);
+
+	// ---- SPECIFIC place (0.6, the machine's SYSEX RECV SPEC)
+	//
+	// A user-data dump (global, kit, pattern, song) with its position byte (index 9) set to _slot, and its checksum
+	// made again when the dump's trailer was valid (the sum covers the position byte; a broken trailer stays as
+	// broken as it was). Every other byte is the file's. Unchanged when it is no such dump.
+	std::vector<uint8_t> syxPlaced(const std::vector<uint8_t>& _message, uint8_t _slot);
+
+	// ---- DigiPRO user waveforms (Monomachine MKII; PROBES-manual-gaps.md P4)
+	//
+	// A request (0x5E, waveform 0-63) is answered with the waveform's dump (0x5D, the waveform in byte 9) when the
+	// waveform is used, with nothing when it is empty. A dump is taken only on GLOBAL > FILE > DIGIPRO MGR > RECEIVE.
+	constexpr uint8_t g_mmWaveDump = 0x5d;
+	constexpr uint8_t g_mmWaveRequest = 0x5e;
+	constexpr uint8_t g_mmWaves = 64;
+	std::vector<uint8_t> mmWaveRequest(uint8_t _wave);
+	// A complete Monomachine waveform dump (header, 0x5D, F7): its waveform, else -1.
+	int mmWaveDumpSlot(const std::vector<uint8_t>& _message);
+
 	// ---- as-is import (B-019)
 	//
 	// An import is a MIDI cable into the machine: the file's messages go to it unchanged, in file order, and

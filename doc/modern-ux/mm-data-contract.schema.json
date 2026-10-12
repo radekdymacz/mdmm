@@ -2150,6 +2150,17 @@
             "messages": {
               "type": "integer",
               "minimum": 0
+            },
+            "place": {
+              "description": "0.6: SPECIFIC place, per kind the first slot its items land in (empty: each in its own slot); then each item's slot is where it lands and its from the file's slot",
+              "type": "object"
+            },
+            "reset": {
+              "description": "0.6: Reset machine… (Empty reset, Factory reset): the preview of what the reset sends, which already runs",
+              "type": "string"
+            },
+            "running": {
+              "type": "boolean"
             }
           }
         },
@@ -2200,6 +2211,10 @@
                 }
               }
             },
+            "check": {
+              "description": "0.6: VERIFY ONLY (nothing sent; the report counts same, differs, unknown, no reply)",
+              "type": "boolean"
+            },
             "report": {
               "type": "object"
             }
@@ -2207,7 +2222,7 @@
         },
         {
           "type": "object",
-          "description": "P7: an export to a .syx: written, or why not.",
+          "description": "P7: an export to a .syx: written, or why not. 0.6: running while the Monomachine's DigiPRO waveforms are read from the machine (the text says how far), then the last one says what was written.",
           "required": ["type", "ok", "text"],
           "properties": {
             "type": {
@@ -2215,6 +2230,75 @@
             },
             "ok": {
               "type": "boolean"
+            },
+            "running": {
+              "type": "boolean"
+            },
+            "text": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "description": "0.6 (wave 6): the export panel's facts (syxExportInfo): per kind (global, kit, pattern, song; wave on the Monomachine) its slots, how many the editor holds, how many hold data and the first and last of those (-1: none).",
+          "required": ["type", "model", "kinds"],
+          "properties": {
+            "type": {
+              "const": "syxExportInfo"
+            },
+            "model": {
+              "type": "string"
+            },
+            "kinds": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "required": ["slots"],
+                "properties": {
+                  "slots": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "held": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "used": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "first": {
+                    "type": "integer",
+                    "minimum": -1
+                  },
+                  "last": {
+                    "type": "integer",
+                    "minimum": -1
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "description": "0.6 (wave 6): a factory reset being prepared (the Machinedrum: a second machine started from the user's ROM is read; prepare, with the dumps read of all) or failing (failed, with why). The reset itself follows as a syxPreview with reset and syxProgress.",
+          "required": ["type", "phase", "done", "total", "text"],
+          "properties": {
+            "type": {
+              "const": "syxReset"
+            },
+            "phase": {
+              "enum": ["prepare", "failed"]
+            },
+            "done": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "total": {
+              "type": "integer",
+              "minimum": 0
             },
             "text": {
               "type": "string"
@@ -5830,7 +5914,7 @@
         },
         {
           "type": "object",
-          "description": "host: import the previewed .syx: the kinds chosen (global, kit, pattern, song, other) but the items in skip (\"kind:slot\"), sent to the machine as they are (the firmware decides what it takes), then read back and reported (syxProgress); no undo step",
+          "description": "host: import the previewed .syx: the kinds chosen (global, kit, pattern, song, other) but the items in skip (\"kind:slot\", the slot an item lands in), sent to the machine as they are (the firmware decides what it takes), then read back and reported (syxProgress); no undo step. placeAt (SPECIFIC, 0.6): per kind the first slot its items land in, in slot order ({\"kit\": 4}; the dumps go with that position byte and checksum); checkOnly (VERIFY ONLY): nothing is sent, each item's slot is read and compared with the file",
           "required": ["op", "kinds"],
           "properties": {
             "op": {
@@ -5851,6 +5935,12 @@
             },
             "skip": {
               "type": "array"
+            },
+            "placeAt": {
+              "type": "object"
+            },
+            "checkOnly": {
+              "type": ["boolean", "integer"]
             }
           },
           "additionalProperties": false
@@ -5878,7 +5968,31 @@
         },
         {
           "type": "object",
-          "description": "host: every document the editor holds, as one .syx: the window's native save dialog",
+          "description": "host: the open .syx's preview again (syxPreview) with its items placed: per kind the first slot ({\"kit\": 4, \"pattern\": 16}), a kind not named in its own slots; each item says where it lands (slot), where it came from (from), whether it overwrites data there; an item past the last slot does not land",
+          "required": ["op", "placeAt"],
+          "properties": {
+            "op": {
+              "const": "syxPlace"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "placeAt": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: the documents the editor holds as one .syx, through the window's native save dialog: every one (no kinds), or the kinds named (global, kit, pattern, song; the Monomachine's DigiPRO waveforms as wave, read from the machine) with their ranges ({\"kit\": [0, 11]}, from 0, inclusive; a kind without one: all its slots); syxExport messages follow",
           "required": ["op"],
           "properties": {
             "op": {
@@ -5893,6 +6007,58 @@
             },
             "force": {
               "type": ["boolean", "integer"]
+            },
+            "kinds": {
+              "type": "array"
+            },
+            "ranges": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: the export panel's facts (a syxExportInfo message): per kind its slots, how many the editor holds, how many hold data and the first and last of those",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "syxExportInfo"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: Reset machine: empty clears every kit, pattern and song (the library's Clear in each slot, sent as dumps; globals and samples stay), factory (the Machinedrum) brings back the factory kits, patterns and songs read from a second machine started from the user's own ROM; both read back and reported as an import (syxPreview with reset, then syxProgress); no undo step: the page asks first",
+          "required": ["op", "how"],
+          "properties": {
+            "op": {
+              "const": "machineReset"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "how": {
+              "type": "string",
+              "enum": ["empty", "factory"]
             }
           },
           "additionalProperties": false
