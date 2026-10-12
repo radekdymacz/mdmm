@@ -1887,6 +1887,10 @@ const MmJourneys = (() => {
 		],
 		async tidy(u) { if (!$1("#globpop").hidden) u.key("Escape"); }
 	};
+	/* Review 1 (B-097): the lock parameter keys of each page of track 1 fit (the count beside the name) */
+	const lockKeysFit = Journey.lockKeysJourney("mm-lock-keys-fit", [go("seq"), sel(0),
+		{ say: "each page of the lock panel: its keys", act: async (u, c) => { c.bad = []; for (const pg of $all("[data-lpage]").map(b => b.dataset.lpage)) { u.click(`[data-lpage="${pg}"]`); await sleep(150); const x = Journey.lockKeysCut(); if (x) c.bad.push(`${pg}: ${x}`); } },
+			screen: c => ok(!c.bad.length, c.bad.join(" | ")) }]);
 	/* Review 1 (Radek, 2026-10-12, B-094): every modal locks: a click outside keeps each kind open, Esc closes it */
 	const modalLock = Journey.modalLockJourney("mm-modal-lock", [
 		{ name: "GLOBAL", sel: "#globpop", open: u => u.click("#globkey") },
@@ -3223,7 +3227,7 @@ const MmJourneys = (() => {
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, mutScope,
 		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
-		blackKeys, rollPaint, rollDrawLength, rollBoxMove, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxPlace, resetEmpty, syxRunningReach];
+		blackKeys, rollPaint, rollDrawLength, rollBoxMove, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxPlace, resetEmpty, syxRunningReach];
 
 	async function between(u) {
 		for (let i = 0; i < 3 && dlgShown(); i++) { u.key("Escape"); await sleep(200); }

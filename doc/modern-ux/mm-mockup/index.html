@@ -402,8 +402,10 @@ table.song tr.cur td:first-child{box-shadow:inset 3px 0 0 var(--led)}
 .pgrid{display:grid;gap:3px}
 .prow{display:grid;grid-template-columns:58px repeat(8,64px);gap:3px;align-items:center}
 .plab{font:600 10px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--print)}
-.pk{height:24px;padding:0 6px;font:500 11px var(--mono);letter-spacing:0;position:relative;text-align:left}
-.pk i{position:absolute;right:4px;top:50%;transform:translateY(-50%);font-style:normal;font-size:10px;color:var(--led)}
+.pk{height:24px;padding:0 6px;font:500 11px var(--mono);letter-spacing:0;position:relative;text-align:left;display:flex;align-items:center;gap:3px;min-width:0}
+/* review 1 (B-097): the name and the lock count side by side, the name cut short (never under the count) */
+.pk .pkn{flex:1 1 auto;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:clip}
+.pk i{flex:none;font-style:normal;font-size:10px;color:var(--led)}
 .pk.has::before{content:"";position:absolute;left:3px;top:3px;width:4px;height:4px;border-radius:50%;background:var(--led);box-shadow:0 0 4px var(--led)}
 .pk[aria-pressed=true]{background:var(--cream);color:var(--creamtext)}
 .pk[aria-pressed=true] i{color:var(--rec)}
@@ -561,7 +563,7 @@ table.song tr.cur td:first-child{box-shadow:inset 3px 0 0 var(--led)}
 :root{--hdr:172px!important}
 .th .nm span{display:none}
 .pgrid.vert .pk{padding:0 4px;font-size:10.5px}
-.pgrid.vert .pk i{right:3px;font-size:9px}
+.pgrid.vert .pk i{font-size:9px}
 .pleds{display:flex;gap:8px;align-items:end}
 .pl{display:grid;justify-items:center;gap:2px}
 .pl .led{width:8px;height:8px}
@@ -5941,7 +5943,7 @@ function pageKeys(){return`<span class="pagectl rh"><button class="pgkey" id="pg
 function lockPicker(t){const midi=isMidiT(t),list=pagesOf(t),d=dockOf(t);if(!list.includes(S.lanePage))S.lanePage=list[0];
  return`<div class="railparams ${d==="locks"?"":"dockrail"}"><div class="rphead"><span class="cap">${DOCKN[d]}</span><button id="lockLane" class="iconkey" aria-label="Lock the current value on the selected steps" title="Lock ${pidLabel(t,S.lane)} at its current value on the selected steps (the machine: hold the trig, click the knob)"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M4 6.5V4.5a3 3 0 0 1 6 0v2M3 6.5h8v6H3z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></button><button id="clearLane" class="iconkey" aria-label="Clear these locks" title="Clear ${pidLabel(t,S.lane)} locks"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 4h10M5.5 4V2.5h3V4M3.5 4l.7 8h5.6l.7-8M6 6.5v3.5M8 6.5v3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
   <div class="lpspace"></div><div class="pagetabs" role="group" aria-label="DATA page">${midi?`<button data-lpage="MID" aria-pressed="true" style="grid-column:1/-1"><i class="led"></i>MIDI PAGE</button>`:PAGES.map(p=>{const n=trackLockPids(t).filter(x=>x.startsWith(p+".")).length;return`<button data-lpage="${p}" aria-pressed="${S.lanePage===p}" aria-label="${PAGEN[p]}${n?", "+n+" locked":""}"><i class="led ${n&&S.lanePage!==p?"g on":""}"></i>${p}</button>`}).join("")}</div>
-  <div class="pkcol">${pnames(t,S.lanePage).map((nm,i)=>{if(!nm)return`<span class="pk empty"></span>`;const pid=S.lanePage+"."+i,n=S.locks.get(lkKey(t,pid))?.size||0;return`<button class="pk ${n?"has":""}" data-lane="${pid}" aria-pressed="${pid===S.lane}" title="${n?n+" locked step"+(n>1?"s":""):"No locks yet"}">${nm}${n?`<i>${n}</i>`:""}</button>`}).join("")}${Array.from({length:8-pnames(t,S.lanePage).length},()=>`<span class="pk empty"></span>`).join("")}</div>${d==="locks"?"":`<div class="dockkeys" id="dockkeys">${dockKeys(t,d)}</div>`}</div>`}
+  <div class="pkcol">${pnames(t,S.lanePage).map((nm,i)=>{if(!nm)return`<span class="pk empty"></span>`;const pid=S.lanePage+"."+i,n=S.locks.get(lkKey(t,pid))?.size||0;return`<button class="pk ${n?"has":""}" data-lane="${pid}" aria-pressed="${pid===S.lane}" title="${n?n+" locked step"+(n>1?"s":""):"No locks yet"}"><span class="pkn">${nm}</span>${n?`<i>${n}</i>`:""}</button>`}).join("")}${Array.from({length:8-pnames(t,S.lanePage).length},()=>`<span class="pk empty"></span>`).join("")}</div>${d==="locks"?"":`<div class="dockkeys" id="dockkeys">${dockKeys(t,d)}</div>`}</div>`}
 function sideSw(){return`<div class="sidesw" role="group" aria-label="Sequencer side"><button data-side="int" aria-pressed="${S.side!=="midi"}" title="The six synth tracks"><i class="led"></i>Synth</button><button data-side="midi" aria-pressed="${S.side==="midi"}" title="The six MIDI sequencer tracks (FUNCTION + TRIG SELECT on the machine)"><i class="led"></i>MIDI</button></div>`}
 function renderRail(){const r=$("#rail"),withSide=S.ws==="seq"||S.ws==="sound";
  const anyMs=[...S.tracks,...S.midi].some(x=>x.mute||x.solo);

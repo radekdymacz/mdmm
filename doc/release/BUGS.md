@@ -4,6 +4,14 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-097 · Both editors: a lock parameter key's count drawn over its name ("RTG·DIST")
+
+- **From:** Radek's 0.6 review, 2026-10-12 (Machinedrum, the Lock parameter panel, screenshot).
+- **What happens:** the key of the routing DIST reads RTG·DIST with its red lock count drawn over the name, so it reads like one key for two parameters; SYN·DIST is tight too.
+- **Cause:** the count sat on the key's right edge (absolute), over a name as wide as the key; the name carried the page (SYN·, RTG·, FX·) that its column heading already says.
+- **Fix (`fix/0.6-review-1`):** a key shows the parameter's name alone (DIST under SYNTH, DIST under ROUTING; the full name, SYN·DIST or RTG·DIST, is its tip and its spoken name); the name and the count sit side by side, the name cut short before it could go under the count (`mdDeskSeq.js`, the MD mockup's and the MM mockup's `.pk`). One key is still one parameter. Journeys `md-lock-keys-fit` (every track's machine), `mm-lock-keys-fit` (every page): each key's name whole, its count beside it, inside the key; at 1280 wide too where the plug-in sizes its window.
+- **Status:** fixed on `fix/0.6-review-1`.
+
 ## B-096 · Machinedrum: "loaded a song and can't play it" (not reproduced)
 
 - **From:** Radek's 0.6 review, 2026-10-12 (installed build): the first factory song, SONG mode, PLAY: nothing happens.

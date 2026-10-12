@@ -1594,6 +1594,10 @@ const MdJourneys = (() => {
 	const shotsGlobal = { name: "md-shots-global", proves: [], needs: () => !/md-shots/.test(location.search) ? "screenshots only when asked by name" : null,
 		steps: [{ say: "open GLOBAL", act: async u => { await u.pick("engsel", "global"); await sleep(800); shot("global-md"); }, screen: () => ok(!$1("#globpop").hidden, "closed"), hold },
 			{ say: "Esc", act: u => { u.key("Escape"); shot("done"); } }] };
+	/* Review 1 (B-097): the lock parameter keys of every track's machine fit (names without SYN· / RTG·, counts beside) */
+	const lockKeysFit = Journey.lockKeysJourney("md-lock-keys-fit", [go("seq"),
+		{ say: "each track in turn: its lock parameter keys", act: async (u, c) => { c.bad = []; for (let t = 0; t < 16; t++) { u.click(rail(t)); await sleep(150); const x = Journey.lockKeysCut(); if (x) c.bad.push(`T${t + 1} ${V.tracks[t].m}: ${x}`); } u.click(rail(0)); await sleep(150); },
+			screen: c => ok(!c.bad.length, c.bad.join(" | ")) }]);
 	/* Review 1 (Radek, 2026-10-12, B-094): every modal locks: a click outside keeps each kind open, Esc closes it */
 	const modalLock = Journey.modalLockJourney("md-modal-lock", [
 		{ name: "GLOBAL", sel: "#globpop", open: u => u.click("#globkey") },
@@ -2655,7 +2659,7 @@ const MdJourneys = (() => {
 		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, noteLights, audioPanel, romCard, notePlay,
 		lockRamp, pasteMany, mutScope, songInspector, songDrag, ramView, setupChop, panBox, hwNoMachine, syxImportJ,
 		syxImportMute, globalReset, shotsGlobal, shotsSound, shotsReview, shots, shotsSong, shotsImport, editorMenuJ, memoryJ, shotsMenu, ...cpuJs, ...volJs,
-		dropSyxJ, dropSampleJ, ...viewJs, syxExportKinds, syxVerify, syxPlace, modalLock, songFactoryPlay, resetFactory, resetEmpty, syxRunningReach];
+		dropSyxJ, dropSampleJ, ...viewJs, syxExportKinds, syxVerify, syxPlace, modalLock, songFactoryPlay, lockKeysFit, resetFactory, resetEmpty, syxRunningReach];
 
 	/* ---------- demos: journeys played for a camera (doc/modern-ux/DEMO-VIDEOS.md) ---------- */
 	/* Not in `all`: ?selftest=journey never runs them; ?selftest=demo-md-<name> does (Journey.demo), at a person's pace
