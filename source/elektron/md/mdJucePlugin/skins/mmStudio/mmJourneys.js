@@ -1265,6 +1265,15 @@ const MmJourneys = (() => {
 				screen: () => { const a = $1('#main canvas.ed[data-ed="uni"]'), b = $1('#main canvas.ed[data-ed="sub"]'); if (!a || !b) return ok(false, "no UNISON or SUB screen"); const ra = inkRuns(a), rb = inkRuns(b); return ok(ra.n >= 3 && rb.n >= 2 && ra.best <= 3 && rb.best <= 3, `unison ${ra.n} stems, widest ${ra.best} px; sub ${rb.n} stems, widest ${rb.best} px`); } },
 			],
 		async tidy(u, c) { blur(); for (let k = 0; k < (c.n || 0); k++) { u.key("z", { cmd: true }); await sleep(300); } } };
+	/* Review 1 (Radek, 2026-10-12, I-023): both plates on the Machinedrum MKI light plate's greys, each its own LCD */
+	const cssTok = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim().toLowerCase();
+	const plateGreys = {
+		name: "mm-plate-greys", proves: [],
+		steps: [{ say: "MKI and MKII: the panel greys of the MD's MKI plate (#d9dad6, #cdcec9, #e5e6e2), the LCD light blue on MKI, bluish white on MKII", act: async (u, c) => {
+				c.p0 = S().plate; c.seen = {};
+				for (const pl of ["mk1", "mk2"]) { if (S().plate !== pl) u.click("#platekey"); await until(() => S().plate === pl, 1500); await sleep(150); c.seen[pl] = ["--plate", "--plate2", "--plate3", "--lcd"].map(cssTok); } },
+				screen: c => ok(["mk1", "mk2"].every(pl => c.seen[pl] && c.seen[pl].slice(0, 3).join() === "#d9dad6,#cdcec9,#e5e6e2") && c.seen.mk1[3] === "#b6d2e8" && c.seen.mk2[3] === "#dfeaf1", JSON.stringify(c.seen)) }],
+		async tidy(u, c) { if (c.p0 && S().plate !== c.p0) u.click("#platekey"); } };
 	const menvLayout = {
 		name: "mm-perform-menv-layout", proves: ["MM-160"],
 		steps: [
@@ -3179,7 +3188,7 @@ const MmJourneys = (() => {
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, mutScope,
-		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, menvCurve, uniSubFine, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
+		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
 		blackKeys, rollPaint, rollDrawLength, rollBoxMove, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxPlace, resetEmpty];
 
 	async function between(u) {
