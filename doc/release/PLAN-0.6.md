@@ -33,14 +33,13 @@ a setting turns it off. Two instances of one machine: the last save wins (say so
 
 **Left from the wave 9 review (small, polish):** switching the rail from MIDI to Synth selects a synth track and so moves POLY (mmMockup.js setSide -> polyFollows; only a person's own track pick should); step recording started on a MIDI track sends t:0 and moves POLY to T1. The ctest entry `mmDeskFirmwareTest` gets no ROM argument (GEARMULATOR_MM_ROM unset) and skips, so tier 2 never runs its default sections (smoke, p4, hw, chain, record, kitlink, reclock): make it `--env` like its siblings and raise its time limit.
 
-**Not started:** wave 9 (MM Perform: see and set up, B-064: mock-up and
-self-review against Radek's UI rules first), wave 10 (MM MKII look, I-023: colours sampled in IDEAS.md I-023; the
-Machinedrum photos also disagree with our MD skins, see the open choice below), slice 5 (journeys and snapshots for the
-unproved rows, doc/features/unproved-*.md), the guide appendices and "Beyond the hardware" chapter, the polish pass
-(B-070, B-062, I-022 typed values, B-063 waits for the tester's host and screenshots, I-002 lights for incoming notes),
-doc/guide/OPEN-FACTS.md, then `scripts/mdmm-full-gate.sh` on a quiet Mac and `release/0.6.0`.
+**Not started:** slice 5 (journeys and snapshots for the unproved rows, doc/features/unproved-*.md), the guide
+appendices, doc/guide/OPEN-FACTS.md, retrain the PGO profile (scripts/macos/train_mdmm_pgo.sh: the build says stale),
+then `scripts/mdmm-full-gate.sh` on a quiet Mac and `release/0.6.0`. In progress: wave 11 (`feat/0.6-memory`, review
+fixes), polish B (`feat/0.6-polish-b`: B-070, B-062, I-002, I-022). B-063 waits for the tester's host and screenshots.
+After 0.6: the site moves from Lemon Squeezy to GitHub Sponsors (Radek, 2026-10-12; he sets up Sponsors first).
 
-**Known flaky under parallel load** (pass alone): md-boot-card, md-song-mode, mm-top-pattern-next, the MD intent cases
+**Known flaky under parallel load** (pass alone): md-boot-card, md-song-mode, mm-top-pattern-next, md-top-tempo-window, the MD intent cases
 when several worktrees run firmware tests at once. Look at shared state between worktrees before the release gate.
 
 **Open choices for Radek:** (1) skins true to the product photos on both editors (MD silver with a red LCD; MM MKI
