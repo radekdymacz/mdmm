@@ -18,7 +18,7 @@ The empty reset clears the memory of the machine. In the editor it is in the eng
 3. Click **Clear everything**. The **Empty reset** panel opens. The editor writes an empty kit, pattern and song into every slot, then reads each one back.
 4. Read the report and click **Done**.
 
-The globals and the samples stay. To reset a global, open GLOBAL and click **Reset to defaults**.
+The globals and the samples stay. A global is reset in its own slot in GLOBAL (chapter 10).
 
 NOTE: The reset has no undo. Click **Export SysEx…** in the question first to keep a way back.
 
