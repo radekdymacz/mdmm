@@ -89,6 +89,9 @@ namespace synthLib
 		void insertMidiEvent(const SMidiEvent& _ev);
 
 		bool setLatencyBlocks(uint32_t _latencyBlocks);
+		// Whether the host's tempo and transport go to the device as MIDI clock, Start and Stop (on by default)
+		void setHostClock(bool _on) { m_hostClockOn.store(_on, std::memory_order_release); }
+		bool hostClock() const { return m_hostClockOn.load(std::memory_order_acquire); }
 		uint32_t getLatencyBlocks() const { return m_extraLatencyBlocks; }
 
 	private:
@@ -126,6 +129,8 @@ namespace synthLib
 		uint32_t m_deviceExtraLatencyHost = 0;
 
 		MidiClock m_midiClock;
+		std::atomic<bool> m_hostClockOn{true};
+		bool m_hostClockWas = true;		// audio thread
 
 		uint32_t m_extraLatencyBlocks = 1;
 

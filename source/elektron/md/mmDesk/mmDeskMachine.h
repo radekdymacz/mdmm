@@ -8,6 +8,7 @@
 
 #include "deskCore/deskAdapter.h"
 #include "deskCore/deskChain.h"
+#include "deskCore/deskHostClock.h"
 #include "deskCore/deskWorkingCopy.h"
 #include "deskCore/deskCore.h"
 #include "deskCore/deskLoadQueue.h"
@@ -199,6 +200,7 @@ namespace mmDesk
 		deskCore::Outcome cmdMute(const Value&, const Documents&);
 		deskCore::Outcome cmdSeqMode(const Value&, const Documents&);
 		deskCore::Outcome cmdFollowHost(const Value&, const Documents&);
+		deskCore::HostClock m_hostClock;	// review 1 (I-026): the global's clock in is the host-clock switch
 		deskCore::Outcome cmdGlobalSlot(const Value&, const Documents&);
 		deskCore::Outcome cmdMuteMidi(const Value&, const Documents&);
 		deskCore::Outcome cmdPoly(const Value&, const Documents&);

@@ -1437,14 +1437,15 @@ namespace mdDesk
 	// P7, in a DAW: the machine follows the host's MIDI clock and Start/Stop (MdModel::hostFollowing). The
 	// global goes out as a dump (made active with 0x56, then read back): the machine's own setting, not an
 	// edit, so no undo step.
-	Outcome MdMachine::cmdFollowHost(const Value&, const Documents& _view)
+	Outcome MdMachine::cmdFollowHost(const Value& _m, const Documents& _view)
 	{
 		const auto slot = m_session.state().globalSlot;
 		if(!slot || !_view.global || _view.global->position != *slot)
 			return ok();
 		const auto g = MdModel::hostFollowing(*_view.global);
-		if(!g)
-			return ok();
+		// review 1 (I-026): TEMPO IN is the switch; INT the person chose stays
+		if(!m_hostClock.wants(!g, flagOf(_m, "project")))
+			return ok(m_hostClock.on ? "" : "The machine runs on its own clock (GLOBAL " + std::to_string(*slot + 1) + ": TEMPO IN internal)");
 		if(auto problems = m_session.pushGlobal(*g); !problems.empty())
 			return {problems, {}, {}};
 		if(canSendSysex())
@@ -2287,6 +2288,7 @@ namespace mdDesk
 		v.set("known", static_cast<int>(knownCount()));
 		v.set("loading", static_cast<int>(m_loads.pending()));
 		v.set("roundTripMs", m_lastRoundTripMs);
+		v.set("hostClock", m_hostClock.on);
 		return v;
 	}
 

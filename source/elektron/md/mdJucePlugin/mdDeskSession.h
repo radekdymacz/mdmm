@@ -397,7 +397,19 @@ namespace mdJucePlugin
 			{
 				Value m = Value::object();
 				m.set("op", "followHost");
+				m.set("project", processor().projectStateSeen());
 				m_desk->onPageMessage(m);
+				// review 1 (I-026): the global's TEMPO IN is the switch: the host's clock goes to the machine only while it
+				// follows
+				const auto st = m_desk->status();
+				const auto* hc = st.find("hostClock");
+				const bool on = !hc || !hc->isBool() || hc->asBool();
+				if(on != m_hostClockOn)
+				{
+					m_hostClockOn = on;
+					processor().setHostClock(on);
+					m_hostTempo = {};	// the page hears "follows" again at once
+				}
 			}
 			m_followReady = ready;
 			// B-035: while the machine starts (and for the first minute): the host's audio calls and the machine's
@@ -438,7 +450,7 @@ namespace mdJucePlugin
 					Value h = Value::object();
 					h.set("type", "host");
 					h.set("bpm", *bpm);
-					h.set("follows", m_followHost);
+					h.set("follows", m_followHost && m_hostClockOn);
 					toPage(h);
 				}
 		}
@@ -624,6 +636,7 @@ namespace mdJucePlugin
 		// A plug-in in a host (a DAW): not the standalone app, which has no host transport, and not a
 		// processor without a plug-in wrapper (the tests).
 		const bool m_followHost;
+		bool m_hostClockOn = true;	// review 1 (I-026): the machine follows the host's clock (its global's TEMPO IN EXT)
 		bool m_followReady = false;
 		HostTempo m_hostTempo;
 		uint32_t m_memorySeen = 0;	// the machine memory status last published (0: publish again)

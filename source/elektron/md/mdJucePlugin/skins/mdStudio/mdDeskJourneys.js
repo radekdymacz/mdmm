@@ -1472,6 +1472,22 @@ const MdJourneys = (() => {
 			screen: c => ok((marked(c), c.seen.has(1)) && /·002$/.test($1("#pat")?.textContent || ""), `marked ${[...c.seen]}; LCD ${$1("#pat")?.textContent}`), machine: () => ok(tele.last?.songRow === 1, "songRow " + tele.last?.songRow), within: 30000 },
 		{ say: "press STOP (or the song ends): no row is marked", act: u => { if (V.playing) u.click("#play"); }, screen: () => ok(!$1("#tl .scell.ph"), "still marked"), machine: () => ok(!V.playing, "playing") }
 	];
+	/* Review 1 (B-096, Radek: "loaded a song and can't play it"): song 1 from the slot list (Load), SONG, then ▶ and Space:
+	   the machine plays the song (its telemetry) */
+	const songFactoryPlay = {
+		name: "md-song-load-play", proves: ["MD-017", "MD-144"],
+		steps: [
+			go("song"),
+			{ say: "stop, select song 1 in the song slots, Load", act: async (u, c) => { if (V.playing) { u.click("#play"); await until(() => !V.playing, 3000); } c.s0 = V.songSlot; c.m0 = V.songMode; await until(() => Object.keys(Docs.songs).length >= 32, 20000); if (V.songSlot !== 0) { u.click('[data-ss="0"]'); await sleep(200); u.click('[data-sa="load"]'); } },
+				machine: () => ok(songSlotOf(Docs) === 0, "machine song " + (songSlotOf(Docs) + 1)), within: 20000 },
+			{ say: "click SONG", act: u => u.click('[data-set="songpick"] button[data-v="song"]'), machine: () => ok(V.songMode === true, "songMode " + V.songMode), within: 6000 },
+			{ say: "click ▶: the song plays", act: u => u.click("#play"), machine: () => ok(!!tele.last?.playing && tele.last.songRow >= 0, `playing ${tele.last?.playing}, songRow ${tele.last?.songRow}`), within: 6000 },
+			{ say: "click ▶ again: stopped", act: u => u.click("#play"), machine: () => ok(!tele.last?.playing, "still playing"), within: 6000 },
+			{ say: "press Space: the song plays again", act: u => { document.activeElement?.blur?.(); u.key(" "); }, machine: () => ok(!!tele.last?.playing, `playing ${tele.last?.playing}`), within: 6000 },
+			{ say: "press Space: stopped", act: u => u.key(" "), machine: () => ok(!tele.last?.playing, "still playing"), within: 6000 }
+		],
+		async tidy(u, c) { if (V.playing) { u.click("#play"); await until(() => !V.playing, 3000); } if (c.m0 === false && V.songMode) { u.click('[data-set="songpick"] button[data-v="pattern"]'); await sleep(800); } }
+	};
 	const songPlayheadTidy = async (u, c) => {
 		if (V.playing) { u.click("#play"); await until(() => !V.playing, 3000); }
 		if (c.s != null && V.songSlot === c.s) await undoUntil(u, () => songRows().length === 1, 4);
@@ -2639,7 +2655,7 @@ const MdJourneys = (() => {
 		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, noteLights, audioPanel, romCard, notePlay,
 		lockRamp, pasteMany, mutScope, songInspector, songDrag, ramView, setupChop, panBox, hwNoMachine, syxImportJ,
 		syxImportMute, globalReset, shotsGlobal, shotsSound, shotsReview, shots, shotsSong, shotsImport, editorMenuJ, memoryJ, shotsMenu, ...cpuJs, ...volJs,
-		dropSyxJ, dropSampleJ, ...viewJs, syxExportKinds, syxVerify, syxPlace, modalLock, resetFactory, resetEmpty, syxRunningReach];
+		dropSyxJ, dropSampleJ, ...viewJs, syxExportKinds, syxVerify, syxPlace, modalLock, songFactoryPlay, resetFactory, resetEmpty, syxRunningReach];
 
 	/* ---------- demos: journeys played for a camera (doc/modern-ux/DEMO-VIDEOS.md) ---------- */
 	/* Not in `all`: ?selftest=journey never runs them; ?selftest=demo-md-<name> does (Journey.demo), at a person's pace

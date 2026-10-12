@@ -3,6 +3,12 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-026 · In a DAW: the machine's own clock (GLOBAL Tempo in INT)
+
+- **From:** Radek's 0.6 review, 2026-10-12: in the plug-in he must be able to switch the machine to its internal clock. `followHost` set EXT and set it again every 2 s, so Tempo in INT did not stick in a DAW and TEMPO edits were refused ("The DAW sets the tempo").
+- **Built on `fix/0.6-review-1`:** the existing GLOBAL › Sync › Tempo in (INT / EXT) is the switch, both editors, no new control. EXT: the machine follows the DAW's tempo and transport (a new plug-in instance starts so: `followHost` sets EXT once). INT: the machine runs on its own clock and tempo, TEMPO edits, `followHost` sets nothing, and the plug-in no longer sends the host's clock and transport (`synthLib::Plugin::setHostClock`). The global is the machine's, saved with the project, so the choice is too: a project that comes back with INT keeps it (`deskCore::HostClock`, the processor's project state). Machine memory (wave 11): the global's host bytes are left out of the memory file only while the machine follows the host; with INT the tempo is a normal save. Tests: `deskCoreTest` (the policy), `mdDeskFirmwareTest hostclock` and `mmDeskFirmwareTest hostclock` (INT stays through three followHosts, PLAY runs on the machine's own clock, EXT again turns it on). Guide: md chapters 1, 8, 10; mm chapters 2, 12, 19; rows MD-093, MM-198, MM-297.
+- **Status:** built, not merged. The DAW itself is in the release's host tests (no host journey here: the page tier has no DAW).
+
 ## I-024 · Saved kits and patterns stay on the machine for every new session
 
 - **From:** a user, 2026-10-12: "save kits and patterns created/edited and saved in the editor so they persist on the device each time I open the plugin in a new session".

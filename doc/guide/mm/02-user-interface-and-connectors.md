@@ -67,7 +67,7 @@ The <TEMPO> field of the LCD is the tempo window of the machine. Drag it up or d
 
 To tap a tempo, press {key:tap-tempo-shift}. The editor uses the average of your last taps. On every workspace except **Sequence** a plain {key:tap-tempo} taps too. On **Sequence** that key switches the piano roll's Draw mode.
 
-NOTE: In a DAW the host sets the tempo. The field is marked and refuses an edit, with a note that says to change it in the DAW.
+NOTE: In a DAW the host sets the tempo. The field is marked and refuses an edit, with a note that says to change it in the DAW. **Tempo in** INT in GLOBAL gives the machine its own clock (chapter 12).
 
 ## FUNCTION KEY
 <!-- rows: MM-024 @8df7bf -->
