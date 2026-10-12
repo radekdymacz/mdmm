@@ -482,7 +482,8 @@ const MdJourneys = (() => {
 				machine: c => ok(trigsOf(c.t).length < c.p0.length, `${c.p0.length} -> ${trigsOf(c.t).length} trigs; results ${results.map(r => r.op + ":" + r.ok + (r.errors ? " " + r.errors.join(";") : "")).join(", ")}`), within: 10000 },
 			{ say: "let Delete go, click REC off, then STOP: the other tracks kept their trigs", act: async u => { keyEv("keyup", "Delete"); await sleep(300); u.click("#rec"); await sleep(500); if (V.playing) u.click("#play"); },
 				screen: () => ok(!document.body.classList.contains("erasing") && !V.rec && !V.playing, `REC ${V.rec}, playing ${V.playing}`),
-				machine: c => ok([...Array(16).keys()].filter(t => t !== c.t).map(trigsOf).every((a, k) => same(a, c.others[k])), "another track changed"), within: 8000 }
+				machine: c => { const ts = [...Array(16).keys()].filter(t => t !== c.t), bad = ts.filter((t, k) => !same(trigsOf(t), c.others[k]));
+					return ok(!bad.length, "another track changed: " + bad.map(t => `track ${t + 1} ${c.others[ts.indexOf(t)].join(",")} -> ${trigsOf(t).join(",")}`).join("; ") + `; track ${c.t + 1} ${c.p0.join(",")} -> ${trigsOf(c.t).join(",")}`); }, within: 8000 }
 		],
 		async tidy(u, c) { keyEv("keyup", "Delete"); if (V.rec) u.click("#rec"); if (V.playing) u.click("#play"); await sleep(600);
 			/* the erased trigs back, one click each (the machine's erase is not an undo step) */

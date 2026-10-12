@@ -2842,6 +2842,18 @@ namespace
 		std::printf("  after: track 14 %d of 16 trigs, track 13 %d of 16\n", t14, t13);
 		check(t14 < 16 && t14 >= 9, "track 14 lost the trigs that played while Delete was held");
 		check(t13 == 16, "track 13 kept its trigs");
+		// B-101: no other track changes (the e2e run: track 1 gained a trig while track 9's were erased)
+		std::string changed;
+		for(int t = 0; t < 16; ++t)
+		{
+			if(t == 13)
+				continue;
+			for(size_t st = 0; st < 64; ++st)
+				if(ed::hasTrig(p, t, st) != ed::hasTrig(after, t, st))
+					changed += " T" + std::to_string(t + 1) + "/" + std::to_string(st + 1) + (ed::hasTrig(after, t, st) ? "+" : "-");
+		}
+		std::printf("  other tracks' trigs changed:%s\n", changed.empty() ? " none" : changed.c_str());
+		check(changed.empty(), "the other tracks kept their trigs");
 		const bool shown = rig.runUntil([&]
 		{
 			const auto d = rig.pageDoc("pattern", pattern);
@@ -2913,6 +2925,14 @@ namespace
 		check(l9 < 16 && l9 >= 6, "track 14 lost parameter 9's locks on the steps that played while it was held");
 		check(l1 == 16 && trigs(after, 13) == 16, "its trigs and parameter 1's locks stay");
 		check(other == 16, "track 13 keeps its locks");
+		// B-101: no track's trigs change (a key let go in the wrong order sets one on the machine's selected track)
+		std::string changed;
+		for(int t = 0; t < 16; ++t)
+			for(size_t st = 0; st < 64; ++st)
+				if(ed::hasTrig(p, t, st) != ed::hasTrig(after, t, st))
+					changed += " T" + std::to_string(t + 1) + "/" + std::to_string(st + 1) + (ed::hasTrig(after, t, st) ? "+" : "-");
+		std::printf("  trigs changed:%s\n", changed.empty() ? " none" : changed.c_str());
+		check(changed.empty(), "every track kept its trigs");
 		const bool shown = rig.runUntil([&]
 		{
 			const auto d = rig.pageDoc("pattern", pattern);
@@ -2921,6 +2941,68 @@ namespace
 			return q && locks(*q, 13, 9) == l9;
 		}, 4000);
 		check(shown, "the page's pattern document shows it");
+	}
+
+	// B-101 (the 0.6 e2e run, md-seq-live-unlock): locks drawn on the track with the most trigs, REC at once, the locks
+	// erased as they play: no "Push failed: the machine did not read back pattern A01", REC waits for the drawn locks to be
+	// on the machine (none dumped over the recording), and the editor ends with the machine's pattern.
+	void editThenRecord(const Bytes& _rom, const std::string& _romName)
+	{
+		std::puts("edit then record: locks drawn, REC at once, the locks erased while recording");
+		Rig rig(_rom, _romName);
+		rig.page(R"({"op":"ready"})");
+		rig.runUntil([&] { return rig.desk().isInputReady() && rig.desk().linkState().pattern && rig.desk().linkState().kit; }, 8000);
+		auto& desk = rig.desk();
+		const auto pattern = *desk.linkState().pattern;
+		rig.runUntil([&] { return desk.documents().patterns.count(pattern) > 0 && !desk.isBusy(); }, 10000);
+		const auto p0 = desk.documents().patterns.at(pattern);
+		const auto trigs = [&](const int _t) { std::vector<size_t> v; for(size_t st = 0; st < ed::visibleSteps(p0); ++st) if(ed::hasTrig(p0, _t, st)) v.push_back(st); return v; };
+		int t = 0;
+		for(int k = 1; k < 16; ++k)
+			if(trigs(k).size() > trigs(t).size())
+				t = k;
+		const auto on = trigs(t);
+		require(on.size() >= 4, "no track with four trigs");
+		const auto errors = rig.pageErrors;
+		int id = 10;
+		for(const auto st : on)
+		{
+			rig.page("{\"op\":\"lock\",\"p\":" + std::to_string(pattern) + ",\"t\":" + std::to_string(t) + ",\"i\":12,\"s\":" + std::to_string(st) + ",\"v\":" + std::to_string(20 + st) + ",\"id\":" + std::to_string(id++) + "}");
+			rig.run(15);
+		}
+		rig.run(100);
+		rig.page(R"({"op":"record","id":3})");
+		std::printf("  REC: %s\n", rig.lastResult() ? ed::json::write(*rig.lastResult()).c_str() : "none");
+		check(rig.runUntil([&] { return rig.pageTelemetry().recording; }, 5000), "live recording starts");
+		rig.run(200);
+		for(int k = 0; k < 15; ++k)
+		{
+			rig.page("{\"op\":\"liveErase\",\"t\":" + std::to_string(t) + ",\"on\":true,\"i\":12,\"id\":30}");
+			rig.run(100);
+		}
+		rig.page("{\"op\":\"liveErase\",\"t\":" + std::to_string(t) + ",\"on\":false,\"id\":31}");
+		rig.run(1500);
+		rig.page(R"({"op":"record","id":4})");
+		rig.page(R"({"op":"stop","id":5})");
+		rig.run(1500);
+		rig.runUntil([&] { return !desk.isBusy(); }, 10000);
+		rig.run(6000);
+		const auto q = rig.readPattern(pattern);
+		const auto& d = desk.documents().patterns.at(pattern);
+		int machine = 0, shown = 0, drawn = 0;
+		for(const auto st : on)
+		{
+			const auto v = q ? ed::lockValue(*q, t, 12, st) : std::nullopt;
+			machine += v.has_value();
+			drawn += v == std::optional<uint8_t>(static_cast<uint8_t>(20 + st));
+			shown += ed::lockValue(d, t, 12, st).has_value();
+		}
+		std::printf("  track %d: %zu locks drawn; after: %d on the machine (%d with the drawn value), %d in the editor, %zu page errors\n",
+			t + 1, on.size(), machine, drawn, shown, rig.pageErrors - errors);
+		check(rig.pageErrors == errors, "no push failed while recording");
+		check(machine < static_cast<int>(on.size()), "the locks that played while it was held are gone");
+		check(drawn == machine && machine * 2 >= static_cast<int>(on.size()), "the others are the drawn ones: REC waited for them to be on the machine");
+		check(q && *q == d, "the editor shows the machine's pattern");
 	}
 
 	void transport(const Bytes& _rom, const std::string& _romName)
@@ -4811,6 +4893,7 @@ int main(const int _argc, char** _argv)
 		{
 			liveErase(rom, romPath);
 			liveUnlock(rom, romPath);
+			editThenRecord(rom, romPath);
 			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 			std::printf("mdDeskFirmwareTest liveerase: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
 			return g_failures ? 1 : 0;

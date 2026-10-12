@@ -4,6 +4,14 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-101 · Machinedrum: live erase sets a trig on another track; "Push failed" after locks drawn just before REC
+
+- **From:** the 0.6 e2e run, 2026-10-13: `md-seq-live-erase` fails ("another track changed"); after `md-seq-live-unlock` the page shows the red banner "PUSH FAILED: THE MACHINE DID NOT READ BACK PATTERN A01. SHOWING WHAT IT HOLDS." (picture `e2e-md-seq-live-unlock`).
+- **What happens:** (1) Delete held while live recording erases the selected track's trigs as they play, and one trig appears on track 1 (track 9 erased: track 1 gained step 9; through the desk on the firmware, track 14 erased: track 1 gained step 14). (2) Locks drawn on the playing pattern and REC pressed at once: the editor reports a failed push although the machine holds the locks.
+- **Cause:** (1) the editor let the keys go in the order TRIG, then EXIT/NO. A TRIG key let go while EXIT/NO is still down sets a trig on the machine's selected track at the step of that key's number (measured: with EXIT/NO up first, nothing changes). A move of the erase to another track let a TRIG key go the same way. (2) The pattern's dump was still on its way when REC started: it went out while the machine recorded, and the machine then changed the pattern itself (the erased locks), so its read-back never equalled the dump and the push timed out as failed; such a dump also lands over what is being recorded.
+- **Fix (`fix/0.6-e2e-md`):** EXIT/NO goes up first, then the TRIG key; another track lets both go and presses both again (`MdMachine::releaseErase`, `cmdLiveErase`). REC waits until the playing pattern's push is on the machine (at most 3 s, `pumpRecordStart`). A read-back of the playing pattern after the machine recorded since the dump went out is the machine's truth, not a failed push (`onDumpReadBack`). Tests: `mdLiveEraseFirmwareTest` (the other tracks keep their trigs; every track keeps its trigs in the unlock case; new: locks drawn on the track with the most trigs, REC at once, the locks erased while recording: no page error, the locks that stay are the drawn ones, the editor shows the machine's pattern; the trig check fails with the old order, the push check with both changes undone), `mdDeskTest` (the key order); e2e `md-seq-live-erase` (its failure now names the tracks that changed) and `md-seq-live-unlock` pass from fresh settings, no banner.
+- **Status:** fixed on `fix/0.6-e2e-md`.
+
 ## B-100 · Machinedrum: four sequence journeys fail on factory patterns (EDIT ALL on)
 
 - **From:** the 0.6 e2e run, 2026-10-13: `md-seq-trig-types`, `md-seq-swing-copy`, `md-seq-copy-what`, `md-seq-clear-what` fail on the firmware from fresh settings and pass on the page tier.
