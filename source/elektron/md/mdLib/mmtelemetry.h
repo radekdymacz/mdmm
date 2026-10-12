@@ -51,6 +51,9 @@ namespace md
 		// one byte, the row index 0-199 of the loaded song while it plays in SONG mode (a LOOP row is never
 		// "played"). Pattern mode leaves it as it was: read it with the sequencer mode.
 		static constexpr uint32_t g_songRowAddress = 0x2bdba1;
+		// 0.6 (MM-271, gapProbesFirmwareTest w12mmcounter): the song's played steps (16ths) since PLAY, 16 bits
+		// big-endian; the EDIT SONG header's bars and beats are steps / 16 + 1 : steps % 16 / 4 + 1 (read off its LCD)
+		static constexpr uint32_t g_songStepsAddress = 0x2bdf3c;
 		// Patch RAM: 0x700023 is the current kit number, 0x700028 the working kit
 		// (the kit dump's raw payload, 698 bytes, unsaved edits included).
 		static constexpr uint32_t g_workingKitAddress = 0x700023;
@@ -83,6 +86,7 @@ namespace md
 		std::atomic<int> stepCursor{-1};	// STEP RECORDING: the step the next note writes
 		std::atomic<int> bankGroup{-1};		// 0 A-D, 1 E-H; -1 = unknown
 		std::atomic<int> songRow{-1};		// the song row that plays (SONG mode); -1 = unknown
+		std::atomic<int> songSteps{-1};		// MM-271: the song's played steps since PLAY; -1 = unknown
 		std::atomic<int> chainActive{-1};	// 1 a chain plays (pattern mode), 0 none; -1 = unknown
 		std::atomic<int> chainNext{-1};
 		std::atomic<int> chainLength{0};
@@ -148,6 +152,7 @@ namespace md
 			}
 			mutes.store(m, std::memory_order_relaxed);
 			songRow.store(_read8(g_songRowAddress), std::memory_order_relaxed);
+			songSteps.store((int(_read8(g_songStepsAddress)) << 8) | _read8(g_songStepsAddress + 1), std::memory_order_relaxed);
 			recording.store(_read8(g_liveRecordAddress) ? 2 : _read8(g_stepRecordAddress) ? 3 : _read8(g_gridRecordAddress) ? 1 : 0,
 				std::memory_order_relaxed);
 			stepCursor.store(_read8(g_stepCursorAddress), std::memory_order_relaxed);
@@ -190,6 +195,7 @@ namespace md
 			stepCursor.store(-1, std::memory_order_relaxed);
 			bankGroup.store(-1, std::memory_order_relaxed);
 			songRow.store(-1, std::memory_order_relaxed);
+			songSteps.store(-1, std::memory_order_relaxed);
 			chainActive.store(-1, std::memory_order_relaxed);
 			chainNext.store(-1, std::memory_order_relaxed);
 			chainLength.store(0, std::memory_order_relaxed);

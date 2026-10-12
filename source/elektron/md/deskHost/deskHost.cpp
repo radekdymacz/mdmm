@@ -149,6 +149,15 @@ namespace deskHost
 				"the editor's volume in dB (I-021: the LCD's output meter): the plug-in's output gain on every output, after the "
 				"emulation (the machine's own volume is untouched); -60 is off; saved with the project and the standalone's state",
 				Action::OutputGain),
+			// I-024 (doc/modern-ux/DESIGN-machine-memory.md): the machine memory that stays for new sessions
+			row("memoryKeep", {{"on", ArgType::Bool}},
+				"KEEP MEMORY: on, a session without a project state starts from the machine memory file and every save on the "
+				"machine writes it; off, neither (the file stays); kept in the editor's settings; a machineMemory message follows",
+				Action::MemoryKeep),
+			row("memoryFactory", {},
+				"RESET MACHINE… > Start from factory memory: the machine memory file is deleted and the machine restarts from factory memory (the "
+				"page asked the user first); a machineMemory message follows",
+				Action::MemoryFactory),
 		});
 		return table;
 	}

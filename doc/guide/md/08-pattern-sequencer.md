@@ -92,7 +92,7 @@ On the machine you hold a bank key for two seconds so that you can choose the pa
 {bug:B-045}NOTE: In this version, a pattern chosen while a SysEx import runs can ask about unsaved kit edits that you never made. The question goes away when the import ends. This is a known fault.{/bug}
 
 ## PATTERN CHAINING
-<!-- rows: MD-098 MD-099 @51ecad -->
+<!-- rows: MD-098 MD-099 @b9abfb -->
 
 A chain plays patterns of one bank in the order you pick them, and starts again at the first.
 
@@ -106,7 +106,13 @@ A chain holds up to 16 patterns of one bank, each pattern once. The palette says
 
 NOTE: The **Chain** pads are disabled, with a reason, when the engine cannot read or set the chain.
 
-{gap:MD-099}The editor has no key that makes [STOP] jump to a queued pattern. It relies on the machine doing so when a chain is set.{/gap}
+A pattern queued while the machine plays starts at once when you stop:
+
+1. While a pattern plays, choose another one: click **›** next to the pattern on the LCD, or a pattern in the pattern chooser. The LCD shows its name, blinking: it is queued.
+2. Press [STOP] (click **▶** or press {key:play-stop}). The machine stops and the queued pattern is the current one.
+3. Press [PLAY] to start it from its first step.
+
+NOTE: This is the machine's own STOP, which the editor presses for you. With a real Machinedrum over MIDI the editor has no transport.
 
 ## PARAMETER TWEAKING
 <!-- rows: MD-100 MD-101 MD-102 @7efc71 -->
@@ -125,7 +131,7 @@ The machine keeps the edits you lose in its UNDO KIT.
 NOTE: Click **FN** in the top bar if your system or host takes [⌥] for itself. The next click, drag or key then counts as if [⌥] were held. Double-click **FN** to keep it on.
 
 ## SCALE SETUP
-<!-- rows: MD-103 MD-104 MD-105 MD-106 @e4f8f9 -->
+<!-- rows: MD-103 MD-104 MD-105 MD-106 @dec5f1 -->
 
 The scale of a pattern is its length and its speed.
 
@@ -140,7 +146,7 @@ Steps past the length are dimmed in the grid. In CLASSIC the total is 32 at most
 
 To double a pattern, click the <LEN> ×2 key. The new half is a copy of the steps and locks of the first half. This is one undo step. The editor refuses a pattern past 64 steps, and past 32 in CLASSIC, and says why.
 
-{gap:MD-106}The machine copies the first page to the later pages when you make a pattern longer. The editor does not show this. Use <LEN> ×2 to copy the pattern.{/gap}
+When you make the total longer, the editor does what the machine does: if no track has a trig past the old total, the steps you had repeat into the new ones, with their accents, swings, slides and locks. From 16 to 64 steps the first page fills all four pages. If a track has a trig past the old total, nothing is copied. A message says what was copied. Press {key:undo} to take it back.
 
 ### Speed
 
@@ -211,7 +217,7 @@ To use the selection:
 
 {key:cut} copies and clears. {key:duplicate} copies the block to the steps right after it; press it again for one more copy. [⌘]-drag the selection to drop a copy where you let go. {key:sel-trigs} switches the trigs of the selection on, or off when each has one. {key:deselect} clears the selection.
 
-Right-click a step for the step menu. It holds trig, accent, slide, copy, cut, paste, duplicate, clear, and **Fill every 2nd** and **Fill every 4th** from that step. On a selected step the menu acts on the whole selection.
+Select a step or steps and click the small ⋯ on the selection for the step menu; a right-click on a step opens it too. It holds trig, accent, slide, copy, cut, paste, duplicate, clear, and **Fill every 2nd** and **Fill every 4th** from that step. On a selected step the menu acts on the whole selection.
 
 The <COPY>, <CLR> and <PASTE> keys on the LCD do the same as the keys. They are marked when they act on a selection.
 

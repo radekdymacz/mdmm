@@ -94,6 +94,7 @@ namespace
 		case K::KnobUp: case K::KnobDown: return std::nullopt;	// an encoder, not a key (pressKeys)
 		case K::StepRecord: return C::Record;	// with STOP held
 		case K::ExitDown: case K::ExitUp: return C::Exit;
+		case K::Kit: return C::Kit;
 		}
 		return std::nullopt;
 	}
@@ -293,6 +294,7 @@ namespace
 			t.stepCursor = tel.stepCursor.load();
 			t.bankGroup = tel.bankGroup.load();
 			t.songRow = tel.songRow.load();
+			t.songSteps = tel.songSteps.load();
 			t.chainKnown = tel.readChain(t.chain.active, t.chain.next, t.chain.patterns);
 			return t;
 		}
@@ -632,6 +634,58 @@ namespace
 		const auto saved = r.desk->kit(static_cast<uint8_t>(from));
 		check(r.desk->currentKit() == to && kitWorking(r) == "clean", "Save and load: K" + std::to_string(to + 1) + " plays, clean");
 		check(saved && saved->tracks[0].pages[2][0] == v, "and the edit is in K" + std::to_string(from + 1) + " (read back from the slot)");
+		// MM-102: an edit of K<to>, LOAD KIT of another slot (the machine keeps the edit as its UNDO KIT), then loadUndoKit
+		// (the panel's keys): K<to> plays again with the edit, unsaved (gapProbesFirmwareTest w12undo)
+		{
+			auto e = *r.desk->workingKit();
+			const auto w = static_cast<uint8_t>(e.tracks[0].pages[2][0] == 33 ? 34 : 33);
+			e.tracks[0].pages[2][0] = w;
+			r.msg(R"({"op":"set","id":10,"kind":"workingKit","doc":)" + ed::json::write(ed::mmKitToJson(e)) + "}");
+			r.run(800);
+			r.msg(R"({"op":"loadKit","id":11,"force":true,"k":)" + std::to_string(from) + "}");
+			const auto t1 = r.ms();
+			while(r.desk->currentKit() != from && r.ms() - t1 < 8000)
+				r.run(100);
+			r.run(800);
+			r.msg(R"({"op":"loadUndoKit","id":12,"force":true})");
+			const auto t2 = r.ms();
+			const auto back = [&] { const auto wk = r.desk->workingKit(); return r.desk->currentKit() == to && wk && wk->tracks[0].pages[2][0] == w; };
+			while(!back() && r.ms() - t2 < 8000)
+				r.run(100);
+			r.run(1000);
+			std::printf("  UNDO KIT: kit %d, %s\n", r.desk->currentKit(), kitWorking(r).c_str());
+			check(back() && kitWorking(r) == "edited", "UNDO KIT: K" + std::to_string(to + 1) + " plays again with its unsaved edit, and the editor follows");
+		}
+		// MM-102 at the top of the list: from K128 the route is 2 + 128 + 1 keys (about 262 panel states, more than the
+		// old queue of 128 held): an edit of K127, LOAD KIT K128, UNDO KIT brings K127 back with its edit
+		{
+			const auto loadTo = [&](const int _k)
+			{
+				r.msg(R"({"op":"loadKit","force":true,"k":)" + std::to_string(_k) + "}");
+				const auto t = r.ms();
+				while(r.desk->currentKit() != _k && r.ms() - t < 8000)
+					r.run(100);
+				r.run(800);
+			};
+			loadTo(126);
+			auto e = *r.desk->workingKit();
+			const auto w = static_cast<uint8_t>(e.tracks[0].pages[2][0] == 35 ? 36 : 35);
+			e.tracks[0].pages[2][0] = w;
+			r.msg(R"({"op":"set","id":13,"kind":"workingKit","doc":)" + ed::json::write(ed::mmKitToJson(e)) + "}");
+			r.run(800);
+			loadTo(127);
+			check(r.desk->currentKit() == 127, "LOAD KIT K128 over the edited K127");
+			r.msg(R"({"op":"loadUndoKit","id":14,"force":true})");
+			const bool taken = r.lastResult().isObject() && r.lastResult().find("ok")->asBool();
+			const auto t3 = r.ms();
+			const auto high = [&] { const auto wk = r.desk->workingKit(); return r.desk->currentKit() == 126 && wk && wk->tracks[0].pages[2][0] == w; };
+			while(!high() && r.ms() - t3 < 12000)
+				r.run(100);
+			r.run(1000);
+			std::printf("  UNDO KIT from K128: kit %d, %s\n", r.desk->currentKit(), kitWorking(r).c_str());
+			check(taken && high() && kitWorking(r) == "edited", "UNDO KIT from K128 (129 UP keys): K127 plays again with its unsaved edit");
+			loadTo(to);
+		}
 	}
 
 	// P7: loading a pattern (which loads its kit) leaves the kit that plays clean, and no question
@@ -796,6 +850,8 @@ namespace
 		r.msg(R"({"op":"record","mode":"live"})");
 		r.run(600);
 		check(r.tel.recording.load() == 2, "LIVE RECORDING on");
+		r.msg(R"({"op":"loadUndoKit","force":true})");
+		check(!ok() && r.tel.recording.load() == 2, "UNDO KIT is refused while recording (its keys would leave the kit list open)");
 		r.msg(R"({"op":"liveErase","t":0,"on":true})");
 		check(ok(), "liveErase on taken");
 		r.run(500);
@@ -982,8 +1038,19 @@ namespace
 		r.msg(R"({"op":"seqMode","song":true})");
 		r.run(1500);
 		r.msg(R"({"op":"play"})");
-		std::vector<int> rows, patterns, lateRows;
+		std::vector<int> rows, patterns, lateRows, steps;
 		int last = -1;
+		// MM-271: the song's played steps the page is told (the EDIT SONG header's bars and beats)
+		const auto pageSteps = [&]
+		{
+			for(auto it = r.page.rbegin(); it != r.page.rend(); ++it)
+				if(it->find("type")->asString() == "telemetry")
+				{
+					const auto* ss = it->find("songSteps");
+					return ss && ss->isNumber() ? static_cast<int>(ss->asNumber()) : -1;
+				}
+			return -1;
+		};
 		const auto pageRow = [&]
 		{
 			for(auto it = r.page.rbegin(); it != r.page.rend(); ++it)
@@ -1003,6 +1070,7 @@ namespace
 			if(st == 3 && last != 3)
 			{
 				rows.push_back(pageRow());
+				steps.push_back(pageSteps());
 				const auto reply = ed::parseMmStatusResponse(r.m.request(ed::mmStatusRequest(ed::MmStatus::Pattern), 0x72));
 				patterns.push_back(reply ? reply->value : -1);
 			}
@@ -1024,6 +1092,16 @@ namespace
 		for(size_t k = 0; k < lateRows.size() && k < rows.size(); ++k)
 			late = late && lateRows[k] == rows[k];
 		check(late, "at the last step of each pass the page is still told that pass's row");
+		// every pass is 8 steps, sampled at its fourth: the played steps grow by 8 a pass, through the repeat and the loop
+		std::string counts;
+		bool counting = steps.size() >= 2 && steps[0] >= 0;
+		for(size_t k = 0; k < steps.size(); ++k)
+		{
+			counts += " " + std::to_string(steps[k]);
+			counting = counting && (k == 0 || steps[k] - steps[k - 1] == 8);
+		}
+		std::printf("  the song's played steps at each pass:%s\n", counts.c_str());
+		check(counting, "the page is told the song's played steps: 8 more every pass of 8 steps (MM-271)");
 		r.msg(R"({"op":"stop"})");
 		r.run(600);
 		// 0.3.5: an edit of the machine's song is heard without LOAD SONG by hand. Stopped in SONG mode: row 1 becomes
@@ -2445,6 +2523,9 @@ namespace
 		const uint8_t base = g.baseChannel & 15;
 
 		// LIVE RECORDING: a note from the keyboard on T1's channel lands on a step
+		// the panel is free once the machine has left SYSEX RECV (RECORD is refused as busy while it is still on it)
+		for(int i = 0; i < 200 && r.desk->recvState() != "idle"; ++i)
+			r.run(100);
 		r.msg(R"({"op":"play"})");
 		r.run(1500);
 		r.msg(R"({"op":"record","mode":"live"})");
@@ -2845,6 +2926,10 @@ namespace
 		}
 		_r.desk->setSysexTap({});
 		_r.run(2000);
+		// the machine is on SYSEX RECV until the desk leaves it (idle 3 s, then the exit keys; B-062's macro is longer): the
+		// edits that follow are for the main screen
+		for(int i = 0; i < 300 && _r.desk->recvState() != "idle"; ++i)
+			_r.run(100);
 	}
 
 	// B-051, F3: the global the machine ships with (every slot of a fresh machine is elektronData::mmFactoryGlobal; FACTORY_PRINT=1
@@ -3760,6 +3845,8 @@ namespace
 			in >> atStep >> page >> index;
 		}
 		r.msg(R"({"op":"tempo","bpm":60})");
+		for(int i = 0; i < 200 && r.desk->recvState() != "idle"; ++i)	// the panel is free once SYSEX RECV is left
+			r.run(100);
 		r.msg(R"({"op":"play"})");
 		r.run(1000);
 		r.msg(R"({"op":"record","mode":"live"})");

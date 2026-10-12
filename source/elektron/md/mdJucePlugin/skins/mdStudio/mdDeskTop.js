@@ -78,7 +78,7 @@ const LIFE = {
 	ready: { label: "READY", led: "on" } };
 const lifeOf = l => LIFE[l] || LIFE.booting;
 /* the engine menu's own entries (not engines) */
-const ENGINE_ACTIONS = ["global", "audio", "rom", "import", "export", "reset"];
+const ENGINE_ACTIONS = ["global", "audio", "rom", "import", "export", "reset", "memoryKeep"];
 function engineLabel() {
 	const e = lifeOf(V.lifecycle);
 	if (V.lifecycle === "ready") return [V.caps.label || e.label, e.led, V.caps.about || ""];
@@ -140,9 +140,25 @@ document.addEventListener("change", e => {
 	if (v === "rom") romMenu();
 	else if (v === "global") { sel.value = V.caps.engine; openGlobal(); }
 	else if (v === "audio") { sel.value = V.caps.engine; openAudio(); }
+	else if (v === "memoryKeep") { sel.value = V.caps.engine; renderEngine(); cmd("memoryKeep", { on: !Memory.keep }); }
 	else if (Syx.menu(v)) { sel.value = V.caps.engine; renderEngine(); }	/* IMPORT SYSEX…, EXPORT SYSEX…, RESET MACHINE… (wave 6) */
 	else if ((machineState().engines || []).some(x => x.id === v)) cmd("engine", { kind: v });
 });
+/* I-024 (doc/modern-ux/DESIGN-machine-memory.md): the machine memory that stays for new sessions, as the plug-in says
+   (machineMemory). KEEP MEMORY turns it on and off; starting from factory memory is a choice of RESET MACHINE…
+   (shared/deskSyx.js, the host's memory and factoryMemory, mdDeskRom.js). Only where the plug-in keeps a memory file
+   (available). What went wrong is the plug-in's notice (once), and the entry's tooltip. */
+const Memory = { keep: true, available: false, saved: false, note: "" };
+function renderMemoryMenu() {
+	const keep = document.querySelector('#engsel option[value="memoryKeep"]');
+	if (!keep) return;
+	keep.hidden = !Memory.available;
+	keep.textContent = "KEEP MEMORY: " + (Memory.keep ? "ON" : "OFF");
+	keep.dataset.saved = Memory.saved ? "1" : "0";
+	keep.title = Memory.note || (Memory.keep ? "New sessions without a DAW project start with what you saved on the machine. Click to turn it off."
+		: "New sessions start from factory memory. Click to keep what you save on the machine for new sessions.");
+}
+Bridge.onMessage(m => { if (m.type === "machineMemory") { Object.assign(Memory, { keep: !!m.keep, available: !!m.available, saved: !!m.saved, note: m.note || "" }); renderMemoryMenu(); } });
 
 /* I-002: a note from a MIDI keyboard (the plug-in's midiIn) on the global's base channel plays the track its map gives
    (GLOBAL › Map editor); that track's number on the rail and its Mix LED light for a moment, as a trig does. Notes that
@@ -221,6 +237,9 @@ function hostRefused(m) {
    the arrangement cell, the time bar up to it, the What plays line and the LCD's pattern slot ===== */
 let songRowShown = -2;
 function songRowNow() { const t = Docs.telemetry; return V.songMode === true && V.playing && t && t.songRow != null && t.songRow >= 0 ? t.songRow : -1; }
+/* MD-147: the passes of the playing row still to come (telemetry songRepeats, the machine's counter), -1 unknown */
+function songLeftNow() { const t = Docs.telemetry; return songRowNow() >= 0 && t.songRepeats != null ? t.songRepeats : -1; }
+const leftText = n => n > 0 ? ` · ${n} more` : n === 0 ? " · last" : "";
 const nn3 = n => String(n + 1).padStart(3, "0");
 const songRows = () => V.song.filter(r => r.type !== "end").length;
 /* the What plays line: PATTERN B07 / SONG 01 · row 017 of 65 · B01 / CHAIN A03»A05 */
@@ -228,7 +247,7 @@ function playsText() {
 	const plays = playsOf(Docs);
 	if (plays.kind !== "song") return plays.label;
 	const row = songRowNow(), r = row >= 0 ? V.song[row] : null;
-	return `SONG ${String(V.songSlot + 1).padStart(2, "0")} · ` + (row >= 0 ? `row ${nn3(row)} of ${songRows()}${r && !r.type ? " · " + patName(r.pat) : ""}` : `${songRows()} rows · ${V.playing ? "…" : "stopped"}`);
+	return `SONG ${String(V.songSlot + 1).padStart(2, "0")} · ` + (row >= 0 ? `row ${nn3(row)} of ${songRows()}${r && !r.type ? " · " + patName(r.pat) + (r.rep > 1 ? leftText(songLeftNow()) : "") : ""}` : `${songRows()} rows · ${V.playing ? "…" : "stopped"}`);
 }
 /* the LCD's pattern slot reads SONG 01 · 017 in song mode */
 function songLcd() {
@@ -243,14 +262,14 @@ function markSongRow(force) {
 	const st = document.getElementById("arrstate");
 	if (st && st.textContent !== arrState()) st.textContent = arrState();
 	document.querySelector(".songui")?.classList.toggle("songplaying", V.songMode === true && V.playing);
-	const row = songRowNow();
-	if (row === songRowShown && !force) return;
-	songRowShown = row;
+	const row = songRowNow(), left = songLeftNow(), key = row + ":" + left;
+	if (key === songRowShown && !force) return;
+	songRowShown = key;
 	songLcd();
 	const pl = document.getElementById("songPlays"); if (pl) pl.textContent = playsText();
 	if (S.ws !== "song") return;
-	$$(".scell.ph").forEach(c => c.classList.remove("ph"));
-	if (row >= 0) document.querySelector(`.scell[data-i="${row}"]`)?.classList.add("ph");
+	$$(".scell.ph").forEach(c => { c.classList.remove("ph"); delete c.dataset.left; });
+	if (row >= 0) { const c = document.querySelector(`.scell[data-i="${row}"]`); if (c) { c.classList.add("ph"); if (V.song[row]?.rep > 1 && left >= 0) { c.dataset.left = left; } } }
 	$$(".durbar .db").forEach(d => { const i = +d.dataset.i; d.classList.toggle("past", row >= 0 && i < row); d.classList.toggle("now", i === row); });
 }
 
@@ -266,7 +285,8 @@ function onTelemetry(m) {
 	if (V.rec !== wasRec) { renderTop(); if (V.rec) toast("Live recording: click a track's steps to play it, move a value to lock it."); }
 	S.step = V.playing ? m.step : -1;
 	markSongRow();
-	if (wasPlaying !== V.playing) { renderTop(); $$(".ph").forEach(c => c.classList.remove("ph")); setPos(); phLast = -1; movePH(); }
+	/* the song row's mark is markSongRow's (just above): PLAY must not take it away until the row changes */
+	if (wasPlaying !== V.playing) { renderTop(); $$(".ph:not(.scell)").forEach(c => c.classList.remove("ph")); setPos(); phLast = -1; movePH(); }
 	const prev = lastStep; lastStep = S.step;
 	if (S.step === prev) return;
 	/* Capture next loop (UW): the recorder track plays (records) for one whole loop from the next

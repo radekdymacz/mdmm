@@ -1,7 +1,7 @@
 // Reads the journey files as text (nothing is run) and lists each journey with the feature rows it proves.
 // Shared by mdmm-features-check.mjs and mdmm-guide.mjs. Plain Node, no dependencies.
 // A journey names its rows in a `proves: ["MD-107", ...]` field beside `name:` (an object literal), or in the options
-// object of a helper that builds journeys (tapWith, genJourney, editorMenuJourney). `proves: []` says it proves none
+// object of a helper that builds journeys (tapWith, genJourney, editorMenuJourney, memoryJourney). `proves: []` says it proves none
 // (boot, focus, layout, screenshots). Journey.viewJourneys(prefix, ...) makes two such journeys itself.
 // Only names that start with md- or mm- are journeys: demos (demo-md-...) and the view lists of viewJourneys are not.
 
@@ -12,7 +12,7 @@ export const JOURNEY_FILES = [
 	{ machine: 'md', file: 'source/elektron/md/mdJucePlugin/skins/mdStudio/mdDeskJourneys.js' },
 	{ machine: 'mm', file: 'source/elektron/md/mdJucePlugin/skins/mmStudio/mmJourneys.js' },
 ];
-const HELPERS = ['tapWith', 'genJourney', 'editorMenuJourney'];
+const HELPERS = ['tapWith', 'genJourney', 'editorMenuJourney', 'memoryJourney'];
 
 // Same length as src; comments, regex literals and the insides of strings become spaces (quotes stay), so that a
 // search for code finds only code. Also returns the matching close index for every bracket.

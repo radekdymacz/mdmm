@@ -51,7 +51,8 @@
 <li><a href="/guide/md/13-technical-information-mki-vs-mkii/">13. Technical information, MKI vs MKII</a></li>
 <li><span class="gd-side-todo">14. Appendix A: machine reference <span class="gd-vh">(to come)</span></span></li>
 <li><span class="gd-side-todo">15. Appendix B: MIDI control reference <span class="gd-vh">(to come)</span></span></li>
-<li><span class="gd-side-todo">16. Appendix C: sysex reference <span class="gd-vh">(to come)</span></span></li></ol>
+<li><span class="gd-side-todo">16. Appendix C: sysex reference <span class="gd-vh">(to come)</span></span></li>
+<li><a href="/guide/md/17-beyond-the-hardware/">17. Beyond the hardware</a></li></ol>
 <ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
 </nav>
 <article class="gd-article">
@@ -115,7 +116,9 @@
 <ol class="gd-steps"><li>Press <kbd class="gd-key">[5]</kbd> to open the <b class="gd-ui">Song</b> workspace.</li><li>Click <b class="gd-ui">CHAIN</b> over the pattern palette.</li><li>Click a bank letter.</li><li>Click the patterns in the order you want. Each pad shows its number in the chain. After the second pad the machine plays the chain at once. While it plays, the chain starts at the end of the pattern. While it is stopped, <kbd class="gd-key">[PLAY]</kbd> starts at the first pad.</li><li>Click a numbered pad to take it out. <b class="gd-ui">Back</b> takes out the last pad. <b class="gd-ui">Clear</b> ends the chain.</li></ol>
 <p>A chain holds up to 16 patterns of one bank, each pattern once. The palette says which pattern plays now and which comes next. Choosing a pattern ends the chain. Editing the patterns in it does not.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The <b class="gd-ui">Chain</b> pads are disabled, with a reason, when the engine cannot read or set the chain.</p></aside>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> The editor has no key that makes <kbd class="gd-key">[STOP]</kbd> jump to a queued pattern. It relies on the machine doing so when a chain is set.</p>
+<p>A pattern queued while the machine plays starts at once when you stop:</p>
+<ol class="gd-steps"><li>While a pattern plays, choose another one: click <b class="gd-ui">›</b> next to the pattern on the LCD, or a pattern in the pattern chooser. The LCD shows its name, blinking: it is queued.</li><li>Press <kbd class="gd-key">[STOP]</kbd> (click <b class="gd-ui">▶</b> or press <kbd class="gd-key">[SPACE]</kbd>). The machine stops and the queued pattern is the current one.</li><li>Press <kbd class="gd-key">[PLAY]</kbd> to start it from its first step.</li></ol>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>This is the machine's own STOP, which the editor presses for you. With a real Machinedrum over MIDI the editor has no transport.</p></aside>
 </div></section>
 <section class="gd-sec" id="parameter-tweaking" aria-labelledby="parameter-tweaking-h">
 <div class="gd-body gd-prose"><h2 id="parameter-tweaking-h">PARAMETER TWEAKING <a class="gd-anchor" href="#parameter-tweaking" aria-label="Link to PARAMETER TWEAKING">#</a></h2>
@@ -136,7 +139,7 @@
 <ul class="gd-list"><li>Click <b class="gd-light">&lt;LEN&gt;</b> on the second line of the LCD to step through 16, 32, 48 and 64. Click with <kbd class="gd-key">[⇧]</kbd> to step back. You can also drag or scroll on it.</li><li>Hold <kbd class="gd-key">[⌥]</kbd> and click, drag or scroll on <b class="gd-light">&lt;LEN&gt;</b> to set the length inside the total. The field then reads the length and the total, for example 12/16.</li></ul>
 <p>Steps past the length are dimmed in the grid. In CLASSIC the total is 32 at most.</p>
 <p>To double a pattern, click the <b class="gd-light">&lt;LEN&gt;</b> ×2 key. The new half is a copy of the steps and locks of the first half. This is one undo step. The editor refuses a pattern past 64 steps, and past 32 in CLASSIC, and says why.</p>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> The machine copies the first page to the later pages when you make a pattern longer. The editor does not show this. Use <b class="gd-light">&lt;LEN&gt;</b> ×2 to copy the pattern.</p>
+<p>When you make the total longer, the editor does what the machine does: if no track has a trig past the old total, the steps you had repeat into the new ones, with their accents, swings, slides and locks. From 16 to 64 steps the first page fills all four pages. If a track has a trig past the old total, nothing is copied. A message says what was copied. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take it back.</p>
 <h4 class="gd-h3" id="speed">Speed</h4>
 <p>Click <b class="gd-light">&lt;SPD&gt;</b> to step through the tempo multipliers 1X, 2X, 3/4X and 3/2X. Click with <kbd class="gd-key">[⇧]</kbd> to step back. You can also drag or scroll on it.</p>
 </div></section>
@@ -175,7 +178,7 @@
 <p>To use the selection:</p>
 <ol class="gd-steps"><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>.</li><li>Select the step where the block is to start, on the track where it is to start. A single <kbd class="gd-key">[⌘]</kbd>-click does it.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>. The block lands with its first step on the step you chose.</li></ol>
 <p><kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[X]</kbd> copies and clears. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[D]</kbd> copies the block to the steps right after it; press it again for one more copy. <kbd class="gd-key">[⌘]</kbd>-drag the selection to drop a copy where you let go. <kbd class="gd-key">[ENTER]</kbd> switches the trigs of the selection on, or off when each has one. <kbd class="gd-key">[ESC]</kbd> clears the selection.</p>
-<p>Right-click a step for the step menu. It holds trig, accent, slide, copy, cut, paste, duplicate, clear, and <b class="gd-ui">Fill every 2nd</b> and <b class="gd-ui">Fill every 4th</b> from that step. On a selected step the menu acts on the whole selection.</p>
+<p>Select a step or steps and click the small ⋯ on the selection for the step menu; a right-click on a step opens it too. It holds trig, accent, slide, copy, cut, paste, duplicate, clear, and <b class="gd-ui">Fill every 2nd</b> and <b class="gd-ui">Fill every 4th</b> from that step. On a selected step the menu acts on the whole selection.</p>
 <p>The <b class="gd-light">&lt;COPY&gt;</b>, <b class="gd-light">&lt;CLR&gt;</b> and <b class="gd-light">&lt;PASTE&gt;</b> keys on the LCD do the same as the keys. They are marked when they act on a selection.</p>
 </div></section>
 <section class="gd-sec" id="clear-note-parameter-locks" aria-labelledby="clear-note-parameter-locks-h">

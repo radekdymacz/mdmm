@@ -23,7 +23,7 @@ function syncSel(ghost){selGhost=ghost||null;
  $$("#seq .ruler .rul[data-s]").forEach(r=>r.classList.toggle("selx",!!rulSel(+r.dataset.s)));
  $$("#seq .tlane .tc[data-s]").forEach(c=>{const s=+c.dataset.s;c.classList.toggle("selx",inSel(S.sel,s));c.classList.toggle("selghost",inSel(S.sel,s,selGhost))});
  $$("#rail .th[data-sel]").forEach(h=>h.classList.toggle("selt",!!trackSel(+h.dataset.sel)));
- secLabels();redraw()}
+ secLabels();redraw();StepSel.moreWake()}
 function setSel(x){S.stepSel=x;syncSel()}
 function clearSel(){if(!S.stepSel&&!selGhost)return;S.stepSel=null;syncSel()}
 /* the roll draws the selection over the selected track's columns (ED.lane, 70-seq.js) */
@@ -63,6 +63,17 @@ function selCopyTo(dt,at){const x=selShown();if(!x)return false;
  edit("copyStepsTo",Object.assign(selArgs(x),{at,dt}));setSel(StepSel.landing({tracks:x.n,length:x.to-x.from},dt,at,SEL_TRACKS,S.len));return true}
 function selDuplicate(){const x=selShown();return x?selCopyTo(x.t,x.to):false}
 function selClear(){const x=selShown();if(!x)return false;const keep=selKeeps(x);edit("clearSteps",selArgs(x));selKeep(keep);return true}
+/* MM-201: the lane's parameter locked at its current value (the kit's) on every selected step of the lane's track that has a
+   note (the machine: hold the TRIG key, click the knob, manual 1-57); one undo step */
+function lockCurrent(){const t=S.sel,x=S.stepSel,pid=S.lane;
+ if(!x||t<x.t||t>=x.t+x.n){toast(`Select steps of ${tLabel(t)} first (⌘-click or drag on the ruler), then click the lock.`);return}
+ const v=getP(t,pid);if(v==null){toast(`${pidLabel(t,pid)} has no value on ${tLabel(t)}.`);return}
+ const steps=[];for(let s=x.from;s<x.to&&s<S.len;s++){const st=trk(t).steps[s];if(st&&!st.off)steps.push(s)}
+ if(!steps.length){toast("The selected steps have no notes: a step without a note cannot hold a lock.");return}
+ commit();let n=0;for(const s of steps){if(!setLock(t,pid,s,v))break;edit("lock",{t,...pidArgs(pid),s,v});n++}commit();
+ const[pg,i]=pid.split("."),m=meta(t,pg,+i);renderTop();renderLane();toast(`${pidLabel(t,pid)} locked at ${fmt(m,v)} on ${n} step${n>1?"s":""} · ${tLabel(t)}`)}
+/* MM-083, MM-184, MM-203: the selected steps' locks go, their notes stay (the machine's CLEAR NOTE LOCKS, TRIG + PLAY) */
+function selClearLocks(){const x=selShown();if(!x)return false;edit("clearStepLocks",selArgs(x));return true}
 /* I-010: a note before the selection that ran into it keeps its length when the selection is cleared: a NOTE OFF on
    the selection's first step with anything on it (where that note ended; on a MIDI track only when its LEN went that
    far). Read before the clear, put down after it (a step intent of its own, in the same gesture: one undo step). */
@@ -142,10 +153,16 @@ function stepMenuItems(t,s,pitch){const x=S.stepSel,st=trk(t).steps[s],one=StepS
   ...(midi?[]:[{id:"step-trigless",label:"Trigless (no envelope trigs)",key:"",run:()=>selMark("trigless")}]),
   {id:"step-slide",label:"Slide",key:"",run:()=>selMark("slide")},
   ...(one&&pitch!=null&&st?.n&&!st.n.includes(pitch)?[{id:"step-chord",label:`Chord note ${noteName(pitch)}`,key:keyOf("roll-chord"),run:()=>selChord(t,s,pitch)}]:[])];
- return StepSel.menuItems({marks,copy:()=>selCopy(),cut:()=>selCut(),paste:()=>selPaste(),canPaste:!!clipSize(),duplicate:()=>selDuplicate(),clear:()=>selClear(),
-  fill:n=>fillEvery(t,s,n,pitch??lastNote(t,s)),key:keyOf})}
+ const items=StepSel.menuItems({marks,copy:()=>selCopy(),cut:()=>selCut(),paste:()=>selPaste(),canPaste:!!clipSize(),duplicate:()=>selDuplicate(),clear:()=>selClear(),
+  fill:n=>fillEvery(t,s,n,pitch??lastNote(t,s)),key:keyOf});
+ /* MM-083: right after Clear, the locks alone */
+ const at=items.findIndex(x=>x&&x.id==="delete");items.splice(at+1,0,{id:"clear-step-locks",label:"Clear locks (keep the notes)",key:"",run:()=>selClearLocks()});
+ return items}
 function stepMenu(t,s,pitch,x,y){if(!inSel(t,s))setSel({t,n:1,from:s,to:s+1});
  DeskMenu.open(stepMenuItems(t,s,pitch),x,y,{title:StepSel.menuTitle(S.stepSel,t,s,selName)})}
+/* the step menu's visible key: ⋯ on the selection's last step shown, over the ruler (shared/deskSelect.js moreKey) */
+StepSel.moreKey({active:()=>S.ws==="seq"&&!!S.stepSel&&!S.rec,cells:()=>document.querySelectorAll("#seq .ruler .rul.selx"),clip:()=>document.getElementById("seqscroll"),
+ open:(x,y)=>{if(S.stepSel)stepMenu(S.stepSel.t,S.stepSel.from,undefined,x,y)}});
 document.addEventListener("contextmenu",e=>{if(S.ws!=="seq"||!e.target.closest?.("#seq"))return;const c=selCellOf(e);if(!c||c.ruler)return;
  e.preventDefault();if(S.rec){toast("Wait until live recording stops.");return}stepMenu(c.t,c.s,c.pitch,e.clientX,e.clientY)});
 

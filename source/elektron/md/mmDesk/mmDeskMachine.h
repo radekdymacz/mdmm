@@ -101,6 +101,8 @@ namespace mmDesk
 		static const std::map<std::string, Handler>& handlers();
 		static const std::map<std::string, Handler>& askers();
 		deskCore::Outcome askLoadKit(const Value&, const Documents&);
+		deskCore::Outcome askLoadUndoKit(const Value&, const Documents&);
+		deskCore::Outcome cmdLoadUndoKit(const Value&, const Documents&);
 		deskCore::Outcome askSaveKit(const Value&, const Documents&);
 		deskCore::Outcome askSelect(const Value&, const Documents&);
 		deskCore::Outcome askPlay(const Value&, const Documents&);
@@ -287,6 +289,7 @@ namespace mmDesk
 		deskCore::WireFacts m_wire;
 		int m_curPattern = -1, m_curKit = -1, m_curSong = -1, m_curGlobal = -1, m_songMode = -1;
 		int m_activateGlobal = -1;	// the active global's slot to make active again (0x56) once RECV is left
+		int m_chooseGlobal = -1;	// the slot chosen while RECV was busy: 0x56 before the next macro (B-067, B-071)
 		// The slot the editor made active (globalSlot) until the status shows it: a dump of the old active global read
 		// back meanwhile must not make that one active again over the choice (the 0.5.0 gate's mm-global-slot).
 		// Given up once the 0x56 for it went g_chosenGlobalMs ago and the status still says another.

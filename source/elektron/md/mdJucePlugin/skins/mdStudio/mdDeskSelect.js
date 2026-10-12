@@ -18,6 +18,7 @@ function syncSel(ghost) {
 	$$("#seq .st").forEach(b => { const t = +b.dataset.t, s = +b.dataset.s; b.classList.toggle("selx", inSel(t, s)); b.classList.toggle("selghost", inSel(t, s, ghost)); });
 	$$("#seq .rul[data-s]").forEach(r => r.classList.toggle("selx", !!S.stepSel && +r.dataset.s >= S.stepSel.from && +r.dataset.s < S.stepSel.to));
 	secLabels();
+	StepSel.moreWake();
 }
 function setSel(x) { S.stepSel = x; syncSel(); }
 function clearSel() { if (!S.stepSel) return; S.stepSel = null; syncSel(); }
@@ -189,6 +190,13 @@ function stepMenu(t, s, x, y) {
 	if (!inSel(t, s)) { setSel({ t, n: 1, from: s, to: s + 1 }); if (t !== S.sel) select(t); }
 	DeskMenu.open(stepMenuItems(t, s), x, y, { title: StepSel.menuTitle(S.stepSel, t, s, trackWords) });
 }
+/* the step menu's visible key: ⋯ on the selection's last step shown (shared/deskSelect.js moreKey) */
+StepSel.moreKey({
+	active: () => S.ws === "seq" && !!S.stepSel && !V.rec,
+	cells: () => document.querySelectorAll("#seq .st.selx"),
+	clip: () => document.getElementById("seqscroll"),
+	open: (x, y) => { if (S.stepSel) stepMenu(S.stepSel.t, S.stepSel.from, x, y); }
+});
 document.addEventListener("contextmenu", e => {
 	const st = e.target.closest?.("#seq .st"); if (!st || S.ws !== "seq") return;
 	e.preventDefault();

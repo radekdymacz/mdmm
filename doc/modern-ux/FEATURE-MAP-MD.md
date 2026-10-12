@@ -53,7 +53,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.9 | Kit name and number | Current kit | ✅ | LCD: Kit with saved/edited chip |  | 1 |
 | p.9 | Synth, machine and page text | Focus info | ✅ | Sound: machine button, family; LCD line 2 |  | 1 |
 | p.9 | Level bar (overall volume of the track) | LEV meter | ✅ | Mix: the LEV box's bar shows the stored level | The box's fill is the level, as the LCD's bar. | 1 |
-| p.9 | Eight value boxes with 'clip' between dependent values | Parameter display | 🟡 | Value boxes | Dependent-pair clip not drawn. | – |
+| p.9 | Eight value boxes with 'clip' between dependent values | Parameter display | ✅ | Sound: an arch over the gap between two boxes the machine joins with a clip; each box of a pair names the other in its tooltip | Clips measured on the firmware for every machine and page (gapProbesFirmwareTest w12clip, elektronData::mdMachineClips) | 1 |
 | p.9 | Windows over the main screen, icon help, EXIT closes | Layer edit | ➖ | Popovers close with Esc |  | – |
 | p.10 | Load a kit and trig tracks (quick start) | Basic play | ✅ | Kit library; step grid; piano keys | See §4. | 1 |
 | p.10 | Accelerated knob editing (pressed knob) | Coarse step | ✅ | Wheel with Shift = 10; Shift-drag = fine |  | 1 |
@@ -68,9 +68,9 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.15 | Kits not linked to a pattern marked with a star | Unused-kit marker | ✅ | Kit library slot name ends with * | EXTENDED only. | 1 |
 | p.15 | Save kit and choose slot | SAVE KIT | ✅ | Kit library: Save, Save as Knn | UNDO KIT keeps the overwritten kit. | 1 |
 | p.15 | Name a kit (letters, high-score picker) | Kit name | ✅ | Kit library: Rename (F2 / double-click), 16 chars | Typing replaces the wheel. | 1 |
-| p.16 | UNDO KIT (kit list entry 0) | Restore lost kit | 🟡 | Editor undo (Cmd+Z); Reload | The machine's UNDO KIT is kept but not listed as a slot. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. | – |
+| p.16 | UNDO KIT (kit list entry 0) | Restore lost kit | ✅ | Kit library: UNDO KIT (the machine's KIT > LOAD KIT > UNDO KIT through its keys; off over HW MIDI) | Measured: the lost kit plays again unsaved, its own slot current; LOAD KIT 64-127 does not reach it (gapProbesFirmwareTest w12undo) | 1 |
 | p.16 | Copy kit and paste to slot | Kit copy | ✅ | Kit library: Copy, Paste, drag onto slot (Cmd+C/V) |  | 1 |
-| p.17 | Clear kit | CLEAR KIT | 🟡 | Kit library: Clear | Writes an empty kit (GND-EMPTY, neutral values); the machine's own clear may leave other values. | 1 |
+| p.17 | Clear kit | CLEAR KIT | ✅ | Kit library: Clear (Delete) writes what the machine's CLEAR KIT leaves | Measured: every track GND-EMPTY at the same values, master effects at their start, name byte 0x7f (gapProbesFirmwareTest w12clearkit, elektronData::mdClearedKit) | 1 |
 | p.17 | Undo paste / clear kit | Undo | ✅ | Cmd+Z |  | 2 |
 | p.17 | Kit assembly: pick MD-synth and machine per track | EDIT KIT | ✅ | Sound: machine button opens the picker by family | All 10 families. | 1 |
 | p.18 | Load machine and keep track FX / routing | FUNCTION + ENTER | ✅ | Picker: 'Keep effects + routing' toggle (default on) | S.keepFx. | 1 |
@@ -149,14 +149,14 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.37 | Pending pattern at the pattern end | Queue | ✅ | Pattern chooser Queue / Now; LCD blinks |  | 1 |
 | p.37 | Sticky bank keys (two seconds) | One-hand operation | ➖ |  | Not needed with the mouse. | – |
 | p.37 | Pattern chaining (one bank, each pattern once) | Chain | ✅ | Song page > Patterns > Chain | Limit 16 pads in page. | 1 |
-| p.37 | STOP jumps to a queued pattern | Chain behaviour | 🟡 | Firmware behaviour | Page does not add a key; the firmware does it when a chain is set. | – |
+| p.37 | STOP jumps to a queued pattern | Chain behaviour | ✅ | STOP (▶ or Space) with a pattern queued: it becomes the current pattern at once (the machine's STOP); the LCD and the chooser say so | Measured: the panel's STOP switches to a pattern cued by LOAD PATTERN; MIDI Stop does not (gapProbesFirmwareTest w12stop) | 1 |
 | p.37 | Parameter tweaking: FUNCTION + knob on all tracks | Control All | ✅ | Alt-drag a value; MUTATE | Cmd 'tweak'. | 1 |
 | p.38 | Filter sweep with FUNCTION + knob E/F in TFX | Whole-pattern sweep | ✅ | Alt-drag FLTF / FLTW | Same. | 1 |
 | p.38 | FUNCTION + CLASSIC/EXTENDED reloads kit | Revert | ✅ | Kit library: Reload (kit field) |  | 1 |
 | p.38 | Scale setup: number of steps | Pattern length | ✅ | LCD LEN with Alt (inner length) |  | 1 |
 | p.38 | Scale setup: total length 16/32/48/64 | Pages | ✅ | LCD LEN | Doubling: LEN x2 key. | 1 |
 | p.38 | Scale setup: tempo multiplier 1X, 2X, 3/4X, 3/2X | Speed | ✅ | LCD SPD |  | 1 |
-| p.38 | First page copied to later pages when extending | Auto fill | 🟡 | LEN x2 copies the new half | The firmware's auto-copy on length change is not shown; not verified. | – |
+| p.38 | First page copied to later pages when extending | Auto fill | ✅ | LCD LEN (total length): a longer total repeats the steps into the new ones, as the machine's SCALE SETUP; a message says so | Measured: copied only when no track has a trig past the old total (gapProbesFirmwareTest w12extend); mdDeskFirmwareTest p4 compares the editor with the panel | 1 |
 | p.39 | Grid recording (trig toggle per step) | Compose | ✅ | Step grid click; drag paints | Undo is one step per drag. | 3 |
 | p.39 | Pattern pages in grid mode | Switch page | ✅ | Page key |  | 1 |
 | p.39 | No save needed; copy before editing | Work in memory | ✅ | Library copy |  | 1 |
@@ -202,7 +202,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.51 | Load song | LOAD SONG | ✅ | Songs column: select a slot, Load (Enter); LCD SONG; loads when stopped |  | 1 |
 | p.52 | Play, pause, stop a song | Transport | ✅ | Play key: play, pause (⇧-click, ⇧Space), stop; in SONG mode as in pattern mode |  | 2 |
 | p.52 | Move song pointer to a row; start from a row | Navigate, transport | ✅ | Song: ▶ From here on the selected row, or Enter (SONG mode, the song position, Continue) | A LOOP or JUMP before the row cannot be counted through: the editor says so (start the song and let it play there). | 1 |
-| p.52 | Playing row shown, repeats left | Playhead | 🟡 | Playing row marked in the arrangement | Turns left not shown. | 1 |
+| p.52 | Playing row shown, repeats left | Playhead | ✅ | Song: the playing row marked +2, +1, last; the What plays line ends 2 more / last | The machine's own counter (RAM 0x2b1901, gapProbesFirmwareTest w12repeats), telemetry songRepeats | 2 |
 | p.52 | STOP holds, second STOP to start | Stop behaviour | ✅ | Play key: ⇧-click pauses and holds the position; ▶ goes on, Stop in the ▶ menu ends it |  | 1 |
 | p.53 | Song editor: pattern, REP, BPM, offset, length, mute | EDIT SONG | ✅ | Song > Selected row; arrangement grid |  | 1 |
 | p.53 | Insert / remove step | FUNCTION + arrows | ✅ | Add by palette, Duplicate, Delete |  | 2 |
@@ -274,7 +274,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 |---|---|---|---|---|---|---|
 | p.79 | Test mode | Self test | ➖ |  |  | – |
 | p.79 | Empty reset | Clear all | ✅ | Engine menu: Reset machine… > Empty reset… (asked twice): every kit, pattern and song cleared, read back and reported in the SysEx panel | Globals and samples stay: a global is reset in its slot in GLOBAL. | 1 |
-| p.79 | Factory reset | Presets | ✅ | Engine menu: Reset machine… > Factory reset… (asked twice): a second machine started from your ROM gives the factory kits, patterns and songs; sent, read back and reported | Seconds to prepare, minutes to send and read back. Globals and samples stay. | 1 |
+| p.79 | Factory reset | Presets | ✅ | Engine menu: Reset machine… > Factory reset… (asked twice): a second machine started from your ROM gives the factory kits, patterns and songs; sent, read back and reported | Seconds to prepare, minutes to send and read back. Globals and samples stay. Reset machine… > Start from factory memory… is the other way: the whole machine restarts from factory memory in seconds (globals and samples too) and the saved machine memory goes (I-024). | 1 |
 | p.79 | Soft reset | Reload samples | ❌ | None | Restart the editor. | – |
 | p.79 | MIDI upgrade / send upgrade | OS update | ➖ |  | Firmware fixed to OS 1.63. | – |
 
@@ -388,17 +388,23 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.C-3 | Status request / set / response 0x70-0x72 | Mode, slots | ✅ | PATTERN / SONG switch; MODE |  | 2 |
 | p.C-4 | TurboMIDI speed messages 0x10-0x17 | Fast transfer | ➖ |  | Not needed. | – |
 
+## 17. Beyond the hardware
+
+| Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
+|---|---|---|---|---|---|---|
+| p. | What you save stays for every new session | The machine keeps its kits, patterns, songs, globals and samples when it is switched off. | ✅ | By itself (a session without a DAW project, and the standalone, start from the saved memory); engine menu: KEEP MEMORY; Reset machine… > Start from factory memory… | I-024, doc/modern-ux/DESIGN-machine-memory.md | 1 |
+
 ## Summary
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 259 |
-| 🟡 Partial | 15 |
+| ✅ Yes | 266 |
+| 🟡 Partial | 9 |
 | ❌ No | 6 |
 | ➖ Not applicable | 16 |
-| Total | 296 |
+| Total | 297 |
 
-Of the 280 applicable rows, 259 are fully covered, 15 partly, 6 not at all.
+Of the 281 applicable rows, 266 are fully covered, 9 partly, 6 not at all.
 
 ### Top gaps (our UI), most important first
 

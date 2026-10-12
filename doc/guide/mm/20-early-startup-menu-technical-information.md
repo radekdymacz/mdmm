@@ -25,9 +25,11 @@ NOTE: The reset has no undo. Click **Export SysEx…** in the question first to 
 NOTE: With a real Monomachine over MIDI, the machine must be on its SYSEX RECV screen. The sync field reads SEND and the number of waiting dumps until it is.
 
 ## FACTORY RESET
-<!-- rows: MM-318 @9366c0 -->
+<!-- rows: MM-318 @dc2556 -->
 
 The editor holds no factory data of the Monomachine, so it offers no factory reset. The **RESET MACHINE…** question says so. To get the factory kits and patterns back, import a factory .syx file. See "FILE" in chapter 19.
+
+**Start from factory memory…** in the same question restarts the machine as on a new install and deletes the saved machine memory. Its kits and patterns are those the emulated machine starts with, which are the factory ones only when the editor has the Monomachine's factory memory image. See "MACHINE MEMORY" in chapter 24.
 
 ## SOFT RESET
 <!-- rows: MM-319 @836f00 -->
@@ -38,3 +40,13 @@ The soft reset restarts the machine and keeps its data. In the editor, close the
 <!-- rows: MM-320 @989256 -->
 
 The OS upgrade runs on the real machine. The editor does not upgrade the OS. It runs the Monomachine OS 1.32B that you give it as a ROM.
+
+## MKI / MKII DIFFERENCES
+<!-- rows: MM-322 @0634ce -->
+
+The MKI and the MKII run the same OS. The MKII adds the user waveforms of the DigiPRO machines. The editor draws the panel of either model.
+
+1. Click **MKI** or **MKII** at the right of the top bar. The panel changes to the other model: the MKI has a light-blue LCD, the MKII a bluish-white one.
+2. Click it again to go back.
+
+With MKI chosen, the machines that need the MKII are grey in the machine list.

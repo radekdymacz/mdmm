@@ -37,6 +37,7 @@
 @page c18 { @top-left { content: "18. Routing"; } }
 @page c19 { @top-left { content: "19. Global settings"; } }
 @page c20 { @top-left { content: "20. Early startup menu, technical information"; } }
+@page c24 { @top-left { content: "24. Beyond the hardware"; } }
 </style>
 </head>
 <body class="gd">
@@ -78,6 +79,7 @@
 <li class="gd-tocome"><span class="gd-tnum">21</span><span class="gd-ttitle">Appendix A: machine reference</span><span class="gd-tsum">To come</span></li>
 <li class="gd-tocome"><span class="gd-tnum">22</span><span class="gd-ttitle">Appendix B: MIDI control reference</span><span class="gd-tsum">To come</span></li>
 <li class="gd-tocome"><span class="gd-tnum">23</span><span class="gd-ttitle">Appendix C: SysEx reference</span><span class="gd-tsum">To come</span></li>
+<li><a href="#c24"><span class="gd-tnum">24</span><span class="gd-ttitle">Beyond the hardware</span><span class="gd-tsum">What the editor does that the Monomachine itself does not have, or does in its own way.</span></a></li>
 </ol></section>
 <article class="gd-chapter" id="c1" style="page: c1">
 <div class="gd-runhead"><span>1. Introduction, philosophy, highlights</span><span>Monomachine Editor</span></div>
@@ -174,7 +176,7 @@
 <div class="gd-body gd-prose"><h2>TRIG KEYS</h2>
 <p>The sixteen TRIG keys play notes and set trigs. In the editor:</p>
 <ul class="gd-list"><li>The keys <kbd class="gd-key">[A S D F G H J K L]</kbd> play the selected synth track, from any workspace. They are the white keys C to D. <kbd class="gd-key">[W E T Y U O P]</kbd> are the black keys above them.</li><li>Press <kbd class="gd-key">[Z]</kbd> or <kbd class="gd-key">[X]</kbd> to move the octave down or up, from −3 to +3. Press <kbd class="gd-key">[C]</kbd> or <kbd class="gd-key">[V]</kbd> to step the velocity through 20, 40, 60, 80, 100 and 127.</li><li>The on-screen keyboard in the <b class="gd-ui">Perform</b> workspace plays notes by click or drag.</li><li>Clicking in the piano roll of the <b class="gd-ui">Sequence</b> workspace plays the pitch.</li></ul>
-<p>To set a trig on a step, as the TRIG keys do in grid mode, click the piano roll with Draw on, click a dot in the ENV row, or right-click the step for the step menu.</p>
+<p>To set a trig on a step, as the TRIG keys do in grid mode, click the piano roll with Draw on, click a dot in the ENV row, or open the step menu (the ⋯ on a selected step, or a right-click).</p>
 <p>On the machine, <kbd class="gd-key">[BANK]</kbd> + <kbd class="gd-key">[TRIG]</kbd> picks a pattern. In the editor click the <b class="gd-light">&lt;PATTERN&gt;</b> field of the LCD for the pattern chooser, or the <b class="gd-ui">‹</b> and <b class="gd-ui">›</b> keys beside it. Chapter 4 describes picking.</p>
 </div></section>
 <section class="gd-sec" id="pattern-and-song-key">
@@ -342,8 +344,7 @@
 <h4 class="gd-h3">Lock live</h4>
 <p>While live recording plays, turn a value on the <b class="gd-ui">Sound</b> workspace. The machine records the value as a lock on the step that plays when the value arrives. The editor marks that step in the trig row and in the lock lane, for about three seconds, and a note says which value it locked.</p>
 <h4 class="gd-h3">Remove locks</h4>
-<ul class="gd-list"><li>Hold <kbd class="gd-key">[⌥]</kbd> and drag over the lane to erase the locks of one parameter.</li><li>The clear key in the rail header clears the locks of the parameter you are looking at. Hold <kbd class="gd-key">[⌥]</kbd> and click it to clear every lock of the track.</li><li>Select a step and press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd>. The step loses its note, its slide and its locks together.</li></ul>
-<p>You cannot remove the locks of a step and keep its note yet.</p>
+<ul class="gd-list"><li>Hold <kbd class="gd-key">[⌥]</kbd> and drag over the lane to erase the locks of one parameter.</li><li>The clear key in the rail header clears the locks of the parameter you are looking at. Hold <kbd class="gd-key">[⌥]</kbd> and click it to clear every lock of the track.</li><li>Right-click a step and choose <b class="gd-ui">Clear locks (keep the notes)</b>. The step loses its locks and keeps its note. On a selected step it works on the whole selection.</li><li>Select a step and press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd>. The step loses its note, its slide and its locks together.</li></ul>
 </div></section>
 </article>
 <article class="gd-chapter" id="c5" style="page: c5">
@@ -432,7 +433,9 @@
 <p>Every pattern recalls a kit. When you pick a pattern, the machine loads its kit, unless the kit is already the one that plays.</p>
 <p>The pattern chooser shows, on each pattern, its length and its kit as K and a number. The kit library shows on each kit slot the patterns that link to it. A kit no pattern links to ends its name with a star and reads &quot;no pattern&quot;.</p>
 <p>If you pick a pattern with a different kit while the current kit has edits that are not saved, the editor asks. It offers <b class="gd-ui">Save kit, then switch</b>, a switch that leaves the edits to the machine's UNDO KIT, and <b class="gd-ui">Cancel</b>.</p>
-<p>Loading a kit from the library makes it the kit of the current pattern. You cannot set the kit of another pattern directly.</p>
+<p>Loading a kit from the library makes it the kit of the current pattern. To set the kit of any pattern:</p>
+<ol class="gd-steps"><li>Click the <b class="gd-light">&lt;PATTERN&gt;</b> field in the LCD. The pattern chooser opens.</li><li>Hold <kbd class="gd-key">[⌥]</kbd> and click the pattern. It is selected, not loaded.</li><li>Choose a kit in the <b class="gd-ui">Kit</b> list. The pattern now recalls that kit.</li></ol>
+<p>If the pattern plays, the machine loads the new kit at once. When the kit that plays has unsaved edits, the editor asks first. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take the change back.</p>
 </div></section>
 <section class="gd-sec" id="loading-a-kit">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-19</span></span></aside>
@@ -455,7 +458,10 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-20</span></span></aside>
 <div class="gd-body gd-prose"><h2>UNDO KIT</h2>
 <p>The machine keeps one extra kit, the UNDO KIT, as the first entry of its kit list. It holds the kit lost to the last load or overwrite without saving. The dialogs of the editor name it when an action puts a kit there. The editor's own undo, <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd>, works on top of it.</p>
-<p>You cannot open the UNDO KIT slot from the editor yet.</p>
+<p>To load it:</p>
+<ol class="gd-steps"><li>Open the kit library: click the <b class="gd-ui">KIT</b> field on the LCD.</li><li>Click <b class="gd-ui">UNDO KIT</b>. The lost kit plays again, with its unsaved edits, and the slot it came from becomes the current kit.</li><li>Click <b class="gd-ui">Save</b> to keep it.</li></ol>
+<p>If the current kit has unsaved edits, the editor asks first: the machine does not keep them when it loads the UNDO KIT.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The editor presses the machine's own keys (KIT, LOAD, the first entry of the list). There is no MIDI message for the UNDO KIT, so with a real Monomachine over MIDI the button is off: use the machine's kit list.</p></aside>
 </div></section>
 <section class="gd-sec" id="copy-kit">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-21</span></span></aside>
@@ -824,14 +830,16 @@
 <p>Notes, NOTE OFFs, envelope trigs, slides and locks go along. Other keys on a selection:</p>
 <table class="gd-table"><thead><tr><th>Key</th><th>Does</th></tr></thead><tbody><tr><td><kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[X]</kbd></td><td>copy, then clear</td></tr><tr><td><kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[D]</kbd></td><td>put a copy right after the selection; again for another</td></tr><tr><td><kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[A]</kbd></td><td>select every step of the six tracks shown</td></tr><tr><td><kbd class="gd-key">[←]</kbd> or <kbd class="gd-key">[→]</kbd></td><td>move the selection one step</td></tr><tr><td><kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[←]</kbd> or <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[→]</kbd></td><td>extend the selection one step</td></tr><tr><td><kbd class="gd-key">[ESC]</kbd></td><td>clear the selection</td></tr></tbody></table>
 <p>Drag the selection with <kbd class="gd-key">[⌘]</kbd> held to drop a copy where you let go. A dashed frame shows where it lands. With <b class="gd-ui">Draw</b> dark, drag the selected notes in the roll without <kbd class="gd-key">[⌘]</kbd> to move them.</p>
-<p>Right-click a step for the step menu: note on or off, NOTE OFF, trigless, slide, a chord note, copy, cut, paste here, duplicate, clear, and fill every 2nd or 4th step from the one you clicked. Synth steps paste onto synth tracks, MIDI steps onto MIDI tracks.</p>
+<p>Select a step or steps and click the small ⋯ on the selection for the step menu (a right-click on a step opens it too): note on or off, NOTE OFF, trigless, slide, a chord note, copy, cut, paste here, duplicate, clear, and fill every 2nd or 4th step from the one you clicked. Synth steps paste onto synth tracks, MIDI steps onto MIDI tracks.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p><kbd class="gd-key">[⌘]</kbd> is <kbd class="gd-key">[CTRL]</kbd> on Windows and Linux.</p></aside>
 </div></section>
 <section class="gd-sec" id="clear-note-parameter-locks">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-50</span></span></aside>
 <div class="gd-body gd-prose"><h2>CLEAR NOTE PARAMETER LOCKS</h2>
 <p>To clear the locks of one parameter on some steps, hold <kbd class="gd-key">[⌥]</kbd> and drag across the bars in the lock lane. Click the bin in the lane header to clear all the locks of that parameter. Hold <kbd class="gd-key">[⌥]</kbd> and click the bin to clear every lock of the track. A selected step cleared with <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> loses its note and its locks together.</p>
-<p>There is no key that clears the locks of one step and keeps its note.</p>
+<p>The machine's CLEAR NOTE LOCKS clears the locks of one note and keeps the note:</p>
+<ol class="gd-steps"><li>Select the step, or several steps, in the roll or the trig rows.</li><li>Right-click one of them and choose <b class="gd-ui">Clear locks (keep the notes)</b>.</li></ol>
+<p>The notes stay. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to get the locks back.</p>
 </div></section>
 <section class="gd-sec" id="track-page-copy">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-49,</span> <span>1-51</span></span></aside>
@@ -951,9 +959,11 @@
 <ol class="gd-steps"><li>Click the page key and the parameter key in the rail.</li><li>Drag across the bars in the lane. Each step with a trig that the pointer crosses takes the value at the height of the pointer.</li><li>To move one lock, scroll the wheel over its step. A notch moves the value by 4. Hold <kbd class="gd-key">[⇧]</kbd> for 1. A step with no lock starts from the kit value.</li><li>To draw a straight line of values, hold <kbd class="gd-key">[⇧]</kbd> and drag from the first step to the last. Every step with a trig under the line gets a lock. It is one undo step.</li></ol>
 <p>Every lock of the parameter shows as a bar, so you can read the values of a step at any time. When you change the selected track or the parameter, the lane shows the new one.</p>
 <h4 class="gd-h3">Remove locks</h4>
-<ul class="gd-list"><li>Hold <kbd class="gd-key">[⌥]</kbd> and drag across the bars to remove the locks of that parameter on the steps you cross.</li><li>Click the bin in the lane header to remove all the locks of the parameter.</li><li>Hold <kbd class="gd-key">[⌥]</kbd> and click the bin to remove every lock of the track.</li><li>Select a step and press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> to clear the step whole, with its note.</li></ul>
-<p>There is no key that removes only the locks of one step and keeps its note.</p>
-<p>You cannot lock the current value of a parameter with one click. Draw the value in the lane.</p>
+<ul class="gd-list"><li>Hold <kbd class="gd-key">[⌥]</kbd> and drag across the bars to remove the locks of that parameter on the steps you cross.</li><li>Click the bin in the lane header to remove all the locks of the parameter.</li><li>Hold <kbd class="gd-key">[⌥]</kbd> and click the bin to remove every lock of the track.</li><li>Select a step or steps, click the small ⋯ on the selection (or right-click a step) and choose <b class="gd-ui">Clear locks (keep the notes)</b> to remove all the locks of the step, or of the selected steps. The note stays.</li><li>Select a step and press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> to clear the step whole, with its note.</li></ul>
+<h4 class="gd-h3">Lock the current value</h4>
+<p>On the machine you hold a trig and click a knob: the step keeps the value the knob has now. In the editor:</p>
+<ol class="gd-steps"><li>Click the page key and the parameter key in the rail.</li><li>Select the steps: hold <kbd class="gd-key">[⌘]</kbd> and click a note, or drag on the step ruler.</li><li>Click the lock key in the rail's header, beside the bin. Each selected step with a note gets a lock at the value the kit has now.</li></ol>
+<p>It is one undo step. A step without a note cannot hold a lock and is left out.</p>
 <h4 class="gd-h3">Copy a note with its locks</h4>
 <p>The locks of a step go with the step when you copy it. See &quot;Note copy&quot; in chapter 11.</p>
 <h4 class="gd-h3">Slide</h4>
@@ -1042,7 +1052,7 @@
 <div class="gd-body gd-prose"><h2>SLIDE</h2>
 <p>A slide makes a locked value glide to the next lock instead of jumping.</p>
 <ol class="gd-steps"><li>Click <b class="gd-ui">Slide</b> under the roll.</li><li>Click a step's column of the roll. A triangle at the foot of the roll marks the step that slides. Click again to take it off.</li><li>Drag across columns to paint slides on every step you cross, in one undo step.</li><li>Press <kbd class="gd-key">[ESC]</kbd> to write notes again.</li></ol>
-<p>The right-click menu has <b class="gd-ui">Slide</b> too. In the lock lane the glide is drawn from one lock to the next.</p>
+<p>The step menu (the ⋯ on a selection, or a right-click) has <b class="gd-ui">Slide</b> too. In the lock lane the glide is drawn from one lock to the next.</p>
 <p>To copy, paste or clear the slide row of a track, tick <b class="gd-ui">Slide</b> in <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> or <b class="gd-ui">Clear…</b> of the LCD's <b class="gd-ui">▾</b> menu (chapter 11, &quot;Super copy&quot;). Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take each back.</p>
 </div></section>
 <section class="gd-sec" id="the-mute-mode">
@@ -1203,7 +1213,7 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-77</span></span></aside>
 <div class="gd-body gd-prose"><h2>SONG EDIT TRANSPORT</h2>
 <p>On the machine you start the song from any row: select the row and press <kbd class="gd-key">[ENTER/YES]</kbd>. In the editor select the row and press <kbd class="gd-key">[ENTER]</kbd>, or click <b class="gd-ui">▶ From here</b> (see &quot;SONG TRANSPORT&quot;).</p>
-<p>The machine shows the song position in bars and beats. The editor shows the length of the whole song instead, in the <b class="gd-ui">Songs</b> column and on the LCD. There is no live bar and beat counter in the editor yet.</p>
+<p>The machine counts the bars and beats the song has played in the EDIT SONG header. The editor shows the same counter in the <b class="gd-ui">Arrangement</b> header while the song plays: Playing · 002:03 is bar 2, beat 3. The length of the whole song is in the <b class="gd-ui">Songs</b> column and on the LCD.</p>
 </div></section>
 <section class="gd-sec" id="song-loops">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-78</span></span></aside>
@@ -1349,7 +1359,7 @@
 <p>The multi map starts patterns from key ranges. It is on the <b class="gd-ui">Perform</b> workspace, in multi map mode. It is stored in the global slot.</p>
 <ol class="gd-steps"><li>Press <kbd class="gd-key">[4]</kbd>.</li><li>In the <b class="gd-ui">Keyboard</b> bar, click <b class="gd-ui">Multi map</b>.</li><li>The table lists the ranges from the lowest key. Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> beside a range's upper key to move the limit. The last range always ends at G-9.</li><li>Choose the pattern in the <b class="gd-ui">Pattern</b> list. <b class="gd-ui">CUR</b> plays the current pattern.</li><li>Set <b class="gd-ui">OFS</b>, the first step. <b class="gd-ui">LEN</b> is the number of steps and needs an offset first. <b class="gd-ui">TRN</b> is the transpose and <b class="gd-ui">TIM</b> the timing.</li><li>Click <b class="gd-ui">Split selected range</b> to cut a range in two. Click × to delete a range.</li></ol>
 <p>Bands on the keyboard show the ranges. A key you play shows the pattern it starts.</p>
-<p>The pattern list offers CUR and the patterns A01 to B16 only. The machine takes all 128.</p>
+<p>The <b class="gd-ui">Pattern</b> list of a range offers CUR and all 128 patterns, A01 to H16.</p>
 </div></section>
 <section class="gd-sec" id="mechanical-settings">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-94</span></span></aside>
@@ -1415,6 +1425,7 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-110</span></span></aside>
 <div class="gd-body gd-prose"><h2>FACTORY RESET</h2>
 <p>The editor holds no factory data of the Monomachine, so it offers no factory reset. The <b class="gd-ui">RESET MACHINE…</b> question says so. To get the factory kits and patterns back, import a factory .syx file. See &quot;FILE&quot; in chapter 19.</p>
+<p><b class="gd-ui">Start from factory memory…</b> in the same question restarts the machine as on a new install and deletes the saved machine memory. Its kits and patterns are those the emulated machine starts with, which are the factory ones only when the editor has the Monomachine's factory memory image. See &quot;MACHINE MEMORY&quot; in chapter 24.</p>
 </div></section>
 <section class="gd-sec" id="soft-reset">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-111</span></span></aside>
@@ -1425,6 +1436,38 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-111,</span> <span>1-112</span></span></aside>
 <div class="gd-body gd-prose"><h2>MIDI UPGRADE, SEND UPGRADE</h2>
 <p>The OS upgrade runs on the real machine. The editor does not upgrade the OS. It runs the Monomachine OS 1.32B that you give it as a ROM.</p>
+</div></section>
+<section class="gd-sec" id="mki-mkii-differences">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-114</span></span></aside>
+<div class="gd-body gd-prose"><h2>MKI / MKII DIFFERENCES</h2>
+<p>The MKI and the MKII run the same OS. The MKII adds the user waveforms of the DigiPRO machines. The editor draws the panel of either model.</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">MKI</b> or <b class="gd-ui">MKII</b> at the right of the top bar. The panel changes to the other model: the MKI has a light-blue LCD, the MKII a bluish-white one.</li><li>Click it again to go back.</li></ol>
+<p>With MKI chosen, the machines that need the MKII are grey in the machine list.</p>
+</div></section>
+</article>
+<article class="gd-chapter" id="c24" style="page: c24">
+<div class="gd-runhead"><span>24. Beyond the hardware</span><span>Monomachine Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">24</p><h1>Beyond the hardware</h1>
+</header>
+<div class="gd-intro gd-prose"><p>The editor runs the real Monomachine operating system and adds a few things around it. This chapter describes them.</p></div>
+<section class="gd-sec" id="machine-memory">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>MACHINE MEMORY</h2>
+<p>A Monomachine keeps what you save when you switch it off: its kits, patterns, songs and globals stay in its memory. The editor does the same. When you save on the machine, the editor writes what you saved to a file on your computer, slot by slot. A new session starts from factory memory with the saved slots put back in.</p>
+<p>Only a save writes the file: a kit, pattern, song or global stored into its slot. That is SAVE KIT, a change to a pattern (the machine stores pattern edits as you make them), SAVE SONG, a change to a global, a SysEx dump the machine takes in, a storage image you load. It makes no difference whether you save in the editor or on the machine's own keys. The editor writes the file a second or two after the save. Turning a knob, automation from a DAW and changes to the kit that plays that you have not saved write nothing, and neither does playing. In a DAW the machine follows the DAW's clock; that setting is never saved.</p>
+<p>A new session is a new plug-in in a DAW project, a new DAW project, or a start of the standalone editor. It has every slot you saved, wherever you saved it. The standalone editor also keeps the kit that played when you quit it, with its unsaved changes.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A DAW project keeps its own memory. When you open a saved project, the machine starts with the memory of that project, not with the file. A save you then make in that project goes to the file too, and only the slot you saved.</p></aside>
+<h4 class="gd-h3">Start from factory memory</h4>
+<ol class="gd-steps"><li>Choose <b class="gd-ui">RESET MACHINE…</b> in the engine menu, the drop-down at the left of the LCD.</li><li>Click <b class="gd-ui">Start from factory memory…</b>. The editor asks a second time.</li><li>Click <b class="gd-ui">Start from factory memory</b>. The machine restarts with its factory memory, as on a new install, and the saved memory file is deleted. This takes a few seconds.</li></ol>
+<p>New sessions now start from factory memory until you save again. The reset has no undo: click <b class="gd-ui">Export SysEx…</b> in the question first to keep a way back.</p>
+<h4 class="gd-h3">Turn it off</h4>
+<p>Choose <b class="gd-ui">KEEP MEMORY: ON</b> in the engine menu. It reads <b class="gd-ui">KEEP MEMORY: OFF</b>, and new sessions start from factory memory. The editor no longer writes the file. The file stays, so when you turn it on again, new sessions start with the memory you saved before.</p>
+<h4 class="gd-h3">Two editors at once</h4>
+<p>Two Monomachine editors open at the same time, in one DAW project or in two, share the same file. Each writes the slots it saves and leaves the others. When two editors save the same slot, the last save wins.</p>
+<h4 class="gd-h3">When the file cannot be used</h4>
+<p>The file is written in one step, so a crash leaves the old memory or the new one. If the file is damaged, the machine starts from factory memory and the editor says so. It keeps the file beside the new one as machine-memory.unusable with the date and time in its name, and your next save writes a new memory file. If the file was written by a newer editor, the editor leaves it as it is and saves nothing over it. It says so; move the file away to save again.</p>
+<p>If the editor cannot write the file, because the disk is full or the folder is read only, it says so and keeps the old file. It tries again at your next save and when it closes. Your saves stay in the session. The standalone editor starts with them next time, not with the old file, and writes them then.</p>
+<p>The file is machine-memory.bin in the memory folder of the editor's data folder: Documents/Gearmulator Preview/Monomachine/memory. It holds the slots you saved, nothing else. It holds no firmware.</p>
 </div></section>
 </article>
 </div>

@@ -391,8 +391,8 @@ stage_direct() {
 	stage_begin "2b" "Firmware tests ctest cannot run"
 	have_roms both || { stage_end FAIL "" "${MISSING_WHAT}"; return; }
 	local bad=0 notes="" tool mmtool mdtool
-	# mmDeskFirmwareTest has a ctest entry, but its 400 s limit is too short and without -DGEARMULATOR_MM_ROM it only
-	# skips; mdDeskFirmwareTest is its Machinedrum twin and has none. Both end with a "PASS (n failure...)" line. The two
+	# mmDeskFirmwareTest has a ctest entry too (--env, 1800 s; tier 2 runs it); here it runs on the gate's own ROM path;
+	# mdDeskFirmwareTest is its Machinedrum twin and has none. Both end with a "PASS (n failure...)" line. The two
 	# run at once, each in a sandbox of its own (their result and note in a file: a subshell's variables stay there).
 	mmtool="$(find_tool mmDeskFirmwareTest)"; mdtool="$(find_tool mdDeskFirmwareTest)"
 	(

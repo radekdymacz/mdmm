@@ -94,6 +94,29 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 6. Multi trig, ALL TRK, envelope ATK 0 DEC 0 SUS 0 REL 0: a key gives nothing. Play T1 with the computer's note keys (A S D): silent now too, until Panic (the ▶ menu, or its key). Set DEC, SUS and REL back to 127: the keys sound again.
 7. SEQ START with REL 0: a Multi trig key starts the pattern; let go and the pattern goes silent until the next key or STOP.
 
+## Machine memory for new sessions (wave 11, I-024, both editors)
+
+1. Plug-in in a new DAW project: change a kit name, SAVE KIT into a slot (page or panel). Wait two seconds.
+2. Add a second instance of the same editor in a new project (or close and add again): the slot holds your kit.
+3. Open an older saved project: it has its own memory, not the new kit.
+4. Engine menu: RESET MACHINE… > Start from factory memory…, Cancel, then again and confirm: the factory kits are back within seconds; a new instance starts from factory memory. The engine menu has no separate entry for it.
+5. KEEP MEMORY: OFF, save a kit, new instance: factory memory. Turn it ON again.
+6. Standalone: save a kit in a plug-in, then start the standalone (it has its own saved state): it has that kit, and its own other kits and the kit that played stay. With KEEP MEMORY: OFF it starts with its own state alone.
+7. The file: `~/Documents/Gearmulator Preview/<Machine>/memory/machine-memory.bin`. Damage it (change a byte): the next new instance says so, starts from factory memory and keeps `machine-memory.unusable.bin`.
+8. MD: load a sample into a UW slot in the Sampler and save nothing else, wait until the machine has stored it, new instance: the sample is there.
+9. Only saves write: play a pattern in a DAW with automation on a few parameters for a minute, turn knobs, rename the kit that plays without SAVE KIT: the file's date does not change. SAVE KIT: it changes within two seconds.
+10. Save a kit and quit the standalone at once (Cmd+Q): start it again, and a new plug-in instance: both have the kit.
+11. Standalone: rename the kit that plays (no SAVE KIT), quit, start again: the name is still there. Quit it, save a kit in a plug-in, start the standalone again: it has the plug-in's kit and still the renamed kit that plays.
+12. KEEP MEMORY: OFF, SAVE KIT, KEEP MEMORY: ON: the file's date changes at once; a new instance has the kit and every kit saved before.
+13. Make the memory folder read-only (`chmod 555`), SAVE KIT in the standalone: the editor says the file could not be written. Quit, `chmod 755`, start the standalone: the kit is there (not the old file's), and the file is written again.
+14. Open an old DAW project and SAVE KIT into one slot: a new instance has that kit and every other slot saved before, not the old project's kits, patterns or songs.
+15. Save a kit and at once use MIDI panic's restart (or install the ROM again): a new instance has the kit.
+16. MM: load a storage image: a new instance has the image's kits, patterns and songs that differ from what you had.
+17. Edit a pattern (a step, a lock), a song row and a global setting from the page: a new instance has each.
+18. Two instances (a DAW and the standalone, or two in one DAW): save different kits in both, quickly one after the other: a new instance has every one.
+19. Change the active global, mute tracks: the file's date does not change. MD standalone: change the tempo: a new instance has it. MD in a DAW (the machine follows the DAW's tempo): change the DAW's tempo: the file's date does not change.
+20. Load the VST3 and the AU of one editor in one host and save different kits in each: a new instance has every one.
+
 ## Polish B (B-070, B-062, I-002, I-022, both editors)
 
 1. MD (B-070): paint Swing on a few steps, then click one of those trigs off, drag-paint some off, cut a selection with swing in it, fill every 2nd step over swung steps: no swing mark flashes back on a step whose trig went. Rotate (Alt + ← →) moves the swing marks with the trigs; copy and paste a selection keeps them.
@@ -102,3 +125,18 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 4. MD (I-002): GLOBAL base channel set, play a mapped track note on a MIDI keyboard: the track's number on the rail glows a moment (on Mix: its LED). Another channel: nothing. While the sequencer plays, a note does not cut a trig's flash of the Mix LED short. In HW MIDI no note lights a track.
 5. Both (I-022): ⌘-click a value box (Ctrl-click on Windows): a field over it with its value, selected. Type a value, Enter: set; ⌘Z takes it back in one step. Type 999 or a word: refused, the field turns red and says the range (or the names), stays open; Esc leaves it. Tab to a value and press Enter: the field. Tab with a refused value keeps the field open; Enter on the tempo or a volume fader does what it did before. Double-click still sets the default, drag and wheel as before.
 6. Both (I-022): signed values (PAN, EQG): type -10 or +10. MD: where a box shows a unit beside its number, its text works too. MM lists: on an LFO's WAVE or PAGE type a name in small letters (saw, flt); MM PAN: L12, C or R5.
+
+## The gaps (wave 12, `feat/0.6-gaps`)
+
+1. MM (MM-322): click MKI / MKII at the right of the top bar: the LCD turns light blue (MKI) or bluish white (MKII), the toast names the model's LCD; on MKI the machine list greys the MKII-only machines.
+2. MD (MD-033): Sound, put TRX-BD on a track: a small arch over the gap between RAMP and RDEC, AMD and AMF, EQF and EQG, FLTF FLTW FLTQ, SPD and DEPTH. Point at RDEC: the tooltip names RAMP. A ROM machine: no arch on STRT and END. MID machines: the routing page shows CC5D CC5V CC6D CC6V PCHG (B-082).
+3. Both (MD-043, MM-102): rename the kit that plays in the kit library, click another kit, Load without saving; then click **UNDO KIT**: the renamed kit plays again, edited, in its own slot (the LCD's KIT field shows it). With unsaved edits UNDO KIT asks first. HW MIDI: the button is off with the reason.
+4. MD (MD-045): Clear a kit slot in the library (it asks), load it: every track GND-EMPTY, VOL 127, level 100; the master effects at their start values; the slot reads EMPTY. Cmd+Z brings the kit back. Reset machine > Empty reset leaves the same kits.
+5. MD (MD-099): play a pattern, click › on the LCD (the next pattern blinks: queued), press STOP at once: the machine stops and the LCD shows the queued pattern as the current one; PLAY starts it from step 1.
+6. MD (MD-106): a 16-step pattern with trigs on page 1 only: click LEN on the LCD to 32 (or 64): the trigs, accents, swing and locks of page 1 repeat on the new pages, a message says so; Cmd+Z takes it back. With a trig on a later page (hidden past the length) nothing is copied.
+7. MD (MD-147): Song page, a row with Repeat 3 (×3): play the song: the playing row reads +2, +1, last, and the line over the bank letters ends 2 more, 1 more, last; the next row (×1) shows nothing. The playing row is marked as soon as PLAY starts (it used to show only from the second row).
+8. MM (MM-083, MM-184, MM-203): draw locks in the lane over a few notes, right-click one of those steps and choose Clear locks (keep the notes): its locks go (every parameter), the note stays, the other steps keep theirs; ⌘Z brings them back. On a selection of steps it clears all of theirs.
+9. MM (MM-201): Sequence, Locks tab, pick a parameter, ⌘-click a note (or drag on the ruler for several), click the lock key beside the bin in the rail header: each selected note gets a lock at the value the kit has now (the bar sits on the dashed kit line); one ⌘Z takes them all back. With no selection the key says to select steps first.
+10. MM (MM-095): open the pattern chooser, ⌥-click a pattern (selected, not loaded), choose a kit in the Kit list: the pattern's tile shows the new K number, ⌘Z takes it back. On the pattern that plays the kit loads at once; with unsaved kit edits it asks first. Choosing in the Kit list no longer closes the chooser.
+11. MM (MM-271): Song page, SONG, PLAY: the Arrangement header reads Playing · 001:01 and counts bars and beats as the song plays (through repeats and loops, as the machine's EDIT SONG header); STOP: the counter goes.
+12. MM (MM-301): Perform › Multi map: a range's PAT list runs CUR, A01 to H16; choose H16, play a key in the range: the machine starts H16. ⌘Z takes it back.

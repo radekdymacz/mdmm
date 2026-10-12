@@ -1567,6 +1567,15 @@
                 "items": {
                   "type": ["string", "null"]
                 }
+              },
+              "clips": {
+                "type": "array",
+                "description": "MD-033: the clips the machine's LCD draws between two value boxes whose parameters depend on each other: i joins parameters i and i + 1 (0-23: SYNTHESIS, EFFECTS, ROUTING). Measured on OS 1.63 (gapProbesFirmwareTest w12clip).",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 22
+                }
               }
             }
           }
@@ -1809,13 +1818,13 @@
               "const": "ask"
             },
             "ask": {
-              "enum": ["breakChain", "discardKit", "loadKit", "reloadKit", "overwriteKit", "overwriteSlot", "clearSlot", "relinkKit"]
+              "enum": ["breakChain", "discardKit", "loadKit", "reloadKit", "overwriteKit", "overwriteSlot", "clearSlot", "relinkKit", "loadUndoKit"]
             },
             "also": {
               "type": "array",
               "description": "Other questions this one answers too (force answers all of them).",
               "items": {
-                "enum": ["breakChain", "discardKit", "loadKit", "reloadKit", "overwriteKit", "overwriteSlot", "clearSlot", "relinkKit"]
+                "enum": ["breakChain", "discardKit", "loadKit", "reloadKit", "overwriteKit", "overwriteSlot", "clearSlot", "relinkKit", "loadUndoKit"]
               }
             },
             "message": {
@@ -1900,6 +1909,12 @@
               "minimum": 0,
               "maximum": 255,
               "description": "0.3.5: the song row heard (RAM 0x2b18f5, md::SongPosition, as it was at PLAY and at the last wrap: the byte queues the next row two steps early), null where the engine cannot read it. Meaningful while machine.songMode is true and the machine plays."
+            },
+            "songRepeats": {
+              "type": ["integer", "null"],
+              "minimum": 0,
+              "maximum": 255,
+              "description": "0.6 (MD-147): the passes of that row still to come (RAM 0x2b1901, md::SongPosition, counting down: REPEATS 3 reads 3, 2, 1, 0), read with songRow; null when songRow is."
             }
           }
         },
@@ -2012,6 +2027,28 @@
               "type": "integer",
               "minimum": 1,
               "maximum": 127
+            }
+          }
+        },
+        {
+          "type": "object",
+          "description": "I-024 (doc/modern-ux/DESIGN-machine-memory.md): the machine memory that stays for new sessions, on the page's ready and whenever it changes. keep: KEEP MEMORY (the setting, default on; memoryKeep sets it); available: the plug-in has a folder for the file (false in an isolated test); saved: the machine memory file is there; note: what went wrong last (a write that failed, a file that could not be used and was moved aside), empty when nothing did.",
+          "required": ["type", "keep", "available", "saved", "note"],
+          "properties": {
+            "type": {
+              "const": "machineMemory"
+            },
+            "keep": {
+              "type": "boolean"
+            },
+            "available": {
+              "type": "boolean"
+            },
+            "saved": {
+              "type": "boolean"
+            },
+            "note": {
+              "type": "string"
             }
           }
         },
@@ -5225,6 +5262,27 @@
         },
         {
           "type": "object",
+          "description": "machine: KIT > LOAD KIT > UNDO KIT with the panel's keys: the kit last lost to a LOAD KIT or an overwrite plays again, its own slot current, unsaved (MD-043, measured: gapProbesFirmwareTest w12undo)",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "loadUndoKit"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "description": "machine: SAVE KIT n",
           "required": ["op", "k"],
           "properties": {
@@ -6819,6 +6877,51 @@
               "type": "number",
               "minimum": -60,
               "maximum": 6
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: KEEP MEMORY: on, a session without a project state starts from the machine memory file and every save on the machine writes it; off, neither (the file stays); kept in the editor's settings; a machineMemory message follows",
+          "required": ["op", "on"],
+          "properties": {
+            "op": {
+              "const": "memoryKeep"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "on": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: RESET MACHINE… > Start from factory memory: the machine memory file is deleted and the machine restarts from factory memory (the page asked the user first); a machineMemory message follows",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "memoryFactory"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
             }
           },
           "additionalProperties": false
