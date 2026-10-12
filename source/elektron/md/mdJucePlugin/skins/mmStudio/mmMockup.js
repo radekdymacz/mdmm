@@ -1453,9 +1453,12 @@ const StepSel = (() => {
 		return true;
 	}
 	function moreWake() {
-		if (!more || moreRaf) return;
-		const tick = () => { moreRaf = morePlace() ? requestAnimationFrame(tick) : 0; };
-		moreRaf = requestAnimationFrame(tick);
+		if (!more || moreRaf || typeof requestAnimationFrame === "undefined") return;
+		/* a frame that runs at once (a test's stand-in) must not recurse */
+		let inTick = false;
+		const tick = () => { if (inTick) return; inTick = true; moreRaf = morePlace() ? (requestAnimationFrame(tick) || -1) : 0; inTick = false; };
+		moreRaf = -1;
+		moreRaf = requestAnimationFrame(tick) || -1;
 	}
 	function moreKey(o) {
 		if (typeof document === "undefined") return null;
