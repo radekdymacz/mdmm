@@ -10,8 +10,36 @@ namespace mmDesk
 	// mode it is in (RAM). RECORD from LIVE goes to GRID (measured), so off from live is RECORD twice.
 	// 0.6 wave 7: STEP RECORDING (STOP held + RECORD); RECORD leaves it (measured). It writes the track in focus
 	// only (a note on another track's channel writes nothing, measured): t presses TRACK t first, also while in it.
+	// Review 1 (Radek, 2026-10-12, B-092): RECORD waits like PLAY. Refused while the panel takes a dump or leaves SYSEX
+	// RECV, it is pressed as soon as the panel is free (pumpRecord), given up after g_transportWaitMs; RECORD again while
+	// it waits cancels it.
 	Outcome MmMachine::cmdRecord(const Value& _m, const Documents&)
 	{
+		if(m_pendingRecord)
+		{
+			m_pendingRecord.reset();
+			return ok("RECORD cancelled: it was waiting for the panel.");
+		}
+		return record(_m, true);
+	}
+
+	void MmMachine::pumpRecord(const double _now)
+	{
+		if(!m_pendingRecord)
+			return;
+		if(_now - m_pendingRecordMs > g_transportWaitMs)
+		{
+			m_pendingRecord.reset();
+			return;
+		}
+		const auto m = *m_pendingRecord;
+		if(record(m, false).errors.empty() && !m_recordWaiting)
+			m_pendingRecord.reset();
+	}
+
+	Outcome MmMachine::record(const Value& _m, const bool _first)
+	{
+		m_recordWaiting = false;
 		if(!machineState())
 			return refuse(capabilities().reason("gridRecord"));
 		if(m_tel.recording < 0)
@@ -38,7 +66,16 @@ namespace mmDesk
 		if(keys.empty())
 			return ok();
 		if(!pressKeys(keys))
-			return refuse(g_panelBusy);
+		{
+			// the panel is busy taking an edit (SYSEX RECV): RECORD goes once it is free, as PLAY does
+			m_recordWaiting = true;
+			if(_first)
+			{
+				m_pendingRecord = _m;
+				m_pendingRecordMs = now();
+			}
+			return ok(g_transportWaits);
+		}
 		if(want == 3 && cur != 3)
 			return ok("STEP RECORDING: play a note to write it to the step, then the next. → a rest, ← back, Delete clears the step, Esc: done.");
 		return ok();

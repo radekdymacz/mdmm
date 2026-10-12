@@ -150,6 +150,7 @@ namespace mmDesk
 			m_pendingTransport.reset();
 	}
 
+
 	bool MmMachine::pressKeys(const std::vector<Key>& _keys)
 	{
 		const auto s = m_recv.state();

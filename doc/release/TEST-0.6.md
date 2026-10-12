@@ -152,3 +152,4 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 7. MM: a pattern with chords on T5, LIVE RECORDING, hold Delete over a few chord steps; then lock a value on Sequence and add a note: both taken, no message about chord notes (B-093).
 8. Both, as a plug-in in a DAW: a new instance follows the DAW (TEMPO marked). GLOBAL › Sync › Tempo in INT: TEMPO edits, ▶ plays on the machine's own clock whatever the DAW does; save the project, reopen it: still INT. Tempo in EXT: follows the DAW again (I-026).
 9. MD: Song page, slot 1 (the factory song), Load, SONG, ▶: the song plays; Space stops and plays it again (B-096; if it does not, note standalone or DAW and whether ▶ blinks).
+10. MM: make an edit that sends a dump (paste a pattern), then at once ●: the LCD says it follows in a moment and recording starts when the dump is in; ● again during the wait cancels it (B-092).
