@@ -18,6 +18,22 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Should:** each E12 machine lists the knobs the manual lists.
 - **Status:** fixed in slice 5 (four names swapped back); `md-sound-machine-reference` checks every machine against the manual's list. Values and SysEx are untouched: only the labels of the fourth knob moved.
 
+## B-072 · Song page: PATTERN clicked soon after SONG leaves the machine in SONG mode
+
+- **From:** the journey md-song-mode, 2026-10-12 (on the "flaky" list; it fails whenever it runs right after md-seq-live-record, 4 of 6 runs).
+- **What happens:** click SONG, then PATTERN before the page has drawn the machine's answer: PATTERN sends nothing, the machine stays in SONG mode and the switch jumps back to SONG.
+- **Cause:** since 0.6 wave 1 (the PATTERN · CHAIN · SONG keys, 97f1ccfe8) a key sent the mode only when it differed from `V.songMode`, the view of the last render; the machine's answer to SONG was in the machine state but not yet in that view, so PATTERN looked like no change. The MM page had the same check on its own copy of the mode. Before wave 1 every click sent the mode.
+- **Fix (`fix/0.6-span-song`):** every key sends the mode (SET STATUS 0x10 and the status request; the same mode again changes nothing), on both editors. Tests: md-seq-live-record then md-song-mode, 5 of 5 runs pass; `mdDeskFirmwareTest <MD ROM> songrow`: SONG sent again while the song plays is no restart.
+- **Status:** fixed on `fix/0.6-span-song`. Not in a release (wave 1 is on the 0.6 branch only).
+
+## B-071 · Monomachine: an imported global's MIDI channels do not reach the machine
+
+- **From:** `mmDeskFirmwareTest <MM ROM> span`, once it ran under ctest, 2026-10-12: with base channel 13 and span 6 imported, the T2 and T3 edits, the MULTI ENV and the T1 to T3 mutes did not reach the machine.
+- **What happens:** import a .syx with the active global's channels changed: the GLOBAL page shows the new channels, the machine keeps the old ones (measured, `SPAN_PROBE=12,6 mmDeskFirmwareTest <MM ROM> spanprobe`: CCs on channels 1 to 6 still reach T1 to T6, channels 13 to 15 nothing). The editor sends to the new channels, so those edits and mutes are lost until the slot is made active again.
+- **Cause:** a dump of the active global is stored, not applied, until its slot is made active (0x56) after SYSEX RECV is left. B-067 moved every waiting 0x56 before the SYSEX RECV macro, to make a chosen slot active before the macro's cursor goes there. The re-activation after an imported dump waits in the same place, so it now went out before the macro, before the dump was in.
+- **Fix (`fix/0.6-span-song`):** two separate waits: a slot the person chose goes before the macro (B-067); the re-activation of the active global goes after the macro, once RECV is left and no dump waits for it, as before B-067. A chosen slot drops any re-activation still waiting. Tests: `mmDeskFirmwareTest <MM ROM> span` (all three variants), `factoryglobal` and `intentcases` (B-067), mmDeskTest (a slot chosen while an imported dump waits stays active; the re-activation applies the new dump).
+- **Status:** fixed on `fix/0.6-span-song`. Not in a release: B-067 came after 0.5.1, but it is on main.
+
 ## B-070 · Machinedrum: a swing mark can flash back on a step whose trig was just removed
 
 - **From:** the wave 3 review, 2026-10-12.
