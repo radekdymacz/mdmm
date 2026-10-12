@@ -2019,11 +2019,23 @@ const MdJourneys = (() => {
 			{ say: "the LCD shows the kit's slot and name and that it is saved", screen: () => ok($1("#kitname").textContent.trim() === `K${nn(V.kit)} ${kitName(V.kit).trim()}`.trim() && /saved|edited/.test($1("#save").textContent), `LCD "${$1("#kitname").textContent}", chip "${$1("#save").textContent}", kit ${V.kit}`), machine: () => ok(currentKitSlot() === V.kit && Docs.kits[V.kit] != null, "kit slot " + currentKitSlot()) },
 			{ say: "click KIT: the library of 64 kits opens, the current one marked", act: u => u.click("#kitf"), screen: () => ok(!$1("#libpop").hidden && $all("#libpop .ks").length === 64 && $1(ks(V.kit))?.classList.contains("cur"), $all("#libpop .ks").length + " tiles"), machine: () => ok(Object.keys(Docs.kits).length === 64, Object.keys(Docs.kits).length + " kits read") },
 			{ say: "a kit holds 16 tracks, each with 8 synthesis, 8 effects and 8 routing values and its LFO, the master effects and a name", machine: () => { const k = kitDocOf(Docs); return ok(k && k.tracks.length === 16 && k.tracks.every(t => t.synth.length === 8 && t.effects.length === 8 && t.routing.length === 8 && t.lfo && t.machine) && k.masterFx && typeof kitNameText(k.name) === "string", "kit " + JSON.stringify(Object.keys(k || {}))); } },
+			/* B-105 (the 0.6 e2e run): factory memory links every kit that holds data to a pattern, so no star showed. The
+			   journey makes its own: the kit that plays pasted into an empty slot no pattern links (undone in tidy) */
+			{ say: "when every kit with data is linked (factory memory), Copy the kit that plays and Paste it into an empty slot no pattern links", act: async (u, c) => {
+				if ([...Array(64).keys()].some(k => !kitEmpty(k) && !linked(k).length)) return;
+				const dst = [...Array(64).keys()].reverse().find(k => k !== V.kit && kitEmpty(k) && !linked(k).length);
+				if (dst == null) throw new Error("no empty kit slot that no pattern links");
+				u.click(ks(V.kit), { alt: true }); await sleep(150); u.click('#libpop [data-la="copy"]'); await sleep(150);
+				u.click(ks(dst), { alt: true }); await sleep(150); await until(idle, 8000); u.click('#libpop [data-la="paste"]');
+				if (await until(() => dlgShown() && !!dlgButton("Overwrite"), 1500)) u.click(dlgButton("Overwrite"));
+				c.pasted = dst; await until(() => !kitEmpty(dst), 12000); },
+				machine: c => ok(c.pasted == null || !kitEmpty(c.pasted), "slot " + c.pasted), within: 15000 },
 			{ say: "in EXTENDED a kit no pattern links to ends with a star, the others show the patterns that use them", act: () => Journey.snapshot("md-kit-library"),
 				screen: () => { const bad = [...Array(64).keys()].filter(k => { if (kitEmpty(k) && k !== V.kit) return false; const t = $1(ks(k))?.querySelector(".lsn")?.textContent || ""; return t.endsWith("*") !== !linked(k).length; });
 					const stars = $all("#libpop .lsn").filter(e => e.textContent.endsWith("*")).length; return ok(!bad.length && V.mode === "EXTENDED" && stars >= 1, `kits wrong ${bad.slice(0, 8)}, stars ${stars}`); } },
 			esc
-		]
+		],
+		async tidy(u, c) { if (c.pasted == null) return; if (!$1("#libpop").hidden) u.key("Escape"); await until(idle, 8000); blur(); u.key("z", { cmd: true }); await until(() => kitEmpty(c.pasted), 12000); }
 	};
 	/* MD-109, MD-102: the kit is worked on in memory, copied before editing, and reloaded from its slot */
 	const kitMemoryJ = {

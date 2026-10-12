@@ -2965,9 +2965,23 @@ const MmJourneys = (() => {
 	const kitSlots = {
 		name: "mm-lib-kit-slots", proves: ["MM-097", "MM-098", "MM-108"],
 		steps: [
-			{ say: "open the kit library: a kit that no pattern recalls ends with a star, one a pattern recalls has none", act: async (u, c) => { c.k0 = machine().kit.current; u.click("#kitf"); await until(() => $all("#libpop .ks").length >= 128, 4000); await until(() => I().slots("pattern").length >= 128 && I().slots("kit").length >= 128, 30000); await sleep(300); Journey.snapshot("mm-kit-library"); },
-				screen: () => { const used = new Set(); for (let p = 0; p < 128; p++) { const d = I().doc("pattern", p); if (d) used.add(d.kit); } const bad = []; for (let k = 0; k < 128; k++) { const star = $1(ksq(k))?.querySelector(".lsn")?.textContent.endsWith("*"); if (star !== !used.has(k)) bad.push(`K${k + 1}: star ${star}, used ${used.has(k)}`); } return ok(!bad.length && used.size < 128, bad.slice(0, 4).join(" | ")); } },
-			{ say: "Clear a kit (it asks): its slot holds six GND-SIN tracks; load that slot: the machine plays six GND-SIN", act: async (u, c) => { c.n0 = histN(); c.slot = otherSlot(); c.d0 = JSON.stringify(I().doc("kit", c.slot)); u.click(ksq(c.slot), { alt: true }); await sleep(200); u.click('#libpop [data-la="clear"]'); await answer(u, c); await until(() => MmConvert.kitEmpty(I().doc("kit", c.slot)), 20000);
+			{ say: "open the kit library: a kit that no pattern recalls ends with a star, one a pattern recalls has none", act: async (u, c) => { c.k0 = machine().kit.current; u.click("#kitf"); await until(() => $all("#libpop .ks").length >= 128, 4000); await until(() => I().slots("pattern").length >= 128 && I().slots("kit").length >= 128, 30000); await sleep(300);
+					/* B-105: factory memory links every kit that holds data to a pattern: the journey makes its own unlinked kit, the
+					   kit that plays pasted into an empty slot no pattern recalls (undone in tidy) */
+					const used = new Set(); for (let p = 0; p < 128; p++) { const d = I().doc("pattern", p); if (d) used.add(d.kit); }
+					const emptyAt = k => !!$1(ksq(k))?.classList.contains("empty");
+					if (![...Array(128).keys()].some(k => !used.has(k) && !emptyAt(k))) {
+						const dst = [...Array(128).keys()].reverse().find(k => k !== c.k0 && !used.has(k) && emptyAt(k));
+						if (dst == null) throw new Error("no empty kit slot that no pattern recalls");
+						c.n0 = histN(); u.click(ksq(c.k0), { alt: true }); await sleep(150); u.click('#libpop [data-la="copy"]'); await sleep(150);
+						u.click(ksq(dst), { alt: true }); await sleep(150); u.click('#libpop [data-la="paste"]'); await sleep(300); if (dlgShown()) u.click($1("#dlg .danger") || $1('#dlg [data-dlg="0"]'));
+						await until(() => !emptyAt(dst), 15000); await sleep(300);
+					}
+					Journey.snapshot("mm-kit-library"); },
+				/* B-105 (the 0.6 e2e run): an empty slot shows EMPTY, no star (factory memory has empty kit slots; the page
+				   tier's fixture has none) */
+				screen: () => { const used = new Set(); for (let p = 0; p < 128; p++) { const d = I().doc("pattern", p); if (d) used.add(d.kit); } const bad = []; let stars = 0; for (let k = 0; k < 128; k++) { const tile = $1(ksq(k)), star = !!tile?.querySelector(".lsn")?.textContent.endsWith("*"), empty = !!tile?.classList.contains("empty"); stars += star; if (star !== (!used.has(k) && !empty)) bad.push(`K${k + 1}: star ${star}, used ${used.has(k)}, empty ${empty}`); } return ok(!bad.length && stars >= 1, `stars ${stars}; ` + bad.slice(0, 4).join(" | ")); } },
+			{ say: "Clear a kit (it asks): its slot holds six GND-SIN tracks; load that slot: the machine plays six GND-SIN", act: async (u, c) => { c.n0 ??= histN(); c.slot = otherSlot(); c.d0 = JSON.stringify(I().doc("kit", c.slot)); u.click(ksq(c.slot), { alt: true }); await sleep(200); u.click('#libpop [data-la="clear"]'); await answer(u, c); await until(() => MmConvert.kitEmpty(I().doc("kit", c.slot)), 20000);
 					c.docT = I().doc("kit", c.slot).tracks.map(t => t.machineName); u.click(ksq(c.slot)); if (await until(dlgShown, 1500)) u.click(dlgButton("Load without saving") || $1("#dlg .danger")); await until(() => machine().kit.current === c.slot, 15000); await sleep(800); },
 				machine: c => ok(c.docT.every(m => m === "GND-SIN") && machine().kit.current === c.slot && wk().tracks.every(t => t.machineName === "GND-SIN"), `slot ${c.docT}, loaded ${wk().tracks.map(t => t.machineName)}`), within: 50000 },
 			{ say: "Esc; on Sound, track 1 as FM or SID again, then CLR on the LCD: the track is GND-SIN with every page at its start, as the cleared kit's; Cmd+Z brings the machine back", act: async (u, c) => { if (!$1("#libpop").hidden) u.key("Escape"); await sleep(200); u.click(tab("sound")); await sleep(300); u.click(rail(0)); await sleep(200); u.click("#machbtn"); await until(() => !$1("#machpop").hidden, 1500); u.click('#machpop .mf[data-fam="SID"]'); await sleep(50); u.click('#machpop .mk[data-mach="SID-6581"]'); await until(() => wk().tracks[0].machineName === "SID-6581", 4000); await sleep(300);
