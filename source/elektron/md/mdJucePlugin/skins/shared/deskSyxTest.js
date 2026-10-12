@@ -82,5 +82,33 @@ check(M.slotLabel("song", 4) === "S05" && M.slotLabel("global", 7) === "G8", "so
 	check(M.kindLine("send", undefined, false).text === "not sent", "a kind not chosen: not sent");
 }
 
+/* VERIFY ONLY (0.6): a report of a check counts "same", and an item it does not list is the same as the file */
+{
+	const picked = [{ kind: "kit", slot: 0 }, { kind: "kit", slot: 1 }];
+	const r = M.outcomes(picked, { check: true, same: 1, items: [{ kind: "kit", slot: 1, outcome: "differs", text: "kit 2: different" }] });
+	check(r.get("kit:0").outcome === "same" && r.get("kit:1").outcome === "differs", "verify only: not listed is the same, listed its outcome");
+	check(M.OUTCOME.same[1] === "=", "the same as the file: =");
+}
+
+/* SPECIFIC place (0.6): a kind's first slot is the file's first, from where an item came */
+check(M.placeFirst([{ slot: 9, from: 3 }, { slot: 10, from: 4 }]) === 3 && M.placeFirst([{ slot: 7 }, { slot: 2 }]) === 2, "place: the first slot is the file's first");
+
+/* the export (0.6): ALL is everything; unticked, each kind with data over its first to last used slot */
+{
+	const info = { model: "Machinedrum", kinds: { kit: { slots: 64, held: 64, used: 12, first: 0, last: 11 }, pattern: { slots: 128, held: 128, used: 0, first: -1, last: -1 },
+		global: { slots: 8, held: 1, used: 1, first: 0, last: 0 } } };
+	const d = M.exportDefaults(info);
+	check(d.kit.on && d.kit.from === 0 && d.kit.to === 11, "kits with data: ticked, K01 to the last used");
+	check(!d.pattern.on && d.pattern.from === 0 && d.pattern.to === 127, "no patterns with data: not ticked, the whole range");
+	check(!d.global.on && !d.song, "globals not ticked until chosen; a kind the host does not name is not offered");
+	check(JSON.stringify(M.exportRequest(true, d)) === "{}", "ALL: no kinds, everything");
+	d.kit.from = 5; d.kit.to = 2; d.global.on = true;
+	const q = M.exportRequest(false, d);
+	check(q.kinds.join() === "kit,global" && q.ranges.kit.join() === "2,5" && q.ranges.global.join() === "0,0", "a range set backwards goes from low to high");
+	check(M.exportLine(false, d, info) === "Kits K03–K06 · Globals G1.", "the export's line: " + M.exportLine(false, d, info));
+	check(M.exportLine(false, {}, info) === "Nothing chosen.", "nothing ticked");
+	check(M.rangeLabel("wave", 0) === "W01" && M.rangeLabel("wave", 63) === "W64", "waveforms W01..W64");
+}
+
 console.log(failures ? `${failures} FAILED` : "all ok");
 process.exit(failures ? 1 : 0);

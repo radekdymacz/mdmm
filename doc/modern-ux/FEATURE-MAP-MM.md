@@ -34,7 +34,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Highlights 1-2 | 18 tempo synced LFOs | 3 per track | ✅ | Sound > LFO 1-3 |  | – |
 | Highlights 1-2 | 12 arpeggiators | One per track, synth and MIDI | ✅ | Sequence dock > Arp |  | – |
 | Highlights 1-2 | Full real-time control | Every DATA value live | ✅ | Every value box, drag or wheel | Sent as CC while dragging | – |
-| Highlights 1-2 | DigiPRO user waveforms (MKII) | 64 user waveform slots | ❌ | – | The page can pick waveform 1-64 (WAV1, WAV2, WAVE) but cannot send, receive, rename or erase user waveforms. Measured (P4): a request (0x5E) returns a used waveform byte for byte; a dump (0x5D) is taken only on DIGIPRO MGR > RECEIVE. | – |
+| Highlights 1-2 | DigiPRO user waveforms (MKII) | 64 user waveform slots | 🟡 | Export SysEx…: Waveforms W01 to W64, read from the machine into the .syx | An empty waveform answers nothing and is left out. | 1 |
 | +Drive 1-3 | Snapshots, Digibanks, 8192 waveforms | Optional storage drive | ➖ | – | Not emulated, see section 19 | – |
 
 ## 2. User interface and connectors (1-4 to 1-9)
@@ -421,10 +421,10 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Mechanical settings 1-94 | Knob resolution (MKII) | Encoder resolution | ➖ | – | Hardware knobs | – |
 | Mechanical settings 1-94 | Velocity curve, fixed velocity (SFX-6) | Keyboard response | ➖ | – | Hardware keys. The editor's own velocity is keys C / V | – |
 | Mechanical settings 1-94 | Joystick mapping TIGHT / FULL | Joystick | ➖ | – | Hardware joystick | – |
-| File 1-95 | Sysex send: ALL, KIT, PAT+KIT, SONG+PAT+KIT with ranges | Send dumps | 🟡 | Right-click menu > export all as one .syx | No range choice | – |
-| File 1-97 | Sysex receive: ORIG, SPEC, VERF | Receive dumps | 🟡 | SysEx import panel: choose slots, preview, report | ORIG-style (original positions); no SPEC start slot and no VERF-only mode | 2 |
+| File 1-95 | Sysex send: ALL, KIT, PAT+KIT, SONG+PAT+KIT with ranges | Send dumps | ✅ | Engine menu or a library's header: Export SysEx…: All (every kit, pattern, song and global), or untick All and tick Kits, Patterns, Songs, Globals, Waveforms, each with its range | The kinds are chosen one by one: a song range does not add its patterns by itself. | 1 |
+| File 1-97 | Sysex receive: ORIG, SPEC, VERF | Receive dumps | ✅ | Import SysEx: PLACE row (Original place, Specific place from a first slot per kind, the grid shows where each item lands); Verify only beside Import | Verify only writes nothing: the slots are read and compared. | 4 |
 | File 1-95, 1-97 | Needs the machine on SYSEX RECV | Receive session | ✅ | Editor drives it itself; pattern field shows RECV / SEND n | HW MIDI: user opens the screen | 2 |
-| DigiPRO manager 1-99 | Send, receive, erase, rename user waveforms; copy between Digibanks | Waveform manager | ❌ | – | MKII only. Measured (P4): send (0x5E, used waveforms only) and receive (0x5D on the RECEIVE screen) work on the emulator; rename, erase and copy were not probed. | – |
+| DigiPRO manager 1-99 | Send, receive, erase, rename user waveforms; copy between Digibanks | Waveform manager | 🟡 | Export SysEx…: Waveforms (the manager's SEND) |  | – |
 | +Drive settings 1-105 | Quick mode, format | +Drive | ➖ | – | Not emulated | – |
 | Snapshot manager 1-106 | Load, save, rename, erase, lock snapshots | +Drive | ➖ | – |  | – |
 | Digibank manager 1-107 | Switch, rename, erase, lock banks | +Drive | ➖ | – |  | – |
@@ -436,8 +436,8 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
 | Test mode 1-110 | Hardware self test, joystick calibration | Test | ➖ | – |  | – |
-| Empty reset 1-110 | Clear kits, patterns, songs, globals | Reset | 🟡 | Clear single slots in the libraries; Alt + CLR for a pattern; GLOBAL > Reset to defaults for the active global | No "clear everything" key | – |
-| Factory reset 1-110 | Restore factory data | Reset | ❌ | – | Remove and add the ROM or import the factory .syx | – |
+| Empty reset 1-110 | Clear kits, patterns, songs, globals | Reset | ✅ | Engine menu: Reset machine… > Empty reset… (asked twice): every kit, pattern and song cleared on SYSEX RECV, read back and reported in the SysEx panel | Globals stay: GLOBAL > Reset to defaults resets a global. | 1 |
+| Factory reset 1-110 | Restore factory data | Reset | ❌ | Engine menu: Reset machine… says why it is not offered |  | – |
 | Soft reset 1-111 | Restart keeping data | Restart | ➖ | – | Reopen the editor | – |
 | MIDI upgrade, send upgrade 1-111, 1-112 | OS update over MIDI | OS update | ➖ | – | The editor loads the OS 1.32B image | – |
 | Specifications 1-113 | Data sheet | Specs | ➖ | – |  | – |
@@ -512,7 +512,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | 0x58 / 0x59 Load / save kit C-2 | Kit load, save | LOAD / SAVE KIT | ✅ | Kit library |  | – |
 | 0x5B Assign machine C-2 | Machine and init mode | Machine | ✅ | Machine picker |  | – |
 | 0x5C Set track routing C-2 | Output bus, input | Routing | ✅ | Mix |  | – |
-| 0x5D / 0x5E Digipro waveform dump, request C-2 | User waveforms | Waveforms | ❌ | – | Measured (P4): a request (0x5E) returns a used waveform byte for byte, nothing for an empty one; a dump (0x5D) is taken only on DIGIPRO MGR > RECEIVE. | – |
+| 0x5D / 0x5E Digipro waveform dump, request C-2 | User waveforms | Waveforms | 🟡 | Export SysEx…: Waveforms (0x5E requests, the dumps written to the file) |  | – |
 | 0x5E Set Gate box parameter C-2 | Reverb parameter | Reverb | ➖ | – | Not used; reverb values go as CC | – |
 | 0x61 Set tempo C-2 | Tempo | Tempo | ✅ | LCD TEMPO | 30-300 BPM | – |
 | 0x67 / 0x68 Pattern dump, request C-3 | Pattern data | Pattern | ✅ | All sequence edits, chooser |  | – |
@@ -531,9 +531,9 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 315 |
+| ✅ | 318 |
 | 🟡 | 25 |
-| ❌ | 11 |
+| ❌ | 8 |
 | ➖ | 34 |
 | Total | 385 |
 

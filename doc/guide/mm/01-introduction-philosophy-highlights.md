@@ -24,9 +24,9 @@ The machine's main features, and where each one is in the editor:
 ![The Sound workspace](shot:mm-sound-workspace)
 
 ## DIGIPRO USER WAVEFORMS
-<!-- rows: MM-010 @b0daf9 -->
+<!-- rows: MM-010 @a62218 -->
 
-The DigiPRO machines of an MKII play 64 waveforms, and the MKII lets you load your own. {gap:MM-010}The editor picks a waveform from 1 to 64 in the wave fields of the DigiPRO machines, but it cannot send, receive, rename or erase user waveforms yet.{/gap}
+The DigiPRO machines of an MKII play 64 waveforms, and the MKII lets you load your own. The editor picks a waveform from 1 to 64 in the wave fields of the DigiPRO machines. **Export SysEx…** saves the user waveforms in a .syx file: see "DIGIPRO MANAGER" in chapter 19. {gap:MM-010}You cannot send waveforms to the machine, rename or erase them in the editor.{/gap}
 
 The **MKII** key in the top bar switches the editor between the MKI and MKII plate. The MKII adds the user waveforms and the DigiPRO double draw and ensemble machines. On the MKI plate the machine picker greys those two machines out and says "MKII only".
 

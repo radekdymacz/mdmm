@@ -1352,6 +1352,77 @@ const MmJourneys = (() => {
 			{ say: "press Escape", act: u => u.key("Escape"), screen: () => ok($1("#libpop").hidden, "open") }
 		]
 	};
+	/* ---------- wave 6: SysEx kinds and ranges (DigiPRO waveforms too), SPECIFIC place, VERIFY ONLY, Reset machine… ---------- */
+	const syxNews = [];
+	Bridge.onMessage(m => { if (m.type === "syxExport") { syxNews.push(m); if (syxNews.length > 20) syxNews.shift(); } });
+	const lastExport = () => syxNews.filter(m => !m.running).pop();
+	const syxWanted = () => window.gmDev || new URLSearchParams(location.search).get("syxfile") ? null : "no .syx for the run (GEARMULATOR_MDMM_SYX_FILE)";
+	const syxValue = (k, end) => `#syxpop [data-sxv="${end}"][data-k="${k}"]`;
+	const syxKinds = on => async u => { for (const b of $all("#syxpop [data-syxkind]")) if (b.checked !== on.includes(b.dataset.syxkind)) u.click(b); await sleep(100); };
+	const syxCell = id => `#syxpop button[data-syxitem="${id}"]`;
+	const openImport = { say: "choose IMPORT SYSEX… in the engine menu: the file's preview", act: u => u.pick("engsel", "import"),
+		screen: () => ok(!$1("#syxpop").hidden && !$1("#syxpop").classList.contains("syx-export") && $all('#syxpop button[data-syxitem^="kit:"]').length > 0, "no preview with kits"), within: 8000 };
+	const syxExportKinds = {
+		name: "mm-lib-syx-export-kinds", proves: ["MM-307", "MM-010"],
+		needs: () => window.gmDev ? null : "the save dialog: the page tier only",
+		steps: [
+			{ say: "choose EXPORT SYSEX… in the engine menu: ALL is ticked, the kinds and the waveforms wait under it", act: u => u.pick("engsel", "export"),
+				screen: () => ok(!$1("#syxpop").hidden && $1("#syxpop").classList.contains("syx-export") && !!$1('#syxpop [data-sxk="all"]')?.checked && !!$1(syxValue("wave", "to")), "no export panel with ALL and the waveforms"), within: 6000 },
+			{ say: "untick All, untick Patterns and Songs, wheel the kits' last slot down to K04", act: async u => { u.click('#syxpop [data-sxk="all"]'); await sleep(100); u.click('#syxpop [data-sxk="pattern"]'); u.click('#syxpop [data-sxk="song"]'); await sleep(100); u.wheel(syxValue("kit", "to"), -124); },
+				screen: () => ok($1(syxValue("kit", "to"))?.textContent === "K04" && !$1('#syxpop [data-sxk="pattern"]').checked && !$1('#syxpop [data-sxk="song"]').checked, "kits to " + $1(syxValue("kit", "to"))?.textContent) },
+			{ say: "tick Waveforms, wheel their last one down to W08", act: async u => { u.click('#syxpop [data-sxk="wave"]'); await sleep(100); u.wheel(syxValue("wave", "to"), -56); },
+				screen: () => ok($1(syxValue("wave", "to"))?.textContent === "W08" && /Kits K01–K04 · Waveforms W01–W08/.test($1("#syxpop .syxsum")?.textContent || ""), "summary " + $1("#syxpop .syxsum")?.textContent) },
+			{ say: "click Save .syx…: the waveforms are read from the machine, then the file is written", act: (u, c) => { c.n = syxNews.length; u.click('#syxpop [data-syxgo="save"]'); },
+				screen: c => { const m = syxNews.length > c.n && lastExport(); return ok(!!m && m.ok && /^Wrote .*: 4 kits, 2 waveforms\.$/.test(m.text), m ? m.text : "no export yet"); }, within: 20000 }
+		],
+		async tidy() { $1("#syxpop").hidden = true; }
+	};
+	const syxVerify = {
+		name: "mm-lib-syx-verify", proves: ["MM-308"],
+		needs: syxWanted,
+		steps: [
+			openImport,
+			{ say: "click Verify only: the slots are read and compared, nothing is written", act: (u, c) => { c.k0 = kitName(0); u.click('#syxpop [data-syxgo="verify"]'); },
+				screen: () => ok(/^Verify only: \d+ of \d+ the same/.test($1("#syxpop .syxsum")?.textContent || "") && /Nothing was written/.test($1("#syxpop .syxsum")?.textContent || ""), "progress: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
+				machine: c => ok(!window.gmDev || kitName(0) === c.k0, `K01 "${kitName(0)}" (before "${c.k0}")`), within: 60000 },
+			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") }
+		],
+		async tidy() { $1("#syxpop").hidden = true; }
+	};
+	const syxPlace = {
+		name: "mm-lib-syx-place", proves: ["MM-308"],
+		needs: syxWanted,
+		steps: [
+			openImport,
+			{ say: "click Specific place, then the first slot four times: the kits land in K05 and K06", act: async u => { u.click('#syxpop [data-sxp="specific"]'); await sleep(150); for (let i = 0; i < 4; i++) { u.click(syxValue("kit", "place")); await sleep(60); } },
+				screen: () => ok($1(syxValue("kit", "place"))?.textContent === "K05" && !!$1(syxCell("kit:4")) && !!$1(syxCell("kit:5")) && !$1(syxCell("kit:0")), "cells " + $all('#syxpop button[data-syxitem^="kit:"]').map(b => b.dataset.syxitem).join(" ")), within: 4000 },
+			{ say: "leave Kits ticked only, click Import: it asks first (K05 and K06 hold kits)", act: async (u, c) => { await syxKinds(["kit"])(u); c.names = $all('#syxpop button[data-syxitem^="kit:"]').map(b => [+b.dataset.syxitem.split(":")[1], (b.dataset.syxname || "").trim()]); c.k0 = kitName(0); u.click('#syxpop [data-syxgo="start"]'); },
+				screen: () => ok(dlgShown() && /K05/.test($1("#dlg").textContent) && !!dlgButton("Import 2"), "no question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
+			{ say: "click Import 2: sent on SYSEX RECV to K05 and K06, read back, reported", act: u => u.click(dlgButton("Import 2")),
+				screen: () => ok(/2 imported/.test($1("#syxpop .syxsum")?.textContent || ""), "progress: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
+				machine: c => ok(c.names.every(([k, n]) => (kitName(k) || "").trim() === n) && kitName(0) === c.k0, c.names.map(([k, n]) => `K${k + 1} "${kitName(k)}" want "${n}"`).join(", ") + `; K01 "${kitName(0)}"`), within: 90000 },
+			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") }
+		],
+		async tidy() { if (dlgShown()) dlgButton("Cancel")?.click(); $1("#syxpop").hidden = true; }
+	};
+	/* Reset machine… > Empty reset: the Monomachine has no factory reset in the editor; two questions, then every kit,
+	   pattern and song cleared on SYSEX RECV and read back. It empties the machine: the last journey of all */
+	const resetEmpty = {
+		name: "mm-engine-reset-empty", proves: ["MM-317"],
+		steps: [
+			{ say: "choose RESET MACHINE… in the engine menu: Empty reset and why no factory reset; Cancel is the default", act: u => u.pick("engsel", "reset"),
+				screen: () => ok(dlgShown() && !!dlgButton("Empty reset…") && !dlgButton("Factory reset…") && /factory data is not in the editor/.test($1("#dlg").textContent) && $1("#dlg .btnrow button:last-child")?.textContent === "Cancel", "the question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
+			{ say: "click Empty reset…: it asks a second time", act: u => u.click(dlgButton("Empty reset…")),
+				screen: () => ok(dlgShown() && !!dlgButton("Clear everything"), "second question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
+			{ say: "click Clear everything: the reset runs in the SysEx panel and reports", act: u => u.click(dlgButton("Clear everything")),
+				screen: () => ok(/Empty reset/.test($1("#syxpop .cap")?.textContent || "") && /cleared/.test($1("#syxpop .syxsum")?.textContent || ""), "panel: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
+				machine: () => { const named = [...Array(128).keys()].filter(k => (kitName(k) || "").trim()), trigs = [...Array(128).keys()].filter(p => (I().doc("pattern", p)?.tracks || []).some(t => (t.trig || []).length)),
+					songs = [...Array(24).keys()].filter(s => (songOf(s)?.rows || []).length > 1);
+					return ok(!named.length && !trigs.length && !songs.length, `${named.length} kits named, ${trigs.length} patterns with trigs, ${songs.length} songs with rows`); }, within: 400000 },
+			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") }
+		],
+		async tidy() { if (dlgShown()) dlgButton("Cancel")?.click(); $1("#syxpop").hidden = true; }
+	};
 	/* B-026 / B-031 (the Machinedrum's md-lib-syx-import-mute): import a file with its globals, then mute on the rail and
 	   play: the machine holds the mute (its memory, not the page's wish); a track the active global gives no MIDI channel
 	   (B-051: base OFF, or beyond CHANNEL SPAN) is refused, and the notice's fix (each track its own channel) makes the next M work. Then the pattern still changes, stopped and
@@ -1707,7 +1778,7 @@ const MmJourneys = (() => {
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, genKeys, mutScope,
 		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
-		blackKeys, rollPaint, rollDrawLength, rollBoxMove, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, dropSyxJ, globalChannels, globalReset, globalSlot, shotsGlobal, genBarFit, shotsSound, ...viewJs, ...cpuJs, ...volJs];
+		blackKeys, rollPaint, rollDrawLength, rollBoxMove, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, dropSyxJ, globalChannels, globalReset, globalSlot, shotsGlobal, genBarFit, shotsSound, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxPlace, resetEmpty];
 
 	async function between(u) {
 		for (let i = 0; i < 3 && dlgShown(); i++) { u.key("Escape"); await sleep(200); }
