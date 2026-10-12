@@ -78,7 +78,7 @@ const LIFE = {
 	ready: { label: "READY", led: "on" } };
 const lifeOf = l => LIFE[l] || LIFE.booting;
 /* the engine menu's own entries (not engines) */
-const ENGINE_ACTIONS = ["global", "audio", "rom", "import", "export", "reset"];
+const ENGINE_ACTIONS = ["global", "audio", "rom", "import", "export", "reset", "memoryKeep"];
 function engineLabel() {
 	const e = lifeOf(V.lifecycle);
 	if (V.lifecycle === "ready") return [V.caps.label || e.label, e.led, V.caps.about || ""];
@@ -140,9 +140,25 @@ document.addEventListener("change", e => {
 	if (v === "rom") romMenu();
 	else if (v === "global") { sel.value = V.caps.engine; openGlobal(); }
 	else if (v === "audio") { sel.value = V.caps.engine; openAudio(); }
+	else if (v === "memoryKeep") { sel.value = V.caps.engine; renderEngine(); cmd("memoryKeep", { on: !Memory.keep }); }
 	else if (Syx.menu(v)) { sel.value = V.caps.engine; renderEngine(); }	/* IMPORT SYSEX…, EXPORT SYSEX…, RESET MACHINE… (wave 6) */
 	else if ((machineState().engines || []).some(x => x.id === v)) cmd("engine", { kind: v });
 });
+/* I-024 (doc/modern-ux/DESIGN-machine-memory.md): the machine memory that stays for new sessions, as the plug-in says
+   (machineMemory). KEEP MEMORY turns it on and off; starting from factory memory is a choice of RESET MACHINE…
+   (shared/deskSyx.js, the host's memory and factoryMemory, mdDeskRom.js). Only where the plug-in keeps a memory file
+   (available). What went wrong is the plug-in's notice (once), and the entry's tooltip. */
+const Memory = { keep: true, available: false, saved: false, note: "" };
+function renderMemoryMenu() {
+	const keep = document.querySelector('#engsel option[value="memoryKeep"]');
+	if (!keep) return;
+	keep.hidden = !Memory.available;
+	keep.textContent = "KEEP MEMORY: " + (Memory.keep ? "ON" : "OFF");
+	keep.dataset.saved = Memory.saved ? "1" : "0";
+	keep.title = Memory.note || (Memory.keep ? "New sessions without a DAW project start with what you saved on the machine. Click to turn it off."
+		: "New sessions start from factory memory. Click to keep what you save on the machine for new sessions.");
+}
+Bridge.onMessage(m => { if (m.type === "machineMemory") { Object.assign(Memory, { keep: !!m.keep, available: !!m.available, saved: !!m.saved, note: m.note || "" }); renderMemoryMenu(); } });
 
 /* I-002: a note from a MIDI keyboard (the plug-in's midiIn) on the global's base channel plays the track its map gives
    (GLOBAL › Map editor); that track's number on the rail and its Mix LED light for a moment, as a trig does. Notes that
