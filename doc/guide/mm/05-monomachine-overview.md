@@ -17,7 +17,7 @@ Chapter 6 describes the machines and kits.
 ## SIX TRACK SEQUENCING
 <!-- rows: MM-085 @e017c0 -->
 
-A pattern holds the notes, the envelope trigs and the parameter locks of the six tracks. The **Sequence** workspace edits them: a piano roll for notes, a row of A, F and L dots for the envelope trigs, and a lock lane for the parameters. Chapters 10 to 15 describe the sequencer.
+A pattern holds the notes, the envelope trigs and the parameter locks of the six tracks. The **Sequence** workspace edits them: a piano roll for notes, with small marks on the notes for envelope trigs, slide, swing and locks, and a lock lane for the parameters. Chapters 10 to 15 describe the sequencer.
 
 ![The Sequence workspace](shot:mm-sequence-workspace)
 

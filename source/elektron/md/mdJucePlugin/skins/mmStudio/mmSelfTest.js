@@ -433,30 +433,28 @@ window.MMDiagnostics = {};
 			return seen.join("; ");
 		});
 		await check("all steps by default, and the page fits the window", async () => {
-			const n = $$("#seq .rollmarks [data-rm]").length, de = document.documentElement, lane = $("#lanescroll")?.getBoundingClientRect();
+			const n = $$("#seq .ruler .rul[data-s]").length, de = document.documentElement, lane = $("#lanescroll")?.getBoundingClientRect();
 			const note = `${n} of ${s.len} steps, page ${de.scrollHeight} / window ${innerHeight}, lock lane bottom ${lane ? Math.round(lane.bottom) : "?"}`;
 			if (n !== s.len || de.scrollHeight > innerHeight + 1 || !lane || lane.bottom > innerHeight) throw new Error(note);
 			return note;
 		});
-		await check("with Slide chosen a drag across the roll paints slide steps on, then off, one undo step each", async () => {
-			V().goWs("seq"); await sleep(600); $('.ttrow [data-tt="sld"]').click(); await sleep(400);
-			const p = cur().pat, roll = () => $("#seq canvas.roll[data-big]"), q = st => $(`#seq .rollmarks [data-rm="${st}"]`);
+		await check("the step menu's Slide on four selected steps turns slide on, then off, one undo step each", async () => {
+			V().goWs("seq"); await sleep(600);
+			const p = cur().pat;
 			const free = [...Array(s.len - 3).keys()].find(st => [0, 1, 2, 3].every(k => !s.tracks[s.sel].slide.has(st + k)));
 			if (free == null) throw new Error("no four free SLIDE steps");
 			const run = [free, free + 1, free + 2, free + 3];
-			const pe = (type, st, o = {}) => { const r = q(st).getBoundingClientRect(), c = roll().getBoundingClientRect(); return new PointerEvent(type, Object.assign({ bubbles: true, cancelable: true, pointerId: 8, pointerType: "mouse", button: 0, clientX: r.left + r.width / 2, clientY: c.bottom - 6 }, o)); };
-			const drag = steps => { roll().dispatchEvent(pe("pointerdown", steps[0], { buttons: 1 })); for (const st of steps.slice(1)) roll().dispatchEvent(pe("pointermove", st, { buttons: 1 })); roll().dispatchEvent(pe("pointerup", steps[steps.length - 1], { buttons: 0 })); };
 			const slides = d => d.tracks[s.sel].slide || [];
+			const pick = () => { setSel({ t: s.sel, n: 1, from: free, to: free + 4 }); const it = stepMenuItems(s.sel, free).find(x => x && x.id === "step-slide"); if (!it) throw new Error("no Slide in the step menu"); it.run(); clearSel(); };
 			const u0 = machine().history?.undoCount || 0;
-			drag(run);
+			pick();
 			await waitFor(m => m.type === "doc" && m.kind === "pattern" && m.slot === p && !m.pending && run.every(st => slides(m.doc).includes(st)), 15000).catch(() => { throw new Error("not read back on"); });
 			await sleep(800);
 			const u1 = machine().history?.undoCount || 0;
-			drag([...run].reverse());
+			pick();
 			await waitFor(m => m.type === "doc" && m.kind === "pattern" && m.slot === p && !m.pending && !run.some(st => slides(m.doc).includes(st)), 15000).catch(() => { throw new Error("not read back off"); });
 			await sleep(800);
 			const u2 = machine().history?.undoCount || 0;
-			$('.ttrow [data-tt="note"]')?.click();
 			if (u1 !== u0 + 1 || u2 !== u1 + 1) throw new Error(`undo steps ${u0} -> ${u1} -> ${u2}`);
 			return `steps ${free + 1}-${free + 4}, undo steps ${u0} -> ${u1} -> ${u2}`;
 		});

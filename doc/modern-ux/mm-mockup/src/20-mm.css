@@ -304,16 +304,7 @@ canvas.roll{width:100%;display:block;border-radius:4px;background:var(--lcd);box
 .tlanes{margin-top:8px!important}
 .tlane .tc.envc{display:flex;gap:2px;align-items:center;justify-content:center;box-shadow:none;background:transparent;cursor:default}
 .tlane .tc.envc.na{opacity:.3}
-.tlane .tc.envc .d{width:9px;height:9px;min-width:0;padding:0;border-radius:50%;background:transparent;box-shadow:inset 0 0 0 1.5px var(--print3);cursor:pointer}
-.tlane .tc.envc .d.on.a{background:var(--led);box-shadow:0 0 4px var(--led)}
-.tlane .tc.envc .d.on.f{background:var(--ledy);box-shadow:0 0 4px var(--ledy)}
-.tlane .tc.envc .d.on.l{background:var(--ledg);box-shadow:0 0 4px var(--ledg)}
 .tlane .tc.envc::after{display:none}
-/* ALL (up to 64 steps in the width): the three trig-track dots stack in the narrow step */
-.mstack.all .tlane .tc.envc{flex-direction:column;gap:1px}
-.mstack.all .tlane .tc.envc .d{width:4px;height:4px;box-shadow:inset 0 0 0 1px var(--print3)}
-.envlab{display:inline-flex;gap:2px;align-items:center;font:600 9px var(--sans);letter-spacing:.04em;color:var(--print2)}
-.envlab i{width:6px;height:6px;border-radius:50%;margin-left:2px}.envlab i.a{background:var(--led)}.envlab i.f{background:var(--ledy)}.envlab i.l{background:var(--ledg)}
 .dock{margin-top:10px;border-top:2px solid var(--print);padding-top:8px}
 .docktabs{display:flex;gap:4px;align-items:center;height:30px;white-space:nowrap;margin-bottom:8px}
 .docktabs .lkey[aria-selected=true]{background:var(--cream);color:var(--creamtext)}

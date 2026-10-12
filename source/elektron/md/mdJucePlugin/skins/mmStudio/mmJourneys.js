@@ -186,29 +186,36 @@ const MmJourneys = (() => {
 		],
 		async tidy(u) { if (tele.last?.record && tele.last.record !== "off") u.click("#rec"); }
 	};
-	/* wave 3 (DESIGN-machine-menus.md §2): Note · Slide · Swing under the roll; in Slide or Swing a drag across the roll's step
-	   columns paints that mark (one undo step), the marks sit along the roll's foot; Esc back to Note */
+	/* 2026-10-12 (the roll's foot, Radek: "needs to be simple to use"): slide and swing are set in the step menu, on the
+	   selection; the roll shows them as small marks on the notes (a slide only where the step holds a lock, swing only on a trig) */
 	const swingsOf = t => (patDoc()?.tracks[t]?.swing || []).slice().sort((a, b) => a - b);
-	/* the roll canvas and where step s's column is on it (its foot), as fractions for the hands */
-	const rollFoot = s => { const c = $1("#seq canvas.roll[data-big]"), r = c.getBoundingClientRect(), m = $1(`#seq .rollmarks [data-rm="${s}"]`).getBoundingClientRect(); return { c, fx: (m.left + m.width / 2 - r.left) / r.width, fy: 0.97, x: m.left + m.width / 2 }; };
+	/* the step menu on step s of track t (a right-click there; s: null, the ⋯ key of the selection), then its entries by id
+	   in turn (a submenu's entry opens it) */
+	const stepPick = async (u, t, s, ...ids) => {
+		if (s == null) { await until(() => !!$1("#stepmore") && !$1("#stepmore").hidden, 2000); u.click("#stepmore"); }
+		else { const p = rollCell(t, s); u.rightClick(p.c, {}, p.fx, p.fy); }
+		if (!await until(() => DeskMenu.shown, 1500)) throw new Error("no step menu");
+		for (const id of ids) { if (!await until(() => !!$1(`#deskmenu [data-mid="${id}"]`), 1500)) throw new Error("no " + id + " in the step menu"); u.click(`#deskmenu [data-mid="${id}"]`); await sleep(150); } };
+	const ticked = id => $1(`#deskmenu [data-mid="${id}"]`)?.getAttribute("aria-checked") === "true";
 	const slidePaint = {
-		name: "mm-seq-trig-types", proves: ["MM-231", "MM-233"],
+		name: "mm-seq-slide-swing", proves: ["MM-231", "MM-233", "MM-038"],
 		steps: [
 			go("seq"), sel(0),
-			{ say: "click Slide under the roll", act: u => u.click('.ttrow [data-tt="sld"]'), screen: () => ok(S().tt === "sld" && $1('.ttrow [data-tt="sld"]').getAttribute("aria-checked") === "true", "type " + S().tt) },
-			{ say: "drag across four step columns of the roll: slide on, one undo step", act: async (u, c) => {
+			{ say: "no trig type keys, no A F L row, no hint under the roll", act: () => { }, screen: () => ok(!$1(".ttrow") && !$1("[data-tt]") && !$1("[data-env]") && !$1("#tlanes") && !$1(".rollmarks"), "a row under the roll") },
+			{ say: "Cmd-drag four steps in the roll, then ⋯ > Slide: slide on all four, one undo step", act: async (u, c) => {
 				c.s0 = [...Array(S().len - 3).keys()].find(s => [0, 1, 2, 3].every(k => !slidesOf(0).includes(s + k))); if (c.s0 == null) throw new Error("no four free slide steps");
-				c.run = [0, 1, 2, 3].map(k => c.s0 + k); c.u0 = machine().history?.undoCount || 0;
-				const f = rollFoot(c.s0); await u.drag(f.c, c.run.slice(1).map(s => [rollFoot(s).x - f.x, 0]), {}, { fx: f.fx, fy: f.fy });
+				c.run = [0, 1, 2, 3].map(k => c.s0 + k); if (S().stepSel) clearSel();
+				await dragRoll(u, 0, c.run, { cmd: true }); await until(() => S().stepSel?.from === c.s0 && S().stepSel?.to === c.s0 + 4, 2000);
+				await stepPick(u, 0, null, "step-slide");
 			}, machine: c => ok(c.run.every(s => slidesOf(0).includes(s)), "slides " + slidesOf(0).join(",")),
-				screen: c => ok(c.run.every(s => $1(`#seq .rollmarks [data-rm="${s}"]`)?.classList.contains("sld")), "no slide marks"), within: 15000 },
-			{ say: "one undo step: Cmd+Z takes all four", act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(c.run.every(s => !slidesOf(0).includes(s)), "slides " + slidesOf(0).join(",")), within: 15000 },
-			{ say: "click Swing, then click a step's column: its swing flips", act: async (u, c) => { u.click('.ttrow [data-tt="swg"]'); await sleep(300); c.w = c.run[0]; c.w0 = swingsOf(0).includes(c.w); const f = rollFoot(c.w); u.click(f.c, {}, f.fx, f.fy); },
-				machine: c => ok(swingsOf(0).includes(c.w) !== c.w0, "swing " + swingsOf(0).join(",")), screen: c => ok($1(`#seq .rollmarks [data-rm="${c.w}"]`)?.classList.contains("swg") !== c.w0, "swing mark unchanged"), within: 15000 },
-			{ say: "press Escape: back to Note", act: u => u.key("Escape"), screen: () => ok(S().tt === "note" && $1('.ttrow [data-tt="note"]').getAttribute("aria-checked") === "true", "type " + S().tt) },
-			{ say: "Cmd+Z: the swing as before", act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(swingsOf(0).includes(c.w) === c.w0, "swing " + swingsOf(0).join(",")), within: 15000 }
+				screen: c => ok(c.run.every(s => S().tracks[0].slide.has(s)), "slides shown " + [...S().tracks[0].slide].join(",")), within: 15000 },
+			{ say: "the step menu ticks Slide for the four", act: async u => { await stepPick(u, 0, null); }, screen: () => ok(ticked("step-slide"), "Slide not ticked") },
+			{ say: "Escape; one undo step: Cmd+Z takes all four", act: async u => { closeDeskMenu(); await sleep(100); blur(); u.key("z", { cmd: true }); }, machine: c => ok(c.run.every(s => !slidesOf(0).includes(s)), "slides " + slidesOf(0).join(",")), within: 15000 },
+			{ say: "right-click a step and choose Swing: its swing flips", act: async (u, c) => { if (S().stepSel) clearSel(); c.w = c.run[0]; c.w0 = swingsOf(0).includes(c.w); await stepPick(u, 0, c.w, "step-swing"); },
+				machine: c => ok(swingsOf(0).includes(c.w) !== c.w0, "swing " + swingsOf(0).join(",")), screen: c => ok(S().tracks[0].swing.has(c.w) !== c.w0, "swing unchanged"), within: 15000 },
+			{ say: "Cmd+Z: the swing as before", act: u => { if (S().stepSel) clearSel(); blur(); u.key("z", { cmd: true }); }, machine: c => ok(swingsOf(0).includes(c.w) === c.w0, "swing " + swingsOf(0).join(",")), within: 15000 }
 		],
-		async tidy(u) { if (S().tt && S().tt !== "note") $1('.ttrow [data-tt="note"]')?.click(); }
+		async tidy(u) { if (DeskMenu.shown) closeDeskMenu(); if (S().stepSel) clearSel(); }
 	};
 	const lenKey = {
 		name: "mm-seq-len", proves: ["MM-166"],
@@ -1491,7 +1498,7 @@ const MmJourneys = (() => {
 	/* K7 (DESIGN-step-selection.md §7, the Machinedrum's md-seq-select-copy-paste): one note copied to another step of
 	   its track (the LCD's PASTE on the selection), then a block of two tracks duplicated and cleared with the LCD's CLR */
 	const inPat = s => s < S().len;
-	const selCells = () => $all("#seq .tlane.env .tc.selx").map(e => +e.dataset.s);
+	const selCells = () => $all("#seq .ruler .rul.selx").map(e => +e.dataset.s);
 	const selectCopyPaste = {
 		name: "mm-seq-select-copy-paste", proves: ["MM-183"],
 		steps: [
@@ -2465,36 +2472,46 @@ const MmJourneys = (() => {
 	};
 	const bitsOf = (t, k) => (patDoc()?.tracks[t]?.[k] || []).slice().sort((a, b) => a - b);
 	const noteAt = (t, s) => (patDoc()?.tracks[t]?.notes || []).filter(([x]) => x === s).map(([, n]) => n);
-	const dot = (b, s) => `[data-env="${b}"][data-s="${s}"]`;
+	/* the envelopes a trig fires as the view holds them, and as the step menu ticks them (Envelopes > Amp, Filter, LFO) */
+	const envOf = (t, s) => { const st = S().tracks[t].steps[s]; return [!!st?.a, !!st?.f, !!st?.l]; };
+	const envTicks = async (u, t, s) => { if (S().stepSel) clearSel(); await stepPick(u, t, s, "step-env"); const r = ["a", "f", "l"].map(k => ticked("step-env-" + k)); closeDeskMenu(); await sleep(100); return r; };
+	const envPick = async (u, t, s, k) => { if (S().stepSel) clearSel(); await stepPick(u, t, s, "step-env", "step-env-" + k); };
 	const envJ = {
-		name: "mm-seq-env-trigs", proves: ["MM-029", "MM-047", "MM-085", "MM-143", "MM-171", "MM-209", "MM-210", "MM-211", "MM-213", "MM-214"],
+		name: "mm-seq-env-trigs", proves: ["MM-029", "MM-047", "MM-085", "MM-143", "MM-171", "MM-209", "MM-210", "MM-211", "MM-212", "MM-213", "MM-214"],
 		steps: [
 			go("seq"), sel(0), drawOn,
-			{ say: "the LCD names the kit, the rail marks the track, the ENV row's A F L dots show each step's amp, filter and LFO trigs as the pattern holds them", act: async () => { await sleep(300); Journey.snapshot("mm-sequence-workspace"); Journey.snapshot("mm-page-overview"); Journey.snapshot("mm-overview");
+			{ say: "the LCD names the kit, the rail marks the track; the roll holds each trig's envelopes as the pattern does, and marks on the notes show them (no row under the roll)", act: async () => { await sleep(300); Journey.snapshot("mm-sequence-workspace"); Journey.snapshot("mm-page-overview"); Journey.snapshot("mm-overview");
 					/* the pictures named for an element are taken only when that element is on the page, drawn and in view (a snapshot is the whole page) */
-					const lit = [...Array(S().len).keys()].find(s => $1(dot("a", s))); if (lit == null) throw new Error("no ENV row dots to snapshot"); $1(dot("a", lit)).scrollIntoView({ block: "nearest" }); await sleep(150); Journey.snapshot("mm-env-row");
+					const roll = $1("#seq canvas.roll[data-big]"); if (!roll) throw new Error("no roll to snapshot"); roll.scrollIntoView({ block: "nearest" }); await sleep(150); Journey.snapshot("mm-roll-marks");
 					const lcd = $1(".lcdpanel"); if (!lcd || !lcd.getBoundingClientRect().width) throw new Error("no LCD to snapshot"); lcd.scrollIntoView({ block: "nearest" }); await sleep(150); Journey.snapshot("mm-lcd"); }, screen: () => {
-					const bad = []; if (!$1("#kitname").textContent.includes(kitName(machine().kit.current).trim())) bad.push("LCD kit " + $1("#kitname").textContent); if (S().sel !== 0) bad.push("track " + S().sel);
-					for (let s = 0; s < S().len; s++) { const st = S().tracks[0].steps[s]; if (!st || st.off) continue; for (const [b, k] of [["a", "amp"], ["f", "filter"], ["l", "lfo"]]) { const d = $1(dot(b, s)); if (!d || (d.getAttribute("aria-pressed") === "true") !== bitsOf(0, k).includes(s)) bad.push(`step ${s + 1} ${b}`); } }
+					const bad = []; if (!$1("#kitname").textContent.includes(kitName(machine().kit.current).trim())) bad.push("LCD kit " + $1("#kitname").textContent); if (S().sel !== 0) bad.push("track " + S().sel); if ($1("[data-env]") || $1(".ttrow")) bad.push("a row under the roll");
+					for (let s = 0; s < S().len; s++) { const st = S().tracks[0].steps[s]; if (!st || st.off) continue; for (const [b, k] of [["a", "amp"], ["f", "filter"], ["l", "lfo"]]) if (!!st[b] !== bitsOf(0, k).includes(s)) bad.push(`step ${s + 1} ${b}`); }
 					return ok(!bad.length, bad.slice(0, 5).join(" | ")); } },
-			{ say: "click an empty cell of the roll: the new note fires all three envelopes (A F L lit) and has its pitch", act: (u, c) => { c.n0 = histN(); c.pitch = rollCell(0, 0).n; c.s = freeSteps(0, 1, 6, c.pitch)[0]; const p = rollPitch(0, c.s, c.pitch); u.click(p.c, {}, p.fx, p.fy); },
+			{ say: "click an empty cell of the roll: the new note fires all three envelopes (the step menu ticks Amp, Filter, LFO) and has its pitch", act: async (u, c) => { c.n0 = histN(); c.pitch = rollCell(0, 0).n; c.s = freeSteps(0, 1, 6, c.pitch)[0]; const p = rollPitch(0, c.s, c.pitch); u.click(p.c, {}, p.fx, p.fy);
+					await until(() => bitsOf(0, "trig").includes(c.s), 6000); c.ticks = await envTicks(u, 0, c.s); },
 				machine: c => ok(bitsOf(0, "trig").includes(c.s) && ["amp", "filter", "lfo"].every(k => bitsOf(0, k).includes(c.s)) && noteAt(0, c.s).join() === String(c.pitch), `trig ${bitsOf(0, "trig").includes(c.s)}, amp ${bitsOf(0, "amp").includes(c.s)}, filter ${bitsOf(0, "filter").includes(c.s)}, lfo ${bitsOf(0, "lfo").includes(c.s)}, note ${noteAt(0, c.s)}`),
-				screen: c => ok(["a", "f", "l"].every(b => $1(dot(b, c.s))?.getAttribute("aria-pressed") === "true"), "dots"), within: 8000 },
-			{ say: "click A: only the amp trig goes; click F: only the filter trig goes; the trig and the pitch stay", act: async (u, c) => { u.click(dot("a", c.s)); await until(() => !bitsOf(0, "amp").includes(c.s), 4000); c.a = [bitsOf(0, "amp").includes(c.s), bitsOf(0, "filter").includes(c.s), bitsOf(0, "lfo").includes(c.s)];
-					u.click(dot("f", c.s)); await until(() => !bitsOf(0, "filter").includes(c.s), 4000); c.f = [bitsOf(0, "amp").includes(c.s), bitsOf(0, "filter").includes(c.s), bitsOf(0, "lfo").includes(c.s)]; },
-				machine: c => ok(same(c.a, [false, true, true]) && same(c.f, [false, false, true]) && bitsOf(0, "trig").includes(c.s) && noteAt(0, c.s).join() === String(c.pitch), `after A ${c.a}, after F ${c.f}`), within: 10000 },
-			{ say: "click L: the last one goes: a trig with no envelopes, the pitch kept (it sets a pitch or holds locks); the roll draws it outlined", act: async (u, c) => { u.click(dot("l", c.s)); await until(() => !bitsOf(0, "lfo").includes(c.s), 4000); await sleep(200); c.span = noteSpans(0).find(sp => sp.s === c.s); },
-				machine: c => ok(["amp", "filter", "lfo"].every(k => !bitsOf(0, k).includes(c.s)) && bitsOf(0, "trig").includes(c.s) && noteAt(0, c.s).join() === String(c.pitch), "bits"), screen: c => ok(c.span?.kind === "trigless", "span " + JSON.stringify(c.span?.kind)), within: 8000 },
+				screen: c => ok(same(c.ticks, [true, true, true]), "menu ticks " + c.ticks), within: 8000 },
+			{ say: "step menu > Envelopes > Amp: only the amp trig goes; then > Filter: only the filter trig goes; the trig and the pitch stay", act: async (u, c) => { await envPick(u, 0, c.s, "a"); await until(() => !bitsOf(0, "amp").includes(c.s), 4000); c.a = [bitsOf(0, "amp").includes(c.s), bitsOf(0, "filter").includes(c.s), bitsOf(0, "lfo").includes(c.s)];
+					await envPick(u, 0, c.s, "f"); await until(() => !bitsOf(0, "filter").includes(c.s), 4000); c.f = [bitsOf(0, "amp").includes(c.s), bitsOf(0, "filter").includes(c.s), bitsOf(0, "lfo").includes(c.s)]; },
+				machine: c => ok(same(c.a, [false, true, true]) && same(c.f, [false, false, true]) && bitsOf(0, "trig").includes(c.s) && noteAt(0, c.s).join() === String(c.pitch), `after Amp ${c.a}, after Filter ${c.f}`),
+				screen: c => ok(same(envOf(0, c.s), [false, false, true]) && noteSpans(0).find(sp => sp.s === c.s)?.kind === "part", "view " + envOf(0, c.s)), within: 10000 },
+			{ say: "> LFO: the last one goes: a trig with no envelopes, the pitch kept (it sets a pitch or holds locks); the roll draws it as a small hollow square and the menu ticks Trigless trig", act: async (u, c) => { await envPick(u, 0, c.s, "l"); await until(() => !bitsOf(0, "lfo").includes(c.s), 4000); await sleep(200); c.span = noteSpans(0).find(sp => sp.s === c.s);
+					if (S().stepSel) clearSel(); await stepPick(u, 0, c.s); c.tl = ticked("step-trigless"); closeDeskMenu(); },
+				machine: c => ok(["amp", "filter", "lfo"].every(k => !bitsOf(0, k).includes(c.s)) && bitsOf(0, "trig").includes(c.s) && noteAt(0, c.s).join() === String(c.pitch), "bits"), screen: c => ok(c.span?.kind === "trigless" && c.tl, "span " + JSON.stringify(c.span?.kind) + ", ticked " + c.tl), within: 8000 },
 			{ say: "a lock drawn on that trigless step holds", act: async (u, c) => { const k = $1('[data-dock="locks"]'); if (k) u.click(k); await sleep(200); c.lane = S().lane; await u.drag(`#lane .lb[data-s="${c.s}"]`, [[0, -3]], {}, { fy: 0.5 }); },
 				machine: c => { const [pg, pi] = [PAGES.indexOf(c.lane.split(".")[0]), +c.lane.split(".")[1]]; const l = (patDoc().locks || []).find(x => x.track === 0 && x.page === pg && x.param === pi); return ok(l && l.steps.some(([x]) => x === c.s), "locks " + JSON.stringify(l)); }, within: 8000 },
-			{ say: "click L alone: the LFO trig only, the others stay off (the LFO is trigged on its own)", act: async (u, c) => { u.click(dot("l", c.s)); await until(() => bitsOf(0, "lfo").includes(c.s), 4000); },
+			{ say: "> LFO alone: the LFO trig only, the others stay off (the LFO is trigged on its own)", act: async (u, c) => { await envPick(u, 0, c.s, "l"); await until(() => bitsOf(0, "lfo").includes(c.s), 4000); },
 				machine: c => ok(bitsOf(0, "lfo").includes(c.s) && !bitsOf(0, "amp").includes(c.s) && !bitsOf(0, "filter").includes(c.s), `amp ${bitsOf(0, "amp").includes(c.s)}, filter ${bitsOf(0, "filter").includes(c.s)}, lfo ${bitsOf(0, "lfo").includes(c.s)}`), within: 6000 },
-			{ say: "a trig with no pitch of its own (envelope trigs only: its note is the one before): click its A dot: the amp trig flips, the step stays without a pitch", act: async (u, c) => {
+			{ say: "right-click an empty step and choose Trigless trig: a trig with no envelopes at the track's pitch; choose it again: the step is empty", act: async (u, c) => { c.e = freeSteps(0, 1, 0).find(x => x !== c.s); if (c.e == null) throw new Error("no empty step"); if (S().stepSel) clearSel();
+					await stepPick(u, 0, c.e, "step-trigless"); c.on = await until(() => bitsOf(0, "trig").includes(c.e) && !["amp", "filter", "lfo"].some(k => bitsOf(0, k).includes(c.e)), 6000); c.kind = noteSpans(0).find(sp => sp.s === c.e)?.kind;
+					if (S().stepSel) clearSel(); await stepPick(u, 0, c.e, "step-trigless"); },
+				machine: c => ok(c.on && !bitsOf(0, "trig").includes(c.e), `added ${c.on}, then trig ${bitsOf(0, "trig").includes(c.e)}`), screen: c => ok(c.kind === "trigless" && !S().tracks[0].steps[c.e], "kind " + c.kind), within: 8000 },
+			{ say: "a trig with no pitch of its own (envelope trigs only: its note is the one before): step menu > Envelopes > Amp: the amp trig flips, the step stays without a pitch", act: async (u, c) => {
 					const found = [0, 1, 2, 3, 4, 5].map(t => [t, noteSpans(t).find(sp => sp.pitchless && sp.st.a)]).find(([, sp]) => sp); if (!found) throw new Error("no pitchless trig in the pattern"); c.pt = found[0]; c.ps = found[1].s; u.click(rail(c.pt)); await sleep(300);
-					c.a0 = bitsOf(c.pt, "amp").includes(c.ps); u.click(dot("a", c.ps)); await until(() => bitsOf(c.pt, "amp").includes(c.ps) !== c.a0, 4000); },
+					c.a0 = bitsOf(c.pt, "amp").includes(c.ps); await envPick(u, c.pt, c.ps, "a"); await until(() => bitsOf(c.pt, "amp").includes(c.ps) !== c.a0, 4000); },
 				machine: c => ok(bitsOf(c.pt, "amp").includes(c.ps) !== c.a0 && bitsOf(c.pt, "trig").includes(c.ps) && !noteAt(c.pt, c.ps).length, `amp ${bitsOf(c.pt, "amp").includes(c.ps)}, notes ${noteAt(c.pt, c.ps)}`), screen: c => ok(noteSpans(c.pt).find(sp => sp.s === c.ps)?.pitchless === true, "span"), within: 6000 }
 		],
-		async tidy(u, c) { drawBack(c); if (c.n0 != null) await undoTo(u, c.n0); }
+		async tidy(u, c) { if (DeskMenu.shown) closeDeskMenu(); if (S().stepSel) clearSel(); drawBack(c); if (c.n0 != null) await undoTo(u, c.n0); }
 	};
 	/* the keys that play: the home row on the selected track's channel, velocity C and V, octave Z and X; the roll's pitch, an octave by drag, a chord, a note gone */
 	const noteWires = n0 => nonSys(n0).filter(w => w.kind === "note").map(w => w.b);
@@ -2688,16 +2705,16 @@ const MmJourneys = (() => {
 		name: "mm-midi-seq-docks", proves: ["MM-248"],
 		steps: [
 			go("seq"), sel(0),
-			{ say: "on M1: the row under the roll is VEL, with no A F L dots", act: async (u, c) => { c.n0 = histN(); u.click('[data-side="midi"]'); await sleep(400); u.click(rail(6)); await sleep(300); },
+			{ say: "on M1: the row under the roll is VEL, with no envelope entries anywhere", act: async (u, c) => { c.n0 = histN(); u.click('[data-side="midi"]'); await sleep(400); u.click(rail(6)); await sleep(300); },
 				screen: () => ok(/VEL/.test($1(".tlane.env .tlab")?.textContent || "") && !$1("[data-env]") && S().sel === 6, "row " + $1(".tlane.env .tlab")?.textContent), within: 6000 },
-			{ say: "Slide under the roll, drag across four step columns: those steps slide on M1; Swing on a column flips that step's swing", act: async (u, c) => { u.click('.ttrow [data-tt="sld"]'); await sleep(200); c.s0 = [...Array(S().len - 3).keys()].find(s => [0, 1, 2, 3].every(k => !(mDoc(0).slide || []).includes(s + k))); c.run = [0, 1, 2, 3].map(k => c.s0 + k);
-					const f = rollFoot(c.s0); await u.drag(f.c, c.run.slice(1).map(s => [rollFoot(s).x - f.x, 0]), {}, { fx: f.fx, fy: f.fy }); await until(() => c.run.every(s => (mDoc(0).slide || []).includes(s)), 6000);
-					u.click('.ttrow [data-tt="swg"]'); await sleep(200); c.w = c.run[0]; c.w0 = (mDoc(0).swing || []).includes(c.w); const g = rollFoot(c.w); u.click(g.c, {}, g.fx, g.fy); await until(() => (mDoc(0).swing || []).includes(c.w) !== c.w0, 6000); u.click('.ttrow [data-tt="note"]'); await sleep(300); },
+			{ say: "Cmd-drag four steps of M1's roll, ⋯ > Slide: those steps slide on M1; right-click a step > Swing: its swing flips", act: async (u, c) => { c.s0 = [...Array(S().len - 3).keys()].find(s => [0, 1, 2, 3].every(k => !(mDoc(0).slide || []).includes(s + k))); c.run = [0, 1, 2, 3].map(k => c.s0 + k);
+					if (S().stepSel) clearSel(); await dragRoll(u, 6, c.run, { cmd: true }); await until(() => S().stepSel?.from === c.s0 && S().stepSel?.to === c.s0 + 4, 2000); await stepPick(u, 6, null, "step-slide"); await until(() => c.run.every(s => (mDoc(0).slide || []).includes(s)), 6000);
+					c.env = !$1('#deskmenu [data-mid="step-env"]'); if (S().stepSel) clearSel(); c.w = c.run[0]; c.w0 = (mDoc(0).swing || []).includes(c.w); await stepPick(u, 6, c.w, "step-swing"); await until(() => (mDoc(0).swing || []).includes(c.w) !== c.w0, 6000); if (S().stepSel) clearSel(); },
 				machine: c => ok(c.run.every(s => (mDoc(0).slide || []).includes(s)) && (mDoc(0).swing || []).includes(c.w) !== c.w0, `slide ${mDoc(0).slide}, swing ${mDoc(0).swing}`), within: 20000 },
 			{ say: "Transpose: TRACK typed +3, the pattern holds 3 for M1; the Arp tab says there are no envelope switches on MIDI", act: async (u, c) => { await dockOpen(u, "trn"); const q = '#main .pc[data-g="trn"][data-n="TRACK"]'; u.click(q, { cmd: true }); typeIn(u, "+3"); await until(() => mDoc(0).transpose === 3, 6000); await dockOpen(u, "arp"); c.none = $all("[data-arptrig]").length === 0 && /none on MIDI/.test($1(".dkna")?.textContent || ""); },
 				machine: c => ok(mDoc(0).transpose === 3 && c.none, `transpose ${mDoc(0).transpose}, no switches ${c.none}`), within: 10000 }
 		],
-		async tidy(u, c) { if (S().tt && S().tt !== "note") $1('.ttrow [data-tt="note"]')?.click(); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); if (S().side === "midi") u.click('[data-side="int"]'); if (c.n0 != null) await undoTo(u, c.n0); }
+		async tidy(u, c) { if (DeskMenu.shown) closeDeskMenu(); if (S().stepSel) clearSel(); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); if (S().side === "midi") u.click('[data-side="int"]'); if (c.n0 != null) await undoTo(u, c.n0); }
 	};
 	/* ---- Perform: the keyboard's four modes and the channels they play on, MULTI TRIG and MULTI MAP set-up (Appendix B notes, GLOBAL channels, Additional kit settings) ---- */
 	const gch = () => gDoc()?.channels;
@@ -3095,14 +3112,14 @@ const MmJourneys = (() => {
 		name: "mm-seq-bank-functions", proves: ["MM-038"],
 		steps: [
 			go("seq"), sel(0),
-			{ say: "ARP and TRANSPOSE are docks under the roll; SLIDE and SWING are the marks under the roll; SWG is on the LCD: one of each on track 1, each in the pattern", act: async (u, c) => { c.n0 = histN(); c.bad = []; await dockOpen(u, "arp"); const m0 = arpOf(0).mode; u.click(`[data-set="arpmode"] button[data-v="${m0 === 3 ? 2 : 3}"]`); if (!await until(() => arpOf(0).mode !== m0, 4000)) c.bad.push("ARP");
+			{ say: "ARP and TRANSPOSE are docks under the roll; SLIDE and SWING are in the step menu; SWG is on the LCD: one of each on track 1, each in the pattern", act: async (u, c) => { c.n0 = histN(); c.bad = []; await dockOpen(u, "arp"); const m0 = arpOf(0).mode; u.click(`[data-set="arpmode"] button[data-v="${m0 === 3 ? 2 : 3}"]`); if (!await until(() => arpOf(0).mode !== m0, 4000)) c.bad.push("ARP");
 					await dockOpen(u, "trn"); const t0 = patDoc().tracks[0].transpose; u.click('#main .pc[data-g="trn"][data-n="TRACK"]', { cmd: true }); typeIn(u, t0 === 4 ? "+5" : "+4"); if (!await until(() => patDoc().tracks[0].transpose !== t0, 4000)) c.bad.push("TRANSPOSE");
-					u.click('[data-dock="locks"]'); await sleep(200); u.click('.ttrow [data-tt="sld"]'); await sleep(200); const s0 = [...Array(S().len - 2).keys()].find(s => !slidesOf(0).includes(s) && !slidesOf(0).includes(s + 1)); const f = rollFoot(s0); await u.drag(f.c, [[rollFoot(s0 + 1).x - f.x, 0]], {}, { fx: f.fx, fy: f.fy }); if (!await until(() => slidesOf(0).includes(s0) && slidesOf(0).includes(s0 + 1), 4000)) c.bad.push("SLIDE");
-					u.click('.ttrow [data-tt="swg"]'); await sleep(200); const w0 = [...Array(S().len).keys()].find(s => !swingsOf(0).includes(s)); const g = rollFoot(w0); u.click(g.c, {}, g.fx, g.fy); if (!await until(() => swingsOf(0).includes(w0), 4000)) c.bad.push(`SWING step ${w0}: ${swingsOf(0)}, mode ${S().tt}`); u.click('.ttrow [data-tt="note"]'); await sleep(200);
+					u.click('[data-dock="locks"]'); await sleep(200); const s0 = [...Array(S().len - 2).keys()].find(s => !slidesOf(0).includes(s) && !slidesOf(0).includes(s + 1)); if (S().stepSel) clearSel(); await dragRoll(u, 0, [s0, s0 + 1], { cmd: true }); await until(() => S().stepSel?.from === s0, 2000); await stepPick(u, 0, null, "step-slide"); if (!await until(() => slidesOf(0).includes(s0) && slidesOf(0).includes(s0 + 1), 4000)) c.bad.push("SLIDE");
+					if (S().stepSel) clearSel(); const w0 = [...Array(S().len).keys()].find(s => !swingsOf(0).includes(s)); await stepPick(u, 0, w0, "step-swing"); if (!await until(() => swingsOf(0).includes(w0), 4000)) c.bad.push(`SWING step ${w0}: ${swingsOf(0)}`); if (S().stepSel) clearSel(); await sleep(200);
 					const sw = patDoc().swingAmount; u.wheel('#lcd2 [data-l2="swing"]', sw < 30 ? 1 : -1); if (!await until(() => patDoc().swingAmount !== sw, 4000)) c.bad.push("SWG on the LCD"); },
 				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 }
 		],
-		async tidy(u, c) { if (S().tt && S().tt !== "note") $1('.ttrow [data-tt="note"]')?.click(); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); if (c.n0 != null) await undoTo(u, c.n0); }
+		async tidy(u, c) { if (DeskMenu.shown) closeDeskMenu(); if (S().stepSel) clearSel(); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); if (c.n0 != null) await undoTo(u, c.n0); }
 	};
 	/* SLICE5-MM-END */
 	/* ---------- wave 12: the gaps (doc/release/PLAN-0.6.md, Gap triage) ---------- */
