@@ -48,7 +48,7 @@ const SND_COL = { fx: "var(--e12)", rt: "var(--gnd)", lfo: "var(--teal)" };
 function sgHtml(x, cols, color, tag, note) {
 	const page = SND_TAG[x.g][1];
 	const body = x.body || `<div class="ctl" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${x.knobs.map(n => pc(x.g, n, { color: SND_COL[x.g] || color })).join("")}</div>`;
-	return `<section class="sg" data-sg="${x.key}"><header><h3>${mutTitle(x)}</h3>${tag ? `<span title="${attr(x.tagTip || "Its knobs are on the Machinedrum's " + page + " page")}">${SND_TAG[x.g][0]}</span>` : ""}</header>${x.plot || (note ? `<p class="sgnote">${note}</p>` : "")}${body}</section>`;
+	return `<section class="sg" data-sg="${x.key}"><header${x.menu ? ' class="hasmenu"' : ""}><h3>${mutTitle(x)}</h3>${tag ? `<span title="${attr(x.tagTip || "Its knobs are on the Machinedrum's " + page + " page")}">${SND_TAG[x.g][0]}</span>` : ""}${x.menu || ""}</header>${x.plot || (note ? `<p class="sgnote">${note}</p>` : "")}${body}</section>`;
 }
 /* One row (shared/deskSoundLayout.js soundRow): a group with a screen is a column of its own (a waveform wider),
    the ones without pair up; a lone one says what its knobs do (the machine's about when it has no note) */
@@ -66,6 +66,8 @@ function renderSound() {
 	const shapeRow = sl => `<div class="kv"><span class="mono">${sl}</span><div class="shapes">${SHAPES.map((n, i) => `<button data-slot="${sl}" data-shape="${i}" aria-pressed="${l[sl] === i}" title="${n}${sl === "SHP2" ? ", inverted" : ""}" aria-label="${sl} ${n}">${shapeIcon(i, sl === "SHP2")}</button>`).join("")}</div></div>`;
 	const lfo = [
 		{ key: "lshape", title: `LFO ${t + 1} shape`, g: "lfo", knobs: ["SHMIX"], w: 5, tagTip: lfoTip,
+			/* 0.6 wave 4: Copy LFO, Paste LFO, Clear LFO (mdDeskWhat.js) */
+			menu: `<button class="lfomenu" data-lfom="1" aria-haspopup="menu" title="Copy, paste or clear LFO ${t + 1}" aria-label="LFO ${t + 1}: copy, paste or clear">⋯</button>`,
 			plot: sndPlot(`<canvas class="ed" data-ed="lshape" aria-label="One cycle of the LFO's shape. Drag the dot for SHMIX."></canvas>`, SND_TIP.lshape),
 			body: `<div class="sgline lfoshape">${shapeRow("SHP1")}${shapeRow("SHP2")}${pc("lfo", "SHMIX", { color: SND_COL.lfo })}</div>` },
 		{ key: "lmotion", title: "LFO motion", g: "lfo", knobs: ["SPD", "DEPTH"], w: 3.4, tagTip: lfoTip,

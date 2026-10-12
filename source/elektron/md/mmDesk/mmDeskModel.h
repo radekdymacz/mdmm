@@ -1,6 +1,7 @@
 #pragma once
 
 #include "deskCore/deskCommands.h"
+#include "deskCore/deskEdits.h"
 #include "deskCore/deskCore.h"
 
 namespace deskCore
@@ -136,8 +137,31 @@ namespace mmDesk
 
 			bool operator==(const Steps& _o) const { return length == _o.length && rows == _o.rows; }
 		};
+		// A track's parts (trackCopy: COPY what, the machine's SUPER COPY): its values over the whole track, of the
+		// parts it copied (trackParts below).
+		struct Track
+		{
+			bool midi = false;					// a MIDI sequencer track's (its parts paste onto MIDI tracks only)
+			std::vector<StepValue> steps;		// the 64 steps
+			uint64_t slide = 0, swing = 0;
+			std::map<std::pair<uint8_t, uint8_t>, std::map<uint8_t, uint8_t>> locks;	// (page, param) -> step -> value
+			uint8_t arpPlayOjmp = 0, arpMode = 0, arpRange = 0, arpSpeed = 0, arpTrigs = 0, arpLength = 0;
+			std::array<uint8_t, 16> arpSteps{};
+			int8_t transpose = 0;
+			uint8_t scale = 0, key = 0;
+			Sound sound;
+
+			bool operator==(const Track& _o) const
+			{
+				return midi == _o.midi && steps == _o.steps && slide == _o.slide && swing == _o.swing && locks == _o.locks
+					&& arpPlayOjmp == _o.arpPlayOjmp && arpMode == _o.arpMode && arpRange == _o.arpRange && arpSpeed == _o.arpSpeed
+					&& arpTrigs == _o.arpTrigs && arpLength == _o.arpLength && arpSteps == _o.arpSteps && transpose == _o.transpose
+					&& scale == _o.scale && key == _o.key && sound == _o.sound;
+			}
+		};
 		std::optional<Steps> steps;
 		std::optional<Sound> sound;
+		std::optional<deskCore::trackParts::Clip<Track>> track;
 		std::optional<elektronData::json::Value> songRow;	// a contract row
 		std::optional<elektronData::MmKit> kit;				// the kit library
 		std::optional<elektronData::MmPattern> pattern;		// the pattern library
@@ -145,10 +169,16 @@ namespace mmDesk
 
 		bool operator==(const Clipboard& _o) const
 		{
-			return steps == _o.steps && sound == _o.sound && songRow == _o.songRow && kit == _o.kit && pattern == _o.pattern
-				&& song == _o.song;
+			return steps == _o.steps && sound == _o.sound && track == _o.track && songRow == _o.songRow && kit == _o.kit
+				&& pattern == _o.pattern && song == _o.song;
 		}
 	};
+
+	// The parts of a track COPY / PASTE / CLEAR what names (trackCopy, trackPaste, trackClear; deskCore/deskEdits.h
+	// trackParts), in the order the page shows them: the pattern's notes (trigs, envelope trigs, NOTE OFFs, pitches),
+	// melody (the pitches alone, onto the trigs that are there), slide, swing, locks, arp and transpose, and the kit's
+	// machine and sound (a synth track's).
+	const std::vector<deskCore::trackParts::Part>& trackParts();
 
 	struct EditContext
 	{
@@ -197,6 +227,9 @@ namespace mmDesk
 	// The command table's group of the library's slot ops (kitCopy ... patClear): the machine asks before they lose
 	// something (MmMachine::review).
 	constexpr int g_library = 1;
+	// The group of a track's parts (trackCopy, trackPaste, trackClear: COPY / PASTE / CLEAR what): one command may
+	// change the pattern and the kit that plays (deskCore/deskEdits.h trackParts).
+	constexpr int g_track = 2;
 
 	struct MmModel
 	{
