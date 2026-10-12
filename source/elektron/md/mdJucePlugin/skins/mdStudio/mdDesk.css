@@ -242,21 +242,17 @@ details.rules li{margin:0 0 5px;break-inside:avoid}
 .toast.on{opacity:1}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
-/* ===== Hardware-true pass (from panel photos; tokens and sources: doc/modern-ux/SKIN-COLOURS.md) =====
-   Both plates are silver with the red LCD, as every Machinedrum is. MKI (SPS-1 / SPS-1UW): brown print and tan
-   label bars. MKII (SPS-1 / SPS-1UW MKII): dark grey print, maroon label bars, red accents. */
+/* ===== Hardware-true pass (from panel photos) ===== */
 :root{
   --plate:#d9dad6;--plate2:#cdcec9;--plate3:#e5e6e2;--print:#94552b;--print2:#7a5a44;--print3:#8d7a6c;--rule:#b99a80;--body:#2f2c29;
-  --key:#272a31;--key2:#363a43;--keytext:#e9e4d6;--keydim:#a9aeb6;--cream:#e9e4d6;--creamtext:#2d2b27;
-  --led:#ff3b2f;--ledoff:#8a3a33;--rec:#e0472e;--lcd:#f2432f;--ink:#3a0b07;--labfill:#b07a4a;--labtext:#f6efe3;--knob:#2c2f35;
+  --key:#3a4049;--key2:#4a525c;--keytext:#e9e4d6;--keydim:#a9aeb6;--cream:#e9e4d6;--creamtext:#2d2b27;
+  --led:#ff3b2f;--ledoff:#8a3a33;--rec:#e0472e;--lcd:#b3c03c;--ink:#1f2a0e;--labfill:#b07a4a;--labtext:#f6efe3;--knob:#3a4049;
   --trig:var(--led);--oxblood:var(--print);
 }
 :root[data-plate="mk2"]{
-  color-scheme:light;
-  --plate:#d3d4cf;--plate2:#c7c8c3;--plate3:#e0e1dc;--print:#3e3a3b;--print2:#5f5a5a;--print3:#7d7878;--rule:#aca8a6;--body:#2a2828;
-  --key:#20232b;--key2:#2f333c;--keytext:#ecebe5;--keydim:#9a9ea6;--cream:#e6e3d8;--creamtext:#2a2826;
-  --led:#ff3b2f;--ledoff:#7a2f2a;--rec:#e5381f;--lcd:#f2432f;--ink:#3a0b07;--labfill:#5c1d19;--labtext:#f3eeea;--knob:#3b3f47;
-  --trig:var(--led);--oxblood:#a8302a;
+  --plate:#161716;--plate2:#0f100f;--plate3:#232422;--print:#f1f0ea;--print2:#c9c8c1;--print3:#94938c;--rule:#5d5e59;--body:#ecebe5;
+  --key:#232423;--key2:#30312f;--keytext:#ecebe5;--keydim:#8f908b;--cream:#ece6d6;--creamtext:#1f1e1b;
+  --ledoff:#4d1714;--lcd:#ef5a39;--ink:#3a0e08;--labfill:#f1f0ea;--labtext:#111;--knob:#9a9ca0;
 }
 body{color:var(--body)}
 .note,.edhint,.kv,.slot .route{color:var(--print2)}
@@ -1024,7 +1020,7 @@ html,body{min-width:1280px}
 #phcol{position:absolute;left:0;top:0;pointer-events:none;z-index:2;opacity:0;border-radius:5px;
  background:linear-gradient(to bottom,color-mix(in srgb,var(--led) 30%,transparent),color-mix(in srgb,var(--led) 18%,transparent));
  box-shadow:0 0 0 2px var(--led),0 0 16px color-mix(in srgb,var(--led) 40%,transparent);will-change:transform}
-:root #phcol{background:color-mix(in srgb,var(--led) 26%,transparent);box-shadow:0 0 0 2px var(--led),0 0 12px color-mix(in srgb,var(--led) 45%,transparent)}
+:root[data-plate="mk1"] #phcol{background:color-mix(in srgb,var(--led) 26%,transparent);box-shadow:0 0 0 2px var(--led),0 0 12px color-mix(in srgb,var(--led) 45%,transparent)}
 /* v46: LCD fields have fixed widths, so values never resize the LCD */
 .lcdpanel b,.lcd2{font-variant-numeric:tabular-nums}
 #bpm,#pos,#lockn{display:inline-block;width:5.2ch;min-width:0!important;text-align:left}

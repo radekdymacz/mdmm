@@ -1,13 +1,15 @@
 # Skin colours, true to the product photos (0.6, branch `feat/0.6-skins`)
 
-Radek, 2026-10-12: both editors look like the machines in the product photos; the MKI / MKII plate key chooses the
-look. Only colour tokens change: no control moves, no new control. Values are pixel samples (median-cut over a box)
+Radek, 2026-10-12: the Monomachine Editor looks like the machines in the product photos; the MKI / MKII plate key
+chooses the look. **The Machinedrum Editor stays as it was, by choice** (Radek, after the side-by-side comparison): the
+light MKI with the green LCD and the dark MKII, so the MD keeps its dark look. The MD photo findings and the tokens
+tried for it are kept below for the record; they are not in the skin. Only colour tokens change: no control moves, no new control. Values are pixel samples (median-cut over a box)
 from the photos below, rounded and evened out by eye: photo white balance varies, JPEG blurs LCD pixels into the
 ground (so ink colours are set darker than the raw sample), and small photos lose fine print.
 
-Where they live: the Machinedrum's in `doc/modern-ux/mockup/index.html` ("Hardware-true pass"), the Monomachine's in
-`doc/modern-ux/mm-mockup/src/20-mm.css` (the plate blocks); `sync-mdstudio-skin.py` and `sync-mmstudio-skin.py`
-write them into `mdDesk.css` and `mmStudio.css`.
+Where they live: the Monomachine's in `doc/modern-ux/mm-mockup/src/20-mm.css` (the plate blocks); `build.sh` and
+`sync-mmstudio-skin.py` write them into `mmStudio.css`. The Machinedrum's (unchanged) in `doc/modern-ux/mockup/index.html`
+("Hardware-true pass").
 
 ## Photos
 
@@ -28,6 +30,8 @@ green-grey keys and knobs and rust label bars (E); the MKII a warmer silver, a b
 black keys and knobs, white keys, dusty red-brown label bars and red print (F, G).
 
 ## Tokens
+
+The MM columns are in the skin. The MD columns were tried on this branch and taken back out (not in the skin).
 
 | Token | MD MKI | MD MKII | MM MKI | MM MKII |
 |---|---|---|---|---|
@@ -50,13 +54,8 @@ black keys and knobs, white keys, dusty red-brown label bars and red print (F, G
 
 ## What changed against the old skins
 
-- Machinedrum MKI: the LCD was yellow-green (#b3c03c); no Machinedrum photo shows one, so it is red as on the MKII.
-  Keys and knobs darker (near black, as A, B, D).
-- Machinedrum MKII: was a black panel (#161716) with white print; every MKII photo shows a silver panel. Now silver,
-  dark print, maroon label bars, the same red LCD.
 - Monomachine: MKI and MKII had one look (grey-green LCD #b9c4b0, the emulator's mmSfx60 skin). Now MKI light blue,
   MKII bluish-white, each with its own panel, keys and label colours.
-- The Machinedrum's play-head column takes the light plates' style on both plates (it was MKI only).
-
-The page theme: the Machinedrum's MKII was its dark look, and with no saved choice the MD page starts on MKII when
-the system is in dark mode (mdDeskTop.js). With both plates silver the MD has no dark look on this branch.
+- Machinedrum: unchanged by choice (MKI silver with the yellow-green LCD #b3c03c, MKII black panel with the red LCD,
+  the dark look the page starts on when the system is in dark mode). The photos show a silver panel and a red LCD on
+  every Machinedrum; Radek prefers the current looks.
