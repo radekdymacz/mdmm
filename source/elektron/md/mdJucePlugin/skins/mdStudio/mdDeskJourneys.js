@@ -1790,7 +1790,6 @@ const MdJourneys = (() => {
 		]
 	};
 	/* ---------- 0.6 slice 5: journeys for the rows that had none (doc/features/unproved-md.md) ---------- */
-	/* SLICE5-DEFS */
 	/* ---- chapters 1, 2 and 8 (the LCD, modes, the pattern chooser, the kit library) ---- */
 	const l2 = k => `#lcd2 [data-l2="${k}"]`;
 	const l2text = k => $1(l2(k) + " b")?.textContent;
@@ -2415,10 +2414,7 @@ const MdJourneys = (() => {
 		]
 	};
 	const slice5 = [modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, kitNameSave, songCommands, playModeJ, pageLeds, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
-	/* PROBE-START */
-	const probeJ = { name: "md-zz-probe", proves: [], steps: [{ say: "probe", act: async (u, c) => { let r; try { const src = await (await fetch("zzprobe.js")).text(); const AF = Object.getPrototypeOf(async function () { }).constructor; r = await new AF("u", "c", "results", "tele", "J", src)(u, c, results, tele, { soundTracks, trigsOf, kit, kitVals, desk, locksOf }); } catch (e) { r = "ERR " + e + " " + (e.stack || "").slice(0, 200); } Bridge.log("PROBE " + JSON.stringify(r)); } }] };
-	/* PROBE-END */
-	const all = [probeJ, ...slice5, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
+	const all = [...slice5, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
 		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
 		genJourney("md-gen-mutate-undo", false, { proves: [] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: [] }), genKeys,
 		shapeSound, arrows, machinePick, machAudition, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,
