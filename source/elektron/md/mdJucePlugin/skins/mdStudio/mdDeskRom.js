@@ -60,12 +60,18 @@ Drop.host = { send: c => { const { op, ...args } = c; cmd(op, args); }, ask: (ht
 	romWanted: () => V.lifecycle === "missing" || V.lifecycle === "unsupported",
 		samples: (drop, items, x, y) => dropSamples(drop, items, x, y),
 	hint: "Drop a ROM (.bin, .zip), a SysEx file (.syx), or samples (.wav, .aif) for the Sampler's ROM slots" };
-/* SysEx import and export: the host's file dialogs and document writes (the page never reads the file) */
-Syx.host = { choose: () => cmd("chooseSyx"), exportAll: () => cmd("syxExport"), start: (kinds, skip) => cmd("syxImport", { kinds, skip: skip || [] }), stop: () => cmd("syxCancel") };
+/* SysEx import and export: the host's file dialogs and document writes (the page never reads the file); 0.6: the
+   import's place and VERIFY ONLY, the export's kinds and ranges, Reset machine… (empty, and factory from the ROM) */
+Syx.host = { machine: "Machinedrum", factory: true, choose: () => cmd("chooseSyx"),
+	start: (kinds, skip, o = {}) => cmd("syxImport", Object.assign({ kinds, skip: skip || [] }, o.placeAt ? { placeAt: o.placeAt } : {}, o.checkOnly ? { checkOnly: true } : {})),
+	stop: () => cmd("syxCancel"), place: placeAt => cmd("syxPlace", { placeAt }), exportInfo: () => cmd("syxExportInfo"),
+	exportSave: req => cmd("syxExport", req), reset: how => cmd("machineReset", { how }), ask: (html, btns) => ask(html, btns), say: t => toast(t) };
 Bridge.onMessage(m => {
 	if (m.type === "syxPreview") Syx.preview(m);
 	else if (m.type === "syxProgress") Syx.progress(m);
-	else if (m.type === "syxExport") toast(m.text);
+	else if (m.type === "syxExport") Syx.exported(m);
+	else if (m.type === "syxExportInfo") Syx.exportInfo(m);
+	else if (m.type === "syxReset") Syx.resetNews(m);
 });
 
 /* the dialog's and the firmware screen's keys (the router's, mdDeskRender.js CLICKS): true when the click was theirs */

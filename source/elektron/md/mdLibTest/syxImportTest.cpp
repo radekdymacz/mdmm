@@ -7,6 +7,7 @@
 
 #include "elektronData/mdCommands.h"
 #include "elektronData/mmDump.h"
+#include "elektronData/sysex7bit.h"
 
 #include "../mdJucePlugin/mdSyxSession.h"	// the session's import job, header only (B-019)
 
@@ -560,6 +561,124 @@ namespace
 		check(j3.phase() == Job::Phase::Reading, "Stop while sending: what went is read back");
 	}
 
+	// 0.6 (wave 6): SPECIFIC place, VERIFY ONLY, a part for an export, the DigiPRO messages.
+	void placeAndCheck()
+	{
+		std::printf("0.6: a dump placed elsewhere, an export's part, SPECIFIC place, VERIFY ONLY\n");
+		auto k1 = mdKit(1); setName(k1.name, "NEW1");
+		const auto m1 = ed::encodeMdKit(k1);
+		const auto placed = ed::syxPlaced(m1, 10);
+		bool othersSame = placed.size() == m1.size();
+		for(size_t i = 0; othersSame && i + 5 < m1.size(); ++i)
+			othersSame = i == 9 || placed[i] == m1[i];
+		const auto back = ed::decodeMdKit(placed);
+		check(placed[9] == 10 && ed::isDumpTrailerValid(placed) && othersSame && back && back->position == 10 && back->name == k1.name,
+			"a kit placed in slot 11: its position byte and checksum, every other byte the file's");
+		auto broken = m1;
+		broken[broken.size() - 4] ^= 1;
+		const auto placedBroken = ed::syxPlaced(broken, 10);
+		check(placedBroken[9] == 10 && !ed::isDumpTrailerValid(placedBroken), "a dump with a broken checksum stays broken where it lands");
+		const Bytes command{0xf0, 0x00, 0x20, 0x3c, 0x02, 0x00, 0x57, 0x05, 0xf7};
+		check(ed::syxPlaced(command, 3) == command, "a message that is no dump is never placed");
+
+		const auto all = mdBackup();
+		const auto part = ed::syxSelect(all, {{ed::SyxKind::Kit, {1, 3}}, {ed::SyxKind::Song, {0, 0}}});
+		check(part.kits.size() == 3 && part.kits.count(1) && part.kits.count(3) && part.songs.size() == 1 && part.patterns.empty() && part.globals.empty(),
+			"an export's part: kits 2-4 and song 1, nothing else");
+		const auto parsed = ed::parseSyx(ed::writeSyx(part));
+		check(parsed.md.kits.size() == 3 && parsed.md.songs.size() == 1, "the part as a file holds just that");
+
+		check(ed::mmWaveRequest(5) == Bytes({0xf0, 0x00, 0x20, 0x3c, 0x03, 0x00, 0x5e, 0x05, 0xf7}), "the DigiPRO waveform request (0x5E)");
+		Bytes wave{0xf0, 0x00, 0x20, 0x3c, 0x03, 0x00, 0x5d, 0x01, 0x01, 0x07, 0, 0, 0, 0, 0, 0, 0, 0xf7};
+		check(ed::mmWaveDumpSlot(wave) == 7 && ed::mmWaveDumpSlot(m1) == -1, "a waveform dump says its waveform; a kit is none");
+
+		// SPECIFIC: the file's kits 2 and 4 (NEW1, NEW3) from K11: they land in K11 and K12; K11 holds data, K12 not known
+		auto k3 = mdKit(3); setName(k3.name, "NEW3");
+		Bytes file;
+		append(file, ed::encodeMdKit(k1));
+		append(file, ed::encodeMdKit(k3));
+		append(file, ed::encodeMdPattern(mdPattern(5)));
+		FakeMachine machine;
+		machine.kits[10] = mdKit(10);
+		ed::MdDocuments known;
+		known.kits[10] = mdKit(10);
+		Job job;
+		job.open(file, "place.syx", known, {-1, 11, -1, -1});
+		const auto p = job.place({{"kit", 10}}, known, {-1, 11, -1, -1});
+		const auto& kits = p.find("items")->find("kit")->asArray();
+		check(kits.size() == 2 && kits[0].find("slot")->asNumber() == 10 && kits[0].find("from")->asNumber() == 1
+			&& kits[1].find("slot")->asNumber() == 11 && kits[1].find("from")->asNumber() == 3, "the preview: kit 2 lands in K11, kit 4 in K12, each with where it came from");
+		check(kits[0].find("overwrites")->asBool() && !kits[1].find("overwrites")->asBool() && kits[1].find("plays")->asBool(),
+			"K11 holds data (it overwrites); K12 is empty and plays now");
+		check(p.find("items")->find("pattern")->asArray()[0].find("slot")->asNumber() == 5 && p.find("place")->find("kit")->asNumber() == 10,
+			"a kind not placed keeps its own slots; the preview names the first slot");
+		check(job.start({"kit"}, {"kit:11"}, known).empty(), "the import starts, K12 left out");
+		double now = 0;
+		drive(job, machine, now);
+		const auto& w = machine.wire;
+		check(std::find(w.begin(), w.end(), ed::syxPlaced(m1, 10)) != w.end() && std::find(w.begin(), w.end(), m1) == w.end(),
+			"kit 2 went with K11's position and checksum, never as the file had it");
+		check(machine.kits.count(10) && machine.kits[10].name == k1.name && !machine.kits.count(11) && !machine.kits.count(3), "the machine holds NEW1 in K11, nothing else changed");
+		const auto out = job.outcomes();
+		check(out.size() == 1 && out[0].first.slot == 10 && out[0].second == ed::SyxOutcome::Taken, "K11 read back: taken");
+
+		Job beyond;
+		beyond.open(file, "place.syx", known, {});
+		const auto b = beyond.place({{"kit", 63}}, known, {});
+		check(b.find("items")->find("kit")->asArray().size() == 1 && b.find("skippedCount")->asNumber() == 1
+			&& b.find("skipped")->asArray()[0].asString().find("past the last slot") != std::string::npos, "a kit that would land past K64 is left out, said");
+		check(beyond.place({}, known, {}).find("items")->find("kit")->asArray()[0].find("slot")->asNumber() == 1, "ORIGINAL again: back to its own slot");
+
+		// VERIFY ONLY: the machine holds the file's kit 2 and another kit 4; nothing is sent, both are read and compared
+		FakeMachine m2;
+		m2.kits[1] = k1;
+		m2.kits[3] = mdKit(3);
+		Job check2;
+		check2.open(file, "verify.syx", known, {});
+		check(check2.start({"kit", "pattern"}, {}, known, true).empty(), "verify only starts");
+		double t2 = 0;
+		const auto progress = drive(check2, m2, t2);
+		const bool sentDump = std::any_of(m2.wire.begin(), m2.wire.end(), [](const Bytes& _m) { return _m.size() > 9; });
+		check(!sentDump && m2.kits[3].name != k3.name, "verify only writes nothing: only requests went");
+		const auto& last = progress.back();
+		const auto& rep2 = *last.find("report");
+		check(last.find("check")->asBool() && rep2.find("same")->asNumber() == 1 && rep2.find("differs")->asNumber() == 1 && rep2.find("no reply")->asNumber() == 1,
+			"the report: kit 2 the same, kit 4 different, pattern 6 not answered (" + ed::json::write(rep2) + ")");
+		check(last.find("text")->asString().find("Verify only: 1 of 3 the same") == 0 && last.find("text")->asString().find("Nothing was written") != std::string::npos,
+			"the summary: " + last.find("text")->asString());
+	}
+
+	// The Monomachine's DigiPRO waveforms for an export: one request at a time; a used one answers, an empty one not.
+	void waveRead()
+	{
+		std::printf("0.6: the DigiPRO waveforms read for an export\n");
+		struct Waves
+		{
+			struct AsIs { size_t queued = 0; bool busy = false; std::string waitsFor; };
+			std::map<uint8_t, Bytes> used;
+			std::vector<Bytes> wire, replies;
+			std::string sendAsIs(const Bytes& _m, bool) { wire.push_back(_m); if(_m.size() == 9 && _m[6] == 0x5e && used.count(_m[7])) replies.push_back(used[_m[7]]); return {}; }
+			AsIs asIs() const { return {}; }
+		} m;
+		for(const uint8_t w : {2, 5})
+			m.used[w] = Bytes{0xf0, 0x00, 0x20, 0x3c, 0x03, 0x00, 0x5d, 0x01, 0x01, w, 0, 0, 0, 0, 0x11, 0, 0, 0xf7};
+		mdJucePlugin::SyxWaveRead read;
+		read.start(0, 7);
+		double now = 0;
+		for(int i = 0; i < 5000 && read.running(); ++i)
+		{
+			now += 10;
+			read.step(m, now, false);
+			for(const auto& r : m.replies)
+				read.onMachineSysex(r);
+			m.replies.clear();
+		}
+		const auto dumps = read.dumps();
+		check(!read.running() && read.done() == 8 && m.wire.size() == 8, "waveforms 1-8 asked for, one each (" + std::to_string(m.wire.size()) + ")");
+		check(dumps.size() == 2 && dumps[0] == m.used[2] && dumps[1] == m.used[5], "the two used ones kept as they came; the empty ones time out");
+		check(now < 8 * 800 + 200, "an empty waveform costs its short time-out only (" + std::to_string(static_cast<int>(now)) + " ms)");
+	}
+
 	void notData()
 	{
 		std::printf("as is: files with nothing to import\n");
@@ -588,6 +707,8 @@ int main()
 	sendable();
 	canonical();
 	job();
+	placeAndCheck();
+	waveRead();
 	notData();
 	std::printf("%s (%d failures)\n", g_failures ? "FAIL" : "PASS", g_failures);
 	return g_failures ? 1 : 0;
