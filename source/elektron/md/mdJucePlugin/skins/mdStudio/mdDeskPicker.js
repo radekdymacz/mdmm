@@ -9,8 +9,9 @@
    picker any other way (Esc, BACK, a click outside) puts the old one back. S.aud is the audition as a value
    {t, g, was, m, ok}: a trial in the core (trialBegin / trialEnd, deskCore.h Core::trial) under one gesture g, so the
    whole audition and the pick are one undo step. The core takes the trial back only while its step is the newest one
-   (a refused machine edit recorded nothing, so nothing earlier is undone), and on its own when the page goes away or
-   loads again (a window closed mid-audition leaves no tried machine behind). Any other edit, Undo or Redo ends the
+   (a refused machine edit recorded nothing, so nothing earlier is undone), and on its own when a page loads again (a
+   reload, or the editor window opened again after it was closed mid-audition: the tried machine goes then; detach
+   comes only when the processor goes). Any other edit, Undo or Redo ends the
    audition (kept). m: the machine tried last, ok: the last one the plug-in took. Measured on
    OS 1.63 (doc/modern-ux/PROBES-manual-gaps.md P9): the note right behind the SysEx plays the new machine, and the old
    machine with its values again gives the old sound. */

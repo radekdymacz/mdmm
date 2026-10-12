@@ -25,7 +25,7 @@ and LCD fit (B-061, B-065, B-066), the volume-strip fix; the feature data, journ
 
 | Branch | State | Next step |
 |---|---|---|
-| `feat/0.6-mix` | wave 8 (MD only): LEV box on Mix (MD-008, MD-032, MD-278), machine audition in the picker (MD-037) as a core trial (`trialBegin` / `trialEnd`, taken back on page detach or reload); probe P9; reviewed, review fixes in | merge into `feat/0.6-features` |
+| `feat/0.6-mix` | wave 8 (MD only): LEV box on Mix (MD-008, MD-032, MD-278), machine audition in the picker (MD-037) as a core trial (`trialBegin` / `trialEnd`, taken back when a page loads again or the processor goes); probe P9; reviewed, review fixes in | merge into `feat/0.6-features` |
 
 **Wave 11 (added 2026-10-12, I-024):** machine memory that stays for every new session, way A: one memory file per
 machine in the editor's user folder; a session with no project state starts from it; each save on the machine (kit,
