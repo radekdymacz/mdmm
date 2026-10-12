@@ -69,8 +69,8 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Front panel 1-5 | 15 BANK keys A-H | Pattern bank | ✅ | Pattern chooser |  | – |
 | Front panel 1-5 | 15 BANK secondary: ARP, TRANSPOSE, SWING, SLIDE | Track settings windows | ✅ | Sequence dock > Arp, Transpose; Slide and Swing under the roll; LCD SWG |  | – |
 | Front panel 1-5 | 16 REC key (grid recording) | Grid mode on / off | 🟡 | LCD record key | Stopped = grid record; the page's step editing does not need it | 1 |
-| Front panel 1-5 | 16 PLAY (pause on second press) | Start, pause | 🟡 | LCD play key, Space | Toggle start / stop, no pause. Measured (P1, doc/modern-ux/PROBES-manual-gaps.md): MIDI Stop + Continue pauses and resumes when TRANSPORT IN is ACCEPT. | 2 |
-| Front panel 1-5 | 16 STOP; STOP twice rewinds and silences | Stop, reset | 🟡 | Same key | One press only; no rewind or all-notes-off key | 2 |
+| Front panel 1-5 | 16 PLAY (pause on second press) | Start, pause | ✅ | LCD play key: ⇧-click or ⇧Space pauses (▶ blinks, the position holds), ▶ goes on; the ▶ menu (right-click or its ▾) | Over HW MIDI pause and Continue need GLOBAL › CONTROL IN › TRANSPORT = ACCEPT; the editor asks to set it. | 3 |
+| Front panel 1-5 | 16 STOP; STOP twice rewinds and silences | Stop, reset | ✅ | Panic: ⌘. or the ▶ menu's Panic (All Notes Off on each track's channel, then STOP twice) |  | 3 |
 | Front panel 1-5 | 16 REC + PLAY = live recording | Live recording | ✅ | Alt + Space, record key while playing | `record` op | 1 |
 | Front panel 1-5 | 16 STOP + REC = step recording | Step recording | ❌ | – | Not in the page | – |
 | Front panel 1-5 | 16 Secondary: COPY, PASTE, CLEAR | Copy / paste / clear | ✅ | LCD COPY / CLR / PASTE, Cmd+C / V, Delete | Scope depends on the workspace; on Sequence it is the selected steps, else the page shown (`130-main.js` secAction) | 4 |
@@ -99,7 +99,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | LCD 1-10 | Level bar | Track level | ✅ | Mix LEVEL fader |  | 1 |
 | LCD 1-10 | Eight parameter circles with names | Data page | ✅ | Value boxes with names |  | – |
 | LCD 1-10 | Four boxes: playback position | Position | ✅ | LCD POSITION, page LEDs, playhead |  | – |
-| LCD 1-10 | Record / play / pause / stop symbols | Status | 🟡 | Record and play lamps | No pause state | – |
+| LCD 1-10 | Record / play / pause / stop symbols | Status | ✅ | Play key: blinks while paused; POSITION keeps the held step |  | 1 |
 | LCD 1-10 | Kit name and number | Current kit | ✅ | LCD KIT (saved / edited) |  | – |
 | LCD 1-10 | Pattern index A01-H16 | Current pattern | ✅ | LCD PATTERN |  | 1 |
 | LCD 1-10 | Machine of the track in focus | Machine | ✅ | Rail, Sound header |  | – |
@@ -111,7 +111,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 |---|---|---|---|---|---|---|
 | Selecting and playing 1-11 | Select a pattern; kit loads with it | Pattern pick | ✅ | LCD ‹ ›, chooser | Asks before losing kit edits | 2 |
 | Selecting and playing 1-11 | Pending pattern shown with arrow | Cued pattern | ✅ | Queued name blinks in the LCD |  | 1 |
-| Selecting and playing 1-11 | Play, pause, stop | Transport | 🟡 | Play key | See section 2 | – |
+| Selecting and playing 1-11 | Play, pause, stop | Transport | ✅ | Play key: play, pause (⇧-click, ⇧Space), stop |  | 1 |
 | Playing in multi trig 1-12 | Play MULTI TRIG from a keyboard | Multi trig | ✅ | Perform > Multi trig; MIDI channel 7 |  | – |
 | Exploring a pattern 1-12 | Try each track, tweak SYNTHESIS | Auditioning | ✅ | Sound; roll keys play the track |  | – |
 | Grid recording 1-12 | Load kit for the pattern | LOAD KIT | ✅ | Kit library |  | 1 |
@@ -261,23 +261,23 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Clear note parameter locks 1-50 | Clear locks of one note, undoable | Clear locks | 🟡 | Lane Alt-drag per parameter; Alt + lane clear for a track; a selected step's Delete clears the step whole | No key for the locks of one step alone | – |
 | Track page copy 1-51 | Copy a page to another page | Page copy | ✅ | LCD COPY on the page shown (no step selected), PASTE on another page; or select the steps | Steps, slides and locks (`130-main.js` secAction) | – |
 | Clear track page 1-51 | Clear a page | Page clear | ✅ | CLR with a page shown |  | 1 |
-| Track copy 1-52 | Track data to another track incl. machine, arp, transpose, swing, slide | Track copy | 🟡 | Select a track's steps (drag the step ruler), Cmd+C, Cmd+V on another track; Cmd+A takes all six; machine through Sound COPY; Shift-click track headers marks tracks to paste into | Steps, slides and locks, not machine in the same copy, and not arp / transpose / swing | – |
-| Clear track 1-53 | Clear a track | Track clear | 🟡 | Select the track's steps with the ruler and Delete; Alt + lane clear for locks | No single clear-this-track key; the LCD CLR clears the page shown | – |
+| Track copy 1-52 | Track data to another track incl. machine, arp, transpose, swing, slide | Track copy | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (⌘⇧C, ⌘⇧V): notes, melody, slide, swing, locks, arp, transpose, machine + sound in one copy; Paste lights the tracks (synth onto synth, MIDI onto MIDI); one undo step |  | 1 |
+| Clear track 1-53 | Clear a track | Track clear | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (⌘⇧⌫): tick Notes (or any parts) of the selected track; Cmd+Z |  | 1 |
 | Pattern copy 1-53 | Whole pattern incl. kit link and MIDI tracks | Pattern copy | ✅ | Pattern chooser Copy / Paste, drag a slot |  | – |
 | Clear pattern 1-54 | Clear all, keep kit link | Pattern clear | ✅ | Alt + CLR, chooser Clear | Keeps the kit link | 2 |
-| Super copy 1-54 | Choose what to copy (melody, machine) | Super copy | ❌ | – | A step selection copies a block of tracks and steps, but not a chosen part of them (no melody-only copy) | – |
-| Super clear 1-55 | Choose what to clear | Super clear | ❌ | – | Separate clears exist (steps, locks, pattern, machine) | – |
+| Super copy 1-54 | Choose what to copy (melody, machine) | Super copy | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (⌘⇧C, ⌘⇧V): Melody pastes the pitches onto the trigs already there; Machine + sound the machine |  | 1 |
+| Super clear 1-55 | Choose what to clear | Super clear | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (⌘⇧⌫): tick the parts to clear; Cmd+Z | Melody leaves the trigs without a pitch; swing goes back to every second 16th; arp to OFF. | 1 |
 
 ## 12. Tempo (1-55 to 1-57)
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
 | Tempo 1-55 | Global tempo, not stored in patterns | Global tempo | ✅ | LCD TEMPO |  | 1 |
-| Tempo screen 1-56 | Integer and decimal tempo | Edit tempo | ✅ | Drag, arrows, Shift = 0.1 | 30-300 BPM | – |
-| Tempo screen 1-56 | Delay change until FUNCTION released | Delayed change | ❌ | – |  | – |
-| Tempo screen 1-56 | Temporary +/-10 % shift | Nudge | ❌ | – |  | – |
+| Tempo screen 1-56 | Integer and decimal tempo | Edit tempo | ✅ | Drag, arrows, Shift = 0.1 | 30-300 BPM | 1 |
+| Tempo screen 1-56 | Delay change until FUNCTION released | Delayed change | ✅ | TEMPO window (a click on the tempo): Change on release; ⌥-drag the tempo does it once |  | 1 |
+| Tempo screen 1-56 | Temporary +/-10 % shift | Nudge | ✅ | TEMPO window: −10 % / +10 % held, or the keys - and = held; back at the release |  | 1 |
 | Tap tempo 1-56 | Average of taps | Tap | ✅ | Shift + B everywhere; B off Sequence | The last five taps are averaged; a pause of 2 s starts over | 2 |
-| External synchronisation 1-56 | Internal or external MIDI clock; EXT shown | Sync | ✅ | GLOBAL > Sync > Tempo in (INT / EXT); in a DAW the machine follows the host automatically (`followHost`) | See Control In | – |
+| External synchronisation 1-56 | Internal or external MIDI clock; EXT shown | Sync | ✅ | GLOBAL > Sync > Tempo in (INT / EXT); in a DAW the machine follows the host automatically (`followHost`) | See Control In | 1 |
 | Tempo 1-57 | Songs store tempo changes | Song tempo | ✅ | Song row Tempo |  | – |
 
 ## 13. Parameter locks (1-57, 1-58)
@@ -315,7 +315,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Arpeggiator 1-62 | PLAY TRUE, UP, DOWN, CYCLE, RND | Direction | ✅ | Arp Play keys |  | – |
 | Arpeggiator 1-62 | RNGE | Octave range | ✅ | Arp RNGE |  | 1 |
 | Arpeggiator 1-62 | OJMP | Octave jump | ✅ | Arp OJMP | Low bit / upper bits split, see mapping note 6 | – |
-| Arpeggiator 1-62 | Copy, clear, paste, undo arp | Arp clipboard | ❌ | – | Page undo only | – |
+| Arpeggiator 1-62 | Copy, clear, paste, undo arp | Arp clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Arp ticked): copy, paste, clear (back to OFF); Cmd+Z |  | 1 |
 | Arp envelope switches 1-62 | AMP, FLT, LFO trigging (not on MIDI) | Arp trigs | ✅ | Arp Trig keys | Disabled on MIDI tracks | – |
 | Arp rhythm and offset 1-63 | Up to 16 steps, on / off | Rhythm | ✅ | 16-cell strip: click mutes |  | – |
 | Arp rhythm and offset 1-63 | Note offset per step | Offset | ✅ | Drag a cell up / down (+/-24) |  | – |
@@ -326,9 +326,9 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Transpose 1-64 | KEY for MAJ / MIN | Key | ✅ | Click the keyboard picture |  | – |
 | Swing 1-64 | Amount 50-80 %, per pattern | Swing | ✅ | LCD SWG |  | – |
 | Swing track 1-65 | Per-track swing steps, default every second 16th | Swing track | ✅ | Sequence: Swing under the roll, then click or drag the step columns; marks along the roll's foot | Drag paints, one undo step | 1 |
-| Swing 1-65 | Copy, clear, paste, undo swing track | Swing clipboard | ❌ | – |  | – |
+| Swing 1-65 | Copy, clear, paste, undo swing track | Swing clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Swing ticked): copy, paste, clear; Cmd+Z |  | 1 |
 | Slide 1-66 | Slide track per track | Slide | ✅ | Sequence: Slide under the roll, then click or drag the step columns; marks along the roll's foot; lock lane draws the glide |  | 2 |
-| Slide 1-66 | Copy, clear, paste, undo slide | Slide clipboard | ❌ | – |  | – |
+| Slide 1-66 | Copy, clear, paste, undo slide | Slide clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Slide ticked): copy, paste, clear; Cmd+Z |  | 1 |
 | Mute mode 1-67 | Mute window, 6 + 6 | Mutes | ✅ | Perform > Mutes; rail M | MIDI mutes through the MUTE window keys | 2 |
 | Mute mode 1-67 | Held changes until FUNCTION released | Prepared mutes | ✅ | Shift + M prepares, applies on release |  | 1 |
 | Mute mode 1-68 | Minimise the window | Small window | ➖ | – | Page | – |
@@ -360,9 +360,9 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Load song 1-73 | Load a song slot | LOAD SONG | ✅ | Songs column: select a slot, Load (Enter) | Only while stopped | 3 |
 | Save song 1-74 | Save and name a song | SAVE SONG | ✅ | Songs column: Save (SAVE SONG 0x6D), Save to… with a name, Rename (F2) | Edits still go into the slot as dumps (SYSEX RECV); a name has 14 characters. | 1 |
 | Save song 1-74 | Copy, paste, clear, undo a song slot | Song slots | ✅ | Songs column: Copy, Paste, Clear, drag a slot onto another; Cmd+Z | Library slot ops songCopy, songPaste, songCopyTo, songClear, songRename; asks before writing over a song. | 1 |
-| Song play 1-75 | Play, pause, stop | Transport | 🟡 | Play key |  | – |
+| Song play 1-75 | Play, pause, stop | Transport | ✅ | Play key: play, pause (⇧-click, ⇧Space), stop; in SONG mode as in pattern mode |  | 2 |
 | Song play 1-75 | Switch to pattern mode and back; pointer held | Mode toggle | ✅ | PATTERN · CHAIN · SONG keys |  | 3 |
-| Song transport 1-75 | Move the song pointer to a row and continue | Jump to row | ❌ | – | Page shows the playing row (0.3.5) but cannot set it. Measured (P1): with TRANSPORT IN = ACCEPT, Song Position Pointer + Continue starts the row that holds the pointer (at its first step on the internal clock). | – |
+| Song transport 1-75 | Move the song pointer to a row and continue | Jump to row | ✅ | Song: ▶ From here on the selected row, or Enter (SONG mode, the song position, Continue) | Needs TRANSPORT IN = ACCEPT (factory IGNORE): the editor asks to set it, then plays. The row starts at its first step (P1). | 1 |
 | Song transport 1-75 | Song pointer position over MIDI | SPP | ➖ | – | Firmware, via global transport setting | – |
 | Song editing 1-76 | ROW count | Rows | ✅ | Arrangement grid |  | – |
 | Song editing 1-76 | PAT column, END mark | Pattern | ✅ | Pattern palette, drag, ‹ › |  | 3 |
@@ -374,7 +374,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Song editing 1-77 | XTRA: row BPM | Row tempo | ✅ | Row Tempo |  | – |
 | Song editing 1-77 | Insert / remove rows (FUNCTION + arrows) | Row edit | ✅ | Row Duplicate, Delete, Add loop, drag |  | 1 |
 | Song editing 1-77 | Copy, paste, clear, undo rows | Row clipboard | ✅ | LCD COPY / PASTE / CLR; page undo |  | – |
-| Song edit transport 1-77 | Start from any row (ENTER) | Play from row | ❌ | – |  | – |
+| Song edit transport 1-77 | Start from any row (ENTER) | Play from row | ✅ | Song: Enter on the selected row (▶ From here) |  | 1 |
 | Song edit transport 1-77 | Counter in bars and beats | Song time | 🟡 | Song header: rows, bars, time | Not a live counter | – |
 | Song loops 1-78 | Loop to a row, repeat count, nesting | Loop | ✅ | Row command LOOP |  | 1 |
 | Song jump 1-78 | Forward jump | Jump | ✅ | Row command JUMP |  | – |
@@ -490,7 +490,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | CC: filter B-3 | CC 72-79 | Filter page | ✅ | FLT values |  | – |
 | CC: effects B-3 | CC 80-87 | Effects page | ✅ | EFX values |  | – |
 | CC: LFO 1-3 B-3 | CC 88-95, 104-111, 112-119 | LFO pages | ✅ | LFO values |  | – |
-| CC: all notes off B-3 | CC 120 | Panic | ❌ | – | No panic key | – |
+| CC: all notes off B-3 | CC 120 | Panic | ✅ | Panic (⌘., the ▶ menu) sends All Notes Off (CC 123) on each track's channel | Measured (P5 MM): CC 120 does nothing on OS 1.32B; CC 123 lets held notes go as their note offs would. | 1 |
 | NRPN parameters B-5 | Track, parameter, value | NRPN | ✅ | MIDI page values go as NRPN 0x38-0x3F |  | – |
 | NRPN pitch B-5 | Pitch for a track | Pitch | ➖ | – | Firmware in; not used by the page | – |
 | NRPN note off, trig track B-5 | Release, trig A / L / F | Extra trigs | ➖ | – | Not sent; manual bit order erratum recorded | – |
@@ -531,9 +531,9 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 303 |
-| 🟡 | 30 |
-| ❌ | 18 |
+| ✅ | 320 |
+| 🟡 | 23 |
+| ❌ | 8 |
 | ➖ | 34 |
 | Total | 385 |
 

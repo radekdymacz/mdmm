@@ -8,7 +8,7 @@ The machine's screen shows the tempo, a level bar, eight parameter circles, four
 The LCD has two lines. The first line, from the left: the engine menu, the record and play keys, <TEMPO>, <POSITION>, <PATTERN>, <KIT> and <LOCKS>. The second line changes with the workspace. At its right end it has the sync field, then the keys <COPY>, <CLR> and <PASTE>.
 
 ## LCD
-<!-- rows: MM-013 MM-061 MM-062 MM-063 MM-064 MM-065 MM-066 MM-067 MM-068 @780ec5 -->
+<!-- rows: MM-013 MM-061 MM-062 MM-063 MM-064 MM-065 MM-066 MM-067 MM-068 @0cddb3 -->
 
 ### Tempo
 
@@ -24,7 +24,7 @@ The machine's level bar is the **LEVEL** fader of the **Mix** workspace. The eig
 
 ### Status
 
-The record key and the play key light while the machine records and plays. The play key reads a triangle when stopped and a square when playing. {gap:MM-065}The editor has no pause state.{/gap}
+The record key and the play key light while the machine records and plays. The play key reads a triangle when stopped and a square when playing. While the machine is paused the play key blinks and <POSITION> keeps the step the pause holds.
 
 ### Kit
 

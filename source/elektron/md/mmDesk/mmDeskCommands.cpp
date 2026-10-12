@@ -15,7 +15,8 @@ namespace mmDesk
 	const std::map<std::string, MmMachine::Handler>& MmMachine::askers()
 	{
 		static const std::map<std::string, Handler> map{{"loadKit", &MmMachine::askLoadKit}, {"saveKit", &MmMachine::askSaveKit},
-			{"select", &MmMachine::askSelect}, {"play", &MmMachine::askPlay}, {"saveSong", &MmMachine::askSaveSong}};
+			{"select", &MmMachine::askSelect}, {"play", &MmMachine::askPlay}, {"saveSong", &MmMachine::askSaveSong},
+			{"pause", &MmMachine::askPause}, {"resume", &MmMachine::askPause}, {"playFrom", &MmMachine::askPlayFrom}};
 		return map;
 	}
 
@@ -168,7 +169,9 @@ namespace mmDesk
 			{"mute", &MmMachine::cmdMute}, {"seqMode", &MmMachine::cmdSeqMode}, {"followHost", &MmMachine::cmdFollowHost}, {"muteMidi", &MmMachine::cmdMuteMidi},
 			{"poly", &MmMachine::cmdPoly}, {"record", &MmMachine::cmdRecord}, {"hwSend", &MmMachine::cmdHwSend},
 			{"chain", &MmMachine::cmdChain}, {"chainClear", &MmMachine::cmdChainClear},
-			{"noteOn", &MmMachine::cmdNoteOn}, {"noteOff", &MmMachine::cmdNoteOff}, {"globalSlot", &MmMachine::cmdGlobalSlot}};
+			{"noteOn", &MmMachine::cmdNoteOn}, {"noteOff", &MmMachine::cmdNoteOff}, {"globalSlot", &MmMachine::cmdGlobalSlot},
+			{"pause", &MmMachine::cmdPause}, {"resume", &MmMachine::cmdResume}, {"playFrom", &MmMachine::cmdPlayFrom},
+			{"panic", &MmMachine::cmdPanic}, {"nudge", &MmMachine::cmdNudge}};
 		return map;
 	}
 
@@ -448,6 +451,7 @@ namespace mmDesk
 		f.playing = m_playing;
 		f.statusReplies = m_wire.statusReplies;
 		f.pattern = m_curPattern;
+		f.songMode = m_songMode;
 		for(const auto& d : m_sequence.due(_now, f))
 		{
 			switch(d.action)
@@ -459,6 +463,11 @@ namespace mmDesk
 				m_queuedPattern = -1;
 				requestStatus();
 				m_lastStatusMs = _now;
+				break;
+			case Act::MidiStop:
+			case Act::SongMode:
+			case Act::FromPosition:
+				runTransportAct(d.action, d.arg);
 				break;
 			}
 		}

@@ -3,6 +3,7 @@
 #include "mdDeskChain.h"
 #include "mdDeskKeys.h"
 #include "mdDeskLibrary.h"
+#include "mdDeskTransport.h"
 
 #include "deskCore/deskKinds.h"
 
@@ -383,6 +384,9 @@ namespace mdDesk
 		const bool telemetry = m_telemetry.valid;
 		static const std::string noKeys = "It needs the machine's panel keys; this engine has none.";
 		c.set("transport", static_cast<bool>(m_port.pressKey), "This engine has no transport.");
+		// wave 2: panic is the panel's STOP twice (P5); play from a song row is MIDI (P1)
+		c.set("panic", keys, g_noPanic);
+		c.set("playFrom", static_cast<bool>(m_port.sendMidi), g_noPlayFrom);
 		c.set("panelKeys", keys, noKeys);
 		c.set("liveRecord", canLiveRecord(), panelKeys() ? g_noLiveRecordTelemetry : g_noLiveRecordKeys);
 		c.set("chains", canChain(), g_noChains);
@@ -726,7 +730,9 @@ namespace mdDesk
 			{"chainClear", &MdMachine::cmdChainClear}, {"globalSlot", &MdMachine::cmdGlobalSlot},
 			{"selectSong", &MdMachine::cmdSelectSong}, {"reloadSong", &MdMachine::cmdReloadSong}, {"saveSong", &MdMachine::cmdSaveSong},
 			{"sampleName", &MdMachine::cmdSampleName}, {"sampleCancel", &MdMachine::cmdSampleCancel}, {"play", &MdMachine::cmdPlay}, {"stop", &MdMachine::cmdStop},
-			{"mute", &MdMachine::cmdMute}, {"followHost", &MdMachine::cmdFollowHost}, {"seqMode", &MdMachine::cmdSeqMode}};
+			{"mute", &MdMachine::cmdMute}, {"followHost", &MdMachine::cmdFollowHost}, {"seqMode", &MdMachine::cmdSeqMode},
+			{"pause", &MdMachine::cmdPause}, {"resume", &MdMachine::cmdResume}, {"playFrom", &MdMachine::cmdPlayFrom},
+			{"panic", &MdMachine::cmdPanic}, {"nudge", &MdMachine::cmdNudge}};
 		return map;
 	}
 
@@ -1344,6 +1350,7 @@ namespace mdDesk
 		f.playing = m_telemetry.playing;
 		f.statusReplies = m_wire.statusReplies;
 		f.pattern = m_session.state().pattern ? *m_session.state().pattern : -1;
+		f.songMode = m_session.state().songMode ? (*m_session.state().songMode ? 1 : 0) : -1;
 		for(const auto& d : m_sequence.due(_now, f))
 		{
 			switch(d.action)
@@ -1360,6 +1367,11 @@ namespace mdDesk
 				break;
 			case Act::SelectPattern:
 				m_session.selectPattern(static_cast<uint8_t>(d.arg));
+				break;
+			case Act::MidiStop:
+			case Act::SongMode:
+			case Act::FromPosition:
+				runTransportAct(d.action, d.arg);
 				break;
 			}
 		}

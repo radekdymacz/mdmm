@@ -245,6 +245,8 @@ img,svg,canvas{-webkit-user-drag:none}
    selection is outlined (mdDeskComforts.js secLabels) */
 .lcdsec button.onsel{opacity:1;text-decoration:underline;text-underline-offset:2px}
 /* @include shared/deskSongSlots.css */
+/* 0.6 wave 4: COPY / PASTE / CLEAR what (skins/shared/deskWhat.js) */
+/* @include shared/deskWhat.css */
 /* 0.3.5, the Song page's left column by hierarchy (mdDeskSong.js): (a) What plays: the PATTERN | SONG switch, big,
    and one live line from the machine; (b) the song; (c) the palette; (d) the selected row. The mode is lit by what
    the machine reports; the arrangement is framed in red while the song plays, and looks as ever otherwise */
@@ -281,6 +283,7 @@ img,svg,canvas{-webkit-user-drag:none}
 /* I-018: the CPU meter beside the version (skins/shared/deskCpu.js) */
 /* @include shared/deskCpu.css */
 /* @include shared/deskTopFit.css */
+/* @include shared/deskTransport.css */
 /* I-021: the output meter and volume at the LCD's right end (skins/shared/deskVolume.js) */
 /* @include shared/deskVolume.css */
 

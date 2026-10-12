@@ -22,10 +22,11 @@ target_sources(mdDesk PRIVATE
 	mdDeskSds.cpp mdDeskSds.h
 	mdDeskSetup.cpp mdDeskSetup.h
 	mdDeskTelemetry.h
+	mdDeskTransport.cpp mdDeskTransport.h
 	mdDeskWorkingKit.cpp mdDeskWorkingKit.h
 )
 
-target_link_libraries(mdDesk PUBLIC deskCore elektronData mdDataLink)
+target_link_libraries(mdDesk PUBLIC deskCore elektronData mdDataLink deskWire)
 target_include_directories(mdDesk PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_compile_features(mdDesk PUBLIC cxx_std_17)
 set_property(TARGET mdDesk PROPERTY FOLDER "Elektron")

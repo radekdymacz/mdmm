@@ -84,14 +84,17 @@
 <p>You can go to pattern mode and back while the song plays. Click <b class="gd-ui">PATTERN</b>: the machine plays a pattern. Click <b class="gd-ui">SONG</b> to play the song again.</p>
 <p>The line under the chip in the <b class="gd-ui">Songs</b> column gives the length of the song as rows, bars and playing time at the current tempo. The time is an estimate. The LCD shows the same as <b class="gd-light">&lt;ROWS&gt;</b>, <b class="gd-light">&lt;BARS&gt;</b> and <b class="gd-light">&lt;TIME&gt;</b> on the second line of the Song workspace.</p>
 <p>When the host sends a song position, the machine follows it. The editor has no control for this.</p>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot pause a song in the editor. <kbd class="gd-key">[PLAY]</kbd> starts and stops it.</p>
+<p>To pause a song, hold <kbd class="gd-key">[⇧]</kbd> and click the Play key, or press <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[SPACE]</kbd>. The song holds its row and step. Click the Play key to go on from there.</p>
 <p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> The editor does not show how many turns of a repeat are left.</p>
 </div></section>
 <section class="gd-sec" id="navigating-a-song" aria-labelledby="navigating-a-song-h">
 <div class="gd-body gd-prose"><h2 id="navigating-a-song-h">NAVIGATING A SONG <a class="gd-anchor" href="#navigating-a-song" aria-label="Link to NAVIGATING A SONG">#</a></h2>
 <p class="gd-ref">MD manual p.52</p>
 <p>Click a cell of the arrangement to select that row. Press <kbd class="gd-key">[←]</kbd> or <kbd class="gd-key">[→]</kbd> to move to the previous or next row. A selected row is the one you edit.</p>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> Selecting a row does not move the song pointer. You cannot start the song from a chosen row in the editor yet.</p>
+<p>To start the song from a row:</p>
+<ol class="gd-steps"><li>Click the row's cell in the arrangement.</li><li>Click <b class="gd-ui">▶ From here</b> in the <b class="gd-ui">Selected row</b> card, or press <kbd class="gd-key">[ENTER]</kbd>.</li></ol>
+<p>The machine goes to SONG mode if it was in pattern mode and plays the song from the first step of that row. The editor sends the machine a MIDI song position, the steps of the rows before it, and then Continue.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A loop or jump row before the chosen row cannot be counted through. The editor says so; start the song and let it play to the row. The machine's <b class="gd-light">&lt;CTRL IN&gt;</b> must be on.</p></aside>
 </div></section>
 <section class="gd-sec" id="song-editing" aria-labelledby="song-editing-h">
 <div class="gd-body gd-prose"><h2 id="song-editing-h">SONG EDITING <a class="gd-anchor" href="#song-editing" aria-label="Link to SONG EDITING">#</a></h2>
@@ -130,7 +133,8 @@
 <section class="gd-sec" id="song-transport" aria-labelledby="song-transport-h">
 <div class="gd-body gd-prose"><h2 id="song-transport-h">SONG TRANSPORT <a class="gd-anchor" href="#song-transport" aria-label="Link to SONG TRANSPORT">#</a></h2>
 <p class="gd-ref">MD manual p.52</p>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> On the machine, <kbd class="gd-key">[STOP]</kbd> holds the song and a second <kbd class="gd-key">[STOP]</kbd> starts it. The editor has no such key. <kbd class="gd-key">[SPACE]</kbd> plays and stops.</p>
+<p>On the machine <kbd class="gd-key">[STOP]</kbd> holds the song where it is, and <kbd class="gd-key">[PLAY]</kbd> goes on from there. In the editor:</p>
+<ol class="gd-steps"><li>Hold <kbd class="gd-key">[⇧]</kbd> and click the Play key, or press <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[SPACE]</kbd>. The song holds its position. The Play key blinks.</li><li>Click the Play key to go on from that position.</li><li>To stop the song from the hold, choose <b class="gd-ui">Stop</b> in the transport menu (right-click the Play key, or click its ▾).</li></ol>
 </div></section>
 <section class="gd-sec" id="song-loop" aria-labelledby="song-loop-h">
 <div class="gd-body gd-prose"><h2 id="song-loop-h">SONG LOOP <a class="gd-anchor" href="#song-loop" aria-label="Link to SONG LOOP">#</a></h2>

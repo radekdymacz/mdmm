@@ -16,6 +16,10 @@ merge on 2026-10-09.*
   failures and HW MIDI → MM GLOBAL and the song LOOP fix → MM step-selection parity → individually validated
   CPU improvements. Clean-up fits around them, time-boxed. An uncertain emulation change never holds 1.0 back.
 
+## 0.6 (2026-10-12)
+
+0.5.x carries the CPU work; 0.6 is stability and feature completeness against the two manuals, on `feat/0.6-features`. Plan, state and handover: [release/PLAN-0.6.md](release/PLAN-0.6.md).
+
 ## 1. Where we stand (2026-10-09)
 
 | Layer | Lines (shipped code, no tests/docs/third-party) | Share |

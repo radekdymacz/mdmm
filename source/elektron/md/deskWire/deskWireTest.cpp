@@ -77,6 +77,12 @@ namespace
 		const auto both = deskWire::realtimeOf(std::vector<Key>{Key::Stop, Key::Play});
 		check(both && both->size() == 2 && (*both)[0] == Bytes({0xfc}) && (*both)[1] == Bytes({0xfa}), "keys in order");
 		check(!deskWire::realtimeOf(std::vector<Key>{Key::Play, Key::Exit}), "all or none");
+		check(deskWire::stopMessage() == Bytes({0xfc}) && deskWire::continueMessage() == Bytes({0xfb}), "Stop is 0xfc, Continue 0xfb");
+		check(deskWire::songPosition(0) == Bytes({0xf2, 0, 0}), "song position 0");
+		check(deskWire::songPosition(36) == Bytes({0xf2, 36, 0}), "song position 36: LSB first");
+		check(deskWire::songPosition(200) == Bytes({0xf2, 200 & 0x7f, 1}), "song position 200: 7 bits each");
+		check(deskWire::songPosition(0x3fff) == Bytes({0xf2, 0x7f, 0x7f}), "the last song position");
+		check(!deskWire::songPosition(0x4000) && !deskWire::songPosition(-1), "none out of range");
 		check(deskWire::md::realtimeOf("play") == 0xfa && deskWire::md::realtimeOf("stop") == 0xfc && !deskWire::md::realtimeOf("kit"),
 			"the MD's key names");
 	}

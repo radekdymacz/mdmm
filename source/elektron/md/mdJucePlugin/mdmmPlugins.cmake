@@ -93,10 +93,12 @@ list(APPEND SOURCES
 	skins/mdStudio/mdDeskLive.js
 	skins/mdStudio/mdDeskLibrary.js
 	skins/mdStudio/mdDeskKeys.js
+	skins/mdStudio/mdDeskTransport.js
 	skins/mdStudio/mdDeskGlobal.js
 	skins/shared/deskGlobal.js skins/shared/deskGlobal.css
 	skins/mdStudio/mdDeskAudio.js
 	skins/shared/deskModal.js skins/shared/deskModal.css skins/shared/deskModalTest.js skins/shared/deskMenu.js skins/shared/deskMenuTest.js
+	skins/shared/deskTransport.js skins/shared/deskTransport.css skins/shared/deskTransportTest.js
 	skins/shared/deskCaps.js
 	skins/shared/deskBoot.js skins/shared/deskBoot.css
 	skins/shared/deskSyx.js skins/shared/deskSyx.css skins/shared/deskSyxTest.js
@@ -107,7 +109,7 @@ list(APPEND SOURCES
 	skins/shared/deskDocs.js
 	skins/shared/deskOverlay.js skins/shared/deskOverlayTest.js
 	skins/shared/deskGen.js skins/shared/deskGenTest.js skins/shared/deskGenBar.js skins/shared/deskGenBar.css skins/shared/deskSoundLayout.js skins/shared/deskSoundLayoutTest.js skins/shared/deskSound.css
-	skins/shared/deskKeys.js skins/shared/deskKeysTest.js skins/shared/deskKeymapTest.js skins/shared/deskKeyView.js skins/shared/deskKeyView.css skins/shared/deskKeyViewTest.js skins/shared/deskSongSlots.js skins/shared/deskSongSlots.css
+	skins/shared/deskKeys.js skins/shared/deskKeysTest.js skins/shared/deskKeymapTest.js skins/shared/deskKeyView.js skins/shared/deskKeyView.css skins/shared/deskKeyViewTest.js skins/shared/deskSongSlots.js skins/shared/deskSongSlots.css skins/shared/deskWhat.js skins/shared/deskWhat.css skins/shared/deskWhatTest.js
 	skins/shared/deskTogglePaint.js skins/shared/deskTogglePaintTest.js
 	skins/shared/deskSelect.js skins/shared/deskSelectTest.js
 	skins/shared/deskCompat.js skins/shared/deskCompatTest.js
@@ -143,9 +145,9 @@ option(MDMM_INSTALL_DEV_PLUGINS "Copy the built editors to ~/Library/Audio/Plug-
 # The Machinedrum page loads the shared scripts as files; the Monomachine page has them inside
 # mmMockup.js (sync-mmstudio-skin.py) but for the bridge.
 set(MD_SHARED_PAGE_FILES
-	"skins/shared/deskModal.js" "skins/shared/deskMenu.js" "skins/shared/deskCaps.js" "skins/shared/deskBoot.js" "skins/shared/deskSyx.js" "skins/shared/deskBridge.js"
+	"skins/shared/deskModal.js" "skins/shared/deskMenu.js" "skins/shared/deskTransport.js" "skins/shared/deskCaps.js" "skins/shared/deskBoot.js" "skins/shared/deskSyx.js" "skins/shared/deskBridge.js"
 	"skins/shared/deskDrop.js" "skins/shared/deskDocs.js" "skins/shared/deskOverlay.js" "skins/shared/deskGen.js" "skins/shared/deskGenBar.js" "skins/shared/deskSoundLayout.js"
-	"skins/shared/deskKeys.js" "skins/shared/deskKeyView.js" "skins/shared/deskSongSlots.js" "skins/shared/deskTogglePaint.js" "skins/shared/deskSelect.js"
+	"skins/shared/deskKeys.js" "skins/shared/deskKeyView.js" "skins/shared/deskSongSlots.js" "skins/shared/deskWhat.js" "skins/shared/deskTogglePaint.js" "skins/shared/deskSelect.js"
 	"skins/shared/deskAudio.js" "skins/shared/deskGlobal.js" "skins/shared/deskCompat.js" "skins/shared/deskZoom.js" "skins/shared/deskAbout.js" "skins/shared/deskCpu.js" "skins/shared/deskVolume.js" "skins/shared/deskTopFit.js")
 file(GLOB MD_SKIN_ASSETS CONFIGURE_DEPENDS
 	"skins/mdStudio/*.rml" "skins/mdStudio/*.html" "skins/mdStudio/mdDesk.css" "skins/mdStudio/*.js"
@@ -177,9 +179,9 @@ set(MM_NODE_TESTS "skins/mmStudio/mmConvertTest.js" "skins/mmStudio/mmKeysTest.j
 	"skins/mmStudio/mmViewTest.js" "skins/mmStudio/mmViewFixture.json")
 # the shared page files' node tests (never in a glob, so never shipped); checked to be there
 set(SHARED_NODE_TESTS "skins/shared/deskGenTest.js" "skins/shared/deskOverlayTest.js" "skins/shared/deskBridgeTest.js"
-	"skins/shared/deskTogglePaintTest.js" "skins/shared/deskSelectTest.js" "skins/shared/deskKeysTest.js" "skins/shared/deskModalTest.js" "skins/shared/deskMenuTest.js" "skins/shared/deskCompatTest.js"
+	"skins/shared/deskTogglePaintTest.js" "skins/shared/deskSelectTest.js" "skins/shared/deskKeysTest.js" "skins/shared/deskModalTest.js" "skins/shared/deskMenuTest.js" "skins/shared/deskTransportTest.js" "skins/shared/deskCompatTest.js"
 	"skins/shared/deskKeymapTest.js" "skins/shared/deskKeyViewTest.js" "skins/shared/deskAboutTest.js" "skins/shared/deskCpuTest.js" "skins/shared/deskVolumeTest.js"
-	"skins/shared/deskSyxTest.js" "skins/shared/deskDropTest.js" "skins/shared/deskSoundLayoutTest.js"
+	"skins/shared/deskSyxTest.js" "skins/shared/deskDropTest.js" "skins/shared/deskSoundLayoutTest.js" "skins/shared/deskWhatTest.js"
 	"skins/shared/deskJourneyTiersTest.js")
 foreach(test ${MD_NODE_TESTS} ${MD_SELF_TESTS} ${MM_SELF_TESTS} ${MM_NODE_TESTS} ${SHARED_NODE_TESTS} ${MD_SHARED_PAGE_FILES})
 	if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${test}")
@@ -625,6 +627,8 @@ function(mdmm_plugin_targets)
 		# I-008: the menu drawn in the page (placement, keys, the editor menu's message and picks) and its wiring
 		add_test(NAME deskMenuPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskMenuTest.js)
 		set_tests_properties(deskMenuPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
+		add_test(NAME deskTransportPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskTransportTest.js)
+		set_tests_properties(deskTransportPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# the pages on an older WebKit (B-001, macOS 12): the stylesheets without color-mix() and :focus-visible
 		add_test(NAME deskCompatPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskCompatTest.js)
 		set_tests_properties(deskCompatPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
@@ -643,6 +647,9 @@ function(mdmm_plugin_targets)
 		# I-021: the LCD's output meter and volume (the meter's ballistics, the volume's drag, wheel and reset, its wiring)
 		add_test(NAME deskVolumePageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskVolumeTest.js)
 		set_tests_properties(deskVolumePageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
+		# 0.6 wave 4: COPY / PASTE / CLEAR what (the dialog, the remembered ticks, the go key's words, both pages load it)
+		add_test(NAME deskWhatPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskWhatTest.js)
+		set_tests_properties(deskWhatPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# the MD page's wiring on its own scripts: solo and the machine's mutes, renders held by a gesture, prepared mutes
 		add_test(NAME mdDeskPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/mdStudio/mdDeskPageTest.js)
 		set_tests_properties(mdDeskPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)

@@ -700,6 +700,100 @@
 			"area": "Steps"
 		},
 		{
+			"id": "pause",
+			"scope": "any",
+			"keys": [
+				"Space"
+			],
+			"mod": "shift",
+			"group": "Transport",
+			"does": "Pause: the machine holds its step; again (or ▶) goes on from it, STOP ends it (also ⇧-click ▶)",
+			"code": "Space",
+			"short": "Pause",
+			"dispatched": true
+		},
+		{
+			"id": "panic",
+			"scope": "any",
+			"keys": [
+				"."
+			],
+			"mod": "cmd",
+			"group": "Transport",
+			"does": "Panic: every voice off (the machine's STOP twice)",
+			"short": "Panic",
+			"dispatched": true
+		},
+		{
+			"id": "tempo-nudge",
+			"scope": "any",
+			"keys": [
+				"-",
+				"="
+			],
+			"mod": "",
+			"group": "Transport",
+			"does": "Hold: the tempo 10 % slower (-) or faster (=) while held, as the TEMPO menu's nudge",
+			"short": "Nudge",
+			"dispatched": true
+		},
+		{
+			"id": "song-play-from",
+			"scope": "song",
+			"keys": [
+				"Enter"
+			],
+			"mod": "",
+			"group": "Song",
+			"does": "Play the song from the selected row (▶ From here)",
+			"short": "From here",
+			"dispatched": true
+		},
+		{
+			"id": "transport-menu",
+			"scope": "any",
+			"keys": [
+				"right-click ▶"
+			],
+			"mod": "",
+			"group": "Transport",
+			"does": "The transport menu: Play / Stop, Pause / Continue, Record, Panic (also the ▾ in the key's corner)",
+			"area": "Top bar"
+		},
+		{
+			"id": "pause-click",
+			"scope": "any",
+			"keys": [
+				"▶"
+			],
+			"mod": "shift",
+			"group": "Transport",
+			"does": "Click: pause; ▶ again goes on from the step",
+			"area": "Top bar"
+		},
+		{
+			"id": "tempo-click",
+			"scope": "any",
+			"keys": [
+				"tempo"
+			],
+			"mod": "",
+			"group": "Transport",
+			"does": "Click (no drag): the TEMPO window: − / +, TAP, nudge, change on release",
+			"area": "Top bar"
+		},
+		{
+			"id": "tempo-delayed",
+			"scope": "any",
+			"keys": [
+				"tempo"
+			],
+			"mod": "alt",
+			"group": "Transport",
+			"does": "Drag: the tempo changes when you let go (FUNCTION held on the machine)",
+			"area": "Top bar"
+		},
+		{
 			"id": "close-dialog",
 			"scope": "any",
 			"keys": [
@@ -796,7 +890,7 @@
 			],
 			"mod": "",
 			"group": "Transport",
-			"does": "Play / stop",
+			"does": "Play / stop (paused: go on from the step)",
 			"short": "Play / stop",
 			"dispatched": true
 		},
@@ -1306,6 +1400,42 @@
 			"mod": "",
 			"group": "Kit library, pattern chooser",
 			"does": "Close"
+		},
+		{
+			"id": "copy-what",
+			"scope": "any",
+			"keys": [
+				"C"
+			],
+			"mod": "cmd+shift",
+			"group": "Anywhere",
+			"does": "Copy what: choose which parts of the selected track to copy (the machine's SUPER COPY)",
+			"short": "Copy what",
+			"dispatched": true
+		},
+		{
+			"id": "paste-what",
+			"scope": "any",
+			"keys": [
+				"V"
+			],
+			"mod": "cmd+shift",
+			"group": "Anywhere",
+			"does": "Paste what: choose which copied parts go into which tracks",
+			"short": "Paste what",
+			"dispatched": true
+		},
+		{
+			"id": "clear-what",
+			"scope": "any",
+			"keys": [
+				"Backspace"
+			],
+			"mod": "cmd+shift",
+			"group": "Anywhere",
+			"does": "Clear what: choose which parts of the selected track to clear (the machine's SUPER CLEAR)",
+			"short": "Clear what",
+			"dispatched": true
 		},
 		{
 			"id": "global-key",
@@ -2179,6 +2309,42 @@
 			"area": "Roll"
 		},
 		{
+			"id": "copy-what",
+			"scope": "any",
+			"keys": [
+				"C"
+			],
+			"mod": "cmd+shift",
+			"group": "Anywhere",
+			"does": "Copy what: choose which parts of the selected track to copy (the machine's SUPER COPY)",
+			"short": "Copy what",
+			"dispatched": true
+		},
+		{
+			"id": "paste-what",
+			"scope": "any",
+			"keys": [
+				"V"
+			],
+			"mod": "cmd+shift",
+			"group": "Anywhere",
+			"does": "Paste what: choose which copied parts go into which tracks",
+			"short": "Paste what",
+			"dispatched": true
+		},
+		{
+			"id": "clear-what",
+			"scope": "any",
+			"keys": [
+				"Backspace"
+			],
+			"mod": "cmd+shift",
+			"group": "Anywhere",
+			"does": "Clear what: choose which parts of the selected track to clear (the machine's SUPER CLEAR)",
+			"short": "Clear what",
+			"dispatched": true
+		},
+		{
 			"id": "global-key",
 			"scope": "any",
 			"keys": [
@@ -2292,6 +2458,100 @@
 			"does": "Close"
 		},
 		{
+			"id": "pause",
+			"scope": "any",
+			"keys": [
+				"Space"
+			],
+			"mod": "shift",
+			"group": "Transport",
+			"does": "Pause: the machine holds its step; again (or ▶) goes on from it, STOP ends it (also ⇧-click ▶)",
+			"code": "Space",
+			"short": "Pause",
+			"dispatched": true
+		},
+		{
+			"id": "panic",
+			"scope": "any",
+			"keys": [
+				"."
+			],
+			"mod": "cmd",
+			"group": "Transport",
+			"does": "Panic: every note off (All Notes Off on each track's channel) and STOP",
+			"short": "Panic",
+			"dispatched": true
+		},
+		{
+			"id": "tempo-nudge",
+			"scope": "any",
+			"keys": [
+				"-",
+				"="
+			],
+			"mod": "",
+			"group": "Transport",
+			"does": "Hold: the tempo 10 % slower (-) or faster (=) while held, as the TEMPO menu's nudge",
+			"short": "Nudge",
+			"dispatched": true
+		},
+		{
+			"id": "song-play-from",
+			"scope": "song",
+			"keys": [
+				"Enter"
+			],
+			"mod": "",
+			"group": "Song",
+			"does": "Play the song from the selected row (▶ From here)",
+			"short": "From here",
+			"dispatched": true
+		},
+		{
+			"id": "transport-menu",
+			"scope": "any",
+			"keys": [
+				"right-click ▶"
+			],
+			"mod": "",
+			"group": "Transport",
+			"does": "The transport menu: Play / Stop, Pause / Continue, Live record, Panic (also the ▾ in the key's corner)",
+			"area": "Top bar"
+		},
+		{
+			"id": "pause-click",
+			"scope": "any",
+			"keys": [
+				"▶"
+			],
+			"mod": "shift",
+			"group": "Transport",
+			"does": "Click: pause; ▶ again goes on from the step",
+			"area": "Top bar"
+		},
+		{
+			"id": "tempo-click",
+			"scope": "any",
+			"keys": [
+				"tempo"
+			],
+			"mod": "",
+			"group": "Transport",
+			"does": "Click (no drag): the TEMPO window: − / +, TAP, nudge, change on release, INT / EXT",
+			"area": "Top bar"
+		},
+		{
+			"id": "tempo-delayed",
+			"scope": "any",
+			"keys": [
+				"tempo"
+			],
+			"mod": "alt",
+			"group": "Transport",
+			"does": "Drag: the tempo changes when you let go (FUNCTION held on the machine)",
+			"area": "Top bar"
+		},
+		{
 			"id": "close-dialog",
 			"scope": "any",
 			"keys": [
@@ -2402,7 +2662,7 @@
 			],
 			"mod": "",
 			"group": "Transport",
-			"does": "Play / stop",
+			"does": "Play / stop (paused: go on from the step)",
 			"dispatched": true
 		},
 		{
