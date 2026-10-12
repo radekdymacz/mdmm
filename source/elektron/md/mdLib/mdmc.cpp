@@ -193,6 +193,13 @@ namespace md
 		return true;
 	}
 
+	void Microcontroller::pokePatchRamForTest(const size_t _offset, const uint8_t _value)
+	{
+		std::unique_lock lock(m_patchRamMutex);
+		if(_offset < m_patchRam.size())
+			m_patchRam[_offset] = _value;
+	}
+
 	bool Microcontroller::replacePatchRam(const std::vector<uint8_t>& _data)
 	{
 		if(_data.size() != m_patchRam.size())

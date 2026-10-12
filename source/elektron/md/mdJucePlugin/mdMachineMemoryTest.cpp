@@ -161,14 +161,21 @@ namespace
 			check(!replaceable(decode(other, Model::Machinedrum)), "the other machine's file is never replaced");
 		}
 		{
-			// the MD global's tempo alone is no save
+			// the MD global's tempo: a save, but not while the machine follows the host (then never written)
 			const auto base = memoryOf(0);
 			auto now = base;
 			const auto* g = findSlot(Model::Machinedrum, {Kind::Global, 0});
 			now[g->ranges.front().begin + 0xa4] ^= 1;
-			check(changedSlots(Model::Machinedrum, base, now).empty(), "a tempo change alone is no save");
+			now[g->ranges.front().begin + 0xad] ^= 1;
+			check(changedSlots(Model::Machinedrum, base, now).size() == 1, "a tempo change is a save");
+			check(changedSlots(Model::Machinedrum, base, now, true).empty(), "following the host: the tempo and sync alone are none");
 			now[g->ranges.front().begin + 0xa0] ^= 1;
-			check(changedSlots(Model::Machinedrum, base, now).size() == 1, "with another global change it is");
+			check(changedSlots(Model::Machinedrum, base, now, true).size() == 1, "with another global change it is");
+			auto kept = now;
+			keepHostBytes(Model::Machinedrum, kept, base);
+			check(kept[g->ranges.front().begin + 0xa4] == base[g->ranges.front().begin + 0xa4] && kept[g->ranges.front().begin + 0xa0] == now[g->ranges.front().begin + 0xa0],
+				"written while following: the host's bytes as they were");
+			check(slotSame(Model::Machinedrum, {Kind::Global, 0}, now, now) && !slotSame(Model::Machinedrum, {Kind::Global, 0}, base, now), "two looks compared per slot");
 		}
 		check(decode({}, Model::Machinedrum).problem == Problem::Empty, "no bytes: empty");
 		check(decode({1, 2, 3}, Model::Machinedrum).problem == Problem::NotOurs, "a short file is not ours");
