@@ -165,6 +165,8 @@ namespace md
 		void setExactEssiTiming(bool _on);
 		bool exactEssiTiming() const { return m_exactEssiTiming; }
 		uint64_t hardwareEpoch() const { return m_hardwareEpoch; }
+		// I-024: this device among every device of the process (a rebooted or reinstalled machine is another one)
+		uint64_t deviceId() const { return m_sysexDeviceId; }
 		// All import lifecycle calls require the owning Plugin/processor lock.
 		// Payload ownership remains in TurboMidiTransfer; dialogs carry only tickets.
 		std::optional<SysexImportTicket> beginUserSysexImport();

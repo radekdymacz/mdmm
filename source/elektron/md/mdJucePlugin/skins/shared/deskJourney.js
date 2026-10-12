@@ -373,6 +373,38 @@ const Journey = (() => {
 		Pointer.on = false;
 		log(`DEMOS DONE ${passed}/${list.length}`);
 	}
+	/* I-024 (doc/modern-ux/DESIGN-machine-memory.md): the machine memory, both editors. The engine menu's KEEP MEMORY
+	   turns off and on again (the plug-in's machineMemory says so, the entry's words follow); RESET MACHINE… offers Start
+	   from factory memory…, which asks again (Cancel changes nothing), then sends it and the saved file is gone. That the
+	   machine then starts from factory memory, and that a save is there in the next session, is
+	   mdMachineMemoryFirmwareTest's. */
+	const memoryJourney = (name, o = {}) => {
+		const keep = () => $q('#engsel option[value="memoryKeep"]');
+		const keepSays = () => keep()?.textContent || "";
+		const saved = () => keep()?.dataset.saved;
+		const dlgOn = () => !!$q("#dlg") && !$q("#dlg").hidden;
+		const dlgKey = text => [...document.querySelectorAll("#dlg [data-dlg]")].find(b => b.textContent.trim() === text);
+		return {
+			name, proves: o.proves,
+			steps: [
+				{ say: "the engine menu has KEEP MEMORY: ON, and no entry of its own for factory memory", act: () => {},
+					screen: () => ok(!!keep() && !keep().hidden && keepSays() === "KEEP MEMORY: ON" && !$q('#engsel option[value="memoryFactory"]'), keepSays() || "no entry") },
+				{ say: "choose KEEP MEMORY: it reads OFF", act: hands => hands.pick("engsel", "memoryKeep"), screen: () => ok(keepSays() === "KEEP MEMORY: OFF", keepSays()) },
+				{ say: "choose it again: ON", act: hands => hands.pick("engsel", "memoryKeep"), screen: () => ok(keepSays() === "KEEP MEMORY: ON", keepSays()) },
+				{ say: "choose RESET MACHINE…: Start from factory memory… is one of its choices", act: hands => hands.pick("engsel", "reset"),
+					screen: () => ok(dlgOn() && !!dlgKey("Start from factory memory…"), "no choice") },
+				{ say: "click it: the editor asks again", act: hands => hands.click(dlgKey("Start from factory memory…")),
+					screen: () => ok(dlgOn() && !!dlgKey("Start from factory memory") && !!dlgKey("Cancel"), "no question") },
+				{ say: "Cancel: nothing happens, the saved memory stays", act: hands => hands.click(dlgKey("Cancel")),
+					screen: () => ok(!dlgOn() && saved() === "1", "saved " + saved()) },
+				{ say: "again, and Start from factory memory: the saved memory is gone", act: async hands => {
+					await hands.pick("engsel", "reset"); await until(() => !!dlgKey("Start from factory memory…"), 2000); hands.click(dlgKey("Start from factory memory…"));
+					await until(() => !!dlgKey("Start from factory memory"), 2000); hands.click(dlgKey("Start from factory memory")); },
+					screen: () => ok(!dlgOn() && saved() === "0", "saved " + saved()) }
+			],
+			tidy: async hands => { if (dlgOn() && dlgKey("Cancel")) hands.click(dlgKey("Cancel")); if (keepSays() === "KEEP MEMORY: OFF") await hands.pick("engsel", "memoryKeep"); }
+		};
+	};
 	/* for needs: the page draws its canvases on animation frames, which WebKit runs only while the window is on screen */
 	/* I-008: the editor's menu, both editors: drawn by the page from the plug-in's entries (editorMenu, deskMenu.js),
 	   opened by a right-click anywhere the page has no menu of its own (the header, the rail). menu.via(u, path) opens it afresh (the plug-in's entries as
@@ -808,5 +840,5 @@ const Journey = (() => {
 			{ name: `${prefix}-shots-views`, proves: [], needs: () => location.search.includes(`${prefix}-shots`) ? null : "screenshots only when asked by name", steps: views.map(v => step(v, true)) }
 		];
 	}
-	return { run, demo, ok, sleep, until, u, TIERS, tierOf, onScreen, osKeyPath, menu, editorMenuJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, fitJourneys, snapshot, safari15Diff, viewJourneys };
+	return { run, demo, ok, sleep, until, u, TIERS, tierOf, onScreen, osKeyPath, menu, editorMenuJourney, memoryJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, fitJourneys, snapshot, safari15Diff, viewJourneys };
 })();

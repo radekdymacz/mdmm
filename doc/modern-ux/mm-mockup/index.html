@@ -2667,7 +2667,7 @@ body.erasing .rail .th.sel{box-shadow:inset 0 0 0 2px var(--rec)!important}
     <div class="midgrp">
       <div class="lcdgroup">
         <div class="lcdpanel"><div class="bootscr" id="bootscr" aria-hidden="true"><div class="bs1">MONOMACHINE <span id="bsmk">SFX-60 MKII</span></div><div class="bs2" id="bstxt">OS 1.32B · STARTING</div><div class="bsbar"><i id="bsbar"></i></div></div>
-          <div class="f trf"><small class="engf"><select id="engsel" data-k="1" hidden><option value="emu">EMU OS 1.32B</option><option value="hw">HW MIDI</option><option value="audio">AUDIO/MIDI…</option><option value="global">GLOBAL…</option><option value="rom">LOAD ROM</option><option value="import">IMPORT SYSEX…</option><option value="export">EXPORT SYSEX…</option><option value="reset">RESET MACHINE…</option></select><button class="kselbtn lcdeng" type="button" data-for="engsel" aria-haspopup="listbox" aria-expanded="false" aria-label="Engine: emulator or hardware" title="Engine: run the emulator, or edit a real Monomachine over MIDI"><i class="led on" id="engled"></i><span>EMU OS 1.32B</span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button></small><span class="lcdt">
+          <div class="f trf"><small class="engf"><select id="engsel" data-k="1" hidden><option value="emu">EMU OS 1.32B</option><option value="hw">HW MIDI</option><option value="audio">AUDIO/MIDI…</option><option value="global">GLOBAL…</option><option value="rom">LOAD ROM</option><option value="import">IMPORT SYSEX…</option><option value="export">EXPORT SYSEX…</option><option value="reset">RESET MACHINE…</option><option value="memoryKeep" hidden>KEEP MEMORY: ON</option></select><button class="kselbtn lcdeng" type="button" data-for="engsel" aria-haspopup="listbox" aria-expanded="false" aria-label="Engine: emulator or hardware" title="Engine: run the emulator, or edit a real Monomachine over MIDI"><i class="led on" id="engled"></i><span>EMU OS 1.32B</span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button></small><span class="lcdt">
             <button class="lt rec" id="rec" aria-pressed="false" aria-label="Record" title="Record: stopped = GRID RECORDING, playing = LIVE RECORDING. Alt+Space: live recording. ⇧-click (stopped): STEP RECORDING."><i class="led" id="recled"></i>●</button>
             <button class="lt" id="play" aria-pressed="false" aria-label="Play" title="Play / stop (Space)"><i class="led" id="playled"></i><span id="playico">▶</span></button>
             <button class="ltmore" id="playmore" type="button" aria-haspopup="menu" aria-label="Transport menu" title="Transport: Play, Pause, Live record, Panic (or right-click ▶)">▾</button>
@@ -3220,12 +3220,12 @@ const MM_SEAM={
   "selectPattern","kit","tempo","mutes","keyMode","record","chain","chainClear","seqMode","loadSong","saveSong","waiting",
   "sendNow","playKey","keyUp","transport","noteOn","noteOff","joy","learning","learnTarget","learnBind","modulators",
   "engine","chooseRom","removeRom","romManage","syxChoose","syxExport","syxStart","syxStop","syxPlace","syxExportInfo","machineReset","revealRom",
-  "recheck","firstRun","bootScreen","renderPst","menu","audioDoc","audioSend","audioMeter","globalSlot"],
+  "recheck","firstRun","bootScreen","renderPst","menu","audioDoc","audioSend","audioMeter","globalSlot","memory"],
  "view":[
   "audible","soloed","engReady","asgT","noteName","pname","machName","kitName","gated","busy","sel","mode",
   "playing","step","tempo","engineState","kitState","learnTarget","learning","ctlSetup","show","startEmpty",
   "setPatternSlot","setKitSlot","setReading","setTempo","setInput","setPlaying","setStep","setSongRow","setEng","dlgOpen",
-  "setEngineLabel","setEngineTip","setEngines","setAudioEntry","clearLearnTarget","setMapping","setModulation",
+  "setEngineLabel","setEngineTip","setEngines","setAudioEntry","setMemory","clearLearnTarget","setMapping","setModulation",
   "setCtlSetup","disable","setRecord","setRecLock","setLcd","setKeyDown","setMidiHeld","setPst","closeFirmwareDialog","bootRom",
   "bootInstalled","syxPreview","syxProgress","syxExported","syxExportInfo","render","renderTop","drawLib","toast","ask","redraw","movePH",
   "setPos","flashTracks","goWs","clickStep","autoRange","kitSave","redrawAudio","audioLevel","openAudio"]};
@@ -3325,6 +3325,8 @@ function demoRebase(step){if(window.MMDemoHost)window.MMDemoHost.rebase(step)}
                                       dialogs; the preview and progress come back through MMView
      removeRom(info)   REMOVE in the LOAD ROM card
      romManage()   LOAD ROM in the engine menu (a host shows which firmware runs, REPLACE and REMOVE; none: the start-up card)
+     memory(what)   I-024: "keep" (the engine menu's KEEP MEMORY on / off) or "factory" (RESET MACHINE…'s Start from
+                                      factory memory, asked by the panel); the state comes back with MMView.setMemory
      chooseRom(), revealRom(), recheck()   the start-up card's keys (P7): the native file chooser for the
                                       firmware, the ROM folder, look again (the page never reads the ROM)
      audioDoc(), audioSend(command), audioMeter(on)   the AUDIO / MIDI panel's devices
@@ -5118,8 +5120,9 @@ const Boot = (() => {
      Syx.reset()           Reset machine…: the question (the engine menu's RESET MACHINE…)
      Syx.menu(value)       an engine menu entry of the panel's (import, export, reset): true when it was one
      Syx.host = {choose(), start(kinds, skip, {placeAt, checkOnly}), stop(), place(placeAt), exportInfo(), exportSave({kinds?, ranges?}),
-                 reset(how), ask(html, keys), say(text), machine, factory}   the app's host (machine: its name; factory: it has a
-                 factory reset)
+                 reset(how), ask(html, keys), say(text), machine, factory, memory(), factoryMemory()}   the app's host (machine:
+                 its name; factory: it has a factory reset; I-024: memory() the plug-in's machineMemory, factoryMemory() start
+                 from factory memory, a third choice of Reset machine… where memory().available)
      Syx.model             the panel's pure part, as data (deskSyxTest.js) */
 const Syx = (() => {
 	/* ---- the pure part: the file's items in, what the panel shows out ---- */
@@ -5578,12 +5581,22 @@ const Syx = (() => {
 	   Esc and a click elsewhere answer the last key) */
 	function reset() {
 		if (!hostHas("ask")) return;
-		const name = esc(Syx.host.machine || "machine"), f = !!Syx.host.factory;
+		const name = esc(Syx.host.machine || "machine"), f = !!Syx.host.factory, mem = memoryHere();
 		Syx.host.ask(`<b>Reset machine</b> (the machine's start-up menu: hold FUNCTION at power on).<br><br><b>Empty reset</b> clears every kit, pattern and song; ${f ? "samples and globals stay" : "globals stay"}. It asks a second time.<br>`
 			+ (f ? `<b>Factory reset</b> brings back the factory kits, patterns and songs, read from a second ${name} started from your own ROM; globals and samples stay.<br>`
 				: `Factory reset is not offered: the ${name}'s factory data is not in the editor.<br>`)
+			+ (mem ? `<b>Start from factory memory</b> restarts the ${name} as on a new install: its whole memory (kits, patterns, songs, globals${f ? ", samples" : ""}) is the factory's, and the saved machine memory for new sessions is deleted (seconds).<br>` : "")
 			+ `<br>There is no undo. Export SysEx… first keeps a way back.`,
-			[["Empty reset…", "danger", () => resetAgain("empty")], ...(f ? [["Factory reset…", "", () => resetAgain("factory")]] : []), ["Export SysEx…", "", openExport], ["Cancel", "cream", () => { }]]);
+			[["Empty reset…", "danger", () => resetAgain("empty")], ...(f ? [["Factory reset…", "", () => resetAgain("factory")]] : []),
+				...(mem ? [["Start from factory memory…", "", memoryAgain]] : []), ["Export SysEx…", "", openExport], ["Cancel", "cream", () => { }]]);
+	}
+	/* I-024 (doc/modern-ux/DESIGN-machine-memory.md): starting from factory memory, where the host keeps a machine memory
+	   (its memory() says available) */
+	function memoryHere() { const m = hostHas("memory") && hostHas("factoryMemory") ? Syx.host.memory() : null; return !!(m && m.available); }
+	function memoryAgain() {
+		const name = esc(Syx.host.machine || "machine"), saved = !!(Syx.host.memory() || {}).saved;
+		Syx.host.ask(`<b>Start from factory memory:</b> restart the ${name} with its factory memory now${saved ? " and delete the saved machine memory" : ""}? New sessions start from factory memory until you save again. A DAW project keeps its own memory.<br><br>What the machine holds now is lost: there is no undo. Export SysEx… first keeps a way back.`,
+			[["Start from factory memory", "danger", () => Syx.host.factoryMemory()], ["Export SysEx…", "", openExport], ["Cancel", "cream", () => { }]]);
 	}
 	function resetAgain(how) {
 		const name = esc(Syx.host.machine || "machine");
@@ -8426,6 +8439,7 @@ document.addEventListener("change",e=>{const id=e.target.id,v=e.target.value,tr=
  if(id==="romfile"){checkRom(e.target.files[0]);return}
  if(id==="engsel"){const btn=document.querySelector(".lcdeng");if(v==="global"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;openGlobal();return}if(v==="audio"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;openAudio();return}if(v==="rom"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;if(HOST.romManage)HOST.romManage();else firstRun();return}
   if(v==="import"||v==="export"||v==="reset"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;Syx.menu(v);return}
+  if(v==="memoryKeep"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;if(HOST.memory)HOST.memory("keep");return}
   S.engine=v;S.pend=0;renderPst();if(HOST.engine)HOST.engine(v);else startEngine(v);return}
  let m=id.match(/^lp(\d)$/);if(m){editTrack(S.sel,()=>{const l=V("LF"+m[1]);l[0]=+v;l[1]=0});render();return}
  m=id.match(/^ld(\d)$/);if(m){editTrack(S.sel,()=>{V("LF"+m[1])[1]=+v});render();return}
@@ -8685,11 +8699,16 @@ function setRecord(mode,at=-1){const on=mode==="grid"||mode==="live",was=S.recMo
 /* an engine state's LCD label: [text, led "on" | "blink" | "off", tooltip] */
 function setEngineLabel(st,label){ENG[st]=label;if(S.eng===st)setEng(st)}
 /* a host's engine map ([{id, label, available, reason}]) in the engine menu, before the menu's own entries */
-function setEngines(list,current){const sel=$("#engsel");if(!sel)return;const own=["audio","global","rom","import","export","reset"];
+function setEngines(list,current){const sel=$("#engsel");if(!sel)return;const own=["audio","global","rom","import","export","reset","memoryKeep"];
  for(const o of [...sel.options])if(!own.includes(o.value)&&!list.some(e=>e.id===o.value))o.remove();
  const first=[...sel.options].find(o=>own.includes(o.value))||null;
  for(const e of list){let o=sel.querySelector(`option[value="${e.id}"]`);if(!o){o=document.createElement("option");o.value=e.id}sel.insertBefore(o,first);o.textContent=e.label;o.disabled=!e.available;o.title=e.available?"":e.reason||""}
  if(current){sel.value=current;S.engine=current}}
+/* I-024: the engine menu's KEEP MEMORY as the host says ({keep, available, saved, note}), only where the host keeps a
+   machine memory file (doc/modern-ux/DESIGN-machine-memory.md); RESET MACHINE… offers starting from factory memory (S.mem) */
+function setMemory(m){S.mem=m;const k=document.querySelector('#engsel option[value="memoryKeep"]');if(!k)return;
+ k.hidden=!m.available;k.textContent="KEEP MEMORY: "+(m.keep?"ON":"OFF");k.dataset.saved=m.saved?"1":"0";
+ k.title=m.note||(m.keep?"New sessions without a DAW project start with what you saved on the machine. Click to turn it off.":"New sessions start from factory memory. Click to keep what you save on the machine for new sessions.")}
 /* the AUDIO / MIDI entry of the engine menu: only where the host has the devices (a standalone) */
 function setAudioEntry(on){const o=document.querySelector('#engsel option[value="audio"]');if(o)o.hidden=o.disabled=!on;Boot.midiRefresh()}
 /* the app sources and their links as the host's engine took them (ctlSetup() shape); the knob rows and their links stay */
@@ -8726,6 +8745,7 @@ Syx.host={machine:"Monomachine",factory:false,
  exportInfo:()=>{if(HOST.syxExportInfo)return HOST.syxExportInfo();Syx.exportInfo({type:"syxExportInfo",model:"Monomachine",kinds:{kit:{slots:128,held:128,used:8,first:0,last:7},pattern:{slots:128,held:128,used:8,first:0,last:7},song:{slots:24,held:24,used:3,first:0,last:2},global:{slots:8,held:8,used:8,first:0,last:7},wave:{slots:64}}})},
  exportSave:r=>{if(HOST.syxExport)return HOST.syxExport(r);toast("In the plug-in: a save dialog, then "+(r.kinds?r.kinds.join(", "):"every document")+" as one .syx.")},
  reset:h=>{if(HOST.machineReset)return HOST.machineReset(h);toast("In the plug-in: the empty reset runs in the SysEx panel (example).")},
+ memory:()=>S.mem||null,factoryMemory:()=>{if(HOST.memory)HOST.memory("factory")},
  ask:(h,b)=>ask(h,b),say:t=>toast(t)};
 /* the start-up card's keys: the host's native file chooser and ROM folder (the ROM stays on this computer); the
    example pretends an install */
@@ -8747,7 +8767,7 @@ window.MMView={
     library's other slots keep their own cheap setters; setTempo is the BPM gesture's own write (the self-test's) */
  show,startEmpty,setPatternSlot,setKitSlot,setReading,setTempo:bpm=>{S.bpm=bpm},
  setInput,setPlaying,setStep,setSongRow:r=>{S.songRow=r;markSongRow()},
- setEng,dlgOpen:()=>!$("#dlg").hidden,setEngineLabel,setEngineTip,setEngines,setAudioEntry,clearLearnTarget:()=>{S.learnT=null},setMapping,setModulation,setCtlSetup,disable,
+ setEng,dlgOpen:()=>!$("#dlg").hidden,setEngineLabel,setEngineTip,setEngines,setAudioEntry,setMemory,clearLearnTarget:()=>{S.learnT=null},setMapping,setModulation,setCtlSetup,disable,
  setRecord,setRecLock,
  setLcd,setKeyDown,setMidiHeld,setPst,closeFirmwareDialog,bootRom:r=>Boot.rom(r),bootInstalled:o=>Boot.showInstalled(o),syxPreview:m=>Syx.preview(m),syxProgress:m=>Syx.progress(m),syxExported:m=>Syx.exported(m),syxExportInfo:m=>Syx.exportInfo(m),
  /* calls */

@@ -65,7 +65,8 @@ Drop.host = { send: c => { const { op, ...args } = c; cmd(op, args); }, ask: (ht
 Syx.host = { machine: "Machinedrum", factory: true, choose: () => cmd("chooseSyx"),
 	start: (kinds, skip, o = {}) => cmd("syxImport", Object.assign({ kinds, skip: skip || [] }, o.placeAt ? { placeAt: o.placeAt } : {}, o.checkOnly ? { checkOnly: true } : {})),
 	stop: () => cmd("syxCancel"), place: placeAt => cmd("syxPlace", { placeAt }), exportInfo: () => cmd("syxExportInfo"),
-	exportSave: req => cmd("syxExport", req), reset: how => cmd("machineReset", { how }), ask: (html, btns) => ask(html, btns), say: t => toast(t) };
+	exportSave: req => cmd("syxExport", req), reset: how => cmd("machineReset", { how }),
+	memory: () => Memory, factoryMemory: () => cmd("memoryFactory"), ask: (html, btns) => ask(html, btns), say: t => toast(t) };
 Bridge.onMessage(m => {
 	if (m.type === "syxPreview") Syx.preview(m);
 	else if (m.type === "syxProgress") Syx.progress(m);

@@ -25,9 +25,11 @@ NOTE: The reset has no undo. Click **Export SysEx…** in the question first to 
 NOTE: With a real Monomachine over MIDI, the machine must be on its SYSEX RECV screen. The sync field reads SEND and the number of waiting dumps until it is.
 
 ## FACTORY RESET
-<!-- rows: MM-318 @9366c0 -->
+<!-- rows: MM-318 @dc2556 -->
 
 The editor holds no factory data of the Monomachine, so it offers no factory reset. The **RESET MACHINE…** question says so. To get the factory kits and patterns back, import a factory .syx file. See "FILE" in chapter 19.
+
+**Start from factory memory…** in the same question restarts the machine as on a new install and deletes the saved machine memory. Its kits and patterns are those the emulated machine starts with, which are the factory ones only when the editor has the Monomachine's factory memory image. See "MACHINE MEMORY" in chapter 24.
 
 ## SOFT RESET
 <!-- rows: MM-319 @836f00 -->

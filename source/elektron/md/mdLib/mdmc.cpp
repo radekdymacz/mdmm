@@ -178,6 +178,28 @@ namespace md
 		return m_patchRam;
 	}
 
+	void Microcontroller::copyPatchRamTo(std::vector<uint8_t>& _out) const
+	{
+		std::shared_lock lock(m_patchRamMutex);
+		_out.assign(m_patchRam.begin(), m_patchRam.end());
+	}
+
+	bool Microcontroller::copyPatchRamRange(uint8_t* _out, const size_t _offset, const size_t _size) const
+	{
+		std::shared_lock lock(m_patchRamMutex);
+		if(_offset > m_patchRam.size() || _size > m_patchRam.size() - _offset)
+			return false;
+		std::memcpy(_out, m_patchRam.data() + _offset, _size);
+		return true;
+	}
+
+	void Microcontroller::pokePatchRamForTest(const size_t _offset, const uint8_t _value)
+	{
+		std::unique_lock lock(m_patchRamMutex);
+		if(_offset < m_patchRam.size())
+			m_patchRam[_offset] = _value;
+	}
+
 	bool Microcontroller::replacePatchRam(const std::vector<uint8_t>& _data)
 	{
 		if(_data.size() != m_patchRam.size())

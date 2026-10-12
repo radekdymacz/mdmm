@@ -2017,6 +2017,28 @@
         },
         {
           "type": "object",
+          "description": "I-024 (doc/modern-ux/DESIGN-machine-memory.md): the machine memory that stays for new sessions, on the page's ready and whenever it changes. keep: KEEP MEMORY (the setting, default on; memoryKeep sets it); available: the plug-in has a folder for the file (false in an isolated test); saved: the machine memory file is there; note: what went wrong last (a write that failed, a file that could not be used and was moved aside), empty when nothing did.",
+          "required": ["type", "keep", "available", "saved", "note"],
+          "properties": {
+            "type": {
+              "const": "machineMemory"
+            },
+            "keep": {
+              "type": "boolean"
+            },
+            "available": {
+              "type": "boolean"
+            },
+            "saved": {
+              "type": "boolean"
+            },
+            "note": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
           "description": "I-002, B-062: the notes held down from outside (the host's MIDI in or a MIDI input port), each with its channel (0-15), by channel then low to high: a note on holds a note until its note off (or all notes off, all sound off, a system reset). A state, not events: sent when it changed, looked at every 32 ms (a burst is one message), and once for a new page; a note off is never lost, and a MIDI input that changes or closes, a bypass or a release lets go of every note. Not in HW MIDI (what comes in is the real machine's own MIDI OUT). The page's own keyboard is not in it. The Monomachine Editor lights, on the Perform keyboard, the notes on the channels the machine plays (AUTO, the track channels, MULTI TRIG, MULTI MAP).",
           "required": ["type", "notes"],
           "properties": {
@@ -6819,6 +6841,51 @@
               "type": "number",
               "minimum": -60,
               "maximum": 6
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: KEEP MEMORY: on, a session without a project state starts from the machine memory file and every save on the machine writes it; off, neither (the file stays); kept in the editor's settings; a machineMemory message follows",
+          "required": ["op", "on"],
+          "properties": {
+            "op": {
+              "const": "memoryKeep"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "on": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: RESET MACHINE… > Start from factory memory: the machine memory file is deleted and the machine restarts from factory memory (the page asked the user first); a machineMemory message follows",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "memoryFactory"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
             }
           },
           "additionalProperties": false
