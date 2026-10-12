@@ -452,7 +452,8 @@ namespace mmDesk
 			// MM-P4
 			{"muteMidi", Owner::Machine, Gate::Input, -1, {t6, {"on", ArgType::Bool, 0, 0, true}},
 				"a MIDI sequencer track's mute (the MUTE window: FUNCTION + BANK GROUP, TRIG 9-14)"},
-			{"poly", Owner::Machine, Gate::Input, -1, {{"on", ArgType::Bool}}, "POLY, the machine's audio mode (SET STATUS 0x20)"},
+			{"poly", Owner::Machine, Gate::Input, -1, {{"on", ArgType::Bool}, {"t", ArgType::Integer, 0, 5, true}},
+				"POLY, the machine's audio mode (SET STATUS 0x20); t: TRACK t first, the track POLY plays with six voices (again while on: it moves there)"},
 			{"record", Owner::Machine, Gate::Input, -1, {{"mode", ArgType::Text, 0, 0, false, {"off", "grid", "live", "step"}},
 				{"t", ArgType::Integer, 0, 5, true}},
 				"GRID RECORDING (RECORD), LIVE RECORDING (RECORD + PLAY), STEP RECORDING (STOP + RECORD) or off; t: the track in"

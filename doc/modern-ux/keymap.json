@@ -452,6 +452,19 @@
 			"dispatched": true
 		},
 		{
+			"id": "picker-audition",
+			"scope": "sound",
+			"keys": [
+				"Space"
+			],
+			"mod": "",
+			"group": "Machine picker",
+			"does": "In the machine picker: hear the focused machine on the track; Enter keeps it, Esc puts the old one back",
+			"short": "Hear",
+			"modal": "machpop",
+			"dispatched": true
+		},
+		{
 			"id": "randomise-track",
 			"scope": "any",
 			"keys": [
@@ -746,7 +759,7 @@
 			],
 			"mod": "",
 			"group": "Transport",
-			"does": "While live recording, hold: erase the selected track's trigs as they play (EXIT/NO + its TRIG key on the machine)",
+			"does": "While live recording, hold: erase the selected track's trigs as they play (EXIT/NO + its TRIG key on the machine). With a track value pressed: that parameter's locks instead (EXIT/NO + its DATA ENTRY knob)",
 			"short": "Erase",
 			"dispatched": true
 		},

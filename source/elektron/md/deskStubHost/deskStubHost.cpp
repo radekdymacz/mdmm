@@ -247,6 +247,10 @@ namespace
 				// wave 7: EXIT/NO and a TRIG key held while live recording: that track's trig on the step that plays goes
 				if(m_recording && m_exitHeld && m_heldTrig >= 0)
 					m_patterns[m_pattern] = ed::withTrig(m_patterns[m_pattern], static_cast<size_t>(m_heldTrig), static_cast<size_t>(m_step), false);
+				// MD-140: EXIT/NO and a DATA ENTRY knob's switch: the selected track's lock of that knob's parameter on the step goes
+				if(m_recording && m_exitHeld && m_heldKnob >= 0)
+					m_patterns[m_pattern] = ed::withoutLock(m_patterns[m_pattern], m_track, static_cast<size_t>(m_knobPage * 8 + m_heldKnob),
+						static_cast<size_t>(m_step));
 			}
 			mdDesk::Telemetry t;
 			t.valid = true;
@@ -254,7 +258,9 @@ namespace
 			t.pattern = m_pattern;
 			t.playing = m_playing;
 			t.recording = m_recording;
-			t.knobPage = -1;
+			// the knob page only while live recording (lock removal needs it): stopped or playing none is reported, so
+			// Control All stays on CCs
+			t.knobPage = m_recording ? m_knobPage : -1;
 			t.bootAnimation = 0;
 			t.mutes = m_mutes;
 			t.chainKnown = true;
@@ -442,6 +448,8 @@ namespace
 					m_exitHeld = down;
 				else if(name.rfind("trig", 0) == 0)
 					m_heldTrig = down ? std::atoi(name.c_str() + 4) - 1 : -1;
+				else if(name.size() == 5 && name.rfind("knob", 0) == 0)
+					m_heldKnob = down ? name[4] - 'A' : -1;
 				return true;
 			}
 			if(_key.rfind("trig", 0) == 0)
@@ -487,6 +495,8 @@ namespace
 			}
 			else if(_key == "bankGroup")
 				m_bankGroup = 1 - m_bankGroup;
+			else if(_key == "page")	// SYNTHESIS / EFFECTS / ROUTING
+				m_knobPage = (m_knobPage + 1) % 3;
 			else if(_key.rfind("chain:", 0) == 0)	// chain:<bank>:<trig>,<trig>,...: BANK held, the TRIGs (mdDeskChain.cpp)
 			{
 				const auto colon = _key.find(':', 6);
@@ -531,7 +541,7 @@ namespace
 		mdDesk::Chain m_chain;
 		uint8_t m_pattern = 0, m_kit = 0, m_song = 0, m_global = 0, m_track = 0;
 		bool m_songMode = false, m_playing = false, m_paused = false, m_recording = false, m_exitHeld = false;
-		int m_heldTrig = -1;
+		int m_heldTrig = -1, m_heldKnob = -1, m_knobPage = 0;
 		int m_mutes = 0, m_step = 0, m_bankGroup = 0, m_songPos = 0;
 		double m_stepAt = 0, m_memoryAt = -1000;
 		std::vector<Bytes> m_replies;
@@ -786,6 +796,7 @@ namespace
 				case 0x08: value = m_song; break;
 				case 0x10: value = m_songMode ? 1 : 0; break;
 				case 0x20: value = m_poly ? 1 : 0; break;
+				case 0x22: value = static_cast<uint8_t>(std::max(0, m_focus)); break;	// the track in focus (0.6 wave 9)
 				default: break;
 				}
 				reply({0xf0, 0x00, 0x20, 0x3c, 0x03, 0x00, 0x72, v, static_cast<uint8_t>(value & 0x7f), 0xf7});

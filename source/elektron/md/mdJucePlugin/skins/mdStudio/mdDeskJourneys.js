@@ -476,6 +476,56 @@ const MdJourneys = (() => {
 			for (const s of c.p0 || []) if (!trigsOf(c.t).includes(s) && $1(cell(c.t, s))) { u.click(cell(c.t, s)); await sleep(120); } }
 	};
 
+	/* MD-140 (manual p.48): EXIT/NO with a DATA ENTRY knob pressed while live recording takes that parameter's locks of the
+	   selected track off as they play. In the editor the value pressed is the knob: the mouse held on it, then Delete held.
+	   The trigs and the other parameters stay. */
+	const pressEv = (type, el) => { const r = el.getBoundingClientRect(); el.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, composed: true,
+		clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, button: 0, buttons: type === "pointerdown" ? 1 : 0, pointerId: 1, pointerType: "mouse", isPrimary: true })); };
+	const liveUnlock = {
+		name: "md-seq-live-unlock", proves: ["MD-140"],
+		steps: [
+			go("seq"),
+			{ say: "pick the track with the most trigs and no FLTF locks", act: (u, c) => { c.t = soundTracks().filter(t => !locksOf(t, pidx(t, "FLTF")).length).sort((a, b) => trigsOf(b).length - trigsOf(a).length)[0] ?? soundTrack(); c.i = pidx(c.t, "FLTF"); u.click(rail(c.t)); },
+				screen: c => ok(S.sel === c.t, "selected " + S.sel), machine: c => ok(trigsOf(c.t).length >= 2 && c.i >= 0 && !locksOf(c.t, c.i).length, `track ${c.t + 1}: ${trigsOf(c.t).length} trigs, FLTF #${c.i} locks ${JSON.stringify(locksOf(c.t, c.i))}`) },
+			{ say: "click the FLTF lock key and draw a lock on each of the track's trigs", act: async (u, c) => { u.click('#chips .pk[data-lane="FLTF"]'); await sleep(200); c.on = trigsOf(c.t).filter(s => s < V.len);
+				await u.drag(`#lane .lb[data-s="${c.on[0]}"]`, c.on.slice(1).map(s => `#lane .lb[data-s="${s}"]`), {}, { fy: 0.3 }); },
+				machine: c => { c.p0 = trigsOf(c.t); c.others = kitLocks(c); return ok(c.on.every(s => locksOf(c.t, c.i).some(([x]) => x === s)), "locks " + JSON.stringify(locksOf(c.t, c.i))); }, within: 8000 },
+			{ say: "click REC, then the Sound tab: live recording, playing", act: async u => { u.click("#rec"); await sleep(300); u.click(tab("sound")); }, screen: () => ok(V.rec && S.ws === "sound", `REC ${V.rec}, workspace ${S.ws}`), machine: () => ok(tele.last?.playing, "not playing"), within: 5000 },
+			{ say: "press the FLTF value and hold Delete: its locks go as they play", act: (u, c) => { results.length = 0; c.el = $1('#main .pc[data-n="FLTF"]'); if (!c.el) throw new Error("no FLTF value on the Sound page"); c.v0 = getV(c.el); pressEv("pointerdown", c.el); document.activeElement?.blur?.(); u.cap("value pressed, Delete held"); keyEv("keydown", "Delete"); },
+				screen: c => ok(document.body.classList.contains("erasing") && c.el.classList.contains("erasing"), "not marked as erasing"),
+				machine: c => ok(locksOf(c.t, c.i).length < c.on.length, `${c.on.length} -> ${locksOf(c.t, c.i).length} locks; results ${results.map(r => r.op + ":" + r.ok + (r.errors ? " " + r.errors.join(";") : "")).join(", ")}`), within: 10000 },
+			{ say: "drag the pressed value, let Delete go first, drag on: the value does not move until the mouse is let go", act: async (u, c) => {
+				/* the drag's moves go to the value (the page's #main listens), sideways towards the far end of its range */
+				const d = c.v0 > 64 ? -1 : 1, move = dx => { const r = c.el.getBoundingClientRect(); c.el.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: r.left + r.width / 2 + d * dx, clientY: r.top + r.height / 2, buttons: 1, pointerId: 1, pointerType: "mouse", isPrimary: true })); };
+				move(20); await sleep(100); keyEv("keyup", "Delete"); await sleep(100); move(40); await sleep(100); move(60); await sleep(100); c.v1 = getV(c.el); pressEv("pointerup", c.el); },
+				screen: c => ok(c.v1 === c.v0 && !document.body.classList.contains("erasing"), `value ${c.v0} -> ${c.v1}`) },
+			{ say: "on Mix, press a master effect value (it has no locks) and hold Delete: nothing is erased, the editor says so", act: async (u, c) => {
+				u.click(tab("mix")); await sleep(300);
+				c.nl = $1('#main .pc[data-g="mfx"]'); if (!c.nl) throw new Error("no master effect value on the Mix page");
+				c.n = eraseSent.length; c.p1 = trigsOf(c.t); pressEv("pointerdown", c.nl); keyEv("keydown", "Delete"); await sleep(500); },
+				screen: () => ok(/no locks/.test($1("#toast")?.textContent || ""), "toast " + ($1("#toast")?.textContent || "")),
+				machine: c => ok(eraseSent.length === c.n && same(trigsOf(c.t), c.p1), `sent ${JSON.stringify(eraseSent.slice(c.n))}, trigs ${trigsOf(c.t).join(",")}`) },
+			{ say: "let both go; hold Delete and press the FLTF value within the grace: only its locks are asked for, never the trigs", act: async (u, c) => {
+				keyEv("keyup", "Delete"); pressEv("pointerup", c.nl); u.click(tab("sound")); await sleep(300); c.n = eraseSent.length;
+				/* Delete, then the value in the same moment (well inside the grace, also on a busy machine); the value looked up
+				   now, as the page shows it */
+				keyEv("keydown", "Delete"); c.el = $1('#main .pc[data-n="FLTF"]'); pressEv("pointerdown", c.el); await sleep(500); },
+				screen: c => ok(c.el.classList.contains("erasing"), "the value is not marked"),
+				machine: c => ok(eraseSent.slice(c.n).some(m => m.on) && eraseSent.slice(c.n).every(m => !m.on || m.i === c.i), "sent " + JSON.stringify(eraseSent.slice(c.n))) },
+			{ say: "let the value and Delete go, click REC off, then STOP: the trigs and the other locks stayed", act: async (u, c) => { pressEv("pointerup", c.el); keyEv("keyup", "Delete"); await sleep(300); u.click("#rec"); await sleep(500); if (V.playing) u.click("#play"); },
+				screen: c => ok(!document.body.classList.contains("erasing") && !c.el.classList.contains("erasing") && !V.rec && !V.playing, `REC ${V.rec}, playing ${V.playing}`),
+				machine: c => ok(same(trigsOf(c.t), c.p0) && same(kitLocks(c), c.others), `trigs ${trigsOf(c.t).join(",")} (were ${c.p0.join(",")}); other locks changed: ${!same(kitLocks(c), c.others)}`), within: 8000 }
+		],
+		async tidy(u, c) { if (c.el) pressEv("pointerup", c.el); if (c.nl) pressEv("pointerup", c.nl); keyEv("keyup", "Delete"); if (V.rec) u.click("#rec"); if (V.playing) u.click("#play"); await sleep(600);
+			/* the FLTF locks it drew and the machine left: the lane's clear key */
+			if (c.i >= 0 && locksOf(c.t, c.i).length) { u.click(tab("seq")); await sleep(200); u.click('#chips .pk[data-lane="FLTF"]'); await sleep(200); u.click("#clearLane"); } }
+	};
+	/* the liveErase commands the page sent (MD-140's journey checks what Delete asked for) */
+	const eraseSent = [];
+	{ const send0 = Bridge.send; Bridge.send = (m, o) => { if (m?.op === "liveErase") { eraseSent.push({ t: m.t, on: m.on, i: m.i }); if (eraseSent.length > 80) eraseSent.shift(); } return send0(m, o); }; }
+	/* every lock of the pattern but the journey's own parameter on its track */
+	const kitLocks = c => JSON.stringify((pat()?.locks || []).filter(l => !(l.track === c.t && l.param === c.i)));
+
 	/* ---------- generators ---------- */
 	const genJourney = (name, defaults, o = {}) => ({
 		name, proves: o.proves,
@@ -542,6 +592,31 @@ const MdJourneys = (() => {
 				screen: c => ok($1("#machpop").hidden && V.tracks[c.t].m === c.m1, "view " + V.tracks[c.t].m), machine: c => ok(kit().tracks[c.t].machine === c.m1, "kit machine " + kit().tracks[c.t].machine), within: 6000 },
 			{ ...undoKey, machine: c => ok(kit().tracks[c.t].machine === c.m0, "kit machine " + kit().tracks[c.t].machine), screen: c => ok(V.tracks[c.t].m === c.m0, "view " + V.tracks[c.t].m), within: 6000 }
 		]
+	};
+	/* wave 8: the machine picker's audition (the machine's EDIT KIT preview): ▶ or Space puts the machine on the track and
+	   plays its note; Esc puts the old one back; Enter keeps it, and the audition and the pick are one undo step */
+	const gndOthers = c => $all("#machpop .mk").map(b => b.dataset.mach).filter(m => m !== c.m0 && m !== "GND-EMPTY");
+	const machAudition = {
+		name: "md-sound-audition", proves: ["MD-037"],
+		steps: [
+			go("sound"), sel(() => soundTrack()),
+			{ say: "open the machine picker on the GND family", act: async (u, c) => { c.m0 = kit().tracks[c.t].machine; c.k0 = JSON.stringify(kit().tracks[c.t]); u.click("#machbtn"); await sleep(200); u.click('#machpop .mf[data-fam="GND"]'); await sleep(200); },
+				screen: () => ok(!$1("#machpop").hidden && $all("#machpop .mk").length > 2, "picker closed") },
+			{ say: "click ▶ on a machine: it plays on the track, the picker stays open", act: async (u, c) => { c.m1 = gndOthers(c)[0]; results.length = 0; $1(`#machpop .mk[data-mach="${c.m1}"]`).focus(); await sleep(100); u.click(`#machpop .mk[data-mach="${c.m1}"] [data-play]`); },
+				screen: c => ok(!$1("#machpop").hidden && V.tracks[c.t].m === c.m1 && /was/i.test($1("#mpaud")?.textContent || ""), `picker ${$1("#machpop").hidden ? "closed" : "open"}, view ${V.tracks[c.t].m}, line "${$1("#mpaud")?.textContent || "none"}"`),
+				machine: c => ok(kit().tracks[c.t].machine === c.m1 && results.some(r => r.op === "noteOn" && r.ok), `kit machine ${kit().tracks[c.t].machine}, results ${results.map(r => r.op + ":" + r.ok).join(",")}`), within: 6000 },
+			{ say: "press Esc: the old machine is back, every value of the track as it was", act: u => u.key("Escape"),
+				screen: c => ok($1("#machpop").hidden && V.tracks[c.t].m === c.m0, `picker ${$1("#machpop").hidden ? "closed" : "open"}, view ${V.tracks[c.t].m}`),
+				machine: c => ok(JSON.stringify(kit().tracks[c.t]) === c.k0, "kit track " + JSON.stringify(kit().tracks[c.t]) + ", was " + c.k0), within: 6000 },
+			{ say: "open it again, focus another machine and press Space: it plays", act: async (u, c) => { u.click("#machbtn"); await sleep(200); u.click('#machpop .mf[data-fam="GND"]'); await sleep(200); c.m2 = gndOthers(c).slice(-1)[0]; results.length = 0; $1(`#machpop .mk[data-mach="${c.m2}"]`).focus(); await sleep(100); u.key(" "); },
+				screen: c => ok(!$1("#machpop").hidden && V.tracks[c.t].m === c.m2, `picker ${$1("#machpop").hidden ? "closed" : "open"}, view ${V.tracks[c.t].m}`),
+				machine: c => ok(kit().tracks[c.t].machine === c.m2 && results.some(r => r.op === "noteOn"), `kit machine ${kit().tracks[c.t].machine}, results ${results.map(r => r.op + ":" + r.ok).join(",")}`), within: 6000 },
+			{ say: "press Enter: it stays", act: u => u.key("Enter"),
+				screen: c => ok($1("#machpop").hidden && V.tracks[c.t].m === c.m2, `picker ${$1("#machpop").hidden ? "closed" : "open"}, view ${V.tracks[c.t].m}`),
+				machine: c => ok(kit().tracks[c.t].machine === c.m2, "kit machine " + kit().tracks[c.t].machine), within: 6000 },
+			{ ...undoKey, say: "press Cmd+Z once: the track as before the audition", machine: c => ok(JSON.stringify(kit().tracks[c.t]) === c.k0, "kit track " + JSON.stringify(kit().tracks[c.t]) + ", was " + c.k0), screen: c => ok(V.tracks[c.t].m === c.m0, "view " + V.tracks[c.t].m), within: 6000 }
+		],
+		async tidy() { if (!$1("#machpop").hidden) closePicker(); }
 	};
 	const soundCopy = {
 		name: "md-sound-copy-paste", proves: ["MD-051", "MD-052"],
@@ -660,6 +735,22 @@ const MdJourneys = (() => {
 			{ say: "click a track's OUT key: an individual output", act: (u, c) => { c.t = soundTrack(); c.o0 = Docs.global.routing[c.t]; u.click(`.strip[data-sel="${c.t}"] [data-out]`); },
 				screen: c => ok($1(`.strip[data-sel="${c.t}"] [data-out]`).textContent !== "OUT " + c.o0, "key " + $1(`.strip[data-sel="${c.t}"] [data-out]`).textContent), machine: c => ok(Docs.global.routing[c.t] !== c.o0, "global routing " + Docs.global.routing[c.t]) },
 			{ say: "click it until it is back", act: async (u, c) => { for (let k = 0; k < 8 && Docs.global.routing[c.t] !== c.o0; k++) { u.click(`.strip[data-sel="${c.t}"] [data-out]`); await sleep(800); } }, machine: c => ok(Docs.global.routing[c.t] === c.o0, "global routing " + Docs.global.routing[c.t]) }
+		]
+	};
+	/* wave 8: LEV, the kit's level of a track (the machine's LEVEL knob), above each strip's VOL */
+	const levOf = t => kit()?.tracks[t]?.level;
+	const levBoxQ = t => `.strip[data-sel="${t}"] .pc[data-g="lev"]`;
+	const lev = {
+		name: "md-mix-lev", proves: ["MD-008", "MD-032", "MD-278"],
+		steps: [
+			go("mix"),
+			{ say: "drag a track's LEV box", act: async (u, c) => { c.t = soundTrack(); c.l0 = levOf(c.t); await nudge(u, levBoxQ(c.t), c.l0); },
+				screen: c => ok(+$1(`${levBoxQ(c.t)} b`)?.textContent === V.tracks[c.t].level && V.tracks[c.t].level !== c.l0 && $1(levBoxQ(c.t)).style.getPropertyValue("--f") === V.tracks[c.t].level / 127 * 100 + "%", `shows ${$1(`${levBoxQ(c.t)} b`)?.textContent}, bar ${$1(levBoxQ(c.t))?.style.getPropertyValue("--f")}, view ${V.tracks[c.t].level}, was ${c.l0}`),
+				machine: c => ok(levOf(c.t) !== c.l0 && levOf(c.t) === V.tracks[c.t].level, "kit level " + levOf(c.t)), within: 6000 },
+			{ say: "double-click it: 100", act: u => u.dblclick(levBoxQ(soundTrack())),
+				screen: c => ok($1(`${levBoxQ(c.t)} b`)?.textContent === "100", "shows " + $1(`${levBoxQ(c.t)} b`)?.textContent), machine: c => ok(levOf(c.t) === 100, "kit level " + levOf(c.t)), within: 6000 },
+			{ say: "click Undo until it is back", act: async (u, c) => { for (let k = 0; k < 3 && levOf(c.t) !== c.l0; k++) { u.click("#undo"); await sleep(700); } },
+				machine: c => ok(levOf(c.t) === c.l0, "kit level " + levOf(c.t)), screen: c => ok($1(`${levBoxQ(c.t)} b`)?.textContent === String(c.l0), "shows " + $1(`${levBoxQ(c.t)} b`)?.textContent), within: 6000 }
 		]
 	};
 	const masterFx = {
@@ -1700,10 +1791,10 @@ const MdJourneys = (() => {
 		]
 	};
 	const all = [bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
-		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase,
+		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
 		genJourney("md-gen-mutate-undo", false, { proves: [] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: [] }), genKeys,
-		shapeSound, arrows, machinePick, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,
-		mixSolo, shiftMutes, allOff, fader, outKey, masterFx,
+		shapeSound, arrows, machinePick, machAudition, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,
+		mixSolo, shiftMutes, allOff, fader, lev, outKey, masterFx,
 		songArrange, songChain, songPlayhead, songSlots, songKeys, shotsSongSlots, samplerSlots, samplerSetup, audition,
 		libDialog, kitCopy, kitRename, kitClear, patGo, patClear, dialogEsc,
 		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, audioPanel, romCard, notePlay,

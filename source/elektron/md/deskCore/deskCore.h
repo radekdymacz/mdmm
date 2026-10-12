@@ -351,8 +351,41 @@ namespace deskCore
 			forgetAll();
 		}
 
-		void undo(const Value& _message) { undoRedo(false, _message); }
-		void redo(const Value& _message) { undoRedo(true, _message); }
+		void undo(const Value& _message) { m_trial = 0; undoRedo(false, _message); }
+		void redo(const Value& _message) { m_trial = 0; undoRedo(true, _message); }
+
+		// A trial (wave 8, the MD machine picker's audition): edits the page tries under one gesture g, kept or taken
+		// back as a whole. trialBegin {g} opens it; trialEnd {g, keep} closes it: keep leaves the edits as one undo step,
+		// otherwise that step is taken back, only while it is still the newest step and of the trial's gesture (a
+		// refused edit recorded nothing, so nothing of the user's earlier work is undone). Any other step, an undo or
+		// a redo ends the trial (kept). A trialEnd of another gesture changes nothing. A page that loads again (ready: a
+		// reload, or a new editor window attaching after the old one closed mid-trial) takes an open trial back; detach
+		// (only when the processor goes) does too.
+		void trial(const Value& _message)
+		{
+			const auto* g = _message.find("g");
+			const uint64_t gesture = g && g->isNumber() && g->asNumber() > 0 ? static_cast<uint64_t>(g->asNumber()) : 0;
+			if(!gesture)
+			{
+				result(_message, {"g: a trial needs its gesture"}, {});
+				return;
+			}
+			if(opOf(_message) == "trialBegin")
+			{
+				m_trial = gesture;
+				result(_message, {}, {});
+				return;
+			}
+			if(m_trial != gesture)
+			{
+				result(_message, {}, {});	// a stale end (another trial, or one already over): nothing
+				return;
+			}
+			const bool undone = !flag(_message, "keep") && takeBackTrial();
+			m_trial = 0;
+			result(_message, {}, undone ? "Back as it was" : "");
+		}
+		uint64_t openTrial() const { return m_trial; }
 
 		// A pure edit (the table's CoreOp::Edit).
 		void edit(const Value& _message) { run(_message, Model::apply(m_view, _message, m_clipboard, context())); }
@@ -388,7 +421,10 @@ namespace deskCore
 			std::string note = r.note;
 			const auto delivered = deliver(r.changes, review.intent, errors, note);
 			const auto* g = _message.find("g");
-			m_history.record(delivered, g && g->isNumber() && g->asNumber() > 0 ? static_cast<uint64_t>(g->asNumber()) : 0);
+			const uint64_t gesture = g && g->isNumber() && g->asNumber() > 0 ? static_cast<uint64_t>(g->asNumber()) : 0;
+			m_history.record(delivered, gesture);
+			if(!delivered.empty() && gesture != m_trial)
+				m_trial = 0;
 			result(_message, errors, note);
 		}
 
@@ -485,6 +521,9 @@ namespace deskCore
 		// The page (re)attached: everything once more.
 		void pageReady()
 		{
+			if(m_trial)
+				takeBackTrial();
+			m_trial = 0;
 			m_pageReady = true;
 			m_pageSeen = true;
 			for(const auto& [ref, s] : m_docs)
@@ -494,7 +533,13 @@ namespace deskCore
 				m_machine->pageReady();
 		}
 
-		void detach() { m_pageReady = false; }
+		void detach()
+		{
+			if(m_trial)
+				takeBackTrial();
+			m_trial = 0;
+			m_pageReady = false;
+		}
 
 		// One ordered outbox (P6): the documents that changed and the machine document when its value
 		// changed, then every other message since the last flush in the order it happened (results,
@@ -652,6 +697,25 @@ namespace deskCore
 			return delivered;
 		}
 
+		// The open trial's step back (Core::trial), when it is the newest step; true when it was taken back. It leaves
+		// nothing to redo.
+		bool takeBackTrial()
+		{
+			if(!m_trial || m_history.lastGesture() != m_trial || !m_machine)
+				return false;
+			auto changes = m_history.next(History<Change>::Direction::Undo);
+			if(!changes)
+				return false;
+			for(auto& c : *changes)
+				if(auto now = Model::get(m_view, c.ref()))
+					c.before = *now;
+			std::vector<std::string> errors;
+			std::string note;
+			m_history.done(History<Change>::Direction::Undo, deliver(*changes, typename Adapter::Intent{}, errors, note));
+			m_history.dropRedo();
+			return true;
+		}
+
 		// Undo and redo deliver like any edit: from what the page shows now (each change's `before`
 		// is the current view), and only what was delivered is recorded.
 		void undoRedo(const bool _redo, const Value& _message)
@@ -678,11 +742,13 @@ namespace deskCore
 				m_toPage(_message);
 		}
 
-		static bool forced(const Value& _message)
+		// a flag argument as true or as a nonzero number
+		static bool flag(const Value& _message, const char* _name)
 		{
-			const auto* f = _message.find("force");
+			const auto* f = _message.find(_name);
 			return f && ((f->isBool() && f->asBool()) || (f->isNumber() && f->asNumber() != 0));
 		}
+		static bool forced(const Value& _message) { return flag(_message, "force"); }
 
 		void changed(const Ref& _ref)
 		{
@@ -701,6 +767,7 @@ namespace deskCore
 			m_view = {};
 			m_dirty.clear();
 			m_history.clear();
+			m_trial = 0;
 			m_lastMachine.reset();
 		}
 
@@ -709,6 +776,7 @@ namespace deskCore
 		std::map<Ref, DocState<Doc>> m_docs;
 		Documents m_view;
 		History<Change> m_history;
+		uint64_t m_trial = 0;		// the open trial's gesture (Core::trial), 0: none
 		Clipboard m_clipboard;
 		std::set<Ref> m_dirty;
 		std::optional<Value> m_lastMachine;		// the machine document last published

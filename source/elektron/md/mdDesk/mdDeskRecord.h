@@ -61,6 +61,9 @@ namespace mdDesk
 		// selected (the panel may have changed it) and what was pending.
 		void reset();
 
+		// The desk selected _track on the machine by itself (live lock removal): no SET STATUS needed for it.
+		void trackSelected(const uint8_t _track) { m_selected = _track; }
+
 		bool pending() const { return !m_targets.empty(); }
 		// Values still on their way, so the view can keep showing them.
 		const std::map<std::pair<uint8_t, uint8_t>, uint8_t>& targets() const { return m_targets; }

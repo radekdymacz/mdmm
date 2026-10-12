@@ -2,7 +2,7 @@
 // user-supplied ROM). Discovery harness: it finds and measures, the smoke test
 // (mdDeskFirmwareTest) checks.
 //
-//   mdEditorProbeFirmwareTest <ROM> [workkit|liverec|liveerase|samples|sds]
+//   mdEditorProbeFirmwareTest <ROM> [workkit|liverec|liveerase|liveunlock|samples|sds]
 //   mdEditorProbeFirmwareTest <ROM> samplemap <dir>                 P9: flash, patch RAM and DSP2 dumps around SDS imports
 //   mdEditorProbeFirmwareTest <ROM> rammap <dir> <LEN> <frames>     P9: DSP2 memory before/after a RAM-R1 take
 //
@@ -432,6 +432,122 @@ namespace
 		check(t1, "EXIT + TRIG 1 held over steps 5-8 erased track 1 there");
 		check(t2, "EXIT alone erases nothing");
 		check(t3, "TRIG 3 then EXIT erases too (either order)");
+	}
+
+	uint8_t workingParamOf(Machine& _m, const uint8_t _t, const uint8_t _i)
+	{
+		return _m.read8(static_cast<uint32_t>(ed::g_mdWorkingKitAddress + ed::g_mdWorkingKitParamsOffset + _t * 24 + _i));
+	}
+
+	// 0.6 MD-140: remove locks while live recording (manual p.48): hold EXIT/NO and a DATA ENTRY knob; the locks of
+	// that parameter on the track go on the steps that play. What has to be turned, for how long, on which track, and
+	// what else goes (the trigs, other parameters, the knob's value).
+	void liveUnlock(const Bytes& _rom)
+	{
+		std::puts("== probe: live recording, remove locks (EXIT + DATA ENTRY)");
+		Machine m(_rom, g_romName);
+		const int patSlot = status(m, ed::MdStatus::Pattern);
+		require(patSlot >= 0, "status");
+		auto p = *readPattern(m, static_cast<uint8_t>(patSlot));
+		p.length = 16;
+		for(uint8_t t = 0; t < 16; ++t)
+			for(uint8_t s = 0; s < 64; ++s)
+				p = ed::withTrig(p, t, s, t < 2 && s < 16);
+		for(uint8_t t = 0; t < 2; ++t)
+			for(uint8_t prm = 0; prm < 4; ++prm)
+				for(uint8_t s = 0; s < 16; ++s)
+					p = *ed::withLock(p, t, prm, s, static_cast<uint8_t>(10 + prm));
+		m.send(ed::encodeMdPattern(p));
+		m.send(ed::mdSetStatus(ed::MdStatus::Track, 0));
+		m.run(200);
+		const auto show = [&](const char* _what)
+		{
+			const auto q = *readPattern(m, static_cast<uint8_t>(patSlot));
+			for(uint8_t t = 0; t < 2; ++t)
+			{
+				std::printf("  %-10s track %u trigs   ", _what, t + 1);
+				for(uint8_t s = 0; s < 16; ++s)
+					std::printf("%c", ed::hasTrig(q, t, s) ? 'x' : '.');
+				std::printf("\n");
+				for(uint8_t prm = 0; prm < 4; ++prm)
+				{
+					std::printf("  %-10s track %u param %u ", _what, t + 1, prm);
+					for(uint8_t s = 0; s < 16; ++s)
+					{
+						const auto v = ed::lockValue(q, t, prm, s);
+						std::printf("%c", !v ? '.' : *v == 10 + prm ? 'L' : '*');
+					}
+					std::printf("\n");
+				}
+			}
+			std::printf("  %-10s track 1 working params 0-3: %u %u %u %u\n", _what, workingParamOf(m, 0, 0), workingParamOf(m, 0, 1),
+				workingParamOf(m, 0, 2), workingParamOf(m, 0, 3));
+			return q;
+		};
+		show("start");
+		const auto waitStep = [&](const uint8_t _step)
+		{
+			for(int i = 0; i < 200000 && m.playhead() != _step; ++i)
+				m.step();
+		};
+		// The DATA ENTRY knobs are push switches too (row 0x25, one bit a knob; encoderPressFirmwareTest).
+		uint8_t pressed = 0;
+		const auto knob = [&](const uint8_t _encoder, const bool _down)
+		{
+			const auto bit = md::panelEncoderPressPacket(md::MachineModel::Machinedrum, static_cast<md::PanelEncoder>(_encoder));
+			require(bit.has_value(), "encoder switch");
+			pressed = static_cast<uint8_t>(_down ? pressed | bit->mask : pressed & ~bit->mask);
+			rawPanel(m, bit->row, pressed, 2);
+		};
+		const auto exitKey = [&](const bool _down) { rawPanel(m, 0x23, _down ? 0x10 : 0x00, 2); };
+		rawPanel(m, 0x22, 0x02);
+		rawPanel(m, 0x22, 0x06);
+		rawPanel(m, 0x22, 0x02);
+		rawPanel(m, 0x22, 0x00);
+		m.run(200);
+		// Pass 1. A: EXIT down, then knob A pressed, both held over steps 4-8. B: knob B pressed alone over 11-14.
+		waitStep(3);
+		exitKey(true);
+		knob(0, true);
+		waitStep(8);
+		knob(0, false);
+		exitKey(false);
+		waitStep(10);
+		knob(1, true);
+		waitStep(14);
+		knob(1, false);
+		waitStep(15);
+		waitStep(0);
+		show("pass 1");
+		// Pass 2. C: knob C pressed first, then EXIT, over 4-8 (the other order). D: EXIT held over 11-14, knob D only
+		// tapped at 11 (does it latch while EXIT stays down?).
+		waitStep(3);
+		knob(2, true);
+		exitKey(true);
+		waitStep(8);
+		exitKey(false);
+		knob(2, false);
+		waitStep(10);
+		exitKey(true);
+		knob(3, true);
+		knob(3, false);
+		waitStep(14);
+		exitKey(false);
+		waitStep(15);
+		waitStep(0);
+		show("pass 2");
+		// Pass 3. Track 2 selected: EXIT + knob A over steps 4-7: track 2's param 0 (and not track 1's)?
+		m.send(ed::mdSetStatus(ed::MdStatus::Track, 1));
+		waitStep(3);
+		exitKey(true);
+		knob(0, true);
+		waitStep(7);
+		knob(0, false);
+		exitKey(false);
+		waitStep(15);
+		m.panel(md::PanelControl::Stop);
+		m.run(300);
+		show("pass 3");
 	}
 
 	// Second take: which knob moves become locks? The manual: the selected track's
@@ -1077,6 +1193,8 @@ int main(const int _argc, char** _argv)
 			recordKnobs(rom);
 		if(only == "liveerase")
 			liveErase(rom);
+		if(only == "liveunlock")
+			liveUnlock(rom);
 		if(only.empty() || only == "liverec" || only == "livelocks")
 			liveLocks(rom);
 		std::printf("%s (%d failures)\n", g_failures ? "FAIL" : "PASS", g_failures);

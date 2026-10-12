@@ -213,10 +213,62 @@ document.addEventListener("click", e => {
 	if (e.target.closest("[data-pfrom]")) toast(`Plays the song from row ${String(S.songSel + 1).padStart(3, "0")}.`);
 });
 
+
+/* ================= wave 9 (B-064): Perform, see and set up POLY, the filter's key tracking and the MULTI ENV =================
+   No new control and no new row: words in the hints that are there, the track lamps under the keyboard, the rail, and one
+   pointer in the Sound page's Filter header that opens Perform › Assign › KEY (the switches stay where they are). */
+const W9 = { on: false, mt: 0 };
+const MTN = ["ALL TRK", "SPLIT KEY", "SEQ START", "SEQ TRNSP"];
+/* what the MULTI ENV does with the kit's MULTI TRIG mode (measured, PROBES-manual-gaps.md P10) */
+function menvSay() {
+	const m = S.multi.mode, kb = S.mode === "multi";
+	const what = [
+		"shapes the notes of the MULTI TRIG channel, which play all six tracks. After such a note, with REL under 127, every track stays silent until the next one or STOP.",
+		"no effect in this mode. The envelope works in ALL TRK, SEQ START and SEQ TRNSP (Multi trig under Keyboard).",
+		"shapes the pattern a MULTI TRIG note starts. After that note, with REL under 127, every track stays silent until the next one or STOP.",
+		"shapes the pattern a MULTI TRIG note starts and transposes. After that note, with REL under 127, every track stays silent until the next one or STOP."][m];
+	return `<b>${MTN[m]}:</b> ${what}${!kb && m !== 1 ? ` <span class="w9to">The keys play ${S.mode === "poly" ? "POLY" : S.mode === "map" ? "MULTI MAP" : "AUTO TRACK"} now: choose <b>Multi trig</b> under Keyboard to hear it.</span>` : ""}`;
+}
+function polyLine(t) { return `POLY: T${t + 1} plays six voices (TRACK ${t + 1} on the machine); the other five tracks are silent, notes on their channels too. The sequencer plays T${t + 1}'s chord notes. Select another track to move POLY there (its first chord can sound as one note).`; }
+function w9Draw() {
+	if (!W9.on) return;
+	if (S.ws === "perform") {
+		const c = $(".menvcard"); if (c) { c.querySelector("header span").textContent = "both DATA PAGE keys · MULTI TRIG " + MTN[S.multi.mode]; const h = c.querySelector(".hint"); h.innerHTML = menvSay(); h.classList.add("nx", "w9say"); }
+		if (S.mode === "poly") {
+			const t = asgT(), hint = $(".kbsec > .hint"); if (hint) { hint.textContent = polyLine(t); hint.classList.add("nx"); }
+			$$("#trklamps > span").forEach((sp, i) => { if (i > 5) return; sp.classList.toggle("w9off", i !== t); sp.title = i === t ? "Six voices in POLY" : "Silent in POLY"; if (i === t) sp.insertAdjacentHTML("beforeend", `<em class="w9x nx">×6</em>`); });
+			$$('[data-set="astrk"] button').forEach(b => { const i = +b.dataset.v; b.classList.toggle("w9off", i !== t); b.title = i === t ? `T${i + 1} plays POLY: six voices` : `Silent in POLY. Click: T${i + 1} plays POLY instead`; if (i === t) b.insertAdjacentHTML("beforeend", `<em class="w9x nx">×6</em>`); });
+		}
+	}
+	if ((S.ws === "seq" || S.ws === "sound") && S.mode === "poly") {
+		const t = S.sel < 6 ? S.sel : -1;
+		$$("#rail .th[data-sel]").forEach(th => { const i = +th.dataset.sel; if (i === t) { th.querySelector(".nm b")?.insertAdjacentHTML("beforeend", `<em class="w9x nx" title="POLY: six voices">×6</em>`); } if (i < 6 && i !== t) th.title = "Silent in POLY"; });
+	}
+	if (S.ws === "sound" && S.sel < 6) {
+		const A = trk(S.sel).assign, f = $('[data-sg="FLT:filter"] header'); if (f) {
+			f.insertAdjacentHTML("beforeend", `<button class="w9key nx" data-w9key title="The filter follows the note unless switched off: Perform › Assign › KEY (KIT › ASSIGN › KEY on the machine). Click to go there.">KEY <i class="led ${A.hpf ? "on" : ""}"></i>HPF <i class="led ${A.lpf ? "on" : ""}"></i>LPF ›</button>`);
+		}
+	}
+}
+/* the Filter screen's label says when a filter does not follow the note */
+const w9Flt = ED.flt.draw; ED.flt.draw = function (g, W, H) { w9Flt.call(this, g, W, H); if (!W9.on) return; const A = trk(S.sel).assign; if (A.hpf && A.lpf) return;
+	g.fillStyle = cssv("--lcd"); g.fillRect(0, 2, W, 18); label(g, "base + width · " + (!A.hpf && !A.lpf ? "fixed: no key tracking" : !A.hpf ? "HPF fixed, LPF tracks" : "LPF fixed, HPF tracks")); };
+document.addEventListener("click", e => { if (e.target.closest("[data-w9key]")) { S.ws = "perform"; S.asTab = "KEY"; render(); setTimeout(() => $(".keyrow")?.classList.add("w9flash"), 30); } });
+document.head.insertAdjacentHTML("beforeend", `<style>
+.w9x{font-style:normal;margin-left:4px;padding:0 3px;border-radius:2px;background:var(--led);color:#fff;font:600 9px var(--mono)}
+#trklamps>span.w9off{opacity:.38}
+.w9say b{font-weight:600}.w9to{display:block;margin-top:2px}
+.perf:has(.w9to:hover) [data-pmode="multi"]{box-shadow:0 0 0 2px var(--led)}
+[data-set="astrk"] button.w9off{opacity:.45}
+.w9key{margin-left:auto;height:18px;padding:0 6px;display:inline-flex;gap:4px;align-items:center;font:600 9px var(--sans);letter-spacing:.1em}
+.w9key .led{width:6px;height:6px}.keyrow.w9flash{outline:2px solid var(--led);outline-offset:3px}
+</style>`);
+const w9Page = window.renderPage; window.renderPage = function () { w9Page.apply(this, arguments); w9Draw(); };
+
 /* ================= the review states ================= */
 const ws = w => { if (G.open) gClose(false); STEP.on = false; if (S.ws !== w) { S.ws = w; } render(); };
 const at = (sel, dx = 0, dy = 0) => { const r = $(sel).getBoundingClientRect(); return [r.left + 20 + dx, r.top + r.height / 2 + dy]; };
-NX.onReset = () => { TT.type = "note"; if (S.nxPaused) { S.nxPaused = false; $("#play").classList.remove("paused"); } if (STEP.on) { STEP.on = false; render(); } };
+NX.onReset = () => { W9.on = false; TT.type = "note"; if (S.nxPaused) { S.nxPaused = false; $("#play").classList.remove("paused"); } if (STEP.on) { STEP.on = false; render(); } };
 NX.init([
 	{ grp: "Header", id: "header", label: "Header (unchanged)", note: "The header is as today. New: the ▾ beside COPY CLR PASTE, ⇧-click and right-click on ▶, ⇧-click on ● (step recording), a click on the tempo opens TEMPO, GLOBAL opens a page, three engine menu entries.", open: () => ws("seq") },
 	{ grp: "Header", id: "play", label: "Play key menu: pause, panic", note: "▶ stays play / stop. ⇧-click or ⇧Space pauses. Right-click: Pause, Step record, Panic (CC 120 on each track channel).", open: () => { ws("seq"); const [x, y] = at("#play", 10, 10); playMenu(x, y); } },
@@ -232,6 +284,12 @@ NX.init([
 	{ grp: "Workspaces", id: "steprec", label: "Sequence: STEP recording", note: "New: ⇧-click ● (or the play key's menu): the REC key shows STEP, a cursor sits on the roll; a played note writes and moves on; → rest, ← back, ⌫ clear, Esc done.", open: () => { ws("seq"); STEP.s = 6; stepOn(); } },
 	{ grp: "Workspaces", id: "trigtype", label: "Sequence: trig type", note: "In the row under the roll, where the SLIDE and SWING rows were: Note · Slide · Swing keys (the lit one is what a click paints) and a hint. In Slide or Swing the whole step column is the target; the marks sit along the foot of the roll. No All tracks toggle: the MM keeps slide and swing per track. No row above the roll.", open: () => { ws("seq"); TT.type = "swg"; render(); } },
 	{ grp: "Workspaces", id: "songs", label: "Song: slots + one palette", note: "New: the 24 song slots as a column on the left (Load, Save, Save to… | Copy, Paste, Clear, Rename; empty slots quieter); the Song card's picker goes. One pattern palette with one switch PATTERN · CHAIN · SONG replaces the What plays card and Arrange | Chain. The inspector shows only in SONG, with ▶ From here (after probe P1).", open: () => { SG.mode = "song"; ws("song"); } },
+	{ grp: "Perform (wave 9)", id: "w9poly", label: "Perform: POLY", note: "Keyboard › Poly. The hint under the mode keys says which track plays six voices (the machine's TRACK key goes with the track selected here) and that the others are silent; Assign's track keys 1-6 (and the track lamps under the keys) mark that track ×6 and dim the other five. Selecting another track there (or on the rail) moves POLY to it.", open: () => { W9.on = true; S.mode = "poly"; S.sel = 2; ws("perform"); } },
+	{ grp: "Perform (wave 9)", id: "w9rail", label: "Sequence rail in POLY", note: "The rail as today (the other tracks were already dimmed in POLY); the POLY track's name gets ×6.", open: () => { W9.on = true; S.mode = "poly"; S.sel = 2; ws("seq"); } },
+	{ grp: "Perform (wave 9)", id: "w9menv", label: "Multi envelope: AUTO TRACK keys", note: "The card's hint says, for the kit's MULTI TRIG mode, what the envelope shapes, measured on the firmware (P10). The keyboard plays AUTO TRACK, so the hint says to choose Multi trig (pointing at the hint rings that key). No second Multi trig key.", open: () => { W9.on = true; S.mode = "normal"; S.multi.mode = 0; ws("perform"); } },
+	{ grp: "Perform (wave 9)", id: "w9split", label: "Multi envelope: SPLIT KEY", note: "In SPLIT KEY the envelope does nothing: the hint says so and names the modes where it works.", open: () => { W9.on = true; S.mode = "multi"; S.multi.mode = 1; ws("perform"); } },
+	{ grp: "Perform (wave 9)", id: "w9seq", label: "Multi envelope: SEQ START", note: "SEQ START and SEQ TRNSP: the envelope shapes the pattern a MULTI TRIG note starts, and with REL under 127 the machine is silent after that note until the next one (the factory kit is SEQ START).", open: () => { W9.on = true; S.mode = "multi"; S.multi.mode = 2; ws("perform"); } },
+	{ grp: "Perform (wave 9)", id: "w9key", label: "Sound: Filter key tracking", note: "The Filter header gets KEY with two lamps (HPF, LPF lit while the filter follows the note); a click opens Perform › Assign › KEY for this track, where the switches stay. The screen's label says which filter is fixed. Here LPF is off.", open: () => { W9.on = true; S.mode = "normal"; S.sel = 0; trk(0).assign.lpf = false; ws("sound"); } },
 	{ grp: "Workspaces", id: "songchain", label: "Song: palette in CHAIN", note: "CHAIN: pad clicks build the machine's chain; Back / Clear and the Plays line under the pads. No inspector.", open: () => { SG.mode = "chain"; S.chainDraft = [0, 2, 1]; ws("song"); } }
 ], "Monomachine: what changes with DESIGN-machine-menus.md. The header gains GLOBAL; the workspaces stay; each button opens one new screen or state.");
 })();

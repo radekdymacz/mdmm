@@ -1,9 +1,9 @@
-// Manual-gap probes P1 to P6 (doc/modern-ux/PROBES-manual-gaps.md): six questions about the firmware that decide parts of
+// Manual-gap probes P1 to P10 (doc/modern-ux/PROBES-manual-gaps.md): questions about the firmware that decide parts of
 // the manual-gap work (doc/modern-ux/PLAN-manual-gaps.md, wave P), answered on the real ROMs (MD OS 1.63, MM OS 1.32B).
 // Discovery harness in the style of mdP4ProbeFirmwareTest and mmEditorProbeFirmwareTest: it measures and prints a
 // RESULT line per question; the checks only guard that the rig itself works (the machine boots, plays, answers).
 //
-//   gapProbesFirmwareTest <MD ROM> <MM ROM> [p1|p1md|p1mm|p2|p2panel|p3|p4|p5|p6|p6b|p7|all]
+//   gapProbesFirmwareTest <MD ROM> <MM ROM> [p1|p1md|p1mm|p2|p2panel|p3|p4|p5|p6|p6b|p7|p8|p9|p10|all]
 //   gapProbesFirmwareTest <MD ROM> <MM ROM> explore md|mm "<key,key,...>"     (prints the LCD after the keys)
 //
 // "-" for a ROM skips that machine; "--env" takes it from GEARMULATOR_MD_FIRMWARE_BIN / GEARMULATOR_MM_FIRMWARE_BIN. Exits 77
@@ -22,6 +22,7 @@
 #include "elektronData/mdSong.h"
 #include "elektronData/mmCommands.h"
 #include "elektronData/mmGlobal.h"
+#include "elektronData/mmKit.h"
 #include "elektronData/mmPattern.h"
 #include "elektronData/mmSong.h"
 #include "elektronData/mmValidate.h"
@@ -43,6 +44,7 @@
 #include <optional>
 #include <set>
 #include <sstream>
+#include <tuple>
 
 using namespace mdFirmwareSession;
 namespace ed = elektronData;
@@ -1676,6 +1678,397 @@ namespace
 			key(r, md::PanelControl::Exit, 40, 80);
 	}
 
+	// P9 (wave 8): the machine picker's audition and the Mix page's LEV, as the editor sends them. A machine assigned the
+	// way the desk's `machine` command does it (SysEx 0x5B, init SYNTHESIS, then the document's synthesis values as CCs),
+	// the track's note (the default map: track 1 = note 36 on the base channel) right behind it or a little later: is the
+	// new machine the one heard? Then the way back (the old machine and its values again, as Undo delivers them) and the
+	// level CC (8 + track) against the note's loudness.
+	void p9(const Bytes& _rom)
+	{
+		std::puts("== P9 MD: a machine assigned and its track's note right behind it (the picker's audition); the level CC");
+		Rig r(_rom, false);
+		r.setSongMode(false);
+		const auto sin = *ed::mdMachineModel("GND-SIN"), empty = *ed::mdMachineModel("GND-EMPTY");
+		// track 1's synthesis CCs 16-19 on channel 1: GND-SIN PTCH, DEC, RAMP, RDEC
+		const auto tune = [&] {
+			r->send({0xb0, 16, 40});
+			r->send({0xb0, 17, 90});
+			r->send({0xb0, 18, 0});
+			r->send({0xb0, 19, 0});
+		};
+		const auto level = [&](const uint8_t _v) {
+			namespace a = md::automation;
+			if(const auto cc = a::encodeParameterChange(md::MachineModel::Machinedrum, {a::machinedrum::Level, 0, 0, _v}, 0))
+				r->send({(*cc)[0], (*cc)[1], (*cc)[2]});
+		};
+		const auto heard = [&] {	// the note on track 1 and the first 300 ms after it
+			const auto from = r->left().size();
+			r->send({0x90, 36, 100});
+			r.run(300);
+			const double v = rms(r->left(), r->right(), from, r->left().size());
+			r->send({0x80, 36, 0});
+			r.run(700);
+			return v;
+		};
+		const auto settle = [&](const uint32_t _model) {
+			r->send(ed::mdAssignMachine(0, _model, ed::MdMachineInit::SynthesisEffectsRouting));
+			r.run(200);
+			if(_model == sin)
+				tune();
+			level(100);
+			r.run(300);
+		};
+		settle(sin);
+		const double sinLevel = heard();
+		settle(empty);
+		const double emptyLevel = heard();
+		std::printf("  controls: GND-SIN %.5f, GND-EMPTY %.5f\n", sinLevel, emptyLevel);
+		check(sinLevel > 1e-3 && emptyLevel < sinLevel * 0.05, "the rig: track 1's note sounds on GND-SIN, not on GND-EMPTY");
+
+		std::string answers;
+		int newHeard = 0, all = 0;
+		for(const double gap : {0.0, 5.0, 20.0, 100.0})
+		{
+			for(const auto& [from, to, name] : {std::tuple{empty, sin, "GND-EMPTY -> GND-SIN"}, std::tuple{sin, empty, "GND-SIN -> GND-EMPTY"}})
+			{
+				settle(from);
+				r->send(ed::mdAssignMachine(0, to, ed::MdMachineInit::Synthesis));
+				if(to == sin)
+					tune();	// the document's synthesis values, as the desk resends them after a new machine
+				if(gap > 0)
+					r.run(gap);
+				const double v = heard();
+				const bool isNew = to == sin ? v > sinLevel * 0.5 : v < sinLevel * 0.05;
+				std::printf("  %-22s note %5.1f ms after: %.5f  %s\n", name, gap, v, isNew ? "the new machine" : "THE OLD MACHINE");
+				newHeard += isNew ? 1 : 0;
+				++all;
+				if(!isNew)
+					answers += std::string(name) + " at " + std::to_string(int(gap)) + " ms; ";
+			}
+		}
+
+		// the way back: GND-SIN tuned, auditioned as GND-EMPTY, then GND-SIN and its values again (Undo's delivery)
+		settle(sin);
+		const double before = heard();
+		r->send(ed::mdAssignMachine(0, empty, ed::MdMachineInit::Synthesis));
+		const double during = heard();
+		r->send(ed::mdAssignMachine(0, sin, ed::MdMachineInit::Synthesis));
+		tune();
+		const double after = heard();
+		std::printf("  back: before %.5f, auditioning GND-EMPTY %.5f, back on GND-SIN %.5f\n", before, during, after);
+		const bool back = after > before * 0.9 && after < before * 1.1;
+
+		// LEV: the level CC against the note's loudness
+		std::string levels;
+		double at100 = 0;
+		for(const uint8_t v : {127, 100, 64, 32, 0})
+		{
+			settle(sin);
+			level(v);
+			r.run(50);
+			const double l = heard();
+			if(v == 100)
+				at100 = l;
+			char x[48];
+			std::snprintf(x, sizeof x, "%s%d: %.5f", levels.empty() ? "" : ", ", v, l);
+			levels += x;
+		}
+		std::printf("  level CC: %s\n", levels.c_str());
+		check(at100 > 1e-3, "the rig: a note at level 100 sounds");
+		result("P9", std::to_string(newHeard) + " of " + std::to_string(all) + " notes played the new machine"
+			+ (answers.empty() ? " (also with no gap: SysEx then note in one stream)" : "; the old one at " + answers)
+			+ (back ? "; the old machine and its values again give the same sound" : "; the way back does NOT give the same sound")
+			+ "; level CC " + levels);
+	}
+
+	// ---- P10: MM POLY, the filter's key tracking and the MULTI ENV (0.6 wave 9, B-064) ---------------------------------
+	// Every scenario: a kit written by dump into slot 11 and a pattern into slot 10 that links it (LOAD PATTERN loads both),
+	// raw MIDI notes on the channels of the factory global (track t: base + t; AUTO 9, MULTI TRIG 7), the output measured.
+	// A "plain" track: AMP ATK 0 HOLD 0 DEC 127 REL 8 DIST 64, VOL 60, level 48, the filter open, no filter envelope, no
+	// delay, no LFO.
+
+	struct P10Kit
+	{
+		std::array<uint8_t, 6> machine{1, 1, 1, 1, 1, 1};	// 1 GND-SIN, 2 GND-NOIS
+		std::array<uint8_t, 6> vol{60, 60, 60, 60, 60, 60};
+		uint8_t mode = 1;									// MULTI TRIG mode: 0 ALL TRK, 1 SPLIT KEY, 2 SEQ START, 3 SEQ TRNSP
+		std::array<uint8_t, 4> env{0, 127, 127, 127};		// MULTI ENV ATK DEC SUS REL
+		uint8_t lpfMask = 0x3f, hpfMask = 0x3f;
+		std::array<uint8_t, 2> flt{0, 127};					// T1's FILTER BASE, WDTH
+	};
+	constexpr uint8_t g_p10Kit = 10, g_p10Pattern = 9;
+
+	// T1's trigs: every second step (pitch C-4), or one chord trig (C E G) on step 1; T2 a trig on step 1 too
+	void p10Load(Rig& _r, const P10Kit& _k, const bool _chord)
+	{
+		auto kit = *ed::decodeMmKit(_r.dump(0x52, 0));
+		kit.position = g_p10Kit;
+		for(size_t t = 0; t < 6; ++t)
+		{
+			kit.machines[t] = _k.machine[t];
+			kit.levels[t] = 48;	// six tracks together stay well under full scale
+			auto& pg = kit.tracks[t].pages;
+			pg[0] = {0, 0, 0, 0, 0, 0, 0, 64};
+			pg[1] = {0, 0, 127, 8, 64, _k.vol[t], 64, 0};	// DIST 64: none (0 silences the track, measured)
+			pg[2] = {0, 127, 0, 0, 0, 40, 0, 0};
+			pg[3] = {64, 64, 0, 32, 0, 0, 0, 127};
+			for(size_t l = 4; l < 7; ++l)
+				pg[l][7] = 0;
+			kit.tracks[t].multiEnv = {_k.env[0], _k.env[1], _k.env[2], _k.env[3], 0, 0};
+		}
+		kit.tracks[0].pages[2][0] = _k.flt[0];
+		kit.tracks[0].pages[2][1] = _k.flt[1];
+		kit.multiTrigMode = _k.mode;
+		kit.multiTrigTiming = 0;
+		kit.splitKey = 0;	// SPLIT KEY: every key is in the upper zone, which starts at T1: all six tracks
+		kit.splitTrack = 0;
+		kit.lpfMask = _k.lpfMask;
+		kit.hpfMask = _k.hpfMask;
+		auto p = *ed::decodeMmPattern(_r.dump(0x67, 0));
+		p.position = g_p10Pattern;
+		p.kit = g_p10Kit;
+		p.length = 16;
+		p.multiplier = 0;
+		for(auto* m : {&p.amp, &p.filter, &p.lfo, &p.noteOff, &p.midiTrig, &p.midiNoteOff, &p.pitch, &p.chord, &p.midiNote, &p.slide, &p.midiSlide})
+			m->fill(0);
+		for(auto& n : p.notes)
+			n.fill(ed::MmPattern::g_noNote);
+		p.lockMasks = {};
+		p.lockRowCount = 0;
+		p.midiNoteCount = 0;
+		p.chordNoteCount = 0;
+		if(_chord)
+		{
+			p.amp[0] = p.filter[0] = p.lfo[0] = p.pitch[0] = p.chord[0] = 1;
+			p.notes[0][0] = 60;
+			p.chordNotes[0] = ed::mmNoteEntryWord({0, 0, 64});
+			p.chordNotes[1] = ed::mmNoteEntryWord({0, 0, 67});
+			p.chordNoteCount = 2;
+			p.amp[1] = p.filter[1] = p.lfo[1] = p.pitch[1] = 1;
+			p.notes[1][0] = 72;
+		}
+		else
+			for(size_t s = 0; s < 16; s += 2)
+			{
+				p.amp[0] |= 1ull << s;
+				p.filter[0] |= 1ull << s;
+				p.lfo[0] |= 1ull << s;
+				p.pitch[0] |= 1ull << s;
+				p.notes[0][s] = 60;
+			}
+		mmSendDumps(_r, {ed::encodeMmKit(kit), ed::encodeMmPattern(p)});
+		halt(_r);
+		_r.loadPattern(g_p10Pattern);
+		_r->send(ed::mmLoadKit(g_p10Kit));
+		_r.run(600);
+		const auto back = ed::decodeMmKit(_r.dump(0x52, g_p10Kit));
+		check(back && back->multiTrigMode == _k.mode && back->tracks[0].multiEnv[3] == _k.env[3] && back->machines[1] == _k.machine[1], "P10: the kit is stored");
+		check(_r.status(0x02) == g_p10Kit && _r.status(0x04) == g_p10Pattern, "P10: kit and pattern loaded");
+	}
+
+	double p10Level(Rig& _r, const double _ms)
+	{
+		const size_t a = _r->left().size();
+		_r.run(_ms);
+		return rms(_r->left(), _r->right(), a, _r->left().size());
+	}
+
+	// the amplitude at _f over [_from, _to) (Goertzel, the mix of both channels)
+	double p10Amp(Rig& _r, const size_t _from, const size_t _to, const double _f)
+	{
+		const auto& l = _r->left();
+		const auto& rr = _r->right();
+		const double w = 2.0 * M_PI * _f / 44100.0, c = 2.0 * std::cos(w);
+		double s1 = 0, s2 = 0;
+		for(size_t i = _from; i < _to; ++i)
+		{
+			const double s = 0.5 * (double(l[i]) + double(rr[i])) + c * s1 - s2;
+			s2 = s1;
+			s1 = s;
+		}
+		return 2.0 * std::sqrt(std::max(0.0, s1 * s1 + s2 * s2 - c * s1 * s2)) / double(std::max<size_t>(1, _to - _from));
+	}
+
+	// the strongest amplitude within 3 % of _f (0.25 Hz steps): a pitch, whatever its fine tune
+	double p10Pitch(Rig& _r, const size_t _from, const size_t _to, const double _f)
+	{
+		double best = 0;
+		for(double f = _f * 0.97; f <= _f * 1.03; f += 0.25)
+			best = std::max(best, p10Amp(_r, _from, _to, f));
+		return best;
+	}
+
+	void p10(const Bytes& _rom)
+	{
+		std::puts("== P10 MM: POLY, the filter's key tracking, the MULTI ENV (wave 9, B-064)");
+		Rig r(_rom, true);
+		r.setSongMode(false);
+		const int slot = r.status(0x01);
+		const auto gl = *ed::decodeMmGlobal(r.dump(0x50, static_cast<uint8_t>(slot)));
+		const uint8_t base = gl.baseChannel, autoCh = gl.autoChannel, mt = gl.multiTrigChannel;
+		{
+			const auto k0 = *ed::decodeMmKit(r.dump(0x52, static_cast<uint8_t>(r.status(0x02))));
+			std::printf("  global %d: base %d, auto %d, multi trig %d (0-based); the kit that plays at boot: MULTI TRIG mode %d, MULTI ENV %d %d %d %d %d %d\n", slot, base, autoCh, mt,
+				k0.multiTrigMode, k0.tracks[0].multiEnv[0], k0.tracks[0].multiEnv[1], k0.tracks[0].multiEnv[2], k0.tracks[0].multiEnv[3], k0.tracks[0].multiEnv[4], k0.tracks[0].multiEnv[5]);
+		}
+		const auto on = [&](const uint8_t _ch, const uint8_t _n) { r->send({static_cast<uint8_t>(0x90 | _ch), _n, 100}); };
+		const auto off = [&](const uint8_t _ch, const uint8_t _n) { r->send({static_cast<uint8_t>(0x80 | _ch), _n, 0}); };
+		const auto offAll = [&] {
+			for(const uint8_t ch : {uint8_t(base), uint8_t(base + 1), uint8_t(base + 5), autoCh, mt})
+				for(const uint8_t n : {36, 60, 64, 67, 72, 84})
+					off(ch, n);
+			r.run(800);
+		};
+		const auto stopped = [&] { halt(r); offAll(); };
+		const auto seq = [&] { key(r, md::PanelControl::Play); r.run(400); const double v = p10Level(r, 1000); halt(r); r.run(400); return v; };
+
+		// ---- POLY: whose voices, how many ----
+		{
+			P10Kit k;
+			k.machine = {1, 2, 2, 2, 2, 2};
+			p10Load(r, k, true);
+			// the sine's frequency at C-4
+			on(base, 60);
+			r.run(300);
+			size_t a = r->left().size();
+			r.run(300);
+			double f0 = 0, best = -1;
+			for(double f = 100; f < 1000; f *= std::pow(2.0, 1.0 / 96.0))
+				if(const double v = p10Amp(r, a, r->left().size(), f); v > best)
+				{
+					best = v;
+					f0 = f;
+				}
+			stopped();
+			std::printf("  T1 GND-SIN C-4: %.1f Hz\n", f0);
+			// which of _semis (semitones over C-4) sound: an amplitude over a quarter of the strongest one's
+			const auto pitches = [&](const std::function<void()>& _play, const char* _what, const std::vector<int>& _semis = {0, 4, 7}) {
+				_play();
+				r.run(300);
+				const size_t a0 = r->left().size();
+				r.run(300);
+				const size_t a1 = r->left().size();
+				std::vector<double> amp;
+				for(const int st : _semis)
+					amp.push_back(p10Pitch(r, a0, a1, f0 * std::pow(2.0, st / 12.0)));
+				const double lv = rms(r->left(), r->right(), a0, a1), top = *std::max_element(amp.begin(), amp.end());
+				int n = 0;
+				std::string each;
+				for(size_t i = 0; i < amp.size(); ++i)
+				{
+					n += top > 1e-3 && amp[i] > 0.25 * top;
+					char b[24];
+					std::snprintf(b, sizeof b, " %+d:%.4f", _semis[i], amp[i]);
+					each += b;
+				}
+				stopped();
+				std::printf("  %-62s%s, rms %.4f: %d sound\n", _what, each.c_str(), lv, n);
+				return std::array<double, 2>{double(n), lv};
+			};
+			const auto chord = [&](const std::function<void()>& _play, const char* _what) { return pitches(_play, _what); };
+			const auto keys = [&](const uint8_t _ch) { on(_ch, 60); on(_ch, 64); on(_ch, 67); };
+			key(r, md::PanelControl::Track1);
+			const auto mono = chord([&] { keys(base); }, "mono, TRACK 1, C E G on track 1's channel");
+			r->send(ed::mmSetStatus(ed::MmStatus::Poly, 1));
+			r.run(300);
+			std::printf("  POLY status: %d\n", r.status(0x20));
+			const auto poly = chord([&] { keys(base); }, "POLY, TRACK 1, C E G on track 1's channel");
+			const auto other = chord([&] { keys(static_cast<uint8_t>(base + 1)); }, "POLY, TRACK 1, C E G on track 2's channel");
+			const auto autoC = chord([&] { keys(autoCh); }, "POLY, TRACK 1, C E G on the AUTO channel");
+			const auto mtC = chord([&] { keys(mt); }, "POLY, TRACK 1, C E G on the MULTI TRIG channel");
+			const auto six = pitches([&] { for(const uint8_t n : {60, 64, 67, 72, 76, 79}) on(base, n); }, "POLY, TRACK 1, six notes (C E G of C-4 and C-5) on track 1", {0, 4, 7, 12, 16, 19});
+			const auto seven = pitches([&] { for(const uint8_t n : {60, 64, 67, 72, 76, 79, 84}) on(base, n); }, "POLY, TRACK 1, seven notes (and C-6) on track 1", {0, 4, 7, 12, 16, 19, 24});
+			key(r, md::PanelControl::Track2);
+			const auto t2off = chord([&] { keys(base); }, "POLY, TRACK 2, C E G on track 1's channel");
+			const auto t2 = chord([&] { keys(static_cast<uint8_t>(base + 1)); }, "POLY, TRACK 2, C E G on track 2's channel (T2 noise)");
+			key(r, md::PanelControl::Track1);
+			const auto sp = chord([&] { key(r, md::PanelControl::Play); }, "POLY, TRACK 1, the sequencer: T1's C E G trig, T2's C-5");
+			r->send(ed::mmSetStatus(ed::MmStatus::Poly, 0));
+			r.run(300);
+			const auto sm = chord([&] { key(r, md::PanelControl::Play); }, "mono, the sequencer: T1's C E G trig, T2's C-5");
+			result("P10 poly", "mono " + std::to_string(int(mono[0])) + " pitch; POLY on the focus track " + std::to_string(int(poly[0]))
+				+ ", on another track's channel rms " + std::to_string(other[1]).substr(0, 6) + ", AUTO " + std::to_string(int(autoC[0])) + ", MULTI TRIG " + std::to_string(int(mtC[0]))
+				+ "; focus T2: T1's channel rms " + std::to_string(t2off[1]).substr(0, 6) + ", T2's channel rms " + std::to_string(t2[1]).substr(0, 6)
+				+ "; sequencer chord POLY " + std::to_string(int(sp[0])) + " mono " + std::to_string(int(sm[0])) + "; six notes: " + std::to_string(int(six[0])) + " sound, seven: "
+				+ std::to_string(int(seven[0])));
+		}
+
+		// ---- KEY TRACKING: a low and a high note through a low LPF (a high HPF), tracking on and off ----
+		{
+			std::string line;
+			for(const auto& [what, flt, lpf] : std::vector<std::tuple<const char*, std::array<uint8_t, 2>, bool>>{{"LPF", {0, 24}, true}, {"HPF", {80, 47}, false}})
+			{
+				for(const bool track : {true, false})
+				{
+					P10Kit k;
+					k.vol = {60, 0, 0, 0, 0, 0};
+					k.flt = flt;
+					(lpf ? k.lpfMask : k.hpfMask) = track ? 0x3f : 0x3e;
+					p10Load(r, k, false);
+					on(base, 36);
+					r.run(300);
+					const double lo = p10Level(r, 300);
+					stopped();
+					on(base, 84);
+					r.run(300);
+					const double hi = p10Level(r, 300);
+					stopped();
+					std::printf("  %s (BASE %d WDTH %d), key tracking %s: C-1 (MIDI 36) %.4f, C-5 (MIDI 84) %.4f\n", what, flt[0], flt[1], track ? "on " : "off", lo, hi);
+					char b[96];
+					std::snprintf(b, sizeof b, "%s %s: low %.4f high %.4f; ", what, track ? "on" : "off", lo, hi);
+					line += b;
+				}
+			}
+			result("P10 key", line);
+		}
+
+		// ---- MULTI ENV: what it shapes, in each MULTI TRIG mode ----
+		{
+			std::string line;
+			const char* modes[4] = {"ALL TRK", "SPLIT KEY", "SEQ START", "SEQ TRNSP"};
+			for(uint8_t mode = 0; mode < 4; ++mode)
+			{
+				for(const auto& env : std::vector<std::array<uint8_t, 4>>{{0, 127, 127, 127}, {0, 127, 127, 0}, {0, 0, 0, 0}})
+				{
+					P10Kit k;
+					k.mode = mode;
+					k.env = env;
+					p10Load(r, k, false);
+					const double s0 = seq();
+					on(base, 60);
+					r.run(200);
+					const double o0 = p10Level(r, 300);
+					stopped();
+					on(mt, 60);
+					r.run(200);
+					const double m = p10Level(r, 300);
+					off(mt, 60);
+					r.run(800);
+					const double after = p10Level(r, 300);
+					const double s1 = mode >= 2 ? -1 : seq();
+					on(base, 60);
+					r.run(200);
+					const double o1 = p10Level(r, 300);
+					stopped();
+					// a MULTI TRIG note again (held, the pattern stopped), and T1's own note under it
+					on(mt, 60);
+					r.run(300);
+					halt(r);
+					on(base, 64);
+					r.run(200);
+					const double o2 = p10Level(r, 300);
+					stopped();
+					std::printf("  %-9s env %3d %3d %3d %3d: sequencer %.4f, T1's own note %.4f; MULTI TRIG note %.4f, 300 ms after its note off %.4f; then sequencer %.4f, T1's own note %.4f; under a new MULTI TRIG note %.4f\n",
+						modes[mode], env[0], env[1], env[2], env[3], s0, o0, m, after, s1, o1, o2);
+					char b[200];
+					std::snprintf(b, sizeof b, "%s %d/%d/%d/%d: seq %.3f own %.3f MT %.3f after %.3f seq %.3f own %.3f own under MT %.3f; ", modes[mode], env[0], env[1], env[2], env[3], s0, o0, m, after, s1, o1, o2);
+					line += b;
+				}
+			}
+			result("P10 menv", line);
+		}
+	}
+
 	// ---- explore ------------------------------------------------------------------------------------------------------
 
 	void explore(const Bytes& _rom, const bool _mm, const std::string& _keys)
@@ -1693,7 +2086,7 @@ int main(const int _argc, char** _argv)
 	std::setvbuf(stdout, nullptr, _IOLBF, 0);
 	if(_argc < 3)
 	{
-		std::puts("usage: gapProbesFirmwareTest <MD ROM|-> <MM ROM|-> [p1|p1md|p1mm|p2|p2panel|p3|p4|p5|p6|p6b|p7|p8|all|explore md|mm keys]");
+		std::puts("usage: gapProbesFirmwareTest <MD ROM|-> <MM ROM|-> [p1|p1md|p1mm|p2|p2panel|p3|p4|p5|p6|p6b|p7|p8|p9|p10|all|explore md|mm keys]");
 		return 77;
 	}
 	try
@@ -1741,6 +2134,8 @@ int main(const int _argc, char** _argv)
 			p2(mmRom);
 		if(!mmRom.empty() && only == "p8")
 			p8(mmRom);
+		if(!mmRom.empty() && only == "p10")
+			p10(mmRom);
 		if(!mmRom.empty() && want("p4"))
 			p4(mmRom);
 		if(!mdRom.empty() && want("p5"))
@@ -1753,6 +2148,8 @@ int main(const int _argc, char** _argv)
 			p6b(mdRom);
 		if(!mdRom.empty() && want("p7"))
 			p7(mdRom);
+		if(!mdRom.empty() && want("p9"))
+			p9(mdRom);
 		if(!mdRom.empty() && (want("p1") || only == "p1md"))
 			p1(mdRom, false);
 		if(!mmRom.empty() && (want("p1") || only == "p1mm"))
