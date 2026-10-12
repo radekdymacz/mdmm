@@ -18,14 +18,13 @@ agents at once; Radek tests the whole release at the end from doc/release/TEST-0
 markers: resolve, grep for `<<<<<<<`, then commit, as separate steps.
 
 **Merged into `feat/0.6-features`** (each reviewed, tier 2 green): wave P (probes, doc/modern-ux/PROBES-manual-gaps.md,
-B-069), wave 1 song slots, wave 2 transport, wave 3 trig types and marks, wave 4 copy / paste / clear what, wave 5 GLOBAL page (2026-10-12, review fixes 4bcacdd4e), wave 6 SysEx and reset (2026-10-12; Import/Export in the engine menu only, Radek), the top-bar
+B-069), wave 1 song slots, wave 2 transport, wave 3 trig types and marks, wave 4 copy / paste / clear what, wave 5 GLOBAL page (2026-10-12, review fixes 4bcacdd4e), wave 6 SysEx and reset (2026-10-12; Import/Export in the engine menu only, Radek), wave 7 recording (2026-10-12; MD-140, live lock removal with EXIT + a knob, still missing), wave 10 MM skins true to the photos (MD unchanged, Radek), the top-bar
 and LCD fit (B-061, B-065, B-066), the volume-strip fix; the feature data, journey links and guide (slices 1-4).
 
 **Pushed, not merged** (each its own worktree under `audio/gearmulator-md-mm-wt/`):
 
 | Branch | State | Next step |
 |---|---|---|
-| `feat/0.6-recording` (wave 7) | probes, MD live erase, MM step recording and live erase in the core, firmware tests, stub host; `feat/0.6-features` merged in; step 0 (tier 1 on the combined base after waves 2 + 4, 2026-10-12): green in 231 s (125 unit tests, the page journeys of both editors, one golden per machine); page part, journeys, rows, guide and TEST-0.6.md done | review, merge |
 
 **Wave 11 (added 2026-10-12, I-024):** machine memory that stays for every new session, way A: one memory file per
 machine in the editor's user folder; a session with no project state starts from it; each save on the machine (kit,
