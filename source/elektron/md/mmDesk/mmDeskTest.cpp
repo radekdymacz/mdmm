@@ -799,7 +799,12 @@ void kitAfterPatternDump(const uint8_t _link3 = 5)
 		auto changed = *relinkOk;
 		changed.kit = 9;
 		// a link the person changes is the person's: the dump keeps it (the machine loads that kit)
+		// MM-095: over unsaved kit edits that asks first (the machine would load kit 10 at once); with force it goes
+		const auto before = m.slots[{0x67, 3}];
 		msg(R"({"op":"set","kind":"pattern","doc":)" + ed::json::write(ed::mmPatternToJson(changed)) + "}");
+		run(500);
+		check(m.slots[{0x67, 3}] == before, "a link changed over unsaved kit edits waits for the answer");
+		msg(R"({"op":"set","force":true,"kind":"pattern","doc":)" + ed::json::write(ed::mmPatternToJson(changed)) + "}");
 		run(2000);
 		check(ed::decodeMmPattern(m.slots[{0x67, 3}])->kit == 9, "a link the edit changes is sent as it is");
 		return;

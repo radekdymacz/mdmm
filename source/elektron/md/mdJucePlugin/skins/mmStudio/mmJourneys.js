@@ -2104,7 +2104,19 @@ const MmJourneys = (() => {
 		],
 		async tidy(u, c) { if (S().stepSel) clearSel(); await undoUntil(u, () => (machine().history?.undoCount || 0) <= c.u0, 4); }
 	};
-	const wave12 = [undoKitJ, clearStepLocksJ, lockCurrentJ];
+	/* MM-095: the kit a pattern plays, set in the pattern chooser (its Kit list) */
+	const patKitJ = {
+		name: "mm-lib-pattern-kit", proves: ["MM-095"],
+		steps: [
+			{ say: "click the pattern on the LCD, Alt-click another pattern: selected, not loaded", act: async (u, c) => { c.p0 = cur(); c.p = (c.p0 + 3) % 128; u.click("#pat"); await sleep(300); u.click(`#libpop .ps[data-ps="${c.p}"]`, { alt: true }); },
+				screen: c => ok(!$1("#libpop").hidden && !!$1("#patkit"), "no Kit list"), machine: c => ok(cur() === c.p0 && !!I().doc("pattern", c.p), "pattern " + cur()), within: 6000 },
+			{ say: "choose another kit in the Kit list: the pattern plays that kit", act: async (u, c) => { c.k0 = I().doc("pattern", c.p).kit; c.k = (c.k0 + 5) % 128; await choose(u, "patkit", String(c.k)); },
+				machine: c => ok(I().doc("pattern", c.p)?.kit === c.k && cur() === c.p0, `pattern ${c.p + 1} kit ${I().doc("pattern", c.p)?.kit}, playing ${cur()}`), screen: c => ok(!$1("#libpop").hidden && +$1("#patkit")?.value === c.k, `list ${$1("#patkit")?.value}, open ${!$1("#libpop").hidden}`), within: 15000 },
+			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(I().doc("pattern", c.p)?.kit === c.k0, "kit " + I().doc("pattern", c.p)?.kit), within: 15000 },
+			{ say: "press Escape", act: u => u.key("Escape"), screen: () => ok($1("#libpop").hidden, "open") }
+		]
+	};
+	const wave12 = [undoKitJ, clearStepLocksJ, lockCurrentJ, patKitJ];
 	const all = [...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
