@@ -46,7 +46,7 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 
 ## SysEx and reset (wave 6)
 
-1. Both: the engine menu's IMPORT SYSEX…, EXPORT SYSEX… and RESET MACHINE… entries; the library headers' Import SysEx… and Export SysEx… keys open the same panels.
+1. Both: the engine menu's IMPORT SYSEX…, EXPORT SYSEX… and RESET MACHINE… entries (the kit library and the pattern chooser no longer have SysEx keys); a .syx dropped on the window still opens the import.
 2. Export: All ticked saves a full backup. Untick All: Kits K01 to K04 and Globals G1 only (click, ⇧-click, wheel, drag, arrows on a range end), Save .syx…, then import that file and check it holds just those.
 3. MM: tick Waveforms W01 to W08 in the export; the file holds the used ones (an empty waveform is left out).
 4. Import a file with two kits: Specific place, kits from K05. The grid shows them on K05 and K06, the tooltip says where each came from; Import asks first when a slot holds data. Original place puts them back.

@@ -1896,8 +1896,6 @@ body.deskmidi #main,body.deskmidi #rail{opacity:.3;pointer-events:none;transitio
 .syxbar{position:relative;height:20px;border-radius:3px;background:var(--ledoff);overflow:hidden}
 .syxbar i{position:absolute;left:0;top:0;bottom:0;background:var(--led);width:0;transition:width .2s}
 .syxbar span{position:relative;display:block;padding:0 8px;text-align:center;font:600 11px/20px var(--sans);letter-spacing:.06em;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.syxkeys{display:inline-flex;gap:6px;margin-left:auto}
-.syxkeys+.libx{margin-left:8px!important}
 /* 0.6 (wave 6): the export (ALL, or each kind with its range) and the import's PLACE row; a range or first slot is a
    value (click, ⇧-click, wheel, drag, arrows) */
 .syx-export .sxall,.syx-export .sxlist{display:grid;gap:2px;padding:0 2px}
@@ -4943,7 +4941,6 @@ const Boot = (() => {
    each item at the slot it lands in, and the panel asks before an item lands on a slot that holds data) and VERIFY ONLY
    (nothing is written: the slots are read and compared), and Reset machine… is a question whose reset runs in the panel
    as an import of the slots it clears (Syx.reset).
-     Syx.keys()            the library's two keys (markup)
      Syx.preview(m)        {type:"syxPreview", ok, text, file, model, fullBackup, items:{kind:[{slot,from?,name,kit?,overwrites,plays,format,
                             readable}]}, skipped, skippedCount, messages, place?, reset?, running?}
      Syx.progress(m)       {type:"syxProgress", phase, done, total, running, text, check?, report?:{taken, converted, ignored, differs,
@@ -4952,7 +4949,7 @@ const Boot = (() => {
      Syx.exported(m)       {type:"syxExport", ok, running?, text}
      Syx.exportInfo(m)     {type:"syxExportInfo", model, kinds:{kind:{slots, held, used, first, last}}}
      Syx.resetNews(m)      {type:"syxReset", phase, done, total, text}: a factory reset being prepared
-     Syx.openExport()      the export panel (the engine menu's EXPORT SYSEX…, the library's Export key)
+     Syx.openExport()      the export panel (the engine menu's EXPORT SYSEX…)
      Syx.reset()           Reset machine…: the question (the engine menu's RESET MACHINE…)
      Syx.menu(value)       an engine menu entry of the panel's (import, export, reset): true when it was one
      Syx.host = {choose(), start(kinds, skip, {placeAt, checkOnly}), stop(), place(placeAt), exportInfo(), exportSave({kinds?, ranges?}),
@@ -5354,8 +5351,6 @@ const Syx = (() => {
 		}
 	}
 	document.addEventListener("click", e => {
-		const sk = e.target.closest?.("[data-syx]");
-		if (sk && Syx.host) { if (sk.dataset.syx === "import") Syx.host.choose(); else openExport(); return; }
 		if (!pop.contains(e.target)) return;
 		const sv = e.target.closest("[data-sxv]");
 		if (sv) { if (!sv.dataset.dragged) nudge(sv, e.shiftKey ? -1 : 1); delete sv.dataset.dragged; return; }
@@ -5442,7 +5437,6 @@ const Syx = (() => {
 	/* an export's news (written, or the waveforms read so far) */
 	function exported(m) { say(m.text); return m; }
 	return {
-		keys: () => `<span class="syxkeys"><button class="amkey" data-syx="import" title="Open a .syx (a backup, or dumps from any source) and choose what to send to the machine.">Import SysEx…</button><button class="amkey" data-syx="export" title="Every pattern, kit, song and global the editor holds as one .syx, or the kinds and ranges you choose">Export SysEx…</button></span>`,
 		preview, progress, exported, exportInfo, openExport, reset, menu, resetNews: m => say(m.text), host: null, model
 	};
 })();
@@ -7590,7 +7584,7 @@ function kitSlot(k){const cur=k===S.kit,st=S.kits[k],empty=st.empty&&!cur,name=k
  const nm=LIB.renaming===k?`<input class="lsin" id="lsin" maxlength="${KNAME}" value="${escH(name)}" aria-label="Kit name, up to ${KNAME} characters" spellcheck="false" autocomplete="off">`:empty&&!name?"EMPTY":escH(name||"EMPTY")+(!lp.length&&!empty?"*":"");
  return`<button class="ls ks${empty?" empty":""}${cur?" cur":""}${ed?" edited":""}" data-ks="${k}" draggable="${LIB.renaming===k?"false":"true"}" aria-selected="${k===LIB.sel}" title="${escH(tip)}"><span class="lsh"><b>K${nn(k)}</b>${cur?`<em><i class="led${ed?" on":""}"></i>${ed?"ed":"ok"}</em>`:""}</span><span class="lsn">${nm}</span><span class="lsl">${links}</span></button>`}
 function drawKitLib(){const k=LIB.sel,cur=S.kit,ed=S.kitState==="edited",empty=S.kits[k].empty&&k!==cur,dis=c=>c?" disabled":"";
- return`<div class="libhead"><span class="cap">Kit library</span><span class="lcdchip">K${nn(cur)} ${escH(S.workName||"EMPTY")} · ${ed?"edited":"saved"}</span><span class="note">128 slots. Every pattern recalls its kit. Writes go through SYSEX RECV.</span>${Syx.keys()}<button class="libx" data-la="close" title="Close (Esc)">Esc</button></div>
+ return`<div class="libhead"><span class="cap">Kit library</span><span class="lcdchip">K${nn(cur)} ${escH(S.workName||"EMPTY")} · ${ed?"edited":"saved"}</span><span class="note">128 slots. Every pattern recalls its kit. Writes go through SYSEX RECV.</span><button class="libx" data-la="close" title="Close (Esc)">Esc</button></div>
  <div class="libacts"><div class="grp"><span class="ilab">Current K${nn(cur)}</span><button data-la="save" title="${KTIP.save}">Save</button><button class="danger" data-la="reload"${dis(!ed)} title="${KTIP.reload}">Reload</button></div>
   <div class="grp"><span class="ilab">Slot K${nn(k)}</span><button data-la="load"${dis(k===cur&&!ed)} title="${k===cur?"Already the current kit. Enter reloads it when it is edited. ":""}${KTIP.load} (Enter)">Load</button><button data-la="saveas"${dis(k===cur)} title="${k===cur?"This is the current slot: use Save. ":""}${KTIP.saveas}">Save as K${nn(k)}</button>
   <button data-la="copy" title="${KTIP.copy} (Cmd+C)">Copy</button><button data-la="paste"${dis(LCLIP?.type!=="kit")} title="${LCLIP?.type==="kit"?"Paste K"+nn(LCLIP.from)+" "+escH(LCLIP.name)+". ":"Copy a kit first. "}${KTIP.paste} (Cmd+V)">Paste</button>
@@ -7602,7 +7596,7 @@ function patSlot(p){const cur=p===S.pat,q=p===S.queued&&!cur,has=hasPat(p);
  return`<button class="ls ps${has?"":" empty"}${cur?" cur":""}${q?" q":""}" data-ps="${p}" draggable="${has}" aria-selected="${p===LIB.sel}" title="${escH(tip)}"><b>${patName(p)}</b><span>${has?patLen(p)+" · K"+nn(S.patKit[p]):"EMPTY"}</span></button>`}
 function drawPatLib(){const p=LIB.sel,cur=S.pat,dis=c=>c?" disabled":"";
  const rows=[..."ABCDEFGH"].map((b,i)=>`<button class="bank lbank${i===cur>>4?" on":""}" data-lb="${i}" title="Bank ${b} (key ${b})"><i class="led"></i>${b}</button>`+Array.from({length:16},(_,j)=>patSlot(i*16+j)).join("")).join("");
- return`<div class="libhead"><span class="cap">Patterns</span><span class="lcdchip">${patName(cur)} · ${S.len} steps · K${nn(S.patKit[cur])}${S.queued!=null&&S.queued!==cur?" → "+patName(S.queued):""}</span><span class="note">8 banks × 16. ${S.playing?"Playing: a new pattern starts at the pattern end.":"Stopped: a click switches at once."} Factory presets sit in A-D, E-H start empty.</span>${Syx.keys()}<button class="libx" data-la="close" title="Close (Esc)">Esc</button></div>
+ return`<div class="libhead"><span class="cap">Patterns</span><span class="lcdchip">${patName(cur)} · ${S.len} steps · K${nn(S.patKit[cur])}${S.queued!=null&&S.queued!==cur?" → "+patName(S.queued):""}</span><span class="note">8 banks × 16. ${S.playing?"Playing: a new pattern starts at the pattern end.":"Stopped: a click switches at once."} Factory presets sit in A-D, E-H start empty.</span><button class="libx" data-la="close" title="Close (Esc)">Esc</button></div>
  <div class="libacts"><div class="grp"><span class="ilab">Slot ${patName(p)}</span><button data-la="go"${dis(p===cur&&S.queued==null)} title="${PTIP.go} (Enter)">${S.playing?"Queue":"Go"}</button><button data-la="now"${dis(p===cur&&S.queued==null)} title="${PTIP.now}">Now</button>
   <button data-la="copy" title="${PTIP.copy} (Cmd+C)">Copy</button><button data-la="paste"${dis(LCLIP?.type!=="pat")} title="${LCLIP?.type==="pat"?"Paste "+patName(LCLIP.from)+". ":"Copy a pattern first. "}${PTIP.paste} (Cmd+V)">Paste</button><button class="danger" data-la="clear"${dis(!hasPat(p))} title="${PTIP.clear} (Delete)">Clear</button></div></div>
  <div class="libgrid pats" aria-label="128 patterns">${rows}</div>

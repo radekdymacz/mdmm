@@ -105,11 +105,11 @@ The two trig inputs of the machine turn the pulses of a pad into notes. The **Tr
 {gap:MD-175}The card shows these values as they are stored. You cannot change them in the editor yet. They are marked "not verified".{/gap}
 
 ## ALL DATA SYSEX SEND
-<!-- rows: MD-176 @4c32f1 -->
+<!-- rows: MD-176 @6e8617 -->
 
 On the machine you send SysEx to another device. In the editor you write it to a .syx file on your computer.
 
-1. Open the engine menu (the engine name at the left of the LCD) and choose **EXPORT SYSEX…**. Or click **Export SysEx…** in the header of the kit library or the pattern chooser. The **Export SysEx** panel opens.
+1. Open the engine menu (the engine name at the left of the LCD) and choose **EXPORT SYSEX…**. The **Export SysEx** panel opens.
 2. **All** is ticked. The line at the foot says how many kits, patterns, songs and globals the editor holds.
 3. Click **Save .syx…** and choose where to put the file. The name starts as the product name and "backup.syx", in your Documents folder.
 
@@ -155,11 +155,11 @@ NOTE: On the machine a song send takes its patterns and kits with it. In the edi
 The editor writes the kits it holds. A message at the end says how many of each kind went into the file.
 
 ## GENERAL SYSEX RECEIVE
-<!-- rows: MD-181 @f9ab4b -->
+<!-- rows: MD-181 @ee3966 -->
 
 The machine takes SysEx at any time. In the editor you open the file first and choose what to send.
 
-1. Choose **IMPORT SYSEX…** in the engine menu, or click **Import SysEx…** in the header of the kit library or the pattern chooser. Or drop the .syx file on the window. Drag and drop works on macOS only.
+1. Choose **IMPORT SYSEX…** in the engine menu. Or drop the .syx file on the window. Drag and drop works on macOS only.
 2. Choose the file. The **Import SysEx** panel opens. Its header names the model and says "full backup" when the file is one.
 3. Read the tabs: **Kits**, **Patterns**, **Songs**, **Globals** and **Other**. A tab shows the slots of the machine as a grid, and the number of items of that kind in the file. Each tab has a box: tick it to send that kind.
 4. A slot in the grid is marked when it overwrites a slot that holds data on the machine. A slot marked ▶ plays now. Click a slot to leave it out. Click it again to take it back. Click with [⇧] to change a range.

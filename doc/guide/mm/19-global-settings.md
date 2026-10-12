@@ -95,13 +95,13 @@ Bands on the keyboard show the ranges. A key you play shows the pattern it start
 Knob resolution, the velocity curve and the joystick mapping belong to the hardware. The editor has no setting for them.
 
 ## FILE
-<!-- rows: MM-307 MM-308 MM-309 @bf5d76 -->
+<!-- rows: MM-307 MM-308 MM-309 @e1a17c -->
 
 On the machine the FILE menu sends and receives SysEx. In the editor you write a .syx file on your computer, and you open one to send it to the machine.
 
 ### Export
 
-1. Choose **EXPORT SYSEX…** in the engine menu (the engine name at the left of the LCD), or click **Export SysEx…** in the kit library or the pattern chooser. The **Export SysEx** panel opens.
+1. Choose **EXPORT SYSEX…** in the engine menu (the engine name at the left of the LCD). The **Export SysEx** panel opens.
 2. **All** is ticked: every kit, pattern, song and global the editor holds goes into one file, as the machine's ALL.
 3. To choose, untick **All**. Each kind has its row: **Kits**, **Patterns**, **Songs**, **Globals** and **Waveforms**. Tick the kinds you want.
 4. Set the first and the last slot of each kind. Click a value to step it up, [⇧]-click to step it down, or turn the wheel, drag up or down, or use the arrow keys. A kind with data starts from its first to its last used slot.
@@ -111,7 +111,7 @@ NOTE: On the machine KIT, PAT+KIT and SONG+PAT+KIT take the kits and patterns wi
 
 ### Import
 
-1. Choose **IMPORT SYSEX…** in the engine menu, click **Import SysEx…** in the kit library or the pattern chooser, or drop a .syx file on the window (macOS only).
+1. Choose **IMPORT SYSEX…** in the engine menu, or drop a .syx file on the window (macOS only).
 2. The import window previews the file. It has a tab for each kind: Kits, Patterns, Songs, Globals and Other.
 3. A slot grid shows the slots. A click leaves a slot out or takes it in again. Hold [⇧] and click to choose a range.
 4. Click **Import**. The window shows a bar. **Stop** ends the import, **Hide** puts the window away.
