@@ -113,7 +113,7 @@
 <p>In a DAW the machine follows the host's tempo. The Tempo field is marked and does not edit; change the tempo in the DAW.</p>
 <h4 class="gd-h3">Data entry</h4>
 <p>Each parameter is a value box. A box shows the name and the value.</p>
-<ul class="gd-list"><li>Drag a box up or down, or sideways, to change it.</li><li>Hold <kbd class="gd-key">[⇧]</kbd> and drag for fine steps, a quarter as fast.</li><li>Scroll the wheel over a box: one step a notch, ten with <kbd class="gd-key">[⇧]</kbd>.</li><li>Double-click a box to set it to 64, or to 100 for <b class="gd-ui">VOL</b>.</li></ul>
+<ul class="gd-list"><li>Drag a box up or down, or sideways, to change it.</li><li>Hold <kbd class="gd-key">[⇧]</kbd> and drag for fine steps, a quarter as fast.</li><li>Scroll the wheel over a box: one step a notch, ten with <kbd class="gd-key">[⇧]</kbd>.</li><li>Double-click a box to set it to 64, or to 100 for <b class="gd-ui">VOL</b>.</li><li>Hold <kbd class="gd-key">[⌘]</kbd> and click a box to type its value. A field opens over the box. Type the value and press <kbd class="gd-key">[ENTER]</kbd>, or press <kbd class="gd-key">[ESC]</kbd> to leave it as it was. A box that has the focus opens the field with <kbd class="gd-key">[ENTER]</kbd> too.</li></ul>
 <p>On the machine you press a DATA ENTRY knob in to turn it in coarse steps. In the editor the wheel with <kbd class="gd-key">[⇧]</kbd> does the same.</p>
 <h4 class="gd-h3">The three parameter pages</h4>
 <p>The machine shows the synthesis, effects and routing parameters one page at a time. The Sound workspace shows all three at once, in groups. A small word at the right of a group's title names the machine's page that holds its knobs.</p>
@@ -329,6 +329,7 @@
 <p>Machines without a picture, such as MIDI out, show only boxes and a line about what the machine does.</p>
 <figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: A machine's groups"><span>Screenshot to come</span></div><figcaption>A machine's groups</figcaption></figure>
 <p>Hold <kbd class="gd-key">[⌥]</kbd> and drag a value to move the same knob on every track. This is Control All. MIDI and control machines are left out.</p>
+<aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>To set an exact value, hold <kbd class="gd-key">[⌘]</kbd> and click the box, type the value and press <kbd class="gd-key">[ENTER]</kbd>. A box that shows a sign, such as <b class="gd-ui">PAN</b>, takes -64 to +63. A value past the ends is refused: the field turns red and says the range, and stays open until you correct it or press <kbd class="gd-key">[ESC]</kbd>. Each typed value is one undo step.</p></aside>
 </div></section>
 </article>
 <article class="gd-chapter" id="c4" style="page: c4">
@@ -959,6 +960,7 @@
 <p>The map editor says which MIDI note plays what. A note can play a track, start a pattern, or start or stop the machine. The <b class="gd-ui">Map editor</b> card has the sixteen track keys and the controls for the other notes.</p>
 <h4 class="gd-h3">Notes for the tracks</h4>
 <p>Each of the sixteen keys is named TRACK 1 to TRACK 16. It shows the note that plays the track, or -- when the track has none. Click <b class="gd-ui">‹</b> or <b class="gd-ui">›</b> on a key to move the note down or up. Notes are named as C4, C#4 and so on, from 0 to 127.</p>
+<p>When a MIDI keyboard plays a track's note on the base channel, the track's number in the track rail glows for a moment, and so does its light on the Mix workspace. A note on another channel lights nothing.</p>
 <h4 class="gd-h3">Notes for patterns and the transport</h4>
 <ol class="gd-steps"><li>Beside <b class="gd-ui">Map a note</b>, click <b class="gd-ui">‹</b> or <b class="gd-ui">›</b> to choose the note.</li><li>Choose from the menu what the note plays: nothing, a track, a pattern A01 to H16, START or STOP.</li></ol>
 <p>A note plays one thing. If you give it a new job, it leaves the old one. The line beside <b class="gd-ui">Pattern trig</b> lists the notes that play patterns or the transport.</p>

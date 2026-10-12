@@ -1010,6 +1010,7 @@ namespace mdJucePlugin
 	{
 		if(_bypassed)
 		{
+			m_midiHeld.clear();	// I-002: a bypassed plug-in hears no note off
 			m_boot.counters.onBypassed(_frames);
 			m_cpuMeter.onBypassed();
 			return;
@@ -1032,11 +1033,15 @@ namespace mdJucePlugin
 		m_outputMeter.onBlock(_outputs, _frames);
 	}
 
-	// 0.6: a note on from outside, for the page (LEARN, I-002); SysEx and the rest pass by
+	// 0.6: a note on from outside, for the page (LEARN, I-002), and the notes held (the lit keys); SysEx and the rest
+	// pass by
 	void AudioPluginAudioProcessor::midiInReceived(const synthLib::SMidiEvent& _ev)
 	{
 		if(!_ev.sysex.empty())
 			return;
+		// HW MIDI: what comes in is (also) the real machine's own MIDI OUT, never a key held by a player
+		if(!getExternalMidi().isOn())
+			m_midiHeld.onMidi(_ev.a, _ev.b, _ev.c);
 		if(const auto n = midiIn::noteOn(_ev.a, _ev.b, _ev.c))
 			m_midiIn.tryPush(*n);
 	}

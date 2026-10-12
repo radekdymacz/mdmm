@@ -89,6 +89,11 @@ namespace mdJucePlugin
 	// rest: they are hints).
 	elektronData::json::Value midiInOf(const midiIn::Note& _note);
 	constexpr int g_midiInPerStep = 16;
+	// I-002, B-062: the notes held from outside, as the page's {"type":"midiHeld","notes":[{ch, note}...]} (by channel,
+	// low to high; the page lights those on the channels the machine plays): when they changed, looked at every g_midiHeldMs (a burst is one message), and once for a new page.
+	elektronData::json::Value midiHeldOf(const midiIn::Notes& _notes);
+	midiIn::Notes heldMidiNotesOf(AudioPluginAudioProcessor& _processor);
+	constexpr double g_midiHeldMs = 32;
 
 	// P7: whether the machine follows the host's tempo and transport: in a DAW's plug-in only.
 
@@ -419,6 +424,10 @@ namespace mdJucePlugin
 				m_memorySeen = processor().machineMemoryVersion();
 				toPage(machineMemoryOf(processor()));
 			}
+			// I-002, B-062: the notes held from outside, as a state (the Perform keyboard's lit keys; no lock)
+			if(m_desk->pageSeen() && due(t, g_midiHeldMs))
+				if(const auto held = m_midiHeld.next(heldMidiNotesOf(processor())))
+					toPage(midiHeldOf(*held));
 			// I-021: the LCD's output meter and volume (no lock: one atomic swap, mdOutputLevel.h)
 			if(m_desk->pageSeen() && due(t, g_outputLevelMs))
 				toPage(outputLevelOf(processor()));
@@ -468,8 +477,9 @@ namespace mdJucePlugin
 			p.device.nowMs = [] { return sessionNowMs(); };
 			p.toPage = [this](const Value& _m) { toPage(_m); };
 			p.saveSetup = [this](const Value& _setup) { m_setup.save(_setup); };
-			// After the page's ready the plug-in publishes its own document too, and the host's tempo again.
-			p.ready = [this] { m_learn.publish(); m_hostTempo = {}; m_memorySeen = 0; };
+			// After the page's ready the plug-in publishes its own document too, and the host's tempo and the held notes
+			// again, and the machine memory's state.
+			p.ready = [this] { m_learn.publish(); m_hostTempo = {}; m_midiHeld = {}; m_memorySeen = 0; };
 			return p;
 		}
 
@@ -617,6 +627,7 @@ namespace mdJucePlugin
 		bool m_followReady = false;
 		HostTempo m_hostTempo;
 		uint32_t m_memorySeen = 0;	// the machine memory status last published (0: publish again)
+		midiIn::HeldFeed m_midiHeld;
 		SyxWork<DeskT> m_syx;
 	};
 

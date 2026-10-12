@@ -289,6 +289,7 @@ img,svg,canvas{-webkit-user-drag:none}
 /* @include shared/deskTransport.css */
 /* I-021: the output meter and volume at the LCD's right end (skins/shared/deskVolume.js) */
 /* @include shared/deskVolume.css */
+/* @include shared/deskValueEdit.css */
 
 /* Wave 3, the trig types (DESIGN-machine-menus.md §2; mockup-next md-13): Trig · Accent · Swing · Slide in the bar
    under the grid, the lit one is what a click paints; All tracks · This track (EDIT ALL) beside them; swing is a teal
@@ -323,3 +324,6 @@ html[data-tt=acc] #seq .st:not(.on),html[data-tt=swg] #seq .st:not(.on),html[dat
 .mp-aud span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase}
 .mp-audk{display:flex;gap:6px;align-items:center;background:transparent;box-shadow:none;color:var(--ink);font:11px var(--pix);text-transform:uppercase;padding:2px 4px}
 .mp-audk kbd{font:10px var(--pix);border:1px solid var(--ink);border-radius:2px;padding:0 4px}
+/* I-002: a note from a MIDI keyboard played this track (mdDeskTop.js noteLight): its number on the rail glows a moment */
+.th.hit .n{box-shadow:0 0 0 1px var(--led),0 0 6px 1px var(--led)}
+.strip .led.act.hit{background:var(--led);box-shadow:0 0 6px 1px var(--led)}

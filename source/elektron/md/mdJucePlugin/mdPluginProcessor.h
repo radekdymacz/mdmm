@@ -82,6 +82,12 @@ namespace mdJucePlugin
 		// (mdMidiIn.h); taken on the message thread
 		void midiInReceived(const synthLib::SMidiEvent& _ev) override;
 		std::optional<midiIn::Note> takeMidiIn() { midiIn::Note n; if(m_midiIn.tryPop(n)) return n; return {}; }
+		// I-002, B-062: the notes held from outside (any channel), for the session's midiHeld message (mdMidiIn.h)
+		midiIn::Notes heldMidiNotes() const { return m_midiHeld.notes(); }
+		// I-002, B-062: every held note let go (a MIDI input opened, closed or switched; the HW MIDI engine on or off;
+		// released by the host; bypassed: processBlockStarted). A note off that never comes cannot leave a key lit.
+		void midiInputsChanged() override { m_midiHeld.clear(); }
+		void releaseResources() override { m_midiHeld.clear(); }	// the base does nothing here
 		// Tester switch (doc/md_mm_performance_diagnostics.md): run the emulation as before the step 1
 		// speed-ups (md::Device::setSpeedUps). Identical audio, more host CPU. Kept in the plug-in's config.
 		void setLegacyEmulation(bool _legacy);
@@ -212,6 +218,7 @@ namespace mdJucePlugin
 		cpuLoad::Smoother m_cpuSmoother;	// message thread
 		outputLevel::Meter m_outputMeter;
 		midiIn::Queue m_midiIn;
+		midiIn::Held m_midiHeld;
 		uint64_t m_blockStartNs = 0;		// audio thread
 		static uint64_t cpuClockNs();
 		void recordBoot();

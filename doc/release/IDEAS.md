@@ -19,13 +19,16 @@
 - **Sampled 2026-10-11** (pixel averages from product photos; photo white balance varies, so treat as a starting point): SFX-60+ MKII (Vintage King): panel #e9e9e9, key area #ffffff, display window #010101, LCD ground #f2fcfb, LCD pixels #0e1a19, black keys #0a0a0a, white keys #fbf9f7, COPY #e33b21, knobs #010101. SFX-60 and SFX-6 MKI (Vintage Synth Explorer): panel #b2bcbe to #c4c3c3, window #010101 to #323232, LCD ground #b6dde1 to #cfdff0 (light blue), pixels #000000, COPY #f22518, knobs #323d2f (dark green-grey). Ours today (both plates): panel #d4d5d0, LCD #b9c4b0 (grey-green), ink #172014, bezel #0d0f0c, labels #a04d39.
 - **Built on `feat/0.6-skins` (2026-10-12, not merged):** the Monomachine true to the product photos, the plate key chooses the look: MKI light-blue LCD, MKII bluish-white LCD, each with its own panel, keys and label colours. The Machinedrum Editor is unchanged by choice (Radek, after the side-by-side comparison: keep the light MKI with the green LCD and the dark MKII), although its photos show silver with a red LCD on both. Final tokens and the photos they came from: [doc/modern-ux/SKIN-COLOURS.md](../modern-ux/SKIN-COLOURS.md).
 - **Status:** Monomachine skins accepted by Radek; on its own branch, not merged yet.
+- **In the manual review (Radek, 2026-10-12):** the MM MKII panel in 0.6 (`#d2d1cc`) reads as warm grey, not silver. Make it a light cool silver near the photo sample (`#e9e9e9`), fixed while Radek tests the installed 0.6 by hand, without running the automatic tests again for it.
 
 ## I-022 · Type a parameter value
 
 - **From:** Discord tester M, 2026-10-11: "being able to type in specific parameter values", as Monomodule and other software instruments.
 - **Today:** no value box takes typing; double-click resets to the default (MM `mmMockup.js` ~4694, MD `mdDeskGestures.js` ~171).
 - **Idea:** a way to type a value into any parameter (both editors), without losing double-click = default. The gesture to be decided (for example Enter on a focused value, or a modifier + click).
-- **Status:** new, for 0.6.
+- **Chosen (0.6, polish B):** ⌘-click a value box or fader (Ctrl-click off a Mac), or Enter on one that has the focus (Tab to it). A field opens over the box with the value as the box shows it, selected; Enter sets it, Esc or a click elsewhere leaves it. Why: double-click stays the default, a plain click and drag stay the drag, Alt stays Control All and Shift fine, and right-click is out (Radek's rule, and Ctrl-click is a right-click on a Mac). ⌘ on a value had no meaning yet. Enter is the keyboard path to the same field. No new control: the box itself takes the gesture; the field lives only while typing.
+- **What may be typed:** what the box shows. A number takes the nearest value (1200 on a box that shows 1196 or 1210); a signed box takes -64 to +63 with or without the +; a list takes its names in any case (an LFO's wave, a page, OFF), the MM PAN L12 / C / R5 or the number, an MD unit's text ("1/16", "250 ms") or the box's own number. A number past the ends, or a text the box never shows, is refused in the field (red, the range or the names in its tip and a toast) and the field stays open. One edit, its own undo step.
+- **Status:** done in 0.6 (polish B): `skins/shared/deskValueEdit.js` (both editors), deskValueEditTest.js, journeys md-sound-type-value and mm-sound-type-value. The machine-name picker and other menus keep their own lists.
 
 ## I-021 · An output meter and master volume in the LCD (both editors)
 
@@ -166,7 +169,7 @@
 - **From:** Discord tester B, 2026-10-07.
 - **Idea:** a visual sign on the Sound page when a note arrives from a MIDI controller (which track was triggered).
 - **Also:** Discord tester M, 2026-10-11: light the on-screen keyboard's keys for notes played, as Ableton's (the Monomachine's Perform keyboard; B-062 is the stuck light).
-- **Status:** started in 0.6 (wave 5): the plug-in sends each note on from outside to the page (`midiIn`, data-contract.md); the Machinedrum's LEARN reads it. Showing it (a track's light on Sound, the Perform keyboard's keys) is still to do; the design has no place for it yet.
+- **Status:** done in 0.6 (polish B). The plug-in also sends the notes held from outside as a state (`midiHeld`, every 32 ms at most, when they changed; a note off is never lost, all notes off clears), so a burst is one message and a key cannot stay lit. Monomachine: the Perform keyboard lights the keys a MIDI keyboard holds (journey mm-perform-keys-lit; mdMidiInTest, mdSessionNoRomTest). Machinedrum (no keyboard): a note on the base channel that the map gives a track makes that track's number on the rail glow a moment, and its LED on Mix (journey md-sound-note-light); no new control. The MM's Sound page shows no note light yet (its rail has none to glow; a later idea).
 
 ## I-001 · Select steps, copy, paste and duplicate
 

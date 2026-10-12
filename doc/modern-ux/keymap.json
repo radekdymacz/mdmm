@@ -275,6 +275,17 @@
 			"area": "Values"
 		},
 		{
+			"id": "value-type",
+			"scope": "sound mix sampler control",
+			"keys": [
+				"value"
+			],
+			"mod": "cmd",
+			"group": "Values",
+			"does": "Click: type a value, then Enter (Esc: leave it as it was). Enter on a focused value does the same",
+			"area": "Values"
+		},
+		{
 			"id": "tempo-drag",
 			"scope": "any",
 			"keys": [
@@ -1737,6 +1748,17 @@
 			"mod": "",
 			"group": "Values",
 			"does": "Back to its default (64; a list's first entry)",
+			"area": "Values"
+		},
+		{
+			"id": "value-type",
+			"scope": "sound mix perform control",
+			"keys": [
+				"value"
+			],
+			"mod": "cmd",
+			"group": "Values",
+			"does": "Click: type a value, then Enter (Esc: leave it as it was). Enter on a focused value does the same",
 			"area": "Values"
 		},
 		{

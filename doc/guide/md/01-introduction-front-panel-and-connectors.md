@@ -6,7 +6,7 @@ The Machinedrum Editor runs the Elektron Machinedrum firmware (OS 1.63) behind o
 This chapter maps the machine's front panel and rear connectors to the page. Later chapters follow the manual's order and say how to do each job.
 
 ## FRONT PANEL
-<!-- rows: MD-001 MD-002 MD-003 MD-004 MD-005 MD-006 MD-007 MD-008 MD-009 MD-010 MD-011 MD-012 MD-013 MD-014 MD-015 MD-016 MD-017 MD-018 MD-019 MD-020 MD-021 @c277df -->
+<!-- rows: MD-001 MD-002 MD-003 MD-004 MD-005 MD-006 MD-007 MD-008 MD-009 MD-010 MD-011 MD-012 MD-013 MD-014 MD-015 MD-016 MD-017 MD-018 MD-019 MD-020 MD-021 @4c3a02 -->
 
 The page has three parts. The top bar holds the workspace tabs, the LCD and the Undo, Redo, GLOBAL and panel colour keys. The track rail runs down the left side. The workspace fills the rest.
 
@@ -118,6 +118,7 @@ Each parameter is a value box. A box shows the name and the value.
 - Hold {key:value-fine} and drag for fine steps, a quarter as fast.
 - Scroll the wheel over a box: one step a notch, ten with [⇧].
 - Double-click a box to set it to 64, or to 100 for **VOL**.
+- Hold [⌘] and click a box to type its value. A field opens over the box. Type the value and press [ENTER], or press [ESC] to leave it as it was. A box that has the focus opens the field with [ENTER] too.
 
 On the machine you press a DATA ENTRY knob in to turn it in coarse steps. In the editor the wheel with [⇧] does the same.
 
