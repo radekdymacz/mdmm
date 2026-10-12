@@ -31,7 +31,7 @@ machine in the editor's user folder; a session with no project state starts from
 pattern, song, global) writes it; a DAW project still opens with its own memory; a menu item starts from factory memory;
 a setting turns it off. Two instances of one machine: the last save wins (say so in the guide). Branch `feat/0.6-memory`.
 
-**Left from the wave 9 review (small, polish):** switching the rail from MIDI to Synth selects a synth track and so moves POLY (mmMockup.js setSide -> polyFollows; only a person's own track pick should); step recording started on a MIDI track sends t:0 and moves POLY to T1. The ctest entry `mmDeskFirmwareTest` gets no ROM argument (GEARMULATOR_MM_ROM unset) and skips, so tier 2 never runs its default sections (smoke, p4, hw, chain, record, kitlink, reclock): make it `--env` like its siblings and raise its time limit.
+**Polish C and fix/0.6-span-song merged (2026-10-12):** the wave 9 follow-ups, MM firmware tests now run in ctest, B-071 and B-072 fixed. B-071 is also on main: its port waits on `fix/mm-b071-main` for Radek's OK to merge into main.
 
 **Gap triage (Radek, 2026-10-12)** for the partial and missing rows with no plan:
 - Build in 0.6 (wave 12, `feat/0.6-gaps`): MD-033, MD-043, MD-045, MD-099, MD-106, MD-147, MM-083, MM-184, MM-203, MM-201, MM-095, MM-102, MM-271, MM-301.
