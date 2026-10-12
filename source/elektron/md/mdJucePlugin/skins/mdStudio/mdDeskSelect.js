@@ -18,6 +18,7 @@ function syncSel(ghost) {
 	$$("#seq .st").forEach(b => { const t = +b.dataset.t, s = +b.dataset.s; b.classList.toggle("selx", inSel(t, s)); b.classList.toggle("selghost", inSel(t, s, ghost)); });
 	$$("#seq .rul[data-s]").forEach(r => r.classList.toggle("selx", !!S.stepSel && +r.dataset.s >= S.stepSel.from && +r.dataset.s < S.stepSel.to));
 	secLabels();
+	StepSel.moreWake();
 }
 function setSel(x) { S.stepSel = x; syncSel(); }
 function clearSel() { if (!S.stepSel) return; S.stepSel = null; syncSel(); }
@@ -191,7 +192,9 @@ function stepMenu(t, s, x, y) {
 }
 /* the step menu's visible key: ⋯ on the selection's last step shown (shared/deskSelect.js moreKey) */
 StepSel.moreKey({
-	anchor: () => { if (S.ws !== "seq" || !S.stepSel || V.rec) return null; const c = document.querySelectorAll("#seq .st.selx"); return c.length ? c[c.length - 1] : null; },
+	active: () => S.ws === "seq" && !!S.stepSel && !V.rec,
+	cells: () => document.querySelectorAll("#seq .st.selx"),
+	clip: () => document.getElementById("seqscroll"),
 	open: (x, y) => { if (S.stepSel) stepMenu(S.stepSel.t, S.stepSel.from, x, y); }
 });
 document.addEventListener("contextmenu", e => {

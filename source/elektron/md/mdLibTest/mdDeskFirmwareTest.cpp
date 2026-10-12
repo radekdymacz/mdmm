@@ -913,8 +913,8 @@ namespace
 		_rig.run(50);
 		_rig.page("{\"op\":\"trig\",\"p\":" + p + R"(,"t":0,"s":3,"id":46})");
 		check(_rig.lastResult() && !_rig.lastResult()->find("ok")->asBool(), "grid edits wait while recording");
-		_rig.page(R"({"op":"loadUndoKit","force":true,"id":48})");
-		check(_rig.lastResult() && !_rig.lastResult()->find("ok")->asBool() && recording(), "UNDO KIT is refused while recording (its keys would leave the kit list open)");
+		_rig.page(R"({"op":"loadUndoKit","id":848})");
+		check(_rig.lastResult() && !_rig.lastResult()->find("ok")->asBool() && recording(), "UNDO KIT is refused while recording, before any question (its keys would leave the kit list open)");
 		_rig.runUntil(stepIs(12), 3000);
 		_rig.page(R"({"op":"record","id":47})");
 		check(_rig.runUntil([&] { return !recording(); }, 1000), "REC again leaves recording");

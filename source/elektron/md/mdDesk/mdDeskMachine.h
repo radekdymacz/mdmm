@@ -221,6 +221,7 @@ namespace mdDesk
 		deskCore::Outcome cmdSaveKit(const Value&, const Documents&);
 		deskCore::Outcome cmdReloadKit(const Value&, const Documents&);
 		deskCore::Outcome cmdLoadUndoKit(const Value&, const Documents&);
+		std::optional<deskCore::Outcome> undoKitRefused() const;
 		deskCore::Outcome askLoadUndoKit(const Value&, const Documents&);
 		deskCore::Outcome cmdKitLoad(const Value&, const Documents&);
 		deskCore::Outcome cmdKitSaveAs(const Value&, const Documents&);
