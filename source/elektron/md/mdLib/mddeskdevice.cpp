@@ -138,6 +138,7 @@ namespace md
 			t.mutes.store(-1, std::memory_order_relaxed);
 			t.chainActive.store(-1, std::memory_order_relaxed);
 			t.songRow.store(-1, std::memory_order_relaxed);
+			t.songRepeats.store(-1, std::memory_order_relaxed);
 			return;
 		}
 		auto& uc = hardware.getUC();
@@ -154,6 +155,7 @@ namespace md
 		t.step.store(step, std::memory_order_relaxed);
 		t.pattern.store(uc.read8(patternAddress), std::memory_order_relaxed);
 		t.songRow.store(uc.read8(SongPosition::g_rowAddress), std::memory_order_relaxed);
+		t.songRepeats.store(uc.read8(SongPosition::g_repeatsAddress), std::memory_order_relaxed);
 		m_sequencer.update(step, uc.read8(SequencerState::g_stoppedAddress), uc.read8(SequencerState::g_recordLedAddress),
 			_frames);
 		t.playing.store(m_sequencer.playing() ? 1 : 0, std::memory_order_relaxed);

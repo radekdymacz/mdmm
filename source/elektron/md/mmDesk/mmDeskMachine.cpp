@@ -326,6 +326,8 @@ namespace mmDesk
 		t.set("stepAt", cursor >= 0 ? Value(cursor) : Value());
 		const int row = m_songRow.update(m_tel.songRow, m_tel.step, m_playing);
 		t.set("songRow", row >= 0 ? Value(row) : Value());
+		// MM-271: the song's played steps, the EDIT SONG header's bars and beats (while a song plays)
+		t.set("songSteps", row >= 0 && m_tel.songSteps >= 0 ? Value(m_tel.songSteps) : Value());
 		publishTelemetry(std::move(t));
 	}
 

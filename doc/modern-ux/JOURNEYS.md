@@ -302,3 +302,24 @@ Written 2026-10-12 from doc/features/unproved-md.md: each journey names the rows
 | md-seq-lock-budget | MD-137 |
 | md-seq-live-lock | MD-139 |
 | md-limits | MD-207 |
+
+## 0.6 wave 12: the gaps (`feat/0.6-gaps`)
+
+The rows Radek's gap triage (2026-10-12) put in 0.6, each built and proved by a journey of its own; the firmware facts
+under them are doc/modern-ux/PROBES-manual-gaps.md W12. Page tier, 2026-10-12: all pass.
+
+| Journey | Rows |
+|---|---|
+| md-sound-clips | MD-033 |
+| md-lib-undo-kit | MD-043 |
+| md-lib-kit-clear-undo (values checked now) | MD-045 |
+| md-top-stop-queued | MD-099 |
+| md-seq-len-repeats | MD-106 |
+| md-song-repeats-left | MD-147 |
+| mm-lib-undo-kit | MM-102 |
+| mm-seq-clear-step-locks | MM-083, MM-184, MM-203 |
+| mm-seq-lock-current | MM-201 |
+| mm-lib-pattern-kit | MM-095 |
+| mm-song-counter | MM-271 |
+| mm-perform-map-pattern | MM-301 |
+| mm-top-plate (checks the look now) | MM-322 |

@@ -133,7 +133,7 @@
 <p>Click the <b class="gd-ui">Kit</b> field of the LCD to open the kit library. Chapter 3 describes it.</p>
 <p>The machine's song menu is the <b class="gd-ui">Songs</b> column of the Song workspace: load, save, save to another slot with a name, copy, paste, clear and rename. Chapter 9 describes it.</p>
 <h4 class="gd-h3">TRIG keys</h4>
-<p>The steps of the grid are the TRIG keys. Click a step to turn its trig on or off. Right-click a step for its menu.</p>
+<p>The steps of the grid are the TRIG keys. Click a step to turn its trig on or off. Select a step (⌘-click) and click the small ⋯ on it for its menu, or right-click the step.</p>
 <p>The piano keys play the selected track from any workspace: <kbd class="gd-key">[A S D F G H J K L]</kbd> play the white keys C to D. <kbd class="gd-key">[Z]</kbd> or <kbd class="gd-key">[X]</kbd> moves the octave and <kbd class="gd-key">[C]</kbd> or <kbd class="gd-key">[V]</kbd> sets the velocity.</p>
 <h4 class="gd-h3">Pattern pages</h4>
 <p>A pattern of 64 steps has four pages of 16.</p>
@@ -200,7 +200,8 @@
 <p>The machine shows the level of the track as a bar on its screen. The editor shows it on the Mix workspace: the bar inside each strip's <b class="gd-ui">LEV</b> box fills with the track's level. Chapter 1 says how to set it.</p>
 <h4 class="gd-h3">Value boxes</h4>
 <p>Parameters appear as value boxes on the Sound and Mix workspaces. A box shows the parameter name and its value, 0 to 127. A few parameters run from one side to the other, or from cut to boost, and show -64 to +63 with 0 in the middle. They are PAN, EQG, the levels and balances of the RAM recorder, and the gains of the master EQ's CTR machine.</p>
-<p>The editor does not draw the clip that the machine shows between two values that depend on each other.</p>
+<p>When two parameters depend on each other, the machine draws a small clip between their values. The Sound workspace draws the same clip, a small arch over the gap between the two boxes, for example between RAMP and RDEC on TRX-BD and between FLTF, FLTW and FLTQ on every machine. The editor groups the boxes by what they do, so the two boxes of a pair can sit in two groups. Point at a box to see which value it works with.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: Clips between RAMP and RDEC, and between the filter's values"><span>Screenshot to come</span></div><figcaption>Clips between RAMP and RDEC, and between the filter's values</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="layer-edit-and-windows">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.9</span></span></aside>
@@ -266,7 +267,10 @@
 <p>The machine keeps one UNDO KIT: the kit lost to your last load or save.</p>
 <p>The editor has its own undo for slot changes. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> in the kit library to take back a paste, a clear or a rename. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> anywhere to undo your last edit, and <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[Z]</kbd> to redo it.</p>
 <p>To throw away your edits to the current kit, click <b class="gd-ui">Reload</b> in the kit library. It loads the slot again. <b class="gd-ui">Reload</b> is off while the kit is saved.</p>
-<p>The editor does not list the machine's UNDO KIT as a slot, so you cannot load it from the library.</p>
+<p>To get back the kit lost to your last load or save:</p>
+<ol class="gd-steps"><li>Open the kit library: click the <b class="gd-ui">KIT</b> field on the LCD.</li><li>Click <b class="gd-ui">UNDO KIT</b>. The lost kit plays again, with its unsaved edits, and the slot it came from becomes the current kit.</li><li>Click <b class="gd-ui">Save</b> to keep it.</li></ol>
+<p>If the current kit has unsaved edits, the editor asks first: the machine does not keep them when it loads the UNDO KIT.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The editor presses the machine's own keys (KIT, LOAD KIT, the first entry of the list). There is no MIDI message for the UNDO KIT, so with a real Machinedrum over MIDI the button is off: use the machine's kit list.</p></aside>
 </div></section>
 <section class="gd-sec" id="copy-kit">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.16</span></span></aside>
@@ -279,8 +283,7 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.17</span></span></aside>
 <div class="gd-body gd-prose"><h2>CLEAR KIT</h2>
 <ol class="gd-steps"><li>Select a slot in the kit library.</li><li>Click <b class="gd-ui">Clear</b>, or press <kbd class="gd-key">[DELETE]</kbd>.</li></ol>
-<p>The slot is written as an empty kit: every track is GND-EMPTY, all values are neutral and the kit has no name. The slot then reads EMPTY.</p>
-<p>The machine's own clear may leave other values than the editor does.</p>
+<p>The slot is written as the machine's own CLEAR KIT leaves it: every track is GND-EMPTY at the same values (level 100, VOL 127), each track's LFO on its own track, the master effects at their start, and no name. The slot then reads EMPTY. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to get the kit back.</p>
 </div></section>
 <section class="gd-sec" id="kit-assembly">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.17,</span> <span>18</span></span></aside>
@@ -596,7 +599,9 @@
 <ol class="gd-steps"><li>Press <kbd class="gd-key">[5]</kbd> to open the <b class="gd-ui">Song</b> workspace.</li><li>Click <b class="gd-ui">CHAIN</b> over the pattern palette.</li><li>Click a bank letter.</li><li>Click the patterns in the order you want. Each pad shows its number in the chain. After the second pad the machine plays the chain at once. While it plays, the chain starts at the end of the pattern. While it is stopped, <kbd class="gd-key">[PLAY]</kbd> starts at the first pad.</li><li>Click a numbered pad to take it out. <b class="gd-ui">Back</b> takes out the last pad. <b class="gd-ui">Clear</b> ends the chain.</li></ol>
 <p>A chain holds up to 16 patterns of one bank, each pattern once. The palette says which pattern plays now and which comes next. Choosing a pattern ends the chain. Editing the patterns in it does not.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The <b class="gd-ui">Chain</b> pads are disabled, with a reason, when the engine cannot read or set the chain.</p></aside>
-<p>The editor has no key that makes <kbd class="gd-key">[STOP]</kbd> jump to a queued pattern. It relies on the machine doing so when a chain is set.</p>
+<p>A pattern queued while the machine plays starts at once when you stop:</p>
+<ol class="gd-steps"><li>While a pattern plays, choose another one: click <b class="gd-ui">›</b> next to the pattern on the LCD, or a pattern in the pattern chooser. The LCD shows its name, blinking: it is queued.</li><li>Press <kbd class="gd-key">[STOP]</kbd> (click <b class="gd-ui">▶</b> or press <kbd class="gd-key">[SPACE]</kbd>). The machine stops and the queued pattern is the current one.</li><li>Press <kbd class="gd-key">[PLAY]</kbd> to start it from its first step.</li></ol>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>This is the machine's own STOP, which the editor presses for you. With a real Machinedrum over MIDI the editor has no transport.</p></aside>
 </div></section>
 <section class="gd-sec" id="parameter-tweaking">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.37,</span> <span>38</span></span></aside>
@@ -617,7 +622,7 @@
 <ul class="gd-list"><li>Click <b class="gd-light">&lt;LEN&gt;</b> on the second line of the LCD to step through 16, 32, 48 and 64. Click with <kbd class="gd-key">[⇧]</kbd> to step back. You can also drag or scroll on it.</li><li>Hold <kbd class="gd-key">[⌥]</kbd> and click, drag or scroll on <b class="gd-light">&lt;LEN&gt;</b> to set the length inside the total. The field then reads the length and the total, for example 12/16.</li></ul>
 <p>Steps past the length are dimmed in the grid. In CLASSIC the total is 32 at most.</p>
 <p>To double a pattern, click the <b class="gd-light">&lt;LEN&gt;</b> ×2 key. The new half is a copy of the steps and locks of the first half. This is one undo step. The editor refuses a pattern past 64 steps, and past 32 in CLASSIC, and says why.</p>
-<p>The machine copies the first page to the later pages when you make a pattern longer. The editor does not show this. Use <b class="gd-light">&lt;LEN&gt;</b> ×2 to copy the pattern.</p>
+<p>When you make the total longer, the editor does what the machine does: if no track has a trig past the old total, the steps you had repeat into the new ones, with their accents, swings, slides and locks. From 16 to 64 steps the first page fills all four pages. If a track has a trig past the old total, nothing is copied. A message says what was copied. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take it back.</p>
 <h4 class="gd-h3">Speed</h4>
 <p>Click <b class="gd-light">&lt;SPD&gt;</b> to step through the tempo multipliers 1X, 2X, 3/4X and 3/2X. Click with <kbd class="gd-key">[⇧]</kbd> to step back. You can also drag or scroll on it.</p>
 </div></section>
@@ -656,7 +661,7 @@
 <p>To use the selection:</p>
 <ol class="gd-steps"><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>.</li><li>Select the step where the block is to start, on the track where it is to start. A single <kbd class="gd-key">[⌘]</kbd>-click does it.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>. The block lands with its first step on the step you chose.</li></ol>
 <p><kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[X]</kbd> copies and clears. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[D]</kbd> copies the block to the steps right after it; press it again for one more copy. <kbd class="gd-key">[⌘]</kbd>-drag the selection to drop a copy where you let go. <kbd class="gd-key">[ENTER]</kbd> switches the trigs of the selection on, or off when each has one. <kbd class="gd-key">[ESC]</kbd> clears the selection.</p>
-<p>Right-click a step for the step menu. It holds trig, accent, slide, copy, cut, paste, duplicate, clear, and <b class="gd-ui">Fill every 2nd</b> and <b class="gd-ui">Fill every 4th</b> from that step. On a selected step the menu acts on the whole selection.</p>
+<p>Select a step or steps and click the small ⋯ on the selection for the step menu; a right-click on a step opens it too. It holds trig, accent, slide, copy, cut, paste, duplicate, clear, and <b class="gd-ui">Fill every 2nd</b> and <b class="gd-ui">Fill every 4th</b> from that step. On a selected step the menu acts on the whole selection.</p>
 <p>The <b class="gd-light">&lt;COPY&gt;</b>, <b class="gd-light">&lt;CLR&gt;</b> and <b class="gd-light">&lt;PASTE&gt;</b> keys on the LCD do the same as the keys. They are marked when they act on a selection.</p>
 </div></section>
 <section class="gd-sec" id="clear-note-parameter-locks">
@@ -820,7 +825,7 @@
 <p>The line under the chip in the <b class="gd-ui">Songs</b> column gives the length of the song as rows, bars and playing time at the current tempo. The time is an estimate. The LCD shows the same as <b class="gd-light">&lt;ROWS&gt;</b>, <b class="gd-light">&lt;BARS&gt;</b> and <b class="gd-light">&lt;TIME&gt;</b> on the second line of the Song workspace.</p>
 <p>When the host sends a song position, the machine follows it. The editor has no control for this.</p>
 <p>To pause a song, hold <kbd class="gd-key">[⇧]</kbd> and click the Play key, or press <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[SPACE]</kbd>. The song holds its row and step. Click the Play key to go on from there.</p>
-<p>The editor does not show how many turns of a repeat are left.</p>
+<p>A row that repeats shows how many more times it plays, as the machine counts them. The playing row reads +2, +1, then last, and the line over the bank letters ends with 2 more, 1 more or last.</p>
 </div></section>
 <section class="gd-sec" id="navigating-a-song">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.52</span></span></aside>

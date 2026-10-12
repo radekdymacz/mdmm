@@ -80,7 +80,7 @@
 	const view = () => { const v = MmView.derive(docs(), { songEdit, host: hostTempo }); return Overlay.over(Overlay.size() ? MmView.own(v) : v); };
 	/* the view shows the machine: the catalogue (MmConvert's enumerations), the current pattern and the kit that plays */
 	const ready = () => !!catalogue && !!(docs().patterns[cur("pattern")] && kitNow());
-	const last = { record: null, stepAt: -1, ready: false, readyLabel: "", caps: null, modSent: null, note: { g: 0, text: "" }, songRow: -1, hostRefused: "" };
+	const last = { record: null, stepAt: -1, ready: false, readyLabel: "", caps: null, modSent: null, note: { g: 0, text: "" }, songRow: -1, songSteps: -1, hostRefused: "" };
 	let gesture = Bridge.gesture();
 	let modInFlight = 0;	// the id of a modSet command not answered yet
 	let clip = null;	// the page's copy of what the core's clipboard holds (MmView.copied): a paste shows at once
@@ -451,6 +451,7 @@
 			else if (op === "reload") send({ op: "loadKit" }, { onResult: noteOf });
 			else if (op === "load") send({ op: "loadKit", k }, { onResult: noteOf });
 			else if (op === "saveAs") send({ op: "saveKit", k }, { onResult: noteOf });
+			else if (op === "undo") send({ op: "loadUndoKit" }, { onResult: noteOf });
 		},
 		/* the machine's tempo: shown at once (Overlay); the machine document says it from when the core took it
 		   until its memory does (deskCore::FieldExpectation) */
@@ -670,6 +671,9 @@
 			/* 0.3.5: the song row that plays (RAM): the Song page's playhead, without a render */
 			const row = m.songRow ?? -1;
 			if (row !== last.songRow) { last.songRow = row; V().setSongRow(row); }
+			/* MM-271: the song's played steps, the arrangement header's bars and beats */
+			const steps = m.songSteps ?? -1;
+			if (steps !== last.songSteps) { last.songSteps = steps; V().setSongSteps(steps); }
 		}
 		else if (m.type === "host") { hostTempo = m; refresh(); }
 		else if (m.type === "audioRun") Boot.audio(m);

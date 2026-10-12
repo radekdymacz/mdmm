@@ -160,7 +160,7 @@ The machine's song menu is the **Songs** column of the Song workspace: load, sav
 
 ### TRIG keys
 
-The steps of the grid are the TRIG keys. Click a step to turn its trig on or off. Right-click a step for its menu.
+The steps of the grid are the TRIG keys. Click a step to turn its trig on or off. Select a step (⌘-click) and click the small ⋯ on it for its menu, or right-click the step.
 
 The piano keys play the selected track from any workspace: {key:piano-white} play the white keys C to D. {key:octave} moves the octave and {key:velocity} sets the velocity.
 

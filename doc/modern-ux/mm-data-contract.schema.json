@@ -1738,6 +1738,12 @@
               "minimum": 0,
               "maximum": 199,
               "description": "0.3.5: the song row heard (RAM 0x2bdba1, md::MmTelemetry, as it was at PLAY and at the last wrap), null where the engine cannot read it. Meaningful while song.songMode is true and the machine plays."
+            },
+            "songSteps": {
+              "type": ["integer", "null"],
+              "minimum": 0,
+              "maximum": 65535,
+              "description": "0.6 (MM-271): the song's played steps (16ths) since PLAY (RAM 0x2bdf3c, md::MmTelemetry), as the EDIT SONG header counts them: bar steps / 16 + 1, beat steps % 16 / 4 + 1; null with songRow."
             }
           }
         },
@@ -2444,13 +2450,13 @@
               "const": "ask"
             },
             "ask": {
-              "enum": ["loadKit", "reloadKit", "overwriteSlot", "clearSlot", "discardKit", "transportIgnore", "breakChain"]
+              "enum": ["loadKit", "reloadKit", "overwriteSlot", "clearSlot", "discardKit", "transportIgnore", "breakChain", "loadUndoKit"]
             },
             "also": {
               "type": "array",
               "description": "Other questions this one answers too (force answers all of them).",
               "items": {
-                "enum": ["loadKit", "reloadKit", "overwriteSlot", "clearSlot", "discardKit", "transportIgnore", "breakChain"]
+                "enum": ["loadKit", "reloadKit", "overwriteSlot", "clearSlot", "discardKit", "transportIgnore", "breakChain", "loadUndoKit"]
               }
             },
             "message": {
@@ -3558,6 +3564,37 @@
         },
         {
           "type": "object",
+          "description": "core: the kit a pattern plays (its link, MM-095): over the pattern that plays the machine loads that kit at once (measured)",
+          "required": ["op", "p", "v"],
+          "properties": {
+            "op": {
+              "const": "patternKit"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "p": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            },
+            "v": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "description": "core: the tempo multiplier",
           "required": ["op", "p", "v"],
           "properties": {
@@ -3715,6 +3752,52 @@
           "properties": {
             "op": {
               "const": "clearSteps"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "p": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            },
+            "t": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 11
+            },
+            "n": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            },
+            "from": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 63
+            },
+            "to": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 64
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core: the locks of the steps in [from, to) of tracks t to t + n - 1, the notes kept (the machine's CLEAR NOTE LOCKS, MM-083)",
+          "required": ["op", "p", "t", "from", "to"],
+          "properties": {
+            "op": {
+              "const": "clearStepLocks"
             },
             "id": {
               "type": "integer"
@@ -5175,6 +5258,27 @@
               "type": "integer",
               "minimum": 0,
               "maximum": 127
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "machine: KIT > LOAD KIT > UNDO KIT with the panel's keys: the kit last lost to a LOAD KIT or an overwrite plays again, its own slot current, unsaved (MM-102, measured: gapProbesFirmwareTest w12undo)",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "loadUndoKit"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
             }
           },
           "additionalProperties": false

@@ -44,7 +44,7 @@ namespace mdDesk
 		constexpr double g_tweakPageGapMs = KnobRecorder::g_pageGapMs;
 		constexpr double g_coalesceMs = 50;
 		constexpr double g_tweakSelectMs = 100;		// SET STATUS track again if the status did not follow
-		// The device sends one panel packet a block (DeskDevice, 128 at most queued): a turn waits while more
+		// The device sends one panel packet a block (DeskDevice, 512 at most queued): a turn waits while more
 		// than this are on their way, and sends at most this many steps.
 		constexpr int g_tweakMaxPending = 4;
 		constexpr int g_tweakMaxSteps = 16;
@@ -140,6 +140,7 @@ namespace mdDesk
 
 		// Why the panel-key features are not here (the capabilities' reasons and the refusals).
 		constexpr const char* g_noLiveRecordKeys = "Live recording needs the machine's panel keys; this engine has none.";
+		constexpr const char* g_noUndoKitKeys = "The UNDO KIT has no MIDI message: on the machine, KIT > LOAD KIT, the first entry (00 UNDO KIT).";
 		constexpr const char* g_noLiveRecordTelemetry = "Live recording needs the machine's sequencer telemetry (MD OS 1.63).";
 		constexpr const char* g_noChains = "Chaining is made with the machine's keys: it needs the local emulated MD OS 1.63";
 
@@ -725,7 +726,7 @@ namespace mdDesk
 	{
 		static const std::map<std::string, Handler> map{
 			{"load", &MdMachine::cmdLoad}, {"select", &MdMachine::cmdSelect}, {"saveKit", &MdMachine::cmdSaveKit},
-			{"reloadKit", &MdMachine::cmdReloadKit}, {"kitLoad", &MdMachine::cmdKitLoad}, {"kitSaveAs", &MdMachine::cmdKitSaveAs},
+			{"reloadKit", &MdMachine::cmdReloadKit}, {"kitLoad", &MdMachine::cmdKitLoad}, {"kitSaveAs", &MdMachine::cmdKitSaveAs}, {"loadUndoKit", &MdMachine::cmdLoadUndoKit},
 			{"record", &MdMachine::cmdRecord}, {"liveErase", &MdMachine::cmdLiveErase}, {"recTrig", &MdMachine::cmdRecTrig}, {"noteOn", &MdMachine::cmdNoteOn}, {"noteOff", &MdMachine::cmdNoteOff}, {"chain", &MdMachine::cmdChain},
 			{"chainClear", &MdMachine::cmdChainClear}, {"globalSlot", &MdMachine::cmdGlobalSlot},
 			{"selectSong", &MdMachine::cmdSelectSong}, {"reloadSong", &MdMachine::cmdReloadSong}, {"saveSong", &MdMachine::cmdSaveSong},
@@ -757,7 +758,7 @@ namespace mdDesk
 	const std::map<std::string, MdMachine::Handler>& MdMachine::askers()
 	{
 		static const std::map<std::string, Handler> map{{"select", &MdMachine::askSelect}, {"kitLoad", &MdMachine::askKitLoad},
-			{"reloadKit", &MdMachine::askReloadKit}, {"kitSaveAs", &MdMachine::askKitSaveAs}, {"saveSong", &MdMachine::askSaveSong}};
+			{"reloadKit", &MdMachine::askReloadKit}, {"kitSaveAs", &MdMachine::askKitSaveAs}, {"loadUndoKit", &MdMachine::askLoadUndoKit}, {"saveSong", &MdMachine::askSaveSong}};
 		return map;
 	}
 
@@ -940,6 +941,55 @@ namespace mdDesk
 		const auto slot = static_cast<uint8_t>(*intOf(_m, "k"));
 		m_session.loadKit(slot);
 		return kitSwitchedBy(slot, true);
+	}
+
+	// MD-043: the UNDO KIT, the first entry of the machine's kit list, through the panel's keys (there is no SysEx for
+	// it; LOAD KIT 64-127 is ignored). Measured (gapProbesFirmwareTest w12undo): the kit last lost to a LOAD KIT or an
+	// overwrite plays again, unsaved, and its own slot becomes current; the edits of the kit that played are not kept
+	// (the UNDO KIT stays as it was). The list opens on the current kit: k + 1 times UP reaches the UNDO KIT. Memory
+	// then shows the kit number and the kit (takeWorkingKit asks the status), as for a load on the panel.
+	// What stops the UNDO KIT route before it starts: refused before the question is asked, and again when it runs
+	std::optional<Outcome> MdMachine::undoKitRefused() const
+	{
+		if(!panelKeys())
+			return refuse(g_noUndoKitKeys);
+		if(!currentKit())
+			return refuse("The kit that plays is not known yet");
+		// the route starts on the main screen: not while recording, nor while other panel keys are on their way
+		if(m_telemetry.recording || m_telemetry.gridEdit)
+			return refuse("Not while recording: stop recording first, then load the UNDO KIT");
+		if(m_telemetry.panelPending > 0 || !m_keys.waiting.empty())
+			return refuse("The machine's panel is busy: try again in a moment");
+		return std::nullopt;
+	}
+
+	Outcome MdMachine::askLoadUndoKit(const Value&, const Documents& _view)
+	{
+		if(auto no = undoKitRefused())
+			return *no;
+		if(kitState(_view) != deskCore::KitState::Edited)
+			return ok();
+		const auto kit = currentKit();
+		return ask("loadUndoKit", "<b>" + (kit ? kitLabel(_view, *kit) : std::string("The kit that plays")) + "</b> has unsaved changes. Load the"
+			" UNDO KIT? The machine does not keep these edits: they are lost.", "Load the UNDO KIT", kitDetails(kit));
+	}
+
+	Outcome MdMachine::cmdLoadUndoKit(const Value&, const Documents& _view)
+	{
+		if(auto no = undoKitRefused())
+			return *no;
+		const auto kit = currentKit();
+		restore(m_working.held.releaseAll(), _view);
+		bool pressed = pressKey("kit") && pressKey("enter");
+		for(int i = 0; pressed && i <= *kit; ++i)
+			pressed = pressKey("up");
+		pressed = pressed && pressKey("enter");
+		if(!pressed)
+		{
+			pressKey("exit");	// out of the kit list, if the keys stopped in it
+			return refuse("The panel did not take the keys");
+		}
+		return ok("UNDO KIT loaded: the kit it came from is current again, unsaved. Save it to keep it");
 	}
 
 	Outcome MdMachine::cmdKitSaveAs(const Value& _m, const Documents& _view)
@@ -1870,6 +1920,7 @@ namespace mdDesk
 		}
 		m_telemetrySeen = true;
 		m_songRowHeard = m_songRow.update(_t.songRow, _t.step, _t.playing);
+		m_songRepeatsHeard = m_songRepeats.update(_t.songRepeats, _t.step, _t.playing);
 		// The keys' fact: the device reports them pending, then none left.
 		m_keys.onPending(_t.panelPending);
 		if(!e.any)
@@ -1916,6 +1967,8 @@ namespace mdDesk
 		t.set("recording", _t.recording);
 		t.set("valid", _t.valid);
 		t.set("songRow", m_songRowHeard >= 0 ? Value(m_songRowHeard) : Value());
+		// MD-147: the row's passes still to come, read with the row (at PLAY and at each wrap, as the row)
+		t.set("songRepeats", m_songRowHeard >= 0 && m_songRepeatsHeard >= 0 ? Value(m_songRepeatsHeard) : Value());
 		publishTelemetry(std::move(t));
 		return e;
 	}

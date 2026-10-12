@@ -38,7 +38,7 @@ Each slot shows its number, its name and its rows. An empty slot reads EMPTY and
 NOTE: The machine loads a song only while it is stopped. While it plays, **Load** is greyed out.
 
 ## PLAYING A SONG
-<!-- rows: MD-145 MD-147 MD-160 MD-161 @193495 -->
+<!-- rows: MD-145 MD-147 MD-160 MD-161 @eb1167 -->
 
 In song mode the machine plays the song from the first row, row by row, to the END row.
 
@@ -59,7 +59,7 @@ When the host sends a song position, the machine follows it. The editor has no c
 
 To pause a song, hold [⇧] and click the Play key, or press {key:pause}. The song holds its row and step. Click the Play key to go on from there.
 
-{gap:MD-147}The editor does not show how many turns of a repeat are left.{/gap}
+A row that repeats shows how many more times it plays, as the machine counts them. The playing row reads +2, +1, then last, and the line over the bank letters ends with 2 more, 1 more or last.
 
 ## NAVIGATING A SONG
 <!-- rows: MD-146 @12c625 -->
