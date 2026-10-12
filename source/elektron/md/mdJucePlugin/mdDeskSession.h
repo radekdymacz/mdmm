@@ -3,7 +3,7 @@
 #include "mdMidiIn.h"
 #include "mdMidiLearnCommands.h"
 #include "mdPageSpec.h"
-#include "mdSyxSession.h"
+#include "mdSyxWork.h"
 
 #include "deskCore/deskCapabilities.h"
 #include "deskCore/deskCommands.h"
@@ -86,10 +86,6 @@ namespace mdJucePlugin
 	elektronData::json::Value midiInOf(const midiIn::Note& _note);
 	constexpr int g_midiInPerStep = 16;
 
-	// P7: a model's SysEx import traits (mdSessionMd.cpp, mdSessionMm.cpp): the documents' type, the
-	// file's and the desk's documents, one document as the contract's JSON, and what may be imported.
-	template<typename DeskT> struct SyxTraits;
-
 	// P7: whether the machine follows the host's tempo and transport: in a DAW's plug-in only.
 
 	// Due on the session's first step, then once every _periodMs (_tick counts steps from 1).
@@ -147,10 +143,11 @@ namespace mdJucePlugin
 		// the ROM folder (never over another file), and the machine started again with it. The page hears
 		// {"type":"romInstall", ok, text}. Nothing leaves this computer.
 		void installRom(const juce::File& _file);
-		// P7: a .syx the user chose or dropped: its preview for the page (syxPreview); and every document
-		// the editor holds written to a .syx (syxExport). The model's session does both.
+		// P7: a .syx the user chose or dropped: its preview for the page (syxPreview); and the documents the
+		// editor holds written to a .syx (syxExport; 0.6: _request is the page's syxExport command, its kinds and
+		// ranges, the Monomachine's waveforms read from the machine first). The model's session does both.
 		virtual void openSyx(const juce::File& _file) = 0;
-		virtual void exportSyx(const juce::File& _file) = 0;
+		virtual void exportSyx(const juce::File& _file, const elektronData::json::Value& _request) = 0;
 		// P9: a sample file (WAV, AIFF) the user chose for UW ROM slot _slot. The Machinedrum's session
 		// sends it (sampleLoad messages follow); a model without a sampler ignores it.
 		virtual void loadSampleFile(uint8_t _slot, const juce::File& _file) { (void)_slot; (void)_file; }
@@ -323,6 +320,10 @@ namespace mdJucePlugin
 				reply(_message, false, errors.front());
 				return;
 			}
+			// 0.6 (wave 6): the SysEx rows the session runs (mdSyxWork.h); a factory reset is the model's
+			if(m_syx.handle(*m_desk, _message, [this](const Value& _m, const bool _ok, const std::string& _n) { reply(_m, _ok, _n); },
+				[this](const Value& _m) { toPage(_m); }))
+				return;
 			switch(row->handler.action)
 			{
 			case Action::Engine: setEngine(_message); break;
@@ -330,8 +331,7 @@ namespace mdJucePlugin
 			case Action::RevealRomFolder: revealRomFolder(_message); break;
 			case Action::RomInfo: romInfo(_message); break;
 			case Action::RemoveRom: removeRom(_message); break;
-			case Action::SyxImport: syxImport(_message); break;
-			case Action::SyxCancel: m_syx.cancel(); toPage(m_syx.progress()); reply(_message, true, "Import stopped."); break;
+			case Action::MachineReset: machineReset(_message); break;
 			case Action::Midi: onMidi(_message); break;
 			case Action::OutputGain:
 				// the next outputLevel message (within g_outputLevelMs) brings the gain back to the page
@@ -366,10 +366,10 @@ namespace mdJucePlugin
 			// input, then each document is read back (mdSyxSession.h)
 			if(m_syx.running() && m_desk->lifecycle() == deskCore::Lifecycle::Ready)
 			{
-				if(auto p = m_syx.step(m_desk->machine(), sessionNowMs(), m_record->profile.wire))
-					toPage(*p);
+				m_syx.step(*m_desk, sessionNowMs(), m_record->profile.wire, [this](const Value& _m) { toPage(_m); });
 				m_desk->flush();
 			}
+			stepModel();
 			// B-030: at once when the machine becomes ready (not up to 2 s later), then on the cadence. A refusal is a
 			// result (op followHost) the page shows and logs.
 			const bool ready = m_desk->lifecycle() == deskCore::Lifecycle::Ready;
@@ -429,6 +429,11 @@ namespace mdJucePlugin
 
 	protected:
 		virtual void onMidi(const Value& _message) { reply(_message, false, "midi: this editor's page has no keyboard"); }
+		// machineReset {how} that SyxWork does not run (the Machinedrum's factory reset): the model's
+		virtual void machineReset(const Value& _message) { reply(_message, false, "This machine has no such reset in the editor."); }
+		// The model's own step work (the factory data being prepared).
+		virtual void stepModel() {}
+		SyxWork<DeskT>& syx() { return m_syx; }
 		virtual const char* missingText() const = 0;
 		EngineT& currentEngine() { return *m_engine; }
 		void onDetach() override { m_desk->detachPage(); }
@@ -518,8 +523,6 @@ namespace mdJucePlugin
 			reply(_message, true, "Engine: " + record->profile.label);
 		}
 
-		using Syx = SyxTraits<DeskT>;
-
 		void openSyx(const juce::File& _file) override
 		{
 			juce::MemoryBlock mb;
@@ -532,39 +535,40 @@ namespace mdJucePlugin
 				return;
 			}
 			const auto* d = static_cast<const uint8_t*>(mb.getData());
-			toPage(m_syx.open(std::vector<uint8_t>(d, d + mb.getSize()), _file.getFileName().toStdString(), Syx::machine(*m_desk),
-				Syx::playing(*m_desk)));
+			toPage(m_syx.open(*m_desk, std::vector<uint8_t>(d, d + mb.getSize()), _file.getFileName().toStdString()));
 		}
 
-		void syxImport(const Value& _message)
+		// 0.6: the kinds and ranges the page asked for (none: every document the editor holds); the Monomachine's
+		// waveforms are read from the machine first, then the file is written.
+		void exportSyx(const juce::File& _file, const Value& _request) override
 		{
-			const auto strings = [&_message](const char* _key)
+			using Work = SyxWork<DeskT>;
+			const auto r = Work::exportRequest(_request);
+			const auto write = [this, _file, all = r.all](const std::vector<uint8_t>& _bytes, const std::string& _words)
 			{
-				std::vector<std::string> out;
-				if(const auto* k = _message.find(_key); k && k->isArray())
-					for(const auto& v : k->asArray())
-						if(v.isString())
-							out.push_back(v.asString());
-				return out;
+				Value m = Value::object();
+				m.set("type", "syxExport");
+				const bool ok = !_bytes.empty() && _file.replaceWithData(_bytes.data(), _bytes.size());
+				m.set("ok", ok);
+				m.set("running", false);
+				m.set("text", ok ? "Wrote " + _file.getFileName().toStdString() + " (" + std::to_string(_bytes.size()) + " bytes): "
+					+ (all ? "every document the editor holds (" + _words + ")." : _words + ".")
+					: _bytes.empty() ? "Nothing to write: the editor holds none of what was chosen." : "The .syx could not be written.");
+				toPage(m);
 			};
-			const auto kinds = strings("kinds");
-			const auto skip = strings("skip");
-			// B-019: the file's messages as they are; no undo step (the machine decides, the editor reads back)
-			const auto why = m_syx.start(kinds, std::set<std::string>(skip.begin(), skip.end()), Syx::machine(*m_desk));
-			reply(_message, why.empty(), why);
-			toPage(m_syx.progress());
-		}
-
-		void exportSyx(const juce::File& _file) override
-		{
-			const auto bytes = elektronData::writeSyx(Syx::machine(*m_desk));
-			Value m = Value::object();
-			m.set("type", "syxExport");
-			const bool ok = !bytes.empty() && _file.replaceWithData(bytes.data(), bytes.size());
-			m.set("ok", ok);
-			m.set("text", ok ? "Wrote " + _file.getFileName().toStdString() + " (" + std::to_string(bytes.size()) + " bytes): every document the editor holds."
-				: "The .syx could not be written.");
-			toPage(m);
+			if(r.waves)
+			{
+				if(!m_syx.exportStart(*m_desk, r, write))
+				{
+					Value m = Value::object();
+					m.set("type", "syxExport");
+					m.set("ok", false);
+					m.set("text", "An import or export is running: try again when it is done.");
+					toPage(m);
+				}
+				return;
+			}
+			write(Work::exportBytes(*m_desk, r), Work::exportWords(*m_desk, r));
 		}
 
 		void recheckFirmware(const Value& _message)
@@ -591,7 +595,7 @@ namespace mdJucePlugin
 		const bool m_followHost;
 		bool m_followReady = false;
 		HostTempo m_hostTempo;
-		SyxJob<SyxTraits<DeskT>> m_syx;
+		SyxWork<DeskT> m_syx;
 	};
 
 	// The machine's own screen while it starts, as the page's LCD (both models): every g_lcdMs, only

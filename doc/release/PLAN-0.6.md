@@ -18,14 +18,13 @@ agents at once; Radek tests the whole release at the end from doc/release/TEST-0
 markers: resolve, grep for `<<<<<<<`, then commit, as separate steps.
 
 **Merged into `feat/0.6-features`** (each reviewed, tier 2 green): wave P (probes, doc/modern-ux/PROBES-manual-gaps.md,
-B-069), wave 1 song slots, wave 2 transport, wave 3 trig types and marks, wave 4 copy / paste / clear what, wave 5 GLOBAL page (2026-10-12, review fixes 4bcacdd4e), the top-bar
+B-069), wave 1 song slots, wave 2 transport, wave 3 trig types and marks, wave 4 copy / paste / clear what, wave 5 GLOBAL page (2026-10-12, review fixes 4bcacdd4e), wave 6 SysEx and reset (2026-10-12; Import/Export in the engine menu only, Radek), the top-bar
 and LCD fit (B-061, B-065, B-066), the volume-strip fix; the feature data, journey links and guide (slices 1-4).
 
 **Pushed, not merged** (each its own worktree under `audio/gearmulator-md-mm-wt/`):
 
 | Branch | State | Next step |
 |---|---|---|
-| `feat/0.6-sysex` (wave 6) | core committed (c118e4fa7); page, journeys and mock-up in one unchecked WIP commit (d880b0c67) | finish the page and MD journeys, rows, guide; tier 1 and 2; review; merge |
 | `feat/0.6-recording` (wave 7) | probes, MD live erase, MM step recording and live erase in the core, firmware tests, stub host; `feat/0.6-features` merged in; step 0 (tier 1 on the combined base after waves 2 + 4, 2026-10-12): green in 231 s (125 unit tests, the page journeys of both editors, one golden per machine); page part, journeys, rows, guide and TEST-0.6.md done | review, merge |
 
 **Wave 11 (added 2026-10-12, I-024):** machine memory that stays for every new session, way A: one memory file per
@@ -43,9 +42,9 @@ doc/guide/OPEN-FACTS.md, then `scripts/mdmm-full-gate.sh` on a quiet Mac and `re
 **Known flaky under parallel load** (pass alone): md-boot-card, md-song-mode, mm-top-pattern-next, the MD intent cases
 when several worktrees run firmware tests at once. Look at shared state between worktrees before the release gate.
 
-**Radek's choices (2026-10-12):** (1) skins true to the product photos on both editors (MD silver with a red LCD; MM MKI
-light-blue LCD, MKII bluish-white), built on their own branch `feat/0.6-skins` and compared side by side with the
-current skins before any merge; (2) no Discord reply for now; (3) wave 5 keeps the name **Clear**.
+**Open choices for Radek:** (1) skins true to the product photos on both editors (MD silver with a red LCD; MM MKI
+light-blue LCD, MKII bluish-white) or only the MM (wave 10); (2) the Discord reply to the 2026-10-11 tester report is
+drafted in the session, not posted; (3) Clear vs Reset to defaults (wave 5).
 
 ## Execution (started 2026-10-11, after 0.5.1 and the dev-cycle work)
 
