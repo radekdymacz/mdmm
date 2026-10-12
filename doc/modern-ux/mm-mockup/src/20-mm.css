@@ -9,13 +9,14 @@
    and knobs, rust label bars. MKII (SFX-6 / SFX-60+ MKII): warm silver, near-black window, bluish-white LCD with
    black pixels, black keys and knobs, white keys, dusty red-brown label bars, red print. Both are light plates.
    Review 1 (Radek, 2026-10-12): both plates take the panel greys of the Machinedrum's MKI light plate (--plate,
-   --plate2, --plate3); the LCDs, keys and label colours stay each plate's own. */
+   --plate2, --plate3) and its grey for the screens (--scr: the piano roll, the lock lane, the Sound and Perform
+   screens, the arp, routing and song grounds); the top bar's LCD, keys and label colours stay each plate's own. */
 :root,:root[data-plate="mk1"]{
   color-scheme:light;
   --plate:#d9dad6;--plate2:#cdcec9;--plate3:#e5e6e2;--print:#2e3232;--print2:#4f5554;--print3:#6d7372;--rule:#a2a8ab;--body:#232727;
   --key:#232b28;--key2:#323c38;--keytext:#eef0ee;--keydim:#a9b1ae;--cream:#e4e6e6;--creamtext:#232727;
   --led:#f0331f;--ledoff:#7b4035;--ledg:#9fc568;--ledgoff:#56604b;--ledy:#e4c45c;--rec:#e8301e;
-  --lcd:#b6d2e8;--ink:#0d1626;--bezel:#060707;--labfill:#9a3820;--labtext:#f3eee9;--knob:#323d31;--rust:#9a3820;
+  --lcd:#b6d2e8;--scr:#cdcec9;--ink:#0d1626;--bezel:#060707;--labfill:#9a3820;--labtext:#f3eee9;--knob:#323d31;--rust:#9a3820;
   --trig:var(--led);--oxblood:var(--rust);
 }
 :root[data-plate="mk2"]{
@@ -23,7 +24,7 @@
   --plate:#d9dad6;--plate2:#cdcec9;--plate3:#e5e6e2;--print:#3b3a3c;--print2:#5a585a;--print3:#787577;--rule:#a8a6a1;--body:#262527;
   --key:#1a1c22;--key2:#2a2d35;--keytext:#efeee8;--keydim:#a7a8ad;--cream:#ecebe4;--creamtext:#262527;
   --led:#ff3b2f;--ledoff:#7a6e66;--ledg:#7fd13b;--ledgoff:#5d6656;--ledy:#e4c45c;--rec:#e2452a;
-  --lcd:#dfeaf1;--ink:#121b28;--bezel:#1c1a1d;--labfill:#84434d;--labtext:#f6eff0;--knob:#141416;--rust:#b8433d;
+  --lcd:#dfeaf1;--scr:#cdcec9;--ink:#121b28;--bezel:#1c1a1d;--labfill:#84434d;--labtext:#f6eff0;--knob:#141416;--rust:#b8433d;
   --trig:var(--led);--oxblood:var(--rust);
 }
 html{scrollbar-gutter:stable}

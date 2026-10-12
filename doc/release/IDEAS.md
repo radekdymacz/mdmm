@@ -20,7 +20,7 @@
 - **Built on `feat/0.6-skins` (2026-10-12, not merged):** the Monomachine true to the product photos, the plate key chooses the look: MKI light-blue LCD, MKII bluish-white LCD, each with its own panel, keys and label colours. The Machinedrum Editor is unchanged by choice (Radek, after the side-by-side comparison: keep the light MKI with the green LCD and the dark MKII), although its photos show silver with a red LCD on both. Final tokens and the photos they came from: [doc/modern-ux/SKIN-COLOURS.md](../modern-ux/SKIN-COLOURS.md).
 - **Status:** Monomachine skins accepted by Radek; on its own branch, not merged yet.
 - **In the manual review (Radek, 2026-10-12):** the MM MKII panel in 0.6 (`#d2d1cc`) reads as warm grey, not silver. Make it a light cool silver near the photo sample (`#e9e9e9`), fixed while Radek tests the installed 0.6 by hand, without running the automatic tests again for it.
-- **Review 1 (Radek, 2026-10-12):** instead, both MM plates take the grey of the Machinedrum's MKI light plate (`--plate` #d9dad6, `--plate2` #cdcec9, `--plate3` #e5e6e2); the MM LCD colours stay (MKI light blue, MKII bluish white). Built on `fix/0.6-review-1` (journey `mm-plate-greys`; SKIN-COLOURS.md).
+- **Review 1 (Radek, 2026-10-12):** instead, both MM plates take the grey of the Machinedrum's MKI light plate (`--plate` #d9dad6, `--plate2` #cdcec9, `--plate3` #e5e6e2); the big screens (piano roll, lock lane, Sound and Perform plots) take the same grey (`--scr` #cdcec9) instead of the LCD colour; the top bar's LCD keeps the MM colours (MKI light blue, MKII bluish white). Built on `fix/0.6-review-1` (journey `mm-plate-greys`; SKIN-COLOURS.md).
 
 ## I-022 · Type a parameter value
 
