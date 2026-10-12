@@ -33,7 +33,7 @@ Every lock of the parameter shows as a bar, so you can read the values of a step
 - Hold [⌥] and drag across the bars to remove the locks of that parameter on the steps you cross.
 - Click the bin in the lane header to remove all the locks of the parameter.
 - Hold [⌥] and click the bin to remove every lock of the track.
-- Right-click a step and choose **Clear locks (keep the notes)** to remove all the locks of the step, or of the selected steps. The note stays.
+- Select a step or steps, click the small ⋯ on the selection (or right-click a step) and choose **Clear locks (keep the notes)** to remove all the locks of the step, or of the selected steps. The note stays.
 - Select a step and press {key:delete} to clear the step whole, with its note.
 
 ### Lock the current value

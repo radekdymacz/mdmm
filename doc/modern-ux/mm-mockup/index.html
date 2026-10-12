@@ -4082,7 +4082,7 @@ const StepSel = (() => {
 		Keys.bind({ id: "step-select", scope: "seq", area, keys: ["step"], mod: "cmd", group: "Sequence", does: does("step-select", "Click: select the step (⌘V pastes there). Drag: select steps × tracks. Drag the selection: a copy where you let go") });
 		Keys.bind({ id: "step-extend", scope: "seq", area, keys: ["step"], mod: "cmd+shift", group: "Sequence", does: does("step-extend", "Click: extend the selection to the step") });
 		Keys.bind({ id: "ruler-select", scope: "seq", area, keys: ["step ruler"], group: "Sequence", does: does("ruler-select", "Click or drag: select steps of the selected track (down over the grid: more tracks); ⇧-click extends") });
-		Keys.bind({ id: "step-menu", scope: "seq", area, keys: ["right-click a step"], group: "Sequence", does: does("step-menu", "The step menu: trig, accent, slide, copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (Ctrl-click on a Mac; the Menu key on a focused step)") });
+		Keys.bind({ id: "step-menu", scope: "seq", area, keys: ["right-click a step"], group: "Sequence", does: does("step-menu", "The step menu: trig, accent, slide, copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (the ⋯ on the selection; Ctrl-click on a Mac; the Menu key on a focused step)") });
 	}
 
 	/* the words of an entry's key (a pointer gesture's: "⌘⇧-click") */
@@ -4107,7 +4107,38 @@ const StepSel = (() => {
 	/* the menu's title: the step, or the selection */
 	const menuTitle = (x, t, s, name) => one(x) ? `${name(t, 1).replace(/^./, c => c.toUpperCase())}, step ${s + 1}` : `Selected: ${say(x, name)}`;
 
-	return { between, inside, shown, extend, landing, moved, grown, say, one, start, dropAt, during, end, bind, keyOf, menuItems, menuTitle };
+	/* ---- the step menu's visible key (Radek, 2026-10-12: nothing only behind a right-click): a small ⋯ on the
+	   selection's last step shown; a click opens the same step menu, right-click stays a shortcut. It floats over the
+	   step (no row of its own, the layout stays) and follows it each frame. o: {anchor(): the element it sits on, or
+	   null to hide it; open(x, y): the step menu at that point} ---- */
+	function moreKey(o) {
+		if (typeof document === "undefined") return null;
+		let b = document.getElementById("stepmore");
+		if (!b) {
+			b = document.createElement("button");
+			b.id = "stepmore"; b.type = "button"; b.textContent = "⋯"; b.hidden = true;
+			b.title = "The step menu: marks, copy, paste, clear, locks, fills (also right-click a step)";
+			b.setAttribute("aria-label", "Step menu");
+			b.style.cssText = "position:fixed;z-index:40;width:18px;height:14px;padding:0;line-height:10px;font-size:13px;border-radius:3px;cursor:pointer;"
+				+ "border:1px solid var(--keydim,#777);background:var(--key,#333);color:var(--ink,#eee)";
+			for (const ev of ["pointerdown", "mousedown"]) b.addEventListener(ev, e => e.stopPropagation());
+			b.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); const r = b.getBoundingClientRect(); b._open?.(r.left, r.bottom + 2); });
+			document.body.appendChild(b);
+		}
+		b._open = o.open; b._anchor = o.anchor;
+		if (!b._raf) {
+			const tick = () => {
+				const a = b._anchor?.(), r = a?.getBoundingClientRect?.();
+				if (!r || !r.width) { if (!b.hidden) b.hidden = true; }
+				else { b.hidden = false; b.style.left = Math.round(r.right - 16) + "px"; b.style.top = Math.round(r.top - 7) + "px"; }
+				b._raf = requestAnimationFrame(tick);
+			};
+			b._raf = requestAnimationFrame(tick);
+		}
+		return b;
+	}
+
+	return { between, inside, shown, extend, landing, moved, grown, say, one, start, dropAt, during, end, bind, keyOf, menuItems, menuTitle, moreKey };
 })();
 if (typeof module !== "undefined") module.exports = StepSel;
 "use strict";
@@ -6626,6 +6657,9 @@ function stepMenuItems(t,s,pitch){const x=S.stepSel,st=trk(t).steps[s],one=StepS
  return items}
 function stepMenu(t,s,pitch,x,y){if(!inSel(t,s))setSel({t,n:1,from:s,to:s+1});
  DeskMenu.open(stepMenuItems(t,s,pitch),x,y,{title:StepSel.menuTitle(S.stepSel,t,s,selName)})}
+/* the step menu's visible key: ⋯ on the selection's last step shown, over the ruler (shared/deskSelect.js moreKey) */
+StepSel.moreKey({anchor:()=>{if(S.ws!=="seq"||!S.stepSel||S.rec)return null;const c=document.querySelectorAll("#seq .ruler .rul.selx");return c.length?c[c.length-1]:null},
+ open:(x,y)=>{if(S.stepSel)stepMenu(S.stepSel.t,S.stepSel.from,undefined,x,y)}});
 document.addEventListener("contextmenu",e=>{if(S.ws!=="seq"||!e.target.closest?.("#seq"))return;const c=selCellOf(e);if(!c||c.ruler)return;
  e.preventDefault();if(S.rec){toast("Wait until live recording stops.");return}stepMenu(c.t,c.s,c.pitch,e.clientX,e.clientY)});
 
