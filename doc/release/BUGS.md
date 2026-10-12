@@ -4,6 +4,14 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-099 · Monomachine: PLAY right after an edit or an undo plays silence (or nothing) for seconds
+
+- **From:** the 0.6 e2e run, 2026-10-13 (mm-real-sequence-plays on the firmware, picture e2e-mm-real-sequence-plays-fail; mm-keys-space-play the same way).
+- **What happens:** four notes drawn, the pattern cleared (Alt+Delete), Cmd+Z: the page shows the notes back, PLAY at once says "The machine is taking an edit (SYSEX RECV): it follows in a moment", and then nothing plays; PLAY again a few seconds later plays them. The same now and then for the first PLAY after drawing notes.
+- **Cause (measured, `mmDeskFirmwareTest undoplay`):** PLAY waits while the panel takes the edit's dump on SYSEX RECV and is pressed once the machine's RECV count says the dump arrived. Two things let it go too early, and a panel key the machine gets while it takes a dump is lost: the machine clears its RECV count as it opens SYSEX RECV, after the screen already shows, so a session parked on the old count saw the dump as taken (an unsigned count below its base); and the count moves as the dump arrives, not when the machine is done with it (a key 10 ms after is lost, 20 ms after is taken; the editor's clock in the plug-in is not the machine's).
+- **Fix (`fix/0.6-e2e-mm`):** the RECV session counts from the cleared count, says "taking" while a dump waits to go out on the next tick, and for 60 ms of machine time after the count moved (`mmRecv`); a waiting PLAY, STOP or RECORD also waits until the dump's read-back is in, the machine's own answer that it holds it (at most 2 s after the dump: `pressTransportKeys`, `Pushes::anyBusyWithin`). The page still says it follows in a moment; it now does, within a second. Tests: `mmDeskTest` (the RECV session: taking until settled, the cleared count; the waiting STOP and RECORD once settled), `mmDeskFirmwareTest undoplay` (four step intents, clearPattern, undo, PLAY at once: the notes sound, rms; it failed before the fix: 8 s, silence), journeys `mm-real-sequence-plays`, `mm-keys-space-play` on the firmware.
+- **Status:** fixed on `fix/0.6-e2e-mm`.
+
 ## B-104 · Monomachine: ⇧-click on PLAY says "Paused" but the editor shows it playing on
 
 - **From:** the 0.6 e2e run, 2026-10-13 (mm-top-pause on the firmware; MM-040, MM-065, MM-072).
