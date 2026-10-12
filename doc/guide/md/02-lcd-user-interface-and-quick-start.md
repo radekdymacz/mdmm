@@ -4,7 +4,7 @@
 The LCD sits in the middle of the top bar. It shows the state of the machine: the engine, the transport, the tempo, the position, the pattern, the kit and the lock count. A second line holds values that depend on the workspace. Most fields are also controls.
 
 ## THE LCD USER INTERFACE
-<!-- rows: MD-027 MD-028 MD-029 MD-030 MD-031 MD-032 MD-033 @9fd72e -->
+<!-- rows: MD-027 MD-028 MD-029 MD-030 MD-031 MD-032 MD-033 @3fc498 -->
 
 ![The LCD](shot:md-lcd)
 
@@ -78,7 +78,7 @@ The **Sync** field reads Sync when the editor is in step with the machine and Se
 
 ### Level
 
-{gap:MD-032}The editor has no level bar for the overall volume of a track.{/gap}
+The machine shows the level of the track as a bar on its screen. The editor shows it on the Mix workspace: the bar inside each strip's **LEV** box fills with the track's level. Chapter 1 says how to set it.
 
 ### Value boxes
 
@@ -94,7 +94,7 @@ On the machine a window opens over the main screen and EXIT closes it. In the ed
 Press {key:keys-help} to open the keyboard view. It lists every key and gesture of the editor.
 
 ## QUICK START
-<!-- rows: MD-035 MD-036 MD-037 @e1b930 -->
+<!-- rows: MD-035 MD-036 MD-037 @f2c4a2 -->
 
 This is a first session. It loads a kit, places trigs, plays them and changes a sound.
 
@@ -114,7 +114,17 @@ Turn a value in small steps when you need them. Hold [⇧] and drag for fine ste
 
 ### Hear a machine before loading it
 
-{gap:MD-037}The editor has no preview for a machine. Choosing a machine in the picker loads it at once. Press {key:undo} to take it back.{/gap}
+In the machine picker you can hear a machine on the track before you keep it.
+
+1. Press {key:workspace-2} for the Sound workspace and select a track.
+2. Click the machine key under the header. The machine picker opens.
+3. Point at a machine and click its ▶, or move to it with [TAB] and press {key:picker-audition}. The machine goes on the track and the track plays once. A line under the preview says which machine plays and which one was there before.
+4. Try other machines the same way.
+5. Press [ENTER] or click **Keep** to keep the machine, or click another machine to keep that one. Press {key:close-dialog} or click **Back** to put the old machine back.
+
+The machine plays with the track's own values, so you hear it as it will be in the kit. The machine itself plays a new machine with its default values instead. Trying machines and keeping one is one step for {key:undo}. During live recording the machine changes but no note plays, so no trig is recorded.
+
+NOTE: GND-EMPTY and the RAM recorders go on the track but play nothing. The editor says why.
 
 ### Using the track effects
 

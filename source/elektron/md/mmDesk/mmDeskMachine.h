@@ -122,6 +122,8 @@ namespace mmDesk
 		// memory's mute of track t (0-5 synth, 6-11 MIDI), POLY and tempo (BPM x 24); nullopt: not known
 		std::optional<bool> muteInMemory(const int _t) const { if(m_tel.mutes < 0) return std::nullopt; return ((m_tel.mutes >> _t) & 1) != 0; }
 		std::optional<bool> polyInMemory() const { if(m_poly < 0) return std::nullopt; return m_poly == 1; }
+		// the track in focus (status 0x22, its TRACK keys: the track POLY plays); nullopt: not known
+		std::optional<int> focusInMemory() const { if(m_focus < 0 || m_focus > 5) return std::nullopt; return m_focus; }
 		std::optional<int> tempoInMemory() const { if(m_tel.tempo < 720 || m_tel.tempo > 7200) return std::nullopt; return m_tel.tempo; }
 		void request(const Ref& _ref, bool _urgent);
 		void requestStatus();
@@ -299,6 +301,7 @@ namespace mmDesk
 		// Telemetry::mutes), POLY and the tempo (BPM x 24). The machine document says these until then.
 		std::array<deskCore::FieldExpectation<bool>, 12> m_expectMute{};
 		deskCore::FieldExpectation<bool> m_expectPoly;
+		deskCore::FieldExpectation<int> m_expectFocus;	// 0.6 wave 9: the TRACK the editor pressed for POLY
 		deskCore::FieldExpectation<int> m_expectTempo;
 		RecordReads m_recordReads;		// RECORD's read-backs (watchRecord)
 		bool m_exitHeld = false;		// liveErase: EXIT is down on the panel

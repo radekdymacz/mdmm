@@ -1197,6 +1197,31 @@
               ],
               "description": "P4, live recording: the trig the last knob turn locks (mdDesk::nextLockStep), for about 3 s."
             },
+            "liveErase": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "required": ["track", "param", "state"],
+                  "properties": {
+                    "track": {
+                      "$ref": "#/$defs/track"
+                    },
+                    "param": {
+                      "type": ["integer", "null"],
+                      "minimum": 0,
+                      "maximum": 23
+                    },
+                    "state": {
+                      "enum": ["preparing", "held", "gaveUp"]
+                    }
+                  }
+                }
+              ],
+              "description": "Wave 7 and MD-140, live recording: what Delete holds on the machine. param null: EXIT/NO and the track's TRIG key; a kit parameter: EXIT/NO and its DATA ENTRY knob, preparing while the track is selected and the knob page shown, gaveUp when that page never showed (nothing removed)."
+            },
             "bankGroup": {
               "type": "integer",
               "minimum": -1,
@@ -2832,6 +2857,53 @@
               "minimum": 0
             },
             "force": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core: a trial of edits under the gesture g (the machine picker's audition)",
+          "required": ["op", "g"],
+          "properties": {
+            "op": {
+              "const": "trialBegin"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core: the trial g ends: kept, or its step taken back while it is the newest one",
+          "required": ["op", "g"],
+          "properties": {
+            "op": {
+              "const": "trialEnd"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "keep": {
               "type": ["boolean", "integer"]
             }
           },
@@ -5219,7 +5291,7 @@
         },
         {
           "type": "object",
-          "description": "machine: live recording: EXIT/NO and track t's TRIG key held (on) or let go; its trigs go as they play (manual p.40)",
+          "description": "machine: live recording: EXIT/NO and track t's TRIG key held (on) or let go; its trigs go as they play (manual p.40). With i: EXIT/NO and the DATA ENTRY knob of kit parameter i pressed instead; track t's locks of that parameter go as they play (manual p.48)",
           "required": ["op", "t", "on"],
           "properties": {
             "op": {
@@ -5242,6 +5314,11 @@
             },
             "on": {
               "type": ["boolean", "integer"]
+            },
+            "i": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 23
             }
           },
           "additionalProperties": false

@@ -23,7 +23,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.4 | FUNCTION key (secondary functions) | Modifier for everything | 🟡 | Alt key, or FN key in top bar | Alt = 'all tracks'; the machine's FUNCTION combos are mapped one by one below. | – |
 | p.4 | BANK key and A/E, B/F, C/G, D/H keys | Pick a pattern bank and pattern | ✅ | Pattern chooser (click Pattern in the LCD; keys A-H) | mdDeskLibrary.js. | – |
 | p.4 | ENTER/YES, EXIT/NO, arrow keys | Menu navigation | ➖ | Not needed | Every menu is a native control. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. | – |
-| p.5 | LEVEL knob (per-track overall gain) | LEV, cannot be locked or LFO'd | ❌ | None | The desk has a 'level' command, but no page control uses it. Use VOL on Mix instead. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. | – |
+| p.5 | LEVEL knob (per-track overall gain) | LEV, cannot be locked or LFO'd | ✅ | Mix: the LEV box above each strip's VOL fader (drag, wheel, arrows; double-click 100) | The kit's level of the track (`level`), sent as the track's level CC. Not lockable, as on the machine. The level CC measured on OS 1.63 (P9: 0 silent, 64 about 0.4 of 100, 127 about 1.6). | 1 |
 | p.5 | TEMPO key | Open tempo screen | ✅ | LCD: Tempo (drag), T key to tap | See §9. | 5 |
 | p.5 | DATA ENTRY knobs (A-H), pressed = coarse | Eight parameter knobs | ✅ | Value boxes on Sound and Mix; drag, wheel, Shift = fine | Wheel notch 1, Shift 10. | 2 |
 | p.5 | SYNTHESIS/EFFECTS/ROUTING toggle | Switch knob page | ✅ | Sound page shows all three as groups | No page toggle; all pages in one view. | – |
@@ -52,12 +52,12 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.9 | Transport symbols | Record/play/pause/stop | ✅ | Play key: blinks while paused; POSITION keeps the held step |  | 1 |
 | p.9 | Kit name and number | Current kit | ✅ | LCD: Kit with saved/edited chip |  | – |
 | p.9 | Synth, machine and page text | Focus info | ✅ | Sound: machine button, family; LCD line 2 |  | – |
-| p.9 | Level bar (overall volume of the track) | LEV meter | ❌ | None | See LEVEL knob. | – |
+| p.9 | Level bar (overall volume of the track) | LEV meter | ✅ | Mix: the LEV box's bar shows the stored level | The box's fill is the level, as the LCD's bar. | 1 |
 | p.9 | Eight value boxes with 'clip' between dependent values | Parameter display | 🟡 | Value boxes | Dependent-pair clip not drawn. | – |
 | p.9 | Windows over the main screen, icon help, EXIT closes | Layer edit | ➖ | Popovers close with Esc |  | – |
 | p.10 | Load a kit and trig tracks (quick start) | Basic play | ✅ | Kit library; step grid; piano keys | See §4. | – |
 | p.10 | Accelerated knob editing (pressed knob) | Coarse step | ✅ | Wheel with Shift = 10; Shift-drag = fine |  | – |
-| p.11 | Hear a machine before loading it (EDIT KIT preview) | Preview default sound | ❌ | None | Machine picker loads the machine at once; Undo takes it back. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. | – |
+| p.11 | Hear a machine before loading it (EDIT KIT preview) | Preview default sound | ✅ | Sound > machine picker: ▶ on a machine key (or Space) plays it on the track; Enter or a click keeps it, Esc puts the old one back | The machine goes on the track and the track's note plays, so it is heard with the track's values (the machine's own preview plays its default sound). The audition and the pick are one undo step. Measured on OS 1.63 (P9): the note right behind the machine's SysEx plays the new machine. | 1 |
 
 ## 3. Sound synthesis: kits (pp.13-21)
 
@@ -190,7 +190,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.48 | 64 locked parameters per pattern | Budget | ✅ | LCD Locks counter, refuses past 64 |  | – |
 | p.48 | Locks only play in EXTENDED, kept in CLASSIC | Behaviour | ✅ | Lane greyed in CLASSIC |  | – |
 | p.48 | Live-recorded locks (move a value while recording) | Live locks | ✅ | REC and move a value | Locks next unplayed trig. | – |
-| p.48 | Remove live locks (EXIT + knob) | Erase live locks | ❌ | None | Erase in the lane afterwards. | – |
+| p.48 | Remove live locks (EXIT + knob) | Erase live locks | ✅ | Press a track value, then hold Delete while live recording: its locks go as they play | EXIT/NO with the knob's switch on the machine (measured: either order, a tap does not latch, trigs and other locks stay); the core selects the track and shows the knob's page first | 1 |
 | p.49 | Slide trigs (ALL and per track) | Parameter slide | ✅ | Alt+Shift-click a step; Slide in the trig types under the grid, then click or drag steps; All tracks or This track |  | 2 |
 | p.50 | Copy / paste / clear slide | Slide clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Slide ticked); a selection's copy includes slides | With EDIT ALL on, the slide row is the pattern's. | 1 |
 
@@ -363,7 +363,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 |---|---|---|---|---|---|---|
 | p.B-1 | Default note map (tracks C2.., patterns E4..) | Defaults | ✅ | GLOBAL > Map editor | Set in the machine's global. | – |
 | p.B-1 | CC mapping, 4 channels from base, all parameters | Remote control | ✅ | Live edits go out as CCs; HW MIDI engine; Control (MIDI learn) | Control workspace hidden unless the plug-in enables it. | – |
-| p.B-1 | Level and mute CCs per track | CC 8-15 | 🟡 | Mute keys use machine memory | No page control for level CCs. | – |
+| p.B-1 | Level and mute CCs per track | CC 8-15 | ✅ | Mix: LEV sends the level CC; the mute keys use machine memory | The level CC measured (P9). | 1 |
 
 ## 16. Appendix C: sysex reference
 
@@ -398,13 +398,13 @@ Method: manual read in full; claims checked against the page files (`source/elek
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 255 |
-| 🟡 Partial | 16 |
-| ❌ No | 10 |
+| ✅ Yes | 260 |
+| 🟡 Partial | 15 |
+| ❌ No | 6 |
 | ➖ Not applicable | 16 |
 | Total | 297 |
 
-Of the 281 applicable rows, 255 are fully covered, 16 partly, 10 not at all.
+Of the 281 applicable rows, 260 are fully covered, 15 partly, 6 not at all.
 
 ### Top gaps (our UI), most important first
 

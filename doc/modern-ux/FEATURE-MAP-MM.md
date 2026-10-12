@@ -47,7 +47,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Front panel 1-4 | 4 DATA ENTRY knobs A-H | Eight parameters of the page | ✅ | Every value box (drag, wheel, arrows, double click resets) |  | 2 |
 | Front panel 1-4 | 4 Accelerated edit (press and turn) | Bigger steps | 🟡 | Shift = fine, Page Up / Down = x10 | Different gesture | – |
 | Front panel 1-4 | 5 DATA PAGE keys, seven pages | SYN, AMP, FLT, EFX, LFO 1-3 | ✅ | Sound shows every page at once; lock lane page tabs |  | – |
-| Front panel 1-4 | 5 Both DATA PAGE keys open MULTI ENV | Multi envelope window | ✅ | Perform > Multi envelope |  | – |
+| Front panel 1-4 | 5 Both DATA PAGE keys open MULTI ENV | Multi envelope window | ✅ | Perform > Multi envelope |  | 1 |
 | Front panel 1-4 | 6 TRACK keys, select | Pick the track in focus | ✅ | Rail, Up / Down keys, Mix node click |  | 1 |
 | Front panel 1-4 | 6 TRACK keys, mute / unmute (FUNCTION) | Mute a track | ✅ | M key per track, Perform > Mutes, key M | Shift + M prepares mutes | 6 |
 | Front panel 1-4 | 6 TRACK LED colours | Active, muted, in focus | 🟡 | Rail row dims when muted, selected row lit |  | – |
@@ -61,7 +61,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Front panel 1-5 | 10 TRIG keys edit notes in grid mode | Step trigs | ✅ | Roll click (Draw on), ENV dots, step menu |  | – |
 | Front panel 1-5 | 10 BANK + TRIG selects pattern | Pattern pick | ✅ | LCD > PATTERN (‹ ›, chooser) |  | 1 |
 | Front panel 1-5 | 11 PATTERN / SONG key | Sequencer mode | ✅ | LCD line 2 PLAY PAT / SONG, Song > What plays | `seqMode` op | 1 |
-| Front panel 1-5 | 11 POLY (FUNCTION + PATTERN / SONG) | Poly mode | ✅ | Perform > Keyboard > Poly | `poly` op | 1 |
+| Front panel 1-5 | 11 POLY (FUNCTION + PATTERN / SONG) | Poly mode | ✅ | Perform > Keyboard > Poly, on the track selected (the editor presses its TRACK key) | `poly` op | 2 |
 | Front panel 1-5 | 12 ENTER / YES, EXIT / NO | Confirm, cancel | ➖ | – | Page dialogs | – |
 | Front panel 1-5 | 13 ARROW keys; octave for TRIG keys | Navigate; octave | ✅ | Keys Z / X octave; arrows step values |  | – |
 | Front panel 1-5 | 14 BANK GROUP A-D / E-H | Bank group | ✅ | Pattern chooser shows all 8 banks |  | – |
@@ -131,7 +131,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Six individual tracks 1-15 | Per track machine and effects | Multitimbral | ✅ | Sound, Mix |  | – |
 | Six track sequencing 1-15 | Notes, envelope trigs, parameters | Sequencer | ✅ | Sequence |  | – |
 | MIDI sequencing 1-15 | Six MIDI tracks | MIDI seq | ✅ | Sequence (MIDI side) |  | – |
-| Poly mode 1-15 | One track with six voices | POLY | ✅ | Perform > Poly | Other tracks dimmed | 1 |
+| Poly mode 1-15 | One track with six voices | POLY | ✅ | Perform > Poly: the track selected (Assign's 1-6, the rail) plays six voices; ×6 on its key and lamp, the others dimmed | `poly {on, t}`; the other tracks silent (P10) | 2 |
 | Multi trig mode 1-15 | All tracks from one source | MULTI TRIG | ✅ | Perform |  | – |
 | Multi map mode 1-15 | Keyboard triggers patterns | MULTI MAP | ✅ | Perform > Multi map |  | – |
 | Figure 1 1-16 | Synthesis overview | Diagram | ➖ | – | The Mix page draws the routing graph | – |
@@ -182,7 +182,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Filter 1-30 | LPQ | Low pass Q | ✅ | Sound > Filter |  | – |
 | Filter envelope 1-31 | ATK, DEC | Filter envelope | ✅ | Sound > Filter env |  | – |
 | Filter envelope 1-31 | BOFS, WOFS | Envelope offsets | ✅ | Sound > Filter env |  | – |
-| Filter tracking 1-31 | Filter follows pitch; switch off HPF / LPF | Key tracking | ✅ | Perform > Assign > KEY > HPF, LPF | `assign` op | – |
+| Filter tracking 1-31 | Filter follows pitch; switch off HPF / LPF | Key tracking | ✅ | Perform > Assign > KEY > HPF, LPF; KEY in Sound > Filter shows them and leads there | `assign` op | 1 |
 | EQ 1-32 | EQF, EQG | One band EQ | ✅ | Sound > Effects |  | – |
 | Sample rate reduction 1-32 | SRR | Lo-fi | ✅ | Sound > Effects |  | – |
 | Delay 1-33 | DSND (sign: stereo kept / ping-pong) | Delay send | ✅ | Sound > Effects; Mix trim |  | – |
@@ -213,7 +213,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Assign 1-39 | Joystick R / L with MIRR | Joystick | ✅ | Assign tab JOY RL, Mirror |  | – |
 | Assign 1-39 | Joystick U, D tabs | Joystick | ✅ | Assign tabs JOY U, JOY D |  | – |
 | Assign 1-39 | Velocity assign | Velocity | ✅ | Assign tab VEL | Sequencer plays velocity 100 | – |
-| Assign 1-40 | Key tracking assign | Key | ✅ | Assign tab KEY |  | – |
+| Assign 1-40 | Key tracking assign | Key | ✅ | Perform > Assign > KEY; KEY in Sound > Filter leads there |  | 1 |
 | Assign 1-39 | Copy, clear, paste, undo assign | Assign clipboard | ✅ | Perform COPY / CLR / PASTE |  | – |
 | Trig track settings 1-40 | TRIG POS (forward notes, chainable) | Trig position | ✅ | Sequence dock > Trig setup | Dotted cord on Mix graph | – |
 | Trig track settings 1-41 | PORTAMENTO ALWAYS / ONLY LEGATO | Portamento mode | ✅ | Trig setup > Port |  | 1 |
@@ -224,7 +224,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Multi trig 1-43 | SEQ TRNSP | Transpose, loop unbroken | ✅ | Perform > Multi trig |  | – |
 | Multi trig 1-43 | TIMING context tab | Delay to bar | ✅ | Perform Timing stepper |  | – |
 | Multi trig 1-43 | Arpeggiators work in all-track mode | Arp | ✅ | Per track arp | Firmware | – |
-| Multi env 1-43 | ATK, DEC, SUS, REL | ADSR on top | ✅ | Perform > Multi envelope |  | 2 |
+| Multi env 1-43 | ATK, DEC, SUS, REL | ADSR on top | ✅ | Perform > Multi envelope: the card names the kit's MULTI TRIG mode and says what the envelope shapes in it |  | 3 |
 | Multi env 1-44 | PORT | Multi portamento | ✅ | Same |  | – |
 
 ## 10. The pattern sequencer: pattern operation (1-45 to 1-47)
@@ -333,7 +333,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Mute mode 1-67 | Held changes until FUNCTION released | Prepared mutes | ✅ | Shift + M prepares, applies on release |  | 1 |
 | Mute mode 1-68 | Minimise the window | Small window | ➖ | – | Page | – |
 | Mute mode 1-68 | Mutes are global and remembered | Persistence | ✅ | Machine holds them | A track with no MIDI channel cannot be muted over MIDI: the page says so and offers "Give each track its own channel" (GLOBAL > Control) | – |
-| Poly mode 1-69 | Six voices on the track in focus | Poly | ✅ | Perform > Poly |  | 1 |
+| Poly mode 1-69 | Six voices on the track in focus | Poly | ✅ | Perform > Poly; the sequencer plays the poly track's chord trigs |  | 2 |
 
 ## 16. The MIDI sequencer (1-70 to 1-72)
 

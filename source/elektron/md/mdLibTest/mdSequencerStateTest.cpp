@@ -65,6 +65,11 @@ int main()
 		check(t14.size() == 1 && t14[0] == *md::panelPacket(mdm, md::PanelControl::Trigger14), "hold:trig14 is TRIG 14 down");
 		check(panelKeySequence(mdm, "hold:trig17").empty() && panelKeySequence(mdm, "hold:trig").empty()
 			&& panelKeySequence(mdm, "hold:play").empty(), "no other keys are held");
+		// MD-140: a DATA ENTRY knob's switch held (EXIT/NO + a knob removes that parameter's locks while live recording)
+		const auto knobC = panelKeySequence(mdm, "hold:knobC"), knobCUp = panelKeySequence(mdm, "release:knobC");
+		check(knobC.size() == 1 && knobC[0] == *md::panelEncoderPressPacket(mdm, md::PanelEncoder::DataEntryC), "hold:knobC is knob C pressed");
+		check(knobCUp.size() == 1 && knobCUp[0].row == knobC[0].row && knobCUp[0].mask == 0, "release:knobC lets its row go");
+		check(panelKeySequence(mdm, "hold:knobI").empty() && panelKeySequence(mdm, "hold:knob").empty(), "knobs A to H only");
 	}
 	// P4: a chain holds the bank key and the TRIG keys together, in order.
 	const auto ch = md::panelKeySequence(md::MachineModel::Machinedrum, "chain:1:2,9,0");

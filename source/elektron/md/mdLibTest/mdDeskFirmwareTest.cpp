@@ -2703,6 +2703,79 @@ namespace
 		check(shown, "the page's pattern document shows the erase");
 	}
 
+	// 0.6 MD-140: remove locks while live recording (manual p.48) through the desk: liveErase with i selects the track,
+	// shows the parameter's knob page and holds EXIT/NO with that knob's switch; the firmware removes the track's locks of
+	// that parameter on the steps that play meanwhile; its trigs and other locks stay (mdEditorProbeFirmwareTest liveunlock).
+	void liveUnlock(const Bytes& _rom, const std::string& _romName)
+	{
+		std::puts("liveunlock: hold a value and Delete while live recording");
+		Rig rig(_rom, _romName);
+		rig.page(R"({"op":"ready"})");
+		rig.runUntil([&] { return rig.desk().isInputReady() && rig.desk().linkState().pattern && rig.desk().linkState().kit; }, 8000);
+		auto& m = rig.machine();
+		auto& desk = rig.desk();
+		const auto pattern = *desk.linkState().pattern;
+		rig.runUntil([&] { return desk.documents().patterns.count(pattern) > 0 && !desk.isBusy(); }, 10000);
+		auto p = *rig.readPattern(pattern);
+		p.length = 16;
+		for(uint8_t t = 12; t < 14; ++t)
+			for(uint8_t st = 0; st < 64; ++st)
+				p = ed::withTrig(p, t, st, st < 16);
+		// track 14: parameter 9 (EFFECTS page, knob B) and parameter 1 locked on every step; track 13: parameter 9
+		for(uint8_t st = 0; st < 16; ++st)
+		{
+			p = *ed::withLock(p, 13, 9, st, 20);
+			p = *ed::withLock(p, 13, 1, st, 30);
+			p = *ed::withLock(p, 12, 9, st, 40);
+		}
+		rig.page(R"({"op":"set","id":1,"kind":"pattern","doc":)" + ed::json::write(ed::patternToJson(p)) + "}");
+		check(resultOk(rig), "the pattern set");
+		rig.runUntil([&] { return !desk.isBusy(); }, 8000);
+		rig.run(1000);
+		const auto locks = [&](const ed::MdPattern& _p, const int _t, const int _i) { int n = 0; for(size_t st = 0; st < 16; ++st) n += ed::lockValue(_p, _t, _i, st).has_value(); return n; };
+		const auto trigs = [&](const ed::MdPattern& _p, const int _t) { int n = 0; for(size_t st = 0; st < 16; ++st) n += ed::hasTrig(_p, _t, st); return n; };
+		check(rig.runUntil([&] { const auto q = rig.readPattern(pattern); return q && locks(*q, 13, 9) == 16; }, 8000), "track 14 has a lock on every step");
+		const auto recording = [&] { return rig.pageTelemetry().recording; };
+		rig.page("{\"op\":\"select\",\"p\":" + std::to_string(pattern) + ",\"id\":8}");
+		rig.run(1500);
+		rig.page(R"({"op":"record","id":3})");
+		check(rig.runUntil(recording, 1500), "live recording starts");
+		rig.runUntil([&] { return m.playhead() == 1; }, 3000);
+		rig.page(R"({"op":"liveErase","t":13,"on":true,"i":9,"id":4})");
+		check(resultOk(rig), "liveErase with i on: track 14 selected, then EXIT/NO and knob B");
+		// the page's word every 250 ms while Delete is held, to step 9
+		while(m.playhead() != 9)
+		{
+			rig.run(100);
+			rig.page(R"({"op":"liveErase","t":13,"on":true,"i":9,"id":5})");
+			if(!recording())
+				break;
+		}
+		rig.page(R"({"op":"liveErase","t":13,"on":false,"id":6})");
+		check(resultOk(rig), "liveErase off: both let go");
+		rig.runUntil([&] { return m.playhead() == 14; }, 3000);
+		rig.page(R"({"op":"record","id":7})");
+		check(rig.runUntil([&] { return !recording(); }, 1500), "REC again leaves recording");
+		rig.page(R"({"op":"stop","id":9})");
+		rig.run(1500);
+		rig.runUntil([&] { return !desk.isBusy(); }, 4000);
+		const auto after = desk.documents().patterns.at(pattern);
+		const int l9 = locks(after, 13, 9), l1 = locks(after, 13, 1), other = locks(after, 12, 9);
+		std::printf("  after: track 14 parameter 9 %d of 16 locks, parameter 1 %d, trigs %d; track 13 parameter 9 %d\n", l9, l1,
+			trigs(after, 13), other);
+		check(l9 < 16 && l9 >= 6, "track 14 lost parameter 9's locks on the steps that played while it was held");
+		check(l1 == 16 && trigs(after, 13) == 16, "its trigs and parameter 1's locks stay");
+		check(other == 16, "track 13 keeps its locks");
+		const bool shown = rig.runUntil([&]
+		{
+			const auto d = rig.pageDoc("pattern", pattern);
+			std::vector<std::string> errors;
+			const auto q = d ? ed::patternFromJson(*d, errors) : std::nullopt;
+			return q && locks(*q, 13, 9) == l9;
+		}, 4000);
+		check(shown, "the page's pattern document shows it");
+	}
+
 	void transport(const Bytes& _rom, const std::string& _romName)
 	{
 		std::puts("transport: pause, play from a row, panic, nudge");
@@ -4437,6 +4510,7 @@ int main(const int _argc, char** _argv)
 		if(mode == "liveerase")
 		{
 			liveErase(rom, romPath);
+			liveUnlock(rom, romPath);
 			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 			std::printf("mdDeskFirmwareTest liveerase: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
 			return g_failures ? 1 : 0;

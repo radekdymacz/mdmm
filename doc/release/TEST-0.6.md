@@ -71,6 +71,28 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 4. MM: while step recording, pick another synth track: the machine writes that track from the same step. With a step selection made first, ⇧-click ● drops it, and ← → Esc are step recording's.
 5. Both: hold Delete while live recording and close the editor window (or reload the page): the erase stops within a second.
 6. MM on real hardware: step recording and live erase are refused with the reason (they need the machine's keys).
+7. MD (MD-140, polish A): lock a value on a track's trigs (lock lane), start live recording, go to Sound, press that value and keep the mouse down, then hold Delete: the value and the track's header are marked red and that value's locks go as they play (the first step or two may stay while the editor selects the track and the knob page); the value does not move, the trigs and the other locks stay. Delete alone still erases trigs (after a moment: a value pressed just after Delete still wins); a value with no locks (a master effect on Mix) removes nothing and says so; letting the value go first stops the removal until Delete is let go; letting Delete go first leaves the value where it was until the mouse is let go. The MM has no such gesture (its manual removes locks in grid recording only).
+
+## MD sound and mix (wave 8, Machinedrum only)
+
+1. Mix: each strip has a **LEV** box above the VOL fader. Drag one, scroll the wheel over it, focus it and press ↑ ↓: the track gets louder or quieter while it plays, the box's bar follows. Double-click: 100. Undo takes each change back. LEV and VOL are separate values (VOL can be locked, LEV cannot).
+2. LEV of a track at 0: the track is silent; save the kit, load another and back: the level is kept.
+3. Sound: open the machine picker. Point at a machine: a red ▶ shows on its key. Click ▶: the machine goes on the track and the track plays once; the picker stays open and a line says "▶ machine · track n · was ...". Try several.
+4. Esc (or **Back**, or a click outside the picker): the old machine is back, with its sound as it was (also with "Keep effects + routing" off).
+5. Move with Tab to a machine and press Space: it plays. Enter (or **Keep**, or a click on the key): it stays. One ⌘Z takes the whole try-and-keep back to the machine before.
+6. An audition the machine refuses (start the editor and open the picker before the machine is ready, or base channel OFF): Esc undoes nothing of your earlier edits. ⌘Z while auditioning: the audition ends (no line, no "was"), Esc then changes nothing.
+7. Close the editor window (or reload the page) while a machine is being auditioned, open it again: the track has its old machine and values (while the window is closed the tried machine stays; it goes when the page loads again).
+8. ▶ on GND-EMPTY or a RAM recorder: the machine goes on the track, no note, a toast says why. During live recording an audition changes the machine but plays no note (no trig is recorded).
+
+## MM Perform: Poly, key tracking, Multi envelope (wave 9, B-064)
+
+1. Perform: click Assign's track key 3, then **Poly** in the Keyboard card. The line under the keyboard modes says T3 plays six voices; key 3 and its lamp under the keyboard read ×6, the others dim. Hold a chord on the computer keys (A D G, or a MIDI keyboard on T3's channel): all its notes sound.
+2. Still in Poly, click track key 5: Poly moves to T5 (the first chord there can sound as one note, the next ones are chords). Notes on T3's channel are now silent. On Sequence the rail marks T5 ×6 and dims the others. Pick a MIDI track (MIDI, M2): Poly stays on T5.
+3. Reload the page, or turn Poly on at the machine with another TRACK lit: the page shows Poly on the machine's track and selects it, without pressing anything. **Auto track** ends Poly.
+4. Sound, a track with a low LPF (WDTH low): the Filter group's title shows **KEY** with HPF and LPF lit. Click it: Perform opens on Assign › KEY for that track. Switch **LPF tracks keys** off: back on Sound the LPF lamp is dark and the filter screen's label says LPF fixed; high notes now sound much quieter than low ones.
+5. Perform, Multi envelope card: its title names the kit's MULTI TRIG mode. With the keys on Auto track the hint says to choose Multi trig (pointing at that sentence rings the Multi trig key). Choose Multi trig and SPLIT KEY: the hint says the envelope has no effect.
+6. Multi trig, ALL TRK, envelope ATK 0 DEC 0 SUS 0 REL 0: a key gives nothing. Play T1 with the computer's note keys (A S D): silent now too, until Panic (the ▶ menu, or its key). Set DEC, SUS and REL back to 127: the keys sound again.
+7. SEQ START with REL 0: a Multi trig key starts the pattern; let go and the pattern goes silent until the next key or STOP.
 
 ## Machine memory for new sessions (wave 11, I-024, both editors)
 

@@ -225,8 +225,10 @@ namespace mdDesk
 		deskCore::Outcome kitSwitchedBy(uint8_t _slot, bool _load);
 		deskCore::Outcome cmdRecord(const Value&, const Documents&);
 		deskCore::Outcome cmdLiveErase(const Value&, const Documents&);
-		// liveErase: EXIT/NO and the TRIG key let go if they are down.
+		// liveErase: EXIT/NO and the TRIG key or knob switch let go if they are down.
 		void releaseErase();
+		// liveErase with a parameter: select the track, show its knob page, then hold EXIT/NO and the knob.
+		void pumpErase(double _now);
 		deskCore::Outcome cmdRecTrig(const Value&, const Documents&);
 		deskCore::Outcome cmdNoteOn(const Value&, const Documents&);
 		deskCore::Outcome cmdNoteOff(const Value&, const Documents&);
@@ -315,8 +317,21 @@ namespace mdDesk
 		std::array<std::optional<SoundingNote>, 16> m_notes{};
 		KnobRecorder m_knobs;
 		std::optional<RecLock> m_recLock;
-		std::optional<uint8_t> m_erasing;	// liveErase: the track whose TRIG key is held with EXIT/NO
+		// liveErase: the track whose TRIG key is held with EXIT/NO, or (param, MD-140) whose knob switch is: the knob
+		// of kit parameter 0-23 on its page (SYNTHESIS / EFFECTS / ROUTING), which the machine shows before the keys go
+		// down (held false until then).
+		struct Erase
+		{
+			uint8_t track = 0;
+			std::optional<uint8_t> param;
+			bool held = false;
+			bool gaveUp = false;	// the knob page never showed: nothing held until the page asks for something else
+			int pagePresses = 0;
+			double lastMs = -1e9;
+		};
+		std::optional<Erase> m_erasing;
 		double m_eraseSeenMs = 0;			// liveErase: the page's last word that the key is still held
+		static constexpr int g_eraseMaxPagePresses = 4;
 		double m_recordPollMs = -1e9;
 		deskCore::Sequencer<Act> m_sequence;
 		TweakTurns m_tweak;

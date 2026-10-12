@@ -1409,6 +1409,66 @@ namespace
 		now += 1100;
 		desk.tick();
 		check(keys.size() == 10 && keys[8] == "release:trig4" && keys[9] == "release:exit", "no word for over a second: both let go");
+		// MD-140 (manual p.48): with i, EXIT/NO and the parameter's knob switch; first the track selected and its knob page shown
+		{
+			using Keys = std::vector<std::string>;
+			t.knobPage = 0;
+			desk.onTelemetry(t);
+			keys.clear();
+			wire.clear();
+			desk.onPageMessage(cmd(R"({"op":"liveErase","t":4,"on":true,"i":10,"id":61})"));
+			check(ok() && keys.empty() && !wire.empty() && wire.back() == ed::mdSetStatus(ed::MdStatus::Track, 4),
+				"liveErase with i: track 5 selected first, no key yet");
+			now += 50;
+			desk.tick();
+			check(keys == Keys{"page"}, "parameter 10 is on the EFFECTS page: the page key");
+			t.knobPage = 1;
+			desk.onTelemetry(t);
+			now += 50;
+			desk.tick();
+			check(keys == Keys{"page", "hold:exit", "hold:knobC"}, "the page shows: EXIT/NO and knob C down");
+			now += 50;
+			desk.onPageMessage(cmd(R"({"op":"liveErase","t":4,"on":true,"i":10,"id":62})"));
+			desk.tick();
+			check(ok() && keys.size() == 3, "the page's word again: nothing more pressed");
+			desk.onPageMessage(cmd(R"({"op":"liveErase","t":4,"on":true,"id":63})"));
+			check(ok() && keys == Keys{"page", "hold:exit", "hold:knobC", "release:knobC", "release:exit", "hold:exit", "hold:trig5"},
+				"the trigs instead (no i): the knob let go, TRIG 5 held");
+			keys.clear();
+			desk.onPageMessage(cmd(R"({"op":"liveErase","t":4,"on":false,"id":64})"));
+			check(ok() && keys == Keys{"release:trig5", "release:exit"}, "off: TRIG 5 and EXIT/NO let go");
+			// a knob page that never shows: a few page presses, then nothing held
+			keys.clear();
+			desk.onPageMessage(cmd(R"({"op":"liveErase","t":4,"on":true,"i":2,"id":65})"));
+			for(int i = 0; i < 8; ++i)
+			{
+				now += 200;
+				desk.onPageMessage(cmd(R"({"op":"liveErase","t":4,"on":true,"i":2,"id":66})"));
+				desk.tick();
+			}
+			check(keys == Keys{"page", "page", "page", "page"}, "a knob page that never shows: four page presses, then it gives up (the page's word does not start it again)");
+			const auto eraseState = [&]() -> std::string
+			{
+				for(auto it = page.rbegin(); it != page.rend(); ++it)
+					if(it->find("type")->asString() == "machine" && it->find("doc")->find("desk"))
+					{
+						const auto* e = it->find("doc")->find("desk")->find("liveErase");
+						return e && e->isObject() ? e->find("state")->asString() : "none";
+					}
+				return "no machine document";
+			};
+			check(eraseState() == "gaveUp", "the page is told it gave up (desk.liveErase.state gaveUp): " + eraseState());
+			keys.clear();
+			desk.onPageMessage(cmd(R"({"op":"liveErase","t":4,"on":false,"id":67})"));
+			check(keys.empty(), "off after that: nothing to let go");
+			desk.tick();
+			check(eraseState() == "none", "and then no erase in the desk document: " + eraseState());
+			t.knobPage = -1;
+			desk.onTelemetry(t);
+			wire.clear();
+			desk.onPageMessage(cmd(R"({"op":"liveErase","t":4,"on":true,"i":2,"id":68})"));
+			check(!ok() && keys.empty() && wire.empty(), "no knob page known: refused at once, nothing selected or pressed");
+		}
 		desk.onPageMessage(cmd(R"({"op":"liveErase","t":3,"on":true,"id":60})"));
 		keys.clear();
 		desk.onPageMessage(cmd(R"({"op":"ready"})"));

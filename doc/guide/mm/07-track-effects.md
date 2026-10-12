@@ -70,13 +70,16 @@ In the picture, drag the dots sideways for BASE and WDTH and up for HPQ and LPQ.
 The **Filter env** group holds ATK and DEC, the attack and decay times of the filter envelope, and BOFS and WOFS, how far the envelope moves BASE and WDTH.
 
 ## FILTER TRACKING
-<!-- rows: MM-128 @68abda -->
+<!-- rows: MM-128 @caaf38 -->
 
-Both filters can follow the pitch of the notes. The switches are on the **Perform** workspace, in the **Assign** card.
+Both filters follow the pitch of the notes. With tracking off a filter stays where BASE and WDTH put it, whatever note plays: under a low LPF the high notes go quiet, and a high HPF lets them through.
 
-1. Select the track with the numbered keys in the title of the **Assign** card.
-2. Click the **KEY** tab.
-3. Click **HPF tracks keys** or **LPF tracks keys**. A lit key means the filter follows the keys.
+The title of the **Filter** group shows the state: **KEY** with a lamp for HPF and one for LPF, lit while that filter follows the notes. The label of the filter's screen says which filter is fixed. The switches are on the **Perform** workspace, in the **Assign** card.
+
+1. Click **KEY** in the title of the **Filter** group. The **Perform** workspace opens on the **KEY** tab of the **Assign** card, for the same track.
+2. Click **HPF tracks keys** or **LPF tracks keys**. A lit key means the filter follows the keys.
+
+![Key tracking in the Filter group](shot:mm-sound-key-tracking)
 
 ## EQ
 <!-- rows: MM-129 @3c3b49 -->

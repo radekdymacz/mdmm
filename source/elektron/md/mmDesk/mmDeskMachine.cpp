@@ -136,6 +136,7 @@ namespace mmDesk
 		m_recLock.reset();
 		m_expectMute = {};
 		m_expectPoly = {};
+		m_expectFocus = {};
 		m_expectTempo = {};
 		m_curPattern = m_curKit = m_curSong = m_curGlobal = m_songMode = m_queuedPattern = -1;
 		m_chosenGlobal = -1;
@@ -357,6 +358,9 @@ namespace mmDesk
 		d.set("mutes", std::move(mutes));
 		const auto poly = m_expectPoly.shown(polyInMemory(), t, m_profile.settleMs);
 		d.set("poly", poly ? Value(*poly) : Value());
+		// 0.6 wave 9: the track in focus, the one POLY plays (status 0x22); the TRACK the editor pressed until it shows
+		const auto focus = m_expectFocus.shown(focusInMemory(), t, m_profile.settleMs);
+		d.set("focus", focus ? Value(*focus) : Value());
 		// MM-P8: the machine's own chain and BANK GROUP (RAM), as the Machinedrum's machine.desk
 		Value desk = Value::object();
 		if(m_tel.chainKnown)

@@ -987,8 +987,12 @@ namespace mdDesk
 
 	// Erase while live recording (manual p.40): hold EXIT/NO and the track's TRIG key; the firmware removes the
 	// track's trigs for the part of the pattern that plays while both are down (mdEditorProbeFirmwareTest
-	// liveerase: either order; EXIT alone erases nothing). The keys stay down until off, another track, or the end
-	// of recording; what the firmware erased comes back with the pattern's read-back.
+	// liveerase: either order; EXIT alone erases nothing). With i (MD-140, manual p.48): EXIT/NO and the parameter's
+	// DATA ENTRY knob pressed (its switch, not a turn) remove that parameter's locks of the selected track on the steps
+	// that play meanwhile; its trigs, its other locks, the other tracks and the knob's value stay (mdEditorProbeFirmwareTest
+	// liveunlock: either order, a tap does not latch, a turn with EXIT held records a lock as without it). So the track
+	// is selected and the knob's page shown first (pumpErase), then both go down. The keys stay down until off, another
+	// track or parameter, or the end of recording; what the firmware erased comes back with the pattern's read-back.
 	Outcome MdMachine::cmdLiveErase(const Value& _m, const Documents&)
 	{
 		if(!canLiveRecord())
@@ -1001,29 +1005,85 @@ namespace mdDesk
 		if(!m_telemetry.recording)
 			return refuse("Not recording: erase works while live recording plays.");
 		const auto t = static_cast<uint8_t>(*intOf(_m, "t"));
+		const auto i = intOf(_m, "i");
+		const std::optional<uint8_t> param = i ? std::optional<uint8_t>(static_cast<uint8_t>(*i)) : std::nullopt;
 		m_eraseSeenMs = now();
-		if(m_erasing == t)
+		if(m_erasing && m_erasing->track == t && m_erasing->param == param)
 			return ok();
-		if(m_erasing)
-			pressKey("release:trig" + std::to_string(*m_erasing + 1));
-		else if(!pressKey("hold:exit"))
-			return refuse("TRIG keys need the local emulated machine");
+		if(param)
+		{
+			if(!m_port.turnKnob || !canSendSysex())
+				return refuse("Knob switches need the local emulated machine");
+			if(m_telemetry.knobPage < 0)
+				return refuse("The machine's knob page is not known here, so its locks cannot be removed live.");
+			releaseErase();
+			m_erasing = Erase{t, param};
+			pumpErase(now());
+			return ok("Removing track " + std::to_string(t + 1) + "'s locks of this parameter as they play, while Delete is held.");
+		}
+		if(m_erasing && !m_erasing->param && m_erasing->held)
+			pressKey("release:trig" + std::to_string(m_erasing->track + 1));
+		else
+		{
+			releaseErase();
+			if(!pressKey("hold:exit"))
+				return refuse("TRIG keys need the local emulated machine");
+		}
 		if(!pressKey("hold:trig" + std::to_string(t + 1)))
 		{
 			pressKey("release:exit");
 			m_erasing.reset();
 			return refuse("TRIG keys need the local emulated machine");
 		}
-		m_erasing = t;
+		m_erasing = Erase{t, std::nullopt, true};
 		return ok("Erasing track " + std::to_string(t + 1) + "'s trigs as they play, while Delete is held.");
+	}
+
+	void MdMachine::pumpErase(const double _now)
+	{
+		if(!m_erasing || m_erasing->held || m_erasing->gaveUp || !m_erasing->param)
+			return;
+		auto& e = *m_erasing;
+		const int page = *e.param / 8;
+		if(e.lastMs < -1e8)
+		{
+			// the machine removes the selected track's locks: select it (the knob recorder knows it is selected)
+			sendSysex(ed::mdSetStatus(ed::MdStatus::Track, e.track));
+			m_knobs.trackSelected(e.track);
+			e.lastMs = _now;
+			return;
+		}
+		if(m_telemetry.knobPage != page)
+		{
+			if(_now - e.lastMs < (e.pagePresses ? KnobRecorder::g_pageGapMs : KnobRecorder::g_selectGapMs))
+				return;
+			if(e.pagePresses >= g_eraseMaxPagePresses || m_telemetry.knobPage < 0)
+			{
+				e.gaveUp = true;	// the knob page never showed: nothing held, nothing removed
+				return;
+			}
+			++e.pagePresses;
+			e.lastMs = _now;
+			pressKey("page");
+			return;
+		}
+		if(_now - e.lastMs < KnobRecorder::g_selectGapMs)
+			return;
+		pressKey("hold:exit");
+		pressKey(std::string("hold:knob") + static_cast<char>('A' + *e.param % 8));
+		e.held = true;
 	}
 
 	void MdMachine::releaseErase()
 	{
 		if(!m_erasing)
 			return;
-		pressKey("release:trig" + std::to_string(*m_erasing + 1));
-		pressKey("release:exit");
+		if(m_erasing->held)
+		{
+			pressKey(m_erasing->param ? std::string("release:knob") + static_cast<char>('A' + *m_erasing->param % 8)
+				: "release:trig" + std::to_string(m_erasing->track + 1));
+			pressKey("release:exit");
+		}
 		m_erasing.reset();
 	}
 
@@ -1866,6 +1926,7 @@ namespace mdDesk
 			m_recLock.reset();
 		if(!m_telemetry.recording)
 			return;
+		pumpErase(_now);
 		// What the firmware records shows up in the pattern: read it back now and then.
 		const auto pattern = m_session.state().pattern;
 		if(pattern && _now - m_recordPollMs > 400 && !busy())
@@ -1873,6 +1934,10 @@ namespace mdDesk
 			m_recordPollMs = _now;
 			load({DocKind::Pattern, *pattern}, true);
 		}
+		// a lock removal owns the track selection, the knob page and the knob until it is let go: the knob recorder waits
+		// (it would press the page key too, or turn the held knob's page away)
+		if(m_erasing && m_erasing->param && !m_erasing->gaveUp)
+			return;
 		const auto* memory = m_working.image && currentKit() == m_working.image->position ? &*m_working.image : nullptr;
 		const auto step = m_knobs.next(_now, m_telemetry.knobPage, memory);
 		if(!step)
@@ -2215,6 +2280,16 @@ namespace mdDesk
 		}
 		else
 			desk.set("recLock", Value());
+		if(m_erasing)
+		{
+			Value e = Value::object();
+			e.set("track", static_cast<int>(m_erasing->track));
+			e.set("param", m_erasing->param ? Value(static_cast<int>(*m_erasing->param)) : Value());
+			e.set("state", m_erasing->gaveUp ? "gaveUp" : m_erasing->held ? "held" : "preparing");
+			desk.set("liveErase", std::move(e));
+		}
+		else
+			desk.set("liveErase", Value());
 		doc.set("desk", std::move(desk));
 		return doc;
 	}
