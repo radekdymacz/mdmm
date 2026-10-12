@@ -2152,7 +2152,7 @@ const MmJourneys = (() => {
 				machine: c => ok(I().doc("global", c.g)?.multiMap?.[1]?.[0] === 127, "PAT " + I().doc("global", c.g)?.multiMap?.[1]?.[0]), screen: () => ok($1("#mmapviz .band")?.textContent.includes("H16") || /H16/.test($1(".maprow")?.textContent || "") || +$1("#mpat0")?.value === 127, "shows " + $1("#mpat0")?.value), within: 15000 },
 			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(I().doc("global", c.g)?.multiMap?.[1]?.[0] === c.p0, "PAT " + I().doc("global", c.g)?.multiMap?.[1]?.[0]), within: 15000 }
 		],
-		async tidy(u) { if ($1('[data-pmode="normal"]')) u.click('[data-pmode="normal"]'); }
+		async tidy(u) { if ($1('[data-pmode="normal"]')) u.click('[data-pmode="normal"]'); await recvIdle(); }
 	};
 	const wave12 = [undoKitJ, clearStepLocksJ, lockCurrentJ, patKitJ, songCounterJ, mapPatJ];
 	const all = [...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
