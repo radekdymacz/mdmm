@@ -66,8 +66,10 @@ function stepRecord(){
  if(stepOn()){stepDone();return}
  if(S.playing||S.paused){toast("Stop first: step recording starts while the machine is stopped.");return}
  if(S.stepSel)clearSel();
- const t=isMidiT(S.sel)?0:S.sel;S.stepT=t;
- if(HOST.transport){transportCmd("record",{mode:"step",t});return}
+ /* a MIDI track selected: the machine step-records the track in focus, and the page leaves its focus where it is (no t:
+    no TRACK key; the machine's own POLY and TRACK stay as they are) */
+ const t=isMidiT(S.sel)?null:S.sel;S.stepT=t;
+ if(HOST.transport){transportCmd("record",t==null?{mode:"step"}:{mode:"step",t});return}
  setRecord("step",0);toast("STEP RECORDING: play a note to write it to the step, then the next. → a rest, ← back, Delete clears the step, Esc: done.")}
 function stepDone(){if(!stepOn())return;if(HOST.record){HOST.record();return}setRecord("off",-1)}
 function stepKey(key){
@@ -79,7 +81,7 @@ function stepFocus(){if(!stepOn()||isMidiT(S.sel)||S.stepT===S.sel)return;S.step
 function stepDraw(){
  $$(".stepcur").forEach(x=>x.remove());
  if(!stepOn()||S.ws!=="seq")return;
- const t=S.stepT??S.sel,at=S.stepAt,lane=$("#seq .nlane.big"),ru=at>=0?$(`#seq .ruler .rul[data-s="${at}"]`):null;
+ const t=S.stepT??S.sel;if(isMidiT(t))return;const at=S.stepAt,lane=$("#seq .nlane.big"),ru=at>=0?$(`#seq .ruler .rul[data-s="${at}"]`):null;
  if(!lane||!ru)return;
  const lr=lane.getBoundingClientRect(),r=ru.getBoundingClientRect();
  lane.insertAdjacentHTML("beforeend",`<div class="stepcur" aria-hidden="true" data-l="${tLabel(t)} · STEP ${String(at+1).padStart(2,"0")}" style="left:${r.left-lr.left-1}px;width:${r.width+2}px"></div>`)}

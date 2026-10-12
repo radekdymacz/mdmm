@@ -170,7 +170,9 @@ function autoRange(t){const ns=trk(t).steps.flatMap(x=>x?.n||[]);if(!ns.length)r
    "enabled", mmAdapter.js); the mockup on its own shows it. */
 function setMapping(on){S.mapping=!!on;{const t=$("#tabs [data-ws=control]"),k=$("#learnkey");if(t)t.hidden=!on;if(k)k.hidden=!on}if(!on){S.learn=false;S.learnT=null;document.body.classList.remove("learn");if(S.ws==="control")S.ws="seq"}}
 function goWs(ws){if(ws==="control"&&!S.mapping)return;S.ws=ws;const t=S.sel%6+((ws==="seq"||ws==="sound")&&S.side==="midi"?6:0);select(t)}
-function setSide(sd){S.side=sd;select(S.sel%6+(sd==="midi"?6:0))}
+/* Midi -> Synth in POLY selects the machine's own POLY track, not S.sel%6 (the M2 would pick T2): only a person's own
+   track pick moves POLY (polyFollows), and a rail switch is no pick */
+function setSide(sd){S.side=sd;select(sd==="int"&&S.mode==="poly"&&S.polyT!=null?S.polyT:S.sel%6+(sd==="midi"?6:0))}
 function select(t){S.sel=t;stepFocus();autoRange(t);const pg=S.lane.split(".")[0];if(isMidiT(t)){if(pg!=="MID"){S.lane="MID.1";S.lanePage="MID"}}else if(pg==="MID"||!pname(t,S.lane)){S.lane="FLT.1";S.lanePage="FLT"}render()}
 document.addEventListener("click",e=>{
  const mu=e.target.closest("[data-mute]"),so=e.target.closest("[data-solo]");
