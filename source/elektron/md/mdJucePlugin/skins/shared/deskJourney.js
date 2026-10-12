@@ -854,5 +854,35 @@ const Journey = (() => {
 			{ name: `${prefix}-shots-views`, proves: [], needs: () => location.search.includes(`${prefix}-shots`) ? null : "screenshots only when asked by name", steps: views.map(v => step(v, true)) }
 		];
 	}
-	return { run, demo, ok, sleep, until, recent, u, TIERS, tierOf, onScreen, osKeyPath, menu, editorMenuJourney, memoryJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, fitJourneys, snapshot, safari15Diff, viewJourneys };
+	/* Review 1 (Radek, 2026-10-12, B-094): every modal locks. pressOutside() presses, releases and clicks where a person
+	   would click beside the dialog (the window's bottom-left corner: the backdrop, or the question's own overlay), as a
+	   browser sends it to whatever is there; it returns what was under the pointer.
+	   modalLockJourney(name, dialogs): each dialog {name, sel, open(u, c), needs?()} opened, pressed outside (it stays,
+	   on top), then Esc closes it. */
+	function pressOutside() {
+		const x = 6, y = innerHeight - 6, e = document.elementFromPoint(x, y);
+		if (!e) return "nothing";
+		for (const [k, T] of [["pointerdown", PointerEvent], ["mousedown", MouseEvent], ["pointerup", PointerEvent], ["mouseup", MouseEvent], ["click", MouseEvent]])
+			e.dispatchEvent(new T(k, { bubbles: true, cancelable: true, composed: true, clientX: x, clientY: y, button: 0, buttons: k.endsWith("down") ? 1 : 0 }));
+		return e.id || e.className || e.tagName;
+	}
+	const isOpen = sel => { const el = document.querySelector(sel); return !!el && !el.hidden; };
+	/* a box as "x,y wxh" (rounded), and the keys that are not wholly inside it and in view (their words; "" when all are) */
+	const boxOf = sel => { const el = document.querySelector(sel); if (!el || el.hidden) return "hidden"; const r = el.getBoundingClientRect(); return `${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}x${Math.round(r.height)}`; };
+	const keysInside = (sel, keys) => { const el = document.querySelector(sel); if (!el) return "no panel"; const b = el.getBoundingClientRect();
+		return [...document.querySelectorAll(keys)].filter(k => { const r = k.getBoundingClientRect(); const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+			return !(r.left >= b.left - 1 && r.right <= b.right + 1 && r.top >= b.top - 1 && r.bottom <= b.bottom + 1 && r.bottom <= innerHeight && (top === k || k.contains(top))); }).map(k => k.textContent.trim()).join(","); };
+	const modalLockJourney = (name, dialogs) => ({
+		name, proves: [],
+		steps: dialogs.flatMap(d => [
+			{ say: `open ${d.name}`, act: async (u, c) => { c.skip = d.needs ? d.needs() : null; if (c.skip) { Bridge.log(`JOURNEY ${name}: ${d.name} skipped: ${c.skip}`); return; } await d.open(u, c); await until(() => isOpen(d.sel), 4000); await sleep(250); },
+				screen: c => c.skip ? true : ok(isOpen(d.sel), d.name + " not open") },
+			{ say: `click outside ${d.name}: it stays open, on top`, act: async (u, c) => { if (c.skip) return; c.under = pressOutside(); await sleep(350); },
+				screen: c => c.skip ? true : ok(isOpen(d.sel) && typeof Modal !== "undefined" && "#" + Modal.top() === d.sel, `${d.name} ${isOpen(d.sel) ? "open" : "closed"}, on top ${typeof Modal !== "undefined" ? Modal.top() : "-"}, pressed on ${c.under}`) },
+			{ say: `press Escape: ${d.name} closes`, act: async (u, c) => { if (c.skip) return; u.key("Escape"); await sleep(250); },
+				screen: c => c.skip ? true : ok(!isOpen(d.sel), d.name + " still open") }
+		]),
+		async tidy(u) { for (let i = 0; i < 4 && typeof Modal !== "undefined" && Modal.top(); i++) { u.key("Escape"); await sleep(200); } }
+	});
+	return { pressOutside, modalLockJourney, boxOf, keysInside, run, demo, ok, sleep, until, recent, u, TIERS, tierOf, onScreen, osKeyPath, menu, editorMenuJourney, memoryJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, fitJourneys, snapshot, safari15Diff, viewJourneys };
 })();

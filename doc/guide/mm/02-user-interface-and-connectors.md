@@ -33,7 +33,7 @@ On the machine the LEVEL knob sets the level of the selected track and the eight
 The machine's accelerated edit, where you press a knob and turn it for larger steps, is a different gesture here. Hold [⇧] while you drag for fine steps, a quarter as fast. Hold [⇧] while you turn the wheel, or press Page Up or Page Down on a focused value, to step by ten.
 
 ## DATA PAGE
-<!-- rows: MM-017 MM-018 @ecdf67 -->
+<!-- rows: MM-017 MM-018 @317d98 -->
 
 The machine has seven DATA pages for each track: SYN, AMP, FLT, EFX, LF1, LF2 and LF3. It shows one at a time on its eight knobs. The **Sound** workspace shows every page of the selected track at once, in groups of a few values. The **Sequence** workspace has the page tabs SYN, AMP, FLT, EFX, LF1, LF2 and LF3 in the track rail. They choose the parameters the lock lane edits.
 
@@ -85,10 +85,10 @@ On the machine [KIT] opens the kit menu. In the editor click the <KIT> field of 
 - choose **GLOBAL…** in the engine menu, the drop-down at the left of the LCD;
 - press the GLOBAL link in the **AUDIO / MIDI** panel.
 
-The GLOBAL page opens under the header. It holds the eight global slots and the Control, Sync, Routing, Audio and Control out 1 settings, the master tune among them. {key:close-global} goes back to the workspace. Chapter 19 describes it.
+The GLOBAL page opens over the workspace. It holds the eight global slots and the Control, Sync, Routing, Audio and Control out 1 settings, the master tune among them. {key:close-global} goes back to the workspace. Chapter 19 describes it.
 
 ## TRIG KEYS
-<!-- rows: MM-027 MM-028 MM-029 MM-030 @7a3fc9 -->
+<!-- rows: MM-027 MM-028 MM-029 MM-030 @f192fc -->
 
 The sixteen TRIG keys play notes and set trigs. In the editor:
 
@@ -109,14 +109,14 @@ On the machine, [BANK] + [TRIG] picks a pattern. In the editor click the <PATTER
 [FUNCTION] + [PATTERN/SONG] switches POLY mode. In the editor the **Perform** workspace has a **Poly** key in the **Keyboard** card. Poly mode plays the track selected on the machine with [TRACK]; the editor presses that key for the track you select. Chapter 5 describes poly mode.
 
 ## ENTER, EXIT AND ARROW KEYS
-<!-- rows: MM-033 MM-034 @56d222 -->
+<!-- rows: MM-033 MM-034 @35f8b7 -->
 
 The machine's [ENTER/YES] and [EXIT/NO] confirm and cancel. The editor asks in dialogs on the page: answer with the dialog's buttons, and close one with {key:close-dialog}.
 
 The arrow keys of the machine move the cursor and set the octave of the TRIG keys. In the editor {key:value-left-right} and {key:value-up-down} step a focused value, and {key:octave-down} and {key:octave-up} set the octave of the note keys.
 
 ## BANK KEYS
-<!-- rows: MM-035 MM-036 MM-037 MM-038 @8d122e -->
+<!-- rows: MM-035 MM-036 MM-037 MM-038 @3283c1 -->
 
 The machine's BANK GROUP and BANK keys choose the pattern bank. The pattern chooser shows all eight banks A to H at once. Press {key:lib-bank} inside it to jump to a bank.
 
@@ -163,21 +163,21 @@ COPY, CLEAR and PASTE are the three keys under the LCD, <COPY>, <CLR> and <PASTE
 {key:clear-pattern} on **Sequence** clears the whole pattern. Clicking <CLR> with [⌥] held does the same.
 
 ## SCALE KEY
-<!-- rows: MM-045 MM-046 @ab2ddc -->
+<!-- rows: MM-045 MM-046 @e1f087 -->
 
 The machine's [SCALE] key shows one page of 16 steps. In the editor press **Page** in the **Sequence** workspace, or press the square bracket keys, to step through the pages. Four lights show the pages the pattern has and which one is shown.
 
 [FUNCTION] + [SCALE] opens the scale set-up. In the editor its fields are in the LCD's second line on **Sequence**: <LEN> sets the pattern length and <SPD> the speed. Click a field to step it. Chapter 11 describes both.
 
 ## TRIG SELECT KEY
-<!-- rows: MM-047 MM-048 @ed5468 -->
+<!-- rows: MM-047 MM-048 @87cfcb -->
 
 On the machine [TRIG SELECT] chooses which trig track the TRIG keys edit: AMP, FILTER, LFO or ALL. In the editor each step has a row of three dots, A, F and L, in the **Sequence** workspace. A dot lights for each envelope the step fires. Click a dot to switch it. A step with no dots lit is trigless.
 
 [FUNCTION] + [TRIG SELECT] edits the MIDI tracks. In the editor use the **Synth** and **MIDI** keys in the track rail, or the <SEQ> field in the LCD, to change between the six synth tracks and the six MIDI tracks.
 
 ## THE KEYBOARD (SFX-6)
-<!-- rows: MM-049 MM-050 MM-051 MM-052 MM-053 MM-054 @81f870 -->
+<!-- rows: MM-049 MM-050 MM-051 MM-052 MM-053 MM-054 @6dfed2 -->
 
 The SFX-6 has a keyboard and a joystick. The editor has the same functions on the **Perform** workspace.
 

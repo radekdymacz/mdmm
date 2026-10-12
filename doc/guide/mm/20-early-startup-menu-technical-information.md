@@ -13,7 +13,7 @@ The test mode checks the hardware of the machine: its keys, knobs, joystick and 
 
 The empty reset clears the memory of the machine.
 
-1. Choose **RESET MACHINE…** in the engine menu (the engine name at the left of the LCD). A question says what the reset clears. **Cancel** is the default: [ESC] or a click outside answers it.
+1. Choose **RESET MACHINE…** in the engine menu (the engine name at the left of the LCD). A question says what the reset clears. **Cancel** is the default: [ESC] answers it. A click beside the question does nothing.
 2. Click **Empty reset…**. The editor asks a second time.
 3. Click **Clear everything**. The **Empty reset** panel opens. The editor writes an empty kit, pattern and song into every slot through the SYSEX RECV screen, then reads each one back.
 4. Read the report and click **Done**.

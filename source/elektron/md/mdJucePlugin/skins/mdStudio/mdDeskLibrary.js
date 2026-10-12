@@ -146,7 +146,7 @@ Bridge.onMessage(m => {
 document.addEventListener("click", e => {
 	if (e.target.closest?.("#kitf")) { e.stopImmediatePropagation(); toggleLib("kit"); return; }
 	if (e.target.closest?.("#pat")) { e.stopImmediatePropagation(); toggleLib("pat"); return; }
-	if (!LIB.open) return; if ($("#libpop").contains(e.target) || e.target.closest?.("#dlg,#undo,#redo")) return; closeLib(false);
+	/* review 1 (B-094): every modal locks: a click outside the library no longer closes it (Esc, its close key) */
 }, true);
 document.addEventListener("click", e => {
 	if (!LIB.open || !$("#libpop").contains(e.target) || e.target.closest?.("#lsin")) return;
