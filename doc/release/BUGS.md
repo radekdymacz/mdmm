@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-090 · Monomachine: the UNISON and SUB screens draw heavy bars
+
+- **From:** Radek's 0.6 review, 2026-10-12.
+- **What happens:** Sound, a SWAVE machine: the UNISON screen draws its partials as 6 px bars (UNIW at ±12 ST: heavy vertical bars), the SUB screen thick stalks; every other screen on the page draws 2 px lines.
+- **Fix (`fix/0.6-review-1`):** both screens draw fine stems: 2 px for a partial, dashed 1.5 px for the extended unison pair, the base 1.5 px and faint; the dots are the page's usual ones (`90-sound.js` `ED.uni`, `ED.sub`). Journey `mm-sound-unison-sub-fine` (the widest run of ink across each screen is at most 3 px).
+- **Status:** fixed on `fix/0.6-review-1`.
+
 ## B-088 · Monomachine: swing marks on empty steps (the machine's data, not a bug)
 
 - **From:** Radek's 0.6 review, 2026-10-12 ("slide marks on every step", the teal marks: they are the swing marks).

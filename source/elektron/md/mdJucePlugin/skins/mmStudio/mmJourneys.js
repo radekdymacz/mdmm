@@ -1236,6 +1236,20 @@ const MmJourneys = (() => {
 	/* B-017: dragging the multi envelope (its DEC value, or the DEC dot on its screen) never changes the page's layout:
 	   the screen's canvas took its drawn size (its pixels, the display's scale times its box) as its own height, so each
 	   redraw while dragging made the card, and the page, taller, until the render on release put it back. */
+	/* Review 1 (B-090): the UNISON and SUB screens draw fine stems (2 px, as the other screens' lines), not 6 px bars:
+	   the widest run of ink across the screen just above its foot */
+	const inkRuns = cv => { const g = cv.getContext("2d"), y = Math.round(cv.height - 30 * (devicePixelRatio || 1)), d = g.getImageData(0, y, cv.width, 1).data; let run = 0, best = 0, n = 0; for (let x = 0; x < cv.width; x++) { const a = d[x * 4 + 3]; if (a > 200) { run++; if (run === 1) n++; best = Math.max(best, run); } else run = 0; } return { best: best / (devicePixelRatio || 1), n }; };
+	const uniSubFine = {
+		name: "mm-sound-unison-sub-fine", proves: [],
+		steps: [go("sound"), sel(0),
+			{ say: "SWAVE-SAW on track 1, UNIW 127 UNIL 100 SUB1 90 SUBX 70: each screen's stems are at most 3 px wide", act: async (u, c) => {
+				c.m0 = wk().tracks[0].machineName; c.n = 0;
+				if (c.m0 !== "SWAVE-SAW") { c.n++; u.click("#machbtn"); await until(() => !$1("#machpop").hidden, 1500); u.click('#machpop .mf[data-fam="SWAVE"]'); await sleep(50); u.click('#machpop .mk[data-mach="SWAVE-SAW"]'); await until(() => wk().tracks[0].machineName === "SWAVE-SAW", 4000); await sleep(400); }
+				for (const [n, v] of [["UNIW", 127], ["UNIL", 100], ["SUB1", 90], ["SUBX", 70]]) { const q = `#main .pc[data-g="SYN"][aria-label="${n}"]`; if (!$1(q)) continue; const v0 = $1(q + " b")?.textContent; u.click(q, { cmd: true }); await until(() => !!$1("input.vedit"), 1500); $1("input.vedit").value = String(v); u.key("Enter"); await sleep(200); if ($1(q + " b")?.textContent !== v0) c.n++; }
+				await sleep(400); },
+				screen: () => { const a = $1('#main canvas.ed[data-ed="uni"]'), b = $1('#main canvas.ed[data-ed="sub"]'); if (!a || !b) return ok(false, "no UNISON or SUB screen"); const ra = inkRuns(a), rb = inkRuns(b); return ok(ra.n >= 3 && rb.n >= 2 && ra.best <= 3 && rb.best <= 3, `unison ${ra.n} stems, widest ${ra.best} px; sub ${rb.n} stems, widest ${rb.best} px`); } },
+			],
+		async tidy(u, c) { blur(); for (let k = 0; k < (c.n || 0); k++) { u.key("z", { cmd: true }); await sleep(300); } } };
 	const menvLayout = {
 		name: "mm-perform-menv-layout", proves: ["MM-160"],
 		steps: [
@@ -3150,7 +3164,7 @@ const MmJourneys = (() => {
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, mutScope,
-		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
+		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, uniSubFine, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
 		blackKeys, rollPaint, rollDrawLength, rollBoxMove, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxPlace, resetEmpty];
 
 	async function between(u) {
