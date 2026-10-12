@@ -1081,7 +1081,7 @@ namespace
 		std::puts("== P4 boot: input held until the start-up animation is over");
 		// The start the page sees (B-003): a machine with a blank UW flash first formats it, which the plug-in shows as
 		// loading, and starts again on the formatted flash. So the formatting run first, then the start under test on
-		// its flash. B-104: the desk's status requests at the instant the firmware takes MIDI left 0x20 in the main
+		// its flash. B-109: the desk's status requests at the instant the firmware takes MIDI left 0x20 in the main
 		// screen byte while the animation still ran; the desk took that for the main screen and its first PLAY was lost.
 		Bytes flash, cache;
 		{
