@@ -559,6 +559,25 @@ const MdJourneys = (() => {
 		]
 	};
 
+	/* 0.6: GLOBAL has no backdrop; a press outside it closes it and reaches nothing below (a step of the grid: no trig) */
+	const globalClickOut = {
+		name: "md-global-click-out", proves: [],
+		steps: [
+			go("seq"), sel(() => soundTrack()),
+			{ say: "open GLOBAL, then press an empty step of the grid (its press, release and click)", act: async (u, c) => {
+				c.s = [...Array(V.len).keys()].find(s => !trigsOf(c.t).includes(s)); if (c.s == null) throw new Error("no empty step");
+				c.p0 = trigsOf(c.t).join(","); c.u0 = V.undoCount;
+				u.click("#globkey"); await sleep(300);
+				const e = $1(cell(c.t, c.s)), r = e.getBoundingClientRect();
+				const pressOn = (e, x, y) => { for (const [k, T] of [["pointerdown", PointerEvent], ["mousedown", MouseEvent], ["pointerup", PointerEvent], ["mouseup", MouseEvent], ["click", MouseEvent]])
+			e.dispatchEvent(new T(k, { bubbles: true, cancelable: true, composed: true, clientX: x, clientY: y, button: 0, buttons: k.endsWith("down") ? 1 : 0 })); };
+				pressOn(e, r.left + r.width / 2, r.top + r.height / 2); await sleep(300);
+			}, screen: c => ok($1("#globpop").hidden && !pressed("#globkey") && !pressed(cell(c.t, c.s)), "page " + ($1("#globpop").hidden ? "closed" : "open") + ", step " + (pressed(cell(c.t, c.s)) ? "lit" : "dark")),
+				machine: c => ok(trigsOf(c.t).join(",") === c.p0 && V.undoCount === c.u0, `pattern ${trigsOf(c.t).join(",")} (was ${c.p0}), undo steps ${c.u0} -> ${V.undoCount}`) }
+		],
+		async tidy(u) { if (!$1("#globpop").hidden) u.key("Escape"); }
+	};
+
 	/* ---------- Mix ---------- */
 	const mixSolo = {
 		name: "md-mix-mute-solo", proves: ["MD-122"],
@@ -1548,7 +1567,7 @@ const MdJourneys = (() => {
 	const all = [bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
 		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec,
 		genJourney("md-gen-mutate-undo", false, { proves: [] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: [] }), genKeys,
-		shapeSound, arrows, machinePick, soundCopy, editorDrag, controlAll, globalKey, songModeJ,
+		shapeSound, arrows, machinePick, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,
 		mixSolo, shiftMutes, allOff, fader, outKey, masterFx,
 		songArrange, songChain, songPlayhead, songSlots, songKeys, shotsSongSlots, samplerSlots, samplerSetup, audition,
 		libDialog, kitCopy, kitRename, kitClear, patGo, patClear, dialogEsc,

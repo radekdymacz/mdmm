@@ -1534,6 +1534,23 @@ const MmJourneys = (() => {
 		],
 		async tidy(u) { if (!$1("#globpop").hidden) u.key("Escape"); u.click(tab("seq")); await sleep(200); }
 	};
+	/* 0.6: GLOBAL has no backdrop; a press outside it closes it and reaches nothing below (the rail: no track picked) */
+	const globalClickOut = {
+		name: "mm-global-click-out", proves: [],
+		steps: [
+			go("seq"), sel(0),
+			{ say: "open GLOBAL, then press another track on the rail below it (its press, release and click)", act: async (u, c) => {
+				c.p0 = trigsOf(0).join(","); c.u0 = machine().history?.undoCount || 0;
+				u.click("#globkey"); await sleep(300);
+				const e = $1(rail(2)), r = e.getBoundingClientRect();
+				const pressOn = (e, x, y) => { for (const [k, T] of [["pointerdown", PointerEvent], ["mousedown", MouseEvent], ["pointerup", PointerEvent], ["mouseup", MouseEvent], ["click", MouseEvent]])
+			e.dispatchEvent(new T(k, { bubbles: true, cancelable: true, composed: true, clientX: x, clientY: y, button: 0, buttons: k.endsWith("down") ? 1 : 0 })); };
+				pressOn(e, r.left + r.width / 2, r.top + r.height / 2); await sleep(300);
+			}, screen: () => ok($1("#globpop").hidden && !pressed("#globkey") && S().sel === 0, "page " + ($1("#globpop").hidden ? "closed" : "open") + ", track " + (S().sel + 1) + " selected"),
+				machine: c => ok(trigsOf(0).join(",") === c.p0 && (machine().history?.undoCount || 0) === c.u0, `pattern ${trigsOf(0).join(",")} (was ${c.p0}), undo steps ${c.u0} -> ${machine().history?.undoCount || 0}`) }
+		],
+		async tidy(u) { if (!$1("#globpop").hidden) u.key("Escape"); }
+	};
 	/* 0.6: Copy and Paste of the active global (globalCopy, globalPaste), asked before the paste, one undo step */
 	const globalCopyPaste = {
 		name: "mm-global-copy-paste", proves: ["MM-285"],
@@ -1755,7 +1772,7 @@ const MmJourneys = (() => {
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, genKeys, mutScope,
 		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
-		blackKeys, rollPaint, rollDrawLength, rollBoxMove, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, ...viewJs, ...cpuJs, ...volJs];
+		blackKeys, rollPaint, rollDrawLength, rollBoxMove, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, ...viewJs, ...cpuJs, ...volJs];
 
 	async function between(u) {
 		for (let i = 0; i < 3 && dlgShown(); i++) { u.key("Escape"); await sleep(200); }

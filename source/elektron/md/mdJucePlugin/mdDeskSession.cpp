@@ -130,6 +130,8 @@ namespace mdJucePlugin
 
 	DeskSession::DeskSession(AudioPluginAudioProcessor& _processor) : m_processor(_processor)
 	{
+		// notes that came before this session are old: a page that opens later does not get them
+		while(processor().takeMidiIn()) {}
 	}
 
 	DeskSession::~DeskSession()

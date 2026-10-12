@@ -112,7 +112,7 @@ const MmView = (() => {
 		v.hostTempo = !!(H && H.follows && H.bpm > 0 && global && global.controlIn && global.controlIn.tempoSync === 1);
 		if (v.hostTempo) v.bpm = H.bpm;
 		/* B-051, F3: the GLOBAL page's MIDI part, the active global's (a channel 0-15, null OFF) */
-		if (global) v.glob = globPage(glob, global);
+		if (global) { v.glob = globPage(glob, global); v.glob.clip = m?.clipboard?.global ?? null; }
 		const kd = kitDocOf(docs, kit), pd = pat != null ? docs.patterns[pat] || null : null;
 		/* the view shows the machine once the current pattern and the kit that plays are there */
 		v.ready = !!(kd && pd);
