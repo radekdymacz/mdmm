@@ -28,7 +28,7 @@ const SKINS = path.join(ROOT, "source/elektron/md/mdJucePlugin/skins");
 const usage = () => { console.error("usage: node scripts/mdmm-page.mjs [--jobs N] [--tier page|machine|host|all] [--host stub|record] [--timeout S] [--out DIR] [--verbose] [md|mm|both] [selector]"); process.exit(2); };
 
 /* ---------- arguments ---------- */
-const opt = { jobs: 2, tier: "page", host: "stub", timeout: 600, out: process.env.MDMM_PAGE_OUT || "", verbose: false };
+const opt = { jobs: 2, tier: "page", host: "stub", timeout: 1800, out: process.env.MDMM_PAGE_OUT || "", verbose: false };
 const rest = [];
 for (let a = process.argv.slice(2); a.length;) {
 	const x = a.shift();
