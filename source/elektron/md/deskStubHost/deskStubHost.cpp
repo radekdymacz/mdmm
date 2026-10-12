@@ -37,6 +37,8 @@
 #include "elektronData/mmPattern.h"
 #include "elektronData/mmSong.h"
 
+#include "deskWire/mmWire.h"
+
 #include <poll.h>
 #include <unistd.h>
 
@@ -306,6 +308,7 @@ namespace
 		}
 
 	private:
+
 		void reply(Bytes _m) { m_replies.push_back(std::move(_m)); }
 	public:
 		// replies waiting: the host steps again at once (a background load is a request and its reply, back to back)
@@ -576,6 +579,8 @@ namespace
 	// The fake MM OS 1.32B (as mmDeskTest's FakeMachine, grown): dumps are taken on SYSEX RECV only (the GLOBAL menu's
 	// screen the desk's key macro opens), requests and status answered, LOAD PATTERN / KIT, SAVE KIT, SET ACTIVE GLOBAL,
 	// the working kit (parameter changes and machine assigns move it; memory shows it), the mutes and the transport.
+	void toPage(const Value& _m);
+
 	class FakeMm
 	{
 	public:
@@ -632,11 +637,13 @@ namespace
 		mmDesk::DevicePort port()
 		{
 			mmDesk::DevicePort p;
-			p.sendSysex = [this](const Bytes& _m) { take(_m); };
+			p.sendSysex = [this](const Bytes& _m) { wire("sysex", _m); take(_m); };
 			p.sendParam = [this](const uint8_t _t, const uint8_t _p, const uint8_t _i, const uint8_t _v)
 			{
 				if(_t >= 6 || _i >= 8)
 					return;
+				if(const auto cc = deskWire::mm::param(m_baseCh, _t, _p, _i, _v))
+					wire("cc", *cc);
 				if(_p == 8 && _i == 0)	// the track's mute (mmDeskCommands.cpp)
 					m_mutes = _v ? (m_mutes | (1 << _t)) : (m_mutes & ~(1 << _t));
 				else if(_p == 7 && _i == 0)
@@ -645,10 +652,13 @@ namespace
 					m_working.tracks[_t].pages[_p][_i] = _v;
 			};
 			// NRPN: a track's MIDI page (0x38 +) and its multi envelope (0x40 +), mmDeskDelivery.cpp
+			p.baseChannel = [this](const uint8_t _ch) { m_baseCh = _ch; };
 			p.sendNrpn = [this](const uint8_t _t, const uint8_t _p, const uint8_t _v)
 			{
 				if(_t >= 6)
 					return;
+				for(const auto& m : deskWire::mm::nrpn(m_baseCh, _t, _p, _v))
+					wire("nrpn", m);
 				if(_p >= 0x38 && _p < 0x40)
 					m_working.tracks[_t].midi[_p - 0x38] = _v;
 				else if(_p >= 0x40 && _p < 0x46)
@@ -675,8 +685,10 @@ namespace
 				return true;
 			};
 			// wave 7: STEP RECORDING writes a played note (any channel here) to the focus track at the cursor, and moves on
-			p.sendNote = [this](uint8_t, const uint8_t _note, const uint8_t _velocity)
+			p.sendNote = [this](const uint8_t _ch, const uint8_t _note, const uint8_t _velocity)
 			{
+				if(const auto n = deskWire::note(_ch, _note, _velocity))
+					wire("note", *n);
 				if(m_recording != 3 || !_velocity || m_stepCursor < 0)
 					return;
 				setNote(m_focus, m_stepCursor, _note);
@@ -685,6 +697,22 @@ namespace
 			p.sendMidi = [this](const Bytes& _m) { realtime(_m); };
 			p.nowMs = [] { return nowMs(); };
 			return p;
+		}
+
+		// 0.6 slice 5 MM: every message the core hands the device edge, as the wire engine would put it on the cable (the base
+		// channel from baseChannel, deskWire's CC / NRPN / note encoders): {type: "wire", kind, b: the first 16 bytes, n: its
+		// length}. The page ignores the type; a journey listens to it (Bridge.onMessage) to check the CC number and the channel.
+		void wire(const char* _kind, const Bytes& _b)
+		{
+			Value m = Value::object();
+			m.set("type", "wire");
+			m.set("kind", _kind);
+			Value b = Value::array();
+			for(size_t i = 0; i < _b.size() && i < 16; ++i)
+				b.push(Value(static_cast<int>(_b[i])));
+			m.set("b", std::move(b));
+			m.set("n", static_cast<int>(_b.size()));
+			toPage(m);
 		}
 
 		// a step of track _t: a note (0-127) or none (-1), as the machine's recordings write it (trigs and pitch)
@@ -754,6 +782,7 @@ namespace
 		}
 
 	private:
+		uint8_t m_baseCh = 0;
 		void reply(Bytes _m) { m_replies.push_back(std::move(_m)); }
 	public:
 		// replies waiting: the host steps again at once (a background load is a request and its reply, back to back)
