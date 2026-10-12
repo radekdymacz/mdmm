@@ -44,7 +44,8 @@ list(APPEND SOURCES
 	mdPageEditor.cpp mdPageEditor.h mdPageZoom.h mdEditorMenu.h mdNoticeBook.h mdDroppedFiles.h
 	mdRomInstall.cpp mdRomInstall.h
 	mdSettingsMigration.cpp mdSettingsMigration.h
-	mdSessionMd.cpp mdSessionMm.cpp mdSessions.h
+	mdSessionMd.cpp mdSessionMm.cpp mdSessions.h mdSyxSession.h mdSyxWork.h
+	mdFactorySource.cpp mdFactorySource.h
 	mdStudioLink.cpp mdStudioLink.h
 	mdWebPageHost.cpp mdWebPageHost.h
 	mmStudioLink.cpp mmStudioLink.h
@@ -744,6 +745,15 @@ function(mdmm_plugin_targets)
 		add_test(NAME mdMachineMemoryFirmwareTest_${m} COMMAND mdMachineMemoryFirmwareTest ${m})
 		set_tests_properties(mdMachineMemoryFirmwareTest_${m} PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
 	endforeach()
+
+	# Wave 6: Reset machine > Factory reset's source, a second machine from the ROM read on its own thread (mdFactorySource.h).
+	# In ctest; it skips (77) without GEARMULATOR_MD_FIRMWARE_BIN in the environment.
+	add_executable(mdFactorySourceFirmwareTest mdFactorySourceFirmwareTest.cpp mdFactorySource.cpp)
+	target_link_libraries(mdFactorySourceFirmwareTest PRIVATE mdLib elektronData)
+	target_include_directories(mdFactorySourceFirmwareTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../..)
+	set_property(TARGET mdFactorySourceFirmwareTest PROPERTY FOLDER "Elektron/test")
+	add_test(NAME mdFactorySourceFirmwareTest COMMAND mdFactorySourceFirmwareTest)
+	set_tests_properties(mdFactorySourceFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 900)
 
 	# A machine without its ROM is not an error: the session says "missing", the page's card takes the ROM,
 	# and the machine starts in place. The plain runs need no ROM; "install" needs the user's own (skips, 77, without).

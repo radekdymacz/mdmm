@@ -16,6 +16,8 @@
 //   burst      back-to-back dumps; the RECV message and error counters
 //   macro      how fast the SYSEX RECV panel macro can run
 //   recvflag, recvcount, workkit, boot   RAM searches
+//   recording  0.6 wave 7: EXIT held in LIVE RECORDING (erases the focus track's notes as they play), STEP
+//              RECORDING (STOP + REC): its flag (0x2bff05) and cursor (0x2bff09), the keys, which channel records
 //   chain [hex] MM-P8: BANK + TRIG, BANK GROUP and pattern chaining in RAM (with an address: its life)
 //   queue      a queued pattern switch against status and the playhead
 //   screens    the firmware's screen word across screens
@@ -2420,6 +2422,217 @@ namespace
 		check(after > base * 0.3, "still playing after leaving SYSEX RECV");
 		printLcd(*m, "after EXIT");
 	}
+
+	// ---- recording (0.6 wave 7): LIVE RECORDING erase (EXIT held) and STEP RECORDING (STOP + REC), manual 1-49, 1-50 ----
+
+	std::string maskText(const uint64_t _m, const int _len)
+	{
+		std::string s;
+		for(int i = 0; i < _len; ++i)
+			s += (_m >> i) & 1 ? 'x' : '.';
+		return s;
+	}
+
+	void printTrack(Machine& _m, const char* _what, const int _t = 0)
+	{
+		const auto p = ed::decodeMmPattern(patternDump(_m, 0));
+		if(!p)
+		{
+			std::printf("  %-28s (no pattern dump)\n", _what);
+			return;
+		}
+		std::printf("  %-28s T%d amp %s pitch %s off %s notes", _what, _t + 1, maskText(p->amp[_t], p->length).c_str(),
+			maskText(p->pitch[_t], p->length).c_str(), maskText(p->noteOff[_t], p->length).c_str());
+		for(int s = 0; s < p->length; ++s)
+			if(p->notes[_t][s] != ed::MmPattern::g_noNote)
+				std::printf(" %d:%d", s, p->notes[_t][s]);
+		std::printf("\n");
+	}
+
+	void diffRam(const Bytes& _a, const Bytes& _b, const char* _what, const size_t _max = 40)
+	{
+		std::printf("  RAM %s:", _what);
+		size_t n = 0;
+		for(size_t i = 0; i < std::min(_a.size(), _b.size()); ++i)
+			if(_a[i] != _b[i] && n++ < _max)
+				std::printf(" %06x:%02x>%02x", addrOf(i), _a[i], _b[i]);
+		std::printf(" (%zu)\n", n);
+	}
+
+	void recordingMode(const Bytes& _rom)
+	{
+		std::puts("== MM recording probe (live erase, step recording)");
+		auto m = boot(_rom);
+		const auto rec = *md::panelPacket(g_mm, md::PanelControl::Record);
+		const auto play = *md::panelPacket(g_mm, md::PanelControl::Play);
+		const auto stop = *md::panelPacket(g_mm, md::PanelControl::Stop);
+		const auto exitKey = *md::panelPacket(g_mm, md::PanelControl::Exit);
+		const auto readRec = [&]
+		{
+			return std::to_string(m->read8(md::MmTelemetry::g_gridRecordAddress)) + "/" + std::to_string(m->read8(md::MmTelemetry::g_liveRecordAddress));
+		};
+		const auto note = [&](const uint8_t _ch, const uint8_t _n, const double _ms)
+		{
+			m->send({static_cast<uint8_t>(0x90 | _ch), _n, 100});
+			m->run(_ms);
+			m->send({static_cast<uint8_t>(0x80 | _ch), _n, 0});
+			m->run(150);
+		};
+		// A pattern with notes on T1 every step, length 16.
+		{
+			auto p = *ed::decodeMmPattern(patternDump(*m, 0));
+			std::printf("  factory pattern 1: length %d\n", p.length);
+			recvMacro(*m, 20, 20);
+			m->run(200);
+			p.position = 0;
+			p.length = 16;
+			for(int t = 0; t < 2; ++t)
+				for(int s = 0; s < 16; ++s)
+				{
+					p.amp[t] |= 1ull << s; p.filter[t] |= 1ull << s; p.lfo[t] |= 1ull << s; p.pitch[t] |= 1ull << s;
+					p.notes[t][s] = static_cast<uint8_t>(48 + s);
+				}
+			m->send(ed::encodeMmPattern(p));
+			m->run(300);
+			for(int i = 0; i < 8; ++i) key(*m, md::PanelControl::Exit, 20, 20);
+			m->send(mmCommand(0x5b, {0}));	// LOAD PATTERN 1
+			m->run(500);
+		}
+		printTrack(*m, "start");
+		printTrack(*m, "start", 1);
+		const int tempo = (int(m->read8(md::MmTelemetry::g_tempoAddress)) << 8) | m->read8(md::MmTelemetry::g_tempoAddress + 1);
+		const double stepMs = tempo > 0 ? 60000.0 / (tempo / 24.0) / 4 : 125;
+		std::printf("  tempo %.1f, step %.1f ms\n", tempo / 24.0, stepMs);
+
+		// LIVE RECORDING: hold RECORD, press PLAY.
+		rawKey(*m, rec, 60);
+		rawKey(*m, {rec.row, static_cast<uint8_t>(rec.mask | (rec.row == play.row ? play.mask : 0))}, 0);
+		if(rec.row != play.row) rawKey(*m, play, 60);
+		rawKey(*m, {play.row, 0}, 0);
+		rawKey(*m, {rec.row, 0}, 300);
+		std::printf("  live: grid/live %s running %d\n", readRec().c_str(), m->read8(md::MmTelemetry::g_runningAddress));
+		// Wait for step 0, then hold EXIT for steps 4..7.
+		while(m->read8(md::MmTelemetry::g_stepAddress) != 3) m->run(2);
+		const auto before = chainSnapshot(*m);
+		rawKey(*m, exitKey, stepMs * 4);
+		const auto during = chainSnapshot(*m);
+		std::printf("  live 2bfef8:");
+		for(uint32_t a = 0x2bfef8; a < 0x2bff20; ++a) std::printf(" %02x", before[a - 0x200000]);
+		std::printf("\n");
+		rawKey(*m, {exitKey.row, 0}, stepMs * 2);
+		diffRam(before, during, "EXIT held in LIVE");
+		printTrack(*m, "after EXIT steps 4-7 (T1 focus)");
+		printTrack(*m, "after EXIT steps 4-7", 1);
+		// Focus T2 (TRACK 2) and hold EXIT again over steps 8-11.
+		key(*m, md::PanelControl::Track2, 40, 40);
+		while(m->read8(md::MmTelemetry::g_stepAddress) != 7) m->run(2);
+		rawKey(*m, exitKey, stepMs * 4);
+		rawKey(*m, {exitKey.row, 0}, stepMs * 2);
+		printTrack(*m, "after TRACK 2 + EXIT 8-11", 0);
+		printTrack(*m, "after TRACK 2 + EXIT 8-11", 1);
+		// STOP: out of live recording.
+		key(*m, md::PanelControl::Stop, 40, 200);
+		key(*m, md::PanelControl::Stop, 40, 300);
+		key(*m, md::PanelControl::Track1, 40, 40);
+		std::printf("  stopped: grid/live %s running %d step %d\n", readRec().c_str(), m->read8(md::MmTelemetry::g_runningAddress), m->read8(md::MmTelemetry::g_stepAddress));
+
+		// STEP RECORDING: hold STOP, press REC.
+		const auto s0 = chainSnapshot(*m);
+		rawKey(*m, stop, 60);
+		rawKey(*m, rec, 60);
+		rawKey(*m, {rec.row, 0}, 60);
+		rawKey(*m, {stop.row, 0}, 300);
+		const auto s1 = chainSnapshot(*m);
+		std::printf("  step rec: grid/live %s running %d step %d\n", readRec().c_str(), m->read8(md::MmTelemetry::g_runningAddress), m->read8(md::MmTelemetry::g_stepAddress));
+		diffRam(s0, s1, "STOP+REC", 80);
+		printLcd(*m, "STEP RECORDING");
+		// A note on the auto channel (9), then on track 1's channel (1).
+		note(8, 60, 100);
+		const auto s2 = chainSnapshot(*m);
+		diffRam(s1, s2, "note on ch 9", 60);
+		printTrack(*m, "after a note (ch 9)");
+		note(0, 62, 100);
+		const auto s3 = chainSnapshot(*m);
+		diffRam(s2, s3, "note on ch 1", 60);
+		printTrack(*m, "after a note (ch 1)");
+		key(*m, md::PanelControl::Right, 40, 100);
+		const auto s4 = chainSnapshot(*m);
+		diffRam(s3, s4, "RIGHT", 60);
+		key(*m, md::PanelControl::Left, 40, 100);
+		const auto s5 = chainSnapshot(*m);
+		diffRam(s4, s5, "LEFT", 60);
+		key(*m, md::PanelControl::Enter, 40, 150);
+		const auto s6 = chainSnapshot(*m);
+		diffRam(s5, s6, "ENTER", 60);
+		printTrack(*m, "after ENTER");
+		key(*m, md::PanelControl::Exit, 40, 150);
+		const auto s7 = chainSnapshot(*m);
+		diffRam(s6, s7, "EXIT", 60);
+		printTrack(*m, "after EXIT");
+		printLcd(*m, "STEP RECORDING after keys");
+		// A chord: two notes held together.
+		m->send({0x98, 64, 100}); m->run(20); m->send({0x98, 67, 100}); m->run(100);
+		m->send({0x88, 64, 0}); m->run(20); m->send({0x88, 67, 0}); m->run(150);
+		printTrack(*m, "after a chord (ch 9)");
+		const auto s7b = chainSnapshot(*m);
+		{
+			// The cursor: a byte that reads 0 1 2 3 2 3 4 5 (+ b) across the snapshots.
+			const std::vector<const Bytes*> cur{&s1, &s2, &s3, &s4, &s5, &s6, &s7, &s7b};
+			const int want[] = {0, 1, 2, 3, 2, 3, 4, 5};
+			std::printf("  cursor candidates:");
+			for(size_t i = 0; i < s1.size(); ++i)
+			{
+				const int b = int((*cur[0])[i]) - want[0];
+				bool all = true;
+				for(size_t k = 1; k < cur.size() && all; ++k)
+					all = int((*cur[k])[i]) - want[k] == b;
+				if(all)
+					std::printf(" %06x(b=%d)", addrOf(i), b);
+			}
+			std::printf("\n");
+		}
+		note(1, 70, 100);
+		printTrack(*m, "after a note on ch 2 (T1 focus)", 0);
+		printTrack(*m, "after a note on ch 2 (T1 focus)", 1);
+		std::printf("  cursor %d\n", m->read8(0x2bff09));
+		// Leave: REC, then STOP, see which ends it.
+		const auto s8 = chainSnapshot(*m);
+		key(*m, md::PanelControl::Record, 40, 300);
+		std::printf("  after REC: grid/live %s\n", readRec().c_str());
+		const auto s9 = chainSnapshot(*m);
+		diffRam(s8, s9, "REC in step rec", 60);
+		key(*m, md::PanelControl::Stop, 40, 300);
+		std::printf("  after STOP: grid/live %s\n", readRec().c_str());
+		const auto s10 = chainSnapshot(*m);
+		diffRam(s9, s10, "STOP after", 60);
+		printLcd(*m, "after leaving");
+		// GRID RECORDING alone, to tell STEP from GRID.
+		key(*m, md::PanelControl::Record, 40, 300);
+		const auto g1 = chainSnapshot(*m);
+		std::printf("  grid: grid/live %s\n", readRec().c_str());
+		key(*m, md::PanelControl::Record, 40, 300);
+		const auto o1 = chainSnapshot(*m);
+		std::printf("  step flag candidates (same in every step snapshot, other in grid and off):");
+		const std::vector<const Bytes*> st{&s1, &s2, &s3, &s4, &s5, &s6, &s7, &s7b};
+		for(size_t i = 0; i < s1.size(); ++i)
+		{
+			const auto v = s1[i];
+			bool all = true;
+			for(const auto* x : st) all = all && (*x)[i] == v;
+			if(all && g1[i] != v && o1[i] != v && s0[i] != v && s10[i] != v)
+				std::printf(" %06x(%02x step, %02x grid, %02x off)", addrOf(i), v, g1[i], o1[i]);
+		}
+		std::printf("\n");
+		const auto row = [&](const char* _n, const Bytes& _s)
+		{
+			std::printf("  %-5s 2bfef8:", _n);
+			for(uint32_t a = 0x2bfef8; a < 0x2bff20; ++a)
+				for(size_t i = 0x0bfef8; i < 0x0bfef9; ++i)
+					std::printf(" %02x", _s[a - 0x200000]);
+			std::printf("\n");
+		};
+		row("off", s0); row("step", s1); row("step7", s7b); row("grid", g1); row("off2", o1);
+	}
 }
 
 int main(const int _argc, char** _argv)
@@ -2459,6 +2672,7 @@ int main(const int _argc, char** _argv)
 		else if(mode == "recvflag2") recvFlag2Mode(rom);
 		else if(mode == "chain") chainMode(rom, dir);
 		else if(mode == "songrow") songRowMode(rom);
+		else if(mode == "recording") recordingMode(rom);
 		else if(mode == "enums")
 		{
 			require(_argc >= 7, "enums <outdir> <machine> <page> <param>...");

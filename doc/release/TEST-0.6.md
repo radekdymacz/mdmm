@@ -53,13 +53,32 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 5. MM: Master tune − / + (Shift: 1 Hz); listen to the pitch. Control out 1: Sequencer OUT silences the tracks (the line under the rows says so) and sends NRPN; back to INT.
 6. MM on real hardware: a master tune or Control out 1 change waits as SEND n.
 
+## SysEx and reset (wave 6)
+
+1. Both: the engine menu's IMPORT SYSEX…, EXPORT SYSEX… and RESET MACHINE… entries (the kit library and the pattern chooser no longer have SysEx keys); a .syx dropped on the window still opens the import.
+2. Export: All ticked saves a full backup. Untick All: Kits K01 to K04 and Globals G1 only (click, ⇧-click, wheel, drag, arrows on a range end), Save .syx…, then import that file and check it holds just those.
+3. MM: tick Waveforms W01 to W08 in the export; the file holds the used ones (an empty waveform is left out).
+4. Import a file with two kits: Specific place, kits from K05. The grid shows them on K05 and K06, the tooltip says where each came from; Import asks first when a slot holds data. Original place puts them back.
+5. Verify only, with and without Specific place: nothing changes on the machine; the report shows = and ≠.
+6. Reset machine… > Empty reset… (asked twice): every kit, pattern and song empty, globals unchanged. MD: Factory reset… (seconds to prepare, minutes to send and read back): kits 1 to 4 are TRX UW, EFM UW, E12 UW, P-I UW again. MM: the question says why there is no factory reset.
+7. MM on real hardware: an empty reset waits as SEND n until SYSEX RECV; the export of waveforms reads them over the cable.
+
+## Recording (wave 7)
+
+1. MD: select a track with trigs, start live recording (● or ⌥Space), hold Delete: the track's header is marked red and its trigs go as they play. Let go: the other tracks kept theirs.
+2. MM: the same with LIVE RECORDING (⌥Space): hold Delete, the selected track's notes go as they pass.
+3. MM: stopped, ⇧-click ● (or the ▶ menu's Step record): the key shows STEP and a red cursor on the roll (no new row above the roll). Play A S D: each note goes to the cursor's step and the cursor moves on. → leaves a rest, ← goes back, Delete clears the step, Esc (or ●) ends it.
+4. MM: while step recording, pick another synth track: the machine writes that track from the same step. With a step selection made first, ⇧-click ● drops it, and ← → Esc are step recording's.
+5. Both: hold Delete while live recording and close the editor window (or reload the page): the erase stops within a second.
+6. MM on real hardware: step recording and live erase are refused with the reason (they need the machine's keys).
+
 ## Machine memory for new sessions (wave 11, I-024, both editors)
 
 1. Plug-in in a new DAW project: change a kit name, SAVE KIT into a slot (page or panel). Wait two seconds.
 2. Add a second instance of the same editor in a new project (or close and add again): the slot holds your kit.
 3. Open an older saved project: it has its own memory, not the new kit.
-4. Engine menu: START FROM FACTORY MEMORY…, Cancel, then again and confirm: the factory kits are back; a new instance starts from factory memory.
+4. Engine menu: RESET MACHINE… > Start from factory memory…, Cancel, then again and confirm: the factory kits are back within seconds; a new instance starts from factory memory. The engine menu has no separate entry for it.
 5. KEEP MEMORY: OFF, save a kit, new instance: factory memory. Turn it ON again.
-6. Standalone first start with no saved state (fresh settings): starts with the saved memory.
+6. Standalone: save a kit in a plug-in, then start the standalone (it has its own saved state): it starts with the saved memory, not its own. With KEEP MEMORY: OFF it starts with its own state again.
 7. The file: `~/Documents/Gearmulator Preview/<Machine>/memory/machine-memory.bin`. Damage it (change a byte): the next new instance says so, starts from factory memory and keeps `machine-memory.unusable.bin`.
 8. MD: load a sample into a UW slot, wait, new instance: the sample is there.

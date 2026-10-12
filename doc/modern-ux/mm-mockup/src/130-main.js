@@ -171,7 +171,7 @@ function autoRange(t){const ns=trk(t).steps.flatMap(x=>x?.n||[]);if(!ns.length)r
 function setMapping(on){S.mapping=!!on;{const t=$("#tabs [data-ws=control]"),k=$("#learnkey");if(t)t.hidden=!on;if(k)k.hidden=!on}if(!on){S.learn=false;S.learnT=null;document.body.classList.remove("learn");if(S.ws==="control")S.ws="seq"}}
 function goWs(ws){if(ws==="control"&&!S.mapping)return;S.ws=ws;const t=S.sel%6+((ws==="seq"||ws==="sound")&&S.side==="midi"?6:0);select(t)}
 function setSide(sd){S.side=sd;select(S.sel%6+(sd==="midi"?6:0))}
-function select(t){S.sel=t;autoRange(t);const pg=S.lane.split(".")[0];if(isMidiT(t)){if(pg!=="MID"){S.lane="MID.1";S.lanePage="MID"}}else if(pg==="MID"||!pname(t,S.lane)){S.lane="FLT.1";S.lanePage="FLT"}render()}
+function select(t){S.sel=t;stepFocus();autoRange(t);const pg=S.lane.split(".")[0];if(isMidiT(t)){if(pg!=="MID"){S.lane="MID.1";S.lanePage="MID"}}else if(pg==="MID"||!pname(t,S.lane)){S.lane="FLT.1";S.lanePage="FLT"}render()}
 document.addEventListener("click",e=>{
  const mu=e.target.closest("[data-mute]"),so=e.target.closest("[data-solo]");
  if(mu||so){const i=+(mu||so).dataset[mu?"mute":"solo"],t=trk(i);if(mu&&e.shiftKey){ARMED.has(i)?ARMED.delete(i):ARMED.set(i,!t.mute);showArmed();return}if(mu)t.mute=!t.mute;else t.solo=!t.solo;tx();if(HOST.mutes)HOST.mutes();render();return}
@@ -245,13 +245,14 @@ document.addEventListener("click",e=>{
  const tb=e.target.closest("#tabs button");if(tb){goWs(tb.dataset.ws);return}
  if(e.target.closest("#platekey")){setPlate(S.plate==="mk1"?"mk2":"mk1");return}
  if(e.target.closest("#play")){if(e.shiftKey)pauseToggle();else playButton();return}
- if(e.target.closest("#rec")){if(HOST.record)return HOST.record();S.rec=!S.rec;renderTop();if(S.rec)toast("GRID RECORD on. On the machine: hold a trig to see its note, turn a knob to lock it. Here: just click and draw.");return}
+ if(e.target.closest("#rec")){if(e.shiftKey||stepOn()){stepRecord();return}if(HOST.record)return HOST.record();S.rec=!S.rec;renderTop();if(S.rec)toast("GRID RECORD on. On the machine: hold a trig to see its note, turn a knob to lock it. Here: just click and draw.");return}
  if(e.target.closest("#patPrev")){goPattern((S.queued??S.pat)-1);return}
  if(e.target.closest("#patNext")){goPattern((S.queued??S.pat)+1);return}});
 document.addEventListener("change",e=>{const id=e.target.id,v=e.target.value,tr=trk(S.sel);
  if(id==="romfile"){checkRom(e.target.files[0]);return}
  if(id==="engsel"){const btn=document.querySelector(".lcdeng");if(v==="global"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;openGlobal();return}if(v==="audio"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;openAudio();return}if(v==="rom"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;if(HOST.romManage)HOST.romManage();else firstRun();return}
-  if(v==="memoryKeep"||v==="memoryFactory"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;if(HOST.memory)HOST.memory(v==="memoryKeep"?"keep":"factory");return}
+  if(v==="import"||v==="export"||v==="reset"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;Syx.menu(v);return}
+  if(v==="memoryKeep"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;if(HOST.memory)HOST.memory("keep");return}
   S.engine=v;S.pend=0;renderPst();if(HOST.engine)HOST.engine(v);else startEngine(v);return}
  let m=id.match(/^lp(\d)$/);if(m){editTrack(S.sel,()=>{const l=V("LF"+m[1]);l[0]=+v;l[1]=0});render();return}
  m=id.match(/^ld(\d)$/);if(m){editTrack(S.sel,()=>{V("LF"+m[1])[1]=+v});render();return}
@@ -280,7 +281,7 @@ Keys.bind({id:"play-stop",scope:"any",keys:["Space"],group:"Transport",does:"Pla
 Keys.bind({id:"record",scope:"any",keys:["Space"],code:"Space",mod:"alt",group:"Transport",does:"Live recording (RECORD + PLAY): Alt + play, the other Alt that is not \"all\". Again: recording off",run:()=>liveRecord()});
 ["seq","sound","mix","perform","song","control"].forEach((ws,i)=>Keys.bind({id:"workspace-"+(i+1),scope:"any",keys:[String(i+1)],group:"Workspaces",does:["Sequence","Sound","Mix","Perform","Song","Control"][i],mapping:ws==="control",when:ws==="control"?()=>S.mapping:null,run:()=>goWs(ws)}));
 Keys.bind({id:"page-prev-next",scope:"seq",keys:["[","]"],group:"Sequence",does:"Previous / next page",when:()=>S.ws==="seq"&&pages16()>1,run:e=>{const n=pages16();S.viewAll=false;S.page=(S.page+(e.key==="]"?1:-1)+n)%n;render()}});
-Keys.bind({id:"delete",scope:"seq song",keys:["Delete","Backspace"],group:"Sequence",does:"Clear the selected steps; with none selected nothing (Clr clears the page shown, ⌥Delete the pattern). Song: delete the row",when:()=>S.ws==="song"||S.ws==="seq",
+Keys.bind({id:"delete",scope:"seq song",keys:["Delete","Backspace"],group:"Sequence",does:"Clear the selected steps; with none selected nothing (Clr clears the page shown, ⌥Delete the pattern). Song: delete the row",when:()=>(S.ws==="song"||S.ws==="seq")&&S.recMode!=="step"&&S.recMode!=="live",
  run:()=>S.ws==="song"?songAction("del"):S.stepSel?secAction("clear"):toast(Modifiers.say("Nothing selected: ⌘-click or ⌘-drag steps first. Clr clears the page shown, ⌥Delete the whole pattern."))});
 Keys.bind({id:"clear-pattern",scope:"seq",keys:["Delete","Backspace"],mod:"alt",group:"All",does:"Sequence: clear the whole pattern: every track's notes, slides and locks (one undo step)",when:()=>S.ws==="seq",run:()=>clearPattern()});
 Keys.bind({id:"clr-key-all",scope:"any",area:"Top bar",keys:["CLR"],mod:"alt",group:"All",does:"Click: clear the whole pattern, every track's notes, slides and locks (one undo step)"});
@@ -492,22 +493,24 @@ function show(v,all){
  showLater=false;render();drawLib()}
 /* busy: a gesture, or a menu open (a render would close it under the person: the drawing waits for it, as for a drag) */
 const busyNow=()=>{try{return !!(S.genEnding||drag||laneDraw||rollDrag||selDrag||active||arpDrag||l2drag||joyDrag||splitDrag||cord||kbDown||paint)||menuOpen()}catch(_){return false}};
-/* RECORD as the machine is in it: "off" | "grid" | "live" */
-function setRecord(mode){const on=mode==="grid"||mode==="live";S.recMode=mode;if(!!S.rec!==on){S.rec=on;renderTop()}const b=$("#rec");if(b)b.title=mode==="live"?"LIVE RECORDING: notes you play are recorded. Click to stop recording.":mode==="grid"?"GRID RECORDING: the machine's TRIG keys write steps. Click to leave.":"RECORD: stopped = GRID RECORDING, playing = LIVE RECORDING (the keyboard's notes are recorded)."}
+/* RECORD as the machine is in it: "off" | "grid" | "live" | "step" (wave 7: STEP RECORDING, at = the step the next note
+   writes, -1 unknown) */
+function setRecord(mode,at=-1){const on=mode==="grid"||mode==="live",was=S.recMode;S.recMode=mode;S.stepAt=mode==="step"?at:-1;if(mode!=="step")S.stepT=null;if(mode!=="live")eraseUp();
+ if(!!S.rec!==on||(was==="step")!==(mode==="step"))renderTop();else if(mode==="step")stepDraw();
+ const b=$("#rec");if(b)b.title=mode==="step"?"STEP RECORDING: play a note to write the step under the cursor. → a rest, ← back, Delete clears the step. Click (or Esc): done.":mode==="live"?"LIVE RECORDING: notes you play are recorded; hold Delete to erase the selected track's notes as they play. Click to stop recording.":mode==="grid"?"GRID RECORDING: the machine's TRIG keys write steps. Click to leave.":"RECORD: stopped = GRID RECORDING, playing = LIVE RECORDING (the keyboard's notes are recorded). ⇧-click (stopped): STEP RECORDING."}
 /* an engine state's LCD label: [text, led "on" | "blink" | "off", tooltip] */
 function setEngineLabel(st,label){ENG[st]=label;if(S.eng===st)setEng(st)}
 /* a host's engine map ([{id, label, available, reason}]) in the engine menu, before the menu's own entries */
-function setEngines(list,current){const sel=$("#engsel");if(!sel)return;const own=["audio","global","rom","memoryKeep","memoryFactory"];
+function setEngines(list,current){const sel=$("#engsel");if(!sel)return;const own=["audio","global","rom","import","export","reset","memoryKeep"];
  for(const o of [...sel.options])if(!own.includes(o.value)&&!list.some(e=>e.id===o.value))o.remove();
  const first=[...sel.options].find(o=>own.includes(o.value))||null;
  for(const e of list){let o=sel.querySelector(`option[value="${e.id}"]`);if(!o){o=document.createElement("option");o.value=e.id}sel.insertBefore(o,first);o.textContent=e.label;o.disabled=!e.available;o.title=e.available?"":e.reason||""}
  if(current){sel.value=current;S.engine=current}}
-/* I-024: the engine menu's KEEP MEMORY and START FROM FACTORY MEMORY… as the host says ({keep, available, saved, note}):
-   only where the host keeps a machine memory file (doc/modern-ux/DESIGN-machine-memory.md) */
-function setMemory(m){const k=document.querySelector('#engsel option[value="memoryKeep"]'),f=document.querySelector('#engsel option[value="memoryFactory"]');if(!k||!f)return;
- k.hidden=f.hidden=!m.available;k.textContent="KEEP MEMORY: "+(m.keep?"ON":"OFF");
- k.title=m.keep?"New sessions without a project start with what you saved on the machine. Click to turn it off.":"New sessions start from factory memory. Click to keep what you save on the machine for new sessions.";
- f.dataset.saved=m.saved?"1":"0";f.title=m.note||(m.saved?"Forget the saved machine memory and restart the machine from factory memory.":"Restart the machine from factory memory.")}
+/* I-024: the engine menu's KEEP MEMORY as the host says ({keep, available, saved, note}), only where the host keeps a
+   machine memory file (doc/modern-ux/DESIGN-machine-memory.md); RESET MACHINE… offers starting from factory memory (S.mem) */
+function setMemory(m){S.mem=m;const k=document.querySelector('#engsel option[value="memoryKeep"]');if(!k)return;
+ k.hidden=!m.available;k.textContent="KEEP MEMORY: "+(m.keep?"ON":"OFF");k.dataset.saved=m.saved?"1":"0";
+ k.title=m.note||(m.keep?"New sessions without a DAW project start with what you saved on the machine. Click to turn it off.":"New sessions start from factory memory. Click to keep what you save on the machine for new sessions.")}
 /* the AUDIO / MIDI entry of the engine menu: only where the host has the devices (a standalone) */
 function setAudioEntry(on){const o=document.querySelector('#engsel option[value="audio"]');if(o)o.hidden=o.disabled=!on;Boot.midiRefresh()}
 /* the app sources and their links as the host's engine took them (ctlSetup() shape); the knob rows and their links stay */
@@ -535,10 +538,17 @@ const dialogOpen=()=>!$("#dlg").hidden;
    steps share its look, so the dialog is named by its key, Dlg in deskModal.js) */
 function closeFirmwareDialog(){Dlg.drop("firstRun")}
 /* SysEx import and export: the host's file dialogs and document writes; the example shows a pretend file */
-Syx.host={choose:()=>{if(HOST.syxChoose)return HOST.syxChoose();Syx.preview({ok:true,file:"example.syx",model:"Monomachine",fullBackup:false,problemCount:0,problems:[],items:{kit:[{slot:0,name:"SUPERWAVES",overwrites:true}],pattern:[{slot:0,name:"A01",kit:0,overwrites:true}],song:[],global:[]}})},
- exportAll:()=>{if(HOST.syxExport)return HOST.syxExport();toast("In the plug-in: a save dialog, then every document as one .syx.")},
- start:(k,s)=>{if(HOST.syxStart)return HOST.syxStart(k,s);Syx.progress({phase:"done",done:2,total:2,running:false,text:"2 imported (example).",report:{taken:2,items:[]}})},
- stop:()=>{if(HOST.syxStop)return HOST.syxStop()}};
+Syx.host={machine:"Monomachine",factory:false,
+ choose:()=>{if(HOST.syxChoose)return HOST.syxChoose();Syx.preview({ok:true,file:"example.syx",model:"Monomachine",fullBackup:false,problemCount:0,problems:[],items:{kit:[{slot:0,name:"SUPERWAVES",overwrites:true}],pattern:[{slot:0,name:"A01",kit:0,overwrites:true}],song:[],global:[]}})},
+ start:(k,s,o)=>{if(HOST.syxStart)return HOST.syxStart(k,s,o);Syx.progress({phase:"done",done:2,total:2,running:false,text:"2 imported (example).",report:{taken:2,items:[]}})},
+ stop:()=>{if(HOST.syxStop)return HOST.syxStop()},
+ /* 0.6 (wave 6): SPECIFIC place, the export's kinds and ranges (DigiPRO waveforms too), Reset machine… (empty) */
+ place:p=>{if(HOST.syxPlace)return HOST.syxPlace(p);Syx.preview({ok:true,file:"example.syx",model:"Monomachine",place:p,items:{kit:[{slot:p.kit??0,from:p.kit?0:undefined,name:"SUPERWAVES",overwrites:!p.kit}],pattern:[{slot:p.pattern??0,from:p.pattern?0:undefined,name:"A01",kit:0,overwrites:!p.pattern}],song:[],global:[]}})},
+ exportInfo:()=>{if(HOST.syxExportInfo)return HOST.syxExportInfo();Syx.exportInfo({type:"syxExportInfo",model:"Monomachine",kinds:{kit:{slots:128,held:128,used:8,first:0,last:7},pattern:{slots:128,held:128,used:8,first:0,last:7},song:{slots:24,held:24,used:3,first:0,last:2},global:{slots:8,held:8,used:8,first:0,last:7},wave:{slots:64}}})},
+ exportSave:r=>{if(HOST.syxExport)return HOST.syxExport(r);toast("In the plug-in: a save dialog, then "+(r.kinds?r.kinds.join(", "):"every document")+" as one .syx.")},
+ reset:h=>{if(HOST.machineReset)return HOST.machineReset(h);toast("In the plug-in: the empty reset runs in the SysEx panel (example).")},
+ memory:()=>S.mem||null,factoryMemory:()=>{if(HOST.memory)HOST.memory("factory")},
+ ask:(h,b)=>ask(h,b),say:t=>toast(t)};
 /* the start-up card's keys: the host's native file chooser and ROM folder (the ROM stays on this computer); the
    example pretends an install */
 Boot.host={chooseRom:()=>{if(HOST.chooseRom)return HOST.chooseRom();Boot.rom({ok:true,text:"\u2713 Monomachine OS 1.32B found (example)"});setTimeout(()=>startEngine("emu"),900)},
@@ -561,7 +571,7 @@ window.MMView={
  setInput,setPlaying,setStep,setSongRow:r=>{S.songRow=r;markSongRow()},
  setEng,dlgOpen:()=>!$("#dlg").hidden,setEngineLabel,setEngineTip,setEngines,setAudioEntry,setMemory,clearLearnTarget:()=>{S.learnT=null},setMapping,setModulation,setCtlSetup,disable,
  setRecord,setRecLock,
- setLcd,setKeyDown,setPst,closeFirmwareDialog,bootRom:r=>Boot.rom(r),bootInstalled:o=>Boot.showInstalled(o),syxPreview:m=>Syx.preview(m),syxProgress:m=>Syx.progress(m),
+ setLcd,setKeyDown,setPst,closeFirmwareDialog,bootRom:r=>Boot.rom(r),bootInstalled:o=>Boot.showInstalled(o),syxPreview:m=>Syx.preview(m),syxProgress:m=>Syx.progress(m),syxExported:m=>Syx.exported(m),syxExportInfo:m=>Syx.exportInfo(m),
  /* calls */
  render,renderTop,drawLib,toast,ask,redraw,movePH,setPos,flashTracks,goWs,clickStep,autoRange,kitSave,
  redrawAudio:()=>{if(AP.open)drawAudio()},audioLevel,openAudio};

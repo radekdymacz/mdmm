@@ -84,7 +84,8 @@ function renderTop(){
  $("#play").setAttribute("aria-pressed",S.playing);$("#playico").textContent=S.playing?"■":"▶";$("#play").setAttribute("aria-label",S.playing?"Stop":S.paused?"Continue":"Play");
  /* wave 2: paused, ▶ blinks and goes on from the step it holds (128-transport.js) */
  $("#play").classList.toggle("paused",!!S.paused);$("#play").title=S.paused?"Paused: ▶ goes on from the step (⇧Space); STOP in the menu ends it":"Play / stop (Space). ⇧-click: pause. Right-click or ▾: Pause, Live record, Panic";
- if(typeof DeskTransport!=="undefined"&&DeskTransport.tempoShown())DeskTransport.refreshTempo();$("#rec").setAttribute("aria-pressed",!!S.rec);$("#recled").classList.toggle("on",!!S.rec);
+ if(typeof DeskTransport!=="undefined"&&DeskTransport.tempoShown())DeskTransport.refreshTempo();{const st=S.recMode==="step",rk=$("#rec");rk.setAttribute("aria-pressed",!!S.rec||st);$("#recled").classList.toggle("on",!!S.rec||st);rk.classList.toggle("step",st);
+ let m=rk.querySelector(".stepm");if(st&&!m)rk.insertAdjacentHTML("beforeend",'<span class="stepm">STEP</span>');else if(!st&&m)m.remove();if(S.ws==="seq"&&$("#seqscroll"))stepDraw()}
  renderPst();syncLockBudget()}
 /* line 2: fixed-width slots (as in the MD Editor v46), so values never push into COPY / CLR / PASTE */
 function L2(k,lab,val,title,ed,w=8,id=""){return`<span class="l2 ${ed?"ed":""}" style="width:${w}ch" ${k?`data-l2="${k}"`:""} ${title?`title="${title}"`:""}><small>${lab}</small><b ${id?`id="${id}"`:""}>${val}</b></span>`}

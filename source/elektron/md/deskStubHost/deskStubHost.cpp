@@ -8,7 +8,10 @@
 //
 // The page's batches come in on stdin, one JSON array per line (what the page's bridge posts); the messages for the
 // page go out on stdout, one JSON array per line (what gm.recv takes). The plug-in's own commands (deskHost's table:
-// the engine map, ROM, audio, menu, notices) are answered ok and do nothing. --real-timing keeps the emulator
+// the engine map, ROM, audio, menu, notices) are answered ok and do nothing, but the SysEx ones (wave 6): the session's
+// SysEx work runs here as in the plug-in (mdJucePlugin/mdSyxWork.h), Import SysEx… opens the page tier's own file (two
+// kits and two patterns named IMPORT, or GEARMULATOR_MDMM_SYX_FILE), Export SysEx… writes into the temp folder, and a
+// factory reset is said to be the plug-in's. --real-timing keeps the emulator
 // profile's dump pacing (a read-back 750 ms after the last edit on the MD) and the desk's clock at the wall's speed; by
 // default the pacing is 20 ms and the desk's clock runs four times as fast (the loads at start take seconds, not ten).
 
@@ -16,6 +19,7 @@
 #include "mdDesk/mdDeskSetup.h"
 #include "mmDesk/mmDesk.h"
 #include "deskHost/deskHost.h"
+#include "mdJucePlugin/mdSyxWork.h"
 
 #include "elektronData/factoryGlobals.h"
 #include "elektronData/mdCommands.h"
@@ -45,6 +49,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <type_traits>
 #include <map>
 #include <memory>
 #include <string>
@@ -205,6 +210,8 @@ namespace
 			p.sendMute = [this](const uint8_t _t, const bool _on) { if(_t < 16) m_mutes = _on ? (m_mutes | (1 << _t)) : (m_mutes & ~(1 << _t)); };
 			p.sendNote = [](uint8_t, uint8_t, uint8_t) {};
 			p.pressKey = [this](const std::string& _k) { return press(_k); };
+			// DATA ENTRY: present (live recording needs it) but no knob page is reported, so Control All stays on CCs
+			p.turnKnob = [](uint8_t, int) { return true; };
 			p.sendMidi = [this](const Bytes& _m) { realtime(_m); };
 			p.nowMs = [] { return nowMs(); };
 			p.audition = [this](const ed::AuditionClip& _clip)
@@ -237,13 +244,17 @@ namespace
 					m_step = songLocate(++m_songPos).second;
 				else
 					m_step = (m_step + 1) % std::max<int>(1, m_patterns[m_pattern].length);
+				// wave 7: EXIT/NO and a TRIG key held while live recording: that track's trig on the step that plays goes
+				if(m_recording && m_exitHeld && m_heldTrig >= 0)
+					m_patterns[m_pattern] = ed::withTrig(m_patterns[m_pattern], static_cast<size_t>(m_heldTrig), static_cast<size_t>(m_step), false);
 			}
 			mdDesk::Telemetry t;
 			t.valid = true;
 			t.step = m_playing ? m_step : -1;
 			t.pattern = m_pattern;
 			t.playing = m_playing;
-			t.knobPage = 0;
+			t.recording = m_recording;
+			t.knobPage = -1;
 			t.bootAnimation = 0;
 			t.mutes = m_mutes;
 			t.chainKnown = true;
@@ -422,6 +433,33 @@ namespace
 
 		bool press(const std::string& _key)
 		{
+			// wave 7: keys held down and let go later (EXIT/NO, a TRIG key), a TRIG key recorded while live recording
+			if(_key.rfind("hold:", 0) == 0 || _key.rfind("release:", 0) == 0)
+			{
+				const bool down = _key[0] == 'h';
+				const auto name = _key.substr(down ? 5 : 8);
+				if(name == "exit")
+					m_exitHeld = down;
+				else if(name.rfind("trig", 0) == 0)
+					m_heldTrig = down ? std::atoi(name.c_str() + 4) - 1 : -1;
+				return true;
+			}
+			if(_key.rfind("trig", 0) == 0)
+			{
+				if(m_recording && m_playing)
+					m_patterns[m_pattern] = ed::withTrig(m_patterns[m_pattern], static_cast<size_t>(std::atoi(_key.c_str() + 4) - 1), static_cast<size_t>(m_step), true);
+				return true;
+			}
+			// REC while recording is PLAY: recording off, the pattern plays on (mdDeskMachine.cpp cmdRecord)
+			if(_key == "play" && m_recording)
+			{
+				m_recording = false;
+				return true;
+			}
+			if(_key == "recordPlay")
+				m_recording = true;
+			else if(_key == "stop")
+				m_recording = false;
 			// PLAY: starts; while playing it pauses, while paused it goes on (the machine's own pause)
 			if(_key == "play" && m_playing)
 			{
@@ -492,7 +530,8 @@ namespace
 		double m_auditionEnds = 0;
 		mdDesk::Chain m_chain;
 		uint8_t m_pattern = 0, m_kit = 0, m_song = 0, m_global = 0, m_track = 0;
-		bool m_songMode = false, m_playing = false, m_paused = false;
+		bool m_songMode = false, m_playing = false, m_paused = false, m_recording = false, m_exitHeld = false;
+		int m_heldTrig = -1;
 		int m_mutes = 0, m_step = 0, m_bankGroup = 0, m_songPos = 0;
 		double m_stepAt = 0, m_memoryAt = -1000;
 		std::vector<Bytes> m_replies;
@@ -600,10 +639,39 @@ namespace
 				}
 				return true;
 			};
-			p.sendNote = [](uint8_t, uint8_t, uint8_t) {};
+			// wave 7: STEP RECORDING writes a played note (any channel here) to the focus track at the cursor, and moves on
+			p.sendNote = [this](uint8_t, const uint8_t _note, const uint8_t _velocity)
+			{
+				if(m_recording != 3 || !_velocity || m_stepCursor < 0)
+					return;
+				setNote(m_focus, m_stepCursor, _note);
+				m_stepCursor = (m_stepCursor + 1) % std::max<int>(1, m_patterns[m_pattern].length);
+			};
 			p.sendMidi = [this](const Bytes& _m) { realtime(_m); };
 			p.nowMs = [] { return nowMs(); };
 			return p;
+		}
+
+		// a step of track _t: a note (0-127) or none (-1), as the machine's recordings write it (trigs and pitch)
+		void setNote(const int _t, const int _s, const int _note)
+		{
+			auto& p = m_patterns[m_pattern];
+			const auto bit = ed::mmStepBit(static_cast<size_t>(_s));
+			for(auto* m : {&p.amp, &p.filter, &p.lfo, &p.pitch})
+				(*m)[static_cast<size_t>(_t)] = _note >= 0 ? ((*m)[static_cast<size_t>(_t)] | bit) : ((*m)[static_cast<size_t>(_t)] & ~bit);
+			p.notes[static_cast<size_t>(_t)][static_cast<size_t>(_s)] = _note >= 0 ? static_cast<uint8_t>(_note) : ed::MmPattern::g_noNote;
+			// a step written or erased loses its chord notes (they need the trig, and a written note is one note)
+			p.chord[static_cast<size_t>(_t)] &= ~bit;
+			size_t kept = 0;
+			for(size_t i = 0; i < p.chordNoteCount && i < p.chordNotes.size(); ++i)
+			{
+				const auto e = ed::mmNoteEntry(p.chordNotes[i]);
+				if(e.track != _t || e.step != _s)
+					p.chordNotes[kept++] = p.chordNotes[i];
+			}
+			for(size_t i = kept; i < p.chordNoteCount && i < p.chordNotes.size(); ++i)
+				p.chordNotes[i] = 0;
+			p.chordNoteCount = static_cast<uint8_t>(kept);
 		}
 
 		void step(mmDesk::Desk& _desk)
@@ -618,6 +686,9 @@ namespace
 				m_stepAt = now;
 				m_step = m_songMode ? songLocate(++m_songPos).second : (m_step + 1) % 16;
 				++m_blocks;
+				// wave 7: EXIT held in LIVE RECORDING: the focus track's note on the step that plays goes
+				if(m_recording == 2 && m_exitHeld)
+					setNote(m_focus, m_step, -1);
 			}
 			mmDesk::Telemetry t;
 			t.valid = true;
@@ -629,7 +700,8 @@ namespace
 			t.recvActive = m_screen == mmDesk::Screen::GlobalEdit;
 			t.tempo = m_tempo;
 			t.mutes = m_mutes;
-			t.recording = 0;
+			t.recording = m_recording;
+			t.stepCursor = m_recording == 3 ? m_stepCursor : -1;
 			t.bankGroup = m_bankGroup;
 			t.chainKnown = true;
 			t.chain = m_chain;
@@ -688,6 +760,10 @@ namespace
 			case 0x59: { auto k = m_working; k.position = v & 127; m_kits[v & 127] = k; m_kit = v & 127; return; }
 			case 0x6c: m_song = v % ed::MmSong::g_slots; return;
 			case 0x6d: return;
+			case 0x5e:	// a DigiPRO waveform: answered when used (waveforms 1 and 4 here), else nothing (P4)
+				if(v == 0 || v == 3)
+					reply({0xf0, 0x00, 0x20, 0x3c, 0x03, 0x00, 0x5d, 0x01, 0x01, v, 0, 0, 0, 0, static_cast<uint8_t>(0x10 + v), 0, 0, 0xf7});
+				return;
 			case 0x5b: if(_m.size() >= 11 && v < 6) m_working.machines[v] = _m[8]; return;
 			case 0x61: if(_m.size() >= 10) m_tempo = (v << 7) | _m[8]; return;	// TEMPO, BPM x 24
 			case 0x5c:	// the outputs, and an FX machine's input (any other's cleared), as OS 1.32B stores them (elektronData::mmSetKitInput)
@@ -806,6 +882,32 @@ namespace
 			}
 			for(const auto k : _keys)
 			{
+				using K = mmDesk::Key;
+				// wave 7: the recording modes as the machine's keys move them (mmEditorProbeFirmwareTest recording), the focus,
+				// EXIT held, STEP RECORDING's keys
+				if(k >= K::Track1 && k <= K::Track6)
+					m_focus = static_cast<int>(k) - static_cast<int>(K::Track1);
+				else if(k == K::ExitDown || k == K::ExitUp)
+					m_exitHeld = k == K::ExitDown;
+				else if(k == K::Record)
+					m_recording = m_recording == 0 ? 1 : m_recording == 2 ? 1 : 0;
+				else if(k == K::StepRecord)
+				{
+					m_recording = 3;
+					m_stepCursor = 0;
+					m_running = m_paused = false;
+				}
+				else if(m_recording == 3 && (k == K::Left || k == K::Right || k == K::Enter))
+				{
+					const int len = std::max<int>(1, m_patterns[m_pattern].length);
+					if(k == K::Enter)
+						setNote(m_focus, m_stepCursor, -1);
+					m_stepCursor = (m_stepCursor + (k == K::Left ? len - 1 : 1)) % len;
+				}
+				if(k == K::LiveRecord)
+					m_recording = 2;
+				else if(k == K::Stop && m_recording == 2)
+					m_recording = 0;
 				if(k == mmDesk::Key::BankGroup)
 					m_bankGroup = 1 - m_bankGroup;
 				// PLAY: starts; while playing it pauses, while paused it goes on (the machine's own pause)
@@ -847,6 +949,8 @@ namespace
 		uint8_t m_pattern = 0, m_kit = 0, m_song = 0, m_global = 0;
 		bool m_songMode = false, m_running = false, m_poly = false, m_paused = false;
 		int m_mutes = 0, m_step = 0, m_bankGroup = 0, m_tempo = 120 * 24, m_songPos = 0;
+		int m_recording = 0, m_stepCursor = 0, m_focus = 0;	// 0 off, 1 grid, 2 live, 3 step; the cursor; the track in focus
+		bool m_exitHeld = false;
 		uint64_t m_blocks = 0;
 		uint32_t m_recvTaken = 0;
 		mmDesk::Screen m_screen = mmDesk::Screen::Main;
@@ -897,7 +1001,50 @@ namespace
 		toPage(m);
 	}
 
-	template<typename DeskT> void hostMessage(DeskT& _desk, const Value& _message, double& _gainDb)
+	// The .syx Import SysEx… opens in the page tier: GEARMULATOR_MDMM_SYX_FILE, else two kits named IMPORT 1 and IMPORT 2
+	// in K01 and K02 and two patterns (A01, A02) with trigs on every step of track 1, from the committed test dumps.
+	Bytes stubSyx(const bool _mm)
+	{
+		if(const char* f = std::getenv("GEARMULATOR_MDMM_SYX_FILE"); f && *f)
+		{
+			std::ifstream in(f, std::ios::binary);
+			if(in)
+				return {std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
+		}
+		Bytes out;
+		const auto add = [&out](const Bytes& _m) { out.insert(out.end(), _m.begin(), _m.end()); };
+		for(uint8_t i = 0; i < 2; ++i)
+		{
+			if(_mm)
+			{
+				auto k = *ed::decodeMmKit(load(i ? "mm/programmed-kit-001.syx" : "mm/programmed-kit-000.syx"));
+				k.position = i;
+				setName(k.name, "IMPORT " + std::to_string(i + 1));
+				add(ed::encodeMmKit(k));
+				auto p = *ed::decodeMmPattern(load("mm/programmed-pattern-001.syx"));
+				p.position = i;
+				p.kit = i;
+				add(ed::encodeMmPattern(p));
+			}
+			else
+			{
+				auto k = *ed::decodeMdKit(load(i ? "programmed_kit_1.syx" : "programmed_kit_0.syx"));
+				k.position = i;
+				setName(k.name, "IMPORT " + std::to_string(i + 1));
+				add(ed::encodeMdKit(k));
+				auto p = *ed::decodeMdPattern(load("programmed_pattern_1.syx"));
+				p.position = i;
+				p.kit = i;
+				p.length = 16;
+				p.trigs.fill(0);
+				p.trigs[0] = 0xffff;
+				add(ed::encodeMdPattern(p));
+			}
+		}
+		return out;
+	}
+
+	template<typename DeskT> void hostMessage(DeskT& _desk, mdJucePlugin::SyxWork<DeskT>& _syx, const Value& _message, double& _gainDb)
 	{
 		const auto op = deskCore::opOf(_message);
 		if(_desk.onPageMessage(_message))
@@ -915,6 +1062,46 @@ namespace
 		if(const auto errors = deskHost::Table::check(*row, _message); !errors.empty())
 		{
 			reply(_message, false, errors.front());
+			return;
+		}
+		// wave 6: the session's SysEx work, as the plug-in runs it
+		if(_syx.handle(_desk, _message, reply, toPage))
+			return;
+		constexpr bool mm = std::is_same_v<DeskT, mmDesk::Desk>;
+		if(op == "chooseSyx")
+		{
+			reply(_message, true, "");
+			const char* f = std::getenv("GEARMULATOR_MDMM_SYX_FILE");
+			toPage(_syx.open(_desk, stubSyx(mm), f && *f ? std::string(f).substr(std::string(f).find_last_of('/') + 1) : std::string("page-tier.syx")));
+			return;
+		}
+		if(op == "syxExport")
+		{
+			reply(_message, true, "");
+			using Work = mdJucePlugin::SyxWork<DeskT>;
+			const auto r = Work::exportRequest(_message);
+			const auto write = [all = r.all](const Bytes& _bytes, const std::string& _words)
+			{
+				const auto path = std::string(std::getenv("TMPDIR") ? std::getenv("TMPDIR") : "/tmp") + "/deskStubHost-export.syx";
+				std::ofstream o(path, std::ios::binary);
+				o.write(reinterpret_cast<const char*>(_bytes.data()), static_cast<std::streamsize>(_bytes.size()));
+				Value m = Value::object();
+				m.set("type", "syxExport");
+				m.set("ok", !_bytes.empty());
+				m.set("running", false);
+				m.set("text", _bytes.empty() ? std::string("Nothing to write: the editor holds none of what was chosen.")
+					: "Wrote page-tier.syx (" + std::to_string(_bytes.size()) + " bytes): " + (all ? "every document the editor holds (" + _words + ")." : _words + "."));
+				toPage(m);
+			};
+			if(r.waves)
+				_syx.exportStart(_desk, r, write);
+			else
+				write(Work::exportBytes(_desk, r), Work::exportWords(_desk, r));
+			return;
+		}
+		if(op == "machineReset")
+		{
+			reply(_message, false, "The factory reset needs the plug-in (a second machine from the ROM): not in the page tier.");
 			return;
 		}
 		if(op == "outputGain")
@@ -972,6 +1159,8 @@ namespace
 	template<typename DeskT, typename Fake> int serve(DeskT& _desk, Fake& _fake)
 	{
 		double cpuAt = -1000, levelAt = -1000, gainDb = 0;
+		mdJucePlugin::SyxWork<DeskT> syx;
+		_desk.setSysexTap([&syx](const Bytes& _m) { syx.onMachineSysex(_m); });
 		std::string pending;
 		bool open = true;
 		while(open)
@@ -998,10 +1187,15 @@ namespace
 						continue;
 					}
 					for(const auto& m : batch->asArray())
-						hostMessage(_desk, m, gainDb);
+						hostMessage(_desk, syx, m, gainDb);
 				}
 			}
 			_fake.step(_desk);
+			if(syx.running() && _desk.lifecycle() == deskCore::Lifecycle::Ready)
+			{
+				syx.step(_desk, nowMs(), false, toPage);
+				_desk.flush();
+			}
 			if(_desk.pageSeen())
 				periodic(nowMs(), cpuAt, levelAt, gainDb);
 			flushOut();

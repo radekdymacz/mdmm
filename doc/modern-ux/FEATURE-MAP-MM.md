@@ -34,7 +34,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Highlights 1-2 | 18 tempo synced LFOs | 3 per track | ✅ | Sound > LFO 1-3 |  | – |
 | Highlights 1-2 | 12 arpeggiators | One per track, synth and MIDI | ✅ | Sequence dock > Arp |  | – |
 | Highlights 1-2 | Full real-time control | Every DATA value live | ✅ | Every value box, drag or wheel | Sent as CC while dragging | – |
-| Highlights 1-2 | DigiPRO user waveforms (MKII) | 64 user waveform slots | ❌ | – | The page can pick waveform 1-64 (WAV1, WAV2, WAVE) but cannot send, receive, rename or erase user waveforms. Measured (P4): a request (0x5E) returns a used waveform byte for byte; a dump (0x5D) is taken only on DIGIPRO MGR > RECEIVE. | – |
+| Highlights 1-2 | DigiPRO user waveforms (MKII) | 64 user waveform slots | 🟡 | Export SysEx…: Waveforms W01 to W64, read from the machine into the .syx | An empty waveform answers nothing and is left out. | 1 |
 | +Drive 1-3 | Snapshots, Digibanks, 8192 waveforms | Optional storage drive | ➖ | – | Not emulated, see section 19 | – |
 
 ## 2. User interface and connectors (1-4 to 1-9)
@@ -72,7 +72,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Front panel 1-5 | 16 PLAY (pause on second press) | Start, pause | ✅ | LCD play key: ⇧-click or ⇧Space pauses (▶ blinks, the position holds), ▶ goes on; the ▶ menu (right-click or its ▾) | Over HW MIDI pause and Continue need GLOBAL › CONTROL IN › TRANSPORT = ACCEPT; the editor asks to set it. | 3 |
 | Front panel 1-5 | 16 STOP; STOP twice rewinds and silences | Stop, reset | ✅ | Panic: ⌘. or the ▶ menu's Panic (All Notes Off on each track's channel, then STOP twice) |  | 3 |
 | Front panel 1-5 | 16 REC + PLAY = live recording | Live recording | ✅ | Alt + Space, record key while playing | `record` op | 1 |
-| Front panel 1-5 | 16 STOP + REC = step recording | Step recording | ❌ | – | Not in the page | – |
+| Front panel 1-5 | 16 STOP + REC = step recording | Step recording | ✅ | Shift-click REC (stopped), or the ▶ menu's Step record |  | 1 |
 | Front panel 1-5 | 16 Secondary: COPY, PASTE, CLEAR | Copy / paste / clear | ✅ | LCD COPY / CLR / PASTE, Cmd+C / V, Delete | Scope depends on the workspace; on Sequence it is the selected steps, else the page shown (`130-main.js` secAction) | 4 |
 | Front panel 1-5 | 17 SCALE key: page of 16 steps | Track page | ✅ | Sequence PAGE key and 4 page LEDs, keys [ ] |  | 1 |
 | Front panel 1-5 | 17 SCALE SETUP (FUNCTION + SCALE) | Length and speed | ✅ | LCD line 2 LEN, SPD |  | – |
@@ -119,7 +119,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Grid recording 1-13 | Hold a trig, set pitch on the mini keyboard | Pitch of a trig | ✅ | Roll: click or drag for pitch |  | – |
 | Grid recording 1-13 | NOTE OFF (FUNCTION + TRIG) | Note off trig | ✅ | Alt-click an empty step; drag a bar's end |  | 1 |
 | Live recording 1-13 | Record notes in real time, quantised | Live record | ✅ | Alt + Space, record key | Quantising done by firmware | 1 |
-| Live recording 1-13 | Erase with EXIT while notes sound | Live erase | ❌ | – | Not in the page | – |
+| Live recording 1-13 | Erase with EXIT while notes sound | Live erase | ✅ | Hold Delete while live recording: the selected track's notes go as they play |  | 1 |
 | Parameter locks 1-13 | Lock a value on a step | P-lock | ✅ | Lock lane (draw bars), wheel on a step |  | 2 |
 | Parameter locks 1-14 | Record locks live by turning a knob | Live lock | ✅ | Value boxes while live recording | The machine records; the page marks the step's cell and lock lane for about 3 s and says which value it locked (`70-seq.js` setRecLock) | – |
 | Parameter locks 1-14 | Remove one lock; remove all locks of a trig | Clear locks | 🟡 | Lane: Alt-drag erases one parameter's steps; a selected step's Delete or step-menu Clear takes its note, slide and locks together | No key that drops a step's locks and keeps its note | 1 |
@@ -255,8 +255,8 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Grid recording 1-49 | Copy / clear / paste act on the track in grid mode | Scope | ✅ | LCD COPY / CLR / PASTE | Page shown of the selected track | 1 |
 | Live recording 1-49 | Record played notes, quantised | Live | ✅ | Alt + Space |  | 1 |
 | Live recording 1-49 | Chords recorded | Live chords | 🟡 | Played one key at a time | Chords are drawn with Shift-click in the roll | – |
-| Live recording 1-49 | Erase with EXIT | Live erase | ❌ | – |  | – |
-| Step recording 1-50 | Step-by-step input | Step rec | ❌ | – | Roll painting is the page's way | – |
+| Live recording 1-49 | Erase with EXIT | Live erase | ✅ | Hold Delete while live recording |  | 1 |
+| Step recording 1-50 | Step-by-step input | Step rec | ✅ | Sequence: Shift-click REC; a played note writes the step under the cursor and moves on; → rest, ← back, Delete clears, Esc done |  | 1 |
 | Note copy 1-50 | Copy one trig with locks to another step | Note copy | ✅ | Sequence: Cmd-click a step (Ctrl on Windows and Linux), Cmd+C, select the target, Cmd+V; Cmd-drag drops a copy; Cmd+D duplicates | Notes, NOTE OFFs, envelope trigs, slides and locks go along (`77-select.js`, `copySteps`) | 5 |
 | Clear note parameter locks 1-50 | Clear locks of one note, undoable | Clear locks | 🟡 | Lane Alt-drag per parameter; Alt + lane clear for a track; a selected step's Delete clears the step whole | No key for the locks of one step alone | – |
 | Track page copy 1-51 | Copy a page to another page | Page copy | ✅ | LCD COPY on the page shown (no step selected), PASTE on another page; or select the steps | Steps, slides and locks (`130-main.js` secAction) | – |
@@ -421,10 +421,10 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Mechanical settings 1-94 | Knob resolution (MKII) | Encoder resolution | ➖ | – | Hardware knobs | – |
 | Mechanical settings 1-94 | Velocity curve, fixed velocity (SFX-6) | Keyboard response | ➖ | – | Hardware keys. The editor's own velocity is keys C / V | – |
 | Mechanical settings 1-94 | Joystick mapping TIGHT / FULL | Joystick | ➖ | – | Hardware joystick | – |
-| File 1-95 | Sysex send: ALL, KIT, PAT+KIT, SONG+PAT+KIT with ranges | Send dumps | 🟡 | Right-click menu > export all as one .syx | No range choice | – |
-| File 1-97 | Sysex receive: ORIG, SPEC, VERF | Receive dumps | 🟡 | SysEx import panel: choose slots, preview, report | ORIG-style (original positions); no SPEC start slot and no VERF-only mode | 2 |
+| File 1-95 | Sysex send: ALL, KIT, PAT+KIT, SONG+PAT+KIT with ranges | Send dumps | ✅ | Engine menu: EXPORT SYSEX…: All (every kit, pattern, song and global), or untick All and tick Kits, Patterns, Songs, Globals, Waveforms, each with its range | The kinds are chosen one by one: a song range does not add its patterns by itself. | 1 |
+| File 1-97 | Sysex receive: ORIG, SPEC, VERF | Receive dumps | ✅ | Import SysEx: PLACE row (Original place, Specific place from a first slot per kind, the grid shows where each item lands); Verify only beside Import | Verify only writes nothing: the slots are read and compared. | 4 |
 | File 1-95, 1-97 | Needs the machine on SYSEX RECV | Receive session | ✅ | Editor drives it itself; pattern field shows RECV / SEND n | HW MIDI: user opens the screen | 2 |
-| DigiPRO manager 1-99 | Send, receive, erase, rename user waveforms; copy between Digibanks | Waveform manager | ❌ | – | MKII only. Measured (P4): send (0x5E, used waveforms only) and receive (0x5D on the RECEIVE screen) work on the emulator; rename, erase and copy were not probed. | – |
+| DigiPRO manager 1-99 | Send, receive, erase, rename user waveforms; copy between Digibanks | Waveform manager | 🟡 | Export SysEx…: Waveforms (the manager's SEND) |  | – |
 | +Drive settings 1-105 | Quick mode, format | +Drive | ➖ | – | Not emulated | – |
 | Snapshot manager 1-106 | Load, save, rename, erase, lock snapshots | +Drive | ➖ | – |  | – |
 | Digibank manager 1-107 | Switch, rename, erase, lock banks | +Drive | ➖ | – |  | – |
@@ -436,8 +436,8 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
 | Test mode 1-110 | Hardware self test, joystick calibration | Test | ➖ | – |  | – |
-| Empty reset 1-110 | Clear kits, patterns, songs, globals | Reset | 🟡 | Clear single slots in the libraries; Alt + CLR for a pattern; GLOBAL > Clear for the active global | No "clear everything" key | – |
-| Factory reset 1-110 | Restore factory data | Reset | ❌ | – | Remove and add the ROM or import the factory .syx | – |
+| Empty reset 1-110 | Clear kits, patterns, songs, globals | Reset | ✅ | Engine menu: Reset machine… > Empty reset… (asked twice): every kit, pattern and song cleared on SYSEX RECV, read back and reported in the SysEx panel | Globals stay: a global is reset in its slot in GLOBAL. | 1 |
+| Factory reset 1-110 | Restore factory data | Reset | ❌ | Engine menu: Reset machine… says why it is not offered; Start from factory memory… restarts the machine as on a new install, with the saved machine memory deleted (I-024) |  | – |
 | Soft reset 1-111 | Restart keeping data | Restart | ➖ | – | Reopen the editor | – |
 | MIDI upgrade, send upgrade 1-111, 1-112 | OS update over MIDI | OS update | ➖ | – | The editor loads the OS 1.32B image | – |
 | Specifications 1-113 | Data sheet | Specs | ➖ | – |  | – |
@@ -512,7 +512,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | 0x58 / 0x59 Load / save kit C-2 | Kit load, save | LOAD / SAVE KIT | ✅ | Kit library |  | – |
 | 0x5B Assign machine C-2 | Machine and init mode | Machine | ✅ | Machine picker |  | – |
 | 0x5C Set track routing C-2 | Output bus, input | Routing | ✅ | Mix |  | – |
-| 0x5D / 0x5E Digipro waveform dump, request C-2 | User waveforms | Waveforms | ❌ | – | Measured (P4): a request (0x5E) returns a used waveform byte for byte, nothing for an empty one; a dump (0x5D) is taken only on DIGIPRO MGR > RECEIVE. | – |
+| 0x5D / 0x5E Digipro waveform dump, request C-2 | User waveforms | Waveforms | 🟡 | Export SysEx…: Waveforms (0x5E requests, the dumps written to the file) |  | – |
 | 0x5E Set Gate box parameter C-2 | Reverb parameter | Reverb | ➖ | – | Not used; reverb values go as CC | – |
 | 0x61 Set tempo C-2 | Tempo | Tempo | ✅ | LCD TEMPO | 30-300 BPM | – |
 | 0x67 / 0x68 Pattern dump, request C-3 | Pattern data | Pattern | ✅ | All sequence edits, chooser |  | – |
@@ -525,7 +525,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
-| MACHINE MEMORY | What you save stays for every new session | The machine keeps its kits, patterns, songs and globals when it is switched off. | ✅ | By itself (a session without a project starts from the saved memory); engine menu: KEEP MEMORY, START FROM FACTORY MEMORY | I-024, doc/modern-ux/DESIGN-machine-memory.md | 1 |
+| MACHINE MEMORY | What you save stays for every new session | The machine keeps its kits, patterns, songs and globals when it is switched off. | ✅ | By itself (a session without a DAW project, and the standalone, start from the saved memory); engine menu: KEEP MEMORY; Reset machine… > Start from factory memory… | I-024, doc/modern-ux/DESIGN-machine-memory.md | 1 |
 
 ## 24. Editor features with no manual counterpart (for orientation)
 
@@ -537,16 +537,16 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 321 |
+| ✅ | 328 |
 | 🟡 | 23 |
-| ❌ | 8 |
+| ❌ | 1 |
 | ➖ | 34 |
 | Total | 386 |
 
 ### Top gaps, ranked (our UI)
 
 1. **No DigiPRO user waveform manager (1-99 to 1-104, 0x5D / 0x5E).** MKII machines can pick waveforms 1-64 but the user cannot send, receive, rename or erase them.
-2. **Step recording and live-record erase (1-50, 1-49) are not in the page.** Live recording works and marks the step that gets a lock; the roll's drawing is the page's way of entering notes.
+2. **Step recording and live-record erase (1-50, 1-49)** are in the page since 0.6 (wave 7): ⇧-click REC, and Delete held while live recording.
 3. **Song: no pointer jump or play-from-row (1-75, 1-77), no SAVE SONG, song-slot copy or rename (1-74).** The page shows the playing row but cannot set it; `saveSong` exists in the desk but no control uses it.
 4. **GLOBAL is mostly there, with holes (1-87, 1-88, 1-91).** Master tune, CONTROL OUT 1 (sequencer, arp, keyboard to INT / OUT), and copy / paste / clear of a global slot are missing; some bytes of the global are not decoded.
 5. **Super copy / super clear (1-54, 1-55) and whole-track copy (1-52).** A step selection copies steps, slides and locks of chosen tracks, but not a chosen part (melody only) and not arp, transpose or swing with it.

@@ -201,6 +201,8 @@ namespace
 		uint32_t recvTaken = 0;	// dumps taken on SYSEX RECV (the RECV count, RAM 0x26a3c4)
 		bool slow = false;		// dumps stay on their way (inFlight) until taken by hand
 		int recording = -1;		// the recording mode the telemetry says (-1 unknown)
+		int stepCursor = -1;	// STEP RECORDING's cursor (RAM 0x2bff09)
+		std::vector<mmDesk::Key> keyLog;	// every key pressed, in order
 		std::vector<Bytes> replies;
 		std::vector<Bytes> ignored;
 		std::vector<Bytes> inFlight;
@@ -315,6 +317,7 @@ namespace
 		port.device.pressKeys = [&](const std::vector<mmDesk::Key>& _k)
 		{
 			m.keysPressed += static_cast<int>(_k.size());
+			m.keyLog.insert(m.keyLog.end(), _k.begin(), _k.end());
 			if(mmDesk::RecvSession::isEnterMacro(_k))
 				m.screenWord = mmDesk::Screen::GlobalEdit;
 			else if(_k == mmDesk::RecvSession::exitKeys())
@@ -335,6 +338,7 @@ namespace
 				mmDesk::Telemetry tel = screen(m.screenWord);
 				tel.recvCount = m.recvTaken;
 				tel.recording = m.recording;
+				tel.stepCursor = m.stepCursor;
 				d.onTelemetry(tel);
 				d.tick();
 				auto replies = std::move(m.replies);
@@ -409,6 +413,83 @@ namespace
 			check(lastResult().find("ok")->asBool() && m.keysPressed == keys0 + 2 && d.recvParked(), "taken: RECORD is pressed on SYSEX RECV");
 			m.recording = -1;
 			run(3500);
+		}
+
+		// 0.6 wave 7: STEP RECORDING (STOP held + RECORD) with TRACK t in focus, its keys, and LIVE RECORDING's erase
+		// (EXIT held), as the machine's keys from the mode it is in (mmEditorProbeFirmwareTest recording).
+		{
+			using K = mmDesk::Key;
+			const auto keysOf = [&](const std::string& _json)
+			{
+				m.keyLog.clear();
+				msg(_json);
+				return m.keyLog;
+			};
+			const auto lastTelemetry = [&]
+			{
+				for(auto it = page.rbegin(); it != page.rend(); ++it)
+					if(it->find("type")->asString() == "telemetry")
+						return *it;
+				return Value();
+			};
+			m.recording = 0;
+			run(50);
+			check(keysOf(R"({"op":"record","mode":"step","t":2})") == std::vector<K>{K::Track3, K::StepRecord} && lastResult().find("ok")->asBool(),
+				"step from off: TRACK 3, then STOP held + RECORD");
+			check(keysOf(R"({"op":"stepKey","key":"right"})").empty() && !lastResult().find("ok")->asBool(), "a step key refused until the machine is in it");
+			m.recording = 3;
+			m.stepCursor = 0;
+			run(100);
+			auto tel = lastTelemetry();
+			check(tel.find("record")->asString() == "step" && tel.find("stepAt")->asNumber() == 0, "the telemetry says step, the cursor at 0");
+			m.stepCursor = 1;
+			run(100);
+			check(lastTelemetry().find("stepAt")->asNumber() == 1, "a cursor move is published (the playhead stands)");
+			check(keysOf(R"({"op":"stepKey","key":"right"})") == std::vector<K>{K::Right}, "RIGHT: a rest");
+			check(keysOf(R"({"op":"stepKey","key":"left"})") == std::vector<K>{K::Left}, "LEFT: back");
+			check(keysOf(R"({"op":"stepKey","key":"clear"})") == std::vector<K>{K::Enter}, "clear: ENTER");
+			check(keysOf(R"({"op":"record","mode":"step","t":4})") == std::vector<K>{K::Track5}, "step again with another track: the focus only");
+			check(keysOf(R"({"op":"liveErase","t":0,"on":true})").empty() && !lastResult().find("ok")->asBool(), "erase refused outside LIVE RECORDING");
+			check(keysOf(R"({"op":"record","mode":"off"})") == std::vector<K>{K::Record}, "off from step: RECORD");
+			m.recording = 0;
+			m.stepCursor = 1;	// RAM keeps it
+			run(100);
+			check(lastTelemetry().find("stepAt")->isNull(), "out of step recording: no cursor");
+			check(keysOf(R"({"op":"record","mode":"live"})") == std::vector<K>{K::LiveRecord}, "live from off");
+			m.recording = 2;
+			run(100);
+			check(keysOf(R"({"op":"liveErase","t":1,"on":true})") == std::vector<K>{K::Track2, K::ExitDown}, "erase on: TRACK 2, EXIT down");
+			check(keysOf(R"({"op":"liveErase","t":3,"on":true})") == std::vector<K>{K::Track4}, "another track: the focus moves, EXIT stays down");
+			check(keysOf(R"({"op":"liveErase","t":3,"on":false})") == std::vector<K>{K::ExitUp}, "off: EXIT up");
+			check(keysOf(R"({"op":"liveErase","t":3,"on":false})").empty(), "off again: nothing");
+			// the page says every 250 ms that Delete is still held; a page that goes quiet (closed, reloaded) lets EXIT go
+			keysOf(R"({"op":"liveErase","t":2,"on":true})");
+			m.keyLog.clear();
+			for(int i = 0; i < 6; ++i)
+			{
+				run(250);
+				msg(R"({"op":"liveErase","t":2,"on":true})");
+			}
+			check(m.keyLog.empty(), "held with the page's word every 250 ms: nothing let go, nothing pressed again");
+			run(1200);
+			check(m.keyLog == std::vector<K>{K::ExitUp}, "no word for over a second: EXIT up");
+			keysOf(R"({"op":"liveErase","t":2,"on":true})");
+			m.keyLog.clear();
+			msg(R"({"op":"ready"})");
+			run(20);
+			check(m.keyLog == std::vector<K>{K::ExitUp}, "the page (re)attached: EXIT up");
+			keysOf(R"({"op":"liveErase","t":0,"on":true})");
+			m.keyLog.clear();
+			m.recording = 0;
+			run(100);
+			check(m.keyLog == std::vector<K>{K::ExitUp}, "recording over: EXIT let go");
+			check(keysOf(R"({"op":"record","mode":"step"})") == std::vector<K>{K::StepRecord}, "step without t: the focus as it is");
+			m.recording = 2;
+			run(50);
+			check(keysOf(R"({"op":"record","mode":"step","t":0})") == std::vector<K>{K::Track1, K::Record, K::Record, K::StepRecord}, "step from live: off first (RECORD twice)");
+			m.recording = -1;
+			m.stepCursor = -1;
+			run(200);
 		}
 
 		// Invalid: 63 locked parameters.
@@ -1746,7 +1827,7 @@ void checkContract(const bool _write)
 		check(false, gap.c_str());
 	// The plug-in's host sends these; this test has no host.
 	const auto r = contract::checkMessages(*root, g_published, {"learn", "audio", "audioLevel", "openAudio",
-		"romInstall", "romInfo", "notice", "syxPreview", "syxProgress", "syxExport", "host", "audioRun", "cpuLoad", "outputLevel", "machineMemory", "midiIn", "editorMenu",
+		"romInstall", "romInfo", "notice", "syxPreview", "syxProgress", "syxExport", "syxExportInfo", "syxReset", "host", "audioRun", "cpuLoad", "outputLevel", "machineMemory", "midiIn", "editorMenu",
 		"zoom", "drop", "dragFiles"});
 	for(const auto& p : r.off)
 		std::printf("    %s\n", p.c_str());

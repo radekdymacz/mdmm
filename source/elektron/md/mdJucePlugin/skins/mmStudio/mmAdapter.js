@@ -80,7 +80,7 @@
 	const view = () => { const v = MmView.derive(docs(), { songEdit, host: hostTempo }); return Overlay.over(Overlay.size() ? MmView.own(v) : v); };
 	/* the view shows the machine: the catalogue (MmConvert's enumerations), the current pattern and the kit that plays */
 	const ready = () => !!catalogue && !!(docs().patterns[cur("pattern")] && kitNow());
-	const last = { record: null, ready: false, readyLabel: "", caps: null, modSent: null, note: { g: 0, text: "" }, songRow: -1, hostRefused: "" };
+	const last = { record: null, stepAt: -1, ready: false, readyLabel: "", caps: null, modSent: null, note: { g: 0, text: "" }, songRow: -1, hostRefused: "" };
 	let gesture = Bridge.gesture();
 	let modInFlight = 0;	// the id of a modSet command not answered yet
 	let clip = null;	// the page's copy of what the core's clipboard holds (MmView.copied): a paste shows at once
@@ -542,19 +542,26 @@
 		   it), the ROM folder, and a new look */
 		chooseRom() { send({ op: "chooseRom" }); },
 		removeRom(info) { askRemoveRom(info); },
-		/* I-024 (doc/modern-ux/DESIGN-machine-memory.md): KEEP MEMORY on or off; START FROM FACTORY MEMORY… asks first */
+		/* I-024 (doc/modern-ux/DESIGN-machine-memory.md): KEEP MEMORY on or off; "factory": RESET MACHINE…'s Start from
+		   factory memory (the question was the panel's, shared/deskSyx.js) */
 		memory(what) {
-			if (what === "keep") { send({ op: "memoryKeep", on: !memory.keep }, { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } }); return; }
-			V().ask(`<b>Start from factory memory?</b><br>The machine restarts with its factory kits, patterns, songs and globals${memory.saved ? ", and the saved machine memory is deleted" : ""}. New sessions start from factory memory until you save again. A DAW project keeps its own memory.`,
-				[["Start from factory memory", "danger", () => send({ op: "memoryFactory" }, { onResult: r => V().toast(r.ok ? r.note : r.errors[0]) })], ["Cancel", "", () => {}]]);
+			if (what === "keep") send({ op: "memoryKeep", on: !memory.keep }, { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } });
+			else send({ op: "memoryFactory" }, { onResult: r => V().toast(r.ok ? r.note : r.errors[0]) });
 		},
 		/* LOAD ROM in the engine menu: which firmware runs, REPLACE or REMOVE it (the reply is the romInfo message) */
 		romManage() { if (machine?.lifecycle === "missing") host.firstRun(); else send({ op: "romInfo" }); },
 		/* SysEx import and export (P7): the window's file dialogs; the plug-in parses and writes */
 		syxChoose() { send({ op: "chooseSyx" }); },
-		syxExport() { send({ op: "syxExport" }); },
-		syxStart(kinds, skip) { send({ op: "syxImport", kinds, skip: skip || [] }, { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } }); },
+		syxExport(request) { send(Object.assign({ op: "syxExport" }, request || {})); },
+		syxStart(kinds, skip, o = {}) {
+			send(Object.assign({ op: "syxImport", kinds, skip: skip || [] }, o.placeAt ? { placeAt: o.placeAt } : {}, o.checkOnly ? { checkOnly: true } : {}),
+				{ onResult: r => { if (!r.ok) V().toast(r.errors[0]); } });
+		},
 		syxStop() { send({ op: "syxCancel" }); },
+		/* 0.6 (wave 6): the open file's preview placed elsewhere, the export panel's facts, Reset machine… (empty) */
+		syxPlace(placeAt) { send({ op: "syxPlace", placeAt }, { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } }); },
+		syxExportInfo() { send({ op: "syxExportInfo" }); },
+		machineReset(how) { send({ op: "machineReset", how }, { onResult: r => V().toast(r.ok ? r.note : r.errors[0]) }); },
 		revealRom() { send({ op: "revealRomFolder" }); },
 		recheck() { send({ op: "recheckFirmware" }, { onResult: r => V().toast(r.ok ? r.note : r.errors[0]) }); },
 		firstRun() {
@@ -642,7 +649,12 @@
 			if (m.playing !== V().playing()) V().setPlaying(m.playing);
 			if (V().playing()) V().setStep(m.step);
 			/* MM-P4: the machine's recording mode */
-			if (m.record !== undefined && m.record !== last.record) { last.record = m.record; V().setRecord(m.record || "off"); }
+			/* wave 7: STEP RECORDING's cursor (stepAt, the step the next note writes) comes with it */
+			const at = m.stepAt ?? -1;
+			if ((m.record !== undefined && m.record !== last.record) || at !== last.stepAt) {
+				if (m.record !== undefined) last.record = m.record;
+				last.stepAt = at; V().setRecord(last.record || "off", at);
+			}
 			/* 0.3.5: the song row that plays (RAM): the Song page's playhead, without a render */
 			const row = m.songRow ?? -1;
 			if (row !== last.songRow) { last.songRow = row; V().setSongRow(row); }
@@ -651,7 +663,7 @@
 		else if (m.type === "audioRun") Boot.audio(m);
 		else if (m.type === "cpuLoad") CpuMeter.update(m);
 		else if (m.type === "outputLevel") DeskVolume.update(m);
-		/* I-024: the machine memory for new sessions (KEEP MEMORY, START FROM FACTORY MEMORY… in the engine menu) */
+		/* I-024: the machine memory for new sessions (the engine menu's KEEP MEMORY, RESET MACHINE…'s Start from factory memory) */
 		else if (m.type === "machineMemory") { memory = m; V().setMemory(m); }
 		/* 0.6: a note from a MIDI keyboard (the plug-in's midiIn): the Machinedrum's LEARN reads it; the Monomachine's
 		   page has no use for it yet (I-002's keyboard lights wait for B-062) */
@@ -671,7 +683,9 @@
 			else if (m.type === "editorMenu") { if (!CpuMeter.takeMenu(m)) DeskMenu.showEditor(m, menuAt.x, menuAt.y, c => send(c)); }
 			else if (m.type === "syxPreview") V().syxPreview(m);
 			else if (m.type === "syxProgress") V().syxProgress(m);
-			else if (m.type === "syxExport") V().toast(m.text);
+			else if (m.type === "syxExport") V().syxExported(m);
+			else if (m.type === "syxExportInfo") V().syxExportInfo(m);
+			else if (m.type === "syxReset") V().toast(m.text);
 		else if (m.type === "error") onError(m);
 		else if (m.type === "result" && m.op === "followHost" && !m.ok) {
 			/* a refused followHost (B-030): logged, and said once per reason */

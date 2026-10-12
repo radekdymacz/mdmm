@@ -4,25 +4,23 @@
 The editor runs the real Machinedrum operating system and adds a few things around it. This chapter describes them.
 
 ## MACHINE MEMORY
-<!-- rows: MD-X01 @66217f -->
+<!-- rows: MD-X01 @152d0b -->
 
 A Machinedrum keeps what you save when you switch it off: its kits, patterns, songs, globals and samples stay in its memory. The editor does the same. When you save on the machine, the editor writes the machine's memory to a file on your computer. A new session starts from that file.
 
 What counts as a save is what changes the machine's memory: SAVE KIT, a change to a pattern, SAVE SONG, a change to a global, a SysEx dump the machine takes in. It makes no difference whether you save in the editor or on the machine's own keys. The editor writes the file a second or two after the memory stops changing. Playing a pattern writes nothing.
 
-A new session is a new plug-in in a DAW project, a new DAW project, or the first start of the standalone editor. It starts with the memory you last saved.
+A new session is a new plug-in in a DAW project, a new DAW project, or a start of the standalone editor. It starts with the memory you last saved, wherever you saved it.
 
 NOTE: A DAW project keeps its own memory. When you open a saved project, the machine starts with the memory of that project, not with the file. A save you then make in that project goes to the file too.
 
-NOTE: The standalone editor keeps its memory when you quit it and starts with it again. It reads the file only at its first start.
-
 ### Start from factory memory
 
-1. Open the engine menu, the drop-down at the left of the LCD.
-2. Choose **START FROM FACTORY MEMORY…**. The editor asks first.
-3. Click **Start from factory memory**. The machine restarts with its factory kits, patterns, songs and globals, and the saved memory file is deleted.
+1. Choose **RESET MACHINE…** in the engine menu, the drop-down at the left of the LCD.
+2. Click **Start from factory memory…**. The editor asks a second time.
+3. Click **Start from factory memory**. The machine restarts with its factory memory, as on a new install, and the saved memory file is deleted. This takes a few seconds.
 
-New sessions now start from factory memory until you save again.
+New sessions now start from factory memory until you save again. The reset has no undo: click **Export SysEx…** in the question first to keep a way back.
 
 ### Turn it off
 

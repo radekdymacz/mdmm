@@ -111,6 +111,8 @@ namespace
 		check(startOf(false, true, true, false) == Start::Off, "no folder: factory memory");
 		check(startOf(false, false, true, true) == Start::Wait, "no ROM yet: wait");
 		check(startOf(false, true, true, true) == Start::File, "else the file");
+		check(stateIsProject(false), "a DAW project's state is a project: it wins over the file");
+		check(!stateIsProject(true), "the standalone's own state is not: the file wins");
 	}
 
 	void hashing()

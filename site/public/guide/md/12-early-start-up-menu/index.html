@@ -66,12 +66,18 @@
 <section class="gd-sec" id="empty-reset" aria-labelledby="empty-reset-h">
 <div class="gd-body gd-prose"><h2 id="empty-reset-h">EMPTY RESET <a class="gd-anchor" href="#empty-reset" aria-label="Link to EMPTY RESET">#</a></h2>
 <p class="gd-ref">MD manual p.79</p>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot empty the whole memory of the machine at once in the editor. You can clear a pattern, a kit, a song row or a sample slot one at a time.</p>
+<p>The empty reset clears the memory of the machine. In the editor it is in the engine menu.</p>
+<ol class="gd-steps"><li>Choose <b class="gd-ui">RESET MACHINE…</b> in the engine menu (the engine name at the left of the LCD). A question says what each reset clears. <b class="gd-ui">Cancel</b> is the default: <kbd class="gd-key">[ESC]</kbd> or a click outside answers it.</li><li>Click <b class="gd-ui">Empty reset…</b>. The editor asks a second time.</li><li>Click <b class="gd-ui">Clear everything</b>. The <b class="gd-ui">Empty reset</b> panel opens. The editor writes an empty kit, pattern and song into every slot, then reads each one back.</li><li>Read the report and click <b class="gd-ui">Done</b>.</li></ol>
+<p>The globals and the samples stay. A global is reset in its own slot in GLOBAL (chapter 10).</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The reset has no undo. Click <b class="gd-ui">Export SysEx…</b> in the question first to keep a way back.</p></aside>
 </div></section>
 <section class="gd-sec" id="factory-reset" aria-labelledby="factory-reset-h">
 <div class="gd-body gd-prose"><h2 id="factory-reset-h">FACTORY RESET <a class="gd-anchor" href="#factory-reset" aria-label="Link to FACTORY RESET">#</a></h2>
 <p class="gd-ref">MD manual p.79</p>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot reset the machine to its factory data in the editor. Import a factory .syx file instead. See &quot;GENERAL SYSEX RECEIVE&quot; in chapter 10.</p>
+<p>The factory reset brings back the kits, patterns and songs the machine had when it left the factory. The editor takes them from your own ROM: it starts a second machine with it, in the background, and reads that machine's memory.</p>
+<ol class="gd-steps"><li>Choose <b class="gd-ui">RESET MACHINE…</b> in the engine menu.</li><li>Click <b class="gd-ui">Factory reset…</b>. The editor asks a second time.</li><li>Click <b class="gd-ui">Factory reset</b>. Preparing the factory data takes a few seconds. Then the <b class="gd-ui">Factory reset</b> panel sends every kit, pattern and song and reads each one back. This takes a few minutes.</li><li>Read the report and click <b class="gd-ui">Done</b>. Kits 1 to 4 are named TRX UW, EFM UW, E12 UW and P-I UW.</li></ol>
+<p>The globals and the samples stay. The reset has no undo: export first.</p>
+<aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>To bring back the whole factory memory at once, globals and samples too, click <b class="gd-ui">Start from factory memory…</b> in the same question. The machine restarts in a few seconds. See &quot;MACHINE MEMORY&quot; in chapter 17.</p></aside>
 </div></section>
 <section class="gd-sec" id="soft-reset" aria-labelledby="soft-reset-h">
 <div class="gd-body gd-prose"><h2 id="soft-reset-h">SOFT RESET <a class="gd-anchor" href="#soft-reset" aria-label="Link to SOFT RESET">#</a></h2>

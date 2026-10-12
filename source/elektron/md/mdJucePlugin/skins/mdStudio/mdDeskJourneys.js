@@ -453,6 +453,29 @@ const MdJourneys = (() => {
 		async tidy(u) { if (V.rec) u.click("#rec"); if (V.playing) u.click("#play"); }
 	};
 
+	/* wave 7 (manual p.40): Delete held while live recording is EXIT/NO + the track's TRIG key on the machine; the track's
+	   trigs go as they play. The key is held: a keydown now, its keyup later (u.key presses and lets go at once). */
+	const keyEv = (type, key) => (document.activeElement && document.activeElement !== document.documentElement ? document.activeElement : document.body)
+		.dispatchEvent(new KeyboardEvent(type, { key, code: key, bubbles: true, cancelable: true, composed: true }));
+	const liveErase = {
+		name: "md-seq-live-erase", proves: ["MD-113"],
+		steps: [
+			go("seq"),
+			{ say: "pick the track with the most trigs", act: (u, c) => { c.t = soundTracks().slice().sort((a, b) => trigsOf(b).length - trigsOf(a).length)[0] ?? soundTrack(); c.p0 = trigsOf(c.t); c.others = [...Array(16).keys()].filter(t => t !== c.t).map(trigsOf); u.click(rail(c.t)); },
+				screen: c => ok(S.sel === c.t, "selected " + S.sel), machine: c => ok(c.p0.length > 0, "no trigs on track " + (c.t + 1)) },
+			{ say: "click REC: live recording, playing", act: u => u.click("#rec"), screen: () => ok(V.rec, "REC " + V.rec), machine: () => ok(tele.last?.playing, "not playing"), within: 5000 },
+			{ say: "hold Delete: the selected track's trigs go as they play", act: (u, c) => { results.length = 0; document.activeElement?.blur?.(); u.cap("Delete held"); keyEv("keydown", "Delete"); },
+				screen: () => ok(document.body.classList.contains("erasing"), "not marked as erasing"),
+				machine: c => ok(trigsOf(c.t).length < c.p0.length, `${c.p0.length} -> ${trigsOf(c.t).length} trigs; results ${results.map(r => r.op + ":" + r.ok + (r.errors ? " " + r.errors.join(";") : "")).join(", ")}`), within: 10000 },
+			{ say: "let Delete go, click REC off, then STOP: the other tracks kept their trigs", act: async u => { keyEv("keyup", "Delete"); await sleep(300); u.click("#rec"); await sleep(500); if (V.playing) u.click("#play"); },
+				screen: () => ok(!document.body.classList.contains("erasing") && !V.rec && !V.playing, `REC ${V.rec}, playing ${V.playing}`),
+				machine: c => ok([...Array(16).keys()].filter(t => t !== c.t).map(trigsOf).every((a, k) => same(a, c.others[k])), "another track changed"), within: 8000 }
+		],
+		async tidy(u, c) { keyEv("keyup", "Delete"); if (V.rec) u.click("#rec"); if (V.playing) u.click("#play"); await sleep(600);
+			/* the erased trigs back, one click each (the machine's erase is not an undo step) */
+			for (const s of c.p0 || []) if (!trigsOf(c.t).includes(s) && $1(cell(c.t, s))) { u.click(cell(c.t, s)); await sleep(120); } }
+	};
+
 	/* ---------- generators ---------- */
 	const genJourney = (name, defaults, o = {}) => ({
 		name, proves: o.proves,
@@ -1105,8 +1128,7 @@ const MdJourneys = (() => {
 		name: "md-lib-syx-import", proves: ["MD-181"],
 		needs: () => new URLSearchParams(location.search).get("syxfile") ? null : "no .syx for the run (GEARMULATOR_MDMM_SYX_FILE)",
 		steps: [
-			openKits,
-			{ say: "click Import SysEx…: the file's preview", act: u => u.click('#libpop [data-syx="import"]'), screen: () => ok(!$1("#syxpop").hidden && syxKitIds().length > 0, "no preview with kits"), within: 8000 },
+			{ say: "choose IMPORT SYSEX… in the engine menu: the file's preview", act: u => u.pick("engsel", "import"), screen: () => ok(!$1("#syxpop").hidden && syxKitIds().length > 0, "no preview with kits"), within: 8000 },
 			{ say: "leave Kits ticked only, click Import: sent, read back, reported", act: (u, c) => {
 				for (const b of $all("#syxpop [data-syxkind]")) if (b.checked !== (b.dataset.syxkind === "kit")) u.click(b);
 				c.names = syxKitIds().map(b => [+b.dataset.syxitem.split(":")[1], (b.dataset.syxname || "").trim()]);
@@ -1121,6 +1143,120 @@ const MdJourneys = (() => {
 			esc
 		]
 	};
+	/* ---------- wave 6: SysEx kinds and ranges, SPECIFIC place, VERIFY ONLY, Reset machine… ---------- */
+	/* the SysEx news as they come (the export's words, a factory reset being prepared): the toast may be replaced */
+	const syxNews = [];
+	Bridge.onMessage(m => { if (m.type === "syxExport" || m.type === "syxReset") { syxNews.push(m); if (syxNews.length > 20) syxNews.shift(); } });
+	const lastExport = () => syxNews.filter(m => m.type === "syxExport" && !m.running).pop();
+	/* the page tier opens its own file and writes into the temp folder; the plug-in needs the run's file (diagnostics) */
+	const syxWanted = () => window.gmDev || new URLSearchParams(location.search).get("syxfile") ? null : "no .syx for the run (GEARMULATOR_MDMM_SYX_FILE)";
+	const syxValue = (k, end) => `#syxpop [data-sxv="${end}"][data-k="${k}"]`;
+	const syxKinds = on => async u => { for (const b of $all("#syxpop [data-syxkind]")) if (b.checked !== on.includes(b.dataset.syxkind)) u.click(b); await sleep(100); };
+	const syxCell = id => `#syxpop button[data-syxitem="${id}"]`;
+	const openImport = { say: "choose IMPORT SYSEX… in the engine menu: the file's preview", act: u => u.pick("engsel", "import"),
+		screen: () => ok(!$1("#syxpop").hidden && !$1("#syxpop").classList.contains("syx-export") && $all('#syxpop button[data-syxitem^="kit:"]').length > 0, "no preview with kits"), within: 8000 };
+	const syxExportKinds = {
+		name: "md-lib-syx-export-kinds", proves: ["MD-176", "MD-177", "MD-178", "MD-179", "MD-180"],
+		needs: () => window.gmDev ? null : "the save dialog: the page tier only",
+		steps: [
+			{ say: "choose EXPORT SYSEX… in the engine menu: ALL is ticked, the kinds wait under it", act: u => u.pick("engsel", "export"),
+				screen: () => ok(!$1("#syxpop").hidden && $1("#syxpop").classList.contains("syx-export") && !!$1('#syxpop [data-sxk="all"]')?.checked && !!$1(syxValue("kit", "to")), "no export panel with ALL and the kit range"), within: 6000 },
+			{ say: "click Save .syx… with All: every document the editor holds", act: (u, c) => { c.n = syxNews.length; u.click('#syxpop [data-syxgo="save"]'); },
+				screen: c => { const m = syxNews.length > c.n && lastExport(); return ok(!!m && m.ok && /every document the editor holds \(\d+ kits?, \d+ patterns?, \d+ songs?, \d+ globals?\)/.test(m.text) && $1("#syxpop").hidden, m ? m.text : "no export yet"); }, within: 8000 },
+			{ say: "EXPORT SYSEX… again and untick All: each kind with its range", act: async u => { await u.pick("engsel", "export"); await until(() => !!$1(syxValue("kit", "to")), 6000); u.click('#syxpop [data-sxk="all"]'); },
+				screen: () => ok(!$1('#syxpop [data-sxk="kit"]')?.disabled && /^K64$/.test($1(syxValue("kit", "to"))?.textContent || "") && /^H16$/.test($1(syxValue("pattern", "to"))?.textContent || ""), "kits to " + $1(syxValue("kit", "to"))?.textContent), within: 6000 },
+			{ say: "⇧-click the kits' last slot twice (K62); wheel the songs to S01 to S02; tick Songs and Globals", act: async u => {
+				u.click(syxValue("kit", "to"), { shift: true }); u.click(syxValue("kit", "to"), { shift: true }); await sleep(100);
+				u.wheel(syxValue("song", "from"), -40); u.wheel(syxValue("song", "to"), -40); await sleep(100); u.wheel(syxValue("song", "to"), 1); await sleep(100);
+				if (!$1('#syxpop [data-sxk="song"]').checked) u.click('#syxpop [data-sxk="song"]'); u.click('#syxpop [data-sxk="global"]'); await sleep(100); },
+				screen: () => ok($1(syxValue("kit", "to"))?.textContent === "K62" && $1('#syxpop [data-sxk="song"]').checked && $1('#syxpop [data-sxk="global"]').checked
+					&& /Kits K01–K62 · Patterns A01–H16 · Songs S01–S02 · Globals/.test($1("#syxpop .syxsum")?.textContent || ""), "summary " + $1("#syxpop .syxsum")?.textContent) },
+			{ say: "click Save .syx…: just those are written, two songs among them", act: (u, c) => { c.n = syxNews.length; u.click('#syxpop [data-syxgo="save"]'); },
+				screen: c => { const m = syxNews.length > c.n && lastExport(); return ok(!!m && m.ok && /62 kits, 128 patterns, 2 songs, 1 global\./.test(m.text) && $1("#syxpop").hidden, m ? m.text : "no export yet"); }, within: 8000 }
+		],
+		async tidy() { $1("#syxpop").hidden = true; }
+	};
+	const syxVerify = {
+		name: "md-lib-syx-verify", proves: ["MD-184"],
+		needs: syxWanted,
+		steps: [
+			openImport,
+			{ say: "click Verify only: the slots are read and compared, nothing is written", act: (u, c) => { c.k0 = kitName(0); u.click('#syxpop [data-syxgo="verify"]'); },
+				screen: () => ok(/^Verify only: \d+ of \d+ the same/.test($1("#syxpop .syxsum")?.textContent || "") && /Nothing was written/.test($1("#syxpop .syxsum")?.textContent || ""), "progress: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
+				machine: c => ok(kitName(0) === c.k0, `K01 "${kitName(0)}" (before "${c.k0}")`), within: 60000 },
+			{ say: "the file's kits differ from the machine's: the grid marks them ≠ and the summary does not say all the same", act: () => {},
+				screen: () => { const outs = $all("#syxpop [data-syxout]").map(d => d.dataset.syxout), s = $1("#syxpop .syxsum")?.textContent || "", m = s.match(/(\d+) of (\d+) the same/);
+					return ok(outs.includes("differs") && !!m && +m[1] < +m[2], outs.join(" ") + " / " + s); } },
+			{ say: "the grid marks what differs (≠) and what is the same (=)", act: () => {},
+				screen: () => ok($all("#syxpop [data-syxout]").length > 0 && $all("#syxpop [data-syxout]").every(d => ["same", "differs", "unknown", "no reply"].includes(d.dataset.syxout)), $all("#syxpop [data-syxout]").map(d => d.dataset.syxout).join(" ")) },
+			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") }
+		],
+		async tidy() { $1("#syxpop").hidden = true; }
+	};
+	const syxPlace = {
+		name: "md-lib-syx-place", proves: ["MD-183", "MD-184"],
+		needs: syxWanted,
+		steps: [
+			openImport,
+			{ say: "click Specific place: the kits start at the file's first (K01)", act: u => u.click('#syxpop [data-sxp="specific"]'),
+				screen: () => ok(!!$1(syxValue("kit", "place")) && $1(syxValue("kit", "place")).textContent === "K01", "first " + $1(syxValue("kit", "place"))?.textContent) },
+			{ say: "click the first slot four times: K05; the grid shows the kits landing in K05 and K06", act: async u => { for (let i = 0; i < 4; i++) { u.click(syxValue("kit", "place")); await sleep(60); } },
+				screen: () => ok($1(syxValue("kit", "place"))?.textContent === "K05" && !!$1(syxCell("kit:4")) && !!$1(syxCell("kit:5")) && !$1(syxCell("kit:0")) && /from K0[12]/.test($1(syxCell("kit:4"))?.title || ""),
+					"cells " + $all('#syxpop button[data-syxitem^="kit:"]').map(b => b.dataset.syxitem).join(" ")), within: 4000 },
+			{ say: "leave Kits ticked only, click Import: it asks first (K05 and K06 hold kits)", act: async (u, c) => { await syxKinds(["kit"])(u); c.names = $all('#syxpop button[data-syxitem^="kit:"]').map(b => [+b.dataset.syxitem.split(":")[1], (b.dataset.syxname || "").trim()]); c.k0 = kitName(0); u.click('#syxpop [data-syxgo="start"]'); },
+				screen: () => ok(dlgShown() && /K05/.test($1("#dlg").textContent) && !!dlgButton("Import 2"), "no question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
+			{ say: "click Import 2: sent to K05 and K06, read back, reported", act: u => u.click(dlgButton("Import 2")),
+				screen: () => ok(/2 imported/.test($1("#syxpop .syxsum")?.textContent || ""), "progress: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
+				machine: c => ok(c.names.every(([k, n]) => kitName(k) === n) && kitName(0) === c.k0, c.names.map(([k, n]) => `K${k + 1} "${kitName(k)}" want "${n}"`).join(", ") + `; K01 "${kitName(0)}"`), within: 60000 },
+			{ say: "click Done, Import SysEx… again, Specific place from K05, Verify only: the same", act: async u => {
+				u.click('#syxpop [data-syxgo="close"]'); await sleep(200); await u.pick("engsel", "import"); await until(() => !!$1('#syxpop [data-sxp="specific"]'), 6000);
+				await syxKinds(["kit"])(u); u.click('#syxpop [data-syxtab="kit"]'); await sleep(100); u.click('#syxpop [data-sxp="specific"]'); await sleep(200);
+				for (let i = 0; i < 4; i++) { u.click(syxValue("kit", "place")); await sleep(60); }
+				await until(() => !!$1(syxCell("kit:4")), 3000); u.click('#syxpop [data-syxgo="verify"]'); },
+				screen: () => ok(/^Verify only: 2 of 2 the same/.test($1("#syxpop .syxsum")?.textContent || ""), "report " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")), within: 60000 },
+			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") }
+		],
+		async tidy() { if (dlgShown()) dlgButton("Cancel")?.click(); $1("#syxpop").hidden = true; }
+	};
+	/* Reset machine… > Empty reset: two questions, then every kit, pattern and song cleared and read back. It empties the
+	   machine: the last journey of all */
+	const resetEmpty = {
+		name: "md-engine-reset-empty", proves: ["MD-203"],
+		steps: [
+			{ say: "choose RESET MACHINE… in the engine menu: what each reset destroys; Cancel is the default", act: u => u.pick("engsel", "reset"),
+				screen: () => ok(dlgShown() && !!dlgButton("Empty reset…") && !!dlgButton("Factory reset…") && !!dlgButton("Export SysEx…") && $1("#dlg .btnrow button:last-child")?.textContent === "Cancel", "the question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
+			{ say: "click Empty reset…: it asks a second time", act: u => u.click(dlgButton("Empty reset…")),
+				screen: () => ok(dlgShown() && !!dlgButton("Clear everything") && /no undo/.test($1("#dlg").textContent), "second question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
+			{ say: "click Clear everything: the reset runs in the SysEx panel and reports", act: (u, c) => { c.g0 = JSON.stringify(Docs.global); u.click(dlgButton("Clear everything")); },
+				screen: () => ok(/Empty reset/.test($1("#syxpop .cap")?.textContent || "") && /cleared/.test($1("#syxpop .syxsum")?.textContent || ""), "panel: " + ($1("#syxpop .cap")?.textContent || "") + " " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
+				machine: c => { const named = [...Array(64).keys()].filter(k => kitName(k)), trigs = [...Array(128).keys()].filter(p => (Docs.patterns[p]?.tracks || []).some(t => t.trigs.length)), songs = [...Array(32).keys()].filter(s => (Docs.songs[s]?.rows || []).length > 1);
+					/* the machine's own empty pattern (16 steps, 1x, kit 1, no swing), and the global as it was */
+					const odd = [...Array(128).keys()].filter(p => { const d = Docs.patterns[p]; return !d || d.length !== 16 || ![0, "1X"].includes(d.tempoMultiplier) || d.kit !== 0 || d.swingAmount !== 0; });
+					return ok(!named.length && !trigs.length && !songs.length && !odd.length && JSON.stringify(Docs.global) === c.g0,
+						`${named.length} kits named, ${trigs.length} patterns with trigs, ${songs.length} songs with rows, ${odd.length} patterns not as the machine's empty one (${odd.slice(0, 3).map(p => JSON.stringify([Docs.patterns[p]?.length, Docs.patterns[p]?.tempoMultiplier, Docs.patterns[p]?.kit, Docs.patterns[p]?.swingAmount])).join(" ")}), global ${JSON.stringify(Docs.global) === c.g0 ? "kept" : "changed"}`); }, within: 240000 },
+			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") }
+		],
+		async tidy() { if (dlgShown()) dlgButton("Cancel")?.click(); $1("#syxpop").hidden = true; }
+	};
+	/* Reset machine… > Factory reset (P6): a second machine from the run's ROM, read (seconds), then every kit, pattern and
+	   song sent and read back (minutes): the factory kits 1-4 are TRX UW, EFM UW, E12 UW, P-I UW (mdFactorySourceFirmwareTest).
+	   A kit cleared first shows the restore (the run's machine may hold the factory kits already). The plug-in only */
+	const FACTORY_KITS = ["TRX UW", "EFM UW", "E12 UW", "P-I UW"];
+	const resetFactory = {
+		name: "md-engine-reset-factory", proves: ["MD-204"],
+		needs: () => window.gmDev ? "a second machine from the ROM: the plug-in only" : null,
+		steps: [
+			{ say: "clear a stored kit of the first four (not the one that plays): it is empty", act: (u, c) => { c.k = V.kit === 1 ? 2 : 1; cmd("kitClear", { k: c.k, force: true }); },
+				machine: c => ok(!(kitName(c.k) || "").trim(), `K0${c.k + 1} "${kitName(c.k)}"`), within: 10000 },
+			{ say: "choose RESET MACHINE…, click Factory reset…", act: async u => { await u.pick("engsel", "reset"); await until(dlgShown, 3000); u.click(dlgButton("Factory reset…")); },
+				screen: () => ok(dlgShown() && !!dlgButton("Factory reset"), "second question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
+			{ say: "click Factory reset: the factory data is prepared, then sent, read back and reported", act: u => u.click(dlgButton("Factory reset")),
+				screen: () => ok(/Factory reset/.test($1("#syxpop .cap")?.textContent || "") && /restored/.test($1("#syxpop .syxsum")?.textContent || ""), "news " + (syxNews.at(-1)?.text || "") + "; panel " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
+				machine: () => ok(FACTORY_KITS.every((n, k) => (kitName(k) || "").trim() === n), [0, 1, 2, 3].map(k => kitName(k)).join(", ")), within: 600000 },
+			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") }
+		],
+		async tidy() { if (dlgShown()) dlgButton("Cancel")?.click(); $1("#syxpop").hidden = true; }
+	};
 	/* B-026: import a file with its globals, then mute on the rail and play: the machine must hold the mute (its memory,
 	   not the page's wish). With the file's base channel OFF the M is refused, with the reason, and never lit. The file
 	   is the run's (GEARMULATOR_MDMM_SYX_FILE; mdDeskFirmwareTest syxexport with SYX_BASE_CHANNEL makes one). */
@@ -1128,8 +1264,7 @@ const MdJourneys = (() => {
 		name: "md-lib-syx-import-mute", proves: ["MD-094", "MD-122", "MD-181"],
 		needs: () => new URLSearchParams(location.search).get("syxfile") ? null : "no .syx for the run (GEARMULATOR_MDMM_SYX_FILE)",
 		steps: [
-			openKits,
-			{ say: "click Import SysEx…, tick Globals too", act: async u => { u.click('#libpop [data-syx="import"]'); await until(() => !$1("#syxpop").hidden && $all("#syxpop [data-syxkind]").length, 8000); const g = $1('#syxpop [data-syxkind="global"]'); if (g && !g.checked) u.click(g); },
+			{ say: "choose IMPORT SYSEX… in the engine menu, tick Globals too", act: async u => { await u.pick("engsel", "import"); await until(() => !$1("#syxpop").hidden && $all("#syxpop [data-syxkind]").length, 8000); const g = $1('#syxpop [data-syxkind="global"]'); if (g && !g.checked) u.click(g); },
 				screen: () => ok(!$1("#syxpop").hidden && !!$1('#syxpop [data-syxkind="global"]')?.checked, "no Globals in the preview"), within: 8000 },
 			{ say: "click Import: sent, read back, reported", act: u => u.click('#syxpop [data-syxgo="start"]'), screen: () => ok(/imported/.test($1("#syxpop .syxsum")?.textContent || ""), "progress: " + ($1("#syxpop .syxbar span")?.textContent || "")), within: 180000 },
 			{ say: "click Done, then the Sequence tab", act: async u => { u.click('#syxpop [data-syxgo="close"]'); await sleep(300); u.key("Escape"); await sleep(300); u.click(tab("seq")); },
@@ -1304,8 +1439,7 @@ const MdJourneys = (() => {
 			{ say: "done", act: () => shot("done") }] };
 	const shotsImport = { name: "md-shots-import", proves: [], needs: () => !/md-shots/.test(location.search) ? "screenshots only when asked by name" : syxImportJ.needs(),
 		steps: [
-			openKits,
-			{ say: "click Import SysEx…: the preview, the Kits tab", act: async u => { u.click('#libpop [data-syx="import"]'); await until(() => syxKitIds().length > 0, 8000); await sleep(400); shot("import-1-md-kits"); },
+			{ say: "choose IMPORT SYSEX… in the engine menu: the preview, the Kits tab", act: async u => { await u.pick("engsel", "import"); await until(() => syxKitIds().length > 0, 8000); await sleep(400); shot("import-1-md-kits"); },
 				screen: () => ok(!$1("#syxpop").hidden && syxKitIds().length > 0, "no preview with kits"), within: 10000, hold },
 			{ say: "the Patterns tab", act: async u => { u.click('#syxpop [data-syxtab="pattern"]'); await sleep(400); shot("import-2-md-patterns"); }, hold },
 			{ say: "the Globals tab", act: async u => { u.click('#syxpop [data-syxtab="global"]'); await sleep(400); shot("import-3-md-globals"); }, hold },
@@ -1349,7 +1483,7 @@ const MdJourneys = (() => {
 		{ name: "patterns", open: u => u.click("#pat"), close: esc1 },
 		{ name: "global", open: u => u.pick("engsel", "global"), close: esc1 },
 		{ name: "audio", needs: () => { const o = $1('#engsel option[value="audio"]'); return o && !o.hidden && !o.disabled ? null : "no AUDIO / MIDI here (the plug-in in a host)"; }, open: u => u.pick("engsel", "audio"), close: esc1 },
-		{ name: "syx-import", needs: syxImportJ.needs, open: async u => { u.click("#kitf"); await sleep(300); u.click('#libpop [data-syx="import"]'); await until(() => syxKitIds().length > 0, 8000); },
+		{ name: "syx-import", needs: syxImportJ.needs, open: async u => { await u.pick("engsel", "import"); await until(() => syxKitIds().length > 0, 8000); },
 			close: async u => { $1('#syxpop [data-syxgo="close"]')?.click(); await sleep(200); await esc1(u); } },
 		{ name: "keys", open: u => { document.activeElement?.blur?.(); u.key("?", { shift: true }); }, close: esc1 },
 		{ name: "menu", open: u => menu.via(u), close: async () => closeDeskMenu() },
@@ -1566,7 +1700,7 @@ const MdJourneys = (() => {
 		]
 	};
 	const all = [bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
-		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec,
+		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase,
 		genJourney("md-gen-mutate-undo", false, { proves: [] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: [] }), genKeys,
 		shapeSound, arrows, machinePick, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,
 		mixSolo, shiftMutes, allOff, fader, outKey, masterFx,
@@ -1575,7 +1709,7 @@ const MdJourneys = (() => {
 		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, audioPanel, romCard, notePlay,
 		lockRamp, pasteMany, mutScope, songInspector, songDrag, ramView, setupChop, panBox, hwNoMachine, syxImportJ,
 		syxImportMute, globalReset, shotsGlobal, shotsSound, shots, shotsSong, shotsImport, editorMenuJ, memoryJ, shotsMenu, ...cpuJs, ...volJs,
-		dropSyxJ, dropSampleJ, ...viewJs];
+		dropSyxJ, dropSampleJ, ...viewJs, syxExportKinds, syxVerify, syxPlace, resetFactory, resetEmpty];
 
 	/* ---------- demos: journeys played for a camera (doc/modern-ux/DEMO-VIDEOS.md) ---------- */
 	/* Not in `all`: ?selftest=journey never runs them; ?selftest=demo-md-<name> does (Journey.demo), at a person's pace

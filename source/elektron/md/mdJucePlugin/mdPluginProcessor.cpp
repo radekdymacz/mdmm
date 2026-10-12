@@ -195,8 +195,8 @@ namespace mdJucePlugin
 
 	void AudioPluginAudioProcessor::setStateInformation(const void* _data, const int _size)
 	{
-		if(_size > 0)
-			m_projectStateSeen = true;	// I-024: the project's memory wins over the machine memory file
+		if(_size > 0 && machineMemory::stateIsProject(m_standaloneState))
+			m_projectStateSeen = true;	// I-024: a DAW project's memory wins over the machine memory file
 		if(!m_desk->holdState(_data, _size)) Processor::setStateInformation(_data, _size);
 	}
 
@@ -454,13 +454,13 @@ namespace mdJucePlugin
 	AudioPluginAudioProcessor::AudioPluginAudioProcessor(const md::MachineModel _model,
 		EphemeralConfig _config) :
 		AudioPluginAudioProcessor(_model, std::vector<uint8_t>{}, true,
-			std::move(_config.deviceHomePath), std::move(_config.machineMemoryFolder))
+			std::move(_config.deviceHomePath), std::move(_config.machineMemoryFolder), _config.standaloneState)
 	{
 	}
 
 	AudioPluginAudioProcessor::AudioPluginAudioProcessor(const md::MachineModel _model,
 		std::vector<uint8_t> _initialPatchRam, const bool _ephemeralConfig,
-		std::optional<std::string> _deviceHomePath, std::optional<std::string> _memoryFolder) :
+		std::optional<std::string> _deviceHomePath, std::optional<std::string> _memoryFolder, const bool _standaloneState) :
 		Processor(createBusesProperties(),
 			prepareConfig(_model, _ephemeralConfig), makeProcessorProperties(_model),
 			_ephemeralConfig
@@ -525,6 +525,9 @@ namespace mdJucePlugin
 		else if(!_ephemeralConfig && wrapperType != wrapperType_Undefined)
 			m_memoryFolder = baseLib::filesystem::validatePath(getDataFolder()) + machineMemory::g_folder + "/";
 		m_memoryKeep.store(getConfig().getBoolValue(machineMemory::g_keepKey, true), std::memory_order_release);
+		// Radek, 2026-10-12: one memory for everything, like a real machine. The standalone's own state (JUCE's, saved when
+		// it quits) does not win over the file; a DAW project's does.
+		m_standaloneState = _standaloneState || wrapperType == wrapperType_Standalone;
 		startMachineMemoryThread();
 		m_performanceReport = std::make_unique<synthLib::PerformanceReport>(
 			getPlugin().getRealtimeInstrumentation(), panelEventDetails);

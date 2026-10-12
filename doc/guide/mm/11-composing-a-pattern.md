@@ -59,7 +59,7 @@ The LCD keys **Copy**, **Clr** and **Paste** act on the selected track. With no 
 NOTE: The machine also has a GRID RECORDING state. When the machine is stopped, **●** on the LCD turns it on, and the machine's own trig keys write steps. The editor reads the steps back. You do not need it to write notes.
 
 ## LIVE RECORDING
-<!-- rows: MM-179 MM-180 MM-181 @1af738 -->
+<!-- rows: MM-179 MM-180 MM-181 @ef0b73 -->
 
 Live recording records the notes you play while the pattern runs.
 
@@ -72,16 +72,27 @@ The machine records each note on the step nearest to it. The notes appear in the
 
 {gap:MM-180}The editor records one key at a time. Draw a chord with [⇧]-click in the roll.{/gap}
 
-{gap:MM-181}You cannot erase notes with a key while you record in the editor yet. Delete them in the roll.{/gap}
+To erase while you record, select the track and hold {key:live-erase}. This is the machine's [EXIT]. The notes of the track go on each step that plays while the key is down. The track's header is marked red. Let the key go to stop erasing.
 
 NOTE: Wait until live recording stops before you select steps or open the step menu. The editor refuses them while it records.
 
 NOTE: Values you turn while the pattern records are locked. See "Parameter locks in live recording mode" in chapter 13.
 
 ## STEP RECORDING
-<!-- rows: MM-182 @8830d4 -->
+<!-- rows: MM-182 @f2e0cc -->
 
-Notes are entered in the editor by drawing them in the piano roll. {gap:MM-182}The editor has no step recording yet.{/gap}
+In step recording you play one note for each step, and the machine moves on by itself. The tempo does not matter.
+
+1. Stop the machine and select a synth track. The machine writes only this track.
+2. Hold [⇧] and click the record key, or choose **Step record** in the play key's menu. The record key shows STEP, and a red cursor on the roll marks the step, with the track and the step number.
+3. Play a note with the computer keys or the keys left of the roll. The machine writes it to the step under the cursor, and the cursor moves to the next step.
+4. Press {key:step-move} to move. → leaves a rest and moves on. ← goes a step back.
+5. Press {key:step-clear} to clear the step under the cursor. The cursor moves on.
+6. Press {key:step-done}, or click the record key, to stop.
+
+Select another synth track while step recording is on, and the machine records that track from the same step.
+
+You can also draw notes in the piano roll at any time.
 
 ## NOTE COPY
 <!-- rows: MM-183 @da0485 -->

@@ -30,6 +30,8 @@ namespace mdJucePlugin
 			// I-024: the folder of the machine memory file (mdMachineMemory.h). Disengaged: none (an isolated test
 			// keeps no memory between sessions); an engaged path: that folder.
 			std::optional<std::string> machineMemoryFolder;
+			// I-024: take the state given at the start as the standalone's own (the memory file wins over it)
+			bool standaloneState = false;
 		};
 
 	    AudioPluginAudioProcessor();
@@ -112,7 +114,7 @@ namespace mdJucePlugin
 		uint32_t machineMemoryVersion() const { return m_memoryVersion.load(std::memory_order_acquire); }
 		bool keepMachineMemory() const { return m_memoryKeep.load(std::memory_order_acquire); }
 		void setKeepMachineMemory(bool _keep);
-		// START FROM FACTORY MEMORY: the file goes and the machine restarts from factory memory (a fresh machine's
+		// RESET MACHINE… > Start from factory memory: the file goes and the machine restarts from factory memory (a fresh machine's
 		// state, as on a new install). The page asked the user first. False with the reason in _note.
 		bool startFromFactoryMemory(std::string& _note);
 		juce::File machineMemoryFile() const;
@@ -152,7 +154,7 @@ namespace mdJucePlugin
 		AudioPluginAudioProcessor(md::MachineModel _model,
 			std::vector<uint8_t> _initialPatchRam, bool _ephemeralConfig,
 			std::optional<std::string> _deviceHomePath = std::nullopt,
-			std::optional<std::string> _memoryFolder = std::nullopt);
+			std::optional<std::string> _memoryFolder = std::nullopt, bool _standaloneState = false);
 		bool serviceDeferredStateRestore();
 		bool serviceStateRestoreFailure();
 		void recordStandaloneStartupDiagnostics();
@@ -199,6 +201,7 @@ namespace mdJucePlugin
 		// I-024: machine memory. m_memoryFolder empty: off (an isolated test, or a processor no plug-in wrapper made)
 		std::string m_memoryFolder;
 		bool m_projectStateSeen = false;		// a project state came this session (message thread)
+		bool m_standaloneState = false;		// the state at the start is the standalone's own: the file wins over it
 		bool m_memoryStartDone = false;
 		uint64_t m_memoryRestoreGeneration = 0;	// the device's restore generation of the file's payload, 0: none
 		std::atomic<uint32_t> m_memoryVersion{1};
