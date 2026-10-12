@@ -3903,12 +3903,15 @@ const What = (() => {
 	};
 	const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 	const store = (editor, verb) => "deskWhat." + editor + "." + verb;
-	/* the ticks of a verb as this browser remembers them (none: the defaults), among the ids offered */
+	/* the ticks of a verb as this browser remembers them (none: the defaults), among the ids offered. When none of the
+	   remembered ones is offered, the defaults (B-085: Paste… after a paste of Trigs alone and a copy of Swing alone
+	   opened with nothing ticked, its key off) */
 	function ticked(editor, verb, ids, defaults) {
 		let saved = null;
 		try { saved = JSON.parse(localStorage.getItem(store(editor, verb)) || "null"); } catch (_) { saved = null; }
-		const list = Array.isArray(saved) ? saved : defaults || [];
-		return ids.filter(id => list.includes(id));
+		const pick = list => ids.filter(id => list.includes(id));
+		const on = Array.isArray(saved) ? pick(saved) : [];
+		return on.length ? on : pick(defaults || []);
 	}
 	function remember(editor, verb, ids) { try { localStorage.setItem(store(editor, verb), JSON.stringify(ids)); } catch (_) { } }
 	const label = (verb, what, to) => VERBS[verb].go(to ? to.length : 0);
@@ -7221,7 +7224,7 @@ function renderSound(){const t=S.sel,tr=trk(t);let rows,head;
 /* machine picker (MD Editor pattern) */
 S.keepFx=true;
 function machList(f){return Object.keys(MACH).filter(m=>famKey(m)===f)}
-function openPicker(){const tr=trk(S.sel);S.pickFam=S.pickFam&&S.pickOpenFor===S.sel?S.pickFam:famKey(tr.m);S.pickOpenFor=S.sel;drawPicker();
+function openPicker(){const tr=trk(S.sel);S.pickFam=famKey(tr.m);drawPicker();
  const pop=$("#machpop"),b=$("#machbtn").getBoundingClientRect();pop.hidden=false;pop.style.top=(b.bottom+scrollY+6)+"px";pop.style.left=Math.max(16,Math.min(b.left+scrollX,innerWidth-pop.offsetWidth-16))+"px";$("#machbtn").setAttribute("aria-expanded","true");pop.querySelector(".mk[aria-pressed=true],.mk:not(:disabled)")?.focus()}
 function closePicker(){const pop=$("#machpop");if(pop.hidden)return;pop.hidden=true;$("#machbtn")?.setAttribute("aria-expanded","false")}
 function prevText(m){const k=MACH[m];return`<b>${m}</b> ${k.about} · ${k.p.filter(Boolean).join(" ")||"no parameters"}`}

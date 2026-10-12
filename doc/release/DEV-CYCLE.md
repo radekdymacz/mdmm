@@ -61,10 +61,10 @@ no row matches runs everything of its tier.
   them) in headless Chrome, driven over the DevTools protocol with node's own WebSocket (no npm package), `?dev=1`, and
   puts `deskStubHost` behind the bridge: the editors' real core (`mdDesk`, `mmDesk`) with a fake machine that speaks the
   firmware's SysEx (keeps the dumps, answers requests and status, LOAD PATTERN and KIT, SAVE KIT, the working kit from
-  memory, mutes, the transport, chains, the MM's SYSEX RECV and MUTE window, a small MD sample bank). Undo, refusals,
+  memory, mutes, the transport, chains, the MM's SYSEX RECV and MUTE window, a small MD sample bank). Since slice 5 (0.6) the Monomachine's fake also reports every message the core gives the device edge as `{type: "wire", kind, b, n}` (a CC, NRPN or note as deskWire encodes it on the global's base channel, a SysEx's first sixteen bytes and its length), so a page journey checks the CC number, channel, NRPN triple, note velocity and SysEx id the manual's Appendix B and C name; it also locks a value turned during live recording and keeps the working kit when a pattern recalls the kit that plays. Undo, refusals,
   history, the library and the read-back are the real code. Every command the page sends is checked against the contract
   schema and recorded. Its fixture: the committed test dumps, 16-step patterns, kits named KIT nn, four-row songs,
-  factory globals. All 133 page journeys of both editors pass in about a minute at `--jobs 4`.
+  factory globals. The Machinedrum's 118 page journeys take about 2 minutes at `--jobs 4`; the Monomachine's 136 (slice 5 grew them, many wait for the machine's read-back) 7.5 minutes at `--jobs 2`, so `mdmm-page.mjs` allows 30 minutes a page (`--timeout`) and a full MM run at `--jobs 1` does not abort.
 - **Journey tiers.** `deskJourney.js` `TIERS`: 10 host journeys, 32 machine journeys (the tap tempo ones too: they time key presses), every other one a page journey; a
   selector's `~page`, `~machine`, `~host`. `mdmm-journeys.sh --tier` (the standalone, default all) and `--vst3-tier`
   (default host). `deskJourneyTiersTest.js` keeps the table on real names.
@@ -101,7 +101,7 @@ no row matches runs everything of its tier.
 | | Before (0.5.1) | After |
 |---|---|---|
 | Full local gate | 62 min (+35 for a re-run) | 21.6 min, warm tree (build 3 min; lane 1 7.5 min with 7a-7c beside it; 7d 5.2 min; timing stages 6 min). A cold tree adds about 6 min: ccache is not installed on this Mac (`brew install ccache`) |
-| Journeys in the gate (7d) | 32 min, 362 runs one at a time | 5.2 min: 65 machine and host journeys at 4 at once (and 2c, the page tier, 136 journeys in 1.5 min inside lane 1) |
+| Journeys in the gate (7d) | 32 min, 362 runs one at a time | 5.2 min: 65 machine and host journeys at 4 at once (and 2c, the page tier, 254 journeys of both editors, about 8 minutes at `--jobs 2` for the Monomachine, inside lane 1) |
 | Page journeys, both editors | in the app only | 49-68 s, headless (6 or 4 pages per editor) |
 | Unit tests (no firmware) | 4.6 min in ctest with the firmware ones | 5 s without Timing and Slow, 16 s all, at -j12 |
 | Tier 0 / 1 / 2 | - | 2-4 s / 18 s / 2.6 min |

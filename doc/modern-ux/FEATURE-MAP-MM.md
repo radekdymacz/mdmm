@@ -26,14 +26,14 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
 | Conventions 1-1 | Key, knob, LED conventions | How the manual writes controls | ➖ | – | Documentation only | – |
-| Highlights 1-2 | 6 track internal sequencer with synthesis | Six sequenced mono synth tracks | ✅ | Sequence, Sound | `mmDesk` kit + pattern documents | – |
-| Highlights 1-2 | 6 track external MIDI sequencer | Six MIDI tracks per pattern | ✅ | Sequence, SYNTH / MIDI switch in the rail | Edits `p` tracks 6-11 | – |
+| Highlights 1-2 | 6 track internal sequencer with synthesis | Six sequenced mono synth tracks | ✅ | Sequence, Sound | `mmDesk` kit + pattern documents | 1 |
+| Highlights 1-2 | 6 track external MIDI sequencer | Six MIDI tracks per pattern | ✅ | Sequence, SYNTH / MIDI switch in the rail | Edits `p` tracks 6-11 | 1 |
 | Highlights 1-2 | 5 Monosynths (SuperWave, SID, DigiPRO, FM+, VO) | Machine families | ✅ | Sound > machine picker | All 14 sound machines, see section 21 | 2 |
-| Highlights 1-2 | Dynamically controlled stereo effects (FX machines) | Four FX machines plus reverb, chorus etc. | ✅ | Sound > machine picker, Mix > INPUT | See section 21 | – |
-| Highlights 1-2 | 6 tape style tempo synced delays | One delay per track | ✅ | Sound > Effects (DTIM DSND DFB DBAS DWID) |  | – |
-| Highlights 1-2 | 18 tempo synced LFOs | 3 per track | ✅ | Sound > LFO 1-3 |  | – |
-| Highlights 1-2 | 12 arpeggiators | One per track, synth and MIDI | ✅ | Sequence dock > Arp |  | – |
-| Highlights 1-2 | Full real-time control | Every DATA value live | ✅ | Every value box, drag or wheel | Sent as CC while dragging | – |
+| Highlights 1-2 | Dynamically controlled stereo effects (FX machines) | Four FX machines plus reverb, chorus etc. | ✅ | Sound > machine picker, Mix > INPUT | See section 21 | 1 |
+| Highlights 1-2 | 6 tape style tempo synced delays | One delay per track | ✅ | Sound > Effects (DTIM DSND DFB DBAS DWID) |  | 1 |
+| Highlights 1-2 | 18 tempo synced LFOs | 3 per track | ✅ | Sound > LFO 1-3 |  | 1 |
+| Highlights 1-2 | 12 arpeggiators | One per track, synth and MIDI | ✅ | Sequence dock > Arp |  | 1 |
+| Highlights 1-2 | Full real-time control | Every DATA value live | ✅ | Every value box, drag or wheel | Sent as CC while dragging | 1 |
 | Highlights 1-2 | DigiPRO user waveforms (MKII) | 64 user waveform slots | 🟡 | Export SysEx…: Waveforms W01 to W64, read from the machine into the .syx | An empty waveform answers nothing and is left out. | 1 |
 | +Drive 1-3 | Snapshots, Digibanks, 8192 waveforms | Optional storage drive | ➖ | – | Not emulated, see section 19 | – |
 
@@ -46,7 +46,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Front panel 1-4 | 3 LEVEL knob | Track level (CC 7) | ✅ | Mix > LEVEL fader per track |  | 2 |
 | Front panel 1-4 | 4 DATA ENTRY knobs A-H | Eight parameters of the page | ✅ | Every value box (drag, wheel, arrows, double click resets; ⌘-click or Enter: type a value) |  | 3 |
 | Front panel 1-4 | 4 Accelerated edit (press and turn) | Bigger steps | 🟡 | Shift = fine, Page Up / Down = x10 | Different gesture | – |
-| Front panel 1-4 | 5 DATA PAGE keys, seven pages | SYN, AMP, FLT, EFX, LFO 1-3 | ✅ | Sound shows every page at once; lock lane page tabs |  | – |
+| Front panel 1-4 | 5 DATA PAGE keys, seven pages | SYN, AMP, FLT, EFX, LFO 1-3 | ✅ | Sound shows every page at once; lock lane page tabs |  | 1 |
 | Front panel 1-4 | 5 Both DATA PAGE keys open MULTI ENV | Multi envelope window | ✅ | Perform > Multi envelope |  | 1 |
 | Front panel 1-4 | 6 TRACK keys, select | Pick the track in focus | ✅ | Rail, Up / Down keys, Mix node click |  | 1 |
 | Front panel 1-4 | 6 TRACK keys, mute / unmute (FUNCTION) | Mute a track | ✅ | M key per track, Perform > Mutes, key M | Shift + M prepares mutes | 6 |
@@ -57,17 +57,17 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Front panel 1-4 | 9 KIT / SONG key | Kit menu or song menu | ✅ | LCD > KIT (kit library); Song workspace |  | 1 |
 | Front panel 1-4 | 9 GLOBAL (FUNCTION + KIT / SONG) | Global menu | ✅ | GLOBAL key in the top bar (a page under the header), engine menu > GLOBAL…, link in the AUDIO / MIDI panel | 8 slots with Copy · Paste · Clear, Control, Sync, Routing, Audio (master tune), Control out 1 (`deskGlobal.js`, `117-global.js`) | 1 |
 | Front panel 1-5 | 10 TRIG keys as keyboard | Play notes | ✅ | Home-row keys A-L and W-P, on-screen keyboard (Perform), roll keys |  | 2 |
-| Front panel 1-5 | 10 Velocity 80, or 127 with FUNCTION | Key velocity | ✅ | Keys C / V (20 40 60 80 100 127) |  | – |
-| Front panel 1-5 | 10 TRIG keys edit notes in grid mode | Step trigs | ✅ | Roll click (Draw on), ENV dots, step menu |  | – |
+| Front panel 1-5 | 10 Velocity 80, or 127 with FUNCTION | Key velocity | ✅ | Keys C / V (20 40 60 80 100 127) |  | 1 |
+| Front panel 1-5 | 10 TRIG keys edit notes in grid mode | Step trigs | ✅ | Roll click (Draw on), ENV dots, step menu |  | 1 |
 | Front panel 1-5 | 10 BANK + TRIG selects pattern | Pattern pick | ✅ | LCD > PATTERN (‹ ›, chooser) |  | 1 |
 | Front panel 1-5 | 11 PATTERN / SONG key | Sequencer mode | ✅ | LCD line 2 PLAY PAT / SONG, Song > What plays | `seqMode` op | 1 |
 | Front panel 1-5 | 11 POLY (FUNCTION + PATTERN / SONG) | Poly mode | ✅ | Perform > Keyboard > Poly, on the track selected (the editor presses its TRACK key) | `poly` op | 2 |
 | Front panel 1-5 | 12 ENTER / YES, EXIT / NO | Confirm, cancel | ➖ | – | Page dialogs | – |
-| Front panel 1-5 | 13 ARROW keys; octave for TRIG keys | Navigate; octave | ✅ | Keys Z / X octave; arrows step values |  | – |
-| Front panel 1-5 | 14 BANK GROUP A-D / E-H | Bank group | ✅ | Pattern chooser shows all 8 banks |  | – |
-| Front panel 1-5 | 14 MUTE MODE (FUNCTION + BANK GROUP) | Mute window | ✅ | Perform > Mutes |  | – |
-| Front panel 1-5 | 15 BANK keys A-H | Pattern bank | ✅ | Pattern chooser |  | – |
-| Front panel 1-5 | 15 BANK secondary: ARP, TRANSPOSE, SWING, SLIDE | Track settings windows | ✅ | Sequence dock > Arp, Transpose; Slide and Swing under the roll; LCD SWG |  | – |
+| Front panel 1-5 | 13 ARROW keys; octave for TRIG keys | Navigate; octave | ✅ | Keys Z / X octave; arrows step values |  | 1 |
+| Front panel 1-5 | 14 BANK GROUP A-D / E-H | Bank group | ✅ | Pattern chooser shows all 8 banks |  | 1 |
+| Front panel 1-5 | 14 MUTE MODE (FUNCTION + BANK GROUP) | Mute window | ✅ | Perform > Mutes |  | 1 |
+| Front panel 1-5 | 15 BANK keys A-H | Pattern bank | ✅ | Pattern chooser |  | 1 |
+| Front panel 1-5 | 15 BANK secondary: ARP, TRANSPOSE, SWING, SLIDE | Track settings windows | ✅ | Sequence dock > Arp, Transpose; Slide and Swing under the roll; LCD SWG |  | 1 |
 | Front panel 1-5 | 16 REC key (grid recording) | Grid mode on / off | 🟡 | LCD record key | Stopped = grid record; the page's step editing does not need it | 1 |
 | Front panel 1-5 | 16 PLAY (pause on second press) | Start, pause | ✅ | LCD play key: ⇧-click or ⇧Space pauses (▶ blinks, the position holds), ▶ goes on; the ▶ menu (right-click or its ▾) | Over HW MIDI pause and Continue need GLOBAL › CONTROL IN › TRANSPORT = ACCEPT; the editor asks to set it. | 3 |
 | Front panel 1-5 | 16 STOP; STOP twice rewinds and silences | Stop, reset | ✅ | Panic: ⌘. or the ▶ menu's Panic (All Notes Off on each track's channel, then STOP twice) |  | 3 |
@@ -75,14 +75,14 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Front panel 1-5 | 16 STOP + REC = step recording | Step recording | ✅ | Shift-click REC (stopped), or the ▶ menu's Step record |  | 1 |
 | Front panel 1-5 | 16 Secondary: COPY, PASTE, CLEAR | Copy / paste / clear | ✅ | LCD COPY / CLR / PASTE, Cmd+C / V, Delete | Scope depends on the workspace; on Sequence it is the selected steps, else the page shown (`130-main.js` secAction) | 4 |
 | Front panel 1-5 | 17 SCALE key: page of 16 steps | Track page | ✅ | Sequence PAGE key and 4 page LEDs, keys [ ] |  | 1 |
-| Front panel 1-5 | 17 SCALE SETUP (FUNCTION + SCALE) | Length and speed | ✅ | LCD line 2 LEN, SPD |  | – |
-| Front panel 1-5 | 18 TRIG SELECT: AMP / FILTER / LFO / ALL | Trig track | ✅ | ENV row of A F L dots per trig | Different UI, same data | – |
-| Front panel 1-5 | 18 MIDI SEQ mode (FUNCTION + TRIG SELECT) | Edit MIDI tracks | ✅ | SYNTH / MIDI switch |  | – |
+| Front panel 1-5 | 17 SCALE SETUP (FUNCTION + SCALE) | Length and speed | ✅ | LCD line 2 LEN, SPD |  | 1 |
+| Front panel 1-5 | 18 TRIG SELECT: AMP / FILTER / LFO / ALL | Trig track | ✅ | ENV row of A F L dots per trig | Different UI, same data | 1 |
+| Front panel 1-5 | 18 MIDI SEQ mode (FUNCTION + TRIG SELECT) | Edit MIDI tracks | ✅ | SYNTH / MIDI switch |  | 1 |
 | Keyboard SFX-6 1-6 | Joystick (real time) | Expression control | ✅ | Perform > Assign pad (springs back) | Mouse; pitch bend / CC 1 / CC 2 map | 1 |
 | Keyboard SFX-6 1-6 | Keyboard | Real-time play and record | ✅ | Perform on-screen keyboard (keys lit while held, also from a MIDI keyboard); home row |  | 3 |
 | Keyboard SFX-6 1-6 | MULTI TRIG key | Toggle multi trig | ✅ | Perform > Multi trig |  | 1 |
 | Keyboard SFX-6 1-6 | MULTI MAP (FUNCTION + MULTI TRIG) | Toggle multi map | ✅ | Perform > Multi map |  | 1 |
-| Keyboard SFX-6 1-6 | OCTAVE keys | Keyboard octave | ✅ | Perform Octave stepper |  | – |
+| Keyboard SFX-6 1-6 | OCTAVE keys | Keyboard octave | ✅ | Perform Octave stepper |  | 1 |
 | Keyboard SFX-6 1-6 | KEYBOARD LEDs | Notes shown | ➖ | – | The roll shows pitches | – |
 | Rear 1-7 | Power switch, power in, voltage selector, fuse | Power | ➖ | – |  | – |
 | Rear 1-7 | MIDI Thru / Out / In | MIDI ports | 🟡 | AUDIO / MIDI panel (standalone): inputs, output, Bluetooth | In a DAW the host routes MIDI. Machine MIDI out reaches the host since 0.4.0. No MIDI THRU | – |
@@ -97,12 +97,12 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 |---|---|---|---|---|---|---|
 | LCD 1-10 | Tempo, "EXT" when synced | Tempo display | 🟡 | LCD TEMPO (marked when the DAW sets it) | "EXT" shown as host tempo | – |
 | LCD 1-10 | Level bar | Track level | ✅ | Mix LEVEL fader |  | 1 |
-| LCD 1-10 | Eight parameter circles with names | Data page | ✅ | Value boxes with names |  | – |
-| LCD 1-10 | Four boxes: playback position | Position | ✅ | LCD POSITION, page LEDs, playhead |  | – |
+| LCD 1-10 | Eight parameter circles with names | Data page | ✅ | Value boxes with names |  | 1 |
+| LCD 1-10 | Four boxes: playback position | Position | ✅ | LCD POSITION, page LEDs, playhead |  | 1 |
 | LCD 1-10 | Record / play / pause / stop symbols | Status | ✅ | Play key: blinks while paused; POSITION keeps the held step |  | 1 |
-| LCD 1-10 | Kit name and number | Current kit | ✅ | LCD KIT (saved / edited) |  | – |
+| LCD 1-10 | Kit name and number | Current kit | ✅ | LCD KIT (saved / edited) |  | 1 |
 | LCD 1-10 | Pattern index A01-H16 | Current pattern | ✅ | LCD PATTERN |  | 1 |
-| LCD 1-10 | Machine of the track in focus | Machine | ✅ | Rail, Sound header |  | – |
+| LCD 1-10 | Machine of the track in focus | Machine | ✅ | Rail, Sound header |  | 1 |
 | Layer edit and windows 1-10 | Windows on top, keys still work below | Window behaviour | ➖ | – | Page dialogs | – |
 
 ## 4. Quick start (1-11 to 1-14)
@@ -112,145 +112,145 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Selecting and playing 1-11 | Select a pattern; kit loads with it | Pattern pick | ✅ | LCD ‹ ›, chooser | Asks before losing kit edits | 2 |
 | Selecting and playing 1-11 | Pending pattern shown with arrow | Cued pattern | ✅ | Queued name blinks in the LCD |  | 1 |
 | Selecting and playing 1-11 | Play, pause, stop | Transport | ✅ | Play key: play, pause (⇧-click, ⇧Space), stop |  | 1 |
-| Playing in multi trig 1-12 | Play MULTI TRIG from a keyboard | Multi trig | ✅ | Perform > Multi trig; MIDI channel 7 |  | – |
-| Exploring a pattern 1-12 | Try each track, tweak SYNTHESIS | Auditioning | ✅ | Sound; roll keys play the track |  | – |
+| Playing in multi trig 1-12 | Play MULTI TRIG from a keyboard | Multi trig | ✅ | Perform > Multi trig; MIDI channel 7 |  | 1 |
+| Exploring a pattern 1-12 | Try each track, tweak SYNTHESIS | Auditioning | ✅ | Sound; roll keys play the track |  | 1 |
 | Grid recording 1-12 | Load kit for the pattern | LOAD KIT | ✅ | Kit library |  | 1 |
 | Grid recording 1-12 | Add a note trig | Trig on | ✅ | Roll click |  | 4 |
-| Grid recording 1-13 | Hold a trig, set pitch on the mini keyboard | Pitch of a trig | ✅ | Roll: click or drag for pitch |  | – |
+| Grid recording 1-13 | Hold a trig, set pitch on the mini keyboard | Pitch of a trig | ✅ | Roll: click or drag for pitch |  | 1 |
 | Grid recording 1-13 | NOTE OFF (FUNCTION + TRIG) | Note off trig | ✅ | Alt-click an empty step; drag a bar's end |  | 1 |
 | Live recording 1-13 | Record notes in real time, quantised | Live record | ✅ | Alt + Space, record key | Quantising done by firmware | 1 |
 | Live recording 1-13 | Erase with EXIT while notes sound | Live erase | ✅ | Hold Delete while live recording: the selected track's notes go as they play |  | 1 |
 | Parameter locks 1-13 | Lock a value on a step | P-lock | ✅ | Lock lane (draw bars), wheel on a step |  | 2 |
-| Parameter locks 1-14 | Record locks live by turning a knob | Live lock | ✅ | Value boxes while live recording | The machine records; the page marks the step's cell and lock lane for about 3 s and says which value it locked (`70-seq.js` setRecLock) | – |
+| Parameter locks 1-14 | Record locks live by turning a knob | Live lock | ✅ | Value boxes while live recording | The machine records; the page marks the step's cell and lock lane for about 3 s and says which value it locked (`70-seq.js` setRecLock) | 1 |
 | Parameter locks 1-14 | Remove one lock; remove all locks of a trig | Clear locks | ✅ | Lane: Alt-drag erases one parameter's locks; a step's menu (right-click, or the Menu key on a focused step): Clear locks takes all its locks (or the selection's) and keeps the note | No key that drops a step's locks and keeps its note | 2 |
 
 ## 5. Monomachine overview (1-15, 1-16)
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
-| Six individual tracks 1-15 | Per track machine and effects | Multitimbral | ✅ | Sound, Mix |  | – |
-| Six track sequencing 1-15 | Notes, envelope trigs, parameters | Sequencer | ✅ | Sequence |  | – |
-| MIDI sequencing 1-15 | Six MIDI tracks | MIDI seq | ✅ | Sequence (MIDI side) |  | – |
+| Six individual tracks 1-15 | Per track machine and effects | Multitimbral | ✅ | Sound, Mix |  | 1 |
+| Six track sequencing 1-15 | Notes, envelope trigs, parameters | Sequencer | ✅ | Sequence |  | 1 |
+| MIDI sequencing 1-15 | Six MIDI tracks | MIDI seq | ✅ | Sequence (MIDI side) |  | 1 |
 | Poly mode 1-15 | One track with six voices | POLY | ✅ | Perform > Poly: the track selected (Assign's 1-6, the rail) plays six voices; ×6 on its key and lamp, the others dimmed | `poly {on, t}`; the other tracks silent (P10) | 2 |
-| Multi trig mode 1-15 | All tracks from one source | MULTI TRIG | ✅ | Perform |  | – |
-| Multi map mode 1-15 | Keyboard triggers patterns | MULTI MAP | ✅ | Perform > Multi map |  | – |
+| Multi trig mode 1-15 | All tracks from one source | MULTI TRIG | ✅ | Perform |  | 1 |
+| Multi map mode 1-15 | Keyboard triggers patterns | MULTI MAP | ✅ | Perform > Multi map |  | 1 |
 | Figure 1 1-16 | Synthesis overview | Diagram | ➖ | – | The Mix page draws the routing graph | – |
 
 ## 6. Synthesis arrangement: kits and machines (1-17 to 1-25)
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
-| Arrangement 1-17 | Machines grouped in Mono-synths | Families | ✅ | Machine picker families |  | – |
-| Arrangement 1-17 | Track effects per track (filter, EQ, SRR, distortion, delay) | Effects | ✅ | Sound AMP, FLT, EFX |  | – |
-| Kits 1-18 | Kit holds machines, pages, LFOs, MIDI pages, routing, trig, multi env, name | Kit content | ✅ | Whole kit editable in the working kit | `WorkingKit` document | – |
-| Link kits and patterns 1-18 | Pattern recalls its kit; same kit not reloaded | Link | ✅ | Pattern chooser shows kit per pattern | Dialog "Save kit, then switch" | – |
+| Arrangement 1-17 | Machines grouped in Mono-synths | Families | ✅ | Machine picker families |  | 1 |
+| Arrangement 1-17 | Track effects per track (filter, EQ, SRR, distortion, delay) | Effects | ✅ | Sound AMP, FLT, EFX |  | 1 |
+| Kits 1-18 | Kit holds machines, pages, LFOs, MIDI pages, routing, trig, multi env, name | Kit content | ✅ | Whole kit editable in the working kit | `WorkingKit` document | 1 |
+| Link kits and patterns 1-18 | Pattern recalls its kit; same kit not reloaded | Link | ✅ | Pattern chooser shows kit per pattern | Dialog "Save kit, then switch" | 1 |
 | Link kits and patterns 1-18 | Change which kit a pattern uses | Relink | ✅ | Pattern chooser: Alt-click a pattern, then its Kit list (patternKit); over the pattern that plays the kit loads at once, asked over unsaved edits | Measured: the dump carries the link; over the pattern that plays the machine loads the kit (gapProbesFirmwareTest w12patkit) | 1 |
 | Loading a kit 1-19 | Kit list of 128, load | LOAD KIT | ✅ | Kit library |  | 1 |
-| Loading a kit 1-19 | Star on kits with no pattern | Unlinked mark | ✅ | Star in kit slot |  | – |
-| Loading an empty kit 1-19 | Six GND-SIN tracks | Empty kit | ✅ | Load an empty slot |  | – |
+| Loading a kit 1-19 | Star on kits with no pattern | Unlinked mark | ✅ | Star in kit slot |  | 1 |
+| Loading an empty kit 1-19 | Six GND-SIN tracks | Empty kit | ✅ | Load an empty slot |  | 1 |
 | Saving and naming 1-19 | SAVE KIT | Save | ✅ | Kit library Save, Save as |  | 1 |
 | Saving and naming 1-20 | Name a kit (11 characters) | Rename | ✅ | Kit library Rename, F2 |  | 1 |
 | Saving and naming 1-20 | "High score" character picker | Text entry | ➖ | – | Text field | – |
 | Undo kit 1-20 | UNDO KIT keeps lost edits | Safety slot | ✅ | Kit library: UNDO KIT (KIT > LOAD > UNDO KIT through the machine's keys; off over HW MIDI) | Measured: the lost kit plays again unsaved, its own slot current (gapProbesFirmwareTest w12undo) | 1 |
 | Copy kit 1-21 | Copy and paste kit slot | Kit copy | ✅ | Kit library Copy / Paste, drag a slot | Through SYSEX RECV | 1 |
 | Clear kit 1-21 | Clear kit slot | Kit clear | ✅ | Kit library Clear |  | 1 |
-| Assigning a machine 1-22 | SYNTH, MACHINE, MIX columns in EDIT KIT | Machine picker | ✅ | Sound > machine key |  | – |
-| Assigning a machine 1-22 | "Keep effects" vs init pages | Init data | ✅ | "Keep track effects + LFOs" toggle | `machine` op | – |
+| Assigning a machine 1-22 | SYNTH, MACHINE, MIX columns in EDIT KIT | Machine picker | ✅ | Sound > machine key |  | 1 |
+| Assigning a machine 1-22 | "Keep effects" vs init pages | Init data | ✅ | "Keep track effects + LFOs" toggle | `machine` op | 1 |
 | Copy machine 1-23 | Machine and settings to another track or kit | Copy machine | ✅ | Sound COPY / PASTE | `copySound` | 1 |
-| Clear machine 1-24 | Back to GND-SIN | Clear machine | ✅ | Sound CLR |  | – |
-| Setting the mix bus 1-24 | OUT BUS per track | Mix bus | ✅ | Mix > Out AB CD EF | A track can feed two | – |
-| Parameter editing 1-25 | 7 pages of 8, 56 parameters | Edit | ✅ | Sound |  | – |
-| Parameter editing 1-25 | TUNE on every synth machine | Fine tune | ✅ | SYN page TUNE (not on BeatBox) | Per the OS 1.32B screens | – |
+| Clear machine 1-24 | Back to GND-SIN | Clear machine | ✅ | Sound CLR |  | 1 |
+| Setting the mix bus 1-24 | OUT BUS per track | Mix bus | ✅ | Mix > Out AB CD EF | A track can feed two | 1 |
+| Parameter editing 1-25 | 7 pages of 8, 56 parameters | Edit | ✅ | Sound |  | 1 |
+| Parameter editing 1-25 | TUNE on every synth machine | Fine tune | ✅ | SYN page TUNE (not on BeatBox) | Per the OS 1.32B screens | 1 |
 | Parameter editing 1-25 | Kit changes are unsaved until SAVE | Dirty state | ✅ | KIT "edited / saved" |  | 1 |
 
 ## 7. Track effects (1-26 to 1-34)
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
-| Level 1-26 | LEV, not lockable | Track level | ✅ | Mix LEVEL |  | – |
-| Amp envelope 1-26 | ATK | Attack | ✅ | Sound > Amp |  | – |
-| Amp envelope 1-27 | HOLD | Hold | ✅ | Sound > Amp |  | – |
-| Amp envelope 1-27 | DEC | Decay | ✅ | Sound > Amp |  | – |
-| Amp envelope 1-27 | REL | Release | ✅ | Sound > Amp |  | – |
-| Distortion 1-27 | DIST (headroom below 0) | Distortion | ✅ | Sound > Amp > Drive |  | – |
-| Track volume 1-28 | VOL (lockable) | Volume | ✅ | Sound > Amp; Mix trim |  | – |
+| Level 1-26 | LEV, not lockable | Track level | ✅ | Mix LEVEL |  | 1 |
+| Amp envelope 1-26 | ATK | Attack | ✅ | Sound > Amp |  | 1 |
+| Amp envelope 1-27 | HOLD | Hold | ✅ | Sound > Amp |  | 1 |
+| Amp envelope 1-27 | DEC | Decay | ✅ | Sound > Amp |  | 1 |
+| Amp envelope 1-27 | REL | Release | ✅ | Sound > Amp |  | 1 |
+| Distortion 1-27 | DIST (headroom below 0) | Distortion | ✅ | Sound > Amp > Drive |  | 1 |
+| Track volume 1-28 | VOL (lockable) | Volume | ✅ | Sound > Amp; Mix trim |  | 1 |
 | Pan 1-29 | PAN | Stereo place | ✅ | Sound > Amp; Mix PAN |  | 1 |
-| Portamento 1-29 | PORT | Glide time | ✅ | Sound > Amp > Glide; Sequence > Trig setup |  | – |
-| Filter 1-30 | BASE | Filter base | ✅ | Sound > Filter |  | – |
-| Filter 1-30 | WDTH | Filter width | ✅ | Sound > Filter |  | – |
-| Filter 1-30 | HPQ | High pass Q | ✅ | Sound > Filter |  | – |
-| Filter 1-30 | LPQ | Low pass Q | ✅ | Sound > Filter |  | – |
-| Filter envelope 1-31 | ATK, DEC | Filter envelope | ✅ | Sound > Filter env |  | – |
-| Filter envelope 1-31 | BOFS, WOFS | Envelope offsets | ✅ | Sound > Filter env |  | – |
+| Portamento 1-29 | PORT | Glide time | ✅ | Sound > Amp > Glide; Sequence > Trig setup |  | 2 |
+| Filter 1-30 | BASE | Filter base | ✅ | Sound > Filter |  | 1 |
+| Filter 1-30 | WDTH | Filter width | ✅ | Sound > Filter |  | 1 |
+| Filter 1-30 | HPQ | High pass Q | ✅ | Sound > Filter |  | 1 |
+| Filter 1-30 | LPQ | Low pass Q | ✅ | Sound > Filter |  | 1 |
+| Filter envelope 1-31 | ATK, DEC | Filter envelope | ✅ | Sound > Filter env |  | 1 |
+| Filter envelope 1-31 | BOFS, WOFS | Envelope offsets | ✅ | Sound > Filter env |  | 1 |
 | Filter tracking 1-31 | Filter follows pitch; switch off HPF / LPF | Key tracking | ✅ | Perform > Assign > KEY > HPF, LPF; KEY in Sound > Filter shows them and leads there | `assign` op | 1 |
-| EQ 1-32 | EQF, EQG | One band EQ | ✅ | Sound > Effects |  | – |
-| Sample rate reduction 1-32 | SRR | Lo-fi | ✅ | Sound > Effects |  | – |
-| Delay 1-33 | DSND (sign: stereo kept / ping-pong) | Delay send | ✅ | Sound > Effects; Mix trim |  | – |
-| Delay 1-33 | DTIM (256th notes) | Delay time | ✅ | Sound > Effects |  | – |
-| Delay 1-33 | DFB | Feedback | ✅ | Sound > Effects (warns above 64) |  | – |
-| Delay 1-33 | DBAS, DWID | Feedback filter | ✅ | Sound > Effects |  | – |
+| EQ 1-32 | EQF, EQG | One band EQ | ✅ | Sound > Effects |  | 1 |
+| Sample rate reduction 1-32 | SRR | Lo-fi | ✅ | Sound > Effects |  | 1 |
+| Delay 1-33 | DSND (sign: stereo kept / ping-pong) | Delay send | ✅ | Sound > Effects; Mix trim |  | 1 |
+| Delay 1-33 | DTIM (256th notes) | Delay time | ✅ | Sound > Effects |  | 1 |
+| Delay 1-33 | DFB | Feedback | ✅ | Sound > Effects (warns above 64) |  | 1 |
+| Delay 1-33 | DBAS, DWID | Feedback filter | ✅ | Sound > Effects |  | 1 |
 
 ## 8. Low frequency oscillators (1-35 to 1-37)
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
-| LFO 1-35 | PAGE and DEST (incl. PTCH, eight ranges, MIDI page, other LFOs) | Target | ✅ | Sound > LFO page and dest selects; drag the ~ handle onto a value |  | – |
-| LFO 1-35 | TRIG: FREE, TRIG, HOLD, ONE, HALF | Trig mode | ✅ | LFO TRIG keys |  | – |
-| LFO 1-35 | WAVE, 11 shapes | Waveform | ✅ | 11 shape keys |  | – |
-| LFO 1-35 | MULT | Multiplier | ✅ | LFO MULT |  | – |
-| LFO 1-36 | SPD | Speed | ✅ | LFO SPD |  | – |
-| LFO 1-36 | INTL | Interlace | ✅ | LFO INTL |  | – |
-| LFO 1-36 | DPTH | Depth | ✅ | LFO DPTH |  | – |
-| LFO 1-37 | Two LFOs on one target add | Layering | ✅ | Any; badge ~n shows modulation |  | – |
-| LFO 1-37 | LFO trigs sequenced separately | LFO trig | ✅ | ENV row L dot |  | – |
-| LFO 1-35 | LFOs shared with the MIDI track of the same number | Shared | ✅ | MIDI page notes it; link to T LFOs |  | – |
+| LFO 1-35 | PAGE and DEST (incl. PTCH, eight ranges, MIDI page, other LFOs) | Target | ✅ | Sound > LFO page and dest selects; drag the ~ handle onto a value |  | 1 |
+| LFO 1-35 | TRIG: FREE, TRIG, HOLD, ONE, HALF | Trig mode | ✅ | LFO TRIG keys |  | 1 |
+| LFO 1-35 | WAVE, 11 shapes | Waveform | ✅ | 11 shape keys |  | 1 |
+| LFO 1-35 | MULT | Multiplier | ✅ | LFO MULT |  | 1 |
+| LFO 1-36 | SPD | Speed | ✅ | LFO SPD |  | 1 |
+| LFO 1-36 | INTL | Interlace | ✅ | LFO INTL |  | 1 |
+| LFO 1-36 | DPTH | Depth | ✅ | LFO DPTH |  | 1 |
+| LFO 1-37 | Two LFOs on one target add | Layering | ✅ | Any; badge ~n shows modulation |  | 1 |
+| LFO 1-37 | LFO trigs sequenced separately | LFO trig | ✅ | ENV row L dot |  | 1 |
+| LFO 1-35 | LFOs shared with the MIDI track of the same number | Shared | ✅ | MIDI page notes it; link to T LFOs |  | 1 |
 
 ## 9. Additional kit settings (1-38 to 1-44)
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
 | Assign 1-38 | Two rows of PAGE, DEST, ADD per source | Modulation assign | ✅ | Perform > Assign |  | 1 |
-| Assign 1-39 | Joystick R / L with MIRR | Joystick | ✅ | Assign tab JOY RL, Mirror |  | – |
-| Assign 1-39 | Joystick U, D tabs | Joystick | ✅ | Assign tabs JOY U, JOY D |  | – |
-| Assign 1-39 | Velocity assign | Velocity | ✅ | Assign tab VEL | Sequencer plays velocity 100 | – |
+| Assign 1-39 | Joystick R / L with MIRR | Joystick | ✅ | Assign tab JOY RL, Mirror |  | 1 |
+| Assign 1-39 | Joystick U, D tabs | Joystick | ✅ | Assign tabs JOY U, JOY D |  | 1 |
+| Assign 1-39 | Velocity assign | Velocity | ✅ | Assign tab VEL | Sequencer plays velocity 100 | 1 |
 | Assign 1-40 | Key tracking assign | Key | ✅ | Perform > Assign > KEY; KEY in Sound > Filter leads there |  | 1 |
-| Assign 1-39 | Copy, clear, paste, undo assign | Assign clipboard | ✅ | Perform COPY / CLR / PASTE |  | – |
-| Trig track settings 1-40 | TRIG POS (forward notes, chainable) | Trig position | ✅ | Sequence dock > Trig setup | Dotted cord on Mix graph | – |
+| Assign 1-39 | Copy, clear, paste, undo assign | Assign clipboard | ✅ | Perform COPY / CLR / PASTE |  | 1 |
+| Trig track settings 1-40 | TRIG POS (forward notes, chainable) | Trig position | ✅ | Sequence dock > Trig setup | Dotted cord on Mix graph | 1 |
 | Trig track settings 1-41 | PORTAMENTO ALWAYS / ONLY LEGATO | Portamento mode | ✅ | Trig setup > Port |  | 1 |
-| Trig track settings 1-41 | Legato trig modes AMP, FILTER, LFO | Legato | ✅ | Trig setup > Legato |  | – |
-| Multi trig 1-41 | ALL TRK | All tracks play | ✅ | Perform > Multi trig |  | – |
-| Multi trig 1-42 | SPLIT KEY: TRACK and KEY zones | Split | ✅ | Perform: split marker, "Upper from" |  | – |
-| Multi trig 1-42 | SEQ START | Restart pattern per note | ✅ | Perform > Multi trig |  | – |
-| Multi trig 1-43 | SEQ TRNSP | Transpose, loop unbroken | ✅ | Perform > Multi trig |  | – |
-| Multi trig 1-43 | TIMING context tab | Delay to bar | ✅ | Perform Timing stepper |  | – |
-| Multi trig 1-43 | Arpeggiators work in all-track mode | Arp | ✅ | Per track arp | Firmware | – |
+| Trig track settings 1-41 | Legato trig modes AMP, FILTER, LFO | Legato | ✅ | Trig setup > Legato |  | 1 |
+| Multi trig 1-41 | ALL TRK | All tracks play | ✅ | Perform > Multi trig |  | 1 |
+| Multi trig 1-42 | SPLIT KEY: TRACK and KEY zones | Split | ✅ | Perform: split marker, "Upper from" |  | 1 |
+| Multi trig 1-42 | SEQ START | Restart pattern per note | ✅ | Perform > Multi trig |  | 1 |
+| Multi trig 1-43 | SEQ TRNSP | Transpose, loop unbroken | ✅ | Perform > Multi trig |  | 1 |
+| Multi trig 1-43 | TIMING context tab | Delay to bar | ✅ | Perform Timing stepper |  | 1 |
+| Multi trig 1-43 | Arpeggiators work in all-track mode | Arp | ✅ | Per track arp | Firmware | 1 |
 | Multi env 1-43 | ATK, DEC, SUS, REL | ADSR on top | ✅ | Perform > Multi envelope: the card names the kit's MULTI TRIG mode and says what the envelope shapes in it |  | 3 |
-| Multi env 1-44 | PORT | Multi portamento | ✅ | Same |  | – |
+| Multi env 1-44 | PORT | Multi portamento | ✅ | Same |  | 1 |
 
 ## 10. The pattern sequencer: pattern operation (1-45 to 1-47)
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
 | Pattern selection 1-45 | 8 banks x 16, A01-H16 | Pattern select | ✅ | Pattern chooser |  | 1 |
-| Pattern selection 1-45 | Red LEDs show patterns with data | Used mark | ✅ | Chooser slot shows length or empty |  | – |
+| Pattern selection 1-45 | Red LEDs show patterns with data | Used mark | ✅ | Chooser slot shows length or empty |  | 1 |
 | Pattern selection 1-45 | Switch waits for pattern end | Cued switch | ✅ | Queue; Shift-click or "Now" switches at once | "Now" = STOP, LOAD, PLAY | 1 |
 | Pattern chaining 1-46 | Chain patterns of one bank, each once | Chain | ✅ | Song > Patterns > Chain | `chain` op; STOP resets, pick ends the chain | 1 |
 | Scale setup 1-46 | Total steps up to 64 | Length | ✅ | LCD LEN (2-64), x2 key |  | 1 |
 | Scale setup 1-46 | Scale length in pages | Pages | ✅ | PAGE key, LEDs |  | 1 |
-| Scale setup 1-47 | Tempo multiplier 1X, 2X, 3/4X, 3/2X | Speed | ✅ | LCD SPD |  | – |
-| Scale setup 1-47 | Lower pages auto-copied when lengthened | Page copy | ✅ | Firmware; x2 key copies the first half |  | – |
-| Scale setup 1-47 | Song rows override length | Row length | ✅ | Song > Part |  | – |
-| Recording preparations 1-47 | Select kit, track, trig tracks all lit | Setup | ✅ | Implicit in the page |  | – |
+| Scale setup 1-47 | Tempo multiplier 1X, 2X, 3/4X, 3/2X | Speed | ✅ | LCD SPD |  | 1 |
+| Scale setup 1-47 | Lower pages auto-copied when lengthened | Page copy | ✅ | Firmware; x2 key copies the first half |  | 1 |
+| Scale setup 1-47 | Song rows override length | Row length | ✅ | Song > Part |  | 1 |
+| Recording preparations 1-47 | Select kit, track, trig tracks all lit | Setup | ✅ | Implicit in the page |  | 1 |
 
 ## 11. Composing a pattern (1-47 to 1-55)
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
 | Grid recording 1-47 | Trig on / off | Step trig | ✅ | Roll click |  | 2 |
-| Grid recording 1-48 | Pitch of a trig | Note | ✅ | Roll vertical position |  | – |
-| Grid recording 1-48 | Octave shift (FUNCTION + arrows) | Octave | ✅ | Roll drag; wheel + Shift = octave |  | – |
+| Grid recording 1-48 | Pitch of a trig | Note | ✅ | Roll vertical position |  | 1 |
+| Grid recording 1-48 | Octave shift (FUNCTION + arrows) | Octave | ✅ | Roll drag; wheel + Shift = octave |  | 1 |
 | Grid recording 1-48 | NOTE OFF trig | Note off | ✅ | Alt-click; drag bar end |  | 1 |
-| Grid recording 1-48 | Chords | Chord | ✅ | Shift-click in the roll | Same-length notes on MIDI tracks | – |
+| Grid recording 1-48 | Chords | Chord | ✅ | Shift-click in the roll | Same-length notes on MIDI tracks | 1 |
 | Grid recording 1-49 | Rotate trigs and locks (FUNCTION + arrows) | Rotate | ✅ | Alt + Left / Right | `rotate` op | 2 |
 | Grid recording 1-49 | Copy / clear / paste act on the track in grid mode | Scope | ✅ | LCD COPY / CLR / PASTE | Page shown of the selected track | 1 |
 | Live recording 1-49 | Record played notes, quantised | Live | ✅ | Alt + Space |  | 1 |
@@ -259,11 +259,11 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Step recording 1-50 | Step-by-step input | Step rec | ✅ | Sequence: Shift-click REC; a played note writes the step under the cursor and moves on; → rest, ← back, Delete clears, Esc done |  | 1 |
 | Note copy 1-50 | Copy one trig with locks to another step | Note copy | ✅ | Sequence: Cmd-click a step (Ctrl on Windows and Linux), Cmd+C, select the target, Cmd+V; Cmd-drag drops a copy; Cmd+D duplicates | Notes, NOTE OFFs, envelope trigs, slides and locks go along (`77-select.js`, `copySteps`) | 5 |
 | Clear note parameter locks 1-50 | Clear locks of one note, undoable | Clear locks | ✅ | The step menu's Clear locks (keep the notes), on a step or a selection; one undo step | No key for the locks of one step alone | 1 |
-| Track page copy 1-51 | Copy a page to another page | Page copy | ✅ | LCD COPY on the page shown (no step selected), PASTE on another page; or select the steps | Steps, slides and locks (`130-main.js` secAction) | – |
+| Track page copy 1-51 | Copy a page to another page | Page copy | ✅ | LCD COPY on the page shown (no step selected), PASTE on another page; or select the steps | Steps, slides and locks (`130-main.js` secAction) | 1 |
 | Clear track page 1-51 | Clear a page | Page clear | ✅ | CLR with a page shown |  | 1 |
 | Track copy 1-52 | Track data to another track incl. machine, arp, transpose, swing, slide | Track copy | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (⌘⇧C, ⌘⇧V): notes, melody, slide, swing, locks, arp, transpose, machine + sound in one copy; Paste lights the tracks (synth onto synth, MIDI onto MIDI); one undo step |  | 1 |
 | Clear track 1-53 | Clear a track | Track clear | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (⌘⇧⌫): tick Notes (or any parts) of the selected track; Cmd+Z |  | 1 |
-| Pattern copy 1-53 | Whole pattern incl. kit link and MIDI tracks | Pattern copy | ✅ | Pattern chooser Copy / Paste, drag a slot |  | – |
+| Pattern copy 1-53 | Whole pattern incl. kit link and MIDI tracks | Pattern copy | ✅ | Pattern chooser Copy / Paste, drag a slot |  | 1 |
 | Clear pattern 1-54 | Clear all, keep kit link | Pattern clear | ✅ | Alt + CLR, chooser Clear | Keeps the kit link | 2 |
 | Super copy 1-54 | Choose what to copy (melody, machine) | Super copy | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (⌘⇧C, ⌘⇧V): Melody pastes the pitches onto the trigs already there; Machine + sound the machine |  | 1 |
 | Super clear 1-55 | Choose what to clear | Super clear | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (⌘⇧⌫): tick the parts to clear; Cmd+Z | Melody leaves the trigs without a pitch; swing goes back to every second 16th; arp to OFF. | 1 |
@@ -278,7 +278,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Tempo screen 1-56 | Temporary +/-10 % shift | Nudge | ✅ | TEMPO window: −10 % / +10 % held, or the keys - and = held; back at the release |  | 1 |
 | Tap tempo 1-56 | Average of taps | Tap | ✅ | Shift + B everywhere; B off Sequence | The last five taps are averaged; a pause of 2 s starts over | 2 |
 | External synchronisation 1-56 | Internal or external MIDI clock; EXT shown | Sync | ✅ | GLOBAL > Sync > Tempo in (INT / EXT); in a DAW the machine follows the host automatically (`followHost`) | See Control In | 1 |
-| Tempo 1-57 | Songs store tempo changes | Song tempo | ✅ | Song row Tempo |  | – |
+| Tempo 1-57 | Songs store tempo changes | Song tempo | ✅ | Song row Tempo |  | 1 |
 
 ## 13. Parameter locks (1-57, 1-58)
 
@@ -288,43 +288,43 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Locks in grid mode 1-57 | Click a knob to lock its current value | Lock to current | ✅ | Sequence, Locks: select steps, then the lock key in the rail header locks the lane's parameter at its current (kit) value on each selected note; one undo step | No "lock current" click | 1 |
 | Locks in grid mode 1-57 | View locks of a step | View | ✅ | Lane shows bars per parameter |  | 1 |
 | Locks in grid mode 1-57 | Remove one / all locks of a step | Remove | ✅ | One lock: Alt-drag on the lane; all locks of a step: the step menu's Clear locks |  | 1 |
-| Locks in grid mode 1-57 | Note copy and paste | Note copy | ✅ | See section 11 | Locks travel with the copied step | – |
-| Locks 1-58 | 62 locked parameters per pattern, pooled | Lock budget | ✅ | LCD LOCKS nn/62; lane budget | Blocks a 63rd | – |
-| Locks 1-58 | Parameter locked once can hold a value on every step | Lane | ✅ | Lock lane |  | – |
-| Locks in live recording 1-58 | Locks recorded while turning knobs | Live locks | ✅ | Value boxes; the step and lane are marked | The machine records; see section 4 | – |
-| Locks in live recording 1-58 | Edit afterwards in grid mode | Fine tune | ✅ | Lock lane |  | – |
+| Locks in grid mode 1-57 | Note copy and paste | Note copy | ✅ | See section 11 | Locks travel with the copied step | 1 |
+| Locks 1-58 | 62 locked parameters per pattern, pooled | Lock budget | ✅ | LCD LOCKS nn/62; lane budget | Blocks a 63rd | 1 |
+| Locks 1-58 | Parameter locked once can hold a value on every step | Lane | ✅ | Lock lane |  | 1 |
+| Locks in live recording 1-58 | Locks recorded while turning knobs | Live locks | ✅ | Value boxes; the step and lane are marked | The machine records; see section 4 | 1 |
+| Locks in live recording 1-58 | Edit afterwards in grid mode | Fine tune | ✅ | Lock lane |  | 1 |
 
 ## 14. Advanced sequencer control (1-58 to 1-60)
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
-| Trig tracks 1-58 | AMP, FILTER, LFO sub tracks | Split trigs | ✅ | ENV row dots |  | – |
-| Trig tracks 1-59 | ALL mode adds a pitch by default | All trig | ✅ | Click in the roll |  | – |
-| Trig tracks 1-59 | AMP only, FILTER only, LFO only | Single trig | ✅ | Toggle single dots |  | – |
+| Trig tracks 1-58 | AMP, FILTER, LFO sub tracks | Split trigs | ✅ | ENV row dots |  | 1 |
+| Trig tracks 1-59 | ALL mode adds a pitch by default | All trig | ✅ | Click in the roll |  | 1 |
+| Trig tracks 1-59 | AMP only, FILTER only, LFO only | Single trig | ✅ | Toggle single dots |  | 1 |
 | Trig tracks 1-59 | LED colours green, red, yellow | State | 🟡 | Dot colours red / yellow / green in the ENV row |  | – |
-| Trigless trigs 1-59 | Trig with no envelopes, for pitch or locks | Trigless | ✅ | All three dots off; roll shows outlined bar |  | – |
-| Pitchless trigs 1-59 | Trig without own pitch (EXIT) | Pitchless | ✅ | ENV row on a step with no pitch; dashed bar |  | – |
+| Trigless trigs 1-59 | Trig with no envelopes, for pitch or locks | Trigless | ✅ | All three dots off; roll shows outlined bar |  | 1 |
+| Pitchless trigs 1-59 | Trig without own pitch (EXIT) | Pitchless | ✅ | ENV row on a step with no pitch; dashed bar |  | 1 |
 
 ## 15. Additional sequencer features (1-61 to 1-69)
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
 | Arpeggiator 1-61 | 12 arpeggiators, one per track | Arp | ✅ | Sequence dock > Arp, any of 12 tracks |  | 1 |
-| Arpeggiator 1-61 | SPD (6 = 16th) | Speed | ✅ | Arp SPD |  | – |
+| Arpeggiator 1-61 | SPD (6 = 16th) | Speed | ✅ | Arp SPD |  | 1 |
 | Arpeggiator 1-61 | MODE OFF, KEY, SID, ADD | Mode | ✅ | Arp Mode keys |  | 1 |
-| Arpeggiator 1-62 | PLAY TRUE, UP, DOWN, CYCLE, RND | Direction | ✅ | Arp Play keys |  | – |
+| Arpeggiator 1-62 | PLAY TRUE, UP, DOWN, CYCLE, RND | Direction | ✅ | Arp Play keys |  | 1 |
 | Arpeggiator 1-62 | RNGE | Octave range | ✅ | Arp RNGE |  | 1 |
-| Arpeggiator 1-62 | OJMP | Octave jump | ✅ | Arp OJMP | Low bit / upper bits split, see mapping note 6 | – |
+| Arpeggiator 1-62 | OJMP | Octave jump | ✅ | Arp OJMP | Low bit / upper bits split, see mapping note 6 | 1 |
 | Arpeggiator 1-62 | Copy, clear, paste, undo arp | Arp clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Arp ticked): copy, paste, clear (back to OFF); Cmd+Z |  | 1 |
-| Arp envelope switches 1-62 | AMP, FLT, LFO trigging (not on MIDI) | Arp trigs | ✅ | Arp Trig keys | Disabled on MIDI tracks | – |
-| Arp rhythm and offset 1-63 | Up to 16 steps, on / off | Rhythm | ✅ | 16-cell strip: click mutes |  | – |
-| Arp rhythm and offset 1-63 | Note offset per step | Offset | ✅ | Drag a cell up / down (+/-24) |  | – |
-| Arp rhythm and offset 1-63 | Length by LEVEL | Length | ✅ | Click past the end, or the LEN row |  | – |
+| Arp envelope switches 1-62 | AMP, FLT, LFO trigging (not on MIDI) | Arp trigs | ✅ | Arp Trig keys | Disabled on MIDI tracks | 1 |
+| Arp rhythm and offset 1-63 | Up to 16 steps, on / off | Rhythm | ✅ | 16-cell strip: click mutes |  | 1 |
+| Arp rhythm and offset 1-63 | Note offset per step | Offset | ✅ | Drag a cell up / down (+/-24) |  | 1 |
+| Arp rhythm and offset 1-63 | Length by LEVEL | Length | ✅ | Click past the end, or the LEN row |  | 1 |
 | Transpose 1-63 | Per track, live, pattern data untouched | Track transpose | ✅ | Dock > Transpose > TRACK |  | 2 |
-| Transpose 1-64 | PAT, shared by all tracks | Pattern transpose | ✅ | Transpose > PAT; LCD |  | – |
-| Transpose 1-64 | SCALE ---, FIX, MAJ, MIN | Scale | ✅ | Transpose Scale keys |  | – |
-| Transpose 1-64 | KEY for MAJ / MIN | Key | ✅ | Click the keyboard picture |  | – |
-| Swing 1-64 | Amount 50-80 %, per pattern | Swing | ✅ | LCD SWG |  | – |
+| Transpose 1-64 | PAT, shared by all tracks | Pattern transpose | ✅ | Transpose > PAT; LCD |  | 1 |
+| Transpose 1-64 | SCALE ---, FIX, MAJ, MIN | Scale | ✅ | Transpose Scale keys |  | 1 |
+| Transpose 1-64 | KEY for MAJ / MIN | Key | ✅ | Click the keyboard picture |  | 1 |
+| Swing 1-64 | Amount 50-80 %, per pattern | Swing | ✅ | LCD SWG |  | 1 |
 | Swing track 1-65 | Per-track swing steps, default every second 16th | Swing track | ✅ | Sequence: Swing under the roll, then click or drag the step columns; marks along the roll's foot | Drag paints, one undo step | 1 |
 | Swing 1-65 | Copy, clear, paste, undo swing track | Swing clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Swing ticked): copy, paste, clear; Cmd+Z |  | 1 |
 | Slide 1-66 | Slide track per track | Slide | ✅ | Sequence: Slide under the roll, then click or drag the step columns; marks along the roll's foot; lock lane draws the glide |  | 2 |
@@ -332,7 +332,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Mute mode 1-67 | Mute window, 6 + 6 | Mutes | ✅ | Perform > Mutes; rail M | MIDI mutes through the MUTE window keys | 2 |
 | Mute mode 1-67 | Held changes until FUNCTION released | Prepared mutes | ✅ | Shift + M prepares, applies on release |  | 1 |
 | Mute mode 1-68 | Minimise the window | Small window | ➖ | – | Page | – |
-| Mute mode 1-68 | Mutes are global and remembered | Persistence | ✅ | Machine holds them | A track with no MIDI channel cannot be muted over MIDI: the page says so and offers "Give each track its own channel" (GLOBAL > Control) | – |
+| Mute mode 1-68 | Mutes are global and remembered | Persistence | ✅ | Machine holds them | A track with no MIDI channel cannot be muted over MIDI: the page says so and offers "Give each track its own channel" (GLOBAL > Control) | 1 |
 | Poly mode 1-69 | Six voices on the track in focus | Poly | ✅ | Perform > Poly; the sequencer plays the poly track's chord trigs |  | 2 |
 
 ## 16. The MIDI sequencer (1-70 to 1-72)
@@ -341,14 +341,14 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 |---|---|---|---|---|---|---|
 | Using the MIDI sequencer 1-70 | Switch internal / MIDI editing | Side switch | ✅ | SYNTH / MIDI |  | 1 |
 | Using the MIDI sequencer 1-70 | Select MIDI track, mute | Track | ✅ | Rail |  | 1 |
-| Using the MIDI sequencer 1-70 | Notes, chords (one length), locks | MIDI notes | ✅ | Roll with real lengths |  | – |
+| Using the MIDI sequencer 1-70 | Notes, chords (one length), locks | MIDI notes | ✅ | Roll with real lengths |  | 1 |
 | MIDI page 1-71 | LEN (127 = until note off) | Length | ✅ | MIDI page, drag a note end |  | 1 |
-| MIDI page 1-71 | VEL | Velocity | ✅ | MIDI page, VEL row |  | – |
-| MIDI page 1-71 | PB | Pitch bend | ✅ | MIDI page |  | – |
-| MIDI page 1-71 | PCHG (only when locked) | Program change | ✅ | MIDI page |  | – |
-| MIDI page 1-71 | CC 1-4 | Controllers | ✅ | MIDI page CL / CC boxes |  | – |
-| Comparison 1-71 | No trig tracks; arp without switches; swing and slide; transpose | Differences | ✅ | Same docks |  | – |
-| Comparison 1-71 | MIDI page stored in the kit | Kit part | ✅ | Kit edits |  | – |
+| MIDI page 1-71 | VEL | Velocity | ✅ | MIDI page, VEL row |  | 1 |
+| MIDI page 1-71 | PB | Pitch bend | ✅ | MIDI page |  | 1 |
+| MIDI page 1-71 | PCHG (only when locked) | Program change | ✅ | MIDI page |  | 1 |
+| MIDI page 1-71 | CC 1-4 | Controllers | ✅ | MIDI page CL / CC boxes |  | 1 |
+| Comparison 1-71 | No trig tracks; arp without switches; swing and slide; transpose | Differences | ✅ | Same docks |  | 1 |
+| Comparison 1-71 | MIDI page stored in the kit | Kit part | ✅ | Kit edits |  | 1 |
 | Comparison 1-71 | Internal tracks can send MIDI too | Internal MIDI out | ✅ | GLOBAL > Control out 1 (OUT or INT+OUT) | The sequencer's trigs go out as NRPN on the base channel, the arpeggiator and the keyboard as notes (P2) | 1 |
 
 ## 17. The song mode (1-73 to 1-80)
@@ -364,36 +364,36 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Song play 1-75 | Switch to pattern mode and back; pointer held | Mode toggle | ✅ | PATTERN · CHAIN · SONG keys |  | 3 |
 | Song transport 1-75 | Move the song pointer to a row and continue | Jump to row | ✅ | Song: ▶ From here on the selected row, or Enter (SONG mode, the song position, Continue) | Needs TRANSPORT IN = ACCEPT (factory IGNORE): the editor asks to set it, then plays. The row starts at its first step (P1). | 1 |
 | Song transport 1-75 | Song pointer position over MIDI | SPP | ➖ | – | Firmware, via global transport setting | – |
-| Song editing 1-76 | ROW count | Rows | ✅ | Arrangement grid |  | – |
+| Song editing 1-76 | ROW count | Rows | ✅ | Arrangement grid |  | 1 |
 | Song editing 1-76 | PAT column, END mark | Pattern | ✅ | Pattern palette, drag, ‹ › |  | 3 |
 | Song editing 1-76 | REP | Repeats | ✅ | Repeat stepper |  | 1 |
-| Song editing 1-77 | TRN pattern transpose | Row transpose | ✅ | Transpose stepper |  | – |
-| Song editing 1-77 | Song track transpose (TR1-6, six MIDI) | Per-track transpose | ✅ | Row > More > Per track |  | – |
-| Song editing 1-77 | OF LN offset and length | Part | ✅ | Row > More > Part |  | – |
+| Song editing 1-77 | TRN pattern transpose | Row transpose | ✅ | Transpose stepper |  | 1 |
+| Song editing 1-77 | Song track transpose (TR1-6, six MIDI) | Per-track transpose | ✅ | Row > More > Per track |  | 1 |
+| Song editing 1-77 | OF LN offset and length | Part | ✅ | Row > More > Part |  | 1 |
 | Song editing 1-77 | XTRA: row mutes (6 + 6) | Row mutes | ✅ | Row > More > Mutes |  | 1 |
-| Song editing 1-77 | XTRA: row BPM | Row tempo | ✅ | Row Tempo |  | – |
+| Song editing 1-77 | XTRA: row BPM | Row tempo | ✅ | Row Tempo |  | 1 |
 | Song editing 1-77 | Insert / remove rows (FUNCTION + arrows) | Row edit | ✅ | Row Duplicate, Delete, Add loop, drag |  | 1 |
-| Song editing 1-77 | Copy, paste, clear, undo rows | Row clipboard | ✅ | LCD COPY / PASTE / CLR; page undo |  | – |
+| Song editing 1-77 | Copy, paste, clear, undo rows | Row clipboard | ✅ | LCD COPY / PASTE / CLR; page undo |  | 1 |
 | Song edit transport 1-77 | Start from any row (ENTER) | Play from row | ✅ | Song: Enter on the selected row (▶ From here) |  | 1 |
 | Song edit transport 1-77 | Counter in bars and beats | Song time | ✅ | Song: the Arrangement header reads Playing · bar:beat while the song plays (the machine's counter, telemetry songSteps) | RAM 0x2bdf3c, the EDIT SONG header's counter (gapProbesFirmwareTest w12mmcounter); song rows, bars and time stay in the Songs column | 1 |
 | Song loops 1-78 | Loop to a row, repeat count, nesting | Loop | ✅ | Row command LOOP |  | 1 |
-| Song jump 1-78 | Forward jump | Jump | ✅ | Row command JUMP |  | – |
-| Song halt 1-78 | Pause playback | Halt | ✅ | Row command HALT |  | – |
-| Song extra 1-79, 1-80 | Row mutes and BPM; bold M / B marks | XTRA | ✅ | Cell marks T M B ~ |  | – |
+| Song jump 1-78 | Forward jump | Jump | ✅ | Row command JUMP |  | 1 |
+| Song halt 1-78 | Pause playback | Halt | ✅ | Row command HALT |  | 1 |
+| Song extra 1-79, 1-80 | Row mutes and BPM; bold M / B marks | XTRA | ✅ | Cell marks T M B ~ |  | 1 |
 
 ## 18. Routing (1-81 to 1-86)
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
-| Mixer 1-81 | OUT BUS AB, CD, EF per track | Mix buses | ✅ | Mix > Out |  | – |
-| FX machines 1-81 | Need input and a trig | FX input | ✅ | Mix IN select; new FX sets DEC and REL to 127 |  | – |
-| Audio inputs 1-82 | INP A, INP B, INP AB | External audio | ✅ | Mix IN select |  | – |
-| Audio inputs 1-82 | THRU machine as a start | THRU | ✅ | Machine picker |  | – |
-| Neighbour routing 1-83 | NEIBOR input; chainable | Neighbour | ✅ | Mix IN = NEIBOR | Drawn as an arrow | – |
-| Mix bus routing 1-84 | BUS AB / CD / EF input; insert or send | Bus FX | ✅ | Mix IN = BUS xx; flow line says insert |  | – |
-| Routing mode AB=MIX 1-85 | CD and EF added to A/B | Mix mode | ✅ | Mix routing bar, LCD ROUTE |  | – |
-| Routing mode 6xMONO 1-85 | Each track to its own output | Mono outs | ✅ | Mix routing bar |  | – |
-| Routing 3xSTEREO 1-89 | Default routing | Stereo | ✅ | Mix routing bar |  | – |
+| Mixer 1-81 | OUT BUS AB, CD, EF per track | Mix buses | ✅ | Mix > Out |  | 1 |
+| FX machines 1-81 | Need input and a trig | FX input | ✅ | Mix IN select; new FX sets DEC and REL to 127 |  | 1 |
+| Audio inputs 1-82 | INP A, INP B, INP AB | External audio | ✅ | Mix IN select |  | 1 |
+| Audio inputs 1-82 | THRU machine as a start | THRU | ✅ | Machine picker |  | 1 |
+| Neighbour routing 1-83 | NEIBOR input; chainable | Neighbour | ✅ | Mix IN = NEIBOR | Drawn as an arrow | 1 |
+| Mix bus routing 1-84 | BUS AB / CD / EF input; insert or send | Bus FX | ✅ | Mix IN = BUS xx; flow line says insert |  | 1 |
+| Routing mode AB=MIX 1-85 | CD and EF added to A/B | Mix mode | ✅ | Mix routing bar, LCD ROUTE |  | 1 |
+| Routing mode 6xMONO 1-85 | Each track to its own output | Mono outs | ✅ | Mix routing bar |  | 1 |
+| Routing 3xSTEREO 1-89 | Default routing | Stereo | ✅ | Mix routing bar |  | 1 |
 
 ## 19. Global settings (1-87 to 1-111)
 
@@ -403,21 +403,21 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Turbo menu 1-87, 1-88 | TURBO negotiate speed | MIDI speed | ➖ | – | The emulator's own transfers use it internally; no cable to negotiate | – |
 | Audio > Master tune 1-88 | 440.0 Hz default | Master tune | ✅ | GLOBAL > Audio > Master tune (400.0 to 499.9 Hz; − / + 0.1 Hz, Shift 1 Hz) | `masterTune`; the range is the panel's (P8 in PROBES-manual-gaps.md) | 1 |
 | Audio > Routing 1-89 | Three routing modes | Routing | ✅ | Mix routing bar |  | 1 |
-| Control > MIDI channels 1-89 | Base channel | Base | ✅ | GLOBAL > Control > Base channel (OFF, 1-16) | Track t listens on base + t while t is inside the span (`117-global.js`) | – |
+| Control > MIDI channels 1-89 | Base channel | Base | ✅ | GLOBAL > Control > Base channel (OFF, 1-16) | Track t listens on base + t while t is inside the span (`117-global.js`) | 1 |
 | Control > MIDI channels 1-90 | Channel span | Span | ✅ | GLOBAL > Control > Channel span | A warning names the tracks without a channel of their own | 2 |
-| Control > MIDI channels 1-90 | Multi trig channel | Multi trig ch | ✅ | GLOBAL > Control > Multi trig |  | – |
-| Control > MIDI channels 1-90 | Multi map channel | Multi map ch | ✅ | GLOBAL > Control > Multi map |  | – |
-| Control > MIDI channels 1-90 | Auto track channel | Auto ch | ✅ | GLOBAL > Control > Auto track |  | – |
+| Control > MIDI channels 1-90 | Multi trig channel | Multi trig ch | ✅ | GLOBAL > Control > Multi trig |  | 1 |
+| Control > MIDI channels 1-90 | Multi map channel | Multi map ch | ✅ | GLOBAL > Control > Multi map |  | 1 |
+| Control > MIDI channels 1-90 | Auto track channel | Auto ch | ✅ | GLOBAL > Control > Auto track |  | 1 |
 | MIDI functionality 1-90 | NRPN control, program change selects pattern | MIDI in | ➖ | – | Firmware; automation and DAW MIDI reach it | – |
 | Control out 1 1-91 | SEQUENCER, ARP, KEYBOARD to INT / OUT / INT+OUT | Output routing | ✅ | GLOBAL > Control out 1: Sequencer, Arp, Keyboard to INT, OUT or INT+OUT | Measured (P2): global bytes 0x07-0x09 (`globalMidi` sequencerOut, arpOut, keyboardOut). The page warns when OUT leaves the machine silent | 1 |
 | Control out 2 1-92 | TRANSPORT, MIDI CLOCK, PRG CHANGE out | Output control | ✅ | GLOBAL > Sync > Ctrl out, Tempo out; Control > Prg change out | `globalMidi` (clockOut, transportOut, programChangeOut). Machine MIDI out reaches the host since 0.4.0 | 1 |
-| Control in 1-92 | TEMPO SYNC internal / external | Sync | ✅ | GLOBAL > Sync > Tempo in (INT / EXT) | A DAW sets EXT itself (`followHost`) | – |
-| Control in 1-92 | TRANSPORT ACCEPT / IGNORE | Transport in | ✅ | GLOBAL > Sync > Ctrl in | A DAW turns it on itself; the page also asks once when PLAY needs it | – |
+| Control in 1-92 | TEMPO SYNC internal / external | Sync | ✅ | GLOBAL > Sync > Tempo in (INT / EXT) | A DAW sets EXT itself (`followHost`) | 1 |
+| Control in 1-92 | TRANSPORT ACCEPT / IGNORE | Transport in | ✅ | GLOBAL > Sync > Ctrl in | A DAW turns it on itself; the page also asks once when PLAY needs it | 1 |
 | Control in 1-93 | PRG CHANGE in | Program change in | 🟡 | GLOBAL > Control > Prg change in, shown as BASE | Shown, not changeable: measured, the machine always takes it on the base channel | – |
 | Multi map edit 1-93 | Ranges, upper key, insert / delete | Key ranges | ✅ | Perform > Multi map table, Split, delete |  | 1 |
 | Multi map edit 1-93 | PAT (CUR or pattern) | Pattern | ✅ | Perform › Multi map: a range's PAT list, CUR and A01-H16 | Measured: the firmware takes and keeps pattern 128 (H16) in a range (intent case on OS 1.32B) | 1 |
-| Multi map edit 1-93 | OFS, LEN | Offset, length | ✅ | OFS, LEN boxes |  | – |
-| Multi map edit 1-93 | TRN, TIM | Transpose, timing | ✅ | TRN, TIM boxes |  | – |
+| Multi map edit 1-93 | OFS, LEN | Offset, length | ✅ | OFS, LEN boxes |  | 1 |
+| Multi map edit 1-93 | TRN, TIM | Transpose, timing | ✅ | TRN, TIM boxes |  | 1 |
 | Mechanical settings 1-94 | Knob resolution (MKII) | Encoder resolution | ➖ | – | Hardware knobs | – |
 | Mechanical settings 1-94 | Velocity curve, fixed velocity (SFX-6) | Keyboard response | ➖ | – | Hardware keys. The editor's own velocity is keys C / V | – |
 | Mechanical settings 1-94 | Joystick mapping TIGHT / FULL | Joystick | ➖ | – | Hardware joystick | – |
@@ -428,8 +428,8 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | +Drive settings 1-105 | Quick mode, format | +Drive | ➖ | – | Not emulated | – |
 | Snapshot manager 1-106 | Load, save, rename, erase, lock snapshots | +Drive | ➖ | – |  | – |
 | Digibank manager 1-107 | Switch, rename, erase, lock banks | +Drive | ➖ | – |  | – |
-| MIDI seq 1-108 | Track channel per MIDI track | MIDI seq channel | ✅ | MIDI page > Channel keys | `midiTrack` op | – |
-| MIDI seq 1-109 | CL1-4 (CC 0-127 or AFT) | CC numbers | ✅ | MIDI page > CL1-4 |  | – |
+| MIDI seq 1-108 | Track channel per MIDI track | MIDI seq channel | ✅ | MIDI page > Channel keys | `midiTrack` op | 1 |
+| MIDI seq 1-109 | CL1-4 (CC 0-127 or AFT) | CC numbers | ✅ | MIDI page > CL1-4 |  | 1 |
 
 ## 20. Early startup menu, technical information (1-110 to 1-116)
 
@@ -448,54 +448,54 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
-| SWAVE-SAW A-1 | UNIL, UNIW, UNIX, SUBX, SUB1, SUB2, TUNE | Eight saw oscillators | ✅ | Sound with unison and sub screens |  | – |
-| SWAVE-PULSE A-2 | UNIL, UNIW, SUB1, SUB2, PW, PWAD, PWRS, TUNE | Pulse oscillators | ✅ | Sound with pulse screen |  | – |
-| SWAVE-ENS A-2 | PCH2-4, WAVE, PW, CHRL, CHRW, TUNE | Chord ensemble | ✅ | Sound with chord keyboard | Offset-ratio options of PCH not modelled | – |
-| SID 6581 A-3 | PW, PWAD, PWRS, WAVE, MOD, MSRC, MFRQ, TUNE | SID | ✅ | Sound with waveform and pulse screens |  | – |
-| DPRO-WAVE A-4 | WAVE, WP, WPM, WPRS, SYNC, SFRQ, TUNE | Wave morph | ✅ | Sound > morph screen |  | – |
-| DPRO-BBOX A-4 | PTCH, STRT, RTRG, RTIM; 24 drums by key | Beat box | ✅ | Sound; roll names the drums |  | – |
-| DPRO-DDRW A-5 | WAV1, MIX, WAV2, TIME, BR1, WID, BR2, TUNE | Doubledraw (MKII) | ✅ | Sound; MKII only | User waveforms cannot be loaded | – |
-| DPRO-DENS A-5 | PCH2-4, WAVE, CHRL, CHRW, TUNE | Ensemble (MKII) | ✅ | Sound; MKII only |  | – |
-| FM+STAT A-6 | 1FRQ, 1FIN, 1ENV, 1FB, 2FRQ, 2VOL, TONE, TUNE | FM static | ✅ | Sound > FM screen |  | – |
-| FM+PAR A-7 | 1-3FRQ, 1-3ENV, TONE, TUNE | FM parallel | ✅ | Sound > FM blocks |  | – |
-| FM+DYN A-7 | 1FRQ, 1FEN, 1VOL, 1VEN, 2FRQ, 2ENV, 2FB, TUNE | FM dynamic | ✅ | Sound |  | – |
-| VO-6 A-8 | VOC1-2, V-SW, VOIC, CONS, CLEN, CVOL, TUNE | Voice | ✅ | Sound > vowel map; roll shows consonant |  | – |
-| VO-6 tutorial A-9 | Spell a word with locks | Tutorial | ✅ | Example in the mockup | Pattern recipe, doable with the lane | – |
-| GND-GND A-10 | Silence | Ground | ✅ | Machine picker |  | – |
-| GND-SIN A-10 | Sine, TUNE | Sine | ✅ | Machine picker |  | – |
-| GND-NOIS A-10 | ST, RED, STON, TUNE | Noise | ✅ | Sound > noise screen |  | – |
-| FX-THRU A-12 | INP | Pass through | ✅ | Sound; Mix IN |  | – |
-| FX-REVERB A-12 | DEC, DAMP, GATE, MIX, HP, LP, INP | Gated reverb | ✅ | Sound > reverb screen |  | – |
-| FX-CHORUS A-13 | DEL, DEP, SPD, MIX, FB, WID, LP, INP | Chorus | ✅ | Sound > sweep screen |  | – |
-| FX-DYNAMIX A-13 | ATK, REL, THRS, MIX, RAT, GAIN, RMS, INP | Compressor | ✅ | Sound > compressor curve |  | – |
-| FX-RINGMOD A-14 | WAVE, EXT, MIX, INP | Ring modulator | ✅ | Sound > carrier screen |  | – |
-| FX-PHASER A-14 | CNTR, DEP, SPD, MIX, FB, WID | Phaser | ✅ | Sound > sweep screen |  | – |
-| FX-FLANGER A-14, A-15 | DEL, DEP, SPD, MIX, FB, WID, INP | Flanger | ✅ | Sound > sweep screen |  | – |
+| SWAVE-SAW A-1 | UNIL, UNIW, UNIX, SUBX, SUB1, SUB2, TUNE | Eight saw oscillators | ✅ | Sound with unison and sub screens |  | 1 |
+| SWAVE-PULSE A-2 | UNIL, UNIW, SUB1, SUB2, PW, PWAD, PWRS, TUNE | Pulse oscillators | ✅ | Sound with pulse screen |  | 1 |
+| SWAVE-ENS A-2 | PCH2-4, WAVE, PW, CHRL, CHRW, TUNE | Chord ensemble | ✅ | Sound with chord keyboard | Offset-ratio options of PCH not modelled | 1 |
+| SID 6581 A-3 | PW, PWAD, PWRS, WAVE, MOD, MSRC, MFRQ, TUNE | SID | ✅ | Sound with waveform and pulse screens |  | 1 |
+| DPRO-WAVE A-4 | WAVE, WP, WPM, WPRS, SYNC, SFRQ, TUNE | Wave morph | ✅ | Sound > morph screen |  | 1 |
+| DPRO-BBOX A-4 | PTCH, STRT, RTRG, RTIM; 24 drums by key | Beat box | ✅ | Sound; roll names the drums |  | 2 |
+| DPRO-DDRW A-5 | WAV1, MIX, WAV2, TIME, BR1, WID, BR2, TUNE | Doubledraw (MKII) | ✅ | Sound; MKII only | User waveforms cannot be loaded | 1 |
+| DPRO-DENS A-5 | PCH2-4, WAVE, CHRL, CHRW, TUNE | Ensemble (MKII) | ✅ | Sound; MKII only |  | 1 |
+| FM+STAT A-6 | 1FRQ, 1FIN, 1ENV, 1FB, 2FRQ, 2VOL, TONE, TUNE | FM static | ✅ | Sound > FM screen |  | 1 |
+| FM+PAR A-7 | 1-3FRQ, 1-3ENV, TONE, TUNE | FM parallel | ✅ | Sound > FM blocks |  | 1 |
+| FM+DYN A-7 | 1FRQ, 1FEN, 1VOL, 1VEN, 2FRQ, 2ENV, 2FB, TUNE | FM dynamic | ✅ | Sound |  | 1 |
+| VO-6 A-8 | VOC1-2, V-SW, VOIC, CONS, CLEN, CVOL, TUNE | Voice | ✅ | Sound > vowel map; roll shows consonant |  | 2 |
+| VO-6 tutorial A-9 | Spell a word with locks | Tutorial | ✅ | Example in the mockup | Pattern recipe, doable with the lane | 1 |
+| GND-GND A-10 | Silence | Ground | ✅ | Machine picker |  | 1 |
+| GND-SIN A-10 | Sine, TUNE | Sine | ✅ | Machine picker |  | 1 |
+| GND-NOIS A-10 | ST, RED, STON, TUNE | Noise | ✅ | Sound > noise screen |  | 1 |
+| FX-THRU A-12 | INP | Pass through | ✅ | Sound; Mix IN |  | 1 |
+| FX-REVERB A-12 | DEC, DAMP, GATE, MIX, HP, LP, INP | Gated reverb | ✅ | Sound > reverb screen |  | 1 |
+| FX-CHORUS A-13 | DEL, DEP, SPD, MIX, FB, WID, LP, INP | Chorus | ✅ | Sound > sweep screen |  | 1 |
+| FX-DYNAMIX A-13 | ATK, REL, THRS, MIX, RAT, GAIN, RMS, INP | Compressor | ✅ | Sound > compressor curve |  | 1 |
+| FX-RINGMOD A-14 | WAVE, EXT, MIX, INP | Ring modulator | ✅ | Sound > carrier screen |  | 1 |
+| FX-PHASER A-14 | CNTR, DEP, SPD, MIX, FB, WID | Phaser | ✅ | Sound > sweep screen |  | 1 |
+| FX-FLANGER A-14, A-15 | DEL, DEP, SPD, MIX, FB, WID, INP | Flanger | ✅ | Sound > sweep screen |  | 1 |
 
 ## 22. Appendix B: MIDI control reference (B-1 to B-6)
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
 | Channels B-1 | Base channel + 0..5 per track | Track channels | ✅ | GLOBAL > Control; keys and keyboard use them | See Control > MIDI channels | 1 |
-| Note on / off B-1 | Trig amp, filter, LFO; note off releases | Notes | ✅ | On-screen keyboard, home row, roll keys | `noteOn` / `noteOff` | – |
-| Multi trig channel B-2 | All track, split, seq start, seq transpose | Multi trig notes | ✅ | Perform keyboard |  | – |
-| Multi map channel B-2 | Triggers patterns | Multi map notes | ✅ | Perform keyboard |  | – |
-| Auto channel B-2 | Notes go to the active track | Auto | ✅ | Perform "Auto track" |  | – |
-| CC: joystick up / down B-2 | CC 1, 2 | Joystick | ✅ | Assign pad |  | – |
-| CC: mute B-2 | CC 3 | Mute | ✅ | Mute keys |  | – |
-| CC: level B-2 | CC 7 | Level | ✅ | LEVEL fader |  | – |
-| CC: pan B-2 | CC 10 and 62 | Pan | ✅ | PAN |  | – |
-| CC: synthesis 1-8 B-2 | CC 48-55 | Synth page | ✅ | SYN values |  | – |
-| CC: amp B-2, B-3 | CC 56-63 | Amp page | ✅ | AMP values |  | – |
-| CC: filter B-3 | CC 72-79 | Filter page | ✅ | FLT values |  | – |
-| CC: effects B-3 | CC 80-87 | Effects page | ✅ | EFX values |  | – |
-| CC: LFO 1-3 B-3 | CC 88-95, 104-111, 112-119 | LFO pages | ✅ | LFO values |  | – |
+| Note on / off B-1 | Trig amp, filter, LFO; note off releases | Notes | ✅ | On-screen keyboard, home row, roll keys | `noteOn` / `noteOff` | 1 |
+| Multi trig channel B-2 | All track, split, seq start, seq transpose | Multi trig notes | ✅ | Perform keyboard |  | 1 |
+| Multi map channel B-2 | Triggers patterns | Multi map notes | ✅ | Perform keyboard |  | 1 |
+| Auto channel B-2 | Notes go to the active track | Auto | ✅ | Perform "Auto track" |  | 1 |
+| CC: joystick up / down B-2 | CC 1, 2 | Joystick | ✅ | Assign pad |  | 1 |
+| CC: mute B-2 | CC 3 | Mute | ✅ | Mute keys |  | 1 |
+| CC: level B-2 | CC 7 | Level | ✅ | LEVEL fader |  | 1 |
+| CC: pan B-2 | CC 10 and 62 | Pan | ✅ | PAN |  | 1 |
+| CC: synthesis 1-8 B-2 | CC 48-55 | Synth page | ✅ | SYN values |  | 1 |
+| CC: amp B-2, B-3 | CC 56-63 | Amp page | ✅ | AMP values |  | 1 |
+| CC: filter B-3 | CC 72-79 | Filter page | ✅ | FLT values |  | 1 |
+| CC: effects B-3 | CC 80-87 | Effects page | ✅ | EFX values |  | 1 |
+| CC: LFO 1-3 B-3 | CC 88-95, 104-111, 112-119 | LFO pages | ✅ | LFO values |  | 1 |
 | CC: all notes off B-3 | CC 120 | Panic | ✅ | Panic (⌘., the ▶ menu) sends All Notes Off (CC 123) on each track's channel | Measured (P5 MM): CC 120 does nothing on OS 1.32B; CC 123 lets held notes go as their note offs would. | 1 |
-| NRPN parameters B-5 | Track, parameter, value | NRPN | ✅ | MIDI page values go as NRPN 0x38-0x3F |  | – |
+| NRPN parameters B-5 | Track, parameter, value | NRPN | ✅ | MIDI page values go as NRPN 0x38-0x3F |  | 1 |
 | NRPN pitch B-5 | Pitch for a track | Pitch | ➖ | – | Firmware in; not used by the page | – |
 | NRPN note off, trig track B-5 | Release, trig A / L / F | Extra trigs | ➖ | – | Not sent; manual bit order erratum recorded | – |
-| NRPN multi env B-5 | Range 0x40-0x45 | Multi env | ✅ | Perform multi envelope |  | – |
-| Pitch bend B-6 | Per track | Pitch bend | ✅ | Joystick pad |  | – |
+| NRPN multi env B-5 | Range 0x40-0x45 | Multi env | ✅ | Perform multi envelope |  | 1 |
+| Pitch bend B-6 | Per track | Pitch bend | ✅ | Joystick pad |  | 1 |
 | Program change B-6 | Selects pattern | Pattern by PC | ➖ | – | Firmware reacts to host MIDI | – |
 | Song pointer, clock, start, continue, stop B-6 | System messages | Sync | ➖ | – | Firmware; used by `followHost` | – |
 
@@ -504,21 +504,21 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
 | 0x50 / 0x51 Global dump, request C-1 | Global slot data | Global | ✅ | Read and written: routing, MIDI channels, control in, control out 1 and 2, MIDI seq, multi map, master tune | Bytes 0x0d-0x11, 0x30-0x35 and 0x36-0x3b are kept as the machine sends them (no function found, P2) | 1 |
-| 0x52 / 0x53 Kit dump, request C-1 | Kit data | Kit | ✅ | Kit library, SysEx panel |  | – |
+| 0x52 / 0x53 Kit dump, request C-1 | Kit data | Kit | ✅ | Kit library, SysEx panel |  | 1 |
 | 0x54 Unused C-1 | – | – | ➖ | – |  | – |
-| 0x55 Set current kit name C-1 | Live kit rename | Kit name | ✅ | Kit library Rename (current kit) |  | – |
+| 0x55 Set current kit name C-1 | Live kit rename | Kit name | ✅ | Kit library Rename (current kit) |  | 1 |
 | 0x56 Set active global C-1 | Choose global slot | Global select | ✅ | GLOBAL panel slot keys | `globalSlot`; a slot made active during a SYSEX RECV dump stays active | 1 |
-| 0x57 Load pattern C-2 | Switch pattern | LOAD PATTERN | ✅ | Pattern chooser |  | – |
-| 0x58 / 0x59 Load / save kit C-2 | Kit load, save | LOAD / SAVE KIT | ✅ | Kit library |  | – |
-| 0x5B Assign machine C-2 | Machine and init mode | Machine | ✅ | Machine picker |  | – |
-| 0x5C Set track routing C-2 | Output bus, input | Routing | ✅ | Mix |  | – |
+| 0x57 Load pattern C-2 | Switch pattern | LOAD PATTERN | ✅ | Pattern chooser |  | 1 |
+| 0x58 / 0x59 Load / save kit C-2 | Kit load, save | LOAD / SAVE KIT | ✅ | Kit library |  | 1 |
+| 0x5B Assign machine C-2 | Machine and init mode | Machine | ✅ | Machine picker |  | 1 |
+| 0x5C Set track routing C-2 | Output bus, input | Routing | ✅ | Mix |  | 1 |
 | 0x5D / 0x5E Digipro waveform dump, request C-2 | User waveforms | Waveforms | 🟡 | Export SysEx…: Waveforms (0x5E requests, the dumps written to the file) |  | – |
 | 0x5E Set Gate box parameter C-2 | Reverb parameter | Reverb | ➖ | – | Not used; reverb values go as CC | – |
-| 0x61 Set tempo C-2 | Tempo | Tempo | ✅ | LCD TEMPO | 30-300 BPM | – |
-| 0x67 / 0x68 Pattern dump, request C-3 | Pattern data | Pattern | ✅ | All sequence edits, chooser |  | – |
-| 0x69 / 0x6A Song dump, request C-3 | Song data | Song | ✅ | Song workspace |  | – |
-| 0x6C / 0x6D Load / save song C-3 | Song slot | Load song | ✅ | Songs column: Load, Save | loadSong 0x6C, saveSong 0x6D. | – |
-| 0x70-0x72 Status request, set, response C-3, C-4 | Slot, mode, poly, tracks | Status | ✅ | Pattern / song mode, poly, kit state |  | – |
+| 0x61 Set tempo C-2 | Tempo | Tempo | ✅ | LCD TEMPO | 30-300 BPM | 1 |
+| 0x67 / 0x68 Pattern dump, request C-3 | Pattern data | Pattern | ✅ | All sequence edits, chooser |  | 1 |
+| 0x69 / 0x6A Song dump, request C-3 | Song data | Song | ✅ | Song workspace |  | 1 |
+| 0x6C / 0x6D Load / save song C-3 | Song slot | Load song | ✅ | Songs column: Load, Save | loadSong 0x6C, saveSong 0x6D. | 1 |
+| 0x70-0x72 Status request, set, response C-3, C-4 | Slot, mode, poly, tracks | Status | ✅ | Pattern / song mode, poly, kit state |  | 1 |
 | TurboMIDI speed messages C-4, C-5 | Speed negotiation | Turbo | ➖ | – | Cable protocol | – |
 
 ## 24. Beyond the hardware
