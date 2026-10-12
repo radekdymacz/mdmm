@@ -325,3 +325,16 @@ low LPF both notes go quiet, the high one more; under a high HPF the high note g
 **For wave 9.** The editor presses TRACK t with POLY (the track the page shows is the one that plays), the Perform page
 says which track plays six voices and that the others are silent, the Sound page's Filter group shows the KEY switches'
 state, and the Multi envelope card says per MULTI TRIG mode what it shapes and when it silences the machine.
+
+## W12: the gaps of wave 12 (`feat/0.6-gaps`, 2026-10-12)
+
+`gapProbesFirmwareTest <MD ROM> <MM ROM> w12clip|w12undo|w12clearkit|w12stop|w12extend|w12repeats|w12patkit|w12mmcounter`,
+on MD OS 1.63 and MM OS 1.32B. `W12_LCD=1` prints the LCD, `W12_SNAP_MACHINE` / `W12_SNAP_DIR` write a machine's three
+pages as images.
+
+**W12a, MD clips (MD-033).** The LCD draws a clip as a small arch over the dotted line between two value boxes, above
+their knobs. Every machine on track 1, every page: the EFFECTS page joins AMD-AMF, EQF-EQG and FLTF-FLTW-FLTQ on every
+machine but MID, CTR-8P and the master-effect CTR machines; ROUTING joins LFOS-LFOD-LFOM on all but CTR-8P (none at
+all); the SYNTHESIS pairs are per machine (TRX-BD RAMP-RDEC, TRX-SD BUMP-BENV and TONE-TUNE, the E12 machines RTRG-RTIM,
+none on ROM and RAM machines, ...). The table is `elektronData::mdMachineClips`; the probe checks it machine by machine.
+The same screens showed B-082: MID's ROUTING is CC5D CC5V CC6D CC6V PCHG LFOS LFOD LFOM.

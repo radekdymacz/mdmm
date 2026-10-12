@@ -1567,6 +1567,15 @@
                 "items": {
                   "type": ["string", "null"]
                 }
+              },
+              "clips": {
+                "type": "array",
+                "description": "MD-033: the clips the machine's LCD draws between two value boxes whose parameters depend on each other: i joins parameters i and i + 1 (0-23: SYNTHESIS, EFFECTS, ROUTING). Measured on OS 1.63 (gapProbesFirmwareTest w12clip).",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 22
+                }
               }
             }
           }

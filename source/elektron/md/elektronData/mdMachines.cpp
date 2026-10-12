@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdio>
 #include <cstring>
+#include <utility>
 
 namespace elektronData
 {
@@ -174,6 +175,35 @@ namespace elektronData
 			for(size_t i = 0; i < 8; ++i)
 				_out[_page * 8 + i] = _names[i];
 		}
+	}
+
+	uint32_t mdMachineClips(const uint32_t _model)
+	{
+		const auto name = mdMachineName(_model);
+		if(name.empty() || name == "CTR-8P")
+			return 0;
+		// the EFFECTS page: AMD-AMF, EQF-EQG, FLTF-FLTW-FLTQ; ROUTING: LFOS-LFOD-LFOM
+		constexpr uint32_t effects = (1u << 8) | (1u << 10) | (1u << 12) | (1u << 13);
+		constexpr uint32_t lfo = (1u << 21) | (1u << 22);
+		const auto family = mdMachineFamily(_model);
+		if(family == "MID")	// NOTE-N2-N3; CC1-4 D-V; CC5 D-V, CC6 D-V; the LFO
+			return 0x03u | (0x55u << 8) | (0x05u << 16) | lfo;
+		if(name == "CTR-RE" || name == "CTR-GB" || name == "CTR-EQ" || name == "CTR-DX")
+			return lfo;
+		static const std::pair<const char*, uint32_t> g_synthesis[] = {
+			{"GND-SIN", 0x04}, {"TRX-BD", 0x04}, {"TRX-CY", 0x04}, {"GND-IM", 0x05},
+			{"TRX-SD", 0x24}, {"TRX-XT", 0x24}, {"TRX-XC", 0x24}, {"E12-BD", 0x24}, {"E12-HT", 0x24}, {"E12-LT", 0x24},
+			{"E12-CP", 0x24}, {"E12-CB", 0x24}, {"E12-CH", 0x24}, {"E12-CC", 0x24}, {"E12-TA", 0x24}, {"E12-TR", 0x24},
+			{"TRX-CP", 0x60}, {"TRX-MA", 0x10}, {"P-I-MA", 0x10}, {"P-I-RS", 0x10},
+			{"EFM-BD", 0x74}, {"EFM-SD", 0x34}, {"EFM-CP", 0x34}, {"EFM-HH", 0x34}, {"EFM-RS", 0x70},
+			{"EFM-CB", 0x30}, {"EFM-CY", 0x30}, {"P-I-RC", 0x30}, {"P-I-CC", 0x30}, {"P-I-HH", 0x30},
+			{"E12-SD", 0x20}, {"E12-RS", 0x20}, {"E12-OH", 0x20}, {"E12-RC", 0x20}, {"E12-BR", 0x20}, {"E12-SH", 0x20},
+			{"E12-BC", 0x20}, {"P-I-SD", 0x20}, {"INP-GA", 0x06}, {"INP-GB", 0x06}, {"INP-EA", 0x32}, {"INP-EB", 0x32}};
+		uint32_t synthesis = 0;
+		for(const auto& [machine, bits] : g_synthesis)
+			if(name == machine)
+				synthesis = bits;
+		return synthesis | effects | lfo;
 	}
 
 	std::string mdMachineFamily(const uint32_t _model)

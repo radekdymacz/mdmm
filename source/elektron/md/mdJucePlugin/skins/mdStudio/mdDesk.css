@@ -2202,3 +2202,11 @@ html[data-tt=acc] #seq .st:not(.on),html[data-tt=swg] #seq .st:not(.on),html[dat
 /* I-002: a note from a MIDI keyboard played this track (mdDeskTop.js noteLight): its number on the rail glows a moment */
 .th.hit .n{box-shadow:0 0 0 1px var(--led),0 0 6px 1px var(--led)}
 .strip .led.act.hit{background:var(--led);box-shadow:0 0 6px 1px var(--led)}
+
+/* MD-033: the machine's clip between two value boxes whose parameters depend on each other (mdDeskSound.js clipMarks:
+   the arch over the gap after column --c of --n, on row --r of --rows; the group's gap is 4px) */
+.sg>.ctl{position:relative}
+.snd .clipmk{position:absolute;left:calc((100% - (var(--n) - 1) * 4px) / var(--n) * var(--c) + (var(--c) - 1) * 4px - 5px);width:14px;
+ top:calc((100% + 4px) / var(--rows) * var(--r) - 5px);height:6px;border:1.5px solid var(--keydim);border-bottom:0;border-radius:6px 6px 0 0;pointer-events:none;box-sizing:border-box}
+.snd .clipgap{flex:0 0 0;align-self:stretch;margin-left:-4px;position:relative;pointer-events:none}
+.snd .clipgap::before{content:"";position:absolute;left:-5px;top:-5px;width:14px;height:6px;border:1.5px solid var(--keydim);border-bottom:0;border-radius:6px 6px 0 0;box-sizing:border-box}

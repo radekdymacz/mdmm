@@ -2462,8 +2462,39 @@ const MdJourneys = (() => {
 			{ say: "32 songs on the Song page", act: u => u.click(tab("song")), screen: () => ok($all("[data-ss]").length === 32, $all("[data-ss]").length + " slots"), machine: () => ok(Object.keys(Docs.songs).length === 32, Object.keys(Docs.songs).length + " songs") }
 		]
 	};
+	/* ---------- wave 12: the gaps (doc/release/PLAN-0.6.md, Gap triage) ---------- */
+	/* MD-033: the machine's clips over the Sound page's boxes (the catalogue's, measured on the firmware) */
+	const machineOnTrack = async (u, c, m) => {
+		if (V.tracks[c.t].m === m) return true;
+		u.click("#machbtn"); await until(() => !$1("#machpop").hidden, 1500); u.click(`#machpop .mf[data-fam="${famKey(m, Cat)}"]`); await sleep(30);
+		const key = $1(`#machpop .mk[data-mach="${m}"]`); if (!key) { if (!$1("#machpop").hidden) u.key("Escape"); return false; }
+		u.click(key); await until(() => V.tracks[c.t].m === m, 4000); await until(idle, 4000); return V.tracks[c.t].m === m;
+	};
+	/* the arches drawn: each must sit over the gap between its two boxes (a box's right edge, the next one's left) */
+	const drawnClips = () => $all(".snd .clipmk, .snd .clipgap").map(x => {
+		const [a, b] = x.dataset.pair.split(" "), sec = x.closest(".sg"), A = sec?.querySelector(`.pc[data-n="${a}"]`), B = sec?.querySelector(`.pc[data-n="${b}"]`);
+		const r = (x.classList.contains("clipgap") ? x : x).getBoundingClientRect(), ra = A?.getBoundingClientRect(), rb = B?.getBoundingClientRect();
+		const mid = x.classList.contains("clipgap") ? r.left : r.left + r.width / 2, over = ra && rb && mid >= ra.right - 3 && mid <= rb.left + 3 && Math.abs(ra.top - rb.top) < 2;
+		return over ? x.dataset.pair : x.dataset.pair + " (misplaced)";
+	}).sort();
+	const clipsJ = {
+		name: "md-sound-clips", proves: ["MD-033"],
+		steps: [
+			go("sound"), sel(() => soundTrack()),
+			{ say: "put TRX-BD on the track: an arch joins RAMP and RDEC, AMD and AMF, EQF and EQG, FLTF FLTW FLTQ, SPD and DEPTH, as the machine's LCD", act: async (u, c) => {
+				c.n0 = V.undoCount; if (!await machineOnTrack(u, c, "TRX-BD")) throw new Error("TRX-BD not picked"); await sleep(120); Journey.snapshot("md-sound-clips"); },
+				screen: () => { const d = drawnClips(); return ok(["AMD AMF", "EQF EQG", "FLTF FLTW", "FLTW FLTQ", "RAMP RDEC", "SPD DEPTH"].every(p => d.includes(p)), d.join(", ")); },
+				machine: c => ok(V.tracks[c.t].m === "TRX-BD" && JSON.stringify(Cat.byName["TRX-BD"].clips) === "[2,8,10,12,13,21,22]", "catalogue " + JSON.stringify(Cat.byName["TRX-BD"]?.clips)) },
+			{ say: "point at RDEC: its tooltip names RAMP", screen: () => ok(($1('.snd .pc[data-g="syn"][data-n="RDEC"]')?.title || "").includes("RAMP"), $1('.snd .pc[data-g="syn"][data-n="RDEC"]')?.title) },
+			{ say: "put ROM-01 on the track: no synthesis clip (STRT and END are not joined), the effects' arches stay", act: async (u, c) => { if (!await machineOnTrack(u, c, "ROM-01")) throw new Error("ROM-01 not picked"); await sleep(120); },
+				screen: () => { const d = drawnClips(); return ok(!d.includes("RAMP RDEC") && !d.some(p => /STRT|END|PTCH/.test(p)) && d.includes("AMD AMF"), d.join(", ")); },
+				machine: c => ok(V.tracks[c.t].m === "ROM-01", "machine " + V.tracks[c.t].m) }
+		],
+		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); }
+	};
+	const wave12 = [clipsJ];
 	const slice5 = [modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, kitNameSave, songCommands, playModeJ, pageLeds, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
-	const all = [...slice5, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
+	const all = [...slice5, ...wave12, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
 		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
 		genJourney("md-gen-mutate-undo", false, { proves: [] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: [] }), genKeys,
 		shapeSound, typeValue, arrows, machinePick, machAudition, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,
