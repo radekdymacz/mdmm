@@ -39,7 +39,7 @@ a setting turns it off. Two instances of one machine: the last save wins (say so
 - `not-needed`: MD-005, MD-016, MD-023, MD-024, MD-025, MD-205, MD-293, MM-013, MM-016, MM-021, MM-039, MM-056, MM-057, MM-058, MM-061, MM-180, MM-212, MM-299; MM-322 is done by wave 10 (check and mark it done).
   Reasons: the host routes MIDI and audio, the mouse makes the key combination pointless, the editor restart is the soft reset, the firmware fixes the PRG CHANGE channel, chords are drawn in the roll.
 
-**Not started:** slice 5 (journeys and snapshots for the unproved rows, doc/features/unproved-*.md), the guide
+**Slice 5 MD merged** (161 of 163 rows; MD-192 and MD-200 need a WAV in the machine tier). Its review's weak proofs, to fix: MD-277 (no channel checked: the stub ignores CCs), the machine reference compares knob names sorted (compare in order), MD-085, MD-125, MD-138, MD-049/050/290, MD-139 (`|| true`), md-mix-master-cards first check, md-seq-clear-page order flake, MD-088/291 comment, dead MFX_IDS and the unit fixture's masterFx order, a firmware test for LockMode 0x20 then 0x51. **Not started:** slice 5 for the MM (doc/features/unproved-mm.md), the guide
 appendices, doc/guide/OPEN-FACTS.md, retrain the PGO profile (scripts/macos/train_mdmm_pgo.sh: the build says stale),
 then `scripts/mdmm-full-gate.sh` on a quiet Mac and `release/0.6.0`. In progress: wave 11 (`feat/0.6-memory`, review
 fixes). B-063 waits for the tester's host and screenshots.
