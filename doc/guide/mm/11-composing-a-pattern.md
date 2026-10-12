@@ -28,7 +28,7 @@ On the machine you step through the grid with the trig keys. In the editor you d
 4. To change the pitch, drag the note up or down.
 5. To fill steps, drag sideways. Every empty step the pointer crosses gets the note.
 
-A drag, a paint or a run of rotates is one undo step. {key:undo} takes it back whole.
+A drag or a paint is one undo step. {key:undo} takes it back whole.
 
 NOTE: With **Draw** dark, a drag in an empty place draws a box round notes and selects them, and a double-click adds a note.
 
@@ -42,7 +42,7 @@ Drag the end of a note to set its length. New notes take the length too. On a sy
 
 To set a NOTE OFF by hand, hold [⌥] and click an empty step. A NOTE OFF is a yellow mark.
 
-To delete a note, hold [⌥] and click it. The note before it keeps its length. Drag on with [⌥] held to delete every step the pointer crosses.
+To delete a note, hold [⌥] and click it. The note before it keeps its length. Drag on with [⌥] held to delete every step the pointer crosses. One {key:undo} brings all of them back.
 
 ### Chords
 
@@ -51,6 +51,8 @@ Hold [⇧] and click the step at another pitch. The step holds a chord note. A c
 ### Rotate
 
 Press {key:rotate} to move all the notes, slides and locks of the selected track one step earlier or later. They wrap round at the length of the pattern.
+
+Rotates made while [⌥] stays down are one undo step. Let go of [⌥] and the next rotate is a step of its own, so {key:undo} takes back one rotate at a time.
 
 ### Copy, clear and paste on the LCD
 
@@ -86,7 +88,7 @@ NOTE: Values you turn while the pattern records are locked. See "Parameter locks
 In step recording you play one note for each step, and the machine moves on by itself. The tempo does not matter.
 
 1. Stop the machine and select a synth track. The machine writes only this track.
-2. Hold [⇧] and click the record key, or choose **Step record** in the play key's menu. The record key shows STEP, and a red cursor on the roll marks the step, with the track and the step number.
+2. Hold [⇧] and click the record key, or choose **Step record** in the play key's menu. The record key shows STEP, and a red cursor on the roll marks the step, with the track and the step number. A selection of steps is dropped.
 3. Play a note with the computer keys or the keys left of the roll. The machine writes it to the step under the cursor, and the cursor moves to the next step.
 4. Press {key:step-move} to move. → leaves a rest and moves on. ← goes a step back.
 5. Press {key:step-clear} to clear the step under the cursor. The cursor moves on.
@@ -133,7 +135,7 @@ The machine's CLEAR NOTE LOCKS clears the locks of one note and keeps the note:
 1. Select the step, or several steps, in the roll or the trig rows.
 2. Right-click one of them and choose **Clear locks (keep the notes)**.
 
-The notes stay. Press {key:undo} to get the locks back.
+You can also click the small ⋯ on a selected step and choose it there. The notes stay. Press {key:undo} to get the locks back.
 
 ## TRACK PAGE COPY
 <!-- rows: MM-185 MM-178 @06846c -->
@@ -141,7 +143,7 @@ The notes stay. Press {key:undo} to get the locks back.
 A page is the 16 steps shown while **Page** is on. While **All** is lit, the page is the whole pattern. With no steps selected, the LCD keys copy and paste the page shown of the selected track.
 
 1. Show the page to copy.
-2. Click **Copy** on the LCD. The steps, slides and locks of the page are copied.
+2. Click **Copy** on the LCD. The page is named, and its steps, slides and locks are copied.
 3. Show the page to paste into. It can be on another track of the same kind.
 4. Click **Paste**.
 
@@ -157,6 +159,19 @@ Click **Clr** on the LCD with no steps selected. The notes, slides and locks of 
 ## TRACK COPY
 <!-- rows: MM-187 @c4beb7 -->
 
+To copy a track with its sound, arpeggiator, transpose and swing:
+
+1. Select the track in the rail.
+2. Click **▾** beside <COPY> <CLR> <PASTE> on the LCD, then **Copy…**. The **Copy what** window opens.
+3. Tick **Notes**, **Slide**, **Swing**, **Arp**, **Transpose** and **Machine + sound**, and click **Copy**.
+4. Select the track to paste into.
+5. Click **▾**, then **Paste…**. The window reads **Paste what**.
+6. Click **Paste into 1 track**. The track now holds the notes, slides, swing, arpeggiator, transpose and machine of the first. Press {key:undo} and the track is as before, in one step.
+
+![Paste what](shot:mm-paste-what)
+
+To copy only the notes with the step ruler:
+
 1. Drag across the whole step ruler to select all the steps of the selected track.
 2. Press {key:copy}.
 3. Click the target track in the rail, then click the first step of the ruler.
@@ -169,7 +184,12 @@ To copy a whole track with its machine, its arpeggiator, its transpose and its s
 ## CLEAR TRACK
 <!-- rows: MM-188 @ca1110 -->
 
-Select all the steps of the track with the ruler and press {key:delete}. To clear every lock of the track, hold [⌥] and click the bin in the lane header.
+To clear parts of a track:
+
+1. Select the track in the rail and press {key:clear-what}. The **Clear what** window opens.
+2. Tick the parts, for example **Notes** alone, and click **Clear**. The notes go and the slides stay.
+
+Or select all the steps of the track with the ruler and press {key:delete}. To clear every lock of the track, hold [⌥] and click the bin in the lane header.
 
 To clear the whole track, or only some of its parts, use **Clear…** in the LCD's **▾** menu: see "Super clear". **Clr** clears the page shown.
 
@@ -180,7 +200,8 @@ A pattern copy takes the whole pattern: the notes, locks, MIDI notes, the arpegg
 
 1. Open the pattern chooser: click the pattern field of the LCD.
 2. Click the slot to copy, then **Copy**.
-3. Click the target slot, then **Paste**.
+3. Click the target slot, then **Paste**. The slot shows the length and kit of the copy at once.
+4. Press {key:undo} to take the paste back.
 
 You can also drag a slot onto another slot to copy it there.
 
@@ -189,7 +210,7 @@ NOTE: A pattern paste goes through the machine's SYSEX RECV. The editor does tha
 ## CLEAR PATTERN
 <!-- rows: MM-190 @83c282 -->
 
-In the pattern chooser, click the slot and then **Clear**. Or, on **Sequence**, press {key:clear-pattern}.
+In the pattern chooser, click the slot and then **Clear**, and answer the question. The slot reads EMPTY at once. Or, on **Sequence**, press {key:clear-pattern}. {key:undo} takes it back.
 
 Both clear the notes and locks of every track. The pattern keeps its link to the kit, as on the machine.
 

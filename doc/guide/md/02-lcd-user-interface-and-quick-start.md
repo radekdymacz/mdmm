@@ -33,7 +33,7 @@ The label says what the machine is doing. READY, with the engine's name (EMU OS 
 
 ### Tempo
 
-**Tempo** shows the tempo in BPM with one decimal, for example 124.0. Drag it up or down to change it, or tap it with {key:tap-tempo}.
+**Tempo** shows the tempo in BPM with one decimal, for example 124.0. Drag it up or down to change it, or tap it with {key:tap-tempo}. Click it without dragging to open the TEMPO window, which has **+** and **-** keys for single BPM steps and a **+10 %** key. Chapter 1 describes both.
 
 ### Position
 
@@ -96,7 +96,7 @@ On the machine a window opens over the main screen and EXIT closes it. In the ed
 Press {key:keys-help} to open the keyboard view. It lists every key and gesture of the editor.
 
 ## QUICK START
-<!-- rows: MD-035 MD-036 MD-037 @f2c4a2 -->
+<!-- rows: MD-035 MD-036 MD-037 @90ac82 -->
 
 This is a first session. It loads a kit, places trigs, plays them and changes a sound.
 
@@ -106,7 +106,7 @@ This is a first session. It loads a kit, places trigs, plays them and changes a 
 2. Click a kit. The machine loads it at once. If you have unsaved changes, the editor asks first.
 3. Press {key:close-dialog}, then press {key:workspace-1} for the Sequence workspace.
 4. Click steps in the grid. Each click turns a trig on or off. Each row of the grid is a track.
-5. Press {key:play-stop}. The pattern plays.
+5. Press {key:play-stop}. The pattern plays with your trigs. Press it again to stop.
 6. Click a track in the rail to select it. Press the keys A to L to play it by hand.
 7. Press {key:workspace-2} for the Sound workspace. Drag a value box to change the sound of the selected track.
 
@@ -114,17 +114,19 @@ This is a first session. It loads a kit, places trigs, plays them and changes a 
 
 Turn a value in small steps when you need them. Hold [⇧] and drag for fine steps. Scroll the wheel over a box for one step a notch, and hold [⇧] for ten. Double-click a box to set it back to 64.
 
+![One notch of the wheel and a drag on a value box](shot:md-sound-knob-steps)
+
 ### Hear a machine before loading it
 
 In the machine picker you can hear a machine on the track before you keep it.
 
-1. Press {key:workspace-2} for the Sound workspace and select a track.
+1. Press {key:workspace-2} for the Sound workspace and select a track in the rail.
 2. Click the machine key under the header. The machine picker opens.
 3. Point at a machine and click its ▶, or move to it with [TAB] and press {key:picker-audition}. The machine goes on the track and the track plays once. A line under the preview says which machine plays and which one was there before.
-4. Try other machines the same way.
+4. Try other machines the same way. The picker stays open while you try.
 5. Press [ENTER] or click **Keep** to keep the machine, or click another machine to keep that one. Press {key:close-dialog} or click **Back** to put the old machine back.
 
-The machine plays with the track's own values, so you hear it as it will be in the kit. The machine itself plays a new machine with its default values instead. Trying machines and keeping one is one step for {key:undo}. During live recording the machine changes but no note plays, so no trig is recorded.
+The machine plays with the track's own values, so you hear it as it will be in the kit. The machine itself plays a new machine with its default values instead. Trying machines and keeping one is one step for {key:undo}: a single press brings back the track as it was before you started. During live recording the machine changes but no note plays, so no trig is recorded.
 
 NOTE: GND-EMPTY and the RAM recorders go on the track but play nothing. The editor says why.
 
