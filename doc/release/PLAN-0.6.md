@@ -41,8 +41,7 @@ a setting turns it off. Two instances of one machine: the last save wins (say so
 
 **Slice 5 MD merged** (161 of 163 rows; MD-192 and MD-200 need a WAV in the machine tier). Its review's weak proofs, to fix: MD-277 (no channel checked: the stub ignores CCs), the machine reference compares knob names sorted (compare in order), MD-085, MD-125, MD-138, MD-049/050/290, MD-139 (`|| true`), md-mix-master-cards first check, md-seq-clear-page order flake, MD-088/291 comment, dead MFX_IDS and the unit fixture's masterFx order, a firmware test for LockMode 0x20 then 0x51. **Not started:** slice 5 for the MM (doc/features/unproved-mm.md), the guide
 appendices, doc/guide/OPEN-FACTS.md, retrain the PGO profile (scripts/macos/train_mdmm_pgo.sh: the build says stale),
-then `scripts/mdmm-full-gate.sh` on a quiet Mac and `release/0.6.0`. In progress: wave 11 (`feat/0.6-memory`, review
-fixes). B-063 waits for the tester's host and screenshots.
+then `scripts/mdmm-full-gate.sh` on a quiet Mac and `release/0.6.0`. Wave 11 merged (2026-10-12, five reviews). B-063 waits for the tester's host and screenshots.
 After 0.6: the site moves from Lemon Squeezy to GitHub Sponsors (Radek, 2026-10-12; he sets up Sponsors first).
 
 **Known flaky under parallel load** (pass alone): md-boot-card, md-song-mode, mm-top-pattern-next, md-top-tempo-window, the MD intent cases
