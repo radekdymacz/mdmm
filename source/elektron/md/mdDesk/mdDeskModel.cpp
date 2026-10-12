@@ -357,8 +357,9 @@ namespace mdDesk
 			{"kitSaveAs", Owner::Machine, Gate::Input, -1, {k}, "SAVE KIT n"},
 			{"record", Owner::Machine, Gate::Input, -1, {}, "REC as on the machine"},
 			{"recTrig", Owner::Machine, Gate::Input, -1, {t}, "a TRIG key while recording"},
-			{"liveErase", Owner::Machine, Gate::Input, -1, {t, {"on", ArgType::Bool}},
-				"live recording: EXIT/NO and track t's TRIG key held (on) or let go; its trigs go as they play (manual p.40)"},
+			{"liveErase", Owner::Machine, Gate::Input, -1, {t, {"on", ArgType::Bool}, opt({"i", ArgType::Integer, 0, 23})},
+				"live recording: EXIT/NO and track t's TRIG key held (on) or let go; its trigs go as they play (manual p.40). With i: "
+				"EXIT/NO and the DATA ENTRY knob of kit parameter i pressed instead; track t's locks of that parameter go as they play (manual p.48)"},
 			{"noteOn", Owner::Machine, Gate::Input, -1, {t, {"vel", ArgType::Integer, 1, 127}, {"pitch", ArgType::Integer, -48, 48}},
 				"the page's keyboard: play track t (its MAP EDITOR note), pitch semitones from its sound (ROM, RAM-P: a PTCH held while the key is down, not an edit)"},
 			{"noteOff", Owner::Machine, Gate::Input, -1, {t, opt({"pitch", ArgType::Integer, -48, 48})}, "the key let go: track t's note (of that pitch), and what it held"},
