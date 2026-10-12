@@ -22,7 +22,7 @@ const KTIP = {
 	saveas: "SAVE KIT n (SysEx 0x59): n becomes the current kit and, in EXTENDED, the current pattern links to it (measured). The old slot keeps what it had",
 	copy: "Copies the kit the editor holds: a stored slot, or for the current kit its working copy read from the machine's memory, unsaved edits included",
 	paste: "A kit dump (0x52) into the slot. Into the current kit it is also LOAD KIT, because a dump alone only writes the slot (measured): heard at once, unsaved edits lost",
-	clear: "There is no CLEAR KIT over SysEx: the editor writes an empty kit (every track GND-EMPTY, neutral values, no name). What the machine's own CLEAR KIT leaves is not known",
+	clear: "There is no CLEAR KIT over SysEx: the editor writes the kit the machine's own CLEAR KIT leaves (measured): every track GND-EMPTY at the same values, the master effects at their start, no name",
 	rename: "The current kit: SysEx 0x55 renames the working kit; SAVE stores it. Other slots: their dump is written back with the new name",
 	reload: "LOAD KIT on the current slot (0x58): the edits are lost. The machine keeps them in its UNDO KIT",
 	undo: "The machine's UNDO KIT, the first entry of its kit list: the kit lost to the last LOAD KIT or overwrite. The editor opens KIT > LOAD KIT > UNDO KIT with the machine's keys: that kit plays again, unsaved, and the slot it came from becomes the current kit (measured). Unsaved edits of the kit that plays are lost",

@@ -70,7 +70,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.15 | Name a kit (letters, high-score picker) | Kit name | ✅ | Kit library: Rename (F2 / double-click), 16 chars | Typing replaces the wheel. | 1 |
 | p.16 | UNDO KIT (kit list entry 0) | Restore lost kit | ✅ | Kit library: UNDO KIT (the machine's KIT > LOAD KIT > UNDO KIT through its keys; off over HW MIDI) | Measured: the lost kit plays again unsaved, its own slot current; LOAD KIT 64-127 does not reach it (gapProbesFirmwareTest w12undo) | 1 |
 | p.16 | Copy kit and paste to slot | Kit copy | ✅ | Kit library: Copy, Paste, drag onto slot (Cmd+C/V) |  | 1 |
-| p.17 | Clear kit | CLEAR KIT | 🟡 | Kit library: Clear | Writes an empty kit (GND-EMPTY, neutral values); the machine's own clear may leave other values. | 1 |
+| p.17 | Clear kit | CLEAR KIT | ✅ | Kit library: Clear (Delete) writes what the machine's CLEAR KIT leaves | Measured: every track GND-EMPTY at the same values, master effects at their start, name byte 0x7f (gapProbesFirmwareTest w12clearkit, elektronData::mdClearedKit) | 1 |
 | p.17 | Undo paste / clear kit | Undo | ✅ | Cmd+Z |  | 2 |
 | p.17 | Kit assembly: pick MD-synth and machine per track | EDIT KIT | ✅ | Sound: machine button opens the picker by family | All 10 families. | 1 |
 | p.18 | Load machine and keep track FX / routing | FUNCTION + ENTER | ✅ | Picker: 'Keep effects + routing' toggle (default on) | S.keepFx. | 1 |
@@ -392,13 +392,13 @@ Method: manual read in full; claims checked against the page files (`source/elek
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 261 |
-| 🟡 Partial | 13 |
+| ✅ Yes | 262 |
+| 🟡 Partial | 12 |
 | ❌ No | 6 |
 | ➖ Not applicable | 16 |
 | Total | 296 |
 
-Of the 280 applicable rows, 261 are fully covered, 13 partly, 6 not at all.
+Of the 280 applicable rows, 262 are fully covered, 12 partly, 6 not at all.
 
 ### Top gaps (our UI), most important first
 
