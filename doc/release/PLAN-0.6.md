@@ -33,6 +33,12 @@ a setting turns it off. Two instances of one machine: the last save wins (say so
 
 **Left from the wave 9 review (small, polish):** switching the rail from MIDI to Synth selects a synth track and so moves POLY (mmMockup.js setSide -> polyFollows; only a person's own track pick should); step recording started on a MIDI track sends t:0 and moves POLY to T1. The ctest entry `mmDeskFirmwareTest` gets no ROM argument (GEARMULATOR_MM_ROM unset) and skips, so tier 2 never runs its default sections (smoke, p4, hw, chain, record, kitlink, reclock): make it `--env` like its siblings and raise its time limit.
 
+**Gap triage (Radek, 2026-10-12)** for the partial and missing rows with no plan:
+- Build in 0.6 (wave 12, `feat/0.6-gaps`): MD-033, MD-043, MD-045, MD-099, MD-106, MD-147, MM-083, MM-184, MM-203, MM-201, MM-095, MM-102, MM-271, MM-301.
+- `later` (0.7): MD-189, MD-193, MD-194, MD-196, MD-198, MD-199 (sample manager, SDS from other tools), MD-208, MD-209 (MKI model).
+- `not-needed`: MD-005, MD-016, MD-023, MD-024, MD-025, MD-205, MD-293, MM-013, MM-016, MM-021, MM-039, MM-056, MM-057, MM-058, MM-061, MM-180, MM-212, MM-299; MM-322 is done by wave 10 (check and mark it done).
+  Reasons: the host routes MIDI and audio, the mouse makes the key combination pointless, the editor restart is the soft reset, the firmware fixes the PRG CHANGE channel, chords are drawn in the roll.
+
 **Not started:** slice 5 (journeys and snapshots for the unproved rows, doc/features/unproved-*.md), the guide
 appendices, doc/guide/OPEN-FACTS.md, retrain the PGO profile (scripts/macos/train_mdmm_pgo.sh: the build says stale),
 then `scripts/mdmm-full-gate.sh` on a quiet Mac and `release/0.6.0`. In progress: wave 11 (`feat/0.6-memory`, review
