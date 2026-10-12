@@ -506,8 +506,10 @@ const MdJourneys = (() => {
 				screen: () => ok(/no locks/.test($1("#toast")?.textContent || ""), "toast " + ($1("#toast")?.textContent || "")),
 				machine: c => ok(eraseSent.length === c.n && same(trigsOf(c.t), c.p1), `sent ${JSON.stringify(eraseSent.slice(c.n))}, trigs ${trigsOf(c.t).join(",")}`) },
 			{ say: "let both go; hold Delete and press the FLTF value within the grace: only its locks are asked for, never the trigs", act: async (u, c) => {
-				keyEv("keyup", "Delete"); pressEv("pointerup", c.nl); u.click(tab("sound")); await sleep(300); c.el = $1('#main .pc[data-n="FLTF"]'); c.n = eraseSent.length;
-				keyEv("keydown", "Delete"); await sleep(40); pressEv("pointerdown", c.el); await sleep(500); },
+				keyEv("keyup", "Delete"); pressEv("pointerup", c.nl); u.click(tab("sound")); await sleep(300); c.n = eraseSent.length;
+				/* Delete, then the value in the same moment (well inside the grace, also on a busy machine); the value looked up
+				   now, as the page shows it */
+				keyEv("keydown", "Delete"); c.el = $1('#main .pc[data-n="FLTF"]'); pressEv("pointerdown", c.el); await sleep(500); },
 				screen: c => ok(c.el.classList.contains("erasing"), "the value is not marked"),
 				machine: c => ok(eraseSent.slice(c.n).some(m => m.on) && eraseSent.slice(c.n).every(m => !m.on || m.i === c.i), "sent " + JSON.stringify(eraseSent.slice(c.n))) },
 			{ say: "let the value and Delete go, click REC off, then STOP: the trigs and the other locks stayed", act: async (u, c) => { pressEv("pointerup", c.el); keyEv("keyup", "Delete"); await sleep(300); u.click("#rec"); await sleep(500); if (V.playing) u.click("#play"); },
