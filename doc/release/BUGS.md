@@ -44,6 +44,55 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Fix (`fix/0.6-e2e-md`):** until the editor has sent a LOAD SONG since the machine started (`Session::songLoaded`), SONG mode, PLAY in SONG mode and From here first load the song the machine reports, while it is stopped (`MdMachine::songNotLoaded`; the emulated machine only: the editor's song edits always go into the slot, so nothing of the working song is lost). Test: `mdFactorySongFirmwareTest` (no Load: SONG then PLAY plays; a machine already in SONG mode at the start: PLAY plays, From here plays; then Load and PLAY), each failing without the fix; e2e `md-real-factory-songs` alone from fresh settings passes.
 - **Status:** fixed on `fix/0.6-e2e-md`; B-096 is very likely this (to confirm with Radek).
 
+## B-107 · Journeys that need data factory memory does not hold
+
+- **From:** the 0.6 e2e run, 2026-10-13 (md-seq-lock-budget, mm-seq-env-trigs, mm-perform-multi-setup, mm-seq-six-tracks).
+- **Sorted, each test data (no page bug):**
+  - md-seq-lock-budget, "no pattern with 64 locks": factory memory has none (the page tier's fixture has). The journey makes one in a pattern with no locks: a trig on step 1 of each of the 16 tracks, four locked parameters each; undone in its tidy.
+  - mm-seq-env-trigs, "no pitchless trig": a trig with no note of its own comes only from the machine's own patterns or a backup (the page makes none; the fixture holds some). Without one the journey writes its own with the step intent (a trig with its envelopes and no note) on a free step after a note.
+  - mm-perform-multi-setup, "timing 0: 1": the kit held another MULTI TRIG timing than DIRECT when the journey began (it counted from DIRECT up); it steps down to DIRECT first. Passes alone and after the journeys before it in the run.
+  - mm-seq-six-tracks, "step NaN is not shown": a factory pattern has a note on or under every step from 9 on of some track, so the journey found no free step. When a track has no room it draws in an empty pattern of banks E to H (a pick there loads no kit, B-053) and picks the first pattern again in its tidy.
+- **Fix (`fix/0.6-e2e-mm`):** the journeys above. Each passes on the firmware and in the page tier, except mm-seq-six-tracks, whose next step (the AMP value of each track: "wire nothing", the CC it sends) checks the Monomachine fake's wire report, which only the page tier's stub machine sends: a page-tier-only check, like mm-seq-trig-setup's, mm-sound-track-effects', mm-wire-cc's and the other "wire nothing" fails of the run (not in this entry).
+- **Status:** fixed on `fix/0.6-e2e-mm` (journeys only).
+
+## B-106 · Monomachine: keys that take no click at 1440 x 923 (Perform's OCTAVE +, a row's per-track transpose)
+
+- **From:** the 0.6 e2e run, 2026-10-13 (the plug-in at 1440 x 923: mm-perform-joystick-midi and mm-perform-keys-lit, "OCTAVE + covered by #main"; mm-song-row-settings, More, "+ covered by button").
+- **Cause (measured in the plug-in's WebKit, elementFromPoint across each key):** Perform is 32 px taller than the window there, so the workspace scrolls, and WebKit hit-tests the right 29 px of a scrolling area as its overlay scroll bar: the right half of OCTAVE +, at the edge, took no click. In the Song page's row inspector a per-track cell (− T3 +) is 43 px wide in WebKit's fonts, narrower than its keys and name: the + spilled over the next cell's −, which took the click. Chrome (the page tier) lays both out a few px differently, so the page tier never saw it.
+- **Fix (`fix/0.6-e2e-mm`):** the keyboard's title row on Perform keeps the right 32 px free; a per-track transpose cell gives its name what it needs and its two keys share the rest, inside the cell (the MM mockup's `20-mm.css`). The three journeys pass on the firmware; the page tier's Perform, Song and fit journeys pass.
+- **Status:** fixed on `fix/0.6-e2e-mm`.
+
+## B-105 · Both editors: the library's star (a kit no pattern recalls) "does not show" on the firmware
+
+- **From:** the 0.6 e2e run, 2026-10-13 (md-lib-kit-menu: "stars 0"; mm-lib-kit-slots: K65 to K68 "star false, used false").
+- **Sorted:** test data, not the page. On factory memory every kit that holds data is linked by some pattern, so no kit earns the star; the slots no pattern recalls are empty and show EMPTY without a star, on both editors (the Monomachine journey expected a star there). The page tier's fixture (kits named KIT nn in every slot, some unlinked) never met either.
+- **Fix (`fix/0.6-e2e-mm`):** both journeys make their own data when no kit qualifies: the kit that plays copied and pasted into an empty slot no pattern recalls (undone in the journey's tidy); the Monomachine's expects no star on an empty slot and at least one star. md-lib-kit-menu and mm-lib-kit-slots pass on the firmware and in the page tier.
+- **Status:** fixed on `fix/0.6-e2e-mm` (journeys only).
+
+## B-102 · Both editors: the SysEx import panel runs past the bottom of the window; lib-syx-place says "no question"
+
+- **From:** the 0.6 e2e run, 2026-10-13 (pictures at 1440 x 923: e2e-mm-lib-syx-place-fail, e2e-md-lib-syx-place-fail; journeys md-lib-syx-place, mm-lib-syx-place).
+- **What happens:** the panel starts under the header and is as tall as the window less 48 px, so its foot (Cancel, Verify only, Import) runs past the bottom of the window. The two journeys failed with "no question" while the question was on the page.
+- **Cause:** the panel stood where the page's flow put it (no top of its own) with a height made for the whole window (review 1, B-095). The journeys asked for "Import 2", the two kits of the page tier's file; the e2e run's file (every committed test dump) holds three, so the question said Import 3: test data, not the page.
+- **Fix (`fix/0.6-e2e-mm`):** the panel is centred in the window, its size the window's alone (up to 1120 x 820, 16 px from each edge at most; `deskSyx.css`): always wholly inside, one size for its whole run (B-095 kept). The journeys count the file's kits and ask for that many (`Import n`, `n imported`, the MD's Verify only `n of n`); md-syx-running-reach and mm-syx-running-reach also check the panel is wholly inside the window. Page tier and firmware: both journeys of each editor pass.
+- **Status:** fixed on `fix/0.6-e2e-mm`.
+
+## B-099 · Monomachine: PLAY right after an edit or an undo plays silence (or nothing) for seconds
+
+- **From:** the 0.6 e2e run, 2026-10-13 (mm-real-sequence-plays on the firmware, picture e2e-mm-real-sequence-plays-fail; mm-keys-space-play the same way).
+- **What happens:** four notes drawn, the pattern cleared (Alt+Delete), Cmd+Z: the page shows the notes back, PLAY at once says "The machine is taking an edit (SYSEX RECV): it follows in a moment", and then nothing plays; PLAY again a few seconds later plays them. The same now and then for the first PLAY after drawing notes.
+- **Cause (measured, `mmDeskFirmwareTest undoplay`):** PLAY waits while the panel takes the edit's dump on SYSEX RECV and is pressed once the machine's RECV count says the dump arrived. Two things let it go too early, and a panel key the machine gets while it takes a dump is lost: the machine clears its RECV count as it opens SYSEX RECV, after the screen already shows, so a session parked on the old count saw the dump as taken (an unsigned count below its base); and the count moves as the dump arrives, not when the machine is done with it (a key 10 ms after is lost, 20 ms after is taken; the editor's clock in the plug-in is not the machine's).
+- **Fix (`fix/0.6-e2e-mm`):** the RECV session counts from the cleared count, says "taking" while a dump waits to go out on the next tick, and for 60 ms of machine time after the count moved (`mmRecv`); a waiting PLAY, STOP or RECORD also waits until the dump's read-back is in, the machine's own answer that it holds it (at most 2 s after the dump: `pressTransportKeys`, `Pushes::anyBusyWithin`). The page still says it follows in a moment; it now does, within a second. Tests: `mmDeskTest` (the RECV session: taking until settled, the cleared count; the waiting STOP and RECORD once settled), `mmDeskFirmwareTest undoplay` (four step intents, clearPattern, undo, PLAY at once: the notes sound, rms; it failed before the fix: 8 s, silence), journeys `mm-real-sequence-plays`, `mm-keys-space-play` on the firmware.
+- **Status:** fixed on `fix/0.6-e2e-mm`.
+
+## B-104 · Monomachine: ⇧-click on PLAY says "Paused" but the editor shows it playing on
+
+- **From:** the 0.6 e2e run, 2026-10-13 (mm-top-pause on the firmware; MM-040, MM-065, MM-072).
+- **What happens:** right after an edit (the panel parked on SYSEX RECV for the edit's dump), ⇧-click ▶ (or ⇧Space): the toast says Paused, the machine holds its step, but the editor keeps ▶ lit as playing and the pause is dropped a second later. Alone the pause worked, but ▶ then went on with the playhead a step late.
+- **Cause (measured, `mmDeskFirmwareTest parked`):** the panel's PLAY on SYSEX RECV pauses the machine, but the firmware's running flag in RAM stays 1, also after the panel leaves SYSEX RECV, until the machine plays on or stops (STOP there sets it to 0). The editor's "playing" is that flag or the step moving, so it said playing. After a resume the flag can lag a step, and two steps forward were needed to say playing again.
+- **Fix (`fix/0.6-e2e-mm`):** after a pause the editor pressed, "playing" is the step moving alone until it moves on or the flag reads 0 (`pausedByEditor`, `mmDeskWatch.h`); after a resume the editor sent, the first step forward is playing (`resumedByEditor`). The page takes the step the machine holds as the paused step (the key reaches the machine a moment after the click: POSITION and CONTINUE's step, `setPausedStep`). Tests: `mmDeskTest` (watchStep: the pause with the flag set, the resume), `mmDeskFirmwareTest parked` (the pause while parked holds the step and the page is told it does not play; after the session leaves too; resume plays on), the journey `mm-top-pause` on the firmware, alone and after `mm-seq-first-beat`.
+- **Status:** fixed on `fix/0.6-e2e-mm`.
+
 ## B-097 · Both editors: a lock parameter key's count drawn over its name ("RTG·DIST")
 
 - **From:** Radek's 0.6 review, 2026-10-12 (Machinedrum, the Lock parameter panel, screenshot).

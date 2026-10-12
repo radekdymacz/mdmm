@@ -1262,6 +1262,10 @@ table.mmap tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--led)}
 .ttr{display:grid;grid-template-columns:34px repeat(6,minmax(0,1fr));gap:3px;align-items:center;flex:1}
 .ttr .ilab{min-width:0}
 .ttr .tt{display:grid;grid-template-columns:18px 1fr 18px;align-items:center;height:26px;background:var(--key);border-radius:3px;color:var(--keytext)}
+/* B-106: in a narrow inspector a cell is narrower than − T3 + (43 px in the plug-in at 1440 x 923): the + went over the next
+   cell's −. The name takes what it needs, the two keys share the rest: each cell keeps its own keys */
+.ttr .tt{grid-template-columns:minmax(10px,1fr) auto minmax(10px,1fr);min-width:0;overflow:hidden}
+.ttr .tt b{white-space:nowrap}
 .ttr .tt button{all:unset;cursor:pointer;text-align:center;font:600 12px var(--mono);color:var(--keydim)}
 .ttr .tt button:hover{color:var(--keytext)}
 .ttr .tt b{text-align:center;font:500 12px var(--mono)}
@@ -1622,6 +1626,10 @@ body{box-sizing:border-box;overflow:hidden}
 .app{height:100%;min-height:0;grid-template-rows:auto minmax(0,1fr);max-width:none!important}
 .app>.body{height:100%;min-height:0;align-items:stretch!important}
 #main{min-height:0;overflow:auto;display:flex;flex-direction:column}
+/* B-106 (the 0.6 e2e run, 1440 x 923 in the plug-in): when #main scrolls (Perform is 32 px taller than the window there),
+   WebKit hit-tests the right 29 px of it as its overlay scroll bar: Perform's OCTAVE + at the right edge took no click
+   (measured: elementFromPoint across the key). The keyboard's title row keeps that strip free */
+.perf .kbtitle{padding-right:32px}
 #main>*{flex:none}
 .rail{align-content:start;min-height:0}
 /* Sequence */
@@ -1929,6 +1937,10 @@ body.deskmidi #main,body.deskmidi #rail{opacity:.3;pointer-events:none;transitio
 /* review 1 (B-095): one size for the panel's whole run (preview, import, report, export, reset): as big as the window
    lets it be up to 1120 x 820, the slots scroll inside; the head and the footer (Stop, Hide, Done) always in view */
 .syxpop{display:flex;flex-direction:column;height:min(820px,calc(100vh - 48px));box-sizing:border-box}
+/* B-102 (the 0.6 e2e run, 1440 x 923): the panel stood where the page's flow put it (under the header) with the height
+   of the whole window, so its foot ran past the bottom. It is centred in the window now, its size the window's alone:
+   always wholly inside, the same size for its whole run */
+.syxpop{position:fixed;inset:0;margin:auto;height:min(820px,calc(100vh - 32px));max-height:none}
 .syxpop>*{flex:none}
 .syxpop>.syxbody,.syxpop>.sxlist{flex:1 1 auto;min-height:0;overflow:auto}
 .syxpop>.syxfoot{margin-top:auto}
@@ -3215,7 +3227,7 @@ const MM_SEAM={
  "view":[
   "audible","soloed","engReady","asgT","noteName","pname","machName","kitName","gated","busy","sel","mode",
   "playing","step","tempo","engineState","kitState","learnTarget","learning","ctlSetup","show","startEmpty",
-  "setPatternSlot","setKitSlot","setReading","setTempo","setInput","setPlaying","setStep","setSongRow","setSongSteps","setEng","dlgOpen",
+  "setPatternSlot","setKitSlot","setReading","setTempo","setInput","setPlaying","setStep","setPausedStep","setSongRow","setSongSteps","setEng","dlgOpen",
   "setEngineLabel","setEngineTip","setEngines","setAudioEntry","setMemory","clearLearnTarget","setMapping","setModulation",
   "setCtlSetup","disable","setRecord","setRecLock","setLcd","setKeyDown","setMidiHeld","setPst","closeFirmwareDialog","bootRom",
   "bootInstalled","syxPreview","syxProgress","syxExported","syxExportInfo","render","renderTop","drawLib","toast","ask","redraw","movePH",
@@ -8677,6 +8689,8 @@ addEventListener("scroll",()=>{if(S.playing)movePH(false)},true);addEventListene
 function setPos(){const at=S.playing&&S.step>=0?S.step:S.paused&&S.paused.step>=0?S.paused.step:-1;$("#pos").textContent=at>=0?String(Math.floor(at/16)+1).padStart(2,"0")+"."+String(at%16+1).padStart(2,"0"):"--.--"}
 /* A host's transport (P6): the machine's step and whether it plays, shown. */
 function setStep(step){if(step===S.step)return;const prev=S.step;S.step=step;stepShown(prev)}
+/* B-104: paused, the step the machine holds (the key reaches it a moment after the click): POSITION and CONTINUE's step */
+function setPausedStep(step){if(!S.paused||step<0||S.paused.step===step)return;S.paused.step=step;setPos()}
 function setPlaying(on){if(S.playing===on)return;S.playing=on;if(on)S.paused=null;if(!on){$$(".pl").forEach(b=>b.classList.remove("play"));$("#tempoled").classList.remove("on");$$(".ph").forEach(c=>c.classList.remove("ph"));S.step=-1}setPos();renderTop();redraw();movePH(false);markSongRow()}
 function togglePlay(){if(HOST.togglePlay)return HOST.togglePlay();if(!S.playing&&S.eng&&!engReady())return;S.playing=!S.playing;clearInterval(clock);$$(".pl").forEach(b=>b.classList.remove("play"));$("#tempoled").classList.remove("on");$$(".ph").forEach(c=>c.classList.remove("ph"));if(S.playing){S.step=-1;tick();restartClock()}else S.queued=null;setPos();renderTop();redraw();movePH(false)}
 
@@ -8866,7 +8880,7 @@ window.MMView={
  /* the machine's documents: show(view) is the one writer of S's document members (DESIGN-UNIFY.md phase 1); the
     library's other slots keep their own cheap setters; setTempo is the BPM gesture's own write (the self-test's) */
  show,startEmpty,setPatternSlot,setKitSlot,setReading,setTempo:bpm=>{S.bpm=bpm},
- setInput,setPlaying,setStep,setSongRow:r=>{S.songRow=r;markSongRow()},
+ setInput,setPlaying,setStep,setPausedStep,setSongRow:r=>{S.songRow=r;markSongRow()},
  setSongSteps:n=>{S.songSteps=n;const st=document.getElementById("arrstate");if(st&&st.textContent!==arrState())st.textContent=arrState()},
  setEng,dlgOpen:()=>!$("#dlg").hidden,setEngineLabel,setEngineTip,setEngines,setAudioEntry,setMemory,clearLearnTarget:()=>{S.learnT=null},setMapping,setModulation,setCtlSetup,disable,
  setRecord,setRecLock,

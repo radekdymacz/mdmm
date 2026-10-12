@@ -1362,17 +1362,17 @@ const MdJourneys = (() => {
 			{ say: "click the first slot four times: K05; the grid shows the kits landing in K05 and K06", act: async u => { for (let i = 0; i < 4; i++) { u.click(syxValue("kit", "place")); await sleep(60); } },
 				screen: () => ok($1(syxValue("kit", "place"))?.textContent === "K05" && !!$1(syxCell("kit:4")) && !!$1(syxCell("kit:5")) && !$1(syxCell("kit:0")) && /from K0[12]/.test($1(syxCell("kit:4"))?.dataset.syxtip || ""),
 					"cells " + $all('#syxpop button[data-syxitem^="kit:"]').map(b => b.dataset.syxitem).join(" ")), within: 4000 },
-			{ say: "leave Kits ticked only, click Import: it asks first (K05 and K06 hold kits)", act: async (u, c) => { await syxKinds(["kit"])(u); c.names = $all('#syxpop button[data-syxitem^="kit:"]').map(b => [+b.dataset.syxitem.split(":")[1], (b.dataset.syxname || "").trim()]); c.k0 = kitName(0); u.click('#syxpop [data-syxgo="start"]'); },
-				screen: () => ok(dlgShown() && /K05/.test($1("#dlg").textContent) && !!dlgButton("Import 2"), "no question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
-			{ say: "click Import 2: sent to K05 and K06, read back, reported", act: u => u.click(dlgButton("Import 2")),
-				screen: () => ok(/2 imported/.test($1("#syxpop .syxsum")?.textContent || ""), "progress: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
+			{ say: "leave Kits ticked only, click Import: it asks first (the file's kits land on K05 and on, which hold kits)", act: async (u, c) => { await syxKinds(["kit"])(u); c.names = $all('#syxpop button[data-syxitem^="kit:"]').map(b => [+b.dataset.syxitem.split(":")[1], (b.dataset.syxname || "").trim()]); c.k0 = kitName(0); u.click('#syxpop [data-syxgo="start"]'); },
+				screen: c => ok(dlgShown() && /K05/.test($1("#dlg").textContent) && !!dlgButton(`Import ${c.names.length}`), `no question for ${c.names.length} kits: ` + ($1("#dlg").textContent || "").slice(0, 80)) },
+			{ say: "click Import n: sent to K05 and on, read back, reported", act: (u, c) => u.click(dlgButton(`Import ${c.names.length}`)),
+				screen: c => ok(new RegExp(`${c.names.length} imported`).test($1("#syxpop .syxsum")?.textContent || ""), "progress: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
 				machine: c => ok(c.names.every(([k, n]) => kitName(k) === n) && kitName(0) === c.k0, c.names.map(([k, n]) => `K${k + 1} "${kitName(k)}" want "${n}"`).join(", ") + `; K01 "${kitName(0)}"`), within: 60000 },
 			{ say: "click Done, Import SysEx… again, Specific place from K05, Verify only: the same", act: async u => {
 				u.click('#syxpop [data-syxgo="close"]'); await sleep(200); await u.pick("engsel", "import"); await until(() => !!$1('#syxpop [data-sxp="specific"]'), 6000);
 				await syxKinds(["kit"])(u); u.click('#syxpop [data-syxtab="kit"]'); await sleep(100); u.click('#syxpop [data-sxp="specific"]'); await sleep(200);
 				for (let i = 0; i < 4; i++) { u.click(syxValue("kit", "place")); await sleep(60); }
 				await until(() => !!$1(syxCell("kit:4")), 3000); u.click('#syxpop [data-syxgo="verify"]'); },
-				screen: () => ok(/^Verify only: 2 of 2 the same/.test($1("#syxpop .syxsum")?.textContent || ""), "report " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")), within: 60000 },
+				screen: c => ok(new RegExp(`^Verify only: ${c.names.length} of ${c.names.length} the same`).test($1("#syxpop .syxsum")?.textContent || ""), "report " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")), within: 60000 },
 			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") }
 		],
 		async tidy() { if (dlgShown()) dlgButton("Cancel")?.click(); $1("#syxpop").hidden = true; }
@@ -1627,13 +1627,15 @@ const MdJourneys = (() => {
 			openImport,
 			{ say: "click Import; while it runs press Escape and click outside: the panel stays, one size, Stop and Hide inside it", act: async (u, c) => {
 				c.box = [Journey.boxOf("#syxpop")];
+				/* B-102: wholly inside the window (at 1440 x 923 its foot ran past the bottom) */
+				{ const r = $1("#syxpop").getBoundingClientRect(); c.inWindow = r.top >= 0 && r.left >= 0 && r.bottom <= innerHeight + 0.5 && r.right <= innerWidth + 0.5; c.win = `${innerWidth}x${innerHeight}`; }
 				u.click('#syxpop [data-syxgo="start"]'); c.ran = await until(() => $1("#syxpop").classList.contains("syx-running"), 3000);
 				c.box.push(Journey.boxOf("#syxpop")); c.keys = Journey.keysInside("#syxpop", '#syxpop .syxfoot button');
 				/* at once (the page tier's import can be over in a few hundred ms): Esc while it still runs */
 				c.runningAtEsc = $1("#syxpop").classList.contains("syx-running") && !!$1("#syxpop").dataset.busy; u.key("Escape"); c.afterEsc = !$1("#syxpop").hidden;
 				c.under = Journey.pressOutside(); await sleep(200); c.afterClick = !$1("#syxpop").hidden; c.box.push(Journey.boxOf("#syxpop"));
 				Bridge.log(`JOURNEY ${"md"}-syx-running-reach: Esc ${c.runningAtEsc ? "while it ran" : "after it ended"}`); },
-				screen: c => ok(c.ran && (!c.runningAtEsc || c.afterEsc) && c.afterClick && Modal.top() === "syxpop" && new Set(c.box).size === 1 && c.keys === "", `ran ${c.ran}, Esc while running ${c.runningAtEsc} -> open ${c.afterEsc}, after the click open ${c.afterClick} (on ${c.under}), boxes ${c.box.join(" | ")}, keys out ${c.keys}`) },
+				screen: c => ok(c.ran && (!c.runningAtEsc || c.afterEsc) && c.afterClick && Modal.top() === "syxpop" && new Set(c.box).size === 1 && c.keys === "" && c.inWindow, `in the window ${c.win}: ${c.inWindow}, ran ${c.ran}, Esc while running ${c.runningAtEsc} -> open ${c.afterEsc}, after the click open ${c.afterClick} (on ${c.under}), boxes ${c.box.join(" | ")}, keys out ${c.keys}`) },
 			{ say: "click Hide (if it still runs), then IMPORT SYSEX… in the engine menu: the same panel again", act: async (u, c) => {
 				c.hid = false; const h = $1('#syxpop .btnrow [data-syxgo="close"]'); if ($1("#syxpop").classList.contains("syx-running") && h) { u.click(h); await sleep(200); c.hid = $1("#syxpop").hidden; }
 				u.pick("engsel", "import"); await sleep(400); },
@@ -2030,11 +2032,23 @@ const MdJourneys = (() => {
 			{ say: "the LCD shows the kit's slot and name and that it is saved", screen: () => ok($1("#kitname").textContent.trim() === `K${nn(V.kit)} ${kitName(V.kit).trim()}`.trim() && /saved|edited/.test($1("#save").textContent), `LCD "${$1("#kitname").textContent}", chip "${$1("#save").textContent}", kit ${V.kit}`), machine: () => ok(currentKitSlot() === V.kit && Docs.kits[V.kit] != null, "kit slot " + currentKitSlot()) },
 			{ say: "click KIT: the library of 64 kits opens, the current one marked", act: u => u.click("#kitf"), screen: () => ok(!$1("#libpop").hidden && $all("#libpop .ks").length === 64 && $1(ks(V.kit))?.classList.contains("cur"), $all("#libpop .ks").length + " tiles"), machine: () => ok(Object.keys(Docs.kits).length === 64, Object.keys(Docs.kits).length + " kits read") },
 			{ say: "a kit holds 16 tracks, each with 8 synthesis, 8 effects and 8 routing values and its LFO, the master effects and a name", machine: () => { const k = kitDocOf(Docs); return ok(k && k.tracks.length === 16 && k.tracks.every(t => t.synth.length === 8 && t.effects.length === 8 && t.routing.length === 8 && t.lfo && t.machine) && k.masterFx && typeof kitNameText(k.name) === "string", "kit " + JSON.stringify(Object.keys(k || {}))); } },
+			/* B-105 (the 0.6 e2e run): factory memory links every kit that holds data to a pattern, so no star showed. The
+			   journey makes its own: the kit that plays pasted into an empty slot no pattern links (undone in tidy) */
+			{ say: "when every kit with data is linked (factory memory), Copy the kit that plays and Paste it into an empty slot no pattern links", act: async (u, c) => {
+				if ([...Array(64).keys()].some(k => !kitEmpty(k) && !linked(k).length)) return;
+				const dst = [...Array(64).keys()].reverse().find(k => k !== V.kit && kitEmpty(k) && !linked(k).length);
+				if (dst == null) throw new Error("no empty kit slot that no pattern links");
+				u.click(ks(V.kit), { alt: true }); await sleep(150); u.click('#libpop [data-la="copy"]'); await sleep(150);
+				u.click(ks(dst), { alt: true }); await sleep(150); await until(idle, 8000); u.click('#libpop [data-la="paste"]');
+				if (await until(() => dlgShown() && !!dlgButton("Overwrite"), 1500)) u.click(dlgButton("Overwrite"));
+				c.pasted = dst; await until(() => !kitEmpty(dst), 12000); },
+				machine: c => ok(c.pasted == null || !kitEmpty(c.pasted), "slot " + c.pasted), within: 15000 },
 			{ say: "in EXTENDED a kit no pattern links to ends with a star, the others show the patterns that use them", act: () => Journey.snapshot("md-kit-library"),
 				screen: () => { const bad = [...Array(64).keys()].filter(k => { if (kitEmpty(k) && k !== V.kit) return false; const t = $1(ks(k))?.querySelector(".lsn")?.textContent || ""; return t.endsWith("*") !== !linked(k).length; });
 					const stars = $all("#libpop .lsn").filter(e => e.textContent.endsWith("*")).length; return ok(!bad.length && V.mode === "EXTENDED" && stars >= 1, `kits wrong ${bad.slice(0, 8)}, stars ${stars}`); } },
 			esc
-		]
+		],
+		async tidy(u, c) { if (c.pasted == null) return; if (!$1("#libpop").hidden) u.key("Escape"); await until(idle, 8000); blur(); u.key("z", { cmd: true }); await until(() => kitEmpty(c.pasted), 12000); }
 	};
 	/* MD-109, MD-102: the kit is worked on in memory, copied before editing, and reloaded from its slot */
 	const kitMemoryJ = {
@@ -2512,7 +2526,14 @@ const MdJourneys = (() => {
 		name: "md-seq-lock-budget", proves: ["MD-137"],
 		steps: [
 			go("seq"),
-			{ say: "open a pattern whose 64 locked parameters are all used: the LCD counter reads 64/64", act: async (u, c) => { c.p0 = currentPatternSlot(); c.p = [...Array(128).keys()].find(p => Docs.patterns[p]?.locks.length >= 64); if (c.p == null) throw new Error("no pattern with 64 locks");
+			{ say: "open a pattern whose 64 locked parameters are all used: the LCD counter reads 64/64", act: async (u, c) => { c.p0 = currentPatternSlot(); c.p = [...Array(128).keys()].find(p => Docs.patterns[p]?.locks.length >= 64);
+					/* B-107 (the 0.6 e2e run): factory memory has no pattern with 64 locks (the page tier's fixture has). The journey
+					   makes its own in a pattern with none: a trig on step 1 of each of the 16 tracks, four locked parameters each
+					   (undone in tidy) */
+					if (c.p == null) { c.u0 = V.undoCount; c.p = [...Array(128).keys()].reverse().find(p => p !== c.p0 && Docs.patterns[p] && !Docs.patterns[p].locks.length); if (c.p == null) throw new Error("no pattern without locks");
+						cmd("steps", { p: c.p, from: 0, to: 16, rows: [...Array(16).keys()].map(t => ({ t, on: [0] })) }); await until(idle, 8000); await sleep(300);
+						for (let t = 0; t < 16; t++) { for (let i = 0; i < 4; i++) cmd("lock", { p: c.p, t, i, s: 0, v: 40 + i }); await until(idle, 8000); }
+						if (!await until(() => Docs.patterns[c.p]?.locks.length >= 64, 20000)) throw new Error("the 64 locks did not come: " + Docs.patterns[c.p]?.locks.length); }
 					u.click("#pat"); await until(() => $all("#libpop .ps").length === 128, 3000); u.click(psq(c.p)); await confirmIfAsked(u); await until(() => currentPatternSlot() === c.p, 6000); await sleep(500); },
 				screen: () => ok($1("#lockn").textContent === "64/64", "counter " + $1("#lockn").textContent), machine: c => ok(currentPatternSlot() === c.p && patDoc().locks.length === 64, "locks " + patDoc().locks.length), within: 8000 },
 			{ say: "pick a track with a trig and a lock key it has not locked, draw a lock: the editor refuses and says so", act: async (u, c) => { u.key("Escape"); await sleep(200);
@@ -2520,7 +2541,8 @@ const MdJourneys = (() => {
 					if (c.t == null) throw new Error("no free lock row on a track with a trig"); u.click(rail(c.t)); await sleep(250); u.click(`#chips .pk[data-lane="${c.pn}"]`); await sleep(150); c.i = pidx(c.t, c.pn); await u.drag(`#lane .lb[data-s="${c.s}"]`, [[0, 4]], {}, { fy: 0.3 }); },
 				screen: () => ok(/64 locked parameters/.test($1("#toast")?.textContent || ""), "toast " + $1("#toast")?.textContent), machine: c => ok(!locksOf(c.t, c.i).length && patDoc().locks.length === 64, `locks ${locksOf(c.t, c.i).length}, rows ${patDoc().locks.length}`), within: 5000 }
 		],
-		async tidy(u, c) { if (c.p0 != null && currentPatternSlot() !== c.p0) { u.click("#pat"); await sleep(400); u.click(psq(c.p0)); await confirmIfAsked(u); await until(() => currentPatternSlot() === c.p0, 6000); u.key("Escape"); } }
+		async tidy(u, c) { if (c.p0 != null && currentPatternSlot() !== c.p0) { u.click("#pat"); await sleep(400); u.click(psq(c.p0)); await confirmIfAsked(u); await until(() => currentPatternSlot() === c.p0, 6000); u.key("Escape"); }
+			if (c.u0 != null) await undoTo(u, c.u0); }
 	};
 	/* MD-139: a value moved while recording locks the next trig that has not played */
 	const liveLock = {
