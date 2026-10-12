@@ -260,13 +260,22 @@ namespace mmDesk
 			m_lastStatusMs = _now;
 			requestStatus();
 		}
-		// a slot to make active goes before the SYSEX RECV macro may start (its cursor goes to that slot, B-067)
+		// B-071: two 0x56 that go at different times. A slot the person chose goes before the SYSEX RECV macro may
+		// start (its cursor goes to that slot, B-067); the active global made active again to apply a dump of it goes
+		// after the macro, once RECV is left: sent before, while that dump still waits for the macro, the machine
+		// applies the old contents and then only stores the new ones (mmDeskFirmwareTest span, base 13 span 6).
+		const bool recvIdle = m_profile.wire || m_recv.state() == RecvSession::State::Idle;
+		if(m_chooseGlobal >= 0 && recvIdle)
+		{
+			sendActiveGlobal(m_chooseGlobal);
+			m_chooseGlobal = -1;
+		}
+		pumpRecv(_now);
 		if(m_activateGlobal >= 0 && (m_profile.wire || m_recv.state() == RecvSession::State::Idle))
 		{
 			sendActiveGlobal(m_activateGlobal);
 			m_activateGlobal = -1;
 		}
-		pumpRecv(_now);
 		pumpTranspose(_view);
 		pumpTransport(_now);
 		pumpAfterAccept(_now, _view);
