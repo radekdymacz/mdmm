@@ -271,7 +271,8 @@ namespace mmDesk
 			m_chooseGlobal = -1;
 		}
 		pumpRecv(_now);
-		if(m_activateGlobal >= 0 && (m_profile.wire || m_recv.state() == RecvSession::State::Idle))
+		// and not while a dump still waits for the macro (telemetry not valid yet: the session stays Idle with it)
+		if(m_activateGlobal >= 0 && (m_profile.wire || (m_recv.state() == RecvSession::State::Idle && m_recv.queued() == 0)))
 		{
 			sendActiveGlobal(m_activateGlobal);
 			m_activateGlobal = -1;
