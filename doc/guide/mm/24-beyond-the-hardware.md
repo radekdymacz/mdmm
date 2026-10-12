@@ -32,7 +32,7 @@ Two Monomachine editors open at the same time, in one DAW project or in two, sha
 
 ### When the file cannot be used
 
-The file is written in one step, so a crash leaves the old memory or the new one. If the file is damaged or was written by another version of the editor, the machine starts from factory memory and the editor says so. It keeps the file beside the new one as machine-memory.unusable.bin, and your next save writes a new memory file.
+The file is written in one step, so a crash leaves the old memory or the new one. If the file is damaged, the machine starts from factory memory and the editor says so. It keeps the file beside the new one as machine-memory.unusable with the date and time in its name, and your next save writes a new memory file. If the file was written by a newer editor, the editor leaves it as it is and saves nothing over it. It says so; move the file away to save again.
 
 If the editor cannot write the file, because the disk is full or the folder is read only, it says so and keeps the old file. It tries again at your next save and when it closes. Your saves stay in the session. The standalone editor starts with them next time, not with the old file, and writes them then.
 

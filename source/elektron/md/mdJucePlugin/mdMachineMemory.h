@@ -25,7 +25,7 @@ namespace mdJucePlugin::machineMemory
 	// standalone's slots that the file replaced at its first start are kept (a state from before I-024)
 	constexpr const char* g_folder = "memory";
 	constexpr const char* g_fileName = "machine-memory.bin";
-	constexpr const char* g_unusableName = "machine-memory.unusable.bin";
+	constexpr const char* g_unusableName = "machine-memory.unusable";	// + "-<date-time>.bin"
 	constexpr const char* g_keptName = "machine-memory.standalone-kept.bin";
 
 	constexpr char g_magic[8] = {'M', 'D', 'M', 'M', 'M', 'E', 'M', '\0'};
@@ -107,6 +107,9 @@ namespace mdJucePlugin::machineMemory
 		// LOAD KIT set in the pattern that plays (measured: MD 0x94, MM 0x426). A change of these alone is merged byte by
 		// byte, so a kit saved in an old project does not bring back the rest of that project's pattern.
 		std::vector<uint32_t> links;
+		// Bytes whose change alone is no save (offsets in the slot's bytes): the MD global's tempo (+0xa4, two bytes),
+		// which the tempo knob, the host's tempo and a global made active change. They go with the global's next save.
+		std::vector<uint32_t> volatileBytes;
 	};
 
 	constexpr uint32_t g_otherBlock = 0x100;
@@ -121,21 +124,27 @@ namespace mdJucePlugin::machineMemory
 	// automation land here.
 	inline std::vector<Range> unwatched(const md::MachineModel _model)
 	{
+		// measured further (MDMM_MEMORY_OTHER=1: tempo, track, song mode, the active global, mutes, play): the active
+		// global's number (MD 0x120ca, MM 0x1629f), the MD's sequencer mode and its 16 tracks' run state with their mutes
+		// (0x723c0-0x724bf)
 		if(_model == md::MachineModel::Monomachine)
-			return {{0x000000, 0x00059c}, {0x016ae3, 0x016ae4}, {0x0e26e8, 0x0e39b8}, {0x0ffd38, 0x100000}};
-		return {{0x000000, 0x0008ca}, {0x0126ae, 0x0130be}, {0x0272be, 0x0272c0}, {0x07fff0, 0x07fff8}};
+			return {{0x000000, 0x00059c}, {0x01629c, 0x0162a0}, {0x016ae3, 0x016ae4}, {0x0e26e8, 0x0e39b8}, {0x0ffd38, 0x100000}};
+		return {{0x000000, 0x0008ca}, {0x0120ca, 0x0120cc}, {0x0126ae, 0x0130be}, {0x0272be, 0x0272c0}, {0x0723c0, 0x0724c0},
+			{0x07fff0, 0x07fff8}};
 	}
 
 	namespace detail
 	{
 		inline void addArray(std::vector<struct Slot>& _out, const Kind _kind, const uint32_t _count,
-			const std::vector<std::pair<uint32_t, uint32_t>>& _parts, const std::vector<uint32_t>& _links = {})	// (base, size = stride) per part
+			const std::vector<std::pair<uint32_t, uint32_t>>& _parts, const std::vector<uint32_t>& _links = {},
+			const std::vector<uint32_t>& _volatile = {})	// (base, size = stride) per part
 		{
 			for(uint32_t i = 0; i < _count; ++i)
 			{
 				Slot s;
 				s.key = {_kind, i};
 				s.links = _links;
+				s.volatileBytes = _volatile;
 				for(const auto& [base, size] : _parts)
 				{
 					s.ranges.push_back({base + i * size, base + (i + 1) * size});
@@ -158,7 +167,7 @@ namespace mdJucePlugin::machineMemory
 			else
 			{
 				addArray(out, Kind::Kit, 64, {{0x0008ca, 0x460}});
-				addArray(out, Kind::Global, 8, {{0x0120cc, 0xb2}});
+				addArray(out, Kind::Global, 8, {{0x0120cc, 0xb2}}, {}, {0xa4, 0xa5});
 				addArray(out, Kind::Song, 32, {{0x0130be, 0xa10}});
 				// a UW pattern is three parts: its steps and locks, a 204-byte record, its extended part
 				addArray(out, Kind::Pattern, 128, {{0x0272c0, 0x896}, {0x06bdc0, 0xcc}, {0x080000, 0x90c}}, {0x94});
@@ -320,9 +329,20 @@ namespace mdJucePlugin::machineMemory
 
 	inline bool slotDiffers(const Slot& _slot, const std::vector<uint8_t>& _a, const std::vector<uint8_t>& _b)
 	{
+		bool any = false;
 		for(const auto& r : _slot.ranges)
 			if(std::memcmp(_a.data() + r.begin, _b.data() + r.begin, r.end - r.begin) != 0)
-				return true;
+				any = true;
+		if(!any || _slot.volatileBytes.empty())
+			return any;
+		// a change of its volatile bytes alone is no save
+		size_t at = 0;
+		for(const auto& r : _slot.ranges)
+		{
+			for(uint32_t i = r.begin; i < r.end; ++i, ++at)
+				if(_a[i] != _b[i] && std::find(_slot.volatileBytes.begin(), _slot.volatileBytes.end(), static_cast<uint32_t>(at)) == _slot.volatileBytes.end())
+					return true;
+		}
 		return false;
 	}
 
@@ -430,8 +450,23 @@ namespace mdJucePlugin::machineMemory
 	struct Decoded
 	{
 		Problem problem = Problem::Empty;
+		uint32_t version = 0;		// the file's format version (Problem::Version: older or newer than g_version)
 		StoreFile file;
 	};
+
+	// What the editor does with a file it cannot use: one it may replace (damaged, not ours, the previews' version 1:
+	// moved aside with a time stamp, never deleted) or one it must leave alone (a newer version, another layout, the other
+	// machine's: kept, and no write goes over it until it is moved by the person)
+	inline bool replaceable(const Decoded& _d)
+	{
+		switch(_d.problem)
+		{
+		case Problem::Version: return _d.version < g_version;
+		case Problem::Layout:
+		case Problem::Machine: return false;
+		default: return true;
+		}
+	}
 
 	// The saved slots of a file of this machine, or why there are none. Never throws, reads nothing past the bytes;
 	// every entry must name a slot of this layout, once, with its exact size.
@@ -445,7 +480,8 @@ namespace mdJucePlugin::machineMemory
 			d.problem = Problem::NotOurs;
 			return d;
 		}
-		if(detail::getU32(_file.data() + 8) != g_version)
+		d.version = detail::getU32(_file.data() + 8);
+		if(d.version != g_version)
 		{
 			d.problem = Problem::Version;
 			return d;

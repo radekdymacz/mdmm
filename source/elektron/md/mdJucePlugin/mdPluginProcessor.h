@@ -122,6 +122,8 @@ namespace mdJucePlugin
 		bool keepMachineMemory() const { return m_memoryKeep.load(std::memory_order_acquire); }
 		// The start's decision is made (the file's slots laid over, or not needed): tests wait for it
 		bool machineMemoryStarted() const { return m_memoryStartDone.load(); }
+		// Tests: the next restore the machine memory asks for (the start's overlay, factory memory) is refused at once
+		void refuseNextMachineMemoryRestoreForTest() { m_refuseNextRestoreForTest = true; }
 		void setKeepMachineMemory(bool _keep);
 		// RESET MACHINE… > Start from factory memory: the file goes and the machine restarts from factory memory (a fresh machine's
 		// state, as on a new install). The page asked the user first. False with the reason in _note.
@@ -237,6 +239,7 @@ namespace mdJucePlugin
 		std::atomic<uint64_t> m_memoryRomFingerprint{0};	// MD: the ROM's (the file's flash sectors belong to it)
 		std::atomic<uint64_t> m_factoryRestoreGeneration{0};	// Start from factory memory's restore, 0: none
 		std::atomic<bool> m_memoryStartDone{false};
+		std::atomic<bool> m_refuseNextRestoreForTest{false};
 		std::atomic<uint64_t> m_memoryRestoreGeneration{0};	// the device's restore generation of the file's payload, 0: none
 		std::atomic<uint32_t> m_memoryVersion{1};
 		std::atomic<bool> m_memorySampleStored{false};	// machineMemorySampleStored, for the thread's next look

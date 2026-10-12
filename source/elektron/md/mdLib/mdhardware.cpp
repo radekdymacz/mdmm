@@ -667,6 +667,17 @@ namespace md
 			m_uc.copyPatchRamTo(_out);
 	}
 
+	bool Hardware::copyPatchRamRange(uint8_t* _out, const size_t _offset, const size_t _size) const
+	{
+		std::lock_guard lock(m_factoryFlashMutex);
+		if(!m_pendingFlashOverlay.valid)
+			return m_uc.copyPatchRamRange(_out, _offset, _size);
+		if(_offset > m_pendingPatchRam.size() || _size > m_pendingPatchRam.size() - _offset)
+			return false;
+		std::memcpy(_out, m_pendingPatchRam.data() + _offset, _size);
+		return true;
+	}
+
 	void Hardware::advanceFactoryFlashCapture()
 	{
 		if(m_model != MachineModel::Machinedrum
