@@ -2735,7 +2735,44 @@ const MdJourneys = (() => {
 		],
 		async tidy(u, c) { if (V.playing) u.click("#play"); if (c.p0 != null && currentPatternSlot() !== c.p0) { u.click("#pat"); await sleep(400); u.click(psq(c.p0)); await sleep(800); if (!$1("#libpop").hidden) u.key("Escape"); } }
 	};
-	const e2eReal = [realSongs, realPatterns];
+	/* What you draw is what plays: in an empty pattern four trigs are drawn, the machine plays them (steps move, the output is not
+	   silent); the pattern cleared, it plays silence; one undo and it plays them again. The page can read the transport and the
+	   output's peaks, not each trig the firmware fires: the peaks stand for "the trigs play". */
+	const playPeak = async (u, ms, skip) => {
+		heard.peak = 0; tele.steps = [];
+		await until(idle, 8000);
+		u.click("#play");
+		const started = await until(() => !!tele.last?.playing, 5000);
+		await sleep(skip); heard.peak = 0; await sleep(ms - skip);
+		const r = { started, peak: heard.peak, steps: new Set(tele.steps).size };
+		u.click("#play"); await until(() => !V.playing && !tele.last?.playing, 5000);
+		return r;
+	};
+	const emptyPatternSlot = () => [...Array(128).keys()].find(p => Docs.patterns[p] && !hasTrigs(p));
+	const realSequence = {
+		name: "md-real-sequence-plays", proves: ["MD-X24"],
+		steps: [
+			go("seq"),
+			{ say: "pick a pattern with no trigs in the pattern chooser", within: 20000,
+				act: async (u, c) => { await until(() => Object.keys(Docs.patterns).length >= 128, 30000); c.p0 = currentPatternSlot(); c.p = emptyPatternSlot(); if (c.p == null) throw new Error("no empty pattern");
+					u.click("#pat"); await until(() => $all("#libpop .ps").length === 128, 4000); u.click(psq(c.p)); await confirmIfAsked(u); if (!$1("#libpop").hidden) u.key("Escape"); },
+				machine: c => ok(currentPatternSlot() === c.p && !hasTrigs(c.p), "pattern " + currentPatternSlot()) },
+			sel(() => soundTrack()),
+			{ say: "click four steps on that track", act: async (u, c) => { c.steps = [0, 4, 8, 12]; for (const s of c.steps) { u.click(cell(c.t, s)); await sleep(150); } await sleep(300); Journey.snapshot("md-real-sequence-drawn"); },
+				machine: c => ok(c.steps.every(s => trigsOf(c.t).includes(s)) && idle(), `pattern has ${trigsOf(c.t).join(",")}`) },
+			{ say: "press PLAY for six seconds: the position moves through the pattern and the output is not silent", within: 3000,
+				act: async (u, c) => { c.on = await playPeak(u, 6000, 1500); }, machine: c => ok(c.on.started && c.on.steps >= 8 && c.on.peak > 0.0002, `started ${c.on.started}, ${c.on.steps} steps, peak ${c.on.peak.toFixed(4)}`) },
+			{ say: "press Alt+Delete: the pattern is cleared; PLAY: it moves and plays silence", within: 3000,
+				act: async (u, c) => { document.activeElement?.blur?.(); u.key("Delete", { alt: true }); await until(() => !hasTrigs(c.p) && idle(), 8000); await sleep(1500); c.off = await playPeak(u, 5000, 1500); Journey.snapshot("md-real-sequence-cleared"); },
+				machine: c => ok(c.off.started && c.off.steps >= 8 && c.off.peak < 0.0001, `started ${c.off.started}, ${c.off.steps} steps, peak ${c.off.peak.toFixed(4)}`) },
+			{ say: "press Cmd+Z once: the four trigs are back and play again", within: 3000,
+				act: async (u, c) => { u.key("z", { cmd: true }); await until(() => c.steps.every(s => trigsOf(c.t).includes(s)) && idle(), 8000); c.back = await playPeak(u, 6000, 1500); },
+				machine: c => ok(c.steps.every(s => trigsOf(c.t).includes(s)) && c.back.started && c.back.peak > 0.0002, `trigs ${trigsOf(c.t).join(",")}, peak ${c.back.peak.toFixed(4)}`) }
+		],
+		async tidy(u, c) { if (V.playing) u.click("#play"); for (let i = 0; i < 6 && c.t != null && c.p != null && hasTrigs(c.p); i++) { document.activeElement?.blur?.(); u.key("Delete", { alt: true }); await until(idle, 4000); await sleep(500); }
+			if (c.p0 != null && currentPatternSlot() !== c.p0) { u.click("#pat"); await sleep(400); u.click(psq(c.p0)); await sleep(800); if (!$1("#libpop").hidden) u.key("Escape"); } }
+	};
+	const e2eReal = [realSongs, realPatterns, realSequence];
 
 	const all = [...slice5, ...wave12, ...e2eReal, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
 		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,

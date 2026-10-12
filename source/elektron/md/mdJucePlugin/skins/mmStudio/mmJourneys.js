@@ -3310,7 +3310,48 @@ const MmJourneys = (() => {
 		],
 		async tidy(u, c) { if (S().playing) u.click("#play"); if (c.p0 != null && cur() !== c.p0) { u.click("#pat"); await sleep(400); u.click(`#libpop .ps[data-ps="${c.p0}"]`); await sleep(800); if (!$1("#libpop").hidden) u.key("Escape"); } }
 	};
-	const e2eReal = [realSongs, realPatterns];
+	/* What you draw is what plays: in an empty pattern four notes are drawn, the machine plays them (the position moves, the
+	   output is not silent); the pattern cleared, it plays silence; one undo and it plays them again. The page reads the transport
+	   and the output's peaks, not each note the firmware fires: the peaks stand for "the notes play". */
+	const playPeak = async (u, ms, skip) => {
+		heard.peak = 0; tele.steps = [];
+		u.click("#play");
+		const started = await until(() => !!tele.last?.playing, 5000);
+		await sleep(skip); heard.peak = 0; await sleep(ms - skip);
+		const r = { started, peak: heard.peak, steps: new Set(tele.steps).size };
+		u.click("#play"); await until(() => !S().playing && !tele.last?.playing, 5000);
+		return r;
+	};
+	const hasNotes = p => patTrigs(p) > 0;
+	const realSequence = {
+		name: "mm-real-sequence-plays", proves: ["MM-X24"],
+		steps: [
+			go("seq"),
+			{ say: "pick a pattern with no notes in the pattern chooser", within: 20000,
+				act: async (u, c) => { await until(() => I().slots("pattern").length >= 128, 30000); c.p0 = cur(); c.p = [...Array(128).keys()].find(p => I().doc("pattern", p) && !hasNotes(p)); if (c.p == null) throw new Error("no empty pattern");
+					u.click("#pat"); await until(() => $all("#libpop .ps").length === 128, 4000); u.click(`#libpop .ps[data-ps="${c.p}"]`); await confirmIfAsked(u); if (!$1("#libpop").hidden) u.key("Escape"); },
+				machine: c => ok(cur() === c.p && !hasNotes(c.p), "pattern " + cur()) },
+			sel(0),
+			{ say: "click four cells of the piano roll", act: async (u, c) => {
+				c.n = rollCell(c.t, 0).n;
+				c.steps = [0, 4, 8, 12].map(k => freeSteps(c.t, 1, k, c.n)[0]).filter(s => s != null);
+				if (c.steps.length < 4) throw new Error("no four free steps");
+				for (const s of [...c.steps].reverse()) { const p = rollCell(c.t, s); u.click(p.c, {}, p.fx, p.fy); await sleep(250); }
+				await sleep(300); Journey.snapshot("mm-real-sequence-drawn"); },
+				machine: c => ok(c.steps.every(s => trigsOf(c.t).includes(s)), `pattern has ${trigsOf(c.t).join(",")}`), within: 10000 },
+			{ say: "press PLAY for six seconds: the position moves through the pattern and the output is not silent", within: 3000,
+				act: async (u, c) => { c.on = await playPeak(u, 6000, 1500); }, machine: c => ok(c.on.started && c.on.steps >= 8 && c.on.peak > 0.0002, `started ${c.on.started}, ${c.on.steps} steps, peak ${c.on.peak.toFixed(4)}`) },
+			{ say: "press Alt+Delete: the pattern is cleared; PLAY: it moves and plays silence", within: 3000,
+				act: async (u, c) => { blur(); u.key("Delete", { alt: true }); await until(() => !hasNotes(c.p), 15000); await sleep(2000); c.off = await playPeak(u, 5000, 1500); Journey.snapshot("mm-real-sequence-cleared"); },
+				machine: c => ok(c.off.started && c.off.steps >= 8 && c.off.peak < 0.0001, `started ${c.off.started}, ${c.off.steps} steps, peak ${c.off.peak.toFixed(4)}`) },
+			{ say: "press Cmd+Z once: the four notes are back and play again", within: 3000,
+				act: async (u, c) => { blur(); u.key("z", { cmd: true }); await until(() => c.steps.every(s => trigsOf(c.t).includes(s)), 15000); c.back = await playPeak(u, 6000, 1500); Bridge.log(`E2E undo then play at once: peak ${c.back.peak.toFixed(4)}, ${c.back.steps} steps`); if (c.back.peak <= 0.0002) { await sleep(3000); c.back2 = await playPeak(u, 6000, 1500); Bridge.log(`E2E undo, 3 s later, play: peak ${c.back2.peak.toFixed(4)}`); c.late = c.back2.peak > 0.0002; } },
+				machine: c => ok(c.steps.every(s => trigsOf(c.t).includes(s)) && c.back.started && c.back.peak > 0.0002, `notes ${trigsOf(c.t).join(",")}, the page says they are back but the machine played silence at once after the undo (peak ${c.back.peak.toFixed(4)})${c.late ? ", and played them 3 s later" : ""}`) }
+		],
+		async tidy(u, c) { if (S().playing) u.click("#play"); for (let i = 0; i < 4 && c.p != null && hasNotes(c.p); i++) { blur(); u.key("Delete", { alt: true }); await sleep(2000); }
+			if (c.p0 != null && cur() !== c.p0) { u.click("#pat"); await sleep(400); u.click(`#libpop .ps[data-ps="${c.p0}"]`); await sleep(800); if (!$1("#libpop").hidden) u.key("Escape"); } }
+	};
+	const e2eReal = [realSongs, realPatterns, realSequence];
 
 	const wave12 = [undoKitJ, clearStepLocksJ, lockCurrentJ, patKitJ, songCounterJ, mapPatJ];
 	const all = [...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
