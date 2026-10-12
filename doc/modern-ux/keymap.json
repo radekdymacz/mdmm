@@ -1445,7 +1445,7 @@
 			],
 			"mod": "",
 			"group": "Anywhere",
-			"does": "The machine's own settings, kept in its memory: MIDI channels, sync and the rest (also the engine menu: GLOBAL…)",
+			"does": "The GLOBAL page: the machine's own settings, kept in its memory: MIDI channels, sync and the rest (also the engine menu: GLOBAL…)",
 			"area": "Top bar"
 		},
 		{
@@ -1456,7 +1456,7 @@
 			],
 			"mod": "",
 			"group": "Anywhere",
-			"does": "Close the GLOBAL settings",
+			"does": "Back from the GLOBAL page to the workspace",
 			"short": "Close",
 			"dispatched": true
 		},
@@ -2352,7 +2352,7 @@
 			],
 			"mod": "",
 			"group": "Anywhere",
-			"does": "The machine's own settings, kept in its memory: MIDI channels, sync and the rest (also the engine menu: GLOBAL…)",
+			"does": "The GLOBAL page: the machine's own settings, kept in its memory: MIDI channels, sync and the rest (also the engine menu: GLOBAL…)",
 			"area": "Top bar"
 		},
 		{
@@ -2363,7 +2363,7 @@
 			],
 			"mod": "",
 			"group": "Anywhere",
-			"does": "Close the GLOBAL settings",
+			"does": "Back from the GLOBAL page to the workspace",
 			"short": "Close",
 			"dispatched": true
 		},

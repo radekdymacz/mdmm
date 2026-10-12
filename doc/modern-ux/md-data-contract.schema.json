@@ -1332,6 +1332,10 @@
                   }
                 }
               ]
+            },
+            "global": {
+              "description": "The global slot the GLOBAL page's Copy took (0.6); null when none.",
+              "type": ["integer", "null"]
             }
           }
         },
@@ -1958,6 +1962,31 @@
                   }
                 }
               }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "description": "0.6 (GLOBAL › Map editor › LEARN, I-002): a note on that reached the plug-in from outside (the host's MIDI in or a MIDI input port), as it came: ch 0-15, note, vel 1-127. Sent on the next step (every 20 ms or so) while the page is up; a burst past 16 a step, or past the plug-in's queue, is dropped. The page's own keyboard is not in it.",
+          "required": ["type", "ch", "note", "vel"],
+          "properties": {
+            "type": {
+              "const": "midiIn"
+            },
+            "ch": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 15
+            },
+            "note": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            },
+            "vel": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 127
             }
           }
         },
@@ -4840,7 +4869,7 @@
         },
         {
           "type": "object",
-          "description": "core: a GLOBAL setting by name",
+          "description": "core: a GLOBAL setting by name (keymap: note, target; trigIn: input 0 A 1 B, param, v; resetMap: Elektron's note map)",
           "required": ["op", "field"],
           "properties": {
             "op": {
@@ -4858,7 +4887,7 @@
             },
             "field": {
               "type": "string",
-              "enum": ["baseChannel", "tempoIn", "ctrlIn", "tempoOut", "ctrlOut", "programChangeIn", "programChangeOut", "localControl", "programChangeChannel", "trigMode", "keymap"]
+              "enum": ["baseChannel", "tempoIn", "ctrlIn", "tempoOut", "ctrlOut", "programChangeIn", "programChangeOut", "localControl", "programChangeChannel", "trigMode", "keymap", "trigIn", "resetMap"]
             },
             "on": {
               "type": ["boolean", "integer"]
@@ -4880,13 +4909,22 @@
                   "maximum": 145
                 }
               ]
+            },
+            "input": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "param": {
+              "type": "string",
+              "enum": ["dest", "gate", "sens", "vmin", "vmax"]
             }
           },
           "additionalProperties": false
         },
         {
           "type": "object",
-          "description": "core: GLOBAL › Reset to defaults: the active global becomes the one the machine ships with (measured, mdDeskFirmwareTest factoryglobal)",
+          "description": "core: GLOBAL › Clear: the active global becomes the one the machine ships with (measured, mdDeskFirmwareTest factoryglobal)",
           "required": ["op"],
           "properties": {
             "op": {
@@ -4901,6 +4939,58 @@
             },
             "force": {
               "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core: GLOBAL › Copy: the global into the clipboard",
+          "required": ["op", "slot"],
+          "properties": {
+            "op": {
+              "const": "globalCopy"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "slot": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 7
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core: GLOBAL › Paste: the clipboard's global into this slot (its position kept)",
+          "required": ["op", "slot"],
+          "properties": {
+            "op": {
+              "const": "globalPaste"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "slot": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 7
             }
           },
           "additionalProperties": false

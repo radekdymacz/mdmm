@@ -322,6 +322,11 @@ with the project (the GAIN chunk) and so with the standalone's state. Measured o
 the enabled outputs and three lock-free maxima a block (`mdJucePlugin/mdOutputLevel.h`); no lock, no allocation.
 Not a host-automatable parameter (see IDEAS.md I-021).
 
+**Notes from outside (0.6: GLOBAL › Map editor › LEARN, I-002).** `{"type":"midiIn","ch","note","vel"}`: a note on that
+reached the plug-in from outside (the host's MIDI in or a MIDI input port), sent on the next step while the page is up
+(`mdMidiIn.h`, the processor's `midiInReceived` hook; at most 16 a step, a full queue drops the rest). The page's own
+keyboard is not in it. The Machinedrum Editor's LEARN maps the next one to a track; nothing else reads it yet.
+
 **The host's tempo (B-030).** In a DAW the plug-in sends `{"type":"host","bpm","follows"}`:
 the host's tempo as its playhead reports it (also while the host's transport is stopped),
 when it changed (by 0.01 BPM) or a page is new; `follows` is true in a DAW (the plug-in

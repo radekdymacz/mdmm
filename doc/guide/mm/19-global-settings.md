@@ -1,20 +1,26 @@
 # 19. Global settings
 <!-- summary: The machine's own settings: MIDI channels, sync, routing, the multi map, and the SysEx import and export. -->
 
-The machine keeps eight global slots. One is active. The settings are in the **GLOBAL** panel. Click **Global** in the top bar, or choose **GLOBAL…** in the engine menu. Press [ESC] to close it.
+The machine keeps eight global slots. One is active. The settings are on the **GLOBAL** page. Click **Global** in the top bar, or choose **GLOBAL…** in the engine menu. The page covers the workspace under the header. Press {key:close-global}, click **Global** again, or click a workspace key to go back.
 
-![The GLOBAL panel](shot:mm-global-panel)
+![The GLOBAL page](shot:mm-global-panel)
 
-Every change is stored in the active slot and made active at once. The panel has the cards **Control**, **Sync** and **Routing**.
+Every change is stored in the active slot and made active at once. The page has the cards **Control**, **Sync**, **Routing**, **Audio** and **Control out 1**.
 
 ## GLOBAL SLOTS
-<!-- rows: MM-285 @9a1a0c -->
+<!-- rows: MM-285 @16fad6 -->
 
-The header of the panel holds the keys 1 to 8. The lit key is the active slot. Click another key to make that slot active.
+The head of the page holds the keys 1 to 8. The lit key is the active slot. Click another key to make that slot active.
 
-**Reset to defaults** writes the global the machine ships with into the active slot. The editor asks first.
+To copy a global slot to another:
 
-{gap:MM-285}You cannot copy, paste or clear a global slot in the editor yet.{/gap}
+1. Click **Copy**. The editor keeps all the settings of the active slot. **Paste** is now on.
+2. Click the key of the slot to copy to. It becomes the active slot.
+3. Click **Paste**. The editor asks first, because the settings of that slot are replaced. Click **Paste** to go on, or **Cancel**.
+
+To clear the active slot, click **Clear**. The editor asks first. The slot then holds the global the machine ships with.
+
+Undo takes back a paste or a clear, as any other edit.
 
 ## TURBO MENU
 <!-- rows: MM-286 @4ae36d -->
@@ -22,11 +28,16 @@ The header of the panel holds the keys 1 to 8. The lit key is the active slot. C
 The machine negotiates its MIDI speed with a cable. The editor has no cable to negotiate, so it has no turbo menu.
 
 ## AUDIO
-<!-- rows: MM-287 MM-288 @e66a72 -->
+<!-- rows: MM-287 MM-288 @186cf1 -->
 
 ### MASTER TUNE
 
-{gap:MM-287}The GLOBAL panel has no master tune yet.{/gap}
+The master tune sets the pitch of A for the whole machine. It is 440.0 Hz as the machine ships.
+
+1. In the **Audio** card, click **−** or **+** beside **Master tune**. Each click moves it 0.1 Hz.
+2. Hold [⇧] and click to move it 1 Hz.
+
+The tune runs from 400.0 to 499.9 Hz, as on the machine.
 
 ### ROUTING
 
@@ -55,9 +66,17 @@ A track has a channel only if its channel is 15 or lower. A base channel of 16 r
 The machine takes NRPN control and uses program change to select patterns. Automation and MIDI from a DAW reach it as they reach the machine.
 
 ### CONTROL OUT1
-<!-- rows: MM-295 @63f101 -->
+<!-- rows: MM-295 @d33887 -->
 
-{gap:MM-295}You cannot send the sequencer, the arpeggiator or the keyboard to the MIDI out of the machine in the editor yet.{/gap}
+Control out 1 sets where the notes of the sequencer, the arpeggiator and the keyboard go. The **Control out 1** card has a row for each: **Sequencer**, **Arp** and **Keyboard**. Click one of:
+
+- **INT**: the internal tracks play the notes. Nothing goes to MIDI out.
+- **OUT**: the notes go to MIDI out only. The tracks make no sound.
+- **INT+OUT**: both.
+
+The machine ships with INT for the sequencer and the arpeggiator, and INT+OUT for the keyboard. The sequencer sends its trigs as NRPN on the base channel. The arpeggiator and the keyboard send notes. The keyboard is the TRIG keys of the machine.
+
+NOTE: With OUT the machine makes no sound of its own for that source. The card says so in a line under the rows. Choose INT or INT+OUT to hear it again.
 
 ### CONTROL OUT2
 <!-- rows: MM-296 @0e638d -->

@@ -196,7 +196,13 @@ no journey yet); **not testable** (why). "—": the editor has no such feature.
 | GLOBAL: a setting read back (TEMPO OUT) | md-global-tempo-out PASS | — (MM globals: the Perform and Mix journeys) |
 | GLOBAL › ROUTING fits its dialog, a route read back | md-global-routing PASS | — |
 | GLOBAL › MIDI: CHANNEL SPAN 0 refuses a track's mute (a notice with Give each track its own channel), its sound value still reaches the machine; the notice's key, then the mute lands (B-051) | — | mm-global-channels |
-| GLOBAL › Reset to defaults: asked, then the factory global read back | md-global-reset | mm-global-reset |
+| GLOBAL › Clear: asked, then the factory global read back | md-global-reset | mm-global-reset |
+| GLOBAL as a page under the header (0.6): as wide as it, the head on one line; a workspace tab goes back | md-global-page | mm-global-page |
+| GLOBAL › Copy, a change, Paste (asked), Undo (0.6) | md-global-copy-paste | mm-global-copy-paste |
+| GLOBAL › TRIG IN A / B: Gate and Dest stepped, Undo (0.6, P3) | md-global-trig-in | — |
+| GLOBAL › Map editor › LEARN: a note from a MIDI keyboard (midiIn) maps to the track; Reset map (asked) (0.6) | md-global-learn | — |
+| GLOBAL › AUDIO › MASTER TUNE: 0.1 Hz and 1 Hz steps, Undo (0.6) | — | mm-global-tune |
+| GLOBAL › CONTROL OUT1: OUT and its warning, INT+OUT, INT (0.6, P2) | — | mm-global-control-out |
 | GLOBAL's slot keys: another slot active, then back | — | mm-global-slot |
 | Song page: PATTERN | SONG switch, lit from the machine's status (0.3.5) | md-song-mode | mm-song-mode |
 | Song page: the song playhead (the row the machine plays, from RAM), What plays, PAT/SONG on the LCD (0.3.5) | md-song-playhead | mm-song-playhead |

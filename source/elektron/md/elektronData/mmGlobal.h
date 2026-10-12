@@ -46,7 +46,7 @@ namespace elektronData
 
 		uint8_t autoChannel = 8, baseChannel = 0, channelSpan = 6, multiTrigChannel = 6, multiMapChannel = 7;
 		uint8_t tempoSync = 0, transportIn = 0;
-		std::array<uint8_t, 3> x07{};
+		std::array<uint8_t, 3> controlOut1{};	// SEQUENCER, ARP, KEYBOARD: 0 INT, 1 OUT, 2 INT+OUT (P2)
 		uint8_t transportOut = 1, clockOut = 1, programChangeOut = 0;
 		std::array<uint8_t, 5> x0d{};
 		std::array<uint8_t, 6> midiSeqChannels{};
