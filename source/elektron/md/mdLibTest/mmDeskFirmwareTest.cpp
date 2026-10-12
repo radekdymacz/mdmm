@@ -4458,6 +4458,46 @@ namespace
 		}
 	};
 
+	// Review 1 (2026-10-12, item 1): the swing track as the machine keeps it. Swing marks under the roll showed on every
+	// step, empty ones too: is that the firmware's data? Every pattern of a fresh machine read back, its swing masks
+	// against its trigs; then a step set and cleared through the desk, read back from memory.
+	void swingProbe(const Bytes& _rom)
+	{
+		std::puts("swingprobe: the swing track in the machine's patterns");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		const auto t0 = r.ms();
+		while(r.desk->loaded() < 288 && r.ms() - t0 < 60000)
+			r.run(100);
+		std::map<uint64_t, int> masks;
+		int onEmpty = 0, onTrig = 0, patterns = 0;
+		for(int i = 0; i < 128; ++i)
+		{
+			const auto p = r.desk->pattern(static_cast<uint8_t>(i));
+			if(!p)
+				continue;
+			++patterns;
+			for(size_t t = 0; t < 6; ++t)
+			{
+				++masks[p->swing[t]];
+				for(size_t s = 0; s < p->length; ++s)
+				{
+					if(!ed::mmStepSet(p->swing[t], s))
+						continue;
+					(ed::mmStepSet(p->amp[t] | p->filter[t] | p->lfo[t], s) ? onTrig : onEmpty)++;
+				}
+			}
+		}
+		std::printf("  %d patterns read; swing masks (track count):\n", patterns);
+		for(const auto& [m, n] : masks)
+			std::printf("    %016llx x %d\n", static_cast<unsigned long long>(m), n);
+		std::printf("  swing bits on a step with a trig: %d, on an empty step: %d\n", onTrig, onEmpty);
+		check(patterns == 128, "every pattern read back");
+		check(masks.size() >= 1, "swing masks seen");
+	}
+
 	void performSound(const Bytes& _rom)
 	{
 		std::puts("perform: POLY, key tracking and the MULTI ENV, judged by the output (0.6 wave 9, B-064)");
@@ -4832,6 +4872,8 @@ int main(const int _argc, char** _argv)
 			intentCasesOnFirmware(rom);
 		if(only == "perform")
 			performSound(rom);
+		if(only == "swingprobe")
+			swingProbe(rom);
 		check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 		std::printf("%s (%d failures)\n", g_failures ? "FAIL" : "PASS", g_failures);
 		return g_failures ? 1 : 0;

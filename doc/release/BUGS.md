@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-088 · Monomachine: swing marks on empty steps (the machine's data, not a bug)
+
+- **From:** Radek's 0.6 review, 2026-10-12 ("slide marks on every step", the teal marks: they are the swing marks).
+- **What happens:** the teal swing marks along the foot of the roll show on empty steps too, on some patterns on every step.
+- **Facts (measured, `mmDeskFirmwareTest <ROM> swingprobe`):** the Monomachine keeps swing as a track of its own per track (a 64-bit mask per track), independent of the trigs; it delays only steps with a trig. Every pattern of a fresh machine read back: 332 tracks hold the default every second 16th over 64 steps (`aaaaaaaaaaaaaaaa`), 395 the same over 32 steps, 5 every other step the other way round, 4 nothing, 1 every step (`ffffffffffffffff`), 2 `ffff5555ffff5555`; 12,847 swing bits sit on empty steps against 1,818 on steps with a trig. The page shows the masks as the machine keeps them; the stub's fixture and the desk do not set swing by themselves (the desk's Clear… with Swing writes the default every second 16th).
+- **Status:** no data or drawing bug. How the foot of the roll shows swing and slide (marks only under trigs, or the masks as they are) is being redesigned separately (Radek, 2026-10-12); the drawing is unchanged here.
+
 ## B-087 · Machinedrum: PLAY shows pressed and the machine as playing while the firmware starts
 
 - **From:** the journey md-boot-card (on the "flaky" list: about one start in five in the full runs, 2026-10-12).
