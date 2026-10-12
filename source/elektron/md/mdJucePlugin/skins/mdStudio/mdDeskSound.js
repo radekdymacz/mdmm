@@ -6,7 +6,8 @@
 /* ===== Sound ===== */
 function pc(g, n, { t, f, color, unit } = {}) {
 	if (!n) return `<div class="pc empty" aria-hidden="true"></div>`;
-	return `<div class="pc" role="slider" tabindex="0" aria-label="${n}" aria-valuemin="0" aria-valuemax="127" data-g="${g}" data-n="${n}"${t != null ? ` data-t="${t}"` : ""}${f ? ` data-f="${f}"` : ""}${color ? ` style="--pc:${color}"` : ""}><span>${n}</span>${unit ? `<i class="pu" data-unit="${unit}"></i>` : ""}<b></b></div>`;
+	const partner = t == null && S.ws === "sound" ? CLIP[g + ":" + n] : null, tip = partner ? ` data-clip="${partner}" title="Works with ${partner}: the Machinedrum joins the two with a clip"` : "";
+	return `<div class="pc"${tip} role="slider" tabindex="0" aria-label="${n}" aria-valuemin="0" aria-valuemax="127" data-g="${g}" data-n="${n}"${t != null ? ` data-t="${t}"` : ""}${f ? ` data-f="${f}"` : ""}${color ? ` style="--pc:${color}"` : ""}><span>${n}</span>${unit ? `<i class="pu" data-unit="${unit}"></i>` : ""}<b></b></div>`;
 }
 function shapeIcon(i, inv) { const pts = Array.from({ length: 25 }, (_, k) => { const x = k / 24; return [(x * 26 + 1).toFixed(1), (11 - 7 * shape(i, x, inv)).toFixed(1)]; }); return `<svg width="28" height="22" viewBox="0 0 28 22" aria-hidden="true"><polyline fill="none" stroke="currentColor" stroke-width="1.6" points="${pts.map(p => p.join(",")).join(" ")}"/></svg>`; }
 const RND = [.35, -.7, .9, -.25, .55, -.9, .1, .7];
@@ -47,7 +48,7 @@ const SND_COL = { fx: "var(--e12)", rt: "var(--gnd)", lfo: "var(--teal)" };
    the first group of that page in its row (tag false). Each part is a cell of the row's grid. */
 function sgHtml(x, cols, color, tag, note) {
 	const page = SND_TAG[x.g][1];
-	const body = x.body || `<div class="ctl" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${x.knobs.map(n => pc(x.g, n, { color: SND_COL[x.g] || color })).join("")}</div>`;
+	const body = x.body || `<div class="ctl" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${x.knobs.map(n => pc(x.g, n, { color: SND_COL[x.g] || color })).join("")}${clipMarks(x.g, x.knobs, cols)}</div>`;
 	return `<section class="sg" data-sg="${x.key}"><header${x.menu ? ' class="hasmenu"' : ""}><h3>${mutTitle(x)}</h3>${tag ? `<span title="${attr(x.tagTip || "Its knobs are on the Machinedrum's " + page + " page")}">${SND_TAG[x.g][0]}</span>` : ""}${x.menu || ""}</header>${x.plot || (note ? `<p class="sgnote">${note}</p>` : "")}${body}</section>`;
 }
 /* One row (shared/deskSoundLayout.js soundRow): a group with a screen is a column of its own (a waveform wider),
@@ -58,6 +59,7 @@ function sgRow(list, cls, color) { return soundRow(list, cls, Object.assign({ gr
 function renderSound() {
 	const t = S.sel, tr = V.tracks[t], l = tr.lfo, at = smpOfMachine(tr.m), color = FAMC[tr.fam];
 	const relSel = (id, kind, word) => `<select id="${id}"><option value="">none</option>${V.tracks.map((x, i) => i !== t ? `<option value="${i}" ${tr[kind] === i ? "selected" : ""}>${word} ${i + 1} ${x.name}</option>` : "").join("")}</select>`;
+	setClips(tr);
 	const [syn, fxrt] = sndGroups(tr);
 	[...syn, ...fxrt].forEach(x => { x.plot = sndScreen(x.ed, tr, at, x.knobs.map(n => n.replace(/^SYN·/, ""))); });
 	if (!syn.length) syn.push({ key: "syn", title: "Synthesis", g: "syn", knobs: [], n: 0, w: 8, body: `<p class="sgabout">${about(tr.m, Cat) || "This machine has no synthesis knobs."}</p>` });
@@ -72,7 +74,7 @@ function renderSound() {
 			body: `<div class="sgline lfoshape">${shapeRow("SHP1")}${shapeRow("SHP2")}${pc("lfo", "SHMIX", { color: SND_COL.lfo })}</div>` },
 		{ key: "lmotion", title: "LFO motion", g: "lfo", knobs: ["SPD", "DEPTH"], w: 3.4, tagTip: lfoTip,
 			plot: sndPlot(`<canvas class="ed" data-ed="lmotion" aria-label="The LFO across one bar. Drag the dot for SPD and DEPTH."></canvas>`, SND_TIP.lmotion),
-			body: `<div class="sgline">${["SPD", "DEPTH"].map(n => pc("lfo", n, { color: SND_COL.lfo })).join("")}<span class="seg" data-set="upd" title="UPDTE: FREE runs on, TRIG restarts it on every trig, HOLD keeps the value a trig takes">${["FREE", "TRIG", "HOLD"].map(u => `<button data-v="${u}" aria-pressed="${l.UPDTE === u}">${u}</button>`).join("")}</span></div>` },
+			body: `<div class="sgline">${pc("lfo", "SPD", { color: SND_COL.lfo })}${clipGap("lfo", "SPD", "DEPTH")}${pc("lfo", "DEPTH", { color: SND_COL.lfo })}<span class="seg" data-set="upd" title="UPDTE: FREE runs on, TRIG restarts it on every trig, HOLD keeps the value a trig takes">${["FREE", "TRIG", "HOLD"].map(u => `<button data-v="${u}" aria-pressed="${l.UPDTE === u}">${u}</button>`).join("")}</span></div>` },
 		{ key: "ltarget", title: "LFO target", g: "lfo", knobs: [], w: 2, tagTip: lfoTip,
 			body: `<div class="sgsel" title="The parameter this LFO moves: a track, then one of its parameters"><select id="lfoT">${V.tracks.map((x, i) => `<option value="${i}" ${i === l.TRCK ? "selected" : ""}>T${i + 1} ${x.name}</option>`).join("")}</select><select id="lfoP">${params(l.TRCK).map(p => `<option ${p === l.PARAM ? "selected" : ""}>${p}</option>`).join("")}</select></div>` },
 		{ key: "rel", title: "Relations", g: "kit", knobs: [], w: 2, tagTip: "Kit relations: EDIT KIT → RELATE",
@@ -87,6 +89,22 @@ function renderSound() {
  </div>`;
 	syncControls(); redraw();
 }
+
+/* MD-033: the machine's clips (clipPairs, mdDeskModel.js) on the Sound page. CLIP: {"g:name": its partner} for the
+   selected track's machine, set by renderSound. A box of a pair names the other in its tooltip (the page groups the
+   knobs by what they do, so a pair can sit in two groups); two boxes side by side get a small arch over the gap
+   between them, as the LCD draws it: placed by CSS from the box's column and row in its group (no measuring), in a
+   flex line a zero-width mark between the two. */
+let CLIP = {};
+function setClips(tr) { CLIP = {}; for (const [[g, a], [h, b]] of clipPairs(tr.m, Cat, Enums())) { CLIP[g + ":" + a] = b; CLIP[h + ":" + b] = a; } }
+const clipped = (g, a, b) => CLIP[g + ":" + a] === b;
+function clipMarks(g, knobs, cols) {
+	const rows = Math.ceil(knobs.length / cols); let out = "";
+	for (let i = 0; i + 1 < knobs.length; i++) if (i % cols !== cols - 1 && clipped(g, knobs[i], knobs[i + 1]))
+		out += `<i class="clipmk" aria-hidden="true" data-pair="${knobs[i]} ${knobs[i + 1]}" style="--c:${i % cols + 1};--n:${cols};--r:${Math.floor(i / cols)};--rows:${rows}"></i>`;
+	return out;
+}
+const clipGap = (g, a, b) => clipped(g, a, b) ? `<i class="clipgap" aria-hidden="true" data-pair="${a} ${b}"></i>` : "";
 
 /* the LFO's shape keys (the router's, mdDeskRender.js CLICKS): true when the click was theirs */
 function clickShape(e) {

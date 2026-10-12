@@ -195,24 +195,10 @@ namespace mdDesk
 		}
 	}
 
+	// MD-045: what the machine's own CLEAR KIT leaves (elektronData::mdClearedKit, measured)
 	ed::MdKit emptyKit(const ed::MdKit& _like, const uint8_t _slot)
 	{
-		auto k = _like;
-		k.position = _slot;
-		k.name.fill(0);
-		for(size_t t = 0; t < ed::MdKit::g_tracks; ++t)
-		{
-			k.models[t] = 0;	// GND-EMPTY
-			std::copy(neutralTrackValues().begin(), neutralTrackValues().end(), k.params[t].begin());
-			k.levels[t] = neutralTrackLevel();
-			k.lfos[t].track = static_cast<uint8_t>(t);
-			k.lfos[t].param = 0;
-			k.lfos[t].shape1 = k.lfos[t].shape2 = 0;
-			k.lfos[t].update = 0;
-			k.trigGroups[t] = ed::MdKit::g_noGroup;
-			k.muteGroups[t] = ed::MdKit::g_noGroup;
-		}
-		return k;
+		return ed::mdClearedKit(_like, _slot);
 	}
 
 	ed::MdSong emptySong(const ed::MdSong& _like, const uint8_t _slot)

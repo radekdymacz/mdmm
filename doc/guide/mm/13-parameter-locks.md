@@ -17,7 +17,7 @@ The rail on the left of the lane lists what you can lock. For a synth track the 
 The lane shows one parameter at a time, the one lit in the rail. Each step with a trig has a bar. A dashed line across the lane marks the value of the kit. Hatched steps have no trig.
 
 ## PARAMETER LOCKS IN GRID RECORDING MODE
-<!-- rows: MM-200 MM-201 MM-202 MM-203 MM-204 @3558a2 -->
+<!-- rows: MM-200 MM-201 MM-202 MM-203 MM-204 @e29259 -->
 
 On the machine you hold a trig and turn a knob. In the editor you draw the value in the lane.
 
@@ -33,11 +33,18 @@ Every lock of the parameter shows as a bar, so you can read the values of a step
 - Hold [⌥] and drag across the bars to remove the locks of that parameter on the steps you cross.
 - Click the bin in the lane header to remove all the locks of the parameter.
 - Hold [⌥] and click the bin to remove every lock of the track.
+- Select a step or steps, click the small ⋯ on the selection (or right-click a step) and choose **Clear locks (keep the notes)** to remove all the locks of the step, or of the selected steps. The note stays.
 - Select a step and press {key:delete} to clear the step whole, with its note.
 
-{gap:MM-203}There is no key that removes only the locks of one step and keeps its note.{/gap}
+### Lock the current value
 
-{gap:MM-201}You cannot lock the current value of a parameter with one click. Draw the value in the lane.{/gap}
+On the machine you hold a trig and click a knob: the step keeps the value the knob has now. In the editor:
+
+1. Click the page key and the parameter key in the rail.
+2. Select the steps: hold [⌘] and click a note, or drag on the step ruler.
+3. Click the lock key in the rail's header, beside the bin. Each selected step with a note gets a lock at the value the kit has now.
+
+It is one undo step. A step without a note cannot hold a lock and is left out.
 
 ### Copy a note with its locks
 

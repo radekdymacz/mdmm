@@ -322,6 +322,9 @@ const MdJourneys = (() => {
 			}, screen: c => ok(pressed(cell(c.t, c.s)), "not lit"), machine: c => ok(trigsOf(c.t).includes(c.s), "no trig") },
 			{ say: "right-click it: its menu", act: (u, c) => u.rightClick(cell(c.t, c.s)),
 				screen: c => ok(!$1("#deskmenu").hidden && $1('#deskmenu [data-mid="step-fill-2"]') && $1(cell(c.t, c.s)).classList.contains("selx"), "no step menu") },
+			{ say: "Escape, then click the ⋯ on the selected step (the menu's visible key): the same menu", act: async u => { u.key("Escape"); await until(() => $1("#deskmenu").hidden, 1000);
+				await until(() => !!$1("#stepmore") && !$1("#stepmore").hidden, 2000); u.click("#stepmore"); },
+				screen: c => ok(!$1("#deskmenu").hidden && $1('#deskmenu [data-mid="step-fill-2"]') && $1(cell(c.t, c.s)).classList.contains("selx"), "no step menu from ⋯ (" + ($1("#stepmore") ? "hidden " + $1("#stepmore").hidden : "no key") + ")"), within: 2000 },
 			{ say: "choose Accent", act: u => u.click('#deskmenu [data-mid="step-accent"]'), screen: c => ok($1("#deskmenu").hidden && $1(cell(c.t, c.s)).classList.contains("acc"), "no accent shown"),
 				machine: c => ok(flagsOf(c.t, "accent").includes(c.s) || (V.accAll && (pat().accent?.steps || []).includes(c.s)), "accent " + flagsOf(c.t, "accent").join(",")) },
 			{ say: "right-click it again and choose Copy", act: async u => { u.rightClick(cell(S.stepSel.t, S.stepSel.from)); await sleep(150); u.click('#deskmenu [data-mid="copy"]'); },
@@ -921,7 +924,15 @@ const MdJourneys = (() => {
 		steps: [
 			openKits,
 			libSelect(c => { const k = otherKit(c); c.d0 = JSON.stringify(Docs.kits[k]); return k; }),
-			{ say: "press Delete: the slot is cleared", act: async u => { u.key("Delete"); if (await until(dlgShown, 1200)) u.click($1("#dlg .danger")); }, machine: c => ok(kitEmpty(c.sel), "slot " + kitName(c.sel)), screen: c => ok($1(ks(c.sel))?.textContent.includes("EMPTY"), "tile " + $1(ks(c.sel))?.textContent), within: 8000 },
+			/* MD-045: what the machine's own CLEAR KIT leaves (measured: every track GND-EMPTY, level 100, VOL 127, the LFO's SHP2 4) */
+			{ say: "press Delete: the slot is cleared as the machine clears it", act: async u => { u.key("Delete"); if (await until(dlgShown, 1200)) u.click($1("#dlg .danger")); },
+				machine: c => { const d = Docs.kits[c.sel], tr = d?.tracks || [], fx = d?.masterFx || {};
+					/* the master effects at the machine's start values and the name's first byte 0x7f (gapProbesFirmwareTest w12clearkit) */
+					const fxOk = same(fx.gateBox, [0, 0, 64, 0, 0, 127, 127, 96]) && same(fx.rhythmEcho, [32, 0, 32, 0, 0, 127, 0, 96]) && same(fx.eq, [64, 64, 64, 64, 64, 64, 64, 127]) && same(fx.dynamix, [127, 127, 127, 127, 127, 127, 0, 0]);
+					return ok(kitEmpty(c.sel) && tr.length === 16 && tr.every(t => t.level === 100 && same(t.synth, [64, 64, 0, 0, 0, 0, 0, 0]) && same(t.effects, [0, 0, 64, 64, 0, 127, 0, 0]) && same(t.routing, [0, 127, 64, 0, 0, 64, 0, 0]) && t.lfo?.shape2 === 4)
+						&& fxOk && d.name?.charCodeAt(0) === 0x7f,
+					"slot " + kitName(c.sel) + " name byte " + d?.name?.charCodeAt(0) + " fx " + JSON.stringify(fx) + " T1 " + JSON.stringify(tr[0])); },
+				screen: c => ok($1(ks(c.sel))?.textContent.includes("EMPTY"), "tile " + $1(ks(c.sel))?.textContent), within: 8000 },
 			{ ...undoKey, machine: c => ok(JSON.stringify(Docs.kits[c.sel]) === c.d0, "slot not restored"), within: 8000 },
 			esc
 		]
@@ -2315,7 +2326,7 @@ const MdJourneys = (() => {
 		name: "md-song-commands", proves: ["MD-143", "MD-152", "MD-153", "MD-155", "MD-156", "MD-161", "MD-295"],
 		steps: [
 			go("song"),
-			{ say: "the page holds 32 songs of up to 256 rows, and the song ends with END", act: (u, c) => { c.r0 = JSON.stringify(songRows()); c.m0 = V.songMode; u.click('[data-set="songpick"] button[data-v="song"]'); Journey.snapshot("md-song-workspace"); },
+			{ say: "the page holds 32 songs of up to 256 rows, and the song ends with END", act: (u, c) => { c.r0 = JSON.stringify(songRows()); c.u0 = V.undoCount; c.m0 = V.songMode; u.click('[data-set="songpick"] button[data-v="song"]'); Journey.snapshot("md-song-workspace"); },
 				screen: () => ok($all("[data-ss]").length === 32 && /of 256 rows/.test($1(".arrcard .note")?.textContent || "") && [...$all("#tl .scell")].some(c => c.textContent.trim() === "END"), `${$all("[data-ss]").length} songs, "${$1(".arrcard .note")?.textContent.slice(0, 40)}"`),
 				machine: () => ok(Object.keys(Docs.songs).length === 32 && songRows().length >= 1 && Docs.songs[currentSongSlot()].rows.slice(-1)[0].kind === "end", "songs " + Object.keys(Docs.songs).length) },
 			{ say: "add a row (pad A01): the bar counter on the LCD goes up", act: async (u, c) => { c.b0 = +($1("#lcd2").innerText.match(/BARS\s*(\d+)/)?.[1]); c.n0 = songRows().length; u.click('[data-addpat="0"]'); await until(() => songRows().length === c.n0 + 1, 4000); c.i = S.songSel; await sleep(300); },
@@ -2328,7 +2339,7 @@ const MdJourneys = (() => {
 		],
 		/* the rows and the mode as they were: the next journey that plays (md-seq-page-leds) played this song's part row and
 		   its HALT. More's key is on a pattern row only (after HALT the loop row is selected): no click when it is gone */
-		async tidy(u, c) { blur(); if (S.songMore && $1("[data-rowmore]")) u.click("[data-rowmore]"); if (c.r0) await undoUntil(u, () => JSON.stringify(songRows()) === c.r0, 10);
+		async tidy(u, c) { blur(); if (S.songMore && $1("[data-rowmore]")) u.click("[data-rowmore]"); if (c.u0 != null) await undoTo(u, c.u0); if (c.r0) await undoUntil(u, () => JSON.stringify(songRows()) === c.r0, 10);
 			if (c.m0 === false && V.songMode !== false) { u.click('[data-set="songpick"] button[data-v="pattern"]'); await until(() => V.songMode === false && idle(), 4000); } }
 	};
 	/* MD-295: the PATTERN / SONG switch is the machine's status */
@@ -2466,8 +2477,121 @@ const MdJourneys = (() => {
 			{ say: "32 songs on the Song page", act: u => u.click(tab("song")), screen: () => ok($all("[data-ss]").length === 32, $all("[data-ss]").length + " slots"), machine: () => ok(Object.keys(Docs.songs).length === 32, Object.keys(Docs.songs).length + " songs") }
 		]
 	};
+	/* ---------- wave 12: the gaps (doc/release/PLAN-0.6.md, Gap triage) ---------- */
+	/* MD-033: the machine's clips over the Sound page's boxes (the catalogue's, measured on the firmware) */
+	const machineOnTrack = async (u, c, m) => {
+		if (V.tracks[c.t].m === m) return true;
+		u.click("#machbtn"); await until(() => !$1("#machpop").hidden, 1500); u.click(`#machpop .mf[data-fam="${famKey(m, Cat)}"]`); await sleep(30);
+		const key = $1(`#machpop .mk[data-mach="${m}"]`); if (!key) { if (!$1("#machpop").hidden) u.key("Escape"); return false; }
+		u.click(key); await until(() => V.tracks[c.t].m === m, 4000); await until(idle, 4000); return V.tracks[c.t].m === m;
+	};
+	/* the arches drawn: each must sit over the gap between its two boxes (a box's right edge, the next one's left) */
+	const drawnClips = () => $all(".snd .clipmk, .snd .clipgap").map(x => {
+		const [a, b] = x.dataset.pair.split(" "), sec = x.closest(".sg"), A = sec?.querySelector(`.pc[data-n="${a}"]`), B = sec?.querySelector(`.pc[data-n="${b}"]`);
+		const r = (x.classList.contains("clipgap") ? x : x).getBoundingClientRect(), ra = A?.getBoundingClientRect(), rb = B?.getBoundingClientRect();
+		const mid = x.classList.contains("clipgap") ? r.left : r.left + r.width / 2, over = ra && rb && mid >= ra.right - 3 && mid <= rb.left + 3 && Math.abs(ra.top - rb.top) < 2;
+		return over ? x.dataset.pair : x.dataset.pair + " (misplaced)";
+	}).sort();
+	const clipsJ = {
+		name: "md-sound-clips", proves: ["MD-033"],
+		steps: [
+			go("sound"), sel(() => soundTrack()),
+			{ say: "put TRX-BD on the track: an arch joins RAMP and RDEC, AMD and AMF, EQF and EQG, FLTF FLTW FLTQ, SPD and DEPTH, as the machine's LCD", act: async (u, c) => {
+				c.n0 = V.undoCount; if (!await machineOnTrack(u, c, "TRX-BD")) throw new Error("TRX-BD not picked"); await sleep(120); Journey.snapshot("md-sound-clips"); },
+				screen: () => { const d = drawnClips(); return ok(["AMD AMF", "EQF EQG", "FLTF FLTW", "FLTW FLTQ", "RAMP RDEC", "SPD DEPTH"].every(p => d.includes(p)), d.join(", ")); },
+				machine: c => ok(V.tracks[c.t].m === "TRX-BD" && JSON.stringify(Cat.byName["TRX-BD"].clips) === "[2,8,10,12,13,21,22]", "catalogue " + JSON.stringify(Cat.byName["TRX-BD"]?.clips)) },
+			{ say: "point at RDEC: its tooltip names RAMP", screen: () => ok(($1('.snd .pc[data-g="syn"][data-n="RDEC"]')?.title || "").includes("RAMP"), $1('.snd .pc[data-g="syn"][data-n="RDEC"]')?.title) },
+			{ say: "put ROM-01 on the track: no synthesis clip (STRT and END are not joined), the effects' arches stay", act: async (u, c) => { if (!await machineOnTrack(u, c, "ROM-01")) throw new Error("ROM-01 not picked"); await sleep(120); },
+				screen: () => { const d = drawnClips(); return ok(!d.includes("RAMP RDEC") && !d.some(p => /STRT|END|PTCH/.test(p)) && d.includes("AMD AMF"), d.join(", ")); },
+				machine: c => ok(V.tracks[c.t].m === "ROM-01", "machine " + V.tracks[c.t].m) }
+		],
+		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); }
+	};
+	/* MD-043: the machine's UNDO KIT from the kit library (KIT > LOAD KIT > UNDO KIT with the machine's keys) */
+	const workingName = () => kitNameText(kitDocOf(Docs)?.name);
+	const undoKitJ = {
+		name: "md-lib-undo-kit", proves: ["MD-043"],
+		steps: [
+			openKits,
+			{ say: "rename the kit that plays to UNDOJRNY (an unsaved edit)", act: async (u, c) => {
+				c.k0 = V.kit; c.name0 = workingName(); u.click(ks(c.k0), { alt: true }); await sleep(100); u.click('#libpop [data-la="rename"]'); await sleep(200); u.type("#lsin", "UNDOJRNY"); await sleep(100); u.key("Enter"); await confirmIfAsked(u); },
+				machine: () => ok(workingName() === "UNDOJRNY" && V.kitState === "edited", `working ${workingName()}, ${V.kitState}`), within: 8000 },
+			{ say: "click another kit: it loads without saving (the machine keeps the edited kit as its UNDO KIT)", act: async (u, c) => {
+				c.k1 = otherKit(c, [c.k0]); u.click(ks(c.k1)); if (await until(dlgShown, 2000)) u.click(dlgButton("Load without saving") || $1("#dlg .danger")); },
+				machine: c => ok(V.kit === c.k1 && workingName() !== "UNDOJRNY", `kit ${V.kit}, working ${workingName()}`), within: 8000 },
+			{ say: "click UNDO KIT: the edited kit plays again, unsaved, in its own slot", act: async u => { u.click('#libpop [data-la="undokit"]'); await confirmIfAsked(u); },
+				machine: c => ok(V.kit === c.k0 && workingName() === "UNDOJRNY" && V.kitState === "edited", `kit ${V.kit}, working ${workingName()}, ${V.kitState}`),
+				screen: c => ok($1("#libpop .lcdchip")?.textContent.includes("K" + nn(c.k0)) && $1("#libpop .lcdchip")?.textContent.includes("edited"), $1("#libpop .lcdchip")?.textContent), within: 10000 },
+			esc
+		],
+		async tidy(u, c) { if (c.k0 == null) return; if (V.kit !== c.k0) { cmd("kitLoad", { k: c.k0, force: true }); await until(() => V.kit === c.k0, 4000); } cmd("reloadKit", { force: true }); await until(() => V.kitState !== "edited", 6000); }
+	};
+	/* MD-099: a pattern queued while playing starts at STOP, not only at the pattern's end (the panel's STOP; measured) */
+	const stopQueuedJ = {
+		name: "md-top-stop-queued", proves: ["MD-099"],
+		steps: [
+			{ say: "press PLAY", act: (u, c) => { c.p0 = currentPatternSlot(); u.click("#play"); }, machine: () => ok(tele.last?.playing, "not playing"), within: 5000 },
+			{ say: "just after the pattern starts again, click › on the LCD: the next pattern is queued", act: async (u, c) => {
+				await until(() => tele.last?.playing && tele.last.step >= 1 && tele.last.step <= 3, 6000); u.click("#patNext"); await confirmIfAsked(u); c.at = tele.last?.step; },
+				machine: c => ok(desk().queued === c.p0 + 1 && currentPatternSlot() === c.p0, `queued ${desk().queued}, pattern ${currentPatternSlot()}`), screen: c => ok($1("#pat").textContent.includes(patName(c.p0 + 1)), "LCD " + $1("#pat").textContent), within: 600 },
+			{ say: "press STOP at once: the machine stops and the queued pattern is the current one, long before the pattern's end", act: (u, c) => { c.stopAt = tele.last?.step; u.click("#play"); },
+				machine: c => ok(currentPatternSlot() === c.p0 + 1 && !tele.last?.playing && desk().queued == null, `pattern ${currentPatternSlot()}, playing ${tele.last?.playing}, stopped at step ${c.stopAt}`),
+				screen: c => ok(!V.playing && V.pat === c.p0 + 1 && $1("#pat").textContent.includes(patName(c.p0 + 1)), `LCD ${$1("#pat").textContent}, view ${V.pat}`), within: 900 }
+		],
+		async tidy(u, c) { if (V.playing) u.click("#play"); await until(() => !V.playing, 3000); if (c.p0 != null && currentPatternSlot() !== c.p0) { u.click("#patPrev"); await confirmIfAsked(u); } }
+	};
+	/* MD-106: a pattern made longer repeats its steps into the new ones, as the machine's SCALE SETUP (measured) */
+	const trigBits = (d, t) => (d?.tracks[t]?.trigs || []);
+	const lenRepeatJ = {
+		name: "md-seq-len-repeats", proves: ["MD-106"],
+		steps: [
+			go("seq"),
+			{ say: "a pattern with nothing past step 16 (› on the LCD until one), its LEN clicked round to 16", act: async (u, c) => {
+				c.p0 = currentPatternSlot(); c.moves = 0;
+				const fits = () => patDoc() && patDoc().tracks.every(t => t.trigs.every(s => s < 16)) && patDoc().tracks.some(t => t.trigs.length);
+				while (!fits() && c.moves < 12) { u.click("#patNext"); await confirmIfAsked(u); c.moves++; await until(() => !!patDoc() && currentPatternSlot() === (c.p0 + c.moves) % 128, 3000); await until(idle, 3000); }
+				c.n0 = V.undoCount;
+				for (let i = 0; i < 4 && V.len !== 16; i++) { const was = V.len; u.click(l2("len")); await until(() => V.len !== was, 3000); await until(idle, 3000); }
+				c.before = patDoc().tracks.map(t => t.trigs.slice().sort((a, b) => a - b)); },
+				machine: () => ok(V.len === 16, "LEN " + V.len) },
+			{ say: "click LEN on the LCD: 32 steps, and steps 1 to 16 repeat into 17 to 32", act: u => u.click(l2("len")),
+				machine: c => { const d = patDoc(); const want = c.before.map(a => [...a, ...a.map(s => s + 16)]); const got = d?.tracks.map(t => t.trigs.slice().sort((a, b) => a - b));
+					return ok(d?.totalLength === 32 && same(got, want), `total ${d?.totalLength}, T1 ${JSON.stringify(got?.[0])} (want ${JSON.stringify(want[0])})`); },
+				screen: c => { const t = c.before.findIndex(a => a.length), s = c.before[t]?.[0]; return ok(V.len === 32 && pressed(cell(t, s + 16)), `LEN ${V.len}, track ${t + 1} step ${s + 17} ${pressed(cell(t, s + 16)) ? "lit" : "dark"}`); }, within: 6000 },
+			{ ...undoKey, machine: c => ok(patDoc()?.totalLength === 16 && same(patDoc().tracks.map(t => t.trigs.slice().sort((a, b) => a - b)), c.before), "total " + patDoc()?.totalLength), within: 6000 }
+		],
+		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); for (let i = 0; i < (c.moves || 0); i++) { u.click("#patPrev"); await confirmIfAsked(u); await sleep(150); } }
+	};
+	/* MD-147: the playing song row's passes still to come (the machine's counter, telemetry songRepeats) */
+	const leftOf = () => $1("#tl .scell.ph")?.dataset.left;
+	const songRepeatsJ = {
+		name: "md-song-repeats-left", proves: ["MD-147"],
+		steps: [
+			go("song"),
+			{ say: "stop, then pick an empty song in the song slots (click it, Load; one is cleared first when every slot holds a song)", act: async (u, c) => {
+				if (V.playing) { u.click("#play"); await until(() => !V.playing, 3000); } c.s0 = V.songSlot; c.m0 = V.songMode; await until(() => Object.keys(Docs.songs).length >= 32, 20000);
+				c.s = emptySong() ?? (await scratch())[0]; await songTo(u, c.s); },
+				screen: c => ok(V.songSlot === c.s, "song " + (V.songSlot + 1)), machine: c => ok(songSlotOf(Docs) === c.s, "machine song " + (songSlotOf(Docs) + 1)), within: 20000 },
+			{ say: "Arrange: pad A01, then Repeat + twice (the row plays three times), then pad A02", act: async (u, c) => {
+				u.click('[data-set="songpick"] button[data-v="song"]'); await sleep(200); u.click('[data-addpat="0"]'); await until(() => songRows().length === 2, 4000);
+				for (let i = 0; i < 2; i++) { const r = songRows()[0].repeats; u.click('[data-step="rep"][data-d="1"]'); await until(() => songRows()[0].repeats === r + 1, 4000); }
+				u.click('[data-addpat="1"]'); },
+				machine: () => ok(songRows().length === 3 && songRows()[0].repeats === 2 && songRows()[1].pattern === 1, "rows " + JSON.stringify(songRows().map(r => [r.pattern, r.repeats]))), within: 8000 },
+			{ say: "PATTERN, then SONG: the machine takes the edited song", act: async u => { u.click('[data-set="songpick"] button[data-v="pattern"]'); await until(() => V.songMode === false, 4000); await sleep(300);
+				u.click('[data-set="songpick"] button[data-v="song"]'); await until(() => V.songMode === true, 4000); }, machine: () => ok(V.songMode === true && !V.songReload, "songMode " + V.songMode + ", reload " + V.songReload), within: 8000 },
+			{ say: "press PLAY: row 001 is marked +2, the line says 2 more", act: (u, c) => { c.lefts = []; u.click("#play"); },
+				screen: () => ok(leftOf() === "2" && /row 001 of 2 · A01 · 2 more/.test($1("#songPlays")?.textContent || ""), `mark ${leftOf()}, plays ${$1("#songPlays")?.textContent}`),
+				machine: () => ok(tele.last?.playing && tele.last.songRow === 0 && tele.last.songRepeats === 2, `row ${tele.last?.songRow}, repeats ${tele.last?.songRepeats}`), within: 8000 },
+			{ say: "the second pass: +1, the third: last; then row 002 has none", act: async (u, c) => {
+				const end = performance.now() + 12000; while (performance.now() < end && tele.last?.songRow !== 1) { const l = leftOf(); if (l != null && c.lefts[c.lefts.length - 1] !== l) c.lefts.push(l); await sleep(40); } },
+				screen: c => ok(c.lefts.join(" ") === "2 1 0" && !leftOf(), `marks ${c.lefts.join(" ")}, now ${leftOf()}`), machine: () => ok(tele.last?.songRow === 1 && tele.last.songRepeats === 0, `row ${tele.last?.songRow}, repeats ${tele.last?.songRepeats}`), within: 4000 },
+			{ say: "press STOP", act: u => { if (V.playing) u.click("#play"); }, screen: () => ok(!$1("#tl .scell.ph"), "still marked"), machine: () => ok(!V.playing, "playing") }
+		],
+		tidy: songPlayheadTidy
+	};
+	const wave12 = [clipsJ, undoKitJ, stopQueuedJ, lenRepeatJ, songRepeatsJ];
 	const slice5 = [modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, kitNameSave, songCommands, playModeJ, pageLeds, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
-	const all = [...slice5, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
+	const all = [...slice5, ...wave12, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
 		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
 		genJourney("md-gen-mutate-undo", false, { proves: [] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: [] }), genKeys,
 		shapeSound, typeValue, arrows, machinePick, machAudition, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,

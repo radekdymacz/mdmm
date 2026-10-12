@@ -118,7 +118,7 @@ NOTE: A row with a tempo of its own sets the tempo of the machine when it plays.
 NOTE: The machine sends and follows MIDI song position by itself. The editor does not change that.
 
 ## SONG EDITING
-<!-- rows: MM-260 MM-261 MM-262 MM-263 MM-265 MM-268 MM-269 MM-271 MM-275 @67250a -->
+<!-- rows: MM-260 MM-261 MM-262 MM-263 MM-265 MM-268 MM-269 MM-271 MM-275 @2dc0a4 -->
 
 The **Arrangement** is where you build the song. Each cell is a row: the pattern it plays, with marks under the name for what else the row does. You can edit the song while it plays.
 
@@ -216,11 +216,11 @@ The editor writes each edit into the song on the machine. An edit made while the
 NOTE: With a real Monomachine over MIDI, edits wait until the machine takes them. The sync field at the right of the LCD, which normally reads Sync, reads SEND and the number of edits that wait. Click it and follow the steps.
 
 ## SONG EDIT TRANSPORT
-<!-- rows: MM-270 MM-271 @e6529f -->
+<!-- rows: MM-270 MM-271 @b66d84 -->
 
 On the machine you start the song from any row: select the row and press [ENTER/YES]. In the editor select the row and press {key:song-play-from}, or click **▶ From here** (see "SONG TRANSPORT").
 
-The machine shows the song position in bars and beats. The editor shows the length of the whole song instead, in the **Songs** column and on the LCD. {gap:MM-271}There is no live bar and beat counter in the editor yet.{/gap}
+The machine counts the bars and beats the song has played in the EDIT SONG header. The editor shows the same counter in the **Arrangement** header while the song plays: Playing · 002:03 is bar 2, beat 3. The length of the whole song is in the **Songs** column and on the LCD.
 
 ## SONG LOOPS
 <!-- rows: MM-272 @d50ca1 -->

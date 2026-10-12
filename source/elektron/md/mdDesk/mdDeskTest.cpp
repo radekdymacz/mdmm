@@ -1009,6 +1009,20 @@ namespace
 
 		desk.onPageMessage(cmd(R"({"op":"ready"})"));
 		check(lastOf("catalogue") != nullptr, "the page gets the machine catalogue");
+		if(const auto* cat = lastOf("catalogue"))
+		{
+			// MD-033: each machine's clips, as the LCD draws them (gapProbesFirmwareTest w12clip)
+			std::string bd, rom;
+			for(const auto& m : cat->find("doc")->find("machines")->asArray())
+			{
+				std::string c;
+				for(const auto& i : m.find("clips")->asArray())
+					c += std::to_string(static_cast<int>(i.asNumber())) + " ";
+				if(m.find("machine")->asString() == "TRX-BD") bd = c;
+				if(m.find("machine")->asString() == "ROM-01") rom = c;
+			}
+			check(bd == "2 8 10 12 13 21 22 " && rom == "8 10 12 13 21 22 ", "the catalogue's clips: TRX-BD RAMP-RDEC and the effects and LFO pairs (" + bd + "/ " + rom + ")");
+		}
 		desk.onPageMessage(cmd(R"({"op":"trig","p":1,"t":0,"s":0,"id":1})"));
 		const auto* busy = lastOf("result");
 		check(busy && !busy->find("ok")->asBool(), "edits wait until the machine answers (device busy)");
@@ -2200,6 +2214,14 @@ namespace
 			keys.clear();
 			desk.onPageMessage(cmd(R"({"op":"panic","id":4})"));
 			check(ok() && keys == std::vector<std::string>{"stop", "stop"}, "panic: STOP twice (P5)");
+			// MD-043: the UNDO KIT through the panel: KIT, ENTER, UP to the list's first entry from the current kit (3), ENTER
+			status(desk, 0x02, 2);
+			desk.tick();
+			keys.clear();
+			desk.onPageMessage(cmd(R"({"op":"loadUndoKit","id":40,"force":true})"));
+			check(ok() && keys == std::vector<std::string>{"kit", "enter", "up", "up", "up", "enter"}, "UNDO KIT: KIT, ENTER, UP three times from K03, ENTER");
+			status(desk, 0x02, 0);
+			desk.tick();
 
 			// play from row 3 while playing in PATTERN mode: MIDI Stop, then SONG mode, then the position and Continue
 			t.playing = true;

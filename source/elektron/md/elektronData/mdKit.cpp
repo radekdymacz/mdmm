@@ -129,6 +129,37 @@ namespace elektronData
 		return m;
 	}
 
+	MdKit mdClearedKit(const MdKit& _was, const uint8_t _slot)
+	{
+		static constexpr std::array<uint8_t, MdKit::g_paramsPerTrack> track{
+			64, 64, 0, 0, 0, 0, 0, 0,		// synthesis
+			0, 0, 64, 64, 0, 127, 0, 0,		// AMD AMF EQF EQG FLTF FLTW FLTQ SRR
+			0, 127, 64, 0, 0, 64, 0, 0};	// DIST VOL PAN DEL REV LFOS LFOD LFOM
+		static constexpr std::array<std::array<uint8_t, 8>, MdKit::MasterFxCount> masterFx{{
+			{0, 0, 64, 0, 0, 127, 127, 96},			// gate box
+			{32, 0, 32, 0, 0, 127, 0, 96},			// rhythm echo
+			{64, 64, 64, 64, 64, 64, 64, 127},		// EQ
+			{127, 127, 127, 127, 127, 127, 0, 0}}};	// dynamix
+		auto k = _was;
+		k.position = _slot;
+		k.name[0] = 0x7f;
+		for(size_t t = 0; t < MdKit::g_tracks; ++t)
+		{
+			k.models[t] = 0;
+			k.params[t] = track;
+			k.levels[t] = 100;
+			k.lfos[t].track = static_cast<uint8_t>(t);
+			k.lfos[t].param = 0;
+			k.lfos[t].shape1 = 0;
+			k.lfos[t].shape2 = 4;
+			k.lfos[t].update = 0;
+			k.trigGroups[t] = MdKit::g_noGroup;
+			k.muteGroups[t] = MdKit::g_noGroup;
+		}
+		k.masterFx = masterFx;
+		return k;
+	}
+
 	std::vector<uint8_t> mdKitRequest(const uint8_t _slot)
 	{
 		return dumpIo::request(g_kitRequestId, _slot);
