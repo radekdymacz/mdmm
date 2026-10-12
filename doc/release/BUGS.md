@@ -4,6 +4,14 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-071 · Monomachine: an imported global's MIDI channels do not reach the machine
+
+- **From:** `mmDeskFirmwareTest <MM ROM> span`, once it ran under ctest, 2026-10-12: with base channel 13 and span 6 imported, the T2 and T3 edits, the MULTI ENV and the T1 to T3 mutes did not reach the machine.
+- **What happens:** import a .syx with the active global's channels changed: the GLOBAL page shows the new channels, the machine keeps the old ones (measured, `SPAN_PROBE=12,6 mmDeskFirmwareTest <MM ROM> spanprobe`: CCs on channels 1 to 6 still reach T1 to T6, channels 13 to 15 nothing). The editor sends to the new channels, so those edits and mutes are lost until the slot is made active again.
+- **Cause:** a dump of the active global is stored, not applied, until its slot is made active (0x56) after SYSEX RECV is left. B-067 moved every waiting 0x56 before the SYSEX RECV macro, to make a chosen slot active before the macro's cursor goes there. The re-activation after an imported dump waits in the same place, so it now went out before the macro, before the dump was in.
+- **Fix (`fix/mm-b071-main` (and `fix/0.6-span-song`)):** two separate waits: a slot the person chose goes before the macro (B-067); the re-activation of the active global goes after the macro, once RECV is left and no dump waits for it, as before B-067. A chosen slot drops any re-activation still waiting. Tests: `mmDeskFirmwareTest <MM ROM> span` (all three variants), `factoryglobal` and `intentcases` (B-067), mmDeskTest (a slot chosen while an imported dump waits stays active; the re-activation applies the new dump).
+- **Status:** fixed on `fix/mm-b071-main` (and `fix/0.6-span-song`). Not in a release: B-067 came after 0.5.1, but it is on main.
+
 ## B-068 · Monomachine: an FX machine's input reads back as another (INP A for BUS AB)
 
 - **From:** the MM intent cases on the firmware (`mmDeskFirmwareTest <MM ROM> intentcases`, doc/release/DEV-CYCLE.md), 2026-10-11.
