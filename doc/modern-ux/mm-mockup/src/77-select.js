@@ -63,6 +63,15 @@ function selCopyTo(dt,at){const x=selShown();if(!x)return false;
  edit("copyStepsTo",Object.assign(selArgs(x),{at,dt}));setSel(StepSel.landing({tracks:x.n,length:x.to-x.from},dt,at,SEL_TRACKS,S.len));return true}
 function selDuplicate(){const x=selShown();return x?selCopyTo(x.t,x.to):false}
 function selClear(){const x=selShown();if(!x)return false;const keep=selKeeps(x);edit("clearSteps",selArgs(x));selKeep(keep);return true}
+/* MM-201: the lane's parameter locked at its current value (the kit's) on every selected step of the lane's track that has a
+   note (the machine: hold the TRIG key, click the knob, manual 1-57); one undo step */
+function lockCurrent(){const t=S.sel,x=S.stepSel,pid=S.lane;
+ if(!x||t<x.t||t>=x.t+x.n){toast(`Select steps of ${tLabel(t)} first (⌘-click or drag on the ruler), then click the lock.`);return}
+ const v=getP(t,pid);if(v==null){toast(`${pidLabel(t,pid)} has no value on ${tLabel(t)}.`);return}
+ const steps=[];for(let s=x.from;s<x.to&&s<S.len;s++){const st=trk(t).steps[s];if(st&&!st.off)steps.push(s)}
+ if(!steps.length){toast("The selected steps have no notes: a step without a note cannot hold a lock.");return}
+ commit();let n=0;for(const s of steps){if(!setLock(t,pid,s,v))break;edit("lock",{t,...pidArgs(pid),s,v});n++}commit();
+ const[pg,i]=pid.split("."),m=meta(t,pg,+i);renderTop();renderLane();toast(`${pidLabel(t,pid)} locked at ${fmt(m,v)} on ${n} step${n>1?"s":""} · ${tLabel(t)}`)}
 /* MM-083, MM-184, MM-203: the selected steps' locks go, their notes stay (the machine's CLEAR NOTE LOCKS, TRIG + PLAY) */
 function selClearLocks(){const x=selShown();if(!x)return false;edit("clearStepLocks",selArgs(x));return true}
 /* I-010: a note before the selection that ran into it keeps its length when the selection is cleared: a NOTE OFF on

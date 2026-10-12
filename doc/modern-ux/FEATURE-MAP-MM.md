@@ -285,7 +285,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
 | Locks in grid mode 1-57 | Hold a trig, turn a knob | Lock | ✅ | Lane: draw; wheel; ramp with Shift |  | 1 |
-| Locks in grid mode 1-57 | Click a knob to lock its current value | Lock to current | 🟡 | Lane draw sets any value | No "lock current" click | – |
+| Locks in grid mode 1-57 | Click a knob to lock its current value | Lock to current | ✅ | Sequence, Locks: select steps, then the lock key in the rail header locks the lane's parameter at its current (kit) value on each selected note; one undo step | No "lock current" click | 1 |
 | Locks in grid mode 1-57 | View locks of a step | View | ✅ | Lane shows bars per parameter |  | 1 |
 | Locks in grid mode 1-57 | Remove one / all locks of a step | Remove | ✅ | One lock: Alt-drag on the lane; all locks of a step: the step menu's Clear locks |  | 1 |
 | Locks in grid mode 1-57 | Note copy and paste | Note copy | ✅ | See section 11 | Locks travel with the copied step | – |
@@ -531,8 +531,8 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 332 |
-| 🟡 | 18 |
+| ✅ | 333 |
+| 🟡 | 17 |
 | ❌ | 1 |
 | ➖ | 34 |
 | Total | 385 |
