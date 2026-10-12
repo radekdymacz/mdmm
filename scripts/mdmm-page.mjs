@@ -146,13 +146,14 @@ function runUnit(ed, selector, dir) {
 		fs.mkdirSync(dir, { recursive: true });
 		const logf = fs.createWriteStream(path.join(dir, "page.log")), cmdf = fs.createWriteStream(path.join(dir, "commands.jsonl"));
 		const lines = [], problems = [];
-		let finished = false, host = null, sid = null, timer = null, targetId = null;
+		let finished = false, host = null, sid = null, timer = null, targetId = null, contextId = null;
 		const t0 = Date.now();
 		const log = t => { logf.write(`${((Date.now() - t0) / 1000).toFixed(3)} ${t}\n`); };
 		const finish = async why => {
 			if (finished) return; finished = true; clearTimeout(timer);
 			if (why) { problems.push(why); log("FAIL " + why); }
 			if (targetId) try { await send("Target.closeTarget", { targetId }); } catch { }
+			if (contextId) try { await send("Target.disposeBrowserContext", { browserContextId: contextId }); } catch { }
 			if (host) { host.stdin.end(); host.kill(); }
 			logf.end(); cmdf.end();
 			done({ ed, dir, lines, problems, secs: (Date.now() - t0) / 1000 });
@@ -176,7 +177,10 @@ function runUnit(ed, selector, dir) {
 			if (host) host.stdin.write(JSON.stringify(batch) + "\n");
 			else deliver(JSON.stringify(batch.filter(c => c.id != null).map(c => ({ type: "result", id: c.id, op: c.op, ok: true }))));
 		};
-		targetId = (await send("Target.createTarget", { url: "about:blank" })).targetId;
+		/* each page in a browser context of its own: the pages of one run shared one origin, so one page's remembered
+		   ticks (localStorage: Copy what, Paste what) were another's starting state, whatever journey it ran then */
+		contextId = (await send("Target.createBrowserContext", { disposeOnDetach: true })).browserContextId;
+		targetId = (await send("Target.createTarget", { url: "about:blank", browserContextId: contextId })).targetId;
 		sid = (await send("Target.attachToTarget", { targetId, flatten: true })).sessionId;
 		sessions.set(sid, (method, p) => {
 			if (method === "Runtime.bindingCalled" && p.name === "__mdmmPost") { try { fromPage(JSON.parse(p.payload)); } catch (e) { log("post: " + e.message); } }
@@ -226,13 +230,15 @@ ws.close(); chrome.kill(); server.close();
 try { fs.rmSync(profile, { recursive: true, force: true }); } catch { }
 
 let passed = 0, failed = 0, skipped = 0, status = 0;
-const report = [];
+const report = [], leftOver = [];
 for (const r of results) {
 	report.push(`== ${r.ed} (${path.basename(r.dir)}), ${r.secs.toFixed(1)} s`);
 	for (const l of r.lines) if (/^JOURNEY \S+ (PASS|FAIL|SKIP)|^JOURNEYS (start|DONE)/.test(l)) report.push(l);
 	passed += r.lines.filter(l => /^JOURNEY \S+ PASS/.test(l)).length;
 	failed += r.lines.filter(l => /^JOURNEY \S+ FAIL/.test(l)).length;
 	skipped += r.lines.filter(l => /^JOURNEY \S+ SKIP/.test(l)).length;
+	/* what a journey left for the next one to put right (the page's between and the runner's close of what stays open) */
+	for (const l of r.lines) if (/^JOURNEY \S+ before: /.test(l)) leftOver.push(`${r.ed}: ${l.replace(/^JOURNEY /, "")}`);
 	const uniq = [...new Set(r.problems)];
 	for (const p of uniq.slice(0, 10)) report.push("FAIL " + p);
 	if (uniq.length) status = 1;
@@ -240,6 +246,7 @@ for (const r of results) {
 }
 if (failed) status = 1;
 if (passed + failed + skipped === 0) { report.push("FAIL no journey matched " + sel + tierSel); status = 1; }
+if (leftOver.length) { report.push(`WARN ${leftOver.length} journey(s) started on state the one before left (the journey named comes after the one that left it):`); for (const l of leftOver) report.push("   " + l.slice(0, 200)); }
 report.push(`PAGE JOURNEYS: ${passed} passed, ${failed} failed, ${skipped} skipped in ${Math.round((Date.now() - T0) / 1000)} s (${opt.jobs} per editor)`);
 fs.writeFileSync(path.join(OUT, "report.txt"), report.join("\n") + "\n");
 console.log(report.filter(l => !/^JOURNEY \S+ PASS/.test(l)).join("\n"));
