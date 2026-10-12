@@ -257,3 +257,45 @@ no journey yet); **not testable** (why). "—": the editor has no such feature.
 5. A journey's Alt chord (`u.key(k, {alt: true})`) sends no keyup of Alt itself. The Monomachine page now ends a
    rotate run on any event without Alt as well (MM-PORT-PLAN.md 2026-10-05), so the journeys after `mm-seq-rotate` keep
    their own undo steps.
+
+## 0.6 slice 5: the Machinedrum journeys for the rows that had none
+
+Written 2026-10-12 from doc/features/unproved-md.md: each journey names the rows it proves (`proves:`), all in the page tier (headless Chrome on the real core, `scripts/mdmm-page.mjs`), with the guide's pictures as snapshots. Where an existing journey already did the thing, its `proves:` grew instead (MD-279 and MD-283 to MD-295 in the kit, pattern, song, mix and sound journeys). Two rows have none: MD-192 and MD-200 need a dropped sample file, so only the machine tier with a WAV can show them.
+
+| Journey | Rows |
+|---|---|
+| md-top-mode | MD-004, MD-087, MD-088, MD-138 |
+| md-seq-scale | MD-103, MD-104, MD-105 |
+| md-seq-swing-accent | MD-126, MD-130 |
+| md-top-tempo-steps | MD-089 |
+| md-lib-pattern-chooser | MD-006, MD-095, MD-120, MD-291 |
+| md-lib-kit-menu | MD-018, MD-030, MD-038, MD-040 |
+| md-lib-kit-memory | MD-109, MD-102 |
+| md-quick-start | MD-035 |
+| md-sound-knob-steps | MD-036 |
+| md-sound-machine-reference | MD-211 to MD-274 (63 rows) |
+| md-sound-track-effects | MD-011 to MD-069 (13 rows) |
+| md-sound-filter-sweep | MD-101 |
+| md-sound-relations | MD-049, MD-050, MD-290 |
+| md-sound-keep-clear | MD-048, MD-053 |
+| md-mix-master-cards | MD-071, MD-072, MD-073, MD-074, MD-287 |
+| md-sound-lfo | MD-288 to MD-085 (11 rows) |
+| md-sound-ctr-locks | MD-075 |
+| md-global-settings | MD-093, MD-170, MD-171, MD-185, MD-186, MD-188, MD-281 |
+| md-global-channel-trig-slot | MD-172, MD-168, MD-282 |
+| md-global-map-track | MD-165, MD-284, MD-276 |
+| md-sound-cc-channels | MD-277 |
+| md-lib-syx-original | MD-182 |
+| md-sampler-rename | MD-197 |
+| md-lib-kit-name-save | MD-280, MD-283 |
+| md-song-commands | MD-143, MD-152, MD-153, MD-155, MD-156, MD-161, MD-295 |
+| md-top-play-mode | MD-295 |
+| md-seq-page-leds | MD-021, MD-028 |
+| md-sound-focus-info | MD-031 |
+| md-seq-clear-page | MD-119 |
+| md-seq-clear-locks | MD-115 |
+| md-seq-swing-copy | MD-133 |
+| md-keys-mutes-persist | MD-125 |
+| md-seq-lock-budget | MD-137 |
+| md-seq-live-lock | MD-139 |
+| md-limits | MD-207 |
