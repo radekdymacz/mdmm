@@ -4,6 +4,14 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-104 · Machinedrum: the first PLAY after start-up can do nothing
+
+- **From:** the 0.6 e2e work, 2026-10-13: `mdDeskFirmwareTest p4` ("the first PLAY after ready plays") failed on `feat/0.6-e2e` too; a first PLAY that does nothing is what users report.
+- **What happens:** the editor says the machine is ready about 30 ms after the firmware takes MIDI, while its start-up animation still runs for 10 to 14 s and ignores the panel's keys: PLAY is pressed and lost.
+- **Cause:** the start-up animation is over when main RAM 0x28998a turns non-zero (`md::BootAnimation`, P4). A status request answered at the instant the firmware takes MIDI leaves 0x20 there at once, with the animation still running (measured: 0x20 from the start, 0x27 at 11.9 s, PLAY first taken then; without that early request the byte stays 0 until 0x27). Whether the editor's first requests land at that instant is timing, so it happened on some starts only. The test also ran its boot on the blank-flash formatting run, which the plug-in shows as loading (B-003), not on the start the page sees.
+- **Fix (`fix/0.6-e2e-md`):** 0x20 is not the main screen (`BootAnimation::isMainScreen`); the 30 s timeout stays. `mdSequencerStateTest` (0x20 then 0x27); `mdDeskFirmwareTest p4` boots on the formatted flash, as the plug-in's second start, and the first PLAY after ready plays (input ready 13.8 s after MIDI; before the fix 33 ms, PLAY lost).
+- **Status:** fixed on `fix/0.6-e2e-md`.
+
 ## B-103 · Machinedrum: a pattern made 64 steps long from 48 repeats the wrong steps
 
 - **From:** the 0.6 e2e run, 2026-10-13: `md-seq-len-repeats` fails ("total 32, T1 [0,8,14,16,22,32,40,46,48,56,62]", toast "As the machine does: the first 48 steps repeat into steps 49 to 64").

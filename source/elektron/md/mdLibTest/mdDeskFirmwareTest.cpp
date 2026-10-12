@@ -82,8 +82,9 @@ namespace
 	class Rig
 	{
 	public:
-		explicit Rig(const Bytes& _rom, const std::string& _romName, const Bytes& _patchRam = {}, const bool _waitSplash = true)
-			: m_machine(_rom, _romName, _patchRam, _waitSplash)
+		explicit Rig(const Bytes& _rom, const std::string& _romName, const Bytes& _patchRam = {}, const bool _waitSplash = true,
+			const Bytes& _flash = {}, const Bytes& _factoryCache = {})
+			: m_machine(_rom, _romName, _patchRam, _waitSplash, md::MachineModel::Machinedrum, _flash, _factoryCache)
 		{
 			mdDesk::Desk::Port port;
 			port.device.sendSysex = [this](const Bytes& _b) { m_patternDumps += _b.size() > 6 && _b[6] == 0x67; m_out.push_back(_b); };
@@ -1078,7 +1079,19 @@ namespace
 	void bootHold(const Bytes& _rom, const std::string& _romName)
 	{
 		std::puts("== P4 boot: input held until the start-up animation is over");
-		Rig rig(_rom, _romName, {}, false);
+		// The start the page sees (B-003): a machine with a blank UW flash first formats it, which the plug-in shows as
+		// loading, and starts again on the formatted flash. So the formatting run first, then the start under test on
+		// its flash. B-104: the desk's status requests at the instant the firmware takes MIDI left 0x20 in the main
+		// screen byte while the animation still ran; the desk took that for the main screen and its first PLAY was lost.
+		Bytes flash, cache;
+		{
+			Machine prep(_rom, _romName);
+			require(prep.hardware().isFactoryFlashCacheReady(), "the first run did not prepare the UW flash");
+			flash = prep.hardware().copyFlashData();
+			cache = prep.hardware().copyFactoryFlashCache();
+		}
+		Rig rig(_rom, _romName, Bytes{}, false, flash, cache);
+		check(!rig.machine().hardware().isFactoryFlashInitializationExpected(), "the start under test is not the formatting run");
 		auto& m = rig.machine();
 		const auto t0 = m.now();
 		rig.page(R"({"op":"ready"})");

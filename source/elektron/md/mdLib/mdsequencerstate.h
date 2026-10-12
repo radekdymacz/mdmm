@@ -79,8 +79,14 @@ namespace md
 				return;
 			m_frames += _frames;
 			m_seen = true;
-			m_over = _mainScreen != 0 || m_frames >= g_timeoutFrames;
+			m_over = isMainScreen(_mainScreen) || m_frames >= g_timeoutFrames;
 		}
+
+		// The main screen is 0x27 (it then flickers 0x27 / 0x00). A status request answered the instant the firmware
+		// takes MIDI leaves 0x20 there while the animation still runs and ignores the panel's keys (measured
+		// 2026-10-13, mdDeskFirmwareTest p4: 0x20 at once, 0x27 after 11.9 s, PLAY first taken then): not over.
+		static bool isMainScreen(const uint8_t _value) { return _value != 0 && _value != g_earlySysex; }
+		static constexpr uint8_t g_earlySysex = 0x20;
 
 		// -1 not known yet, 1 the animation runs (keys are ignored), 0 over.
 		int state() const { return m_over ? 0 : m_seen ? 1 : -1; }
