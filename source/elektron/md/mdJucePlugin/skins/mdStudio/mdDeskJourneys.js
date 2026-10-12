@@ -1380,8 +1380,173 @@ const MdJourneys = (() => {
 					within: 90000 }
 		]
 	};
-	const all = [bootCard, firstBeat, spaceTransport, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
-		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec,
+
+	/* ---------- wave 2: the transport beyond PLAY and STOP (doc/modern-ux/DESIGN-machine-menus.md §2) ---------- */
+	const opsSent = [];	/* the ops the page sent, newest last (a tempo sent once, at the release) */
+	{ const send0 = Bridge.send; Bridge.send = (m, o) => { opsSent.push(m.op); if (opsSent.length > 80) opsSent.shift(); return send0(m, o); }; }
+	const paused = () => $1("#play")?.classList.contains("paused");
+	const playing = () => !!tele.last?.playing;
+	const stopAll = async u => { if (S.paused || V.playing) { u.click("#play"); await sleep(200); } if (V.playing) { u.click("#play"); await until(() => !playing(), 3000); } };
+	const pauseJ = {
+		name: "md-top-pause", proves: ["MD-014", "MD-029", "MD-148"],
+		steps: [
+			{ say: "press PLAY", act: u => { tele.steps = []; u.click("#play"); }, machine: () => ok(playing() && new Set(tele.steps).size >= 3, "telemetry " + tele.steps.join(",")), within: 6000 },
+			{ say: "⇧-click ▶: it pauses, ▶ blinks, the position stays", act: (u, c) => u.click("#play", { shift: true }),
+				screen: c => ok(paused() && /^\d\d\.\d\d$/.test(c.pos = $1("#pos").textContent), "paused " + paused() + ", POSITION " + $1("#pos").textContent),
+				machine: () => ok(!playing(), "still playing"), within: 3000 },
+			{ say: "wait: the step holds", act: async (u, c) => { c.held = S.paused?.step; await sleep(600); }, screen: c => ok(paused() && $1("#pos").textContent === c.pos, "POSITION " + $1("#pos").textContent + ", was " + c.pos),
+				machine: () => ok(!playing(), "it moved on") },
+			{ say: "click ▶: it goes on from the step it held", act: u => { tele.steps = []; u.click("#play"); },
+				screen: () => ok(!paused() && V.playing, "paused " + paused()),
+				machine: c => ok(playing() && tele.steps.length >= 2 && (tele.steps[0] === c.held || tele.steps[0] === c.held + 1), `steps after ${c.held + 1}: ${tele.steps.map(s => s + 1).join(",")}`), within: 4000 },
+			{ say: "⇧Space: paused again", act: u => { document.activeElement?.blur?.(); u.key(" ", { shift: true }); }, screen: () => ok(paused(), "not paused"), machine: () => ok(!playing(), "playing"), within: 3000 },
+			{ say: "⇧Space again: it plays on", act: u => u.key(" ", { shift: true }), screen: () => ok(!paused() && V.playing, "paused " + paused()), machine: () => ok(playing(), "not playing"), within: 3000 },
+			{ say: "⇧-click ▶, then STOP from the ▾ menu: the pause ends, the position goes", act: async u => { u.click("#play", { shift: true }); await until(paused, 2000); u.click("#playmore"); await until(() => !!$1('#deskmenu [data-mid="play"]'), 2000); u.click('#deskmenu [data-mid="play"]'); },
+				screen: () => ok(!paused() && !V.playing && $1("#pos").textContent === "--.--", "POSITION " + $1("#pos").textContent), machine: () => ok(!playing(), "playing"), within: 3000 }
+		],
+		async tidy(u) { await stopAll(u); }
+	};
+	const panicJ = {
+		name: "md-top-panic", proves: ["MD-015"],
+		steps: [
+			{ say: "press PLAY", act: u => u.click("#play"), machine: () => ok(playing(), "not playing"), within: 6000 },
+			{ say: "click the ▾ in the ▶ key's corner: the transport menu, Panic in it", act: u => u.click("#playmore"),
+				screen: () => ok(!!$1('#deskmenu [data-mid="panic"]') && !$1('#deskmenu [data-mid="panic"]').disabled && !!$1('#deskmenu [data-mid="pause"]') && !!$1('#deskmenu [data-mid="record"]'), "menu " + ($1("#deskmenu")?.textContent || "none")), within: 2000 },
+			{ say: "click Panic: every voice off, the machine stops (its STOP twice)", act: u => u.click('#deskmenu [data-mid="panic"]'),
+				screen: () => ok(!$1('#deskmenu [data-mid="panic"]') && !V.playing, "playing " + V.playing), machine: () => ok(!playing() && results.some(r => r.op === "panic" && r.ok), "playing " + playing()), within: 3000 },
+			{ say: "PLAY, then right-click ▶: the same menu", act: async u => { u.click("#play"); await until(playing, 4000); u.rightClick("#play"); },
+				screen: () => ok(!!$1('#deskmenu [data-mid="panic"]'), "no menu"), within: 2000 },
+			{ say: "press Escape: it closes; ⌘.: panic, it stops", act: async u => { u.key("Escape"); await until(() => !$1('#deskmenu [data-mid="panic"]'), 1000); document.activeElement?.blur?.(); u.key(".", { cmd: true }); },
+				machine: () => ok(!playing(), "playing"), screen: () => ok(!V.playing && !$1("#deskmenu [data-mid]"), "menu or play"), within: 3000 }
+		],
+		async tidy(u) { if (typeof closeDeskMenu === "function") closeDeskMenu(); await stopAll(u); }
+	};
+	const tempoWindowJ = {
+		name: "md-top-tempo-window", proves: ["MD-009", "MD-091"],
+		steps: [
+			{ say: "click the tempo on the LCD (no drag): the TEMPO window", act: (u, c) => { c.b0 = Docs.global.tempo; u.click("#bpm"); },
+				screen: () => ok(!!$1("#tempopop") && $1("#tpv")?.textContent === (+V.bpm).toFixed(1), "pop-up " + ($1("#tpv")?.textContent || "none")), within: 2000 },
+			{ say: "click +: one BPM faster", act: u => u.click('#tempopop [data-tp="1"]'),
+				screen: c => ok(parseFloat($1("#tpv").textContent) === lcdBpm(c.b0 + 1) && parseFloat($1("#bpm").textContent) === lcdBpm(c.b0 + 1), "window " + $1("#tpv").textContent + ", LCD " + $1("#bpm").textContent),
+				machine: c => ok(Math.abs(Docs.global.tempo - (c.b0 + 1)) < 0.05, "tempo " + Docs.global.tempo), within: 4000 },
+			{ say: "click −: back", act: u => u.click('#tempopop [data-tp="-1"]'), machine: c => ok(Math.abs(Docs.global.tempo - c.b0) < 0.05, "tempo " + Docs.global.tempo), within: 4000 },
+			{ say: "hold +10 %: 10 % faster while held (the LCD says it), nothing stored", act: (u, c) => { c.n = opsSent.length; const b = $1('#tempopop [data-tp="n+"]'); b.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1, pointerType: "mouse", isPrimary: true })); },
+				screen: c => ok(parseFloat($1("#bpm").textContent) === DeskTransport.nudged(c.b0, 10) && parseFloat($1("#tpv").textContent) === DeskTransport.nudged(c.b0, 10), "LCD " + $1("#bpm").textContent),
+				machine: c => ok(results.some(r => r.op === "nudge" && r.ok) && Math.abs(Docs.global.tempo - c.b0) < 0.05, "nudge " + JSON.stringify(results.filter(r => r.op === "nudge").slice(-1))), within: 3000 },
+			{ say: "let go: back to the tempo it was", act: () => $1('#tempopop [data-tp="n+"]').dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1, pointerType: "mouse", isPrimary: true })),
+				screen: c => ok(parseFloat($1("#bpm").textContent) === lcdBpm(c.b0), "LCD " + $1("#bpm").textContent), machine: c => ok(Math.abs(Docs.global.tempo - c.b0) < 0.05 && opsSent.slice(c.n).filter(o => o === "nudge").length === 2, "tempo " + Docs.global.tempo + ", sent " + opsSent.slice(c.n).join(",")), within: 3000 },
+			{ say: "press Escape: it closes; the key = held and let go nudges too", act: async (u, c) => { u.key("Escape"); await sleep(100); c.n = opsSent.length; document.activeElement?.blur?.(); u.key("="); },
+				screen: () => ok(!$1("#tempopop"), "still open"), machine: c => ok(opsSent.slice(c.n).filter(o => o === "nudge").length === 2, "sent " + opsSent.slice(c.n).join(",")), within: 2000 }
+		],
+		async tidy() { DeskTransport.closeTempo(); }
+	};
+	const tempoReleaseJ = {
+		name: "md-top-tempo-release", proves: ["MD-090"],
+		steps: [
+			{ say: "⌥-drag the tempo up: the LCD follows, the tempo goes once, at the release", act: async (u, c) => { c.b0 = Docs.global.tempo; c.n = opsSent.length; await u.drag("#bpm", [[0, -6], [0, -12], [0, -18], [0, -24]], { alt: true }); },
+				screen: c => ok(parseFloat($1("#bpm").textContent) === lcdBpm(V.bpm) && V.bpm > c.b0, "LCD " + $1("#bpm").textContent),
+				machine: c => ok(Docs.global.tempo > c.b0 && opsSent.slice(c.n).filter(o => o === "tempo").length === 1, "tempo " + Docs.global.tempo + ", sent " + opsSent.slice(c.n).join(",")), within: 4000 },
+			{ say: "in the TEMPO window tick Change on release, close it, drag down as far: one tempo again", act: async (u, c) => { u.click("#bpm"); await until(() => !!$1("#tpdelay"), 2000); if (!$1("#tpdelay").checked) u.click("#tpdelay"); u.key("Escape"); await sleep(100); c.b1 = Docs.global.tempo; c.n = opsSent.length; await u.drag("#bpm", [[0, 6], [0, 12], [0, 18], [0, 24]]); },
+				machine: c => ok(Math.abs(Docs.global.tempo - c.b0) < 0.05 && opsSent.slice(c.n).filter(o => o === "tempo").length === 1, "tempo " + Docs.global.tempo + " (was " + c.b0 + "), sent " + opsSent.slice(c.n).join(",")), within: 4000 }
+		],
+		async tidy(u, c) { DeskTransport.setDelayed(false); DeskTransport.closeTempo(); if (c.b0 != null && Math.abs(Docs.global.tempo - c.b0) >= 0.05) cmd("tempo", { bpm: c.b0 }); await sleep(300); }
+	};
+	const playFromJ = {
+		name: "md-song-play-from", proves: ["MD-146", "MD-145"],
+		steps: [
+			go("song"),
+			{ say: "click row 3 of the arrangement, then ▶ From here: the machine plays the song from row 3, in SONG mode", act: async (u, c) => { c.m0 = machineState().songMode === true; u.click('[data-set="songpick"] button[data-v="song"]'); await until(() => !!$1('[data-rowact="from"]'), 4000); u.click('.scell[data-i="2"]'); await sleep(150); u.click('[data-rowact="from"]'); },
+				screen: () => ok(V.songMode === true && V.playing, "song mode " + V.songMode + ", playing " + V.playing),
+				machine: () => ok(playing() && tele.last.songRow === 2, "row " + (tele.last?.songRow + 1) + ", playing " + playing()), within: 8000 },
+			{ say: "click row 2 and press Enter: from row 2", act: async u => { u.click('.scell[data-i="1"]'); await sleep(150); document.activeElement?.blur?.(); u.key("Enter"); },
+				machine: () => ok(playing() && tele.last.songRow === 1, "row " + (tele.last?.songRow + 1)), within: 8000 }
+		],
+		async tidy(u, c) { await stopAll(u); if (!c.m0 && machineState().songMode === true) { cmd("seqMode", { song: false }); await sleep(800); } }
+	};
+
+	/* ---------- 0.6 wave 4: COPY / PASTE / CLEAR what (skins/shared/deskWhat.js, mdDeskWhat.js) ---------- */
+	const blur = () => document.activeElement?.blur?.();
+	const whatShown = () => !$1("#dlg").hidden && !!$1("#dlg .what");
+	const whatTicked = () => $all("#dlg .what input[data-wid]:checked").map(x => x.dataset.wid);
+	/* the dialog's ticks made to want (each box clicked as a person would) */
+	const whatTick = (u, want) => { for (const x of $all("#dlg .what input[data-wid]")) if (!x.disabled && x.checked !== want.includes(x.dataset.wid)) u.click(x); };
+	/* shot(menu): the snapshots of the menu and of the dialog it opens (Journey.snapshot: the guide's pictures) */
+	const whatPick = (verb, shot) => ({ say: `click ▾ beside COPY CLR PASTE, then ${verb[0].toUpperCase() + verb.slice(1)}…`,
+		act: async u => { u.click("[data-secwhat]"); await until(() => DeskMenu.shown, 1500); if (shot) shot(true); u.click(`#deskmenu [data-mid="${verb}"]`);
+			if (shot && await until(whatShown, 1500)) shot(false); },
+		screen: () => ok(whatShown() && $1("#dlg .what h3")?.textContent.toLowerCase() === verb + " what", "dialog " + ($1("#dlg h3")?.textContent || "none")) });
+	const lfoOf = t => { const k = kit()?.tracks[t]; return k ? { ...k.lfo, spd: k.routing.slice(5) } : null; };
+	const copyWhat = {
+		name: "md-seq-copy-what", proves: ["MD-116", "MD-129", "MD-142"],
+		steps: [
+			go("seq"),
+			{ say: "pick a track with two trigs or more, and another with a different machine", act: (u, c) => {
+				c.a = soundTracks().find(t => trigsOf(t).filter(s => s < V.len).length >= 2) ?? soundTrack();
+				c.b = soundTracks().find(t => t !== c.a && V.tracks[t].model !== V.tracks[c.a].model && !same(trigsOf(t), trigsOf(c.a))) ?? (c.a + 1) % 16;
+				c.tb = trigsOf(c.b); c.mb = kit()?.tracks[c.b].model; u.click(rail(c.a)); },
+				screen: c => ok(S.sel === c.a, "selected " + S.sel), machine: c => ok(trigsOf(c.a).length >= 2, "fewer than two trigs") },
+			{ say: "shift-click its first trig (an accent), alt-shift-click its second (a slide)", act: async (u, c) => {
+				const on = trigsOf(c.a).filter(s => s < V.len); c.s0 = on[0]; c.s1 = on[1];
+				u.click(cell(c.a, c.s0), { shift: true }); await sleep(300); u.click(cell(c.a, c.s1), { alt: true, shift: true }); },
+				machine: c => ok(flagsOf(c.a, "accent").includes(c.s0) && flagsOf(c.a, "slide").includes(c.s1), `accent ${flagsOf(c.a, "accent")} slide ${flagsOf(c.a, "slide")}`), within: 4000 },
+			whatPick("copy", m => m ? Journey.snapshot("md-copy-what-menu") : Journey.snapshot("md-copy-what")),
+			{ say: "tick Trigs, Accent, Slide and Machine + sound (nothing else), click Copy", act: u => { whatTick(u, ["trigs", "accent", "slide", "sound"]); u.click("#dlg [data-wgo]"); },
+				screen: () => ok(!whatShown(), "still open"),
+				machine: c => ok(V.clipboard.track && V.clipboard.track.t === c.a && same(V.clipboard.track.what, ["trigs", "accent", "slide", "sound"]), "clipboard " + JSON.stringify(V.clipboard.track)), within: 4000 },
+			{ say: "pick the other track on the rail", act: (u, c) => u.click(rail(c.b)), screen: c => ok(S.sel === c.b, "selected " + S.sel) },
+			{ ...whatPick("paste", m => m ? Journey.snapshot("md-paste-what-menu") : Journey.snapshot("md-paste-what")), screen: c => ok(whatShown() && same($all("#dlg [data-wto][aria-pressed=true]").map(b => +b.dataset.wto), [c.b])
+				&& $1("#dlg [data-wgo]")?.textContent === "Paste into 1 track" && same(whatTicked(), ["trigs", "accent", "slide", "sound"])
+				&& $1('#dlg input[data-wid="locks"]')?.disabled, "keys " + $all("#dlg [data-wto][aria-pressed=true]").map(b => b.dataset.wto) + ", ticked " + whatTicked()) },
+			{ say: "click Paste into 1 track: the trigs, their marks and the sound land on it", act: u => u.click("#dlg [data-wgo]"),
+				machine: c => ok(same(trigsOf(c.b), trigsOf(c.a)) && same(flagsOf(c.b, "accent"), flagsOf(c.a, "accent")) && same(flagsOf(c.b, "slide"), flagsOf(c.a, "slide"))
+					&& kit()?.tracks[c.b].model === kit()?.tracks[c.a].model, `trigs ${trigsOf(c.b)}, accent ${flagsOf(c.b, "accent")}, slide ${flagsOf(c.b, "slide")}, model ${kit()?.tracks[c.b].model}`),
+				screen: c => ok(gridShows(c.b), "grid " + lit(c.b).join(",")), within: 8000 },
+			{ say: "press Cmd+Z once: the paste is one undo step, the track is as before", act: u => { blur(); u.key("z", { cmd: true }); },
+				machine: c => ok(same(trigsOf(c.b), c.tb) && kit()?.tracks[c.b].model === c.mb, `trigs ${trigsOf(c.b)}, model ${kit()?.tracks[c.b].model}`), within: 8000 },
+			{ say: "Cmd+Z twice more: the accent and the slide go", act: async u => { u.key("z", { cmd: true }); await sleep(600); u.key("z", { cmd: true }); },
+				machine: c => ok(!flagsOf(c.a, "accent").includes(c.s0) && !flagsOf(c.a, "slide").includes(c.s1), `accent ${flagsOf(c.a, "accent")} slide ${flagsOf(c.a, "slide")}`), within: 8000 }
+		]
+	};
+	const clearWhat = {
+		name: "md-seq-clear-what", proves: ["MD-129", "MD-117"],
+		steps: [
+			go("seq"),
+			{ say: "pick a track with trigs and shift-click its first trig: an accent", act: async (u, c) => {
+				c.a = soundTracks().find(t => trigsOf(t).filter(s => s < V.len).length >= 1) ?? soundTrack(); u.click(rail(c.a)); await sleep(200);
+				c.s0 = trigsOf(c.a).filter(s => s < V.len)[0]; c.t0 = trigsOf(c.a); u.click(cell(c.a, c.s0), { shift: true }); },
+				machine: c => ok(flagsOf(c.a, "accent").includes(c.s0), "accent " + flagsOf(c.a, "accent")), within: 4000 },
+			{ say: "press Cmd+Shift+Backspace: Clear what opens", act: u => { blur(); u.key("Backspace", { cmd: true, shift: true }); },
+				screen: () => ok(whatShown() && $1("#dlg .what h3")?.textContent === "Clear what" && $1("#dlg [data-wgo]")?.classList.contains("danger"), "dialog " + ($1("#dlg h3")?.textContent || "none")) },
+			{ say: "tick Accent alone and click Clear: the accent goes, the trigs stay", act: u => { whatTick(u, ["accent"]); u.click("#dlg [data-wgo]"); },
+				machine: c => ok(!flagsOf(c.a, "accent").length && same(trigsOf(c.a), c.t0), `accent ${flagsOf(c.a, "accent")}, trigs ${trigsOf(c.a)}`), within: 6000 },
+			{ say: "open Clear what again: Accent is still the one ticked (the ticks are remembered); tick Trigs alone, Clear", act: async (u, c) => {
+				u.key("Backspace", { cmd: true, shift: true }); await until(whatShown, 1500); c.ticks = whatTicked(); whatTick(u, ["trigs"]); u.click("#dlg [data-wgo]"); },
+				machine: c => ok(!trigsOf(c.a).length, "trigs " + trigsOf(c.a)), screen: c => ok(!lit(c.a).length && same(c.ticks, ["accent"]), "lit " + lit(c.a) + ", ticked before " + c.ticks), within: 6000 },
+			{ say: "Cmd+Z twice: the trigs and the accent are back", act: async u => { u.key("z", { cmd: true }); await sleep(600); u.key("z", { cmd: true }); },
+				machine: c => ok(same(trigsOf(c.a), c.t0) && flagsOf(c.a, "accent").includes(c.s0), `trigs ${trigsOf(c.a)}, accent ${flagsOf(c.a, "accent")}`), within: 8000 },
+			{ say: "Cmd+Z: the accent of the start goes too", act: u => u.key("z", { cmd: true }), machine: c => ok(!flagsOf(c.a, "accent").includes(c.s0), "accent " + flagsOf(c.a, "accent")), within: 6000 }
+		]
+	};
+	const lfoMenuJ = {
+		name: "md-sound-lfo-menu", proves: ["MD-086"],
+		steps: [
+			go("sound"),
+			{ say: "pick a track; two tracks whose LFOs differ", act: (u, c) => { const ts = soundTracks();
+				c.a = ts[0] ?? 0; c.b = ts.find(t => t !== c.a && !same(lfoOf(t), lfoOf(c.a))) ?? (c.a + 1) % 16; c.lb = lfoOf(c.b); u.click(rail(c.a)); },
+				screen: c => ok(S.sel === c.a && !!$1("[data-lfom]"), "selected " + S.sel + ", LFO ⋯ " + !!$1("[data-lfom]")) },
+			{ say: "click ⋯ on the LFO card, then Copy LFO", act: async u => { u.click("[data-lfom]"); await until(() => DeskMenu.shown, 1500); Journey.snapshot("md-lfo-menu"); u.click('#deskmenu [data-mid="copy"]'); },
+				machine: c => ok(V.clipboard.track && V.clipboard.track.t === c.a && same(V.clipboard.track.what, ["lfo"]), "clipboard " + JSON.stringify(V.clipboard.track)), within: 4000 },
+			{ say: "pick the other track, click ⋯, then Paste LFO", act: async (u, c) => { u.click(rail(c.b)); await sleep(300); u.click("[data-lfom]"); await until(() => DeskMenu.shown, 1500); u.click('#deskmenu [data-mid="paste"]'); },
+				machine: c => { const a = lfoOf(c.a), b = lfoOf(c.b); return ok(b && a.param === b.param && a.shape1 === b.shape1 && a.shape2 === b.shape2 && a.update === b.update && same(a.spd, b.spd)
+					&& b.track === (a.track === c.a ? c.b : a.track), "LFO " + JSON.stringify(b) + " from " + JSON.stringify(a)); }, within: 6000 },
+			{ say: "click ⋯, then Clear LFO: its settings at the start", act: async u => { u.click("[data-lfom]"); await until(() => DeskMenu.shown, 1500); u.click('#deskmenu [data-mid="clear"]'); },
+				machine: c => { const b = lfoOf(c.b); return ok(b && b.track === c.b && b.param === 0 && b.shape1 === 0 && b.shape2 === 0 && b.update === 0, "LFO " + JSON.stringify(b)); }, within: 6000 },
+			{ say: "Cmd+Z twice: the LFO is as before", act: async u => { blur(); u.key("z", { cmd: true }); await sleep(700); u.key("z", { cmd: true }); },
+				machine: c => ok(same(lfoOf(c.b), c.lb), "LFO " + JSON.stringify(lfoOf(c.b))), within: 8000 }
+		]
+	};
+	const all = [bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
+		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec,
 		genJourney("md-gen-mutate-undo", false, { proves: [] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: [] }), genKeys,
 		shapeSound, arrows, machinePick, soundCopy, editorDrag, controlAll, globalKey, songModeJ,
 		mixSolo, shiftMutes, allOff, fader, outKey, masterFx,

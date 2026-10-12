@@ -523,7 +523,7 @@ const MM_SEAM={
  "host":[
   "ownsClock","engineLabels","notes","start","commit","intent","library","undo","redo","history","togglePlay",
   "selectPattern","kit","tempo","mutes","keyMode","record","chain","chainClear","seqMode","loadSong","saveSong","waiting",
-  "sendNow","playKey","keyUp","noteOn","noteOff","joy","learning","learnTarget","learnBind","modulators",
+  "sendNow","playKey","keyUp","transport","noteOn","noteOff","joy","learning","learnTarget","learnBind","modulators",
   "engine","chooseRom","removeRom","romManage","syxChoose","syxExport","syxStart","syxStop","revealRom",
   "recheck","firstRun","bootScreen","renderPst","menu","audioDoc","audioSend","audioMeter","globalSlot"],
  "view":[
@@ -636,6 +636,9 @@ function demoRebase(step){if(window.MMDemoHost)window.MMDemoHost.rebase(step)}
                                       firmware, the ROM folder, look again (the page never reads the ROM)
      audioDoc(), audioSend(command), audioMeter(on)   the AUDIO / MIDI panel's devices
      globalSlot(n)                    GLOBAL's slot keys: make global slot n (0-7) the active one (B-051)
+     transport(op, args, done)        wave 2, the transport beyond PLAY and STOP: op pause | resume | stop | panic |
+                                      playFrom {i} (a song row) | nudge {pct} (the tempo pct % off while held, 0 =
+                                      back); done(ok) once the machine answered (128-transport.js)
    The view's side, for a host: window.MMView (130-main.js): values to read; show(view), the one
    writer of the state's document members (the machine's documents as the host derives them,
    DESIGN-UNIFY.md phase 1: the current pattern and kit, song, global, tempo, mutes, POLY, what
@@ -1182,6 +1185,93 @@ const SongSlots = (() => {
 	}
 
 	return { init(h) { host = h; }, html, afterRender, busy, select, get sel() { return sel; }, get naming() { return naming; } };
+})();
+
+/* ---- shared/deskWhat.js ---- */
+"use strict";
+/* COPY / PASTE / CLEAR what (0.6 wave 4, doc/modern-ux/DESIGN-machine-menus.md 2): the machine's SUPER COPY and SUPER
+   CLEAR, both editors. The LCD's COPY CLR PASTE keep acting as they do; the small ▾ beside them opens Copy… Paste…
+   Clear…, each a dialog of ticks grouped as the machine keeps the data (PATTERN, KIT) and, for Paste, the tracks it
+   goes into. The ticks are remembered (per editor and per verb, in this browser). One command goes out:
+   trackCopy / trackPaste / trackClear {t | to, what} (deskEdits.h trackParts), one undo step. The dialog is the
+   question: Paste and Clear write only from its key. Each page builds the dialog's data (its parts, counts, tracks,
+   what its engine says) and sends the command; this file is the dialog, the menu and the remembered ticks.
+
+   open(o): o = {verb: "copy"|"paste"|"clear", editor: "md"|"mm", src, srcNote, fine?,
+     groups: [{name, note?, info?, items: [{id, label, n?, why?}]}]  (why: the item cannot be ticked, and the reason)
+     to?: [{t, label, name, on, why?}]  (Paste: the target tracks; why: this track cannot take it)
+     defaults: [ids ticked the first time], done: (what, to) => void}
+   menu(el, run): the ▾'s menu under el; run(verb) opens that verb's dialog.
+   label(verb, what, to): the go key's words. ticked(editor, verb, ids, defaults): the remembered ticks among ids. */
+const What = (() => {
+	const VERBS = {
+		copy: { title: "Copy what", go: () => "Copy", fine: "Ticks are remembered. The machine's SUPER COPY.", key: "⌘⇧C" },
+		paste: { title: "Paste what", go: (n) => n > 1 ? `Paste into ${n} tracks` : n === 1 ? "Paste into 1 track" : "Paste", fine: "Ticks are remembered. Pastes into every lit track.", key: "⌘⇧V" },
+		clear: { title: "Clear what", go: () => "Clear", fine: "Ticks are remembered. The machine's SUPER CLEAR. ⌘Z undoes it.", key: "⌘⇧⌫" }
+	};
+	const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+	const store = (editor, verb) => "deskWhat." + editor + "." + verb;
+	/* the ticks of a verb as this browser remembers them (none: the defaults), among the ids offered */
+	function ticked(editor, verb, ids, defaults) {
+		let saved = null;
+		try { saved = JSON.parse(localStorage.getItem(store(editor, verb)) || "null"); } catch (_) { saved = null; }
+		const list = Array.isArray(saved) ? saved : defaults || [];
+		return ids.filter(id => list.includes(id));
+	}
+	function remember(editor, verb, ids) { try { localStorage.setItem(store(editor, verb), JSON.stringify(ids)); } catch (_) { } }
+	const label = (verb, what, to) => VERBS[verb].go(to ? to.length : 0);
+
+	/* the dialog's markup (pure): ticks by group, the target tracks, the go key and Cancel */
+	function html(o, on) {
+		const V = VERBS[o.verb];
+		const item = it => `<label class="${it.why ? "dis" : ""}"${it.why ? ` title="${esc(it.why)}"` : ""}><input type="checkbox" data-wid="${esc(it.id)}"${on.includes(it.id) && !it.why ? " checked" : ""}${it.why ? " disabled" : ""}> <span>${esc(it.label)}</span>${it.n != null && it.n !== "" ? `<small>${esc(it.n)}</small>` : ""}</label>`;
+		const groups = o.groups.map(g => `<div class="whatgrp"><h4>${esc(g.name)}<small>${esc(g.note || "")}</small></h4><div class="whatgrid">${g.items.map(item).join("")}</div>${g.info ? `<p class="whatinfo">${esc(g.info)}</p>` : ""}</div>`).join("");
+		const to = o.to ? `<div class="whatsrc whatto"><span class="ilab">To tracks</span><span class="to" role="group" aria-label="The tracks to paste into">${o.to.map(x =>
+			`<button type="button" data-wto="${x.t}" aria-pressed="${!!x.on && !x.why}"${x.why ? ` disabled title="${esc(x.why)}"` : ` title="${esc(x.name)}"`}>${esc(x.label)}</button>`).join("")}</span></div>` : "";
+		return `<div class="dlgbox what" role="dialog" aria-modal="true" aria-label="${esc(V.title)}"><h3>${esc(V.title)}</h3>
+			<div class="whatsrc"><span class="ilab">${o.verb === "paste" ? "From" : "Track"}</span><span class="lcdchip">${esc(o.src)}</span><span>${esc(o.srcNote || "")}</span></div>
+			${groups}${to}<p class="fine">${esc(o.fine || V.fine)}</p>
+			<div class="btnrow"><button class="${o.verb === "clear" ? "danger" : "cream"}" data-dlg="0" data-wgo="1">${esc(label(o.verb, [], o.to ? o.to.filter(x => x.on && !x.why) : null))}</button><button data-dlg="1">Cancel</button></div></div>`;
+	}
+	/* what the dialog says now: the ticked parts and the lit tracks */
+	function read(d) {
+		return { what: [...d.querySelectorAll("input[data-wid]:checked")].map(x => x.dataset.wid),
+			to: [...d.querySelectorAll("[data-wto][aria-pressed=true]")].map(x => +x.dataset.wto) };
+	}
+	let cur = null;
+	/* the go key: off while nothing is ticked (or no track lit), its words say how many tracks */
+	function sync(d) {
+		if (!cur) return;
+		const r = read(d), go = d.querySelector("[data-wgo]"); if (!go) return;
+		go.textContent = label(cur.verb, r.what, cur.to ? r.to : null);
+		go.disabled = !r.what.length || (!!cur.to && !r.to.length);
+	}
+	function open(o) {
+		const ids = o.groups.flatMap(g => g.items.filter(it => !it.why).map(it => it.id));
+		const on = ticked(o.editor, o.verb, ids, o.defaults);
+		const run = () => { const d = document.querySelector("#dlg"), r = read(d); cur = null; remember(o.editor, o.verb, r.what); o.done(r.what, r.to); };
+		Dlg.show({ key: "what", draw: () => {
+			const d = document.querySelector("#dlg");
+			cur = o; d.dataset.first = ""; d.innerHTML = html(o, on); d._btns = [["", "", run], ["Cancel", "", () => { cur = null; }]];
+			d.hidden = false; sync(d);
+		} });
+	}
+	const isOpen = () => !!cur && !document.querySelector("#dlg")?.hidden;
+	/* the target keys toggle; a tick changes the go key (capture: before the pages' own click routers) */
+	if (typeof document !== "undefined") {
+		document.addEventListener("click", e => {
+			const b = e.target.closest?.("#dlg .what [data-wto]"); if (!b || b.disabled) return;
+			e.stopPropagation(); b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") !== "true"); sync(document.querySelector("#dlg"));
+		}, true);
+		document.addEventListener("change", e => { if (e.target.closest?.("#dlg .what")) sync(document.querySelector("#dlg")); }, true);
+	}
+	function menu(el, run) {
+		const r = el.getBoundingClientRect();
+		DeskMenu.open([{ id: "copy", label: "Copy…", key: VERBS.copy.key, run: () => run("copy") }, { id: "paste", label: "Paste…", key: VERBS.paste.key, run: () => run("paste") },
+			{ id: "clear", label: "Clear…", key: VERBS.clear.key, run: () => run("clear") }, "-",
+			{ note: "Choose what of the selected track: the machine's SUPER COPY and SUPER CLEAR" }], Math.max(4, r.right - 230), r.bottom + 4, { title: "Copy / paste / clear what" });
+	}
+	return { open, menu, html, read, ticked, remember, label, isOpen, VERBS };
 })();
 
 /* ---- shared/deskTogglePaint.js ---- */
@@ -1833,6 +1923,151 @@ const DeskMenu = (() => {
 function closeDeskMenu() { DeskMenu.close(); }
 if (typeof module !== "undefined") module.exports = { DeskMenu };
 
+/* ---- shared/deskTransport.js ---- */
+"use strict";
+/* The transport beyond PLAY and STOP, both editors (wave 2, doc/modern-ux/DESIGN-machine-menus.md §2): the ▶ key's menu,
+   the TEMPO pop-up under the LCD's tempo, and the words and numbers they share. Nothing here knows a machine: each page
+   gives a host with its own commands.
+     The ▶ menu (right-click ▶, or the ▾ in its corner, so nothing is only behind a right-click): Play / Stop, Pause /
+     Continue, Record, Panic, each with its key. menuItems(state, host) is the list (pure); openMenu(x, y, state, host)
+     shows it (deskMenu.js). state: {playing, paused, rec, can: {pause, record, panic}, reasons: {name: words}}.
+     host: play(), stop(), pauseToggle(), record(), panic(), recordLabel. Paused, the first entry is Stop (it ends the
+     pause) and the second Continue.
+     The TEMPO pop-up (the machine's TEMPO menu): BPM − / + (⇧: a tenth), TAP, NUDGE −10 % / +10 % while held (the keys -
+     and = too), "Change on release" (the tempo drag sends at the release; ⌥-drag the tempo does it once), the sync line.
+     openTempo(anchor, host): host.bpm() the tempo shown, set(bpm), nudge(pct) (0 = let go), tap(), refused() the reason
+     the tempo cannot be set here or "" (a DAW sets it), sync: {text: () => words, html?: () => markup, click?(action),
+     global?: () => void}.
+     delayed() / setDelayed(on): "Change on release", remembered in this browser only (a convenience, nothing breaks
+     without it). nudged(bpm, pct) and clampBpm(v) are the numbers. Plain DOM, ES2020. */
+const DeskTransport = (() => {
+	const NUDGE = 10;
+	const KEY = "desk.tempoDelayed";
+	const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+	const clampBpm = v => Math.max(30, Math.min(300, Math.round(v * 10) / 10));
+	/* the tempo while a nudge is held: pct % off, to a tenth of a BPM */
+	const nudged = (bpm, pct) => clampBpm(bpm * (100 + pct) / 100);
+
+	/* ---- the ▶ menu (pure list) ---- */
+	function menuItems(st, h) {
+		const can = st.can || {}, why = st.reasons || {};
+		const items = [
+			{ id: "play", label: st.playing || st.paused ? "Stop" : "Play", key: "Space", enabled: can.transport !== false, run: () => st.playing || st.paused ? h.stop() : h.play() },
+			{ id: "pause", label: st.paused ? "Continue" : "Pause", key: "⇧Space", enabled: can.transport !== false && (st.playing || st.paused), run: () => h.pauseToggle() },
+			{ id: "record", label: h.recordLabel || "Record", key: "⌥Space", enabled: can.record !== false, run: () => h.record() },
+			"-",
+			{ id: "panic", label: "Panic: all voices off", key: "⌘.", enabled: can.panic !== false, run: () => h.panic() }
+		];
+		if (can.panic === false && why.panic) items.push({ note: why.panic });
+		return items;
+	}
+	function openMenu(x, y, st, h) {
+		if (typeof DeskMenu !== "undefined") DeskMenu.open(menuItems(st, h), x, y, { title: "Transport" });
+	}
+
+	/* ---- "Change on release" (this browser only) ---- */
+	function delayed() { try { return localStorage.getItem(KEY) === "1"; } catch (_) { return false; } }
+	function setDelayed(on) { try { localStorage.setItem(KEY, on ? "1" : "0"); } catch (_) { } }
+
+	/* ---- the TEMPO pop-up ---- */
+	let pop = null, host = null, anchorEl = null, held = 0;
+	const q = s => pop && pop.querySelector(s);
+	function draw() {
+		if (!pop || !host) return;
+		const v = q("#tpv"); if (v) v.textContent = (+host.bpm() || 0).toFixed(1);
+		const why = host.refused ? host.refused() : "";
+		pop.querySelectorAll("[data-tp]").forEach(b => { if (b.dataset.tp !== "close" && b.dataset.tp !== "glob") { b.disabled = !!why; b.title = why || b.dataset.title || ""; } });
+		const s = q(".tsync"); if (s && host.sync) s.innerHTML = syncRow();
+	}
+	function syncRow() {
+		const s = host.sync || {};
+		return `<span class="ilab">Sync</span>${s.html ? s.html() : `<span class="note">${esc(s.text ? s.text() : "")}</span>`}`
+			+ (s.global ? `<button data-tp="glob" class="tglob" title="GLOBAL › Sync: where the tempo comes from">Sync in GLOBAL →</button>` : "");
+	}
+	function place() {
+		if (!pop || !anchorEl) return;
+		const r = anchorEl.getBoundingClientRect(), w = pop.offsetWidth || 390, vw = document.documentElement.clientWidth || innerWidth;
+		const left = Math.max(12, Math.min(vw - w - 12, r.left + r.width / 2 - 40));
+		pop.style.left = left + "px"; pop.style.top = (r.bottom + 12) + "px";
+		pop.style.setProperty("--ax", Math.max(10, r.left + r.width / 2 - left - 7) + "px");
+	}
+	function openTempo(anchor, h) {
+		closeTempo();
+		host = h; anchorEl = anchor;
+		pop = document.createElement("div");
+		pop.className = "tempopop"; pop.id = "tempopop"; pop.setAttribute("role", "dialog"); pop.setAttribute("aria-label", "Tempo");
+		pop.innerHTML = `<div class="th1"><span class="cap">Tempo</span><span class="note">the machine's TEMPO menu</span><button class="libx" data-tp="close" title="Close (Esc)">Esc</button></div>
+			<div class="bpmrow"><span class="bpmbig" id="tpv">0.0</span><small>BPM</small>
+				<button class="sq" data-tp="-1" data-title="−1 BPM (⇧: −0.1)" aria-label="Slower">−</button><button class="sq" data-tp="1" data-title="+1 BPM (⇧: +0.1)" aria-label="Faster">+</button>
+				<button class="tap" data-tp="tap" data-title="Tap the tempo (also ⇧B): four taps or more set it">TAP</button></div>
+			<div class="tr"><span class="ilab">Nudge</span><button data-tp="n-" data-title="Hold: 10 % slower while held (key -)">◂ −10 %<kbd>-</kbd></button><button data-tp="n+" data-title="Hold: 10 % faster while held (key =)">+10 % ▸<kbd>=</kbd></button><span class="hold">hold; let go = back</span></div>
+			<label class="tr"><input type="checkbox" id="tpdelay"${delayed() ? " checked" : ""}> Change on release <span class="hold">⌥-drag the tempo: once</span></label>
+			<div class="tr tsync"></div>
+			<div class="tnote">The tempo is global on the machine: a pattern does not store it, a song row can.</div>`;
+		document.body.appendChild(pop);
+		anchor.closest(".f")?.classList.add("tempof");
+		anchor.setAttribute("aria-expanded", "true");
+		draw(); place();
+		pop.addEventListener("click", e => {
+			const b = e.target.closest("[data-tp]"); if (!b || b.disabled) return;
+			const a = b.dataset.tp;
+			if (a === "close") { closeTempo(); return; }
+			if (a === "glob") { closeTempo(); host.sync?.global?.(); return; }
+			if (a === "tap") { host.tap(); setTimeout(draw, 0); return; }
+			if (a === "-1" || a === "1") { host.set(clampBpm(+host.bpm() + (+a) * (e.shiftKey ? .1 : 1))); setTimeout(draw, 0); return; }
+			if (a.startsWith("sync:")) host.sync?.click?.(a.slice(5));
+		});
+		pop.addEventListener("change", e => { if (e.target.id === "tpdelay") setDelayed(e.target.checked); });
+		pop.addEventListener("pointerdown", e => { const b = e.target.closest('[data-tp="n-"],[data-tp="n+"]'); if (b && !b.disabled) nudge(b.dataset.tp === "n+" ? NUDGE : -NUDGE, b); });
+		for (const ev of ["pointerup", "pointerleave", "pointercancel"]) pop.addEventListener(ev, () => { if (held && !keyHeld) nudge(0); });
+		setTimeout(() => pop && q('[data-tp="tap"]')?.focus({ preventScroll: true }), 0);
+		return pop;
+	}
+	function closeTempo() {
+		if (held) nudge(0);
+		if (!pop) return;
+		pop.remove(); pop = null;
+		anchorEl?.closest(".f")?.classList.remove("tempof");
+		anchorEl?.setAttribute("aria-expanded", "false");
+	}
+	const tempoShown = () => !!pop;
+	/* a nudge held (pct, the button) or let go (0); the host sends it, the pop-up shows it */
+	let keyHeld = "";
+	function nudge(pct, btn) {
+		if (pct === held) return;
+		held = pct;
+		pop?.querySelectorAll(".nudging").forEach(x => x.classList.remove("nudging"));
+		if (btn) btn.classList.add("nudging");
+		host?.nudge(pct);
+		setTimeout(draw, 0);
+	}
+	/* the keys - and = held: a nudge while down (the page's key map says when they are free), let go at the key's release */
+	function nudgeKey(key, h) {
+		if (keyHeld) return;
+		if (!pop) host = h;
+		keyHeld = key;
+		nudge(key === "=" ? NUDGE : -NUDGE, q(key === "=" ? '[data-tp="n+"]' : '[data-tp="n-"]'));
+	}
+	if (typeof document !== "undefined") {
+		document.addEventListener("keyup", e => { if (keyHeld && e.key === keyHeld) { keyHeld = ""; nudge(0); } }, true);
+		addEventListener("blur", () => { if (keyHeld) { keyHeld = ""; nudge(0); } });
+		document.addEventListener("keydown", e => { if (pop && e.key === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); closeTempo(); } }, true);
+		document.addEventListener("pointerdown", e => { if (pop && !pop.contains(e.target) && !(anchorEl && anchorEl.contains(e.target))) closeTempo(); }, true);
+		addEventListener("resize", () => place());
+	}
+
+	/* A press on the tempo that does not move is a click (it opens the pop-up); one that moves is the drag. */
+	function bindClick(el, open) {
+		let d = null;
+		el.addEventListener("pointerdown", e => { d = { x: e.clientX, y: e.clientY }; }, true);
+		el.addEventListener("pointermove", e => { if (d && (Math.abs(e.clientY - d.y) > 2 || Math.abs(e.clientX - d.x) > 2)) d.moved = true; }, true);
+		el.addEventListener("pointerup", e => { const was = d; d = null; if (was && !was.moved && Math.abs(e.clientY - was.y) < 3 && Math.abs(e.clientX - was.x) < 3) setTimeout(open, 0); }, true);
+	}
+
+	return { menuItems, openMenu, openTempo, closeTempo, tempoShown, refreshTempo: draw, nudgeKey, nudgeHeld: () => held, bindClick, delayed, setDelayed, nudged, clampBpm, NUDGE };
+})();
+if (typeof module !== "undefined") module.exports = { DeskTransport };
+
 /* ---- shared/deskCaps.js ---- */
 "use strict";
 /* What the engine cannot do, both editors (skins/shared/; DESIGN-REVIEW-2026-10-02 finding 16). One routine marks
@@ -2476,11 +2711,14 @@ function renderTop(){
  const lkk=$("#learnkey");if(lkk){lkk.setAttribute("aria-pressed",S.learn);lkk.classList.toggle("on",!!S.learn)}
  $("#platekey span").textContent=S.plate==="mk1"?"MKI":"MKII";
  const n=S.locks.size,m=$("#meter");$("#lockn").textContent=String(n).padStart(2,"0")+"/62";m.className="f meter"+(n>=62?" full":n>=52?" warn":"");
- $("#bpm").textContent=S.bpm.toFixed(1);$("#pat").textContent=patName(S.queued??S.pat);$("#pat").parentElement.classList.toggle("queued",S.queued!=null);songLcd();
+ $("#bpm").textContent=(S.tempoDraft??S.bpm).toFixed(1);$("#pat").textContent=patName(S.queued??S.pat);$("#pat").parentElement.classList.toggle("queued",S.queued!=null);songLcd();
  /* B-030: the host's tempo (in a DAW the machine follows): marked, and not edited here */
  $("#bpm").parentElement.classList.toggle("hosttempo",!!S.hostTempo);$("#bpm").title=S.hostTempo?"The DAW's tempo: the machine follows the host. Change it in the DAW.":"Drag up or down";
  $("#kitname").textContent=S.eng==="hwwait"?"—":kitName(S.kit);const hc=HOST.history?HOST.history():{undo:0,redo:0};$("#undo").disabled=!hc.undo;$("#redo").disabled=!hc.redo;$("#undon").textContent=hc.undo||"";$("#redon").textContent=hc.redo||"";
- $("#play").setAttribute("aria-pressed",S.playing);$("#playico").textContent=S.playing?"■":"▶";$("#play").setAttribute("aria-label",S.playing?"Stop":"Play");$("#rec").setAttribute("aria-pressed",!!S.rec);$("#recled").classList.toggle("on",!!S.rec);
+ $("#play").setAttribute("aria-pressed",S.playing);$("#playico").textContent=S.playing?"■":"▶";$("#play").setAttribute("aria-label",S.playing?"Stop":S.paused?"Continue":"Play");
+ /* wave 2: paused, ▶ blinks and goes on from the step it holds (128-transport.js) */
+ $("#play").classList.toggle("paused",!!S.paused);$("#play").title=S.paused?"Paused: ▶ goes on from the step (⇧Space); STOP in the menu ends it":"Play / stop (Space). ⇧-click: pause. Right-click or ▾: Pause, Live record, Panic";
+ if(typeof DeskTransport!=="undefined"&&DeskTransport.tempoShown())DeskTransport.refreshTempo();$("#rec").setAttribute("aria-pressed",!!S.rec);$("#recled").classList.toggle("on",!!S.rec);
  renderPst();syncLockBudget()}
 /* line 2: fixed-width slots (as in the MD Editor v46), so values never push into COPY / CLR / PASTE */
 function L2(k,lab,val,title,ed,w=8,id=""){return`<span class="l2 ${ed?"ed":""}" style="width:${w}ch" ${k?`data-l2="${k}"`:""} ${title?`title="${title}"`:""}><small>${lab}</small><b ${id?`id="${id}"`:""}>${val}</b></span>`}
@@ -3422,6 +3660,41 @@ StepSel.bind(Keys,{seqKeys:()=>seqKeys(),has:()=>!!S.stepSel,selKeys,cut:selCut,
   "step-extend":"Click: extend the selection to the step (on another track's roll: the tracks between too)",
   "ruler-select":"Click or drag: select steps of the selected track; ⇧-click extends",
   "step-menu":"The step menu: note on / off, NOTE OFF, trigless, slide, a chord note (roll), copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (Ctrl-click on a Mac)"}});
+
+/* ---- 78-what.js ---- */
+/* ===== COPY / PASTE / CLEAR what (0.6 wave 4; the dialog, the ▾ menu and the remembered ticks are shared/deskWhat.js) =====
+   The selected track's parts as the Monomachine keeps them: PATTERN (notes, melody, slide, swing, locks, arp, transpose:
+   every step of the pattern, the track's settings in it) and KIT (machine + sound, a synth track's). One intent each,
+   trackCopy / trackPaste / trackClear (mmDesk::trackParts), one undo step; the page shows the result's documents. A synth
+   track's parts paste onto synth tracks, a MIDI track's onto MIDI tracks. WCLIP: the page's note of what was copied. */
+const MM_WHAT=[["notes","Notes","pat"],["melody","Melody","pat"],["slide","Slide","pat"],["swing","Swing","pat"],["locks","Locks","pat"],["arp","Arp","pat"],["transpose","Transpose","pat"],["sound","Machine + sound","kit"]];
+let WCLIP=null;
+/* what each step part of track t holds now (arp and transpose are settings: no number) */
+function whatCounts(t){const tr=trk(t),st=tr.steps.filter(x=>x&&!x.off);let locks=0;
+ for(const[k,m] of S.locks)if(+k.split("|")[0]===t)locks+=m.size;
+ return{notes:st.length,melody:st.filter(x=>x.n&&x.n.length).length,slide:tr.slide.size,swing:tr.swing.size,locks}}
+const whatName=t=>tLabel(t)+" "+trk(t).m;
+function whatOpen(verb){
+ const t=S.sel,clip=WCLIP;
+ if(verb==="paste"&&!clip){toast("Copy a track's parts first: ▾ Copy… on the LCD.");return}
+ const counts=verb==="paste"?clip.counts:whatCounts(t),midi=verb==="paste"?clip.midi:isMidiT(t);
+ const why=id=>verb==="paste"&&!clip.what.includes(id)?"Not copied: Copy… did not tick it":id==="sound"&&midi?"A MIDI track has no machine: sound is a synth track's":"";
+ const item=([id,label])=>({id,label,n:counts[id]!=null?String(counts[id]):"",why:why(id)});
+ const groups=[{name:"Pattern",note:patName(S.pat),info:NA.recvSession||"",items:MM_WHAT.filter(p=>p[2]==="pat").map(item)},
+  {name:"Kit",note:kitName(S.kit),info:NA.workingKitMemory||"",items:MM_WHAT.filter(p=>p[2]==="kit").map(item)}];
+ const marked=S.marks&&S.marks.size?[...S.marks]:[t];
+ What.open({verb,editor:"mm",groups,src:whatName(verb==="paste"?clip.t:t),
+  srcNote:verb==="paste"?"copied from "+tLabel(clip.t):"pattern "+patName(S.pat)+" · all steps",
+  to:verb==="paste"?Array.from({length:12},(_,i)=>({t:i,label:tLabel(i),name:whatName(i),on:marked.includes(i),
+   why:isMidiT(i)!==clip.midi?(clip.midi?"A MIDI track's parts paste onto MIDI tracks":"A synth track's parts paste onto synth tracks"):""})):null,
+  defaults:verb==="copy"?["notes","slide","swing","locks"]:verb==="paste"?clip.what:["locks"],
+  done:(what,to)=>{
+   if(verb==="copy"){WCLIP={t,what,midi:isMidiT(t),counts:whatCounts(t)};edit("trackCopy",{t,what});return}
+   if(verb==="paste")edit("trackPaste",{to,what});else edit("trackClear",{t,what});commit()}})}
+addEventListener("click",e=>{const m=e.target.closest?.("[data-secwhat]");if(m){e.preventDefault();e.stopImmediatePropagation();What.menu(m,whatOpen)}},true);
+Keys.bind({id:"copy-what",short:"Copy what",scope:"any",keys:["C"],mod:"cmd+shift",group:"Anywhere",does:"Copy what: choose which parts of the selected track to copy (the machine's SUPER COPY)",run:()=>whatOpen("copy")});
+Keys.bind({id:"paste-what",short:"Paste what",scope:"any",keys:["V"],mod:"cmd+shift",group:"Anywhere",does:"Paste what: choose which copied parts go into which tracks",run:()=>whatOpen("paste")});
+Keys.bind({id:"clear-what",short:"Clear what",scope:"any",keys:["Backspace"],mod:"cmd+shift",group:"Anywhere",does:"Clear what: choose which parts of the selected track to clear (the machine's SUPER CLEAR)",run:()=>whatOpen("clear")});
 
 /* ---- 80-notes.js ---- */
 
@@ -4427,7 +4700,7 @@ function renderSong(){songModeSync();S.songSel=Math.max(0,Math.min(S.songSel,S.s
    <div class="irow"><span class="ilab"></span><span class="note">${sel.type==="loop"?"Loops nest. Loops also stretch a part past the 64-step pattern limit.":sel.type==="jump"?"Jumps the song pointer forward.":"Pauses until you pick a row to go on from."}</span></div>`;
  const lines=Math.ceil(200/16);
  $("#main").innerHTML=`<div class="songui lay2 withlib ${S.plays.songMode?"songmode":"patmode"}${S.plays.songMode&&S.playing?" songplaying":""}">${SongSlots.html()}<div class="songleft"><section class="card whatplays ${S.plays.songMode?"song":"pattern"} ${chain?"chainmode":""}">${head}${palette}</section>
-   ${pick==="song"?`<section class="card"><header><h3>Selected row</h3><span class="rowacts"><button data-rowact="up" title="Move left">←</button><button data-rowact="down" title="Move right">→</button><button data-rowact="dup">Duplicate</button><button data-rowact="loop">Add loop</button><button data-rowact="del" class="danger">Delete</button></span></header><div class="insp">${insp}</div></section>`:""}</div>
+   ${pick==="song"?`<section class="card"><header><h3>Selected row</h3><span class="rowacts"><button data-rowact="from" title="Play the song from this row (Enter): SONG mode, the row from its first step">▶ From here</button><button data-rowact="up" title="Move left">←</button><button data-rowact="down" title="Move right">→</button><button data-rowact="dup">Duplicate</button><button data-rowact="loop">Add loop</button><button data-rowact="del" class="danger">Delete</button></span></header><div class="insp">${insp}</div></section>`:""}</div>
   <section class="card arrcard"><header><h3>Arrangement</h3><span class="arrstate" id="arrstate">${arrState()}</span><span class="note" title="${S.song.length} of 200 rows · T track transpose · M mutes · B tempo · ~ part">${S.song.length} of 200 rows · T track transpose · M mutes · B tempo</span></header>
    <div class="durbar" title="Song shape by time (length × repeats); in SONG mode it fills up to the row that plays">${S.song.map((r,i)=>r.type?`<i class="db dbm" data-i="${i}"></i>`:`<i class="db ${i===S.songSel?"sel":""}" data-row="${i}" data-i="${i}" style="flex:${rowLen(r)*r.rep} 1 0"></i>`).join("")}</div>
    <div class="slotgrid" id="tl">${Array.from({length:lines},(_,line)=>`<span class="sglab">${String(line*16+1).padStart(3,"0")}</span>${Array.from({length:16},(_,c)=>{const i=line*16+c,r=S.song[i];if(i>=200)return`<span></span>`;
@@ -4467,6 +4740,7 @@ function editRow(i=S.songSel){edit("rowSet",{i,row:S.song[i]})}
 function songRetarget(map){S.song.forEach((r,j)=>{if(r.type==="loop"||r.type==="jump")r.to=map(r.to);else if(r.type==="halt")r.to=j})}
 function songMove(from,to){const order=S.song.map((_,j)=>j),[m]=order.splice(from,1);order.splice(to,0,m);const map=[],was=S.song.slice();order.forEach((j,n)=>{map[j]=n;S.song[n]=was[j]});songRetarget(j=>map[j]??j);S.songSel=to;edit("rowMove",{from,to})}
 function songAction(a){const i=S.songSel,r=S.song[i];
+ if(a==="from"){playFromRow(i);return}
  if(a==="del"){if(r.type==="end")return;S.song.splice(i,1);songRetarget(j=>j<=i?j:j-1);S.songSel=Math.min(i,S.song.length-1);edit("rowDelete",{i})}
  if(a==="dup"&&!r.type){if(S.song.length>=200){toast("A song holds 200 rows.");return}S.song.splice(i+1,0,JSON.parse(JSON.stringify(r)));songRetarget(j=>j<=i?j:j+1);S.songSel=i+1;edit("rowInsert",{i:i+1,row:S.song[i+1]})}
  if(a==="up"&&i>0&&r.type!=="end")songMove(i,i-1);
@@ -4804,6 +5078,69 @@ function audioSend(c){if(HOST.audioSend)return HOST.audioSend(c);const D=AUD,say
  if(c.set!=="outputChannel")D.error="";
  D.latencyMs=Math.round((D.bufferSize.value+96)/D.sampleRate.value*10000)/10;drawAudio()}
 
+/* ---- 128-transport.js ---- */
+/* ===== Wave 2 (doc/modern-ux/DESIGN-machine-menus.md §2): the transport beyond PLAY and STOP =====
+   The ▶ menu and the TEMPO pop-up are drawn by shared/deskTransport.js; here are this page's commands for them:
+     the pause: ⇧-click ▶ or ⇧Space; ▶ again (or ⇧Space) goes on from the step, STOP ends it. S.paused holds the step the
+       pause keeps until PLAY, STOP, or the machine plays again (setPlaying);
+     the ▶ menu: right-click ▶, or the ▾ in its corner (Play / Stop, Pause / Continue, Live record, Panic);
+     panic: ⌘. (All Notes Off on each track's channel, then STOP);
+     the TEMPO pop-up: a click on the LCD's tempo (a drag still sets it); the nudge: - and = held; the sync INT / EXT;
+     play from a song row: ▶ From here on the Song page's selected row, or Enter there.
+   With a host, each is HOST.transport(op, args, done); on its own the mockup's example clock pauses and goes on. */
+function transportCmd(op,args,done){if(HOST.transport)return HOST.transport(op,args||{},done||(()=>{}));if(done)done(true)}
+function pauseNow(){if(!S.playing)return;const step=S.step;
+ if(HOST.transport)transportCmd("pause",{},ok=>{if(!ok){S.paused=null;renderTop();setPos()}});else{clearInterval(clock);S.playing=false}
+ S.paused={step};renderTop();setPos()}
+function resumeNow(){if(!S.paused)return;const at=S.paused.step;S.paused=null;
+ if(HOST.transport)transportCmd("resume");else{S.playing=true;S.step=at;restartClock()}
+ renderTop();setPos()}
+function pauseToggle(){if(S.paused)resumeNow();else pauseNow()}
+/* the ▶ key: PLAY, STOP, or (paused) CONTINUE */
+function playButton(){if(S.paused){resumeNow();return}togglePlay()}
+function stopNow(){const was=S.paused;S.paused=null;
+ if(S.playing)togglePlay();
+ else if(was&&HOST.transport)transportCmd("stop");	// paused: the machine stands; STOP ends the pause
+ else if(was)S.step=-1;
+ renderTop();setPos()}
+function panicNow(){if(NA.panic){toast(NA.panic);return}S.paused=null;
+ if(HOST.transport)transportCmd("panic",{},()=>{});else{if(S.playing)togglePlay();toast("Panic: every note off.")}
+ renderTop();setPos()}
+const TRANSPORT_HOST={recordLabel:"Live record",play:()=>playButton(),stop:()=>stopNow(),pauseToggle:()=>pauseToggle(),record:()=>liveRecord(),panic:()=>panicNow()};
+function transportMenu(x,y){DeskTransport.openMenu(x,y,{playing:S.playing,paused:!!S.paused,rec:!!S.rec,can:{transport:!NA.transport,record:true,panic:!NA.panic},reasons:{panic:NA.panic}},TRANSPORT_HOST)}
+document.addEventListener("contextmenu",e=>{if(!e.target.closest?.("#play"))return;e.preventDefault();e.stopImmediatePropagation();transportMenu(e.clientX,e.clientY)},true);
+document.addEventListener("click",e=>{const m=e.target.closest?.("#playmore");if(!m)return;e.preventDefault();e.stopImmediatePropagation();const r=m.getBoundingClientRect();transportMenu(r.left,r.bottom+2)},true);
+
+/* ===== the TEMPO pop-up and the nudge ===== */
+function nudgeTempo(pct){if(pct&&tempoLocked())return;
+ if(HOST.transport){transportCmd("nudge",{pct});return}
+ if(pct&&S.nudgeFrom==null)S.nudgeFrom=S.bpm;if(S.nudgeFrom!=null)S.bpm=pct?DeskTransport.nudged(S.nudgeFrom,pct):S.nudgeFrom;if(!pct)S.nudgeFrom=null;renderTop();if(S.playing)restartClock()}
+function setTempo(bpm){if(tempoLocked())return;S.bpm=bpm;if(HOST.tempo)HOST.tempo(S.bpm);renderTop();if(S.playing)restartClock()}
+const TEMPO_HOST={bpm:()=>S.tempoDraft??S.bpm,set:bpm=>setTempo(bpm),nudge:pct=>nudgeTempo(pct),tap:()=>tapTempo(),
+ refused:()=>S.hostTempo?"The DAW sets the tempo. Change it there.":"",
+ sync:{html:()=>{const ext=!!S.glob?.clockIn;return`<span class="seg" title="GLOBAL › Sync › Tempo in: the machine's own tempo (INT) or MIDI clock (EXT)"><button data-tp="sync:int" aria-pressed="${!ext}">INT</button><button data-tp="sync:ext" aria-pressed="${ext}">EXT</button></span>`},
+  click:a=>{if(!S.glob||!!S.glob.clockIn===(a==="ext"))return;S.glob.clockIn=a==="ext";edit("globalMidi",{clockIn:a==="ext"});DeskTransport.refreshTempo()},
+  global:()=>openGlobal()}};
+function openTempo(){const b=$("#bpm");if(b)DeskTransport.openTempo(b,TEMPO_HOST)}
+(()=>{const b=$("#bpm");if(b){b.setAttribute("aria-haspopup","dialog");DeskTransport.bindClick(b,openTempo)}})();
+
+/* ===== play from a song row ===== */
+function playFromRow(i=S.songSel){if(NA.playFrom){toast(NA.playFrom);return}const r=S.song[i];if(!r||r.type){toast("Pick a pattern row to play from.");return}
+ if(S.songs&&S.songs.slot!==S.songs.current){toast(`The machine plays song ${String(S.songs.current+1).padStart(2,"0")}: Load this one first, then play it from a row.`);return}
+ S.paused=null;if(HOST.transport){transportCmd("playFrom",{i});return}
+ toast(`Plays the song from row ${String(i+1).padStart(3,"0")}.`)}
+
+/* ===== keys ===== */
+Keys.bind({id:"pause",short:"Pause",scope:"any",keys:["Space"],code:"Space",mod:"shift",group:"Transport",does:"Pause: the machine holds its step; again (or ▶) goes on from it, STOP ends it (also ⇧-click ▶)",run:()=>pauseToggle()});
+Keys.bind({id:"panic",short:"Panic",scope:"any",keys:["."],mod:"cmd",group:"Transport",does:"Panic: every note off (All Notes Off on each track's channel) and STOP",run:()=>panicNow()});
+Keys.bind({id:"tempo-nudge",short:"Nudge",scope:"any",keys:["-","="],group:"Transport",does:"Hold: the tempo 10 % slower (-) or faster (=) while held, as the TEMPO menu's nudge",when:()=>kbOn(),run:e=>DeskTransport.nudgeKey(e.key,TEMPO_HOST)});
+Keys.bind({id:"song-play-from",short:"From here",scope:"song",keys:["Enter"],group:"Song",does:"Play the song from the selected row (▶ From here)",when:()=>kbOn()&&S.ws==="song"&&!document.activeElement?.closest?.(".songlib,[data-rowact]"),run:()=>playFromRow()});
+[["transport-menu","any","Top bar",["right-click ▶"],"","Transport","The transport menu: Play / Stop, Pause / Continue, Live record, Panic (also the ▾ in the key's corner)"],
+ ["pause-click","any","Top bar",["▶"],"shift","Transport","Click: pause; ▶ again goes on from the step"],
+ ["tempo-click","any","Top bar",["tempo"],"","Transport","Click (no drag): the TEMPO window: − / +, TAP, nudge, change on release, INT / EXT"],
+ ["tempo-delayed","any","Top bar",["tempo"],"alt","Transport","Drag: the tempo changes when you let go (FUNCTION held on the machine)"]
+].forEach(([id,scope,area,keys,mod,group,does])=>Keys.bind({id,scope,area,keys,mod,group,does}));
+
 /* ---- 130-main.js ---- */
 
 /* ===== Undo / redo: the host's, one step per gesture (the plug-in's core; on its own the demo host's snapshots,
@@ -5051,7 +5388,7 @@ document.addEventListener("click",e=>{
  if(e.target.closest("#learnkey")){S.learn=!S.learn;S.learnT=null;document.body.classList.toggle("learn",S.learn);renderTop();if(S.learn)toast("LEARN: click a value, then press 1-8 for a controller knob.");if(HOST.learning)HOST.learning(S.learn);return}
  const tb=e.target.closest("#tabs button");if(tb){goWs(tb.dataset.ws);return}
  if(e.target.closest("#platekey")){setPlate(S.plate==="mk1"?"mk2":"mk1");return}
- if(e.target.closest("#play")){togglePlay();return}
+ if(e.target.closest("#play")){if(e.shiftKey)pauseToggle();else playButton();return}
  if(e.target.closest("#rec")){if(HOST.record)return HOST.record();S.rec=!S.rec;renderTop();if(S.rec)toast("GRID RECORD on. On the machine: hold a trig to see its note, turn a knob to lock it. Here: just click and draw.");return}
  if(e.target.closest("#patPrev")){goPattern((S.queued??S.pat)-1);return}
  if(e.target.closest("#patNext")){goPattern((S.queued??S.pat)+1);return}});
@@ -5082,7 +5419,7 @@ Keys.bind({id:"paste",scope:"any",keys:["V"],mod:"cmd",group:"Anywhere",does:"Pa
 Keys.bind({id:"leave-learn",scope:"control",keys:["Escape"],group:"Anywhere",does:"Leave LEARN",mapping:true,when:()=>S.mapping&&S.learn,run:()=>leaveLearn()});
 Keys.bind({id:"learn-knob",scope:"control",keys:["1 – 8"],group:"Anywhere",does:"LEARN: the controller knob for the value clicked",mapping:true});
 Keys.bind({id:"audio-settings",scope:"any",keys:[","],group:"Anywhere",does:"AUDIO / MIDI settings (also in the engine menu)"});
-Keys.bind({id:"play-stop",scope:"any",keys:["Space"],group:"Transport",does:"Play / stop",run:()=>togglePlay()});
+Keys.bind({id:"play-stop",scope:"any",keys:["Space"],group:"Transport",does:"Play / stop (paused: go on from the step)",run:()=>playButton()});
 Keys.bind({id:"record",scope:"any",keys:["Space"],code:"Space",mod:"alt",group:"Transport",does:"Live recording (RECORD + PLAY): Alt + play, the other Alt that is not \"all\". Again: recording off",run:()=>liveRecord()});
 ["seq","sound","mix","perform","song","control"].forEach((ws,i)=>Keys.bind({id:"workspace-"+(i+1),scope:"any",keys:[String(i+1)],group:"Workspaces",does:["Sequence","Sound","Mix","Perform","Song","Control"][i],mapping:ws==="control",when:ws==="control"?()=>S.mapping:null,run:()=>goWs(ws)}));
 Keys.bind({id:"page-prev-next",scope:"seq",keys:["[","]"],group:"Sequence",does:"Previous / next page",when:()=>S.ws==="seq"&&pages16()>1,run:e=>{const n=pages16();S.viewAll=false;S.page=(S.page+(e.key==="]"?1:-1)+n)%n;render()}});
@@ -5110,9 +5447,12 @@ document.addEventListener("selectstart",e=>{if(!textField(e.target))e.preventDef
 document.addEventListener("dragstart",e=>{if(e.target.closest?.("img,svg,canvas")&&!e.target.closest?.("[draggable=true]"))e.preventDefault()},true);
 
 /* BPM: drag or arrows */
-(()=>{const b=$("#bpm");let d=null;b.addEventListener("pointerdown",e=>{if(tempoLocked())return;d={y:e.clientY,v:S.bpm};b.setPointerCapture(e.pointerId)});
- b.addEventListener("pointermove",e=>{if(!d)return;if(e.buttons===0&&e.pointerType==="mouse"){d=null;return}S.bpm=clamp(Math.round((d.v+(d.y-e.clientY)*(e.shiftKey?.1:.5))*10)/10,30,300);if(HOST.tempo)HOST.tempo(S.bpm);renderTop();if(S.playing)restartClock()});
- b.addEventListener("pointerup",()=>d=null);b.addEventListener("keydown",e=>{const k={ArrowUp:1,ArrowDown:-1}[e.key];if(!k)return;e.preventDefault();if(tempoLocked())return;S.bpm=clamp(S.bpm+k*(e.shiftKey?.1:1),30,300);if(HOST.tempo)HOST.tempo(S.bpm);renderTop();if(S.playing)restartClock()})})();
+/* wave 2, change on release (the TEMPO window's tick, or ⌥ held at the press): the LCD shows the drag, the tempo goes at the release */
+(()=>{const b=$("#bpm");let d=null;b.addEventListener("pointerdown",e=>{if(tempoLocked())return;d={y:e.clientY,v:S.bpm,late:e.altKey||DeskTransport.delayed()};b.setPointerCapture(e.pointerId)});
+ const release=()=>{const was=d;d=null;if(was&&was.late&&S.tempoDraft!=null){const v=S.tempoDraft;S.tempoDraft=null;setTempo(v)}else S.tempoDraft=null};
+ b.addEventListener("pointermove",e=>{if(!d)return;if(e.buttons===0&&e.pointerType==="mouse"){release();return}const v=clamp(Math.round((d.v+(d.y-e.clientY)*(e.shiftKey?.1:.5))*10)/10,30,300);
+  if(d.late){if(v!==S.tempoDraft){S.tempoDraft=v;renderTop()}return}S.bpm=v;if(HOST.tempo)HOST.tempo(S.bpm);renderTop();if(S.playing)restartClock()});
+ b.addEventListener("pointerup",()=>release());b.addEventListener("keydown",e=>{const k={ArrowUp:1,ArrowDown:-1}[e.key];if(!k)return;e.preventDefault();if(tempoLocked())return;S.bpm=clamp(S.bpm+k*(e.shiftKey?.1:1),30,300);if(HOST.tempo)HOST.tempo(S.bpm);renderTop();if(S.playing)restartClock()})})();
 
 
 /* ===== Engine status (from the MD Editor v48): the LCD says what the engine is doing; editing waits until it is ready ===== */
@@ -5188,10 +5528,11 @@ function movePH(glide=true){let ph=document.getElementById("phcol");if(!glide){p
  ph.style.width=r.width+"px";ph.style.top=(top-3)+"px";ph.style.height=(bot-top+6)+"px";ph.style.transform=`translateX(${r.left}px)`;
  ph.style.opacity=r.right>v.left+1&&r.left<v.right-1?"1":"0";phX=r.left}
 addEventListener("scroll",()=>{if(S.playing)movePH(false)},true);addEventListener("resize",()=>{if(S.playing)movePH(false)});
-function setPos(){$("#pos").textContent=S.playing&&S.step>=0?String(Math.floor(S.step/16)+1).padStart(2,"0")+"."+String(S.step%16+1).padStart(2,"0"):"--.--"}
+/* paused: the step the pause holds */
+function setPos(){const at=S.playing&&S.step>=0?S.step:S.paused&&S.paused.step>=0?S.paused.step:-1;$("#pos").textContent=at>=0?String(Math.floor(at/16)+1).padStart(2,"0")+"."+String(at%16+1).padStart(2,"0"):"--.--"}
 /* A host's transport (P6): the machine's step and whether it plays, shown. */
 function setStep(step){if(step===S.step)return;const prev=S.step;S.step=step;stepShown(prev)}
-function setPlaying(on){if(S.playing===on)return;S.playing=on;if(!on){$$(".pl").forEach(b=>b.classList.remove("play"));$("#tempoled").classList.remove("on");$$(".ph").forEach(c=>c.classList.remove("ph"));S.step=-1}setPos();renderTop();redraw();movePH(false);markSongRow()}
+function setPlaying(on){if(S.playing===on)return;S.playing=on;if(on)S.paused=null;if(!on){$$(".pl").forEach(b=>b.classList.remove("play"));$("#tempoled").classList.remove("on");$$(".ph").forEach(c=>c.classList.remove("ph"));S.step=-1}setPos();renderTop();redraw();movePH(false);markSongRow()}
 function togglePlay(){if(HOST.togglePlay)return HOST.togglePlay();if(!S.playing&&S.eng&&!engReady())return;S.playing=!S.playing;clearInterval(clock);$$(".pl").forEach(b=>b.classList.remove("play"));$("#tempoled").classList.remove("on");$$(".ph").forEach(c=>c.classList.remove("ph"));if(S.playing){S.step=-1;tick();restartClock()}else S.queued=null;setPos();renderTop();redraw();movePH(false)}
 
 /* ===== Render ===== */
@@ -5220,7 +5561,7 @@ addEventListener("resize",()=>{if(S.ws==="seq"){fitLane();drawSlides();alignLock
    its engine cannot do it says with disable(capability, reason). */
 const NA_SEL={
  midiMutes:[6,7,8,9,10,11].flatMap(t=>[`[data-mute="${t}"]`,`[data-solo="${t}"]`,`[data-gmute="${t}"]`]).join(","),
- transport:"#play",poly:'[data-pmode="poly"]',multiTrig:'[data-set="mtmode"] button,[data-strk],[data-tim],#splitm',
+ transport:"#play,#playmore",playFrom:'[data-rowact="from"]',panic:'[data-mid="panic"]',poly:'[data-pmode="poly"]',multiTrig:'[data-set="mtmode"] button,[data-strk],[data-tim],#splitm',
  multiMap:'.maprow [data-mhi],.maprow select,.maprow .kselbtn,.maprow .pc,[data-mdel],[data-madd],[data-band]',
  portamento:'[data-set="port"] button',gridRecord:"#rec",chains:'[data-chainpad],[data-chain]'};
 const NA_CARD={multiMap:".maprow"};	// a card that also says the reason in words

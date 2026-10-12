@@ -17,7 +17,8 @@ namespace deskCore
 		Stopped,		// telemetry: the sequencer stopped
 		Playing,		// telemetry: it plays
 		StatusReply,	// a status reply came after the action (MIDI is taken in order)
-		PatternIs		// the machine reports pattern `waitArg` as current
+		PatternIs,		// the machine reports pattern `waitArg` as current
+		SongModeIs		// the machine reports SONG mode (`waitArg` 1) or PATTERN mode (0)
 	};
 
 	struct SeqFacts
@@ -25,6 +26,7 @@ namespace deskCore
 		bool playing = false;
 		uint32_t statusReplies = 0;		// a counter: every status reply adds one
 		int pattern = -1;
+		int songMode = -1;				// 1 SONG, 0 PATTERN, -1 not known
 	};
 
 	template<typename Action>
@@ -69,7 +71,8 @@ namespace deskCore
 						|| (s.until == Wait::Stopped && !_facts.playing)
 						|| (s.until == Wait::Playing && _facts.playing)
 						|| (s.until == Wait::StatusReply && _facts.statusReplies != m_repliesAtAction)
-						|| (s.until == Wait::PatternIs && _facts.pattern == s.waitArg);
+						|| (s.until == Wait::PatternIs && _facts.pattern == s.waitArg)
+						|| (s.until == Wait::SongModeIs && _facts.songMode == s.waitArg);
 					timedOut = !holds && _nowMs - m_actionMs >= s.timeoutMs;
 					if(!holds && !timedOut)
 						break;

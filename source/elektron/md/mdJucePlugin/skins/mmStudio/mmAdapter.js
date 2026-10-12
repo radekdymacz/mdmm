@@ -220,13 +220,14 @@
 	/* an edit intent of a gesture: sent with the gesture's id, shown at once (MmView.writes, Overlay) until its
 	   answer, which comes after the documents it changed; refused: the view shows the documents again. The op
 	   names its document (MmView.kindOf): the kit that plays gets k, a song row op s (the song the Song workspace
-	   edits), a pattern op p; the global's and the library's ops name their own. */
+	   edits), a pattern op p, a track's parts (COPY / PASTE / CLEAR what) both; the global's and the library's ops name their own. */
 	function intent(op, args) {
 		if (!canSend()) { unsent = true; return; }
 		const g = gesture, v = view(), kind = MmView.kindOf(op), c = MmView.toFw(Object.assign({ op }, structuredClone(args)), v, fwDocs());
 		if (kind === "kit") c.k = cur("kit");
 		else if (kind === "song") c.s = songSlot();
 		else if (kind === "pattern") c.p = cur("pattern");
+		else if (kind === "track") { c.p = cur("pattern"); c.k = cur("kit"); }
 		c.g = g;
 		const key = KEYED[op] ? op + ":" + JSON.stringify(KEYED[op](c)) : null;
 		const id = send(c, { key, onResult: r => {
@@ -429,6 +430,12 @@
 		redo() { send({ op: "redo" }, { onResult: r => r.ok ? V().toast(r.note || "Redo") : V().toast(r.errors[0]) }); },
 		history() { const h = machine?.history; return { undo: h?.undoCount || 0, redo: h?.redoCount || 0 }; },
 		togglePlay() { if (V().engReady()) send({ op: V().playing() ? "stop" : "play" }); },
+		/* wave 2: pause, resume, stop, panic, playFrom {i}, nudge {pct}; what the machine says comes as a toast (a question,
+		   TRANSPORT ACCEPT, is the "ask" message) */
+		transport(op, args, done) {
+			if (!V().engReady()) { if (done) done(false); return; }
+			send(Object.assign({ op }, args || {}), { onResult: r => { if (!r.ok) V().toast(r.errors[0]); else if (r.note && op !== "nudge") V().toast(r.note); if (done) done(!!r.ok); } });
+		},
 		selectPattern(p, nowFlag) { send({ op: "select", p, now: !!nowFlag }, { onResult: noteOf }); },
 		/* the kit keys: plain commands; the plug-in asks when something would be lost */
 		kit(op, k) {

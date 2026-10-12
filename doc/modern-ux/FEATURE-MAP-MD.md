@@ -24,13 +24,13 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.4 | BANK key and A/E, B/F, C/G, D/H keys | Pick a pattern bank and pattern | ✅ | Pattern chooser (click Pattern in the LCD; keys A-H) | mdDeskLibrary.js. | – |
 | p.4 | ENTER/YES, EXIT/NO, arrow keys | Menu navigation | ➖ | Not needed | Every menu is a native control. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. | – |
 | p.5 | LEVEL knob (per-track overall gain) | LEV, cannot be locked or LFO'd | ❌ | None | The desk has a 'level' command, but no page control uses it. Use VOL on Mix instead. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. | – |
-| p.5 | TEMPO key | Open tempo screen | ✅ | LCD: Tempo (drag), T key to tap | See §9. | 4 |
+| p.5 | TEMPO key | Open tempo screen | ✅ | LCD: Tempo (drag), T key to tap | See §9. | 5 |
 | p.5 | DATA ENTRY knobs (A-H), pressed = coarse | Eight parameter knobs | ✅ | Value boxes on Sound and Mix; drag, wheel, Shift = fine | Wheel notch 1, Shift 10. | 2 |
 | p.5 | SYNTHESIS/EFFECTS/ROUTING toggle | Switch knob page | ✅ | Sound page shows all three as groups | No page toggle; all pages in one view. | – |
 | p.5 | RECORD key (grid record on/off) | Toggle grid edit | ➖ | Grid is always editable | The step grid needs no mode. | – |
 | p.5 | RECORD + PLAY (live recording) | Live record | ✅ | REC button, Alt+Space | LCD top bar. | 1 |
-| p.5 | PLAY (second press pauses) | Start / pause | 🟡 | Play/Stop button, Space | Play and stop only; no pause. Measured (P1, doc/modern-ux/PROBES-manual-gaps.md): MIDI Stop holds the step and Continue goes on from it, in pattern and song mode. | 2 |
-| p.5 | STOP; double STOP silences all voices | Stop, panic | 🟡 | Play/Stop button | No panic key. Measured (P5): no MIDI message silences the voices (Stop once or twice, CC 120 and 123, reset, note offs, loads, mutes); only the panel STOP pressed twice does, which the emulator can press. | – |
+| p.5 | PLAY (second press pauses) | Start / pause | ✅ | Play key: ⇧-click or ⇧Space pauses (▶ blinks, the position holds), ▶ goes on; the ▶ menu (right-click or its ▾) | Pause and Continue are MIDI Stop and Continue on both engines (P1, P1b): with CTRL IN off the machine takes neither, and the editor says so. | 3 |
+| p.5 | STOP; double STOP silences all voices | Stop, panic | ✅ | Panic: ⌘. or the ▶ menu's Panic (the machine's STOP pressed twice) | Over HW MIDI there is no panic: no MIDI message silences the Machinedrum (P5); the menu entry is off and says why. | 1 |
 | p.5 | STOP + PLAY restarts from the top | Restart | 🟡 | Stop then Play | Same result in two clicks. | – |
 | p.5 | PATTERN/SONG key | Switch sequencer mode | ✅ | Song page: PATTERN · CHAIN · SONG keys; LCD PLAY value | seqMode command. | 3 |
 | p.5 | KIT key (kit menu) / FUNCTION + KIT (song menu) | Open kit / song menus | ✅ | Kit: library popover. Song: the Songs column on the Song page (Load, Save, Save to…, Copy, Paste, Clear, Rename) | The song menu is the Songs column (0.6). | – |
@@ -49,7 +49,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 |---|---|---|---|---|---|---|
 | p.9 | Tempo display with one decimal | Show BPM | ✅ | LCD: Tempo |  | 1 |
 | p.9 | Four pattern-page boxes | Playback page | ✅ | Page LEDs; LCD Position |  | – |
-| p.9 | Transport symbols | Record/play/pause/stop | 🟡 | REC and Play LEDs | No pause state. | – |
+| p.9 | Transport symbols | Record/play/pause/stop | ✅ | Play key: blinks while paused; POSITION keeps the held step |  | 1 |
 | p.9 | Kit name and number | Current kit | ✅ | LCD: Kit with saved/edited chip |  | – |
 | p.9 | Synth, machine and page text | Focus info | ✅ | Sound: machine button, family; LCD line 2 |  | – |
 | p.9 | Level bar (overall volume of the track) | LEV meter | ❌ | None | See LEVEL knob. | – |
@@ -131,7 +131,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.33 | DEPTH | Amount | ✅ | Sound > LFO motion |  | – |
 | p.33 | SHMIX | Waveform balance | ✅ | Sound > LFO shape |  | – |
 | p.34 | Two LFOs on one target add up | Layering | ✅ | Set same target twice | Not drawn as a total. | – |
-| p.34 | Copy, paste, clear, undo of an LFO | LFO clipboard | 🟡 | Sound copy/paste carries the LFO with the sound | No LFO-only copy or clear. | – |
+| p.34 | Copy, paste, clear, undo of an LFO | LFO clipboard | ✅ | Sound: ⋯ on the LFO card: Copy LFO, Paste LFO, Clear LFO; LCD ▾ Copy… / Paste… / Clear… with LFO ticked; Cmd+Z | An LFO that moved its own track moves the track it is pasted on. | 1 |
 
 ## 8. Pattern sequencer (pp.35-50)
 
@@ -140,8 +140,8 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.35 | CLASSIC mode | Trigs only, no kit link | ✅ | LCD MODE = CLASSIC | Lock lane greyed; locks kept. | – |
 | p.35 | EXTENDED mode (kit link, locks) | Pattern recalls its kit | ✅ | LCD MODE = EXT; Pattern chooser shows Knn |  | – |
 | p.36 | Tempo: integer and decimal steps | Tempo screen | ✅ | LCD tempo drag (Shift = 0.1) | Arrow keys step it when focused. | – |
-| p.36 | FUNCTION held: tempo changes on release | Delayed change | ❌ | None |  | – |
-| p.36 | Temporary +/-10 % tempo shift (LEFT/RIGHT) | Turntable sync | ❌ | None | The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. | – |
+| p.36 | FUNCTION held: tempo changes on release | Delayed change | ✅ | TEMPO window (a click on the tempo): Change on release; ⌥-drag the tempo does it once |  | 1 |
+| p.36 | Temporary +/-10 % tempo shift (LEFT/RIGHT) | Turntable sync | ✅ | TEMPO window: −10 % / +10 % held, or the keys - and = held; back at the release, nothing stored |  | 1 |
 | p.36 | Tap tempo | FUNCTION + TEMPO | ✅ | T or B key; Shift+B on every workspace | keymap.json tap-tempo, tap-tempo-shift. On the Monomachine B is Draw on Sequence, so Shift+B is the one key both editors share. | 3 |
 | p.36 | External sync, EXT shown | MIDI clock follow | ✅ | Global > Sync > Tempo in; host tempo marked on LCD | DAW follows host. | – |
 | p.37 | Pattern selection (8 banks x 16) | A01-H16 | ✅ | Pattern chooser; prev/next arrows |  | 4 |
@@ -166,8 +166,8 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.40 | Remove notes while live recording (EXIT + TRIG) | Erase live | ❌ | None |  | – |
 | p.40 | Note copy / paste with locks | COPY NOTE | ✅ | Select a step (Cmd-click), Cmd+C, Cmd+V; also Cmd+X, Cmd+D (duplicate), step menu | Copy carries locks, accents and slides. Shared selection code: skins/shared/deskSelect.js. | 4 |
 | p.40 | Clear note parameter locks / undo | CLEAR NOTE LOCKS | ✅ | Step menu clear; lane erase (Alt-drag) |  | – |
-| p.41 | Track copy / paste (notes, machine, LFO, locks) | COPY TRACK | 🟡 | Select track steps, copy, paste; Shift-click headers = paste to many | Machine and LFO are copied separately (Sound copy). | 1 |
-| p.41 | Clear track / undo | CLEAR TRACK | ✅ | ALL view then Clr, or select the track's steps (step ruler) and press Delete | Delete clears only selected steps; with none selected it does nothing (a hint says so). | 1 |
+| p.41 | Track copy / paste (notes, machine, LFO, locks) | COPY TRACK | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (⌘⇧C, ⌘⇧V): tick trigs, accent, swing, slide, locks, machine + sound, LFO; Paste lights the tracks to paste into; one undo step. Also a selection's Cmd+C / Cmd+V | The whole track (all 64 steps) and its sound in one copy. | 2 |
+| p.41 | Clear track / undo | CLEAR TRACK | ✅ | ALL view then Clr, or select the track's steps (step ruler) and press Delete | Delete clears only selected steps; with none selected it does nothing (a hint says so). | 2 |
 | p.42 | Copy / paste track page | COPY PAGE | ✅ | Cmd+C with no selection copies the page shown |  | 2 |
 | p.42 | Clear track page | CLEAR PAGE | ✅ | Clr key (LCD) | Clears the page shown of the selected track; with Alt held the key reads All and clears the pattern. | – |
 | p.43 | Pattern copy / paste (with kit link) | COPY PATTERN | ✅ | Pattern chooser: Copy, Paste, drag |  | – |
@@ -179,11 +179,11 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.45 | Accent amount 0-15 | ACCENT level | ✅ | LCD ACC |  | – |
 | p.45 | Accent trigs per step | Accent pattern | ✅ | Shift-click a step; Accent in the trig types under the grid, then click or drag steps | Honours EDIT ALL (All tracks · This track in the trig types). | 2 |
 | p.45 | Accent pattern ALL vs per-track edit | EDIT ALL toggle | ✅ | Sequence: choose Accent, Swing or Slide in the trig types under the grid, then All tracks or This track | The pattern's EDIT ALL per mark (markMode). Measured (gapProbesFirmwareTest p7): any nonzero flag is ALL and reaches every track; there is no per-track take setting, so the design's track dots are not built. | 1 |
-| p.46 | Copy / paste / clear accent pattern or track | Accent clipboard | 🟡 | Selection copy includes accents | No separate accent window. | – |
+| p.46 | Copy / paste / clear accent pattern or track | Accent clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Accent ticked); a selection's copy includes accents | With EDIT ALL on, the accent row is the pattern's, shared by every track. | 2 |
 | p.46 | Swing amount 50-80 % | SWING level | ✅ | LCD SWG |  | – |
 | p.46 | Swing step pattern (which steps swing) | Swing trigs | ✅ | Sequence: Swing in the trig types under the grid, then click or drag steps with a trig; a teal mark on the step | swingStep; a swing mark needs a trig, as accent and slide. | 1 |
 | p.46 | Per-track swing | Swing tracks | ✅ | Sequence: Swing in the trig types, This track: each track's own swing steps | All tracks share the SWG amount, as on the machine. | 1 |
-| p.47 | Copy / paste / clear swing | Swing clipboard | 🟡 | Selection copy includes swing marks |  | – |
+| p.47 | Copy / paste / clear swing | Swing clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Swing ticked); a selection's copy includes swing marks | With EDIT ALL on, the swing row is the pattern's. | – |
 | p.47 | Parameter locks, grid: hold TRIG + knob | Lock a value | ✅ | Lock lane: drag over a step; parameter keys | 64 budget meter on LCD. | 2 |
 | p.48 | View a step's locks (hold TRIG) | Inspect | ✅ | Lock lane shows each step's value; chips show counts |  | 1 |
 | p.48 | Remove all locks of a step / one lock | Unlock | ✅ | Step menu; Alt-drag lane erase; Alt+clear key |  | 2 |
@@ -192,7 +192,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.48 | Live-recorded locks (move a value while recording) | Live locks | ✅ | REC and move a value | Locks next unplayed trig. | – |
 | p.48 | Remove live locks (EXIT + knob) | Erase live locks | ❌ | None | Erase in the lane afterwards. | – |
 | p.49 | Slide trigs (ALL and per track) | Parameter slide | ✅ | Alt+Shift-click a step; Slide in the trig types under the grid, then click or drag steps; All tracks or This track |  | 2 |
-| p.50 | Copy / paste / clear slide | Slide clipboard | 🟡 | Selection copy includes slides |  | – |
+| p.50 | Copy / paste / clear slide | Slide clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Slide ticked); a selection's copy includes slides | With EDIT ALL on, the slide row is the pattern's. | 1 |
 
 ## 9. Song mode (pp.51-56)
 
@@ -200,10 +200,10 @@ Method: manual read in full; claims checked against the page files (`source/elek
 |---|---|---|---|---|---|---|
 | p.51 | Song capacity: 256 rows, 32 songs | Limits | ✅ | Song page: Songs column (32 slots); row count |  | – |
 | p.51 | Load song | LOAD SONG | ✅ | Songs column: select a slot, Load (Enter); LCD SONG; loads when stopped |  | 1 |
-| p.52 | Play, pause, stop a song | Transport | 🟡 | Play/Stop button | No pause. Measured (P1): MIDI Stop + Continue pauses and resumes a song. | 1 |
-| p.52 | Move song pointer to a row; start from a row | Navigate, transport | ❌ | None | Click on a row only selects it for editing. Measured (P1): Song Position Pointer (the steps of the rows before it) + Continue plays from that row and step in song mode. | – |
+| p.52 | Play, pause, stop a song | Transport | ✅ | Play key: play, pause (⇧-click, ⇧Space), stop; in SONG mode as in pattern mode |  | 2 |
+| p.52 | Move song pointer to a row; start from a row | Navigate, transport | ✅ | Song: ▶ From here on the selected row, or Enter (SONG mode, the song position, Continue) | A LOOP or JUMP before the row cannot be counted through: the editor says so (start the song and let it play there). | 1 |
 | p.52 | Playing row shown, repeats left | Playhead | 🟡 | Playing row marked in the arrangement | Turns left not shown. | 1 |
-| p.52 | STOP holds, second STOP to start | Stop behaviour | ❌ | None | No pause key. Measured (P1): MIDI Stop holds the position, Continue goes on. | – |
+| p.52 | STOP holds, second STOP to start | Stop behaviour | ✅ | Play key: ⇧-click pauses and holds the position; ▶ goes on, Stop in the ▶ menu ends it |  | 1 |
 | p.53 | Song editor: pattern, REP, BPM, offset, length, mute | EDIT SONG | ✅ | Song > Selected row; arrangement grid |  | 1 |
 | p.53 | Insert / remove step | FUNCTION + arrows | ✅ | Add by palette, Duplicate, Delete |  | 2 |
 | p.53 | Copy / paste / clear / undo rows | Row clipboard | ✅ | Cmd+C/V; Delete; Cmd+Z |  | 1 |
@@ -392,13 +392,13 @@ Method: manual read in full; claims checked against the page files (`source/elek
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 231 |
-| 🟡 Partial | 31 |
-| ❌ No | 18 |
+| ✅ Yes | 244 |
+| 🟡 Partial | 22 |
+| ❌ No | 14 |
 | ➖ Not applicable | 16 |
 | Total | 296 |
 
-Of the 280 applicable rows, 231 are fully covered, 31 partly, 18 not at all.
+Of the 280 applicable rows, 244 are fully covered, 22 partly, 14 not at all.
 
 ### Top gaps (our UI), most important first
 

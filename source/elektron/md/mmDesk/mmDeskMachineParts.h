@@ -5,6 +5,7 @@
 // mmDesk's interface.
 
 #include "mmDeskMachine.h"
+#include "mmDeskTransport.h"
 
 #include "elektronData/mmJson.h"
 

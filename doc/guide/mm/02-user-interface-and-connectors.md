@@ -128,7 +128,7 @@ The keys that open the secondary windows, ARP, TRANSPOSE, SWING and SLIDE, are a
 - Slide is the **Slide** key under the roll of the **Sequence** workspace.
 
 ## RECORD, PLAY AND STOP
-<!-- rows: MM-039 MM-040 MM-041 MM-042 MM-043 MM-044 @49431b -->
+<!-- rows: MM-039 MM-040 MM-041 MM-042 MM-043 MM-044 @e9dc9e -->
 
 The record and play keys are at the top right of the LCD.
 
@@ -136,7 +136,19 @@ The record and play keys are at the top right of the LCD.
 - Click the record key while the machine is stopped to switch grid recording on. Editing steps on the page does not need it.
 - Press {key:record} to start live recording, the machine's [REC] + [PLAY]. Press it again to stop recording.
 
-Grid recording is not needed to edit steps with the mouse. {gap:MM-040}The play key does not pause. It starts and stops.{/gap} {gap:MM-041}There is no double stop that rewinds the pattern and silences the notes.{/gap} {gap:MM-043}You cannot record by stepping through the pattern in the editor yet.{/gap}
+Grid recording is not needed to edit steps with the mouse. {gap:MM-043}You cannot record by stepping through the pattern in the editor yet.{/gap}
+
+On the machine a second press of [PLAY] pauses. In the editor:
+
+1. Hold [⇧] and click the play key, or press {key:pause}. The machine holds its step. The play key blinks and <POSITION> keeps the step.
+2. Click the play key, or press {key:pause} again. The machine goes on from the step it held.
+3. To end the pause instead, choose **Stop** in the transport menu. <POSITION> reads --.--.
+
+The transport menu has Play or Stop, Pause or Continue, Live record and Panic, each with its key. Right-click the play key to open it, or click the small ▾ in the key's corner.
+
+On the machine a double press of [STOP] rewinds the pattern and silences the notes. In the editor this is **Panic**: press {key:panic}, or choose **Panic** in the transport menu. The editor sends All Notes Off on the channel of each track and stops the machine. The notes fade out with their release.
+
+NOTE: Over a MIDI cable the pause is MIDI Stop and Continue, which the Monomachine takes only with <TRANSPORT> set to ACCEPT (GLOBAL, CONTROL IN). The editor asks to set it the first time.
 
 COPY, CLEAR and PASTE are the three keys under the LCD, <COPY>, <CLR> and <PASTE>, with {key:copy}, {key:delete} and {key:paste}. What they act on depends on the workspace:
 
