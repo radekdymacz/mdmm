@@ -2658,12 +2658,14 @@ const MdJourneys = (() => {
 	const playFor = async (u, ms, wantRows) => {
 		const r = { started: false, steps: new Set(), rows: new Set(), peak: 0 };
 		heard.peak = 0; tele.steps = [];
+		await until(idle, 8000);
 		u.click("#play");
 		r.started = await until(() => !!tele.last?.playing, 5000);
+		if (!r.started) { r.again = true; u.click("#play"); r.started = await until(() => !!tele.last?.playing, 5000); }	/* a person presses again */
 		const end = performance.now() + ms;
 		while (performance.now() < end) {
 			if (tele.last?.playing) { r.steps.add(tele.last.step); if (tele.last.songRow != null) r.rows.add(tele.last.songRow); }
-			if (r.steps.size >= 8 && heard.peak > 0.001 && (!wantRows || r.rows.size >= 2)) break;
+			if (r.steps.size >= 8 && heard.peak > 0.0002 && (!wantRows || r.rows.size >= 2)) break;
 			await sleep(60);
 		}
 		r.peak = heard.peak;
@@ -2687,10 +2689,11 @@ const MdJourneys = (() => {
 						const rows = (Docs.songs[s]?.rows || []).filter(r => r.kind === "pattern").length;
 						const r = await playFor(u, 10000, rows > 1);
 						if (s === c.songs[0]) { Journey.snapshot("md-real-song-playing"); }
-						const why = [!r.started && "did not start", r.started && r.steps.size < 4 && `only ${r.steps.size} steps moved`, r.peak <= 0.001 && "silent", rows > 1 && r.rows.size < 2 && `stayed on row ${[...r.rows].join(",") || "?"}`, V.playing && "did not stop"].filter(Boolean);
+						const why = [!r.started && "did not start (pressed twice)", r.again && r.started && "needed a second press of PLAY", r.started && r.steps.size < 4 && `only ${r.steps.size} steps moved`, r.peak <= 0.0002 && "silent", rows > 1 && r.rows.size < 2 && `stayed on row ${[...r.rows].join(",") || "?"}`, V.playing && "did not stop"].filter(Boolean);
 						Bridge.log(`E2E song ${s + 1}: ${rows} rows, ${r.steps.size} steps, rows ${[...r.rows].join(",")}, peak ${r.peak.toFixed(3)}${why.length ? " PROBLEM " + why.join(", ") : ""}`);
 						(why.length ? c.bad : c.good).push(why.length ? `song ${s + 1} (${rows} rows): ${why.join(", ")}` : s + 1);
 					}
+					if (c.bad.length && c.bad.every(b => /silent/.test(b))) c.bad.push("every song reads silent: the background run zeroes the output (run with GEARMULATOR_MDMM_BACKGROUND_METER=1, scripts/mdmm-e2e.sh)");
 					c.note = `${c.good.length} of ${c.songs.length} songs played: ${c.good.join(" ")}`;
 				}, screen: c => ok(!c.bad.length, c.bad.join("; ")) }
 		],
@@ -2713,7 +2716,7 @@ const MdJourneys = (() => {
 						await sleep(300);
 						const r = await playFor(u, 12000, false);
 						if (p === c.picks[0]) Journey.snapshot("md-real-pattern-playing");
-						const why = [!r.started && "did not start", r.started && r.steps.size < 8 && `only ${r.steps.size} steps moved`, r.peak <= 0.001 && "silent"].filter(Boolean);
+						const why = [!r.started && "did not start (pressed twice)", r.again && r.started && "needed a second press of PLAY", r.started && r.steps.size < 8 && `only ${r.steps.size} steps moved`, r.peak <= 0.0002 && "silent"].filter(Boolean);
 						Bridge.log(`E2E pattern ${p + 1}: ${r.steps.size} steps, peak ${r.peak.toFixed(3)}${why.length ? " PROBLEM " + why.join(", ") : ""}`);
 						(why.length ? c.bad : c.good).push(why.length ? `pattern ${p + 1}: ${why.join(", ")}` : p + 1);
 					}

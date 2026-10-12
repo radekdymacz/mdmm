@@ -53,7 +53,7 @@ PY
 	PIDS=""
 	for M in md mm; do
 		[ "$WHICH" = both ] || [ "$WHICH" = $M ] || continue
-		GEARMULATOR_MDMM_SYX_FILE="$OUT/fixtures/$M.syx" GEARMULATOR_MDMM_WAV_FILE="$OUT/fixtures/e2e.wav" \
+		GEARMULATOR_MDMM_BACKGROUND_METER=1 GEARMULATOR_MDMM_SYX_FILE="$OUT/fixtures/$M.syx" GEARMULATOR_MDMM_WAV_FILE="$OUT/fixtures/e2e.wav" \
 		MDMM_JOURNEY_TIMEOUT=${MDMM_JOURNEY_TIMEOUT:-3600} MDMM_JOURNEY_SETTINGS=fresh MDMM_JOURNEY_E2E=1 MDMM_JOURNEY_OUT="$RUN/$M" \
 			scripts/mdmm-journeys.sh --background --jobs "$JOBS" "$M" "$SEL" > "$OUT/journeys-$M.log" 2>&1 &
 		PIDS="$PIDS $!"
