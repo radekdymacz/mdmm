@@ -884,5 +884,25 @@ const Journey = (() => {
 		]),
 		async tidy(u) { for (let i = 0; i < 4 && typeof Modal !== "undefined" && Modal.top(); i++) { u.key("Escape"); await sleep(200); } }
 	});
-	return { pressOutside, modalLockJourney, boxOf, keysInside, run, demo, ok, sleep, until, recent, u, TIERS, tierOf, onScreen, osKeyPath, menu, editorMenuJourney, memoryJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, fitJourneys, snapshot, safari15Diff, viewJourneys };
+	/* Review 1 (B-097): every key of the lock parameter panel shows its whole name, and its lock count beside it, never
+	   over it: "" when all fit, else the keys that do not. At the window's size, and at 1280 wide where the plug-in can
+	   size its window (gmView) */
+	function lockKeysCut(sel = ".pk[data-lane]") {
+		return [...document.querySelectorAll(sel)].filter(k => k.getClientRects().length).map(k => {
+			const n = k.querySelector(".pkn"), i = k.querySelector("i"), b = k.getBoundingClientRect();
+			if (!n) return k.textContent.trim() + ": no name";
+			const r = n.getBoundingClientRect(), cut = n.scrollWidth > n.clientWidth + 1, over = i && i.getBoundingClientRect().left < r.right - 0.5, out = r.right > b.right + 0.5 || (i && i.getBoundingClientRect().right > b.right + 0.5);
+			return cut || over || out ? `${n.textContent}${i ? "+" + i.textContent : ""} (${cut ? "cut " + n.scrollWidth + ">" + n.clientWidth : ""}${over ? " under the count" : ""}${out ? " out of its key" : ""})` : "";
+		}).filter(Boolean).join(", ");
+	}
+	const lockKeysJourney = (name, setup) => ({
+		name, proves: [],
+		steps: [...setup,
+			{ say: "every lock parameter key: its whole name, the count beside it", act: async (u, c) => {
+				c.cut = {}; c.cut[innerWidth] = lockKeysCut();
+				if (typeof window.gmView === "function") { const w0 = innerWidth, h0 = innerHeight; window.gmView(1280, 924); await until(() => innerWidth === 1280, 3000); await sleep(400); c.cut[innerWidth] = lockKeysCut(); window.gmView(w0, h0); await until(() => innerWidth === w0, 3000); }
+				c.n = document.querySelectorAll(".pk[data-lane]").length; },
+				screen: c => ok(c.n > 0 && Object.values(c.cut).every(x => !x), `${c.n} keys; ` + Object.entries(c.cut).map(([w, x]) => `${w}: ${x || "all fit"}`).join("; ")) }]
+	});
+	return { lockKeysCut, lockKeysJourney, pressOutside, modalLockJourney, boxOf, keysInside, run, demo, ok, sleep, until, recent, u, TIERS, tierOf, onScreen, osKeyPath, menu, editorMenuJourney, memoryJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, fitJourneys, snapshot, safari15Diff, viewJourneys };
 })();
