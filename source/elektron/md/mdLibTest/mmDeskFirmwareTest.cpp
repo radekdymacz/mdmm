@@ -1175,6 +1175,32 @@ namespace
 		check(r.tel.step.load() == t0, "and stops on the host's Stop");
 		r.msg(R"({"op":"followHost"})");
 		check(r.lastResult().find("note")->asString().empty(), "a second followHost changes nothing");
+		// review 1 (I-026): GLOBAL › Tempo in INT (MIDI SYNC CLOCK IN off) is the switch to the machine's own clock
+		{
+			const auto hostClockOn = [&] { const auto st = r.desk->status(); const auto* v = st.find("hostClock"); return v && v->isBool() && v->asBool(); };
+			check(hostClockOn(), "following: the desk's status says hostClock");
+			const auto gs = std::to_string(r.desk->currentGlobal());
+			r.msg(R"({"op":"globalMidi","g":)" + gs + R"(,"clockIn":false})");
+			for(int i = 0; i < 100 && r.desk->global(static_cast<uint8_t>(r.desk->currentGlobal()))->tempoSync; ++i)
+				r.run(100);
+			for(int i = 0; i < 3; ++i)
+			{
+				r.msg(R"({"op":"followHost"})");
+				r.run(2500);
+			}
+			check(r.desk->global(static_cast<uint8_t>(r.desk->currentGlobal()))->tempoSync == 0, "Tempo in INT stays through three followHosts (read back)");
+			check(!hostClockOn(), "the desk's status says the host clock is off");
+			r.msg(R"({"op":"globalMidi","g":)" + gs + R"(,"clockIn":true})");
+			for(int i = 0; i < 100 && !r.desk->global(static_cast<uint8_t>(r.desk->currentGlobal()))->tempoSync; ++i)
+				r.run(100);
+			for(int i = 0; i < 8 && !hostClockOn(); ++i)
+			{
+				r.msg(R"({"op":"followHost"})");
+				r.run(1000);
+			}
+			const auto g4 = *r.desk->global(static_cast<uint8_t>(r.desk->currentGlobal()));
+			check(hostClockOn(), "Tempo in EXT again: the host clock is on (clock in " + std::to_string(g4.tempoSync) + ", transport in " + std::to_string(g4.transportIn) + ")");
+		}
 		// Clock and transport OUT (the leader of two apps over a MIDI bus): which bytes make the machine send them
 		if(std::getenv("MM_SYNC_OUT"))
 		{

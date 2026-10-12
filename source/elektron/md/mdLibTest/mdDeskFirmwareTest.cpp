@@ -3025,6 +3025,74 @@ namespace
 			"nudge +10 %: faster while held, back at the release, nothing stored");
 	}
 
+	// Review 1 (2026-10-12, item 11, B-096): Radek, installed build: the first factory song, SONG mode, PLAY: nothing.
+	// Factory memory, the song slot list's Load (selectSong), SONG (seqMode), PLAY as the top bar sends it.
+	void factorySong(const Bytes& _rom, const std::string& _romName)
+	{
+		std::puts("factory song: load song 1, SONG mode, PLAY");
+		Rig rig(_rom, _romName);
+		rig.page(R"({"op":"ready"})");
+		const auto& desk = rig.desk();
+		rig.runUntil([&] { return desk.isReady() && desk.documents().patterns.size() == 128 && desk.documents().kits.size() == 64 && desk.documents().songs.size() == 32; }, 60000);
+		auto& m = rig.machine();
+		for(int sn = 0; sn < 2; ++sn)
+			if(desk.documents().songs.count(static_cast<uint8_t>(sn)))
+			{
+				const auto& so = desk.documents().songs.at(static_cast<uint8_t>(sn));
+				std::string rows;
+				for(const auto& r : so.rows)
+					rows += " " + (r.pattern == ed::MdSongRow::g_endRow ? std::string("END") : r.pattern == ed::MdSongRow::g_loopRow ? "LOOP" + std::to_string(r.target + 1) : ed::mdPatternName(r.pattern) + "x" + std::to_string(r.repeats + 1) + "[" + std::to_string(r.start) + "-" + std::to_string(r.end) + "]");
+				std::printf("  song %d:%s\n", sn + 1, rows.c_str());
+			}
+		const auto mode = [&] { const auto* d = rig.machineDoc() ? rig.machineDoc()->find("songMode") : nullptr; return d && d->isBool() && d->asBool(); };
+		rig.page(R"({"op":"selectSong","s":0,"id":1})");
+		rig.run(800);
+		std::printf("  selectSong 0: %s\n", (rig.lastResult() ? ed::json::write(*rig.lastResult()) : std::string("no result")).c_str());
+		rig.page(R"({"op":"seqMode","song":true,"id":2})");
+		const bool inSong = rig.runUntil(mode, 3000);
+		std::printf("  seqMode song: %s, machine in SONG mode %d\n", (rig.lastResult() ? ed::json::write(*rig.lastResult()) : std::string("no result")).c_str(), inSong);
+		check(inSong, "SONG mode on the machine");
+		rig.page(R"({"op":"play","id":3})");
+		rig.run(200);
+		std::printf("  play: %s\n", (rig.lastResult() ? ed::json::write(*rig.lastResult()) : std::string("no result")).c_str());
+		std::vector<int> steps, rows, pats;
+		for(int i = 0; i < 600; ++i)
+		{
+			rig.run(5);
+			const auto t = rig.pageTelemetry();
+			if(t.playing && (steps.empty() || steps.back() != t.step))
+			{
+				steps.push_back(t.step);
+				rows.push_back(t.songRow);
+				pats.push_back(m.read8(0x28d205));
+			}
+		}
+		std::string seen;
+		for(size_t k = 0; k < steps.size() && k < 24; ++k)
+			seen += " " + std::to_string(steps[k]) + "/r" + std::to_string(rows[k] + 1) + "/" + ed::mdPatternName(static_cast<uint8_t>(pats[k]));
+		std::printf("  3 s after PLAY: %zu steps seen:%s\n", steps.size(), seen.c_str());
+		check(steps.size() >= 8, "PLAY in SONG mode: the machine plays (the step moves)");
+		check(!rows.empty() && rows.front() >= 0, "the page is told a song row");
+		rig.page(R"({"op":"stop","id":4})");
+		rig.run(600);
+		check(!rig.pageTelemetry().playing, "STOP");
+		// the same in a DAW (followHost: TEMPO IN external) with the DAW stopped: PLAY waits for the host's clock
+		rig.page(R"({"op":"followHost","id":6})");
+		rig.runUntil([&] { return desk.documents().global && (desk.documents().global->syncFlags & ed::mdGlobalBits::g_tempoInExternal); }, 4000);
+		rig.run(500);
+		rig.page(R"({"op":"play","id":7})");
+		const auto h0 = m.playhead();
+		rig.run(2000);
+		const bool moved = m.playhead() != h0 || rig.pageTelemetry().playing;
+		// measured 2026-10-12: it plays (the panel's PLAY starts the machine on EXT as well): not the cause of B-096
+		std::printf("  in a DAW (TEMPO IN external, no host clock): PLAY %s\n", moved ? "plays" : "does nothing: the machine waits for the DAW's clock");
+		rig.page(R"({"op":"stop","id":8})");
+		rig.page(R"({"op":"globalSet","field":"tempoIn","on":false,"id":9})");
+		rig.run(1500);
+		rig.page(R"({"op":"seqMode","song":false,"id":5})");
+		rig.run(400);
+	}
+
 	void songRow(const Bytes& _rom, const std::string& _romName)
 	{
 		std::puts("song row: the Song page's playhead");
@@ -3192,6 +3260,30 @@ namespace
 		check(m.playhead() == p0, "and stops on the host's Stop");
 		rig.page(R"({"op":"followHost","id":2})");
 		check(rig.lastResult() && rig.lastResult()->find("note")->asString().empty(), "a second followHost changes nothing");
+		// review 1 (I-026): GLOBAL › Tempo in INT is the switch to the machine's own clock; followHost (every 2 s in the
+		// plug-in) no longer sets EXT again, the desk's status says the host clock is off; EXT again turns it back on
+		const auto hostClock = [&] { const auto st = desk.status(); const auto* v = st.find("hostClock"); return v && v->isBool() && v->asBool(); };
+		check(hostClock(), "following: the desk's status says hostClock");
+		rig.page(R"({"op":"globalSet","field":"tempoIn","on":false,"id":3})");
+		rig.runUntil([&] { return desk.documents().global && !(desk.documents().global->syncFlags & ed::mdGlobalBits::g_tempoInExternal); }, 4000);
+		for(int i = 0; i < 3; ++i)
+		{
+			rig.page(R"({"op":"followHost","id":4})");
+			rig.run(2000);
+		}
+		check(desk.documents().global && !(desk.documents().global->syncFlags & ed::mdGlobalBits::g_tempoInExternal), "Tempo in INT stays through three followHosts (read back)");
+		check(!hostClock(), "the desk's status says the host clock is off");
+		rig.page(R"({"op":"play","id":5})");
+		const auto q0 = m.playhead();
+		rig.run(1500);
+		check(m.playhead() != q0, "INT: PLAY plays on the machine's own clock, no host clock");
+		rig.page(R"({"op":"stop","id":6})");
+		rig.run(500);
+		rig.page(R"({"op":"globalSet","field":"tempoIn","on":true,"id":7})");
+		rig.runUntil([&] { return desk.documents().global && (desk.documents().global->syncFlags & ed::mdGlobalBits::g_tempoInExternal); }, 4000);
+		rig.page(R"({"op":"followHost","id":8})");
+		check(hostClock(), "Tempo in EXT again: the host clock is on");
+		// a project that comes back with INT keeps it: a new desk state (project) sees INT first
 	}
 
 	// P9: a WAV into a UW ROM slot through the desk (decode, mono 16-bit, SDS with the machine's
@@ -4697,6 +4789,13 @@ int main(const int _argc, char** _argv)
 			transport(rom, romPath);
 			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 			std::printf("mdDeskFirmwareTest transport: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
+			return g_failures ? 1 : 0;
+		}
+		if(mode == "factorysong")
+		{
+			factorySong(rom, romPath);
+			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
+			std::printf("mdDeskFirmwareTest factorysong: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
 			return g_failures ? 1 : 0;
 		}
 		if(mode == "songrow")

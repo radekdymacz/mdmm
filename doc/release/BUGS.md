@@ -4,6 +4,12 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-096 · Machinedrum: "loaded a song and can't play it" (not reproduced)
+
+- **From:** Radek's 0.6 review, 2026-10-12 (installed build): the first factory song, SONG mode, PLAY: nothing happens.
+- **Checked (`fix/0.6-review-1`):** on the firmware through the desk (`mdFactorySongFirmwareTest`): factory memory, song 1 (A01 to D16, 32 steps each, then END) loaded as the slot list's Load does (`selectSong`), SONG (`seqMode`), PLAY: the machine is in SONG mode and plays A01, the page is told row 1; STOP stops. The same with TEMPO IN external (a plug-in in a DAW, the DAW stopped): PLAY still plays, so the host clock is not the cause. On the page (`md-song-load-play`, the page tier): song 1 from the slot list, SONG, then ▶ and Space each play the song and stop it. The suspects from the 0.6 waves (B-072's mode keys, the pause state after B-086, play from a row, MD-099's STOP to the queued pattern) are covered by these and by md-song-playhead, md-song-play-from and md-top-pause.
+- **Status:** open, not reproduced. Needed from Radek: standalone or a DAW (and which), whether PATTERN mode plays then, whether ▶ shows ■ or blinks (paused), and the editor's log after the press (Help › Show log). In a DAW, I-026 (Tempo in INT) now lets the machine run on its own clock.
+
 ## B-095 · Both editors: the SysEx import panel changes size while it runs; a tooltip covers Stop
 
 - **From:** Radek's 0.6 review, 2026-10-12 (Machinedrum, screenshot).

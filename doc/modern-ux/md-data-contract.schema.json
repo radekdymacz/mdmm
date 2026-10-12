@@ -5861,7 +5861,7 @@
         },
         {
           "type": "object",
-          "description": "machine: in a DAW: the active GLOBAL follows the host's clock and transport",
+          "description": "machine: in a DAW: the active GLOBAL follows the host's clock and transport, until the person sets the machine's own clock there (review 1, I-026); project: the plug-in's state came from a DAW project, whose global is kept as it is",
           "required": ["op"],
           "properties": {
             "op": {
@@ -5875,6 +5875,9 @@
               "minimum": 0
             },
             "force": {
+              "type": ["boolean", "integer"]
+            },
+            "project": {
               "type": ["boolean", "integer"]
             }
           },

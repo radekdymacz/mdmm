@@ -11,7 +11,7 @@ const NOTE=n=>["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"][n%12]+(Math
 const KTGT=v=>v==null?"--":v<16?"TRACK "+(v+1):v<144?"ABCDEFGH"[(v-16)>>4]+String((v-16)%16+1).padStart(2,"0"):v===144?"START":v===145?"STOP":"#"+v;
 const GTIP={
  base:"The first of four MIDI channels the machine listens and sends on (channel n to n+3). OFF: the machine takes no notes, mutes or sound values over MIDI, so the editor cannot play it; + or − sets 1–4",
- tempoIn:"INTERNAL: its own BPM. EXTERNAL: follows MIDI clock (MIDI Start waits for the clock)",
+ tempoIn:"INTERNAL: its own BPM. EXTERNAL: follows MIDI clock (MIDI Start waits for the clock). In a DAW: EXT follows the DAW's tempo and transport (a new plug-in starts so); INT runs the machine on its own clock and tempo, kept with the project",
  ctrlIn:"React to MIDI Start, Stop and Continue",tempoOut:"Send MIDI clock",ctrlOut:"Send MIDI Start, Stop and Continue",
  pcIn:"Program change selects a pattern",pcOut:"Selecting a pattern sends a program change",
  pcCh:"BASE: in on the four base channels, out on the first",

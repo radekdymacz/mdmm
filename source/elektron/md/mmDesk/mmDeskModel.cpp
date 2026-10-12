@@ -470,7 +470,7 @@ namespace mmDesk
 			{"stepKey", Owner::Machine, Gate::Input, -1, {{"key", ArgType::Text, 0, 0, false, {"left", "right", "clear"}}},
 				"STEP RECORDING: LEFT (a step back), RIGHT (on, a rest) or ENTER (clear the step, on)"},
 			{"hwSend", Owner::Machine, Gate::Input, -1, {}, "HW MIDI: the machine is on SYSEX RECV; send the dumps that wait for it"},
-			{"followHost", Owner::Machine, Gate::Input, -1, {}, "in a DAW: the active GLOBAL follows the host's clock and transport"},
+			{"followHost", Owner::Machine, Gate::Input, -1, {{"project", ArgType::Bool, 0, 0, true}}, "in a DAW: the active GLOBAL follows the host's clock and transport, until the person sets the machine's own clock there (review 1, I-026); project: the plug-in's state came from a DAW project, whose global is kept as it is"},
 			{"globalSlot", Owner::Machine, Gate::Input, -1, {deskCore::slotArg<MmModel>("slot", Kind::Global)}, "the active GLOBAL slot (SET ACTIVE GLOBAL 0x56)"},
 			// MM-P8
 			{"chain", Owner::Machine, Gate::Input, -1, {{"patterns", ArgType::Array}}, "BANK held + TRIG keys: the machine's pattern chain"},

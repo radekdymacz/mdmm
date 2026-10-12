@@ -213,6 +213,13 @@ namespace mdJucePlugin
 		if(!m_desk->heldState(_dest)) Processor::getStateInformation(_dest);	// no ROM: the project as it was (mdDeskHost.h)
 	}
 
+	void AudioPluginAudioProcessor::setHostClock(const bool _on)
+	{
+		getPlugin().setHostClock(_on);
+		const bool daw = !m_standaloneState && wrapperType != wrapperType_Undefined;
+		m_memoryFollowsHost = daw && _on;
+	}
+
 	void AudioPluginAudioProcessor::setStateInformation(const void* _data, const int _size)
 	{
 		if(_size > 0 && machineMemory::stateIsProject(m_standaloneState))

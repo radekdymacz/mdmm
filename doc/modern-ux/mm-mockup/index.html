@@ -5177,7 +5177,9 @@ const Boot = (() => {
    8 x 16, songs 2 x 16, globals 1-8), a slot that holds data on the machine with a lit dot, the one that plays now
    cream with ▶. A click on a slot leaves it out or takes it again, Shift-click a range. Three states, one footer:
    preview (Cancel, Import n), importing (the phases and a bar; Stop, Hide), report (per slot what the machine did,
-   the problems as a list; Done only).
+   the problems as a list; Done only). Review 1 (B-094, B-095): one size for the whole run (deskSyx.css), a slot's facts
+   in a line of the panel (no tooltip over Stop and Hide); at work Esc and a click outside keep it (data-busy); after
+   Hide the engine menu's entries show it again, with its report when the run ended meanwhile.
    0.6 (wave 6, DESIGN-machine-menus.md §2): the same panel exports too (ALL ticked by default; unticked, each kind with
    its range), the import gets its PLACE row (ORIGINAL, or SPECIFIC from a first slot per kind: the host previews again,
    each item at the slot it lands in, and the panel asks before an item lands on a slot that holds data) and VERIFY ONLY
@@ -7616,7 +7618,7 @@ const MM_GTIP={
  multiMap:"MULTI MAP: notes on this channel start patterns as the MULTI MAP says (Perform)",
  pcIn:"Measured: the machine always takes a program change on its base channel (it selects a pattern); no setting turns it off",
  pcOut:"Picking a pattern sends a program change on the base channel",
- tempoIn:"INTERNAL: its own tempo. EXTERNAL: follows MIDI clock. In a DAW the plug-in sets EXT itself (it follows the host)",
+ tempoIn:"INTERNAL: its own tempo. EXTERNAL: follows MIDI clock. In a DAW: EXT follows the DAW's tempo and transport (a new plug-in starts so); INT runs the machine on its own clock and tempo, kept with the project",
  ctrlIn:"React to MIDI Start, Stop and Continue. In a DAW the plug-in turns it on itself",
  tempoOut:"Send MIDI clock",ctrlOut:"Send MIDI Start and Stop",
  routing:"How the six tracks reach the outputs (also on Mix)",

@@ -128,6 +128,11 @@ namespace mdJucePlugin
 		void refuseNextMachineMemoryRestoreForTest() { m_refuseNextRestoreForTest = true; }
 		// Tests: the machine follows the host (a plug-in in a DAW: tempo and sync are the host's, never saved)
 		void setMachineMemoryFollowsHostForTest(bool _follows) { m_memoryFollowsHost = _follows; }
+		// Review 1 (I-026): in a DAW, the machine follows the host's clock (the active global's TEMPO IN says EXT) or runs
+		// on its own (INT): the host's clock and transport go to the machine, and the global's host bytes are left out of
+		// the machine memory file, only while it follows (the session sets it from the desk's status)
+		void setHostClock(bool _on);
+		bool projectStateSeen() const { return m_projectStateSeen.load(); }
 		// Tests: called by the watch's thread after each piece of a look (the offset of the piece it copied)
 		void setMachineMemoryLookHookForTest(std::function<void(size_t)> _hook)
 		{

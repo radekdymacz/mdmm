@@ -277,7 +277,7 @@ Beside **Tempo in**, click:
 - **INT**: the machine runs at its own tempo.
 - **EXT**: the machine follows the MIDI clock it receives. MIDI Start waits for the clock.
 
-In a DAW the machine follows the tempo of the host. See "EXTERNAL SYNCHRONIZATION" in chapter 8.
+In a DAW, EXT follows the tempo and transport of the host, and a new plug-in starts so. INT runs the machine on its own clock there, and the project keeps it. See "EXTERNAL SYNCHRONIZATION" in chapter 8.
 
 ### Ctrl in
 

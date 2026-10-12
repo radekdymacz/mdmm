@@ -389,7 +389,7 @@ namespace mmDesk
 	// P7, in a DAW: the machine follows the host's MIDI clock and Start/Stop (MmModel::hostFollowing). The
 	// global goes out as a dump on SYSEX RECV (made active with 0x56 once it is read back, onDump): the
 	// machine's own setting, not an edit, so no undo step.
-	Outcome MmMachine::cmdFollowHost(const Value&, const Documents& _view)
+	Outcome MmMachine::cmdFollowHost(const Value& _m, const Documents& _view)
 	{
 		if(m_curGlobal < 0)
 			return ok();
@@ -398,8 +398,9 @@ namespace mmDesk
 		if(it == _view.globals.end() || m_pushes.busy(ref))
 			return ok();
 		const auto g = MmModel::hostFollowing(it->second);
-		if(!g)
-			return ok();
+		// review 1 (I-026): MIDI SYNC CLOCK IN (with TRANSPORT IN) is the switch; the machine's own clock the person chose stays
+		if(!m_hostClock.wants(!g, flag(_m, "project")))
+			return ok(m_hostClock.on ? "" : "The machine runs on its own clock (GLOBAL " + std::to_string(ref.slot + 1) + ": CLOCK IN off)");
 		pushDump(ref, ed::encodeMmGlobal(*g));
 		return ok("The machine follows the host's tempo and transport (GLOBAL " + std::to_string(ref.slot + 1) + ": MIDI SYNC CLOCK IN, TRANSPORT IN)");
 	}

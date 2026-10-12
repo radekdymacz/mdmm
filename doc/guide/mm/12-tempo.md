@@ -2,7 +2,7 @@
 <!-- summary: Set the tempo by hand or by tapping, and follow a DAW or an external clock. -->
 
 ## TEMPO
-<!-- rows: MM-193 MM-199 @6bcf85 -->
+<!-- rows: MM-193 MM-199 @5b6847 -->
 
 The tempo is global. A pattern does not store it, so changing the pattern never changes the tempo. A song row can carry a tempo of its own (see chapter 17, "Set a tempo for a row").
 
@@ -30,7 +30,7 @@ Press [Esc] or click outside the window to close it.
 
 TIP: Hold [⌥] while you drag the field to change the tempo at the release once, without the tick.
 
-NOTE: In a DAW the machine follows the tempo of the DAW and the field refuses edits. The page says "The DAW sets the tempo. Change it there."
+NOTE: In a DAW, with **Tempo in** on EXT, the machine follows the tempo of the DAW and the field refuses edits. The page says "The DAW sets the tempo. Change it there."
 
 ## TAP TEMPO
 <!-- rows: MM-197 @66da4a -->
@@ -43,7 +43,7 @@ The tempo is the average of the last five taps. A pause of two seconds starts th
 On workspaces other than **Sequence**, [B] taps too. On **Sequence** [B] is the **Draw** key of the piano roll.
 
 ## EXTERNAL SYNCHRONISATION
-<!-- rows: MM-198 @aa1926 -->
+<!-- rows: MM-198 @35e91f -->
 
 The machine runs on its own clock or follows a MIDI clock. The setting is in the **GLOBAL** panel.
 
@@ -53,4 +53,4 @@ The machine runs on its own clock or follows a MIDI clock. The setting is in the
 
 The **Sync** keys **INT** and **EXT** of the **TEMPO** window set **Tempo in** too.
 
-In a DAW you set nothing. The plug-in sets **Tempo in** to EXT and **Ctrl in** to ON itself, and the machine follows the host. See chapter 19, "Control out 2" and "Control in", for the other settings of the card.
+In a DAW a new plug-in sets **Tempo in** to EXT and **Ctrl in** to ON itself, and the machine follows the host. Set **Tempo in** to INT to run the machine on its own clock in the DAW: the tempo edits again, and the DAW's tempo and transport no longer reach the machine. EXT follows the DAW again. The project keeps the choice. See chapter 19, "Control out 2" and "Control in", for the other settings of the card.

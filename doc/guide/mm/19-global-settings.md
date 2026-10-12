@@ -90,7 +90,7 @@ The **Sync** card holds two switches for what the machine sends. **Tempo out** s
 - **Ctrl in**: ON makes the machine react to MIDI start, stop and continue.
 - **Prg change in**: reads BASE. The machine always takes a program change on its base channel, so you cannot change it.
 
-In a DAW the plug-in sets **Tempo in** to EXT and **Ctrl in** to ON itself.
+In a DAW a new plug-in sets **Tempo in** to EXT and **Ctrl in** to ON itself. Set **Tempo in** to INT and the machine runs on its own clock there; the project keeps it.
 
 ### MULTI MAP EDIT
 <!-- rows: MM-300 MM-301 MM-302 MM-303 @a98cee -->
