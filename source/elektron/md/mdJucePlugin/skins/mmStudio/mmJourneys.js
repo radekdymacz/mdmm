@@ -2334,8 +2334,199 @@ const MmJourneys = (() => {
 			if (c.plate0 && document.documentElement.dataset.plate !== c.plate0) u.click("#platekey");
 		}
 	};
+	/* ---- Sequence: the envelope trigs, pitch and the keys (the sequencer chapters) ---- */
+	const rollPitch = (t, s, pitch) => {
+		const c = $1(`#seq canvas.roll[data-big][data-t="${t}"]`); if (!c) throw new Error("no piano roll for track " + (t + 1));
+		const G = laneGeom(c), r = c.getBoundingClientRect(), q = G.col[s]; if (!q) throw new Error("step " + (s + 1) + " is not shown");
+		const row = G.lo + G.rows - 1 - pitch; if (row < 0 || row >= G.rows) throw new Error(`pitch ${pitch} is off the roll (${G.lo}-${G.lo + G.rows - 1})`);
+		return { c, G, fx: (q.x0 + q.x1) / 2 / r.width, fy: (G.top + (row + 0.5) * G.rh) / r.height, rh: G.rh, lo: G.lo, hi: G.lo + G.rows - 1 };
+	};
+	const bitsOf = (t, k) => (patDoc()?.tracks[t]?.[k] || []).slice().sort((a, b) => a - b);
+	const noteAt = (t, s) => (patDoc()?.tracks[t]?.notes || []).filter(([x]) => x === s).map(([, n]) => n);
+	const dot = (b, s) => `[data-env="${b}"][data-s="${s}"]`;
+	const envJ = {
+		name: "mm-seq-env-trigs", proves: ["MM-029", "MM-047", "MM-085", "MM-143", "MM-171", "MM-209", "MM-210", "MM-211", "MM-213", "MM-214"],
+		steps: [
+			go("seq"), sel(0), drawOn,
+			{ say: "the LCD names the kit, the rail marks the track, the ENV row's A F L dots show each step's amp, filter and LFO trigs as the pattern holds them", screen: () => {
+					const bad = []; if (!$1("#kitname").textContent.includes(kitName(machine().kit.current).trim())) bad.push("LCD kit " + $1("#kitname").textContent); if (S().sel !== 0) bad.push("track " + S().sel);
+					for (let s = 0; s < S().len; s++) { const st = S().tracks[0].steps[s]; if (!st || st.off) continue; for (const [b, k] of [["a", "amp"], ["f", "filter"], ["l", "lfo"]]) { const d = $1(dot(b, s)); if (!d || (d.getAttribute("aria-pressed") === "true") !== bitsOf(0, k).includes(s)) bad.push(`step ${s + 1} ${b}`); } }
+					return ok(!bad.length, bad.slice(0, 5).join(" | ")); } },
+			{ say: "click an empty cell of the roll: the new note fires all three envelopes (A F L lit) and has its pitch", act: (u, c) => { c.n0 = histN(); c.pitch = rollCell(0, 0).n; c.s = freeSteps(0, 1, 6, c.pitch)[0]; const p = rollPitch(0, c.s, c.pitch); u.click(p.c, {}, p.fx, p.fy); },
+				machine: c => ok(bitsOf(0, "trig").includes(c.s) && ["amp", "filter", "lfo"].every(k => bitsOf(0, k).includes(c.s)) && noteAt(0, c.s).join() === String(c.pitch), `trig ${bitsOf(0, "trig").includes(c.s)}, amp ${bitsOf(0, "amp").includes(c.s)}, filter ${bitsOf(0, "filter").includes(c.s)}, lfo ${bitsOf(0, "lfo").includes(c.s)}, note ${noteAt(0, c.s)}`),
+				screen: c => ok(["a", "f", "l"].every(b => $1(dot(b, c.s))?.getAttribute("aria-pressed") === "true"), "dots"), within: 8000 },
+			{ say: "click A: only the amp trig goes; click F: only the filter trig goes; the trig and the pitch stay", act: async (u, c) => { u.click(dot("a", c.s)); await until(() => !bitsOf(0, "amp").includes(c.s), 4000); c.a = [bitsOf(0, "amp").includes(c.s), bitsOf(0, "filter").includes(c.s), bitsOf(0, "lfo").includes(c.s)];
+					u.click(dot("f", c.s)); await until(() => !bitsOf(0, "filter").includes(c.s), 4000); c.f = [bitsOf(0, "amp").includes(c.s), bitsOf(0, "filter").includes(c.s), bitsOf(0, "lfo").includes(c.s)]; },
+				machine: c => ok(same(c.a, [false, true, true]) && same(c.f, [false, false, true]) && bitsOf(0, "trig").includes(c.s) && noteAt(0, c.s).join() === String(c.pitch), `after A ${c.a}, after F ${c.f}`), within: 10000 },
+			{ say: "click L: the last one goes: a trig with no envelopes, the pitch kept (it sets a pitch or holds locks); the roll draws it outlined", act: async (u, c) => { u.click(dot("l", c.s)); await until(() => !bitsOf(0, "lfo").includes(c.s), 4000); await sleep(200); c.span = noteSpans(0).find(sp => sp.s === c.s); },
+				machine: c => ok(["amp", "filter", "lfo"].every(k => !bitsOf(0, k).includes(c.s)) && bitsOf(0, "trig").includes(c.s) && noteAt(0, c.s).join() === String(c.pitch), "bits"), screen: c => ok(c.span?.kind === "trigless", "span " + JSON.stringify(c.span?.kind)), within: 8000 },
+			{ say: "a lock drawn on that trigless step holds", act: async (u, c) => { const k = $1('[data-dock="locks"]'); if (k) u.click(k); await sleep(200); c.lane = S().lane; await u.drag(`#lane .lb[data-s="${c.s}"]`, [[0, -3]], {}, { fy: 0.5 }); },
+				machine: c => { const [pg, pi] = [PAGES.indexOf(c.lane.split(".")[0]), +c.lane.split(".")[1]]; const l = (patDoc().locks || []).find(x => x.track === 0 && x.page === pg && x.param === pi); return ok(l && l.steps.some(([x]) => x === c.s), "locks " + JSON.stringify(l)); }, within: 8000 },
+			{ say: "click L alone: the LFO trig only, the others stay off (the LFO is trigged on its own)", act: async (u, c) => { u.click(dot("l", c.s)); await until(() => bitsOf(0, "lfo").includes(c.s), 4000); },
+				machine: c => ok(bitsOf(0, "lfo").includes(c.s) && !bitsOf(0, "amp").includes(c.s) && !bitsOf(0, "filter").includes(c.s), `amp ${bitsOf(0, "amp").includes(c.s)}, filter ${bitsOf(0, "filter").includes(c.s)}, lfo ${bitsOf(0, "lfo").includes(c.s)}`), within: 6000 },
+			{ say: "a trig with no pitch of its own (envelope trigs only: its note is the one before): click its A dot: the amp trig flips, the step stays without a pitch", act: async (u, c) => {
+					const found = [0, 1, 2, 3, 4, 5].map(t => [t, noteSpans(t).find(sp => sp.pitchless && sp.st.a)]).find(([, sp]) => sp); if (!found) throw new Error("no pitchless trig in the pattern"); c.pt = found[0]; c.ps = found[1].s; u.click(rail(c.pt)); await sleep(300);
+					c.a0 = bitsOf(c.pt, "amp").includes(c.ps); u.click(dot("a", c.ps)); await until(() => bitsOf(c.pt, "amp").includes(c.ps) !== c.a0, 4000); },
+				machine: c => ok(bitsOf(c.pt, "amp").includes(c.ps) !== c.a0 && bitsOf(c.pt, "trig").includes(c.ps) && !noteAt(c.pt, c.ps).length, `amp ${bitsOf(c.pt, "amp").includes(c.ps)}, notes ${noteAt(c.pt, c.ps)}`), screen: c => ok(noteSpans(c.pt).find(sp => sp.s === c.ps)?.pitchless === true, "span"), within: 6000 }
+		],
+		async tidy(u, c) { drawBack(c); if (c.n0 != null) await undoTo(u, c.n0); }
+	};
+	/* the keys that play: the home row on the selected track's channel, velocity C and V, octave Z and X; the roll's pitch, an octave by drag, a chord, a note gone */
+	const noteWires = n0 => nonSys(n0).filter(w => w.kind === "note").map(w => w.b);
+	const playKey = async (u, k) => { const w0 = wireSeq; blur(); u.key(k); await until(() => noteWires(w0).length >= 2, 2000); await sleep(100); return noteWires(w0); };
+	const pitchKeys = {
+		name: "mm-seq-pitch-keys", proves: ["MM-028", "MM-034", "MM-074", "MM-077", "MM-173", "MM-174", "MM-176", "MM-348"],
+		steps: [
+			go("seq"), sel(0), drawOn,
+			{ say: "click three rows of the roll: each note has the pitch of the row it was clicked in", act: async (u, c) => { c.n0 = histN(); const p0 = rollPitch(0, 0, rollCell(0, 0).n); c.pitches = [p0.lo + 2, Math.floor((p0.lo + p0.hi) / 2), p0.hi - 2]; c.steps = c.pitches.map((pt, k) => freeSteps(0, 1, 6 + k * 3, pt)[0]); if (c.steps.some(s => s == null)) throw new Error("no free steps");
+					for (const [k, s] of c.steps.entries()) { const p = rollPitch(0, s, c.pitches[k]); u.click(p.c, {}, p.fx, p.fy); await sleep(300); } },
+				machine: c => ok(c.steps.every((s, k) => noteAt(0, s).join() === String(c.pitches[k])), `notes ${c.steps.map(s => noteAt(0, s))} for ${c.pitches}`), within: 12000 },
+			{ say: "drag the lowest note up twelve rows (an octave): its pitch is twelve more", act: async (u, c) => { c.from = c.pitches[0]; const p = rollPitch(0, c.steps[0], c.from); await u.drag(p.c, [[0, -p.rh * 4], [0, -p.rh * 8], [0, -p.rh * 12]], {}, { fx: p.fx, fy: p.fy }); },
+				machine: c => ok(noteAt(0, c.steps[0]).join() === String(c.from + 12), `note ${noteAt(0, c.steps[0])}, from ${c.from}`), within: 8000 },
+			{ say: "scroll the roll with Shift: it moves by an octave", act: async (u, c) => { const cv = rollPitch(0, 0, rollCell(0, 0).n).c; c.lo0 = S().rollLoT[0] ?? S().rollLo; u.wheel(cv, 1, { shift: true }); await sleep(200); c.lo1 = S().rollLoT[0] ?? S().rollLo; u.wheel(cv, -1, { shift: true }); await sleep(200); c.lo2 = S().rollLoT[0] ?? S().rollLo; },
+				screen: c => ok(Math.abs(c.lo1 - c.lo0) === 12 && c.lo2 === c.lo0, `from ${c.lo0} to ${c.lo1}, back to ${c.lo2}`) },
+			{ say: "Shift-click another pitch on a note's step: a chord of two notes", act: async (u, c) => { const s = c.steps[1], p0 = rollPitch(0, s, c.pitches[1]), want = c.pitches[1] + 4; if (want > p0.hi) c.cp = c.pitches[1] - 4; else c.cp = want; const p = rollPitch(0, s, c.cp); u.click(p.c, { shift: true }, p.fx, p.fy); await until(() => bitsOf(0, "chord").includes(s), 4000); },
+				machine: c => ok(bitsOf(0, "chord").includes(c.steps[1]) && S().tracks[0].steps[c.steps[1]]?.n?.length === 2 && S().tracks[0].steps[c.steps[1]].n.includes(c.cp), `chord ${bitsOf(0, "chord").includes(c.steps[1])}, notes ${JSON.stringify(S().tracks[0].steps[c.steps[1]]?.n)}`), within: 8000 },
+			{ say: "Alt-click the third note: the note is gone", act: async (u, c) => { const p = rollPitch(0, c.steps[2], c.pitches[2]); u.click(p.c, { alt: true }, p.fx, p.fy); await until(() => !bitsOf(0, "trig").includes(c.steps[2]), 4000); },
+				machine: c => ok(!bitsOf(0, "trig").includes(c.steps[2]) && !noteAt(0, c.steps[2]).length, `trig ${bitsOf(0, "trig").includes(c.steps[2])}, notes ${noteAt(0, c.steps[2])}`), within: 8000 },
+			{ say: "V raises the keyboard velocity to 127, C twice brings it to 80: A plays a note on track 1's channel at that velocity, and lets go with its note off", act: async (u, c) => { c.bad = []; const ch = 0x90 | baseCh(), off = 0x80 | baseCh();
+					let w = await playKey(u, "a"); const base = w[0]?.[1]; if (!base) c.bad.push("A: " + JSON.stringify(w));
+					blur(); u.key("v"); blur(); u.key("v"); w = await playKey(u, "a"); if (!(w[0]?.[0] === ch && w[0][2] === 127 && w[1]?.[0] === off && w[1][1] === w[0][1] && w[1][2] === 0)) c.bad.push("at 127: " + JSON.stringify(w));
+					blur(); u.key("c"); blur(); u.key("c"); w = await playKey(u, "a"); if (!(w[0]?.[0] === ch && w[0][2] === 80)) c.bad.push("at 80: " + JSON.stringify(w)); c.base = base; },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
+			{ say: "X raises the octave: A plays an octave higher; Z twice: an octave lower than the start", act: async (u, c) => { c.bad = []; blur(); u.key("x"); let w = await playKey(u, "a"); if (w[0]?.[1] !== c.base + 12) c.bad.push("octave +1: " + JSON.stringify(w) + " from " + c.base);
+					blur(); u.key("z"); blur(); u.key("z"); w = await playKey(u, "a"); if (w[0]?.[1] !== c.base - 12) c.bad.push("octave -1: " + JSON.stringify(w)); blur(); u.key("x"); },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
+			{ say: "each of the six tracks, picked on the rail, plays from A on its own channel, and its SYN value moves on that channel", act: async (u, c) => { c.bad = []; for (let t = 0; t < 6; t++) { u.click(rail(t)); await sleep(200); const w = await playKey(u, "a"); if (w[0]?.[0] !== (0x90 | (baseCh() + t))) c.bad.push(`T${t + 1}: ${JSON.stringify(w)}`); } },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 }
+		],
+		async tidy(u, c) { drawBack(c); blur(); u.key("v"); if (c.n0 != null) await undoTo(u, c.n0); }
+	};
+	/* ---- Parameter locks: the seven data pages of the lane picker, a value on every step, the pool of 62, live recording ---- */
+	const laneTabs = () => $all("[data-lpage]").map(b => b.textContent.trim());
+	const lockList = () => (patDoc()?.locks || []);
+	const lockVals = (t, pg, pi) => { const l = lockList().find(x => x.track === t && x.page === pg && x.param === pi); return l ? l.steps.slice().sort((a, b) => a[0] - b[0]) : []; };
+	/* pick lane (page, index) of the selected track and draw one lock on step s at height fy */
+	const drawLock = async (u, g, i, s, fy) => { u.click(`[data-lpage="${g}"]`); await sleep(30); u.click(`.pk[data-lane="${g}.${i}"]`); await sleep(30); await u.drag(`#lane .lb[data-s="${s}"]`, [[0, -1]], {}, { fy, settle: 40, stepMs: 10 }); };
+	const locksJ = {
+		name: "mm-seq-locks", proves: ["MM-017", "MM-113", "MM-205", "MM-206", "MM-208"],
+		steps: [
+			go("seq"), sel(0),
+			{ say: "the lock lane's picker has the seven data pages in order; each lists that page's own values; LEV is on none of them (it is not lockable)", act: async (u, c) => { c.bad = []; if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); await sleep(200);
+					if (laneTabs().join(" ") !== "SYN AMP FLT EFX LF1 LF2 LF3") c.bad.push("tabs " + laneTabs().join(" "));
+					for (const g of PAGES) { u.click(`[data-lpage="${g}"]`); await sleep(60); const names = $all(".pkcol .pk[data-lane]").map(b => b.textContent.replace(/\d+$/, "")); const want = pnames(0, g).filter(Boolean);
+						if (names.join(" ") !== want.join(" ")) c.bad.push(`${g}: ${names.join(" ")} (page: ${want.join(" ")})`); if (names.some(n => /^LEV/.test(n))) c.bad.push(g + " lists LEV"); if (S().lanePage !== g || $1(`[data-lpage="${g}"]`).getAttribute("aria-pressed") !== "true") c.bad.push("tab " + g + " not lit"); } },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
+			{ say: "lock AMP ATK on three trigs, each drawn at its own height: three different values, the higher the bar the higher the value", act: async (u, c) => { c.n0 = histN(); c.t = [0, 1, 2, 3, 4, 5].find(t => trigsOf(t).length >= 3); u.click(rail(c.t)); await sleep(300); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); await sleep(200);
+					c.on = trigsOf(c.t).filter(s => s < S().len).slice(0, 3); await drawLock(u, "AMP", 0, c.on[0], 0.2); await drawLock(u, "AMP", 0, c.on[1], 0.5); await drawLock(u, "AMP", 0, c.on[2], 0.8); await sleep(500); c.v = lockVals(c.t, 1, 0); },
+				machine: c => ok(c.v.length === 3 && c.v[0][1] > c.v[1][1] && c.v[1][1] > c.v[2][1] && c.v.every(([s], k) => s === c.on[k]), "locks " + JSON.stringify(c.v)), within: 8000 },
+			{ say: "draw the middle step again, higher: only its value changes (edited in the grid afterwards)", act: async (u, c) => { c.before = c.v.map(x => x.slice()); await u.drag(`#lane .lb[data-s="${c.on[1]}"]`, [[0, -1]], {}, { fy: 0.1, settle: 40, stepMs: 10 }); await sleep(500); c.v2 = lockVals(c.t, 1, 0); },
+				machine: c => ok(c.v2.length === 3 && c.v2[1][1] > c.before[1][1] && c.v2[0][1] === c.before[0][1] && c.v2[2][1] === c.before[2][1], `before ${JSON.stringify(c.before)}, after ${JSON.stringify(c.v2)}`), within: 8000 },
+			{ say: "lock parameter after parameter across the tracks until the pattern holds 62: the LCD counts them all (the pool is the pattern's, not a track's)", act: async (u, c) => { c.fill = []; c.tr = new Set();
+					outer: for (let t = 0; t < 6; t++) { if (trigsOf(t).length < 1) continue; let added = 0; u.click(rail(t)); await sleep(150); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); const s = trigsOf(t).find(x => x < S().len); if (s == null) continue;
+						for (const g of PAGES) for (const [i, nm] of pnames(t, g).entries()) { if (!nm) continue; if (lockList().length >= 62) break outer; if (added >= 20) continue; if (lockVals(t, PAGES.indexOf(g), i).length) continue; const n = lockList().length; await drawLock(u, g, i, s, 0.4); if (!await until(() => lockList().length === n + 1, 3000)) { c.fill.push(`T${t + 1} ${g}.${i}: ${lockList().length}`); break outer; } c.tr.add(t); added++; } }
+					await sleep(300); c.n = lockList().length; c.lcd = $1("#lockn").textContent; },
+				machine: c => ok(c.n === 62 && !c.fill.length && c.tr.size >= 2, `${c.n} locked parameters on ${c.tr.size} tracks ${c.fill.join(" ")}`), screen: c => ok(c.lcd === "62/62" && $1("#meter").classList.contains("full"), `LCD ${c.lcd}, meter ${$1("#meter").className}`), within: 1000 },
+			{ say: "a 63rd parameter is refused: the machine keeps 62, the page says all are in use", act: async (u, c) => { const t = [0, 1, 2, 3, 4, 5].find(x => trigsOf(x).length && [...PAGES].some(g => pnames(x, g).some((nm, i) => nm && !lockVals(x, PAGES.indexOf(g), i).length))); u.click(rail(t)); await sleep(200); const g = PAGES.find(g => pnames(t, g).some((nm, i) => nm && !lockVals(t, PAGES.indexOf(g), i).length)), i = pnames(t, g).findIndex((nm, i) => nm && !lockVals(t, PAGES.indexOf(g), i).length); c.n1 = lockList().length;
+					await drawLock(u, g, i, trigsOf(t).find(x => x < S().len), 0.4); await sleep(800); },
+				screen: () => ok(/All 62 locked parameters are in use/.test($1("#toast")?.textContent || ""), "toast " + $1("#toast")?.textContent), machine: c => ok(lockList().length === 62 && c.n1 === 62, "locks " + lockList().length), within: 6000 }
+		],
+		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); }
+	};
+	/* LIVE RECORDING: a value turned while the pattern plays is locked on the step that plays (the firmware does it; the page names it) */
+	const recLocks = {
+		name: "mm-seq-record-locks", proves: ["MM-082", "MM-207"],
+		steps: [
+			go("sound"), sel(0),
+			{ say: "press Alt+Space: live recording, playing", act: (u, c) => { c.p0 = pat0(); c.l0 = lockList().length; blur(); results.length = 0; u.key(" ", { alt: true }, "Space"); },
+				machine: () => ok(tele.last?.record === "live" && tele.last?.playing, `record ${tele.last?.record}, playing ${tele.last?.playing}`), within: 8000 },
+			{ say: "turn AMP's DEC on Sound: the CC goes to the machine on track 1's channel, the page says which step it locks", act: async (u, c) => { c.r = await nudgeBox(u, 0, "AMP", 2); await sleep(300); c.toast = $1("#toast")?.textContent || ""; c.cell = c.r.v1; },
+				machine: c => ok(!checkBox(c.r, 0, "AMP", 2) && /Locks T1 AMP DEC on step \d+/.test(c.toast), `${checkBox(c.r, 0, "AMP", 2) || ""} toast "${c.toast}"`), within: 6000 },
+			{ say: "click RECORD off, then STOP: the pattern holds a lock of AMP DEC, with the value turned, on a step of track 1", act: async (u, c) => { u.click("#rec"); await sleep(800); if (S().playing) u.click("#play"); await sleep(1500); },
+				machine: c => { const l = lockVals(0, 1, 2); return ok(l.length >= 1 && l.some(([, v]) => v === c.cell), `locks ${JSON.stringify(l)}, value turned ${c.cell}`); }, within: 10000 },
+			go("seq"),
+			{ say: "on Sequence the lane picker counts the lock the recording made on AMP DEC; the lane's clear key takes it away", act: async (u, c) => { if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); await sleep(200); u.click('[data-lpage="AMP"]'); await sleep(60); u.click('.pk[data-lane="AMP.2"]'); await sleep(300); c.has = $1('.pk[data-lane="AMP.2"]')?.classList.contains("has") && +$1('.pk[data-lane="AMP.2"] i')?.textContent >= 1; u.click("#clearLane"); await sleep(600); },
+				screen: c => ok(c.has, "AMP DEC in the picker has no locked step"), machine: () => ok(lockVals(0, 1, 2).length === 0, "locks " + JSON.stringify(lockVals(0, 1, 2))), within: 8000 }
+		],
+		async tidy(u, c) { if (tele.last?.record && tele.last.record !== "off") u.click("#rec"); await sleep(400); if (S().playing) u.click("#play"); await sleep(800); if (c.p0) await undoUntil(u, () => pat0() === c.p0, 4); const n0 = c.l0; if (n0 != null && lockList().length !== n0) { for (const l of lockList().slice()) if (l.track === 0 && l.page === 1 && l.param === 2) Bridge.send({ op: "clearLane", t: 0, page: 1, param: 2 }); await sleep(800); } }
+	};
+	/* ---- Sequence docks and the LCD: the arpeggiators, the scale setup, transpose, trig setup (Additional sequencer features) ---- */
+	const trackDoc = t => t < 6 ? patDoc().tracks[t] : patDoc().midiTracks[t - 6];
+	const arpOf = t => trackDoc(t).arp;
+	const dockOpen = async (u, d) => { u.click(`[data-dock="${d}"]`); await sleep(300); };
+	const arpSetup = {
+		name: "mm-seq-arp-setup", proves: ["MM-008", "MM-216", "MM-218", "MM-220", "MM-222", "MM-223", "MM-224", "MM-225"],
+		steps: [
+			go("seq"), sel(0),
+			{ say: "all twelve arpeggiators (six synth tracks, six MIDI tracks): each track's mode key sets its own arpeggiator and no other", act: async (u, c) => { c.n0 = histN(); c.bad = []; await dockOpen(u, "arp");
+					for (const t of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) { if (t >= 6 && S().side !== "midi") { u.click('[data-side="midi"]'); await sleep(300); } if (t < 6 && S().side === "midi") { u.click('[data-side="int"]'); await sleep(300); } u.click(rail(t)); await sleep(250); if (!$1('[data-set="arpmode"]')) await dockOpen(u, "arp");
+						const before = [...Array(12).keys()].map(x => JSON.stringify(arpOf(x))); const m0 = arpOf(t).mode, v = m0 === 1 ? 2 : 1; u.click(`[data-set="arpmode"] button[data-v="${v}"]`); if (!await until(() => arpOf(t).mode === v, 4000)) { c.bad.push(`T${t + 1}: mode ${arpOf(t).mode} for ${v}`); continue; }
+						const after = [...Array(12).keys()].map(x => JSON.stringify(arpOf(x))); if (after.some((a, x) => x !== t && a !== before[x])) c.bad.push(`T${t + 1}: another arpeggiator changed`); } },
+				screen: c => ok(!c.bad.length, c.bad.slice(0, 4).join(" | ")), within: 1000 },
+			{ say: "on track 1: the four modes OFF KEY SID ADD, and the five PLAY keys TRUE UP DOWN CYCLE RND, each its own value in the pattern", act: async (u, c) => { c.bad = []; if (S().side === "midi") { u.click('[data-side="int"]'); await sleep(300); } u.click(rail(0)); await sleep(250); if (!$1('[data-set="arpmode"]')) await dockOpen(u, "arp");
+					if ($all('[data-set="arpmode"] button').map(b => b.textContent).join(" ") !== "OFF KEY SID ADD") c.bad.push("modes " + $all('[data-set="arpmode"] button').map(b => b.textContent)); if ($all('[data-set="arpplay"] button').map(b => b.textContent).join(" ") !== "TRUE UP DOWN CYCLE RND") c.bad.push("play " + $all('[data-set="arpplay"] button').map(b => b.textContent));
+					for (let i = 0; i < 4; i++) { u.click(`[data-set="arpmode"] button[data-v="${i}"]`); if (!await until(() => arpOf(0).mode === i, 3000)) c.bad.push(`mode ${i}: ${arpOf(0).mode}`); }
+					u.click('[data-set="arpmode"] button[data-v="1"]'); await until(() => arpOf(0).mode === 1, 3000);
+					for (let i = 0; i < 5; i++) { u.click(`[data-set="arpplay"] button[data-v="${i}"]`); if (!await until(() => arpOf(0).play === i, 3000)) c.bad.push(`PLAY ${i}: ${arpOf(0).play}`); } },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
+			{ say: "SPD 6 is a sixteenth: the light notes follow one to a step; OJMP typed: the pattern holds it", act: async (u, c) => { const q = '.pc[data-g="arp"][data-n="SPD"]'; u.click(q, { cmd: true }); typeIn(u, "6"); await until(() => arpOf(0).speed === 5, 4000); c.sp = arpOf(0).speed;
+					c.ticks = arpTicks(0, { s: 0, e: 4, n: [60] }).map(k => k.w); const o = '.pc[data-g="arp"][data-n="OJMP"]'; u.click(o, { cmd: true }); typeIn(u, "5"); await until(() => arpOf(0).ojmp === 5, 4000); c.oj = arpOf(0).ojmp; },
+				machine: c => ok(c.sp === 5 && c.ticks.length >= 1 && c.ticks.every(w => w === 1) && c.oj === 5, `speed ${c.sp}, tick lengths ${c.ticks}, ojmp ${c.oj}`), within: 8000 },
+			{ say: "TRIG keys AMP FLT LFO: each switches that envelope the arpeggiator's notes fire (the pattern's trigs bits 1, 2, 4); a MIDI track has none", act: async (u, c) => { c.bad = []; for (const k of ["amp", "flt", "lfo"]) { const bit = { amp: 1, flt: 2, lfo: 4 }[k], was = arpOf(0).trigs & bit; u.click(`[data-arptrig="${k}"]`); if (!await until(() => (arpOf(0).trigs & bit) !== was, 3000)) c.bad.push(`${k}: ${arpOf(0).trigs}`); }
+					u.click('[data-side="midi"]'); await sleep(300); u.click(rail(6)); await sleep(250); if (!$1('[data-set="arpmode"]')) await dockOpen(u, "arp"); c.none = $all("[data-arptrig]").length === 0 && /none on MIDI/.test($1(".dkna")?.textContent || ""); u.click('[data-side="int"]'); await sleep(300); u.click(rail(0)); await sleep(250); },
+				screen: c => ok(!c.bad.length && c.none, c.bad.join(" | ") + " MIDI none " + c.none), within: 1000 },
+			{ say: "the sixteen cells: a click mutes step 3 (255) and again brings it back; a drag up to the top and past it gives +24, down to the bottom -24; a click past the length extends it; the LEN row sets it", act: async (u, c) => { c.bad = []; const cell = k => `.arptrack .ac[data-ac="${k}"]`; u.click(rail(0)); await sleep(200); const was = arpOf(0).steps[2], mute0 = was === 255;
+					u.click(cell(2)); if (!await until(() => (arpOf(0).steps[2] === 255) !== mute0, 3000)) c.bad.push("mute: " + arpOf(0).steps[2]); u.click(cell(2)); if (!await until(() => (arpOf(0).steps[2] === 255) === mute0, 3000)) c.bad.push("unmute: " + arpOf(0).steps[2]);
+					const k0 = Math.min(3, arpOf(0).length - 1); await u.drag(cell(k0), [[0, -60], [0, -120], [0, -240]]); if (!await until(() => arpOf(0).steps[k0] === 64 + 24, 3000)) c.bad.push("+24: " + arpOf(0).steps[k0]);
+					await u.drag(cell(k0), [[0, 60], [0, 120], [0, 240], [0, 400]]); if (!await until(() => arpOf(0).steps[k0] === 64 - 24, 3000)) c.bad.push("-24: " + arpOf(0).steps[k0]);
+					const L = arpOf(0).length, want = L === 8 ? 6 : 8; u.click(`[data-arplen="${want}"]`); if (!await until(() => arpOf(0).length === want, 3000)) c.bad.push(`LEN ${want}: ${arpOf(0).length}`);
+					const pastEnd = $1(".arptrack .ac.na"); if (pastEnd) { const k = +pastEnd.dataset.ac; u.click(pastEnd); if (!await until(() => arpOf(0).length === k + 1, 3000)) c.bad.push(`extend to ${k + 1}: ${arpOf(0).length}`); } else c.bad.push("no cell past the end"); },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 }
+		],
+		async tidy(u, c) { if (S().side === "midi") u.click('[data-side="int"]'); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); if (c.n0 != null) await undoTo(u, c.n0); }
+	};
+	/* the LCD's second line: LEN, ×2, SPD, SWG; the Transpose dock: SCALE, KEY, TRACK and PAT; the Trig setup dock */
+	const lcdSetup = {
+		name: "mm-seq-scale-setup", proves: ["MM-046", "MM-168", "MM-169", "MM-227", "MM-228", "MM-229", "MM-230"],
+		steps: [
+			go("seq"), sel(0),
+			{ say: "click SPD on the LCD four times: 1X, 2X, 3/4X, 3/2X, in that order, each the pattern's multiplier", act: async (u, c) => { c.n0 = histN(); c.bad = []; c.seen = [patDoc().multiplier]; for (let i = 0; i < 4; i++) { const m = patDoc().multiplier; u.click('#lcd2 [data-l2="mult"]'); if (!await until(() => patDoc().multiplier !== m, 3000)) { c.bad.push("SPD stayed " + m); break; } c.seen.push(patDoc().multiplier); } },
+				screen: c => ok(!c.bad.length && ["1X", "2X", "3/4X", "3/2X"].every(m => c.seen.includes(m)) && c.seen[4] === c.seen[0] && same(c.seen.slice(0, 4).map(x => ["1X", "2X", "3/4X", "3/2X"].indexOf(x)).map((x, k, a) => (x - a[0] + 4) % 4), [0, 1, 2, 3]), "seen " + c.seen + " " + c.bad), within: 1000 },
+			{ say: "scroll SWG up and down past its ends: it stops at 50 % and at 80 %, the pattern holds the percent over 50", act: async (u, c) => { for (let i = 0; i < 40; i++) { u.wheel('#lcd2 [data-l2="swing"]', 1); await sleep(15); } await sleep(300); c.hi = patDoc().swingAmount; c.hit = $1('#lcd2 [data-l2="swing"] b').textContent; for (let i = 0; i < 40; i++) { u.wheel('#lcd2 [data-l2="swing"]', -1); await sleep(15); } await sleep(300); c.lo = patDoc().swingAmount; c.lot = $1('#lcd2 [data-l2="swing"] b').textContent; },
+				machine: c => ok(c.hi === 30 && c.lo === 0 && c.hit === "80%" && c.lot === "50%", `top ${c.hi} ${c.hit}, bottom ${c.lo} ${c.lot}`), within: 8000 },
+			{ say: "click ×2 on the LCD: the pattern doubles, the new pages copies of the first (the notes of the first half again in the second)", act: async (u, c) => { c.len0 = patDoc().length; if (c.len0 > 32) { u.click('#lcd2 [data-l2="len"]'); await sleep(500); } c.len = patDoc().length; c.t0 = bitsOf(0, "trig").filter(s => s < c.len); c.notes0 = (patDoc().tracks[0].notes || []).filter(([s]) => s < c.len); u.click('#lcd2 [data-l2="dbl"]'); await until(() => patDoc().length === c.len * 2, 4000); },
+				machine: c => ok(patDoc().length === c.len * 2 && same(bitsOf(0, "trig").filter(s => s >= c.len && s < 2 * c.len).map(s => s - c.len), c.t0) && same((patDoc().tracks[0].notes || []).filter(([s]) => s >= c.len && s < 2 * c.len).map(([s, n]) => [s - c.len, n]), c.notes0), `length ${patDoc().length} for ${c.len * 2}; trigs ${bitsOf(0, "trig")} (first half ${c.t0}); notes ${JSON.stringify(patDoc().tracks[0].notes)}`), within: 8000 },
+			{ say: "Transpose: the four SCALE keys --- FIX MAJ MIN, each the track's scale", act: async (u, c) => { c.bad = []; await dockOpen(u, "trn"); const names = $all('[data-set="scale"] button').map(b => b.textContent); if (names.join(" ") !== "--- FIX MAJ MIN") c.bad.push("keys " + names);
+					for (let i = 0; i < 4; i++) { u.click(`[data-set="scale"] button[data-v="${i}"]`); if (!await until(() => patDoc().tracks[0].scale === i, 3000)) c.bad.push(`scale ${i}: ${patDoc().tracks[0].scale}`); } },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
+			{ say: "with MAJ: a click on the keyboard picture sets KEY (the root); on E the pattern holds 4", act: async (u, c) => { u.click('[data-set="scale"] button[data-v="2"]'); await until(() => patDoc().tracks[0].scale === 2, 3000); const cv = $1('#dkvis canvas[data-ed="dktrn"]'), r = cv.getBoundingClientRect(), k = ED.dktrn.keys(r.width, r.height).find(x => x.n === 4); c.k0 = patDoc().tracks[0].key; u.click(cv, {}, (k.x + k.w / 2) / r.width, (k.y + k.h * 0.85) / r.height); await until(() => patDoc().tracks[0].key === 4, 3000); },
+				machine: () => ok(patDoc().tracks[0].key === 4, "KEY " + patDoc().tracks[0].key), within: 6000 },
+			{ say: "PAT is the pattern's transpose, shared by all tracks: typed +5, the pattern holds 5 and no track's own transpose moves", act: async (u, c) => { c.tr = [0, 1, 2, 3, 4, 5].map(t => patDoc().tracks[t].transpose); const q = '#main .pc[data-g="ptrn"][data-n="PAT"]'; u.click(q, { cmd: true }); typeIn(u, "+5"); await until(() => patDoc().patternTranspose === 5, 4000); },
+				machine: c => ok(patDoc().patternTranspose === 5 && [0, 1, 2, 3, 4, 5].every(t => patDoc().tracks[t].transpose === c.tr[t]), `PAT ${patDoc().patternTranspose}, tracks ${[0, 1, 2, 3, 4, 5].map(t => patDoc().tracks[t].transpose)}`), within: 6000 }
+		],
+		async tidy(u, c) { if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); if (c.n0 != null) await undoTo(u, c.n0); }
+	};
+	const trigSetup = {
+		name: "mm-seq-trig-setup", proves: ["MM-121", "MM-151", "MM-153", "MM-161"],
+		steps: [
+			go("seq"), sel(0),
+			{ say: "Trig setup: PORT's box (ATK, HOLD, DEC, PORT are the four boxes) sends CC 63 on the track's channel", act: async (u, c) => { c.n0 = histN(); await dockOpen(u, "trig"); c.r = await nudgeBox(u, 0, "AMP", 7); Journey.snapshot("mm-trig-setup"); },
+				machine: c => ok(!checkBox(c.r, 0, "AMP", 7), checkBox(c.r, 0, "AMP", 7) || ""), within: 8000 },
+			{ say: "PORT ALWAYS or ONLY LEGATO: the kit's portamento mask has track 1's bit as set (ALWAYS) or clear", act: async (u, c) => { c.bad = []; const bit = x => (wk().trackMasks.portamento >> 0) & 1; for (const v of [0, 1]) { u.click(`[data-set="port"] button[data-v="${v}"]`); if (!await until(() => bit() === (v === 0 ? 1 : 0), 4000)) c.bad.push(`PORT ${v}: mask ${wk().trackMasks.portamento}`); } },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
+			{ say: "LEGATO A F L: each key flips that envelope's bit of track 1 in the kit's masks", act: async (u, c) => { c.bad = []; for (const [k, f] of [["amp", "legatoAmp"], ["flt", "legatoFilter"], ["lfo", "legatoLfo"]]) { const was = wk().trackMasks[f] & 1; u.click(`[data-leg="${k}"]`); if (!await until(() => (wk().trackMasks[f] & 1) !== was, 4000)) c.bad.push(`${k}: ${wk().trackMasks[f]}`); } },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
+			{ say: "TRIG POSITION: T2 on track 1, then T3 on track 2: the notes are forwarded (chainable: T1 to T2 to T3), each in its own track's kit; none takes it back", act: async (u, c) => { c.bad = [];
+					u.click('[data-set="trigpos"] button[data-v="1"]'); if (!await until(() => wk().tracks[0].trigPos === 1, 4000)) c.bad.push("T1 to T2: " + wk().tracks[0].trigPos);
+					u.click(rail(1)); await sleep(300); u.click('[data-set="trigpos"] button[data-v="2"]'); if (!await until(() => wk().tracks[1].trigPos === 2, 4000)) c.bad.push("T2 to T3: " + wk().tracks[1].trigPos); c.chain = [wk().tracks[0].trigPos, wk().tracks[1].trigPos];
+					if ($1('[data-set="trigpos"] button[data-v="1"]')) c.noSelf = !$1('[data-set="trigpos"] button[data-v="1"]'); u.click('[data-set="trigpos"] button[data-v=""]'); if (!await until(() => wk().tracks[1].trigPos == null, 4000)) c.bad.push("none: " + wk().tracks[1].trigPos);
+					u.click(rail(0)); await sleep(300); u.click('[data-set="trigpos"] button[data-v=""]'); if (!await until(() => wk().tracks[0].trigPos == null, 4000)) c.bad.push("none T1: " + wk().tracks[0].trigPos); },
+				screen: c => ok(!c.bad.length && same(c.chain, [1, 2]), c.bad.join(" | ") + " chain " + c.chain), within: 1000 }
+		],
+		async tidy(u, c) { if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); if (c.n0 != null) await undoTo(u, c.n0); }
+	};
 	/* SLICE5-MM-END */
-	const all = [/* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
+	const all = [/* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,

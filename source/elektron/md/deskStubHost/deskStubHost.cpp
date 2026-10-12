@@ -649,7 +649,10 @@ namespace
 				else if(_p == 7 && _i == 0)
 					m_working.levels[_t] = _v;
 				else if(_p < 7)
+				{
 					m_working.tracks[_t].pages[_p][_i] = _v;
+					lockLive(_t, _p, _i, _v);
+				}
 			};
 			// NRPN: a track's MIDI page (0x38 +) and its multi envelope (0x40 +), mmDeskDelivery.cpp
 			p.baseChannel = [this](const uint8_t _ch) { m_baseCh = _ch; };
@@ -713,6 +716,32 @@ namespace
 			m.set("b", std::move(b));
 			m.set("n", static_cast<int>(_b.size()));
 			toPage(m);
+		}
+
+		// slice 5 (MM-082, MM-207): LIVE RECORDING plays and a value the editor sends (a CC) is locked on the step that plays when it
+		// arrives, a step without a trig included (mmDeskFirmwareTest reclock): the parameter's row is made when it is new (rows
+		// sit in track, page, parameter order), 62 at most
+		void lockLive(const uint8_t _t, const uint8_t _pg, const uint8_t _i, const uint8_t _v)
+		{
+			if(m_recording != 2 || !m_running)
+				return;
+			auto& p = m_patterns[m_pattern];
+			const ed::MmLockParam param{_t, _pg, _i};
+			int row = ed::mmLockRow(p, param);
+			if(row < 0)
+			{
+				if(p.lockRowCount >= ed::MmPattern::g_lockRows)
+					return;
+				p.lockMasks[_t][_pg] = static_cast<uint8_t>(p.lockMasks[_t][_pg] | (1u << _i));
+				row = ed::mmLockRow(p, param);
+				if(row < 0)
+					return;
+				for(int k = static_cast<int>(ed::MmPattern::g_lockRows) - 1; k > row; --k)
+					p.lockRows[static_cast<size_t>(k)] = p.lockRows[static_cast<size_t>(k) - 1];
+				p.lockRows[static_cast<size_t>(row)].fill(0xff);
+				++p.lockRowCount;
+			}
+			p.lockRows[static_cast<size_t>(row)][static_cast<size_t>(m_step) % ed::MmPattern::g_steps] = _v;
 		}
 
 		// a step of track _t: a note (0-127) or none (-1), as the machine's recordings write it (trigs and pitch)
