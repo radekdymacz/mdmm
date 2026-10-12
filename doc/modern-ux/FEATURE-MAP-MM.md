@@ -131,7 +131,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Six individual tracks 1-15 | Per track machine and effects | Multitimbral | ✅ | Sound, Mix |  | – |
 | Six track sequencing 1-15 | Notes, envelope trigs, parameters | Sequencer | ✅ | Sequence |  | – |
 | MIDI sequencing 1-15 | Six MIDI tracks | MIDI seq | ✅ | Sequence (MIDI side) |  | – |
-| Poly mode 1-15 | One track with six voices | POLY | ✅ | Perform > Poly: the track selected (Assign's 1-6, the rail) plays six voices; ×6 on its key and lamp, the others dimmed | `poly {on, t}`; the other tracks silent (P9) | 2 |
+| Poly mode 1-15 | One track with six voices | POLY | ✅ | Perform > Poly: the track selected (Assign's 1-6, the rail) plays six voices; ×6 on its key and lamp, the others dimmed | `poly {on, t}`; the other tracks silent (P10) | 2 |
 | Multi trig mode 1-15 | All tracks from one source | MULTI TRIG | ✅ | Perform |  | – |
 | Multi map mode 1-15 | Keyboard triggers patterns | MULTI MAP | ✅ | Perform > Multi map |  | – |
 | Figure 1 1-16 | Synthesis overview | Diagram | ➖ | – | The Mix page draws the routing graph | – |

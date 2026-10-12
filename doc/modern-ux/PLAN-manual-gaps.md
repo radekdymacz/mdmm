@@ -41,7 +41,7 @@ Order: P and 1 at once; then 2, 3, 4 (separate lanes); then 5, 6, 7, 8, 9, 10. A
 ## Wave 9: MM Perform, see and set up (B-064), mock-up and self-review
 
 2026-10-12, branch `feat/0.6-perform`. The firmware facts first, measured, not read from the manual:
-[PROBES-manual-gaps.md](PROBES-manual-gaps.md) P9 (`gapProbesFirmwareTest p9`). What they changed in the plan:
+[PROBES-manual-gaps.md](PROBES-manual-gaps.md) P10 (`gapProbesFirmwareTest p10`). What they changed in the plan:
 
 - **POLY plays the machine's track in focus**, the TRACK key's, not the page's track. The page played the selected
   track's channel while the machine might hold POLY on another track: silence ("poly mode doesn't seem to be working").

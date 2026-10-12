@@ -4329,7 +4329,7 @@ namespace
 namespace
 {
 	// 0.6 wave 9 (B-064): POLY, the filter's key tracking and the MULTI ENV, through the commands the Perform and Sound
-	// pages send, judged by what the machine plays (the facts: doc/modern-ux/PROBES-manual-gaps.md P9).
+	// pages send, judged by what the machine plays (the facts: doc/modern-ux/PROBES-manual-gaps.md P10).
 	struct Out
 	{
 		const Rig& r;
@@ -4498,7 +4498,7 @@ namespace
 		check(mono.first == 1, "mono: six notes on T3's channel, one pitch sounds (" + std::to_string(mono.first) + ")");
 		r.msg("{\"op\":\"poly\",\"id\":1,\"on\":true,\"t\":2}");
 		settle(1500);
-		say("poly on, t 2");
+		check(say("poly on, t 2") == std::pair<int, int>{1, 2}, "POLY with t 2: the machine's POLY is on, its focus T3 (TRACK 3 pressed)");
 		const auto poly = voices(2);
 		check(poly.first >= 5, "POLY on T3 (TRACK 3 pressed): the six notes on T3's channel sound as a chord (" + std::to_string(poly.first) + " pitches)");
 		const auto other = voices(0);
@@ -4612,6 +4612,20 @@ namespace
 		check(started > 1e-3 && afterOff < 0.05 * started, "SEQ START: a MULTI TRIG note starts the pattern; with REL 0 it is silent after the note off");
 		check(ownAfter2 < 1e-3, "SEQ START: after that note off the machine is silent, own notes too");
 		check(ownStop > 1e-3, "SEQ START: STOP opens it again (" + std::to_string(ownStop) + ")");
+		panic();
+		// SEQ TRNSP: the same, the pattern started (and transposed) by a MULTI TRIG note
+		mode(3);
+		kitIsPages("SEQ TRNSP, REL 0");
+		const double trnStarted = measure([&] { mtNote(true); }, 500).rms();
+		mtNote(false);
+		r.run(400);
+		const double trnAfter = measure([] {}, 400).rms();
+		const double trnOwn = level(12);
+		r.msg(R"({"op":"stop"})");
+		r.run(600);
+		std::printf("    SEQ TRNSP, REL 0: the pattern a MULTI TRIG note starts %.4f; after its note off %.4f; T1's own note then %.4f\n", trnStarted, trnAfter, trnOwn);
+		check(trnStarted > 1e-3 && trnAfter < 0.05 * trnStarted && trnOwn < 1e-3,
+			"SEQ TRNSP: a MULTI TRIG note starts the pattern; with REL 0 the pattern and the tracks' own notes are silent after its note off");
 		panic();
 		r.msg("{\"op\":\"clearPattern\",\"g\":" + G() + ",\"p\":" + p + "}");
 		mode(0);

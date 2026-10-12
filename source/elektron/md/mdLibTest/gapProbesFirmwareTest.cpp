@@ -1,9 +1,9 @@
-// Manual-gap probes P1 to P9 (doc/modern-ux/PROBES-manual-gaps.md): questions about the firmware that decide parts of
+// Manual-gap probes P1 to P10 (doc/modern-ux/PROBES-manual-gaps.md): questions about the firmware that decide parts of
 // the manual-gap work (doc/modern-ux/PLAN-manual-gaps.md, wave P), answered on the real ROMs (MD OS 1.63, MM OS 1.32B).
 // Discovery harness in the style of mdP4ProbeFirmwareTest and mmEditorProbeFirmwareTest: it measures and prints a
 // RESULT line per question; the checks only guard that the rig itself works (the machine boots, plays, answers).
 //
-//   gapProbesFirmwareTest <MD ROM> <MM ROM> [p1|p1md|p1mm|p2|p2panel|p3|p4|p5|p6|p6b|p7|p8|p9|all]
+//   gapProbesFirmwareTest <MD ROM> <MM ROM> [p1|p1md|p1mm|p2|p2panel|p3|p4|p5|p6|p6b|p7|p8|p10|all]
 //   gapProbesFirmwareTest <MD ROM> <MM ROM> explore md|mm "<key,key,...>"     (prints the LCD after the keys)
 //
 // "-" for a ROM skips that machine; "--env" takes it from GEARMULATOR_MD_FIRMWARE_BIN / GEARMULATOR_MM_FIRMWARE_BIN. Exits 77
@@ -1678,13 +1678,13 @@ namespace
 			key(r, md::PanelControl::Exit, 40, 80);
 	}
 
-	// ---- P9: MM POLY, the filter's key tracking and the MULTI ENV (0.6 wave 9, B-064) ---------------------------------
+	// ---- P10: MM POLY, the filter's key tracking and the MULTI ENV (0.6 wave 9, B-064) ---------------------------------
 	// Every scenario: a kit written by dump into slot 11 and a pattern into slot 10 that links it (LOAD PATTERN loads both),
 	// raw MIDI notes on the channels of the factory global (track t: base + t; AUTO 9, MULTI TRIG 7), the output measured.
 	// A "plain" track: AMP ATK 0 HOLD 0 DEC 127 REL 8 DIST 64, VOL 60, level 48, the filter open, no filter envelope, no
 	// delay, no LFO.
 
-	struct P9Kit
+	struct P10Kit
 	{
 		std::array<uint8_t, 6> machine{1, 1, 1, 1, 1, 1};	// 1 GND-SIN, 2 GND-NOIS
 		std::array<uint8_t, 6> vol{60, 60, 60, 60, 60, 60};
@@ -1693,13 +1693,13 @@ namespace
 		uint8_t lpfMask = 0x3f, hpfMask = 0x3f;
 		std::array<uint8_t, 2> flt{0, 127};					// T1's FILTER BASE, WDTH
 	};
-	constexpr uint8_t g_p9Kit = 10, g_p9Pattern = 9;
+	constexpr uint8_t g_p10Kit = 10, g_p10Pattern = 9;
 
 	// T1's trigs: every second step (pitch C-4), or one chord trig (C E G) on step 1; T2 a trig on step 1 too
-	void p9Load(Rig& _r, const P9Kit& _k, const bool _chord)
+	void p10Load(Rig& _r, const P10Kit& _k, const bool _chord)
 	{
 		auto kit = *ed::decodeMmKit(_r.dump(0x52, 0));
-		kit.position = g_p9Kit;
+		kit.position = g_p10Kit;
 		for(size_t t = 0; t < 6; ++t)
 		{
 			kit.machines[t] = _k.machine[t];
@@ -1722,8 +1722,8 @@ namespace
 		kit.lpfMask = _k.lpfMask;
 		kit.hpfMask = _k.hpfMask;
 		auto p = *ed::decodeMmPattern(_r.dump(0x67, 0));
-		p.position = g_p9Pattern;
-		p.kit = g_p9Kit;
+		p.position = g_p10Pattern;
+		p.kit = g_p10Kit;
 		p.length = 16;
 		p.multiplier = 0;
 		for(auto* m : {&p.amp, &p.filter, &p.lfo, &p.noteOff, &p.midiTrig, &p.midiNoteOff, &p.pitch, &p.chord, &p.midiNote, &p.slide, &p.midiSlide})
@@ -1755,15 +1755,15 @@ namespace
 			}
 		mmSendDumps(_r, {ed::encodeMmKit(kit), ed::encodeMmPattern(p)});
 		halt(_r);
-		_r.loadPattern(g_p9Pattern);
-		_r->send(ed::mmLoadKit(g_p9Kit));
+		_r.loadPattern(g_p10Pattern);
+		_r->send(ed::mmLoadKit(g_p10Kit));
 		_r.run(600);
-		const auto back = ed::decodeMmKit(_r.dump(0x52, g_p9Kit));
-		check(back && back->multiTrigMode == _k.mode && back->tracks[0].multiEnv[3] == _k.env[3] && back->machines[1] == _k.machine[1], "P9: the kit is stored");
-		check(_r.status(0x02) == g_p9Kit && _r.status(0x04) == g_p9Pattern, "P9: kit and pattern loaded");
+		const auto back = ed::decodeMmKit(_r.dump(0x52, g_p10Kit));
+		check(back && back->multiTrigMode == _k.mode && back->tracks[0].multiEnv[3] == _k.env[3] && back->machines[1] == _k.machine[1], "P10: the kit is stored");
+		check(_r.status(0x02) == g_p10Kit && _r.status(0x04) == g_p10Pattern, "P10: kit and pattern loaded");
 	}
 
-	double p9Level(Rig& _r, const double _ms)
+	double p10Level(Rig& _r, const double _ms)
 	{
 		const size_t a = _r->left().size();
 		_r.run(_ms);
@@ -1771,7 +1771,7 @@ namespace
 	}
 
 	// the amplitude at _f over [_from, _to) (Goertzel, the mix of both channels)
-	double p9Amp(Rig& _r, const size_t _from, const size_t _to, const double _f)
+	double p10Amp(Rig& _r, const size_t _from, const size_t _to, const double _f)
 	{
 		const auto& l = _r->left();
 		const auto& rr = _r->right();
@@ -1787,17 +1787,17 @@ namespace
 	}
 
 	// the strongest amplitude within 3 % of _f (0.25 Hz steps): a pitch, whatever its fine tune
-	double p9Pitch(Rig& _r, const size_t _from, const size_t _to, const double _f)
+	double p10Pitch(Rig& _r, const size_t _from, const size_t _to, const double _f)
 	{
 		double best = 0;
 		for(double f = _f * 0.97; f <= _f * 1.03; f += 0.25)
-			best = std::max(best, p9Amp(_r, _from, _to, f));
+			best = std::max(best, p10Amp(_r, _from, _to, f));
 		return best;
 	}
 
-	void p9(const Bytes& _rom)
+	void p10(const Bytes& _rom)
 	{
-		std::puts("== P9 MM: POLY, the filter's key tracking, the MULTI ENV (wave 9, B-064)");
+		std::puts("== P10 MM: POLY, the filter's key tracking, the MULTI ENV (wave 9, B-064)");
 		Rig r(_rom, true);
 		r.setSongMode(false);
 		const int slot = r.status(0x01);
@@ -1817,13 +1817,13 @@ namespace
 			r.run(800);
 		};
 		const auto stopped = [&] { halt(r); offAll(); };
-		const auto seq = [&] { key(r, md::PanelControl::Play); r.run(400); const double v = p9Level(r, 1000); halt(r); r.run(400); return v; };
+		const auto seq = [&] { key(r, md::PanelControl::Play); r.run(400); const double v = p10Level(r, 1000); halt(r); r.run(400); return v; };
 
 		// ---- POLY: whose voices, how many ----
 		{
-			P9Kit k;
+			P10Kit k;
 			k.machine = {1, 2, 2, 2, 2, 2};
-			p9Load(r, k, true);
+			p10Load(r, k, true);
 			// the sine's frequency at C-4
 			on(base, 60);
 			r.run(300);
@@ -1831,7 +1831,7 @@ namespace
 			r.run(300);
 			double f0 = 0, best = -1;
 			for(double f = 100; f < 1000; f *= std::pow(2.0, 1.0 / 96.0))
-				if(const double v = p9Amp(r, a, r->left().size(), f); v > best)
+				if(const double v = p10Amp(r, a, r->left().size(), f); v > best)
 				{
 					best = v;
 					f0 = f;
@@ -1847,7 +1847,7 @@ namespace
 				const size_t a1 = r->left().size();
 				std::vector<double> amp;
 				for(const int st : _semis)
-					amp.push_back(p9Pitch(r, a0, a1, f0 * std::pow(2.0, st / 12.0)));
+					amp.push_back(p10Pitch(r, a0, a1, f0 * std::pow(2.0, st / 12.0)));
 				const double lv = rms(r->left(), r->right(), a0, a1), top = *std::max_element(amp.begin(), amp.end());
 				int n = 0;
 				std::string each;
@@ -1883,7 +1883,7 @@ namespace
 			r->send(ed::mmSetStatus(ed::MmStatus::Poly, 0));
 			r.run(300);
 			const auto sm = chord([&] { key(r, md::PanelControl::Play); }, "mono, the sequencer: T1's C E G trig, T2's C-5");
-			result("P9 poly", "mono " + std::to_string(int(mono[0])) + " pitch; POLY on the focus track " + std::to_string(int(poly[0]))
+			result("P10 poly", "mono " + std::to_string(int(mono[0])) + " pitch; POLY on the focus track " + std::to_string(int(poly[0]))
 				+ ", on another track's channel rms " + std::to_string(other[1]).substr(0, 6) + ", AUTO " + std::to_string(int(autoC[0])) + ", MULTI TRIG " + std::to_string(int(mtC[0]))
 				+ "; focus T2: T1's channel rms " + std::to_string(t2off[1]).substr(0, 6) + ", T2's channel rms " + std::to_string(t2[1]).substr(0, 6)
 				+ "; sequencer chord POLY " + std::to_string(int(sp[0])) + " mono " + std::to_string(int(sm[0])) + "; six notes: " + std::to_string(int(six[0])) + " sound, seven: "
@@ -1897,18 +1897,18 @@ namespace
 			{
 				for(const bool track : {true, false})
 				{
-					P9Kit k;
+					P10Kit k;
 					k.vol = {60, 0, 0, 0, 0, 0};
 					k.flt = flt;
 					(lpf ? k.lpfMask : k.hpfMask) = track ? 0x3f : 0x3e;
-					p9Load(r, k, false);
+					p10Load(r, k, false);
 					on(base, 36);
 					r.run(300);
-					const double lo = p9Level(r, 300);
+					const double lo = p10Level(r, 300);
 					stopped();
 					on(base, 84);
 					r.run(300);
-					const double hi = p9Level(r, 300);
+					const double hi = p10Level(r, 300);
 					stopped();
 					std::printf("  %s (BASE %d WDTH %d), key tracking %s: C-1 (MIDI 36) %.4f, C-5 (MIDI 84) %.4f\n", what, flt[0], flt[1], track ? "on " : "off", lo, hi);
 					char b[96];
@@ -1916,7 +1916,7 @@ namespace
 					line += b;
 				}
 			}
-			result("P9 key", line);
+			result("P10 key", line);
 		}
 
 		// ---- MULTI ENV: what it shapes, in each MULTI TRIG mode ----
@@ -1927,25 +1927,25 @@ namespace
 			{
 				for(const auto& env : std::vector<std::array<uint8_t, 4>>{{0, 127, 127, 127}, {0, 127, 127, 0}, {0, 0, 0, 0}})
 				{
-					P9Kit k;
+					P10Kit k;
 					k.mode = mode;
 					k.env = env;
-					p9Load(r, k, false);
+					p10Load(r, k, false);
 					const double s0 = seq();
 					on(base, 60);
 					r.run(200);
-					const double o0 = p9Level(r, 300);
+					const double o0 = p10Level(r, 300);
 					stopped();
 					on(mt, 60);
 					r.run(200);
-					const double m = p9Level(r, 300);
+					const double m = p10Level(r, 300);
 					off(mt, 60);
 					r.run(800);
-					const double after = p9Level(r, 300);
+					const double after = p10Level(r, 300);
 					const double s1 = mode >= 2 ? -1 : seq();
 					on(base, 60);
 					r.run(200);
-					const double o1 = p9Level(r, 300);
+					const double o1 = p10Level(r, 300);
 					stopped();
 					// a MULTI TRIG note again (held, the pattern stopped), and T1's own note under it
 					on(mt, 60);
@@ -1953,7 +1953,7 @@ namespace
 					halt(r);
 					on(base, 64);
 					r.run(200);
-					const double o2 = p9Level(r, 300);
+					const double o2 = p10Level(r, 300);
 					stopped();
 					std::printf("  %-9s env %3d %3d %3d %3d: sequencer %.4f, T1's own note %.4f; MULTI TRIG note %.4f, 300 ms after its note off %.4f; then sequencer %.4f, T1's own note %.4f; under a new MULTI TRIG note %.4f\n",
 						modes[mode], env[0], env[1], env[2], env[3], s0, o0, m, after, s1, o1, o2);
@@ -1962,7 +1962,7 @@ namespace
 					line += b;
 				}
 			}
-			result("P9 menv", line);
+			result("P10 menv", line);
 		}
 	}
 
@@ -1983,7 +1983,7 @@ int main(const int _argc, char** _argv)
 	std::setvbuf(stdout, nullptr, _IOLBF, 0);
 	if(_argc < 3)
 	{
-		std::puts("usage: gapProbesFirmwareTest <MD ROM|-> <MM ROM|-> [p1|p1md|p1mm|p2|p2panel|p3|p4|p5|p6|p6b|p7|p8|p9|all|explore md|mm keys]");
+		std::puts("usage: gapProbesFirmwareTest <MD ROM|-> <MM ROM|-> [p1|p1md|p1mm|p2|p2panel|p3|p4|p5|p6|p6b|p7|p8|p10|all|explore md|mm keys]");
 		return 77;
 	}
 	try
@@ -2031,8 +2031,8 @@ int main(const int _argc, char** _argv)
 			p2(mmRom);
 		if(!mmRom.empty() && only == "p8")
 			p8(mmRom);
-		if(!mmRom.empty() && only == "p9")
-			p9(mmRom);
+		if(!mmRom.empty() && only == "p10")
+			p10(mmRom);
 		if(!mmRom.empty() && want("p4"))
 			p4(mmRom);
 		if(!mdRom.empty() && want("p5"))

@@ -1936,7 +1936,8 @@ void memoryFields()
 	port.device.sendNrpn = [](uint8_t, uint8_t, uint8_t) {};
 	int muteWindows = 0;
 	std::vector<mmDesk::Key> lastKeys;
-	port.device.pressKeys = [&](const std::vector<mmDesk::Key>& _keys) { muteWindows += !_keys.empty() && _keys[0] == mmDesk::Key::MuteWindow; lastKeys = _keys; return true; };
+	bool panelFree = true;
+	port.device.pressKeys = [&](const std::vector<mmDesk::Key>& _keys) { if(!panelFree) return false; muteWindows += !_keys.empty() && _keys[0] == mmDesk::Key::MuteWindow; lastKeys = _keys; return true; };
 	port.device.nowMs = [&] { return now; };
 	port.toPage = [&](const Value& _v) { page.push_back(_v); g_published.push_back(_v); };
 	const auto status = [](const uint8_t _p, const uint8_t _v) { return Bytes{0xf0, 0, 0x20, 0x3c, 3, 0, 0x72, _p, _v, 0xf7}; };
@@ -2042,6 +2043,21 @@ void memoryFields()
 	lastKeys.clear();
 	msg(R"({"op":"poly","id":7,"on":true,"t":2})");
 	check(lastKeys == std::vector<mmDesk::Key>{mmDesk::Key::Track3}, "POLY with t: TRACK 3 pressed");
+	const auto focus = [&] { const auto* f = machine()->find("focus"); return !f || f->isNull() ? -1 : static_cast<int>(f->asNumber()); };
+	check(focus() == 2, "POLY with t: the machine document says focus T3 at once");
+	d.onDeviceSysex(status(0x22, 2));
+	run(20);
+	check(focus() == 2, "focus: settled by the status reply");
+	// the panel busy: refused, nothing pressed, the focus stays the machine's
+	panelFree = false;
+	lastKeys.clear();
+	msg(R"({"op":"poly","id":9,"on":true,"t":4})");
+	check(lastKeys.empty() && focus() == 2, "POLY with t while the panel is busy: refused, the focus stays T3");
+	panelFree = true;
+	// TRACK pressed on the machine: memory wins
+	d.onDeviceSysex(status(0x22, 1));
+	run(20);
+	check(focus() == 1, "TRACK 2 on the machine: focus T2");
 	lastKeys.clear();
 	msg(R"({"op":"poly","id":8,"on":false,"t":2})");
 	check(lastKeys.empty(), "POLY off: no TRACK key");

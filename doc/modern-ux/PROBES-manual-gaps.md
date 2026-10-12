@@ -30,7 +30,7 @@
 | P5 MM | MM: what silences held notes | CC 123 lets them go (as note offs: the release rings); CC 120 and MIDI Stop do nothing; the panel's STOP lets them go too | wave 2 |
 | P7 | MD: which tracks take the EDIT ALL row (`gapProbesFirmwareTest p7`) | Every track. `editAll` is a flag (any nonzero is ALL), not a track mask; per track only the own row counts | wave 3 |
 | P8 | MM: the range of GLOBAL > AUDIO > MASTER TUNE (`gapProbesFirmwareTest p8`, wave 5) | 4000 to 4999 tenths of Hz (400.0 to 499.9 Hz); UP / DOWN 1 Hz, RIGHT / LEFT 0.1 Hz | wave 5 |
-| P9 | MM: what POLY, the filter's key tracking and the MULTI ENV do to the sound (`gapProbesFirmwareTest p9`, wave 9, B-064) | POLY: the track in focus (TRACK keys) plays up to six notes at once, the other five are silent, notes on their channels too; KEY HPF / LPF off: that filter stops following the note; MULTI ENV: shapes MULTI TRIG notes in ALL TRK, SEQ START, SEQ TRNSP (not SPLIT KEY), and once such a note has played it holds every track at its level: after the note off with REL under 127 the machine is silent until the next MULTI TRIG note or STOP | wave 9 |
+| P10 | MM: what POLY, the filter's key tracking and the MULTI ENV do to the sound (`gapProbesFirmwareTest p10`, wave 9, B-064) | POLY: the track in focus (TRACK keys) plays up to six notes at once, the other five are silent, notes on their channels too; KEY HPF / LPF off: that filter stops following the note; MULTI ENV: shapes MULTI TRIG notes in ALL TRK, SEQ START, SEQ TRNSP (not SPLIT KEY), and once such a note has played it holds every track at its level: after the note off with REL under 127 the machine is silent until the next MULTI TRIG note or STOP | wave 9 |
 
 ## P1: Song Position Pointer and Continue
 
@@ -256,9 +256,9 @@ the pattern for them to set.
 So the editor's `masterTune` takes 4000 to 4999; a value the panel cannot reach is refused. What the tune does to the
 pitch was not measured (the machine's own setting, read back by `mmIntentCasesFirmwareTest`).
 
-## P9: MM POLY, the filter's key tracking and the MULTI ENV (wave 9, B-064, 2026-10-12)
+## P10: MM POLY, the filter's key tracking and the MULTI ENV (wave 9, B-064, 2026-10-12)
 
-`gapProbesFirmwareTest - <MM ROM> p9` (about 3 minutes). Each scenario writes a kit into slot 11 and a pattern into slot
+`gapProbesFirmwareTest - <MM ROM> p10` (about 3 minutes). Each scenario writes a kit into slot 11 and a pattern into slot
 10 that links it (LOAD PATTERN loads both), plays raw MIDI notes on the factory global's channels (track t on base + t,
 AUTO 9, MULTI TRIG 7) and measures the output: the level, and which pitches sound (a sine on T1, the amplitude at each
 note's frequency). A plain track: GND-SIN, AMP ATK 0 HOLD 0 DEC 127 REL 8, DIST 64, VOL 60, level 48. (AMP DIST 0

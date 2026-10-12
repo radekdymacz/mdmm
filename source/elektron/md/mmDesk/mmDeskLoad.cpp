@@ -23,7 +23,7 @@ namespace mmDesk
 	void MmMachine::requestStatus()
 	{
 		for(const auto p : {ed::MmStatus::Pattern, ed::MmStatus::Kit, ed::MmStatus::Song, ed::MmStatus::Global, ed::MmStatus::SongMode,
-			ed::MmStatus::Poly})
+			ed::MmStatus::Poly, ed::MmStatus::AudioTrack})
 			m_port.sendSysex(ed::mmStatusRequest(p));
 	}
 
@@ -225,6 +225,7 @@ namespace mmDesk
 		case ed::MmStatus::AudioTrack:
 			m_focus = _value;
 			m_focusSeenMs = clock();
+			m_expectFocus = m_expectFocus.observed(focusInMemory(), clock(), m_profile.settleMs);
 			return;
 		case ed::MmStatus::Poly:
 			m_poly = _value;

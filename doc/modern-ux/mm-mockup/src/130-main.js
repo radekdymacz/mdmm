@@ -403,11 +403,14 @@ function renderPage(){closePicker();closeK();const sl=$("#seqscroll")?.scrollLef
  $("#body").className="body "+(full?"full ":"")+"ws-"+S.ws;$("#rail").hidden=full;if(!full)renderRail();renderSub();
  ({control:renderControl,seq:renderSeq,sound:renderSound,mix:renderMix,perform:renderPerform,song:renderSong})[S.ws]();
  const sc=$("#seqscroll");if(sc){sc.scrollLeft=sl;const l=$("#lanescroll");if(l)l.scrollLeft=sl}enhanceSelects($("#main"));if(S.learn)document.body.classList.add("learn");movePH(false);polyFollows()}
-/* 0.6 wave 9 (B-064): POLY plays the machine's track in focus; the track selected here (rail, Assign's 1-6) is the one
-   that plays it: a new selection while in POLY moves it (the host presses that TRACK key) */
+/* 0.6 wave 9 (B-064): POLY plays the machine's track in focus; the synth track the person selects here (rail, Assign's
+   1-6) is the one that plays it: a new selection while in POLY moves it (the host presses that TRACK key) */
 /* the Multi envelope's "choose Multi trig" rings that key while pointed at (no :has(): macOS 12's WebKit) */
 for(const[ev,on]of[["pointerover",true],["pointerout",false]])document.addEventListener(ev,e=>{if(e.target.closest?.(".menvto"))$('[data-pmode="multi"]')?.classList.toggle("ring",on)});
-function polyFollows(){if(S.mode!=="poly"){S.polyT=null;return}const t=asgT();if(S.polyT===t)return;S.polyT=t;if(HOST.keyMode)HOST.keyMode("poly",t)}
+function polyFollows(){if(S.mode!=="poly"){S.polyT=null;return}
+ /* the machine's track is not known yet (POLY read back, the focus still on its way): nothing pressed; a MIDI track
+    selected: POLY stays where it is (MIDI tracks have no voices) */
+ if(S.polyT==null||isMidiT(S.sel))return;const t=asgT();if(S.polyT===t)return;S.polyT=t;if(HOST.keyMode)HOST.keyMode("poly",t)}
 function setPlate(v){S.plate=v;document.documentElement.dataset.plate=v;try{localStorage.setItem("mmeditor.plate",v)}catch(_){}
  if(v==="mk1"){const bad=S.tracks.filter(t=>MACH[t.m].mk2);if(bad.length)toast(`MKI: ${bad.map(t=>t.m).join(", ")} needs a MKII. It would load as nothing on a MKI.`);else toast("MKI: no user waveforms, no DPRO-DDRW or DPRO-DENS. The plate looks the same.")}
  if(v==="mk2")toast("MKII: the same silver plate, plus user waveforms and the DigiPRO draw machines.");
@@ -490,6 +493,9 @@ function show(v,all){
   if(v.mutes&&!solo)v.mutes.forEach((m,i)=>{if(m!=null&&m!==was.mutes?.[i]&&!!trk(i).mute!==m){trk(i).mute=m;doc=true}});
   /* POLY is the machine's audio mode; the keyboard's other modes are the page's */
   if(v.poly!=null&&v.poly!==was.poly){const m=v.poly?"poly":S.mode==="poly"?"normal":S.mode;if(m!==S.mode){S.mode=m;doc=true}}
+  /* 0.6 wave 9: POLY's track is the machine's track in focus. The page follows it (a reload, POLY or TRACK pressed on
+     the machine, a refused move): its track is selected, and nothing is pressed for it (polyFollows) */
+  if(S.mode==="poly"&&v.focus!=null&&v.focus!==S.polyT){S.polyT=v.focus;if(asgT()!==v.focus)S.sel=isMidiT(S.sel)&&(S.ws==="seq"||S.ws==="sound")?v.focus+6:v.focus;doc=true}
   if(doc)pruneLocks();
   if(seq)autoRange(S.sel)}
  if(top)renderTop();

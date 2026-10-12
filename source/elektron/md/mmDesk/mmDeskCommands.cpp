@@ -435,7 +435,7 @@ namespace mmDesk
 
 	// MM-P4: POLY is the machine's audio mode, SET STATUS 0x20 (0 mono, 1 POLY), read back by status.
 	// 0.6 wave 9 (B-064): POLY plays the track in focus (the TRACK keys) with six voices and silences the other five,
-	// notes on their channels too (measured, gapProbesFirmwareTest p9). t: TRACK t first, so the track the page shows is
+	// notes on their channels too (measured, gapProbesFirmwareTest p10). t: TRACK t first, so the track the page shows is
 	// the one that plays; sent again while POLY is on, the TRACK key moves POLY there (measured; the first chord on the
 	// new track can come out as one note, the next ones are chords: the firmware's, CC 123 or POLY off and on first do
 	// not change it).
@@ -449,6 +449,8 @@ namespace mmDesk
 				note = "POLY plays the track selected on the machine: press TRACK " + std::to_string(t + 1) + " there.";
 			else if(!pressKeys({static_cast<Key>(static_cast<int>(Key::Track1) + t)}))
 				return refuse(g_panelBusy);
+			else
+				m_expectFocus = deskCore::FieldExpectation<int>::sent(t, clock());
 		}
 		m_port.sendSysex(ed::mmSetStatus(ed::MmStatus::Poly, poly ? 1 : 0));
 		m_port.sendSysex(ed::mmStatusRequest(ed::MmStatus::Poly));
