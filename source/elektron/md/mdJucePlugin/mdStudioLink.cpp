@@ -217,6 +217,7 @@ namespace mdJucePlugin
 		t.mutes = m_telemetry->mutes.load(std::memory_order_relaxed);
 		t.panelPending = m_telemetry->panelPending.load(std::memory_order_relaxed);
 		t.songRow = m_telemetry->songRow.load(std::memory_order_relaxed);
+		t.songRepeats = m_telemetry->songRepeats.load(std::memory_order_relaxed);
 		const int active = m_telemetry->chainActive.load(std::memory_order_relaxed);
 		t.chainKnown = active >= 0;
 		if(t.chainKnown)

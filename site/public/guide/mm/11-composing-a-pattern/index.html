@@ -58,7 +58,8 @@
 <li><a href="/guide/mm/20-early-startup-menu-technical-information/">20. Early startup menu, technical information</a></li>
 <li><span class="gd-side-todo">21. Appendix A: machine reference <span class="gd-vh">(to come)</span></span></li>
 <li><span class="gd-side-todo">22. Appendix B: MIDI control reference <span class="gd-vh">(to come)</span></span></li>
-<li><span class="gd-side-todo">23. Appendix C: SysEx reference <span class="gd-vh">(to come)</span></span></li></ol>
+<li><span class="gd-side-todo">23. Appendix C: SysEx reference <span class="gd-vh">(to come)</span></span></li>
+<li><a href="/guide/mm/24-beyond-the-hardware/">24. Beyond the hardware</a></li></ol>
 <ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
 </nav>
 <article class="gd-article">
@@ -120,14 +121,16 @@
 <p>Notes, NOTE OFFs, envelope trigs, slides and locks go along. Other keys on a selection:</p>
 <table class="gd-table"><thead><tr><th>Key</th><th>Does</th></tr></thead><tbody><tr><td><kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[X]</kbd></td><td>copy, then clear</td></tr><tr><td><kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[D]</kbd></td><td>put a copy right after the selection; again for another</td></tr><tr><td><kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[A]</kbd></td><td>select every step of the six tracks shown</td></tr><tr><td><kbd class="gd-key">[←]</kbd> or <kbd class="gd-key">[→]</kbd></td><td>move the selection one step</td></tr><tr><td><kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[←]</kbd> or <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[→]</kbd></td><td>extend the selection one step</td></tr><tr><td><kbd class="gd-key">[ESC]</kbd></td><td>clear the selection</td></tr></tbody></table>
 <p>Drag the selection with <kbd class="gd-key">[⌘]</kbd> held to drop a copy where you let go. A dashed frame shows where it lands. With <b class="gd-ui">Draw</b> dark, drag the selected notes in the roll without <kbd class="gd-key">[⌘]</kbd> to move them.</p>
-<p>Right-click a step for the step menu: note on or off, NOTE OFF, trigless, slide, a chord note, copy, cut, paste here, duplicate, clear, and fill every 2nd or 4th step from the one you clicked. Synth steps paste onto synth tracks, MIDI steps onto MIDI tracks.</p>
+<p>Select a step or steps and click the small ⋯ on the selection for the step menu (a right-click on a step opens it too): note on or off, NOTE OFF, trigless, slide, a chord note, copy, cut, paste here, duplicate, clear, and fill every 2nd or 4th step from the one you clicked. Synth steps paste onto synth tracks, MIDI steps onto MIDI tracks.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p><kbd class="gd-key">[⌘]</kbd> is <kbd class="gd-key">[CTRL]</kbd> on Windows and Linux.</p></aside>
 </div></section>
 <section class="gd-sec" id="clear-note-parameter-locks" aria-labelledby="clear-note-parameter-locks-h">
 <div class="gd-body gd-prose"><h2 id="clear-note-parameter-locks-h">CLEAR NOTE PARAMETER LOCKS <a class="gd-anchor" href="#clear-note-parameter-locks" aria-label="Link to CLEAR NOTE PARAMETER LOCKS">#</a></h2>
 <p class="gd-ref">MM manual p.1-50</p>
 <p>To clear the locks of one parameter on some steps, hold <kbd class="gd-key">[⌥]</kbd> and drag across the bars in the lock lane. Click the bin in the lane header to clear all the locks of that parameter. Hold <kbd class="gd-key">[⌥]</kbd> and click the bin to clear every lock of the track. A selected step cleared with <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> loses its note and its locks together.</p>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> There is no key that clears the locks of one step and keeps its note.</p>
+<p>The machine's CLEAR NOTE LOCKS clears the locks of one note and keeps the note:</p>
+<ol class="gd-steps"><li>Select the step, or several steps, in the roll or the trig rows.</li><li>Right-click one of them and choose <b class="gd-ui">Clear locks (keep the notes)</b>.</li></ol>
+<p>The notes stay. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to get the locks back.</p>
 </div></section>
 <section class="gd-sec" id="track-page-copy" aria-labelledby="track-page-copy-h">
 <div class="gd-body gd-prose"><h2 id="track-page-copy-h">TRACK PAGE COPY <a class="gd-anchor" href="#track-page-copy" aria-label="Link to TRACK PAGE COPY">#</a></h2>

@@ -18,7 +18,7 @@
      undo(), redo(), history()        undo lives with the host; history() = {undo, redo} counts
      togglePlay(), ownsClock          the machine is the sequencer
      selectPattern(p, now)            LOAD PATTERN (now: STOP, LOAD PATTERN, PLAY)
-     kit(op, k)                       "save" | "load" | "saveAs" | "reload"
+     kit(op, k)                       "save" | "load" | "saveAs" | "reload" | "undo" (the machine's UNDO KIT, MM-102)
      tempo(bpm), mutes()              the machine's tempo; the tracks' mutes changed (synth and MIDI)
      keyMode(mode, t)                 the keyboard mode changed ("normal" | "multi" | "map" | "poly"): POLY
                                       is the machine's audio mode, on track t (0-5: its TRACK key; again with
@@ -49,6 +49,8 @@
                                       dialogs; the preview and progress come back through MMView
      removeRom(info)   REMOVE in the LOAD ROM card
      romManage()   LOAD ROM in the engine menu (a host shows which firmware runs, REPLACE and REMOVE; none: the start-up card)
+     memory(what)   I-024: "keep" (the engine menu's KEEP MEMORY on / off) or "factory" (RESET MACHINE…'s Start from
+                                      factory memory, asked by the panel); the state comes back with MMView.setMemory
      chooseRom(), revealRom(), recheck()   the start-up card's keys (P7): the native file chooser for the
                                       firmware, the ROM folder, look again (the page never reads the ROM)
      audioDoc(), audioSend(command), audioMeter(on)   the AUDIO / MIDI panel's devices

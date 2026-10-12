@@ -69,14 +69,26 @@ namespace mmDesk
 		// Machinedrum's: clearing a slot; writing over a kit that has a name, over the kit that plays (it is loaded
 		// too, its unsaved edits go), or over a pattern with trigs.
 		const auto op = deskCore::opOf(_command);
+		// MM-095: the pattern that plays given another kit: the machine loads that kit at once, the edits of the kit that
+		// plays are lost (measured, gapProbesFirmwareTest w12patkit). Joined to the library's question (withAsk), never
+		// instead of it: a pattern written over the one that plays asks both.
+		Outcome o;
+		if(kitState(_view) == deskCore::KitState::Edited)
+			for(const auto& c : _changes)
+				if(c.ref().kind == Kind::Pattern && static_cast<int>(c.ref().slot) == m_curPattern
+					&& std::get<ed::MmPattern>(c.after).kit != std::get<ed::MmPattern>(c.before).kit)
+				{
+					o = ask("discardKit", "<b>" + ed::mmPatternName(c.ref().slot) + "</b> plays and gets kit <b>" + kitLabel(_view, std::get<ed::MmPattern>(c.after).kit)
+						+ "</b>: the machine loads it at once, and your edits to <b>" + kitLabel(_view, m_curKit) + "</b> are lost.", "Switch and lose edits");
+					break;
+				}
 		const auto* row = MmModel::commands().find(op);
 		if(!row || row->group != g_library)
-			return ok();
+			return Review(o);
 		const bool clears = op == "kitClear" || op == "patClear" || op == "songClear";
 		if(op == "kitRename" || op == "kitCopy" || op == "patCopy" || op == "songRename" || op == "songCopy" || op == "globalCopy")
-			return ok();	// a name, or the clipboard: nothing is lost
+			return Review(o);	// a name, or the clipboard: nothing is lost (but the kit edits, above)
 		const bool edited = kitState(_view) == deskCore::KitState::Edited;
-		Outcome o;
 		for(const auto& c : _changes)
 		{
 			const auto ref = c.ref();

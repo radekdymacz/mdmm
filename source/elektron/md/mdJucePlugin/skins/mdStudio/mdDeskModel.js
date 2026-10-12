@@ -51,6 +51,15 @@ function slots(m, cat) {
 }
 /* a lane's (or a knob's) label on machine m: n, or FX·n / RTG·n where its synthesis page has an n too */
 function laneLabel(m, n, cat) { const a = slots(m, cat); if (!a.includes("SYN·" + n)) return n; return (a.indexOf(n) >= 16 ? "RTG·" : "FX·") + n; }
+/* MD-033: the clips the machine's LCD draws between two value boxes whose parameters depend on each other (the
+   catalogue's clips: i joins slot i and i + 1), as the Sound page names its boxes: [[g, a], [g, b]] with g "syn",
+   "fx" or "rt", and LFOS LFOD LFOM as the LFO card's SPD DEPTH SHMIX (E.lfoParams). Pairs with an unnamed slot go. */
+function clipPairs(m, cat, E) {
+	const c = cat.byName[m]; if (!c || !c.clips) return [];
+	const a = slots(m, cat), G = ["syn", "fx", "rt"];
+	const box = i => { const lfo = E && E.lfoParams ? Object.keys(E.lfoParams).find(n => E.lfoParams[n] === i) : null; return lfo ? ["lfo", lfo] : a[i] ? [G[i >> 3], a[i]] : null; };
+	return c.clips.map(i => [box(i), box(i + 1)]).filter(([x, y]) => x && y);
+}
 /* Three pages of 8 slots; an unused slot is null. */
 function pages(m, cat) { const a = slots(m, cat); return { s: a.slice(0, 8), e: a.slice(8, 16), r: a.slice(16, 24) }; }
 const names = list => list.filter(Boolean);

@@ -103,6 +103,9 @@ namespace md
 	struct SongPosition
 	{
 		static constexpr uint32_t g_rowAddress = 0x2b18f5;
+		// 0.6 (MD-147, gapProbesFirmwareTest w12repeats): the passes of that row still to come, one byte counting down
+		// (REPEATS 3: 3, 2, 1, 0 over the row's four passes); like the row byte it moves near the pattern's end
+		static constexpr uint32_t g_repeatsAddress = 0x2b1901;
 	};
 
 	struct ChainAndMutes

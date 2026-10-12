@@ -122,7 +122,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Live recording 1-13 | Erase with EXIT while notes sound | Live erase | ✅ | Hold Delete while live recording: the selected track's notes go as they play |  | 1 |
 | Parameter locks 1-13 | Lock a value on a step | P-lock | ✅ | Lock lane (draw bars), wheel on a step |  | 2 |
 | Parameter locks 1-14 | Record locks live by turning a knob | Live lock | ✅ | Value boxes while live recording | The machine records; the page marks the step's cell and lock lane for about 3 s and says which value it locked (`70-seq.js` setRecLock) | 1 |
-| Parameter locks 1-14 | Remove one lock; remove all locks of a trig | Clear locks | 🟡 | Lane: Alt-drag erases one parameter's steps; a selected step's Delete or step-menu Clear takes its note, slide and locks together | No key that drops a step's locks and keeps its note | 1 |
+| Parameter locks 1-14 | Remove one lock; remove all locks of a trig | Clear locks | ✅ | Lane: Alt-drag erases one parameter's locks; a step's menu (right-click, or the Menu key on a focused step): Clear locks takes all its locks (or the selection's) and keeps the note | No key that drops a step's locks and keeps its note | 2 |
 
 ## 5. Monomachine overview (1-15, 1-16)
 
@@ -144,14 +144,14 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Arrangement 1-17 | Track effects per track (filter, EQ, SRR, distortion, delay) | Effects | ✅ | Sound AMP, FLT, EFX |  | 1 |
 | Kits 1-18 | Kit holds machines, pages, LFOs, MIDI pages, routing, trig, multi env, name | Kit content | ✅ | Whole kit editable in the working kit | `WorkingKit` document | 1 |
 | Link kits and patterns 1-18 | Pattern recalls its kit; same kit not reloaded | Link | ✅ | Pattern chooser shows kit per pattern | Dialog "Save kit, then switch" | 1 |
-| Link kits and patterns 1-18 | Change which kit a pattern uses | Relink | 🟡 | Kit library LOAD relinks current pattern | No direct "set kit of pattern N" control | – |
+| Link kits and patterns 1-18 | Change which kit a pattern uses | Relink | ✅ | Pattern chooser: Alt-click a pattern, then its Kit list (patternKit); over the pattern that plays the kit loads at once, asked over unsaved edits | Measured: the dump carries the link; over the pattern that plays the machine loads the kit (gapProbesFirmwareTest w12patkit) | 1 |
 | Loading a kit 1-19 | Kit list of 128, load | LOAD KIT | ✅ | Kit library |  | 1 |
 | Loading a kit 1-19 | Star on kits with no pattern | Unlinked mark | ✅ | Star in kit slot |  | 1 |
 | Loading an empty kit 1-19 | Six GND-SIN tracks | Empty kit | ✅ | Load an empty slot |  | 1 |
 | Saving and naming 1-19 | SAVE KIT | Save | ✅ | Kit library Save, Save as |  | 1 |
 | Saving and naming 1-20 | Name a kit (11 characters) | Rename | ✅ | Kit library Rename, F2 |  | 1 |
 | Saving and naming 1-20 | "High score" character picker | Text entry | ➖ | – | Text field | – |
-| Undo kit 1-20 | UNDO KIT keeps lost edits | Safety slot | 🟡 | Dialogs name it; page undo on top | Firmware keeps the slot; no control to open it | – |
+| Undo kit 1-20 | UNDO KIT keeps lost edits | Safety slot | ✅ | Kit library: UNDO KIT (KIT > LOAD > UNDO KIT through the machine's keys; off over HW MIDI) | Measured: the lost kit plays again unsaved, its own slot current (gapProbesFirmwareTest w12undo) | 1 |
 | Copy kit 1-21 | Copy and paste kit slot | Kit copy | ✅ | Kit library Copy / Paste, drag a slot | Through SYSEX RECV | 1 |
 | Clear kit 1-21 | Clear kit slot | Kit clear | ✅ | Kit library Clear |  | 1 |
 | Assigning a machine 1-22 | SYNTH, MACHINE, MIX columns in EDIT KIT | Machine picker | ✅ | Sound > machine key |  | 1 |
@@ -258,7 +258,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Live recording 1-49 | Erase with EXIT | Live erase | ✅ | Hold Delete while live recording |  | 1 |
 | Step recording 1-50 | Step-by-step input | Step rec | ✅ | Sequence: Shift-click REC; a played note writes the step under the cursor and moves on; → rest, ← back, Delete clears, Esc done |  | 1 |
 | Note copy 1-50 | Copy one trig with locks to another step | Note copy | ✅ | Sequence: Cmd-click a step (Ctrl on Windows and Linux), Cmd+C, select the target, Cmd+V; Cmd-drag drops a copy; Cmd+D duplicates | Notes, NOTE OFFs, envelope trigs, slides and locks go along (`77-select.js`, `copySteps`) | 5 |
-| Clear note parameter locks 1-50 | Clear locks of one note, undoable | Clear locks | 🟡 | Lane Alt-drag per parameter; Alt + lane clear for a track; a selected step's Delete clears the step whole | No key for the locks of one step alone | – |
+| Clear note parameter locks 1-50 | Clear locks of one note, undoable | Clear locks | ✅ | The step menu's Clear locks (keep the notes), on a step or a selection; one undo step | No key for the locks of one step alone | 1 |
 | Track page copy 1-51 | Copy a page to another page | Page copy | ✅ | LCD COPY on the page shown (no step selected), PASTE on another page; or select the steps | Steps, slides and locks (`130-main.js` secAction) | 1 |
 | Clear track page 1-51 | Clear a page | Page clear | ✅ | CLR with a page shown |  | 1 |
 | Track copy 1-52 | Track data to another track incl. machine, arp, transpose, swing, slide | Track copy | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (⌘⇧C, ⌘⇧V): notes, melody, slide, swing, locks, arp, transpose, machine + sound in one copy; Paste lights the tracks (synth onto synth, MIDI onto MIDI); one undo step |  | 1 |
@@ -285,9 +285,9 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
 | Locks in grid mode 1-57 | Hold a trig, turn a knob | Lock | ✅ | Lane: draw; wheel; ramp with Shift |  | 1 |
-| Locks in grid mode 1-57 | Click a knob to lock its current value | Lock to current | 🟡 | Lane draw sets any value | No "lock current" click | – |
+| Locks in grid mode 1-57 | Click a knob to lock its current value | Lock to current | ✅ | Sequence, Locks: select steps, then the lock key in the rail header locks the lane's parameter at its current (kit) value on each selected note; one undo step | No "lock current" click | 1 |
 | Locks in grid mode 1-57 | View locks of a step | View | ✅ | Lane shows bars per parameter |  | 1 |
-| Locks in grid mode 1-57 | Remove one / all locks of a step | Remove | 🟡 | See section 4 and section 11 |  | – |
+| Locks in grid mode 1-57 | Remove one / all locks of a step | Remove | ✅ | One lock: Alt-drag on the lane; all locks of a step: the step menu's Clear locks |  | 1 |
 | Locks in grid mode 1-57 | Note copy and paste | Note copy | ✅ | See section 11 | Locks travel with the copied step | 1 |
 | Locks 1-58 | 62 locked parameters per pattern, pooled | Lock budget | ✅ | LCD LOCKS nn/62; lane budget | Blocks a 63rd | 1 |
 | Locks 1-58 | Parameter locked once can hold a value on every step | Lane | ✅ | Lock lane |  | 1 |
@@ -375,7 +375,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Song editing 1-77 | Insert / remove rows (FUNCTION + arrows) | Row edit | ✅ | Row Duplicate, Delete, Add loop, drag |  | 1 |
 | Song editing 1-77 | Copy, paste, clear, undo rows | Row clipboard | ✅ | LCD COPY / PASTE / CLR; page undo |  | 1 |
 | Song edit transport 1-77 | Start from any row (ENTER) | Play from row | ✅ | Song: Enter on the selected row (▶ From here) |  | 1 |
-| Song edit transport 1-77 | Counter in bars and beats | Song time | 🟡 | Song header: rows, bars, time | Not a live counter | – |
+| Song edit transport 1-77 | Counter in bars and beats | Song time | ✅ | Song: the Arrangement header reads Playing · bar:beat while the song plays (the machine's counter, telemetry songSteps) | RAM 0x2bdf3c, the EDIT SONG header's counter (gapProbesFirmwareTest w12mmcounter); song rows, bars and time stay in the Songs column | 1 |
 | Song loops 1-78 | Loop to a row, repeat count, nesting | Loop | ✅ | Row command LOOP |  | 1 |
 | Song jump 1-78 | Forward jump | Jump | ✅ | Row command JUMP |  | 1 |
 | Song halt 1-78 | Pause playback | Halt | ✅ | Row command HALT |  | 1 |
@@ -415,7 +415,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Control in 1-92 | TRANSPORT ACCEPT / IGNORE | Transport in | ✅ | GLOBAL > Sync > Ctrl in | A DAW turns it on itself; the page also asks once when PLAY needs it | 1 |
 | Control in 1-93 | PRG CHANGE in | Program change in | 🟡 | GLOBAL > Control > Prg change in, shown as BASE | Shown, not changeable: measured, the machine always takes it on the base channel | – |
 | Multi map edit 1-93 | Ranges, upper key, insert / delete | Key ranges | ✅ | Perform > Multi map table, Split, delete |  | 1 |
-| Multi map edit 1-93 | PAT (CUR or pattern) | Pattern | 🟡 | Pattern select | The list offers CUR and A01-B16 only (32 patterns); the machine takes all 128 | – |
+| Multi map edit 1-93 | PAT (CUR or pattern) | Pattern | ✅ | Perform › Multi map: a range's PAT list, CUR and A01-H16 | Measured: the firmware takes and keeps pattern 128 (H16) in a range (intent case on OS 1.32B) | 1 |
 | Multi map edit 1-93 | OFS, LEN | Offset, length | ✅ | OFS, LEN boxes |  | 1 |
 | Multi map edit 1-93 | TRN, TIM | Transpose, timing | ✅ | TRN, TIM boxes |  | 1 |
 | Mechanical settings 1-94 | Knob resolution (MKII) | Encoder resolution | ➖ | – | Hardware knobs | – |
@@ -437,11 +437,11 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 |---|---|---|---|---|---|---|
 | Test mode 1-110 | Hardware self test, joystick calibration | Test | ➖ | – |  | – |
 | Empty reset 1-110 | Clear kits, patterns, songs, globals | Reset | ✅ | Engine menu: Reset machine… > Empty reset… (asked twice): every kit, pattern and song cleared on SYSEX RECV, read back and reported in the SysEx panel | Globals stay: a global is reset in its slot in GLOBAL. | 1 |
-| Factory reset 1-110 | Restore factory data | Reset | ❌ | Engine menu: Reset machine… says why it is not offered |  | – |
+| Factory reset 1-110 | Restore factory data | Reset | ❌ | Engine menu: Reset machine… says why it is not offered; Start from factory memory… restarts the machine as on a new install, with the saved machine memory deleted (I-024) |  | – |
 | Soft reset 1-111 | Restart keeping data | Restart | ➖ | – | Reopen the editor | – |
 | MIDI upgrade, send upgrade 1-111, 1-112 | OS update over MIDI | OS update | ➖ | – | The editor loads the OS 1.32B image | – |
 | Specifications 1-113 | Data sheet | Specs | ➖ | – |  | – |
-| MKI / MKII differences 1-114 | Hardware, user waveforms | Model | 🟡 | MKI / MKII plate key greys MKII-only machines | Plate looks the same | – |
+| MKI / MKII differences 1-114 | Hardware, user waveforms | Model | ✅ | MKI / MKII plate key: each model its own look (MKI light-blue LCD, MKII bluish-white, wave 10); MKI greys the MKII-only machines | Wave 10 made the plates true to the product photos | 1 |
 | Credits, contact 1-115, 1-116 | – | – | ➖ | About box |  | – |
 
 ## 21. Appendix A: machine reference (A-1 to A-15)
@@ -521,6 +521,12 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | 0x70-0x72 Status request, set, response C-3, C-4 | Slot, mode, poly, tracks | Status | ✅ | Pattern / song mode, poly, kit state |  | 1 |
 | TurboMIDI speed messages C-4, C-5 | Speed negotiation | Turbo | ➖ | – | Cable protocol | – |
 
+## 24. Beyond the hardware
+
+| Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
+|---|---|---|---|---|---|---|
+| MACHINE MEMORY | What you save stays for every new session | The machine keeps its kits, patterns, songs and globals when it is switched off. | ✅ | By itself (a session without a DAW project, and the standalone, start from the saved memory); engine menu: KEEP MEMORY; Reset machine… > Start from factory memory… | I-024, doc/modern-ux/DESIGN-machine-memory.md | 1 |
+
 ## 24. Editor features with no manual counterpart (for orientation)
 
 The page also has things the manual does not: GEN and MUTATE generators, step selection with a box select and Draw mode in the piano roll, note lengths drawn by dragging a note's end, Control All (Alt-drag), paste to many tracks, ghost notes, ramps in the lock lane, undo and redo, DAW tempo follow, the AUDIO / MIDI panel, ROM and engine menu, SysEx import preview and report. They are not counted below.
@@ -531,11 +537,11 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 327 |
-| 🟡 | 23 |
+| ✅ | 337 |
+| 🟡 | 14 |
 | ❌ | 1 |
 | ➖ | 34 |
-| Total | 385 |
+| Total | 386 |
 
 ### Top gaps, ranked (our UI)
 

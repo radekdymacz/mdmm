@@ -198,6 +198,7 @@ namespace
 		int keysPressed = 0;
 		uint8_t pattern = 3, kit = 5, global = 0, songMode = 0;
 		std::vector<uint8_t> activations;	// every SET ACTIVE GLOBAL (0x56) taken, in order
+		std::vector<Bytes> applied;			// the slot's stored global each 0x56 applied (B-071)
 		uint32_t recvTaken = 0;	// dumps taken on SYSEX RECV (the RECV count, RAM 0x26a3c4)
 		bool slow = false;		// dumps stay on their way (inFlight) until taken by hand
 		int recording = -1;		// the recording mode the telemetry says (-1 unknown)
@@ -241,6 +242,7 @@ namespace
 			{
 				global = _m[7];
 				activations.push_back(_m[7]);
+				applied.push_back(slots[{0x50, _m[7]}]);
 				return;
 			}
 			if(cmd == 0x57 && _m.size() > 7)
@@ -609,6 +611,32 @@ namespace
 			run(2000);
 			check(m.global == 0 && d.currentGlobal() == 0, "back to GLOBAL 1");
 		}
+
+		// B-071: an imported dump of the active global waits for its re-activation (0x56) until it is in; a slot chosen
+		// meanwhile, with RECV still idle, goes at once and that re-activation never goes over it.
+		{
+			run(4000);
+			check(d.currentGlobal() == 0 && !d.recvParked(), "GLOBAL 1 active, RECV left");
+			auto g = d.documents().globals.at(0);
+			g.channelSpan = 4;
+			m.activations.clear();
+			check(d.machine().sendAsIs(ed::encodeMmGlobal(g), true).empty(), "an imported GLOBAL 1 dump is taken");
+			msg(R"({"op":"globalSlot","id":49,"slot":1})");
+			run(8000);
+			std::string order;
+			for(const auto a : m.activations) order += " " + std::to_string(a + 1);
+			check(m.global == 1 && d.currentGlobal() == 1 && !m.activations.empty() && m.activations.back() == 1,
+				("GLOBAL 2 chosen while the import waits stays active (0x56:" + order + ")").c_str());
+			msg(R"({"op":"globalSlot","id":50,"slot":0})");
+			run(2000);
+			m.activations.clear();
+			m.applied.clear();
+			g.channelSpan = 6;
+			check(d.machine().sendAsIs(ed::encodeMmGlobal(g), true).empty(), "an imported GLOBAL 1 dump again");
+			run(8000);
+			check(m.activations.size() == 1 && m.activations[0] == 0 && m.applied[0] == ed::encodeMmGlobal(g),
+				"GLOBAL 1 is made active again once, after its dump is in (the new channels applied)");
+		}
 	}
 }
 
@@ -799,7 +827,12 @@ void kitAfterPatternDump(const uint8_t _link3 = 5)
 		auto changed = *relinkOk;
 		changed.kit = 9;
 		// a link the person changes is the person's: the dump keeps it (the machine loads that kit)
+		// MM-095: over unsaved kit edits that asks first (the machine would load kit 10 at once); with force it goes
+		const auto before = m.slots[{0x67, 3}];
 		msg(R"({"op":"set","kind":"pattern","doc":)" + ed::json::write(ed::mmPatternToJson(changed)) + "}");
+		run(500);
+		check(m.slots[{0x67, 3}] == before, "a link changed over unsaved kit edits waits for the answer");
+		msg(R"({"op":"set","force":true,"kind":"pattern","doc":)" + ed::json::write(ed::mmPatternToJson(changed)) + "}");
 		run(2000);
 		check(ed::decodeMmPattern(m.slots[{0x67, 3}])->kit == 9, "a link the edit changes is sent as it is");
 		return;
@@ -1112,6 +1145,25 @@ void asksAndErrors()
 		msg(R"({"op":"patClear","p":1,"id":9,"g":53})");
 		check(result(9) && result(9)->find("ok")->asBool() == false && last("ask")->find("command")->find("op")->asString() != "patClear",
 			"a pattern not read yet: refused, no question");
+		{
+			// MM-095 review: a pattern with trigs and another kit copied over the pattern that plays (A02, kit 3) while
+			// the kit is edited: one question naming both, the overwrite and the switch that loses the edits
+			auto plays = emptyPattern(1);
+			plays.kit = 2;
+			plays.amp[0] = 1;
+			auto from = emptyPattern(6);
+			from.kit = 4;
+			from.amp[1] = 1;
+			d.onDeviceSysex(ed::encodeMmPattern(plays));
+			d.onDeviceSysex(ed::encodeMmPattern(from));
+			msg(R"({"op":"patCopyTo","from":6,"to":1,"id":30,"g":70})");
+			const auto* both = last("ask");
+			const auto* also = both ? both->find("also") : nullptr;
+			const auto named = [&](const std::string& _w) { if(both->find("ask")->asString() == _w) return true;
+				if(also && also->isArray()) for(const auto& x : also->asArray()) if(x.asString() == _w) return true; return false; };
+			check(both && both->find("command")->find("op")->asString() == "patCopyTo" && named("overwriteSlot") && named("discardKit")
+				&& d.pattern(1)->kit == 2, "a pattern copied over the one that plays, with another kit, over kit edits: one question, the overwrite and the lost edits");
+		}
 		{
 			// 0.6 wave 1: the song slots. S04 holds a song, S05 and S06 are empty; the library's ops over them.
 			ed::MmSong held;
@@ -1827,7 +1879,7 @@ void checkContract(const bool _write)
 		check(false, gap.c_str());
 	// The plug-in's host sends these; this test has no host.
 	const auto r = contract::checkMessages(*root, g_published, {"learn", "audio", "audioLevel", "openAudio",
-		"romInstall", "romInfo", "notice", "syxPreview", "syxProgress", "syxExport", "syxExportInfo", "syxReset", "host", "audioRun", "cpuLoad", "outputLevel", "midiIn", "midiHeld", "editorMenu",
+		"romInstall", "romInfo", "notice", "syxPreview", "syxProgress", "syxExport", "syxExportInfo", "syxReset", "host", "audioRun", "cpuLoad", "outputLevel", "machineMemory", "midiIn", "midiHeld", "editorMenu",
 		"zoom", "drop", "dragFiles"});
 	for(const auto& p : r.off)
 		std::printf("    %s\n", p.c_str());

@@ -234,6 +234,7 @@ namespace
 			bool playing = false;
 			bool recording = false;
 			int songRow = -1;
+			int songRepeats = -1;
 		};
 		PageTelemetry pageTelemetry() const
 		{
@@ -247,6 +248,7 @@ namespace
 			if(const auto* p = v.find("playing")) t.playing = p->asBool();
 			if(const auto* p = v.find("recording")) t.recording = p->asBool();
 			if(const auto* p = v.find("songRow"); p && p->isNumber()) t.songRow = static_cast<int>(p->asNumber());
+			if(const auto* p = v.find("songRepeats"); p && p->isNumber()) t.songRepeats = static_cast<int>(p->asNumber());
 			return t;
 		}
 
@@ -383,6 +385,7 @@ namespace
 			t.knobPage = m_machine.read8(md::SequencerState::g_knobPageAddress);
 			t.panelPending = static_cast<int>(m_keys.size());	// the rig's key queue, as md::Device reports its own
 			t.songRow = m_machine.read8(md::SongPosition::g_rowAddress);	// 0.3.5, as md::DeskDevice publishes it
+			t.songRepeats = m_machine.read8(md::SongPosition::g_repeatsAddress);	// 0.6, MD-147
 			// P4, as md::Device publishes them.
 			m_boot.update(m_machine.read8(md::BootAnimation::g_mainScreenAddress), now - m_bootAt);
 			m_bootAt = now;
@@ -910,6 +913,8 @@ namespace
 		_rig.run(50);
 		_rig.page("{\"op\":\"trig\",\"p\":" + p + R"(,"t":0,"s":3,"id":46})");
 		check(_rig.lastResult() && !_rig.lastResult()->find("ok")->asBool(), "grid edits wait while recording");
+		_rig.page(R"({"op":"loadUndoKit","id":848})");
+		check(_rig.lastResult() && !_rig.lastResult()->find("ok")->asBool() && recording(), "UNDO KIT is refused while recording, before any question (its keys would leave the kit list open)");
 		_rig.runUntil(stepIs(12), 3000);
 		_rig.page(R"({"op":"record","id":47})");
 		check(_rig.runUntil([&] { return !recording(); }, 1000), "REC again leaves recording");
@@ -1424,6 +1429,96 @@ namespace
 	}
 
 	// P4: the kit library and pattern chooser on firmware, checked by the machine's own dumps.
+	// MD-106: the editor's longer total length does what the machine's SCALE SETUP does (gapProbesFirmwareTest w12extend):
+	// the same 16-step pattern in two slots, one lengthened on the panel (FUNCTION + SCALE, the scale field, UP), one by
+	// the editor's totalLength; both read back. Again with a trig past the old length (then neither copies).
+	void extendPattern(Rig& _rig)
+	{
+		auto& m = _rig.machine();
+		auto& desk = _rig.desk();
+		std::puts("== MD-106 a pattern made longer copies its steps, as the machine's SCALE SETUP");
+		const auto settle = [&] { _rig.runUntil([&] { return !desk.isBusy(); }, 3000); _rig.run(300); };
+		const auto hold = [&](const std::vector<md::PanelControl>& _keys)
+		{
+			md::PanelRowState rows;
+			std::vector<md::PanelPacket> states;
+			for(const auto k : _keys)
+				states.push_back(rows.press(*md::panelPacket(m.hardware().getModel(), k)));
+			for(auto it = _keys.rbegin(); it != _keys.rend(); ++it)
+				states.push_back(rows.release(*md::panelPacket(m.hardware().getModel(), *it)));
+			for(const auto& st : states)
+			{
+				m.hardware().trySendPanelEvent(st.row, st.mask);
+				_rig.run(60);
+			}
+			_rig.run(100);
+		};
+		const auto key = [&](const md::PanelControl _k) { hold({_k}); };
+		for(const bool later : {false, true})
+		{
+			auto p = *_rig.readPattern(110);
+			p.length = 16;
+			p.scale = 0;
+			p.trigs.fill(0);
+			p.lockMasks.fill(0);
+			for(auto& row : p.lockRows) row.fill(0xff);
+			p.lockedRows = 0;
+			p.accentPattern = 1ull << 4;
+			p.slidePattern = 0;
+			p.swingPattern = 1ull << 8;
+			p.trackAccent.fill(0); p.trackSlide.fill(0); p.trackSwing.fill(0);
+			for(const size_t i : {0, 4, 8, 13})
+				p = ed::withTrig(p, 0, i, true);
+			p = ed::withTrig(p, 1, 2, true);
+			if(later)
+				p = ed::withTrig(p, 2, 40, true);
+			p = *ed::withLock(p, 0, 0, 4, 99);
+			for(const uint8_t slot : {110, 111})
+			{
+				p.position = slot;
+				m.send(ed::encodeMdPattern(p));
+				_rig.run(400);
+			}
+			_rig.pageConfirmed(R"({"op":"load","kind":"pattern","slot":111,"id":1059})");
+			const bool known = _rig.runUntil([&] { const auto it = desk.documents().patterns.find(111); return it != desk.documents().patterns.end() && it->second.trigs == p.trigs; }, 4000);
+			check(known, "the editor read the pattern back");
+			// the machine: SCALE SETUP on the pattern that plays, the scale field one up (16 -> 32)
+			m.send(ed::mdLoadPattern(110));
+			_rig.run(400);
+			key(md::PanelControl::Exit);
+			key(md::PanelControl::Exit);
+			hold({md::PanelControl::Function, md::PanelControl::Scale});
+			// the window keeps its field (LEN, SCALE, the speed; LEFT and RIGHT wrap): LEN at first, SCALE the second time
+			if(!later)
+				key(md::PanelControl::Right);
+			key(md::PanelControl::Up);
+			if(const char* snap = std::getenv("EXTEND_SNAP"))
+			{
+				const auto panel = m.hardware().getFrontPanelSnapshot();
+				std::ofstream image(std::string(snap) + (later ? "b.pgm" : "a.pgm"), std::ios::binary);
+				image << "P5\n128 64\n255\n";
+				for(uint32_t y = 0; y < 64; ++y)
+					for(uint32_t x = 0; x < 128; ++x)
+						image.put(panel.getLcdPixel(x, y) ? '\0' : '\xff');
+			}
+			key(md::PanelControl::Exit);
+			_rig.run(400);
+			// the editor: totalLength 32 on the other slot
+			_rig.pageConfirmed(R"({"op":"totalLength","p":111,"v":32,"force":true,"id":1060})");
+			settle();
+			const auto a = *_rig.readPattern(110), b = *_rig.readPattern(111);
+			bool locks = true;
+			for(size_t i = 0; i < 64; ++i)
+				locks = locks && ed::lockValue(a, 0, 0, i) == ed::lockValue(b, 0, 0, i);
+			const bool same = a.length == b.length && a.scale == b.scale && a.trigs == b.trigs && a.accentPattern == b.accentPattern
+				&& a.swingPattern == b.swingPattern && a.trackAccent == b.trackAccent && a.trackSwing == b.trackSwing && a.lockMasks == b.lockMasks && locks;
+			std::printf("  %s: machine %d steps, T1 %016llx; editor %d steps, T1 %016llx\n", later ? "a trig past the old length" : "the later steps empty",
+				a.length, static_cast<unsigned long long>(a.trigs[0]), b.length, static_cast<unsigned long long>(b.trigs[0]));
+			check(same && a.length == 32 && (later ? a.trigs[0] == p.trigs[0] : a.trigs[0] == (p.trigs[0] | (p.trigs[0] << 16))),
+				std::string("the editor's longer pattern is the machine's: ") + (later ? "nothing copied (a trig past the old length)" : "steps 1-16 repeated into 17-32"));
+		}
+	}
+
 	void library(Rig& _rig)
 	{
 		auto& m = _rig.machine();
@@ -1457,10 +1552,12 @@ namespace
 		_rig.pageConfirmed(R"({"op":"kitRename","k":40,"name":"lib test","id":952})");
 		settle();
 		check(kitNameOf(readKit(40)) == "LIB TEST", "rename of a slot that does not play: dump with the new name");
+		const auto beforeClear = readKit(40);
 		_rig.pageConfirmed(R"({"op":"kitClear","k":40,"id":953})");
 		settle();
 		const auto cleared = readKit(40);
-		check(std::all_of(cleared.models.begin(), cleared.models.end(), [](const uint32_t _m) { return _m == 0; }) && kitNameOf(cleared).empty(),
+		check(cleared == ed::mdClearedKit(beforeClear, 40), "clear: the slot holds what the machine's CLEAR KIT leaves (MD-045)");
+		check(std::all_of(cleared.models.begin(), cleared.models.end(), [](const uint32_t _m) { return _m == 0; }) && mdDesk::kitNameText(cleared).empty(),
 			"clear: every track GND-EMPTY, no name");
 		_rig.pageConfirmed(R"({"op":"undo","id":954})");
 		settle();
@@ -1548,10 +1645,60 @@ namespace
 		const bool now = _rig.runUntil([&] { return _rig.pageTelemetry().playing && _rig.pageTelemetry().pattern == target; }, 3000);
 		std::printf("  switch now: playing %s after %.0f ms\n", ed::mdPatternName(target).c_str(), ms(m.now() - t0));
 		check(now, "Now while playing: STOP, LOAD PATTERN, PLAY plays the new pattern");
-		_rig.pageConfirmed(R"({"op":"stop","id":963})");
+		// MD-099: a pattern queued while playing (Go) starts at STOP, before the pattern's end (gapProbesFirmwareTest w12stop)
+		{
+			_rig.runUntil([&] { const auto st = _rig.pageTelemetry().step; return st >= 1 && st <= 3; }, 4000);
+			_rig.pageConfirmed("{\"op\":\"select\",\"p\":" + std::to_string(pat) + ",\"force\":true,\"id\":964}");
+			_rig.run(60);
+			const bool queued = _rig.pageTelemetry().pattern == target;
+			const auto t1 = m.now();
+			_rig.pageConfirmed(R"({"op":"stop","id":963})");
+			const bool jumped = _rig.runUntil([&] { return !_rig.pageTelemetry().playing && _rig.pageTelemetry().pattern == pat && desk.linkState().pattern == pat; }, 1500);
+			std::printf("  STOP with %s queued: %s after %.0f ms\n", ed::mdPatternName(pat).c_str(), jumped ? "switched" : "not switched", ms(m.now() - t1));
+			check(queued && jumped, "STOP with a pattern queued: the machine and the editor switch to it at once");
+		}
 		_rig.run(300);
 		m.send(ed::mdLoadPattern(pat));
 		_rig.run(300);
+		// MD-043: LOAD KIT over the edit puts it in the machine's UNDO KIT; loadUndoKit (the panel's keys) brings it back,
+		// unsaved, in its own slot (gapProbesFirmwareTest w12undo)
+		{
+			const auto here = *desk.linkState().kit;
+			const uint8_t other = static_cast<uint8_t>(here == 41 ? 40 : 41);
+			_rig.pageConfirmed("{\"op\":\"kitName\",\"k\":" + std::to_string(here) + ",\"name\":\"UNDO TEST\",\"id\":976}");
+			settle();
+			_rig.pageConfirmed("{\"op\":\"kitLoad\",\"k\":" + std::to_string(other) + ",\"force\":true,\"id\":973}");
+			settle();
+			check(kitStatus() == other, "LOAD KIT of another slot over the renamed kit");
+			_rig.pageConfirmed(R"({"op":"loadUndoKit","force":true,"id":974})");
+			const bool back = _rig.runUntil([&] { return desk.linkState().kit == here && desk.documents().working && kitNameOf(desk.documents().working->kit) == "UNDO TEST"; }, 6000);
+			settle();
+			std::printf("  UNDO KIT: kit %d, working '%s'\n", kitStatus(), desk.documents().working ? kitNameOf(desk.documents().working->kit).c_str() : "?");
+			check(back && kitStatus() == here, "UNDO KIT: the renamed kit plays again in its own slot, and the editor follows");
+			_rig.pageConfirmed(R"({"op":"reloadKit","force":true,"id":975})");
+			settle();
+		}
+		// MD-043 at the top of the list: the route from kit 64 is 2 + 64 + 1 keys (134 panel states, more than the old
+		// queue of 128 held): an edit of kit 63, LOAD KIT 64, UNDO KIT brings kit 63 back
+		{
+			const auto here = *desk.linkState().kit;
+			_rig.pageConfirmed(R"({"op":"kitLoad","k":62,"force":true,"id":977})");
+			settle();
+			_rig.pageConfirmed(R"({"op":"kitName","k":62,"name":"UNDO HIGH","id":978})");
+			settle();
+			_rig.pageConfirmed(R"({"op":"kitLoad","k":63,"force":true,"id":979})");
+			settle();
+			check(kitStatus() == 63, "LOAD KIT 64 over the renamed kit 63");
+			_rig.pageConfirmed(R"({"op":"loadUndoKit","force":true,"id":980})");
+			const bool back = _rig.runUntil([&] { return desk.linkState().kit == 62 && desk.documents().working && kitNameOf(desk.documents().working->kit) == "UNDO HIGH"; }, 8000);
+			settle();
+			std::printf("  UNDO KIT from kit 64: kit %d, working '%s'\n", kitStatus(), desk.documents().working ? kitNameOf(desk.documents().working->kit).c_str() : "?");
+			check(back && kitStatus() == 62, "UNDO KIT from kit 64 (65 UP keys): kit 63 plays again, renamed, and the machine is out of its kit list");
+			_rig.pageConfirmed(R"({"op":"reloadKit","force":true,"id":981})");
+			settle();
+			_rig.pageConfirmed("{\"op\":\"kitLoad\",\"k\":" + std::to_string(here) + ",\"force\":true,\"id\":982}");
+			settle();
+		}
 	}
 
 	// P4 HW MIDI against the emulated MD as the MIDI peer ("a real Machinedrum"): the desk has
@@ -2917,7 +3064,7 @@ namespace
 		rig.page(R"({"op":"play","id":2})");
 		// the middle of each pass (step 3) and its last step (7): the RAM byte has queued the next row by then
 		// (two steps early), the page is still told the row heard
-		std::vector<int> rows, patterns, lateRows;
+		std::vector<int> rows, patterns, lateRows, repeats, lateRepeats;
 		int lastStep = -1;
 		for(int i = 0; i < 4000 && rows.size() < 10; ++i)
 		{
@@ -2926,10 +3073,14 @@ namespace
 			if(t.playing && t.step == 3 && lastStep != 3)
 			{
 				rows.push_back(t.songRow);
+				repeats.push_back(t.songRepeats);
 				patterns.push_back(m.read8(0x28d205));
 			}
 			if(t.playing && t.step == 7 && lastStep != 7 && !rows.empty())
+			{
 				lateRows.push_back(t.songRow);
+				lateRepeats.push_back(t.songRepeats);
+			}
 			lastStep = t.step;
 		}
 		bool late = !lateRows.empty();
@@ -2946,6 +3097,31 @@ namespace
 		std::printf("  rows (one-based) at each pass, with the pattern that plays:%s\n", seen.c_str());
 		check(match, "the row the page is told is the row whose pattern plays, at every pass");
 		check(rows == std::vector<int>{0, 1, 1, 2, 1, 1, 2, 1, 1, 2}, "the rows go 1 2 2 3, then round the loop (LOOP to row 2) 2 2 3 2 2 3 2");
+		// MD-147: the passes of the row still to come, as the page is told them (row 2 plays twice: 1, then 0)
+		std::string reps;
+		for(size_t k = 0; k < repeats.size(); ++k)
+			reps += " " + std::to_string(repeats[k]) + "/" + std::to_string(k < lateRepeats.size() ? lateRepeats[k] : -9);
+		std::printf("  passes still to come at step 4 / step 8 of each pass:%s\n", reps.c_str());
+		check(repeats == std::vector<int>{0, 1, 0, 0, 1, 0, 0, 1, 0, 0} && std::equal(lateRepeats.begin(), lateRepeats.end(), repeats.begin()),
+			"the page is told the passes of the row still to come: row 2 (REPEATS 1) 1 then 0, the others 0, the same at the pass's last step");
+		// B-072: the Song page's keys send the mode on every click; SONG again while the song plays is no restart
+		{
+			rig.page(R"({"op":"seqMode","song":true,"id":10})");
+			std::vector<int> again;
+			lastStep = -1;
+			for(int i = 0; i < 2000 && again.size() < 4; ++i)
+			{
+				rig.run(5);
+				const auto t = rig.pageTelemetry();
+				if(t.playing && t.step == 3 && lastStep != 3)
+					again.push_back(t.songRow);
+				lastStep = t.step;
+			}
+			std::string seenAgain;
+			for(const auto r : again) seenAgain += " " + std::to_string(r + 1);
+			check(again.size() == 4 && std::none_of(again.begin(), again.end(), [](const int _r) { return _r == 0; }) && rig.pageTelemetry().playing,
+				"SONG sent again while the song plays: it plays on round the loop, not from row 1 (rows" + seenAgain + ")");
+		}
 		rig.page(R"({"op":"stop","id":3})");
 		rig.run(600);
 		check(!rig.pageTelemetry().playing, "STOP: the page is told the machine stopped (no row is marked then)");
@@ -4351,6 +4527,7 @@ int main(const int _argc, char** _argv)
 			chaining(rig);
 			recLockTruth(rig);
 			library(rig);
+			extendPattern(rig);
 			globalSettings(rig);
 			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 			std::printf("mdDeskFirmwareTest p4: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);

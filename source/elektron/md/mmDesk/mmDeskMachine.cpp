@@ -260,13 +260,23 @@ namespace mmDesk
 			m_lastStatusMs = _now;
 			requestStatus();
 		}
-		// a slot to make active goes before the SYSEX RECV macro may start (its cursor goes to that slot, B-067)
-		if(m_activateGlobal >= 0 && (m_profile.wire || m_recv.state() == RecvSession::State::Idle))
+		// B-071: two 0x56 that go at different times. A slot the person chose goes before the SYSEX RECV macro may
+		// start (its cursor goes to that slot, B-067); the active global made active again to apply a dump of it goes
+		// after the macro, once RECV is left: sent before, while that dump still waits for the macro, the machine
+		// applies the old contents and then only stores the new ones (mmDeskFirmwareTest span, base 13 span 6).
+		const bool recvIdle = m_profile.wire || m_recv.state() == RecvSession::State::Idle;
+		if(m_chooseGlobal >= 0 && recvIdle)
+		{
+			sendActiveGlobal(m_chooseGlobal);
+			m_chooseGlobal = -1;
+		}
+		pumpRecv(_now);
+		// and not while a dump still waits for the macro (telemetry not valid yet: the session stays Idle with it)
+		if(m_activateGlobal >= 0 && (m_profile.wire || (m_recv.state() == RecvSession::State::Idle && m_recv.queued() == 0)))
 		{
 			sendActiveGlobal(m_activateGlobal);
 			m_activateGlobal = -1;
 		}
-		pumpRecv(_now);
 		pumpTranspose(_view);
 		pumpTransport(_now);
 		pumpAfterAccept(_now, _view);
@@ -316,6 +326,8 @@ namespace mmDesk
 		t.set("stepAt", cursor >= 0 ? Value(cursor) : Value());
 		const int row = m_songRow.update(m_tel.songRow, m_tel.step, m_playing);
 		t.set("songRow", row >= 0 ? Value(row) : Value());
+		// MM-271: the song's played steps, the EDIT SONG header's bars and beats (while a song plays)
+		t.set("songSteps", row >= 0 && m_tel.songSteps >= 0 ? Value(m_tel.songSteps) : Value());
 		publishTelemetry(std::move(t));
 	}
 

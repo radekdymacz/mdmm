@@ -24,7 +24,7 @@ const SONG_PICKS=[["pattern","Pattern"],["chain","Chain"],["song","Song"]];
 function songModeSync(){const sm=!!S.plays.songMode,ch=!!S.plays.chain?.active;
  if(!SONG_PICKS.some(([k])=>k===S.songPick))S.songPick=sm?"song":ch?"chain":"pattern";
  if(S.songModeSeen!==sm){S.songModeSeen=sm;if(sm)S.songPick="song";else if(S.songPick==="song")S.songPick=ch?"chain":"pattern"}}
-function songPickSet(v){S.songPick=v;const want=v==="song";if(!!S.plays.songMode!==want)seqMode(want);render()}
+function songPickSet(v){S.songPick=v;seqMode(v==="song");render()}/* B-072: every key sends the mode (a key pressed before the machine's answer to the one before was in S.plays sent nothing) */
 S.plays={chain:null,songMode:false,song:0};
 const nn2=i=>String(i+1).padStart(2,"0");
 /* what the machine plays: in song mode the song (the Monomachine keeps a chain there but plays the song,
@@ -70,7 +70,11 @@ function playsText(){const plays=playsOf();if(plays.kind!=="song")return plays.l
 function songLcd(){const p=$("#pat"),f=p?.closest(".patf"),lab=f?.querySelector("small");if(!p)return;const song=!!S.plays.songMode,row=songRowNow();
  if(lab)lab.textContent=song?"Song":"Pattern";if(song)p.textContent=nn2(S.plays.song??0)+(row>=0?"·"+nn3(row):"");f?.classList.toggle("songlcd",song)}
 /* the arrangement's header and frame: the mode and the transport apart (PLAYING only while the song really plays) */
-function arrState(){return S.plays.songMode?(S.playing?"Playing":"Song mode · stopped"):"Pattern mode · song not playing"}
+/* MM-271: the song's bars and beats played, as the EDIT SONG header counts them (telemetry songSteps: bar steps / 16 + 1,
+   beat steps % 16 / 4 + 1) */
+S.songSteps=-1;
+const songPlayed=()=>S.plays.songMode&&S.playing&&S.songSteps>=0?String((S.songSteps>>4)+1).padStart(3,"0")+":"+String(((S.songSteps&15)>>2)+1).padStart(2,"0"):"";
+function arrState(){return S.plays.songMode?(S.playing?"Playing"+(songPlayed()?" · "+songPlayed():""):"Song mode · stopped"):"Pattern mode · song not playing"}
 function markSongRow(force){const st=document.getElementById("arrstate");if(st&&st.textContent!==arrState())st.textContent=arrState();
  document.querySelector(".songui")?.classList.toggle("songplaying",!!S.plays.songMode&&S.playing);
  const row=songRowNow();if(row===songRowShown&&!force)return;songRowShown=row;songLcd();

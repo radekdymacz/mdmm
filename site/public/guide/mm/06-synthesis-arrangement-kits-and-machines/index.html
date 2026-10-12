@@ -58,7 +58,8 @@
 <li><a href="/guide/mm/20-early-startup-menu-technical-information/">20. Early startup menu, technical information</a></li>
 <li><span class="gd-side-todo">21. Appendix A: machine reference <span class="gd-vh">(to come)</span></span></li>
 <li><span class="gd-side-todo">22. Appendix B: MIDI control reference <span class="gd-vh">(to come)</span></span></li>
-<li><span class="gd-side-todo">23. Appendix C: SysEx reference <span class="gd-vh">(to come)</span></span></li></ol>
+<li><span class="gd-side-todo">23. Appendix C: SysEx reference <span class="gd-vh">(to come)</span></span></li>
+<li><a href="/guide/mm/24-beyond-the-hardware/">24. Beyond the hardware</a></li></ol>
 <ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
 </nav>
 <article class="gd-article">
@@ -83,7 +84,9 @@
 <p>Every pattern recalls a kit. When you pick a pattern, the machine loads its kit, unless the kit is already the one that plays.</p>
 <p>The pattern chooser shows, on each pattern, its length and its kit as K and a number. The kit library shows on each kit slot the patterns that link to it. A kit no pattern links to ends its name with a star and reads &quot;no pattern&quot;.</p>
 <p>If you pick a pattern with a different kit while the current kit has edits that are not saved, the editor asks. It offers <b class="gd-ui">Save kit, then switch</b>, a switch that leaves the edits to the machine's UNDO KIT, and <b class="gd-ui">Cancel</b>.</p>
-<p>Loading a kit from the library makes it the kit of the current pattern. You cannot set the kit of another pattern directly.</p>
+<p>Loading a kit from the library makes it the kit of the current pattern. To set the kit of any pattern:</p>
+<ol class="gd-steps"><li>Click the <b class="gd-light">&lt;PATTERN&gt;</b> field in the LCD. The pattern chooser opens.</li><li>Hold <kbd class="gd-key">[⌥]</kbd> and click the pattern. It is selected, not loaded.</li><li>Choose a kit in the <b class="gd-ui">Kit</b> list. The pattern now recalls that kit.</li></ol>
+<p>If the pattern plays, the machine loads the new kit at once. When the kit that plays has unsaved edits, the editor asks first. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take the change back.</p>
 </div></section>
 <section class="gd-sec" id="loading-a-kit" aria-labelledby="loading-a-kit-h">
 <div class="gd-body gd-prose"><h2 id="loading-a-kit-h">LOADING A KIT <a class="gd-anchor" href="#loading-a-kit" aria-label="Link to LOADING A KIT">#</a></h2>
@@ -106,7 +109,10 @@
 <div class="gd-body gd-prose"><h2 id="undo-kit-h">UNDO KIT <a class="gd-anchor" href="#undo-kit" aria-label="Link to UNDO KIT">#</a></h2>
 <p class="gd-ref">MM manual p.1-20</p>
 <p>The machine keeps one extra kit, the UNDO KIT, as the first entry of its kit list. It holds the kit lost to the last load or overwrite without saving. The dialogs of the editor name it when an action puts a kit there. The editor's own undo, <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd>, works on top of it.</p>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> You cannot open the UNDO KIT slot from the editor yet.</p>
+<p>To load it:</p>
+<ol class="gd-steps"><li>Open the kit library: click the <b class="gd-ui">KIT</b> field on the LCD.</li><li>Click <b class="gd-ui">UNDO KIT</b>. The lost kit plays again, with its unsaved edits, and the slot it came from becomes the current kit.</li><li>Click <b class="gd-ui">Save</b> to keep it.</li></ol>
+<p>If the current kit has unsaved edits, the editor asks first: the machine does not keep them when it loads the UNDO KIT.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The editor presses the machine's own keys (KIT, LOAD, the first entry of the list). There is no MIDI message for the UNDO KIT, so with a real Monomachine over MIDI the button is off: use the machine's kit list.</p></aside>
 </div></section>
 <section class="gd-sec" id="copy-kit" aria-labelledby="copy-kit-h">
 <div class="gd-body gd-prose"><h2 id="copy-kit-h">COPY KIT <a class="gd-anchor" href="#copy-kit" aria-label="Link to COPY KIT">#</a></h2>

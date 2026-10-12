@@ -180,6 +180,12 @@ namespace md
 			m_midiTransmitTap = std::move(_tap);
 		}
 		std::vector<uint8_t> copyPatchRam() const;
+		// I-024: the same into _out, reusing its capacity (the machine memory's look, under the plug-in's lock)
+		void copyPatchRamTo(std::vector<uint8_t>& _out) const;
+		// I-024: a part of it (the machine memory's look copies in chunks); false when out of range
+		bool copyPatchRamRange(uint8_t* _out, size_t _offset, size_t _size) const;
+		// Tests (I-024): a byte of the patch RAM changed as the firmware would
+		void pokePatchRamForTest(size_t _offset, uint8_t _value);
 		bool replacePatchRam(const std::vector<uint8_t>& _data);
 		std::vector<uint8_t> copyFlashData() const;
 		std::vector<uint8_t> copyUserFlash() const;

@@ -19,6 +19,7 @@
 #include "elektronData/mdKit.h"
 #include "elektronData/mdMachines.h"
 #include "elektronData/mdPattern.h"
+#include "elektronData/mdWorkingKit.h"
 #include "elektronData/mdSong.h"
 #include "elektronData/mmCommands.h"
 #include "elektronData/mmGlobal.h"
@@ -30,6 +31,7 @@
 
 #include "mdLib/mdautomation.h"
 #include "mdLib/mdfactorybaseline.h"
+#include "mdLib/mdmemorymap.h"
 #include "mdLib/mdsequencerstate.h"
 #include "mdLib/mmtelemetry.h"
 
@@ -2069,6 +2071,504 @@ namespace
 		}
 	}
 
+
+	// ---- W12a MD: the "clip" between two dependent values on the synthesis page (MD-033) --------------------------------
+	// Every machine on track 1, its synthesis page, the LCD. A clip is a small arch over the dotted line between two
+	// value boxes, above their knobs (manual p.9): three pixels lit on the line's row y0 (x-1..x+1), and on y0+1 the
+	// pixels x-3 and x+3 lit with x itself dark. y0 is 14 for the upper four boxes, 46 for the lower four; the lines are
+	// at x 67, 87, 107. W12_LCD=1 prints each screen that has one.
+
+	void w12clip(const Bytes& _rom)
+	{
+		std::puts("== W12a MD: clips between the synthesis page's value boxes");
+		Rig r(_rom, false);
+		keySeq(r, "exit,exit");
+		const auto clips = [&] {
+			const auto p = r->hardware().getFrontPanelSnapshot();
+			const auto at = [&](const int _x, const int _y) { return p.getLcdPixel(static_cast<uint32_t>(_x), static_cast<uint32_t>(_y)); };
+			std::string where;
+			for(const int row : {0, 1})
+				for(const int gap : {0, 1, 2})
+				{
+					const int x = 67 + 20 * gap, y = row ? 46 : 14;
+					if(at(x - 1, y) && at(x, y) && at(x + 1, y) && at(x - 3, y + 1) && at(x + 3, y + 1) && !at(x, y + 1))
+						where += " " + std::to_string(row * 4 + gap + 1) + "-" + std::to_string(row * 4 + gap + 2);
+				}
+			return where;
+		};
+		std::string found;
+		for(uint32_t model = 0; model < 256; ++model)
+		{
+			const auto name = ed::mdMachineName(model);
+			if(name.empty())
+				continue;
+			r->send(ed::mdAssignMachine(0, model, ed::MdMachineInit::SynthesisEffectsRouting));
+			r.run(400);
+			keySeq(r, "exit");
+			r.run(200);
+			const auto names = ed::mdMachineParamNames(model);
+			uint32_t measured = 0;
+			for(int page = 0; page < 3; ++page)
+			{
+				if(page)
+					keySeq(r, "routing");
+				if(const char* snap = std::getenv("W12_SNAP_MACHINE"); snap && name == snap)
+					keySeq(r, std::string("snap:") + std::getenv("W12_SNAP_DIR") + "/" + std::to_string(page) + ".pgm");
+				const auto where = clips();
+				if(where.empty())
+					continue;
+				std::string pairs;
+				for(size_t i = 1; i < where.size(); i += 4)
+				{
+					const int k = page * 8 + where[i] - '1';
+					measured |= 1u << k;
+					pairs += std::string(" ") + (names[k] ? names[k] : "?") + "/" + (names[k + 1] ? names[k + 1] : "?");
+				}
+				static const char* pageNames[3] = {"synthesis", "effects", "routing"};
+				std::printf("  %-9s %-9s clip between knobs%s:%s\n", name.c_str(), pageNames[page], where.c_str(), pairs.c_str());
+				found += name + "/" + pageNames[page] + ":" + where + ";";
+				if(std::getenv("W12_LCD"))
+					printLcd(r, name.c_str());
+			}
+			keySeq(r, "routing");
+			check(measured == ed::mdMachineClips(model), name + ": the clips as elektronData::mdMachineClips lists them");
+		}
+		result("W12a clip", found.empty() ? "no machine draws a clip" : found);
+	}
+
+	// ---- W12b MD + MM: where the UNDO KIT lives and how to load it (MD-043, MM-102) --------------------------------------
+	// The working kit gets a name the slots do not hold, another kit is loaded (LOAD KIT): the firmware keeps the edited
+	// kit as its UNDO KIT. Where are its bytes (patch RAM and main RAM searched for the name), and does a LOAD KIT of a
+	// slot past the last (64..127) load it?
+
+	void w12undo(const Bytes& _rom, const bool _mm)
+	{
+		std::printf("== W12b %s: the UNDO KIT\n", _mm ? "MM" : "MD");
+		Rig r(_rom, _mm);
+		const uint32_t wk = _mm ? ed::g_mmWorkingKitAddress : ed::g_mdWorkingKitAddress;
+		const auto name = [&](const uint32_t _at) { std::string n; for(uint32_t i = 0; i < 11; ++i) { const auto c = r->read8(_at + i); n += c >= 32 && c < 127 ? static_cast<char>(c) : '.'; } return n; };
+		const auto setName = [&](const std::string& _n) { r->send(_mm ? ed::mmSetKitName(_n) : ed::mdSetKitName(_n)); r.run(300); };
+		const auto loadKit = [&](const uint8_t _k) { r->send(_mm ? ed::mmLoadKit(_k) : ed::mdLoadKit(_k)); r.run(500); };
+		const auto find = [&](const std::string& _n) {
+			std::string at;
+			for(const auto range : {md::memorymap::g_patchOsAlias, md::memorymap::g_mainRam})
+				for(uint32_t a = range.begin; a + _n.size() < range.end; ++a)
+				{
+					bool same = true;
+					for(size_t i = 0; i < _n.size() && same; ++i)
+						same = r->read8(a + static_cast<uint32_t>(i)) == static_cast<uint8_t>(_n[i]);
+					if(same)
+					{
+						char x[16];
+						std::snprintf(x, sizeof x, " 0x%06x", a);
+						at += x;
+					}
+				}
+			return at.empty() ? std::string(" nowhere") : at;
+		};
+		const int k0 = r.status(0x02);
+		std::printf("  kit %d, working kit name '%s'\n", k0, name(wk).c_str());
+		setName("UNDOTESTA");
+		std::printf("  renamed live: working kit name '%s'; UNDOTESTA at%s\n", name(wk).c_str(), find("UNDOTESTA").c_str());
+		const uint8_t k1 = static_cast<uint8_t>((k0 + 1) % 64);
+		loadKit(k1);
+		std::printf("  LOAD KIT %d: kit %d, working kit '%s'; UNDOTESTA at%s\n", k1, r.status(0x02), name(wk).c_str(), find("UNDOTESTA").c_str());
+		std::string line = "after LOAD KIT the edited kit is at" + find("UNDOTESTA");
+		for(const int k : {64, 65, 100, 127})
+		{
+			loadKit(static_cast<uint8_t>(k));
+			std::printf("  LOAD KIT %d: kit %d, working kit '%s'\n", k, r.status(0x02), name(wk).c_str());
+			line += "; LOAD KIT " + std::to_string(k) + " -> kit " + std::to_string(r.status(0x02)) + " '" + name(wk) + "'";
+		}
+		// SAVE KIT over another slot: the overwritten kit goes to the UNDO KIT (manual)
+		setName("UNDOTESTB");
+		r->send(_mm ? ed::mmSaveKit(k0) : ed::mdSaveKit(k0));
+		r.run(800);
+		std::printf("  SAVE KIT %d (renamed UNDOTESTB first): UNDOTESTA at%s, UNDOTESTB at%s\n", k0, find("UNDOTESTA").c_str(), find("UNDOTESTB").c_str());
+		// The machine's own route: LOAD KIT list, its first entry (UNDO KIT), ENTER
+		const uint32_t undoAt = wk + static_cast<uint32_t>(_mm ? 698 : ed::g_mdWorkingKitSize);
+		loadKit(k1);
+		setName("UNDOTESTC");
+		loadKit(static_cast<uint8_t>((k1 + 1) % 64));
+		std::printf("  kit %d plays '%s', UNDO KIT image (0x%06x) '%s'\n", r.status(0x02), name(wk).c_str(), undoAt, name(undoAt).c_str());
+		if(_mm)
+			keySeq(r, "kit,enter,up*3,enter");
+		else
+			keySeq(r, "kit,enter,up*3,enter");
+		r.run(500);
+		std::printf("  panel LOAD KIT > UNDO KIT: kit %d plays '%s', UNDO KIT image '%s'\n", r.status(0x02), name(wk).c_str(), name(undoAt).c_str());
+		line += "; panel load of UNDO KIT: kit " + std::to_string(r.status(0x02)) + " plays '" + name(wk) + "', undo image now '" + name(undoAt) + "'";
+		// the kit that plays has unsaved edits when the UNDO KIT is loaded: where do they go?
+		setName("UNDOTESTD");
+		keySeq(r, "kit,enter,up*" + std::to_string(r.status(0x02) + 1) + ",enter");
+		r.run(500);
+		std::printf("  edited (UNDOTESTD), then UNDO KIT again: kit %d plays '%s', UNDO KIT image '%s'\n", r.status(0x02), name(wk).c_str(), name(undoAt).c_str());
+		line += "; with unsaved edits (UNDOTESTD) UNDO KIT again: kit " + std::to_string(r.status(0x02)) + " plays '" + name(wk) + "', undo image '" + name(undoAt) + "'";
+		result(_mm ? "W12b MM undo kit" : "W12b MD undo kit", line);
+		if(std::getenv("W12_LCD"))
+			printLcd(r, "end");
+	}
+
+	// ---- W12c MD + MM: what the machine's CLEAR KIT leaves in a slot (MD-045) -------------------------------------------
+	// LOAD KIT list, a slot that is not the current kit, FUNCTION + PLAY (CLEAR KIT), EXIT; the slot read back. Two
+	// slots with different kits, so what depends on the old kit shows.
+
+	void w12clearkit(const Bytes& _rom)
+	{
+		std::puts("== W12c MD: CLEAR KIT");
+		Rig r(_rom, false);
+		const auto readKit = [&](const uint8_t _k) { return *ed::decodeMdKit(r.dump(0x52, _k)); };
+		const auto show = [&](const ed::MdKit& _k, const char* _what) {
+			std::printf("  %s: name '", _what);
+			for(const auto c : _k.name) std::printf("%c", c >= 32 && c < 127 ? c : '.');
+			std::printf("' version %d revision %d; name bytes", _k.version, _k.revision);
+			for(const auto c : _k.name) std::printf(" %02x", c);
+			std::printf("\n");
+			for(size_t t = 0; t < 16; ++t)
+			{
+				std::printf("    T%-2zu model %3u level %3d trig %3d mute %3d lfo %d/%d/%d/%d/%d params", t + 1, _k.models[t], _k.levels[t], _k.trigGroups[t],
+					_k.muteGroups[t], _k.lfos[t].track, _k.lfos[t].param, _k.lfos[t].shape1, _k.lfos[t].shape2, _k.lfos[t].update);
+				for(const auto v : _k.params[t]) std::printf(" %d", v);
+				std::printf("\n");
+				if(t > 1 && std::getenv("W12_ALL") == nullptr) { std::printf("    ...\n"); break; }
+			}
+			for(size_t f = 0; f < 4; ++f) { std::printf("    master fx %zu:", f); for(const auto v : _k.masterFx[f]) std::printf(" %d", v); std::printf("\n"); }
+			for(size_t t = 0; t < 16; t += 5) { std::printf("    lfo state T%zu:", t + 1); for(const auto v : _k.lfos[t].state) std::printf(" %d", v); std::printf("\n"); }
+		};
+		const int k0 = r.status(0x02);
+		std::printf("  current kit %d\n", k0);
+		std::vector<ed::MdKit> cleared;
+		for(const int down : {3, 5})
+		{
+			const auto slot = static_cast<uint8_t>(k0 + down);
+			const auto before = readKit(slot);
+			show(before, ("slot " + std::to_string(slot) + " before").c_str());
+			keySeq(r, "kit,enter,down*" + std::to_string(down) + ",f+play");
+			r.run(300);
+			if(std::getenv("W12_LCD")) printLcd(r, "after f+play");
+			keySeq(r, "exit,exit");
+			r.run(500);
+			const auto after = readKit(slot);
+			show(after, ("slot " + std::to_string(slot) + " after CLEAR KIT").c_str());
+			check(after == ed::mdClearedKit(before, slot), "slot " + std::to_string(slot) + ": the machine's CLEAR KIT leaves elektronData::mdClearedKit");
+			cleared.push_back(after);
+		}
+		auto a = cleared[0], b = cleared[1];
+		a.position = b.position = 0;
+		const bool same = a == b;
+		bool tracksSame = true, allEmpty = true;
+		for(size_t t = 0; t < 16; ++t)
+		{
+			tracksSame = tracksSame && cleared[0].params[t] == cleared[0].params[0] && cleared[0].levels[t] == cleared[0].levels[0];
+			allEmpty = allEmpty && cleared[0].models[t] == 0;
+		}
+		result("W12c MD clear kit", std::string("two cleared slots ") + (same ? "are the same kit" : "differ") + "; every track " +
+			(allEmpty ? "GND-EMPTY" : "not GND-EMPTY") + (tracksSame ? ", the same values on every track" : ", values differ per track"));
+	}
+
+	// ---- W12d MD + MM: STOP with a pattern cued (MD-099) -----------------------------------------------------------------
+	// A01 plays, A02 is cued (a TRIG key while playing, or SysEx LOAD PATTERN), then STOP: the panel's, or MIDI Stop. Which
+	// pattern is current after it, and which plays on PLAY?
+
+	void w12stop(const Bytes& _rom, const bool _mm)
+	{
+		std::printf("== W12d %s: STOP with a pattern cued\n", _mm ? "MM" : "MD");
+		Rig r(_rom, _mm);
+		const auto pat = [&] { return r.status(0x04); };
+		std::string line;
+		const char* cues[2] = {"TRIG key", "SysEx LOAD PATTERN"};
+		const char* stops[2] = {"panel STOP", "MIDI Stop"};
+		for(int cue = 0; cue < 2; ++cue)
+			for(int stop = 0; stop < 2; ++stop)
+			{
+				halt(r);
+				r.setSongMode(false);
+				r.loadPattern(0);
+				key(r, md::PanelControl::Play);
+				r.run(300);
+				if(cue == 0)
+					key(r, md::PanelControl::Trigger2);
+				else
+					r->send(_mm ? ed::mmLoadPattern(1) : ed::mdLoadPattern(1));
+				r.run(150);
+				const int cued = pat();
+				const int stepBefore = r.step();
+				if(stop == 0)
+					key(r, md::PanelControl::Stop);
+				else
+					r->post({0xfc});
+				r.run(300);
+				const int after = pat();
+				key(r, md::PanelControl::Play);
+				r.run(300);
+				const int plays = pat();
+				const int step = r.step();
+				char b[256];
+				std::snprintf(b, sizeof b, "%s + %s: pattern %d while cued (step %d), %d after STOP, %d after PLAY (step %d)", cues[cue], stops[stop], cued,
+					stepBefore, after, plays, step);
+				std::printf("  %s\n", b);
+				line += std::string(b) + "; ";
+			}
+		halt(r);
+		result(_mm ? "W12d MM stop" : "W12d MD stop", line);
+	}
+
+	// ---- W12e MD: a pattern made longer on the machine copies its first page (MD-106) ------------------------------------
+	// A 16-step pattern with trigs, a lock, accent and swing on page 1 only goes in as a dump; SCALE SETUP (FUNCTION +
+	// SCALE) and UP / DOWN lengthen it; the pattern read back. Again with a trig on page 3 (the manual: the copy happens
+	// only when the later pages are empty), and from 32 steps, and to 48.
+
+	void w12extend(const Bytes& _rom)
+	{
+		std::puts("== W12e MD: lengthening a pattern on the machine");
+		std::unique_ptr<Rig> rig;
+		const auto readPattern = [&](const uint8_t _p) { return *ed::decodeMdPattern(rig->dump(0x67, _p)); };
+		const auto trigsOf = [](const ed::MdPattern& _p, const size_t _t) {
+			std::string s;
+			for(size_t i = 0; i < _p.length; ++i)
+				s += (i && i % 16 == 0 ? "|" : "") + std::string(ed::hasTrig(_p, _t, i) ? "x" : ".");
+			return s;
+		};
+		std::string line;
+		struct Case { const char* what; uint8_t from; const char* keys; bool page3; };
+		for(const Case c : {Case{"LEN 16 scale 16, up (LEN 17)", 16, "up", false}, Case{"scale 16 -> 32 (right, up)", 16, "right,up", false},
+				Case{"scale 16 -> 64 (right, up*3)", 16, "right,up*3", false}, Case{"scale 16 -> 64 with a trig on page 3", 16, "right,up*3", true},
+				Case{"scale 32 -> 64 (right, up*2)", 32, "right,up*2", false}, Case{"scale 16 -> 48 (right, up*2)", 16, "right,up*2", false},
+				Case{"LEN 16 scale 64 -> LEN 64 (up*48)", 16, "up*48", false},
+				Case{"scale 16 -> 32 with a trig on page 2", 16, "right,up", true}, Case{"scale 32 LEN 20 -> scale 64", 20, "right,up*2", false},
+				Case{"scale 16 -> 32 with a trig on page 3 (step 41, past the new length)", 16, "right,up", true}})
+		{
+			rig = std::make_unique<Rig>(_rom, false);
+			auto& r = *rig;
+			auto p = readPattern(0);
+			p.length = c.from;
+			const bool wide = std::string(c.what).find("scale 64 ->") != std::string::npos;
+			p.scale = wide ? 3 : c.from == 20 ? 1 : static_cast<uint8_t>(c.from / 16 - 1);
+			p.trigs.fill(0);
+			p.lockMasks.fill(0);
+			for(auto& row : p.lockRows) row.fill(0xff);
+			p.accentPattern = p.slidePattern = p.swingPattern = 0;
+			p.trackAccent.fill(0); p.trackSlide.fill(0); p.trackSwing.fill(0);
+			p.lockedRows = 0;
+			for(const size_t i : {0, 4, 8, 13})
+				p = ed::withTrig(p, 0, i, true);
+			p = ed::withTrig(p, 1, 2, true);
+			if(c.from > 16)
+				p = ed::withTrig(p, 1, 20, true);
+			if(c.page3)
+				p = ed::withTrig(p, 2, std::string(c.what).find("page 2") != std::string::npos ? 20 : 40, true);
+			p.accentPattern = 1ull << 4;
+			p.swingPattern = 1ull << 8;
+			if(const auto l = ed::withLock(p, 0, 0, 4, 99))
+				p = *l;
+			p.position = 0;
+			r->send(ed::encodeMdPattern(p));
+			r.run(500);
+			r.loadPattern(0);
+			const auto before = readPattern(0);
+			keySeq(r, "f+scale");
+			keySeq(r, std::string("left*3,") + c.keys);
+			keySeq(r, "exit");
+			r.run(400);
+			const auto after = readPattern(0);
+			const auto lock = ed::lockValue(after, 0, 0, 36);
+			const auto lock2 = ed::lockValue(after, 0, 0, 20);
+			char b[600];
+			std::snprintf(b, sizeof b, "%s: length %d/%d -> %d/%d; T1 %s; T2 %s; T3 %s; accent %016llx swing %016llx; lock T1 PTCH step 21 %d, step 37 %d",
+				c.what, before.length, before.scale, after.length, after.scale, trigsOf(after, 0).c_str(), trigsOf(after, 1).c_str(), trigsOf(after, 2).c_str(),
+				static_cast<unsigned long long>(after.accentPattern), static_cast<unsigned long long>(after.swingPattern), lock2 ? *lock2 : -1, lock ? *lock : -1);
+			std::printf("  %s\n", b);
+			line += std::string(b) + "; ";
+		}
+		result("W12e MD extend", line);
+	}
+
+	// ---- W12f MD: where the firmware counts a song row's repeats (MD-147) -------------------------------------------------
+	// Song 8: row 0 = A02 (8 steps) x4 (REPEATS 3), row 1 = A03 x3 (REPEATS 2), END. SONG mode, PLAY; main RAM snapshot in
+	// the middle of every pass (step 4); the bytes that count the passes of a row (up or down by one a pass, again for the
+	// next row).
+
+	void w12repeats(const Bytes& _rom)
+	{
+		std::puts("== W12f MD: the song row's repeat counter");
+		Rig r(_rom, false);
+		mdSetupSong(r);
+		ed::MdSong song;
+		song.position = 7;
+		song.rows.clear();
+		for(const auto [pat, reps] : {std::pair<uint8_t, uint8_t>{1, 3}, {2, 2}})
+		{
+			ed::MdSongRow row;
+			row.pattern = pat;
+			row.repeats = reps;
+			row.start = 0;
+			row.end = 8;
+			song.rows.push_back(row);
+		}
+		ed::MdSongRow end;
+		end.pattern = ed::MdSongRow::g_endRow;
+		song.rows.push_back(end);
+		r->send(ed::encodeMdSong(song));
+		r.run(300);
+		r.loadSong(7);
+		r.setSongMode(true);
+		key(r, md::PanelControl::Play);
+		std::vector<Bytes> snaps;
+		std::vector<int> rows;
+		int last = -1;
+		for(int i = 0; i < 4000 && snaps.size() < 7; ++i)
+		{
+			r.run(5);
+			const int st = r.step();
+			if(st == 4 && last != 4)
+			{
+				snaps.push_back(r->snapshotRam());
+				rows.push_back(r.row());
+			}
+			last = st;
+		}
+		halt(r);
+		std::string rowLine;
+		for(const auto x : rows)
+			rowLine += std::to_string(x) + " ";
+		std::printf("  rows at the passes: %s\n", rowLine.c_str());
+		std::string found;
+		if(snaps.size() == 7)
+			for(size_t a = 0; a < snaps[0].size(); ++a)
+			{
+				int v[7];
+				for(size_t k = 0; k < 7; ++k)
+					v[k] = snaps[k][a];
+				const auto counts = [&](const size_t _from, const size_t _n, const int _dir) {
+					for(size_t k = _from + 1; k < _from + _n; ++k)
+						if(v[k] != v[k - 1] + _dir)
+							return false;
+					return true;
+				};
+				for(const int dir : {-1, 1})
+					if(counts(0, 4, dir) && counts(4, 3, dir))
+					{
+						char x[160];
+						std::snprintf(x, sizeof x, " 0x%06zx (%s: %d %d %d %d | %d %d %d)", 0x200000 + a, dir < 0 ? "down" : "up", v[0], v[1], v[2], v[3], v[4], v[5], v[6]);
+						std::printf("  candidate%s\n", x);
+						found += x;
+					}
+			}
+		result("W12f MD repeats", "rows " + rowLine + "; counters:" + (found.empty() ? std::string(" none") : found));
+	}
+
+	// ---- W12g MM: the kit a pattern uses (MM-095) ---------------------------------------------------------------------------
+	// Pattern 2 (not playing) and pattern 1 (the current one) get kit 4 by a dump (SYSEX RECV); which kit plays after each,
+	// and after LOAD PATTERN of each? Stopped and playing.
+
+	void w12patkit(const Bytes& _rom)
+	{
+		std::puts("== W12g MM: a pattern's kit");
+		Rig r(_rom, true);
+		std::string line;
+		const auto setKit = [&](const uint8_t _p, const uint8_t _k) {
+			auto p = *ed::decodeMmPattern(r.dump(0x67, _p));
+			p.kit = _k;
+			mmSendDumps(r, {ed::encodeMmPattern(p)});
+			r.run(500);
+			return static_cast<int>(ed::decodeMmPattern(r.dump(0x67, _p))->kit);
+		};
+		const auto say = [&](const std::string& _what) {
+			char b[200];
+			std::snprintf(b, sizeof b, "%s: pattern %d, kit %d", _what.c_str(), r.status(0x04), r.status(0x02));
+			std::printf("  %s\n", b);
+			line += std::string(b) + "; ";
+		};
+		r.loadPattern(0);
+		r->send(ed::mmLoadKit(0));
+		r.run(400);
+		say("start");
+		for(const bool playing : {false, true})
+		{
+			const std::string w = playing ? " (playing)" : " (stopped)";
+			if(playing)
+				key(r, md::PanelControl::Play);
+			std::printf("  pattern 2 kit set to 5 by a dump: read back %d\n", setKit(1, 5));
+			say("after the dump into another pattern" + w);
+			std::printf("  pattern 1 kit set to 4 by a dump: read back %d\n", setKit(0, 4));
+			say("after the dump into the current pattern" + w);
+			r.loadPattern(1);
+			r.run(playing ? 2500 : 300);
+			say("after LOAD PATTERN 2" + w);
+			r.loadPattern(0);
+			r.run(playing ? 2500 : 300);
+			say("after LOAD PATTERN 1" + w);
+			if(playing)
+				halt(r);
+			setKit(0, 0);
+			setKit(1, 1);
+			r.loadPattern(0);
+			r->send(ed::mmLoadKit(0));
+			r.run(400);
+		}
+		result("W12g MM pattern kit", line);
+	}
+
+	// ---- W12h MM: the song's bars and beats (MM-271) --------------------------------------------------------------------------
+	// Song 6 (rows of 8 steps = 2 beats): SONG mode, PLAY; main RAM in the middle of every row (step 4); the bytes and
+	// 16-bit words that grow by the same amount every row.
+
+	void w12mmcounter(const Bytes& _rom)
+	{
+		std::puts("== W12h MM: the song's played bars and beats");
+		Rig r(_rom, true);
+		mmSetupSong(r);
+		r.loadSong(5);
+		r.setSongMode(true);
+		key(r, md::PanelControl::Play);
+		std::vector<Bytes> snaps;
+		std::vector<int> rows;
+		int last = -1;
+		for(int i = 0; i < 4000 && snaps.size() < (std::getenv("W12_KEYS") ? 3u : 5u); ++i)
+		{
+			r.run(5);
+			const int st = r.step();
+			if(st == 4 && last != 4)
+			{
+				snaps.push_back(r->snapshotRam());
+				rows.push_back(r.row());
+			}
+			last = st;
+		}
+		if(const char* keys = std::getenv("W12_KEYS"))
+		{
+			keySeq(r, keys);
+			std::printf("  after the keys: song steps (0x2bdf3c) %d\n", (r->read8(0x2bdf3c) << 8) | r->read8(0x2bdf3d));
+		}
+		halt(r);
+		std::string rowLine;
+		for(const auto x : rows)
+			rowLine += std::to_string(x) + " ";
+		std::printf("  rows at the samples: %s\n", rowLine.c_str());
+		std::string found;
+		if(snaps.size() == 5)
+			for(size_t a = 0; a + 1 < snaps[0].size(); ++a)
+				for(const int width : {1, 2})
+				{
+					int v[5];
+					for(size_t k = 0; k < 5; ++k)
+						v[k] = width == 1 ? snaps[k][a] : (snaps[k][a] << 8) | snaps[k][a + 1];
+					const int d = v[1] - v[0];
+					if(d <= 0 || d > 64)
+						continue;
+					bool same = true;
+					for(size_t k = 2; k < 5 && same; ++k)
+						same = v[k] - v[k - 1] == d;
+					if(!same)
+						continue;
+					char x[160];
+					std::snprintf(x, sizeof x, " 0x%06zx/%d (+%d: %d %d %d %d %d)", 0x200000 + a, width, d, v[0], v[1], v[2], v[3], v[4]);
+					std::printf("  candidate%s\n", x);
+					found += x;
+				}
+		result("W12h MM counter", "rows " + rowLine + "; growing:" + (found.empty() ? std::string(" none") : found));
+	}
+
 	// ---- explore ------------------------------------------------------------------------------------------------------
 
 	void explore(const Bytes& _rom, const bool _mm, const std::string& _keys)
@@ -2126,6 +2626,26 @@ int main(const int _argc, char** _argv)
 			explore(mm ? mmRom : mdRom, mm, _argv[5]);
 			return 0;
 		}
+		if(!mdRom.empty() && only == "w12undo")
+			w12undo(mdRom, false);
+		if(!mmRom.empty() && only == "w12undo")
+			w12undo(mmRom, true);
+		if(!mdRom.empty() && only == "w12clearkit")
+			w12clearkit(mdRom);
+		if(!mdRom.empty() && only == "w12stop")
+			w12stop(mdRom, false);
+		if(!mmRom.empty() && only == "w12stop")
+			w12stop(mmRom, true);
+		if(!mdRom.empty() && only == "w12extend")
+			w12extend(mdRom);
+		if(!mdRom.empty() && only == "w12repeats")
+			w12repeats(mdRom);
+		if(!mmRom.empty() && only == "w12patkit")
+			w12patkit(mmRom);
+		if(!mmRom.empty() && only == "w12mmcounter")
+			w12mmcounter(mmRom);
+		if(!mdRom.empty() && only == "w12clip")
+			w12clip(mdRom);
 		if(!mdRom.empty() && want("p3"))
 			p3(mdRom);
 		if(!mmRom.empty() && (want("p2") || only == "p2panel"))

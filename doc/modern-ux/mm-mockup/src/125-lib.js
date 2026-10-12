@@ -48,8 +48,10 @@ const KTIP={
  clear:"There is no SysEx CLEAR KIT. The editor sends a kit dump with the empty kit: six GND-SIN machines and default pages, as the machine's own empty kit (1-19). Goes through SYSEX RECV",
  rename:"Current kit: SysEx 0x55 sets the working kit's name (11 ASCII bytes); SAVE stores it. Other slots: dump request, new name, dump back through SYSEX RECV. Which characters the MM font draws is not checked",
  reload:"LOAD KIT on the current slot (0x58): the edits are discarded. The machine keeps them in its UNDO KIT",
+ undo:"The machine's UNDO KIT, the first entry of its kit list: the kit lost to the last LOAD KIT or overwrite (1-20). The editor opens KIT > LOAD KIT > UNDO KIT with the machine's keys: that kit plays again, unsaved, and the slot it came from becomes the current kit (measured). Unsaved edits of the kit that plays are lost",
  drag:"Drag onto another slot to copy it: dump request, then a dump into the target (through SYSEX RECV)"};
 const PTIP={
+ kit:"The kit this pattern plays (its link, 1-18). A pattern dump carries it; over the pattern that plays the machine loads that kit at once (measured), and asks first when the kit that plays has unsaved edits",
  go:"LOAD PATTERN (SysEx 0x57). While playing, the machine switches at the pattern end (1-45); the editor keeps the queue itself. The pattern also loads its kit (1-18)",
  now:"Switch now (Shift+click). Stopped: the same as a click. Playing: the machine only switches at the pattern end, so the editor would send STOP, LOAD PATTERN, PLAY (not tested)",
  copy:"Pattern dump request (0x68). Copies notes, locks, MIDI notes, arp / transpose / swing / slide and the kit link, like the machine's COPY PATTERN (1-53)",
@@ -63,12 +65,12 @@ function kitSlot(k){const cur=k===S.kit,st=S.kits[k],empty=st.empty&&!cur,name=k
  return`<button class="ls ks${empty?" empty":""}${cur?" cur":""}${ed?" edited":""}" data-ks="${k}" draggable="${LIB.renaming===k?"false":"true"}" aria-selected="${k===LIB.sel}" title="${escH(tip)}"><span class="lsh"><b>K${nn(k)}</b>${cur?`<em><i class="led${ed?" on":""}"></i>${ed?"ed":"ok"}</em>`:""}</span><span class="lsn">${nm}</span><span class="lsl">${links}</span></button>`}
 function drawKitLib(){const k=LIB.sel,cur=S.kit,ed=S.kitState==="edited",empty=S.kits[k].empty&&k!==cur,dis=c=>c?" disabled":"";
  return`<div class="libhead"><span class="cap">Kit library</span><span class="lcdchip">K${nn(cur)} ${escH(S.workName||"EMPTY")} · ${ed?"edited":"saved"}</span><span class="note">128 slots. Every pattern recalls its kit. Writes go through SYSEX RECV.</span><button class="libx" data-la="close" title="Close (Esc)">Esc</button></div>
- <div class="libacts"><div class="grp"><span class="ilab">Current K${nn(cur)}</span><button data-la="save" title="${KTIP.save}">Save</button><button class="danger" data-la="reload"${dis(!ed)} title="${KTIP.reload}">Reload</button></div>
+ <div class="libacts"><div class="grp"><span class="ilab">Current K${nn(cur)}</span><button data-la="save" title="${KTIP.save}">Save</button><button class="danger" data-la="reload"${dis(!ed)} title="${KTIP.reload}">Reload</button><button data-la="undokit"${NA.panelKeys?` disabled title="${NA.panelKeys}"`:` title="${KTIP.undo}"`}>UNDO KIT</button></div>
   <div class="grp"><span class="ilab">Slot K${nn(k)}</span><button data-la="load"${dis(k===cur&&!ed)} title="${k===cur?"Already the current kit. Enter reloads it when it is edited. ":""}${KTIP.load} (Enter)">Load</button><button data-la="saveas"${dis(k===cur)} title="${k===cur?"This is the current slot: use Save. ":""}${KTIP.saveas}">Save as K${nn(k)}</button>
   <button data-la="copy" title="${KTIP.copy} (Cmd+C)">Copy</button><button data-la="paste"${dis(LCLIP?.type!=="kit")} title="${LCLIP?.type==="kit"?"Paste K"+nn(LCLIP.from)+" "+escH(LCLIP.name)+". ":"Copy a kit first. "}${KTIP.paste} (Cmd+V)">Paste</button>
   <button class="danger" data-la="clear"${dis(empty)} title="${KTIP.clear} (Delete)">Clear</button><button data-la="rename" title="${KTIP.rename} (F2 or double-click)">Rename</button></div></div>
  <div class="libgrid kits" aria-label="128 kit slots">${Array.from({length:128},(_,i)=>kitSlot(i)).join("")}</div>
- <div class="libfoot"><span>Click loads · arrows move, Enter loads · Alt+click selects · F2 or double-click renames · Delete clears · drag a slot onto another to copy · Cmd+Z undoes · Esc closes</span><span class="fw" title="The machine keeps one UNDO KIT as the first entry of its kit list: the kit lost to the last load or overwrite (1-20). The editor's own undo works on top of it.">The machine also keeps an UNDO KIT</span></div>`}
+ <div class="libfoot"><span>Click loads · arrows move, Enter loads · Alt+click selects · F2 or double-click renames · Delete clears · drag a slot onto another to copy · Cmd+Z undoes · Esc closes</span><span class="fw" title="The machine keeps one UNDO KIT as the first entry of its kit list: the kit lost to the last load or overwrite (1-20). UNDO KIT loads it. The editor's own undo works on top of it.">UNDO KIT: the kit lost last</span></div>`}
 function patSlot(p){const cur=p===S.pat,q=p===S.queued&&!cur,has=hasPat(p);
  const tip=`${patName(p)} · ${has?patLen(p)+" steps · kit "+kitName(S.patKit[p]):"empty"}${cur?" · current":""}${q?" · queued: starts at the pattern end":""}. Click queues, Shift+click switches now. Drag onto another slot to copy.`;
  return`<button class="ls ps${has?"":" empty"}${cur?" cur":""}${q?" q":""}" data-ps="${p}" draggable="${has}" aria-selected="${p===LIB.sel}" title="${escH(tip)}"><b>${patName(p)}</b><span>${has?patLen(p)+" · K"+nn(S.patKit[p]):"EMPTY"}</span></button>`}
@@ -76,14 +78,15 @@ function drawPatLib(){const p=LIB.sel,cur=S.pat,dis=c=>c?" disabled":"";
  const rows=[..."ABCDEFGH"].map((b,i)=>`<button class="bank lbank${i===cur>>4?" on":""}" data-lb="${i}" title="Bank ${b} (key ${b})"><i class="led"></i>${b}</button>`+Array.from({length:16},(_,j)=>patSlot(i*16+j)).join("")).join("");
  return`<div class="libhead"><span class="cap">Patterns</span><span class="lcdchip">${patName(cur)} · ${S.len} steps · K${nn(S.patKit[cur])}${S.queued!=null&&S.queued!==cur?" → "+patName(S.queued):""}</span><span class="note">8 banks × 16. ${S.playing?"Playing: a new pattern starts at the pattern end.":"Stopped: a click switches at once."} Factory presets sit in A-D, E-H start empty.</span><button class="libx" data-la="close" title="Close (Esc)">Esc</button></div>
  <div class="libacts"><div class="grp"><span class="ilab">Slot ${patName(p)}</span><button data-la="go"${dis(p===cur&&S.queued==null)} title="${PTIP.go} (Enter)">${S.playing?"Queue":"Go"}</button><button data-la="now"${dis(p===cur&&S.queued==null)} title="${PTIP.now}">Now</button>
-  <button data-la="copy" title="${PTIP.copy} (Cmd+C)">Copy</button><button data-la="paste"${dis(LCLIP?.type!=="pat")} title="${LCLIP?.type==="pat"?"Paste "+patName(LCLIP.from)+". ":"Copy a pattern first. "}${PTIP.paste} (Cmd+V)">Paste</button><button class="danger" data-la="clear"${dis(!hasPat(p))} title="${PTIP.clear} (Delete)">Clear</button></div></div>
+  <button data-la="copy" title="${PTIP.copy} (Cmd+C)">Copy</button><button data-la="paste"${dis(LCLIP?.type!=="pat")} title="${LCLIP?.type==="pat"?"Paste "+patName(LCLIP.from)+". ":"Copy a pattern first. "}${PTIP.paste} (Cmd+V)">Paste</button><button class="danger" data-la="clear"${dis(!hasPat(p))} title="${PTIP.clear} (Delete)">Clear</button>
+  <span class="ilab" title="${PTIP.kit}">Kit</span><select id="patkit" aria-label="The kit ${patName(p)} plays" title="${PTIP.kit}">${Array.from({length:128},(_,k)=>`<option value="${k}"${S.patKit[p]===k?" selected":""}>${escH(kitName(k))}</option>`).join("")}</select></div></div>
  <div class="libgrid pats" aria-label="128 patterns">${rows}</div>
- <div class="libfoot"><span>Arrows move · A–H jump to a bank · Enter queues · Shift+click or Now switches now · Delete clears · drag a slot onto another to copy · Esc closes</span><span class="fw" title="${PTIP.go}">Queued = blinking</span></div>`}
+ <div class="libfoot"><span>Arrows move · A–H jump to a bank · Enter queues · Shift+click or Now switches now · Alt+click selects · Delete clears · drag a slot onto another to copy · Esc closes</span><span class="fw" title="${PTIP.go}">Queued = blinking</span></div>`}
 let LCLIP=null;
 function libSig(){return[LIB.open,LIB.sel,LIB.renaming,S.pat,S.queued,S.kit,S.kitState,S.workName,S.playing,S.len,LCLIP?.type,LCLIP?.from,hasPat(S.pat),S.patKit.join(),S.kits.map(k=>k.name+(k.empty?0:1)).join("|"),S.patInfo.map(x=>+x.has+"."+x.len).join()].join("~")}
 function drawLib(focus){if(!LIB.open||LIB.drag)return;const sig=libSig(),pop=$("#libpop"),had=focus||pop.contains(document.activeElement);
  if(sig===LIB.sig&&pop.firstChild){if(focus&&!pop.contains(document.activeElement))libFocus();return}LIB.sig=sig;
- pop.innerHTML=LIB.open==="kit"?drawKitLib():drawPatLib();pop.dataset.kind=LIB.open;pop.setAttribute("aria-label",LIB.open==="kit"?"Kit library":"Pattern chooser");
+ pop.innerHTML=LIB.open==="kit"?drawKitLib():drawPatLib();enhanceSelects(pop);pop.dataset.kind=LIB.open;pop.setAttribute("aria-label",LIB.open==="kit"?"Kit library":"Pattern chooser");
  const inp=$("#lsin");if(inp){inp.focus({preventScroll:true});inp.select();return}if(had)libFocus()}
 function libFocus(){const pop=$("#libpop"),el=pop.querySelector(".ls[aria-selected=true]");if(!el)return;el.focus({preventScroll:true});
  if(pop.scrollHeight>pop.clientHeight){const a=el.getBoundingClientRect(),b=pop.getBoundingClientRect();if(a.top<b.top)pop.scrollTop-=b.top-a.top+8;else if(a.bottom>b.bottom)pop.scrollTop+=a.bottom-b.bottom+8}}
@@ -114,6 +117,7 @@ function kitClear(k){if(S.kits[k].empty&&k!==S.kit){toast(kitName(k)+" is alread
  if(READING.kit.has(k)){toast(READ_NOTE);return}
  if(HOST.library){HOST.library("kitClear",{k});return}
  ask(`Clear <b>${kitName(k)}</b>?${k===S.kit?" It is the current kit: all six tracks go back to GND-SIN"+(S.kitState==="edited"?" and the unsaved edits are lost.":"."):""}${linked(k).length?" "+linked(k).length+" pattern(s) link to it.":""}`,[["Clear kit","danger",()=>{S.kits[k]={name:"",empty:true,data:null};if(k===S.kit){applyKit(clearedKit());S.workName="";setKitState("clean")}exampleDump();demoRebase(true);render();drawLib(true);toast("Cleared K"+nn(k)+".")}],["Cancel","",()=>drawLib(true)]])}
+function kitUndo(){if(HOST.kit)return HOST.kit("undo",S.kit);toast("The UNDO KIT is the machine's: this example has none.")}
 function kitReload(){if(HOST.kit)return HOST.kit("reload",S.kit);if(S.kitState!=="edited"){toast(kitName(S.kit)+" matches its saved slot. Nothing to reload.");return}
  ask(`Reload <b>${kitName(S.kit)}</b> from the machine? Your edits go to its UNDO KIT.`,[["Reload (discard edits)","danger",()=>{applyKit(kitData(S.kit));S.workName=S.kits[S.kit].name;setKitState("clean");demoRebase(true);tx();render();drawLib(true);toast("Reloaded "+kitName(S.kit)+" from the machine.")}],["Cancel","",()=>drawLib(true)]])}
 function startRename(k){if(LIB.open!=="kit")return;LIB.sel=k;LIB.renaming=k;drawLib(true)}
@@ -136,13 +140,16 @@ function patClear(p){if(!hasPat(p)){toast(patName(p)+" is already empty.");retur
  if(READING.pattern.has(p)){toast(READ_NOTE);return}
  if(HOST.library){HOST.library("patClear",{p});return}
  ask(`Clear <b>${patName(p)}</b>? Its notes and locks are removed. It keeps its kit link, as on the machine.`,[["Clear pattern","danger",()=>{const e=emptyPat(patLen(p));S.patData[p]=e;S.patInfo[p]={has:false,len:e.len};if(p===S.pat)applyPat(e);exampleDump();demoRebase(true);render();drawLib(true);toast("Cleared "+patName(p)+".")}],["Cancel","",()=>drawLib(true)]])}
+/* MM-095: the kit a pattern plays (its link); over the pattern that plays the machine loads it at once (measured) */
+function patKitSet(p,k){if(S.patKit[p]===k)return;if(HOST.library){HOST.library("patternKit",{p,v:k});return}S.patKit[p]=k;drawLib(true);toast(`${patName(p)} plays ${kitName(k)}.`)}
+document.addEventListener("change",e=>{if(e.target.id==="patkit"&&LIB.open==="pat")patKitSet(LIB.sel,+e.target.value)});
 function patGo(p,now){LIB.sel=p;if(p===S.pat&&S.queued==null){drawLib(true);return}goPattern(p,now);drawLib(true)}
 function libAct(a){const k=LIB.sel,kit=LIB.open==="kit";
- ({close:()=>closeLib(true),load:()=>kitLoad(k),save:kitSave,saveas:()=>kitSaveAs(k),reload:kitReload,rename:()=>startRename(k),
+ ({close:()=>closeLib(true),load:()=>kitLoad(k),save:kitSave,saveas:()=>kitSaveAs(k),reload:kitReload,undokit:kitUndo,rename:()=>startRename(k),
    copy:()=>kit?kitCopy(k):patCopy(k),paste:()=>kit?kitPaste(k):patPaste(k),clear:()=>kit?kitClear(k):patClear(k),go:()=>patGo(k,false),now:()=>patGo(k,true)})[a]?.()}
 
 /* ----- mouse ----- */
-document.addEventListener("click",e=>{if(!LIB.open)return;if($("#libpop").contains(e.target)||e.target.closest?.("#dlg,#kitf,#pat,#undo,#redo"))return;closeLib(false)},true);
+document.addEventListener("click",e=>{if(!LIB.open)return;if($("#libpop").contains(e.target)||e.target.closest?.("#dlg,#kitf,#pat,#undo,#redo,#kpop"))return;closeLib(false)},true);
 document.addEventListener("click",e=>{if(!LIB.open||!$("#libpop").contains(e.target)||e.target.closest?.("#lsin"))return;
  const a=e.target.closest("[data-la]");if(a){if(!a.disabled)libAct(a.dataset.la);return}
  /* a click loads the slot at once (LOAD KIT; over unsaved edits the machine asks first: Save and load, Load
@@ -150,7 +157,7 @@ document.addEventListener("click",e=>{if(!LIB.open||!$("#libpop").contains(e.tar
     without loading (MM-PORT-PLAN f, as the Machinedrum Editor) */
  const ks=e.target.closest("[data-ks]");if(ks){const k=+ks.dataset.ks;if(LIB.renaming!=null)finishRename(true);LIB.sel=k;drawLib(true);
   if(k!==S.kit&&!e.altKey&&!e.metaKey&&!e.ctrlKey&&e.detail<2)kitLoad(k);return}
- const ps=e.target.closest("[data-ps]");if(ps){patGo(+ps.dataset.ps,e.shiftKey);return}
+ const ps=e.target.closest("[data-ps]");if(ps){if(e.altKey){LIB.sel=+ps.dataset.ps;drawLib(true);return}patGo(+ps.dataset.ps,e.shiftKey);return}	/* Alt+click: only selects (its Kit list, MM-095) */
  const lb=e.target.closest("[data-lb]");if(lb){LIB.sel=+lb.dataset.lb*16+(LIB.sel&15);drawLib(true)}});
 /* the first click has loaded the slot: double-click renames it (unless the machine is asking) */
 document.addEventListener("dblclick",e=>{const ks=e.target.closest("#libpop [data-ks]");if(ks&&!e.target.closest("#lsin")&&$("#dlg").hidden)startRename(+ks.dataset.ks)});
