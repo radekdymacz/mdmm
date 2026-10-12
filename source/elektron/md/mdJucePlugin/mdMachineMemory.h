@@ -364,10 +364,12 @@ namespace mdJucePlugin::machineMemory
 	}
 
 	// The slots whose bytes are the same in two memories (two looks: a slot read whole, not torn by a save under way)
-	inline bool slotSame(const md::MachineModel _model, const Key& _key, const std::vector<uint8_t>& _a, const std::vector<uint8_t>& _b)
+	// (_followsHost: the host bytes may differ: a DAW's tempo ramp never holds back a real save of the global)
+	inline bool slotSame(const md::MachineModel _model, const Key& _key, const std::vector<uint8_t>& _a, const std::vector<uint8_t>& _b,
+		const bool _followsHost = false)
 	{
 		const auto* s = findSlot(_model, _key);
-		return s && _a.size() == md::g_patchRamStateSize && _b.size() == md::g_patchRamStateSize && !slotDiffers(*s, _a, _b);
+		return s && _a.size() == md::g_patchRamStateSize && _b.size() == md::g_patchRamStateSize && !slotDiffers(*s, _a, _b, _followsHost);
 	}
 
 	// The patch RAM slots that differ between two memories (what saves changed since the base)
@@ -617,9 +619,24 @@ namespace mdJucePlugin::machineMemory
 
 	// A save of patch RAM slots with the memory they changed from: a slot whose change is in its link bytes alone, and
 	// that the store has, takes only those bytes; any other changed slot is taken whole.
+	// _followsHost: the slots' host bytes are not this session's to save: they keep the stored slot's (another
+	// instance may have saved a newer tempo), or the base's when the store has no such slot.
 	inline void mergeSaved(Store& _store, const md::MachineModel _model, const std::vector<Key>& _keys, const std::vector<uint8_t>& _base,
-		const std::vector<uint8_t>& _patch, const std::vector<uint8_t>& _sectors, const uint64_t _savedAt)
+		const std::vector<uint8_t>& _patch, const std::vector<uint8_t>& _sectors, const uint64_t _savedAt, const bool _followsHost = false)
 	{
+		// the host bytes as they were before this save: the stored slot's, else the base's
+		std::map<Key, std::vector<uint8_t>> hostBefore;
+		if(_followsHost)
+		{
+			for(const auto& k : _keys)
+			{
+				const auto* s = k.kind == Kind::Sector ? nullptr : findSlot(_model, k);
+				if(!s || s->hostBytes.empty())
+					continue;
+				const auto it = _store.find(k);
+				hostBefore[k] = it != _store.end() ? it->second.bytes : (_base.size() == md::g_patchRamStateSize ? slotBytes(*s, _base) : std::vector<uint8_t>{});
+			}
+		}
 		std::vector<Key> whole;
 		for(const auto& k : _keys)
 		{
@@ -646,6 +663,14 @@ namespace mdJucePlugin::machineMemory
 			it->second.savedAt = _savedAt;
 		}
 		merge(_store, _model, whole, _patch, _sectors, _savedAt);
+		for(const auto& [k, before] : hostBefore)
+		{
+			const auto* s = findSlot(_model, k);
+			auto& bytes = _store[k].bytes;
+			for(const auto at : s->hostBytes)
+				if(at < bytes.size() && at < before.size())
+					bytes[at] = before[at];
+		}
 	}
 
 	// The store laid over a memory: each saved slot's bytes in place, but the _skip ones (the standalone's own saves

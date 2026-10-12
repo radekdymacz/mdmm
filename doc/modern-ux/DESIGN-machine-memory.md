@@ -126,9 +126,11 @@ is a save. CCs from a DAW with live recording off change the working kit only.
   pieces: the MD's patterns always are, any slot across a 64 KiB line), so **a slot is written only when its bytes
   were the same in the last two looks**; one that differs waits for the next look (while a pattern is recorded into
   live, until it holds still). The looks that write at once take the memory whole, in one hold of the plug-in's lock
-  (about 0.1 ms, 0.3 ms with the MM's user flash): the last look at the close and before the host saves its state, the
-  base of a new memory. The MD's sample sectors are copied twice and a sector that differs between the copies waits
-  (one copy in one hold at the close). Test 3p changes a pattern's two ends between the pieces of every look for 12 s
+  (about 0.1 ms, 0.3 ms with the MM's user flash): the last look at the close and before a memory is replaced (a
+  project, the file's slots, factory memory), the base of a new memory. The host saving its state takes no look: it
+  writes what the last two looks agree on, as the thread would (hosts autosave while they play, at 32 to 64 sample
+  buffers, where one more hold of the plug-in's lock on that path could drop out). The MD's sample sectors, forced
+  ones too, are copied twice and a sector that differs between the copies waits (one copy in one hold at the close). Test 3p changes a pattern's two ends between the pieces of every look for 12 s
   (with a write asked for at once and the 10 s busy limit passed): no torn pattern reaches the file, the settled one
   does, and the close writes it whole.
 - When the watched memory differs from the last write and has been quiet for one look (10 s at the latest while it
@@ -136,12 +138,15 @@ is a save. CCs from a DAW with live recording off change the working kit only.
   the file, holding the file's lock (below): read it, put those slots in, write it to a temporary file in the same folder, flush it to the disk
   (`FileOutputStream::flush`: fsync on POSIX, FlushFileBuffers on Windows) and rename it over the old one
   (`juce::TemporaryFile`). A crash leaves the old file or the new one. The base takes the written slots. A write that
-  fails (no lock, no permission, disk full, a file it may not write over) is tried again every 5 s, with the next save
-  and at the close; its slots stay pending meanwhile.
+  fails (no lock, no permission, disk full, a file it may not write over) is tried again every 5 s (not at every look;
+  a new save waits for those 5 s too, test 3s) and at the close; its slots stay pending meanwhile.
 - **Tempo** (Radek, 2026-10-12): the tempo persists as on the machine: a tempo change in the standalone is a save of
   its global. A plug-in in a DAW makes its machine follow the host's tempo and transport (`followHost`): there the
   bytes that following sets (table above) are never a save, and when the global is written for another change they go
-  as the session started with them, so a DAW's tempo never reaches the file (test 3q, both machines).
+  as the file has them (another instance, the standalone, may have saved a newer tempo since), or as the session
+  started with them when the file has no global, so a DAW's tempo never reaches the file, also after a project opens
+  (test 3q, both machines). A tempo ramp between two looks does not hold such a write back (the two-look check skips
+  those bytes while following).
 - A sample the page sends (Sampler, ROM-xx) is a save: when its transfer ends (the desk's `sampleLoad` "done") the
   watch waits until the flash has been still for a second after the store began (30 s at the latest), then the sample
   sectors that differ from the base are written. The flash is not watched otherwise (OS 1.63 writes it by itself while
@@ -155,10 +160,15 @@ is a save. CCs from a DAW with live recording off change the working kit only.
   start's read hold it: an exclusive `flock` (POSIX) or `LockFileEx` (Windows) on `machine-memory.lock` beside the
   file. Both belong to the open file, not the process, so they hold between processes (a DAW and the standalone) and
   within one: two instances, and the VST3 and the AU of one editor in one host, which are two bundles with their own
-  statics (a mutex per path in each bundle queues its own threads first). A lock not had within 10 s refuses the
-  write (tried again); the start waits for it. A folder where the lock file cannot be made gets no lock: nothing can
-  be written there, and a read needs none (the file is replaced whole by a rename). Tests: 3m (two instances saving
-  other slots again and again), 3r (a second process holds the lock: the save waits for it).
+  statics (a mutex per path in each bundle queues its own threads first). The bundle's mutex and the file lock
+  together are waited for 2 s at most, so the message thread never waits longer; a write that did not get them is
+  refused and tried again 5 s later. A lock file that cannot be opened for writing is opened read-only (a read-only
+  folder: `flock` and `LockFileEx` work on it). A folder where the lock file cannot be made or opened, or a file system
+  without locks (`ENOTSUP`, `ENOLCK`), gets no lock and no wait, said once on stderr: nothing can be written there, or
+  there is nothing to wait for (the file is replaced whole by a rename, so a read needs no lock). Tests: 3m (two
+  instances saving other slots again and again), 3r (a second handle in the same process, as the AU beside the VST3,
+  then a second process: the save waits for each and is written once it lets go; the test fails if the process ends
+  early).
 - **A storage image** (Monomachine, Load storage image…) is decided to be what it is on the machine: the battery memory
   replaced. Its slots that differ from the base are saves and go to the file.
 
@@ -166,10 +176,10 @@ What closes each way a save could be lost, and its test (mdMachineMemoryFirmware
 
 | Way | What the editor does | Session |
 |---|---|---|
-| A save just before the instance closes | the thread is told to stop and joined (never killed: it may hold the file or the plug-in's lock), then one last look under the lock writes the slots that differ from the base; the same last look runs before every state save | 3d, 3e |
+| A save just before the instance closes | the thread is told to stop and joined (never killed: it may hold the file or the plug-in's lock), then one last look under the lock writes the slots that differ from the base; a state save writes what the last two looks agree on (no look of its own: the audio thread) | 3d, 3e |
 | A save, then the machine restarts at once | the base stays across the restart: the save is written after it | 3e |
 | KEEP MEMORY off from the start, then on (A) | the base was kept while off; on: the slots that differ are merged, nothing else is touched | 3f |
-| A write fails (read-only folder, disk full) | the old file stays; the note says why; the slots stay pending (the base keeps them out), tried with the next save and at the close, and named in the standalone's state, which wins over the stale file at its next start and writes them | 3i |
+| A write fails (read-only folder, disk full) | the old file stays; the note says why; the slots stay pending (the base keeps them out), tried again every 5 s and at the close, and named in the standalone's state, which wins over the stale file at its next start and writes them | 3i, 3s |
 | A DAW project's mark (B) | never read | 3j |
 | A standalone state from before the slot store (C) | the file wins, the own slots that differ are kept aside, the slots the file lacks are seeded | 3k |
 | An old project, one kit saved (D) | only that kit's slot is merged | 3 |
@@ -178,15 +188,16 @@ What closes each way a save could be lost, and its test (mdMachineMemoryFirmware
 | The start's slots refused by the machine at once | the file stays as it is, the notice says so, the memory there stays the base: a save that failed, then a restart, is still written | 3n |
 | A save under way while a look is taken in pieces | a slot is written only when two looks agree, or from a look in one hold | 3p |
 | MD: samples saved with another ROM, a sample saved with this one | the other ROM's sectors go to `machine-memory.samples-<fingerprint>.bin` (never over another) first and the notice says where; if that cannot be written, nothing is replaced | 3o (MD) |
-| Start from factory memory (F) | the file goes only once the new machine runs on factory memory and its lock is had; a newer editor's file is moved aside with a time stamp, not deleted; refused: the file stays | 4, 3n |
+| Start from factory memory (F) | the slots saved before it was asked for go only once the new machine runs on factory memory and the file's lock is had (the clear, or the next write in the same hold of the lock); a slot another editor saved since stays, so a newer save is never deleted; a newer editor's file is moved aside with a time stamp, not deleted; refused: the file stays | 4, 4b, 3n |
 | Automation while a pattern plays | nothing is written (12.5 s of CCs on every track, the steps seen moving) | 1 |
 | A kit, a pattern step and lock, a song, a global, a sample (MD) from the page | each reaches the file as its slot | 2 |
 
 ## 4. The controls
 
 - **RESET MACHINE… > Start from factory memory…** (wave 6's question, its third choice; asked a second time): restarts
-  the machine from factory memory (a fresh machine's state, as on a new install); the file is deleted only once the
-  machine runs on it (the watch's next base), after the saves made before were written. Nothing is changed when the
+  the machine from factory memory (a fresh machine's state, as on a new install); the file's slots saved before it are
+  deleted only once the machine runs on it (the watch's next base), after the saves made before were written; a slot
+  another editor saved after it stays (the file goes when nothing is left). Nothing is changed when the
   fresh machine has no ROM or the machine refuses the state (the file stays, the note says so); when the file cannot
   be deleted, an empty store replaces it. One place, no
   separate entry (Radek's rule). Chosen over making wave 6's Factory reset also clear the file: that reset keeps
@@ -216,7 +227,7 @@ What closes each way a save could be lost, and its test (mdMachineMemoryFirmware
 | A look: the plug-in's lock held, the longest piece (the audio thread can wait this long) | 0.03 ms typical, 0.11 ms worst | 0.002 ms typical, 0.43 ms worst (both under the test's load: two machines at once) |
 | A look with its hash, on the thread | about 2.4 ms | about 4.8 ms |
 | A write: read the file, merge the slots, temporary file, fsync, rename | 0.6 to 1.4 ms; one kit and the playing pattern's kit byte: a 6 KiB file | 0.5 to 0.8 ms; 7 KiB |
-| MD: the sample flash copied (at a new base and after a sample store, 6 MiB, one 64 KiB sector a lock) | under 0.1 ms a sector | (none: the user flash is in every look) |
+| MD: the sample flash copied: at a new base (a project, the file's slots, factory memory) in one hold, 6 MiB; after a sample store twice, one 64 KiB sector a hold | the one hold at a new base 0.15 to 0.30 ms (two runs, the longest hold of the session); a sector 0.001 to 0.012 ms | (none: the user flash is in every look) |
 | Writes while idle or playing (12 s of play, automation on every track) | none | none |
 
 The first look allocates its buffers before it takes the lock; later looks copy into them. The file grows with what is

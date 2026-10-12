@@ -177,7 +177,8 @@ namespace mdJucePlugin
 		bool lastWriteFailed = false;
 		double retryAtMs = 0;				// a failed write is tried again from then (every 5 s)
 		bool prevValid = false;				// scratch holds the previous look of this machine (two looks to compare)
-		bool clearFilePending = false;		// Start from factory memory: the file goes once its lock is had
+		bool clearFilePending = false;		// Start from factory memory: the file's slots saved before it go, once its lock is had
+		uint64_t factoryAtMs = 0;			// when Start from factory memory was asked for (ms since 1970)
 		// MD: a sample the page sent was stored (machineMemorySampleStored): written once the flash is still
 		uint64_t flashMark = 0;				// the cycle of the last flash write (0: none since the start)
 		double flashChangedMs = 0;			// when that mark last moved
@@ -236,7 +237,7 @@ namespace mdJucePlugin
 	{
 		// I-024: a save not yet in the machine memory file is written first; what still is not (a write failed, KEEP
 		// MEMORY off) is named in the state, so the standalone's next start keeps it over the file's slots
-		flushMachineMemory(false);
+		flushMachineMemory(FlushMode::HostSave);
 		jucePluginEditorLib::Processor::saveChunkData(_stream);
 		{
 			const auto mark = machineMemoryMark();
@@ -1318,7 +1319,7 @@ namespace mdJucePlugin
 		m_memoryThread->notify();
 		(void)m_memoryThread->waitForThreadToExit(-1);
 		m_memoryThread.reset();
-		flushMachineMemory(true);
+		flushMachineMemory(FlushMode::Close);
 	}
 
 	void AudioPluginAudioProcessor::setMachineMemoryLookMs(const int _ms)
@@ -1520,6 +1521,14 @@ namespace mdJucePlugin
 			error = "The machine memory file is busy (another editor holds it); the save is tried again.";
 		}
 		auto store = readOk ? readMemoryStore(readOk, error) : machineMemory::StoreFile{};
+		const bool clearing = readOk && w.clearFilePending;
+		if(clearing)
+		{
+			// Start from factory memory not done yet: its clear goes first, in this same hold of the lock (the slots
+			// saved before it go; a newer save another editor made stays)
+			for(auto it = store.slots.begin(); it != store.slots.end();)
+				it = it->second.savedAt < w.factoryAtMs ? store.slots.erase(it) : std::next(it);
+		}
 		std::vector<uint8_t> bytes;
 		if(readOk)
 		{
@@ -1556,7 +1565,8 @@ namespace mdJucePlugin
 		}
 		if(readOk)
 		{
-			machineMemory::mergeSaved(store.slots, m_model, _keys, _base, _patch, _sectors, static_cast<uint64_t>(juce::Time::currentTimeMillis()));
+			machineMemory::mergeSaved(store.slots, m_model, _keys, _base, _patch, _sectors, static_cast<uint64_t>(juce::Time::currentTimeMillis()),
+				m_memoryFollowsHost.load());
 			bytes = machineMemory::encode(m_model, store);
 			if(writeMemoryFile(machineMemoryFile(), bytes, error))
 				error.clear();
@@ -1568,6 +1578,8 @@ namespace mdJucePlugin
 		const bool ok = readOk && error.empty();
 		if(ok)
 		{
+			if(clearing)
+				w.clearFilePending = false;
 			++w.cost.writes;
 			w.cost.fileBytes = bytes.size();
 			w.cost.lastSlots = _keys.size();
@@ -1599,9 +1611,9 @@ namespace mdJucePlugin
 	// The slots that changed since the base (and the forced ones) merged into the file; the base takes them on (m_memoryMutex
 	// held, w.patch the last look). _consistent: w.patch was read whole (one hold of the plug-in's lock); else only a slot
 	// whose bytes were the same in the last two looks is written (a look taken in pieces can see a save half done), the
-	// others wait for the next look. A failed write leaves the base, so they stay pending: tried again 5 s later, with
-	// the next save and when the instance closes. True: nothing left to write.
-	bool AudioPluginAudioProcessor::writeChanges(const bool _withForced, const bool _consistent)
+	// others are held back for the next look. A failed write leaves the base, so its slots stay pending: tried again
+	// 5 s later (w.retryAtMs), with the next save and when the instance closes.
+	AudioPluginAudioProcessor::WriteResult AudioPluginAudioProcessor::writeChanges(const bool _withForced, const bool _consistent)
 	{
 		auto& w = *m_memoryWatch;
 		const bool mm = m_model == md::MachineModel::Monomachine;
@@ -1615,24 +1627,34 @@ namespace mdJucePlugin
 			for(const auto& k : machineMemory::changedSectors(m_model, w.baseUserFlash, w.userFlash))
 				keys.insert(k);
 		if(keys.empty())
-			return true;
+			return WriteResult::Done;
+		// MD sample sectors: copied twice now (or once in one hold), only sectors the same in both are taken
+		const bool mdSectors = !mm && std::any_of(keys.begin(), keys.end(), [](const machineMemory::Key& _k) { return _k.kind == machineMemory::Kind::Sector; });
+		std::vector<uint8_t> flashAgain;
+		bool flashOk = true;
+		if(mdSectors)
+			flashOk = copyMachineFlash(w.flash, _consistent) && (_consistent || copyMachineFlash(flashAgain, false));
 		std::vector<machineMemory::Key> list;
 		bool heldBack = false;
 		for(const auto& k : keys)
 		{
 			bool whole = _consistent;
-			if(!whole && w.prevValid)
+			if(k.kind == machineMemory::Kind::Sector && !mm)
+			{
+				const size_t at = size_t{k.index} * machineMemory::g_sectorSize;
+				whole = flashOk && (_consistent || (flashAgain.size() >= at + machineMemory::g_sectorSize
+					&& std::memcmp(w.flash.data() + at, flashAgain.data() + at, machineMemory::g_sectorSize) == 0));
+			}
+			else if(!whole && w.prevValid)
 			{
 				if(k.kind != machineMemory::Kind::Sector)
-					whole = machineMemory::slotSame(m_model, k, w.patch, w.scratch);
-				else if(mm)
+					whole = machineMemory::slotSame(m_model, k, w.patch, w.scratch, host);
+				else
 				{
 					const size_t at = size_t{k.index} * machineMemory::g_sectorSize;
 					whole = w.scratchUserFlash.size() >= at + machineMemory::g_sectorSize
 						&& std::memcmp(w.userFlash.data() + at, w.scratchUserFlash.data() + at, machineMemory::g_sectorSize) == 0;
 				}
-				else
-					whole = true;	// MD sectors: taken by takeSampleSectors, which compares two copies itself
 			}
 			if(whole)
 				list.push_back(k);
@@ -1640,21 +1662,13 @@ namespace mdJucePlugin
 				heldBack = true;
 		}
 		if(list.empty())
-			return false;
-		// while the machine follows the host, the bytes it sets (tempo, sync) go as the session started with them
-		std::vector<uint8_t> patch;
-		const std::vector<uint8_t>* toWrite = &w.patch;
-		if(host)
-		{
-			patch = w.patch;
-			machineMemory::keepHostBytes(m_model, patch, w.base);
-			toWrite = &patch;
-		}
+			return WriteResult::HeldBack;
 		const auto& sectors = mm ? w.userFlash : w.flash;
-		if(!writeMachineMemory(list, w.base, *toWrite, sectors))
+		// (while the machine follows the host, mergeSaved keeps the host bytes as the file has them)
+		if(!writeMachineMemory(list, w.base, w.patch, sectors))
 		{
 			w.retryAtMs = juce::Time::getMillisecondCounterHiRes() + 5000.0;
-			return false;
+			return WriteResult::Failed;
 		}
 		for(const auto& k : list)
 		{
@@ -1666,10 +1680,10 @@ namespace mdJucePlugin
 					std::copy_n(sectors.begin() + static_cast<std::ptrdiff_t>(at), machineMemory::g_sectorSize, base.begin() + static_cast<std::ptrdiff_t>(at));
 			}
 			else if(const auto* slot = machineMemory::findSlot(m_model, k))
-				machineMemory::putSlot(*slot, w.base, machineMemory::slotBytes(*slot, *toWrite));
+				machineMemory::putSlot(*slot, w.base, machineMemory::slotBytes(*slot, w.patch));
 			w.forced.erase(k);
 		}
-		return !heldBack;
+		return heldBack ? WriteResult::HeldBack : WriteResult::Done;
 	}
 
 	// At the start of a session (the timer, message thread), once the machine runs with its ROM: a DAW project's state
@@ -1869,6 +1883,7 @@ namespace mdJucePlugin
 		machineMemoryWillBeReplaced();
 		{
 			const std::lock_guard lock(m_memoryMutex);
+			m_memoryWatch->factoryAtMs = static_cast<uint64_t>(juce::Time::currentTimeMillis());
 			const auto generation = [this]
 			{
 				return getPlugin().withDeviceLocked([](synthLib::Device* const _device)
@@ -1920,6 +1935,12 @@ namespace mdJucePlugin
 	bool AudioPluginAudioProcessor::copyMachineFlash(std::vector<uint8_t>& _flash, const bool _atomic)
 	{
 		_flash.resize(md::g_romSize);
+		double holdMax = 0;
+		struct Measure
+		{
+			AudioPluginAudioProcessor& p; double& max;
+			~Measure() { if(p.m_memoryWatch) { p.m_memoryWatch->cost.flashHoldLastMs = max; p.m_memoryWatch->cost.flashHoldMaxMs = std::max(p.m_memoryWatch->cost.flashHoldMaxMs, max); } }
+		} measure{*this, holdMax};
 		std::optional<uint64_t> epoch;
 		const size_t step = _atomic ? _flash.size() - md::g_mdFirmwareFlashEnd : machineMemory::g_sectorSize;
 		for(size_t at = md::g_mdFirmwareFlashEnd; at < _flash.size(); at += step)
@@ -1933,7 +1954,10 @@ namespace mdJucePlugin
 				if(epoch && *epoch != e)
 					return false;
 				epoch = e;
-				return device->getHardware().getUC().copyFlashDataRangeRealtime(_flash.data() + at, at, step);
+				const auto t0 = std::chrono::steady_clock::now();
+				const bool copied = device->getHardware().getUC().copyFlashDataRangeRealtime(_flash.data() + at, at, step);
+				holdMax = std::max(holdMax, std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
+				return copied;
 			});
 			if(!ok)
 				return false;
@@ -2017,8 +2041,16 @@ namespace mdJucePlugin
 			{
 				if(!piece([&](md::Hardware& _hw) { return _hw.copyPatchRamRange(patch.data() + at, at, std::min(chunk, patch.size() - at)); }))
 					return false;
-				if(m_lookPieceHookForTest)
-					m_lookPieceHookForTest(at);
+				if(m_hasLookHookForTest.load(std::memory_order_acquire))
+				{
+					std::function<void(size_t)> hook;
+					{
+						const std::lock_guard hookLock(m_lookHookMutex);
+						hook = m_lookPieceHookForTest;
+					}
+					if(hook)
+						hook(at);
+				}
 			}
 			if(mm)
 				for(size_t at = 0; at < userFlash.size(); at += chunk)
@@ -2097,9 +2129,10 @@ namespace mdJucePlugin
 		return true;
 	}
 
-	// Start from factory memory's end (m_memoryMutex held): the file goes, under its lock. A file this editor may not
-	// replace (a newer editor's, another layout's) is moved aside with a time stamp, never deleted. Not had the lock:
-	// tried again at the next look.
+	// Start from factory memory's end (m_memoryMutex held), inside the file's lock: the slots saved before it was asked
+	// for go; a slot another instance saved since stays (the file is written back with it, or deleted when nothing is
+	// left). A file this editor may not replace (a newer editor's, another layout's) is moved aside with a time stamp,
+	// never deleted. Not had the lock: tried again at the next look and at the close.
 	void AudioPluginAudioProcessor::clearMemoryFile()
 	{
 		auto& w = *m_memoryWatch;
@@ -2113,16 +2146,21 @@ namespace mdJucePlugin
 		juce::MemoryBlock raw;
 		const bool read = file.loadFileAsData(raw);
 		const auto* bytes = static_cast<const uint8_t*>(raw.getData());
-		const auto decoded = machineMemory::decode(read ? std::vector<uint8_t>(bytes, bytes + raw.getSize()) : std::vector<uint8_t>{}, m_model);
+		auto decoded = machineMemory::decode(read ? std::vector<uint8_t>(bytes, bytes + raw.getSize()) : std::vector<uint8_t>{}, m_model);
+		std::string error;
 		if(read && decoded.problem != machineMemory::Problem::None && !machineMemory::replaceable(decoded))
 			m_memoryNote = moveMemoryFileAside("The saved machine memory was written by another editor; it was not deleted.");
-		else if(!file.deleteFile())
+		else if(decoded.problem == machineMemory::Problem::None)
 		{
-			// it cannot go: an empty store replaces it, so its slots never come back
-			std::string error;
-			if(!writeMemoryFile(file, machineMemory::encode(m_model, {}), error))
-				m_memoryNote = "The machine memory file could not be deleted: " + file.getFullPathName().toStdString();
+			auto& slots = decoded.file.slots;
+			for(auto it = slots.begin(); it != slots.end();)
+				it = it->second.savedAt < w.factoryAtMs ? slots.erase(it) : std::next(it);
+			const bool gone = slots.empty() ? file.deleteFile() : writeMemoryFile(file, machineMemory::encode(m_model, decoded.file), error);
+			if(!gone && !writeMemoryFile(file, machineMemory::encode(m_model, {}), error))
+				m_memoryNote = "The machine memory file could not be cleared: " + file.getFullPathName().toStdString();
 		}
+		else if(!file.deleteFile())	// damaged: nothing in it to keep
+			m_memoryNote = "The machine memory file could not be deleted: " + file.getFullPathName().toStdString();
 		m_memoryVersion.fetch_add(1, std::memory_order_acq_rel);
 	}
 
@@ -2151,13 +2189,19 @@ namespace mdJucePlugin
 		if(!keepMachineMemory())
 			return;
 		const auto now = juce::Time::getMillisecondCounterHiRes();
-		const bool retry = w.lastWriteFailed && now >= w.retryAtMs;
-		if(!w.watch.look(signature, now) && !retry)
+		const bool retryDue = w.lastWriteFailed && now >= w.retryAtMs;
+		const bool wants = w.watch.look(signature, now);
+		// after a failed write: nothing before its 5 s are up (a new save waits for them too)
+		if(w.lastWriteFailed && !retryDue)
 			return;
-		if(writeChanges(true, false))
-			w.watch.written(signature);
-		else
-			w.watch.writeSoon();	// slots held back (seen changing) or a failed write: the next look tries again
+		if(!wants && !retryDue)
+			return;
+		switch(writeChanges(true, false))
+		{
+		case WriteResult::Done: w.watch.written(signature); break;
+		case WriteResult::HeldBack: w.watch.writeSoon(); break;	// slots seen changing: the next look tries again
+		case WriteResult::Failed: w.watch.written(signature); break;	// the 5 s retry takes it (the base keeps it pending)
+		}
 	}
 
 	// MD (m_memoryMutex held, after a look): a sample the page sent is a save of a slot (ROM-xx), stored by the machine
@@ -2185,27 +2229,14 @@ namespace mdJucePlugin
 
 	// The sample sectors that differ from the base become forced (written at the next write, and named in the state
 	// The sample sectors that differ from the base become forced (written at the next write, and named in the state
-	// until then). The flash is copied twice (in pieces, the lock released between): a sector that differs between
-	// the copies is still being written and waits for the next look. _atomic (the close): one copy in one hold.
+	// until then; writeChanges takes a sector only when two copies of it agree, or from one copy in one hold).
 	void AudioPluginAudioProcessor::takeSampleSectors(const bool _atomic)
 	{
 		auto& w = *m_memoryWatch;
 		if(m_model != md::MachineModel::Machinedrum || !copyMachineFlash(w.flash, _atomic))
 			return;
-		std::vector<uint8_t> again;
-		if(!_atomic && !copyMachineFlash(again, false))
-			return;
-		bool still = true;
 		for(const auto& k : machineMemory::changedSectors(m_model, w.baseFlash, w.flash))
-		{
-			const size_t at = size_t{k.index} * machineMemory::g_sectorSize;
-			if(!_atomic && std::memcmp(w.flash.data() + at, again.data() + at, machineMemory::g_sectorSize) != 0)
-				still = false;
-			else
-				w.forced.insert(k);
-		}
-		if(!still)
-			w.sampleArmedMs = juce::Time::getMillisecondCounterHiRes() - 29000.0;	// look again at the next look
+			w.forced.insert(k);
 		w.watch.writeSoon();
 	}
 
@@ -2220,21 +2251,30 @@ namespace mdJucePlugin
 	// one are written now, and the next machine's memory is the new base, not a save.
 	void AudioPluginAudioProcessor::machineMemoryWillBeReplaced()
 	{
-		flushMachineMemory(false);
+		flushMachineMemory(FlushMode::Replace);
 		const std::lock_guard lock(m_memoryMutex);
 		if(m_memoryWatch)
 			m_memoryWatch->rebaseNext = true;
 	}
 
-	// One last look now (the instance going away, the host saving its state, a memory about to be replaced): saves not
-	// written yet are written. The look is taken whole, in one hold of the plug-in's lock (about 0.1 ms for the patch
-	// RAM, 0.3 ms with the MM's user flash), so nothing half saved is written.
-	void AudioPluginAudioProcessor::flushMachineMemory(const bool _closing)
+	// Saves not written yet are written now. FlushMode::Close (the instance going away) and Replace (a memory about to be
+	// replaced: a project, the file's slots, factory memory) take one last look whole, in one hold of the plug-in's lock
+	// (about 0.1 ms, 0.3 ms with the MM's user flash); HostSave (the host saving its state, often while it plays, at 32
+	// sample buffers) takes no look: it writes what the last two looks agree on, as the thread would.
+	void AudioPluginAudioProcessor::flushMachineMemory(const FlushMode _mode)
 	{
 		if(m_memoryFolder.empty() || !m_memoryWatch)
 			return;
 		const std::lock_guard lock(m_memoryMutex);
 		auto& w = *m_memoryWatch;
+		if(w.clearFilePending)
+			clearMemoryFile();
+		if(_mode == FlushMode::HostSave)
+		{
+			if(keepMachineMemory() && w.watch.based() && w.epoch)
+				(void)writeChanges(true, false);
+			return;
+		}
 		uint64_t signature = 0, epoch = 0;
 		if(!lookMachineMemory(signature, epoch, true))
 			return;
@@ -2249,14 +2289,14 @@ namespace mdJucePlugin
 		std::swap(w.userFlash, w.scratchUserFlash);
 		w.prevValid = false;	// scratch: a look of another kind; the thread's next look compares again
 		// closing: a sample sent and maybe not stored yet is written as it is (the close itself ends its store)
-		if(_closing && (w.sampleArmedMs || m_memorySampleStored.exchange(false)))
+		if(_mode == FlushMode::Close && (w.sampleArmedMs || m_memorySampleStored.exchange(false)))
 		{
 			w.sampleArmedMs.reset();
 			takeSampleSectors(true);
 		}
 		if(!keepMachineMemory() || !w.watch.based())
 			return;
-		if(writeChanges(true, true))
+		if(writeChanges(true, true) == WriteResult::Done)
 			w.watch.written(signature);
 	}
 
