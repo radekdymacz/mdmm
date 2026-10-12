@@ -71,3 +71,12 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 4. MM: while step recording, pick another synth track: the machine writes that track from the same step. With a step selection made first, ⇧-click ● drops it, and ← → Esc are step recording's.
 5. Both: hold Delete while live recording and close the editor window (or reload the page): the erase stops within a second.
 6. MM on real hardware: step recording and live erase are refused with the reason (they need the machine's keys).
+
+## MM Perform: Poly, key tracking, Multi envelope (wave 9, B-064)
+
+1. Perform: click Assign's track key 3, then **Poly** in the Keyboard card. The line under the keyboard modes says T3 plays six voices; key 3 and its lamp under the keyboard read ×6, the others dim. Hold a chord on the computer keys (A D G, or a MIDI keyboard on T3's channel): all its notes sound.
+2. Still in Poly, click track key 5: Poly moves to T5 (the first chord there can sound as one note, the next ones are chords). Notes on T3's channel are now silent. On Sequence the rail marks T5 ×6 and dims the others. **Auto track** ends Poly.
+3. Sound, a track with a low LPF (WDTH low): the Filter group's title shows **KEY** with HPF and LPF lit. Click it: Perform opens on Assign › KEY for that track. Switch **LPF tracks keys** off: back on Sound the LPF lamp is dark and the filter screen's label says LPF fixed; high notes now sound much quieter than low ones.
+4. Perform, Multi envelope card: its title names the kit's MULTI TRIG mode. With the keys on Auto track the hint says to choose Multi trig (pointing at that sentence rings the Multi trig key). Choose Multi trig and SPLIT KEY: the hint says the envelope has no effect.
+5. Multi trig, ALL TRK, envelope ATK 0 DEC 0 SUS 0 REL 0: a key gives nothing. Play T1 with the computer's note keys (A S D): silent now too, until Panic (the ▶ menu, or its key). Set DEC, SUS and REL back to 127: the keys sound again.
+6. SEQ START with REL 0: a Multi trig key starts the pattern; let go and the pattern goes silent until the next key or STOP.

@@ -1935,7 +1935,8 @@ void memoryFields()
 	port.device.sendParam = [](uint8_t, uint8_t, uint8_t, uint8_t) {};
 	port.device.sendNrpn = [](uint8_t, uint8_t, uint8_t) {};
 	int muteWindows = 0;
-	port.device.pressKeys = [&](const std::vector<mmDesk::Key>& _keys) { muteWindows += !_keys.empty() && _keys[0] == mmDesk::Key::MuteWindow; return true; };
+	std::vector<mmDesk::Key> lastKeys;
+	port.device.pressKeys = [&](const std::vector<mmDesk::Key>& _keys) { muteWindows += !_keys.empty() && _keys[0] == mmDesk::Key::MuteWindow; lastKeys = _keys; return true; };
 	port.device.nowMs = [&] { return now; };
 	port.toPage = [&](const Value& _v) { page.push_back(_v); g_published.push_back(_v); };
 	const auto status = [](const uint8_t _p, const uint8_t _v) { return Bytes{0xf0, 0, 0x20, 0x3c, 3, 0, 0x72, _p, _v, 0xf7}; };
@@ -2037,6 +2038,15 @@ void memoryFields()
 	msg(R"({"op":"poly","id":5,"on":true})");
 	run(1600);
 	check(poly() == 0, "no status reply for longer than settleMs: memory wins");
+	// 0.6 wave 9 (B-064): POLY plays the track in focus; t presses its TRACK key first (again while on: it moves there)
+	lastKeys.clear();
+	msg(R"({"op":"poly","id":7,"on":true,"t":2})");
+	check(lastKeys == std::vector<mmDesk::Key>{mmDesk::Key::Track3}, "POLY with t: TRACK 3 pressed");
+	lastKeys.clear();
+	msg(R"({"op":"poly","id":8,"on":false,"t":2})");
+	check(lastKeys.empty(), "POLY off: no TRACK key");
+	d.onDeviceSysex(status(0x20, 0));
+	run(20);
 
 	// the tempo (BPM x 24 in memory)
 	msg(R"({"op":"tempo","id":6,"bpm":130})");

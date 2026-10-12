@@ -1,6 +1,15 @@
 
 /* ===== Perform: keyboard modes, multi trig, multi map, multi env, assign, mutes ===== */
 const PMODES=[["normal","Auto track","Keys play the track in focus (AUTO TRACK channel 9)."],["multi","Multi trig","One source plays all six tracks as one big mono synth (channel 7)."],["map","Multi map","Key ranges start patterns, with offset, length and transpose (channel 8)."],["poly","Poly","All six engines play the track in focus with six voices. Other tracks go quiet."]];
+/* 0.6 wave 9 (B-064), measured (PROBES-manual-gaps.md P9): POLY plays the machine's track in focus, the one selected
+   here (HOST.keyMode presses its TRACK key); the MULTI ENV per MULTI TRIG mode */
+function polyHint(t){return`POLY: T${t+1} plays six voices (TRACK ${t+1} on the machine); the other five tracks are silent, notes on their channels too. The sequencer plays T${t+1}'s chord notes. Select another track to move POLY there (its first chord can sound as one note).`}
+const MENV_SAY=["shapes the notes of the MULTI TRIG channel, which play all six tracks. After such a note, with REL under 127, every track stays silent until the next one or STOP.",
+ "no effect in this mode. The envelope works in ALL TRK, SEQ START and SEQ TRNSP (Multi trig under Keyboard).",
+ "shapes the pattern a MULTI TRIG note starts. After that note, with REL under 127, every track stays silent until the next one or STOP.",
+ "shapes the pattern a MULTI TRIG note starts and transposes. After that note, with REL under 127, every track stays silent until the next one or STOP."];
+function menvHint(){const m=S.multi.mode,play=S.mode!=="multi"&&m!==1;
+ return`<b>${MTM[m]}:</b> ${MENV_SAY[m]}${play?` <span class="menvto">The keys play ${{normal:"AUTO TRACK",map:"MULTI MAP",poly:"POLY"}[S.mode]} now: choose <b>Multi trig</b> under Keyboard to hear it.</span>`:""}`}
 const MTM=["ALL TRK","SPLIT KEY","SEQ START","SEQ TRNSP"],TIMS=["DIRECT","1/16","2/16","4/16","8/16","16/16","32/16"];
 const isBlack=n=>[1,3,6,8,10].includes(n%12);
 function kbRange(){const lo=12*(S.kbOct+1);return[lo,lo+47]}
@@ -27,10 +36,10 @@ function renderPerform(){const pm=PMODES.find(p=>p[0]===S.mode),t=asgT(),tr=S.tr
  const joy=S.asTab.startsWith("JOY");
  $("#main").innerHTML=`<div class="perf ${S.mode==="map"?"map":""}">
   <div class="perf3">
-   <section class="card menvcard"><header><h3>Multi envelope</h3><span>both DATA PAGE keys · multi trig only</span></header><div class="menvplot"><canvas class="ed" data-ed="menv" aria-label="Multi envelope. Drag the dots."></canvas></div>
+   <section class="card menvcard"><header><h3>Multi envelope</h3><span title="Both DATA PAGE keys on the machine. Its effect depends on the kit's MULTI TRIG mode">MULTI TRIG ${MTM[S.multi.mode]}</span></header><div class="menvplot"><canvas class="ed" data-ed="menv" aria-label="Multi envelope. Drag the dots."></canvas></div>
     <div class="ctl" style="grid-template-columns:repeat(5,minmax(0,1fr))">${["ATK","DEC","SUS","REL","PORT"].map(n=>pc("menv",n,{})).join("")}</div>
-    <div class="hint">On top of every track's own envelope. For no effect: ATK 0, DEC, SUS and REL at 127.</div></section>
-   <section class="card asgcard"><header><h3>Assign · T${t+1} ${shortM(tr.m)}</h3><span class="seg" data-set="astrk">${[0,1,2,3,4,5].map(k=>`<button data-v="${k}" aria-pressed="${k===t}">${k+1}</button>`).join("")}</span></header>
+    <div class="hint menvsay" title="On top of every track's own envelope. For no effect: ATK 0, DEC, SUS and REL at 127.">${menvHint()}</div></section>
+   <section class="card asgcard"><header><h3>Assign · T${t+1} ${shortM(tr.m)}</h3><span class="seg" data-set="astrk">${[0,1,2,3,4,5].map(k=>{const p=S.mode==="poly";return`<button data-v="${k}" aria-pressed="${k===t}"${p?` class="${k===t?"polyt":"polyoff"}" title="${k===t?`T${k+1} plays POLY: six voices`:`Silent in POLY. Click: T${k+1} plays POLY instead`}"`:""}>${k+1}${p&&k===t?`<em class="x6">×6</em>`:""}</button>`}).join("")}</span></header>
     <span class="seg" data-set="astab">${Object.keys(A.tabs).map(k=>`<button data-v="${k}" aria-pressed="${S.asTab===k}">${k}</button>`).join("")}</span>
     <div class="asgn${joy?"":" nojoy"}">${joy?`<div class="joy" id="joy" title="Drag the stick. It springs back."><span class="cross"></span><span class="cross2"></span><small class="jl">L</small><small class="jr">R</small><small class="ju">U</small><small class="jd">D</small><span class="knobj" id="knobj" style="left:${50+S.joy.x*42}%;top:${50-S.joy.y*42}%"></span></div>`:""}
      <div style="display:grid;gap:6px">${rows.map(asRow).join("")}
@@ -52,9 +61,9 @@ function renderPerform(){const pm=PMODES.find(p=>p[0]===S.mode),t=asgT(),tr=S.tr
   <div class="kbsec">
   <div class="perfbar kbtitle"><span class="cap">Keyboard</span><span class="keyrow">${PMODES.map(([k,n])=>`<button class="lkey" data-pmode="${k}" aria-pressed="${S.mode===k}"><i class="led"></i>${n}</button>`).join("")}</span>${mtCtl}
    <span class="stepper" style="margin-left:auto"><span class="ilab">Octave</span><button data-kboct="-1" aria-label="Octave down">−</button><b class="mono">${noteName(kbRange()[0])}</b><button data-kboct="1" aria-label="Octave up">+</button></span></div>
-  <div class="hint">${pm[2]} ${S.mode==="multi"?{0:"Notes go to all six tracks; each keeps its own arpeggiator.",1:`Keys from ${noteName(S.multi.splitKey)} play T${S.multi.splitTrack}-T6, keys below play T1-T${S.multi.splitTrack-1}. The multi envelope is not used here.`,2:"Each note restarts the pattern, transposed from C-4.",3:"The first note starts the pattern; later notes only transpose it, so the loop never breaks."}[S.multi.mode]:""}</div>
+  <div class="hint kbhint">${S.mode==="poly"?polyHint(t):pm[2]} ${S.mode==="multi"?{0:"Notes go to all six tracks; each keeps its own arpeggiator.",1:`Keys from ${noteName(S.multi.splitKey)} play T${S.multi.splitTrack}-T6, keys below play T1-T${S.multi.splitTrack-1}. The multi envelope is not used here.`,2:"Each note restarts the pattern, transposed from C-4.",3:"The first note starts the pattern; later notes only transpose it, so the loop never breaks."}[S.multi.mode]:""}</div>
   <div class="kbwrap">${S.mode==="map"?`<div class="mapbands">${mapBands()}</div>`:""}<div class="kb" id="kb">${renderKb()}</div>
-   <div class="trklamps" id="trklamps">${S.tracks.map((x,i)=>`<span><i class="led" data-lamp="${i}"></i>T${i+1} ${shortM(x.m)}</span>`).join("")}<span class="hint" id="kbinfo" style="margin-left:auto">Click or drag across the keys to play.</span></div></div>
+   <div class="trklamps" id="trklamps">${S.tracks.map((x,i)=>{const p=S.mode==="poly";return`<span${p?` class="${i===t?"polyt":"polyoff"}" title="${i===t?"Six voices in POLY":"Silent in POLY"}"`:""}><i class="led" data-lamp="${i}"></i>T${i+1} ${shortM(x.m)}${p&&i===t?`<em class="x6">×6</em>`:""}</span>`}).join("")}<span class="hint" id="kbinfo" style="margin-left:auto">Click or drag across the keys to play.</span></div></div>
   </div></div>`;
  /* the cards keep their hints in view (tipify went with the Sound page's groups) */
  syncControls();redraw()}

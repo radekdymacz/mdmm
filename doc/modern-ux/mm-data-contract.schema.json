@@ -5484,7 +5484,7 @@
         },
         {
           "type": "object",
-          "description": "machine: POLY, the machine's audio mode (SET STATUS 0x20)",
+          "description": "machine: POLY, the machine's audio mode (SET STATUS 0x20); t: TRACK t first, the track POLY plays with six voices (again while on: it moves there)",
           "required": ["op", "on"],
           "properties": {
             "op": {
@@ -5502,6 +5502,11 @@
             },
             "on": {
               "type": ["boolean", "integer"]
+            },
+            "t": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
             }
           },
           "additionalProperties": false

@@ -150,6 +150,9 @@ function(mdmm_add_lib_tests _dir)
 	# wave 7: LIVE RECORDING's erase (EXIT held) and STEP RECORDING through the desk to the firmware
 	add_test(NAME mmStepRecordFirmwareTest COMMAND mmDeskFirmwareTest --env steprec)
 	set_tests_properties(mmStepRecordFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
+	# 0.6 wave 9 (B-064): POLY, key tracking and the MULTI ENV through the desk, judged by the output
+	add_test(NAME mmPerformSoundFirmwareTest COMMAND mmDeskFirmwareTest --env perform)
+	set_tests_properties(mmPerformSoundFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
 	add_test(NAME mmSyxPickFirmwareTest COMMAND mmDeskFirmwareTest --env syxpick)
 	set_tests_properties(mmSyxPickFirmwareTest PROPERTIES
 		LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1200)

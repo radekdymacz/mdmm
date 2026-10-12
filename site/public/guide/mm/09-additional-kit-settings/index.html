@@ -81,7 +81,7 @@
 <p>The VEL tab assigns the velocity of the notes you play to a parameter. The sequencer always plays its notes at velocity 100, so a velocity assign only responds to the keys.</p>
 <h4 class="gd-h3" id="key-tracking">KEY TRACKING</h4>
 <p>The KEY tab assigns the key you played last to a parameter. The value is low for the lowest key and near its maximum for the highest.</p>
-<p>Two keys on this tab, <b class="gd-ui">HPF tracks keys</b> and <b class="gd-ui">LPF tracks keys</b>, switch the key tracking of the high-pass and low-pass filters.</p>
+<p>Two keys on this tab, <b class="gd-ui">HPF tracks keys</b> and <b class="gd-ui">LPF tracks keys</b>, switch the key tracking of the high-pass and low-pass filters. <b class="gd-ui">KEY</b> in the title of the <b class="gd-ui">Filter</b> group on <b class="gd-ui">Sound</b> shows the two switches and opens this tab. Chapter 7 describes filter tracking.</p>
 </div></section>
 <section class="gd-sec" id="trig-track-settings" aria-labelledby="trig-track-settings-h">
 <div class="gd-body gd-prose"><h2 id="trig-track-settings-h">TRIG TRACK SETTINGS <a class="gd-anchor" href="#trig-track-settings" aria-label="Link to TRIG TRACK SETTINGS">#</a></h2>
@@ -117,7 +117,11 @@
 <section class="gd-sec" id="multi-env" aria-labelledby="multi-env-h">
 <div class="gd-body gd-prose"><h2 id="multi-env-h">MULTI ENV <a class="gd-anchor" href="#multi-env" aria-label="Link to MULTI ENV">#</a></h2>
 <p class="gd-ref">MM manual pp.1-43, 1-44</p>
-<p>The <b class="gd-ui">Multi envelope</b> card holds an ADSR that acts on top of every track's own envelope. It acts in multi trig mode.</p>
+<p>The <b class="gd-ui">Multi envelope</b> card holds an ADSR that acts on top of every track's own envelope. Notes on the multi trig channel set it going. What it shapes depends on the multi trig mode of the kit. The title of the card names the mode, and the line under the boxes says what the envelope does in it.</p>
+<ul class="gd-list"><li>ALL TRK: it shapes the notes of the multi trig channel, which play all six tracks.</li><li>SPLIT KEY: it has no effect.</li><li>SEQ START and SEQ TRNSP: it shapes the pattern that a multi trig note starts.</li></ul>
+<p>Before the first multi trig note the envelope leaves the tracks alone. After one, its level holds every track. With REL under 127 every track is silent once that note is let go, its own notes too, until the next multi trig note or STOP. In SEQ START and SEQ TRNSP the pattern goes silent with them. <b class="gd-ui">Panic</b> (<kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[.]</kbd>, or <b class="gd-ui">Panic</b> in the transport menu) sends STOP and opens it again.</p>
+<p>To hear the envelope from the editor, click <b class="gd-ui">Multi trig</b> in the <b class="gd-ui">Keyboard</b> card: the keys then play on the multi trig channel. While the keys play another mode, the card says so.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The multi envelope in ALL TRK"><span>Screenshot to come</span></div><figcaption>The multi envelope in ALL TRK</figcaption></figure>
 <p>The five boxes are <b class="gd-ui">ATK</b>, <b class="gd-ui">DEC</b>, <b class="gd-ui">SUS</b>, <b class="gd-ui">REL</b> and <b class="gd-ui">PORT</b>. PORT is the portamento for all tracks. The plot above them shows the envelope. Drag its dots to change ATK, DEC with SUS, and REL. A REL of 127 never fades, and the plot says so.</p>
 <aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>For no effect from the multi envelope, set ATK to 0, and DEC, SUS and REL to 127.</p></aside>
 </div></section>
