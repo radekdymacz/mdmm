@@ -2087,7 +2087,24 @@ const MmJourneys = (() => {
 		],
 		async tidy(u, c) { if (S().stepSel) clearSel(); await undoUntil(u, () => (machine().history?.undoCount || 0) <= c.u0, 6); }
 	};
-	const wave12 = [undoKitJ, clearStepLocksJ];
+	/* MM-201: the lane's parameter locked at its current value on the selected step (the lock key in the rail's header) */
+	const lockCurrentJ = {
+		name: "mm-seq-lock-current", proves: ["MM-201"],
+		steps: [
+			go("seq"),
+			{ say: "pick a track with a note, the Locks tab", act: async (u, c) => { c.u0 = machine().history?.undoCount || 0; c.t = [0, 1, 2, 3, 4, 5].find(t => trigsOf(t).some(s => s < S().len && stepLocks(t, s).length === 0)) ?? 0;
+				if (S().side === "midi") u.click('[data-side="int"]'); u.click(rail(c.t)); await sleep(200); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); },
+				screen: c => ok(S().sel === c.t && !!$1("#lockLane"), "no lock key") },
+			{ say: "Cmd-click one of its notes: selected", act: (u, c) => { c.s = trigsOf(c.t).find(s => s < S().len && stepLocks(c.t, s).length === 0); if (S().stepSel) clearSel(); const p = rollCell(c.t, c.s); u.click(p.c, { cmd: true }, p.fx, p.fy); },
+				screen: c => ok(same(S().stepSel, { t: c.t, n: 1, from: c.s, to: c.s + 1 }), "selection " + JSON.stringify(S().stepSel)) },
+			{ say: "click the lock key: the lane's parameter is locked on the step at the value the kit has", act: (u, c) => { c.lane = S().lane; [c.pg, c.pi] = [PAGES.indexOf(c.lane.split(".")[0]), +c.lane.split(".")[1]]; c.kit = wk()?.tracks[c.t]?.pages?.[c.pg]?.[c.pi]; u.click("#lockLane"); },
+				machine: c => { const l = (patDoc().locks || []).find(x => x.track === c.t && x.page === c.pg && x.param === c.pi), v = l?.steps.find(([x]) => x === c.s)?.[1]; return ok(v != null && c.kit != null && v === c.kit, `lock ${v}, kit ${c.kit}, ${c.lane}`); },
+				screen: c => ok(S().locks.get(c.t + "|" + c.lane)?.has(c.s), "the lane shows no lock"), within: 15000 },
+			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(!(patDoc().locks || []).some(x => x.track === c.t && x.page === c.pg && x.param === c.pi && x.steps.some(([s]) => s === c.s)), "lock still there"), within: 15000 }
+		],
+		async tidy(u, c) { if (S().stepSel) clearSel(); await undoUntil(u, () => (machine().history?.undoCount || 0) <= c.u0, 4); }
+	};
+	const wave12 = [undoKitJ, clearStepLocksJ, lockCurrentJ];
 	const all = [...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
