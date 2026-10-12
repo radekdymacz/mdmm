@@ -1367,12 +1367,15 @@ const MmJourneys = (() => {
 		steps: [
 			{ say: "choose EXPORT SYSEX… in the engine menu: ALL is ticked, the kinds and the waveforms wait under it", act: u => u.pick("engsel", "export"),
 				screen: () => ok(!$1("#syxpop").hidden && $1("#syxpop").classList.contains("syx-export") && !!$1('#syxpop [data-sxk="all"]')?.checked && !!$1(syxValue("wave", "to")), "no export panel with ALL and the waveforms"), within: 6000 },
-			{ say: "untick All, untick Patterns and Songs, wheel the kits' last slot down to K04", act: async u => { u.click('#syxpop [data-sxk="all"]'); await sleep(100); u.click('#syxpop [data-sxk="pattern"]'); u.click('#syxpop [data-sxk="song"]'); await sleep(100); u.wheel(syxValue("kit", "to"), -124); },
-				screen: () => ok($1(syxValue("kit", "to"))?.textContent === "K04" && !$1('#syxpop [data-sxk="pattern"]').checked && !$1('#syxpop [data-sxk="song"]').checked, "kits to " + $1(syxValue("kit", "to"))?.textContent) },
+			{ say: "click Save .syx… with All: every document the editor holds", act: (u, c) => { c.n = syxNews.length; u.click('#syxpop [data-syxgo="save"]'); },
+				screen: c => { const m = syxNews.length > c.n && lastExport(); return ok(!!m && m.ok && /every document the editor holds \(/.test(m.text) && $1("#syxpop").hidden, m ? m.text : "no export yet"); }, within: 8000 },
+			{ say: "EXPORT SYSEX… again; untick All, untick Patterns and Songs, tick Globals, wheel the kits' last slot down to K04", act: async u => { await u.pick("engsel", "export"); await until(() => !!$1(syxValue("kit", "to")), 6000);
+				u.click('#syxpop [data-sxk="all"]'); await sleep(100); u.click('#syxpop [data-sxk="pattern"]'); u.click('#syxpop [data-sxk="song"]'); u.click('#syxpop [data-sxk="global"]'); await sleep(100); u.wheel(syxValue("kit", "to"), -124); },
+				screen: () => ok($1(syxValue("kit", "to"))?.textContent === "K04" && !$1('#syxpop [data-sxk="pattern"]').checked && !$1('#syxpop [data-sxk="song"]').checked && $1('#syxpop [data-sxk="global"]').checked, "kits to " + $1(syxValue("kit", "to"))?.textContent), within: 6000 },
 			{ say: "tick Waveforms, wheel their last one down to W08", act: async u => { u.click('#syxpop [data-sxk="wave"]'); await sleep(100); u.wheel(syxValue("wave", "to"), -56); },
-				screen: () => ok($1(syxValue("wave", "to"))?.textContent === "W08" && /Kits K01–K04 · Waveforms W01–W08/.test($1("#syxpop .syxsum")?.textContent || ""), "summary " + $1("#syxpop .syxsum")?.textContent) },
+				screen: () => ok($1(syxValue("wave", "to"))?.textContent === "W08" && /Kits K01–K04 · Globals G1–G8 · Waveforms W01–W08/.test($1("#syxpop .syxsum")?.textContent || ""), "summary " + $1("#syxpop .syxsum")?.textContent) },
 			{ say: "click Save .syx…: the waveforms are read from the machine, then the file is written", act: (u, c) => { c.n = syxNews.length; u.click('#syxpop [data-syxgo="save"]'); },
-				screen: c => { const m = syxNews.length > c.n && lastExport(); return ok(!!m && m.ok && /^Wrote .*: 4 kits, 2 waveforms\.$/.test(m.text), m ? m.text : "no export yet"); }, within: 20000 }
+				screen: c => { const m = syxNews.length > c.n && lastExport(); return ok(!!m && m.ok && /^Wrote .*: 4 kits, 8 globals, 2 waveforms\.$/.test(m.text), m ? m.text : "no export yet"); }, within: 20000 }
 		],
 		async tidy() { $1("#syxpop").hidden = true; }
 	};
@@ -1434,7 +1437,7 @@ const MmJourneys = (() => {
 	   (B-051: base OFF, or beyond CHANNEL SPAN) is refused, and the notice's fix (each track its own channel) makes the next M work. Then the pattern still changes, stopped and
 	   playing. The file is the run's (GEARMULATOR_MDMM_SYX_FILE). */
 	const globalNow = () => I().doc("global", machine().global?.current ?? 0);
-	const reaches = t => { const g = globalNow(); return !!g && g.baseChannel <= 14 && t < g.channelSpan && g.baseChannel + t <= 14; };
+	const reaches = t => { const c = globalNow()?.channels; return !!c && c.base <= 14 && t < c.span && c.base + t <= 14; };
 	const railM = t => `#rail .th[data-sel="${t}"] .ms.m`;
 	const syxImportMute = {
 		name: "mm-lib-syx-import-mute", proves: ["MM-308", "MM-309", "MM-020"],
@@ -1448,7 +1451,7 @@ const MmJourneys = (() => {
 			{ say: "click M on a track of the rail: its mute flips on the machine; a track with no MIDI channel (B-051) is refused, the notice offers the fix: take it, then M again",
 				act: async (u, c) => { c.m0 = synthMutes(); c.t = [0, 1, 2, 3, 4, 5].find(t => !c.m0.includes(t)) ?? 0; c.want = !c.m0.includes(c.t); c.fixed = !reaches(c.t); await sleep(1500); u.click(railM(c.t));
 					if (c.fixed) { if (!await until(dlgShown, 4000)) throw new Error("no notice for the refused mute"); u.click(dlgButton("Give each track its own channel")); await until(() => reaches(c.t), 15000); await sleep(3000); u.click(railM(c.t)); } },
-				machine: c => ok(synthMuted(c.t) === c.want, `base ${globalNow()?.baseChannel}, span ${globalNow()?.channelSpan}, track ${c.t + 1}${c.fixed ? " (channels given)" : ""}, machine mutes ${synthMutes()} (before ${c.m0})`),
+				machine: c => ok(synthMuted(c.t) === c.want, `base ${globalNow()?.channels?.base}, span ${globalNow()?.channels?.span}, track ${c.t + 1}${c.fixed ? " (channels given)" : ""}, machine mutes ${synthMutes()} (before ${c.m0})`),
 				screen: c => ok(pressed(railM(c.t)) === c.want && !dlgShown(), "M " + (pressed(railM(c.t)) ? "lit" : "not lit")), within: 30000 },
 			{ say: "press PLAY: the mute holds", act: u => { tele.steps = []; u.click("#play"); },
 				machine: c => ok(new Set(tele.steps).size >= 4 && synthMuted(c.t) === c.want, `machine mutes ${synthMutes()}, steps ${tele.steps.length}`),
