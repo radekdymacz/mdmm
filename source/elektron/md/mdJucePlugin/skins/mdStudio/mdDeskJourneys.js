@@ -476,6 +476,35 @@ const MdJourneys = (() => {
 			for (const s of c.p0 || []) if (!trigsOf(c.t).includes(s) && $1(cell(c.t, s))) { u.click(cell(c.t, s)); await sleep(120); } }
 	};
 
+	/* MD-140 (manual p.48): EXIT/NO with a DATA ENTRY knob pressed while live recording takes that parameter's locks of the
+	   selected track off as they play. In the editor the value pressed is the knob: the mouse held on it, then Delete held.
+	   The trigs and the other parameters stay. */
+	const pressEv = (type, el) => { const r = el.getBoundingClientRect(); el.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, composed: true,
+		clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, button: 0, buttons: type === "pointerdown" ? 1 : 0, pointerId: 1, pointerType: "mouse", isPrimary: true })); };
+	const liveUnlock = {
+		name: "md-seq-live-unlock", proves: ["MD-140"],
+		steps: [
+			go("seq"),
+			{ say: "pick the track with the most trigs and no FLTF locks", act: (u, c) => { c.t = soundTracks().filter(t => !locksOf(t, pidx(t, "FLTF")).length).sort((a, b) => trigsOf(b).length - trigsOf(a).length)[0] ?? soundTrack(); c.i = pidx(c.t, "FLTF"); u.click(rail(c.t)); },
+				screen: c => ok(S.sel === c.t, "selected " + S.sel), machine: c => ok(trigsOf(c.t).length >= 2 && c.i >= 0 && !locksOf(c.t, c.i).length, `track ${c.t + 1}: ${trigsOf(c.t).length} trigs, FLTF #${c.i} locks ${JSON.stringify(locksOf(c.t, c.i))}`) },
+			{ say: "click the FLTF lock key and draw a lock on each of the track's trigs", act: async (u, c) => { u.click('#chips .pk[data-lane="FLTF"]'); await sleep(200); c.on = trigsOf(c.t).filter(s => s < V.len);
+				await u.drag(`#lane .lb[data-s="${c.on[0]}"]`, c.on.slice(1).map(s => `#lane .lb[data-s="${s}"]`), {}, { fy: 0.3 }); },
+				machine: c => { c.p0 = trigsOf(c.t); c.others = kitLocks(c); return ok(c.on.every(s => locksOf(c.t, c.i).some(([x]) => x === s)), "locks " + JSON.stringify(locksOf(c.t, c.i))); }, within: 8000 },
+			{ say: "click REC, then the Sound tab: live recording, playing", act: async u => { u.click("#rec"); await sleep(300); u.click(tab("sound")); }, screen: () => ok(V.rec && S.ws === "sound", `REC ${V.rec}, workspace ${S.ws}`), machine: () => ok(tele.last?.playing, "not playing"), within: 5000 },
+			{ say: "press the FLTF value and hold Delete: its locks go as they play", act: (u, c) => { results.length = 0; c.el = $1('#main .pc[data-n="FLTF"]'); if (!c.el) throw new Error("no FLTF value on the Sound page"); pressEv("pointerdown", c.el); document.activeElement?.blur?.(); u.cap("value pressed, Delete held"); keyEv("keydown", "Delete"); },
+				screen: c => ok(document.body.classList.contains("erasing") && c.el.classList.contains("erasing"), "not marked as erasing"),
+				machine: c => ok(locksOf(c.t, c.i).length < c.on.length, `${c.on.length} -> ${locksOf(c.t, c.i).length} locks; results ${results.map(r => r.op + ":" + r.ok + (r.errors ? " " + r.errors.join(";") : "")).join(", ")}`), within: 10000 },
+			{ say: "let the value and Delete go, click REC off, then STOP: the trigs and the other locks stayed", act: async (u, c) => { pressEv("pointerup", c.el); keyEv("keyup", "Delete"); await sleep(300); u.click("#rec"); await sleep(500); if (V.playing) u.click("#play"); },
+				screen: c => ok(!document.body.classList.contains("erasing") && !c.el.classList.contains("erasing") && !V.rec && !V.playing, `REC ${V.rec}, playing ${V.playing}`),
+				machine: c => ok(same(trigsOf(c.t), c.p0) && same(kitLocks(c), c.others), `trigs ${trigsOf(c.t).join(",")} (were ${c.p0.join(",")}); other locks changed: ${!same(kitLocks(c), c.others)}`), within: 8000 }
+		],
+		async tidy(u, c) { if (c.el) pressEv("pointerup", c.el); keyEv("keyup", "Delete"); if (V.rec) u.click("#rec"); if (V.playing) u.click("#play"); await sleep(600);
+			/* the FLTF locks it drew and the machine left: the lane's clear key */
+			if (c.i >= 0 && locksOf(c.t, c.i).length) { u.click(tab("seq")); await sleep(200); u.click('#chips .pk[data-lane="FLTF"]'); await sleep(200); u.click("#clearLane"); } }
+	};
+	/* every lock of the pattern but the journey's own parameter on its track */
+	const kitLocks = c => JSON.stringify((pat()?.locks || []).filter(l => !(l.track === c.t && l.param === c.i)));
+
 	/* ---------- generators ---------- */
 	const genJourney = (name, defaults, o = {}) => ({
 		name, proves: o.proves,
@@ -1699,7 +1728,7 @@ const MdJourneys = (() => {
 		]
 	};
 	const all = [bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
-		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase,
+		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
 		genJourney("md-gen-mutate-undo", false, { proves: [] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: [] }), genKeys,
 		shapeSound, arrows, machinePick, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,
 		mixSolo, shiftMutes, allOff, fader, outKey, masterFx,
