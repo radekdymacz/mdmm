@@ -73,7 +73,7 @@ namespace mmDesk
 		if(!row || row->group != g_library)
 			return ok();
 		const bool clears = op == "kitClear" || op == "patClear" || op == "songClear";
-		if(op == "kitRename" || op == "kitCopy" || op == "patCopy" || op == "songRename" || op == "songCopy")
+		if(op == "kitRename" || op == "kitCopy" || op == "patCopy" || op == "songRename" || op == "songCopy" || op == "globalCopy")
 			return ok();	// a name, or the clipboard: nothing is lost
 		const bool edited = kitState(_view) == deskCore::KitState::Edited;
 		Outcome o;
@@ -93,6 +93,9 @@ namespace mmDesk
 				if(!songIsEmpty(std::get<ed::MmSong>(c.before)))
 					o = deskCore::withAsk(std::move(o), ask("clearSlot", "Clear <b>S" + std::string(ref.slot < 9 ? "0" : "") + std::to_string(ref.slot + 1) + "</b>? Its rows and its name are removed.", "Clear song"));
 			}
+			else if(ref.kind == Kind::Global)
+				o = deskCore::withAsk(std::move(o), ask("overwriteSlot", "Paste over <b>GLOBAL " + std::to_string(ref.slot + 1) + "</b>? Its MIDI channels,"
+					" control, multi map, MIDI tracks, routing and master tune are replaced (Undo brings them back).", "Paste"));
 			else if(ref.kind == Kind::Song)
 			{
 				if(!songIsEmpty(std::get<ed::MmSong>(c.before)))

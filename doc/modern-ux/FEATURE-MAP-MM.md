@@ -55,7 +55,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Front panel 1-4 | 7 Tap tempo (FUNCTION + TEMPO) | Tap | ✅ | Shift + B on every workspace; plain B on the others than Sequence | On Sequence, B is the piano roll's Draw (`75-comforts.js`) | 2 |
 | Front panel 1-4 | 8 FUNCTION key (secondary functions) | Modifier | ➖ | – | Replaced by Alt, Shift, Cmd and buttons | – |
 | Front panel 1-4 | 9 KIT / SONG key | Kit menu or song menu | ✅ | LCD > KIT (kit library); Song workspace |  | 1 |
-| Front panel 1-4 | 9 GLOBAL (FUNCTION + KIT / SONG) | Global menu | ✅ | GLOBAL key in the top bar, engine menu > GLOBAL…, link in the AUDIO / MIDI panel | 8 slots, Control, Sync, Routing; master tune is not on it (`deskGlobal.js`, `117-global.js`) | – |
+| Front panel 1-4 | 9 GLOBAL (FUNCTION + KIT / SONG) | Global menu | ✅ | GLOBAL key in the top bar (a page under the header), engine menu > GLOBAL…, link in the AUDIO / MIDI panel | 8 slots with Copy · Paste · Clear, Control, Sync, Routing, Audio (master tune), Control out 1 (`deskGlobal.js`, `117-global.js`) | 1 |
 | Front panel 1-5 | 10 TRIG keys as keyboard | Play notes | ✅ | Home-row keys A-L and W-P, on-screen keyboard (Perform), roll keys |  | 2 |
 | Front panel 1-5 | 10 Velocity 80, or 127 with FUNCTION | Key velocity | ✅ | Keys C / V (20 40 60 80 100 127) |  | – |
 | Front panel 1-5 | 10 TRIG keys edit notes in grid mode | Step trigs | ✅ | Roll click (Draw on), ENV dots, step menu |  | – |
@@ -349,7 +349,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | MIDI page 1-71 | CC 1-4 | Controllers | ✅ | MIDI page CL / CC boxes |  | – |
 | Comparison 1-71 | No trig tracks; arp without switches; swing and slide; transpose | Differences | ✅ | Same docks |  | – |
 | Comparison 1-71 | MIDI page stored in the kit | Kit part | ✅ | Kit edits |  | – |
-| Comparison 1-71 | Internal tracks can send MIDI too | Internal MIDI out | ❌ | – | CONTROL OUT1 not editable. Measured (P2): global bytes 0x07-0x09, 0 INT, 1 OUT, 2 INT+OUT. | – |
+| Comparison 1-71 | Internal tracks can send MIDI too | Internal MIDI out | ✅ | GLOBAL > Control out 1 (OUT or INT+OUT) | The sequencer's trigs go out as NRPN on the base channel, the arpeggiator and the keyboard as notes (P2) | 1 |
 
 ## 17. The song mode (1-73 to 1-80)
 
@@ -399,9 +399,9 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
-| Global slots 1-87 | 8 global slots; select, copy, paste, clear | Global slots | 🟡 | GLOBAL panel: slot keys 1-8 make one active; Reset to defaults (asked first) | No copy, paste or clear of a slot (`deskGlobal.js`, `globalSlot`, `globalReset`) | 2 |
+| Global slots 1-87 | 8 global slots; select, copy, paste, clear | Global slots | ✅ | GLOBAL page head: slot keys 1-8 make one active; Copy, Paste (asked first), Clear (asked first) | `globalCopy`, `globalPaste`, `globalReset` (the factory global), each one undo step | 3 |
 | Turbo menu 1-87, 1-88 | TURBO negotiate speed | MIDI speed | ➖ | – | The emulator's own transfers use it internally; no cable to negotiate | – |
-| Audio > Master tune 1-88 | 440.0 Hz default | Master tune | ❌ | – | Not on the GLOBAL page yet (release notes 0.5.0, Known); some bytes of the global are not decoded | – |
+| Audio > Master tune 1-88 | 440.0 Hz default | Master tune | ✅ | GLOBAL > Audio > Master tune (400.0 to 499.9 Hz; − / + 0.1 Hz, Shift 1 Hz) | `masterTune`; the range is the panel's (P8 in PROBES-manual-gaps.md) | 1 |
 | Audio > Routing 1-89 | Three routing modes | Routing | ✅ | Mix routing bar |  | 1 |
 | Control > MIDI channels 1-89 | Base channel | Base | ✅ | GLOBAL > Control > Base channel (OFF, 1-16) | Track t listens on base + t while t is inside the span (`117-global.js`) | – |
 | Control > MIDI channels 1-90 | Channel span | Span | ✅ | GLOBAL > Control > Channel span | A warning names the tracks without a channel of their own | 2 |
@@ -409,7 +409,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Control > MIDI channels 1-90 | Multi map channel | Multi map ch | ✅ | GLOBAL > Control > Multi map |  | – |
 | Control > MIDI channels 1-90 | Auto track channel | Auto ch | ✅ | GLOBAL > Control > Auto track |  | – |
 | MIDI functionality 1-90 | NRPN control, program change selects pattern | MIDI in | ➖ | – | Firmware; automation and DAW MIDI reach it | – |
-| Control out 1 1-91 | SEQUENCER, ARP, KEYBOARD to INT / OUT / INT+OUT | Output routing | ❌ | – | Not on the GLOBAL page. Measured (P2): global bytes 0x07 SEQUENCER, 0x08 ARP, 0x09 KEYBOARD; 0 INT, 1 OUT, 2 INT+OUT; factory INT, INT, INT+OUT. | – |
+| Control out 1 1-91 | SEQUENCER, ARP, KEYBOARD to INT / OUT / INT+OUT | Output routing | ✅ | GLOBAL > Control out 1: Sequencer, Arp, Keyboard to INT, OUT or INT+OUT | Measured (P2): global bytes 0x07-0x09 (`globalMidi` sequencerOut, arpOut, keyboardOut). The page warns when OUT leaves the machine silent | 1 |
 | Control out 2 1-92 | TRANSPORT, MIDI CLOCK, PRG CHANGE out | Output control | ✅ | GLOBAL > Sync > Ctrl out, Tempo out; Control > Prg change out | `globalMidi` (clockOut, transportOut, programChangeOut). Machine MIDI out reaches the host since 0.4.0 | 1 |
 | Control in 1-92 | TEMPO SYNC internal / external | Sync | ✅ | GLOBAL > Sync > Tempo in (INT / EXT) | A DAW sets EXT itself (`followHost`) | – |
 | Control in 1-92 | TRANSPORT ACCEPT / IGNORE | Transport in | ✅ | GLOBAL > Sync > Ctrl in | A DAW turns it on itself; the page also asks once when PLAY needs it | – |
@@ -436,7 +436,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
 | Test mode 1-110 | Hardware self test, joystick calibration | Test | ➖ | – |  | – |
-| Empty reset 1-110 | Clear kits, patterns, songs, globals | Reset | 🟡 | Clear single slots in the libraries; Alt + CLR for a pattern; GLOBAL > Reset to defaults for the active global | No "clear everything" key | – |
+| Empty reset 1-110 | Clear kits, patterns, songs, globals | Reset | 🟡 | Clear single slots in the libraries; Alt + CLR for a pattern; GLOBAL > Clear for the active global | No "clear everything" key | – |
 | Factory reset 1-110 | Restore factory data | Reset | ❌ | – | Remove and add the ROM or import the factory .syx | – |
 | Soft reset 1-111 | Restart keeping data | Restart | ➖ | – | Reopen the editor | – |
 | MIDI upgrade, send upgrade 1-111, 1-112 | OS update over MIDI | OS update | ➖ | – | The editor loads the OS 1.32B image | – |
@@ -503,7 +503,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
-| 0x50 / 0x51 Global dump, request C-1 | Global slot data | Global | 🟡 | Read and written for routing, MIDI channels, sync, MIDI seq, multi map | Master tune and some bytes are not decoded on the page; CONTROL OUT 1 is measured (P2, bytes 0x07-0x09) but not on the page. | – |
+| 0x50 / 0x51 Global dump, request C-1 | Global slot data | Global | ✅ | Read and written: routing, MIDI channels, control in, control out 1 and 2, MIDI seq, multi map, master tune | Bytes 0x0d-0x11, 0x30-0x35 and 0x36-0x3b are kept as the machine sends them (no function found, P2) | 1 |
 | 0x52 / 0x53 Kit dump, request C-1 | Kit data | Kit | ✅ | Kit library, SysEx panel |  | – |
 | 0x54 Unused C-1 | – | – | ➖ | – |  | – |
 | 0x55 Set current kit name C-1 | Live kit rename | Kit name | ✅ | Kit library Rename (current kit) |  | – |
@@ -531,9 +531,9 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 319 |
-| 🟡 | 25 |
-| ❌ | 7 |
+| ✅ | 324 |
+| 🟡 | 23 |
+| ❌ | 4 |
 | ➖ | 34 |
 | Total | 385 |
 
@@ -548,4 +548,4 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 7. **Transport details (1-5, 1-56).** No pause, no double-STOP rewind and all-notes-off, no +/-10 % tempo nudge, no delayed tempo change, no panic (CC 120).
 8. **Arpeggiator, swing and slide have no copy / clear / paste / undo of their own (1-62, 1-65, 1-66).** Page undo only.
 9. **Lock helpers (1-14, 1-57).** No key that drops only the locks of one step and keeps its note, and no "lock the current value" click.
-10. **Reset functions (1-110).** No empty reset or factory reset from the editor (GLOBAL has Reset to defaults for one slot); the page cannot show or open the UNDO KIT slot.
+10. **Reset functions (1-110).** No empty reset or factory reset from the editor (GLOBAL has Clear for one slot); the page cannot show or open the UNDO KIT slot.

@@ -17,7 +17,7 @@ namespace elektronData
 			_io.u8(_g.multiMapChannel);
 			_io.u8(_g.tempoSync);
 			_io.u8(_g.transportIn);
-			_io.bytes(_g.x07);
+			_io.bytes(_g.controlOut1);
 			_io.u8(_g.transportOut);
 			_io.u8(_g.clockOut);
 			_io.u8(_g.programChangeOut);

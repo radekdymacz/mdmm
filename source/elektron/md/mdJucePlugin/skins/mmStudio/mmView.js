@@ -82,7 +82,11 @@ const MmView = (() => {
 	function globPage(slot, g) {
 		const c = g.channels || {}, i = g.controlIn || {}, o = g.controlOut || {};
 		return { slot, base: chOf(c.base), span: c.span ?? 0, auto: chOf(c.auto), multiTrig: chOf(c.multiTrig), multiMap: chOf(c.multiMap),
-			clockIn: i.tempoSync === 1, transportIn: i.transport === 1, clockOut: o.clock !== 0, transportOut: o.transport !== 0, programChangeOut: !!o.programChange };
+			clockIn: i.tempoSync === 1, transportIn: i.transport === 1, clockOut: o.clock !== 0, transportOut: o.transport !== 0, programChangeOut: !!o.programChange,
+			/* CONTROL OUT1 (P2): 0 INT, 1 OUT, 2 INT+OUT; null in a document from before 0.6 */
+			sequencerOut: o.sequencer ?? null, arpOut: o.arp ?? null, keyboardOut: o.keyboard ?? null,
+			/* AUDIO › MASTER TUNE in tenths of Hz */
+			tune: g.masterTune ?? null };
 	}
 	/* B-051: the channel the machine takes track t's CCs, mutes and notes on, or null (elektronData::mmTrackChannel,
 	   measured on OS 1.32B: base + t while t < CHANNEL SPAN and base + t is 0-14; channel 16 reaches no track) */
@@ -108,7 +112,7 @@ const MmView = (() => {
 		v.hostTempo = !!(H && H.follows && H.bpm > 0 && global && global.controlIn && global.controlIn.tempoSync === 1);
 		if (v.hostTempo) v.bpm = H.bpm;
 		/* B-051, F3: the GLOBAL page's MIDI part, the active global's (a channel 0-15, null OFF) */
-		if (global) v.glob = globPage(glob, global);
+		if (global) { v.glob = globPage(glob, global); v.glob.clip = m?.clipboard?.global ?? null; }
 		const kd = kitDocOf(docs, kit), pd = pat != null ? docs.patterns[pat] || null : null;
 		/* the view shows the machine once the current pattern and the kit that plays are there */
 		v.ready = !!(kd && pd);
@@ -221,8 +225,10 @@ const MmView = (() => {
 		legato: (v, c) => [[["tracks", c.t, "leg", { amp: "amp", filter: "flt", lfo: "lfo" }[c.env]], c.on ? 1 : 0]],
 		portamento: (v, c) => [[["tracks", c.t, "port"], c.v === "always" ? 0 : 1]],
 		routing: (v, c) => [[["routing"], c.v]],
-		globalMidi: (v, c) => ["base", "span", "auto", "multiTrig", "multiMap", "clockIn", "transportIn", "clockOut", "transportOut", "programChangeOut"]
-			.filter(k => c[k] !== undefined).map(k => [["glob", k], k === "span" ? c[k] : typeof c[k] === "boolean" ? c[k] : chOf(c[k])]),
+		globalMidi: (v, c) => ["base", "span", "auto", "multiTrig", "multiMap", "clockIn", "transportIn", "clockOut", "transportOut", "programChangeOut",
+			"sequencerOut", "arpOut", "keyboardOut"]
+			.filter(k => c[k] !== undefined).map(k => [["glob", k], k === "span" || k.endsWith("Out") && typeof c[k] === "number" ? c[k] : typeof c[k] === "boolean" ? c[k] : chOf(c[k])]),
+		masterTune: (v, c) => [[["glob", "tune"], c.v]],
 		globalReset: () => [],
 		midiTrack: (v, c) => [...(c.ch != null ? [[["midi", c.t, "ch"], c.ch + 1]] : []), ...(c.cc ? [[["midi", c.t, "cc"], c.cc.map(Number)]] : [])],
 		step: (v, c) => stepWrites(v, c.t, c.s, c.v),
@@ -473,12 +479,12 @@ const MmView = (() => {
 	const OPS = {
 		kit: ["level", "route", "input", "param", "trigPos", "legato", "portamento", "machine", "clearSound", "copySound", "pasteSound", "params",
 			"assign", "multiEnv", "multiTrig", "kitName"],
-		global: ["routing", "midiTrack", "globalMidi", "globalReset", "multiMap", "multiMapSplit", "multiMapDelete"],
+		global: ["routing", "midiTrack", "globalMidi", "masterTune", "globalReset", "multiMap", "multiMapSplit", "multiMapDelete"],
 		song: ["rowSet", "rowInsert", "rowDelete", "rowMove", "copyRow", "pasteRow"],
 		/* COPY / PASTE / CLEAR what (0.6): the pattern that plays (p) and the kit that plays (k) */
 		track: ["trackCopy", "trackPaste", "trackClear"],
 		library: ["patCopy", "patPaste", "patCopyTo", "patClear", "kitCopy", "kitPaste", "kitCopyTo", "kitClear", "kitRename",
-			"songCopy", "songPaste", "songCopyTo", "songClear", "songRename"]
+			"songCopy", "songPaste", "songCopyTo", "songClear", "songRename", "globalCopy", "globalPaste"]
 	};
 	const KIND = new Map(Object.entries(OPS).flatMap(([kind, ops]) => ops.map(op => [op, kind])));
 	const kindOf = op => KIND.get(op) || "pattern";

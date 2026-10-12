@@ -240,7 +240,7 @@ function deriveView(docs, ui) {
 		songMode: M.songMode === true ? true : M.songMode === false ? false : null,
 		roundTrip: desk.roundTripMs, lifecycle: M.lifecycle || "booting", lifecycleText: M.lifecycleText || "",
 		input: !!M.input, midi: !!M.midi, caps,
-		clipboard: Object.assign({ steps: false, sound: false, songRow: false, kit: null, pattern: null, song: null }, M.clipboard || {}),
+		clipboard: Object.assign({ steps: false, sound: false, songRow: false, kit: null, pattern: null, song: null, global: null }, M.clipboard || {}),
 		canUndo: !!hist.undo, canRedo: !!hist.redo, undoCount: hist.undoCount || 0, redoCount: hist.redoCount || 0,
 		songReload: !!(M.song && M.song.reloadNeeded), len: 16, length: 16, mult: "1X", swing: 50, accAmt: 0, accAll: false, slideAll: false, swingAll: false };
 	/* B-030: in a DAW whose clock the machine follows (its global: TEMPO IN external, set by the plug-in), the tempo

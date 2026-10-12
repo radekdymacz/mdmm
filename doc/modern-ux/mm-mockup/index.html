@@ -1713,7 +1713,7 @@ svg.route{width:100%;height:auto;aspect-ratio:1200/146;min-height:0}
 .modalbg{position:fixed;inset:0;z-index:var(--mz,59);background:rgba(8,8,6,.52)}
 .modalbg[hidden]{display:none}
 .modalbg.clear{background:transparent}
-.modal:not(.dlg):not(.bootcard):not(.deskmenu){position:fixed!important;left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;margin:0!important;max-width:calc(100vw - 48px)!important;max-height:calc(100vh - 48px)!important;overflow:auto!important;z-index:var(--mz,60)!important;box-sizing:border-box}
+.modal:not(.dlg):not(.bootcard):not(.deskmenu):not(.gpage){position:fixed!important;left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;margin:0!important;max-width:calc(100vw - 48px)!important;max-height:calc(100vh - 48px)!important;overflow:auto!important;z-index:var(--mz,60)!important;box-sizing:border-box}
 .dlg.modal{background:transparent!important;z-index:var(--mz,60)!important}
 .modal:focus,.modal .dlgbox:focus{outline:none}
 .modalopen .kpop{z-index:120!important}
@@ -1972,8 +1972,9 @@ body.deskmidi #main,body.deskmidi #rail{opacity:.3;pointer-events:none;transitio
 /* a smaller window: fewer words on the keys, the columns one under the other */
 @media (max-width:900px){.kv-cap{height:38px}.kv-cap .kv-act{-webkit-line-clamp:1;font-size:9px}.kv-cols{grid-template-columns:minmax(0,1fr)}.kv-hint{display:none}.globpop.kview .keysgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:640px){.kv-cap{height:30px;padding:2px}.kv-cap .kv-act{display:none}.kv-cap.has::after{content:"";position:absolute;left:50%;bottom:4px;width:5px;height:5px;margin-left:-2px;border-radius:50%;background:var(--cream)}.kv-keys,.kv-board{gap:2px}.kv-cap b{font-size:8px}.globpop.kview .keysgrid{grid-template-columns:minmax(0,1fr)}}
-/* The GLOBAL panel both editors share (deskGlobal.js; B-051, F3): the Machinedrum Editor's v61 (P5) panel, moved here
-   unchanged, plus the Reset to defaults key and the channel warning. Plain grid and flex (macOS 12's WebKit). */
+/* The GLOBAL page both editors share (deskGlobal.js; B-051, F3): the Machinedrum Editor's v61 (P5) panel, moved here,
+   the channel warning; since 0.6 a page over the workspace under the header (.gpage, DESIGN-machine-menus.md §2, the
+   mock-ups md-08 and mm-06): the head on one line, the cards in three columns. Plain grid and flex (macOS 12's WebKit). */
 .globpop{position:absolute;z-index:22;width:min(1180px,calc(100vw - 32px));display:grid;gap:10px;align-content:start;padding:14px;background:var(--plate);border:2px solid var(--print);border-radius:6px;box-shadow:0 18px 40px rgba(0,0,0,.35);overflow:auto;overscroll-behavior:contain;color:var(--body)}
 .globgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .globgrid .card{gap:8px}
@@ -2002,6 +2003,34 @@ body.deskmidi #main,body.deskmidi #rail{opacity:.3;pointer-events:none;transitio
 .gnv{font:600 9px var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--print3);border:1px solid var(--rule);border-radius:2px;padding:0 4px;margin-left:6px}
 .libhead .greset{flex:none}
 .gwarn{grid-column:1/-1;margin:0;font-size:12px;color:var(--red)}
+/* 0.6: the page: no frame of its own, the header's width, scrolls inside */
+.globpop.gpage{z-index:var(--mz,22);border:0;border-radius:0;box-shadow:none;padding:0 2px 16px;gap:14px;background:var(--plate);box-sizing:border-box}
+.gphead{display:flex;align-items:center;gap:14px;flex-wrap:nowrap;white-space:nowrap;border-bottom:2px solid var(--print);padding-bottom:10px;min-width:0}
+.gpname{font:600 22px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase;color:var(--print)}
+.gphead .gslots button{width:34px;height:30px;font-size:13px}
+.gpkeys{display:flex;gap:4px}
+.gphead .gpkeys button,.gphead .gpback,.globgrid .mini{height:30px;padding:0 12px;font:600 11px var(--sans);letter-spacing:.14em;text-transform:uppercase;white-space:nowrap}
+.gphead .gpkeys button[disabled]{opacity:.45}
+.gphead .danger:hover{background:var(--rec,var(--red));color:#fff}
+.gphead .gpsp{flex:1 1 auto}
+.gphead .note{font-size:13px}
+.gpage .globgrid{gap:22px 28px;align-items:start}
+.gpage .globgrid .grow2{min-height:32px}
+.gpage .globgrid .grow2 .ilab{min-width:120px}
+.globgrid .mini{height:22px;padding:0 8px;font-size:10px;margin-right:8px}
+/* the map editor's LEARN dots (MD): click one, play a note */
+.gmk small{display:flex;align-items:center;gap:4px}
+.glearn{width:12px;height:12px;padding:0;border:0;border-radius:50%;background:transparent;box-shadow:inset 0 0 0 1.5px currentColor;opacity:.7;cursor:pointer;min-width:0}
+.glearn[aria-pressed=true]{background:var(--led,var(--red));box-shadow:0 0 5px 1px var(--led,var(--red));opacity:1}
+.glearnhint{font-size:12px;color:var(--print2)}
+/* TRIG IN A / B as steppers (MD) and CONTROL OUT1 rows (MM) */
+.ginputs .stepper{display:flex;gap:2px;align-items:center}
+.ginputs .stepper button{width:18px;height:22px;padding:0;min-width:0}
+.ginputs .stepper b{min-width:3ch;text-align:center;font-weight:500}
+.gpage .stepper b{min-width:5ch;text-align:center}
+/* a row's note (the map editor's "16 notes play patterns …"): one line of a fixed height, so a glyph from a fallback
+   font (→) cannot make the row taller while the fonts settle (md-old-webkit measured 38 px against 32) */
+.globgrid .grow2 .note{line-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 /* P7: the workspace and setup keys: one minimum width each, so the rows look even (MIX was a sliver) */
 #tabs button{min-width:60px!important;justify-content:center;box-sizing:border-box}
 .setkeys button{min-width:46px!important;justify-content:center;box-sizing:border-box}
@@ -2631,7 +2660,7 @@ body.erasing .rail .th.sel{box-shadow:inset 0 0 0 2px var(--rec)!important}
 <div class="machpop" id="machpop" role="dialog" aria-label="Choose a machine" hidden></div>
 <div class="kpop" id="kpop" role="listbox" hidden></div>
 <div class="libpop keyspop" id="keyspop" role="dialog" aria-label="Keys" hidden></div>
-<div class="libpop globpop" id="globpop" role="dialog" aria-label="Global settings" hidden></div>
+<div class="libpop globpop" id="globpop" role="region" aria-label="Global" hidden></div>
 <div class="ampop" id="audiopop" role="dialog" aria-label="Audio and MIDI settings" hidden></div>
 <div class="dlg" id="dlg" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -3327,7 +3356,7 @@ const Keys = (() => {
 	   pressed, ["step"]), keys: ["Z"], mod: "cmd"|"alt"|"shift"|"cmd+shift"|"", group, does (text, or () => text when it shows state), when?: () => bool,
 	   run?: e => void, field?: true, hidden?: true (dispatched, but another entry describes it in the ? overlay),
 	   modal?: "keyspop" (it also runs while that dialog is the top one; every other entry is off while one is open)
-	     or "panel" (it also runs over any panel: the library, GLOBAL, AUDIO / MIDI; never over a question),
+	     or "panel" (it also runs over any panel: the library, AUDIO / MIDI, and the GLOBAL page; never over a question),
 	   code?: "KeyR" (matched on the physical key, e.code: with Alt or Cmd held macOS types another character)} */
 	function bind(entry) { list.push(Object.assign({ mod: "", when: null, field: false }, entry)); }
 	const modOf = e => Modifiers.of(e);
@@ -3338,7 +3367,7 @@ const Keys = (() => {
 	   free(): no dialog open and no text field focused, the rule of the keys that play and act on tracks. */
 	const modalTop = () => typeof Modal !== "undefined" && Modal.top ? Modal.top() : null;
 	const modalKind = () => typeof Modal !== "undefined" && Modal.kind ? Modal.kind() : null;
-	const passes = (b, top) => b.modal === top || (b.modal === "panel" && modalKind() === "panel");
+	const passes = (b, top) => b.modal === top || (b.modal === "panel" && (modalKind() === "panel" || modalKind() === "page"));
 	const free = () => !modalTop() && !document.activeElement?.closest?.("input,select,textarea,[contenteditable]");
 	/* The keys that reached the page, newest last ("cmd+C", "shift+?", "Space"): every keydown (noted first, before a
 	   dialog keeps it from the shortcuts) and every edit command taken as its key (below). The key probe's text. */
@@ -4159,11 +4188,14 @@ const MmRoll=(()=>{
      panel    a library, settings or list: Esc and a click outside close it (its own close function)
      boot     the start-up card (deskBoot.js): nothing closes it but the machine becoming ready
      menu     a context menu (deskMenu.js, K3): at the pointer, nothing dimmed, Esc and a click outside close it
+     page     a page over the workspace (0.6: GLOBAL): placed by its owner under the header, nothing dimmed, the header
+              stays clickable (its owner closes it on a click there), Esc closes it; the keys stay its own, as a panel's
    A listbox (the dropdowns) is not a modal: it stays at its button. */
 const Modal = (() => {
 	const KINDS = { confirm: { outside: false, focusLast: true, esc: true }, panel: { outside: true, focusLast: false, esc: true },
-		boot: { outside: false, focusLast: false, esc: false }, menu: { outside: true, focusLast: false, esc: true } };
-	const DIALOGS = [["#dlg", "confirm", null], ["#libpop", "panel", "closeLib"], ["#globpop", "panel", "closeGlobal"],
+		boot: { outside: false, focusLast: false, esc: false }, menu: { outside: true, focusLast: false, esc: true },
+		page: { outside: false, focusLast: false, esc: true } };
+	const DIALOGS = [["#dlg", "confirm", null], ["#libpop", "panel", "closeLib"], ["#globpop", "page", "closeGlobal"],
 		["#keyspop", "panel", "toggleKeys"], ["#audiopop", "panel", "closeAudio"], ["#machpop", "panel", "closePicker"], ["#bootcard", "boot", null],
 		["#syxpop", "panel", null], ["#deskmenu", "menu", "closeDeskMenu"]];
 	const stack = [];	// {el, kind, close, back}
@@ -4175,7 +4207,7 @@ const Modal = (() => {
 	const keys = d => [...box(d).querySelectorAll(FOCUSABLE)].filter(e => e.offsetParent !== null || e === document.activeElement);
 	function layer() {
 		if (!bg) { bg = document.createElement("div"); bg.id = "modalbg"; bg.className = "modalbg"; bg.hidden = true; document.body.appendChild(bg); }
-		bg.hidden = !stack.length;
+		bg.hidden = !stack.length || stack[stack.length - 1].kind === "page";	/* a page dims nothing and covers no header */
 		bg.classList.toggle("clear", stack.length > 0 && stack[stack.length - 1].kind === "menu");	/* a menu dims nothing */
 		stack.forEach((d, i) => { d.el.classList.add("modal"); d.el.style.setProperty("--mz", 60 + i * 2); });
 		if (stack.length) bg.style.setProperty("--mz", 59 + (stack.length - 1) * 2);
@@ -4234,7 +4266,7 @@ const Modal = (() => {
 		if (ev === "click") { if (KINDS[d.kind].outside) dismiss(d); else { const b = box(d); b.classList.remove("nudge"); void b.offsetWidth; b.classList.add("nudge"); } }
 	}, true);
 	/* focus that leaves the top dialog (a click on the page behind is stopped above) comes back */
-	document.addEventListener("focusin", e => { const d = top(); if (d && !d.el.contains(e.target) && e.target !== bg && !e.target.closest?.("#kpop")) focusIn(d); });
+	document.addEventListener("focusin", e => { const d = top(); if (d && d.kind !== "page" && !d.el.contains(e.target) && e.target !== bg && !e.target.closest?.("#kpop")) focusIn(d); });
 	if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", watch); else watch();
 	/* Tips: the LCD's titles show under the display, never over it (a native tooltip covers the fields) */
 	const tip = document.createElement("div"); tip.className = "lcdtip"; tip.hidden = true; tip.setAttribute("role", "tooltip"); document.body.appendChild(tip);
@@ -6991,82 +7023,107 @@ document.addEventListener("click",e=>{if(S.ws!=="control")return;const C=S.ctl;
  const as=e.target.closest("[data-addsrc]");if(as){const k=as.dataset.addsrc,n=C.sources.filter(x=>x.kind===k).length;const id=k+"X"+Date.now();C.sources.push(k==="lfo"?{id,kind:"lfo",label:"LFO "+"ABCDEFGH"[n],val:64,SHAPE:2,RATE:"1",DEPTH:80}:{id,kind:"rnd",label:"Random "+"ABCDEFGH"[n],val:64,RATE:"1/8",SMOOTH:0,_t:64});C.sel=id;ctlChanged();render();return}});
 document.addEventListener("change",e=>{if(e.target.id==="lt"){S.ctl.addT=+e.target.value;render()}});
 "use strict";
-/* The GLOBAL panel both editors share (B-051, F3; the Machinedrum Editor's v61 panel, P5, made shared): the machine's
-   own settings, kept in its active global slot, in one panel opened by the GLOBAL key in the top bar or GLOBAL… in the
-   engine menu (and the AUDIO panel's link). This file is the frame and the controls: the header with the 8 slots (the
-   active one lit; a click makes that one active), Reset to defaults (asked first), the cards' controls (GlobalUi), the
-   footer, placing, the GLOBAL key's light, Esc and a click outside. What a machine's global holds is its host's
-   (DeskGlobal.host, set by mdDeskGlobal.js and the Monomachine mockup's 117-global.js):
+/* The GLOBAL page both editors share (B-051, F3; the Machinedrum Editor's v61 panel, P5, made shared; a page over the
+   workspace since 0.6, DESIGN-machine-menus.md §2): the machine's own settings, kept in its active global slot, opened by
+   the GLOBAL key in the top bar or GLOBAL… in the engine menu (and the AUDIO panel's link). The header stays; Esc, the
+   GLOBAL key or a click on the header goes back. This file is the frame and the controls: the head on one line (the
+   slot chip, the 8 slots: the active one lit, a click makes that one active; Copy · Paste · Clear, the machine's global
+   slot menu), the cards' controls (GlobalUi), placing, the GLOBAL key's light. What a machine's global holds is its
+   host's (DeskGlobal.host, set by mdDeskGlobal.js and the Monomachine mockup's 117-global.js):
      view()        the active global as the page shows it ({slot, ...}), or null while it is read
      cards(G)      the cards' HTML; their controls carry data-ga (a click) or data-gsel (a select)
      click(a, G)   a card's control was clicked (a: the element with data-ga)
      change(s, G)  a card's select changed (optional)
      slot(n)       make slot n the active one
-     reset()       the active slot becomes the machine's factory global
-     ask(html, yes)  the editor's question dialog (yes runs on the confirm key)
-     menu          where the settings are on the machine, for the header ("FUNCTION + PATTERN/SONG") */
-var GP = { open: false, note: 64 };
+     reset()       Clear: the active slot becomes the machine's factory global (asked first, here)
+     copy(G), paste(G), canPaste()   Copy and Paste of the active slot (the core asks before a paste)
+     ask(html, label, yes)  the editor's question dialog (yes runs on the confirm key, named label)
+     back()        the name of the workspace under the page, for the head's back key
+     menu          where the settings are on the machine, for the head's tip ("FUNCTION + PATTERN/SONG") */
+var GP = { open: false, note: 64, learn: null, shift: false };
 const DeskGlobal = { host: null };
 const GlobalUi = {
 	tog: (f, on, tip, a = "ON", b = "OFF") => `<span class="seg" title="${tip}"><button data-ga="${f}" data-v="1" aria-pressed="${on}">${a}</button><button data-ga="${f}" data-v="0" aria-pressed="${!on}">${b}</button></span>`,
 	step: (f, label, tip) => `<span class="stepper" title="${tip}"><button data-ga="${f}" data-d="-1" aria-label="Less">−</button><b class="mono">${label}</b><button data-ga="${f}" data-d="1" aria-label="More">+</button></span>`,
 	row: (label, control, extra = "") => `<div class="grow2"><span class="ilab">${label}</span>${control}${extra}</div>`
 };
-const GRESET_TIP = "The active global slot back to how the machine shipped: MIDI channels, sync and the rest (asked first)";
+const GRESET_TIP = "Clear: the active global slot back to how the machine shipped: MIDI channels, sync and the rest (asked first)";
 function drawGlobal() {
 	const pop = document.getElementById("globpop"), H = DeskGlobal.host;
 	if (!pop) return;
-	if (!GP.open || !H) { pop.hidden = true; return; }
-	const G = H.view();
-	if (!G) { pop.innerHTML = `<div class="libhead"><span class="cap">Global</span><span class="note">Reading the global settings from the machine…</span><button class="libx" data-ga="close">Esc</button></div>`; pop.hidden = false; placeGlobal(); return; }
-	pop.innerHTML = `<div class="libhead"><span class="cap">Global</span><span class="lcdchip">GLOBAL ${G.slot + 1}</span><span class="gslots" title="8 global setups; the lit one is active (SysEx 0x56)">${Array.from({ length: 8 }, (_, k) => `<button data-ga="slot" data-v="${k}" aria-pressed="${k === G.slot}">${k + 1}</button>`).join("")}</span><span class="note">${H.menu} on the machine. A change is stored and made active at once.</span><button class="amkey greset" data-ga="reset" title="${GRESET_TIP}">Reset to defaults</button><button class="libx" data-ga="close" title="Close (Esc)">Esc</button></div>
- <div class="globgrid">${H.cards(G)}</div>
- <div class="libfoot"><span>The GLOBAL key in the top bar or the engine menu opens it · Esc closes · every change is stored on the machine and made active</span><span class="fw" title="The machine keeps 8 global setups">GLOBAL ${G.slot + 1} of 8</span></div>`;
+	if (!GP.open || !H) { pop.hidden = true; pop.classList.remove("gpage"); return; }
+	pop.classList.add("gpage");
+	const G = H.view(), back = H.back ? H.back() : "", esc = `<button class="gpback" data-ga="close" title="Back${back ? " to " + back : ""} (Esc or GLOBAL)">Esc${back ? " · back to " + back : ""}</button>`;
+	if (!G) { pop.innerHTML = `<div class="gphead"><span class="gpname">Global</span><span class="note">Reading the global settings from the machine…</span><span class="gpsp"></span>${esc}</div>`; pop.hidden = false; placeGlobal(); return; }
+	const can = !H.canPaste || H.canPaste();
+	pop.innerHTML = `<div class="gphead" title="${H.menu} on the machine. Every change is stored in the active slot and made active at once."><span class="gpname">Global</span><span class="lcdchip">GLOBAL ${G.slot + 1}</span><span class="gslots" title="8 global setups; the lit one is active (SysEx 0x56). A click makes it active">${Array.from({ length: 8 }, (_, k) => `<button data-ga="slot" data-v="${k}" aria-pressed="${k === G.slot}">${k + 1}</button>`).join("")}</span>${H.copy ? `<span class="gpkeys"><button data-ga="copy" title="Copy GLOBAL ${G.slot + 1}: all its settings">Copy</button><button data-ga="paste"${can ? "" : " disabled"} title="${can ? `Paste the copied global into GLOBAL ${G.slot + 1} (asked first; Undo brings it back)` : "Copy a global first"}">Paste</button>` : `<span class="gpkeys">`}<button class="greset danger" data-ga="reset" title="${GRESET_TIP}">Clear</button></span><span class="gpsp"></span>${esc}</div>
+ <div class="globgrid">${H.cards(G)}</div>`;
 	if (typeof enhanceSelects === "function") enhanceSelects(pop);
 	pop.hidden = false; placeGlobal();
 }
+/* under the header, as wide as it, down to the window's foot (the page scrolls inside) */
 function placeGlobal() {
-	const pop = document.getElementById("globpop"), r = document.querySelector(".lcdpanel").getBoundingClientRect(), top = Math.max(16, r.bottom + 8);
-	pop.style.top = (top + scrollY) + "px"; pop.style.maxHeight = Math.max(240, innerHeight - top - 12) + "px";
-	pop.style.left = Math.max(16, (document.documentElement.clientWidth - pop.offsetWidth) / 2 + scrollX) + "px";
+	const pop = document.getElementById("globpop"), hd = document.querySelector("header.top") || document.querySelector(".lcdpanel"), r = hd.getBoundingClientRect(), top = Math.max(16, r.bottom + 10);
+	pop.style.top = (top + scrollY) + "px"; pop.style.height = Math.max(240, innerHeight - top) + "px"; pop.style.maxHeight = "";
+	pop.style.left = (r.left + scrollX) + "px"; pop.style.width = r.width + "px";
 }
 function globKeyLit() { const k = document.getElementById("globkey"); if (k) { k.setAttribute("aria-pressed", String(GP.open)); k.classList.toggle("on", GP.open); const l = k.querySelector(".led"); if (l) l.classList.toggle("on", GP.open); } }
 function openGlobal() { if (typeof closeLib === "function") closeLib(false); GP.open = true; drawGlobal(); globKeyLit(); }
-function closeGlobal() { GP.open = false; drawGlobal(); globKeyLit(); }
+function closeGlobal() { GP.open = false; GP.learn = null; drawGlobal(); globKeyLit(); }
 function globalClick(a) {
 	const H = DeskGlobal.host, f = a.dataset.ga;
 	if (f === "close") { closeGlobal(); return; }
 	const G = H && H.view(); if (!G) return;
 	if (f === "slot") { if (+a.dataset.v !== G.slot) H.slot(+a.dataset.v); return; }
 	if (f === "reset") {
-		H.ask(`Reset GLOBAL ${G.slot + 1} to the factory settings? MIDI channels, sync and the rest go back to how the machine shipped.`, () => H.reset());
+		H.ask(`Clear <b>GLOBAL ${G.slot + 1}</b>? MIDI channels, sync and the rest go back to the factory settings (Undo brings them back).`, "Clear", () => H.reset());
 		return;
 	}
+	if (f === "copy") { H.copy(G); return; }
+	if (f === "paste") { if (!H.canPaste || H.canPaste()) H.paste(G); return; }
 	H.click(a, G);
 }
+/* No backdrop: a press outside the page closes it and goes no further (a step of the grid below must not take it); the header
+   (a workspace tab, the LCD, a key) is let through, the click there does what it does. The press, its release and its click
+   are one gesture: after the first is eaten, the rest of them are too (EAT), for a moment. */
+const GLOBAL_THROUGH = "#dlg,.kpop,#kpop,.lcdeng,.modalbg,#deskmenu", GLOBAL_HEADER = "header.top,.lcdpanel";
+let globEat = false;
+const globStop = e => { e.preventDefault(); e.stopPropagation(); };
+const globOutside = e => !document.getElementById("globpop").contains(e.target) && !(e.target.closest && e.target.closest(GLOBAL_THROUGH + "," + GLOBAL_HEADER));
+for (const ev of ["pointerdown", "mousedown", "pointerup", "mouseup"]) document.addEventListener(ev, e => {
+	if (globEat) { globStop(e); return; }
+	if (!GP.open || !globOutside(e)) return;
+	globStop(e); globEat = true; setTimeout(() => { globEat = false; }, 600);
+	if (ev === "pointerdown" || ev === "mousedown") closeGlobal();
+}, true);
 document.addEventListener("click", e => {
 	if (e.target.closest && e.target.closest("#globkey")) { GP.open ? closeGlobal() : openGlobal(); e.stopPropagation(); return; }
+	if (globEat) { globEat = false; globStop(e); return; }
 	if (!GP.open) return;
 	const pop = document.getElementById("globpop");
-	if (pop.contains(e.target)) { const a = e.target.closest("[data-ga]"); if (a) globalClick(a); return; }
-	if (!(e.target.closest && e.target.closest("#dlg,.kpop,#kpop,.lcdeng"))) closeGlobal();
+	if (pop.contains(e.target)) { const a = e.target.closest("[data-ga]"); GP.shift = !!e.shiftKey; if (a) globalClick(a); return; }
+	if (e.target.closest && e.target.closest(GLOBAL_THROUGH)) return;
+	closeGlobal();
+	if (!(e.target.closest && e.target.closest(GLOBAL_HEADER))) globStop(e);
 }, true);
 document.addEventListener("change", e => {
 	const s = e.target.closest && e.target.closest("#globpop [data-gsel]"), H = DeskGlobal.host;
 	if (s && H && H.change && H.view()) H.change(s, H.view());
 });
 addEventListener("resize", () => { if (GP.open) placeGlobal(); });
-Keys.bind({ id: "global-key", scope: "any", area: "Top bar", keys: ["GLOBAL key"], group: "Anywhere", does: "The machine's own settings, kept in its memory: MIDI channels, sync and the rest (also the engine menu: GLOBAL…)" });
-Keys.bind({ id: "close-global", short: "Close", scope: "any", keys: ["Escape"], group: "Anywhere", does: "Close the GLOBAL settings", when: () => GP.open, run: () => closeGlobal() });
-/* ===== GLOBAL: the machine's own settings (B-051, ROADMAP F3) =====
-   The Machinedrum Editor's GLOBAL panel, one implementation for both editors (skins/shared/deskGlobal.js: the slots,
-   Reset to defaults, the footer, the controls); this is the Monomachine's host of it. S.glob is the active global
+Keys.bind({ id: "global-key", scope: "any", area: "Top bar", keys: ["GLOBAL key"], group: "Anywhere", does: "The GLOBAL page: the machine's own settings, kept in its memory: MIDI channels, sync and the rest (also the engine menu: GLOBAL…)" });
+Keys.bind({ id: "close-global", short: "Close", scope: "any", keys: ["Escape"], group: "Anywhere", does: "Back from the GLOBAL page to the workspace", when: () => GP.open, run: () => closeGlobal() });
+/* ===== GLOBAL: the machine's own settings (B-051, ROADMAP F3; a page since 0.6) =====
+   The Machinedrum Editor's GLOBAL page, one implementation for both editors (skins/shared/deskGlobal.js: the slots,
+   Copy · Paste · Clear, the controls); this is the Monomachine's host of it. S.glob is the active global
    as the page shows it (MmView's globPage: a channel 0-15, null OFF); a change is the globalMidi intent (the routing
    mode: routing), stored in the active slot and made active; a slot key is HOST.globalSlot (SET ACTIVE GLOBAL).
    Measured on OS 1.32B (mmDeskFirmwareTest spanprobe, globalprobe): track t listens on base + t while t < CHANNEL SPAN
    and base + t is channel 15 or lower (16 reaches no track); CONTROL OUT's clock, Start/Stop and program change are
    three bytes of the global; a program change is always taken in on the base channel. The MULTI MAP (the MD's map
-   editor's counterpart) is on Perform. */
+   editor's counterpart) is on Perform. 0.6: AUDIO › MASTER TUNE (masterTune, 400.0-499.9 Hz as the panel runs it) and
+   CONTROL OUT1 (globalMidi sequencerOut, arpOut, keyboardOut: 0 INT, 1 OUT, 2 INT+OUT; PROBES-manual-gaps.md P2),
+   Copy / Paste of the slot (the library's globalCopy, globalPaste). */
 const GCH=c=>c==null?"OFF":String(c+1);
 const gTrackCh=(g,t)=>g&&g.base!=null&&t<g.span&&g.base+t<=14?g.base+t:null;
 const MM_GTIP={
@@ -7080,7 +7137,14 @@ const MM_GTIP={
  tempoIn:"INTERNAL: its own tempo. EXTERNAL: follows MIDI clock. In a DAW the plug-in sets EXT itself (it follows the host)",
  ctrlIn:"React to MIDI Start, Stop and Continue. In a DAW the plug-in turns it on itself",
  tempoOut:"Send MIDI clock",ctrlOut:"Send MIDI Start and Stop",
- routing:"How the six tracks reach the outputs (also on Mix)"};
+ routing:"How the six tracks reach the outputs (also on Mix)",
+ tune:"MASTER TUNE: the pitch of A, 400.0 to 499.9 Hz (440.0 as the machine ships). − or +: 0.1 Hz; Shift: 1 Hz",
+ out1:"CONTROL OUT1: where the notes of the sequencer, the arpeggiator and the keyboard go. INT: the internal tracks only. OUT: MIDI out only (no sound here). INT+OUT: both"};
+const OUT1=[["sequencerOut","Sequencer","the sequencer's trigs (sent as NRPN on the base channel)"],["arpOut","Arp","the arpeggiator's notes"],["keyboardOut","Keyboard","the keyboard's notes (the TRIG keys)"]];
+/* what OUT silences, said once: "The sequencer and the keyboard play no sound here: …" */
+function gOutWarn(G){const off=OUT1.filter(([k])=>G[k]===1).map(([,n])=>n.toLowerCase());if(!off.length)return"";
+ const list=off.length===1?off[0]:off.slice(0,-1).join(", ")+" and "+off[off.length-1];
+ return list[0].toUpperCase()+list.slice(1)+(off.length===1?" plays":" play")+" no sound here: OUT sends "+(off.length===1?"it":"them")+" to MIDI out only. INT or INT+OUT brings the sound back."}
 /* "No track has …", "T3 has …", "T4, T5 and T6 have …" */
 function gNoChannel(none){if(!none.length)return"";const tail=one=>`: mutes and notes cannot reach ${one?"it":"them"}, and the editor sends ${one?"its":"their"} sound values as kit dumps.`;
  if(none.length===6)return"No track has a MIDI channel of its own"+tail(false);
@@ -7106,11 +7170,18 @@ function mmGlobalCards(G){const{tog,step,row}=GlobalUi;
    ${row("Tempo out",tog("tempoOut",G.clockOut,MM_GTIP.tempoOut))}
    ${row("Ctrl out",tog("ctrlOut",G.transportOut,MM_GTIP.ctrlOut))}</section>
   <section class="card"><header><h3>Routing</h3><span>the six tracks to the outputs</span></header>
-   ${row("Mode",`<span class="seg" title="${MM_GTIP.routing}">${ROUTES.map(r=>`<button data-ga="routing" data-r="${r}" aria-pressed="${S.routing===r}">${r.replace("+"," + ")}</button>`).join("")}</span>`)}</section>`}
+   ${row("Mode",`<span class="seg" title="${MM_GTIP.routing}">${ROUTES.map(r=>`<button data-ga="routing" data-r="${r}" aria-pressed="${S.routing===r}">${r.replace("+"," + ")}</button>`).join("")}</span>`)}</section>
+  <section class="card"><header><h3>Audio</h3><span>the machine's outputs</span></header>
+   ${row("Master tune",step("tune",G.tune==null?"--":(G.tune/10).toFixed(1)+" Hz",MM_GTIP.tune))}</section>
+  <section class="card"><header><h3>Control out 1</h3><span>notes to the tracks, MIDI out or both</span></header>
+   ${OUT1.map(([k,label,what])=>row(label,`<span class="seg" title="${MM_GTIP.out1} (here: ${what})">${["INT","OUT","INT+OUT"].map((n,v)=>`<button data-ga="out1" data-k="${k}" data-v="${v}" aria-pressed="${G[k]===v}">${n}</button>`).join("")}</span>`)).join("")}
+   ${gOutWarn(G)?`<p class="gwarn">${gOutWarn(G)}</p>`:""}</section>`}
 /* a channel stepper: OFF, 1 … 16 */
 const gStep=(c,d)=>{const i=Math.max(0,Math.min(16,(c==null?0:c+1)+d));return i===0?null:i-1};
 function mmGlobalClick(a,G){const f=a.dataset.ga,d=a.dataset.d!=null?+a.dataset.d:0,v=a.dataset.v!=null?+a.dataset.v:null;
  if(f==="routing"){if(S.routing!==a.dataset.r){S.routing=a.dataset.r;edit("routing",{v:S.routing});render();drawGlobal()}return}
+ if(f==="tune"){if(G.tune==null)return;const t=Math.max(4000,Math.min(4999,G.tune+d*(GP.shift?10:1)));if(t!==G.tune){G.tune=t;edit("masterTune",{v:t});drawGlobal()}return}
+ if(f==="out1"){const k=a.dataset.k;if(G[k]!==v){G[k]=v;edit("globalMidi",{[k]:v});drawGlobal()}return}
  const toggles={pcOut:"programChangeOut",tempoIn:"clockIn",ctrlIn:"transportIn",tempoOut:"clockOut",ctrlOut:"transportOut"};
  let args=null;
  if(f==="span")args={span:Math.max(0,Math.min(16,G.span+d))};
@@ -7121,7 +7192,11 @@ function mmGlobalClick(a,G){const f=a.dataset.ga,d=a.dataset.d!=null?+a.dataset.
 DeskGlobal.host={view:()=>S.glob||null,cards:mmGlobalCards,click:mmGlobalClick,menu:"FUNCTION + KIT/SONG",
  slot:n=>{if(HOST.globalSlot)return HOST.globalSlot(n);S.glob.slot=n;drawGlobal()},
  reset:()=>edit("globalReset",{}),
- ask:(html,yes)=>ask(html,[["Reset","danger",yes],["Cancel","",()=>{}]])};
+ copy:G=>{S.globClip=G.slot;if(HOST.library)HOST.library("globalCopy",{slot:G.slot});toast("Copied GLOBAL "+(G.slot+1)+".");drawGlobal()},
+ paste:G=>{if(HOST.library)HOST.library("globalPaste",{slot:G.slot});else toast("Pasted GLOBAL "+(S.globClip+1)+" into GLOBAL "+(G.slot+1)+".")},
+ canPaste:()=>S.glob?.clip!=null||(!HOST.library&&S.globClip!=null),
+ back:()=>({seq:"Sequence",sound:"Sound",mix:"Mix",perform:"Perform",song:"Song",control:"Control"})[S.ws]||"",
+ ask:(html,label,yes)=>ask(html,[[label,"danger",yes],["Cancel","",()=>{}]])};
 
 /* ===== Song (from the MD Editor, with the MM's per-row transpose, 6 + 6 mutes, 200 rows) ===== */
 const T64=()=>Array(12).fill(64);
@@ -9037,7 +9112,11 @@ const MmView = (() => {
 	function globPage(slot, g) {
 		const c = g.channels || {}, i = g.controlIn || {}, o = g.controlOut || {};
 		return { slot, base: chOf(c.base), span: c.span ?? 0, auto: chOf(c.auto), multiTrig: chOf(c.multiTrig), multiMap: chOf(c.multiMap),
-			clockIn: i.tempoSync === 1, transportIn: i.transport === 1, clockOut: o.clock !== 0, transportOut: o.transport !== 0, programChangeOut: !!o.programChange };
+			clockIn: i.tempoSync === 1, transportIn: i.transport === 1, clockOut: o.clock !== 0, transportOut: o.transport !== 0, programChangeOut: !!o.programChange,
+			/* CONTROL OUT1 (P2): 0 INT, 1 OUT, 2 INT+OUT; null in a document from before 0.6 */
+			sequencerOut: o.sequencer ?? null, arpOut: o.arp ?? null, keyboardOut: o.keyboard ?? null,
+			/* AUDIO › MASTER TUNE in tenths of Hz */
+			tune: g.masterTune ?? null };
 	}
 	/* B-051: the channel the machine takes track t's CCs, mutes and notes on, or null (elektronData::mmTrackChannel,
 	   measured on OS 1.32B: base + t while t < CHANNEL SPAN and base + t is 0-14; channel 16 reaches no track) */
@@ -9063,7 +9142,7 @@ const MmView = (() => {
 		v.hostTempo = !!(H && H.follows && H.bpm > 0 && global && global.controlIn && global.controlIn.tempoSync === 1);
 		if (v.hostTempo) v.bpm = H.bpm;
 		/* B-051, F3: the GLOBAL page's MIDI part, the active global's (a channel 0-15, null OFF) */
-		if (global) v.glob = globPage(glob, global);
+		if (global) { v.glob = globPage(glob, global); v.glob.clip = m?.clipboard?.global ?? null; }
 		const kd = kitDocOf(docs, kit), pd = pat != null ? docs.patterns[pat] || null : null;
 		/* the view shows the machine once the current pattern and the kit that plays are there */
 		v.ready = !!(kd && pd);
@@ -9176,8 +9255,10 @@ const MmView = (() => {
 		legato: (v, c) => [[["tracks", c.t, "leg", { amp: "amp", filter: "flt", lfo: "lfo" }[c.env]], c.on ? 1 : 0]],
 		portamento: (v, c) => [[["tracks", c.t, "port"], c.v === "always" ? 0 : 1]],
 		routing: (v, c) => [[["routing"], c.v]],
-		globalMidi: (v, c) => ["base", "span", "auto", "multiTrig", "multiMap", "clockIn", "transportIn", "clockOut", "transportOut", "programChangeOut"]
-			.filter(k => c[k] !== undefined).map(k => [["glob", k], k === "span" ? c[k] : typeof c[k] === "boolean" ? c[k] : chOf(c[k])]),
+		globalMidi: (v, c) => ["base", "span", "auto", "multiTrig", "multiMap", "clockIn", "transportIn", "clockOut", "transportOut", "programChangeOut",
+			"sequencerOut", "arpOut", "keyboardOut"]
+			.filter(k => c[k] !== undefined).map(k => [["glob", k], k === "span" || k.endsWith("Out") && typeof c[k] === "number" ? c[k] : typeof c[k] === "boolean" ? c[k] : chOf(c[k])]),
+		masterTune: (v, c) => [[["glob", "tune"], c.v]],
 		globalReset: () => [],
 		midiTrack: (v, c) => [...(c.ch != null ? [[["midi", c.t, "ch"], c.ch + 1]] : []), ...(c.cc ? [[["midi", c.t, "cc"], c.cc.map(Number)]] : [])],
 		step: (v, c) => stepWrites(v, c.t, c.s, c.v),
@@ -9428,12 +9509,12 @@ const MmView = (() => {
 	const OPS = {
 		kit: ["level", "route", "input", "param", "trigPos", "legato", "portamento", "machine", "clearSound", "copySound", "pasteSound", "params",
 			"assign", "multiEnv", "multiTrig", "kitName"],
-		global: ["routing", "midiTrack", "globalMidi", "globalReset", "multiMap", "multiMapSplit", "multiMapDelete"],
+		global: ["routing", "midiTrack", "globalMidi", "masterTune", "globalReset", "multiMap", "multiMapSplit", "multiMapDelete"],
 		song: ["rowSet", "rowInsert", "rowDelete", "rowMove", "copyRow", "pasteRow"],
 		/* COPY / PASTE / CLEAR what (0.6): the pattern that plays (p) and the kit that plays (k) */
 		track: ["trackCopy", "trackPaste", "trackClear"],
 		library: ["patCopy", "patPaste", "patCopyTo", "patClear", "kitCopy", "kitPaste", "kitCopyTo", "kitClear", "kitRename",
-			"songCopy", "songPaste", "songCopyTo", "songClear", "songRename"]
+			"songCopy", "songPaste", "songCopyTo", "songClear", "songRename", "globalCopy", "globalPaste"]
 	};
 	const KIND = new Map(Object.entries(OPS).flatMap(([kind, ops]) => ops.map(op => [op, kind])));
 	const kindOf = op => KIND.get(op) || "pattern";

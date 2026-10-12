@@ -33,10 +33,10 @@ The **Channel** keys 1 to 16 set the MIDI channel of the track.
 NOTE: The LFOs of a MIDI track are shared with the synth track of the same number.
 
 ## COMPARISON
-<!-- rows: MM-248 MM-249 MM-250 @788e19 -->
+<!-- rows: MM-248 MM-249 MM-250 @d1c478 -->
 
 A MIDI track has no trig tracks, so its row under the roll shows the velocity in place of the envelope dots. It has an arpeggiator without envelope switches, swing, slide and transpose, in the same tabs as a synth track.
 
 The MIDI page is stored in the kit, so edits of it are kit edits.
 
-{gap:MM-250}You cannot make a synth track send MIDI from the editor yet.{/gap}
+The internal tracks can send MIDI too. On the **GLOBAL** page, the **Control out 1** card sends the notes of the sequencer, the arpeggiator or the keyboard to MIDI out, with or without the sound of the tracks. See chapter 19.

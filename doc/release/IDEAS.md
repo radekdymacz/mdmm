@@ -165,7 +165,7 @@
 - **From:** Discord tester B, 2026-10-07.
 - **Idea:** a visual sign on the Sound page when a note arrives from a MIDI controller (which track was triggered).
 - **Also:** Discord tester M, 2026-10-11: light the on-screen keyboard's keys for notes played, as Ableton's (the Monomachine's Perform keyboard; B-062 is the stuck light).
-- **Status:** new.
+- **Status:** started in 0.6 (wave 5): the plug-in sends each note on from outside to the page (`midiIn`, data-contract.md); the Machinedrum's LEARN reads it. Showing it (a track's light on Sound, the Perform keyboard's keys) is still to do; the design has no place for it yet.
 
 ## I-001 · Select steps, copy, paste and duplicate
 

@@ -913,18 +913,23 @@
 <p class="gd-cmeta">MD manual pp.57-78</p>
 </header>
 <div class="gd-intro gd-prose"><p>The global settings are the machine's own settings. They hold the MIDI channels, the map of notes to tracks and patterns, program change, the output of each track and the sync. They belong to the machine, not to a pattern or a kit.</p>
-<p>In the editor they sit in the <b class="gd-ui">GLOBAL</b> panel.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The GLOBAL panel"><span>Screenshot to come</span></div><figcaption>The GLOBAL panel</figcaption></figure></div>
+<p>In the editor they sit on the <b class="gd-ui">GLOBAL</b> page. The page covers the workspace under the header. The header stays as it is.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The GLOBAL page"><span>Screenshot to come</span></div><figcaption>The GLOBAL page</figcaption></figure></div>
 <section class="gd-sec" id="global-settings">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.57</span></span></aside>
 <div class="gd-body gd-prose"><h2>GLOBAL SETTINGS</h2>
 <p>The machine keeps 8 globals. One is active. On the machine you open the settings with <kbd class="gd-key">[FUNCTION]</kbd> and <kbd class="gd-key">[PATTERN/SONG]</kbd>.</p>
-<p>To open the panel:</p>
-<ol class="gd-steps"><li>Click <b class="gd-ui">GLOBAL</b> in the top bar. Or choose <b class="gd-ui">GLOBAL…</b> in the engine menu, the menu you open from the engine name on the LCD.</li><li>The header reads GLOBAL and the number of the active global. The keys 1 to 8 are the 8 globals. The lit key is the active one.</li><li>Click a key to make that global the active one.</li><li>Press <kbd class="gd-key">[ESC]</kbd>, or click <b class="gd-ui">GLOBAL</b> again, to close the panel. A click outside it closes it too.</li></ol>
+<p>To open the page:</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">GLOBAL</b> in the top bar. Or choose <b class="gd-ui">GLOBAL…</b> in the engine menu, the menu you open from the engine name on the LCD.</li><li>The page opens under the header. Its head reads GLOBAL and the number of the active global. The keys 1 to 8 are the 8 globals. The lit key is the active one.</li><li>Click a key to make that global the active one.</li><li>Press <kbd class="gd-key">[ESC]</kbd>, click <b class="gd-ui">GLOBAL</b> again, or click the key at the right of the head, to go back to the workspace. A click on a workspace key goes to that workspace.</li></ol>
 <p>Every change is stored in the active global and made active at once. There is nothing to save.</p>
-<p>To put the active global back to how the machine shipped, click <b class="gd-ui">Reset to defaults</b>. The editor asks first. Click <b class="gd-ui">Reset</b> to go on, or <b class="gd-ui">Cancel</b>.</p>
-<p>The panel has five cards: <b class="gd-ui">Control</b>, <b class="gd-ui">Sync</b>, <b class="gd-ui">Trig in A / B</b>, <b class="gd-ui">Map editor</b> and <b class="gd-ui">Routing</b>.</p>
-<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A setting that the editor could not check on the emulated machine is marked &quot;not verified&quot; in the panel.</p></aside>
+<p>The page has five cards: <b class="gd-ui">Control</b>, <b class="gd-ui">Sync</b>, <b class="gd-ui">Trig in A / B</b>, <b class="gd-ui">Map editor</b> and <b class="gd-ui">Routing</b>.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A setting that the editor could not check on the emulated machine is marked &quot;not verified&quot; on the page.</p></aside>
+<h4 class="gd-h3">Copy, paste and clear a global</h4>
+<p>The head has the keys <b class="gd-ui">Copy</b>, <b class="gd-ui">Paste</b> and <b class="gd-ui">Clear</b>. They act on the active global.</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">Copy</b>. The editor keeps all the settings of the active global. <b class="gd-ui">Paste</b> is now on.</li><li>Click the key of another global to make it active.</li><li>Click <b class="gd-ui">Paste</b>. The editor asks first, because the settings of that global are replaced. Click <b class="gd-ui">Paste</b> to go on, or <b class="gd-ui">Cancel</b>.</li></ol>
+<p>To put the active global back to how the machine shipped, click <b class="gd-ui">Clear</b>. The editor asks first. Click <b class="gd-ui">Clear</b> to go on, or <b class="gd-ui">Cancel</b>.</p>
+<p>Undo takes back a paste or a clear, as any other edit.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The machine's own global menu has no copy or paste. In the editor you copy a whole global from one slot to another.</p></aside>
 </div></section>
 <section class="gd-sec" id="turbo-menu">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.57</span></span></aside>
@@ -939,7 +944,7 @@
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>When the global holds a base channel of OFF, the card reads OFF. The machine then takes no notes, mutes or sound values over MIDI, and the editor cannot play it.</p></aside>
 </div></section>
 <section class="gd-sec" id="map-editor">
-<aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.59,</span> <span>60</span></span></aside>
+<aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.59,</span> <span>60,</span> <span>C-3</span></span></aside>
 <div class="gd-body gd-prose"><h2>MAP EDITOR</h2>
 <p>The map editor says which MIDI note plays what. A note can play a track, start a pattern, or start or stop the machine. The <b class="gd-ui">Map editor</b> card has the sixteen track keys and the controls for the other notes.</p>
 <h4 class="gd-h3">Notes for the tracks</h4>
@@ -950,7 +955,15 @@
 <h4 class="gd-h3">How a pattern note starts</h4>
 <p>Beside <b class="gd-ui">Pattern trig</b>, click one of:</p>
 <ul class="gd-list"><li><b class="gd-ui">GATE</b>: the pattern plays while the key is held.</li><li><b class="gd-ui">START</b>: the pattern starts at once.</li><li><b class="gd-ui">QUE</b>: the pattern starts at the end of the pattern that plays.</li></ul>
-<p>You cannot give a note by playing it on a keyboard in the editor yet. Choose the note with the <b class="gd-ui">‹</b> and <b class="gd-ui">›</b> keys.</p>
+<h4 class="gd-h3">Learn a note from a keyboard</h4>
+<p>You can give a track its note by playing the note on a MIDI keyboard, as you do on the machine.</p>
+<ol class="gd-steps"><li>Connect the keyboard to the MIDI input of the editor: the MIDI input of the standalone, or the MIDI track of the plug-in in your DAW.</li><li>Click the round dot beside the name of a track key, for example TRACK 3. The dot lights. The head of the card reads LEARN and the track.</li><li>Play a note on the keyboard. The note now plays the track, and the dot goes out. The key shows the note.</li></ol>
+<p>Click the lit dot again to stop without a note. Going back to the workspace stops it too.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The editor takes the note on any MIDI channel.</p></aside>
+<h4 class="gd-h3">Reset the map</h4>
+<ol class="gd-steps"><li>Click <b class="gd-ui">Reset map</b> in the head of the <b class="gd-ui">Map editor</b> card.</li><li>The editor asks first. Click <b class="gd-ui">Reset map</b> to go on, or <b class="gd-ui">Cancel</b>.</li></ol>
+<p>The map goes back to the one Elektron gives the machine: the tracks from C2, the patterns from E4. The rest of the global stays. Undo brings your map back.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>It is the map that the SysEx message Reset MIDI note map leaves on the machine.</p></aside>
 </div></section>
 <section class="gd-sec" id="local-control">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.60</span></span></aside>
@@ -979,8 +992,10 @@
 <section class="gd-sec" id="trig">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.63</span></span></aside>
 <div class="gd-body gd-prose"><h2>TRIG</h2>
-<p>The two trig inputs of the machine turn the pulses of a pad into notes. The <b class="gd-ui">Trig in A / B</b> card shows what the global holds for each input: <b class="gd-ui">Gate</b>, <b class="gd-ui">Sens</b>, <b class="gd-ui">Vmin</b>, <b class="gd-ui">Vmax</b> and <b class="gd-ui">Dest</b>.</p>
-<p>The card shows these values as they are stored. You cannot change them in the editor yet. They are marked &quot;not verified&quot;.</p>
+<p>The two trig inputs of the machine turn the pulses of a pad into notes. On the machine they are in the ROUTING menu. The <b class="gd-ui">Trig in A / B</b> card has a row for each input, <b class="gd-ui">A</b> and <b class="gd-ui">B</b>, with five values:</p>
+<ul class="gd-list"><li><b class="gd-ui">Gate</b>, <b class="gd-ui">Sens</b>, <b class="gd-ui">Vmin</b> and <b class="gd-ui">Vmax</b>: 0 to 127.</li><li><b class="gd-ui">Dest</b>: the track a pulse plays, T1 to T16, or - for none.</li></ul>
+<p>To change a value, click <b class="gd-ui">‹</b> or <b class="gd-ui">›</b> beside it. Hold <kbd class="gd-key">[⇧]</kbd> and click to move it by 10. <b class="gd-ui">Dest</b> runs from - to T1, T2 and up to T16, as the knob of the machine does.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The emulated machine has no trig inputs. The values are stored in the global and sent to a real machine, but what they do to a pulse could not be checked. The card is marked &quot;not verified&quot;.</p></aside>
 </div></section>
 <section class="gd-sec" id="all-data-sysex-send">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.64</span></span></aside>

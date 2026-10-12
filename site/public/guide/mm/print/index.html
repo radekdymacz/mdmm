@@ -166,8 +166,7 @@
 <p>On the machine <kbd class="gd-key">[KIT]</kbd> opens the kit menu. In the editor click the <b class="gd-light">&lt;KIT&gt;</b> field of the LCD to open the kit library. Chapter 6 describes it. The <b class="gd-ui">Song</b> workspace (<kbd class="gd-key">[5]</kbd>) is the song menu: see chapter 17.</p>
 <p><kbd class="gd-key">[FUNCTION]</kbd> + <kbd class="gd-key">[KIT]</kbd> opens the global menu. In the editor open it in one of three ways:</p>
 <ul class="gd-list"><li>click <b class="gd-ui">Global</b> in the top bar;</li><li>choose <b class="gd-ui">GLOBAL…</b> in the engine menu, the drop-down at the left of the LCD;</li><li>press the GLOBAL link in the <b class="gd-ui">AUDIO / MIDI</b> panel.</li></ul>
-<p>The panel holds eight global slots and the Control, Sync and Routing settings. <kbd class="gd-key">[ESC]</kbd> closes it.</p>
-<p>Master tune is not on the GLOBAL panel yet.</p>
+<p>The GLOBAL page opens under the header. It holds the eight global slots and the Control, Sync, Routing, Audio and Control out 1 settings, the master tune among them. <kbd class="gd-key">[ESC]</kbd> goes back to the workspace. Chapter 19 describes it.</p>
 </div></section>
 <section class="gd-sec" id="trig-keys">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-5</span></span></aside>
@@ -1082,7 +1081,7 @@
 <div class="gd-body gd-prose"><h2>COMPARISON</h2>
 <p>A MIDI track has no trig tracks, so its row under the roll shows the velocity in place of the envelope dots. It has an arpeggiator without envelope switches, swing, slide and transpose, in the same tabs as a synth track.</p>
 <p>The MIDI page is stored in the kit, so edits of it are kit edits.</p>
-<p>You cannot make a synth track send MIDI from the editor yet.</p>
+<p>The internal tracks can send MIDI too. On the <b class="gd-ui">GLOBAL</b> page, the <b class="gd-ui">Control out 1</b> card sends the notes of the sequencer, the arpeggiator or the keyboard to MIDI out, with or without the sound of the tracks. See chapter 19.</p>
 </div></section>
 </article>
 <article class="gd-chapter" id="c17" style="page: c17">
@@ -1287,15 +1286,17 @@
 <header class="gd-chead"><p class="gd-cnum">19</p><h1>Global settings</h1>
 <p class="gd-cmeta">MM manual pp.1-87 to 1-111</p>
 </header>
-<div class="gd-intro gd-prose"><p>The machine keeps eight global slots. One is active. The settings are in the <b class="gd-ui">GLOBAL</b> panel. Click <b class="gd-ui">Global</b> in the top bar, or choose <b class="gd-ui">GLOBAL…</b> in the engine menu. Press <kbd class="gd-key">[ESC]</kbd> to close it.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The GLOBAL panel"><span>Screenshot to come</span></div><figcaption>The GLOBAL panel</figcaption></figure>
-<p>Every change is stored in the active slot and made active at once. The panel has the cards <b class="gd-ui">Control</b>, <b class="gd-ui">Sync</b> and <b class="gd-ui">Routing</b>.</p></div>
+<div class="gd-intro gd-prose"><p>The machine keeps eight global slots. One is active. The settings are on the <b class="gd-ui">GLOBAL</b> page. Click <b class="gd-ui">Global</b> in the top bar, or choose <b class="gd-ui">GLOBAL…</b> in the engine menu. The page covers the workspace under the header. Press <kbd class="gd-key">[ESC]</kbd>, click <b class="gd-ui">Global</b> again, or click a workspace key to go back.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The GLOBAL page"><span>Screenshot to come</span></div><figcaption>The GLOBAL page</figcaption></figure>
+<p>Every change is stored in the active slot and made active at once. The page has the cards <b class="gd-ui">Control</b>, <b class="gd-ui">Sync</b>, <b class="gd-ui">Routing</b>, <b class="gd-ui">Audio</b> and <b class="gd-ui">Control out 1</b>.</p></div>
 <section class="gd-sec" id="global-slots">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-87</span></span></aside>
 <div class="gd-body gd-prose"><h2>GLOBAL SLOTS</h2>
-<p>The header of the panel holds the keys 1 to 8. The lit key is the active slot. Click another key to make that slot active.</p>
-<p><b class="gd-ui">Reset to defaults</b> writes the global the machine ships with into the active slot. The editor asks first.</p>
-<p>You cannot copy, paste or clear a global slot in the editor yet.</p>
+<p>The head of the page holds the keys 1 to 8. The lit key is the active slot. Click another key to make that slot active.</p>
+<p>To copy a global slot to another:</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">Copy</b>. The editor keeps all the settings of the active slot. <b class="gd-ui">Paste</b> is now on.</li><li>Click the key of the slot to copy to. It becomes the active slot.</li><li>Click <b class="gd-ui">Paste</b>. The editor asks first, because the settings of that slot are replaced. Click <b class="gd-ui">Paste</b> to go on, or <b class="gd-ui">Cancel</b>.</li></ol>
+<p>To clear the active slot, click <b class="gd-ui">Clear</b>. The editor asks first. The slot then holds the global the machine ships with.</p>
+<p>Undo takes back a paste or a clear, as any other edit.</p>
 </div></section>
 <section class="gd-sec" id="turbo-menu">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-87,</span> <span>1-88</span></span></aside>
@@ -1306,7 +1307,9 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-88,</span> <span>1-89</span></span></aside>
 <div class="gd-body gd-prose"><h2>AUDIO</h2>
 <h4 class="gd-h3">MASTER TUNE</h4>
-<p>The GLOBAL panel has no master tune yet.</p>
+<p>The master tune sets the pitch of A for the whole machine. It is 440.0 Hz as the machine ships.</p>
+<ol class="gd-steps"><li>In the <b class="gd-ui">Audio</b> card, click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> beside <b class="gd-ui">Master tune</b>. Each click moves it 0.1 Hz.</li><li>Hold <kbd class="gd-key">[⇧]</kbd> and click to move it 1 Hz.</li></ol>
+<p>The tune runs from 400.0 to 499.9 Hz, as on the machine.</p>
 <h4 class="gd-h3">ROUTING</h4>
 <p>The <b class="gd-ui">Routing</b> card sets the routing mode: 3xSTEREO, 3xSTEREO + AB=MIX or 6xMONO. It is the same setting as the <b class="gd-ui">Routing</b> bar on <b class="gd-ui">Mix</b>. See chapter 18.</p>
 </div></section>
@@ -1321,7 +1324,10 @@
 <h4 class="gd-h3">MORE ON THE MONOMACHINE MIDI FUNCTIONALITY</h4>
 <p>The machine takes NRPN control and uses program change to select patterns. Automation and MIDI from a DAW reach it as they reach the machine.</p>
 <h4 class="gd-h3">CONTROL OUT1</h4>
-<p>You cannot send the sequencer, the arpeggiator or the keyboard to the MIDI out of the machine in the editor yet.</p>
+<p>Control out 1 sets where the notes of the sequencer, the arpeggiator and the keyboard go. The <b class="gd-ui">Control out 1</b> card has a row for each: <b class="gd-ui">Sequencer</b>, <b class="gd-ui">Arp</b> and <b class="gd-ui">Keyboard</b>. Click one of:</p>
+<ul class="gd-list"><li><b class="gd-ui">INT</b>: the internal tracks play the notes. Nothing goes to MIDI out.</li><li><b class="gd-ui">OUT</b>: the notes go to MIDI out only. The tracks make no sound.</li><li><b class="gd-ui">INT+OUT</b>: both.</li></ul>
+<p>The machine ships with INT for the sequencer and the arpeggiator, and INT+OUT for the keyboard. The sequencer sends its trigs as NRPN on the base channel. The arpeggiator and the keyboard send notes. The keyboard is the TRIG keys of the machine.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>With OUT the machine makes no sound of its own for that source. The card says so in a line under the rows. Choose INT or INT+OUT to hear it again.</p></aside>
 <h4 class="gd-h3">CONTROL OUT2</h4>
 <p>The <b class="gd-ui">Sync</b> card holds two switches for what the machine sends. <b class="gd-ui">Tempo out</b> sends the MIDI clock. <b class="gd-ui">Ctrl out</b> sends MIDI start and stop. The <b class="gd-ui">Control</b> card has <b class="gd-ui">Prg change out</b>: choosing a pattern then sends a program change on the base channel.</p>
 <h4 class="gd-h3">CONTROL IN</h4>

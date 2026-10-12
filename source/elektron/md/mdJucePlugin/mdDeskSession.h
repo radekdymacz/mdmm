@@ -1,5 +1,6 @@
 #pragma once
 
+#include "mdMidiIn.h"
 #include "mdMidiLearnCommands.h"
 #include "mdPageSpec.h"
 #include "mdSyxSession.h"
@@ -79,6 +80,11 @@ namespace mdJucePlugin
 	// I-021: the page's volume (outputGain {db}): the processor's output gain (mdOutputLevel.h's range)
 	void setOutputGainDb(AudioPluginAudioProcessor& _processor, double _db);
 	constexpr double g_outputLevelMs = 250;
+	// 0.6 (GLOBAL › Map editor › LEARN, I-002): a note on that reached the plug-in from outside, as the page's
+	// {"type":"midiIn","ch","note","vel"} (ch 0-15). Every step, at most g_midiInPerStep of them (a full queue drops the
+	// rest: they are hints).
+	elektronData::json::Value midiInOf(const midiIn::Note& _note);
+	constexpr int g_midiInPerStep = 16;
 
 	// P7: a model's SysEx import traits (mdSessionMd.cpp, mdSessionMm.cpp): the documents' type, the
 	// file's and the desk's documents, one document as the contract's JSON, and what may be imported.
@@ -382,6 +388,16 @@ namespace mdJucePlugin
 			// I-018: the CPU meter in the top bar (no lock: atomics read on this thread, mdCpuLoad.h)
 			if(m_desk->pageSeen() && due(t, g_cpuLoadMs))
 				toPage(cpuLoadOf(processor()));
+			// 0.6: the notes from outside (LEARN; no lock: mdMidiIn.h). Taken also while no page is up, so a page that opens
+			// later does not get old ones (the queue is emptied when the session starts, too).
+			for(int n = 0; n < g_midiInPerStep; ++n)
+			{
+				const auto note = processor().takeMidiIn();
+				if(!note)
+					break;
+				if(m_desk->pageSeen())
+					toPage(midiInOf(*note));
+			}
 			// I-021: the LCD's output meter and volume (no lock: one atomic swap, mdOutputLevel.h)
 			if(m_desk->pageSeen() && due(t, g_outputLevelMs))
 				toPage(outputLevelOf(processor()));
