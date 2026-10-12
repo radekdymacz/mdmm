@@ -86,13 +86,15 @@ const Keys = (() => {
 		return false;
 	}
 	/* B-023: the field a key belongs to, or null: a text field keeps every key; a focused value (role=slider: a knob, a
-	   fader, the tempo; a click on one focuses it) only the keys that move it and Enter (type a value: deskValueEdit.js), which its own handler takes. Every other
+	   fader, the tempo; a click on one focuses it) only the keys that move it, and Enter on a value box in #main (type a value: deskValueEdit.js), which its own handler takes. Every other
 	   key is the page's: ⌘Z after a drag on a value (or after its arrow keys) undoes, Space plays, ⌘C copies. */
-	const SLIDER_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End", "Enter"]);
+	const SLIDER_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End"]);
 	function fieldOf(el, e) {
 		const text = el?.closest?.("input,select,textarea"); if (text) return text;
 		const slider = el?.closest?.("[role=slider]");
-		return slider && SLIDER_KEYS.has(norm(e)) ? slider : null;
+		/* Enter on a value box of the page (not the tempo or a volume slider): the box's own, it opens the typed value */
+		const typed = e.key === "Enter" && slider?.matches?.("#main .pc[data-g], #main .fader[data-g]");
+		return slider && (SLIDER_KEYS.has(norm(e)) || typed) ? slider : null;
 	}
 	let lastDown = null;	/* {k, at} of the last ⌘ keydown: an edit command right after it is the same press */
 	document.addEventListener("keydown", e => {

@@ -1,7 +1,8 @@
 "use strict";
 /* I-022: type a parameter value (both editors). ⌘-click a value box (Ctrl-click off a Mac), or Enter on a value box that
    has the focus (Tab to it): a field opens over the box with the value as it is shown, selected. Type a value and press
-   Enter: it is set as one edit (one undo step, as one notch of the wheel); Esc, or a click elsewhere, leaves it as it was.
+   Enter (or Tab) sets it as one edit (one undo step); Esc, or a click elsewhere, leaves it as it was. Tab with a value
+   the box cannot take keeps the field open, marked, as Enter does.
    What may be typed is what the box shows: a number (the nearest value is taken, so 1200 on a box that shows 1196 or
    1210 takes the nearer), a name from a list (a machine, a scale, OFF), as the box writes it, in any case. A number past
    the ends, or a text the box never shows, is refused with the range or the names, and the field stays open. No new
@@ -58,23 +59,24 @@ const ValueEdit = (() => {
 			e.stopPropagation();
 			if (e.key === "Enter") { e.preventDefault(); commit(); }
 			else if (e.key === "Escape") { e.preventDefault(); close(true); }
-			else if (e.key === "Tab") commit(true);
+			else if (e.key === "Tab") { if (!commit(true)) e.preventDefault(); }	/* refused: the field stays, marked */
 			else input.classList.remove("bad");
 		});
 		input.addEventListener("blur", () => { if (cur && cur.input === input) close(); });
 		input.focus(); input.select();
 		return true;
 	}
-	/* Enter: set it (one edit), or say why not and stay open */
+	/* Enter (or Tab, leave: the focus moves on): set it (one edit), or say why not and stay open. False: refused */
 	function commit(leave) {
-		if (!cur) return;
+		if (!cur) return true;
 		const { el, input, host } = cur, box = el.isConnected ? el : host.find(el);
-		if (!box) { close(); return; }
+		if (!box) { close(); return true; }
 		const [lo, hi] = host.range(box), p = parse(input.value, lo, hi, v => host.shown(box, v));
-		if (p.empty) { close(true); return; }
-		if (p.error) { input.classList.add("bad"); input.title = p.error; host.say(p.error); if (!leave) input.select(); return; }
+		if (p.empty) { close(!leave); return true; }
+		if (p.error) { input.classList.add("bad"); input.title = p.error; host.say(p.error); input.select(); return false; }
 		close(!leave);
 		if (host.get(box) !== p.v) host.set(box, p.v);
+		return true;
 	}
 	/* the field goes; refocus: the box takes the focus back (Enter opens the field again) */
 	function close(refocus) {

@@ -150,13 +150,14 @@ document.addEventListener("change", e => {
 const NoteLights = { due: new Set(), timer: 0 };
 function noteLight(m) {
 	const g = Docs.global; if (!g || !(g.baseChannel >= 0 && g.baseChannel <= 12) || m.ch !== g.baseChannel) return;
+	if (V.caps.engine === "hw") return;	/* HW MIDI: what comes in is the real machine's own MIDI OUT, not a player */
 	const t = g.keymap?.[m.note]; if (!(t >= 0 && t < 16)) return;
 	NoteLights.due.add(t); if (NoteLights.timer) return;
 	NoteLights.timer = setTimeout(() => {
 		NoteLights.timer = 0;
+		/* its own class and timer ("hit"), so it never ends a trig's flash of the Mix LED ("on") early */
 		for (const i of NoteLights.due) for (const l of document.querySelectorAll(`#rail .th[data-sel="${i}"], .act[data-act="${i}"]`)) {
-			const c = l.classList.contains("th") ? "hit" : "on";
-			l.classList.add(c); clearTimeout(l.nlT); l.nlT = setTimeout(() => l.classList.remove(c), 140);
+			l.classList.add("hit"); clearTimeout(l.nlT); l.nlT = setTimeout(() => l.classList.remove("hit"), 140);
 		}
 		NoteLights.due.clear();
 	}, 16);

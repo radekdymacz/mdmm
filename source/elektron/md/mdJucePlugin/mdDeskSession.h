@@ -85,8 +85,8 @@ namespace mdJucePlugin
 	// rest: they are hints).
 	elektronData::json::Value midiInOf(const midiIn::Note& _note);
 	constexpr int g_midiInPerStep = 16;
-	// I-002, B-062: the notes held from outside, as the page's {"type":"midiHeld","notes":[n...]} (low to high, any
-	// channel): when they changed, looked at every g_midiHeldMs (a burst is one message), and once for a new page.
+	// I-002, B-062: the notes held from outside, as the page's {"type":"midiHeld","notes":[{ch, note}...]} (by channel,
+	// low to high; the page lights those on the channels the machine plays): when they changed, looked at every g_midiHeldMs (a burst is one message), and once for a new page.
 	elektronData::json::Value midiHeldOf(const midiIn::Notes& _notes);
 	midiIn::Notes heldMidiNotesOf(AudioPluginAudioProcessor& _processor);
 	constexpr double g_midiHeldMs = 32;
