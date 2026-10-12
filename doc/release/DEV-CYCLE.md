@@ -47,7 +47,7 @@ And: no release after 0.5.1 until this is done.
 |---|---|---|---|---|---|
 | 0 Save | each save, or by hand | `scripts/mdmm-check.sh --save` (`--watch`: on every save) | the pages against the contract and their mockups, the unit tests of what changed (built first), without the Slow and Timing ones | under 30 s | 2 s (a page file), 4 s (a desk file, rebuilt from ccache) |
 | 1 Did I break it | before Radek plays a build, before a merge | `scripts/mdmm-check.sh` | tier 0 with every test of what changed, the page journeys of that area, one golden per machine when emulation code changed | under 2 min | 18 s (a sequencer page change: 28 unit tests, 18 page journeys) |
-| 2 Branch check | before a merge, in the background, when desk or emulator code changed | `scripts/mdmm-check.sh --branch` | every unit test, every page journey, the firmware tests and the machine journeys of the area, every golden when emulation changed | under 10 min | 2.6 min (a desk file: 123 unit tests, 136 page journeys, the MM intent cases on the firmware) |
+| 2 Branch check | before a merge, in the background, when desk or emulator code changed | `scripts/mdmm-check.sh --branch` | every unit test, every page journey, the firmware tests (their programs built first) and the machine journeys of the area, every golden when emulation changed | under 10 min | 2.6 min (a desk file: 123 unit tests, 136 page journeys, the MM intent cases on the firmware) |
 | 3 Full gate on main | by hand, on a quiet Mac: the start of a release, after a big merge | `scripts/mdmm-full-gate.sh` (`--soak` for the soak) | the full local gate | under 30 min | 21.6 min (warm tree; 0.5.1: 62 min) |
 | 4 Release | from main after a green full gate | `scripts/mdmm-full-gate.sh --plan`, then the command it prints | the gate stages the diff since that run touches (`MDMM_GATE_ONLY`), the release CI, the tag | about 30 min, mostly CI | the stages of the diff |
 
@@ -77,6 +77,11 @@ no row matches runs everything of its tier.
   `mmIntentCases.h` / `mdIntentCases.h` and run by the core tests (`mmDeskTest`, `mdDeskTest`) and, through the desk on
   the firmware, by `mmDeskFirmwareTest intentcases` and `mdDeskFirmwareTest intentcases` (ctest
   `mdIntentCasesFirmwareTest` and `mmIntentCasesFirmwareTest`).
+- **No stale test programs.** ctest runs whatever binary the tree holds, so each tier builds the programs of the tests
+  it is about to run first (`cmake --build temp/dev --target ...`, incremental, ccache): the unit tests' since the
+  start, the firmware tests' in tier 2 since 2026-10-12 (before that a branch check could run a firmware test built
+  from older sources: seen several times on 2026-10-12). An up-to-date program costs one ninja no-op; tier 0 and 1 run
+  no firmware tests and are unchanged.
 - **ctest lanes.** The 28 node page tests carry the label `Page`; the Timing tests run serially (`RUN_SERIAL`); the slow
   unit tests carry `Slow` (out of the save-time lane).
 - **The gate in lanes.** Stage 1 with ccache; the journeys' diagnostics build in the background while the release
