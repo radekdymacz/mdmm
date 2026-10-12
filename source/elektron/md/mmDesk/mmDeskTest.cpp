@@ -197,6 +197,7 @@ namespace
 		int keysPressed = 0;
 		uint8_t pattern = 3, kit = 5, global = 0;
 		std::vector<uint8_t> activations;	// every SET ACTIVE GLOBAL (0x56) taken, in order
+		std::vector<Bytes> applied;			// the slot's stored global each 0x56 applied (B-071)
 		uint32_t recvTaken = 0;	// dumps taken on SYSEX RECV (the RECV count, RAM 0x26a3c4)
 		bool slow = false;		// dumps stay on their way (inFlight) until taken by hand
 		int recording = -1;		// the recording mode the telemetry says (-1 unknown)
@@ -238,6 +239,7 @@ namespace
 			{
 				global = _m[7];
 				activations.push_back(_m[7]);
+				applied.push_back(slots[{0x50, _m[7]}]);
 				return;
 			}
 			if(cmd == 0x57 && _m.size() > 7)
@@ -521,6 +523,32 @@ namespace
 			msg(R"({"op":"globalSlot","id":48,"slot":0})");
 			run(2000);
 			check(m.global == 0 && d.currentGlobal() == 0, "back to GLOBAL 1");
+		}
+
+		// B-071: an imported dump of the active global waits for its re-activation (0x56) until it is in; a slot chosen
+		// meanwhile, with RECV still idle, goes at once and that re-activation never goes over it.
+		{
+			run(4000);
+			check(d.currentGlobal() == 0 && !d.recvParked(), "GLOBAL 1 active, RECV left");
+			auto g = d.documents().globals.at(0);
+			g.channelSpan = 4;
+			m.activations.clear();
+			check(d.machine().sendAsIs(ed::encodeMmGlobal(g), true).empty(), "an imported GLOBAL 1 dump is taken");
+			msg(R"({"op":"globalSlot","id":49,"slot":1})");
+			run(8000);
+			std::string order;
+			for(const auto a : m.activations) order += " " + std::to_string(a + 1);
+			check(m.global == 1 && d.currentGlobal() == 1 && !m.activations.empty() && m.activations.back() == 1,
+				("GLOBAL 2 chosen while the import waits stays active (0x56:" + order + ")").c_str());
+			msg(R"({"op":"globalSlot","id":50,"slot":0})");
+			run(2000);
+			m.activations.clear();
+			m.applied.clear();
+			g.channelSpan = 6;
+			check(d.machine().sendAsIs(ed::encodeMmGlobal(g), true).empty(), "an imported GLOBAL 1 dump again");
+			run(8000);
+			check(m.activations.size() == 1 && m.activations[0] == 0 && m.applied[0] == ed::encodeMmGlobal(g),
+				"GLOBAL 1 is made active again once, after its dump is in (the new channels applied)");
 		}
 	}
 }
