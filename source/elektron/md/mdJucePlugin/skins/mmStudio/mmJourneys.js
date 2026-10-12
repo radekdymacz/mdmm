@@ -1668,10 +1668,10 @@ const MmJourneys = (() => {
 			openImport,
 			{ say: "click Specific place, then the first slot four times: the kits land in K05 and K06", act: async u => { u.click('#syxpop [data-sxp="specific"]'); await sleep(150); for (let i = 0; i < 4; i++) { u.click(syxValue("kit", "place")); await sleep(60); } },
 				screen: () => ok($1(syxValue("kit", "place"))?.textContent === "K05" && !!$1(syxCell("kit:4")) && !!$1(syxCell("kit:5")) && !$1(syxCell("kit:0")), "cells " + $all('#syxpop button[data-syxitem^="kit:"]').map(b => b.dataset.syxitem).join(" ")), within: 4000 },
-			{ say: "leave Kits ticked only, click Import: it asks first (K05 and K06 hold kits)", act: async (u, c) => { await syxKinds(["kit"])(u); c.names = $all('#syxpop button[data-syxitem^="kit:"]').map(b => [+b.dataset.syxitem.split(":")[1], (b.dataset.syxname || "").trim()]); c.k0 = kitName(0); u.click('#syxpop [data-syxgo="start"]'); },
-				screen: () => ok(dlgShown() && /K05/.test($1("#dlg").textContent) && !!dlgButton("Import 2"), "no question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
-			{ say: "click Import 2: sent on SYSEX RECV to K05 and K06, read back, reported", act: u => u.click(dlgButton("Import 2")),
-				screen: () => ok(/2 imported/.test($1("#syxpop .syxsum")?.textContent || ""), "progress: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
+			{ say: "leave Kits ticked only, click Import: it asks first (the file's kits land on K05 and on, which hold kits)", act: async (u, c) => { await syxKinds(["kit"])(u); c.names = $all('#syxpop button[data-syxitem^="kit:"]').map(b => [+b.dataset.syxitem.split(":")[1], (b.dataset.syxname || "").trim()]); c.k0 = kitName(0); u.click('#syxpop [data-syxgo="start"]'); },
+				screen: c => ok(dlgShown() && /K05/.test($1("#dlg").textContent) && !!dlgButton(`Import ${c.names.length}`), `no question for ${c.names.length} kits: ` + ($1("#dlg").textContent || "").slice(0, 80)) },
+			{ say: "click Import n: sent on SYSEX RECV to K05 and on, read back, reported", act: (u, c) => u.click(dlgButton(`Import ${c.names.length}`)),
+				screen: c => ok(new RegExp(`${c.names.length} imported`).test($1("#syxpop .syxsum")?.textContent || ""), "progress: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
 				machine: c => ok(c.names.every(([k, n]) => (kitName(k) || "").trim() === n) && kitName(0) === c.k0, c.names.map(([k, n]) => `K${k + 1} "${kitName(k)}" want "${n}"`).join(", ") + `; K01 "${kitName(0)}"`), within: 90000 },
 			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") }
 		],
@@ -1918,13 +1918,15 @@ const MmJourneys = (() => {
 			openImport,
 			{ say: "click Import; while it runs press Escape and click outside: the panel stays, one size, Stop and Hide inside it", act: async (u, c) => {
 				c.box = [Journey.boxOf("#syxpop")];
+				/* B-102: wholly inside the window (at 1440 x 923 its foot ran past the bottom) */
+				{ const r = $1("#syxpop").getBoundingClientRect(); c.inWindow = r.top >= 0 && r.left >= 0 && r.bottom <= innerHeight + 0.5 && r.right <= innerWidth + 0.5; c.win = `${innerWidth}x${innerHeight}`; }
 				u.click('#syxpop [data-syxgo="start"]'); c.ran = await until(() => $1("#syxpop").classList.contains("syx-running"), 3000);
 				c.box.push(Journey.boxOf("#syxpop")); c.keys = Journey.keysInside("#syxpop", '#syxpop .syxfoot button');
 				/* at once (the page tier's import can be over in a few hundred ms): Esc while it still runs */
 				c.runningAtEsc = $1("#syxpop").classList.contains("syx-running") && !!$1("#syxpop").dataset.busy; u.key("Escape"); c.afterEsc = !$1("#syxpop").hidden;
 				c.under = Journey.pressOutside(); await sleep(200); c.afterClick = !$1("#syxpop").hidden; c.box.push(Journey.boxOf("#syxpop"));
 				Bridge.log(`JOURNEY ${"mm"}-syx-running-reach: Esc ${c.runningAtEsc ? "while it ran" : "after it ended"}`); },
-				screen: c => ok(c.ran && (!c.runningAtEsc || c.afterEsc) && c.afterClick && Modal.top() === "syxpop" && new Set(c.box).size === 1 && c.keys === "", `ran ${c.ran}, Esc while running ${c.runningAtEsc} -> open ${c.afterEsc}, after the click open ${c.afterClick} (on ${c.under}), boxes ${c.box.join(" | ")}, keys out ${c.keys}`) },
+				screen: c => ok(c.ran && (!c.runningAtEsc || c.afterEsc) && c.afterClick && Modal.top() === "syxpop" && new Set(c.box).size === 1 && c.keys === "" && c.inWindow, `in the window ${c.win}: ${c.inWindow}, ran ${c.ran}, Esc while running ${c.runningAtEsc} -> open ${c.afterEsc}, after the click open ${c.afterClick} (on ${c.under}), boxes ${c.box.join(" | ")}, keys out ${c.keys}`) },
 			{ say: "click Hide (if it still runs), then IMPORT SYSEX… in the engine menu: the same panel again", act: async (u, c) => {
 				c.hid = false; const h = $1('#syxpop .btnrow [data-syxgo="close"]'); if ($1("#syxpop").classList.contains("syx-running") && h) { u.click(h); await sleep(200); c.hid = $1("#syxpop").hidden; }
 				u.pick("engsel", "import"); await sleep(400); },
