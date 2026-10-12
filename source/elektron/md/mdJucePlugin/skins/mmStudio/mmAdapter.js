@@ -472,11 +472,16 @@
 				}
 			refresh();
 		},
-		/* POLY is the machine's audio mode (SET STATUS 0x20): entering or leaving it */
-		keyMode(mode) {
-			const poly = mode === "poly";
-			if (poly === view().poly) return;
-			expect(send({ op: "poly", on: poly }, { onResult: r => { answered(r); noteOf(r); } }), [[["poly"], poly]]);
+		/* POLY is the machine's audio mode (SET STATUS 0x20): entering or leaving it; on track t (0.6 wave 9: POLY plays
+		   the machine's track in focus, so the core presses TRACK t first; a new t while in POLY moves it there). The
+		   view shows POLY and the focus at once; a refused command (the panel busy) shows the machine's again, which the
+		   page then follows, and says why */
+		keyMode(mode, t) {
+			const poly = mode === "poly", on = poly && t != null && t >= 0 && t < 6 ? t : null;
+			if (poly === view().poly && (!poly || on == null || on === view().focus)) return;
+			const writes = [[["poly"], poly]];
+			if (on != null) writes.push([["focus"], on]);
+			expect(send(Object.assign({ op: "poly", on: poly }, on != null ? { t: on } : {}), { onResult: r => { answered(r); if (r.ok) noteOf(r); else V().toast(r.errors[0] || "POLY did not change."); } }), writes);
 			refresh();
 		},
 		/* the RECORD key: stopped = GRID RECORDING, playing = LIVE RECORDING, recording = off; live (Alt+Space,

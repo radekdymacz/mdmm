@@ -148,6 +148,7 @@ The machine state the page shows, published by `mmDesk::Desk` whenever it change
 | `global` | the active global slot |
 | `mutes` | MM-P4: `synth` and `midi`, bit t = track t muted, from RAM (the MUTE window and CC 3; made on the machine's panel too); `null` where the engine cannot read them (HW MIDI) |
 | `poly` | MM-P4: POLY, the machine's audio mode (status 0x20); `null` until it answers |
+| `focus` | 0.6 wave 9: the synth track in focus, its TRACK key (status 0x22, asked with the other statuses), the track POLY plays; the track a `poly` with `t` pressed until the machine shows it; `null` until it answers |
 | `tempo` | BPM from RAM; `null` while it is not a tempo yet (boot) |
 
 `mutes`, `poly` and `tempo` are memory's, but a value the page set (`mute`, `muteMidi`, `poly`, `tempo`) is
@@ -215,7 +216,7 @@ document) is the intent of an import or a restore (the plug-in's own); the page 
 Commands from the page: `ready`, `set` (`kind`, `doc`), `load` (`kind`, `slot`),
 `select` (`p`), `loadKit` / `saveKit` (`k`), `loadSong` / `saveSong` (`s`),
 `tempo` (`bpm`), `play`, `stop`, `mute` (`t`, `on`), `muteMidi` (`t`, `on`: the MUTE window),
-`poly` (`on`), `record` (`mode`: `off`, `grid`, `live`), `hwSend` (HW MIDI: the machine is on
+`poly` (`on`, `t`: TRACK t first), `record` (`mode`: `off`, `grid`, `live`), `hwSend` (HW MIDI: the machine is on
 SYSEX RECV), `followHost`, `revealRomFolder`, `recheckFirmware`, and the `learn*` family. The
 schema's `$defs/command` is generated from the command tables (`mmDeskTest --write-schema`).
 `chain` (`patterns`) and `chainClear`: see Chaining below.
