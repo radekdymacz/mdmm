@@ -2510,7 +2510,14 @@ const MdJourneys = (() => {
 		name: "md-seq-lock-budget", proves: ["MD-137"],
 		steps: [
 			go("seq"),
-			{ say: "open a pattern whose 64 locked parameters are all used: the LCD counter reads 64/64", act: async (u, c) => { c.p0 = currentPatternSlot(); c.p = [...Array(128).keys()].find(p => Docs.patterns[p]?.locks.length >= 64); if (c.p == null) throw new Error("no pattern with 64 locks");
+			{ say: "open a pattern whose 64 locked parameters are all used: the LCD counter reads 64/64", act: async (u, c) => { c.p0 = currentPatternSlot(); c.p = [...Array(128).keys()].find(p => Docs.patterns[p]?.locks.length >= 64);
+					/* B-107 (the 0.6 e2e run): factory memory has no pattern with 64 locks (the page tier's fixture has). The journey
+					   makes its own in a pattern with none: a trig on step 1 of each of the 16 tracks, four locked parameters each
+					   (undone in tidy) */
+					if (c.p == null) { c.u0 = V.undoCount; c.p = [...Array(128).keys()].reverse().find(p => p !== c.p0 && Docs.patterns[p] && !Docs.patterns[p].locks.length); if (c.p == null) throw new Error("no pattern without locks");
+						cmd("steps", { p: c.p, from: 0, to: 16, rows: [...Array(16).keys()].map(t => ({ t, on: [0] })) }); await until(idle, 8000); await sleep(300);
+						for (let t = 0; t < 16; t++) { for (let i = 0; i < 4; i++) cmd("lock", { p: c.p, t, i, s: 0, v: 40 + i }); await until(idle, 8000); }
+						if (!await until(() => Docs.patterns[c.p]?.locks.length >= 64, 20000)) throw new Error("the 64 locks did not come: " + Docs.patterns[c.p]?.locks.length); }
 					u.click("#pat"); await until(() => $all("#libpop .ps").length === 128, 3000); u.click(psq(c.p)); await confirmIfAsked(u); await until(() => currentPatternSlot() === c.p, 6000); await sleep(500); },
 				screen: () => ok($1("#lockn").textContent === "64/64", "counter " + $1("#lockn").textContent), machine: c => ok(currentPatternSlot() === c.p && patDoc().locks.length === 64, "locks " + patDoc().locks.length), within: 8000 },
 			{ say: "pick a track with a trig and a lock key it has not locked, draw a lock: the editor refuses and says so", act: async (u, c) => { u.key("Escape"); await sleep(200);
@@ -2518,7 +2525,8 @@ const MdJourneys = (() => {
 					if (c.t == null) throw new Error("no free lock row on a track with a trig"); u.click(rail(c.t)); await sleep(250); u.click(`#chips .pk[data-lane="${c.pn}"]`); await sleep(150); c.i = pidx(c.t, c.pn); await u.drag(`#lane .lb[data-s="${c.s}"]`, [[0, 4]], {}, { fy: 0.3 }); },
 				screen: () => ok(/64 locked parameters/.test($1("#toast")?.textContent || ""), "toast " + $1("#toast")?.textContent), machine: c => ok(!locksOf(c.t, c.i).length && patDoc().locks.length === 64, `locks ${locksOf(c.t, c.i).length}, rows ${patDoc().locks.length}`), within: 5000 }
 		],
-		async tidy(u, c) { if (c.p0 != null && currentPatternSlot() !== c.p0) { u.click("#pat"); await sleep(400); u.click(psq(c.p0)); await confirmIfAsked(u); await until(() => currentPatternSlot() === c.p0, 6000); u.key("Escape"); } }
+		async tidy(u, c) { if (c.p0 != null && currentPatternSlot() !== c.p0) { u.click("#pat"); await sleep(400); u.click(psq(c.p0)); await confirmIfAsked(u); await until(() => currentPatternSlot() === c.p0, 6000); u.key("Escape"); }
+			if (c.u0 != null) await undoTo(u, c.u0); }
 	};
 	/* MD-139: a value moved while recording locks the next trig that has not played */
 	const liveLock = {

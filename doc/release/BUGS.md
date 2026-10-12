@@ -4,6 +4,17 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-107 · Journeys that need data factory memory does not hold
+
+- **From:** the 0.6 e2e run, 2026-10-13 (md-seq-lock-budget, mm-seq-env-trigs, mm-perform-multi-setup, mm-seq-six-tracks).
+- **Sorted, each test data (no page bug):**
+  - md-seq-lock-budget, "no pattern with 64 locks": factory memory has none (the page tier's fixture has). The journey makes one in a pattern with no locks: a trig on step 1 of each of the 16 tracks, four locked parameters each; undone in its tidy.
+  - mm-seq-env-trigs, "no pitchless trig": a trig with no note of its own comes only from the machine's own patterns or a backup (the page makes none; the fixture holds some). Without one the journey writes its own with the step intent (a trig with its envelopes and no note) on a free step after a note.
+  - mm-perform-multi-setup, "timing 0: 1": the kit held another MULTI TRIG timing than DIRECT when the journey began (it counted from DIRECT up); it steps down to DIRECT first. Passes alone and after the journeys before it in the run.
+  - mm-seq-six-tracks, "step NaN is not shown": a factory pattern has a note on or under every step from 9 on of some track, so the journey found no free step. When a track has no room it draws in an empty pattern of banks E to H (a pick there loads no kit, B-053) and picks the first pattern again in its tidy.
+- **Fix (`fix/0.6-e2e-mm`):** the journeys above. Each passes on the firmware and in the page tier, except mm-seq-six-tracks, whose next step (the AMP value of each track: "wire nothing", the CC it sends) checks the Monomachine fake's wire report, which only the page tier's stub machine sends: a page-tier-only check, like mm-seq-trig-setup's, mm-sound-track-effects', mm-wire-cc's and the other "wire nothing" fails of the run (not in this entry).
+- **Status:** fixed on `fix/0.6-e2e-mm` (journeys only).
+
 ## B-106 · Monomachine: keys that take no click at 1440 x 923 (Perform's OCTAVE +, a row's per-track transpose)
 
 - **From:** the 0.6 e2e run, 2026-10-13 (the plug-in at 1440 x 923: mm-perform-joystick-midi and mm-perform-keys-lit, "OCTAVE + covered by #main"; mm-song-row-settings, More, "+ covered by button").

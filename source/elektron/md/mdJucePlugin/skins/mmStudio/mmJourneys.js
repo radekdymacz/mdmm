@@ -2509,7 +2509,13 @@ const MmJourneys = (() => {
 					if (S().stepSel) clearSel(); await stepPick(u, 0, c.e, "step-trigless"); },
 				machine: c => ok(c.on && !bitsOf(0, "trig").includes(c.e), `added ${c.on}, then trig ${bitsOf(0, "trig").includes(c.e)}`), screen: c => ok(c.kind === "trigless" && !S().tracks[0].steps[c.e], "kind " + c.kind), within: 8000 },
 			{ say: "a trig with no pitch of its own (envelope trigs only: its note is the one before): step menu > Envelopes > Amp: the amp trig flips, the step stays without a pitch", act: async (u, c) => {
-					const found = [0, 1, 2, 3, 4, 5].map(t => [t, noteSpans(t).find(sp => sp.pitchless && sp.st.a)]).find(([, sp]) => sp); if (!found) throw new Error("no pitchless trig in the pattern"); c.pt = found[0]; c.ps = found[1].s; u.click(rail(c.pt)); await sleep(300);
+					/* B-107 (the 0.6 e2e run): the page makes no pitchless trig (the machine's own patterns and backups hold them; the
+					   page tier's fixture does, factory memory not): without one the journey writes its own with the step intent
+					   (a trig with its envelopes and no note), on a free step after a note */
+					let found = [0, 1, 2, 3, 4, 5].map(t => [t, noteSpans(t).find(sp => sp.pitchless && sp.st.a)]).find(([, sp]) => sp);
+					if (!found) { const s0 = freeSteps(0, 3, (c.s ?? 0) + 1).find(x => x !== c.e && x > (c.s ?? 0)); if (s0 == null) throw new Error("no free step for a pitchless trig");
+						HOST.intent("step", { t: 0, s: s0, v: { a: 1, f: 1, l: 1 } }); await until(() => noteSpans(0).some(sp => sp.s === s0 && sp.pitchless), 6000);
+						found = [0, noteSpans(0).find(sp => sp.s === s0 && sp.pitchless && sp.st.a)]; if (!found[1]) throw new Error("the pitchless trig did not come"); } c.pt = found[0]; c.ps = found[1].s; u.click(rail(c.pt)); await sleep(300);
 					c.a0 = bitsOf(c.pt, "amp").includes(c.ps); await envPick(u, c.pt, c.ps, "a"); await until(() => bitsOf(c.pt, "amp").includes(c.ps) !== c.a0, 4000); },
 				machine: c => ok(bitsOf(c.pt, "amp").includes(c.ps) !== c.a0 && bitsOf(c.pt, "trig").includes(c.ps) && !noteAt(c.pt, c.ps).length, `amp ${bitsOf(c.pt, "amp").includes(c.ps)}, notes ${noteAt(c.pt, c.ps)}`), screen: c => ok(noteSpans(c.pt).find(sp => sp.s === c.ps)?.pitchless === true, "span"), within: 6000 }
 		],
@@ -2755,6 +2761,9 @@ const MmJourneys = (() => {
 					c.k0 = wk().multiTrig.splitKey; await u.drag("#splitm", [[-60, 0], [-120, 0]]); await sleep(500); c.k1 = wk().multiTrig.splitKey; if (c.k1 >= c.k0) c.bad.push(`split key ${c.k0} -> ${c.k1}`); c.hint = $1(".kbhint")?.textContent || ""; },
 				screen: c => ok(!c.bad.length && /^.*Keys from .* play T\d-T6, keys below play T1-T\d/.test(c.hint), c.bad.join(" | ") + " hint " + c.hint), within: 1000 },
 			{ say: "SEQ START and SEQ TRNSP have a Timing stepper: from DIRECT through 1/16, 2/16, 4/16, 8/16, 16/16 to 32/16, the kit's timing", act: async (u, c) => { c.bad = []; u.click('[data-set="mtmode"] button[data-v="2"]'); await until(() => wk().multiTrig.mode === 2, 4000); await sleep(300); const names = ["DIRECT", "1/16", "2/16", "4/16", "8/16", "16/16", "32/16"];
+					/* B-107 (the 0.6 e2e run, "timing 0: 1"): the kit may hold another timing than DIRECT (a kit's own, or one a journey
+					   before left): − down to DIRECT first */
+					for (let i = 0; i < 7 && wk().multiTrig.timing > 0; i++) { const was = wk().multiTrig.timing; u.click('[data-tim="-1"]'); await until(() => wk().multiTrig.timing < was, 4000); }
 					for (let k = 0; k < 7; k++) { if (k > 0) u.click('[data-tim="1"]'); if (!await until(() => wk().multiTrig.timing === k, 4000)) c.bad.push(`timing ${k}: ${wk().multiTrig.timing}`); const shown = $all(".stepper").find(s => /Timing/.test(s.textContent))?.querySelector("b")?.textContent; if (shown !== names[k]) c.bad.push(`shows ${shown} for ${names[k]}`); }
 					u.click('[data-set="mtmode"] button[data-v="3"]'); await until(() => wk().multiTrig.mode === 3, 4000); await sleep(300); c.has3 = !!$1("[data-tim]"); Journey.snapshot("mm-perform-multi-trig"); },
 				screen: c => ok(!c.bad.length && c.has3, c.bad.join(" | ") + " timing in SEQ TRNSP " + c.has3), within: 1000 },
@@ -3109,7 +3118,19 @@ const MmJourneys = (() => {
 	const sixTracks = {
 		name: "mm-seq-six-tracks", proves: ["MM-002", "MM-006", "MM-009"],
 		steps: [
-			go("seq"), sel(0), drawOn,
+			go("seq"),
+			/* B-107 (the 0.6 e2e run, "step NaN is not shown"): a factory pattern's tracks hold notes on (or under) every step
+			   the journey can draw on. It draws in an empty pattern of banks E to H instead (a pick there loads no kit, B-053) */
+			{ say: "when a track has no free step from step 9 on, pick an empty pattern in banks E to H in the pattern chooser (it loads no kit)", within: 20000,
+				act: async (u, c) => { await until(() => I().slots("pattern").length >= 128, 30000);
+					/* room on track t: a step from 9 on that is empty and under no note's bar (the step before that holds anything is a NOTE OFF or none) */
+					const room = t => { const st = trkOf(t).steps; for (let x = 8; x < S().len; x++) { if (st[x]) continue; let k = x - 1; while (k >= 0 && !st[k]) k--; if (k < 0 || st[k].off) return true; } return false; };
+					if ([0, 1, 2, 3, 4, 5].every(room)) return;
+					const eh = [...Array(64).keys()].map(k => k + 64).filter(p => p !== cur() && I().doc("pattern", p));
+					c.p0 = cur(); c.p = eh.find(p => !patTrigs(p)) ?? eh.sort((a, b) => patTrigs(a) - patTrigs(b))[0]; if (c.p == null) throw new Error("no pattern in banks E to H");
+					u.click("#pat"); await until(() => $all("#libpop .ps").length === 128, 4000); u.click(`#libpop .ps[data-ps="${c.p}"]`); await confirmIfAsked(u); if (!$1("#libpop").hidden) u.key("Escape"); await until(() => cur() === c.p, 15000); },
+				machine: c => ok(c.p == null || cur() === c.p, "pattern " + cur()) },
+			sel(0), drawOn,
 			{ say: "six tracks, each a sequencer and a synth of its own: a note in track t's roll and a value on its AMP page change only track t, in the pattern and in the kit", act: async (u, c) => { c.n0 = histN(); c.bad = [];
 					for (let t = 0; t < 6; t++) { u.click(tab("seq")); await sleep(250); u.click(rail(t)); await sleep(250); const before = JSON.stringify([patDoc().tracks.filter((x, i) => i !== t), patDoc().midiTracks]); const s = freeSteps(t, 1, 8, rollCell(t, 0).n)[0]; const p = rollCell(t, s); u.click(p.c, {}, p.fx, p.fy); if (!await until(() => trigsOf(t).includes(s), 4000)) { c.bad.push(`T${t + 1}: no note`); continue; } await sleep(200);
 						if (JSON.stringify([patDoc().tracks.filter((x, i) => i !== t), patDoc().midiTracks]) !== before) c.bad.push(`T${t + 1}: another track's pattern changed`);
@@ -3121,7 +3142,8 @@ const MmJourneys = (() => {
 					const d0 = cellOf(0, "AMP", 2), up = d0 < 80 ? 1 : -1; w0 = wireSeq; await u.drag(q, [[up * 6, 0], [up * 12, 0], [up * 18, 0], [up * 24, 0], [up * 30, 0]]); await sleep(600); const cc = ccsOf(w0).filter(x => x[1] === 58).map(x => x[2]); if (cc.length < 3 || !cc.every((v, k) => k === 0 || (up > 0 ? v >= cc[k - 1] : v <= cc[k - 1])) || cc[cc.length - 1] === cc[0]) c.bad.push("drag CCs " + cc); },
 				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 }
 		],
-		async tidy(u, c) { drawBack(c); if (c.n0 != null) await undoTo(u, c.n0); }
+		async tidy(u, c) { drawBack(c); if (c.n0 != null) await undoTo(u, c.n0);
+			if (c.p0 != null && cur() !== c.p0) { u.click("#pat"); await sleep(400); u.click(`#libpop .ps[data-ps="${c.p0}"]`); await confirmIfAsked(u); await sleep(800); if (!$1("#libpop").hidden) u.key("Escape"); } }
 	};
 	/* the four things the machine's BANK keys do with FUNCTION on the sequencer: ARP, TRANSPOSE, SWING, SLIDE */
 	const bankFunctions = {
