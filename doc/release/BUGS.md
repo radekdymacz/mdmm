@@ -4,28 +4,28 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
-## B-084 · Machinedrum: PLAY shows pressed and the machine as playing while the firmware starts
+## B-087 · Machinedrum: PLAY shows pressed and the machine as playing while the firmware starts
 
 - **From:** the journey md-boot-card (on the "flaky" list: about one start in five in the full runs, 2026-10-12).
 - **What happens:** under the start-up card, within the first second, the page shows ■ on the PLAY key and the telemetry says the machine plays, before the firmware takes MIDI.
 - **Cause:** the plug-in reads "playing" from the firmware's RAM (a step byte that moves, the stopped byte clear: `md::SequencerState`). While the firmware starts, it sets up that RAM: the step byte changed with the stopped byte still 0, which read as playing for 0.7 s. The first step read also counted as a move.
-- **Fix (`fix/0.6-flaky`):** the sequencer state is read only once the firmware takes MIDI (`isFirmwareMidiReady`, as the start-up animation already was), and starts afresh for a new machine; the first step read is where the step is, not a move (`mdsequencerstate.h`, `mddeskdevice.cpp`). Tests: `mdSequencerStateTest` (B-084), md-boot-card 8 of 8 with four editors starting at once.
+- **Fix (`fix/0.6-flaky`):** the sequencer state is read only once the firmware takes MIDI (`isFirmwareMidiReady`, as the start-up animation already was), and starts afresh for a new machine; the first step read is where the step is, not a move (`mdsequencerstate.h`, `mddeskdevice.cpp`). Tests: `mdSequencerStateTest` (B-087), md-boot-card 8 of 8 with four editors starting at once.
 - **Status:** fixed on `fix/0.6-flaky`. Shown to the person only under the start-up card (the card covers PLAY), so nobody could press it; the telemetry the core and the page read was wrong for that moment.
 
-## B-083 · Machinedrum: a pause right after PLAY can end at once and stop the machine
+## B-086 · Machinedrum: a pause right after PLAY can end at once and stop the machine
 
 - **From:** the journey md-top-pause (on the "flaky" list: step 2 "⇧-click ▶: it pauses", the toast "Paused." shown, then the position gone).
 - **What happens:** ⇧-click ▶ (or ⇧Space) while the machine plays: the toast says Paused, but ▶ does not blink and POSITION reads --.--: the machine stopped, the pause is gone, ▶ starts from the top.
 - **Cause:** the page ended a pause whenever a telemetry frame said "playing" (`onTelemetry`, mdDeskTop.js). A frame the machine sent before the pause reached it arrives after the click and still says playing: the pause just begun was dropped, then the machine stopped. More likely on a busy Mac (frames queue up), and in the plug-in as well as the page tier.
-- **Fix (`fix/0.6-flaky`):** the pause ends only when the machine starts playing again (from stopped to playing: PLAY, or its own panel). The MM page already did so (`setPlaying`). Test: mdDeskPageTest.js (B-083: a late frame keeps the pause; stopped, still paused on its step; playing again ends it).
+- **Fix (`fix/0.6-flaky`):** the pause ends only when the machine starts playing again (from stopped to playing: PLAY, or its own panel). The MM page already did so (`setPlaying`). Test: mdDeskPageTest.js (B-086: a late frame keeps the pause; stopped, still paused on its step; playing again ends it).
 - **Status:** fixed on `fix/0.6-flaky`. Not in a release (the pause is 0.6 wave 2).
 
-## B-082 · Paste what opens with nothing ticked after another paste
+## B-085 · Paste what opens with nothing ticked after another paste
 
 - **From:** the journeys md-seq-swing-copy and md-seq-copy-what (on the "flaky" list), 2026-10-12.
 - **What happens:** paste Trigs alone with ▾ Paste…, later copy Swing alone and open ▾ Paste…: no part is ticked (Swing is offered, the rest "Not copied") and the Paste key is off until Swing is ticked by hand.
 - **Cause:** the dialog's ticks are remembered per verb (deskWhat.js `ticked`); the remembered ones were filtered by what the clipboard offers, and nothing was left.
-- **Fix (`fix/0.6-flaky`):** when none of the remembered ticks is offered, the dialog ticks its defaults among them (for Paste: what was copied). Both editors (the MM page is generated from the same file). Test: deskWhatTest.js (B-082). In the page tier the journeys met it because every page of a run shared one browser store; the runner now gives each page its own (below, DEV-CYCLE.md "Known flaky").
+- **Fix (`fix/0.6-flaky`):** when none of the remembered ticks is offered, the dialog ticks its defaults among them (for Paste: what was copied). Both editors (the MM page is generated from the same file). Test: deskWhatTest.js (B-085). In the page tier the journeys met it because every page of a run shared one browser store; the runner now gives each page its own (below, DEV-CYCLE.md "Known flaky").
 - **Status:** fixed on `fix/0.6-flaky`. Not in a release (Copy what is 0.6 wave 4).
 
 ## B-081 · Machinedrum: the Rhythm Echo and Gate Box cards on the Mix page show and edit each other's values

@@ -387,18 +387,18 @@ P.Docs.telemetry = Object.assign({}, P.Docs.telemetry, { playing: false });
 P.setV(Object.assign({}, P.V, { playing: false }));
 check(P.playsText() === "SONG 01 · 2 rows · stopped", "stopped: no row is said (" + P.playsText() + ")");
 
-/* ---- B-083: a frame the machine sent while it still played, before the pause reached it, keeps the pause ---- */
+/* ---- B-086: a frame the machine sent while it still played, before the pause reached it, keeps the pause ---- */
 {
 	const frame = (step, playing) => P.onTelemetry({ type: "telemetry", step, pattern: 0, playing, recording: false, valid: true, songRow: -1 });
 	frame(4, true); P.S.paused = null;
 	sent.length = 0; P.pauseNow();
-	check(!!P.S.paused && sent.some(m => m.op === "pause"), "B-083: ⇧-click ▶ while playing: paused, the pause sent");
+	check(!!P.S.paused && sent.some(m => m.op === "pause"), "B-086: ⇧-click ▶ while playing: paused, the pause sent");
 	frame(5, true);
-	check(!!P.S.paused, "B-083: a late frame (still playing) keeps the pause");
+	check(!!P.S.paused, "B-086: a late frame (still playing) keeps the pause");
 	frame(-1, false);
-	check(!!P.S.paused && P.S.paused.step === 4, "B-083: the machine stops: still paused on the step it held");
+	check(!!P.S.paused && P.S.paused.step === 4, "B-086: the machine stops: still paused on the step it held");
 	frame(4, true);
-	check(P.S.paused === null, "B-083: the machine plays again (PLAY, or its own panel): the pause is over");
+	check(P.S.paused === null, "B-086: the machine plays again (PLAY, or its own panel): the pause is over");
 	frame(-1, false);
 }
 

@@ -27,7 +27,7 @@ namespace md
 		void update(const uint8_t _step, const uint8_t _stopped, const uint8_t _recordLed, const uint64_t _frames)
 		{
 			m_frames += _frames;
-			// the first step read is where it is, not a move (B-084: a machine just started does not play)
+			// the first step read is where it is, not a move (B-087: a machine just started does not play)
 			if(m_step < 0)
 				m_step = _step;
 			else if(_step != m_step)

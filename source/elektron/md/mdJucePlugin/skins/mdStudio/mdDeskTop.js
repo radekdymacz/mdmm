@@ -278,7 +278,7 @@ function onTelemetry(m) {
 	const wasPlaying = V.playing, wasRec = V.rec, tp = transportOf(Docs);
 	if (tp.playing !== wasPlaying || tp.rec !== wasRec) { Base = deriveView(Docs, S); V = view(); }
 	/* the machine plays again (PLAY, or its own panel): the pause is over. Only when it starts again: a frame sent while
-	   it still played, before the pause reached it, ended the pause just begun, and the machine then stopped (B-083) */
+	   it still played, before the pause reached it, ended the pause just begun, and the machine then stopped (B-086) */
 	if (V.playing && !wasPlaying && S.paused) { S.paused = null; renderTop(); }
 	if (V.rec !== wasRec) { renderTop(); if (V.rec) toast("Live recording: click a track's steps to play it, move a value to lock it."); }
 	S.step = V.playing ? m.step : -1;

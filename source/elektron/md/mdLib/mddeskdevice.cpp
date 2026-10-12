@@ -156,7 +156,7 @@ namespace md
 		t.step.store(step, std::memory_order_relaxed);
 		t.pattern.store(uc.read8(patternAddress), std::memory_order_relaxed);
 		t.songRow.store(uc.read8(SongPosition::g_rowAddress), std::memory_order_relaxed);
-		// B-084: not before the firmware takes MIDI. While it starts, its RAM is being set up: the step byte changed with
+		// B-087: not before the firmware takes MIDI. While it starts, its RAM is being set up: the step byte changed with
 		// the stopped byte still 0 read as "playing" for 0.7 s, so the page showed PLAY pressed under the start-up card
 		// and the machine as playing (md-boot-card, about one start in five)
 		if(ready)
