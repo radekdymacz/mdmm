@@ -1428,6 +1428,17 @@
         "engines": {
           "$ref": "#/$defs/engines"
         },
+        "clipboard": {
+          "type": "object",
+          "description": "What the core's clipboard holds that the page reads (0.6): global is the slot the GLOBAL page's Copy took (null when none; Paste is on while it is set).",
+          "required": ["global"],
+          "additionalProperties": true,
+          "properties": {
+            "global": {
+              "type": ["integer", "null"]
+            }
+          }
+        },
         "history": {
           "$ref": "#/$defs/history"
         },

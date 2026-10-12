@@ -268,7 +268,13 @@ namespace mmDesk
 		// removed or re-meant; adding one keeps it.
 		static constexpr int contractVersion = 2;
 		// The Monomachine's page keeps no clipboard in the core.
-		static std::optional<elektronData::json::Value> clipboardDocument(const Clipboard&) { return {}; }
+		// 0.6: what the page reads of the clipboard: the GLOBAL page's Paste is on while a global is copied
+		static std::optional<elektronData::json::Value> clipboardDocument(const Clipboard& _clip)
+		{
+			auto c = elektronData::json::Value::object();
+			c.set("global", _clip.global ? elektronData::json::Value(static_cast<int>(_clip.global->position)) : elektronData::json::Value());
+			return c;
+		}
 		// The Monomachine Editor's command vocabulary.
 		static const Table& commands();
 		// P7: the active global as it must be for the machine to follow a DAW's tempo and transport (MIDI

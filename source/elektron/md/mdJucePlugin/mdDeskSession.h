@@ -389,7 +389,7 @@ namespace mdJucePlugin
 			if(m_desk->pageSeen() && due(t, g_cpuLoadMs))
 				toPage(cpuLoadOf(processor()));
 			// 0.6: the notes from outside (LEARN; no lock: mdMidiIn.h). Taken also while no page is up, so a page that opens
-			// later does not get old ones.
+			// later does not get old ones (the queue is emptied when the session starts, too).
 			for(int n = 0; n < g_midiInPerStep; ++n)
 			{
 				const auto note = processor().takeMidiIn();

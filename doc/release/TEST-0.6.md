@@ -46,7 +46,7 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 
 ## GLOBAL page (wave 5, both editors)
 
-1. GLOBAL in the top bar: the page sits under the header, as wide; a workspace key, Esc and GLOBAL all go back.
+1. GLOBAL in the top bar: the page sits under the header, as wide; a workspace key, Esc and GLOBAL all go back. A click anywhere else on the page only closes it (the step under the pointer does not take it).
 2. Copy, click another slot, Paste (it asks), Cmd+Z. Clear asks, then Cmd+Z.
 3. MD: TRIG IN A / B: − / + on each value (Shift: 10), Dest runs -, T1 … T16.
 4. MD: a LEARN dot on a track, then play a note on a MIDI keyboard (the standalone's MIDI input; in a DAW the track's MIDI): the track takes the note. Reset map (it asks), Cmd+Z.

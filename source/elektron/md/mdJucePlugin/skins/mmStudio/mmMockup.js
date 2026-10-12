@@ -4481,13 +4481,28 @@ function globalClick(a) {
 	if (f === "paste") { if (!H.canPaste || H.canPaste()) H.paste(G); return; }
 	H.click(a, G);
 }
+/* No backdrop: a press outside the page closes it and goes no further (a step of the grid below must not take it); the header
+   (a workspace tab, the LCD, a key) is let through, the click there does what it does. The press, its release and its click
+   are one gesture: after the first is eaten, the rest of them are too (EAT), for a moment. */
+const GLOBAL_THROUGH = "#dlg,.kpop,#kpop,.lcdeng,.modalbg,#deskmenu", GLOBAL_HEADER = "header.top,.lcdpanel";
+let globEat = false;
+const globStop = e => { e.preventDefault(); e.stopPropagation(); };
+const globOutside = e => !document.getElementById("globpop").contains(e.target) && !(e.target.closest && e.target.closest(GLOBAL_THROUGH + "," + GLOBAL_HEADER));
+for (const ev of ["pointerdown", "mousedown", "pointerup", "mouseup"]) document.addEventListener(ev, e => {
+	if (globEat) { globStop(e); return; }
+	if (!GP.open || !globOutside(e)) return;
+	globStop(e); globEat = true; setTimeout(() => { globEat = false; }, 600);
+	if (ev === "pointerdown" || ev === "mousedown") closeGlobal();
+}, true);
 document.addEventListener("click", e => {
 	if (e.target.closest && e.target.closest("#globkey")) { GP.open ? closeGlobal() : openGlobal(); e.stopPropagation(); return; }
+	if (globEat) { globEat = false; globStop(e); return; }
 	if (!GP.open) return;
 	const pop = document.getElementById("globpop");
 	if (pop.contains(e.target)) { const a = e.target.closest("[data-ga]"); GP.shift = !!e.shiftKey; if (a) globalClick(a); return; }
-	/* the header (a workspace tab, the LCD, a key): back to the workspace, and the click does what it does */
-	if (!(e.target.closest && e.target.closest("#dlg,.kpop,#kpop,.lcdeng,.modalbg,#deskmenu"))) closeGlobal();
+	if (e.target.closest && e.target.closest(GLOBAL_THROUGH)) return;
+	closeGlobal();
+	if (!(e.target.closest && e.target.closest(GLOBAL_HEADER))) globStop(e);
 }, true);
 document.addEventListener("change", e => {
 	const s = e.target.closest && e.target.closest("#globpop [data-gsel]"), H = DeskGlobal.host;
@@ -4579,7 +4594,7 @@ DeskGlobal.host={view:()=>S.glob||null,cards:mmGlobalCards,click:mmGlobalClick,m
  reset:()=>edit("globalReset",{}),
  copy:G=>{S.globClip=G.slot;if(HOST.library)HOST.library("globalCopy",{slot:G.slot});toast("Copied GLOBAL "+(G.slot+1)+".");drawGlobal()},
  paste:G=>{if(HOST.library)HOST.library("globalPaste",{slot:G.slot});else toast("Pasted GLOBAL "+(S.globClip+1)+" into GLOBAL "+(G.slot+1)+".")},
- canPaste:()=>S.globClip!=null,
+ canPaste:()=>S.glob?.clip!=null||(!HOST.library&&S.globClip!=null),
  back:()=>({seq:"Sequence",sound:"Sound",mix:"Mix",perform:"Perform",song:"Song",control:"Control"})[S.ws]||"",
  ask:(html,label,yes)=>ask(html,[[label,"danger",yes],["Cancel","",()=>{}]])};
 

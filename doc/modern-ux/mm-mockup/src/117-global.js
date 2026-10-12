@@ -79,6 +79,6 @@ DeskGlobal.host={view:()=>S.glob||null,cards:mmGlobalCards,click:mmGlobalClick,m
  reset:()=>edit("globalReset",{}),
  copy:G=>{S.globClip=G.slot;if(HOST.library)HOST.library("globalCopy",{slot:G.slot});toast("Copied GLOBAL "+(G.slot+1)+".");drawGlobal()},
  paste:G=>{if(HOST.library)HOST.library("globalPaste",{slot:G.slot});else toast("Pasted GLOBAL "+(S.globClip+1)+" into GLOBAL "+(G.slot+1)+".")},
- canPaste:()=>S.globClip!=null,
+ canPaste:()=>S.glob?.clip!=null||(!HOST.library&&S.globClip!=null),
  back:()=>({seq:"Sequence",sound:"Sound",mix:"Mix",perform:"Perform",song:"Song",control:"Control"})[S.ws]||"",
  ask:(html,label,yes)=>ask(html,[[label,"danger",yes],["Cancel","",()=>{}]])};
