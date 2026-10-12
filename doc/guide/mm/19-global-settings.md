@@ -106,7 +106,7 @@ The multi map starts patterns from key ranges. It is on the **Perform** workspac
 
 Bands on the keyboard show the ranges. A key you play shows the pattern it starts.
 
-The **PAT** list of a range offers CUR, the pattern that plays, and all 128 patterns, A01 to H16.
+The **Pattern** list of a range offers CUR and all 128 patterns, A01 to H16.
 
 ## MECHANICAL SETTINGS
 <!-- rows: MM-304 MM-305 MM-306 @9df19f -->
