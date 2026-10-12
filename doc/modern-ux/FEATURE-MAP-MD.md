@@ -393,18 +393,39 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
 | p. | What you save stays for every new session | The machine keeps its kits, patterns, songs, globals and samples when it is switched off. | ✅ | By itself (a session without a DAW project, and the standalone, start from the saved memory); engine menu: KEEP MEMORY; Reset machine… > Start from factory memory… | I-024, doc/modern-ux/DESIGN-machine-memory.md | 1 |
+| p. | Factory songs play | The songs of factory memory are there and play: load one, SONG mode, PLAY. | ✅ | Song workspace: the song slots, Load; the arrangement follows the machine | e2e: every factory song | 2 |
+| p. | Factory patterns play | The patterns of factory memory are there and play: pick one on the LCD, PLAY. | ✅ | The pattern chooser on the LCD | e2e: patterns spread over all 128 | 2 |
+| p. | GEN rolls a rhythm | No such function: you set the hits by hand. The editor rolls a rhythm for you from a few settings. | ✅ | GEN bar on Sequence: Random, Defaults, Hits; R | One undo step | 3 |
+| p. | MUTATE changes a sound | No such function. The editor nudges the sound of the tracks at random, within a scope and an amount. | ✅ | GEN bar on Sequence: MUTATE, scope chips, amount | One undo step | 2 |
+| p. | Solo | Solo plays one track alone; the mutes you had come back when you let go. | ✅ | Mix: S on the strip; the rail | The machine has mute only | 1 |
+| p. | Undo and redo | No undo. Every edit of the editor can be taken back and done again, across kits, patterns and songs. | ✅ | UNDO and REDO in the top bar; Cmd+Z, Cmd+Shift+Z | The machine has no undo | 2 |
+| p. | Typed values | Type a value into a knob instead of turning it. | ✅ | Cmd-click or Enter on a value box; the arrow keys step it | A list takes its names | 2 |
+| p. | The step menu | Right-click a step for accent or slide, copy, paste and fill. | ✅ | Right-click a step (MM: in the roll or a trig row) | Keyboard and mouse | 2 |
+| p. | Select, copy and paste steps | Select steps with the mouse, copy, paste and clear them, to one track or several. | ✅ | Cmd-click, Cmd-drag, the top bar's Copy, Paste, Clr; Cmd+C, Cmd+V |  | 4 |
+| p. | Copy, Paste and Clear what | Choose what a copy, paste or clear takes: trigs, locks, the sound, the whole track. | ✅ | The what menu on Copy, Paste and Clear |  | 2 |
+| p. | Drop a file on the window | Drop a SysEx file (or, on the Machinedrum, a sample) on the editor. | ✅ | The window itself | macOS | 2 |
+| p. | SysEx import with a preview | Look inside a SysEx file before you send it: tick the kinds, choose where each goes, read the report. | ✅ | Engine menu: IMPORT SYSEX… |  | 5 |
+| p. | Notes from a MIDI keyboard light the track | The track you play lights on the rail and in the mixer. | ✅ | Rail numbers, Mix LEDs |  | 1 |
+| p. | The CPU meter and the speed-ups | No such function. A meter shows how much of the audio time the emulation takes, with the speed-ups to switch. | ✅ | The CPU meter beside the version; Developer › Speed-ups |  | 2 |
+| p. | The output meter and volume | Two bars and a volume line at the end of the LCD. | ✅ | The LCD's right end |  | 1 |
+| p. | The editor's menu | A right-click menu for zoom, updates and the developer switches. | ✅ | Right-click the header or the rail |  | 1 |
+| p. | The keyboard view | The drawn keyboard, with each key's words and a search. | ✅ | The ? key in the top bar |  | 1 |
+| p. | The computer keyboard plays | The two rows of letter keys play the selected track. | ✅ | Letter keys on any workspace |  | 1 |
+| p. | Tap tempo | Tap B (Shift+B on every workspace) to set the tempo. | ✅ | The B key |  | 3 |
+| p. | Pattern queue and chooser | Pick any of the 128 patterns from the chooser; played while it runs, it waits for the end. | ✅ | The pattern on the LCD |  | 3 |
+| p. | Kit and song slots | The kit library and the song slots: load, copy, paste, rename and clear a slot, each undoable. | ✅ | The kit on the LCD; Song workspace |  | 4 |
 
 ## Summary
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 266 |
+| ✅ Yes | 287 |
 | 🟡 Partial | 9 |
 | ❌ No | 6 |
 | ➖ Not applicable | 16 |
-| Total | 297 |
+| Total | 318 |
 
-Of the 281 applicable rows, 266 are fully covered, 9 partly, 6 not at all.
+Of the 302 applicable rows, 287 are fully covered, 9 partly, 6 not at all.
 
 ### Top gaps (our UI), most important first
 

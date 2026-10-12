@@ -251,7 +251,7 @@ const Journey = (() => {
 		machine: ["seq-first-beat", "seq-queue-while-playing", "seq-live-record", "seq-grid-record", "sampler-setup-undo", "sampler-audition",
 			"sampler-ram-view", "sampler-setup-chop", "lib-syx-import", "lib-syx-import-mute", "song-mode", "keys-play-notes", "keys-black-keys",
 			"perform-keyboard", "engine-hw-no-machine", "global-tempo-out", "audio-panel", "drop-syx", "drop-sample", "old-webkit",
-			"sound-machine-stays", "engine-reset-factory",
+			"sound-machine-stays", "engine-reset-factory", "real-factory-songs", "real-factory-patterns",
 			/* they time key presses against the journey's clock: in the page tier, beside the gate's busy lane 1, the page
 			   and the journey's clock drifted apart by several per cent (2026-10-11) */
 			"keys-tap-tempo", "keys-tap-tempo-b", "keys-tap-tempo-shift", "shots", "shots-cpu", "shots-global", "shots-import", "shots-menu", "shots-song", "shots-sound", "shots-views"]
@@ -263,9 +263,14 @@ const Journey = (() => {
 
 	/* ---------- the runner ---------- */
 	/* the journeys (what: "journey") or demos ("demo") this page was asked for: null when none */
+	let e2eMode = false, current = "", shots = 0;
 	function wanted(all, what = "journey") {
 		const m = location.search.match(new RegExp(`[?&]selftest=(${what}[^&]*)`)); if (!m) return null;
 		let kind = decodeURIComponent(m[1]);
+		/* ":e2e" at the very end (scripts/mdmm-e2e.sh): the evidence run: each journey leaves a snapshot of the page at its
+		   proof moment (its own, or one of its last step, "e2e-<journey>"; "e2e-<journey>-fail" where it failed), and
+		   logs "JOURNEY <name> SHOT <name>" for each, so scripts/mdmm-e2e.mjs can put a picture to each feature row */
+		e2eMode = /:e2e$/.test(kind); if (e2eMode) kind = kind.replace(/:e2e$/, "");
 		/* "@k/n" at the end (scripts/mdmm-journeys.sh --jobs n runs n editors at once): every n-th of the chosen ones,
 		   from the k-th, so the n editors share them without a list of names */
 		const shard = kind.match(/@(\d+)\/(\d+)$/);
@@ -285,6 +290,7 @@ const Journey = (() => {
 		const c = c0 || {}, n = j.steps.length;
 		let reason = "";
 		/* what the journey needs that this run may not have (the window on screen): it is skipped, not failed */
+		current = j.name; shots = 0;
 		const missing = j.needs ? await j.needs() : null;	/* may be async: what it needs may still be on its way */
 		if (missing) { log(`JOURNEY ${j.name} SKIP ${missing}`); return "skip"; }
 		for (let i = 0; i < n && !reason; i++) {
@@ -305,6 +311,11 @@ const Journey = (() => {
 			const seen = [scr !== true ? "screen: " + scr : "", mac !== true ? "machine: " + mac : "", around ? "page: " + around : ""].filter(Boolean).join("; ");
 			reason = `step ${i + 1} "${st.say}": ${seen}`;
 			log(`${head} FAIL ${st.say} after ${ms} ms: ${seen}`);
+		}
+		if (e2eMode && !film) {
+			/* the proof moment: where the journey ended (its failing step's page where it failed), before the tidy puts things back */
+			if (reason) { try { snapshot(`e2e-${j.name}-fail`); } catch (e) { log(`JOURNEY ${j.name} e2e snapshot: ${e.message}`); } }
+			else if (!shots) { try { await sleep(250); snapshot(`e2e-${j.name}`); } catch (e) { log(`JOURNEY ${j.name} e2e snapshot: ${e.message}`); } }
 		}
 		if (j.tidy) { try { await j.tidy(u, c); } catch (e) { log(`JOURNEY ${j.name} tidy: ${e.message}`); } }
 		log(`JOURNEY ${j.name} ${reason ? "FAIL " + reason : "PASS"}`);
@@ -785,6 +796,7 @@ const Journey = (() => {
 	   Chrome, where macOS gives the shell no Screen Recording): the DOM with each canvas's drawing as its background,
 	   the form values as attributes, the window's size; logged in pieces as "SNAP <name> <i>/<n> <text>". */
 	function snapshot(name) {
+		shots++; if (runLog && current) runLog(`JOURNEY ${current} SHOT ${name}`);
 		const doc = document.documentElement.cloneNode(true), live = [...document.querySelectorAll("canvas")], copies = [...doc.querySelectorAll("canvas")];
 		live.forEach((c, i) => { try { const d = c.width && c.height ? c.toDataURL() : ""; if (d && copies[i]) copies[i].style.backgroundImage = `url(${d})`, copies[i].style.backgroundSize = "100% 100%"; } catch (_) { } });
 		const liveSel = [...document.querySelectorAll("select")], copySel = [...doc.querySelectorAll("select")];

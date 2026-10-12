@@ -526,6 +526,28 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
 | MACHINE MEMORY | What you save stays for every new session | The machine keeps its kits, patterns, songs and globals when it is switched off. | ✅ | By itself (a session without a DAW project, and the standalone, start from the saved memory); engine menu: KEEP MEMORY; Reset machine… > Start from factory memory… | I-024, doc/modern-ux/DESIGN-machine-memory.md | 1 |
+| FACTORY SONGS PLAY | Factory songs play | The songs of factory memory are there and play: load one, SONG mode, PLAY. | ✅ | Song workspace: the song slots, Load; the arrangement follows the machine | e2e: every factory song | 2 |
+| FACTORY PATTERNS PLAY | Factory patterns play | The patterns of factory memory are there and play: pick one on the LCD, PLAY. | ✅ | The pattern chooser on the LCD | e2e: patterns spread over all 128 | 2 |
+| GEN ROLLS A RHYTHM | GEN rolls a rhythm | No such function: you set the hits by hand. The editor rolls a rhythm for you from a few settings. | ✅ | GEN bar on Sequence: Random, Defaults, Hits; R | One undo step | 2 |
+| MUTATE CHANGES A SOUND | MUTATE changes a sound | No such function. The editor nudges the sound of the tracks at random, within a scope and an amount. | ✅ | GEN bar on Sequence: MUTATE, scope chips, amount | One undo step | 2 |
+| SOLO | Solo | Solo plays one track alone; the mutes you had come back when you let go. | ✅ | Mix: S on the strip; the rail | The machine has mute only | 1 |
+| UNDO AND REDO | Undo and redo | No undo. Every edit of the editor can be taken back and done again, across kits, patterns and songs. | ✅ | UNDO and REDO in the top bar; Cmd+Z, Cmd+Shift+Z | The machine has no undo | 2 |
+| TYPED VALUES | Typed values | Type a value into a knob instead of turning it. | ✅ | Cmd-click or Enter on a value box; the arrow keys step it | A list takes its names | 2 |
+| THE STEP MENU | The step menu | Right-click a step for accent or slide, copy, paste and fill. | ✅ | Right-click a step (MM: in the roll or a trig row) | Keyboard and mouse | 1 |
+| SELECT, COPY AND PASTE STEPS | Select, copy and paste steps | Select steps with the mouse, copy, paste and clear them, to one track or several. | ✅ | Cmd-click, Cmd-drag, the top bar's Copy, Paste, Clr; Cmd+C, Cmd+V |  | 5 |
+| COPY, PASTE AND CLEAR WHAT | Copy, Paste and Clear what | Choose what a copy, paste or clear takes: trigs, locks, the sound, the whole track. | ✅ | The what menu on Copy, Paste and Clear |  | 2 |
+| DROP A FILE ON THE WINDOW | Drop a file on the window | Drop a SysEx file (or, on the Machinedrum, a sample) on the editor. | ✅ | The window itself | macOS | 1 |
+| SYSEX IMPORT WITH A PREVIEW | SysEx import with a preview | Look inside a SysEx file before you send it: tick the kinds, choose where each goes, read the report. | ✅ | Engine menu: IMPORT SYSEX… |  | 4 |
+| NOTES FROM A MIDI KEYBOARD LIGHT THE TRACK | Notes from a MIDI keyboard light the track | The track you play lights on the rail and in the mixer. | ✅ | Rail numbers, Mix LEDs |  | 1 |
+| THE CPU METER AND THE SPEED-UPS | The CPU meter and the speed-ups | No such function. A meter shows how much of the audio time the emulation takes, with the speed-ups to switch. | ✅ | The CPU meter beside the version; Developer › Speed-ups |  | 2 |
+| THE OUTPUT METER AND VOLUME | The output meter and volume | Two bars and a volume line at the end of the LCD. | ✅ | The LCD's right end |  | 1 |
+| THE EDITOR'S MENU | The editor's menu | A right-click menu for zoom, updates and the developer switches. | ✅ | Right-click the header or the rail |  | 1 |
+| THE KEYBOARD VIEW | The keyboard view | The drawn keyboard, with each key's words and a search. | ✅ | The ? key in the top bar |  | 1 |
+| THE COMPUTER KEYBOARD PLAYS | The computer keyboard plays | The two rows of letter keys play the selected track. | ✅ | Letter keys on any workspace |  | 2 |
+| TAP TEMPO | Tap tempo | Tap B (Shift+B on every workspace) to set the tempo. | ✅ | The B key |  | 2 |
+| PATTERN QUEUE AND CHOOSER | Pattern queue and chooser | Pick any of the 128 patterns from the chooser; played while it runs, it waits for the end. | ✅ | The pattern on the LCD |  | 3 |
+| KIT AND SONG SLOTS | Kit and song slots | The kit library and the song slots: load, copy, paste, rename and clear a slot, each undoable. | ✅ | The kit on the LCD; Song workspace |  | 5 |
+| PIANO ROLL | Piano roll | Draw notes on a roll with a note length, move or box-select them and play chords; the roll writes the same step data as the machine's own entry. | ✅ | Sequence: the piano roll, Draw (B), Len | MM only | 5 |
 
 ## 24. Editor features with no manual counterpart (for orientation)
 
@@ -537,11 +559,11 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 337 |
+| ✅ | 359 |
 | 🟡 | 14 |
 | ❌ | 1 |
 | ➖ | 34 |
-| Total | 386 |
+| Total | 408 |
 
 ### Top gaps, ranked (our UI)
 
