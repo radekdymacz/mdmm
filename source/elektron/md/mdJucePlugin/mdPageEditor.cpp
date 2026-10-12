@@ -204,7 +204,7 @@ namespace mdJucePlugin
 			}
 			else if(row->handler.action == deskHost::Action::ChooseSyx || row->handler.action == deskHost::Action::SyxExport)
 			{
-				chooseSyx(row->handler.action == deskHost::Action::SyxExport);
+				chooseSyx(row->handler.action == deskHost::Action::SyxExport, _message);
 				m_page->send(deskCore::resultMessage(_message, {}, {}));
 			}
 			else if(row->handler.action == deskHost::Action::PageZoom)
@@ -306,7 +306,7 @@ namespace mdJucePlugin
 			});
 	}
 
-	void PageEditor::chooseSyx(const bool _save)
+	void PageEditor::chooseSyx(const bool _save, const json::Value& _request)
 	{
 #if MDMM_DIAGNOSTICS
 		// B-019's journeys: the file is the run's (GEARMULATOR_MDMM_SYX_FILE), no chooser in front of anything
@@ -316,20 +316,26 @@ namespace mdJucePlugin
 			m_session->openSyx(given);
 			return;
 		}
+		// wave 6's export journeys: the file goes where the run says (GEARMULATOR_MDMM_SYX_EXPORT), no save dialog
+		if(const auto out = juce::SystemStats::getEnvironmentVariable("GEARMULATOR_MDMM_SYX_EXPORT", {}); _save && out.isNotEmpty() && m_session)
+		{
+			m_session->exportSyx(juce::File(out), _request);
+			return;
+		}
 #endif
 		const auto dir = juce::File::getSpecialLocation(juce::File::userDocumentsDirectory);
 		m_chooser = std::make_unique<juce::FileChooser>(_save ? "Export SysEx" : "Import SysEx (.syx)",
 			_save ? dir.getChildFile(juce::String(getProcessor().getProperties().name) + " backup.syx") : dir, "*.syx");
 		const auto flags = _save ? juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::warnAboutOverwriting
 			: juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles;
-		m_chooser->launchAsync(flags, [this, _save](const juce::FileChooser& _c)
+		m_chooser->launchAsync(flags, [this, _save, _request](const juce::FileChooser& _c)
 		{
 			const genericUI::messageRoute::OwnerScope owner(m_noticeOwner);
 			const auto f = _c.getResult();
 			if(f == juce::File() || !m_session)
 				return;
 			if(_save)
-				m_session->exportSyx(f.withFileExtension("syx"));
+				m_session->exportSyx(f.withFileExtension("syx"), _request);
 			else if(f.existsAsFile())
 				m_session->openSyx(f);
 		});
