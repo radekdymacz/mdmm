@@ -1712,7 +1712,7 @@ const MmJourneys = (() => {
 		steps: [
 			{ say: "choose IMPORT SYSEX… in the engine menu, tick Globals too", act: async u => { await u.pick("engsel", "import"); await until(() => !$1("#syxpop").hidden && $all("#syxpop [data-syxkind]").length, 8000); const g = $1('#syxpop [data-syxkind="global"]'); if (g && !g.checked) u.click(g); },
 				screen: () => ok(!$1("#syxpop").hidden && !!$1('#syxpop [data-syxkind="global"]')?.checked, "no Globals in the preview"), within: 8000 },
-			{ say: "click Import: sent on SYSEX RECV, read back, reported", act: u => u.click('#syxpop [data-syxgo="start"]'), screen: () => ok(/imported/.test($1("#syxpop .syxsum")?.textContent || ""), "progress: " + ($1("#syxpop .syxbar span")?.textContent || "")), within: 900000 },
+			{ say: "click Import: sent on SYSEX RECV, read back, reported", act: u => u.click('#syxpop [data-syxgo="start"]'), screen: () => ok(/imported/.test($1("#syxpop .syxsum")?.textContent || ""), "progress: " + ($1("#syxpop .syxbar span")?.textContent || "")), within: 3000 },
 			{ say: "click Done, Escape, then the Sequence tab", act: async u => { u.click('#syxpop [data-syxgo="close"]'); await sleep(300); u.key("Escape"); await sleep(300); u.click(tab("seq")); if (S().side === "midi") u.click('[data-side="int"]'); },
 				screen: () => onTab("seq"), machine: () => ok(!!globalNow() && machine().mutes?.synth != null, "global " + !!globalNow() + ", mutes " + machine().mutes?.synth), within: 8000 },
 			{ say: "click M on a track of the rail: its mute flips on the machine; a track with no MIDI channel (B-051) is refused, the notice offers the fix: take it, then M again",
@@ -3262,7 +3262,7 @@ const MmJourneys = (() => {
 		name: "mm-real-factory-songs", proves: ["MM-X02", "MM-X02"],
 		steps: [
 			go("song"),
-			{ say: "from factory memory: load each song that holds rows (click it, Load), SONG mode, PLAY: the machine starts, the step moves, the song moves on to a later row, the output is not silent, STOP stops it", within: 900000,
+			{ say: "from factory memory: load each song that holds rows (click it, Load), SONG mode, PLAY: the machine starts, the step moves, the song moves on to a later row, the output is not silent, STOP stops it", within: 3000,
 				act: async (u, c) => {
 					await until(() => I().slots("song").length >= 24, 30000);
 					c.songs = [...Array(24).keys()].filter(s => (I().doc("song", s)?.rows || []).some(r => r.kind === "pattern"));
@@ -3287,7 +3287,7 @@ const MmJourneys = (() => {
 	const realPatterns = {
 		name: "mm-real-factory-patterns", proves: ["MM-X03", "MM-X03"],
 		steps: [
-			{ say: "from factory memory: pick eight patterns that hold notes, spread over the 128, one after the other, and PLAY each: the step moves through the pattern and the output is not silent", within: 300000,
+			{ say: "from factory memory: pick eight patterns that hold notes, spread over the 128, one after the other, and PLAY each: the step moves through the pattern and the output is not silent", within: 3000,
 				act: async (u, c) => {
 					await until(() => I().slots("pattern").length >= 128, 30000);
 					const withNotes = [...Array(128).keys()].filter(p => patTrigs(p) > 0);

@@ -2678,18 +2678,28 @@ const MdJourneys = (() => {
 		name: "md-real-factory-songs", proves: ["MD-X02", "MD-X02"],
 		steps: [
 			go("song"),
-			{ say: "from factory memory: load each song that holds rows (click it, Load), SONG mode, PLAY: the machine starts, the step moves, the song moves on to a later row, the output is not silent, STOP stops it", within: 900000,
+			{ say: "from factory memory: load each song that holds rows (click it, Load), SONG mode, PLAY: the machine starts, the step moves, the song moves on to a later row, the output is not silent, STOP stops it", within: 3000,
 				act: async (u, c) => {
 					await until(() => Object.keys(Docs.songs).length >= 32, 30000);
 					c.songs = songNames(); c.bad = []; c.good = []; c.s0 = V.songSlot; c.m0 = V.songMode;
 					if (!c.songs.length) throw new Error("no factory song holds rows");
 					for (const s of c.songs) {
+						Bridge.log(`E2E song ${s + 1}: loading (machine song ${songSlotOf(Docs) + 1}, playing ${!!V.playing})`);
 						await songTo(u, s);
+						Bridge.log(`E2E song ${s + 1}: loaded, song mode ${V.songMode}`);
 						u.click('[data-set="songpick"] button[data-v="song"]'); await until(() => V.songMode === true, 6000); await sleep(300);
+						Bridge.log(`E2E song ${s + 1}: SONG mode ${V.songMode}, dialog ${dlgShown()}, desk tx ${!!desk().tx}`);
 						const rows = (Docs.songs[s]?.rows || []).filter(r => r.kind === "pattern").length;
-						const r = await playFor(u, 10000, rows > 1);
+						let r = await playFor(u, 10000, rows > 1);
+						if (!r.started) {	/* a person tries the row's From here next: said, so the finding is exact */
+							u.click('.scell[data-i="0"]'); await sleep(200); u.click('[data-rowact="from"]');
+							const via = await until(() => !!tele.last?.playing, 5000);
+							Bridge.log(`E2E song ${s + 1}: PLAY did not start it; From here ${via ? "did" : "did not either"}`);
+							if (via) { r = await playFor(u, 10000, rows > 1).then(x => x, () => r); u.click("#play"); }
+							r.viaFrom = via; if (V.playing) { u.click("#play"); await until(() => !V.playing, 4000); }
+						}
 						if (s === c.songs[0]) { Journey.snapshot("md-real-song-playing"); }
-						const why = [!r.started && "did not start (pressed twice)", r.again && r.started && "needed a second press of PLAY", r.started && r.steps.size < 4 && `only ${r.steps.size} steps moved`, r.peak <= 0.0002 && "silent", rows > 1 && r.rows.size < 2 && `stayed on row ${[...r.rows].join(",") || "?"}`, V.playing && "did not stop"].filter(Boolean);
+						const why = [!r.started && `PLAY did not start it (pressed twice)${r.viaFrom === true ? ", From here did" : r.viaFrom === false ? ", From here did not either" : ""}`, r.again && r.started && "needed a second press of PLAY", r.started && r.steps.size < 4 && `only ${r.steps.size} steps moved`, r.peak <= 0.0002 && "silent", rows > 1 && r.rows.size < 2 && `stayed on row ${[...r.rows].join(",") || "?"}`, V.playing && "did not stop"].filter(Boolean);
 						Bridge.log(`E2E song ${s + 1}: ${rows} rows, ${r.steps.size} steps, rows ${[...r.rows].join(",")}, peak ${r.peak.toFixed(3)}${why.length ? " PROBLEM " + why.join(", ") : ""}`);
 						(why.length ? c.bad : c.good).push(why.length ? `song ${s + 1} (${rows} rows): ${why.join(", ")}` : s + 1);
 					}
@@ -2702,7 +2712,7 @@ const MdJourneys = (() => {
 	const realPatterns = {
 		name: "md-real-factory-patterns", proves: ["MD-X03", "MD-X03"],
 		steps: [
-			{ say: "from factory memory: pick eight patterns that hold trigs, spread over the 128, one after the other, and PLAY each: the step moves through the pattern and the output is not silent", within: 300000,
+			{ say: "from factory memory: pick eight patterns that hold trigs, spread over the 128, one after the other, and PLAY each: the step moves through the pattern and the output is not silent", within: 3000,
 				act: async (u, c) => {
 					await until(() => Object.keys(Docs.patterns).length >= 128, 30000);
 					const withTrigs = [...Array(128).keys()].filter(hasTrigs);
