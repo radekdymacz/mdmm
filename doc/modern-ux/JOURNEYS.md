@@ -27,9 +27,9 @@ no journey yet); **not testable** (why). "—": the editor has no such feature.
 
 | | Machinedrum | Monomachine | Both |
 |---|---|---|---|
-| Features in the inventory (one row a feature; "—" rows not counted) | 83 | 87 | 170 |
-| Covered by a journey | 71 | 77 | 148 |
-| of which PASS | 71 | 77 | 148 |
+| Features in the inventory (one row a feature; "—" rows not counted) | 85 | 89 | 174 |
+| Covered by a journey | 73 | 79 | 152 |
+| of which PASS | 73 | 79 | 152 |
 | of which FAIL (product bug) | 0 | 0 | 0 |
 | of which SKIP here (window covered) | 0 | 0 | 0 |
 | Not covered yet (reachable through the page) | 1 | 0 | 1 |
@@ -132,6 +132,8 @@ no journey yet); **not testable** (why). "—": the editor has no such feature.
 |---|---|---|
 | Sound page grouped by function | md-sound-shape-undo PASS | mm-sound-shape-undo PASS |
 | Drag a value, undo restores the kit | md-sound-shape-undo PASS | mm-sound-shape-undo PASS |
+| Type a value (⌘-click or Enter on a value box): one undo step, refused past the ends, a list takes its names (I-022) | md-sound-type-value PASS (page tier) | mm-sound-type-value PASS (page tier) |
+| A note from a MIDI keyboard lights its track: rail number, Mix LED (I-002) | md-sound-note-light PASS (page tier) | — |
 | A focused value: ↑ ↓ step it | md-sound-value-keys PASS (bug 2, fixed) | mm-sound-value-keys PASS (bug 3, fixed) |
 | Machine picker, undo | md-sound-machine-pick-undo PASS | mm-sound-machine-pick-undo PASS |
 | A picked machine stays after a step on Sequence, whose dump reloads the kit on the machine (B-027) | — (mdDeskFirmwareTest machine) | mm-sound-machine-stays |
@@ -180,6 +182,7 @@ no journey yet); **not testable** (why). "—": the editor has no such feature.
 | MULTI TRIG mode | — | mm-perform-multi-trig PASS |
 | MULTI MAP: split and delete a range | — | mm-perform-multi-map PASS |
 | Perform keyboard plays | — | mm-perform-keyboard PASS (the note reaches the plug-in; live notes have no read-back) |
+| Perform keyboard: a key lit while held (mouse, computer keys, MIDI keyboard), dark when let go (B-062, I-002) | — | mm-perform-keys-lit PASS (page tier) |
 | Joystick, assign rows, multi envelope, PORTAMENTO | — | mm-perform-joystick-assign PASS, mm-perform-menv-portamento PASS |
 
 ## Library and GLOBAL

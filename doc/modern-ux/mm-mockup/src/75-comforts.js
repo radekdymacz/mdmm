@@ -113,8 +113,8 @@ function kbOn(){return Keys.free()}
 function kbTell(k,t){if(KB.told.has(k))return;KB.told.add(k);toast(t)}
 function homeDown(e){if(e.repeat||KB.held.has(e.code))return;const t=S.sel,k=KEYS_PIANO[e.code.replace(/^Key/,"")];if(k==null)return;
  if(isMidiT(t)){kbTell("midi","The keys play the synth tracks: a MIDI track's notes go to the MIDI OUT only.");return}
- const n=clamp(KEYS_BASE+12*KB.oct+k);KB.held.set(e.code,{t,n});keyNote(t,n,KB.vel)}
-function homeUp(code){const h=KB.held.get(code);if(!h)return;KB.held.delete(code);keyNote(h.t,h.n,0)}
+ const n=clamp(KEYS_BASE+12*KB.oct+k);KB.held.set(e.code,{t,n});paintKb();keyNote(t,n,KB.vel)}
+function homeUp(code){const h=KB.held.get(code);if(!h)return;KB.held.delete(code);paintKb();keyNote(h.t,h.n,0)}
 /* a host plays the machine (the note intent: pitch in semitones from KEYS_BASE, C3); the example only shows the track's lamp */
 function keyNote(t,n,vel){if(HOST.noteOn){const p=n-KEYS_BASE;return vel?HOST.noteOn(t,p,vel):HOST.noteOff(t,p)}if(vel){flashTracks([t]);kbTell("eg","Example: in the plug-in the keys play the machine.")}}
 function kbVel(d){KB.vel=keyVel(KB.vel,d);toast(`Keyboard velocity ${KB.vel}`)}

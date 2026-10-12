@@ -65,6 +65,8 @@ Bridge.onMessage(m => {
 	case "audioRun": Boot.audio(m); break;
 	case "cpuLoad": CpuMeter.update(m); break;
 	case "outputLevel": DeskVolume.update(m); break;
+	case "midiIn": noteLight(m); break;
+	case "midiHeld": break;	/* the notes held: the Monomachine's Perform keyboard lights them; the Machinedrum has no keyboard (its notes are trigs: midiIn) */
 	case "result": if (m.op === "followHost" && !m.ok) hostRefused(m); break;
 	case "setup": { const before = knobCcs().join(); Docs.setup = m.doc; if (knobCcs().join() !== before && S.ws === "control") scheduleRender(); break; }
 	case "mod": {

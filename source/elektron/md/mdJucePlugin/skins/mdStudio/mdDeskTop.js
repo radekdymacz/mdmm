@@ -144,6 +144,23 @@ document.addEventListener("change", e => {
 	else if ((machineState().engines || []).some(x => x.id === v)) cmd("engine", { kind: v });
 });
 
+/* I-002: a note from a MIDI keyboard (the plug-in's midiIn) on the global's base channel plays the track its map gives
+   (GLOBAL › Map editor); that track's number on the rail and its Mix LED light for a moment, as a trig does. Notes that
+   come together are drawn in one pass (one timer, at most one a frame), so a burst never floods the page. */
+const NoteLights = { due: new Set(), timer: 0 };
+function noteLight(m) {
+	const g = Docs.global; if (!g || !(g.baseChannel >= 0 && g.baseChannel <= 12) || m.ch !== g.baseChannel) return;
+	const t = g.keymap?.[m.note]; if (!(t >= 0 && t < 16)) return;
+	NoteLights.due.add(t); if (NoteLights.timer) return;
+	NoteLights.timer = setTimeout(() => {
+		NoteLights.timer = 0;
+		for (const i of NoteLights.due) for (const l of document.querySelectorAll(`#rail .th[data-sel="${i}"], .act[data-act="${i}"]`)) {
+			const c = l.classList.contains("th") ? "hit" : "on";
+			l.classList.add(c); clearTimeout(l.nlT); l.nlT = setTimeout(() => l.classList.remove(c), 140);
+		}
+		NoteLights.due.clear();
+	}, 16);
+}
 /* ===== Track header (one component, used by rail and grid) ===== */
 function th(i, extra = "") {
 	const t = V.tracks[i]; return `<div class="th ${i === S.sel ? "sel" : ""} ${S.multi.has(i) && S.ws === "seq" ? "multi" : ""} ${audible(i) ? "" : "off"} ${extra}" data-sel="${i}" style="--c:${FAMC[t.fam]}">

@@ -57,6 +57,7 @@ Keys.bind({ id: "zoom-reset", short: "Zoom 100 %", scope: "any", keys: ["0"], mo
 	["value-fine", "sound mix sampler control", "Values", ["value"], "shift", "Values", "Drag: fine, a quarter as fast"],
 	["value-wheel", "sound mix sampler control", "Values", ["wheel on a value"], "", "Values", "One step a notch (⇧: 10)"],
 	["value-reset", "sound mix sampler control", "Values", ["double-click a value"], "", "Values", "Back to its default (64; VOL 100)"],
+	["value-type", "sound mix sampler control", "Values", ["value"], "cmd", "Values", "Click: type a value, then Enter (Esc: leave it as it was). Enter on a focused value does the same"],
 	/* the top bar and the LCD (mdDeskGestures.js, mdDeskTop.js, mdDeskLive.js) */
 	["tempo-drag", "any", "Top bar", ["tempo"], "", "Transport", "Drag up or down: the tempo, half a BPM a pixel (⇧: a tenth)"],
 	["lcd-value", "any", "LCD", ["LCD value"], "", "Anywhere", "Click: its next value; ⇧-click the previous one. LEN, SPD, SONG: drag up or down to step through them"],

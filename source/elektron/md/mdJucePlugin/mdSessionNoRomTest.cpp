@@ -245,6 +245,24 @@ int main(const int _argc, char** const _argv)
 		pump(600);
 		const auto got = count(published, "midiIn") - flooded;
 		check(got > 0 && got < 1000, "a flood of 5000 notes: the queue drops what does not fit (" + std::to_string(got) + " reached the page)");
+		// I-002, B-062: the notes held reach the page as a state (midiHeld), at most one message per 32 ms however many
+		// notes come; a note off is never lost, so all notes off leaves no key lit
+		const auto heldNow = [&]() -> std::string
+		{
+			for(auto it = published.rbegin(); it != published.rend(); ++it)
+				if(str(*it, "type") == "midiHeld")
+					if(const auto* n = it->find("notes"))
+						return elektronData::json::write(*n);
+			return "none";
+		};
+		check(heldNow().find("62") != std::string::npos, "midiHeld names the host's held note 62 (" + heldNow() + ")");
+		const auto heldBefore = count(published, "midiHeld");
+		processor->addMidiEvent(synthLib::SMidiEvent(synthLib::MidiEventSource::Host, 0xb0, 123, 0));
+		processor->addMidiEvent(synthLib::SMidiEvent(synthLib::MidiEventSource::Host, 0x81, 62, 0));
+		for(int i = 0; i < 20 && heldNow() != "[]"; ++i)
+			pump(50);
+		check(heldNow() == "[]", "after all notes off and the note off of 62 no note is held (" + heldNow() + ")");
+		check(count(published, "midiHeld") > heldBefore && count(published, "midiHeld") - heldBefore < 40, "a few midiHeld messages, not one per note");
 	}
 	// B-030: the host's tempo reaches the page while the host is stopped (the LCD's TEMPO shows it)
 	{

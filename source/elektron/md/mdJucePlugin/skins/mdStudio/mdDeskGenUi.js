@@ -65,7 +65,7 @@ function genLive(all = S.alt) {
 		for (let s = from; s < to; s++) {
 			const want = on.has(s);
 			if (want !== tr.trigs[s]) w.push([["tracks", t, "trigs", s], want]);
-			if (!want && tr.trigs[s]) w.push([["tracks", t, "acc", s], false], [["tracks", t, "slide", s], false], ...clearStep(t, s));
+			if (!want && tr.trigs[s]) w.push(...trigOffWrites(t, s));
 			if (acc && want) w.push([["tracks", t, "acc", s], acc.has(s)]);
 		}
 		rows.push(row);

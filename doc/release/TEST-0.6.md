@@ -83,3 +83,12 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 6. An audition the machine refuses (start the editor and open the picker before the machine is ready, or base channel OFF): Esc undoes nothing of your earlier edits. ⌘Z while auditioning: the audition ends (no line, no "was"), Esc then changes nothing.
 7. Close the editor window (or reload the page) while a machine is being auditioned, open it again: the track has its old machine and values (while the window is closed the tried machine stays; it goes when the page loads again).
 8. ▶ on GND-EMPTY or a RAM recorder: the machine goes on the track, no note, a toast says why. During live recording an audition changes the machine but plays no note (no trig is recorded).
+
+## Polish B (B-070, B-062, I-002, I-022, both editors)
+
+1. MD (B-070): paint Swing on a few steps, then click one of those trigs off, drag-paint some off, cut a selection with swing in it, fill every 2nd step over swung steps: no swing mark flashes back on a step whose trig went. Rotate (Alt + ← →) moves the swing marks with the trigs; copy and paste a selection keeps them.
+2. MM (B-062): Perform, press a key with the mouse and hold it: lit; let go: dark. Drag across the keys: only the key under the mouse is lit. Hold A, S on the computer keyboard: both lit, each dark when let go. Change the octave while holding: still right.
+3. MM (I-002): play a MIDI keyboard into the standalone (AUDIO / MIDI panel input) and into a DAW track with the plug-in: the keys you hold light (any channel), chords too; let go: dark. Send all notes off from the DAW (stop): every key dark. A fast run of notes: the page stays smooth.
+4. MD (I-002): GLOBAL base channel set, play a mapped track note on a MIDI keyboard: the track's number on the rail glows a moment (on Mix: its LED). Another channel: nothing.
+5. Both (I-022): ⌘-click a value box (Ctrl-click on Windows): a field over it with its value, selected. Type a value, Enter: set; ⌘Z takes it back in one step. Type 999 or a word: refused, the field turns red and says the range (or the names), stays open; Esc leaves it. Tab to a value and press Enter: the field. Double-click still sets the default, drag and wheel as before.
+6. Both (I-022): signed values (PAN, EQG): type -10 or +10. MD: where a box shows a unit beside its number, its text works too. MM lists: on an LFO's WAVE or PAGE type a name in small letters (saw, flt); MM PAN: L12, C or R5.
