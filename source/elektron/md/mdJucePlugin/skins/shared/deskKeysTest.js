@@ -136,6 +136,13 @@ check(pressOn(slider, " ").ran === "play", "a value focused: Space plays");
 check(pressOn(slider, "ArrowUp").ran === "", "a value focused: ↑ is the value's (no track change)");
 check(pressOn(slider, "PageDown").ran === "", "a value focused: Page Down is the value's");
 check(pressOn({ closest: () => null }, "ArrowUp").ran === "track", "nothing focused: ↑ picks the track");
+/* I-022: Enter is a value box's own (it opens the typed value) only for a value box in #main; the tempo and the volume
+   sliders leave it to the page */
+Keys.bind({ id: "t-enter", scope: "any", keys: ["Enter"], group: "Anywhere", does: "enter", run: () => ran.push("enter") });
+const box = { closest: q => (q.includes("role=slider") ? box : null), matches: q => q.includes("#main .pc[data-g]") };
+const tempo = { closest: q => (q.includes("role=slider") ? tempo : null), matches: () => false };
+check(pressOn(box, "Enter").ran === "", "a value box focused: Enter is the box's (the typed value)");
+check(pressOn(tempo, "Enter").ran === "enter" && pressOn(slider, "Enter").ran === "enter", "the tempo or another slider focused: Enter is the page's");
 check(pressOn(text, "z", { metaKey: true }).ran === "" && pressOn(text, " ").ran === "", "a text field focused: ⌘Z and Space are the field's");
 document.activeElement = slider;
 CtxDate.now = () => realNow() + 50000;

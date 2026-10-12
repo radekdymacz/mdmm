@@ -25,7 +25,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.4 | ENTER/YES, EXIT/NO, arrow keys | Menu navigation | ➖ | Not needed | Every menu is a native control. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. | – |
 | p.5 | LEVEL knob (per-track overall gain) | LEV, cannot be locked or LFO'd | ✅ | Mix: the LEV box above each strip's VOL fader (drag, wheel, arrows; double-click 100) | The kit's level of the track (`level`), sent as the track's level CC. Not lockable, as on the machine. The level CC measured on OS 1.63 (P9: 0 silent, 64 about 0.4 of 100, 127 about 1.6). | 1 |
 | p.5 | TEMPO key | Open tempo screen | ✅ | LCD: Tempo (drag), T key to tap | See §9. | 5 |
-| p.5 | DATA ENTRY knobs (A-H), pressed = coarse | Eight parameter knobs | ✅ | Value boxes on Sound and Mix; drag, wheel, Shift = fine | Wheel notch 1, Shift 10. | 2 |
+| p.5 | DATA ENTRY knobs (A-H), pressed = coarse | Eight parameter knobs | ✅ | Value boxes on Sound and Mix; drag, wheel, Shift = fine; ⌘-click or Enter: type a value | Wheel notch 1, Shift 10. | 3 |
 | p.5 | SYNTHESIS/EFFECTS/ROUTING toggle | Switch knob page | ✅ | Sound page shows all three as groups | No page toggle; all pages in one view. | – |
 | p.5 | RECORD key (grid record on/off) | Toggle grid edit | ➖ | Grid is always editable | The step grid needs no mode. | – |
 | p.5 | RECORD + PLAY (live recording) | Live record | ✅ | REC button, Alt+Space | LCD top bar. | 1 |
@@ -79,7 +79,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.19 | Copy machine | COPY MACHINE | ✅ | Sound: Cmd+C on a track | Copies model, values, level, LFO. | 1 |
 | p.20 | Paste machine (many times, to other kits) | PASTE MACHINE | ✅ | Sound: Cmd+V | Clipboard stays. | 1 |
 | p.20 | Clear machine / undo | CLEAR MACHINE | ✅ | Sound: clear sound; Cmd+Z | Track shows GND-EMPTY. | – |
-| p.21 | Machine parameter editing (up to 8 knobs) | SYNTH page | ✅ | Sound: groups with canvases and boxes | Every knob sits in one group. | 3 |
+| p.21 | Machine parameter editing (up to 8 knobs) | SYNTH page | ✅ | Sound: groups with canvases and boxes | Every knob sits in one group. | 4 |
 | p.21 | Kit changes lost unless saved | Dirty warning | ✅ | Saved / edited chip on LCD kit field |  | 1 |
 
 ## 4. Track effects (pp.22-24)
@@ -224,8 +224,8 @@ Method: manual read in full; claims checked against the page files (`source/elek
 |---|---|---|---|---|---|---|
 | p.57 | 8 global slots | Switch set-up | ✅ | GLOBAL page (the GLOBAL key in the top bar, or GLOBAL… in the engine menu): slot keys 1-8; Copy · Paste · Clear of the active slot | Page shared with the Monomachine Editor (skins/shared/deskGlobal.js). Copy and Paste are the editor's (the machine's menu has none); Clear is the factory global. | 2 |
 | p.57 | Turbo menu (speed negotiation) | TurboMIDI | ➖ |  | Emulator and wire use their own pacing. | – |
-| p.59 | Base channel (1-4 ... 13-16, OFF) | MIDI channels | ✅ | GLOBAL > Control |  | 1 |
-| p.59 | Map editor: group TRACK | Note to track | ✅ | GLOBAL > Map editor, 16 track keys |  | – |
+| p.59 | Base channel (1-4 ... 13-16, OFF) | MIDI channels | ✅ | GLOBAL > Control |  | 2 |
+| p.59 | Map editor: group TRACK | Note to track | ✅ | GLOBAL > Map editor, 16 track keys; a mapped note from a MIDI keyboard lights its track on the rail and on Mix |  | 1 |
 | p.59 | Map editor: group PAT A-H | Note to pattern | ✅ | GLOBAL > Map a note |  | 1 |
 | p.60 | Map editor: group CTRL (start, stop) | Note to transport | ✅ | GLOBAL > Map a note |  | 1 |
 | p.60 | Map editor: TRIG GATE / START / QUE | Pattern trig mode | ✅ | GLOBAL > Pattern trig |  | – |

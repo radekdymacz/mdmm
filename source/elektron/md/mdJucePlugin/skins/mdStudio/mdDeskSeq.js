@@ -112,7 +112,7 @@ function clickSteps(e) {
 	else if (e.shiftKey && t.trigs[s]) cmd("accent", { p: V.pat, t: i, s }, undefined, [[["tracks", i, "acc", s], !t.acc.has(s)]]);
 	else {
 		const on = !t.trigs[s], w = [[["tracks", i, "trigs", s], on]];
-		if (!on) w.push([["tracks", i, "acc", s], false], [["tracks", i, "slide", s], false], ...clearStep(i, s));
+		if (!on) w.push(...trigOffWrites(i, s));
 		cmd("trig", { p: V.pat, t: i, s, on }, undefined, w);
 		if (!on) renderTop();
 	}

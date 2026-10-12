@@ -1855,6 +1855,35 @@
         },
         {
           "type": "object",
+          "description": "I-002, B-062: the notes held down from outside (the host's MIDI in or a MIDI input port), each with its channel (0-15), by channel then low to high: a note on holds a note until its note off (or all notes off, all sound off, a system reset). A state, not events: sent when it changed, looked at every 32 ms (a burst is one message), and once for a new page; a note off is never lost, and a MIDI input that changes or closes, a bypass or a release lets go of every note. Not in HW MIDI (what comes in is the real machine's own MIDI OUT). The page's own keyboard is not in it. The Monomachine Editor lights, on the Perform keyboard, the notes on the channels the machine plays (AUTO, the track channels, MULTI TRIG, MULTI MAP).",
+          "required": ["type", "notes"],
+          "properties": {
+            "type": {
+              "const": "midiHeld"
+            },
+            "notes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["ch", "note"],
+                "properties": {
+                  "ch": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 15
+                  },
+                  "note": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 127
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
           "description": "I-021: the LCD's output meter and volume, every 250 ms while the page is up: peakL and peakR, the largest sample of the main output's left and right since the previous message, after the volume (linear, 1 = 0 dBFS; 0 when the audio does not run or the channel is not enabled); clip, whether a sample of any output (main and extra) was above 0 dBFS in that time; gainDb, the volume (the plug-in's output gain after the emulation, -60 to +6 dB in 0.1 dB steps; null when it is off). Set with the outputGain command.",
           "required": ["type", "peakL", "peakR", "clip", "gainDb"],
           "properties": {
