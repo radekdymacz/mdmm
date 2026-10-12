@@ -1920,6 +1920,25 @@ const MmJourneys = (() => {
 			go("seq"), genBarFits("track 1", true),
 			{ say: "the GEN bar", act: async () => { await sleep(400); shot("gen-mm"); }, hold },
 			{ say: "done", act: () => shot("done") }] };
+	/* Radek's 0.6 review 1 (2026-10-12) as snapshots, before and after (scripts/mdmm-snap.py): the roll's foot, the
+	   Sound page's UNISON and SUB screens, the multi envelope at ATK 73 DEC 0 SUS 127 REL 127, both plates, GLOBAL */
+	const typeVal = async (u, q, v) => { if (!$1(q)) return; u.click(q, { cmd: true }); await until(() => !!field(), 1500); typeIn(u, String(v)); await sleep(250); };
+	const shotsReview = { name: "mm-shots-review", proves: [], needs: () => !/mm-shots/.test(location.search) ? "screenshots only when asked by name" : null,
+		steps: [go("seq"), sel(0),
+			{ say: "the roll", act: async () => { await sleep(800); Journey.snapshot("review-seq"); } },
+			go("sound"),
+			{ say: "SWAVE-SAW, the unison wide and the subs up", act: async u => {
+				if (wk().tracks[0].machineName !== "SWAVE-SAW") { u.click("#machbtn"); await until(() => !$1("#machpop").hidden, 1500); u.click('#machpop .mf[data-fam="SWAVE"]'); await sleep(50); u.click('#machpop .mk[data-mach="SWAVE-SAW"]'); await until(() => wk().tracks[0].machineName === "SWAVE-SAW", 4000); await sleep(400); }
+				for (const [n, v] of [["UNIW", 127], ["UNIL", 100], ["UNIX", 80], ["SUB1", 90], ["SUB2", 60], ["SUBX", 70]]) await typeVal(u, `#main .pc[data-g="SYN"][aria-label="${n}"]`, v);
+				await sleep(600); Journey.snapshot("review-sound"); } },
+			go("perform"),
+			{ say: "the multi envelope at ATK 73 DEC 0 SUS 127 REL 127", act: async u => {
+				for (const [n, v] of [["ATK", 73], ["DEC", 0], ["SUS", 127], ["REL", 127]]) await typeVal(u, `#main .pc[data-g="menv"][data-n="${n}"]`, v);
+				await sleep(600); Journey.snapshot("review-perform"); } },
+			{ say: "REL 40", act: async u => { await typeVal(u, '#main .pc[data-g="menv"][data-n="REL"]', 40); await typeVal(u, '#main .pc[data-g="menv"][data-n="SUS"]', 80); await typeVal(u, '#main .pc[data-g="menv"][data-n="DEC"]', 50); await sleep(600); Journey.snapshot("review-perform-rel40"); } },
+			go("seq"),
+			{ say: "both plates", act: async u => { for (const pl of ["mk1", "mk2"]) { if (S().plate !== pl) u.click("#platekey"); await sleep(600); Journey.snapshot("review-plate-" + pl); } } },
+			{ say: "GLOBAL", act: async u => { u.click("#globkey"); await sleep(800); Journey.snapshot("review-global"); u.key("Escape"); await sleep(300); } }] };
 	/* B-054: every view, as macOS 12's WebKit 15 lays it out (Journey.viewJourneys: mm-old-webkit in every run,
 	   mm-shots-views for scripts/mdmm-snap.py --safari15) */
 	const ws = (name, extra, w = name) => ({ name, open: async u => { u.click(tab(w)); await until(() => S().ws === w, 3000); if (extra) await extra(u); } });
@@ -3132,7 +3151,7 @@ const MmJourneys = (() => {
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, mutScope,
 		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
-		blackKeys, rollPaint, rollDrawLength, rollBoxMove, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxPlace, resetEmpty];
+		blackKeys, rollPaint, rollDrawLength, rollBoxMove, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxPlace, resetEmpty];
 
 	async function between(u) {
 		for (let i = 0; i < 3 && dlgShown(); i++) { u.key("Escape"); await sleep(200); }
