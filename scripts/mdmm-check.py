@@ -20,6 +20,8 @@ NOT_UNIT_LABELS = "FirmwareTest|PluginTest"
 NOT_UNIT_NAMES = "_AU|VST|Plugin_|PluginTest"
 COLUMNS = ["path", "ctest", "firmware", "page", "machine", "goldens", "gate"]
 DEFAULT_ROW = {"path": "(no row)", "ctest": "all", "firmware": "-", "page": "*", "machine": "-", "goldens": "no", "gate": "all"}
+# unit tests that read the editors' built bundles, not a program of their own: the editors are built before they run
+NEEDS_EDITORS = {"mdmmIdentityTest"}
 # every stage of the local gate, in its order (scripts/mdmm-local-gate.sh)
 GATE_STAGES = ["1", "2", "2c", "2b", "3", "4", "5", "7a", "7b", "7c", "7d", "5b", "6a", "6b"]
 
@@ -211,6 +213,10 @@ def unit_tests(runner, plan, tier, tests, targets):
 		runner.note("unit tests", "none for these files")
 		return
 	build_programs(runner, selected, tests, targets)
+	if NEEDS_EDITORS & set(selected):
+		# mdmmIdentityTest checks the bundles in the products folder: built now, or it reads none (a fresh tree) or old ones
+		runner.run("build the editors (" + ", ".join(sorted(NEEDS_EDITORS & set(selected))) + " reads their bundles)",
+			[os.path.join(ROOT, "scripts", "mdmm-dev.sh"), "build"])
 	regex = "^(" + "|".join(sorted(selected)) + ")$"
 	jobs = str(os.cpu_count() or 8)
 	os.makedirs(os.path.join(BUILD, "build-data"), exist_ok=True)

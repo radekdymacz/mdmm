@@ -424,7 +424,7 @@ To take the locks of one value out while recording, as the machine does with [EX
 3. Hold {key:live-erase} as well. The track's header and the value are marked red. The machine removes the track's locks of that value on each step that plays while both are down.
 4. Let them go to stop.
 
-The trigs and the locks of the other values stay. Press the value first: {key:live-erase} on its own erases trigs. If you let the value go while {key:live-erase} is still down, nothing more is removed until you let the key go.
+The trigs and the locks of the other values stay. Press the value first, or within a moment of {key:live-erase}: the key on its own erases trigs. A value that cannot be locked, such as a master effect, removes nothing; the editor says so. If you let the value go while {key:live-erase} is still down, nothing more is removed until you let the key go. The value does not move while it is held for this, even after you let the key go, until you let the mouse go.
 
 NOTE: The machine removes the locks of the track it has selected, from the knob page that holds the value. The editor selects the track and shows that page before it holds the keys, so the first step or two after the press may keep their lock.
 
