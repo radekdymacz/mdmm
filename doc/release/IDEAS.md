@@ -3,14 +3,6 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
-## I-024 · Saved kits and patterns stay on the machine for every new session
-
-- **From:** a user, 2026-10-12: "save kits and patterns created/edited and saved in the editor so they persist on the device each time I open the plugin in a new session".
-- **Today:** the machine's memory (kits, patterns, songs, globals) is saved in the DAW project and, for the standalone, when the app quits. A new DAW project, or a new instance of the plug-in, starts from the factory memory. So a kit saved in one project is not there in the next one. A real machine keeps what you save.
-- **Way A (machine memory file, as a real machine):** one memory file per machine in the editor's user folder. A new session with no project state starts from it. Each SAVE KIT, SAVE PATTERN, song or global save also writes it. An existing DAW project still opens with its own memory. A menu item starts from factory memory again. Risk: two instances of the same machine both write the file; the last save wins.
-- **Way B (start-up memory, by hand):** a menu item "Use this memory for new sessions" copies the current memory into the file; new sessions start from it. Nothing is written by itself. Simpler and safe with many instances, but the user must remember to do it.
-- **Status:** new. Proposal: way A, with a setting to turn it off. To be planned (0.6 or later: Radek decides).
-
 ## I-023 · Monomachine: a real MKII look (silver panel, bluish-white LCD with black text)
 
 - **From:** Discord tester M, 2026-10-11: on the Monomachine "the MKI/MKII button does nothing"; on the Machinedrum it changes the skin. Wants the Monomachine MKII look: silver, black and white, the MKII LCD's bluish-white background with black text.

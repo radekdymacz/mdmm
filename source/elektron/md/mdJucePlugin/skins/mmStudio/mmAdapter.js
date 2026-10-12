@@ -545,9 +545,16 @@
 		romManage() { if (machine?.lifecycle === "missing") host.firstRun(); else send({ op: "romInfo" }); },
 		/* SysEx import and export (P7): the window's file dialogs; the plug-in parses and writes */
 		syxChoose() { send({ op: "chooseSyx" }); },
-		syxExport() { send({ op: "syxExport" }); },
-		syxStart(kinds, skip) { send({ op: "syxImport", kinds, skip: skip || [] }, { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } }); },
+		syxExport(request) { send(Object.assign({ op: "syxExport" }, request || {})); },
+		syxStart(kinds, skip, o = {}) {
+			send(Object.assign({ op: "syxImport", kinds, skip: skip || [] }, o.placeAt ? { placeAt: o.placeAt } : {}, o.checkOnly ? { checkOnly: true } : {}),
+				{ onResult: r => { if (!r.ok) V().toast(r.errors[0]); } });
+		},
 		syxStop() { send({ op: "syxCancel" }); },
+		/* 0.6 (wave 6): the open file's preview placed elsewhere, the export panel's facts, Reset machine… (empty) */
+		syxPlace(placeAt) { send({ op: "syxPlace", placeAt }, { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } }); },
+		syxExportInfo() { send({ op: "syxExportInfo" }); },
+		machineReset(how) { send({ op: "machineReset", how }, { onResult: r => V().toast(r.ok ? r.note : r.errors[0]) }); },
 		revealRom() { send({ op: "revealRomFolder" }); },
 		recheck() { send({ op: "recheckFirmware" }, { onResult: r => V().toast(r.ok ? r.note : r.errors[0]) }); },
 		firstRun() {
@@ -659,7 +666,9 @@
 			else if (m.type === "editorMenu") { if (!CpuMeter.takeMenu(m)) DeskMenu.showEditor(m, menuAt.x, menuAt.y, c => send(c)); }
 			else if (m.type === "syxPreview") V().syxPreview(m);
 			else if (m.type === "syxProgress") V().syxProgress(m);
-			else if (m.type === "syxExport") V().toast(m.text);
+			else if (m.type === "syxExport") V().syxExported(m);
+			else if (m.type === "syxExportInfo") V().syxExportInfo(m);
+			else if (m.type === "syxReset") V().toast(m.text);
 		else if (m.type === "error") onError(m);
 		else if (m.type === "result" && m.op === "followHost" && !m.ok) {
 			/* a refused followHost (B-030): logged, and said once per reason */

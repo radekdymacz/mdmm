@@ -77,7 +77,7 @@ const LIFE = {
 	ready: { label: "READY", led: "on" } };
 const lifeOf = l => LIFE[l] || LIFE.booting;
 /* the engine menu's own entries (not engines) */
-const ENGINE_ACTIONS = ["global", "audio", "rom"];
+const ENGINE_ACTIONS = ["global", "audio", "rom", "import", "export", "reset"];
 function engineLabel() {
 	const e = lifeOf(V.lifecycle);
 	if (V.lifecycle === "ready") return [V.caps.label || e.label, e.led, V.caps.about || ""];
@@ -139,6 +139,7 @@ document.addEventListener("change", e => {
 	if (v === "rom") romMenu();
 	else if (v === "global") { sel.value = V.caps.engine; openGlobal(); }
 	else if (v === "audio") { sel.value = V.caps.engine; openAudio(); }
+	else if (Syx.menu(v)) { sel.value = V.caps.engine; renderEngine(); }	/* IMPORT SYSEX…, EXPORT SYSEX…, RESET MACHINE… (wave 6) */
 	else if ((machineState().engines || []).some(x => x.id === v)) cmd("engine", { kind: v });
 });
 

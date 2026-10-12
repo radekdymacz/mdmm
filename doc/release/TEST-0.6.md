@@ -43,3 +43,13 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 2. MM: paste melody onto another track's trigs; synth parts do not paste onto MIDI tracks (shown off with the reason).
 3. MD Sound: the LFO card's ⋯ menu: Copy, Paste, Clear LFO.
 4. The keys ⌘⇧C, ⌘⇧V, ⌘⇧⌫, also in the plug-in in a DAW (⌘⇧V must not do a text "paste and match style").
+
+## SysEx and reset (wave 6)
+
+1. Both: the engine menu's IMPORT SYSEX…, EXPORT SYSEX… and RESET MACHINE… entries; the library headers' Import SysEx… and Export SysEx… keys open the same panels.
+2. Export: All ticked saves a full backup. Untick All: Kits K01 to K04 and Globals G1 only (click, ⇧-click, wheel, drag, arrows on a range end), Save .syx…, then import that file and check it holds just those.
+3. MM: tick Waveforms W01 to W08 in the export; the file holds the used ones (an empty waveform is left out).
+4. Import a file with two kits: Specific place, kits from K05. The grid shows them on K05 and K06, the tooltip says where each came from; Import asks first when a slot holds data. Original place puts them back.
+5. Verify only, with and without Specific place: nothing changes on the machine; the report shows = and ≠.
+6. Reset machine… > Empty reset… (asked twice): every kit, pattern and song empty, globals unchanged. MD: Factory reset… (about a minute to prepare): kits E12 UW, EFM UW, P-I UW, TRX UW come back. MM: the question says why there is no factory reset.
+7. MM on real hardware: an empty reset waits as SEND n until SYSEX RECV; the export of waveforms reads them over the cable.
