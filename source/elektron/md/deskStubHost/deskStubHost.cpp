@@ -301,7 +301,7 @@ namespace
 			case 0x04: return m_pattern;
 			case 0x08: return m_song;
 			case 0x10: return m_songMode ? 1 : 0;
-			case 0x20: return 1;	// extended locks
+			case 0x20: return m_globals[m_global].extendedMode ? 1 : 0;	// extended locks: the active global's
 			case 0x22: return m_track;
 			default: return 0;
 			}
@@ -338,6 +338,7 @@ namespace
 				case 0x04: loadPattern(_m[8]); break;
 				case 0x08: m_song = _m[8] & 31; break;
 				case 0x10: m_songMode = _m[8] != 0; break;
+				case 0x20: m_globals[m_global].extendedMode = _m[8] != 0 ? 1 : 0; break;	// CLASSIC / EXTENDED (slice 5: MD-004)
 				case 0x22: m_track = _m[8] & 15; break;
 				default: break;
 				}
