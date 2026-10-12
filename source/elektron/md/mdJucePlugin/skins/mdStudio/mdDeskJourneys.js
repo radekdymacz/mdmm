@@ -1125,17 +1125,21 @@ const MdJourneys = (() => {
 		],
 		async tidy() { if (dlgShown()) dlgButton("Cancel")?.click(); $1("#syxpop").hidden = true; }
 	};
-	/* Reset machine… > Factory reset (P6): a second machine from the run's ROM, read, then every kit, pattern and song
-	   restored: the factory kits are named E12 UW, EFM UW, P-I UW, TRX UW (the plug-in only; minutes) */
+	/* Reset machine… > Factory reset (P6): a second machine from the run's ROM, read (seconds), then every kit, pattern and
+	   song sent and read back (minutes): the factory kits 1-4 are TRX UW, EFM UW, E12 UW, P-I UW (mdFactorySourceFirmwareTest).
+	   A kit cleared first shows the restore (the run's machine may hold the factory kits already). The plug-in only */
+	const FACTORY_KITS = ["TRX UW", "EFM UW", "E12 UW", "P-I UW"];
 	const resetFactory = {
 		name: "md-engine-reset-factory", proves: ["MD-204"],
 		needs: () => window.gmDev ? "a second machine from the ROM: the plug-in only" : null,
 		steps: [
+			{ say: "clear a stored kit of the first four (not the one that plays): it is empty", act: (u, c) => { c.k = V.kit === 1 ? 2 : 1; cmd("kitClear", { k: c.k, force: true }); },
+				machine: c => ok(!(kitName(c.k) || "").trim(), `K0${c.k + 1} "${kitName(c.k)}"`), within: 10000 },
 			{ say: "choose RESET MACHINE…, click Factory reset…", act: async u => { await u.pick("engsel", "reset"); await until(dlgShown, 3000); u.click(dlgButton("Factory reset…")); },
 				screen: () => ok(dlgShown() && !!dlgButton("Factory reset"), "second question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
 			{ say: "click Factory reset: the factory data is prepared, then sent, read back and reported", act: u => u.click(dlgButton("Factory reset")),
 				screen: () => ok(/Factory reset/.test($1("#syxpop .cap")?.textContent || "") && /restored/.test($1("#syxpop .syxsum")?.textContent || ""), "news " + (syxNews.at(-1)?.text || "") + "; panel " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
-				machine: () => ok(["E12 UW", "EFM UW", "P-I UW", "TRX UW"].every((n, k) => (kitName(k) || "").trim() === n), [0, 1, 2, 3].map(k => kitName(k)).join(", ")), within: 600000 },
+				machine: () => ok(FACTORY_KITS.every((n, k) => (kitName(k) || "").trim() === n), [0, 1, 2, 3].map(k => kitName(k)).join(", ")), within: 600000 },
 			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") }
 		],
 		async tidy() { if (dlgShown()) dlgButton("Cancel")?.click(); $1("#syxpop").hidden = true; }

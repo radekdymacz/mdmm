@@ -6,6 +6,7 @@
 #include "synthLib/midiTypes.h"
 
 #include <array>
+#include <memory>
 
 namespace mdJucePlugin
 {
@@ -111,7 +112,9 @@ namespace mdJucePlugin
 	{
 		Result r;
 		const auto stopped = [_stop] { return _stop && _stop->load(); };
-		Machine m(_rom, _romName);
+		// on the heap: md::Hardware is far larger than a std::thread's stack (512 KB on macOS; the stack overflowed there)
+		const auto machine = std::make_unique<Machine>(_rom, _romName);
+		auto& m = *machine;
 		if(!m.valid())
 		{
 			r.error = "The ROM did not start a second Machinedrum.";

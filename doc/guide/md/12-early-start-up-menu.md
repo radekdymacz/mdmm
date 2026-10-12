@@ -29,8 +29,8 @@ The factory reset brings back the kits, patterns and songs the machine had when 
 
 1. Choose **RESET MACHINE…** in the engine menu.
 2. Click **Factory reset…**. The editor asks a second time.
-3. Click **Factory reset**. Preparing the factory data takes about a minute. Then the **Factory reset** panel sends every kit, pattern and song and reads each one back.
-4. Read the report and click **Done**. The first kits are named E12 UW, EFM UW, P-I UW and TRX UW.
+3. Click **Factory reset**. Preparing the factory data takes a few seconds. Then the **Factory reset** panel sends every kit, pattern and song and reads each one back. This takes a few minutes.
+4. Read the report and click **Done**. Kits 1 to 4 are named TRX UW, EFM UW, E12 UW and P-I UW.
 
 The globals and the samples stay. The reset has no undo: export first.
 

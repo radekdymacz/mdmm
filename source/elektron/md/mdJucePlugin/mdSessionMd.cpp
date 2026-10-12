@@ -208,7 +208,7 @@ namespace mdJucePlugin
 			m_factoryWanted = true;
 			m_factoryNewsMs = -1e9;
 			reply(_message, true, "Preparing the factory data: a second Machinedrum starts from your ROM, unheard, and is read "
-				"(about a minute). Nothing on your machine changes until then.");
+				"(seconds). Nothing on your machine changes until then.");
 		}
 
 		void stepModel() override

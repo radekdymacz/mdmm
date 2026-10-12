@@ -51,5 +51,5 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 3. MM: tick Waveforms W01 to W08 in the export; the file holds the used ones (an empty waveform is left out).
 4. Import a file with two kits: Specific place, kits from K05. The grid shows them on K05 and K06, the tooltip says where each came from; Import asks first when a slot holds data. Original place puts them back.
 5. Verify only, with and without Specific place: nothing changes on the machine; the report shows = and ≠.
-6. Reset machine… > Empty reset… (asked twice): every kit, pattern and song empty, globals unchanged. MD: Factory reset… (about a minute to prepare): kits E12 UW, EFM UW, P-I UW, TRX UW come back. MM: the question says why there is no factory reset.
+6. Reset machine… > Empty reset… (asked twice): every kit, pattern and song empty, globals unchanged. MD: Factory reset… (seconds to prepare, minutes to send and read back): kits 1 to 4 are TRX UW, EFM UW, E12 UW, P-I UW again. MM: the question says why there is no factory reset.
 7. MM on real hardware: an empty reset waits as SEND n until SYSEX RECV; the export of waveforms reads them over the cable.
