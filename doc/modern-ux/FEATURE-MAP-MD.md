@@ -274,7 +274,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 |---|---|---|---|---|---|---|
 | p.79 | Test mode | Self test | ➖ |  |  | – |
 | p.79 | Empty reset | Clear all | ✅ | Engine menu: Reset machine… > Empty reset… (asked twice): every kit, pattern and song cleared, read back and reported in the SysEx panel | Globals and samples stay: a global is reset in its slot in GLOBAL. | 1 |
-| p.79 | Factory reset | Presets | ✅ | Engine menu: Reset machine… > Factory reset… (asked twice): a second machine started from your ROM gives the factory kits, patterns and songs; sent, read back and reported | Seconds to prepare, minutes to send and read back. Globals and samples stay. | 1 |
+| p.79 | Factory reset | Presets | ✅ | Engine menu: Reset machine… > Factory reset… (asked twice): a second machine started from your ROM gives the factory kits, patterns and songs; sent, read back and reported | Seconds to prepare, minutes to send and read back. Globals and samples stay. Reset machine… > Start from factory memory… is the other way: the whole machine restarts from factory memory in seconds (globals and samples too) and the saved machine memory goes (I-024). | 1 |
 | p.79 | Soft reset | Reload samples | ❌ | None | Restart the editor. | – |
 | p.79 | MIDI upgrade / send upgrade | OS update | ➖ |  | Firmware fixed to OS 1.63. | – |
 
@@ -388,17 +388,23 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.C-3 | Status request / set / response 0x70-0x72 | Mode, slots | ✅ | PATTERN / SONG switch; MODE |  | 2 |
 | p.C-4 | TurboMIDI speed messages 0x10-0x17 | Fast transfer | ➖ |  | Not needed. | – |
 
+## 17. Beyond the hardware
+
+| Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
+|---|---|---|---|---|---|---|
+| p. | What you save stays for every new session | The machine keeps its kits, patterns, songs, globals and samples when it is switched off. | ✅ | By itself (a session without a DAW project, and the standalone, start from the saved memory); engine menu: KEEP MEMORY; Reset machine… > Start from factory memory… | I-024, doc/modern-ux/DESIGN-machine-memory.md | 1 |
+
 ## Summary
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 265 |
+| ✅ Yes | 266 |
 | 🟡 Partial | 9 |
 | ❌ No | 6 |
 | ➖ Not applicable | 16 |
-| Total | 296 |
+| Total | 297 |
 
-Of the 280 applicable rows, 265 are fully covered, 9 partly, 6 not at all.
+Of the 281 applicable rows, 266 are fully covered, 9 partly, 6 not at all.
 
 ### Top gaps (our UI), most important first
 

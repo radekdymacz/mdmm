@@ -28,8 +28,9 @@
      Syx.reset()           Reset machine…: the question (the engine menu's RESET MACHINE…)
      Syx.menu(value)       an engine menu entry of the panel's (import, export, reset): true when it was one
      Syx.host = {choose(), start(kinds, skip, {placeAt, checkOnly}), stop(), place(placeAt), exportInfo(), exportSave({kinds?, ranges?}),
-                 reset(how), ask(html, keys), say(text), machine, factory}   the app's host (machine: its name; factory: it has a
-                 factory reset)
+                 reset(how), ask(html, keys), say(text), machine, factory, memory(), factoryMemory()}   the app's host (machine:
+                 its name; factory: it has a factory reset; I-024: memory() the plug-in's machineMemory, factoryMemory() start
+                 from factory memory, a third choice of Reset machine… where memory().available)
      Syx.model             the panel's pure part, as data (deskSyxTest.js) */
 const Syx = (() => {
 	/* ---- the pure part: the file's items in, what the panel shows out ---- */
@@ -488,12 +489,22 @@ const Syx = (() => {
 	   Esc and a click elsewhere answer the last key) */
 	function reset() {
 		if (!hostHas("ask")) return;
-		const name = esc(Syx.host.machine || "machine"), f = !!Syx.host.factory;
+		const name = esc(Syx.host.machine || "machine"), f = !!Syx.host.factory, mem = memoryHere();
 		Syx.host.ask(`<b>Reset machine</b> (the machine's start-up menu: hold FUNCTION at power on).<br><br><b>Empty reset</b> clears every kit, pattern and song; ${f ? "samples and globals stay" : "globals stay"}. It asks a second time.<br>`
 			+ (f ? `<b>Factory reset</b> brings back the factory kits, patterns and songs, read from a second ${name} started from your own ROM; globals and samples stay.<br>`
 				: `Factory reset is not offered: the ${name}'s factory data is not in the editor.<br>`)
+			+ (mem ? `<b>Start from factory memory</b> restarts the ${name} as on a new install: its whole memory (kits, patterns, songs, globals${f ? ", samples" : ""}) is the factory's, and the saved machine memory for new sessions is deleted (seconds).<br>` : "")
 			+ `<br>There is no undo. Export SysEx… first keeps a way back.`,
-			[["Empty reset…", "danger", () => resetAgain("empty")], ...(f ? [["Factory reset…", "", () => resetAgain("factory")]] : []), ["Export SysEx…", "", openExport], ["Cancel", "cream", () => { }]]);
+			[["Empty reset…", "danger", () => resetAgain("empty")], ...(f ? [["Factory reset…", "", () => resetAgain("factory")]] : []),
+				...(mem ? [["Start from factory memory…", "", memoryAgain]] : []), ["Export SysEx…", "", openExport], ["Cancel", "cream", () => { }]]);
+	}
+	/* I-024 (doc/modern-ux/DESIGN-machine-memory.md): starting from factory memory, where the host keeps a machine memory
+	   (its memory() says available) */
+	function memoryHere() { const m = hostHas("memory") && hostHas("factoryMemory") ? Syx.host.memory() : null; return !!(m && m.available); }
+	function memoryAgain() {
+		const name = esc(Syx.host.machine || "machine"), saved = !!(Syx.host.memory() || {}).saved;
+		Syx.host.ask(`<b>Start from factory memory:</b> restart the ${name} with its factory memory now${saved ? " and delete the saved machine memory" : ""}? New sessions start from factory memory until you save again. A DAW project keeps its own memory.<br><br>What the machine holds now is lost: there is no undo. Export SysEx… first keeps a way back.`,
+			[["Start from factory memory", "danger", () => Syx.host.factoryMemory()], ["Export SysEx…", "", openExport], ["Cancel", "cream", () => { }]]);
 	}
 	function resetAgain(how) {
 		const name = esc(Syx.host.machine || "machine");
