@@ -18,7 +18,7 @@ agents at once; Radek tests the whole release at the end from doc/release/TEST-0
 markers: resolve, grep for `<<<<<<<`, then commit, as separate steps.
 
 **Merged into `feat/0.6-features`** (each reviewed, tier 2 green): wave P (probes, doc/modern-ux/PROBES-manual-gaps.md,
-B-069), wave 1 song slots, wave 2 transport, wave 3 trig types and marks, wave 4 copy / paste / clear what, wave 5 GLOBAL page (2026-10-12, review fixes 4bcacdd4e), wave 6 SysEx and reset (2026-10-12; Import/Export in the engine menu only, Radek), wave 7 recording (2026-10-12), polish A (2026-10-12: MD-140 done, live lock removal: a value pressed and Delete held is EXIT/NO + its DATA ENTRY knob; mdmm-check builds the firmware test programs and the editors before the tests that use them), wave 10 MM skins true to the photos (MD unchanged, Radek), wave 8 MD LEV and machine audition (2026-10-12), the top-bar
+B-069), wave 1 song slots, wave 2 transport, wave 3 trig types and marks, wave 4 copy / paste / clear what, wave 5 GLOBAL page (2026-10-12, review fixes 4bcacdd4e), wave 6 SysEx and reset (2026-10-12; Import/Export in the engine menu only, Radek), wave 7 recording (2026-10-12), polish A (2026-10-12: MD-140 done, live lock removal: a value pressed and Delete held is EXIT/NO + its DATA ENTRY knob; mdmm-check builds the firmware test programs and the editors before the tests that use them), wave 10 MM skins true to the photos (MD unchanged, Radek), wave 8 MD LEV and machine audition (2026-10-12), wave 9 MM Perform B-064 (2026-10-12), the top-bar
 and LCD fit (B-061, B-065, B-066), the volume-strip fix; the feature data, journey links and guide (slices 1-4).
 
 **Pushed, not merged** (each its own worktree under `audio/gearmulator-md-mm-wt/`):
@@ -30,6 +30,8 @@ and LCD fit (B-061, B-065, B-066), the volume-strip fix; the feature data, journ
 machine in the editor's user folder; a session with no project state starts from it; each save on the machine (kit,
 pattern, song, global) writes it; a DAW project still opens with its own memory; a menu item starts from factory memory;
 a setting turns it off. Two instances of one machine: the last save wins (say so in the guide). Branch `feat/0.6-memory`.
+
+**Left from the wave 9 review (small, polish):** switching the rail from MIDI to Synth selects a synth track and so moves POLY (mmMockup.js setSide -> polyFollows; only a person's own track pick should); step recording started on a MIDI track sends t:0 and moves POLY to T1. The ctest entry `mmDeskFirmwareTest` gets no ROM argument (GEARMULATOR_MM_ROM unset) and skips, so tier 2 never runs its default sections (smoke, p4, hw, chain, record, kitlink, reclock): make it `--env` like its siblings and raise its time limit.
 
 **Not started:** wave 9 (MM Perform: see and set up, B-064: mock-up and
 self-review against Radek's UI rules first), wave 10 (MM MKII look, I-023: colours sampled in IDEAS.md I-023; the
