@@ -29,6 +29,11 @@ and LCD fit (B-061, B-065, B-066), the volume-strip fix; the feature data, journ
 | `feat/0.6-sysex` (wave 6) | core committed (c118e4fa7); page, journeys and mock-up in one unchecked WIP commit (d880b0c67) | finish the page and MD journeys, rows, guide; tier 1 and 2; review; merge |
 | `feat/0.6-recording` (wave 7) | probes, MD live erase, MM step recording and live erase in the core, firmware tests, stub host: 5 commits; page, journeys, rows and guide not done; its step 0 (tier 1 on the combined base after waves 2 + 4) has no recorded result | run step 0 on `feat/0.6-features`, then the page part, tiers, review, merge |
 
+**Wave 11 (added 2026-10-12, I-024):** machine memory that stays for every new session, way A: one memory file per
+machine in the editor's user folder; a session with no project state starts from it; each save on the machine (kit,
+pattern, song, global) writes it; a DAW project still opens with its own memory; a menu item starts from factory memory;
+a setting turns it off. Two instances of one machine: the last save wins (say so in the guide). Branch `feat/0.6-memory`.
+
 **Not started:** wave 8 (MD LEV on Mix, machine audition), wave 9 (MM Perform: see and set up, B-064: mock-up and
 self-review against Radek's UI rules first), wave 10 (MM MKII look, I-023: colours sampled in IDEAS.md I-023; the
 Machinedrum photos also disagree with our MD skins, see the open choice below), slice 5 (journeys and snapshots for the
