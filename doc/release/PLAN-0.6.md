@@ -33,6 +33,10 @@ a setting turns it off. Two instances of one machine: the last save wins (say so
 
 **Polish C and fix/0.6-span-song merged (2026-10-12):** the wave 9 follow-ups, MM firmware tests now run in ctest, B-071 and B-072 fixed. B-071 is also on main: its port waits on `fix/mm-b071-main` for Radek's OK to merge into main.
 
+**Wave 12, the gaps (`feat/0.6-gaps`, pushed, not merged):** the 14 rows below built, each with its journey, guide section
+and TEST-0.6.md line; the triage set in the data (`plan`, `planReason`); MM-322 done (wave 10); B-082 (MID routing names)
+found and fixed on the way. Firmware facts: doc/modern-ux/PROBES-manual-gaps.md W12. Waits for its review and merge.
+
 **Gap triage (Radek, 2026-10-12)** for the partial and missing rows with no plan:
 - Build in 0.6 (wave 12, `feat/0.6-gaps`): MD-033, MD-043, MD-045, MD-099, MD-106, MD-147, MM-083, MM-184, MM-203, MM-201, MM-095, MM-102, MM-271, MM-301.
 - `later` (0.7): MD-189, MD-193, MD-194, MD-196, MD-198, MD-199 (sample manager, SDS from other tools), MD-208, MD-209 (MKI model).

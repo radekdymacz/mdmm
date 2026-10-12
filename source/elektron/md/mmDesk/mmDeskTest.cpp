@@ -827,7 +827,12 @@ void kitAfterPatternDump(const uint8_t _link3 = 5)
 		auto changed = *relinkOk;
 		changed.kit = 9;
 		// a link the person changes is the person's: the dump keeps it (the machine loads that kit)
+		// MM-095: over unsaved kit edits that asks first (the machine would load kit 10 at once); with force it goes
+		const auto before = m.slots[{0x67, 3}];
 		msg(R"({"op":"set","kind":"pattern","doc":)" + ed::json::write(ed::mmPatternToJson(changed)) + "}");
+		run(500);
+		check(m.slots[{0x67, 3}] == before, "a link changed over unsaved kit edits waits for the answer");
+		msg(R"({"op":"set","force":true,"kind":"pattern","doc":)" + ed::json::write(ed::mmPatternToJson(changed)) + "}");
 		run(2000);
 		check(ed::decodeMmPattern(m.slots[{0x67, 3}])->kit == 9, "a link the edit changes is sent as it is");
 		return;
@@ -1140,6 +1145,25 @@ void asksAndErrors()
 		msg(R"({"op":"patClear","p":1,"id":9,"g":53})");
 		check(result(9) && result(9)->find("ok")->asBool() == false && last("ask")->find("command")->find("op")->asString() != "patClear",
 			"a pattern not read yet: refused, no question");
+		{
+			// MM-095 review: a pattern with trigs and another kit copied over the pattern that plays (A02, kit 3) while
+			// the kit is edited: one question naming both, the overwrite and the switch that loses the edits
+			auto plays = emptyPattern(1);
+			plays.kit = 2;
+			plays.amp[0] = 1;
+			auto from = emptyPattern(6);
+			from.kit = 4;
+			from.amp[1] = 1;
+			d.onDeviceSysex(ed::encodeMmPattern(plays));
+			d.onDeviceSysex(ed::encodeMmPattern(from));
+			msg(R"({"op":"patCopyTo","from":6,"to":1,"id":30,"g":70})");
+			const auto* both = last("ask");
+			const auto* also = both ? both->find("also") : nullptr;
+			const auto named = [&](const std::string& _w) { if(both->find("ask")->asString() == _w) return true;
+				if(also && also->isArray()) for(const auto& x : also->asArray()) if(x.asString() == _w) return true; return false; };
+			check(both && both->find("command")->find("op")->asString() == "patCopyTo" && named("overwriteSlot") && named("discardKit")
+				&& d.pattern(1)->kit == 2, "a pattern copied over the one that plays, with another kit, over kit edits: one question, the overwrite and the lost edits");
+		}
 		{
 			// 0.6 wave 1: the song slots. S04 holds a song, S05 and S06 are empty; the library's ops over them.
 			ed::MmSong held;

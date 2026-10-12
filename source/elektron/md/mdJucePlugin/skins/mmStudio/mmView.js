@@ -298,7 +298,15 @@ const MmView = (() => {
 			for (let t = c.t; t < c.t + (c.n || 1); t++) for (let s = c.from; s < c.to; s++) out.push(...stepWrites(v, t, s, null), [[...trackPath(t), "slide", s], false]);
 			return out;
 		},
+		/* MM-083: the steps' locks go, their notes stay */
+		clearStepLocks: (v, c) => {
+			const out = [];
+			for (let t = c.t; t < c.t + (c.n || 1); t++) for (const k of keysOf(v, t)) for (const s of v.locks.get(k).keys()) if (s >= c.from && s < c.to) out.push([["locks", k, s], DELETE()]);
+			return out;
+		},
 		copySteps: () => [],
+		/* MM-095: a pattern's kit (the chooser's Kit list): shown at the result, as the library's slots */
+		patternKit: () => [],
 		/* the core's clipboard; the page shows the paste from its own copy of it (clip: MmView.copied) */
 		pasteSteps: (v, c, clip) => clip && clip.kind === "steps" ? putWrites(v, clip, c.t, c.from, (c.to ?? c.from + clip.length) - c.from) : [],
 		copyStepsTo: (v, c) => putWrites(v, blockOf(v, c.t, c.n || 1, c.from, c.to), c.dt ?? c.t, c.at, c.to - c.from),
@@ -484,7 +492,7 @@ const MmView = (() => {
 		song: ["rowSet", "rowInsert", "rowDelete", "rowMove", "copyRow", "pasteRow"],
 		/* COPY / PASTE / CLEAR what (0.6): the pattern that plays (p) and the kit that plays (k) */
 		track: ["trackCopy", "trackPaste", "trackClear"],
-		library: ["patCopy", "patPaste", "patCopyTo", "patClear", "kitCopy", "kitPaste", "kitCopyTo", "kitClear", "kitRename",
+		library: ["patternKit", "patCopy", "patPaste", "patCopyTo", "patClear", "kitCopy", "kitPaste", "kitCopyTo", "kitClear", "kitRename",
 			"songCopy", "songPaste", "songCopyTo", "songClear", "songRename", "globalCopy", "globalPaste"]
 	};
 	const KIND = new Map(Object.entries(OPS).flatMap(([kind, ops]) => ops.map(op => [op, kind])));

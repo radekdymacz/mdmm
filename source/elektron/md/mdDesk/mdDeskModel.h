@@ -85,7 +85,7 @@ namespace mdDesk
 		static const std::vector<std::string>& asks()
 		{
 			static const std::vector<std::string> a{"breakChain", "discardKit", "loadKit", "reloadKit", "overwriteKit", "overwriteSlot",
-				"clearSlot", "relinkKit"};
+				"clearSlot", "relinkKit", "loadUndoKit"};
 			return a;
 		}
 	};

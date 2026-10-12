@@ -22,12 +22,13 @@ const KTIP = {
 	saveas: "SAVE KIT n (SysEx 0x59): n becomes the current kit and, in EXTENDED, the current pattern links to it (measured). The old slot keeps what it had",
 	copy: "Copies the kit the editor holds: a stored slot, or for the current kit its working copy read from the machine's memory, unsaved edits included",
 	paste: "A kit dump (0x52) into the slot. Into the current kit it is also LOAD KIT, because a dump alone only writes the slot (measured): heard at once, unsaved edits lost",
-	clear: "There is no CLEAR KIT over SysEx: the editor writes an empty kit (every track GND-EMPTY, neutral values, no name). What the machine's own CLEAR KIT leaves is not known",
+	clear: "There is no CLEAR KIT over SysEx: the editor writes the kit the machine's own CLEAR KIT leaves (measured): every track GND-EMPTY at the same values, the master effects at their start, no name",
 	rename: "The current kit: SysEx 0x55 renames the working kit; SAVE stores it. Other slots: their dump is written back with the new name",
 	reload: "LOAD KIT on the current slot (0x58): the edits are lost. The machine keeps them in its UNDO KIT",
+	undo: "The machine's UNDO KIT, the first entry of its kit list: the kit lost to the last LOAD KIT or overwrite. The editor opens KIT > LOAD KIT > UNDO KIT with the machine's keys: that kit plays again, unsaved, and the slot it came from becomes the current kit (measured). Unsaved edits of the kit that plays are lost",
 	drag: "Drag onto another slot to copy it (a kit dump into the target)" };
 const PTIP = {
-	go: "LOAD PATTERN (SysEx 0x57). While playing the machine switches at the pattern end. A chain ends here",
+	go: "LOAD PATTERN (SysEx 0x57). While playing the machine switches at the pattern end, or at STOP (measured). A chain ends here",
 	now: "Switch now: stopped, the same as Go. Playing: STOP, LOAD PATTERN, PLAY (measured: plays the new pattern after about 370 ms)",
 	copy: "Copies the pattern: notes, locks and the kit link, like the machine's COPY PATTERN",
 	paste: "A pattern dump (0x67) into the slot; pattern dumps are live. Over the current pattern with another kit link the machine loads that kit (measured): the editor asks first when the kit has unsaved edits",
@@ -55,23 +56,23 @@ function drawKitLib() {
 	const k = LIB.sel, cur = V.kit, ed = V.kitState === "edited", empty = kitEmpty(k) && k !== cur, dis = c => c ? " disabled" : "", loaded = kitLoaded(k);
 	const n = Object.keys(Docs.kits).length;
 	return `<div class="libhead"><span class="cap">Kit library</span><span class="lcdchip">K${nn(cur)} ${escH(kDisp(cur) || "EMPTY")} · ${ed ? "edited" : "saved"}</span><span class="note">${V.mode === "EXTENDED" ? "EXTENDED: every pattern recalls its kit." : "CLASSIC: patterns do not recall kits."} 64 slots${n < 64 ? ` · reading ${n} of 64 from the machine` : ""}.</span><button class="libx" data-la="close" title="Close (Esc)">Esc</button></div>
- <div class="libacts"><div class="grp"><span class="ilab">Current K${nn(cur)}</span><button data-la="save" title="${KTIP.save}">Save</button><button class="danger" data-la="reload"${dis(!ed)} title="${KTIP.reload}">Reload</button></div>
+ <div class="libacts"><div class="grp"><span class="ilab">Current K${nn(cur)}</span><button data-la="save" title="${KTIP.save}">Save</button><button class="danger" data-la="reload"${dis(!ed)} title="${KTIP.reload}">Reload</button><button data-la="undokit"${dis(!canDo(V, "panelKeys"))} title="${escH(canDo(V, "panelKeys") ? KTIP.undo : V.caps.reasons.panelKeys || "The UNDO KIT needs the machine's keys.")}">UNDO KIT</button></div>
   <div class="grp"><span class="ilab">Slot K${nn(k)}</span><button data-la="saveas"${dis(k === cur)} title="${k === cur ? "This is the current slot: use Save. " : ""}${KTIP.saveas}">Save as K${nn(k)}</button>
   <button data-la="copy"${dis(!loaded)} title="${KTIP.copy} (Cmd+C)">Copy</button><button data-la="paste"${dis(V.clipboard.kit == null || !loaded)} title="${V.clipboard.kit != null ? "Paste K" + nn(V.clipboard.kit) + " " + escH(kDisp(V.clipboard.kit)) + ". " : "Copy a kit first. "}${KTIP.paste} (Cmd+V)">Paste</button>
   <button class="danger" data-la="clear"${dis(empty || !loaded)} title="${KTIP.clear} (Delete)">Clear</button><button data-la="rename"${dis(!loaded)} title="${KTIP.rename} (F2 or double-click)">Rename</button></div></div>
  <div class="libgrid kits" aria-label="64 kit slots">${Array.from({ length: 64 }, (_, i) => kitSlot(i)).join("")}</div>
- <div class="libfoot"><span>Click loads · arrows move, Enter loads · Alt+click selects · F2 or double-click renames · Delete clears · drag a slot onto another to copy · Cmd+Z undoes a paste, clear or rename · Esc closes</span><span class="fw" title="The machine keeps one UNDO KIT as the first entry of its kit list: the kit lost to the last load or overwrite. The editor's own undo works on top of it for slot writes; LOAD and SAVE are the machine's.">The machine also keeps an UNDO KIT</span></div>`;
+ <div class="libfoot"><span>Click loads · arrows move, Enter loads · Alt+click selects · F2 or double-click renames · Delete clears · drag a slot onto another to copy · Cmd+Z undoes a paste, clear or rename · Esc closes</span><span class="fw" title="The machine keeps one UNDO KIT as the first entry of its kit list: the kit lost to the last load or overwrite. UNDO KIT loads it. The editor's own undo works on top of it for slot writes; LOAD and SAVE are the machine's.">UNDO KIT: the kit lost last</span></div>`;
 }
 function patSlot(p) {
 	const cur = p === V.pat, q = p === V.queued && !cur, has = hasPat(p), ext = V.mode === "EXTENDED", k = patKitOf(p), loaded = !!Docs.patterns[p];
-	const tip = `${patName(p)} · ${!loaded ? "loading" : has ? patLen(p) + " steps" + (ext && k != null ? " · kit K" + nn(k) : "") : "empty"}${cur ? " · current" : ""}${q ? " · queued: starts at the pattern end" : ""}. Click queues, Shift+click switches now. Drag onto another slot to copy.`;
+	const tip = `${patName(p)} · ${!loaded ? "loading" : has ? patLen(p) + " steps" + (ext && k != null ? " · kit K" + nn(k) : "") : "empty"}${cur ? " · current" : ""}${q ? " · queued: starts at the pattern end, or at once when you press STOP" : ""}. Click queues, Shift+click switches now. Drag onto another slot to copy.`;
 	return `<button class="ls ps${has ? "" : " empty"}${cur ? " cur" : ""}${q ? " q" : ""}" data-ps="${p}" draggable="${has}" aria-selected="${p === LIB.sel}" title="${escH(tip)}"><b>${patName(p)}</b><span>${!loaded ? "…" : has ? patLen(p) + (ext && k != null ? " · K" + nn(k) : "") : "EMPTY"}</span></button>`;
 }
 function drawPatLib() {
 	const p = LIB.sel, cur = V.pat, dis = c => c ? " disabled" : "", ext = V.mode === "EXTENDED", loaded = !!Docs.patterns[p];
 	const rows = [..."ABCDEFGH"].map((b, i) => `<button class="bank lbank${i === cur >> 4 ? " on" : ""}" data-lb="${i}" title="Bank ${b} (key ${b})"><i class="led"></i>${b}</button>` + Array.from({ length: 16 }, (_, j) => patSlot(i * 16 + j)).join("")).join("");
 	const ck = patKitOf(cur);
-	return `<div class="libhead"><span class="cap">Patterns</span><span class="lcdchip">${patName(cur)} · ${V.len} steps${ext && ck != null ? " · K" + nn(ck) : ""}${V.queued != null && V.queued !== cur ? " → " + patName(V.queued) : ""}</span><span class="note">8 banks × 16. ${V.playing ? "Playing: a new pattern starts at the pattern end." : "Stopped: a click switches at once."}</span><button class="libx" data-la="close" title="Close (Esc)">Esc</button></div>
+	return `<div class="libhead"><span class="cap">Patterns</span><span class="lcdchip">${patName(cur)} · ${V.len} steps${ext && ck != null ? " · K" + nn(ck) : ""}${V.queued != null && V.queued !== cur ? " → " + patName(V.queued) : ""}</span><span class="note">8 banks × 16. ${V.playing ? "Playing: a new pattern starts at the pattern end, or at STOP." : "Stopped: a click switches at once."}</span><button class="libx" data-la="close" title="Close (Esc)">Esc</button></div>
  <div class="libacts"><div class="grp"><span class="ilab">Slot ${patName(p)}</span><button data-la="go"${dis(p === cur && V.queued == null)} title="${PTIP.go} (Enter)">${V.playing ? "Queue" : "Go"}</button><button data-la="now"${dis(p === cur && V.queued == null)} title="${PTIP.now}">Now</button>
   <button data-la="copy"${dis(!loaded)} title="${PTIP.copy} (Cmd+C)">Copy</button><button data-la="paste"${dis(V.clipboard.pattern == null || !loaded)} title="${V.clipboard.pattern != null ? "Paste " + patName(V.clipboard.pattern) + ". " : "Copy a pattern first. "}${PTIP.paste} (Cmd+V)">Paste</button><button class="danger" data-la="clear"${dis(!hasPat(p))} title="${PTIP.clear} (Delete)">Clear</button></div></div>
  <div class="libgrid pats" aria-label="128 patterns">${rows}</div>
@@ -132,7 +133,7 @@ function patClear(p) {
 function patGo(p, now) { LIB.sel = p; if (p === V.pat && V.queued == null) { drawLib(true); return; } if (now) cmd("select", { p, now: true }); else goPattern(p); drawLib(true); }
 function libAct(a) {
 	const k = LIB.sel, kit = LIB.open === "kit";
-	({ close: () => closeLib(true), save: () => saveKit(), saveas: () => kitSaveAs(k), reload: kitReload, rename: () => startRename(k),
+	({ close: () => closeLib(true), save: () => saveKit(), saveas: () => kitSaveAs(k), reload: kitReload, undokit: () => cmd("loadUndoKit", {}), rename: () => startRename(k),
 		copy: () => kit ? kitCopy(k) : patCopy(k), paste: () => kit ? kitPaste(k) : patPaste(k), clear: () => kit ? kitClear(k) : patClear(k), go: () => patGo(k, false), now: () => patGo(k, true) })[a]?.();
 }
 

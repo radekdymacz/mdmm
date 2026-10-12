@@ -987,6 +987,36 @@ namespace mmDesk
 			return _p;
 		}
 
+		// MM-083, MM-184, MM-203: the locks of the steps in [from, to) of tracks t to t + n - 1 go, their notes stay (the
+		// machine's TRIG + PLAY in grid recording, "CLEAR NOTE LOCKS", manual 1-50, 1-57)
+		// MM-095: the kit the pattern plays (manual 1-18). The firmware takes it with the dump; over the pattern that plays
+		// it loads that kit at once (gapProbesFirmwareTest w12patkit)
+		std::optional<MmPattern> patternKit(MmPattern _p, const In& _in)
+		{
+			_p.kit = static_cast<uint8_t>(_in.a.integer("v"));
+			_in.note = ed::mmPatternName(_p.position) + " plays kit " + std::to_string(_p.kit + 1);
+			return _p;
+		}
+
+		std::optional<MmPattern> clearStepLocks(MmPattern _p, const In& _in)
+		{
+			const auto r = stepRange(_in);
+			if(!r)
+				return {};
+			size_t before = 0, after = 0;
+			for(const auto& lp : ed::mmLockParams(_p))
+				if(const auto row = ed::mmLockRow(_p, lp); row >= 0)
+					before += static_cast<size_t>(std::count_if(_p.lockRows[static_cast<size_t>(row)].begin(), _p.lockRows[static_cast<size_t>(row)].end(), [](const uint8_t _v) { return _v != MmPattern::g_noLock; }));
+			for(int t = r->track; t < r->track + r->rows; ++t)
+				for(int s = r->from; s < r->to; ++s)
+					clearStepLocks(_p, trackOf(t), static_cast<size_t>(s));
+			for(const auto& lp : ed::mmLockParams(_p))
+				if(const auto row = ed::mmLockRow(_p, lp); row >= 0)
+					after += static_cast<size_t>(std::count_if(_p.lockRows[static_cast<size_t>(row)].begin(), _p.lockRows[static_cast<size_t>(row)].end(), [](const uint8_t _v) { return _v != MmPattern::g_noLock; }));
+			_in.note = before == after ? rangeName(*r) + ": no locks" : "Cleared " + std::to_string(before - after) + " lock(s) of " + rangeName(*r) + "; the notes stay";
+			return _p;
+		}
+
 		std::optional<MmPattern> copySteps(MmPattern _p, const In& _in)
 		{
 			const auto r = stepRange(_in);
@@ -1044,7 +1074,7 @@ namespace mmDesk
 				{"step", step}, {"slide", slide}, {"swingStep", swingStep}, {"lock", lock}, {"clearLane", clearLane},
 				{"clearLocks", clearLocks}, {"clearPattern", clearPattern}, {"steps", steps}, {"rotate", rotate},
 				{"doublePattern", doublePattern}, {"length", length}, {"speed", speed}, {"swing", swing}, {"transpose", transpose},
-				{"arp", arp}, {"clearSteps", clearSteps}, {"copySteps", copySteps}, {"pasteSteps", pasteSteps}, {"copyStepsTo", copyStepsTo}};
+				{"arp", arp}, {"clearSteps", clearSteps}, {"clearStepLocks", clearStepLocks}, {"patternKit", patternKit}, {"copySteps", copySteps}, {"pasteSteps", pasteSteps}, {"copyStepsTo", copyStepsTo}};
 			return edits;
 		}
 
