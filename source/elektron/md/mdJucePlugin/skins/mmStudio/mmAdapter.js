@@ -661,6 +661,7 @@
 		else if (m.type === "telemetry") {
 			if (m.playing !== V().playing()) V().setPlaying(m.playing);
 			if (V().playing()) V().setStep(m.step);
+			else V().setPausedStep(m.step);
 			/* MM-P4: the machine's recording mode */
 			/* wave 7: STEP RECORDING's cursor (stepAt, the step the next note writes) comes with it */
 			const at = m.stepAt ?? -1;

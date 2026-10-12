@@ -741,6 +741,40 @@ void watchSteps()
 	check(w.playing, "two moves forward: playing");
 	w = mmDesk::watchStep(w.next, t, 700);
 	check(!w.playing && !w.stepped, "standing still for three step times: stopped");
+	// B-104: a pause the editor pressed while the flag stays set (on SYSEX RECV): the step decides
+	t.running = 1;
+	t.step = 7;
+	w = mmDesk::watchStep(w.next, t, 800);
+	t.step = 8;
+	w = mmDesk::watchStep(w.next, t, 925);
+	check(w.playing, "the flag set and stepping: playing");
+	w = mmDesk::watchStep(mmDesk::pausedByEditor(w.next), t, 950);
+	check(!w.playing, "B-104: paused by the editor, the flag still set: not playing");
+	t.step = 9;
+	w = mmDesk::watchStep(w.next, t, 1000);
+	check(!w.playing && w.next.paused, "B-104: one step more (the key on its way): still paused");
+	w = mmDesk::watchStep(w.next, t, 3000);
+	check(!w.playing && w.next.paused, "B-104: the step holds: still paused");
+	t.step = 10;
+	w = mmDesk::watchStep(w.next, t, 3100);
+	t.step = 11;
+	w = mmDesk::watchStep(w.next, t, 3225);
+	check(w.playing && !w.next.paused, "B-104: it moves on (PLAY on the panel): playing, the flag counts again");
+	t.running = 0;
+	w = mmDesk::watchStep(mmDesk::pausedByEditor(w.next), t, 3300);
+	t.running = 1;
+	w = mmDesk::watchStep(w.next, t, 3400);
+	check(w.playing && !w.next.paused, "B-104: the flag read 0 once: it is honest again");
+	// a resume the editor pressed: the first step forward is playing, the flag still 0
+	t.running = 0;
+	w = mmDesk::watchStep(mmDesk::pausedByEditor(w.next), t, 3500);
+	check(!w.playing, "paused (the flag 0)");
+	auto resumed = mmDesk::resumedByEditor(w.next, 4000);
+	w = mmDesk::watchStep(resumed, t, 4010);
+	check(!w.playing, "resumed, the step not moved yet: not playing yet");
+	t.step = 12;
+	w = mmDesk::watchStep(w.next, t, 4100);
+	check(w.playing, "resumed: the first step forward is playing (the flag lags)");
 }
 
 // B-027: the Monomachine loads the kit a pattern links when it takes a dump of the pattern that plays (measured,
