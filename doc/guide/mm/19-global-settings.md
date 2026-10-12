@@ -93,7 +93,7 @@ The **Sync** card holds two switches for what the machine sends. **Tempo out** s
 In a DAW the plug-in sets **Tempo in** to EXT and **Ctrl in** to ON itself.
 
 ### MULTI MAP EDIT
-<!-- rows: MM-300 MM-301 MM-302 MM-303 @d3fcee -->
+<!-- rows: MM-300 MM-301 MM-302 MM-303 @7c3b38 -->
 
 The multi map starts patterns from key ranges. It is on the **Perform** workspace, in multi map mode. It is stored in the global slot.
 
@@ -106,7 +106,7 @@ The multi map starts patterns from key ranges. It is on the **Perform** workspac
 
 Bands on the keyboard show the ranges. A key you play shows the pattern it starts.
 
-{gap:MM-301}The pattern list offers CUR and the patterns A01 to B16 only. The machine takes all 128.{/gap}
+The **PAT** list of a range offers CUR, the pattern that plays, and all 128 patterns, A01 to H16.
 
 ## MECHANICAL SETTINGS
 <!-- rows: MM-304 MM-305 MM-306 @9df19f -->

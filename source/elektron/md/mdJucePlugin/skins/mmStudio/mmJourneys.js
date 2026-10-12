@@ -2134,7 +2134,20 @@ const MmJourneys = (() => {
 		],
 		async tidy(u, c) { if (S().playing) { u.click("#play"); await until(() => !S().playing, 3000); } if (c.m0 === false && machine().song?.songMode !== false) { u.click('[data-set="songpick"] button[data-v="pattern"]'); await sleep(1000); } }
 	};
-	const wave12 = [undoKitJ, clearStepLocksJ, lockCurrentJ, patKitJ, songCounterJ];
+	/* MM-301: a multi map range plays any of the 128 patterns (its PAT list, CUR and A01-H16) */
+	const mapPatJ = {
+		name: "mm-perform-map-pattern", proves: ["MM-301"],
+		steps: [
+			go("perform"),
+			{ say: "click Multi map: the map table, the first range's PAT list holds CUR and all 128 patterns", act: (u, c) => { c.g = machine().global?.current ?? 0; c.p0 = I().doc("global", c.g)?.multiMap?.[1]?.[0]; u.click('[data-pmode="map"]'); },
+				screen: () => ok(!!$1("#mpat0") && $1("#mpat0").options.length === 129 && $1("#mpat0").options[128].textContent === "H16", `${$1("#mpat0")?.options.length} entries, the last ${$1("#mpat0")?.options[128]?.textContent}`) },
+			{ say: "choose H16 for the first range: the global's map plays it", act: async u => { await choose(u, "mpat0", "127"); },
+				machine: c => ok(I().doc("global", c.g)?.multiMap?.[1]?.[0] === 127, "PAT " + I().doc("global", c.g)?.multiMap?.[1]?.[0]), screen: () => ok($1("#mmapviz .band")?.textContent.includes("H16") || /H16/.test($1(".maprow")?.textContent || "") || +$1("#mpat0")?.value === 127, "shows " + $1("#mpat0")?.value), within: 15000 },
+			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(I().doc("global", c.g)?.multiMap?.[1]?.[0] === c.p0, "PAT " + I().doc("global", c.g)?.multiMap?.[1]?.[0]), within: 15000 }
+		],
+		async tidy(u) { if ($1('[data-pmode="normal"]')) u.click('[data-pmode="normal"]'); }
+	};
+	const wave12 = [undoKitJ, clearStepLocksJ, lockCurrentJ, patKitJ, songCounterJ, mapPatJ];
 	const all = [...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
