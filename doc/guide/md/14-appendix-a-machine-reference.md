@@ -3,14 +3,16 @@
 
 A machine is the sound engine of one track. The Machinedrum holds 16 tracks and each one carries one machine at a time. This chapter lists the machines by family, as the machine's own appendix does.
 
-In the editor you choose a machine on the **Sound** workspace. Pick a track on the rail, click the machine key, choose a family, then choose a machine in it. The track takes the machine and the Sound page shows its knobs. {key:undo} takes the choice back. The knobs of a machine are in groups of eight, as on the LCD.
+In the editor you choose a machine on the **Sound** workspace. Pick a track on the rail, click the machine key, choose a family, then choose a machine in it. The track takes the machine and the Sound page shows its knobs. {key:undo} takes the choice back. A machine has up to eight knobs, as on the LCD, and the Sound page shows each one in a group with its value box.
 
 NOTE: The kit holds the machine of every track, so a machine is saved and loaded with the kit.
 
 ## TRX MACHINES
 <!-- rows: MD-211 MD-212 MD-213 MD-214 MD-215 MD-216 MD-217 MD-218 MD-219 MD-220 MD-221 MD-222 MD-223 @4feb08 -->
 
-The TRX family models classic analogue drum voices. Each machine is one drum sound. The Sound workspace shows its knobs in groups, each knob in its own box.
+The TRX family models classic analogue drum voices. Each machine is one drum sound. The Sound workspace shows its knobs in groups, each knob with its own value box. Pitch, decay and ramp sit in the first groups, and tone and clip in the last.
+
+![TRX-BD on the Sound workspace, its knobs in groups with a box under each.](shot:md-sound-groups)
 
 | Machine | Sound |
 |---|---|
@@ -48,6 +50,8 @@ The EFM family makes drum sounds by frequency modulation. The knobs sit in group
 <!-- rows: MD-232 MD-233 MD-234 MD-235 MD-236 MD-237 MD-238 MD-239 MD-240 MD-241 MD-242 MD-243 MD-244 MD-245 MD-246 MD-247 @42f945 -->
 
 The E12 family is a set of drums and percussion that follow the sound of a 12 bit sampler. The knobs sit in groups on the Sound workspace.
+
+![E12-SD on the Sound workspace with its pitch, envelope, tone and retrig groups.](shot:md-machine-e12)
 
 | Machine | Sound |
 |---|---|
@@ -118,6 +122,8 @@ The MID family turns a track into a MIDI controller, one machine for each of the
 
 The CTR family does not play a sound. It moves the parameters of other tracks or of a master effect. **Control all** and **Control 8 parameters** move parameters of the other tracks, and their knobs show as plain knob boxes. The other four, Rhythm Echo, Gate Box, Master EQ and Dynamix, move the knobs of that master effect, and their groups show on the Sound workspace.
 
+![CTR-RE on the Sound workspace, with the delay, modulation, filter and output groups of the Rhythm Echo.](shot:md-machine-ctr)
+
 | Machine | Sound |
 |---|---|
 | CTR-AL | Control all |
@@ -132,10 +138,12 @@ The CTR family does not play a sound. It moves the parameters of other tracks or
 
 The ROM machines play the samples held in the machine's own memory. The first 24 play a sample as a one shot, and the second 24 play a sample as a loop, with a linear start and end. The Sound workspace shows a sample screen with <STRT> and <END>, and the **Sampler** workspace shows the slots as tiles.
 
+![ROM-01 on the Sound workspace, with the sample screen and the <STRT> and <END> knobs.](shot:md-machine-rom)
+
 | Machine | Sound |
 |---|---|
-| ROM-1 | to ROM-24 ROM sample player |
-| ROM-25 | to ROM-48 ROM loop player (linear STRT, END) |
+| ROM-1 to ROM-24 | ROM sample player |
+| ROM-25 to ROM-48 | ROM loop player (linear STRT, END) |
 
 ## RAM MACHINES
 <!-- rows: MD-273 MD-274 @60f1fd -->

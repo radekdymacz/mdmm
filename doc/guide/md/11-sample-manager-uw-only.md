@@ -91,6 +91,10 @@ The machine takes a sample sent over MIDI at any time. The editor does not wait 
 3. Choose a WAV or AIFF file.
 4. A bar shows the sending. Click **Stop** to cancel. When it ends, a message says the sample is loaded.
 
+![A sample sent to ROM slot 33](shot:e2e-md-drop-sample)
+
+You can also drop the file on the waveform of an empty ROM slot. The slot takes it.
+
 The sample replaces what the slot holds. The plug-in gives it a name of four letters from the file name.
 
 ## ORIGINAL PLACE SAMPLE RECEIVE

@@ -33,7 +33,7 @@ This message renames the kit that is loaded. The **Rename** control of the kit l
 ## 0x56 SET ACTIVE GLOBAL
 <!-- rows: MM-373 @efd8d9 -->
 
-This message chooses the global slot in use. The slot keys of the GLOBAL panel send it. A slot made active while a dump is arriving on the SYSEX RECV screen stays active.
+This message chooses the global slot in use. The slot keys of the GLOBAL panel send it: click key 2 and it lights, and the machine takes slot 2 as the active global. A slot made active while a dump is arriving on the SYSEX RECV screen stays active.
 
 ## 0x57 LOAD PATTERN
 <!-- rows: MM-374 @246b09 -->

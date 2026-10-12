@@ -3352,6 +3352,9 @@ const MdJourneys = (() => {
 		for (let i = 0; i < 3 && dlgShown(); i++) { u.key("Escape"); await sleep(200); }
 		if (LIB.open) { closeLib(false); await sleep(100); }
 		for (const q of ["#globpop", "#keyspop", "#audiopop", "#machpop", "#kpop"]) if ($1(q) && !$1(q).hidden) { u.key("Escape"); await sleep(150); }
+		/* the machine restarting (a journey that reset it: the start-up card is back): it is waited for, as a person waits, so
+		   the next journey does not meet a covered page (md-engine-memory, then md-top-cpu-meter ... in the 0.6 evidence run) */
+		if (!$1("#bootcard").hidden) { await until(() => $1("#bootcard").hidden, 120000); await sleep(1500); }
 		if (!$1("#bootcard").hidden) $1('#bootcard [data-bootrom="close"]')?.click();
 		if (V.rec) { u.click("#rec"); await sleep(300); }
 		if (V.playing) { u.click("#play"); await until(() => !V.playing, 3000); }

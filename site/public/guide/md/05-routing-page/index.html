@@ -49,9 +49,9 @@
 <li><a href="/guide/md/11-sample-manager-uw-only/">11. Sample manager, UW only</a></li>
 <li><a href="/guide/md/12-early-start-up-menu/">12. Early start-up menu</a></li>
 <li><a href="/guide/md/13-technical-information-mki-vs-mkii/">13. Technical information, MKI vs MKII</a></li>
-<li><span class="gd-side-todo">14. Appendix A: machine reference <span class="gd-vh">(to come)</span></span></li>
-<li><span class="gd-side-todo">15. Appendix B: MIDI control reference <span class="gd-vh">(to come)</span></span></li>
-<li><span class="gd-side-todo">16. Appendix C: sysex reference <span class="gd-vh">(to come)</span></span></li>
+<li><a href="/guide/md/14-appendix-a-machine-reference/">14. Appendix A: machine reference</a></li>
+<li><a href="/guide/md/15-appendix-b-midi-control-reference/">15. Appendix B: MIDI control reference</a></li>
+<li><a href="/guide/md/16-appendix-c-sysex-reference/">16. Appendix C: sysex reference</a></li>
 <li><a href="/guide/md/17-beyond-the-hardware/">17. Beyond the hardware</a></li></ol>
 <ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
 </nav>
@@ -60,32 +60,37 @@
 <div class="gd-intro gd-prose"><p>The routing parameters set how a track's sound goes through the distortion, the volume and pan, and on to the effect buses. They are part of the kit.</p>
 <p>There are two places to set them:</p>
 <ul class="gd-list"><li>On the Sound workspace they are groups of the second row, after the track effects: <b class="gd-ui">Drive</b>, <b class="gd-ui">Level · pan</b> and <b class="gd-ui">Sends</b>. A small word at the right of the first one names the machine's ROUTING page.</li><li>On the Mix workspace each track has a strip with its <b class="gd-ui">VOL</b> fader and the <b class="gd-ui">PAN</b>, <b class="gd-ui">DIST</b>, <b class="gd-ui">DEL</b> and <b class="gd-ui">REV</b> boxes.</li></ul>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: A strip on the Mix workspace"><span>Screenshot to come</span></div><figcaption>A strip on the Mix workspace</figcaption></figure>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/md-mix-strip.webp" aria-label="Open the picture full size: A strip on the Mix workspace"><img src="/guide/shots/md-mix-strip.webp" width="1440" height="923" alt="A strip on the Mix workspace" loading="lazy"></a><figcaption>A strip on the Mix workspace</figcaption></figure>
 <p>To lock a routing parameter to a step, open the Sequence workspace and click its key in the lock lane, in the row of keys labelled <b class="gd-ui">Routing</b>.</p></div>
 <section class="gd-sec" id="distortion" aria-labelledby="distortion-h">
 <div class="gd-body gd-prose"><h2 id="distortion-h">DISTORTION <a class="gd-anchor" href="#distortion" aria-label="Link to DISTORTION">#</a></h2>
 <p class="gd-ref">MD manual p.25</p>
 <p><b class="gd-ui">DIST</b> controls the distortion of the track. It acts after the track effects and before the volume and pan.</p>
-<p>The group <b class="gd-ui">Drive</b> shows input against output. The dashed line is a clean signal. Drag the dot to set <b class="gd-ui">DIST</b>. On the Mix workspace use the <b class="gd-ui">DIST</b> box of the strip.</p>
+<p>The group <b class="gd-ui">Drive</b> shows input against output. The dashed line is a clean signal.</p>
+<p>To set it:</p>
+<ol class="gd-steps"><li>Click the <b class="gd-ui">Sound</b> tab.</li><li>Select the track on the rail. The page shows the synthesis, effects and routing groups together.</li><li>Drag the dot in <b class="gd-ui">Drive</b>, or click the <b class="gd-ui">DIST</b> box and press the up or down arrow key. The value changes in the kit.</li></ol>
+<p>On the Mix workspace use the <b class="gd-ui">DIST</b> box of the strip.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/md-sound-workspace.webp" aria-label="Open the picture full size: The Sound workspace with the routing groups in the second row"><img src="/guide/shots/md-sound-workspace.webp" width="1440" height="923" alt="The Sound workspace with the routing groups in the second row" loading="lazy"></a><figcaption>The Sound workspace with the routing groups in the second row</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="volume" aria-labelledby="volume-h">
 <div class="gd-body gd-prose"><h2 id="volume-h">VOLUME <a class="gd-anchor" href="#volume" aria-label="Link to VOLUME">#</a></h2>
 <p class="gd-ref">MD manual p.25</p>
 <p><b class="gd-ui">VOL</b> is the volume of the track. It is separate from the overall gain of the track and, unlike it, can be locked and moved by an LFO.</p>
 <p>On the Mix workspace <b class="gd-ui">VOL</b> is the fader of the strip. Drag the fader, or press <kbd class="gd-key">[↑]</kbd> or <kbd class="gd-key">[↓]</kbd> while it has focus. Double-click it to set 100. On the Sound workspace <b class="gd-ui">VOL</b> is in the group <b class="gd-ui">Level · pan</b>.</p>
+<p>To take a change back, press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd>. The fader goes back to where it was.</p>
 </div></section>
 <section class="gd-sec" id="pan" aria-labelledby="pan-h">
 <div class="gd-body gd-prose"><h2 id="pan-h">PAN <a class="gd-anchor" href="#pan" aria-label="Link to PAN">#</a></h2>
 <p class="gd-ref">MD manual p.26</p>
 <p><b class="gd-ui">PAN</b> places the track in the stereo field of the main outputs. It shows -64 for hard left to +63 for hard right, and 0 for the centre.</p>
-<p>On the Sound workspace the group <b class="gd-ui">Level · pan</b> has one dot: sideways sets <b class="gd-ui">PAN</b>, upward sets <b class="gd-ui">VOL</b>. On the Mix workspace use the <b class="gd-ui">PAN</b> box.</p>
+<p>On the Sound workspace the group <b class="gd-ui">Level · pan</b> has one dot: sideways sets <b class="gd-ui">PAN</b>, upward sets <b class="gd-ui">VOL</b>. On the Mix workspace drag the <b class="gd-ui">PAN</b> box of the strip sideways. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take the change back.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>PAN has no effect on a track that goes to an individual output, A to F. The Mix workspace still shows its value.</p></aside>
 </div></section>
 <section class="gd-sec" id="delay-send" aria-labelledby="delay-send-h">
 <div class="gd-body gd-prose"><h2 id="delay-send-h">DELAY SEND <a class="gd-anchor" href="#delay-send" aria-label="Link to DELAY SEND">#</a></h2>
 <p class="gd-ref">MD manual p.26</p>
 <p><b class="gd-ui">DEL</b> sets how much of the track goes to the Rhythm Echo, the delay of the master effects.</p>
-<p>On the Sound workspace the group <b class="gd-ui">Sends</b> has two bars, one for <b class="gd-ui">DEL</b> and one for <b class="gd-ui">REV</b>. Drag the dot on a bar. On the Mix workspace use the <b class="gd-ui">DEL</b> box.</p>
+<p>On the Sound workspace the group <b class="gd-ui">Sends</b> has two bars, one for <b class="gd-ui">DEL</b> and one for <b class="gd-ui">REV</b>. Drag the dot on a bar, or click the box and press the up or down arrow key. On the Mix workspace use the <b class="gd-ui">DEL</b> box.</p>
 <p>A track on an individual output, A to F, has no delay. Its <b class="gd-ui">DEL</b> box is greyed on the Mix workspace, with a note, and the value is kept.</p>
 </div></section>
 <section class="gd-sec" id="reverb-send" aria-labelledby="reverb-send-h">
@@ -98,6 +103,7 @@
 <div class="gd-body gd-prose"><h2 id="lfo-control-h">LFO CONTROL <a class="gd-anchor" href="#lfo-control" aria-label="Link to LFO CONTROL">#</a></h2>
 <p class="gd-ref">MD manual p.27</p>
 <p>The three routing parameters <b class="gd-ui">LFOS</b>, <b class="gd-ui">LFOD</b> and <b class="gd-ui">LFOM</b> are the speed, depth and mix of the track's LFO. They are the same kit values as <b class="gd-ui">SPD</b>, <b class="gd-ui">DEPTH</b> and <b class="gd-ui">SHMIX</b> in the LFO group of the Sound workspace, so the LFO group holds all three. Chapter 7 describes the LFO.</p>
+<p>Click any of the three boxes in the LFO group and press the up or down arrow key. Each one moves its own routing value and no other.</p>
 <p>When you lock <b class="gd-ui">LFOS</b>, <b class="gd-ui">LFOD</b> or <b class="gd-ui">LFOM</b> on a step, the lock also shows on the box of the LFO group.</p>
 </div></section>
 <nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/md/04-track-effects/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">4. Track effects</span></a><a href="/guide/md/06-stereo-master-effects/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">6. Stereo master effects</span></a></nav>

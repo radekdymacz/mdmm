@@ -166,6 +166,11 @@ To play notes from the keyboard:
 
 [FUNCTION] + [PATTERN/SONG] switches POLY mode. In the editor the **Perform** workspace has a **Poly** key in the **Keyboard** card. Poly mode plays the track selected on the machine with [TRACK]; the editor presses that key for the track you select. Chapter 5 describes poly mode.
 
+1. Click **Perform**.
+2. Click the key of track 3 in the title of the **Assign** card, then click **Poly**. The machine's poly mode is on, on track 3.
+3. Click the key of track 5. Poly mode moves to track 5.
+4. Click **Auto track** to switch poly mode off.
+
 To switch between pattern and song:
 
 1. Click **Song**.
@@ -236,7 +241,13 @@ On the machine a second press of [PLAY] pauses. In the editor:
 
 The transport menu has Play or Stop, Pause or Continue, Live record and Panic, each with its key. Right-click the play key to open it, or click the small ▾ in the key's corner.
 
-On the machine a double press of [STOP] rewinds the pattern and silences the notes. In the editor this is **Panic**: press {key:panic}, or choose **Panic** in the transport menu. The editor sends All Notes Off on the channel of each track and stops the machine. The notes fade out with their release.
+On the machine a double press of [STOP] rewinds the pattern and silences the notes. In the editor this is **Panic**.
+
+1. Press the play key. The machine plays.
+2. Click the small ▾ in the corner of the play key. The transport menu opens with **Panic** in it.
+3. Click **Panic**. Every note goes off and the machine stops.
+
+Right-click the play key for the same menu, or press {key:panic}. The editor sends All Notes Off on the channel of each track and stops the machine. The notes fade out with their release.
 
 NOTE: Over a MIDI cable the pause is MIDI Stop and Continue, which the Monomachine takes only with <TRANSPORT> set to ACCEPT (GLOBAL, CONTROL IN). The editor asks to set it the first time.
 

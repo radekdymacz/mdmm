@@ -1,0 +1,2260 @@
+{
+	"machine": "md",
+	"run": {
+		"version": "0.5.1",
+		"date": "2026-10-12",
+		"commit": "",
+		"firmware": ""
+	},
+	"rows": {
+		"MD-001": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-002": {
+			"result": "pass",
+			"shot": "e2e-md-keys-track-select",
+			"journeys": [
+				"md-keys-track-select"
+			]
+		},
+		"MD-003": {
+			"result": "pass",
+			"shot": "e2e-md-seq-lock-lane",
+			"journeys": [
+				"md-seq-lock-lane"
+			]
+		},
+		"MD-004": {
+			"result": "pass",
+			"shot": "md-top-mode-classic",
+			"journeys": [
+				"md-top-mode"
+			]
+		},
+		"MD-005": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-006": {
+			"result": "pass",
+			"shot": "md-pattern-chooser",
+			"journeys": [
+				"md-lib-pattern-chooser"
+			]
+		},
+		"MD-007": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-008": {
+			"result": "pass",
+			"shot": "e2e-md-mix-lev",
+			"journeys": [
+				"md-mix-lev"
+			]
+		},
+		"MD-009": {
+			"result": "pass",
+			"shot": "e2e-md-top-tempo-drag",
+			"journeys": [
+				"md-top-tempo-drag",
+				"md-top-tempo-window",
+				"md-keys-tap-tempo",
+				"md-keys-tap-tempo-b",
+				"md-keys-tap-tempo-shift"
+			]
+		},
+		"MD-010": {
+			"result": "pass",
+			"shot": "e2e-md-sound-shape-undo",
+			"journeys": [
+				"md-sound-shape-undo",
+				"md-sound-type-value",
+				"md-sound-value-keys"
+			]
+		},
+		"MD-011": {
+			"result": "pass",
+			"shot": "md-sound-workspace",
+			"journeys": [
+				"md-sound-track-effects"
+			]
+		},
+		"MD-012": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-013": {
+			"result": "pass",
+			"shot": "e2e-md-seq-live-record",
+			"journeys": [
+				"md-seq-live-record"
+			]
+		},
+		"MD-014": {
+			"result": "pass",
+			"shot": "md-step-grid",
+			"journeys": [
+				"md-seq-first-beat",
+				"md-keys-space-play",
+				"md-top-pause"
+			]
+		},
+		"MD-015": {
+			"result": "pass",
+			"shot": "e2e-md-top-panic",
+			"journeys": [
+				"md-top-panic"
+			]
+		},
+		"MD-016": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-017": {
+			"result": "pass",
+			"shot": "e2e-md-song-mode",
+			"journeys": [
+				"md-song-mode",
+				"md-song-load-play",
+				"md-song-keys",
+				"md-song-playhead"
+			]
+		},
+		"MD-018": {
+			"result": "stub-only",
+			"shot": "md-kit-library",
+			"journeys": [
+				"md-lib-kit-menu"
+			]
+		},
+		"MD-019": {
+			"result": "pass",
+			"shot": "md-step-grid",
+			"journeys": [
+				"md-seq-first-beat",
+				"md-keys-play-notes"
+			]
+		},
+		"MD-020": {
+			"result": "pass",
+			"shot": "e2e-md-seq-pages",
+			"journeys": [
+				"md-seq-pages"
+			]
+		},
+		"MD-021": {
+			"result": "pass",
+			"shot": "md-sequence-workspace",
+			"journeys": [
+				"md-seq-page-leds"
+			]
+		},
+		"MD-022": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-023": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-024": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-025": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-026": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-027": {
+			"result": "pass",
+			"shot": "e2e-md-top-tempo-drag",
+			"journeys": [
+				"md-top-tempo-drag"
+			]
+		},
+		"MD-028": {
+			"result": "pass",
+			"shot": "md-sequence-workspace",
+			"journeys": [
+				"md-seq-page-leds"
+			]
+		},
+		"MD-029": {
+			"result": "pass",
+			"shot": "e2e-md-top-pause",
+			"journeys": [
+				"md-top-pause"
+			]
+		},
+		"MD-030": {
+			"result": "stub-only",
+			"shot": "md-kit-library",
+			"journeys": [
+				"md-lib-kit-menu"
+			]
+		},
+		"MD-031": {
+			"result": "pass",
+			"shot": "md-lcd",
+			"journeys": [
+				"md-sound-focus-info"
+			]
+		},
+		"MD-032": {
+			"result": "pass",
+			"shot": "e2e-md-mix-lev",
+			"journeys": [
+				"md-mix-lev"
+			]
+		},
+		"MD-033": {
+			"result": "pass",
+			"shot": "md-sound-clips",
+			"journeys": [
+				"md-sound-clips"
+			]
+		},
+		"MD-034": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-035": {
+			"result": "pass",
+			"shot": "md-quick-start",
+			"journeys": [
+				"md-quick-start"
+			]
+		},
+		"MD-036": {
+			"result": "pass",
+			"shot": "md-sound-knob-steps",
+			"journeys": [
+				"md-sound-knob-steps"
+			]
+		},
+		"MD-037": {
+			"result": "pass",
+			"shot": "e2e-md-sound-audition",
+			"journeys": [
+				"md-sound-audition"
+			]
+		},
+		"MD-038": {
+			"result": "stub-only",
+			"shot": "md-kit-library",
+			"journeys": [
+				"md-lib-kit-menu"
+			]
+		},
+		"MD-039": {
+			"result": "pass",
+			"shot": "e2e-md-lib-load-save-dialog",
+			"journeys": [
+				"md-lib-load-save-dialog"
+			]
+		},
+		"MD-040": {
+			"result": "stub-only",
+			"shot": "md-kit-library",
+			"journeys": [
+				"md-lib-kit-menu"
+			]
+		},
+		"MD-041": {
+			"result": "pass",
+			"shot": "e2e-md-lib-load-save-dialog",
+			"journeys": [
+				"md-lib-load-save-dialog"
+			]
+		},
+		"MD-042": {
+			"result": "pass",
+			"shot": "e2e-md-lib-kit-rename-undo",
+			"journeys": [
+				"md-lib-kit-rename-undo"
+			]
+		},
+		"MD-043": {
+			"result": "pass",
+			"shot": "e2e-md-lib-undo-kit",
+			"journeys": [
+				"md-lib-undo-kit"
+			]
+		},
+		"MD-044": {
+			"result": "pass",
+			"shot": "e2e-md-lib-kit-copy-paste-undo",
+			"journeys": [
+				"md-lib-kit-copy-paste-undo"
+			]
+		},
+		"MD-045": {
+			"result": "pass",
+			"shot": "e2e-md-lib-kit-clear-undo",
+			"journeys": [
+				"md-lib-kit-clear-undo"
+			]
+		},
+		"MD-046": {
+			"result": "pass",
+			"shot": "e2e-md-lib-kit-copy-paste-undo",
+			"journeys": [
+				"md-lib-kit-copy-paste-undo",
+				"md-lib-kit-clear-undo"
+			]
+		},
+		"MD-047": {
+			"result": "pass",
+			"shot": "e2e-md-sound-machine-pick-undo",
+			"journeys": [
+				"md-sound-machine-pick-undo"
+			]
+		},
+		"MD-048": {
+			"result": "pass",
+			"shot": "e2e-md-sound-keep-clear",
+			"journeys": [
+				"md-sound-keep-clear"
+			]
+		},
+		"MD-049": {
+			"result": "pass",
+			"shot": "md-relations",
+			"journeys": [
+				"md-sound-relations"
+			]
+		},
+		"MD-050": {
+			"result": "pass",
+			"shot": "md-relations",
+			"journeys": [
+				"md-sound-relations"
+			]
+		},
+		"MD-051": {
+			"result": "pass",
+			"shot": "e2e-md-sound-copy-paste",
+			"journeys": [
+				"md-sound-copy-paste"
+			]
+		},
+		"MD-052": {
+			"result": "pass",
+			"shot": "e2e-md-sound-copy-paste",
+			"journeys": [
+				"md-sound-copy-paste"
+			]
+		},
+		"MD-053": {
+			"result": "pass",
+			"shot": "e2e-md-sound-keep-clear",
+			"journeys": [
+				"md-sound-keep-clear"
+			]
+		},
+		"MD-054": {
+			"result": "pass",
+			"shot": "e2e-md-sound-shape-undo",
+			"journeys": [
+				"md-sound-shape-undo",
+				"md-sound-type-value",
+				"md-sound-value-keys",
+				"md-sound-screen-drag"
+			]
+		},
+		"MD-055": {
+			"result": "pass",
+			"shot": "e2e-md-dialog-esc-space-cancel",
+			"journeys": [
+				"md-dialog-esc-space-cancel"
+			]
+		},
+		"MD-056": {
+			"result": "pass",
+			"shot": "md-sound-workspace",
+			"journeys": [
+				"md-sound-track-effects"
+			]
+		},
+		"MD-057": {
+			"result": "pass",
+			"shot": "md-sound-workspace",
+			"journeys": [
+				"md-sound-track-effects"
+			]
+		},
+		"MD-058": {
+			"result": "pass",
+			"shot": "md-sound-workspace",
+			"journeys": [
+				"md-sound-track-effects"
+			]
+		},
+		"MD-059": {
+			"result": "pass",
+			"shot": "md-sound-workspace",
+			"journeys": [
+				"md-sound-track-effects"
+			]
+		},
+		"MD-060": {
+			"result": "pass",
+			"shot": "md-sound-workspace",
+			"journeys": [
+				"md-sound-track-effects"
+			]
+		},
+		"MD-061": {
+			"result": "pass",
+			"shot": "md-sound-workspace",
+			"journeys": [
+				"md-sound-track-effects"
+			]
+		},
+		"MD-062": {
+			"result": "pass",
+			"shot": "md-sound-workspace",
+			"journeys": [
+				"md-sound-track-effects"
+			]
+		},
+		"MD-063": {
+			"result": "pass",
+			"shot": "md-sound-workspace",
+			"journeys": [
+				"md-sound-track-effects"
+			]
+		},
+		"MD-064": {
+			"result": "pass",
+			"shot": "md-sound-workspace",
+			"journeys": [
+				"md-sound-track-effects"
+			]
+		},
+		"MD-065": {
+			"result": "pass",
+			"shot": "md-mix-strip",
+			"journeys": [
+				"md-mix-fader-undo"
+			]
+		},
+		"MD-066": {
+			"result": "pass",
+			"shot": "e2e-md-mix-pan-undo",
+			"journeys": [
+				"md-mix-pan-undo"
+			]
+		},
+		"MD-067": {
+			"result": "pass",
+			"shot": "md-sound-workspace",
+			"journeys": [
+				"md-sound-track-effects"
+			]
+		},
+		"MD-068": {
+			"result": "pass",
+			"shot": "md-sound-workspace",
+			"journeys": [
+				"md-sound-track-effects"
+			]
+		},
+		"MD-069": {
+			"result": "pass",
+			"shot": "md-sound-workspace",
+			"journeys": [
+				"md-sound-track-effects"
+			]
+		},
+		"MD-070": {
+			"result": "pass",
+			"shot": "e2e-md-mix-master-fx",
+			"journeys": [
+				"md-mix-master-fx"
+			]
+		},
+		"MD-071": {
+			"result": "pass",
+			"shot": "md-master-effects",
+			"journeys": [
+				"md-mix-master-cards"
+			]
+		},
+		"MD-072": {
+			"result": "pass",
+			"shot": "md-master-effects",
+			"journeys": [
+				"md-mix-master-cards"
+			]
+		},
+		"MD-073": {
+			"result": "pass",
+			"shot": "md-master-effects",
+			"journeys": [
+				"md-mix-master-cards"
+			]
+		},
+		"MD-074": {
+			"result": "pass",
+			"shot": "md-master-effects",
+			"journeys": [
+				"md-mix-master-cards"
+			]
+		},
+		"MD-075": {
+			"result": "pass",
+			"shot": "e2e-md-sound-ctr-locks",
+			"journeys": [
+				"md-sound-ctr-locks"
+			]
+		},
+		"MD-076": {
+			"result": "pass",
+			"shot": "md-lfo",
+			"journeys": [
+				"md-sound-lfo"
+			]
+		},
+		"MD-077": {
+			"result": "pass",
+			"shot": "md-lfo",
+			"journeys": [
+				"md-sound-lfo"
+			]
+		},
+		"MD-078": {
+			"result": "pass",
+			"shot": "md-lfo",
+			"journeys": [
+				"md-sound-lfo"
+			]
+		},
+		"MD-079": {
+			"result": "pass",
+			"shot": "md-lfo",
+			"journeys": [
+				"md-sound-lfo"
+			]
+		},
+		"MD-080": {
+			"result": "pass",
+			"shot": "md-lfo",
+			"journeys": [
+				"md-sound-lfo"
+			]
+		},
+		"MD-081": {
+			"result": "pass",
+			"shot": "md-lfo",
+			"journeys": [
+				"md-sound-lfo"
+			]
+		},
+		"MD-082": {
+			"result": "pass",
+			"shot": "md-lfo",
+			"journeys": [
+				"md-sound-lfo"
+			]
+		},
+		"MD-083": {
+			"result": "pass",
+			"shot": "md-lfo",
+			"journeys": [
+				"md-sound-lfo"
+			]
+		},
+		"MD-084": {
+			"result": "pass",
+			"shot": "md-lfo",
+			"journeys": [
+				"md-sound-lfo"
+			]
+		},
+		"MD-085": {
+			"result": "pass",
+			"shot": "md-lfo",
+			"journeys": [
+				"md-sound-lfo"
+			]
+		},
+		"MD-086": {
+			"result": "pass",
+			"shot": "md-lfo-menu",
+			"journeys": [
+				"md-sound-lfo-menu"
+			]
+		},
+		"MD-087": {
+			"result": "pass",
+			"shot": "md-top-mode-classic",
+			"journeys": [
+				"md-top-mode"
+			]
+		},
+		"MD-088": {
+			"result": "pass",
+			"shot": "md-top-mode-classic",
+			"journeys": [
+				"md-top-mode"
+			]
+		},
+		"MD-089": {
+			"result": "pass",
+			"shot": "md-top-tempo-steps",
+			"journeys": [
+				"md-top-tempo-steps"
+			]
+		},
+		"MD-090": {
+			"result": "pass",
+			"shot": "e2e-md-top-tempo-release",
+			"journeys": [
+				"md-top-tempo-release"
+			]
+		},
+		"MD-091": {
+			"result": "pass",
+			"shot": "e2e-md-top-tempo-window",
+			"journeys": [
+				"md-top-tempo-window"
+			]
+		},
+		"MD-092": {
+			"result": "pass",
+			"shot": "e2e-md-keys-tap-tempo",
+			"journeys": [
+				"md-keys-tap-tempo",
+				"md-keys-tap-tempo-b",
+				"md-keys-tap-tempo-shift"
+			]
+		},
+		"MD-093": {
+			"result": "pass",
+			"shot": "md-global-panel",
+			"journeys": [
+				"md-global-settings"
+			]
+		},
+		"MD-094": {
+			"result": "pass",
+			"shot": "e2e-md-top-pattern-next",
+			"journeys": [
+				"md-top-pattern-next",
+				"md-seq-queue-while-playing",
+				"md-lib-pattern-go",
+				"md-lib-syx-import-mute"
+			]
+		},
+		"MD-095": {
+			"result": "pass",
+			"shot": "md-pattern-chooser",
+			"journeys": [
+				"md-lib-pattern-chooser"
+			]
+		},
+		"MD-096": {
+			"result": "pass",
+			"shot": "e2e-md-seq-queue-while-playing",
+			"journeys": [
+				"md-seq-queue-while-playing"
+			]
+		},
+		"MD-097": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-098": {
+			"result": "pass",
+			"shot": "e2e-md-song-chain",
+			"journeys": [
+				"md-song-chain"
+			]
+		},
+		"MD-099": {
+			"result": "pass",
+			"shot": "e2e-md-top-stop-queued",
+			"journeys": [
+				"md-top-stop-queued"
+			]
+		},
+		"MD-100": {
+			"result": "pass",
+			"shot": "e2e-md-sound-control-all",
+			"journeys": [
+				"md-sound-control-all"
+			]
+		},
+		"MD-101": {
+			"result": "pass",
+			"shot": "e2e-md-sound-filter-sweep",
+			"journeys": [
+				"md-sound-filter-sweep"
+			]
+		},
+		"MD-102": {
+			"result": "pass",
+			"shot": "md-kit-reload",
+			"journeys": [
+				"md-lib-kit-memory"
+			]
+		},
+		"MD-103": {
+			"result": "pass",
+			"shot": "md-seq-scale",
+			"journeys": [
+				"md-seq-scale"
+			]
+		},
+		"MD-104": {
+			"result": "pass",
+			"shot": "md-seq-scale",
+			"journeys": [
+				"md-seq-scale"
+			]
+		},
+		"MD-105": {
+			"result": "pass",
+			"shot": "md-seq-scale",
+			"journeys": [
+				"md-seq-scale"
+			]
+		},
+		"MD-106": {
+			"result": "stub-only",
+			"shot": "e2e-md-seq-len-repeats-fail",
+			"journeys": [
+				"md-seq-len-repeats"
+			]
+		},
+		"MD-107": {
+			"result": "pass",
+			"shot": "md-step-grid",
+			"journeys": [
+				"md-seq-first-beat",
+				"md-top-undo-redo",
+				"md-seq-paint-undo"
+			]
+		},
+		"MD-108": {
+			"result": "pass",
+			"shot": "e2e-md-seq-pages",
+			"journeys": [
+				"md-seq-pages"
+			]
+		},
+		"MD-109": {
+			"result": "pass",
+			"shot": "md-kit-reload",
+			"journeys": [
+				"md-lib-kit-memory"
+			]
+		},
+		"MD-110": {
+			"result": "pass",
+			"shot": "e2e-md-seq-rotate",
+			"journeys": [
+				"md-seq-rotate",
+				"md-seq-rotate-undo"
+			]
+		},
+		"MD-111": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-112": {
+			"result": "pass",
+			"shot": "e2e-md-seq-live-record",
+			"journeys": [
+				"md-seq-live-record"
+			]
+		},
+		"MD-113": {
+			"result": "stub-only",
+			"shot": "e2e-md-seq-live-erase-fail",
+			"journeys": [
+				"md-seq-live-erase"
+			]
+		},
+		"MD-114": {
+			"result": "pass",
+			"shot": "e2e-md-seq-select-copy-paste",
+			"journeys": [
+				"md-seq-select-copy-paste",
+				"md-seq-step-menu",
+				"md-seq-os-copy-paste",
+				"md-seq-copy-paste-buttons"
+			]
+		},
+		"MD-115": {
+			"result": "pass",
+			"shot": "md-lock-lane",
+			"journeys": [
+				"md-seq-clear-locks"
+			]
+		},
+		"MD-116": {
+			"result": "stub-only",
+			"shot": "e2e-md-seq-copy-paste-clear",
+			"journeys": [
+				"md-seq-copy-paste-clear",
+				"md-seq-copy-what"
+			]
+		},
+		"MD-117": {
+			"result": "stub-only",
+			"shot": "e2e-md-seq-copy-paste-clear",
+			"journeys": [
+				"md-seq-copy-paste-clear",
+				"md-seq-clear-what"
+			]
+		},
+		"MD-118": {
+			"result": "pass",
+			"shot": "e2e-md-seq-copy-paste-clear",
+			"journeys": [
+				"md-seq-copy-paste-clear",
+				"md-seq-paste-many"
+			]
+		},
+		"MD-119": {
+			"result": "pass",
+			"shot": "e2e-md-seq-clear-page",
+			"journeys": [
+				"md-seq-clear-page"
+			]
+		},
+		"MD-120": {
+			"result": "pass",
+			"shot": "md-pattern-chooser",
+			"journeys": [
+				"md-lib-pattern-chooser"
+			]
+		},
+		"MD-121": {
+			"result": "pass",
+			"shot": "e2e-md-seq-clear-pattern-undo",
+			"journeys": [
+				"md-seq-clear-pattern-undo",
+				"md-lib-pattern-clear-undo"
+			]
+		},
+		"MD-122": {
+			"result": "pass",
+			"shot": "e2e-md-keys-mute",
+			"journeys": [
+				"md-keys-mute",
+				"md-mix-mute-solo",
+				"md-mix-ms-off",
+				"md-lib-syx-import-mute"
+			]
+		},
+		"MD-123": {
+			"result": "pass",
+			"shot": "e2e-md-mix-shift-mutes",
+			"journeys": [
+				"md-mix-shift-mutes"
+			]
+		},
+		"MD-124": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-125": {
+			"result": "pass",
+			"shot": "e2e-md-keys-mutes-persist",
+			"journeys": [
+				"md-keys-mutes-persist"
+			]
+		},
+		"MD-126": {
+			"result": "pass",
+			"shot": "md-seq-swing-accent",
+			"journeys": [
+				"md-seq-swing-accent"
+			]
+		},
+		"MD-127": {
+			"result": "pass",
+			"shot": "md-accent",
+			"journeys": [
+				"md-seq-accent-slide",
+				"md-seq-step-menu"
+			]
+		},
+		"MD-128": {
+			"result": "stub-only",
+			"shot": "e2e-md-seq-trig-types-fail",
+			"journeys": [
+				"md-seq-trig-types"
+			]
+		},
+		"MD-129": {
+			"result": "stub-only",
+			"shot": "e2e-md-seq-copy-what-fail",
+			"journeys": [
+				"md-seq-copy-what",
+				"md-seq-clear-what"
+			]
+		},
+		"MD-130": {
+			"result": "pass",
+			"shot": "md-seq-swing-accent",
+			"journeys": [
+				"md-seq-swing-accent"
+			]
+		},
+		"MD-131": {
+			"result": "stub-only",
+			"shot": "e2e-md-seq-trig-types-fail",
+			"journeys": [
+				"md-seq-trig-types"
+			]
+		},
+		"MD-132": {
+			"result": "stub-only",
+			"shot": "e2e-md-seq-trig-types-fail",
+			"journeys": [
+				"md-seq-trig-types"
+			]
+		},
+		"MD-133": {
+			"result": "stub-only",
+			"shot": "e2e-md-seq-swing-copy-fail",
+			"journeys": [
+				"md-seq-swing-copy"
+			]
+		},
+		"MD-134": {
+			"result": "pass",
+			"shot": "e2e-md-seq-lock-lane",
+			"journeys": [
+				"md-seq-lock-lane",
+				"md-seq-lock-ramp-erase-wheel"
+			]
+		},
+		"MD-135": {
+			"result": "pass",
+			"shot": "e2e-md-seq-lock-lane",
+			"journeys": [
+				"md-seq-lock-lane"
+			]
+		},
+		"MD-136": {
+			"result": "pass",
+			"shot": "e2e-md-seq-lock-lane",
+			"journeys": [
+				"md-seq-lock-lane",
+				"md-seq-lock-ramp-erase-wheel"
+			]
+		},
+		"MD-137": {
+			"result": "stub-only",
+			"shot": "e2e-md-seq-lock-budget-fail",
+			"journeys": [
+				"md-seq-lock-budget"
+			]
+		},
+		"MD-138": {
+			"result": "pass",
+			"shot": "md-top-mode-classic",
+			"journeys": [
+				"md-top-mode"
+			]
+		},
+		"MD-139": {
+			"result": "pass",
+			"shot": "md-live-recording",
+			"journeys": [
+				"md-seq-live-lock"
+			]
+		},
+		"MD-140": {
+			"result": "pass",
+			"shot": "e2e-md-seq-live-unlock",
+			"journeys": [
+				"md-seq-live-unlock"
+			]
+		},
+		"MD-141": {
+			"result": "stub-only",
+			"shot": "md-accent",
+			"journeys": [
+				"md-seq-accent-slide",
+				"md-seq-trig-types"
+			]
+		},
+		"MD-142": {
+			"result": "stub-only",
+			"shot": "e2e-md-seq-copy-what-fail",
+			"journeys": [
+				"md-seq-copy-what"
+			]
+		},
+		"MD-143": {
+			"result": "pass",
+			"shot": "md-song-workspace",
+			"journeys": [
+				"md-song-commands"
+			]
+		},
+		"MD-144": {
+			"result": "pass",
+			"shot": "e2e-md-song-load-play",
+			"journeys": [
+				"md-song-load-play",
+				"md-song-slots"
+			]
+		},
+		"MD-145": {
+			"result": "pass",
+			"shot": "md-song-what-plays",
+			"journeys": [
+				"md-song-playhead",
+				"md-song-play-from"
+			]
+		},
+		"MD-146": {
+			"result": "pass",
+			"shot": "md-song-what-plays",
+			"journeys": [
+				"md-song-play-from"
+			]
+		},
+		"MD-147": {
+			"result": "pass",
+			"shot": "e2e-md-song-playhead",
+			"journeys": [
+				"md-song-playhead",
+				"md-song-repeats-left"
+			]
+		},
+		"MD-148": {
+			"result": "pass",
+			"shot": "e2e-md-top-pause",
+			"journeys": [
+				"md-top-pause"
+			]
+		},
+		"MD-149": {
+			"result": "pass",
+			"shot": "md-song-loop",
+			"journeys": [
+				"md-song-row-inspector"
+			]
+		},
+		"MD-150": {
+			"result": "pass",
+			"shot": "e2e-md-song-arrange-rows",
+			"journeys": [
+				"md-song-arrange-rows",
+				"md-song-drag-drop"
+			]
+		},
+		"MD-151": {
+			"result": "pass",
+			"shot": "e2e-md-song-arrange-rows",
+			"journeys": [
+				"md-song-arrange-rows"
+			]
+		},
+		"MD-152": {
+			"result": "pass",
+			"shot": "md-song-workspace",
+			"journeys": [
+				"md-song-commands"
+			]
+		},
+		"MD-153": {
+			"result": "pass",
+			"shot": "md-song-workspace",
+			"journeys": [
+				"md-song-commands"
+			]
+		},
+		"MD-154": {
+			"result": "pass",
+			"shot": "md-song-loop",
+			"journeys": [
+				"md-song-row-inspector"
+			]
+		},
+		"MD-155": {
+			"result": "pass",
+			"shot": "md-song-workspace",
+			"journeys": [
+				"md-song-commands"
+			]
+		},
+		"MD-156": {
+			"result": "pass",
+			"shot": "md-song-workspace",
+			"journeys": [
+				"md-song-commands"
+			]
+		},
+		"MD-157": {
+			"result": "pass",
+			"shot": "md-song-loop",
+			"journeys": [
+				"md-song-row-inspector"
+			]
+		},
+		"MD-158": {
+			"result": "pass",
+			"shot": "e2e-md-song-slots",
+			"journeys": [
+				"md-song-slots"
+			]
+		},
+		"MD-159": {
+			"result": "pass",
+			"shot": "e2e-md-song-slots",
+			"journeys": [
+				"md-song-slots"
+			]
+		},
+		"MD-160": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-161": {
+			"result": "pass",
+			"shot": "md-song-workspace",
+			"journeys": [
+				"md-song-commands"
+			]
+		},
+		"MD-162": {
+			"result": "pass",
+			"shot": "e2e-md-global-page",
+			"journeys": [
+				"md-global-page",
+				"md-global-copy-paste"
+			]
+		},
+		"MD-163": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-164": {
+			"result": "pass",
+			"shot": "e2e-md-global-reset",
+			"journeys": [
+				"md-global-reset",
+				"md-sound-note-light"
+			]
+		},
+		"MD-165": {
+			"result": "pass",
+			"shot": "md-map-editor",
+			"journeys": [
+				"md-sound-note-light",
+				"md-global-map-track"
+			]
+		},
+		"MD-166": {
+			"result": "pass",
+			"shot": "e2e-md-global-map-note",
+			"journeys": [
+				"md-global-map-note"
+			]
+		},
+		"MD-167": {
+			"result": "pass",
+			"shot": "e2e-md-global-map-note",
+			"journeys": [
+				"md-global-map-note"
+			]
+		},
+		"MD-168": {
+			"result": "pass",
+			"shot": "e2e-md-global-channel-trig-slot",
+			"journeys": [
+				"md-global-channel-trig-slot"
+			]
+		},
+		"MD-169": {
+			"result": "pass",
+			"shot": "e2e-md-global-learn",
+			"journeys": [
+				"md-global-learn"
+			]
+		},
+		"MD-170": {
+			"result": "pass",
+			"shot": "md-global-panel",
+			"journeys": [
+				"md-global-settings"
+			]
+		},
+		"MD-171": {
+			"result": "pass",
+			"shot": "md-global-panel",
+			"journeys": [
+				"md-global-settings"
+			]
+		},
+		"MD-172": {
+			"result": "pass",
+			"shot": "e2e-md-global-channel-trig-slot",
+			"journeys": [
+				"md-global-channel-trig-slot"
+			]
+		},
+		"MD-173": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-174": {
+			"result": "pass",
+			"shot": "e2e-md-mix-out-route",
+			"journeys": [
+				"md-mix-out-route",
+				"md-global-routing"
+			]
+		},
+		"MD-175": {
+			"result": "pass",
+			"shot": "e2e-md-global-trig-in",
+			"journeys": [
+				"md-global-trig-in"
+			]
+		},
+		"MD-176": {
+			"result": "stub-only",
+			"shot": "",
+			"journeys": [
+				"md-lib-syx-export-kinds"
+			]
+		},
+		"MD-177": {
+			"result": "stub-only",
+			"shot": "",
+			"journeys": [
+				"md-lib-syx-export-kinds"
+			]
+		},
+		"MD-178": {
+			"result": "stub-only",
+			"shot": "",
+			"journeys": [
+				"md-lib-syx-export-kinds"
+			]
+		},
+		"MD-179": {
+			"result": "stub-only",
+			"shot": "",
+			"journeys": [
+				"md-lib-syx-export-kinds"
+			]
+		},
+		"MD-180": {
+			"result": "stub-only",
+			"shot": "",
+			"journeys": [
+				"md-lib-syx-export-kinds"
+			]
+		},
+		"MD-181": {
+			"result": "pass",
+			"shot": "e2e-md-lib-syx-import",
+			"journeys": [
+				"md-lib-syx-import",
+				"md-lib-syx-import-mute",
+				"md-drop-syx"
+			]
+		},
+		"MD-182": {
+			"result": "stub-only",
+			"shot": "",
+			"journeys": [
+				"md-lib-syx-original"
+			]
+		},
+		"MD-183": {
+			"result": "stub-only",
+			"shot": "e2e-md-lib-syx-place-fail",
+			"journeys": [
+				"md-lib-syx-place"
+			]
+		},
+		"MD-184": {
+			"result": "stub-only",
+			"shot": "e2e-md-lib-syx-verify",
+			"journeys": [
+				"md-lib-syx-verify",
+				"md-lib-syx-place"
+			]
+		},
+		"MD-185": {
+			"result": "pass",
+			"shot": "md-global-panel",
+			"journeys": [
+				"md-global-settings"
+			]
+		},
+		"MD-186": {
+			"result": "pass",
+			"shot": "md-global-panel",
+			"journeys": [
+				"md-global-settings"
+			]
+		},
+		"MD-187": {
+			"result": "pass",
+			"shot": "e2e-md-global-tempo-out",
+			"journeys": [
+				"md-global-tempo-out",
+				"md-global-reset"
+			]
+		},
+		"MD-188": {
+			"result": "pass",
+			"shot": "md-global-panel",
+			"journeys": [
+				"md-global-settings"
+			]
+		},
+		"MD-189": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-190": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-191": {
+			"result": "pass",
+			"shot": "e2e-md-drop-sample",
+			"journeys": [
+				"md-drop-sample"
+			]
+		},
+		"MD-192": {
+			"result": "missing",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-193": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-194": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-195": {
+			"result": "pass",
+			"shot": "e2e-md-sampler-audition",
+			"journeys": [
+				"md-sampler-audition"
+			]
+		},
+		"MD-196": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-197": {
+			"result": "stub-only",
+			"shot": "e2e-md-sampler-rename-fail",
+			"journeys": [
+				"md-sampler-rename"
+			]
+		},
+		"MD-198": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-199": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-200": {
+			"result": "missing",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-201": {
+			"result": "pass",
+			"shot": "md-sampler-workspace",
+			"journeys": [
+				"md-sampler-slots"
+			]
+		},
+		"MD-202": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-203": {
+			"result": "pass",
+			"shot": "e2e-md-engine-reset-empty",
+			"journeys": [
+				"md-engine-reset-empty"
+			]
+		},
+		"MD-204": {
+			"result": "pass",
+			"shot": "e2e-md-engine-reset-factory",
+			"journeys": [
+				"md-engine-reset-factory"
+			]
+		},
+		"MD-205": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-206": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-207": {
+			"result": "pass",
+			"shot": "e2e-md-limits",
+			"journeys": [
+				"md-limits"
+			]
+		},
+		"MD-208": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-209": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-210": {
+			"result": "pass",
+			"shot": "e2e-md-top-plate",
+			"journeys": [
+				"md-top-plate"
+			]
+		},
+		"MD-211": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-212": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-213": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-214": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-215": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-216": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-217": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-218": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-219": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-220": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-221": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-222": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-223": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-224": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-225": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-226": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-227": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-228": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-229": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-230": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-231": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-232": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-233": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-234": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-235": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-236": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-237": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-238": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-239": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-240": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-241": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-242": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-243": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-244": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-245": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-246": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-247": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-248": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-249": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-250": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-251": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-252": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-253": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-254": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-255": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-256": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-257": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-258": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-259": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-260": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-261": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-262": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-263": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-264": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-265": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-266": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-267": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-268": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-269": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-270": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-271": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-272": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-273": {
+			"result": "pass",
+			"shot": "e2e-md-sampler-setup-undo",
+			"journeys": [
+				"md-sampler-setup-undo"
+			]
+		},
+		"MD-274": {
+			"result": "pass",
+			"shot": "md-sound-groups",
+			"journeys": [
+				"md-sound-machine-reference"
+			]
+		},
+		"MD-275": {
+			"result": "pass",
+			"shot": "md-sampler-ram",
+			"journeys": [
+				"md-sampler-setup-undo",
+				"md-sampler-ram-view",
+				"md-sampler-setup-chop"
+			]
+		},
+		"MD-276": {
+			"result": "pass",
+			"shot": "md-map-editor",
+			"journeys": [
+				"md-global-map-track"
+			]
+		},
+		"MD-277": {
+			"result": "pass",
+			"shot": "e2e-md-sound-cc-channels",
+			"journeys": [
+				"md-sound-cc-channels"
+			]
+		},
+		"MD-278": {
+			"result": "pass",
+			"shot": "e2e-md-mix-lev",
+			"journeys": [
+				"md-mix-lev"
+			]
+		},
+		"MD-279": {
+			"result": "pass",
+			"shot": "e2e-md-lib-kit-copy-paste-undo",
+			"journeys": [
+				"md-lib-kit-copy-paste-undo"
+			]
+		},
+		"MD-280": {
+			"result": "pass",
+			"shot": "e2e-md-lib-kit-name-save",
+			"journeys": [
+				"md-lib-kit-name-save"
+			]
+		},
+		"MD-281": {
+			"result": "pass",
+			"shot": "md-global-panel",
+			"journeys": [
+				"md-global-settings"
+			]
+		},
+		"MD-282": {
+			"result": "pass",
+			"shot": "e2e-md-global-channel-trig-slot",
+			"journeys": [
+				"md-global-channel-trig-slot"
+			]
+		},
+		"MD-283": {
+			"result": "pass",
+			"shot": "e2e-md-lib-load-save-dialog",
+			"journeys": [
+				"md-lib-load-save-dialog",
+				"md-lib-pattern-go",
+				"md-lib-kit-name-save"
+			]
+		},
+		"MD-284": {
+			"result": "pass",
+			"shot": "md-map-editor",
+			"journeys": [
+				"md-global-map-track"
+			]
+		},
+		"MD-285": {
+			"result": "pass",
+			"shot": "e2e-md-sound-machine-pick-undo",
+			"journeys": [
+				"md-sound-machine-pick-undo"
+			]
+		},
+		"MD-286": {
+			"result": "pass",
+			"shot": "e2e-md-mix-out-route",
+			"journeys": [
+				"md-mix-out-route"
+			]
+		},
+		"MD-287": {
+			"result": "pass",
+			"shot": "md-master-effects",
+			"journeys": [
+				"md-mix-master-cards"
+			]
+		},
+		"MD-288": {
+			"result": "pass",
+			"shot": "md-lfo",
+			"journeys": [
+				"md-top-tempo-drag",
+				"md-sound-lfo"
+			]
+		},
+		"MD-289": {
+			"result": "pass",
+			"shot": "e2e-md-global-learn",
+			"journeys": [
+				"md-global-learn"
+			]
+		},
+		"MD-290": {
+			"result": "pass",
+			"shot": "md-relations",
+			"journeys": [
+				"md-sound-relations"
+			]
+		},
+		"MD-291": {
+			"result": "pass",
+			"shot": "md-pattern-chooser",
+			"journeys": [
+				"md-lib-pattern-chooser"
+			]
+		},
+		"MD-292": {
+			"result": "pass",
+			"shot": "e2e-md-song-slots",
+			"journeys": [
+				"md-song-slots"
+			]
+		},
+		"MD-293": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-294": {
+			"result": "pass",
+			"shot": "e2e-md-song-slots",
+			"journeys": [
+				"md-song-slots"
+			]
+		},
+		"MD-295": {
+			"result": "pass",
+			"shot": "md-song-workspace",
+			"journeys": [
+				"md-song-commands",
+				"md-top-play-mode"
+			]
+		},
+		"MD-296": {
+			"result": "n/a",
+			"shot": "",
+			"journeys": []
+		},
+		"MD-X01": {
+			"result": "pass",
+			"shot": "e2e-md-engine-memory",
+			"journeys": [
+				"md-engine-memory"
+			]
+		},
+		"MD-X02": {
+			"result": "pass",
+			"shot": "md-real-song-playing",
+			"journeys": [
+				"md-real-factory-songs",
+				"md-real-factory-songs"
+			]
+		},
+		"MD-X03": {
+			"result": "pass",
+			"shot": "md-real-pattern-playing",
+			"journeys": [
+				"md-real-factory-patterns",
+				"md-real-factory-patterns"
+			]
+		},
+		"MD-X04": {
+			"result": "stub-only",
+			"shot": "e2e-md-gen-keys-r",
+			"journeys": [
+				"md-gen-keys-r",
+				"md-gen-mutate-undo",
+				"md-gen-defaults-mutate-undo"
+			]
+		},
+		"MD-X05": {
+			"result": "pass",
+			"shot": "e2e-md-gen-mutate-scope",
+			"journeys": [
+				"md-gen-mutate-scope",
+				"md-gen-mutate-undo"
+			]
+		},
+		"MD-X06": {
+			"result": "pass",
+			"shot": "e2e-md-mix-mute-solo",
+			"journeys": [
+				"md-mix-mute-solo"
+			]
+		},
+		"MD-X07": {
+			"result": "pass",
+			"shot": "e2e-md-top-undo-redo",
+			"journeys": [
+				"md-top-undo-redo",
+				"md-lib-undo-kit"
+			]
+		},
+		"MD-X08": {
+			"result": "pass",
+			"shot": "e2e-md-sound-type-value",
+			"journeys": [
+				"md-sound-type-value",
+				"md-sound-value-keys"
+			]
+		},
+		"MD-X09": {
+			"result": "pass",
+			"shot": "e2e-md-seq-step-menu",
+			"journeys": [
+				"md-seq-step-menu",
+				"md-seq-fill-every"
+			]
+		},
+		"MD-X10": {
+			"result": "pass",
+			"shot": "e2e-md-seq-select-copy-paste",
+			"journeys": [
+				"md-seq-select-copy-paste",
+				"md-seq-os-copy-paste",
+				"md-seq-copy-paste-buttons",
+				"md-seq-paste-many"
+			]
+		},
+		"MD-X11": {
+			"result": "stub-only",
+			"shot": "e2e-md-seq-copy-what-fail",
+			"journeys": [
+				"md-seq-copy-what",
+				"md-seq-clear-what"
+			]
+		},
+		"MD-X12": {
+			"result": "pass",
+			"shot": "e2e-md-drop-syx",
+			"journeys": [
+				"md-drop-syx",
+				"md-drop-sample"
+			]
+		},
+		"MD-X13": {
+			"result": "stub-only",
+			"shot": "e2e-md-lib-syx-import",
+			"journeys": [
+				"md-lib-syx-import",
+				"md-lib-syx-export-kinds",
+				"md-lib-syx-verify",
+				"md-lib-syx-place",
+				"md-lib-syx-original"
+			]
+		},
+		"MD-X14": {
+			"result": "pass",
+			"shot": "e2e-md-sound-note-light",
+			"journeys": [
+				"md-sound-note-light"
+			]
+		},
+		"MD-X15": {
+			"result": "pass",
+			"shot": "e2e-md-top-cpu-meter",
+			"journeys": [
+				"md-top-cpu-meter",
+				"md-dev-speedups"
+			]
+		},
+		"MD-X16": {
+			"result": "pass",
+			"shot": "e2e-md-lcd-volume",
+			"journeys": [
+				"md-lcd-volume"
+			]
+		},
+		"MD-X17": {
+			"result": "pass",
+			"shot": "e2e-md-top-editor-menu",
+			"journeys": [
+				"md-top-editor-menu"
+			]
+		},
+		"MD-X18": {
+			"result": "pass",
+			"shot": "e2e-md-keys-help",
+			"journeys": [
+				"md-keys-help"
+			]
+		},
+		"MD-X19": {
+			"result": "pass",
+			"shot": "e2e-md-keys-play-notes",
+			"journeys": [
+				"md-keys-play-notes"
+			]
+		},
+		"MD-X20": {
+			"result": "pass",
+			"shot": "e2e-md-keys-tap-tempo",
+			"journeys": [
+				"md-keys-tap-tempo",
+				"md-keys-tap-tempo-b",
+				"md-keys-tap-tempo-shift"
+			]
+		},
+		"MD-X21": {
+			"result": "pass",
+			"shot": "md-pattern-chooser",
+			"journeys": [
+				"md-seq-queue-while-playing",
+				"md-lib-pattern-go",
+				"md-lib-pattern-chooser"
+			]
+		},
+		"MD-X22": {
+			"result": "pass",
+			"shot": "e2e-md-lib-kit-copy-paste-undo",
+			"journeys": [
+				"md-lib-kit-copy-paste-undo",
+				"md-lib-kit-rename-undo",
+				"md-lib-kit-clear-undo",
+				"md-song-slots"
+			]
+		},
+		"MD-X24": {
+			"result": "pass",
+			"shot": "md-real-sequence-drawn",
+			"journeys": [
+				"md-real-sequence-plays"
+			]
+		}
+	}
+}

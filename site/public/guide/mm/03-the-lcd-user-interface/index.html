@@ -56,16 +56,16 @@
 <li><a href="/guide/mm/18-routing/">18. Routing</a></li>
 <li><a href="/guide/mm/19-global-settings/">19. Global settings</a></li>
 <li><a href="/guide/mm/20-early-startup-menu-technical-information/">20. Early startup menu, technical information</a></li>
-<li><span class="gd-side-todo">21. Appendix A: machine reference <span class="gd-vh">(to come)</span></span></li>
-<li><span class="gd-side-todo">22. Appendix B: MIDI control reference <span class="gd-vh">(to come)</span></span></li>
-<li><span class="gd-side-todo">23. Appendix C: SysEx reference <span class="gd-vh">(to come)</span></span></li>
+<li><a href="/guide/mm/21-appendix-a-machine-reference/">21. Appendix A: machine reference</a></li>
+<li><a href="/guide/mm/22-appendix-b-midi-control-reference/">22. Appendix B: MIDI control reference</a></li>
+<li><a href="/guide/mm/23-appendix-c-sysex-reference/">23. Appendix C: SysEx reference</a></li>
 <li><a href="/guide/mm/24-beyond-the-hardware/">24. Beyond the hardware</a></li></ol>
 <ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
 </nav>
 <article class="gd-article">
 <header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">3</span><span class="gd-ctitle">The LCD user interface</span></h1><p class="gd-cmeta">MM manual p.1-10</p></header>
 <div class="gd-intro gd-prose"><p>The machine's screen shows the tempo, a level bar, eight parameter circles, four position boxes, the kit and the pattern. The editor's LCD is a strip in the top bar. It shows the same state: the fields that matter all the time stay in view, and the parameters of the screen live in the workspaces.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The LCD in the top bar"><span>Screenshot to come</span></div><figcaption>The LCD in the top bar</figcaption></figure>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/mm-lcd.webp" aria-label="Open the picture full size: The LCD in the top bar"><img src="/guide/shots/mm-lcd.webp" width="1440" height="923" alt="The LCD in the top bar" loading="lazy"></a><figcaption>The LCD in the top bar</figcaption></figure>
 <p>The LCD has two lines. The first line, from the left: the engine menu, the record and play keys, <b class="gd-light">&lt;TEMPO&gt;</b>, <b class="gd-light">&lt;POSITION&gt;</b>, <b class="gd-light">&lt;PATTERN&gt;</b>, <b class="gd-light">&lt;KIT&gt;</b> and <b class="gd-light">&lt;LOCKS&gt;</b>. The second line changes with the workspace. At its right end it has the sync field, then the keys <b class="gd-light">&lt;COPY&gt;</b>, <b class="gd-light">&lt;CLR&gt;</b> and <b class="gd-light">&lt;PASTE&gt;</b>.</p></div>
 <section class="gd-sec" id="lcd" aria-labelledby="lcd-h">
 <div class="gd-body gd-prose"><h2 id="lcd-h">LCD <a class="gd-anchor" href="#lcd" aria-label="Link to LCD">#</a></h2>
@@ -74,16 +74,18 @@
 <p><b class="gd-light">&lt;TEMPO&gt;</b> shows the tempo in beats per minute, with one decimal. Drag it up or down to change it. When the host sets the tempo, the field is marked as the DAW's tempo and refuses edits. This is the editor's counterpart of the EXT the machine shows when it follows an external clock.</p>
 <h4 class="gd-h3" id="level-and-parameters">Level and parameters</h4>
 <p>The machine's level bar is the <b class="gd-ui">LEVEL</b> fader of the <b class="gd-ui">Mix</b> workspace. The eight parameter circles with their names are the value boxes of the <b class="gd-ui">Sound</b> workspace. Each box has the parameter's name and its value.</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">Mix</b> and drag the <b class="gd-ui">LEVEL</b> fader of track 1. The level follows.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd>. The level is back.</li><li>Click <b class="gd-ui">M</b> on track 1 to mute it, and click <b class="gd-ui">M</b> again to unmute it.</li></ol>
 <h4 class="gd-h3" id="position">Position</h4>
-<p><b class="gd-light">&lt;POSITION&gt;</b> shows the playback position as bar and step, for example 02.05. It reads --.-- when the machine is stopped. In the <b class="gd-ui">Sequence</b> workspace, four lights beside the <b class="gd-ui">Page</b> key show which pages the pattern has and the page shown, and a playhead runs across the steps.</p>
+<p><b class="gd-light">&lt;POSITION&gt;</b> shows the playback position as bar and step, for example 02.05. It reads --.-- when the machine is stopped. While the machine plays it counts the page and the step in it, and the same page is lit in the track rail. In the <b class="gd-ui">Sequence</b> workspace, four lights beside the <b class="gd-ui">Page</b> key show which pages the pattern has and the page shown, and a playhead runs across the steps.</p>
 <h4 class="gd-h3" id="status">Status</h4>
 <p>The record key and the play key light while the machine records and plays. The play key reads a triangle when stopped and a square when playing. While the machine is paused the play key blinks and <b class="gd-light">&lt;POSITION&gt;</b> keeps the step the pause holds.</p>
 <h4 class="gd-h3" id="kit">Kit</h4>
 <p><b class="gd-light">&lt;KIT&gt;</b> shows the number and the name of the current kit, for example K01 MONOMACHINE. Beside the label a small field reads saved or edited. It reads edited when the values of the kit differ from the kit saved in its slot on the machine. Click the field to open the kit library.</p>
 <h4 class="gd-h3" id="pattern">Pattern</h4>
-<p><b class="gd-light">&lt;PATTERN&gt;</b> shows the current pattern, A01 to H16. The <b class="gd-ui">‹</b> and <b class="gd-ui">›</b> keys beside it step to the pattern before or after. Click the name to open the pattern chooser. A pattern that waits for the end of the current one blinks.</p>
+<p><b class="gd-light">&lt;PATTERN&gt;</b> shows the current pattern, A01 to H16. The <b class="gd-ui">‹</b> and <b class="gd-ui">›</b> keys beside it step to the pattern before or after. Click <b class="gd-ui">›</b> to step to the next pattern and <b class="gd-ui">‹</b> to step back. Click the name to open the pattern chooser. A pattern that waits for the end of the current one blinks.</p>
 <h4 class="gd-h3" id="machine">Machine</h4>
-<p>The machine of the selected track is named in its row of the track rail and in the header of the <b class="gd-ui">Sound</b> workspace. The header is also the machine picker: click it to change the machine.</p>
+<p>The machine of the selected track is named in its row of the track rail and in the header of the <b class="gd-ui">Sound</b> workspace. The header is also the machine picker: click it to change the machine. Pick each of the six tracks in turn and the rail and the header name the machine of the track you picked.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-mm-lcd-boxes.webp" aria-label="Open the picture full size: The LCD in the top bar while the machine plays"><img src="/guide/shots/e2e-mm-lcd-boxes.webp" width="1440" height="923" alt="The LCD in the top bar while the machine plays" loading="lazy"></a><figcaption>The LCD in the top bar while the machine plays</figcaption></figure>
 <h4 class="gd-h3" id="locks">Locks</h4>
 <p><b class="gd-light">&lt;LOCKS&gt;</b> counts the locked parameters in the pattern, out of 62. The Monomachine shares those 62 between all twelve tracks. The field warns when you near the limit.</p>
 <h4 class="gd-h3" id="sync">Sync</h4>

@@ -22,6 +22,13 @@ To clear the active slot, click **Clear**. The editor asks first. The slot then 
 
 Undo takes back a paste or a clear, as any other edit.
 
+![The GLOBAL page with its eight slot keys](shot:e2e-mm-global-slot)
+
+To clear a slot:
+
+1. Click **Clear**. The editor asks.
+2. Click **Clear** in the question. The slot holds the factory global again, and the page shows it.
+
 ## TURBO MENU
 <!-- rows: MM-286 @4ae36d -->
 

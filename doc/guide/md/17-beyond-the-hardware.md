@@ -43,12 +43,42 @@ The file is machine-memory.bin in the memory folder of the editor's data folder:
 ## FACTORY SONGS PLAY
 <!-- rows: MD-X02 @8aa428 -->
 
-The songs of factory memory are in the editor, and they play. Load one in the **Song** workspace, then press {key:play-stop} in song mode. The arrangement follows what the machine plays. See "LOAD SONG" in chapter 9.
+The songs of factory memory are in the editor, and they play. The arrangement follows what the machine plays. See "LOAD SONG" in chapter 9.
+
+1. Click the **Song** tab.
+2. Click a slot that holds a song, such as UW DEMO, and click **Load**.
+3. Click **SONG** over the pattern palette. The machine is in song mode.
+4. Press {key:play-stop}. The step moves, and the song goes on from row to row. The output is not silent.
+5. Press {key:play-stop} again. The song stops.
 
 ## FACTORY PATTERNS PLAY
 <!-- rows: MD-X03 @fb73fc -->
 
-The patterns of factory memory are in the editor, and they play. Click the pattern on the LCD, choose one in the chooser, and press {key:play-stop}. See "PATTERN CHOOSER AND QUEUE" below.
+The patterns of factory memory are in the editor, and they play. See "PATTERN QUEUE AND CHOOSER" below.
+
+1. Click the pattern on the LCD. The chooser opens.
+2. Click a pattern that holds trigs. The kit of the pattern loads with it.
+3. Press {key:play-stop}. The step moves through the pattern and the output is not silent.
+4. Press {key:play-stop} again, and choose another pattern the same way.
+
+## WHAT YOU DRAW PLAYS
+<!-- rows: MD-X24 @b7b866 -->
+
+What you draw in the grid is what the machine plays. Four trigs drawn in an empty pattern sound when you press play, a cleared pattern plays silence, and an undo brings the trigs back.
+
+![Four trigs drawn on track 1 of an empty pattern](shot:md-real-sequence-drawn)
+
+1. Click the **Sequence** tab.
+2. Click the pattern on the LCD and choose a pattern with no trigs.
+3. Pick a track on the rail.
+4. Click four steps on that track. Each becomes a trig.
+5. Press {key:play-stop}. The position moves through the pattern and the track sounds.
+6. Press [⌥] [DELETE]. The pattern is cleared.
+
+![The same pattern after the clear](shot:md-real-sequence-cleared)
+
+7. Press {key:play-stop} again. The position moves and nothing sounds.
+8. Press [⌘] [Z] once. The four trigs are back, and they play again.
 
 ## GEN ROLLS A RHYTHM
 <!-- rows: MD-X04 @ea987e -->
@@ -59,6 +89,16 @@ The machine has no such function: you set every hit by hand. The **GEN** bar on 
 <!-- rows: MD-X05 @d98851 -->
 
 The machine has no such function. **MUTATE** in the **GEN** bar nudges the sound of the tracks at random. The scope chips choose what moves, and the amount says how far. A mutation is one undo step.
+
+![MUTATE on the Sound workspace with only the effects chip lit](shot:e2e-md-gen-mutate-scope)
+
+1. Click the **Sound** tab and pick a track on the rail.
+2. In **MUTATE**, switch the **FX** chip on and the **SYN** chip off. Only the effects move.
+3. Raise the amount by one step.
+4. Click **Random**. The effect values of the track change and the synth values stay.
+5. Press [⌘] [Z]. The sound is as it was.
+
+To mutate and roll together, pick a drum track on the **Sequence** workspace and click **Random** in the **GEN** bar until the rhythm changes. Then click the **Sound** tab and **Random** in **MUTATE**. Click **UNDO** once: the sound is back. Click it again: the rhythm is back.
 
 ## SOLO
 <!-- rows: MD-X06 @3a9a39 -->
@@ -121,6 +161,19 @@ Right-click a step for its menu: accent or slide, copy, paste and fill.
 
 Select steps with the mouse, then copy, paste and clear them, on one track or on several. [⌘] click a step to select it, [⌘] drag to select a block. Use **Copy**, **Paste** and **Clr** in the top bar, or {key:copy} and {key:paste} on the keyboard. See "NOTE COPY" in chapter 8.
 
+1. Click the **Sequence** tab and pick a track on the rail.
+2. [⌘] click a step with a trig. It is selected.
+3. Press {key:copy}, or click **Copy** in the top bar.
+4. [⌘] click an empty step of the same track.
+5. Press {key:paste}, or click **Paste**. The trig lands on the selected step.
+6. [⌘] drag from step 1 of a track to step 4 of the next. The block is selected.
+7. Press {key:duplicate}. The block appears again on steps 5 to 8.
+8. Click **Clr**. The selected block is cleared and nothing else.
+9. Press [ESC]. The selection goes.
+10. Press {key:undo} three times. Both tracks are as they were.
+
+To paste into several tracks, copy a track and click the headers of two other tracks with [⇧] held. Press {key:paste}: both tracks get the steps, and one {key:undo} takes both back.
+
 ## COPY, PASTE AND CLEAR WHAT
 <!-- rows: MD-X11 @e33e53 -->
 
@@ -130,6 +183,19 @@ A copy, a paste or a clear can take only part of what a step holds. The **what**
 <!-- rows: MD-X12 @1ce61e -->
 
 Drop a SysEx file on the editor to open it in the import preview. On the Machinedrum you can drop a WAV or AIFF sample on the **Sampler** too. Drag and drop works on macOS only. See "GENERAL SYSEX RECEIVE" in chapter 10 and "SPECIFIC PLACE SAMPLE RECEIVE" in chapter 11.
+
+To open a SysEx file:
+
+1. Drag the .syx file onto the editor window. The **Import SysEx** panel opens with the preview of the file.
+2. Click **Cancel**. The panel closes and nothing is sent.
+
+To load a sample:
+
+1. Click the **Sampler** tab.
+2. Click an empty ROM slot.
+3. Drag the WAV file onto the waveform of the slot. The editor sends it, and the slot holds the sample.
+
+![A sample dropped on ROM slot 33](shot:e2e-md-drop-sample)
 
 ## SYSEX IMPORT WITH A PREVIEW
 <!-- rows: MD-X13 @1ada43 -->
@@ -154,6 +220,13 @@ The notes that play each track are set in "MAP EDITOR" in chapter 10.
 <!-- rows: MD-X15 @ca9b71 -->
 
 The machine has no such function. A meter after the version in the top bar shows how much of the audio time the emulation takes. Click the meter for its details: the average, the worst block, the machine's speed and the speed-ups. The speed-ups are switched in the Developer menu.
+
+1. Look at the meter after the version in the top bar. It reads a share of the audio time.
+2. Press {key:play-stop}. While the machine plays, the meter moves.
+3. Click the meter. Its details open under it: the average, the worst block, the machine's speed, the rate and block size, and the speed-ups.
+4. The details follow the meter while they are open. Press [ESC] to close them.
+5. Open **Developer** and choose **Speed-ups**. The tick turns, and the machine runs with the speed-ups off. Choose it again to turn them on.
+6. In the details of the meter, **Speed-ups (each)…** lists every lever. Switch one off and on again.
 
 ## THE OUTPUT METER AND VOLUME
 <!-- rows: MD-X16 @5888f9 -->

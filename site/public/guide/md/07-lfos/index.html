@@ -49,9 +49,9 @@
 <li><a href="/guide/md/11-sample-manager-uw-only/">11. Sample manager, UW only</a></li>
 <li><a href="/guide/md/12-early-start-up-menu/">12. Early start-up menu</a></li>
 <li><a href="/guide/md/13-technical-information-mki-vs-mkii/">13. Technical information, MKI vs MKII</a></li>
-<li><span class="gd-side-todo">14. Appendix A: machine reference <span class="gd-vh">(to come)</span></span></li>
-<li><span class="gd-side-todo">15. Appendix B: MIDI control reference <span class="gd-vh">(to come)</span></span></li>
-<li><span class="gd-side-todo">16. Appendix C: sysex reference <span class="gd-vh">(to come)</span></span></li>
+<li><a href="/guide/md/14-appendix-a-machine-reference/">14. Appendix A: machine reference</a></li>
+<li><a href="/guide/md/15-appendix-b-midi-control-reference/">15. Appendix B: MIDI control reference</a></li>
+<li><a href="/guide/md/16-appendix-c-sysex-reference/">16. Appendix C: sysex reference</a></li>
 <li><a href="/guide/md/17-beyond-the-hardware/">17. Beyond the hardware</a></li></ol>
 <ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
 </nav>
@@ -59,7 +59,7 @@
 <header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">7</span><span class="gd-ctitle">LFOs</span></h1><p class="gd-cmeta">MD manual pp.32-34</p></header>
 <div class="gd-intro gd-prose"><p>Each kit has 16 LFOs, one for each track. An LFO moves one parameter of one track, up and down, in time with the tempo. By default an LFO moves a parameter of its own track.</p>
 <p>On the Sound workspace the LFO of the selected track fills the last row. Select another track in the rail to edit its LFO. The row holds three groups: <b class="gd-ui">LFO shape</b>, <b class="gd-ui">LFO motion</b> and <b class="gd-ui">LFO target</b>. The title of the first reads LFO and the track number, for example LFO 3 shape.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The LFO row"><span>Screenshot to come</span></div><figcaption>The LFO row</figcaption></figure></div>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/md-lfo.webp" aria-label="Open the picture full size: The LFO row"><img src="/guide/shots/md-lfo.webp" width="1440" height="923" alt="The LFO row" loading="lazy"></a><figcaption>The LFO row</figcaption></figure></div>
 <section class="gd-sec" id="lfo-edit" aria-labelledby="lfo-edit-h">
 <div class="gd-body gd-prose"><h2 id="lfo-edit-h">LFO EDIT <a class="gd-anchor" href="#lfo-edit" aria-label="Link to LFO EDIT">#</a></h2>
 <p class="gd-ref">MD manual p.32</p>
@@ -68,6 +68,7 @@
 <p>The group <b class="gd-ui">LFO target</b> has two menus.</p>
 <ol class="gd-steps"><li>Open the first menu and choose the track the LFO moves. Entries read T1 and the track's sound.</li><li>Open the second menu and choose the parameter. It lists the synthesis, effects and routing parameters of that track.</li></ol>
 <p>To move another LFO, choose that LFO's track and then <b class="gd-ui">LFOS</b>, <b class="gd-ui">LFOD</b> or <b class="gd-ui">LFOM</b>. These are its speed, depth and mix. The machine applies its own rule for which LFO may move which.</p>
+<p>An LFO can move a parameter of another LFO, its own included: choose <b class="gd-ui">LFOS</b> of the same track as the target, and the LFO changes its own speed.</p>
 <p>When you choose another track, the parameter stays if the new track has it. If not, the first parameter of the new track is chosen.</p>
 </div></section>
 <section class="gd-sec" id="shp1-and-shp2" aria-labelledby="shp1-and-shp2-h">
@@ -75,19 +76,19 @@
 <p class="gd-ref">MD manual p.32</p>
 <p>The group <b class="gd-ui">LFO shape</b> has two rows of shape keys. <b class="gd-ui">SHP1</b> and <b class="gd-ui">SHP2</b> each choose one of six shapes: triangle, saw, square, linear decay, exponential decay and random.</p>
 <p><b class="gd-ui">SHP2</b> shows the same six shapes inverted.</p>
-<p>Click a key to choose a shape. The screen shows one cycle of the LFO. The solid line is the mix of the two shapes. The faint lines are the shapes themselves.</p>
+<p>Click a key to choose a shape. Try each of the six keys of <b class="gd-ui">SHP1</b> and each of <b class="gd-ui">SHP2</b>: the kit follows each click. The screen shows one cycle of the LFO. The solid line is the mix of the two shapes. The faint lines are the shapes themselves.</p>
 </div></section>
 <section class="gd-sec" id="updte" aria-labelledby="updte-h">
 <div class="gd-body gd-prose"><h2 id="updte-h">UPDTE <a class="gd-anchor" href="#updte" aria-label="Link to UPDTE">#</a></h2>
 <p class="gd-ref">MD manual p.32</p>
 <p>The group <b class="gd-ui">LFO motion</b> has the <b class="gd-ui">UPDTE</b> keys.</p>
 <ul class="gd-list"><li><b class="gd-ui">FREE</b>: the LFO runs on and never restarts.</li><li><b class="gd-ui">TRIG</b>: the LFO restarts on every trig of its track.</li><li><b class="gd-ui">HOLD</b>: the LFO holds the value it has when the track is trigged, until the next trig.</li></ul>
-<p>An LFO restarts only when its own track is trigged.</p>
+<p>An LFO restarts only when its own track is trigged. Click a key to choose the mode.</p>
 </div></section>
 <section class="gd-sec" id="speed" aria-labelledby="speed-h">
 <div class="gd-body gd-prose"><h2 id="speed-h">SPEED <a class="gd-anchor" href="#speed" aria-label="Link to SPEED">#</a></h2>
 <p class="gd-ref">MD manual p.32</p>
-<p><b class="gd-ui">SPD</b> is the speed of the LFO, in 1/128 notes of the tempo. Drag the <b class="gd-ui">SPD</b> box, or the dot on the screen of <b class="gd-ui">LFO motion</b> sideways.</p>
+<p><b class="gd-ui">SPD</b> is the speed of the LFO, in 1/128 notes of the tempo. Drag the <b class="gd-ui">SPD</b> box, or the dot on the screen of <b class="gd-ui">LFO motion</b> sideways. With the box focused, the up and down arrow keys move it one step at a time.</p>
 <p>The screen shows the LFO across one bar of the track. The ticks mark the restarts of <b class="gd-ui">TRIG</b>.</p>
 </div></section>
 <section class="gd-sec" id="depth" aria-labelledby="depth-h">
@@ -105,7 +106,7 @@
 <div class="gd-body gd-prose"><h2 id="layering-lfos-h">LAYERING LFOS <a class="gd-anchor" href="#layering-lfos" aria-label="Link to LAYERING LFOS">#</a></h2>
 <p class="gd-ref">MD manual p.34</p>
 <p>If the LFOs of two tracks have the same target, their outputs add. You can build slow and fast movements on one parameter this way.</p>
-<ol class="gd-steps"><li>Select the first track and set its LFO target.</li><li>Select a second track and choose the same track and parameter as its LFO target.</li></ol>
+<ol class="gd-steps"><li>Select the first track and set its LFO target.</li><li>Select a second track and choose the same track and parameter as its LFO target.</li><li>Both LFOs keep their settings, and their outputs add.</li></ol>
 <p>An LFO can also move several parameters of a machine at once, one parameter for each track's LFO.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The screens draw each LFO on its own. The editor does not draw the sum of two LFOs on one target.</p></aside>
 </div></section>
@@ -114,7 +115,8 @@
 <p class="gd-ref">MD manual p.34</p>
 <p>The LFO is part of the track's sound. Copy and paste on the Sound workspace take the machine, its values, its level and its LFO together: see &quot;Copy machine&quot; in chapter 3. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take an edit back.</p>
 <p>To copy, paste or clear the LFO alone:</p>
-<ol class="gd-steps"><li>On the <b class="gd-ui">Sound</b> workspace, select the track.</li><li>Click <b class="gd-ui">⋯</b> at the right of the LFO card's title. A menu opens.</li><li>Choose <b class="gd-ui">Copy LFO</b>. The shapes, the target, <b class="gd-light">&lt;UPDTE&gt;</b>, <b class="gd-light">&lt;SPD&gt;</b>, <b class="gd-light">&lt;DEPTH&gt;</b> and <b class="gd-light">&lt;SHMIX&gt;</b> are copied.</li><li>Select another track, click <b class="gd-ui">⋯</b> and choose <b class="gd-ui">Paste LFO</b>. The LFO of that track becomes the copy.</li><li>Choose <b class="gd-ui">Clear LFO</b> to set an LFO back to its start: no shapes, the first parameter of its own track, <b class="gd-light">&lt;FREE&gt;</b>, <b class="gd-light">&lt;SPD&gt;</b> 64, <b class="gd-light">&lt;DEPTH&gt;</b> and <b class="gd-light">&lt;SHMIX&gt;</b> 0.</li></ol>
+<ol class="gd-steps"><li>On the <b class="gd-ui">Sound</b> workspace, select the track.</li><li>Click <b class="gd-ui">⋯</b> at the right of the LFO card's title. A menu opens.</li><li>Choose <b class="gd-ui">Copy LFO</b>. The shapes, the target, <b class="gd-light">&lt;UPDTE&gt;</b>, <b class="gd-light">&lt;SPD&gt;</b>, <b class="gd-light">&lt;DEPTH&gt;</b> and <b class="gd-light">&lt;SHMIX&gt;</b> are copied.</li><li>Select another track, click <b class="gd-ui">⋯</b> and choose <b class="gd-ui">Paste LFO</b>. The LFO of that track becomes the copy.</li><li>Choose <b class="gd-ui">Clear LFO</b> to set an LFO back to its start: no shapes, the first parameter of its own track, <b class="gd-light">&lt;FREE&gt;</b>, <b class="gd-light">&lt;SPD&gt;</b> 64, <b class="gd-light">&lt;DEPTH&gt;</b> and <b class="gd-light">&lt;SHMIX&gt;</b> 0.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> twice. The clear goes, then the paste, and the LFO is as it was before.</li></ol>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/md-lfo-menu.webp" aria-label="Open the picture full size: The LFO menu"><img src="/guide/shots/md-lfo-menu.webp" width="1440" height="923" alt="The LFO menu" loading="lazy"></a><figcaption>The LFO menu</figcaption></figure>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>An LFO that moved a parameter of its own track moves the same parameter of the track it is pasted on. An LFO that moved another track keeps that target.</p></aside>
 <p>The LFO is also a part of <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> and <b class="gd-ui">Clear…</b> in the LCD's <b class="gd-ui">▾</b> menu: see &quot;Track copy&quot; in chapter 8.</p>
 <p>LFO settings are stored in the kit. Save the kit to keep them.</p>
