@@ -658,6 +658,15 @@ namespace md
 		return m_pendingFlashOverlay.valid ? m_pendingPatchRam : m_uc.copyPatchRam();
 	}
 
+	void Hardware::copyPatchRamTo(std::vector<uint8_t>& _out) const
+	{
+		std::lock_guard lock(m_factoryFlashMutex);
+		if(m_pendingFlashOverlay.valid)
+			_out.assign(m_pendingPatchRam.begin(), m_pendingPatchRam.end());
+		else
+			m_uc.copyPatchRamTo(_out);
+	}
+
 	void Hardware::advanceFactoryFlashCapture()
 	{
 		if(m_model != MachineModel::Machinedrum

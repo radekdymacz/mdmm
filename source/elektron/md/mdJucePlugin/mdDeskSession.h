@@ -77,6 +77,9 @@ namespace mdJucePlugin
 	// output's left and right peaks since the last one, after the output gain, whether any output clipped, and the gain
 	// in dB (null: off). As often as cpuLoad.
 	elektronData::json::Value outputLevelOf(AudioPluginAudioProcessor& _processor);
+	// I-024: {"type":"machineMemory", keep, available, saved, note} for the engine menu's KEEP MEMORY and START FROM
+	// FACTORY MEMORY (doc/modern-ux/DESIGN-machine-memory.md)
+	elektronData::json::Value machineMemoryOf(AudioPluginAudioProcessor& _processor);
 	// I-021: the page's volume (outputGain {db}): the processor's output gain (mdOutputLevel.h's range)
 	void setOutputGainDb(AudioPluginAudioProcessor& _processor, double _db);
 	constexpr double g_outputLevelMs = 250;
@@ -338,6 +341,17 @@ namespace mdJucePlugin
 				setOutputGainDb(processor(), _message.find("db")->asNumber());
 				reply(_message, true, "");
 				break;
+			case Action::MemoryKeep:
+				processor().setKeepMachineMemory(_message.find("on")->asBool());
+				reply(_message, true, "");
+				break;
+			case Action::MemoryFactory:
+			{
+				std::string note;
+				const bool ok = processor().startFromFactoryMemory(note);
+				reply(_message, ok, note);
+				break;
+			}
 			case Action::LearnStart:
 			case Action::LearnAdd:
 			case Action::LearnSetCc:
@@ -398,6 +412,12 @@ namespace mdJucePlugin
 				if(m_desk->pageSeen())
 					toPage(midiInOf(*note));
 			}
+			// I-024: the machine memory's state (KEEP MEMORY, a file saved, what went wrong) when it changed
+			if(m_desk->pageSeen() && processor().machineMemoryVersion() != m_memorySeen)
+			{
+				m_memorySeen = processor().machineMemoryVersion();
+				toPage(machineMemoryOf(processor()));
+			}
 			// I-021: the LCD's output meter and volume (no lock: one atomic swap, mdOutputLevel.h)
 			if(m_desk->pageSeen() && due(t, g_outputLevelMs))
 				toPage(outputLevelOf(processor()));
@@ -443,7 +463,7 @@ namespace mdJucePlugin
 			p.toPage = [this](const Value& _m) { toPage(_m); };
 			p.saveSetup = [this](const Value& _setup) { m_setup.save(_setup); };
 			// After the page's ready the plug-in publishes its own document too, and the host's tempo again.
-			p.ready = [this] { m_learn.publish(); m_hostTempo = {}; };
+			p.ready = [this] { m_learn.publish(); m_hostTempo = {}; m_memorySeen = 0; };
 			return p;
 		}
 
@@ -591,6 +611,7 @@ namespace mdJucePlugin
 		const bool m_followHost;
 		bool m_followReady = false;
 		HostTempo m_hostTempo;
+		uint32_t m_memorySeen = 0;	// the machine memory status last published (0: publish again)
 		SyxJob<SyxTraits<DeskT>> m_syx;
 	};
 

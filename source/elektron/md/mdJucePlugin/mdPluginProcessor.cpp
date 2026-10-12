@@ -18,6 +18,7 @@
 #include "mdProcessArch.h"
 #include "mdSettingsMigration.h"
 #include "mdStorageImage.h"
+#include "mdMachineMemory.h"
 
 // ReSharper disable once CppUnusedIncludeDirective
 #include "BinaryData.h"
@@ -27,11 +28,13 @@
 #include "mdLib/mddevice.h"
 #include "mdLib/mdromloader.h"
 #include "mdLib/mdstate.h"
+#include "mdLib/mdmemorymap.h"
 #include "mdLib/mdpanel.h"
 
 #include "synthLib/deviceException.h"
 
 #include "baseLib/binarystream.h"
+#include "baseLib/filesystem.h"
 
 #include "juce_audio_utils/juce_audio_utils.h"
 #include "juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h"
@@ -151,6 +154,40 @@ namespace
 
 namespace mdJucePlugin
 {
+	// The watch's state, behind m_memoryMutex: the policy, the machine it watches (its hardware epoch: a restore or a
+	// restart is a new machine, with a new base), the cost measured.
+	struct AudioPluginAudioProcessor::MemoryWatchState
+	{
+		machineMemory::Watch watch;
+		std::optional<uint64_t> epoch;		// the machine the base is of
+		std::optional<uint64_t> settling;	// a new machine's first signature: the base once a look sees it again
+		uint32_t settleLooks = 0;
+		MachineMemoryCost cost;
+		std::vector<uint8_t> patch, userFlash;	// the look's copies
+	};
+
+	// The "machine memory" thread: one look a second (lookAtMachineMemory), never on the audio thread.
+	class MachineMemoryThread final : public juce::Thread
+	{
+	public:
+		explicit MachineMemoryThread(AudioPluginAudioProcessor& _processor)
+			: juce::Thread("machine memory"), m_processor(_processor) {}
+
+		void run() override
+		{
+			while(!threadShouldExit())
+			{
+				m_processor.lookAtMachineMemory();
+				wait(m_ms.load(std::memory_order_relaxed));
+			}
+		}
+
+		std::atomic<int> m_ms{1000};
+
+	private:
+		AudioPluginAudioProcessor& m_processor;
+	};
+
 	void AudioPluginAudioProcessor::getStateInformation(juce::MemoryBlock& _dest)
 	{
 		if(!m_desk->heldState(_dest)) Processor::getStateInformation(_dest);	// no ROM: the project as it was (mdDeskHost.h)
@@ -158,6 +195,8 @@ namespace mdJucePlugin
 
 	void AudioPluginAudioProcessor::setStateInformation(const void* _data, const int _size)
 	{
+		if(_size > 0)
+			m_projectStateSeen = true;	// I-024: the project's memory wins over the machine memory file
 		if(!m_desk->holdState(_data, _size)) Processor::setStateInformation(_data, _size);
 	}
 
@@ -415,13 +454,13 @@ namespace mdJucePlugin
 	AudioPluginAudioProcessor::AudioPluginAudioProcessor(const md::MachineModel _model,
 		EphemeralConfig _config) :
 		AudioPluginAudioProcessor(_model, std::vector<uint8_t>{}, true,
-			std::move(_config.deviceHomePath))
+			std::move(_config.deviceHomePath), std::move(_config.machineMemoryFolder))
 	{
 	}
 
 	AudioPluginAudioProcessor::AudioPluginAudioProcessor(const md::MachineModel _model,
 		std::vector<uint8_t> _initialPatchRam, const bool _ephemeralConfig,
-		std::optional<std::string> _deviceHomePath) :
+		std::optional<std::string> _deviceHomePath, std::optional<std::string> _memoryFolder) :
 		Processor(createBusesProperties(),
 			prepareConfig(_model, _ephemeralConfig), makeProcessorProperties(_model),
 			_ephemeralConfig
@@ -479,6 +518,14 @@ namespace mdJucePlugin
 		startTimer(250);	// B-035: the start-up log's line every second, in the plug-in too (recordBoot)
 		m_desk = std::make_unique<DeskHost>(*this);
 		m_desk->startSession();
+		// I-024: the machine memory's folder: the test's, or the data folder's for a plug-in or the standalone (a
+		// processor that no plug-in wrapper made, a test's, keeps none: it never reads or writes the person's memory)
+		if(_memoryFolder)
+			m_memoryFolder = *_memoryFolder;
+		else if(!_ephemeralConfig && wrapperType != wrapperType_Undefined)
+			m_memoryFolder = baseLib::filesystem::validatePath(getDataFolder()) + machineMemory::g_folder + "/";
+		m_memoryKeep.store(getConfig().getBoolValue(machineMemory::g_keepKey, true), std::memory_order_release);
+		startMachineMemoryThread();
 		m_performanceReport = std::make_unique<synthLib::PerformanceReport>(
 			getPlugin().getRealtimeInstrumentation(), panelEventDetails);
 		// The environment switch is also useful in hosts without an open editor.
@@ -502,6 +549,7 @@ namespace mdJucePlugin
 	AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
 	{
 		stopTimer();
+		stopMachineMemoryThread();	// and writes a save it has not written yet
 		m_performanceReport.reset();
 		// The editor is a view over the session and keeps a pointer to it (PageEditor detaches on
 		// destruction): the view goes first, then the desk host and its session.
@@ -798,6 +846,14 @@ namespace mdJucePlugin
 		if(error.empty() || generation == m_reportedRestoreFailureGeneration)
 			return false;
 		m_reportedRestoreFailureGeneration = generation;
+		// I-024: the machine refused the machine memory file's payload (the Machinedrum's ROM changed, a bad state
+		// in a good frame): the machine stays on factory memory, the file is moved aside, the notice says why
+		if(m_memoryRestoreGeneration != 0 && generation == m_memoryRestoreGeneration)
+		{
+			m_memoryRestoreGeneration = 0;
+			machineMemoryUnusable("The machine could not use it: " + error);
+			return true;
+		}
 		reportProjectStateRestoreFailure(error);
 		return true;
 	}
@@ -980,6 +1036,15 @@ namespace mdJucePlugin
 			recordBoot();
 		}
 		recordStandaloneStartupDiagnostics();
+		serviceMachineMemoryStart();
+		// I-024: a write that failed (the thread's) is said once, on the message thread
+		if(m_memoryWriteFailed.exchange(false))
+		{
+			const auto note = machineMemoryStatus().note;
+			const genericUI::messageRoute::OwnerScope owner(static_cast<const void*>(this));
+			genericUI::MessageBox::showOk(genericUI::MessageBox::Icon::Warning,
+				std::string(productName(m_model)) + " machine memory", note + " Your saves stay in this session; the editor tries again at the next save.");
+		}
 		if(serviceProjectStateRestore())
 			return;
 		(void)serviceFactoryInitialization();
@@ -1134,6 +1199,375 @@ namespace mdJucePlugin
 			const auto* const device = dynamic_cast<const md::Device*>(_device);
 			return device && device->supportsRamRecordingMode();
 		});
+	}
+
+	// ===== I-024: machine memory (doc/modern-ux/DESIGN-machine-memory.md, mdMachineMemory.h) =====
+
+	juce::File AudioPluginAudioProcessor::machineMemoryFile() const
+	{
+		if(m_memoryFolder.empty())
+			return {};
+		return juce::File(juce::String::fromUTF8(m_memoryFolder.c_str())).getChildFile(machineMemory::g_fileName);
+	}
+
+	void AudioPluginAudioProcessor::startMachineMemoryThread()
+	{
+		m_memoryWatch = std::make_unique<MemoryWatchState>();
+		if(m_memoryFolder.empty())
+			return;
+		m_memoryThread = std::make_unique<MachineMemoryThread>(*this);
+		m_memoryThread->m_ms = m_memoryLookMs.load();
+		m_memoryThread->startThread(juce::Thread::Priority::low);
+	}
+
+	void AudioPluginAudioProcessor::stopMachineMemoryThread()
+	{
+		if(!m_memoryThread)
+			return;
+		m_memoryThread->signalThreadShouldExit();
+		m_memoryThread->notify();
+		m_memoryThread->stopThread(10000);
+		m_memoryThread.reset();
+		// a save seen and not yet written (the debounce's second look had not come): written now
+		uint64_t epoch = 0;
+		bool pending = false;
+		{
+			const std::lock_guard lock(m_memoryMutex);
+			pending = m_memoryWatch && m_memoryWatch->watch.pending() && m_memoryWatch->epoch && keepMachineMemory();
+			if(pending)
+				epoch = *m_memoryWatch->epoch;
+		}
+		if(pending)
+		{
+			const std::lock_guard lock(m_memoryMutex);
+			(void)writeMachineMemory(epoch);
+		}
+	}
+
+	void AudioPluginAudioProcessor::setMachineMemoryLookMs(const int _ms)
+	{
+		m_memoryLookMs = std::max(10, _ms);
+		if(m_memoryThread)
+		{
+			m_memoryThread->m_ms = m_memoryLookMs.load();
+			m_memoryThread->notify();
+		}
+	}
+
+	bool AudioPluginAudioProcessor::machineDeviceReady()
+	{
+		return getPlugin().withDeviceLocked([](synthLib::Device* const _device)
+		{
+			const auto* const device = dynamic_cast<const md::Device*>(_device);
+			return device != nullptr && device->isValid();
+		});
+	}
+
+	void AudioPluginAudioProcessor::setMachineMemoryNote(std::string _note)
+	{
+		{
+			const std::lock_guard lock(m_memoryMutex);
+			m_memoryNote = std::move(_note);
+		}
+		m_memoryVersion.fetch_add(1, std::memory_order_acq_rel);
+	}
+
+	AudioPluginAudioProcessor::MachineMemoryStatus AudioPluginAudioProcessor::machineMemoryStatus() const
+	{
+		MachineMemoryStatus s;
+		s.keep = keepMachineMemory();
+		s.available = !m_memoryFolder.empty();
+		const std::lock_guard lock(m_memoryMutex);
+		s.saved = s.available && machineMemoryFile().existsAsFile();
+		s.note = m_memoryNote;
+		return s;
+	}
+
+	AudioPluginAudioProcessor::MachineMemoryCost AudioPluginAudioProcessor::machineMemoryCost() const
+	{
+		const std::lock_guard lock(m_memoryMutex);
+		return m_memoryWatch ? m_memoryWatch->cost : MachineMemoryCost{};
+	}
+
+	void AudioPluginAudioProcessor::setKeepMachineMemory(const bool _keep)
+	{
+		getConfig().setValue(machineMemory::g_keepKey, _keep);
+		getConfig().saveIfNeeded();
+		{
+			const std::lock_guard lock(m_memoryMutex);
+			m_memoryKeep.store(_keep, std::memory_order_release);
+			// on again: the memory of that moment is the base (nothing is written for turning it on)
+			if(m_memoryWatch)
+			{
+				m_memoryWatch->watch.reset();
+				m_memoryWatch->epoch.reset();
+				m_memoryWatch->settling.reset();
+			}
+		}
+		m_memoryVersion.fetch_add(1, std::memory_order_acq_rel);
+	}
+
+	// A file that cannot be used: moved aside (one kept), the session goes on with factory memory, the notice says why.
+	void AudioPluginAudioProcessor::machineMemoryUnusable(const std::string& _why)
+	{
+		std::string text = _why + " The machine starts from factory memory; your next save writes a new memory file.";
+		{
+			const std::lock_guard lock(m_memoryMutex);
+			const auto file = machineMemoryFile();
+			if(file.existsAsFile())
+			{
+				const auto aside = file.getSiblingFile(machineMemory::g_unusableName);
+				aside.deleteFile();
+				if(file.moveFileTo(aside))
+					text += " The old file was kept as " + aside.getFullPathName().toStdString() + ".";
+			}
+		}
+		setMachineMemoryNote(text);
+		std::fprintf(stderr, "[MD] machine memory: %s\n", text.c_str());
+		const genericUI::messageRoute::OwnerScope owner(static_cast<const void*>(this));	// this instance's window shows it
+		genericUI::MessageBox::showOk(genericUI::MessageBox::Icon::Warning,	// the page shows it (messageRoute.h)
+			std::string(productName(m_model)) + " machine memory", text);
+	}
+
+	// At the start of a session (the timer, message thread): a project state wins; else the file, once the machine has
+	// its ROM. The file's payload is restored the way a project's is (synthLib::Plugin::setState).
+	void AudioPluginAudioProcessor::serviceMachineMemoryStart()
+	{
+		if(m_memoryStartDone)
+			return;
+		const auto start = machineMemory::startOf(m_projectStateSeen, machineDeviceReady(), keepMachineMemory(),
+			!m_memoryFolder.empty());
+		if(start == machineMemory::Start::Wait)
+			return;
+		m_memoryStartDone = true;
+		if(start != machineMemory::Start::File)
+			return;
+		const auto file = machineMemoryFile();
+		if(!file.existsAsFile())
+			return;
+		juce::MemoryBlock raw;
+		if(!file.loadFileAsData(raw))
+		{
+			machineMemoryUnusable("The saved machine memory could not be read (" + file.getFullPathName().toStdString() + ").");
+			return;
+		}
+		const auto* bytes = static_cast<const uint8_t*>(raw.getData());
+		const auto decoded = machineMemory::decode(std::vector<uint8_t>(bytes, bytes + raw.getSize()), m_model);
+		if(decoded.problem != machineMemory::Problem::None)
+		{
+			machineMemoryUnusable(machineMemory::describe(decoded.problem));
+			return;
+		}
+		bool restored = false;
+		{
+			const std::lock_guard lock(m_memoryMutex);	// no write while the machine changes to it
+			restored = getPlugin().setState(decoded.payload);
+			m_memoryRestoreGeneration = getPlugin().withDeviceLocked([](synthLib::Device* const _device)
+			{
+				const auto* const device = dynamic_cast<const md::Device*>(_device);
+				return device ? device->deferredStateGeneration() : uint64_t{0};
+			});
+		}
+		std::fprintf(stderr, "[MD] machine memory: started from %s (%zu bytes)%s\n", file.getFullPathName().toRawUTF8(),
+			decoded.payload.size(), restored ? "" : ", refused");
+		// a refusal is reported by serviceStateRestoreFailure (its generation is the file's)
+		if(hasController())
+			getController().onStateLoaded();
+		updateHostDisplay(juce::AudioProcessorListener::ChangeDetails().withNonParameterStateChanged(true));
+		m_memoryVersion.fetch_add(1, std::memory_order_acq_rel);
+	}
+
+	bool AudioPluginAudioProcessor::startFromFactoryMemory(std::string& _note)
+	{
+		// a fresh machine's state (its factory memory: the Monomachine's factory image when installed, the Machinedrum's
+		// factory flash cache), as a new install starts
+		std::unique_ptr<synthLib::Device> fresh;
+		try
+		{
+			fresh.reset(createDevice());
+		}
+		catch(const std::exception& _e)
+		{
+			_note = std::string("The machine could not be made again: ") + _e.what();
+			return false;
+		}
+		std::vector<uint8_t> state;
+		auto* const freshMachine = dynamic_cast<md::Device*>(fresh.get());
+		if(freshMachine && freshMachine->isValid())
+		{
+			state = {1, synthLib::StateTypeGlobal};	// synthLib::Plugin's envelope (its g_stateVersion)
+			if(!freshMachine->getState(state, synthLib::StateTypeGlobal))
+			{
+				_note = "The factory memory could not be read.";
+				return false;
+			}
+		}
+		bool restarted = state.empty();
+		{
+			const std::lock_guard lock(m_memoryMutex);
+			const auto file = machineMemoryFile();
+			if(file != juce::File() && file.existsAsFile() && !file.deleteFile())
+			{
+				_note = "The machine memory file could not be deleted: " + file.getFullPathName().toStdString();
+				return false;
+			}
+			if(!state.empty())
+				restarted = getPlugin().setState(state);
+			m_memoryWatch->watch.reset();
+			m_memoryWatch->epoch.reset();
+			m_memoryWatch->settling.reset();
+			m_memoryNote.clear();
+		}
+		fresh.reset();
+		m_memoryRestoreGeneration = 0;
+		if(hasController())
+			getController().onStateLoaded();
+		updateHostDisplay(juce::AudioProcessorListener::ChangeDetails().withNonParameterStateChanged(true));
+		m_memoryVersion.fetch_add(1, std::memory_order_acq_rel);
+		std::fprintf(stderr, "[MD] machine memory: started from factory memory%s\n", restarted ? "" : " (the machine refused it)");
+		_note = restarted ? "The machine starts from factory memory." : "The machine memory file is gone, but the machine did not restart.";
+		return restarted;
+	}
+
+	// One look (the thread): under the plug-in's lock a copy of the memory that a save changes (the patch RAM, the
+	// Monomachine's user flash, the Machinedrum's last flash write), then its hash; the watch decides on a write.
+	void AudioPluginAudioProcessor::lookAtMachineMemory()
+	{
+		const std::lock_guard lock(m_memoryMutex);
+		auto& w = *m_memoryWatch;
+		if(!keepMachineMemory())
+			return;
+		// the buffers stay with the watch: no allocation under the lock after the first look
+		auto& patch = w.patch;
+		auto& userFlash = w.userFlash;
+		patch.reserve(md::g_patchRamStateSize);
+		if(m_model == md::MachineModel::Monomachine)
+			userFlash.resize(md::g_mmUserFlashStateSize);
+		uint64_t flashMark = 0, epoch = 0;
+		bool ok = false;
+		const auto begin = std::chrono::steady_clock::now();
+		std::chrono::steady_clock::time_point held, released;
+		getPlugin().withDeviceLocked([&](synthLib::Device* const _device)
+		{
+			held = std::chrono::steady_clock::now();
+			struct Released { std::chrono::steady_clock::time_point& at; ~Released() { at = std::chrono::steady_clock::now(); } } done{released};
+			auto* const device = dynamic_cast<md::Device*>(_device);
+			if(!device || !device->isValid() || device->isProjectStateRestorePending())
+				return;
+			auto& hw = device->getHardware();
+			if(!hw.isFirmwareMidiReady())
+				return;
+			if(m_model == md::MachineModel::Machinedrum)
+			{
+				// the file is written only once the factory flash is known, so its flash part is sparse (no ROM bytes)
+				if(!hw.factoryFlashBaseline())
+					return;
+				auto& uc = hw.getUC();
+				flashMark = uc.flashDirty() ? uc.getCycles() - uc.flashIdleCycles() : 0;
+			}
+			else if(!hw.getUC().copyFlashDataRangeRealtime(userFlash.data(),
+				md::memorymap::g_flashFull.offset(md::memorymap::g_mmUserFlash.begin), userFlash.size()))
+				return;
+			hw.copyPatchRamTo(patch);
+			epoch = device->hardwareEpoch();
+			ok = true;
+		});
+		if(!ok)
+		{
+			w.watch.reset();
+			w.epoch.reset();
+			w.settling.reset();
+			w.settleLooks = 0;
+			return;
+		}
+		auto signature = machineMemory::hash(patch.data(), machineMemory::watchedPatchBytes(m_model, patch.size()));
+		signature = machineMemory::hash(userFlash.data(), userFlash.size(), signature);
+		signature = machineMemory::hash(reinterpret_cast<const uint8_t*>(&flashMark), sizeof(flashMark), signature);
+		const auto end = std::chrono::steady_clock::now();
+		// the time the audio thread could wait: from taking the lock to releasing it (the wait for a block in progress
+		// before it is this thread's, not the audio thread's)
+		const auto lockMs = std::chrono::duration<double, std::milli>(released - held).count();
+		w.cost.lookLockLastMs = lockMs;
+		w.cost.lookLockMaxMs = std::max(w.cost.lookLockMaxMs, lockMs);
+		w.cost.lookMs = std::chrono::duration<double, std::milli>(end - begin).count();
+		++w.cost.looks;
+		// a new machine (the start, a restore, factory memory): its memory once it holds still for a look is the base,
+		// so starting or opening a project writes nothing
+		if(w.epoch != epoch)
+		{
+			if(w.settling != signature && w.settleLooks < 5)
+			{
+				w.settling = signature;
+				++w.settleLooks;
+				return;
+			}
+			w.watch.base(signature);
+			w.epoch = epoch;
+			w.settling.reset();
+			w.settleLooks = 0;
+			return;
+		}
+		if(!w.watch.look(signature, juce::Time::getMillisecondCounterHiRes()))
+			return;
+		if(writeMachineMemory(epoch))
+			w.watch.written(signature);
+	}
+
+	// The full state, as a DAW save takes it (Plugin::getState: captured under the lock, encoded after it, B-034),
+	// framed and written to a temporary file in the folder, then renamed over the old one. Called with m_memoryMutex
+	// held by the thread, or alone when the thread has stopped.
+	bool AudioPluginAudioProcessor::writeMachineMemory(const uint64_t _epoch)
+	{
+		const auto begin = std::chrono::steady_clock::now();
+		std::vector<uint8_t> state;
+		// the machine the watch saw, and no restore under way (else getState gives the requested state, not memory)
+		const bool same = getPlugin().withDeviceLocked([&](synthLib::Device* const _device)
+		{
+			const auto* const device = dynamic_cast<const md::Device*>(_device);
+			return device && device->hardwareEpoch() == _epoch && !device->isProjectStateRestorePending();
+		});
+		if(!same || !getPlugin().getState(state, synthLib::StateTypeGlobal) || state.size() <= 2)
+			return false;
+		const auto bytes = machineMemory::encode(m_model, state);
+		const auto file = machineMemoryFile();
+		std::string error;
+		const auto folder = file.getParentDirectory().createDirectory();
+		if(folder.failed())
+			error = "The machine memory folder could not be made: " + folder.getErrorMessage().toStdString();
+		else
+		{
+			juce::TemporaryFile temporary(file, juce::TemporaryFile::useHiddenFile);
+			auto out = temporary.getFile().createOutputStream();
+			const bool wrote = out && out->openedOk() && out->write(bytes.data(), bytes.size());
+			if(out)
+				out->flush();
+			const bool streamOk = out && out->getStatus().wasOk();
+			out.reset();
+			if(!wrote || !streamOk || temporary.getFile().getSize() != static_cast<juce::int64>(bytes.size()))
+				error = "The machine memory could not be written (disk full, or no permission?): " + file.getFullPathName().toStdString();
+			else if(!temporary.overwriteTargetFileWithTemporary())
+				error = "The machine memory file could not be replaced: " + file.getFullPathName().toStdString();
+		}
+		const auto ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - begin).count();
+		if(m_memoryWatch)
+		{
+			m_memoryWatch->cost.writeMs = ms;
+			if(error.empty())
+			{
+				++m_memoryWatch->cost.writes;
+				m_memoryWatch->cost.fileBytes = bytes.size();
+			}
+		}
+		const bool hadNote = !m_memoryNote.empty();
+		m_memoryNote = error;
+		if(!error.empty() && !m_memoryWriteWarned.exchange(true))
+			m_memoryWriteFailed.store(true, std::memory_order_release);	// the timer's notice, once a session
+		if(!error.empty() || hadNote)
+			m_memoryVersion.fetch_add(1, std::memory_order_acq_rel);
+		else if(m_memoryWatch && m_memoryWatch->cost.writes == 1)
+			m_memoryVersion.fetch_add(1, std::memory_order_acq_rel);	// "saved" may have changed
+		std::fprintf(stderr, "[MD] machine memory: %s (%zu bytes, %.2f ms)\n", error.empty() ? "written" : error.c_str(), bytes.size(), ms);
+		return error.empty();
 	}
 
 	pluginLib::Controller* AudioPluginAudioProcessor::createController()

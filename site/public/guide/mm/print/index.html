@@ -36,6 +36,7 @@
 @page c17 { @top-left { content: "17. The song mode"; } }
 @page c18 { @top-left { content: "18. Routing"; } }
 @page c19 { @top-left { content: "19. Global settings"; } }
+@page c24 { @top-left { content: "24. Beyond the hardware"; } }
 </style>
 </head>
 <body class="gd">
@@ -77,6 +78,7 @@
 <li class="gd-tocome"><span class="gd-tnum">21</span><span class="gd-ttitle">Appendix A: machine reference</span><span class="gd-tsum">To come</span></li>
 <li class="gd-tocome"><span class="gd-tnum">22</span><span class="gd-ttitle">Appendix B: MIDI control reference</span><span class="gd-tsum">To come</span></li>
 <li class="gd-tocome"><span class="gd-tnum">23</span><span class="gd-ttitle">Appendix C: SysEx reference</span><span class="gd-tsum">To come</span></li>
+<li><a href="#c24"><span class="gd-tnum">24</span><span class="gd-ttitle">Beyond the hardware</span><span class="gd-tsum">What the editor does that the Monomachine itself does not have, or does in its own way.</span></a></li>
 </ol></section>
 <article class="gd-chapter" id="c1" style="page: c1">
 <div class="gd-runhead"><span>1. Introduction, philosophy, highlights</span><span>Monomachine Editor</span></div>
@@ -1369,6 +1371,31 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-108,</span> <span>1-109</span></span></aside>
 <div class="gd-body gd-prose"><h2>MIDI SEQ</h2>
 <p>The channel of each MIDI track, and the controller numbers CL1 to CL4, are on the <b class="gd-ui">MIDI page</b> of <b class="gd-ui">Sequence</b>. See chapter 16.</p>
+</div></section>
+</article>
+<article class="gd-chapter" id="c24" style="page: c24">
+<div class="gd-runhead"><span>24. Beyond the hardware</span><span>Monomachine Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">24</p><h1>Beyond the hardware</h1>
+</header>
+<div class="gd-intro gd-prose"><p>The editor runs the real Monomachine operating system and adds a few things around it. This chapter describes them.</p></div>
+<section class="gd-sec" id="machine-memory">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>MACHINE MEMORY</h2>
+<p>A Monomachine keeps what you save when you switch it off: its kits, patterns, songs and globals stay in its memory. The editor does the same. When you save on the machine, the editor writes the machine's memory to a file on your computer. A new session starts from that file.</p>
+<p>What counts as a save is what changes the machine's memory: SAVE KIT, a change to a pattern, SAVE SONG, a change to a global, a SysEx dump the machine takes in. It makes no difference whether you save in the editor or on the machine's own keys. The editor writes the file a second or two after the memory stops changing. Playing a pattern writes nothing.</p>
+<p>A new session is a new plug-in in a DAW project, a new DAW project, or the first start of the standalone editor. It starts with the memory you last saved.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A DAW project keeps its own memory. When you open a saved project, the machine starts with the memory of that project, not with the file. A save you then make in that project goes to the file too.</p></aside>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The standalone editor keeps its memory when you quit it and starts with it again. It reads the file only at its first start.</p></aside>
+<h4 class="gd-h3">Start from factory memory</h4>
+<ol class="gd-steps"><li>Open the engine menu, the drop-down at the left of the LCD.</li><li>Choose <b class="gd-ui">START FROM FACTORY MEMORY…</b>. The editor asks first.</li><li>Click <b class="gd-ui">Start from factory memory</b>. The machine restarts with its factory kits, patterns, songs and globals, and the saved memory file is deleted.</li></ol>
+<p>New sessions now start from factory memory until you save again.</p>
+<h4 class="gd-h3">Turn it off</h4>
+<p>Choose <b class="gd-ui">KEEP MEMORY: ON</b> in the engine menu. It reads <b class="gd-ui">KEEP MEMORY: OFF</b>, and new sessions start from factory memory. The editor no longer writes the file. The file stays, so when you turn it on again, new sessions start with the memory you saved before.</p>
+<h4 class="gd-h3">Two editors at once</h4>
+<p>Two Monomachine editors open at the same time, in one DAW project or in two, share the same file. Each writes its own saves. The last save wins: a new session starts with the memory of the editor that saved last.</p>
+<h4 class="gd-h3">When the file cannot be used</h4>
+<p>The file is written in one step, so a crash leaves the old memory or the new one. If the file is damaged, belongs to another firmware or was written by a newer editor, the machine starts from factory memory and the editor says so. It keeps the file beside the new one as machine-memory.unusable.bin, and your next save writes a new memory file.</p>
+<p>The file is machine-memory.bin in the memory folder of the editor's data folder: Documents/Gearmulator Preview/Monomachine/memory. It holds the machine's memory only, the same part of a DAW project. It holds no firmware.</p>
 </div></section>
 </article>
 </div>

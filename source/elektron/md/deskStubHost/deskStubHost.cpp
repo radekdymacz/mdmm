@@ -879,11 +879,33 @@ namespace
 		toPage(deskCore::resultMessage(_message, _ok ? std::vector<std::string>{} : std::vector<std::string>{_note}, _note));
 	}
 
+	// I-024: the machine memory as the plug-in publishes it (machineMemory): KEEP MEMORY on, a file saved
+	struct StubMemory
+	{
+		bool keep = true;
+		bool saved = true;
+	} g_memory;
+
+	void publishMemory()
+	{
+		Value m = Value::object();
+		m.set("type", "machineMemory");
+		m.set("keep", g_memory.keep);
+		m.set("available", true);
+		m.set("saved", g_memory.saved);
+		m.set("note", "");
+		toPage(m);
+	}
+
 	template<typename DeskT> void hostMessage(DeskT& _desk, const Value& _message, double& _gainDb)
 	{
-		if(_desk.onPageMessage(_message))
-			return;
 		const auto op = deskCore::opOf(_message);
+		if(_desk.onPageMessage(_message))
+		{
+			if(op == "ready")
+				publishMemory();
+			return;
+		}
 		const auto* row = deskHost::commands().find(op);
 		if(!row)
 		{
@@ -898,7 +920,15 @@ namespace
 		if(op == "outputGain")
 			if(const auto* db = _message.find("db"); db && db->isNumber())
 				_gainDb = db->asNumber();
-		reply(_message, true, "");
+		reply(_message, true, op == "memoryFactory" ? "The machine starts from factory memory." : "");
+		if(op == "memoryKeep" || op == "memoryFactory")
+		{
+			if(op == "memoryKeep")
+				g_memory.keep = _message.find("on")->asBool();
+			else
+				g_memory.saved = false;
+			publishMemory();
+		}
 	}
 
 	void periodic(const double _now, double& _cpuAt, double& _levelAt, const double _gainDb)

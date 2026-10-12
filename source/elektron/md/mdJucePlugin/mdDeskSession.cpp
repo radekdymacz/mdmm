@@ -113,6 +113,18 @@ namespace mdJucePlugin
 		return m;
 	}
 
+	elektronData::json::Value machineMemoryOf(AudioPluginAudioProcessor& _processor)
+	{
+		const auto s = _processor.machineMemoryStatus();
+		auto m = elektronData::json::Value::object();
+		m.set("type", "machineMemory");
+		m.set("keep", s.keep);
+		m.set("available", s.available);
+		m.set("saved", s.saved);
+		m.set("note", s.note);
+		return m;
+	}
+
 	void setOutputGainDb(AudioPluginAudioProcessor& _processor, const double _db)
 	{
 		_processor.setOutputGain(outputLevel::gainOfDb(_db));

@@ -52,3 +52,14 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 4. MD: a LEARN dot on a track, then play a note on a MIDI keyboard (the standalone's MIDI input; in a DAW the track's MIDI): the track takes the note. Reset map (it asks), Cmd+Z.
 5. MM: Master tune − / + (Shift: 1 Hz); listen to the pitch. Control out 1: Sequencer OUT silences the tracks (the line under the rows says so) and sends NRPN; back to INT.
 6. MM on real hardware: a master tune or Control out 1 change waits as SEND n.
+
+## Machine memory for new sessions (wave 11, I-024, both editors)
+
+1. Plug-in in a new DAW project: change a kit name, SAVE KIT into a slot (page or panel). Wait two seconds.
+2. Add a second instance of the same editor in a new project (or close and add again): the slot holds your kit.
+3. Open an older saved project: it has its own memory, not the new kit.
+4. Engine menu: START FROM FACTORY MEMORY…, Cancel, then again and confirm: the factory kits are back; a new instance starts from factory memory.
+5. KEEP MEMORY: OFF, save a kit, new instance: factory memory. Turn it ON again.
+6. Standalone first start with no saved state (fresh settings): starts with the saved memory.
+7. The file: `~/Documents/Gearmulator Preview/<Machine>/memory/machine-memory.bin`. Damage it (change a byte): the next new instance says so, starts from factory memory and keeps `machine-memory.unusable.bin`.
+8. MD: load a sample into a UW slot, wait, new instance: the sample is there.

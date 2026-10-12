@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>24. Beyond the hardware · Monomachine Editor guide</title>
+<meta name="description" content="What the editor does that the Monomachine itself does not have, or does in its own way.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/mm/24-beyond-the-hardware/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261010">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>@page { @top-left { content: "24. Beyond the hardware"; } }</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › <a href="/guide/mm/">Monomachine Editor</a> › Beyond the hardware</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Chapters of the Monomachine Editor guide">
+<p class="gd-side-title"><a href="/guide/mm/">Monomachine Editor guide</a></p>
+<ol class="gd-side-list"><li><a href="/guide/mm/01-introduction-philosophy-highlights/">1. Introduction, philosophy, highlights</a></li>
+<li><a href="/guide/mm/02-user-interface-and-connectors/">2. User interface and connectors</a></li>
+<li><a href="/guide/mm/03-the-lcd-user-interface/">3. The LCD user interface</a></li>
+<li><a href="/guide/mm/04-quick-start/">4. Quick start</a></li>
+<li><a href="/guide/mm/05-monomachine-overview/">5. Monomachine overview</a></li>
+<li><a href="/guide/mm/06-synthesis-arrangement-kits-and-machines/">6. Synthesis arrangement: kits and machines</a></li>
+<li><a href="/guide/mm/07-track-effects/">7. Track effects</a></li>
+<li><a href="/guide/mm/08-low-frequency-oscillators/">8. Low frequency oscillators</a></li>
+<li><a href="/guide/mm/09-additional-kit-settings/">9. Additional kit settings</a></li>
+<li><a href="/guide/mm/10-the-pattern-sequencer-pattern-operation/">10. The pattern sequencer: pattern operation</a></li>
+<li><a href="/guide/mm/11-composing-a-pattern/">11. Composing a pattern</a></li>
+<li><a href="/guide/mm/12-tempo/">12. Tempo</a></li>
+<li><a href="/guide/mm/13-parameter-locks/">13. Parameter locks</a></li>
+<li><a href="/guide/mm/14-advanced-sequencer-control/">14. Advanced sequencer control</a></li>
+<li><a href="/guide/mm/15-additional-sequencer-features/">15. Additional sequencer features</a></li>
+<li><a href="/guide/mm/16-the-midi-sequencer/">16. The MIDI sequencer</a></li>
+<li><a href="/guide/mm/17-the-song-mode/">17. The song mode</a></li>
+<li><a href="/guide/mm/18-routing/">18. Routing</a></li>
+<li><a href="/guide/mm/19-global-settings/">19. Global settings</a></li>
+<li><span class="gd-side-todo">20. Early startup menu, technical information <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">21. Appendix A: machine reference <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">22. Appendix B: MIDI control reference <span class="gd-vh">(to come)</span></span></li>
+<li><span class="gd-side-todo">23. Appendix C: SysEx reference <span class="gd-vh">(to come)</span></span></li>
+<li class="gd-side-cur"><a href="/guide/mm/24-beyond-the-hardware/" aria-current="page">24. Beyond the hardware</a><ol class="gd-side-subs"><li><a href="#machine-memory">MACHINE MEMORY</a></li></ol></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">24</span><span class="gd-ctitle">Beyond the hardware</span></h1></header>
+<div class="gd-intro gd-prose"><p>The editor runs the real Monomachine operating system and adds a few things around it. This chapter describes them.</p></div>
+<section class="gd-sec" id="machine-memory" aria-labelledby="machine-memory-h">
+<div class="gd-body gd-prose"><h2 id="machine-memory-h">MACHINE MEMORY <a class="gd-anchor" href="#machine-memory" aria-label="Link to MACHINE MEMORY">#</a></h2>
+<p>A Monomachine keeps what you save when you switch it off: its kits, patterns, songs and globals stay in its memory. The editor does the same. When you save on the machine, the editor writes the machine's memory to a file on your computer. A new session starts from that file.</p>
+<p>What counts as a save is what changes the machine's memory: SAVE KIT, a change to a pattern, SAVE SONG, a change to a global, a SysEx dump the machine takes in. It makes no difference whether you save in the editor or on the machine's own keys. The editor writes the file a second or two after the memory stops changing. Playing a pattern writes nothing.</p>
+<p>A new session is a new plug-in in a DAW project, a new DAW project, or the first start of the standalone editor. It starts with the memory you last saved.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A DAW project keeps its own memory. When you open a saved project, the machine starts with the memory of that project, not with the file. A save you then make in that project goes to the file too.</p><p>The standalone editor keeps its memory when you quit it and starts with it again. It reads the file only at its first start.</p></aside>
+<h4 class="gd-h3" id="start-from-factory-memory">Start from factory memory</h4>
+<ol class="gd-steps"><li>Open the engine menu, the drop-down at the left of the LCD.</li><li>Choose <b class="gd-ui">START FROM FACTORY MEMORY…</b>. The editor asks first.</li><li>Click <b class="gd-ui">Start from factory memory</b>. The machine restarts with its factory kits, patterns, songs and globals, and the saved memory file is deleted.</li></ol>
+<p>New sessions now start from factory memory until you save again.</p>
+<h4 class="gd-h3" id="turn-it-off">Turn it off</h4>
+<p>Choose <b class="gd-ui">KEEP MEMORY: ON</b> in the engine menu. It reads <b class="gd-ui">KEEP MEMORY: OFF</b>, and new sessions start from factory memory. The editor no longer writes the file. The file stays, so when you turn it on again, new sessions start with the memory you saved before.</p>
+<h4 class="gd-h3" id="two-editors-at-once">Two editors at once</h4>
+<p>Two Monomachine editors open at the same time, in one DAW project or in two, share the same file. Each writes its own saves. The last save wins: a new session starts with the memory of the editor that saved last.</p>
+<h4 class="gd-h3" id="when-the-file-cannot-be-used">When the file cannot be used</h4>
+<p>The file is written in one step, so a crash leaves the old memory or the new one. If the file is damaged, belongs to another firmware or was written by a newer editor, the machine starts from factory memory and the editor says so. It keeps the file beside the new one as machine-memory.unusable.bin, and your next save writes a new memory file.</p>
+<p>The file is machine-memory.bin in the memory folder of the editor's data folder: Documents/Gearmulator Preview/Monomachine/memory. It holds the machine's memory only, the same part of a DAW project. It holds no firmware.</p>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/mm/19-global-settings/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">19. Global settings</span></a><span></span></nav>
+</article>
+</div>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

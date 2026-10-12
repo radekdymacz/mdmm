@@ -76,6 +76,7 @@
 	const songSlot = () => songEdit ?? cur("song");
 	/* B-030: the plug-in's "host" message (a DAW's tempo); the plug-in's, so it stays when the engine changes */
 	let hostTempo = null;
+	let memory = { keep: true, available: false, saved: false, note: "" };	/* I-024: the plug-in's machineMemory */
 	const view = () => { const v = MmView.derive(docs(), { songEdit, host: hostTempo }); return Overlay.over(Overlay.size() ? MmView.own(v) : v); };
 	/* the view shows the machine: the catalogue (MmConvert's enumerations), the current pattern and the kit that plays */
 	const ready = () => !!catalogue && !!(docs().patterns[cur("pattern")] && kitNow());
@@ -541,6 +542,12 @@
 		   it), the ROM folder, and a new look */
 		chooseRom() { send({ op: "chooseRom" }); },
 		removeRom(info) { askRemoveRom(info); },
+		/* I-024 (doc/modern-ux/DESIGN-machine-memory.md): KEEP MEMORY on or off; START FROM FACTORY MEMORY… asks first */
+		memory(what) {
+			if (what === "keep") { send({ op: "memoryKeep", on: !memory.keep }, { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } }); return; }
+			V().ask(`<b>Start from factory memory?</b><br>The machine restarts with its factory kits, patterns, songs and globals${memory.saved ? ", and the saved machine memory is deleted" : ""}. New sessions start from factory memory until you save again. A DAW project keeps its own memory.`,
+				[["Start from factory memory", "danger", () => send({ op: "memoryFactory" }, { onResult: r => V().toast(r.ok ? r.note : r.errors[0]) })], ["Cancel", "", () => {}]]);
+		},
 		/* LOAD ROM in the engine menu: which firmware runs, REPLACE or REMOVE it (the reply is the romInfo message) */
 		romManage() { if (machine?.lifecycle === "missing") host.firstRun(); else send({ op: "romInfo" }); },
 		/* SysEx import and export (P7): the window's file dialogs; the plug-in parses and writes */
@@ -644,6 +651,8 @@
 		else if (m.type === "audioRun") Boot.audio(m);
 		else if (m.type === "cpuLoad") CpuMeter.update(m);
 		else if (m.type === "outputLevel") DeskVolume.update(m);
+		/* I-024: the machine memory for new sessions (KEEP MEMORY, START FROM FACTORY MEMORY… in the engine menu) */
+		else if (m.type === "machineMemory") { memory = m; V().setMemory(m); }
 		/* 0.6: a note from a MIDI keyboard (the plug-in's midiIn): the Machinedrum's LEARN reads it; the Monomachine's
 		   page has no use for it yet (I-002's keyboard lights wait for B-062) */
 		else if (m.type === "midiIn") { /* read, nothing to show */ }

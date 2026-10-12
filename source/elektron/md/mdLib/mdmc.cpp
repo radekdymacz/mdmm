@@ -178,6 +178,12 @@ namespace md
 		return m_patchRam;
 	}
 
+	void Microcontroller::copyPatchRamTo(std::vector<uint8_t>& _out) const
+	{
+		std::shared_lock lock(m_patchRamMutex);
+		_out.assign(m_patchRam.begin(), m_patchRam.end());
+	}
+
 	bool Microcontroller::replacePatchRam(const std::vector<uint8_t>& _data)
 	{
 		if(_data.size() != m_patchRam.size())

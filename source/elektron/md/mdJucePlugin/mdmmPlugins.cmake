@@ -37,7 +37,7 @@ list(APPEND SOURCES
 	mdEditorPages.cpp mdEditorPages.h
 	mdDeskHost.cpp mdDeskHost.h
 	mdStandaloneApp.cpp
-	mdBootDiagnostics.cpp mdBootDiagnostics.h mdCpuLoad.h mdOutputLevel.h mdMidiIn.h
+	mdBootDiagnostics.cpp mdBootDiagnostics.h mdCpuLoad.h mdOutputLevel.h mdMidiIn.h mdMachineMemory.h
 	mdProcessArch.cpp mdProcessArch.h mdRosettaNotice.h
 	mdDeskSession.cpp mdDeskSession.h
 	mdMidiLearnCommands.cpp mdMidiLearnCommands.h
@@ -496,6 +496,14 @@ function(mdmm_plugin_targets)
 	set_tests_properties(mdOutputLevelTest PROPERTIES LABELS "UnitTest")
 	set_property(TARGET mdOutputLevelTest PROPERTY FOLDER "Elektron/test")
 
+	# I-024: the machine memory file's frame and when it is written (mdMachineMemory.h, pure; no ROM)
+	add_executable(mdMachineMemoryTest mdMachineMemoryTest.cpp mdMachineMemory.h)
+	target_link_libraries(mdMachineMemoryTest PRIVATE mdLib)
+	target_include_directories(mdMachineMemoryTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../..)
+	add_test(NAME mdMachineMemoryTest COMMAND mdMachineMemoryTest)
+	set_tests_properties(mdMachineMemoryTest PROPERTIES LABELS "UnitTest")
+	set_property(TARGET mdMachineMemoryTest PROPERTY FOLDER "Elektron/test")
+
 	# 0.6 (GLOBAL › LEARN, I-002): the notes from outside for the page's midiIn message (mdMidiIn.h, pure)
 	add_executable(mdMidiInTest mdMidiInTest.cpp mdMidiIn.h)
 	add_test(NAME mdMidiInTest COMMAND mdMidiInTest)
@@ -721,6 +729,21 @@ function(mdmm_plugin_targets)
 	set_property(TARGET mdFirstStartFirmwareTest PROPERTY FOLDER "Elektron/test")
 	add_test(NAME mdFirstStartFirmwareTest COMMAND mdFirstStartFirmwareTest)
 	set_tests_properties(mdFirstStartFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 900)
+
+	# I-024: the machine memory on the firmware: a kit saved in one session is there in the next, a project wins, START
+	# FROM FACTORY MEMORY, a damaged file. In ctest; each skips (77) without its ROM in the environment.
+	add_executable(mdMachineMemoryFirmwareTest mdMachineMemoryFirmwareTest.cpp)
+	target_link_libraries(mdMachineMemoryFirmwareTest PRIVATE
+		mdJucePlugin jucePluginEditorLib mdLib juce_plugin_modules
+		juce::juce_opengl)
+	target_include_directories(mdMachineMemoryFirmwareTest PRIVATE
+		${CMAKE_CURRENT_SOURCE_DIR}/../../..)
+	target_compile_definitions(mdMachineMemoryFirmwareTest PRIVATE JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1)
+	set_property(TARGET mdMachineMemoryFirmwareTest PROPERTY FOLDER "Elektron/test")
+	foreach(m md mm)
+		add_test(NAME mdMachineMemoryFirmwareTest_${m} COMMAND mdMachineMemoryFirmwareTest ${m})
+		set_tests_properties(mdMachineMemoryFirmwareTest_${m} PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
+	endforeach()
 
 	# A machine without its ROM is not an error: the session says "missing", the page's card takes the ROM,
 	# and the machine starts in place. The plain runs need no ROM; "install" needs the user's own (skips, 77, without).

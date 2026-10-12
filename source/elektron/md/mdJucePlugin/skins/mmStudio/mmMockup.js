@@ -525,12 +525,12 @@ const MM_SEAM={
   "selectPattern","kit","tempo","mutes","keyMode","record","chain","chainClear","seqMode","loadSong","saveSong","waiting",
   "sendNow","playKey","keyUp","transport","noteOn","noteOff","joy","learning","learnTarget","learnBind","modulators",
   "engine","chooseRom","removeRom","romManage","syxChoose","syxExport","syxStart","syxStop","revealRom",
-  "recheck","firstRun","bootScreen","renderPst","menu","audioDoc","audioSend","audioMeter","globalSlot"],
+  "recheck","firstRun","bootScreen","renderPst","menu","audioDoc","audioSend","audioMeter","globalSlot","memory"],
  "view":[
   "audible","soloed","engReady","asgT","noteName","pname","machName","kitName","gated","busy","sel","mode",
   "playing","step","tempo","engineState","kitState","learnTarget","learning","ctlSetup","show","startEmpty",
   "setPatternSlot","setKitSlot","setReading","setTempo","setInput","setPlaying","setStep","setSongRow","setEng","dlgOpen",
-  "setEngineLabel","setEngineTip","setEngines","setAudioEntry","clearLearnTarget","setMapping","setModulation",
+  "setEngineLabel","setEngineTip","setEngines","setAudioEntry","setMemory","clearLearnTarget","setMapping","setModulation",
   "setCtlSetup","disable","setRecord","setRecLock","setLcd","setKeyDown","setPst","closeFirmwareDialog","bootRom",
   "bootInstalled","syxPreview","syxProgress","render","renderTop","drawLib","toast","ask","redraw","movePH",
   "setPos","flashTracks","goWs","clickStep","autoRange","kitSave","redrawAudio","audioLevel","openAudio"]};
@@ -632,6 +632,8 @@ function demoRebase(step){if(window.MMDemoHost)window.MMDemoHost.rebase(step)}
                                       dialogs; the preview and progress come back through MMView
      removeRom(info)   REMOVE in the LOAD ROM card
      romManage()   LOAD ROM in the engine menu (a host shows which firmware runs, REPLACE and REMOVE; none: the start-up card)
+     memory(what)   I-024, the engine menu's machine memory entries: "keep" (KEEP MEMORY on / off) or "factory" (START FROM
+                                      FACTORY MEMORY…: the host asks first); the state comes back with MMView.setMemory
      chooseRom(), revealRom(), recheck()   the start-up card's keys (P7): the native file chooser for the
                                       firmware, the ROM folder, look again (the page never reads the ROM)
      audioDoc(), audioSend(command), audioMeter(on)   the AUDIO / MIDI panel's devices
@@ -5410,6 +5412,7 @@ document.addEventListener("click",e=>{
 document.addEventListener("change",e=>{const id=e.target.id,v=e.target.value,tr=trk(S.sel);
  if(id==="romfile"){checkRom(e.target.files[0]);return}
  if(id==="engsel"){const btn=document.querySelector(".lcdeng");if(v==="global"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;openGlobal();return}if(v==="audio"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;openAudio();return}if(v==="rom"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;if(HOST.romManage)HOST.romManage();else firstRun();return}
+  if(v==="memoryKeep"||v==="memoryFactory"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;if(HOST.memory)HOST.memory(v==="memoryKeep"?"keep":"factory");return}
   S.engine=v;S.pend=0;renderPst();if(HOST.engine)HOST.engine(v);else startEngine(v);return}
  let m=id.match(/^lp(\d)$/);if(m){editTrack(S.sel,()=>{const l=V("LF"+m[1]);l[0]=+v;l[1]=0});render();return}
  m=id.match(/^ld(\d)$/);if(m){editTrack(S.sel,()=>{V("LF"+m[1])[1]=+v});render();return}
@@ -5655,11 +5658,17 @@ function setRecord(mode){const on=mode==="grid"||mode==="live";S.recMode=mode;if
 /* an engine state's LCD label: [text, led "on" | "blink" | "off", tooltip] */
 function setEngineLabel(st,label){ENG[st]=label;if(S.eng===st)setEng(st)}
 /* a host's engine map ([{id, label, available, reason}]) in the engine menu, before the menu's own entries */
-function setEngines(list,current){const sel=$("#engsel");if(!sel)return;const own=["audio","global","rom"];
+function setEngines(list,current){const sel=$("#engsel");if(!sel)return;const own=["audio","global","rom","memoryKeep","memoryFactory"];
  for(const o of [...sel.options])if(!own.includes(o.value)&&!list.some(e=>e.id===o.value))o.remove();
  const first=[...sel.options].find(o=>own.includes(o.value))||null;
  for(const e of list){let o=sel.querySelector(`option[value="${e.id}"]`);if(!o){o=document.createElement("option");o.value=e.id}sel.insertBefore(o,first);o.textContent=e.label;o.disabled=!e.available;o.title=e.available?"":e.reason||""}
  if(current){sel.value=current;S.engine=current}}
+/* I-024: the engine menu's KEEP MEMORY and START FROM FACTORY MEMORY… as the host says ({keep, available, saved, note}):
+   only where the host keeps a machine memory file (doc/modern-ux/DESIGN-machine-memory.md) */
+function setMemory(m){const k=document.querySelector('#engsel option[value="memoryKeep"]'),f=document.querySelector('#engsel option[value="memoryFactory"]');if(!k||!f)return;
+ k.hidden=f.hidden=!m.available;k.textContent="KEEP MEMORY: "+(m.keep?"ON":"OFF");
+ k.title=m.keep?"New sessions without a project start with what you saved on the machine. Click to turn it off.":"New sessions start from factory memory. Click to keep what you save on the machine for new sessions.";
+ f.dataset.saved=m.saved?"1":"0";f.title=m.note||(m.saved?"Forget the saved machine memory and restart the machine from factory memory.":"Restart the machine from factory memory.")}
 /* the AUDIO / MIDI entry of the engine menu: only where the host has the devices (a standalone) */
 function setAudioEntry(on){const o=document.querySelector('#engsel option[value="audio"]');if(o)o.hidden=o.disabled=!on;Boot.midiRefresh()}
 /* the app sources and their links as the host's engine took them (ctlSetup() shape); the knob rows and their links stay */
@@ -5711,7 +5720,7 @@ window.MMView={
     library's other slots keep their own cheap setters; setTempo is the BPM gesture's own write (the self-test's) */
  show,startEmpty,setPatternSlot,setKitSlot,setReading,setTempo:bpm=>{S.bpm=bpm},
  setInput,setPlaying,setStep,setSongRow:r=>{S.songRow=r;markSongRow()},
- setEng,dlgOpen:()=>!$("#dlg").hidden,setEngineLabel,setEngineTip,setEngines,setAudioEntry,clearLearnTarget:()=>{S.learnT=null},setMapping,setModulation,setCtlSetup,disable,
+ setEng,dlgOpen:()=>!$("#dlg").hidden,setEngineLabel,setEngineTip,setEngines,setAudioEntry,setMemory,clearLearnTarget:()=>{S.learnT=null},setMapping,setModulation,setCtlSetup,disable,
  setRecord,setRecLock,
  setLcd,setKeyDown,setPst,closeFirmwareDialog,bootRom:r=>Boot.rom(r),bootInstalled:o=>Boot.showInstalled(o),syxPreview:m=>Syx.preview(m),syxProgress:m=>Syx.progress(m),
  /* calls */
