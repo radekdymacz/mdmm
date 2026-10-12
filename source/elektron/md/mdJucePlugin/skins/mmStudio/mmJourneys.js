@@ -2679,8 +2679,65 @@ const MmJourneys = (() => {
 		],
 		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); }
 	};
+	/* ---- Song: the selected row's settings, the commands and the rows' marks (the song mode chapter) ---- */
+	const rowI = () => S().songSel;
+	const rowDoc = () => songDoc()?.rows[rowI()];
+	const cellMarks = i => ($1(`#tl .scell[data-i="${i}"]`)?.textContent || "").replace(/\s+/g, " ").trim();
+	/* a row edit is a song dump through SYSEX RECV and its read-back: the next edit waits for it */
+	const songSettled = async () => { await until(() => (I().machine?.recv?.state === "idle" && !I().machine?.recv?.sending), 20000); await sleep(600); };
+	const stepRow = async (u, k, d, field, get) => { const v0 = get(); u.click(`[data-step="${k}"][data-d="${d}"]`); await until(() => get() !== v0, 6000); await songSettled(); return [v0, get()]; };
+	const songRowSettings = {
+		name: "mm-song-row-settings", proves: ["MM-170", "MM-199", "MM-260", "MM-263", "MM-264", "MM-265", "MM-267", "MM-273", "MM-274", "MM-275"],
+		steps: [
+			go("song"),
+			{ say: "SONG mode, add a row: the header counts the rows of the machine's song (END is the last of them), the grid has a cell for each", act: async (u, c) => { c.r0 = JSON.stringify(songDoc()?.rows); c.n0 = histN(); c.m0 = machine().song?.songMode === true; u.click('[data-set="songpick"] button[data-v="song"]'); await sleep(300); u.click('[data-addpat="2"]'); await until(() => JSON.stringify(songDoc()?.rows) !== c.r0, 8000); await sleep(400); c.i = rowI(); },
+				screen: () => ok(new RegExp(`^${S().song.length} of 200 rows`).test($1(".arrcard .note")?.textContent || "") && $all("#tl .scell:not(.empty)").length === S().song.length, `header "${$1(".arrcard .note")?.textContent}", cells ${$all("#tl .scell:not(.empty)").length}, rows ${S().song.length}`),
+				machine: c => ok(songDoc().rows.length === S().song.length && songDoc().rows.length === JSON.parse(c.r0).length + 1 && songDoc().rows[songDoc().rows.length - 1].kind === "end", `doc ${songDoc().rows.length} rows, page ${S().song.length}, before ${JSON.parse(c.r0).length}`), within: 10000 },
+			{ say: "Transpose + twice on the row: the song row holds 2 (pattern, all tracks) and its cell shows +2", act: async (u, c) => { u.click('[data-step="trn"][data-d="1"]'); await until(() => rowDoc().transpose === 1, 6000); await songSettled(); u.click('[data-step="trn"][data-d="1"]'); await until(() => rowDoc().transpose === 2, 6000); await songSettled(); c.mk1 = cellMarks(c.i); },
+				machine: () => ok(rowDoc().transpose === 2, "transpose " + rowDoc().transpose), screen: c => ok(/\+2/.test(c.mk1), "cell " + c.mk1), within: 8000 },
+			{ say: "More: each of the six synth tracks and the six MIDI tracks has a transpose of its own for the row (TR1 to TR6, six MIDI): + on track 3 and on MIDI track 2 move those only", act: async (u, c) => { if (!$1("[data-ttr]")) u.click("[data-rowmore]"); await sleep(300); c.bad = []; const t0 = rowDoc().trackTranspose.slice(), m0 = rowDoc().midiTranspose.slice(); const cnt = $all("[data-ttr]").length / 2;
+					u.click('[data-ttr="2"][data-d="1"]'); await until(() => rowDoc().trackTranspose[2] === t0[2] + 1, 6000); await songSettled(); if (!same(rowDoc().trackTranspose.filter((v, k) => k !== 2), t0.filter((v, k) => k !== 2)) || !same(rowDoc().midiTranspose, m0)) c.bad.push("T3 moved others: " + rowDoc().trackTranspose);
+					u.click('[data-ttr="7"][data-d="1"]'); await until(() => rowDoc().midiTranspose[1] === m0[1] + 1, 6000); await songSettled(); if (!same(rowDoc().midiTranspose.filter((v, k) => k !== 1), m0.filter((v, k) => k !== 1)) || rowDoc().trackTranspose[2] !== t0[2] + 1) c.bad.push("M2 moved others: " + rowDoc().midiTranspose); c.cnt = cnt; },
+				screen: c => ok(!c.bad.length && c.cnt === 12, c.bad.join(" | ") + " keys " + c.cnt), within: 8000 },
+			{ say: "Part: Offset + and Length −: the row plays a part of the pattern (its own length), the pattern keeps its length; Whole pattern puts both back", act: async (u, c) => { c.plen = patDoc()?.length; await stepRow(u, "ofs", 1, "offset", () => rowDoc().offset); const l = await stepRow(u, "len", -1, "length", () => rowDoc().length); c.part = [rowDoc().offset, rowDoc().length]; c.pat1 = JSON.stringify(I().doc("pattern", rowDoc().pattern)?.length); c.pat0 = I().doc("pattern", rowDoc().pattern)?.length;
+					c.mk = cellMarks(c.i); u.click("[data-fullpat]"); await until(() => rowDoc().offset === 0 && rowDoc().length >= (I().doc("pattern", rowDoc().pattern)?.length || 16), 6000); c.whole = [rowDoc().offset, rowDoc().length]; },
+				machine: c => ok(c.part[0] === 1 && c.part[1] < (c.pat0 || 99) && c.whole[0] === 0 && c.whole[1] === c.pat0, `part ${c.part}, whole ${c.whole}, pattern length ${c.pat0}`), within: 10000 },
+			{ say: "Tempo: Keep off gives the row a tempo of its own (the current BPM), + raises it; the song stores it in the row and the cell shows B", act: async (u, c) => { u.click("[data-bpmkeep]"); await until(() => rowDoc().tempo != null, 6000); await songSettled(); c.t0 = rowDoc().tempo; u.click('[data-step="bpm"][data-d="1"]'); await until(() => rowDoc().tempo !== c.t0, 6000); await songSettled(); c.mk2 = cellMarks(c.i); },
+				machine: c => ok(rowDoc().tempo === c.t0 + 1 && c.t0 > 0, `tempo ${rowDoc().tempo} (was ${c.t0})`), screen: c => ok(/B/.test(c.mk2), "cell " + c.mk2), within: 8000 },
+			{ say: "Mutes: T1 muted for the row: the row's mute mask holds bit 0, the cell shows M; its marks now T, M and B", act: async (u, c) => { u.click('[data-rowmute="0"]'); await until(() => (rowDoc().mutes & 1) === 1, 6000); await songSettled(); c.mk3 = cellMarks(c.i); },
+				machine: () => ok((rowDoc().mutes & 1) === 1, "mutes " + rowDoc().mutes), screen: c => ok(/T/.test(c.mk3) && /M/.test(c.mk3) && /B/.test(c.mk3), "cell " + c.mk3), within: 8000 },
+			{ say: "Add loop, then JUMP: a forward jump, its target a later row (stepper +); then HALT: it pauses the playback, its target the row itself", act: async (u, c) => { c.bad = []; u.click('[data-rowact="loop"]'); await until(() => songDoc().rows.some(r => r.kind === "loop"), 6000); c.li = rowI(); await songSettled();
+					u.click('[data-set="loopkind"] button[data-v="jump"]'); await songSettled(); if (!await until(() => songDoc().rows[c.li]?.kind === "jump", 6000)) c.bad.push("JUMP: " + songDoc().rows[c.li]?.kind); else { c.jt = songDoc().rows[c.li].target; if (!(c.jt > c.li)) c.bad.push(`JUMP target ${c.jt} not after row ${c.li}`); }
+					u.click('[data-set="loopkind"] button[data-v="halt"]'); if (!await until(() => songDoc().rows[c.li]?.kind === "halt", 6000)) c.bad.push("HALT: " + songDoc().rows[c.li]?.kind); else if (songDoc().rows[c.li].target !== c.li) c.bad.push("HALT target " + songDoc().rows[c.li].target); await sleep(300); c.cell = cellMarks(c.li); },
+				screen: c => ok(!c.bad.length && /HALT/.test(c.cell), c.bad.join(" | ") + " cell " + c.cell), within: 10000 }
+		],
+		async tidy(u, c) { if (S().songMore) u.click("[data-rowmore]"); if (c.r0) await undoUntil(u, () => JSON.stringify(songDoc()?.rows) === c.r0, 14); if (c.m0 === false && machine().song?.songMode !== false) { u.click('[data-set="songpick"] button[data-v="pattern"]'); await sleep(1500); } }
+	};
+	const songRowsCopy = {
+		name: "mm-song-rows-copy", proves: ["MM-269"],
+		steps: [
+			go("song"),
+			{ say: "SONG mode: give row 2 a transpose of 1, click Copy on the LCD (it names the row)", act: async (u, c) => { c.r0 = JSON.stringify(songDoc()?.rows); c.m0 = machine().song?.songMode === true; u.click('[data-set="songpick"] button[data-v="song"]'); await sleep(300); u.click('#tl .scell[data-i="1"]'); await sleep(300); await stepRow(u, "trn", 1, "transpose", () => rowDoc().transpose); const btn = n => $all(".lcdpanel button").find(b => b.textContent.trim() === n); u.click(btn("Copy")); await sleep(500); c.src = JSON.stringify(rowDoc()); c.toast = $1("#toast")?.textContent; },
+				screen: c => ok(/Copied row 2/.test(c.toast), "toast " + c.toast), machine: () => ok(rowDoc().transpose === 1, "transpose " + rowDoc().transpose), within: 10000 },
+			{ say: "select row 4, Paste: a copy of row 2 follows it, the same pattern, repeats, transpose and mutes", act: async (u, c) => { c.n = songDoc().rows.length; u.click('#tl .scell[data-i="3"]'); await sleep(300); u.click($all(".lcdpanel button").find(b => b.textContent.trim() === "Paste")); await until(() => songDoc().rows.length === c.n + 1, 8000); await songSettled(); },
+				machine: c => ok(songDoc().rows.length === c.n + 1 && same(songDoc().rows[4], JSON.parse(c.src)), `row 5 ${JSON.stringify(songDoc().rows[4])} for ${c.src}`), within: 12000 },
+			{ say: "Clr takes the selected row out; Cmd+Z brings it back", act: async (u, c) => { c.n1 = songDoc().rows.length; u.click($all(".lcdpanel button").find(b => b.textContent.trim() === "Clr")); await sleep(500); if (dlgShown()) u.click($1("#dlg .danger") || dlgButton("Clear")); await until(() => songDoc().rows.length === c.n1 - 1, 8000); await songSettled(); c.after = songDoc().rows.length; blur(); u.key("z", { cmd: true }); await until(() => songDoc().rows.length === c.n1, 8000); await songSettled(); },
+				machine: c => ok(c.after === c.n1 - 1 && songDoc().rows.length === c.n1 && same(songDoc().rows[4], JSON.parse(c.src)), `rows ${c.n1} -> ${c.after} -> ${songDoc().rows.length}`), within: 20000 }
+		],
+		async tidy(u, c) { if (c.r0) await undoUntil(u, () => JSON.stringify(songDoc()?.rows) === c.r0, 8); if (c.m0 === false && machine().song?.songMode !== false) { u.click('[data-set="songpick"] button[data-v="pattern"]'); await sleep(1500); } }
+	};
+	/* GLOBAL: TEMPO SYNC INT / EXT and TRANSPORT IN ACCEPT / IGNORE (the machine takes them: the setting is read back from it) */
+	const globalSync = {
+		name: "mm-global-sync", proves: ["MM-297", "MM-298"],
+		steps: [
+			{ say: "open GLOBAL: Tempo in EXT, then INT; Control in ON (transport accepted), then OFF (ignored): each is written to the machine and read back, the key lit", act: async (u, c) => { c.bad = []; c.s0 = JSON.stringify(gDoc().controlIn); u.click("#globkey"); await sleep(300);
+					for (const [ga, v, f, want] of [["tempoIn", 1, "tempoSync", 1], ["tempoIn", 0, "tempoSync", 0], ["ctrlIn", 1, "transport", 1], ["ctrlIn", 0, "transport", 0]]) { const g0 = wireSeq; u.click(`#globpop [data-ga="${ga}"][data-v="${v}"]`); if (!await until(() => gDoc().controlIn[f] === want, 15000)) { c.bad.push(`${ga} ${v}: ${JSON.stringify(gDoc().controlIn)}`); continue; } await globalSettled(g0); if (!pressed(`#globpop [data-ga="${ga}"][data-v="${v}"]`) || gDoc().controlIn[f] !== want) c.bad.push(`${ga} ${v}: not lit / read back ${JSON.stringify(gDoc().controlIn)}`); } },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 }
+		],
+		async tidy(u, c) { if (c.s0) { const s = JSON.parse(c.s0); for (const [ga, f] of [["tempoIn", "tempoSync"], ["ctrlIn", "transport"]]) if (gDoc().controlIn[f] !== s[f]) { u.click(`#globpop [data-ga="${ga}"][data-v="${s[f]}"]`); await sleep(1500); } } if (!$1("#globpop").hidden) u.key("Escape"); }
+	};
 	/* SLICE5-MM-END */
-	const all = [/* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
+	const all = [/* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowsCopy, globalSync, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
