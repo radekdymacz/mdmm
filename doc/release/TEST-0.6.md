@@ -106,3 +106,4 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 ## The gaps (wave 12, `feat/0.6-gaps`)
 
 1. MM (MM-322): click MKI / MKII at the right of the top bar: the LCD turns light blue (MKI) or bluish white (MKII), the toast names the model's LCD; on MKI the machine list greys the MKII-only machines.
+2. MD (MD-033): Sound, put TRX-BD on a track: a small arch over the gap between RAMP and RDEC, AMD and AMF, EQF and EQG, FLTF FLTW FLTQ, SPD and DEPTH. Point at RDEC: the tooltip names RAMP. A ROM machine: no arch on STRT and END. MID machines: the routing page shows CC5D CC5V CC6D CC6V PCHG (B-082).

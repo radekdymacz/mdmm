@@ -29,6 +29,12 @@ namespace elektronData
 	using MdParamNames = std::array<const char*, 24>;
 	MdParamNames mdMachineParamNames(uint32_t _model);
 
+	// MD-033: the "clips" the machine's LCD draws between two value boxes whose
+	// parameters depend on each other (manual p.9). Bit i: parameters i and i + 1
+	// (0-23: SYNTHESIS, EFFECTS, ROUTING, eight each) are joined. Measured on OS 1.63,
+	// every machine and page (gapProbesFirmwareTest w12clip, which checks this table).
+	uint32_t mdMachineClips(uint32_t _model);
+
 	// "TRX", "EFM", "E12", "P-I", "GND", "INP", "MID", "CTR", "ROM", "RAM"; empty
 	// for an unknown model.
 	std::string mdMachineFamily(uint32_t _model);

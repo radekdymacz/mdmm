@@ -4,7 +4,7 @@
 The LCD sits in the middle of the top bar. It shows the state of the machine: the engine, the transport, the tempo, the position, the pattern, the kit and the lock count. A second line holds values that depend on the workspace. Most fields are also controls.
 
 ## THE LCD USER INTERFACE
-<!-- rows: MD-027 MD-028 MD-029 MD-030 MD-031 MD-032 MD-033 @3fc498 -->
+<!-- rows: MD-027 MD-028 MD-029 MD-030 MD-031 MD-032 MD-033 @ce1796 -->
 
 ![The LCD](shot:md-lcd)
 
@@ -84,7 +84,9 @@ The machine shows the level of the track as a bar on its screen. The editor show
 
 Parameters appear as value boxes on the Sound and Mix workspaces. A box shows the parameter name and its value, 0 to 127. A few parameters run from one side to the other, or from cut to boost, and show -64 to +63 with 0 in the middle. They are PAN, EQG, the levels and balances of the RAM recorder, and the gains of the master EQ's CTR machine.
 
-{gap:MD-033}The editor does not draw the clip that the machine shows between two values that depend on each other.{/gap}
+When two parameters depend on each other, the machine draws a small clip between their values. The Sound workspace draws the same clip, a small arch over the gap between the two boxes, for example between RAMP and RDEC on TRX-BD and between FLTF, FLTW and FLTQ on every machine. The editor groups the boxes by what they do, so the two boxes of a pair can sit in two groups. Point at a box to see which value it works with.
+
+![Clips between RAMP and RDEC, and between the filter's values](shot:md-sound-clips)
 
 ## LAYER EDIT AND WINDOWS
 <!-- rows: MD-034 @718129 -->

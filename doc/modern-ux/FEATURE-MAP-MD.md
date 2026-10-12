@@ -53,7 +53,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.9 | Kit name and number | Current kit | ✅ | LCD: Kit with saved/edited chip |  | 1 |
 | p.9 | Synth, machine and page text | Focus info | ✅ | Sound: machine button, family; LCD line 2 |  | 1 |
 | p.9 | Level bar (overall volume of the track) | LEV meter | ✅ | Mix: the LEV box's bar shows the stored level | The box's fill is the level, as the LCD's bar. | 1 |
-| p.9 | Eight value boxes with 'clip' between dependent values | Parameter display | 🟡 | Value boxes | Dependent-pair clip not drawn. | – |
+| p.9 | Eight value boxes with 'clip' between dependent values | Parameter display | ✅ | Sound: an arch over the gap between two boxes the machine joins with a clip; each box of a pair names the other in its tooltip | Clips measured on the firmware for every machine and page (gapProbesFirmwareTest w12clip, elektronData::mdMachineClips) | 1 |
 | p.9 | Windows over the main screen, icon help, EXIT closes | Layer edit | ➖ | Popovers close with Esc |  | – |
 | p.10 | Load a kit and trig tracks (quick start) | Basic play | ✅ | Kit library; step grid; piano keys | See §4. | 1 |
 | p.10 | Accelerated knob editing (pressed knob) | Coarse step | ✅ | Wheel with Shift = 10; Shift-drag = fine |  | 1 |
@@ -392,13 +392,13 @@ Method: manual read in full; claims checked against the page files (`source/elek
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 259 |
-| 🟡 Partial | 15 |
+| ✅ Yes | 260 |
+| 🟡 Partial | 14 |
 | ❌ No | 6 |
 | ➖ Not applicable | 16 |
 | Total | 296 |
 
-Of the 280 applicable rows, 259 are fully covered, 15 partly, 6 not at all.
+Of the 280 applicable rows, 260 are fully covered, 14 partly, 6 not at all.
 
 ### Top gaps (our UI), most important first
 
