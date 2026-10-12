@@ -677,7 +677,7 @@ namespace
 				{
 					m_chain = {};
 					m_pattern = list[0];
-					loadKit(m_patterns[m_pattern].kit);
+					recallKit(m_patterns[m_pattern].kit);
 				}
 				else
 				{
@@ -817,6 +817,14 @@ namespace
 		// replies waiting: the host steps again at once (a background load is a request and its reply, back to back)
 		bool busy() const { return !m_replies.empty(); }
 	private:
+		// a pattern recalls its kit, but the same kit is not read again: the working kit keeps its edits (the firmware does:
+		// mmDeskFirmwareTest machine, "another pattern with the same kit"; MM manual 1-18)
+		void recallKit(const uint8_t _k)
+		{
+			if((_k & 127) != m_kit)
+				loadKit(_k);
+		}
+
 		void loadKit(const uint8_t _k)
 		{
 			m_kit = _k & 127;
@@ -848,7 +856,7 @@ namespace
 			case 0x68: reply(ed::encodeMmPattern(m_patterns[v & 127])); return;
 			case 0x6a: reply(ed::encodeMmSong(m_songs[v % ed::MmSong::g_slots])); return;
 			case 0x56: m_global = v & 7; return;
-			case 0x57: m_chain = {}; m_pattern = v & 127; loadKit(m_patterns[m_pattern].kit); return;
+			case 0x57: m_chain = {}; m_pattern = v & 127; recallKit(m_patterns[m_pattern].kit); return;
 			case 0x58: loadKit(v); return;
 			case 0x59: { auto k = m_working; k.position = v & 127; m_kits[v & 127] = k; m_kit = v & 127; return; }
 			case 0x6c: m_song = v % ed::MmSong::g_slots; return;
@@ -892,7 +900,7 @@ namespace
 				{
 				case 0x01: m_global = _m[8] & 7; break;
 				case 0x02: loadKit(_m[8]); break;
-				case 0x04: m_pattern = _m[8] & 127; loadKit(m_patterns[m_pattern].kit); break;
+				case 0x04: m_pattern = _m[8] & 127; recallKit(m_patterns[m_pattern].kit); break;
 				case 0x08: m_song = _m[8] % ed::MmSong::g_slots; break;
 				case 0x10: m_songMode = _m[8] != 0; break;
 				case 0x20: m_poly = _m[8] != 0; break;
