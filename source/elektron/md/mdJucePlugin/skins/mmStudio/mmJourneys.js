@@ -944,7 +944,11 @@ const MmJourneys = (() => {
 			{ say: "Cmd-drag over steps 5 to 7 of the roll: a step selection", act: async (u, c) => { if (S().stepSel) clearSel(); await dragRoll(u, c.t, [4, 6], { cmd: true }); }, screen: () => ok(!!S().stepSel, "nothing selected") },
 			{ say: "Shift-click RECORD (stopped): step recording, the cursor on step 1, the selection dropped, no new row above the roll", act: async (u, c) => { c.top = $1("#seqscroll")?.getBoundingClientRect().top; if (S().playing) u.click("#play");
 				/* the selection's drag may still be on its way through SYSEX RECV on a busy Mac: once it is in */
-				await recvIdle(); results.length = 0; u.click("#rec", { shift: true }); },
+				await recvIdle(); results.length = 0; u.click("#rec", { shift: true });
+				/* refused while the panel still takes an earlier dump on SYSEX RECV (the keys would be lost: "The panel is busy");
+				   clicked again then, as clickMidiMute and mm-seq-first-beat's PLAY (B-014) */
+				for (let i = 0; i < 5 && await until(() => results.some(r => r.op === "record" && r.ok === false && /busy/.test(r.errors?.[0] || "")), 1500); i++) {
+					c.note = "the plug-in said the panel was busy (SYSEX RECV); clicked again"; results.length = 0; await sleep(1500); u.click("#rec", { shift: true }); } },
 				machine: () => ok(tele.last?.record === "step" && stepAt() === 0, `record ${tele.last?.record}, cursor ${stepAt()}; ${resultsSay()}`),
 				screen: c => ok(S().recMode === "step" && !S().stepSel && !!$1(".stepcur") && $1("#rec").classList.contains("step") && $1("#seqscroll")?.getBoundingClientRect().top === c.top,
 					`step ${S().recMode}, selection ${JSON.stringify(S().stepSel)}, cursor ${!!$1(".stepcur")}, roll top ${c.top} -> ${$1("#seqscroll")?.getBoundingClientRect().top}`), within: 8000 },
