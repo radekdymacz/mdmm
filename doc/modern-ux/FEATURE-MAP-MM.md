@@ -375,7 +375,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Song editing 1-77 | Insert / remove rows (FUNCTION + arrows) | Row edit | ✅ | Row Duplicate, Delete, Add loop, drag |  | 1 |
 | Song editing 1-77 | Copy, paste, clear, undo rows | Row clipboard | ✅ | LCD COPY / PASTE / CLR; page undo |  | – |
 | Song edit transport 1-77 | Start from any row (ENTER) | Play from row | ✅ | Song: Enter on the selected row (▶ From here) |  | 1 |
-| Song edit transport 1-77 | Counter in bars and beats | Song time | 🟡 | Song header: rows, bars, time | Not a live counter | – |
+| Song edit transport 1-77 | Counter in bars and beats | Song time | ✅ | Song: the Arrangement header reads Playing · bar:beat while the song plays (the machine's counter, telemetry songSteps) | RAM 0x2bdf3c, the EDIT SONG header's counter (gapProbesFirmwareTest w12mmcounter); song rows, bars and time stay in the Songs column | 1 |
 | Song loops 1-78 | Loop to a row, repeat count, nesting | Loop | ✅ | Row command LOOP |  | 1 |
 | Song jump 1-78 | Forward jump | Jump | ✅ | Row command JUMP |  | – |
 | Song halt 1-78 | Pause playback | Halt | ✅ | Row command HALT |  | – |
@@ -531,8 +531,8 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 334 |
-| 🟡 | 16 |
+| ✅ | 335 |
+| 🟡 | 15 |
 | ❌ | 1 |
 | ➖ | 34 |
 | Total | 385 |
