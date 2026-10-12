@@ -1,6 +1,7 @@
 "use strict";
-/* Mix: a strip a track (level, pan, drive, sends, output, mute and solo), the master effects with their
-   editors. */
+/* Mix: a strip a track (LEV, volume, pan, drive, sends, output, mute and solo), the master effects with their
+   editors. LEV is the kit's level of the track (the machine's LEVEL knob: not lockable, no LFO), the `level`
+   command; VOL under it is the routing page's volume. */
 
 /* ===== Mix ===== */
 function renderMix() {
@@ -8,6 +9,7 @@ function renderMix() {
  <div class="scroll"><div class="strips">${V.tracks.map((t, i) => {
 		const out = t.out || "MAIN", direct = out !== "MAIN"; return `<div class="strip ${i === S.sel ? "sel" : ""} ${direct ? "direct" : ""}" data-sel="${i}" style="${audible(i) ? "" : "opacity:.5"}">
   <div class="top2"><i class="led act" data-act="${i}"></i><span>${i + 1}</span></div>
+  ${levBox(i)}
   ${"VOL" in t.rt ? `<div class="fader" role="slider" tabindex="0" aria-label="Track ${i + 1} volume" data-g="rt" data-n="VOL" data-t="${i}"><div class="tr"><i></i></div><div class="cap2"></div></div>` : `<div class="fader"></div>`}
   <div class="v" data-show="${i}"></div>
   ${["PAN", "DIST", "DEL", "REV"].map(n => n in t.rt ? (direct && (n === "DEL" || n === "REV") ? pc("rt", n, { t: i }).replace('class="pc"', `class="pc mainonly" title="${n === "DEL" ? "Delay" : "Reverb"} sends only reach the main outputs; this track goes to OUT ${out}. The value is kept."`) : pc("rt", n, { t: i })) : `<div class="pc empty" aria-hidden="true"></div>`).join("")}
@@ -20,6 +22,11 @@ function renderMix() {
   <canvas class="ed sm" data-ed="${id}" aria-label="${f.name} screen. Drag the dots."></canvas>
   <div class="ctl four">${f.k.map(n => pc("mfx", n, { f: id })).join("")}</div></section>`).join("")}</div>`;
 	syncControls(); redraw();
+}
+/* the LEV box of track i: a value box like the others (drag, wheel, arrows; double-click 100, the kit's neutral level),
+   its fill the stored level (mdDeskApp.js ref: data-g "lev") */
+function levBox(i) {
+	return pc("lev", "LEV", { t: i }).replace('aria-label="LEV"', `aria-label="Track ${i + 1} level" title="LEV: track ${i + 1}'s level in the kit, the machine's LEVEL knob. Not lockable. Double-click: 100."`).replace('class="pc"', 'class="pc lev"');
 }
 /* The master effects' editors (their values: V.mfx; sendEditor sends them as masterFx) */
 ED.eq = {

@@ -56,7 +56,11 @@ check(!badMod.length, "no ⇧ or ⌘ commands but ⇧B (tap tempo), ⌘Z ⌘⇧Z
 const EXCLUSIVE = new Set([" Escape", " ArrowLeft", " ArrowRight", " Enter", " Delete", " Backspace"]);
 const by = new Map();
 for (const b of run) for (const id of ids(b)) for (const m of mods(b)) { const k = m + " " + id; by.set(k, [...(by.get(k) || []), b]); }
-const clash = [...by].filter(([k, bs]) => bs.length > 1 && (bs.some(b => !b.when) || !EXCLUSIVE.has(k)));
+/* an entry for one dialog only (modal: its id, not "panel") never runs beside an entry with no modal: the dialog's
+   keys are its own while it is open (deskKeys.js), the page's run only while none is (wave 8: Space hears a machine in
+   the machine picker, plays everywhere else) */
+const apart = bs => bs.length === 2 && bs.some(b => b.modal && b.modal !== "panel" && b.when) && bs.some(b => !b.modal);
+const clash = [...by].filter(([k, bs]) => bs.length > 1 && !apart(bs) && (bs.some(b => !b.when) || !EXCLUSIVE.has(k)));
 check(!clash.length, "no two dispatched entries share a key and modifiers" + (clash.length ? ": " + clash.map(([k, bs]) => `${k} → ${bs.map(name).join(" / ")}`).join("; ") : ""));
 
 /* ---- the approved map is there (RULE 1-3) ---- */

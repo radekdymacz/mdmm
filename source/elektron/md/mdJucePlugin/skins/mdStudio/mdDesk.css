@@ -2184,3 +2184,13 @@ header.top.tf4 .row2 .lcd2{gap:5px!important}
 .st.on.acc.sl.sw{background-size:88% 9px,9px 9px,100% 100%}
 html[data-tt=acc] #seq .st,html[data-tt=swg] #seq .st,html[data-tt=sld] #seq .st{cursor:cell}
 html[data-tt=acc] #seq .st:not(.on),html[data-tt=swg] #seq .st:not(.on),html[data-tt=sld] #seq .st:not(.on){cursor:not-allowed}
+/* wave 8: the machine picker's audition. ▶ on the hovered, focused and auditioned machine key; the line under the preview */
+.mk{position:relative}
+.mk .mk-play{display:none;position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;background:var(--led);cursor:pointer}
+.mk .mk-play::after{content:"";position:absolute;left:7px;top:5px;border-style:solid;border-width:4px 0 4px 6px;border-color:transparent transparent transparent #fff}
+.mk:hover .mk-play,.mk.kf .mk-play,.mk.aud .mk-play{display:block}
+.mk.aud{outline:2px solid var(--led);outline-offset:-2px}
+.mp-aud{grid-column:1/-1;display:flex;gap:10px;align-items:center;background:var(--lcd);color:var(--ink);font:11px/1.7 var(--pix);padding:6px 10px;border-radius:3px;outline:1px dashed var(--ink);outline-offset:-4px}
+.mp-aud span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase}
+.mp-audk{display:flex;gap:6px;align-items:center;background:transparent;box-shadow:none;color:var(--ink);font:11px var(--pix);text-transform:uppercase;padding:2px 4px}
+.mp-audk kbd{font:10px var(--pix);border:1px solid var(--ink);border-radius:2px;padding:0 4px}
