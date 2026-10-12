@@ -26,7 +26,7 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 ## Trig types and marks (wave 3)
 
 1. MD: paint Swing, Accent and Slide with the keys under the grid; switch All tracks / This track; Esc goes back to Trig; one undo per drag.
-2. MM: Slide and Swing drags on the roll's Note · Slide · Swing row, then one undo; Esc.
+2. MM: the Note · Slide · Swing row is gone (2026-10-12); see "MM: a trig's marks on the roll" below.
 3. MD: paint swing on a step, remove the trig, add it again (B-070: no swing mark should flash back).
 
 ## Transport (wave 2)
@@ -140,3 +140,13 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 10. MM (MM-095): open the pattern chooser, ⌥-click a pattern (selected, not loaded), choose a kit in the Kit list: the pattern's tile shows the new K number, ⌘Z takes it back. On the pattern that plays the kit loads at once; with unsaved kit edits it asks first. Choosing in the Kit list no longer closes the chooser.
 11. MM (MM-271): Song page, SONG, PLAY: the Arrangement header reads Playing · 001:01 and counts bars and beats as the song plays (through repeats and loops, as the machine's EDIT SONG header); STOP: the counter goes.
 12. MM (MM-301): Perform › Multi map: a range's PAT list runs CUR, A01 to H16; choose H16, play a key in the range: the machine starts H16. ⌘Z takes it back.
+
+## MM: a trig's marks on the roll (`feat/0.6-mm-foot`, 2026-10-12)
+
+1. MM Sequence: under the roll there is no Note · Slide · Swing row, no hint line and no A F L dots; the roll is taller by that much (a MIDI track keeps its VEL row).
+2. A note that fires only some envelopes shows their letters at the start of its bar (A, AF, L ...; small ticks where the bar is narrow); a note with all three shows nothing.
+3. Over a note: a dot where the step has a lock, a small ramp where it slides and holds a lock (a slide on a step without a lock shows nothing), a teal slant where its trig swings (the default swing on empty steps shows nothing).
+4. A trigless trig is a small hollow square in its step; a NOTE OFF has a small yellow lamp at the top of its step (OFF beside it where it ends no note).
+5. Right-click a note (or the ⋯ of a selection): NOTE OFF, Trigless trig (locks only), Envelopes > Amp / Filter / LFO, Slide, Swing, each ticked when every selected step has it; Clear locks after Clear. Each sets every selected step; one ⌘Z takes it back.
+6. Trigless trig on an empty step adds one at the track's pitch (draw a lock on it in the lane); choose it again: it goes with its locks.
+7. On a MIDI track the menu has Slide and Swing, no Envelopes or Trigless trig.
