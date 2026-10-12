@@ -4,6 +4,14 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-102 · Both editors: the SysEx import panel runs past the bottom of the window; lib-syx-place says "no question"
+
+- **From:** the 0.6 e2e run, 2026-10-13 (pictures at 1440 x 923: e2e-mm-lib-syx-place-fail, e2e-md-lib-syx-place-fail; journeys md-lib-syx-place, mm-lib-syx-place).
+- **What happens:** the panel starts under the header and is as tall as the window less 48 px, so its foot (Cancel, Verify only, Import) runs past the bottom of the window. The two journeys failed with "no question" while the question was on the page.
+- **Cause:** the panel stood where the page's flow put it (no top of its own) with a height made for the whole window (review 1, B-095). The journeys asked for "Import 2", the two kits of the page tier's file; the e2e run's file (every committed test dump) holds three, so the question said Import 3: test data, not the page.
+- **Fix (`fix/0.6-e2e-mm`):** the panel is centred in the window, its size the window's alone (up to 1120 x 820, 16 px from each edge at most; `deskSyx.css`): always wholly inside, one size for its whole run (B-095 kept). The journeys count the file's kits and ask for that many (`Import n`, `n imported`, the MD's Verify only `n of n`); md-syx-running-reach and mm-syx-running-reach also check the panel is wholly inside the window. Page tier and firmware: both journeys of each editor pass.
+- **Status:** fixed on `fix/0.6-e2e-mm`.
+
 ## B-099 · Monomachine: PLAY right after an edit or an undo plays silence (or nothing) for seconds
 
 - **From:** the 0.6 e2e run, 2026-10-13 (mm-real-sequence-plays on the firmware, picture e2e-mm-real-sequence-plays-fail; mm-keys-space-play the same way).
