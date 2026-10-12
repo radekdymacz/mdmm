@@ -65,7 +65,7 @@ namespace mmDesk
 		}
 		if(keys.empty())
 			return ok();
-		if(!pressKeys(keys))
+		if(!pressTransportKeys(keys))
 		{
 			// the panel is busy taking an edit (SYSEX RECV): RECORD goes once it is free, as PLAY does
 			m_recordWaiting = true;

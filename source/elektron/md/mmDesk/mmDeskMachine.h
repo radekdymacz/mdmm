@@ -185,6 +185,9 @@ namespace mmDesk
 		void publishTransport(double _now, bool _recordChanged);
 		void applyWorkingKit(double _now, const Documents& _view);
 		bool pressKeys(const std::vector<Key>& _keys);
+		// PLAY, STOP and RECORD, which wait for the panel (pumpTransport, pumpRecord): also not while an edit's dump waits
+		// for its read-back (B-099)
+		bool pressTransportKeys(const std::vector<Key>& _keys);
 		deskCore::KitState kitState(const Documents& _view) const;
 		void setBaseChannel(const elektronData::MmGlobal& _g);
 

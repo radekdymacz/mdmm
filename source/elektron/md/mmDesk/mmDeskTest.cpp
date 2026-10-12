@@ -59,18 +59,35 @@ namespace
 		auto t = screen(mmDesk::Screen::GlobalEdit);
 		t.recvCount = 7;
 		r.tick(0, t);
-		check(r.parked() && !r.taking(), "parked, nothing sent yet: not taking");
+		check(r.parked() && r.taking(), "B-099: parked, the dump goes on the next tick: taking (a key now reaches the machine before it)");
 		auto out = r.tick(10, t);
 		check(out.sends.size() == 1 && r.taking(), "the dump sent, the RECV count not moved: taking (a key now is lost)");
 		t.recvErrors = 1;
 		r.tick(20, t);
-		check(!r.taking(), "a message counted (an error counts too): taken");
+		check(r.taking(), "B-099: a message counted (an error counts too): still taking for settleMs");
+		r.tick(20 + r.settleMs, t);
+		check(!r.taking(), "settleMs after: taken");
 		r.want({0xf0, 2, 0xf7});
-		r.tick(30, t);
+		r.tick(200, t);
 		check(r.taking(), "another dump sent: taking again");
 		t.recvCount = 8;
-		r.tick(40, t);
+		r.tick(210, t);
+		r.tick(300, t);
 		check(!r.taking() && r.parked(), "taken: keys work on SYSEX RECV, still parked");
+		// B-099: the machine clears its count as it opens SYSEX RECV, and the screen may show first
+		mmDesk::RecvSession c;
+		c.want({0xf0, 1, 0xf7});
+		auto u = screen(mmDesk::Screen::GlobalEdit);
+		u.recvCount = 5;
+		c.tick(0, u);
+		u.recvCount = 0;
+		c.tick(10, u);
+		c.tick(100, u);
+		check(c.taking(), "B-099: parked on the old count, the count cleared, the dump not counted: taking");
+		u.recvCount = 1;
+		c.tick(110, u);
+		c.tick(200, u);
+		check(!c.taking(), "B-099: counted from the cleared count: taken");
 	}
 
 	void recvSession()
@@ -414,7 +431,9 @@ namespace
 			for(auto& b : std::exchange(m.inFlight, {}))
 				m.take(b);
 			run(20);
-			check(m.keysPressed == keys0 + 2, ("taken: the waiting STOP and the waiting RECORD are pressed, once each (PLAY is not): " + std::to_string(m.keysPressed - keys0)).c_str());
+			check(m.keysPressed == keys0, "B-099: taken, the machine still settling: nothing pressed yet");
+			run(100);
+			check(m.keysPressed == keys0 + 2, ("taken and settled: the waiting STOP and the waiting RECORD are pressed, once each (PLAY is not): " + std::to_string(m.keysPressed - keys0)).c_str());
 			run(200);
 			check(m.keysPressed == keys0 + 2, "and nothing more");
 			m.recording = -1;

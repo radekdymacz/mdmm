@@ -2551,6 +2551,94 @@ namespace
 		check(!pagePlaying(), "B-104: stopped");
 	}
 
+	// B-099 (the 0.6 e2e run, mm-real-sequence-plays): four notes, PLAY and STOP, the pattern cleared, PLAY and STOP, one
+	// undo, PLAY at once: the machine must play the notes the page shows, at once (the PLAY waits for the dump).
+	// Measured: the machine clears its RECV count as it opens SYSEX RECV, after the screen shows; a park on the old count
+	// saw the dump as taken, and a key 10 ms after the count moved is still lost (20 ms is taken): the PLAY that waited
+	// was pressed into the dump and lost, and the machine stood still until PLAY again.
+	void undoPlay(const Bytes& _rom)
+	{
+		std::puts("undoplay");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		while(r.desk->loaded() < 288)
+			r.run(100);
+		constexpr uint8_t slot = 65;
+		auto empty = *r.desk->pattern(slot);
+		empty.length = 16;
+		for(auto* m : {&empty.amp, &empty.filter, &empty.lfo, &empty.noteOff, &empty.midiTrig, &empty.midiNoteOff, &empty.pitch, &empty.chord, &empty.midiNote, &empty.slide, &empty.midiSlide})
+			m->fill(0);
+		for(auto& n : empty.notes)
+			n.fill(ed::MmPattern::g_noNote);
+		for(auto& m : empty.lockMasks)
+			m.fill(0);
+		for(auto& row : empty.lockRows)
+			row.fill(ed::MmPattern::g_noLock);
+		empty.lockRowCount = 0;
+		empty.chordNotes.fill(0xffff);
+		empty.chordNoteCount = 0;
+		empty.midiNotes.fill(0xffff);
+		empty.midiNoteCount = 0;
+		const auto set = [&](const ed::MmPattern& _p) { r.msg(R"({"op":"set","kind":"pattern","doc":)" + ed::json::write(ed::mmPatternToJson(_p)) + "}"); };
+		set(empty);
+		r.run(2000);
+		r.msgConfirmed(R"({"op":"select","p":65})");
+		r.run(500);
+		for(int i = 0; i < 200 && r.desk->recvState() != "idle"; ++i)
+			r.run(100);
+		const auto trigs = [&] { const auto q = *r.desk->pattern(slot); int n = 0; for(size_t st = 0; st < 16; ++st) n += ed::mmStepSet(q.pitch[0], st); return n; };
+		// PLAY, how long until the step moves twice (the RAM flag can stay 0 here), STOP
+		const auto playNow = [&](const char* _what)
+		{
+			const double t0 = r.ms();
+			r.msg(R"({"op":"play"})");
+			const auto res = r.lastResult();
+			int moves = 0, last = r.tel.step.load();
+			for(int i = 0; i < 400 && moves < 2; ++i)
+			{
+				r.run(20);
+				if(r.tel.step.load() != last)
+				{
+					last = r.tel.step.load();
+					++moves;
+				}
+			}
+			const double took = r.ms() - t0;
+			r.run(2000);
+			const double level = r.rms(2000);
+			std::printf("  %s: PLAY %s, the step moving after %.0f ms (recv %s), rms %.4f\n", _what, ed::json::write(res).c_str(), took, r.desk->recvState().c_str(), level);
+			r.msg(R"({"op":"stop"})");
+			r.run(600);
+			return std::make_pair(took, level);
+		};
+		// as the page does it: four clicks in the roll (step intents, 250 ms apart), Alt+Delete (clearPattern), Cmd+Z (undo)
+		for(const int st : {12, 8, 4, 0})
+		{
+			r.msg(R"({"op":"step","p":65,"t":0,"s":)" + std::to_string(st) + R"(,"v":{"n":[48],"a":1,"f":1,"l":1}})");
+			r.run(250);
+		}
+		r.run(300);
+		const auto on = playNow("four notes, PLAY while their dump goes");
+		check(on.first < 2000 && on.second > 0.002, "B-099: PLAY right after an edit plays the notes once the dump is in");
+		r.msg(R"({"op":"clearPattern","p":65})");
+		r.run(2000);
+		check(trigs() == 0, "cleared");
+		const auto off = playNow("cleared");
+		check(off.second < on.second / 4, "cleared: it plays silence");
+		r.msg(R"({"op":"undo"})");
+		r.run(50);
+		check(trigs() == 4, "undo: the four notes are back in the core's pattern");
+		const auto back = playNow("undo, PLAY at once");
+		check(back.first < 2000 && back.second > on.second / 2, "B-099: PLAY right after the undo plays the notes at once (" + std::to_string(static_cast<int>(back.first)) + " ms, rms "
+			+ std::to_string(back.second) + ")");
+		r.run(3000);
+		const auto later = playNow("undo, PLAY 3 s later");
+		check(later.second > on.second / 2, "and later too");
+		check(r.desk->pattern(slot) && trigs() == 4, "the machine holds the four notes (read back)");
+	}
+
 	void recording(const Bytes& _rom)
 	{
 		std::puts("recording");
@@ -5045,6 +5133,8 @@ int main(const int _argc, char** _argv)
 			swingProbe(rom);
 		if(only == "chorderase")
 			chordErase(rom);
+		if(only.empty() || only == "undoplay")
+			undoPlay(rom);
 		check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 		std::printf("%s (%d failures)\n", g_failures ? "FAIL" : "PASS", g_failures);
 		return g_failures ? 1 : 0;

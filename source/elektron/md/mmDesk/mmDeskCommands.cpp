@@ -146,7 +146,7 @@ namespace mmDesk
 			m_pendingTransport.reset();
 			return;
 		}
-		if(pressKeys({*m_pendingTransport}))
+		if(pressTransportKeys({*m_pendingTransport}))
 			m_pendingTransport.reset();
 	}
 
@@ -167,6 +167,20 @@ namespace mmDesk
 			states += static_cast<size_t>(keyStates(k));
 		m_keysUntilMs = std::max(m_keysUntilMs, now()) + static_cast<double>(states) * g_keyStateMs + g_keysMarginMs;
 		return true;
+	}
+
+	// B-099 (the 0.6 e2e run, mm-real-sequence-plays on the firmware): PLAY right after an edit was pressed while the
+	// machine still took the edit's dump on SYSEX RECV and was lost (the page said the notes were there, the machine stood
+	// still or played on without them until PLAY again). The RECV count says when the dump arrived, not when the machine
+	// is done with it, and the editor's clock is not the machine's; the read-back is the machine's own answer that it
+	// holds the dump (it answers the request after it). So the waiting transport keys go once no dump waits for its
+	// read-back (a few hundred ms), or its read-back is late (g_transportSettleMs after it went: a read-back that does not
+	// match keeps a push busy until it times out, which a key need not wait for).
+	bool MmMachine::pressTransportKeys(const std::vector<Key>& _keys)
+	{
+		if(!m_profile.wire && m_pushes.anyBusyWithin(now(), g_transportSettleMs))
+			return false;
+		return pressKeys(_keys);
 	}
 
 	// ---- machine commands ----
@@ -361,7 +375,7 @@ namespace mmDesk
 			sendActiveGlobal(activeSlot() & 7);
 			m_reactivateGlobal = false;
 		}
-		if(!pressKeys({Key::Play}))
+		if(!pressTransportKeys({Key::Play}))
 		{
 			// 0.3.4: the panel is busy taking an edit (SYSEX RECV): PLAY goes once it is free
 			m_pendingTransport = Key::Play;
@@ -376,7 +390,7 @@ namespace mmDesk
 
 	Outcome MmMachine::cmdStop(const Value&, const Documents&)
 	{
-		if(pressKeys({Key::Stop}))
+		if(pressTransportKeys({Key::Stop}))
 		{
 			m_pendingTransport.reset();
 			return ok();
