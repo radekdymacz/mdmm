@@ -37,7 +37,10 @@ const MmJourneys = (() => {
 	{ const send0 = Bridge.send; Bridge.send = (m, o) => { sent.push(m.op); if (sent.length > 50) sent.shift(); if (m.op === "noteOn") { notesOn.push(m.pitch); if (notesOn.length > 50) notesOn.shift(); }
 		if (m.op === "midi") { midiSent.push(m.b); if (midiSent.length > 50) midiSent.shift(); }
 		if (m.op === "poly") { polySent.push({ on: m.on, t: m.t }); if (polySent.length > 20) polySent.shift(); } return send0(m, o); }; }
+	let wireSeq = 0;
+	const wireLog = [];	/* what the core handed the device edge, as the wire engine would encode it (the page tier's stub host: {type: "wire", kind, b, n}), newest last */
 	Bridge.onMessage(m => {
+		if (m.type === "wire") { m.seq = ++wireSeq; wireLog.push(m); if (wireLog.length > 600) wireLog.shift(); }
 		if (m.type === "telemetry") { tele.last = m; if (m.playing) { tele.steps.push(m.step); if (tele.steps.length > 64) tele.steps.shift(); } }
 		if (m.type === "result") { results.push(m); if (results.length > 50) results.shift(); }
 	});
@@ -2039,7 +2042,300 @@ const MmJourneys = (() => {
 			{ ...undoKey, machine: c => ok(partsOf(c.a) === c.p0, "track " + partsOf(c.a)), within: 10000 }
 		]
 	};
-	const all = [bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
+
+	/* ======================= 0.6 slice 5 (Monomachine): journeys for the rows that had none (doc/features/unproved-mm.md) =======================
+	   Page tier (no ROM): the editor's real core behind deskStubHost. A "machine" check reads the core's documents; the
+	   stub also hands the device edge's messages back as {type: "wire"} (what the wire engine would put on the cable: the CC
+	   number and the channel, the NRPN, the notes, the SysEx), so a journey can check what the machine would receive. */
+	const nonSys = n0 => wireLog.filter(w => w.seq > n0 && w.kind !== "sysex");
+	const hex2 = w => w.b.map(x => x.toString(16).padStart(2, "0")).join(" ");
+	const baseCh = () => gDoc()?.channels?.base ?? 0;
+	/* every value of the working kit that a Sound edit can reach, as flat cells (a changed cell names where) */
+	const kitCells = () => { const o = {}, k = wk(); k.tracks.forEach((tr, t) => { tr.pages.forEach((pg, p) => pg.forEach((v, i) => { o[`T${t + 1}.${p}.${i}`] = v; })); o["lev" + (t + 1)] = k.levels[t]; o["in" + (t + 1)] = tr.input; o["out" + (t + 1)] = tr.outputs; o["mach" + (t + 1)] = tr.machineName; }); return o; };
+	const cellDiff = (a, b) => Object.keys(b).filter(k => a[k] !== b[k]);
+	const histN = () => machine().history?.undoCount || 0;
+	const undoTo = async (u, n0) => { for (let i = 0; i < 500 && histN() > n0; i++) { const k = histN(); blur(); u.key("z", { cmd: true }); if (!await until(() => histN() < k, 4000)) break; } await sleep(300); };
+	/* the strings a canvas draws (its labels): the page's drawing run once on it with fillText watched */
+	const canvasTexts = c => { const f0 = CanvasRenderingContext2D.prototype.fillText, out = []; CanvasRenderingContext2D.prototype.fillText = function (t, ...r) { out.push(String(t)); return f0.call(this, t, ...r); }; try { drawEd(c); } finally { CanvasRenderingContext2D.prototype.fillText = f0; } return out; };
+	/* a value box (page g, index i): its element, meta and the kit's cell of track t */
+	const box = (g, i) => $1(`#main .pc[data-g="${g}"][data-n="${i}"]`);
+	const cellOf = (t, g, i) => wk().tracks[t].pages[PAGES.indexOf(g)][i];
+	/* press an arrow on a value box and read back: what moved in the kit, the wire's CC, the box's text */
+	async function nudgeBox(u, t, g, i) {
+		const el = box(g, i); if (!el) return { err: `no box ${g}.${i}` };
+		const v0 = cellOf(t, g, i), m = ref(el)[2], mx = maxOf(m), before = kitCells(), w0 = wireSeq;
+		el.focus(); u.key(v0 >= mx ? "ArrowDown" : "ArrowUp");
+		if (!await until(() => cellOf(t, g, i) !== v0, 3000)) return { err: `${g}.${i} stayed ${v0}` };
+		const v1 = cellOf(t, g, i); await until(() => nonSys(w0).some(w => w.kind === "cc"), 2000); await sleep(120);
+		return { v0, v1, moved: cellDiff(before, kitCells()), cc: nonSys(w0).filter(w => w.kind === "cc"), text: valueText(`#main .pc[data-g="${g}"][data-n="${i}"]`), name: el.getAttribute("aria-label") };
+	}
+	/* the Monomachine manual's CC numbers of the DATA pages (Appendix B): SYN 48-55, AMP 56-63, FLT 72-79, EFX 80-87, LFO 1 88-95, LFO 2 104-111, LFO 3 112-119 */
+	const CC_BASE = { SYN: 48, AMP: 56, FLT: 72, EFX: 80, LF1: 88, LF2: 104, LF3: 112 };
+	/* did the box's edit reach its own cell, only that cell, and the wire as the one CC the manual names, on the track's channel? */
+	const checkBox = (r, t, g, i) => {
+		if (r.err) return r.err;
+		const want = `T${t + 1}.${PAGES.indexOf(g)}.${i}`;
+		if (r.moved.length !== 1 || r.moved[0] !== want) return `${g}.${i}: moved ${r.moved.join(",") || "nothing"}`;
+		const cc = r.cc.map(w => w.b);
+		if (cc.length !== 1 || cc[0][0] !== (0xb0 | (baseCh() + t)) || cc[0][1] !== CC_BASE[g] + i || cc[0][2] !== r.v1) return `${g}.${i}: wire ${r.cc.map(hex2).join(" | ") || "nothing"}, wanted b${(baseCh() + t).toString(16)} ${(CC_BASE[g] + i).toString(16)} ${r.v1.toString(16)}`;
+		return null;
+	};
+	/* ---- Appendix A: every machine of the manual, picked on a track, with the knobs the manual lists, in its order; each knob moves its own cell and sends its own CC ---- */
+	const MANUAL_MACHINES = [
+		["SWAVE-SAW", "UNIL UNIW UNIX SUBX SUB1 SUB2 TUNE"], ["SWAVE-PULS", "UNIL UNIW SUB1 SUB2 PW PWAD PWRS TUNE"], ["SWAVE-ENS", "PCH2 PCH3 PCH4 WAVE PW CHRL CHRW TUNE"],
+		["SID-6581", "PW PWAD PWRS WAVE MOD MSRC MFRQ TUNE"], ["DPRO-WAVE", "WAVE WP WPM WPRS SYNC SFRQ TUNE"], ["DPRO-BBOX", "PTCH STRT RTRG RTIM"],
+		["DPRO-DDRW", "WAV1 MIX WAV2 TIME BR1 WID BR2 TUNE"], ["DPRO-DENS", "PCH2 PCH3 PCH4 WAVE CHRL CHRW TUNE"],
+		["FM+STAT", "1FRQ 1FIN 1ENV 1FB 2FRQ 2VOL TONE TUNE"], ["FM+PAR", "1FRQ 1ENV 2FRQ 2ENV 3FRQ 3ENV TONE TUNE"], ["FM+DYN", "1FRQ 1FEN 1VOL 1VEN 2FRQ 2ENV 2FB TUNE"],
+		["VO-6", "VOC1 VOC2 V-SW VOIC CONS CLEN CVOL TUNE"], ["GND-GND", ""], ["GND-SIN", "TUNE"], ["GND-NOIS", "ST RED STON TUNE"],
+		["FX-THRU", "INP"], ["FX-REVERB", "DEC DAMP GATE MIX HP LP INP"], ["FX-CHORUS", "DEL DEP SPD MIX FB WID LP INP"], ["FX-DYNAMIX", "ATK REL THRS MIX RAT GAIN RMS INP"],
+		["FX-RINGMOD", "WAVE EXT MIX INP"], ["FX-PHASER", "CNTR DEP SPD MIX FB WID INP"],	/* the manual's page for the phaser lists no INP; the machine has it (every FX machine takes an input) */
+		 ["FX-FLANGER", "DEL DEP SPD MIX FB WID INP"]];
+	const machineReference = {
+		name: "mm-sound-machine-reference", proves: ["MM-324", "MM-325", "MM-326", "MM-327", "MM-328", "MM-329", "MM-330", "MM-331", "MM-332", "MM-333", "MM-334", "MM-335", "MM-337", "MM-338", "MM-339", "MM-340",
+			"MM-341", "MM-342", "MM-343", "MM-344", "MM-345", "MM-346", "MM-091", "MM-110", "MM-111", "MM-063"],
+		steps: [
+			go("sound"), sel(0),
+			{ say: "the Sound page has seven pages of eight values: SYN, AMP, FLT, EFX and the three LFOs, and the kit holds them all", screen: () => ok(["AMP", "FLT", "EFX"].every(g => $all(`#main .pc[data-g="${g}"]`).length === 8) && ["LF1", "LF2", "LF3"].every(g => $all(`#main .pc[data-g="${g}"]`).length === 4 && $1(`#lp${g[2]}`) && $1(`#ld${g[2]}`) && $all(`[data-set="ltrig"][data-l="${g}"] button`).length === 5 && $all(`[data-lwave="${g}"]`).length === 11), "boxes " + ["AMP", "FLT", "EFX", "LF1"].map(g => g + $all(`#main .pc[data-g="${g}"]`).length)),
+				machine: () => ok(wk().tracks.every(tr => tr.pages.length >= 7 && tr.pages.slice(0, 7).every(pg => pg.length === 8)), "pages " + wk().tracks[0].pages.map(p => p.length)) },
+			{ say: "the MKII plate on (two of the machines are MKII only)", act: (u, c) => { c.plate0 = document.documentElement.dataset.plate; if (c.plate0 !== "mk2") u.click("#platekey"); }, screen: () => ok(document.documentElement.dataset.plate === "mk2", "plate " + document.documentElement.dataset.plate) },
+			{ say: "pick each machine of the manual (its family, then its key): the machine is in the kit, the page shows the manual's knobs in the manual's order, each knob moves its own value and sends its own CC", act: async (u, c) => {
+				c.n0 = histN(); c.bad = []; c.n = 0; c.knobs = 0; c.t = 0;
+				for (const [m, want] of MANUAL_MACHINES) {
+					const fam = m.replace(/-.*$/, "").replace(/^(FM\+).*/, "FM+");
+					u.click("#machbtn"); await until(() => !$1("#machpop").hidden, 1500);
+					const famBtn = $1(`#machpop .mf[data-fam="${famKey(m)}"]`); if (famKey(m) !== fam || !famBtn) { c.bad.push(`${m}: family ${famKey(m)}, the manual's ${fam}`); if (!$1("#machpop").hidden) u.key("Escape"); continue; }
+					u.click(famBtn); await sleep(30);
+					const key = $1(`#machpop .mk[data-mach="${m}"]`); if (!key || key.disabled) { c.bad.push(m + ": no key"); if (!$1("#machpop").hidden) u.key("Escape"); continue; }
+					u.click(key); if (!await until(() => wk().tracks[0].machineName === m && S().tracks[0].m === m, 4000)) { c.bad.push(`${m}: not picked, kit has ${wk().tracks[0].machineName}`); continue; }
+					await sleep(250);
+					const boxes = $all('#main .pc[data-g="SYN"]').map(e => [+e.dataset.n, e.getAttribute("aria-label")]).sort((a, b) => a[0] - b[0]);
+					if (boxes.map(b => b[1]).join(" ") !== want) { c.bad.push(`${m}: ${boxes.map(b => b[1]).join(" ")} (manual: ${want})`); continue; }
+					/* TUNE is on every synth machine except the beat box and silence */
+					const tune = boxes.some(b => b[1] === "TUNE"), synth = !/^(FX-|GND-GND|DPRO-BBOX)/.test(m);
+					if (tune !== synth) c.bad.push(`${m}: TUNE ${tune}`);
+					for (const [i, name] of boxes) {
+						const r = await nudgeBox(u, 0, "SYN", i);
+						if (name === "INP") { if (r.err || !r.moved.length) c.bad.push(`${m} INP: ${r.err || "nothing moved"}`); else c.knobs++; continue; }
+						const e = checkBox(r, 0, "SYN", i); if (e) c.bad.push(m + " " + name + ": " + e); else c.knobs++;
+					}
+					if (m === "DPRO-BBOX" || m === "VO-6") Journey.snapshot(m === "VO-6" ? "mm-machine-vo6" : "mm-machine-bbox");
+					c.n++;
+				}
+				c.note = `${c.n} machines, ${c.knobs} knobs`; },
+				screen: c => ok(!c.bad.length, c.bad.slice(0, 6).join(" | ") + (c.bad.length > 6 ? ` (+${c.bad.length - 6})` : "")), machine: c => ok(c.n === MANUAL_MACHINES.length, c.n + " of " + MANUAL_MACHINES.length + " machines"), within: 1000 }
+		],
+		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); if (c.plate0 && document.documentElement.dataset.plate !== c.plate0) u.click("#platekey"); }
+	};
+	/* ---- Sound: the track effects, every value of AMP, FLT and EFX in the manual's order (Track effects chapter) ---- */
+	const EFFECT_PAGES = [["AMP", "ATK HOLD DEC REL DIST VOL PAN PORT"], ["FLT", "BASE WDTH HPQ LPQ ATK DEC BOFS WOFS"], ["EFX", "EQF EQG SRR DTIM DSND DFB DBAS DWID"]];
+	/* the values the manual gives a sign (below 0: headroom for DIST, a cut for EQG, left for PAN, stereo kept for DSND) */
+	const SIGNED_NAMES = new Set(["DIST", "PAN", "EQG", "DSND"]);
+	const signedText = v => (v - 64 > 0 ? "+" : "") + (v - 64);
+	const trackEffects = {
+		name: "mm-sound-track-effects", proves: ["MM-114", "MM-115", "MM-116", "MM-117", "MM-118", "MM-119", "MM-121", "MM-122", "MM-123", "MM-124", "MM-125", "MM-126", "MM-127", "MM-129", "MM-130", "MM-131", "MM-132", "MM-133", "MM-134", "MM-092", "MM-084"],
+		steps: [
+			go("sound"), sel(0),
+			{ say: "AMP, FLT and EFX: each value box has the manual's name at the manual's place; an arrow moves its own cell of the kit and sends its own CC on the track's channel; the sign shows where the manual gives one", act: async (u, c) => {
+				c.n0 = histN(); c.bad = []; c.n = 0;
+				for (const [g, names] of EFFECT_PAGES) {
+					const boxes = $all(`#main .pc[data-g="${g}"]`).map(e => [+e.dataset.n, e.getAttribute("aria-label")]).sort((a, b) => a[0] - b[0]);
+					if (boxes.map(b => b[1]).join(" ") !== names) { c.bad.push(`${g}: ${boxes.map(b => b[1]).join(" ")} (manual: ${names})`); continue; }
+					for (const [i, name] of boxes) {
+						const r = await nudgeBox(u, 0, g, i), e = checkBox(r, 0, g, i);
+						if (e) { c.bad.push(e); continue; }
+						const wantText = SIGNED_NAMES.has(name) ? signedText(r.v1) : String(r.v1);
+						if (r.text !== wantText) c.bad.push(`${g} ${name}: shows ${r.text}, wanted ${wantText}`); else c.n++;
+					}
+				}
+				Journey.snapshot("mm-sound-effects"); c.note = c.n + " values"; },
+				screen: c => ok(!c.bad.length, c.bad.slice(0, 6).join(" | ")), machine: c => ok(c.n === 24, c.n + " of 24 values"), within: 1000 },
+			{ say: "pick track 4: the same box moves track 4's cell only, on track 4's channel", act: async (u, c) => { u.click(rail(3)); await sleep(300); c.r = await nudgeBox(u, 3, "AMP", 0); },
+				screen: c => ok(S().sel === 3, "track " + S().sel), machine: c => ok(!checkBox(c.r, 3, "AMP", 0), checkBox(c.r, 3, "AMP", 0)), within: 8000 },
+			{ say: "pick another machine on track 4: only track 4's machine changes", act: async (u, c) => { c.b = kitCells(); u.click("#machbtn"); await until(() => !$1("#machpop").hidden, 1500); const m0 = wk().tracks[3].machineName; c.m1 = ["SID-6581", "FM+STAT"].find(m => m !== m0); u.click(`#machpop .mf[data-fam="${famKey(c.m1)}"]`); await sleep(50); u.click(`#machpop .mk[data-mach="${c.m1}"]`); await until(() => wk().tracks[3].machineName === c.m1, 4000); await sleep(300); },
+				machine: c => { const d = cellDiff(c.b, kitCells()); return ok(d.includes("mach4") && d.every(k => /^T4\.0\.|^mach4$|^in4$|^out4$/.test(k)), "changed " + d.join(",")); }, within: 8000 },
+			{ say: "the delay screen: drag its handle left by a quarter of the screen: DTIM falls by 64, in the 256ths of a bar the repeats sit apart", act: async (u, c) => { u.click(rail(0)); await sleep(300);
+					const cv = $1('#main canvas.ed[data-ed="delay"]'), r = cv.getBoundingClientRect(), h = ED.delay.handles(r.width, r.height, cv)[0]; c.d0 = cellOf(0, "EFX", 3); c.dx = -Math.round(r.width / 4); c.hx = h.x; c.W = r.width;
+					await u.drag(cv, [[Math.round(c.dx / 2), 0], [c.dx, 0]], {}, { fx: h.x / r.width, fy: Math.min(Math.max(h.y, 6), r.height - 6) / r.height }); },
+				machine: c => { const want = Math.round((c.hx + c.dx) / c.W * 256); return ok(Math.abs(cellOf(0, "EFX", 3) - want) <= 2 && cellOf(0, "EFX", 3) !== c.d0, `DTIM ${cellOf(0, "EFX", 3)}, wanted about ${want} (was ${c.d0})`); }, within: 8000 },
+			{ say: "type DSND below 0: the delay screen says stereo kept; above 0: ping-pong", act: async (u, c) => { const q = '#main .pc[data-g="EFX"][data-n="4"]', cv = () => $1('#main canvas.ed[data-ed="delay"]');
+					u.click(q, { cmd: true }); typeIn(u, "-20"); await until(() => cellOf(0, "EFX", 4) === 44, 3000); await sleep(200); c.lo = canvasTexts(cv()).join("|"); c.loV = cellOf(0, "EFX", 4);
+					u.click(q, { cmd: true }); typeIn(u, "+20"); await until(() => cellOf(0, "EFX", 4) === 84, 3000); await sleep(200); c.hi = canvasTexts(cv()).join("|"); c.hiV = cellOf(0, "EFX", 4); },
+				machine: c => ok(c.loV === 44 && c.hiV === 84 && /STEREO KEPT/.test(c.lo) && !/PING/.test(c.lo) && /PING-PONG/.test(c.hi), `DSND ${c.loV}: "${c.lo}", ${c.hiV}: "${c.hi}"`), within: 8000 },
+			{ say: "type DFB above 64: the delay screen warns that the repeats grow; at 40 it does not", act: async (u, c) => { const q = '#main .pc[data-g="EFX"][data-n="5"]', cv = () => $1('#main canvas.ed[data-ed="delay"]');
+					u.click(q, { cmd: true }); typeIn(u, "100"); await until(() => cellOf(0, "EFX", 5) === 100, 3000); await sleep(200); c.up = canvasTexts(cv()).join("|");
+					u.click(q, { cmd: true }); typeIn(u, "40"); await until(() => cellOf(0, "EFX", 5) === 40, 3000); await sleep(200); c.dn = canvasTexts(cv()).join("|"); },
+				machine: c => ok(/GROWS/.test(c.up) && !/GROWS/.test(c.dn), `at 100: "${c.up}", at 40: "${c.dn}"`), within: 8000 }
+		],
+		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); }
+	};
+	/* ---- Sound: the three LFOs of each synth track (the LFO chapter): PAGE and DEST, TRIG, WAVE, MULT, SPD, INTL, DPTH ---- */
+	const LFO_PAGES = ["PTCH", "SYN", "AMP", "FLT", "EFX", "LF1", "LF2", "LF3", "MIDI"];
+	const LFO_DEST = { PTCH: "1/12 2/12 7/12 1OCT 2OCT 4OCT 8OCT 16OCT", AMP: "ATK HOLD DEC REL DIST VOL PAN PORT", FLT: "BASE WDTH HPQ LPQ ATK DEC BOFS WOFS", EFX: "EQF EQG SRR DTIM DSND DFB DBAS DWID",
+		LF1: "PAGE DEST TRIG WAVE MULT SPD INTL DPTH", LF2: "PAGE DEST TRIG WAVE MULT SPD INTL DPTH", LF3: "PAGE DEST TRIG WAVE MULT SPD INTL DPTH", MIDI: "LEN VEL PB PCHG CC1 CC2 CC3 CC4" };
+	const LFO_TRIGS = "FREE TRIG HOLD ONE HALF", LFO_WAVES = "TRI ITRI SAW ISAW SQR ISQR EXP IEXP RMP IRMP RND", LFO_MULTS = "1X 2X 4X 8X 16X 32X 64X";
+	const selOptions = id => [...$1("#" + id).options].map(o => o.text);
+	const lfoCell = (t, k, i) => wk().tracks[t].pages[3 + k][i];
+	/* a list value is held as the firmware holds it: the step i of n is ceil(i * 128 / n) (doc/modern-ux/mm-catalogue.json enumRule); read back, floor(value * n / 128) */
+	const enIdx = (v, n) => Math.floor(v * n / 128);
+	const lfoPage = (t, k) => enIdx(lfoCell(t, k, 0), 9), lfoDest = (t, k) => enIdx(lfoCell(t, k, 1), 8);
+	const lfoJ = {
+		name: "mm-sound-lfo", proves: ["MM-135", "MM-136", "MM-137", "MM-138", "MM-139", "MM-140", "MM-141", "MM-142", "MM-144", "MM-007"],
+		steps: [
+			go("sound"), sel(0),
+			{ say: "LFO 1's PAGE lists the nine places an LFO can go (PTCH, the four pages, the three LFOs, the MIDI page); each choice is the kit's first LFO value, and DEST then lists that page's own eight names (PTCH: eight ranges)", act: async (u, c) => {
+				c.n0 = histN(); c.bad = [];
+				const pages = selOptions("lp1"); if (pages.join(" ") !== LFO_PAGES.join(" ")) c.bad.push("PAGE lists " + pages.join(" "));
+				const synNames = (MANUAL_MACHINES.find(m => m[0] === wk().tracks[0].machineName) || [0, ""])[1].split(" ");
+				for (let i = 0; i < LFO_PAGES.length; i++) {
+					await choose(u, "lp1", i); if (!await until(() => lfoPage(0, 1) === i, 3000)) { c.bad.push(`PAGE ${LFO_PAGES[i]}: kit ${lfoCell(0, 1, 0)}`); continue; }
+					await sleep(150);
+					const want = LFO_PAGES[i] === "SYN" ? null : LFO_DEST[LFO_PAGES[i]], got = selOptions("ld1").join(" ");
+					if (want && got !== want) c.bad.push(`DEST of ${LFO_PAGES[i]}: ${got} (manual: ${want})`);
+					if (!want && got.replace(/—/g, "").split(/\s+/).filter(Boolean).join(" ") !== synNames.join(" ")) c.bad.push(`DEST of SYN: ${got} (machine: ${synNames.join(" ")})`);
+				}
+				/* every destination of one page, each its own value (the second LFO value) */
+				await choose(u, "lp1", 2);
+				for (let j = 0; j < 8; j++) { await choose(u, "ld1", j); if (!await until(() => lfoDest(0, 1) === j, 3000)) c.bad.push(`DEST ${j}: kit ${lfoCell(0, 1, 1)}`); }
+				/* one LFO on another: LFO 1 on LFO 2's SPD */
+				await choose(u, "lp1", 6); await choose(u, "ld1", 5); await sleep(300);
+				if (lfoPage(0, 1) !== 6 || lfoDest(0, 1) !== 5) c.bad.push(`LFO on LFO: ${lfoCell(0, 1, 0)}/${lfoCell(0, 1, 1)}`);
+				await choose(u, "lp1", 8); await sleep(200); if (lfoPage(0, 1) !== 8 || selOptions("ld1").join(" ") !== LFO_DEST.MIDI) c.bad.push("MIDI page: " + selOptions("ld1").join(" ")); },
+				screen: c => ok(!c.bad.length, c.bad.slice(0, 5).join(" | ")), within: 1000 },
+			{ say: "TRIG: the five keys FREE TRIG HOLD ONE HALF in that order; each is the third LFO value", act: async (u, c) => { c.bad = [];
+					const names = $all('[data-set="ltrig"][data-l="LF1"] button').map(b => b.textContent.trim()); if (names.join(" ") !== LFO_TRIGS) c.bad.push("keys " + names.join(" "));
+					for (let i = 0; i < 5; i++) { u.click(`[data-set="ltrig"][data-l="LF1"] button[data-v="${i}"]`); if (!await until(() => enIdx(lfoCell(0, 1, 2), 5) === i && pressed(`[data-set="ltrig"][data-l="LF1"] button[data-v="${i}"]`), 3000)) c.bad.push(`TRIG ${i}: kit ${lfoCell(0, 1, 2)}`); } },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
+			{ say: "WAVE: eleven shape keys, named in the manual's order; each is the fourth LFO value", act: async (u, c) => { c.bad = [];
+					const names = $all('[data-lwave="LF1"]').map(b => b.getAttribute("title")); if (names.join(" ") !== LFO_WAVES) c.bad.push("shapes " + names.join(" "));
+					for (let i = 0; i < 11; i++) { u.click(`[data-lwave="LF1"][data-w="${i}"]`); if (!await until(() => enIdx(lfoCell(0, 1, 3), 11) === i && pressed(`[data-lwave="LF1"][data-w="${i}"]`), 3000)) c.bad.push(`WAVE ${i}: kit ${lfoCell(0, 1, 3)}`); } Journey.snapshot("mm-sound-lfos"); },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
+			{ say: "MULT: type each of its seven names (1X to 64X): the box shows it, the kit holds the matching step of the list", act: async (u, c) => { c.bad = [];
+					const q = '#main .pc[data-g="LF1"][data-n="4"]'; if ((ref(box("LF1", 4))[2].en || []).join(" ") !== LFO_MULTS) c.bad.push("MULT list " + (ref(box("LF1", 4))[2].en || []).join(" "));
+					for (const [i, nm] of LFO_MULTS.split(" ").entries()) { u.click(q, { cmd: true }); typeIn(u, nm.toLowerCase()); if (!await until(() => enIdx(lfoCell(0, 1, 4), 7) === i && valueText(q) === nm, 3000)) c.bad.push(`MULT ${nm}: kit ${lfoCell(0, 1, 4)}, shows ${valueText(q)}`); } },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
+			{ say: "SPD, INTL and DPTH of LFO 1: each moves its own cell and sends its own CC (93, 94, 95) on the track's channel", act: async (u, c) => { c.bad = []; for (const i of [5, 6, 7]) { const e = checkBox(await nudgeBox(u, 0, "LF1", i), 0, "LF1", i); if (e) c.bad.push(e); } },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
+			{ say: "all eighteen LFOs (three on each of the six tracks): SPD of each moves only its own cell, on its track's channel, with the CC of its own LFO (93, 109, 117)", act: async (u, c) => { c.bad = []; c.n = 0;
+					for (let t = 0; t < 6; t++) { u.click(rail(t)); await sleep(250); for (const g of ["LF1", "LF2", "LF3"]) { const e = checkBox(await nudgeBox(u, t, g, 5), t, g, 5); if (e) c.bad.push(`T${t + 1} ${g}: ${e}`); else c.n++; } } },
+				screen: c => ok(!c.bad.length, c.bad.slice(0, 4).join(" | ")), machine: c => ok(c.n === 18, c.n + " of 18"), within: 1000 },
+			{ say: "two LFOs on one target add: LFO 1 and LFO 2 of track 1 both on FLT BASE with depth: the value shows ~12", act: async (u, c) => { u.click(rail(0)); await sleep(300);
+					for (const [k, n] of [[1, 5], [2, 6]]) { await choose(u, "lp" + k, 3); await choose(u, "ld" + k, 0); await until(() => lfoPage(0, k) === 3 && lfoDest(0, k) === 0, 3000);
+						const q = `#main .pc[data-g="LF${k}"][data-n="7"]`; u.click(q, { cmd: true }); typeIn(u, "80"); await until(() => lfoCell(0, k, 7) === 80, 3000); }
+					await sleep(300); c.t = $1('#main .pc[data-g="FLT"][data-n="0"] .mod')?.textContent; c.ti = $1('#main .pc[data-g="FLT"][data-n="0"]')?.title; },
+				screen: c => ok(c.t === "~12" && /LFO 1 \+ 2/.test(c.ti), `badge ${c.t}, title ${c.ti}`), machine: () => ok(lfoPage(0, 1) === 3 && lfoPage(0, 2) === 3 && lfoDest(0, 1) === 0 && lfoDest(0, 2) === 0, "LFO targets differ"), within: 6000 },
+			{ say: "the MIDI track of the same number shares the three LFOs: its page says so and one key goes to the synth track's LFOs", act: async (u, c) => { u.click('[data-side="midi"]'); await sleep(300); u.click(rail(6)); await sleep(300); c.txt = $1("#main .sgabout")?.textContent || ""; u.click('[data-goto="0"]'); await sleep(300); },
+				screen: c => ok(/shares its three LFOs with synth track 1/.test(c.txt) && S().sel === 0 && S().side !== "midi" && !!$1("#lp1"), `text "${c.txt.slice(0, 60)}", track ${S().sel}, side ${S().side}`), within: 6000 }
+		],
+		async tidy(u, c) { if (S().side === "midi") u.click('[data-side="int"]'); if (c.n0 != null) await undoTo(u, c.n0); }
+	};
+	/* ---- Mix: the buses, the inputs and the routing (the Routing chapter) ---- */
+	const BUS_BIT = { AB: 1, CD: 2, EF: 4 }, IN_NAMES = ["NEIBOR", "INP A", "INP B", "INP AB", "BUS AB", "BUS CD", "BUS EF"];
+	/* the SysEx 0x5C the core sent for a routing edit: F0 00 20 3C 03 00 5C track outputs input F7 (a synth machine takes no input: 0) */
+	const route5c = n0 => wireLog.filter(w => w.seq > n0 && w.kind === "sysex" && w.b[6] === 0x5c).map(w => ({ t: w.b[7], out: w.b[8], inp: w.b[9] }));
+	const flowOf = b => $all(".flowl span").map(e => e.textContent.trim()).find(x => x.startsWith(b + ":")) || "";
+	const lcdRoute = () => $1('#lcd2 [data-l2="route"] b')?.textContent;
+	const setMachineOf = async (u, t, m) => { u.click(tab("sound")); await sleep(200); u.click(rail(t)); await sleep(200); u.click("#machbtn"); await until(() => !$1("#machpop").hidden, 1500); u.click(`#machpop .mf[data-fam="${famKey(m)}"]`); await sleep(50); u.click(`#machpop .mk[data-mach="${m}"]`); await until(() => wk().tracks[t].machineName === m, 4000); await sleep(300); u.click(tab("mix")); await sleep(300); };
+	const mixBuses = {
+		name: "mm-mix-buses", proves: ["MM-109", "MM-276", "MM-277", "MM-278", "MM-279", "MM-280", "MM-281", "MM-282", "MM-283", "MM-284"],
+		steps: [
+			go("mix"),
+			{ say: "the factory routing is 3xSTEREO: its key is lit, the LCD says it, the kit's global holds it", screen: () => ok(pressed('[data-set="routing"] button[data-v="3xSTEREO"]') && /^3xST(EREO)?$/.test(lcdRoute()), `lit ${$all('[data-set="routing"] button').filter(b => b.getAttribute("aria-pressed") === "true").map(b => b.dataset.v)}, LCD ${lcdRoute()}`), machine: () => ok(gDoc()?.routingMode === "3xSTEREO", "routing " + gDoc()?.routingMode) },
+			{ say: "every track's OUT keys AB, CD, EF: a click flips that bus of that track only, the machine gets SysEx 0x5C with the track's new bits, and a synth track's name moves in and out of the bus's flow line", act: async (u, c) => {
+				c.n0 = histN(); c.bad = []; c.n = 0;
+				for (let t = 0; t < 6; t++) for (const b of ["AB", "CD", "EF"]) {
+					const q = `[data-bus="${b}"][data-t="${t}"]`, was = wk().tracks[t].outputs, w0 = wireSeq, others = wk().tracks.map(x => x.outputs);
+					u.click(q); if (!await until(() => wk().tracks[t].outputs === (was ^ BUS_BIT[b]), 3000)) { c.bad.push(`T${t + 1} ${b}: bits ${wk().tracks[t].outputs} for ${was ^ BUS_BIT[b]}`); continue; }
+					await until(() => route5c(w0).length > 0, 2000); const r = route5c(w0).pop();
+					if (!r || r.t !== t || r.out !== (was ^ BUS_BIT[b]) || r.inp !== (isFx(S().tracks[t].m) ? wk().tracks[t].input : 0)) c.bad.push(`T${t + 1} ${b}: SysEx ${JSON.stringify(r)}`);
+					else if (wk().tracks.some((x, i) => i !== t && x.outputs !== others[i])) c.bad.push(`T${t + 1} ${b}: another track changed`);
+					else if (pressed(q) !== !!((was ^ BUS_BIT[b]) & BUS_BIT[b])) c.bad.push(`T${t + 1} ${b}: key ${pressed(q)}`);
+					else c.n++;
+					if (!isFx(S().tracks[t].m) && !S().tracks[t].mute) { await sleep(100); const on = !!(wk().tracks[t].outputs & BUS_BIT[b]), has = new RegExp(`(^|[ +(›])T${t + 1} `).test(flowOf(b)); if (on !== has) c.bad.push(`T${t + 1} ${b}: flow "${flowOf(b)}"`); }
+					u.click(q); await until(() => wk().tracks[t].outputs === was, 3000);
+				}
+				c.note = c.n + " keys"; },
+				screen: c => ok(!c.bad.length, c.bad.slice(0, 5).join(" | ")), machine: c => ok(c.n === 18, c.n + " of 18 keys"), within: 1000 },
+			{ say: "an FX machine picked on track 4 takes an input (NEIBOR, the track before) and has DEC and REL at 127 so the sound passes", act: async (u, c) => { c.m0 = wk().tracks[3].machineName; await setMachineOf(u, 3, "FX-CHORUS"); },
+				machine: () => ok(wk().tracks[3].input === 0 && wk().tracks[3].pages[1][2] === 127 && wk().tracks[3].pages[1][3] === 127, `input ${wk().tracks[3].input}, AMP DEC ${wk().tracks[3].pages[1][2]} REL ${wk().tracks[3].pages[1][3]}`), screen: () => ok($1("#inp3")?.value === "NEIBOR", "IN " + $1("#inp3")?.value), within: 8000 },
+			{ say: "IN INP A, INP B, INP AB: the kit holds the input and the machine gets it in SysEx 0x5C", act: async (u, c) => { c.bad = []; for (const [i, nm] of [[1, "INP A"], [2, "INP B"], [3, "INP AB"]]) { const w0 = wireSeq; await choose(u, "inp3", nm); if (!await until(() => wk().tracks[3].input === i, 3000)) { c.bad.push(`${nm}: kit ${wk().tracks[3].input}`); continue; } await until(() => route5c(w0).length > 0, 2000); const r = route5c(w0).pop(); if (!r || r.t !== 3 || r.inp !== i) c.bad.push(`${nm}: SysEx ${JSON.stringify(r)}`); } },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
+			{ say: "a THRU machine on track 1 starts a chain: INP AB, DEC and REL 127; the next FX machine on track 2 on NEIBOR, the one after on NEIBOR too: the flow line names the neighbours (T1›T2, T2›T3)", act: async (u, c) => { await setMachineOf(u, 0, "FX-THRU"); await setMachineOf(u, 1, "FX-CHORUS"); await setMachineOf(u, 2, "FX-REVERB");
+					for (const t of [0, 1, 2]) if (!(wk().tracks[t].outputs & 1)) { u.click(`[data-bus="AB"][data-t="${t}"]`); await sleep(300); } for (const t of [3, 4, 5]) if (wk().tracks[t].outputs & 1) { u.click(`[data-bus="AB"][data-t="${t}"]`); await sleep(300); }
+					await sleep(300); c.flow = flowOf("AB"); },
+				machine: () => ok(wk().tracks[0].machineName === "FX-THRU" && wk().tracks[0].input === 3 && wk().tracks[0].pages[1][2] === 127 && wk().tracks[1].input === 0 && wk().tracks[2].input === 0, `inputs ${wk().tracks.slice(0, 3).map(x => x.input)}`),
+				screen: c => ok(/T1 FX-THRU/.test(c.flow) && /T1›T2 FX-CHORUS/.test(c.flow) && /T2›T3 FX-REVERB/.test(c.flow), "flow " + c.flow), within: 10000 },
+			{ say: "track 3 on IN BUS AB with OUT AB on: an insert, the flow line says so; OUT AB off: it takes a copy", act: async (u, c) => { await choose(u, "inp2", "BUS AB"); await until(() => wk().tracks[2].input === 4, 3000); await sleep(300); c.ins = flowOf("AB");
+					u.click('[data-bus="AB"][data-t="2"]'); await until(() => !(wk().tracks[2].outputs & 1), 3000); await sleep(300); c.snd = flowOf("AB"); Journey.snapshot("mm-mix-routing"); },
+				screen: c => ok(/INSERT/.test(c.ins) && !/INSERT/.test(c.snd) && /T3 FX-REVERB takes a copy/.test(c.snd), `insert: ${c.ins} | send: ${c.snd}`), machine: () => ok(wk().tracks[2].input === 4, "input " + wk().tracks[2].input), within: 8000 },
+			{ say: "IN BUS CD and BUS EF are in the list; each is its number in the kit", act: async (u, c) => { c.bad = []; for (const [i, nm] of [[5, "BUS CD"], [6, "BUS EF"]]) { await choose(u, "inp2", nm); if (!await until(() => wk().tracks[2].input === i, 3000)) c.bad.push(`${nm}: kit ${wk().tracks[2].input}`); } c.opts = selOptions("inp2").join(","); },
+				screen: c => ok(!c.bad.length && c.opts === IN_NAMES.join(","), c.bad.join(" | ") + " options " + c.opts), within: 1000 },
+			{ say: "the routing keys: 3xSTEREO + AB=MIX adds C/D and E/F to A/B (the flow lines and the LCD say it)", act: async (u, c) => { u.click('[data-set="routing"] button[data-v="3xSTEREO+AB=MIX"]'); await until(() => gDoc()?.routingMode === "3xSTEREO+AB=MIX", 5000); await sleep(400); c.cd = flowOf("CD"); c.ef = flowOf("EF"); c.lcd = lcdRoute(); },
+				screen: c => ok(/OUT C\/D \+ A\/B/.test(c.cd) && /OUT E\/F \+ A\/B/.test(c.ef) && /^3xST\+AB=MIX$/.test(c.lcd), `CD "${c.cd}", EF "${c.ef}", LCD ${c.lcd}`), machine: () => ok(gDoc()?.routingMode === "3xSTEREO+AB=MIX", "routing " + gDoc()?.routingMode), within: 8000 },
+			{ say: "6xMONO: each track to its own output, A to F (the graph says OUT A to OUT F), no bus is sent out", act: async (u, c) => { u.click('[data-set="routing"] button[data-v="6xMONO"]'); await until(() => gDoc()?.routingMode === "6xMONO", 5000); await sleep(400); c.txt = [...document.querySelectorAll(".routewrap svg text")].map(e => e.textContent); c.f = ["AB", "CD", "EF"].map(flowOf); c.lcd = lcdRoute(); },
+				screen: c => ok(["A", "B", "C", "D", "E", "F"].every(l => c.txt.includes("OUT " + l)) && c.f.every(x => /not sent out/.test(x)) && /^6xMONO$/.test(c.lcd), `graph ${c.txt.filter(x => /^OUT/.test(x))}, flows ${c.f}, LCD ${c.lcd}`), machine: () => ok(gDoc()?.routingMode === "6xMONO", "routing " + gDoc()?.routingMode), within: 8000 },
+			{ say: "click ROUTE on the LCD: the next routing mode", act: async (u, c) => { c.r0 = gDoc()?.routingMode; u.click('#lcd2 [data-l2="route"]'); await sleep(1200); },
+				machine: c => ok(gDoc()?.routingMode !== c.r0, "routing " + gDoc()?.routingMode), within: 6000 },
+			{ say: "click 3xSTEREO: the default routing, as GLOBAL Clear leaves it", act: u => u.click('[data-set="routing"] button[data-v="3xSTEREO"]'), machine: () => ok(gDoc()?.routingMode === "3xSTEREO", "routing " + gDoc()?.routingMode), screen: () => ok(pressed('[data-set="routing"] button[data-v="3xSTEREO"]'), "not lit"), within: 8000 }
+		],
+		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); }
+	};
+	/* ---- Appendix B: what the machine is sent as MIDI (CC, NRPN) on which channel; the base channel, and OFF ---- */
+	const ccsOf = n0 => nonSys(n0).filter(w => w.kind === "cc").map(w => w.b);
+	/* one edit through the page's own control, then the CC the machine would get: the controller numbers and the channel are the manual's */
+	async function wireOf(act) { const w0 = wireSeq; await act(); await sleep(450); return ccsOf(w0); }
+	/* a GLOBAL edit: written, read back and made active (SysEx 0x50, 0x51, 0x56); only then does the core and the wire use it */
+	const globalSettled = async n0 => { await until(() => wireLog.some(w => w.seq > n0 && w.kind === "sysex" && w.b[6] === 0x56), 10000); await sleep(2000); };
+	const wireCc = {
+		name: "mm-wire-cc", proves: ["MM-353", "MM-354", "MM-355", "MM-356", "MM-357", "MM-358", "MM-359", "MM-360", "MM-362", "MM-289"],
+		steps: [
+			go("sound"), sel(0),
+			{ say: "a machine with all eight SYN values (DPRO-DDRW, MKII): each value of the page sends its own CC, 48 to 55, on the track's channel with the value the kit holds", act: async (u, c) => { c.n0 = histN(); c.bad = []; c.plate0 = document.documentElement.dataset.plate; if (c.plate0 !== "mk2") u.click("#platekey"); await sleep(200);
+					u.click("#machbtn"); await until(() => !$1("#machpop").hidden, 1500); u.click('#machpop .mf[data-fam="DPRO"]'); await sleep(50); u.click('#machpop .mk[data-mach="DPRO-DDRW"]'); await until(() => wk().tracks[0].machineName === "DPRO-DDRW", 4000); await sleep(300);
+					for (let i = 0; i < 8; i++) { const e = checkBox(await nudgeBox(u, 0, "SYN", i), 0, "SYN", i); if (e) c.bad.push(e); } },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
+			{ say: "AMP 56-63, FLT 72-79, EFX 80-87: every value of each page, on track 6's channel (base + 5)", act: async (u, c) => { c.bad = []; u.click(rail(5)); await sleep(300);
+					for (const g of ["AMP", "FLT", "EFX"]) for (let i = 0; i < 8; i++) { const e = checkBox(await nudgeBox(u, 5, g, i), 5, g, i); if (e) c.bad.push(e); } },
+				screen: c => ok(!c.bad.length, c.bad.slice(0, 5).join(" | ")), within: 1000 },
+			{ say: "the three LFOs: all eight values of each (the PAGE and DEST lists, the TRIG and WAVE keys, MULT, SPD, INTL, DPTH) go as CC 88-95, 104-111 and 112-119", act: async (u, c) => { c.bad = []; u.click(rail(1)); await sleep(300);
+					const t = 1, expect = (k, i, v, cc) => cc.some(b => b[0] === (0xb0 | (baseCh() + t)) && b[1] === CC_BASE["LF" + k] + i && b[2] === v);
+					for (const k of [1, 2, 3]) {
+						const g = "LF" + k, pg = 3 + k, base = lfoCell(t, k, 0) === 0 ? 1 : 0;
+						let cc = await wireOf(() => choose(u, "lp" + k, base === 0 ? 2 : 3)); if (!expect(k, 0, lfoCell(t, k, 0), cc)) c.bad.push(`${g} PAGE: ${cc.map(b => b.join(" ")).join(" | ")}`);
+						cc = await wireOf(() => choose(u, "ld" + k, 3)); if (!expect(k, 1, lfoCell(t, k, 1), cc)) c.bad.push(`${g} DEST: ${cc.map(b => b.join(" ")).join(" | ")}`);
+						const tv = enIdx(lfoCell(t, k, 2), 5) === 2 ? 3 : 2, wv = enIdx(lfoCell(t, k, 3), 11) === 4 ? 5 : 4;
+						cc = await wireOf(() => u.click(`[data-set="ltrig"][data-l="${g}"] button[data-v="${tv}"]`)); if (!expect(k, 2, lfoCell(t, k, 2), cc)) c.bad.push(`${g} TRIG: ${cc.map(b => b.join(" ")).join(" | ")}`);
+						cc = await wireOf(() => u.click(`[data-lwave="${g}"][data-w="${wv}"]`)); if (!expect(k, 3, lfoCell(t, k, 3), cc)) c.bad.push(`${g} WAVE: ${cc.map(b => b.join(" ")).join(" | ")}`);
+						for (const i of [4, 5, 6, 7]) { const e = checkBox(await nudgeBox(u, t, g, i), t, g, i); if (e) c.bad.push(e); }
+					} },
+				screen: c => ok(!c.bad.length, c.bad.slice(0, 5).join(" | ")), within: 1000 },
+			go("mix"),
+			{ say: "LEVEL: drag track 2's fader: CC 7 on its channel with the kit's level", act: async (u, c) => { c.c = await wireOf(() => u.drag(strip(1, '.fader[data-g="lev"]'), [[0, -8], [0, -16], [0, -24]])); },
+				screen: c => ok(c.c.length >= 1 && c.c.every(b => b[0] === (0xb0 | (baseCh() + 1)) && b[1] === 7) && c.c[c.c.length - 1][2] === wk().levels[1], `CC ${c.c.map(b => b.join(" ")).join(" | ")}, level ${wk().levels[1]}`), within: 6000 },
+			{ say: "M on track 3: CC 3 value 1 on track 3's channel; again: value 0", act: async (u, c) => { c.on = await wireOf(() => u.click(strip(2, ".ms.m"))); c.off = await wireOf(() => u.click(strip(2, ".ms.m"))); },
+				screen: c => ok(c.on.length === 1 && c.off.length === 1 && c.on[0][0] === (0xb0 | (baseCh() + 2)) && c.on[0][1] === 3 && c.on[0][2] === 1 && c.off[0][1] === 3 && c.off[0][2] === 0, `on ${c.on.map(b => b.join(" "))}, off ${c.off.map(b => b.join(" "))}`), within: 6000 },
+			{ say: "PAN of track 2: the AMP page's seventh value, CC 62 on its channel (the machine answers the standard CC 10 too; the page sends 62)", act: async (u, c) => { const v0 = wk().tracks[1].pages[1][6]; c.c = await wireOf(() => u.drag(strip(1, ".pc.pan"), [[v0 > 64 ? -8 : 8, 0], [v0 > 64 ? -16 : 16, 0]])); },
+				screen: c => ok(c.c.length >= 1 && c.c.every(b => b[0] === (0xb0 | (baseCh() + 1)) && b[1] === 62) && c.c[c.c.length - 1][2] === wk().tracks[1].pages[1][6], `CC ${c.c.map(b => b.join(" ")).join(" | ")}`), within: 6000 },
+			go("sound"),
+			{ say: "a MIDI track's MIDI page: LEN, VEL, PB, PCHG and CL1-4 go as NRPN on the base channel: the track as the MSB (99), the parameter 0x38 to 0x3F as the LSB (98), the value as data entry (6)", act: async (u, c) => { c.bad = []; u.click('[data-side="midi"]'); await sleep(300); u.click(rail(7)); await sleep(300);
+					for (let i = 0; i < 8; i++) { const el = box("MID", i); if (!el) { c.bad.push("no MIDI box " + i); continue; } const v0 = wk().tracks[1].pages[7][i], mx = maxOf(ref(el)[2]), w0 = wireSeq; el.focus(); u.key(v0 >= mx ? "ArrowDown" : "ArrowUp"); await until(() => wk().tracks[1].pages[7][i] !== v0, 3000); await sleep(400);
+						const n = nonSys(w0).filter(w => w.kind === "nrpn").map(w => w.b), v1 = wk().tracks[1].pages[7][i];
+						if (n.length !== 3 || !n.every(b => b[0] === (0xb0 | baseCh())) || n[0][1] !== 99 || n[0][2] !== 1 || n[1][1] !== 98 || n[1][2] !== 0x38 + i || n[2][1] !== 6 || n[2][2] !== v1) c.bad.push(`MIDI ${i}: ${n.map(b => b.join(" ")).join(" | ")} for ${v1}`); } },
+				screen: c => ok(!c.bad.length, c.bad.slice(0, 4).join(" | ")), within: 1000 },
+			{ say: "the base channel: GLOBAL, + once: track 1's value goes out on channel 2; OFF (− twice): the edit reaches the kit but no CC goes", act: async (u, c) => { u.click('[data-side="int"]'); await sleep(300); u.click(rail(0)); await sleep(300); c.base0 = baseCh(); u.click("#globkey"); await sleep(300);
+					const g0 = wireSeq; u.click('#globpop [data-ga="base"][data-d="1"]'); await until(() => baseCh() === c.base0 + 1, 15000); await globalSettled(g0); u.key("Escape"); await sleep(300); c.r1 = await nudgeBox(u, 0, "AMP", 0);
+					u.click("#globkey"); await sleep(300); const g1 = wireSeq; for (let i = 0; i < 2; i++) { u.click('#globpop [data-ga="base"][data-d="-1"]'); await sleep(400); } await until(() => baseCh() > 15, 15000); await globalSettled(g1); u.key("Escape"); await sleep(300); c.offBase = baseCh(); const w0 = wireSeq; c.r2 = await nudgeBox(u, 0, "AMP", 1).catch(e => ({ err: String(e) })); c.ccs = ccsOf(w0); },
+				screen: c => ok(c.r1.cc?.length === 1 && c.r1.cc[0].b[0] === 0xb1 && c.r1.cc[0].b[1] === 56, `base +1: ${c.r1.err || ""} ${c.r1.cc?.map(w => hex2(w))}`), machine: c => ok(c.offBase > 15 && !c.ccs.length && (c.r2.moved || []).length > 0, `base ${c.offBase}, CCs ${c.ccs.map(b => b.join(" "))}, moved ${c.r2.moved}`), within: 6000 }
+		],
+		async tidy(u, c) {
+			if (c.base0 != null && baseCh() !== c.base0) { if ($1("#globpop").hidden) { u.click("#globkey"); await sleep(300); } for (let i = 0; i < 4 && baseCh() !== c.base0; i++) { u.click(`#globpop [data-ga="base"][data-d="${baseCh() > 15 ? 1 : -1}"]`); await sleep(500); } await until(() => baseCh() === c.base0, 10000); }
+			if (!$1("#globpop").hidden) u.key("Escape");
+			if (S().side === "midi") u.click('[data-side="int"]');
+			if (c.n0 != null) await undoTo(u, c.n0);
+			if (c.plate0 && document.documentElement.dataset.plate !== c.plate0) u.click("#platekey");
+		}
+	};
+	/* SLICE5-MM-END */
+	const all = [/* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
