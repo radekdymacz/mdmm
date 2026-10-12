@@ -30,6 +30,49 @@ namespace mdJucePlugin
 	// reset sends (every kit, pattern and song slot as the library's Clear leaves it).
 	template<typename DeskT> struct SyxTraits;
 
+	// An empty pattern as the machine keeps one (measured 2026-10-12 on a machine started with no patch RAM: the MD's
+	// 64 empty factory slots, the MM's 63): no trigs or locks, length 16, speed 1x, kit 1, no swing, no transpose, and
+	// on the MD accent 64 with every EDIT ALL on, on the MM each arpeggiator at length 8, speed 5, every step 64 (TRIG
+	// 7 on the synth tracks). The library's Clear keeps a slot's kit, length and speed (as the machine's CLEAR); a reset
+	// does not. _base gives only what the editor does not name (format bytes, the firmware's own fields).
+	inline elektronData::MdPattern emptyPatternMd(const elektronData::MdPattern& _base, const uint8_t _slot)
+	{
+		auto p = mdDesk::emptyPattern(_base);
+		p.position = _slot;
+		p.length = 16;
+		p.tempoMultiplier = 0;
+		p.scale = 0;
+		p.kit = 0;
+		p.swingAmount = 0;
+		p.accentAmount = 64;
+		p.accentEditAll = p.slideEditAll = p.swingEditAll = 1;
+		p.lockedRows = 0;
+		return p;
+	}
+	inline elektronData::MmPattern emptyPatternMm(const elektronData::MmPattern& _base, const uint8_t _slot)
+	{
+		auto p = mmDesk::emptyPattern(_base);
+		p.position = _slot;
+		p.length = 16;
+		p.multiplier = 0;
+		p.kit = 0;
+		p.swingAmount = 0;
+		p.patternTranspose = 0;
+		p.transpose = p.midiTranspose = {};
+		for(auto* a : {&p.arp, &p.midiArp})
+		{
+			a->playOjmp.fill(0);
+			a->mode.fill(0);
+			a->range.fill(0);
+			a->speed.fill(5);
+			a->length.fill(8);
+			a->trigs.fill(a == &p.arp ? 7 : 0);
+			for(auto& st : a->steps)
+				st.fill(64);
+		}
+		return p;
+	}
+
 	template<> struct SyxTraits<mdDesk::Desk>
 	{
 		using Docs = elektronData::MdDocuments;
@@ -56,8 +99,9 @@ namespace mdJucePlugin
 			const auto of = [](const std::optional<uint8_t>& _v) { return _v ? static_cast<int>(*_v) : -1; };
 			return {of(s.pattern), of(s.kit), of(s.song), of(s.globalSlot)};
 		}
-		// Empty reset: 64 kits, 128 patterns, 32 songs as the library clears a slot (mdDeskLibrary.h); the slot's own
-		// document is the base where the editor holds it, another of its kind where not. "" or why not.
+		// Empty reset: 64 kits and 32 songs as the library clears a slot (mdDeskLibrary.h; the slot's own document is the
+		// base where the editor holds it, another of its kind where not), 128 patterns as the machine's own empty one
+		// (emptyPatternMd). "" or why not.
 		static std::string empties(const mdDesk::Desk& _d, std::vector<Bytes>& _out)
 		{
 			namespace ed = elektronData;
@@ -72,9 +116,7 @@ namespace mdJucePlugin
 			for(uint8_t p = 0; p < 128; ++p)
 			{
 				const auto it = v.patterns.find(p);
-				auto e = mdDesk::emptyPattern(it != v.patterns.end() ? it->second : v.patterns.begin()->second);
-				e.position = p;
-				_out.push_back(ed::encodeMdPattern(e));
+				_out.push_back(ed::encodeMdPattern(emptyPatternMd(it != v.patterns.end() ? it->second : v.patterns.begin()->second, p)));
 			}
 			for(uint8_t s = 0; s < ed::MdSong::g_slots; ++s)
 			{
@@ -107,7 +149,8 @@ namespace mdJucePlugin
 		{
 			return {_d.currentPattern(), _d.currentKit(), _d.currentSong(), _d.currentGlobal()};
 		}
-		// Empty reset: 128 kits, 128 patterns, 24 songs as the library clears a slot (mmDeskModel.h).
+		// Empty reset: 128 kits and 24 songs as the library clears a slot (mmDeskModel.h), 128 patterns as the machine's
+		// own empty one (emptyPatternMm).
 		static std::string empties(const mmDesk::Desk& _d, std::vector<Bytes>& _out)
 		{
 			namespace ed = elektronData;
@@ -122,9 +165,7 @@ namespace mdJucePlugin
 			for(uint8_t p = 0; p < 128; ++p)
 			{
 				const auto it = v.patterns.find(p);
-				auto e = mmDesk::emptyPattern(it != v.patterns.end() ? it->second : v.patterns.begin()->second);
-				e.position = p;
-				_out.push_back(ed::encodeMmPattern(e));
+				_out.push_back(ed::encodeMmPattern(emptyPatternMm(it != v.patterns.end() ? it->second : v.patterns.begin()->second, p)));
 			}
 			for(uint8_t s = 0; s < 24; ++s)
 			{

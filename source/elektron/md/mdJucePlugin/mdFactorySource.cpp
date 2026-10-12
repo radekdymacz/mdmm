@@ -41,8 +41,10 @@ namespace mdJucePlugin
 			}
 			uint64_t frames() const { return m_frames; }
 
-			// A request, then the first reply with _reply as its command, within _ms of machine time ({} if none).
-			std::vector<uint8_t> request(const std::vector<uint8_t>& _request, const uint8_t _reply, const double _ms)
+			// A request, then the first reply with _reply as its command, within _ms of machine time ({} if none, or
+			// when _stop is set: the owner's destructor waits for this thread)
+			std::vector<uint8_t> request(const std::vector<uint8_t>& _request, const uint8_t _reply, const double _ms,
+				const std::atomic<bool>* _stop)
 			{
 				m_rx.clear();
 				synthLib::SMidiEvent e(synthLib::MidiEventSource::Host);
@@ -51,6 +53,8 @@ namespace mdJucePlugin
 				const auto end = m_frames + static_cast<uint64_t>(_ms * g_rate / 1000.0);
 				while(m_frames < end)
 				{
+					if(_stop && _stop->load())
+						return {};
 					for(const auto& m : m_rx)
 						if(m.size() > 10 && m[6] == _reply && m.back() == 0xf7)
 							return m;
@@ -134,7 +138,11 @@ namespace mdJucePlugin
 			}
 		}
 		for(int i = 0; i < 2 * static_cast<int>(g_rate / g_block); ++i)
+		{
+			if(stopped())
+				return {{}, "Stopped."};
 			m.step();
+		}
 		const std::pair<uint8_t, uint8_t> kinds[] = {{0x52, 64}, {0x67, 128}, {0x69, 32}};	// dump id, slots (the request is id + 1)
 		for(const auto& [reply, slots] : kinds)
 			for(uint8_t s = 0; s < slots; ++s)
@@ -143,8 +151,10 @@ namespace mdJucePlugin
 					return {{}, "Stopped."};
 				const std::vector<uint8_t> request{0xf0, 0x00, 0x20, 0x3c, 0x02, 0x00, static_cast<uint8_t>(reply + 1), s, 0xf7};
 				std::vector<uint8_t> d;
-				for(int tries = 0; tries < 3 && d.empty(); ++tries)
-					d = m.request(request, reply, 3000);
+				for(int tries = 0; tries < 3 && d.empty() && !stopped(); ++tries)
+					d = m.request(request, reply, 3000, _stop);
+				if(stopped())
+					return {{}, "Stopped."};
 				if(d.empty())
 				{
 					r.error = "The second Machinedrum did not answer a dump request (" + std::to_string(reply) + " slot "

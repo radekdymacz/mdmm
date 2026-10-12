@@ -5080,7 +5080,7 @@ const Syx = (() => {
 	let skip = new Set();
 	const on = {};	// kind -> ticked
 	/* 0.6: what the panel shows (import or export), the import's PLACE (each kind's first slot) and the export's choices */
-	let mode = "import", placing = false, placeT = 0;
+	let mode = "import", placing = false, placeT = 0, placeW = 0;
 	const place = { specific: false, first: {} };
 	const ex = { all: true, kinds: {}, info: null };
 	const hostHas = f => !!(Syx.host && Syx.host[f]);
@@ -5190,7 +5190,7 @@ const Syx = (() => {
 			const c = ex.kinds[k]; if (!c) return "";
 			const v = (end, n) => `<button type="button" class="sxv" role="spinbutton" data-sxv="${end}" data-k="${k}" aria-valuenow="${n}" title="${end === "from" ? "The first" : "The last"} of the ${esc(label.toLowerCase())}: click (⇧-click back), the wheel, drag up or down, or the arrow keys">${rangeLabel(k, n)}</button>`;
 			const sub = k === "wave" ? "DigiPRO user waveforms, read from the machine (an empty one answers nothing)"
-				: f[k] ? `${f[k].used} used of ${f[k].slots}${f[k].held < f[k].slots ? ` · ${f[k].held} read so far` : ""}${k === "global" ? " · MIDI channels and settings" : ""}` : "";
+				: f[k] ? `${f[k].used} used of ${f[k].slots}${f[k].held < f[k].slots ? ` · ${f[k].held} read so far` : ""}${k === "global" ? " · MIDI channels and settings" : ""}${k === "song" ? " · a song's patterns and kits are not added by themselves: tick them too" : ""}` : "";
 			return `<label class="sxrow"><input type="checkbox" data-sxk="${k}"${c.on ? " checked" : ""}${ex.all ? " disabled" : ""}><b>${esc(label)}</b><span class="sxrng">${v("from", c.from)}<i>–</i>${v("to", c.to)}</span><small>${esc(sub)}</small></label>`;
 		};
 		pop.innerHTML = `<div class="libhead syxhead"><span class="cap">Export SysEx</span><span class="lcdchip">${esc(ex.info?.model || "")}</span><span class="syxfile">machine → one .syx file</span><button type="button" class="libx" data-syxgo="close" title="Close (Esc)">Esc</button></div>
@@ -5211,8 +5211,9 @@ const Syx = (() => {
 	function sums() {
 		if (state !== "preview") return;
 		const t = totals(), go = q('[data-syxgo="start"]'), w = q(".syxwarn");
-		if (go) { go.textContent = t.n ? `Import ${t.n}` : "Import"; go.disabled = !t.n; go.classList.toggle("danger", !!t.over); }
-		const vf = q('[data-syxgo="verify"]'); if (vf) vf.disabled = !picked().some(p => p.kind !== "other");
+		/* while a new place is previewed, the grid and its overwrite counts are not yet where the items land: no Import or Verify */
+		if (go) { go.textContent = placing ? "Placing…" : t.n ? `Import ${t.n}` : "Import"; go.disabled = placing || !t.n; go.classList.toggle("danger", !placing && !!t.over); }
+		const vf = q('[data-syxgo="verify"]'); if (vf) vf.disabled = placing || !picked().some(p => p.kind !== "other");
 		if (w) { w.textContent = footLine(t); w.classList.toggle("hot", !!t.over); }
 		for (const [k] of kindsIn()) {
 			const s = tabSub(k), el = q(`[data-syxtab="${k}"] .s`);
@@ -5251,7 +5252,7 @@ const Syx = (() => {
 	function preview(m) {
 		mode = "import";
 		const again = placing && m.ok && last && last.ok && m.file === last.file && state === "preview";
-		placing = false;
+		placing = false; clearTimeout(placeW);
 		last = m; state = m.ok ? "preview" : "error"; skip = new Set(); anchor = null; res = new Map(); rep = null; picks = []; steps = []; lastProgress = null;
 		if (!again) {
 			for (const [k] of KINDS) on[k] = !OFF[k];
@@ -5271,8 +5272,19 @@ const Syx = (() => {
 	/* the place changed: the host previews again (each item where it lands, what it overwrites there) */
 	function placeChanged() {
 		if (!hostHas("place")) return;
-		clearTimeout(placeT);
-		placeT = setTimeout(() => { placing = true; Syx.host.place(placeAt()); }, 120);
+		clearTimeout(placeT); clearTimeout(placeW);
+		/* pending from the first change until the host's preview comes back (or a refusal: then the old preview stands) */
+		placing = true; sums();
+		placeT = setTimeout(() => { Syx.host.place(placeAt()); placeW = setTimeout(placeLost, 5000); }, 120);
+	}
+	/* no preview came back for the new place: the place goes back to the one the grid shows (the last preview's) */
+	function placeLost() {
+		if (!placing) return;
+		placing = false;
+		const p = last?.place || {};
+		place.specific = Object.keys(p).length > 0;
+		for (const [k, v] of Object.entries(p)) place.first[k] = v;
+		if (state === "preview" && mode === "import" && !pop.hidden) draw();
 	}
 	const placeAt = () => place.specific ? Object.fromEntries(kindsIn().map(([k]) => k).filter(k => k !== "other").map(k => [k, place.first[k]])) : {};
 	/* a value of the panel (a place's first slot, an export range's end): within its kind's slots */
@@ -5375,13 +5387,14 @@ const Syx = (() => {
 		if (sel && state === "preview") { select(sel.dataset.syxsel); return; }
 		const g = e.target.closest("[data-syxgo]"); if (!g) return;
 		const a = g.dataset.syxgo;
+		if ((a === "start" || a === "verify") && placing) return;	/* the place's preview is still on its way */
 		if (a === "start" && Syx.host && state === "preview") {
-			const t = totals();
+			const t = totals(), asked = JSON.stringify(placeAt());
 			/* SPECIFIC onto slots that hold data: the question first (ORIGINAL's footer warns as before) */
 			if (place.specific && t.over && hostHas("ask")) {
 				const over = picked().filter(p => p.overwrites);
 				Syx.host.ask(`Import ${t.n}: ${t.over} item${t.over > 1 ? "s land on slots that hold" : " lands on a slot that holds"} data on the machine (${over.slice(0, 6).map(p => slotLabel(p.kind, p.slot)).join(", ")}${t.over > 6 ? ", …" : ""}). What is there is lost: there is no undo. Export SysEx… first keeps a way back.`,
-					[[`Import ${t.n}`, "danger", () => { if (state === "preview" && !pop.hidden) start(false); }], ["Cancel", "cream", () => { }]]);
+					[[`Import ${t.n}`, "danger", () => { if (state === "preview" && !pop.hidden && !placing && JSON.stringify(placeAt()) === asked) start(false); }], ["Cancel", "cream", () => { }]]);
 			}
 			else start(false);
 		}
