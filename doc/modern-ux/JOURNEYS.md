@@ -89,18 +89,18 @@ no journey yet); **not testable** (why). "—": the editor has no such feature.
 | Feature | Machinedrum | Monomachine |
 |---|---|---|
 | Trigs / notes by click (MM: piano roll) | md-seq-first-beat PASS | mm-seq-first-beat PASS |
-| Drag-paint steps, one undo step (MM: Slide under the roll paints the step columns, wave 3; the roll: a new note dragged sideways paints, Alt-drag erases, 2026-10-05) | md-seq-paint-undo PASS | mm-seq-trig-types PASS, mm-seq-roll-paint PASS (paint, erase, each one undo step) |
+| Drag-paint steps, one undo step (MM: the roll: a new note dragged sideways paints, Alt-drag erases, 2026-10-05; slide and swing on a selection from the step menu, one undo step, 2026-10-12) | md-seq-paint-undo PASS | mm-seq-slide-swing PASS, mm-seq-roll-paint PASS (paint, erase, each one undo step) |
 | Piano roll note length (I-010, 0.5 slice 3): Draw at 1/16, a note and its NOTE OFF; the Len key at 1/8, a note two steps long; a note's end dragged to the next note (its NOTE OFF goes, Len 3/16); undo | — | mm-roll-draw-length PASS (2026-10-10) |
 | Piano roll Draw off (I-007, slice 3): B, a box round a note selects it with its NOTE OFF, a drag moves both, Delete, B again, undo | — | mm-roll-box-move PASS (2026-10-10; the first run found a 1/16 note on narrow columns pressed as its end: the end zone is now at most a third of the bar) |
 | A MIDI note's length is its LEN, 6 a step (slice 3, measured): a 1/16 note is LEN 6, its end dragged to three steps locks LEN 18 | — | mm-roll-midi-len PASS (2026-10-10) |
 | Accent (Shift-click), slide (Alt-click) | md-seq-accent-slide PASS | — (MM: Slide under the roll, above) |
-| Trig types: Trig · Accent · Swing · Slide (MD, with All tracks · This track), Note · Slide · Swing (MM), Esc back (wave 3) | md-seq-trig-types PASS | mm-seq-trig-types PASS |
+| Trig types: Trig · Accent · Swing · Slide (MD, with All tracks · This track), Esc back (wave 3). MM since 2026-10-12: no trig type row; slide, swing and the envelopes are in the step menu, marks on the notes | md-seq-trig-types PASS | mm-seq-slide-swing PASS, mm-seq-env-trigs PASS |
 | Lock lane: pick a parameter, draw locks, clear | md-seq-lock-lane PASS | mm-seq-lock-lane PASS |
 | Lock lane ramp (Shift-drag), erase (Alt-drag), wheel on a step | md-seq-lock-ramp-erase-wheel PASS | mm-seq-lock-ramp-erase-wheel PASS |
 | Pages: ALL, PAGE, [ ] | md-seq-pages PASS | mm-seq-pages PASS |
 | Copy, paste, clear steps (Cmd+C, Cmd+V; since K2 (MD) and K7 (MM): Delete with no selection does nothing, Clr clears the page) | md-seq-copy-paste-clear PASS | mm-seq-copy-paste-clear PASS (2026-10-10, K7) |
 | Select steps with ⌘-click / ⌘-drag (K2; MM K7: the piano roll, ⌘⇧-click on the next track's roll for a two-track block), the LCD's PASTE and CLR on the selection, ⌘D | md-seq-select-copy-paste PASS | mm-seq-select-copy-paste PASS (2026-10-10) |
-| The step menu (right-click a step, K3; MM K7: in the roll or a trig row): accent (MM: slide), copy, paste here | md-seq-step-menu PASS | mm-seq-step-menu PASS (2026-10-10) |
+| The step menu (right-click a step, K3; MM K7: in the roll): accent (MM: slide; since 2026-10-12 also swing, the envelopes, trigless), copy, paste here | md-seq-step-menu PASS | mm-seq-step-menu PASS (2026-10-10) |
 | Cmd+C, Cmd+V, Cmd+Z as the operating system delivers them (real `NSEvent`s through AppKit's key path, `u.osKey`; B-015), standalone and VST3, 2026-10-08 | md-seq-os-copy-paste PASS (FAIL without the fix: no key reached the page) | mm-seq-os-copy-paste PASS (2026-10-10, standalone) |
 | A selected step copied and pasted with the mouse (the top bar's Copy, Paste, Clr), 2026-10-08 | md-seq-copy-paste-buttons PASS | mm-seq-copy-paste-buttons PASS (2026-10-10) |
 | Clear the whole pattern (Alt+Delete), undo | md-seq-clear-pattern-undo PASS | mm-seq-clear-pattern-undo PASS |
@@ -314,7 +314,7 @@ Written 2026-10-12 from doc/features/unproved-mm.md: 205 done rows had no journe
 | mm-sound-lfo | MM-007, MM-135 to MM-142, MM-144 (10) |
 | mm-mix-buses | MM-005, MM-109, MM-276 to MM-284, MM-377 (12) |
 | mm-wire-cc | MM-289, MM-353 to MM-360, MM-362 (10) |
-| mm-seq-env-trigs | MM-029, MM-047, MM-085, MM-143, MM-171, MM-209, MM-210, MM-211, MM-213, MM-214 (10) |
+| mm-seq-env-trigs | MM-029, MM-047, MM-085, MM-143, MM-171, MM-209, MM-210, MM-211, MM-212, MM-213, MM-214 (11; since 2026-10-12 through the step menu) |
 | mm-seq-pitch-keys | MM-028, MM-034, MM-074, MM-077, MM-173, MM-174, MM-176, MM-348 (8) |
 | mm-seq-locks | MM-017, MM-113, MM-205, MM-206, MM-208 (5) |
 | mm-seq-record-locks | MM-082, MM-207 (2) |
@@ -342,7 +342,7 @@ Written 2026-10-12 from doc/features/unproved-mm.md: 205 done rows had no journe
 | mm-lcd-boxes | MM-064, MM-066, MM-068 (3) |
 | mm-perform-mutes | MM-036, MM-238 (2) |
 | mm-seq-six-tracks | MM-002, MM-006, MM-009 (3) |
-| mm-seq-bank-functions | MM-038 (1) |
+| mm-seq-bank-functions | MM-038 (1; slide and swing from the step menu since 2026-10-12) |
 
 What the journeys found (no row went down): the manual's phaser page lists no INP, the machine has it (every FX machine takes an input), so mm-sound-machine-reference expects it; the Perform assign Copy and Paste take the five tabs' rows (R, U, D, VEL, KEY) and leave the two left-joystick rows alone (the editor has no box for them: MIRR makes them follow the right); PAN goes out as CC 62 only (the machine also answers the standard CC 10); the multi envelope's sixth NRPN (0x45) has no box on the page.
 
