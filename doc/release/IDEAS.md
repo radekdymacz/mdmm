@@ -19,6 +19,7 @@
 - **Sampled 2026-10-11** (pixel averages from product photos; photo white balance varies, so treat as a starting point): SFX-60+ MKII (Vintage King): panel #e9e9e9, key area #ffffff, display window #010101, LCD ground #f2fcfb, LCD pixels #0e1a19, black keys #0a0a0a, white keys #fbf9f7, COPY #e33b21, knobs #010101. SFX-60 and SFX-6 MKI (Vintage Synth Explorer): panel #b2bcbe to #c4c3c3, window #010101 to #323232, LCD ground #b6dde1 to #cfdff0 (light blue), pixels #000000, COPY #f22518, knobs #323d2f (dark green-grey). Ours today (both plates): panel #d4d5d0, LCD #b9c4b0 (grey-green), ink #172014, bezel #0d0f0c, labels #a04d39.
 - **Built on `feat/0.6-skins` (2026-10-12, not merged):** the Monomachine true to the product photos, the plate key chooses the look: MKI light-blue LCD, MKII bluish-white LCD, each with its own panel, keys and label colours. The Machinedrum Editor is unchanged by choice (Radek, after the side-by-side comparison: keep the light MKI with the green LCD and the dark MKII), although its photos show silver with a red LCD on both. Final tokens and the photos they came from: [doc/modern-ux/SKIN-COLOURS.md](../modern-ux/SKIN-COLOURS.md).
 - **Status:** Monomachine skins accepted by Radek; on its own branch, not merged yet.
+- **Later (Radek, 2026-10-12):** the MM MKII panel in 0.6 (`#d2d1cc`) reads as warm grey, not silver. Make it a light cool silver near the photo sample (`#e9e9e9`), compared before merge. Not in 0.6, so the release tests are not run again.
 
 ## I-022 · Type a parameter value
 
