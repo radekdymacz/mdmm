@@ -421,7 +421,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Mechanical settings 1-94 | Knob resolution (MKII) | Encoder resolution | ➖ | – | Hardware knobs | – |
 | Mechanical settings 1-94 | Velocity curve, fixed velocity (SFX-6) | Keyboard response | ➖ | – | Hardware keys. The editor's own velocity is keys C / V | – |
 | Mechanical settings 1-94 | Joystick mapping TIGHT / FULL | Joystick | ➖ | – | Hardware joystick | – |
-| File 1-95 | Sysex send: ALL, KIT, PAT+KIT, SONG+PAT+KIT with ranges | Send dumps | ✅ | Engine menu or a library's header: Export SysEx…: All (every kit, pattern, song and global), or untick All and tick Kits, Patterns, Songs, Globals, Waveforms, each with its range | The kinds are chosen one by one: a song range does not add its patterns by itself. | 1 |
+| File 1-95 | Sysex send: ALL, KIT, PAT+KIT, SONG+PAT+KIT with ranges | Send dumps | ✅ | Engine menu: EXPORT SYSEX…: All (every kit, pattern, song and global), or untick All and tick Kits, Patterns, Songs, Globals, Waveforms, each with its range | The kinds are chosen one by one: a song range does not add its patterns by itself. | 1 |
 | File 1-97 | Sysex receive: ORIG, SPEC, VERF | Receive dumps | ✅ | Import SysEx: PLACE row (Original place, Specific place from a first slot per kind, the grid shows where each item lands); Verify only beside Import | Verify only writes nothing: the slots are read and compared. | 4 |
 | File 1-95, 1-97 | Needs the machine on SYSEX RECV | Receive session | ✅ | Editor drives it itself; pattern field shows RECV / SEND n | HW MIDI: user opens the screen | 2 |
 | DigiPRO manager 1-99 | Send, receive, erase, rename user waveforms; copy between Digibanks | Waveform manager | 🟡 | Export SysEx…: Waveforms (the manager's SEND) |  | – |

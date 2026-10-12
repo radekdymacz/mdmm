@@ -16,7 +16,6 @@
    each item at the slot it lands in, and the panel asks before an item lands on a slot that holds data) and VERIFY ONLY
    (nothing is written: the slots are read and compared), and Reset machine… is a question whose reset runs in the panel
    as an import of the slots it clears (Syx.reset).
-     Syx.keys()            the library's two keys (markup)
      Syx.preview(m)        {type:"syxPreview", ok, text, file, model, fullBackup, items:{kind:[{slot,from?,name,kit?,overwrites,plays,format,
                             readable}]}, skipped, skippedCount, messages, place?, reset?, running?}
      Syx.progress(m)       {type:"syxProgress", phase, done, total, running, text, check?, report?:{taken, converted, ignored, differs,
@@ -25,7 +24,7 @@
      Syx.exported(m)       {type:"syxExport", ok, running?, text}
      Syx.exportInfo(m)     {type:"syxExportInfo", model, kinds:{kind:{slots, held, used, first, last}}}
      Syx.resetNews(m)      {type:"syxReset", phase, done, total, text}: a factory reset being prepared
-     Syx.openExport()      the export panel (the engine menu's EXPORT SYSEX…, the library's Export key)
+     Syx.openExport()      the export panel (the engine menu's EXPORT SYSEX…)
      Syx.reset()           Reset machine…: the question (the engine menu's RESET MACHINE…)
      Syx.menu(value)       an engine menu entry of the panel's (import, export, reset): true when it was one
      Syx.host = {choose(), start(kinds, skip, {placeAt, checkOnly}), stop(), place(placeAt), exportInfo(), exportSave({kinds?, ranges?}),
@@ -427,8 +426,6 @@ const Syx = (() => {
 		}
 	}
 	document.addEventListener("click", e => {
-		const sk = e.target.closest?.("[data-syx]");
-		if (sk && Syx.host) { if (sk.dataset.syx === "import") Syx.host.choose(); else openExport(); return; }
 		if (!pop.contains(e.target)) return;
 		const sv = e.target.closest("[data-sxv]");
 		if (sv) { if (!sv.dataset.dragged) nudge(sv, e.shiftKey ? -1 : 1); delete sv.dataset.dragged; return; }
@@ -515,7 +512,6 @@ const Syx = (() => {
 	/* an export's news (written, or the waveforms read so far) */
 	function exported(m) { say(m.text); return m; }
 	return {
-		keys: () => `<span class="syxkeys"><button class="amkey" data-syx="import" title="Open a .syx (a backup, or dumps from any source) and choose what to send to the machine.">Import SysEx…</button><button class="amkey" data-syx="export" title="Every pattern, kit, song and global the editor holds as one .syx, or the kinds and ranges you choose">Export SysEx…</button></span>`,
 		preview, progress, exported, exportInfo, openExport, reset, menu, resetNews: m => say(m.text), host: null, model
 	};
 })();
