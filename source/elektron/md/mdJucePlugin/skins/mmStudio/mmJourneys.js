@@ -1236,6 +1236,21 @@ const MmJourneys = (() => {
 	/* B-017: dragging the multi envelope (its DEC value, or the DEC dot on its screen) never changes the page's layout:
 	   the screen's canvas took its drawn size (its pixels, the display's scale times its box) as its own height, so each
 	   redraw while dragging made the card, and the page, taller, until the render on release put it back. */
+	/* Review 1 (2026-10-12, B-089): the multi envelope's screen is an ADSR for every value, its dots on the curve. ATK 73
+	   DEC 0 SUS 127 REL 127 (Radek's case: REL 127 is ∞) and ATK 20 DEC 50 SUS 80 REL 40 */
+	const typeMenv = async (u, n, v) => { const q = `#main .pc[data-g="menv"][data-n="${n}"]`; u.click(q, { cmd: true }); await until(() => !!$1("input.vedit"), 1500); const f = $1("input.vedit"); f.value = String(v); u.key("Enter"); await sleep(200); };
+	const menvDots = () => { const cv = $1('#main canvas.ed[data-ed="menv"]'), r = cv.getBoundingClientRect(); return { W: r.width, H: r.height, h: Object.fromEntries(ED.menv.handles(r.width, r.height, cv).map(x => [x.k.split(" ")[0], x])) }; };
+	const menvCurve = {
+		name: "mm-perform-menv-curve", proves: ["MM-160"],
+		steps: [go("perform"),
+			{ say: "type ATK 73, DEC 0, SUS 127, REL 127: the sustain holds at the top to the edge (REL ∞), the REL dot on it, inside the screen", act: async (u, c) => { c.e0 = JSON.stringify(wk().tracks.map(t => t.multiEnv)); for (const [n, v] of [["ATK", 73], ["DEC", 0], ["SUS", 127], ["REL", 127]]) await typeMenv(u, n, v); await sleep(300); },
+				screen: () => { const { W, H, h } = menvDots(), a = h.ATK, d = h.DEC, r = h.REL; return ok(a && d && r && Math.abs(d.y - a.y) < 1 && Math.abs(r.y - d.y) < 1 && r.x > d.x && r.x <= W - 4 && r.k === "REL ∞", `ATK ${a?.x | 0},${a?.y | 0} DEC ${d?.x | 0},${d?.y | 0} REL ${r?.k} ${r?.x | 0},${r?.y | 0} in ${W | 0}x${H | 0}`); },
+				machine: () => ok(wk().tracks.every(t => JSON.stringify(t.multiEnv.slice(0, 4)) === "[73,0,127,127]"), "multi env " + JSON.stringify(wk().tracks[0].multiEnv)), within: 15000 },
+			{ say: "type DEC 50, SUS 80, REL 40: the dots go up to the top, down to SUS, and the REL dot at the foot, right of the sustain", act: async u => { for (const [n, v] of [["ATK", 20], ["DEC", 50], ["SUS", 80], ["REL", 40]]) await typeMenv(u, n, v); await sleep(300); },
+				screen: () => { const { W, H, h } = menvDots(), a = h.ATK, d = h.DEC, r = h.REL; return ok(a && d && r && a.y < d.y && d.x > a.x && r.y > d.y && r.x > d.x + 10 && r.x <= W - 4 && r.y >= H - 14 && r.k === "REL", `ATK ${a?.x | 0},${a?.y | 0} DEC ${d?.x | 0},${d?.y | 0} REL ${r?.k} ${r?.x | 0},${r?.y | 0} in ${W | 0}x${H | 0}`); },
+				machine: () => ok(wk().tracks.every(t => JSON.stringify(t.multiEnv.slice(0, 4)) === "[20,50,80,40]"), "multi env " + JSON.stringify(wk().tracks[0].multiEnv)), within: 15000 }],
+		async tidy(u, c) { if (!c.e0) return; const e = JSON.parse(c.e0)[0]; for (const [i, n] of ["ATK", "DEC", "SUS", "REL"].entries()) if (wk().tracks[0].multiEnv[i] !== e[i]) await typeMenv(u, n, e[i]); }
+	};
 	/* Review 1 (B-090): the UNISON and SUB screens draw fine stems (2 px, as the other screens' lines), not 6 px bars:
 	   the widest run of ink across the screen just above its foot */
 	const inkRuns = cv => { const g = cv.getContext("2d"), y = Math.round(cv.height - 30 * (devicePixelRatio || 1)), d = g.getImageData(0, y, cv.width, 1).data; let run = 0, best = 0, n = 0; for (let x = 0; x < cv.width; x++) { const a = d[x * 4 + 3]; if (a > 200) { run++; if (run === 1) n++; best = Math.max(best, run); } else run = 0; } return { best: best / (devicePixelRatio || 1), n }; };
@@ -3164,7 +3179,7 @@ const MmJourneys = (() => {
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, mutScope,
-		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, uniSubFine, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
+		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, menvCurve, uniSubFine, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
 		blackKeys, rollPaint, rollDrawLength, rollBoxMove, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxPlace, resetEmpty];
 
 	async function between(u) {
