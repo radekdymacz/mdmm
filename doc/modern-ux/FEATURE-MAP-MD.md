@@ -236,15 +236,15 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.61 | Encoder resolution 24 / 32 (MKII) | MECH SETTINGS | ➖ |  | No knobs. | – |
 | p.62 | Output routing, tracks to A-F or MAIN | OUTPUT | ✅ | GLOBAL > Routing; Mix OUT key |  | 2 |
 | p.63 | Trig in A/B: GATE, SENS, VMIN, VMAX, DEST | External pads | ✅ | GLOBAL > Trig in A / B: Gate, Sens, Vmin, Vmax and Dest of each input (− / +, Shift: 10) | The bytes measured (P3). The emulator has no trig inputs, so what the values do to a pulse is not verified there. | 1 |
-| p.64 | Sysex send all data | Backup | 🟡 | Engine menu: Export SysEx (every document) | One file; no range. | – |
-| p.66 | Global sysex send (all or one slot) | Send globals | 🟡 | Export SysEx | No single-slot send. | – |
-| p.66 | Song + pattern (+ kit) sysex send, range | Send songs | 🟡 | Export SysEx | No range. | – |
-| p.66 | Pattern (+ kit) sysex send, range | Send patterns | 🟡 | Export SysEx | No range. | – |
-| p.66 | Kit sysex send, range | Send kits | 🟡 | Export SysEx | No range. | – |
-| p.67 | General sysex receive (any time) | Import | ✅ | Import SysEx / drop a .syx: preview by kind and slot, then report |  | 3 |
+| p.64 | Sysex send all data | Backup | ✅ | Engine menu: EXPORT SYSEX…, All ticked (the default): every kit, pattern, song and global the editor holds as one .syx |  | 1 |
+| p.66 | Global sysex send (all or one slot) | Send globals | ✅ | Export SysEx…: untick All, tick Globals, set the range G1 to G8 (one slot or all) |  | 1 |
+| p.66 | Song + pattern (+ kit) sysex send, range | Send songs | ✅ | Export SysEx…: untick All, tick Songs (and Patterns, Kits), each with its own range | The kinds are chosen one by one: a song range does not add its patterns by itself. | 1 |
+| p.66 | Pattern (+ kit) sysex send, range | Send patterns | ✅ | Export SysEx…: untick All, tick Patterns (and Kits), each with its own range |  | 1 |
+| p.66 | Kit sysex send, range | Send kits | ✅ | Export SysEx…: untick All, tick Kits, set the range |  | 1 |
+| p.67 | General sysex receive (any time) | Import | ✅ | Engine menu: IMPORT SYSEX… / drop a .syx: preview by kind and slot, then report |  | 3 |
 | p.68 | Original place receive (ORIG) | Same slot | ✅ | Import SysEx | Default. | – |
-| p.68 | Specific place receive (SPEC) | Relocate | ❌ | None | Import keeps original slots; slots can be left out only. | – |
-| p.69 | Sysex verify (VERF) | Check without writing | 🟡 | Import report lists differences | It writes; no dry run. | – |
+| p.68 | Specific place receive (SPEC) | Relocate | ✅ | Import SysEx: PLACE row, Specific place, the first slot per kind; the grid shows where each item lands; Import asks before it lands on a slot that holds data | Each kind has its own first slot; items keep their order and gaps. | 1 |
+| p.69 | Sysex verify (VERF) | Check without writing | ✅ | Import SysEx: Verify only beside Import: nothing is written, each slot is read and compared (= the same, ≠ different, ? no answer) | Works with Specific place too. | 2 |
 | p.75 | Tempo in INTERNAL / EXTERNAL | Sync | ✅ | GLOBAL > Sync |  | – |
 | p.76 | Control in ON / OFF (start, stop, continue) | CTRL IN | ✅ | GLOBAL > Sync |  | – |
 | p.77 | Tempo out (send clock) | TEMPO OUT | ✅ | GLOBAL > Sync |  | 2 |
@@ -273,8 +273,8 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
 | p.79 | Test mode | Self test | ➖ |  |  | – |
-| p.79 | Empty reset | Clear all | ❌ | None | Per-slot clear only. | – |
-| p.79 | Factory reset | Presets | ❌ | None | Re-import a .syx instead. Measured (P6): the factory baseline holds the sample flash only; a machine booted with no patch RAM holds the factory kits, patterns, songs and globals, the same at every boot. | – |
+| p.79 | Empty reset | Clear all | ✅ | Engine menu: Reset machine… > Empty reset… (asked twice): every kit, pattern and song cleared, read back and reported in the SysEx panel | Globals and samples stay: a global is reset in its slot in GLOBAL. | 1 |
+| p.79 | Factory reset | Presets | ✅ | Engine menu: Reset machine… > Factory reset… (asked twice): a second machine started from your ROM gives the factory kits, patterns and songs; sent, read back and reported | Seconds to prepare, minutes to send and read back. Globals and samples stay. | 1 |
 | p.79 | Soft reset | Reload samples | ❌ | None | Restart the editor. | – |
 | p.79 | MIDI upgrade / send upgrade | OS update | ➖ |  | Firmware fixed to OS 1.63. | – |
 
@@ -392,13 +392,13 @@ Method: manual read in full; claims checked against the page files (`source/elek
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 244 |
-| 🟡 Partial | 22 |
-| ❌ No | 14 |
+| ✅ Yes | 253 |
+| 🟡 Partial | 16 |
+| ❌ No | 11 |
 | ➖ Not applicable | 16 |
 | Total | 296 |
 
-Of the 280 applicable rows, 244 are fully covered, 22 partly, 14 not at all.
+Of the 280 applicable rows, 253 are fully covered, 16 partly, 11 not at all.
 
 ### Top gaps (our UI), most important first
 

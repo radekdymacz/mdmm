@@ -136,7 +136,9 @@ namespace
 		// the import's preview (the documents the session holds, round trip through the file)
 		{
 			const auto f = juce::File::createTempFile(".syx");
-			session->exportSyx(f);
+			session->exportSyx(f, parseJson(R"({"op":"syxExport","kinds":["kit","pattern"],"ranges":{"kit":[0,3]}})"));
+			session->exportSyx(f, parseJson(R"({"op":"syxExport"})"));
+			session->onPageMessage(parseJson(R"({"op":"syxExportInfo","id":6})"));
 			session->openSyx(f);
 			session->onPageMessage(parseJson(R"({"op":"syxImport","id":7,"kinds":["kit"]})"));
 			session->onPageMessage(parseJson(R"({"op":"syxCancel","id":8})"));

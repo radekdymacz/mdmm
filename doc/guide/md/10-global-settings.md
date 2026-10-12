@@ -141,46 +141,61 @@ To change a value, click **‹** or **›** beside it. Hold [⇧] and click to m
 NOTE: The emulated machine has no trig inputs. The values are stored in the global and sent to a real machine, but what they do to a pulse could not be checked. The card is marked "not verified".
 
 ## ALL DATA SYSEX SEND
-<!-- rows: MD-176 @ccc069 -->
+<!-- rows: MD-176 @6e8617 -->
 
-To save everything the editor holds as a SysEx file:
+On the machine you send SysEx to another device. In the editor you write it to a .syx file on your computer.
 
-1. Click the kit name in the <KIT> field of the LCD, or the pattern name in the <PATTERN> field. The kit library or the pattern chooser opens.
-2. Click **Export SysEx…** in its header.
-3. Choose where to put the file. The name starts as the product name and "backup.syx", in your Documents folder.
+1. Open the engine menu (the engine name at the left of the LCD) and choose **EXPORT SYSEX…**. The **Export SysEx** panel opens.
+2. **All** is ticked. The line at the foot says how many kits, patterns, songs and globals the editor holds.
+3. Click **Save .syx…** and choose where to put the file. The name starts as the product name and "backup.syx", in your Documents folder.
 
-The file holds every pattern, kit and song the editor has, and the global. It is one file.
+The file holds every pattern, kit and song the editor has, and the globals. It is one file.
 
-TIP: Export before you import. The import has no undo, and the export keeps a way back.
-
-{gap:MD-176}You cannot choose a range of slots for the export yet.{/gap}
+TIP: Export before you import or reset. Neither has an undo, and the export keeps a way back.
 
 ## GLOBAL SYSEX SEND
-<!-- rows: MD-177 @f6f201 -->
+<!-- rows: MD-177 @c0f929 -->
 
-The export of all data includes the global. {gap:MD-177}You cannot send the global of one slot alone, or all the globals, in the editor yet.{/gap}
+1. Open **Export SysEx…** as above and untick **All**. Each kind shows its own row with a range.
+2. Tick **Globals**. Untick the kinds you do not want.
+3. Set the first and the last global of the range. Click a value to step it up, [⇧]-click to step it down, or turn the wheel, drag up or down, or use the arrow keys. G1 to G1 sends one global, G1 to G8 sends them all.
+4. Click **Save .syx…**.
+
+Globals are not ticked until you tick them. They hold the MIDI channels and the sync settings.
 
 ## SONG + PATTERN (+ KIT) SYSEX SEND
-<!-- rows: MD-178 @bc1ec1 -->
+<!-- rows: MD-178 @1597c0 -->
 
-{gap:MD-178}The export holds all the songs with all the patterns and kits. You cannot choose a range of songs in the editor yet.{/gap}
+1. Open **Export SysEx…** and untick **All**.
+2. Tick **Songs** and set the range of songs.
+3. Tick **Patterns** and **Kits** too, with their ranges, if the file must play on its own.
+4. Click **Save .syx…**.
+
+NOTE: On the machine a song send takes its patterns and kits with it. In the editor you choose each kind and its range. A kind with data is ticked from its first to its last used slot.
 
 ## PATTERN (+ KIT) SYSEX SEND
-<!-- rows: MD-179 @3dcf19 -->
+<!-- rows: MD-179 @50c36f -->
 
-{gap:MD-179}The export holds all the patterns and kits. You cannot choose a range of patterns in the editor yet.{/gap}
+1. Open **Export SysEx…** and untick **All**.
+2. Tick **Patterns** and set the range, for example A01 to B16.
+3. Tick **Kits** and set their range if you want the kits of those patterns too.
+4. Click **Save .syx…**. The line at the foot names each kind and its range before you save.
 
 ## KIT SYSEX SEND
-<!-- rows: MD-180 @c70e79 -->
+<!-- rows: MD-180 @c85d2b -->
 
-{gap:MD-180}The export holds all the kits. You cannot choose a range of kits in the editor yet.{/gap}
+1. Open **Export SysEx…** and untick **All**.
+2. Tick **Kits** only and set the range, for example K01 to K12.
+3. Click **Save .syx…**.
+
+The editor writes the kits it holds. A message at the end says how many of each kind went into the file.
 
 ## GENERAL SYSEX RECEIVE
-<!-- rows: MD-181 @f9ab4b -->
+<!-- rows: MD-181 @ee3966 -->
 
 The machine takes SysEx at any time. In the editor you open the file first and choose what to send.
 
-1. Click **Import SysEx…** in the header of the kit library or the pattern chooser. Or drop the .syx file on the window. Drag and drop works on macOS only.
+1. Choose **IMPORT SYSEX…** in the engine menu. Or drop the .syx file on the window. Drag and drop works on macOS only.
 2. Choose the file. The **Import SysEx** panel opens. Its header names the model and says "full backup" when the file is one.
 3. Read the tabs: **Kits**, **Patterns**, **Songs**, **Globals** and **Other**. A tab shows the slots of the machine as a grid, and the number of items of that kind in the file. Each tab has a box: tick it to send that kind.
 4. A slot in the grid is marked when it overwrites a slot that holds data on the machine. A slot marked ▶ plays now. Click a slot to leave it out. Click it again to take it back. Click with [⇧] to change a range.
@@ -212,19 +227,41 @@ NOTE: **Globals** and **Other** are off until you tick them. A global changes th
 ## ORIGINAL PLACE SYSEX RECEIVE
 <!-- rows: MD-182 @7b772b -->
 
-The import puts each item in the slot it came from, as the machine does with ORIG. This is how every import works in the editor.
+The import puts each item in the slot it came from, as the machine does with ORIG. This is the default: **Original place** is lit in the **Place** row under the grid.
 
 ## SPECIFIC PLACE SYSEX RECEIVE
-<!-- rows: MD-183 @f29fa0 -->
+<!-- rows: MD-183 @736926 -->
 
-{gap:MD-183}You cannot send an item to another slot than the one it came from. You can leave slots out of the import.{/gap}
+With SPEC the machine writes the items from a slot you choose. In the editor each kind has its own first slot.
+
+1. Open the file with **Import SysEx…**.
+2. Click **Specific place** in the **Place** row. A value appears for the kind of the tab shown, for example **Kits from K01**. It starts at the file's first slot, so nothing moves yet.
+3. Set the first slot: click it to step it up, [⇧]-click to step it down, or turn the wheel, drag or use the arrow keys. The grid moves the items to the slots they land in. Each item keeps its place after the first, gaps included. Hover over a slot to see where it came from in the file.
+4. Choose another tab to set the first slot of that kind.
+5. Click **Import**. When an item lands on a slot that holds data, the editor asks first and names the slots. Click **Import** in the question to go on, or **Cancel**.
+
+An item that would land past the last slot of the machine is not sent. **Original place** puts every item back where it came from.
 
 ## SYSEX VERIFY
-<!-- rows: MD-184 @7616a4 -->
+<!-- rows: MD-184 @e5b552 -->
 
-The import reads every item back after it sends it. The report lists the items that differ from the file, marked ≠.
+VERIFY compares a file with the machine and writes nothing.
 
-{gap:MD-184}The import writes to the machine. You cannot compare a file with the machine without writing it.{/gap}
+1. Open the file with **Import SysEx…** and choose the kinds and slots as for an import. **Specific place** works here too.
+2. Click **Verify only**, beside **Import**.
+3. The editor reads each slot the items land in and compares it with the file. The bar shows how far it is.
+
+The report marks each slot:
+
+| Mark | Meaning |
+|---|---|
+| = | the same as the file |
+| ≠ | different from the file |
+| ? | no answer |
+
+The line at the foot says how many slots are the same. Nothing was written to the machine.
+
+An import reads every item back as well. Its report lists the items that differ from the file, marked ≠.
 
 ## SYNC
 <!-- rows: MD-185 MD-186 MD-187 MD-188 @c3eccc -->

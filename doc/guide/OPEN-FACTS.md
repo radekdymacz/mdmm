@@ -15,8 +15,6 @@ doc/features/*.json are fixed, and the line is deleted here.
 - MD-133: swing marks in a selection copy. The copy code shows none; the guide says so.
 - MD-207: "384 CC" omitted.
 - MD-200: sample rate and bit depth. The guide says 44.1 kHz at most, mono, 16-bit.
-- MD-176 to MD-180: Import and Export SysEx sit in the kit library and pattern chooser headers, not the engine
-  menu. The rows' `where` looks stale: fix them.
 - MD-196: `<MEM>` is an estimate computed from sample length.
 - MD-164: base channel OFF can be shown, not set.
 - Alt-drag undo: BUGS.md lists B-023 fixed for 0.3.5, but the guide makes no undo claim yet. Confirm with a

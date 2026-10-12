@@ -788,6 +788,61 @@ namespace elektronData
 		return {};
 	}
 
+	namespace
+	{
+		template<typename Map>
+		Map selectRange(const Map& _map, const SyxSelection& _selection, const SyxKind _kind)
+		{
+			Map out;
+			const auto r = _selection.find(_kind);
+			if(r == _selection.end())
+				return out;
+			for(const auto& [slot, doc] : _map)
+				if(slot >= r->second.from && slot <= r->second.to)
+					out.emplace(slot, doc);
+			return out;
+		}
+
+		template<typename Docs>
+		Docs select(const Docs& _d, const SyxSelection& _s)
+		{
+			Docs o;
+			o.globals = selectRange(_d.globals, _s, SyxKind::Global);
+			o.kits = selectRange(_d.kits, _s, SyxKind::Kit);
+			o.patterns = selectRange(_d.patterns, _s, SyxKind::Pattern);
+			o.songs = selectRange(_d.songs, _s, SyxKind::Song);
+			return o;
+		}
+	}
+
+	MdDocuments syxSelect(const MdDocuments& _documents, const SyxSelection& _selection) { return select(_documents, _selection); }
+	MmDocuments syxSelect(const MmDocuments& _documents, const SyxSelection& _selection) { return select(_documents, _selection); }
+
+	std::vector<uint8_t> syxPlaced(const std::vector<uint8_t>& _message, const uint8_t _slot)
+	{
+		if(_message.size() < 15 || headerModel(_message) == SyxModel::Unknown || kindOf(_message[6]) == SyxKind::Other
+			|| _message[9] == _slot)
+			return _message;
+		const bool valid = isDumpTrailerValid(_message);
+		auto out = _message;
+		out[9] = static_cast<uint8_t>(_slot & 0x7f);
+		if(valid)
+			writeDumpTrailer(out);
+		return out;
+	}
+
+	std::vector<uint8_t> mmWaveRequest(const uint8_t _wave)
+	{
+		return mmRequest(g_mmWaveRequest, static_cast<uint8_t>(_wave & 0x3f));
+	}
+
+	int mmWaveDumpSlot(const std::vector<uint8_t>& _message)
+	{
+		if(_message.size() < 15 || headerModel(_message) != SyxModel::Mm || _message[6] != g_mmWaveDump || _message.back() != 0xf7)
+			return -1;
+		return _message[9] < g_mmWaves ? _message[9] : -1;
+	}
+
 	std::vector<std::string> syxGlobalChanges(const SyxModel _model, const std::optional<std::vector<uint8_t>>& _before,
 		const std::optional<std::vector<uint8_t>>& _after)
 	{

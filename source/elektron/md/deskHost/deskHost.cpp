@@ -80,12 +80,33 @@ namespace deskHost
 				"choose a sample (WAV or AIFF) for UW ROM slot slot: the window's native file chooser; the plug-in reads the file, "
 				"converts it and sends it as SDS (sampleLoad messages follow); the file never passes through the page",
 				Action::ChooseSample, Actor::Window),
-			row("syxImport", {{"kinds", ArgType::Array}, {"skip", ArgType::Array, 0, 0, true}},
-				"import the previewed .syx: the kinds chosen (global, kit, pattern, song, other) but the items in skip (\"kind:slot\"), "
-				"sent to the machine as they are (the firmware decides what it takes), then read back and reported (syxProgress); no undo step",
+			row("syxImport", {{"kinds", ArgType::Array}, {"skip", ArgType::Array, 0, 0, true}, {"placeAt", ArgType::Object, 0, 0, true},
+					{"checkOnly", ArgType::Bool, 0, 0, true}},
+				"import the previewed .syx: the kinds chosen (global, kit, pattern, song, other) but the items in skip (\"kind:slot\", the slot "
+				"an item lands in), sent to the machine as they are (the firmware decides what it takes), then read back and reported "
+				"(syxProgress); no undo step. placeAt (SPECIFIC, 0.6): per kind the first slot its items land in, in slot order "
+				"({\"kit\": 4}; the dumps go with that position byte and checksum); checkOnly (VERIFY ONLY): nothing is sent, each item's "
+				"slot is read and compared with the file",
 				Action::SyxImport),
 			row("syxCancel", {}, "stop an import: nothing more is sent, what went is read back and reported", Action::SyxCancel),
-			row("syxExport", {}, "every document the editor holds, as one .syx: the window's native save dialog", Action::SyxExport, Actor::Window),
+			row("syxPlace", {{"placeAt", ArgType::Object}},
+				"the open .syx's preview again (syxPreview) with its items placed: per kind the first slot ({\"kit\": 4, \"pattern\": 16}), "
+				"a kind not named in its own slots; each item says where it lands (slot), where it came from (from), whether it "
+				"overwrites data there; an item past the last slot does not land",
+				Action::SyxPlace),
+			row("syxExport", {{"kinds", ArgType::Array, 0, 0, true}, {"ranges", ArgType::Object, 0, 0, true}},
+				"the documents the editor holds as one .syx, through the window's native save dialog: every one (no kinds), or the kinds "
+				"named (global, kit, pattern, song; the Monomachine's DigiPRO waveforms as wave, read from the machine) with their "
+				"ranges ({\"kit\": [0, 11]}, from 0, inclusive; a kind without one: all its slots); syxExport messages follow",
+				Action::SyxExport, Actor::Window),
+			row("syxExportInfo", {}, "the export panel's facts (a syxExportInfo message): per kind its slots, how many the editor holds, "
+				"how many hold data and the first and last of those", Action::SyxExportInfo),
+			row("machineReset", {{"how", ArgType::Text, 0, 0, false, {"empty", "factory"}}},
+				"Reset machine: empty clears every kit, pattern and song (the library's Clear in each slot, sent as dumps; globals "
+				"and samples stay), factory (the Machinedrum) brings back the factory kits, patterns and songs read from a second "
+				"machine started from the user's own ROM; both read back and reported as an import (syxPreview with reset, then "
+				"syxProgress); no undo step: the page asks first",
+				Action::MachineReset),
 			row("midi", {bytes}, "a channel message from the page: [status 0x80-0xef, data, data]", Action::Midi),
 			row("openMenu", {}, "the editor's menu: the window answers with an editorMenu message (its entries as data), the page draws it (I-008)",
 				Action::Menu, Actor::Window),

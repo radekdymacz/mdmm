@@ -524,7 +524,7 @@ const MM_SEAM={
   "ownsClock","engineLabels","notes","start","commit","intent","library","undo","redo","history","togglePlay",
   "selectPattern","kit","tempo","mutes","keyMode","record","chain","chainClear","seqMode","loadSong","saveSong","waiting",
   "sendNow","playKey","keyUp","transport","noteOn","noteOff","joy","learning","learnTarget","learnBind","modulators",
-  "engine","chooseRom","removeRom","romManage","syxChoose","syxExport","syxStart","syxStop","revealRom",
+  "engine","chooseRom","removeRom","romManage","syxChoose","syxExport","syxStart","syxStop","syxPlace","syxExportInfo","machineReset","revealRom",
   "recheck","firstRun","bootScreen","renderPst","menu","audioDoc","audioSend","audioMeter","globalSlot"],
  "view":[
   "audible","soloed","engReady","asgT","noteName","pname","machName","kitName","gated","busy","sel","mode",
@@ -532,7 +532,7 @@ const MM_SEAM={
   "setPatternSlot","setKitSlot","setReading","setTempo","setInput","setPlaying","setStep","setSongRow","setEng","dlgOpen",
   "setEngineLabel","setEngineTip","setEngines","setAudioEntry","clearLearnTarget","setMapping","setModulation",
   "setCtlSetup","disable","setRecord","setRecLock","setLcd","setKeyDown","setPst","closeFirmwareDialog","bootRom",
-  "bootInstalled","syxPreview","syxProgress","render","renderTop","drawLib","toast","ask","redraw","movePH",
+  "bootInstalled","syxPreview","syxProgress","syxExported","syxExportInfo","render","renderTop","drawLib","toast","ask","redraw","movePH",
   "setPos","flashTracks","goWs","clickStep","autoRange","kitSave","redrawAudio","audioLevel","openAudio"]};
 
 /* ---- 54-demo.js ---- */
@@ -628,7 +628,8 @@ function demoRebase(step){if(window.MMDemoHost)window.MMDemoHost.rebase(step)}
                                       shows their moving values with MMView.setModulation
      notes                            the host's words for the Control sources ({ccSource, appSource})
      engine(kind), firstRun(), bootScreen(on), renderPst(), engineLabels, menu(x, y) (the editor's menu at that point: the host draws it with DeskMenu, I-008)
-     syxChoose(), syxExport(), syxStart(kinds, skip), syxStop()   SysEx import and export (P7, B-019): the host's file
+     syxChoose(), syxExport(request), syxStart(kinds, skip, {placeAt, checkOnly}), syxStop(), syxPlace(placeAt), syxExportInfo(),
+     machineReset(how)   SysEx import and export (P7, B-019; 0.6: SPECIFIC place, VERIFY ONLY, kinds and ranges, Reset machine…): the host's file
                                       dialogs; the preview and progress come back through MMView
      removeRom(info)   REMOVE in the LOAD ROM card
      romManage()   LOAD ROM in the engine menu (a host shows which firmware runs, REPLACE and REMOVE; none: the start-up card)
@@ -2336,13 +2337,25 @@ const Boot = (() => {
    cream with ▶. A click on a slot leaves it out or takes it again, Shift-click a range. Three states, one footer:
    preview (Cancel, Import n), importing (the phases and a bar; Stop, Hide), report (per slot what the machine did,
    the problems as a list; Done only).
-     Syx.keys()            the library's two keys (markup)
-     Syx.preview(m)        {type:"syxPreview", ok, text, file, model, fullBackup, items:{kind:[{slot,name,kit?,overwrites,plays,format,readable}]},
-                            skipped, skippedCount, messages}
-     Syx.progress(m)       {type:"syxProgress", phase, done, total, running, text, report?:{taken, converted, ignored, differs,
-                            changed, unknown, "no reply", commands, unsent, items:[{kind, slot, name, outcome, text}]}}
-     Syx.exported(m)       {type:"syxExport", ok, text}
-     Syx.host = {choose(), exportAll(), start(kinds, skip), stop()}   the app's host calls
+   0.6 (wave 6, DESIGN-machine-menus.md §2): the same panel exports too (ALL ticked by default; unticked, each kind with
+   its range), the import gets its PLACE row (ORIGINAL, or SPECIFIC from a first slot per kind: the host previews again,
+   each item at the slot it lands in, and the panel asks before an item lands on a slot that holds data) and VERIFY ONLY
+   (nothing is written: the slots are read and compared), and Reset machine… is a question whose reset runs in the panel
+   as an import of the slots it clears (Syx.reset).
+     Syx.preview(m)        {type:"syxPreview", ok, text, file, model, fullBackup, items:{kind:[{slot,from?,name,kit?,overwrites,plays,format,
+                            readable}]}, skipped, skippedCount, messages, place?, reset?, running?}
+     Syx.progress(m)       {type:"syxProgress", phase, done, total, running, text, check?, report?:{taken, converted, ignored, differs,
+                            changed, unknown, "no reply", commands, unsent, items:[{kind, slot, name, outcome, text}]} (check: same, differs,
+                            unknown, "no reply")}
+     Syx.exported(m)       {type:"syxExport", ok, running?, text}
+     Syx.exportInfo(m)     {type:"syxExportInfo", model, kinds:{kind:{slots, held, used, first, last}}}
+     Syx.resetNews(m)      {type:"syxReset", phase, done, total, text}: a factory reset being prepared
+     Syx.openExport()      the export panel (the engine menu's EXPORT SYSEX…)
+     Syx.reset()           Reset machine…: the question (the engine menu's RESET MACHINE…)
+     Syx.menu(value)       an engine menu entry of the panel's (import, export, reset): true when it was one
+     Syx.host = {choose(), start(kinds, skip, {placeAt, checkOnly}), stop(), place(placeAt), exportInfo(), exportSave({kinds?, ranges?}),
+                 reset(how), ask(html, keys), say(text), machine, factory}   the app's host (machine: its name; factory: it has a
+                 factory reset)
      Syx.model             the panel's pure part, as data (deskSyxTest.js) */
 const Syx = (() => {
 	/* ---- the pure part: the file's items in, what the panel shows out ---- */
@@ -2391,17 +2404,50 @@ const Syx = (() => {
 	   unless the counts do not add up (stopped, or more problems than the report lists): then "unclear" */
 	function outcomes(picked, report) {
 		const out = new Map(), listed = new Map((report?.items || []).map(i => [key(i.kind, i.slot), i]));
-		const slots = picked.filter(p => p.kind !== "other");
-		const whole = (report?.taken || 0) + listed.size === slots.length;
+		const slots = picked.filter(p => p.kind !== "other"), ok = report?.check ? "same" : "taken";
+		const whole = (report?.[ok] || 0) + listed.size === slots.length;
 		for (const p of picked) {
 			const id = key(p.kind, p.slot), l = listed.get(id);
-			out.set(id, p.kind === "other" ? { outcome: "sent" } : l ? { outcome: l.outcome, text: l.text } : { outcome: whole ? "taken" : "unclear" });
+			out.set(id, p.kind === "other" ? { outcome: "sent" } : l ? { outcome: l.outcome, text: l.text } : { outcome: whole ? ok : "unclear" });
 		}
 		return out;
 	}
+	/* SPECIFIC place: a kind's first slot, by default the file's first (nothing moves until the person moves it) */
+	const placeFirst = list => list.reduce((a, i) => Math.min(a, i.from ?? i.slot), Infinity);
+	/* the export: a kind's label and slots; wave is the Monomachine's DigiPRO waveforms (W01..W64) */
+	const EXPORT_KINDS = [["kit", "Kits"], ["pattern", "Patterns"], ["song", "Songs"], ["global", "Globals"], ["wave", "Waveforms"]];
+	const rangeLabel = (k, n) => k === "wave" ? "W" + nn(n + 1) : slotLabel(k, n);
+	/* the export's choices from the host's facts: a kind with data is ticked over its first to last used slot; globals
+	   (the MIDI channels) and waveforms (read from the machine) are not, until ticked */
+	function exportDefaults(info) {
+		const out = {};
+		for (const [k] of EXPORT_KINDS) {
+			const f = info?.kinds?.[k]; if (!f) continue;
+			const used = f.used > 0 && f.first >= 0;
+			out[k] = { on: used && k !== "global" && k !== "wave", from: used ? f.first : 0, to: used ? f.last : f.slots - 1, slots: f.slots };
+		}
+		return out;
+	}
+	/* what syxExport asks for: {} is everything the editor holds; else the kinds ticked with their ranges */
+	function exportRequest(all, kinds) {
+		if (all) return {};
+		const on = Object.keys(kinds).filter(k => kinds[k].on);
+		return { kinds: on, ranges: Object.fromEntries(on.map(k => [k, [Math.min(kinds[k].from, kinds[k].to), Math.max(kinds[k].from, kinds[k].to)]])) };
+	}
+	function exportLine(all, kinds, info) {
+		if (all) {
+			const f = info?.kinds || {}, held = ["kit", "pattern", "song", "global"].map(k => f[k] ? `${f[k].held} ${KINDS.find(x => x[0] === k)[1].toLowerCase()}` : "").filter(Boolean);
+			return "Full backup: every kit, pattern, song and global the editor holds" + (held.length ? ` (${held.join(", ")})` : "") + ".";
+		}
+		const on = EXPORT_KINDS.filter(([k]) => kinds[k]?.on);
+		if (!on.length) return "Nothing chosen.";
+		const span = k => { const a = Math.min(kinds[k].from, kinds[k].to), b = Math.max(kinds[k].from, kinds[k].to); return a === b ? rangeLabel(k, a) : `${rangeLabel(k, a)}–${rangeLabel(k, b)}`; };
+		return on.map(([k, l]) => `${l} ${span(k)}`).join(" · ")
+			+ (kinds.wave?.on ? ". The waveforms are read from the machine first (an empty one answers nothing)." : ".");
+	}
 	const OUTCOME = { taken: ["taken", "✓"], converted: ["converted", "≈"], ignored: ["ignored", "✕"], differs: ["different", "≠"], changed: ["not comparable", "~"],
-		unknown: ["not comparable", "~"], "no reply": ["no answer", "?"], unclear: ["not known", "?"], sent: ["sent", "→"] };
-	const problem = o => o !== "taken" && o !== "sent";
+		unknown: ["not comparable", "~"], "no reply": ["no answer", "?"], unclear: ["not known", "?"], sent: ["sent", "→"], same: ["the same as the file", "="] };
+	const problem = o => o !== "taken" && o !== "sent" && o !== "same";
 	/* the footer's one line before the import */
 	function footLine(t) {
 		if (!t.n) return "Nothing chosen.";
@@ -2420,7 +2466,8 @@ const Syx = (() => {
 		const all = kp.done >= kp.total;
 		return { text: `${all ? "✓ " : ""}${verb} ${kp.done} of ${kp.total}`, pct: Math.round(kp.done / kp.total * 100) };
 	}
-	const model = { KINDS, OFF, slotLabel, capacity, layout, kindSums, toggleRange, outcomes, footLine, kindLine, OUTCOME };
+	const model = { KINDS, OFF, slotLabel, capacity, layout, kindSums, toggleRange, outcomes, footLine, kindLine, OUTCOME, placeFirst, EXPORT_KINDS, rangeLabel,
+		exportDefaults, exportRequest, exportLine };
 
 	/* ---- the panel ---- */
 	const pop = document.createElement("div");
@@ -2430,6 +2477,11 @@ const Syx = (() => {
 	let last = null, state = "idle", tab = null, anchor = null, problemsOnly = true, steps = [], rep = null, picks = [], res = new Map(), follow = true;
 	let skip = new Set();
 	const on = {};	// kind -> ticked
+	/* 0.6: what the panel shows (import or export), the import's PLACE (each kind's first slot) and the export's choices */
+	let mode = "import", placing = false, placeT = 0, placeW = 0;
+	const place = { specific: false, first: {} };
+	const ex = { all: true, kinds: {}, info: null };
+	const hostHas = f => !!(Syx.host && Syx.host[f]);
 	const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 	const q = s => pop.querySelector(s);
 	const kindsIn = () => last ? KINDS.filter(([k]) => (last.items[k] || []).length) : [];
@@ -2442,7 +2494,8 @@ const Syx = (() => {
 	const HELP = "Everything goes into the same slots as in the file, as from a MIDI cable: the machine decides what it takes. Afterwards the editor reads every item back and says what happened. ▶ plays now: the machine takes the dump over it, and unsaved edits of the kit that plays may be lost. Globals (MIDI channels, sync, machine settings) and other messages are off unless you tick them; the active global becomes active at once. There is no Undo: Export SysEx… first keeps a way back.";
 
 	function tip(k, i, out) {
-		const t = [slotLabel(k, i.slot) + (i.name && i.name !== slotLabel(k, i.slot) ? " " + i.name : ""), i.kit != null ? "kit " + nn(i.kit + 1) : "", i.format ? "format " + i.format : "",
+		const t = [slotLabel(k, i.slot) + (i.name && i.name !== slotLabel(k, i.slot) ? " " + i.name : ""), i.from != null ? "from " + slotLabel(k, i.from) + " in the file" : "",
+			i.kit != null ? "kit " + nn(i.kit + 1) : "", i.format ? "format " + i.format : "",
 			i.readable === false ? "the editor cannot read this dump (the machine may)" : "", i.plays ? "plays now" : "", i.overwrites ? "overwrites a slot that holds data" : "into an empty slot"];
 		if (state === "preview") t.push(!on[k] ? "tick " + KINDS.find(x => x[0] === k)[1] + " to send these" : out ? "left out: click to take it" : "click to leave it out, Shift-click a range");
 		const r = res.get(key(k, i.slot));
@@ -2475,6 +2528,7 @@ const Syx = (() => {
 			const mine = picks.filter(p => p.kind === k), bad = mine.filter(p => problem(res.get(key(k, p.slot))?.outcome)).length;
 			if (!mine.length) return { text: "not sent", bad: 0 };
 			if (k === "other") return { text: `${mine.length} sent`, bad: 0 };
+			if (rep?.report?.check) return { text: `${mine.length - bad} the same${bad ? ` · ${bad} different or unread` : ""}`, bad };
 			return { text: `${mine.length - bad} taken${bad ? ` · ${bad} problem${bad > 1 ? "s" : ""}` : ""}`, bad };
 		}
 		const s = kindSums(k, list, skip, on[k]);
@@ -2492,8 +2546,10 @@ const Syx = (() => {
 	function tools() {
 		if (state === "report") {
 			const bad = [...res.values()].filter(r => problem(r.outcome)).length;
+			const leg = rep?.report?.check ? `<i class="lg">=</i>the same as the file <i class="lg bad">≠</i>different <i class="lg bad">?</i>no answer`
+				: `<i class="lg">✓</i>taken as in the file <i class="lg bad">≈</i>converted <i class="lg bad">✕</i>ignored <i class="lg bad">≠</i>different`;
 			return `<div class="syxtools"><label class="syxfilt"><input type="checkbox" data-syxgo="problems"${problemsOnly && bad ? " checked" : ""}${bad ? "" : " disabled"}> Show problems only</label>
-				<span class="syxleg"><i class="lg">✓</i>taken as in the file <i class="lg bad">≈</i>converted <i class="lg bad">✕</i>ignored <i class="lg bad">≠</i>different</span></div>`;
+				<span class="syxleg">${leg}</span></div>`;
 		}
 		return `<div class="syxtools"><span class="syxleg"><i class="lg over"></i>overwrites data <i class="lg"></i>empty slot <i class="lg plays">▶</i>plays now <i class="lg off"></i>left out</span>
 			<span class="syxsel">${state === "preview" ? `<button type="button" data-syxsel="all">All</button><button type="button" data-syxsel="fresh">Empty slots only</button><button type="button" data-syxsel="none">None</button>` : ""}</span></div>`;
@@ -2507,25 +2563,55 @@ const Syx = (() => {
 		if (state === "report") return `<div class="syxfoot"><div class="syxmsg"><p class="syxsum">${esc(rep.text || "")}</p></div><div class="btnrow"><button type="button" class="go" data-syxgo="close">Done</button></div></div>`;
 		if (state === "running") return `<div class="syxfoot"><div class="syxmsg"><div class="syxsteps"></div><div class="syxbar"><i></i><span></span></div></div><div class="btnrow"><button type="button" data-syxgo="close">Hide</button><button type="button" data-syxgo="stop">Stop</button></div></div>`;
 		const skipped = last.skippedCount ? `<details class="syxprob"><summary>${last.skippedCount} message${last.skippedCount > 1 ? "s" : ""} cannot be sent</summary>${(last.skipped || []).map(p => `<div>${esc(p)}</div>`).join("")}</details>` : "";
-		return `<div class="syxfoot"><div class="syxmsg"><p class="syxwarn"></p>${skipped}</div><div class="btnrow"><button type="button" data-syxgo="close">Cancel</button><button type="button" class="go" data-syxgo="start">Import</button></div></div>`;
+		const verify = hostHas("start") ? `<button type="button" data-syxgo="verify" title="Read the slots the items land in and compare them with the file; nothing is written">Verify only</button>` : "";
+		return `<div class="syxfoot"><div class="syxmsg"><p class="syxwarn"></p>${skipped}</div><div class="btnrow"><button type="button" data-syxgo="close">Cancel</button>${verify}<button type="button" class="go" data-syxgo="start">Import</button></div></div>`;
 	}
 	function head() {
 		const what = last.ok ? `<span class="lcdchip">${esc(last.model || "")}${last.fullBackup ? " · full backup" : ""}</span>` : "";
-		return `<div class="libhead syxhead"><span class="cap">Import SysEx</span>${what}<span class="syxfile" title="${esc(last.file || "")}">${esc(last.file || "")}</span>${last.ok ? `<button type="button" class="libx syxq" data-syxgo="help" aria-expanded="false" title="How the import works">?</button>` : ""}<button type="button" class="libx" data-syxgo="close" title="Close (Esc)">Esc</button></div>
+		return `<div class="libhead syxhead"><span class="cap">${esc(last.reset || "Import SysEx")}</span>${what}<span class="syxfile" title="${esc(last.file || "")}">${esc(last.file || "")}</span>${last.ok ? `<button type="button" class="libx syxq" data-syxgo="help" aria-expanded="false" title="How the import works">?</button>` : ""}<button type="button" class="libx" data-syxgo="close" title="Close (Esc)">Esc</button></div>
 			<p class="syxhelp" hidden>${esc(HELP)}</p>`;
 	}
+	/* PLACE (0.6): ORIGINAL, or SPECIFIC from a first slot for the kind shown (each kind its own); the grid shows where each
+	   item lands. Not for a reset (it clears every slot where it is) */
+	function placeRow() {
+		if (state !== "preview" || last.reset || !hostHas("place")) return "";
+		const k = tab, list = last.items[k] || [], label = (KINDS.find(x => x[0] === k) || ["", ""])[1];
+		const val = place.specific && k !== "other" && list.length ? `<span class="sxfirst">${esc(label)} from <button type="button" class="sxv" role="spinbutton" data-sxv="place" data-k="${k}" aria-valuenow="${place.first[k]}" title="The slot the first of the ${esc(label.toLowerCase())} lands in: click (⇧-click back), the wheel, drag up or down, or the arrow keys">${rangeLabel(k, place.first[k])}</button></span>` : "";
+		return `<div class="sxplace"><span class="ilab">Place</span><span class="seg"><button type="button" data-sxp="original" aria-pressed="${!place.specific}">Original place</button><button type="button" data-sxp="specific" aria-pressed="${place.specific}">Specific place</button></span>${val}
+			<span class="note">${place.specific ? "The grid shows where each item lands. Each kind starts at its own first slot." : "Each item goes back to the slot it came from."}</span></div>`;
+	}
+	function drawExport() {
+		pop.classList.add("syx-export"); pop.classList.toggle("sxallon", ex.all);
+		for (const st of ["preview", "error", "running", "report"]) pop.classList.remove("syx-" + st);
+		const f = ex.info?.kinds || {};
+		const row = ([k, label]) => {
+			const c = ex.kinds[k]; if (!c) return "";
+			const v = (end, n) => `<button type="button" class="sxv" role="spinbutton" data-sxv="${end}" data-k="${k}" aria-valuenow="${n}" title="${end === "from" ? "The first" : "The last"} of the ${esc(label.toLowerCase())}: click (⇧-click back), the wheel, drag up or down, or the arrow keys">${rangeLabel(k, n)}</button>`;
+			const sub = k === "wave" ? "DigiPRO user waveforms, read from the machine (an empty one answers nothing)"
+				: f[k] ? `${f[k].used} used of ${f[k].slots}${f[k].held < f[k].slots ? ` · ${f[k].held} read so far` : ""}${k === "global" ? " · MIDI channels and settings" : ""}${k === "song" ? " · a song's patterns and kits are not added by themselves: tick them too" : ""}` : "";
+			return `<label class="sxrow"><input type="checkbox" data-sxk="${k}"${c.on ? " checked" : ""}${ex.all ? " disabled" : ""}><b>${esc(label)}</b><span class="sxrng">${v("from", c.from)}<i>–</i>${v("to", c.to)}</span><small>${esc(sub)}</small></label>`;
+		};
+		pop.innerHTML = `<div class="libhead syxhead"><span class="cap">Export SysEx</span><span class="lcdchip">${esc(ex.info?.model || "")}</span><span class="syxfile">machine → one .syx file</span><button type="button" class="libx" data-syxgo="close" title="Close (Esc)">Esc</button></div>
+			<div class="sxall"><label class="sxrow"><input type="checkbox" data-sxk="all"${ex.all ? " checked" : ""}><b>All</b><span class="sxrng"></span><small>a full backup: every kit, pattern, song and global. Untick to choose kinds and ranges</small></label></div>
+			<div class="sxlist">${ex.info ? EXPORT_KINDS.map(row).join("") : `<p class="syxnote">Asking the editor what it holds…</p>`}</div>
+			<div class="syxfoot"><div class="syxmsg"><p class="syxsum">${esc(exportLine(ex.all, ex.kinds, ex.info))}</p></div><div class="btnrow"><button type="button" data-syxgo="close">Cancel</button><button type="button" class="go" data-syxgo="save"${!ex.all && !Object.values(ex.kinds).some(c => c.on) ? " disabled" : ""}>Save .syx…</button></div></div>`;
+	}
 	function draw() {
+		if (mode === "export") { drawExport(); return; }
+		pop.classList.remove("syx-export", "sxallon");
 		if (!last) return;
 		for (const st of ["preview", "error", "running", "report"]) pop.classList.toggle("syx-" + st, st === state);
 		if (!last.ok) { pop.innerHTML = head() + `<p class="syxwhy">${esc(last.text)}</p><div class="syxfoot"><div class="syxmsg"></div><div class="btnrow"><button type="button" data-syxgo="close">Close</button></div></div>`; return; }
 		const list = state === "report" && problemsOnly && [...res.values()].some(r => problem(r.outcome));
-		pop.innerHTML = head() + tabs() + `<div class="syxbody">${list ? `<div class="syxpane">${problems()}</div>` : kindsIn().map(([k]) => pane(k)).join("")}</div>` + tools() + foot();
+		pop.innerHTML = head() + tabs() + `<div class="syxbody">${list ? `<div class="syxpane">${problems()}</div>` : kindsIn().map(([k]) => pane(k)).join("")}</div>` + placeRow() + tools() + foot();
 		sums(); bar();
 	}
 	function sums() {
 		if (state !== "preview") return;
 		const t = totals(), go = q('[data-syxgo="start"]'), w = q(".syxwarn");
-		if (go) { go.textContent = t.n ? `Import ${t.n}` : "Import"; go.disabled = !t.n; go.classList.toggle("danger", !!t.over); }
+		/* while a new place is previewed, the grid and its overwrite counts are not yet where the items land: no Import or Verify */
+		if (go) { go.textContent = placing ? "Placing…" : t.n ? `Import ${t.n}` : "Import"; go.disabled = placing || !t.n; go.classList.toggle("danger", !placing && !!t.over); }
+		const vf = q('[data-syxgo="verify"]'); if (vf) vf.disabled = placing || !picked().some(p => p.kind !== "other");
 		if (w) { w.textContent = footLine(t); w.classList.toggle("hot", !!t.over); }
 		for (const [k] of kindsIn()) {
 			const s = tabSub(k), el = q(`[data-syxtab="${k}"] .s`);
@@ -2559,12 +2645,62 @@ const Syx = (() => {
 		for (const t of pop.querySelectorAll("[data-syxtabk]")) t.classList.toggle("sel", t.dataset.syxtabk === k);
 		for (const p of pop.querySelectorAll("[data-syxpane]")) p.hidden = p.dataset.syxpane !== k;
 		for (const b of pop.querySelectorAll("[data-syxtab]")) b.setAttribute("aria-selected", b.dataset.syxtab === k);
+		const pr = q(".sxplace"); if (pr) pr.outerHTML = placeRow();
 	}
 	function preview(m) {
+		mode = "import";
+		const again = placing && m.ok && last && last.ok && m.file === last.file && state === "preview";
+		placing = false; clearTimeout(placeW);
 		last = m; state = m.ok ? "preview" : "error"; skip = new Set(); anchor = null; res = new Map(); rep = null; picks = []; steps = []; lastProgress = null;
-		for (const [k] of KINDS) on[k] = !OFF[k];
-		tab = kindsIn()[0]?.[0] || null;
+		if (!again) {
+			for (const [k] of KINDS) on[k] = !OFF[k];
+			tab = kindsIn()[0]?.[0] || null;
+			place.specific = false; place.first = {};
+			if (m.ok) for (const [k] of kindsIn()) place.first[k] = placeFirst(m.items[k]);
+		}
+		else if (!kindsIn().some(([k]) => k === tab)) tab = kindsIn()[0]?.[0] || null;
+		/* a reset runs already: every kit, pattern and song it sends */
+		if (m.ok && m.reset) {
+			for (const [k] of KINDS) on[k] = k === "kit" || k === "pattern" || k === "song";
+			follow = true; picks = picked(); state = "running";
+			lastProgress = { phase: "send", done: 0, total: 0, running: true, text: "Starting" };
+		}
 		draw(); pop.hidden = false;
+	}
+	/* the place changed: the host previews again (each item where it lands, what it overwrites there) */
+	function placeChanged() {
+		if (!hostHas("place")) return;
+		clearTimeout(placeT); clearTimeout(placeW);
+		/* pending from the first change until the host's preview comes back (or a refusal: then the old preview stands) */
+		placing = true; sums();
+		placeT = setTimeout(() => { Syx.host.place(placeAt()); placeW = setTimeout(placeLost, 5000); }, 120);
+	}
+	/* no preview came back for the new place: the place goes back to the one the grid shows (the last preview's) */
+	function placeLost() {
+		if (!placing) return;
+		placing = false;
+		const p = last?.place || {};
+		place.specific = Object.keys(p).length > 0;
+		for (const [k, v] of Object.entries(p)) place.first[k] = v;
+		if (state === "preview" && mode === "import" && !pop.hidden) draw();
+	}
+	const placeAt = () => place.specific ? Object.fromEntries(kindsIn().map(([k]) => k).filter(k => k !== "other").map(k => [k, place.first[k]])) : {};
+	/* a value of the panel (a place's first slot, an export range's end): within its kind's slots */
+	function slotsOf(k) {
+		if (mode === "export") return ex.kinds[k]?.slots || 1;
+		return capacity(last?.model, k, []);
+	}
+	function nudge(el, d) {
+		const k = el.dataset.k, what = el.dataset.sxv, n = slotsOf(k);
+		if (what === "place") { place.first[k] = Math.max(0, Math.min(n - 1, (place.first[k] || 0) + d)); el.textContent = rangeLabel(k, place.first[k]); el.setAttribute("aria-valuenow", place.first[k]); placeChanged(); return; }
+		const c = ex.kinds[k]; if (!c) return;
+		c[what] = Math.max(0, Math.min(n - 1, c[what] + d)); el.textContent = rangeLabel(k, c[what]); el.setAttribute("aria-valuenow", c[what]);
+		const sum = q(".syxsum"); if (sum) sum.textContent = exportLine(ex.all, ex.kinds, ex.info);
+	}
+	function start(check) {
+		follow = true; picks = picked(); const kinds = chosen(), sk2 = [...skip];
+		state = "running"; lastProgress = { phase: check ? "read" : "send", done: 0, total: 0, running: true, text: check ? "Verify only: starting" : "Starting" }; draw();
+		Syx.host.start(kinds, sk2, { placeAt: placeAt(), checkOnly: !!check });
 	}
 	function progress(m) {
 		if (!last || !last.ok) return;
@@ -2580,9 +2716,28 @@ const Syx = (() => {
 		if (state === "running") { state = "preview"; draw(); }	// the host refused or ended without a report
 	}
 	pop.addEventListener("change", e => {
+		const xk = e.target.dataset?.sxk;
+		if (xk && mode === "export") {
+			if (xk === "all") ex.all = e.target.checked; else if (ex.kinds[xk]) ex.kinds[xk].on = e.target.checked;
+			draw(); return;
+		}
 		const k = e.target.dataset?.syxkind;
 		if (k && state === "preview") { on[k] = e.target.checked; show(k); sums(); return; }
 		if (e.target.dataset?.syxgo === "problems") { problemsOnly = e.target.checked; draw(); }
+	});
+	/* a value (place, from, to): the wheel, a drag up or down, the arrow keys, as other values */
+	pop.addEventListener("wheel", e => { const v = e.target.closest?.("[data-sxv]"); if (!v) return; e.preventDefault(); nudge(v, e.deltaY < 0 ? 1 : -1); }, { passive: false });
+	pop.addEventListener("keydown", e => {
+		const v = e.target.closest?.("[data-sxv]"); if (!v) return;
+		const d = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1, PageUp: 8, PageDown: -8 }[e.key];
+		if (d) { e.preventDefault(); e.stopPropagation(); nudge(v, d); }
+	});
+	pop.addEventListener("pointerdown", e => {
+		const v = e.target.closest?.("[data-sxv]"); if (!v || e.button !== 0) return;
+		let y = e.clientY, moved = 0;
+		const move = ev => { const d = Math.trunc((y - ev.clientY) / 6); if (d) { nudge(v, d); y -= d * 6; moved += Math.abs(d); v.dataset.dragged = "1"; } };
+		const up = () => { removeEventListener("pointermove", move); removeEventListener("pointerup", up); if (!moved) delete v.dataset.dragged; };
+		addEventListener("pointermove", move); addEventListener("pointerup", up);
 	});
 	function select(how) {
 		const list = last.items[tab] || [];
@@ -2597,9 +2752,21 @@ const Syx = (() => {
 		}
 	}
 	document.addEventListener("click", e => {
-		const sk = e.target.closest?.("[data-syx]");
-		if (sk && Syx.host) { if (sk.dataset.syx === "import") Syx.host.choose(); else Syx.host.exportAll(); return; }
 		if (!pop.contains(e.target)) return;
+		const sv = e.target.closest("[data-sxv]");
+		if (sv) { if (!sv.dataset.dragged) nudge(sv, e.shiftKey ? -1 : 1); delete sv.dataset.dragged; return; }
+		const sp = e.target.closest("[data-sxp]");
+		if (sp && state === "preview" && mode === "import") {
+			const specific = sp.dataset.sxp === "specific";
+			if (specific !== place.specific) { place.specific = specific; const pr = q(".sxplace"); if (pr) pr.outerHTML = placeRow(); placeChanged(); }
+			return;
+		}
+		if (mode === "export") {
+			const g2 = e.target.closest("[data-syxgo]");
+			if (g2?.dataset.syxgo === "close") pop.hidden = true;
+			else if (g2?.dataset.syxgo === "save" && hostHas("exportSave")) { pop.hidden = true; Syx.host.exportSave(exportRequest(ex.all, ex.kinds)); }
+			return;
+		}
 		const t = e.target.closest("[data-syxtab]");
 		if (t) {
 			if (state === "running") { follow = false; show(t.dataset.syxtab); return; }
@@ -2616,18 +2783,62 @@ const Syx = (() => {
 		if (sel && state === "preview") { select(sel.dataset.syxsel); return; }
 		const g = e.target.closest("[data-syxgo]"); if (!g) return;
 		const a = g.dataset.syxgo;
+		if ((a === "start" || a === "verify") && placing) return;	/* the place's preview is still on its way */
 		if (a === "start" && Syx.host && state === "preview") {
-			follow = true; picks = picked(); const kinds = chosen(), sk2 = [...skip];
-			state = "running"; lastProgress = { phase: "send", done: 0, total: 0, running: true, text: "Starting" }; draw();
-			Syx.host.start(kinds, sk2);
+			const t = totals(), asked = JSON.stringify(placeAt());
+			/* SPECIFIC onto slots that hold data: the question first (ORIGINAL's footer warns as before) */
+			if (place.specific && t.over && hostHas("ask")) {
+				const over = picked().filter(p => p.overwrites);
+				Syx.host.ask(`Import ${t.n}: ${t.over} item${t.over > 1 ? "s land on slots that hold" : " lands on a slot that holds"} data on the machine (${over.slice(0, 6).map(p => slotLabel(p.kind, p.slot)).join(", ")}${t.over > 6 ? ", …" : ""}). What is there is lost: there is no undo. Export SysEx… first keeps a way back.`,
+					[[`Import ${t.n}`, "danger", () => { if (state === "preview" && !pop.hidden && !placing && JSON.stringify(placeAt()) === asked) start(false); }], ["Cancel", "cream", () => { }]]);
+			}
+			else start(false);
 		}
+		else if (a === "verify" && Syx.host && state === "preview") start(true);
 		else if (a === "stop" && Syx.host) Syx.host.stop();
 		else if (a === "help") { const h = q(".syxhelp"); h.hidden = !h.hidden; g.setAttribute("aria-expanded", String(!h.hidden)); }
 		else if (a === "close") pop.hidden = true;
 	});
+	/* the export panel: everything by default; the host's facts fill the kinds and their default ranges */
+	function openExport() {
+		mode = "export"; ex.all = true; ex.info = null; ex.kinds = {};
+		draw(); pop.hidden = false;
+		if (hostHas("exportInfo")) Syx.host.exportInfo();
+	}
+	function exportInfo(m) {
+		ex.info = m; ex.kinds = exportDefaults(m);
+		if (mode === "export" && !pop.hidden) draw();
+	}
+	function say(t) { if (hostHas("say") && t) Syx.host.say(t); }
+	/* Reset machine…: what it destroys, Export SysEx… first, then the reset asks a second time (Cancel is the default:
+	   Esc and a click elsewhere answer the last key) */
+	function reset() {
+		if (!hostHas("ask")) return;
+		const name = esc(Syx.host.machine || "machine"), f = !!Syx.host.factory;
+		Syx.host.ask(`<b>Reset machine</b> (the machine's start-up menu: hold FUNCTION at power on).<br><br><b>Empty reset</b> clears every kit, pattern and song; ${f ? "samples and globals stay" : "globals stay"}. It asks a second time.<br>`
+			+ (f ? `<b>Factory reset</b> brings back the factory kits, patterns and songs, read from a second ${name} started from your own ROM; globals and samples stay.<br>`
+				: `Factory reset is not offered: the ${name}'s factory data is not in the editor.<br>`)
+			+ `<br>There is no undo. Export SysEx… first keeps a way back.`,
+			[["Empty reset…", "danger", () => resetAgain("empty")], ...(f ? [["Factory reset…", "", () => resetAgain("factory")]] : []), ["Export SysEx…", "", openExport], ["Cancel", "cream", () => { }]]);
+	}
+	function resetAgain(how) {
+		const name = esc(Syx.host.machine || "machine");
+		const what = how === "empty" ? `<b>Empty reset:</b> clear every kit, pattern and song on the ${name} now? Each slot is overwritten with an empty one and read back.`
+			: `<b>Factory reset:</b> replace every kit, pattern and song on the ${name} with the factory ones? A second ${name} starts from your ROM first (seconds), then each slot is overwritten and read back (a few minutes).`;
+		Syx.host.ask(`${what}<br><br>What the machine holds now is lost: there is no undo. Export SysEx… first keeps a way back.`,
+			[[how === "empty" ? "Clear everything" : "Factory reset", "danger", () => Syx.host.reset(how)], ["Export SysEx…", "", openExport], ["Cancel", "cream", () => { }]]);
+	}
+	/* the engine menu's entries of the panel */
+	function menu(v) {
+		if (v === "import") { if (Syx.host) Syx.host.choose(); return true; }
+		if (v === "export") { openExport(); return true; }
+		if (v === "reset") { reset(); return true; }
+		return false;
+	}
+	/* an export's news (written, or the waveforms read so far) */
+	function exported(m) { say(m.text); return m; }
 	return {
-		keys: () => `<span class="syxkeys"><button class="amkey" data-syx="import" title="Open a .syx (a backup, or dumps from any source) and choose what to send to the machine.">Import SysEx…</button><button class="amkey" data-syx="export" title="Every pattern, kit, song and the global the editor holds, as one .syx">Export SysEx…</button></span>`,
-		preview, progress, exported: m => m, host: null, model
+		preview, progress, exported, exportInfo, openExport, reset, menu, resetNews: m => say(m.text), host: null, model
 	};
 })();
 
@@ -4849,7 +5060,7 @@ function kitSlot(k){const cur=k===S.kit,st=S.kits[k],empty=st.empty&&!cur,name=k
  const nm=LIB.renaming===k?`<input class="lsin" id="lsin" maxlength="${KNAME}" value="${escH(name)}" aria-label="Kit name, up to ${KNAME} characters" spellcheck="false" autocomplete="off">`:empty&&!name?"EMPTY":escH(name||"EMPTY")+(!lp.length&&!empty?"*":"");
  return`<button class="ls ks${empty?" empty":""}${cur?" cur":""}${ed?" edited":""}" data-ks="${k}" draggable="${LIB.renaming===k?"false":"true"}" aria-selected="${k===LIB.sel}" title="${escH(tip)}"><span class="lsh"><b>K${nn(k)}</b>${cur?`<em><i class="led${ed?" on":""}"></i>${ed?"ed":"ok"}</em>`:""}</span><span class="lsn">${nm}</span><span class="lsl">${links}</span></button>`}
 function drawKitLib(){const k=LIB.sel,cur=S.kit,ed=S.kitState==="edited",empty=S.kits[k].empty&&k!==cur,dis=c=>c?" disabled":"";
- return`<div class="libhead"><span class="cap">Kit library</span><span class="lcdchip">K${nn(cur)} ${escH(S.workName||"EMPTY")} · ${ed?"edited":"saved"}</span><span class="note">128 slots. Every pattern recalls its kit. Writes go through SYSEX RECV.</span>${Syx.keys()}<button class="libx" data-la="close" title="Close (Esc)">Esc</button></div>
+ return`<div class="libhead"><span class="cap">Kit library</span><span class="lcdchip">K${nn(cur)} ${escH(S.workName||"EMPTY")} · ${ed?"edited":"saved"}</span><span class="note">128 slots. Every pattern recalls its kit. Writes go through SYSEX RECV.</span><button class="libx" data-la="close" title="Close (Esc)">Esc</button></div>
  <div class="libacts"><div class="grp"><span class="ilab">Current K${nn(cur)}</span><button data-la="save" title="${KTIP.save}">Save</button><button class="danger" data-la="reload"${dis(!ed)} title="${KTIP.reload}">Reload</button></div>
   <div class="grp"><span class="ilab">Slot K${nn(k)}</span><button data-la="load"${dis(k===cur&&!ed)} title="${k===cur?"Already the current kit. Enter reloads it when it is edited. ":""}${KTIP.load} (Enter)">Load</button><button data-la="saveas"${dis(k===cur)} title="${k===cur?"This is the current slot: use Save. ":""}${KTIP.saveas}">Save as K${nn(k)}</button>
   <button data-la="copy" title="${KTIP.copy} (Cmd+C)">Copy</button><button data-la="paste"${dis(LCLIP?.type!=="kit")} title="${LCLIP?.type==="kit"?"Paste K"+nn(LCLIP.from)+" "+escH(LCLIP.name)+". ":"Copy a kit first. "}${KTIP.paste} (Cmd+V)">Paste</button>
@@ -4861,7 +5072,7 @@ function patSlot(p){const cur=p===S.pat,q=p===S.queued&&!cur,has=hasPat(p);
  return`<button class="ls ps${has?"":" empty"}${cur?" cur":""}${q?" q":""}" data-ps="${p}" draggable="${has}" aria-selected="${p===LIB.sel}" title="${escH(tip)}"><b>${patName(p)}</b><span>${has?patLen(p)+" · K"+nn(S.patKit[p]):"EMPTY"}</span></button>`}
 function drawPatLib(){const p=LIB.sel,cur=S.pat,dis=c=>c?" disabled":"";
  const rows=[..."ABCDEFGH"].map((b,i)=>`<button class="bank lbank${i===cur>>4?" on":""}" data-lb="${i}" title="Bank ${b} (key ${b})"><i class="led"></i>${b}</button>`+Array.from({length:16},(_,j)=>patSlot(i*16+j)).join("")).join("");
- return`<div class="libhead"><span class="cap">Patterns</span><span class="lcdchip">${patName(cur)} · ${S.len} steps · K${nn(S.patKit[cur])}${S.queued!=null&&S.queued!==cur?" → "+patName(S.queued):""}</span><span class="note">8 banks × 16. ${S.playing?"Playing: a new pattern starts at the pattern end.":"Stopped: a click switches at once."} Factory presets sit in A-D, E-H start empty.</span>${Syx.keys()}<button class="libx" data-la="close" title="Close (Esc)">Esc</button></div>
+ return`<div class="libhead"><span class="cap">Patterns</span><span class="lcdchip">${patName(cur)} · ${S.len} steps · K${nn(S.patKit[cur])}${S.queued!=null&&S.queued!==cur?" → "+patName(S.queued):""}</span><span class="note">8 banks × 16. ${S.playing?"Playing: a new pattern starts at the pattern end.":"Stopped: a click switches at once."} Factory presets sit in A-D, E-H start empty.</span><button class="libx" data-la="close" title="Close (Esc)">Esc</button></div>
  <div class="libacts"><div class="grp"><span class="ilab">Slot ${patName(p)}</span><button data-la="go"${dis(p===cur&&S.queued==null)} title="${PTIP.go} (Enter)">${S.playing?"Queue":"Go"}</button><button data-la="now"${dis(p===cur&&S.queued==null)} title="${PTIP.now}">Now</button>
   <button data-la="copy" title="${PTIP.copy} (Cmd+C)">Copy</button><button data-la="paste"${dis(LCLIP?.type!=="pat")} title="${LCLIP?.type==="pat"?"Paste "+patName(LCLIP.from)+". ":"Copy a pattern first. "}${PTIP.paste} (Cmd+V)">Paste</button><button class="danger" data-la="clear"${dis(!hasPat(p))} title="${PTIP.clear} (Delete)">Clear</button></div></div>
  <div class="libgrid pats" aria-label="128 patterns">${rows}</div>
@@ -5410,6 +5621,7 @@ document.addEventListener("click",e=>{
 document.addEventListener("change",e=>{const id=e.target.id,v=e.target.value,tr=trk(S.sel);
  if(id==="romfile"){checkRom(e.target.files[0]);return}
  if(id==="engsel"){const btn=document.querySelector(".lcdeng");if(v==="global"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;openGlobal();return}if(v==="audio"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;openAudio();return}if(v==="rom"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;if(HOST.romManage)HOST.romManage();else firstRun();return}
+  if(v==="import"||v==="export"||v==="reset"){e.target.value=S.engine;btn.querySelector("span").textContent=e.target.selectedOptions[0].text;Syx.menu(v);return}
   S.engine=v;S.pend=0;renderPst();if(HOST.engine)HOST.engine(v);else startEngine(v);return}
  let m=id.match(/^lp(\d)$/);if(m){editTrack(S.sel,()=>{const l=V("LF"+m[1]);l[0]=+v;l[1]=0});render();return}
  m=id.match(/^ld(\d)$/);if(m){editTrack(S.sel,()=>{V("LF"+m[1])[1]=+v});render();return}
@@ -5655,7 +5867,7 @@ function setRecord(mode){const on=mode==="grid"||mode==="live";S.recMode=mode;if
 /* an engine state's LCD label: [text, led "on" | "blink" | "off", tooltip] */
 function setEngineLabel(st,label){ENG[st]=label;if(S.eng===st)setEng(st)}
 /* a host's engine map ([{id, label, available, reason}]) in the engine menu, before the menu's own entries */
-function setEngines(list,current){const sel=$("#engsel");if(!sel)return;const own=["audio","global","rom"];
+function setEngines(list,current){const sel=$("#engsel");if(!sel)return;const own=["audio","global","rom","import","export","reset"];
  for(const o of [...sel.options])if(!own.includes(o.value)&&!list.some(e=>e.id===o.value))o.remove();
  const first=[...sel.options].find(o=>own.includes(o.value))||null;
  for(const e of list){let o=sel.querySelector(`option[value="${e.id}"]`);if(!o){o=document.createElement("option");o.value=e.id}sel.insertBefore(o,first);o.textContent=e.label;o.disabled=!e.available;o.title=e.available?"":e.reason||""}
@@ -5687,10 +5899,16 @@ const dialogOpen=()=>!$("#dlg").hidden;
    steps share its look, so the dialog is named by its key, Dlg in deskModal.js) */
 function closeFirmwareDialog(){Dlg.drop("firstRun")}
 /* SysEx import and export: the host's file dialogs and document writes; the example shows a pretend file */
-Syx.host={choose:()=>{if(HOST.syxChoose)return HOST.syxChoose();Syx.preview({ok:true,file:"example.syx",model:"Monomachine",fullBackup:false,problemCount:0,problems:[],items:{kit:[{slot:0,name:"SUPERWAVES",overwrites:true}],pattern:[{slot:0,name:"A01",kit:0,overwrites:true}],song:[],global:[]}})},
- exportAll:()=>{if(HOST.syxExport)return HOST.syxExport();toast("In the plug-in: a save dialog, then every document as one .syx.")},
- start:(k,s)=>{if(HOST.syxStart)return HOST.syxStart(k,s);Syx.progress({phase:"done",done:2,total:2,running:false,text:"2 imported (example).",report:{taken:2,items:[]}})},
- stop:()=>{if(HOST.syxStop)return HOST.syxStop()}};
+Syx.host={machine:"Monomachine",factory:false,
+ choose:()=>{if(HOST.syxChoose)return HOST.syxChoose();Syx.preview({ok:true,file:"example.syx",model:"Monomachine",fullBackup:false,problemCount:0,problems:[],items:{kit:[{slot:0,name:"SUPERWAVES",overwrites:true}],pattern:[{slot:0,name:"A01",kit:0,overwrites:true}],song:[],global:[]}})},
+ start:(k,s,o)=>{if(HOST.syxStart)return HOST.syxStart(k,s,o);Syx.progress({phase:"done",done:2,total:2,running:false,text:"2 imported (example).",report:{taken:2,items:[]}})},
+ stop:()=>{if(HOST.syxStop)return HOST.syxStop()},
+ /* 0.6 (wave 6): SPECIFIC place, the export's kinds and ranges (DigiPRO waveforms too), Reset machine… (empty) */
+ place:p=>{if(HOST.syxPlace)return HOST.syxPlace(p);Syx.preview({ok:true,file:"example.syx",model:"Monomachine",place:p,items:{kit:[{slot:p.kit??0,from:p.kit?0:undefined,name:"SUPERWAVES",overwrites:!p.kit}],pattern:[{slot:p.pattern??0,from:p.pattern?0:undefined,name:"A01",kit:0,overwrites:!p.pattern}],song:[],global:[]}})},
+ exportInfo:()=>{if(HOST.syxExportInfo)return HOST.syxExportInfo();Syx.exportInfo({type:"syxExportInfo",model:"Monomachine",kinds:{kit:{slots:128,held:128,used:8,first:0,last:7},pattern:{slots:128,held:128,used:8,first:0,last:7},song:{slots:24,held:24,used:3,first:0,last:2},global:{slots:8,held:8,used:8,first:0,last:7},wave:{slots:64}}})},
+ exportSave:r=>{if(HOST.syxExport)return HOST.syxExport(r);toast("In the plug-in: a save dialog, then "+(r.kinds?r.kinds.join(", "):"every document")+" as one .syx.")},
+ reset:h=>{if(HOST.machineReset)return HOST.machineReset(h);toast("In the plug-in: the empty reset runs in the SysEx panel (example).")},
+ ask:(h,b)=>ask(h,b),say:t=>toast(t)};
 /* the start-up card's keys: the host's native file chooser and ROM folder (the ROM stays on this computer); the
    example pretends an install */
 Boot.host={chooseRom:()=>{if(HOST.chooseRom)return HOST.chooseRom();Boot.rom({ok:true,text:"\u2713 Monomachine OS 1.32B found (example)"});setTimeout(()=>startEngine("emu"),900)},
@@ -5713,7 +5931,7 @@ window.MMView={
  setInput,setPlaying,setStep,setSongRow:r=>{S.songRow=r;markSongRow()},
  setEng,dlgOpen:()=>!$("#dlg").hidden,setEngineLabel,setEngineTip,setEngines,setAudioEntry,clearLearnTarget:()=>{S.learnT=null},setMapping,setModulation,setCtlSetup,disable,
  setRecord,setRecLock,
- setLcd,setKeyDown,setPst,closeFirmwareDialog,bootRom:r=>Boot.rom(r),bootInstalled:o=>Boot.showInstalled(o),syxPreview:m=>Syx.preview(m),syxProgress:m=>Syx.progress(m),
+ setLcd,setKeyDown,setPst,closeFirmwareDialog,bootRom:r=>Boot.rom(r),bootInstalled:o=>Boot.showInstalled(o),syxPreview:m=>Syx.preview(m),syxProgress:m=>Syx.progress(m),syxExported:m=>Syx.exported(m),syxExportInfo:m=>Syx.exportInfo(m),
  /* calls */
  render,renderTop,drawLib,toast,ask,redraw,movePH,setPos,flashTracks,goWs,clickStep,autoRange,kitSave,
  redrawAudio:()=>{if(AP.open)drawAudio()},audioLevel,openAudio};

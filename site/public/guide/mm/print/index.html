@@ -36,6 +36,7 @@
 @page c17 { @top-left { content: "17. The song mode"; } }
 @page c18 { @top-left { content: "18. Routing"; } }
 @page c19 { @top-left { content: "19. Global settings"; } }
+@page c20 { @top-left { content: "20. Early startup menu, technical information"; } }
 </style>
 </head>
 <body class="gd">
@@ -73,7 +74,7 @@
 <li><a href="#c17"><span class="gd-tnum">17</span><span class="gd-ttitle">The song mode</span><span class="gd-tsum">Arrange patterns into songs of up to 200 rows, with repeats, transposes, parts, mutes, tempo changes and loops.</span></a></li>
 <li><a href="#c18"><span class="gd-tnum">18</span><span class="gd-ttitle">Routing</span><span class="gd-tsum">Send tracks to the mix buses and outputs, feed effects from other tracks or the audio inputs, and choose the routing mode.</span></a></li>
 <li><a href="#c19"><span class="gd-tnum">19</span><span class="gd-ttitle">Global settings</span><span class="gd-tsum">The machine's own settings: MIDI channels, sync, routing, the multi map, and the SysEx import and export.</span></a></li>
-<li class="gd-tocome"><span class="gd-tnum">20</span><span class="gd-ttitle">Early startup menu, technical information</span><span class="gd-tsum">To come</span></li>
+<li><a href="#c20"><span class="gd-tnum">20</span><span class="gd-ttitle">Early startup menu, technical information</span><span class="gd-tsum">What the machine's startup menu does, and what to do in the editor instead.</span></a></li>
 <li class="gd-tocome"><span class="gd-tnum">21</span><span class="gd-ttitle">Appendix A: machine reference</span><span class="gd-tsum">To come</span></li>
 <li class="gd-tocome"><span class="gd-tnum">22</span><span class="gd-ttitle">Appendix B: MIDI control reference</span><span class="gd-tsum">To come</span></li>
 <li class="gd-tocome"><span class="gd-tnum">23</span><span class="gd-ttitle">Appendix C: SysEx reference</span><span class="gd-tsum">To come</span></li>
@@ -96,7 +97,7 @@
 <section class="gd-sec" id="digipro-user-waveforms">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-2</span></span></aside>
 <div class="gd-body gd-prose"><h2>DIGIPRO USER WAVEFORMS</h2>
-<p>The DigiPRO machines of an MKII play 64 waveforms, and the MKII lets you load your own. The editor picks a waveform from 1 to 64 in the wave fields of the DigiPRO machines, but it cannot send, receive, rename or erase user waveforms yet.</p>
+<p>The DigiPRO machines of an MKII play 64 waveforms, and the MKII lets you load your own. The editor picks a waveform from 1 to 64 in the wave fields of the DigiPRO machines. <b class="gd-ui">Export SysEx…</b> saves the user waveforms in a .syx file: see &quot;DIGIPRO MANAGER&quot; in chapter 19. You cannot send waveforms to the machine, rename or erase them in the editor.</p>
 <p>The <b class="gd-ui">MKII</b> key in the top bar switches the editor between the MKI and MKII plate. The MKII adds the user waveforms and the DigiPRO double draw and ensemble machines. On the MKI plate the machine picker greys those two machines out and says &quot;MKII only&quot;.</p>
 </div></section>
 <section class="gd-sec" id="conventions">
@@ -1344,21 +1345,26 @@
 <section class="gd-sec" id="file">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-95,</span> <span>1-97</span></span></aside>
 <div class="gd-body gd-prose"><h2>FILE</h2>
+<p>On the machine the FILE menu sends and receives SysEx. In the editor you write a .syx file on your computer, and you open one to send it to the machine.</p>
 <h4 class="gd-h3">Export</h4>
-<p>The kit library and the pattern chooser each have an <b class="gd-ui">Export SysEx…</b> key. It writes every pattern, kit and song, and the global the editor holds, into one .syx file. The plug-in opens a save dialog.</p>
-<p>You cannot choose a range of slots to send.</p>
+<ol class="gd-steps"><li>Choose <b class="gd-ui">EXPORT SYSEX…</b> in the engine menu (the engine name at the left of the LCD). The <b class="gd-ui">Export SysEx</b> panel opens.</li><li><b class="gd-ui">All</b> is ticked: every kit, pattern, song and global the editor holds goes into one file, as the machine's ALL.</li><li>To choose, untick <b class="gd-ui">All</b>. Each kind has its row: <b class="gd-ui">Kits</b>, <b class="gd-ui">Patterns</b>, <b class="gd-ui">Songs</b>, <b class="gd-ui">Globals</b> and <b class="gd-ui">Waveforms</b>. Tick the kinds you want.</li><li>Set the first and the last slot of each kind. Click a value to step it up, <kbd class="gd-key">[⇧]</kbd>-click to step it down, or turn the wheel, drag up or down, or use the arrow keys. A kind with data starts from its first to its last used slot.</li><li>Click <b class="gd-ui">Save .syx…</b> and choose where to put the file. A message says what went into it.</li></ol>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>On the machine KIT, PAT+KIT and SONG+PAT+KIT take the kits and patterns with them. In the editor you tick each kind and set its range.</p></aside>
 <h4 class="gd-h3">Import</h4>
-<ol class="gd-steps"><li>Click <b class="gd-ui">Import SysEx…</b> in the kit library or the pattern chooser, or drop a .syx file on the window (macOS only).</li><li>The import window previews the file. It has a tab for each kind: Kits, Patterns, Songs, Globals and Other.</li><li>A slot grid shows the slots. A click leaves a slot out or takes it in again. Hold <kbd class="gd-key">[⇧]</kbd> and click to choose a range.</li><li>Click <b class="gd-ui">Import</b>. The window shows a bar. <b class="gd-ui">Stop</b> ends the import, <b class="gd-ui">Hide</b> puts the window away.</li><li>A report lists what the machine did with each slot.</li></ol>
+<ol class="gd-steps"><li>Choose <b class="gd-ui">IMPORT SYSEX…</b> in the engine menu, or drop a .syx file on the window (macOS only).</li><li>The import window previews the file. It has a tab for each kind: Kits, Patterns, Songs, Globals and Other.</li><li>A slot grid shows the slots. A click leaves a slot out or takes it in again. Hold <kbd class="gd-key">[⇧]</kbd> and click to choose a range.</li><li>Click <b class="gd-ui">Import</b>. The window shows a bar. <b class="gd-ui">Stop</b> ends the import, <b class="gd-ui">Hide</b> puts the window away.</li><li>A report lists what the machine did with each slot.</li></ol>
 <p>Globals and other messages are off unless you tick them. Importing a global changes the channels the machine listens on. There is no undo, so use <b class="gd-ui">Export SysEx…</b> first.</p>
-<p>Files go into the slots they came from.</p>
-<p>You cannot choose a first slot to write to, and there is no mode that only verifies a file.</p>
+<h4 class="gd-h3">Original and specific place</h4>
+<p>The <b class="gd-ui">Place</b> row under the grid has two keys. <b class="gd-ui">Original place</b>, the default, puts each item in the slot it came from, as ORIG.</p>
+<p><b class="gd-ui">Specific place</b> is SPEC. A value shows the first slot of the kind on the tab, for example <b class="gd-ui">Kits from K01</b>. Step it as any value. The grid moves the items to where they land, each kind from its own first slot. When an item lands on a slot that holds data, <b class="gd-ui">Import</b> asks first and names the slots. An item past the last slot is not sent.</p>
+<h4 class="gd-h3">Verify only</h4>
+<p><b class="gd-ui">Verify only</b>, beside <b class="gd-ui">Import</b>, is VERF. It writes nothing. The editor reads each slot the items land in and compares it with the file. The report marks = the same, ≠ different and ? no answer.</p>
 <h4 class="gd-h3">The machine's SYSEX RECV screen</h4>
 <p>The Monomachine takes a dump only on its SysEx receive screen. The editor opens it for you. With a real Monomachine over MIDI, the sync field on the second line of the LCD reads SEND and the number of waiting edits. Click it and follow the steps.</p>
 </div></section>
 <section class="gd-sec" id="digipro-manager">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-99</span></span></aside>
 <div class="gd-body gd-prose"><h2>DIGIPRO MANAGER</h2>
-<p>You cannot send, receive, rename or erase user waveforms in the editor.</p>
+<p>The DigiPRO manager of an MKII sends, receives, renames and erases user waveforms. The editor does the send: tick <b class="gd-ui">Waveforms</b> in <b class="gd-ui">Export SysEx…</b> and set the range W01 to W64. The editor asks the machine for each waveform and writes the ones it has into the file. An empty waveform answers nothing and is left out.</p>
+<p>You cannot send waveforms to the machine, rename or erase them in the editor.</p>
 </div></section>
 <section class="gd-sec" id="drive-settings">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-105,</span> <span>1-106,</span> <span>1-107</span></span></aside>
@@ -1369,6 +1375,42 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-108,</span> <span>1-109</span></span></aside>
 <div class="gd-body gd-prose"><h2>MIDI SEQ</h2>
 <p>The channel of each MIDI track, and the controller numbers CL1 to CL4, are on the <b class="gd-ui">MIDI page</b> of <b class="gd-ui">Sequence</b>. See chapter 16.</p>
+</div></section>
+</article>
+<article class="gd-chapter" id="c20" style="page: c20">
+<div class="gd-runhead"><span>20. Early startup menu, technical information</span><span>Monomachine Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">20</p><h1>Early startup menu, technical information</h1>
+<p class="gd-cmeta">MM manual pp.1-110 to 1-116</p>
+</header>
+<div class="gd-intro gd-prose"><p>On the machine you hold a key while you switch it on to open the early startup menu. It holds the test mode, the resets and the OS upgrade. The editor starts the machine for you, with the OS you gave it, and has no such menu. The resets are in the engine menu instead.</p></div>
+<section class="gd-sec" id="test-mode">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-110</span></span></aside>
+<div class="gd-body gd-prose"><h2>TEST MODE</h2>
+<p>The test mode checks the hardware of the machine: its keys, knobs, joystick and outputs. The editor runs on the emulated machine and has nothing to test.</p>
+</div></section>
+<section class="gd-sec" id="empty-reset">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-110</span></span></aside>
+<div class="gd-body gd-prose"><h2>EMPTY RESET</h2>
+<p>The empty reset clears the memory of the machine.</p>
+<ol class="gd-steps"><li>Choose <b class="gd-ui">RESET MACHINE…</b> in the engine menu (the engine name at the left of the LCD). A question says what the reset clears. <b class="gd-ui">Cancel</b> is the default: <kbd class="gd-key">[ESC]</kbd> or a click outside answers it.</li><li>Click <b class="gd-ui">Empty reset…</b>. The editor asks a second time.</li><li>Click <b class="gd-ui">Clear everything</b>. The <b class="gd-ui">Empty reset</b> panel opens. The editor writes an empty kit, pattern and song into every slot through the SYSEX RECV screen, then reads each one back.</li><li>Read the report and click <b class="gd-ui">Done</b>.</li></ol>
+<p>The globals stay. A global is reset in its own slot in GLOBAL (chapter 19).</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The reset has no undo. Click <b class="gd-ui">Export SysEx…</b> in the question first to keep a way back.</p></aside>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>With a real Monomachine over MIDI, the machine must be on its SYSEX RECV screen. The sync field reads SEND and the number of waiting dumps until it is.</p></aside>
+</div></section>
+<section class="gd-sec" id="factory-reset">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-110</span></span></aside>
+<div class="gd-body gd-prose"><h2>FACTORY RESET</h2>
+<p>The editor holds no factory data of the Monomachine, so it offers no factory reset. The <b class="gd-ui">RESET MACHINE…</b> question says so. To get the factory kits and patterns back, import a factory .syx file. See &quot;FILE&quot; in chapter 19.</p>
+</div></section>
+<section class="gd-sec" id="soft-reset">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-111</span></span></aside>
+<div class="gd-body gd-prose"><h2>SOFT RESET</h2>
+<p>The soft reset restarts the machine and keeps its data. In the editor, close the editor and open it again.</p>
+</div></section>
+<section class="gd-sec" id="midi-upgrade-send-upgrade">
+<aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-111,</span> <span>1-112</span></span></aside>
+<div class="gd-body gd-prose"><h2>MIDI UPGRADE, SEND UPGRADE</h2>
+<p>The OS upgrade runs on the real machine. The editor does not upgrade the OS. It runs the Monomachine OS 1.32B that you give it as a ROM.</p>
 </div></section>
 </article>
 </div>
