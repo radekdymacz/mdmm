@@ -5415,7 +5415,7 @@ const Syx = (() => {
 	function resetAgain(how) {
 		const name = esc(Syx.host.machine || "machine");
 		const what = how === "empty" ? `<b>Empty reset:</b> clear every kit, pattern and song on the ${name} now? Each slot is overwritten with an empty one and read back.`
-			: `<b>Factory reset:</b> replace every kit, pattern and song on the ${name} with the factory ones? A second ${name} starts from your ROM first (about a minute), then each slot is overwritten and read back.`;
+			: `<b>Factory reset:</b> replace every kit, pattern and song on the ${name} with the factory ones? A second ${name} starts from your ROM first (seconds), then each slot is overwritten and read back (a few minutes).`;
 		Syx.host.ask(`${what}<br><br>What the machine holds now is lost: there is no undo. Export SysEx… first keeps a way back.`,
 			[[how === "empty" ? "Clear everything" : "Factory reset", "danger", () => Syx.host.reset(how)], ["Export SysEx…", "", openExport], ["Cancel", "cream", () => { }]]);
 	}

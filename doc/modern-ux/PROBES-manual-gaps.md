@@ -219,8 +219,8 @@ is dumped again; a stored kit and pattern are changed and the machine boots agai
 - The baseline is the initialised sample flash. None of the 64 kits, 128 patterns, 5 non-empty songs or 8 globals is in
   it, nor in the ROM image as dumped. The globals are in the patch RAM as they are dumped; kits and patterns are there in
   another form.
-- A machine booted with no patch RAM holds the factory data: 64 different kits (the first ones "E12 UW", "EFM UW",
-  "P-I UW", "TRX UW"), 128 different patterns. A second fresh boot gave all 232 dumps byte for byte the same.
+- A machine booted with no patch RAM holds the factory data: 64 different kits (kits 1 to 4 "TRX UW", "EFM UW",
+  "E12 UW", "P-I UW"; mdFactorySourceFirmwareTest), 128 different patterns. A second fresh boot gave all 232 dumps byte for byte the same.
 - The patch RAM carries a stored kit and pattern over a reboot.
 
 **For wave 6.** Factory reset on the MD is possible without factory files: boot a second machine with no patch RAM from
