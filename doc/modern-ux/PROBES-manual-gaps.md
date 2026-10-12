@@ -31,6 +31,7 @@
 | P7 | MD: which tracks take the EDIT ALL row (`gapProbesFirmwareTest p7`) | Every track. `editAll` is a flag (any nonzero is ALL), not a track mask; per track only the own row counts | wave 3 |
 | P8 | MM: the range of GLOBAL > AUDIO > MASTER TUNE (`gapProbesFirmwareTest p8`, wave 5) | 4000 to 4999 tenths of Hz (400.0 to 499.9 Hz); UP / DOWN 1 Hz, RIGHT / LEFT 0.1 Hz | wave 5 |
 | P9 | MD: a machine assigned and its track's note right behind it (the picker's audition); the level CC (`gapProbesFirmwareTest p9`, wave 8) | The note plays the new machine, also with no gap after the SysEx; the old machine and its values again give the old sound; level CC 0 is silent, 64 about 0.4 and 127 about 1.6 of 100's loudness | wave 8 |
+| P10 | MM: what POLY, the filter's key tracking and the MULTI ENV do to the sound (`gapProbesFirmwareTest p10`, wave 9, B-064) | POLY: the track in focus (TRACK keys) plays up to six notes at once, the other five are silent, notes on their channels too; KEY HPF / LPF off: that filter stops following the note; MULTI ENV: shapes MULTI TRIG notes in ALL TRK, SEQ START, SEQ TRNSP (not SPLIT KEY), and once such a note has played it holds every track at its level: after the note off with REL under 127 the machine is silent until the next MULTI TRIG note or STOP | wave 9 |
 
 ## P1: Song Position Pointer and Continue
 
@@ -274,3 +275,53 @@ the note follows after 0, 5, 20 or 100 ms; the loudness of the first 300 ms afte
 
 RESULT P9: 8 of 8 notes played the new machine (also with no gap: SysEx then note in one stream); the old machine and
 its values again give the same sound; level CC 127: 0.09094, 100: 0.05631, 64: 0.02310, 32: 0.00577, 0: 0.00001.
+## P10: MM POLY, the filter's key tracking and the MULTI ENV (wave 9, B-064, 2026-10-12)
+
+`gapProbesFirmwareTest - <MM ROM> p10` (about 3 minutes). Each scenario writes a kit into slot 11 and a pattern into slot
+10 that links it (LOAD PATTERN loads both), plays raw MIDI notes on the factory global's channels (track t on base + t,
+AUTO 9, MULTI TRIG 7) and measures the output: the level, and which pitches sound (a sine on T1, the amplitude at each
+note's frequency). A plain track: GND-SIN, AMP ATK 0 HOLD 0 DEC 127 REL 8, DIST 64, VOL 60, level 48. (AMP DIST 0
+silences a track: the neutral value is 64.) The guard of the same facts through the editor's own commands is
+`mmDeskFirmwareTest perform` (ctest `mmPerformSoundFirmwareTest`).
+
+The kit that plays at boot is in MULTI TRIG mode SEQ START with the MULTI ENV at ATK 0 DEC 0 SUS 127 REL 127.
+
+**POLY** (SET STATUS 0x20 = 1):
+
+- Mono, C E G held on T1's channel: one pitch (the last). POLY with TRACK 1: the three sound; six notes C E G of C-4 and
+  C-5: all six through the editor, four to six raw (the first notes of a burst sent in the same millisecond can be
+  lost); seven notes: six sound, the oldest goes.
+- POLY with TRACK 1: notes on T2's channel are silent. Notes on the AUTO channel play T1 polyphonically too.
+- TRACK 2 pressed while in POLY: T2 plays POLY (its own machine), T1's channel is silent. The TRACK key moves POLY;
+  the first chord on the new track can come out as one note, the next ones are chords (CC 123 or POLY off and on first
+  do not change it).
+- The sequencer in POLY: a trig with chord notes plays the chord; in mono only the base note.
+
+**Key tracking** (kit bytes 0x2aa LPF, 0x2ab HPF, a bit per track; ASSIGN > KEY):
+
+| T1, a C-1 (MIDI 36) and a C-5 (MIDI 84) | key tracking on | off |
+|---|---|---|
+| LPF low (BASE 0, WDTH 24) | 0.045, 0.043 | 0.0013, 0.0003 |
+| HPF high (BASE 80, WDTH 47) | 0.0003, 0.0002 | 0.0098, 0.0212 |
+
+With tracking on the filter moves with the note (both notes alike); off, it stays where BASE and WDTH put it: through a
+low LPF both notes go quiet, the high one more; under a high HPF the high note gets through.
+
+**MULTI ENV** (the six tracks' bytes alike; NRPN 0x40-0x43 live, the same as a dump):
+
+- ALL TRK: a note on the MULTI TRIG channel plays all six tracks and the envelope shapes it (DEC 0 SUS 0: silent).
+  Before any MULTI TRIG note the envelope leaves everything alone: the sequencer and a track's own notes play as usual,
+  whatever its settings.
+- Once a MULTI TRIG note has played, the envelope's level holds every track: with REL under 127, after that note off
+  the tracks are silent, their own notes too (ATK 0 DEC 127 SUS 127 REL 0: own note 0.0000 after, 0.032 before), until
+  the next MULTI TRIG note or STOP (the panel's, or the editor's Panic). REL 127 holds the level: ATK 0 DEC 127 SUS
+  127 REL 127 is the neutral envelope (the manual's).
+- SPLIT KEY: no effect, whatever its settings.
+- SEQ START and SEQ TRNSP: a MULTI TRIG note starts the pattern (SEQ TRNSP: and transposes it) and the envelope shapes
+  what plays; after the note off with REL 0 the pattern is silent, and so are the tracks' own notes, until the next
+  MULTI TRIG note or STOP.
+- ATK's time scale was not measured (the rises seen depended on the envelope's state before the note).
+
+**For wave 9.** The editor presses TRACK t with POLY (the track the page shows is the one that plays), the Perform page
+says which track plays six voices and that the others are silent, the Sound page's Filter group shows the KEY switches'
+state, and the Multi envelope card says per MULTI TRIG mode what it shapes and when it silences the machine.

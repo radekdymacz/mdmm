@@ -10,7 +10,8 @@
 //                                        edited while playing is heard at once), trnprobe (B-060's measurements: what
 //                                        applies a dumped transpose while the pattern plays), intentcases (the intent
 //                                        cases of doc/modern-ux/intent-cases.json through the desk, read back from the machine),
-//                                        steprec (0.6 wave 7: LIVE RECORDING's erase and STEP RECORDING)
+//                                        steprec (0.6 wave 7: LIVE RECORDING's erase and STEP RECORDING), perform (0.6
+//                                        wave 9, B-064: POLY, key tracking and the MULTI ENV, judged by the output)
 //
 // Exits 77 (skip) without arguments.
 
@@ -4325,6 +4326,313 @@ namespace
 	}
 }
 
+namespace
+{
+	// 0.6 wave 9 (B-064): POLY, the filter's key tracking and the MULTI ENV, through the commands the Perform and Sound
+	// pages send, judged by what the machine plays (the facts: doc/modern-ux/PROBES-manual-gaps.md P10).
+	struct Out
+	{
+		const Rig& r;
+		size_t from, to;
+
+		double amp(const double _f) const
+		{
+			const auto& l = r.m.left();
+			const auto& rr = r.m.right();
+			const double w = 2.0 * M_PI * _f / g_rate, c = 2.0 * std::cos(w);
+			double s1 = 0, s2 = 0;
+			for(size_t i = from; i < to; ++i)
+			{
+				const double s = 0.5 * (double(l[i]) + double(rr[i])) + c * s1 - s2;
+				s2 = s1;
+				s1 = s;
+			}
+			return 2.0 * std::sqrt(std::max(0.0, s1 * s1 + s2 * s2 - c * s1 * s2)) / double(std::max<size_t>(1, to - from));
+		}
+		// the strongest amplitude within 3 % of _f: a pitch, whatever its fine tune
+		double pitch(const double _f) const
+		{
+			double best = 0;
+			for(double f = _f * 0.97; f <= _f * 1.03; f += 0.25)
+				best = std::max(best, amp(f));
+			return best;
+		}
+		double rms() const
+		{
+			const auto& l = r.m.left();
+			const auto& rr = r.m.right();
+			double e = 0;
+			for(size_t i = from; i < to; ++i)
+			{
+				const double x = 0.5 * (double(l[i]) + double(rr[i]));
+				e += x * x;
+			}
+			return std::sqrt(e / double(std::max<size_t>(1, to - from)));
+		}
+	};
+
+	void performSound(const Bytes& _rom)
+	{
+		std::puts("perform: POLY, key tracking and the MULTI ENV, judged by the output (0.6 wave 9, B-064)");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		const auto t0 = r.ms();
+		while(r.desk->loaded() < 288 && r.ms() - t0 < 60000)
+			r.run(100);
+		r.run(1500);
+		const auto k = std::to_string(r.desk->currentKit()), p = std::to_string(r.desk->currentPattern());
+		const auto gl = r.desk->global(static_cast<uint8_t>(r.desk->currentGlobal()));
+		require(gl.has_value(), "the active global is loaded");
+		const uint8_t mt = gl->multiTrigChannel;
+		int g = 20000;
+		const auto G = [&] { return std::to_string(++g); };
+		const auto settle = [&](const double _ms = 4000) { r.run(_ms); };
+		const auto values = [&](const std::vector<std::array<int, 4>>& _v)
+		{
+			std::string s;
+			for(const auto& x : _v)
+				s += (s.empty() ? "[" : ",[") + std::to_string(x[0]) + "," + std::to_string(x[1]) + "," + std::to_string(x[2]) + "," + std::to_string(x[3]) + "]";
+			r.msg("{\"op\":\"params\",\"g\":" + G() + ",\"k\":" + k + ",\"values\":[" + s + "]}");
+		};
+		const auto noteOn = [&](const int _t, const int _pitch) { r.msg("{\"op\":\"noteOn\",\"t\":" + std::to_string(_t) + ",\"vel\":100,\"pitch\":" + std::to_string(_pitch) + "}"); };
+		const auto noteOff = [&](const int _t) { r.msg("{\"op\":\"noteOff\",\"t\":" + std::to_string(_t) + "}"); };
+		const auto mtNote = [&](const bool _on) { r.out.push_back({static_cast<uint8_t>((_on ? 0x90 : 0x80) | mt), 60, static_cast<uint8_t>(_on ? 100 : 0)}); };
+		// every note let go (not on the MULTI TRIG channel: a note off there moves the MULTI ENV on)
+		const auto quiet = [&]
+		{
+			for(int t = 0; t < 6; ++t)
+				noteOff(t);
+			r.run(800);
+		};
+		// play, wait, then measure _ms
+		const auto measure = [&](const std::function<void()>& _play, const double _ms = 300)
+		{
+			_play();
+			r.run(300);
+			const size_t a = r.m.left().size();
+			r.run(_ms);
+			return Out{r, a, r.m.left().size()};
+		};
+		// every track GND-SIN with every page at its start, then a plain voice: AMP HOLD 0 DEC 127 (held to the
+		// NOTE OFF), VOL 60, level 48 (six together stay under full scale)
+		for(int t = 0; t < 6; ++t)
+		{
+			r.msg("{\"op\":\"clearSound\",\"g\":" + G() + ",\"k\":" + k + ",\"t\":" + std::to_string(t) + "}");
+			r.run(400);	// one at a time, as a person clicks: six in one tick did not all land (2026-10-12, not looked into)
+		}
+		for(int t = 0; t < 6; ++t)
+		{
+			values({{t, 1, 1, 0}, {t, 1, 2, 127}, {t, 1, 3, 8}, {t, 1, 5, 60}});
+			r.msg("{\"op\":\"level\",\"g\":" + G() + ",\"k\":" + k + ",\"t\":" + std::to_string(t) + ",\"v\":48}");
+		}
+		settle();
+		const auto kitIsPages = [&](const char* _when)
+		{
+			const auto mem = workingKitInMemory(r);
+			const auto w = r.desk->workingKit();
+			check(mem && w && ed::mmKitRaw(*mem) == ed::mmKitRaw(*w), std::string(_when) + ": the machine holds the page's kit");
+		};
+		kitIsPages("the plain voices");
+		{
+			const auto mem = workingKitInMemory(r);
+			check(mem && std::all_of(mem->machines.begin(), mem->machines.end(), [](const uint8_t _m) { return _m == 1; }), "the plain voices: every track GND-SIN");
+		}
+		// ---- POLY: six notes on T3's channel; how many of their pitches sound ----
+		const auto c4 = measure([&] { noteOn(2, 12); });
+		double f0 = 0, best = -1;
+		for(double f = 150; f < 600; f *= std::pow(2.0, 1.0 / 192.0))
+			if(const double a = c4.amp(f); a > best)
+			{
+				best = a;
+				f0 = f;
+			}
+		quiet();
+		check(best > 1e-3, "the rig: T3's sine sounds (" + std::to_string(f0) + " Hz)");
+		const std::vector<int> six{12, 16, 19, 24, 28, 31};	// C E G of C-4 and C-5
+		const auto voices = [&](const int _t)
+		{
+			const auto o = measure([&] {
+				for(const int n : six)
+				{
+					noteOn(_t, n);
+					r.run(30);
+				}
+			});
+			std::vector<double> a;
+			for(const int n : six)
+				a.push_back(o.pitch(f0 * std::pow(2.0, (n - 12) / 12.0)));
+			const double top = *std::max_element(a.begin(), a.end());
+			int count = 0;
+			std::string each;
+			for(const double x : a)
+			{
+				count += top > 1e-3 && x > 0.25 * top;
+				char b[16];
+				std::snprintf(b, sizeof b, " %.4f", x);
+				each += b;
+			}
+			quiet();
+			std::printf("    pitches:%s, rms %.4f\n", each.c_str(), o.rms());
+			return std::pair<int, double>{count, o.rms()};
+		};
+		// what the machine says: POLY and the track in focus (status 0x20, 0x22)
+		const auto say = [&](const char* _when)
+		{
+			int focus = -1, polyOn = -1;
+			r.tap = [&](const Bytes& _b) {
+				if(const auto st = ed::parseMmStatusResponse(_b); st && st->param == ed::MmStatus::AudioTrack)
+					focus = st->value;
+				else if(st && st->param == ed::MmStatus::Poly)
+					polyOn = st->value;
+			};
+			r.out.push_back(ed::mmStatusRequest(ed::MmStatus::Poly));
+			r.out.push_back(ed::mmStatusRequest(ed::MmStatus::AudioTrack));
+			r.run(500);
+			r.tap = nullptr;
+			std::printf("    %s: the machine's POLY %d, track in focus %d (0-based)\n", _when, polyOn, focus);
+			return std::pair<int, int>{polyOn, focus};
+		};
+		const auto mono = voices(2);
+		check(mono.first == 1, "mono: six notes on T3's channel, one pitch sounds (" + std::to_string(mono.first) + ")");
+		r.msg("{\"op\":\"poly\",\"id\":1,\"on\":true,\"t\":2}");
+		settle(1500);
+		check(say("poly on, t 2") == std::pair<int, int>{1, 2}, "POLY with t 2: the machine's POLY is on, its focus T3 (TRACK 3 pressed)");
+		const auto poly = voices(2);
+		check(poly.first >= 5, "POLY on T3 (TRACK 3 pressed): the six notes on T3's channel sound as a chord (" + std::to_string(poly.first) + " pitches)");
+		const auto other = voices(0);
+		check(other.second < 1e-3, "POLY on T3: notes on T1's channel are silent (rms " + std::to_string(other.second) + ")");
+		r.msg("{\"op\":\"poly\",\"id\":2,\"on\":true,\"t\":0}");
+		settle(1500);
+		check(say("poly on, t 0") == std::pair<int, int>{1, 0}, "POLY moved to T1 (poly again with t 0): the machine's focus is T1, POLY on");
+		// the first chord on the new track can come out as one note (the firmware's, measured), the next ones are chords
+		const auto first = voices(0), moved = voices(0);
+		check(moved.first >= 5, "POLY moved to T1: its chords sound (" + std::to_string(moved.first) + " pitches; the first chord " + std::to_string(first.first) + ")");
+		r.msg(R"({"op":"poly","id":3,"on":false})");
+		settle(1500);
+
+		// ---- KEY TRACKING: T1 alone, a C-1 and a C-5 through a low LPF, then a high HPF, its switch on and off ----
+		for(int t = 1; t < 6; ++t)
+			values({{t, 1, 5, 0}});
+		const auto level = [&](const int _pitch)
+		{
+			const double v = measure([&] { noteOn(0, _pitch); }).rms();
+			quiet();
+			return v;
+		};
+		const auto keyTrack = [&](const char* _which, const bool _on)
+		{
+			r.msg("{\"op\":\"assign\",\"g\":" + G() + ",\"k\":" + k + ",\"t\":0,\"" + _which + "\":" + (_on ? "true" : "false") + "}");
+			settle(6000);
+		};
+		values({{0, 2, 0, 0}, {0, 2, 1, 24}});	// LPF low: BASE 0, WDTH 24
+		settle();
+		const double lpfOnLo = level(-12), lpfOnHi = level(36);
+		keyTrack("lpf", false);
+		const double lpfOffLo = level(-12), lpfOffHi = level(36);
+		std::printf("    LPF low, tracking on: C-1 %.4f C-5 %.4f; off: %.4f %.4f\n", lpfOnLo, lpfOnHi, lpfOffLo, lpfOffHi);
+		check(lpfOnHi > 0.5 * lpfOnLo && lpfOffHi < 0.5 * lpfOffLo && lpfOffHi < 0.2 * lpfOnHi,
+			"LPF key tracking off (assign lpf false): the filter stays low, a high note is cut (on " + std::to_string(lpfOnHi) + ", off " + std::to_string(lpfOffHi) + ")");
+		keyTrack("lpf", true);
+		values({{0, 2, 0, 80}, {0, 2, 1, 47}});	// HPF high: BASE 80, WDTH 47
+		settle();
+		const double hpfOnLo = level(-12), hpfOnHi = level(36);
+		keyTrack("hpf", false);
+		const double hpfOffLo = level(-12), hpfOffHi = level(36);
+		std::printf("    HPF high, tracking on: C-1 %.4f C-5 %.4f; off: %.4f %.4f\n", hpfOnLo, hpfOnHi, hpfOffLo, hpfOffHi);
+		check(hpfOffHi > 3 * hpfOnHi && hpfOffHi > hpfOffLo,
+			"HPF key tracking off (assign hpf false): the high-pass stays put, a high note gets through (on " + std::to_string(hpfOnHi) + ", off " + std::to_string(hpfOffHi) + ")");
+		keyTrack("hpf", true);
+		values({{0, 2, 0, 0}, {0, 2, 1, 127}});
+		for(int t = 1; t < 6; ++t)
+			values({{t, 1, 5, 60}});
+		settle();
+
+		// ---- MULTI ENV ----
+		const auto env = [&](const std::array<int, 4>& _v)
+		{
+			for(int i = 0; i < 4; ++i)
+				r.msg("{\"op\":\"multiEnv\",\"g\":" + G() + ",\"k\":" + k + ",\"i\":" + std::to_string(i) + ",\"v\":" + std::to_string(_v[static_cast<size_t>(i)]) + "}");
+			settle();
+		};
+		const auto mode = [&](const int _m)
+		{
+			r.msg("{\"op\":\"multiTrig\",\"g\":" + G() + ",\"k\":" + k + ",\"mode\":" + std::to_string(_m) + ",\"splitKey\":0,\"splitTrack\":0,\"timing\":0}");
+			settle(6000);
+		};
+		const auto mtLevel = [&]
+		{
+			const double v = measure([&] { mtNote(true); }).rms();
+			mtNote(false);
+			r.run(800);
+			return v;
+		};
+		const auto panic = [&] { r.msg(R"({"op":"panic"})"); r.run(1500); };
+		// ALL TRK, the envelope closed (DEC 0 SUS 0 REL 0): a track's own note before any MULTI TRIG note, the note, a
+		// track's own note after it, Panic (STOP), a track's own note again
+		mode(0);
+		env({0, 0, 0, 0});
+		panic();
+		kitIsPages("ALL TRK, closed");
+		const double ownBefore = level(12), allClosed = mtLevel(), ownAfter = level(12);
+		panic();
+		const double ownPanic = level(12);
+		env({0, 127, 127, 127});
+		const double allOpen = mtLevel();
+		std::printf("    ALL TRK: a MULTI TRIG note %.4f (env open), %.4f (DEC 0 SUS 0); T1's own note before it %.4f, after it %.4f, after Panic %.4f\n", allOpen, allClosed,
+			ownBefore, ownAfter, ownPanic);
+		check(allOpen > 1e-2 && allClosed < 0.05 * allOpen, "ALL TRK: the MULTI ENV shapes a MULTI TRIG note (closed: silent)");
+		check(ownBefore > 1e-3 && ownAfter < 0.05 * ownBefore, "ALL TRK: a track's own note is not shaped before a MULTI TRIG note; after one the closed envelope keeps every track silent");
+		check(ownPanic > 0.5 * ownBefore, "ALL TRK: Panic (STOP) opens the envelope again");
+		mode(1);
+		env({0, 0, 0, 0});
+		panic();
+		const double splitClosed = mtLevel();
+		std::printf("    SPLIT KEY: a MULTI TRIG note under the closed env %.4f\n", splitClosed);
+		check(splitClosed > 0.3 * allOpen, "SPLIT KEY: the MULTI ENV has no effect");
+		panic();
+		// SEQ START: T1 trigs on every second step; a MULTI TRIG note starts the pattern; REL 0: silent after its note off
+		r.msg("{\"op\":\"clearPattern\",\"g\":" + G() + ",\"p\":" + p + "}");
+		for(int s = 0; s < 16; s += 2)
+			r.msg("{\"op\":\"step\",\"g\":" + G() + ",\"p\":" + p + ",\"t\":0,\"s\":" + std::to_string(s) + ",\"v\":{\"n\":[60],\"a\":1,\"f\":1,\"l\":1}}");
+		settle(10000);
+		mode(2);
+		env({0, 127, 127, 0});
+		kitIsPages("SEQ START, REL 0");
+		const double started = measure([&] { mtNote(true); }, 500).rms();
+		mtNote(false);
+		r.run(400);
+		const double afterOff = measure([] {}, 400).rms();
+		const double ownAfter2 = level(12);
+		r.msg(R"({"op":"stop"})");
+		r.run(600);
+		const double ownStop = level(12);
+		std::printf("    SEQ START, REL 0: the pattern a MULTI TRIG note starts %.4f; after its note off %.4f; T1's own note then %.4f\n", started, afterOff, ownAfter2);
+		check(started > 1e-3 && afterOff < 0.05 * started, "SEQ START: a MULTI TRIG note starts the pattern; with REL 0 it is silent after the note off");
+		check(ownAfter2 < 1e-3, "SEQ START: after that note off the machine is silent, own notes too");
+		check(ownStop > 1e-3, "SEQ START: STOP opens it again (" + std::to_string(ownStop) + ")");
+		panic();
+		// SEQ TRNSP: the same, the pattern started (and transposed) by a MULTI TRIG note
+		mode(3);
+		kitIsPages("SEQ TRNSP, REL 0");
+		const double trnStarted = measure([&] { mtNote(true); }, 500).rms();
+		mtNote(false);
+		r.run(400);
+		const double trnAfter = measure([] {}, 400).rms();
+		const double trnOwn = level(12);
+		r.msg(R"({"op":"stop"})");
+		r.run(600);
+		std::printf("    SEQ TRNSP, REL 0: the pattern a MULTI TRIG note starts %.4f; after its note off %.4f; T1's own note then %.4f\n", trnStarted, trnAfter, trnOwn);
+		check(trnStarted > 1e-3 && trnAfter < 0.05 * trnStarted && trnOwn < 1e-3,
+			"SEQ TRNSP: a MULTI TRIG note starts the pattern; with REL 0 the pattern and the tracks' own notes are silent after its note off");
+		panic();
+		r.msg("{\"op\":\"clearPattern\",\"g\":" + G() + ",\"p\":" + p + "}");
+		mode(0);
+		env({0, 127, 127, 127});
+	}
+}
+
 int main(const int _argc, char** _argv)
 {
 	std::setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -4435,6 +4743,8 @@ int main(const int _argc, char** _argv)
 			transposeLive(rom);
 		if(only == "intentcases")
 			intentCasesOnFirmware(rom);
+		if(only == "perform")
+			performSound(rom);
 		check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 		std::printf("%s (%d failures)\n", g_failures ? "FAIL" : "PASS", g_failures);
 		return g_failures ? 1 : 0;

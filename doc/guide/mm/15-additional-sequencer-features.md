@@ -123,11 +123,12 @@ NOTE: A MIDI track needs a MIDI channel of its own to be muted over MIDI. If it 
 The mute window of the machine is a screen of its own. The editor has no such window, so there is nothing to minimise.
 
 ## POLY MODE
-<!-- rows: MM-239 @2de77f -->
+<!-- rows: MM-239 @b3299e -->
 
-In poly mode all six engines play the track in focus, with six voices.
+In poly mode all six engines play the track in focus, with six voices. The sequencer then plays the chord notes of that track's trigs as chords. Out of poly mode a trig plays only its first note.
 
 1. Press {key:workspace-4}.
-2. In the **Keyboard** bar, click **Poly**.
+2. Select the track with the numbered keys in the title of the **Assign** card.
+3. In the **Keyboard** bar, click **Poly**.
 
-The other five tracks are off until you leave poly mode. The page says so, and the rail marks the tracks that are off.
+The other five tracks are silent until you leave poly mode. The line under the keyboard modes says so, and on **Sequence** the rail dims those tracks and marks the poly track ×6. Chapter 5 describes poly mode.

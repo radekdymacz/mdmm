@@ -154,7 +154,8 @@ ED.amp={geo(W,H,c){const e=ampTimes(V("AMP"))||{at:0,ho:0,de:Infinity,re:Infinit
    {x:G.inf?Math.min(W-5,G.X(G.off)):G.X(e.at+e.ho+e.de),y:G.Y(G.inf?1:.1),k:"DEC",drag:x=>set(2,x>=W-3?127:Math.min(126,ampValue("fall",G.S(x)-e.at-e.ho)))},
    {x:G.rinf?W-5:G.X(G.off+e.re),y:G.Y(G.rinf?1:.1),k:"REL",drag:x=>set(3,x>=W-3?127:Math.min(126,ampValue("fall",G.S(x)-G.off)))}]}};
 ED.flt={resp(u,env){const f=V("FLT"),b=Math.min(1,(f[0]+(env?f[6]:0))/127),w=(f[1]+(env?f[7]:0))/127,lp=Math.min(1,b+w);let d=0;if(u<b)d-=Math.pow((b-u)*7,2);if(u>lp)d-=Math.pow((u-lp)*7,2);d+=f[2]/127*1.6*Math.exp(-Math.pow((u-b)*26,2))+f[3]/127*1.6*Math.exp(-Math.pow((u-lp)*26,2));return d},
- draw(g,W,H){grid(g,W,H);const f=V("FLT");if(f[6]||f[7])line(g,W,x=>clamp(H/2+8-this.resp(x/W,1)*(H/4),6,H-6),inkA(.55),1.5,[5,4]);line(g,W,x=>clamp(H/2+8-this.resp(x/W)*(H/4),6,H-6),cssv("--ink"),2.2);label(g,"base + width"+(f[6]||f[7]?" · dashed = env peak":""))},
+ draw(g,W,H){grid(g,W,H);const f=V("FLT"),A=S.sel<6?trk(S.sel).assign:null;if(f[6]||f[7])line(g,W,x=>clamp(H/2+8-this.resp(x/W,1)*(H/4),6,H-6),inkA(.55),1.5,[5,4]);line(g,W,x=>clamp(H/2+8-this.resp(x/W)*(H/4),6,H-6),cssv("--ink"),2.2);
+  const fixed=!A||A.hpf&&A.lpf?"":!A.hpf&&!A.lpf?" · fixed: no key tracking":!A.hpf?" · HPF fixed":" · LPF fixed";label(g,"base + width"+(fixed||(f[6]||f[7]?" · dashed = env peak":"")))},
  handles(W,H){const f=V("FLT"),b=f[0]/127,lp=Math.min(1,b+f[1]/127),yy=u=>clamp(H/2+8-this.resp(u)*(H/4),6,H-6);
   return[{x:Math.max(6,b*W),y:yy(b),k:"BASE · HPQ",drag:(x,y)=>{f[0]=clamp(Math.round(x/W*127));f[2]=clamp(Math.round((H/2+8-y)/(H/2)*127))}},{x:Math.min(W-6,lp*W),y:yy(lp),k:"WDTH · LPQ",drag:(x,y)=>{f[1]=clamp(Math.round((x/W-f[0]/127)*127));f[3]=clamp(Math.round((H/2+8-y)/(H/2)*127))}}]}};
 function lfoCycle(v){const m=Math.pow(2,v[4]);return v[5]?2048/(v[5]*m):Infinity}
@@ -189,7 +190,7 @@ const SND_TIP={uni:"The base saw (middle) and the unison pair either side: UNIW 
  amp:"The level after a trig, in steps at this tempo, as the Monomachine plays it: ATK rises (64 ≈ 0.14 s), HOLD keeps it for HOLD/8 steps (no NOTE OFF needed), DEC falls (64 ≈ 0.55 s to -20 dB; 127 holds to the NOTE OFF), REL falls after the NOTE OFF (dashed; 127 never fades). ATK, DEC and REL are times: each 8 more about doubles them. Drag the dots.",
  dist:"Distortion, in to out (dashed = clean). Drag the dot up or down.",
  pan:"The track in the stereo field: PAN sideways, VOL up. Drag the dot.",
- flt:"The 24 dB gap filter: BASE is the high-pass, WDTH the gap to the low-pass, the dots up for HPQ and LPQ. Dashed: where the envelope takes it. Both track the note.",
+ flt:"The 24 dB gap filter: BASE is the high-pass, WDTH the gap to the low-pass, the dots up for HPQ and LPQ. Dashed: where the envelope takes it. Both follow the note unless KEY (Perform › Assign › KEY) switches one off: the label then says which is fixed.",
  fenv:"The filter's own envelope: ATK, DEC; BOFS how far it lifts the base (solid, up), WOFS the width (dashed). Drag the dots.",
  eq:"One EQ band: EQF moves it, EQG boosts (up) or cuts (down). Drag the dot.",
  srr:"Sample-rate reduction: more SRR, longer held steps (the rail).",
@@ -206,7 +207,11 @@ const MM_PG_TIP={SYN:"the machine's SYNTHESIS page",AMP:"the AMPLIFICATION page"
    or what its knobs do, its boxes; each part is a cell of the row's grid */
 function sgHtml(x,cols,tag,note){const t=S.sel;
  const body=x.body||`<div class="ctl" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${x.idx.map((i,k)=>pc(x.pg,i,{t,label:x.labels?.[k]||x.knobs[k]})).join("")}</div>`;
- return`<section class="sg" data-sg="${x.pg}:${x.key}"><header><h3>${sgTitle(x)}</h3>${tag?`<span title="Its knobs are on ${MM_PG_TIP[x.pg]||x.pg}">${tag}</span>`:""}</header>${x.plot||(note?`<p class="sgnote" title="${attrS(note)}">${note}</p>`:"")}${body}</section>`}
+ return`<section class="sg" data-sg="${x.pg}:${x.key}"><header><h3>${sgTitle(x)}</h3>${tag?`<span title="Its knobs are on ${MM_PG_TIP[x.pg]||x.pg}">${tag}</span>`:""}${x.pg==="FLT"&&x.key==="filter"&&t<6?keyTrackKey(t):""}</header>${x.plot||(note?`<p class="sgnote" title="${attrS(note)}">${note}</p>`:"")}${body}</section>`}
+/* 0.6 wave 9 (B-064): the filter's key tracking, shown where the filter is; the switches stay in Perform › Assign › KEY
+   (KIT › ASSIGN › KEY on the machine), where this key leads */
+function keyTrackKey(t){const A=trk(t).assign;return`<button class="keytrk" data-keytrk="${t}" title="The filter follows the note unless switched off: HPF ${A.hpf?"on":"off"}, LPF ${A.lpf?"on":"off"}. Click: Perform › Assign › KEY, where they are switched (KIT › ASSIGN › KEY on the machine)" aria-label="Key tracking: HPF ${A.hpf?"on":"off"}, LPF ${A.lpf?"on":"off"}. Opens Perform, Assign, KEY">KEY <i class="led ${A.hpf?"on":""}"></i>HPF <i class="led ${A.lpf?"on":""}"></i>LPF ›</button>`}
+function keyTrackGo(t){S.ws="perform";S.sel=t;S.asTab="KEY";render();requestAnimationFrame(()=>{const k=$(".keyrow");if(k){k.classList.add("flash");setTimeout(()=>k.classList.remove("flash"),1200)}})}
 /* One row (shared/deskSoundLayout.js soundRow, as the Machinedrum Editor's): a group with a screen is a column of its
    own, the ones without pair up; a lone one says what its knobs do. The page's word on the first group of a page in
    the row (a group's own tag wins: an LFO that is off says so). */
