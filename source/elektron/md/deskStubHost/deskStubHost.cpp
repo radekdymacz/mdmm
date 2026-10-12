@@ -655,6 +655,18 @@ namespace
 			for(auto* m : {&p.amp, &p.filter, &p.lfo, &p.pitch})
 				(*m)[static_cast<size_t>(_t)] = _note >= 0 ? ((*m)[static_cast<size_t>(_t)] | bit) : ((*m)[static_cast<size_t>(_t)] & ~bit);
 			p.notes[static_cast<size_t>(_t)][static_cast<size_t>(_s)] = _note >= 0 ? static_cast<uint8_t>(_note) : ed::MmPattern::g_noNote;
+			// a step written or erased loses its chord notes (they need the trig, and a written note is one note)
+			p.chord[static_cast<size_t>(_t)] &= ~bit;
+			size_t kept = 0;
+			for(size_t i = 0; i < p.chordNoteCount && i < p.chordNotes.size(); ++i)
+			{
+				const auto e = ed::mmNoteEntry(p.chordNotes[i]);
+				if(e.track != _t || e.step != _s)
+					p.chordNotes[kept++] = p.chordNotes[i];
+			}
+			for(size_t i = kept; i < p.chordNoteCount && i < p.chordNotes.size(); ++i)
+				p.chordNotes[i] = 0;
+			p.chordNoteCount = static_cast<uint8_t>(kept);
 		}
 
 		void step(mmDesk::Desk& _desk)
