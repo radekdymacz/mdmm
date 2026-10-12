@@ -20,6 +20,14 @@ namespace
 
 int main()
 {
+	{
+		// B-087: the first read, the stopped byte still 0 (a firmware setting up its RAM): where the step is, not a move
+		md::SequencerState first;
+		first.update(5, 0, 0x06, ms(10));
+		check(!first.playing() && !first.recording(), "B-087: the first step read is no move: not playing");
+		first.update(6, 0, 0x06, ms(100));
+		check(first.playing(), "B-087: the step moves after it: plays");
+	}
 	md::SequencerState s;
 	s.update(0, 1, 0x06, ms(10));
 	check(!s.playing() && !s.recording() && !s.gridEdit(), "boot: stopped");

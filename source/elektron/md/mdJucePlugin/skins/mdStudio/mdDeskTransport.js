@@ -11,7 +11,7 @@
 /* ===== the pause ===== */
 function pauseNow() {
 	if (!V.playing) return;
-	S.paused = { step: S.step };
+	S.paused = { step: S.step, at: Date.now() };
 	cmd("pause", {}, undefined, undefined, r => { if (!r.ok) { S.paused = null; renderTop(); setPos(); } });
 	renderTop(); setPos();
 }
