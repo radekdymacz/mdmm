@@ -28,10 +28,12 @@ function songModeSync() {
 		if (sm === true) S.songPick = "song"; else if (sm === false && S.songPick === "song") S.songPick = chainDoc()?.active ? "chain" : "pattern";
 	}
 }
+/* B-072: every key sends the mode, as the PATTERN | SONG switch did before 0.6: V.songMode is the view of the last
+   render and the machine's answer to a key just pressed may not be in it yet (SONG, then PATTERN at once: PATTERN
+   sent nothing, the machine stayed in SONG mode and the switch went back to SONG) */
 function songPickSet(v) {
 	S.songPick = v;
-	const want = v === "song";
-	if (V.songMode !== want) cmd("seqMode", { song: want });
+	cmd("seqMode", { song: v === "song" });
 	render();
 }
 function chainDoc() { const d = machineState().desk || {}; return d.chain || null; }

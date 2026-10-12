@@ -24,7 +24,7 @@ const SONG_PICKS=[["pattern","Pattern"],["chain","Chain"],["song","Song"]];
 function songModeSync(){const sm=!!S.plays.songMode,ch=!!S.plays.chain?.active;
  if(!SONG_PICKS.some(([k])=>k===S.songPick))S.songPick=sm?"song":ch?"chain":"pattern";
  if(S.songModeSeen!==sm){S.songModeSeen=sm;if(sm)S.songPick="song";else if(S.songPick==="song")S.songPick=ch?"chain":"pattern"}}
-function songPickSet(v){S.songPick=v;const want=v==="song";if(!!S.plays.songMode!==want)seqMode(want);render()}
+function songPickSet(v){S.songPick=v;seqMode(v==="song");render()}/* B-072: every key sends the mode (a key pressed before the machine's answer to the one before was in S.plays sent nothing) */
 S.plays={chain:null,songMode:false,song:0};
 const nn2=i=>String(i+1).padStart(2,"0");
 /* what the machine plays: in song mode the song (the Monomachine keeps a chain there but plays the song,

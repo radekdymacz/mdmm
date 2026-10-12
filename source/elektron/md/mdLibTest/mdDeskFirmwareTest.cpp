@@ -3081,6 +3081,24 @@ namespace
 		std::printf("  passes still to come at step 4 / step 8 of each pass:%s\n", reps.c_str());
 		check(repeats == std::vector<int>{0, 1, 0, 0, 1, 0, 0, 1, 0, 0} && std::equal(lateRepeats.begin(), lateRepeats.end(), repeats.begin()),
 			"the page is told the passes of the row still to come: row 2 (REPEATS 1) 1 then 0, the others 0, the same at the pass's last step");
+		// B-072: the Song page's keys send the mode on every click; SONG again while the song plays is no restart
+		{
+			rig.page(R"({"op":"seqMode","song":true,"id":10})");
+			std::vector<int> again;
+			lastStep = -1;
+			for(int i = 0; i < 2000 && again.size() < 4; ++i)
+			{
+				rig.run(5);
+				const auto t = rig.pageTelemetry();
+				if(t.playing && t.step == 3 && lastStep != 3)
+					again.push_back(t.songRow);
+				lastStep = t.step;
+			}
+			std::string seenAgain;
+			for(const auto r : again) seenAgain += " " + std::to_string(r + 1);
+			check(again.size() == 4 && std::none_of(again.begin(), again.end(), [](const int _r) { return _r == 0; }) && rig.pageTelemetry().playing,
+				"SONG sent again while the song plays: it plays on round the loop, not from row 1 (rows" + seenAgain + ")");
+		}
 		rig.page(R"({"op":"stop","id":3})");
 		rig.run(600);
 		check(!rig.pageTelemetry().playing, "STOP: the page is told the machine stopped (no row is marked then)");

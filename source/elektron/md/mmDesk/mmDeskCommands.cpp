@@ -415,10 +415,11 @@ namespace mmDesk
 		const auto slot = static_cast<uint8_t>(num(_m, "slot") & 7);
 		m_chosenGlobal = slot;
 		m_chosenSentMs = -1;
+		m_activateGlobal = -1;	// a re-activation of the old active global still waiting never goes over the choice (B-071)
 		if(m_profile.wire || m_recv.state() == RecvSession::State::Idle)
 			sendActiveGlobal(slot);
 		else
-			m_activateGlobal = slot;	// over any re-activation of the old active global still waiting
+			m_chooseGlobal = slot;
 		m_port.sendSysex(ed::mmStatusRequest(ed::MmStatus::Global));
 		if(!known({Kind::Global, slot}))
 			request({Kind::Global, slot}, true);
