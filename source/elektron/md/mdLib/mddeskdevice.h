@@ -67,6 +67,8 @@ namespace md
 			std::array<std::atomic<uint8_t>, 16> chain{};
 			// 0.3.5 (md::SongPosition): the song row the sequencer plays, -1 unknown
 			std::atomic<int> songRow{-1};
+			// 0.6 (MD-147, md::SongPosition): that row's passes still to come, -1 unknown
+			std::atomic<int> songRepeats{-1};
 
 			// The working kit (P3, mdEditorProbeFirmwareTest workkit): patch RAM
 			// 0x700008 holds the current kit number, 0x70000a the kit that plays,
@@ -149,11 +151,12 @@ namespace md
 		SequencerState m_sequencer;
 		BootAnimation m_bootAnimation;
 		const Hardware* m_bootAnimationOf = nullptr;
-		// 128: the MM SYSEX RECV macro alone is 29 keys, about 60 row states (MM-P2).
-		std::array<PanelPacket, 128> m_panelSequence{};
+		// 512: the MM SYSEX RECV macro alone is 29 keys, about 60 row states (MM-P2); the UNDO KIT route is up to
+		// 128 + 3 keys, about 262 states on the MM and 134 on the MD (MD-043, MM-102).
+		std::array<PanelPacket, 512> m_panelSequence{};
 		size_t m_panelSequenceSize = 0;
 		size_t m_panelSequenceNext = 0;
-		std::array<uint32_t, 128> m_panelSequenceHolds{};
+		std::array<uint32_t, 512> m_panelSequenceHolds{};
 		uint64_t m_panelSequenceAt = 0;
 		uint64_t m_frames = 0;
 		bool m_silentOutput = false;

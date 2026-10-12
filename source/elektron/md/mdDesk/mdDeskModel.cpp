@@ -179,6 +179,13 @@ namespace mdDesk
 			for(const auto* p : ed::mdMachineParamNames(model))
 				params.push(p && *p ? Value(p) : Value());
 			m.set("params", std::move(params));
+			// MD-033: the LCD's clips, i: parameters i and i + 1 depend on each other
+			Value clips = Value::array();
+			const auto bits = ed::mdMachineClips(model);
+			for(int i = 0; i < 23; ++i)
+				if(bits & (1u << i))
+					clips.push(i);
+			m.set("clips", std::move(clips));
 			machines.push(std::move(m));
 		}
 		const auto names = [](const auto& _list)
@@ -354,6 +361,8 @@ namespace mdDesk
 			{"saveKit", Owner::Machine, Gate::Input, -1, {}, "SAVE KIT to the current slot"},
 			{"reloadKit", Owner::Machine, Gate::Input, -1, {}, "LOAD KIT of the current slot"},
 			{"kitLoad", Owner::Machine, Gate::Input, -1, {k}, "LOAD KIT"},
+			{"loadUndoKit", Owner::Machine, Gate::Input, -1, {}, "KIT > LOAD KIT > UNDO KIT with the panel's keys: the kit last lost to a LOAD KIT"
+				" or an overwrite plays again, its own slot current, unsaved (MD-043, measured: gapProbesFirmwareTest w12undo)"},
 			{"kitSaveAs", Owner::Machine, Gate::Input, -1, {k}, "SAVE KIT n"},
 			{"record", Owner::Machine, Gate::Input, -1, {}, "REC as on the machine"},
 			{"recTrig", Owner::Machine, Gate::Input, -1, {t}, "a TRIG key while recording"},

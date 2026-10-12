@@ -74,7 +74,7 @@ const StepSel = (() => {
 		Keys.bind({ id: "step-select", scope: "seq", area, keys: ["step"], mod: "cmd", group: "Sequence", does: does("step-select", "Click: select the step (⌘V pastes there). Drag: select steps × tracks. Drag the selection: a copy where you let go") });
 		Keys.bind({ id: "step-extend", scope: "seq", area, keys: ["step"], mod: "cmd+shift", group: "Sequence", does: does("step-extend", "Click: extend the selection to the step") });
 		Keys.bind({ id: "ruler-select", scope: "seq", area, keys: ["step ruler"], group: "Sequence", does: does("ruler-select", "Click or drag: select steps of the selected track (down over the grid: more tracks); ⇧-click extends") });
-		Keys.bind({ id: "step-menu", scope: "seq", area, keys: ["right-click a step"], group: "Sequence", does: does("step-menu", "The step menu: trig, accent, slide, copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (Ctrl-click on a Mac; the Menu key on a focused step)") });
+		Keys.bind({ id: "step-menu", scope: "seq", area, keys: ["right-click a step"], group: "Sequence", does: does("step-menu", "The step menu: trig, accent, slide, copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (the ⋯ on the selection; Ctrl-click on a Mac; the Menu key on a focused step)") });
 	}
 
 	/* the words of an entry's key (a pointer gesture's: "⌘⇧-click") */
@@ -99,6 +99,57 @@ const StepSel = (() => {
 	/* the menu's title: the step, or the selection */
 	const menuTitle = (x, t, s, name) => one(x) ? `${name(t, 1).replace(/^./, c => c.toUpperCase())}, step ${s + 1}` : `Selected: ${say(x, name)}`;
 
-	return { between, inside, shown, extend, landing, moved, grown, say, one, start, dropAt, during, end, bind, keyOf, menuItems, menuTitle };
+	/* ---- the step menu's visible key (Radek, 2026-10-12: nothing only behind a right-click): a small ⋯ inside the
+	   top-right corner of the selection's last step that is on screen; a click opens the same step menu, right-click
+	   stays a shortcut. It floats (no row of its own, the layout stays), under the popovers and hidden while a dialog
+	   or a menu is open. It is placed frame by frame only while there is a selection (moreWake starts that, from the
+	   editors' syncSel, a scroll or a resize). o: {active(): a selection on the Sequence page; cells(): the selected
+	   steps in order; clip(): the scrolling grid, the part of it on screen; open(x, y): the step menu there} ---- */
+	let more = null, moreRaf = 0;
+	function morePlace() {
+		const b = more?.b, o = more?.o; if (!b) return false;
+		if (!o.active()) { b.hidden = true; return false; }
+		const busy = document.documentElement.classList.contains("modalopen") || (typeof DeskMenu !== "undefined" && DeskMenu.shown);
+		const c = o.clip()?.getBoundingClientRect(), cells = o.cells();
+		let r = null;
+		for (let i = cells.length - 1; i >= 0 && !r; i--) {
+			const q = cells[i].getBoundingClientRect();
+			if (q.width && (!c || (q.left >= c.left - 1 && q.right <= c.right + 1 && q.top >= c.top - 1 && q.bottom <= c.bottom + 1))) r = q;
+		}
+		if (!r || busy) { b.hidden = true; return true; }
+		const w = Math.max(10, Math.min(16, Math.floor(r.width) - 2));
+		b.hidden = false; b.style.width = w + "px"; b.style.left = Math.round(r.right - w - 1) + "px"; b.style.top = Math.round(r.top + 1) + "px";
+		return true;
+	}
+	function moreWake() {
+		if (!more || moreRaf || typeof requestAnimationFrame === "undefined") return;
+		/* a frame that runs at once (a test's stand-in) must not recurse */
+		let inTick = false;
+		const tick = () => { if (inTick) return; inTick = true; moreRaf = morePlace() ? (requestAnimationFrame(tick) || -1) : 0; inTick = false; };
+		moreRaf = -1;
+		moreRaf = requestAnimationFrame(tick) || -1;
+	}
+	function moreKey(o) {
+		if (typeof document === "undefined") return null;
+		let b = document.getElementById("stepmore");
+		if (!b) {
+			b = document.createElement("button");
+			b.id = "stepmore"; b.type = "button"; b.textContent = "⋯"; b.hidden = true;
+			b.title = "The step menu: marks, copy, paste, clear, locks, fills (also right-click a step)";
+			b.setAttribute("aria-label", "Step menu");
+			b.style.cssText = "position:fixed;z-index:20;height:11px;padding:0;line-height:6px;font-size:11px;border-radius:2px;cursor:pointer;box-sizing:border-box;"
+				+ "border:1px solid var(--keydim,#777);background:var(--key,#333);color:var(--ink,#eee)";
+			for (const ev of ["pointerdown", "mousedown"]) b.addEventListener(ev, e => e.stopPropagation());
+			b.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); const r = b.getBoundingClientRect(); more?.o.open(r.left, r.bottom + 2); });
+			document.body.appendChild(b);
+			addEventListener("scroll", moreWake, { capture: true, passive: true });
+			addEventListener("resize", moreWake);
+		}
+		more = { b, o };
+		moreWake();
+		return b;
+	}
+
+	return { between, inside, shown, extend, landing, moved, grown, say, one, start, dropAt, during, end, bind, keyOf, menuItems, menuTitle, moreKey, moreWake };
 })();
 if (typeof module !== "undefined") module.exports = StepSel;

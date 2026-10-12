@@ -70,7 +70,11 @@ function playsText(){const plays=playsOf();if(plays.kind!=="song")return plays.l
 function songLcd(){const p=$("#pat"),f=p?.closest(".patf"),lab=f?.querySelector("small");if(!p)return;const song=!!S.plays.songMode,row=songRowNow();
  if(lab)lab.textContent=song?"Song":"Pattern";if(song)p.textContent=nn2(S.plays.song??0)+(row>=0?"·"+nn3(row):"");f?.classList.toggle("songlcd",song)}
 /* the arrangement's header and frame: the mode and the transport apart (PLAYING only while the song really plays) */
-function arrState(){return S.plays.songMode?(S.playing?"Playing":"Song mode · stopped"):"Pattern mode · song not playing"}
+/* MM-271: the song's bars and beats played, as the EDIT SONG header counts them (telemetry songSteps: bar steps / 16 + 1,
+   beat steps % 16 / 4 + 1) */
+S.songSteps=-1;
+const songPlayed=()=>S.plays.songMode&&S.playing&&S.songSteps>=0?String((S.songSteps>>4)+1).padStart(3,"0")+":"+String(((S.songSteps&15)>>2)+1).padStart(2,"0"):"";
+function arrState(){return S.plays.songMode?(S.playing?"Playing"+(songPlayed()?" · "+songPlayed():""):"Song mode · stopped"):"Pattern mode · song not playing"}
 function markSongRow(force){const st=document.getElementById("arrstate");if(st&&st.textContent!==arrState())st.textContent=arrState();
  document.querySelector(".songui")?.classList.toggle("songplaying",!!S.plays.songMode&&S.playing);
  const row=songRowNow();if(row===songRowShown&&!force)return;songRowShown=row;songLcd();

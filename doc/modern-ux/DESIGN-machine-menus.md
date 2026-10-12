@@ -15,7 +15,8 @@
 3. **Like the machine.** Group as the hardware does (KIT, SONG, GLOBAL, TEMPO, FUNCTION + B/F C/G D/H, SUPER COPY) and
    use its names, but do not copy its nesting: the desktop shows a whole page at once.
 4. **No right-click for main things.** Every function has a visible control; the only right-click menu is ▶'s
-   (pause, panic), and both also have keys.
+   (pause, panic), and both also have keys. The step menu opens with a normal click on the small ⋯ that sits on the
+   selection's last step (Radek, 2026-10-12); a right-click on a step is its shortcut.
 5. **Same concept, same control on MD and MM.**
 
 ## 2. What changes, screen by screen

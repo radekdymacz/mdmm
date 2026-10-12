@@ -92,7 +92,7 @@ A slide makes a locked value glide to the next lock instead of jumping.
 3. Drag across columns to paint slides on every step you cross, in one undo step.
 4. Press {key:trig-type} to write notes again.
 
-The right-click menu has **Slide** too. In the lock lane the glide is drawn from one lock to the next.
+The step menu (the ⋯ on a selection, or a right-click) has **Slide** too. In the lock lane the glide is drawn from one lock to the next.
 
 To copy, paste or clear the slide row of a track, tick **Slide** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu (chapter 11, "Super copy"). Press {key:undo} to take each back.
 

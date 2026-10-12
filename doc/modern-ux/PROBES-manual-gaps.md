@@ -325,3 +325,55 @@ low LPF both notes go quiet, the high one more; under a high HPF the high note g
 **For wave 9.** The editor presses TRACK t with POLY (the track the page shows is the one that plays), the Perform page
 says which track plays six voices and that the others are silent, the Sound page's Filter group shows the KEY switches'
 state, and the Multi envelope card says per MULTI TRIG mode what it shapes and when it silences the machine.
+
+## W12: the gaps of wave 12 (`feat/0.6-gaps`, 2026-10-12)
+
+`gapProbesFirmwareTest <MD ROM> <MM ROM> w12clip|w12undo|w12clearkit|w12stop|w12extend|w12repeats|w12patkit|w12mmcounter`,
+on MD OS 1.63 and MM OS 1.32B. `W12_LCD=1` prints the LCD, `W12_SNAP_MACHINE` / `W12_SNAP_DIR` write a machine's three
+pages as images.
+
+**W12a, MD clips (MD-033).** The LCD draws a clip as a small arch over the dotted line between two value boxes, above
+their knobs. Every machine on track 1, every page: the EFFECTS page joins AMD-AMF, EQF-EQG and FLTF-FLTW-FLTQ on every
+machine but MID, CTR-8P and the master-effect CTR machines; ROUTING joins LFOS-LFOD-LFOM on all but CTR-8P (none at
+all); the SYNTHESIS pairs are per machine (TRX-BD RAMP-RDEC, TRX-SD BUMP-BENV and TONE-TUNE, the E12 machines RTRG-RTIM,
+none on ROM and RAM machines, ...). The table is `elektronData::mdMachineClips`; the probe checks it machine by machine.
+The same screens showed B-082: MID's ROUTING is CC5D CC5V CC6D CC6V PCHG LFOS LFOD LFOM.
+
+**W12b, the UNDO KIT (MD-043, MM-102).** Both machines keep it in patch RAM right after the working kit, in the same
+layout (MD 0x70046a, MM 0x7002e2). A SysEx LOAD KIT of 64 to 127 does not reach it (the MD ignores it, the MM loads
+those slots). The machine's own route, KIT > LOAD KIT, the list's first entry (00 UNDO KIT; the list opens on the current
+kit, so k + 1 times UP), loads it: the lost kit plays, unsaved, and the slot it came from becomes the current kit. The
+edits of the kit that played are not kept anywhere (the UNDO KIT stays as it was). LOAD KIT over unsaved edits and SAVE
+KIT over another slot put the lost kit there, as the manual says.
+
+**W12c, MD CLEAR KIT (MD-045).** LOAD KIT list, a slot, FUNCTION + PLAY: the slot's tracks are all GND-EMPTY with the
+same values (SYNTHESIS 64 64 0 0 0 0 0 0, EFFECTS 0 0 64 64 0 127 0 0, ROUTING 0 127 64 0 0 64 0 0, level 100, no
+trig or mute group, the LFO on its own track, parameter 0, SHP1 0, SHP2 4, FREE), the master effects at their start
+values, and the name's first byte 0x7f (no name; the other name bytes and the LFOs' running state stay). Two slots of
+different kits clear to the same kit but for those kept bytes. `elektronData::mdClearedKit`; the probe checks it.
+
+**W12d, STOP with a pattern queued (MD-099).** Both machines: A01 plays, A02 is cued with a SysEx LOAD PATTERN (the
+status still says A01): the panel's STOP makes A02 current at once, and PLAY starts it. MIDI Stop does not (A01 stays,
+the cue too). A single TRIG key while playing cues nothing (a pattern is picked with a BANK key held).
+
+**W12e, a pattern made longer on the MD (MD-106).** SCALE SETUP (FUNCTION + SCALE) has three fields, LEN, the scale
+(16, 32, 48, 64) and the speed; LEFT and RIGHT wrap and the window keeps its field. LEN stays within the scale. A
+larger scale sets LEN to it and, when no track has a trig from the old scale's end on (to step 64), repeats the old
+scale's steps into the new ones: trigs, accent, swing and locks (16 to 64: page 1 four times; 32 to 64: pages 1 and 2
+twice; LEN 20 in scale 32 to 48: the 32 steps, then page 1 again). A trig anywhere past the old scale (also past the new
+one) stops the copy. LEN alone copies nothing. `totalLength` in the core does the same; `mdDeskFirmwareTest p4`
+compares it with the panel's.
+
+**W12f, the MD song row's repeats (MD-147).** Main RAM 0x2b1901 counts the playing row's passes still to come, down by
+one a pass (REPEATS 3: 3, 2, 1, 0), and starts again at the next row; it is read with the row byte (0x2b18f5), at PLAY
+and at each pattern wrap (`md::SongPosition::g_repeatsAddress`, telemetry `songRepeats`; `mdDeskFirmwareTest songrow`
+checks it through a LOOP).
+
+**W12g, the MM pattern's kit (MM-095).** A pattern dump (SYSEX RECV) carries the kit link; the read-back keeps it. Into
+another pattern it changes nothing that plays; LOAD PATTERN of it then loads that kit. Into the pattern that plays, the
+machine loads the new kit at once, stopped and playing.
+
+**W12h, the MM song counter (MM-271).** Main RAM 0x2bdf3c, 16 bits big-endian, counts the song's steps from PLAY: the
+index of the step that plays, from 0, on through repeats and loops (a pass of 8 steps adds 8). The EDIT SONG header
+shows it as bar steps / 16 + 1 and beat steps % 16 / 4 + 1 (24 steps: 002:03, read off the LCD).
+`mmDeskFirmwareTest songrow` checks it through a repeat and a LOOP.
