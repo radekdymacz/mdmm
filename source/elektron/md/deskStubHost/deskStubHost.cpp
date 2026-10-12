@@ -8,7 +8,10 @@
 //
 // The page's batches come in on stdin, one JSON array per line (what the page's bridge posts); the messages for the
 // page go out on stdout, one JSON array per line (what gm.recv takes). The plug-in's own commands (deskHost's table:
-// the engine map, ROM, audio, menu, notices) are answered ok and do nothing. --real-timing keeps the emulator
+// the engine map, ROM, audio, menu, notices) are answered ok and do nothing, but the SysEx ones (wave 6): the session's
+// SysEx work runs here as in the plug-in (mdJucePlugin/mdSyxWork.h), Import SysEx… opens the page tier's own file (two
+// kits and two patterns named IMPORT, or GEARMULATOR_MDMM_SYX_FILE), Export SysEx… writes into the temp folder, and a
+// factory reset is said to be the plug-in's. --real-timing keeps the emulator
 // profile's dump pacing (a read-back 750 ms after the last edit on the MD) and the desk's clock at the wall's speed; by
 // default the pacing is 20 ms and the desk's clock runs four times as fast (the loads at start take seconds, not ten).
 
@@ -16,6 +19,7 @@
 #include "mdDesk/mdDeskSetup.h"
 #include "mmDesk/mmDesk.h"
 #include "deskHost/deskHost.h"
+#include "mdJucePlugin/mdSyxWork.h"
 
 #include "elektronData/factoryGlobals.h"
 #include "elektronData/mdCommands.h"
@@ -45,6 +49,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <type_traits>
 #include <map>
 #include <memory>
 #include <string>
@@ -688,6 +693,10 @@ namespace
 			case 0x59: { auto k = m_working; k.position = v & 127; m_kits[v & 127] = k; m_kit = v & 127; return; }
 			case 0x6c: m_song = v % ed::MmSong::g_slots; return;
 			case 0x6d: return;
+			case 0x5e:	// a DigiPRO waveform: answered when used (waveforms 1 and 4 here), else nothing (P4)
+				if(v == 0 || v == 3)
+					reply({0xf0, 0x00, 0x20, 0x3c, 0x03, 0x00, 0x5d, 0x01, 0x01, v, 0, 0, 0, 0, static_cast<uint8_t>(0x10 + v), 0, 0, 0xf7});
+				return;
 			case 0x5b: if(_m.size() >= 11 && v < 6) m_working.machines[v] = _m[8]; return;
 			case 0x61: if(_m.size() >= 10) m_tempo = (v << 7) | _m[8]; return;	// TEMPO, BPM x 24
 			case 0x5c:	// the outputs, and an FX machine's input (any other's cleared), as OS 1.32B stores them (elektronData::mmSetKitInput)
@@ -879,7 +888,50 @@ namespace
 		toPage(deskCore::resultMessage(_message, _ok ? std::vector<std::string>{} : std::vector<std::string>{_note}, _note));
 	}
 
-	template<typename DeskT> void hostMessage(DeskT& _desk, const Value& _message, double& _gainDb)
+	// The .syx Import SysEx… opens in the page tier: GEARMULATOR_MDMM_SYX_FILE, else two kits named IMPORT 1 and IMPORT 2
+	// in K01 and K02 and two patterns (A01, A02) with trigs on every step of track 1, from the committed test dumps.
+	Bytes stubSyx(const bool _mm)
+	{
+		if(const char* f = std::getenv("GEARMULATOR_MDMM_SYX_FILE"); f && *f)
+		{
+			std::ifstream in(f, std::ios::binary);
+			if(in)
+				return {std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
+		}
+		Bytes out;
+		const auto add = [&out](const Bytes& _m) { out.insert(out.end(), _m.begin(), _m.end()); };
+		for(uint8_t i = 0; i < 2; ++i)
+		{
+			if(_mm)
+			{
+				auto k = *ed::decodeMmKit(load(i ? "mm/programmed-kit-001.syx" : "mm/programmed-kit-000.syx"));
+				k.position = i;
+				setName(k.name, "IMPORT " + std::to_string(i + 1));
+				add(ed::encodeMmKit(k));
+				auto p = *ed::decodeMmPattern(load("mm/programmed-pattern-001.syx"));
+				p.position = i;
+				p.kit = i;
+				add(ed::encodeMmPattern(p));
+			}
+			else
+			{
+				auto k = *ed::decodeMdKit(load(i ? "programmed_kit_1.syx" : "programmed_kit_0.syx"));
+				k.position = i;
+				setName(k.name, "IMPORT " + std::to_string(i + 1));
+				add(ed::encodeMdKit(k));
+				auto p = *ed::decodeMdPattern(load("programmed_pattern_1.syx"));
+				p.position = i;
+				p.kit = i;
+				p.length = 16;
+				p.trigs.fill(0);
+				p.trigs[0] = 0xffff;
+				add(ed::encodeMdPattern(p));
+			}
+		}
+		return out;
+	}
+
+	template<typename DeskT> void hostMessage(DeskT& _desk, mdJucePlugin::SyxWork<DeskT>& _syx, const Value& _message, double& _gainDb)
 	{
 		if(_desk.onPageMessage(_message))
 			return;
@@ -893,6 +945,46 @@ namespace
 		if(const auto errors = deskHost::Table::check(*row, _message); !errors.empty())
 		{
 			reply(_message, false, errors.front());
+			return;
+		}
+		// wave 6: the session's SysEx work, as the plug-in runs it
+		if(_syx.handle(_desk, _message, reply, toPage))
+			return;
+		constexpr bool mm = std::is_same_v<DeskT, mmDesk::Desk>;
+		if(op == "chooseSyx")
+		{
+			reply(_message, true, "");
+			const char* f = std::getenv("GEARMULATOR_MDMM_SYX_FILE");
+			toPage(_syx.open(_desk, stubSyx(mm), f && *f ? std::string(f).substr(std::string(f).find_last_of('/') + 1) : std::string("page-tier.syx")));
+			return;
+		}
+		if(op == "syxExport")
+		{
+			reply(_message, true, "");
+			using Work = mdJucePlugin::SyxWork<DeskT>;
+			const auto r = Work::exportRequest(_message);
+			const auto write = [all = r.all](const Bytes& _bytes, const std::string& _words)
+			{
+				const auto path = std::string(std::getenv("TMPDIR") ? std::getenv("TMPDIR") : "/tmp") + "/deskStubHost-export.syx";
+				std::ofstream o(path, std::ios::binary);
+				o.write(reinterpret_cast<const char*>(_bytes.data()), static_cast<std::streamsize>(_bytes.size()));
+				Value m = Value::object();
+				m.set("type", "syxExport");
+				m.set("ok", !_bytes.empty());
+				m.set("running", false);
+				m.set("text", _bytes.empty() ? std::string("Nothing to write: the editor holds none of what was chosen.")
+					: "Wrote page-tier.syx (" + std::to_string(_bytes.size()) + " bytes): " + (all ? "every document the editor holds (" + _words + ")." : _words + "."));
+				toPage(m);
+			};
+			if(r.waves)
+				_syx.exportStart(_desk, r, write);
+			else
+				write(Work::exportBytes(_desk, r), Work::exportWords(_desk, r));
+			return;
+		}
+		if(op == "machineReset")
+		{
+			reply(_message, false, "The factory reset needs the plug-in (a second machine from the ROM): not in the page tier.");
 			return;
 		}
 		if(op == "outputGain")
@@ -942,6 +1034,8 @@ namespace
 	template<typename DeskT, typename Fake> int serve(DeskT& _desk, Fake& _fake)
 	{
 		double cpuAt = -1000, levelAt = -1000, gainDb = 0;
+		mdJucePlugin::SyxWork<DeskT> syx;
+		_desk.setSysexTap([&syx](const Bytes& _m) { syx.onMachineSysex(_m); });
 		std::string pending;
 		bool open = true;
 		while(open)
@@ -968,10 +1062,15 @@ namespace
 						continue;
 					}
 					for(const auto& m : batch->asArray())
-						hostMessage(_desk, m, gainDb);
+						hostMessage(_desk, syx, m, gainDb);
 				}
 			}
 			_fake.step(_desk);
+			if(syx.running() && _desk.lifecycle() == deskCore::Lifecycle::Ready)
+			{
+				syx.step(_desk, nowMs(), false, toPage);
+				_desk.flush();
+			}
 			if(_desk.pageSeen())
 				periodic(nowMs(), cpuAt, levelAt, gainDb);
 			flushOut();

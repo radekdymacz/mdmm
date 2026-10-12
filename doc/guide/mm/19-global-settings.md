@@ -114,17 +114,23 @@ Bands on the keyboard show the ranges. A key you play shows the pattern it start
 Knob resolution, the velocity curve and the joystick mapping belong to the hardware. The editor has no setting for them.
 
 ## FILE
-<!-- rows: MM-307 MM-308 MM-309 @6b9473 -->
+<!-- rows: MM-307 MM-308 MM-309 @e1a17c -->
+
+On the machine the FILE menu sends and receives SysEx. In the editor you write a .syx file on your computer, and you open one to send it to the machine.
 
 ### Export
 
-The kit library and the pattern chooser each have an **Export SysEx…** key. It writes every pattern, kit and song, and the global the editor holds, into one .syx file. The plug-in opens a save dialog.
+1. Choose **EXPORT SYSEX…** in the engine menu (the engine name at the left of the LCD). The **Export SysEx** panel opens.
+2. **All** is ticked: every kit, pattern, song and global the editor holds goes into one file, as the machine's ALL.
+3. To choose, untick **All**. Each kind has its row: **Kits**, **Patterns**, **Songs**, **Globals** and **Waveforms**. Tick the kinds you want.
+4. Set the first and the last slot of each kind. Click a value to step it up, [⇧]-click to step it down, or turn the wheel, drag up or down, or use the arrow keys. A kind with data starts from its first to its last used slot.
+5. Click **Save .syx…** and choose where to put the file. A message says what went into it.
 
-{gap:MM-307}You cannot choose a range of slots to send.{/gap}
+NOTE: On the machine KIT, PAT+KIT and SONG+PAT+KIT take the kits and patterns with them. In the editor you tick each kind and set its range.
 
 ### Import
 
-1. Click **Import SysEx…** in the kit library or the pattern chooser, or drop a .syx file on the window (macOS only).
+1. Choose **IMPORT SYSEX…** in the engine menu, or drop a .syx file on the window (macOS only).
 2. The import window previews the file. It has a tab for each kind: Kits, Patterns, Songs, Globals and Other.
 3. A slot grid shows the slots. A click leaves a slot out or takes it in again. Hold [⇧] and click to choose a range.
 4. Click **Import**. The window shows a bar. **Stop** ends the import, **Hide** puts the window away.
@@ -132,18 +138,26 @@ The kit library and the pattern chooser each have an **Export SysEx…** key. It
 
 Globals and other messages are off unless you tick them. Importing a global changes the channels the machine listens on. There is no undo, so use **Export SysEx…** first.
 
-Files go into the slots they came from.
+### Original and specific place
 
-{gap:MM-308}You cannot choose a first slot to write to, and there is no mode that only verifies a file.{/gap}
+The **Place** row under the grid has two keys. **Original place**, the default, puts each item in the slot it came from, as ORIG.
+
+**Specific place** is SPEC. A value shows the first slot of the kind on the tab, for example **Kits from K01**. Step it as any value. The grid moves the items to where they land, each kind from its own first slot. When an item lands on a slot that holds data, **Import** asks first and names the slots. An item past the last slot is not sent.
+
+### Verify only
+
+**Verify only**, beside **Import**, is VERF. It writes nothing. The editor reads each slot the items land in and compares it with the file. The report marks = the same, ≠ different and ? no answer.
 
 ### The machine's SYSEX RECV screen
 
 The Monomachine takes a dump only on its SysEx receive screen. The editor opens it for you. With a real Monomachine over MIDI, the sync field on the second line of the LCD reads SEND and the number of waiting edits. Click it and follow the steps.
 
 ## DIGIPRO MANAGER
-<!-- rows: MM-310 @cd7e9d -->
+<!-- rows: MM-310 @cfd149 -->
 
-{gap:MM-310}You cannot send, receive, rename or erase user waveforms in the editor.{/gap}
+The DigiPRO manager of an MKII sends, receives, renames and erases user waveforms. The editor does the send: tick **Waveforms** in **Export SysEx…** and set the range W01 to W64. The editor asks the machine for each waveform and writes the ones it has into the file. An empty waveform answers nothing and is left out.
+
+{gap:MM-310}You cannot send waveforms to the machine, rename or erase them in the editor.{/gap}
 
 ## +DRIVE SETTINGS
 <!-- rows: MM-311 MM-312 MM-313 @25af9c -->
