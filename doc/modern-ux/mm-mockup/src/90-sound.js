@@ -20,7 +20,9 @@ function hashN(i){const x=Math.sin(i*127.1)*43758.5;return x-Math.floor(x)}
 /* SWAVE: the base saw with the unison pair at ±UNIW (UNIL), the extended pair at twice the width (UNIX) */
 ED.uni={geo(W,H){return{cx:W/2,sp:(W/2-12)/26,base:H-14,hh:H-36}},
  draw(g,W,H,c){const G=this.geo(W,H),ink=cssv("--ink");grid(g,W,H);
-  const bar=(semi,h,dash)=>{const x=G.cx+semi*G.sp;g.fillStyle=ink;g.globalAlpha=dash?.5:1;g.fillRect(x-3,G.base-h*G.hh,6,Math.max(1,h*G.hh));g.globalAlpha=1};
+  /* review 1 (2026-10-12): a fine stem per partial, 2 px as the other screens' lines (they were 6 px bars); dashed
+     for the extended pair */
+  const bar=(semi,h,dash)=>{const x=Math.round(G.cx+semi*G.sp)+.5;g.strokeStyle=ink;g.lineWidth=dash?1.5:2;g.setLineDash(dash?[3,3]:[]);g.beginPath();g.moveTo(x,G.base);g.lineTo(x,G.base-Math.max(1,h*G.hh));g.stroke();g.setLineDash([])};
   const uw=sv("UNIW")/127*12,ul=sv("UNIL")/127;bar(0,1);if(ul){bar(-uw,ul);bar(uw,ul)}
   if(ck(c).includes("UNIX")){const ux=Math.min(sv("UNIX"),sv("UNIL"))/127;if(ux){bar(-2*uw,ux,1);bar(2*uw,ux,1)}}
   label(g,`unison ±${Math.round(uw*10)/10} st`)},
@@ -28,8 +30,10 @@ ED.uni={geo(W,H){return{cx:W/2,sp:(W/2-12)/26,base:H-14,hh:H-36}},
 /* the subs: a sine one (SUB1) and two (SUB2) octaves down, a square one octave down (SUBX); the base faint */
 ED.sub={geo(W,H){return{x0:16,sp:(W-28)/27,base:H-16,hh:H-38}},
  bars(c){const k=ck(c);return k.map(n=>({n,semi:n==="SUB2"?-24:-12,dx:n==="SUBX"?-8:n==="SUB1"&&k.includes("SUBX")?8:0}))},
- draw(g,W,H,c){const G=this.geo(W,H),ink=cssv("--ink"),X=s=>G.x0+(s+25)*G.sp;grid(g,W,H);g.fillStyle=inkA(.3);g.fillRect(X(0)-3,G.base-G.hh,6,G.hh);
-  for(const b of this.bars(c)){const v=sv(b.n)/127,x=X(b.semi)+b.dx;g.fillStyle=ink;g.fillRect(x-3,G.base-v*G.hh,6,Math.max(1,v*G.hh));g.font=SFONT;g.fillText(b.n==="SUBX"?"SQ":b.n==="SUB2"?"-24":"-12",x-7,H-4)}
+ draw(g,W,H,c){const G=this.geo(W,H),ink=cssv("--ink"),X=s=>G.x0+(s+25)*G.sp;grid(g,W,H);
+  /* review 1: fine stems (2 px), the base 1 px and faint */
+  const stem=(x,h,w,c)=>{x=Math.round(x)+.5;g.strokeStyle=c;g.lineWidth=w;g.beginPath();g.moveTo(x,G.base);g.lineTo(x,G.base-Math.max(1,h));g.stroke()};stem(X(0),G.hh,1.5,inkA(.35));
+  for(const b of this.bars(c)){const v=sv(b.n)/127,x=X(b.semi)+b.dx;stem(x,v*G.hh,2,ink);g.fillStyle=ink;g.font=SFONT;g.fillText(b.n==="SUBX"?"SQ":b.n==="SUB2"?"-24":"-12",x-7,H-4)}
   g.font=SFONT;g.fillStyle=inkA(.6);g.fillText("BASE",X(0)-12,H-4);label(g,"subs below the base")},
  handles(W,H,c){const G=this.geo(W,H),X=s=>G.x0+(s+25)*G.sp;return this.bars(c).map(b=>({x:X(b.semi)+b.dx,y:G.base-sv(b.n)/127*G.hh,k:b.n,drag:(x,y)=>sset(b.n,(G.base-y)/G.hh*127)}))}};
 /* a pulse: SID's PW is the width; SWAVE's PW is signed, 0 = square, either end a spike. PWAD sweeps it (dashed) */
