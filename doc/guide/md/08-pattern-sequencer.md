@@ -217,7 +217,7 @@ To use the selection:
 
 {key:cut} copies and clears. {key:duplicate} copies the block to the steps right after it; press it again for one more copy. [⌘]-drag the selection to drop a copy where you let go. {key:sel-trigs} switches the trigs of the selection on, or off when each has one. {key:deselect} clears the selection.
 
-Right-click a step for the step menu. It holds trig, accent, slide, copy, cut, paste, duplicate, clear, and **Fill every 2nd** and **Fill every 4th** from that step. On a selected step the menu acts on the whole selection.
+Select a step or steps and click the small ⋯ on the selection for the step menu; a right-click on a step opens it too. It holds trig, accent, slide, copy, cut, paste, duplicate, clear, and **Fill every 2nd** and **Fill every 4th** from that step. On a selected step the menu acts on the whole selection.
 
 The <COPY>, <CLR> and <PASTE> keys on the LCD do the same as the keys. They are marked when they act on a selection.
 

@@ -2085,11 +2085,12 @@ const MmJourneys = (() => {
 				screen: c => ok(S().sel === c.t && !!$1("#lane"), "no lane"), machine: c => ok(trigsOf(c.t).length >= 2, "fewer than two notes") },
 			{ say: "draw locks across the lane over two notes", act: async (u, c) => { c.on = trigsOf(c.t).filter(s => s < S().len).slice(0, 2); await u.drag(`#lane .lb[data-s="${c.on[0]}"]`, [`#lane .lb[data-s="${c.on[1]}"]`], {}, { fy: 0.3 }); },
 				machine: c => ok(c.on.every(s => stepLocks(c.t, s).length > 0), "locks " + JSON.stringify(patDoc().locks)), within: 15000 },
-			{ say: "right-click the first of them and choose Clear locks (keep the notes)", act: async (u, c) => { const p = rollCell(c.t, c.on[0]); u.rightClick(p.c, {}, p.fx, p.fy); await sleep(150); u.click('#deskmenu [data-mid="clear-step-locks"]'); },
+			{ say: "⌘-click the first of them, click the ⋯ on it and choose Clear locks (keep the notes)", act: async (u, c) => { if (S().stepSel) clearSel(); const p = rollCell(c.t, c.on[0]); u.click(p.c, { cmd: true }, p.fx, p.fy);
+				await until(() => !!$1("#stepmore") && !$1("#stepmore").hidden, 2000); u.click("#stepmore"); await until(() => !!$1('#deskmenu [data-mid="clear-step-locks"]'), 1500); u.click('#deskmenu [data-mid="clear-step-locks"]'); },
 				machine: c => ok(stepLocks(c.t, c.on[0]).length === 0 && stepLocks(c.t, c.on[1]).length > 0 && trigsOf(c.t).includes(c.on[0]), `step ${c.on[0] + 1} locks ${stepLocks(c.t, c.on[0]).length}, step ${c.on[1] + 1} ${stepLocks(c.t, c.on[1]).length}, notes ${trigsOf(c.t)}`),
 				screen: c => ok(!!S().tracks[c.t].steps[c.on[0]] && ![...S().locks].some(([k, m]) => +k.split("|")[0] === c.t && m.has(c.on[0])), "the page still shows a lock or lost the note"), within: 15000 },
 			{ ...undoKey, machine: c => ok(stepLocks(c.t, c.on[0]).length > 0, "locks not back"), within: 15000 },
-			{ say: "right-click the second step and choose Clear locks: the same for it", act: async (u, c) => { const p = rollCell(c.t, c.on[1]); u.rightClick(p.c, {}, p.fx, p.fy); await sleep(150); u.click('#deskmenu [data-mid="clear-step-locks"]'); },
+			{ say: "right-click the second step (the shortcut) and choose Clear locks: the same for it", act: async (u, c) => { const p = rollCell(c.t, c.on[1]); u.rightClick(p.c, {}, p.fx, p.fy); await sleep(150); u.click('#deskmenu [data-mid="clear-step-locks"]'); },
 				machine: c => ok(stepLocks(c.t, c.on[1]).length === 0 && stepLocks(c.t, c.on[0]).length > 0 && trigsOf(c.t).includes(c.on[1]), `locks ${stepLocks(c.t, c.on[1]).length}, notes ${trigsOf(c.t)}`), within: 15000 }
 		],
 		async tidy(u, c) { if (S().stepSel) clearSel(); await undoUntil(u, () => (machine().history?.undoCount || 0) <= c.u0, 6); }

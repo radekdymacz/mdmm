@@ -189,6 +189,11 @@ function stepMenu(t, s, x, y) {
 	if (!inSel(t, s)) { setSel({ t, n: 1, from: s, to: s + 1 }); if (t !== S.sel) select(t); }
 	DeskMenu.open(stepMenuItems(t, s), x, y, { title: StepSel.menuTitle(S.stepSel, t, s, trackWords) });
 }
+/* the step menu's visible key: ⋯ on the selection's last step shown (shared/deskSelect.js moreKey) */
+StepSel.moreKey({
+	anchor: () => { if (S.ws !== "seq" || !S.stepSel || V.rec) return null; const c = document.querySelectorAll("#seq .st.selx"); return c.length ? c[c.length - 1] : null; },
+	open: (x, y) => { if (S.stepSel) stepMenu(S.stepSel.t, S.stepSel.from, x, y); }
+});
 document.addEventListener("contextmenu", e => {
 	const st = e.target.closest?.("#seq .st"); if (!st || S.ws !== "seq") return;
 	e.preventDefault();
