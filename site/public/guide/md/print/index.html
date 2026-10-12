@@ -103,7 +103,9 @@
 <p>The ‹ and › keys beside the pattern name step to the pattern before or after.</p>
 <figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The pattern chooser"><span>Screenshot to come</span></div><figcaption>The pattern chooser</figcaption></figure>
 <h4 class="gd-h3">Level</h4>
-<p>The editor has no control for LEVEL, the overall gain of a track. Use <b class="gd-ui">VOL</b> on the Mix workspace.</p>
+<p>The machine's LEVEL knob sets the overall level of the selected track. It is stored in the kit, and it cannot be locked or modulated by an LFO. In the editor it is the <b class="gd-ui">LEV</b> box at the top of each strip on the Mix workspace.</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[3]</kbd> for the Mix workspace.</li><li>Drag the <b class="gd-ui">LEV</b> box of a track up or down, or scroll the wheel over it. The kit that plays takes the new level at once.</li><li>Double-click the box to set it back to 100.</li></ol>
+<p><b class="gd-ui">VOL</b> under it is the track's volume on the routing page. It is a different value: VOL can be locked, LEV cannot.</p>
 <h4 class="gd-h3">Tempo</h4>
 <ol class="gd-steps"><li>Drag the <b class="gd-ui">Tempo</b> value in the LCD up or down. Each pixel is half a BPM; hold <kbd class="gd-key">[⇧]</kbd> for a tenth of a BPM a pixel.</li><li>Or press <kbd class="gd-key">[T]</kbd> or <kbd class="gd-key">[B]</kbd> in time with the beat. The tempo is the average of your last taps.</li></ol>
 <p>In a DAW the machine follows the host's tempo. The Tempo field is marked and does not edit; change the tempo in the DAW.</p>
@@ -193,7 +195,7 @@
 <h4 class="gd-h3">Sync</h4>
 <p>The <b class="gd-ui">Sync</b> field reads Sync when the editor is in step with the machine and Send while it sends your edits. When the machine follows the host's clock it reads Host. While the editor reads the machine's patterns, kits and songs in the background after start-up, it shows how many of them are read, as a count out of the total. You can edit while it reads.</p>
 <h4 class="gd-h3">Level</h4>
-<p>The editor has no level bar for the overall volume of a track.</p>
+<p>The machine shows the level of the track as a bar on its screen. The editor shows it on the Mix workspace: the bar inside each strip's <b class="gd-ui">LEV</b> box fills with the track's level. Chapter 1 says how to set it.</p>
 <h4 class="gd-h3">Value boxes</h4>
 <p>Parameters appear as value boxes on the Sound and Mix workspaces. A box shows the parameter name and its value, 0 to 127. A few parameters run from one side to the other, or from cut to boost, and show -64 to +63 with 0 in the middle. They are PAN, EQG, the levels and balances of the RAM recorder, and the gains of the master EQ's CTR machine.</p>
 <p>The editor does not draw the clip that the machine shows between two values that depend on each other.</p>
@@ -213,7 +215,10 @@
 <figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The Sound workspace"><span>Screenshot to come</span></div><figcaption>The Sound workspace</figcaption></figure>
 <p>Turn a value in small steps when you need them. Hold <kbd class="gd-key">[⇧]</kbd> and drag for fine steps. Scroll the wheel over a box for one step a notch, and hold <kbd class="gd-key">[⇧]</kbd> for ten. Double-click a box to set it back to 64.</p>
 <h4 class="gd-h3">Hear a machine before loading it</h4>
-<p>The editor has no preview for a machine. Choosing a machine in the picker loads it at once. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take it back.</p>
+<p>In the machine picker you can hear a machine on the track before you keep it.</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[2]</kbd> for the Sound workspace and select a track.</li><li>Click the machine key under the header. The machine picker opens.</li><li>Point at a machine and click its ▶, or move to it with <kbd class="gd-key">[TAB]</kbd> and press <kbd class="gd-key">[SPACE]</kbd>. The machine goes on the track and the track plays once. A line under the preview says which machine plays and which one was there before.</li><li>Try other machines the same way.</li><li>Press <kbd class="gd-key">[ENTER]</kbd> or click <b class="gd-ui">Keep</b> to keep the machine, or click another machine to keep that one. Press <kbd class="gd-key">[ESC]</kbd> or click <b class="gd-ui">Back</b> to put the old machine back.</li></ol>
+<p>The machine plays with the track's own values, so you hear it as it will be in the kit. The machine itself plays a new machine with its default values instead. Trying machines and keeping one is one step for <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd>. During live recording the machine changes but no note plays, so no trig is recorded.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>GND-EMPTY and the RAM recorders go on the track but play nothing. The editor says why.</p></aside>
 <h4 class="gd-h3">Using the track effects</h4>
 <p>Each track has an amplitude modulator, an EQ, a filter and a sample rate reducer. They are groups on the Sound workspace. Chapter 4 describes them.</p>
 <h4 class="gd-h3">Selecting and playing a pattern</h4>

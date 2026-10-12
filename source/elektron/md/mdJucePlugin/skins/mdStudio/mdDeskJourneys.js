@@ -543,6 +543,31 @@ const MdJourneys = (() => {
 			{ ...undoKey, machine: c => ok(kit().tracks[c.t].machine === c.m0, "kit machine " + kit().tracks[c.t].machine), screen: c => ok(V.tracks[c.t].m === c.m0, "view " + V.tracks[c.t].m), within: 6000 }
 		]
 	};
+	/* wave 8: the machine picker's audition (the machine's EDIT KIT preview): ▶ or Space puts the machine on the track and
+	   plays its note; Esc puts the old one back; Enter keeps it, and the audition and the pick are one undo step */
+	const gndOthers = c => $all("#machpop .mk").map(b => b.dataset.mach).filter(m => m !== c.m0 && m !== "GND-EMPTY");
+	const machAudition = {
+		name: "md-sound-audition", proves: ["MD-037"],
+		steps: [
+			go("sound"), sel(() => soundTrack()),
+			{ say: "open the machine picker on the GND family", act: async (u, c) => { c.m0 = kit().tracks[c.t].machine; c.k0 = JSON.stringify(kit().tracks[c.t]); u.click("#machbtn"); await sleep(200); u.click('#machpop .mf[data-fam="GND"]'); await sleep(200); },
+				screen: () => ok(!$1("#machpop").hidden && $all("#machpop .mk").length > 2, "picker closed") },
+			{ say: "click ▶ on a machine: it plays on the track, the picker stays open", act: async (u, c) => { c.m1 = gndOthers(c)[0]; results.length = 0; $1(`#machpop .mk[data-mach="${c.m1}"]`).focus(); await sleep(100); u.click(`#machpop .mk[data-mach="${c.m1}"] [data-play]`); },
+				screen: c => ok(!$1("#machpop").hidden && V.tracks[c.t].m === c.m1 && /was/i.test($1("#mpaud")?.textContent || ""), `picker ${$1("#machpop").hidden ? "closed" : "open"}, view ${V.tracks[c.t].m}, line "${$1("#mpaud")?.textContent || "none"}"`),
+				machine: c => ok(kit().tracks[c.t].machine === c.m1 && results.some(r => r.op === "noteOn" && r.ok), `kit machine ${kit().tracks[c.t].machine}, results ${results.map(r => r.op + ":" + r.ok).join(",")}`), within: 6000 },
+			{ say: "press Esc: the old machine is back, every value of the track as it was", act: u => u.key("Escape"),
+				screen: c => ok($1("#machpop").hidden && V.tracks[c.t].m === c.m0, `picker ${$1("#machpop").hidden ? "closed" : "open"}, view ${V.tracks[c.t].m}`),
+				machine: c => ok(JSON.stringify(kit().tracks[c.t]) === c.k0, "kit track " + JSON.stringify(kit().tracks[c.t]) + ", was " + c.k0), within: 6000 },
+			{ say: "open it again, focus another machine and press Space: it plays", act: async (u, c) => { u.click("#machbtn"); await sleep(200); u.click('#machpop .mf[data-fam="GND"]'); await sleep(200); c.m2 = gndOthers(c).slice(-1)[0]; results.length = 0; $1(`#machpop .mk[data-mach="${c.m2}"]`).focus(); await sleep(100); u.key(" "); },
+				screen: c => ok(!$1("#machpop").hidden && V.tracks[c.t].m === c.m2, `picker ${$1("#machpop").hidden ? "closed" : "open"}, view ${V.tracks[c.t].m}`),
+				machine: c => ok(kit().tracks[c.t].machine === c.m2 && results.some(r => r.op === "noteOn"), `kit machine ${kit().tracks[c.t].machine}, results ${results.map(r => r.op + ":" + r.ok).join(",")}`), within: 6000 },
+			{ say: "press Enter: it stays", act: u => u.key("Enter"),
+				screen: c => ok($1("#machpop").hidden && V.tracks[c.t].m === c.m2, `picker ${$1("#machpop").hidden ? "closed" : "open"}, view ${V.tracks[c.t].m}`),
+				machine: c => ok(kit().tracks[c.t].machine === c.m2, "kit machine " + kit().tracks[c.t].machine), within: 6000 },
+			{ ...undoKey, say: "press Cmd+Z once: the track as before the audition", machine: c => ok(JSON.stringify(kit().tracks[c.t]) === c.k0, "kit track " + JSON.stringify(kit().tracks[c.t]) + ", was " + c.k0), screen: c => ok(V.tracks[c.t].m === c.m0, "view " + V.tracks[c.t].m), within: 6000 }
+		],
+		async tidy() { if (!$1("#machpop").hidden) closePicker(); }
+	};
 	const soundCopy = {
 		name: "md-sound-copy-paste", proves: ["MD-051", "MD-052"],
 		steps: [
@@ -660,6 +685,22 @@ const MdJourneys = (() => {
 			{ say: "click a track's OUT key: an individual output", act: (u, c) => { c.t = soundTrack(); c.o0 = Docs.global.routing[c.t]; u.click(`.strip[data-sel="${c.t}"] [data-out]`); },
 				screen: c => ok($1(`.strip[data-sel="${c.t}"] [data-out]`).textContent !== "OUT " + c.o0, "key " + $1(`.strip[data-sel="${c.t}"] [data-out]`).textContent), machine: c => ok(Docs.global.routing[c.t] !== c.o0, "global routing " + Docs.global.routing[c.t]) },
 			{ say: "click it until it is back", act: async (u, c) => { for (let k = 0; k < 8 && Docs.global.routing[c.t] !== c.o0; k++) { u.click(`.strip[data-sel="${c.t}"] [data-out]`); await sleep(800); } }, machine: c => ok(Docs.global.routing[c.t] === c.o0, "global routing " + Docs.global.routing[c.t]) }
+		]
+	};
+	/* wave 8: LEV, the kit's level of a track (the machine's LEVEL knob), above each strip's VOL */
+	const levOf = t => kit()?.tracks[t]?.level;
+	const levBoxQ = t => `.strip[data-sel="${t}"] .pc[data-g="lev"]`;
+	const lev = {
+		name: "md-mix-lev", proves: ["MD-008", "MD-032", "MD-278"],
+		steps: [
+			go("mix"),
+			{ say: "drag a track's LEV box", act: async (u, c) => { c.t = soundTrack(); c.l0 = levOf(c.t); await nudge(u, levBoxQ(c.t), c.l0); },
+				screen: c => ok(+$1(`${levBoxQ(c.t)} b`)?.textContent === V.tracks[c.t].level && V.tracks[c.t].level !== c.l0 && $1(levBoxQ(c.t)).style.getPropertyValue("--f") === V.tracks[c.t].level / 127 * 100 + "%", `shows ${$1(`${levBoxQ(c.t)} b`)?.textContent}, bar ${$1(levBoxQ(c.t))?.style.getPropertyValue("--f")}, view ${V.tracks[c.t].level}, was ${c.l0}`),
+				machine: c => ok(levOf(c.t) !== c.l0 && levOf(c.t) === V.tracks[c.t].level, "kit level " + levOf(c.t)), within: 6000 },
+			{ say: "double-click it: 100", act: u => u.dblclick(levBoxQ(soundTrack())),
+				screen: c => ok($1(`${levBoxQ(c.t)} b`)?.textContent === "100", "shows " + $1(`${levBoxQ(c.t)} b`)?.textContent), machine: c => ok(levOf(c.t) === 100, "kit level " + levOf(c.t)), within: 6000 },
+			{ say: "click Undo until it is back", act: async (u, c) => { for (let k = 0; k < 3 && levOf(c.t) !== c.l0; k++) { u.click("#undo"); await sleep(700); } },
+				machine: c => ok(levOf(c.t) === c.l0, "kit level " + levOf(c.t)), screen: c => ok($1(`${levBoxQ(c.t)} b`)?.textContent === String(c.l0), "shows " + $1(`${levBoxQ(c.t)} b`)?.textContent), within: 6000 }
 		]
 	};
 	const masterFx = {
@@ -1701,8 +1742,8 @@ const MdJourneys = (() => {
 	const all = [bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
 		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase,
 		genJourney("md-gen-mutate-undo", false, { proves: [] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: [] }), genKeys,
-		shapeSound, arrows, machinePick, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,
-		mixSolo, shiftMutes, allOff, fader, outKey, masterFx,
+		shapeSound, arrows, machinePick, machAudition, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,
+		mixSolo, shiftMutes, allOff, fader, lev, outKey, masterFx,
 		songArrange, songChain, songPlayhead, songSlots, songKeys, shotsSongSlots, samplerSlots, samplerSetup, audition,
 		libDialog, kitCopy, kitRename, kitClear, patGo, patClear, dialogEsc,
 		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, audioPanel, romCard, notePlay,
