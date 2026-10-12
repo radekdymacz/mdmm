@@ -41,6 +41,7 @@ namespace mmDesk::parts
 	// 0.3.4: PLAY / STOP while the panel takes an edit wait for it (pumpTransport), this long at most
 	constexpr const char* g_transportWaits = "The machine is taking an edit (SYSEX RECV): it follows in a moment.";
 	constexpr double g_transportWaitMs = 10000;
+	constexpr double g_transportSettleMs = 2000;	// B-099: a waiting PLAY, STOP or RECORD waits for a dump's read-back this long at most
 
 	// The dump a request brings back, for timeouts at DIN speed (the kind's record).
 	inline size_t replyBytes(const Kind _k)

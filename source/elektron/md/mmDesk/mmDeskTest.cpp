@@ -59,18 +59,35 @@ namespace
 		auto t = screen(mmDesk::Screen::GlobalEdit);
 		t.recvCount = 7;
 		r.tick(0, t);
-		check(r.parked() && !r.taking(), "parked, nothing sent yet: not taking");
+		check(r.parked() && r.taking(), "B-099: parked, the dump goes on the next tick: taking (a key now reaches the machine before it)");
 		auto out = r.tick(10, t);
 		check(out.sends.size() == 1 && r.taking(), "the dump sent, the RECV count not moved: taking (a key now is lost)");
 		t.recvErrors = 1;
 		r.tick(20, t);
-		check(!r.taking(), "a message counted (an error counts too): taken");
+		check(r.taking(), "B-099: a message counted (an error counts too): still taking for settleMs");
+		r.tick(20 + r.settleMs, t);
+		check(!r.taking(), "settleMs after: taken");
 		r.want({0xf0, 2, 0xf7});
-		r.tick(30, t);
+		r.tick(200, t);
 		check(r.taking(), "another dump sent: taking again");
 		t.recvCount = 8;
-		r.tick(40, t);
+		r.tick(210, t);
+		r.tick(300, t);
 		check(!r.taking() && r.parked(), "taken: keys work on SYSEX RECV, still parked");
+		// B-099: the machine clears its count as it opens SYSEX RECV, and the screen may show first
+		mmDesk::RecvSession c;
+		c.want({0xf0, 1, 0xf7});
+		auto u = screen(mmDesk::Screen::GlobalEdit);
+		u.recvCount = 5;
+		c.tick(0, u);
+		u.recvCount = 0;
+		c.tick(10, u);
+		c.tick(100, u);
+		check(c.taking(), "B-099: parked on the old count, the count cleared, the dump not counted: taking");
+		u.recvCount = 1;
+		c.tick(110, u);
+		c.tick(200, u);
+		check(!c.taking(), "B-099: counted from the cleared count: taken");
 	}
 
 	void recvSession()
@@ -414,7 +431,9 @@ namespace
 			for(auto& b : std::exchange(m.inFlight, {}))
 				m.take(b);
 			run(20);
-			check(m.keysPressed == keys0 + 2, ("taken: the waiting STOP and the waiting RECORD are pressed, once each (PLAY is not): " + std::to_string(m.keysPressed - keys0)).c_str());
+			check(m.keysPressed == keys0, "B-099: taken, the machine still settling: nothing pressed yet");
+			run(100);
+			check(m.keysPressed == keys0 + 2, ("taken and settled: the waiting STOP and the waiting RECORD are pressed, once each (PLAY is not): " + std::to_string(m.keysPressed - keys0)).c_str());
 			run(200);
 			check(m.keysPressed == keys0 + 2, "and nothing more");
 			m.recording = -1;
@@ -741,6 +760,40 @@ void watchSteps()
 	check(w.playing, "two moves forward: playing");
 	w = mmDesk::watchStep(w.next, t, 700);
 	check(!w.playing && !w.stepped, "standing still for three step times: stopped");
+	// B-104: a pause the editor pressed while the flag stays set (on SYSEX RECV): the step decides
+	t.running = 1;
+	t.step = 7;
+	w = mmDesk::watchStep(w.next, t, 800);
+	t.step = 8;
+	w = mmDesk::watchStep(w.next, t, 925);
+	check(w.playing, "the flag set and stepping: playing");
+	w = mmDesk::watchStep(mmDesk::pausedByEditor(w.next), t, 950);
+	check(!w.playing, "B-104: paused by the editor, the flag still set: not playing");
+	t.step = 9;
+	w = mmDesk::watchStep(w.next, t, 1000);
+	check(!w.playing && w.next.paused, "B-104: one step more (the key on its way): still paused");
+	w = mmDesk::watchStep(w.next, t, 3000);
+	check(!w.playing && w.next.paused, "B-104: the step holds: still paused");
+	t.step = 10;
+	w = mmDesk::watchStep(w.next, t, 3100);
+	t.step = 11;
+	w = mmDesk::watchStep(w.next, t, 3225);
+	check(w.playing && !w.next.paused, "B-104: it moves on (PLAY on the panel): playing, the flag counts again");
+	t.running = 0;
+	w = mmDesk::watchStep(mmDesk::pausedByEditor(w.next), t, 3300);
+	t.running = 1;
+	w = mmDesk::watchStep(w.next, t, 3400);
+	check(w.playing && !w.next.paused, "B-104: the flag read 0 once: it is honest again");
+	// a resume the editor pressed: the first step forward is playing, the flag still 0
+	t.running = 0;
+	w = mmDesk::watchStep(mmDesk::pausedByEditor(w.next), t, 3500);
+	check(!w.playing, "paused (the flag 0)");
+	auto resumed = mmDesk::resumedByEditor(w.next, 4000);
+	w = mmDesk::watchStep(resumed, t, 4010);
+	check(!w.playing, "resumed, the step not moved yet: not playing yet");
+	t.step = 12;
+	w = mmDesk::watchStep(w.next, t, 4100);
+	check(w.playing, "resumed: the first step forward is playing (the flag lags)");
 }
 
 // B-027: the Monomachine loads the kit a pattern links when it takes a dump of the pattern that plays (measured,

@@ -1668,10 +1668,10 @@ const MmJourneys = (() => {
 			openImport,
 			{ say: "click Specific place, then the first slot four times: the kits land in K05 and K06", act: async u => { u.click('#syxpop [data-sxp="specific"]'); await sleep(150); for (let i = 0; i < 4; i++) { u.click(syxValue("kit", "place")); await sleep(60); } },
 				screen: () => ok($1(syxValue("kit", "place"))?.textContent === "K05" && !!$1(syxCell("kit:4")) && !!$1(syxCell("kit:5")) && !$1(syxCell("kit:0")), "cells " + $all('#syxpop button[data-syxitem^="kit:"]').map(b => b.dataset.syxitem).join(" ")), within: 4000 },
-			{ say: "leave Kits ticked only, click Import: it asks first (K05 and K06 hold kits)", act: async (u, c) => { await syxKinds(["kit"])(u); c.names = $all('#syxpop button[data-syxitem^="kit:"]').map(b => [+b.dataset.syxitem.split(":")[1], (b.dataset.syxname || "").trim()]); c.k0 = kitName(0); u.click('#syxpop [data-syxgo="start"]'); },
-				screen: () => ok(dlgShown() && /K05/.test($1("#dlg").textContent) && !!dlgButton("Import 2"), "no question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
-			{ say: "click Import 2: sent on SYSEX RECV to K05 and K06, read back, reported", act: u => u.click(dlgButton("Import 2")),
-				screen: () => ok(/2 imported/.test($1("#syxpop .syxsum")?.textContent || ""), "progress: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
+			{ say: "leave Kits ticked only, click Import: it asks first (the file's kits land on K05 and on, which hold kits)", act: async (u, c) => { await syxKinds(["kit"])(u); c.names = $all('#syxpop button[data-syxitem^="kit:"]').map(b => [+b.dataset.syxitem.split(":")[1], (b.dataset.syxname || "").trim()]); c.k0 = kitName(0); u.click('#syxpop [data-syxgo="start"]'); },
+				screen: c => ok(dlgShown() && /K05/.test($1("#dlg").textContent) && !!dlgButton(`Import ${c.names.length}`), `no question for ${c.names.length} kits: ` + ($1("#dlg").textContent || "").slice(0, 80)) },
+			{ say: "click Import n: sent on SYSEX RECV to K05 and on, read back, reported", act: (u, c) => u.click(dlgButton(`Import ${c.names.length}`)),
+				screen: c => ok(new RegExp(`${c.names.length} imported`).test($1("#syxpop .syxsum")?.textContent || ""), "progress: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
 				machine: c => ok(c.names.every(([k, n]) => (kitName(k) || "").trim() === n) && kitName(0) === c.k0, c.names.map(([k, n]) => `K${k + 1} "${kitName(k)}" want "${n}"`).join(", ") + `; K01 "${kitName(0)}"`), within: 90000 },
 			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") }
 		],
@@ -1918,13 +1918,15 @@ const MmJourneys = (() => {
 			openImport,
 			{ say: "click Import; while it runs press Escape and click outside: the panel stays, one size, Stop and Hide inside it", act: async (u, c) => {
 				c.box = [Journey.boxOf("#syxpop")];
+				/* B-102: wholly inside the window (at 1440 x 923 its foot ran past the bottom) */
+				{ const r = $1("#syxpop").getBoundingClientRect(); c.inWindow = r.top >= 0 && r.left >= 0 && r.bottom <= innerHeight + 0.5 && r.right <= innerWidth + 0.5; c.win = `${innerWidth}x${innerHeight}`; }
 				u.click('#syxpop [data-syxgo="start"]'); c.ran = await until(() => $1("#syxpop").classList.contains("syx-running"), 3000);
 				c.box.push(Journey.boxOf("#syxpop")); c.keys = Journey.keysInside("#syxpop", '#syxpop .syxfoot button');
 				/* at once (the page tier's import can be over in a few hundred ms): Esc while it still runs */
 				c.runningAtEsc = $1("#syxpop").classList.contains("syx-running") && !!$1("#syxpop").dataset.busy; u.key("Escape"); c.afterEsc = !$1("#syxpop").hidden;
 				c.under = Journey.pressOutside(); await sleep(200); c.afterClick = !$1("#syxpop").hidden; c.box.push(Journey.boxOf("#syxpop"));
 				Bridge.log(`JOURNEY ${"mm"}-syx-running-reach: Esc ${c.runningAtEsc ? "while it ran" : "after it ended"}`); },
-				screen: c => ok(c.ran && (!c.runningAtEsc || c.afterEsc) && c.afterClick && Modal.top() === "syxpop" && new Set(c.box).size === 1 && c.keys === "", `ran ${c.ran}, Esc while running ${c.runningAtEsc} -> open ${c.afterEsc}, after the click open ${c.afterClick} (on ${c.under}), boxes ${c.box.join(" | ")}, keys out ${c.keys}`) },
+				screen: c => ok(c.ran && (!c.runningAtEsc || c.afterEsc) && c.afterClick && Modal.top() === "syxpop" && new Set(c.box).size === 1 && c.keys === "" && c.inWindow, `in the window ${c.win}: ${c.inWindow}, ran ${c.ran}, Esc while running ${c.runningAtEsc} -> open ${c.afterEsc}, after the click open ${c.afterClick} (on ${c.under}), boxes ${c.box.join(" | ")}, keys out ${c.keys}`) },
 			{ say: "click Hide (if it still runs), then IMPORT SYSEX… in the engine menu: the same panel again", act: async (u, c) => {
 				c.hid = false; const h = $1('#syxpop .btnrow [data-syxgo="close"]'); if ($1("#syxpop").classList.contains("syx-running") && h) { u.click(h); await sleep(200); c.hid = $1("#syxpop").hidden; }
 				u.pick("engsel", "import"); await sleep(400); },
@@ -2507,7 +2509,13 @@ const MmJourneys = (() => {
 					if (S().stepSel) clearSel(); await stepPick(u, 0, c.e, "step-trigless"); },
 				machine: c => ok(c.on && !bitsOf(0, "trig").includes(c.e), `added ${c.on}, then trig ${bitsOf(0, "trig").includes(c.e)}`), screen: c => ok(c.kind === "trigless" && !S().tracks[0].steps[c.e], "kind " + c.kind), within: 8000 },
 			{ say: "a trig with no pitch of its own (envelope trigs only: its note is the one before): step menu > Envelopes > Amp: the amp trig flips, the step stays without a pitch", act: async (u, c) => {
-					const found = [0, 1, 2, 3, 4, 5].map(t => [t, noteSpans(t).find(sp => sp.pitchless && sp.st.a)]).find(([, sp]) => sp); if (!found) throw new Error("no pitchless trig in the pattern"); c.pt = found[0]; c.ps = found[1].s; u.click(rail(c.pt)); await sleep(300);
+					/* B-107 (the 0.6 e2e run): the page makes no pitchless trig (the machine's own patterns and backups hold them; the
+					   page tier's fixture does, factory memory not): without one the journey writes its own with the step intent
+					   (a trig with its envelopes and no note), on a free step after a note */
+					let found = [0, 1, 2, 3, 4, 5].map(t => [t, noteSpans(t).find(sp => sp.pitchless && sp.st.a)]).find(([, sp]) => sp);
+					if (!found) { const s0 = freeSteps(0, 3, (c.s ?? 0) + 1).find(x => x !== c.e && x > (c.s ?? 0)); if (s0 == null) throw new Error("no free step for a pitchless trig");
+						HOST.intent("step", { t: 0, s: s0, v: { a: 1, f: 1, l: 1 } }); await until(() => noteSpans(0).some(sp => sp.s === s0 && sp.pitchless), 6000);
+						found = [0, noteSpans(0).find(sp => sp.s === s0 && sp.pitchless && sp.st.a)]; if (!found[1]) throw new Error("the pitchless trig did not come"); } c.pt = found[0]; c.ps = found[1].s; u.click(rail(c.pt)); await sleep(300);
 					c.a0 = bitsOf(c.pt, "amp").includes(c.ps); await envPick(u, c.pt, c.ps, "a"); await until(() => bitsOf(c.pt, "amp").includes(c.ps) !== c.a0, 4000); },
 				machine: c => ok(bitsOf(c.pt, "amp").includes(c.ps) !== c.a0 && bitsOf(c.pt, "trig").includes(c.ps) && !noteAt(c.pt, c.ps).length, `amp ${bitsOf(c.pt, "amp").includes(c.ps)}, notes ${noteAt(c.pt, c.ps)}`), screen: c => ok(noteSpans(c.pt).find(sp => sp.s === c.ps)?.pitchless === true, "span"), within: 6000 }
 		],
@@ -2753,6 +2761,9 @@ const MmJourneys = (() => {
 					c.k0 = wk().multiTrig.splitKey; await u.drag("#splitm", [[-60, 0], [-120, 0]]); await sleep(500); c.k1 = wk().multiTrig.splitKey; if (c.k1 >= c.k0) c.bad.push(`split key ${c.k0} -> ${c.k1}`); c.hint = $1(".kbhint")?.textContent || ""; },
 				screen: c => ok(!c.bad.length && /^.*Keys from .* play T\d-T6, keys below play T1-T\d/.test(c.hint), c.bad.join(" | ") + " hint " + c.hint), within: 1000 },
 			{ say: "SEQ START and SEQ TRNSP have a Timing stepper: from DIRECT through 1/16, 2/16, 4/16, 8/16, 16/16 to 32/16, the kit's timing", act: async (u, c) => { c.bad = []; u.click('[data-set="mtmode"] button[data-v="2"]'); await until(() => wk().multiTrig.mode === 2, 4000); await sleep(300); const names = ["DIRECT", "1/16", "2/16", "4/16", "8/16", "16/16", "32/16"];
+					/* B-107 (the 0.6 e2e run, "timing 0: 1"): the kit may hold another timing than DIRECT (a kit's own, or one a journey
+					   before left): − down to DIRECT first */
+					for (let i = 0; i < 7 && wk().multiTrig.timing > 0; i++) { const was = wk().multiTrig.timing; u.click('[data-tim="-1"]'); await until(() => wk().multiTrig.timing < was, 4000); }
 					for (let k = 0; k < 7; k++) { if (k > 0) u.click('[data-tim="1"]'); if (!await until(() => wk().multiTrig.timing === k, 4000)) c.bad.push(`timing ${k}: ${wk().multiTrig.timing}`); const shown = $all(".stepper").find(s => /Timing/.test(s.textContent))?.querySelector("b")?.textContent; if (shown !== names[k]) c.bad.push(`shows ${shown} for ${names[k]}`); }
 					u.click('[data-set="mtmode"] button[data-v="3"]'); await until(() => wk().multiTrig.mode === 3, 4000); await sleep(300); c.has3 = !!$1("[data-tim]"); Journey.snapshot("mm-perform-multi-trig"); },
 				screen: c => ok(!c.bad.length && c.has3, c.bad.join(" | ") + " timing in SEQ TRNSP " + c.has3), within: 1000 },
@@ -2963,9 +2974,23 @@ const MmJourneys = (() => {
 	const kitSlots = {
 		name: "mm-lib-kit-slots", proves: ["MM-097", "MM-098", "MM-108"],
 		steps: [
-			{ say: "open the kit library: a kit that no pattern recalls ends with a star, one a pattern recalls has none", act: async (u, c) => { c.k0 = machine().kit.current; u.click("#kitf"); await until(() => $all("#libpop .ks").length >= 128, 4000); await until(() => I().slots("pattern").length >= 128 && I().slots("kit").length >= 128, 30000); await sleep(300); Journey.snapshot("mm-kit-library"); },
-				screen: () => { const used = new Set(); for (let p = 0; p < 128; p++) { const d = I().doc("pattern", p); if (d) used.add(d.kit); } const bad = []; for (let k = 0; k < 128; k++) { const star = $1(ksq(k))?.querySelector(".lsn")?.textContent.endsWith("*"); if (star !== !used.has(k)) bad.push(`K${k + 1}: star ${star}, used ${used.has(k)}`); } return ok(!bad.length && used.size < 128, bad.slice(0, 4).join(" | ")); } },
-			{ say: "Clear a kit (it asks): its slot holds six GND-SIN tracks; load that slot: the machine plays six GND-SIN", act: async (u, c) => { c.n0 = histN(); c.slot = otherSlot(); c.d0 = JSON.stringify(I().doc("kit", c.slot)); u.click(ksq(c.slot), { alt: true }); await sleep(200); u.click('#libpop [data-la="clear"]'); await answer(u, c); await until(() => MmConvert.kitEmpty(I().doc("kit", c.slot)), 20000);
+			{ say: "open the kit library: a kit that no pattern recalls ends with a star, one a pattern recalls has none", act: async (u, c) => { c.k0 = machine().kit.current; u.click("#kitf"); await until(() => $all("#libpop .ks").length >= 128, 4000); await until(() => I().slots("pattern").length >= 128 && I().slots("kit").length >= 128, 30000); await sleep(300);
+					/* B-105: factory memory links every kit that holds data to a pattern: the journey makes its own unlinked kit, the
+					   kit that plays pasted into an empty slot no pattern recalls (undone in tidy) */
+					const used = new Set(); for (let p = 0; p < 128; p++) { const d = I().doc("pattern", p); if (d) used.add(d.kit); }
+					const emptyAt = k => !!$1(ksq(k))?.classList.contains("empty");
+					if (![...Array(128).keys()].some(k => !used.has(k) && !emptyAt(k))) {
+						const dst = [...Array(128).keys()].reverse().find(k => k !== c.k0 && !used.has(k) && emptyAt(k));
+						if (dst == null) throw new Error("no empty kit slot that no pattern recalls");
+						c.n0 = histN(); u.click(ksq(c.k0), { alt: true }); await sleep(150); u.click('#libpop [data-la="copy"]'); await sleep(150);
+						u.click(ksq(dst), { alt: true }); await sleep(150); u.click('#libpop [data-la="paste"]'); await sleep(300); if (dlgShown()) u.click($1("#dlg .danger") || $1('#dlg [data-dlg="0"]'));
+						await until(() => !emptyAt(dst), 15000); await sleep(300);
+					}
+					Journey.snapshot("mm-kit-library"); },
+				/* B-105 (the 0.6 e2e run): an empty slot shows EMPTY, no star (factory memory has empty kit slots; the page
+				   tier's fixture has none) */
+				screen: () => { const used = new Set(); for (let p = 0; p < 128; p++) { const d = I().doc("pattern", p); if (d) used.add(d.kit); } const bad = []; let stars = 0; for (let k = 0; k < 128; k++) { const tile = $1(ksq(k)), star = !!tile?.querySelector(".lsn")?.textContent.endsWith("*"), empty = !!tile?.classList.contains("empty"); stars += star; if (star !== (!used.has(k) && !empty)) bad.push(`K${k + 1}: star ${star}, used ${used.has(k)}, empty ${empty}`); } return ok(!bad.length && stars >= 1, `stars ${stars}; ` + bad.slice(0, 4).join(" | ")); } },
+			{ say: "Clear a kit (it asks): its slot holds six GND-SIN tracks; load that slot: the machine plays six GND-SIN", act: async (u, c) => { c.n0 ??= histN(); c.slot = otherSlot(); c.d0 = JSON.stringify(I().doc("kit", c.slot)); u.click(ksq(c.slot), { alt: true }); await sleep(200); u.click('#libpop [data-la="clear"]'); await answer(u, c); await until(() => MmConvert.kitEmpty(I().doc("kit", c.slot)), 20000);
 					c.docT = I().doc("kit", c.slot).tracks.map(t => t.machineName); u.click(ksq(c.slot)); if (await until(dlgShown, 1500)) u.click(dlgButton("Load without saving") || $1("#dlg .danger")); await until(() => machine().kit.current === c.slot, 15000); await sleep(800); },
 				machine: c => ok(c.docT.every(m => m === "GND-SIN") && machine().kit.current === c.slot && wk().tracks.every(t => t.machineName === "GND-SIN"), `slot ${c.docT}, loaded ${wk().tracks.map(t => t.machineName)}`), within: 50000 },
 			{ say: "Esc; on Sound, track 1 as FM or SID again, then CLR on the LCD: the track is GND-SIN with every page at its start, as the cleared kit's; Cmd+Z brings the machine back", act: async (u, c) => { if (!$1("#libpop").hidden) u.key("Escape"); await sleep(200); u.click(tab("sound")); await sleep(300); u.click(rail(0)); await sleep(200); u.click("#machbtn"); await until(() => !$1("#machpop").hidden, 1500); u.click('#machpop .mf[data-fam="SID"]'); await sleep(50); u.click('#machpop .mk[data-mach="SID-6581"]'); await until(() => wk().tracks[0].machineName === "SID-6581", 4000); await sleep(300);
@@ -3093,7 +3118,19 @@ const MmJourneys = (() => {
 	const sixTracks = {
 		name: "mm-seq-six-tracks", proves: ["MM-002", "MM-006", "MM-009"],
 		steps: [
-			go("seq"), sel(0), drawOn,
+			go("seq"),
+			/* B-107 (the 0.6 e2e run, "step NaN is not shown"): a factory pattern's tracks hold notes on (or under) every step
+			   the journey can draw on. It draws in an empty pattern of banks E to H instead (a pick there loads no kit, B-053) */
+			{ say: "when a track has no free step from step 9 on, pick an empty pattern in banks E to H in the pattern chooser (it loads no kit)", within: 20000,
+				act: async (u, c) => { await until(() => I().slots("pattern").length >= 128, 30000);
+					/* room on track t: a step from 9 on that is empty and under no note's bar (the step before that holds anything is a NOTE OFF or none) */
+					const room = t => { const st = trkOf(t).steps; for (let x = 8; x < S().len; x++) { if (st[x]) continue; let k = x - 1; while (k >= 0 && !st[k]) k--; if (k < 0 || st[k].off) return true; } return false; };
+					if ([0, 1, 2, 3, 4, 5].every(room)) return;
+					const eh = [...Array(64).keys()].map(k => k + 64).filter(p => p !== cur() && I().doc("pattern", p));
+					c.p0 = cur(); c.p = eh.find(p => !patTrigs(p)) ?? eh.sort((a, b) => patTrigs(a) - patTrigs(b))[0]; if (c.p == null) throw new Error("no pattern in banks E to H");
+					u.click("#pat"); await until(() => $all("#libpop .ps").length === 128, 4000); u.click(`#libpop .ps[data-ps="${c.p}"]`); await confirmIfAsked(u); if (!$1("#libpop").hidden) u.key("Escape"); await until(() => cur() === c.p, 15000); },
+				machine: c => ok(c.p == null || cur() === c.p, "pattern " + cur()) },
+			sel(0), drawOn,
 			{ say: "six tracks, each a sequencer and a synth of its own: a note in track t's roll and a value on its AMP page change only track t, in the pattern and in the kit", act: async (u, c) => { c.n0 = histN(); c.bad = [];
 					for (let t = 0; t < 6; t++) { u.click(tab("seq")); await sleep(250); u.click(rail(t)); await sleep(250); const before = JSON.stringify([patDoc().tracks.filter((x, i) => i !== t), patDoc().midiTracks]); const s = freeSteps(t, 1, 8, rollCell(t, 0).n)[0]; const p = rollCell(t, s); u.click(p.c, {}, p.fx, p.fy); if (!await until(() => trigsOf(t).includes(s), 4000)) { c.bad.push(`T${t + 1}: no note`); continue; } await sleep(200);
 						if (JSON.stringify([patDoc().tracks.filter((x, i) => i !== t), patDoc().midiTracks]) !== before) c.bad.push(`T${t + 1}: another track's pattern changed`);
@@ -3105,7 +3142,8 @@ const MmJourneys = (() => {
 					const d0 = cellOf(0, "AMP", 2), up = d0 < 80 ? 1 : -1; w0 = wireSeq; await u.drag(q, [[up * 6, 0], [up * 12, 0], [up * 18, 0], [up * 24, 0], [up * 30, 0]]); await sleep(600); const cc = ccsOf(w0).filter(x => x[1] === 58).map(x => x[2]); if (cc.length < 3 || !cc.every((v, k) => k === 0 || (up > 0 ? v >= cc[k - 1] : v <= cc[k - 1])) || cc[cc.length - 1] === cc[0]) c.bad.push("drag CCs " + cc); },
 				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 }
 		],
-		async tidy(u, c) { drawBack(c); if (c.n0 != null) await undoTo(u, c.n0); }
+		async tidy(u, c) { drawBack(c); if (c.n0 != null) await undoTo(u, c.n0);
+			if (c.p0 != null && cur() !== c.p0) { u.click("#pat"); await sleep(400); u.click(`#libpop .ps[data-ps="${c.p0}"]`); await confirmIfAsked(u); await sleep(800); if (!$1("#libpop").hidden) u.key("Escape"); } }
 	};
 	/* the four things the machine's BANK keys do with FUNCTION on the sequencer: ARP, TRANSPOSE, SWING, SLIDE */
 	const bankFunctions = {

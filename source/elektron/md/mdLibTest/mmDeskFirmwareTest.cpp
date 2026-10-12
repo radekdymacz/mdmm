@@ -2501,6 +2501,184 @@ namespace
 		r.msg(R"({"op":"record","mode":"off"})");
 		r.run(800);
 		check(r.tel.recording.load() == 0, "GRID RECORDING off");
+		leave();
+
+		// B-104 (the 0.6 e2e run): the pause while the desk is parked on SYSEX RECV after an edit, the machine playing.
+		// Measured: the machine holds its step, but the RAM running flag stays 1 (on SYSEX RECV and after the panel left
+		// it) until it plays on or stops; STOP there sets it to 0. The page is told it is paused all the same.
+		const auto pagePlaying = [&]
+		{
+			for(auto it = r.page.rbegin(); it != r.page.rend(); ++it)
+				if(it->find("type")->asString() == "telemetry")
+					return it->find("playing")->asBool();
+			return false;
+		};
+		const auto trace = [&](const int _n)
+		{
+			std::string tr;
+			for(int i = 0; i < _n; ++i)
+			{
+				r.run(100);
+				tr += " " + std::to_string(r.tel.step.load() + 1) + "/" + std::to_string(r.tel.running.load()) + (pagePlaying() ? "p" : "");
+			}
+			return tr;
+		};
+		r.msg(R"({"op":"play"})");
+		for(int i = 0; i < 30 && r.tel.running.load() != 1; ++i)
+			r.run(100);
+		check(r.tel.running.load() == 1, "B-104: it plays");
+		check(park(), "B-104: parked on SYSEX RECV while it plays");
+		taken();
+		std::printf("  parked, playing: step/flag(p: the page is told playing) every 100 ms:%s\n", trace(4).c_str());
+		r.msg(R"({"op":"pause"})");
+		const auto paused = r.lastResult();
+		r.run(600);
+		const int held = r.tel.step.load();
+		std::printf("  pause while parked: %s; then%s\n", ed::json::write(paused).c_str(), trace(6).c_str());
+		check(paused.find("ok")->asBool() && r.tel.step.load() == held, "B-104: the pause while parked holds the step");
+		check(!pagePlaying(), "B-104: the page is told it does not play (the RAM flag still says it does)");
+		leave();
+		std::printf("  the session left SYSEX RECV (%s): step %d, flag %d\n", r.desk->recvState().c_str(), r.tel.step.load() + 1, r.tel.running.load());
+		check(r.tel.step.load() == held && !pagePlaying(), "B-104: still paused, and told so, once the session left SYSEX RECV");
+		r.msg(R"({"op":"resume"})");
+		const auto resumed = trace(6);
+		std::printf("  resume:%s\n", resumed.c_str());
+		check(r.tel.step.load() != held && pagePlaying(), "B-104: resume plays on, and the page is told so");
+		r.msg(R"({"op":"stop"})");
+		r.run(400);
+		r.msg(R"({"op":"stop"})");
+		r.run(800);
+		check(!pagePlaying(), "B-104: stopped");
+	}
+
+	// B-099 (the 0.6 e2e run, mm-real-sequence-plays): four notes, PLAY and STOP, the pattern cleared, PLAY and STOP, one
+	// undo, PLAY at once: the machine must play the notes the page shows, at once (the PLAY waits for the dump).
+	// Measured: the machine clears its RECV count as it opens SYSEX RECV, after the screen shows; a park on the old count
+	// saw the dump as taken, and a key 10 ms after the count moved is still lost (20 ms is taken): the PLAY that waited
+	// was pressed into the dump and lost, and the machine stood still until PLAY again.
+	void undoPlay(const Bytes& _rom)
+	{
+		std::puts("undoplay");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		while(r.desk->loaded() < 288)
+			r.run(100);
+		constexpr uint8_t slot = 65;
+		auto empty = *r.desk->pattern(slot);
+		empty.length = 16;
+		for(auto* m : {&empty.amp, &empty.filter, &empty.lfo, &empty.noteOff, &empty.midiTrig, &empty.midiNoteOff, &empty.pitch, &empty.chord, &empty.midiNote, &empty.slide, &empty.midiSlide})
+			m->fill(0);
+		for(auto& n : empty.notes)
+			n.fill(ed::MmPattern::g_noNote);
+		for(auto& m : empty.lockMasks)
+			m.fill(0);
+		for(auto& row : empty.lockRows)
+			row.fill(ed::MmPattern::g_noLock);
+		empty.lockRowCount = 0;
+		empty.chordNotes.fill(0xffff);
+		empty.chordNoteCount = 0;
+		empty.midiNotes.fill(0xffff);
+		empty.midiNoteCount = 0;
+		const auto set = [&](const ed::MmPattern& _p) { r.msg(R"({"op":"set","kind":"pattern","doc":)" + ed::json::write(ed::mmPatternToJson(_p)) + "}"); };
+		set(empty);
+		r.run(2000);
+		r.msgConfirmed(R"({"op":"select","p":65})");
+		r.run(500);
+		for(int i = 0; i < 200 && r.desk->recvState() != "idle"; ++i)
+			r.run(100);
+		const auto trigs = [&] { const auto q = *r.desk->pattern(slot); int n = 0; for(size_t st = 0; st < 16; ++st) n += ed::mmStepSet(q.pitch[0], st); return n; };
+		// PLAY, how long until the step moves twice (the RAM flag can stay 0 here), STOP
+		const auto playNow = [&](const char* _what)
+		{
+			const double t0 = r.ms();
+			r.msg(R"({"op":"play"})");
+			const auto res = r.lastResult();
+			int moves = 0, last = r.tel.step.load();
+			for(int i = 0; i < 400 && moves < 2; ++i)
+			{
+				r.run(20);
+				if(r.tel.step.load() != last)
+				{
+					last = r.tel.step.load();
+					++moves;
+				}
+			}
+			const double took = r.ms() - t0;
+			r.run(2000);
+			const double level = r.rms(2000);
+			std::printf("  %s: PLAY %s, the step moving after %.0f ms (recv %s), rms %.4f\n", _what, ed::json::write(res).c_str(), took, r.desk->recvState().c_str(), level);
+			r.msg(R"({"op":"stop"})");
+			r.run(600);
+			return std::make_pair(took, level);
+		};
+		// as the page does it: four clicks in the roll (step intents, 250 ms apart), Alt+Delete (clearPattern), Cmd+Z (undo)
+		for(const int st : {12, 8, 4, 0})
+		{
+			r.msg(R"({"op":"step","p":65,"t":0,"s":)" + std::to_string(st) + R"(,"v":{"n":[48],"a":1,"f":1,"l":1}})");
+			r.run(250);
+		}
+		r.run(300);
+		const auto on = playNow("four notes, PLAY while their dump goes");
+		check(on.first < 2000 && on.second > 0.002, "B-099: PLAY right after an edit plays the notes once the dump is in");
+		r.msg(R"({"op":"clearPattern","p":65})");
+		r.run(2000);
+		check(trigs() == 0, "cleared");
+		const auto off = playNow("cleared");
+		check(off.second < on.second / 4, "cleared: it plays silence");
+		r.msg(R"({"op":"undo"})");
+		r.run(50);
+		check(trigs() == 4, "undo: the four notes are back in the core's pattern");
+		const auto back = playNow("undo, PLAY at once");
+		check(back.first < 2000 && back.second > on.second / 2, "B-099: PLAY right after the undo plays the notes at once (" + std::to_string(static_cast<int>(back.first)) + " ms, rms "
+			+ std::to_string(back.second) + ")");
+		r.run(3000);
+		const auto later = playNow("undo, PLAY 3 s later");
+		check(later.second > on.second / 2, "and later too");
+		check(r.desk->pattern(slot) && trigs() == 4, "the machine holds the four notes (read back)");
+	}
+
+	// The Machinedrum's B-098 checked on the Monomachine (2026-10-13): after a start, factory memory, SONG mode, PLAY
+	// before any Load plays the song it reports, as after a LOAD SONG of that slot (measured: the same rows, steps and
+	// level). The Monomachine does not have the Machinedrum's empty working song; this keeps it so.
+	void factorySong(const Bytes& _rom)
+	{
+		std::puts("factorysong");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		while(r.desk->loaded() < 288)
+			r.run(100);
+		const auto playFor = [&](const char* _what)
+		{
+			r.msg(R"({"op":"play"})");
+			std::string tr;
+			std::set<int> steps;
+			for(int i = 0; i < 30; ++i)
+			{
+				r.run(100);
+				steps.insert(r.tel.step.load());
+				if(i % 5 == 0)
+					tr += " " + std::to_string(r.tel.songRow.load()) + "/" + std::to_string(r.tel.step.load() + 1);
+			}
+			const double level = r.rms(2000);
+			std::printf("  %s: song %d, row/step every 500 ms:%s, %zu steps seen, rms %.4f\n", _what, r.desk->currentSong(), tr.c_str(), steps.size(), level);
+			r.msg(R"({"op":"stop"})");
+			r.run(400);
+			r.msg(R"({"op":"stop"})");
+			r.run(600);
+			return std::make_pair(steps.size(), level);
+		};
+		r.msg(R"({"op":"seqMode","song":true})");
+		r.run(1000);
+		const auto first = playFor("fresh start, SONG mode, PLAY");
+		r.msg(R"({"op":"loadSong","s":)" + std::to_string(std::max(0, r.desk->currentSong())) + "}");
+		r.run(1500);
+		const auto loaded = playFor("after LOAD SONG of that slot, PLAY");
+		check(loaded.first >= 8 && loaded.second > 0.002, "after LOAD SONG the song plays");
+		check(first.first >= 8 && first.second > loaded.second / 4, "(MD B-098) the first PLAY in SONG mode after a start plays the song");
 	}
 
 	void recording(const Bytes& _rom)
@@ -4997,6 +5175,10 @@ int main(const int _argc, char** _argv)
 			swingProbe(rom);
 		if(only == "chorderase")
 			chordErase(rom);
+		if(only.empty() || only == "undoplay")
+			undoPlay(rom);
+		if(only.empty() || only == "factorysong")
+			factorySong(rom);
 		check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 		std::printf("%s (%d failures)\n", g_failures ? "FAIL" : "PASS", g_failures);
 		return g_failures ? 1 : 0;

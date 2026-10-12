@@ -253,6 +253,10 @@ table.mmap tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--led)}
 .ttr{display:grid;grid-template-columns:34px repeat(6,minmax(0,1fr));gap:3px;align-items:center;flex:1}
 .ttr .ilab{min-width:0}
 .ttr .tt{display:grid;grid-template-columns:18px 1fr 18px;align-items:center;height:26px;background:var(--key);border-radius:3px;color:var(--keytext)}
+/* B-106: in a narrow inspector a cell is narrower than − T3 + (43 px in the plug-in at 1440 x 923): the + went over the next
+   cell's −. The name takes what it needs, the two keys share the rest: each cell keeps its own keys */
+.ttr .tt{grid-template-columns:minmax(10px,1fr) auto minmax(10px,1fr);min-width:0;overflow:hidden}
+.ttr .tt b{white-space:nowrap}
 .ttr .tt button{all:unset;cursor:pointer;text-align:center;font:600 12px var(--mono);color:var(--keydim)}
 .ttr .tt button:hover{color:var(--keytext)}
 .ttr .tt b{text-align:center;font:500 12px var(--mono)}
@@ -613,6 +617,10 @@ body{box-sizing:border-box;overflow:hidden}
 .app{height:100%;min-height:0;grid-template-rows:auto minmax(0,1fr);max-width:none!important}
 .app>.body{height:100%;min-height:0;align-items:stretch!important}
 #main{min-height:0;overflow:auto;display:flex;flex-direction:column}
+/* B-106 (the 0.6 e2e run, 1440 x 923 in the plug-in): when #main scrolls (Perform is 32 px taller than the window there),
+   WebKit hit-tests the right 29 px of it as its overlay scroll bar: Perform's OCTAVE + at the right edge took no click
+   (measured: elementFromPoint across the key). The keyboard's title row keeps that strip free */
+.perf .kbtitle{padding-right:32px}
 #main>*{flex:none}
 .rail{align-content:start;min-height:0}
 /* Sequence */

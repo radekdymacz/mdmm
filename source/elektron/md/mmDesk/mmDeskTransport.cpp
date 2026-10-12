@@ -133,7 +133,12 @@ namespace mmDesk
 		if(m_profile.telemetry && !m_playing)
 			return refuse("Nothing plays: PLAY first.");
 		if(panelTransport())
-			return pressKeys({Key::Play}) ? ok("Paused. PLAY goes on from this step; STOP ends it.") : refuse(g_panelBusy);
+		{
+			if(!pressKeys({Key::Play}))
+				return refuse(g_panelBusy);
+			m_steps = pausedByEditor(m_steps);
+			return ok("Paused. PLAY goes on from this step; STOP ends it.");
+		}
 		Outcome o;
 		if(acceptTransport(_m, _view, o))
 			return o;
@@ -149,13 +154,19 @@ namespace mmDesk
 	{
 		const auto* g = activeGlobal(_view, m_curGlobal);
 		if(panelTransport() && !(g && g->transportIn == 1 && m_port.sendMidi))
-			return pressKeys({Key::Play}) ? ok() : refuse(g_panelBusy);
+		{
+			if(!pressKeys({Key::Play}))
+				return refuse(g_panelBusy);
+			m_steps = resumedByEditor(m_steps, now());
+			return ok();
+		}
 		Outcome o;
 		if(acceptTransport(_m, _view, o))
 			return o;
 		if(!m_port.sendMidi)
 			return refuse("This engine has no transport.");
 		m_port.sendMidi(deskWire::continueMessage());
+		m_steps = resumedByEditor(m_steps, now());
 		return ok();
 	}
 

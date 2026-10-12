@@ -96,7 +96,16 @@ namespace mmDesk
 			giveUp(out, now);
 		if(!_t.valid)
 			return out;
+		const uint32_t takenBefore = m_taken;
 		m_taken = _t.recvCount + _t.recvErrors;
+		// B-099 (measured, mmDeskFirmwareTest undoplay): the machine clears its RECV count as it opens SYSEX RECV, and
+		// the screen can show before the count is cleared: a park on the old count saw the dump as taken (unsigned, the
+		// count below the base) and a key went to the machine while it took the dump. A count below the base is the
+		// cleared one: count from there.
+		if(m_state == State::Parked && m_taken < m_recvBase)
+			m_recvBase = m_taken;
+		if(m_state == State::Parked && m_taken > takenBefore)
+			m_takenMs = now;
 		const bool onRecv = onSysexRecv(_t);
 		const bool keysDone = now >= m_keysDone;
 		const bool onMain = _t.screen == Screen::Main;
