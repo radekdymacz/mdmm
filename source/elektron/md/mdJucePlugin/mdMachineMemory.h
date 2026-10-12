@@ -1,12 +1,14 @@
 #pragma once
 
 // I-024 (wave 11 of 0.6): the machine's memory that stays for every new session, like a real machine's battery-backed
-// memory (doc/modern-ux/DESIGN-machine-memory.md). Pure: the file's frame and when to write it. The processor reads
+// memory (doc/modern-ux/DESIGN-machine-memory.md). Pure: the file's frame, what a save is, when to write and how a
+// session starts. The processor reads
 // and writes the file and runs the watch on its "machine memory" thread (mdPluginProcessor.cpp); mdMachineMemoryTest.
 
 #include "mdLib/mdstate.h"
 #include "mdLib/mdtypes.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <optional>
@@ -22,7 +24,7 @@ namespace mdJucePlugin::machineMemory
 
 	constexpr char g_magic[8] = {'M', 'D', 'M', 'M', 'M', 'E', 'M', '\0'};
 	constexpr uint32_t g_version = 1;
-	constexpr size_t g_headerSize = 24;
+	constexpr size_t g_headerSize = 32;
 	// Larger than any state of either machine (MD: 1 MiB patch RAM and at most 8 MiB of flash sectors with their
 	// headers; MM: 3 MiB), so a size field from a broken file never asks for gigabytes.
 	constexpr uint32_t g_maxPayload = 16u * 1024u * 1024u;
@@ -53,6 +55,20 @@ namespace mdJucePlugin::machineMemory
 				_out.push_back(static_cast<uint8_t>(_v >> (8 * i)));
 		}
 
+		inline void putU64(std::vector<uint8_t>& _out, const uint64_t _v)
+		{
+			for(int i = 0; i < 8; ++i)
+				_out.push_back(static_cast<uint8_t>(_v >> (8 * i)));
+		}
+
+		inline uint64_t getU64(const std::vector<uint8_t>& _in, const size_t _at)
+		{
+			uint64_t v = 0;
+			for(int i = 0; i < 8; ++i)
+				v |= static_cast<uint64_t>(_in[_at + static_cast<size_t>(i)]) << (8 * i);
+			return v;
+		}
+
 		inline uint32_t getU32(const std::vector<uint8_t>& _in, const size_t _at)
 		{
 			uint32_t v = 0;
@@ -62,9 +78,10 @@ namespace mdJucePlugin::machineMemory
 		}
 	}
 
-	// The file: the frame (magic, version, machine, size, CRC-32), then the payload as the device state of a project's
-	// "MIDI" chunk (synthLib::Plugin::getState(StateTypeGlobal)).
-	inline std::vector<uint8_t> encode(const md::MachineModel _model, const std::vector<uint8_t>& _payload)
+	// The file: the frame (magic, version, machine, the payload's size, a CRC-32 of the stamp and the payload, the stamp),
+	// then the payload as the device state of a project's "MIDI" chunk (synthLib::Plugin::getState(StateTypeGlobal)).
+	// The stamp names this write (never 0): a standalone's own state that knows it holds the same saved memory.
+	inline std::vector<uint8_t> encode(const md::MachineModel _model, const uint64_t _stamp, const std::vector<uint8_t>& _payload)
 	{
 		std::vector<uint8_t> out;
 		out.reserve(g_headerSize + _payload.size());
@@ -75,14 +92,19 @@ namespace mdJucePlugin::machineMemory
 		out.push_back(0);
 		out.push_back(0);
 		detail::putU32(out, static_cast<uint32_t>(_payload.size()));
-		detail::putU32(out, md::crc32(_payload.data(), _payload.size()));
+		detail::putU32(out, 0);	// the CRC, below
+		detail::putU64(out, _stamp);
 		out.insert(out.end(), _payload.begin(), _payload.end());
+		const auto crc = md::crc32(out.data() + 24, out.size() - 24);
+		for(int i = 0; i < 4; ++i)
+			out[20 + static_cast<size_t>(i)] = static_cast<uint8_t>(crc >> (8 * i));
 		return out;
 	}
 
 	struct Decoded
 	{
 		Problem problem = Problem::Empty;
+		uint64_t stamp = 0;
 		std::vector<uint8_t> payload;
 	};
 
@@ -110,12 +132,13 @@ namespace mdJucePlugin::machineMemory
 		const auto size = detail::getU32(_file, 16);
 		if(_file[13] != 0 || _file[14] != 0 || _file[15] != 0 || size == 0 || size > g_maxPayload
 			|| _file.size() != g_headerSize + static_cast<size_t>(size)
-			|| detail::getU32(_file, 20) != md::crc32(_file.data() + g_headerSize, size))
+			|| detail::getU32(_file, 20) != md::crc32(_file.data() + 24, _file.size() - 24))
 		{
 			d.problem = Problem::Corrupt;
 			return d;
 		}
 		d.problem = Problem::None;
+		d.stamp = detail::getU64(_file, 24);
 		d.payload.assign(_file.begin() + static_cast<std::ptrdiff_t>(g_headerSize), _file.end());
 		return d;
 	}
@@ -146,14 +169,45 @@ namespace mdJucePlugin::machineMemory
 		return _h;
 	}
 
-	// The part of the patch RAM the watch looks at. The Monomachine's firmware keeps its stack at the top of the patch RAM
-	// (measured, OS 1.32B: 0x0ffd38-0x0ffd43 change by themselves seconds after the start and now and then while idle,
-	// mdMachineMemoryFirmwareTest), so its top 4 KiB are no save: a change there alone writes nothing (the file still
-	// holds them, as a project does). The Machinedrum's patch RAM holds still while idle (measured, OS 1.63).
-	constexpr size_t g_mmStackBytes = 0x1000;
-	inline size_t watchedPatchBytes(const md::MachineModel _model, const size_t _size)
+	// What a save is (Radek, 2026-10-12): a kit, pattern, song or global stored into a slot, from the page or the machine's
+	// own keys. Knob moves, automation and unsaved edits of the kit that plays are none. The watch looks at the patch RAM
+	// but these ranges, measured on the firmware (mdMachineMemoryFirmwareTest's probe, MDMM_MEMORY_PROBE=1):
+	//   the working area at the bottom: the kit that plays with its unsaved edits, its second copy (what LOAD KIT and
+	//     SAVE KIT go through) and the current slot numbers; every knob, CC and automation lands here. The stored kit
+	//     slots start right after it (MD slot 1 at 0x8c8, 0x460 a kit; MM slot 1 at 0x5a2, 0x2b4 a kit);
+	//   the pattern that was loaded last (two bytes LOAD PATTERN writes, MD 0x272be, MM 0x16ae3): no save;
+	//   MD 0x7fff0-0x7fff7: a byte that moves while it plays; MM: the firmware's stack, the top 4 KiB (it changes by
+	//     itself, now and then).
+	// The file still holds the whole memory, as a project does: what the watch skips is written with the next save.
+	struct Range
 	{
-		return _model == md::MachineModel::Monomachine && _size > g_mmStackBytes ? _size - g_mmStackBytes : _size;
+		uint32_t begin;
+		uint32_t end;
+	};
+
+	inline std::vector<Range> unwatched(const md::MachineModel _model)
+	{
+		if(_model == md::MachineModel::Monomachine)
+			return {{0x000000, 0x0005a0}, {0x016ae3, 0x016ae5}, {0x0ff000, 0x100000}};
+		return {{0x000000, 0x0008c8}, {0x0272be, 0x0272c0}, {0x07fff0, 0x07fff8}};
+	}
+
+	// The look's signature of what a save changes: the patch RAM but the unwatched ranges, then _more (the MM's user
+	// flash: its DigiPRO waveforms)
+	inline uint64_t signature(const md::MachineModel _model, const std::vector<uint8_t>& _patch, const uint8_t* _more, const size_t _moreSize)
+	{
+		uint64_t h = 0xcbf29ce484222325ull;
+		size_t at = 0;
+		for(const auto& r : unwatched(_model))
+		{
+			const size_t b = std::min<size_t>(r.begin, _patch.size()), e = std::min<size_t>(r.end, _patch.size());
+			if(b > at)
+				h = hash(_patch.data() + at, b - at, h);
+			at = std::max(at, e);
+		}
+		if(at < _patch.size())
+			h = hash(_patch.data() + at, _patch.size() - at, h);
+		return hash(_more, _moreSize, h);
 	}
 
 	// When to write. One look a second gives the memory's signature (its hash); the watch writes when the memory
@@ -186,6 +240,11 @@ namespace mdJucePlugin::machineMemory
 		{
 			if(!m_based)
 				return false;
+			if(m_soon)
+			{
+				m_seen = _signature;
+				return true;
+			}
 			if(_signature == m_written)
 			{
 				m_seen = _signature;
@@ -199,10 +258,17 @@ namespace mdJucePlugin::machineMemory
 			return quiet || _nowMs - *m_changedAt >= m_maxDelayMs;
 		}
 
-		void written(const uint64_t _signature) { base(_signature); }
+		void written(const uint64_t _signature) { base(_signature); m_soon = false; }
+
+		// Write at the next look that has a base, changed or not (KEEP MEMORY turned on again, a standalone's own saves
+		// the file does not have)
+		void writeSoon() { m_soon = true; }
+		bool wantsWrite() const { return m_based && m_soon; }
 
 		// A change seen that is not written yet (the instance going away writes it).
-		bool pending() const { return m_based && m_seen != m_written; }
+		bool pending() const { return m_based && (m_soon || m_seen != m_written); }
+		// A signature (a last look's) that differs from what was written
+		bool differs(const uint64_t _signature) const { return m_based && (m_soon || _signature != m_written); }
 
 	private:
 		double m_maxDelayMs;
@@ -210,31 +276,57 @@ namespace mdJucePlugin::machineMemory
 		uint64_t m_seen = 0;
 		std::optional<double> m_changedAt;
 		bool m_based = false;
+		bool m_soon = false;
 	};
 
 	// Whether a state given to the plug-in is a project whose memory wins over the file: a DAW project's is; the
 	// standalone's own state (JUCE saves it when the app quits) is not (Radek, 2026-10-12: one memory for everything, like
-	// a real machine; with KEEP MEMORY on the standalone starts from the file, and keeps its own state when there is none).
+	// a real machine).
 	inline bool stateIsProject(const bool _standalone) { return !_standalone; }
 
-	// How a session's memory starts (the processor's decision, pure): a project state wins; else the file when the
-	// setting is on.
+	// What a memory knows of the file (the processor's "MMEM" chunk, in the standalone's own state and in projects): the
+	// stamp of the file it holds the saves of (0: none) and whether it holds saves the file does not have (a write
+	// failed: no permission, disk full).
+	struct Mark
+	{
+		uint64_t stamp = 0;
+		bool unsaved = false;
+	};
+
+	// How a session's memory starts (the processor's decision, pure)
 	enum class Start : uint8_t
 	{
 		Wait,		// no machine with a ROM yet
-		Project,	// a project state came: it is the memory
-		Off,		// the setting is off, or no folder (an isolated test)
-		File,		// read the file
+		Project,	// a DAW project's state came: it is the memory
+		Off,		// KEEP MEMORY off, no folder (an isolated test), or no file: the memory the session has
+		File,		// the file's memory
+		Own,		// the standalone's own state: it holds the file's saves (the same stamp) and maybe unsaved edits of the
+					// kit that plays, or saves the file does not have (then it is written at once)
 	};
 
-	inline Start startOf(const bool _projectState, const bool _machineReady, const bool _keep, const bool _folder)
+	struct StartFacts
 	{
-		if(_projectState)
+		bool projectState = false;		// a DAW project's state came
+		bool machineReady = false;
+		bool keep = true;
+		bool folder = true;
+		bool file = false;				// a usable file is there
+		uint64_t fileStamp = 0;
+		std::optional<Mark> own;		// the standalone's own state's mark (none: no own state, or one from before I-024)
+	};
+
+	// Never loses a save: the standalone's own state wins when it holds every save of the file (the same stamp) or saves
+	// the file lacks (unsaved); else the file is newer (another instance saved since), and its saves win.
+	inline Start startOf(const StartFacts& _f)
+	{
+		if(_f.projectState)
 			return Start::Project;
-		if(!_keep || !_folder)
+		if(!_f.keep || !_f.folder)
 			return Start::Off;
-		if(!_machineReady)
+		if(!_f.machineReady)
 			return Start::Wait;
-		return Start::File;
+		if(_f.own && (_f.own->unsaved || (_f.file && _f.own->stamp == _f.fileStamp)))
+			return Start::Own;
+		return _f.file ? Start::File : Start::Off;
 	}
 }

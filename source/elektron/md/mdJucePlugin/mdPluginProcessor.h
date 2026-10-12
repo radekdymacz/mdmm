@@ -5,6 +5,7 @@
 #include "mdCpuLoad.h"
 #include "mdMidiIn.h"
 #include "mdOutputLevel.h"
+#include "mdMachineMemory.h"
 #include "mdLib/mdtypes.h"
 #include "synthLib/performanceReport.h"
 
@@ -123,10 +124,16 @@ namespace mdJucePlugin
 		struct MachineMemoryCost
 		{
 			double lookLockMaxMs = 0, lookLockLastMs = 0, lookMs = 0, writeMs = 0;
-			uint32_t looks = 0, writes = 0;
+			uint32_t looks = 0, writes = 0, failedWrites = 0;
 			size_t fileBytes = 0;
 		};
 		MachineMemoryCost machineMemoryCost() const;
+		// What this memory knows of the file (the stamp it holds the saves of, saves the file lacks): the "MMEM" chunk
+		machineMemory::Mark machineMemoryMark() const;
+		// One last look now and a write when a save is not in the file yet (the instance going away, a state save)
+		void flushMachineMemory(bool _closing);
+		// MD: the page's sample transfer ended; the machine stores it into a ROM slot (a save, written once stored)
+		void machineMemorySampleStored();
 		// The watch's thread runs once a second; a test may run it faster (milliseconds between looks).
 		void setMachineMemoryLookMs(int _ms);
 		// The thread's one look and maybe a write (any thread but the audio thread; the thread calls it).
@@ -165,6 +172,8 @@ namespace mdJucePlugin
 		void startMachineMemoryThread();
 		void stopMachineMemoryThread();
 		bool writeMachineMemory(uint64_t _epoch);
+		bool lookMachineMemory(uint64_t& _signature, uint64_t& _epoch);
+		void serviceSampleStore();
 		void machineMemoryUnusable(const std::string& _why);
 		void setMachineMemoryNote(std::string _note);
 		bool machineDeviceReady();
@@ -200,11 +209,13 @@ namespace mdJucePlugin
 		std::unique_ptr<class DeskHost> m_desk;
 		// I-024: machine memory. m_memoryFolder empty: off (an isolated test, or a processor no plug-in wrapper made)
 		std::string m_memoryFolder;
-		bool m_projectStateSeen = false;		// a project state came this session (message thread)
+		std::atomic<bool> m_projectStateSeen{false};	// a DAW project's state came this session (any thread)
+		std::optional<machineMemory::Mark> m_loadedMark;	// the last state's "MMEM" chunk (m_memoryMutex)
 		bool m_standaloneState = false;		// the state at the start is the standalone's own: the file wins over it
 		bool m_memoryStartDone = false;
-		uint64_t m_memoryRestoreGeneration = 0;	// the device's restore generation of the file's payload, 0: none
+		std::atomic<uint64_t> m_memoryRestoreGeneration{0};	// the device's restore generation of the file's payload, 0: none
 		std::atomic<uint32_t> m_memoryVersion{1};
+		std::atomic<bool> m_memorySampleStored{false};	// machineMemorySampleStored, for the thread's next look
 		std::atomic<bool> m_memoryKeep{true};	// the setting, cached for the thread (the config is the message thread's)
 		std::atomic<int> m_memoryLookMs{1000};
 		std::atomic<bool> m_memoryWriteWarned{false};	// a failed write was said this session
