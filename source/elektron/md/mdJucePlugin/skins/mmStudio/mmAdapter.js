@@ -657,8 +657,10 @@
 		else if (m.type === "cpuLoad") CpuMeter.update(m);
 		else if (m.type === "outputLevel") DeskVolume.update(m);
 		/* 0.6: a note from a MIDI keyboard (the plug-in's midiIn): the Machinedrum's LEARN reads it; the Monomachine's
-		   page has no use for it yet (I-002's keyboard lights wait for B-062) */
+		   page shows the notes held instead (midiHeld: a state, so a lost note off cannot leave a key lit) */
 		else if (m.type === "midiIn") { /* read, nothing to show */ }
+		/* I-002, B-062: the notes a MIDI keyboard holds light the Perform keyboard's keys */
+		else if (m.type === "midiHeld") V().setMidiHeld(m.notes);
 		else if (m.type === "lcd") { lcdBits = Uint8Array.from(atob(m.bits || ""), c => c.charCodeAt(0)); showLcd(); }
 		else if (m.type === "mod") onMod(m);
 		else if (m.type === "catalogue") onCatalogue(m.doc);

@@ -19,7 +19,7 @@ The LCD of the machine is the **LCD** in the top bar. It holds the fields <TEMPO
 {gap:MM-013}The machine's own screen is not shown after start-up. What it would show is spread over the page.{/gap}
 
 ## LEVEL AND DATA ENTRY
-<!-- rows: MM-014 MM-015 MM-016 @b3cb12 -->
+<!-- rows: MM-014 MM-015 MM-016 @8c8e55 -->
 
 On the machine the LEVEL knob sets the level of the selected track and the eight DATA ENTRY knobs set the parameters of the page shown. In the editor every parameter is a value box.
 
@@ -28,6 +28,7 @@ On the machine the LEVEL knob sets the level of the selected track and the eight
 - Turn the mouse wheel over a value box to step it, one step a notch.
 - Click a value box and press the arrow keys to step it ({key:value-up-down}).
 - Double-click a value box to set it to its default.
+- Hold [⌘] and click a value box to type its value, or press [ENTER] on a value box that has the focus. Type the value and press [ENTER], or press [ESC] to leave it as it was. A box that shows names takes a name, for example SAW for an LFO's wave, in small or capital letters. **PAN** takes L12, C or R5. A value the box cannot show is refused, and the field says what it takes. Each typed value is one undo step.
 
 The machine's accelerated edit, where you press a knob and turn it for larger steps, is a different gesture here. Hold [⇧] while you drag for fine steps, a quarter as fast. Hold [⇧] while you turn the wheel, or press Page Up or Page Down on a focused value, to step by ten.
 
@@ -176,7 +177,7 @@ On the machine [TRIG SELECT] chooses which trig track the TRIG keys edit: AMP, F
 [FUNCTION] + [TRIG SELECT] edits the MIDI tracks. In the editor use the **Synth** and **MIDI** keys in the track rail, or the <SEQ> field in the LCD, to change between the six synth tracks and the six MIDI tracks.
 
 ## THE KEYBOARD (SFX-6)
-<!-- rows: MM-049 MM-050 MM-051 MM-052 MM-053 MM-054 @5dc86e -->
+<!-- rows: MM-049 MM-050 MM-051 MM-052 MM-053 MM-054 @81f870 -->
 
 The SFX-6 has a keyboard and a joystick. The editor has the same functions on the **Perform** workspace.
 
@@ -185,7 +186,7 @@ The SFX-6 has a keyboard and a joystick. The editor has the same functions on th
 - **Multi trig** and **Multi map** are keys of the card.
 - The **Octave** stepper moves the on-screen keyboard.
 
-The computer keys play notes too: {key:piano-white} and {key:piano-black}. The piano roll shows the pitches the machine plays, so the keyboard LEDs have no counterpart.
+The computer keys play notes too: {key:piano-white} and {key:piano-black}. A key of the on-screen keyboard is lit while you hold it: with the mouse, with the computer keys, or on a MIDI keyboard connected to the editor (the MIDI input of the standalone, or the MIDI track of the plug-in in your DAW). The piano roll shows the pitches the machine plays.
 
 ## REAR PANEL
 <!-- rows: MM-055 MM-056 MM-057 MM-058 MM-059 @0cc8d3 -->

@@ -10,7 +10,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **What happens:** paint Swing on a step, remove its trig: for a moment the swing mark shows again, until the core's result arrives and the view corrects itself.
 - **Cause:** the page's optimistic write on a trig removal clears the step's accent and slide but not its swing; the core clears all three.
 - **Should:** the optimistic write clears swing too.
-- **Status:** open, for 0.6 (polish pass).
+- **Status:** fixed in 0.6 (polish B): every write that removes a trig on the page (a click, a paint, a cut or clear of a selection, a fill, GEN) clears its accent, slide and swing and its locks in one place (`trigOffWrites`, mdDeskApp.js); a selection's copy, paste and rotate carry the swing marks too. Proved in mdDeskPageTest.js (B-070).
 
 ## B-069 · Machinedrum: the GLOBAL panel's Trig in A / B card shows its values under the wrong names
 
@@ -71,7 +71,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **From:** Discord tester M, 2026-10-11, asking for keys that light up when pressed, as Ableton's on-screen keyboard.
 - **Read in the code:** a pressed key gets the class `dn` (`mmMockup.js` ~3838), but key up never clears it (`mmMockup.js` ~4675, `mmAdapter.js` ~510): the key stays lit until another is pressed. Notes from MIDI in are not shown (I-002).
 - **Should:** lit while held (mouse, computer keyboard), dark on release; MIDI in lights the key too (I-002).
-- **Status:** open, for 0.6.
+- **Status:** fixed in 0.6 (polish B): the keys are drawn from one state (the key the mouse holds, the computer keyboard's held keys, the notes a MIDI keyboard holds), so a release or a render cannot leave one lit. Journey mm-perform-keys-lit.
 ## B-061 · Machinedrum: in a small window the top bar's Setup keys run past the window's right edge
 
 - **From:** the journeys `md-top-cpu-meter` and `md-lcd-volume`, 2026-10-11, in `--background` runs (both hosts) while cutting 0.5.1; they pass at full size.

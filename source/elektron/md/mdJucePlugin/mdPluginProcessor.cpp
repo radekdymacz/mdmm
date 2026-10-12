@@ -904,11 +904,13 @@ namespace mdJucePlugin
 		m_outputMeter.onBlock(_outputs, _frames);
 	}
 
-	// 0.6: a note on from outside, for the page (LEARN, I-002); SysEx and the rest pass by
+	// 0.6: a note on from outside, for the page (LEARN, I-002), and the notes held (the lit keys); SysEx and the rest
+	// pass by
 	void AudioPluginAudioProcessor::midiInReceived(const synthLib::SMidiEvent& _ev)
 	{
 		if(!_ev.sysex.empty())
 			return;
+		m_midiHeld.onMidi(_ev.a, _ev.b, _ev.c);
 		if(const auto n = midiIn::noteOn(_ev.a, _ev.b, _ev.c))
 			m_midiIn.tryPush(*n);
 	}

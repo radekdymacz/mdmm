@@ -113,6 +113,22 @@ namespace mdJucePlugin
 		return m;
 	}
 
+	elektronData::json::Value midiHeldOf(const midiIn::Notes& _notes)
+	{
+		auto m = elektronData::json::Value::object();
+		m.set("type", "midiHeld");
+		auto notes = elektronData::json::Value::array();
+		for(const auto n : midiIn::list(_notes))
+			notes.push(n);
+		m.set("notes", std::move(notes));
+		return m;
+	}
+
+	midiIn::Notes heldMidiNotesOf(AudioPluginAudioProcessor& _processor)
+	{
+		return _processor.heldMidiNotes();
+	}
+
 	void setOutputGainDb(AudioPluginAudioProcessor& _processor, const double _db)
 	{
 		_processor.setOutputGain(outputLevel::gainOfDb(_db));

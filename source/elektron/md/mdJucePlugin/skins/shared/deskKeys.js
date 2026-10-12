@@ -86,9 +86,9 @@ const Keys = (() => {
 		return false;
 	}
 	/* B-023: the field a key belongs to, or null: a text field keeps every key; a focused value (role=slider: a knob, a
-	   fader, the tempo; a click on one focuses it) only the keys that move it, which its own handler takes. Every other
+	   fader, the tempo; a click on one focuses it) only the keys that move it and Enter (type a value: deskValueEdit.js), which its own handler takes. Every other
 	   key is the page's: ⌘Z after a drag on a value (or after its arrow keys) undoes, Space plays, ⌘C copies. */
-	const SLIDER_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End"]);
+	const SLIDER_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End", "Enter"]);
 	function fieldOf(el, e) {
 		const text = el?.closest?.("input,select,textarea"); if (text) return text;
 		const slider = el?.closest?.("[role=slider]");

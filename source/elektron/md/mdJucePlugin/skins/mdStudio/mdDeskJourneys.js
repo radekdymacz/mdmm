@@ -574,6 +574,34 @@ const MdJourneys = (() => {
 			{ say: "click Undo", act: u => u.click("#undo"), screen: c => ok(+$1(`#main .pc[data-g="syn"][data-n="${c.n}"] b`)?.textContent === c.v0, "shows " + $1(`#main .pc[data-g="syn"][data-n="${c.n}"] b`)?.textContent), machine: c => ok(kitVals(c.t)[c.i] === c.v0, `kit ${c.n} = ${kitVals(c.t)[c.i]}`) }
 		]
 	};
+	/* I-022: a value typed: ⌘-click a value box, type, Enter (one edit, one undo step); past the end is refused and the
+	   field stays; Esc leaves it; Enter on the focused box opens it again; double-click is still the default */
+	const field = () => $1("input.vedit");
+	const typeIn = (u, text) => { const f = field(); if (!f) throw new Error("no value field"); f.value = text; u.key("Enter"); };
+	const boxText = q => $1(`${q} b`)?.textContent;
+	const typeValue = {
+		name: "md-sound-type-value", proves: ["MD-010", "MD-054"],
+		steps: [
+			go("sound"), sel(() => soundTrack()),
+			{ say: "⌘-click a synthesis value: a field over it with the value it shows", act: (u, c) => {
+				const el = $all('#main .pc[data-g="syn"]').find(e => !SIGNED.has(e.dataset.n)); if (!el) throw new Error("no synthesis value");
+				c.n = el.dataset.n; c.i = pidx(c.t, c.n, "syn"); c.q = `#main .pc[data-g="syn"][data-n="${c.n}"]`; c.v0 = kitVals(c.t)[c.i];
+				u.click(c.q, { cmd: true }); },
+				screen: c => ok(!!field() && field().value === String(c.v0) && document.activeElement === field(), "field " + field()?.value + ", kit " + c.v0) },
+			{ say: "type a value and press Enter: the box shows it, the machine has it", act: (u, c) => { c.v1 = c.v0 === 100 ? 20 : 100; typeIn(u, String(c.v1)); },
+				screen: c => ok(!field() && boxText(c.q) === String(c.v1), "shows " + boxText(c.q)), machine: c => ok(kitVals(c.t)[c.i] === c.v1, `kit ${c.n} = ${kitVals(c.t)[c.i]}`), within: 6000 },
+			{ say: "⌘-click it again and type 128: refused, the field stays, nothing sent", act: (u, c) => { u.click(c.q, { cmd: true }); typeIn(u, "128"); },
+				screen: c => ok(!!field() && field().classList.contains("bad") && /0 to 127/.test(field().title), "field " + field()?.className + " " + field()?.title), machine: c => ok(kitVals(c.t)[c.i] === c.v1, `kit ${c.n} = ${kitVals(c.t)[c.i]}`) },
+			{ say: "press Esc: the field goes, the value as it was", act: u => u.key("Escape"), screen: c => ok(!field() && boxText(c.q) === String(c.v1) && document.activeElement === $1(c.q), "shows " + boxText(c.q)) },
+			{ say: "press Enter on the box (it has the focus): the field again; type 30", act: async (u, c) => { u.key("Enter"); await sleep(50); typeIn(u, "30"); },
+				screen: c => ok(!field() && boxText(c.q) === "30", "shows " + boxText(c.q)), machine: c => ok(kitVals(c.t)[c.i] === 30, `kit ${c.n} = ${kitVals(c.t)[c.i]}`), within: 6000 },
+			{ say: "double-click the box: 64, as before", act: (u, c) => u.dblclick(c.q), screen: c => ok(boxText(c.q) === "64", "shows " + boxText(c.q)), machine: c => ok(kitVals(c.t)[c.i] === 64, `kit ${c.n} = ${kitVals(c.t)[c.i]}`), within: 6000 },
+			{ ...undoKey, say: "Cmd+Z: 30 again", machine: c => ok(kitVals(c.t)[c.i] === 30, `kit ${c.n} = ${kitVals(c.t)[c.i]}`), within: 6000 },
+			{ ...undoKey, say: "Cmd+Z: each typed value is one undo step", machine: c => ok(kitVals(c.t)[c.i] === c.v1, `kit ${c.n} = ${kitVals(c.t)[c.i]}`), within: 6000 },
+			{ ...undoKey, say: "Cmd+Z: as it was", machine: c => ok(kitVals(c.t)[c.i] === c.v0, `kit ${c.n} = ${kitVals(c.t)[c.i]}`), screen: c => ok(boxText(c.q) === String(c.v0), "shows " + boxText(c.q)), within: 6000 }
+		],
+		async tidy() { if (field()) ValueEdit.close(); }
+	};
 	const arrows = {
 		name: "md-sound-value-keys", proves: ["MD-010", "MD-054"],
 		steps: [
@@ -1048,6 +1076,25 @@ const MdJourneys = (() => {
 			esc
 		],
 		async tidy(u) { if (dlgShown()) u.click(dlgButton("Cancel")); if (!$1("#globpop").hidden) u.key("Escape"); }
+	};
+	/* I-002: a note from a MIDI keyboard (the plug-in's midiIn, given to the page as the plug-in would) on the base channel
+	   lights the track the map gives it: its number on the rail (Sound), its LED on Mix; another channel lights nothing */
+	const watchLit = (c, q, cls) => { c.lit = new Set(); c.obs?.disconnect(); c.obs = new MutationObserver(rs => rs.forEach(r => { const e = r.target; if (e.matches?.(q) && e.classList.contains(cls)) c.lit.add(+(e.dataset.sel ?? e.dataset.act)); }));
+		c.obs.observe(document.body, { subtree: true, attributes: true, attributeFilter: ["class"] }); };
+	const noteLights = {
+		name: "md-sound-note-light", proves: ["MD-164", "MD-165"],
+		steps: [
+			go("sound"),
+			{ say: "a MIDI keyboard plays track 3's note on another channel than the base: no track lights", act: async (u, c) => { c.g = Docs.global; c.n = c.g.keymap.indexOf(2); watchLit(c, "#rail .th", "hit"); window.gm.recv([{ type: "midiIn", ch: (c.g.baseChannel + 1) % 16, note: c.n, vel: 100 }]); await sleep(300); },
+				screen: c => ok(c.n >= 0 && c.lit.size === 0, "note " + c.n + ", lit " + [...c.lit]) },
+			{ say: "on the base channel: track 3's number on the rail lights for a moment", act: (u, c) => { watchLit(c, "#rail .th", "hit"); window.gm.recv([{ type: "midiIn", ch: c.g.baseChannel, note: c.n, vel: 100 }]); },
+				screen: c => ok(c.lit.has(2) && c.lit.size === 1, "lit " + [...c.lit]), within: 2000 },
+			{ say: "and goes out", screen: () => ok(!$1('#rail .th[data-sel="2"]').classList.contains("hit"), "still lit"), within: 2000 },
+			go("mix"),
+			{ say: "on Mix a burst of 50 notes for track 3: its LED lights, no other", act: (u, c) => { watchLit(c, ".strip .act", "on"); window.gm.recv(Array.from({ length: 50 }, () => ({ type: "midiIn", ch: c.g.baseChannel, note: c.n, vel: 100 }))); },
+				screen: c => ok(c.lit.has(2) && [...c.lit].every(t => t === 2 || V.tracks[t].trigs.some(Boolean)), "lit " + [...c.lit]), within: 2000 }
+		],
+		async tidy(u, c) { c?.obs?.disconnect(); }
 	};
 	const audioPanel = {
 		name: "md-audio-panel", proves: [],
@@ -1792,11 +1839,11 @@ const MdJourneys = (() => {
 	const all = [bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
 		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
 		genJourney("md-gen-mutate-undo", false, { proves: [] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: [] }), genKeys,
-		shapeSound, arrows, machinePick, machAudition, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,
+		shapeSound, typeValue, arrows, machinePick, machAudition, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,
 		mixSolo, shiftMutes, allOff, fader, lev, outKey, masterFx,
 		songArrange, songChain, songPlayhead, songSlots, songKeys, shotsSongSlots, samplerSlots, samplerSetup, audition,
 		libDialog, kitCopy, kitRename, kitClear, patGo, patClear, dialogEsc,
-		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, audioPanel, romCard, notePlay,
+		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, noteLights, audioPanel, romCard, notePlay,
 		lockRamp, pasteMany, mutScope, songInspector, songDrag, ramView, setupChop, panBox, hwNoMachine, syxImportJ,
 		syxImportMute, globalReset, shotsGlobal, shotsSound, shots, shotsSong, shotsImport, editorMenuJ, shotsMenu, ...cpuJs, ...volJs,
 		dropSyxJ, dropSampleJ, ...viewJs, syxExportKinds, syxVerify, syxPlace, resetFactory, resetEmpty];

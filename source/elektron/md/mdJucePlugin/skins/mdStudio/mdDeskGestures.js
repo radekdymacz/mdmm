@@ -141,12 +141,29 @@ document.addEventListener("pointerup", e => {
 	if (!k.moved) l2step(k.k, 1);
 });
 
+/* ===== I-022: a value typed (shared/deskValueEdit.js): ⌘-click a value box or fader, or Enter on one that has the focus.
+   What may be typed is what the box shows (a signed value as -64 to +63; with a unit, its text too: "1/16", "250 ms").
+   One edit, its own gesture: one undo step. ===== */
+const ValueBox = {
+	range: el => [0, el.dataset.n === "depth" ? 100 : 127],
+	shown(el, v) {
+		const own = SIGNED.has(el.dataset.n) && el.dataset.g !== "mfx" ? (v - 64 > 0 ? "+" : "") + (v - 64) : String(v);
+		const u = el.querySelector(".pu"); return u ? [own, UNITS[u.dataset.unit](v)[0]] : own;
+	},
+	get: el => getV(el),
+	set(el, v) { Gesture.begin(); setV(el, v); Gesture.end(); },
+	/* the same box after a render: the same data-g, data-n and the rest */
+	find: el => $("#main")?.querySelector(Object.entries(el.dataset).filter(([k]) => ["g", "n", "t", "f", "src", "li"].includes(k)).map(([k, v]) => `[data-${k}="${CSS.escape(v)}"]`).join("")) || null,
+	say: t => toast(t)
+};
+
 /* ===== Input: a value box or fader ("value"), a curve editor's dot ("editor"), the lock lane ("lane") ===== */
 const main = $("#main");
 const DRAGS = ["value", "editor", "lane"], dragging = () => DRAGS.some(k => Held.as(k));
 main.addEventListener("pointerdown", e => {
 	const c = e.target.closest("canvas.ed"); if (c) { const h = nearest(c, e); if (!h) return; Held.begin("editor", { c, k: h.k }); Gesture.begin(); grabPointer(c, e); e.preventDefault(); redraw(); return; }
-	const el = e.target.closest(".pc[data-g],.fader[data-g]"); if (el) { Held.begin("value", { el, x: e.clientX, y: e.clientY, v: getV(el), vert: el.classList.contains("fader") }); Gesture.begin(); grabPointer(el, e); el.classList.add("act"); e.preventDefault(); return; }
+	const el = e.target.closest(".pc[data-g],.fader[data-g]"); if (el && ValueEdit.isOpenClick(e)) { e.preventDefault(); ValueEdit.open(el, ValueBox); return; }
+	if (el) { Held.begin("value", { el, x: e.clientX, y: e.clientY, v: getV(el), vert: el.classList.contains("fader") }); Gesture.begin(); grabPointer(el, e); el.classList.add("act"); e.preventDefault(); return; }
 	const lb = e.target.closest(".lb"); if (lb) { Held.begin("lane", { erase: e.altKey, ramp: e.shiftKey && !e.altKey, touched: new Set() }); Gesture.begin(); grabPointer($("#lane"), e); laneAt(e); e.preventDefault(); }
 });
 main.addEventListener("pointermove", e => {
@@ -168,8 +185,8 @@ window.addEventListener("blur", () => { if (dragging()) endDrag(); });
 /* A gesture ends with any pointer release, wherever it lands. */
 document.addEventListener("pointerup", () => setTimeout(() => { if (!interacting()) Gesture.end(); }), true);
 main.addEventListener("wheel", e => { const el = e.target.closest(".pc[data-g],.fader[data-g]"); if (!el) return; e.preventDefault(); const d = (e.deltaY || e.deltaX) < 0 ? 1 : -1; setV(el, getV(el) + d * (e.shiftKey ? 10 : 1)); }, { passive: false });
-main.addEventListener("dblclick", e => { const el = e.target.closest(".pc[data-g],.fader[data-g]"); if (el) setV(el, el.dataset.n === "VOL" || el.dataset.g === "lev" ? 100 : 64); });
-main.addEventListener("keydown", e => { const el = e.target.closest("[data-g]"); if (!el) return; const d = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1, PageUp: 10, PageDown: -10 }[e.key]; if (d == null) return; e.preventDefault(); setV(el, getV(el) + d * (e.shiftKey ? 10 : 1)); });
+main.addEventListener("dblclick", e => { const el = e.target.closest(".pc[data-g],.fader[data-g]"); if (el && !ValueEdit.isOpenClick(e)) setV(el, el.dataset.n === "VOL" || el.dataset.g === "lev" ? 100 : 64); });
+main.addEventListener("keydown", e => { const el = e.target.closest("[data-g]"); if (!el) return; if (e.key === "Enter" && !e.metaKey && !e.ctrlKey && !e.altKey && el.matches(".pc,.fader")) { e.preventDefault(); ValueEdit.open(el, ValueBox); return; } const d = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1, PageUp: 10, PageDown: -10 }[e.key]; if (d == null) return; e.preventDefault(); setV(el, getV(el) + d * (e.shiftKey ? 10 : 1)); });
 
 /* ===== Steps: a drag across them paints them (P7): the first step decides (on or off) and every step the pointer
    crosses becomes that, one undo step for the whole drag. A click is a one-step paint. With a trig type other than
@@ -183,7 +200,7 @@ function paintStep(el) {
 	if (p.mark) { if (t[p.mark.set].has(s) !== p.on) setMark(p.mark, i, s, p.on); return; }
 	if (t.trigs[s] === p.on) return;
 	const w = [[["tracks", i, "trigs", s], p.on]];
-	if (!p.on) w.push([["tracks", i, "acc", s], false], [["tracks", i, "slide", s], false], ...clearStep(i, s));
+	if (!p.on) w.push(...trigOffWrites(i, s));
 	cmd("trig", { p: V.pat, t: i, s, on: p.on }, undefined, w);
 	refreshRow(i);
 	if (!p.on) Held.with("paint", { locks: true });

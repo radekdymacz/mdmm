@@ -531,7 +531,7 @@ const MM_SEAM={
   "playing","step","tempo","engineState","kitState","learnTarget","learning","ctlSetup","show","startEmpty",
   "setPatternSlot","setKitSlot","setReading","setTempo","setInput","setPlaying","setStep","setSongRow","setEng","dlgOpen",
   "setEngineLabel","setEngineTip","setEngines","setAudioEntry","clearLearnTarget","setMapping","setModulation",
-  "setCtlSetup","disable","setRecord","setRecLock","setLcd","setKeyDown","setPst","closeFirmwareDialog","bootRom",
+  "setCtlSetup","disable","setRecord","setRecLock","setLcd","setKeyDown","setMidiHeld","setPst","closeFirmwareDialog","bootRom",
   "bootInstalled","syxPreview","syxProgress","syxExported","syxExportInfo","render","renderTop","drawLib","toast","ask","redraw","movePH",
   "setPos","flashTracks","goWs","clickStep","autoRange","kitSave","redrawAudio","audioLevel","openAudio"]};
 
@@ -743,9 +743,9 @@ const Keys = (() => {
 		return false;
 	}
 	/* B-023: the field a key belongs to, or null: a text field keeps every key; a focused value (role=slider: a knob, a
-	   fader, the tempo; a click on one focuses it) only the keys that move it, which its own handler takes. Every other
+	   fader, the tempo; a click on one focuses it) only the keys that move it and Enter (type a value: deskValueEdit.js), which its own handler takes. Every other
 	   key is the page's: ⌘Z after a drag on a value (or after its arrow keys) undoes, Space plays, ⌘C copies. */
-	const SLIDER_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End"]);
+	const SLIDER_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End", "Enter"]);
 	function fieldOf(el, e) {
 		const text = el?.closest?.("input,select,textarea"); if (text) return text;
 		const slider = el?.closest?.("[role=slider]");
@@ -1429,6 +1429,98 @@ const StepSel = (() => {
 })();
 if (typeof module !== "undefined") module.exports = StepSel;
 
+/* ---- shared/deskValueEdit.js ---- */
+"use strict";
+/* I-022: type a parameter value (both editors). ⌘-click a value box (Ctrl-click off a Mac), or Enter on a value box that
+   has the focus (Tab to it): a field opens over the box with the value as it is shown, selected. Type a value and press
+   Enter: it is set as one edit (one undo step, as one notch of the wheel); Esc, or a click elsewhere, leaves it as it was.
+   What may be typed is what the box shows: a number (the nearest value is taken, so 1200 on a box that shows 1196 or
+   1210 takes the nearer), a name from a list (a machine, a scale, OFF), as the box writes it, in any case. A number past
+   the ends, or a text the box never shows, is refused with the range or the names, and the field stays open. No new
+   control: the box itself takes the gesture; double-click is still the default value, a drag still drags.
+   The editor gives a host: { range(el) [lo, hi] (the stored values), shown(el, v) the text the box shows for v (or a list:
+   the first the box's own, the rest other spellings), get(el), set(el, v), find(el) the box again after a render (or null),
+   say(text) }. parse() is pure (deskValueEditTest.js). */
+const ValueEdit = (() => {
+	const norm = s => String(s).trim().replace(/\s+/g, " ").toLowerCase();
+	const tight = s => norm(s).replace(/ /g, "");
+	/* a shown text as a number, a unit after it allowed ("12", "+3", "-64", "1.5 s", "50%", "2 bars"); null when the text is
+	   not one ("C-4", "1/16", "L12", "OFF") */
+	const numOf = s => { const m = /^\s*([+-]?\d+(?:[.,]\d+)?)\s*([a-zµ%°]*)\s*$/i.exec(String(s)); return m ? +m[1].replace(",", ".") : null; };
+	const forms = (shown, v) => { const f = shown(v); return Array.isArray(f) ? f.map(String) : [String(f)]; };
+	/* text typed -> {v} (a stored value lo..hi) or {error}; empty text: {empty: true} */
+	function parse(text, lo, hi, shown) {
+		if (!norm(text)) return { empty: true };
+		const all = [];
+		for (let v = lo; v <= hi; v++) all.push([v, forms(shown, v)]);
+		/* 1. as the box writes it (or another spelling the editor gives), any case, spaces aside */
+		for (const [v, fs] of all) if (fs.some(f => tight(f) === tight(text))) return { v };
+		const nums = [];
+		for (const [v, fs] of all) for (const f of fs) { const x = numOf(f); if (x != null) { nums.push([v, x, f]); break; } }
+		const x = numOf(text);
+		if (nums.length) {
+			let min = nums[0], max = nums[0];
+			for (const n of nums) { if (n[1] < min[1]) min = n; if (n[1] > max[1]) max = n; }
+			if (x == null) return { error: `Not a value of this box: type a number from ${min[2]} to ${max[2]}.` };
+			if (x < min[1] - 1e-9 || x > max[1] + 1e-9) return { error: `Out of range: ${min[2]} to ${max[2]}.` };
+			/* 2. a number: the value whose number is nearest (ties: the lower stored value) */
+			let best = nums[0];
+			for (const n of nums) if (Math.abs(n[1] - x) < Math.abs(best[1] - x)) best = n;
+			return { v: best[0] };
+		}
+		const names = all.map(([, fs]) => fs[0]);
+		const some = names.length > 6 ? [...names.slice(0, 4), "…", names[names.length - 1]] : names;
+		return { error: `Not a value of this box: type one of ${some.join(", ")}.` };
+	}
+
+	let cur = null;	/* {el, input, host} while the field is open */
+	function open(el, host) {
+		close();
+		const v = host.get(el);
+		if (v == null) { host.say("This value is not known yet."); return false; }
+		const r = el.getBoundingClientRect(), w = Math.max(64, r.width);
+		const input = document.createElement("input");
+		input.type = "text"; input.className = "vedit"; input.spellcheck = false; input.autocomplete = "off";
+		input.setAttribute("aria-label", "Type a value for " + (el.getAttribute("aria-label") || "this value") + ", then Enter (Esc: leave it)");
+		input.value = forms(v => host.shown(el, v), v)[0];
+		Object.assign(input.style, { left: r.left + (r.width - w) / 2 + "px", top: r.top + "px", width: w + "px", height: Math.max(22, r.height) + "px" });
+		document.body.appendChild(input);
+		cur = { el, input, host };
+		input.addEventListener("keydown", e => {
+			e.stopPropagation();
+			if (e.key === "Enter") { e.preventDefault(); commit(); }
+			else if (e.key === "Escape") { e.preventDefault(); close(true); }
+			else if (e.key === "Tab") commit(true);
+			else input.classList.remove("bad");
+		});
+		input.addEventListener("blur", () => { if (cur && cur.input === input) close(); });
+		input.focus(); input.select();
+		return true;
+	}
+	/* Enter: set it (one edit), or say why not and stay open */
+	function commit(leave) {
+		if (!cur) return;
+		const { el, input, host } = cur, box = el.isConnected ? el : host.find(el);
+		if (!box) { close(); return; }
+		const [lo, hi] = host.range(box), p = parse(input.value, lo, hi, v => host.shown(box, v));
+		if (p.empty) { close(true); return; }
+		if (p.error) { input.classList.add("bad"); input.title = p.error; host.say(p.error); if (!leave) input.select(); return; }
+		close(!leave);
+		if (host.get(box) !== p.v) host.set(box, p.v);
+	}
+	/* the field goes; refocus: the box takes the focus back (Enter opens the field again) */
+	function close(refocus) {
+		if (!cur) return;
+		const { el, input, host } = cur; cur = null;
+		input.remove();
+		if (refocus) { const box = el.isConnected ? el : host.find(el); box?.focus?.({ preventScroll: true }); }
+	}
+	/* the gesture, from the editor's pointerdown on a value box: ⌘-click (Ctrl-click off a Mac), no other modifier */
+	const isOpenClick = e => e.button === 0 && typeof Modifiers !== "undefined" && Modifiers.cmd(e) && !e.altKey && !e.shiftKey;
+	return { parse, open, commit, close, isOpenClick, get editing() { return cur ? cur.el : null; } };
+})();
+if (typeof module !== "undefined") module.exports = { ValueEdit };
+
 /* ---- 56-keys.js ---- */
 /* ===== Keys (from the Machinedrum Editor, P5 and its mnemonic map, DESIGN-generators.md §5) =====
    Every shortcut is an entry of Keys: the ? overlay is generated from it, so it lists what the keys really do.
@@ -1478,6 +1570,7 @@ Keys.bind({id:"zoom-reset",short:"Zoom 100 %",scope:"any",keys:["0"],mod:"cmd",g
  ["value-fine","sound mix perform control","Values",["value"],"shift","Values","Drag: fine, a quarter as fast"],
  ["value-wheel","sound mix perform control","Values",["wheel on a value"],"","Values","One step a notch (⇧: 10)"],
  ["value-reset","sound mix perform control","Values",["double-click a value"],"","Values","Back to its default (64; a list's first entry)"],
+ ["value-type","sound mix perform control","Values",["value"],"cmd","Values","Click: type a value, then Enter (Esc: leave it as it was). Enter on a focused value does the same"],
  ["tempo-drag","any","Top bar",["tempo"],"","Transport","Drag up or down: the tempo, half a BPM a pixel (⇧: a tenth)"],
  ["lcd-value","any","LCD",["LCD value"],"","Anywhere","Click: its next value; ⇧-click the previous one; the wheel steps through them. SWING and PTRN: drag up or down"],
  ["header-menu","any","Anywhere",["right-click"],"","Anywhere","The editor's menu: zoom and window size, updates, the log folder, Developer"],
@@ -3493,8 +3586,8 @@ function kbOn(){return Keys.free()}
 function kbTell(k,t){if(KB.told.has(k))return;KB.told.add(k);toast(t)}
 function homeDown(e){if(e.repeat||KB.held.has(e.code))return;const t=S.sel,k=KEYS_PIANO[e.code.replace(/^Key/,"")];if(k==null)return;
  if(isMidiT(t)){kbTell("midi","The keys play the synth tracks: a MIDI track's notes go to the MIDI OUT only.");return}
- const n=clamp(KEYS_BASE+12*KB.oct+k);KB.held.set(e.code,{t,n});keyNote(t,n,KB.vel)}
-function homeUp(code){const h=KB.held.get(code);if(!h)return;KB.held.delete(code);keyNote(h.t,h.n,0)}
+ const n=clamp(KEYS_BASE+12*KB.oct+k);KB.held.set(e.code,{t,n});paintKb();keyNote(t,n,KB.vel)}
+function homeUp(code){const h=KB.held.get(code);if(!h)return;KB.held.delete(code);paintKb();keyNote(h.t,h.n,0)}
 /* a host plays the machine (the note intent: pitch in semitones from KEYS_BASE, C3); the example only shows the track's lamp */
 function keyNote(t,n,vel){if(HOST.noteOn){const p=n-KEYS_BASE;return vel?HOST.noteOn(t,p,vel):HOST.noteOff(t,p)}if(vel){flashTracks([t]);kbTell("eg","Example: in the plug-in the keys play the machine.")}}
 function kbVel(d){KB.vel=keyVel(KB.vel,d);toast(`Keyboard velocity ${KB.vel}`)}
@@ -4501,8 +4594,8 @@ function kbRange(){const lo=12*(S.kbOct+1);return[lo,lo+47]}
 function zoneOf(n){if(S.mode!=="multi"||S.multi.mode!==1)return null;return n>=S.multi.splitKey?"up":"lo"}
 function mapRow(n){let lo=0;for(let i=0;i<S.mmap.length;i++){const r=S.mmap[i];if(n>=lo&&n<=r.hi)return i;lo=r.hi+1}return -1}
 function renderKb(){const[lo,hi]=kbRange(),whites=[];for(let n=lo;n<=hi;n++)if(!isBlack(n))whites.push(n);const ww=100/whites.length;let h="",wi=0;
- for(let n=lo;n<=hi;n++){if(isBlack(n)){h+=`<div class="b" data-key="${n}" style="left:${wi*ww-ww*.3}%;width:${ww*.6}%" aria-label="${noteName(n)}"></div>`;continue}
-  h+=`<div class="w" data-key="${n}" style="left:${wi*ww}%;width:${ww}%" aria-label="${noteName(n)}">${n%12===0?`<small>${noteName(n)}</small>`:""}</div>`;wi++}
+ for(let n=lo;n<=hi;n++){if(isBlack(n)){h+=`<div class="b${kbLit(n)}" data-key="${n}" style="left:${wi*ww-ww*.3}%;width:${ww*.6}%" aria-label="${noteName(n)}"></div>`;continue}
+  h+=`<div class="w${kbLit(n)}" data-key="${n}" style="left:${wi*ww}%;width:${ww}%" aria-label="${noteName(n)}">${n%12===0?`<small>${noteName(n)}</small>`:""}</div>`;wi++}
  if(S.mode==="multi"&&S.multi.mode===1){const sk=S.multi.splitKey;let idx=whites.findIndex(w=>w>=sk);if(idx<0)idx=whites.length;const x=idx*ww;
   h+=`<div class="zone" style="left:0;width:${x}%;background:var(--ledg)"></div><div class="zone" style="left:${x}%;width:${100-x}%;background:var(--led)"></div><div class="splitm" id="splitm" style="left:${x}%" title="Drag the split point"><span>SPLIT ${noteName(sk)} · T${S.multi.splitTrack}-6 above</span></div>`}
  return h}
@@ -4554,8 +4647,14 @@ function renderPerform(){const pm=PMODES.find(p=>p[0]===S.mode),t=asgT(),tr=S.tr
  syncControls();redraw()}
 let kbDown=null,lampT={};
 function flashTracks(ts){ts.forEach(i=>{const l=$(`[data-lamp="${i}"]`);if(!l)return;l.classList.add("on");clearTimeout(lampT[i]);lampT[i]=setTimeout(()=>l.classList.remove("on"),160)})}
-/* a key shown held (null: none) and the keyboard's info line (null: unchanged) */
-function setKeyDown(n,info){$$(".kb .dn").forEach(k=>k.classList.remove("dn"));if(n!=null)$(`.kb [data-key="${n}"]`)?.classList.add("dn");const el=$("#kbinfo");if(el&&info!=null)el.textContent=info}
+/* B-062, I-002: the keys lit, one state the keyboard is drawn from (so a render during a hold keeps it): dn the key the
+   mouse holds and those the computer keyboard holds (KB.held), mi those a MIDI keyboard holds (the plug-in's midiHeld) */
+const KBLIT={mouse:null,midi:new Set()};
+function kbLit(n){return(KBLIT.mouse===n||[...KB.held.values()].some(h=>h.n===n)?" dn":"")+(KBLIT.midi.has(n)?" mi":"")}
+function paintKb(){$$(".kb [data-key]").forEach(k=>{const c=kbLit(+k.dataset.key);k.classList.toggle("dn",c.includes("dn"));k.classList.toggle("mi",c.includes("mi"))})}
+function setMidiHeld(notes){KBLIT.midi=new Set(notes||[]);paintKb()}
+/* a key shown held by the mouse (null: none) and the keyboard's info line (null: unchanged) */
+function setKeyDown(n,info){KBLIT.mouse=n;paintKb();const el=$("#kbinfo");if(el&&info!=null)el.textContent=info}
 function playKey(n){if(HOST.playKey)return HOST.playKey(n);setKeyDown(n,null);let ts=[],msg="";
  if(S.mode==="normal"||S.mode==="poly"){const t=asgT();ts=[t];msg=`${S.mode==="poly"?"POLY ":""}T${t+1} ${noteName(n)}`}
  else if(S.mode==="multi"){const m=S.multi.mode;if(m===0){ts=[0,1,2,3,4,5];msg=`All tracks ${noteName(n)}`}else if(m===1){const up=n>=S.multi.splitKey,a=S.multi.splitTrack-1;ts=up?[0,1,2,3,4,5].filter(i=>i>=a):[0,1,2,3,4,5].filter(i=>i<a);msg=`${up?"Upper":"Lower"} zone ${noteName(n)}`}
@@ -5541,7 +5640,8 @@ main.addEventListener("pointerdown",e=>{
  const pk=e.button===0&&e.target.closest('canvas[data-ed="dktrn"]');if(pk){trnDown(pk,e);e.preventDefault();return}
  const roll=e.target.closest("canvas.roll");if(roll){roll.setPointerCapture(e.pointerId);rollDown(roll,e);e.preventDefault();return}
  const c=e.target.closest("canvas.ed");if(c){const hh=nearest(c,e);if(!hh)return;active={c,k:hh.k,all:e.altKey&&!isMidiT(S.sel)};if(active.all)allTip();c.setPointerCapture(e.pointerId);e.preventDefault();redraw();return}
- const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el){const t=el.dataset.t!=null?+el.dataset.t:S.sel;drag={el,x:e.clientX,y:e.clientY,v:getV(el),vert:el.classList.contains("fader"),hz:el.classList.contains("hz")&&el.getBoundingClientRect().width,mx:maxOf(ref(el)[2]),all:e.altKey&&!isMidiT(t)&&PAGES.includes(el.dataset.g)};if(drag.all)allTip();el.setPointerCapture(e.pointerId);el.classList.add("act");e.preventDefault();return}
+ const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el&&ValueEdit.isOpenClick(e)){e.preventDefault();ValueEdit.open(el,ValueBox);return}
+ if(el){const t=el.dataset.t!=null?+el.dataset.t:S.sel;drag={el,x:e.clientX,y:e.clientY,v:getV(el),vert:el.classList.contains("fader"),hz:el.classList.contains("hz")&&el.getBoundingClientRect().width,mx:maxOf(ref(el)[2]),all:e.altKey&&!isMidiT(t)&&PAGES.includes(el.dataset.g)};if(drag.all)allTip();el.setPointerCapture(e.pointerId);el.classList.add("act");e.preventDefault();return}
  const lb=e.target.closest(".lb");if(lb){laneDraw=e.shiftKey&&!e.altKey?{ramp:true,touched:false}:{erase:e.altKey,touched:false};$("#lane").setPointerCapture(e.pointerId);laneAt(e);e.preventDefault();return}
  const ac=e.target.closest(".ac");if(ac){const k=+ac.dataset.ac,a=trk(S.sel).arp;if(k>=a.len){a.len=k+1;edit("arp",{t:S.sel,field:"length",v:a.len});renderArp();return}arpDrag={k,y:e.clientY,moved:false};$("#arptrack").setPointerCapture(e.pointerId);e.preventDefault();return}
  if(e.target.closest("#joy")){joyDrag=true;$("#joy").setPointerCapture(e.pointerId);joyAt(e);e.preventDefault();return}
@@ -5561,14 +5661,14 @@ main.addEventListener("pointermove",e=>{
  if(arpDrag){const a=trk(S.sel).arp,dd=Math.round((arpDrag.y-e.clientY)/4);if(Math.abs(dd)>0||arpDrag.moved){arpDrag.moved=true;a.ofs[arpDrag.k]=clamp((arpDrag.v0??(arpDrag.v0=a.ofs[arpDrag.k]))+dd,-24,24);renderArp()}return}
  if(joyDrag){joyAt(e);return}
  if(splitDrag){const kb=$("#kb").getBoundingClientRect(),[lo,hi]=kbRange(),whites=[];for(let n=lo;n<=hi;n++)if(!isBlack(n))whites.push(n);const i=clamp(Math.round((e.clientX-kb.left)/kb.width*whites.length),1,whites.length-1);if(S.multi.splitKey!==whites[i]){S.multi.splitKey=whites[i];$("#kb").innerHTML=renderKb();$("#splitm").setPointerCapture?.(e.pointerId)}return}
- if(kbDown){const k=document.elementFromPoint(e.clientX,e.clientY)?.closest(".kb [data-key]");if(k&&!k.classList.contains("dn"))playKey(+k.dataset.key);return}
+ if(kbDown){const k=document.elementFromPoint(e.clientX,e.clientY)?.closest(".kb [data-key]");if(k&&KBLIT.mouse!==+k.dataset.key)playKey(+k.dataset.key);return}
  const c=e.target.closest?.("canvas.ed");if(c)c.style.cursor=ED[c.dataset.ed]?.cursor?.(c,e)||(nearest(c,e)?"grab":"default")});
 function allTip(){if(S.allTold)return;S.allTold=1;toast("Control All: this value moves on all six synth tracks by the same amount (MIDI tracks stay).")}
 function endDrag(e){trnUp();if(cord){cordEnd(e);return}if(rollDrag)rollUp();if(active){active=null;redraw()}if(drag){drag.el.classList.remove("act");drag=null}endLaneDraw();
  if(kbDown&&HOST.keyUp)HOST.keyUp();
  if(arpDrag){const a=trk(S.sel).arp,k=arpDrag.k;if(!arpDrag.moved){a.rhy[k]=!a.rhy[k];renderArp()}edit("arp",{t:S.sel,field:"step",i:k,v:a.rhy[k]?clamp(64+a.ofs[k]):255});arpDrag=null}
  if(joyDrag){joyDrag=false;S.joy={x:0,y:0};const k=$("#knobj");if(k){k.style.left="50%";k.style.top="50%"}if(HOST.joy)HOST.joy(S.joy)}
- if(splitDrag){splitDrag=false;edit("multiTrig",{splitKey:S.multi.splitKey});render()}if(kbDown){kbDown=false;$$(".kb .dn").forEach(k=>k.classList.remove("dn"))}}
+ if(splitDrag){splitDrag=false;edit("multiTrig",{splitKey:S.multi.splitKey});render()}if(kbDown){kbDown=false;setKeyDown(null,null)}}
 /* P7: a gesture ends wherever the button comes up. A render during a drag (a pattern load, the machine's
    documents) removes the element that held the pointer, and its pointerup then lands outside #main: the drag
    stayed on and every mouse move edited the value (the kit showed "edited" after each pattern load). So the end
@@ -5580,12 +5680,20 @@ function joyAt(e){const r=$("#joy").getBoundingClientRect();S.joy={x:clamp((e.cl
  const tr=S.tracks[asgT()],A=tr.assign,rows=A.tabs[S.asTab];const amt=S.asTab==="JOY U"?Math.max(0,S.joy.y):S.asTab==="JOY D"?Math.max(0,-S.joy.y):A.mirr?S.joy.x:Math.max(0,S.joy.x);
  $("#kbinfo")&&($("#kbinfo").textContent=rows.map(r=>`${LPAGES[r.pg]} ${destNames(asgT(),r.pg)[r.d]} ${Math.round((r.add-64)*amt)>=0?"+":""}${Math.round((r.add-64)*amt)}`).join(" · "));tx();if(HOST.joy)HOST.joy(S.joy)}
 function renderArp(){const el=$("#arptrack");if(!el)return;const a=trk(S.sel).arp;el.innerHTML=arpCells(a);$$(".arplenrow button").forEach((b,k)=>b.classList.toggle("on",k<a.len));const c2=$("#arpcap");if(c2)c2.textContent="Rhythm + offset · "+a.len+" steps";$$(".mrowg .rowst").length&&0;redraw()}
+/* I-022: a value typed (shared/deskValueEdit.js): ⌘-click a value box or fader, or Enter on one that has the focus. What
+   may be typed is what the box shows (a list's names, a signed value as -64 to +63, PAN as L12 / C / R5 or the number);
+   one edit, its own undo step (commit before and after) */
+const ValueBox={range:el=>[0,maxOf(ref(el)[2])],
+ shown(el,v){const m=ref(el)[2],own=fmt(m,v);return el.classList.contains("pan")&&m.signed?[v===64?"C":(v<64?"L":"R")+Math.abs(v-64),own]:own},
+ get:el=>getV(el),set(el,v){commit();setV(el,v);commit()},
+ find:el=>$("#main")?.querySelector(Object.entries(el.dataset).filter(([k])=>["g","n","t","i","src","li"].includes(k)).map(([k,v])=>`[data-${k}="${CSS.escape(v)}"]`).join(""))||null,
+ say:t=>toast(t)};
 main.addEventListener("wheel",e=>{
  const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el){e.preventDefault();const d=(e.deltaY||e.deltaX)<0?1:-1;setV(el,getV(el)+d*(e.shiftKey?10:1));return}
  const st=e.target.closest(".mst");if(st){const t=+st.dataset.t,s=+st.dataset.s,x=trk(t).steps[s];if(!x?.n)return;e.preventDefault();const d=((e.deltaY||e.deltaX)<0?1:-1)*(e.shiftKey?12:1);x.n=x.n.map(n=>clamp(n+d));editStep(t,s);refreshRow(t);return}
  const roll=e.target.closest("canvas.roll[data-big]");if(roll){e.preventDefault();const t=+roll.dataset.t;S.rollLoT[t]=clamp((S.rollLoT[t]??S.rollLo)+((e.deltaY)<0?1:-1)*(e.shiftKey?12:2),0,127-ROWS);redraw()}},{passive:false});
-main.addEventListener("dblclick",e=>{const el=e.target.closest(".pc[data-g]");if(el){const m=ref(el)[2];setV(el,m.en?0:m.signed?64:64)}});
-main.addEventListener("keydown",e=>{const el=e.target.closest("[data-g]");if(!el)return;const d={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1,PageUp:10,PageDown:-10}[e.key];if(d==null)return;e.preventDefault();setV(el,getV(el)+d*(e.shiftKey?10:1))});
+main.addEventListener("dblclick",e=>{const el=e.target.closest(".pc[data-g]");if(el&&!ValueEdit.isOpenClick(e)){const m=ref(el)[2];setV(el,m.en?0:m.signed?64:64)}});
+main.addEventListener("keydown",e=>{const el=e.target.closest("[data-g]");if(!el)return;if(e.key==="Enter"&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&el.matches(".pc,.fader")){e.preventDefault();ValueEdit.open(el,ValueBox);return}const d={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1,PageUp:10,PageDown:-10}[e.key];if(d==null)return;e.preventDefault();setV(el,getV(el)+d*(e.shiftKey?10:1))});
 
 /* ===== Clicks ===== */
 function autoRange(t){const ns=trk(t).steps.flatMap(x=>x?.n||[]);if(!ns.length)return;const lo=Math.min(...ns),hi=Math.max(...ns),cur=S.rollLoT[t];if(cur==null||lo<cur||hi>cur+ROWS-1)S.rollLoT[t]=clamp(Math.round((lo+hi)/2)-Math.floor(ROWS/2),0,127-ROWS)}
@@ -5987,7 +6095,7 @@ window.MMView={
  setInput,setPlaying,setStep,setSongRow:r=>{S.songRow=r;markSongRow()},
  setEng,dlgOpen:()=>!$("#dlg").hidden,setEngineLabel,setEngineTip,setEngines,setAudioEntry,clearLearnTarget:()=>{S.learnT=null},setMapping,setModulation,setCtlSetup,disable,
  setRecord,setRecLock,
- setLcd,setKeyDown,setPst,closeFirmwareDialog,bootRom:r=>Boot.rom(r),bootInstalled:o=>Boot.showInstalled(o),syxPreview:m=>Syx.preview(m),syxProgress:m=>Syx.progress(m),syxExported:m=>Syx.exported(m),syxExportInfo:m=>Syx.exportInfo(m),
+ setLcd,setKeyDown,setMidiHeld,setPst,closeFirmwareDialog,bootRom:r=>Boot.rom(r),bootInstalled:o=>Boot.showInstalled(o),syxPreview:m=>Syx.preview(m),syxProgress:m=>Syx.progress(m),syxExported:m=>Syx.exported(m),syxExportInfo:m=>Syx.exportInfo(m),
  /* calls */
  render,renderTop,drawLib,toast,ask,redraw,movePH,setPos,flashTracks,goWs,clickStep,autoRange,kitSave,
  redrawAudio:()=>{if(AP.open)drawAudio()},audioLevel,openAudio};
