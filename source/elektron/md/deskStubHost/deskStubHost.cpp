@@ -343,6 +343,7 @@ namespace
 				default: break;
 				}
 				return;
+			case 0x56: m_global = v & 7; return;	// SET ACTIVE GLOBAL (slice 5: MD-282)
 			case 0x57: loadPattern(v); return;
 			case 0x58: loadKit(v); return;
 			case 0x59: { auto k = m_working; k.position = v & 63; m_kits[v & 63] = k; m_kit = v & 63; return; }	// SAVE KIT

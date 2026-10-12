@@ -840,7 +840,7 @@ const MdJourneys = (() => {
 	const ks = k => `#libpop .ks[data-ks="${k}"]`;
 	const kitName = k => kitNameText(Docs.kits[k]?.name);
 	const libDialog = {
-		name: "md-lib-load-save-dialog", proves: ["MD-039", "MD-041"],
+		name: "md-lib-load-save-dialog", proves: ["MD-039", "MD-041", "MD-283"],
 		steps: [
 			{ say: "click KIT on the LCD: the kit library opens", act: u => u.click("#kitf"), screen: () => ok(!$1("#libpop").hidden && $all("#libpop .ks").length === 64, "library closed"), machine: () => ok(Object.keys(Docs.kits).length === 64, Object.keys(Docs.kits).length + " kits read") },
 			{ say: "click another kit: it loads at once", act: async (u, c) => {
@@ -900,7 +900,7 @@ const MdJourneys = (() => {
 	};
 	const psq = p => `#libpop .ps[data-ps="${p}"]`;
 	const patGo = {
-		name: "md-lib-pattern-go", proves: ["MD-094"],
+		name: "md-lib-pattern-go", proves: ["MD-094", "MD-283"],
 		steps: [
 			{ say: "click the pattern on the LCD: 128 patterns", act: (u, c) => { c.p0 = currentPatternSlot(); u.click("#pat"); }, screen: () => ok(!$1("#libpop").hidden && $all("#libpop .ps").length === 128, $all("#libpop .ps").length + " slots"), machine: () => ok(Object.keys(Docs.patterns).length === 128, Object.keys(Docs.patterns).length + " read") },
 			{ say: "click another pattern (stopped: it switches)", act: async (u, c) => { c.p = (c.p0 + 2) % 128; u.click(psq(c.p)); await confirmIfAsked(u); }, machine: c => ok(currentPatternSlot() === c.p, "machine pattern " + currentPatternSlot()), screen: c => ok($1(psq(c.p))?.classList.contains("cur"), "not current"), within: 5000 },
@@ -1440,7 +1440,7 @@ const MdJourneys = (() => {
 	};
 	const slotEl = s => `[data-ss="${s}"]`;
 	const songSlots = {
-		name: "md-song-slots", proves: ["MD-144", "MD-158", "MD-159"],
+		name: "md-song-slots", proves: ["MD-144", "MD-158", "MD-159", "MD-292", "MD-294"],
 		steps: [
 			go("song"),
 			{ say: "stop; click an empty song slot: it is only selected, the machine's song stays", act: async (u, c) => {
@@ -2161,7 +2161,133 @@ const MdJourneys = (() => {
 		],
 		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); }
 	};
-	const slice5 = [modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks];
+	/* ---- chapters 9, 10 and the appendices: the song commands, GLOBAL, SysEx ---- */
+	const gOpen = { say: "choose GLOBAL… in the engine menu", act: async u => { await u.pick("engsel", "global"); await sleep(400); }, screen: () => ok(!$1("#globpop").hidden, "panel closed"), machine: () => ok(!!Docs.global?.control, "no global") };
+	const GFIELD = { pcIn: ["programChangeIn", false], pcOut: ["programChangeOut", false], local: ["localControl", false], ctrlIn: ["ctrlIn", false], ctrlOut: ["ctrlOut", false] };
+	/* MD-170, MD-171, MD-185, MD-186, MD-188, MD-093: the on / off settings of the GLOBAL page, each read back */
+	const globalToggles = {
+		name: "md-global-settings", proves: ["MD-093", "MD-170", "MD-171", "MD-185", "MD-186", "MD-188", "MD-281"],
+		steps: [
+			gOpen,
+			{ say: "the panel shows the global the machine reported: its slot, its base channel and its sync settings", act: () => Journey.snapshot("md-global-panel"),
+				screen: () => ok($all('#globpop [data-ga="slot"]').length === 8 && $all('#globpop [data-ga="slot"]').some(b => b.getAttribute("aria-pressed") === "true"), $all('#globpop [data-ga="slot"]').length + " slot keys"), machine: () => ok(Docs.global.slot != null && Docs.global.baseChannel != null && !!Docs.global.control, "global " + JSON.stringify(Object.keys(Docs.global))) },
+			{ say: "click each of PRG CHANGE IN, PRG CHANGE OUT, LOCAL CTRL, CTRL IN and CTRL OUT: each flips in the machine's global, and clicking again puts it back", act: async (u, c) => { c.bad = [];
+					for (const [f, [field]] of Object.entries(GFIELD)) { const v0 = Docs.global.control[field]; u.click(tog(f, !v0));
+						if (!await until(() => Docs.global.control[field] === !v0 && pressed(tog(f, !v0)), 4000)) c.bad.push(`${f}: ${Docs.global.control[field]}`);
+						u.click(tog(f, v0)); if (!await until(() => Docs.global.control[field] === v0, 4000)) c.bad.push(`${f} back: ${Docs.global.control[field]}`); await until(idle, 3000); } },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
+			{ say: "click TEMPO IN EXT: the machine follows an external clock, the LCD's SYNC says HOST", act: (u, c) => { c.t0 = Docs.global.control.tempoIn; u.click(tog("tempoIn", true)); },
+				screen: () => ok(/^host$/i.test($1("#synct")?.textContent), "sync key " + $1("#synct")?.textContent), machine: () => ok(Docs.global.control.tempoIn === "external", "tempo in " + Docs.global.control.tempoIn), within: 6000 },
+			{ say: "click TEMPO IN INT: its own clock, SYNC again", act: u => u.click(tog("tempoIn", false)), screen: () => ok(/^sync$/i.test($1("#synct")?.textContent), "sync key " + $1("#synct")?.textContent), machine: () => ok(Docs.global.control.tempoIn === "internal", "tempo in " + Docs.global.control.tempoIn), within: 6000 },
+			esc
+		],
+		async tidy(u, c) { if (Docs.global?.control?.tempoIn === "external") cmd("globalSet", { field: "tempoIn", on: false }); await sleep(400); }
+	};
+	/* MD-172, MD-168, MD-282: the program change channel, the pattern trig mode, the active global */
+	const globalMore = {
+		name: "md-global-channel-trig-slot", proves: ["MD-172", "MD-168", "MD-282"],
+		steps: [
+			gOpen,
+			{ say: "click the program change channel up: BASE becomes channel 1, and down again", act: async (u, c) => { c.c0 = Docs.global.control.programChangeChannel; u.click('#globpop [data-ga="pcCh"][data-d="1"]'); await until(() => Docs.global.control.programChangeChannel === Math.min(16, c.c0 + 1), 4000); c.c1 = Docs.global.control.programChangeChannel; u.click('#globpop [data-ga="pcCh"][data-d="-1"]'); },
+				screen: c => ok(c.c1 === Math.min(16, c.c0 + 1), "channel " + c.c1), machine: c => ok(Docs.global.control.programChangeChannel === c.c0, "channel " + Docs.global.control.programChangeChannel), within: 6000 },
+			{ say: "click GATE, START and QUE under Pattern trig: the machine's mode follows each", act: async (u, c) => { c.t0 = Docs.global.control.trigMode; c.bad = [];
+					for (const [i, n] of ["gate", "start", "que"].entries()) { u.click(`#globpop [data-ga="trig"][data-v="${i}"]`); if (!await until(() => Docs.global.control.trigMode === n && $1(`#globpop [data-ga="trig"][data-v="${i}"]`)?.getAttribute("aria-pressed") === "true", 4000)) c.bad.push(`${n}: ${Docs.global.control.trigMode}`); await until(idle, 3000); }
+					const i0 = ["gate", "start", "que"].indexOf(c.t0); if (i0 >= 0) u.click(`#globpop [data-ga="trig"][data-v="${i0}"]`); },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
+			{ say: "click another global slot key: the machine's active global is that one, and back", act: async (u, c) => { c.s0 = Docs.global.slot; c.s1 = (c.s0 + 1) % 8; u.click(`#globpop [data-ga="slot"][data-v="${c.s1}"]`); await until(() => Docs.global?.slot === c.s1 && machineState().globalSlot === c.s1, 8000); c.mid = machineState().globalSlot; u.click(`#globpop [data-ga="slot"][data-v="${c.s0}"]`); },
+				screen: c => ok(c.mid === c.s1, "machine's global " + c.mid), machine: c => ok(Docs.global.slot === c.s0 && machineState().globalSlot === c.s0, "slot " + Docs.global.slot), within: 8000 },
+			esc
+		]
+	};
+	/* MD-165, MD-284, MD-276: the map editor: a track's note, Reset map to Elektron's map */
+	const globalMapJ = {
+		name: "md-global-map-track", proves: ["MD-165", "MD-284", "MD-276"],
+		steps: [
+			gOpen,
+			{ say: "click the note of TRACK 3 up: it plays from the next note", act: async (u, c) => { c.n0 = Docs.global.keymap.indexOf(2); c.undo0 = V.undoCount; u.click('#globpop [data-ga="map"][data-t="2"][data-d="1"]'); },
+				machine: c => ok(Docs.global.keymap.indexOf(2) === c.n0 + 1, `track 3 at note ${Docs.global.keymap.indexOf(2)}, was ${c.n0}`), screen: () => ok(!$1("#globpop").hidden, "panel closed"), within: 6000 },
+			{ say: "click Reset map and answer: tracks from C2, patterns from E4", act: async u => { u.click('#globpop [data-ga="resetmap"]'); if (await until(dlgShown, 2000)) u.click(dlgButton("Reset map") || $1("#dlg .danger")); Journey.snapshot("md-map-editor"); },
+				machine: () => { const k = Docs.global.keymap; const tn = [36, 38, 40, 41, 43, 45, 47, 48, 50, 52, 53, 55, 57, 59, 60, 62]; return ok(tn.every((n, t) => k[n] === t) && k[64] === 16 && k[65] === 17 && k[67] === 18, `tracks at ${tn.map(n => k[n])}, E4 gives ${k[64]}`); }, within: 8000 },
+			esc
+		],
+		async tidy(u, c) { if (c.undo0 != null) await undoTo(u, c.undo0); }
+	};
+	/* MD-277: a value moved on a track of each of the four channel groups reaches the machine on its own channel */
+	const ccChannels = {
+		name: "md-sound-cc-channels", proves: ["MD-277"],
+		steps: [
+			go("sound"),
+			{ say: "move a synthesis value on a track of each group of four (tracks 1, 5, 9 and 13): each reaches the machine", act: async (u, c) => { c.n0 = V.undoCount; c.bad = []; c.n = 0;
+					for (const g of [0, 4, 8, 12]) { const t = [g, g + 1, g + 2, g + 3].find(x => soundTracks().includes(x)); if (t == null) { c.bad.push(`group ${g / 4 + 1}: no sound track`); continue; }
+						u.click(rail(t)); await sleep(250); const el = $1('#main .pc[data-g="syn"]'); if (!el) { c.bad.push(`T${t + 1}: no knob`); continue; } const n = el.dataset.n, i = pidx(t, n, "syn"), v0 = kitVals(t)[i], d = v0 > 120 ? "ArrowDown" : "ArrowUp", want = v0 + (d === "ArrowUp" ? 1 : -1);
+						el.focus(); u.key(d); if (!await until(() => kitVals(t)[i] === want, 4000)) c.bad.push(`T${t + 1} ${n}: ${kitVals(t)[i]} for ${want}`); else c.n++; await until(idle, 3000); } },
+				screen: c => ok(!c.bad.length && c.n === 4, c.bad.join(" | ") || c.n + " groups"), within: 1000 }
+		],
+		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); }
+	};
+	/* MD-182: the SysEx import's default place is the file's own */
+	const syxOriginal = {
+		name: "md-lib-syx-original", proves: ["MD-182"],
+		needs: () => window.gmDev ? null : "the page tier opens its own file",
+		steps: [
+			openImport,
+			{ say: "Original place is the one chosen: each kit sits at the slot the file holds it in", act: () => Journey.snapshot("md-sysex-import"),
+				screen: () => ok($1('#syxpop [data-sxp="original"]')?.getAttribute("aria-pressed") === "true" && !!$1(syxCell("kit:0")) && !!$1(syxCell("kit:1")) && !$1(syxCell("kit:4")), `original ${$1('#syxpop [data-sxp="original"]')?.getAttribute("aria-pressed")}, cells ${syxKitIds().map(b => b.dataset.syxitem).join(" ")}`) },
+			{ say: "click Verify only: each kit is compared with the machine's slot of the same number", act: u => u.click('#syxpop [data-syxgo="verify"]'),
+				screen: () => ok(/Nothing was written/.test($1("#syxpop .syxsum")?.textContent || "") && $all("#syxpop [data-syxout]").length >= 2, "progress: " + ($1("#syxpop .syxsum")?.textContent || "")), within: 60000 },
+			{ say: "click Done", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") }
+		],
+		async tidy() { $1("#syxpop").hidden = true; }
+	};
+	/* MD-197: a ROM slot's name is sent (SysEx 0x73) and shown */
+	const sampleRename = {
+		name: "md-sampler-rename", proves: ["MD-197"],
+		steps: [
+			go("sampler"),
+			{ say: "click a ROM slot, click Rename, type a name and click Send name", act: async (u, c) => { const k = $all(".slotk.rom")[5]; c.slot = +k.dataset.slot.slice(3); u.click(k); await sleep(300); results.length = 0; u.click(`[data-rename="${c.slot}"]`); await until(() => !!$1("#rname"), 2000); u.type("#rname", "jrny"); await sleep(100); u.click(dlgButton("Send name")); },
+				screen: c => ok(($1(".romsel header")?.textContent || "").includes("JRNY"), "card " + ($1(".romsel header")?.textContent || "")), machine: c => ok(results.some(r => r.op === "sampleName" && r.ok), "results " + results.map(r => r.op + ":" + r.ok).join(",")), within: 6000 }
+		]
+	};
+	/* MD-280, MD-283: rename the current kit (SysEx 0x55), save it (0x59), and put it back */
+	const kitNameSave = {
+		name: "md-lib-kit-name-save", proves: ["MD-280", "MD-283"],
+		steps: [
+			{ say: "click KIT, double-click the current kit, type a name, Enter: the working kit is renamed and not yet saved", act: async (u, c) => { c.k = V.kit; c.n0 = kitName(c.k); c.st = JSON.stringify(Docs.kits[c.k]); u.click("#kitf"); await sleep(250); u.click(ks(c.k), { alt: true }); u.key("F2"); await sleep(250); u.type("#lsin", "journey"); await sleep(100); u.key("Enter"); if (await until(dlgShown, 1500)) u.click($1("#dlg .danger")); },
+				screen: c => ok($1("#kitname").textContent.includes("JOURNEY"), "LCD " + $1("#kitname").textContent), machine: c => ok(kitNameText(kitDocOf(Docs).name).trim() === "JOURNEY", "working kit " + kitNameText(kitDocOf(Docs).name)), within: 8000 },
+			{ say: "click Save: the slot holds the new name", act: async u => { u.click('#libpop [data-la="save"]'); if (await until(dlgShown, 1500)) u.click(dlgButton("Overwrite") || $1("#dlg .danger")); },
+				machine: c => ok(kitName(c.k).trim() === "JOURNEY", "slot " + kitName(c.k)), screen: () => ok(/saved/.test($1("#save").textContent), "chip " + $1("#save").textContent), within: 8000 },
+			{ say: "rename it back and save again", act: async (u, c) => { u.click(ks(c.k), { alt: true }); u.key("F2"); await sleep(250); u.type("#lsin", c.n0.trim().toLowerCase()); await sleep(100); u.key("Enter"); if (await until(dlgShown, 1500)) u.click($1("#dlg .danger")); await sleep(400); u.click('#libpop [data-la="save"]'); if (await until(dlgShown, 1500)) u.click(dlgButton("Overwrite") || $1("#dlg .danger")); },
+				machine: c => ok(kitName(c.k).trim() === c.n0.trim(), "slot " + kitName(c.k)), within: 10000 },
+			esc
+		]
+	};
+	/* MD-143, MD-152, MD-153, MD-155, MD-156, MD-161, MD-295: the song page's limits, END, a part of a pattern, jump, halt, the bar counter and the PATTERN / SONG switch */
+	const songCommands = {
+		name: "md-song-commands", proves: ["MD-143", "MD-152", "MD-153", "MD-155", "MD-156", "MD-161", "MD-295"],
+		steps: [
+			go("song"),
+			{ say: "the page holds 32 songs of up to 256 rows, and the song ends with END", act: (u, c) => { c.r0 = JSON.stringify(songRows()); u.click('[data-set="songpick"] button[data-v="song"]'); Journey.snapshot("md-song-workspace"); },
+				screen: () => ok($all("[data-ss]").length === 32 && /of 256 rows/.test($1(".arrcard .note")?.textContent || "") && [...$all("#tl .scell")].some(c => c.textContent.trim() === "END"), `${$all("[data-ss]").length} songs, "${$1(".arrcard .note")?.textContent.slice(0, 40)}"`),
+				machine: () => ok(Object.keys(Docs.songs).length === 32 && songRows().length >= 1 && Docs.songs[currentSongSlot()].rows.slice(-1)[0].kind === "end", "songs " + Object.keys(Docs.songs).length) },
+			{ say: "add a row (pad A01): the bar counter on the LCD goes up", act: async (u, c) => { c.b0 = +($1("#lcd2").innerText.match(/BARS\s*(\d+)/)?.[1]); c.n0 = songRows().length; u.click('[data-addpat="0"]'); await until(() => songRows().length === c.n0 + 1, 4000); c.i = S.songSel; await sleep(300); },
+				screen: c => { const b = +($1("#lcd2").innerText.match(/BARS\s*(\d+)/)?.[1]); return ok(b === Math.round(songSteps() / 16) && b > c.b0, `BARS ${b} (was ${c.b0}), rows give ${Math.round(songSteps() / 16)}`); }, machine: c => ok(songRows().length === c.n0 + 1, "rows " + songRows().length) },
+			{ say: "click More, then Start + and Length −: the row plays part of its pattern", act: async (u, c) => { u.click("[data-rowmore]"); await sleep(250); c.s0 = songRows()[c.i].start; c.e0 = songRows()[c.i].end; u.click('[data-step="ofs"][data-d="1"]'); await until(() => songRows()[c.i].start === c.s0 + 1, 4000); u.click('[data-step="len"][data-d="-1"]'); },
+				machine: c => ok(songRows()[c.i].start === c.s0 + 1 && songRows()[c.i].end < c.e0 + 1 && songRows()[c.i].end - songRows()[c.i].start < c.e0 - c.s0, `rows[${c.i}] ${songRows()[c.i].start}-${songRows()[c.i].end}, was ${c.s0}-${c.e0}`), screen: () => ok(!!$1(".partbar .on"), "no part bar"), within: 8000 },
+			{ say: "click Add loop, then JUMP: the row is a jump", act: async (u, c) => { u.click('[data-rowact="loop"]'); await until(() => songRows()[c.i + 1]?.kind === "loop", 4000); u.click('[data-set="loopkind"] button[data-v="jump"]'); },
+				machine: c => ok(songRows()[c.i + 1]?.kind === "jump", "row " + JSON.stringify(songRows()[c.i + 1])), screen: () => ok($1('[data-set="loopkind"] button[data-v="jump"]')?.getAttribute("aria-pressed") === "true", "JUMP not pressed"), within: 6000 },
+			{ say: "click HALT: the row is a halt", act: u => u.click('[data-set="loopkind"] button[data-v="halt"]'), machine: c => ok(songRows()[c.i + 1]?.kind === "halt", "row " + JSON.stringify(songRows()[c.i + 1])), within: 6000 }
+		],
+		async tidy(u, c) { if (S.songMore) u.click("[data-rowmore]"); if (c.r0) await undoUntil(u, () => JSON.stringify(songRows()) === c.r0, 10); }
+	};
+	/* MD-295: the PATTERN / SONG switch is the machine's status */
+	const playModeJ = {
+		name: "md-top-play-mode", proves: ["MD-295"],
+		steps: [
+			{ say: "click PLAY on the LCD's second line: the machine's mode is SONG", act: (u, c) => { c.m0 = V.songMode; u.click(l2("seqmode")); }, screen: c => ok(V.songMode === !c.m0 && l2text("seqmode") === (c.m0 ? "PAT" : "SONG"), `mode ${V.songMode}, LCD ${l2text("seqmode")}`), machine: c => ok(machineState().songMode === !c.m0, "machine " + machineState().songMode), within: 6000 },
+			{ say: "click it again: back", act: u => u.click(l2("seqmode")), screen: c => ok(V.songMode === c.m0, "mode " + V.songMode), machine: c => ok(machineState().songMode === c.m0, "machine " + machineState().songMode), within: 6000 }
+		]
+	};
+	const slice5 = [modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, kitNameSave, songCommands, playModeJ];
 	/* PROBE-START */
 	const probeJ = { name: "md-zz-probe", proves: [], steps: [{ say: "probe", act: async (u, c) => { let r; try { const src = await (await fetch("zzprobe.js")).text(); const AF = Object.getPrototypeOf(async function () { }).constructor; r = await new AF("u", "c", "results", "tele", "J", src)(u, c, results, tele, { soundTracks, trigsOf, kit, kitVals, desk, locksOf }); } catch (e) { r = "ERR " + e + " " + (e.stack || "").slice(0, 200); } Bridge.log("PROBE " + JSON.stringify(r)); } }] };
 	/* PROBE-END */
