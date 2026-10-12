@@ -7,8 +7,11 @@
    (shown on the hovered and the focused one) or Space puts that machine on the track and plays the track's note, so it is
    heard in the kit as it would be kept. Picking a machine (a click, Enter on its key, or KEEP) keeps it; closing the
    picker any other way (Esc, BACK, a click outside) puts the old one back. S.aud is the audition as a value
-   {t, g, was, m, live}: its machine edits share one gesture g (one undo step from the machine before), and BACK is the
-   Undo of that step while it is still the newest one (live; any other edit ends that and the machine stays). Measured on
+   {t, g, was, m, ok}: a trial in the core (trialBegin / trialEnd, deskCore.h Core::trial) under one gesture g, so the
+   whole audition and the pick are one undo step. The core takes the trial back only while its step is the newest one
+   (a refused machine edit recorded nothing, so nothing earlier is undone), and on its own when the page goes away or
+   loads again (a window closed mid-audition leaves no tried machine behind). Any other edit, Undo or Redo ends the
+   audition (kept). m: the machine tried last, ok: the last one the plug-in took. Measured on
    OS 1.63 (doc/modern-ux/PROBES-manual-gaps.md P9): the note right behind the SysEx plays the new machine, and the old
    machine with its values again gives the old sound. */
 const FAMS = [["TRX", "Analogue model"], ["EFM", "FM drums"], ["E12", "12-bit samples"], ["PI", "Physical model"], ["GND", "Tone and noise"], ["INP", "External input"], ["MID", "MIDI out"], ["CTR", "Control"], ["ROM", "ROM samples · UW"], ["RAM", "RAM record + play · UW"]];
@@ -43,19 +46,27 @@ function sendMachine(v, t, g, onDone) {
 function setMachine(v, t = S.sel) {
 	if (!Cat.byName[v]) return;
 	const a = S.aud && S.aud.t === t ? S.aud : null;
-	if (!a || a.m !== v) sendMachine(v, t, a && a.live ? a.g : undefined);
+	if (!a || a.m !== v) sendMachine(v, t, a ? a.g : undefined);
 	if (!params(t).includes(S.lane)) S.lane = params(t).includes("FLTF") ? "FLTF" : params(t)[0] || "FLTF";
 	closePicker(true); render();
 }
-/* hear machine v on the selected track: the machine edit (the audition's gesture), then the track's note once the
-   plug-in took it (the note never passes the machine's SysEx: mdDeskMachine.cpp, B-014) */
+/* hear machine v on the selected track: the machine edit (the trial's gesture), then the track's note once the
+   plug-in took it (the note never passes the machine's SysEx: mdDeskMachine.cpp, B-014). A refused edit (the machine
+   not ready...) leaves the machine the plug-in took last. */
 function audition(v) {
 	const t = S.sel, tr = V.tracks[t]; if (!Cat.byName[v] || !tr) return;
-	/* a new audition from the machine there now: the first, another track's, or after an edit ended the last one's Undo */
-	if (!S.aud || S.aud.t !== t || !S.aud.live) S.aud = { t, g: Bridge.gesture(), was: tr.m, m: tr.m, live: true };
-	const a = S.aud, play = r => { if (r && !r.ok) return; if (S.aud === a) audNote(t); };
-	if (a.m === v) play();
-	else { a.m = v; sendMachine(v, t, a.g, play); }
+	if (!S.aud || S.aud.t !== t) {
+		endAudition(true);
+		S.aud = { t, g: Bridge.gesture(), was: tr.m, m: tr.m, ok: tr.m };
+		Bridge.send({ op: "trialBegin", g: S.aud.g });
+	}
+	const a = S.aud, done = r => {
+		if (S.aud !== a) return;
+		if (r && !r.ok) { a.m = a.ok; if (!$("#machpop").hidden) { drawPicker(); focusMach(v); } return; }
+		a.ok = v; audNote(t);
+	};
+	if (a.m === v && a.ok === v) done();
+	else { a.m = v; sendMachine(v, t, a.g, done); }
 	drawPicker(); focusMach(v);
 }
 /* the track's note, let go after 400 ms; a machine with no sound of its own says so (the plug-in's words) */
@@ -64,15 +75,17 @@ function audNote(t) {
 	Bridge.send({ op: "noteOn", t, vel: 100, pitch: 0 }, { onResult: r => { if (r && !r.ok && r.errors?.length) toast(r.errors[0]); } });
 	clearTimeout(audNote.off); audNote.off = setTimeout(() => Bridge.send({ op: "noteOff", t, pitch: 0 }), 400);
 }
-/* the audition ends: kept, or the old machine back (Undo of its step while that is the newest; else it stays, said) */
+/* the audition ends: kept, or taken back by the core (only while its step is the newest one) */
 function endAudition(keep) {
 	const a = S.aud; if (!a) return; S.aud = null;
-	if (keep || a.m === a.was) return;
-	if (a.live) cmd("undo");
-	else toast(`${a.m} stays on track ${a.t + 1}: another edit came after it. Undo takes it back.`);
+	Bridge.send({ op: "trialEnd", g: a.g, keep: !!keep }, { onResult: r => { if (r && r.ok && r.note) toast(r.note); } });
 }
-/* any edit but the audition's own machine edits (and undo, redo) ends its Undo: the machine then stays */
-onEditSent((op, args) => { if (S.aud && !(op === "machine" && args.g === S.aud.g)) S.aud.live = false; });
+/* any edit but the audition's own machine edits, and Undo or Redo, ends it in the core (kept): here too, and the
+   picker says so (no ▶ line, no "was") */
+onEditSent((op, args) => {
+	if (!S.aud || (op === "machine" && args.g === S.aud.g)) return;
+	endAudition(true); if (!$("#machpop").hidden) drawPicker();
+});
 function focusMach(v) { $(`#machpop .mk[data-mach="${v}"]`)?.focus({ preventScroll: true }); }
 document.addEventListener("click", e => {
 	if (e.target.closest("#machbtn")) { $("#machpop").hidden ? openPicker() : closePicker(); return; }
@@ -90,11 +103,8 @@ document.addEventListener("mouseover", e => { const m = e.target.closest("#machp
    background matches no :focus in WebKit) */
 document.addEventListener("focusin", e => { $$("#machpop .mk.kf").forEach(k => k.classList.remove("kf")); const m = e.target.closest("#machpop .mk"); if (m) { m.classList.add("kf"); $("#mpprev").innerHTML = prevText(m.dataset.mach); } });
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#machpop").hidden) { closePicker(); $("#machbtn")?.focus(); } });
-/* the machine Space hears: the focused machine key's; the hovered one's while no other key of the picker has the focus
-   (Space on a family key or Keep effects presses that key) */
-let hoverMach = null;
-document.addEventListener("mouseover", e => { const m = e.target.closest("#machpop .mk"); hoverMach = m ? m.dataset.mach : null; });
-function auditionTarget() { const f = document.activeElement; return f?.closest?.("#machpop .mk")?.dataset.mach || (f?.closest?.("#machpop button") ? null : hoverMach); }
+/* the machine Space hears: the focused machine key's (Space on a family key or Keep effects presses that key) */
+function auditionTarget() { return document.activeElement?.closest?.("#machpop .mk")?.dataset.mach || null; }
 /* a key press of Space on a machine key would also click it (pick it): the audition took the press */
 document.addEventListener("keyup", e => { if (e.key === " " && e.target.closest?.("#machpop .mk")) e.preventDefault(); }, true);
 /* Enter while an audition plays and no key of the picker has the focus: keep it */
@@ -103,7 +113,7 @@ document.addEventListener("keydown", e => {
 	e.preventDefault(); const a = S.aud; setMachine(a.m, a.t);
 });
 Keys.bind({ id: "picker-audition", short: "Hear", scope: "sound", keys: ["Space"], group: "Machine picker", modal: "machpop",
-	does: "In the machine picker: hear the focused (or hovered) machine on the track; Enter keeps it, Esc puts the old one back",
+	does: "In the machine picker: hear the focused machine on the track; Enter keeps it, Esc puts the old one back",
 	when: () => !$("#machpop").hidden && !!auditionTarget(), run: () => audition(auditionTarget()) });
 
 /* ===== Key-style dropdowns: every <select> gets a key + a list of keys ===== */

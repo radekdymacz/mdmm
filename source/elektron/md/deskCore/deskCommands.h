@@ -31,7 +31,8 @@ namespace deskCore
 		Set,		// a whole document as the intent (the model's setDocument)
 		Ready,		// the page is up: everything once more
 		Undo,
-		Redo
+		Redo,
+		Trial		// a trial of edits under one gesture (trialBegin / trialEnd; Core::trial)
 	};
 
 	enum class Gate : uint8_t

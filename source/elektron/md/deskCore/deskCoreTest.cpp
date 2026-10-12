@@ -548,6 +548,66 @@ namespace
 		c.flush();
 		check(page.back().find("type")->asString() == "result" && page.back().find("id")->asNumber() == 9, "undo answers");
 	}
+	// A trial (wave 8, the machine picker's audition): its edits under one gesture, kept or taken back as a whole; never
+	// an earlier step of the user's (a refused edit recorded nothing), and taken back when the page goes or comes again.
+	void trial()
+	{
+		std::puts("core: a trial");
+		std::vector<Value> page;
+		Core<ToyModel> c([&](const Value& _m) { page.push_back(_m); });
+		ToyMachine m;
+		c.setMachine(&m);
+		c.pageReady();
+		m.events.push_back(ToyMachine::Ev::observed({1, 10}, Source::Dump));
+		c.pump();
+		const auto msg = [](const char* _json) { return *elektronData::json::parse(_json); };
+		const auto value = [&] { return c.view().toys.at(1).value; };
+		const auto lastResult = [&]() -> const Value* { c.flush(); for(auto it = page.rbegin(); it != page.rend(); ++it) if(it->find("type")->asString() == "result") return &*it; return nullptr; };
+
+		c.edit(msg(R"({"op":"set","s":1,"v":20,"g":1})"));	// the user's own edit before the trial
+		c.trial(msg(R"({"op":"trialBegin","g":5})"));
+		c.edit(msg(R"({"op":"set","s":1,"v":-5,"g":5})"));	// refused by the machine: nothing recorded
+		c.trial(msg(R"({"op":"trialEnd","g":5,"keep":false})"));
+		check(value() == 20 && c.history().size() == 1 && lastResult()->find("ok")->asBool(), "a trial whose only edit was refused takes back nothing of the user's");
+
+		c.trial(msg(R"({"op":"trialBegin","g":6})"));
+		c.edit(msg(R"({"op":"set","s":1,"v":30,"g":6})"));
+		c.edit(msg(R"({"op":"set","s":1,"v":40,"g":6})"));
+		check(value() == 40 && c.history().size() == 2, "a trial's edits are one step");
+		c.trial(msg(R"({"op":"trialEnd","g":6,"keep":false})"));
+		check(value() == 20 && c.history().size() == 1 && !c.history().canRedo() && c.openTrial() == 0, "back: the step taken back, nothing to redo");
+
+		c.trial(msg(R"({"op":"trialBegin","g":7})"));
+		c.edit(msg(R"({"op":"set","s":1,"v":50,"g":7})"));
+		c.trial(msg(R"({"op":"trialEnd","g":7,"keep":true})"));
+		check(value() == 50 && c.history().size() == 2, "keep: the step stays, one undo step");
+
+		c.trial(msg(R"({"op":"trialBegin","g":8})"));
+		c.edit(msg(R"({"op":"set","s":1,"v":60,"g":8})"));
+		c.edit(msg(R"({"op":"set","s":1,"v":61,"g":9})"));	// another edit ends the trial (kept)
+		c.trial(msg(R"({"op":"trialEnd","g":8,"keep":false})"));
+		check(value() == 61 && c.openTrial() == 0, "an edit of another gesture ends the trial: nothing is taken back");
+
+		c.trial(msg(R"({"op":"trialBegin","g":10})"));
+		c.edit(msg(R"({"op":"set","s":1,"v":70,"g":10})"));
+		c.undo(msg(R"({"op":"undo"})"));
+		check(value() == 61 && c.openTrial() == 0, "Undo mid-trial undoes it and ends the trial");
+		c.trial(msg(R"({"op":"trialEnd","g":10,"keep":false})"));
+		check(value() == 61, "a later end takes back nothing more");
+
+		c.trial(msg(R"({"op":"trialBegin","g":11})"));
+		c.edit(msg(R"({"op":"set","s":1,"v":80,"g":11})"));
+		c.detach();
+		check(value() == 61 && c.openTrial() == 0, "the page goes mid-trial: the trial is taken back");
+		c.pageReady();
+		c.trial(msg(R"({"op":"trialBegin","g":12})"));
+		c.edit(msg(R"({"op":"set","s":1,"v":90,"g":12})"));
+		c.pageReady();
+		check(value() == 61 && c.openTrial() == 0, "the page loads again mid-trial: the trial is taken back");
+		c.trial(msg(R"({"op":"trialEnd","keep":true})"));
+		check(!lastResult()->find("ok")->asBool(), "a trial command needs its gesture");
+	}
+
 	// The working-copy policy on a toy kit (an int per knob): status is the truth, an image that
 	// predates the editor's edits waits, the image taken is what the machine holds and the view
 	// keeps the overlay (edits the image cannot show yet).
@@ -707,6 +767,7 @@ int main()
 	sequence();
 	commands();
 	core();
+	trial();
 	desk();
 	std::printf("deskCoreTest: %s (%d failures)\n", g_failures ? "FAIL" : "PASS", g_failures);
 	return g_failures ? 1 : 0;
