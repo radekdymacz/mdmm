@@ -30,6 +30,9 @@
 @page c11 { @top-left { content: "11. Sample manager, UW only"; } }
 @page c12 { @top-left { content: "12. Early start-up menu"; } }
 @page c13 { @top-left { content: "13. Technical information, MKI vs MKII"; } }
+@page c14 { @top-left { content: "14. Appendix A: machine reference"; } }
+@page c15 { @top-left { content: "15. Appendix B: MIDI control reference"; } }
+@page c16 { @top-left { content: "16. Appendix C: sysex reference"; } }
 @page c17 { @top-left { content: "17. Beyond the hardware"; } }
 </style>
 </head>
@@ -62,9 +65,9 @@
 <li><a href="#c11"><span class="gd-tnum">11</span><span class="gd-ttitle">Sample manager, UW only</span><span class="gd-tsum">Load, name, hear and place samples in the ROM slots, and record into the RAM slots, on the UW machine.</span></a></li>
 <li><a href="#c12"><span class="gd-tnum">12</span><span class="gd-ttitle">Early start-up menu</span><span class="gd-tsum">What the machine's start-up menu does, and what to do in the editor instead.</span></a></li>
 <li><a href="#c13"><span class="gd-tnum">13</span><span class="gd-ttitle">Technical information, MKI vs MKII</span><span class="gd-tsum">The limits of the machine as the editor keeps them, and where the editor differs for the MKI and MKII models.</span></a></li>
-<li class="gd-tocome"><span class="gd-tnum">14</span><span class="gd-ttitle">Appendix A: machine reference</span><span class="gd-tsum">To come</span></li>
-<li class="gd-tocome"><span class="gd-tnum">15</span><span class="gd-ttitle">Appendix B: MIDI control reference</span><span class="gd-tsum">To come</span></li>
-<li class="gd-tocome"><span class="gd-tnum">16</span><span class="gd-ttitle">Appendix C: sysex reference</span><span class="gd-tsum">To come</span></li>
+<li><a href="#c14"><span class="gd-tnum">14</span><span class="gd-ttitle">Appendix A: machine reference</span><span class="gd-tsum">Every machine the Machinedrum can load into a track, by family, and where the editor shows it.</span></a></li>
+<li><a href="#c15"><span class="gd-tnum">15</span><span class="gd-ttitle">Appendix B: MIDI control reference</span><span class="gd-tsum">The note map and the control change numbers the Machinedrum answers to, and where the editor sets them.</span></a></li>
+<li><a href="#c16"><span class="gd-tnum">16</span><span class="gd-ttitle">Appendix C: sysex reference</span><span class="gd-tsum">The system exclusive messages of the Machinedrum, and the part of the editor that sends or reads each.</span></a></li>
 <li><a href="#c17"><span class="gd-tnum">17</span><span class="gd-ttitle">Beyond the hardware</span><span class="gd-tsum">What the editor does that the Machinedrum itself does not have, or does in its own way.</span></a></li>
 </ol></section>
 <article class="gd-chapter" id="c1" style="page: c1">
@@ -78,7 +81,7 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.4,</span> <span>5</span></span></aside>
 <div class="gd-body gd-prose"><h2>FRONT PANEL</h2>
 <p>The page has three parts. The top bar holds the workspace tabs, the LCD and the Undo, Redo, GLOBAL and panel colour keys. The track rail runs down the left side. The workspace fills the rest.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The Machinedrum Editor"><span>Screenshot to come</span></div><figcaption>The Machinedrum Editor</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/md-workspaces.webp" width="1440" height="923" alt="The Machinedrum Editor" loading="lazy"><figcaption>The Machinedrum Editor</figcaption></figure>
 <h4 class="gd-h3">The workspaces</h4>
 <p>The machine has pages that you reach with keys. The editor has workspaces that you reach with the tabs in the top bar.</p>
 <table class="gd-table"><thead><tr><th>Workspace</th><th>Key</th><th>What it holds</th></tr></thead><tbody><tr><td>Sequence</td><td><kbd class="gd-key">[1]</kbd></td><td>the step grid, the lock lane and the generators</td></tr><tr><td>Sound</td><td><kbd class="gd-key">[2]</kbd></td><td>the selected track's machine, effects, routing and LFO</td></tr><tr><td>Mix</td><td><kbd class="gd-key">[3]</kbd></td><td>one strip a track, and the four master effects</td></tr><tr><td>Sampler</td><td><kbd class="gd-key">[4]</kbd></td><td>the sample slots and the RAM machines</td></tr><tr><td>Song</td><td><kbd class="gd-key">[5]</kbd></td><td>the song arrangement</td></tr></tbody></table>
@@ -94,6 +97,9 @@
 <h4 class="gd-h3">Classic and extended mode</h4>
 <ol class="gd-steps"><li>Open the Sequence workspace.</li><li>Click <b class="gd-ui">MODE</b> on the LCD's second line.</li><li>The field reads CLASSIC or EXT. Each click switches.</li></ol>
 <p>In CLASSIC mode a pattern holds trigs only. In EXTENDED mode a pattern also holds its kit link and its parameter locks, and locks play only in EXTENDED mode.</p>
+<p>In CLASSIC mode the lock lane says that its locks are muted. The locks are not lost: they come back when you switch to EXTENDED. In CLASSIC the pattern chooser shows no kit under any pattern.</p>
+<ol class="gd-steps" start="4"><li>Click the pattern name in the LCD to open the pattern chooser. In EXTENDED it shows each pattern's kit, in CLASSIC it does not.</li><li>Press <kbd class="gd-key">[ESC]</kbd> to close it.</li></ol>
+<figure class="gd-shot"><img src="/guide/shots/md-top-mode-classic.webp" width="1440" height="923" alt="The pattern chooser in CLASSIC mode" loading="lazy"><figcaption>The pattern chooser in CLASSIC mode</figcaption></figure>
 <h4 class="gd-h3">The FUNCTION key</h4>
 <p>The machine's FUNCTION key is the <kbd class="gd-key">[⌥]</kbd> key of the computer. Hold it while you press a key or drag a control, and the action reaches every track, or a wider range.</p>
 <ul class="gd-list"><li><kbd class="gd-key">[⌥]</kbd> and drag a value: move the same knob on every track.</li><li><kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[R]</kbd>: randomise every track.</li><li><kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[M]</kbd>: mute every track.</li><li><kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[SPACE]</kbd>: live recording.</li><li><kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[BACKSPACE]</kbd>: clear the whole pattern.</li></ul>
@@ -102,14 +108,19 @@
 <h4 class="gd-h3">Pattern banks</h4>
 <p>Patterns are in eight banks, A to H, of 16 patterns each.</p>
 <ol class="gd-steps"><li>Click the pattern name in the LCD. The pattern chooser opens.</li><li>Press a letter from <kbd class="gd-key">[A–H]</kbd> to jump to that bank, or click a bank key.</li><li>Click a pattern. While the machine plays, it starts the pattern when the current one ends. When it is stopped, the pattern changes at once.</li><li>Press <kbd class="gd-key">[ESC]</kbd> to close the chooser.</li></ol>
+<p>Every slot shows its name and its length in steps. A slot with no trigs reads EMPTY. To copy a pattern:</p>
+<ol class="gd-steps"><li>Select a pattern that has trigs and click <b class="gd-ui">Copy</b>.</li><li>Select another slot and click <b class="gd-ui">Paste</b>. The slot takes the steps and the kit link of the copy.</li><li>To empty a slot, select it and click <b class="gd-ui">Clear</b>. Its tile reads EMPTY.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take a paste or a clear back, once for each.</li></ol>
 <p>The ‹ and › keys beside the pattern name step to the pattern before or after.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The pattern chooser"><span>Screenshot to come</span></div><figcaption>The pattern chooser</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/md-pattern-chooser.webp" width="1440" height="923" alt="The pattern chooser" loading="lazy"><figcaption>The pattern chooser</figcaption></figure>
 <h4 class="gd-h3">Level</h4>
 <p>The machine's LEVEL knob sets the overall level of the selected track. It is stored in the kit, and it cannot be locked or modulated by an LFO. In the editor it is the <b class="gd-ui">LEV</b> box at the top of each strip on the Mix workspace.</p>
-<ol class="gd-steps"><li>Press <kbd class="gd-key">[3]</kbd> for the Mix workspace.</li><li>Drag the <b class="gd-ui">LEV</b> box of a track up or down, or scroll the wheel over it. The kit that plays takes the new level at once.</li><li>Double-click the box to set it back to 100.</li></ol>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[3]</kbd> for the Mix workspace.</li><li>Drag the <b class="gd-ui">LEV</b> box of a track up or down, or scroll the wheel over it. The kit that plays takes the new level at once.</li><li>Double-click the box to set it back to 100.</li><li><kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> takes each change back.</li></ol>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-mix-lev.webp" width="1440" height="923" alt="The Mix workspace with a LEV box on each strip" loading="lazy"><figcaption>The Mix workspace with a LEV box on each strip</figcaption></figure>
 <p><b class="gd-ui">VOL</b> under it is the track's volume on the routing page. It is a different value: VOL can be locked, LEV cannot.</p>
 <h4 class="gd-h3">Tempo</h4>
 <ol class="gd-steps"><li>Drag the <b class="gd-ui">Tempo</b> value in the LCD up or down. Each pixel is half a BPM; hold <kbd class="gd-key">[⇧]</kbd> for a tenth of a BPM a pixel.</li><li>Or press <kbd class="gd-key">[T]</kbd> or <kbd class="gd-key">[B]</kbd> in time with the beat. The tempo is the average of your last taps.</li></ol>
+<p>To set the tempo in single steps, click the <b class="gd-ui">Tempo</b> value without dragging:</p>
+<ol class="gd-steps"><li>A TEMPO window opens.</li><li>Click <b class="gd-ui">+</b> to go one BPM faster and <b class="gd-ui">-</b> to go one BPM slower.</li><li>Hold <b class="gd-ui">+10 %</b> to play 10 % faster for as long as you hold it. The LCD says so. The tempo you set is not changed, and it returns when you let go.</li><li>Press <kbd class="gd-key">[ESC]</kbd> to close the window.</li></ol>
 <p>In a DAW the machine follows the host's tempo. The Tempo field is marked and does not edit; change the tempo in the DAW, or set <b class="gd-ui">Tempo in</b> to INT in GLOBAL for the machine's own clock.</p>
 <h4 class="gd-h3">Data entry</h4>
 <p>Each parameter is a value box. A box shows the name and the value.</p>
@@ -128,21 +139,25 @@
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Pause and Continue reach the machine as MIDI Stop and Continue, so the machine's <b class="gd-light">&lt;CTRL IN&gt;</b> must be on (GLOBAL, MIDI). Over a MIDI cable there is no panic: no MIDI message silences the Machinedrum. Press <kbd class="gd-key">[STOP]</kbd> twice on the machine.</p></aside>
 <p>There is no key that restarts the pattern from the top while it plays. Stop, then play.</p>
 <h4 class="gd-h3">Pattern or song</h4>
-<p>The LCD's second line has a <b class="gd-ui">PLAY</b> field on every workspace. It reads PAT in pattern mode and SONG in song mode, and each click switches. On the Song workspace the <b class="gd-ui">PATTERN</b> and <b class="gd-ui">SONG</b> keys over the pattern palette do the same. The field shows what the machine reports.</p>
+<p>The LCD's second line has a <b class="gd-ui">PLAY</b> field on every workspace. It reads PAT in pattern mode and SONG in song mode, and each click switches. On the Song workspace the <b class="gd-ui">PATTERN</b>, <b class="gd-ui">CHAIN</b> and <b class="gd-ui">SONG</b> keys over the pattern palette set what plays. <b class="gd-ui">PATTERN</b> and <b class="gd-ui">CHAIN</b> keep the machine in pattern mode: in PATTERN a click on a pad queues that pattern, in CHAIN the pads number the chain. <b class="gd-ui">SONG</b> puts the machine in song mode, and the pads add rows to the arrangement. The field shows what the machine reports.</p>
 <h4 class="gd-h3">Kits and songs</h4>
 <p>Click the <b class="gd-ui">Kit</b> field of the LCD to open the kit library. Chapter 3 describes it.</p>
 <p>The machine's song menu is the <b class="gd-ui">Songs</b> column of the Song workspace: load, save, save to another slot with a name, copy, paste, clear and rename. Chapter 9 describes it.</p>
 <h4 class="gd-h3">TRIG keys</h4>
 <p>The steps of the grid are the TRIG keys. Click a step to turn its trig on or off. Select a step (⌘-click) and click the small ⋯ on it for its menu, or right-click the step.</p>
+<p>To play a first beat:</p>
+<ol class="gd-steps"><li>Open the Sequence workspace and select a track in the rail.</li><li>Click four empty steps of that track. Each lights as a trig.</li><li>Press <kbd class="gd-key">[SPACE]</kbd>. The pattern plays with your trigs.</li><li>Press the same key to stop.</li></ol>
+<figure class="gd-shot"><img src="/guide/shots/md-step-grid.webp" width="1440" height="923" alt="The step grid with trigs" loading="lazy"><figcaption>The step grid with trigs</figcaption></figure>
 <p>The piano keys play the selected track from any workspace: <kbd class="gd-key">[A S D F G H J K L]</kbd> play the white keys C to D. <kbd class="gd-key">[Z]</kbd> or <kbd class="gd-key">[X]</kbd> moves the octave and <kbd class="gd-key">[C]</kbd> or <kbd class="gd-key">[V]</kbd> sets the velocity.</p>
 <h4 class="gd-h3">Pattern pages</h4>
 <p>A pattern of 64 steps has four pages of 16.</p>
-<ul class="gd-list"><li>Click <b class="gd-ui">Page</b> to show the next page. Hold <kbd class="gd-key">[⇧]</kbd> and click to show the previous one. The left and right square bracket keys do the same.</li><li>Four LEDs beside the key show the pages the pattern has. The page that plays is lit.</li><li><b class="gd-ui">All</b> shows every step at once. It is on when the editor starts.</li><li><b class="gd-ui">Fol</b> makes the page follow the play position.</li></ul>
+<ul class="gd-list"><li>Click <b class="gd-ui">Page</b> to show the next page. Hold <kbd class="gd-key">[⇧]</kbd> and click to show the previous one. The left and right square bracket keys do the same.</li><li>Four LEDs beside the key show the pages the pattern has. The page that plays is lit. Click an LED to show that page.</li><li>If the pattern has one page, click <b class="gd-ui">×2</b> on the LCD to double its length. The LEDs then show the pages of the new length.</li><li><b class="gd-ui">All</b> shows every step at once. It is on when the editor starts.</li><li><b class="gd-ui">Fol</b> makes the page follow the play position. With <b class="gd-ui">Fol</b> on and the machine playing, the lit LED moves to the second page when the position passes step 16.</li></ul>
+<figure class="gd-shot"><img src="/guide/shots/md-sequence-workspace.webp" width="1440" height="923" alt="The Sequence workspace with its page LEDs" loading="lazy"><figcaption>The Sequence workspace with its page LEDs</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="rear-connectors">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.6,</span> <span>7</span></span></aside>
 <div class="gd-body gd-prose"><h2>REAR CONNECTORS</h2>
-<p>The editor has no power switch or power input. It runs as a plug-in in your DAW, or as a standalone program.</p>
+<p>The editor has no power switch or power input. It runs as a plug-in in your DAW, or as a standalone program. It has no rack mount, no battery and nothing to care for.</p>
 <h4 class="gd-h3">MIDI</h4>
 <p>In a DAW the plug-in takes MIDI from the host. In the standalone, open the <b class="gd-ui">AUDIO / MIDI</b> settings with <kbd class="gd-key">[,]</kbd>. The <b class="gd-ui">MIDI</b> card lists the MIDI inputs, the output and Bluetooth devices. No MIDI input is on until you switch it on.</p>
 <p>The machine's own MIDI out reaches your DAW through the plug-in's MIDI output, and the standalone's MIDI output. It carries notes, controllers, program changes, pitch bend, pressure, clock, start, stop and continue. It never carries SysEx.</p>
@@ -153,7 +168,7 @@
 <ol class="gd-steps"><li>Choose a device under <b class="gd-ui">Device</b>.</li><li>Watch <b class="gd-ui">Level</b> for the signal.</li><li>Click <b class="gd-ui">LIVE</b> to pass the input to the machine.</li></ol>
 <p>The input starts <b class="gd-ui">MUTED</b>, so that a microphone and speakers cannot feed back. Keep speakers away from a microphone when it is live.</p>
 <p>A track plays the input when its machine is one of the External input machines (INP). Choose one with the machine key on the Sound workspace.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The AUDIO / MIDI settings"><span>Screenshot to come</span></div><figcaption>The AUDIO / MIDI settings</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/md-audio-midi.webp" width="1440" height="923" alt="The AUDIO / MIDI settings" loading="lazy"><figcaption>The AUDIO / MIDI settings</figcaption></figure>
 <h4 class="gd-h3">Outputs</h4>
 <p>The machine has a main output and six individual outputs, A to F. Each track goes to one of them.</p>
 <ol class="gd-steps"><li>Open the Mix workspace.</li><li>Click <b class="gd-ui">OUT</b> at the foot of a track's strip. The key reads OUT MAIN, OUT A, and on to OUT F, and each click goes to the next.</li></ol>
@@ -170,14 +185,14 @@
 <section class="gd-sec" id="the-lcd-user-interface">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.9</span></span></aside>
 <div class="gd-body gd-prose"><h2>THE LCD USER INTERFACE</h2>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The LCD"><span>Screenshot to come</span></div><figcaption>The LCD</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/md-lcd.webp" width="1440" height="923" alt="The LCD" loading="lazy"><figcaption>The LCD</figcaption></figure>
 <p>From left to right the LCD holds:</p>
 <ul class="gd-list"><li>The engine label with its LED, and the <b class="gd-ui">REC</b> and Play keys.</li><li><b class="gd-ui">Tempo</b>, with an LED that blinks on every fourth step while the machine plays.</li><li><b class="gd-ui">Position</b>.</li><li><b class="gd-ui">Pattern</b>, with ‹ and › keys.</li><li><b class="gd-ui">Kit</b>, with a chip that reads saved or edited.</li><li><b class="gd-ui">Locks</b>.</li><li>The second line, the <b class="gd-ui">Sync</b> field, and the <b class="gd-ui">Copy</b>, <b class="gd-ui">Clr</b> and <b class="gd-ui">Paste</b> keys.</li></ul>
 <h4 class="gd-h3">The engine label</h4>
 <p>The label says what the machine is doing. READY, with the engine's name (EMU OS 1.63), means it takes input. Until then the fields dim, <b class="gd-ui">REC</b> and Play are off, and edits wait.</p>
 <table class="gd-table"><thead><tr><th>Label</th><th>Meaning</th></tr></thead><tbody><tr><td>NO ROM</td><td>no firmware is installed yet</td></tr><tr><td>LOADING ROM</td><td>the machine is being prepared or restored</td></tr><tr><td>BOOTING OS</td><td>the firmware is starting</td></tr><tr><td>EMU OS 1.63</td><td>the emulated machine is ready</td></tr><tr><td>ROM ERROR</td><td>the firmware you installed is not OS 1.63</td></tr><tr><td>HW CONNECT, HW NO MIDI</td><td>the editor is waiting for a real machine on MIDI</td></tr></tbody></table>
 <h4 class="gd-h3">Tempo</h4>
-<p><b class="gd-ui">Tempo</b> shows the tempo in BPM with one decimal, for example 124.0. Drag it up or down to change it, or tap it with <kbd class="gd-key">[T]</kbd> or <kbd class="gd-key">[B]</kbd>.</p>
+<p><b class="gd-ui">Tempo</b> shows the tempo in BPM with one decimal, for example 124.0. Drag it up or down to change it, or tap it with <kbd class="gd-key">[T]</kbd> or <kbd class="gd-key">[B]</kbd>. Click it without dragging to open the TEMPO window, which has <b class="gd-ui">+</b> and <b class="gd-ui">-</b> keys for single BPM steps and a <b class="gd-ui">+10 %</b> key. Chapter 1 describes both.</p>
 <h4 class="gd-h3">Position</h4>
 <p><b class="gd-ui">Position</b> shows the bar and step of the playhead, for example 02.05, in bars of 16 steps. It reads --.-- while the machine is stopped.</p>
 <p>On the Sequence workspace the four page LEDs beside the <b class="gd-ui">Page</b> key show the same thing as the machine's four pattern-page boxes: the page that plays is lit.</p>
@@ -201,7 +216,7 @@
 <h4 class="gd-h3">Value boxes</h4>
 <p>Parameters appear as value boxes on the Sound and Mix workspaces. A box shows the parameter name and its value, 0 to 127. A few parameters run from one side to the other, or from cut to boost, and show -64 to +63 with 0 in the middle. They are PAN, EQG, the levels and balances of the RAM recorder, and the gains of the master EQ's CTR machine.</p>
 <p>When two parameters depend on each other, the machine draws a small clip between their values. The Sound workspace draws the same clip, a small arch over the gap between the two boxes, for example between RAMP and RDEC on TRX-BD and between FLTF, FLTW and FLTQ on every machine. The editor groups the boxes by what they do, so the two boxes of a pair can sit in two groups. Point at a box to see which value it works with.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: Clips between RAMP and RDEC, and between the filter's values"><span>Screenshot to come</span></div><figcaption>Clips between RAMP and RDEC, and between the filter's values</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/md-sound-clips.webp" width="1440" height="923" alt="Clips between RAMP and RDEC, and between the filter's values" loading="lazy"><figcaption>Clips between RAMP and RDEC, and between the filter's values</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="layer-edit-and-windows">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.9</span></span></aside>
@@ -214,13 +229,14 @@
 <div class="gd-body gd-prose"><h2>QUICK START</h2>
 <p>This is a first session. It loads a kit, places trigs, plays them and changes a sound.</p>
 <h4 class="gd-h3">Playing and tweaking drum sounds</h4>
-<ol class="gd-steps"><li>Click the <b class="gd-ui">Kit</b> field of the LCD. The kit library opens.</li><li>Click a kit. The machine loads it at once. If you have unsaved changes, the editor asks first.</li><li>Press <kbd class="gd-key">[ESC]</kbd>, then press <kbd class="gd-key">[1]</kbd> for the Sequence workspace.</li><li>Click steps in the grid. Each click turns a trig on or off. Each row of the grid is a track.</li><li>Press <kbd class="gd-key">[SPACE]</kbd>. The pattern plays.</li><li>Click a track in the rail to select it. Press the keys A to L to play it by hand.</li><li>Press <kbd class="gd-key">[2]</kbd> for the Sound workspace. Drag a value box to change the sound of the selected track.</li></ol>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The Sound workspace"><span>Screenshot to come</span></div><figcaption>The Sound workspace</figcaption></figure>
+<ol class="gd-steps"><li>Click the <b class="gd-ui">Kit</b> field of the LCD. The kit library opens.</li><li>Click a kit. The machine loads it at once. If you have unsaved changes, the editor asks first.</li><li>Press <kbd class="gd-key">[ESC]</kbd>, then press <kbd class="gd-key">[1]</kbd> for the Sequence workspace.</li><li>Click steps in the grid. Each click turns a trig on or off. Each row of the grid is a track.</li><li>Press <kbd class="gd-key">[SPACE]</kbd>. The pattern plays with your trigs. Press it again to stop.</li><li>Click a track in the rail to select it. Press the keys A to L to play it by hand.</li><li>Press <kbd class="gd-key">[2]</kbd> for the Sound workspace. Drag a value box to change the sound of the selected track.</li></ol>
+<figure class="gd-shot"><img src="/guide/shots/md-sound-workspace.webp" width="1440" height="923" alt="The Sound workspace" loading="lazy"><figcaption>The Sound workspace</figcaption></figure>
 <p>Turn a value in small steps when you need them. Hold <kbd class="gd-key">[⇧]</kbd> and drag for fine steps. Scroll the wheel over a box for one step a notch, and hold <kbd class="gd-key">[⇧]</kbd> for ten. Double-click a box to set it back to 64.</p>
+<figure class="gd-shot"><img src="/guide/shots/md-sound-knob-steps.webp" width="1440" height="923" alt="One notch of the wheel and a drag on a value box" loading="lazy"><figcaption>One notch of the wheel and a drag on a value box</figcaption></figure>
 <h4 class="gd-h3">Hear a machine before loading it</h4>
 <p>In the machine picker you can hear a machine on the track before you keep it.</p>
-<ol class="gd-steps"><li>Press <kbd class="gd-key">[2]</kbd> for the Sound workspace and select a track.</li><li>Click the machine key under the header. The machine picker opens.</li><li>Point at a machine and click its ▶, or move to it with <kbd class="gd-key">[TAB]</kbd> and press <kbd class="gd-key">[SPACE]</kbd>. The machine goes on the track and the track plays once. A line under the preview says which machine plays and which one was there before.</li><li>Try other machines the same way.</li><li>Press <kbd class="gd-key">[ENTER]</kbd> or click <b class="gd-ui">Keep</b> to keep the machine, or click another machine to keep that one. Press <kbd class="gd-key">[ESC]</kbd> or click <b class="gd-ui">Back</b> to put the old machine back.</li></ol>
-<p>The machine plays with the track's own values, so you hear it as it will be in the kit. The machine itself plays a new machine with its default values instead. Trying machines and keeping one is one step for <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd>. During live recording the machine changes but no note plays, so no trig is recorded.</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[2]</kbd> for the Sound workspace and select a track in the rail.</li><li>Click the machine key under the header. The machine picker opens.</li><li>Point at a machine and click its ▶, or move to it with <kbd class="gd-key">[TAB]</kbd> and press <kbd class="gd-key">[SPACE]</kbd>. The machine goes on the track and the track plays once. A line under the preview says which machine plays and which one was there before.</li><li>Try other machines the same way. The picker stays open while you try.</li><li>Press <kbd class="gd-key">[ENTER]</kbd> or click <b class="gd-ui">Keep</b> to keep the machine, or click another machine to keep that one. Press <kbd class="gd-key">[ESC]</kbd> or click <b class="gd-ui">Back</b> to put the old machine back.</li></ol>
+<p>The machine plays with the track's own values, so you hear it as it will be in the kit. The machine itself plays a new machine with its default values instead. Trying machines and keeping one is one step for <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd>: a single press brings back the track as it was before you started. During live recording the machine changes but no note plays, so no trig is recorded.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>GND-EMPTY and the RAM recorders go on the track but play nothing. The editor says why.</p></aside>
 <h4 class="gd-h3">Using the track effects</h4>
 <p>Each track has an amplitude modulator, an EQ, a filter and a sample rate reducer. They are groups on the Sound workspace. Chapter 4 describes them.</p>
@@ -238,7 +254,7 @@
 <section class="gd-sec" id="machinedrum-kits">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.14,</span> <span>21</span></span></aside>
 <div class="gd-body gd-prose"><h2>MACHINEDRUM KITS</h2>
-<p>The <b class="gd-ui">Kit</b> field of the LCD shows the working kit. Its chip says whether the kit is <b class="gd-ui">saved</b> or <b class="gd-ui">edited</b>. The chip turns to <b class="gd-ui">edited</b> when you change the kit. Edits are lost when you load another kit, unless you save them first. The editor asks before it loses edits.</p>
+<p>The <b class="gd-ui">Kit</b> field of the LCD shows the working kit. Its chip says whether the kit is <b class="gd-ui">saved</b> or <b class="gd-ui">edited</b>. The chip turns to <b class="gd-ui">edited</b> when you change the kit. Edits are lost when you load another kit, unless you save them first. The editor asks before it loses edits. Press <kbd class="gd-key">[ESC]</kbd> to cancel the question: nothing loads and your edits stay. <kbd class="gd-key">[SPACE]</kbd> presses the focused Cancel key.</p>
 <p>The kit library, the Sound workspace and the Mix workspace all read and write the whole kit. The Sound workspace holds the sounds, the Mix workspace the routing and the master effects.</p>
 </div></section>
 <section class="gd-sec" id="loading-a-kit">
@@ -246,7 +262,7 @@
 <div class="gd-body gd-prose"><h2>LOADING A KIT</h2>
 <ol class="gd-steps"><li>Click the <b class="gd-ui">Kit</b> field of the LCD, or focus it and press <kbd class="gd-key">[ENTER / SPACE ON KIT OR THE PATTERN]</kbd>. The kit library opens with the 64 slots in rows of eight.</li><li>Click a slot. The machine loads the kit at once. The slot you clicked becomes the current kit.</li><li>Press <kbd class="gd-key">[ESC]</kbd> to close the library.</li></ol>
 <p>If the working kit has unsaved edits, the editor asks before it loads. The loaded kit replaces your edits, but the machine keeps them in its own UNDO KIT.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The kit library"><span>Screenshot to come</span></div><figcaption>The kit library</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/md-kit-library.webp" width="1440" height="923" alt="The kit library" loading="lazy"><figcaption>The kit library</figcaption></figure>
 <p>To look at a slot without loading it, hold <kbd class="gd-key">[⌥]</kbd> and click it, or move with <kbd class="gd-key">[ARROWS]</kbd>. Press <kbd class="gd-key">[ENTER]</kbd> to load the slot you selected.</p>
 <p>Each slot shows its number, its name and the patterns that link to it. In EXTENDED mode a kit that no pattern links to has a star after its name. A slot that was never written reads EMPTY.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>In EXTENDED mode, loading a kit also links the current pattern to it.</p></aside>
@@ -255,11 +271,11 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.15</span></span></aside>
 <div class="gd-body gd-prose"><h2>SAVING AND NAMING A KIT</h2>
 <h4 class="gd-h3">Save a kit</h4>
-<ol class="gd-steps"><li>Open the kit library.</li><li>Click <b class="gd-ui">Save</b> to store the working kit in the slot it came from.</li><li>Or select another slot and click <b class="gd-ui">Save as</b> with its number. The working kit goes into that slot and becomes the current kit. In EXTENDED mode the current pattern links to it.</li><li>The chip reads <b class="gd-ui">saved</b>.</li></ol>
+<ol class="gd-steps"><li>Open the kit library.</li><li>Click <b class="gd-ui">Save</b> to store the working kit in the slot it came from.</li><li>Or select another slot and click <b class="gd-ui">Save as</b> with its number. The working kit goes into that slot and becomes the current kit. In EXTENDED mode the current pattern links to it.</li><li>The editor asks before it overwrites a slot that holds a kit. Click <b class="gd-ui">Overwrite</b>. While the question is open, the library's own keys do nothing.</li><li>The chip reads <b class="gd-ui">saved</b>.</li></ol>
 <p>The kit that the save overwrites goes to the machine's UNDO KIT. The slot you saved from keeps what it had when you use <b class="gd-ui">Save as</b>.</p>
 <h4 class="gd-h3">Name a kit</h4>
 <ol class="gd-steps"><li>Select the slot in the kit library.</li><li>Click <b class="gd-ui">Rename</b>, press <kbd class="gd-key">[F2]</kbd>, or double-click the slot.</li><li>Type the name. It has at most 16 characters. Letters become capitals. The name takes letters, digits, spaces and a few marks; the editor drops any other character as you type.</li><li>Press <kbd class="gd-key">[ENTER]</kbd> to keep the name, or <kbd class="gd-key">[ESC]</kbd> to leave it.</li></ol>
-<p>Renaming the current kit changes the working kit, so you must save to store the name. Renaming another slot writes the name into that slot at once.</p>
+<p>Renaming the current kit changes the working kit, so you must save to store the name. Renaming another slot writes the name into that slot after the editor asks you to confirm. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> takes a rename back.</p>
 </div></section>
 <section class="gd-sec" id="undo-kit">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.16,</span> <span>17</span></span></aside>
@@ -275,7 +291,7 @@
 <section class="gd-sec" id="copy-kit">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.16</span></span></aside>
 <div class="gd-body gd-prose"><h2>COPY KIT</h2>
-<ol class="gd-steps"><li>Select a slot in the kit library.</li><li>Click <b class="gd-ui">Copy</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C / V]</kbd>.</li><li>Select the slot to copy to.</li><li>Click <b class="gd-ui">Paste</b>, or press the same keys with <kbd class="gd-key">[V]</kbd>.</li></ol>
+<ol class="gd-steps"><li>Select a slot in the kit library.</li><li>Click <b class="gd-ui">Copy</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C / V]</kbd>.</li><li>Select the slot to copy to.</li><li>Click <b class="gd-ui">Paste</b>, or press the same keys with <kbd class="gd-key">[V]</kbd>. If the slot holds a kit, the editor asks first: click <b class="gd-ui">Overwrite</b>.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> with the library open to put the slot back as it was.</li></ol>
 <p>You can also drag a slot onto another slot to copy it there.</p>
 <p>A copy of the current kit includes the edits you have not saved. Pasting into the current kit also loads it, because the machine only plays what it has loaded. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take a paste back.</p>
 </div></section>
@@ -289,13 +305,14 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.17,</span> <span>18</span></span></aside>
 <div class="gd-body gd-prose"><h2>KIT ASSEMBLY</h2>
 <p>Each track holds one machine. The machine decides which synthesis parameters the track has.</p>
-<ol class="gd-steps"><li>Open the Sound workspace and select a track.</li><li>Click the machine key at the left of the header. It shows the machine and its family. The picker opens.</li><li>Click a family at the left: TRX, EFM, E12, P-I, GND, INP, MID, CTR, ROM or RAM.</li><li>Click a machine. The track takes it at once.</li></ol>
+<ol class="gd-steps"><li>Open the Sound workspace and select a track.</li><li>Click the machine key at the left of the header. It shows the machine and its family. The picker opens.</li><li>Click a family at the left: TRX, EFM, E12, P-I, GND, INP, MID, CTR, ROM or RAM.</li><li>Click a machine. The track takes it at once.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to put the old machine back.</li></ol>
 <p>Hover over a machine to see its name and the names of its knobs in the line under the grid.</p>
 <table class="gd-table"><thead><tr><th>Family</th><th>Machines</th></tr></thead><tbody><tr><td>TRX</td><td>analogue models</td></tr><tr><td>EFM</td><td>FM drums</td></tr><tr><td>E12</td><td>12-bit samples</td></tr><tr><td>P-I</td><td>physical models</td></tr><tr><td>GND</td><td>tone and noise</td></tr><tr><td>INP</td><td>external input</td></tr><tr><td>MID</td><td>MIDI out</td></tr><tr><td>CTR</td><td>control</td></tr><tr><td>ROM</td><td>ROM samples, on the UW models</td></tr><tr><td>RAM</td><td>RAM record and play, on the UW models</td></tr></tbody></table>
 <h4 class="gd-h3">Keep effects and routing</h4>
 <p>The picker has a <b class="gd-ui">Keep effects + routing</b> key, lit when it is on. It is on at start.</p>
 <ul class="gd-list"><li>With it on, the new machine keeps the track's effects and routing values.</li><li>With it off, the effects and routing values of the track go back to neutral.</li></ul>
 <p>The synthesis values stay as they are in both cases and go to the new machine.</p>
+<ol class="gd-steps"><li>Open the picker. <b class="gd-ui">Keep effects + routing</b> is lit.</li><li>Pick another machine. The track keeps its effects and routing values.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take the change back.</li></ol>
 </div></section>
 <section class="gd-sec" id="setting-mute-and-trig-relations-of-a-kit">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.18,</span> <span>19</span></span></aside>
@@ -303,7 +320,9 @@
 <p>A relation links one track to another. Both are set on the Sound workspace, in the <b class="gd-ui">Relations</b> group at the right end of the last row.</p>
 <ul class="gd-list"><li><b class="gd-ui">Mute</b>: a trig on this track mutes the track you choose. Use it for an open and a closed hihat.</li><li><b class="gd-ui">Trig</b>: a trig on this track also trigs the track you choose. Use it to layer sounds. Trig relations do not chain.</li></ul>
 <ol class="gd-steps"><li>Select the track that causes the effect.</li><li>Under <b class="gd-ui">Mute</b> or <b class="gd-ui">Trig</b>, open the menu and choose a track, or choose none.</li></ol>
+<ol class="gd-steps" start="3"><li>To remove a relation, choose none in the same menu.</li></ol>
 <p>Relations are part of the kit. Save the kit to keep them.</p>
+<figure class="gd-shot"><img src="/guide/shots/md-relations.webp" width="1440" height="923" alt="The Relations group" loading="lazy"><figcaption>The Relations group</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="copy-machine">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.19</span></span></aside>
@@ -315,13 +334,13 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.20</span></span></aside>
 <div class="gd-body gd-prose"><h2>PASTE MACHINE</h2>
 <ol class="gd-steps"><li>Select the track to paste onto, on the Sound workspace.</li><li>Click <b class="gd-ui">Paste</b> on the LCD, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>.</li></ol>
-<p>The track takes the copied machine, values, level and LFO. The LFO now targets the track you pasted onto. You can paste as often as you like, onto any track and into any kit: the copy stays until you copy something else.</p>
+<p>The track takes the copied machine, values, level and LFO. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> takes the paste back. The LFO now targets the track you pasted onto. You can paste as often as you like, onto any track and into any kit: the copy stays until you copy something else.</p>
 </div></section>
 <section class="gd-sec" id="clear-machine">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.20</span></span></aside>
 <div class="gd-body gd-prose"><h2>CLEAR MACHINE</h2>
-<ol class="gd-steps"><li>Select a track on the Sound workspace.</li><li>Click <b class="gd-ui">Clr</b> on the LCD.</li></ol>
-<p>All parameters of the track, its effects and its routing go back to neutral values, and its level goes to 100. The track keeps its machine. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take the clear back.</p>
+<ol class="gd-steps"><li>Select a track on the Sound workspace.</li><li>Click the machine key at the left of the header. The picker opens.</li><li>Choose <b class="gd-ui">GND-EMPTY</b>. The track has no machine: the key shows GND-EMPTY.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take the clear back.</li></ol>
+<p>The key <b class="gd-ui">Clr</b> on the LCD is a different thing. It sets every parameter of the track, its effects and its routing to neutral values and its level to 100, and the track keeps its machine.</p>
 </div></section>
 <section class="gd-sec" id="machine-parameter-editing">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.21</span></span></aside>
@@ -330,7 +349,8 @@
 <ul class="gd-list"><li>The first row holds the synthesis groups of the machine, for example Pitch, Amp env and Tone.</li><li>The second row holds the track effects and the routing: chapters 4 and 5.</li><li>The third row holds the LFO and the track's relations: chapter 7.</li></ul>
 <p>A group's screen is a picture of what its knobs do. Drag the dots on it to change the knobs. A dot on a rail at the foot of a screen is a knob the curve shows. Each screen has a help text; hover over it.</p>
 <p>Machines without a picture, such as MIDI out, show only boxes and a line about what the machine does.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: A machine's groups"><span>Screenshot to come</span></div><figcaption>A machine's groups</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/md-sound-groups.webp" width="1440" height="923" alt="A machine's groups" loading="lazy"><figcaption>A machine's groups</figcaption></figure>
+<p>To change a value with the keyboard, focus a box and press <kbd class="gd-key">[↑]</kbd> or <kbd class="gd-key">[↓]</kbd>. Each press moves it one step.</p>
 <p>Hold <kbd class="gd-key">[⌥]</kbd> and drag a value to move the same knob on every track. This is Control All. MIDI and control machines are left out.</p>
 <aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>To set an exact value, hold <kbd class="gd-key">[⌘]</kbd> and click the box, type the value and press <kbd class="gd-key">[ENTER]</kbd>. A box that shows a sign, such as <b class="gd-ui">PAN</b>, takes -64 to +63. A value past the ends is refused: the field turns red and says the range, and stays open until you correct it or press <kbd class="gd-key">[ESC]</kbd>. Each typed value is one undo step.</p></aside>
 </div></section>
@@ -342,7 +362,9 @@
 </header>
 <div class="gd-intro gd-prose"><p>Each track has four effects after its machine: an amplitude modulator, a one-band EQ, a filter and a sample rate reducer. They act on that track only. Their parameters are part of the kit.</p>
 <p>On the Sound workspace they are the first four groups of the second row. A small word at the right of the first group names the machine's EFFECTS page. Each group has a screen and value boxes. Drag a box or a dot on the screen to change a parameter.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The track effects on the Sound workspace"><span>Screenshot to come</span></div><figcaption>The track effects on the Sound workspace</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/md-track-effects.webp" width="1440" height="923" alt="The track effects on the Sound workspace" loading="lazy"><figcaption>The track effects on the Sound workspace</figcaption></figure>
+<p>To set an effect:</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[2]</kbd> for the Sound workspace and select a track in the rail.</li><li>Drag the value box of the parameter, or drag a dot on the group's screen.</li><li>Or focus the box and press an arrow key. Each press moves the value one step.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take the change back.</li></ol>
 <p>To lock an effect parameter to a step, open the Sequence workspace and click the parameter's key in the lock lane, in the row of keys labelled <b class="gd-ui">Effects</b>. Chapter 8 describes the lock lane.</p></div>
 <section class="gd-sec" id="amplitude-modulator">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.22</span></span></aside>
@@ -382,32 +404,37 @@
 <div class="gd-intro gd-prose"><p>The routing parameters set how a track's sound goes through the distortion, the volume and pan, and on to the effect buses. They are part of the kit.</p>
 <p>There are two places to set them:</p>
 <ul class="gd-list"><li>On the Sound workspace they are groups of the second row, after the track effects: <b class="gd-ui">Drive</b>, <b class="gd-ui">Level · pan</b> and <b class="gd-ui">Sends</b>. A small word at the right of the first one names the machine's ROUTING page.</li><li>On the Mix workspace each track has a strip with its <b class="gd-ui">VOL</b> fader and the <b class="gd-ui">PAN</b>, <b class="gd-ui">DIST</b>, <b class="gd-ui">DEL</b> and <b class="gd-ui">REV</b> boxes.</li></ul>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: A strip on the Mix workspace"><span>Screenshot to come</span></div><figcaption>A strip on the Mix workspace</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/md-mix-strip.webp" width="1440" height="923" alt="A strip on the Mix workspace" loading="lazy"><figcaption>A strip on the Mix workspace</figcaption></figure>
 <p>To lock a routing parameter to a step, open the Sequence workspace and click its key in the lock lane, in the row of keys labelled <b class="gd-ui">Routing</b>.</p></div>
 <section class="gd-sec" id="distortion">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.25</span></span></aside>
 <div class="gd-body gd-prose"><h2>DISTORTION</h2>
 <p><b class="gd-ui">DIST</b> controls the distortion of the track. It acts after the track effects and before the volume and pan.</p>
-<p>The group <b class="gd-ui">Drive</b> shows input against output. The dashed line is a clean signal. Drag the dot to set <b class="gd-ui">DIST</b>. On the Mix workspace use the <b class="gd-ui">DIST</b> box of the strip.</p>
+<p>The group <b class="gd-ui">Drive</b> shows input against output. The dashed line is a clean signal.</p>
+<p>To set it:</p>
+<ol class="gd-steps"><li>Click the <b class="gd-ui">Sound</b> tab.</li><li>Select the track on the rail. The page shows the synthesis, effects and routing groups together.</li><li>Drag the dot in <b class="gd-ui">Drive</b>, or click the <b class="gd-ui">DIST</b> box and press the up or down arrow key. The value changes in the kit.</li></ol>
+<p>On the Mix workspace use the <b class="gd-ui">DIST</b> box of the strip.</p>
+<figure class="gd-shot"><img src="/guide/shots/md-sound-workspace.webp" width="1440" height="923" alt="The Sound workspace with the routing groups in the second row" loading="lazy"><figcaption>The Sound workspace with the routing groups in the second row</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="volume">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.25</span></span></aside>
 <div class="gd-body gd-prose"><h2>VOLUME</h2>
 <p><b class="gd-ui">VOL</b> is the volume of the track. It is separate from the overall gain of the track and, unlike it, can be locked and moved by an LFO.</p>
 <p>On the Mix workspace <b class="gd-ui">VOL</b> is the fader of the strip. Drag the fader, or press <kbd class="gd-key">[↑]</kbd> or <kbd class="gd-key">[↓]</kbd> while it has focus. Double-click it to set 100. On the Sound workspace <b class="gd-ui">VOL</b> is in the group <b class="gd-ui">Level · pan</b>.</p>
+<p>To take a change back, press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd>. The fader goes back to where it was.</p>
 </div></section>
 <section class="gd-sec" id="pan">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.26</span></span></aside>
 <div class="gd-body gd-prose"><h2>PAN</h2>
 <p><b class="gd-ui">PAN</b> places the track in the stereo field of the main outputs. It shows -64 for hard left to +63 for hard right, and 0 for the centre.</p>
-<p>On the Sound workspace the group <b class="gd-ui">Level · pan</b> has one dot: sideways sets <b class="gd-ui">PAN</b>, upward sets <b class="gd-ui">VOL</b>. On the Mix workspace use the <b class="gd-ui">PAN</b> box.</p>
+<p>On the Sound workspace the group <b class="gd-ui">Level · pan</b> has one dot: sideways sets <b class="gd-ui">PAN</b>, upward sets <b class="gd-ui">VOL</b>. On the Mix workspace drag the <b class="gd-ui">PAN</b> box of the strip sideways. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take the change back.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>PAN has no effect on a track that goes to an individual output, A to F. The Mix workspace still shows its value.</p></aside>
 </div></section>
 <section class="gd-sec" id="delay-send">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.26</span></span></aside>
 <div class="gd-body gd-prose"><h2>DELAY SEND</h2>
 <p><b class="gd-ui">DEL</b> sets how much of the track goes to the Rhythm Echo, the delay of the master effects.</p>
-<p>On the Sound workspace the group <b class="gd-ui">Sends</b> has two bars, one for <b class="gd-ui">DEL</b> and one for <b class="gd-ui">REV</b>. Drag the dot on a bar. On the Mix workspace use the <b class="gd-ui">DEL</b> box.</p>
+<p>On the Sound workspace the group <b class="gd-ui">Sends</b> has two bars, one for <b class="gd-ui">DEL</b> and one for <b class="gd-ui">REV</b>. Drag the dot on a bar, or click the box and press the up or down arrow key. On the Mix workspace use the <b class="gd-ui">DEL</b> box.</p>
 <p>A track on an individual output, A to F, has no delay. Its <b class="gd-ui">DEL</b> box is greyed on the Mix workspace, with a note, and the value is kept.</p>
 </div></section>
 <section class="gd-sec" id="reverb-send">
@@ -420,6 +447,7 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.27</span></span></aside>
 <div class="gd-body gd-prose"><h2>LFO CONTROL</h2>
 <p>The three routing parameters <b class="gd-ui">LFOS</b>, <b class="gd-ui">LFOD</b> and <b class="gd-ui">LFOM</b> are the speed, depth and mix of the track's LFO. They are the same kit values as <b class="gd-ui">SPD</b>, <b class="gd-ui">DEPTH</b> and <b class="gd-ui">SHMIX</b> in the LFO group of the Sound workspace, so the LFO group holds all three. Chapter 7 describes the LFO.</p>
+<p>Click any of the three boxes in the LFO group and press the up or down arrow key. Each one moves its own routing value and no other.</p>
 <p>When you lock <b class="gd-ui">LFOS</b>, <b class="gd-ui">LFOD</b> or <b class="gd-ui">LFOM</b> on a step, the lock also shows on the box of the LFO group.</p>
 </div></section>
 </article>
@@ -434,9 +462,14 @@
 <div class="gd-body gd-prose"><h2>THE STEREO MASTER EFFECT SYSTEM</h2>
 <p>The master effects are on the Mix workspace, below the track strips. A line above them shows the signal path: sends, Rhythm Echo, Gate Box, master EQ, Dynamix, main out. Tracks on the individual outputs A to F skip this chain.</p>
 <p>Each effect is a card with a name, a screen and eight value boxes. Drag a dot on the screen or a box to change a parameter.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The master effects"><span>Screenshot to come</span></div><figcaption>The master effects</figcaption></figure>
+<ol class="gd-steps"><li>Click the <b class="gd-ui">Mix</b> tab.</li><li>Drag a value on one of the cards. The change is heard at once.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take it back.</li></ol>
+<p>The four cards hold 32 values. Each one moves its own parameter of its own effect and no other.</p>
+<figure class="gd-shot"><img src="/guide/shots/md-master-effects.webp" width="1440" height="923" alt="The master effects" loading="lazy"><figcaption>The master effects</figcaption></figure>
 <p>The master effects are part of the kit. Save the kit to keep your changes.</p>
 <p>You cannot lock the master effects on the Mix workspace. To change them from the sequencer, use a CTR machine on a track. The machines CTR-RE, CTR-GB, CTR-EQ and CTR-DX hold the parameters of the Rhythm Echo, the Gate Box, the master EQ and Dynamix. They make no sound. On the Sound workspace they show the same groups as the cards, and you lock their parameters in the lock lane like any other.</p>
+<p>To lock the Rhythm Echo time on a step:</p>
+<ol class="gd-steps"><li>Click the <b class="gd-ui">Sound</b> tab and select a track on the rail.</li><li>Choose CTR-RE in the machine menu of the track. The track now stands for the Rhythm Echo.</li><li>Click the <b class="gd-ui">Sequence</b> tab. Click a step of that track to put a trig on it.</li><li>Click the <b class="gd-ui">TIME</b> key under <b class="gd-ui">Lock parameter</b>, then drag across the lock lane over the trig. The step holds its own echo time.</li></ol>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-sound-ctr-locks.webp" width="1440" height="923" alt="A control track for the Rhythm Echo, with a lock on TIME" loading="lazy"><figcaption>A control track for the Rhythm Echo, with a lock on TIME</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="the-rhythm-echo-delay">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.29</span></span></aside>
@@ -474,7 +507,7 @@
 </header>
 <div class="gd-intro gd-prose"><p>Each kit has 16 LFOs, one for each track. An LFO moves one parameter of one track, up and down, in time with the tempo. By default an LFO moves a parameter of its own track.</p>
 <p>On the Sound workspace the LFO of the selected track fills the last row. Select another track in the rail to edit its LFO. The row holds three groups: <b class="gd-ui">LFO shape</b>, <b class="gd-ui">LFO motion</b> and <b class="gd-ui">LFO target</b>. The title of the first reads LFO and the track number, for example LFO 3 shape.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The LFO row"><span>Screenshot to come</span></div><figcaption>The LFO row</figcaption></figure></div>
+<figure class="gd-shot"><img src="/guide/shots/md-lfo.webp" width="1440" height="923" alt="The LFO row" loading="lazy"><figcaption>The LFO row</figcaption></figure></div>
 <section class="gd-sec" id="lfo-edit">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.32</span></span></aside>
 <div class="gd-body gd-prose"><h2>LFO EDIT</h2>
@@ -483,6 +516,7 @@
 <p>The group <b class="gd-ui">LFO target</b> has two menus.</p>
 <ol class="gd-steps"><li>Open the first menu and choose the track the LFO moves. Entries read T1 and the track's sound.</li><li>Open the second menu and choose the parameter. It lists the synthesis, effects and routing parameters of that track.</li></ol>
 <p>To move another LFO, choose that LFO's track and then <b class="gd-ui">LFOS</b>, <b class="gd-ui">LFOD</b> or <b class="gd-ui">LFOM</b>. These are its speed, depth and mix. The machine applies its own rule for which LFO may move which.</p>
+<p>An LFO can move a parameter of another LFO, its own included: choose <b class="gd-ui">LFOS</b> of the same track as the target, and the LFO changes its own speed.</p>
 <p>When you choose another track, the parameter stays if the new track has it. If not, the first parameter of the new track is chosen.</p>
 </div></section>
 <section class="gd-sec" id="shp1-and-shp2">
@@ -490,19 +524,19 @@
 <div class="gd-body gd-prose"><h2>SHP1 AND SHP2</h2>
 <p>The group <b class="gd-ui">LFO shape</b> has two rows of shape keys. <b class="gd-ui">SHP1</b> and <b class="gd-ui">SHP2</b> each choose one of six shapes: triangle, saw, square, linear decay, exponential decay and random.</p>
 <p><b class="gd-ui">SHP2</b> shows the same six shapes inverted.</p>
-<p>Click a key to choose a shape. The screen shows one cycle of the LFO. The solid line is the mix of the two shapes. The faint lines are the shapes themselves.</p>
+<p>Click a key to choose a shape. Try each of the six keys of <b class="gd-ui">SHP1</b> and each of <b class="gd-ui">SHP2</b>: the kit follows each click. The screen shows one cycle of the LFO. The solid line is the mix of the two shapes. The faint lines are the shapes themselves.</p>
 </div></section>
 <section class="gd-sec" id="updte">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.32</span></span></aside>
 <div class="gd-body gd-prose"><h2>UPDTE</h2>
 <p>The group <b class="gd-ui">LFO motion</b> has the <b class="gd-ui">UPDTE</b> keys.</p>
 <ul class="gd-list"><li><b class="gd-ui">FREE</b>: the LFO runs on and never restarts.</li><li><b class="gd-ui">TRIG</b>: the LFO restarts on every trig of its track.</li><li><b class="gd-ui">HOLD</b>: the LFO holds the value it has when the track is trigged, until the next trig.</li></ul>
-<p>An LFO restarts only when its own track is trigged.</p>
+<p>An LFO restarts only when its own track is trigged. Click a key to choose the mode.</p>
 </div></section>
 <section class="gd-sec" id="speed">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.32</span></span></aside>
 <div class="gd-body gd-prose"><h2>SPEED</h2>
-<p><b class="gd-ui">SPD</b> is the speed of the LFO, in 1/128 notes of the tempo. Drag the <b class="gd-ui">SPD</b> box, or the dot on the screen of <b class="gd-ui">LFO motion</b> sideways.</p>
+<p><b class="gd-ui">SPD</b> is the speed of the LFO, in 1/128 notes of the tempo. Drag the <b class="gd-ui">SPD</b> box, or the dot on the screen of <b class="gd-ui">LFO motion</b> sideways. With the box focused, the up and down arrow keys move it one step at a time.</p>
 <p>The screen shows the LFO across one bar of the track. The ticks mark the restarts of <b class="gd-ui">TRIG</b>.</p>
 </div></section>
 <section class="gd-sec" id="depth">
@@ -520,7 +554,7 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.34</span></span></aside>
 <div class="gd-body gd-prose"><h2>LAYERING LFOS</h2>
 <p>If the LFOs of two tracks have the same target, their outputs add. You can build slow and fast movements on one parameter this way.</p>
-<ol class="gd-steps"><li>Select the first track and set its LFO target.</li><li>Select a second track and choose the same track and parameter as its LFO target.</li></ol>
+<ol class="gd-steps"><li>Select the first track and set its LFO target.</li><li>Select a second track and choose the same track and parameter as its LFO target.</li><li>Both LFOs keep their settings, and their outputs add.</li></ol>
 <p>An LFO can also move several parameters of a machine at once, one parameter for each track's LFO.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The screens draw each LFO on its own. The editor does not draw the sum of two LFOs on one target.</p></aside>
 </div></section>
@@ -529,7 +563,8 @@
 <div class="gd-body gd-prose"><h2>COPY, PASTE, CLEAR AND UNDO</h2>
 <p>The LFO is part of the track's sound. Copy and paste on the Sound workspace take the machine, its values, its level and its LFO together: see &quot;Copy machine&quot; in chapter 3. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take an edit back.</p>
 <p>To copy, paste or clear the LFO alone:</p>
-<ol class="gd-steps"><li>On the <b class="gd-ui">Sound</b> workspace, select the track.</li><li>Click <b class="gd-ui">⋯</b> at the right of the LFO card's title. A menu opens.</li><li>Choose <b class="gd-ui">Copy LFO</b>. The shapes, the target, <b class="gd-light">&lt;UPDTE&gt;</b>, <b class="gd-light">&lt;SPD&gt;</b>, <b class="gd-light">&lt;DEPTH&gt;</b> and <b class="gd-light">&lt;SHMIX&gt;</b> are copied.</li><li>Select another track, click <b class="gd-ui">⋯</b> and choose <b class="gd-ui">Paste LFO</b>. The LFO of that track becomes the copy.</li><li>Choose <b class="gd-ui">Clear LFO</b> to set an LFO back to its start: no shapes, the first parameter of its own track, <b class="gd-light">&lt;FREE&gt;</b>, <b class="gd-light">&lt;SPD&gt;</b> 64, <b class="gd-light">&lt;DEPTH&gt;</b> and <b class="gd-light">&lt;SHMIX&gt;</b> 0.</li></ol>
+<ol class="gd-steps"><li>On the <b class="gd-ui">Sound</b> workspace, select the track.</li><li>Click <b class="gd-ui">⋯</b> at the right of the LFO card's title. A menu opens.</li><li>Choose <b class="gd-ui">Copy LFO</b>. The shapes, the target, <b class="gd-light">&lt;UPDTE&gt;</b>, <b class="gd-light">&lt;SPD&gt;</b>, <b class="gd-light">&lt;DEPTH&gt;</b> and <b class="gd-light">&lt;SHMIX&gt;</b> are copied.</li><li>Select another track, click <b class="gd-ui">⋯</b> and choose <b class="gd-ui">Paste LFO</b>. The LFO of that track becomes the copy.</li><li>Choose <b class="gd-ui">Clear LFO</b> to set an LFO back to its start: no shapes, the first parameter of its own track, <b class="gd-light">&lt;FREE&gt;</b>, <b class="gd-light">&lt;SPD&gt;</b> 64, <b class="gd-light">&lt;DEPTH&gt;</b> and <b class="gd-light">&lt;SHMIX&gt;</b> 0.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> twice. The clear goes, then the paste, and the LFO is as it was before.</li></ol>
+<figure class="gd-shot"><img src="/guide/shots/md-lfo-menu.webp" width="1440" height="923" alt="The LFO menu" loading="lazy"><figcaption>The LFO menu</figcaption></figure>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>An LFO that moved a parameter of its own track moves the same parameter of the track it is pasted on. An LFO that moved another track keeps that target.</p></aside>
 <p>The LFO is also a part of <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> and <b class="gd-ui">Clear…</b> in the LCD's <b class="gd-ui">▾</b> menu: see &quot;Track copy&quot; in chapter 8.</p>
 <p>LFO settings are stored in the kit. Save the kit to keep them.</p>
@@ -542,7 +577,7 @@
 </header>
 <div class="gd-intro gd-prose"><p>The pattern sequencer plays 16 tracks, one step after another, in a loop. A pattern is up to 64 steps long. The Machinedrum holds 128 patterns in 8 banks of 16, A01 to H16. Each step can hold a trig, an accent, a slide and parameter locks.</p>
 <p>In the editor the sequencer is the <b class="gd-ui">Sequence</b> workspace. Press <kbd class="gd-key">[1]</kbd>, or click the <b class="gd-ui">Sequence</b> tab. The 16 tracks run down the page, the steps across it, 16 steps to a page. The lock lane lies under the steps. The LCD keeps the tempo, the pattern, the kit and the lock count on every workspace. Its second line holds the pattern's own values: <b class="gd-light">&lt;LEN&gt;</b>, <b class="gd-light">&lt;SPD&gt;</b>, <b class="gd-light">&lt;SWG&gt;</b>, <b class="gd-light">&lt;ACC&gt;</b> and <b class="gd-light">&lt;MODE&gt;</b>.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The Sequence workspace"><span>Screenshot to come</span></div><figcaption>The Sequence workspace</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/md-sequence-workspace.webp" width="1440" height="923" alt="The Sequence workspace" loading="lazy"><figcaption>The Sequence workspace</figcaption></figure>
 <p>Keys are written as on a Mac. <kbd class="gd-key">[⌘]</kbd> is <kbd class="gd-key">[CTRL]</kbd> on Windows and Linux. <kbd class="gd-key">[⌥]</kbd> is <kbd class="gd-key">[ALT]</kbd>. The machine's <kbd class="gd-key">[FUNCTION]</kbd> key has no twin in the editor. Its second jobs follow <kbd class="gd-key">[⌥]</kbd> or have a control of their own, and each section says which.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A drag, a paint or a run of rotates is one undo step. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take it back whole, <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[Z]</kbd> to put it back.</p></aside></div>
 <section class="gd-sec" id="classic-vs-extended">
@@ -553,7 +588,8 @@
 <p>In <b class="gd-ui">EXTENDED</b> each pattern is linked to a kit, and the machine loads that kit when the pattern is chosen. Parameter locks play. Patterns can be 48 or 64 steps long.</p>
 <p>To change the mode:</p>
 <ol class="gd-steps"><li>Open the <b class="gd-ui">Sequence</b> workspace.</li><li>Click <b class="gd-light">&lt;MODE&gt;</b> on the second line of the LCD. It reads EXT or CLASSIC.</li></ol>
-<p>In CLASSIC the lock lane is greyed and says &quot;CLASSIC: locks muted&quot;. The pattern chooser and the kit library say which mode is on. In EXTENDED the chooser shows the kit of each pattern as K01 to K64.</p>
+<p>In CLASSIC the lock lane is greyed and says &quot;CLASSIC: locks muted&quot;. The locks are all still there. The pattern chooser and the kit library say which mode is on. In EXTENDED the chooser shows the kit of each pattern as K01 to K64.</p>
+<figure class="gd-shot"><img src="/guide/shots/md-top-mode-classic.webp" width="1440" height="923" alt="The pattern chooser in CLASSIC: no pattern shows a kit" loading="lazy"><figcaption>The pattern chooser in CLASSIC: no pattern shows a kit</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="tempo">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.36</span></span></aside>
@@ -585,7 +621,7 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.37</span></span></aside>
 <div class="gd-body gd-prose"><h2>PATTERN SELECTION</h2>
 <p>The pattern chooser shows all 128 patterns as eight banks of 16 slots. Each slot gives the pattern's name, its length in steps and, in EXTENDED, its kit. A slot with no pattern reads EMPTY.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The pattern chooser"><span>Screenshot to come</span></div><figcaption>The pattern chooser</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/md-pattern-chooser.webp" width="1440" height="923" alt="The pattern chooser" loading="lazy"><figcaption>The pattern chooser</figcaption></figure>
 <p>To choose a pattern:</p>
 <ol class="gd-steps"><li>Click the pattern name in the <b class="gd-light">&lt;PATTERN&gt;</b> field of the LCD. The chooser opens. The arrows beside the name step to the previous and next pattern without it.</li><li>Click a bank letter, or press the key A to H, to go to that bank. The arrow keys move over the slots.</li><li>Click a slot, or press <kbd class="gd-key">[ENTER]</kbd>. While the machine is stopped, the pattern changes at once. While it plays, the pattern is queued and starts at the end of the pattern that plays. The pattern name in the LCD and the queued slot blink until it does.</li><li>Click a slot with <kbd class="gd-key">[⇧]</kbd> held, or click <b class="gd-ui">Now</b>, to change at once, without waiting for the end of the pattern. While the machine plays, it stops, loads the pattern and plays again.</li><li>Press <kbd class="gd-key">[ESC]</kbd> to close the chooser.</li></ol>
 <p>The button under <b class="gd-ui">Slot</b> reads <b class="gd-ui">Go</b> while the machine is stopped and <b class="gd-ui">Queue</b> while it plays.</p>
@@ -598,6 +634,7 @@
 <div class="gd-body gd-prose"><h2>PATTERN CHAINING</h2>
 <p>A chain plays patterns of one bank in the order you pick them, and starts again at the first.</p>
 <ol class="gd-steps"><li>Press <kbd class="gd-key">[5]</kbd> to open the <b class="gd-ui">Song</b> workspace.</li><li>Click <b class="gd-ui">CHAIN</b> over the pattern palette.</li><li>Click a bank letter.</li><li>Click the patterns in the order you want. Each pad shows its number in the chain. After the second pad the machine plays the chain at once. While it plays, the chain starts at the end of the pattern. While it is stopped, <kbd class="gd-key">[PLAY]</kbd> starts at the first pad.</li><li>Click a numbered pad to take it out. <b class="gd-ui">Back</b> takes out the last pad. <b class="gd-ui">Clear</b> ends the chain.</li></ol>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-song-chain.webp" width="1440" height="923" alt="A chain of two patterns playing" loading="lazy"><figcaption>A chain of two patterns playing</figcaption></figure>
 <p>A chain holds up to 16 patterns of one bank, each pattern once. The palette says which pattern plays now and which comes next. Choosing a pattern ends the chain. Editing the patterns in it does not.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The <b class="gd-ui">Chain</b> pads are disabled, with a reason, when the engine cannot read or set the chain.</p></aside>
 <p>A pattern queued while the machine plays starts at once when you stop:</p>
@@ -610,7 +647,8 @@
 <p>On the machine you hold <kbd class="gd-key">[FUNCTION]</kbd> and turn a knob to move that parameter on all 16 tracks. In the editor you hold <kbd class="gd-key">[⌥]</kbd> and drag a value on <b class="gd-ui">Sound</b> or <b class="gd-ui">Mix</b>. The same knob moves on every track by the same amount.</p>
 <p>To sweep the filters of all tracks, hold <kbd class="gd-key">[⌥]</kbd> and drag the FLTF or FLTW value.</p>
 <p>To drop the tweaks of a kit and load its stored sound again:</p>
-<ol class="gd-steps"><li>Click the kit name in the <b class="gd-light">&lt;KIT&gt;</b> field of the LCD. The kit library opens.</li><li>Click <b class="gd-ui">Reload</b> under <b class="gd-ui">Current</b>. The button is available only when the kit has unsaved edits.</li></ol>
+<ol class="gd-steps"><li>Click the kit name in the <b class="gd-light">&lt;KIT&gt;</b> field of the LCD. The kit library opens.</li><li>Click <b class="gd-ui">Reload</b> under <b class="gd-ui">Current</b>. The button is available only when the kit has unsaved edits. The edits are lost and the kit is as stored.</li></ol>
+<figure class="gd-shot"><img src="/guide/shots/md-kit-reload.webp" width="1440" height="923" alt="The kit library with Reload" loading="lazy"><figcaption>The kit library with Reload</figcaption></figure>
 <p>The machine keeps the edits you lose in its UNDO KIT.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Click <b class="gd-ui">FN</b> in the top bar if your system or host takes <kbd class="gd-key">[⌥]</kbd> for itself. The next click, drag or key then counts as if <kbd class="gd-key">[⌥]</kbd> were held. Double-click <b class="gd-ui">FN</b> to keep it on.</p></aside>
 </div></section>
@@ -625,14 +663,15 @@
 <p>To double a pattern, click the <b class="gd-light">&lt;LEN&gt;</b> ×2 key. The new half is a copy of the steps and locks of the first half. This is one undo step. The editor refuses a pattern past 64 steps, and past 32 in CLASSIC, and says why.</p>
 <p>When you make the total longer, the editor does what the machine does: if no track has a trig past the old total, the steps you had repeat into the new ones, with their accents, swings, slides and locks. From 16 to 64 steps the first page fills all four pages. If a track has a trig past the old total, nothing is copied. A message says what was copied. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take it back.</p>
 <h4 class="gd-h3">Speed</h4>
-<p>Click <b class="gd-light">&lt;SPD&gt;</b> to step through the tempo multipliers 1X, 2X, 3/4X and 3/2X. Click with <kbd class="gd-key">[⇧]</kbd> to step back. You can also drag or scroll on it.</p>
+<p>Click <b class="gd-light">&lt;SPD&gt;</b> to step through the tempo multipliers 1X, 2X, 3/4X and 3/2X. Click with <kbd class="gd-key">[⇧]</kbd> to step back. You can also drag or scroll on it: three notches of the wheel walk the four speeds.</p>
+<figure class="gd-shot"><img src="/guide/shots/md-seq-scale.webp" width="1440" height="923" alt="The scale fields on the LCD" loading="lazy"><figcaption>The scale fields on the LCD</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="grid-recording">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.39</span></span></aside>
 <div class="gd-body gd-prose"><h2>GRID RECORDING</h2>
 <p>In grid recording you place the trigs one step at a time. The pattern plays while you work, and each change is in the pattern at once.</p>
 <ol class="gd-steps"><li>Click a step to put a trig on it. Click it again to take the trig off.</li><li>To place several, press on a step and drag. Every step you cross becomes what the first one became.</li><li>To reach the other steps of a long pattern, click <b class="gd-ui">Page</b> or press <kbd class="gd-key">[[]</kbd> or []]. Click <b class="gd-ui">Page</b> with <kbd class="gd-key">[⇧]</kbd> to go back. The four lights show the page you see.</li><li>Click <b class="gd-ui">All</b> to see every step on one screen. Click <b class="gd-ui">Fol</b> to make the page follow the play position.</li></ol>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The step grid"><span>Screenshot to come</span></div><figcaption>The step grid</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/md-step-grid.webp" width="1440" height="923" alt="The step grid" loading="lazy"><figcaption>The step grid</figcaption></figure>
 <p>There is no save. Every change is in the pattern. To keep the original while you try something, copy the pattern to another slot first. See &quot;PATTERN COPY&quot;.</p>
 <h4 class="gd-h3">Move the notes</h4>
 <p>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[←]</kbd> or <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[→]</kbd>. The selected track moves one step earlier or later. Its trigs, accents, slides and locks move, and the steps at the ends wrap round. A run of presses while you hold <kbd class="gd-key">[⌥]</kbd> is one undo step.</p>
@@ -648,7 +687,7 @@
 <p>In live recording you play the tracks and the machine puts the trigs on the steps.</p>
 <ol class="gd-steps"><li>Press <kbd class="gd-key">[SPACE]</kbd>.</li><li>Click <b class="gd-ui">●</b> in the top bar, or press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[SPACE]</kbd> to start recording and playing in one press. The key lights.</li><li>Click the steps of a track, or press the keys A to L, which play the selected track. The track sounds and the machine writes the trig on the step it plays. The machine quantises it.</li><li>Click <b class="gd-ui">●</b> again to stop recording. The pattern goes on playing.</li></ol>
 <p>While recording is on, a click on a step plays the track, and the other edits of the pattern wait. A right-click on a step says &quot;Wait until live recording stops.&quot;</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: Live recording"><span>Screenshot to come</span></div><figcaption>Live recording</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/md-live-recording.webp" width="1440" height="923" alt="Live recording" loading="lazy"><figcaption>Live recording</figcaption></figure>
 <p>To take trigs out while recording, as the machine does with <kbd class="gd-key">[EXIT/NO]</kbd> and a <kbd class="gd-key">[TRIG]</kbd> key:</p>
 <ol class="gd-steps"><li>Select the track on the rail.</li><li>Hold <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd>. The track's header is marked red. The machine removes the track's trigs on each step that plays while the key is down.</li><li>Let the key go to stop erasing.</li></ol>
 <p>Only the selected track is erased. The erase ends by itself when recording stops.</p>
@@ -669,7 +708,7 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.40</span></span></aside>
 <div class="gd-body gd-prose"><h2>CLEAR NOTE PARAMETER LOCKS</h2>
 <p>To take locks off a step, use one of these:</p>
-<ul class="gd-list"><li>Select the step and press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd>, or choose <b class="gd-ui">Clear</b> in the step menu. This clears the trig and its locks together.</li><li>Hold <kbd class="gd-key">[⌥]</kbd> and drag over the bars of the lock lane. This erases the locks it crosses and leaves the trigs.</li><li>Click the bin key above the parameter keys to clear every lock of the parameter on this track. Hold <kbd class="gd-key">[⌥]</kbd> and it clears every lock of the track.</li></ul>
+<ul class="gd-list"><li>Select the step and press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd>, or choose <b class="gd-ui">Clear</b> in the step menu. This clears the trig and its locks together.</li><li>Hold <kbd class="gd-key">[⌥]</kbd> and drag over the bars of the lock lane. This erases the locks it crosses and leaves the trigs.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[BACKSPACE]</kbd>, tick <b class="gd-ui">Locks</b> only and click <b class="gd-ui">Clear</b>. The locks of the track go and the trigs stay.</li><li>Click the bin key above the parameter keys to clear every lock of the parameter on this track. Hold <kbd class="gd-key">[⌥]</kbd> and it clears every lock of the track.</li></ul>
 <p>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take a clear back.</p>
 </div></section>
 <section class="gd-sec" id="track-copy">
@@ -726,6 +765,7 @@
 <ul class="gd-list"><li>Click <b class="gd-ui">M</b> to mute or unmute the track.</li><li>Press and drag across the keys. Every key you cross becomes what the first one became.</li><li>Press <kbd class="gd-key">[M]</kbd> to mute the selected track on any workspace. <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[M]</kbd> mutes every track, or unmutes them all when none is audible. <kbd class="gd-key">[0]</kbd>, or <b class="gd-ui">M/S off</b>, unmutes and unsolos everything.</li></ul>
 <p>To prepare mutes and apply them together, as the machine's mute window does:</p>
 <ol class="gd-steps"><li>Hold <kbd class="gd-key">[⇧]</kbd> and click <b class="gd-ui">M</b> on the tracks. Each track shows + for a track it will unmute or X for a track it will mute.</li><li>Let go of <kbd class="gd-key">[⇧]</kbd>. All the changes apply at once.</li></ol>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-mix-shift-mutes.webp" width="1440" height="923" alt="Mutes prepared with the shift key: nothing is sent until you let go" loading="lazy"><figcaption>Mutes prepared with the shift key: nothing is sent until you let go</figcaption></figure>
 <p>The mutes are the machine's. The editor reads them from the machine's memory, whoever set them, and they stay when you change pattern or switch between pattern and song mode. A solo is the editor's: it mutes the other tracks on the machine, and when you let the solo go it gives your mutes back.</p>
 <p>On the machine you can minimise the mute window. In the editor the keys are always on the page.</p>
 </div></section>
@@ -742,7 +782,7 @@
 <p>A pattern holds one accent row for all tracks and one for each track. With <b class="gd-ui">Accent</b> lit, <b class="gd-ui">All tracks</b> and <b class="gd-ui">This track</b> show over the keys.</p>
 <ul class="gd-list"><li><b class="gd-ui">All tracks</b>: an accent on a step accents that step on every track. The step legend says &quot;(all)&quot;.</li><li><b class="gd-ui">This track</b>: each track has its own accents. Click the steps of the track you want.</li></ul>
 <p>The pattern keeps both rows. Switch back and the other row is there again. This is the machine's <kbd class="gd-key">[RIGHT]</kbd> key in the accent window. Each of accent, swing and slide has its own setting.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The accent of a step"><span>Screenshot to come</span></div><figcaption>The accent of a step</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/md-accent.webp" width="1440" height="923" alt="The accent of a step" loading="lazy"><figcaption>The accent of a step</figcaption></figure>
 <p>To copy, paste or clear the accents of a track, tick <b class="gd-ui">Accent</b> in <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> or <b class="gd-ui">Clear…</b> of the LCD's <b class="gd-ui">▾</b> menu (see &quot;Track copy&quot;). A selection copy also takes the accents with the steps.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>While the accent is shared by all tracks, a paste or a clear of <b class="gd-ui">Accent</b> changes it for every track.</p></aside>
 </div></section>
@@ -754,6 +794,7 @@
 <ol class="gd-steps"><li>Click <b class="gd-ui">Swing</b> in the bar under the grid.</li><li>Click a step with a trig. A teal mark shows on it: the step swings. Click it again to take the swing off.</li><li>Drag across steps to paint swing on every step with a trig that you cross.</li><li>Press <kbd class="gd-key">[ESC]</kbd> to paint trigs again.</li></ol>
 <p>With <b class="gd-ui">All tracks</b> the swing row is shared: a mark on a step swings that step on every track. With <b class="gd-ui">This track</b> each track has its own swing steps. Every track uses the same <b class="gd-light">&lt;SWG&gt;</b> amount.</p>
 <aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>Swing only the hi-hats for a feel apart from the rest of the pattern.</p></aside>
+<figure class="gd-shot"><img src="/guide/shots/md-seq-swing-accent.webp" width="1440" height="923" alt="The LCD with the accent and swing amounts, and the trig types under the grid" loading="lazy"><figcaption>The LCD with the accent and swing amounts, and the trig types under the grid</figcaption></figure>
 <p>Tick <b class="gd-ui">Swing</b> in <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> or <b class="gd-ui">Clear…</b> of the LCD's <b class="gd-ui">▾</b> menu to copy, paste or clear the swing steps of a track (see &quot;Track copy&quot;).</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>With <b class="gd-ui">All tracks</b> the swing row is the pattern's, so a paste or a clear of <b class="gd-ui">Swing</b> changes it for every track.</p></aside>
 </div></section>
@@ -763,7 +804,7 @@
 <p>A parameter lock gives one parameter its own value on one step. The step has to hold a trig. A pattern holds 64 locked parameters. A track and a parameter with any lock count once.</p>
 <h4 class="gd-h3">Lock a parameter</h4>
 <ol class="gd-steps"><li>Select the track.</li><li>In the rail under <b class="gd-ui">Lock parameter</b>, click the key of the parameter. The keys are in three groups: <b class="gd-ui">Synth</b>, <b class="gd-ui">Effects</b> and <b class="gd-ui">Routing</b>. A number on a key tells how many steps it has locked.</li><li>Drag over the bars of the <b class="gd-ui">Lock lane</b>. Each step with a trig takes the value where the pointer crosses it. Steps with no trig are hatched and take no lock.</li><li>Hold <kbd class="gd-key">[⇧]</kbd> and drag to draw a ramp, a straight line from where you press to where you let go.</li><li>To move one lock, scroll on its step. Four values a notch, or one with <kbd class="gd-key">[⇧]</kbd>.</li></ol>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The lock lane"><span>Screenshot to come</span></div><figcaption>The lock lane</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/md-lock-lane.webp" width="1440" height="923" alt="The lock lane" loading="lazy"><figcaption>The lock lane</figcaption></figure>
 <p>The lane shows the value locked on each step, and a dashed line shows the value of the kit. A bipolar parameter draws from the centre: up for right or boost, down for left or cut.</p>
 <h4 class="gd-h3">The lock count</h4>
 <p>The <b class="gd-light">&lt;LOCKS&gt;</b> field of the LCD and the header of the lane count the locked parameters, for example 41 / 64. The count turns to a warning from 52. At 64 the editor refuses a new lock and tells you to clear a lane first.</p>
@@ -799,7 +840,7 @@
 </header>
 <div class="gd-intro gd-prose"><p>The song mode plays patterns in a set order. Each row of a song names a pattern and how it plays: how many times, the whole pattern or a part of it, with some tracks muted, at a tempo of its own. Command rows loop back, jump forward or halt the song.</p>
 <p>In the editor the song mode is the <b class="gd-ui">Song</b> workspace. Press <kbd class="gd-key">[5]</kbd>, or click the <b class="gd-ui">Song</b> tab. The <b class="gd-ui">Songs</b> column on the left holds the 32 song slots. The middle column holds the <b class="gd-ui">PATTERN</b>, <b class="gd-ui">CHAIN</b> and <b class="gd-ui">SONG</b> keys over the pattern palette, and in song mode the <b class="gd-ui">Selected row</b>. On the right, the <b class="gd-ui">Arrangement</b> shows every row of the song as a cell, 16 cells to a line.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The Song workspace"><span>Screenshot to come</span></div><figcaption>The Song workspace</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/md-song-workspace.webp" width="1440" height="923" alt="The Song workspace" loading="lazy"><figcaption>The Song workspace</figcaption></figure>
 <p>The machine plays the song. The editor writes the song into the machine and shows what the machine reports: the mode, the row that plays and the tempo.</p>
 <p>The three keys over the palette say what the machine plays and what a click on a pad does:</p>
 <ul class="gd-list"><li><b class="gd-ui">PATTERN</b>: the machine is in pattern mode. A pad click goes to that pattern.</li><li><b class="gd-ui">CHAIN</b>: the machine is in pattern mode and a pad click adds the pattern to its chain. See the pattern sequencer chapter.</li><li><b class="gd-ui">SONG</b>: the machine is in song mode. A pad click adds a row to the song.</li></ul>
@@ -813,6 +854,7 @@
 <ol class="gd-steps"><li>Stop the machine. Press <kbd class="gd-key">[SPACE]</kbd> if it plays.</li><li>Click a slot in the <b class="gd-ui">Songs</b> column. The slot is selected. The machine still holds its song.</li><li>Click <b class="gd-ui">Load</b>, or press <kbd class="gd-key">[ENTER]</kbd>. The machine loads the song, and its slot is lit.</li></ol>
 <p>You can also click <b class="gd-light">&lt;SONG&gt;</b> on the second line of the LCD, or drag or scroll on it, to load the next song. Click with <kbd class="gd-key">[⇧]</kbd> to go back.</p>
 <p>Each slot shows its number, its name and its rows. An empty slot reads EMPTY and is drawn faint. Press the arrow keys to move the selection while a slot has the focus.</p>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-song-slots.webp" width="1440" height="923" alt="The Songs column" loading="lazy"><figcaption>The Songs column</figcaption></figure>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The machine loads a song only while it is stopped. While it plays, <b class="gd-ui">Load</b> is greyed out.</p></aside>
 </div></section>
 <section class="gd-sec" id="playing-a-song">
@@ -820,13 +862,14 @@
 <div class="gd-body gd-prose"><h2>PLAYING A SONG</h2>
 <p>In song mode the machine plays the song from the first row, row by row, to the END row.</p>
 <ol class="gd-steps"><li>Click <b class="gd-ui">SONG</b> over the palette, or click <b class="gd-light">&lt;PLAY&gt;</b> on the LCD until it reads SONG.</li><li>Press <kbd class="gd-key">[SPACE]</kbd>. The song plays. The <b class="gd-ui">Arrangement</b> header reads Playing and the arrangement is framed.</li><li>Read what plays on the line over the bank letters: SONG 01 · row 017 of 65 · B01 means song 01, row 017 of 65 rows, pattern B01. The <b class="gd-light">&lt;PATTERN&gt;</b> field of the LCD reads the song and the row, for example 01·017.</li><li>Press <kbd class="gd-key">[SPACE]</kbd> again to stop.</li></ol>
-<p>The playing row is marked in the arrangement, and the bar over it fills up to that row.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: What plays, in song mode: the line over the bank letters"><span>Screenshot to come</span></div><figcaption>What plays, in song mode: the line over the bank letters</figcaption></figure>
+<p>The playing row is marked in the arrangement, and the bar over it fills up to that row. When you press <kbd class="gd-key">[SPACE]</kbd> again, or the song ends, no row is marked.</p>
+<figure class="gd-shot"><img src="/guide/shots/md-song-what-plays.webp" width="1440" height="923" alt="What plays, in song mode: the line over the bank letters" loading="lazy"><figcaption>What plays, in song mode: the line over the bank letters</figcaption></figure>
 <p>You can go to pattern mode and back while the song plays. Click <b class="gd-ui">PATTERN</b>: the machine plays a pattern. Click <b class="gd-ui">SONG</b> to play the song again.</p>
 <p>The line under the chip in the <b class="gd-ui">Songs</b> column gives the length of the song as rows, bars and playing time at the current tempo. The time is an estimate. The LCD shows the same as <b class="gd-light">&lt;ROWS&gt;</b>, <b class="gd-light">&lt;BARS&gt;</b> and <b class="gd-light">&lt;TIME&gt;</b> on the second line of the Song workspace.</p>
 <p>When the host sends a song position, the machine follows it. The editor has no control for this.</p>
 <p>To pause a song, hold <kbd class="gd-key">[⇧]</kbd> and click the Play key, or press <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[SPACE]</kbd>. The song holds its row and step. Click the Play key to go on from there.</p>
-<p>A row that repeats shows how many more times it plays, as the machine counts them. The playing row reads +2, +1, then last, and the line over the bank letters ends with 2 more, 1 more or last.</p>
+<p>A row that repeats shows how many more times it plays, as the machine counts them. The playing row reads +2, +1, then last, and the line over the bank letters ends with 2 more, 1 more or last. The next row shows no count.</p>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-song-repeats-left.webp" width="1440" height="923" alt="A row that repeats, playing its first pass" loading="lazy"><figcaption>A row that repeats, playing its first pass</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="navigating-a-song">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.52</span></span></aside>
@@ -843,7 +886,7 @@
 <h4 class="gd-h3">Add patterns</h4>
 <p>The pattern palette shows the 128 patterns by bank. Click <b class="gd-ui">SONG</b> over it. Each pad gives the pattern's name and its length, or &quot;empty&quot;.</p>
 <ol class="gd-steps"><li>Click a bank letter.</li><li>Click a pad. The pattern goes into the song after the selected row, and the new row is selected.</li></ol>
-<p>You can also drag a pad onto the arrangement. It lands on the cell you drop it on.</p>
+<p>You can also drag a pad onto the arrangement. It lands on the cell you drop it on. Drop it on the empty end of the arrangement and the row is added at the end. The <b class="gd-light">&lt;BARS&gt;</b> count on the LCD goes up with each row.</p>
 <h4 class="gd-h3">Set how a row plays</h4>
 <p>Select the row. The <b class="gd-ui">Selected row</b> card shows its values.</p>
 <ul class="gd-list"><li><b class="gd-ui">Row</b> shows the row number and the pattern. Click <b class="gd-ui">‹</b> or <b class="gd-ui">›</b> to choose another pattern.</li><li><b class="gd-ui">Repeat</b> sets how many times the row plays, 1 to 64.</li><li><b class="gd-ui">Tempo</b> reads <b class="gd-ui">Keep</b> while the row plays at the tempo before it. Click <b class="gd-ui">Keep</b> to give the row a tempo of its own, then click <b class="gd-ui">−</b> or <b class="gd-ui">+</b>, 30 to 300 beats per minute. Click <b class="gd-ui">Keep</b> again to take it off.</li></ul>
@@ -853,7 +896,8 @@
 <ul class="gd-list"><li><b class="gd-ui">←</b> and <b class="gd-ui">→</b> move the row one place.</li><li><b class="gd-ui">Duplicate</b> copies the row to the place after it.</li><li><b class="gd-ui">Add loop</b> adds a loop row. See &quot;SONG LOOP&quot;.</li><li><b class="gd-ui">Delete</b> removes the row.</li></ul>
 <p>You can also drag a cell to move it.</p>
 <h4 class="gd-h3">Copy, paste and undo</h4>
-<p>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd> to copy the selected row. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd> to put it after the selected row. Press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> to delete the row. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to undo the last edit.</p>
+<p>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd> to copy the selected row. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd> to put it after the selected row. Press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> to delete the row. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to undo the last edit, and <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[Z]</kbd> to put it back.</p>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-song-arrange-rows.webp" width="1440" height="923" alt="Rows added and deleted in the arrangement" loading="lazy"><figcaption>Rows added and deleted in the arrangement</figcaption></figure>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A song holds 256 rows. The editor refuses a row past that.</p></aside>
 <h4 class="gd-h3">The END row</h4>
 <p>The last row of a song is END. The song stops there. New rows always go before it. The END row cannot be moved, duplicated or deleted.</p>
@@ -875,14 +919,15 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.52</span></span></aside>
 <div class="gd-body gd-prose"><h2>SONG TRANSPORT</h2>
 <p>On the machine <kbd class="gd-key">[STOP]</kbd> holds the song where it is, and <kbd class="gd-key">[PLAY]</kbd> goes on from there. In the editor:</p>
-<ol class="gd-steps"><li>Hold <kbd class="gd-key">[⇧]</kbd> and click the Play key, or press <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[SPACE]</kbd>. The song holds its position. The Play key blinks.</li><li>Click the Play key to go on from that position.</li><li>To stop the song from the hold, choose <b class="gd-ui">Stop</b> in the transport menu (right-click the Play key, or click its ▾).</li></ol>
+<ol class="gd-steps"><li>Hold <kbd class="gd-key">[⇧]</kbd> and click the Play key, or press <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[SPACE]</kbd>. The song holds its position. The Play key blinks.</li><li>Click the Play key to go on from that position.</li><li>To stop the song from the hold, choose <b class="gd-ui">Stop</b> in the transport menu (right-click the Play key, or click its ▾). The hold ends and the position goes.</li></ol>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-top-pause.webp" width="1440" height="923" alt="The Play key blinking while the song is held" loading="lazy"><figcaption>The Play key blinking while the song is held</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="song-loop">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.54</span></span></aside>
 <div class="gd-body gd-prose"><h2>SONG LOOP</h2>
 <p>A loop row sends the song back to an earlier row, a set number of times. Loops keep a song short and its shape clear.</p>
 <ol class="gd-steps"><li>Select the last row of the part to repeat.</li><li>Click <b class="gd-ui">Add loop</b> in the header of the <b class="gd-ui">Selected row</b> card. A loop row goes in after it. Its cell reads ↺ and the row it goes back to.</li><li>Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> beside <b class="gd-ui">Back to</b> to set the first row of the part.</li><li>Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> beside <b class="gd-ui">Times</b> to set how many times the part plays, 2 to 64. Click <b class="gd-ui">Forever</b> for a loop that never ends. The cell shows ∞.</li></ol>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: A loop row"><span>Screenshot to come</span></div><figcaption>A loop row</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/md-song-loop.webp" width="1440" height="923" alt="A loop row" loading="lazy"><figcaption>A loop row</figcaption></figure>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Loops can sit inside other loops.</p></aside>
 <aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>A loop that runs for ever is good live. Select the row you want next while it plays.</p></aside>
 </div></section>
@@ -920,7 +965,7 @@
 <ol class="gd-steps"><li>Select a slot and click <b class="gd-ui">Copy</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>.</li><li>Select another slot and click <b class="gd-ui">Paste</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>. The slot holds a copy of the song, with its name.</li></ol>
 <p>You can also drag a slot onto another. The song is copied there.</p>
 <p>To empty a slot, select it and click <b class="gd-ui">Clear</b>, or press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd>. The rows and the name are removed. The slot reads EMPTY.</p>
-<p>When a paste, a copy or <b class="gd-ui">Clear</b> would write over a song, the editor asks first. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to undo a paste, a copy, a name or a clear.</p>
+<p>When a paste, a copy or <b class="gd-ui">Clear</b> would write over a song, the editor asks first. Click <b class="gd-ui">Clear song</b> to answer the question of a clear: the slot is empty and quiet. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to undo a paste, a copy, a name or a clear, and <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[Z]</kbd> to do it again.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A song stores which patterns it plays, not the patterns themselves. Change a pattern and every row that uses it plays the changed pattern.</p></aside>
 </div></section>
 </article>
@@ -931,7 +976,7 @@
 </header>
 <div class="gd-intro gd-prose"><p>The global settings are the machine's own settings. They hold the MIDI channels, the map of notes to tracks and patterns, program change, the output of each track and the sync. They belong to the machine, not to a pattern or a kit.</p>
 <p>In the editor they sit on the <b class="gd-ui">GLOBAL</b> page. It opens over the workspace, which dims behind it.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The GLOBAL page"><span>Screenshot to come</span></div><figcaption>The GLOBAL page</figcaption></figure></div>
+<figure class="gd-shot"><img src="/guide/shots/md-global-panel.webp" width="1440" height="923" alt="The GLOBAL page" loading="lazy"><figcaption>The GLOBAL page</figcaption></figure></div>
 <section class="gd-sec" id="global-settings">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.57</span></span></aside>
 <div class="gd-body gd-prose"><h2>GLOBAL SETTINGS</h2>
@@ -944,6 +989,7 @@
 <h4 class="gd-h3">Copy, paste and clear a global</h4>
 <p>The head has the keys <b class="gd-ui">Copy</b>, <b class="gd-ui">Paste</b> and <b class="gd-ui">Clear</b>. They act on the active global.</p>
 <ol class="gd-steps"><li>Click <b class="gd-ui">Copy</b>. The editor keeps all the settings of the active global. <b class="gd-ui">Paste</b> is now on.</li><li>Click the key of another global to make it active.</li><li>Click <b class="gd-ui">Paste</b>. The editor asks first, because the settings of that global are replaced. Click <b class="gd-ui">Paste</b> to go on, or <b class="gd-ui">Cancel</b>.</li></ol>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-global-copy-paste.webp" width="1440" height="923" alt="The Copy, Paste and Clear keys" loading="lazy"><figcaption>The Copy, Paste and Clear keys</figcaption></figure>
 <p>To put the active global back to how the machine shipped, click <b class="gd-ui">Clear</b>. The editor asks first. Click <b class="gd-ui">Clear</b> to go on, or <b class="gd-ui">Cancel</b>.</p>
 <p>Undo takes back a paste or a clear, as any other edit.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The machine's own global menu has no copy or paste. In the editor you copy a whole global from one slot to another.</p></aside>
@@ -966,6 +1012,7 @@
 <p>The map editor says which MIDI note plays what. A note can play a track, start a pattern, or start or stop the machine. The <b class="gd-ui">Map editor</b> card has the sixteen track keys and the controls for the other notes.</p>
 <h4 class="gd-h3">Notes for the tracks</h4>
 <p>Each of the sixteen keys is named TRACK 1 to TRACK 16. It shows the note that plays the track, or -- when the track has none. Click <b class="gd-ui">‹</b> or <b class="gd-ui">›</b> on a key to move the note down or up. Notes are named as C4, C#4 and so on, from 0 to 127.</p>
+<figure class="gd-shot"><img src="/guide/shots/md-map-editor.webp" width="1440" height="923" alt="The Map editor card" loading="lazy"><figcaption>The Map editor card</figcaption></figure>
 <p>When a MIDI keyboard plays a track's note on the base channel, the track's number in the track rail glows for a moment, and so does its light on the Mix workspace. A note on another channel lights nothing.</p>
 <h4 class="gd-h3">Notes for patterns and the transport</h4>
 <ol class="gd-steps"><li>Beside <b class="gd-ui">Map a note</b>, click <b class="gd-ui">‹</b> or <b class="gd-ui">›</b> to choose the note.</li><li>Choose from the menu what the note plays: nothing, a track, a pattern A01 to H16, START or STOP.</li></ol>
@@ -1005,6 +1052,7 @@
 <div class="gd-body gd-prose"><h2>OUTPUT</h2>
 <p>Each track plays on the main output, through the master effects, or on one of the individual outputs A to F, which skip the master effects.</p>
 <p>In the <b class="gd-ui">Routing</b> card the sixteen keys show the output of each track: MAIN, or A to F. Click a key to go to the next output: MAIN, A, B, C, D, E, F, then MAIN again.</p>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-global-routing.webp" width="1440" height="923" alt="The Routing card" loading="lazy"><figcaption>The Routing card</figcaption></figure>
 <p>You can also click <b class="gd-ui">OUT</b> on the strip of the track in the <b class="gd-ui">Mix</b> workspace. Delay and reverb sends reach only the main outputs, so a track on an individual output keeps those values but does not use them.</p>
 </div></section>
 <section class="gd-sec" id="trig">
@@ -1092,7 +1140,7 @@
 <h4 class="gd-h3">Ctrl in</h4>
 <p>Beside <b class="gd-ui">Ctrl in</b>, click <b class="gd-ui">ON</b> to make the machine react to MIDI Start, Stop and Continue. Click <b class="gd-ui">OFF</b> to make it ignore them.</p>
 <h4 class="gd-h3">Tempo out</h4>
-<p>Beside <b class="gd-ui">Tempo out</b>, click <b class="gd-ui">ON</b> to make the machine send the MIDI clock.</p>
+<p>Beside <b class="gd-ui">Tempo out</b>, click <b class="gd-ui">ON</b> to make the machine send the MIDI clock. Click it again to put it back.</p>
 <h4 class="gd-h3">Ctrl out</h4>
 <p>Beside <b class="gd-ui">Ctrl out</b>, click <b class="gd-ui">ON</b> to make the machine send MIDI Start, Stop and Continue.</p>
 </div></section>
@@ -1104,7 +1152,7 @@
 </header>
 <div class="gd-intro gd-prose"><p>The sample manager is a feature of the UW models, which have sample memory. In the editor it is the <b class="gd-ui">Sampler</b> workspace. Press <kbd class="gd-key">[4]</kbd>, or click the <b class="gd-ui">Sampler</b> tab.</p>
 <p>The rail on the left lists the slots: four RAM slots and 48 ROM slots. The page shows the selected slot. On the second line of the LCD, <b class="gd-light">&lt;MEM&gt;</b> gives the share of the sample memory in use, <b class="gd-light">&lt;KIT&gt;</b> the number of tracks in the kit that play a ROM slot, and <b class="gd-light">&lt;SLOT&gt;</b> the selected slot.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The Sampler workspace"><span>Screenshot to come</span></div><figcaption>The Sampler workspace</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/md-sampler-workspace.webp" width="1440" height="923" alt="The Sampler workspace" loading="lazy"><figcaption>The Sampler workspace</figcaption></figure>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The Sampler needs the UW's ROM and RAM machines. With other firmware, or while the machine has not started, the page says so.</p></aside></div>
 <section class="gd-sec" id="sample-manager">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.70,</span> <span>71</span></span></aside>
@@ -1115,7 +1163,8 @@
 <p>Point at the <b class="gd-light">&lt;MEM&gt;</b> field to see the figures behind it.</p>
 <p>The <b class="gd-light">&lt;MEM&gt;</b> percentage is worked out from the samples the editor reads. It is not the machine's own figure of memory left.</p>
 <h4 class="gd-h3">Hear a sample</h4>
-<p>Click the play key on a tile, or the play key by the waveform of the selected slot. The sample plays once, from the start, on the output of the plug-in. Click the key again to stop it. A line moves over the waveform as it plays.</p>
+<p>Click the play key on a tile, or the play key by the waveform of the selected slot. !<a href="shot:e2e-md-sampler-audition">A tile with its play key</a></p>
+<p>The sample plays once, from the start, on the output of the plug-in. Click the key again to stop it. A line moves over the waveform as it plays.</p>
 <h4 class="gd-h3">Name a sample</h4>
 <ol class="gd-steps"><li>Select the ROM slot.</li><li>Click <b class="gd-ui">Rename</b>.</li><li>Type a name of up to four letters and click <b class="gd-ui">Send name</b>.</li></ol>
 <p>The machine takes the new name. It never reports the names it holds, so the editor shows the names it has sent in this session, and the names of samples it reads from the emulated machine.</p>
@@ -1135,7 +1184,7 @@
 <p>To start sampling into a RAM slot:</p>
 <ol class="gd-steps"><li>Select a RAM slot in the rail.</li><li>In the <b class="gd-ui">Set up sampling</b> card, choose the recorder track and the player track with the <b class="gd-ui">‹</b> and <b class="gd-ui">›</b> keys.</li><li>Click <b class="gd-ui">Set up sampling</b>. The recorder takes the machine RAM-R and records the main mix. The player takes RAM-P and plays the slot. This is one undo step.</li><li>Press <kbd class="gd-key">[SPACE]</kbd>.</li><li>Click <b class="gd-ui">Capture next loop</b>. The recorder records one whole loop from the next start of the pattern, then the editor mutes it to keep the take.</li></ol>
 <p>Click <b class="gd-ui">Live</b> to record again on every loop. Click <b class="gd-ui">Freeze</b> to mute the recorder and keep the take. <b class="gd-ui">Main mix</b>, <b class="gd-ui">Input A</b>, <b class="gd-ui">Input B</b> and <b class="gd-ui">A + B</b> choose what the recorder takes.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: A RAM slot with a take"><span>Screenshot to come</span></div><figcaption>A RAM slot with a take</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/md-sampler-ram.webp" width="1440" height="923" alt="A RAM slot with a take" loading="lazy"><figcaption>A RAM slot with a take</figcaption></figure>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A RAM slot holds only what its recorder records. You cannot load a file into it.</p></aside>
 </div></section>
 <section class="gd-sec" id="ram-to-rom-copy">
@@ -1152,6 +1201,8 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.73</span></span></aside>
 <div class="gd-body gd-prose"><h2>SPECIFIC PLACE SAMPLE RECEIVE</h2>
 <ol class="gd-steps"><li>Select the ROM slot in the rail or on its tile.</li><li>Click <b class="gd-ui">Load sample…</b> or, on an empty tile, <b class="gd-ui">Load…</b>.</li><li>Choose a WAV or AIFF file.</li><li>A bar shows the sending. Click <b class="gd-ui">Stop</b> to cancel. When it ends, a message says the sample is loaded.</li></ol>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-drop-sample.webp" width="1440" height="923" alt="A sample sent to ROM slot 33" loading="lazy"><figcaption>A sample sent to ROM slot 33</figcaption></figure>
+<p>You can also drop the file on the waveform of an empty ROM slot. The slot takes it.</p>
 <p>The sample replaces what the slot holds. The plug-in gives it a name of four letters from the file name.</p>
 </div></section>
 <section class="gd-sec" id="original-place-sample-receive">
@@ -1188,6 +1239,7 @@
 <div class="gd-body gd-prose"><h2>EMPTY RESET</h2>
 <p>The empty reset clears the memory of the machine. In the editor it is in the engine menu.</p>
 <ol class="gd-steps"><li>Choose <b class="gd-ui">RESET MACHINE…</b> in the engine menu (the engine name at the left of the LCD). A question says what each reset clears. <b class="gd-ui">Cancel</b> is the default: <kbd class="gd-key">[ESC]</kbd> answers it. A click beside the question does nothing.</li><li>Click <b class="gd-ui">Empty reset…</b>. The editor asks a second time.</li><li>Click <b class="gd-ui">Clear everything</b>. The <b class="gd-ui">Empty reset</b> panel opens. The editor writes an empty kit, pattern and song into every slot, then reads each one back.</li><li>Read the report and click <b class="gd-ui">Done</b>.</li></ol>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-engine-reset-empty.webp" width="1440" height="923" alt="The Empty reset panel" loading="lazy"><figcaption>The Empty reset panel</figcaption></figure>
 <p>The globals and the samples stay. A global is reset in its own slot in GLOBAL (chapter 10).</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The reset has no undo. Click <b class="gd-ui">Export SysEx…</b> in the question first to keep a way back.</p></aside>
 </div></section>
@@ -1196,6 +1248,7 @@
 <div class="gd-body gd-prose"><h2>FACTORY RESET</h2>
 <p>The factory reset brings back the kits, patterns and songs the machine had when it left the factory. The editor takes them from your own ROM: it starts a second machine with it, in the background, and reads that machine's memory.</p>
 <ol class="gd-steps"><li>Choose <b class="gd-ui">RESET MACHINE…</b> in the engine menu.</li><li>Click <b class="gd-ui">Factory reset…</b>. The editor asks a second time.</li><li>Click <b class="gd-ui">Factory reset</b>. Preparing the factory data takes a few seconds. Then the <b class="gd-ui">Factory reset</b> panel sends every kit, pattern and song and reads each one back. This takes a few minutes.</li><li>Read the report and click <b class="gd-ui">Done</b>. Kits 1 to 4 are named TRX UW, EFM UW, E12 UW and P-I UW.</li></ol>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-engine-reset-factory.webp" width="1440" height="923" alt="The Factory reset panel" loading="lazy"><figcaption>The Factory reset panel</figcaption></figure>
 <p>The globals and the samples stay. The reset has no undo: export first.</p>
 <aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>To bring back the whole factory memory at once, globals and samples too, click <b class="gd-ui">Start from factory memory…</b> in the same question. The machine restarts in a few seconds. See &quot;MACHINE MEMORY&quot; in chapter 17.</p></aside>
 </div></section>
@@ -1220,6 +1273,7 @@
 <div class="gd-body gd-prose"><h2>SPECIFICATIONS</h2>
 <p>The editor keeps to the limits of the machine. It refuses what the machine cannot hold, and says why.</p>
 <table class="gd-table"><thead><tr><th>Item</th><th>Limit</th></tr></thead><tbody><tr><td>Tracks</td><td>16</td></tr><tr><td>Patterns</td><td>128, in 8 banks of 16</td></tr><tr><td>Pattern length</td><td>16, 32, 48 or 64 steps</td></tr><tr><td>Kits</td><td>64</td></tr><tr><td>Songs</td><td>32, of up to 256 rows each</td></tr><tr><td>Globals</td><td>8</td></tr><tr><td>Parameter locks</td><td>64 locked parameters in a pattern</td></tr><tr><td>Sample slots</td><td>48 ROM slots and 4 RAM slots</td></tr></tbody></table>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-limits.webp" width="1440" height="923" alt="The limits as the editor shows them" loading="lazy"><figcaption>The limits as the editor shows them</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="differences-between-the-mki-and-mkii-models">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.83</span></span></aside>
@@ -1231,7 +1285,170 @@
 <p>The editor's Sampler has 48 ROM slots and 4 RAM slots.</p>
 <p>The MKI model has 32 sample slots. The editor offers the MKII model only.</p>
 <h4 class="gd-h3">Design</h4>
-<p>The MKI machine is silver, the MKII black. The editor gives its panel either colour. Click <b class="gd-ui">MKI</b> or <b class="gd-ui">MKII</b> in the top bar to switch. The choice is kept for the next time. It changes the colour only.</p>
+<p>The MKI machine is silver, the MKII black. The editor gives its panel either colour. Click <b class="gd-ui">MKI</b> or <b class="gd-ui">MKII</b> in the top bar to switch.</p>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-top-plate.webp" width="1440" height="923" alt="The plate key in the top bar" loading="lazy"><figcaption>The plate key in the top bar</figcaption></figure>
+<p>The choice is kept for the next time. It changes the colour only.</p>
+</div></section>
+</article>
+<article class="gd-chapter" id="c14" style="page: c14">
+<div class="gd-runhead"><span>14. Appendix A: machine reference</span><span>Machinedrum Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">14</p><h1>Appendix A: machine reference</h1>
+<p class="gd-cmeta">MD manual pp.A-1 to A-16</p>
+</header>
+<div class="gd-intro gd-prose"><p>A machine is the sound engine of one track. The Machinedrum holds 16 tracks and each one carries one machine at a time. This chapter lists the machines by family, as the machine's own appendix does.</p>
+<p>In the editor you choose a machine on the <b class="gd-ui">Sound</b> workspace. Pick a track on the rail, click the machine key, choose a family, then choose a machine in it. The track takes the machine and the Sound page shows its knobs. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> takes the choice back. A machine has up to eight knobs, as on the LCD, and the Sound page shows each one in a group with its value box.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The kit holds the machine of every track, so a machine is saved and loaded with the kit.</p></aside></div>
+<section class="gd-sec" id="trx-machines">
+<aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.A-1</span></span></aside>
+<div class="gd-body gd-prose"><h2>TRX MACHINES</h2>
+<p>The TRX family models classic analogue drum voices. Each machine is one drum sound. The Sound workspace shows its knobs in groups, each knob with its own value box. Pitch, decay and ramp sit in the first groups, and tone and clip in the last.</p>
+<figure class="gd-shot"><img src="/guide/shots/md-sound-groups.webp" width="1440" height="923" alt="TRX-BD on the Sound workspace, its knobs in groups with a box under each." loading="lazy"><figcaption>TRX-BD on the Sound workspace, its knobs in groups with a box under each.</figcaption></figure>
+<table class="gd-table"><thead><tr><th>Machine</th><th>Sound</th></tr></thead><tbody><tr><td>TRX-BD</td><td>Bass drum</td></tr><tr><td>TRX-B2</td><td>Bass drum 2</td></tr><tr><td>TRX-SD</td><td>Snare</td></tr><tr><td>TRX-XT</td><td>Tom</td></tr><tr><td>TRX-CP</td><td>Clap</td></tr><tr><td>TRX-RS</td><td>Rim shot</td></tr><tr><td>TRX-CB</td><td>Cow bell</td></tr><tr><td>TRX-CH</td><td>Closed hi-hat</td></tr><tr><td>TRX-OH</td><td>Open hi-hat</td></tr><tr><td>TRX-CY</td><td>Cymbal</td></tr><tr><td>TRX-MA</td><td>Maracas</td></tr><tr><td>TRX-CL</td><td>Claves</td></tr><tr><td>TRX-XC</td><td>Congas</td></tr></tbody></table>
+</div></section>
+<section class="gd-sec" id="efm-machines">
+<aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.A-4</span></span></aside>
+<div class="gd-body gd-prose"><h2>EFM MACHINES</h2>
+<p>The EFM family makes drum sounds by frequency modulation. The knobs sit in groups on the Sound workspace.</p>
+<table class="gd-table"><thead><tr><th>Machine</th><th>Sound</th></tr></thead><tbody><tr><td>EFM-BD</td><td>Bass drum</td></tr><tr><td>EFM-SD</td><td>Snare</td></tr><tr><td>EFM-XT</td><td>Tom</td></tr><tr><td>EFM-CP</td><td>Clap</td></tr><tr><td>EFM-RS</td><td>Rim shot</td></tr><tr><td>EFM-CB</td><td>Cow bell</td></tr><tr><td>EFM-HH</td><td>Hi-hat</td></tr><tr><td>EFM-CY</td><td>Cymbal</td></tr></tbody></table>
+</div></section>
+<section class="gd-sec" id="e12-machines">
+<aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.A-6</span></span></aside>
+<div class="gd-body gd-prose"><h2>E12 MACHINES</h2>
+<p>The E12 family is a set of drums and percussion that follow the sound of a 12 bit sampler. The knobs sit in groups on the Sound workspace.</p>
+<figure class="gd-shot"><img src="/guide/shots/md-machine-e12.webp" width="1440" height="923" alt="E12-SD on the Sound workspace with its pitch, envelope, tone and retrig groups." loading="lazy"><figcaption>E12-SD on the Sound workspace with its pitch, envelope, tone and retrig groups.</figcaption></figure>
+<table class="gd-table"><thead><tr><th>Machine</th><th>Sound</th></tr></thead><tbody><tr><td>E12-BD</td><td>Bass drum</td></tr><tr><td>E12-SD</td><td>Snare</td></tr><tr><td>E12-HT</td><td>High tom</td></tr><tr><td>E12-LT</td><td>Low tom</td></tr><tr><td>E12-CP</td><td>Clap</td></tr><tr><td>E12-RS</td><td>Rim shot</td></tr><tr><td>E12-CB</td><td>Cow bell</td></tr><tr><td>E12-CH</td><td>Closed hi-hat</td></tr><tr><td>E12-OH</td><td>Open hi-hat</td></tr><tr><td>E12-RC</td><td>Ride</td></tr><tr><td>E12-CC</td><td>Crash</td></tr><tr><td>E12-BR</td><td>Brushed snare</td></tr><tr><td>E12-TA</td><td>Tambourine</td></tr><tr><td>E12-TR</td><td>Triangle</td></tr><tr><td>E12-SH</td><td>Shaker</td></tr><tr><td>E12-BC</td><td>Bongo conga</td></tr></tbody></table>
+</div></section>
+<section class="gd-sec" id="p-i-machines">
+<aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.A-9</span></span></aside>
+<div class="gd-body gd-prose"><h2>P-I MACHINES</h2>
+<p>The P-I family is a set of percussion and instrument voices of its own. The knobs sit in groups on the Sound workspace.</p>
+<table class="gd-table"><thead><tr><th>Machine</th><th>Sound</th></tr></thead><tbody><tr><td>P-I-BD</td><td>Bass drum</td></tr><tr><td>P-I-SD</td><td>Snare</td></tr><tr><td>P-I-MT</td><td>Tom (PI-XT)</td></tr><tr><td>P-I-ML</td><td>Metallica</td></tr><tr><td>P-I-MA</td><td>Maracas</td></tr><tr><td>P-I-RS</td><td>Rim shot</td></tr><tr><td>P-I-HH</td><td>Hi-hat</td></tr><tr><td>P-I-RC</td><td>Ride</td></tr><tr><td>P-I-CC</td><td>Crash</td></tr></tbody></table>
+</div></section>
+<section class="gd-sec" id="gnd-machines">
+<aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.A-11</span></span></aside>
+<div class="gd-body gd-prose"><h2>GND MACHINES</h2>
+<p>The GND family holds plain sources: a sine, noise, an impulse, and an empty machine that makes no sound. The empty machine is in the machine picker.</p>
+<table class="gd-table"><thead><tr><th>Machine</th><th>Sound</th></tr></thead><tbody><tr><td>GND-SIN</td><td>Sinus</td></tr><tr><td>GND-NS</td><td>Noise</td></tr><tr><td>GND-IM</td><td>Impulse</td></tr><tr><td>GND-EMPTY</td><td>Empty machine</td></tr></tbody></table>
+</div></section>
+<section class="gd-sec" id="inp-machines">
+<aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.A-11</span></span></aside>
+<div class="gd-body gd-prose"><h2>INP MACHINES</h2>
+<p>The INP family does not make a sound of its own. It reacts to the audio that enters the machine at input A or B. A gate opens when the input is loud enough, a filter follower and an envelope follower turn the input level into a moving sound.</p>
+<table class="gd-table"><thead><tr><th>Machine</th><th>Sound</th></tr></thead><tbody><tr><td>INP-GA/GB</td><td>Input gate A/B</td></tr><tr><td>INP-FA/FB</td><td>Input filter follower A/B</td></tr><tr><td>INP-EA/EB</td><td>Input envelope A/B</td></tr></tbody></table>
+</div></section>
+<section class="gd-sec" id="mid-machines">
+<aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.A-12</span></span></aside>
+<div class="gd-body gd-prose"><h2>MID MACHINES</h2>
+<p>The MID family turns a track into a MIDI controller, one machine for each of the 16 MIDI channels. The Sound workspace shows its knobs as plain knob boxes, with no picture. The routing and effects pages show as groups.</p>
+</div></section>
+<section class="gd-sec" id="ctr-machines">
+<aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.A-12</span></span></aside>
+<div class="gd-body gd-prose"><h2>CTR MACHINES</h2>
+<p>The CTR family does not play a sound. It moves the parameters of other tracks or of a master effect. <b class="gd-ui">Control all</b> and <b class="gd-ui">Control 8 parameters</b> move parameters of the other tracks, and their knobs show as plain knob boxes. The other four, Rhythm Echo, Gate Box, Master EQ and Dynamix, move the knobs of that master effect, and their groups show on the Sound workspace.</p>
+<figure class="gd-shot"><img src="/guide/shots/md-machine-ctr.webp" width="1440" height="923" alt="CTR-RE on the Sound workspace, with the delay, modulation, filter and output groups of the Rhythm Echo." loading="lazy"><figcaption>CTR-RE on the Sound workspace, with the delay, modulation, filter and output groups of the Rhythm Echo.</figcaption></figure>
+<table class="gd-table"><thead><tr><th>Machine</th><th>Sound</th></tr></thead><tbody><tr><td>CTR-AL</td><td>Control all</td></tr><tr><td>CTR-8P</td><td>Control 8 parameters</td></tr><tr><td>CTR-RE</td><td>Control Rhythm Echo</td></tr><tr><td>CTR-GB</td><td>Control Gate Box</td></tr><tr><td>CTR-EQ</td><td>Control Master EQ</td></tr><tr><td>CTR-DX</td><td>Control Dynamix</td></tr></tbody></table>
+</div></section>
+<section class="gd-sec" id="rom-machines">
+<aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.A-15</span></span></aside>
+<div class="gd-body gd-prose"><h2>ROM MACHINES</h2>
+<p>The ROM machines play the samples held in the machine's own memory. The first 24 play a sample as a one shot, and the second 24 play a sample as a loop, with a linear start and end. The Sound workspace shows a sample screen with <b class="gd-light">&lt;STRT&gt;</b> and <b class="gd-light">&lt;END&gt;</b>, and the <b class="gd-ui">Sampler</b> workspace shows the slots as tiles.</p>
+<figure class="gd-shot"><img src="/guide/shots/md-machine-rom.webp" width="1440" height="923" alt="ROM-01 on the Sound workspace, with the sample screen and the &lt;STRT&gt; and &lt;END&gt; knobs." loading="lazy"><figcaption>ROM-01 on the Sound workspace, with the sample screen and the &lt;STRT&gt; and &lt;END&gt; knobs.</figcaption></figure>
+<table class="gd-table"><thead><tr><th>Machine</th><th>Sound</th></tr></thead><tbody><tr><td>ROM-1 to ROM-24</td><td>ROM sample player</td></tr><tr><td>ROM-25 to ROM-48</td><td>ROM loop player (linear STRT, END)</td></tr></tbody></table>
+</div></section>
+<section class="gd-sec" id="ram-machines">
+<aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.A-15</span></span></aside>
+<div class="gd-body gd-prose"><h2>RAM MACHINES</h2>
+<p>The RAM machines play and record samples in the four RAM slots of the machine.</p>
+<ul class="gd-list"><li><b class="gd-ui">RAM-R1 to R4</b> record. A recorder writes audio from an input or from the main mix to a RAM slot. You set one up on the <b class="gd-ui">Sampler</b> workspace, or on the Sound workspace.</li><li><b class="gd-ui">RAM-P1 to P4</b> play the sample that is in the slot. The Sound workspace shows a sample screen with <b class="gd-light">&lt;STRT&gt;</b> and <b class="gd-light">&lt;END&gt;</b>, and the <b class="gd-ui">Sampler</b> workspace shows the slot as a tile.</li></ul>
+</div></section>
+<section class="gd-sec" id="ram-machines-tutorial">
+<aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.A-16</span></span></aside>
+<div class="gd-body gd-prose"><h2>RAM MACHINES TUTORIAL</h2>
+<p>To record the main output and play it back in a track:</p>
+<ol class="gd-steps"><li>Click the <b class="gd-ui">Sampler</b> tab.</li><li>Click an unused RAM slot.</li><li>Click <b class="gd-ui">Set up sampling</b>. The editor makes a recorder of the main mix in one track, takes that track out of the mix (its <b class="gd-light">&lt;VOL&gt;</b> is 0), and adds a player.</li><li>Click <b class="gd-ui">Input A</b> to record from input A instead. The recorder's <b class="gd-light">&lt;VOL&gt;</b> comes back. Click <b class="gd-ui">Main mix</b> and it is 0 again.</li><li>Click an empty step of the RAM view to put a recorder trig there. Click <b class="gd-ui">Freeze</b> to mute the recorder on the machine. Click <b class="gd-ui">Live</b> and it records again.</li></ol>
+<p>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> three times to put everything as it was before the set up.</p>
+</div></section>
+</article>
+<article class="gd-chapter" id="c15" style="page: c15">
+<div class="gd-runhead"><span>15. Appendix B: MIDI control reference</span><span>Machinedrum Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">15</p><h1>Appendix B: MIDI control reference</h1>
+</header>
+<div class="gd-intro gd-prose"><p>The Machinedrum is played and edited over MIDI. This chapter says which notes play which track and pattern, which control changes move the sound parameters, and which move the level and the mute of a track. The editor keeps to the machine's own messages, so a keyboard or a DAW that plays the machine plays the editor.</p></div>
+<section class="gd-sec" id="note-map">
+<aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.B-1</span></span></aside>
+<div class="gd-body gd-prose"><h2>NOTE MAP</h2>
+<p>By default the 16 tracks answer to notes from C2 upwards, one note a track. The 128 patterns answer to notes from E4 upwards, one note a pattern.</p>
+<p>To see or change the map:</p>
+<ol class="gd-steps"><li>Choose <b class="gd-ui">GLOBAL…</b> in the engine menu.</li><li>Find the map editor in the panel. Each track has a note.</li><li>Click the note of a track up or down. The track plays from the next note.</li><li>Click a track's <b class="gd-ui">LEARN</b> dot to set the note by playing it. The head of the panel asks you to play a note. Play it on a MIDI keyboard. The track takes that note and the dot goes out.</li><li>Click <b class="gd-ui">Reset map</b>. The editor asks first. Answer, and the tracks play from C2 and the patterns from E4 again.</li><li>Press <kbd class="gd-key">[ESC]</kbd> to close the panel.</li></ol>
+<aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p><kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> takes back a change to the map.</p></aside>
+</div></section>
+<section class="gd-sec" id="control-changes">
+<aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.B-1</span></span></aside>
+<div class="gd-body gd-prose"><h2>CONTROL CHANGES</h2>
+<p>The sound parameters of the 16 tracks are reached by control change messages. The machine uses four MIDI channels, starting from its base channel, and each channel serves a group of four tracks. Every parameter of a track has its own control change number.</p>
+<p>In the editor you do not type these numbers. When you move a value on the <b class="gd-ui">Sound</b> workspace, the editor sends the control change for it. A move on a track of each group of four, tracks 1, 5, 9 and 13, reaches the machine through its own channel.</p>
+<p>The editor also learns a controller of your own from the one you move, through its Control page.</p>
+</div></section>
+<section class="gd-sec" id="level-and-mute">
+<aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.B-1</span></span></aside>
+<div class="gd-body gd-prose"><h2>LEVEL AND MUTE</h2>
+<p>Each track has its own control change for its level. The mute of a track is a control change of its own too.</p>
+<ol class="gd-steps"><li>Click the <b class="gd-ui">Mix</b> tab.</li><li>Drag the <b class="gd-light">&lt;LEV&gt;</b> box of a track. The level control change goes out with each move.</li><li>Double-click the box. It reads 100.</li><li>Click <b class="gd-ui">Undo</b> until the level is back.</li></ol>
+<p>The mute keys of the editor act on the machine's own memory of the mutes.</p>
+</div></section>
+</article>
+<article class="gd-chapter" id="c16" style="page: c16">
+<div class="gd-runhead"><span>16. Appendix C: sysex reference</span><span>Machinedrum Editor</span></div>
+<header class="gd-chead"><p class="gd-cnum">16</p><h1>Appendix C: sysex reference</h1>
+</header>
+<div class="gd-intro gd-prose"><p>The Machinedrum is also edited by system exclusive messages. A message has a number, which the machine's own appendix lists in hexadecimal. A dump carries a whole object, a kit, a pattern, a song or a global. A request asks the machine for one. The other messages change one thing, such as a tempo or a routing.</p>
+<p>You never send these by hand. The editor sends and reads them for you, and this chapter says where. The numbers are written for reference.</p></div>
+<section class="gd-sec" id="kits">
+<aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.C-1</span></span></aside>
+<div class="gd-body gd-prose"><h2>KITS</h2>
+<p>A kit dump is 0x52 and its request 0x53. The kit library and the whole page use them. A kit moves between the editor and the machine as a dump.</p>
+<p>Set kit name is 0x55. <b class="gd-ui">Rename</b> in the kit library sends it.</p>
+<p>To see the kit messages work:</p>
+<ol class="gd-steps"><li>Click <b class="gd-light">&lt;KIT&gt;</b> on the LCD. The kit library opens.</li><li>Alt-click a slot. It is selected, not loaded.</li><li>Click <b class="gd-ui">Copy</b>, Alt-click another slot and click <b class="gd-ui">Paste</b>. Answer <b class="gd-ui">Overwrite</b> when the editor asks. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> and the slot is back as it was.</li><li>Double-click the current kit, type a name and press <kbd class="gd-key">[Enter]</kbd>. The working kit is renamed and not saved yet.</li><li>Click <b class="gd-ui">Save</b>. The slot holds the new name.</li></ol>
+</div></section>
+<section class="gd-sec" id="globals">
+<aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.C-1</span></span></aside>
+<div class="gd-body gd-prose"><h2>GLOBALS</h2>
+<p>A global dump is 0x50 and its request 0x51. The <b class="gd-ui">GLOBAL</b> panel shows the global the machine reported: its slot, its base channel and its sync settings.</p>
+<p>Set active global is 0x56. The slot keys in the <b class="gd-ui">GLOBAL</b> panel send it.</p>
+<ol class="gd-steps"><li>Choose <b class="gd-ui">GLOBAL…</b> in the engine menu.</li><li>Click another global slot key. The active global of the machine is that one.</li><li>Click the key of the first slot again to put it back.</li></ol>
+</div></section>
+<section class="gd-sec" id="loading-and-saving">
+<aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.C-2,</span> <span>C-3</span></span></aside>
+<div class="gd-body gd-prose"><h2>LOADING AND SAVING</h2>
+<p>Load pattern is 0x57, load kit is 0x58 and save kit is 0x59. The pattern chooser and the kit library send them.</p>
+<p>Save song is 0x6d. <b class="gd-ui">Save</b> in the Songs column sends it.</p>
+<ol class="gd-steps"><li>Click <b class="gd-light">&lt;KIT&gt;</b> on the LCD. Click another kit. It loads at once.</li><li>Alt-click a third kit. It is selected, not loaded.</li><li>Click <b class="gd-ui">Save as</b>. The editor asks before it overwrites. Click <b class="gd-ui">Overwrite</b> and the kit is saved into that slot.</li><li>Click the pattern on the LCD, then another pattern. With the machine stopped, it switches.</li></ol>
+</div></section>
+<section class="gd-sec" id="note-map">
+<aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.C-2,</span> <span>C-3</span></span></aside>
+<div class="gd-body gd-prose"><h2>NOTE MAP</h2>
+<p>Set MIDI note mapping is 0x5a. The map editor in the <b class="gd-ui">GLOBAL</b> panel sends it when you change the note of a track.</p>
+<p>Reset MIDI note map is 0x64. <b class="gd-ui">Reset map</b> sends it. The editor asks first, and <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> takes it back.</p>
+</div></section>
+<section class="gd-sec" id="sound-settings">
+<aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.C-2,</span> <span>C-3</span></span></aside>
+<div class="gd-body gd-prose"><h2>SOUND SETTINGS</h2>
+<p>These messages change one part of the sound.</p>
+<ul class="gd-list"><li>Assign machine is 0x5b. The machine picker on the <b class="gd-ui">Sound</b> workspace sends it.</li><li>Set track routing is 0x5c. The <b class="gd-ui">OUT</b> key of a track on the <b class="gd-ui">Mix</b> workspace sends it, and so does the routing in the <b class="gd-ui">GLOBAL</b> panel.</li><li>The Rhythm Echo, Gate Box, Master EQ and Dynamix messages are 0x5d to 0x60. The cards of the <b class="gd-ui">Mix</b> workspace send them.</li><li>Set tempo is 0x61. Dragging the <b class="gd-light">&lt;TEMPO&gt;</b> field in the LCD sends it.</li><li>Set LFO is 0x62. The LFO cards of the <b class="gd-ui">Sound</b> workspace send it.</li><li>Trig group is 0x65 and mute group is 0x66. <b class="gd-ui">Mute</b> and <b class="gd-ui">Trig</b> in the relations of the <b class="gd-ui">Sound</b> workspace send them.</li></ul>
+</div></section>
+<section class="gd-sec" id="patterns-and-songs">
+<aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.C-3</span></span></aside>
+<div class="gd-body gd-prose"><h2>PATTERNS AND SONGS</h2>
+<p>Pattern dump is 0x67 and its request 0x68. The editor uses them for the whole page, and the pattern chooser shows what they hold.</p>
+<p>Song dump is 0x69 and its request 0x6a. Load song is 0x6c. The <b class="gd-ui">Song</b> workspace uses them. A song slot you click is only selected. <b class="gd-ui">Load</b> puts the machine's song in the editor.</p>
+<p>Status request, set and response are 0x70 to 0x72. The editor reads the machine's mode with them. Click <b class="gd-light">&lt;PLAY&gt;</b> on the second line of the LCD and the machine's mode is SONG. Click it again to go back to PATTERN.</p>
+</div></section>
+<section class="gd-sec" id="not-in-the-editor">
+<aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.C-3,</span> <span>C-4</span></span></aside>
+<div class="gd-body gd-prose"><h2>NOT IN THE EDITOR</h2>
+<p>Set receive position is 0x6b. The editor does not send it. When you import a SysEx file, the editor places the items itself.</p>
+<p>The TurboMIDI speed messages are 0x10 to 0x17. They belong to the hardware link and the editor has no control for them.</p>
 </div></section>
 </article>
 <article class="gd-chapter" id="c17" style="page: c17">
@@ -1247,16 +1464,173 @@
 <p>A new session is a new plug-in in a DAW project, a new DAW project, or a start of the standalone editor. It has every slot you saved, wherever you saved it. The standalone editor also keeps the kit that played when you quit it, with its unsaved changes.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A DAW project keeps its own memory. When you open a saved project, the machine starts with the memory of that project, not with the file. A save you then make in that project goes to the file too, and only the slot you saved.</p></aside>
 <h4 class="gd-h3">Start from factory memory</h4>
-<ol class="gd-steps"><li>Choose <b class="gd-ui">RESET MACHINE…</b> in the engine menu, the drop-down at the left of the LCD.</li><li>Click <b class="gd-ui">Start from factory memory…</b>. The editor asks a second time.</li><li>Click <b class="gd-ui">Start from factory memory</b>. The machine restarts with its factory memory, as on a new install, and the saved memory file is deleted. This takes a few seconds.</li></ol>
+<ol class="gd-steps"><li>Choose <b class="gd-ui">RESET MACHINE…</b> in the engine menu, the drop-down at the left of the LCD.</li><li>Click <b class="gd-ui">Start from factory memory…</b>. The editor asks a second time. <b class="gd-ui">Cancel</b> leaves the saved memory as it is.</li><li>Click <b class="gd-ui">Start from factory memory</b>. The machine restarts with its factory memory, as on a new install, and the saved memory file is deleted. This takes a few seconds.</li></ol>
 <p>New sessions now start from factory memory until you save again. The reset has no undo: click <b class="gd-ui">Export SysEx…</b> in the question first to keep a way back.</p>
 <h4 class="gd-h3">Turn it off</h4>
 <p>Choose <b class="gd-ui">KEEP MEMORY: ON</b> in the engine menu. It reads <b class="gd-ui">KEEP MEMORY: OFF</b>, and new sessions start from factory memory. The editor no longer writes the file. The file stays, so when you turn it on again, new sessions start with the memory you saved before.</p>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-engine-memory.webp" width="1440" height="923" alt="The engine menu with KEEP MEMORY and RESET MACHINE" loading="lazy"><figcaption>The engine menu with KEEP MEMORY and RESET MACHINE</figcaption></figure>
 <h4 class="gd-h3">Two editors at once</h4>
 <p>Two Machinedrum editors open at the same time, in one DAW project or in two, share the same file. Each writes the slots it saves and leaves the others. When two editors save the same slot, the last save wins.</p>
 <h4 class="gd-h3">When the file cannot be used</h4>
 <p>The file is written in one step, so a crash leaves the old memory or the new one. If the file is damaged, the machine starts from factory memory and the editor says so. It keeps the file beside the new one as machine-memory.unusable with the date and time in its name, and your next save writes a new memory file. If the file was written by a newer editor, the editor leaves it as it is and saves nothing over it. It says so; move the file away to save again.</p>
 <p>If the editor cannot write the file, because the disk is full or the folder is read only, it says so and keeps the old file. It tries again at your next save and when it closes. Your saves stay in the session. The standalone editor starts with them next time, not with the old file, and writes them then.</p>
 <p>The file is machine-memory.bin in the memory folder of the editor's data folder: Documents/Gearmulator Preview/Machinedrum/memory. It holds the slots you saved and the samples you loaded, nothing else. Samples saved with another ROM are kept in a file of their own when you save a sample with this one. It holds no firmware.</p>
+</div></section>
+<section class="gd-sec" id="factory-songs-play">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>FACTORY SONGS PLAY</h2>
+<p>The songs of factory memory are in the editor, and they play. The arrangement follows what the machine plays. See &quot;LOAD SONG&quot; in chapter 9.</p>
+<ol class="gd-steps"><li>Click the <b class="gd-ui">Song</b> tab.</li><li>Click a slot that holds a song, such as UW DEMO, and click <b class="gd-ui">Load</b>.</li><li>Click <b class="gd-ui">SONG</b> over the pattern palette. The machine is in song mode.</li><li>Press <kbd class="gd-key">[SPACE]</kbd>. The step moves, and the song goes on from row to row. The output is not silent.</li><li>Press <kbd class="gd-key">[SPACE]</kbd> again. The song stops.</li></ol>
+</div></section>
+<section class="gd-sec" id="factory-patterns-play">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>FACTORY PATTERNS PLAY</h2>
+<p>The patterns of factory memory are in the editor, and they play. See &quot;PATTERN QUEUE AND CHOOSER&quot; below.</p>
+<ol class="gd-steps"><li>Click the pattern on the LCD. The chooser opens.</li><li>Click a pattern that holds trigs. The kit of the pattern loads with it.</li><li>Press <kbd class="gd-key">[SPACE]</kbd>. The step moves through the pattern and the output is not silent.</li><li>Press <kbd class="gd-key">[SPACE]</kbd> again, and choose another pattern the same way.</li></ol>
+</div></section>
+<section class="gd-sec" id="what-you-draw-plays">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>WHAT YOU DRAW PLAYS</h2>
+<p>What you draw in the grid is what the machine plays. Four trigs drawn in an empty pattern sound when you press play, a cleared pattern plays silence, and an undo brings the trigs back.</p>
+<figure class="gd-shot"><img src="/guide/shots/md-real-sequence-drawn.webp" width="1440" height="923" alt="Four trigs drawn on track 1 of an empty pattern" loading="lazy"><figcaption>Four trigs drawn on track 1 of an empty pattern</figcaption></figure>
+<ol class="gd-steps"><li>Click the <b class="gd-ui">Sequence</b> tab.</li><li>Click the pattern on the LCD and choose a pattern with no trigs.</li><li>Pick a track on the rail.</li><li>Click four steps on that track. Each becomes a trig.</li><li>Press <kbd class="gd-key">[SPACE]</kbd>. The position moves through the pattern and the track sounds.</li><li>Press <kbd class="gd-key">[⌥]</kbd> <kbd class="gd-key">[DELETE]</kbd>. The pattern is cleared.</li></ol>
+<figure class="gd-shot"><img src="/guide/shots/md-real-sequence-cleared.webp" width="1440" height="923" alt="The same pattern after the clear" loading="lazy"><figcaption>The same pattern after the clear</figcaption></figure>
+<ol class="gd-steps" start="7"><li>Press <kbd class="gd-key">[SPACE]</kbd> again. The position moves and nothing sounds.</li><li>Press <kbd class="gd-key">[⌘]</kbd> <kbd class="gd-key">[Z]</kbd> once. The four trigs are back, and they play again.</li></ol>
+</div></section>
+<section class="gd-sec" id="gen-rolls-a-rhythm">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>GEN ROLLS A RHYTHM</h2>
+<p>The machine has no such function: you set every hit by hand. The <b class="gd-ui">GEN</b> bar on the <b class="gd-ui">Sequence</b> workspace rolls a rhythm for the selected track from a few settings. <b class="gd-ui">Random</b> rolls a new one, <b class="gd-ui">Defaults</b> sets the generator the track's sound suits, and <b class="gd-ui">Hits</b> says how many hits it holds. The key <kbd class="gd-key">[R]</kbd> rolls too. A whole roll is one undo step.</p>
+</div></section>
+<section class="gd-sec" id="mutate-changes-a-sound">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>MUTATE CHANGES A SOUND</h2>
+<p>The machine has no such function. <b class="gd-ui">MUTATE</b> in the <b class="gd-ui">GEN</b> bar nudges the sound of the tracks at random. The scope chips choose what moves, and the amount says how far. A mutation is one undo step.</p>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-gen-mutate-scope.webp" width="1440" height="923" alt="MUTATE on the Sound workspace with only the effects chip lit" loading="lazy"><figcaption>MUTATE on the Sound workspace with only the effects chip lit</figcaption></figure>
+<ol class="gd-steps"><li>Click the <b class="gd-ui">Sound</b> tab and pick a track on the rail.</li><li>In <b class="gd-ui">MUTATE</b>, switch the <b class="gd-ui">FX</b> chip on and the <b class="gd-ui">SYN</b> chip off. Only the effects move.</li><li>Raise the amount by one step.</li><li>Click <b class="gd-ui">Random</b>. The effect values of the track change and the synth values stay.</li><li>Press <kbd class="gd-key">[⌘]</kbd> <kbd class="gd-key">[Z]</kbd>. The sound is as it was.</li></ol>
+<p>To mutate and roll together, pick a drum track on the <b class="gd-ui">Sequence</b> workspace and click <b class="gd-ui">Random</b> in the <b class="gd-ui">GEN</b> bar until the rhythm changes. Then click the <b class="gd-ui">Sound</b> tab and <b class="gd-ui">Random</b> in <b class="gd-ui">MUTATE</b>. Click <b class="gd-ui">UNDO</b> once: the sound is back. Click it again: the rhythm is back.</p>
+</div></section>
+<section class="gd-sec" id="solo">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>SOLO</h2>
+<p>Solo plays one track alone. The mutes you had come back when you let go.</p>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-mix-mute-solo.webp" width="1440" height="923" alt="The Mix workspace with some tracks muted and one soloed" loading="lazy"><figcaption>The Mix workspace with some tracks muted and one soloed</figcaption></figure>
+<ol class="gd-steps"><li>Click the <b class="gd-ui">Mix</b> tab.</li><li>Drag across the <b class="gd-ui">M</b> keys of four tracks. All four are muted.</li><li>Click <b class="gd-ui">S</b> on another track. That track plays alone.</li><li>Click <b class="gd-ui">S</b> again. The solo ends, and the four mutes are still set.</li></ol>
+</div></section>
+<section class="gd-sec" id="undo-and-redo">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>UNDO AND REDO</h2>
+<p>The machine cannot take an edit back. In the editor every edit can be taken back and done again, across kits, patterns and songs.</p>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-top-undo-redo.webp" width="1440" height="923" alt="The UNDO and REDO keys in the top bar" loading="lazy"><figcaption>The UNDO and REDO keys in the top bar</figcaption></figure>
+<ol class="gd-steps"><li>Click an empty step on the <b class="gd-ui">Sequence</b> workspace. It becomes a trig.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd>. The trig goes.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[Z]</kbd>. The trig is back.</li><li>Click <b class="gd-ui">UNDO</b> in the top bar to take it back again, and <b class="gd-ui">REDO</b> to put it back.</li></ol>
+<p>A drag, a paint or a run of rotates is one step. Each typed value is one step.</p>
+</div></section>
+<section class="gd-sec" id="typed-values">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>TYPED VALUES</h2>
+<p>Type a value into a knob instead of turning it.</p>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-sound-type-value.webp" width="1440" height="923" alt="A typed value in the Sound workspace" loading="lazy"><figcaption>A typed value in the Sound workspace</figcaption></figure>
+<ol class="gd-steps"><li>Click the <b class="gd-ui">Sound</b> tab and pick a track on the rail.</li><li>Click a value box with <kbd class="gd-key">[⌘]</kbd> held, or focus it and press <kbd class="gd-key">[ENTER]</kbd>. A field opens over the box with the value it shows.</li><li>Type a value and press <kbd class="gd-key">[ENTER]</kbd>. The box shows it, and the machine has it.</li><li>A value out of range, such as 128, is refused. The field stays open and nothing is sent.</li><li>Press <kbd class="gd-key">[ESC]</kbd> to close the field. The value is as it was.</li></ol>
+<p>With a value focused, the up and down arrow keys step it. Each typed value is one undo step.</p>
+</div></section>
+<section class="gd-sec" id="the-step-menu">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>THE STEP MENU</h2>
+<p>Right-click a step for its menu: accent or slide, copy, paste and fill.</p>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-seq-step-menu.webp" width="1440" height="923" alt="The step menu" loading="lazy"><figcaption>The step menu</figcaption></figure>
+<ol class="gd-steps"><li>Click the <b class="gd-ui">Sequence</b> tab and pick a track on the rail.</li><li>Click an empty step to make a trig.</li><li>Right-click the step. Its menu opens. The <b class="gd-ui">⋯</b> on the selected step opens the same menu.</li><li>Choose <b class="gd-ui">Accent</b>. The step is an accent.</li><li>Right-click the step again and choose <b class="gd-ui">Copy</b>.</li><li>Right-click an empty step and choose <b class="gd-ui">Paste here</b>. The trig lands there.</li><li>Right-click an empty step and choose <b class="gd-ui">Fill every 2nd from here</b>. Every second step from there comes on. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> takes it back.</li></ol>
+</div></section>
+<section class="gd-sec" id="select-copy-and-paste-steps">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>SELECT, COPY AND PASTE STEPS</h2>
+<p>Select steps with the mouse, then copy, paste and clear them, on one track or on several. <kbd class="gd-key">[⌘]</kbd> click a step to select it, <kbd class="gd-key">[⌘]</kbd> drag to select a block. Use <b class="gd-ui">Copy</b>, <b class="gd-ui">Paste</b> and <b class="gd-ui">Clr</b> in the top bar, or <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd> and <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd> on the keyboard. See &quot;NOTE COPY&quot; in chapter 8.</p>
+<ol class="gd-steps"><li>Click the <b class="gd-ui">Sequence</b> tab and pick a track on the rail.</li><li><kbd class="gd-key">[⌘]</kbd> click a step with a trig. It is selected.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>, or click <b class="gd-ui">Copy</b> in the top bar.</li><li><kbd class="gd-key">[⌘]</kbd> click an empty step of the same track.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>, or click <b class="gd-ui">Paste</b>. The trig lands on the selected step.</li><li><kbd class="gd-key">[⌘]</kbd> drag from step 1 of a track to step 4 of the next. The block is selected.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[D]</kbd>. The block appears again on steps 5 to 8.</li><li>Click <b class="gd-ui">Clr</b>. The selected block is cleared and nothing else.</li><li>Press <kbd class="gd-key">[ESC]</kbd>. The selection goes.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> three times. Both tracks are as they were.</li></ol>
+<p>To paste into several tracks, copy a track and click the headers of two other tracks with <kbd class="gd-key">[⇧]</kbd> held. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>: both tracks get the steps, and one <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> takes both back.</p>
+</div></section>
+<section class="gd-sec" id="copy-paste-and-clear-what">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>COPY, PASTE AND CLEAR WHAT</h2>
+<p>A copy, a paste or a clear can take only part of what a step holds. The <b class="gd-ui">what</b> menu on <b class="gd-ui">Copy</b>, <b class="gd-ui">Paste</b> and <b class="gd-ui">Clear</b> chooses: trigs, locks, the sound, or the whole track. The keys <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[C]</kbd>, <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[V]</kbd> and <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[BACKSPACE]</kbd> open it from the keyboard.</p>
+</div></section>
+<section class="gd-sec" id="drop-a-file-on-the-window">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>DROP A FILE ON THE WINDOW</h2>
+<p>Drop a SysEx file on the editor to open it in the import preview. On the Machinedrum you can drop a WAV or AIFF sample on the <b class="gd-ui">Sampler</b> too. Drag and drop works on macOS only. See &quot;GENERAL SYSEX RECEIVE&quot; in chapter 10 and &quot;SPECIFIC PLACE SAMPLE RECEIVE&quot; in chapter 11.</p>
+<p>To open a SysEx file:</p>
+<ol class="gd-steps"><li>Drag the .syx file onto the editor window. The <b class="gd-ui">Import SysEx</b> panel opens with the preview of the file.</li><li>Click <b class="gd-ui">Cancel</b>. The panel closes and nothing is sent.</li></ol>
+<p>To load a sample:</p>
+<ol class="gd-steps"><li>Click the <b class="gd-ui">Sampler</b> tab.</li><li>Click an empty ROM slot.</li><li>Drag the WAV file onto the waveform of the slot. The editor sends it, and the slot holds the sample.</li></ol>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-drop-sample.webp" width="1440" height="923" alt="A sample dropped on ROM slot 33" loading="lazy"><figcaption>A sample dropped on ROM slot 33</figcaption></figure>
+</div></section>
+<section class="gd-sec" id="sysex-import-with-a-preview">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>SYSEX IMPORT WITH A PREVIEW</h2>
+<p>Choose <b class="gd-ui">IMPORT SYSEX…</b> in the engine menu to look inside a SysEx file before you send it. You tick the kinds, choose where each goes and read the report. The steps are in &quot;GENERAL SYSEX RECEIVE&quot; in chapter 10.</p>
+</div></section>
+<section class="gd-sec" id="midi-note-lights">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>MIDI NOTE LIGHTS</h2>
+<p>The track you play from a MIDI keyboard lights on the track rail and in the mixer.</p>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-sound-note-light.webp" width="1440" height="923" alt="The track rail and the mixer light of a track that plays" loading="lazy"><figcaption>The track rail and the mixer light of a track that plays</figcaption></figure>
+<ol class="gd-steps"><li>Click the <b class="gd-ui">Sound</b> tab.</li><li>Play the note of track 3 from a MIDI keyboard on a channel other than the base channel. No track lights.</li><li>Play it on the base channel. The number of track 3 on the rail lights for a moment, then goes out.</li><li>Click the <b class="gd-ui">Mix</b> tab and play track 3 again. Its light on the strip lights and no other does.</li></ol>
+<p>The notes that play each track are set in &quot;MAP EDITOR&quot; in chapter 10.</p>
+</div></section>
+<section class="gd-sec" id="the-cpu-meter-and-the-speed-ups">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>THE CPU METER AND THE SPEED-UPS</h2>
+<p>The machine has no such function. A meter after the version in the top bar shows how much of the audio time the emulation takes. Click the meter for its details: the average, the worst block, the machine's speed and the speed-ups. The speed-ups are switched in the Developer menu.</p>
+<ol class="gd-steps"><li>Look at the meter after the version in the top bar. It reads a share of the audio time.</li><li>Press <kbd class="gd-key">[SPACE]</kbd>. While the machine plays, the meter moves.</li><li>Click the meter. Its details open under it: the average, the worst block, the machine's speed, the rate and block size, and the speed-ups.</li><li>The details follow the meter while they are open. Press <kbd class="gd-key">[ESC]</kbd> to close them.</li><li>Open <b class="gd-ui">Developer</b> and choose <b class="gd-ui">Speed-ups</b>. The tick turns, and the machine runs with the speed-ups off. Choose it again to turn them on.</li><li>In the details of the meter, <b class="gd-ui">Speed-ups (each)…</b> lists every lever. Switch one off and on again.</li></ol>
+</div></section>
+<section class="gd-sec" id="the-output-meter-and-volume">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>THE OUTPUT METER AND VOLUME</h2>
+<p>Two bars and a volume line sit at the right end of the LCD. The bars show the left and right peaks of the output. The line sets the volume of the editor.</p>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-lcd-volume.webp" width="1440" height="923" alt="The output meter and volume at the end of the LCD" loading="lazy"><figcaption>The output meter and volume at the end of the LCD</figcaption></figure>
+<ol class="gd-steps"><li>Drag the meter down. The volume falls, and the readout under the LCD says so while it changes. The readout goes a moment after.</li><li>Scroll up one notch to raise it by 1 dB.</li><li>Drag it to the foot to turn the output off.</li><li>Double-click the meter to go back to 0 dB.</li><li>Press <kbd class="gd-key">[SPACE]</kbd>. The bars follow the sound.</li></ol>
+</div></section>
+<section class="gd-sec" id="the-editor-s-menu">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>THE EDITOR'S MENU</h2>
+<p>A right-click menu holds the zoom, the updates and the developer switches.</p>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-top-editor-menu.webp" width="1440" height="923" alt="The editor's menu" loading="lazy"><figcaption>The editor's menu</figcaption></figure>
+<ol class="gd-steps"><li>Right-click an empty part of the header, or the track rail. The menu opens with the editor's name and version.</li><li>Focus <b class="gd-ui">Zoom</b> and press the right arrow key. Its steps open.</li><li>Click a step. The menu closes and the page zooms. Open the menu again: <b class="gd-ui">Zoom</b> names the new step.</li><li>Click <b class="gd-ui">Updates</b>, then <b class="gd-ui">Check Daily</b>. Open <b class="gd-ui">Updates</b> again: the tick has turned.</li><li>Press <kbd class="gd-key">[ESC]</kbd> to close a submenu, and <kbd class="gd-key">[ESC]</kbd> again to close the menu.</li></ol>
+</div></section>
+<section class="gd-sec" id="the-keyboard-view">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>THE KEYBOARD VIEW</h2>
+<p>The keyboard view draws the computer keyboard with the words of each key and a search.</p>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-keys-help.webp" width="1440" height="923" alt="The keyboard view" loading="lazy"><figcaption>The keyboard view</figcaption></figure>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[?]</kbd>, or click <b class="gd-ui">?</b> in the top bar. The keyboard view opens.</li><li>Click the <kbd class="gd-key">[⌥]</kbd> / <kbd class="gd-key">[FN]</kbd> layer to see the keys of that layer.</li><li>Click a key on the drawn keyboard. Its job is written in words.</li><li>Type &quot;undo&quot; in the search. The key <kbd class="gd-key">[⌘]</kbd> <kbd class="gd-key">[Z]</kbd> is marked and the list keeps the undo keys.</li><li>Press <kbd class="gd-key">[ESC]</kbd> to close it.</li></ol>
+</div></section>
+<section class="gd-sec" id="the-computer-keyboard-plays">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>THE COMPUTER KEYBOARD PLAYS</h2>
+<p>The two rows of letter keys play the selected track, on any workspace.</p>
+<ol class="gd-steps"><li>Pick a track on the rail.</li><li>Press <kbd class="gd-key">[A]</kbd>. The track plays.</li></ol>
+</div></section>
+<section class="gd-sec" id="tap-tempo">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>TAP TEMPO</h2>
+<p>Tap a key to the beat to set the tempo.</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[B]</kbd> or <kbd class="gd-key">[T]</kbd> five times in time. Or press <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[B]</kbd>, which taps on every workspace.</li><li>The tempo field takes the tempo you tapped. Taps half a second apart read about 119 beats per minute.</li></ol>
+<p>See &quot;TAP TEMPO&quot; in chapter 8.</p>
+</div></section>
+<section class="gd-sec" id="pattern-queue-and-chooser">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>PATTERN QUEUE AND CHOOSER</h2>
+<p>Pick any of the 128 patterns from the chooser. A pattern chosen while the machine plays waits for the end of the pattern that plays.</p>
+<figure class="gd-shot"><img src="/guide/shots/md-pattern-chooser.webp" width="1440" height="923" alt="The pattern chooser" loading="lazy"><figcaption>The pattern chooser</figcaption></figure>
+<ol class="gd-steps"><li>Click the pattern on the LCD. The chooser shows 8 banks of 16. A slot with no trigs says EMPTY. Every other slot gives its length and kit.</li><li>Press a bank letter, or click the key of a bank. The selection moves to that bank.</li><li>Click a pattern. With the machine stopped, it switches at once.</li><li>Press <kbd class="gd-key">[SPACE]</kbd>. While it plays, click <b class="gd-ui">›</b> on the LCD. The next pattern is queued, and it starts at the end of the one that plays.</li><li>Move to a pattern with trigs and click <b class="gd-ui">Copy</b>. Move to another and click <b class="gd-ui">Clear</b>. Its tile says EMPTY. Click <b class="gd-ui">Paste</b>. The slot has the steps and the kit link of the copy.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> twice to bring the slot back. Press <kbd class="gd-key">[ESC]</kbd> to close the chooser.</li></ol>
+</div></section>
+<section class="gd-sec" id="kit-and-song-slots">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>KIT AND SONG SLOTS</h2>
+<p>The kit library and the song slots load, copy, paste, rename and clear a slot. Each is one undo step.</p>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-lib-kit-copy-paste-undo.webp" width="1440" height="923" alt="The kit library after a copy" loading="lazy"><figcaption>The kit library after a copy</figcaption></figure>
+<h4 class="gd-h3">Kit slots</h4>
+<ol class="gd-steps"><li>Click <b class="gd-ui">KIT</b> on the LCD. The kit library opens.</li><li>Click a slot with <kbd class="gd-key">[⌥]</kbd> held. It is selected and not loaded.</li><li>Click <b class="gd-ui">Copy</b>. <kbd class="gd-key">[⌥]</kbd> click another slot and click <b class="gd-ui">Paste</b>. Answer <b class="gd-ui">Overwrite</b> when the editor asks.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd>. The slot is back.</li><li>To rename, click <b class="gd-ui">Rename</b>, type a name, press <kbd class="gd-key">[ENTER]</kbd> and answer the question.</li><li>To clear, select a slot and press <kbd class="gd-key">[DELETE]</kbd>. It is cleared as the machine clears it. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> brings it back.</li></ol>
+<h4 class="gd-h3">Song slots</h4>
+<ol class="gd-steps"><li>Click the <b class="gd-ui">Song</b> tab. Click an empty song slot. It is selected, and the machine's song stays.</li><li>Click <b class="gd-ui">Load</b> to make the machine play that slot's song.</li><li>Press <kbd class="gd-key">[F2]</kbd>, type a name and press <kbd class="gd-key">[ENTER]</kbd>. The slot is named.</li><li>Click <b class="gd-ui">Copy</b>, select another slot and click <b class="gd-ui">Paste</b>. The song is there, with no question.</li><li>Drag a slot onto an empty one to copy it.</li><li>Select a slot and click <b class="gd-ui">Save to…</b>, type a name and press <kbd class="gd-key">[ENTER]</kbd>. The machine's song is saved there.</li><li>Click <b class="gd-ui">Clear</b>. The editor asks first. Answer <b class="gd-ui">Clear song</b>. The slot is empty and quiet.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd>. The song is back. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[Z]</kbd> to empty it again.</li></ol>
 </div></section>
 </article>
 </div>

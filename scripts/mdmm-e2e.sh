@@ -11,6 +11,8 @@
 #     --write-data   write doc/features/e2e-<machine>.json (the maps' E2E column; commit it with the guide)
 #     --select       a journey selector (default: all), for a part of a run: the report then lists the rest as "missing"
 #     --report-only  render the pictures and the report from the last run in temp/evidence/<version>/run
+#     (a targeted re-run of a few journeys whose result a harness fault spoiled goes to $OUT/run-fix/<md|mm>, scripts/mdmm-journeys.sh with
+#      MDMM_JOURNEY_OUT set to it; --report-only then reads both, the later run winning)
 #     --retake       after other branches merged: the same run again, into the same folder (the guide's pictures follow:
 #                    scripts/mdmm-guide.mjs takes the newest snapshot of each name), then the report
 # Fresh settings (MDMM_JOURNEY_SETTINGS=fresh): the machine starts from factory memory, so the pictures are the same each
@@ -62,7 +64,8 @@ PY
 	tail -qn 1 "$OUT"/journeys-*.log
 fi
 PAGEARGS=()
-if [ $PAGE = 1 ]; then
+if [ $REPORT_ONLY = 1 ] && [ -d "$OUT/page" ]; then PAGEARGS=(--page "$OUT/page")
+elif [ $PAGE = 1 ]; then
 	cmake --build "$ROOT/temp/dev" --target deskStubHost > "$OUT/stubhost-build.log" 2>&1 || { echo "deskStubHost did not build: $OUT/stubhost-build.log"; exit 1; }
 	MDMM_STUB_HOST="$ROOT/temp/dev/source/elektron/md/deskStubHost/deskStubHost" node scripts/mdmm-page.mjs --jobs 2 --out "$OUT/page" "$WHICH" "$SEL" > "$OUT/page.log" 2>&1
 	tail -2 "$OUT/page.log"
@@ -70,12 +73,13 @@ if [ $PAGE = 1 ]; then
 fi
 # the pictures: each unit's page log, in parallel
 RAW="$OUT/raw"; rm -rf "$RAW"; mkdir -p "$RAW"; rm -f "$OUT"/shots/*.webp
-find "$RUN" -name page.log | xargs -P 4 -I{} python3 scripts/mdmm-snap.py "$RAW" {} > "$OUT/snap.log" 2>&1
+find "$RUN" "$OUT/run-fix" -name page.log 2>/dev/null | xargs -P 4 -I{} python3 scripts/mdmm-snap.py "$RAW" {} > "$OUT/snap.log" 2>&1
 python3 scripts/mdmm-e2e-webp.py "$RAW" "$OUT/shots" | tee "$OUT/shots.size"
 rm -rf "$RAW"
 FW=""; for r in "$HOME/Documents/Gearmulator Preview/Machinedrum/roms/"* "$HOME/Documents/Gearmulator Preview/Monomachine/roms/"*; do FW="$FW $(basename "$r")"; done
 export MDMM_E2E_VERSION=$VERSION MDMM_E2E_COMMIT=$(git rev-parse --short HEAD) MDMM_E2E_FIRMWARE="${GEARMULATOR_MD_FIRMWARE_BIN:+$(basename "$GEARMULATOR_MD_FIRMWARE_BIN") }${GEARMULATOR_MM_FIRMWARE_BIN:+$(basename "$GEARMULATOR_MM_FIRMWARE_BIN")}${FW}"
 ARGS=(--out "$OUT" "${PAGEARGS[@]}")
 [ $WRITE = 1 ] && ARGS+=(--write-data)
-node scripts/mdmm-e2e.mjs "${ARGS[@]}" "$RUN"
+FIX=(); [ -d "$OUT/run-fix" ] && FIX=("$OUT/run-fix")
+node scripts/mdmm-e2e.mjs "${ARGS[@]}" "$RUN" "${FIX[@]}"
 echo "done in $(( $(date +%s) - START )) s"

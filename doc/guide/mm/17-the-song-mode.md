@@ -243,6 +243,11 @@ On the machine you start the song from any row: select the row and press [ENTER/
 
 The machine counts the bars and beats the song has played in the EDIT SONG header. The editor shows the same counter in the **Arrangement** header while the song plays: Playing · 002:03 is bar 2, beat 3. The length of the whole song is in the **Songs** column and on the LCD.
 
+1. Click **Song**. Stop the machine, then click **SONG** over the pattern palette.
+2. Press {key:play-stop}. The header reads Playing and the bars and beats played.
+3. A bar later the counter reads 002.
+4. Press {key:play-stop} again. The counter goes.
+
 ## SONG LOOPS
 <!-- rows: MM-272 @d50ca1 -->
 

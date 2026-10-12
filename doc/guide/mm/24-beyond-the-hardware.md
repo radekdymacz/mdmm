@@ -47,9 +47,12 @@ The songs of the factory memory are in the song slots of the editor, and they pl
 2. Click a song slot. It is only selected, and the machine keeps the song it has.
 3. Click **Load**, or press {key:song-slot-load}. The machine takes the song while it is stopped, and the arrangement on the right shows its rows.
 4. Click the **SONG** key in the middle of the page, so that the machine plays the song and not a pattern.
-5. Press {key:play-stop}.
+5. Press {key:play-stop}. The machine starts, the step moves and the song goes on to a later row. The output is not silent.
+6. Press {key:play-stop} again. The machine stops.
 
-The arrangement follows the machine as it plays. See "LOAD SONG" in chapter 17.
+![A factory song loaded](shot:mm-real-song-playing)
+
+Every factory song that holds rows plays this way. The arrangement follows the machine as it plays. See "LOAD SONG" in chapter 17.
 
 ## FACTORY PATTERNS PLAY
 <!-- rows: MM-X03 @127e75 -->
@@ -58,7 +61,12 @@ The patterns of the factory memory are there too, A01 to H16.
 
 1. Click the pattern field of the LCD. The pattern chooser opens.
 2. Click the pattern you want. The machine goes to it and loads the kit it recalls.
-3. Press {key:play-stop}.
+3. Press {key:play-stop}. The step moves through the pattern and the output is not silent.
+4. Press {key:play-stop} again, and pick another pattern.
+
+![A factory pattern](shot:mm-real-pattern-playing)
+
+Patterns that hold notes, spread over all 128, play the same way one after the other.
 
 ## GEN ROLLS A RHYTHM
 <!-- rows: MM-X04 @32aa1d -->
@@ -171,6 +179,9 @@ To clear parts, press {key:clear-what}, tick **Notes** alone, and click **Clear*
 <!-- rows: MM-X12 @6d7e0c -->
 
 Drop a SysEx file on the window of the editor, and the import window opens with a preview of it. It is the same as **IMPORT SYSEX…** in the engine menu. See "FILE" in chapter 19.
+
+1. Drag a .syx file from your computer onto the window of the editor. The import window opens with the preview of the file.
+2. To leave it, click **Cancel**. The window closes and nothing is sent.
 
 ## SYSEX IMPORT WITH A PREVIEW
 <!-- rows: MM-X13 @de434b -->
@@ -325,3 +336,21 @@ The roll on **Sequence** draws notes with a length, moves them and selects them 
 9. Press {key:undo} for each step you took.
 
 On **Transpose**, click a key of its keyboard to set the transpose of the track. On a MIDI track the length is a number of ticks: a 1/16 note is 6, and three steps are 18.
+
+## WHAT YOU DRAW IS WHAT PLAYS
+<!-- rows: MM-X24 @9c91af -->
+
+What you enter in the sequencer is what the machine plays. The notes you draw reach the machine, and when you clear the pattern the machine plays silence.
+
+![Four notes drawn in an empty pattern](shot:mm-real-sequence-drawn)
+
+1. Click the **Sequence** tab.
+2. Click the pattern field of the LCD and pick a pattern with no notes.
+3. Pick track 1 in the rail.
+4. Click four cells of the piano roll. Each click draws a note.
+5. Press {key:play-stop} and let the pattern run. The position moves through the pattern and the output is not silent.
+6. Press {key:play-stop} to stop. Press {key:clear-pattern}. The pattern is cleared and the notes are gone.
+
+![The pattern cleared](shot:mm-real-sequence-cleared)
+
+7. Press {key:play-stop} again. The position moves through the pattern and the machine plays silence.

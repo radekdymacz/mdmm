@@ -94,6 +94,12 @@ Each step of a track can swing. A step that swings comes late by the amount of *
 2. Choose **Swing**. A tick shows when every selected step swings. On a selection it sets every step: on when one of them has it off, else off. It is one undo step.
 3. A small teal slant over a note shows that its trig swings.
 
+To swing four steps at once:
+
+1. Click **Sequence** and pick track 1 in the rail.
+2. Drag over four steps in the roll with [⌘] held, then choose **Swing** in the ⋯ menu. Swing is on for all four, in one undo step.
+3. Press {key:undo}. All four are as before.
+
 Each track has its own swing steps. The marks show for the selected track. A new pattern swings every second 16th step, so most off beat notes carry the mark.
 
 To copy, paste or clear the swing row of a track, tick **Swing** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu (chapter 11, "Super copy"). A clear sets it back to every second 16th step. Press {key:undo} to take each back.
@@ -151,6 +157,11 @@ In poly mode all six engines play the track in focus, with six voices. The seque
 
 1. Press {key:workspace-4}.
 2. Select the track with the numbered keys in the title of the **Assign** card.
-3. In the **Keyboard** bar, click **Poly**.
+3. In the **Keyboard** bar, click **Poly**. The machine's poly mode is on, on that track.
+4. Click another numbered key. Poly mode moves to that track.
+5. Click **Sequence**. The rail marks the poly track ×6 and dims the others.
+6. On **Perform**, click **Auto track** to switch poly mode off.
+
+![Poly mode on track 3](shot:mm-perform-poly)
 
 The other five tracks are silent until you leave poly mode. The line under the keyboard modes says so, and on **Sequence** the rail dims those tracks and marks the poly track ×6. Chapter 5 describes poly mode.
