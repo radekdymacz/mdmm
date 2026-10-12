@@ -156,7 +156,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.38 | Scale setup: number of steps | Pattern length | ✅ | LCD LEN with Alt (inner length) |  | 1 |
 | p.38 | Scale setup: total length 16/32/48/64 | Pages | ✅ | LCD LEN | Doubling: LEN x2 key. | 1 |
 | p.38 | Scale setup: tempo multiplier 1X, 2X, 3/4X, 3/2X | Speed | ✅ | LCD SPD |  | 1 |
-| p.38 | First page copied to later pages when extending | Auto fill | 🟡 | LEN x2 copies the new half | The firmware's auto-copy on length change is not shown; not verified. | – |
+| p.38 | First page copied to later pages when extending | Auto fill | ✅ | LCD LEN (total length): a longer total repeats the steps into the new ones, as the machine's SCALE SETUP; a message says so | Measured: copied only when no track has a trig past the old total (gapProbesFirmwareTest w12extend); mdDeskFirmwareTest p4 compares the editor with the panel | 1 |
 | p.39 | Grid recording (trig toggle per step) | Compose | ✅ | Step grid click; drag paints | Undo is one step per drag. | 3 |
 | p.39 | Pattern pages in grid mode | Switch page | ✅ | Page key |  | 1 |
 | p.39 | No save needed; copy before editing | Work in memory | ✅ | Library copy |  | 1 |
@@ -392,13 +392,13 @@ Method: manual read in full; claims checked against the page files (`source/elek
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 263 |
-| 🟡 Partial | 11 |
+| ✅ Yes | 264 |
+| 🟡 Partial | 10 |
 | ❌ No | 6 |
 | ➖ Not applicable | 16 |
 | Total | 296 |
 
-Of the 280 applicable rows, 263 are fully covered, 11 partly, 6 not at all.
+Of the 280 applicable rows, 264 are fully covered, 10 partly, 6 not at all.
 
 ### Top gaps (our UI), most important first
 

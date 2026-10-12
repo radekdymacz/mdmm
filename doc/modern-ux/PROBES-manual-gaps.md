@@ -355,3 +355,11 @@ different kits clear to the same kit but for those kept bytes. `elektronData::md
 **W12d, STOP with a pattern queued (MD-099).** Both machines: A01 plays, A02 is cued with a SysEx LOAD PATTERN (the
 status still says A01): the panel's STOP makes A02 current at once, and PLAY starts it. MIDI Stop does not (A01 stays,
 the cue too). A single TRIG key while playing cues nothing (a pattern is picked with a BANK key held).
+
+**W12e, a pattern made longer on the MD (MD-106).** SCALE SETUP (FUNCTION + SCALE) has three fields, LEN, the scale
+(16, 32, 48, 64) and the speed; LEFT and RIGHT wrap and the window keeps its field. LEN stays within the scale. A
+larger scale sets LEN to it and, when no track has a trig from the old scale's end on (to step 64), repeats the old
+scale's steps into the new ones: trigs, accent, swing and locks (16 to 64: page 1 four times; 32 to 64: pages 1 and 2
+twice; LEN 20 in scale 32 to 48: the 32 steps, then page 1 again). A trig anywhere past the old scale (also past the new
+one) stops the copy. LEN alone copies nothing. `totalLength` in the core does the same; `mdDeskFirmwareTest p4`
+compares it with the panel's.
