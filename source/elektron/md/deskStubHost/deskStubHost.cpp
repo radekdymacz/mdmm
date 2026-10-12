@@ -796,6 +796,7 @@ namespace
 				case 0x08: value = m_song; break;
 				case 0x10: value = m_songMode ? 1 : 0; break;
 				case 0x20: value = m_poly ? 1 : 0; break;
+				case 0x22: value = static_cast<uint8_t>(std::max(0, m_focus)); break;	// the track in focus (0.6 wave 9)
 				default: break;
 				}
 				reply({0xf0, 0x00, 0x20, 0x3c, 0x03, 0x00, 0x72, v, static_cast<uint8_t>(value & 0x7f), 0xf7});

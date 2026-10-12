@@ -18,7 +18,7 @@ agents at once; Radek tests the whole release at the end from doc/release/TEST-0
 markers: resolve, grep for `<<<<<<<`, then commit, as separate steps.
 
 **Merged into `feat/0.6-features`** (each reviewed, tier 2 green): wave P (probes, doc/modern-ux/PROBES-manual-gaps.md,
-B-069), wave 1 song slots, wave 2 transport, wave 3 trig types and marks, wave 4 copy / paste / clear what, wave 5 GLOBAL page (2026-10-12, review fixes 4bcacdd4e), wave 6 SysEx and reset (2026-10-12; Import/Export in the engine menu only, Radek), wave 7 recording (2026-10-12), polish A (2026-10-12: MD-140 done, live lock removal: a value pressed and Delete held is EXIT/NO + its DATA ENTRY knob; mdmm-check builds the firmware test programs and the editors before the tests that use them), wave 10 MM skins true to the photos (MD unchanged, Radek), wave 8 MD LEV and machine audition (2026-10-12), the top-bar
+B-069), wave 1 song slots, wave 2 transport, wave 3 trig types and marks, wave 4 copy / paste / clear what, wave 5 GLOBAL page (2026-10-12, review fixes 4bcacdd4e), wave 6 SysEx and reset (2026-10-12; Import/Export in the engine menu only, Radek), wave 7 recording (2026-10-12), polish A (2026-10-12: MD-140 done, live lock removal: a value pressed and Delete held is EXIT/NO + its DATA ENTRY knob; mdmm-check builds the firmware test programs and the editors before the tests that use them), wave 10 MM skins true to the photos (MD unchanged, Radek), wave 8 MD LEV and machine audition (2026-10-12), wave 9 MM Perform B-064 (2026-10-12), the top-bar
 and LCD fit (B-061, B-065, B-066), the volume-strip fix; the feature data, journey links and guide (slices 1-4).
 
 **Pushed, not merged** (each its own worktree under `audio/gearmulator-md-mm-wt/`):
@@ -31,14 +31,21 @@ machine in the editor's user folder; a session with no project state starts from
 pattern, song, global) writes it; a DAW project still opens with its own memory; a menu item starts from factory memory;
 a setting turns it off. Two instances of one machine: the last save wins (say so in the guide). Branch `feat/0.6-memory`.
 
-**Not started:** wave 9 (MM Perform: see and set up, B-064: mock-up and
-self-review against Radek's UI rules first), wave 10 (MM MKII look, I-023: colours sampled in IDEAS.md I-023; the
-Machinedrum photos also disagree with our MD skins, see the open choice below), slice 5 (journeys and snapshots for the
-unproved rows, doc/features/unproved-*.md), the guide appendices and "Beyond the hardware" chapter, the polish pass
-(B-070, B-062, I-022 typed values, B-063 waits for the tester's host and screenshots, I-002 lights for incoming notes),
-doc/guide/OPEN-FACTS.md, then `scripts/mdmm-full-gate.sh` on a quiet Mac and `release/0.6.0`.
+**Left from the wave 9 review (small, polish):** switching the rail from MIDI to Synth selects a synth track and so moves POLY (mmMockup.js setSide -> polyFollows; only a person's own track pick should); step recording started on a MIDI track sends t:0 and moves POLY to T1. The ctest entry `mmDeskFirmwareTest` gets no ROM argument (GEARMULATOR_MM_ROM unset) and skips, so tier 2 never runs its default sections (smoke, p4, hw, chain, record, kitlink, reclock): make it `--env` like its siblings and raise its time limit.
 
-**Known flaky under parallel load** (pass alone): md-boot-card, md-song-mode, mm-top-pattern-next, the MD intent cases
+**Gap triage (Radek, 2026-10-12)** for the partial and missing rows with no plan:
+- Build in 0.6 (wave 12, `feat/0.6-gaps`): MD-033, MD-043, MD-045, MD-099, MD-106, MD-147, MM-083, MM-184, MM-203, MM-201, MM-095, MM-102, MM-271, MM-301.
+- `later` (0.7): MD-189, MD-193, MD-194, MD-196, MD-198, MD-199 (sample manager, SDS from other tools), MD-208, MD-209 (MKI model).
+- `not-needed`: MD-005, MD-016, MD-023, MD-024, MD-025, MD-205, MD-293, MM-013, MM-016, MM-021, MM-039, MM-056, MM-057, MM-058, MM-061, MM-180, MM-212, MM-299; MM-322 is done by wave 10 (check and mark it done).
+  Reasons: the host routes MIDI and audio, the mouse makes the key combination pointless, the editor restart is the soft reset, the firmware fixes the PRG CHANGE channel, chords are drawn in the roll.
+
+**Not started:** slice 5 (journeys and snapshots for the unproved rows, doc/features/unproved-*.md), the guide
+appendices, doc/guide/OPEN-FACTS.md, retrain the PGO profile (scripts/macos/train_mdmm_pgo.sh: the build says stale),
+then `scripts/mdmm-full-gate.sh` on a quiet Mac and `release/0.6.0`. In progress: wave 11 (`feat/0.6-memory`, review
+fixes), polish B (`feat/0.6-polish-b`: B-070, B-062, I-002, I-022). B-063 waits for the tester's host and screenshots.
+After 0.6: the site moves from Lemon Squeezy to GitHub Sponsors (Radek, 2026-10-12; he sets up Sponsors first).
+
+**Known flaky under parallel load** (pass alone): md-boot-card, md-song-mode, mm-top-pattern-next, md-top-tempo-window, the MD intent cases
 when several worktrees run firmware tests at once. Look at shared state between worktrees before the release gate.
 
 **Open choices for Radek:** (1) skins true to the product photos on both editors (MD silver with a red LCD; MM MKI

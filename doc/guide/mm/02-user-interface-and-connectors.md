@@ -33,11 +33,11 @@ On the machine the LEVEL knob sets the level of the selected track and the eight
 The machine's accelerated edit, where you press a knob and turn it for larger steps, is a different gesture here. Hold [⇧] while you drag for fine steps, a quarter as fast. Hold [⇧] while you turn the wheel, or press Page Up or Page Down on a focused value, to step by ten.
 
 ## DATA PAGE
-<!-- rows: MM-017 MM-018 @858950 -->
+<!-- rows: MM-017 MM-018 @ecdf67 -->
 
 The machine has seven DATA pages for each track: SYN, AMP, FLT, EFX, LF1, LF2 and LF3. It shows one at a time on its eight knobs. The **Sound** workspace shows every page of the selected track at once, in groups of a few values. The **Sequence** workspace has the page tabs SYN, AMP, FLT, EFX, LF1, LF2 and LF3 in the track rail. They choose the parameters the lock lane edits.
 
-Pressing both DATA PAGE keys on the machine opens the multi envelope. In the editor the multi envelope is the first card of the **Perform** workspace. It works in multi trig mode only: see chapter 5.
+Pressing both DATA PAGE keys on the machine opens the multi envelope. In the editor the multi envelope is the first card of the **Perform** workspace. What it shapes depends on the multi trig mode of the kit, which the card names: see chapter 9.
 
 ## TRACK KEYS
 <!-- rows: MM-019 MM-020 MM-021 @6c403a -->
@@ -102,11 +102,11 @@ To set a trig on a step, as the TRIG keys do in grid mode, click the piano roll 
 On the machine, [BANK] + [TRIG] picks a pattern. In the editor click the <PATTERN> field of the LCD for the pattern chooser, or the **‹** and **›** keys beside it. Chapter 4 describes picking.
 
 ## PATTERN AND SONG KEY
-<!-- rows: MM-031 MM-032 @7e157c -->
+<!-- rows: MM-031 MM-032 @b3739c -->
 
 [PATTERN/SONG] switches between playing a pattern and playing a song. Click <PLAY> in the second line of the LCD. It reads PAT or SONG, what the machine reports, and each click switches. The **Song** workspace has the same switch.
 
-[FUNCTION] + [PATTERN/SONG] switches POLY mode. In the editor the **Perform** workspace has a **Poly** key in the **Keyboard** card. Chapter 5 describes poly mode.
+[FUNCTION] + [PATTERN/SONG] switches POLY mode. In the editor the **Perform** workspace has a **Poly** key in the **Keyboard** card. Poly mode plays the track selected on the machine with [TRACK]; the editor presses that key for the track you select. Chapter 5 describes poly mode.
 
 ## ENTER, EXIT AND ARROW KEYS
 <!-- rows: MM-033 MM-034 @56d222 -->

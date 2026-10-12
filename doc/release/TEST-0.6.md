@@ -84,6 +84,16 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 7. Close the editor window (or reload the page) while a machine is being auditioned, open it again: the track has its old machine and values (while the window is closed the tried machine stays; it goes when the page loads again).
 8. ▶ on GND-EMPTY or a RAM recorder: the machine goes on the track, no note, a toast says why. During live recording an audition changes the machine but plays no note (no trig is recorded).
 
+## MM Perform: Poly, key tracking, Multi envelope (wave 9, B-064)
+
+1. Perform: click Assign's track key 3, then **Poly** in the Keyboard card. The line under the keyboard modes says T3 plays six voices; key 3 and its lamp under the keyboard read ×6, the others dim. Hold a chord on the computer keys (A D G, or a MIDI keyboard on T3's channel): all its notes sound.
+2. Still in Poly, click track key 5: Poly moves to T5 (the first chord there can sound as one note, the next ones are chords). Notes on T3's channel are now silent. On Sequence the rail marks T5 ×6 and dims the others. Pick a MIDI track (MIDI, M2): Poly stays on T5.
+3. Reload the page, or turn Poly on at the machine with another TRACK lit: the page shows Poly on the machine's track and selects it, without pressing anything. **Auto track** ends Poly.
+4. Sound, a track with a low LPF (WDTH low): the Filter group's title shows **KEY** with HPF and LPF lit. Click it: Perform opens on Assign › KEY for that track. Switch **LPF tracks keys** off: back on Sound the LPF lamp is dark and the filter screen's label says LPF fixed; high notes now sound much quieter than low ones.
+5. Perform, Multi envelope card: its title names the kit's MULTI TRIG mode. With the keys on Auto track the hint says to choose Multi trig (pointing at that sentence rings the Multi trig key). Choose Multi trig and SPLIT KEY: the hint says the envelope has no effect.
+6. Multi trig, ALL TRK, envelope ATK 0 DEC 0 SUS 0 REL 0: a key gives nothing. Play T1 with the computer's note keys (A S D): silent now too, until Panic (the ▶ menu, or its key). Set DEC, SUS and REL back to 127: the keys sound again.
+7. SEQ START with REL 0: a Multi trig key starts the pattern; let go and the pattern goes silent until the next key or STOP.
+
 ## Polish B (B-070, B-062, I-002, I-022, both editors)
 
 1. MD (B-070): paint Swing on a few steps, then click one of those trigs off, drag-paint some off, cut a selection with swing in it, fill every 2nd step over swung steps: no swing mark flashes back on a step whose trig went. Rotate (Alt + ← →) moves the swing marks with the trigs; copy and paste a selection keeps them.

@@ -211,7 +211,7 @@ document.addEventListener("click",e=>{
  const lw=e.target.closest("[data-lwave]");if(lw){editTrack(S.sel,()=>{V(lw.dataset.lwave)[3]=+lw.dataset.w});render();return}
  const gt=e.target.closest("[data-goto]");if(gt){S.ws="sound";S.side="int";select(+gt.dataset.goto);return}
  const bs=e.target.closest("[data-bus]");if(bs){const t=+bs.dataset.t,tr=S.tracks[t];tr.out[bs.dataset.bus]=!tr.out[bs.dataset.bus];edit("route",{t,out:(tr.out.AB?1:0)|(tr.out.CD?2:0)|(tr.out.EF?4:0)});render();return}
- const pmk=e.target.closest("[data-pmode]");if(pmk){S.mode=pmk.dataset.pmode;if(HOST.keyMode)HOST.keyMode(S.mode);if(S.mode==="poly")toast("POLY: T"+(asgT()+1)+" now plays six voices. The other five tracks are off until you leave POLY.");render();return}
+ const pmk=e.target.closest("[data-pmode]");if(pmk){S.mode=pmk.dataset.pmode;S.polyT=S.mode==="poly"?asgT():null;if(HOST.keyMode)HOST.keyMode(S.mode,asgT());if(S.mode==="poly")toast("POLY: T"+(asgT()+1)+" now plays six voices. The other five tracks are silent until you leave POLY.");render();return}
  const so2=e.target.closest("[data-strk]");if(so2){S.multi.splitTrack=clamp(S.multi.splitTrack+ +so2.dataset.strk,2,6);edit("multiTrig",{splitTrack:S.multi.splitTrack-1});render();return}
  const tm=e.target.closest("[data-tim]");if(tm){S.multi.timing=clamp(S.multi.timing+ +tm.dataset.tim,0,6);edit("multiTrig",{timing:S.multi.timing});render();return}
  const ko=e.target.closest("[data-kboct]");if(ko){S.kbOct=clamp(S.kbOct+ +ko.dataset.kboct,0,6);render();return}
@@ -221,6 +221,7 @@ document.addEventListener("click",e=>{
  const md=e.target.closest("[data-mdel]");if(md){const i=+md.dataset.mdel;if(S.mmap.length<2)return;S.mmap.splice(i,1);if(i===S.mmap.length)S.mmap[i-1].hi=127;S.mmapSel=Math.max(0,i-1);edit("multiMapDelete",{i});render();return}
  if(e.target.closest("[data-madd]")){const i=S.mmapSel,r=S.mmap[i],lo=i?S.mmap[i-1].hi+1:0;if(r.hi-lo<1){toast("A one-key range cannot be split.");return}const mid=Math.floor((lo+r.hi)/2);S.mmap.splice(i,0,{...r,hi:mid});edit("multiMapSplit",{i});render();return}
  const mi=e.target.closest("[data-mirr]");if(mi){const A=S.tracks[asgT()].assign;A.mirr=!A.mirr;edit("assign",{t:asgT(),mirror:A.mirr});render();return}
+ const kg=e.target.closest("[data-keytrk]");if(kg){keyTrackGo(+kg.dataset.keytrk);return}
  const kt=e.target.closest("[data-ktrk]");if(kt){const A=S.tracks[asgT()].assign,k=kt.dataset.ktrk;A[k]=!A[k];edit("assign",{t:asgT(),[k]:A[k]});render();return}
  const pl=e.target.closest(".pl");if(pl&&S.ws==="seq"){const k=+pl.dataset.plp;if(k<pages16()){S.page=k;S.viewAll=false;render()}return}
  const pgk=e.target.closest("#pgkey");if(pgk&&!pgk.disabled){const n=pages16();S.viewAll=false;S.page=(S.page+(e.shiftKey?-1:1)+n)%n;render();return}
@@ -410,7 +411,15 @@ function render(){const f=focusedValue();renderPage();if(f){const el=document.qu
 function renderPage(){closePicker();closeK();const sl=$("#seqscroll")?.scrollLeft||0;renderTop();{const m=(S.ws==="seq"||S.ws==="sound")&&S.side==="midi";if(!m&&S.sel>5)S.sel-=6;if(m&&S.sel<6)S.sel+=6}const full=["mix","perform","song","control"].includes(S.ws);
  $("#body").className="body "+(full?"full ":"")+"ws-"+S.ws;$("#rail").hidden=full;if(!full)renderRail();renderSub();
  ({control:renderControl,seq:renderSeq,sound:renderSound,mix:renderMix,perform:renderPerform,song:renderSong})[S.ws]();
- const sc=$("#seqscroll");if(sc){sc.scrollLeft=sl;const l=$("#lanescroll");if(l)l.scrollLeft=sl}enhanceSelects($("#main"));if(S.learn)document.body.classList.add("learn");movePH(false)}
+ const sc=$("#seqscroll");if(sc){sc.scrollLeft=sl;const l=$("#lanescroll");if(l)l.scrollLeft=sl}enhanceSelects($("#main"));if(S.learn)document.body.classList.add("learn");movePH(false);polyFollows()}
+/* 0.6 wave 9 (B-064): POLY plays the machine's track in focus; the synth track the person selects here (rail, Assign's
+   1-6) is the one that plays it: a new selection while in POLY moves it (the host presses that TRACK key) */
+/* the Multi envelope's "choose Multi trig" rings that key while pointed at (no :has(): macOS 12's WebKit) */
+for(const[ev,on]of[["pointerover",true],["pointerout",false]])document.addEventListener(ev,e=>{if(e.target.closest?.(".menvto"))$('[data-pmode="multi"]')?.classList.toggle("ring",on)});
+function polyFollows(){if(S.mode!=="poly"){S.polyT=null;return}
+ /* the machine's track is not known yet (POLY read back, the focus still on its way): nothing pressed; a MIDI track
+    selected: POLY stays where it is (MIDI tracks have no voices) */
+ if(S.polyT==null||isMidiT(S.sel))return;const t=asgT();if(S.polyT===t)return;S.polyT=t;if(HOST.keyMode)HOST.keyMode("poly",t)}
 function setPlate(v){S.plate=v;document.documentElement.dataset.plate=v;try{localStorage.setItem("mmeditor.plate",v)}catch(_){}
  if(v==="mk1"){const bad=S.tracks.filter(t=>MACH[t.m].mk2);if(bad.length)toast(`MKI: ${bad.map(t=>t.m).join(", ")} needs a MKII. It would load as nothing on a MKI.`);else toast("MKI: no user waveforms, no DPRO-DDRW or DPRO-DENS. The plate looks the same.")}
  if(v==="mk2")toast("MKII: the same silver plate, plus user waveforms and the DigiPRO draw machines.");
@@ -493,6 +502,9 @@ function show(v,all){
   if(v.mutes&&!solo)v.mutes.forEach((m,i)=>{if(m!=null&&m!==was.mutes?.[i]&&!!trk(i).mute!==m){trk(i).mute=m;doc=true}});
   /* POLY is the machine's audio mode; the keyboard's other modes are the page's */
   if(v.poly!=null&&v.poly!==was.poly){const m=v.poly?"poly":S.mode==="poly"?"normal":S.mode;if(m!==S.mode){S.mode=m;doc=true}}
+  /* 0.6 wave 9: POLY's track is the machine's track in focus. The page follows it (a reload, POLY or TRACK pressed on
+     the machine, a refused move): its track is selected, and nothing is pressed for it (polyFollows) */
+  if(S.mode==="poly"&&v.focus!=null&&v.focus!==S.polyT){S.polyT=v.focus;if(asgT()!==v.focus)S.sel=isMidiT(S.sel)&&(S.ws==="seq"||S.ws==="sound")?v.focus+6:v.focus;doc=true}
   if(doc)pruneLocks();
   if(seq)autoRange(S.sel)}
  if(top)renderTop();

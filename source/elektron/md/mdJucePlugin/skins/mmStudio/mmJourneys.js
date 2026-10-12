@@ -33,8 +33,10 @@ const MmJourneys = (() => {
 	/* what the page hands the plug-in (for what has no read-back: live notes) */
 	const notesOn = [];	/* the pitches the keyboard sent (noteOn), newest last */
 	const midiSent = [];	/* the raw MIDI the keyboard and the joystick sent (op midi), newest last */
+	const polySent = [];	/* the poly commands ({on, t}), newest last (0.6 wave 9) */
 	{ const send0 = Bridge.send; Bridge.send = (m, o) => { sent.push(m.op); if (sent.length > 50) sent.shift(); if (m.op === "noteOn") { notesOn.push(m.pitch); if (notesOn.length > 50) notesOn.shift(); }
-		if (m.op === "midi") { midiSent.push(m.b); if (midiSent.length > 50) midiSent.shift(); } return send0(m, o); }; }
+		if (m.op === "midi") { midiSent.push(m.b); if (midiSent.length > 50) midiSent.shift(); }
+		if (m.op === "poly") { polySent.push({ on: m.on, t: m.t }); if (polySent.length > 20) polySent.shift(); } return send0(m, o); }; }
 	Bridge.onMessage(m => {
 		if (m.type === "telemetry") { tele.last = m; if (m.playing) { tele.steps.push(m.step); if (tele.steps.length > 64) tele.steps.shift(); } }
 		if (m.type === "result") { results.push(m); if (results.length > 50) results.shift(); }
@@ -1011,7 +1013,9 @@ const MmJourneys = (() => {
 			{ say: "pick a synth track whose first step is empty", act: (u, c) => { c.t = [0, 1, 2, 3, 4, 5].find(t => !trigsOf(t).includes(0)) ?? 0; c.p0 = trigsOf(c.t); u.click(rail(c.t)); }, screen: c => ok(S().sel === c.t, "selected " + S().sel),
 				machine: c => ok(!c.p0.includes(0), "every track has a note on step 1") },
 			{ say: "Cmd-drag over steps 5 to 7 of the roll: a step selection", act: async (u, c) => { if (S().stepSel) clearSel(); await dragRoll(u, c.t, [4, 6], { cmd: true }); }, screen: () => ok(!!S().stepSel, "nothing selected") },
-			{ say: "Shift-click RECORD (stopped): step recording, the cursor on step 1, the selection dropped, no new row above the roll", act: async (u, c) => { results.length = 0; c.top = $1("#seqscroll")?.getBoundingClientRect().top; if (S().playing) u.click("#play"); u.click("#rec", { shift: true });
+			{ say: "Shift-click RECORD (stopped): step recording, the cursor on step 1, the selection dropped, no new row above the roll", act: async (u, c) => { c.top = $1("#seqscroll")?.getBoundingClientRect().top; if (S().playing) u.click("#play");
+				/* the selection's drag may still be on its way through SYSEX RECV on a busy Mac: once it is in */
+				await recvIdle(); results.length = 0; u.click("#rec", { shift: true });
 				/* refused while the panel still takes an earlier dump on SYSEX RECV (the keys would be lost: "The panel is busy");
 				   clicked again then, as clickMidiMute and mm-seq-first-beat's PLAY (B-014) */
 				for (let i = 0; i < 5 && await until(() => results.some(r => r.op === "record" && r.ok === false && /busy/.test(r.errors?.[0] || "")), 1500); i++) {
@@ -1132,6 +1136,75 @@ const MmJourneys = (() => {
 			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(((wk().trackMasks?.portamento ?? 0) & 1) === (c.p0 & 1), "portamento mask " + wk().trackMasks?.portamento), within: 15000 }
 		],
 		async tidy(u) { if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); }
+	};
+	/* ---------- 0.6 wave 9 (B-064): Perform, see and set up POLY, the filter's key tracking and the MULTI ENV ----------
+	   The sound itself is proven on the firmware through the same commands: mmDeskFirmwareTest perform (ctest
+	   mmPerformSoundFirmwareTest: six notes sound as a chord on the POLY track and the others are silent, KEY off fixes
+	   the filter, the MULTI ENV shapes MULTI TRIG notes and silences the machine after one; PROBES-manual-gaps.md P10). */
+	const lastPoly = () => polySent[polySent.length - 1] || {};
+	/* a kit field with no live message goes as a dump through SYSEX RECV: the journey after this one finds the panel free */
+	const recvIdle = async () => { const recv = () => I().machine?.recv || {}; await until(() => recv().state === "idle" && !recv().sending, 20000); };
+	const astrk = t => `[data-set="astrk"] button[data-v="${t}"]`;
+	const polyTrack = {
+		name: "mm-perform-poly-track", proves: ["MM-032", "MM-087", "MM-239"],
+		steps: [
+			go("perform"),
+			{ say: "click Assign's track key 3, then POLY: the machine's POLY is on, on track 3 (its TRACK key)", act: async (u, c) => { polySent.length = 0; u.click(astrk(2)); await sleep(300); await recvIdle(); results.length = 0; u.click('[data-pmode="poly"]');
+				/* refused while the panel takes an earlier journey's dump (TRACK would be lost): the page stays off POLY and says so; clicked again */
+				for (let i = 0; i < 5 && await until(() => results.some(r => r.op === "poly" && r.ok === false && /busy/.test(r.errors?.[0] || "")), 1500); i++) {
+					c.note = "the plug-in said the panel was busy (SYSEX RECV); clicked again"; results.length = 0; await recvIdle(); if (S().mode === "poly") u.click('[data-pmode="normal"]'); await sleep(300); u.click('[data-pmode="poly"]'); } },
+				screen: () => ok(/^POLY: T3 plays six voices/.test($1(".kbhint")?.textContent || "") && !!$1(astrk(2) + " .x6") && $all('[data-set="astrk"] button.polyoff').length === 5, "hint " + $1(".kbhint")?.textContent),
+				machine: () => ok(machine().poly === true && lastPoly().on === true && lastPoly().t === 2, `poly ${machine().poly}, sent ${JSON.stringify(lastPoly())}`), within: 8000 },
+			{ say: "look at the Perform page in POLY", act: async () => { await sleep(300); Journey.snapshot("mm-perform-poly"); } },
+			{ say: "click track key 5: POLY moves to track 5", act: async u => { await recvIdle(); u.click(astrk(4)); },
+				screen: () => ok(/^POLY: T5 plays six voices/.test($1(".kbhint")?.textContent || "") && !!$1(astrk(4) + " .x6"), "hint " + $1(".kbhint")?.textContent),
+				machine: () => ok(machine().poly === true && lastPoly().t === 4, `poly ${machine().poly}, sent ${JSON.stringify(lastPoly())}`), within: 8000 },
+			{ say: "on Sequence the rail marks track 5 ×6 and dims the others", act: u => u.click(tab("seq")),
+				screen: () => ok(!!$1('#rail .th[data-sel="4"] .x6') && $all("#rail .th.poly-off").length === 5, "rail " + $all("#rail .th.poly-off").length + " dimmed") },
+			{ say: "click MIDI and pick M2 on the rail: POLY stays on track 5 (a MIDI track has no voices)", act: async (u, c) => { c.n = polySent.length; u.click('[data-side="midi"]'); await sleep(200); u.click(rail(7)); await sleep(600); },
+				screen: () => ok(S().sel === 7, "selected " + S().sel), machine: c => ok(polySent.length === c.n && machine().focus === 4, `poly sent ${JSON.stringify(polySent.slice(c.n))}, focus ${machine().focus}`) },
+			{ say: "back on the synth tracks, the machine's TRACK 2 is pressed (here: its command, not the page's): the page follows, track 2 is POLY's and selected", act: async u => { u.click('[data-side="int"]'); await sleep(200); u.click(rail(4)); await sleep(300); Bridge.send({ op: "poly", on: true, t: 1 }); },
+				screen: () => ok(S().sel === 1 && S().polyT === 1 && !!$1('#rail .th[data-sel="1"] .x6'), `selected ${S().sel}, POLY track ${S().polyT}`), machine: () => ok(machine().focus === 1, "focus " + machine().focus), within: 8000 },
+			{ say: "back on Perform, click Auto track: POLY off", act: async u => { u.click(tab("perform")); await sleep(300); u.click('[data-pmode="normal"]'); },
+				screen: () => ok(!$1("#main .x6") && !$all("#main .polyoff").length, "marks left: " + $all("#main .x6, #main .polyoff").length), machine: () => ok(machine().poly === false, "poly " + machine().poly), within: 8000 }
+		],
+		async tidy(u) { if (S().mode === "poly" && $1('[data-pmode="normal"]')) u.click('[data-pmode="normal"]'); }
+	};
+	const lpfOf = t => ((wk()?.trackMasks?.lpf ?? 0x3f) >> t & 1) === 1;
+	const keyLamps = () => [...$all('[data-sg="FLT:filter"] .keytrk .led')].map(l => l.classList.contains("on"));
+	const keyTracking = {
+		name: "mm-sound-key-tracking", proves: ["MM-128", "MM-149"],
+		steps: [
+			go("sound"), sel(0),
+			{ say: "the Filter group's KEY shows the track's key tracking, HPF and LPF", screen: () => { const l = keyLamps(), m = wk()?.trackMasks; return ok(l.length === 2 && l[0] === ((m?.hpf ?? 0x3f) & 1) > 0 && l[1] === lpfOf(0), "lamps " + l + ", masks " + JSON.stringify(m)); } },
+			{ say: "click KEY: Perform › Assign › KEY opens for track 1", act: u => u.click('[data-sg="FLT:filter"] .keytrk'),
+				screen: () => ok(S().ws === "perform" && S().asTab === "KEY" && pressed(astrk(0)) && !!$1('[data-ktrk="lpf"]'), `workspace ${S().ws}, tab ${S().asTab}`) },
+			{ say: "click LPF tracks keys: track 1's low-pass stops following the note", act: (u, c) => { c.l0 = lpfOf(0); u.click('[data-ktrk="lpf"]'); },
+				machine: c => ok(lpfOf(0) !== c.l0, "LPF mask " + wk()?.trackMasks?.lpf), within: 15000 },
+			{ say: "on Sound the Filter's KEY shows LPF off", act: async u => { u.click(tab("sound")); await sleep(400); Journey.snapshot("mm-sound-key-tracking"); },
+				screen: c => ok(keyLamps()[1] === !c.l0, "lamps " + keyLamps()) },
+			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(lpfOf(0) === c.l0, "LPF mask " + wk()?.trackMasks?.lpf), within: 15000 }
+		],
+		async tidy() { await recvIdle(); }
+	};
+	const MTM_N = ["ALL TRK", "SPLIT KEY", "SEQ START", "SEQ TRNSP"];
+	const menvModes = {
+		name: "mm-perform-menv-modes", proves: ["MM-160", "MM-018"],
+		steps: [
+			go("perform"),
+			{ say: "with the keys on Auto track, the Multi envelope card names the kit's MULTI TRIG mode and says to choose Multi trig", act: u => { if (!pressed('[data-pmode="normal"]')) u.click('[data-pmode="normal"]'); },
+				screen: () => { const m = S().multi.mode; return ok($1(".menvcard header span")?.textContent === "MULTI TRIG " + MTM_N[m] && (m === 1 || /choose Multi trig/.test($1(".menvsay")?.textContent || "")), "card " + $1(".menvcard header span")?.textContent + " / " + $1(".menvsay")?.textContent); } },
+			{ say: "click Multi trig, then SPLIT KEY: the card says the envelope has no effect there", act: async (u, c) => { c.m0 = wk()?.multiTrig?.mode; u.click('[data-pmode="multi"]'); await sleep(300); u.click('[data-set="mtmode"] button[data-v="1"]'); },
+				screen: () => ok(/^SPLIT KEY: no effect/.test($1(".menvsay")?.textContent || ""), "hint " + $1(".menvsay")?.textContent), machine: () => ok(wk()?.multiTrig?.mode === 1, "mode " + wk()?.multiTrig?.mode), within: 15000 },
+			{ say: "click ALL TRK: the card says it shapes MULTI TRIG notes and when it silences every track", act: async u => { u.click('[data-set="mtmode"] button[data-v="0"]'); await sleep(400); Journey.snapshot("mm-perform-menv"); },
+				screen: () => ok(/^ALL TRK: shapes the notes of the MULTI TRIG channel/.test($1(".menvsay")?.textContent || "") && /silent until the next one or STOP/.test($1(".menvsay")?.textContent || ""), "hint " + $1(".menvsay")?.textContent),
+				machine: () => ok(wk()?.multiTrig?.mode === 0, "mode " + wk()?.multiTrig?.mode), within: 15000 },
+			{ say: "click SEQ START: the card says it shapes the pattern a MULTI TRIG note starts", act: u => u.click('[data-set="mtmode"] button[data-v="2"]'),
+				screen: () => ok(/^SEQ START: shapes the pattern a MULTI TRIG note starts/.test($1(".menvsay")?.textContent || ""), "hint " + $1(".menvsay")?.textContent), machine: () => ok(wk()?.multiTrig?.mode === 2, "mode " + wk()?.multiTrig?.mode), within: 15000 },
+			{ say: "click the first mode back, then Auto track", act: async (u, c) => { if (c.m0 != null) u.click(`[data-set="mtmode"] button[data-v="${c.m0}"]`); await sleep(300); u.click('[data-pmode="normal"]'); },
+				machine: c => ok(c.m0 == null || wk()?.multiTrig?.mode === c.m0, "mode " + wk()?.multiTrig?.mode), within: 15000 }
+		],
+		async tidy(u) { if ($1('[data-pmode="normal"]') && !pressed('[data-pmode="normal"]')) u.click('[data-pmode="normal"]'); await recvIdle(); }
 	};
 	/* B-017: dragging the multi envelope (its DEC value, or the DEC dot on its screen) never changes the page's layout:
 	   the screen's canvas took its drawn size (its pixels, the display's scale times its box) as its own height, so each
@@ -1968,7 +2041,7 @@ const MmJourneys = (() => {
 	};
 	const all = [bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff,
-		poly, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
+		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, mutScope,
 		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
