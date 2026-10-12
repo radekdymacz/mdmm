@@ -2221,7 +2221,9 @@ namespace
 		const auto show = [&](const ed::MdKit& _k, const char* _what) {
 			std::printf("  %s: name '", _what);
 			for(const auto c : _k.name) std::printf("%c", c >= 32 && c < 127 ? c : '.');
-			std::printf("' version %d revision %d\n", _k.version, _k.revision);
+			std::printf("' version %d revision %d; name bytes", _k.version, _k.revision);
+			for(const auto c : _k.name) std::printf(" %02x", c);
+			std::printf("\n");
 			for(size_t t = 0; t < 16; ++t)
 			{
 				std::printf("    T%-2zu model %3u level %3d trig %3d mute %3d lfo %d/%d/%d/%d/%d params", t + 1, _k.models[t], _k.levels[t], _k.trigGroups[t],
@@ -2231,7 +2233,7 @@ namespace
 				if(t > 1 && std::getenv("W12_ALL") == nullptr) { std::printf("    ...\n"); break; }
 			}
 			for(size_t f = 0; f < 4; ++f) { std::printf("    master fx %zu:", f); for(const auto v : _k.masterFx[f]) std::printf(" %d", v); std::printf("\n"); }
-			std::printf("    lfo state T1:"); for(const auto v : _k.lfos[0].state) std::printf(" %d", v); std::printf("\n");
+			for(size_t t = 0; t < 16; t += 5) { std::printf("    lfo state T%zu:", t + 1); for(const auto v : _k.lfos[t].state) std::printf(" %d", v); std::printf("\n"); }
 		};
 		const int k0 = r.status(0x02);
 		std::printf("  current kit %d\n", k0);
@@ -2248,6 +2250,7 @@ namespace
 			r.run(500);
 			const auto after = readKit(slot);
 			show(after, ("slot " + std::to_string(slot) + " after CLEAR KIT").c_str());
+			check(after == ed::mdClearedKit(before, slot), "slot " + std::to_string(slot) + ": the machine's CLEAR KIT leaves elektronData::mdClearedKit");
 			cleared.push_back(after);
 		}
 		auto a = cleared[0], b = cleared[1];

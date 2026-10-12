@@ -81,6 +81,12 @@ namespace elektronData
 	std::optional<MdKit> decodeMdKit(const std::vector<uint8_t>& _sysex);
 	std::vector<uint8_t> encodeMdKit(const MdKit& _kit);
 
+	// MD-045: the kit the machine's own CLEAR KIT leaves in a slot (LOAD / SAVE KIT list, FUNCTION + PLAY; measured
+	// on OS 1.63, gapProbesFirmwareTest w12clearkit): every track GND-EMPTY at the same values (level 100, the LFO on
+	// its own track, SHP2 4), the master effects at their start, and the name's first byte 0x7f (no name; the other
+	// name bytes and the LFOs' running state stay as _was had them).
+	MdKit mdClearedKit(const MdKit& _was, uint8_t _slot);
+
 	std::vector<uint8_t> mdKitRequest(uint8_t _slot);
 	// Working kit <-> stored slot (manual Appendix C). A kit dump always writes the
 	// stored slot; only LOAD KIT makes it the sound that plays.

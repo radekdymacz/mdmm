@@ -1457,10 +1457,12 @@ namespace
 		_rig.pageConfirmed(R"({"op":"kitRename","k":40,"name":"lib test","id":952})");
 		settle();
 		check(kitNameOf(readKit(40)) == "LIB TEST", "rename of a slot that does not play: dump with the new name");
+		const auto beforeClear = readKit(40);
 		_rig.pageConfirmed(R"({"op":"kitClear","k":40,"id":953})");
 		settle();
 		const auto cleared = readKit(40);
-		check(std::all_of(cleared.models.begin(), cleared.models.end(), [](const uint32_t _m) { return _m == 0; }) && kitNameOf(cleared).empty(),
+		check(cleared == ed::mdClearedKit(beforeClear, 40), "clear: the slot holds what the machine's CLEAR KIT leaves (MD-045)");
+		check(std::all_of(cleared.models.begin(), cleared.models.end(), [](const uint32_t _m) { return _m == 0; }) && mdDesk::kitNameText(cleared).empty(),
 			"clear: every track GND-EMPTY, no name");
 		_rig.pageConfirmed(R"({"op":"undo","id":954})");
 		settle();

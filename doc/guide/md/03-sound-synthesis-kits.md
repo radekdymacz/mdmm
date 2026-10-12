@@ -82,14 +82,12 @@ You can also drag a slot onto another slot to copy it there.
 A copy of the current kit includes the edits you have not saved. Pasting into the current kit also loads it, because the machine only plays what it has loaded. Press {key:lib-undo} to take a paste back.
 
 ## CLEAR KIT
-<!-- rows: MD-045 @3d4903 -->
+<!-- rows: MD-045 @79ddaf -->
 
 1. Select a slot in the kit library.
 2. Click **Clear**, or press {key:lib-clear}.
 
-The slot is written as an empty kit: every track is GND-EMPTY, all values are neutral and the kit has no name. The slot then reads EMPTY.
-
-{gap:MD-045}The machine's own clear may leave other values than the editor does.{/gap}
+The slot is written as the machine's own CLEAR KIT leaves it: every track is GND-EMPTY at the same values (level 100, VOL 127), each track's LFO on its own track, the master effects at their start, and no name. The slot then reads EMPTY. Press {key:undo} to get the kit back.
 
 ## KIT ASSEMBLY
 <!-- rows: MD-047 MD-048 @c0d967 -->

@@ -345,3 +345,9 @@ those slots). The machine's own route, KIT > LOAD KIT, the list's first entry (0
 kit, so k + 1 times UP), loads it: the lost kit plays, unsaved, and the slot it came from becomes the current kit. The
 edits of the kit that played are not kept anywhere (the UNDO KIT stays as it was). LOAD KIT over unsaved edits and SAVE
 KIT over another slot put the lost kit there, as the manual says.
+
+**W12c, MD CLEAR KIT (MD-045).** LOAD KIT list, a slot, FUNCTION + PLAY: the slot's tracks are all GND-EMPTY with the
+same values (SYNTHESIS 64 64 0 0 0 0 0 0, EFFECTS 0 0 64 64 0 127 0 0, ROUTING 0 127 64 0 0 64 0 0, level 100, no
+trig or mute group, the LFO on its own track, parameter 0, SHP1 0, SHP2 4, FREE), the master effects at their start
+values, and the name's first byte 0x7f (no name; the other name bytes and the LFOs' running state stay). Two slots of
+different kits clear to the same kit but for those kept bytes. `elektronData::mdClearedKit`; the probe checks it.
