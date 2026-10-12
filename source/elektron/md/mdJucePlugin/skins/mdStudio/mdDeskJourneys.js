@@ -217,6 +217,15 @@ const MdJourneys = (() => {
 			{ say: "Cmd+Z three times: back to an empty step", act: async u => { for (let i = 0; i < 3; i++) { u.key("z", { cmd: true }); await sleep(500); } }, machine: c => ok(!trigsOf(c.t).includes(c.s), "trig still there"), screen: c => ok(!pressed(cell(c.t, c.s)), "still lit") }
 		]
 	};
+	/* B-100: the factory patterns hold EDIT ALL on for accent, slide and swing (one pattern-wide row every track takes; the
+	   page shows it on each track's trigs and says "Pattern-wide ... (EDIT ALL is on)"). A journey about a track's own marks
+	   sets This track first on the trig types, as a person does; each switch is one undo step, the journey's tidy takes it back. */
+	const MARKS = { acc: ["accent", "Accent"], sld: ["slide", "Slide"], swg: ["swing", "Swing"] };
+	const ownMarks = (...tts) => ({ say: `on the trig types, ${tts.map(k => MARKS[k][1]).join(", ")}: This track each (the track's own marks, EDIT ALL off), then Trig`,
+		act: async (u, c) => { if (c.n0 == null) c.n0 = V.undoCount; for (const k of tts) { u.click(`#ttlegend [data-tt="${k}"]`); await sleep(150);
+			if ($1('#ttlegend [data-ttall="0"]')?.getAttribute("aria-pressed") !== "true") { u.click('#ttlegend [data-ttall="0"]'); await until(() => pat()[MARKS[k][0]].editAll === 0, 4000); } }
+			u.click('#ttlegend [data-tt="trig"]'); },
+		screen: () => ok(S.tt === "trig", "type " + S.tt), machine: () => ok(tts.every(k => pat()[MARKS[k][0]].editAll === 0), tts.map(k => `${MARKS[k][0]} editAll ${pat()[MARKS[k][0]].editAll}`).join(", ")), within: 6000 });
 	/* wave 3: the trig types under the grid (DESIGN-machine-menus.md §2): Swing paints swing steps, EDIT ALL from the page, Slide by
 	   a plain click, Esc back to Trig */
 	const trigTypesJ = {
@@ -228,7 +237,8 @@ const MdJourneys = (() => {
 			{ say: "click Swing in the trig types", act: u => u.click('#ttlegend [data-tt="swg"]'), screen: () => ok(S.tt === "swg" && $1('#ttlegend [data-tt="swg"]').getAttribute("aria-checked") === "true" && !!$1('#ttlegend [data-ttall]'), "type " + S.tt) },
 			{ say: "click This track: the track's own swing row", act: u => u.click('#ttlegend [data-ttall="0"]'), machine: () => ok(pat().swing.editAll === 0, "swing editAll " + pat().swing.editAll) },
 			{ say: "drag across the two trigs: both swing", act: async (u, c) => { c.w0 = flagsOf(c.t, "swing"); await u.drag(cell(c.t, c.s), [cell(c.t, c.s2)]); },
-				screen: c => ok($1(cell(c.t, c.s)).classList.contains("sw") && $1(cell(c.t, c.s2)).classList.contains("sw"), "no swing mark"),
+				/* a drag sets or clears as its first step was (the track's own row may hold swing on these steps: B-088) */
+				screen: c => ok([c.s, c.s2].every(s => $1(cell(c.t, s)).classList.contains("sw") !== c.w0.includes(c.s)), `swing marks ${[c.s, c.s2].map(s => $1(cell(c.t, s)).classList.contains("sw"))}, before ${c.w0.includes(c.s)}`),
 				machine: c => ok([c.s, c.s2].every(s => flagsOf(c.t, "swing").includes(s) !== c.w0.includes(c.s)), "swing " + flagsOf(c.t, "swing").join(",")) },
 			{ say: "click All tracks: EDIT ALL on", act: u => u.click('#ttlegend [data-ttall="1"]'), screen: () => ok($1('#ttlegend [data-ttall="1"]').getAttribute("aria-pressed") === "true", "not pressed"), machine: () => ok(pat().swing.editAll === 1, "swing editAll " + pat().swing.editAll) },
 			{ say: "click Slide, then click the first trig: a slide", act: async (u, c) => { u.click('#ttlegend [data-tt="sld"]'); await sleep(300); c.l0 = V.slideAll ? (pat().slide.steps || []).includes(c.s) : flagsOf(c.t, "slide").includes(c.s); u.click(cell(c.t, c.s)); },
@@ -1842,14 +1852,14 @@ const MdJourneys = (() => {
 	const copyWhat = {
 		name: "md-seq-copy-what", proves: ["MD-116", "MD-129", "MD-142", "MD-X11"],
 		steps: [
-			go("seq"),
+			go("seq"), ownMarks("acc", "sld"),
 			{ say: "pick a track with two trigs or more, and another with a different machine", act: (u, c) => {
 				c.a = soundTracks().find(t => trigsOf(t).filter(s => s < V.len).length >= 2) ?? soundTrack();
 				c.b = soundTracks().find(t => t !== c.a && V.tracks[t].model !== V.tracks[c.a].model && !same(trigsOf(t), trigsOf(c.a))) ?? (c.a + 1) % 16;
 				c.tb = trigsOf(c.b); c.mb = kit()?.tracks[c.b].model; u.click(rail(c.a)); },
 				screen: c => ok(S.sel === c.a, "selected " + S.sel), machine: c => ok(trigsOf(c.a).length >= 2, "fewer than two trigs") },
 			{ say: "shift-click its first trig (an accent), alt-shift-click its second (a slide)", act: async (u, c) => {
-				const on = trigsOf(c.a).filter(s => s < V.len); c.s0 = on[0]; c.s1 = on[1];
+				const on = trigsOf(c.a).filter(s => s < V.len); c.s0 = on.find(s => !flagsOf(c.a, "accent").includes(s)) ?? on[0]; c.s1 = on.find(s => s !== c.s0 && !flagsOf(c.a, "slide").includes(s)) ?? on.find(s => s !== c.s0);
 				u.click(cell(c.a, c.s0), { shift: true }); await sleep(300); u.click(cell(c.a, c.s1), { alt: true, shift: true }); },
 				machine: c => ok(flagsOf(c.a, "accent").includes(c.s0) && flagsOf(c.a, "slide").includes(c.s1), `accent ${flagsOf(c.a, "accent")} slide ${flagsOf(c.a, "slide")}`), within: 4000 },
 			whatPick("copy", m => m ? Journey.snapshot("md-copy-what-menu") : Journey.snapshot("md-copy-what")),
@@ -1868,15 +1878,16 @@ const MdJourneys = (() => {
 				machine: c => ok(same(trigsOf(c.b), c.tb) && kit()?.tracks[c.b].model === c.mb, `trigs ${trigsOf(c.b)}, model ${kit()?.tracks[c.b].model}`), within: 8000 },
 			{ say: "Cmd+Z twice more: the accent and the slide go", act: async u => { u.key("z", { cmd: true }); await sleep(600); u.key("z", { cmd: true }); },
 				machine: c => ok(!flagsOf(c.a, "accent").includes(c.s0) && !flagsOf(c.a, "slide").includes(c.s1), `accent ${flagsOf(c.a, "accent")} slide ${flagsOf(c.a, "slide")}`), within: 8000 }
-		]
+		],
+		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); }
 	};
 	const clearWhat = {
 		name: "md-seq-clear-what", proves: ["MD-129", "MD-117", "MD-X11"],
 		steps: [
-			go("seq"),
+			go("seq"), ownMarks("acc"),
 			{ say: "pick a track with trigs and shift-click its first trig: an accent", act: async (u, c) => {
 				c.a = soundTracks().find(t => trigsOf(t).filter(s => s < V.len).length >= 1) ?? soundTrack(); u.click(rail(c.a)); await sleep(200);
-				c.s0 = trigsOf(c.a).filter(s => s < V.len)[0]; c.t0 = trigsOf(c.a); u.click(cell(c.a, c.s0), { shift: true }); },
+				c.s0 = trigsOf(c.a).filter(s => s < V.len).find(s => !flagsOf(c.a, "accent").includes(s)) ?? trigsOf(c.a)[0]; c.t0 = trigsOf(c.a); u.click(cell(c.a, c.s0), { shift: true }); },
 				machine: c => ok(flagsOf(c.a, "accent").includes(c.s0), "accent " + flagsOf(c.a, "accent")), within: 4000 },
 			{ say: "press Cmd+Shift+Backspace: Clear what opens", act: u => { blur(); u.key("Backspace", { cmd: true, shift: true }); },
 				screen: () => ok(whatShown() && $1("#dlg .what h3")?.textContent === "Clear what" && $1("#dlg [data-wgo]")?.classList.contains("danger"), "dialog " + ($1("#dlg h3")?.textContent || "none")) },
@@ -1888,7 +1899,8 @@ const MdJourneys = (() => {
 			{ say: "Cmd+Z twice: the trigs and the accent are back", act: async u => { u.key("z", { cmd: true }); await sleep(600); u.key("z", { cmd: true }); },
 				machine: c => ok(same(trigsOf(c.a), c.t0) && flagsOf(c.a, "accent").includes(c.s0), `trigs ${trigsOf(c.a)}, accent ${flagsOf(c.a, "accent")}`), within: 8000 },
 			{ say: "Cmd+Z: the accent of the start goes too", act: u => u.key("z", { cmd: true }), machine: c => ok(!flagsOf(c.a, "accent").includes(c.s0), "accent " + flagsOf(c.a, "accent")), within: 6000 }
-		]
+		],
+		async tidy(u, c) { forgetWhat(); if (c.n0 != null) await undoTo(u, c.n0); }
 	};
 	const lfoMenuJ = {
 		name: "md-sound-lfo-menu", proves: ["MD-086"],
@@ -2464,9 +2476,12 @@ const MdJourneys = (() => {
 	const swingCopy = {
 		name: "md-seq-swing-copy", proves: ["MD-133"],
 		steps: [
-			go("seq"),
-			{ say: "pick two tracks that both have a trig on one step, choose the Swing trig type and click that step on the first: a swing mark", act: async (u, c) => { c.n0 = V.undoCount; const ts = soundTracks(); c.s = [...Array(Math.min(V.length, V.len)).keys()].find(s => ts.filter(t => trigsOf(t).includes(s)).length >= 2); if (c.s == null) throw new Error("no step with two trigs");
-					[c.a, c.b] = ts.filter(t => trigsOf(t).includes(c.s)); u.click(rail(c.a)); await sleep(200); u.click('#ttlegend [data-tt="swg"]'); await sleep(150); u.click(cell(c.a, c.s)); },
+			go("seq"), ownMarks("swg"),
+			{ say: "pick two tracks that both have a trig on one step, choose the Swing trig type and click that step on the first: a swing mark", act: async (u, c) => { const ts = soundTracks();
+					/* neither track's own swing row marks that step yet (a factory row may: B-088) */
+					const two = s => ts.filter(t => trigsOf(t).includes(s) && !flagsOf(t, "swing").includes(s));
+					c.s = [...Array(Math.min(V.length, V.len)).keys()].find(s => two(s).length >= 2); if (c.s == null) throw new Error("no step with two trigs and no swing");
+					[c.a, c.b] = two(c.s); u.click(rail(c.a)); await sleep(200); u.click('#ttlegend [data-tt="swg"]'); await sleep(150); u.click(cell(c.a, c.s)); },
 				machine: c => ok(flagsOf(c.a, "swing").includes(c.s) && !flagsOf(c.b, "swing").includes(c.s), `swing ${flagsOf(c.a, "swing")}`), within: 6000 },
 			{ ...whatPick("copy", () => { }), say: "click ▾ beside COPY CLR PASTE, then Copy…" },
 			{ say: "tick Swing alone and click Copy", act: u => { whatTick(u, ["swing"]); u.click("#dlg [data-wgo]"); }, machine: c => ok(V.clipboard.track && same(V.clipboard.track.what, ["swing"]), "clipboard " + JSON.stringify(V.clipboard.track)), within: 4000 },

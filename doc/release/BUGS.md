@@ -4,6 +4,14 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-100 · Machinedrum: four sequence journeys fail on factory patterns (EDIT ALL on)
+
+- **From:** the 0.6 e2e run, 2026-10-13: `md-seq-trig-types`, `md-seq-swing-copy`, `md-seq-copy-what`, `md-seq-clear-what` fail on the firmware from fresh settings and pass on the page tier.
+- **What happens:** the factory patterns hold the pattern's EDIT ALL on for accent, slide and swing: one pattern-wide row every track takes. A shift-click is then a pattern-wide accent (the page says "Pattern-wide accent (EDIT ALL is on)"), which the journeys read in the track's own row; the swing journeys met the track's own swing row already set on the steps they picked (B-088) and a drag that clears.
+- **Checked, the page:** it handles EDIT ALL as the machine does: the grid shows a pattern-wide mark on every track that has a trig on that step, a click sets the pattern-wide row and says so, the trig types' All tracks / This track switch it (`markMode`), Clear what leaves pattern-wide marks and says so. A person on factory settings sees what the machine plays. Not a page bug.
+- **Fix (`fix/0.6-e2e-md`, the journeys):** a journey about a track's own marks first sets This track on the trig types for the marks it uses, as a person does (`ownMarks`; each switch an undo step its tidy takes back); the swing and copy journeys pick steps whose own row has no mark yet; the trig-types drag check follows the drag's set-or-clear. All four pass on the firmware from fresh settings and on the page tier.
+- **Status:** fixed on `fix/0.6-e2e-md`.
+
 ## B-098 · Machinedrum: the first factory song does not play when it is the first thing played after a start
 
 - **From:** the 0.6 e2e run, 2026-10-13 (`md-real-factory-songs` alone, fresh settings); the same as B-096 (Radek: first demo song, SONG mode, PLAY does nothing).
