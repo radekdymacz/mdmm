@@ -101,11 +101,15 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 3. Open an older saved project: it has its own memory, not the new kit.
 4. Engine menu: RESET MACHINE… > Start from factory memory…, Cancel, then again and confirm: the factory kits are back within seconds; a new instance starts from factory memory. The engine menu has no separate entry for it.
 5. KEEP MEMORY: OFF, save a kit, new instance: factory memory. Turn it ON again.
-6. Standalone: save a kit in a plug-in, then start the standalone (it has its own saved state): it starts with the saved memory, not its own. With KEEP MEMORY: OFF it starts with its own state again.
+6. Standalone: save a kit in a plug-in, then start the standalone (it has its own saved state): it has that kit, and its own other kits and the kit that played stay. With KEEP MEMORY: OFF it starts with its own state alone.
 7. The file: `~/Documents/Gearmulator Preview/<Machine>/memory/machine-memory.bin`. Damage it (change a byte): the next new instance says so, starts from factory memory and keeps `machine-memory.unusable.bin`.
 8. MD: load a sample into a UW slot in the Sampler and save nothing else, wait until the machine has stored it, new instance: the sample is there.
 9. Only saves write: play a pattern in a DAW with automation on a few parameters for a minute, turn knobs, rename the kit that plays without SAVE KIT: the file's date does not change. SAVE KIT: it changes within two seconds.
 10. Save a kit and quit the standalone at once (Cmd+Q): start it again, and a new plug-in instance: both have the kit.
-11. Standalone: rename the kit that plays (no SAVE KIT), quit, start again: the name is still there. Quit it, save a kit in a plug-in, start the standalone again: it has the plug-in's save (the unsaved name is gone, as the guide says).
-12. KEEP MEMORY: OFF, SAVE KIT, KEEP MEMORY: ON: the file's date changes at once; a new instance has the kit.
+11. Standalone: rename the kit that plays (no SAVE KIT), quit, start again: the name is still there. Quit it, save a kit in a plug-in, start the standalone again: it has the plug-in's kit and still the renamed kit that plays.
+12. KEEP MEMORY: OFF, SAVE KIT, KEEP MEMORY: ON: the file's date changes at once; a new instance has the kit and every kit saved before.
 13. Make the memory folder read-only (`chmod 555`), SAVE KIT in the standalone: the editor says the file could not be written. Quit, `chmod 755`, start the standalone: the kit is there (not the old file's), and the file is written again.
+14. Open an old DAW project and SAVE KIT into one slot: a new instance has that kit and every other slot saved before, not the old project's kits, patterns or songs.
+15. Save a kit and at once use MIDI panic's restart (or install the ROM again): a new instance has the kit.
+16. MM: load a storage image: a new instance has the image's kits, patterns and songs that differ from what you had.
+17. Edit a pattern (a step, a lock), a song row and a global setting from the page: a new instance has each.

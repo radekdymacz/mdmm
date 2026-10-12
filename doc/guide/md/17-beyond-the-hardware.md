@@ -6,13 +6,13 @@ The editor runs the real Machinedrum operating system and adds a few things arou
 ## MACHINE MEMORY
 <!-- rows: MD-X01 @152d0b -->
 
-A Machinedrum keeps what you save when you switch it off: its kits, patterns, songs, globals and samples stay in its memory. The editor does the same. When you save on the machine, the editor writes the machine's memory to a file on your computer. A new session starts from that file.
+A Machinedrum keeps what you save when you switch it off: its kits, patterns, songs, globals and samples stay in its memory. The editor does the same. When you save on the machine, the editor writes what you saved to a file on your computer, slot by slot. A new session starts from factory memory with the saved slots put back in.
 
 Only a save writes the file: a kit, pattern, song or global stored into its slot. That is SAVE KIT, a change to a pattern (the machine stores pattern edits as you make them), SAVE SONG, a change to a global, a SysEx dump the machine takes in. A sample you load in the Sampler is a save too, written once the machine has stored it. It makes no difference whether you save in the editor or on the machine's own keys. The editor writes the file a second or two after the save. Turning a knob, automation from a DAW and changes to the kit that plays that you have not saved write nothing, and neither does playing.
 
-A new session is a new plug-in in a DAW project, a new DAW project, or a start of the standalone editor. It starts with the memory you last saved, wherever you saved it. The standalone editor keeps the kit that played when you quit it, with its unsaved changes, unless another editor has saved since.
+A new session is a new plug-in in a DAW project, a new DAW project, or a start of the standalone editor. It has every slot you saved, wherever you saved it. The standalone editor also keeps the kit that played when you quit it, with its unsaved changes.
 
-NOTE: A DAW project keeps its own memory. When you open a saved project, the machine starts with the memory of that project, not with the file. A save you then make in that project goes to the file too.
+NOTE: A DAW project keeps its own memory. When you open a saved project, the machine starts with the memory of that project, not with the file. A save you then make in that project goes to the file too, and only the slot you saved.
 
 ### Start from factory memory
 
@@ -28,12 +28,12 @@ Choose **KEEP MEMORY: ON** in the engine menu. It reads **KEEP MEMORY: OFF**, an
 
 ### Two editors at once
 
-Two Machinedrum editors open at the same time, in one DAW project or in two, share the same file. Each writes its own saves. The last save wins: a new session starts with the memory of the editor that saved last.
+Two Machinedrum editors open at the same time, in one DAW project or in two, share the same file. Each writes the slots it saves and leaves the others. When two editors save the same slot, the last save wins.
 
 ### When the file cannot be used
 
-The file is written in one step, so a crash leaves the old memory or the new one. If the file is damaged, belongs to another firmware or was written by a newer editor, the machine starts from factory memory and the editor says so. It keeps the file beside the new one as machine-memory.unusable.bin, and your next save writes a new memory file.
+The file is written in one step, so a crash leaves the old memory or the new one. If the file is damaged or was written by another version of the editor, the machine starts from factory memory and the editor says so. It keeps the file beside the new one as machine-memory.unusable.bin, and your next save writes a new memory file.
 
-If the editor cannot write the file, because the disk is full or the folder is read only, it says so and keeps the old file. It tries again at your next save and when it closes. Your saves stay in the session, and the standalone editor starts with them next time, not with the old file.
+If the editor cannot write the file, because the disk is full or the folder is read only, it says so and keeps the old file. It tries again at your next save and when it closes. Your saves stay in the session. The standalone editor starts with them next time, not with the old file, and writes them then.
 
-The file is machine-memory.bin in the memory folder of the editor's data folder: Documents/Gearmulator Preview/Machinedrum/memory. It holds the machine's memory only, the same part of a DAW project. It holds no firmware.
+The file is machine-memory.bin in the memory folder of the editor's data folder: Documents/Gearmulator Preview/Machinedrum/memory. It holds the slots you saved and the samples you loaded, nothing else. It holds no firmware.
