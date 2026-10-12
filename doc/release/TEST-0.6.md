@@ -36,3 +36,10 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 3. Click the tempo: −/+, TAP, hold +10 % / −10 % (also - and =), Change on release; ⌥-drag the tempo. A plain drag still works as before; in a DAW the tempo stays locked.
 4. Song page: select a row, ▶ From here (or Enter).
 5. MM on real hardware: the question to set TRANSPORT IN = ACCEPT, then pause, continue and play from a row.
+
+## Copy / paste / clear what (wave 4)
+
+1. The ▾ beside COPY CLR PASTE: Copy… a track's trigs, accent, slide and sound, Paste… into two tracks, then one undo, then redo (pattern and kit both come back).
+2. MM: paste melody onto another track's trigs; synth parts do not paste onto MIDI tracks (shown off with the reason).
+3. MD Sound: the LFO card's ⋯ menu: Copy, Paste, Clear LFO.
+4. The keys ⌘⇧C, ⌘⇧V, ⌘⇧⌫, also in the plug-in in a DAW (⌘⇧V must not do a text "paste and match style").

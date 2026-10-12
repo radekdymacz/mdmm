@@ -17,6 +17,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Submodules:** only freetype and lunasvg remain, pinned to their own upstream projects (unmodified third-party code we never change); everything we change is a plain folder.
 - **Releases:** `release/0.x.y` branches are merged into `main`; before tagging, the last green full gate on main plus the gate stages of the diff since (`scripts/mdmm-full-gate.sh --plan`), or the full `scripts/mdmm-local-gate.sh`; the tag `mdmm-v0.x.y` runs .github/workflows/mdmm-editors-release.yml; notes in doc/release/vX.Y.Z.md; bugs and ideas in doc/release/BUGS.md and IDEAS.md (testers are never named).
 
+## 0.6 in progress (handover)
+
+0.6 (stability and feature completeness) is built on the integration branch `feat/0.6-features`, not on main. Start
+with doc/release/PLAN-0.6.md, section "Handover": what is merged, which branches wait (`feat/0.6-global`,
+`feat/0.6-sysex`, `feat/0.6-recording`), what is not started, and Radek's rule for this release (no per-piece play
+tests; merge after green tiers and a reviewer agent; he tests at the end from doc/release/TEST-0.6.md). The feature data
+is doc/features/*.json (doc/features/README.md), the user guide doc/guide/ (README.md, STYLE.md), the gap design
+doc/modern-ux/DESIGN-machine-menus.md with its wave plan doc/modern-ux/PLAN-manual-gaps.md.
+
 ## Sister product: xox-plocks
 
 `audio/xox-plocks` (private, `FutureNativeAudio/xox-plocks`) is a closed-source MIDI-out sequencer with this page's grid. Feature parity on the grid is kept by copying code and ideas both ways, never by forking or a shared library. When a grid feature ships here, update its row in `audio/xox-plocks/PARITY.md`. Code may go there only from files Radek wrote alone (its VENDOR.md); code from there may come here as it is.

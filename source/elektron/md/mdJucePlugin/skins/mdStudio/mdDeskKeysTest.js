@@ -41,9 +41,11 @@ const run = list.filter(b => b.run), name = b => `${Keys.label(b)} (${b.group})`
 /* and the selection's own (K2, DESIGN-keymap.md §3.2): ⌘A selects every step, ⇧← ⇧→ extend it */
 const STD_CMD = new Set(["cmd KeyZ", "cmd+shift KeyZ", "cmd KeyY", "cmd KeyC", "cmd KeyV", "cmd KeyX", "cmd KeyD", "cmd KeyA", "shift ArrowLeft", "shift ArrowRight", "shift KeyB",
 	/* wave 2 (DESIGN-machine-menus.md §3, approved 2026-10-11): ⇧Space pauses, ⌘. is panic */
-	"shift Space", "cmd ."]);
+	"shift Space", "cmd .",
+	/* wave 4: the copy / paste / clear what windows (DESIGN-machine-menus.md §3) */
+	"cmd+shift KeyC", "cmd+shift KeyV", "cmd+shift Backspace"]);
 const badMod = run.filter(b => ids(b).some(id => { const m = b.mod || ""; return m.includes("shift") && !STD_CMD.has(m + " " + id) || m.includes("cmd") && !STD_CMD.has(m + " " + id); }));
-check(!badMod.length, "no ⇧ or ⌘ commands but ⇧B (tap tempo), ⌘Z ⌘⇧Z ⌘Y ⌘C ⌘V ⌘X ⌘D ⌘A and ⇧← ⇧→ (the selection)" + (badMod.length ? ": " + badMod.map(name).join(", ") : ""));
+check(!badMod.length, "no ⇧ or ⌘ commands but ⇧B (tap tempo), ⌘Z ⌘⇧Z ⌘Y ⌘C ⌘V ⌘⇧C ⌘⇧V ⌘⇧⌫ ⌘X ⌘D ⌘A and ⇧← ⇧→ (the selection)" + (badMod.length ? ": " + badMod.map(name).join(", ") : ""));
 
 /* ---- rule: no two dispatched entries on one key and modifiers, unless both are conditional and known exclusive ---- */
 /* Escape: each closes what is open (the help, a dialog, LEARN, the paste marks, GLOBAL), one at a time */

@@ -131,7 +131,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.33 | DEPTH | Amount | ✅ | Sound > LFO motion |  | – |
 | p.33 | SHMIX | Waveform balance | ✅ | Sound > LFO shape |  | – |
 | p.34 | Two LFOs on one target add up | Layering | ✅ | Set same target twice | Not drawn as a total. | – |
-| p.34 | Copy, paste, clear, undo of an LFO | LFO clipboard | 🟡 | Sound copy/paste carries the LFO with the sound | No LFO-only copy or clear. | – |
+| p.34 | Copy, paste, clear, undo of an LFO | LFO clipboard | ✅ | Sound: ⋯ on the LFO card: Copy LFO, Paste LFO, Clear LFO; LCD ▾ Copy… / Paste… / Clear… with LFO ticked; Cmd+Z | An LFO that moved its own track moves the track it is pasted on. | 1 |
 
 ## 8. Pattern sequencer (pp.35-50)
 
@@ -166,8 +166,8 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.40 | Remove notes while live recording (EXIT + TRIG) | Erase live | ❌ | None |  | – |
 | p.40 | Note copy / paste with locks | COPY NOTE | ✅ | Select a step (Cmd-click), Cmd+C, Cmd+V; also Cmd+X, Cmd+D (duplicate), step menu | Copy carries locks, accents and slides. Shared selection code: skins/shared/deskSelect.js. | 4 |
 | p.40 | Clear note parameter locks / undo | CLEAR NOTE LOCKS | ✅ | Step menu clear; lane erase (Alt-drag) |  | – |
-| p.41 | Track copy / paste (notes, machine, LFO, locks) | COPY TRACK | 🟡 | Select track steps, copy, paste; Shift-click headers = paste to many | Machine and LFO are copied separately (Sound copy). | 1 |
-| p.41 | Clear track / undo | CLEAR TRACK | ✅ | ALL view then Clr, or select the track's steps (step ruler) and press Delete | Delete clears only selected steps; with none selected it does nothing (a hint says so). | 1 |
+| p.41 | Track copy / paste (notes, machine, LFO, locks) | COPY TRACK | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (⌘⇧C, ⌘⇧V): tick trigs, accent, swing, slide, locks, machine + sound, LFO; Paste lights the tracks to paste into; one undo step. Also a selection's Cmd+C / Cmd+V | The whole track (all 64 steps) and its sound in one copy. | 2 |
+| p.41 | Clear track / undo | CLEAR TRACK | ✅ | ALL view then Clr, or select the track's steps (step ruler) and press Delete | Delete clears only selected steps; with none selected it does nothing (a hint says so). | 2 |
 | p.42 | Copy / paste track page | COPY PAGE | ✅ | Cmd+C with no selection copies the page shown |  | 2 |
 | p.42 | Clear track page | CLEAR PAGE | ✅ | Clr key (LCD) | Clears the page shown of the selected track; with Alt held the key reads All and clears the pattern. | – |
 | p.43 | Pattern copy / paste (with kit link) | COPY PATTERN | ✅ | Pattern chooser: Copy, Paste, drag |  | – |
@@ -179,11 +179,11 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.45 | Accent amount 0-15 | ACCENT level | ✅ | LCD ACC |  | – |
 | p.45 | Accent trigs per step | Accent pattern | ✅ | Shift-click a step; Accent in the trig types under the grid, then click or drag steps | Honours EDIT ALL (All tracks · This track in the trig types). | 2 |
 | p.45 | Accent pattern ALL vs per-track edit | EDIT ALL toggle | ✅ | Sequence: choose Accent, Swing or Slide in the trig types under the grid, then All tracks or This track | The pattern's EDIT ALL per mark (markMode). Measured (gapProbesFirmwareTest p7): any nonzero flag is ALL and reaches every track; there is no per-track take setting, so the design's track dots are not built. | 1 |
-| p.46 | Copy / paste / clear accent pattern or track | Accent clipboard | 🟡 | Selection copy includes accents | No separate accent window. | – |
+| p.46 | Copy / paste / clear accent pattern or track | Accent clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Accent ticked); a selection's copy includes accents | With EDIT ALL on, the accent row is the pattern's, shared by every track. | 2 |
 | p.46 | Swing amount 50-80 % | SWING level | ✅ | LCD SWG |  | – |
 | p.46 | Swing step pattern (which steps swing) | Swing trigs | ✅ | Sequence: Swing in the trig types under the grid, then click or drag steps with a trig; a teal mark on the step | swingStep; a swing mark needs a trig, as accent and slide. | 1 |
 | p.46 | Per-track swing | Swing tracks | ✅ | Sequence: Swing in the trig types, This track: each track's own swing steps | All tracks share the SWG amount, as on the machine. | 1 |
-| p.47 | Copy / paste / clear swing | Swing clipboard | 🟡 | Selection copy includes swing marks |  | – |
+| p.47 | Copy / paste / clear swing | Swing clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Swing ticked); a selection's copy includes swing marks | With EDIT ALL on, the swing row is the pattern's. | – |
 | p.47 | Parameter locks, grid: hold TRIG + knob | Lock a value | ✅ | Lock lane: drag over a step; parameter keys | 64 budget meter on LCD. | 2 |
 | p.48 | View a step's locks (hold TRIG) | Inspect | ✅ | Lock lane shows each step's value; chips show counts |  | 1 |
 | p.48 | Remove all locks of a step / one lock | Unlock | ✅ | Step menu; Alt-drag lane erase; Alt+clear key |  | 2 |
@@ -192,7 +192,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.48 | Live-recorded locks (move a value while recording) | Live locks | ✅ | REC and move a value | Locks next unplayed trig. | – |
 | p.48 | Remove live locks (EXIT + knob) | Erase live locks | ❌ | None | Erase in the lane afterwards. | – |
 | p.49 | Slide trigs (ALL and per track) | Parameter slide | ✅ | Alt+Shift-click a step; Slide in the trig types under the grid, then click or drag steps; All tracks or This track |  | 2 |
-| p.50 | Copy / paste / clear slide | Slide clipboard | 🟡 | Selection copy includes slides |  | – |
+| p.50 | Copy / paste / clear slide | Slide clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Slide ticked); a selection's copy includes slides | With EDIT ALL on, the slide row is the pattern's. | 1 |
 
 ## 9. Song mode (pp.51-56)
 
@@ -392,13 +392,13 @@ Method: manual read in full; claims checked against the page files (`source/elek
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 236 |
-| 🟡 Partial | 29 |
+| ✅ Yes | 241 |
+| 🟡 Partial | 24 |
 | ❌ No | 15 |
 | ➖ Not applicable | 16 |
 | Total | 296 |
 
-Of the 280 applicable rows, 236 are fully covered, 29 partly, 15 not at all.
+Of the 280 applicable rows, 241 are fully covered, 24 partly, 15 not at all.
 
 ### Top gaps (our UI), most important first
 

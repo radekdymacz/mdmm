@@ -137,7 +137,7 @@ To paste into several tracks at once, hold [⇧] and click the tracks in the rai
 Click **Clr** on the LCD with no steps selected. The notes, slides and locks of the page shown on the selected track go. {key:undo} takes it back.
 
 ## TRACK COPY
-<!-- rows: MM-187 @d4a8c6 -->
+<!-- rows: MM-187 @c4beb7 -->
 
 1. Drag across the whole step ruler to select all the steps of the selected track.
 2. Press {key:copy}.
@@ -146,14 +146,14 @@ Click **Clr** on the LCD with no steps selected. The notes, slides and locks of 
 
 Press {key:select-all} to select the six tracks shown, and paste them as a block. To copy the machine of a track, use **Copy** and **Paste** on the **Sound** workspace.
 
-{gap:MM-187}A track copy takes the steps, slides and locks. It does not take the machine, the arpeggiator, the transpose or the swing in the same copy.{/gap}
+To copy a whole track with its machine, its arpeggiator, its transpose and its swing in one copy, use **Copy…** in the LCD's **▾** menu: see "Super copy".
 
 ## CLEAR TRACK
-<!-- rows: MM-188 @4dd5d0 -->
+<!-- rows: MM-188 @ca1110 -->
 
 Select all the steps of the track with the ruler and press {key:delete}. To clear every lock of the track, hold [⌥] and click the bin in the lane header.
 
-{gap:MM-188}There is no key that clears a track whole. **Clr** clears the page shown.{/gap}
+To clear the whole track, or only some of its parts, use **Clear…** in the LCD's **▾** menu: see "Super clear". **Clr** clears the page shown.
 
 ## PATTERN COPY
 <!-- rows: MM-189 @e07ae0 -->
@@ -176,11 +176,31 @@ In the pattern chooser, click the slot and then **Clear**. Or, on **Sequence**, 
 Both clear the notes and locks of every track. The pattern keeps its link to the kit, as on the machine.
 
 ## SUPER COPY
-<!-- rows: MM-191 @69e670 -->
+<!-- rows: MM-191 @7ac3db -->
 
-{gap:MM-191}You cannot choose which part of a track is copied, for example the melody only. A selection copies a block of tracks and steps whole.{/gap}
+Super copy copies the parts of a track you choose, over every step of the pattern.
+
+1. Select the track in the rail.
+2. Click **▾** at the right of <COPY> <CLR> <PASTE> on the LCD, then **Copy…**, or press {key:copy-what}. The **Copy what** window opens.
+3. Tick the parts. **Pattern** has **Notes**, **Melody**, **Slide**, **Swing**, **Locks**, **Arp** and **Transpose**. **Kit** has **Machine + sound** (a synth track's).
+4. Click **Copy**.
+5. Select the track to paste into. Click **▾**, then **Paste…**, or press {key:paste-what}.
+6. The parts copied are ticked. Under **To tracks** the selected track is lit, or the tracks marked for paste. Click a track key to light or unlight it.
+7. Click **Paste into 1 track** (the key says how many). The paste is one undo step.
+
+**Notes** takes the trigs, the envelope trigs, the NOTE OFFs and the pitches. **Melody** takes only the pitches: they go onto the trigs the target track already holds, and a step with no trig stays empty.
+
+NOTE: A synth track's parts paste onto synth tracks, a MIDI track's parts onto MIDI tracks. The keys of the other kind are off. Locks land only on steps that hold a trig.
+
+![Copy what](shot:mm-copy-what)
 
 ## SUPER CLEAR
-<!-- rows: MM-192 @c7d282 -->
+<!-- rows: MM-192 @8f9cc0 -->
 
-{gap:MM-192}You cannot choose which part of a track is cleared. Clear the steps, the locks, the pattern or the machine one at a time.{/gap}
+1. Select the track in the rail.
+2. Click **▾** at the right of <COPY> <CLR> <PASTE>, then **Clear…**, or press {key:clear-what}.
+3. Tick the parts to clear and click **Clear**.
+
+Clearing **Notes** clears their locks too. **Melody** leaves the trigs without a pitch. **Swing** goes back to every second 16th step, as in a new pattern. **Arp** turns the arpeggiator off and keeps its settings. **Machine + sound** makes the track GND-SIN.
+
+The window remembers what you ticked the last time. Press {key:undo} to take the clear back.
