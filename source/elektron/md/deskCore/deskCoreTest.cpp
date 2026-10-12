@@ -606,6 +606,50 @@ namespace
 		check(value() == 61 && c.openTrial() == 0, "the page loads again mid-trial: the trial is taken back");
 		c.trial(msg(R"({"op":"trialEnd","keep":true})"));
 		check(!lastResult()->find("ok")->asBool(), "a trial command needs its gesture");
+
+		// keep as a number, and a stale end of another gesture
+		c.trial(msg(R"({"op":"trialBegin","g":20})"));
+		c.edit(msg(R"({"op":"set","s":1,"v":21,"g":20})"));
+		c.trial(msg(R"({"op":"trialEnd","g":19,"keep":false})"));
+		check(value() == 21 && c.openTrial() == 20, "a stale trialEnd of another gesture changes nothing, the trial stays open");
+		c.trial(msg(R"({"op":"trialEnd","g":20,"keep":1})"));
+		check(value() == 21 && c.openTrial() == 0, "keep:1 keeps");
+
+		// Redo while a trial is open ends it (kept)
+		c.edit(msg(R"({"op":"set","s":1,"v":30,"g":30})"));
+		c.undo(msg(R"({"op":"undo"})"));
+		c.trial(msg(R"({"op":"trialBegin","g":31})"));
+		c.redo(msg(R"({"op":"redo"})"));
+		c.trial(msg(R"({"op":"trialEnd","g":31,"keep":false})"));
+		check(value() == 30 && c.openTrial() == 0, "Redo mid-trial ends it: the redone step stays");
+
+		// a refused edit outside the trial leaves it open
+		c.trial(msg(R"({"op":"trialBegin","g":40})"));
+		c.edit(msg(R"({"op":"set","s":1,"v":41,"g":40})"));
+		c.edit(msg(R"({"op":"set","s":1,"v":-1,"g":41})"));
+		check(c.openTrial() == 40, "a refused edit of another gesture leaves the trial open");
+		c.trial(msg(R"({"op":"trialEnd","g":40,"keep":false})"));
+		check(value() == 30, "and the trial is still taken back");
+
+		// redo intact when the take-back is a no-op
+		c.edit(msg(R"({"op":"set","s":1,"v":50,"g":50})"));
+		c.undo(msg(R"({"op":"undo"})"));
+		c.trial(msg(R"({"op":"trialBegin","g":51})"));
+		c.edit(msg(R"({"op":"set","s":1,"v":-2,"g":51})"));
+		c.trial(msg(R"({"op":"trialEnd","g":51,"keep":false})"));
+		check(value() == 30 && c.history().canRedo(), "a trial with nothing recorded takes nothing back and leaves Redo as it was");
+
+		// the machine settled the trial's edit as refused (a failed push): the take-back sends nothing
+		m.events.push_back(ToyMachine::Ev::observed({1, 30}, Source::Dump));
+		c.pump();
+		c.trial(msg(R"({"op":"trialBegin","g":60})"));
+		c.edit(msg(R"({"op":"set","s":1,"v":65,"g":60})"));
+		m.events.push_back(ToyMachine::Ev::failed({ToyModel::Kind::Toy, 1}, "no read-back"));
+		c.pump();
+		const auto sent = m.sent.size();
+		check(value() == 30, "a failed push falls back to what the machine holds");
+		c.trial(msg(R"({"op":"trialEnd","g":60,"keep":false})"));
+		check(value() == 30 && m.sent.size() == sent && c.openTrial() == 0, "take-back after the machine refused the trial's edit: nothing sent, the trial over");
 	}
 
 	// The working-copy policy on a toy kit (an int per knob): status is the truth, an image that

@@ -358,8 +358,9 @@ namespace deskCore
 		// back as a whole. trialBegin {g} opens it; trialEnd {g, keep} closes it: keep leaves the edits as one undo step,
 		// otherwise that step is taken back, only while it is still the newest step and of the trial's gesture (a
 		// refused edit recorded nothing, so nothing of the user's earlier work is undone). Any other step, an undo or
-		// a redo ends the trial (kept). A page that goes away (detach) or comes again (ready) takes an open trial back,
-		// so a window closed mid-trial leaves no tried edit behind.
+		// a redo ends the trial (kept). A trialEnd of another gesture changes nothing. A page that loads again (ready: a
+		// reload, or a new editor window attaching after the old one closed mid-trial) takes an open trial back; detach
+		// (only when the processor goes) does too.
 		void trial(const Value& _message)
 		{
 			const auto* g = _message.find("g");
@@ -375,9 +376,12 @@ namespace deskCore
 				result(_message, {}, {});
 				return;
 			}
-			const auto* keep = _message.find("keep");
-			const bool back = m_trial == gesture && !(keep && keep->isBool() && keep->asBool());
-			const bool undone = back && takeBackTrial();
+			if(m_trial != gesture)
+			{
+				result(_message, {}, {});	// a stale end (another trial, or one already over): nothing
+				return;
+			}
+			const bool undone = !flag(_message, "keep") && takeBackTrial();
 			m_trial = 0;
 			result(_message, {}, undone ? "Back as it was" : "");
 		}
@@ -738,11 +742,13 @@ namespace deskCore
 				m_toPage(_message);
 		}
 
-		static bool forced(const Value& _message)
+		// a flag argument as true or as a nonzero number
+		static bool flag(const Value& _message, const char* _name)
 		{
-			const auto* f = _message.find("force");
+			const auto* f = _message.find(_name);
 			return f && ((f->isBool() && f->asBool()) || (f->isNumber() && f->asNumber() != 0));
 		}
+		static bool forced(const Value& _message) { return flag(_message, "force"); }
 
 		void changed(const Ref& _ref)
 		{
