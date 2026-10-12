@@ -2445,6 +2445,9 @@ namespace
 		const uint8_t base = g.baseChannel & 15;
 
 		// LIVE RECORDING: a note from the keyboard on T1's channel lands on a step
+		// the panel is free once the machine has left SYSEX RECV (RECORD is refused as busy while it is still on it)
+		for(int i = 0; i < 200 && r.desk->recvState() != "idle"; ++i)
+			r.run(100);
 		r.msg(R"({"op":"play"})");
 		r.run(1500);
 		r.msg(R"({"op":"record","mode":"live"})");
@@ -2845,6 +2848,10 @@ namespace
 		}
 		_r.desk->setSysexTap({});
 		_r.run(2000);
+		// the machine is on SYSEX RECV until the desk leaves it (idle 3 s, then the exit keys; B-062's macro is longer): the
+		// edits that follow are for the main screen
+		for(int i = 0; i < 300 && _r.desk->recvState() != "idle"; ++i)
+			_r.run(100);
 	}
 
 	// B-051, F3: the global the machine ships with (every slot of a fresh machine is elektronData::mmFactoryGlobal; FACTORY_PRINT=1
@@ -3760,6 +3767,8 @@ namespace
 			in >> atStep >> page >> index;
 		}
 		r.msg(R"({"op":"tempo","bpm":60})");
+		for(int i = 0; i < 200 && r.desk->recvState() != "idle"; ++i)	// the panel is free once SYSEX RECV is left
+			r.run(100);
 		r.msg(R"({"op":"play"})");
 		r.run(1000);
 		r.msg(R"({"op":"record","mode":"live"})");
