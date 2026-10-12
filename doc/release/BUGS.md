@@ -4,6 +4,14 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-082 · Machinedrum: a MID machine's routing knobs carry the wrong names (PCHG edits CC6D)
+
+- **From:** the wave 12 clip probe (`gapProbesFirmwareTest <MD ROM> - w12clip`, the LCD of each page with `W12_SNAP_MACHINE`), 2026-10-12.
+- **What happens:** the Sound page lists a MID machine's ROUTING page as CC5D CC5V PCHG and two empty knobs. The machine's LCD shows CC5D CC5V CC6D CC6V on the top row and PCHG LFOS LFOD LFOM below: the box named PCHG moves CC6D, and CC6D, CC6V and the real PCHG have no box. The master-effect CTR machines (CTR-RE, CTR-GB, CTR-EQ, CTR-DX) listed no ROUTING knobs; the LCD shows LFOS LFOD LFOM there.
+- **Cause:** the names were inferred (`elektronData/mdMachines.cpp`, P2-RESULT.md), never read off the machine.
+- **Should:** each box carries the name the machine shows for that knob.
+- **Status:** fixed in 0.6 wave 12 (`feat/0.6-gaps`): the names as the LCD shows them; `elektronDataTest` checks them. Values and SysEx are untouched (a box sends its knob's index as before).
+
 ## B-081 · Machinedrum: the Rhythm Echo and Gate Box cards on the Mix page show and edit each other's values
 
 - **From:** slice 5 (the master effects journey), 2026-10-12.

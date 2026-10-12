@@ -162,7 +162,9 @@ namespace elektronData
 		constexpr std::array<const char*, 8> g_ramRecord{"MLEV", "MBAL", "ILEV", "IBAL", "CUE1", "CUE2", "LEN", "RATE"};
 		constexpr std::array<const char*, 8> g_midi{"NOTE", "N2", "N3", "LEN", "VEL", "PB", "MW", "AT"};
 		constexpr std::array<const char*, 8> g_midiEffects{"CC1D", "CC1V", "CC2D", "CC2V", "CC3D", "CC3V", "CC4D", "CC4V"};
-		constexpr std::array<const char*, 8> g_midiRouting{"CC5D", "CC5V", "PCHG", "", "", "LFOS", "LFOD", "LFOM"};
+		// B-082: as the machine's LCD shows them (gapProbesFirmwareTest w12clip, W12_SNAP_MACHINE=MID-01)
+		constexpr std::array<const char*, 8> g_midiRouting{"CC5D", "CC5V", "CC6D", "CC6V", "PCHG", "LFOS", "LFOD", "LFOM"};
+		constexpr std::array<const char*, 8> g_lfoOnly{"", "", "", "", "", "LFOS", "LFOD", "LFOM"};
 		constexpr std::array<const char*, 8> g_ctr8pEffects{"P1TR", "P1PA", "P2TR", "P2PA", "P3TR", "P3PA", "P4TR", "P4PA"};
 		constexpr std::array<const char*, 8> g_ctr8pRouting{"P5TR", "P5PA", "P6TR", "P6PA", "P7TR", "P7PA", "P8TR", "P8PA"};
 		constexpr std::array<const char*, 8> g_none{"", "", "", "", "", "", "", ""};
@@ -230,8 +232,9 @@ namespace elektronData
 		}
 		else if(name == "CTR-RE" || name == "CTR-GB" || name == "CTR-EQ" || name == "CTR-DX")
 		{
+			// B-082: their effects page is empty, their routing page holds the track's LFO knobs (the LCD)
 			put(out, 1, g_none);
-			put(out, 2, g_none);
+			put(out, 2, g_lfoOnly);
 		}
 		return out;
 	}
