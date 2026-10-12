@@ -351,3 +351,7 @@ same values (SYNTHESIS 64 64 0 0 0 0 0 0, EFFECTS 0 0 64 64 0 127 0 0, ROUTING 0
 trig or mute group, the LFO on its own track, parameter 0, SHP1 0, SHP2 4, FREE), the master effects at their start
 values, and the name's first byte 0x7f (no name; the other name bytes and the LFOs' running state stay). Two slots of
 different kits clear to the same kit but for those kept bytes. `elektronData::mdClearedKit`; the probe checks it.
+
+**W12d, STOP with a pattern queued (MD-099).** Both machines: A01 plays, A02 is cued with a SysEx LOAD PATTERN (the
+status still says A01): the panel's STOP makes A02 current at once, and PLAY starts it. MIDI Stop does not (A01 stays,
+the cue too). A single TRIG key while playing cues nothing (a pattern is picked with a BANK key held).

@@ -149,7 +149,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.37 | Pending pattern at the pattern end | Queue | ✅ | Pattern chooser Queue / Now; LCD blinks |  | 1 |
 | p.37 | Sticky bank keys (two seconds) | One-hand operation | ➖ |  | Not needed with the mouse. | – |
 | p.37 | Pattern chaining (one bank, each pattern once) | Chain | ✅ | Song page > Patterns > Chain | Limit 16 pads in page. | 1 |
-| p.37 | STOP jumps to a queued pattern | Chain behaviour | 🟡 | Firmware behaviour | Page does not add a key; the firmware does it when a chain is set. | – |
+| p.37 | STOP jumps to a queued pattern | Chain behaviour | ✅ | STOP (▶ or Space) with a pattern queued: it becomes the current pattern at once (the machine's STOP); the LCD and the chooser say so | Measured: the panel's STOP switches to a pattern cued by LOAD PATTERN; MIDI Stop does not (gapProbesFirmwareTest w12stop) | 1 |
 | p.37 | Parameter tweaking: FUNCTION + knob on all tracks | Control All | ✅ | Alt-drag a value; MUTATE | Cmd 'tweak'. | 1 |
 | p.38 | Filter sweep with FUNCTION + knob E/F in TFX | Whole-pattern sweep | ✅ | Alt-drag FLTF / FLTW | Same. | 1 |
 | p.38 | FUNCTION + CLASSIC/EXTENDED reloads kit | Revert | ✅ | Kit library: Reload (kit field) |  | 1 |
@@ -392,13 +392,13 @@ Method: manual read in full; claims checked against the page files (`source/elek
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 262 |
-| 🟡 Partial | 12 |
+| ✅ Yes | 263 |
+| 🟡 Partial | 11 |
 | ❌ No | 6 |
 | ➖ Not applicable | 16 |
 | Total | 296 |
 
-Of the 280 applicable rows, 262 are fully covered, 12 partly, 6 not at all.
+Of the 280 applicable rows, 263 are fully covered, 11 partly, 6 not at all.
 
 ### Top gaps (our UI), most important first
 

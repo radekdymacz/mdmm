@@ -1550,7 +1550,18 @@ namespace
 		const bool now = _rig.runUntil([&] { return _rig.pageTelemetry().playing && _rig.pageTelemetry().pattern == target; }, 3000);
 		std::printf("  switch now: playing %s after %.0f ms\n", ed::mdPatternName(target).c_str(), ms(m.now() - t0));
 		check(now, "Now while playing: STOP, LOAD PATTERN, PLAY plays the new pattern");
-		_rig.pageConfirmed(R"({"op":"stop","id":963})");
+		// MD-099: a pattern queued while playing (Go) starts at STOP, before the pattern's end (gapProbesFirmwareTest w12stop)
+		{
+			_rig.runUntil([&] { const auto st = _rig.pageTelemetry().step; return st >= 1 && st <= 3; }, 4000);
+			_rig.pageConfirmed("{\"op\":\"select\",\"p\":" + std::to_string(pat) + ",\"force\":true,\"id\":964}");
+			_rig.run(60);
+			const bool queued = _rig.pageTelemetry().pattern == target;
+			const auto t1 = m.now();
+			_rig.pageConfirmed(R"({"op":"stop","id":963})");
+			const bool jumped = _rig.runUntil([&] { return !_rig.pageTelemetry().playing && _rig.pageTelemetry().pattern == pat && desk.linkState().pattern == pat; }, 1500);
+			std::printf("  STOP with %s queued: %s after %.0f ms\n", ed::mdPatternName(pat).c_str(), jumped ? "switched" : "not switched", ms(m.now() - t1));
+			check(queued && jumped, "STOP with a pattern queued: the machine and the editor switch to it at once");
+		}
 		_rig.run(300);
 		m.send(ed::mdLoadPattern(pat));
 		_rig.run(300);
