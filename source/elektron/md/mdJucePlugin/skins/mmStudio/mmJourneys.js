@@ -1078,11 +1078,14 @@ const MmJourneys = (() => {
 		name: "mm-perform-poly-track", proves: ["MM-032", "MM-087", "MM-239"],
 		steps: [
 			go("perform"),
-			{ say: "click Assign's track key 3, then POLY: the machine's POLY is on, on track 3 (its TRACK key)", act: async u => { polySent.length = 0; u.click(astrk(2)); await sleep(300); u.click('[data-pmode="poly"]'); },
+			{ say: "click Assign's track key 3, then POLY: the machine's POLY is on, on track 3 (its TRACK key)", act: async (u, c) => { polySent.length = 0; u.click(astrk(2)); await sleep(300); await recvIdle(); results.length = 0; u.click('[data-pmode="poly"]');
+				/* refused while the panel takes an earlier journey's dump (TRACK would be lost): the page stays off POLY and says so; clicked again */
+				for (let i = 0; i < 5 && await until(() => results.some(r => r.op === "poly" && r.ok === false && /busy/.test(r.errors?.[0] || "")), 1500); i++) {
+					c.note = "the plug-in said the panel was busy (SYSEX RECV); clicked again"; results.length = 0; await recvIdle(); if (S().mode === "poly") u.click('[data-pmode="normal"]'); await sleep(300); u.click('[data-pmode="poly"]'); } },
 				screen: () => ok(/^POLY: T3 plays six voices/.test($1(".kbhint")?.textContent || "") && !!$1(astrk(2) + " .x6") && $all('[data-set="astrk"] button.polyoff').length === 5, "hint " + $1(".kbhint")?.textContent),
 				machine: () => ok(machine().poly === true && lastPoly().on === true && lastPoly().t === 2, `poly ${machine().poly}, sent ${JSON.stringify(lastPoly())}`), within: 8000 },
 			{ say: "look at the Perform page in POLY", act: async () => { await sleep(300); Journey.snapshot("mm-perform-poly"); } },
-			{ say: "click track key 5: POLY moves to track 5", act: u => u.click(astrk(4)),
+			{ say: "click track key 5: POLY moves to track 5", act: async u => { await recvIdle(); u.click(astrk(4)); },
 				screen: () => ok(/^POLY: T5 plays six voices/.test($1(".kbhint")?.textContent || "") && !!$1(astrk(4) + " .x6"), "hint " + $1(".kbhint")?.textContent),
 				machine: () => ok(machine().poly === true && lastPoly().t === 4, `poly ${machine().poly}, sent ${JSON.stringify(lastPoly())}`), within: 8000 },
 			{ say: "on Sequence the rail marks track 5 ×6 and dims the others", act: u => u.click(tab("seq")),
