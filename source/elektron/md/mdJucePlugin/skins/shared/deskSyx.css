@@ -29,7 +29,7 @@
 .syxtab.work input:checked{animation:blink 1s steps(2) infinite}
 @media (prefers-reduced-motion:reduce){.syxtab.work input:checked{animation:none}}
 /* the slots, as on the machine */
-.syxbody{max-height:calc(100vh - 330px);overflow:auto;overscroll-behavior:contain}
+.syxbody{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain}
 .syxpane[hidden]{display:none}
 .syxgrid{display:grid;gap:4px;align-items:stretch}
 .syxrl{align-self:center;font:600 12px var(--mono);color:var(--print2);text-align:center}
@@ -121,3 +121,10 @@
 .sxplace .seg button[aria-pressed=true]{background:var(--cream,var(--lcd));color:var(--creamtext,var(--ink))}
 .sxplace .note{font:500 13px/1.35 var(--sans);color:var(--print2)}
 .sxfirst{display:flex;gap:6px;align-items:center;font:12px var(--mono);color:var(--print2)}
+/* review 1 (B-095): one size for the panel's whole run (preview, import, report, export, reset): as big as the window
+   lets it be up to 1120 x 820, the slots scroll inside; the head and the footer (Stop, Hide, Done) always in view */
+.syxpop{display:flex;flex-direction:column;height:min(820px,calc(100vh - 48px));box-sizing:border-box}
+.syxpop>*{flex:none}
+.syxpop>.syxbody,.syxpop>.sxlist{flex:1 1 auto;min-height:0;overflow:auto}
+.syxpop>.syxfoot{margin-top:auto}
+.syxtipline{margin:0;height:16px;font:12px var(--mono);color:var(--print2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

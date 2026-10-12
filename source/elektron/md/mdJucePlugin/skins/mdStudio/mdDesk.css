@@ -401,8 +401,10 @@ table.song tr.cur td:first-child{box-shadow:inset 3px 0 0 var(--led)}
 .pgrid{display:grid;gap:3px}
 .prow{display:grid;grid-template-columns:58px repeat(8,64px);gap:3px;align-items:center}
 .plab{font:600 10px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--print)}
-.pk{height:24px;padding:0 6px;font:500 11px var(--mono);letter-spacing:0;position:relative;text-align:left}
-.pk i{position:absolute;right:4px;top:50%;transform:translateY(-50%);font-style:normal;font-size:10px;color:var(--led)}
+.pk{height:24px;padding:0 6px;font:500 11px var(--mono);letter-spacing:0;position:relative;text-align:left;display:flex;align-items:center;gap:3px;min-width:0}
+/* review 1 (B-097): the name and the lock count side by side, the name cut short (never under the count) */
+.pk .pkn{flex:1 1 auto;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:clip}
+.pk i{flex:none;font-style:normal;font-size:10px;color:var(--led)}
 .pk.has::before{content:"";position:absolute;left:3px;top:3px;width:4px;height:4px;border-radius:50%;background:var(--led);box-shadow:0 0 4px var(--led)}
 .pk[aria-pressed=true]{background:var(--cream);color:var(--creamtext)}
 .pk[aria-pressed=true] i{color:var(--rec)}
@@ -560,7 +562,7 @@ table.song tr.cur td:first-child{box-shadow:inset 3px 0 0 var(--led)}
 :root{--hdr:172px!important}
 .th .nm span{display:none}
 .pgrid.vert .pk{padding:0 4px;font-size:10.5px}
-.pgrid.vert .pk i{right:3px;font-size:9px}
+.pgrid.vert .pk i{font-size:9px}
 .pleds{display:flex;gap:8px;align-items:end}
 .pl{display:grid;justify-items:center;gap:2px}
 .pl .led{width:8px;height:8px}
@@ -1190,9 +1192,9 @@ html,body{min-width:1280px}
 @media (max-width:900px){.amgrid{grid-template-columns:1fr}.amnote{padding-left:0}}
 /* 0.3.5: the line to the machine's own MIDI settings (GLOBAL, the Machinedrum Editor) */
 .amlink{background:none;border:0;padding:0;font:inherit;color:var(--print);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
-/* The GLOBAL page both editors share (deskGlobal.js; B-051, F3): the Machinedrum Editor's v61 (P5) panel, moved here,
-   the channel warning; since 0.6 a page over the workspace under the header (.gpage, DESIGN-machine-menus.md §2, the
-   mock-ups md-08 and mm-06): the head on one line, the cards in three columns. Plain grid and flex (macOS 12's WebKit). */
+/* The GLOBAL dialog both editors share (deskGlobal.js; B-051, F3): the Machinedrum Editor's v61 (P5) panel, moved here,
+   the channel warning; 0.6's page layout (.gpage, DESIGN-machine-menus.md §2, the mock-ups md-08 and mm-06): the head
+   on one line, the cards in three columns; a modal since review 1 (B-091). Plain grid and flex (macOS 12's WebKit). */
 .globpop{position:absolute;z-index:22;width:min(1180px,calc(100vw - 32px));display:grid;gap:10px;align-content:start;padding:14px;background:var(--plate);border:2px solid var(--print);border-radius:6px;box-shadow:0 18px 40px rgba(0,0,0,.35);overflow:auto;overscroll-behavior:contain;color:var(--body)}
 .globgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .globgrid .card{gap:8px}
@@ -1221,8 +1223,9 @@ html,body{min-width:1280px}
 .gnv{font:600 9px var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--print3);border:1px solid var(--rule);border-radius:2px;padding:0 4px;margin-left:6px}
 .libhead .greset{flex:none}
 .gwarn{grid-column:1/-1;margin:0;font-size:12px;color:var(--red)}
-/* 0.6: the page: no frame of its own, the header's width, scrolls inside */
-.globpop.gpage{z-index:var(--mz,22);border:0;border-radius:0;box-shadow:none;padding:0 2px 16px;gap:14px;background:var(--plate);box-sizing:border-box}
+/* the GLOBAL dialog (0.6: the page's head and cards; review 1: a modal again, framed, centred by the modal layer, as wide
+   as the header was at most, scrolls inside) */
+.globpop.gpage{z-index:var(--mz,22);width:min(1400px,calc(100vw - 48px));padding:14px 18px 18px;gap:14px;background:var(--plate);box-sizing:border-box}
 .gphead{display:flex;align-items:center;gap:14px;flex-wrap:nowrap;white-space:nowrap;border-bottom:2px solid var(--print);padding-bottom:10px;min-width:0}
 .gpname{font:600 22px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase;color:var(--print)}
 .gphead .gslots button{width:34px;height:30px;font-size:13px}
@@ -1331,13 +1334,16 @@ body{box-sizing:border-box;overflow:hidden}
 .modalbg{position:fixed;inset:0;z-index:var(--mz,59);background:rgba(8,8,6,.52)}
 .modalbg[hidden]{display:none}
 .modalbg.clear{background:transparent}
-.modal:not(.dlg):not(.bootcard):not(.deskmenu):not(.gpage){position:fixed!important;left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;margin:0!important;max-width:calc(100vw - 48px)!important;max-height:calc(100vh - 48px)!important;overflow:auto!important;z-index:var(--mz,60)!important;box-sizing:border-box}
+.modal:not(.dlg):not(.bootcard):not(.deskmenu){position:fixed!important;left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;margin:0!important;max-width:calc(100vw - 48px)!important;max-height:calc(100vh - 48px)!important;overflow:auto!important;z-index:var(--mz,60)!important;box-sizing:border-box}
 .dlg.modal{background:transparent!important;z-index:var(--mz,60)!important}
 .modal:focus,.modal .dlgbox:focus{outline:none}
 .modalopen .kpop{z-index:120!important}
 @keyframes nudge{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 .dlgbox.nudge{animation:nudge .16s 2}
-@media (prefers-reduced-motion:reduce){.dlgbox.nudge{animation:none}}
+/* a panel's box is placed by a transform: it says "not closed" with a flash of its frame instead */
+@keyframes nudgeflash{50%{outline:3px solid var(--led,#e33);outline-offset:2px}}
+.modal.nudge:not(.dlg){animation:nudgeflash .18s 2}
+@media (prefers-reduced-motion:reduce){.dlgbox.nudge,.modal.nudge{animation:none}}
 /* A context menu (K3, deskMenu.js): at the pointer, above the clear backdrop; each item with its key at the right.
    #deskmenu holds the panels (the menu, an open submenu beside it), each placed by the script. The page's tokens
    (--plate --print --body --rule --mono --sans: light and dark, MK1 and MK2 alike); plain colours and rgba only (no
@@ -1492,7 +1498,7 @@ body.deskmidi #main,body.deskmidi #rail{opacity:.3;pointer-events:none;transitio
 .syxtab.work input:checked{animation:blink 1s steps(2) infinite}
 @media (prefers-reduced-motion:reduce){.syxtab.work input:checked{animation:none}}
 /* the slots, as on the machine */
-.syxbody{max-height:calc(100vh - 330px);overflow:auto;overscroll-behavior:contain}
+.syxbody{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain}
 .syxpane[hidden]{display:none}
 .syxgrid{display:grid;gap:4px;align-items:stretch}
 .syxrl{align-self:center;font:600 12px var(--mono);color:var(--print2);text-align:center}
@@ -1584,6 +1590,13 @@ body.deskmidi #main,body.deskmidi #rail{opacity:.3;pointer-events:none;transitio
 .sxplace .seg button[aria-pressed=true]{background:var(--cream,var(--lcd));color:var(--creamtext,var(--ink))}
 .sxplace .note{font:500 13px/1.35 var(--sans);color:var(--print2)}
 .sxfirst{display:flex;gap:6px;align-items:center;font:12px var(--mono);color:var(--print2)}
+/* review 1 (B-095): one size for the panel's whole run (preview, import, report, export, reset): as big as the window
+   lets it be up to 1120 x 820, the slots scroll inside; the head and the footer (Stop, Hide, Done) always in view */
+.syxpop{display:flex;flex-direction:column;height:min(820px,calc(100vh - 48px));box-sizing:border-box}
+.syxpop>*{flex:none}
+.syxpop>.syxbody,.syxpop>.sxlist{flex:1 1 auto;min-height:0;overflow:auto}
+.syxpop>.syxfoot{margin-top:auto}
+.syxtipline{margin:0;height:16px;font:12px var(--mono);color:var(--print2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ===== The real machine's states (not in the mockup) ===== */
 .st.past{opacity:.45}

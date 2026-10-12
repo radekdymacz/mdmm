@@ -149,7 +149,7 @@ function libAct(a){const k=LIB.sel,kit=LIB.open==="kit";
    copy:()=>kit?kitCopy(k):patCopy(k),paste:()=>kit?kitPaste(k):patPaste(k),clear:()=>kit?kitClear(k):patClear(k),go:()=>patGo(k,false),now:()=>patGo(k,true)})[a]?.()}
 
 /* ----- mouse ----- */
-document.addEventListener("click",e=>{if(!LIB.open)return;if($("#libpop").contains(e.target)||e.target.closest?.("#dlg,#kitf,#pat,#undo,#redo,#kpop"))return;closeLib(false)},true);
+/* review 1 (B-094): every modal locks: a click outside the library no longer closes it (Esc, its close key) */
 document.addEventListener("click",e=>{if(!LIB.open||!$("#libpop").contains(e.target)||e.target.closest?.("#lsin"))return;
  const a=e.target.closest("[data-la]");if(a){if(!a.disabled)libAct(a.dataset.la);return}
  /* a click loads the slot at once (LOAD KIT; over unsaved edits the machine asks first: Save and load, Load

@@ -58,7 +58,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Front panel 1-4 | 9 GLOBAL (FUNCTION + KIT / SONG) | Global menu | ✅ | GLOBAL key in the top bar (a page under the header), engine menu > GLOBAL…, link in the AUDIO / MIDI panel | 8 slots with Copy · Paste · Clear, Control, Sync, Routing, Audio (master tune), Control out 1 (`deskGlobal.js`, `117-global.js`) | 1 |
 | Front panel 1-5 | 10 TRIG keys as keyboard | Play notes | ✅ | Home-row keys A-L and W-P, on-screen keyboard (Perform), roll keys |  | 2 |
 | Front panel 1-5 | 10 Velocity 80, or 127 with FUNCTION | Key velocity | ✅ | Keys C / V (20 40 60 80 100 127) |  | 1 |
-| Front panel 1-5 | 10 TRIG keys edit notes in grid mode | Step trigs | ✅ | Roll click (Draw on), ENV dots, step menu |  | 1 |
+| Front panel 1-5 | 10 TRIG keys edit notes in grid mode | Step trigs | ✅ | Roll click (Draw on), step menu (right-click, ⋯ or the Menu key): Note on / off, NOTE OFF, Trigless trig, Envelopes |  | 1 |
 | Front panel 1-5 | 10 BANK + TRIG selects pattern | Pattern pick | ✅ | LCD > PATTERN (‹ ›, chooser) |  | 1 |
 | Front panel 1-5 | 11 PATTERN / SONG key | Sequencer mode | ✅ | LCD line 2 PLAY PAT / SONG, Song > What plays | `seqMode` op | 1 |
 | Front panel 1-5 | 11 POLY (FUNCTION + PATTERN / SONG) | Poly mode | ✅ | Perform > Keyboard > Poly, on the track selected (the editor presses its TRACK key) | `poly` op | 2 |
@@ -67,7 +67,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Front panel 1-5 | 14 BANK GROUP A-D / E-H | Bank group | ✅ | Pattern chooser shows all 8 banks |  | 1 |
 | Front panel 1-5 | 14 MUTE MODE (FUNCTION + BANK GROUP) | Mute window | ✅ | Perform > Mutes |  | 1 |
 | Front panel 1-5 | 15 BANK keys A-H | Pattern bank | ✅ | Pattern chooser |  | 1 |
-| Front panel 1-5 | 15 BANK secondary: ARP, TRANSPOSE, SWING, SLIDE | Track settings windows | ✅ | Sequence dock > Arp, Transpose; Slide and Swing under the roll; LCD SWG |  | 1 |
+| Front panel 1-5 | 15 BANK secondary: ARP, TRANSPOSE, SWING, SLIDE | Track settings windows | ✅ | Sequence dock > Arp, Transpose; step menu > Slide, Swing (marks on the notes in the roll); LCD SWG |  | 2 |
 | Front panel 1-5 | 16 REC key (grid recording) | Grid mode on / off | 🟡 | LCD record key | Stopped = grid record; the page's step editing does not need it | 1 |
 | Front panel 1-5 | 16 PLAY (pause on second press) | Start, pause | ✅ | LCD play key: ⇧-click or ⇧Space pauses (▶ blinks, the position holds), ▶ goes on; the ▶ menu (right-click or its ▾) | Over HW MIDI pause and Continue need GLOBAL › CONTROL IN › TRANSPORT = ACCEPT; the editor asks to set it. | 3 |
 | Front panel 1-5 | 16 STOP; STOP twice rewinds and silences | Stop, reset | ✅ | Panic: ⌘. or the ▶ menu's Panic (All Notes Off on each track's channel, then STOP twice) |  | 3 |
@@ -76,7 +76,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Front panel 1-5 | 16 Secondary: COPY, PASTE, CLEAR | Copy / paste / clear | ✅ | LCD COPY / CLR / PASTE, Cmd+C / V, Delete | Scope depends on the workspace; on Sequence it is the selected steps, else the page shown (`130-main.js` secAction) | 4 |
 | Front panel 1-5 | 17 SCALE key: page of 16 steps | Track page | ✅ | Sequence PAGE key and 4 page LEDs, keys [ ] |  | 1 |
 | Front panel 1-5 | 17 SCALE SETUP (FUNCTION + SCALE) | Length and speed | ✅ | LCD line 2 LEN, SPD |  | 1 |
-| Front panel 1-5 | 18 TRIG SELECT: AMP / FILTER / LFO / ALL | Trig track | ✅ | ENV row of A F L dots per trig | Different UI, same data | 1 |
+| Front panel 1-5 | 18 TRIG SELECT: AMP / FILTER / LFO / ALL | Trig track | ✅ | Step menu > Envelopes > Amp, Filter, LFO (on a selection: every trig); the roll marks a trig that fires only some (their letters on the note) | Different UI, same data | 1 |
 | Front panel 1-5 | 18 MIDI SEQ mode (FUNCTION + TRIG SELECT) | Edit MIDI tracks | ✅ | SYNTH / MIDI switch |  | 1 |
 | Keyboard SFX-6 1-6 | Joystick (real time) | Expression control | ✅ | Perform > Assign pad (springs back) | Mouse; pitch bend / CC 1 / CC 2 map | 1 |
 | Keyboard SFX-6 1-6 | Keyboard | Real-time play and record | ✅ | Perform on-screen keyboard (keys lit while held, also from a MIDI keyboard); home row |  | 3 |
@@ -202,7 +202,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | LFO 1-36 | INTL | Interlace | ✅ | LFO INTL |  | 1 |
 | LFO 1-36 | DPTH | Depth | ✅ | LFO DPTH |  | 1 |
 | LFO 1-37 | Two LFOs on one target add | Layering | ✅ | Any; badge ~n shows modulation |  | 1 |
-| LFO 1-37 | LFO trigs sequenced separately | LFO trig | ✅ | ENV row L dot |  | 1 |
+| LFO 1-37 | LFO trigs sequenced separately | LFO trig | ✅ | Step menu > Envelopes > LFO; L on the note in the roll |  | 1 |
 | LFO 1-35 | LFOs shared with the MIDI track of the same number | Shared | ✅ | MIDI page notes it; link to T LFOs |  | 1 |
 
 ## 9. Additional kit settings (1-38 to 1-44)
@@ -298,12 +298,12 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
-| Trig tracks 1-58 | AMP, FILTER, LFO sub tracks | Split trigs | ✅ | ENV row dots |  | 1 |
+| Trig tracks 1-58 | AMP, FILTER, LFO sub tracks | Split trigs | ✅ | Step menu > Envelopes (Amp, Filter, LFO); a note that fires only some shows their letters |  | 1 |
 | Trig tracks 1-59 | ALL mode adds a pitch by default | All trig | ✅ | Click in the roll |  | 1 |
-| Trig tracks 1-59 | AMP only, FILTER only, LFO only | Single trig | ✅ | Toggle single dots |  | 1 |
-| Trig tracks 1-59 | LED colours green, red, yellow | State | 🟡 | Dot colours red / yellow / green in the ENV row |  | – |
-| Trigless trigs 1-59 | Trig with no envelopes, for pitch or locks | Trigless | ✅ | All three dots off; roll shows outlined bar |  | 1 |
-| Pitchless trigs 1-59 | Trig without own pitch (EXIT) | Pitchless | ✅ | ENV row on a step with no pitch; dashed bar |  | 1 |
+| Trig tracks 1-59 | AMP only, FILTER only, LFO only | Single trig | ✅ | Step menu > Envelopes: tick one of Amp, Filter, LFO |  | 1 |
+| Trig tracks 1-59 | LED colours green, red, yellow | State | 🟡 | Roll: a NOTE OFF has the yellow lamp of its TRIG LED; a trigless trig a hollow square; a trig that fires only some envelopes their letters |  | 1 |
+| Trigless trigs 1-59 | Trig with no envelopes, for pitch or locks | Trigless | ✅ | Step menu > Trigless trig (adds one on an empty step, or takes a note's envelopes off; again: removes it); the roll shows a small hollow square |  | 1 |
+| Pitchless trigs 1-59 | Trig without own pitch (EXIT) | Pitchless | ✅ | Dashed bar in the roll; its envelopes in the step menu > Envelopes |  | 1 |
 
 ## 15. Additional sequencer features (1-61 to 1-69)
 
@@ -325,9 +325,9 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Transpose 1-64 | SCALE ---, FIX, MAJ, MIN | Scale | ✅ | Transpose Scale keys |  | 1 |
 | Transpose 1-64 | KEY for MAJ / MIN | Key | ✅ | Click the keyboard picture |  | 1 |
 | Swing 1-64 | Amount 50-80 %, per pattern | Swing | ✅ | LCD SWG |  | 1 |
-| Swing track 1-65 | Per-track swing steps, default every second 16th | Swing track | ✅ | Sequence: Swing under the roll, then click or drag the step columns; marks along the roll's foot | Drag paints, one undo step | 1 |
+| Swing track 1-65 | Per-track swing steps, default every second 16th | Swing track | ✅ | Sequence: step menu > Swing on the selected steps (one undo step); a teal slant on the note of a trig that swings | Drag paints, one undo step | 1 |
 | Swing 1-65 | Copy, clear, paste, undo swing track | Swing clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Swing ticked): copy, paste, clear; Cmd+Z |  | 1 |
-| Slide 1-66 | Slide track per track | Slide | ✅ | Sequence: Slide under the roll, then click or drag the step columns; marks along the roll's foot; lock lane draws the glide |  | 2 |
+| Slide 1-66 | Slide track per track | Slide | ✅ | Sequence: step menu > Slide on the selected steps; a small ramp on a note whose step slides and holds a lock; the lock lane draws the glide |  | 2 |
 | Slide 1-66 | Copy, clear, paste, undo slide | Slide clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Slide ticked): copy, paste, clear; Cmd+Z |  | 1 |
 | Mute mode 1-67 | Mute window, 6 + 6 | Mutes | ✅ | Perform > Mutes; rail M | MIDI mutes through the MUTE window keys | 2 |
 | Mute mode 1-67 | Held changes until FUNCTION released | Prepared mutes | ✅ | Shift + M prepares, applies on release |  | 1 |

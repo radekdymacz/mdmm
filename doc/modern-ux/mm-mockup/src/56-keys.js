@@ -24,7 +24,7 @@ function drawKeys(){const pop=$("#keyspop");if(!pop)return;
 function toggleKeys(on){const pop=$("#keyspop");if(!pop)return;if(on??pop.hidden)drawKeys();else{pop.hidden=true;keyView?.reset()}}
 Keys.bind({id:"keys-help",short:"This view",scope:"any",keys:["?"],group:"Help",does:"The keyboard view: what every key and gesture does (this)",modal:"keyspop",run:()=>toggleKeys()});
 Keys.bind({id:"keys-help-close",short:"Close",scope:"any",keys:["Escape"],group:"Help",does:"Close the keyboard view",when:()=>!$("#keyspop").hidden,run:()=>toggleKeys(false)});
-document.addEventListener("click",e=>{const pop=$("#keyspop");if(!pop||pop.hidden)return;if(e.target.closest("[data-keysx]")||!pop.contains(e.target)){pop.hidden=true;keyView?.reset()}},true);
+document.addEventListener("click",e=>{const pop=$("#keyspop");if(!pop||pop.hidden)return;/* review 1: every modal locks: only its close key */if(e.target.closest("[data-keysx]")){pop.hidden=true;keyView?.reset()}},true);
 /* the page zoom keys (skins/shared/deskZoom.js takes them before the map), described, as the MD Editor's */
 Keys.bind({id:"zoom-out",short:"Zoom −",scope:"any",keys:["-"],mod:"cmd",group:"Anywhere",does:"Page zoom: smaller (also in the editor's menu)"});
 Keys.bind({id:"zoom-in",short:"Zoom +",scope:"any",keys:["="],mod:"cmd",group:"Anywhere",does:"Page zoom: larger (⌘+ too)"});

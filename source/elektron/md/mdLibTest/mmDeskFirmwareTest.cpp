@@ -1175,6 +1175,32 @@ namespace
 		check(r.tel.step.load() == t0, "and stops on the host's Stop");
 		r.msg(R"({"op":"followHost"})");
 		check(r.lastResult().find("note")->asString().empty(), "a second followHost changes nothing");
+		// review 1 (I-026): GLOBAL › Tempo in INT (MIDI SYNC CLOCK IN off) is the switch to the machine's own clock
+		{
+			const auto hostClockOn = [&] { const auto st = r.desk->status(); const auto* v = st.find("hostClock"); return v && v->isBool() && v->asBool(); };
+			check(hostClockOn(), "following: the desk's status says hostClock");
+			const auto gs = std::to_string(r.desk->currentGlobal());
+			r.msg(R"({"op":"globalMidi","g":)" + gs + R"(,"clockIn":false})");
+			for(int i = 0; i < 100 && r.desk->global(static_cast<uint8_t>(r.desk->currentGlobal()))->tempoSync; ++i)
+				r.run(100);
+			for(int i = 0; i < 3; ++i)
+			{
+				r.msg(R"({"op":"followHost"})");
+				r.run(2500);
+			}
+			check(r.desk->global(static_cast<uint8_t>(r.desk->currentGlobal()))->tempoSync == 0, "Tempo in INT stays through three followHosts (read back)");
+			check(!hostClockOn(), "the desk's status says the host clock is off");
+			r.msg(R"({"op":"globalMidi","g":)" + gs + R"(,"clockIn":true})");
+			for(int i = 0; i < 100 && !r.desk->global(static_cast<uint8_t>(r.desk->currentGlobal()))->tempoSync; ++i)
+				r.run(100);
+			for(int i = 0; i < 8 && !hostClockOn(); ++i)
+			{
+				r.msg(R"({"op":"followHost"})");
+				r.run(1000);
+			}
+			const auto g4 = *r.desk->global(static_cast<uint8_t>(r.desk->currentGlobal()));
+			check(hostClockOn(), "Tempo in EXT again: the host clock is on (clock in " + std::to_string(g4.tempoSync) + ", transport in " + std::to_string(g4.transportIn) + ")");
+		}
 		// Clock and transport OUT (the leader of two apps over a MIDI bus): which bytes make the machine send them
 		if(std::getenv("MM_SYNC_OUT"))
 		{
@@ -2466,15 +2492,12 @@ namespace
 		r.msg(R"({"op":"record","mode":"grid"})");
 		const auto first = r.lastResult();
 		std::printf("  RECORD while the dump is taken: %s\n", ed::json::write(first).c_str());
-		check(!first.find("ok")->asBool() && first.find("errors")->asArray()[0].asString() == "The panel is busy (SYSEX RECV); try again.",
-			"the desk refuses it as busy (it was answered ok and lost)");
+		check(first.find("ok")->asBool() && r.tel.recording.load() == 0, "review 1 (B-092): the desk takes it and waits, as PLAY does (nothing pressed yet)");
 		taken();
-		r.run(300);
-		r.msg(R"({"op":"record","mode":"grid"})");
-		const auto again = r.lastResult();
-		r.run(800);
-		std::printf("  RECORD once the dump is taken: %s, recording %d, recv %s\n", ed::json::write(again).c_str(), r.tel.recording.load(), r.desk->recvState().c_str());
-		check(again.find("ok")->asBool() && r.tel.recording.load() == 1, "once the dump is taken RECORD is taken: GRID RECORDING");
+		for(int i = 0; i < 30 && r.tel.recording.load() != 1; ++i)
+			r.run(100);
+		std::printf("  RECORD once the dump is taken: recording %d, recv %s\n", r.tel.recording.load(), r.desk->recvState().c_str());
+		check(r.tel.recording.load() == 1, "once the dump is taken the waiting RECORD is pressed: GRID RECORDING");
 		r.msg(R"({"op":"record","mode":"off"})");
 		r.run(800);
 		check(r.tel.recording.load() == 0, "GRID RECORDING off");
@@ -4458,6 +4481,144 @@ namespace
 		}
 	};
 
+	// Review 1 (2026-10-12, B-093): "tracks[4] step 24 has chord notes but no trig" on Sequence. A pattern whose chord
+	// steps lose their trig (the machine's LIVE RECORDING erase; a chord made trigless in the step menu) must stay
+	// editable: the core keeps no chord without its trig, and the machine's own data with one is taken and cleaned.
+	void chordErase(const Bytes& _rom)
+	{
+		std::puts("chorderase: chord steps that lose their trig");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		while(r.desk->loaded() < 288)
+			r.run(100);
+		constexpr uint8_t slot = 67;
+		auto p = *r.desk->pattern(slot);
+		p.length = 16;
+		for(auto* m : {&p.amp, &p.filter, &p.lfo, &p.noteOff, &p.midiTrig, &p.midiNoteOff, &p.pitch, &p.chord, &p.midiNote, &p.slide, &p.midiSlide})
+			m->fill(0);
+		for(auto& n : p.notes)
+			n.fill(ed::MmPattern::g_noNote);
+		for(auto& m : p.lockMasks)
+			m.fill(0);
+		for(auto& row : p.lockRows)
+			row.fill(ed::MmPattern::g_noLock);
+		p.lockRowCount = 0;
+		p.chordNotes.fill(0xffff);
+		p.chordNoteCount = 0;
+		p.midiNotes.fill(0xffff);
+		p.midiNoteCount = 0;
+		// T1: a chord (C E G) on every step
+		for(uint8_t st = 0; st < 16; ++st)
+		{
+			for(auto* m : {&p.pitch, &p.amp, &p.filter, &p.lfo, &p.chord})
+				(*m)[0] |= ed::mmStepBit(st);
+			p.notes[0][st] = 48;
+			for(const uint8_t n : {52, 55})
+				p.chordNotes[p.chordNoteCount++] = ed::mmNoteEntryWord({0, st, n});
+		}
+		// and a lock on every step (FLT page, its first parameter): does the erase leave locks without a trig too?
+		p.lockMasks[0][2] = 1;
+		p.lockRowCount = 1;
+		for(uint8_t st = 0; st < 16; ++st)
+			p.lockRows[0][st] = static_cast<uint8_t>(40 + st);
+		r.msg(R"({"op":"set","kind":"pattern","doc":)" + ed::json::write(ed::mmPatternToJson(p)) + "}");
+		r.run(2000);
+		r.msgConfirmed(R"({"op":"select","p":67})");
+		r.run(500);
+		const auto ok = [&] { const auto v = r.lastResult(); return v.isObject() && v.find("ok")->asBool(); };
+		const auto said = [&] { return ed::json::write(r.lastResult()); };
+		const auto orphans = [&](const ed::MmPattern& _q) { int n = 0; for(size_t st = 0; st < 16; ++st) n += ed::mmStepSet(_q.chord[0], st) && !ed::mmStepSet(_q.pitch[0], st); return n; };
+		// LIVE RECORDING, Delete held on T1 for a few steps (the machine erases as they pass); first the SYSEX RECV
+		// session of the dump ends (the erase is refused while the panel takes one)
+		for(int i = 0; i < 300 && r.desk->recvState() != "idle"; ++i)
+			r.run(100);
+		r.msg(R"({"op":"play"})");
+		r.run(1000);
+		r.msg(R"({"op":"record","mode":"live"})");
+		r.run(600);
+		check(r.tel.recording.load() == 2, "LIVE RECORDING on");
+		r.msg(R"({"op":"liveErase","t":0,"on":true})");
+		check(ok(), "liveErase on taken: " + said());
+		r.run(500);
+		r.msg(R"({"op":"liveErase","t":0,"on":false})");
+		r.run(2500);
+		r.msg(R"({"op":"record","mode":"off"})");
+		r.run(800);
+		r.msg(R"({"op":"stop"})");
+		r.run(800);
+		{
+			const auto q = *r.desk->pattern(slot);
+			int trigs = 0;
+			for(size_t st = 0; st < 16; ++st)
+				trigs += ed::mmStepSet(q.pitch[0], st);
+			std::printf("  after the erase: T1 %d of 16 trigs, %d chord steps without a trig (the core's document); pitch %04llx amp %04llx chord %04llx notes %d\n", trigs, orphans(q),
+				static_cast<unsigned long long>(q.pitch[0] & 0xffff), static_cast<unsigned long long>(q.amp[0] & 0xffff), static_cast<unsigned long long>(q.chord[0] & 0xffff), q.chordNoteCount);
+			check(trigs < 16, "the erase took T1's trigs that played");
+			int locks = 0;
+			for(size_t st = 0; st < 16; ++st)
+				locks += q.lockRowCount > 0 && q.lockRows[0][st] != ed::MmPattern::g_noLock;
+			std::printf("  the erase left %d chord steps without a trig (the machine's data, kept) and %d of 16 locks\n", orphans(q), locks);
+			check(orphans(q) > 0, "the firmware's erase leaves chord bits on the erased steps (the case Radek saw)");
+			check(ed::validate(q).empty(), "the pattern read back is valid: " + (ed::validate(q).empty() ? std::string("yes") : ed::validate(q).front()));
+		}
+		// an edit of that pattern afterwards (Radek's case: a lock on Sequence)
+		r.msg(R"({"op":"step","id":71,"p":67,"t":1,"s":3,"v":{"n":[60],"a":true,"f":true,"l":true}})");
+		r.run(300);
+		check(ok(), "an edit after the erase is taken: " + said());
+		// another edit on T1 itself (a step the erase left alone)
+		r.msg(R"({"op":"step","id":72,"p":67,"t":0,"s":15,"v":{"n":[48,52,55],"a":true,"f":true,"l":true,"notrig":true}})");
+		r.run(300);
+		check(ok(), "another edit on T1 is taken: " + said());
+		r.run(2500);
+		{
+			const auto q = *r.desk->pattern(slot);
+			check(ed::validate(q).empty(), "after the edits: valid");
+			check(ed::mmStepSet(q.pitch[1], 3) && q.notes[1][3] == 60, "the edit reached the machine (T2 step 4, read back)");
+		}
+	}
+
+	// Review 1 (2026-10-12, item 1): the swing track as the machine keeps it. Swing marks under the roll showed on every
+	// step, empty ones too: is that the firmware's data? Every pattern of a fresh machine read back, its swing masks
+	// against its trigs; then a step set and cleared through the desk, read back from memory.
+	void swingProbe(const Bytes& _rom)
+	{
+		std::puts("swingprobe: the swing track in the machine's patterns");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		const auto t0 = r.ms();
+		while(r.desk->loaded() < 288 && r.ms() - t0 < 60000)
+			r.run(100);
+		std::map<uint64_t, int> masks;
+		int onEmpty = 0, onTrig = 0, patterns = 0;
+		for(int i = 0; i < 128; ++i)
+		{
+			const auto p = r.desk->pattern(static_cast<uint8_t>(i));
+			if(!p)
+				continue;
+			++patterns;
+			for(size_t t = 0; t < 6; ++t)
+			{
+				++masks[p->swing[t]];
+				for(size_t s = 0; s < p->length; ++s)
+				{
+					if(!ed::mmStepSet(p->swing[t], s))
+						continue;
+					(ed::mmStepSet(p->amp[t] | p->filter[t] | p->lfo[t], s) ? onTrig : onEmpty)++;
+				}
+			}
+		}
+		std::printf("  %d patterns read; swing masks (track count):\n", patterns);
+		for(const auto& [m, n] : masks)
+			std::printf("    %016llx x %d\n", static_cast<unsigned long long>(m), n);
+		std::printf("  swing bits on a step with a trig: %d, on an empty step: %d\n", onTrig, onEmpty);
+		check(patterns == 128, "every pattern read back");
+		check(masks.size() >= 1, "swing masks seen");
+	}
+
 	void performSound(const Bytes& _rom)
 	{
 		std::puts("perform: POLY, key tracking and the MULTI ENV, judged by the output (0.6 wave 9, B-064)");
@@ -4832,6 +4993,10 @@ int main(const int _argc, char** _argv)
 			intentCasesOnFirmware(rom);
 		if(only == "perform")
 			performSound(rom);
+		if(only == "swingprobe")
+			swingProbe(rom);
+		if(only == "chorderase")
+			chordErase(rom);
 		check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 		std::printf("%s (%d failures)\n", g_failures ? "FAIL" : "PASS", g_failures);
 		return g_failures ? 1 : 0;

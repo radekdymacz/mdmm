@@ -3,13 +3,16 @@
 .modalbg{position:fixed;inset:0;z-index:var(--mz,59);background:rgba(8,8,6,.52)}
 .modalbg[hidden]{display:none}
 .modalbg.clear{background:transparent}
-.modal:not(.dlg):not(.bootcard):not(.deskmenu):not(.gpage){position:fixed!important;left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;margin:0!important;max-width:calc(100vw - 48px)!important;max-height:calc(100vh - 48px)!important;overflow:auto!important;z-index:var(--mz,60)!important;box-sizing:border-box}
+.modal:not(.dlg):not(.bootcard):not(.deskmenu){position:fixed!important;left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;margin:0!important;max-width:calc(100vw - 48px)!important;max-height:calc(100vh - 48px)!important;overflow:auto!important;z-index:var(--mz,60)!important;box-sizing:border-box}
 .dlg.modal{background:transparent!important;z-index:var(--mz,60)!important}
 .modal:focus,.modal .dlgbox:focus{outline:none}
 .modalopen .kpop{z-index:120!important}
 @keyframes nudge{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 .dlgbox.nudge{animation:nudge .16s 2}
-@media (prefers-reduced-motion:reduce){.dlgbox.nudge{animation:none}}
+/* a panel's box is placed by a transform: it says "not closed" with a flash of its frame instead */
+@keyframes nudgeflash{50%{outline:3px solid var(--led,#e33);outline-offset:2px}}
+.modal.nudge:not(.dlg){animation:nudgeflash .18s 2}
+@media (prefers-reduced-motion:reduce){.dlgbox.nudge,.modal.nudge{animation:none}}
 /* A context menu (K3, deskMenu.js): at the pointer, above the clear backdrop; each item with its key at the right.
    #deskmenu holds the panels (the menu, an open submenu beside it), each placed by the script. The page's tokens
    (--plate --print --body --rule --mono --sans: light and dark, MK1 and MK2 alike); plain colours and rgba only (no

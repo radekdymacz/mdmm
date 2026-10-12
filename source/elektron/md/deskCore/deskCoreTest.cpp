@@ -3,6 +3,7 @@
 // (observed vs pending, refusal, settle, undo).
 
 #include "deskChain.h"
+#include "deskHostClock.h"
 #include "deskCore.h"
 #include "deskDesk.h"
 #include "deskEdits.h"
@@ -34,6 +35,22 @@ namespace
 
 	// 0.3.5, the song playhead (deskSongRow.h): the RAM byte runs ahead (it queues the next row about two steps
 	// before the pass ends); the row heard changes at PLAY and at the playhead's wrap only.
+	// review 1 (I-026): the active global's TEMPO IN is the switch between the host's clock and the machine's own
+	void hostClockSwitch()
+	{
+		deskCore::HostClock a;
+		check(a.wants(false, false) && a.on, "a new plug-in: the global does not follow yet: set it (EXT is the default)");
+		check(a.wants(false, false), "not read back yet: still asked");
+		check(!a.wants(true, false) && a.on, "following: nothing to do");
+		check(!a.wants(false, false) && !a.on, "the person set INT: the host clock is off, nothing set");
+		check(!a.wants(false, false) && !a.on, "and it stays off");
+		check(!a.wants(true, false) && a.on, "EXT again: on");
+		deskCore::HostClock p;
+		check(!p.wants(false, true) && !p.on, "a project that comes back with INT keeps it");
+		deskCore::HostClock q;
+		check(!q.wants(true, true) && q.on, "a project with EXT follows");
+	}
+
 	void songRowHeard()
 	{
 		SongRowHeard h;
@@ -759,6 +776,7 @@ namespace
 int main()
 {
 	songRowHeard();
+	hostClockSwitch();
 	workingCopy();
 	noteIntent();
 	trackPartsTest();

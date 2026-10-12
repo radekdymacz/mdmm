@@ -26,7 +26,7 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 ## Trig types and marks (wave 3)
 
 1. MD: paint Swing, Accent and Slide with the keys under the grid; switch All tracks / This track; Esc goes back to Trig; one undo per drag.
-2. MM: Slide and Swing drags on the roll's Note · Slide · Swing row, then one undo; Esc.
+2. MM: the Note · Slide · Swing row is gone (2026-10-12); see "MM: a trig's marks on the roll" below.
 3. MD: paint swing on a step, remove the trig, add it again (B-070: no swing mark should flash back).
 
 ## Transport (wave 2)
@@ -140,3 +140,27 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 10. MM (MM-095): open the pattern chooser, ⌥-click a pattern (selected, not loaded), choose a kit in the Kit list: the pattern's tile shows the new K number, ⌘Z takes it back. On the pattern that plays the kit loads at once; with unsaved kit edits it asks first. Choosing in the Kit list no longer closes the chooser.
 11. MM (MM-271): Song page, SONG, PLAY: the Arrangement header reads Playing · 001:01 and counts bars and beats as the song plays (through repeats and loops, as the machine's EDIT SONG header); STOP: the counter goes.
 12. MM (MM-301): Perform › Multi map: a range's PAT list runs CUR, A01 to H16; choose H16, play a key in the range: the machine starts H16. ⌘Z takes it back.
+
+## MM: a trig's marks on the roll (`feat/0.6-mm-foot`, 2026-10-12)
+
+1. MM Sequence: under the roll there is no Note · Slide · Swing row, no hint line and no A F L dots; the roll is taller by that much (a MIDI track keeps its VEL row).
+2. A note that fires only some envelopes shows their letters at the start of its bar (A, AF, L ...; small ticks where the bar is narrow); a note with all three shows nothing.
+3. Over a note: a dot where the step has a lock, a small ramp where it slides and holds a lock (a slide on a step without a lock shows nothing), a teal slant where its trig swings (the default swing on empty steps shows nothing).
+4. A trigless trig is a small hollow square in its step; a NOTE OFF has a small yellow lamp at the top of its step (OFF beside it where it ends no note).
+5. Right-click a note (or the ⋯ of a selection): NOTE OFF, Trigless trig (locks only), Envelopes > Amp / Filter / LFO, Slide, Swing, each ticked when every selected step has it; Clear locks after Clear. Each sets every selected step; one ⌘Z takes it back.
+6. Trigless trig on an empty step adds one at the track's pitch (draw a lock on it in the lane); choose it again: it goes with its locks.
+7. On a MIDI track the menu has Slide and Swing, no Envelopes or Trigless trig.
+
+## Review 1 fixes (`fix/0.6-review-1`, Radek's 0.6 review, 2026-10-12)
+
+1. MM Sound, SWAVE-SAW: UNIW 127, UNIL 100, UNIX 80: the UNISON screen shows thin stems (dashed for the extended pair); SUB1, SUB2, SUBX up: thin stems on SUB too (B-090).
+2. MM Perform, Multi envelope: ATK 73, DEC 0, SUS 127, REL 127: up to the top, held to the edge with ∞, every dot on the line. REL 40: the release falls to the foot, its dot there. Drag the REL dot to the right end: REL 127 (B-089).
+3. MM: MKI and MKII (the plate key): both panels are the Machinedrum MKI's light grey, and so are the piano roll, the lock lane and the Sound and Perform screens; the top bar's LCD stays light blue on MKI, bluish white on MKII (I-023).
+4. Both: GLOBAL opens as a dialog over the dimmed workspace; a click beside it does nothing; Esc or its back key closes it (B-091).
+5. Both: open the kit library, the keys view (?), AUDIO / MIDI (,), the machine picker, Export SysEx…, Reset machine…: a click beside each leaves it open; Esc closes it (B-094).
+6. Both: Import SysEx… a full backup, Import: the panel keeps its size from the preview to the report; Stop and Hide stay visible; hovering a slot shows its facts in a line over the footer, never over the keys. While it runs, Esc and a click beside it do nothing; Hide, then IMPORT SYSEX… in the engine menu: the same panel (or its report) again (B-094, B-095).
+7. MM: a pattern with chords on T5, LIVE RECORDING, hold Delete over a few chord steps; then lock a value on Sequence and add a note: both taken, no message about chord notes (B-093).
+8. Both, as a plug-in in a DAW: a new instance follows the DAW (TEMPO marked). GLOBAL › Sync › Tempo in INT: TEMPO edits, ▶ plays on the machine's own clock whatever the DAW does; save the project, reopen it: still INT. Tempo in EXT: follows the DAW again (I-026).
+9. MD: Song page, slot 1 (the factory song), Load, SONG, ▶: the song plays; Space stops and plays it again (B-096; if it does not, note standalone or DAW and whether ▶ blinks).
+10. MM: make an edit that sends a dump (paste a pattern), then at once ●: the LCD says it follows in a moment and recording starts when the dump is in; ● again during the wait cancels it (B-092).
+11. Both, Sequence, the Lock parameter panel at the narrowest window: lock a few parameters (a DIST on SYNTH and on ROUTING on the MD): each key shows its name whole and the count beside it; the tip says SYN·DIST or RTG·DIST (B-097).

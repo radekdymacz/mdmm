@@ -12,7 +12,7 @@ Keys are written as on a Mac. [⌘] is [CTRL] on Windows and Linux. [⌥] is [AL
 NOTE: A drag, a paint or a run of rotates is one undo step. Press {key:undo} to take it back whole, {key:redo} to put it back.
 
 ## CLASSIC VS EXTENDED
-<!-- rows: MD-087 MD-088 @7ab71f -->
+<!-- rows: MD-087 MD-088 @ef9f28 -->
 
 The machine edits patterns in one of two modes.
 
@@ -28,7 +28,7 @@ To change the mode:
 In CLASSIC the lock lane is greyed and says "CLASSIC: locks muted". The pattern chooser and the kit library say which mode is on. In EXTENDED the chooser shows the kit of each pattern as K01 to K64.
 
 ## TEMPO
-<!-- rows: MD-089 MD-090 MD-091 @01793b -->
+<!-- rows: MD-089 MD-090 MD-091 @b68751 -->
 
 The <TEMPO> field in the LCD is the tempo window of the machine. It reads in beats per minute with one decimal. The range is 30 to 300.
 
@@ -62,14 +62,16 @@ Tap a key to the beat and the machine takes the tempo you tap.
 The tempo is the average of your last taps, up to five. A pause of over two seconds starts the count again.
 
 ## EXTERNAL SYNCHRONIZATION
-<!-- rows: MD-093 @b2923b -->
+<!-- rows: MD-093 @4cad67 -->
 
-In a DAW the machine follows the host's tempo. The <TEMPO> field is marked, and it cannot be edited. A drag, an arrow key or a tap says "The DAW sets the tempo. Change it there."
+In a DAW a new plug-in follows the host's tempo and transport. The <TEMPO> field is marked, and it cannot be edited. A drag, an arrow key or a tap says "The DAW sets the tempo. Change it there."
+
+**Tempo in** in the GLOBAL panel is the switch. Set it to INT and the machine runs on its own clock in the DAW: <TEMPO> edits again, PLAY and STOP are the machine's, and the DAW's tempo and transport no longer reach it. Set it to EXT to follow the DAW again. The project keeps the choice.
 
 To make the machine follow the MIDI clock of another device, set **Tempo in** to EXT in the GLOBAL panel. See "SYNC" in chapter 10.
 
 ## PATTERN SELECTION
-<!-- rows: MD-094 MD-095 MD-096 MD-097 @a939e8 -->
+<!-- rows: MD-094 MD-095 MD-096 MD-097 @ed9d9a -->
 
 The pattern chooser shows all 128 patterns as eight banks of 16 slots. Each slot gives the pattern's name, its length in steps and, in EXTENDED, its kit. A slot with no pattern reads EMPTY.
 
@@ -115,7 +117,7 @@ A pattern queued while the machine plays starts at once when you stop:
 NOTE: This is the machine's own STOP, which the editor presses for you. With a real Machinedrum over MIDI the editor has no transport.
 
 ## PARAMETER TWEAKING
-<!-- rows: MD-100 MD-101 MD-102 @7efc71 -->
+<!-- rows: MD-100 MD-101 MD-102 @23ab91 -->
 
 On the machine you hold [FUNCTION] and turn a knob to move that parameter on all 16 tracks. In the editor you hold [⌥] and drag a value on **Sound** or **Mix**. The same knob moves on every track by the same amount.
 
@@ -153,7 +155,7 @@ When you make the total longer, the editor does what the machine does: if no tra
 Click <SPD> to step through the tempo multipliers 1X, 2X, 3/4X and 3/2X. Click with [⇧] to step back. You can also drag or scroll on it.
 
 ## GRID RECORDING
-<!-- rows: MD-107 MD-108 MD-109 MD-110 @4f4cc8 -->
+<!-- rows: MD-107 MD-108 MD-109 MD-110 @eb7b4b -->
 
 In grid recording you place the trigs one step at a time. The pattern plays while you work, and each change is in the pattern at once.
 
@@ -222,7 +224,7 @@ Select a step or steps and click the small ⋯ on the selection for the step men
 The <COPY>, <CLR> and <PASTE> keys on the LCD do the same as the keys. They are marked when they act on a selection.
 
 ## CLEAR NOTE PARAMETER LOCKS
-<!-- rows: MD-115 @929635 -->
+<!-- rows: MD-115 @0fb48a -->
 
 To take locks off a step, use one of these:
 
@@ -285,12 +287,12 @@ Press {key:undo} to take the clear back.
 4. Press {key:paste}.
 
 ## CLEAR TRACK PAGE
-<!-- rows: MD-119 @f46eeb -->
+<!-- rows: MD-119 @faa733 -->
 
 Click <CLR> on the LCD. The page you see of the selected track is cleared. Hold [⌥] and the key reads <ALL>: it clears the whole pattern.
 
 ## PATTERN COPY
-<!-- rows: MD-120 @5af406 -->
+<!-- rows: MD-120 @08e2dc -->
 
 A copy of a pattern takes its notes, its locks and its kit link.
 
@@ -314,7 +316,7 @@ The chooser keeps the length, the speed, the swing, the accent and the kit link 
 Press {key:undo} to take the clear back.
 
 ## TRACK MUTING
-<!-- rows: MD-122 MD-123 MD-124 MD-125 @94e1f9 -->
+<!-- rows: MD-122 MD-123 MD-124 MD-125 @6e6025 -->
 
 Every track has an **M** key to mute it and an **S** key to solo it. They sit in the track rail and in the strips of **Mix**.
 
@@ -332,7 +334,7 @@ The mutes are the machine's. The editor reads them from the machine's memory, wh
 On the machine you can minimise the mute window. In the editor the keys are always on the page.
 
 ## ACCENT TRACK
-<!-- rows: MD-126 MD-127 MD-128 MD-129 @84254c -->
+<!-- rows: MD-126 MD-127 MD-128 MD-129 @9d4e4c -->
 
 An accent makes a step louder. The accent amount sets how much louder.
 
@@ -366,7 +368,7 @@ To copy, paste or clear the accents of a track, tick **Accent** in **Copy…**, 
 NOTE: While the accent is shared by all tracks, a paste or a clear of **Accent** changes it for every track.
 
 ## SWING
-<!-- rows: MD-130 MD-131 MD-132 MD-133 @18fe9f -->
+<!-- rows: MD-130 MD-131 MD-132 MD-133 @fc4e72 -->
 
 Swing delays the steps of the swing row. Click <SWG> on the LCD, or drag or scroll on it, to set the amount from 50 to 80 percent. Click with [⇧] to go down. At 50 percent nothing swings.
 
@@ -386,7 +388,7 @@ Tick **Swing** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾**
 NOTE: With **All tracks** the swing row is the pattern's, so a paste or a clear of **Swing** changes it for every track.
 
 ## PARAMETER LOCKS
-<!-- rows: MD-134 MD-135 MD-136 MD-137 MD-138 @994b26 -->
+<!-- rows: MD-134 MD-135 MD-136 MD-137 MD-138 @e6574a -->
 
 A parameter lock gives one parameter its own value on one step. The step has to hold a trig. A pattern holds 64 locked parameters. A track and a parameter with any lock count once.
 
@@ -415,7 +417,7 @@ Locks play only in EXTENDED. In CLASSIC they are kept and do nothing. The lane i
 See "CLEAR NOTE PARAMETER LOCKS".
 
 ## PARAMETER LOCKS IN LIVE RECORDING MODE
-<!-- rows: MD-139 MD-140 @f235d0 -->
+<!-- rows: MD-139 MD-140 @b0883f -->
 
 While you record live, a value you move is locked.
 

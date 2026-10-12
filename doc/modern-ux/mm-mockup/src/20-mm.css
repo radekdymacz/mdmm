@@ -7,21 +7,24 @@
 /* SFX-60 plates, true to the product photos (doc/modern-ux/SKIN-COLOURS.md, I-023): the plate key chooses the look.
    MKI (SFX-6 / SFX-60): cool silver chassis, black window, light-blue LCD with black pixels, dark green-grey keys
    and knobs, rust label bars. MKII (SFX-6 / SFX-60+ MKII): warm silver, near-black window, bluish-white LCD with
-   black pixels, black keys and knobs, white keys, dusty red-brown label bars, red print. Both are light plates. */
+   black pixels, black keys and knobs, white keys, dusty red-brown label bars, red print. Both are light plates.
+   Review 1 (Radek, 2026-10-12): both plates take the panel greys of the Machinedrum's MKI light plate (--plate,
+   --plate2, --plate3) and its grey for the screens (--scr: the piano roll, the lock lane, the Sound and Perform
+   screens, the arp, routing and song grounds); the top bar's LCD, keys and label colours stay each plate's own. */
 :root,:root[data-plate="mk1"]{
   color-scheme:light;
-  --plate:#cfd3d5;--plate2:#c3c8ca;--plate3:#dde1e3;--print:#2e3232;--print2:#4f5554;--print3:#6d7372;--rule:#a2a8ab;--body:#232727;
+  --plate:#d9dad6;--plate2:#cdcec9;--plate3:#e5e6e2;--print:#2e3232;--print2:#4f5554;--print3:#6d7372;--rule:#a2a8ab;--body:#232727;
   --key:#232b28;--key2:#323c38;--keytext:#eef0ee;--keydim:#a9b1ae;--cream:#e4e6e6;--creamtext:#232727;
   --led:#f0331f;--ledoff:#7b4035;--ledg:#9fc568;--ledgoff:#56604b;--ledy:#e4c45c;--rec:#e8301e;
-  --lcd:#b6d2e8;--ink:#0d1626;--bezel:#060707;--labfill:#9a3820;--labtext:#f3eee9;--knob:#323d31;--rust:#9a3820;
+  --lcd:#b6d2e8;--scr:#cdcec9;--ink:#0d1626;--bezel:#060707;--labfill:#9a3820;--labtext:#f3eee9;--knob:#323d31;--rust:#9a3820;
   --trig:var(--led);--oxblood:var(--rust);
 }
 :root[data-plate="mk2"]{
   color-scheme:light;
-  --plate:#d2d1cc;--plate2:#c6c5c0;--plate3:#e0dfda;--print:#3b3a3c;--print2:#5a585a;--print3:#787577;--rule:#a8a6a1;--body:#262527;
+  --plate:#d9dad6;--plate2:#cdcec9;--plate3:#e5e6e2;--print:#3b3a3c;--print2:#5a585a;--print3:#787577;--rule:#a8a6a1;--body:#262527;
   --key:#1a1c22;--key2:#2a2d35;--keytext:#efeee8;--keydim:#a7a8ad;--cream:#ecebe4;--creamtext:#262527;
   --led:#ff3b2f;--ledoff:#7a6e66;--ledg:#7fd13b;--ledgoff:#5d6656;--ledy:#e4c45c;--rec:#e2452a;
-  --lcd:#dfeaf1;--ink:#121b28;--bezel:#1c1a1d;--labfill:#84434d;--labtext:#f6eff0;--knob:#141416;--rust:#b8433d;
+  --lcd:#dfeaf1;--scr:#cdcec9;--ink:#121b28;--bezel:#1c1a1d;--labfill:#84434d;--labtext:#f6eff0;--knob:#141416;--rust:#b8433d;
   --trig:var(--led);--oxblood:var(--rust);
 }
 html{scrollbar-gutter:stable}
@@ -301,16 +304,7 @@ canvas.roll{width:100%;display:block;border-radius:4px;background:var(--lcd);box
 .tlanes{margin-top:8px!important}
 .tlane .tc.envc{display:flex;gap:2px;align-items:center;justify-content:center;box-shadow:none;background:transparent;cursor:default}
 .tlane .tc.envc.na{opacity:.3}
-.tlane .tc.envc .d{width:9px;height:9px;min-width:0;padding:0;border-radius:50%;background:transparent;box-shadow:inset 0 0 0 1.5px var(--print3);cursor:pointer}
-.tlane .tc.envc .d.on.a{background:var(--led);box-shadow:0 0 4px var(--led)}
-.tlane .tc.envc .d.on.f{background:var(--ledy);box-shadow:0 0 4px var(--ledy)}
-.tlane .tc.envc .d.on.l{background:var(--ledg);box-shadow:0 0 4px var(--ledg)}
 .tlane .tc.envc::after{display:none}
-/* ALL (up to 64 steps in the width): the three trig-track dots stack in the narrow step */
-.mstack.all .tlane .tc.envc{flex-direction:column;gap:1px}
-.mstack.all .tlane .tc.envc .d{width:4px;height:4px;box-shadow:inset 0 0 0 1px var(--print3)}
-.envlab{display:inline-flex;gap:2px;align-items:center;font:600 9px var(--sans);letter-spacing:.04em;color:var(--print2)}
-.envlab i{width:6px;height:6px;border-radius:50%;margin-left:2px}.envlab i.a{background:var(--led)}.envlab i.f{background:var(--ledy)}.envlab i.l{background:var(--ledg)}
 .dock{margin-top:10px;border-top:2px solid var(--print);padding-top:8px}
 .docktabs{display:flex;gap:4px;align-items:center;height:30px;white-space:nowrap;margin-bottom:8px}
 .docktabs .lkey[aria-selected=true]{background:var(--cream);color:var(--creamtext)}

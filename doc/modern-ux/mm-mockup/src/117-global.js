@@ -19,7 +19,7 @@ const MM_GTIP={
  multiMap:"MULTI MAP: notes on this channel start patterns as the MULTI MAP says (Perform)",
  pcIn:"Measured: the machine always takes a program change on its base channel (it selects a pattern); no setting turns it off",
  pcOut:"Picking a pattern sends a program change on the base channel",
- tempoIn:"INTERNAL: its own tempo. EXTERNAL: follows MIDI clock. In a DAW the plug-in sets EXT itself (it follows the host)",
+ tempoIn:"INTERNAL: its own tempo. EXTERNAL: follows MIDI clock. In a DAW: EXT follows the DAW's tempo and transport (a new plug-in starts so); INT runs the machine on its own clock and tempo, kept with the project",
  ctrlIn:"React to MIDI Start, Stop and Continue. In a DAW the plug-in turns it on itself",
  tempoOut:"Send MIDI clock",ctrlOut:"Send MIDI Start and Stop",
  routing:"How the six tracks reach the outputs (also on Mix)",

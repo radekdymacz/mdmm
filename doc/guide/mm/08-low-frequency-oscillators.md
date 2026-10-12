@@ -78,9 +78,9 @@ DPTH is the depth: how far the LFO moves its target. At 0 the LFO does nothing a
 Two LFOs can move the same target, and their movements add. A value box that an LFO moves shows a small badge, ~ and the number of the LFO, for example ~1 or ~12 when two LFOs move it. Hover over the badge to read which LFOs these are.
 
 ## LFO TRIGS
-<!-- rows: MM-143 @7c5f71 -->
+<!-- rows: MM-143 @ff5866 -->
 
-The sequencer triggers the LFOs on its own. In the **Sequence** workspace each step has a row of three dots, A, F and L. The L dot of a step triggers the LFOs of the track at that step. It matters for the TRIG, HOLD, ONE and HALF keys. Click the dot to switch it.
+The sequencer triggers the LFOs on its own. A trig with its LFO trig on triggers the LFOs of the track at that step. It matters for the TRIG, HOLD, ONE and HALF keys. In the **Sequence** workspace right-click the step and choose **Envelopes**, then **LFO**, to switch it. A note without its LFO trig shows the letters of the envelopes it does fire.
 
 ## SHARED LFOS
 <!-- rows: MM-144 @99b81e -->
