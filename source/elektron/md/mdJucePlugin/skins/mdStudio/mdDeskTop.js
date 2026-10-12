@@ -77,7 +77,7 @@ const LIFE = {
 	ready: { label: "READY", led: "on" } };
 const lifeOf = l => LIFE[l] || LIFE.booting;
 /* the engine menu's own entries (not engines) */
-const ENGINE_ACTIONS = ["global", "audio", "rom"];
+const ENGINE_ACTIONS = ["global", "audio", "rom", "memoryKeep", "memoryFactory"];
 function engineLabel() {
 	const e = lifeOf(V.lifecycle);
 	if (V.lifecycle === "ready") return [V.caps.label || e.label, e.led, V.caps.about || ""];
@@ -139,8 +139,30 @@ document.addEventListener("change", e => {
 	if (v === "rom") romMenu();
 	else if (v === "global") { sel.value = V.caps.engine; openGlobal(); }
 	else if (v === "audio") { sel.value = V.caps.engine; openAudio(); }
+	else if (v === "memoryKeep") { sel.value = V.caps.engine; renderEngine(); cmd("memoryKeep", { on: !Memory.keep }); }
+	else if (v === "memoryFactory") { sel.value = V.caps.engine; renderEngine(); askFactoryMemory(); }
 	else if ((machineState().engines || []).some(x => x.id === v)) cmd("engine", { kind: v });
 });
+/* I-024 (doc/modern-ux/DESIGN-machine-memory.md): the machine memory that stays for new sessions, as the plug-in says
+   (machineMemory). KEEP MEMORY turns it on and off; START FROM FACTORY MEMORY… asks, then the file goes and the machine
+   restarts from factory memory. Both only where the plug-in keeps a memory file (available). */
+const Memory = { keep: true, available: false, saved: false, note: "" };
+function renderMemoryMenu() {
+	const keep = document.querySelector('#engsel option[value="memoryKeep"]'), factory = document.querySelector('#engsel option[value="memoryFactory"]');
+	if (!keep || !factory) return;
+	keep.hidden = factory.hidden = !Memory.available;
+	keep.textContent = "KEEP MEMORY: " + (Memory.keep ? "ON" : "OFF");
+	keep.title = Memory.keep ? "New sessions without a project start with what you saved on the machine. Click to turn it off."
+		: "New sessions start from factory memory. Click to keep what you save on the machine for new sessions.";
+	factory.dataset.saved = Memory.saved ? "1" : "0";
+	factory.title = Memory.note || (Memory.saved ? "Forget the saved machine memory and restart the machine from factory memory." : "Restart the machine from factory memory.");
+}
+function askFactoryMemory() {
+	ask(`<b>Start from factory memory?</b><br>The machine restarts with its factory kits, patterns, songs and globals${Memory.saved ? ", and the saved machine memory is deleted" : ""}. New sessions start from factory memory until you save again. A DAW project keeps its own memory.`,
+		[["Start from factory memory", "danger", () => cmd("memoryFactory")], ["Cancel", "", () => {}]]);
+}
+/* what went wrong is the plug-in's notice (once), and the entry's tooltip */
+Bridge.onMessage(m => { if (m.type === "machineMemory") { Object.assign(Memory, { keep: !!m.keep, available: !!m.available, saved: !!m.saved, note: m.note || "" }); renderMemoryMenu(); } });
 
 /* ===== Track header (one component, used by rail and grid) ===== */
 function th(i, extra = "") {

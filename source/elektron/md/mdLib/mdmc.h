@@ -180,6 +180,8 @@ namespace md
 			m_midiTransmitTap = std::move(_tap);
 		}
 		std::vector<uint8_t> copyPatchRam() const;
+		// I-024: the same into _out, reusing its capacity (the machine memory's look, under the plug-in's lock)
+		void copyPatchRamTo(std::vector<uint8_t>& _out) const;
 		bool replacePatchRam(const std::vector<uint8_t>& _data);
 		std::vector<uint8_t> copyFlashData() const;
 		std::vector<uint8_t> copyUserFlash() const;

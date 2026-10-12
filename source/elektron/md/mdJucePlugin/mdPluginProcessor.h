@@ -27,6 +27,9 @@ namespace mdJucePlugin
 			// factory/storage caches. A disengaged value preserves normal discovery;
 			// an engaged empty value disables the device home path entirely.
 			std::optional<std::string> deviceHomePath;
+			// I-024: the folder of the machine memory file (mdMachineMemory.h). Disengaged: none (an isolated test
+			// keeps no memory between sessions); an engaged path: that folder.
+			std::optional<std::string> machineMemoryFolder;
 		};
 
 	    AudioPluginAudioProcessor();
@@ -94,6 +97,38 @@ namespace mdJucePlugin
 		// settings at start, env) and what the settings file holds now
 		void logSpeedUps(const char* _via);
 		uint32_t savedSpeedUpLeversOff();
+		// I-024: the machine's memory that stays for every new session (doc/modern-ux/DESIGN-machine-memory.md,
+		// mdMachineMemory.h). A session with no project state starts from the file; a background thread writes each
+		// save on the machine to it. Message thread unless said otherwise.
+		struct MachineMemoryStatus
+		{
+			bool keep = false;			// the setting (KEEP MEMORY), default on
+			bool available = false;		// a folder for the file (none in an isolated test)
+			bool saved = false;			// the file is there
+			std::string note;			// the last thing to say (a write that failed, a file that could not be used)
+		};
+		MachineMemoryStatus machineMemoryStatus() const;
+		// Changes whenever the status may have changed (any thread): the session republishes it to the page.
+		uint32_t machineMemoryVersion() const { return m_memoryVersion.load(std::memory_order_acquire); }
+		bool keepMachineMemory() const { return m_memoryKeep.load(std::memory_order_acquire); }
+		void setKeepMachineMemory(bool _keep);
+		// START FROM FACTORY MEMORY: the file goes and the machine restarts from factory memory (a fresh machine's
+		// state, as on a new install). The page asked the user first. False with the reason in _note.
+		bool startFromFactoryMemory(std::string& _note);
+		juce::File machineMemoryFile() const;
+		// What the watch measured (tests and the design note): the look's time under the plug-in's lock (the worst
+		// and the last), a look's whole time with its hash, the last write's time, how many looks and writes.
+		struct MachineMemoryCost
+		{
+			double lookLockMaxMs = 0, lookLockLastMs = 0, lookMs = 0, writeMs = 0;
+			uint32_t looks = 0, writes = 0;
+			size_t fileBytes = 0;
+		};
+		MachineMemoryCost machineMemoryCost() const;
+		// The watch's thread runs once a second; a test may run it faster (milliseconds between looks).
+		void setMachineMemoryLookMs(int _ms);
+		// The thread's one look and maybe a write (any thread but the audio thread; the thread calls it).
+		void lookAtMachineMemory();
 		// The Machinedrum/Monomachine Editors' setup and session (mdDeskHost.h, doc/modern-ux/UPSTREAM.md).
 		class DeskHost* getDeskHost() const { return m_desk.get(); }
 
@@ -116,12 +151,21 @@ namespace mdJucePlugin
 		bool isBusesLayoutSupported(const BusesLayout& _layout) const override;
 		AudioPluginAudioProcessor(md::MachineModel _model,
 			std::vector<uint8_t> _initialPatchRam, bool _ephemeralConfig,
-			std::optional<std::string> _deviceHomePath = std::nullopt);
+			std::optional<std::string> _deviceHomePath = std::nullopt,
+			std::optional<std::string> _memoryFolder = std::nullopt);
 		bool serviceDeferredStateRestore();
 		bool serviceStateRestoreFailure();
 		void recordStandaloneStartupDiagnostics();
 		void reportProjectStateRestoreFailure(const std::string& _error);
 		void timerCallback() override;
+		// I-024 (mdPluginProcessor.cpp, "machine memory")
+		void serviceMachineMemoryStart();
+		void startMachineMemoryThread();
+		void stopMachineMemoryThread();
+		bool writeMachineMemory(uint64_t _epoch);
+		void machineMemoryUnusable(const std::string& _why);
+		void setMachineMemoryNote(std::string _note);
+		bool machineDeviceReady();
 
 		std::unique_ptr<synthLib::PerformanceReport> m_performanceReport;
 		juce::File m_performanceReportFile;
@@ -152,6 +196,21 @@ namespace mdJucePlugin
 		// the speed-ups as last written to the log (logSpeedUps): -1 none yet; else on | levers << 1 | L3 << 31
 		int64_t m_loggedSpeedUps = -1;
 		std::unique_ptr<class DeskHost> m_desk;
+		// I-024: machine memory. m_memoryFolder empty: off (an isolated test, or a processor no plug-in wrapper made)
+		std::string m_memoryFolder;
+		bool m_projectStateSeen = false;		// a project state came this session (message thread)
+		bool m_memoryStartDone = false;
+		uint64_t m_memoryRestoreGeneration = 0;	// the device's restore generation of the file's payload, 0: none
+		std::atomic<uint32_t> m_memoryVersion{1};
+		std::atomic<bool> m_memoryKeep{true};	// the setting, cached for the thread (the config is the message thread's)
+		std::atomic<int> m_memoryLookMs{1000};
+		std::atomic<bool> m_memoryWriteWarned{false};	// a failed write was said this session
+		std::atomic<bool> m_memoryWriteFailed{false};	// a failed write for the timer to say
+		mutable std::mutex m_memoryMutex;		// the file, the note, the watch, the cost
+		std::string m_memoryNote;
+		struct MemoryWatchState;
+		std::unique_ptr<MemoryWatchState> m_memoryWatch;
+		std::unique_ptr<class MachineMemoryThread> m_memoryThread;
 		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPluginAudioProcessor)
 	};
 }

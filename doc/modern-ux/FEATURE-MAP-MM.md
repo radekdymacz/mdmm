@@ -521,6 +521,12 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | 0x70-0x72 Status request, set, response C-3, C-4 | Slot, mode, poly, tracks | Status | ✅ | Pattern / song mode, poly, kit state |  | – |
 | TurboMIDI speed messages C-4, C-5 | Speed negotiation | Turbo | ➖ | – | Cable protocol | – |
 
+## 24. Beyond the hardware
+
+| Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
+|---|---|---|---|---|---|---|
+| MACHINE MEMORY | What you save stays for every new session | The machine keeps its kits, patterns, songs and globals when it is switched off. | ✅ | By itself (a session without a project starts from the saved memory); engine menu: KEEP MEMORY, START FROM FACTORY MEMORY | I-024, doc/modern-ux/DESIGN-machine-memory.md | 1 |
+
 ## 24. Editor features with no manual counterpart (for orientation)
 
 The page also has things the manual does not: GEN and MUTATE generators, step selection with a box select and Draw mode in the piano roll, note lengths drawn by dragging a note's end, Control All (Alt-drag), paste to many tracks, ghost notes, ramps in the lock lane, undo and redo, DAW tempo follow, the AUDIO / MIDI panel, ROM and engine menu, SysEx import preview and report. They are not counted below.
@@ -531,11 +537,11 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 320 |
+| ✅ | 321 |
 | 🟡 | 23 |
 | ❌ | 8 |
 | ➖ | 34 |
-| Total | 385 |
+| Total | 386 |
 
 ### Top gaps, ranked (our UI)
 

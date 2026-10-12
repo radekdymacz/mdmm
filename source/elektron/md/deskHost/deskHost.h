@@ -51,7 +51,9 @@ namespace deskHost
 		DropRom,
 		DropSyx,			// a .syx dropped on the window: its import preview, as a chosen one's
 		DropSample,			// a sample dropped on the window: into a UW ROM slot, as a chosen one
-		OutputGain			// I-021: the editor's volume (the plug-in's output gain, after the emulation)
+		OutputGain,			// I-021: the editor's volume (the plug-in's output gain, after the emulation)
+		MemoryKeep,			// I-024: KEEP MEMORY on or off (the machine memory file for new sessions)
+		MemoryFactory		// I-024: START FROM FACTORY MEMORY (the file goes; the page asked the user first)
 	};
 
 	// Who acts on a row: the session (it outlives the window) or the window (the menu and the

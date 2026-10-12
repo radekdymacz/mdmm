@@ -388,17 +388,23 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.C-3 | Status request / set / response 0x70-0x72 | Mode, slots | ✅ | PATTERN / SONG switch; MODE |  | – |
 | p.C-4 | TurboMIDI speed messages 0x10-0x17 | Fast transfer | ➖ |  | Not needed. | – |
 
+## 17. Beyond the hardware
+
+| Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
+|---|---|---|---|---|---|---|
+| p. | What you save stays for every new session | The machine keeps its kits, patterns, songs and globals when it is switched off. | ✅ | By itself (a session without a project starts from the saved memory); engine menu: KEEP MEMORY, START FROM FACTORY MEMORY | I-024, doc/modern-ux/DESIGN-machine-memory.md | 1 |
+
 ## Summary
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 244 |
+| ✅ Yes | 245 |
 | 🟡 Partial | 22 |
 | ❌ No | 14 |
 | ➖ Not applicable | 16 |
-| Total | 296 |
+| Total | 297 |
 
-Of the 280 applicable rows, 244 are fully covered, 22 partly, 14 not at all.
+Of the 281 applicable rows, 245 are fully covered, 22 partly, 14 not at all.
 
 ### Top gaps (our UI), most important first
 
