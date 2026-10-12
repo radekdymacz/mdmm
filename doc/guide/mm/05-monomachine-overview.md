@@ -27,16 +27,24 @@ A pattern holds the notes, the envelope trigs and the parameter locks of the six
 Six more tracks in each pattern send MIDI notes. Click **MIDI** in the track rail of the **Sequence** workspace to edit them. The rail then lists M1 to M6, each with its MIDI channel. The **Sound** workspace shows the MIDI page of the selected MIDI track: note length and velocity, pitch bend and program change, and four controllers. Chapter 16 describes the MIDI sequencer.
 
 ## POLY MODE
-<!-- rows: MM-087 @958532 -->
+<!-- rows: MM-087 @f2f4d7 -->
 
-In poly mode all six synth engines play the selected track, so it has six voices. The other tracks go quiet.
+In poly mode all six synth engines play one track, the track in focus, so it has six voices. The other five tracks are silent, and so are notes sent on their MIDI channels.
 
 1. Go to the **Perform** workspace ({key:workspace-4}).
-2. In the **Keyboard** card, click **Poly**.
-3. Select the track to play. The rail rows of the other tracks dim.
-4. Play the keyboard. Poly mode takes its notes on MIDI channel 9, as auto track does.
+2. Select the track with the numbered keys in the title of the **Assign** card.
+3. In the **Keyboard** card, click **Poly**. The editor presses the [TRACK] key of that track on the machine, so the track you see is the track that plays.
+4. Play the keyboard. The machine also takes the notes of the track on its own MIDI channel and on the auto channel.
+
+![Poly mode on track 3](shot:mm-perform-poly)
+
+The line under the keyboard modes names the poly track and says that the others are silent. Its key in the **Assign** card and its lamp under the keyboard read ×6. The keys and lamps of the other tracks dim, and so do their rows in the rail on **Sequence** and **Sound**.
+
+Select another track, in the **Assign** card or in the rail, and poly mode moves to it. The first chord on the new track can sound as one note. The chords after it sound in full.
 
 On the **Perform** workspace the <MODE> field in the second line of the LCD reads POLY while the mode is on. Click **Auto track** to leave it.
+
+NOTE: Over a MIDI cable the editor cannot press [TRACK]. Press it on the machine: poly mode plays the track in focus there.
 
 ## MULTI TRIG MODE
 <!-- rows: MM-088 @600b94 -->

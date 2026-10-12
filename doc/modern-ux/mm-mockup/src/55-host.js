@@ -20,8 +20,9 @@
      selectPattern(p, now)            LOAD PATTERN (now: STOP, LOAD PATTERN, PLAY)
      kit(op, k)                       "save" | "load" | "saveAs" | "reload"
      tempo(bpm), mutes()              the machine's tempo; the tracks' mutes changed (synth and MIDI)
-     keyMode(mode)                    the keyboard mode changed ("normal" | "multi" | "map" | "poly"): POLY
-                                      is the machine's audio mode
+     keyMode(mode, t)                 the keyboard mode changed ("normal" | "multi" | "map" | "poly"): POLY
+                                      is the machine's audio mode, on track t (0-5: its TRACK key; again with
+                                      another t while in POLY: POLY moves there)
      record(live)                     the RECORD key: the host picks GRID or LIVE RECORDING, or off; live
                                       (Alt+Space): LIVE RECORDING, also when stopped
      loadSong(slot)                   LOAD SONG: the song slots' Load makes slot the machine's song, the one

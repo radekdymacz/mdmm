@@ -316,6 +316,7 @@
 	const trackChannel = t => { const c = chan(); return c ? MmView.trackChannel({ base: c.base <= 15 ? c.base : null, span: c.span }, t) : null; };
 	const midi = (b, key) => send({ op: "midi", b }, key ? { key } : {});
 	let held = null;
+	let polyTrack = null;	/* the track the last poly command named (0.6 wave 9) */
 	function noteOff() { if (held) { midi([0x80 | held.ch, held.n, 0]); held = null; } }
 	function joySend(x, y) {
 		const ch = trackChannel(V().asgT());
@@ -465,11 +466,13 @@
 				}
 			refresh();
 		},
-		/* POLY is the machine's audio mode (SET STATUS 0x20): entering or leaving it */
-		keyMode(mode) {
-			const poly = mode === "poly";
-			if (poly === view().poly) return;
-			expect(send({ op: "poly", on: poly }, { onResult: r => { answered(r); noteOf(r); } }), [[["poly"], poly]]);
+		/* POLY is the machine's audio mode (SET STATUS 0x20): entering or leaving it; on track t (0.6 wave 9: POLY plays
+		   the machine's track in focus, so the core presses TRACK t first; a new t while in POLY moves it there) */
+		keyMode(mode, t) {
+			const poly = mode === "poly", on = poly && t != null && t >= 0 && t < 6 ? t : null;
+			if (poly === view().poly && (!poly || on === polyTrack)) return;
+			polyTrack = on;
+			expect(send(Object.assign({ op: "poly", on: poly }, on != null ? { t: on } : {}), { onResult: r => { answered(r); noteOf(r); } }), [[["poly"], poly]]);
 			refresh();
 		},
 		/* the RECORD key: stopped = GRID RECORDING, playing = LIVE RECORDING, recording = off; live (Alt+Space,

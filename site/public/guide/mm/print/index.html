@@ -136,7 +136,7 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-4</span></span></aside>
 <div class="gd-body gd-prose"><h2>DATA PAGE</h2>
 <p>The machine has seven DATA pages for each track: SYN, AMP, FLT, EFX, LF1, LF2 and LF3. It shows one at a time on its eight knobs. The <b class="gd-ui">Sound</b> workspace shows every page of the selected track at once, in groups of a few values. The <b class="gd-ui">Sequence</b> workspace has the page tabs SYN, AMP, FLT, EFX, LF1, LF2 and LF3 in the track rail. They choose the parameters the lock lane edits.</p>
-<p>Pressing both DATA PAGE keys on the machine opens the multi envelope. In the editor the multi envelope is the first card of the <b class="gd-ui">Perform</b> workspace. It works in multi trig mode only: see chapter 5.</p>
+<p>Pressing both DATA PAGE keys on the machine opens the multi envelope. In the editor the multi envelope is the first card of the <b class="gd-ui">Perform</b> workspace. What it shapes depends on the multi trig mode of the kit, which the card names: see chapter 9.</p>
 </div></section>
 <section class="gd-sec" id="track-keys">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-4</span></span></aside>
@@ -181,7 +181,7 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-5</span></span></aside>
 <div class="gd-body gd-prose"><h2>PATTERN AND SONG KEY</h2>
 <p><kbd class="gd-key">[PATTERN/SONG]</kbd> switches between playing a pattern and playing a song. Click <b class="gd-light">&lt;PLAY&gt;</b> in the second line of the LCD. It reads PAT or SONG, what the machine reports, and each click switches. The <b class="gd-ui">Song</b> workspace has the same switch.</p>
-<p><kbd class="gd-key">[FUNCTION]</kbd> + <kbd class="gd-key">[PATTERN/SONG]</kbd> switches POLY mode. In the editor the <b class="gd-ui">Perform</b> workspace has a <b class="gd-ui">Poly</b> key in the <b class="gd-ui">Keyboard</b> card. Chapter 5 describes poly mode.</p>
+<p><kbd class="gd-key">[FUNCTION]</kbd> + <kbd class="gd-key">[PATTERN/SONG]</kbd> switches POLY mode. In the editor the <b class="gd-ui">Perform</b> workspace has a <b class="gd-ui">Poly</b> key in the <b class="gd-ui">Keyboard</b> card. Poly mode plays the track selected on the machine with <kbd class="gd-key">[TRACK]</kbd>; the editor presses that key for the track you select. Chapter 5 describes poly mode.</p>
 </div></section>
 <section class="gd-sec" id="enter-exit-and-arrow-keys">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-5</span></span></aside>
@@ -373,9 +373,13 @@
 <section class="gd-sec" id="poly-mode">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-15</span></span></aside>
 <div class="gd-body gd-prose"><h2>POLY MODE</h2>
-<p>In poly mode all six synth engines play the selected track, so it has six voices. The other tracks go quiet.</p>
-<ol class="gd-steps"><li>Go to the <b class="gd-ui">Perform</b> workspace (<kbd class="gd-key">[4]</kbd>).</li><li>In the <b class="gd-ui">Keyboard</b> card, click <b class="gd-ui">Poly</b>.</li><li>Select the track to play. The rail rows of the other tracks dim.</li><li>Play the keyboard. Poly mode takes its notes on MIDI channel 9, as auto track does.</li></ol>
+<p>In poly mode all six synth engines play one track, the track in focus, so it has six voices. The other five tracks are silent, and so are notes sent on their MIDI channels.</p>
+<ol class="gd-steps"><li>Go to the <b class="gd-ui">Perform</b> workspace (<kbd class="gd-key">[4]</kbd>).</li><li>Select the track with the numbered keys in the title of the <b class="gd-ui">Assign</b> card.</li><li>In the <b class="gd-ui">Keyboard</b> card, click <b class="gd-ui">Poly</b>. The editor presses the <kbd class="gd-key">[TRACK]</kbd> key of that track on the machine, so the track you see is the track that plays.</li><li>Play the keyboard. The machine also takes the notes of the track on its own MIDI channel and on the auto channel.</li></ol>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: Poly mode on track 3"><span>Screenshot to come</span></div><figcaption>Poly mode on track 3</figcaption></figure>
+<p>The line under the keyboard modes names the poly track and says that the others are silent. Its key in the <b class="gd-ui">Assign</b> card and its lamp under the keyboard read ×6. The keys and lamps of the other tracks dim, and so do their rows in the rail on <b class="gd-ui">Sequence</b> and <b class="gd-ui">Sound</b>.</p>
+<p>Select another track, in the <b class="gd-ui">Assign</b> card or in the rail, and poly mode moves to it. The first chord on the new track can sound as one note. The chords after it sound in full.</p>
 <p>On the <b class="gd-ui">Perform</b> workspace the <b class="gd-light">&lt;MODE&gt;</b> field in the second line of the LCD reads POLY while the mode is on. Click <b class="gd-ui">Auto track</b> to leave it.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Over a MIDI cable the editor cannot press <kbd class="gd-key">[TRACK]</kbd>. Press it on the machine: poly mode plays the track in focus there.</p></aside>
 </div></section>
 <section class="gd-sec" id="multi-trig-mode">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-15</span></span></aside>
@@ -558,8 +562,10 @@
 <section class="gd-sec" id="filter-tracking">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-31</span></span></aside>
 <div class="gd-body gd-prose"><h2>FILTER TRACKING</h2>
-<p>Both filters can follow the pitch of the notes. The switches are on the <b class="gd-ui">Perform</b> workspace, in the <b class="gd-ui">Assign</b> card.</p>
-<ol class="gd-steps"><li>Select the track with the numbered keys in the title of the <b class="gd-ui">Assign</b> card.</li><li>Click the <b class="gd-ui">KEY</b> tab.</li><li>Click <b class="gd-ui">HPF tracks keys</b> or <b class="gd-ui">LPF tracks keys</b>. A lit key means the filter follows the keys.</li></ol>
+<p>Both filters follow the pitch of the notes. With tracking off a filter stays where BASE and WDTH put it, whatever note plays: under a low LPF the high notes go quiet, and a high HPF lets them through.</p>
+<p>The title of the <b class="gd-ui">Filter</b> group shows the state: <b class="gd-ui">KEY</b> with a lamp for HPF and one for LPF, lit while that filter follows the notes. The label of the filter's screen says which filter is fixed. The switches are on the <b class="gd-ui">Perform</b> workspace, in the <b class="gd-ui">Assign</b> card.</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">KEY</b> in the title of the <b class="gd-ui">Filter</b> group. The <b class="gd-ui">Perform</b> workspace opens on the <b class="gd-ui">KEY</b> tab of the <b class="gd-ui">Assign</b> card, for the same track.</li><li>Click <b class="gd-ui">HPF tracks keys</b> or <b class="gd-ui">LPF tracks keys</b>. A lit key means the filter follows the keys.</li></ol>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: Key tracking in the Filter group"><span>Screenshot to come</span></div><figcaption>Key tracking in the Filter group</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="eq">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-32</span></span></aside>
@@ -671,7 +677,7 @@
 <p>The VEL tab assigns the velocity of the notes you play to a parameter. The sequencer always plays its notes at velocity 100, so a velocity assign only responds to the keys.</p>
 <h4 class="gd-h3">KEY TRACKING</h4>
 <p>The KEY tab assigns the key you played last to a parameter. The value is low for the lowest key and near its maximum for the highest.</p>
-<p>Two keys on this tab, <b class="gd-ui">HPF tracks keys</b> and <b class="gd-ui">LPF tracks keys</b>, switch the key tracking of the high-pass and low-pass filters.</p>
+<p>Two keys on this tab, <b class="gd-ui">HPF tracks keys</b> and <b class="gd-ui">LPF tracks keys</b>, switch the key tracking of the high-pass and low-pass filters. <b class="gd-ui">KEY</b> in the title of the <b class="gd-ui">Filter</b> group on <b class="gd-ui">Sound</b> shows the two switches and opens this tab. Chapter 7 describes filter tracking.</p>
 </div></section>
 <section class="gd-sec" id="trig-track-settings">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-40,</span> <span>1-41</span></span></aside>
@@ -707,7 +713,11 @@
 <section class="gd-sec" id="multi-env">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-43,</span> <span>1-44</span></span></aside>
 <div class="gd-body gd-prose"><h2>MULTI ENV</h2>
-<p>The <b class="gd-ui">Multi envelope</b> card holds an ADSR that acts on top of every track's own envelope. It acts in multi trig mode.</p>
+<p>The <b class="gd-ui">Multi envelope</b> card holds an ADSR that acts on top of every track's own envelope. Notes on the multi trig channel set it going. What it shapes depends on the multi trig mode of the kit. The title of the card names the mode, and the line under the boxes says what the envelope does in it.</p>
+<ul class="gd-list"><li>ALL TRK: it shapes the notes of the multi trig channel, which play all six tracks.</li><li>SPLIT KEY: it has no effect.</li><li>SEQ START and SEQ TRNSP: it shapes the pattern that a multi trig note starts.</li></ul>
+<p>Before the first multi trig note the envelope leaves the tracks alone. After one, its level holds every track. With REL under 127 every track is silent once that note is let go, its own notes too, until the next multi trig note or STOP. In SEQ START and SEQ TRNSP the pattern goes silent with them. <b class="gd-ui">Panic</b> (<kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[.]</kbd>, or <b class="gd-ui">Panic</b> in the transport menu) sends STOP and opens it again.</p>
+<p>To hear the envelope from the editor, click <b class="gd-ui">Multi trig</b> in the <b class="gd-ui">Keyboard</b> card: the keys then play on the multi trig channel. While the keys play another mode, the card says so.</p>
+<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The multi envelope in ALL TRK"><span>Screenshot to come</span></div><figcaption>The multi envelope in ALL TRK</figcaption></figure>
 <p>The five boxes are <b class="gd-ui">ATK</b>, <b class="gd-ui">DEC</b>, <b class="gd-ui">SUS</b>, <b class="gd-ui">REL</b> and <b class="gd-ui">PORT</b>. PORT is the portamento for all tracks. The plot above them shows the envelope. Drag its dots to change ATK, DEC with SUS, and REL. A REL of 127 never fades, and the plot says so.</p>
 <aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>For no effect from the multi envelope, set ATK to 0, and DEC, SUS and REL to 127.</p></aside>
 </div></section>
@@ -1050,9 +1060,9 @@
 <section class="gd-sec" id="poly-mode">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-69</span></span></aside>
 <div class="gd-body gd-prose"><h2>POLY MODE</h2>
-<p>In poly mode all six engines play the track in focus, with six voices.</p>
-<ol class="gd-steps"><li>Press <kbd class="gd-key">[4]</kbd>.</li><li>In the <b class="gd-ui">Keyboard</b> bar, click <b class="gd-ui">Poly</b>.</li></ol>
-<p>The other five tracks are off until you leave poly mode. The page says so, and the rail marks the tracks that are off.</p>
+<p>In poly mode all six engines play the track in focus, with six voices. The sequencer then plays the chord notes of that track's trigs as chords. Out of poly mode a trig plays only its first note.</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[4]</kbd>.</li><li>Select the track with the numbered keys in the title of the <b class="gd-ui">Assign</b> card.</li><li>In the <b class="gd-ui">Keyboard</b> bar, click <b class="gd-ui">Poly</b>.</li></ol>
+<p>The other five tracks are silent until you leave poly mode. The line under the keyboard modes says so, and on <b class="gd-ui">Sequence</b> the rail dims those tracks and marks the poly track ×6. Chapter 5 describes poly mode.</p>
 </div></section>
 </article>
 <article class="gd-chapter" id="c16" style="page: c16">
