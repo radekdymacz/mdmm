@@ -2515,7 +2515,21 @@ const MdJourneys = (() => {
 		],
 		async tidy(u, c) { if (c.k0 == null) return; if (V.kit !== c.k0) { cmd("kitLoad", { k: c.k0, force: true }); await until(() => V.kit === c.k0, 4000); } cmd("reloadKit", { force: true }); await until(() => V.kitState !== "edited", 6000); }
 	};
-	const wave12 = [clipsJ, undoKitJ];
+	/* MD-099: a pattern queued while playing starts at STOP, not only at the pattern's end (the panel's STOP; measured) */
+	const stopQueuedJ = {
+		name: "md-top-stop-queued", proves: ["MD-099"],
+		steps: [
+			{ say: "press PLAY", act: (u, c) => { c.p0 = currentPatternSlot(); u.click("#play"); }, machine: () => ok(tele.last?.playing, "not playing"), within: 5000 },
+			{ say: "just after the pattern starts again, click › on the LCD: the next pattern is queued", act: async (u, c) => {
+				await until(() => tele.last?.playing && tele.last.step >= 1 && tele.last.step <= 3, 6000); u.click("#patNext"); await confirmIfAsked(u); c.at = tele.last?.step; },
+				machine: c => ok(desk().queued === c.p0 + 1 && currentPatternSlot() === c.p0, `queued ${desk().queued}, pattern ${currentPatternSlot()}`), screen: c => ok($1("#pat").textContent.includes(patName(c.p0 + 1)), "LCD " + $1("#pat").textContent), within: 600 },
+			{ say: "press STOP at once: the machine stops and the queued pattern is the current one, long before the pattern's end", act: (u, c) => { c.stopAt = tele.last?.step; u.click("#play"); },
+				machine: c => ok(currentPatternSlot() === c.p0 + 1 && !tele.last?.playing && desk().queued == null, `pattern ${currentPatternSlot()}, playing ${tele.last?.playing}, stopped at step ${c.stopAt}`),
+				screen: c => ok(!V.playing && V.pat === c.p0 + 1 && $1("#pat").textContent.includes(patName(c.p0 + 1)), `LCD ${$1("#pat").textContent}, view ${V.pat}`), within: 900 }
+		],
+		async tidy(u, c) { if (V.playing) u.click("#play"); await until(() => !V.playing, 3000); if (c.p0 != null && currentPatternSlot() !== c.p0) { u.click("#patPrev"); await confirmIfAsked(u); } }
+	};
+	const wave12 = [clipsJ, undoKitJ, stopQueuedJ];
 	const slice5 = [modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, kitNameSave, songCommands, playModeJ, pageLeds, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
 	const all = [...slice5, ...wave12, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
 		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,

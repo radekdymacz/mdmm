@@ -597,7 +597,9 @@
 <ol class="gd-steps"><li>Press <kbd class="gd-key">[5]</kbd> to open the <b class="gd-ui">Song</b> workspace.</li><li>Click <b class="gd-ui">CHAIN</b> over the pattern palette.</li><li>Click a bank letter.</li><li>Click the patterns in the order you want. Each pad shows its number in the chain. After the second pad the machine plays the chain at once. While it plays, the chain starts at the end of the pattern. While it is stopped, <kbd class="gd-key">[PLAY]</kbd> starts at the first pad.</li><li>Click a numbered pad to take it out. <b class="gd-ui">Back</b> takes out the last pad. <b class="gd-ui">Clear</b> ends the chain.</li></ol>
 <p>A chain holds up to 16 patterns of one bank, each pattern once. The palette says which pattern plays now and which comes next. Choosing a pattern ends the chain. Editing the patterns in it does not.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The <b class="gd-ui">Chain</b> pads are disabled, with a reason, when the engine cannot read or set the chain.</p></aside>
-<p>The editor has no key that makes <kbd class="gd-key">[STOP]</kbd> jump to a queued pattern. It relies on the machine doing so when a chain is set.</p>
+<p>A pattern queued while the machine plays starts at once when you stop:</p>
+<ol class="gd-steps"><li>While a pattern plays, choose another one: click <b class="gd-ui">›</b> next to the pattern on the LCD, or a pattern in the pattern chooser. The LCD shows its name, blinking: it is queued.</li><li>Press <kbd class="gd-key">[STOP]</kbd> (click <b class="gd-ui">▶</b> or press <kbd class="gd-key">[SPACE]</kbd>). The machine stops and the queued pattern is the current one.</li><li>Press <kbd class="gd-key">[PLAY]</kbd> to start it from its first step.</li></ol>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>This is the machine's own STOP, which the editor presses for you. With a real Machinedrum over MIDI the editor has no transport.</p></aside>
 </div></section>
 <section class="gd-sec" id="parameter-tweaking">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual pp.37,</span> <span>38</span></span></aside>

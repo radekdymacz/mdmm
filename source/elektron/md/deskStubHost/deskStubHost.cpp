@@ -268,7 +268,14 @@ namespace
 				if(m_songMode)
 					m_step = songLocate(++m_songPos).second;
 				else
+				{
 					m_step = (m_step + 1) % std::max<int>(1, m_patterns[m_pattern].length);
+					if(m_step == 0 && m_queued >= 0)
+					{
+						loadPattern(static_cast<uint8_t>(m_queued));
+						m_queued = -1;
+					}
+				}
 				// wave 7: EXIT/NO and a TRIG key held while live recording: that track's trig on the step that plays goes
 				if(m_recording && m_exitHeld && m_heldTrig >= 0)
 					m_patterns[m_pattern] = ed::withTrig(m_patterns[m_pattern], static_cast<size_t>(m_heldTrig), static_cast<size_t>(m_step), false);
@@ -375,7 +382,12 @@ namespace
 				}
 				return;
 			case 0x56: m_global = v & 7; return;	// SET ACTIVE GLOBAL (slice 5: MD-282)
-			case 0x57: loadPattern(v); return;
+			case 0x57:	// LOAD PATTERN: while playing (pattern mode) it waits for the pattern's end, or the panel's STOP (MD-099)
+				if(m_playing && !m_songMode)
+					m_queued = v & 127;
+				else
+					loadPattern(v);
+				return;
 			case 0x58: loadKit(v); return;
 			case 0x59: { if((v & 63) != m_kit) { m_undo = m_kits[v & 63]; m_undoSlot = v & 63; }	// the overwritten kit: the UNDO KIT
 				auto k = m_working; k.position = v & 63; m_kits[v & 63] = k; m_kit = v & 63; return; }	// SAVE KIT
@@ -552,6 +564,12 @@ namespace
 			{
 				m_playing = m_paused = false;
 				m_step = m_songPos = 0;
+				// MD-099: the panel's STOP changes to a pattern cued while playing (measured, gapProbesFirmwareTest w12stop)
+				if(m_queued >= 0)
+				{
+					loadPattern(static_cast<uint8_t>(m_queued));
+					m_queued = -1;
+				}
 			}
 			else if(_key == "bankGroup")
 				m_bankGroup = 1 - m_bankGroup;
@@ -603,6 +621,7 @@ namespace
 		double m_auditionEnds = 0;
 		mdDesk::Chain m_chain;
 		uint8_t m_pattern = 0, m_kit = 0, m_song = 0, m_global = 0, m_track = 0;
+		int m_queued = -1;	// a LOAD PATTERN while playing: switched at the pattern's end or STOP
 		bool m_songMode = false, m_playing = false, m_paused = false, m_recording = false, m_exitHeld = false;
 		int m_heldTrig = -1, m_heldKnob = -1, m_knobPage = 0;
 		int m_mutes = 0, m_step = 0, m_bankGroup = 0, m_songPos = 0;

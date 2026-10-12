@@ -28,7 +28,7 @@ const KTIP = {
 	undo: "The machine's UNDO KIT, the first entry of its kit list: the kit lost to the last LOAD KIT or overwrite. The editor opens KIT > LOAD KIT > UNDO KIT with the machine's keys: that kit plays again, unsaved, and the slot it came from becomes the current kit (measured). Unsaved edits of the kit that plays are lost",
 	drag: "Drag onto another slot to copy it (a kit dump into the target)" };
 const PTIP = {
-	go: "LOAD PATTERN (SysEx 0x57). While playing the machine switches at the pattern end. A chain ends here",
+	go: "LOAD PATTERN (SysEx 0x57). While playing the machine switches at the pattern end, or at STOP (measured). A chain ends here",
 	now: "Switch now: stopped, the same as Go. Playing: STOP, LOAD PATTERN, PLAY (measured: plays the new pattern after about 370 ms)",
 	copy: "Copies the pattern: notes, locks and the kit link, like the machine's COPY PATTERN",
 	paste: "A pattern dump (0x67) into the slot; pattern dumps are live. Over the current pattern with another kit link the machine loads that kit (measured): the editor asks first when the kit has unsaved edits",
@@ -65,14 +65,14 @@ function drawKitLib() {
 }
 function patSlot(p) {
 	const cur = p === V.pat, q = p === V.queued && !cur, has = hasPat(p), ext = V.mode === "EXTENDED", k = patKitOf(p), loaded = !!Docs.patterns[p];
-	const tip = `${patName(p)} · ${!loaded ? "loading" : has ? patLen(p) + " steps" + (ext && k != null ? " · kit K" + nn(k) : "") : "empty"}${cur ? " · current" : ""}${q ? " · queued: starts at the pattern end" : ""}. Click queues, Shift+click switches now. Drag onto another slot to copy.`;
+	const tip = `${patName(p)} · ${!loaded ? "loading" : has ? patLen(p) + " steps" + (ext && k != null ? " · kit K" + nn(k) : "") : "empty"}${cur ? " · current" : ""}${q ? " · queued: starts at the pattern end, or at once when you press STOP" : ""}. Click queues, Shift+click switches now. Drag onto another slot to copy.`;
 	return `<button class="ls ps${has ? "" : " empty"}${cur ? " cur" : ""}${q ? " q" : ""}" data-ps="${p}" draggable="${has}" aria-selected="${p === LIB.sel}" title="${escH(tip)}"><b>${patName(p)}</b><span>${!loaded ? "…" : has ? patLen(p) + (ext && k != null ? " · K" + nn(k) : "") : "EMPTY"}</span></button>`;
 }
 function drawPatLib() {
 	const p = LIB.sel, cur = V.pat, dis = c => c ? " disabled" : "", ext = V.mode === "EXTENDED", loaded = !!Docs.patterns[p];
 	const rows = [..."ABCDEFGH"].map((b, i) => `<button class="bank lbank${i === cur >> 4 ? " on" : ""}" data-lb="${i}" title="Bank ${b} (key ${b})"><i class="led"></i>${b}</button>` + Array.from({ length: 16 }, (_, j) => patSlot(i * 16 + j)).join("")).join("");
 	const ck = patKitOf(cur);
-	return `<div class="libhead"><span class="cap">Patterns</span><span class="lcdchip">${patName(cur)} · ${V.len} steps${ext && ck != null ? " · K" + nn(ck) : ""}${V.queued != null && V.queued !== cur ? " → " + patName(V.queued) : ""}</span><span class="note">8 banks × 16. ${V.playing ? "Playing: a new pattern starts at the pattern end." : "Stopped: a click switches at once."}</span><button class="libx" data-la="close" title="Close (Esc)">Esc</button></div>
+	return `<div class="libhead"><span class="cap">Patterns</span><span class="lcdchip">${patName(cur)} · ${V.len} steps${ext && ck != null ? " · K" + nn(ck) : ""}${V.queued != null && V.queued !== cur ? " → " + patName(V.queued) : ""}</span><span class="note">8 banks × 16. ${V.playing ? "Playing: a new pattern starts at the pattern end, or at STOP." : "Stopped: a click switches at once."}</span><button class="libx" data-la="close" title="Close (Esc)">Esc</button></div>
  <div class="libacts"><div class="grp"><span class="ilab">Slot ${patName(p)}</span><button data-la="go"${dis(p === cur && V.queued == null)} title="${PTIP.go} (Enter)">${V.playing ? "Queue" : "Go"}</button><button data-la="now"${dis(p === cur && V.queued == null)} title="${PTIP.now}">Now</button>
   <button data-la="copy"${dis(!loaded)} title="${PTIP.copy} (Cmd+C)">Copy</button><button data-la="paste"${dis(V.clipboard.pattern == null || !loaded)} title="${V.clipboard.pattern != null ? "Paste " + patName(V.clipboard.pattern) + ". " : "Copy a pattern first. "}${PTIP.paste} (Cmd+V)">Paste</button><button class="danger" data-la="clear"${dis(!hasPat(p))} title="${PTIP.clear} (Delete)">Clear</button></div></div>
  <div class="libgrid pats" aria-label="128 patterns">${rows}</div>

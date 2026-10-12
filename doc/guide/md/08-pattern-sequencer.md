@@ -92,7 +92,7 @@ On the machine you hold a bank key for two seconds so that you can choose the pa
 {bug:B-045}NOTE: In this version, a pattern chosen while a SysEx import runs can ask about unsaved kit edits that you never made. The question goes away when the import ends. This is a known fault.{/bug}
 
 ## PATTERN CHAINING
-<!-- rows: MD-098 MD-099 @51ecad -->
+<!-- rows: MD-098 MD-099 @b9abfb -->
 
 A chain plays patterns of one bank in the order you pick them, and starts again at the first.
 
@@ -106,7 +106,13 @@ A chain holds up to 16 patterns of one bank, each pattern once. The palette says
 
 NOTE: The **Chain** pads are disabled, with a reason, when the engine cannot read or set the chain.
 
-{gap:MD-099}The editor has no key that makes [STOP] jump to a queued pattern. It relies on the machine doing so when a chain is set.{/gap}
+A pattern queued while the machine plays starts at once when you stop:
+
+1. While a pattern plays, choose another one: click **›** next to the pattern on the LCD, or a pattern in the pattern chooser. The LCD shows its name, blinking: it is queued.
+2. Press [STOP] (click **▶** or press {key:play-stop}). The machine stops and the queued pattern is the current one.
+3. Press [PLAY] to start it from its first step.
+
+NOTE: This is the machine's own STOP, which the editor presses for you. With a real Machinedrum over MIDI the editor has no transport.
 
 ## PARAMETER TWEAKING
 <!-- rows: MD-100 MD-101 MD-102 @7efc71 -->
