@@ -1031,8 +1031,8 @@ const MdJourneys = (() => {
 		steps: [
 			{ say: "click GLOBAL: a modal over a dimmed backdrop (review 1, B-091), the head on one line, focus inside", act: u => u.click("#globkey"),
 				screen: () => { const p = $1("#globpop").getBoundingClientRect(), hd = $1("#globpop .gphead").getBoundingClientRect(), bg = $1("#modalbg");
-					return ok(!$1("#globpop").hidden && Modal.top() === "globpop" && !!bg && !bg.hidden && Math.abs(p.left + p.width / 2 - innerWidth / 2) < 3 && hd.height < 48 && $1("#globpop").contains(document.activeElement) && $all("#globpop .gslots button").length === 8 && !!$1('#globpop [data-ga="copy"]') && !!$1('#globpop [data-ga="paste"]') && !!$1('#globpop [data-ga="reset"]'),
-						`open ${!$1("#globpop").hidden}, top ${Modal.top()}, backdrop ${bg && !bg.hidden}, centre ${Math.round(p.left + p.width / 2)}/${Math.round(innerWidth / 2)}, head ${Math.round(hd.height)} px, focus ${document.activeElement?.tagName}`); } },
+					const pop = $1("#globpop"), wide = pop.scrollWidth > pop.clientWidth + 1; return ok(!wide && !$1("#globpop").hidden && Modal.top() === "globpop" && !!bg && !bg.hidden && Math.abs(p.left + p.width / 2 - innerWidth / 2) < 3 && hd.height < 48 && $1("#globpop").contains(document.activeElement) && $all("#globpop .gslots button").length === 8 && !!$1('#globpop [data-ga="copy"]') && !!$1('#globpop [data-ga="paste"]') && !!$1('#globpop [data-ga="reset"]'),
+						`${wide ? "its cards wider than the dialog (" + pop.scrollWidth + " > " + pop.clientWidth + "), " : ""}open ${!$1("#globpop").hidden}, top ${Modal.top()}, backdrop ${bg && !bg.hidden}, centre ${Math.round(p.left + p.width / 2)}/${Math.round(innerWidth / 2)}, head ${Math.round(hd.height)} px, focus ${document.activeElement?.tagName}`); } },
 			{ say: "press Escape: GLOBAL closes", act: u => u.key("Escape"), screen: () => ok($1("#globpop").hidden && !pressed("#globkey"), "still open") },
 			{ say: "click GLOBAL, then its back key: closed", act: async u => { u.click("#globkey"); await sleep(300); u.click('#globpop [data-ga="close"]'); }, screen: () => ok($1("#globpop").hidden && !pressed("#globkey"), "still open") }
 		],

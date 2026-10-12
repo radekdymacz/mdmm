@@ -31,7 +31,7 @@
 .gwarn{grid-column:1/-1;margin:0;font-size:12px;color:var(--red)}
 /* the GLOBAL dialog (0.6: the page's head and cards; review 1: a modal again, framed, centred by the modal layer, as wide
    as the header was at most, scrolls inside) */
-.globpop.gpage{z-index:var(--mz,22);width:min(1180px,calc(100vw - 48px));padding:14px 18px 18px;gap:14px;background:var(--plate);box-sizing:border-box}
+.globpop.gpage{z-index:var(--mz,22);width:min(1400px,calc(100vw - 48px));padding:14px 18px 18px;gap:14px;background:var(--plate);box-sizing:border-box}
 .gphead{display:flex;align-items:center;gap:14px;flex-wrap:nowrap;white-space:nowrap;border-bottom:2px solid var(--print);padding-bottom:10px;min-width:0}
 .gpname{font:600 22px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase;color:var(--print)}
 .gphead .gslots button{width:34px;height:30px;font-size:13px}
