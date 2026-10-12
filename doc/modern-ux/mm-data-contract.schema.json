@@ -1288,6 +1288,19 @@
           ],
           "description": "MM-P4: POLY, the machine's audio mode (status 0x20); null until it answers."
         },
+        "focus": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            }
+          ],
+          "description": "0.6 wave 9: the synth track in focus, its TRACK key (status 0x22): the track POLY plays. The track the editor pressed (poly with t) until the machine shows it; null until it answers."
+        },
         "desk": {
           "type": "object",
           "additionalProperties": true,
@@ -5484,7 +5497,7 @@
         },
         {
           "type": "object",
-          "description": "machine: POLY, the machine's audio mode (SET STATUS 0x20)",
+          "description": "machine: POLY, the machine's audio mode (SET STATUS 0x20); t: TRACK t first, the track POLY plays with six voices (again while on: it moves there)",
           "required": ["op", "on"],
           "properties": {
             "op": {
@@ -5502,6 +5515,11 @@
             },
             "on": {
               "type": ["boolean", "integer"]
+            },
+            "t": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
             }
           },
           "additionalProperties": false

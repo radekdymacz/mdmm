@@ -39,11 +39,11 @@ The tabs JOY RL, JOY U and JOY D hold the joystick's three directions: right and
 The VEL tab assigns the velocity of the notes you play to a parameter. The sequencer always plays its notes at velocity 100, so a velocity assign only responds to the keys.
 
 ### KEY TRACKING
-<!-- rows: MM-149 @65813f -->
+<!-- rows: MM-149 @4bc813 -->
 
 The KEY tab assigns the key you played last to a parameter. The value is low for the lowest key and near its maximum for the highest.
 
-Two keys on this tab, **HPF tracks keys** and **LPF tracks keys**, switch the key tracking of the high-pass and low-pass filters.
+Two keys on this tab, **HPF tracks keys** and **LPF tracks keys**, switch the key tracking of the high-pass and low-pass filters. **KEY** in the title of the **Filter** group on **Sound** shows the two switches and opens this tab. Chapter 7 describes filter tracking.
 
 ## TRIG TRACK SETTINGS
 <!-- rows: MM-151 MM-152 MM-153 @71480c -->
@@ -106,9 +106,19 @@ The first note you play starts the pattern. Later notes only transpose it, so th
 **SEQ START** and **SEQ TRNSP** show a **Timing** stepper. Click **−** or **+** to choose DIRECT, 1/16, 2/16, 4/16, 8/16, 16/16 or 32/16. With DIRECT the note acts at once. With another value it acts at the next division of that length, and the page says so when you play.
 
 ## MULTI ENV
-<!-- rows: MM-160 MM-161 @bee3e7 -->
+<!-- rows: MM-160 MM-161 @af3c11 -->
 
-The **Multi envelope** card holds an ADSR that acts on top of every track's own envelope. It acts in multi trig mode.
+The **Multi envelope** card holds an ADSR that acts on top of every track's own envelope. Notes on the multi trig channel set it going. What it shapes depends on the multi trig mode of the kit. The title of the card names the mode, and the line under the boxes says what the envelope does in it.
+
+- ALL TRK: it shapes the notes of the multi trig channel, which play all six tracks.
+- SPLIT KEY: it has no effect.
+- SEQ START and SEQ TRNSP: it shapes the pattern that a multi trig note starts.
+
+Before the first multi trig note the envelope leaves the tracks alone. After one, its level holds every track. With REL under 127 every track is silent once that note is let go, its own notes too, until the next multi trig note or STOP. In SEQ START and SEQ TRNSP the pattern goes silent with them. **Panic** ({key:panic}, or **Panic** in the transport menu) sends STOP and opens it again.
+
+To hear the envelope from the editor, click **Multi trig** in the **Keyboard** card: the keys then play on the multi trig channel. While the keys play another mode, the card says so.
+
+![The multi envelope in ALL TRK](shot:mm-perform-menv)
 
 The five boxes are **ATK**, **DEC**, **SUS**, **REL** and **PORT**. PORT is the portamento for all tracks. The plot above them shows the envelope. Drag its dots to change ATK, DEC with SUS, and REL. A REL of 127 never fades, and the plot says so.
 

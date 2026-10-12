@@ -100,6 +100,7 @@ const MmView = (() => {
 			v.kitState = m.kit?.working || "unknown";
 			if (m.tempo != null) v.bpm = m.tempo;
 			v.poly = m.poly ?? null;
+			v.focus = m.focus ?? null;	/* 0.6 wave 9: the synth track in focus, the one POLY plays */
 			v.mutes = mutesOf(m);
 			v.plays = { chain: m.desk?.chain ?? null, songMode: m.song?.songMode === true, song: m.song?.current ?? 0 };
 			v.songs = songsOf(docs, song, slotIn(m, "song"), m.song?.reloadNeeded === true);

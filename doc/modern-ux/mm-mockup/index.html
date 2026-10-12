@@ -2634,6 +2634,17 @@ html[data-tt=sld] #seq .nlane.big canvas.roll,html[data-tt=swg] #seq .nlane.big 
 .stepcur{position:absolute;top:0;bottom:0;pointer-events:none;z-index:5;border:2px solid var(--led);box-shadow:0 0 0 1px var(--plate),0 0 10px 1px var(--led);border-radius:2px;animation:blink 1s steps(2) infinite}
 .stepcur::after{content:attr(data-l);position:absolute;top:2px;left:2px;font:9px var(--pix);background:var(--led);color:#fff;padding:2px 4px;border-radius:2px;white-space:nowrap}
 body.erasing .rail .th.sel{box-shadow:inset 0 0 0 2px var(--rec)!important}
+/* 0.6 wave 9 (B-064): POLY's track (×6) and the silent ones, the filter's key tracking in the Filter header, the
+   Multi envelope's word per MULTI TRIG mode */
+.x6{font:600 9px var(--mono);font-style:normal;margin-left:4px;padding:0 3px;border-radius:2px;background:var(--led);color:#fff;vertical-align:1px}
+[data-set="astrk"] button.polyoff,#trklamps>span.polyoff{opacity:.42}
+.sg>header>.keytrk{flex:none;margin-left:auto;height:18px;padding:0 6px;display:inline-flex;gap:4px;align-items:center;font:600 9px var(--sans);letter-spacing:.1em;text-transform:uppercase}
+.sg>header>.keytrk .led{width:6px;height:6px}
+.sg>header>span+.keytrk{margin-left:8px}
+.asgcard .keyrow.flash{outline:2px solid var(--led);outline-offset:3px;border-radius:3px}
+.menvsay b{font-weight:600}
+.menvsay .menvto{display:block;margin-top:2px}
+.lkey.ring{box-shadow:0 0 0 2px var(--led)}
 </style>
 <div class="app">
   <header class="top">
@@ -3280,8 +3291,9 @@ function demoRebase(step){if(window.MMDemoHost)window.MMDemoHost.rebase(step)}
      selectPattern(p, now)            LOAD PATTERN (now: STOP, LOAD PATTERN, PLAY)
      kit(op, k)                       "save" | "load" | "saveAs" | "reload"
      tempo(bpm), mutes()              the machine's tempo; the tracks' mutes changed (synth and MIDI)
-     keyMode(mode)                    the keyboard mode changed ("normal" | "multi" | "map" | "poly"): POLY
-                                      is the machine's audio mode
+     keyMode(mode, t)                 the keyboard mode changed ("normal" | "multi" | "map" | "poly"): POLY
+                                      is the machine's audio mode, on track t (0-5: its TRACK key; again with
+                                      another t while in POLY: POLY moves there)
      record(live)                     the RECORD key: the host picks GRID or LIVE RECORDING, or off; live
                                       (Alt+Space): LIVE RECORDING, also when stopped
      loadSong(slot)                   LOAD SONG: the song slots' Load makes slot the machine's song, the one
@@ -5717,8 +5729,8 @@ const gapC=s=>s%16===0&&s!==vis()[0]?"gap":"";
    ONE piano roll for the selected track (the height of the MD's 16-row grid), the ENV row, the trig types (Note ·
    Slide · Swing, wave 3: slide and swing are marks along the foot of the roll), lock lane. */
 const ROLL_H=16*28+15*3;
-function th(t){const tr=trk(t),polyOff=S.mode==="poly"&&t!==S.sel&&t<6;return`<div class="th ${t===S.sel?"sel":""} ${S.ws==="seq"&&S.marks?.has(t)?"marked":""} ${trackSel(t)} ${audible(t)?"":"off"} ${polyOff?"poly-off":""}" data-sel="${t}">
- <div class="threw"><div class="sw"></div><div class="n ${t<6?"":"fill"}">${t<6?t+1:"M"+(t-5)}</div><div class="nm${S.ws==="seq"&&S.gen?" tagged":""}" title="${tr.name}"><b>${t<6?tr.m.replace("SWAVE-","SW-"):"CH"+String(tr.ch).padStart(2,"0")}</b>${S.ws==="seq"&&S.gen?`<i class="gtag" title="${genTip(t)}">${genTag(genSpec(t))}</i>`:""}</div>
+function th(t){const tr=trk(t),pt=S.polyT??S.sel,polyOff=S.mode==="poly"&&t!==pt&&t<6;return`<div class="th ${t===S.sel?"sel":""} ${S.ws==="seq"&&S.marks?.has(t)?"marked":""} ${trackSel(t)} ${audible(t)?"":"off"} ${polyOff?"poly-off":""}" data-sel="${t}">
+ <div class="threw"><div class="sw"></div><div class="n ${t<6?"":"fill"}">${t<6?t+1:"M"+(t-5)}</div><div class="nm${S.ws==="seq"&&S.gen?" tagged":""}" title="${polyOff?"Silent in POLY":S.mode==="poly"&&t===pt?"POLY: six voices":tr.name}"><b>${t<6?tr.m.replace("SWAVE-","SW-"):"CH"+String(tr.ch).padStart(2,"0")}${S.mode==="poly"&&t===pt&&t<6?`<em class="x6">×6</em>`:""}</b>${S.ws==="seq"&&S.gen?`<i class="gtag" title="${genTip(t)}">${genTag(genSpec(t))}</i>`:""}</div>
  <button class="ms m ${ARMED.has(t)?"prep":""}" ${ARMED.has(t)?`data-prep="${ARMED.get(t)?"X":"+"}"`:""} data-mute="${t}" aria-pressed="${tr.mute}" aria-label="Mute ${tLabel(t)}">M</button><button class="ms s" data-solo="${t}" aria-pressed="${tr.solo}" aria-label="Solo ${tLabel(t)}">S</button></div></div>`}
 function pageKeys(){return`<span class="pagectl rh"><button class="pgkey" id="pgkey" ${pages16()<2?"disabled":""} title="Next page. Shift-click = previous. Keys [ and ].">Page</button><span class="pleds" aria-hidden="true">${[0,1,2,3].map(k=>`<span class="pl ${k<pages16()?"":"na"} ${!S.viewAll&&k===S.page?"cur":""}" data-plp="${k}"><i class="led"></i></span>`).join("")}</span><button class="ptog ${S.viewAll?"on":""}" id="pgall" aria-pressed="${S.viewAll}" title="Show all steps"><i class="led"></i>All</button><button class="ptog ${S.follow?"on":""}" id="pgfollow" aria-pressed="${S.follow}" title="Page follows the play position"><i class="led"></i>Fol</button></span>`}
 function lockPicker(t){const midi=isMidiT(t),list=pagesOf(t),d=dockOf(t);if(!list.includes(S.lanePage))S.lanePage=list[0];
@@ -6935,7 +6947,8 @@ ED.amp={geo(W,H,c){const e=ampTimes(V("AMP"))||{at:0,ho:0,de:Infinity,re:Infinit
    {x:G.inf?Math.min(W-5,G.X(G.off)):G.X(e.at+e.ho+e.de),y:G.Y(G.inf?1:.1),k:"DEC",drag:x=>set(2,x>=W-3?127:Math.min(126,ampValue("fall",G.S(x)-e.at-e.ho)))},
    {x:G.rinf?W-5:G.X(G.off+e.re),y:G.Y(G.rinf?1:.1),k:"REL",drag:x=>set(3,x>=W-3?127:Math.min(126,ampValue("fall",G.S(x)-G.off)))}]}};
 ED.flt={resp(u,env){const f=V("FLT"),b=Math.min(1,(f[0]+(env?f[6]:0))/127),w=(f[1]+(env?f[7]:0))/127,lp=Math.min(1,b+w);let d=0;if(u<b)d-=Math.pow((b-u)*7,2);if(u>lp)d-=Math.pow((u-lp)*7,2);d+=f[2]/127*1.6*Math.exp(-Math.pow((u-b)*26,2))+f[3]/127*1.6*Math.exp(-Math.pow((u-lp)*26,2));return d},
- draw(g,W,H){grid(g,W,H);const f=V("FLT");if(f[6]||f[7])line(g,W,x=>clamp(H/2+8-this.resp(x/W,1)*(H/4),6,H-6),inkA(.55),1.5,[5,4]);line(g,W,x=>clamp(H/2+8-this.resp(x/W)*(H/4),6,H-6),cssv("--ink"),2.2);label(g,"base + width"+(f[6]||f[7]?" · dashed = env peak":""))},
+ draw(g,W,H){grid(g,W,H);const f=V("FLT"),A=S.sel<6?trk(S.sel).assign:null;if(f[6]||f[7])line(g,W,x=>clamp(H/2+8-this.resp(x/W,1)*(H/4),6,H-6),inkA(.55),1.5,[5,4]);line(g,W,x=>clamp(H/2+8-this.resp(x/W)*(H/4),6,H-6),cssv("--ink"),2.2);
+  const fixed=!A||A.hpf&&A.lpf?"":!A.hpf&&!A.lpf?" · fixed: no key tracking":!A.hpf?" · HPF fixed":" · LPF fixed";label(g,"base + width"+(fixed||(f[6]||f[7]?" · dashed = env peak":"")))},
  handles(W,H){const f=V("FLT"),b=f[0]/127,lp=Math.min(1,b+f[1]/127),yy=u=>clamp(H/2+8-this.resp(u)*(H/4),6,H-6);
   return[{x:Math.max(6,b*W),y:yy(b),k:"BASE · HPQ",drag:(x,y)=>{f[0]=clamp(Math.round(x/W*127));f[2]=clamp(Math.round((H/2+8-y)/(H/2)*127))}},{x:Math.min(W-6,lp*W),y:yy(lp),k:"WDTH · LPQ",drag:(x,y)=>{f[1]=clamp(Math.round((x/W-f[0]/127)*127));f[3]=clamp(Math.round((H/2+8-y)/(H/2)*127))}}]}};
 function lfoCycle(v){const m=Math.pow(2,v[4]);return v[5]?2048/(v[5]*m):Infinity}
@@ -6970,7 +6983,7 @@ const SND_TIP={uni:"The base saw (middle) and the unison pair either side: UNIW 
  amp:"The level after a trig, in steps at this tempo, as the Monomachine plays it: ATK rises (64 ≈ 0.14 s), HOLD keeps it for HOLD/8 steps (no NOTE OFF needed), DEC falls (64 ≈ 0.55 s to -20 dB; 127 holds to the NOTE OFF), REL falls after the NOTE OFF (dashed; 127 never fades). ATK, DEC and REL are times: each 8 more about doubles them. Drag the dots.",
  dist:"Distortion, in to out (dashed = clean). Drag the dot up or down.",
  pan:"The track in the stereo field: PAN sideways, VOL up. Drag the dot.",
- flt:"The 24 dB gap filter: BASE is the high-pass, WDTH the gap to the low-pass, the dots up for HPQ and LPQ. Dashed: where the envelope takes it. Both track the note.",
+ flt:"The 24 dB gap filter: BASE is the high-pass, WDTH the gap to the low-pass, the dots up for HPQ and LPQ. Dashed: where the envelope takes it. Both follow the note unless KEY (Perform › Assign › KEY) switches one off: the label then says which is fixed.",
  fenv:"The filter's own envelope: ATK, DEC; BOFS how far it lifts the base (solid, up), WOFS the width (dashed). Drag the dots.",
  eq:"One EQ band: EQF moves it, EQG boosts (up) or cuts (down). Drag the dot.",
  srr:"Sample-rate reduction: more SRR, longer held steps (the rail).",
@@ -6987,7 +7000,11 @@ const MM_PG_TIP={SYN:"the machine's SYNTHESIS page",AMP:"the AMPLIFICATION page"
    or what its knobs do, its boxes; each part is a cell of the row's grid */
 function sgHtml(x,cols,tag,note){const t=S.sel;
  const body=x.body||`<div class="ctl" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${x.idx.map((i,k)=>pc(x.pg,i,{t,label:x.labels?.[k]||x.knobs[k]})).join("")}</div>`;
- return`<section class="sg" data-sg="${x.pg}:${x.key}"><header><h3>${sgTitle(x)}</h3>${tag?`<span title="Its knobs are on ${MM_PG_TIP[x.pg]||x.pg}">${tag}</span>`:""}</header>${x.plot||(note?`<p class="sgnote" title="${attrS(note)}">${note}</p>`:"")}${body}</section>`}
+ return`<section class="sg" data-sg="${x.pg}:${x.key}"><header><h3>${sgTitle(x)}</h3>${tag?`<span title="Its knobs are on ${MM_PG_TIP[x.pg]||x.pg}">${tag}</span>`:""}${x.pg==="FLT"&&x.key==="filter"&&t<6?keyTrackKey(t):""}</header>${x.plot||(note?`<p class="sgnote" title="${attrS(note)}">${note}</p>`:"")}${body}</section>`}
+/* 0.6 wave 9 (B-064): the filter's key tracking, shown where the filter is; the switches stay in Perform › Assign › KEY
+   (KIT › ASSIGN › KEY on the machine), where this key leads */
+function keyTrackKey(t){const A=trk(t).assign;return`<button class="keytrk" data-keytrk="${t}" title="The filter follows the note unless switched off: HPF ${A.hpf?"on":"off"}, LPF ${A.lpf?"on":"off"}. Click: Perform › Assign › KEY, where they are switched (KIT › ASSIGN › KEY on the machine)" aria-label="Key tracking: HPF ${A.hpf?"on":"off"}, LPF ${A.lpf?"on":"off"}. Opens Perform, Assign, KEY">KEY <i class="led ${A.hpf?"on":""}"></i>HPF <i class="led ${A.lpf?"on":""}"></i>LPF ›</button>`}
+function keyTrackGo(t){S.ws="perform";S.sel=t;S.asTab="KEY";render();requestAnimationFrame(()=>{const k=$(".keyrow");if(k){k.classList.add("flash");setTimeout(()=>k.classList.remove("flash"),1200)}})}
 /* One row (shared/deskSoundLayout.js soundRow, as the Machinedrum Editor's): a group with a screen is a column of its
    own, the ones without pair up; a lone one says what its knobs do. The page's word on the first group of a page in
    the row (a group's own tag wins: an LFO that is off says so). */
@@ -7120,6 +7137,15 @@ function renderMix(){const T=S.tracks;
 
 /* ===== Perform: keyboard modes, multi trig, multi map, multi env, assign, mutes ===== */
 const PMODES=[["normal","Auto track","Keys play the track in focus (AUTO TRACK channel 9)."],["multi","Multi trig","One source plays all six tracks as one big mono synth (channel 7)."],["map","Multi map","Key ranges start patterns, with offset, length and transpose (channel 8)."],["poly","Poly","All six engines play the track in focus with six voices. Other tracks go quiet."]];
+/* 0.6 wave 9 (B-064), measured (PROBES-manual-gaps.md P10): POLY plays the machine's track in focus, the one selected
+   here (HOST.keyMode presses its TRACK key); the MULTI ENV per MULTI TRIG mode */
+function polyHint(t){return`POLY: T${t+1} plays six voices (TRACK ${t+1} on the machine); the other five tracks are silent, notes on their channels too. The sequencer plays T${t+1}'s chord notes. Select another track to move POLY there (its first chord can sound as one note).`}
+const MENV_SAY=["shapes the notes of the MULTI TRIG channel, which play all six tracks. After such a note, with REL under 127, every track stays silent until the next one or STOP.",
+ "no effect in this mode. The envelope works in ALL TRK, SEQ START and SEQ TRNSP (Multi trig under Keyboard).",
+ "shapes the pattern a MULTI TRIG note starts. After that note, with REL under 127, every track stays silent until the next one or STOP.",
+ "shapes the pattern a MULTI TRIG note starts and transposes. After that note, with REL under 127, every track stays silent until the next one or STOP."];
+function menvHint(){const m=S.multi.mode,play=S.mode!=="multi"&&m!==1;
+ return`<b>${MTM[m]}:</b> ${MENV_SAY[m]}${play?` <span class="menvto">The keys play ${{normal:"AUTO TRACK",map:"MULTI MAP",poly:"POLY"}[S.mode]} now: choose <b>Multi trig</b> under Keyboard to hear it.</span>`:""}`}
 const MTM=["ALL TRK","SPLIT KEY","SEQ START","SEQ TRNSP"],TIMS=["DIRECT","1/16","2/16","4/16","8/16","16/16","32/16"];
 const isBlack=n=>[1,3,6,8,10].includes(n%12);
 function kbRange(){const lo=12*(S.kbOct+1);return[lo,lo+47]}
@@ -7146,10 +7172,10 @@ function renderPerform(){const pm=PMODES.find(p=>p[0]===S.mode),t=asgT(),tr=S.tr
  const joy=S.asTab.startsWith("JOY");
  $("#main").innerHTML=`<div class="perf ${S.mode==="map"?"map":""}">
   <div class="perf3">
-   <section class="card menvcard"><header><h3>Multi envelope</h3><span>both DATA PAGE keys · multi trig only</span></header><div class="menvplot"><canvas class="ed" data-ed="menv" aria-label="Multi envelope. Drag the dots."></canvas></div>
+   <section class="card menvcard"><header><h3>Multi envelope</h3><span title="Both DATA PAGE keys on the machine. Its effect depends on the kit's MULTI TRIG mode">MULTI TRIG ${MTM[S.multi.mode]}</span></header><div class="menvplot"><canvas class="ed" data-ed="menv" aria-label="Multi envelope. Drag the dots."></canvas></div>
     <div class="ctl" style="grid-template-columns:repeat(5,minmax(0,1fr))">${["ATK","DEC","SUS","REL","PORT"].map(n=>pc("menv",n,{})).join("")}</div>
-    <div class="hint">On top of every track's own envelope. For no effect: ATK 0, DEC, SUS and REL at 127.</div></section>
-   <section class="card asgcard"><header><h3>Assign · T${t+1} ${shortM(tr.m)}</h3><span class="seg" data-set="astrk">${[0,1,2,3,4,5].map(k=>`<button data-v="${k}" aria-pressed="${k===t}">${k+1}</button>`).join("")}</span></header>
+    <div class="hint menvsay" title="On top of every track's own envelope. For no effect: ATK 0, DEC, SUS and REL at 127.">${menvHint()}</div></section>
+   <section class="card asgcard"><header><h3>Assign · T${t+1} ${shortM(tr.m)}</h3><span class="seg" data-set="astrk">${[0,1,2,3,4,5].map(k=>{const p=S.mode==="poly";return`<button data-v="${k}" aria-pressed="${k===t}"${p?` class="${k===t?"polyt":"polyoff"}" title="${k===t?`T${k+1} plays POLY: six voices`:`Silent in POLY. Click: T${k+1} plays POLY instead`}"`:""}>${k+1}${p&&k===t?`<em class="x6">×6</em>`:""}</button>`}).join("")}</span></header>
     <span class="seg" data-set="astab">${Object.keys(A.tabs).map(k=>`<button data-v="${k}" aria-pressed="${S.asTab===k}">${k}</button>`).join("")}</span>
     <div class="asgn${joy?"":" nojoy"}">${joy?`<div class="joy" id="joy" title="Drag the stick. It springs back."><span class="cross"></span><span class="cross2"></span><small class="jl">L</small><small class="jr">R</small><small class="ju">U</small><small class="jd">D</small><span class="knobj" id="knobj" style="left:${50+S.joy.x*42}%;top:${50-S.joy.y*42}%"></span></div>`:""}
      <div style="display:grid;gap:6px">${rows.map(asRow).join("")}
@@ -7171,9 +7197,9 @@ function renderPerform(){const pm=PMODES.find(p=>p[0]===S.mode),t=asgT(),tr=S.tr
   <div class="kbsec">
   <div class="perfbar kbtitle"><span class="cap">Keyboard</span><span class="keyrow">${PMODES.map(([k,n])=>`<button class="lkey" data-pmode="${k}" aria-pressed="${S.mode===k}"><i class="led"></i>${n}</button>`).join("")}</span>${mtCtl}
    <span class="stepper" style="margin-left:auto"><span class="ilab">Octave</span><button data-kboct="-1" aria-label="Octave down">−</button><b class="mono">${noteName(kbRange()[0])}</b><button data-kboct="1" aria-label="Octave up">+</button></span></div>
-  <div class="hint">${pm[2]} ${S.mode==="multi"?{0:"Notes go to all six tracks; each keeps its own arpeggiator.",1:`Keys from ${noteName(S.multi.splitKey)} play T${S.multi.splitTrack}-T6, keys below play T1-T${S.multi.splitTrack-1}. The multi envelope is not used here.`,2:"Each note restarts the pattern, transposed from C-4.",3:"The first note starts the pattern; later notes only transpose it, so the loop never breaks."}[S.multi.mode]:""}</div>
+  <div class="hint kbhint">${S.mode==="poly"?polyHint(t):pm[2]} ${S.mode==="multi"?{0:"Notes go to all six tracks; each keeps its own arpeggiator.",1:`Keys from ${noteName(S.multi.splitKey)} play T${S.multi.splitTrack}-T6, keys below play T1-T${S.multi.splitTrack-1}. The multi envelope is not used here.`,2:"Each note restarts the pattern, transposed from C-4.",3:"The first note starts the pattern; later notes only transpose it, so the loop never breaks."}[S.multi.mode]:""}</div>
   <div class="kbwrap">${S.mode==="map"?`<div class="mapbands">${mapBands()}</div>`:""}<div class="kb" id="kb">${renderKb()}</div>
-   <div class="trklamps" id="trklamps">${S.tracks.map((x,i)=>`<span><i class="led" data-lamp="${i}"></i>T${i+1} ${shortM(x.m)}</span>`).join("")}<span class="hint" id="kbinfo" style="margin-left:auto">Click or drag across the keys to play.</span></div></div>
+   <div class="trklamps" id="trklamps">${S.tracks.map((x,i)=>{const p=S.mode==="poly";return`<span${p?` class="${i===t?"polyt":"polyoff"}" title="${i===t?"Six voices in POLY":"Silent in POLY"}"`:""}><i class="led" data-lamp="${i}"></i>T${i+1} ${shortM(x.m)}${p&&i===t?`<em class="x6">×6</em>`:""}</span>`}).join("")}<span class="hint" id="kbinfo" style="margin-left:auto">Click or drag across the keys to play.</span></div></div>
   </div></div>`;
  /* the cards keep their hints in view (tipify went with the Sound page's groups) */
  syncControls();redraw()}
@@ -8230,7 +8256,7 @@ document.addEventListener("click",e=>{
  const lw=e.target.closest("[data-lwave]");if(lw){editTrack(S.sel,()=>{V(lw.dataset.lwave)[3]=+lw.dataset.w});render();return}
  const gt=e.target.closest("[data-goto]");if(gt){S.ws="sound";S.side="int";select(+gt.dataset.goto);return}
  const bs=e.target.closest("[data-bus]");if(bs){const t=+bs.dataset.t,tr=S.tracks[t];tr.out[bs.dataset.bus]=!tr.out[bs.dataset.bus];edit("route",{t,out:(tr.out.AB?1:0)|(tr.out.CD?2:0)|(tr.out.EF?4:0)});render();return}
- const pmk=e.target.closest("[data-pmode]");if(pmk){S.mode=pmk.dataset.pmode;if(HOST.keyMode)HOST.keyMode(S.mode);if(S.mode==="poly")toast("POLY: T"+(asgT()+1)+" now plays six voices. The other five tracks are off until you leave POLY.");render();return}
+ const pmk=e.target.closest("[data-pmode]");if(pmk){S.mode=pmk.dataset.pmode;S.polyT=S.mode==="poly"?asgT():null;if(HOST.keyMode)HOST.keyMode(S.mode,asgT());if(S.mode==="poly")toast("POLY: T"+(asgT()+1)+" now plays six voices. The other five tracks are silent until you leave POLY.");render();return}
  const so2=e.target.closest("[data-strk]");if(so2){S.multi.splitTrack=clamp(S.multi.splitTrack+ +so2.dataset.strk,2,6);edit("multiTrig",{splitTrack:S.multi.splitTrack-1});render();return}
  const tm=e.target.closest("[data-tim]");if(tm){S.multi.timing=clamp(S.multi.timing+ +tm.dataset.tim,0,6);edit("multiTrig",{timing:S.multi.timing});render();return}
  const ko=e.target.closest("[data-kboct]");if(ko){S.kbOct=clamp(S.kbOct+ +ko.dataset.kboct,0,6);render();return}
@@ -8240,6 +8266,7 @@ document.addEventListener("click",e=>{
  const md=e.target.closest("[data-mdel]");if(md){const i=+md.dataset.mdel;if(S.mmap.length<2)return;S.mmap.splice(i,1);if(i===S.mmap.length)S.mmap[i-1].hi=127;S.mmapSel=Math.max(0,i-1);edit("multiMapDelete",{i});render();return}
  if(e.target.closest("[data-madd]")){const i=S.mmapSel,r=S.mmap[i],lo=i?S.mmap[i-1].hi+1:0;if(r.hi-lo<1){toast("A one-key range cannot be split.");return}const mid=Math.floor((lo+r.hi)/2);S.mmap.splice(i,0,{...r,hi:mid});edit("multiMapSplit",{i});render();return}
  const mi=e.target.closest("[data-mirr]");if(mi){const A=S.tracks[asgT()].assign;A.mirr=!A.mirr;edit("assign",{t:asgT(),mirror:A.mirr});render();return}
+ const kg=e.target.closest("[data-keytrk]");if(kg){keyTrackGo(+kg.dataset.keytrk);return}
  const kt=e.target.closest("[data-ktrk]");if(kt){const A=S.tracks[asgT()].assign,k=kt.dataset.ktrk;A[k]=!A[k];edit("assign",{t:asgT(),[k]:A[k]});render();return}
  const pl=e.target.closest(".pl");if(pl&&S.ws==="seq"){const k=+pl.dataset.plp;if(k<pages16()){S.page=k;S.viewAll=false;render()}return}
  const pgk=e.target.closest("#pgkey");if(pgk&&!pgk.disabled){const n=pages16();S.viewAll=false;S.page=(S.page+(e.shiftKey?-1:1)+n)%n;render();return}
@@ -8429,7 +8456,15 @@ function render(){const f=focusedValue();renderPage();if(f){const el=document.qu
 function renderPage(){closePicker();closeK();const sl=$("#seqscroll")?.scrollLeft||0;renderTop();{const m=(S.ws==="seq"||S.ws==="sound")&&S.side==="midi";if(!m&&S.sel>5)S.sel-=6;if(m&&S.sel<6)S.sel+=6}const full=["mix","perform","song","control"].includes(S.ws);
  $("#body").className="body "+(full?"full ":"")+"ws-"+S.ws;$("#rail").hidden=full;if(!full)renderRail();renderSub();
  ({control:renderControl,seq:renderSeq,sound:renderSound,mix:renderMix,perform:renderPerform,song:renderSong})[S.ws]();
- const sc=$("#seqscroll");if(sc){sc.scrollLeft=sl;const l=$("#lanescroll");if(l)l.scrollLeft=sl}enhanceSelects($("#main"));if(S.learn)document.body.classList.add("learn");movePH(false)}
+ const sc=$("#seqscroll");if(sc){sc.scrollLeft=sl;const l=$("#lanescroll");if(l)l.scrollLeft=sl}enhanceSelects($("#main"));if(S.learn)document.body.classList.add("learn");movePH(false);polyFollows()}
+/* 0.6 wave 9 (B-064): POLY plays the machine's track in focus; the synth track the person selects here (rail, Assign's
+   1-6) is the one that plays it: a new selection while in POLY moves it (the host presses that TRACK key) */
+/* the Multi envelope's "choose Multi trig" rings that key while pointed at (no :has(): macOS 12's WebKit) */
+for(const[ev,on]of[["pointerover",true],["pointerout",false]])document.addEventListener(ev,e=>{if(e.target.closest?.(".menvto"))$('[data-pmode="multi"]')?.classList.toggle("ring",on)});
+function polyFollows(){if(S.mode!=="poly"){S.polyT=null;return}
+ /* the machine's track is not known yet (POLY read back, the focus still on its way): nothing pressed; a MIDI track
+    selected: POLY stays where it is (MIDI tracks have no voices) */
+ if(S.polyT==null||isMidiT(S.sel))return;const t=asgT();if(S.polyT===t)return;S.polyT=t;if(HOST.keyMode)HOST.keyMode("poly",t)}
 function setPlate(v){S.plate=v;document.documentElement.dataset.plate=v;try{localStorage.setItem("mmeditor.plate",v)}catch(_){}
  if(v==="mk1"){const bad=S.tracks.filter(t=>MACH[t.m].mk2);if(bad.length)toast(`MKI: ${bad.map(t=>t.m).join(", ")} needs a MKII. It would load as nothing on a MKI.`);else toast("MKI: no user waveforms, no DPRO-DDRW or DPRO-DENS. The plate looks the same.")}
  if(v==="mk2")toast("MKII: the same silver plate, plus user waveforms and the DigiPRO draw machines.");
@@ -8512,6 +8547,9 @@ function show(v,all){
   if(v.mutes&&!solo)v.mutes.forEach((m,i)=>{if(m!=null&&m!==was.mutes?.[i]&&!!trk(i).mute!==m){trk(i).mute=m;doc=true}});
   /* POLY is the machine's audio mode; the keyboard's other modes are the page's */
   if(v.poly!=null&&v.poly!==was.poly){const m=v.poly?"poly":S.mode==="poly"?"normal":S.mode;if(m!==S.mode){S.mode=m;doc=true}}
+  /* 0.6 wave 9: POLY's track is the machine's track in focus. The page follows it (a reload, POLY or TRACK pressed on
+     the machine, a refused move): its track is selected, and nothing is pressed for it (polyFollows) */
+  if(S.mode==="poly"&&v.focus!=null&&v.focus!==S.polyT){S.polyT=v.focus;if(asgT()!==v.focus)S.sel=isMidiT(S.sel)&&(S.ws==="seq"||S.ws==="sound")?v.focus+6:v.focus;doc=true}
   if(doc)pruneLocks();
   if(seq)autoRange(S.sel)}
  if(top)renderTop();
@@ -9378,6 +9416,7 @@ const MmView = (() => {
 			v.kitState = m.kit?.working || "unknown";
 			if (m.tempo != null) v.bpm = m.tempo;
 			v.poly = m.poly ?? null;
+			v.focus = m.focus ?? null;	/* 0.6 wave 9: the synth track in focus, the one POLY plays */
 			v.mutes = mutesOf(m);
 			v.plays = { chain: m.desk?.chain ?? null, songMode: m.song?.songMode === true, song: m.song?.current ?? 0 };
 			v.songs = songsOf(docs, song, slotIn(m, "song"), m.song?.reloadNeeded === true);
