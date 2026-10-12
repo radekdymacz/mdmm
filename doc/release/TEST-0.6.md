@@ -149,3 +149,4 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 4. Both: GLOBAL opens as a dialog over the dimmed workspace; a click beside it does nothing; Esc or its back key closes it (B-091).
 5. Both: open the kit library, the keys view (?), AUDIO / MIDI (,), the machine picker, Export SysEx…, Reset machine…: a click beside each leaves it open; Esc closes it (B-094).
 6. Both: Import SysEx… a full backup, Import: the panel keeps its size from the preview to the report; Stop and Hide stay visible; hovering a slot shows its facts in a line over the footer, never over the keys. While it runs, Esc and a click beside it do nothing; Hide, then IMPORT SYSEX… in the engine menu: the same panel (or its report) again (B-094, B-095).
+7. MM: a pattern with chords on T5, LIVE RECORDING, hold Delete over a few chord steps; then lock a value on Sequence and add a note: both taken, no message about chord notes (B-093).

@@ -19,6 +19,14 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Fix (`fix/0.6-review-1`, Radek's rule: every modal locks):** a click outside never closes a dialog, on both editors (its frame flashes instead); a dialog closes by its own keys or Esc; a dialog at work (`data-busy`: the SysEx panel importing or resetting) refuses Esc too. Its **Hide** key still puts it away; IMPORT SYSEX…, EXPORT SYSEX… or RESET MACHINE… in the engine menu then shows the same panel again (with its report when the run ended meanwhile, and a toast says so). The pages' own outside-click closers are gone (`deskModal.js`, `deskAudio.js`, `deskSyx.js`, `mdDeskKeys.js`, `mdDeskLibrary.js`, the MM mockup's `56-keys.js`, `125-lib.js`). Context menus still close on a click outside (a menu, not a dialog). Journeys `md-modal-lock`, `mm-modal-lock` (GLOBAL, a library, the keys, AUDIO / MIDI, Export SysEx, the machine picker, a question: a click outside keeps each open and on top, Esc closes it), `md-syx-running-reach`, `mm-syx-running-reach` (Esc and a click outside while it imports, Hide, back through the engine menu, the report).
 - **Status:** fixed on `fix/0.6-review-1`.
 
+## B-093 · Monomachine: "tracks[4] step 24 has chord notes but no trig" on Sequence
+
+- **From:** Radek's 0.6 review, 2026-10-12 (installed build, Sequence, the lock lane open: the toast).
+- **What happens:** an edit on Sequence is refused with that message, an internal check the person should never see; every later edit of that pattern is refused the same way.
+- **Cause (measured, `mmDeskFirmwareTest chorderase`):** LIVE RECORDING's erase on the machine (EXIT held, or Delete held in the editor, wave 7) takes a step's trig and envelope bits and its locks, but leaves its chord bit and chord notes. The read-back carries them; the core checks every edited pattern whole (`mmValidate`), and a chord without its trig was an error, so every edit of that pattern failed. No path of the core makes one (it writes a step whole, `setStep`: a chord only with its trig; step clear, cut, Clear… with parts, GEN, undo all go through it).
+- **Fix (`fix/0.6-review-1`):** the check takes such data, as it takes notes without a trig since 0.3.5 (a machine's own backups hold them; the firmware plays nothing there), and a MIDI step's notes without its trig the same way; the page shows such a step as empty, and an edit of it writes it whole. Firmware test `mmChordEraseFirmwareTest` (a chord on each of 16 steps, the erase on the firmware: 4 steps keep chord bits without a trig; the pattern is valid, edits after it are taken and reach the machine).
+- **Status:** fixed on `fix/0.6-review-1`.
+
 ## B-091 · Both editors: GLOBAL as a page under the header; back to a modal
 
 - **From:** Radek's 0.6 review, 2026-10-12: GLOBAL looked better as a modal.

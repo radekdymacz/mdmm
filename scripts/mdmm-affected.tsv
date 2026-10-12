@@ -33,15 +33,16 @@ source/elektron/md/deskCore/*	deskCoreTest|mdDeskTest|mmDeskTest|deskWire	mdInte
 source/elektron/md/deskHost/*	deskCoreTest|mdDeskTest|mmDeskTest	-	*	-	no	2 2b 2c 7d
 source/elektron/md/deskStubHost/*	-	-	*	-	no	2c
 source/elektron/md/mdDesk/*	mdDeskTest|mdDataLinkTest	mdIntentCasesFirmwareTest|mdTransportFirmwareTest|mdLiveEraseFirmwareTest	md-*	-	no	2 2b 2c 4 7d
-source/elektron/md/mmDesk/*	mmDeskTest	mmIntentCasesFirmwareTest|mmDeskFirmwareTest|mmTransportFirmwareTest|mmStepRecordFirmwareTest|mmPerformSoundFirmwareTest	mm-*	-	no	2 2b 2c 4 7d
+source/elektron/md/mmDesk/*	mmDeskTest	mmIntentCasesFirmwareTest|mmDeskFirmwareTest|mmTransportFirmwareTest|mmStepRecordFirmwareTest|mmPerformSoundFirmwareTest|mmChordEraseFirmwareTest	mm-*	-	no	2 2b 2c 4 7d
 source/elektron/md/mdDataLink/*	mdDataLinkTest|mdDeskTest	mdIntentCasesFirmwareTest	md-*	-	no	2 2b 4 7d
 source/elektron/md/deskWire/*	deskWire	mdTransportFirmwareTest|mmTransportFirmwareTest	-	*-engine-hw-*	no	2 2b 7d
-source/elektron/md/elektronData/*	elektronData|mmData|mmConvert|syxImport|mdDeskTest|mmDeskTest	mdSyxPick|mmSyxPick	*	-	no	2 2b 2c 4
+source/elektron/md/elektronData/*	elektronData|mmData|mmConvert|syxImport|mdDeskTest|mmDeskTest	mdSyxPick|mmSyxPick|mmChordEraseFirmwareTest	*	-	no	2 2b 2c 4
 source/elektron/md/mdmmUpdate/*	mdmmUpdate|mdmmReleaseScripts	-	-	-	no	2
 # --- the emulation: the machines themselves
 source/elektron/md/mdLib/*	mdLib|mdRam|mdUart|mdState|mdSequencer|mdFlash|mdAudio|mdMidi|mdHostRx|mdIdle|mdTransport|mdSds|mdTurbo|mdMemory|mmSine|mmDigiPro|mmSysex	mdSessionFirmwareTest|mmBootFirmwareTest|mdAudioFirmwareTest|mmAudioFirmwareTest	-	*-boot-card	yes	1 2 2b 3 4 5 5b 6a 6b 7a 7d
 source/elektron/md/mdLibTest/goldens/*	-	-	-	-	yes	5
 source/elektron/md/mdLibTest/mdDeskFirmwareTest.cpp	-	mdIntentCasesFirmwareTest|mdTransportFirmwareTest|mdLiveEraseFirmwareTest	-	-	no	2 2b
+source/elektron/md/mdLibTest/mmDeskFirmwareTest.cpp	-	mmIntentCasesFirmwareTest|mmStepRecordFirmwareTest|mmPerformSoundFirmwareTest|mmChordEraseFirmwareTest	-	-	no	2 2b
 source/elektron/md/mdLibTest/*	mdLib|mdRam|mdUart|mdState|mdSequencer|mdFlash|mdAudio|mdMidi|mdHostRx|mdIdle|mdTransport|mdSds|mdTurbo|mdMemory|mmSine|mmDigiPro|mmSysex|deskWirePort	-	-	-	no	2 2b
 source/dsp56300/*	dsp56300|dsp56k|ringBuffer|semaphore|sharedAudio|cowMemory|pagedArray	mdAudioFirmwareTest|mmAudioFirmwareTest	-	-	yes	1 2 2b 3 4 5 5b 6a 6b 7a 7d
 source/mc68k/*	mc68k	mdSessionFirmwareTest|mmBootFirmwareTest	-	*-boot-card	yes	1 2 2b 3 4 5 5b 6a 6b 7a 7d
