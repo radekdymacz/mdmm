@@ -9,7 +9,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **From:** the journey md-boot-card (on the "flaky" list: about one start in five in the full runs, 2026-10-12).
 - **What happens:** under the start-up card, within the first second, the page shows ■ on the PLAY key and the telemetry says the machine plays, before the firmware takes MIDI.
 - **Cause:** the plug-in reads "playing" from the firmware's RAM (a step byte that moves, the stopped byte clear: `md::SequencerState`). While the firmware starts, it sets up that RAM: the step byte changed with the stopped byte still 0, which read as playing for 0.7 s. The first step read also counted as a move.
-- **Fix (`fix/0.6-flaky`):** the sequencer state is read only once the firmware takes MIDI (`isFirmwareMidiReady`, as the start-up animation already was), and starts afresh for a new machine; the first step read is where the step is, not a move (`mdsequencerstate.h`, `mddeskdevice.cpp`). Tests: `mdSequencerStateTest` (B-087), md-boot-card 8 of 8 with four editors starting at once.
+- **Fix (`fix/0.6-flaky`):** the sequencer state is read only once the firmware takes MIDI (`isFirmwareMidiReady`, as the start-up animation already was), and starts afresh for a new machine and when a machine starts again in place (not ready, then ready); the first step read is where the step is, not a move (`mdsequencerstate.h`, `mddeskdevice.cpp`). Tests: `mdSequencerStateTest` (B-087), md-boot-card 8 of 8 with four editors starting at once.
 - **Status:** fixed on `fix/0.6-flaky`. Shown to the person only under the start-up card (the card covers PLAY), so nobody could press it; the telemetry the core and the page read was wrong for that moment.
 
 ## B-086 · Machinedrum: a pause right after PLAY can end at once and stop the machine
@@ -17,7 +17,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **From:** the journey md-top-pause (on the "flaky" list: step 2 "⇧-click ▶: it pauses", the toast "Paused." shown, then the position gone).
 - **What happens:** ⇧-click ▶ (or ⇧Space) while the machine plays: the toast says Paused, but ▶ does not blink and POSITION reads --.--: the machine stopped, the pause is gone, ▶ starts from the top.
 - **Cause:** the page ended a pause whenever a telemetry frame said "playing" (`onTelemetry`, mdDeskTop.js). A frame the machine sent before the pause reached it arrives after the click and still says playing: the pause just begun was dropped, then the machine stopped. More likely on a busy Mac (frames queue up), and in the plug-in as well as the page tier.
-- **Fix (`fix/0.6-flaky`):** the pause ends only when the machine starts playing again (from stopped to playing: PLAY, or its own panel). The MM page already did so (`setPlaying`). Test: mdDeskPageTest.js (B-086: a late frame keeps the pause; stopped, still paused on its step; playing again ends it).
+- **Fix (`fix/0.6-flaky`):** the pause ends only when the machine starts playing again (from stopped to playing: PLAY, or its own panel), or when the machine still plays a second after the pause was sent (it did not take it: ▶ does not blink over a machine that plays on). The MM page already did so (`setPlaying`). Test: mdDeskPageTest.js (B-086: a late frame keeps the pause; stopped, still paused on its step; playing again ends it).
 - **Status:** fixed on `fix/0.6-flaky`. Not in a release (the pause is 0.6 wave 2).
 
 ## B-085 · Paste what opens with nothing ticked after another paste

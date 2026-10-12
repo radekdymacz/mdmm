@@ -149,6 +149,7 @@ namespace md
 		std::shared_ptr<SequencerTelemetry> m_sequencerTelemetry = std::make_shared<SequencerTelemetry>();
 		std::shared_ptr<MmTelemetry> m_mmTelemetry = std::make_shared<MmTelemetry>();
 		SequencerState m_sequencer;
+		bool m_sequencerReady = false;	// the firmware took MIDI at the last read (B-087)
 		BootAnimation m_bootAnimation;
 		const Hardware* m_bootAnimationOf = nullptr;
 		// 512: the MM SYSEX RECV macro alone is 29 keys, about 60 row states (MM-P2); the UNDO KIT route is up to
