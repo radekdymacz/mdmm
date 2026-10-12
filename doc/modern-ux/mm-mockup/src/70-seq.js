@@ -2,9 +2,10 @@
 /* ===== Sequence (synth tracks) and MIDI SEQ (MIDI tracks) =====
    One object per step: a trig that carries its pitch (or chord), its NOTE OFF type,
    its envelope trig flags and its parameter locks. The overview shows every track;
-   the note lane edits the selected track's trigs by pitch. Under it the ENV row and the
-   trig types (slide and swing are marks along the foot of the roll). The MIDI sequencer is its own workspace with the same editor. */
-S.page=0;S.viewAll=true;S.follow=false;S.dock="locks";S.tt="note";	/* P7: all steps by default; PAGE pages, ALL goes back */
+   the note lane edits the selected track's trigs by pitch. What a trig has besides its note (the envelopes it fires,
+   slide, swing, locks; a trigless trig; a NOTE OFF) is a small mark on it in the roll, set in the step menu (2026-10-12,
+   Radek: "needs to be simple to use"). The MIDI sequencer is its own workspace with the same editor (its VEL row under the roll). */
+S.page=0;S.viewAll=true;S.follow=false;S.dock="locks";	/* P7: all steps by default; PAGE pages, ALL goes back */
 const pages16=()=>Math.ceil(S.len/16);
 function vis(){if(S.viewAll)return[0,S.len];S.page=Math.min(S.page,pages16()-1);return[S.page*16,Math.min(S.len,S.page*16+16)]}
 function steps(){const[a,b]=vis();return Array.from({length:b-a},(_,k)=>a+k)}
@@ -13,8 +14,8 @@ function steps(){const[a,b]=vis();return Array.from({length:b-a},(_,k)=>a+k)}
 function cols(){return`50px repeat(${steps().length},minmax(${S.viewAll?0:18}px,1fr))`}
 const gapC=s=>s%16===0&&s!==vis()[0]?"gap":"";
 /* MD Editor Sequence layout: rail = tracks + SYNTH/MIDI + lock parameter; main = page keys, ruler,
-   ONE piano roll for the selected track (the height of the MD's 16-row grid), the ENV row, the trig types (Note ·
-   Slide · Swing, wave 3: slide and swing are marks along the foot of the roll), lock lane. */
+   ONE piano roll for the selected track (the height of the MD's 16-row grid; a trig's marks on its note), a MIDI
+   track's VEL row, lock lane. */
 const ROLL_H=16*28+15*3;
 function th(t){const tr=trk(t),pt=S.polyT??S.sel,polyOff=S.mode==="poly"&&t!==pt&&t<6;return`<div class="th ${t===S.sel?"sel":""} ${S.ws==="seq"&&S.marks?.has(t)?"marked":""} ${trackSel(t)} ${audible(t)?"":"off"} ${polyOff?"poly-off":""}" data-sel="${t}">
  <div class="threw"><div class="sw"></div><div class="n ${t<6?"":"fill"}">${t<6?t+1:"M"+(t-5)}</div><div class="nm${S.ws==="seq"&&S.gen?" tagged":""}" title="${polyOff?"Silent in POLY":S.mode==="poly"&&t===pt?"POLY: six voices":tr.name}"><b>${t<6?tr.m.replace("SWAVE-","SW-"):"CH"+String(tr.ch).padStart(2,"0")}${S.mode==="poly"&&t===pt&&t<6?`<em class="x6">×6</em>`:""}</b>${S.ws==="seq"&&S.gen?`<i class="gtag" title="${genTip(t)}">${genTag(genSpec(t))}</i>`:""}</div>
@@ -41,13 +42,9 @@ function setRecLock(l){S.recLock=l||null;const key=l?l.t+":"+l.pid+":"+l.s:"";
  if(key&&key!==recLockKey)toast(`Locks ${tLabel(l.t)} ${pidLabel(l.t,l.pid)} on step ${l.s+1}: the step that plays when the value arrives.`);
  recLockKey=key;setTimeout(markRecLock,20)}
 function renderSeq(){const t=S.sel,tr=trk(t),midi=isMidiT(t);dockOf(t);
- const rows=[["env",midi?"VEL":"Env"]];
- let h=`<div class="scroll" id="seqscroll"><div class="mstack ${S.viewAll?"all":""}" id="seq"><div class="mrowg ruler" style="grid-template-columns:${cols()}"><div class="rul"></div>${steps().map(s=>`<div class="rul ${gapC(s)} ${rulSel(s)}" data-s="${s}">${s%4===0?s+1:""}</div>`).join("")}</div>
-  <div class="nlane big"><canvas class="roll" data-ed="lane" data-t="${t}" data-big="1" title="${ROLL_TIP(t)}" aria-label="${ROLL_TIP(t)}"></canvas>${rollMarks(t)}</div>
-  <div class="tlanes" id="tlanes">${rows.map(([k,lab])=>{if(k==="env"&&midi)return`<div class="tlane env" style="grid-template-columns:${cols()}" title="Velocity per note (VEL, lockable)"><span class="tlab">VEL</span>${steps().map(s=>{const st=tr.steps[s];const v=st&&!st.off?velOf(t,s):null;return`<span class="tc envc ${gapC(s)} ${v==null?"na":""}">${v!=null?`<i class="velbar" style="--v:${v/127*100}%" title="VEL ${v}"></i>`:""}</span>`}).join("")}</div>`;
-   return`<div class="tlane ${k}" style="grid-template-columns:${cols()}" title="Which envelopes this trig fires: AMP (red), FILTER (yellow), LFO (green), the manual's trig tracks. No dots = trigless."><span class="tlab"><small class="envlab">A F L</small></span>${steps().map(s=>{const st=tr.steps[s],ok=st&&!st.off;
-    return`<span class="tc envc ${gapC(s)} ${ok?"":"na"} ${cellSel(s)}" data-s="${s}">${ok?["a","f","l"].map(b=>`<button class="d ${b} ${st[b]?"on":""}" data-env="${b}" data-s="${s}" aria-pressed="${!!st[b]}" aria-label="${{a:"AMP",f:"FILTER",l:"LFO"}[b]} trig step ${s+1}"></button>`).join(""):""}</span>`}).join("")}</div>`}).join("")}</div></div></div>
- ${trigTypeRow(t)}
+ let h=`<div class="scroll" id="seqscroll"><div class="mstack ${S.viewAll?"all":""} ${midi?"midi":""}" id="seq"><div class="mrowg ruler" style="grid-template-columns:${cols()}"><div class="rul"></div>${steps().map(s=>`<div class="rul ${gapC(s)} ${rulSel(s)}" data-s="${s}">${s%4===0?s+1:""}</div>`).join("")}</div>
+  <div class="nlane big"><canvas class="roll" data-ed="lane" data-t="${t}" data-big="1" title="${ROLL_TIP(t)}" aria-label="${ROLL_TIP(t)}"></canvas></div>
+  ${midi?`<div class="tlanes" id="tlanes"><div class="tlane env" style="grid-template-columns:${cols()}" title="Velocity per note (VEL, lockable)"><span class="tlab">VEL</span>${steps().map(s=>{const st=tr.steps[s];const v=st&&!st.off?velOf(t,s):null;return`<span class="tc envc ${gapC(s)} ${v==null?"na":""} ${cellSel(s)}" data-s="${s}">${v!=null?`<i class="velbar" style="--v:${v/127*100}%" title="VEL ${v}"></i>`:""}</span>`}).join("")}</div></div>`:""}</div></div>
  ${genBarHtml()}
  <div class="lanewrap"><div class="lanetop">${S.dock==="locks"?`<span class="cap">Lock lane · ${tLabel(t)} ${midi?"CH"+String(tr.ch).padStart(2,"0"):tr.m} · <b id="lanename">${pidLabel(t,S.lane)}</b> <span class="lanescale" id="lanescale"></span></span>
   <span class="lockbudget" id="lockbudget"></span><span class="lanehelp" title="Draw across the bars to lock this parameter per step. Alt-drag erases. Shift-drag draws a ramp, a straight line from where you press to where you let go. The wheel over a step with a trig moves its lock (Shift: fine). Hatched steps have no trig, so they cannot hold a lock. Dashed line = kit value. A slide step glides to the next lock.">Draw to lock · ⇧ ramp · alt erases</span>`:(()=>{const[h,hl]=dockHelp(t,S.dock);return`<span class="cap">${DOCKN[S.dock]} · ${tLabel(t)} ${midi?"CH"+String(tr.ch).padStart(2,"0"):tr.m}</span><span class="lockbudget dkread" id="dkread">${dockRead(t,S.dock)}</span><span class="lanehelp dkhelp" title="${dkAttr(hl)}">${h}</span>`})()}${dockTabs(t)}</div>
@@ -105,7 +102,6 @@ function clickStep(t,s,e){const tr=trk(t),st=tr.steps[s];
  else if(e.altKey&&!isMidiT(t)){if(!st||st.off)tr.steps[s]={n:[lastNote(t,s)],a:0,f:0,l:0};else{const k=stepKind(st);Object.assign(st,k==="full"?{a:0,f:0,l:0}:{a:1,f:1,l:1})}}
  else{if(st&&!st.off){tr.steps[s]=null;clearStepLocks(t,s)}else tr.steps[s]=note(lastNote(t,s))}
  editStep(t,s);renderTop();if(t!==S.sel){S.sel=t;stepFocus();autoRange(t);render()}else rerenderSeq()}
-function clickEnv(b,s){const t=S.sel,st=trk(t).steps[s];if(!st||st.off)return;st[b]=st[b]?0:1;if(!st.n&&!st.a&&!st.f&&!st.l){trk(t).steps[s]=null;clearStepLocks(t,s)}editStep(t,s);rerenderSeq()}
 let laneDraw=null;
 function laneAt(e){const lane=$("#lane");if(!lane)return;if(laneDraw.ramp){rampAt(e);return}const el=document.elementFromPoint(e.clientX,e.clientY)?.closest(".lb");if(!el||!lane.contains(el))return;
  const s=+el.dataset.s,t=S.sel,st=trk(t).steps[s];if(!st||st.off)return;const[pg,i]=S.lane.split("."),mx=maxOf(meta(t,pg,+i));const r=el.getBoundingClientRect();const v=clamp(Math.round((r.bottom-6-e.clientY)/(r.height-14)*mx),0,mx);
@@ -148,17 +144,19 @@ ED.lane={draw(g,W,H,c){const G=laneGeom(c),t=G.t,tr=trk(t),ink=cssv("--ink");if(
   noteSpans(t).forEach(sp=>{const r=spanX(G,sp);if(!r)return;const[x0,x1]=r,w=x1-x0,c0=G.col[sp.s];const va=midi?.4+.6*velOf(t,sp.s)/127:1;
    sp.n.forEach((n,k)=>{if(n<G.lo||n>G.hi)return;const y=G.y(n)+(G.big?1:.5),h=G.big?G.rh-2:Math.max(3,G.rh-1);
     if(k===0){if(sp.pitchless){g.setLineDash([4,3]);g.strokeStyle=ink;g.lineWidth=1.5;g.strokeRect(x0+.5,y+.5,w-1,h-1);g.setLineDash([])}
-     else if(sp.kind==="trigless"){g.strokeStyle=ink;g.lineWidth=G.big?2:1.5;g.strokeRect(x0+1,y+.5,w-2,h-1)}
-     else{const am=ampSteps(t),ea=sp.s+am,cA=ea<G.b?G.col[Math.max(G.a,Math.floor(ea))]:null;let xa=x1;if(ea<sp.e&&ea>=G.a&&cA)xa=cA.x0+(ea-Math.floor(ea))*(cA.x1-cA.x0);else if(ea<G.a)xa=x0;g.globalAlpha*=va;g.fillStyle=ink;g.fillRect(x0,y,Math.max(0,xa-x0),h);g.globalAlpha=audible(t)?1:.45;if(xa<x1){g.fillStyle=inkA(.3);g.fillRect(xa,y,x1-xa,h)}if(sp.kind==="part"&&G.big){g.fillStyle=cssv("--lcd");g.fillRect(x0+4,y+h/2-1,6,2)}}
-     if(c0&&!sp.clipR&&G.big&&!sp.wrap){g.fillStyle=cssv("--lcd");g.fillRect(x1-4,y+3,2,h-6)}
+     else if(sp.kind==="trigless"){if(G.big&&c0)rollTriglessBox(g,G,c0,n,ink);else{g.strokeStyle=ink;g.lineWidth=1.5;g.strokeRect(x0+1,y+.5,w-2,h-1)}}
+     else{const am=ampSteps(t),ea=sp.s+am,cA=ea<G.b?G.col[Math.max(G.a,Math.floor(ea))]:null;let xa=x1;if(ea<sp.e&&ea>=G.a&&cA)xa=cA.x0+(ea-Math.floor(ea))*(cA.x1-cA.x0);else if(ea<G.a)xa=x0;g.globalAlpha*=va;g.fillStyle=ink;g.fillRect(x0,y,Math.max(0,xa-x0),h);g.globalAlpha=audible(t)?1:.45;if(xa<x1){g.fillStyle=inkA(.3);g.fillRect(xa,y,x1-xa,h)}if(sp.kind==="part"&&G.big&&!midi)rollEnvMarks(g,x0,c0?Math.max(c0.x1,Math.min(x1,xa)):x1,y,h,sp.st)}
+     if(sp.kind!=="trigless"&&c0&&!sp.clipR&&G.big&&!sp.wrap){g.fillStyle=cssv("--lcd");g.fillRect(x1-4,y+3,2,h-6)}
      /* a gate past the pattern's end goes on at its start (I-010): the same bar, lighter, its end the handle */
-     const wr=sp.wrap?spanX(G,{s:0,e:sp.wrap}):null;if(wr){g.globalAlpha*=va*.55;g.fillStyle=ink;g.fillRect(wr[0],y,wr[1]-wr[0],h);g.globalAlpha=audible(t)?1:.45;if(G.big){g.fillStyle=cssv("--lcd");g.fillRect(wr[1]-4,y+3,2,h-6)}}}
+     const wr=sp.wrap&&sp.kind!=="trigless"?spanX(G,{s:0,e:sp.wrap}):null;if(wr){g.globalAlpha*=va*.55;g.fillStyle=ink;g.fillRect(wr[0],y,wr[1]-wr[0],h);g.globalAlpha=audible(t)?1:.45;if(G.big){g.fillStyle=cssv("--lcd");g.fillRect(wr[1]-4,y+3,2,h-6)}}}
     else if(midi){g.globalAlpha*=va;g.fillStyle=ink;g.fillRect(x0,y,w,h);g.globalAlpha=audible(t)?1:.45}else if(c0){const cw=c0.x1-c0.x0;g.strokeStyle=ink;g.lineWidth=G.big?1.5:1;g.strokeRect(c0.x0+.5,y+.5,cw-1,h-1);if(G.big){g.fillStyle=ink;g.beginPath();g.arc(c0.x0+cw/2,y+h/2,2.6,0,7);g.fill()}}});
-   if(c0&&stepLocked(t,sp.s)){g.fillStyle=ink;g.fillRect(c0.x0+2,1,5,G.big?4:3)}
+   if(G.big&&c0){const vis=sp.n.filter(n=>n>=G.lo&&n<=G.hi),top=vis.length?Math.max(...vis):null;
+    rollTopMarks(g,G,t,sp.s,c0.x0,c0.x1-c0.x0,top==null?7:sp.kind==="trigless"?G.y(top)+(G.rh-Math.max(5,Math.min(10,c0.x1-c0.x0-4,G.rh-4)))/2:G.y(top)+1)}
+   else if(c0&&stepLocked(t,sp.s)){g.fillStyle=ink;g.fillRect(c0.x0+2,1,5,3)}
    if(G.big&&c0&&sp.n[0]>=G.lo&&sp.n[0]<=G.hi){const lab=tr.m==="DPRO-BBOX"?BBOX[sp.n[0]]:tr.m==="VO-6"?(()=>{const v=S.locks.get(lkKey(t,"SYN.4"))?.get(sp.s);return v!=null?CONS[v]:null})():null;if(lab){g.fillStyle=ink;g.font="8px Silkscreen, monospace";g.fillText(lab,c0.x0+2,Math.max(9,G.y(sp.n[0])-2))}}
    if(G.big&&midi&&c0&&S.locks.get(lkKey(t,"MID.1"))?.has(sp.s)){g.fillStyle=ink;g.font="8px Silkscreen, monospace";g.fillText("V"+velOf(t,sp.s),c0.x0+2,G.y(sp.n[0])-2)}});
   /* NOTE OFFs: one that ends a note is where its bar ends (a faint line); one that ends nothing is marked */
-  G.vs.forEach(s=>{if(!tr.steps[s]?.off||!G.col[s])return;const x=G.col[s].x0,ends=MmRoll.before(tr.steps,S.len,s)!=null;g.fillStyle=ends?inkA(.25):ink;g.fillRect(x,0,ends?1:2,H);if(G.big&&!ends){g.font="8px Silkscreen, monospace";g.fillText("OFF",x+4,10)}});
+  G.vs.forEach(s=>{if(!tr.steps[s]?.off||!G.col[s])return;const x=G.col[s].x0,ends=MmRoll.before(tr.steps,S.len,s)!=null;g.fillStyle=ends?inkA(.25):ink;g.fillRect(x,0,ends?1:2,H);if(G.big){rollOffLamp(g,x,G.col[s].x1-x);if(!ends){g.fillStyle=ink;g.font="8px Silkscreen, monospace";g.fillText("OFF",x+3,19)}}});
   if(G.big&&S.rollBox&&S.rollBox.t===t){const b=S.rollBox,a0=Math.max(b.s0,G.a),a1=Math.min(b.s1,G.b-1),c0=G.col[a0],c1=G.col[a1];if(c0&&c1&&a1>=a0){const y0=G.y(Math.min(G.hi,b.n1)),y1=G.y(Math.max(G.lo,b.n0))+G.rh;g.save();g.fillStyle=inkA(.08);g.fillRect(c0.x0,y0,c1.x1-c0.x0,y1-y0);g.strokeStyle=ink;g.lineWidth=1.5;g.setLineDash([4,3]);g.strokeRect(c0.x0+.5,y0+.5,c1.x1-c0.x0-1,y1-y0-1);g.restore()}}
   
   g.globalAlpha=1}};
@@ -169,7 +167,7 @@ let rollDrag=null;
 const endZone=(x0,x1)=>Math.min(8,(x1-x0)/3);
 function laneHit(c,e){const G=laneGeom(c),r=c.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;let s=null;for(const k of G.vs){const q=G.col[k];if(q&&x>=q.x0-1.5&&x<=q.x1+1.5){s=k;break}}if(s==null)return null;
  const n=G.lo+G.rows-1-Math.floor((y-G.top)/G.rh),t=G.t;
- for(const sp of noteSpans(t)){const rr=spanX(G,sp);if(rr)for(let k=0;k<sp.n.length;k++){if(sp.n[k]!==n)continue;const c0=G.col[sp.s];const x1=k===0||isMidiT(t)?rr[1]:(c0?c0.x1:-1),x0=k===0||isMidiT(t)?rr[0]:(c0?c0.x0:-1);if(x>=x0&&x<=x1)return{s:sp.s,n,k,edge:k===0&&!sp.clipR&&x>x1-endZone(x0,x1),cell:s}}
+ for(const sp of noteSpans(t)){const rr=spanX(G,sp);if(rr)for(let k=0;k<sp.n.length;k++){if(sp.n[k]!==n)continue;const c0=G.col[sp.s];const whole=(k===0||isMidiT(t))&&sp.kind!=="trigless",x1=whole?rr[1]:(c0?c0.x1:-1),x0=whole?rr[0]:(c0?c0.x0:-1);if(x>=x0&&x<=x1)return{s:sp.s,n,k:sp.kind==="trigless"?0:k,edge:whole&&k===0&&!sp.clipR&&x>x1-endZone(x0,x1),cell:s}}
   /* the part of a gate past the pattern's end, at its start: its end sets the length */
   const wr=sp.wrap&&sp.n[0]===n?spanX(G,{s:0,e:sp.wrap}):null;if(wr&&x>=wr[0]&&x<=wr[1]&&x>wr[1]-endZone(wr[0],wr[1]))return{s:sp.s,n,k:0,edge:true,wrap:true,cell:s}}
  return{s,n,k:-1,cell:s}}
@@ -294,27 +292,30 @@ function rollUp(){const d=rollDrag;rollDrag=null;if(d?.mode==="key"){if(d.n!=nul
  if(d.touched)editSpan(t,d.touched,d.lock);else editStep(t,d.s);
  rerenderSeq()}
 
-/* ===== The trig types (wave 3, DESIGN-machine-menus.md §2, Sequence MM; mockup-next mm-12): Note · Slide · Swing in the row
-   under the roll, where the SLIDE and SWING rows were. The lit key (S.tt) is what a click paints: Note, the roll as ever;
-   Slide or Swing, the whole step column under the pointer, for the selected track (the MM keeps both per track: no EDIT
-   ALL). The marks sit along the foot of the roll: slide a triangle at the left of the step, swing a teal slant at its
-   right. Esc back to Note. ===== */
-const TT_ROW=[["note","Note"],["sld","Slide"],["swg","Swing"]];
-function ttSet(tr,k){return k==="sld"?tr.slide:tr.swing}
-function rollMarks(t){const tr=trk(t);return`<div class="rollmarks mrowg" aria-hidden="true" style="grid-template-columns:${cols()}"><span></span>${steps().map(s=>`<span class="rm${tr.slide.has(s)?" sld":""}${tr.swing.has(s)?" swg":""}" data-rm="${s}"><i class="m1"></i><i class="m2"></i></span>`).join("")}</div>`}
-function trigTypeRow(t){const tt=S.tt||"note";
- return`<div class="ttrow ttunder"><span class="ttkeys" role="radiogroup" aria-label="What a click on the roll paints">${TT_ROW.map(([id,n])=>`<button class="ttk ${id}" role="radio" data-tt="${id}" aria-checked="${tt===id}" title="${id==="note"?"A click on the roll writes notes (Esc comes back here)":`A click on a step's column paints ${n.toLowerCase()} for ${tLabel(t)}; a drag paints every column it crosses (one undo step)`}"><i class="led"></i><span>${n}</span><em class="ttm"></em></button>`).join("")}</span><span class="note">${tt==="note"?"Slide and swing are the marks along the foot of the roll":"Click a step's column to paint "+(tt==="sld"?"slide":"swing")+" · Esc: Note"}</span></div>`}
-function setTrigType(k){S.tt=k;document.documentElement.dataset.tt=k;rerenderSeq()}
-/* the step under x: the foot marks' columns */
-function ttStepAt(x){for(const c of $$("#seq .rollmarks [data-rm]")){const r=c.getBoundingClientRect();if(x>=r.left-1.5&&x<=r.right+1.5)return+c.dataset.rm}return null}
-let ttPaint=null;
-function ttAt(x){if(!ttPaint)return;const s=ttStepAt(x);if(s==null||ttPaint.done.has(s))return;ttPaint.done.add(s);const tr=trk(S.sel),set=ttSet(tr,ttPaint.k);
- if(ttPaint.on==null)ttPaint.on=!set.has(s);if(set.has(s)===ttPaint.on)return;ttPaint.on?set.add(s):set.delete(s);edit(ttPaint.k==="sld"?"slide":"swingStep",{t:S.sel,s,on:ttPaint.on});
- const c=$(`#seq .rollmarks [data-rm="${s}"]`);if(c)c.classList.toggle(ttPaint.k,ttPaint.on);ttPaint.moved=true}
-function ttHover(x){$$("#seq .rollmarks .hov").forEach(c=>c.classList.remove("hov"));if(x==null||!S.tt||S.tt==="note")return;const s=ttStepAt(x);if(s!=null)$(`#seq .rollmarks [data-rm="${s}"]`)?.classList.add("hov")}
-addEventListener("pointerdown",e=>{if(!S.tt||S.tt==="note"||S.ws!=="seq"||e.button!==0||!e.target.closest?.("#seq .nlane.big"))return;e.preventDefault();e.stopImmediatePropagation();ttPaint={k:S.tt,on:null,done:new Set()};ttAt(e.clientX)},true);
-addEventListener("pointermove",e=>{if(ttPaint){if(e.buttons===0&&e.pointerType==="mouse"){ttEnd();return}ttAt(e.clientX);return}ttHover(e.target.closest?.("#seq .nlane.big")?e.clientX:null)},true);
-function ttEnd(){if(!ttPaint)return;const p=ttPaint;ttPaint=null;commit();if(p.moved)rerenderSeq()}
-addEventListener("pointerup",ttEnd,true);addEventListener("pointercancel",ttEnd,true);
-document.addEventListener("click",e=>{const k=e.target.closest(".ttrow [data-tt]");if(k)setTrigType(k.dataset.tt)});
-Keys.bind({id:"trig-type",short:"Note",scope:"seq",keys:["Escape"],group:"Sequence",does:"Back to Note after Slide or Swing: a click on the roll writes notes again",when:()=>S.ws==="seq"&&!!S.tt&&S.tt!=="note"&&!stepOn(),run:()=>setTrigType("note")});
+/* ===== A trig's marks in the roll (2026-10-12, Radek: "needs to be simple to use"; temp/review-1/foot-design): no trig
+   type row, no A F L row, no foot marks. What a trig has besides its note is a small quiet mark on the note, shown only
+   where it does something, and set in the step menu (77-select.js):
+   - the envelopes it fires (the manual's trig tracks AMP, FILTER, LFO), only when not all three: three small ticks in
+     A F L order inside the bar's start, lit for the ones it fires (the letters where the bar has room)
+   - a trigless trig (no envelope: locks only): a small hollow square in its step
+   - over the note's top: a lock (a dot), a slide (a small ramp, only on a step with a lock: a slide glides a locked value
+     to its next lock, without a lock it does nothing), swing (a teal slant, only on a step with a trig: swing delays trigs)
+   - a NOTE OFF: the machine's yellow TRIG LED as a small lamp at the top of its step (OFF where it ends no note). ===== */
+const ENV3=[["a","A"],["f","F"],["l","L"]];
+function rollEnvMarks(g,x0,x1,y,h,st){const on=ENV3.filter(([k])=>st[k]),lcd=cssv("--lcd");g.save();g.font="8px Silkscreen, monospace";
+ const word=on.map(([,L])=>L).join(""),tw=g.measureText(word).width;
+ if(x1-x0>=tw+12){g.fillStyle=lcd;g.fillText(word,x0+3,y+h/2+3)}
+ else{const tk=2,gap=1,hh=Math.max(4,Math.min(8,h-6)),yy=y+(h-hh)/2;ENV3.forEach(([k],i)=>{g.globalAlpha=st[k]?1:.35;g.fillStyle=lcd;g.fillRect(x0+2+i*(tk+gap),st[k]?yy:yy+hh-2,tk,st[k]?hh:2)})}
+ g.restore()}
+/* the marks over a trig's note: a lock dot, a slide ramp, a swing slant, left to right from its start */
+function rollTopMarks(g,G,t,s,x0,cw,yTop){const tr=trk(t),lk=stepLocked(t,s),sl=lk&&tr.slide.has(s),sw=tr.swing.has(s);if(!lk&&!sw)return;
+ const ink=cssv("--ink"),y1=Math.max(1,yTop-1),y0=y1-5;let x=x0+1;g.save();
+ if(lk){g.fillStyle=ink;g.beginPath();g.arc(x+2.5,y0+2.5,2.2,0,7);g.fill();x+=6}
+ if(sl){g.fillStyle=ink;g.beginPath();g.moveTo(x,y1);g.lineTo(x+6,y0);g.lineTo(x+6,y1);g.closePath();g.fill();x+=7}
+ if(sw&&x+4<=x0+cw+2){g.strokeStyle=cssv("--swg")||"#15a39a";g.lineWidth=2;g.beginPath();g.moveTo(x+.5,y0);g.lineTo(x+4,y1);g.stroke()}
+ g.restore()}
+/* a trigless trig: a small hollow square in its step, at its pitch (inside the rows shown) */
+function rollTriglessBox(g,G,c0,n,ink){const cw=c0.x1-c0.x0,sz=Math.max(5,Math.min(10,cw-4,G.rh-4)),nn=Math.max(G.lo,Math.min(G.hi,n)),y=G.y(nn)+(G.rh-sz)/2,x=c0.x0+(cw-sz)/2;
+ g.strokeStyle=ink;g.lineWidth=1.5;g.strokeRect(x+.75,y+.75,sz-1.5,sz-1.5);return{x,y,sz}}
+/* the NOTE OFF lamp: the machine's yellow TRIG LED */
+function rollOffLamp(g,x,cw){const sz=Math.max(4,Math.min(7,cw-4));g.save();g.fillStyle=cssv("--ledy")||"#e4c45c";g.strokeStyle=cssv("--ink");g.lineWidth=1;g.fillRect(x+2,2,sz,sz);g.strokeRect(x+2.5,2.5,sz-1,sz-1);g.restore()}

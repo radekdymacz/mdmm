@@ -97,15 +97,34 @@ function selTrigs(){const x=selShown();if(!x)return false;let on=false;
  for(let t=x.t;t<x.t+x.n;t++)for(let s=x.from;s<x.to;s++)if(!trk(t).steps[s])on=true;
  selSteps(x,(t,tr)=>{for(let s=x.from;s<x.to;s++){const st=tr.steps[s];if(on){if(!st)tr.steps[s]=note(lastNote(t,s))}else if(st&&!st.off){tr.steps[s]=null;tr.slide.delete(s);clearStepLocks(t,s)}}});
  return true}
-/* the step menu's marks: NOTE OFF on every selected step (off again when each is one), the envelope trigs off
-   (trigless) or on for every selected note, a slide on every selected step with a note (off when each has one) */
+/* the step menu's marks (since 2026-10-12 the only place they are set; the roll shows them on the notes, 70-seq.js):
+   NOTE OFF on every selected step (off again when each is one); a trigless trig on every selected step (an empty step
+   gets one at the track's last pitch, a note loses its envelope trigs) or, when each is one, they go (with their locks);
+   an envelope (AMP, FILTER, LFO: the trig tracks) on for every selected trig, off when each has it; a slide or swing on
+   every selected step, off when each has it (the machine keeps both per step, trig or not: they do something on a trig) */
 function selMark(kind){const x=selShown();if(!x)return false;const cells=[];
  for(let t=x.t;t<x.t+x.n;t++)for(let s=x.from;s<x.to;s++)cells.push([t,s,trk(t).steps[s]]);
  if(kind==="noteoff"){const on=cells.some(([,,st])=>!st?.off);selSteps(x,(t,tr)=>{for(let s=x.from;s<x.to;s++){tr.steps[s]=on?{off:1}:tr.steps[s]?.off?null:tr.steps[s];if(on){tr.slide.delete(s);clearStepLocks(t,s)}}});return true}
- const notes=cells.filter(([t,,st])=>st&&!st.off&&(kind!=="trigless"||!isMidiT(t)));
- if(!notes.length){toast(kind==="slide"?"No note to slide there: a slide needs a note.":"No synth note there: trigless is a synth track's note without its envelopes.");return true}
- if(kind==="trigless"){const on=notes.some(([,,st])=>stepKind(st)!=="trigless");selSteps(x,(t,tr)=>{for(const[nt,s,st] of notes)if(nt===t)Object.assign(st,on?{a:0,f:0,l:0}:{a:1,f:1,l:1})});return true}
- const on=notes.some(([t,s])=>!trk(t).slide.has(s));for(const[t,s] of notes)if(trk(t).slide.has(s)!==on){on?trk(t).slide.add(s):trk(t).slide.delete(s);edit("slide",{t,s,on})}rerenderSeq();return true}
+ if(kind==="trigless"){const syn=cells.filter(([t])=>!isMidiT(t));if(!syn.length){toast("A MIDI track has no trigless trigs (no envelopes).");return true}
+  const on=syn.some(([,,st])=>stepKind(st)!=="trigless");
+  selSteps(x,(t,tr)=>{if(isMidiT(t))return;for(let s=x.from;s<x.to;s++){const st=tr.steps[s];
+   if(on){if(!st||st.off)tr.steps[s]={n:[lastNote(t,s)],a:0,f:0,l:0};else Object.assign(st,{a:0,f:0,l:0})}
+   else if(stepKind(st)==="trigless"){tr.steps[s]=null;tr.slide.delete(s);clearStepLocks(t,s)}}});return true}
+ if(kind==="a"||kind==="f"||kind==="l"){const trigs=cells.filter(([t,,st])=>st&&!st.off&&!isMidiT(t));
+  if(!trigs.length){toast("No synth trig there: the envelopes are a synth trig's.");return true}
+  const on=trigs.some(([,,st])=>!st[kind]);selSteps(x,(t,tr)=>{for(const[nt,,st] of trigs)if(nt===t)st[kind]=on?1:0});return true}
+ if(kind==="slide"||kind==="swing"){const set=t=>kind==="slide"?trk(t).slide:trk(t).swing,on=cells.some(([t,s])=>!set(t).has(s));
+  for(const[t,s] of cells)if(set(t).has(s)!==on){on?set(t).add(s):set(t).delete(s);edit(kind==="slide"?"slide":"swingStep",{t,s,on})}
+  commit();rerenderSeq();return true}
+ return false}
+/* what the step menu ticks: true when every selected step (of those it applies to) has the mark */
+function selHas(kind){const x=selShown();if(!x)return false;const c=[];for(let t=x.t;t<x.t+x.n;t++)for(let s=x.from;s<x.to;s++)c.push([t,s,trk(t).steps[s]]);
+ if(kind==="noteoff")return c.every(([,,st])=>st?.off);
+ if(kind==="trigless"){const y=c.filter(([t])=>!isMidiT(t));return y.length>0&&y.every(([,,st])=>stepKind(st)==="trigless")}
+ if(kind==="slide")return c.every(([t,s])=>trk(t).slide.has(s));
+ if(kind==="swing")return c.every(([t,s])=>trk(t).swing.has(s));
+ const y=c.filter(([t,,st])=>st&&!st.off&&!isMidiT(t));return y.length>0&&y.every(([,,st])=>!!st[kind])}
+const selHasTrig=()=>{const x=selShown();if(!x)return false;for(let t=x.t;t<x.t+x.n;t++)for(let s=x.from;s<x.to;s++){const st=trk(t).steps[s];if(st&&!st.off&&!isMidiT(t))return true}return false};
 /* the step menu's chord note: the pitch right-clicked in the roll joins the step's notes */
 function selChord(t,s,pitch){const st=trk(t).steps[s];if(!st?.n||st.n.includes(pitch))return;st.n.push(pitch);editStep(t,s);rerenderSeq()}
 
@@ -143,15 +162,19 @@ function selMove(dt,ds){const x=S.stepSel;if(!x)return;const base=x.t<6?0:6,y=St
  setSel(y);if(x.n===1&&y.t!==S.sel)select(y.t);selToPage()}
 function selGrow(ds){const x=S.stepSel;if(!x)return;setSel(StepSel.grown(x,ds,S.len))}
 
-/* ===== the step menu (right-click a step in the roll or a trig row; Ctrl-click on a Mac): every step and selection
-   action with its key, the fill's home. On a selected step it acts on the selection, on another it selects that
-   step first. The Monomachine's marks: trig, NOTE OFF, trigless, slide, and in the roll a chord note at the pitch. ===== */
+/* ===== the step menu (right-click a step in the roll; Ctrl-click on a Mac; the ⋯ key; the Menu key): every step and
+   selection action with its key, the fill's home. On a selected step it acts on the selection, on another it selects
+   that step first. The Monomachine's marks, ticked when every selected step has them: note on / off, NOTE OFF, a
+   trigless trig, the envelopes a trig fires (AMP, FILTER, LFO), slide, swing, and in the roll a chord note at the
+   pitch; Clear locks after Clear. ===== */
 const keyOf=id=>StepSel.keyOf(Keys,id);
 function stepMenuItems(t,s,pitch){const x=S.stepSel,st=trk(t).steps[s],one=StepSel.one(x),midi=isMidiT(t);
  const marks=[{id:"sel-trigs",label:one?(st&&!st.off?"Note off":"Note on"):"Notes on / off",key:keyOf("sel-trigs"),run:()=>selTrigs()},
-  {id:"step-note-off",label:"NOTE OFF",key:"",run:()=>selMark("noteoff")},
-  ...(midi?[]:[{id:"step-trigless",label:"Trigless (no envelope trigs)",key:"",run:()=>selMark("trigless")}]),
-  {id:"step-slide",label:"Slide",key:"",run:()=>selMark("slide")},
+  {id:"step-note-off",label:"NOTE OFF",key:"",checked:selHas("noteoff"),run:()=>selMark("noteoff")},
+  ...(midi?[]:[{id:"step-trigless",label:"Trigless trig (locks only)",key:"",checked:selHas("trigless"),run:()=>selMark("trigless")},
+   {id:"step-env",label:"Envelopes",items:[["a","Amp"],["f","Filter"],["l","LFO"]].map(([k,n])=>({id:"step-env-"+k,label:n,key:"",checked:selHas(k),enabled:selHasTrig(),run:()=>selMark(k)}))}]),
+  {id:"step-slide",label:"Slide",key:"",checked:selHas("slide"),run:()=>selMark("slide")},
+  {id:"step-swing",label:"Swing",key:"",checked:selHas("swing"),run:()=>selMark("swing")},
   ...(one&&pitch!=null&&st?.n&&!st.n.includes(pitch)?[{id:"step-chord",label:`Chord note ${noteName(pitch)}`,key:keyOf("roll-chord"),run:()=>selChord(t,s,pitch)}]:[])];
  const items=StepSel.menuItems({marks,copy:()=>selCopy(),cut:()=>selCut(),paste:()=>selPaste(),canPaste:!!clipSize(),duplicate:()=>selDuplicate(),clear:()=>selClear(),
   fill:n=>fillEvery(t,s,n,pitch??lastNote(t,s)),key:keyOf});
@@ -176,4 +199,4 @@ StepSel.bind(Keys,{seqKeys:()=>seqKeys(),has:()=>!!S.stepSel,selKeys,cut:selCut,
   "step-select":"Click (roll or trig rows): select the step (⌘V pastes there). Drag: select steps. Drag the selection: a copy where you let go",
   "step-extend":"Click: extend the selection to the step (on another track's roll: the tracks between too)",
   "ruler-select":"Click or drag: select steps of the selected track; ⇧-click extends",
-  "step-menu":"The step menu: note on / off, NOTE OFF, trigless, slide, a chord note (roll), copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (Ctrl-click on a Mac)"}});
+  "step-menu":"The step menu: note on / off, NOTE OFF, a trigless trig, the envelopes a trig fires (Amp, Filter, LFO), slide, swing, a chord note (roll), copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (Ctrl-click on a Mac)"}});

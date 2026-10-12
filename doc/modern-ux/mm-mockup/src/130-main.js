@@ -1,7 +1,7 @@
 
 /* ===== Undo / redo: the host's, one step per gesture (the plug-in's core; on its own the demo host's snapshots,
    54-demo.js). A gesture ends on the events below, unless a drag, a hold or a GEN run or MUTATE trial holds it. ===== */
-function commit(){if(laneDraw||rollDrag||selDrag||drag||active||arpDrag||paint||ttPaint||rotHold)return;genStale();if(genHeld())return;if(HOST.commit)HOST.commit()}
+function commit(){if(laneDraw||rollDrag||selDrag||drag||active||arpDrag||rotHold)return;genStale();if(genHeld())return;if(HOST.commit)HOST.commit()}
 function undo(){genEnd();if(HOST.undo)HOST.undo()}
 function redo(){genEnd();if(HOST.redo)HOST.redo()}
 ["pointerup","keyup","click","change"].forEach(ev=>document.addEventListener(ev,()=>setTimeout(commit,0)));
@@ -98,21 +98,10 @@ document.addEventListener("pointermove",e=>{if(!msPaint)return;if(e.buttons===0&
 function endMsPaint(){if(!msPaint)return;msPaint=null;setTimeout(()=>{msClickEaten=false},0)}
 document.addEventListener("pointerup",endMsPaint);document.addEventListener("pointercancel",endMsPaint);addEventListener("blur",endMsPaint);
 addEventListener("click",e=>{if(!msClickEaten)return;msClickEaten=false;e.stopImmediatePropagation();e.preventDefault()},true);
-/* P7: a drag across the envelope steps paints them: the first step decides on or off,
-   and the drag is one edit (one undo step). A click is a one-step paint. */
-let paint=null;
-function paintAt(el){if(!paint||!el)return;const s=+el.dataset.s,k=el.dataset.env,key=k+":"+s;if(k!==paint.k||paint.done.has(key))return;paint.done.add(key);
- const tr=trk(S.sel);
- const st=tr.steps[s];if(!st||st.off||!!st[k]===paint.on)return;st[k]=paint.on?1:0;if(!st.n&&!st.a&&!st.f&&!st.l){tr.steps[s]=null;clearStepLocks(S.sel,s)}editStep(S.sel,s);
- el.classList.toggle("on",paint.on);el.setAttribute("aria-pressed",paint.on);paint.moved=true}
-function endPaint(){if(!paint)return;const p=paint;paint=null;if(p.moved)rerenderSeq()}
-document.addEventListener("pointerup",endPaint);document.addEventListener("pointercancel",endPaint);addEventListener("blur",endPaint);
 /* ===== Pointer input in the workspace ===== */
 let drag=null,joyDrag=null,splitDrag=null,arpDrag=null;
 const main=$("#main");
 main.addEventListener("pointerdown",e=>{
- const pc=e.button===0&&!e.shiftKey&&!e.altKey&&!e.metaKey&&!e.ctrlKey&&!S.learn&&e.target.closest(".tlane [data-env]");
- if(pc){const s=+pc.dataset.s,tr=trk(S.sel),k=pc.dataset.env;const on=!tr.steps[s]?.[k];paint={k,on,done:new Set()};try{main.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();paintAt(pc);return}
  if(S.learn){const el=e.target.closest(".pc[data-g]");if(el&&(PAGES.includes(el.dataset.g)||el.dataset.g==="MID")){e.preventDefault();e.stopPropagation();const t=el.dataset.t!=null?+el.dataset.t:S.sel;S.learnT={t,pid:el.dataset.g+"."+el.dataset.n};toast(`Target: ${tLabel(t)} ${pidLabel(t,S.learnT.pid)}. Now press 1-8 for a knob.`);if(HOST.learnTarget)HOST.learnTarget({...S.learnT});return}}
  const h=e.target.closest(".lfohandle");if(h){cordStart(e,h);return}
  const pk=e.button===0&&e.target.closest('canvas[data-ed="dktrn"]');if(pk){trnDown(pk,e);e.preventDefault();return}
@@ -126,7 +115,6 @@ main.addEventListener("pointerdown",e=>{
  if(e.target.closest("#splitm")){splitDrag=true;$("#splitm").setPointerCapture(e.pointerId);e.preventDefault();return}
  const key=e.target.closest(".kb [data-key]");if(key){kbDown=true;$("#kb").setPointerCapture(e.pointerId);playKey(+key.dataset.key);e.preventDefault()}});
 main.addEventListener("pointermove",e=>{
- if(paint){if(e.buttons===0&&e.pointerType==="mouse"){endPaint();return}paintAt(document.elementFromPoint(e.clientX,e.clientY)?.closest(".tlane [data-env]"));return}
  if(e.buttons===0&&e.pointerType==="mouse"&&dragging()){endDrag(e);return}
  if(cord){cordMove(e);return}
  const roll=e.target.closest?.("canvas.roll")||(rollDrag&&$("#roll"));if(roll&&(rollDrag||e.target===roll)){rollMove(roll,e);if(rollDrag)return}
@@ -187,7 +175,6 @@ document.addEventListener("click",e=>{
  const mu=e.target.closest("[data-mute]"),so=e.target.closest("[data-solo]");
  if(mu||so){const i=+(mu||so).dataset[mu?"mute":"solo"],t=trk(i);if(mu&&e.shiftKey){ARMED.has(i)?ARMED.delete(i):ARMED.set(i,!t.mute);showArmed();return}if(mu)t.mute=!t.mute;else t.solo=!t.solo;tx();if(HOST.mutes)HOST.mutes();render();return}
  const gm=e.target.closest("[data-gmute]");if(gm){const t=trk(+gm.dataset.gmute);t.mute=!t.mute;tx();if(HOST.mutes)HOST.mutes();render();return}
- const ev=e.target.closest("[data-env]");if(ev){if(e.detail>0)return;clickEnv(ev.dataset.env,+ev.dataset.s);return}	/* a mouse click was the paint gesture's */
  const sd=e.target.closest("[data-side]");if(sd){setSide(sd.dataset.side);return}
  const dk=e.target.closest("[data-dock]");if(dk){S.dock=dk.dataset.dock;rerenderSeq();return}
  const sdk=e.target.closest("[data-snddock]");if(sdk){S.dock=sdk.dataset.snddock;goWs("seq");return}
@@ -516,7 +503,7 @@ function show(v,all){
  if(busyNow()){showLater=true;return}
  showLater=false;render();drawLib()}
 /* busy: a gesture, or a menu open (a render would close it under the person: the drawing waits for it, as for a drag) */
-const busyNow=()=>{try{return !!(S.genEnding||drag||laneDraw||rollDrag||selDrag||active||arpDrag||l2drag||joyDrag||splitDrag||cord||kbDown||paint)||menuOpen()}catch(_){return false}};
+const busyNow=()=>{try{return !!(S.genEnding||drag||laneDraw||rollDrag||selDrag||active||arpDrag||l2drag||joyDrag||splitDrag||cord||kbDown)||menuOpen()}catch(_){return false}};
 /* RECORD as the machine is in it: "off" | "grid" | "live" | "step" (wave 7: STEP RECORDING, at = the step the next note
    writes, -1 unknown) */
 function setRecord(mode,at=-1){const on=mode==="grid"||mode==="live",was=S.recMode;S.recMode=mode;S.stepAt=mode==="step"?at:-1;if(mode!=="step")S.stepT=null;if(mode!=="live")eraseUp();

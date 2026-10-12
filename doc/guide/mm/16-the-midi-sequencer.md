@@ -35,7 +35,7 @@ NOTE: The LFOs of a MIDI track are shared with the synth track of the same numbe
 ## COMPARISON
 <!-- rows: MM-248 MM-249 MM-250 @d1c478 -->
 
-A MIDI track has no trig tracks, so its row under the roll shows the velocity in place of the envelope dots. It has an arpeggiator without envelope switches, swing, slide and transpose, in the same tabs as a synth track.
+A MIDI track has no trig tracks, so its row under the roll shows the velocity. The step menu has no envelopes or trigless trig for it. It has an arpeggiator without envelope switches, swing, slide and transpose, in the same tabs as a synth track.
 
 The MIDI page is stored in the kit, so edits of it are kit edits.
 
