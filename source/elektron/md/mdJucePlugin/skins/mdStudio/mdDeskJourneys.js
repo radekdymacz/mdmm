@@ -582,6 +582,25 @@ const MdJourneys = (() => {
 		]
 	};
 
+	/* 0.6: GLOBAL has no backdrop; a press outside it closes it and reaches nothing below (a step of the grid: no trig) */
+	const globalClickOut = {
+		name: "md-global-click-out", proves: [],
+		steps: [
+			go("seq"), sel(() => soundTrack()),
+			{ say: "open GLOBAL, then press an empty step of the grid (its press, release and click)", act: async (u, c) => {
+				c.s = [...Array(V.len).keys()].find(s => !trigsOf(c.t).includes(s)); if (c.s == null) throw new Error("no empty step");
+				c.p0 = trigsOf(c.t).join(","); c.u0 = V.undoCount;
+				u.click("#globkey"); await sleep(300);
+				const e = $1(cell(c.t, c.s)), r = e.getBoundingClientRect();
+				const pressOn = (e, x, y) => { for (const [k, T] of [["pointerdown", PointerEvent], ["mousedown", MouseEvent], ["pointerup", PointerEvent], ["mouseup", MouseEvent], ["click", MouseEvent]])
+			e.dispatchEvent(new T(k, { bubbles: true, cancelable: true, composed: true, clientX: x, clientY: y, button: 0, buttons: k.endsWith("down") ? 1 : 0 })); };
+				pressOn(e, r.left + r.width / 2, r.top + r.height / 2); await sleep(300);
+			}, screen: c => ok($1("#globpop").hidden && !pressed("#globkey") && !pressed(cell(c.t, c.s)), "page " + ($1("#globpop").hidden ? "closed" : "open") + ", step " + (pressed(cell(c.t, c.s)) ? "lit" : "dark")),
+				machine: c => ok(trigsOf(c.t).join(",") === c.p0 && V.undoCount === c.u0, `pattern ${trigsOf(c.t).join(",")} (was ${c.p0}), undo steps ${c.u0} -> ${V.undoCount}`) }
+		],
+		async tidy(u) { if (!$1("#globpop").hidden) u.key("Escape"); }
+	};
+
 	/* ---------- Mix ---------- */
 	const mixSolo = {
 		name: "md-mix-mute-solo", proves: ["MD-122"],
@@ -834,14 +853,14 @@ const MdJourneys = (() => {
 			esc
 		]
 	};
-	/* B-051, F3: GLOBAL › Reset to defaults (the shared panel): asked first, then the factory global read back */
+	/* B-051, F3: GLOBAL › Clear (the shared page): asked first, then the factory global read back */
 	const globalReset = {
 		name: "md-global-reset", proves: ["MD-164", "MD-187"],
 		steps: [
 			{ say: "open GLOBAL, click TEMPO OUT ON and base channel +", act: async u => { await u.pick("engsel", "global"); await sleep(300); u.click(tog("tempoOut", true)); await sleep(300); u.click('#globpop [data-ga="base"][data-d="1"]'); },
 				machine: () => ok(Docs.global?.control?.tempoOut === true && Docs.global.baseChannel !== 0, "tempoOut " + Docs.global?.control?.tempoOut + ", base " + Docs.global?.baseChannel), within: 10000 },
-			{ say: "click Reset to defaults: it asks", act: u => u.click('#globpop [data-ga="reset"]'), screen: () => ok(dlgShown() && /Reset GLOBAL \d to the factory settings/.test($1("#dlg").textContent), "no question") },
-			{ say: "click Reset: the factory global, read back, on the page", act: u => u.click(dlgButton("Reset")),
+			{ say: "click Clear: it asks", act: u => u.click('#globpop [data-ga="reset"]'), screen: () => ok(dlgShown() && /Clear GLOBAL \d\? .* factory settings/.test($1("#dlg").textContent), "no question") },
+			{ say: "click Clear in the question: the factory global, read back, on the page", act: u => u.click(dlgButton("Clear")),
 				machine: () => ok(Docs.global?.control?.tempoOut === false && Docs.global.baseChannel === 0, "tempoOut " + Docs.global?.control?.tempoOut + ", base " + Docs.global?.baseChannel),
 				screen: () => ok(pressed(tog("tempoOut", false)), "TEMPO OUT not OFF"), within: 10000 },
 			esc
@@ -877,6 +896,67 @@ const MdJourneys = (() => {
 			if (c.stopAt >= 0 && Docs.global.keymap[c.stopAt] !== 145) { GP.note = c.stopAt; drawGlobal(); await sleep(100); await u.pick("gmapsel", "145"); await sleep(1500); }
 			GP.note = 64; u.key("Escape"); await sleep(200);
 		}
+	};
+	/* 0.6 (DESIGN-machine-menus.md §2, md-08): GLOBAL is a page under the header, as wide as it; the header stays and a
+	   click on a workspace tab goes back to that workspace */
+	const globalPage = {
+		name: "md-global-page", proves: ["MD-162"],
+		steps: [
+			{ say: "click GLOBAL: the page under the header, as wide, the head on one line", act: u => u.click("#globkey"),
+				screen: () => { const p = $1("#globpop").getBoundingClientRect(), h = $1("header.top").getBoundingClientRect(), hd = $1("#globpop .gphead").getBoundingClientRect();
+					return ok(!$1("#globpop").hidden && p.top >= h.bottom - 1 && Math.abs(p.width - h.width) < 2 && hd.height < 48 && $all("#globpop .gslots button").length === 8 && !!$1('#globpop [data-ga="copy"]') && !!$1('#globpop [data-ga="paste"]') && !!$1('#globpop [data-ga="reset"]'),
+						`page ${Math.round(p.top)}/${Math.round(h.bottom)} ${Math.round(p.width)}/${Math.round(h.width)}, head ${Math.round(hd.height)} px`); } },
+			{ say: "click the Sound tab: the page goes, Sound shows", act: u => u.click(tab("sound")), screen: () => ok($1("#globpop").hidden && onTab("sound") === true && !pressed("#globkey"), "page " + ($1("#globpop").hidden ? "gone" : "still open")) },
+			{ say: "click GLOBAL, then GLOBAL again: back to Sound", act: async u => { u.click("#globkey"); await sleep(300); u.click("#globkey"); }, screen: () => ok($1("#globpop").hidden && onTab("sound") === true, "page " + ($1("#globpop").hidden ? "gone" : "still open")) }
+		],
+		async tidy(u) { if (!$1("#globpop").hidden) u.key("Escape"); u.click(tab("seq")); await sleep(200); }
+	};
+	/* 0.6: Copy and Paste of the active global (the core's library: globalCopy, globalPaste), asked before the paste,
+	   one undo step */
+	const globalCopyPaste = {
+		name: "md-global-copy-paste", proves: ["MD-162"],
+		steps: [
+			{ say: "open GLOBAL, click Copy: Paste is on", act: u => { u.click("#globkey"); setTimeout(() => u.click('#globpop [data-ga="copy"]'), 300); },
+				screen: () => ok(!$1('#globpop [data-ga="paste"]')?.disabled, "Paste off"), machine: c => { c.t0 = Docs.global?.control?.tempoOut; return ok(V.clipboard?.global != null, "clipboard " + JSON.stringify(V.clipboard?.global)); }, within: 6000 },
+			{ say: "click TEMPO OUT the other way", act: (u, c) => u.click(tog("tempoOut", !c.t0)), machine: c => ok(Docs.global.control.tempoOut === !c.t0, "tempoOut " + Docs.global.control.tempoOut), within: 6000 },
+			{ say: "click Paste: it asks", act: u => u.click('#globpop [data-ga="paste"]'), screen: () => ok(dlgShown() && /Paste over GLOBAL \d/.test($1("#dlg").textContent), "no question"), within: 6000 },
+			{ say: "click Paste in the question: the copied global is back", act: u => u.click(dlgButton("Paste")), machine: c => ok(Docs.global.control.tempoOut === c.t0, "tempoOut " + Docs.global.control.tempoOut),
+				screen: c => ok(pressed(tog("tempoOut", c.t0)), "TEMPO OUT not back"), within: 10000 },
+			{ ...undoKey, say: "press Cmd+Z: the paste is undone", machine: c => ok(Docs.global.control.tempoOut === !c.t0, "tempoOut " + Docs.global.control.tempoOut), within: 10000 }
+		],
+		async tidy(u, c) { if (dlgShown()) u.click(dlgButton("Cancel")); if (c.t0 != null && Docs.global?.control?.tempoOut !== c.t0) { if ($1("#globpop").hidden) { u.click("#globkey"); await sleep(300); } u.click(tog("tempoOut", c.t0)); await until(() => Docs.global?.control?.tempoOut === c.t0, 6000); } if (!$1("#globpop").hidden) u.key("Escape"); }
+	};
+	/* 0.6 (P3): TRIG IN A / B editable: each value a stepper, DEST runs -, 1 ... 16 as the machine's knob */
+	const tin = (p, i, d) => `#globpop [data-ga="trigin"][data-p="${p}"][data-i="${i}"][data-d="${d}"]`;
+	const globalTrigIn = {
+		name: "md-global-trig-in", proves: ["MD-175"],
+		steps: [
+			{ say: "open GLOBAL, click + under Gate for A", act: (u, c) => { c.in0 = Docs.global.settings.inputSettings.slice(); u.click("#globkey"); setTimeout(() => u.click(tin("gate", 0, 1)), 300); },
+				machine: c => ok(Docs.global.settings.inputSettings[2] === Math.min(127, c.in0[2] + 1), "GATE A " + Docs.global.settings.inputSettings[2]), within: 6000 },
+			{ say: "click + under Dest for B: from - to track 1", act: u => u.click(tin("dest", 1, 1)),
+				machine: c => ok(Docs.global.settings.inputSettings[1] === (c.in0[1] === 16 ? 0 : Math.min(15, c.in0[1] + 1)), "DEST B " + Docs.global.settings.inputSettings[1]),
+				screen: () => ok(/T\d+/.test($1(tin("dest", 1, 1))?.previousElementSibling?.textContent || ""), "Dest B shows " + $1(tin("dest", 1, 1))?.previousElementSibling?.textContent), within: 6000 },
+			{ ...undoKey, say: "press Cmd+Z twice: both back", act: async u => { u.key("z", { cmd: true }); await sleep(400); u.key("z", { cmd: true }); }, machine: c => ok(JSON.stringify(Docs.global.settings.inputSettings) === JSON.stringify(c.in0), "inputs " + Docs.global.settings.inputSettings), within: 10000 },
+			esc
+		],
+		async tidy(u) { if (!$1("#globpop").hidden) u.key("Escape"); }
+	};
+	/* 0.6 (MD-169): LEARN on the map editor: a dot on a track's key, then a note from a MIDI keyboard (the plug-in's midiIn;
+	   here given to the page as the plug-in would) maps to that track; Reset map brings Elektron's map back (asked) */
+	const globalLearn = {
+		name: "md-global-learn", proves: ["MD-169", "MD-289"],
+		steps: [
+			{ say: "open GLOBAL, click track 3's LEARN dot: lit, the head says to play a note", act: (u, c) => { c.k0 = Docs.global.keymap.slice(); u.click("#globkey"); setTimeout(() => u.click('#globpop [data-ga="learn"][data-t="2"]'), 300); },
+				screen: () => ok(pressed('#globpop [data-ga="learn"][data-t="2"]') && /LEARN: play a note for TRACK 3/.test($1("#globpop").textContent), "dot " + $1('#globpop [data-ga="learn"][data-t="2"]')?.getAttribute("aria-pressed")), within: 4000 },
+			{ say: "play E7 (100) on a MIDI keyboard: it plays track 3, the dot goes out", act: () => window.gm.recv([{ type: "midiIn", ch: 0, note: 100, vel: 100 }]),
+				machine: () => ok(Docs.global.keymap[100] === 2 && Docs.global.keymap.indexOf(2) === 100, "note 100 -> " + Docs.global.keymap[100]),
+				screen: () => ok(!pressed('#globpop [data-ga="learn"][data-t="2"]') && /E7/.test($all('#globpop .gmk')[2]?.textContent || ""), "track 3 key " + $all('#globpop .gmk')[2]?.textContent), within: 6000 },
+			{ say: "click Reset map: it asks", act: u => u.click('#globpop [data-ga="resetmap"]'), screen: () => ok(dlgShown() && /Elektron's note map/.test($1("#dlg").textContent), "no question") },
+			{ say: "click Reset map in the question: the factory map is back", act: u => u.click(dlgButton("Reset map")),
+				machine: c => ok(Docs.global.keymap[100] == null && Docs.global.keymap[40] === 2, "note 100 -> " + Docs.global.keymap[100] + ", 40 -> " + Docs.global.keymap[40]), within: 10000 },
+			esc
+		],
+		async tidy(u) { if (dlgShown()) u.click(dlgButton("Cancel")); if (!$1("#globpop").hidden) u.key("Escape"); }
 	};
 	const audioPanel = {
 		name: "md-audio-panel", proves: [],
@@ -1510,11 +1590,11 @@ const MdJourneys = (() => {
 	const all = [bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
 		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase,
 		genJourney("md-gen-mutate-undo", false, { proves: [] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: [] }), genKeys,
-		shapeSound, arrows, machinePick, soundCopy, editorDrag, controlAll, globalKey, songModeJ,
+		shapeSound, arrows, machinePick, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,
 		mixSolo, shiftMutes, allOff, fader, outKey, masterFx,
 		songArrange, songChain, songPlayhead, songSlots, songKeys, shotsSongSlots, samplerSlots, samplerSetup, audition,
 		libDialog, kitCopy, kitRename, kitClear, patGo, patClear, dialogEsc,
-		globalJ, globalRouting, globalMapNote, audioPanel, romCard, notePlay,
+		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, audioPanel, romCard, notePlay,
 		lockRamp, pasteMany, mutScope, songInspector, songDrag, ramView, setupChop, panBox, hwNoMachine, syxImportJ,
 		syxImportMute, globalReset, shotsGlobal, shotsSound, shots, shotsSong, shotsImport, editorMenuJ, shotsMenu, ...cpuJs, ...volJs,
 		dropSyxJ, dropSampleJ, ...viewJs];
@@ -2115,7 +2195,7 @@ const MdJourneys = (() => {
 		const back = await until(() => Docs.global?.baseChannel === 0 && Docs.global?.control?.tempoOut === false, 20000);
 		await until(idle, 10000);
 		await sleep(1000);
-		return `${slot} reset to the factory settings (GLOBAL › Reset to defaults): was ${was}, now ${say(Docs.global)}${back ? "" : " (not read back yet)"}`;
+		return `${slot} reset to the factory settings (GLOBAL › Clear): was ${was}, now ${say(Docs.global)}${back ? "" : " (not read back yet)"}`;
 	}
 	/* what the page last told the person: its toast and its error line */
 	const context = () => [...[["toast", $1("#toast")], ["error", $1("#errline")]].filter(([, e]) => e && !e.hidden && e.textContent.trim()).map(([k, e]) => `${k} "${e.textContent.trim().slice(0, 160)}"`),

@@ -37,7 +37,7 @@ list(APPEND SOURCES
 	mdEditorPages.cpp mdEditorPages.h
 	mdDeskHost.cpp mdDeskHost.h
 	mdStandaloneApp.cpp
-	mdBootDiagnostics.cpp mdBootDiagnostics.h mdCpuLoad.h mdOutputLevel.h
+	mdBootDiagnostics.cpp mdBootDiagnostics.h mdCpuLoad.h mdOutputLevel.h mdMidiIn.h
 	mdProcessArch.cpp mdProcessArch.h mdRosettaNotice.h
 	mdDeskSession.cpp mdDeskSession.h
 	mdMidiLearnCommands.cpp mdMidiLearnCommands.h
@@ -495,6 +495,12 @@ function(mdmm_plugin_targets)
 	add_test(NAME mdOutputLevelTest COMMAND mdOutputLevelTest)
 	set_tests_properties(mdOutputLevelTest PROPERTIES LABELS "UnitTest")
 	set_property(TARGET mdOutputLevelTest PROPERTY FOLDER "Elektron/test")
+
+	# 0.6 (GLOBAL › LEARN, I-002): the notes from outside for the page's midiIn message (mdMidiIn.h, pure)
+	add_executable(mdMidiInTest mdMidiInTest.cpp mdMidiIn.h)
+	add_test(NAME mdMidiInTest COMMAND mdMidiInTest)
+	set_tests_properties(mdMidiInTest PROPERTIES LABELS "UnitTest")
+	set_property(TARGET mdMidiInTest PROPERTY FOLDER "Elektron/test")
 
 	add_executable(mdProcessArchTest mdProcessArchTest.cpp mdProcessArch.cpp)
 	# the diagnostics builds' GEARMULATOR_MDMM_FAKE_ROSETTA
