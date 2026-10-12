@@ -14,7 +14,7 @@ namespace mmDesk
 	// function per command that has one.
 	const std::map<std::string, MmMachine::Handler>& MmMachine::askers()
 	{
-		static const std::map<std::string, Handler> map{{"loadKit", &MmMachine::askLoadKit}, {"saveKit", &MmMachine::askSaveKit},
+		static const std::map<std::string, Handler> map{{"loadKit", &MmMachine::askLoadKit}, {"saveKit", &MmMachine::askSaveKit}, {"loadUndoKit", &MmMachine::askLoadUndoKit},
 			{"select", &MmMachine::askSelect}, {"play", &MmMachine::askPlay}, {"saveSong", &MmMachine::askSaveSong},
 			{"pause", &MmMachine::askPause}, {"resume", &MmMachine::askPause}, {"playFrom", &MmMachine::askPlayFrom}};
 		return map;
@@ -52,6 +52,16 @@ namespace mmDesk
 		save.set("op", "saveKit");
 		o.ask->alternatives.push_back({"Save and load", {std::move(save)}});
 		return o;
+	}
+
+	// MM-102: the UNDO KIT drops the unsaved edits of the kit that plays (the machine keeps them nowhere; measured,
+	// gapProbesFirmwareTest w12undo)
+	Outcome MmMachine::askLoadUndoKit(const Value&, const Documents& _view)
+	{
+		if(kitState(_view) != deskCore::KitState::Edited)
+			return ok();
+		return ask("loadUndoKit", "<b>" + kitLabel(_view, m_curKit) + "</b> has unsaved changes. Load the UNDO KIT? The machine does not keep"
+			" these edits: they are lost.", "Load the UNDO KIT");
 	}
 
 	// A pattern that links another kit loads it: the unsaved edits of the kit that plays are lost.
@@ -163,7 +173,7 @@ namespace mmDesk
 	const std::map<std::string, MmMachine::Handler>& MmMachine::handlers()
 	{
 		static const std::map<std::string, Handler> map{
-			{"load", &MmMachine::cmdLoad}, {"select", &MmMachine::cmdSelect}, {"loadKit", &MmMachine::cmdLoadKit},
+			{"load", &MmMachine::cmdLoad}, {"select", &MmMachine::cmdSelect}, {"loadKit", &MmMachine::cmdLoadKit}, {"loadUndoKit", &MmMachine::cmdLoadUndoKit},
 			{"saveKit", &MmMachine::cmdSaveKit}, {"loadSong", &MmMachine::cmdLoadSong}, {"saveSong", &MmMachine::cmdSaveSong},
 			{"tempo", &MmMachine::cmdTempo}, {"play", &MmMachine::cmdPlay}, {"stop", &MmMachine::cmdStop},
 			{"mute", &MmMachine::cmdMute}, {"seqMode", &MmMachine::cmdSeqMode}, {"followHost", &MmMachine::cmdFollowHost}, {"muteMidi", &MmMachine::cmdMuteMidi},
@@ -240,6 +250,24 @@ namespace mmDesk
 		return kitAction(k, false);
 	}
 	Outcome MmMachine::cmdSaveKit(const Value& _m, const Documents&) { return kitAction(num(_m, "k", m_curKit), true); }
+
+	// MM-102: the UNDO KIT, the first entry of the machine's kit list, through the panel's keys (no SysEx reaches it;
+	// LOAD KIT 64-127 loads those slots). Measured (gapProbesFirmwareTest w12undo): the kit last lost to a LOAD KIT or an
+	// overwrite plays again, unsaved, its own slot current. The list opens on the current kit: k + 1 times UP. Memory
+	// then shows the kit number and the kit.
+	Outcome MmMachine::cmdLoadUndoKit(const Value&, const Documents&)
+	{
+		if(!m_port.pressKeys)
+			return refuse("The UNDO KIT has no MIDI message: on the machine, KIT > LOAD KIT, the first entry (00 UNDO KIT).");
+		if(m_curKit < 0)
+			return refuse("The kit that plays is not known yet");
+		std::vector<Key> keys{Key::Kit, Key::Enter};
+		keys.insert(keys.end(), static_cast<size_t>(m_curKit + 1), Key::Up);
+		keys.push_back(Key::Enter);
+		if(!pressKeys(keys))
+			return refuse("The machine is busy (SYSEX RECV): try again in a moment");
+		return ok("UNDO KIT loaded: the kit it came from is current again, unsaved. Save it to keep it");
+	}
 
 	Outcome MmMachine::kitAction(const int _k, const bool _save)
 	{

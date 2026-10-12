@@ -94,6 +94,7 @@ namespace
 		case K::KnobUp: case K::KnobDown: return std::nullopt;	// an encoder, not a key (pressKeys)
 		case K::StepRecord: return C::Record;	// with STOP held
 		case K::ExitDown: case K::ExitUp: return C::Exit;
+		case K::Kit: return C::Kit;
 		}
 		return std::nullopt;
 	}
@@ -632,6 +633,28 @@ namespace
 		const auto saved = r.desk->kit(static_cast<uint8_t>(from));
 		check(r.desk->currentKit() == to && kitWorking(r) == "clean", "Save and load: K" + std::to_string(to + 1) + " plays, clean");
 		check(saved && saved->tracks[0].pages[2][0] == v, "and the edit is in K" + std::to_string(from + 1) + " (read back from the slot)");
+		// MM-102: an edit of K<to>, LOAD KIT of another slot (the machine keeps the edit as its UNDO KIT), then loadUndoKit
+		// (the panel's keys): K<to> plays again with the edit, unsaved (gapProbesFirmwareTest w12undo)
+		{
+			auto e = *r.desk->workingKit();
+			const auto w = static_cast<uint8_t>(e.tracks[0].pages[2][0] == 33 ? 34 : 33);
+			e.tracks[0].pages[2][0] = w;
+			r.msg(R"({"op":"set","id":10,"kind":"workingKit","doc":)" + ed::json::write(ed::mmKitToJson(e)) + "}");
+			r.run(800);
+			r.msg(R"({"op":"loadKit","id":11,"force":true,"k":)" + std::to_string(from) + "}");
+			const auto t1 = r.ms();
+			while(r.desk->currentKit() != from && r.ms() - t1 < 8000)
+				r.run(100);
+			r.run(800);
+			r.msg(R"({"op":"loadUndoKit","id":12,"force":true})");
+			const auto t2 = r.ms();
+			const auto back = [&] { const auto wk = r.desk->workingKit(); return r.desk->currentKit() == to && wk && wk->tracks[0].pages[2][0] == w; };
+			while(!back() && r.ms() - t2 < 8000)
+				r.run(100);
+			r.run(1000);
+			std::printf("  UNDO KIT: kit %d, %s\n", r.desk->currentKit(), kitWorking(r).c_str());
+			check(back() && kitWorking(r) == "edited", "UNDO KIT: K" + std::to_string(to + 1) + " plays again with its unsaved edit, and the editor follows");
+		}
 	}
 
 	// P7: loading a pattern (which loads its kit) leaves the kit that plays clean, and no question

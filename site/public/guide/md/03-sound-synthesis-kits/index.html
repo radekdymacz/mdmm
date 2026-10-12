@@ -90,7 +90,10 @@
 <p>The machine keeps one UNDO KIT: the kit lost to your last load or save.</p>
 <p>The editor has its own undo for slot changes. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> in the kit library to take back a paste, a clear or a rename. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> anywhere to undo your last edit, and <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[Z]</kbd> to redo it.</p>
 <p>To throw away your edits to the current kit, click <b class="gd-ui">Reload</b> in the kit library. It loads the slot again. <b class="gd-ui">Reload</b> is off while the kit is saved.</p>
-<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> The editor does not list the machine's UNDO KIT as a slot, so you cannot load it from the library.</p>
+<p>To get back the kit lost to your last load or save:</p>
+<ol class="gd-steps"><li>Open the kit library: click the <b class="gd-ui">KIT</b> field on the LCD.</li><li>Click <b class="gd-ui">UNDO KIT</b>. The lost kit plays again, with its unsaved edits, and the slot it came from becomes the current kit.</li><li>Click <b class="gd-ui">Save</b> to keep it.</li></ol>
+<p>If the current kit has unsaved edits, the editor asks first: the machine does not keep them when it loads the UNDO KIT.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The editor presses the machine's own keys (KIT, LOAD KIT, the first entry of the list). There is no MIDI message for the UNDO KIT, so with a real Machinedrum over MIDI the button is off: use the machine's kit list.</p></aside>
 </div></section>
 <section class="gd-sec" id="copy-kit" aria-labelledby="copy-kit-h">
 <div class="gd-body gd-prose"><h2 id="copy-kit-h">COPY KIT <a class="gd-anchor" href="#copy-kit" aria-label="Link to COPY KIT">#</a></h2>

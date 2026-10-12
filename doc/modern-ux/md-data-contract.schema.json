@@ -1818,13 +1818,13 @@
               "const": "ask"
             },
             "ask": {
-              "enum": ["breakChain", "discardKit", "loadKit", "reloadKit", "overwriteKit", "overwriteSlot", "clearSlot", "relinkKit"]
+              "enum": ["breakChain", "discardKit", "loadKit", "reloadKit", "overwriteKit", "overwriteSlot", "clearSlot", "relinkKit", "loadUndoKit"]
             },
             "also": {
               "type": "array",
               "description": "Other questions this one answers too (force answers all of them).",
               "items": {
-                "enum": ["breakChain", "discardKit", "loadKit", "reloadKit", "overwriteKit", "overwriteSlot", "clearSlot", "relinkKit"]
+                "enum": ["breakChain", "discardKit", "loadKit", "reloadKit", "overwriteKit", "overwriteSlot", "clearSlot", "relinkKit", "loadUndoKit"]
               }
             },
             "message": {
@@ -5228,6 +5228,27 @@
               "type": "integer",
               "minimum": 0,
               "maximum": 63
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "machine: KIT > LOAD KIT > UNDO KIT with the panel's keys: the kit last lost to a LOAD KIT or an overwrite plays again, its own slot current, unsaved (MD-043, measured: gapProbesFirmwareTest w12undo)",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "loadUndoKit"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
             }
           },
           "additionalProperties": false

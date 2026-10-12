@@ -95,6 +95,16 @@ namespace md
 			control = PanelControl::SynthesisEffectsRouting;
 		else if(_key == "bankGroup")
 			control = PanelControl::BankGroup;
+		else if(_key == "kit")
+			control = PanelControl::Kit;
+		else if(_key == "enter")
+			control = PanelControl::Enter;
+		else if(_key == "exit")
+			control = PanelControl::Exit;
+		else if(_key == "up")
+			control = PanelControl::Up;
+		else if(_key == "down")
+			control = PanelControl::Down;
 		else if(_key.size() > 4 && _key.compare(0, 4, "trig") == 0)
 		{
 			int n = 0;

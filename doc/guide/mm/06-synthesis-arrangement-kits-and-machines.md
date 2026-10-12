@@ -66,11 +66,19 @@ The small field beside the <KIT> label reads **edited** while the kit differs fr
 To rename a kit, select its slot and press {key:lib-rename}, or double-click the slot, or click **Rename**. Type a name of up to 11 characters and press [ENTER]. The editor takes the name as text, so there is no character picker.
 
 ## UNDO KIT
-<!-- rows: MM-102 @7e5911 -->
+<!-- rows: MM-102 @a29a4e -->
 
 The machine keeps one extra kit, the UNDO KIT, as the first entry of its kit list. It holds the kit lost to the last load or overwrite without saving. The dialogs of the editor name it when an action puts a kit there. The editor's own undo, {key:undo}, works on top of it.
 
-{gap:MM-102}You cannot open the UNDO KIT slot from the editor yet.{/gap}
+To load it:
+
+1. Open the kit library: click the **KIT** field on the LCD.
+2. Click **UNDO KIT**. The lost kit plays again, with its unsaved edits, and the slot it came from becomes the current kit.
+3. Click **Save** to keep it.
+
+If the current kit has unsaved edits, the editor asks first: the machine does not keep them when it loads the UNDO KIT.
+
+NOTE: The editor presses the machine's own keys (KIT, LOAD, the first entry of the list). There is no MIDI message for the UNDO KIT, so with a real Monomachine over MIDI the button is off: use the machine's kit list.
 
 ## COPY KIT
 <!-- rows: MM-103 @913049 -->

@@ -2214,6 +2214,14 @@ namespace
 			keys.clear();
 			desk.onPageMessage(cmd(R"({"op":"panic","id":4})"));
 			check(ok() && keys == std::vector<std::string>{"stop", "stop"}, "panic: STOP twice (P5)");
+			// MD-043: the UNDO KIT through the panel: KIT, ENTER, UP to the list's first entry from the current kit (3), ENTER
+			status(desk, 0x02, 2);
+			desk.tick();
+			keys.clear();
+			desk.onPageMessage(cmd(R"({"op":"loadUndoKit","id":40,"force":true})"));
+			check(ok() && keys == std::vector<std::string>{"kit", "enter", "up", "up", "up", "enter"}, "UNDO KIT: KIT, ENTER, UP three times from K03, ENTER");
+			status(desk, 0x02, 0);
+			desk.tick();
 
 			// play from row 3 while playing in PATTERN mode: MIDI Stop, then SONG mode, then the position and Continue
 			t.playing = true;

@@ -68,7 +68,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.15 | Kits not linked to a pattern marked with a star | Unused-kit marker | ✅ | Kit library slot name ends with * | EXTENDED only. | 1 |
 | p.15 | Save kit and choose slot | SAVE KIT | ✅ | Kit library: Save, Save as Knn | UNDO KIT keeps the overwritten kit. | 1 |
 | p.15 | Name a kit (letters, high-score picker) | Kit name | ✅ | Kit library: Rename (F2 / double-click), 16 chars | Typing replaces the wheel. | 1 |
-| p.16 | UNDO KIT (kit list entry 0) | Restore lost kit | 🟡 | Editor undo (Cmd+Z); Reload | The machine's UNDO KIT is kept but not listed as a slot. The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. | – |
+| p.16 | UNDO KIT (kit list entry 0) | Restore lost kit | ✅ | Kit library: UNDO KIT (the machine's KIT > LOAD KIT > UNDO KIT through its keys; off over HW MIDI) | Measured: the lost kit plays again unsaved, its own slot current; LOAD KIT 64-127 does not reach it (gapProbesFirmwareTest w12undo) | 1 |
 | p.16 | Copy kit and paste to slot | Kit copy | ✅ | Kit library: Copy, Paste, drag onto slot (Cmd+C/V) |  | 1 |
 | p.17 | Clear kit | CLEAR KIT | 🟡 | Kit library: Clear | Writes an empty kit (GND-EMPTY, neutral values); the machine's own clear may leave other values. | 1 |
 | p.17 | Undo paste / clear kit | Undo | ✅ | Cmd+Z |  | 2 |
@@ -392,13 +392,13 @@ Method: manual read in full; claims checked against the page files (`source/elek
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 260 |
-| 🟡 Partial | 14 |
+| ✅ Yes | 261 |
+| 🟡 Partial | 13 |
 | ❌ No | 6 |
 | ➖ Not applicable | 16 |
 | Total | 296 |
 
-Of the 280 applicable rows, 260 are fully covered, 14 partly, 6 not at all.
+Of the 280 applicable rows, 261 are fully covered, 13 partly, 6 not at all.
 
 ### Top gaps (our UI), most important first
 

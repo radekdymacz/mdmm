@@ -2492,7 +2492,26 @@ const MdJourneys = (() => {
 		],
 		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); }
 	};
-	const wave12 = [clipsJ];
+	/* MD-043: the machine's UNDO KIT from the kit library (KIT > LOAD KIT > UNDO KIT with the machine's keys) */
+	const workingName = () => kitNameText(kitDocOf(Docs)?.name);
+	const undoKitJ = {
+		name: "md-lib-undo-kit", proves: ["MD-043"],
+		steps: [
+			openKits,
+			{ say: "rename the kit that plays to UNDOJRNY (an unsaved edit)", act: async (u, c) => {
+				c.k0 = V.kit; c.name0 = workingName(); u.click(ks(c.k0), { alt: true }); await sleep(100); u.click('#libpop [data-la="rename"]'); await sleep(200); u.type("#lsin", "UNDOJRNY"); await sleep(100); u.key("Enter"); await confirmIfAsked(u); },
+				machine: () => ok(workingName() === "UNDOJRNY" && V.kitState === "edited", `working ${workingName()}, ${V.kitState}`), within: 8000 },
+			{ say: "click another kit: it loads without saving (the machine keeps the edited kit as its UNDO KIT)", act: async (u, c) => {
+				c.k1 = otherKit(c, [c.k0]); u.click(ks(c.k1)); if (await until(dlgShown, 2000)) u.click(dlgButton("Load without saving") || $1("#dlg .danger")); },
+				machine: c => ok(V.kit === c.k1 && workingName() !== "UNDOJRNY", `kit ${V.kit}, working ${workingName()}`), within: 8000 },
+			{ say: "click UNDO KIT: the edited kit plays again, unsaved, in its own slot", act: async u => { u.click('#libpop [data-la="undokit"]'); await confirmIfAsked(u); },
+				machine: c => ok(V.kit === c.k0 && workingName() === "UNDOJRNY" && V.kitState === "edited", `kit ${V.kit}, working ${workingName()}, ${V.kitState}`),
+				screen: c => ok($1("#libpop .lcdchip")?.textContent.includes("K" + nn(c.k0)) && $1("#libpop .lcdchip")?.textContent.includes("edited"), $1("#libpop .lcdchip")?.textContent), within: 10000 },
+			esc
+		],
+		async tidy(u, c) { if (c.k0 == null) return; if (V.kit !== c.k0) { cmd("kitLoad", { k: c.k0, force: true }); await until(() => V.kit === c.k0, 4000); } cmd("reloadKit", { force: true }); await until(() => V.kitState !== "edited", 6000); }
+	};
+	const wave12 = [clipsJ, undoKitJ];
 	const slice5 = [modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, kitNameSave, songCommands, playModeJ, pageLeds, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
 	const all = [...slice5, ...wave12, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
 		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,

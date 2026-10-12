@@ -432,6 +432,8 @@ namespace mmDesk
 			{"select", Owner::Machine, Gate::Input, -1, {p, {"now", ArgType::Bool, 0, 0, true}},
 				"LOAD PATTERN (at the pattern end while playing; now: STOP, LOAD, PLAY)"},
 			{"loadKit", Owner::Machine, Gate::Input, -1, {kOpt}, "LOAD KIT (the current kit without k)"},
+			{"loadUndoKit", Owner::Machine, Gate::Input, -1, {}, "KIT > LOAD KIT > UNDO KIT with the panel's keys: the kit last lost to a LOAD KIT"
+				" or an overwrite plays again, its own slot current, unsaved (MM-102, measured: gapProbesFirmwareTest w12undo)"},
 			{"saveKit", Owner::Machine, Gate::Input, -1, {kOpt}, "SAVE KIT"},
 			{"loadSong", Owner::Machine, Gate::Input, -1, {sOpt}, "LOAD SONG (stopped)"},
 			{"saveSong", Owner::Machine, Gate::Input, -1, {sOpt}, "SAVE SONG"},

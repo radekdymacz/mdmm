@@ -140,6 +140,7 @@ namespace mdDesk
 
 		// Why the panel-key features are not here (the capabilities' reasons and the refusals).
 		constexpr const char* g_noLiveRecordKeys = "Live recording needs the machine's panel keys; this engine has none.";
+		constexpr const char* g_noUndoKitKeys = "The UNDO KIT has no MIDI message: on the machine, KIT > LOAD KIT, the first entry (00 UNDO KIT).";
 		constexpr const char* g_noLiveRecordTelemetry = "Live recording needs the machine's sequencer telemetry (MD OS 1.63).";
 		constexpr const char* g_noChains = "Chaining is made with the machine's keys: it needs the local emulated MD OS 1.63";
 
@@ -725,7 +726,7 @@ namespace mdDesk
 	{
 		static const std::map<std::string, Handler> map{
 			{"load", &MdMachine::cmdLoad}, {"select", &MdMachine::cmdSelect}, {"saveKit", &MdMachine::cmdSaveKit},
-			{"reloadKit", &MdMachine::cmdReloadKit}, {"kitLoad", &MdMachine::cmdKitLoad}, {"kitSaveAs", &MdMachine::cmdKitSaveAs},
+			{"reloadKit", &MdMachine::cmdReloadKit}, {"kitLoad", &MdMachine::cmdKitLoad}, {"kitSaveAs", &MdMachine::cmdKitSaveAs}, {"loadUndoKit", &MdMachine::cmdLoadUndoKit},
 			{"record", &MdMachine::cmdRecord}, {"liveErase", &MdMachine::cmdLiveErase}, {"recTrig", &MdMachine::cmdRecTrig}, {"noteOn", &MdMachine::cmdNoteOn}, {"noteOff", &MdMachine::cmdNoteOff}, {"chain", &MdMachine::cmdChain},
 			{"chainClear", &MdMachine::cmdChainClear}, {"globalSlot", &MdMachine::cmdGlobalSlot},
 			{"selectSong", &MdMachine::cmdSelectSong}, {"reloadSong", &MdMachine::cmdReloadSong}, {"saveSong", &MdMachine::cmdSaveSong},
@@ -757,7 +758,7 @@ namespace mdDesk
 	const std::map<std::string, MdMachine::Handler>& MdMachine::askers()
 	{
 		static const std::map<std::string, Handler> map{{"select", &MdMachine::askSelect}, {"kitLoad", &MdMachine::askKitLoad},
-			{"reloadKit", &MdMachine::askReloadKit}, {"kitSaveAs", &MdMachine::askKitSaveAs}, {"saveSong", &MdMachine::askSaveSong}};
+			{"reloadKit", &MdMachine::askReloadKit}, {"kitSaveAs", &MdMachine::askKitSaveAs}, {"loadUndoKit", &MdMachine::askLoadUndoKit}, {"saveSong", &MdMachine::askSaveSong}};
 		return map;
 	}
 
@@ -940,6 +941,37 @@ namespace mdDesk
 		const auto slot = static_cast<uint8_t>(*intOf(_m, "k"));
 		m_session.loadKit(slot);
 		return kitSwitchedBy(slot, true);
+	}
+
+	// MD-043: the UNDO KIT, the first entry of the machine's kit list, through the panel's keys (there is no SysEx for
+	// it; LOAD KIT 64-127 is ignored). Measured (gapProbesFirmwareTest w12undo): the kit last lost to a LOAD KIT or an
+	// overwrite plays again, unsaved, and its own slot becomes current; the edits of the kit that played are not kept
+	// (the UNDO KIT stays as it was). The list opens on the current kit: k + 1 times UP reaches the UNDO KIT. Memory
+	// then shows the kit number and the kit (takeWorkingKit asks the status), as for a load on the panel.
+	Outcome MdMachine::askLoadUndoKit(const Value&, const Documents& _view)
+	{
+		if(kitState(_view) != deskCore::KitState::Edited)
+			return ok();
+		const auto kit = currentKit();
+		return ask("loadUndoKit", "<b>" + (kit ? kitLabel(_view, *kit) : std::string("The kit that plays")) + "</b> has unsaved changes. Load the"
+			" UNDO KIT? The machine does not keep these edits: they are lost.", "Load the UNDO KIT", kitDetails(kit));
+	}
+
+	Outcome MdMachine::cmdLoadUndoKit(const Value&, const Documents& _view)
+	{
+		const auto kit = currentKit();
+		if(!panelKeys())
+			return refuse(g_noUndoKitKeys);
+		if(!kit)
+			return refuse("The kit that plays is not known yet");
+		restore(m_working.held.releaseAll(), _view);
+		bool pressed = pressKey("kit") && pressKey("enter");
+		for(int i = 0; pressed && i <= *kit; ++i)
+			pressed = pressKey("up");
+		pressed = pressed && pressKey("enter");
+		if(!pressed)
+			return refuse("The panel did not take the keys");
+		return ok("UNDO KIT loaded: the kit it came from is current again, unsaved. Save it to keep it");
 	}
 
 	Outcome MdMachine::cmdKitSaveAs(const Value& _m, const Documents& _view)

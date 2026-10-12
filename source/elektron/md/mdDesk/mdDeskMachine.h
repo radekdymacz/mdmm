@@ -220,6 +220,8 @@ namespace mdDesk
 		deskCore::Outcome cmdSelect(const Value&, const Documents&);
 		deskCore::Outcome cmdSaveKit(const Value&, const Documents&);
 		deskCore::Outcome cmdReloadKit(const Value&, const Documents&);
+		deskCore::Outcome cmdLoadUndoKit(const Value&, const Documents&);
+		deskCore::Outcome askLoadUndoKit(const Value&, const Documents&);
 		deskCore::Outcome cmdKitLoad(const Value&, const Documents&);
 		deskCore::Outcome cmdKitSaveAs(const Value&, const Documents&);
 		deskCore::Outcome kitSwitchedBy(uint8_t _slot, bool _load);
