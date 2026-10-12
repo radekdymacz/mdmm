@@ -80,8 +80,10 @@ no row matches runs everything of its tier.
 - **No stale test programs.** ctest runs whatever binary the tree holds, so each tier builds the programs of the tests
   it is about to run first (`cmake --build temp/dev --target ...`, incremental, ccache): the unit tests' since the
   start, the firmware tests' in tier 2 since 2026-10-12 (before that a branch check could run a firmware test built
-  from older sources: seen several times on 2026-10-12). An up-to-date program costs one ninja no-op; tier 0 and 1 run
-  no firmware tests and are unchanged.
+  from older sources: seen several times on 2026-10-12). A program not built yet, which ctest lists without a command,
+  is found in the tree's `CTestTestfile.cmake`. `mdmmIdentityTest` reads the editors' bundles, not a program: when it is
+  chosen the editors are built first (`NEEDS_EDITORS`; on a fresh tree it failed before the bundles existed). An
+  up-to-date program costs one ninja no-op; tier 0 and 1 run no firmware tests and are unchanged.
 - **ctest lanes.** The 28 node page tests carry the label `Page`; the Timing tests run serially (`RUN_SERIAL`); the slow
   unit tests carry `Slow` (out of the save-time lane).
 - **The gate in lanes.** Stage 1 with ccache; the journeys' diagnostics build in the background while the release

@@ -37,7 +37,7 @@ function renderTop() {
 	$("#rec").setAttribute("aria-pressed", !!V.rec); $("#recled").classList.toggle("on", !!V.rec);
 	$("#rec").title = V.rec ? "Live recording: click a track's steps to play it, move a value to lock it. A moved value locks the track's next trig whose step has not started yet (the editor marks it). Hold Delete: erase the selected track's trigs as they play; press a value first, then hold Delete: its locks instead. REC again: stop recording, keep playing (Alt+Space)" : "Live recording, as RECORD + PLAY on the machine (Alt+Space: Alt + play)";
 	document.body.classList.toggle("liverec", !!V.rec);
-	if (!V.rec && typeof ERASE !== "undefined" && ERASE.on) { ERASE.on = ERASE.spent = false; ERASE.t = ERASE.i = null; clearInterval(ERASE.beat); document.body.classList.remove("erasing"); eraseMark(null); }
+	if (!V.rec && typeof eraseReset === "function") eraseReset();
 	renderEngine();
 	syncTx();
 	const st = $("#status");

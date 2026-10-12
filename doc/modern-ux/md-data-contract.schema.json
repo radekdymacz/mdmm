@@ -1197,6 +1197,31 @@
               ],
               "description": "P4, live recording: the trig the last knob turn locks (mdDesk::nextLockStep), for about 3 s."
             },
+            "liveErase": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "required": ["track", "param", "state"],
+                  "properties": {
+                    "track": {
+                      "$ref": "#/$defs/track"
+                    },
+                    "param": {
+                      "type": ["integer", "null"],
+                      "minimum": 0,
+                      "maximum": 23
+                    },
+                    "state": {
+                      "enum": ["preparing", "held", "gaveUp"]
+                    }
+                  }
+                }
+              ],
+              "description": "Wave 7 and MD-140, live recording: what Delete holds on the machine. param null: EXIT/NO and the track's TRIG key; a kit parameter: EXIT/NO and its DATA ENTRY knob, preparing while the track is selected and the knob page shown, gaveUp when that page never showed (nothing removed)."
+            },
             "bankGroup": {
               "type": "integer",
               "minimum": -1,

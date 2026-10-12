@@ -1014,6 +1014,8 @@ namespace mdDesk
 		{
 			if(!m_port.turnKnob || !canSendSysex())
 				return refuse("Knob switches need the local emulated machine");
+			if(m_telemetry.knobPage < 0)
+				return refuse("The machine's knob page is not known here, so its locks cannot be removed live.");
 			releaseErase();
 			m_erasing = Erase{t, param};
 			pumpErase(now());
@@ -1055,7 +1057,7 @@ namespace mdDesk
 		{
 			if(_now - e.lastMs < (e.pagePresses ? KnobRecorder::g_pageGapMs : KnobRecorder::g_selectGapMs))
 				return;
-			if(e.pagePresses >= g_eraseMaxPagePresses)
+			if(e.pagePresses >= g_eraseMaxPagePresses || m_telemetry.knobPage < 0)
 			{
 				e.gaveUp = true;	// the knob page never showed: nothing held, nothing removed
 				return;
@@ -1932,6 +1934,10 @@ namespace mdDesk
 			m_recordPollMs = _now;
 			load({DocKind::Pattern, *pattern}, true);
 		}
+		// a lock removal owns the track selection, the knob page and the knob until it is let go: the knob recorder waits
+		// (it would press the page key too, or turn the held knob's page away)
+		if(m_erasing && m_erasing->param && !m_erasing->gaveUp)
+			return;
 		const auto* memory = m_working.image && currentKit() == m_working.image->position ? &*m_working.image : nullptr;
 		const auto step = m_knobs.next(_now, m_telemetry.knobPage, memory);
 		if(!step)
@@ -2274,6 +2280,16 @@ namespace mdDesk
 		}
 		else
 			desk.set("recLock", Value());
+		if(m_erasing)
+		{
+			Value e = Value::object();
+			e.set("track", static_cast<int>(m_erasing->track));
+			e.set("param", m_erasing->param ? Value(static_cast<int>(*m_erasing->param)) : Value());
+			e.set("state", m_erasing->gaveUp ? "gaveUp" : m_erasing->held ? "held" : "preparing");
+			desk.set("liveErase", std::move(e));
+		}
+		else
+			desk.set("liveErase", Value());
 		doc.set("desk", std::move(desk));
 		return doc;
 	}
