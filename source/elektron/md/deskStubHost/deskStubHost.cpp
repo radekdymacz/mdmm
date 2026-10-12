@@ -819,6 +819,7 @@ namespace
 			t.chainKnown = true;
 			t.chain = m_chain;
 			t.songRow = m_songMode ? (m_running ? songLocate(m_songPos).first : 0) : -1;
+			t.songSteps = m_songMode && m_running ? m_songPos : -1;	// MM-271: the song's played steps
 			_desk.onTelemetry(t);
 			if(now - m_memoryAt >= 32)
 			{

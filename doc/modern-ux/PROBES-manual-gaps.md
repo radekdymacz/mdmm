@@ -372,3 +372,8 @@ checks it through a LOOP).
 **W12g, the MM pattern's kit (MM-095).** A pattern dump (SYSEX RECV) carries the kit link; the read-back keeps it. Into
 another pattern it changes nothing that plays; LOAD PATTERN of it then loads that kit. Into the pattern that plays, the
 machine loads the new kit at once, stopped and playing.
+
+**W12h, the MM song counter (MM-271).** Main RAM 0x2bdf3c, 16 bits big-endian, counts the song's steps from PLAY: the
+index of the step that plays, from 0, on through repeats and loops (a pass of 8 steps adds 8). The EDIT SONG header
+shows it as bar steps / 16 + 1 and beat steps % 16 / 4 + 1 (24 steps: 002:03, read off the LCD).
+`mmDeskFirmwareTest songrow` checks it through a repeat and a LOOP.

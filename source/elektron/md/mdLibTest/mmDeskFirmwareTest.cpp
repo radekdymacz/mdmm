@@ -294,6 +294,7 @@ namespace
 			t.stepCursor = tel.stepCursor.load();
 			t.bankGroup = tel.bankGroup.load();
 			t.songRow = tel.songRow.load();
+			t.songSteps = tel.songSteps.load();
 			t.chainKnown = tel.readChain(t.chain.active, t.chain.next, t.chain.patterns);
 			return t;
 		}
@@ -1005,8 +1006,19 @@ namespace
 		r.msg(R"({"op":"seqMode","song":true})");
 		r.run(1500);
 		r.msg(R"({"op":"play"})");
-		std::vector<int> rows, patterns, lateRows;
+		std::vector<int> rows, patterns, lateRows, steps;
 		int last = -1;
+		// MM-271: the song's played steps the page is told (the EDIT SONG header's bars and beats)
+		const auto pageSteps = [&]
+		{
+			for(auto it = r.page.rbegin(); it != r.page.rend(); ++it)
+				if(it->find("type")->asString() == "telemetry")
+				{
+					const auto* ss = it->find("songSteps");
+					return ss && ss->isNumber() ? static_cast<int>(ss->asNumber()) : -1;
+				}
+			return -1;
+		};
 		const auto pageRow = [&]
 		{
 			for(auto it = r.page.rbegin(); it != r.page.rend(); ++it)
@@ -1026,6 +1038,7 @@ namespace
 			if(st == 3 && last != 3)
 			{
 				rows.push_back(pageRow());
+				steps.push_back(pageSteps());
 				const auto reply = ed::parseMmStatusResponse(r.m.request(ed::mmStatusRequest(ed::MmStatus::Pattern), 0x72));
 				patterns.push_back(reply ? reply->value : -1);
 			}
@@ -1047,6 +1060,16 @@ namespace
 		for(size_t k = 0; k < lateRows.size() && k < rows.size(); ++k)
 			late = late && lateRows[k] == rows[k];
 		check(late, "at the last step of each pass the page is still told that pass's row");
+		// every pass is 8 steps, sampled at its fourth: the played steps grow by 8 a pass, through the repeat and the loop
+		std::string counts;
+		bool counting = steps.size() >= 2 && steps[0] >= 0;
+		for(size_t k = 0; k < steps.size(); ++k)
+		{
+			counts += " " + std::to_string(steps[k]);
+			counting = counting && (k == 0 || steps[k] - steps[k - 1] == 8);
+		}
+		std::printf("  the song's played steps at each pass:%s\n", counts.c_str());
+		check(counting, "the page is told the song's played steps: 8 more every pass of 8 steps (MM-271)");
 		r.msg(R"({"op":"stop"})");
 		r.run(600);
 		// 0.3.5: an edit of the machine's song is heard without LOAD SONG by hand. Stopped in SONG mode: row 1 becomes

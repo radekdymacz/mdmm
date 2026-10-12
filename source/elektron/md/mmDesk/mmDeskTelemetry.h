@@ -85,6 +85,7 @@ namespace mmDesk
 		int stepCursor = -1;		// STEP RECORDING: the step a note writes next (RAM 0x2bff09, 0-based); -1 = unknown
 		int bankGroup = -1;			// MM-P8: BANK GROUP, 0 A-D, 1 E-H (RAM 0x70000b); -1 = unknown
 		int songRow = -1;			// 0.3.5: the song row that plays (RAM 0x2bdba1, SONG mode); -1 = unknown
+		int songSteps = -1;			// 0.6 (MM-271): the song's played steps since PLAY (RAM 0x2bdf3c); -1 = unknown
 		bool chainKnown = false;	// MM-P8: the chain is readable (RAM 0x2bc2c4)
 		Chain chain;
 	};

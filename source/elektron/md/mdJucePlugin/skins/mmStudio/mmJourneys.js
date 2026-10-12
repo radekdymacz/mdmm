@@ -2116,7 +2116,25 @@ const MmJourneys = (() => {
 			{ say: "press Escape", act: u => u.key("Escape"), screen: () => ok($1("#libpop").hidden, "open") }
 		]
 	};
-	const wave12 = [undoKitJ, clearStepLocksJ, lockCurrentJ, patKitJ];
+	/* MM-271: the arrangement header counts the bars and beats the song has played (the EDIT SONG header's counter) */
+	const barBeat = n => String((n >> 4) + 1).padStart(3, "0") + ":" + String(((n & 15) >> 2) + 1).padStart(2, "0");
+	const songCounterJ = {
+		name: "mm-song-counter", proves: ["MM-271"],
+		steps: [
+			go("song"),
+			{ say: "stop, click SONG over the palette: song mode", act: async (u, c) => { if (S().playing) { u.click("#play"); await until(() => !S().playing, 3000); } c.m0 = machine().song?.songMode === true; u.click('[data-set="songpick"] button[data-v="song"]'); },
+				machine: () => ok(machine().song?.songMode === true, "songMode " + machine().song?.songMode), within: 8000 },
+			{ say: "press PLAY: the header reads Playing and the bars and beats played", act: async (u, c) => { results.length = 0; u.click("#play");
+				for (let i = 0; i < 5 && await until(() => results.some(r => r.op === "play" && r.ok === false), 1500); i++) { results.length = 0; await sleep(1500); u.click("#play"); } },
+				screen: () => { const n = tele.last?.songSteps, h = $1("#arrstate")?.textContent || ""; return ok(n != null && h === "Playing · " + barBeat(n), `header "${h}", steps ${n}`); },
+				machine: () => ok(tele.last?.playing && tele.last.songSteps >= 0, "songSteps " + tele.last?.songSteps), within: 8000 },
+			{ say: "a bar later the counter reads bar 002", act: async () => { await until(() => (tele.last?.songSteps ?? 0) >= 17, 12000); },
+				screen: () => ok(/^Playing · 002:0[1-4]$/.test($1("#arrstate")?.textContent || ""), "header " + $1("#arrstate")?.textContent), machine: () => ok(tele.last?.songSteps >= 16, "songSteps " + tele.last?.songSteps), within: 4000 },
+			{ say: "press STOP: no counter", act: u => { if (S().playing) u.click("#play"); }, screen: () => ok(!/\d{3}:\d{2}/.test($1("#arrstate")?.textContent || ""), "header " + $1("#arrstate")?.textContent), machine: () => ok(!S().playing, "playing"), within: 8000 }
+		],
+		async tidy(u, c) { if (S().playing) { u.click("#play"); await until(() => !S().playing, 3000); } if (c.m0 === false && machine().song?.songMode !== false) { u.click('[data-set="songpick"] button[data-v="pattern"]'); await sleep(1000); } }
+	};
+	const wave12 = [undoKitJ, clearStepLocksJ, lockCurrentJ, patKitJ, songCounterJ];
 	const all = [...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,

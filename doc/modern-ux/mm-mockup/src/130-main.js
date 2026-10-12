@@ -584,6 +584,7 @@ window.MMView={
     library's other slots keep their own cheap setters; setTempo is the BPM gesture's own write (the self-test's) */
  show,startEmpty,setPatternSlot,setKitSlot,setReading,setTempo:bpm=>{S.bpm=bpm},
  setInput,setPlaying,setStep,setSongRow:r=>{S.songRow=r;markSongRow()},
+ setSongSteps:n=>{S.songSteps=n;const st=document.getElementById("arrstate");if(st&&st.textContent!==arrState())st.textContent=arrState()},
  setEng,dlgOpen:()=>!$("#dlg").hidden,setEngineLabel,setEngineTip,setEngines,setAudioEntry,clearLearnTarget:()=>{S.learnT=null},setMapping,setModulation,setCtlSetup,disable,
  setRecord,setRecLock,
  setLcd,setKeyDown,setMidiHeld,setPst,closeFirmwareDialog,bootRom:r=>Boot.rom(r),bootInstalled:o=>Boot.showInstalled(o),syxPreview:m=>Syx.preview(m),syxProgress:m=>Syx.progress(m),syxExported:m=>Syx.exported(m),syxExportInfo:m=>Syx.exportInfo(m),
