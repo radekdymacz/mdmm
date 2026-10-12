@@ -964,13 +964,21 @@ namespace mdDesk
 			return refuse(g_noUndoKitKeys);
 		if(!kit)
 			return refuse("The kit that plays is not known yet");
+		// the route starts on the main screen: not while recording, nor while other panel keys are on their way
+		if(m_telemetry.recording || m_telemetry.gridEdit)
+			return refuse("Not while recording: stop recording first, then load the UNDO KIT");
+		if(m_telemetry.panelPending > 0 || !m_keys.waiting.empty())
+			return refuse("The machine's panel is busy: try again in a moment");
 		restore(m_working.held.releaseAll(), _view);
 		bool pressed = pressKey("kit") && pressKey("enter");
 		for(int i = 0; pressed && i <= *kit; ++i)
 			pressed = pressKey("up");
 		pressed = pressed && pressKey("enter");
 		if(!pressed)
+		{
+			pressKey("exit");	// out of the kit list, if the keys stopped in it
 			return refuse("The panel did not take the keys");
+		}
 		return ok("UNDO KIT loaded: the kit it came from is current again, unsaved. Save it to keep it");
 	}
 

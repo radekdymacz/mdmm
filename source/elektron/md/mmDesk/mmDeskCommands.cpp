@@ -261,6 +261,12 @@ namespace mmDesk
 			return refuse("The UNDO KIT has no MIDI message: on the machine, KIT > LOAD KIT, the first entry (00 UNDO KIT).");
 		if(m_curKit < 0)
 			return refuse("The kit that plays is not known yet");
+		// the route starts on the main screen (or parked on SYSEX RECV, which the keys leave): not while recording,
+		// not while a menu of the machine is open
+		if(m_tel.recording > 0)
+			return refuse("Not while recording: stop recording first, then load the UNDO KIT");
+		if(m_tel.valid && m_tel.screen != Screen::Main && m_recv.state() != RecvSession::State::Parked)
+			return refuse("A menu is open on the machine: close it (EXIT), then load the UNDO KIT");
 		std::vector<Key> keys{Key::Kit, Key::Enter};
 		keys.insert(keys.end(), static_cast<size_t>(m_curKit + 1), Key::Up);
 		keys.push_back(Key::Enter);

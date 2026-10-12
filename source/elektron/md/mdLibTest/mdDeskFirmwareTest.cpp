@@ -913,6 +913,8 @@ namespace
 		_rig.run(50);
 		_rig.page("{\"op\":\"trig\",\"p\":" + p + R"(,"t":0,"s":3,"id":46})");
 		check(_rig.lastResult() && !_rig.lastResult()->find("ok")->asBool(), "grid edits wait while recording");
+		_rig.page(R"({"op":"loadUndoKit","force":true,"id":48})");
+		check(_rig.lastResult() && !_rig.lastResult()->find("ok")->asBool() && recording(), "UNDO KIT is refused while recording (its keys would leave the kit list open)");
 		_rig.runUntil(stepIs(12), 3000);
 		_rig.page(R"({"op":"record","id":47})");
 		check(_rig.runUntil([&] { return !recording(); }, 1000), "REC again leaves recording");
@@ -1674,6 +1676,27 @@ namespace
 			std::printf("  UNDO KIT: kit %d, working '%s'\n", kitStatus(), desk.documents().working ? kitNameOf(desk.documents().working->kit).c_str() : "?");
 			check(back && kitStatus() == here, "UNDO KIT: the renamed kit plays again in its own slot, and the editor follows");
 			_rig.pageConfirmed(R"({"op":"reloadKit","force":true,"id":975})");
+			settle();
+		}
+		// MD-043 at the top of the list: the route from kit 64 is 2 + 64 + 1 keys (134 panel states, more than the old
+		// queue of 128 held): an edit of kit 63, LOAD KIT 64, UNDO KIT brings kit 63 back
+		{
+			const auto here = *desk.linkState().kit;
+			_rig.pageConfirmed(R"({"op":"kitLoad","k":62,"force":true,"id":977})");
+			settle();
+			_rig.pageConfirmed(R"({"op":"kitName","k":62,"name":"UNDO HIGH","id":978})");
+			settle();
+			_rig.pageConfirmed(R"({"op":"kitLoad","k":63,"force":true,"id":979})");
+			settle();
+			check(kitStatus() == 63, "LOAD KIT 64 over the renamed kit 63");
+			_rig.pageConfirmed(R"({"op":"loadUndoKit","force":true,"id":980})");
+			const bool back = _rig.runUntil([&] { return desk.linkState().kit == 62 && desk.documents().working && kitNameOf(desk.documents().working->kit) == "UNDO HIGH"; }, 8000);
+			settle();
+			std::printf("  UNDO KIT from kit 64: kit %d, working '%s'\n", kitStatus(), desk.documents().working ? kitNameOf(desk.documents().working->kit).c_str() : "?");
+			check(back && kitStatus() == 62, "UNDO KIT from kit 64 (65 UP keys): kit 63 plays again, renamed, and the machine is out of its kit list");
+			_rig.pageConfirmed(R"({"op":"reloadKit","force":true,"id":981})");
+			settle();
+			_rig.pageConfirmed("{\"op\":\"kitLoad\",\"k\":" + std::to_string(here) + ",\"force\":true,\"id\":982}");
 			settle();
 		}
 	}
