@@ -1687,8 +1687,8 @@ const MdJourneys = (() => {
 	};
 
 	/* ---------- wave 2: the transport beyond PLAY and STOP (doc/modern-ux/DESIGN-machine-menus.md §2) ---------- */
-	const opsSent = [];	/* the ops the page sent, newest last (a tempo sent once, at the release) */
-	{ const send0 = Bridge.send; Bridge.send = (m, o) => { opsSent.push(m.op); if (opsSent.length > 80) opsSent.shift(); return send0(m, o); }; }
+	const opsSent = [];	/* the ops the page sent, newest last (a tempo sent once, at the release); never trimmed: a journey marks its place by the length and a trimmed list would make that mark point past the end */
+	{ const send0 = Bridge.send; Bridge.send = (m, o) => { opsSent.push(m.op); return send0(m, o); }; }
 	const paused = () => $1("#play")?.classList.contains("paused");
 	const playing = () => !!tele.last?.playing;
 	const stopAll = async u => { if (S.paused || V.playing) { u.click("#play"); await sleep(200); } if (V.playing) { u.click("#play"); await until(() => !playing(), 3000); } };
