@@ -79,6 +79,10 @@ namespace deskCore
 			push(to, {_d == Direction::Undo ? inverted(_delivered) : _delivered, 0});
 		}
 
+		// The gesture of the newest undo step (0: none, or a step of no gesture).
+		uint64_t lastGesture() const { return m_undo.empty() ? 0 : m_undo.back().gesture; }
+		// The redo list goes (a trial taken back leaves nothing to redo).
+		void dropRedo() { m_redo.clear(); }
 		bool canUndo() const { return !m_undo.empty(); }
 		bool canRedo() const { return !m_redo.empty(); }
 		size_t size() const { return m_undo.size(); }

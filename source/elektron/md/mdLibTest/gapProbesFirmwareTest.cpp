@@ -3,7 +3,7 @@
 // Discovery harness in the style of mdP4ProbeFirmwareTest and mmEditorProbeFirmwareTest: it measures and prints a
 // RESULT line per question; the checks only guard that the rig itself works (the machine boots, plays, answers).
 //
-//   gapProbesFirmwareTest <MD ROM> <MM ROM> [p1|p1md|p1mm|p2|p2panel|p3|p4|p5|p6|p6b|p7|p8|p10|all]
+//   gapProbesFirmwareTest <MD ROM> <MM ROM> [p1|p1md|p1mm|p2|p2panel|p3|p4|p5|p6|p6b|p7|p8|p9|p10|all]
 //   gapProbesFirmwareTest <MD ROM> <MM ROM> explore md|mm "<key,key,...>"     (prints the LCD after the keys)
 //
 // "-" for a ROM skips that machine; "--env" takes it from GEARMULATOR_MD_FIRMWARE_BIN / GEARMULATOR_MM_FIRMWARE_BIN. Exits 77
@@ -1678,6 +1678,109 @@ namespace
 			key(r, md::PanelControl::Exit, 40, 80);
 	}
 
+	// P9 (wave 8): the machine picker's audition and the Mix page's LEV, as the editor sends them. A machine assigned the
+	// way the desk's `machine` command does it (SysEx 0x5B, init SYNTHESIS, then the document's synthesis values as CCs),
+	// the track's note (the default map: track 1 = note 36 on the base channel) right behind it or a little later: is the
+	// new machine the one heard? Then the way back (the old machine and its values again, as Undo delivers them) and the
+	// level CC (8 + track) against the note's loudness.
+	void p9(const Bytes& _rom)
+	{
+		std::puts("== P9 MD: a machine assigned and its track's note right behind it (the picker's audition); the level CC");
+		Rig r(_rom, false);
+		r.setSongMode(false);
+		const auto sin = *ed::mdMachineModel("GND-SIN"), empty = *ed::mdMachineModel("GND-EMPTY");
+		// track 1's synthesis CCs 16-19 on channel 1: GND-SIN PTCH, DEC, RAMP, RDEC
+		const auto tune = [&] {
+			r->send({0xb0, 16, 40});
+			r->send({0xb0, 17, 90});
+			r->send({0xb0, 18, 0});
+			r->send({0xb0, 19, 0});
+		};
+		const auto level = [&](const uint8_t _v) {
+			namespace a = md::automation;
+			if(const auto cc = a::encodeParameterChange(md::MachineModel::Machinedrum, {a::machinedrum::Level, 0, 0, _v}, 0))
+				r->send({(*cc)[0], (*cc)[1], (*cc)[2]});
+		};
+		const auto heard = [&] {	// the note on track 1 and the first 300 ms after it
+			const auto from = r->left().size();
+			r->send({0x90, 36, 100});
+			r.run(300);
+			const double v = rms(r->left(), r->right(), from, r->left().size());
+			r->send({0x80, 36, 0});
+			r.run(700);
+			return v;
+		};
+		const auto settle = [&](const uint32_t _model) {
+			r->send(ed::mdAssignMachine(0, _model, ed::MdMachineInit::SynthesisEffectsRouting));
+			r.run(200);
+			if(_model == sin)
+				tune();
+			level(100);
+			r.run(300);
+		};
+		settle(sin);
+		const double sinLevel = heard();
+		settle(empty);
+		const double emptyLevel = heard();
+		std::printf("  controls: GND-SIN %.5f, GND-EMPTY %.5f\n", sinLevel, emptyLevel);
+		check(sinLevel > 1e-3 && emptyLevel < sinLevel * 0.05, "the rig: track 1's note sounds on GND-SIN, not on GND-EMPTY");
+
+		std::string answers;
+		int newHeard = 0, all = 0;
+		for(const double gap : {0.0, 5.0, 20.0, 100.0})
+		{
+			for(const auto& [from, to, name] : {std::tuple{empty, sin, "GND-EMPTY -> GND-SIN"}, std::tuple{sin, empty, "GND-SIN -> GND-EMPTY"}})
+			{
+				settle(from);
+				r->send(ed::mdAssignMachine(0, to, ed::MdMachineInit::Synthesis));
+				if(to == sin)
+					tune();	// the document's synthesis values, as the desk resends them after a new machine
+				if(gap > 0)
+					r.run(gap);
+				const double v = heard();
+				const bool isNew = to == sin ? v > sinLevel * 0.5 : v < sinLevel * 0.05;
+				std::printf("  %-22s note %5.1f ms after: %.5f  %s\n", name, gap, v, isNew ? "the new machine" : "THE OLD MACHINE");
+				newHeard += isNew ? 1 : 0;
+				++all;
+				if(!isNew)
+					answers += std::string(name) + " at " + std::to_string(int(gap)) + " ms; ";
+			}
+		}
+
+		// the way back: GND-SIN tuned, auditioned as GND-EMPTY, then GND-SIN and its values again (Undo's delivery)
+		settle(sin);
+		const double before = heard();
+		r->send(ed::mdAssignMachine(0, empty, ed::MdMachineInit::Synthesis));
+		const double during = heard();
+		r->send(ed::mdAssignMachine(0, sin, ed::MdMachineInit::Synthesis));
+		tune();
+		const double after = heard();
+		std::printf("  back: before %.5f, auditioning GND-EMPTY %.5f, back on GND-SIN %.5f\n", before, during, after);
+		const bool back = after > before * 0.9 && after < before * 1.1;
+
+		// LEV: the level CC against the note's loudness
+		std::string levels;
+		double at100 = 0;
+		for(const uint8_t v : {127, 100, 64, 32, 0})
+		{
+			settle(sin);
+			level(v);
+			r.run(50);
+			const double l = heard();
+			if(v == 100)
+				at100 = l;
+			char x[48];
+			std::snprintf(x, sizeof x, "%s%d: %.5f", levels.empty() ? "" : ", ", v, l);
+			levels += x;
+		}
+		std::printf("  level CC: %s\n", levels.c_str());
+		check(at100 > 1e-3, "the rig: a note at level 100 sounds");
+		result("P9", std::to_string(newHeard) + " of " + std::to_string(all) + " notes played the new machine"
+			+ (answers.empty() ? " (also with no gap: SysEx then note in one stream)" : "; the old one at " + answers)
+			+ (back ? "; the old machine and its values again give the same sound" : "; the way back does NOT give the same sound")
+			+ "; level CC " + levels);
+	}
+
 	// ---- P10: MM POLY, the filter's key tracking and the MULTI ENV (0.6 wave 9, B-064) ---------------------------------
 	// Every scenario: a kit written by dump into slot 11 and a pattern into slot 10 that links it (LOAD PATTERN loads both),
 	// raw MIDI notes on the channels of the factory global (track t: base + t; AUTO 9, MULTI TRIG 7), the output measured.
@@ -1983,7 +2086,7 @@ int main(const int _argc, char** _argv)
 	std::setvbuf(stdout, nullptr, _IOLBF, 0);
 	if(_argc < 3)
 	{
-		std::puts("usage: gapProbesFirmwareTest <MD ROM|-> <MM ROM|-> [p1|p1md|p1mm|p2|p2panel|p3|p4|p5|p6|p6b|p7|p8|p10|all|explore md|mm keys]");
+		std::puts("usage: gapProbesFirmwareTest <MD ROM|-> <MM ROM|-> [p1|p1md|p1mm|p2|p2panel|p3|p4|p5|p6|p6b|p7|p8|p9|p10|all|explore md|mm keys]");
 		return 77;
 	}
 	try
@@ -2045,6 +2148,8 @@ int main(const int _argc, char** _argv)
 			p6b(mdRom);
 		if(!mdRom.empty() && want("p7"))
 			p7(mdRom);
+		if(!mdRom.empty() && want("p9"))
+			p9(mdRom);
 		if(!mdRom.empty() && (want("p1") || only == "p1md"))
 			p1(mdRom, false);
 		if(!mmRom.empty() && (want("p1") || only == "p1mm"))

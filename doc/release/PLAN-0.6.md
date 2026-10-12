@@ -18,7 +18,7 @@ agents at once; Radek tests the whole release at the end from doc/release/TEST-0
 markers: resolve, grep for `<<<<<<<`, then commit, as separate steps.
 
 **Merged into `feat/0.6-features`** (each reviewed, tier 2 green): wave P (probes, doc/modern-ux/PROBES-manual-gaps.md,
-B-069), wave 1 song slots, wave 2 transport, wave 3 trig types and marks, wave 4 copy / paste / clear what, wave 5 GLOBAL page (2026-10-12, review fixes 4bcacdd4e), wave 6 SysEx and reset (2026-10-12; Import/Export in the engine menu only, Radek), wave 7 recording (2026-10-12; MD-140, live lock removal with EXIT + a knob, still missing), wave 10 MM skins true to the photos (MD unchanged, Radek), the top-bar
+B-069), wave 1 song slots, wave 2 transport, wave 3 trig types and marks, wave 4 copy / paste / clear what, wave 5 GLOBAL page (2026-10-12, review fixes 4bcacdd4e), wave 6 SysEx and reset (2026-10-12; Import/Export in the engine menu only, Radek), wave 7 recording (2026-10-12; MD-140, live lock removal with EXIT + a knob, still missing), wave 10 MM skins true to the photos (MD unchanged, Radek), wave 8 MD LEV and machine audition (2026-10-12), the top-bar
 and LCD fit (B-061, B-065, B-066), the volume-strip fix; the feature data, journey links and guide (slices 1-4).
 
 **Pushed, not merged** (each its own worktree under `audio/gearmulator-md-mm-wt/`):
@@ -31,7 +31,7 @@ machine in the editor's user folder; a session with no project state starts from
 pattern, song, global) writes it; a DAW project still opens with its own memory; a menu item starts from factory memory;
 a setting turns it off. Two instances of one machine: the last save wins (say so in the guide). Branch `feat/0.6-memory`.
 
-**Not started:** wave 8 (MD LEV on Mix, machine audition), wave 9 (MM Perform: see and set up, B-064: mock-up and
+**Not started:** wave 9 (MM Perform: see and set up, B-064: mock-up and
 self-review against Radek's UI rules first), wave 10 (MM MKII look, I-023: colours sampled in IDEAS.md I-023; the
 Machinedrum photos also disagree with our MD skins, see the open choice below), slice 5 (journeys and snapshots for the
 unproved rows, doc/features/unproved-*.md), the guide appendices and "Beyond the hardware" chapter, the polish pass
