@@ -437,7 +437,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 |---|---|---|---|---|---|---|
 | Test mode 1-110 | Hardware self test, joystick calibration | Test | ➖ | – |  | – |
 | Empty reset 1-110 | Clear kits, patterns, songs, globals | Reset | ✅ | Engine menu: Reset machine… > Empty reset… (asked twice): every kit, pattern and song cleared on SYSEX RECV, read back and reported in the SysEx panel | Globals stay: a global is reset in its slot in GLOBAL. | 1 |
-| Factory reset 1-110 | Restore factory data | Reset | ❌ | Engine menu: Reset machine… says why it is not offered |  | – |
+| Factory reset 1-110 | Restore factory data | Reset | ❌ | Engine menu: Reset machine… says why it is not offered; Start from factory memory… restarts the machine as on a new install, with the saved machine memory deleted (I-024) |  | – |
 | Soft reset 1-111 | Restart keeping data | Restart | ➖ | – | Reopen the editor | – |
 | MIDI upgrade, send upgrade 1-111, 1-112 | OS update over MIDI | OS update | ➖ | – | The editor loads the OS 1.32B image | – |
 | Specifications 1-113 | Data sheet | Specs | ➖ | – |  | – |
@@ -521,6 +521,12 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | 0x70-0x72 Status request, set, response C-3, C-4 | Slot, mode, poly, tracks | Status | ✅ | Pattern / song mode, poly, kit state |  | – |
 | TurboMIDI speed messages C-4, C-5 | Speed negotiation | Turbo | ➖ | – | Cable protocol | – |
 
+## 24. Beyond the hardware
+
+| Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
+|---|---|---|---|---|---|---|
+| MACHINE MEMORY | What you save stays for every new session | The machine keeps its kits, patterns, songs and globals when it is switched off. | ✅ | By itself (a session without a DAW project, and the standalone, start from the saved memory); engine menu: KEEP MEMORY; Reset machine… > Start from factory memory… | I-024, doc/modern-ux/DESIGN-machine-memory.md | 1 |
+
 ## 24. Editor features with no manual counterpart (for orientation)
 
 The page also has things the manual does not: GEN and MUTATE generators, step selection with a box select and Draw mode in the piano roll, note lengths drawn by dragging a note's end, Control All (Alt-drag), paste to many tracks, ghost notes, ramps in the lock lane, undo and redo, DAW tempo follow, the AUDIO / MIDI panel, ROM and engine menu, SysEx import preview and report. They are not counted below.
@@ -531,11 +537,11 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 327 |
+| ✅ | 328 |
 | 🟡 | 23 |
 | ❌ | 1 |
 | ➖ | 34 |
-| Total | 385 |
+| Total | 386 |
 
 ### Top gaps, ranked (our UI)
 

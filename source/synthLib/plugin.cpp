@@ -22,8 +22,6 @@ namespace
 
 namespace synthLib
 {
-	constexpr uint8_t g_stateVersion = 1;
-
 	Plugin::Plugin(Device* _device, CallbackDeviceInvalid _callbackDeviceInvalid)
 	: m_resampler(_device->getChannelCountIn(), _device->getChannelCountOut())
 	, m_device(_device)

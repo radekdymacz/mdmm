@@ -9,7 +9,7 @@
 - **Today:** the machine's memory (kits, patterns, songs, globals) is saved in the DAW project and, for the standalone, when the app quits. A new DAW project, or a new instance of the plug-in, starts from the factory memory. So a kit saved in one project is not there in the next one. A real machine keeps what you save.
 - **Way A (machine memory file, as a real machine):** one memory file per machine in the editor's user folder. A new session with no project state starts from it. Each SAVE KIT, SAVE PATTERN, song or global save also writes it. An existing DAW project still opens with its own memory. A menu item starts from factory memory again. Risk: two instances of the same machine both write the file; the last save wins.
 - **Way B (start-up memory, by hand):** a menu item "Use this memory for new sessions" copies the current memory into the file; new sessions start from it. Nothing is written by itself. Simpler and safe with many instances, but the user must remember to do it.
-- **Status:** Radek, 2026-10-12: way A, with a setting to turn it off. Planned for 0.6 (wave 11, PLAN-0.6.md).
+- **Status:** Radek, 2026-10-12: way A, with a setting to turn it off. Planned for 0.6 (wave 11, PLAN-0.6.md). Built on `feat/0.6-memory` (doc/modern-ux/DESIGN-machine-memory.md): one file per machine in `<data folder>/memory/`, a session with no project state starts from it, a watch thread writes each save, the engine menu's KEEP MEMORY, RESET MACHINE…'s Start from factory memory…; the standalone starts from the file too.
 
 ## I-023 · Monomachine: a real MKII look (silver panel, bluish-white LCD with black text)
 

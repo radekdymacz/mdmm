@@ -34,6 +34,8 @@ The factory reset brings back the kits, patterns and songs the machine had when 
 
 The globals and the samples stay. The reset has no undo: export first.
 
+TIP: To bring back the whole factory memory at once, globals and samples too, click **Start from factory memory…** in the same question. The machine restarts in a few seconds. See "MACHINE MEMORY" in chapter 17.
+
 ## SOFT RESET
 <!-- rows: MD-205 @2aa124 -->
 

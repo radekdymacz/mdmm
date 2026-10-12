@@ -29,7 +29,7 @@ and LCD fit (B-061, B-065, B-066), the volume-strip fix; the feature data, journ
 **Wave 11 (added 2026-10-12, I-024):** machine memory that stays for every new session, way A: one memory file per
 machine in the editor's user folder; a session with no project state starts from it; each save on the machine (kit,
 pattern, song, global) writes it; a DAW project still opens with its own memory; a menu item starts from factory memory;
-a setting turns it off. Two instances of one machine: the last save wins (say so in the guide). Branch `feat/0.6-memory`.
+a setting turns it off. Two instances of one machine: the last save wins (say so in the guide). Branch `feat/0.6-memory`. Built and pushed, not merged (design: doc/modern-ux/DESIGN-machine-memory.md; tests mdMachineMemoryTest, mdMachineMemoryFirmwareTest md/mm, journeys md/mm-engine-memory; rows MD-X01, MM-X01; guide chapter "Beyond the hardware"). Start from factory memory is a choice of wave 6's RESET MACHINE…; the standalone starts from the file too (Radek, 2026-10-12). Next: review, merge.
 
 **Polish C and fix/0.6-span-song merged (2026-10-12):** the wave 9 follow-ups, MM firmware tests now run in ctest, B-071 and B-072 fixed. B-071 is also on main: its port waits on `fix/mm-b071-main` for Radek's OK to merge into main.
 
