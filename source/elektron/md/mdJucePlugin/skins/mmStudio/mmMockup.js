@@ -743,13 +743,15 @@ const Keys = (() => {
 		return false;
 	}
 	/* B-023: the field a key belongs to, or null: a text field keeps every key; a focused value (role=slider: a knob, a
-	   fader, the tempo; a click on one focuses it) only the keys that move it and Enter (type a value: deskValueEdit.js), which its own handler takes. Every other
+	   fader, the tempo; a click on one focuses it) only the keys that move it, and Enter on a value box in #main (type a value: deskValueEdit.js), which its own handler takes. Every other
 	   key is the page's: ⌘Z after a drag on a value (or after its arrow keys) undoes, Space plays, ⌘C copies. */
-	const SLIDER_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End", "Enter"]);
+	const SLIDER_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End"]);
 	function fieldOf(el, e) {
 		const text = el?.closest?.("input,select,textarea"); if (text) return text;
 		const slider = el?.closest?.("[role=slider]");
-		return slider && SLIDER_KEYS.has(norm(e)) ? slider : null;
+		/* Enter on a value box of the page (not the tempo or a volume slider): the box's own, it opens the typed value */
+		const typed = e.key === "Enter" && slider?.matches?.("#main .pc[data-g], #main .fader[data-g]");
+		return slider && (SLIDER_KEYS.has(norm(e)) || typed) ? slider : null;
 	}
 	let lastDown = null;	/* {k, at} of the last ⌘ keydown: an edit command right after it is the same press */
 	document.addEventListener("keydown", e => {
@@ -1433,7 +1435,8 @@ if (typeof module !== "undefined") module.exports = StepSel;
 "use strict";
 /* I-022: type a parameter value (both editors). ⌘-click a value box (Ctrl-click off a Mac), or Enter on a value box that
    has the focus (Tab to it): a field opens over the box with the value as it is shown, selected. Type a value and press
-   Enter: it is set as one edit (one undo step, as one notch of the wheel); Esc, or a click elsewhere, leaves it as it was.
+   Enter (or Tab) sets it as one edit (one undo step); Esc, or a click elsewhere, leaves it as it was. Tab with a value
+   the box cannot take keeps the field open, marked, as Enter does.
    What may be typed is what the box shows: a number (the nearest value is taken, so 1200 on a box that shows 1196 or
    1210 takes the nearer), a name from a list (a machine, a scale, OFF), as the box writes it, in any case. A number past
    the ends, or a text the box never shows, is refused with the range or the names, and the field stays open. No new
@@ -1490,23 +1493,24 @@ const ValueEdit = (() => {
 			e.stopPropagation();
 			if (e.key === "Enter") { e.preventDefault(); commit(); }
 			else if (e.key === "Escape") { e.preventDefault(); close(true); }
-			else if (e.key === "Tab") commit(true);
+			else if (e.key === "Tab") { if (!commit(true)) e.preventDefault(); }	/* refused: the field stays, marked */
 			else input.classList.remove("bad");
 		});
 		input.addEventListener("blur", () => { if (cur && cur.input === input) close(); });
 		input.focus(); input.select();
 		return true;
 	}
-	/* Enter: set it (one edit), or say why not and stay open */
+	/* Enter (or Tab, leave: the focus moves on): set it (one edit), or say why not and stay open. False: refused */
 	function commit(leave) {
-		if (!cur) return;
+		if (!cur) return true;
 		const { el, input, host } = cur, box = el.isConnected ? el : host.find(el);
-		if (!box) { close(); return; }
+		if (!box) { close(); return true; }
 		const [lo, hi] = host.range(box), p = parse(input.value, lo, hi, v => host.shown(box, v));
-		if (p.empty) { close(true); return; }
-		if (p.error) { input.classList.add("bad"); input.title = p.error; host.say(p.error); if (!leave) input.select(); return; }
+		if (p.empty) { close(!leave); return true; }
+		if (p.error) { input.classList.add("bad"); input.title = p.error; host.say(p.error); input.select(); return false; }
 		close(!leave);
 		if (host.get(box) !== p.v) host.set(box, p.v);
+		return true;
 	}
 	/* the field goes; refocus: the box takes the focus back (Enter opens the field again) */
 	function close(refocus) {

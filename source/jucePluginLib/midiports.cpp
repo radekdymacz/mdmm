@@ -292,6 +292,7 @@ namespace pluginLib
 
 	bool MidiPorts::setMidiInput(const juce::String& _in)
 	{
+		m_processor.midiInputsChanged();
 		if (m_midiInput != nullptr)
 		{
 			m_midiInput->stop();

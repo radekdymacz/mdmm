@@ -78,6 +78,10 @@ key("Escape");
 check(!field() && sets.length === 1 && box.focused === 3, "Esc: the field goes, nothing set, the box has the focus");
 ValueEdit.open(box, host); field().value = "12"; field().remove();
 check(!field() && sets.length === 1, "a click elsewhere (blur): the field goes, nothing set");
+ValueEdit.open(box, host); key("1"); field().value = "300"; { let prevented = false; const ev = { key: "Tab", stopPropagation() { }, preventDefault() { prevented = true; } }; field().listeners.keydown(ev);
+	check(prevented && field() && field().classList.contains("bad") && sets.length === 1 && /Out of range/.test(said.pop()), "Tab with a refused value: the field stays (the focus does not move), marked and said, nothing set"); }
+field().value = "77"; { let prevented = false; field().listeners.keydown({ key: "Tab", stopPropagation() { }, preventDefault() { prevented = true; } });
+	check(!prevented && !field() && sets[sets.length - 1] === 77, "Tab with a good value: set, the field goes, the focus moves on"); }
 const again = node("div");
 const h2 = Object.assign({}, host, { find: () => again, set: (el, v) => sets.push(el === again ? "again " + v : v) });
 ValueEdit.open(box, h2); box.isConnected = false; field().value = "7"; key("Enter"); box.isConnected = true;

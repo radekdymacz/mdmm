@@ -1091,8 +1091,10 @@ const MdJourneys = (() => {
 				screen: c => ok(c.lit.has(2) && c.lit.size === 1, "lit " + [...c.lit]), within: 2000 },
 			{ say: "and goes out", screen: () => ok(!$1('#rail .th[data-sel="2"]').classList.contains("hit"), "still lit"), within: 2000 },
 			go("mix"),
-			{ say: "on Mix a burst of 50 notes for track 3: its LED lights, no other", act: (u, c) => { watchLit(c, ".strip .act", "on"); window.gm.recv(Array.from({ length: 50 }, () => ({ type: "midiIn", ch: c.g.baseChannel, note: c.n, vel: 100 }))); },
-				screen: c => ok(c.lit.has(2) && [...c.lit].every(t => t === 2 || V.tracks[t].trigs.some(Boolean)), "lit " + [...c.lit]), within: 2000 }
+			{ say: "on Mix a burst of 50 notes for track 3: its LED lights, no other", act: (u, c) => { watchLit(c, ".strip .act", "hit"); window.gm.recv(Array.from({ length: 50 }, () => ({ type: "midiIn", ch: c.g.baseChannel, note: c.n, vel: 100 }))); },
+				screen: c => ok(c.lit.has(2) && c.lit.size === 1, "lit " + [...c.lit]), within: 2000 },
+			{ say: "a trig's flash of that LED (on) stays while the note's light (hit) goes", act: async (u, c) => { const l = $1('.act[data-act="2"]'); l.classList.remove("hit"); l.classList.add("on"); window.gm.recv([{ type: "midiIn", ch: c.g.baseChannel, note: c.n, vel: 100 }]); await sleep(400); c.on = l.classList.contains("on"); l.classList.remove("on"); },
+				screen: c => ok(c.on && !$1('.act[data-act="2"]').classList.contains("hit"), "trig flash cut: " + !c.on) }
 		],
 		async tidy(u, c) { c?.obs?.disconnect(); }
 	};

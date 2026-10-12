@@ -34,14 +34,15 @@ namespace mdJucePlugin::midiIn
 
 	using Queue = RealtimeQueue<Note, 64>;
 
-	// I-002, B-062: the notes held down from outside, for the page's "midiHeld" message ({"type":"midiHeld","notes"}):
-	// the keys of the Monomachine's Perform keyboard light while a MIDI keyboard holds them. A state, not events: a
+	// I-002, B-062: the notes held down from outside, for the page's "midiHeld" message ({"type":"midiHeld","notes":[{ch, note}...]}):
+	// the keys of the Monomachine's Perform keyboard light while a MIDI keyboard holds them (on the channels the
+	// machine plays: the page decides, so each note keeps its channel). A state, not events: a
 	// burst is never queued and a note off can never be lost (the queue above drops notes when it is full; a dropped
 	// note off would leave a key lit). One bit a note and channel, set by a note on, cleared by its note off; CC 120
 	// (all sound off) and 123 to 127 (all notes off and the mode messages, which end every note) clear the channel,
 	// a system reset (0xFF) every channel. Written on the thread the MIDI arrives on, read on the message thread:
 	// atomics only, no lock, no allocation.
-	using Notes = std::array<uint64_t, 2>;	// bit n of word n / 64: note n held (on any channel)
+	using Notes = std::array<std::array<uint64_t, 2>, 16>;	// per channel: bit n of word n / 64, note n held
 
 	class Held
 	{
@@ -78,16 +79,18 @@ namespace mdJucePlugin::midiIn
 			}
 		}
 
-		// The notes held on any channel.
+		// The notes held, per channel.
 		Notes notes() const
 		{
 			Notes n{};
-			for(const auto& ch : m_bits)
-				for(size_t i = 0; i < n.size(); ++i)
-					n[i] |= ch[i].load(std::memory_order_relaxed);
+			for(size_t c = 0; c < n.size(); ++c)
+				for(size_t i = 0; i < n[c].size(); ++i)
+					n[c][i] = m_bits[c][i].load(std::memory_order_relaxed);
 			return n;
 		}
 
+		// Every note let go: the port changed or closed, the host bypassed or released the plug-in, the HW MIDI engine
+		// took over (a note off that never comes must not leave a key lit). Any thread.
 		void clear()
 		{
 			for(auto& ch : m_bits)
@@ -101,13 +104,21 @@ namespace mdJucePlugin::midiIn
 		std::array<std::array<std::atomic<uint64_t>, 2>, 16> m_bits{};
 	};
 
-	// The notes of a set, low to high.
-	inline std::vector<int> list(const Notes& _notes)
+	struct HeldNote
 	{
-		std::vector<int> out;
-		for(int n = 0; n < 128; ++n)
-			if(_notes[n >> 6] & (uint64_t{1} << (n & 63)))
-				out.push_back(n);
+		int ch;
+		int note;
+		bool operator==(const HeldNote& _o) const { return ch == _o.ch && note == _o.note; }
+	};
+
+	// The notes of a set, by channel, then low to high.
+	inline std::vector<HeldNote> list(const Notes& _notes)
+	{
+		std::vector<HeldNote> out;
+		for(int c = 0; c < 16; ++c)
+			for(int n = 0; n < 128; ++n)
+				if(_notes[c][n >> 6] & (uint64_t{1} << (n & 63)))
+					out.push_back({c, n});
 		return out;
 	}
 

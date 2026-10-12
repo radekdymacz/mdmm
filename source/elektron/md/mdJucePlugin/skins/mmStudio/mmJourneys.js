@@ -558,13 +558,19 @@ const MmJourneys = (() => {
 			{ say: "hold A on the computer keyboard: its key (C3, octave 0) is lit while held", act: (u, c) => { blur(); c.a = KEYS_BASE + 12 * KB.oct; kbKey("keydown", "a"); },
 				screen: c => ok(!$1(`.kb [data-key="${c.a}"]`) || litKeys() === String(c.a), "lit " + litKeys()) },
 			{ say: "let go of A: dark", act: () => kbKey("keyup", "a"), screen: () => ok(litKeys() === "", "lit " + litKeys()) },
-			{ say: "a MIDI keyboard holds C4 and E4 (the plug-in's midiHeld): both lit", act: () => window.gm.recv([{ type: "midiHeld", notes: [60, 64] }]),
+			{ say: "a MIDI keyboard holds C4 and E4 on a channel the machine does not play (the plug-in's midiHeld): none lit", act: (u, c) => {
+				const g = globalNow()?.channels || {}, played = new Set([g.auto, g.multiTrig, g.multiMap, ...[0, 1, 2, 3, 4, 5].map(t => t < g.span && g.base + t <= 14 ? g.base + t : null)].filter(x => x != null && x < 16));
+				c.on = [...played][0]; c.off = [...Array(16).keys()].find(x => !played.has(x)); c.held = ns => window.gm.recv([{ type: "midiHeld", notes: ns.map(note => ({ ch: c.on, note })) }]);
+				if (c.on == null) throw new Error("the global plays no channel");
+				window.gm.recv([{ type: "midiHeld", notes: c.off == null ? [] : [{ ch: c.off, note: 60 }, { ch: c.off, note: 64 }] }]); },
+				screen: () => ok(litKeys() === "", "lit " + litKeys()) },
+			{ say: "on a channel the machine plays: both lit", act: (u, c) => c.held([60, 64]),
 				screen: () => ok(["60", "64"].every(n => !$1(`.kb [data-key="${n}"]`) || $1(`.kb [data-key="${n}"]`).classList.contains("mi")), "lit " + litKeys()) },
 			{ say: "the octave changes (the keyboard is drawn again): still lit", act: u => { u.click('[data-kboct="1"]'); u.click('[data-kboct="-1"]'); },
 				screen: () => ok(["60", "64"].every(n => !$1(`.kb [data-key="${n}"]`) || $1(`.kb [data-key="${n}"]`).classList.contains("mi")), "lit " + litKeys()) },
-			{ say: "it lets go of C4: only E4 lit", act: () => window.gm.recv([{ type: "midiHeld", notes: [64] }]),
+			{ say: "it lets go of C4: only E4 lit", act: (u, c) => c.held([64]),
 				screen: () => ok(!$1('.kb [data-key="60"]')?.classList.contains("mi") && (!$1('.kb [data-key="64"]') || $1('.kb [data-key="64"]').classList.contains("mi")), "lit " + litKeys()) },
-			{ say: "and of E4: none lit", act: () => window.gm.recv([{ type: "midiHeld", notes: [] }]), screen: () => ok(litKeys() === "", "lit " + litKeys()) }
+			{ say: "and of E4: none lit", act: (u, c) => c.held([]), screen: () => ok(litKeys() === "", "lit " + litKeys()) }
 		],
 		async tidy() { window.gm.recv([{ type: "midiHeld", notes: [] }]); kbKey("keyup", "a"); }
 	};

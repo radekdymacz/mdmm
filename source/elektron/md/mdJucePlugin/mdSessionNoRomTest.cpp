@@ -31,6 +31,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <functional>
 #include <string>
 #include <thread>
 #include <vector>
@@ -255,7 +256,7 @@ int main(const int _argc, char** const _argv)
 						return elektronData::json::write(*n);
 			return "none";
 		};
-		check(heldNow().find("62") != std::string::npos, "midiHeld names the host's held note 62 (" + heldNow() + ")");
+		check(heldNow().find("\"ch\":1,\"note\":62") != std::string::npos, "midiHeld names the host's held note 62 on its channel 2 (" + heldNow() + ")");
 		const auto heldBefore = count(published, "midiHeld");
 		processor->addMidiEvent(synthLib::SMidiEvent(synthLib::MidiEventSource::Host, 0xb0, 123, 0));
 		processor->addMidiEvent(synthLib::SMidiEvent(synthLib::MidiEventSource::Host, 0x81, 62, 0));
@@ -263,6 +264,28 @@ int main(const int _argc, char** const _argv)
 			pump(50);
 		check(heldNow() == "[]", "after all notes off and the note off of 62 no note is held (" + heldNow() + ")");
 		check(count(published, "midiHeld") > heldBefore && count(published, "midiHeld") - heldBefore < 40, "a few midiHeld messages, not one per note");
+		// a note off that never comes: a MIDI input changed, the host released the plug-in: every key let go
+		const auto holdThen = [&](const std::function<void()>& _what, const std::string& _say)
+		{
+			processor->addMidiEvent(synthLib::SMidiEvent(synthLib::MidiEventSource::Host, 0x92, 70, 100));
+			for(int i = 0; i < 20 && heldNow() == "[]"; ++i)
+				pump(50);
+			check(heldNow().find("70") != std::string::npos, _say + ": held first (" + heldNow() + ")");
+			_what();
+			for(int i = 0; i < 20 && heldNow() != "[]"; ++i)
+				pump(50);
+			check(heldNow() == "[]", _say + ": no note held after (" + heldNow() + ")");
+		};
+		holdThen([&] { processor->midiInputsChanged(); }, "a MIDI input changed");
+		holdThen([&] { processor->releaseResources(); }, "the host released the plug-in");
+		holdThen([&] { processor->processBlockStarted(64, true); }, "the host bypassed the plug-in");
+		// HW MIDI: what comes in is the real machine's own MIDI OUT, never held by a player
+		processor->getExternalMidi().set(true);
+		processor->addMidiEvent(synthLib::SMidiEvent(synthLib::MidiEventSource::Host, 0x90, 72, 100));
+		processor->addMidiEvent(synthLib::SMidiEvent(synthLib::MidiEventSource::Physical, 0x90, 73, 100));
+		pump(300);
+		check(heldNow() == "[]", "HW MIDI: the machine's own notes (host or port) are not held (" + heldNow() + ")");
+		processor->getExternalMidi().set(false);
 	}
 	// B-030: the host's tempo reaches the page while the host is stopped (the LCD's TEMPO shows it)
 	{
