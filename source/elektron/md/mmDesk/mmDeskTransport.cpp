@@ -115,7 +115,7 @@ namespace mmDesk
 			return;
 		}
 		const auto* g = activeGlobal(_view, m_curGlobal);
-		if(!g || g->transportIn != 1 || m_activateGlobal >= 0 || m_pushes.busy({Kind::Global, g->position})
+		if(!g || g->transportIn != 1 || m_activateGlobal >= 0 || m_chooseGlobal >= 0 || m_pushes.busy({Kind::Global, g->position})
 			|| (!m_profile.wire && m_recv.state() != RecvSession::State::Idle))
 			return;
 		if(m_reactivateGlobal && activeSlot() >= 0)

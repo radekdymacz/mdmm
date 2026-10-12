@@ -34,8 +34,10 @@ const MmJourneys = (() => {
 	const notesOn = [];	/* the pitches the keyboard sent (noteOn), newest last */
 	const midiSent = [];	/* the raw MIDI the keyboard and the joystick sent (op midi), newest last */
 	const polySent = [];	/* the poly commands ({on, t}), newest last (0.6 wave 9) */
+	const recSent = [];	/* the record commands ({mode, t}), newest last */
 	{ const send0 = Bridge.send; Bridge.send = (m, o) => { sent.push(m.op); if (sent.length > 50) sent.shift(); if (m.op === "noteOn") { notesOn.push(m.pitch); if (notesOn.length > 50) notesOn.shift(); }
 		if (m.op === "midi") { midiSent.push(m.b); if (midiSent.length > 50) midiSent.shift(); }
+		if (m.op === "record") { recSent.push({ mode: m.mode, t: m.t }); if (recSent.length > 20) recSent.shift(); }
 		if (m.op === "poly") { polySent.push({ on: m.on, t: m.t }); if (polySent.length > 20) polySent.shift(); } return send0(m, o); }; }
 	Bridge.onMessage(m => {
 		if (m.type === "telemetry") { tele.last = m; if (m.playing) { tele.steps.push(m.step); if (tele.steps.length > 64) tele.steps.shift(); } }
@@ -1032,7 +1034,10 @@ const MmJourneys = (() => {
 			{ say: "Cmd-drag over steps 5 to 7 while it records, then press ←: the cursor goes back, the selection stays", act: async (u, c) => { await dragRoll(u, c.t, [4, 6], { cmd: true }); c.sel = JSON.stringify(S().stepSel); blur(); u.key("ArrowLeft"); },
 				machine: () => ok(stepAt() === 0, `cursor ${stepAt()}`), screen: c => ok(!!S().stepSel && JSON.stringify(S().stepSel) === c.sel, `selection ${c.sel} -> ${JSON.stringify(S().stepSel)}`), within: 6000 },
 			{ say: "press Esc: done (not the selection's Esc)", act: u => u.key("Escape"), machine: () => ok(tele.last?.record === "off", "record " + tele.last?.record),
-				screen: () => ok(S().recMode !== "step" && !$1(".stepcur") && !$1("#rec").classList.contains("step"), "cursor or STEP left"), within: 6000 }
+				screen: () => ok(S().recMode !== "step" && !$1(".stepcur") && !$1("#rec").classList.contains("step"), "cursor or STEP left"), within: 6000 },
+			{ say: "pick a MIDI track and Shift-click RECORD: step recording starts without a track (no t: no TRACK key, POLY and the focus stay)", act: async (u, c) => { u.click('[data-side="midi"]'); await sleep(300); u.click(rail(6)); await sleep(300); await recvIdle(); recSent.length = 0; results.length = 0; c.f = machine().focus; u.click("#rec", { shift: true }); await sleep(800); },
+				machine: c => ok(tele.last?.record === "step" && recSent.length >= 1 && recSent.every(r => r.t === undefined) && machine().focus === c.f, `record ${tele.last?.record}, sent ${JSON.stringify(recSent)}, focus ${c.f} -> ${machine().focus}; ${resultsSay()}`), within: 8000 },
+			{ say: "Esc: done, and back to the synth tracks", act: async u => { u.key("Escape"); await sleep(300); u.click('[data-side="int"]'); }, machine: () => ok(tele.last?.record === "off", "record " + tele.last?.record), within: 6000 }
 		],
 		async tidy(u) { if (tele.last?.record === "step") u.key("Escape"); if (S().stepSel) clearSel(); }
 	};
@@ -1163,7 +1168,9 @@ const MmJourneys = (() => {
 				screen: () => ok(!!$1('#rail .th[data-sel="4"] .x6') && $all("#rail .th.poly-off").length === 5, "rail " + $all("#rail .th.poly-off").length + " dimmed") },
 			{ say: "click MIDI and pick M2 on the rail: POLY stays on track 5 (a MIDI track has no voices)", act: async (u, c) => { c.n = polySent.length; u.click('[data-side="midi"]'); await sleep(200); u.click(rail(7)); await sleep(600); },
 				screen: () => ok(S().sel === 7, "selected " + S().sel), machine: c => ok(polySent.length === c.n && machine().focus === 4, `poly sent ${JSON.stringify(polySent.slice(c.n))}, focus ${machine().focus}`) },
-			{ say: "back on the synth tracks, the machine's TRACK 2 is pressed (here: its command, not the page's): the page follows, track 2 is POLY's and selected", act: async u => { u.click('[data-side="int"]'); await sleep(200); u.click(rail(4)); await sleep(300); Bridge.send({ op: "poly", on: true, t: 1 }); },
+			{ say: "click Synth: the rail goes back to the POLY track, and no POLY command is sent (a side switch is no track pick)", act: async (u, c) => { c.n = polySent.length; u.click('[data-side="int"]'); await sleep(600); },
+				screen: () => ok(S().sel === 4 && S().polyT === 4, `selected ${S().sel}, POLY track ${S().polyT}`), machine: c => ok(polySent.length === c.n && machine().focus === 4, `poly sent ${JSON.stringify(polySent.slice(c.n))}, focus ${machine().focus}`) },
+			{ say: "back on the synth tracks, the machine's TRACK 2 is pressed (here: its command, not the page's): the page follows, track 2 is POLY's and selected", act: async u => { u.click(rail(4)); await sleep(300); Bridge.send({ op: "poly", on: true, t: 1 }); },
 				screen: () => ok(S().sel === 1 && S().polyT === 1 && !!$1('#rail .th[data-sel="1"] .x6'), `selected ${S().sel}, POLY track ${S().polyT}`), machine: () => ok(machine().focus === 1, "focus " + machine().focus), within: 8000 },
 			{ say: "back on Perform, click Auto track: POLY off", act: async u => { u.click(tab("perform")); await sleep(300); u.click('[data-pmode="normal"]'); },
 				screen: () => ok(!$1("#main .x6") && !$all("#main .polyoff").length, "marks left: " + $all("#main .x6, #main .polyoff").length), machine: () => ok(machine().poly === false, "poly " + machine().poly), within: 8000 }
