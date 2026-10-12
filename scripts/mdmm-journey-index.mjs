@@ -163,5 +163,7 @@ export function snapshotNames(root) {
 	const dirs = [path.join(root, 'source/elektron/md/mdJucePlugin/skins')];
 	const walk = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else if (e.name.endsWith('.js')) for (const m of fs.readFileSync(p, 'utf8').matchAll(/\bsnapshot\(\s*"([^"]+)"/g)) names.add(m[1]); } };
 	for (const d of dirs) if (fs.existsSync(d)) walk(d);
+	// the end-to-end run (scripts/mdmm-e2e.sh) snapshots every journey at its proof moment as e2e-<journey>
+	for (const j of readJourneys(root)) names.add(`e2e-${j.name}`);
 	return names;
 }
