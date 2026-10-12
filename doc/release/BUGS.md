@@ -4,7 +4,7 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
-## B-104 · Machinedrum: the first PLAY after start-up can do nothing
+## B-109 · Machinedrum: the first PLAY after start-up can do nothing
 
 - **From:** the 0.6 e2e work, 2026-10-13: `mdDeskFirmwareTest p4` ("the first PLAY after ready plays") failed on `feat/0.6-e2e` too; a first PLAY that does nothing is what users report.
 - **What happens:** the editor says the machine is ready about 30 ms after the firmware takes MIDI, while its start-up animation still runs for 10 to 14 s and ignores the panel's keys: PLAY is pressed and lost.
