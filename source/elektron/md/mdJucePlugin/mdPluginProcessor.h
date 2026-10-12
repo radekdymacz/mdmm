@@ -129,7 +129,12 @@ namespace mdJucePlugin
 		// Tests: the machine follows the host (a plug-in in a DAW: tempo and sync are the host's, never saved)
 		void setMachineMemoryFollowsHostForTest(bool _follows) { m_memoryFollowsHost = _follows; }
 		// Tests: called by the watch's thread after each piece of a look (the offset of the piece it copied)
-		void setMachineMemoryLookHookForTest(std::function<void(size_t)> _hook) { m_lookPieceHookForTest = std::move(_hook); }
+		void setMachineMemoryLookHookForTest(std::function<void(size_t)> _hook)
+		{
+			const std::lock_guard lock(m_lookHookMutex);
+			m_hasLookHookForTest = static_cast<bool>(_hook);
+			m_lookPieceHookForTest = std::move(_hook);
+		}
 		void setKeepMachineMemory(bool _keep);
 		// RESET MACHINE… > Start from factory memory: the file goes and the machine restarts from factory memory (a fresh machine's
 		// state, as on a new install). The page asked the user first. False with the reason in _note.
@@ -142,13 +147,15 @@ namespace mdJucePlugin
 			double lookLockMaxMs = 0, lookLockLastMs = 0, lookMs = 0, writeMs = 0;
 			uint32_t looks = 0, writes = 0, failedWrites = 0;
 			size_t lastSlots = 0;		// how many slots the last write merged in
+			double flashHoldMaxMs = 0, flashHoldLastMs = 0;	// MD: the sample flash copy's longest hold of the plug-in's lock
 			size_t fileBytes = 0;
 		};
 		MachineMemoryCost machineMemoryCost() const;
 		// The saves this memory holds that the file lacks (the "MMEM" chunk of the standalone's state)
 		machineMemory::Mark machineMemoryMark() const;
 		// One last look now and a write when a save is not in the file yet (the instance going away, a state save)
-		void flushMachineMemory(bool _closing);
+		enum class FlushMode : uint8_t { Close, Replace, HostSave };
+		void flushMachineMemory(FlushMode _mode);
 		// MD: the page's sample transfer ended; the machine stores it into a ROM slot (a save, written once stored)
 		void machineMemorySampleStored();
 		// The watch's thread runs once a second; a test may run it faster (milliseconds between looks).
@@ -190,7 +197,8 @@ namespace mdJucePlugin
 		void stopMachineMemoryThread();
 		bool writeMachineMemory(const std::vector<machineMemory::Key>& _keys, const std::vector<uint8_t>& _base, const std::vector<uint8_t>& _patch,
 			const std::vector<uint8_t>& _sectors);
-		bool writeChanges(bool _withForced, bool _consistent);
+		enum class WriteResult : uint8_t { Done, HeldBack, Failed };
+		WriteResult writeChanges(bool _withForced, bool _consistent);
 		bool lookMachineMemory(uint64_t& _signature, uint64_t& _epoch, bool _atomic);
 		void clearMemoryFile();
 		bool rebaseMachineMemory(uint64_t _signature, uint64_t _epoch);
@@ -249,7 +257,9 @@ namespace mdJucePlugin
 		std::atomic<bool> m_refuseNextRestoreForTest{false};
 		std::atomic<bool> m_memoryFollowsHost{false};	// a plug-in in a DAW: the global's host bytes are never saved
 		std::atomic<bool> m_memoryNoticePending{false};	// a note for the timer to show (written on the thread)
-		std::function<void(size_t)> m_lookPieceHookForTest;
+		std::function<void(size_t)> m_lookPieceHookForTest;	// (m_lookHookMutex)
+		std::mutex m_lookHookMutex;
+		std::atomic<bool> m_hasLookHookForTest{false};
 		std::atomic<uint64_t> m_memoryRestoreGeneration{0};	// the device's restore generation of the file's payload, 0: none
 		std::atomic<uint32_t> m_memoryVersion{1};
 		std::atomic<bool> m_memorySampleStored{false};	// machineMemorySampleStored, for the thread's next look

@@ -503,6 +503,15 @@ namespace
 	{
 		return mdJucePlugin::machineMemory::decode(readFile(memoryFile()), g_model).file.slots;
 	}
+	// The file holds the slot as this session's memory has it
+	bool fileSlotIs(Session& _s, const Key& _k)
+	{
+		const auto st = fileStore();
+		const auto it = st.find(_k);
+		const auto* slot = mdJucePlugin::machineMemory::findSlot(g_model, _k);
+		return it != st.end() && slot && it->second.bytes == mdJucePlugin::machineMemory::slotBytes(*slot, _s.patch());
+	}
+
 }
 
 int main(const int _argc, char** _argv)
@@ -513,6 +522,8 @@ int main(const int _argc, char** _argv)
 		const mdJucePlugin::machineMemory::FileLock lock(juce::File(juce::String::fromUTF8(_argv[2])));
 		std::printf("holding %d\n", lock.held() ? 1 : 0);
 		std::fflush(stdout);
+		if(_argc > 4 && lock.held() && !lock.unlocked())	// the parent waits for this file (reading the pipe would block until the end)
+			(void)juce::File(juce::String::fromUTF8(_argv[4])).replaceWithText("holding");
 		std::this_thread::sleep_for(std::chrono::milliseconds(std::atoi(_argv[3])));
 		return 0;
 	}
@@ -827,6 +838,9 @@ int main(const int _argc, char** _argv)
 			const auto wav = sineWav();
 			s.processor->getDeskHost()->session()->loadSampleFile(5, wav);
 			check(until([&] { return fileHasKind(Kind::Sector); }, 90000), "a sample loaded reaches the file: " + fileKeys());
+			const auto c = s.processor->machineMemoryCost();
+			std::printf("  cost: the sample flash copy held the plug-in's lock %.3f ms at most (one hold at a new base: 6 MiB), %.3f ms the last copy\n",
+				c.flashHoldMaxMs, c.flashHoldLastMs);
 		}
 		// the sequencer playing is no save
 		const auto writes = s.processor->machineMemoryCost().writes;
@@ -1179,9 +1193,14 @@ int main(const int _argc, char** _argv)
 	{
 		std::puts(" session 3q: tempo: saved with its global; never while the machine follows the host");
 		const auto* g = mdJucePlugin::machineMemory::findSlot(g_model, {Kind::Global, 0});
+		// a plug-in following its DAW starts first; then a standalone (not following) changes the tempo (MM: its sync)
+		Session daw;
+		daw.processor->setMachineMemoryFollowsHostForTest(true);
+		check(daw.waitWatching(), "a plug-in following its DAW starts");
+		check(daw.deskReady(), "its editor has read the machine");
 		{
-			Session s;
-			check(s.waitWatching(), "the machine starts");
+			Session s(std::nullopt, true);
+			check(s.waitWatching(), "a standalone starts");
 			check(s.deskReady(), "the editor has read the machine");
 			if(md)
 				s.send(elektronData::mdSetTempo(133 * 24));
@@ -1192,45 +1211,81 @@ int main(const int _argc, char** _argv)
 				const auto st = fileStore();
 				const auto it = st.find({Kind::Global, 0});
 				return it != st.end() && it->second.bytes == mdJucePlugin::machineMemory::slotBytes(*g, s.patch());
-			}, 15000), md ? "a tempo change is saved with its global" : "a sync change is saved with its global");
+			}, 15000), md ? "the standalone's tempo change is saved with its global" : "the standalone's sync change is saved with its global");
 		}
 		const auto before = fileStore().at({Kind::Global, 0}).bytes;
+		auto hostKept = [&](const Bytes& _after)
 		{
-			Session s;
-			s.processor->setMachineMemoryFollowsHostForTest(true);
-			check(s.waitWatching(), "a plug-in following its DAW starts");
-			check(s.deskReady(), "the editor has read the machine");
-			if(md)
-				s.send(elektronData::mdSetTempo(141 * 24));
-			else
-				s.page(R"({"op":"globalMidi","clockIn":false,"transportIn":true})");
-			pump(3000);
-			check(fileStore().at({Kind::Global, 0}).bytes == before, "the host's tempo and sync are not saved");
-			s.page(md ? R"({"op":"globalSet","field":"baseChannel","v":2})" : R"({"op":"globalMidi","base":2})");
-			check(until([&] { return fileStore().at({Kind::Global, 0}).bytes != before; }, 15000), "another global change is");
-			const auto after = fileStore().at({Kind::Global, 0}).bytes;
-			bool hostKept = true;
+			bool kept = true;
 			for(const auto at : g->hostBytes)
-				hostKept = hostKept && after[at] == before[at];
-			check(hostKept, "with the tempo and sync it had before");
-		}
+				kept = kept && _after[at] == before[at];
+			return kept;
+		};
+		// the plug-in: its DAW's tempo (sync) is never saved; a real global change is, with the tempo the file has
+		// (the newer one the standalone saved, not the one this plug-in started with)
+		if(md)
+			daw.send(elektronData::mdSetTempo(141 * 24));
+		else
+			daw.page(R"({"op":"globalMidi","clockIn":false,"transportIn":true})");
+		pump(3000);
+		check(fileStore().at({Kind::Global, 0}).bytes == before, "the host's tempo and sync are not saved");
+		daw.page(md ? R"({"op":"globalSet","field":"baseChannel","v":2})" : R"({"op":"globalMidi","base":2})");
+		check(until([&] { return fileStore().at({Kind::Global, 0}).bytes != before; }, 15000), "another global change is");
+		check(hostKept(fileStore().at({Kind::Global, 0}).bytes), "with the other instance's newer tempo and sync, not this one's");
+		// a DAW project opens (a new base, the project's tempo): the same
+		daw.processor->setMachineMemoryFollowsHostForTest(true);
+		static_cast<juce::AudioProcessor&>(*daw.processor).setStateInformation(factoryProject.data(), static_cast<int>(factoryProject.size()));
+		pump(500);
+		check(daw.waitWatching(), "a project opens in the plug-in");
+		const auto beforeProject = fileStore().at({Kind::Global, 0}).bytes;
+		check(daw.deskReady(), "its editor has read the machine again");
+		check(daw.pageOk(md ? R"({"op":"globalSet","field":"baseChannel","v":3})" : R"({"op":"globalMidi","base":3})"), "a global change: " + daw.lastPageResult());
+		check(until([&] { return fileStore().at({Kind::Global, 0}).bytes != beforeProject; }, 15000), "a global change in the project is saved");
+		check(hostKept(fileStore().at({Kind::Global, 0}).bytes), "with the file's tempo and sync, not the project's");
 	}
 	{
-		std::puts(" session 3r: another process holds the file's lock: the save waits for it");
+		std::puts(" session 3r: the file's lock held by another bundle in this process, then by another process: the save waits");
+		Session s;
+		check(s.waitWatching(), "the machine starts");
+		{
+			// a second handle in this process, without this bundle's mutex: as the AU beside the VST3
+			const mdJucePlugin::machineMemory::FileLock other(memoryFile(), 2000, false);
+			check(other.held() && !other.unlocked(), "the other bundle holds the file lock");
+			s.saveKit(54, "BUNDLE");
+			pump(2500);
+			check(!fileSlotIs(s, {Kind::Kit, 54}), "not written while it holds it");
+		}
+		check(until([&] { return fileSlotIs(s, {Kind::Kit, 54}); }, 15000), "written once it let go");
 		juce::ChildProcess child;
 		const auto self = juce::File::getSpecialLocation(juce::File::currentExecutableFile).getFullPathName();
-		check(child.start(juce::StringArray{self, "holdlock", memoryFile().getFullPathName(), "5000"}), "a second process starts");
-		char buf[32] = {};
-		(void)child.readProcessOutput(buf, sizeof(buf) - 1);
-		check(juce::String(buf).contains("holding 1"), "it holds the lock");
-		Session s;
-		check(s.waitWatching(), "the machine starts (its start waits for the lock too)");
+		const auto childStart = juce::Time::getMillisecondCounterHiRes();
+		const auto ready = g_memory.getSiblingFile(g_memory.getFileName() + "-holding");
+		(void)ready.deleteFile();
+		check(child.start(juce::StringArray{self, "holdlock", memoryFile().getFullPathName(), "12000", ready.getFullPathName()}), "a second process starts");
+		check(until([&] { return ready.existsAsFile(); }, 10000), "it holds the lock");
+		(void)ready.deleteFile();
 		s.saveKit(55, "LOCKED");
-		pump(1000);
-		const bool waited = !fileHas({Kind::Kit, 55}) || !child.isRunning();
-		check(until([&] { return fileHas({Kind::Kit, 55}); }, 20000), "written once the other process let go");
-		check(waited, "not before");
+		pump(2500);
+		const auto bornAgo = juce::Time::getMillisecondCounterHiRes() - childStart;
+		check(child.isRunning(), "it still holds it (did not die early; " + std::to_string(int(bornAgo)) + " ms, exit " + std::to_string(child.isRunning() ? -1 : int(child.getExitCode())) + ")");
+		check(!fileSlotIs(s, {Kind::Kit, 55}), "not written while it holds it");
+		check(until([&] { return fileSlotIs(s, {Kind::Kit, 55}); }, 30000), "written once the other process let go");
 		child.waitForProcessToFinish(10000);
+	}
+	{
+		std::puts(" session 3s: a write that fails is tried again every 5 s, not at every look");
+		Session s;
+		check(s.waitWatching(), "the machine starts");
+		s.processor->setMachineMemoryLookMs(100);
+		setWritable(g_memory, false);
+		s.saveKit(58, "RETRY");
+		check(until([&] { return s.processor->machineMemoryCost().failedWrites >= 1; }, 10000), "the write failed");
+		const auto first = s.processor->machineMemoryCost().failedWrites;
+		pump(11000);
+		const auto tries = s.processor->machineMemoryCost().failedWrites - first;
+		check(tries >= 1 && tries <= 3, "tried again " + std::to_string(tries) + " times in 11 s (every 5 s, not every 0.1 s look)");
+		setWritable(g_memory, true);
+		check(until([&] { return fileSlotIs(s, {Kind::Kit, 58}); }, 8000), "written at the next try once it can be");
 	}
 	savedFile = readFile(memoryFile());
 	{
@@ -1245,6 +1300,24 @@ int main(const int _argc, char** _argv)
 		check(s.kitName(slot) == factoryName, "kit " + std::to_string(slot + 1) + " is the factory's again");
 		pump(2000);
 		check(!memoryFile().existsAsFile(), "and nothing wrote a file since");
+	}
+	{
+		std::puts(" session 4b: Start from factory memory while another editor holds the file and saves: its newer save stays");
+		Session a, b;
+		check(a.waitWatching() && b.waitWatching(), "two instances start");
+		a.saveKit(57, "OLDSAVE");
+		check(until([&] { return fileSlotIs(a, {Kind::Kit, 57}); }, 15000), "a save before the reset");
+		{
+			const mdJucePlugin::machineMemory::FileLock held(memoryFile(), 2000);	// the file busy at the reset
+			std::string note;
+			check(a.processor->startFromFactoryMemory(note), "Start from factory memory: " + note);
+			check(a.waitWatching(), "the machine runs on factory memory");
+			b.saveKit(56, "NEWER");
+			pump(500);
+			check(fileHas({Kind::Kit, 57}), "the file stays while its lock is held");
+		}
+		check(until([&] { return !fileHas({Kind::Kit, 57}) && fileSlotIs(b, {Kind::Kit, 56}); }, 20000),
+			"then the saves from before the reset go and the newer save stays: " + fileKeys());
 	}
 	{
 		std::puts(" session 5: a damaged file");

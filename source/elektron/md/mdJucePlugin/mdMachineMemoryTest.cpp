@@ -176,6 +176,25 @@ namespace
 			check(kept[g->ranges.front().begin + 0xa4] == base[g->ranges.front().begin + 0xa4] && kept[g->ranges.front().begin + 0xa0] == now[g->ranges.front().begin + 0xa0],
 				"written while following: the host's bytes as they were");
 			check(slotSame(Model::Machinedrum, {Kind::Global, 0}, now, now) && !slotSame(Model::Machinedrum, {Kind::Global, 0}, base, now), "two looks compared per slot");
+			auto ramp = now;
+			ramp[g->ranges.front().begin + 0xa5] ^= 3;	// the DAW's tempo moved between two looks
+			check(slotSame(Model::Machinedrum, {Kind::Global, 0}, now, ramp, true) && !slotSame(Model::Machinedrum, {Kind::Global, 0}, now, ramp),
+				"following the host, a tempo ramp does not hold a global save back");
+			// written while following: the host bytes from the stored slot (another instance's newer tempo), else the base's
+			Store st;
+			auto other = base;
+			other[g->ranges.front().begin + 0xa4] = 0x42;
+			merge(st, Model::Machinedrum, {{Kind::Global, 0}}, other, {}, 1);
+			mergeSaved(st, Model::Machinedrum, {{Kind::Global, 0}}, base, now, {}, 2, true);
+			const auto& b = st.at({Kind::Global, 0}).bytes;
+			check(b[0xa4] == 0x42 && b[0xad] == other[g->ranges.front().begin + 0xad] && b[0xa0] == now[g->ranges.front().begin + 0xa0],
+				"the stored slot's tempo and sync stay, the real change goes in");
+			Store empty;
+			mergeSaved(empty, Model::Machinedrum, {{Kind::Global, 0}}, base, now, {}, 2, true);
+			check(empty.at({Kind::Global, 0}).bytes[0xa4] == base[g->ranges.front().begin + 0xa4], "no stored slot: the base's");
+			Store notFollowing;
+			mergeSaved(notFollowing, Model::Machinedrum, {{Kind::Global, 0}}, base, now, {}, 2, false);
+			check(notFollowing.at({Kind::Global, 0}).bytes[0xa4] == now[g->ranges.front().begin + 0xa4], "not following: the tempo is saved");
 		}
 		check(decode({}, Model::Machinedrum).problem == Problem::Empty, "no bytes: empty");
 		check(decode({1, 2, 3}, Model::Machinedrum).problem == Problem::NotOurs, "a short file is not ours");
