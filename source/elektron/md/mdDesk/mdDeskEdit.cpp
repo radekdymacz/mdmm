@@ -560,15 +560,18 @@ namespace mdDesk
 			_p.length = uint8_t(*v);
 			// MD-106, as the machine's SCALE SETUP (measured, gapProbesFirmwareTest w12extend): a longer total length
 			// repeats the steps it had into the new ones (trigs, accent, slide, swing, locks) when no track has a trig
-			// from the old end on; otherwise the new steps stay as they are
+			// from the old end on; otherwise the new steps stay as they are. The repeat runs in whole 16 or 32 step
+			// blocks: from 48 steps the new page is steps 17-32 again, not 1-16 (B-103, mdDeskFirmwareTest p4, the LCD's
+			// LEN clicked 32 -> 48 -> 64)
 			const uint64_t later = was >= 64 ? 0 : ~0ull << was;
 			const bool clean = std::none_of(_p.trigs.begin(), _p.trigs.end(), [&](const uint64_t _t) { return (_t & later) != 0; });
 			if(now <= was || !clean)
 				return _p;
+			const size_t period = was >= 32 ? 32 : 16;
 			const auto repeat = [&](uint64_t& _bits)
 			{
 				for(size_t i = was; i < now; ++i)
-					_bits = ((_bits >> (i % was)) & 1) ? (_bits | (1ull << i)) : (_bits & ~(1ull << i));
+					_bits = ((_bits >> (i % period)) & 1) ? (_bits | (1ull << i)) : (_bits & ~(1ull << i));
 			};
 			for(size_t t = 0; t < ed::MdPattern::g_tracks; ++t)
 				for(auto* bits : {&_p.trigs[t], &_p.trackAccent[t], &_p.trackSlide[t], &_p.trackSwing[t]})
@@ -578,9 +581,10 @@ namespace mdDesk
 			repeat(_p.swingPattern);
 			for(auto& row : _p.lockRows)
 				for(size_t i = was; i < now; ++i)
-					row[i] = row[i % was];
-			_in.note = "As the machine does: the first " + std::to_string(was) + " steps repeat into steps " + std::to_string(was + 1) + " to "
-				+ std::to_string(now);
+					row[i] = row[i % period];
+			const auto from = was % period;
+			_in.note = "As the machine does: " + (from ? "steps " + std::to_string(from + 1) + " to " + std::to_string(from + now - was)
+				: "the first " + std::to_string(was) + " steps") + " repeat into steps " + std::to_string(was + 1) + " to " + std::to_string(now);
 			return _p;
 		}
 

@@ -1454,11 +1454,15 @@ namespace
 			_rig.run(100);
 		};
 		const auto key = [&](const md::PanelControl _k) { hold({_k}); };
-		for(const bool later : {false, true})
+		// B-103 (the 0.6 e2e run): the third case is the LCD's LEN clicked round, 32 -> 48 -> 64 -> 16 -> 32, on a 32-step
+		// pattern whose page 2 differs from page 1: going up copies, so at 16 the later pages hold steps, and 16 -> 32 then
+		// copies nothing: steps 17-32 are what was there (page 2 again), not page 1 repeated
+		for(const int mode : {0, 1, 2})
 		{
+			const bool later = mode == 1, round = mode == 2;
 			auto p = *_rig.readPattern(110);
-			p.length = 16;
-			p.scale = 0;
+			p.length = round ? 32 : 16;
+			p.scale = round ? 1 : 0;
 			p.trigs.fill(0);
 			p.lockMasks.fill(0);
 			for(auto& row : p.lockRows) row.fill(0xff);
@@ -1472,6 +1476,8 @@ namespace
 			p = ed::withTrig(p, 1, 2, true);
 			if(later)
 				p = ed::withTrig(p, 2, 40, true);
+			if(round)
+				p = ed::withTrig(p, 0, 20, true);
 			p = *ed::withLock(p, 0, 0, 4, 99);
 			for(const uint8_t slot : {110, 111})
 			{
@@ -1488,10 +1494,17 @@ namespace
 			key(md::PanelControl::Exit);
 			key(md::PanelControl::Exit);
 			hold({md::PanelControl::Function, md::PanelControl::Scale});
-			// the window keeps its field (LEN, SCALE, the speed; LEFT and RIGHT wrap): LEN at first, SCALE the second time
-			if(!later)
+			// the window keeps its field (LEN, SCALE, the speed; LEFT and RIGHT wrap): LEN at first, SCALE after
+			if(mode == 0)
 				key(md::PanelControl::Right);
-			key(md::PanelControl::Up);
+			if(round)
+			{
+				for(const auto k : {md::PanelControl::Up, md::PanelControl::Up, md::PanelControl::Down, md::PanelControl::Down,
+						md::PanelControl::Down, md::PanelControl::Up})
+					key(k);
+			}
+			else
+				key(md::PanelControl::Up);
 			if(const char* snap = std::getenv("EXTEND_SNAP"))
 			{
 				const auto panel = m.hardware().getFrontPanelSnapshot();
@@ -1503,19 +1516,24 @@ namespace
 			}
 			key(md::PanelControl::Exit);
 			_rig.run(400);
-			// the editor: totalLength 32 on the other slot
-			_rig.pageConfirmed(R"({"op":"totalLength","p":111,"v":32,"force":true,"id":1060})");
-			settle();
+			// the editor: totalLength 32 on the other slot (round: the LCD's LEN clicks, 48, 64, 16, 32)
+			for(const int v : round ? std::vector<int>{48, 64, 16, 32} : std::vector<int>{32})
+			{
+				_rig.pageConfirmed("{\"op\":\"totalLength\",\"p\":111,\"v\":" + std::to_string(v) + ",\"force\":true,\"id\":1060}");
+				settle();
+			}
 			const auto a = *_rig.readPattern(110), b = *_rig.readPattern(111);
 			bool locks = true;
 			for(size_t i = 0; i < 64; ++i)
 				locks = locks && ed::lockValue(a, 0, 0, i) == ed::lockValue(b, 0, 0, i);
 			const bool same = a.length == b.length && a.scale == b.scale && a.trigs == b.trigs && a.accentPattern == b.accentPattern
 				&& a.swingPattern == b.swingPattern && a.trackAccent == b.trackAccent && a.trackSwing == b.trackSwing && a.lockMasks == b.lockMasks && locks;
-			std::printf("  %s: machine %d steps, T1 %016llx; editor %d steps, T1 %016llx\n", later ? "a trig past the old length" : "the later steps empty",
+			std::printf("  %s: machine %d steps, T1 %016llx; editor %d steps, T1 %016llx\n", round ? "LEN round from 32" : later ? "a trig past the old length" : "the later steps empty",
 				a.length, static_cast<unsigned long long>(a.trigs[0]), b.length, static_cast<unsigned long long>(b.trigs[0]));
-			check(same && a.length == 32 && (later ? a.trigs[0] == p.trigs[0] : a.trigs[0] == (p.trigs[0] | (p.trigs[0] << 16))),
-				std::string("the editor's longer pattern is the machine's: ") + (later ? "nothing copied (a trig past the old length)" : "steps 1-16 repeated into 17-32"));
+			const uint64_t want = round ? (p.trigs[0] & 0xffffffffull) : later ? p.trigs[0] : (p.trigs[0] | (p.trigs[0] << 16));
+			check(same && a.length == 32 && (a.trigs[0] & 0xffffffffull) == want,
+				std::string("the editor's longer pattern is the machine's: ") + (round ? "steps 17-32 are page 2 again, nothing copied (the trip up filled the later pages)"
+					: later ? "nothing copied (a trig past the old length)" : "steps 1-16 repeated into 17-32"));
 		}
 	}
 

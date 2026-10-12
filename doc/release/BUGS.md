@@ -4,6 +4,14 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-103 · Machinedrum: a pattern made 64 steps long from 48 repeats the wrong steps
+
+- **From:** the 0.6 e2e run, 2026-10-13: `md-seq-len-repeats` fails ("total 32, T1 [0,8,14,16,22,32,40,46,48,56,62]", toast "As the machine does: the first 48 steps repeat into steps 49 to 64").
+- **What happens:** the journey clicked the LCD's LEN round to 16 (32, 48, 64, 16) on a factory pattern, then once more to 32, and expected steps 1-16 repeated into 17-32.
+- **Measured (the firmware's SCALE SETUP against the editor, `mdDeskFirmwareTest p4`):** a longer total length repeats the old steps only while no track has a trig from the old end on, anywhere up to step 64 (W12e). Going up 32 -> 48 -> 64 fills the later pages, so after LEN 16 the later pages hold steps and 16 -> 32 copies nothing: steps 17-32 are what was there. Editor and machine agreed on that; the journey's expectation was wrong. They did not agree on 48 -> 64: the machine repeats steps 17-32 into 49-64 (its repeat runs in 32-step blocks from 32 steps on), the editor repeated steps 1-16 ("the first 48 steps").
+- **Fix (`fix/0.6-e2e-md`):** the core's `totalLength` repeats in 16-step blocks from 16 steps and in 32-step blocks from 32 or 48 (trigs, marks, locks), and says which steps it repeated ("steps 17 to 32 repeat into steps 49 to 64"); `mdDeskTest` (48 -> 64), `mdDeskFirmwareTest p4` (a new case, the LCD's LEN clicked round 32 -> 48 -> 64 -> 16 -> 32 on the panel and in the editor: the same pattern read back, all 64 steps, marks and locks). The journey starts from an empty pattern (or clears one with Alt+Delete), clicks LEN round to 16, draws three trigs on page 1, then LEN 32: they repeat into 17-32; it passes on the firmware from fresh settings and on the page tier. PROBES-manual-gaps.md W12e has the 32-step blocks.
+- **Status:** fixed on `fix/0.6-e2e-md`.
+
 ## B-101 · Machinedrum: live erase sets a trig on another track; "Push failed" after locks drawn just before REC
 
 - **From:** the 0.6 e2e run, 2026-10-13: `md-seq-live-erase` fails ("another track changed"); after `md-seq-live-unlock` the page shows the red banner "PUSH FAILED: THE MACHINE DID NOT READ BACK PATTERN A01. SHOWING WHAT IT HOLDS." (picture `e2e-md-seq-live-unlock`).
