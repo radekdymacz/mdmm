@@ -117,7 +117,7 @@ Notes, NOTE OFFs, envelope trigs, slides and locks go along. Other keys on a sel
 
 Drag the selection with [⌘] held to drop a copy where you let go. A dashed frame shows where it lands. With **Draw** dark, drag the selected notes in the roll without [⌘] to move them.
 
-Select a step or steps and click the small ⋯ on the selection for the step menu (a right-click on a step opens it too): note on or off, NOTE OFF, trigless, slide, a chord note, copy, cut, paste here, duplicate, clear, and fill every 2nd or 4th step from the one you clicked. Synth steps paste onto synth tracks, MIDI steps onto MIDI tracks.
+Select a step or steps and click the small ⋯ on the selection for the step menu (a right-click on a step opens it too): note on or off, NOTE OFF, a trigless trig, the envelopes (Amp, Filter, LFO), slide, swing, a chord note, copy, cut, paste here, duplicate, clear, and fill every 2nd or 4th step from the one you clicked. Synth steps paste onto synth tracks, MIDI steps onto MIDI tracks.
 
 NOTE: [⌘] is [CTRL] on Windows and Linux.
 

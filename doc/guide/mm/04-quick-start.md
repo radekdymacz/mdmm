@@ -60,7 +60,7 @@ To paint the same note on several steps, drag sideways. The steps you cross get 
 
 To place a note off, which stops the sound at a step, hold [⌥] and click an empty step. You can also drag the end of a note: the note's length is the distance to its NOTE OFF.
 
-For a chord note on a step, hold [⇧] and click the roll there. Right-click a step for the step menu (Ctrl-click on a Mac). It offers a note on or off, NOTE OFF, trigless, slide and a chord note.
+For a chord note on a step, hold [⇧] and click the roll there. Right-click a step for the step menu (Ctrl-click on a Mac). It offers a note on or off, NOTE OFF, a trigless trig, the envelopes a trig fires, slide, swing and a chord note.
 
 ## LIVE RECORDING
 <!-- rows: MM-079 MM-080 @fe3ff1 -->
