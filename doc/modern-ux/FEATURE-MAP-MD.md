@@ -32,7 +32,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.5 | PLAY (second press pauses) | Start / pause | ✅ | Play key: ⇧-click or ⇧Space pauses (▶ blinks, the position holds), ▶ goes on; the ▶ menu (right-click or its ▾) | Pause and Continue are MIDI Stop and Continue on both engines (P1, P1b): with CTRL IN off the machine takes neither, and the editor says so. | 3 |
 | p.5 | STOP; double STOP silences all voices | Stop, panic | ✅ | Panic: ⌘. or the ▶ menu's Panic (the machine's STOP pressed twice) | Over HW MIDI there is no panic: no MIDI message silences the Machinedrum (P5); the menu entry is off and says why. | 1 |
 | p.5 | STOP + PLAY restarts from the top | Restart | 🟡 | Stop then Play | Same result in two clicks. | – |
-| p.5 | PATTERN/SONG key | Switch sequencer mode | ✅ | Song page: PATTERN · CHAIN · SONG keys; LCD PLAY value | seqMode command. | 3 |
+| p.5 | PATTERN/SONG key | Switch sequencer mode | ✅ | Song page: PATTERN · CHAIN · SONG keys; LCD PLAY value | seqMode command. | 4 |
 | p.5 | KIT key (kit menu) / FUNCTION + KIT (song menu) | Open kit / song menus | ✅ | Kit: library popover. Song: the Songs column on the Song page (Load, Save, Save to…, Copy, Paste, Clear, Rename) | The song menu is the Songs column (0.6). | 1 |
 | p.5 | TRIG keys 1-16 | Play tracks, place notes, pick patterns | ✅ | Step grid; piano keys A-L play the selected track | Right-click a step for its menu. | 2 |
 | p.5 | SCALE SETUP key (page switch) | Pick pattern page | ✅ | Page key and page LEDs above the grid, [ and ] | ALL view shows every step. | 1 |
@@ -143,7 +143,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.36 | FUNCTION held: tempo changes on release | Delayed change | ✅ | TEMPO window (a click on the tempo): Change on release; ⌥-drag the tempo does it once |  | 1 |
 | p.36 | Temporary +/-10 % tempo shift (LEFT/RIGHT) | Turntable sync | ✅ | TEMPO window: −10 % / +10 % held, or the keys - and = held; back at the release, nothing stored |  | 1 |
 | p.36 | Tap tempo | FUNCTION + TEMPO | ✅ | T or B key; Shift+B on every workspace | keymap.json tap-tempo, tap-tempo-shift. On the Monomachine B is Draw on Sequence, so Shift+B is the one key both editors share. | 3 |
-| p.36 | External sync, EXT shown | MIDI clock follow | ✅ | Global > Sync > Tempo in; host tempo marked on LCD | DAW follows host. | 1 |
+| p.36 | External sync, EXT shown | MIDI clock follow | ✅ | Global > Sync > Tempo in; host tempo marked on LCD | In a DAW Tempo in is the switch (review 1, I-026): EXT follows the DAW's tempo and transport (a new plug-in starts so), INT runs the machine on its own clock and TEMPO is editable; kept with the project (`followHost`, `deskHostClock.h`; mdDeskFirmwareTest hostclock). | 1 |
 | p.37 | Pattern selection (8 banks x 16) | A01-H16 | ✅ | Pattern chooser; prev/next arrows |  | 4 |
 | p.37 | Uninitialised patterns shown by LEDs | Which are empty | ✅ | Pattern chooser: EMPTY slots |  | 1 |
 | p.37 | Pending pattern at the pattern end | Queue | ✅ | Pattern chooser Queue / Now; LCD blinks |  | 1 |
@@ -199,7 +199,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys |
 |---|---|---|---|---|---|---|
 | p.51 | Song capacity: 256 rows, 32 songs | Limits | ✅ | Song page: Songs column (32 slots); row count |  | 1 |
-| p.51 | Load song | LOAD SONG | ✅ | Songs column: select a slot, Load (Enter); LCD SONG; loads when stopped |  | 1 |
+| p.51 | Load song | LOAD SONG | ✅ | Songs column: select a slot, Load (Enter); LCD SONG; loads when stopped |  | 2 |
 | p.52 | Play, pause, stop a song | Transport | ✅ | Play key: play, pause (⇧-click, ⇧Space), stop; in SONG mode as in pattern mode |  | 2 |
 | p.52 | Move song pointer to a row; start from a row | Navigate, transport | ✅ | Song: ▶ From here on the selected row, or Enter (SONG mode, the song position, Continue) | A LOOP or JUMP before the row cannot be counted through: the editor says so (start the song and let it play there). | 1 |
 | p.52 | Playing row shown, repeats left | Playhead | ✅ | Song: the playing row marked +2, +1, last; the What plays line ends 2 more / last | The machine's own counter (RAM 0x2b1901, gapProbesFirmwareTest w12repeats), telemetry songRepeats | 2 |

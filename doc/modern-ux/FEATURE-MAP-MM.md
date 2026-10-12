@@ -224,7 +224,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Multi trig 1-43 | SEQ TRNSP | Transpose, loop unbroken | ✅ | Perform > Multi trig |  | 1 |
 | Multi trig 1-43 | TIMING context tab | Delay to bar | ✅ | Perform Timing stepper |  | 1 |
 | Multi trig 1-43 | Arpeggiators work in all-track mode | Arp | ✅ | Per track arp | Firmware | 1 |
-| Multi env 1-43 | ATK, DEC, SUS, REL | ADSR on top | ✅ | Perform > Multi envelope: the card names the kit's MULTI TRIG mode and says what the envelope shapes in it |  | 3 |
+| Multi env 1-43 | ATK, DEC, SUS, REL | ADSR on top | ✅ | Perform > Multi envelope: the card names the kit's MULTI TRIG mode and says what the envelope shapes in it |  | 4 |
 | Multi env 1-44 | PORT | Multi portamento | ✅ | Same |  | 1 |
 
 ## 10. The pattern sequencer: pattern operation (1-45 to 1-47)
@@ -277,7 +277,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Tempo screen 1-56 | Delay change until FUNCTION released | Delayed change | ✅ | TEMPO window (a click on the tempo): Change on release; ⌥-drag the tempo does it once |  | 1 |
 | Tempo screen 1-56 | Temporary +/-10 % shift | Nudge | ✅ | TEMPO window: −10 % / +10 % held, or the keys - and = held; back at the release |  | 1 |
 | Tap tempo 1-56 | Average of taps | Tap | ✅ | Shift + B everywhere; B off Sequence | The last five taps are averaged; a pause of 2 s starts over | 2 |
-| External synchronisation 1-56 | Internal or external MIDI clock; EXT shown | Sync | ✅ | GLOBAL > Sync > Tempo in (INT / EXT); in a DAW the machine follows the host automatically (`followHost`) | See Control In | 1 |
+| External synchronisation 1-56 | Internal or external MIDI clock; EXT shown | Sync | ✅ | GLOBAL > Sync > Tempo in (INT / EXT); in a DAW EXT follows the host (a new plug-in starts so), INT runs the machine on its own clock (`followHost`, review 1, I-026) | See Control In. INT is kept with the project; the host's clock and transport stop going to the machine (mmDeskFirmwareTest hostclock) | 1 |
 | Tempo 1-57 | Songs store tempo changes | Song tempo | ✅ | Song row Tempo |  | 1 |
 
 ## 13. Parameter locks (1-57, 1-58)
@@ -411,7 +411,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | MIDI functionality 1-90 | NRPN control, program change selects pattern | MIDI in | ➖ | – | Firmware; automation and DAW MIDI reach it | – |
 | Control out 1 1-91 | SEQUENCER, ARP, KEYBOARD to INT / OUT / INT+OUT | Output routing | ✅ | GLOBAL > Control out 1: Sequencer, Arp, Keyboard to INT, OUT or INT+OUT | Measured (P2): global bytes 0x07-0x09 (`globalMidi` sequencerOut, arpOut, keyboardOut). The page warns when OUT leaves the machine silent | 1 |
 | Control out 2 1-92 | TRANSPORT, MIDI CLOCK, PRG CHANGE out | Output control | ✅ | GLOBAL > Sync > Ctrl out, Tempo out; Control > Prg change out | `globalMidi` (clockOut, transportOut, programChangeOut). Machine MIDI out reaches the host since 0.4.0 | 1 |
-| Control in 1-92 | TEMPO SYNC internal / external | Sync | ✅ | GLOBAL > Sync > Tempo in (INT / EXT) | A DAW sets EXT itself (`followHost`) | 1 |
+| Control in 1-92 | TEMPO SYNC internal / external | Sync | ✅ | GLOBAL > Sync > Tempo in (INT / EXT) | In a DAW a new plug-in starts on EXT (`followHost`); INT stays and runs the machine on its own clock (review 1, I-026) | 1 |
 | Control in 1-92 | TRANSPORT ACCEPT / IGNORE | Transport in | ✅ | GLOBAL > Sync > Ctrl in | A DAW turns it on itself; the page also asks once when PLAY needs it | 1 |
 | Control in 1-93 | PRG CHANGE in | Program change in | 🟡 | GLOBAL > Control > Prg change in, shown as BASE | Shown, not changeable: measured, the machine always takes it on the base channel | – |
 | Multi map edit 1-93 | Ranges, upper key, insert / delete | Key ranges | ✅ | Perform > Multi map table, Split, delete |  | 1 |
