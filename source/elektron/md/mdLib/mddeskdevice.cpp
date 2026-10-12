@@ -150,6 +150,10 @@ namespace md
 			m_sequencer = {};
 		}
 		const bool ready = hardware.isFirmwareMidiReady();
+		// B-087: a machine that starts again in place (not ready, then ready) reads its sequencer afresh
+		if(ready && !m_sequencerReady)
+			m_sequencer = {};
+		m_sequencerReady = ready;
 		if(ready)
 			m_bootAnimation.update(uc.read8(BootAnimation::g_mainScreenAddress), _frames);
 		t.bootAnimation.store(m_bootAnimation.state(), std::memory_order_relaxed);

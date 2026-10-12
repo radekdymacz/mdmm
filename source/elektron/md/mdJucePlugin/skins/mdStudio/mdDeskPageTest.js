@@ -399,6 +399,12 @@ check(P.playsText() === "SONG 01 · 2 rows · stopped", "stopped: no row is said
 	check(!!P.S.paused && P.S.paused.step === 4, "B-086: the machine stops: still paused on the step it held");
 	frame(4, true);
 	check(P.S.paused === null, "B-086: the machine plays again (PLAY, or its own panel): the pause is over");
+	/* a pause the machine never took: still playing a second after it was sent, the pause is dropped */
+	sent.length = 0; P.pauseNow();
+	frame(5, true);
+	check(!!P.S.paused, "B-086: within a second of the pause, frames that still play keep it");
+	P.S.paused.at -= 1500; frame(6, true);
+	check(P.S.paused === null, "B-086: still playing 1.5 s after the pause was sent: the pause is dropped, the machine plays on");
 	frame(-1, false);
 }
 

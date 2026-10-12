@@ -138,8 +138,10 @@ before it) or under load (`--jobs 4`, 12 to 14 busy loops beside it), its cause 
 | the MD intent cases (`mdIntentCasesFirmwareTest`) | Harmless. The runs that failed (2026-10-12, 01:07, feat/0.6-transport) ran a test program built from older sources: tier 2 did not build the firmware tests' programs then (fixed in 40f198560). The test runs on the machine's own clock (`nowMs` is the emulator's), so load and other worktrees cannot move it, and it writes no shared file | none needed: four at once beside 8 busy loops, 48 of 48 cases each |
 
 Since then a journey that leaves the machine in SONG mode is named in the log (`JOURNEY <next> before: the machine was
-in SONG mode: PATTERN mode again`, against the journey after the one that left it). Several song journeys still leave
-it; the next journey no longer pays for it.
+in SONG mode: PATTERN mode again`, against the journey after the one that left it), and the page tier's report ends with
+a WARN line listing every such "before:" (what `between` put right, what the runner closed). Several song journeys still
+leave SONG mode; the next journey no longer pays for it. The hands log a click on a disabled control
+(`hands: no click on ...`) instead of sending it, and each page's browser context is disposed when its unit ends.
 
 ## What stays open
 

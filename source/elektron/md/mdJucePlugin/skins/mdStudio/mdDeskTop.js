@@ -275,6 +275,7 @@ function markSongRow(force) {
 
 /* Transport: the playhead comes from the machine (telemetry), moved by class only */
 let lastStep = -1;
+const g_pauseTakenMs = 1000;	/* B-086: how long a pause sent may wait for the machine to stop */
 function onTelemetry(m) {
 	Docs.telemetry = m;
 	/* the transport is derived from the telemetry document (transportOf): a new view when it changed */
@@ -283,6 +284,9 @@ function onTelemetry(m) {
 	/* the machine plays again (PLAY, or its own panel): the pause is over. Only when it starts again: a frame sent while
 	   it still played, before the pause reached it, ended the pause just begun, and the machine then stopped (B-086) */
 	if (V.playing && !wasPlaying && S.paused) { S.paused = null; renderTop(); }
+	/* a pause the machine did not take: still playing a second after it was sent (frames before it are late by tens of
+	   ms, not a second), so ▶ does not blink over a machine that plays on */
+	else if (V.playing && S.paused && S.paused.at && Date.now() - S.paused.at > g_pauseTakenMs) { S.paused = null; renderTop(); setPos(); }
 	if (V.rec !== wasRec) { renderTop(); if (V.rec) toast("Live recording: click a track's steps to play it, move a value to lock it."); }
 	S.step = V.playing ? m.step : -1;
 	markSongRow();

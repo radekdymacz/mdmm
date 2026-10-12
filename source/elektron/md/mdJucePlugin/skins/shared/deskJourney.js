@@ -131,7 +131,9 @@ const Journey = (() => {
 			pe("pointerup", t, x, y, m, 0); me("mouseup", t, x, y, m, 0);
 			/* a browser sends no click to a disabled control (a synthetic one would reach the page's click routers: the
 			   Paste what dialog's go key, off while nothing is ticked, sent an empty paste the core refused) */
-			if (!t.closest?.("button:disabled,input:disabled,select:disabled,textarea:disabled")) me("click", t, x, y, m, 0);
+			const off = t.closest?.("button:disabled,input:disabled,select:disabled,textarea:disabled");
+			if (!off) me("click", t, x, y, m, 0);
+			else if (runLog) runLog(`hands: no click on ${describe(off)}${off.textContent ? ' "' + off.textContent.trim().slice(0, 40) + '"' : ""}: it is disabled (a browser sends none)`);
 		},
 		/* a right-click at the element's centre: the second button down and up, then the contextmenu event the browser
 		   sends (a step's menu, DESIGN-keymap.md K3) */
@@ -328,9 +330,10 @@ const Journey = (() => {
 	   once, after ready and before the first journey: logged "JOURNEYS before: ..."), between: async (u) => the page's
 	   neutral state before each journey, context: () => what the page last said (its toast, its error line), added to a
 	   FAIL} */
+	let runLog = null;	/* the running journeys' log (the hands say what they could not do) */
 	async function run(all, page) {
 		const list = wanted(all); if (!list) return;
-		const log = page.log;
+		const log = page.log; runLog = log;
 		log(`JOURNEYS start: ${list.length} of ${all.length}: ${list.map(j => j.name).join(" ")}`);
 		if (!list.length) { log("JOURNEYS DONE 0/0"); return; }
 		let passed = 0, skipped = 0;
