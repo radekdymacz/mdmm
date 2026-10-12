@@ -107,9 +107,11 @@ namespace mdJucePlugin::machineMemory
 		// LOAD KIT set in the pattern that plays (measured: MD 0x94, MM 0x426). A change of these alone is merged byte by
 		// byte, so a kit saved in an old project does not bring back the rest of that project's pattern.
 		std::vector<uint32_t> links;
-		// Bytes whose change alone is no save (offsets in the slot's bytes): the MD global's tempo (+0xa4, two bytes),
-		// which the tempo knob, the host's tempo and a global made active change. They go with the global's next save.
-		std::vector<uint32_t> volatileBytes;
+		// The bytes a plug-in that follows its DAW sets in the active global (offsets in the slot's bytes; measured with
+		// MDMM_MEMORY_OTHER=1): MD the tempo (+0xa4, two bytes) and TEMPO IN / CTRL IN (+0xad); MM TEMPO SYNC (+5) and
+		// TRANSPORT ACCEPT (+6). While the machine follows the host they are never a save and never written (the file
+		// keeps what the session started with); elsewhere (the standalone) a tempo change is a save, as on the machine.
+		std::vector<uint32_t> hostBytes;
 	};
 
 	constexpr uint32_t g_otherBlock = 0x100;
@@ -137,14 +139,14 @@ namespace mdJucePlugin::machineMemory
 	{
 		inline void addArray(std::vector<struct Slot>& _out, const Kind _kind, const uint32_t _count,
 			const std::vector<std::pair<uint32_t, uint32_t>>& _parts, const std::vector<uint32_t>& _links = {},
-			const std::vector<uint32_t>& _volatile = {})	// (base, size = stride) per part
+			const std::vector<uint32_t>& _host = {})	// (base, size = stride) per part
 		{
 			for(uint32_t i = 0; i < _count; ++i)
 			{
 				Slot s;
 				s.key = {_kind, i};
 				s.links = _links;
-				s.volatileBytes = _volatile;
+				s.hostBytes = _host;
 				for(const auto& [base, size] : _parts)
 				{
 					s.ranges.push_back({base + i * size, base + (i + 1) * size});
@@ -160,14 +162,14 @@ namespace mdJucePlugin::machineMemory
 			if(_model == md::MachineModel::Monomachine)
 			{
 				addArray(out, Kind::Kit, 128, {{0x00059c, 0x2ba}});
-				addArray(out, Kind::Global, 8, {{0x0162a0, 0x108}});
+				addArray(out, Kind::Global, 8, {{0x0162a0, 0x108}}, {}, {5, 6});
 				addArray(out, Kind::Pattern, 128, {{0x016ae4, 0x1978}}, {0x426});
 				addArray(out, Kind::Song, 24, {{0x0e39b8, 0x12d0}});
 			}
 			else
 			{
 				addArray(out, Kind::Kit, 64, {{0x0008ca, 0x460}});
-				addArray(out, Kind::Global, 8, {{0x0120cc, 0xb2}}, {}, {0xa4, 0xa5});
+				addArray(out, Kind::Global, 8, {{0x0120cc, 0xb2}}, {}, {0xa4, 0xa5, 0xad});
 				addArray(out, Kind::Song, 32, {{0x0130be, 0xa10}});
 				// a UW pattern is three parts: its steps and locks, a 204-byte record, its extended part
 				addArray(out, Kind::Pattern, 128, {{0x0272c0, 0x896}, {0x06bdc0, 0xcc}, {0x080000, 0x90c}}, {0x94});
@@ -327,33 +329,56 @@ namespace mdJucePlugin::machineMemory
 		}
 	}
 
-	inline bool slotDiffers(const Slot& _slot, const std::vector<uint8_t>& _a, const std::vector<uint8_t>& _b)
+	// _followsHost: a change of the slot's host bytes alone is no change
+	inline bool slotDiffers(const Slot& _slot, const std::vector<uint8_t>& _a, const std::vector<uint8_t>& _b, const bool _followsHost = false)
 	{
 		bool any = false;
 		for(const auto& r : _slot.ranges)
 			if(std::memcmp(_a.data() + r.begin, _b.data() + r.begin, r.end - r.begin) != 0)
 				any = true;
-		if(!any || _slot.volatileBytes.empty())
+		if(!any || !_followsHost || _slot.hostBytes.empty())
 			return any;
-		// a change of its volatile bytes alone is no save
 		size_t at = 0;
 		for(const auto& r : _slot.ranges)
 		{
 			for(uint32_t i = r.begin; i < r.end; ++i, ++at)
-				if(_a[i] != _b[i] && std::find(_slot.volatileBytes.begin(), _slot.volatileBytes.end(), static_cast<uint32_t>(at)) == _slot.volatileBytes.end())
+				if(_a[i] != _b[i] && std::find(_slot.hostBytes.begin(), _slot.hostBytes.end(), static_cast<uint32_t>(at)) == _slot.hostBytes.end())
 					return true;
 		}
 		return false;
 	}
 
+	// The host bytes of every slot put back from _from into _to (a write while the machine follows the host)
+	inline void keepHostBytes(const md::MachineModel _model, std::vector<uint8_t>& _to, const std::vector<uint8_t>& _from)
+	{
+		for(const auto& s : patchSlots(_model))
+		{
+			if(s.hostBytes.empty())
+				continue;
+			size_t at = 0;
+			for(const auto& r : s.ranges)
+				for(uint32_t i = r.begin; i < r.end; ++i, ++at)
+					if(std::find(s.hostBytes.begin(), s.hostBytes.end(), static_cast<uint32_t>(at)) != s.hostBytes.end())
+						_to[i] = _from[i];
+		}
+	}
+
+	// The slots whose bytes are the same in two memories (two looks: a slot read whole, not torn by a save under way)
+	inline bool slotSame(const md::MachineModel _model, const Key& _key, const std::vector<uint8_t>& _a, const std::vector<uint8_t>& _b)
+	{
+		const auto* s = findSlot(_model, _key);
+		return s && _a.size() == md::g_patchRamStateSize && _b.size() == md::g_patchRamStateSize && !slotDiffers(*s, _a, _b);
+	}
+
 	// The patch RAM slots that differ between two memories (what saves changed since the base)
-	inline std::vector<Key> changedSlots(const md::MachineModel _model, const std::vector<uint8_t>& _base, const std::vector<uint8_t>& _now)
+	inline std::vector<Key> changedSlots(const md::MachineModel _model, const std::vector<uint8_t>& _base, const std::vector<uint8_t>& _now,
+		const bool _followsHost = false)
 	{
 		std::vector<Key> out;
 		if(_base.size() != md::g_patchRamStateSize || _now.size() != md::g_patchRamStateSize)
 			return out;
 		for(const auto& s : patchSlots(_model))
-			if(slotDiffers(s, _base, _now))
+			if(slotDiffers(s, _base, _now, _followsHost))
 				out.push_back(s.key);
 		return out;
 	}

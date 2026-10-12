@@ -10,6 +10,7 @@
 #include "mdPluginProcessor.h"
 #include "mdController.h"
 #include "mdMachineMemory.h"
+#include "mdMachineMemoryLock.h"
 #include "mdDeskHost.h"
 #include "mdDeskSession.h"
 #include "elektronData/json.h"
@@ -506,6 +507,15 @@ namespace
 
 int main(const int _argc, char** _argv)
 {
+	// the second process of the cross-process lock test: holds the file's lock for a while
+	if(_argc > 3 && std::string(_argv[1]) == "holdlock")
+	{
+		const mdJucePlugin::machineMemory::FileLock lock(juce::File(juce::String::fromUTF8(_argv[2])));
+		std::printf("holding %d\n", lock.held() ? 1 : 0);
+		std::fflush(stdout);
+		std::this_thread::sleep_for(std::chrono::milliseconds(std::atoi(_argv[3])));
+		return 0;
+	}
 	g_model = _argc > 1 && std::string(_argv[1]) == "mm" ? md::MachineModel::Monomachine : md::MachineModel::Machinedrum;
 	const bool md = g_model == md::MachineModel::Machinedrum;
 	const char* tag = md ? "md" : "mm";
@@ -619,11 +629,19 @@ int main(const int _argc, char** _argv)
 			step("page ready + reads", [&] { pump(3000); });
 			if(md)
 			{
+				step("globalSet tempoIn on", [&] { s.page(R"({"op":"globalSet","field":"tempoIn","on":true})"); });
+				step("globalSet ctrlIn off", [&] { s.page(R"({"op":"globalSet","field":"ctrlIn","on":false})"); });
+				step("globalSet tempoIn off", [&] { s.page(R"({"op":"globalSet","field":"tempoIn","on":false})"); });
 				step("globalSet baseChannel 1", [&] { s.page(R"({"op":"globalSet","field":"baseChannel","v":1})"); });
 				step("globalSet baseChannel 0", [&] { s.page(R"({"op":"globalSet","field":"baseChannel","v":0})"); });
 			}
 			else
+			{
 				step("globalMidi base 1", [&] { s.page(R"({"op":"globalMidi","base":1})"); });
+				step("globalMidi clockIn", [&] { s.page(R"({"op":"globalMidi","clockIn":true})"); });
+				step("globalMidi transportIn", [&] { s.page(R"({"op":"globalMidi","transportIn":true})"); });
+				step("tempo 140", [&] { s.send(mmSetTempo(140.0)); });
+			}
 			return 0;
 		}
 		if(std::getenv("MDMM_MEMORY_LAYOUT"))
@@ -1023,18 +1041,28 @@ int main(const int _argc, char** _argv)
 		check(s.kitName(slot) == factoryName, "the overlay was refused: factory memory");
 		check(!s.processor->machineMemoryStatus().note.empty(), "the note says so: " + s.processor->machineMemoryStatus().note);
 		check(readFile(memoryFile()) == before, "the file is as it was");
+		// the overlay's refusal left no rebase behind: a save that fails, then a restart (still read-only), then the
+		// folder writable again: the save is still pending (not taken into a new base) and is written
+		setWritable(g_memory, false);
+		s.saveKit(51, "OVERLAYP");
+		check(until([&] { return s.processor->machineMemoryCost().failedWrites >= 1; }, 10000), "the write failed");
+		check(s.processor->rebootDevice(), "a restart, the folder still read-only");
+		check(s.waitWatching(), "it runs again");
+		setWritable(g_memory, true);
+		check(until([&] { return fileHas({Kind::Kit, 51}); }, 15000), "the pending save reached the file (the overlay's refusal took no new base)");
 		// F refused, with a save pending from a failed write: the file stays, and the save is written after a restart
+		const auto failed = s.processor->machineMemoryCost().failedWrites;
 		setWritable(g_memory, false);
 		s.saveKit(50, "PENDING");
-		check(until([&] { return s.processor->machineMemoryCost().failedWrites >= 1; }, 10000), "the write failed");
+		check(until([&] { return s.processor->machineMemoryCost().failedWrites > failed; }, 10000), "the write failed");
 		s.processor->refuseNextMachineMemoryRestoreForTest();
 		std::string note;
 		check(!s.processor->startFromFactoryMemory(note), "Start from factory memory refused: " + note);
-		setWritable(g_memory, true);
 		check(memoryFile().existsAsFile(), "the file is kept");
 		check(s.kitName(50) == "PENDING", "the machine kept its memory");
-		check(s.processor->rebootDevice(), "a restart");
+		check(s.processor->rebootDevice(), "a restart, the folder still read-only");
 		check(s.waitWatching(), "it runs again");
+		setWritable(g_memory, true);
 		check(until([&] { return fileHas({Kind::Kit, 50}); }, 15000), "the pending save reached the file (not taken into a new base)");
 		check(fileHas({Kind::Kit, slot}), "the other saves are still there");
 	}
@@ -1053,7 +1081,156 @@ int main(const int _argc, char** _argv)
 		s.processor->getDeskHost()->session()->loadSampleFile(7, sineWav());
 		check(until([&] { return mdJucePlugin::machineMemory::decode(readFile(memoryFile()), g_model).file.romFingerprint != d.file.romFingerprint; }, 90000),
 			"the new sample was saved with this ROM");
-		check(g_memory.findChildFiles(juce::File::findFiles, false, "machine-memory.samples-*.bin").size() == 1, "the other ROM's samples were kept in their own file");
+		const auto kept = g_memory.findChildFiles(juce::File::findFiles, false, "machine-memory.samples-*.bin");
+		check(kept.size() == 1, "the other ROM's samples were kept in their own file");
+		if(kept.size() == 1)
+		{
+			const auto k = mdJucePlugin::machineMemory::decode(readFile(kept[0]), g_model);
+			bool same = k.problem == mdJucePlugin::machineMemory::Problem::None && k.file.romFingerprint == d.file.romFingerprint;
+			size_t sectors = 0;
+			for(const auto& [key, e] : d.file.slots)
+			{
+				if(key.kind != Kind::Sector)
+					continue;
+				++sectors;
+				same = same && k.file.slots.count(key) && k.file.slots.at(key).bytes == e.bytes;
+			}
+			check(same && k.file.slots.size() == sectors, "it holds those samples as they were, with their ROM's fingerprint");
+			check(s.processor->machineMemoryStatus().note.find(kept[0].getFullPathName().toStdString()) != std::string::npos,
+				"the notice names where: " + s.processor->machineMemoryStatus().note);
+		}
+	}
+	{
+		std::puts(" session 3p: a save under way while a look is taken in pieces: no torn slot reaches the file");
+		// a slot across the look's 64 KiB pieces: MD pattern 6 (its first part in piece 2, its third in piece 8), MM pattern
+		// 6 (across 0x20000); between the pieces the test changes both ends, so every look in pieces sees them disagree
+		const auto* pat = mdJucePlugin::machineMemory::findSlot(g_model, {Kind::Pattern, 5});
+		const size_t first = pat->ranges.front().begin + 0x20, last = pat->ranges.back().end - 0x20;
+		const size_t between = md ? 0x30000 : 0x10000;
+		const size_t firstAt = 0x20, lastAt = pat->size - 0x20;	// offsets in the slot's bytes
+		std::atomic<int> value{0};
+		std::atomic<bool> on{false};
+		bool torn = false;
+		uint8_t origFirst = 0, origLast = 0;	// the pattern as it was; after that every change sets both ends to one value
+		auto tornIn = [&](const Bytes& _file)
+		{
+			const auto st = mdJucePlugin::machineMemory::decode(_file, g_model).file.slots;
+			const auto it = st.find({Kind::Pattern, 5});
+			if(it == st.end())
+				return false;
+			const auto a = it->second.bytes[firstAt], b = it->second.bytes[lastAt];
+			return !(a == origFirst && b == origLast) && a != b;
+		};
+		{
+			Session s;
+			check(s.waitWatching(), "the machine starts");
+			s.processor->setMachineMemoryLookMs(50);
+			{
+				const auto mem = s.patch();
+				origFirst = mem[first];
+				origLast = mem[last];
+				check(origFirst != origLast, "the two ends differ to start with (a torn copy would show)");
+			}
+			auto* const proc = s.processor.get();	// (alive until its watch's thread has stopped)
+			proc->setMachineMemoryLookHookForTest([&value, &on, proc, first, last, between](const size_t _at)
+			{
+				if(!on || _at != between)
+					return;
+				const auto v = static_cast<uint8_t>(++value);
+				proc->getPlugin().withDeviceLocked([&](synthLib::Device* _d)
+				{
+					auto* d = dynamic_cast<md::DeskDevice*>(_d);
+					if(!d) return;
+					d->getHardware().getUC().pokePatchRamForTest(first, v);
+					d->getHardware().getUC().pokePatchRamForTest(last, v);
+				});
+			});
+			on = true;
+			s.processor->setKeepMachineMemory(true);	// a write at the next look, changed or not
+			const auto end = juce::Time::getMillisecondCounterHiRes() + 12000;
+			while(juce::Time::getMillisecondCounterHiRes() < end)
+			{
+				pump(100);
+				torn = torn || tornIn(readFile(memoryFile()));
+			}
+			check(value > 50, "the save kept landing between the pieces (" + std::to_string(value.load()) + " looks)");
+			check(!torn, "no torn pattern reached the file while it kept changing (10 s and more)");
+			on = false;
+			const auto settled = static_cast<uint8_t>(value.load());
+			check(until([&]
+			{
+				const auto st = fileStore();
+				const auto it = st.find({Kind::Pattern, 5});
+				return it != st.end() && it->second.bytes[firstAt] == settled && it->second.bytes[lastAt] == settled;
+			}, 10000), "once still, the pattern is written as it is");
+			{
+				const auto mem = s.patch();
+				const auto st = mdJucePlugin::machineMemory::decode(readFile(memoryFile()), g_model).file.slots;
+				const auto it = st.find({Kind::Pattern, 5});
+				std::printf("  memory %02x %02x, file %02x %02x\n", mem[first], mem[last], it != st.end() ? it->second.bytes[firstAt] : 0, it != st.end() ? it->second.bytes[lastAt] : 0);
+			}
+			check(!tornIn(readFile(memoryFile())), "whole");
+			// again, and the instance closes while it changes: the close's look is taken in one hold
+			on = true;
+			pump(1000);
+		}
+		check(!tornIn(readFile(memoryFile())), "the close wrote it whole");
+	}
+	{
+		std::puts(" session 3q: tempo: saved with its global; never while the machine follows the host");
+		const auto* g = mdJucePlugin::machineMemory::findSlot(g_model, {Kind::Global, 0});
+		{
+			Session s;
+			check(s.waitWatching(), "the machine starts");
+			check(s.deskReady(), "the editor has read the machine");
+			if(md)
+				s.send(elektronData::mdSetTempo(133 * 24));
+			else
+				s.page(R"({"op":"globalMidi","clockIn":true})");	// the MM keeps no tempo in a slot: its sync setting
+			check(until([&]
+			{
+				const auto st = fileStore();
+				const auto it = st.find({Kind::Global, 0});
+				return it != st.end() && it->second.bytes == mdJucePlugin::machineMemory::slotBytes(*g, s.patch());
+			}, 15000), md ? "a tempo change is saved with its global" : "a sync change is saved with its global");
+		}
+		const auto before = fileStore().at({Kind::Global, 0}).bytes;
+		{
+			Session s;
+			s.processor->setMachineMemoryFollowsHostForTest(true);
+			check(s.waitWatching(), "a plug-in following its DAW starts");
+			check(s.deskReady(), "the editor has read the machine");
+			if(md)
+				s.send(elektronData::mdSetTempo(141 * 24));
+			else
+				s.page(R"({"op":"globalMidi","clockIn":false,"transportIn":true})");
+			pump(3000);
+			check(fileStore().at({Kind::Global, 0}).bytes == before, "the host's tempo and sync are not saved");
+			s.page(md ? R"({"op":"globalSet","field":"baseChannel","v":2})" : R"({"op":"globalMidi","base":2})");
+			check(until([&] { return fileStore().at({Kind::Global, 0}).bytes != before; }, 15000), "another global change is");
+			const auto after = fileStore().at({Kind::Global, 0}).bytes;
+			bool hostKept = true;
+			for(const auto at : g->hostBytes)
+				hostKept = hostKept && after[at] == before[at];
+			check(hostKept, "with the tempo and sync it had before");
+		}
+	}
+	{
+		std::puts(" session 3r: another process holds the file's lock: the save waits for it");
+		juce::ChildProcess child;
+		const auto self = juce::File::getSpecialLocation(juce::File::currentExecutableFile).getFullPathName();
+		check(child.start(juce::StringArray{self, "holdlock", memoryFile().getFullPathName(), "5000"}), "a second process starts");
+		char buf[32] = {};
+		(void)child.readProcessOutput(buf, sizeof(buf) - 1);
+		check(juce::String(buf).contains("holding 1"), "it holds the lock");
+		Session s;
+		check(s.waitWatching(), "the machine starts (its start waits for the lock too)");
+		s.saveKit(55, "LOCKED");
+		pump(1000);
+		const bool waited = !fileHas({Kind::Kit, 55}) || !child.isRunning();
+		check(until([&] { return fileHas({Kind::Kit, 55}); }, 20000), "written once the other process let go");
+		check(waited, "not before");
+		child.waitForProcessToFinish(10000);
 	}
 	savedFile = readFile(memoryFile());
 	{

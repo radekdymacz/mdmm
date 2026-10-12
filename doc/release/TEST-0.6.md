@@ -114,7 +114,8 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 16. MM: load a storage image: a new instance has the image's kits, patterns and songs that differ from what you had.
 17. Edit a pattern (a step, a lock), a song row and a global setting from the page: a new instance has each.
 18. Two instances (a DAW and the standalone, or two in one DAW): save different kits in both, quickly one after the other: a new instance has every one.
-19. MD: turn the tempo, change the active global, mute tracks: the file's date does not change.
+19. Change the active global, mute tracks: the file's date does not change. MD standalone: change the tempo: a new instance has it. MD in a DAW (the machine follows the DAW's tempo): change the DAW's tempo: the file's date does not change.
+20. Load the VST3 and the AU of one editor in one host and save different kits in each: a new instance has every one.
 
 ## Polish B (B-070, B-062, I-002, I-022, both editors)
 

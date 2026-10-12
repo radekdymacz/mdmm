@@ -6,6 +6,8 @@
 #include "mdMidiIn.h"
 #include "mdOutputLevel.h"
 #include "mdMachineMemory.h"
+
+#include <functional>
 #include "mdLib/mdtypes.h"
 #include "synthLib/performanceReport.h"
 
@@ -124,6 +126,10 @@ namespace mdJucePlugin
 		bool machineMemoryStarted() const { return m_memoryStartDone.load(); }
 		// Tests: the next restore the machine memory asks for (the start's overlay, factory memory) is refused at once
 		void refuseNextMachineMemoryRestoreForTest() { m_refuseNextRestoreForTest = true; }
+		// Tests: the machine follows the host (a plug-in in a DAW: tempo and sync are the host's, never saved)
+		void setMachineMemoryFollowsHostForTest(bool _follows) { m_memoryFollowsHost = _follows; }
+		// Tests: called by the watch's thread after each piece of a look (the offset of the piece it copied)
+		void setMachineMemoryLookHookForTest(std::function<void(size_t)> _hook) { m_lookPieceHookForTest = std::move(_hook); }
 		void setKeepMachineMemory(bool _keep);
 		// RESET MACHINE… > Start from factory memory: the file goes and the machine restarts from factory memory (a fresh machine's
 		// state, as on a new install). The page asked the user first. False with the reason in _note.
@@ -184,12 +190,13 @@ namespace mdJucePlugin
 		void stopMachineMemoryThread();
 		bool writeMachineMemory(const std::vector<machineMemory::Key>& _keys, const std::vector<uint8_t>& _base, const std::vector<uint8_t>& _patch,
 			const std::vector<uint8_t>& _sectors);
-		bool writeChanges(bool _withForced);
-		bool lookMachineMemory(uint64_t& _signature, uint64_t& _epoch);
+		bool writeChanges(bool _withForced, bool _consistent);
+		bool lookMachineMemory(uint64_t& _signature, uint64_t& _epoch, bool _atomic);
+		void clearMemoryFile();
 		bool rebaseMachineMemory(uint64_t _signature, uint64_t _epoch);
 		void serviceSampleStore();
-		void takeSampleSectors();
-		bool copyMachineFlash(std::vector<uint8_t>& _flash);
+		void takeSampleSectors(bool _atomic);
+		bool copyMachineFlash(std::vector<uint8_t>& _flash, bool _atomic = false);
 		machineMemory::StoreFile readMemoryStore(bool& _ok, std::string& _note);
 		static bool writeMemoryFile(const juce::File& _file, const std::vector<uint8_t>& _bytes, std::string& _error);
 		std::string moveMemoryFileAside(std::string _text);
@@ -240,6 +247,9 @@ namespace mdJucePlugin
 		std::atomic<uint64_t> m_factoryRestoreGeneration{0};	// Start from factory memory's restore, 0: none
 		std::atomic<bool> m_memoryStartDone{false};
 		std::atomic<bool> m_refuseNextRestoreForTest{false};
+		std::atomic<bool> m_memoryFollowsHost{false};	// a plug-in in a DAW: the global's host bytes are never saved
+		std::atomic<bool> m_memoryNoticePending{false};	// a note for the timer to show (written on the thread)
+		std::function<void(size_t)> m_lookPieceHookForTest;
 		std::atomic<uint64_t> m_memoryRestoreGeneration{0};	// the device's restore generation of the file's payload, 0: none
 		std::atomic<uint32_t> m_memoryVersion{1};
 		std::atomic<bool> m_memorySampleStored{false};	// machineMemorySampleStored, for the thread's next look
