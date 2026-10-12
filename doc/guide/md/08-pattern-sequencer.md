@@ -131,7 +131,7 @@ The machine keeps the edits you lose in its UNDO KIT.
 NOTE: Click **FN** in the top bar if your system or host takes [⌥] for itself. The next click, drag or key then counts as if [⌥] were held. Double-click **FN** to keep it on.
 
 ## SCALE SETUP
-<!-- rows: MD-103 MD-104 MD-105 MD-106 @e4f8f9 -->
+<!-- rows: MD-103 MD-104 MD-105 MD-106 @dec5f1 -->
 
 The scale of a pattern is its length and its speed.
 
@@ -146,7 +146,7 @@ Steps past the length are dimmed in the grid. In CLASSIC the total is 32 at most
 
 To double a pattern, click the <LEN> ×2 key. The new half is a copy of the steps and locks of the first half. This is one undo step. The editor refuses a pattern past 64 steps, and past 32 in CLASSIC, and says why.
 
-{gap:MD-106}The machine copies the first page to the later pages when you make a pattern longer. The editor does not show this. Use <LEN> ×2 to copy the pattern.{/gap}
+When you make the total longer, the editor does what the machine does: if no track has a trig past the old total, the steps you had repeat into the new ones, with their accents, swings, slides and locks. From 16 to 64 steps the first page fills all four pages. If a track has a trig past the old total, nothing is copied. A message says what was copied. Press {key:undo} to take it back.
 
 ### Speed
 

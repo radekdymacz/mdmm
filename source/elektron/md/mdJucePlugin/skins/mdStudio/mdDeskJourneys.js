@@ -2529,7 +2529,29 @@ const MdJourneys = (() => {
 		],
 		async tidy(u, c) { if (V.playing) u.click("#play"); await until(() => !V.playing, 3000); if (c.p0 != null && currentPatternSlot() !== c.p0) { u.click("#patPrev"); await confirmIfAsked(u); } }
 	};
-	const wave12 = [clipsJ, undoKitJ, stopQueuedJ];
+	/* MD-106: a pattern made longer repeats its steps into the new ones, as the machine's SCALE SETUP (measured) */
+	const trigBits = (d, t) => (d?.tracks[t]?.trigs || []);
+	const lenRepeatJ = {
+		name: "md-seq-len-repeats", proves: ["MD-106"],
+		steps: [
+			go("seq"),
+			{ say: "a pattern with nothing past step 16 (› on the LCD until one), its LEN clicked round to 16", act: async (u, c) => {
+				c.p0 = currentPatternSlot(); c.moves = 0;
+				const fits = () => patDoc() && patDoc().tracks.every(t => t.trigs.every(s => s < 16)) && patDoc().tracks.some(t => t.trigs.length);
+				while (!fits() && c.moves < 12) { u.click("#patNext"); await confirmIfAsked(u); c.moves++; await until(() => !!patDoc() && currentPatternSlot() === (c.p0 + c.moves) % 128, 3000); await until(idle, 3000); }
+				c.n0 = V.undoCount;
+				for (let i = 0; i < 4 && V.len !== 16; i++) { const was = V.len; u.click(l2("len")); await until(() => V.len !== was, 3000); await until(idle, 3000); }
+				c.before = patDoc().tracks.map(t => t.trigs.slice().sort((a, b) => a - b)); },
+				machine: () => ok(V.len === 16, "LEN " + V.len) },
+			{ say: "click LEN on the LCD: 32 steps, and steps 1 to 16 repeat into 17 to 32", act: u => u.click(l2("len")),
+				machine: c => { const d = patDoc(); const want = c.before.map(a => [...a, ...a.map(s => s + 16)]); const got = d?.tracks.map(t => t.trigs.slice().sort((a, b) => a - b));
+					return ok(d?.totalLength === 32 && same(got, want), `total ${d?.totalLength}, T1 ${JSON.stringify(got?.[0])} (want ${JSON.stringify(want[0])})`); },
+				screen: c => { const t = c.before.findIndex(a => a.length), s = c.before[t]?.[0]; return ok(V.len === 32 && pressed(cell(t, s + 16)), `LEN ${V.len}, track ${t + 1} step ${s + 17} ${pressed(cell(t, s + 16)) ? "lit" : "dark"}`); }, within: 6000 },
+			{ ...undoKey, machine: c => ok(patDoc()?.totalLength === 16 && same(patDoc().tracks.map(t => t.trigs.slice().sort((a, b) => a - b)), c.before), "total " + patDoc()?.totalLength), within: 6000 }
+		],
+		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); for (let i = 0; i < (c.moves || 0); i++) { u.click("#patPrev"); await confirmIfAsked(u); await sleep(150); } }
+	};
+	const wave12 = [clipsJ, undoKitJ, stopQueuedJ, lenRepeatJ];
 	const slice5 = [modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, kitNameSave, songCommands, playModeJ, pageLeds, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
 	const all = [...slice5, ...wave12, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
 		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,

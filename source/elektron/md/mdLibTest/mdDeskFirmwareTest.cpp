@@ -1424,6 +1424,96 @@ namespace
 	}
 
 	// P4: the kit library and pattern chooser on firmware, checked by the machine's own dumps.
+	// MD-106: the editor's longer total length does what the machine's SCALE SETUP does (gapProbesFirmwareTest w12extend):
+	// the same 16-step pattern in two slots, one lengthened on the panel (FUNCTION + SCALE, the scale field, UP), one by
+	// the editor's totalLength; both read back. Again with a trig past the old length (then neither copies).
+	void extendPattern(Rig& _rig)
+	{
+		auto& m = _rig.machine();
+		auto& desk = _rig.desk();
+		std::puts("== MD-106 a pattern made longer copies its steps, as the machine's SCALE SETUP");
+		const auto settle = [&] { _rig.runUntil([&] { return !desk.isBusy(); }, 3000); _rig.run(300); };
+		const auto hold = [&](const std::vector<md::PanelControl>& _keys)
+		{
+			md::PanelRowState rows;
+			std::vector<md::PanelPacket> states;
+			for(const auto k : _keys)
+				states.push_back(rows.press(*md::panelPacket(m.hardware().getModel(), k)));
+			for(auto it = _keys.rbegin(); it != _keys.rend(); ++it)
+				states.push_back(rows.release(*md::panelPacket(m.hardware().getModel(), *it)));
+			for(const auto& st : states)
+			{
+				m.hardware().trySendPanelEvent(st.row, st.mask);
+				_rig.run(60);
+			}
+			_rig.run(100);
+		};
+		const auto key = [&](const md::PanelControl _k) { hold({_k}); };
+		for(const bool later : {false, true})
+		{
+			auto p = *_rig.readPattern(110);
+			p.length = 16;
+			p.scale = 0;
+			p.trigs.fill(0);
+			p.lockMasks.fill(0);
+			for(auto& row : p.lockRows) row.fill(0xff);
+			p.lockedRows = 0;
+			p.accentPattern = 1ull << 4;
+			p.slidePattern = 0;
+			p.swingPattern = 1ull << 8;
+			p.trackAccent.fill(0); p.trackSlide.fill(0); p.trackSwing.fill(0);
+			for(const size_t i : {0, 4, 8, 13})
+				p = ed::withTrig(p, 0, i, true);
+			p = ed::withTrig(p, 1, 2, true);
+			if(later)
+				p = ed::withTrig(p, 2, 40, true);
+			p = *ed::withLock(p, 0, 0, 4, 99);
+			for(const uint8_t slot : {110, 111})
+			{
+				p.position = slot;
+				m.send(ed::encodeMdPattern(p));
+				_rig.run(400);
+			}
+			_rig.pageConfirmed(R"({"op":"load","kind":"pattern","slot":111,"id":1059})");
+			const bool known = _rig.runUntil([&] { const auto it = desk.documents().patterns.find(111); return it != desk.documents().patterns.end() && it->second.trigs == p.trigs; }, 4000);
+			check(known, "the editor read the pattern back");
+			// the machine: SCALE SETUP on the pattern that plays, the scale field one up (16 -> 32)
+			m.send(ed::mdLoadPattern(110));
+			_rig.run(400);
+			key(md::PanelControl::Exit);
+			key(md::PanelControl::Exit);
+			hold({md::PanelControl::Function, md::PanelControl::Scale});
+			// the window keeps its field (LEN, SCALE, the speed; LEFT and RIGHT wrap): LEN at first, SCALE the second time
+			if(!later)
+				key(md::PanelControl::Right);
+			key(md::PanelControl::Up);
+			if(const char* snap = std::getenv("EXTEND_SNAP"))
+			{
+				const auto panel = m.hardware().getFrontPanelSnapshot();
+				std::ofstream image(std::string(snap) + (later ? "b.pgm" : "a.pgm"), std::ios::binary);
+				image << "P5\n128 64\n255\n";
+				for(uint32_t y = 0; y < 64; ++y)
+					for(uint32_t x = 0; x < 128; ++x)
+						image.put(panel.getLcdPixel(x, y) ? '\0' : '\xff');
+			}
+			key(md::PanelControl::Exit);
+			_rig.run(400);
+			// the editor: totalLength 32 on the other slot
+			_rig.pageConfirmed(R"({"op":"totalLength","p":111,"v":32,"force":true,"id":1060})");
+			settle();
+			const auto a = *_rig.readPattern(110), b = *_rig.readPattern(111);
+			bool locks = true;
+			for(size_t i = 0; i < 64; ++i)
+				locks = locks && ed::lockValue(a, 0, 0, i) == ed::lockValue(b, 0, 0, i);
+			const bool same = a.length == b.length && a.scale == b.scale && a.trigs == b.trigs && a.accentPattern == b.accentPattern
+				&& a.swingPattern == b.swingPattern && a.trackAccent == b.trackAccent && a.trackSwing == b.trackSwing && a.lockMasks == b.lockMasks && locks;
+			std::printf("  %s: machine %d steps, T1 %016llx; editor %d steps, T1 %016llx\n", later ? "a trig past the old length" : "the later steps empty",
+				a.length, static_cast<unsigned long long>(a.trigs[0]), b.length, static_cast<unsigned long long>(b.trigs[0]));
+			check(same && a.length == 32 && (later ? a.trigs[0] == p.trigs[0] : a.trigs[0] == (p.trigs[0] | (p.trigs[0] << 16))),
+				std::string("the editor's longer pattern is the machine's: ") + (later ? "nothing copied (a trig past the old length)" : "steps 1-16 repeated into 17-32"));
+		}
+	}
+
 	void library(Rig& _rig)
 	{
 		auto& m = _rig.machine();
@@ -4382,6 +4472,7 @@ int main(const int _argc, char** _argv)
 			chaining(rig);
 			recLockTruth(rig);
 			library(rig);
+			extendPattern(rig);
 			globalSettings(rig);
 			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 			std::printf("mdDeskFirmwareTest p4: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
