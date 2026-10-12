@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-105 · Both editors: the library's star (a kit no pattern recalls) "does not show" on the firmware
+
+- **From:** the 0.6 e2e run, 2026-10-13 (md-lib-kit-menu: "stars 0"; mm-lib-kit-slots: K65 to K68 "star false, used false").
+- **Sorted:** test data, not the page. On factory memory every kit that holds data is linked by some pattern, so no kit earns the star; the slots no pattern recalls are empty and show EMPTY without a star, on both editors (the Monomachine journey expected a star there). The page tier's fixture (kits named KIT nn in every slot, some unlinked) never met either.
+- **Fix (`fix/0.6-e2e-mm`):** both journeys make their own data when no kit qualifies: the kit that plays copied and pasted into an empty slot no pattern recalls (undone in the journey's tidy); the Monomachine's expects no star on an empty slot and at least one star. md-lib-kit-menu and mm-lib-kit-slots pass on the firmware and in the page tier.
+- **Status:** fixed on `fix/0.6-e2e-mm` (journeys only).
+
 ## B-102 · Both editors: the SysEx import panel runs past the bottom of the window; lib-syx-place says "no question"
 
 - **From:** the 0.6 e2e run, 2026-10-13 (pictures at 1440 x 923: e2e-mm-lib-syx-place-fail, e2e-md-lib-syx-place-fail; journeys md-lib-syx-place, mm-lib-syx-place).
