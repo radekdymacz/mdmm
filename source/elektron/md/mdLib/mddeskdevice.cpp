@@ -146,16 +146,22 @@ namespace md
 		{
 			m_bootAnimationOf = &hardware;
 			m_bootAnimation.reset();
+			m_sequencer = {};
 		}
-		if(hardware.isFirmwareMidiReady())
+		const bool ready = hardware.isFirmwareMidiReady();
+		if(ready)
 			m_bootAnimation.update(uc.read8(BootAnimation::g_mainScreenAddress), _frames);
 		t.bootAnimation.store(m_bootAnimation.state(), std::memory_order_relaxed);
 		const auto step = uc.read8(SequencerState::g_stepAddress);
 		t.step.store(step, std::memory_order_relaxed);
 		t.pattern.store(uc.read8(patternAddress), std::memory_order_relaxed);
 		t.songRow.store(uc.read8(SongPosition::g_rowAddress), std::memory_order_relaxed);
-		m_sequencer.update(step, uc.read8(SequencerState::g_stoppedAddress), uc.read8(SequencerState::g_recordLedAddress),
-			_frames);
+		// B-084: not before the firmware takes MIDI. While it starts, its RAM is being set up: the step byte changed with
+		// the stopped byte still 0 read as "playing" for 0.7 s, so the page showed PLAY pressed under the start-up card
+		// and the machine as playing (md-boot-card, about one start in five)
+		if(ready)
+			m_sequencer.update(step, uc.read8(SequencerState::g_stoppedAddress), uc.read8(SequencerState::g_recordLedAddress),
+				_frames);
 		t.playing.store(m_sequencer.playing() ? 1 : 0, std::memory_order_relaxed);
 		t.recording.store(m_sequencer.recording() ? 1 : 0, std::memory_order_relaxed);
 		t.gridEdit.store(m_sequencer.gridEdit() ? 1 : 0, std::memory_order_relaxed);
