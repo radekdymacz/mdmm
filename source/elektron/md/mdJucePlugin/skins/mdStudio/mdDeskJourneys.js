@@ -1192,7 +1192,7 @@ const MdJourneys = (() => {
 			{ say: "click More and mute track 1 for the row", act: async u => { u.click("[data-rowmore]"); await sleep(250); u.click('[data-rowmute="0"]'); }, machine: c => ok((songRows()[c.i].mutes || []).includes(0), "mutes " + JSON.stringify(songRows()[c.i].mutes)), screen: () => ok($1('[data-rowmute="0"]')?.classList.contains("off"), "key not off") },
 			{ say: "click Add loop: a loop row after it", act: async u => { u.click('[data-rowact="loop"]'); await sleep(400); Journey.snapshot("md-song-loop"); }, machine: c => ok(songRows()[c.i + 1]?.kind === "loop", "row " + JSON.stringify(songRows()[c.i + 1])), screen: () => ok($all("#tl .scell.loop").length >= 1, "no loop cell") }
 		],
-		async tidy(u, c) { if (S.songMore) u.click("[data-rowmore]"); if (c.r0) await undoUntil(u, () => JSON.stringify(songRows()) === c.r0, 8); }
+		async tidy(u, c) { if (S.songMore && $1("[data-rowmore]")) u.click("[data-rowmore]"); if (c.r0) await undoUntil(u, () => JSON.stringify(songRows()) === c.r0, 8); }
 	};
 	const songDrag = {
 		name: "md-song-drag-drop", proves: ["MD-150"],
@@ -1687,8 +1687,8 @@ const MdJourneys = (() => {
 	};
 
 	/* ---------- wave 2: the transport beyond PLAY and STOP (doc/modern-ux/DESIGN-machine-menus.md §2) ---------- */
-	const opsSent = [];	/* the ops the page sent, newest last (a tempo sent once, at the release); never trimmed: a journey marks its place by the length and a trimmed list would make that mark point past the end */
-	{ const send0 = Bridge.send; Bridge.send = (m, o) => { opsSent.push(m.op); return send0(m, o); }; }
+	const opsSent = Journey.recent(80);	/* the ops the page sent, newest last (a tempo sent once, at the release) */
+	{ const send0 = Bridge.send; Bridge.send = (m, o) => { opsSent.add(m.op); return send0(m, o); }; }
 	const paused = () => $1("#play")?.classList.contains("paused");
 	const playing = () => !!tele.last?.playing;
 	const stopAll = async u => { if (S.paused || V.playing) { u.click("#play"); await sleep(200); } if (V.playing) { u.click("#play"); await until(() => !playing(), 3000); } };
@@ -1735,24 +1735,24 @@ const MdJourneys = (() => {
 				screen: c => ok(parseFloat($1("#tpv").textContent) === lcdBpm(c.b0 + 1) && parseFloat($1("#bpm").textContent) === lcdBpm(c.b0 + 1), "window " + $1("#tpv").textContent + ", LCD " + $1("#bpm").textContent),
 				machine: c => ok(Math.abs(Docs.global.tempo - (c.b0 + 1)) < 0.05, "tempo " + Docs.global.tempo), within: 4000 },
 			{ say: "click −: back", act: u => u.click('#tempopop [data-tp="-1"]'), machine: c => ok(Math.abs(Docs.global.tempo - c.b0) < 0.05, "tempo " + Docs.global.tempo), within: 4000 },
-			{ say: "hold +10 %: 10 % faster while held (the LCD says it), nothing stored", act: (u, c) => { c.n = opsSent.length; const b = $1('#tempopop [data-tp="n+"]'); b.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1, pointerType: "mouse", isPrimary: true })); },
+			{ say: "hold +10 %: 10 % faster while held (the LCD says it), nothing stored", act: (u, c) => { c.n = opsSent.mark(); const b = $1('#tempopop [data-tp="n+"]'); b.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1, pointerType: "mouse", isPrimary: true })); },
 				screen: c => ok(parseFloat($1("#bpm").textContent) === DeskTransport.nudged(c.b0, 10) && parseFloat($1("#tpv").textContent) === DeskTransport.nudged(c.b0, 10), "LCD " + $1("#bpm").textContent),
 				machine: c => ok(results.some(r => r.op === "nudge" && r.ok) && Math.abs(Docs.global.tempo - c.b0) < 0.05, "nudge " + JSON.stringify(results.filter(r => r.op === "nudge").slice(-1))), within: 3000 },
 			{ say: "let go: back to the tempo it was", act: () => $1('#tempopop [data-tp="n+"]').dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1, pointerType: "mouse", isPrimary: true })),
-				screen: c => ok(parseFloat($1("#bpm").textContent) === lcdBpm(c.b0), "LCD " + $1("#bpm").textContent), machine: c => ok(Math.abs(Docs.global.tempo - c.b0) < 0.05 && opsSent.slice(c.n).filter(o => o === "nudge").length === 2, "tempo " + Docs.global.tempo + ", sent " + opsSent.slice(c.n).join(",")), within: 3000 },
-			{ say: "press Escape: it closes; the key = held and let go nudges too", act: async (u, c) => { u.key("Escape"); await sleep(100); c.n = opsSent.length; document.activeElement?.blur?.(); u.key("="); },
-				screen: () => ok(!$1("#tempopop"), "still open"), machine: c => ok(opsSent.slice(c.n).filter(o => o === "nudge").length === 2, "sent " + opsSent.slice(c.n).join(",")), within: 2000 }
+				screen: c => ok(parseFloat($1("#bpm").textContent) === lcdBpm(c.b0), "LCD " + $1("#bpm").textContent), machine: c => ok(Math.abs(Docs.global.tempo - c.b0) < 0.05 && opsSent.since(c.n).filter(o => o === "nudge").length === 2, "tempo " + Docs.global.tempo + ", sent " + opsSent.since(c.n).join(",")), within: 3000 },
+			{ say: "press Escape: it closes; the key = held and let go nudges too", act: async (u, c) => { u.key("Escape"); await sleep(100); c.n = opsSent.mark(); document.activeElement?.blur?.(); u.key("="); },
+				screen: () => ok(!$1("#tempopop"), "still open"), machine: c => ok(opsSent.since(c.n).filter(o => o === "nudge").length === 2, "sent " + opsSent.since(c.n).join(",")), within: 2000 }
 		],
 		async tidy() { DeskTransport.closeTempo(); }
 	};
 	const tempoReleaseJ = {
 		name: "md-top-tempo-release", proves: ["MD-090"],
 		steps: [
-			{ say: "⌥-drag the tempo up: the LCD follows, the tempo goes once, at the release", act: async (u, c) => { c.b0 = Docs.global.tempo; c.n = opsSent.length; await u.drag("#bpm", [[0, -6], [0, -12], [0, -18], [0, -24]], { alt: true }); },
+			{ say: "⌥-drag the tempo up: the LCD follows, the tempo goes once, at the release", act: async (u, c) => { c.b0 = Docs.global.tempo; c.n = opsSent.mark(); await u.drag("#bpm", [[0, -6], [0, -12], [0, -18], [0, -24]], { alt: true }); },
 				screen: c => ok(parseFloat($1("#bpm").textContent) === lcdBpm(V.bpm) && V.bpm > c.b0, "LCD " + $1("#bpm").textContent),
-				machine: c => ok(Docs.global.tempo > c.b0 && opsSent.slice(c.n).filter(o => o === "tempo").length === 1, "tempo " + Docs.global.tempo + ", sent " + opsSent.slice(c.n).join(",")), within: 4000 },
-			{ say: "in the TEMPO window tick Change on release, close it, drag down as far: one tempo again", act: async (u, c) => { u.click("#bpm"); await until(() => !!$1("#tpdelay"), 2000); if (!$1("#tpdelay").checked) u.click("#tpdelay"); u.key("Escape"); await sleep(100); c.b1 = Docs.global.tempo; c.n = opsSent.length; await u.drag("#bpm", [[0, 6], [0, 12], [0, 18], [0, 24]]); },
-				machine: c => ok(Math.abs(Docs.global.tempo - c.b0) < 0.05 && opsSent.slice(c.n).filter(o => o === "tempo").length === 1, "tempo " + Docs.global.tempo + " (was " + c.b0 + "), sent " + opsSent.slice(c.n).join(",")), within: 4000 }
+				machine: c => ok(Docs.global.tempo > c.b0 && opsSent.since(c.n).filter(o => o === "tempo").length === 1, "tempo " + Docs.global.tempo + ", sent " + opsSent.since(c.n).join(",")), within: 4000 },
+			{ say: "in the TEMPO window tick Change on release, close it, drag down as far: one tempo again", act: async (u, c) => { u.click("#bpm"); await until(() => !!$1("#tpdelay"), 2000); if (!$1("#tpdelay").checked) u.click("#tpdelay"); u.key("Escape"); await sleep(100); c.b1 = Docs.global.tempo; c.n = opsSent.mark(); await u.drag("#bpm", [[0, 6], [0, 12], [0, 18], [0, 24]]); },
+				machine: c => ok(Math.abs(Docs.global.tempo - c.b0) < 0.05 && opsSent.since(c.n).filter(o => o === "tempo").length === 1, "tempo " + Docs.global.tempo + " (was " + c.b0 + "), sent " + opsSent.since(c.n).join(",")), within: 4000 }
 		],
 		async tidy(u, c) { DeskTransport.setDelayed(false); DeskTransport.closeTempo(); if (c.b0 != null && Math.abs(Docs.global.tempo - c.b0) >= 0.05) cmd("tempo", { bpm: c.b0 }); await sleep(300); }
 	};
@@ -2326,7 +2326,7 @@ const MdJourneys = (() => {
 		name: "md-song-commands", proves: ["MD-143", "MD-152", "MD-153", "MD-155", "MD-156", "MD-161", "MD-295"],
 		steps: [
 			go("song"),
-			{ say: "the page holds 32 songs of up to 256 rows, and the song ends with END", act: (u, c) => { c.r0 = JSON.stringify(songRows()); c.u0 = V.undoCount; u.click('[data-set="songpick"] button[data-v="song"]'); Journey.snapshot("md-song-workspace"); },
+			{ say: "the page holds 32 songs of up to 256 rows, and the song ends with END", act: (u, c) => { c.r0 = JSON.stringify(songRows()); c.u0 = V.undoCount; c.m0 = V.songMode; u.click('[data-set="songpick"] button[data-v="song"]'); Journey.snapshot("md-song-workspace"); },
 				screen: () => ok($all("[data-ss]").length === 32 && /of 256 rows/.test($1(".arrcard .note")?.textContent || "") && [...$all("#tl .scell")].some(c => c.textContent.trim() === "END"), `${$all("[data-ss]").length} songs, "${$1(".arrcard .note")?.textContent.slice(0, 40)}"`),
 				machine: () => ok(Object.keys(Docs.songs).length === 32 && songRows().length >= 1 && Docs.songs[currentSongSlot()].rows.slice(-1)[0].kind === "end", "songs " + Object.keys(Docs.songs).length) },
 			{ say: "add a row (pad A01): the bar counter on the LCD goes up", act: async (u, c) => { c.b0 = +($1("#lcd2").innerText.match(/BARS\s*(\d+)/)?.[1]); c.n0 = songRows().length; u.click('[data-addpat="0"]'); await until(() => songRows().length === c.n0 + 1, 4000); c.i = S.songSel; await sleep(300); },
@@ -2337,7 +2337,10 @@ const MdJourneys = (() => {
 				machine: c => ok(songRows()[c.i + 1]?.kind === "jump", "row " + JSON.stringify(songRows()[c.i + 1])), screen: () => ok($1('[data-set="loopkind"] button[data-v="jump"]')?.getAttribute("aria-pressed") === "true", "JUMP not pressed"), within: 6000 },
 			{ say: "click HALT: the row is a halt", act: u => u.click('[data-set="loopkind"] button[data-v="halt"]'), machine: c => ok(songRows()[c.i + 1]?.kind === "halt", "row " + JSON.stringify(songRows()[c.i + 1])), within: 6000 }
 		],
-		async tidy(u, c) { if (S.songMore && $1("[data-rowmore]")) u.click("[data-rowmore]"); if (c.u0 != null) await undoTo(u, c.u0); if (c.r0) await undoUntil(u, () => JSON.stringify(songRows()) === c.r0, 10); }
+		/* the rows and the mode as they were: the next journey that plays (md-seq-page-leds) played this song's part row and
+		   its HALT. More's key is on a pattern row only (after HALT the loop row is selected): no click when it is gone */
+		async tidy(u, c) { blur(); if (S.songMore && $1("[data-rowmore]")) u.click("[data-rowmore]"); if (c.u0 != null) await undoTo(u, c.u0); if (c.r0) await undoUntil(u, () => JSON.stringify(songRows()) === c.r0, 10);
+			if (c.m0 === false && V.songMode !== false) { u.click('[data-set="songpick"] button[data-v="pattern"]'); await until(() => V.songMode === false && idle(), 4000); } }
 	};
 	/* MD-295: the PATTERN / SONG switch is the machine's status */
 	const playModeJ = {
@@ -3170,8 +3173,13 @@ const MdJourneys = (() => {
 		if (V.rec) { u.click("#rec"); await sleep(300); }
 		if (V.playing) { u.click("#play"); await until(() => !V.playing, 3000); }
 		if (S.soloSet.size) { setSolo(new Set()); await sleep(200); }
+		/* PATTERN mode: a journey that left the machine in SONG mode made the next one that plays play a song row (and its
+		   HALT) instead of the pattern (md-song-commands, then md-seq-page-leds). Said, so the journey that left it is found */
+		let said = "";
+		if (machineState().songMode === true) { cmd("seqMode", { song: false }); await until(() => machineState().songMode === false && V.songMode === false, 4000); said = "the machine was in SONG mode: PATTERN mode again"; }
 		await until(idle, 4000);
 		await sleep(500);
+		return said;
 	}
 	async function ready() {
 		const up = await until(() => !!machineState().input && V.loaded && $1("#bootcard")?.hidden !== false, 120000);
