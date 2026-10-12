@@ -746,7 +746,7 @@
 			],
 			"mod": "",
 			"group": "Transport",
-			"does": "While live recording, hold: erase the selected track's trigs as they play (EXIT/NO + its TRIG key on the machine)",
+			"does": "While live recording, hold: erase the selected track's trigs as they play (EXIT/NO + its TRIG key on the machine). With a track value pressed first: that parameter's locks instead (EXIT/NO + its DATA ENTRY knob)",
 			"short": "Erase",
 			"dispatched": true
 		},

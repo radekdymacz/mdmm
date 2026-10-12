@@ -1606,6 +1606,7 @@ header.top{position:relative}
 body.liverec .st,body.liverec .lb{cursor:cell}
 /* wave 7: Delete held while live recording erases the selected track's trigs as they play */
 body.erasing .th.sel{box-shadow:inset 0 0 0 2px var(--rec)}
+body.erasing .pc.erasing,body.erasing .fader.erasing{box-shadow:inset 0 0 0 2px var(--rec)}
 .recbadge{font:10px var(--pix);text-transform:uppercase;color:var(--rec)}
 /* Control side panel: the title on one line, the description under it. */
 .ctlui .card>header{flex-direction:column!important;align-items:flex-start!important;gap:2px!important}

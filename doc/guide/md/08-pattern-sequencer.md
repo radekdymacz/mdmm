@@ -409,7 +409,7 @@ Locks play only in EXTENDED. In CLASSIC they are kept and do nothing. The lane i
 See "CLEAR NOTE PARAMETER LOCKS".
 
 ## PARAMETER LOCKS IN LIVE RECORDING MODE
-<!-- rows: MD-139 MD-140 @9a539a -->
+<!-- rows: MD-139 MD-140 @f235d0 -->
 
 While you record live, a value you move is locked.
 
@@ -417,7 +417,16 @@ While you record live, a value you move is locked.
 2. Move a value, for example on **Sound**.
 3. The machine locks the next trig whose step has not started. The editor marks that step and says which value it locked. A trig that is playing is too late.
 
-{gap:MD-140}You cannot remove a lock while recording live in the editor yet. Erase it in the lock lane afterwards.{/gap}
+To take the locks of one value out while recording, as the machine does with [EXIT/NO] and a pressed DATA ENTRY knob:
+
+1. Select the track on the rail.
+2. Press the value and keep the mouse button down. The press is the knob held; it does not change the value.
+3. Hold {key:live-erase} as well. The track's header and the value are marked red. The machine removes the track's locks of that value on each step that plays while both are down.
+4. Let them go to stop.
+
+The trigs and the locks of the other values stay. Press the value first: {key:live-erase} on its own erases trigs. If you let the value go while {key:live-erase} is still down, nothing more is removed until you let the key go.
+
+NOTE: The machine removes the locks of the track it has selected, from the knob page that holds the value. The editor selects the track and shows that page before it holds the keys, so the first step or two after the press may keep their lock.
 
 ## PARAMETER LOCK SLIDE
 <!-- rows: MD-141 MD-142 @97d5ee -->

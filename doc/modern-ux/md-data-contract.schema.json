@@ -5197,7 +5197,7 @@
         },
         {
           "type": "object",
-          "description": "machine: live recording: EXIT/NO and track t's TRIG key held (on) or let go; its trigs go as they play (manual p.40)",
+          "description": "machine: live recording: EXIT/NO and track t's TRIG key held (on) or let go; its trigs go as they play (manual p.40). With i: EXIT/NO and the DATA ENTRY knob of kit parameter i pressed instead; track t's locks of that parameter go as they play (manual p.48)",
           "required": ["op", "t", "on"],
           "properties": {
             "op": {
@@ -5220,6 +5220,11 @@
             },
             "on": {
               "type": ["boolean", "integer"]
+            },
+            "i": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 23
             }
           },
           "additionalProperties": false

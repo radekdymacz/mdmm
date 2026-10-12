@@ -77,30 +77,65 @@ function playFromRow(i = S.songSel) {
 	cmd("playFrom", { i });
 }
 
-/* ===== erase while live recording (wave 7, manual p.40) =====
+/* ===== erase while live recording (wave 7, manual p.40; MD-140, p.48) =====
    Delete (or ⌫) held while live recording is EXIT/NO with the selected track's TRIG key held on the machine: the
-   firmware takes that track's trigs off as they play. Let go (or the window loses the keys): both keys up. The core
-   lets them go by itself when recording ends, when the page comes back, and when the page has not said for a second that
-   the key is still held (the page says it every 250 ms: a page that went away while Delete was down lets go). Key repeat
-   is ignored; the rail's header of the track is marked. */
-const ERASE = { t: null, beat: 0 };
-function eraseDown(e) {
-	if (e.repeat || ERASE.t === S.sel) return;
-	ERASE.t = S.sel;
-	document.body.classList.add("erasing");
-	cmd("liveErase", { t: S.sel, on: true }, undefined, undefined, r => { if (!r.ok) eraseUp(); });
+   firmware takes that track's trigs off as they play. With a track value pressed (the mouse held on it, as a DATA ENTRY
+   knob pressed on the machine), Delete is EXIT/NO with that knob instead: the track's locks of that parameter go as they
+   play, its trigs and other locks stay (the core selects the track and shows the knob's page first). Press the value
+   first, then Delete; Delete first erases trigs until a value is pressed. Letting the value go while Delete is still
+   down erases nothing more (EXIT/NO alone) until Delete is let go. Let go (or the window loses the keys): both keys up.
+   The core lets them go by itself when recording ends, when the page comes back, and when the page has not said for a
+   second that the key is still held (the page says it every 250 ms: a page that went away while Delete was down lets
+   go). Key repeat is ignored; the rail's header of the track is marked, and the pressed value too. */
+const ERASE = { t: null, i: null, on: false, spent: false, beat: 0, el: null };
+let eraseValue = null;	/* the track value pressed while live recording: { t, i, el } (eraseValueAt) */
+function eraseArgs() { return ERASE.i != null ? { t: ERASE.t, on: true, i: ERASE.i } : { t: ERASE.t, on: true }; }
+function eraseMark(el) { ERASE.el?.classList.remove("erasing"); ERASE.el = el; el?.classList.add("erasing"); }
+function eraseSend() {
+	ERASE.t = eraseValue ? eraseValue.t : S.sel; ERASE.i = eraseValue ? eraseValue.i : null;
+	document.body.classList.add("erasing"); eraseMark(eraseValue?.el || null);
+	cmd("liveErase", eraseArgs(), undefined, undefined, r => { if (!r.ok) eraseUp(); });
 	clearInterval(ERASE.beat);
-	ERASE.beat = setInterval(() => { if (ERASE.t != null) Bridge.send({ op: "liveErase", t: ERASE.t, on: true }); }, 250);
+	ERASE.beat = setInterval(() => { if (ERASE.on && !ERASE.spent) Bridge.send({ op: "liveErase", ...eraseArgs() }); }, 250);
+}
+function eraseDown(e) {
+	if (e.repeat || ERASE.on) return;
+	ERASE.on = true; ERASE.spent = false;
+	eraseSend();
 }
 function eraseUp() {
-	if (ERASE.t == null) return;
-	const t = ERASE.t; ERASE.t = null; clearInterval(ERASE.beat);
-	document.body.classList.remove("erasing");
-	Bridge.send({ op: "liveErase", t, on: false });
+	if (!ERASE.on) return;
+	const t = ERASE.t, spent = ERASE.spent;
+	ERASE.on = false; ERASE.spent = false; ERASE.t = ERASE.i = null; clearInterval(ERASE.beat);
+	document.body.classList.remove("erasing"); eraseMark(null);
+	if (!spent) Bridge.send({ op: "liveErase", t, on: false });
 }
+/* the value let go while Delete is down: EXIT/NO alone, nothing more erased until Delete goes up */
+function eraseValueUp() {
+	if (!eraseValue) return;
+	eraseValue = null;
+	if (!ERASE.on || ERASE.i == null || ERASE.spent) return;
+	ERASE.spent = true; clearInterval(ERASE.beat); eraseMark(null);
+	Bridge.send({ op: "liveErase", t: ERASE.t, on: false });
+}
+/* a track value under the pointer: its track and kit parameter (0-23), as Control All finds its knob (mdDeskLive.js) */
+function eraseValueAt(target) {
+	const el = target?.closest?.("#main .pc[data-g],#main .fader[data-g]"); if (!el) return null;
+	const t = el.dataset.t != null ? +el.dataset.t : S.sel, k = tweakKnob(el.dataset.g, el.dataset.n, t);
+	return k ? { t, i: TWEAK_BASE[k.g] + k.knob, el } : null;
+}
+document.addEventListener("pointerdown", e => {
+	eraseValue = null;
+	if (!V.rec || e.button !== 0) return;
+	eraseValue = eraseValueAt(e.target);
+	if (eraseValue && ERASE.on && !ERASE.spent) eraseSend();
+}, true);
+document.addEventListener("pointerup", eraseValueUp, true);
+document.addEventListener("pointercancel", eraseValueUp, true);
 const erasing = () => !!V.rec && kbOn();
+const erasingLocks = () => ERASE.on && ERASE.i != null && !ERASE.spent;
 document.addEventListener("keyup", e => { if (e.key === "Delete" || e.key === "Backspace") eraseUp(); });
-addEventListener("blur", () => eraseUp());
+addEventListener("blur", () => { eraseUp(); eraseValue = null; });
 
 /* ===== the ▾ in the ▶ key's corner (the menu without a right-click) and the tempo's click ===== */
 (() => {
@@ -117,7 +152,7 @@ addEventListener("blur", () => eraseUp());
 Keys.bind({ id: "pause", short: "Pause", scope: "any", keys: ["Space"], code: "Space", mod: "shift", group: "Transport", does: "Pause: the machine holds its step; again (or ▶) goes on from it, STOP ends it (also ⇧-click ▶)", run: () => pauseToggle() });
 Keys.bind({ id: "panic", short: "Panic", scope: "any", keys: ["."], mod: "cmd", group: "Transport", does: "Panic: every voice off (the machine's STOP twice)", run: () => panicNow() });
 Keys.bind({ id: "tempo-nudge", short: "Nudge", scope: "any", keys: ["-", "="], group: "Transport", does: "Hold: the tempo 10 % slower (-) or faster (=) while held, as the TEMPO menu's nudge", when: () => kbOn(), run: e => DeskTransport.nudgeKey(e.key, TEMPO_HOST) });
-Keys.bind({ id: "live-erase", short: "Erase", scope: "any", keys: ["Delete", "Backspace"], group: "Transport", does: "While live recording, hold: erase the selected track's trigs as they play (EXIT/NO + its TRIG key on the machine)", when: () => erasing(), run: e => eraseDown(e) });
+Keys.bind({ id: "live-erase", short: "Erase", scope: "any", keys: ["Delete", "Backspace"], group: "Transport", does: "While live recording, hold: erase the selected track's trigs as they play (EXIT/NO + its TRIG key on the machine). With a track value pressed first: that parameter's locks instead (EXIT/NO + its DATA ENTRY knob)", when: () => erasing(), run: e => eraseDown(e) });
 Keys.bind({ id: "song-play-from", short: "From here", scope: "song", keys: ["Enter"], group: "Song", does: "Play the song from the selected row (▶ From here)", when: () => kbOn() && S.ws === "song" && !document.activeElement?.closest?.(".songlib,[data-rowact]"), run: () => playFromRow() });
 [
 	["transport-menu", "any", "Top bar", ["right-click ▶"], "", "Transport", "The transport menu: Play / Stop, Pause / Continue, Record, Panic (also the ▾ in the key's corner)"],
