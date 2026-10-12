@@ -4,6 +4,14 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-104 · Monomachine: ⇧-click on PLAY says "Paused" but the editor shows it playing on
+
+- **From:** the 0.6 e2e run, 2026-10-13 (mm-top-pause on the firmware; MM-040, MM-065, MM-072).
+- **What happens:** right after an edit (the panel parked on SYSEX RECV for the edit's dump), ⇧-click ▶ (or ⇧Space): the toast says Paused, the machine holds its step, but the editor keeps ▶ lit as playing and the pause is dropped a second later. Alone the pause worked, but ▶ then went on with the playhead a step late.
+- **Cause (measured, `mmDeskFirmwareTest parked`):** the panel's PLAY on SYSEX RECV pauses the machine, but the firmware's running flag in RAM stays 1, also after the panel leaves SYSEX RECV, until the machine plays on or stops (STOP there sets it to 0). The editor's "playing" is that flag or the step moving, so it said playing. After a resume the flag can lag a step, and two steps forward were needed to say playing again.
+- **Fix (`fix/0.6-e2e-mm`):** after a pause the editor pressed, "playing" is the step moving alone until it moves on or the flag reads 0 (`pausedByEditor`, `mmDeskWatch.h`); after a resume the editor sent, the first step forward is playing (`resumedByEditor`). The page takes the step the machine holds as the paused step (the key reaches the machine a moment after the click: POSITION and CONTINUE's step, `setPausedStep`). Tests: `mmDeskTest` (watchStep: the pause with the flag set, the resume), `mmDeskFirmwareTest parked` (the pause while parked holds the step and the page is told it does not play; after the session leaves too; resume plays on), the journey `mm-top-pause` on the firmware, alone and after `mm-seq-first-beat`.
+- **Status:** fixed on `fix/0.6-e2e-mm`.
+
 ## B-097 · Both editors: a lock parameter key's count drawn over its name ("RTG·DIST")
 
 - **From:** Radek's 0.6 review, 2026-10-12 (Machinedrum, the Lock parameter panel, screenshot).

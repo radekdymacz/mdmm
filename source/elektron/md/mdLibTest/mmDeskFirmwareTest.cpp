@@ -2501,6 +2501,54 @@ namespace
 		r.msg(R"({"op":"record","mode":"off"})");
 		r.run(800);
 		check(r.tel.recording.load() == 0, "GRID RECORDING off");
+		leave();
+
+		// B-104 (the 0.6 e2e run): the pause while the desk is parked on SYSEX RECV after an edit, the machine playing.
+		// Measured: the machine holds its step, but the RAM running flag stays 1 (on SYSEX RECV and after the panel left
+		// it) until it plays on or stops; STOP there sets it to 0. The page is told it is paused all the same.
+		const auto pagePlaying = [&]
+		{
+			for(auto it = r.page.rbegin(); it != r.page.rend(); ++it)
+				if(it->find("type")->asString() == "telemetry")
+					return it->find("playing")->asBool();
+			return false;
+		};
+		const auto trace = [&](const int _n)
+		{
+			std::string tr;
+			for(int i = 0; i < _n; ++i)
+			{
+				r.run(100);
+				tr += " " + std::to_string(r.tel.step.load() + 1) + "/" + std::to_string(r.tel.running.load()) + (pagePlaying() ? "p" : "");
+			}
+			return tr;
+		};
+		r.msg(R"({"op":"play"})");
+		for(int i = 0; i < 30 && r.tel.running.load() != 1; ++i)
+			r.run(100);
+		check(r.tel.running.load() == 1, "B-104: it plays");
+		check(park(), "B-104: parked on SYSEX RECV while it plays");
+		taken();
+		std::printf("  parked, playing: step/flag(p: the page is told playing) every 100 ms:%s\n", trace(4).c_str());
+		r.msg(R"({"op":"pause"})");
+		const auto paused = r.lastResult();
+		r.run(600);
+		const int held = r.tel.step.load();
+		std::printf("  pause while parked: %s; then%s\n", ed::json::write(paused).c_str(), trace(6).c_str());
+		check(paused.find("ok")->asBool() && r.tel.step.load() == held, "B-104: the pause while parked holds the step");
+		check(!pagePlaying(), "B-104: the page is told it does not play (the RAM flag still says it does)");
+		leave();
+		std::printf("  the session left SYSEX RECV (%s): step %d, flag %d\n", r.desk->recvState().c_str(), r.tel.step.load() + 1, r.tel.running.load());
+		check(r.tel.step.load() == held && !pagePlaying(), "B-104: still paused, and told so, once the session left SYSEX RECV");
+		r.msg(R"({"op":"resume"})");
+		const auto resumed = trace(6);
+		std::printf("  resume:%s\n", resumed.c_str());
+		check(r.tel.step.load() != held && pagePlaying(), "B-104: resume plays on, and the page is told so");
+		r.msg(R"({"op":"stop"})");
+		r.run(400);
+		r.msg(R"({"op":"stop"})");
+		r.run(800);
+		check(!pagePlaying(), "B-104: stopped");
 	}
 
 	void recording(const Bytes& _rom)
