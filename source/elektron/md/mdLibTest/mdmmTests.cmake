@@ -153,6 +153,9 @@ function(mdmm_add_lib_tests _dir)
 	# 0.6 wave 9 (B-064): POLY, key tracking and the MULTI ENV through the desk, judged by the output
 	add_test(NAME mmPerformSoundFirmwareTest COMMAND mmDeskFirmwareTest --env perform)
 	set_tests_properties(mmPerformSoundFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
+	# review 1 (B-093): LIVE RECORDING's erase leaves chord notes without a trig; the pattern stays editable
+	add_test(NAME mmChordEraseFirmwareTest COMMAND mmDeskFirmwareTest --env chorderase)
+	set_tests_properties(mmChordEraseFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
 	add_test(NAME mmSyxPickFirmwareTest COMMAND mmDeskFirmwareTest --env syxpick)
 	set_tests_properties(mmSyxPickFirmwareTest PROPERTIES
 		LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1200)
