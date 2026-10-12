@@ -181,6 +181,19 @@ namespace
 		Clipboard clip;
 		auto r = run(docs, cmd(R"({"op":"totalLength","p":1,"v":48})"), clip);
 		check(r.errors.empty() && pat(r).scale == 2 && pat(r).length == 48, "total length sets scale and length");
+		{
+			// B-103: from 48 steps the machine's repeat runs in 32-step blocks: steps 49-64 are steps 17-32 again
+			auto d = fixtureDocs();
+			auto& q = d.patterns.at(1);
+			q.length = 48;
+			q.scale = 2;
+			q.trigs.fill(0);
+			for(const size_t st : {0, 20, 40})
+				q = ed::withTrig(q, 0, st, true);
+			const auto r2 = run(d, cmd(R"({"op":"totalLength","p":1,"v":64})"), clip);
+			check(r2.errors.empty() && pat(r2).trigs[0] == ((1ull << 0) | (1ull << 20) | (1ull << 40) | (1ull << 52))
+				&& r2.note.find("steps 17 to 32 repeat into steps 49 to 64") != std::string::npos, "48 -> 64 steps: steps 17-32 repeat into 49-64 (" + r2.note + ")");
+		}
 		r = run(docs, cmd(R"({"op":"totalLength","p":1,"v":20})"), clip);
 		check(!r.errors.empty() && r.changes.empty(), "total length 20 is refused");
 		r = run(docs, cmd(R"({"op":"length","p":1,"v":0})"), clip);
@@ -1405,12 +1418,13 @@ namespace
 		desk.onPageMessage(cmd(R"({"op":"liveErase","t":2,"on":true,"id":52})"));
 		check(ok() && keys.size() == 2, "again for the same track: nothing more pressed");
 		desk.onPageMessage(cmd(R"({"op":"liveErase","t":5,"on":true,"id":53})"));
-		check(ok() && keys == std::vector<std::string>{"hold:exit", "hold:trig3", "release:trig3", "hold:trig6"},
-			"another track: its TRIG key instead, EXIT/NO stays down");
+		// B-101: a TRIG key let go while EXIT/NO is down sets a trig on the machine's selected track: EXIT/NO always goes up first
+		check(ok() && keys == std::vector<std::string>{"hold:exit", "hold:trig3", "release:exit", "release:trig3", "hold:exit", "hold:trig6"},
+			"another track: both let go (EXIT/NO first), then EXIT/NO and its TRIG key down");
 		desk.onPageMessage(cmd(R"({"op":"liveErase","t":5,"on":false,"id":54})"));
-		check(ok() && keys.size() == 6 && keys[4] == "release:trig6" && keys[5] == "release:exit", "off: both let go");
+		check(ok() && keys.size() == 8 && keys[6] == "release:exit" && keys[7] == "release:trig6", "off: both let go, EXIT/NO first");
 		desk.onPageMessage(cmd(R"({"op":"liveErase","t":5,"on":false,"id":55})"));
-		check(ok() && keys.size() == 6, "off again: nothing pressed");
+		check(ok() && keys.size() == 8, "off again: nothing pressed");
 		// the page says every 250 ms that Delete is still held; a page that goes quiet (closed, reloaded) lets the keys go
 		desk.onPageMessage(cmd(R"({"op":"liveErase","t":3,"on":true,"id":58})"));
 		for(int i = 0; i < 6; ++i)
@@ -1419,10 +1433,10 @@ namespace
 			desk.tick();
 			desk.onPageMessage(cmd(R"({"op":"liveErase","t":3,"on":true,"id":59})"));
 		}
-		check(keys.size() == 8, "held with the page's word every 250 ms: nothing let go, nothing pressed again");
+		check(keys.size() == 10, "held with the page's word every 250 ms: nothing let go, nothing pressed again");
 		now += 1100;
 		desk.tick();
-		check(keys.size() == 10 && keys[8] == "release:trig4" && keys[9] == "release:exit", "no word for over a second: both let go");
+		check(keys.size() == 12 && keys[10] == "release:exit" && keys[11] == "release:trig4", "no word for over a second: both let go");
 		// MD-140 (manual p.48): with i, EXIT/NO and the parameter's knob switch; first the track selected and its knob page shown
 		{
 			using Keys = std::vector<std::string>;
@@ -1450,7 +1464,7 @@ namespace
 				"the trigs instead (no i): the knob let go, TRIG 5 held");
 			keys.clear();
 			desk.onPageMessage(cmd(R"({"op":"liveErase","t":4,"on":false,"id":64})"));
-			check(ok() && keys == Keys{"release:trig5", "release:exit"}, "off: TRIG 5 and EXIT/NO let go");
+			check(ok() && keys == Keys{"release:exit", "release:trig5"}, "off: EXIT/NO and TRIG 5 let go");
 			// a knob page that never shows: a few page presses, then nothing held
 			keys.clear();
 			desk.onPageMessage(cmd(R"({"op":"liveErase","t":4,"on":true,"i":2,"id":65})"));
@@ -1486,7 +1500,7 @@ namespace
 		desk.onPageMessage(cmd(R"({"op":"liveErase","t":3,"on":true,"id":60})"));
 		keys.clear();
 		desk.onPageMessage(cmd(R"({"op":"ready"})"));
-		check(keys == std::vector<std::string>{"release:trig4", "release:exit"}, "the page (re)attached: both let go");
+		check(keys == std::vector<std::string>{"release:exit", "release:trig4"}, "the page (re)attached: both let go");
 		keys.resize(6);
 		desk.onPageMessage(cmd(R"({"op":"liveErase","t":1,"on":true,"id":56})"));
 		keys.clear();
@@ -1494,7 +1508,7 @@ namespace
 		check(ok() && keys == std::vector<std::string>{"play"}, "REC while recording presses PLAY: keep playing");
 		t.recording = false;
 		desk.onTelemetry(t);
-		check(keys.size() == 3 && keys[1] == "release:trig2" && keys[2] == "release:exit", "recording over: held erase keys let go");
+		check(keys.size() == 3 && keys[1] == "release:exit" && keys[2] == "release:trig2", "recording over: held erase keys let go");
 		desk.onPageMessage(cmd(R"({"op":"liveErase","t":1,"on":true,"id":57})"));
 		check(!ok(), "liveErase refused when not recording");
 		keys.clear();

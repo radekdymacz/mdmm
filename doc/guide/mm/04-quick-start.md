@@ -14,7 +14,7 @@ A pattern recalls the kit it was saved with. When you pick a pattern, the machin
 4. Press {key:play-stop}. The machine plays and the <POSITION> field counts.
 5. Press {key:pause} to pause, and again to go on. Press {key:play-stop} to stop.
 
-You can also step through patterns with the **‹** and **›** keys beside the name.
+You can also step through patterns with the **‹** and **›** keys beside the name. While the machine plays, click **›**. The next pattern is queued and starts when the current one ends. Stop the machine and click **‹** to go back.
 
 ![The pattern chooser](shot:mm-pattern-chooser)
 
@@ -23,7 +23,7 @@ NOTE: The OS loads the kit of a pattern only for the patterns in banks A to D. I
 Press {key:play-stop} again to stop.
 
 ## PLAYING IN MULTI TRIG
-<!-- rows: MM-073 @8763d6 -->
+<!-- rows: MM-073 @e56ab4 -->
 
 In multi trig mode one source plays all six tracks. To use it:
 
@@ -34,7 +34,7 @@ In multi trig mode one source plays all six tracks. To use it:
 Multi trig takes its notes on MIDI channel 7. Chapter 5 describes the other keyboard modes.
 
 ## EXPLORING A PATTERN
-<!-- rows: MM-074 @107be5 -->
+<!-- rows: MM-074 @466fde -->
 
 Play the pattern and listen to each track.
 
@@ -46,7 +46,7 @@ Play the pattern and listen to each track.
 The piano roll plays the pitch of a note when you click it.
 
 ## GRID RECORDING
-<!-- rows: MM-075 MM-076 MM-077 MM-078 @8d56a9 -->
+<!-- rows: MM-075 MM-076 MM-077 MM-078 @825ab0 -->
 
 In grid recording you place notes on the steps of a pattern one by one. The machine does this with the TRIG keys. In the editor you draw in the piano roll of the **Sequence** workspace.
 
@@ -56,7 +56,17 @@ In grid recording you place notes on the steps of a pattern one by one. The mach
 4. Click an empty step in the roll. A note goes on it, as long as the **Len** key says.
 5. Drag the new note up or down to change its pitch.
 
-To paint the same note on several steps, drag sideways. The steps you cross get the note. A drag is one undo step.
+To paint the same note on several steps, drag sideways. The steps you cross get the note. A drag is one undo step. Hold [⌥] and drag over the notes to erase them, which is also one undo step.
+
+To set how long a note is:
+
+1. Check that **Draw** is lit and the **Len** key reads 1/16.
+2. Click an empty step. A note of one sixteenth goes on it and a NOTE OFF on the step after, so it does not run into the next note.
+3. Click the **Len** key to make it 1/8, then click another empty step. The note is two steps long.
+4. Drag the end of the first note over two more steps. It lasts three steps, up to the next note, and new notes get 3/16.
+5. Press {key:undo} to take the changes back one by one.
+
+![Notes drawn in the piano roll with their lengths](shot:e2e-mm-roll-draw-length)
 
 To place a note off, which stops the sound at a step, hold [⌥] and click an empty step. You can also drag the end of a note: the note's length is the distance to its NOTE OFF.
 
@@ -70,24 +80,26 @@ In live recording you play the keys while the pattern runs, and the machine writ
 1. Select the track to record.
 2. Press {key:record}. The machine starts if it was stopped, and the record light comes on. Clicking the record key while the machine plays does the same.
 3. Play with {key:piano-white} or the on-screen keyboard.
-4. Press {key:record} again to stop recording.
+4. Press {key:record} again to stop recording. If the editor says the panel is busy, wait a moment and press it again.
 
-To erase while recording, hold {key:live-erase}, the machine's [EXIT]. The selected track's notes go on each step that plays while the key is down.
+To erase while recording, hold {key:live-erase}, the machine's [EXIT]. The selected track's notes go on each step that plays while the key is down. The other tracks keep their notes. Let go of the key, switch recording off and stop the machine.
 
 ## PARAMETER LOCKS
-<!-- rows: MM-081 MM-082 MM-083 @5c39c9 -->
+<!-- rows: MM-081 MM-082 MM-083 @b42b03 -->
 
 A parameter lock gives one parameter a value of its own for one step.
 
 ### Lock a value
 
-1. In the **Sequence** workspace, click a page tab in the rail, for example FLT.
+1. In the **Sequence** workspace, click the **Locks** tab under the roll, then a page tab in the rail, for example FLT.
 2. Click the parameter, for example BASE. The lock lane under the roll now edits it.
 3. Drag over the bars of the lane. Each step with a trig gets a lock with the value where you dragged.
-4. To draw a straight line of values, hold [⇧] and drag.
+4. To draw a straight line of values, hold [⇧] and drag. The locks make a ramp over the notes.
 5. To set a locked value from the keys, turn the wheel over a lock step. Each notch is 4, and [⇧] makes it 1.
 
 The <LOCKS> field of the LCD counts the locks of the pattern, out of 62.
+
+![The lock lane under the roll](shot:e2e-mm-seq-lock-lane)
 
 ### Lock live
 
@@ -98,4 +110,5 @@ While live recording plays, turn a value on the **Sound** workspace. The machine
 - Hold [⌥] and drag over the lane to erase the locks of one parameter.
 - The clear key in the rail header clears the locks of the parameter you are looking at. Hold [⌥] and click it to clear every lock of the track.
 - Right-click a step and choose **Clear locks (keep the notes)**. The step loses its locks and keeps its note. On a selected step it works on the whole selection.
+- Select a step and click the **⋯** on it, or right-click it, and choose **Clear locks**. Press {key:undo} to bring the locks back.
 - Select a step and press {key:delete}. The step loses its note, its slide and its locks together.

@@ -49,4 +49,16 @@ The MKI and the MKII run the same OS. The MKII adds the user waveforms of the Di
 1. Click **MKI** or **MKII** at the right of the top bar. The panel changes to the other model: the MKI has a light-blue LCD, the MKII a bluish-white one.
 2. Click it again to go back.
 
+![The MKII panel](shot:e2e-mm-top-plate)
+
 With MKI chosen, the machines that need the MKII are grey in the machine list.
+
+## SPECIFICATIONS
+<!-- rows: MM-321 @4846ac -->
+
+The specifications of the hardware, its connectors, memory and sizes, belong to the machine. The editor lists none of them.
+
+## CREDITS, CONTACT
+<!-- rows: MM-323 @e051f1 -->
+
+The credits and the contact of the manufacturer belong to the machine's manual. The editor shows its own version in the top bar and in the title of the editor's menu.

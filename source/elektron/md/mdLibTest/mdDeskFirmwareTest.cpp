@@ -82,8 +82,9 @@ namespace
 	class Rig
 	{
 	public:
-		explicit Rig(const Bytes& _rom, const std::string& _romName, const Bytes& _patchRam = {}, const bool _waitSplash = true)
-			: m_machine(_rom, _romName, _patchRam, _waitSplash)
+		explicit Rig(const Bytes& _rom, const std::string& _romName, const Bytes& _patchRam = {}, const bool _waitSplash = true,
+			const Bytes& _flash = {}, const Bytes& _factoryCache = {})
+			: m_machine(_rom, _romName, _patchRam, _waitSplash, md::MachineModel::Machinedrum, _flash, _factoryCache)
 		{
 			mdDesk::Desk::Port port;
 			port.device.sendSysex = [this](const Bytes& _b) { m_patternDumps += _b.size() > 6 && _b[6] == 0x67; m_out.push_back(_b); };
@@ -1078,7 +1079,19 @@ namespace
 	void bootHold(const Bytes& _rom, const std::string& _romName)
 	{
 		std::puts("== P4 boot: input held until the start-up animation is over");
-		Rig rig(_rom, _romName, {}, false);
+		// The start the page sees (B-003): a machine with a blank UW flash first formats it, which the plug-in shows as
+		// loading, and starts again on the formatted flash. So the formatting run first, then the start under test on
+		// its flash. B-109: the desk's status requests at the instant the firmware takes MIDI left 0x20 in the main
+		// screen byte while the animation still ran; the desk took that for the main screen and its first PLAY was lost.
+		Bytes flash, cache;
+		{
+			Machine prep(_rom, _romName);
+			require(prep.hardware().isFactoryFlashCacheReady(), "the first run did not prepare the UW flash");
+			flash = prep.hardware().copyFlashData();
+			cache = prep.hardware().copyFactoryFlashCache();
+		}
+		Rig rig(_rom, _romName, Bytes{}, false, flash, cache);
+		check(!rig.machine().hardware().isFactoryFlashInitializationExpected(), "the start under test is not the formatting run");
 		auto& m = rig.machine();
 		const auto t0 = m.now();
 		rig.page(R"({"op":"ready"})");
@@ -1454,11 +1467,15 @@ namespace
 			_rig.run(100);
 		};
 		const auto key = [&](const md::PanelControl _k) { hold({_k}); };
-		for(const bool later : {false, true})
+		// B-103 (the 0.6 e2e run): the third case is the LCD's LEN clicked round, 32 -> 48 -> 64 -> 16 -> 32, on a 32-step
+		// pattern whose page 2 differs from page 1: going up copies, so at 16 the later pages hold steps, and 16 -> 32 then
+		// copies nothing: steps 17-32 are what was there (page 2 again), not page 1 repeated
+		for(const int mode : {0, 1, 2})
 		{
+			const bool later = mode == 1, round = mode == 2;
 			auto p = *_rig.readPattern(110);
-			p.length = 16;
-			p.scale = 0;
+			p.length = round ? 32 : 16;
+			p.scale = round ? 1 : 0;
 			p.trigs.fill(0);
 			p.lockMasks.fill(0);
 			for(auto& row : p.lockRows) row.fill(0xff);
@@ -1472,6 +1489,8 @@ namespace
 			p = ed::withTrig(p, 1, 2, true);
 			if(later)
 				p = ed::withTrig(p, 2, 40, true);
+			if(round)
+				p = ed::withTrig(p, 0, 20, true);
 			p = *ed::withLock(p, 0, 0, 4, 99);
 			for(const uint8_t slot : {110, 111})
 			{
@@ -1488,10 +1507,17 @@ namespace
 			key(md::PanelControl::Exit);
 			key(md::PanelControl::Exit);
 			hold({md::PanelControl::Function, md::PanelControl::Scale});
-			// the window keeps its field (LEN, SCALE, the speed; LEFT and RIGHT wrap): LEN at first, SCALE the second time
-			if(!later)
+			// the window keeps its field (LEN, SCALE, the speed; LEFT and RIGHT wrap): LEN at first, SCALE after
+			if(mode == 0)
 				key(md::PanelControl::Right);
-			key(md::PanelControl::Up);
+			if(round)
+			{
+				for(const auto k : {md::PanelControl::Up, md::PanelControl::Up, md::PanelControl::Down, md::PanelControl::Down,
+						md::PanelControl::Down, md::PanelControl::Up})
+					key(k);
+			}
+			else
+				key(md::PanelControl::Up);
 			if(const char* snap = std::getenv("EXTEND_SNAP"))
 			{
 				const auto panel = m.hardware().getFrontPanelSnapshot();
@@ -1503,19 +1529,24 @@ namespace
 			}
 			key(md::PanelControl::Exit);
 			_rig.run(400);
-			// the editor: totalLength 32 on the other slot
-			_rig.pageConfirmed(R"({"op":"totalLength","p":111,"v":32,"force":true,"id":1060})");
-			settle();
+			// the editor: totalLength 32 on the other slot (round: the LCD's LEN clicks, 48, 64, 16, 32)
+			for(const int v : round ? std::vector<int>{48, 64, 16, 32} : std::vector<int>{32})
+			{
+				_rig.pageConfirmed("{\"op\":\"totalLength\",\"p\":111,\"v\":" + std::to_string(v) + ",\"force\":true,\"id\":1060}");
+				settle();
+			}
 			const auto a = *_rig.readPattern(110), b = *_rig.readPattern(111);
 			bool locks = true;
 			for(size_t i = 0; i < 64; ++i)
 				locks = locks && ed::lockValue(a, 0, 0, i) == ed::lockValue(b, 0, 0, i);
 			const bool same = a.length == b.length && a.scale == b.scale && a.trigs == b.trigs && a.accentPattern == b.accentPattern
 				&& a.swingPattern == b.swingPattern && a.trackAccent == b.trackAccent && a.trackSwing == b.trackSwing && a.lockMasks == b.lockMasks && locks;
-			std::printf("  %s: machine %d steps, T1 %016llx; editor %d steps, T1 %016llx\n", later ? "a trig past the old length" : "the later steps empty",
+			std::printf("  %s: machine %d steps, T1 %016llx; editor %d steps, T1 %016llx\n", round ? "LEN round from 32" : later ? "a trig past the old length" : "the later steps empty",
 				a.length, static_cast<unsigned long long>(a.trigs[0]), b.length, static_cast<unsigned long long>(b.trigs[0]));
-			check(same && a.length == 32 && (later ? a.trigs[0] == p.trigs[0] : a.trigs[0] == (p.trigs[0] | (p.trigs[0] << 16))),
-				std::string("the editor's longer pattern is the machine's: ") + (later ? "nothing copied (a trig past the old length)" : "steps 1-16 repeated into 17-32"));
+			const uint64_t want = round ? (p.trigs[0] & 0xffffffffull) : later ? p.trigs[0] : (p.trigs[0] | (p.trigs[0] << 16));
+			check(same && a.length == 32 && (a.trigs[0] & 0xffffffffull) == want,
+				std::string("the editor's longer pattern is the machine's: ") + (round ? "steps 17-32 are page 2 again, nothing copied (the trip up filled the later pages)"
+					: later ? "nothing copied (a trig past the old length)" : "steps 1-16 repeated into 17-32"));
 		}
 	}
 
@@ -2842,6 +2873,18 @@ namespace
 		std::printf("  after: track 14 %d of 16 trigs, track 13 %d of 16\n", t14, t13);
 		check(t14 < 16 && t14 >= 9, "track 14 lost the trigs that played while Delete was held");
 		check(t13 == 16, "track 13 kept its trigs");
+		// B-101: no other track changes (the e2e run: track 1 gained a trig while track 9's were erased)
+		std::string changed;
+		for(int t = 0; t < 16; ++t)
+		{
+			if(t == 13)
+				continue;
+			for(size_t st = 0; st < 64; ++st)
+				if(ed::hasTrig(p, t, st) != ed::hasTrig(after, t, st))
+					changed += " T" + std::to_string(t + 1) + "/" + std::to_string(st + 1) + (ed::hasTrig(after, t, st) ? "+" : "-");
+		}
+		std::printf("  other tracks' trigs changed:%s\n", changed.empty() ? " none" : changed.c_str());
+		check(changed.empty(), "the other tracks kept their trigs");
 		const bool shown = rig.runUntil([&]
 		{
 			const auto d = rig.pageDoc("pattern", pattern);
@@ -2913,6 +2956,14 @@ namespace
 		check(l9 < 16 && l9 >= 6, "track 14 lost parameter 9's locks on the steps that played while it was held");
 		check(l1 == 16 && trigs(after, 13) == 16, "its trigs and parameter 1's locks stay");
 		check(other == 16, "track 13 keeps its locks");
+		// B-101: no track's trigs change (a key let go in the wrong order sets one on the machine's selected track)
+		std::string changed;
+		for(int t = 0; t < 16; ++t)
+			for(size_t st = 0; st < 64; ++st)
+				if(ed::hasTrig(p, t, st) != ed::hasTrig(after, t, st))
+					changed += " T" + std::to_string(t + 1) + "/" + std::to_string(st + 1) + (ed::hasTrig(after, t, st) ? "+" : "-");
+		std::printf("  trigs changed:%s\n", changed.empty() ? " none" : changed.c_str());
+		check(changed.empty(), "every track kept its trigs");
 		const bool shown = rig.runUntil([&]
 		{
 			const auto d = rig.pageDoc("pattern", pattern);
@@ -2921,6 +2972,68 @@ namespace
 			return q && locks(*q, 13, 9) == l9;
 		}, 4000);
 		check(shown, "the page's pattern document shows it");
+	}
+
+	// B-101 (the 0.6 e2e run, md-seq-live-unlock): locks drawn on the track with the most trigs, REC at once, the locks
+	// erased as they play: no "Push failed: the machine did not read back pattern A01", REC waits for the drawn locks to be
+	// on the machine (none dumped over the recording), and the editor ends with the machine's pattern.
+	void editThenRecord(const Bytes& _rom, const std::string& _romName)
+	{
+		std::puts("edit then record: locks drawn, REC at once, the locks erased while recording");
+		Rig rig(_rom, _romName);
+		rig.page(R"({"op":"ready"})");
+		rig.runUntil([&] { return rig.desk().isInputReady() && rig.desk().linkState().pattern && rig.desk().linkState().kit; }, 8000);
+		auto& desk = rig.desk();
+		const auto pattern = *desk.linkState().pattern;
+		rig.runUntil([&] { return desk.documents().patterns.count(pattern) > 0 && !desk.isBusy(); }, 10000);
+		const auto p0 = desk.documents().patterns.at(pattern);
+		const auto trigs = [&](const int _t) { std::vector<size_t> v; for(size_t st = 0; st < ed::visibleSteps(p0); ++st) if(ed::hasTrig(p0, _t, st)) v.push_back(st); return v; };
+		int t = 0;
+		for(int k = 1; k < 16; ++k)
+			if(trigs(k).size() > trigs(t).size())
+				t = k;
+		const auto on = trigs(t);
+		require(on.size() >= 4, "no track with four trigs");
+		const auto errors = rig.pageErrors;
+		int id = 10;
+		for(const auto st : on)
+		{
+			rig.page("{\"op\":\"lock\",\"p\":" + std::to_string(pattern) + ",\"t\":" + std::to_string(t) + ",\"i\":12,\"s\":" + std::to_string(st) + ",\"v\":" + std::to_string(20 + st) + ",\"id\":" + std::to_string(id++) + "}");
+			rig.run(15);
+		}
+		rig.run(100);
+		rig.page(R"({"op":"record","id":3})");
+		std::printf("  REC: %s\n", rig.lastResult() ? ed::json::write(*rig.lastResult()).c_str() : "none");
+		check(rig.runUntil([&] { return rig.pageTelemetry().recording; }, 5000), "live recording starts");
+		rig.run(200);
+		for(int k = 0; k < 15; ++k)
+		{
+			rig.page("{\"op\":\"liveErase\",\"t\":" + std::to_string(t) + ",\"on\":true,\"i\":12,\"id\":30}");
+			rig.run(100);
+		}
+		rig.page("{\"op\":\"liveErase\",\"t\":" + std::to_string(t) + ",\"on\":false,\"id\":31}");
+		rig.run(1500);
+		rig.page(R"({"op":"record","id":4})");
+		rig.page(R"({"op":"stop","id":5})");
+		rig.run(1500);
+		rig.runUntil([&] { return !desk.isBusy(); }, 10000);
+		rig.run(6000);
+		const auto q = rig.readPattern(pattern);
+		const auto& d = desk.documents().patterns.at(pattern);
+		int machine = 0, shown = 0, drawn = 0;
+		for(const auto st : on)
+		{
+			const auto v = q ? ed::lockValue(*q, t, 12, st) : std::nullopt;
+			machine += v.has_value();
+			drawn += v == std::optional<uint8_t>(static_cast<uint8_t>(20 + st));
+			shown += ed::lockValue(d, t, 12, st).has_value();
+		}
+		std::printf("  track %d: %zu locks drawn; after: %d on the machine (%d with the drawn value), %d in the editor, %zu page errors\n",
+			t + 1, on.size(), machine, drawn, shown, rig.pageErrors - errors);
+		check(rig.pageErrors == errors, "no push failed while recording");
+		check(machine < static_cast<int>(on.size()), "the locks that played while it was held are gone");
+		check(drawn == machine && machine * 2 >= static_cast<int>(on.size()), "the others are the drawn ones: REC waited for them to be on the machine");
+		check(q && *q == d, "the editor shows the machine's pattern");
 	}
 
 	void transport(const Bytes& _rom, const std::string& _romName)
@@ -3045,37 +3158,47 @@ namespace
 				std::printf("  song %d:%s\n", sn + 1, rows.c_str());
 			}
 		const auto mode = [&] { const auto* d = rig.machineDoc() ? rig.machineDoc()->find("songMode") : nullptr; return d && d->isBool() && d->asBool(); };
-		rig.page(R"({"op":"selectSong","s":0,"id":1})");
-		rig.run(800);
-		std::printf("  selectSong 0: %s\n", (rig.lastResult() ? ed::json::write(*rig.lastResult()) : std::string("no result")).c_str());
+		// PLAY as the top bar sends it, 3 s watched: the steps the page is told, with the song row and the pattern
+		const auto playSong = [&](const char* _what, const int _id)
+		{
+			rig.page(std::string(R"({"op":"play","id":)") + std::to_string(_id) + "}");
+			rig.run(200);
+			std::printf("  %s, play: %s\n", _what, (rig.lastResult() ? ed::json::write(*rig.lastResult()) : std::string("no result")).c_str());
+			std::vector<int> steps, rows, pats;
+			for(int i = 0; i < 600; ++i)
+			{
+				rig.run(5);
+				const auto t = rig.pageTelemetry();
+				if(t.playing && (steps.empty() || steps.back() != t.step))
+				{
+					steps.push_back(t.step);
+					rows.push_back(t.songRow);
+					pats.push_back(m.read8(0x28d205));
+				}
+			}
+			std::string seen;
+			for(size_t k = 0; k < steps.size() && k < 24; ++k)
+				seen += " " + std::to_string(steps[k]) + "/r" + std::to_string(rows[k] + 1) + "/" + ed::mdPatternName(static_cast<uint8_t>(pats[k]));
+			std::printf("  3 s after PLAY: %zu steps seen:%s\n", steps.size(), seen.c_str());
+			check(steps.size() >= 8, std::string(_what) + ": PLAY in SONG mode, the machine plays (the step moves)");
+			check(!rows.empty() && rows.front() >= 0, std::string(_what) + ": the page is told a song row");
+			rig.page(R"({"op":"stop","id":4})");
+			rig.run(600);
+			check(!rig.pageTelemetry().playing, std::string(_what) + ": STOP");
+		};
+		// B-098 (the 0.6 e2e run): the first thing after the start, no Load: the machine reports song 1, its working song is
+		// empty until LOAD SONG; SONG mode loads it
+		check(desk.linkState().song == 0, "the machine reports song 1 after the start");
 		rig.page(R"({"op":"seqMode","song":true,"id":2})");
 		const bool inSong = rig.runUntil(mode, 3000);
 		std::printf("  seqMode song: %s, machine in SONG mode %d\n", (rig.lastResult() ? ed::json::write(*rig.lastResult()) : std::string("no result")).c_str(), inSong);
 		check(inSong, "SONG mode on the machine");
-		rig.page(R"({"op":"play","id":3})");
-		rig.run(200);
-		std::printf("  play: %s\n", (rig.lastResult() ? ed::json::write(*rig.lastResult()) : std::string("no result")).c_str());
-		std::vector<int> steps, rows, pats;
-		for(int i = 0; i < 600; ++i)
-		{
-			rig.run(5);
-			const auto t = rig.pageTelemetry();
-			if(t.playing && (steps.empty() || steps.back() != t.step))
-			{
-				steps.push_back(t.step);
-				rows.push_back(t.songRow);
-				pats.push_back(m.read8(0x28d205));
-			}
-		}
-		std::string seen;
-		for(size_t k = 0; k < steps.size() && k < 24; ++k)
-			seen += " " + std::to_string(steps[k]) + "/r" + std::to_string(rows[k] + 1) + "/" + ed::mdPatternName(static_cast<uint8_t>(pats[k]));
-		std::printf("  3 s after PLAY: %zu steps seen:%s\n", steps.size(), seen.c_str());
-		check(steps.size() >= 8, "PLAY in SONG mode: the machine plays (the step moves)");
-		check(!rows.empty() && rows.front() >= 0, "the page is told a song row");
-		rig.page(R"({"op":"stop","id":4})");
-		rig.run(600);
-		check(!rig.pageTelemetry().playing, "STOP");
+		playSong("B-098, no Load since the start", 3);
+		// B-096: the song slot list's Load (selectSong), then PLAY
+		rig.page(R"({"op":"selectSong","s":0,"id":1})");
+		rig.run(800);
+		std::printf("  selectSong 0: %s\n", (rig.lastResult() ? ed::json::write(*rig.lastResult()) : std::string("no result")).c_str());
+		playSong("after Load", 5);
 		// the same in a DAW (followHost: TEMPO IN external) with the DAW stopped: PLAY waits for the host's clock
 		rig.page(R"({"op":"followHost","id":6})");
 		rig.runUntil([&] { return desk.documents().global && (desk.documents().global->syncFlags & ed::mdGlobalBits::g_tempoInExternal); }, 4000);
@@ -3091,6 +3214,27 @@ namespace
 		rig.run(1500);
 		rig.page(R"({"op":"seqMode","song":false,"id":5})");
 		rig.run(400);
+
+		// B-098: a machine already in SONG mode when the editor meets it (set on the machine, not through the page): the
+		// page's PLAY, and the Song page's From here, each the first thing after a start, play the song too
+		for(const bool from : {false, true})
+		{
+			Rig r2(_rom, _romName);
+			r2.page(R"({"op":"ready"})");
+			r2.runUntil([&] { return r2.desk().isReady() && r2.desk().documents().songs.count(0); }, 60000);
+			r2.machine().send(ed::mdSetStatus(ed::MdStatus::SequencerMode, 1));
+			r2.machine().send(ed::mdStatusRequest(ed::MdStatus::SequencerMode));
+			r2.runUntil([&] { return r2.desk().linkState().songMode == true; }, 3000);
+			r2.page(from ? R"({"op":"playFrom","i":0,"id":1})" : R"({"op":"play","id":1})");
+			r2.runUntil([&] { return r2.pageTelemetry().playing; }, 3000);
+			const int s0 = r2.pageTelemetry().step;
+			r2.run(1000);
+			const auto t = r2.pageTelemetry();
+			std::printf("  B-098, in SONG mode at the start, %s: playing %d, step %d -> %d, row %d\n", from ? "From here" : "PLAY", t.playing, s0 + 1, t.step + 1, t.songRow + 1);
+			check(t.playing && t.step != s0 && t.songRow >= 0, std::string("B-098: the first ") + (from ? "From here" : "PLAY") + " after a start in SONG mode plays the song");
+			r2.page(R"({"op":"stop","id":2})");
+			r2.run(400);
+		}
 	}
 
 	void songRow(const Bytes& _rom, const std::string& _romName)
@@ -4780,6 +4924,7 @@ int main(const int _argc, char** _argv)
 		{
 			liveErase(rom, romPath);
 			liveUnlock(rom, romPath);
+			editThenRecord(rom, romPath);
 			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 			std::printf("mdDeskFirmwareTest liveerase: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
 			return g_failures ? 1 : 0;

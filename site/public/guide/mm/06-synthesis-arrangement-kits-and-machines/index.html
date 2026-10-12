@@ -56,9 +56,9 @@
 <li><a href="/guide/mm/18-routing/">18. Routing</a></li>
 <li><a href="/guide/mm/19-global-settings/">19. Global settings</a></li>
 <li><a href="/guide/mm/20-early-startup-menu-technical-information/">20. Early startup menu, technical information</a></li>
-<li><span class="gd-side-todo">21. Appendix A: machine reference <span class="gd-vh">(to come)</span></span></li>
-<li><span class="gd-side-todo">22. Appendix B: MIDI control reference <span class="gd-vh">(to come)</span></span></li>
-<li><span class="gd-side-todo">23. Appendix C: SysEx reference <span class="gd-vh">(to come)</span></span></li>
+<li><a href="/guide/mm/21-appendix-a-machine-reference/">21. Appendix A: machine reference</a></li>
+<li><a href="/guide/mm/22-appendix-b-midi-control-reference/">22. Appendix B: MIDI control reference</a></li>
+<li><a href="/guide/mm/23-appendix-c-sysex-reference/">23. Appendix C: SysEx reference</a></li>
 <li><a href="/guide/mm/24-beyond-the-hardware/">24. Beyond the hardware</a></li></ol>
 <ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
 </nav>
@@ -83,10 +83,13 @@
 <p class="gd-ref">MM manual p.1-18</p>
 <p>Every pattern recalls a kit. When you pick a pattern, the machine loads its kit, unless the kit is already the one that plays.</p>
 <p>The pattern chooser shows, on each pattern, its length and its kit as K and a number. The kit library shows on each kit slot the patterns that link to it. A kit no pattern links to ends its name with a star and reads &quot;no pattern&quot;.</p>
+<p>To see that a kit is not loaded twice:</p>
+<ol class="gd-steps"><li>Pick a pattern. Its kit loads.</li><li>Change a value on the <b class="gd-ui">Sound</b> workspace. The kit reads <b class="gd-ui">edited</b>.</li><li>Pick a second pattern that recalls the same kit. The pattern changes, the kit stays as you edited it and the editor asks nothing.</li></ol>
 <p>If you pick a pattern with a different kit while the current kit has edits that are not saved, the editor asks. It offers <b class="gd-ui">Save kit, then switch</b>, a switch that leaves the edits to the machine's UNDO KIT, and <b class="gd-ui">Cancel</b>.</p>
 <p>Loading a kit from the library makes it the kit of the current pattern. To set the kit of any pattern:</p>
 <ol class="gd-steps"><li>Click the <b class="gd-light">&lt;PATTERN&gt;</b> field in the LCD. The pattern chooser opens.</li><li>Hold <kbd class="gd-key">[⌥]</kbd> and click the pattern. It is selected, not loaded.</li><li>Choose a kit in the <b class="gd-ui">Kit</b> list. The pattern now recalls that kit.</li></ol>
-<p>If the pattern plays, the machine loads the new kit at once. When the kit that plays has unsaved edits, the editor asks first. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take the change back.</p>
+<p>If the pattern plays, the machine loads the new kit at once. When the kit that plays has unsaved edits, the editor asks first: answer <b class="gd-ui">Cancel</b> with <kbd class="gd-key">[ESC]</kbd> and the pattern keeps its kit and the edits stay. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take the change back.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-mm-lib-pattern-kit.webp" aria-label="Open the picture full size: The pattern chooser with a kit chosen for a pattern"><img src="/guide/shots/e2e-mm-lib-pattern-kit.webp" width="1440" height="923" alt="The pattern chooser with a kit chosen for a pattern" loading="lazy"></a><figcaption>The pattern chooser with a kit chosen for a pattern</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="loading-a-kit" aria-labelledby="loading-a-kit-h">
 <div class="gd-body gd-prose"><h2 id="loading-a-kit-h">LOADING A KIT <a class="gd-anchor" href="#loading-a-kit" aria-label="Link to LOADING A KIT">#</a></h2>
@@ -94,7 +97,7 @@
 <p>The machine holds 128 kits. The kit library lists them all.</p>
 <ol class="gd-steps"><li>Click the <b class="gd-light">&lt;KIT&gt;</b> field in the LCD. The kit library opens with the 128 slots as a grid.</li><li>Click a slot, or move to it with the arrow keys and press <kbd class="gd-key">[ENTER]</kbd>. The kit loads. If the current kit has unsaved edits, the editor asks first.</li><li>To select a slot without loading it, hold <kbd class="gd-key">[⌥]</kbd> and click.</li></ol>
 <p>The current kit is marked in the grid, with ok or ed to say whether it is saved or edited. Slots with a name show it; empty slots read EMPTY. <kbd class="gd-key">[ESC]</kbd> closes the library.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The kit library"><span>Screenshot to come</span></div><figcaption>The kit library</figcaption></figure>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/mm-kit-library.webp" aria-label="Open the picture full size: The kit library"><img src="/guide/shots/mm-kit-library.webp" width="1440" height="923" alt="The kit library" loading="lazy"></a><figcaption>The kit library</figcaption></figure>
 <h4 class="gd-h3" id="load-an-empty-kit">Load an empty kit</h4>
 <p>Load an empty slot to start from nothing. The kit has six tracks with the machine GND-SIN, the sine, and default settings.</p>
 </div></section>
@@ -102,14 +105,17 @@
 <div class="gd-body gd-prose"><h2 id="saving-and-naming-h">SAVING AND NAMING <a class="gd-anchor" href="#saving-and-naming" aria-label="Link to SAVING AND NAMING">#</a></h2>
 <p class="gd-ref">MM manual pp.1-19, 1-20</p>
 <p>The small field beside the <b class="gd-light">&lt;KIT&gt;</b> label reads <b class="gd-ui">edited</b> while the kit differs from its saved slot on the machine, and <b class="gd-ui">saved</b> when it matches. The kit edits are kept in the project of your DAW as well.</p>
+<p>To save a kit under another slot:</p>
+<ol class="gd-steps"><li>Click <b class="gd-light">&lt;KIT&gt;</b> on the LCD. The kit library opens.</li><li>Hold <kbd class="gd-key">[⌥]</kbd> and click a slot. It is selected.</li><li>Click <b class="gd-ui">Save as</b> and answer the question.</li></ol>
 <ul class="gd-list"><li><b class="gd-ui">Save</b> writes the current kit to its own slot. The slot's old content goes to the machine's UNDO KIT.</li><li><b class="gd-ui">Save as</b> writes it to the slot you selected, after asking if that slot is used, and the kit becomes that slot's kit. The slot you saved from keeps what it had.</li></ul>
-<p>To rename a kit, select its slot and press <kbd class="gd-key">[F2]</kbd>, or double-click the slot, or click <b class="gd-ui">Rename</b>. Type a name of up to 11 characters and press <kbd class="gd-key">[ENTER]</kbd>. The editor takes the name as text, so there is no character picker.</p>
+<p>To rename a kit, select its slot and press <kbd class="gd-key">[F2]</kbd>, or double-click the slot, or click <b class="gd-ui">Rename</b>. Type a name of up to 11 characters and press <kbd class="gd-key">[ENTER]</kbd>. The editor takes the name as text, so there is no character picker. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take a rename back.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-mm-lib-kit-saveas.webp" aria-label="Open the picture full size: Saving a kit to another slot"><img src="/guide/shots/e2e-mm-lib-kit-saveas.webp" width="1440" height="923" alt="Saving a kit to another slot" loading="lazy"></a><figcaption>Saving a kit to another slot</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="undo-kit" aria-labelledby="undo-kit-h">
 <div class="gd-body gd-prose"><h2 id="undo-kit-h">UNDO KIT <a class="gd-anchor" href="#undo-kit" aria-label="Link to UNDO KIT">#</a></h2>
 <p class="gd-ref">MM manual p.1-20</p>
 <p>The machine keeps one extra kit, the UNDO KIT, as the first entry of its kit list. It holds the kit lost to the last load or overwrite without saving. The dialogs of the editor name it when an action puts a kit there. The editor's own undo, <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd>, works on top of it.</p>
-<p>To load it:</p>
+<p>To lose a kit on purpose and bring it back, rename the kit that plays, which is an edit you do not save, then load another kit. The machine keeps the edited kit as its UNDO KIT. To load it:</p>
 <ol class="gd-steps"><li>Open the kit library: click the <b class="gd-ui">KIT</b> field on the LCD.</li><li>Click <b class="gd-ui">UNDO KIT</b>. The lost kit plays again, with its unsaved edits, and the slot it came from becomes the current kit.</li><li>Click <b class="gd-ui">Save</b> to keep it.</li></ol>
 <p>If the current kit has unsaved edits, the editor asks first: the machine does not keep them when it loads the UNDO KIT.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The editor presses the machine's own keys (KIT, LOAD, the first entry of the list). There is no MIDI message for the UNDO KIT, so with a real Monomachine over MIDI the button is off: use the machine's kit list.</p></aside>
@@ -117,7 +123,7 @@
 <section class="gd-sec" id="copy-kit" aria-labelledby="copy-kit-h">
 <div class="gd-body gd-prose"><h2 id="copy-kit-h">COPY KIT <a class="gd-anchor" href="#copy-kit" aria-label="Link to COPY KIT">#</a></h2>
 <p class="gd-ref">MM manual p.1-21</p>
-<ol class="gd-steps"><li>Open the kit library and select the kit slot.</li><li>Click <b class="gd-ui">Copy</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C / V]</kbd>.</li><li>Select the slot to copy into and click <b class="gd-ui">Paste</b>.</li></ol>
+<ol class="gd-steps"><li>Open the kit library. Hold <kbd class="gd-key">[⌥]</kbd> and click the kit slot to select it.</li><li>Click <b class="gd-ui">Copy</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C / V]</kbd>.</li><li>Hold <kbd class="gd-key">[⌥]</kbd> and click the slot to copy into, then click <b class="gd-ui">Paste</b>.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> with the library open. The slot is back as it was.</li></ol>
 <p>You can also drag a slot onto another slot to copy it there.</p>
 <p>Pasting a kit writes it to the machine as a dump. The machine takes a dump only in its receive state, so the editor passes the dump through the machine's SYSEX RECV, and the sync field of the LCD reads RECV while it does. With a real Monomachine the field reads SEND and a number until you send the edit.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>To hear a kit pasted into the slot that plays, load that slot again.</p></aside>
@@ -125,7 +131,7 @@
 <section class="gd-sec" id="clear-kit" aria-labelledby="clear-kit-h">
 <div class="gd-body gd-prose"><h2 id="clear-kit-h">CLEAR KIT <a class="gd-anchor" href="#clear-kit" aria-label="Link to CLEAR KIT">#</a></h2>
 <p class="gd-ref">MM manual p.1-21</p>
-<ol class="gd-steps"><li>Select the kit slot in the library.</li><li>Click <b class="gd-ui">Clear</b>, or press <kbd class="gd-key">[DELETE]</kbd>.</li></ol>
+<ol class="gd-steps"><li>Hold <kbd class="gd-key">[⌥]</kbd> and click the kit slot in the library to select it.</li><li>Click <b class="gd-ui">Clear</b>, or press <kbd class="gd-key">[DELETE]</kbd>, and answer the question. The slot is cleared.</li></ol>
 <p>The slot gets the empty kit: six sine machines and default settings. The machine has no clear message, so the editor writes the empty kit as a dump, through SYSEX RECV. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> undoes a paste, clear or rename.</p>
 </div></section>
 <section class="gd-sec" id="assigning-a-machine" aria-labelledby="assigning-a-machine-h">
@@ -134,13 +140,13 @@
 <ol class="gd-steps"><li>Select the track in the rail.</li><li>Go to the <b class="gd-ui">Sound</b> workspace (<kbd class="gd-key">[2]</kbd>).</li><li>Click the machine name at the head of the workspace. The machine picker opens.</li><li>Click a family at the left, then a machine. Move the pointer over a machine to read what it is and what its eight synthesis parameters are called.</li></ol>
 <p>The track now plays the machine, with the machine's start values for the synthesis page.</p>
 <p>The picker has a toggle, <b class="gd-ui">Keep track effects + LFOs</b>. While it is lit, the amp, filter, effects and LFO pages of the track stay as they were. Switch it off to set those pages to their start values too.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The machine picker"><span>Screenshot to come</span></div><figcaption>The machine picker</figcaption></figure>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/mm-machine-picker.webp" aria-label="Open the picture full size: The machine picker"><img src="/guide/shots/mm-machine-picker.webp" width="1440" height="923" alt="The machine picker" loading="lazy"></a><figcaption>The machine picker</figcaption></figure>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Changing the machine removes the step locks the track had on the synthesis page, because the old machine's parameters do not exist on the new one.</p><p>A processing machine (an FX machine) needs audio. If the track did not have one, the editor sets its input to INP AB on track 1 or to the track before on the others, and sets AMP DEC and REL to 127 so the sound passes. A note says so.</p></aside>
 </div></section>
 <section class="gd-sec" id="copy-machine" aria-labelledby="copy-machine-h">
 <div class="gd-body gd-prose"><h2 id="copy-machine-h">COPY MACHINE <a class="gd-anchor" href="#copy-machine" aria-label="Link to COPY MACHINE">#</a></h2>
 <p class="gd-ref">MM manual p.1-23</p>
-<ol class="gd-steps"><li>Go to the <b class="gd-ui">Sound</b> workspace and select the track.</li><li>Click <b class="gd-light">&lt;COPY&gt;</b> under the LCD, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>. The machine and all seven DATA pages are copied.</li><li>Select another track and click <b class="gd-light">&lt;PASTE&gt;</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>. The track gets the machine and its settings.</li></ol>
+<ol class="gd-steps"><li>Go to the <b class="gd-ui">Sound</b> workspace and select the track.</li><li>Click <b class="gd-light">&lt;COPY&gt;</b> under the LCD, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>. The machine and all seven DATA pages are copied.</li><li>Select another track and click <b class="gd-light">&lt;PASTE&gt;</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>. The track gets the machine and its settings.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take the paste back.</li></ol>
 </div></section>
 <section class="gd-sec" id="clear-machine" aria-labelledby="clear-machine-h">
 <div class="gd-body gd-prose"><h2 id="clear-machine-h">CLEAR MACHINE <a class="gd-anchor" href="#clear-machine" aria-label="Link to CLEAR MACHINE">#</a></h2>
@@ -158,7 +164,7 @@
 <p>A track has seven pages of eight parameters, 56 in all. The <b class="gd-ui">Sound</b> workspace shows them as groups of a few values, with a small picture where the values draw a shape:</p>
 <ul class="gd-list"><li>the synthesis page, whose groups depend on the machine;</li><li>the amp, filter and effects pages, the same on every machine;</li><li>the three LFOs at the foot.</li></ul>
 <p>Most synth machines have TUNE, a fine tune in semitones, on the synthesis page. The beat box and the FX machines do not.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The Sound workspace"><span>Screenshot to come</span></div><figcaption>The Sound workspace</figcaption></figure>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/mm-sound-workspace.webp" aria-label="Open the picture full size: The Sound workspace"><img src="/guide/shots/mm-sound-workspace.webp" width="1440" height="923" alt="The Sound workspace" loading="lazy"></a><figcaption>The Sound workspace</figcaption></figure>
 <p>Every edit goes to the machine at once, as a controller message, but it is not in the stored kit until you save. The <b class="gd-ui">edited</b> mark in the LCD says so.</p>
 </div></section>
 <nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/mm/05-monomachine-overview/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">5. Monomachine overview</span></a><a href="/guide/mm/07-track-effects/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">7. Track effects</span></a></nav>

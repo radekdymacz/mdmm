@@ -12,14 +12,18 @@ Each of the twelve tracks has its own arpeggiator, six synth tracks and six MIDI
 2. Write a chord: hold [⇧] and click the steps at the other pitches in the roll.
 3. Set the mode and the other values below.
 
-The light notes in the roll show what the arpeggiator plays.
+The light notes in the roll show what the arpeggiator plays. Press {key:undo} to take the change back.
+
+![The arpeggiator tab](shot:e2e-mm-seq-arp)
 
 ### ARPEGGIATOR BASIC SETTINGS
-<!-- rows: MM-216 MM-217 MM-218 MM-219 MM-220 MM-221 @f107b1 -->
+<!-- rows: MM-216 MM-217 MM-218 MM-219 MM-220 MM-221 @1a41b3 -->
 
-- **SPD** is the speed. 6 is a sixteenth note.
-- **RNGE** is the number of octaves the run covers.
-- **OJMP** is the octave jump.
+- **SPD** is the speed. 6 is a sixteenth note, so the light notes follow one to a step.
+- **RNGE** is the number of octaves the run covers. Scroll over it to raise it. It stops at 9 OCT.
+- **OJMP** is the octave jump. Type a value in it.
+
+Each track keeps its own settings: a mode key you click changes the arpeggiator of the selected track and no other.
 
 **Mode** keys:
 
@@ -30,30 +34,43 @@ The light notes in the roll show what the arpeggiator plays.
 
 **Play** keys: **TRUE** plays the notes in the order of the chord, **UP** from low to high, **DOWN** from high to low, **CYCLE** up and then down, and **RND** in a random order. With RND the roll draws the notes outlined, because the pitches vary.
 
-To copy, paste or clear the arpeggiator of a track, tick **Arp** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu (chapter 11, "Super copy"). A clear turns it off. Press {key:undo} to take each back.
+To copy, paste or clear the arpeggiator of a track:
+
+1. Click **▾** beside **COPY**, **CLR** and **PASTE** on the LCD, then **Copy…**.
+2. Tick **Arp** (and anything else the track should carry) and click **Copy**.
+3. Select the other track, open **▾** again, choose **Paste…** and click **Paste into 1 track**. The track now has the arpeggiator of the first.
+4. A clear from **Clear…** turns the arpeggiator off.
+
+Each is one undo step: press {key:undo} to take it back. See chapter 11, "Super copy".
+
+![The arpeggiator settings](shot:e2e-mm-seq-arp-setup)
 
 ### ARPEGGIATOR ENVELOPE TRIGGING SWITCHES
-<!-- rows: MM-222 @9388c0 -->
+<!-- rows: MM-222 @ee86e3 -->
 
 The **Trig** keys **AMP**, **FLT** and **LFO** choose which envelopes the arpeggiator's notes fire again. A MIDI track has no envelopes, so the keys read "none on MIDI".
 
 ### ARPEGGIATOR RHYTHM AND OFFSET TRACK
-<!-- rows: MM-223 MM-224 MM-225 @9f9806 -->
+<!-- rows: MM-223 MM-224 MM-225 @47af59 -->
 
 Under the values is a strip of 16 cells. It repeats while the arpeggiator runs.
 
-- Click a cell to mute it or to switch it on again.
-- Drag a cell up or down to give its note an offset from minus 24 to plus 24 semitones.
+- Click a cell to mute it. Click it again to switch it on.
+- Drag a cell up or down to give its note an offset from minus 24 to plus 24 semitones. Drag past the top for +24 and past the bottom for minus 24.
 - Click a cell past the end, or a key of the **LEN** row under the strip, to set the length of the strip from 1 to 16.
 
 ## TRANSPOSE
-<!-- rows: MM-226 MM-227 MM-228 MM-229 @4c013a -->
+<!-- rows: MM-226 MM-227 MM-228 MM-229 @d449b7 -->
 
 Transpose changes the pitch of the notes while they play. The programmed notes stay as they are. Click **Transpose**.
 
-1. Set **TRACK**, the transpose of the selected track, by dragging the box. The value runs from −64 to +63 semitones.
-2. Set **PAT · all**, the transpose of the whole pattern. All tracks follow it.
+1. Set **TRACK**, the transpose of the selected track, by dragging the box. The value runs from −64 to +63 semitones. You can also click a key of the keyboard picture, for example G.
+2. Set **PAT · all**, the transpose of the whole pattern, for example by typing +5. All tracks follow it and no track's own transpose moves.
 3. Under **Scale** choose **---**, **FIX**, **MAJ** or **MIN**.
+
+Transpose works while the pattern plays. Press {key:play-stop}, click the E key and the pattern goes on playing with the new transpose. Press {key:undo} to take it back.
+
+![The transpose tab](shot:e2e-mm-seq-scale-setup)
 
 The line above the keyboard picture says what the track plays, for example plays +5 semitones.
 
@@ -61,7 +78,7 @@ The line above the keyboard picture says what the track plays, for example plays
 - **FIX**: only the track transpose acts. Use it for drums and effects.
 - **MAJ** and **MIN**: transposed notes stay in the major or minor scale of the key. Keys outside the scale are hatched, in the picture and in the roll.
 
-For MAJ and MIN, click a key of the keyboard picture to set the root key. With **---** and **FIX**, a click on a key sets the track transpose so that C plays that key, upward from C. Hold [⌥] and click to go down to it. The note also sounds while you hold the button.
+For MAJ and MIN, click a key of the keyboard picture to set the root key. A click on E sets the key to 4. With **---** and **FIX**, a click on a key sets the track transpose so that C plays that key, upward from C. Hold [⌥] and click to go down to it. The note also sounds while you hold the button.
 
 ## SWING
 <!-- rows: MM-230 @f18ef4 -->
@@ -77,6 +94,12 @@ Each step of a track can swing. A step that swings comes late by the amount of *
 2. Choose **Swing**. A tick shows when every selected step swings. On a selection it sets every step: on when one of them has it off, else off. It is one undo step.
 3. A small teal slant over a note shows that its trig swings.
 
+To swing four steps at once:
+
+1. Click **Sequence** and pick track 1 in the rail.
+2. Drag over four steps in the roll with [⌘] held, then choose **Swing** in the ⋯ menu. Swing is on for all four, in one undo step.
+3. Press {key:undo}. All four are as before.
+
 Each track has its own swing steps. The marks show for the selected track. A new pattern swings every second 16th step, so most off beat notes carry the mark.
 
 To copy, paste or clear the swing row of a track, tick **Swing** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu (chapter 11, "Super copy"). A clear sets it back to every second 16th step. Press {key:undo} to take each back.
@@ -90,14 +113,17 @@ A slide makes a locked value glide to the next lock instead of jumping. Without 
 2. Choose **Slide**. A tick shows when every selected step slides. On a selection it sets every step, in one undo step.
 3. A small ramp over a note shows a step that slides and holds a lock. In the lock lane the glide is drawn from one lock to the next.
 
+![The step menu](shot:e2e-mm-seq-step-menu)
+
 To copy, paste or clear the slide row of a track, tick **Slide** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu (chapter 11, "Super copy"). Press {key:undo} to take each back.
 
 ## THE MUTE MODE
-<!-- rows: MM-235 MM-236 MM-238 @3849f5 -->
+<!-- rows: MM-235 MM-236 MM-238 @9cbe3f -->
 
 Mutes are global: they do not belong to the pattern. The machine holds them.
 
 - Click **M** on a track in the rail, or on the **Mix** workspace, to mute it. Click **S** to solo it.
+- Press [M] with a track selected to mute it. Press [M] again to unmute it. [⌥] [M] mutes every synth track and [0] unmutes every track.
 - Press {key:mute-track} to mute or unmute the selected track.
 - Press {key:mute-all} to mute every track. When none is audible, it unmutes every track.
 - Press {key:unmute-all}, or click **M/S off** in the rail, to unmute and unsolo everything.
@@ -107,7 +133,13 @@ The **Perform** workspace has a **Mutes** card with all twelve tracks, T1 to T6 
 
 ### Prepare mutes
 
-To change several mutes together, hold [⇧] and click the **M** keys. Each marked key shows + or X for the change to come. When you let go of [⇧] the changes happen together.
+To change several mutes together:
+
+1. Open **Mix**.
+2. Hold [⇧] and click two **M** keys. Each key shows + or X for the change to come. Nothing is sent yet.
+3. Let go of [⇧]. Both tracks mute together.
+
+![Prepared mutes](shot:e2e-mm-mix-shift-mutes)
 
 NOTE: A mute acts on notes. A sound that already plays rings out.
 
@@ -125,6 +157,11 @@ In poly mode all six engines play the track in focus, with six voices. The seque
 
 1. Press {key:workspace-4}.
 2. Select the track with the numbered keys in the title of the **Assign** card.
-3. In the **Keyboard** bar, click **Poly**.
+3. In the **Keyboard** bar, click **Poly**. The machine's poly mode is on, on that track.
+4. Click another numbered key. Poly mode moves to that track.
+5. Click **Sequence**. The rail marks the poly track ×6 and dims the others.
+6. On **Perform**, click **Auto track** to switch poly mode off.
+
+![Poly mode on track 3](shot:mm-perform-poly)
 
 The other five tracks are silent until you leave poly mode. The line under the keyboard modes says so, and on **Sequence** the rail dims those tracks and marks the poly track ×6. Chapter 5 describes poly mode.

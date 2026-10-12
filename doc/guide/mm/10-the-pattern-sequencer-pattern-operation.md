@@ -6,7 +6,7 @@ The sequencer plays patterns. The Monomachine holds 128 patterns, A01 to H16, in
 ## BASIC PATTERN OPERATION
 
 ### PATTERN SELECTION
-<!-- rows: MM-162 MM-163 MM-164 @dee279 -->
+<!-- rows: MM-162 MM-163 MM-164 @459e64 -->
 
 The pattern field of the LCD shows the pattern that plays. Click **‹** or **›** beside it to go to the pattern before or after. For any other pattern, open the pattern chooser.
 
@@ -36,6 +36,8 @@ A chain plays patterns of one bank one after the other, each once, and then star
 
 The machine plays the chain as soon as there are two pads. If it plays, the chain starts at the end of the pattern that plays. If it is stopped, [SPACE] starts it at the first pad. The line over the bank letters reads CHAIN and the patterns in order, for example CHAIN A03»A05.
 
+![Pads A02 and A03 chained on the Song workspace](shot:e2e-mm-song-chain)
+
 - Click a numbered pad to take it out of the chain.
 - **Back** takes out the last pad.
 - **Clear** ends the chain.
@@ -47,7 +49,7 @@ NOTE: A chain holds the patterns of one bank. Choosing another bank starts the l
 NOTE: In song mode the machine plays the song, not the chain. Click **PATTERN** or **CHAIN** over the palette to leave song mode.
 
 ### SCALE SETUP
-<!-- rows: MM-166 MM-167 MM-168 MM-169 MM-170 @cb30c1 -->
+<!-- rows: MM-166 MM-167 MM-168 MM-169 MM-170 @ba87bf -->
 
 The scale of a pattern is its length and its speed. Both are on the second line of the LCD while **Sequence** is open.
 

@@ -361,8 +361,10 @@ the cue too). A single TRIG key while playing cues nothing (a pattern is picked 
 larger scale sets LEN to it and, when no track has a trig from the old scale's end on (to step 64), repeats the old
 scale's steps into the new ones: trigs, accent, swing and locks (16 to 64: page 1 four times; 32 to 64: pages 1 and 2
 twice; LEN 20 in scale 32 to 48: the 32 steps, then page 1 again). A trig anywhere past the old scale (also past the new
-one) stops the copy. LEN alone copies nothing. `totalLength` in the core does the same; `mdDeskFirmwareTest p4`
-compares it with the panel's.
+one) stops the copy. LEN alone copies nothing. From 48 steps the new page is steps 17-32 again, not 1-16: the repeat runs
+in 32-step blocks from 32 steps on (measured 2026-10-13, B-103: 32 -> 48 -> 64 on the panel). `totalLength` in the core
+does the same; `mdDeskFirmwareTest p4` compares it with the panel's (16 -> 32, a trig past the old length, and the LCD's
+LEN clicked round 32 -> 48 -> 64 -> 16 -> 32).
 
 **W12f, the MD song row's repeats (MD-147).** Main RAM 0x2b1901 counts the playing row's passes still to come, down by
 one a pass (REPEATS 3: 3, 2, 1, 0), and starts again at the next row; it is read with the row byte (0x2b18f5), at PLAY

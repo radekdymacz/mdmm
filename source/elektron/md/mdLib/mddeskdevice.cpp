@@ -1,6 +1,7 @@
 #include "mddeskdevice.h"
 
 #include <algorithm>
+#include <cstdlib>
 
 namespace md
 {
@@ -29,9 +30,22 @@ namespace md
 		// P9: the audition on the main output (Main A/B), from its rate to the machine's.
 		m_audition.mix(_outputs[0], _outputs[1], _samples, getSamplerate());
 		if(m_silentOutput)
+		{
+			// A background run plays nothing to the speakers. With GEARMULATOR_MDMM_BACKGROUND_METER=1 (scripts/mdmm-e2e.sh)
+			// the output is not zero but 0.003 of itself (-50 dB: nothing a person hears), so the output meter still reads what
+			// the machine plays and an end-to-end run can say that a song is not silent. Zero otherwise.
+			static const float g_residue = std::getenv("GEARMULATOR_MDMM_BACKGROUND_METER") ? 0.003f : 0.0f;
 			for(auto* out : _outputs)
-				if(out)
+			{
+				if(!out)
+					continue;
+				if(g_residue == 0.0f)
 					std::fill_n(out, _samples, 0.0f);
+				else
+					for(size_t i = 0; i < _samples; ++i)
+						out[i] *= g_residue;
+			}
+		}
 		publishSequencerTelemetry(_samples);
 		scanSamples();
 		m_frames += _samples;

@@ -4,7 +4,7 @@
 The Monomachine has six synth tracks. Each track has its own machine, filter, amp, effects, delay and three LFOs. The sequencer plays the six tracks from one pattern, and six MIDI tracks beside them. The keyboard can play the tracks one at a time, all together, or as a trigger for patterns.
 
 ## SIX INDIVIDUAL TRACKS
-<!-- rows: MM-084 @4ac4da -->
+<!-- rows: MM-084 @f950e1 -->
 
 The six tracks are independent. A kit holds a machine for each and a full set of parameters. In the editor:
 
@@ -15,16 +15,23 @@ The six tracks are independent. A kit holds a machine for each and a full set of
 Chapter 6 describes the machines and kits.
 
 ## SIX TRACK SEQUENCING
-<!-- rows: MM-085 @e017c0 -->
+<!-- rows: MM-085 @255c32 -->
 
 A pattern holds the notes, the envelope trigs and the parameter locks of the six tracks. The **Sequence** workspace edits them: a piano roll for notes, with small marks on the notes for envelope trigs, slide, swing and locks, and a lock lane for the parameters. Chapters 10 to 15 describe the sequencer.
 
 ![The Sequence workspace](shot:mm-sequence-workspace)
 
 ## MIDI SEQUENCING
-<!-- rows: MM-086 @e9ec90 -->
+<!-- rows: MM-086 @8ba608 -->
 
 Six more tracks in each pattern send MIDI notes. Click **MIDI** in the track rail of the **Sequence** workspace to edit them. The rail then lists M1 to M6, each with its MIDI channel. The **Sound** workspace shows the MIDI page of the selected MIDI track: note length and velocity, pitch bend and program change, and four controllers. Chapter 16 describes the MIDI sequencer.
+
+1. Click **Sequence**, pick track 1 in the rail and check that **Draw** is lit.
+2. Click **MIDI**. The rail lists M1 to M6, each with its own roll.
+3. Click a note into each of the six MIDI tracks. Only that track changes: no other MIDI track and no synth track.
+4. Hold [⇧] and click another pitch on a note of M1. The step holds a chord, and all its notes share one length.
+
+![The MIDI tracks in the Sequence workspace](shot:mm-midi-roll)
 
 ## POLY MODE
 <!-- rows: MM-087 @f2f4d7 -->
@@ -49,7 +56,7 @@ On the **Perform** workspace the <MODE> field in the second line of the LCD read
 NOTE: Over a MIDI cable the editor cannot press [TRACK]. Press it on the machine: poly mode plays the track in focus there.
 
 ## MULTI TRIG MODE
-<!-- rows: MM-088 @600b94 -->
+<!-- rows: MM-088 @64cd90 -->
 
 In multi trig mode one source plays all six tracks, as if they were one large mono synth. Click **Multi trig** in the **Keyboard** card. The mode takes its notes on MIDI channel 7.
 
@@ -69,7 +76,7 @@ In **SPLIT KEY** mode, drag the split marker on the keyboard to move the split p
 The **Multi envelope** card of the **Perform** workspace holds an ADSR that works on top of every track's own envelope. It has the values ATK, DEC, SUS, REL and PORT. Drag the dots in the plot or the value boxes. For no effect, set ATK to 0 and DEC, SUS and REL to 127. SPLIT KEY does not use it.
 
 ## MULTI MAP MODE
-<!-- rows: MM-089 @7dee20 -->
+<!-- rows: MM-089 @a3ee1a -->
 
 In multi map mode key ranges of the keyboard start patterns. Click **Multi map** in the **Keyboard** card. The mode takes its notes on MIDI channel 8.
 

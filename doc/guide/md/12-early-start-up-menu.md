@@ -18,6 +18,8 @@ The empty reset clears the memory of the machine. In the editor it is in the eng
 3. Click **Clear everything**. The **Empty reset** panel opens. The editor writes an empty kit, pattern and song into every slot, then reads each one back.
 4. Read the report and click **Done**.
 
+![The Empty reset panel](shot:e2e-md-engine-reset-empty)
+
 The globals and the samples stay. A global is reset in its own slot in GLOBAL (chapter 10).
 
 NOTE: The reset has no undo. Click **Export SysEx…** in the question first to keep a way back.
@@ -31,6 +33,8 @@ The factory reset brings back the kits, patterns and songs the machine had when 
 2. Click **Factory reset…**. The editor asks a second time.
 3. Click **Factory reset**. Preparing the factory data takes a few seconds. Then the **Factory reset** panel sends every kit, pattern and song and reads each one back. This takes a few minutes.
 4. Read the report and click **Done**. Kits 1 to 4 are named TRX UW, EFM UW, E12 UW and P-I UW.
+
+![The Factory reset panel](shot:e2e-md-engine-reset-factory)
 
 The globals and the samples stay. The reset has no undo: export first.
 

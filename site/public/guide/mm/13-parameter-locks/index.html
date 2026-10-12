@@ -56,9 +56,9 @@
 <li><a href="/guide/mm/18-routing/">18. Routing</a></li>
 <li><a href="/guide/mm/19-global-settings/">19. Global settings</a></li>
 <li><a href="/guide/mm/20-early-startup-menu-technical-information/">20. Early startup menu, technical information</a></li>
-<li><span class="gd-side-todo">21. Appendix A: machine reference <span class="gd-vh">(to come)</span></span></li>
-<li><span class="gd-side-todo">22. Appendix B: MIDI control reference <span class="gd-vh">(to come)</span></span></li>
-<li><span class="gd-side-todo">23. Appendix C: SysEx reference <span class="gd-vh">(to come)</span></span></li>
+<li><a href="/guide/mm/21-appendix-a-machine-reference/">21. Appendix A: machine reference</a></li>
+<li><a href="/guide/mm/22-appendix-b-midi-control-reference/">22. Appendix B: MIDI control reference</a></li>
+<li><a href="/guide/mm/23-appendix-c-sysex-reference/">23. Appendix C: SysEx reference</a></li>
 <li><a href="/guide/mm/24-beyond-the-hardware/">24. Beyond the hardware</a></li></ol>
 <ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
 </nav>
@@ -70,7 +70,7 @@
 <div class="gd-body gd-prose"><h2 id="parameter-locks-h">PARAMETER LOCKS <a class="gd-anchor" href="#parameter-locks" aria-label="Link to PARAMETER LOCKS">#</a></h2>
 <p class="gd-ref">MM manual p.1-58</p>
 <p>The lock lane is under the piano roll on <b class="gd-ui">Sequence</b>. Press <kbd class="gd-key">[1]</kbd> and select a track.</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The lock lane"><span>Screenshot to come</span></div><figcaption>The lock lane</figcaption></figure>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/mm-lock-lane.webp" aria-label="Open the picture full size: The lock lane"><img src="/guide/shots/mm-lock-lane.webp" width="1440" height="923" alt="The lock lane" loading="lazy"></a><figcaption>The lock lane</figcaption></figure>
 <p>The rail on the left of the lane lists what you can lock. For a synth track the page keys are SYN, AMP, FLT, EFX, LF1, LF2 and LF3. For a MIDI track there is one key, MIDI PAGE. A green light on a page key means the page holds locks. Under the page keys are the parameters of the page. A number on a parameter key counts its locked steps.</p>
 <p>The lane shows one parameter at a time, the one lit in the rail. Each step with a trig has a bar. A dashed line across the lane marks the value of the kit. Hatched steps have no trig.</p>
 </div></section>
@@ -78,16 +78,18 @@
 <div class="gd-body gd-prose"><h2 id="parameter-locks-in-grid-recording-mode-h">PARAMETER LOCKS IN GRID RECORDING MODE <a class="gd-anchor" href="#parameter-locks-in-grid-recording-mode" aria-label="Link to PARAMETER LOCKS IN GRID RECORDING MODE">#</a></h2>
 <p class="gd-ref">MM manual p.1-57</p>
 <p>On the machine you hold a trig and turn a knob. In the editor you draw the value in the lane.</p>
-<ol class="gd-steps"><li>Click the page key and the parameter key in the rail.</li><li>Drag across the bars in the lane. Each step with a trig that the pointer crosses takes the value at the height of the pointer.</li><li>To move one lock, scroll the wheel over its step. A notch moves the value by 4. Hold <kbd class="gd-key">[⇧]</kbd> for 1. A step with no lock starts from the kit value.</li><li>To draw a straight line of values, hold <kbd class="gd-key">[⇧]</kbd> and drag from the first step to the last. Every step with a trig under the line gets a lock. It is one undo step.</li></ol>
+<ol class="gd-steps"><li>Click the page key and the parameter key in the rail.</li><li>Drag across the bars in the lane. Each step with a trig that the pointer crosses takes the value at the height of the pointer. Every lock shows as a bar.</li><li>To move one lock, scroll the wheel over its step. A notch moves the value by 4. Hold <kbd class="gd-key">[⇧]</kbd> for 1. A step with no lock starts from the kit value.</li><li>To draw a straight line of values, hold <kbd class="gd-key">[⇧]</kbd> and drag from the first step to the last. Every step with a trig under the line gets a lock. It is one undo step.</li></ol>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-mm-seq-lock-ramp-erase-wheel.webp" aria-label="Open the picture full size: Locks drawn across the lane"><img src="/guide/shots/e2e-mm-seq-lock-ramp-erase-wheel.webp" width="1440" height="923" alt="Locks drawn across the lane" loading="lazy"></a><figcaption>Locks drawn across the lane</figcaption></figure>
 <p>Every lock of the parameter shows as a bar, so you can read the values of a step at any time. When you change the selected track or the parameter, the lane shows the new one.</p>
 <h4 class="gd-h3" id="remove-locks">Remove locks</h4>
-<ul class="gd-list"><li>Hold <kbd class="gd-key">[⌥]</kbd> and drag across the bars to remove the locks of that parameter on the steps you cross.</li><li>Click the bin in the lane header to remove all the locks of the parameter.</li><li>Hold <kbd class="gd-key">[⌥]</kbd> and click the bin to remove every lock of the track.</li><li>Select a step or steps, click the small ⋯ on the selection (or right-click a step) and choose <b class="gd-ui">Clear locks (keep the notes)</b> to remove all the locks of the step, or of the selected steps. The note stays.</li><li>Select a step and press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> to clear the step whole, with its note.</li></ul>
+<ul class="gd-list"><li>Hold <kbd class="gd-key">[⌥]</kbd> and drag across the bars to remove the locks of that parameter on the steps you cross. The bars go.</li><li>Click the bin in the lane header to remove all the locks of the parameter.</li><li>Hold <kbd class="gd-key">[⌥]</kbd> and click the bin to remove every lock of the track.</li><li>Select a step or steps, click the small ⋯ on the selection (or right-click a step) and choose <b class="gd-ui">Clear locks (keep the notes)</b> to remove all the locks of the step, or of the selected steps. The note stays. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to put them back.</li><li>Select a step and press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> to clear the step whole, with its note.</li></ul>
 <h4 class="gd-h3" id="lock-the-current-value">Lock the current value</h4>
 <p>On the machine you hold a trig and click a knob: the step keeps the value the knob has now. In the editor:</p>
 <ol class="gd-steps"><li>Click the page key and the parameter key in the rail.</li><li>Select the steps: hold <kbd class="gd-key">[⌘]</kbd> and click a note, or drag on the step ruler.</li><li>Click the lock key in the rail's header, beside the bin. Each selected step with a note gets a lock at the value the kit has now.</li></ol>
-<p>It is one undo step. A step without a note cannot hold a lock and is left out.</p>
+<p>It is one undo step: press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take it back. A step without a note cannot hold a lock and is left out. To lock several steps at once, hold <kbd class="gd-key">[⌘]</kbd> and click one note, hold <kbd class="gd-key">[⌘]</kbd> <kbd class="gd-key">[⇧]</kbd> and click a later one, then click the lock key. Every note between them is locked in one undo step.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-mm-seq-lock-current.webp" aria-label="Open the picture full size: Locking the current value"><img src="/guide/shots/e2e-mm-seq-lock-current.webp" width="1440" height="923" alt="Locking the current value" loading="lazy"></a><figcaption>Locking the current value</figcaption></figure>
 <h4 class="gd-h3" id="copy-a-note-with-its-locks">Copy a note with its locks</h4>
-<p>The locks of a step go with the step when you copy it. See &quot;Note copy&quot; in chapter 11.</p>
+<p>The locks of a step go with the step when you copy it. Right-click a note with a lock, choose <b class="gd-ui">Copy</b>, right-click an empty step and choose <b class="gd-ui">Paste here</b>. The new step has the pitch and the lock. See &quot;Note copy&quot; in chapter 11.</p>
 <h4 class="gd-h3" id="slide">Slide</h4>
 <p>A small ramp over a note marks a step that glides. Set it with <b class="gd-ui">Slide</b> in the step menu. On a step with a slide, a locked value glides to the next lock instead of jumping. See &quot;Slide&quot; in chapter 15.</p>
 </div></section>

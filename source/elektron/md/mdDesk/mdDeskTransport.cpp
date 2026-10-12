@@ -121,6 +121,8 @@ namespace mdDesk
 		if(!pos.refused.empty())
 			return refuse(pos.refused);
 		std::vector<deskCore::SeqStep<Act>> steps;
+		if(songNotLoaded())
+			steps.push_back({Act::LoadSong, *cur, deskCore::Wait::StatusReply, 0, 1000});	// B-098
 		if(m_telemetry.playing)
 			steps.push_back({Act::MidiStop, 0, deskCore::Wait::Stopped, 0, 1000});
 		if(m_session.state().songMode != true)

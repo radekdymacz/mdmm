@@ -33,6 +33,8 @@ The head has the keys **Copy**, **Paste** and **Clear**. They act on the active 
 2. Click the key of another global to make it active.
 3. Click **Paste**. The editor asks first, because the settings of that global are replaced. Click **Paste** to go on, or **Cancel**.
 
+![The Copy, Paste and Clear keys](shot:e2e-md-global-copy-paste)
+
 To put the active global back to how the machine shipped, click **Clear**. The editor asks first. Click **Clear** to go on, or **Cancel**.
 
 Undo takes back a paste or a clear, as any other edit.
@@ -61,6 +63,8 @@ The map editor says which MIDI note plays what. A note can play a track, start a
 ### Notes for the tracks
 
 Each of the sixteen keys is named TRACK 1 to TRACK 16. It shows the note that plays the track, or -- when the track has none. Click **‹** or **›** on a key to move the note down or up. Notes are named as C4, C#4 and so on, from 0 to 127.
+
+![The Map editor card](shot:md-map-editor)
 
 When a MIDI keyboard plays a track's note on the base channel, the track's number in the track rail glows for a moment, and so does its light on the Mix workspace. A note on another channel lights nothing.
 
@@ -127,6 +131,8 @@ The machine sets the resolution of its knobs here: 24 or 32 steps. The editor ha
 Each track plays on the main output, through the master effects, or on one of the individual outputs A to F, which skip the master effects.
 
 In the **Routing** card the sixteen keys show the output of each track: MAIN, or A to F. Click a key to go to the next output: MAIN, A, B, C, D, E, F, then MAIN again.
+
+![The Routing card](shot:e2e-md-global-routing)
 
 You can also click **OUT** on the strip of the track in the **Mix** workspace. Delay and reverb sends reach only the main outputs, so a track on an individual output keeps those values but does not use them.
 
@@ -285,7 +291,7 @@ Beside **Ctrl in**, click **ON** to make the machine react to MIDI Start, Stop a
 
 ### Tempo out
 
-Beside **Tempo out**, click **ON** to make the machine send the MIDI clock.
+Beside **Tempo out**, click **ON** to make the machine send the MIDI clock. Click it again to put it back.
 
 ### Ctrl out
 

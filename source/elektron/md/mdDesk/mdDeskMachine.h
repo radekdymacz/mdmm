@@ -174,6 +174,11 @@ namespace mdDesk
 		void pumpChain();
 		// 0.3.5: an edited current song is heard without Reload song (pumpSongReload)
 		void pumpSongReload(double _now);
+		// B-098: the emulated machine has not loaded a song since it started (its working song is empty)
+		bool songNotLoaded() const;
+		// B-101: REC once the playing pattern's push is on the machine
+		deskCore::Outcome startRecording();
+		void pumpRecordStart(double _now);
 		double m_songEditedMs = -1;
 		void load(const DocRef& _ref, bool _urgent);
 		void request(const DocRef& _ref);
@@ -295,6 +300,7 @@ namespace mdDesk
 		double m_reloadQueuedMs = 0;
 		static constexpr double g_reloadHoldMs = 10000;	// a reload not restored by then holds nothing any more
 		static constexpr double g_songReloadQuietMs = 300;
+		static constexpr double g_recordWaitMs = 3000;	// B-101: REC waits at most this long for a pattern push
 		// liveErase: the page says the key is still held every 250 ms; without word for this long the keys are let go
 		// (a page that went away, reloaded or died while Delete was held)
 		static constexpr double g_eraseQuietMs = 1000;	// a song edit, then this long before the song loads again
@@ -337,6 +343,8 @@ namespace mdDesk
 			double lastMs = -1e9;
 		};
 		std::optional<Erase> m_erasing;
+		double m_recordedMs = -1e18;		// B-101: telemetry last said live recording
+		double m_recordWaitMs = -1;			// B-101: REC pressed, waiting for the pattern's push (pumpRecordStart)
 		double m_eraseSeenMs = 0;			// liveErase: the page's last word that the key is still held
 		static constexpr int g_eraseMaxPagePresses = 4;
 		double m_recordPollMs = -1e9;

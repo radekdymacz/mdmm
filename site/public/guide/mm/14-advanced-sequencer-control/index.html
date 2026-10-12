@@ -56,9 +56,9 @@
 <li><a href="/guide/mm/18-routing/">18. Routing</a></li>
 <li><a href="/guide/mm/19-global-settings/">19. Global settings</a></li>
 <li><a href="/guide/mm/20-early-startup-menu-technical-information/">20. Early startup menu, technical information</a></li>
-<li><span class="gd-side-todo">21. Appendix A: machine reference <span class="gd-vh">(to come)</span></span></li>
-<li><span class="gd-side-todo">22. Appendix B: MIDI control reference <span class="gd-vh">(to come)</span></span></li>
-<li><span class="gd-side-todo">23. Appendix C: SysEx reference <span class="gd-vh">(to come)</span></span></li>
+<li><a href="/guide/mm/21-appendix-a-machine-reference/">21. Appendix A: machine reference</a></li>
+<li><a href="/guide/mm/22-appendix-b-midi-control-reference/">22. Appendix B: MIDI control reference</a></li>
+<li><a href="/guide/mm/23-appendix-c-sysex-reference/">23. Appendix C: SysEx reference</a></li>
 <li><a href="/guide/mm/24-beyond-the-hardware/">24. Beyond the hardware</a></li></ol>
 <ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
 </nav>
@@ -68,7 +68,7 @@
 <div class="gd-body gd-prose"><h2 id="trig-tracks-h">TRIG TRACKS <a class="gd-anchor" href="#trig-tracks" aria-label="Link to TRIG TRACKS">#</a></h2>
 <p class="gd-ref">MM manual pp.1-58, 1-59</p>
 <p>Every note on a synth track is a trig. A trig can fire the amplitude envelope (AMP), the filter envelope (FILTER), the LFO envelope (LFO), or any of them together. The machine keeps one trig track for each. In the editor you set them in the step menu. A MIDI track has no trig tracks (see chapter 16).</p>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: A trig's marks in the roll"><span>Screenshot to come</span></div><figcaption>A trig's marks in the roll</figcaption></figure>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/mm-roll-marks.webp" aria-label="Open the picture full size: A trig's marks in the roll"><img src="/guide/shots/mm-roll-marks.webp" width="1440" height="923" alt="A trig's marks in the roll" loading="lazy"></a><figcaption>A trig's marks in the roll</figcaption></figure>
 <p>A note you draw in the roll fires all three envelopes. To change that:</p>
 <ol class="gd-steps"><li>Right-click the step in the roll (Ctrl-click on a Mac), or select steps and click the ⋯ on the selection.</li><li>Choose <b class="gd-ui">Envelopes</b>. <b class="gd-ui">Amp</b>, <b class="gd-ui">Filter</b> and <b class="gd-ui">LFO</b> have a tick for each envelope the trig fires.</li><li>Click one to switch it. On a selection it switches every trig in it: on when one of them has it off, else off.</li></ol>
 <p>A note that fires only some envelopes shows their letters at the start of its bar: A, F and L. Where the bar is too narrow, three small ticks stand for them in the same order. A note that fires all three has no mark.</p>

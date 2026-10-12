@@ -370,6 +370,8 @@ namespace mdDesk
 		m_notes = {};
 		m_coalesced.clear();
 		m_telemetrySeen = false;
+		m_recordedMs = -1e18;
+		m_recordWaitMs = -1;
 		m_session = mdDataLink::Session([this](const Bytes& _b) { sendSysex(_b); });
 		wireSession();
 		startedOver();
@@ -1027,6 +1029,19 @@ namespace mdDesk
 			return refuse(panelKeys() ? g_noLiveRecordTelemetry : g_noLiveRecordKeys);
 		if(m_telemetry.recording)
 			return pressKey("play") ? ok("Recording off, the pattern keeps playing") : refuse("No panel here");
+		// B-101: an edit of the playing pattern still on its way would be dumped over what the recording writes: REC
+		// waits until the machine holds it (pumpRecordStart)
+		if(const auto p = m_session.state().pattern; p && m_pushes.busy({DocKind::Pattern, *p}))
+		{
+			m_recordWaitMs = now();
+			return ok("Live recording once the pattern's last edit is on the machine");
+		}
+		return startRecording();
+	}
+
+	Outcome MdMachine::startRecording()
+	{
+		m_recordWaitMs = -1;
 		if(m_telemetry.playing)
 		{
 			runSequence({{Act::Stop, 0, deskCore::Wait::Stopped, 0, 1500}, {Act::RecordPlay}});
@@ -1071,14 +1086,10 @@ namespace mdDesk
 			pumpErase(now());
 			return ok("Removing track " + std::to_string(t + 1) + "'s locks of this parameter as they play, while Delete is held.");
 		}
-		if(m_erasing && !m_erasing->param && m_erasing->held)
-			pressKey("release:trig" + std::to_string(m_erasing->track + 1));
-		else
-		{
-			releaseErase();
-			if(!pressKey("hold:exit"))
-				return refuse("TRIG keys need the local emulated machine");
-		}
+		// another track: both up (EXIT/NO first, B-101), then both down again
+		releaseErase();
+		if(!pressKey("hold:exit"))
+			return refuse("TRIG keys need the local emulated machine");
 		if(!pressKey("hold:trig" + std::to_string(t + 1)))
 		{
 			pressKey("release:exit");
@@ -1130,9 +1141,19 @@ namespace mdDesk
 			return;
 		if(m_erasing->held)
 		{
-			pressKey(m_erasing->param ? std::string("release:knob") + static_cast<char>('A' + *m_erasing->param % 8)
-				: "release:trig" + std::to_string(m_erasing->track + 1));
-			pressKey("release:exit");
+			if(m_erasing->param)
+			{
+				pressKey(std::string("release:knob") + static_cast<char>('A' + *m_erasing->param % 8));
+				pressKey("release:exit");
+			}
+			else
+			{
+				// B-101: EXIT/NO up first. A TRIG key let go while EXIT/NO is still down sets a trig on the machine's
+				// selected track at the step of that key's number (measured: track 1 gained step 14 after TRIG 14),
+				// another track than the one erased
+				pressKey("release:exit");
+				pressKey("release:trig" + std::to_string(m_erasing->track + 1));
+			}
 		}
 		m_erasing.reset();
 	}
@@ -1420,8 +1441,23 @@ namespace mdDesk
 			"names back over MIDI.");
 	}
 
+	// B-098 (the 0.6 e2e run, 2026-10-13): after the emulated machine starts, its working song (the one SONG mode plays) holds
+	// nothing until a LOAD SONG, although it reports the song slot it last had: factory memory, SONG mode, PLAY: no step
+	// moves; PLAY after LOAD SONG of that slot plays it (mdDeskFirmwareTest factorysong). Every Load on the page sends LOAD
+	// SONG, so only a play before any Load met it. Until the session has sent one, SONG mode and a song play load the
+	// current slot first (the editor's song edits always go into the slot, so nothing of the working song is lost).
+	bool MdMachine::songNotLoaded() const
+	{
+		return m_profile.memory && !m_session.songLoaded() && m_session.state().song && !m_telemetry.playing && canSendSysex();
+	}
+
 	Outcome MdMachine::cmdPlay(const Value&, const Documents& _view)
 	{
+		if(m_port.pressKey && m_session.state().songMode == true && songNotLoaded())
+		{
+			runSequence({{Act::LoadSong, *m_session.state().song, deskCore::Wait::StatusReply, 0, 1000}, {Act::Play}});
+			return ok();
+		}
 		if(!pressKey("play"))
 			return refuse("Transport keys need the local emulated machine");
 		// P7: a machine that follows the host's clock (in a DAW) plays with the host's transport
@@ -1482,6 +1518,8 @@ namespace mdDesk
 		if(!canSendSysex())
 			return refuse("This engine cannot send SysEx to the machine.");
 		const bool song = flagOf(_m, "song");
+		if(song && songNotLoaded())
+			m_session.loadSong(*m_session.state().song);	// B-098
 		sendSysex(ed::mdSetStatus(ed::MdStatus::SequencerMode, song ? 1 : 0));
 		sendSysex(ed::mdStatusRequest(ed::MdStatus::SequencerMode));
 		return ok(song ? "SONG mode: the machine plays the song." : "PATTERN mode: the machine plays the pattern.");
@@ -1677,6 +1715,14 @@ namespace mdDesk
 			settle(_doc, Source::Dump);
 			break;
 		case deskCore::ReadBackAction::Wait:
+			// B-101: live recording writes the playing pattern itself (trigs played, locks turned or erased), so its
+			// read-back can never equal a dump sent before or while it recorded: the machine's pattern is the truth,
+			// not a failed push ("Push failed: the machine did not read back pattern A01" after md-seq-live-unlock)
+			if(ref.kind == DocKind::Pattern && m_session.state().pattern == ref.slot && m_recordedMs >= push.slot.sentMs())
+			{
+				push.slot.abandon();
+				settle(_doc, Source::Dump);
+			}
 			break;
 		}
 	}
@@ -1914,6 +1960,8 @@ namespace mdDesk
 		const bool chained = _t.chainKnown && _t.chain.active
 			&& (!m_telemetry.chainKnown || !m_telemetry.chain.active || m_telemetry.chain.patterns != _t.chain.patterns);
 		m_telemetry = _t;
+		if(_t.recording)
+			m_recordedMs = now();
 		if(chained)
 		{
 			m_audibleQueue.reset();
@@ -2022,6 +2070,17 @@ namespace mdDesk
 		}
 	}
 
+	// B-101: REC waited for an edit of the playing pattern on its way; at most g_recordWaitMs
+	void MdMachine::pumpRecordStart(const double _now)
+	{
+		if(m_recordWaitMs < 0)
+			return;
+		const auto p = m_session.state().pattern;
+		if(p && m_pushes.busy({DocKind::Pattern, *p}) && _now - m_recordWaitMs < g_recordWaitMs)
+			return;
+		startRecording();
+	}
+
 	void MdMachine::pageReady()
 	{
 		// a page that came back does not hold Delete
@@ -2074,6 +2133,7 @@ namespace mdDesk
 		pumpTweak(_now);
 		pumpCoalesced(_now);
 		pumpPushes(_now, _view);
+		pumpRecordStart(_now);
 		pumpSongReload(_now);
 	}
 

@@ -56,9 +56,9 @@
 <li><a href="/guide/mm/18-routing/">18. Routing</a></li>
 <li><a href="/guide/mm/19-global-settings/">19. Global settings</a></li>
 <li><a href="/guide/mm/20-early-startup-menu-technical-information/">20. Early startup menu, technical information</a></li>
-<li><span class="gd-side-todo">21. Appendix A: machine reference <span class="gd-vh">(to come)</span></span></li>
-<li><span class="gd-side-todo">22. Appendix B: MIDI control reference <span class="gd-vh">(to come)</span></span></li>
-<li><span class="gd-side-todo">23. Appendix C: SysEx reference <span class="gd-vh">(to come)</span></span></li>
+<li><a href="/guide/mm/21-appendix-a-machine-reference/">21. Appendix A: machine reference</a></li>
+<li><a href="/guide/mm/22-appendix-b-midi-control-reference/">22. Appendix B: MIDI control reference</a></li>
+<li><a href="/guide/mm/23-appendix-c-sysex-reference/">23. Appendix C: SysEx reference</a></li>
 <li><a href="/guide/mm/24-beyond-the-hardware/">24. Beyond the hardware</a></li></ol>
 <ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
 </nav>
@@ -70,27 +70,34 @@
 <p class="gd-ref">MM manual pp.1-61, 1-62, 1-63</p>
 <p>Each of the twelve tracks has its own arpeggiator, six synth tracks and six MIDI tracks. A pattern holds all twelve. The arpeggiator turns the chord notes of a trig into a run of notes.</p>
 <ol class="gd-steps"><li>Select a track and click <b class="gd-ui">Arp</b>.</li><li>Write a chord: hold <kbd class="gd-key">[⇧]</kbd> and click the steps at the other pitches in the roll.</li><li>Set the mode and the other values below.</li></ol>
-<p>The light notes in the roll show what the arpeggiator plays.</p>
+<p>The light notes in the roll show what the arpeggiator plays. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take the change back.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-mm-seq-arp.webp" aria-label="Open the picture full size: The arpeggiator tab"><img src="/guide/shots/e2e-mm-seq-arp.webp" width="1440" height="923" alt="The arpeggiator tab" loading="lazy"></a><figcaption>The arpeggiator tab</figcaption></figure>
 <h4 class="gd-h3" id="arpeggiator-basic-settings">ARPEGGIATOR BASIC SETTINGS</h4>
-<ul class="gd-list"><li><b class="gd-ui">SPD</b> is the speed. 6 is a sixteenth note.</li><li><b class="gd-ui">RNGE</b> is the number of octaves the run covers.</li><li><b class="gd-ui">OJMP</b> is the octave jump.</li></ul>
+<ul class="gd-list"><li><b class="gd-ui">SPD</b> is the speed. 6 is a sixteenth note, so the light notes follow one to a step.</li><li><b class="gd-ui">RNGE</b> is the number of octaves the run covers. Scroll over it to raise it. It stops at 9 OCT.</li><li><b class="gd-ui">OJMP</b> is the octave jump. Type a value in it.</li></ul>
+<p>Each track keeps its own settings: a mode key you click changes the arpeggiator of the selected track and no other.</p>
 <p><b class="gd-ui">Mode</b> keys:</p>
 <ul class="gd-list"><li><b class="gd-ui">OFF</b>: the track plays the base note of each trig.</li><li><b class="gd-ui">KEY</b>: the arpeggiator runs while keys are held and plays only the held notes.</li><li><b class="gd-ui">SID</b>: it needs two or more notes. They stay in the cycle after you release them, until a new chord.</li><li><b class="gd-ui">ADD</b>: it starts on the first note. Each extra key joins while one key is held.</li></ul>
 <p><b class="gd-ui">Play</b> keys: <b class="gd-ui">TRUE</b> plays the notes in the order of the chord, <b class="gd-ui">UP</b> from low to high, <b class="gd-ui">DOWN</b> from high to low, <b class="gd-ui">CYCLE</b> up and then down, and <b class="gd-ui">RND</b> in a random order. With RND the roll draws the notes outlined, because the pitches vary.</p>
-<p>To copy, paste or clear the arpeggiator of a track, tick <b class="gd-ui">Arp</b> in <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> or <b class="gd-ui">Clear…</b> of the LCD's <b class="gd-ui">▾</b> menu (chapter 11, &quot;Super copy&quot;). A clear turns it off. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take each back.</p>
+<p>To copy, paste or clear the arpeggiator of a track:</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">▾</b> beside <b class="gd-ui">COPY</b>, <b class="gd-ui">CLR</b> and <b class="gd-ui">PASTE</b> on the LCD, then <b class="gd-ui">Copy…</b>.</li><li>Tick <b class="gd-ui">Arp</b> (and anything else the track should carry) and click <b class="gd-ui">Copy</b>.</li><li>Select the other track, open <b class="gd-ui">▾</b> again, choose <b class="gd-ui">Paste…</b> and click <b class="gd-ui">Paste into 1 track</b>. The track now has the arpeggiator of the first.</li><li>A clear from <b class="gd-ui">Clear…</b> turns the arpeggiator off.</li></ol>
+<p>Each is one undo step: press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take it back. See chapter 11, &quot;Super copy&quot;.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-mm-seq-arp-setup.webp" aria-label="Open the picture full size: The arpeggiator settings"><img src="/guide/shots/e2e-mm-seq-arp-setup.webp" width="1440" height="923" alt="The arpeggiator settings" loading="lazy"></a><figcaption>The arpeggiator settings</figcaption></figure>
 <h4 class="gd-h3" id="arpeggiator-envelope-trigging-switches">ARPEGGIATOR ENVELOPE TRIGGING SWITCHES</h4>
 <p>The <b class="gd-ui">Trig</b> keys <b class="gd-ui">AMP</b>, <b class="gd-ui">FLT</b> and <b class="gd-ui">LFO</b> choose which envelopes the arpeggiator's notes fire again. A MIDI track has no envelopes, so the keys read &quot;none on MIDI&quot;.</p>
 <h4 class="gd-h3" id="arpeggiator-rhythm-and-offset-track">ARPEGGIATOR RHYTHM AND OFFSET TRACK</h4>
 <p>Under the values is a strip of 16 cells. It repeats while the arpeggiator runs.</p>
-<ul class="gd-list"><li>Click a cell to mute it or to switch it on again.</li><li>Drag a cell up or down to give its note an offset from minus 24 to plus 24 semitones.</li><li>Click a cell past the end, or a key of the <b class="gd-ui">LEN</b> row under the strip, to set the length of the strip from 1 to 16.</li></ul>
+<ul class="gd-list"><li>Click a cell to mute it. Click it again to switch it on.</li><li>Drag a cell up or down to give its note an offset from minus 24 to plus 24 semitones. Drag past the top for +24 and past the bottom for minus 24.</li><li>Click a cell past the end, or a key of the <b class="gd-ui">LEN</b> row under the strip, to set the length of the strip from 1 to 16.</li></ul>
 </div></section>
 <section class="gd-sec" id="transpose" aria-labelledby="transpose-h">
 <div class="gd-body gd-prose"><h2 id="transpose-h">TRANSPOSE <a class="gd-anchor" href="#transpose" aria-label="Link to TRANSPOSE">#</a></h2>
 <p class="gd-ref">MM manual pp.1-63, 1-64</p>
 <p>Transpose changes the pitch of the notes while they play. The programmed notes stay as they are. Click <b class="gd-ui">Transpose</b>.</p>
-<ol class="gd-steps"><li>Set <b class="gd-ui">TRACK</b>, the transpose of the selected track, by dragging the box. The value runs from −64 to +63 semitones.</li><li>Set <b class="gd-ui">PAT · all</b>, the transpose of the whole pattern. All tracks follow it.</li><li>Under <b class="gd-ui">Scale</b> choose <b class="gd-ui">---</b>, <b class="gd-ui">FIX</b>, <b class="gd-ui">MAJ</b> or <b class="gd-ui">MIN</b>.</li></ol>
+<ol class="gd-steps"><li>Set <b class="gd-ui">TRACK</b>, the transpose of the selected track, by dragging the box. The value runs from −64 to +63 semitones. You can also click a key of the keyboard picture, for example G.</li><li>Set <b class="gd-ui">PAT · all</b>, the transpose of the whole pattern, for example by typing +5. All tracks follow it and no track's own transpose moves.</li><li>Under <b class="gd-ui">Scale</b> choose <b class="gd-ui">---</b>, <b class="gd-ui">FIX</b>, <b class="gd-ui">MAJ</b> or <b class="gd-ui">MIN</b>.</li></ol>
+<p>Transpose works while the pattern plays. Press <kbd class="gd-key">[SPACE]</kbd>, click the E key and the pattern goes on playing with the new transpose. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take it back.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-mm-seq-scale-setup.webp" aria-label="Open the picture full size: The transpose tab"><img src="/guide/shots/e2e-mm-seq-scale-setup.webp" width="1440" height="923" alt="The transpose tab" loading="lazy"></a><figcaption>The transpose tab</figcaption></figure>
 <p>The line above the keyboard picture says what the track plays, for example plays +5 semitones.</p>
 <ul class="gd-list"><li><b class="gd-ui">---</b>: no scale. The transposes of the track, the pattern, the song and the multi trig add up. Any note can sound.</li><li><b class="gd-ui">FIX</b>: only the track transpose acts. Use it for drums and effects.</li><li><b class="gd-ui">MAJ</b> and <b class="gd-ui">MIN</b>: transposed notes stay in the major or minor scale of the key. Keys outside the scale are hatched, in the picture and in the roll.</li></ul>
-<p>For MAJ and MIN, click a key of the keyboard picture to set the root key. With <b class="gd-ui">---</b> and <b class="gd-ui">FIX</b>, a click on a key sets the track transpose so that C plays that key, upward from C. Hold <kbd class="gd-key">[⌥]</kbd> and click to go down to it. The note also sounds while you hold the button.</p>
+<p>For MAJ and MIN, click a key of the keyboard picture to set the root key. A click on E sets the key to 4. With <b class="gd-ui">---</b> and <b class="gd-ui">FIX</b>, a click on a key sets the track transpose so that C plays that key, upward from C. Hold <kbd class="gd-key">[⌥]</kbd> and click to go down to it. The note also sounds while you hold the button.</p>
 </div></section>
 <section class="gd-sec" id="swing" aria-labelledby="swing-h">
 <div class="gd-body gd-prose"><h2 id="swing-h">SWING <a class="gd-anchor" href="#swing" aria-label="Link to SWING">#</a></h2>
@@ -99,6 +106,8 @@
 <h4 class="gd-h3" id="the-swing-track">THE SWING TRACK</h4>
 <p>Each step of a track can swing. A step that swings comes late by the amount of <b class="gd-ui">SWG</b>. Swing does something only on a step with a trig.</p>
 <ol class="gd-steps"><li>Right-click a step in the roll (Ctrl-click on a Mac), or select steps and click the ⋯ on the selection.</li><li>Choose <b class="gd-ui">Swing</b>. A tick shows when every selected step swings. On a selection it sets every step: on when one of them has it off, else off. It is one undo step.</li><li>A small teal slant over a note shows that its trig swings.</li></ol>
+<p>To swing four steps at once:</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">Sequence</b> and pick track 1 in the rail.</li><li>Drag over four steps in the roll with <kbd class="gd-key">[⌘]</kbd> held, then choose <b class="gd-ui">Swing</b> in the ⋯ menu. Swing is on for all four, in one undo step.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd>. All four are as before.</li></ol>
 <p>Each track has its own swing steps. The marks show for the selected track. A new pattern swings every second 16th step, so most off beat notes carry the mark.</p>
 <p>To copy, paste or clear the swing row of a track, tick <b class="gd-ui">Swing</b> in <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> or <b class="gd-ui">Clear…</b> of the LCD's <b class="gd-ui">▾</b> menu (chapter 11, &quot;Super copy&quot;). A clear sets it back to every second 16th step. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take each back.</p>
 </div></section>
@@ -107,16 +116,19 @@
 <p class="gd-ref">MM manual p.1-66</p>
 <p>A slide makes a locked value glide to the next lock instead of jumping. Without a lock on the step a slide does nothing. The glide of a pitch is PORTAMENTO, in the trig setup.</p>
 <ol class="gd-steps"><li>Right-click a step in the roll, or select steps and click the ⋯ on the selection.</li><li>Choose <b class="gd-ui">Slide</b>. A tick shows when every selected step slides. On a selection it sets every step, in one undo step.</li><li>A small ramp over a note shows a step that slides and holds a lock. In the lock lane the glide is drawn from one lock to the next.</li></ol>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-mm-seq-step-menu.webp" aria-label="Open the picture full size: The step menu"><img src="/guide/shots/e2e-mm-seq-step-menu.webp" width="1440" height="923" alt="The step menu" loading="lazy"></a><figcaption>The step menu</figcaption></figure>
 <p>To copy, paste or clear the slide row of a track, tick <b class="gd-ui">Slide</b> in <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> or <b class="gd-ui">Clear…</b> of the LCD's <b class="gd-ui">▾</b> menu (chapter 11, &quot;Super copy&quot;). Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take each back.</p>
 </div></section>
 <section class="gd-sec" id="the-mute-mode" aria-labelledby="the-mute-mode-h">
 <div class="gd-body gd-prose"><h2 id="the-mute-mode-h">THE MUTE MODE <a class="gd-anchor" href="#the-mute-mode" aria-label="Link to THE MUTE MODE">#</a></h2>
 <p class="gd-ref">MM manual pp.1-67, 1-68</p>
 <p>Mutes are global: they do not belong to the pattern. The machine holds them.</p>
-<ul class="gd-list"><li>Click <b class="gd-ui">M</b> on a track in the rail, or on the <b class="gd-ui">Mix</b> workspace, to mute it. Click <b class="gd-ui">S</b> to solo it.</li><li>Press <kbd class="gd-key">[M]</kbd> to mute or unmute the selected track.</li><li>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[M]</kbd> to mute every track. When none is audible, it unmutes every track.</li><li>Press <kbd class="gd-key">[0]</kbd>, or click <b class="gd-ui">M/S off</b> in the rail, to unmute and unsolo everything.</li><li>Drag across <b class="gd-ui">M</b> or <b class="gd-ui">S</b> keys to set every track you cross as the first one became.</li></ul>
+<ul class="gd-list"><li>Click <b class="gd-ui">M</b> on a track in the rail, or on the <b class="gd-ui">Mix</b> workspace, to mute it. Click <b class="gd-ui">S</b> to solo it.</li><li>Press <kbd class="gd-key">[M]</kbd> with a track selected to mute it. Press <kbd class="gd-key">[M]</kbd> again to unmute it. <kbd class="gd-key">[⌥]</kbd> <kbd class="gd-key">[M]</kbd> mutes every synth track and <kbd class="gd-key">[0]</kbd> unmutes every track.</li><li>Press <kbd class="gd-key">[M]</kbd> to mute or unmute the selected track.</li><li>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[M]</kbd> to mute every track. When none is audible, it unmutes every track.</li><li>Press <kbd class="gd-key">[0]</kbd>, or click <b class="gd-ui">M/S off</b> in the rail, to unmute and unsolo everything.</li><li>Drag across <b class="gd-ui">M</b> or <b class="gd-ui">S</b> keys to set every track you cross as the first one became.</li></ul>
 <p>The <b class="gd-ui">Perform</b> workspace has a <b class="gd-ui">Mutes</b> card with all twelve tracks, T1 to T6 and M1 to M6. A lit key means the track is audible.</p>
 <h4 class="gd-h3" id="prepare-mutes">Prepare mutes</h4>
-<p>To change several mutes together, hold <kbd class="gd-key">[⇧]</kbd> and click the <b class="gd-ui">M</b> keys. Each marked key shows + or X for the change to come. When you let go of <kbd class="gd-key">[⇧]</kbd> the changes happen together.</p>
+<p>To change several mutes together:</p>
+<ol class="gd-steps"><li>Open <b class="gd-ui">Mix</b>.</li><li>Hold <kbd class="gd-key">[⇧]</kbd> and click two <b class="gd-ui">M</b> keys. Each key shows + or X for the change to come. Nothing is sent yet.</li><li>Let go of <kbd class="gd-key">[⇧]</kbd>. Both tracks mute together.</li></ol>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-mm-mix-shift-mutes.webp" aria-label="Open the picture full size: Prepared mutes"><img src="/guide/shots/e2e-mm-mix-shift-mutes.webp" width="1440" height="923" alt="Prepared mutes" loading="lazy"></a><figcaption>Prepared mutes</figcaption></figure>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A mute acts on notes. A sound that already plays rings out.</p><p>A MIDI track needs a MIDI channel of its own to be muted over MIDI. If it has none, the page says so and offers <b class="gd-ui">Give each track its own channel</b>. That sets the channel span of the global to 6.</p></aside>
 <h4 class="gd-h3" id="minimising-the-mute-window">MINIMISING THE MUTE WINDOW</h4>
 <p>The mute window of the machine is a screen of its own. The editor has no such window, so there is nothing to minimise.</p>
@@ -125,7 +137,8 @@
 <div class="gd-body gd-prose"><h2 id="poly-mode-h">POLY MODE <a class="gd-anchor" href="#poly-mode" aria-label="Link to POLY MODE">#</a></h2>
 <p class="gd-ref">MM manual p.1-69</p>
 <p>In poly mode all six engines play the track in focus, with six voices. The sequencer then plays the chord notes of that track's trigs as chords. Out of poly mode a trig plays only its first note.</p>
-<ol class="gd-steps"><li>Press <kbd class="gd-key">[4]</kbd>.</li><li>Select the track with the numbered keys in the title of the <b class="gd-ui">Assign</b> card.</li><li>In the <b class="gd-ui">Keyboard</b> bar, click <b class="gd-ui">Poly</b>.</li></ol>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[4]</kbd>.</li><li>Select the track with the numbered keys in the title of the <b class="gd-ui">Assign</b> card.</li><li>In the <b class="gd-ui">Keyboard</b> bar, click <b class="gd-ui">Poly</b>. The machine's poly mode is on, on that track.</li><li>Click another numbered key. Poly mode moves to that track.</li><li>Click <b class="gd-ui">Sequence</b>. The rail marks the poly track ×6 and dims the others.</li><li>On <b class="gd-ui">Perform</b>, click <b class="gd-ui">Auto track</b> to switch poly mode off.</li></ol>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/mm-perform-poly.webp" aria-label="Open the picture full size: Poly mode on track 3"><img src="/guide/shots/mm-perform-poly.webp" width="1440" height="923" alt="Poly mode on track 3" loading="lazy"></a><figcaption>Poly mode on track 3</figcaption></figure>
 <p>The other five tracks are silent until you leave poly mode. The line under the keyboard modes says so, and on <b class="gd-ui">Sequence</b> the rail dims those tracks and marks the poly track ×6. Chapter 5 describes poly mode.</p>
 </div></section>
 <nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/mm/14-advanced-sequencer-control/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">14. Advanced sequencer control</span></a><a href="/guide/mm/16-the-midi-sequencer/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">16. The MIDI sequencer</span></a></nav>
