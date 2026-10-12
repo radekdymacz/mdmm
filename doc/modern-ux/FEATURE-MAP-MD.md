@@ -163,7 +163,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.39 | FUNCTION + LEFT/RIGHT moves notes | Rotate | ✅ | Alt + arrows (Sequence) | Moves trigs, accents and locks, wrapping at the length; a run is one undo step. | 2 |
 | p.39 | MKI pattern page LEDs | 32 steps | ➖ |  | See §13. | – |
 | p.39 | Live recording, quantised | Play TRIG keys | ✅ | REC then click steps / piano keys | Quantised by the machine. | 1 |
-| p.40 | Remove notes while live recording (EXIT + TRIG) | Erase live | ❌ | None |  | – |
+| p.40 | Remove notes while live recording (EXIT + TRIG) | Erase live | ✅ | Hold Delete while live recording: the selected track's trigs go as they play |  | 1 |
 | p.40 | Note copy / paste with locks | COPY NOTE | ✅ | Select a step (Cmd-click), Cmd+C, Cmd+V; also Cmd+X, Cmd+D (duplicate), step menu | Copy carries locks, accents and slides. Shared selection code: skins/shared/deskSelect.js. | 4 |
 | p.40 | Clear note parameter locks / undo | CLEAR NOTE LOCKS | ✅ | Step menu clear; lane erase (Alt-drag) |  | – |
 | p.41 | Track copy / paste (notes, machine, LFO, locks) | COPY TRACK | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (⌘⇧C, ⌘⇧V): tick trigs, accent, swing, slide, locks, machine + sound, LFO; Paste lights the tracks to paste into; one undo step. Also a selection's Cmd+C / Cmd+V | The whole track (all 64 steps) and its sound in one copy. | 2 |
@@ -392,13 +392,13 @@ Method: manual read in full; claims checked against the page files (`source/elek
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 241 |
+| ✅ Yes | 242 |
 | 🟡 Partial | 24 |
-| ❌ No | 15 |
+| ❌ No | 14 |
 | ➖ Not applicable | 16 |
 | Total | 296 |
 
-Of the 280 applicable rows, 241 are fully covered, 24 partly, 15 not at all.
+Of the 280 applicable rows, 242 are fully covered, 24 partly, 14 not at all.
 
 ### Top gaps (our UI), most important first
 

@@ -35,8 +35,9 @@ function renderTop() {
 	$("#play").title = S.paused ? "Paused: ▶ goes on from the step (⇧Space); STOP in the menu ends it" : "Play / stop (Space). ⇧-click: pause. Right-click or ▾: Pause, Record, Panic";
 	if (DeskTransport.tempoShown()) DeskTransport.refreshTempo();
 	$("#rec").setAttribute("aria-pressed", !!V.rec); $("#recled").classList.toggle("on", !!V.rec);
-	$("#rec").title = V.rec ? "Live recording: click a track's steps to play it, move a value to lock it. A moved value locks the track's next trig whose step has not started yet (the editor marks it). REC again: stop recording, keep playing (Alt+Space)" : "Live recording, as RECORD + PLAY on the machine (Alt+Space: Alt + play)";
+	$("#rec").title = V.rec ? "Live recording: click a track's steps to play it, move a value to lock it. A moved value locks the track's next trig whose step has not started yet (the editor marks it). Hold Delete: erase the selected track's trigs as they play. REC again: stop recording, keep playing (Alt+Space)" : "Live recording, as RECORD + PLAY on the machine (Alt+Space: Alt + play)";
 	document.body.classList.toggle("liverec", !!V.rec);
+	if (!V.rec && typeof ERASE !== "undefined" && ERASE.t != null) { ERASE.t = null; document.body.classList.remove("erasing"); }
 	renderEngine();
 	syncTx();
 	const st = $("#status");

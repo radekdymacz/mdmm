@@ -43,3 +43,11 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 2. MM: paste melody onto another track's trigs; synth parts do not paste onto MIDI tracks (shown off with the reason).
 3. MD Sound: the LFO card's ⋯ menu: Copy, Paste, Clear LFO.
 4. The keys ⌘⇧C, ⌘⇧V, ⌘⇧⌫, also in the plug-in in a DAW (⌘⇧V must not do a text "paste and match style").
+
+## Recording (wave 7)
+
+1. MD: select a track with trigs, start live recording (● or ⌥Space), hold Delete: the track's header is marked red and its trigs go as they play. Let go: the other tracks kept theirs.
+2. MM: the same with LIVE RECORDING (⌥Space): hold Delete, the selected track's notes go as they pass.
+3. MM: stopped, ⇧-click ● (or the ▶ menu's Step record): the key shows STEP, a banner and a red cursor on the roll. Play A S D: each note goes to the cursor's step and the cursor moves on. → leaves a rest, ← goes back, Delete clears the step, Esc (or ●) ends it.
+4. MM: while step recording, pick another synth track: the machine writes that track from the same step.
+5. MM on real hardware: step recording and live erase are refused with the reason (they need the machine's keys).

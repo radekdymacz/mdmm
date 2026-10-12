@@ -79,7 +79,7 @@
 	const view = () => { const v = MmView.derive(docs(), { songEdit, host: hostTempo }); return Overlay.over(Overlay.size() ? MmView.own(v) : v); };
 	/* the view shows the machine: the catalogue (MmConvert's enumerations), the current pattern and the kit that plays */
 	const ready = () => !!catalogue && !!(docs().patterns[cur("pattern")] && kitNow());
-	const last = { record: null, ready: false, readyLabel: "", caps: null, modSent: null, note: { g: 0, text: "" }, songRow: -1, hostRefused: "" };
+	const last = { record: null, stepAt: -1, ready: false, readyLabel: "", caps: null, modSent: null, note: { g: 0, text: "" }, songRow: -1, hostRefused: "" };
 	let gesture = Bridge.gesture();
 	let modInFlight = 0;	// the id of a modSet command not answered yet
 	let clip = null;	// the page's copy of what the core's clipboard holds (MmView.copied): a paste shows at once
@@ -635,7 +635,12 @@
 			if (m.playing !== V().playing()) V().setPlaying(m.playing);
 			if (V().playing()) V().setStep(m.step);
 			/* MM-P4: the machine's recording mode */
-			if (m.record !== undefined && m.record !== last.record) { last.record = m.record; V().setRecord(m.record || "off"); }
+			/* wave 7: STEP RECORDING's cursor (stepAt, the step the next note writes) comes with it */
+			const at = m.stepAt ?? -1;
+			if ((m.record !== undefined && m.record !== last.record) || at !== last.stepAt) {
+				if (m.record !== undefined) last.record = m.record;
+				last.stepAt = at; V().setRecord(last.record || "off", at);
+			}
 			/* 0.3.5: the song row that plays (RAM): the Song page's playhead, without a render */
 			const row = m.songRow ?? -1;
 			if (row !== last.songRow) { last.songRow = row; V().setSongRow(row); }
