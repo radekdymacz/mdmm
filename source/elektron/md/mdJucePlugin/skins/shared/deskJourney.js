@@ -27,6 +27,14 @@ const Journey = (() => {
 	const until = async (f, ms) => { const end = performance.now() + ms; while (performance.now() < end) { if (f()) return true; await sleep(40); } return !!f(); };
 	/* a check's answer: true passes; anything else is what was seen */
 	const ok = (pass, seen) => pass ? true : (seen == null ? "no" : String(seen));
+	/* a log of what the page sent or heard, newest last, the oldest dropped past cap. A journey that asks "what went out
+	   since now" marks it (mark(): how many were ever added) and reads since(mark): marking by length found nothing once
+	   the log was full (it stays at cap), so md-top-tempo-release and the like failed after enough earlier journeys */
+	const recent = cap => { const a = []; a.total = 0;
+		a.add = x => { a.push(x); a.total++; if (a.length > cap) a.shift(); };
+		a.mark = () => a.total;
+		a.since = n => { const k = a.total - n; return k <= 0 ? [] : a.slice(Math.max(0, a.length - k)); };
+		return a; };
 	const describe = el => !el ? "nothing" : (el.id ? "#" + el.id : el.tagName.toLowerCase() + (el.className && typeof el.className === "string" ? "." + el.className.trim().split(/\s+/).join(".") : ""));
 
 	/* ---------- the drawn pointer (demos only) ---------- */
@@ -120,7 +128,10 @@ const Journey = (() => {
 			const e = el(q), { x, y } = pointIn(e, fx, fy), t = document.elementFromPoint(x, y);
 			Pointer.ring(x, y);
 			pe("pointerdown", t, x, y, m, 1); me("mousedown", t, x, y, m, 1);
-			pe("pointerup", t, x, y, m, 0); me("mouseup", t, x, y, m, 0); me("click", t, x, y, m, 0);
+			pe("pointerup", t, x, y, m, 0); me("mouseup", t, x, y, m, 0);
+			/* a browser sends no click to a disabled control (a synthetic one would reach the page's click routers: the
+			   Paste what dialog's go key, off while nothing is ticked, sent an empty paste the core refused) */
+			if (!t.closest?.("button:disabled,input:disabled,select:disabled,textarea:disabled")) me("click", t, x, y, m, 0);
 		},
 		/* a right-click at the element's centre: the second button down and up, then the contextmenu event the browser
 		   sends (a step's menu, DESIGN-keymap.md K3) */
@@ -332,7 +343,7 @@ const Journey = (() => {
 			try { log(`JOURNEYS before: ${await page.prepare(u)}`); } catch (e) { log(`JOURNEYS before: could not prepare: ${e.message}`); }
 		}
 		for (const j of list.filter(j => !j.boot)) {
-			try { if (page.between) await page.between(u); } catch (e) { log(`JOURNEY ${j.name} before: ${e.message}`); }
+			try { const did = page.between ? await page.between(u) : ""; if (did) log(`JOURNEY ${j.name} before: ${did}`); } catch (e) { log(`JOURNEY ${j.name} before: ${e.message}`); }
 			const left = await closeLeftOpen();
 			if (left) log(`JOURNEY ${j.name} before: ${left}`);
 			count(await runOne(j, log, page.context));
@@ -840,5 +851,5 @@ const Journey = (() => {
 			{ name: `${prefix}-shots-views`, proves: [], needs: () => location.search.includes(`${prefix}-shots`) ? null : "screenshots only when asked by name", steps: views.map(v => step(v, true)) }
 		];
 	}
-	return { run, demo, ok, sleep, until, u, TIERS, tierOf, onScreen, osKeyPath, menu, editorMenuJourney, memoryJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, fitJourneys, snapshot, safari15Diff, viewJourneys };
+	return { run, demo, ok, sleep, until, recent, u, TIERS, tierOf, onScreen, osKeyPath, menu, editorMenuJourney, memoryJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, fitJourneys, snapshot, safari15Diff, viewJourneys };
 })();

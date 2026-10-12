@@ -1220,12 +1220,15 @@ const What = (() => {
 	};
 	const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 	const store = (editor, verb) => "deskWhat." + editor + "." + verb;
-	/* the ticks of a verb as this browser remembers them (none: the defaults), among the ids offered */
+	/* the ticks of a verb as this browser remembers them (none: the defaults), among the ids offered. When none of the
+	   remembered ones is offered, the defaults (B-082: Paste… after a paste of Trigs alone and a copy of Swing alone
+	   opened with nothing ticked, its key off) */
 	function ticked(editor, verb, ids, defaults) {
 		let saved = null;
 		try { saved = JSON.parse(localStorage.getItem(store(editor, verb)) || "null"); } catch (_) { saved = null; }
-		const list = Array.isArray(saved) ? saved : defaults || [];
-		return ids.filter(id => list.includes(id));
+		const pick = list => ids.filter(id => list.includes(id));
+		const on = Array.isArray(saved) ? pick(saved) : [];
+		return on.length ? on : pick(defaults || []);
 	}
 	function remember(editor, verb, ids) { try { localStorage.setItem(store(editor, verb), JSON.stringify(ids)); } catch (_) { } }
 	const label = (verb, what, to) => VERBS[verb].go(to ? to.length : 0);

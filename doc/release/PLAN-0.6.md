@@ -44,8 +44,7 @@ appendices, doc/guide/OPEN-FACTS.md, retrain the PGO profile (scripts/macos/trai
 then `scripts/mdmm-full-gate.sh` on a quiet Mac and `release/0.6.0`. Wave 11 merged (2026-10-12, five reviews). B-063 waits for the tester's host and screenshots.
 After 0.6: the site moves from Lemon Squeezy to GitHub Sponsors (Radek, 2026-10-12; he sets up Sponsors first).
 
-**Known flaky under parallel load** (pass alone): md-boot-card, md-song-mode, mm-top-pattern-next, md-top-tempo-window, the MD intent cases
-when several worktrees run firmware tests at once. Look at shared state between worktrees before the release gate.
+**Known flaky:** none (`fix/0.6-flaky`, 2026-10-12): each cause and fix in DEV-CYCLE.md "Known flaky"; md-song-mode was B-072.
 
 **Open choices for Radek:** (1) skins true to the product photos on both editors (MD silver with a red LCD; MM MKI
 light-blue LCD, MKII bluish-white) or only the MM (wave 10); (2) the Discord reply to the 2026-10-11 tester report is

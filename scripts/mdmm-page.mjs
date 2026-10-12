@@ -176,7 +176,10 @@ function runUnit(ed, selector, dir) {
 			if (host) host.stdin.write(JSON.stringify(batch) + "\n");
 			else deliver(JSON.stringify(batch.filter(c => c.id != null).map(c => ({ type: "result", id: c.id, op: c.op, ok: true }))));
 		};
-		targetId = (await send("Target.createTarget", { url: "about:blank" })).targetId;
+		/* each page in a browser context of its own: the pages of one run shared one origin, so one page's remembered
+		   ticks (localStorage: Copy what, Paste what) were another's starting state, whatever journey it ran then */
+		const { browserContextId } = await send("Target.createBrowserContext", { disposeOnDetach: true });
+		targetId = (await send("Target.createTarget", { url: "about:blank", browserContextId })).targetId;
 		sid = (await send("Target.attachToTarget", { targetId, flatten: true })).sessionId;
 		sessions.set(sid, (method, p) => {
 			if (method === "Runtime.bindingCalled" && p.name === "__mdmmPost") { try { fromPage(JSON.parse(p.payload)); } catch (e) { log("post: " + e.message); } }
