@@ -113,6 +113,7 @@ list(APPEND SOURCES
 	skins/shared/deskKeys.js skins/shared/deskKeysTest.js skins/shared/deskKeymapTest.js skins/shared/deskKeyView.js skins/shared/deskKeyView.css skins/shared/deskKeyViewTest.js skins/shared/deskSongSlots.js skins/shared/deskSongSlots.css skins/shared/deskWhat.js skins/shared/deskWhat.css skins/shared/deskWhatTest.js
 	skins/shared/deskTogglePaint.js skins/shared/deskTogglePaintTest.js
 	skins/shared/deskSelect.js skins/shared/deskSelectTest.js
+	skins/shared/deskValueEdit.js skins/shared/deskValueEdit.css skins/shared/deskValueEditTest.js
 	skins/shared/deskCompat.js skins/shared/deskCompatTest.js
 	skins/shared/deskZoom.js
 	skins/shared/deskAbout.js skins/shared/deskAboutTest.js
@@ -148,7 +149,7 @@ option(MDMM_INSTALL_DEV_PLUGINS "Copy the built editors to ~/Library/Audio/Plug-
 set(MD_SHARED_PAGE_FILES
 	"skins/shared/deskModal.js" "skins/shared/deskMenu.js" "skins/shared/deskTransport.js" "skins/shared/deskCaps.js" "skins/shared/deskBoot.js" "skins/shared/deskSyx.js" "skins/shared/deskBridge.js"
 	"skins/shared/deskDrop.js" "skins/shared/deskDocs.js" "skins/shared/deskOverlay.js" "skins/shared/deskGen.js" "skins/shared/deskGenBar.js" "skins/shared/deskSoundLayout.js"
-	"skins/shared/deskKeys.js" "skins/shared/deskKeyView.js" "skins/shared/deskSongSlots.js" "skins/shared/deskWhat.js" "skins/shared/deskTogglePaint.js" "skins/shared/deskSelect.js"
+	"skins/shared/deskKeys.js" "skins/shared/deskKeyView.js" "skins/shared/deskSongSlots.js" "skins/shared/deskWhat.js" "skins/shared/deskTogglePaint.js" "skins/shared/deskSelect.js" "skins/shared/deskValueEdit.js"
 	"skins/shared/deskAudio.js" "skins/shared/deskGlobal.js" "skins/shared/deskCompat.js" "skins/shared/deskZoom.js" "skins/shared/deskAbout.js" "skins/shared/deskCpu.js" "skins/shared/deskVolume.js" "skins/shared/deskTopFit.js")
 file(GLOB MD_SKIN_ASSETS CONFIGURE_DEPENDS
 	"skins/mdStudio/*.rml" "skins/mdStudio/*.html" "skins/mdStudio/mdDesk.css" "skins/mdStudio/*.js"
@@ -183,7 +184,7 @@ set(SHARED_NODE_TESTS "skins/shared/deskGenTest.js" "skins/shared/deskOverlayTes
 	"skins/shared/deskTogglePaintTest.js" "skins/shared/deskSelectTest.js" "skins/shared/deskKeysTest.js" "skins/shared/deskModalTest.js" "skins/shared/deskMenuTest.js" "skins/shared/deskTransportTest.js" "skins/shared/deskCompatTest.js"
 	"skins/shared/deskKeymapTest.js" "skins/shared/deskKeyViewTest.js" "skins/shared/deskAboutTest.js" "skins/shared/deskCpuTest.js" "skins/shared/deskVolumeTest.js"
 	"skins/shared/deskSyxTest.js" "skins/shared/deskDropTest.js" "skins/shared/deskSoundLayoutTest.js" "skins/shared/deskWhatTest.js"
-	"skins/shared/deskJourneyTiersTest.js")
+	"skins/shared/deskJourneyTiersTest.js" "skins/shared/deskValueEditTest.js")
 foreach(test ${MD_NODE_TESTS} ${MD_SELF_TESTS} ${MM_SELF_TESTS} ${MM_NODE_TESTS} ${SHARED_NODE_TESTS} ${MD_SHARED_PAGE_FILES})
 	if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${test}")
 		message(FATAL_ERROR "${test} is not there: update the editors' test lists in ${CMAKE_CURRENT_LIST_FILE}")
@@ -605,6 +606,9 @@ function(mdmm_plugin_targets)
 		# the drag across the M and S keys (both editors): which keys a drag changes
 		add_test(NAME deskTogglePaintPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskTogglePaintTest.js)
 		set_tests_properties(deskTogglePaintPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
+		# I-022: a typed value (both editors): what a text becomes, what is refused, the field, the gesture and its wiring
+		add_test(NAME deskValueEditPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskValueEditTest.js)
+		set_tests_properties(deskValueEditPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# the keys' one gating rule (both editors): no page shortcut behind an open dialog or panel
 		add_test(NAME deskKeysPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskKeysTest.js)
 		set_tests_properties(deskKeysPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)

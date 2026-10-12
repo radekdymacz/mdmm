@@ -314,6 +314,13 @@
 	}
 	/* B-051: a track's own channel by the machine's rule (base + t inside CHANNEL SPAN, up to channel 15), else null */
 	const trackChannel = t => { const c = chan(); return c ? MmView.trackChannel({ base: c.base <= 15 ? c.base : null, span: c.span }, t) : null; };
+	/* I-002: the channels the machine plays notes on, by the active global: AUTO, each synth track's (base + t inside
+	   CHANNEL SPAN), MULTI TRIG, MULTI MAP (a value past 15 is OFF) */
+	function playedChannels() {
+		const c = chan(), out = new Set(); if (!c) return out;
+		for (const ch of [c.auto, c.multiTrig, c.multiMap, ...[0, 1, 2, 3, 4, 5].map(trackChannel)]) if (ch != null && ch >= 0 && ch < 16) out.add(ch);
+		return out;
+	}
 	const midi = (b, key) => send({ op: "midi", b }, key ? { key } : {});
 	let held = null;
 	function noteOff() { if (held) { midi([0x80 | held.ch, held.n, 0]); held = null; } }
@@ -662,8 +669,11 @@
 		else if (m.type === "cpuLoad") CpuMeter.update(m);
 		else if (m.type === "outputLevel") DeskVolume.update(m);
 		/* 0.6: a note from a MIDI keyboard (the plug-in's midiIn): the Machinedrum's LEARN reads it; the Monomachine's
-		   page has no use for it yet (I-002's keyboard lights wait for B-062) */
+		   page shows the notes held instead (midiHeld: a state, so a lost note off cannot leave a key lit) */
 		else if (m.type === "midiIn") { /* read, nothing to show */ }
+		/* I-002, B-062: the notes a MIDI keyboard holds light the Perform keyboard's keys, those on a channel the machine
+		   plays (playedChannels) */
+		else if (m.type === "midiHeld") { const chs = playedChannels(); V().setMidiHeld((m.notes || []).filter(n => chs.has(n.ch)).map(n => n.note)); }
 		else if (m.type === "lcd") { lcdBits = Uint8Array.from(atob(m.bits || ""), c => c.charCodeAt(0)); showLcd(); }
 		else if (m.type === "mod") onMod(m);
 		else if (m.type === "catalogue") onCatalogue(m.doc);

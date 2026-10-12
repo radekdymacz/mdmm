@@ -45,7 +45,7 @@ NOTE: The machine's own global menu has no copy or paste. In the editor you copy
 The turbo menu is for the speed of the MIDI link. The emulated machine and the editor pace their link themselves, so the editor has no turbo setting.
 
 ## BASE CHANNEL
-<!-- rows: MD-164 @a8ea32 -->
+<!-- rows: MD-164 @fbb64f -->
 
 The base channel is the first of four MIDI channels the machine listens and sends on: channel n to channel n+3.
 
@@ -54,13 +54,15 @@ In the **Control** card, click **−** or **+** beside **Base channel**. The val
 NOTE: When the global holds a base channel of OFF, the card reads OFF. The machine then takes no notes, mutes or sound values over MIDI, and the editor cannot play it.
 
 ## MAP EDITOR
-<!-- rows: MD-165 MD-166 MD-167 MD-168 MD-169 MD-289 @1d66e4 -->
+<!-- rows: MD-165 MD-166 MD-167 MD-168 MD-169 MD-289 @a81c64 -->
 
 The map editor says which MIDI note plays what. A note can play a track, start a pattern, or start or stop the machine. The **Map editor** card has the sixteen track keys and the controls for the other notes.
 
 ### Notes for the tracks
 
 Each of the sixteen keys is named TRACK 1 to TRACK 16. It shows the note that plays the track, or -- when the track has none. Click **‹** or **›** on a key to move the note down or up. Notes are named as C4, C#4 and so on, from 0 to 127.
+
+When a MIDI keyboard plays a track's note on the base channel, the track's number in the track rail glows for a moment, and so does its light on the Mix workspace. A note on another channel lights nothing.
 
 ### Notes for patterns and the transport
 

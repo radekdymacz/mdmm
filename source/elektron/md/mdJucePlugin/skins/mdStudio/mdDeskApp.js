@@ -138,6 +138,8 @@ function stepLocked(t, s) { for (const [k, m] of V.locks) if (+k.split(":")[0] =
 function trackLocks(t) { return [...V.locks.keys()].filter(k => +k.split(":")[0] === t).map(k => k.split(":")[1]); }
 /* the view writes that clear a step's locks (a trig removed takes its locks with it) */
 function clearStep(t, s) { return [...V.locks].filter(([k, m]) => +k.split(":")[0] === t && m.has(s)).map(([k]) => [["locks", k, s], DELETE]); }
+/* a trig removed: the view writes for what goes with it, as the core does (its accent, slide and swing, its locks; B-070) */
+function trigOffWrites(t, s) { return [[["tracks", t, "acc", s], false], [["tracks", t, "slide", s], false], [["tracks", t, "swing", s], false], ...clearStep(t, s)]; }
 function params(t) { const p = pages(V.tracks[t].m, Cat); return [...names(p.s), ...names(p.e), ...names(p.r)]; }
 function grp(t, p) { const x = V.tracks[t]; return p in x.syn ? x.syn : p in x.fx ? x.fx : x.rt; }
 function audible(t) { const any = V.tracks.some(x => x.solo); return any ? V.tracks[t].solo : !V.tracks[t].mute; }

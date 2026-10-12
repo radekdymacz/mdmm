@@ -1,5 +1,6 @@
 #include "mdAudioMidiLink.h"
 #include "mdMidiPortRefusal.h"
+#include "jucePluginLib/processor.h"
 
 #include "deskCore/deskCommands.h"
 
@@ -327,6 +328,8 @@ namespace mdJucePlugin
 			if(!device || !on)
 				return needs("device and on");
 			dm.setMidiInputDeviceEnabled(juce::String(*device), onValue);
+			if(auto* p = dynamic_cast<pluginLib::Processor*>(&m_processor))
+				p->midiInputsChanged();	// a note held on a port that went gets no note off
 			saved();
 			// B-037: a port the system did not open stays off without a word from JUCE (on Windows: in use elsewhere)
 			const auto refused = midiPortRefusal::text(midiPortRefusal::Kind::Input,

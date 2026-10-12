@@ -16,8 +16,8 @@ function kbRange(){const lo=12*(S.kbOct+1);return[lo,lo+47]}
 function zoneOf(n){if(S.mode!=="multi"||S.multi.mode!==1)return null;return n>=S.multi.splitKey?"up":"lo"}
 function mapRow(n){let lo=0;for(let i=0;i<S.mmap.length;i++){const r=S.mmap[i];if(n>=lo&&n<=r.hi)return i;lo=r.hi+1}return -1}
 function renderKb(){const[lo,hi]=kbRange(),whites=[];for(let n=lo;n<=hi;n++)if(!isBlack(n))whites.push(n);const ww=100/whites.length;let h="",wi=0;
- for(let n=lo;n<=hi;n++){if(isBlack(n)){h+=`<div class="b" data-key="${n}" style="left:${wi*ww-ww*.3}%;width:${ww*.6}%" aria-label="${noteName(n)}"></div>`;continue}
-  h+=`<div class="w" data-key="${n}" style="left:${wi*ww}%;width:${ww}%" aria-label="${noteName(n)}">${n%12===0?`<small>${noteName(n)}</small>`:""}</div>`;wi++}
+ for(let n=lo;n<=hi;n++){if(isBlack(n)){h+=`<div class="b${kbLit(n)}" data-key="${n}" style="left:${wi*ww-ww*.3}%;width:${ww*.6}%" aria-label="${noteName(n)}"></div>`;continue}
+  h+=`<div class="w${kbLit(n)}" data-key="${n}" style="left:${wi*ww}%;width:${ww}%" aria-label="${noteName(n)}">${n%12===0?`<small>${noteName(n)}</small>`:""}</div>`;wi++}
  if(S.mode==="multi"&&S.multi.mode===1){const sk=S.multi.splitKey;let idx=whites.findIndex(w=>w>=sk);if(idx<0)idx=whites.length;const x=idx*ww;
   h+=`<div class="zone" style="left:0;width:${x}%;background:var(--ledg)"></div><div class="zone" style="left:${x}%;width:${100-x}%;background:var(--led)"></div><div class="splitm" id="splitm" style="left:${x}%" title="Drag the split point"><span>SPLIT ${noteName(sk)} · T${S.multi.splitTrack}-6 above</span></div>`}
  return h}
@@ -69,8 +69,14 @@ function renderPerform(){const pm=PMODES.find(p=>p[0]===S.mode),t=asgT(),tr=S.tr
  syncControls();redraw()}
 let kbDown=null,lampT={};
 function flashTracks(ts){ts.forEach(i=>{const l=$(`[data-lamp="${i}"]`);if(!l)return;l.classList.add("on");clearTimeout(lampT[i]);lampT[i]=setTimeout(()=>l.classList.remove("on"),160)})}
-/* a key shown held (null: none) and the keyboard's info line (null: unchanged) */
-function setKeyDown(n,info){$$(".kb .dn").forEach(k=>k.classList.remove("dn"));if(n!=null)$(`.kb [data-key="${n}"]`)?.classList.add("dn");const el=$("#kbinfo");if(el&&info!=null)el.textContent=info}
+/* B-062, I-002: the keys lit, one state the keyboard is drawn from (so a render during a hold keeps it): dn the key the
+   mouse holds and those the computer keyboard holds (KB.held), mi those a MIDI keyboard holds (the plug-in's midiHeld) */
+const KBLIT={mouse:null,midi:new Set()};
+function kbLit(n){return(KBLIT.mouse===n||[...KB.held.values()].some(h=>h.n===n)?" dn":"")+(KBLIT.midi.has(n)?" mi":"")}
+function paintKb(){$$(".kb [data-key]").forEach(k=>{const c=kbLit(+k.dataset.key);k.classList.toggle("dn",c.includes("dn"));k.classList.toggle("mi",c.includes("mi"))})}
+function setMidiHeld(notes){KBLIT.midi=new Set(notes||[]);paintKb()}
+/* a key shown held by the mouse (null: none) and the keyboard's info line (null: unchanged) */
+function setKeyDown(n,info){KBLIT.mouse=n;paintKb();const el=$("#kbinfo");if(el&&info!=null)el.textContent=info}
 function playKey(n){if(HOST.playKey)return HOST.playKey(n);setKeyDown(n,null);let ts=[],msg="";
  if(S.mode==="normal"||S.mode==="poly"){const t=asgT();ts=[t];msg=`${S.mode==="poly"?"POLY ":""}T${t+1} ${noteName(n)}`}
  else if(S.mode==="multi"){const m=S.multi.mode;if(m===0){ts=[0,1,2,3,4,5];msg=`All tracks ${noteName(n)}`}else if(m===1){const up=n>=S.multi.splitKey,a=S.multi.splitTrack-1;ts=up?[0,1,2,3,4,5].filter(i=>i>=a):[0,1,2,3,4,5].filter(i=>i<a);msg=`${up?"Upper":"Lower"} zone ${noteName(n)}`}

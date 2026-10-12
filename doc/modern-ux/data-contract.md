@@ -325,7 +325,17 @@ Not a host-automatable parameter (see IDEAS.md I-021).
 **Notes from outside (0.6: GLOBAL › Map editor › LEARN, I-002).** `{"type":"midiIn","ch","note","vel"}`: a note on that
 reached the plug-in from outside (the host's MIDI in or a MIDI input port), sent on the next step while the page is up
 (`mdMidiIn.h`, the processor's `midiInReceived` hook; at most 16 a step, a full queue drops the rest). The page's own
-keyboard is not in it. The Machinedrum Editor's LEARN maps the next one to a track; nothing else reads it yet.
+keyboard is not in it. The Machinedrum Editor's LEARN maps the next one to a track, and a note on the base channel
+lights the track its map gives (the rail's number, the Mix LED; at most one redraw a frame).
+
+**Notes held from outside (0.6: B-062, I-002).** `{"type":"midiHeld","notes":[{ch, note}...]}`: the notes held down from
+outside, each with its channel, by channel then low to high, as a state: a note on holds its note until its note off (or
+all notes off, all sound off, a system reset). Sent when it changed, looked at every 32 ms (a burst is one message), and
+once for a new page; a note off is never lost (one bit a note and channel, `midiIn::Held` in `mdMidiIn.h`, not the
+queue). A MIDI input that opens, closes or changes, a bypass, the host's release and a switch of the HW MIDI engine let
+go of every note (`midiInputsChanged`). In HW MIDI nothing is held: what comes in is the real machine's own MIDI OUT.
+The Monomachine Editor lights the keys of the notes on the channels the machine plays (AUTO, the track channels inside
+CHANNEL SPAN, MULTI TRIG, MULTI MAP) on the Perform keyboard; the Machinedrum Editor has no keyboard and ignores it.
 
 **The host's tempo (B-030).** In a DAW the plug-in sends `{"type":"host","bpm","follows"}`:
 the host's tempo as its playhead reports it (also while the host's transport is stopped),
