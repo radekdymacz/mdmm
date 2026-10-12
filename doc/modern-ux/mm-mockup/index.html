@@ -4109,10 +4109,33 @@ const StepSel = (() => {
 	/* the menu's title: the step, or the selection */
 	const menuTitle = (x, t, s, name) => one(x) ? `${name(t, 1).replace(/^./, c => c.toUpperCase())}, step ${s + 1}` : `Selected: ${say(x, name)}`;
 
-	/* ---- the step menu's visible key (Radek, 2026-10-12: nothing only behind a right-click): a small ⋯ on the
-	   selection's last step shown; a click opens the same step menu, right-click stays a shortcut. It floats over the
-	   step (no row of its own, the layout stays) and follows it each frame. o: {anchor(): the element it sits on, or
-	   null to hide it; open(x, y): the step menu at that point} ---- */
+	/* ---- the step menu's visible key (Radek, 2026-10-12: nothing only behind a right-click): a small ⋯ inside the
+	   top-right corner of the selection's last step that is on screen; a click opens the same step menu, right-click
+	   stays a shortcut. It floats (no row of its own, the layout stays), under the popovers and hidden while a dialog
+	   or a menu is open. It is placed frame by frame only while there is a selection (moreWake starts that, from the
+	   editors' syncSel, a scroll or a resize). o: {active(): a selection on the Sequence page; cells(): the selected
+	   steps in order; clip(): the scrolling grid, the part of it on screen; open(x, y): the step menu there} ---- */
+	let more = null, moreRaf = 0;
+	function morePlace() {
+		const b = more?.b, o = more?.o; if (!b) return false;
+		if (!o.active()) { b.hidden = true; return false; }
+		const busy = document.documentElement.classList.contains("modalopen") || (typeof DeskMenu !== "undefined" && DeskMenu.shown);
+		const c = o.clip()?.getBoundingClientRect(), cells = o.cells();
+		let r = null;
+		for (let i = cells.length - 1; i >= 0 && !r; i--) {
+			const q = cells[i].getBoundingClientRect();
+			if (q.width && (!c || (q.left >= c.left - 1 && q.right <= c.right + 1 && q.top >= c.top - 1 && q.bottom <= c.bottom + 1))) r = q;
+		}
+		if (!r || busy) { b.hidden = true; return true; }
+		const w = Math.max(10, Math.min(16, Math.floor(r.width) - 2));
+		b.hidden = false; b.style.width = w + "px"; b.style.left = Math.round(r.right - w - 1) + "px"; b.style.top = Math.round(r.top + 1) + "px";
+		return true;
+	}
+	function moreWake() {
+		if (!more || moreRaf) return;
+		const tick = () => { moreRaf = morePlace() ? requestAnimationFrame(tick) : 0; };
+		moreRaf = requestAnimationFrame(tick);
+	}
 	function moreKey(o) {
 		if (typeof document === "undefined") return null;
 		let b = document.getElementById("stepmore");
@@ -4121,26 +4144,20 @@ const StepSel = (() => {
 			b.id = "stepmore"; b.type = "button"; b.textContent = "⋯"; b.hidden = true;
 			b.title = "The step menu: marks, copy, paste, clear, locks, fills (also right-click a step)";
 			b.setAttribute("aria-label", "Step menu");
-			b.style.cssText = "position:fixed;z-index:40;width:18px;height:14px;padding:0;line-height:10px;font-size:13px;border-radius:3px;cursor:pointer;"
+			b.style.cssText = "position:fixed;z-index:20;height:11px;padding:0;line-height:6px;font-size:11px;border-radius:2px;cursor:pointer;box-sizing:border-box;"
 				+ "border:1px solid var(--keydim,#777);background:var(--key,#333);color:var(--ink,#eee)";
 			for (const ev of ["pointerdown", "mousedown"]) b.addEventListener(ev, e => e.stopPropagation());
-			b.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); const r = b.getBoundingClientRect(); b._open?.(r.left, r.bottom + 2); });
+			b.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); const r = b.getBoundingClientRect(); more?.o.open(r.left, r.bottom + 2); });
 			document.body.appendChild(b);
+			addEventListener("scroll", moreWake, { capture: true, passive: true });
+			addEventListener("resize", moreWake);
 		}
-		b._open = o.open; b._anchor = o.anchor;
-		if (!b._raf) {
-			const tick = () => {
-				const a = b._anchor?.(), r = a?.getBoundingClientRect?.();
-				if (!r || !r.width) { if (!b.hidden) b.hidden = true; }
-				else { b.hidden = false; b.style.left = Math.round(r.right - 16) + "px"; b.style.top = Math.round(r.top - 7) + "px"; }
-				b._raf = requestAnimationFrame(tick);
-			};
-			b._raf = requestAnimationFrame(tick);
-		}
+		more = { b, o };
+		moreWake();
 		return b;
 	}
 
-	return { between, inside, shown, extend, landing, moved, grown, say, one, start, dropAt, during, end, bind, keyOf, menuItems, menuTitle, moreKey };
+	return { between, inside, shown, extend, landing, moved, grown, say, one, start, dropAt, during, end, bind, keyOf, menuItems, menuTitle, moreKey, moreWake };
 })();
 if (typeof module !== "undefined") module.exports = StepSel;
 "use strict";
@@ -6533,7 +6550,7 @@ function syncSel(ghost){selGhost=ghost||null;
  $$("#seq .ruler .rul[data-s]").forEach(r=>r.classList.toggle("selx",!!rulSel(+r.dataset.s)));
  $$("#seq .tlane .tc[data-s]").forEach(c=>{const s=+c.dataset.s;c.classList.toggle("selx",inSel(S.sel,s));c.classList.toggle("selghost",inSel(S.sel,s,selGhost))});
  $$("#rail .th[data-sel]").forEach(h=>h.classList.toggle("selt",!!trackSel(+h.dataset.sel)));
- secLabels();redraw()}
+ secLabels();redraw();StepSel.moreWake()}
 function setSel(x){S.stepSel=x;syncSel()}
 function clearSel(){if(!S.stepSel&&!selGhost)return;S.stepSel=null;syncSel()}
 /* the roll draws the selection over the selected track's columns (ED.lane, 70-seq.js) */
@@ -6671,7 +6688,7 @@ function stepMenuItems(t,s,pitch){const x=S.stepSel,st=trk(t).steps[s],one=StepS
 function stepMenu(t,s,pitch,x,y){if(!inSel(t,s))setSel({t,n:1,from:s,to:s+1});
  DeskMenu.open(stepMenuItems(t,s,pitch),x,y,{title:StepSel.menuTitle(S.stepSel,t,s,selName)})}
 /* the step menu's visible key: ⋯ on the selection's last step shown, over the ruler (shared/deskSelect.js moreKey) */
-StepSel.moreKey({anchor:()=>{if(S.ws!=="seq"||!S.stepSel||S.rec)return null;const c=document.querySelectorAll("#seq .ruler .rul.selx");return c.length?c[c.length-1]:null},
+StepSel.moreKey({active:()=>S.ws==="seq"&&!!S.stepSel&&!S.rec,cells:()=>document.querySelectorAll("#seq .ruler .rul.selx"),clip:()=>document.getElementById("seqscroll"),
  open:(x,y)=>{if(S.stepSel)stepMenu(S.stepSel.t,S.stepSel.from,undefined,x,y)}});
 document.addEventListener("contextmenu",e=>{if(S.ws!=="seq"||!e.target.closest?.("#seq"))return;const c=selCellOf(e);if(!c||c.ruler)return;
  e.preventDefault();if(S.rec){toast("Wait until live recording stops.");return}stepMenu(c.t,c.s,c.pitch,e.clientX,e.clientY)});

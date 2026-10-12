@@ -23,7 +23,7 @@ function syncSel(ghost){selGhost=ghost||null;
  $$("#seq .ruler .rul[data-s]").forEach(r=>r.classList.toggle("selx",!!rulSel(+r.dataset.s)));
  $$("#seq .tlane .tc[data-s]").forEach(c=>{const s=+c.dataset.s;c.classList.toggle("selx",inSel(S.sel,s));c.classList.toggle("selghost",inSel(S.sel,s,selGhost))});
  $$("#rail .th[data-sel]").forEach(h=>h.classList.toggle("selt",!!trackSel(+h.dataset.sel)));
- secLabels();redraw()}
+ secLabels();redraw();StepSel.moreWake()}
 function setSel(x){S.stepSel=x;syncSel()}
 function clearSel(){if(!S.stepSel&&!selGhost)return;S.stepSel=null;syncSel()}
 /* the roll draws the selection over the selected track's columns (ED.lane, 70-seq.js) */
@@ -161,7 +161,7 @@ function stepMenuItems(t,s,pitch){const x=S.stepSel,st=trk(t).steps[s],one=StepS
 function stepMenu(t,s,pitch,x,y){if(!inSel(t,s))setSel({t,n:1,from:s,to:s+1});
  DeskMenu.open(stepMenuItems(t,s,pitch),x,y,{title:StepSel.menuTitle(S.stepSel,t,s,selName)})}
 /* the step menu's visible key: ⋯ on the selection's last step shown, over the ruler (shared/deskSelect.js moreKey) */
-StepSel.moreKey({anchor:()=>{if(S.ws!=="seq"||!S.stepSel||S.rec)return null;const c=document.querySelectorAll("#seq .ruler .rul.selx");return c.length?c[c.length-1]:null},
+StepSel.moreKey({active:()=>S.ws==="seq"&&!!S.stepSel&&!S.rec,cells:()=>document.querySelectorAll("#seq .ruler .rul.selx"),clip:()=>document.getElementById("seqscroll"),
  open:(x,y)=>{if(S.stepSel)stepMenu(S.stepSel.t,S.stepSel.from,undefined,x,y)}});
 document.addEventListener("contextmenu",e=>{if(S.ws!=="seq"||!e.target.closest?.("#seq"))return;const c=selCellOf(e);if(!c||c.ruler)return;
  e.preventDefault();if(S.rec){toast("Wait until live recording stops.");return}stepMenu(c.t,c.s,c.pitch,e.clientX,e.clientY)});
