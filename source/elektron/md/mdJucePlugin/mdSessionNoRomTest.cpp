@@ -218,6 +218,34 @@ int main(const int _argc, char** const _argv)
 		pump(100);
 	check(stand(), "no ROM: the processor runs the silent stand-in (no exception, so no alert)");
 	check(lifecycleOf(published) == "missing", "the page is told the ROM is missing (lifecycle '" + lifecycleOf(published) + "'), not left loading");
+	// 0.6 (LEARN, I-002): a note on that reaches the processor from the host goes through addMidiEvent to the page as
+	// midiIn (channel 0-15, note, velocity); one from the device or the editor does not, nor does a note off
+	{
+		const auto before = count(published, "midiIn");
+		processor->addMidiEvent(synthLib::SMidiEvent(synthLib::MidiEventSource::Device, 0x90, 60, 100));
+		processor->addMidiEvent(synthLib::SMidiEvent(synthLib::MidiEventSource::Editor, 0x90, 61, 100));
+		processor->addMidiEvent(synthLib::SMidiEvent(synthLib::MidiEventSource::Host, 0x81, 63, 64));
+		processor->addMidiEvent(synthLib::SMidiEvent(synthLib::MidiEventSource::Host, 0x91, 62, 90));
+		for(int i = 0; i < 20 && count(published, "midiIn") == before; ++i)
+			pump(50);
+		pump(300);
+		check(count(published, "midiIn") == before + 1, "one midiIn reached the page: the host's note on only (" + std::to_string(count(published, "midiIn") - before) + ")");
+		for(const auto& m : published)
+			if(str(m, "type") == "midiIn")
+			{
+				const auto* ch = m.find("ch");
+				const auto* note = m.find("note");
+				const auto* vel = m.find("vel");
+				check(ch && note && vel && ch->asNumber() == 1 && note->asNumber() == 62 && vel->asNumber() == 90, "its channel, note and velocity are the host's (1, 62, 90)");
+			}
+		// a flood: the queue holds 64 and drops the rest, so far fewer than 5000 reach the page
+		const auto flooded = count(published, "midiIn");
+		for(int i = 0; i < 5000; ++i)
+			processor->addMidiEvent(synthLib::SMidiEvent(synthLib::MidiEventSource::Host, 0x90, static_cast<uint8_t>(i % 100), 100));
+		pump(600);
+		const auto got = count(published, "midiIn") - flooded;
+		check(got > 0 && got < 1000, "a flood of 5000 notes: the queue drops what does not fit (" + std::to_string(got) + " reached the page)");
+	}
 	// B-030: the host's tempo reaches the page while the host is stopped (the LCD's TEMPO shows it)
 	{
 		double bpm = -1;

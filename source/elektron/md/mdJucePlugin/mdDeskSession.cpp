@@ -103,6 +103,16 @@ namespace mdJucePlugin
 		return m;
 	}
 
+	elektronData::json::Value midiInOf(const midiIn::Note& _note)
+	{
+		auto m = elektronData::json::Value::object();
+		m.set("type", "midiIn");
+		m.set("ch", static_cast<int>(_note.channel));
+		m.set("note", static_cast<int>(_note.note));
+		m.set("vel", static_cast<int>(_note.velocity));
+		return m;
+	}
+
 	void setOutputGainDb(AudioPluginAudioProcessor& _processor, const double _db)
 	{
 		_processor.setOutputGain(outputLevel::gainOfDb(_db));
@@ -120,6 +130,8 @@ namespace mdJucePlugin
 
 	DeskSession::DeskSession(AudioPluginAudioProcessor& _processor) : m_processor(_processor)
 	{
+		// notes that came before this session are old: a page that opens later does not get them
+		while(processor().takeMidiIn()) {}
 	}
 
 	DeskSession::~DeskSession()

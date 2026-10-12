@@ -1656,6 +1656,26 @@ namespace
 		(void)table;
 	}
 
+	// P8 (wave 5): GLOBAL > AUDIO > MASTER TUNE from the panel: the global's masterTune (tenths of Hz) after the keys, down
+	// to the bottom and up to the top. P8_NAV: the keys that open the value (default "f+kit,enter,right,enter").
+	void p8(const Bytes& _rom)
+	{
+		std::puts("== P8 MM (panel): GLOBAL > AUDIO > MASTER TUNE, its range");
+		Rig r(_rom, true);
+		const int slot = r.status(0x01);
+		const auto tune = [&] { const auto g = ed::decodeMmGlobal(r.dump(0x50, static_cast<uint8_t>(slot))); return g ? int(g->masterTune) : -1; };
+		const char* nav = std::getenv("P8_NAV");
+		keySeq(r, nav ? nav : "f+kit,enter,right,enter");
+		std::printf("  opened: %d\n", tune());
+		for(const char* k : {"up", "right", "down", "left", "down*60", "left*12", "up*120", "right*12"})
+		{
+			keySeq(r, k);
+			std::printf("  %-9s: %d\n", k, tune());
+		}
+		for(int i = 0; i < 6; ++i)
+			key(r, md::PanelControl::Exit, 40, 80);
+	}
+
 	// ---- explore ------------------------------------------------------------------------------------------------------
 
 	void explore(const Bytes& _rom, const bool _mm, const std::string& _keys)
@@ -1673,7 +1693,7 @@ int main(const int _argc, char** _argv)
 	std::setvbuf(stdout, nullptr, _IOLBF, 0);
 	if(_argc < 3)
 	{
-		std::puts("usage: gapProbesFirmwareTest <MD ROM|-> <MM ROM|-> [p1|p1md|p1mm|p2|p2panel|p3|p4|p5|p6|p6b|p7|all|explore md|mm keys]");
+		std::puts("usage: gapProbesFirmwareTest <MD ROM|-> <MM ROM|-> [p1|p1md|p1mm|p2|p2panel|p3|p4|p5|p6|p6b|p7|p8|all|explore md|mm keys]");
 		return 77;
 	}
 	try
@@ -1719,6 +1739,8 @@ int main(const int _argc, char** _argv)
 			p2panel(mmRom);
 		if(!mmRom.empty() && want("p2"))
 			p2(mmRom);
+		if(!mmRom.empty() && only == "p8")
+			p8(mmRom);
 		if(!mmRom.empty() && want("p4"))
 			p4(mmRom);
 		if(!mdRom.empty() && want("p5"))

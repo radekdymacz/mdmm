@@ -1697,10 +1697,22 @@ namespace mmDesk
 				_g.transportOut = _in.a.flag("transportOut") ? 1 : 0;
 			if(_in.a.has("programChangeOut"))
 				_g.programChangeOut = _in.a.flag("programChangeOut") ? 1 : 0;
+			// CONTROL OUT1 (0.6, PROBES-manual-gaps.md P2): 0 INT, 1 OUT, 2 INT+OUT
+			const char* outs[] = {"sequencerOut", "arpOut", "keyboardOut"};
+			for(size_t i = 0; i < 3; ++i)
+				if(_in.a.has(outs[i]))
+					_g.controlOut1[i] = static_cast<uint8_t>(_in.a.integer(outs[i]));
 			return _g;
 		}
 
-		// B-051, F3: GLOBAL › Reset to defaults: the global the machine ships with, measured (elektronData::mmFactoryGlobal)
+		// GLOBAL › AUDIO › MASTER TUNE (0.6): tenths of Hz, 4400 = 440.0 Hz; the panel runs 4000-4999 (gapProbesFirmwareTest p8)
+		std::optional<MmGlobal> masterTune(MmGlobal _g, const In& _in)
+		{
+			_g.masterTune = static_cast<uint16_t>(_in.a.integer("v"));
+			return _g;
+		}
+
+		// B-051, F3: GLOBAL › Clear: the global the machine ships with, measured (elektronData::mmFactoryGlobal)
 		std::optional<MmGlobal> globalReset(MmGlobal _g, const In&)
 		{
 			return ed::mmFactoryGlobal(_g.position);
@@ -1839,7 +1851,7 @@ namespace mmDesk
 
 		const Edits<MmGlobal>& globalEdits()
 		{
-			static const Edits<MmGlobal> edits{{"routing", routing}, {"midiTrack", midiTrack}, {"globalMidi", globalMidi}, {"globalReset", globalReset}, {"multiMap", multiMap},
+			static const Edits<MmGlobal> edits{{"routing", routing}, {"midiTrack", midiTrack}, {"globalMidi", globalMidi}, {"masterTune", masterTune}, {"globalReset", globalReset}, {"multiMap", multiMap},
 				{"multiMapSplit", multiMapSplit}, {"multiMapDelete", multiMapDelete}};
 			return edits;
 		}
@@ -2107,9 +2119,33 @@ namespace mmDesk
 			[](const Document& _d, const int _slot) { return Document(emptySong(std::get<MmSong>(_d), static_cast<uint8_t>(_slot))); },
 			": no rows, no name", asStored, [](const EditContext&, int) { return false; }, songRenamed, problemsOf};
 
+		// 0.6: the GLOBAL page's Copy and Paste (the machine's global slot menu): the active global, whole; a paste keeps
+		// the target's position and format bytes. Clear is globalReset (the factory global).
+		std::string globalLabel(const int _g) { return "GLOBAL " + std::to_string(_g + 1); }
+
+		const Shelf g_globals{
+			Kind::Global, "slot", "global", globalLabel,
+			[](const Documents& _docs, const EditContext&, const int _g) { return stored(_docs, Kind::Global, _g); },
+			[](const Clipboard& _c) { return _c.global ? std::optional<Document>(*_c.global) : std::nullopt; },
+			[](Clipboard& _c, const Document& _d) { _c.global = std::get<MmGlobal>(_d); },
+			"Copy a global first",
+			[](const int _g, const Document&) { return "Copied " + globalLabel(_g) + ": channels, control, multi map, MIDI tracks, routing and tune"; },
+			[](const Document& _d) { return globalLabel(std::get<MmGlobal>(_d).position); },
+			[](const Document& _src, const Document& _dst, const int _slot)
+			{
+				auto g = std::get<MmGlobal>(_src);
+				const auto& dst = std::get<MmGlobal>(_dst);
+				g.position = static_cast<uint8_t>(_slot);
+				g.version = dst.version;
+				g.revision = dst.revision;
+				return Document(g);
+			},
+			[](const Document&, const int _slot) { return Document(ed::mmFactoryGlobal(static_cast<uint8_t>(_slot))); },
+			": the factory settings", asStored, [](const EditContext&, int) { return false; }, nullptr, problemsOf};
+
 		const Shelf* shelfOf(const int _kind)
 		{
-			for(const auto* sh : {&g_kits, &g_patterns, &g_songs})
+			for(const auto* sh : {&g_kits, &g_patterns, &g_songs, &g_globals})
 				if(static_cast<int>(sh->kind) == _kind)
 					return sh;
 			return nullptr;

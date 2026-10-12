@@ -904,6 +904,15 @@ namespace mdJucePlugin
 		m_outputMeter.onBlock(_outputs, _frames);
 	}
 
+	// 0.6: a note on from outside, for the page (LEARN, I-002); SysEx and the rest pass by
+	void AudioPluginAudioProcessor::midiInReceived(const synthLib::SMidiEvent& _ev)
+	{
+		if(!_ev.sysex.empty())
+			return;
+		if(const auto n = midiIn::noteOn(_ev.a, _ev.b, _ev.c))
+			m_midiIn.tryPush(*n);
+	}
+
 	uint64_t AudioPluginAudioProcessor::cpuClockNs()
 	{
 		return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(

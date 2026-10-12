@@ -1305,6 +1305,34 @@ namespace mdDesk
 			return true;
 		}
 
+		// 0.6 (PROBES-manual-gaps.md P3): TRIG IN A or B, one setting: GATE, SENS, VMIN, VMAX 0-127, DEST 0-15 a track or
+		// 16 none. The bytes are interleaved: setting i of input A at 2i, of B at 2i + 1.
+		bool trigIn(ed::MdGlobal& _g, const In& _in)
+		{
+			const auto* param = _in.a.value("param");
+			if(!param || !param->isString())
+			{
+				_in.errors.push_back("param: dest, gate, sens, vmin or vmax");
+				return false;
+			}
+			const auto input = _in.a.integer("input");
+			if(!input)
+				return false;
+			const auto i = _in.a.indexIn("param", ed::g_mdTrigInParams);
+			const auto v = _in.a.within("v", 0, i == 0 ? 16 : 127);
+			if(v)
+				_g.inputSettings[i * 2 + static_cast<size_t>(*input)] = uint8_t(*v);
+			return v.has_value();
+		}
+
+		// 0.6: the map editor back to Elektron's note map (what Reset MIDI note map, 0x64, leaves: mdDeskFirmwareTest
+		// resetmap); the rest of the global stays.
+		bool resetMap(ed::MdGlobal& _g, const In&)
+		{
+			_g.keymap = ed::mdFactoryGlobal(_g.position).keymap;
+			return true;
+		}
+
 		const std::map<std::string, GlobalField>& globalFields()
 		{
 			static const std::map<std::string, GlobalField> fields{
@@ -1318,7 +1346,9 @@ namespace mdDesk
 				{"localControl", localControl},
 				{"programChangeChannel", programChangeChannel},
 				{"trigMode", trigMode},
-				{"keymap", keymap}};
+				{"keymap", keymap},
+				{"trigIn", trigIn},
+				{"resetMap", resetMap}};
 			return fields;
 		}
 
@@ -1336,7 +1366,7 @@ namespace mdDesk
 			return _g;
 		}
 
-		// B-051, F3: GLOBAL › Reset to defaults: the global the machine ships with, measured (elektronData::mdFactoryGlobal)
+		// B-051, F3: GLOBAL › Clear: the global the machine ships with, measured (elektronData::mdFactoryGlobal)
 		std::optional<ed::MdGlobal> globalReset(ed::MdGlobal _g, const In&)
 		{
 			return ed::mdFactoryGlobal(_g.position);

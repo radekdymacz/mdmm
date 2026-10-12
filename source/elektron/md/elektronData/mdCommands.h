@@ -60,6 +60,9 @@ namespace elektronData
 	std::vector<uint8_t> mdSetTrackRouting(uint8_t _track, uint8_t _output);
 	// Tempo in BPM x 24 (30-300 BPM).
 	std::vector<uint8_t> mdSetTempo(uint16_t _tempo);
+	// Reset MIDI note map (0x64): the active global's map editor back to Elektron's mapping. The editor's own Reset map
+	// writes that map in a global dump (undoable); mdDeskFirmwareTest resetmap checks the two leave the same map.
+	std::vector<uint8_t> mdResetNoteMap();
 
 	// UW sample name (manual Appendix C, 0x73): slot 0-47 (0-31 on MKI), up to 4
 	// 7-bit ASCII characters, space padded. Affects the current sample bank. The

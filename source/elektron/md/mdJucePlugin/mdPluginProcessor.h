@@ -3,6 +3,7 @@
 #include "jucePluginEditorLib/pluginProcessor.h"
 #include "mdBootDiagnostics.h"
 #include "mdCpuLoad.h"
+#include "mdMidiIn.h"
 #include "mdOutputLevel.h"
 #include "mdLib/mdtypes.h"
 #include "synthLib/performanceReport.h"
@@ -71,6 +72,10 @@ namespace mdJucePlugin
 		// session's outputLevel message)
 		void processBlockOutput(const synthLib::TAudioOutputs& _outputs, size_t _frames) override;
 		outputLevel::Peaks takeOutputPeaks() { return m_outputMeter.take(); }
+		// 0.6 (LEARN, I-002): each note on from the host's MIDI in or a port, kept for the session's midiIn message
+		// (mdMidiIn.h); taken on the message thread
+		void midiInReceived(const synthLib::SMidiEvent& _ev) override;
+		std::optional<midiIn::Note> takeMidiIn() { midiIn::Note n; if(m_midiIn.tryPop(n)) return n; return {}; }
 		// Tester switch (doc/md_mm_performance_diagnostics.md): run the emulation as before the step 1
 		// speed-ups (md::Device::setSpeedUps). Identical audio, more host CPU. Kept in the plug-in's config.
 		void setLegacyEmulation(bool _legacy);
@@ -137,6 +142,7 @@ namespace mdJucePlugin
 		cpuLoad::Meter m_cpuMeter;
 		cpuLoad::Smoother m_cpuSmoother;	// message thread
 		outputLevel::Meter m_outputMeter;
+		midiIn::Queue m_midiIn;
 		uint64_t m_blockStartNs = 0;		// audio thread
 		static uint64_t cpuClockNs();
 		void recordBoot();
