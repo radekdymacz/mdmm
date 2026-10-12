@@ -171,6 +171,9 @@ function sendTweak(g, knob, d, t) {
 }
 const setV0 = setV;
 setV = function (el, v) {
+	/* MD-140: the value pressed for live lock removal is the knob held, not turned (a turn would record a lock); it stays
+	   put until the mouse is let go, or its drag would jump when Delete goes up first */
+	if (eraseHeldEl === el) return;
 	if (!tweak || tweak.el !== el) return setV0(el, v);
 	sendTweak(tweak.g, tweak.knob, clamp(Math.round(v)) - getV(el), tweak.t);
 	syncControls(); redraw();

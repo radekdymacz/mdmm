@@ -18,7 +18,7 @@ agents at once; Radek tests the whole release at the end from doc/release/TEST-0
 markers: resolve, grep for `<<<<<<<`, then commit, as separate steps.
 
 **Merged into `feat/0.6-features`** (each reviewed, tier 2 green): wave P (probes, doc/modern-ux/PROBES-manual-gaps.md,
-B-069), wave 1 song slots, wave 2 transport, wave 3 trig types and marks, wave 4 copy / paste / clear what, wave 5 GLOBAL page (2026-10-12, review fixes 4bcacdd4e), wave 6 SysEx and reset (2026-10-12; Import/Export in the engine menu only, Radek), wave 7 recording (2026-10-12; MD-140, live lock removal with EXIT + a knob, still missing), wave 10 MM skins true to the photos (MD unchanged, Radek), wave 8 MD LEV and machine audition (2026-10-12), the top-bar
+B-069), wave 1 song slots, wave 2 transport, wave 3 trig types and marks, wave 4 copy / paste / clear what, wave 5 GLOBAL page (2026-10-12, review fixes 4bcacdd4e), wave 6 SysEx and reset (2026-10-12; Import/Export in the engine menu only, Radek), wave 7 recording (2026-10-12), polish A (2026-10-12: MD-140 done, live lock removal: a value pressed and Delete held is EXIT/NO + its DATA ENTRY knob; mdmm-check builds the firmware test programs and the editors before the tests that use them), wave 10 MM skins true to the photos (MD unchanged, Radek), wave 8 MD LEV and machine audition (2026-10-12), the top-bar
 and LCD fit (B-061, B-065, B-066), the volume-strip fix; the feature data, journey links and guide (slices 1-4).
 
 **Pushed, not merged** (each its own worktree under `audio/gearmulator-md-mm-wt/`):

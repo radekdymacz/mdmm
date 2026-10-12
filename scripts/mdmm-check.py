@@ -20,6 +20,8 @@ NOT_UNIT_LABELS = "FirmwareTest|PluginTest"
 NOT_UNIT_NAMES = "_AU|VST|Plugin_|PluginTest"
 COLUMNS = ["path", "ctest", "firmware", "page", "machine", "goldens", "gate"]
 DEFAULT_ROW = {"path": "(no row)", "ctest": "all", "firmware": "-", "page": "*", "machine": "-", "goldens": "no", "gate": "all"}
+# unit tests that read the editors' built bundles, not a program of their own: the editors are built before they run
+NEEDS_EDITORS = {"mdmmIdentityTest"}
 # every stage of the local gate, in its order (scripts/mdmm-local-gate.sh)
 GATE_STAGES = ["1", "2", "2c", "2b", "3", "4", "5", "7a", "7b", "7c", "7d", "5b", "6a", "6b"]
 
@@ -102,7 +104,19 @@ def ctest_tests():
 		for p in t.get("properties", []):
 			if p["name"] == "LABELS":
 				labels = p["value"]
-		tests[t["name"]] = {"labels": labels, "command": t.get("command", []), "disabled": any(p["name"] == "DISABLED" and p["value"] for p in t.get("properties", []))}
+		tests[t["name"]] = {"labels": labels, "command": t.get("command") or [], "disabled": any(p["name"] == "DISABLED" and p["value"] for p in t.get("properties", []))}
+	# ctest names no command for a program that is not built yet: take it from the CTestTestfile.cmake files, so the
+	# program is built before it runs (a fresh tree, or a test added since the last build)
+	if any(not t["command"] for t in tests.values()):
+		for path in glob.glob(os.path.join(BUILD, "**", "CTestTestfile.cmake"), recursive=True):
+			with open(path, encoding="utf-8") as f:
+				for line in f:
+					m = re.match(r'add_test\((?:\[=\[)?([^\s\]"]+)(?:\]=\])?\s+(.*)\)\s*$', line)
+					if m and m.group(1) in tests and not tests[m.group(1)]["command"]:
+						try:
+							tests[m.group(1)]["command"] = shlex.split(m.group(2))
+						except ValueError:
+							pass
 	return tests
 
 
@@ -160,6 +174,28 @@ def ensure_configured(runner):
 		runner.run("configure", [os.path.join(ROOT, "scripts", "mdmm-dev.sh"), "configure"])
 
 
+def programs_of(names, tests, targets):
+	"""the build targets the ctest tests _names run: their programs (a file of the tree, or a bundle's), never a folder or
+	a utility target such as test"""
+	build = set()
+	for n in names:
+		for arg in tests[n]["command"]:
+			for part in arg.split("="):
+				if part.startswith(BUILD) and os.path.basename(part) in targets and os.path.basename(part) not in ("test", "all", "install") \
+						and not os.path.isdir(part):
+					build.add(os.path.basename(part))
+	return sorted(build)
+
+
+def build_programs(runner, names, tests, targets):
+	"""build (incrementally, ccache) the programs the tests are about to run, so a check never runs a stale binary"""
+	build = programs_of(names, tests, targets)
+	if build:
+		runner.run(f"build {len(build)} test program(s)", ["cmake", "--build", BUILD, "--target", *build],
+			env={"GEARMULATOR_DATA_ROOT": os.path.join(BUILD, "build-data") + "/"})
+	return build
+
+
 def unit_tests(runner, plan, tier, tests, targets):
 	"""build the test programs the chosen tests run, then run them in parallel (save: not the Slow and Timing ones)"""
 	def unit(n):
@@ -176,17 +212,11 @@ def unit_tests(runner, plan, tier, tests, targets):
 	if not selected:
 		runner.note("unit tests", "none for these files")
 		return
-	build = set()
-	for n in selected:
-		for arg in tests[n]["command"]:
-			for part in arg.split("="):
-				# a program of the tree (its file, or a bundle's): never a folder or a utility target such as "test"
-				if part.startswith(BUILD) and os.path.basename(part) in targets and os.path.basename(part) not in ("test", "all", "install") \
-						and not os.path.isdir(part):
-					build.add(os.path.basename(part))
-	if build:
-		runner.run(f"build {len(build)} test program(s)", ["cmake", "--build", BUILD, "--target", *sorted(build)],
-			env={"GEARMULATOR_DATA_ROOT": os.path.join(BUILD, "build-data") + "/"})
+	build_programs(runner, selected, tests, targets)
+	if NEEDS_EDITORS & set(selected):
+		# mdmmIdentityTest checks the bundles in the products folder: built now, or it reads none (a fresh tree) or old ones
+		runner.run("build the editors (" + ", ".join(sorted(NEEDS_EDITORS & set(selected))) + " reads their bundles)",
+			[os.path.join(ROOT, "scripts", "mdmm-dev.sh"), "build"])
 	regex = "^(" + "|".join(sorted(selected)) + ")$"
 	jobs = str(os.cpu_count() or 8)
 	os.makedirs(os.path.join(BUILD, "build-data"), exist_ok=True)
@@ -311,6 +341,9 @@ def main():
 		if plan.firmware:
 			if all(roms.values()):
 				regex = "|".join(plan.firmware)
+				# the firmware test programs are built first, as the unit tests are: ctest runs whatever binary is there
+				firmware = [n for n, t in tests.items() if "FirmwareTest" in t["labels"] and not t["disabled"] and re.search(regex, n)]
+				build_programs(runner, firmware, tests, targets)
 				runner.run("firmware tests", ["ctest", "--test-dir", BUILD, "-j", "4", "--output-on-failure", "-R", regex, "-L", "FirmwareTest"],
 					env={"GEARMULATOR_MD_FIRMWARE_BIN": roms["md"], "GEARMULATOR_MM_FIRMWARE_BIN": roms["mm"],
 						"GEARMULATOR_DATA_ROOT": os.path.join(BUILD, "build-data") + "/"})

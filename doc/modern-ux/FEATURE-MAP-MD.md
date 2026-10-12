@@ -190,7 +190,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.48 | 64 locked parameters per pattern | Budget | ✅ | LCD Locks counter, refuses past 64 |  | – |
 | p.48 | Locks only play in EXTENDED, kept in CLASSIC | Behaviour | ✅ | Lane greyed in CLASSIC |  | – |
 | p.48 | Live-recorded locks (move a value while recording) | Live locks | ✅ | REC and move a value | Locks next unplayed trig. | – |
-| p.48 | Remove live locks (EXIT + knob) | Erase live locks | ❌ | None | Erase in the lane afterwards. | – |
+| p.48 | Remove live locks (EXIT + knob) | Erase live locks | ✅ | Press a track value, then hold Delete while live recording: its locks go as they play | EXIT/NO with the knob's switch on the machine (measured: either order, a tap does not latch, trigs and other locks stay); the core selects the track and shows the knob's page first | 1 |
 | p.49 | Slide trigs (ALL and per track) | Parameter slide | ✅ | Alt+Shift-click a step; Slide in the trig types under the grid, then click or drag steps; All tracks or This track |  | 2 |
 | p.50 | Copy / paste / clear slide | Slide clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Slide ticked); a selection's copy includes slides | With EDIT ALL on, the slide row is the pattern's. | 1 |
 
@@ -392,13 +392,13 @@ Method: manual read in full; claims checked against the page files (`source/elek
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 258 |
+| ✅ Yes | 259 |
 | 🟡 Partial | 15 |
-| ❌ No | 7 |
+| ❌ No | 6 |
 | ➖ Not applicable | 16 |
 | Total | 296 |
 
-Of the 280 applicable rows, 258 are fully covered, 15 partly, 7 not at all.
+Of the 280 applicable rows, 259 are fully covered, 15 partly, 6 not at all.
 
 ### Top gaps (our UI), most important first
 
