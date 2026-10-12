@@ -1,7 +1,7 @@
 
 /* ===== Perform: keyboard modes, multi trig, multi map, multi env, assign, mutes ===== */
 const PMODES=[["normal","Auto track","Keys play the track in focus (AUTO TRACK channel 9)."],["multi","Multi trig","One source plays all six tracks as one big mono synth (channel 7)."],["map","Multi map","Key ranges start patterns, with offset, length and transpose (channel 8)."],["poly","Poly","All six engines play the track in focus with six voices. Other tracks go quiet."]];
-/* 0.6 wave 9 (B-064), measured (PROBES-manual-gaps.md P9): POLY plays the machine's track in focus, the one selected
+/* 0.6 wave 9 (B-064), measured (PROBES-manual-gaps.md P10): POLY plays the machine's track in focus, the one selected
    here (HOST.keyMode presses its TRACK key); the MULTI ENV per MULTI TRIG mode */
 function polyHint(t){return`POLY: T${t+1} plays six voices (TRACK ${t+1} on the machine); the other five tracks are silent, notes on their channels too. The sequencer plays T${t+1}'s chord notes. Select another track to move POLY there (its first chord can sound as one note).`}
 const MENV_SAY=["shapes the notes of the MULTI TRIG channel, which play all six tracks. After such a note, with REL under 127, every track stays silent until the next one or STOP.",

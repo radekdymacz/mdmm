@@ -40,7 +40,9 @@ In poly mode all six synth engines play one track, the track in focus, so it has
 
 The line under the keyboard modes names the poly track and says that the others are silent. Its key in the **Assign** card and its lamp under the keyboard read ×6. The keys and lamps of the other tracks dim, and so do their rows in the rail on **Sequence** and **Sound**.
 
-Select another track, in the **Assign** card or in the rail, and poly mode moves to it. The first chord on the new track can sound as one note. The chords after it sound in full.
+Select another synth track, in the **Assign** card or in the rail, and poly mode moves to it. The first chord on the new track can sound as one note. The chords after it sound in full. A MIDI track selected in the rail leaves poly mode where it is.
+
+The editor follows the machine: press [TRACK] on the machine in poly mode, or switch poly mode on there, and that track is selected and shown as the poly track. If the machine is busy taking a dump, the editor cannot press [TRACK]: the page says so and keeps the track the machine plays.
 
 On the **Perform** workspace the <MODE> field in the second line of the LCD reads POLY while the mode is on. Click **Auto track** to leave it.
 

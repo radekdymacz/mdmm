@@ -943,9 +943,8 @@ const MmJourneys = (() => {
 				machine: c => ok(!c.p0.includes(0), "every track has a note on step 1") },
 			{ say: "Cmd-drag over steps 5 to 7 of the roll: a step selection", act: async (u, c) => { if (S().stepSel) clearSel(); await dragRoll(u, c.t, [4, 6], { cmd: true }); }, screen: () => ok(!!S().stepSel, "nothing selected") },
 			{ say: "Shift-click RECORD (stopped): step recording, the cursor on step 1, the selection dropped, no new row above the roll", act: async (u, c) => { c.top = $1("#seqscroll")?.getBoundingClientRect().top; if (S().playing) u.click("#play");
-				/* the selection's drag may still be on its way through SYSEX RECV on a busy Mac: once it is in, and again if the plug-in says the panel is busy */
-				await recvIdle(); results.length = 0; u.click("#rec", { shift: true });
-				for (let i = 0; i < 3 && await until(() => results.some(r => r.op === "record" && r.ok === false), 1500); i++) { c.note = "the plug-in said the panel was busy (SYSEX RECV); clicked again"; results.length = 0; await recvIdle(); u.click("#rec", { shift: true }); } },
+				/* the selection's drag may still be on its way through SYSEX RECV on a busy Mac: once it is in */
+				await recvIdle(); results.length = 0; u.click("#rec", { shift: true }); },
 				machine: () => ok(tele.last?.record === "step" && stepAt() === 0, `record ${tele.last?.record}, cursor ${stepAt()}; ${resultsSay()}`),
 				screen: c => ok(S().recMode === "step" && !S().stepSel && !!$1(".stepcur") && $1("#rec").classList.contains("step") && $1("#seqscroll")?.getBoundingClientRect().top === c.top,
 					`step ${S().recMode}, selection ${JSON.stringify(S().stepSel)}, cursor ${!!$1(".stepcur")}, roll top ${c.top} -> ${$1("#seqscroll")?.getBoundingClientRect().top}`), within: 8000 },
@@ -1066,7 +1065,7 @@ const MmJourneys = (() => {
 	/* ---------- 0.6 wave 9 (B-064): Perform, see and set up POLY, the filter's key tracking and the MULTI ENV ----------
 	   The sound itself is proven on the firmware through the same commands: mmDeskFirmwareTest perform (ctest
 	   mmPerformSoundFirmwareTest: six notes sound as a chord on the POLY track and the others are silent, KEY off fixes
-	   the filter, the MULTI ENV shapes MULTI TRIG notes and silences the machine after one; PROBES-manual-gaps.md P9). */
+	   the filter, the MULTI ENV shapes MULTI TRIG notes and silences the machine after one; PROBES-manual-gaps.md P10). */
 	const lastPoly = () => polySent[polySent.length - 1] || {};
 	/* a kit field with no live message goes as a dump through SYSEX RECV: the journey after this one finds the panel free */
 	const recvIdle = async () => { const recv = () => I().machine?.recv || {}; await until(() => recv().state === "idle" && !recv().sending, 20000); };
@@ -1084,6 +1083,10 @@ const MmJourneys = (() => {
 				machine: () => ok(machine().poly === true && lastPoly().t === 4, `poly ${machine().poly}, sent ${JSON.stringify(lastPoly())}`), within: 8000 },
 			{ say: "on Sequence the rail marks track 5 ×6 and dims the others", act: u => u.click(tab("seq")),
 				screen: () => ok(!!$1('#rail .th[data-sel="4"] .x6') && $all("#rail .th.poly-off").length === 5, "rail " + $all("#rail .th.poly-off").length + " dimmed") },
+			{ say: "click MIDI and pick M2 on the rail: POLY stays on track 5 (a MIDI track has no voices)", act: async (u, c) => { c.n = polySent.length; u.click('[data-side="midi"]'); await sleep(200); u.click(rail(7)); await sleep(600); },
+				screen: () => ok(S().sel === 7, "selected " + S().sel), machine: c => ok(polySent.length === c.n && machine().focus === 4, `poly sent ${JSON.stringify(polySent.slice(c.n))}, focus ${machine().focus}`) },
+			{ say: "back on the synth tracks, the machine's TRACK 2 is pressed (here: its command, not the page's): the page follows, track 2 is POLY's and selected", act: async u => { u.click('[data-side="int"]'); await sleep(200); u.click(rail(4)); await sleep(300); Bridge.send({ op: "poly", on: true, t: 1 }); },
+				screen: () => ok(S().sel === 1 && S().polyT === 1 && !!$1('#rail .th[data-sel="1"] .x6'), `selected ${S().sel}, POLY track ${S().polyT}`), machine: () => ok(machine().focus === 1, "focus " + machine().focus), within: 8000 },
 			{ say: "back on Perform, click Auto track: POLY off", act: async u => { u.click(tab("perform")); await sleep(300); u.click('[data-pmode="normal"]'); },
 				screen: () => ok(!$1("#main .x6") && !$all("#main .polyoff").length, "marks left: " + $all("#main .x6, #main .polyoff").length), machine: () => ok(machine().poly === false, "poly " + machine().poly), within: 8000 }
 		],
