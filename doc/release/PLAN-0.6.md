@@ -25,7 +25,7 @@ and LCD fit (B-061, B-065, B-066), the volume-strip fix; the feature data, journ
 
 | Branch | State | Next step |
 |---|---|---|
-| `feat/0.6-recording` (wave 7) | probes, MD live erase, MM step recording and live erase in the core, firmware tests, stub host: 5 commits; page, journeys, rows and guide not done; its step 0 (tier 1 on the combined base after waves 2 + 4) has no recorded result | run step 0 on `feat/0.6-features`, then the page part, tiers, review, merge |
+| `feat/0.6-recording` (wave 7) | probes, MD live erase, MM step recording and live erase in the core, firmware tests, stub host; `feat/0.6-features` merged in; step 0 (tier 1 on the combined base after waves 2 + 4, 2026-10-12): green in 231 s (125 unit tests, the page journeys of both editors, one golden per machine); page part, journeys, rows, guide and TEST-0.6.md done | review, merge |
 
 **Wave 11 (added 2026-10-12, I-024):** machine memory that stays for every new session, way A: one memory file per
 machine in the editor's user folder; a session with no project state starts from it; each save on the machine (kit,

@@ -163,7 +163,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.39 | FUNCTION + LEFT/RIGHT moves notes | Rotate | ✅ | Alt + arrows (Sequence) | Moves trigs, accents and locks, wrapping at the length; a run is one undo step. | 2 |
 | p.39 | MKI pattern page LEDs | 32 steps | ➖ |  | See §13. | – |
 | p.39 | Live recording, quantised | Play TRIG keys | ✅ | REC then click steps / piano keys | Quantised by the machine. | 1 |
-| p.40 | Remove notes while live recording (EXIT + TRIG) | Erase live | ❌ | None |  | – |
+| p.40 | Remove notes while live recording (EXIT + TRIG) | Erase live | ✅ | Hold Delete while live recording: the selected track's trigs go as they play |  | 1 |
 | p.40 | Note copy / paste with locks | COPY NOTE | ✅ | Select a step (Cmd-click), Cmd+C, Cmd+V; also Cmd+X, Cmd+D (duplicate), step menu | Copy carries locks, accents and slides. Shared selection code: skins/shared/deskSelect.js. | 4 |
 | p.40 | Clear note parameter locks / undo | CLEAR NOTE LOCKS | ✅ | Step menu clear; lane erase (Alt-drag) |  | – |
 | p.41 | Track copy / paste (notes, machine, LFO, locks) | COPY TRACK | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (⌘⇧C, ⌘⇧V): tick trigs, accent, swing, slide, locks, machine + sound, LFO; Paste lights the tracks to paste into; one undo step. Also a selection's Cmd+C / Cmd+V | The whole track (all 64 steps) and its sound in one copy. | 2 |
@@ -392,13 +392,13 @@ Method: manual read in full; claims checked against the page files (`source/elek
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 253 |
+| ✅ Yes | 254 |
 | 🟡 Partial | 16 |
-| ❌ No | 11 |
+| ❌ No | 10 |
 | ➖ Not applicable | 16 |
 | Total | 296 |
 
-Of the 280 applicable rows, 253 are fully covered, 16 partly, 11 not at all.
+Of the 280 applicable rows, 254 are fully covered, 16 partly, 10 not at all.
 
 ### Top gaps (our UI), most important first
 
@@ -408,7 +408,7 @@ Of the 280 applicable rows, 253 are fully covered, 16 partly, 11 not at all.
 4. **Swing pattern and per-track swing**: only the amount is editable (§8).
 5. **Sysex send and receive control**: export is all-or-nothing, no ranges; no specific-place receive; verify is not a dry run (§10). The note map can only be reset together with the rest of the global (§16).
 6. **Machine preview before loading** in the picker (§2).
-7. **Live-record erase** (EXIT + TRIG, EXIT + knob) and the tempo helpers (delayed change, +/-10 % nudge) (§8).
+7. **Live-record erase of locks** (EXIT + knob; EXIT + TRIG is Delete held since 0.6) and the tempo helpers (delayed change, +/-10 % nudge) (§8).
 8. **Trig in A/B pad settings** are shown but cannot be edited (§10).
 9. **Accent / slide ALL vs per-track flag** cannot be changed, only honoured (§8).
 10. **Pause, panic (double STOP), reset menu** (empty / factory / soft reset) (§1, §12).

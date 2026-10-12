@@ -453,6 +453,29 @@ const MdJourneys = (() => {
 		async tidy(u) { if (V.rec) u.click("#rec"); if (V.playing) u.click("#play"); }
 	};
 
+	/* wave 7 (manual p.40): Delete held while live recording is EXIT/NO + the track's TRIG key on the machine; the track's
+	   trigs go as they play. The key is held: a keydown now, its keyup later (u.key presses and lets go at once). */
+	const keyEv = (type, key) => (document.activeElement && document.activeElement !== document.documentElement ? document.activeElement : document.body)
+		.dispatchEvent(new KeyboardEvent(type, { key, code: key, bubbles: true, cancelable: true, composed: true }));
+	const liveErase = {
+		name: "md-seq-live-erase", proves: ["MD-113"],
+		steps: [
+			go("seq"),
+			{ say: "pick the track with the most trigs", act: (u, c) => { c.t = soundTracks().slice().sort((a, b) => trigsOf(b).length - trigsOf(a).length)[0] ?? soundTrack(); c.p0 = trigsOf(c.t); c.others = [...Array(16).keys()].filter(t => t !== c.t).map(trigsOf); u.click(rail(c.t)); },
+				screen: c => ok(S.sel === c.t, "selected " + S.sel), machine: c => ok(c.p0.length > 0, "no trigs on track " + (c.t + 1)) },
+			{ say: "click REC: live recording, playing", act: u => u.click("#rec"), screen: () => ok(V.rec, "REC " + V.rec), machine: () => ok(tele.last?.playing, "not playing"), within: 5000 },
+			{ say: "hold Delete: the selected track's trigs go as they play", act: (u, c) => { results.length = 0; document.activeElement?.blur?.(); u.cap("Delete held"); keyEv("keydown", "Delete"); },
+				screen: () => ok(document.body.classList.contains("erasing"), "not marked as erasing"),
+				machine: c => ok(trigsOf(c.t).length < c.p0.length, `${c.p0.length} -> ${trigsOf(c.t).length} trigs; results ${results.map(r => r.op + ":" + r.ok + (r.errors ? " " + r.errors.join(";") : "")).join(", ")}`), within: 10000 },
+			{ say: "let Delete go, click REC off, then STOP: the other tracks kept their trigs", act: async u => { keyEv("keyup", "Delete"); await sleep(300); u.click("#rec"); await sleep(500); if (V.playing) u.click("#play"); },
+				screen: () => ok(!document.body.classList.contains("erasing") && !V.rec && !V.playing, `REC ${V.rec}, playing ${V.playing}`),
+				machine: c => ok([...Array(16).keys()].filter(t => t !== c.t).map(trigsOf).every((a, k) => same(a, c.others[k])), "another track changed"), within: 8000 }
+		],
+		async tidy(u, c) { keyEv("keyup", "Delete"); if (V.rec) u.click("#rec"); if (V.playing) u.click("#play"); await sleep(600);
+			/* the erased trigs back, one click each (the machine's erase is not an undo step) */
+			for (const s of c.p0 || []) if (!trigsOf(c.t).includes(s) && $1(cell(c.t, s))) { u.click(cell(c.t, s)); await sleep(120); } }
+	};
+
 	/* ---------- generators ---------- */
 	const genJourney = (name, defaults, o = {}) => ({
 		name, proves: o.proves,
@@ -1676,7 +1699,7 @@ const MdJourneys = (() => {
 		]
 	};
 	const all = [bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
-		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec,
+		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase,
 		genJourney("md-gen-mutate-undo", false, { proves: [] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: [] }), genKeys,
 		shapeSound, arrows, machinePick, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,
 		mixSolo, shiftMutes, allOff, fader, outKey, masterFx,

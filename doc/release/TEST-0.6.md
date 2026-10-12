@@ -62,3 +62,12 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 5. Verify only, with and without Specific place: nothing changes on the machine; the report shows = and ≠.
 6. Reset machine… > Empty reset… (asked twice): every kit, pattern and song empty, globals unchanged. MD: Factory reset… (seconds to prepare, minutes to send and read back): kits 1 to 4 are TRX UW, EFM UW, E12 UW, P-I UW again. MM: the question says why there is no factory reset.
 7. MM on real hardware: an empty reset waits as SEND n until SYSEX RECV; the export of waveforms reads them over the cable.
+
+## Recording (wave 7)
+
+1. MD: select a track with trigs, start live recording (● or ⌥Space), hold Delete: the track's header is marked red and its trigs go as they play. Let go: the other tracks kept theirs.
+2. MM: the same with LIVE RECORDING (⌥Space): hold Delete, the selected track's notes go as they pass.
+3. MM: stopped, ⇧-click ● (or the ▶ menu's Step record): the key shows STEP and a red cursor on the roll (no new row above the roll). Play A S D: each note goes to the cursor's step and the cursor moves on. → leaves a rest, ← goes back, Delete clears the step, Esc (or ●) ends it.
+4. MM: while step recording, pick another synth track: the machine writes that track from the same step. With a step selection made first, ⇧-click ● drops it, and ← → Esc are step recording's.
+5. Both: hold Delete while live recording and close the editor window (or reload the page): the erase stops within a second.
+6. MM on real hardware: step recording and live erase are refused with the reason (they need the machine's keys).

@@ -5197,6 +5197,35 @@
         },
         {
           "type": "object",
+          "description": "machine: live recording: EXIT/NO and track t's TRIG key held (on) or let go; its trigs go as they play (manual p.40)",
+          "required": ["op", "t", "on"],
+          "properties": {
+            "op": {
+              "const": "liveErase"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "t": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 15
+            },
+            "on": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "description": "machine: the page's keyboard: play track t (its MAP EDITOR note), pitch semitones from its sound (ROM, RAM-P: a PTCH held while the key is down, not an edit)",
           "required": ["op", "t", "vel", "pitch"],
           "properties": {

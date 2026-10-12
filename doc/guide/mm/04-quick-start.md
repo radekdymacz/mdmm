@@ -63,7 +63,7 @@ To place a note off, which stops the sound at a step, hold [⌥] and click an em
 For a chord note on a step, hold [⇧] and click the roll there. Right-click a step for the step menu (Ctrl-click on a Mac). It offers a note on or off, NOTE OFF, trigless, slide and a chord note.
 
 ## LIVE RECORDING
-<!-- rows: MM-079 MM-080 @6c9f8c -->
+<!-- rows: MM-079 MM-080 @fe3ff1 -->
 
 In live recording you play the keys while the pattern runs, and the machine writes the notes to the steps that play. The firmware quantises them.
 
@@ -72,7 +72,7 @@ In live recording you play the keys while the pattern runs, and the machine writ
 3. Play with {key:piano-white} or the on-screen keyboard.
 4. Press {key:record} again to stop recording.
 
-{gap:MM-080}You cannot erase notes while recording, as the machine does with [EXIT]. Clear steps in the roll instead.{/gap}
+To erase while recording, hold {key:live-erase}, the machine's [EXIT]. The selected track's notes go on each step that plays while the key is down.
 
 ## PARAMETER LOCKS
 <!-- rows: MM-081 MM-082 MM-083 @71af4b -->

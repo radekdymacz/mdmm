@@ -1384,11 +1384,45 @@ namespace
 		}
 		check(!desk.coreState().state({DocKind::WorkingKit, 0})->pending && desk.documents().working->kit.params[2][3] == 5
 			&& desk.documents().working->kit.params[4][7] == 99, "and the image that shows both settles with both");
+		// 0.6 wave 7: erase while live recording (manual p.40): EXIT/NO and the track's TRIG key held, let go at off.
+		keys.clear();
+		desk.onPageMessage(cmd(R"({"op":"liveErase","t":2,"on":true,"id":51})"));
+		check(ok() && keys == std::vector<std::string>{"hold:exit", "hold:trig3"}, "liveErase on: EXIT/NO down, then TRIG 3");
+		desk.onPageMessage(cmd(R"({"op":"liveErase","t":2,"on":true,"id":52})"));
+		check(ok() && keys.size() == 2, "again for the same track: nothing more pressed");
+		desk.onPageMessage(cmd(R"({"op":"liveErase","t":5,"on":true,"id":53})"));
+		check(ok() && keys == std::vector<std::string>{"hold:exit", "hold:trig3", "release:trig3", "hold:trig6"},
+			"another track: its TRIG key instead, EXIT/NO stays down");
+		desk.onPageMessage(cmd(R"({"op":"liveErase","t":5,"on":false,"id":54})"));
+		check(ok() && keys.size() == 6 && keys[4] == "release:trig6" && keys[5] == "release:exit", "off: both let go");
+		desk.onPageMessage(cmd(R"({"op":"liveErase","t":5,"on":false,"id":55})"));
+		check(ok() && keys.size() == 6, "off again: nothing pressed");
+		// the page says every 250 ms that Delete is still held; a page that goes quiet (closed, reloaded) lets the keys go
+		desk.onPageMessage(cmd(R"({"op":"liveErase","t":3,"on":true,"id":58})"));
+		for(int i = 0; i < 6; ++i)
+		{
+			now += 250;
+			desk.tick();
+			desk.onPageMessage(cmd(R"({"op":"liveErase","t":3,"on":true,"id":59})"));
+		}
+		check(keys.size() == 8, "held with the page's word every 250 ms: nothing let go, nothing pressed again");
+		now += 1100;
+		desk.tick();
+		check(keys.size() == 10 && keys[8] == "release:trig4" && keys[9] == "release:exit", "no word for over a second: both let go");
+		desk.onPageMessage(cmd(R"({"op":"liveErase","t":3,"on":true,"id":60})"));
+		keys.clear();
+		desk.onPageMessage(cmd(R"({"op":"ready"})"));
+		check(keys == std::vector<std::string>{"release:trig4", "release:exit"}, "the page (re)attached: both let go");
+		keys.resize(6);
+		desk.onPageMessage(cmd(R"({"op":"liveErase","t":1,"on":true,"id":56})"));
 		keys.clear();
 		desk.onPageMessage(cmd(R"({"op":"record","id":5})"));
 		check(ok() && keys == std::vector<std::string>{"play"}, "REC while recording presses PLAY: keep playing");
 		t.recording = false;
 		desk.onTelemetry(t);
+		check(keys.size() == 3 && keys[1] == "release:trig2" && keys[2] == "release:exit", "recording over: held erase keys let go");
+		desk.onPageMessage(cmd(R"({"op":"liveErase","t":1,"on":true,"id":57})"));
+		check(!ok(), "liveErase refused when not recording");
 		keys.clear();
 		desk.onPageMessage(cmd(R"({"op":"record","id":6})"));
 		check(keys == std::vector<std::string>{"stop"}, "REC while playing stops first");

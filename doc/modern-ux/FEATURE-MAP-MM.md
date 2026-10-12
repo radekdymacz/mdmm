@@ -72,7 +72,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Front panel 1-5 | 16 PLAY (pause on second press) | Start, pause | ✅ | LCD play key: ⇧-click or ⇧Space pauses (▶ blinks, the position holds), ▶ goes on; the ▶ menu (right-click or its ▾) | Over HW MIDI pause and Continue need GLOBAL › CONTROL IN › TRANSPORT = ACCEPT; the editor asks to set it. | 3 |
 | Front panel 1-5 | 16 STOP; STOP twice rewinds and silences | Stop, reset | ✅ | Panic: ⌘. or the ▶ menu's Panic (All Notes Off on each track's channel, then STOP twice) |  | 3 |
 | Front panel 1-5 | 16 REC + PLAY = live recording | Live recording | ✅ | Alt + Space, record key while playing | `record` op | 1 |
-| Front panel 1-5 | 16 STOP + REC = step recording | Step recording | ❌ | – | Not in the page | – |
+| Front panel 1-5 | 16 STOP + REC = step recording | Step recording | ✅ | Shift-click REC (stopped), or the ▶ menu's Step record |  | 1 |
 | Front panel 1-5 | 16 Secondary: COPY, PASTE, CLEAR | Copy / paste / clear | ✅ | LCD COPY / CLR / PASTE, Cmd+C / V, Delete | Scope depends on the workspace; on Sequence it is the selected steps, else the page shown (`130-main.js` secAction) | 4 |
 | Front panel 1-5 | 17 SCALE key: page of 16 steps | Track page | ✅ | Sequence PAGE key and 4 page LEDs, keys [ ] |  | 1 |
 | Front panel 1-5 | 17 SCALE SETUP (FUNCTION + SCALE) | Length and speed | ✅ | LCD line 2 LEN, SPD |  | – |
@@ -119,7 +119,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Grid recording 1-13 | Hold a trig, set pitch on the mini keyboard | Pitch of a trig | ✅ | Roll: click or drag for pitch |  | – |
 | Grid recording 1-13 | NOTE OFF (FUNCTION + TRIG) | Note off trig | ✅ | Alt-click an empty step; drag a bar's end |  | 1 |
 | Live recording 1-13 | Record notes in real time, quantised | Live record | ✅ | Alt + Space, record key | Quantising done by firmware | 1 |
-| Live recording 1-13 | Erase with EXIT while notes sound | Live erase | ❌ | – | Not in the page | – |
+| Live recording 1-13 | Erase with EXIT while notes sound | Live erase | ✅ | Hold Delete while live recording: the selected track's notes go as they play |  | 1 |
 | Parameter locks 1-13 | Lock a value on a step | P-lock | ✅ | Lock lane (draw bars), wheel on a step |  | 2 |
 | Parameter locks 1-14 | Record locks live by turning a knob | Live lock | ✅ | Value boxes while live recording | The machine records; the page marks the step's cell and lock lane for about 3 s and says which value it locked (`70-seq.js` setRecLock) | – |
 | Parameter locks 1-14 | Remove one lock; remove all locks of a trig | Clear locks | 🟡 | Lane: Alt-drag erases one parameter's steps; a selected step's Delete or step-menu Clear takes its note, slide and locks together | No key that drops a step's locks and keeps its note | 1 |
@@ -255,8 +255,8 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Grid recording 1-49 | Copy / clear / paste act on the track in grid mode | Scope | ✅ | LCD COPY / CLR / PASTE | Page shown of the selected track | 1 |
 | Live recording 1-49 | Record played notes, quantised | Live | ✅ | Alt + Space |  | 1 |
 | Live recording 1-49 | Chords recorded | Live chords | 🟡 | Played one key at a time | Chords are drawn with Shift-click in the roll | – |
-| Live recording 1-49 | Erase with EXIT | Live erase | ❌ | – |  | – |
-| Step recording 1-50 | Step-by-step input | Step rec | ❌ | – | Roll painting is the page's way | – |
+| Live recording 1-49 | Erase with EXIT | Live erase | ✅ | Hold Delete while live recording |  | 1 |
+| Step recording 1-50 | Step-by-step input | Step rec | ✅ | Sequence: Shift-click REC; a played note writes the step under the cursor and moves on; → rest, ← back, Delete clears, Esc done |  | 1 |
 | Note copy 1-50 | Copy one trig with locks to another step | Note copy | ✅ | Sequence: Cmd-click a step (Ctrl on Windows and Linux), Cmd+C, select the target, Cmd+V; Cmd-drag drops a copy; Cmd+D duplicates | Notes, NOTE OFFs, envelope trigs, slides and locks go along (`77-select.js`, `copySteps`) | 5 |
 | Clear note parameter locks 1-50 | Clear locks of one note, undoable | Clear locks | 🟡 | Lane Alt-drag per parameter; Alt + lane clear for a track; a selected step's Delete clears the step whole | No key for the locks of one step alone | – |
 | Track page copy 1-51 | Copy a page to another page | Page copy | ✅ | LCD COPY on the page shown (no step selected), PASTE on another page; or select the steps | Steps, slides and locks (`130-main.js` secAction) | – |
@@ -531,16 +531,16 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 323 |
+| ✅ | 327 |
 | 🟡 | 23 |
-| ❌ | 5 |
+| ❌ | 1 |
 | ➖ | 34 |
 | Total | 385 |
 
 ### Top gaps, ranked (our UI)
 
 1. **No DigiPRO user waveform manager (1-99 to 1-104, 0x5D / 0x5E).** MKII machines can pick waveforms 1-64 but the user cannot send, receive, rename or erase them.
-2. **Step recording and live-record erase (1-50, 1-49) are not in the page.** Live recording works and marks the step that gets a lock; the roll's drawing is the page's way of entering notes.
+2. **Step recording and live-record erase (1-50, 1-49)** are in the page since 0.6 (wave 7): ⇧-click REC, and Delete held while live recording.
 3. **Song: no pointer jump or play-from-row (1-75, 1-77), no SAVE SONG, song-slot copy or rename (1-74).** The page shows the playing row but cannot set it; `saveSong` exists in the desk but no control uses it.
 4. **GLOBAL is mostly there, with holes (1-87, 1-88, 1-91).** Master tune, CONTROL OUT 1 (sequencer, arp, keyboard to INT / OUT), and copy / paste / clear of a global slot are missing; some bytes of the global are not decoded.
 5. **Super copy / super clear (1-54, 1-55) and whole-track copy (1-52).** A step selection copies steps, slides and locks of chosen tracks, but not a chosen part (melody only) and not arp, transpose or swing with it.

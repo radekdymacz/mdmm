@@ -51,7 +51,9 @@ check(!badMod.length, "no ⇧ or ⌘ commands but ⇧B (tap tempo), ⌘Z ⌘⇧Z
 /* Escape: each closes what is open (the help, a dialog, LEARN, the paste marks, GLOBAL), one at a time */
 /* Enter: the selected steps' trigs on Sequence, play from the row on Song (wave 2; each when() names its workspace) */
 /* ← →: Song's rows, or the step selection on Sequence (each when() names its workspace) */
-const EXCLUSIVE = new Set([" Escape", " ArrowLeft", " ArrowRight", " Enter"]);
+/* Delete, ⌫: erase while live recording, clear a step while step recording (MM), the selection on Sequence or the row on
+   Song otherwise (wave 7; each when() names its state) */
+const EXCLUSIVE = new Set([" Escape", " ArrowLeft", " ArrowRight", " Enter", " Delete", " Backspace"]);
 const by = new Map();
 for (const b of run) for (const id of ids(b)) for (const m of mods(b)) { const k = m + " " + id; by.set(k, [...(by.get(k) || []), b]); }
 const clash = [...by].filter(([k, bs]) => bs.length > 1 && (bs.some(b => !b.when) || !EXCLUSIVE.has(k)));
