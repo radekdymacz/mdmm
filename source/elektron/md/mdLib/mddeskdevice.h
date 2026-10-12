@@ -67,6 +67,8 @@ namespace md
 			std::array<std::atomic<uint8_t>, 16> chain{};
 			// 0.3.5 (md::SongPosition): the song row the sequencer plays, -1 unknown
 			std::atomic<int> songRow{-1};
+			// 0.6 (MD-147, md::SongPosition): that row's passes still to come, -1 unknown
+			std::atomic<int> songRepeats{-1};
 
 			// The working kit (P3, mdEditorProbeFirmwareTest workkit): patch RAM
 			// 0x700008 holds the current kit number, 0x70000a the kit that plays,

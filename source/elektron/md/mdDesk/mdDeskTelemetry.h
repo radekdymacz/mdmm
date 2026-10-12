@@ -27,13 +27,15 @@ namespace mdDesk
 		int panelPending = -1;
 		// 0.3.5: the song row the sequencer plays (md::SongPosition), -1 unknown; meaningful in SONG mode only
 		int songRow = -1;
+		// 0.6 (MD-147): that row's passes still to come (md::SongPosition), -1 unknown
+		int songRepeats = -1;
 
 		bool operator==(const Telemetry& _o) const
 		{
 			return step == _o.step && pattern == _o.pattern && playing == _o.playing && recording == _o.recording
 				&& gridEdit == _o.gridEdit && knobPage == _o.knobPage && valid == _o.valid && bootAnimation == _o.bootAnimation
 				&& mutes == _o.mutes && chainKnown == _o.chainKnown && chain == _o.chain && bankGroup == _o.bankGroup
-				&& panelPending == _o.panelPending && songRow == _o.songRow;
+				&& panelPending == _o.panelPending && songRow == _o.songRow && songRepeats == _o.songRepeats;
 		}
 		bool operator!=(const Telemetry& _o) const { return !(*this == _o); }
 	};

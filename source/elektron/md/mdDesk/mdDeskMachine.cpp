@@ -1902,6 +1902,7 @@ namespace mdDesk
 		}
 		m_telemetrySeen = true;
 		m_songRowHeard = m_songRow.update(_t.songRow, _t.step, _t.playing);
+		m_songRepeatsHeard = m_songRepeats.update(_t.songRepeats, _t.step, _t.playing);
 		// The keys' fact: the device reports them pending, then none left.
 		m_keys.onPending(_t.panelPending);
 		if(!e.any)
@@ -1948,6 +1949,8 @@ namespace mdDesk
 		t.set("recording", _t.recording);
 		t.set("valid", _t.valid);
 		t.set("songRow", m_songRowHeard >= 0 ? Value(m_songRowHeard) : Value());
+		// MD-147: the row's passes still to come, read with the row (at PLAY and at each wrap, as the row)
+		t.set("songRepeats", m_songRowHeard >= 0 && m_songRepeatsHeard >= 0 ? Value(m_songRepeatsHeard) : Value());
 		publishTelemetry(std::move(t));
 		return e;
 	}

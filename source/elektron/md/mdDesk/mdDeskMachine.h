@@ -312,6 +312,8 @@ namespace mdDesk
 		Telemetry m_telemetry;
 		deskCore::SongRowHeard m_songRow;	// 0.3.5: the row heard (the RAM byte runs ahead by about two steps)
 		int m_songRowHeard = -1;
+		deskCore::SongRowHeard m_songRepeats;	// MD-147: the row's passes still to come, read as the row
+		int m_songRepeatsHeard = -1;
 		std::array<bool, 16> m_mutes{};
 		// The page's keyboard: per track, the note sounding (one at a time; a later key replaces it). The kit
 		// value a key holds is the working copy's held layer (m_working.held).

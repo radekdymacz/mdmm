@@ -202,7 +202,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.51 | Load song | LOAD SONG | ✅ | Songs column: select a slot, Load (Enter); LCD SONG; loads when stopped |  | 1 |
 | p.52 | Play, pause, stop a song | Transport | ✅ | Play key: play, pause (⇧-click, ⇧Space), stop; in SONG mode as in pattern mode |  | 2 |
 | p.52 | Move song pointer to a row; start from a row | Navigate, transport | ✅ | Song: ▶ From here on the selected row, or Enter (SONG mode, the song position, Continue) | A LOOP or JUMP before the row cannot be counted through: the editor says so (start the song and let it play there). | 1 |
-| p.52 | Playing row shown, repeats left | Playhead | 🟡 | Playing row marked in the arrangement | Turns left not shown. | 1 |
+| p.52 | Playing row shown, repeats left | Playhead | ✅ | Song: the playing row marked +2, +1, last; the What plays line ends 2 more / last | The machine's own counter (RAM 0x2b1901, gapProbesFirmwareTest w12repeats), telemetry songRepeats | 2 |
 | p.52 | STOP holds, second STOP to start | Stop behaviour | ✅ | Play key: ⇧-click pauses and holds the position; ▶ goes on, Stop in the ▶ menu ends it |  | 1 |
 | p.53 | Song editor: pattern, REP, BPM, offset, length, mute | EDIT SONG | ✅ | Song > Selected row; arrangement grid |  | 1 |
 | p.53 | Insert / remove step | FUNCTION + arrows | ✅ | Add by palette, Duplicate, Delete |  | 2 |
@@ -392,13 +392,13 @@ Method: manual read in full; claims checked against the page files (`source/elek
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 264 |
-| 🟡 Partial | 10 |
+| ✅ Yes | 265 |
+| 🟡 Partial | 9 |
 | ❌ No | 6 |
 | ➖ Not applicable | 16 |
 | Total | 296 |
 
-Of the 280 applicable rows, 264 are fully covered, 10 partly, 6 not at all.
+Of the 280 applicable rows, 265 are fully covered, 9 partly, 6 not at all.
 
 ### Top gaps (our UI), most important first
 

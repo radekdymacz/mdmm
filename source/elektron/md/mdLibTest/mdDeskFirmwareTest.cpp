@@ -234,6 +234,7 @@ namespace
 			bool playing = false;
 			bool recording = false;
 			int songRow = -1;
+			int songRepeats = -1;
 		};
 		PageTelemetry pageTelemetry() const
 		{
@@ -247,6 +248,7 @@ namespace
 			if(const auto* p = v.find("playing")) t.playing = p->asBool();
 			if(const auto* p = v.find("recording")) t.recording = p->asBool();
 			if(const auto* p = v.find("songRow"); p && p->isNumber()) t.songRow = static_cast<int>(p->asNumber());
+			if(const auto* p = v.find("songRepeats"); p && p->isNumber()) t.songRepeats = static_cast<int>(p->asNumber());
 			return t;
 		}
 
@@ -383,6 +385,7 @@ namespace
 			t.knobPage = m_machine.read8(md::SequencerState::g_knobPageAddress);
 			t.panelPending = static_cast<int>(m_keys.size());	// the rig's key queue, as md::Device reports its own
 			t.songRow = m_machine.read8(md::SongPosition::g_rowAddress);	// 0.3.5, as md::DeskDevice publishes it
+			t.songRepeats = m_machine.read8(md::SongPosition::g_repeatsAddress);	// 0.6, MD-147
 			// P4, as md::Device publishes them.
 			m_boot.update(m_machine.read8(md::BootAnimation::g_mainScreenAddress), now - m_bootAt);
 			m_bootAt = now;
@@ -3038,7 +3041,7 @@ namespace
 		rig.page(R"({"op":"play","id":2})");
 		// the middle of each pass (step 3) and its last step (7): the RAM byte has queued the next row by then
 		// (two steps early), the page is still told the row heard
-		std::vector<int> rows, patterns, lateRows;
+		std::vector<int> rows, patterns, lateRows, repeats, lateRepeats;
 		int lastStep = -1;
 		for(int i = 0; i < 4000 && rows.size() < 10; ++i)
 		{
@@ -3047,10 +3050,14 @@ namespace
 			if(t.playing && t.step == 3 && lastStep != 3)
 			{
 				rows.push_back(t.songRow);
+				repeats.push_back(t.songRepeats);
 				patterns.push_back(m.read8(0x28d205));
 			}
 			if(t.playing && t.step == 7 && lastStep != 7 && !rows.empty())
+			{
 				lateRows.push_back(t.songRow);
+				lateRepeats.push_back(t.songRepeats);
+			}
 			lastStep = t.step;
 		}
 		bool late = !lateRows.empty();
@@ -3067,6 +3074,13 @@ namespace
 		std::printf("  rows (one-based) at each pass, with the pattern that plays:%s\n", seen.c_str());
 		check(match, "the row the page is told is the row whose pattern plays, at every pass");
 		check(rows == std::vector<int>{0, 1, 1, 2, 1, 1, 2, 1, 1, 2}, "the rows go 1 2 2 3, then round the loop (LOOP to row 2) 2 2 3 2 2 3 2");
+		// MD-147: the passes of the row still to come, as the page is told them (row 2 plays twice: 1, then 0)
+		std::string reps;
+		for(size_t k = 0; k < repeats.size(); ++k)
+			reps += " " + std::to_string(repeats[k]) + "/" + std::to_string(k < lateRepeats.size() ? lateRepeats[k] : -9);
+		std::printf("  passes still to come at step 4 / step 8 of each pass:%s\n", reps.c_str());
+		check(repeats == std::vector<int>{0, 1, 0, 0, 1, 0, 0, 1, 0, 0} && std::equal(lateRepeats.begin(), lateRepeats.end(), repeats.begin()),
+			"the page is told the passes of the row still to come: row 2 (REPEATS 1) 1 then 0, the others 0, the same at the pass's last step");
 		rig.page(R"({"op":"stop","id":3})");
 		rig.run(600);
 		check(!rig.pageTelemetry().playing, "STOP: the page is told the machine stopped (no row is marked then)");

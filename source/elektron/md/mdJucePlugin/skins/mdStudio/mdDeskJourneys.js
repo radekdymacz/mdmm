@@ -2551,7 +2551,34 @@ const MdJourneys = (() => {
 		],
 		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); for (let i = 0; i < (c.moves || 0); i++) { u.click("#patPrev"); await confirmIfAsked(u); await sleep(150); } }
 	};
-	const wave12 = [clipsJ, undoKitJ, stopQueuedJ, lenRepeatJ];
+	/* MD-147: the playing song row's passes still to come (the machine's counter, telemetry songRepeats) */
+	const leftOf = () => $1("#tl .scell.ph")?.dataset.left;
+	const songRepeatsJ = {
+		name: "md-song-repeats-left", proves: ["MD-147"],
+		steps: [
+			go("song"),
+			{ say: "stop, then pick an empty song in the song slots (click it, Load; one is cleared first when every slot holds a song)", act: async (u, c) => {
+				if (V.playing) { u.click("#play"); await until(() => !V.playing, 3000); } c.s0 = V.songSlot; c.m0 = V.songMode; await until(() => Object.keys(Docs.songs).length >= 32, 20000);
+				c.s = emptySong() ?? (await scratch())[0]; await songTo(u, c.s); },
+				screen: c => ok(V.songSlot === c.s, "song " + (V.songSlot + 1)), machine: c => ok(songSlotOf(Docs) === c.s, "machine song " + (songSlotOf(Docs) + 1)), within: 20000 },
+			{ say: "Arrange: pad A01, then Repeat + twice (the row plays three times), then pad A02", act: async (u, c) => {
+				u.click('[data-set="songpick"] button[data-v="song"]'); await sleep(200); u.click('[data-addpat="0"]'); await until(() => songRows().length === 2, 4000);
+				for (let i = 0; i < 2; i++) { const r = songRows()[0].repeats; u.click('[data-step="rep"][data-d="1"]'); await until(() => songRows()[0].repeats === r + 1, 4000); }
+				u.click('[data-addpat="1"]'); },
+				machine: () => ok(songRows().length === 3 && songRows()[0].repeats === 2 && songRows()[1].pattern === 1, "rows " + JSON.stringify(songRows().map(r => [r.pattern, r.repeats]))), within: 8000 },
+			{ say: "PATTERN, then SONG: the machine takes the edited song", act: async u => { u.click('[data-set="songpick"] button[data-v="pattern"]'); await until(() => V.songMode === false, 4000); await sleep(300);
+				u.click('[data-set="songpick"] button[data-v="song"]'); await until(() => V.songMode === true, 4000); }, machine: () => ok(V.songMode === true && !V.songReload, "songMode " + V.songMode + ", reload " + V.songReload), within: 8000 },
+			{ say: "press PLAY: row 001 is marked +2, the line says 2 more", act: (u, c) => { c.lefts = []; u.click("#play"); },
+				screen: () => ok(leftOf() === "2" && /row 001 of 2 · A01 · 2 more/.test($1("#songPlays")?.textContent || ""), `mark ${leftOf()}, plays ${$1("#songPlays")?.textContent}`),
+				machine: () => ok(tele.last?.playing && tele.last.songRow === 0 && tele.last.songRepeats === 2, `row ${tele.last?.songRow}, repeats ${tele.last?.songRepeats}`), within: 8000 },
+			{ say: "the second pass: +1, the third: last; then row 002 has none", act: async (u, c) => {
+				const end = performance.now() + 12000; while (performance.now() < end && tele.last?.songRow !== 1) { const l = leftOf(); if (l != null && c.lefts[c.lefts.length - 1] !== l) c.lefts.push(l); await sleep(40); } },
+				screen: c => ok(c.lefts.join(" ") === "2 1 0" && !leftOf(), `marks ${c.lefts.join(" ")}, now ${leftOf()}`), machine: () => ok(tele.last?.songRow === 1 && tele.last.songRepeats === 0, `row ${tele.last?.songRow}, repeats ${tele.last?.songRepeats}`), within: 4000 },
+			{ say: "press STOP", act: u => { if (V.playing) u.click("#play"); }, screen: () => ok(!$1("#tl .scell.ph"), "still marked"), machine: () => ok(!V.playing, "playing") }
+		],
+		tidy: songPlayheadTidy
+	};
+	const wave12 = [clipsJ, undoKitJ, stopQueuedJ, lenRepeatJ, songRepeatsJ];
 	const slice5 = [modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, kitNameSave, songCommands, playModeJ, pageLeds, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
 	const all = [...slice5, ...wave12, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
 		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
