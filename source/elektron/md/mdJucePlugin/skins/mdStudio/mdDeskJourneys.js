@@ -550,21 +550,21 @@ const MdJourneys = (() => {
 		name: "md-sound-audition", proves: ["MD-037"],
 		steps: [
 			go("sound"), sel(() => soundTrack()),
-			{ say: "open the machine picker on the GND family", act: async (u, c) => { c.m0 = kit().tracks[c.t].machine; u.click("#machbtn"); await sleep(200); u.click('#machpop .mf[data-fam="GND"]'); await sleep(200); },
+			{ say: "open the machine picker on the GND family", act: async (u, c) => { c.m0 = kit().tracks[c.t].machine; c.k0 = JSON.stringify(kit().tracks[c.t]); u.click("#machbtn"); await sleep(200); u.click('#machpop .mf[data-fam="GND"]'); await sleep(200); },
 				screen: () => ok(!$1("#machpop").hidden && $all("#machpop .mk").length > 2, "picker closed") },
 			{ say: "click ▶ on a machine: it plays on the track, the picker stays open", act: async (u, c) => { c.m1 = gndOthers(c)[0]; results.length = 0; $1(`#machpop .mk[data-mach="${c.m1}"]`).focus(); await sleep(100); u.click(`#machpop .mk[data-mach="${c.m1}"] [data-play]`); },
 				screen: c => ok(!$1("#machpop").hidden && V.tracks[c.t].m === c.m1 && /was/i.test($1("#mpaud")?.textContent || ""), `picker ${$1("#machpop").hidden ? "closed" : "open"}, view ${V.tracks[c.t].m}, line "${$1("#mpaud")?.textContent || "none"}"`),
 				machine: c => ok(kit().tracks[c.t].machine === c.m1 && results.some(r => r.op === "noteOn" && r.ok), `kit machine ${kit().tracks[c.t].machine}, results ${results.map(r => r.op + ":" + r.ok).join(",")}`), within: 6000 },
-			{ say: "press Esc: the old machine is back", act: u => u.key("Escape"),
+			{ say: "press Esc: the old machine is back, every value of the track as it was", act: u => u.key("Escape"),
 				screen: c => ok($1("#machpop").hidden && V.tracks[c.t].m === c.m0, `picker ${$1("#machpop").hidden ? "closed" : "open"}, view ${V.tracks[c.t].m}`),
-				machine: c => ok(kit().tracks[c.t].machine === c.m0, "kit machine " + kit().tracks[c.t].machine), within: 6000 },
+				machine: c => ok(JSON.stringify(kit().tracks[c.t]) === c.k0, "kit track " + JSON.stringify(kit().tracks[c.t]) + ", was " + c.k0), within: 6000 },
 			{ say: "open it again, focus another machine and press Space: it plays", act: async (u, c) => { u.click("#machbtn"); await sleep(200); u.click('#machpop .mf[data-fam="GND"]'); await sleep(200); c.m2 = gndOthers(c).slice(-1)[0]; results.length = 0; $1(`#machpop .mk[data-mach="${c.m2}"]`).focus(); await sleep(100); u.key(" "); },
 				screen: c => ok(!$1("#machpop").hidden && V.tracks[c.t].m === c.m2, `picker ${$1("#machpop").hidden ? "closed" : "open"}, view ${V.tracks[c.t].m}`),
 				machine: c => ok(kit().tracks[c.t].machine === c.m2 && results.some(r => r.op === "noteOn"), `kit machine ${kit().tracks[c.t].machine}, results ${results.map(r => r.op + ":" + r.ok).join(",")}`), within: 6000 },
 			{ say: "press Enter: it stays", act: u => u.key("Enter"),
 				screen: c => ok($1("#machpop").hidden && V.tracks[c.t].m === c.m2, `picker ${$1("#machpop").hidden ? "closed" : "open"}, view ${V.tracks[c.t].m}`),
 				machine: c => ok(kit().tracks[c.t].machine === c.m2, "kit machine " + kit().tracks[c.t].machine), within: 6000 },
-			{ ...undoKey, say: "press Cmd+Z once: the machine before the audition", machine: c => ok(kit().tracks[c.t].machine === c.m0, "kit machine " + kit().tracks[c.t].machine), screen: c => ok(V.tracks[c.t].m === c.m0, "view " + V.tracks[c.t].m), within: 6000 }
+			{ ...undoKey, say: "press Cmd+Z once: the track as before the audition", machine: c => ok(JSON.stringify(kit().tracks[c.t]) === c.k0, "kit track " + JSON.stringify(kit().tracks[c.t]) + ", was " + c.k0), screen: c => ok(V.tracks[c.t].m === c.m0, "view " + V.tracks[c.t].m), within: 6000 }
 		],
 		async tidy() { if (!$1("#machpop").hidden) closePicker(); }
 	};

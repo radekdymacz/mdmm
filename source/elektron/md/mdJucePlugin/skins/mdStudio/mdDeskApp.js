@@ -254,7 +254,9 @@ function ref(el) {
 }
 const getV = el => { const [o, n] = ref(el); return o[n]; };
 function setV(el, v) {
-	const [o, n] = ref(el); v = clamp(Math.round(v), 0, n === "depth" ? 100 : 127); if (o[n] === v) return;
+	const [o, n] = ref(el);
+	if (el.dataset.g === "lev" && o[n] == null) return;	/* LEV before the kit is known: "—", nothing sent */
+	v = clamp(Math.round(v), 0, n === "depth" ? 100 : 127); if (o[n] === v) return;
 	/* the page's own modulator setup (Mods.doc): a new doc, sent whole */
 	if (el.dataset.g === "src") { Mods.setSource(el.dataset.src, { [n]: v }); sendMods(); }
 	else if (el.dataset.g === "link") { Mods.setLink(+el.dataset.li, { [n]: v }); sendMods(); }
@@ -277,7 +279,7 @@ function syncControls() {
 			if (mp.length) el.title = "Mapped: " + mp.map(m => "CC " + m.cc).join(", ");
 		}
 		/* a lock on LFOS, LFOD or LFOM shows on the LFO section's SPD, DEPTH, SHMIX (the same kit parameters) */
-		if (el.classList.contains("pc") && el.dataset.g !== "mfx" && el.dataset.g !== "src" && el.dataset.g !== "link") el.classList.toggle("lk", V.locks.has(lk(el.dataset.t != null ? +el.dataset.t : S.sel, el.dataset.g === "lfo" ? lfoRtName(el.dataset.n, el.dataset.t != null ? +el.dataset.t : S.sel) : el.dataset.n)));
+		if (el.classList.contains("pc") && !["mfx", "src", "link", "lev"].includes(el.dataset.g)) el.classList.toggle("lk", V.locks.has(lk(el.dataset.t != null ? +el.dataset.t : S.sel, el.dataset.g === "lfo" ? lfoRtName(el.dataset.n, el.dataset.t != null ? +el.dataset.t : S.sel) : el.dataset.n)));
 	});
 	$$("#main [data-show]").forEach(el => el.textContent = V.tracks[+el.dataset.show].rt.VOL ?? "—");
 }

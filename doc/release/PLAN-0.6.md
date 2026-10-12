@@ -25,13 +25,14 @@ and LCD fit (B-061, B-065, B-066), the volume-strip fix; the feature data, journ
 
 | Branch | State | Next step |
 |---|---|---|
+| `feat/0.6-mix` | wave 8 (MD only): LEV box on Mix (MD-008, MD-032, MD-278), machine audition in the picker (MD-037) as a core trial (`trialBegin` / `trialEnd`, taken back on page detach or reload); probe P9; reviewed, review fixes in | merge into `feat/0.6-features` |
 
 **Wave 11 (added 2026-10-12, I-024):** machine memory that stays for every new session, way A: one memory file per
 machine in the editor's user folder; a session with no project state starts from it; each save on the machine (kit,
 pattern, song, global) writes it; a DAW project still opens with its own memory; a menu item starts from factory memory;
 a setting turns it off. Two instances of one machine: the last save wins (say so in the guide). Branch `feat/0.6-memory`.
 
-**Not started:** wave 8 (MD LEV on Mix, machine audition), wave 9 (MM Perform: see and set up, B-064: mock-up and
+**Not started:** wave 9 (MM Perform: see and set up, B-064: mock-up and
 self-review against Radek's UI rules first), wave 10 (MM MKII look, I-023: colours sampled in IDEAS.md I-023; the
 Machinedrum photos also disagree with our MD skins, see the open choice below), slice 5 (journeys and snapshots for the
 unproved rows, doc/features/unproved-*.md), the guide appendices and "Beyond the hardware" chapter, the polish pass

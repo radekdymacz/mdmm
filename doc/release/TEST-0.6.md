@@ -79,4 +79,6 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 3. Sound: open the machine picker. Point at a machine: a red ▶ shows on its key. Click ▶: the machine goes on the track and the track plays once; the picker stays open and a line says "▶ machine · track n · was ...". Try several.
 4. Esc (or **Back**, or a click outside the picker): the old machine is back, with its sound as it was (also with "Keep effects + routing" off).
 5. Move with Tab to a machine and press Space: it plays. Enter (or **Keep**, or a click on the key): it stays. One ⌘Z takes the whole try-and-keep back to the machine before.
-6. ▶ on GND-EMPTY or a RAM recorder: the machine goes on the track, no note, a toast says why. During live recording an audition changes the machine but plays no note (no trig is recorded).
+6. An audition the machine refuses (start the editor and open the picker before the machine is ready, or base channel OFF): Esc undoes nothing of your earlier edits. ⌘Z while auditioning: the audition ends (no line, no "was"), Esc then changes nothing.
+7. Close the editor window (or reload the page) while a machine is being auditioned, open it again: the track has its old machine and values.
+8. ▶ on GND-EMPTY or a RAM recorder: the machine goes on the track, no note, a toast says why. During live recording an audition changes the machine but plays no note (no trig is recorded).

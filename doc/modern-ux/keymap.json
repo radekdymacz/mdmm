@@ -459,7 +459,7 @@
 			],
 			"mod": "",
 			"group": "Machine picker",
-			"does": "In the machine picker: hear the focused (or hovered) machine on the track; Enter keeps it, Esc puts the old one back",
+			"does": "In the machine picker: hear the focused machine on the track; Enter keeps it, Esc puts the old one back",
 			"short": "Hear",
 			"modal": "machpop",
 			"dispatched": true
