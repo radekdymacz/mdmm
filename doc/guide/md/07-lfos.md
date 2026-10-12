@@ -8,7 +8,7 @@ On the Sound workspace the LFO of the selected track fills the last row. Select 
 ![The LFO row](shot:md-lfo)
 
 ## LFO EDIT
-<!-- rows: MD-076 MD-077 MD-078 @5c1c4d -->
+<!-- rows: MD-076 MD-077 MD-078 @733ea2 -->
 
 On the machine you hold FUNCTION and press the SYNTHESIS, EFFECTS and ROUTING key to open the LFO edit window. In the editor the LFO row is always on the Sound workspace, so there is no window to open.
 
@@ -21,19 +21,21 @@ The group **LFO target** has two menus.
 
 To move another LFO, choose that LFO's track and then **LFOS**, **LFOD** or **LFOM**. These are its speed, depth and mix. The machine applies its own rule for which LFO may move which.
 
+An LFO can move a parameter of another LFO, its own included: choose **LFOS** of the same track as the target, and the LFO changes its own speed.
+
 When you choose another track, the parameter stays if the new track has it. If not, the first parameter of the new track is chosen.
 
 ## SHP1 AND SHP2
-<!-- rows: MD-079 MD-080 @afd961 -->
+<!-- rows: MD-079 MD-080 @bdbdac -->
 
 The group **LFO shape** has two rows of shape keys. **SHP1** and **SHP2** each choose one of six shapes: triangle, saw, square, linear decay, exponential decay and random.
 
 **SHP2** shows the same six shapes inverted.
 
-Click a key to choose a shape. The screen shows one cycle of the LFO. The solid line is the mix of the two shapes. The faint lines are the shapes themselves.
+Click a key to choose a shape. Try each of the six keys of **SHP1** and each of **SHP2**: the kit follows each click. The screen shows one cycle of the LFO. The solid line is the mix of the two shapes. The faint lines are the shapes themselves.
 
 ## UPDTE
-<!-- rows: MD-081 @5af97e -->
+<!-- rows: MD-081 @e48ebd -->
 
 The group **LFO motion** has the **UPDTE** keys.
 
@@ -41,34 +43,35 @@ The group **LFO motion** has the **UPDTE** keys.
 - **TRIG**: the LFO restarts on every trig of its track.
 - **HOLD**: the LFO holds the value it has when the track is trigged, until the next trig.
 
-An LFO restarts only when its own track is trigged.
+An LFO restarts only when its own track is trigged. Click a key to choose the mode.
 
 ## SPEED
-<!-- rows: MD-082 @455b0f -->
+<!-- rows: MD-082 @aed9dc -->
 
-**SPD** is the speed of the LFO, in 1/128 notes of the tempo. Drag the **SPD** box, or the dot on the screen of **LFO motion** sideways.
+**SPD** is the speed of the LFO, in 1/128 notes of the tempo. Drag the **SPD** box, or the dot on the screen of **LFO motion** sideways. With the box focused, the up and down arrow keys move it one step at a time.
 
 The screen shows the LFO across one bar of the track. The ticks mark the restarts of **TRIG**.
 
 ## DEPTH
-<!-- rows: MD-083 @e85d48 -->
+<!-- rows: MD-083 @6cc598 -->
 
 **DEPTH** is how much the LFO moves the parameter. Drag the **DEPTH** box, or the dot on the screen of **LFO motion** upward. The dashed line on the screen shows the depth.
 
 ## SHMIX
-<!-- rows: MD-084 @5933bf -->
+<!-- rows: MD-084 @62486f -->
 
 **SHMIX** balances the two shapes. At 0 the LFO uses **SHP1** only. At 127 it uses **SHP2** only. Drag the **SHMIX** box, or the dot on the screen of **LFO shape** sideways.
 
 **SPD**, **DEPTH** and **SHMIX** are also the routing parameters **LFOS**, **LFOD** and **LFOM**. See chapter 5.
 
 ## LAYERING LFOS
-<!-- rows: MD-085 @a60614 -->
+<!-- rows: MD-085 @5381e5 -->
 
 If the LFOs of two tracks have the same target, their outputs add. You can build slow and fast movements on one parameter this way.
 
 1. Select the first track and set its LFO target.
 2. Select a second track and choose the same track and parameter as its LFO target.
+3. Both LFOs keep their settings, and their outputs add.
 
 An LFO can also move several parameters of a machine at once, one parameter for each track's LFO.
 
@@ -86,6 +89,9 @@ To copy, paste or clear the LFO alone:
 3. Choose **Copy LFO**. The shapes, the target, <UPDTE>, <SPD>, <DEPTH> and <SHMIX> are copied.
 4. Select another track, click **⋯** and choose **Paste LFO**. The LFO of that track becomes the copy.
 5. Choose **Clear LFO** to set an LFO back to its start: no shapes, the first parameter of its own track, <FREE>, <SPD> 64, <DEPTH> and <SHMIX> 0.
+6. Press {key:undo} twice. The clear goes, then the paste, and the LFO is as it was before.
+
+![The LFO menu](shot:md-lfo-menu)
 
 NOTE: An LFO that moved a parameter of its own track moves the same parameter of the track it is pasted on. An LFO that moved another track keeps that target.
 

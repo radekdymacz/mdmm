@@ -10,7 +10,7 @@ The rail on the left lists the slots: four RAM slots and 48 ROM slots. The page 
 NOTE: The Sampler needs the UW's ROM and RAM machines. With other firmware, or while the machine has not started, the page says so.
 
 ## SAMPLE MANAGER
-<!-- rows: MD-189 MD-195 MD-196 MD-197 MD-198 MD-200 @8b1ce1 -->
+<!-- rows: MD-189 MD-195 MD-196 MD-197 MD-198 MD-200 @2318f4 -->
 
 ### The slots
 
@@ -24,7 +24,9 @@ Point at the <MEM> field to see the figures behind it.
 
 ### Hear a sample
 
-Click the play key on a tile, or the play key by the waveform of the selected slot. The sample plays once, from the start, on the output of the plug-in. Click the key again to stop it. A line moves over the waveform as it plays.
+Click the play key on a tile, or the play key by the waveform of the selected slot. ![A tile with its play key](shot:e2e-md-sampler-audition)
+
+The sample plays once, from the start, on the output of the plug-in. Click the key again to stop it. A line moves over the waveform as it plays.
 
 ### Name a sample
 

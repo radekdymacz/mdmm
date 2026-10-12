@@ -23,7 +23,7 @@ To put the machine in song mode:
 You can also click <PLAY> on the second line of the LCD, on every workspace. It reads PAT in pattern mode and SONG in song mode, and each click switches.
 
 ## LOAD SONG
-<!-- rows: MD-143 MD-144 @8db8a4 -->
+<!-- rows: MD-143 MD-144 @09eb7b -->
 
 The Machinedrum holds 32 songs. A song has up to 256 rows. The song you see in the **Arrangement** is the song the machine holds. Its slot is lit in the **Songs** column, and the chip at the top of the column reads its number and name.
 
@@ -34,6 +34,8 @@ The Machinedrum holds 32 songs. A song has up to 256 rows. The song you see in t
 You can also click <SONG> on the second line of the LCD, or drag or scroll on it, to load the next song. Click with [⇧] to go back.
 
 Each slot shows its number, its name and its rows. An empty slot reads EMPTY and is drawn faint. Press the arrow keys to move the selection while a slot has the focus.
+
+![The Songs column](shot:e2e-md-song-slots)
 
 NOTE: The machine loads a song only while it is stopped. While it plays, **Load** is greyed out.
 
@@ -47,7 +49,7 @@ In song mode the machine plays the song from the first row, row by row, to the E
 3. Read what plays on the line over the bank letters: SONG 01 · row 017 of 65 · B01 means song 01, row 017 of 65 rows, pattern B01. The <PATTERN> field of the LCD reads the song and the row, for example 01·017.
 4. Press {key:play-stop} again to stop.
 
-The playing row is marked in the arrangement, and the bar over it fills up to that row.
+The playing row is marked in the arrangement, and the bar over it fills up to that row. When you press {key:play-stop} again, or the song ends, no row is marked.
 
 ![What plays, in song mode: the line over the bank letters](shot:md-song-what-plays)
 
@@ -59,7 +61,9 @@ When the host sends a song position, the machine follows it. The editor has no c
 
 To pause a song, hold [⇧] and click the Play key, or press {key:pause}. The song holds its row and step. Click the Play key to go on from there.
 
-A row that repeats shows how many more times it plays, as the machine counts them. The playing row reads +2, +1, then last, and the line over the bank letters ends with 2 more, 1 more or last.
+A row that repeats shows how many more times it plays, as the machine counts them. The playing row reads +2, +1, then last, and the line over the bank letters ends with 2 more, 1 more or last. The next row shows no count.
+
+![A row that repeats, playing its first pass](shot:e2e-md-song-repeats-left)
 
 ## NAVIGATING A SONG
 <!-- rows: MD-146 @12c625 -->
@@ -76,7 +80,7 @@ The machine goes to SONG mode if it was in pattern mode and plays the song from 
 NOTE: A loop or jump row before the chosen row cannot be counted through. The editor says so; start the song and let it play to the row. The machine's <CTRL IN> must be on.
 
 ## SONG EDITING
-<!-- rows: MD-149 MD-150 MD-151 MD-152 @a11beb -->
+<!-- rows: MD-149 MD-150 MD-151 MD-152 @fb26fa -->
 
 ### Add patterns
 
@@ -85,7 +89,7 @@ The pattern palette shows the 128 patterns by bank. Click **SONG** over it. Each
 1. Click a bank letter.
 2. Click a pad. The pattern goes into the song after the selected row, and the new row is selected.
 
-You can also drag a pad onto the arrangement. It lands on the cell you drop it on.
+You can also drag a pad onto the arrangement. It lands on the cell you drop it on. Drop it on the empty end of the arrangement and the row is added at the end. The <BARS> count on the LCD goes up with each row.
 
 ### Set how a row plays
 
@@ -110,7 +114,9 @@ You can also drag a cell to move it.
 
 ### Copy, paste and undo
 
-Press {key:copy} to copy the selected row. Press {key:paste} to put it after the selected row. Press {key:delete} to delete the row. Press {key:undo} to undo the last edit.
+Press {key:copy} to copy the selected row. Press {key:paste} to put it after the selected row. Press {key:delete} to delete the row. Press {key:undo} to undo the last edit, and {key:redo} to put it back.
+
+![Rows added and deleted in the arrangement](shot:e2e-md-song-arrange-rows)
 
 NOTE: A song holds 256 rows. The editor refuses a row past that.
 
@@ -139,7 +145,7 @@ The editor writes each edit into the song on the machine. An edit is heard from 
 NOTE: With a real Machinedrum over MIDI the editor cannot see the transport. The **Songs** column then reads "Edits heard after STOP + reload" and offers **Reload song**. Click it: the machine stops, loads the song and plays again.
 
 ## SONG ROW OFFSETS AND LENGTHS
-<!-- rows: MD-153 @304985 -->
+<!-- rows: MD-153 @c19cbd -->
 
 A row can play a part of its pattern, from a step you choose and for a number of steps you choose.
 
@@ -158,7 +164,9 @@ On the machine [STOP] holds the song where it is, and [PLAY] goes on from there.
 
 1. Hold [⇧] and click the Play key, or press {key:pause}. The song holds its position. The Play key blinks.
 2. Click the Play key to go on from that position.
-3. To stop the song from the hold, choose **Stop** in the transport menu (right-click the Play key, or click its ▾).
+3. To stop the song from the hold, choose **Stop** in the transport menu (right-click the Play key, or click its ▾). The hold ends and the position goes.
+
+![The Play key blinking while the song is held](shot:e2e-md-top-pause)
 
 ## SONG LOOP
 <!-- rows: MD-154 @0fc513 -->
@@ -177,7 +185,7 @@ NOTE: Loops can sit inside other loops.
 TIP: A loop that runs for ever is good live. Select the row you want next while it plays.
 
 ## SONG JUMP
-<!-- rows: MD-155 @893975 -->
+<!-- rows: MD-155 @d0f862 -->
 
 A jump row sends the song forward to a later row. The rows between are not played.
 
@@ -186,7 +194,7 @@ A jump row sends the song forward to a later row. The rows between are not playe
 3. Click **−** or **+** beside **Jump to** to set the row to go to. It has to be later than the jump. The cell reads → and that row.
 
 ## SONG HALT
-<!-- rows: MD-156 @8df508 -->
+<!-- rows: MD-156 @325c0a -->
 
 A halt row stops the song where it stands. It waits there until you pick a row to go on from.
 
@@ -236,6 +244,6 @@ You can also drag a slot onto another. The song is copied there.
 
 To empty a slot, select it and click **Clear**, or press {key:song-slot-clear}. The rows and the name are removed. The slot reads EMPTY.
 
-When a paste, a copy or **Clear** would write over a song, the editor asks first. Press {key:undo} to undo a paste, a copy, a name or a clear.
+When a paste, a copy or **Clear** would write over a song, the editor asks first. Click **Clear song** to answer the question of a clear: the slot is empty and quiet. Press {key:undo} to undo a paste, a copy, a name or a clear, and {key:redo} to do it again.
 
 NOTE: A song stores which patterns it plays, not the patterns themselves. Change a pattern and every row that uses it plays the changed pattern.

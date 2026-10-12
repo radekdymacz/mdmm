@@ -6,7 +6,7 @@ The Machinedrum Editor runs the Elektron Machinedrum firmware (OS 1.63) behind o
 This chapter maps the machine's front panel and rear connectors to the page. Later chapters follow the manual's order and say how to do each job.
 
 ## FRONT PANEL
-<!-- rows: MD-001 MD-002 MD-003 MD-004 MD-005 MD-006 MD-007 MD-008 MD-009 MD-010 MD-011 MD-012 MD-013 MD-014 MD-015 MD-016 MD-017 MD-018 MD-019 MD-020 MD-021 @af8d02 -->
+<!-- rows: MD-001 MD-002 MD-003 MD-004 MD-005 MD-006 MD-007 MD-008 MD-009 MD-010 MD-011 MD-012 MD-013 MD-014 MD-015 MD-016 MD-017 MD-018 MD-019 MD-020 MD-021 @4089aa -->
 
 The page has three parts. The top bar holds the workspace tabs, the LCD and the Undo, Redo, GLOBAL and panel colour keys. The track rail runs down the left side. The workspace fills the rest.
 
@@ -66,6 +66,13 @@ On the Mix workspace a light on each strip flashes when its track plays a trig. 
 
 In CLASSIC mode a pattern holds trigs only. In EXTENDED mode a pattern also holds its kit link and its parameter locks, and locks play only in EXTENDED mode.
 
+In CLASSIC mode the lock lane says that its locks are muted. The locks are not lost: they come back when you switch to EXTENDED. In CLASSIC the pattern chooser shows no kit under any pattern.
+
+4. Click the pattern name in the LCD to open the pattern chooser. In EXTENDED it shows each pattern's kit, in CLASSIC it does not.
+5. Press {key:close-dialog} to close it.
+
+![The pattern chooser in CLASSIC mode](shot:md-top-mode-classic)
+
 ### The FUNCTION key
 
 The machine's FUNCTION key is the [⌥] key of the computer. Hold it while you press a key or drag a control, and the action reaches every track, or a wider range.
@@ -89,6 +96,13 @@ Patterns are in eight banks, A to H, of 16 patterns each.
 3. Click a pattern. While the machine plays, it starts the pattern when the current one ends. When it is stopped, the pattern changes at once.
 4. Press {key:close-dialog} to close the chooser.
 
+Every slot shows its name and its length in steps. A slot with no trigs reads EMPTY. To copy a pattern:
+
+1. Select a pattern that has trigs and click **Copy**.
+2. Select another slot and click **Paste**. The slot takes the steps and the kit link of the copy.
+3. To empty a slot, select it and click **Clear**. Its tile reads EMPTY.
+4. Press {key:undo} to take a paste or a clear back, once for each.
+
 The ‹ and › keys beside the pattern name step to the pattern before or after.
 
 ![The pattern chooser](shot:md-pattern-chooser)
@@ -100,6 +114,9 @@ The machine's LEVEL knob sets the overall level of the selected track. It is sto
 1. Press {key:workspace-3} for the Mix workspace.
 2. Drag the **LEV** box of a track up or down, or scroll the wheel over it. The kit that plays takes the new level at once.
 3. Double-click the box to set it back to 100.
+4. {key:undo} takes each change back.
+
+![The Mix workspace with a LEV box on each strip](shot:e2e-md-mix-lev)
 
 **VOL** under it is the track's volume on the routing page. It is a different value: VOL can be locked, LEV cannot.
 
@@ -107,6 +124,13 @@ The machine's LEVEL knob sets the overall level of the selected track. It is sto
 
 1. Drag the **Tempo** value in the LCD up or down. Each pixel is half a BPM; hold [⇧] for a tenth of a BPM a pixel.
 2. Or press {key:tap-tempo} in time with the beat. The tempo is the average of your last taps.
+
+To set the tempo in single steps, click the **Tempo** value without dragging:
+
+1. A TEMPO window opens.
+2. Click **+** to go one BPM faster and **-** to go one BPM slower.
+3. Hold **+10 %** to play 10 % faster for as long as you hold it. The LCD says so. The tempo you set is not changed, and it returns when you let go.
+4. Press {key:close-dialog} to close the window.
 
 In a DAW the machine follows the host's tempo. The Tempo field is marked and does not edit; change the tempo in the DAW, or set **Tempo in** to INT in GLOBAL for the machine's own clock.
 
@@ -150,7 +174,7 @@ NOTE: Pause and Continue reach the machine as MIDI Stop and Continue, so the mac
 
 ### Pattern or song
 
-The LCD's second line has a **PLAY** field on every workspace. It reads PAT in pattern mode and SONG in song mode, and each click switches. On the Song workspace the **PATTERN** and **SONG** keys over the pattern palette do the same. The field shows what the machine reports.
+The LCD's second line has a **PLAY** field on every workspace. It reads PAT in pattern mode and SONG in song mode, and each click switches. On the Song workspace the **PATTERN**, **CHAIN** and **SONG** keys over the pattern palette set what plays. **PATTERN** and **CHAIN** keep the machine in pattern mode: in PATTERN a click on a pad queues that pattern, in CHAIN the pads number the chain. **SONG** puts the machine in song mode, and the pads add rows to the arrangement. The field shows what the machine reports.
 
 ### Kits and songs
 
@@ -162,6 +186,15 @@ The machine's song menu is the **Songs** column of the Song workspace: load, sav
 
 The steps of the grid are the TRIG keys. Click a step to turn its trig on or off. Select a step (⌘-click) and click the small ⋯ on it for its menu, or right-click the step.
 
+To play a first beat:
+
+1. Open the Sequence workspace and select a track in the rail.
+2. Click four empty steps of that track. Each lights as a trig.
+3. Press {key:play-stop}. The pattern plays with your trigs.
+4. Press the same key to stop.
+
+![The step grid with trigs](shot:md-step-grid)
+
 The piano keys play the selected track from any workspace: {key:piano-white} play the white keys C to D. {key:octave} moves the octave and {key:velocity} sets the velocity.
 
 ### Pattern pages
@@ -169,14 +202,17 @@ The piano keys play the selected track from any workspace: {key:piano-white} pla
 A pattern of 64 steps has four pages of 16.
 
 - Click **Page** to show the next page. Hold [⇧] and click to show the previous one. The left and right square bracket keys do the same.
-- Four LEDs beside the key show the pages the pattern has. The page that plays is lit.
+- Four LEDs beside the key show the pages the pattern has. The page that plays is lit. Click an LED to show that page.
+- If the pattern has one page, click **×2** on the LCD to double its length. The LEDs then show the pages of the new length.
 - **All** shows every step at once. It is on when the editor starts.
-- **Fol** makes the page follow the play position.
+- **Fol** makes the page follow the play position. With **Fol** on and the machine playing, the lit LED moves to the second page when the position passes step 16.
+
+![The Sequence workspace with its page LEDs](shot:md-sequence-workspace)
 
 ## REAR CONNECTORS
-<!-- rows: MD-022 MD-023 MD-024 MD-025 @f88c29 -->
+<!-- rows: MD-022 MD-023 MD-024 MD-025 MD-026 @0d4dc7 -->
 
-The editor has no power switch or power input. It runs as a plug-in in your DAW, or as a standalone program.
+The editor has no power switch or power input. It runs as a plug-in in your DAW, or as a standalone program. It has no rack mount, no battery and nothing to care for.
 
 ### MIDI
 

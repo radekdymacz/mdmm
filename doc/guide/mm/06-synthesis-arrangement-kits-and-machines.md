@@ -4,7 +4,7 @@
 Each of the six synth tracks plays one machine. A machine is a kind of sound generator. Its output goes through the same chain on every track: the amp, the filter, the effects and the delay. A kit stores the machines of all six tracks and everything that belongs to them.
 
 ## ARRANGEMENT
-<!-- rows: MM-091 MM-092 @8aa756 -->
+<!-- rows: MM-091 MM-092 @9462d3 -->
 
 The machines come in families:
 
@@ -21,18 +21,24 @@ The machines come in families:
 Every track also has the same track effects after its machine: an amp with an envelope and distortion, a filter with its own envelope, an equaliser, sample rate reduction and a tempo synchronised delay. Chapter 7 describes them.
 
 ## KITS
-<!-- rows: MM-093 @3a238c -->
+<!-- rows: MM-093 @159555 -->
 
 A kit holds the machine of each track and all seven DATA pages of each track, with the LFOs. It also holds the MIDI pages of the six MIDI tracks, the routing and input of each track, the trig settings, the multi envelope and the name.
 
 The editor edits the kit the machine plays. It does not write a value to a stored kit slot until you save.
 
 ## LINK KITS AND PATTERNS
-<!-- rows: MM-094 MM-095 @1f7983 -->
+<!-- rows: MM-094 MM-095 @c6cd58 -->
 
 Every pattern recalls a kit. When you pick a pattern, the machine loads its kit, unless the kit is already the one that plays.
 
 The pattern chooser shows, on each pattern, its length and its kit as K and a number. The kit library shows on each kit slot the patterns that link to it. A kit no pattern links to ends its name with a star and reads "no pattern".
+
+To see that a kit is not loaded twice:
+
+1. Pick a pattern. Its kit loads.
+2. Change a value on the **Sound** workspace. The kit reads **edited**.
+3. Pick a second pattern that recalls the same kit. The pattern changes, the kit stays as you edited it and the editor asks nothing.
 
 If you pick a pattern with a different kit while the current kit has edits that are not saved, the editor asks. It offers **Save kit, then switch**, a switch that leaves the edits to the machine's UNDO KIT, and **Cancel**.
 
@@ -42,10 +48,12 @@ Loading a kit from the library makes it the kit of the current pattern. To set t
 2. Hold [⌥] and click the pattern. It is selected, not loaded.
 3. Choose a kit in the **Kit** list. The pattern now recalls that kit.
 
-If the pattern plays, the machine loads the new kit at once. When the kit that plays has unsaved edits, the editor asks first. Press {key:undo} to take the change back.
+If the pattern plays, the machine loads the new kit at once. When the kit that plays has unsaved edits, the editor asks first: answer **Cancel** with {key:close-dialog} and the pattern keeps its kit and the edits stay. Press {key:undo} to take the change back.
+
+![The pattern chooser with a kit chosen for a pattern](shot:e2e-mm-lib-pattern-kit)
 
 ## LOADING A KIT
-<!-- rows: MM-096 MM-097 MM-098 @84bf39 -->
+<!-- rows: MM-096 MM-097 MM-098 @7c59a8 -->
 
 The machine holds 128 kits. The kit library lists them all.
 
@@ -66,17 +74,25 @@ Load an empty slot to start from nothing. The kit has six tracks with the machin
 
 The small field beside the <KIT> label reads **edited** while the kit differs from its saved slot on the machine, and **saved** when it matches. The kit edits are kept in the project of your DAW as well.
 
+To save a kit under another slot:
+
+1. Click <KIT> on the LCD. The kit library opens.
+2. Hold [⌥] and click a slot. It is selected.
+3. Click **Save as** and answer the question.
+
 - **Save** writes the current kit to its own slot. The slot's old content goes to the machine's UNDO KIT.
 - **Save as** writes it to the slot you selected, after asking if that slot is used, and the kit becomes that slot's kit. The slot you saved from keeps what it had.
 
-To rename a kit, select its slot and press {key:lib-rename}, or double-click the slot, or click **Rename**. Type a name of up to 11 characters and press [ENTER]. The editor takes the name as text, so there is no character picker.
+To rename a kit, select its slot and press {key:lib-rename}, or double-click the slot, or click **Rename**. Type a name of up to 11 characters and press [ENTER]. The editor takes the name as text, so there is no character picker. Press {key:undo} to take a rename back.
+
+![Saving a kit to another slot](shot:e2e-mm-lib-kit-saveas)
 
 ## UNDO KIT
 <!-- rows: MM-102 @a29a4e -->
 
 The machine keeps one extra kit, the UNDO KIT, as the first entry of its kit list. It holds the kit lost to the last load or overwrite without saving. The dialogs of the editor name it when an action puts a kit there. The editor's own undo, {key:undo}, works on top of it.
 
-To load it:
+To lose a kit on purpose and bring it back, rename the kit that plays, which is an edit you do not save, then load another kit. The machine keeps the edited kit as its UNDO KIT. To load it:
 
 1. Open the kit library: click the **KIT** field on the LCD.
 2. Click **UNDO KIT**. The lost kit plays again, with its unsaved edits, and the slot it came from becomes the current kit.
@@ -89,9 +105,10 @@ NOTE: The editor presses the machine's own keys (KIT, LOAD, the first entry of t
 ## COPY KIT
 <!-- rows: MM-103 @913049 -->
 
-1. Open the kit library and select the kit slot.
+1. Open the kit library. Hold [⌥] and click the kit slot to select it.
 2. Click **Copy**, or press {key:lib-copy-paste}.
-3. Select the slot to copy into and click **Paste**.
+3. Hold [⌥] and click the slot to copy into, then click **Paste**.
+4. Press {key:undo} with the library open. The slot is back as it was.
 
 You can also drag a slot onto another slot to copy it there.
 
@@ -102,13 +119,13 @@ NOTE: To hear a kit pasted into the slot that plays, load that slot again.
 ## CLEAR KIT
 <!-- rows: MM-104 @d4b0cd -->
 
-1. Select the kit slot in the library.
-2. Click **Clear**, or press {key:lib-clear}.
+1. Hold [⌥] and click the kit slot in the library to select it.
+2. Click **Clear**, or press {key:lib-clear}, and answer the question. The slot is cleared.
 
 The slot gets the empty kit: six sine machines and default settings. The machine has no clear message, so the editor writes the empty kit as a dump, through SYSEX RECV. {key:lib-undo} undoes a paste, clear or rename.
 
 ## ASSIGNING A MACHINE
-<!-- rows: MM-105 MM-106 @884433 -->
+<!-- rows: MM-105 MM-106 @d5d62a -->
 
 1. Select the track in the rail.
 2. Go to the **Sound** workspace ({key:workspace-2}).
@@ -131,19 +148,20 @@ NOTE: A processing machine (an FX machine) needs audio. If the track did not hav
 1. Go to the **Sound** workspace and select the track.
 2. Click <COPY> under the LCD, or press {key:copy}. The machine and all seven DATA pages are copied.
 3. Select another track and click <PASTE>, or press {key:paste}. The track gets the machine and its settings.
+4. Press {key:undo} to take the paste back.
 
 ## CLEAR MACHINE
-<!-- rows: MM-108 @d2dac0 -->
+<!-- rows: MM-108 @f14cbe -->
 
 On the **Sound** workspace, click <CLR>. The track plays GND-SIN again, with every page at its start values.
 
 ## SETTING THE MIX BUS
-<!-- rows: MM-109 @b3fc16 -->
+<!-- rows: MM-109 @0e7166 -->
 
 A track sends its sound to one or two mix buses: AB, CD and EF. In the **Mix** workspace each track strip has three **Out** keys. Click a key to send the track to that bus or to stop sending it. A track can feed two buses. Chapter 18 describes routing.
 
 ## PARAMETER EDITING
-<!-- rows: MM-110 MM-111 MM-112 @6aa5d2 -->
+<!-- rows: MM-110 MM-111 MM-112 @233b93 -->
 
 A track has seven pages of eight parameters, 56 in all. The **Sound** workspace shows them as groups of a few values, with a small picture where the values draw a shape:
 

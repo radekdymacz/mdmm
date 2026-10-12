@@ -4,11 +4,17 @@
 The stereo master effects are four effects that work on the main outputs. The Rhythm Echo and the Gate Box take signal from the tracks through their **DEL** and **REV** sends. The master EQ and Dynamix work on the final stereo output.
 
 ## THE STEREO MASTER EFFECT SYSTEM
-<!-- rows: MD-070 MD-075 @51674b -->
+<!-- rows: MD-070 MD-075 @c9dd2d -->
 
 The master effects are on the Mix workspace, below the track strips. A line above them shows the signal path: sends, Rhythm Echo, Gate Box, master EQ, Dynamix, main out. Tracks on the individual outputs A to F skip this chain.
 
 Each effect is a card with a name, a screen and eight value boxes. Drag a dot on the screen or a box to change a parameter.
+
+1. Click the **Mix** tab.
+2. Drag a value on one of the cards. The change is heard at once.
+3. Press {key:undo} to take it back.
+
+The four cards hold 32 values. Each one moves its own parameter of its own effect and no other.
 
 ![The master effects](shot:md-master-effects)
 
@@ -16,8 +22,17 @@ The master effects are part of the kit. Save the kit to keep your changes.
 
 You cannot lock the master effects on the Mix workspace. To change them from the sequencer, use a CTR machine on a track. The machines CTR-RE, CTR-GB, CTR-EQ and CTR-DX hold the parameters of the Rhythm Echo, the Gate Box, the master EQ and Dynamix. They make no sound. On the Sound workspace they show the same groups as the cards, and you lock their parameters in the lock lane like any other.
 
+To lock the Rhythm Echo time on a step:
+
+1. Click the **Sound** tab and select a track on the rail.
+2. Choose CTR-RE in the machine menu of the track. The track now stands for the Rhythm Echo.
+3. Click the **Sequence** tab. Click a step of that track to put a trig on it.
+4. Click the **TIME** key under **Lock parameter**, then drag across the lock lane over the trig. The step holds its own echo time.
+
+![A control track for the Rhythm Echo, with a lock on TIME](shot:e2e-md-sound-ctr-locks)
+
 ## THE RHYTHM ECHO DELAY
-<!-- rows: MD-071 @ed565a -->
+<!-- rows: MD-071 @d88421 -->
 
 The card **Rhythm Echo** is a delay in time with the tempo. Its sends come from the **DEL** parameter of the tracks.
 
@@ -35,7 +50,7 @@ The card **Rhythm Echo** is a delay in time with the tempo. Its sends come from 
 The screen shows the repeats. Drag its dot sideways for **TIME** and up for **FB**. With **FB** at 64 each repeat is as loud as the one before. Above 64 the repeats grow, and the screen says so.
 
 ## THE GATE BOX REVERB
-<!-- rows: MD-072 @9f869f -->
+<!-- rows: MD-072 @49a254 -->
 
 The card **Gate Box** is a reverb for percussion, with a gate. Its sends come from the **REV** parameter of the tracks.
 
@@ -53,7 +68,7 @@ The card **Gate Box** is a reverb for percussion, with a gate. Its sends come fr
 The screen shows the reverb tail. Its three dots set **PRED**, **DEC** and **GATE**. The label under the screen reads "reverb · gate off" when **GATE** is at 127.
 
 ## MASTER EQ
-<!-- rows: MD-073 @294ce3 -->
+<!-- rows: MD-073 @21050d -->
 
 The card **Master EQ** has a low shelf, a high shelf and one parametric band. It shapes the final stereo output.
 
@@ -68,7 +83,7 @@ The card **Master EQ** has a low shelf, a high shelf and one parametric band. It
 The gains run from 0 to 127 in the boxes, with 64 flat. The screen shows the EQ curve. Each of its three dots sets a frequency sideways and a gain up or down.
 
 ## THE DYNAMIX DYNAMICS PROCESSOR
-<!-- rows: MD-074 @8a8ae2 -->
+<!-- rows: MD-074 @945879 -->
 
 The card **Dynamix** is a compressor for percussion. It works on the main output.
 

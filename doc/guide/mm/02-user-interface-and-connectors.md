@@ -24,11 +24,27 @@ The LCD of the machine is the **LCD** in the top bar. It holds the fields <TEMPO
 On the machine the LEVEL knob sets the level of the selected track and the eight DATA ENTRY knobs set the parameters of the page shown. In the editor every parameter is a value box.
 
 - LEVEL is the **LEVEL** fader of each track in the **Mix** workspace.
+
+To set the level of a track:
+
+1. Click **Mix**.
+2. Drag the **LEVEL** fader of the track. The level follows the fader.
+3. Press {key:undo}. The fader goes back to where it was.
+
 - A value box changes when you drag it up or down, or sideways. Each pixel of drag is one step.
 - Turn the mouse wheel over a value box to step it, one step a notch.
 - Click a value box and press the arrow keys to step it ({key:value-up-down}).
 - Double-click a value box to set it to its default.
 - Hold [⌘] and click a value box to type its value, or press [ENTER] on a value box that has the focus. Type the value and press [ENTER], or press [ESC] to leave it as it was. A box that shows names takes a name, for example SAW for an LFO's wave, in small or capital letters. **PAN** takes L12, C or R5. A value the box cannot show is refused, and the field says what it takes. Each typed value is one undo step.
+
+To type a value:
+
+1. Click **Sound** and pick a track in the rail.
+2. Hold [⌘] and click a value box. A field opens over it with the value it shows.
+3. Type a value and press [ENTER]. The box shows it and the machine has it.
+4. Hold [⌘] and click the box again and type 999. The field stays and refuses the value.
+5. Press [ESC]. The field closes and the value is as it was.
+6. Double-click the box to set its default, then press {key:undo} to take the default back. Press {key:undo} once more to take back the typed value in one step.
 
 The machine's accelerated edit, where you press a knob and turn it for larger steps, is a different gesture here. Hold [⇧] while you drag for fine steps, a quarter as fast. Hold [⇧] while you turn the wheel, or press Page Up or Page Down on a focused value, to step by ten.
 
@@ -38,6 +54,16 @@ The machine's accelerated edit, where you press a knob and turn it for larger st
 The machine has seven DATA pages for each track: SYN, AMP, FLT, EFX, LF1, LF2 and LF3. It shows one at a time on its eight knobs. The **Sound** workspace shows every page of the selected track at once, in groups of a few values. The **Sequence** workspace has the page tabs SYN, AMP, FLT, EFX, LF1, LF2 and LF3 in the track rail. They choose the parameters the lock lane edits.
 
 Pressing both DATA PAGE keys on the machine opens the multi envelope. In the editor the multi envelope is the first card of the **Perform** workspace. What it shapes depends on the multi trig mode of the kit, which the card names: see chapter 9.
+
+![The Multi envelope card in the Perform workspace](shot:mm-perform-menv)
+
+To see what the multi envelope shapes:
+
+1. Click **Perform**. With the keys on **Auto track**, the **Multi envelope** card names the multi trig mode of the kit and says to choose **Multi trig**.
+2. Click **Multi trig**, then the mode SPLIT KEY. The card says the envelope has no effect there.
+3. Click ALL TRK. The card says it shapes the multi trig notes and when it silences every track.
+4. Click SEQ START. The card says it shapes the pattern that a multi trig note starts.
+5. Click the first mode again, then **Auto track**.
 
 ## TRACK KEYS
 <!-- rows: MM-019 MM-020 MM-021 @6c403a -->
@@ -58,6 +84,14 @@ To prepare mutes, hold [⇧] and click **M** on the tracks. Each track shows + o
 
 A muted track dims in the rail. The selected track is lit.
 
+To mute and solo tracks:
+
+1. Click **Mix**, then click **M** on track 1. The track is muted. Click **M** again to unmute it.
+2. Click **S** on track 3. The other synth tracks are muted. Click **S** again and the mutes are as before.
+3. Drag across the **M** keys of tracks 1 to 3. Each track you cross changes as the first one did.
+4. On the keyboard press {key:mute-track}: the selected track is muted. Press it again to unmute it. Press {key:mute-all} to mute every synth track and {key:unmute-all} to unmute every track.
+5. Click **M/S off** in the rail to unmute and unsolo every track.
+
 NOTE: Mutes act on notes. A sound that already plays rings out.
 
 ## TEMPO KEY
@@ -66,6 +100,11 @@ NOTE: Mutes act on notes. A sound that already plays rings out.
 The <TEMPO> field of the LCD is the tempo window of the machine. Drag it up or down: a pixel is half a beat per minute, and [⇧] makes it a tenth. With the field focused, the arrow keys step it.
 
 To tap a tempo, press {key:tap-tempo-shift}. The editor uses the average of your last taps. On every workspace except **Sequence** a plain {key:tap-tempo} taps too. On **Sequence** that key switches the piano roll's Draw mode.
+
+To tap a tempo on **Sequence**:
+
+1. Press {key:tap-tempo-shift} five times, about half a second apart.
+2. <TEMPO> follows your taps. Draw mode stays as it was.
 
 NOTE: In a DAW the host sets the tempo. The field is marked and refuses an edit, with a note that says to change it in the DAW. **Tempo in** INT in GLOBAL gives the machine its own clock (chapter 12).
 
@@ -77,7 +116,14 @@ The machine's [FUNCTION] key gives the other keys a second job. The editor has n
 ## KIT AND SONG KEYS
 <!-- rows: MM-025 MM-026 @d2a720 -->
 
-On the machine [KIT] opens the kit menu. In the editor click the <KIT> field of the LCD to open the kit library. Chapter 6 describes it. The **Song** workspace ({key:workspace-5}) is the song menu: see chapter 17.
+On the machine [KIT] opens the kit menu. In the editor click the <KIT> field of the LCD to open the kit library. Chapter 6 describes it.
+
+1. Click <KIT> on the LCD. The kit library opens.
+2. Click another kit. It loads.
+3. Click the first kit again, then press {key:close-dialog}.
+
+![The kit library](shot:mm-kit-library)
+ The **Song** workspace ({key:workspace-5}) is the song menu: see chapter 17.
 
 [FUNCTION] + [KIT] opens the global menu. In the editor open it in one of three ways:
 
@@ -86,6 +132,9 @@ On the machine [KIT] opens the kit menu. In the editor click the <KIT> field of 
 - press the GLOBAL link in the **AUDIO / MIDI** panel.
 
 The GLOBAL page opens over the workspace. It holds the eight global slots and the Control, Sync, Routing, Audio and Control out 1 settings, the master tune among them. {key:close-global} goes back to the workspace. Chapter 19 describes it.
+
+1. Click **Global** in the top bar. The GLOBAL page opens under the top bar, over the workspace.
+2. Click the **Mix** tab. The page closes and **Mix** shows.
 
 ## TRIG KEYS
 <!-- rows: MM-027 MM-028 MM-029 MM-030 @beca1b -->
@@ -101,12 +150,27 @@ To set a trig on a step, as the TRIG keys do in grid mode, click the piano roll 
 
 On the machine, [BANK] + [TRIG] picks a pattern. In the editor click the <PATTERN> field of the LCD for the pattern chooser, or the **‹** and **›** keys beside it. Chapter 4 describes picking.
 
+1. Click **›** beside <PATTERN>. The next pattern is selected.
+2. Click **‹**. The pattern before it is selected again.
+
+To play notes from the keyboard:
+
+1. Click **Sequence** and pick track 1 in the rail.
+2. Press [A]. Track 1 plays.
+3. Press [W], [T] and [P]. They play C♯, F♯ and the D♯ an octave up from the [A] key's C. [A] and [S] still play C and D.
+
 ## PATTERN AND SONG KEY
 <!-- rows: MM-031 MM-032 @b3739c -->
 
 [PATTERN/SONG] switches between playing a pattern and playing a song. Click <PLAY> in the second line of the LCD. It reads PAT or SONG, what the machine reports, and each click switches. The **Song** workspace has the same switch.
 
 [FUNCTION] + [PATTERN/SONG] switches POLY mode. In the editor the **Perform** workspace has a **Poly** key in the **Keyboard** card. Poly mode plays the track selected on the machine with [TRACK]; the editor presses that key for the track you select. Chapter 5 describes poly mode.
+
+To switch between pattern and song:
+
+1. Click **Song**.
+2. Click the **SONG** key. The machine reports song mode.
+3. Click the **PATTERN** key. The machine reports pattern mode.
 
 ## ENTER, EXIT AND ARROW KEYS
 <!-- rows: MM-033 MM-034 @35f8b7 -->
@@ -119,6 +183,13 @@ The arrow keys of the machine move the cursor and set the octave of the TRIG key
 <!-- rows: MM-035 MM-036 MM-037 MM-038 @97b554 -->
 
 The machine's BANK GROUP and BANK keys choose the pattern bank. The pattern chooser shows all eight banks A to H at once. Press {key:lib-bank} inside it to jump to a bank.
+
+![The pattern chooser](shot:mm-pattern-chooser)
+
+1. Click <PATTERN> on the LCD. The chooser lists the 128 patterns A01 to H16, with the eight bank keys A to H.
+2. Each tile gives the length of its pattern and the kit it recalls. An empty pattern reads EMPTY.
+3. Press [D], then [E], then click the key of bank G. The selection moves into that bank each time.
+4. Click a pattern that recalls another kit. The machine loads that kit.
 
 [FUNCTION] + [BANK GROUP] opens the mute window: it is the **Mutes** card in **Perform**, and the prepared mutes described above.
 
@@ -133,11 +204,29 @@ The keys that open the secondary windows, ARP, TRANSPOSE, SWING and SLIDE, are a
 
 The record and play keys are at the top right of the LCD.
 
-- Press {key:play-stop} or click the play key. The machine plays. Press it again to stop.
+- Press {key:play-stop} or click the play key. The machine plays. Press it again to stop. After clicking in the piano roll, wait for the pattern to reach the machine. If the editor says the panel is busy, press the key again.
 - Click the record key while the machine is stopped to switch grid recording on. Editing steps on the page does not need it.
 - Press {key:record} to start live recording, the machine's [REC] + [PLAY]. Press it again to stop recording.
 
+To record live:
+
+1. Click **Sequence** and pick track 1 in the rail.
+2. Press {key:record}. The machine plays and records.
+3. Play [A], [S] and [D]. The machine records the notes.
+4. Click the record key to switch recording off, then stop the machine.
+
 Grid recording is not needed to edit steps with the mouse. Hold [⇧] and click the record key while the machine is stopped to start step recording, the machine's [STOP] + [REC]. The key shows STEP. See "Step recording" in chapter 11.
+
+1. Click **Sequence** and pick a synth track whose first step is empty.
+2. Hold [⇧] and click the record key while the machine is stopped. The cursor sits on step 1.
+3. Press [A]. The note is written to step 1 and the cursor moves on.
+4. Press [→] for a rest. The cursor moves to step 3.
+5. Press [←] twice to go back to step 1, then press {key:delete}. Step 1 is cleared and the cursor moves on.
+6. Press [ESC] to finish.
+
+On a MIDI track the same click starts step recording without a track key: [ESC] ends it and the editor goes back to the synth tracks.
+
+![Step recording](shot:e2e-mm-seq-step-record)
 
 On the machine a second press of [PLAY] pauses. In the editor:
 
@@ -162,12 +251,31 @@ COPY, CLEAR and PASTE are the three keys under the LCD, <COPY>, <CLR> and <PASTE
 
 {key:clear-pattern} on **Sequence** clears the whole pattern. Clicking <CLR> with [⌥] held does the same.
 
+To copy and paste steps:
+
+1. Click **Sequence**. Click a note with [⌘] held to select it.
+2. Press {key:copy}, or click <COPY> on the LCD.
+3. Click an empty step with [⌘] held, then press {key:paste}, or click <PASTE>. The note lands at the selected step.
+4. With nothing selected, {key:delete} clears nothing. Click <CLR> to clear the page shown.
+5. Press {key:undo} twice to put the track back as it was.
+
+To paste the same steps into several tracks, select the steps, press {key:copy} and press [ESC]. Shift-click the headers of the tracks to mark them and press {key:paste}. Each marked track gets the copied steps.
+
 ## SCALE KEY
 <!-- rows: MM-045 MM-046 @e1f087 -->
 
 The machine's [SCALE] key shows one page of 16 steps. In the editor press **Page** in the **Sequence** workspace, or press the square bracket keys, to step through the pages. Four lights show the pages the pattern has and which one is shown.
 
+1. Click **Sequence**, then switch **ALL** off. The roll shows one page of 16 steps.
+2. Click **Page**. The next page shows, when the pattern is longer than 16 steps.
+3. Press {key:page-prev-next} to go back. Click **ALL** to show every step again.
+
+![The pages of a pattern](shot:e2e-mm-seq-pages)
+
 [FUNCTION] + [SCALE] opens the scale set-up. In the editor its fields are in the LCD's second line on **Sequence**: <LEN> sets the pattern length and <SPD> the speed. Click a field to step it. Chapter 11 describes both.
+
+1. Click <SPD> on the LCD four times. It reads 1X, 2X, 3/4X and 3/2X in turn.
+2. Click **×2** on the LCD. The pattern doubles and the new pages copy the first.
 
 ## TRIG SELECT KEY
 <!-- rows: MM-047 MM-048 @565969 -->
@@ -175,6 +283,11 @@ The machine's [SCALE] key shows one page of 16 steps. In the editor press **Page
 On the machine [TRIG SELECT] chooses which trig track the TRIG keys edit: AMP, FILTER, LFO or ALL. In the editor you choose the envelopes of a trig in the step menu of the **Sequence** workspace: **Envelopes**, then **Amp**, **Filter** or **LFO**. On a selection it sets every trig in it. A note that fires only some envelopes shows their letters on its bar. A trig that fires none is trigless.
 
 [FUNCTION] + [TRIG SELECT] edits the MIDI tracks. In the editor use the **Synth** and **MIDI** keys in the track rail, or the <SEQ> field in the LCD, to change between the six synth tracks and the six MIDI tracks.
+
+1. Click **Sequence**, pick track 1 and click **MIDI**. The rail shows the MIDI tracks M1 to M6, each with its own roll.
+2. Click a note into each of the six MIDI tracks. Only that track changes.
+
+![The MIDI tracks](shot:mm-midi-roll)
 
 ## THE KEYBOARD (SFX-6)
 <!-- rows: MM-049 MM-050 MM-051 MM-052 MM-053 MM-054 @6dfed2 -->
@@ -185,6 +298,14 @@ The SFX-6 has a keyboard and a joystick. The editor has the same functions on th
 - The **Assign** card has a joystick pad. Drag the stick. It springs back when you let go. On the machine's tabletop models the pad sends pitch bend, CC 1 and CC 2.
 - **Multi trig** and **Multi map** are keys of the card.
 - The **Octave** stepper moves the on-screen keyboard.
+
+To use the Perform keyboard and joystick:
+
+1. Click **Perform**, then click a key of the keyboard. The note goes to the machine.
+2. Hold a key with the mouse. It is lit. Let go and no key is lit.
+3. Drag the joystick of the **Assign** card and let go. The moves reach the machine and the stick springs back.
+4. Click **Multi trig**, then SPLIT KEY. Click the first mode again, then **Auto track**.
+5. Click **Multi map**. The map table opens. Click **Split selected range** to add a range, and click **×** on the new range to take it away.
 
 The computer keys play notes too: {key:piano-white} and {key:piano-black}. A key of the on-screen keyboard is lit while you hold it: with the mouse, with the computer keys, or on a MIDI keyboard connected to the editor (the MIDI input of the standalone, or the MIDI track of the plug-in in your DAW). The piano roll shows the pitches the machine plays.
 

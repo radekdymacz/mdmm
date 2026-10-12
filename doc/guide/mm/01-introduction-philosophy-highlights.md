@@ -8,7 +8,7 @@ The Monomachine Editor puts the whole instrument on one web page. It runs the re
 The editor runs as a standalone application and as a VST3 or AU plug-in. It has two engines. The emulator runs the firmware on your computer. The HW MIDI engine edits a real Monomachine over MIDI with the same page.
 
 ## HIGHLIGHTS
-<!-- rows: MM-002 MM-003 MM-004 MM-005 MM-006 MM-007 MM-008 MM-009 @4d6a96 -->
+<!-- rows: MM-002 MM-003 MM-004 MM-005 MM-006 MM-007 MM-008 MM-009 @f324d3 -->
 
 The machine's main features, and where each one is in the editor:
 
@@ -22,6 +22,8 @@ The machine's main features, and where each one is in the editor:
 - **Real-time control.** Every value box on the page is live. A value you drag reaches the machine as a controller message at once.
 
 ![The Sound workspace](shot:mm-sound-workspace)
+
+![The six MIDI tracks, each with its own roll](shot:mm-midi-roll)
 
 ## DIGIPRO USER WAVEFORMS
 <!-- rows: MM-010 @a62218 -->

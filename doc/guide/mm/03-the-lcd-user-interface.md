@@ -8,7 +8,7 @@ The machine's screen shows the tempo, a level bar, eight parameter circles, four
 The LCD has two lines. The first line, from the left: the engine menu, the record and play keys, <TEMPO>, <POSITION>, <PATTERN>, <KIT> and <LOCKS>. The second line changes with the workspace. At its right end it has the sync field, then the keys <COPY>, <CLR> and <PASTE>.
 
 ## LCD
-<!-- rows: MM-013 MM-061 MM-062 MM-063 MM-064 MM-065 MM-066 MM-067 MM-068 @0cddb3 -->
+<!-- rows: MM-013 MM-061 MM-062 MM-063 MM-064 MM-065 MM-066 MM-067 MM-068 @34cce1 -->
 
 ### Tempo
 
@@ -18,9 +18,13 @@ The LCD has two lines. The first line, from the left: the engine menu, the recor
 
 The machine's level bar is the **LEVEL** fader of the **Mix** workspace. The eight parameter circles with their names are the value boxes of the **Sound** workspace. Each box has the parameter's name and its value.
 
+1. Click **Mix** and drag the **LEVEL** fader of track 1. The level follows.
+2. Press {key:undo}. The level is back.
+3. Click **M** on track 1 to mute it, and click **M** again to unmute it.
+
 ### Position
 
-<POSITION> shows the playback position as bar and step, for example 02.05. It reads --.-- when the machine is stopped. In the **Sequence** workspace, four lights beside the **Page** key show which pages the pattern has and the page shown, and a playhead runs across the steps.
+<POSITION> shows the playback position as bar and step, for example 02.05. It reads --.-- when the machine is stopped. While the machine plays it counts the page and the step in it, and the same page is lit in the track rail. In the **Sequence** workspace, four lights beside the **Page** key show which pages the pattern has and the page shown, and a playhead runs across the steps.
 
 ### Status
 
@@ -32,11 +36,13 @@ The record key and the play key light while the machine records and plays. The p
 
 ### Pattern
 
-<PATTERN> shows the current pattern, A01 to H16. The **‹** and **›** keys beside it step to the pattern before or after. Click the name to open the pattern chooser. A pattern that waits for the end of the current one blinks.
+<PATTERN> shows the current pattern, A01 to H16. The **‹** and **›** keys beside it step to the pattern before or after. Click **›** to step to the next pattern and **‹** to step back. Click the name to open the pattern chooser. A pattern that waits for the end of the current one blinks.
 
 ### Machine
 
-The machine of the selected track is named in its row of the track rail and in the header of the **Sound** workspace. The header is also the machine picker: click it to change the machine.
+The machine of the selected track is named in its row of the track rail and in the header of the **Sound** workspace. The header is also the machine picker: click it to change the machine. Pick each of the six tracks in turn and the rail and the header name the machine of the track you picked.
+
+![The LCD in the top bar while the machine plays](shot:e2e-mm-lcd-boxes)
 
 ### Locks
 
