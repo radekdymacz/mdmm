@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-106 · Monomachine: keys that take no click at 1440 x 923 (Perform's OCTAVE +, a row's per-track transpose)
+
+- **From:** the 0.6 e2e run, 2026-10-13 (the plug-in at 1440 x 923: mm-perform-joystick-midi and mm-perform-keys-lit, "OCTAVE + covered by #main"; mm-song-row-settings, More, "+ covered by button").
+- **Cause (measured in the plug-in's WebKit, elementFromPoint across each key):** Perform is 32 px taller than the window there, so the workspace scrolls, and WebKit hit-tests the right 29 px of a scrolling area as its overlay scroll bar: the right half of OCTAVE +, at the edge, took no click. In the Song page's row inspector a per-track cell (− T3 +) is 43 px wide in WebKit's fonts, narrower than its keys and name: the + spilled over the next cell's −, which took the click. Chrome (the page tier) lays both out a few px differently, so the page tier never saw it.
+- **Fix (`fix/0.6-e2e-mm`):** the keyboard's title row on Perform keeps the right 32 px free; a per-track transpose cell gives its name what it needs and its two keys share the rest, inside the cell (the MM mockup's `20-mm.css`). The three journeys pass on the firmware; the page tier's Perform, Song and fit journeys pass.
+- **Status:** fixed on `fix/0.6-e2e-mm`.
+
 ## B-105 · Both editors: the library's star (a kit no pattern recalls) "does not show" on the firmware
 
 - **From:** the 0.6 e2e run, 2026-10-13 (md-lib-kit-menu: "stars 0"; mm-lib-kit-slots: K65 to K68 "star false, used false").
