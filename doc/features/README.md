@@ -30,6 +30,7 @@ Plain Node, no dependencies. The same run writes the guide (`site/public/guide/m
 | `machine` | What the hardware does, one line. |
 | `status` | `done` (✅), `partial` (🟡), `missing` (❌), `hardware` (➖, hardware only). |
 | `plan` | `0.6`, `later`, `not-needed` or `null`. |
+| `planReason` | For `later` and `not-needed`: why, in one line (the gap triage, doc/release/PLAN-0.6.md). |
 | `where` | Where it is in our UI. |
 | `journeys` | Not stored. Derived from the journeys' `proves: ["MD-107"]` fields (`scripts/mdmm-journey-index.mjs`); the maps show a count. `node scripts/mdmm-features-check.mjs` checks the links and writes `unproved-md.md` / `unproved-mm.md` (done rows with no journey). |
 | `missing` | For `partial` and `missing` rows: what is lacking. Taken from `notes` for now. |
