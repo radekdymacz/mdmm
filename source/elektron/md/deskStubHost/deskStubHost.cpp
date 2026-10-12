@@ -725,6 +725,9 @@ namespace
 		{
 			if(m_recording != 2 || !m_running)
 				return;
+			// the track's CC reaches the machine only on a channel it plays (as MmMachine::noteRecLock: ChannelReach)
+			if(!ed::mmTrackChannel(m_globals[m_global & 7], _t).has_value())
+				return;
 			auto& p = m_patterns[m_pattern];
 			const ed::MmLockParam param{_t, _pg, _i};
 			int row = ed::mmLockRow(p, param);
