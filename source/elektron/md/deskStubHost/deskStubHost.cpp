@@ -863,7 +863,8 @@ namespace
 				++m_recvTaken;
 				if(cmd == 0x50) { if(const auto g = ed::decodeMmGlobal(_m)) m_globals[g->position & 7] = *g; }
 				else if(cmd == 0x52) { if(const auto k = ed::decodeMmKit(_m)) { m_kits[k->position & 127] = *k; if((k->position & 127) == m_kit) m_working = *k; } }
-				else if(cmd == 0x67) { if(const auto p = ed::decodeMmPattern(_m)) m_patterns[p->position & 127] = *p; }
+				else if(cmd == 0x67) { if(const auto p = ed::decodeMmPattern(_m)) { const bool relink = (p->position & 127) == m_pattern && p->kit != m_patterns[m_pattern].kit;
+					m_patterns[p->position & 127] = *p; if(relink) loadKit(p->kit); } }	// MM-095: a new kit over the pattern that plays is loaded at once (measured)
 				else if(const auto s = ed::decodeMmSong(_m)) m_songs[s->position % ed::MmSong::g_slots] = *s;
 				return;
 			}

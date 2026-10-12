@@ -144,7 +144,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Arrangement 1-17 | Track effects per track (filter, EQ, SRR, distortion, delay) | Effects | ✅ | Sound AMP, FLT, EFX |  | – |
 | Kits 1-18 | Kit holds machines, pages, LFOs, MIDI pages, routing, trig, multi env, name | Kit content | ✅ | Whole kit editable in the working kit | `WorkingKit` document | – |
 | Link kits and patterns 1-18 | Pattern recalls its kit; same kit not reloaded | Link | ✅ | Pattern chooser shows kit per pattern | Dialog "Save kit, then switch" | – |
-| Link kits and patterns 1-18 | Change which kit a pattern uses | Relink | 🟡 | Kit library LOAD relinks current pattern | No direct "set kit of pattern N" control | – |
+| Link kits and patterns 1-18 | Change which kit a pattern uses | Relink | ✅ | Pattern chooser: Alt-click a pattern, then its Kit list (patternKit); over the pattern that plays the kit loads at once, asked over unsaved edits | Measured: the dump carries the link; over the pattern that plays the machine loads the kit (gapProbesFirmwareTest w12patkit) | 1 |
 | Loading a kit 1-19 | Kit list of 128, load | LOAD KIT | ✅ | Kit library |  | 1 |
 | Loading a kit 1-19 | Star on kits with no pattern | Unlinked mark | ✅ | Star in kit slot |  | – |
 | Loading an empty kit 1-19 | Six GND-SIN tracks | Empty kit | ✅ | Load an empty slot |  | – |
@@ -531,8 +531,8 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 333 |
-| 🟡 | 17 |
+| ✅ | 334 |
+| 🟡 | 16 |
 | ❌ | 1 |
 | ➖ | 34 |
 | Total | 385 |

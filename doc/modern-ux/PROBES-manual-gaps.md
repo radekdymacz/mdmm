@@ -368,3 +368,7 @@ compares it with the panel's.
 one a pass (REPEATS 3: 3, 2, 1, 0), and starts again at the next row; it is read with the row byte (0x2b18f5), at PLAY
 and at each pattern wrap (`md::SongPosition::g_repeatsAddress`, telemetry `songRepeats`; `mdDeskFirmwareTest songrow`
 checks it through a LOOP).
+
+**W12g, the MM pattern's kit (MM-095).** A pattern dump (SYSEX RECV) carries the kit link; the read-back keeps it. Into
+another pattern it changes nothing that plays; LOAD PATTERN of it then loads that kit. Into the pattern that plays, the
+machine loads the new kit at once, stopped and playing.

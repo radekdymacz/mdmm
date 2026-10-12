@@ -28,7 +28,7 @@ A kit holds the machine of each track and all seven DATA pages of each track, wi
 The editor edits the kit the machine plays. It does not write a value to a stored kit slot until you save.
 
 ## LINK KITS AND PATTERNS
-<!-- rows: MM-094 MM-095 @4cc1ce -->
+<!-- rows: MM-094 MM-095 @1f7983 -->
 
 Every pattern recalls a kit. When you pick a pattern, the machine loads its kit, unless the kit is already the one that plays.
 
@@ -36,7 +36,13 @@ The pattern chooser shows, on each pattern, its length and its kit as K and a nu
 
 If you pick a pattern with a different kit while the current kit has edits that are not saved, the editor asks. It offers **Save kit, then switch**, a switch that leaves the edits to the machine's UNDO KIT, and **Cancel**.
 
-Loading a kit from the library makes it the kit of the current pattern. {gap:MM-095}You cannot set the kit of another pattern directly.{/gap}
+Loading a kit from the library makes it the kit of the current pattern. To set the kit of any pattern:
+
+1. Click the <PATTERN> field in the LCD. The pattern chooser opens.
+2. Hold [⌥] and click the pattern. It is selected, not loaded.
+3. Choose a kit in the **Kit** list. The pattern now recalls that kit.
+
+If the pattern plays, the machine loads the new kit at once. When the kit that plays has unsaved edits, the editor asks first. Press {key:undo} to take the change back.
 
 ## LOADING A KIT
 <!-- rows: MM-096 MM-097 MM-098 @84bf39 -->

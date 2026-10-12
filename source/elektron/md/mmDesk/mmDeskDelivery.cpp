@@ -69,6 +69,14 @@ namespace mmDesk
 		// Machinedrum's: clearing a slot; writing over a kit that has a name, over the kit that plays (it is loaded
 		// too, its unsaved edits go), or over a pattern with trigs.
 		const auto op = deskCore::opOf(_command);
+		// MM-095: the pattern that plays given another kit: the machine loads that kit at once, the edits of the kit that
+		// plays are lost (measured, gapProbesFirmwareTest w12patkit)
+		if(kitState(_view) == deskCore::KitState::Edited)
+			for(const auto& c : _changes)
+				if(c.ref().kind == Kind::Pattern && static_cast<int>(c.ref().slot) == m_curPattern
+					&& std::get<ed::MmPattern>(c.after).kit != std::get<ed::MmPattern>(c.before).kit)
+					return Review(ask("discardKit", "<b>" + ed::mmPatternName(c.ref().slot) + "</b> plays and gets kit <b>" + kitLabel(_view, std::get<ed::MmPattern>(c.after).kit)
+						+ "</b>: the machine loads it at once, and your edits to <b>" + kitLabel(_view, m_curKit) + "</b> are lost.", "Switch and lose edits"));
 		const auto* row = MmModel::commands().find(op);
 		if(!row || row->group != g_library)
 			return ok();

@@ -3536,6 +3536,37 @@
         },
         {
           "type": "object",
+          "description": "core: the kit a pattern plays (its link, MM-095): over the pattern that plays the machine loads that kit at once (measured)",
+          "required": ["op", "p", "v"],
+          "properties": {
+            "op": {
+              "const": "patternKit"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "p": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            },
+            "v": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "description": "core: the tempo multiplier",
           "required": ["op", "p", "v"],
           "properties": {

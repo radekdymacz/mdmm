@@ -353,6 +353,8 @@ namespace mmDesk
 				"a track's steps, slides and locks move by steps, wrapping at the length (swing stays: the groove)"},
 			{"doublePattern", Owner::Core, Gate::Input, P, {p}, "length x2, the new half a copy of every track's steps, slides, swing and locks"},
 			{"length", Owner::Core, Gate::Input, P, {p, {"v", ArgType::Integer, 2, 64}}, ""},
+			{"patternKit", Owner::Core, Gate::Input, P, {p, slotK("v")},
+				"the kit a pattern plays (its link, MM-095): over the pattern that plays the machine loads that kit at once (measured)"},
 			{"speed", Owner::Core, Gate::Input, P, {p, {"v", ArgType::Text, 0, 0, false, {"1X", "2X", "3/4X", "3/2X"}}}, "the tempo multiplier"},
 			{"swing", Owner::Core, Gate::Input, P, {p, {"v", ArgType::Integer, 50, 80}}, "percent"},
 			{"transpose", Owner::Core, Gate::Input, P, {p, {"t", ArgType::Integer, 0, 11, true}, {"v", ArgType::Integer, -64, 63, true},
