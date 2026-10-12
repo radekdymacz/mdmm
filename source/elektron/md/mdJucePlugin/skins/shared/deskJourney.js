@@ -286,6 +286,24 @@ const Journey = (() => {
 		return take(all.filter(j => pats.some(r => forms(j.name).some(f => r.test(f)))));
 	}
 	/* film: {t0} when a demo is filmed (its steps' times are logged against t0) */
+	/* The evidence run's watch (":e2e"): what a person must never read on the page, looked for after each step in the toast, the
+	   error line and the question: the program's own words (an undefined, a NaN, an object, a stack, a validation or contract
+	   message), and a question whose buttons something covers (a click outside lost it: the person cannot answer). */
+	const LEAK = /\bundefined\b|\bNaN\b|\[object|TypeError|ReferenceError|RangeError|is not a function|not a function|cannot read|schema|validation|invalid command|unknown op\b|\$\{|\.js:\d+|\bnull\b/i;
+	function e2eLeaks() {
+		const out = [], q = x => document.querySelector(x);
+		for (const id of ["#toast", "#errline"]) { const e = q(id); const t = e && !e.hidden ? e.textContent.trim() : ""; if (t && LEAK.test(t)) out.push(`${id} "${t.slice(0, 120)}"`); }
+		const d = q("#dlg");
+		if (d && !d.hidden && d.dataset.first !== "1") {
+			if (LEAK.test(d.textContent)) out.push(`#dlg "${d.textContent.trim().slice(0, 120)}"`);
+			for (const b of d.querySelectorAll("[data-dlg]")) {
+				const r = b.getBoundingClientRect(); if (r.width < 1) continue;
+				const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+				if (!top || !d.contains(top)) { out.push(`the question's button "${b.textContent.trim()}" is covered by ${describe(top)}`); break; }
+			}
+		}
+		return out;
+	}
 	async function runOne(j, log, context, film, c0) {
 		const c = c0 || {}, n = j.steps.length;
 		let reason = "";
@@ -306,12 +324,14 @@ const Journey = (() => {
 			};
 			const pass = await until(both, st.within ?? 6000);
 			const ms = Math.round(performance.now() - t0);
+			if (e2eMode && !film) for (const l of e2eLeaks()) { c.leaks = c.leaks || []; if (!c.leaks.includes(l)) { c.leaks.push(l); log(`JOURNEY ${j.name} LEAK step ${i + 1}: ${l}`); } }
 			if (pass) { log(`${head} ok ${st.say} (${ms} ms)${c.note ? " · " + c.note : ""}`); c.note = ""; if (st.hold) await sleep(st.hold); continue; }
 			let around = ""; try { around = context ? context() : ""; } catch (_) { }
 			const seen = [scr !== true ? "screen: " + scr : "", mac !== true ? "machine: " + mac : "", around ? "page: " + around : ""].filter(Boolean).join("; ");
 			reason = `step ${i + 1} "${st.say}": ${seen}`;
 			log(`${head} FAIL ${st.say} after ${ms} ms: ${seen}`);
 		}
+		if (e2eMode && !film && !reason && c.leaks?.length) reason = `internal text or an unreachable question: ${c.leaks.join(" | ")}`;
 		if (e2eMode && !film) {
 			/* the proof moment: where the journey ended (its failing step's page where it failed), before the tidy puts things back */
 			if (reason) { try { snapshot(`e2e-${j.name}-fail`); } catch (e) { log(`JOURNEY ${j.name} e2e snapshot: ${e.message}`); } }

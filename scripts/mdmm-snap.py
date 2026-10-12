@@ -43,7 +43,7 @@ def chrome(*a, tries=3):
 
 def short_by():
     """how much shorter than its window headless Chrome lays a page out"""
-    probe = os.path.join(out, '.viewport.html')
+    probe = os.path.join(out, '.viewport-%d.html' % os.getpid())
     open(probe, 'w').write('<body><script>document.body.textContent="VP "+innerHeight</script>')
     m = re.search(r'VP (\d+)', chrome('--window-size=800,800', '--dump-dom', 'file://' + probe))
     os.remove(probe)

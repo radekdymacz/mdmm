@@ -2627,9 +2627,10 @@ const MdJourneys = (() => {
 						await songTo(u, s);
 						u.click('[data-set="songpick"] button[data-v="song"]'); await until(() => V.songMode === true, 6000); await sleep(300);
 						const rows = (Docs.songs[s]?.rows || []).filter(r => r.kind === "pattern").length;
-						const r = await playFor(u, 16000, rows > 1);
+						const r = await playFor(u, 10000, rows > 1);
 						if (s === c.songs[0]) { Journey.snapshot("md-real-song-playing"); }
 						const why = [!r.started && "did not start", r.started && r.steps.size < 4 && `only ${r.steps.size} steps moved`, r.peak <= 0.001 && "silent", rows > 1 && r.rows.size < 2 && `stayed on row ${[...r.rows].join(",") || "?"}`, V.playing && "did not stop"].filter(Boolean);
+						Bridge.log(`E2E song ${s + 1}: ${rows} rows, ${r.steps.size} steps, rows ${[...r.rows].join(",")}, peak ${r.peak.toFixed(3)}${why.length ? " PROBLEM " + why.join(", ") : ""}`);
 						(why.length ? c.bad : c.good).push(why.length ? `song ${s + 1} (${rows} rows): ${why.join(", ")}` : s + 1);
 					}
 					c.note = `${c.good.length} of ${c.songs.length} songs played: ${c.good.join(" ")}`;
@@ -2655,6 +2656,7 @@ const MdJourneys = (() => {
 						const r = await playFor(u, 12000, false);
 						if (p === c.picks[0]) Journey.snapshot("md-real-pattern-playing");
 						const why = [!r.started && "did not start", r.started && r.steps.size < 8 && `only ${r.steps.size} steps moved`, r.peak <= 0.001 && "silent"].filter(Boolean);
+						Bridge.log(`E2E pattern ${p + 1}: ${r.steps.size} steps, peak ${r.peak.toFixed(3)}${why.length ? " PROBLEM " + why.join(", ") : ""}`);
 						(why.length ? c.bad : c.good).push(why.length ? `pattern ${p + 1}: ${why.join(", ")}` : p + 1);
 					}
 					c.note = `${c.good.length} of ${c.picks.length} patterns played: ${c.good.join(" ")}`;
