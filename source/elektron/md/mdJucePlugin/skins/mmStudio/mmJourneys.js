@@ -2108,9 +2108,17 @@ const MmJourneys = (() => {
 			{ say: "click the lock key: the lane's parameter is locked on the step at the value the kit has", act: (u, c) => { c.lane = S().lane; [c.pg, c.pi] = [PAGES.indexOf(c.lane.split(".")[0]), +c.lane.split(".")[1]]; c.kit = wk()?.tracks[c.t]?.pages?.[c.pg]?.[c.pi]; u.click("#lockLane"); },
 				machine: c => { const l = (patDoc().locks || []).find(x => x.track === c.t && x.page === c.pg && x.param === c.pi), v = l?.steps.find(([x]) => x === c.s)?.[1]; return ok(v != null && c.kit != null && v === c.kit, `lock ${v}, kit ${c.kit}, ${c.lane}`); },
 				screen: c => ok(S().locks.get(c.t + "|" + c.lane)?.has(c.s), "the lane shows no lock"), within: 15000 },
-			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(!(patDoc().locks || []).some(x => x.track === c.t && x.page === c.pg && x.param === c.pi && x.steps.some(([s]) => s === c.s)), "lock still there"), within: 15000 }
+			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(!(patDoc().locks || []).some(x => x.track === c.t && x.page === c.pg && x.param === c.pi && x.steps.some(([s]) => s === c.s)), "lock still there"), within: 15000 },
+			{ say: "⌘-click a note, ⌘⇧-click a later one, click the lock key: every selected note is locked, in one undo step", act: async (u, c) => {
+				c.ns = trigsOf(c.t).filter(s => s < S().len && stepLocks(c.t, s).length === 0); if (c.ns.length < 2) throw new Error("fewer than two notes without locks");
+				c.a = c.ns[0]; c.b = c.ns[Math.min(c.ns.length - 1, 3)]; c.in = c.ns.filter(s => s >= c.a && s <= c.b);
+				if (S().stepSel) clearSel(); let p = rollCell(c.t, c.a); u.click(p.c, { cmd: true }, p.fx, p.fy); await sleep(150); p = rollCell(c.t, c.b); u.click(p.c, { cmd: true, shift: true }, p.fx, p.fy); await sleep(150);
+				c.h = machine().history?.undoCount || 0; u.click("#lockLane"); },
+				machine: c => { const l = (patDoc().locks || []).find(x => x.track === c.t && x.page === c.pg && x.param === c.pi), on = new Map(l?.steps || []);
+					return ok(c.in.length >= 2 && c.in.every(s => on.get(s) === c.kit) && (machine().history?.undoCount || 0) === c.h + 1, `notes ${c.in}, locks ${JSON.stringify(l?.steps)}, undo +${(machine().history?.undoCount || 0) - c.h}`); }, within: 15000 },
+			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(!(patDoc().locks || []).some(x => x.track === c.t && x.page === c.pg && x.param === c.pi && x.steps.some(([s]) => c.in.includes(s))), "a lock is still there after one undo"), within: 15000 }
 		],
-		async tidy(u, c) { if (S().stepSel) clearSel(); await undoUntil(u, () => (machine().history?.undoCount || 0) <= c.u0, 4); }
+		async tidy(u, c) { if (S().stepSel) clearSel(); await undoUntil(u, () => (machine().history?.undoCount || 0) <= c.u0, 6); }
 	};
 	/* MM-095: the kit a pattern plays, set in the pattern chooser (its Kit list) */
 	const patKitJ = {
@@ -2121,8 +2129,16 @@ const MmJourneys = (() => {
 			{ say: "choose another kit in the Kit list: the pattern plays that kit", act: async (u, c) => { c.k0 = I().doc("pattern", c.p).kit; c.k = (c.k0 + 5) % 128; await choose(u, "patkit", String(c.k)); },
 				machine: c => ok(I().doc("pattern", c.p)?.kit === c.k && cur() === c.p0, `pattern ${c.p + 1} kit ${I().doc("pattern", c.p)?.kit}, playing ${cur()}`), screen: c => ok(!$1("#libpop").hidden && +$1("#patkit")?.value === c.k, `list ${$1("#patkit")?.value}, open ${!$1("#libpop").hidden}`), within: 15000 },
 			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(I().doc("pattern", c.p)?.kit === c.k0, "kit " + I().doc("pattern", c.p)?.kit), within: 15000 },
-			{ say: "press Escape", act: u => u.key("Escape"), screen: () => ok($1("#libpop").hidden, "open") }
-		]
+			{ say: "press Escape", act: u => u.key("Escape"), screen: () => ok($1("#libpop").hidden, "open") },
+			go("sound"), sel(0),
+			{ say: "drag a value: the kit has unsaved edits", act: async (u, c) => { c.u1 = machine().history?.undoCount || 0; await u.drag('#main .pc[data-g="FLT"]', [[6, 0], [12, 0], [18, 0]]); }, machine: () => ok(kitEdited(), "kit " + machine().kit?.working), within: 8000 },
+			{ say: "click the pattern on the LCD, Alt-click the pattern that plays, choose another kit in its Kit list: the machine would load it at once, so it asks first", act: async (u, c) => {
+				c.kp = I().doc("pattern", c.p0)?.kit; c.kn = (c.kp + 5) % 128; u.click("#pat"); await sleep(300); u.click(`#libpop .ps[data-ps="${c.p0}"]`, { alt: true }); await until(() => !!$1("#patkit"), 2000); await choose(u, "patkit", String(c.kn)); },
+				screen: () => ok(dlgShown() && /lost/.test($1("#dlg")?.textContent || ""), "question " + ($1("#dlg")?.textContent || "none").slice(0, 80)), machine: c => ok(I().doc("pattern", c.p0)?.kit === c.kp && kitEdited(), `kit ${I().doc("pattern", c.p0)?.kit}, ${machine().kit?.working}`), within: 6000 },
+			{ say: "press Escape (Cancel): the pattern keeps its kit, the edits stay", act: u => u.key("Escape"), screen: () => ok(!dlgShown(), "still asking"),
+				machine: c => ok(I().doc("pattern", c.p0)?.kit === c.kp && kitEdited() && machine().kit.current === c.kp, `pattern kit ${I().doc("pattern", c.p0)?.kit}, kit ${machine().kit.current}, ${machine().kit?.working}`), within: 3000 }
+		],
+		async tidy(u, c) { if (dlgShown()) u.key("Escape"); if (!$1("#libpop").hidden) u.key("Escape"); await sleep(200); if (c.u1 != null) await undoUntil(u, () => (machine().history?.undoCount || 0) <= c.u1, 6); }
 	};
 	/* MM-271: the arrangement header counts the bars and beats the song has played (the EDIT SONG header's counter) */
 	const barBeat = n => String((n >> 4) + 1).padStart(3, "0") + ":" + String(((n & 15) >> 2) + 1).padStart(2, "0");
@@ -2150,7 +2166,7 @@ const MmJourneys = (() => {
 			{ say: "click Multi map: the map table, the first range's PAT list holds CUR and all 128 patterns", act: (u, c) => { c.g = machine().global?.current ?? 0; c.p0 = I().doc("global", c.g)?.multiMap?.[1]?.[0]; u.click('[data-pmode="map"]'); },
 				screen: () => ok(!!$1("#mpat0") && $1("#mpat0").options.length === 129 && $1("#mpat0").options[128].textContent === "H16", `${$1("#mpat0")?.options.length} entries, the last ${$1("#mpat0")?.options[128]?.textContent}`) },
 			{ say: "choose H16 for the first range: the global's map plays it", act: async u => { await choose(u, "mpat0", "127"); },
-				machine: c => ok(I().doc("global", c.g)?.multiMap?.[1]?.[0] === 127, "PAT " + I().doc("global", c.g)?.multiMap?.[1]?.[0]), screen: () => ok($1("#mmapviz .band")?.textContent.includes("H16") || /H16/.test($1(".maprow")?.textContent || "") || +$1("#mpat0")?.value === 127, "shows " + $1("#mpat0")?.value), within: 15000 },
+				machine: c => ok(I().doc("global", c.g)?.multiMap?.[1]?.[0] === 127, "PAT " + I().doc("global", c.g)?.multiMap?.[1]?.[0]), screen: () => ok(+$1("#mpat0")?.value === 127 && $1("#mpat0").selectedOptions[0]?.textContent === "H16", "shows " + $1("#mpat0")?.value), within: 15000 },
 			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(I().doc("global", c.g)?.multiMap?.[1]?.[0] === c.p0, "PAT " + I().doc("global", c.g)?.multiMap?.[1]?.[0]), within: 15000 }
 		],
 		async tidy(u) { if ($1('[data-pmode="normal"]')) u.click('[data-pmode="normal"]'); await recvIdle(); }

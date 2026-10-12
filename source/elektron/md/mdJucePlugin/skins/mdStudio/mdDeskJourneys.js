@@ -926,8 +926,12 @@ const MdJourneys = (() => {
 			libSelect(c => { const k = otherKit(c); c.d0 = JSON.stringify(Docs.kits[k]); return k; }),
 			/* MD-045: what the machine's own CLEAR KIT leaves (measured: every track GND-EMPTY, level 100, VOL 127, the LFO's SHP2 4) */
 			{ say: "press Delete: the slot is cleared as the machine clears it", act: async u => { u.key("Delete"); if (await until(dlgShown, 1200)) u.click($1("#dlg .danger")); },
-				machine: c => { const d = Docs.kits[c.sel], tr = d?.tracks || []; return ok(kitEmpty(c.sel) && tr.length === 16 && tr.every(t => t.level === 100 && same(t.synth, [64, 64, 0, 0, 0, 0, 0, 0]) && same(t.routing, [0, 127, 64, 0, 0, 64, 0, 0]) && t.lfo?.shape2 === 4),
-					"slot " + kitName(c.sel) + " T1 " + JSON.stringify(tr[0])); },
+				machine: c => { const d = Docs.kits[c.sel], tr = d?.tracks || [], fx = d?.masterFx || {};
+					/* the master effects at the machine's start values and the name's first byte 0x7f (gapProbesFirmwareTest w12clearkit) */
+					const fxOk = same(fx.gateBox, [0, 0, 64, 0, 0, 127, 127, 96]) && same(fx.rhythmEcho, [32, 0, 32, 0, 0, 127, 0, 96]) && same(fx.eq, [64, 64, 64, 64, 64, 64, 64, 127]) && same(fx.dynamix, [127, 127, 127, 127, 127, 127, 0, 0]);
+					return ok(kitEmpty(c.sel) && tr.length === 16 && tr.every(t => t.level === 100 && same(t.synth, [64, 64, 0, 0, 0, 0, 0, 0]) && same(t.effects, [0, 0, 64, 64, 0, 127, 0, 0]) && same(t.routing, [0, 127, 64, 0, 0, 64, 0, 0]) && t.lfo?.shape2 === 4)
+						&& fxOk && d.name?.charCodeAt(0) === 0x7f,
+					"slot " + kitName(c.sel) + " name byte " + d?.name?.charCodeAt(0) + " fx " + JSON.stringify(fx) + " T1 " + JSON.stringify(tr[0])); },
 				screen: c => ok($1(ks(c.sel))?.textContent.includes("EMPTY"), "tile " + $1(ks(c.sel))?.textContent), within: 8000 },
 			{ ...undoKey, machine: c => ok(JSON.stringify(Docs.kits[c.sel]) === c.d0, "slot not restored"), within: 8000 },
 			esc
