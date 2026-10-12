@@ -3045,37 +3045,47 @@ namespace
 				std::printf("  song %d:%s\n", sn + 1, rows.c_str());
 			}
 		const auto mode = [&] { const auto* d = rig.machineDoc() ? rig.machineDoc()->find("songMode") : nullptr; return d && d->isBool() && d->asBool(); };
-		rig.page(R"({"op":"selectSong","s":0,"id":1})");
-		rig.run(800);
-		std::printf("  selectSong 0: %s\n", (rig.lastResult() ? ed::json::write(*rig.lastResult()) : std::string("no result")).c_str());
+		// PLAY as the top bar sends it, 3 s watched: the steps the page is told, with the song row and the pattern
+		const auto playSong = [&](const char* _what, const int _id)
+		{
+			rig.page(std::string(R"({"op":"play","id":)") + std::to_string(_id) + "}");
+			rig.run(200);
+			std::printf("  %s, play: %s\n", _what, (rig.lastResult() ? ed::json::write(*rig.lastResult()) : std::string("no result")).c_str());
+			std::vector<int> steps, rows, pats;
+			for(int i = 0; i < 600; ++i)
+			{
+				rig.run(5);
+				const auto t = rig.pageTelemetry();
+				if(t.playing && (steps.empty() || steps.back() != t.step))
+				{
+					steps.push_back(t.step);
+					rows.push_back(t.songRow);
+					pats.push_back(m.read8(0x28d205));
+				}
+			}
+			std::string seen;
+			for(size_t k = 0; k < steps.size() && k < 24; ++k)
+				seen += " " + std::to_string(steps[k]) + "/r" + std::to_string(rows[k] + 1) + "/" + ed::mdPatternName(static_cast<uint8_t>(pats[k]));
+			std::printf("  3 s after PLAY: %zu steps seen:%s\n", steps.size(), seen.c_str());
+			check(steps.size() >= 8, std::string(_what) + ": PLAY in SONG mode, the machine plays (the step moves)");
+			check(!rows.empty() && rows.front() >= 0, std::string(_what) + ": the page is told a song row");
+			rig.page(R"({"op":"stop","id":4})");
+			rig.run(600);
+			check(!rig.pageTelemetry().playing, std::string(_what) + ": STOP");
+		};
+		// B-098 (the 0.6 e2e run): the first thing after the start, no Load: the machine reports song 1, its working song is
+		// empty until LOAD SONG; SONG mode loads it
+		check(desk.linkState().song == 0, "the machine reports song 1 after the start");
 		rig.page(R"({"op":"seqMode","song":true,"id":2})");
 		const bool inSong = rig.runUntil(mode, 3000);
 		std::printf("  seqMode song: %s, machine in SONG mode %d\n", (rig.lastResult() ? ed::json::write(*rig.lastResult()) : std::string("no result")).c_str(), inSong);
 		check(inSong, "SONG mode on the machine");
-		rig.page(R"({"op":"play","id":3})");
-		rig.run(200);
-		std::printf("  play: %s\n", (rig.lastResult() ? ed::json::write(*rig.lastResult()) : std::string("no result")).c_str());
-		std::vector<int> steps, rows, pats;
-		for(int i = 0; i < 600; ++i)
-		{
-			rig.run(5);
-			const auto t = rig.pageTelemetry();
-			if(t.playing && (steps.empty() || steps.back() != t.step))
-			{
-				steps.push_back(t.step);
-				rows.push_back(t.songRow);
-				pats.push_back(m.read8(0x28d205));
-			}
-		}
-		std::string seen;
-		for(size_t k = 0; k < steps.size() && k < 24; ++k)
-			seen += " " + std::to_string(steps[k]) + "/r" + std::to_string(rows[k] + 1) + "/" + ed::mdPatternName(static_cast<uint8_t>(pats[k]));
-		std::printf("  3 s after PLAY: %zu steps seen:%s\n", steps.size(), seen.c_str());
-		check(steps.size() >= 8, "PLAY in SONG mode: the machine plays (the step moves)");
-		check(!rows.empty() && rows.front() >= 0, "the page is told a song row");
-		rig.page(R"({"op":"stop","id":4})");
-		rig.run(600);
-		check(!rig.pageTelemetry().playing, "STOP");
+		playSong("B-098, no Load since the start", 3);
+		// B-096: the song slot list's Load (selectSong), then PLAY
+		rig.page(R"({"op":"selectSong","s":0,"id":1})");
+		rig.run(800);
+		std::printf("  selectSong 0: %s\n", (rig.lastResult() ? ed::json::write(*rig.lastResult()) : std::string("no result")).c_str());
+		playSong("after Load", 5);
 		// the same in a DAW (followHost: TEMPO IN external) with the DAW stopped: PLAY waits for the host's clock
 		rig.page(R"({"op":"followHost","id":6})");
 		rig.runUntil([&] { return desk.documents().global && (desk.documents().global->syncFlags & ed::mdGlobalBits::g_tempoInExternal); }, 4000);
@@ -3091,6 +3101,27 @@ namespace
 		rig.run(1500);
 		rig.page(R"({"op":"seqMode","song":false,"id":5})");
 		rig.run(400);
+
+		// B-098: a machine already in SONG mode when the editor meets it (set on the machine, not through the page): the
+		// page's PLAY, and the Song page's From here, each the first thing after a start, play the song too
+		for(const bool from : {false, true})
+		{
+			Rig r2(_rom, _romName);
+			r2.page(R"({"op":"ready"})");
+			r2.runUntil([&] { return r2.desk().isReady() && r2.desk().documents().songs.count(0); }, 60000);
+			r2.machine().send(ed::mdSetStatus(ed::MdStatus::SequencerMode, 1));
+			r2.machine().send(ed::mdStatusRequest(ed::MdStatus::SequencerMode));
+			r2.runUntil([&] { return r2.desk().linkState().songMode == true; }, 3000);
+			r2.page(from ? R"({"op":"playFrom","i":0,"id":1})" : R"({"op":"play","id":1})");
+			r2.runUntil([&] { return r2.pageTelemetry().playing; }, 3000);
+			const int s0 = r2.pageTelemetry().step;
+			r2.run(1000);
+			const auto t = r2.pageTelemetry();
+			std::printf("  B-098, in SONG mode at the start, %s: playing %d, step %d -> %d, row %d\n", from ? "From here" : "PLAY", t.playing, s0 + 1, t.step + 1, t.songRow + 1);
+			check(t.playing && t.step != s0 && t.songRow >= 0, std::string("B-098: the first ") + (from ? "From here" : "PLAY") + " after a start in SONG mode plays the song");
+			r2.page(R"({"op":"stop","id":2})");
+			r2.run(400);
+		}
 	}
 
 	void songRow(const Bytes& _rom, const std::string& _romName)
