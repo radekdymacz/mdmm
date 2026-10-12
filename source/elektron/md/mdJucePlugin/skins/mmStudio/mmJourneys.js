@@ -2068,7 +2068,26 @@ const MmJourneys = (() => {
 		],
 		async tidy(u, c) { if (c.k0 == null) return; Bridge.send({ op: "loadKit", k: c.k0, force: true }); await until(() => machine().kit.current === c.k0, 6000); Bridge.send({ op: "loadKit", force: true }); await until(() => !kitEdited(), 8000); }
 	};
-	const wave12 = [undoKitJ];
+	/* MM-083, MM-184, MM-203: a step's locks go, its note stays (the step menu's Clear locks, on the step or the selection) */
+	const stepLocks = (t, s) => (patDoc().locks || []).filter(l => l.track === t && l.page !== 7 && l.steps.some(([x]) => x === s));
+	const clearStepLocksJ = {
+		name: "mm-seq-clear-step-locks", proves: ["MM-083", "MM-184", "MM-203"],
+		steps: [
+			go("seq"),
+			{ say: "pick a track with notes, the Locks tab", act: async (u, c) => { c.u0 = machine().history?.undoCount || 0; c.t = [0, 1, 2, 3, 4, 5].find(t => trigsOf(t).length >= 2) ?? 0; u.click(rail(c.t)); await sleep(200); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); },
+				screen: c => ok(S().sel === c.t && !!$1("#lane"), "no lane"), machine: c => ok(trigsOf(c.t).length >= 2, "fewer than two notes") },
+			{ say: "draw locks across the lane over two notes", act: async (u, c) => { c.on = trigsOf(c.t).filter(s => s < S().len).slice(0, 2); await u.drag(`#lane .lb[data-s="${c.on[0]}"]`, [`#lane .lb[data-s="${c.on[1]}"]`], {}, { fy: 0.3 }); },
+				machine: c => ok(c.on.every(s => stepLocks(c.t, s).length > 0), "locks " + JSON.stringify(patDoc().locks)), within: 15000 },
+			{ say: "right-click the first of them and choose Clear locks (keep the notes)", act: async (u, c) => { const p = rollCell(c.t, c.on[0]); u.rightClick(p.c, {}, p.fx, p.fy); await sleep(150); u.click('#deskmenu [data-mid="clear-step-locks"]'); },
+				machine: c => ok(stepLocks(c.t, c.on[0]).length === 0 && stepLocks(c.t, c.on[1]).length > 0 && trigsOf(c.t).includes(c.on[0]), `step ${c.on[0] + 1} locks ${stepLocks(c.t, c.on[0]).length}, step ${c.on[1] + 1} ${stepLocks(c.t, c.on[1]).length}, notes ${trigsOf(c.t)}`),
+				screen: c => ok(!!S().tracks[c.t].steps[c.on[0]] && ![...S().locks].some(([k, m]) => +k.split("|")[0] === c.t && m.has(c.on[0])), "the page still shows a lock or lost the note"), within: 15000 },
+			{ ...undoKey, machine: c => ok(stepLocks(c.t, c.on[0]).length > 0, "locks not back"), within: 15000 },
+			{ say: "right-click the second step and choose Clear locks: the same for it", act: async (u, c) => { const p = rollCell(c.t, c.on[1]); u.rightClick(p.c, {}, p.fx, p.fy); await sleep(150); u.click('#deskmenu [data-mid="clear-step-locks"]'); },
+				machine: c => ok(stepLocks(c.t, c.on[1]).length === 0 && stepLocks(c.t, c.on[0]).length > 0 && trigsOf(c.t).includes(c.on[1]), `locks ${stepLocks(c.t, c.on[1]).length}, notes ${trigsOf(c.t)}`), within: 15000 }
+		],
+		async tidy(u, c) { if (S().stepSel) clearSel(); await undoUntil(u, () => (machine().history?.undoCount || 0) <= c.u0, 6); }
+	};
+	const wave12 = [undoKitJ, clearStepLocksJ];
 	const all = [...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,

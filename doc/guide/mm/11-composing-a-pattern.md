@@ -122,11 +122,16 @@ Right-click a step for the step menu: note on or off, NOTE OFF, trigless, slide,
 NOTE: [⌘] is [CTRL] on Windows and Linux.
 
 ## CLEAR NOTE PARAMETER LOCKS
-<!-- rows: MM-184 @eb4c8b -->
+<!-- rows: MM-184 @bee19e -->
 
 To clear the locks of one parameter on some steps, hold [⌥] and drag across the bars in the lock lane. Click the bin in the lane header to clear all the locks of that parameter. Hold [⌥] and click the bin to clear every lock of the track. A selected step cleared with {key:delete} loses its note and its locks together.
 
-{gap:MM-184}There is no key that clears the locks of one step and keeps its note.{/gap}
+The machine's CLEAR NOTE LOCKS clears the locks of one note and keeps the note:
+
+1. Select the step, or several steps, in the roll or the trig rows.
+2. Right-click one of them and choose **Clear locks (keep the notes)**.
+
+The notes stay. Press {key:undo} to get the locks back.
 
 ## TRACK PAGE COPY
 <!-- rows: MM-185 MM-178 @0a2cfa -->

@@ -75,7 +75,7 @@ In live recording you play the keys while the pattern runs, and the machine writ
 To erase while recording, hold {key:live-erase}, the machine's [EXIT]. The selected track's notes go on each step that plays while the key is down.
 
 ## PARAMETER LOCKS
-<!-- rows: MM-081 MM-082 MM-083 @71af4b -->
+<!-- rows: MM-081 MM-082 MM-083 @5c39c9 -->
 
 A parameter lock gives one parameter a value of its own for one step.
 
@@ -97,6 +97,5 @@ While live recording plays, turn a value on the **Sound** workspace. The machine
 
 - Hold [⌥] and drag over the lane to erase the locks of one parameter.
 - The clear key in the rail header clears the locks of the parameter you are looking at. Hold [⌥] and click it to clear every lock of the track.
+- Right-click a step and choose **Clear locks (keep the notes)**. The step loses its locks and keeps its note. On a selected step it works on the whole selection.
 - Select a step and press {key:delete}. The step loses its note, its slide and its locks together.
-
-{gap:MM-083}You cannot remove the locks of a step and keep its note yet.{/gap}

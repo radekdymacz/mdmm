@@ -498,8 +498,8 @@ const result = (m, ok = true, errors = []) => ({ type: "result", id: m.id, op: m
 	check(S.stepSel.t === 5, "↓ stays on the side shown (T6 is the last synth track)");
 	const ids = items => items.filter(i => typeof i !== "string").map(i => i.id).join(" ");
 	M.setSel({ t: 0, n: 1, from: 0, to: 1 }); S.tracks[0].steps[0] = { n: [48], a: 1, f: 1, l: 1 };
-	check(ids(M.stepMenuItems(0, 0, 50)) === "sel-trigs step-note-off step-trigless step-slide step-chord copy cut paste duplicate delete step-fill-2 step-fill-4", "the step menu on a synth note (roll, another pitch): " + ids(M.stepMenuItems(0, 0, 50)));
-	check(ids(M.stepMenuItems(6, 0)) === "sel-trigs step-note-off step-slide copy cut paste duplicate delete step-fill-2 step-fill-4", "on a MIDI track: no trigless, no chord without a pitch");
+	check(ids(M.stepMenuItems(0, 0, 50)) === "sel-trigs step-note-off step-trigless step-slide step-chord copy cut paste duplicate delete clear-step-locks step-fill-2 step-fill-4", "the step menu on a synth note (roll, another pitch): " + ids(M.stepMenuItems(0, 0, 50)));
+	check(ids(M.stepMenuItems(6, 0)) === "sel-trigs step-note-off step-slide copy cut paste duplicate delete clear-step-locks step-fill-2 step-fill-4", "on a MIDI track: no trigless, no chord without a pitch");
 	const k = M.Keys.byId("cut"), dup = M.Keys.byId("duplicate"), all = M.Keys.byId("select-all");
 	check(k && k.mod === "cmd" && dup && dup.mod === "cmd" && all && all.mod === "cmd" && M.Keys.byId("step-menu") && !M.Keys.byId("roll-fill-2"), "the keys: ⌘X ⌘D ⌘A and the step menu (the fill moved there from ⌘-click)");
 	all.run();

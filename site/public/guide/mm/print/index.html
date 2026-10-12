@@ -342,8 +342,7 @@
 <h4 class="gd-h3">Lock live</h4>
 <p>While live recording plays, turn a value on the <b class="gd-ui">Sound</b> workspace. The machine records the value as a lock on the step that plays when the value arrives. The editor marks that step in the trig row and in the lock lane, for about three seconds, and a note says which value it locked.</p>
 <h4 class="gd-h3">Remove locks</h4>
-<ul class="gd-list"><li>Hold <kbd class="gd-key">[⌥]</kbd> and drag over the lane to erase the locks of one parameter.</li><li>The clear key in the rail header clears the locks of the parameter you are looking at. Hold <kbd class="gd-key">[⌥]</kbd> and click it to clear every lock of the track.</li><li>Select a step and press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd>. The step loses its note, its slide and its locks together.</li></ul>
-<p>You cannot remove the locks of a step and keep its note yet.</p>
+<ul class="gd-list"><li>Hold <kbd class="gd-key">[⌥]</kbd> and drag over the lane to erase the locks of one parameter.</li><li>The clear key in the rail header clears the locks of the parameter you are looking at. Hold <kbd class="gd-key">[⌥]</kbd> and click it to clear every lock of the track.</li><li>Right-click a step and choose <b class="gd-ui">Clear locks (keep the notes)</b>. The step loses its locks and keeps its note. On a selected step it works on the whole selection.</li><li>Select a step and press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd>. The step loses its note, its slide and its locks together.</li></ul>
 </div></section>
 </article>
 <article class="gd-chapter" id="c5" style="page: c5">
@@ -834,7 +833,9 @@
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-50</span></span></aside>
 <div class="gd-body gd-prose"><h2>CLEAR NOTE PARAMETER LOCKS</h2>
 <p>To clear the locks of one parameter on some steps, hold <kbd class="gd-key">[⌥]</kbd> and drag across the bars in the lock lane. Click the bin in the lane header to clear all the locks of that parameter. Hold <kbd class="gd-key">[⌥]</kbd> and click the bin to clear every lock of the track. A selected step cleared with <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> loses its note and its locks together.</p>
-<p>There is no key that clears the locks of one step and keeps its note.</p>
+<p>The machine's CLEAR NOTE LOCKS clears the locks of one note and keeps the note:</p>
+<ol class="gd-steps"><li>Select the step, or several steps, in the roll or the trig rows.</li><li>Right-click one of them and choose <b class="gd-ui">Clear locks (keep the notes)</b>.</li></ol>
+<p>The notes stay. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to get the locks back.</p>
 </div></section>
 <section class="gd-sec" id="track-page-copy">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual pp.1-49,</span> <span>1-51</span></span></aside>
@@ -954,8 +955,7 @@
 <ol class="gd-steps"><li>Click the page key and the parameter key in the rail.</li><li>Drag across the bars in the lane. Each step with a trig that the pointer crosses takes the value at the height of the pointer.</li><li>To move one lock, scroll the wheel over its step. A notch moves the value by 4. Hold <kbd class="gd-key">[⇧]</kbd> for 1. A step with no lock starts from the kit value.</li><li>To draw a straight line of values, hold <kbd class="gd-key">[⇧]</kbd> and drag from the first step to the last. Every step with a trig under the line gets a lock. It is one undo step.</li></ol>
 <p>Every lock of the parameter shows as a bar, so you can read the values of a step at any time. When you change the selected track or the parameter, the lane shows the new one.</p>
 <h4 class="gd-h3">Remove locks</h4>
-<ul class="gd-list"><li>Hold <kbd class="gd-key">[⌥]</kbd> and drag across the bars to remove the locks of that parameter on the steps you cross.</li><li>Click the bin in the lane header to remove all the locks of the parameter.</li><li>Hold <kbd class="gd-key">[⌥]</kbd> and click the bin to remove every lock of the track.</li><li>Select a step and press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> to clear the step whole, with its note.</li></ul>
-<p>There is no key that removes only the locks of one step and keeps its note.</p>
+<ul class="gd-list"><li>Hold <kbd class="gd-key">[⌥]</kbd> and drag across the bars to remove the locks of that parameter on the steps you cross.</li><li>Click the bin in the lane header to remove all the locks of the parameter.</li><li>Hold <kbd class="gd-key">[⌥]</kbd> and click the bin to remove every lock of the track.</li><li>Right-click a step and choose <b class="gd-ui">Clear locks (keep the notes)</b> to remove all the locks of the step, or of the selected steps. The note stays.</li><li>Select a step and press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> to clear the step whole, with its note.</li></ul>
 <p>You cannot lock the current value of a parameter with one click. Draw the value in the lane.</p>
 <h4 class="gd-h3">Copy a note with its locks</h4>
 <p>The locks of a step go with the step when you copy it. See &quot;Note copy&quot; in chapter 11.</p>
