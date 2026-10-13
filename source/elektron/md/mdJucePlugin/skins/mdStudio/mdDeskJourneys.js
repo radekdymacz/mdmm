@@ -2839,6 +2839,9 @@ const MdJourneys = (() => {
 						if (!inside && !hidden) c.bad.push(`${tag.textContent} beside EMPTY: ${Math.round(t.left)}-${Math.round(t.right)} in ${Math.round(n.left)}-${Math.round(n.right)}`);
 						if (inside && m && t.right > m.left) c.bad.push(`${tag.textContent} under the M key`); b.textContent = keep; } },
 				screen: c => ok(c.n >= 2 && !c.bad.length, `${c.n} rows; ${c.bad.join(" | ")}`) }
+			,{ say: "the GEN bar's summary line shows whole at this size: what it writes (8 on) and, when the bar has room, the cycle and the steps (B-114)",
+				act: async (u, c) => { await closePops(u); u.click(tab("seq")); await sleep(400); const g = $1(".genband"); c.bad = g ? [...Journey.cutText(g), ...Journey.spills(".genband .gsum")] : ["no GEN bar"]; c.text = $1(".genband .gsum")?.textContent.trim(); },
+				screen: c => ok(c.text && !c.bad.length, `"${c.text}" ${c.bad.join(" | ")}`) }
 		],
 		async tidy(u) { await closePops(u); u.click(tab("seq")); }
 	};

@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-114 · Both editors: the GEN bar's summary line is cut ("E 5/16 · ×4 · 20 on · steps…")
+
+- **From:** screen review, 2026-10-13 (about 8 pictures on the Monomachine, the same line on the Machinedrum).
+- **What happens:** at 1440 px the line at the right end of the GEN bar has about 90 px; it holds 33 letters, so it ends in "steps…", cut in the middle of a word.
+- **Fix (`fix/0.6-screens`):** under 1500 px the line keeps what matters ("20 on", and what a run changed, "+3 −1"); the cycle ("E 5/16 · ×4") and the step range ("steps 1–64") go, and the whole line is in the tooltip (`gopt`, `deskGenBar.js` / `.css`). Page journeys `md-screens-fit` and `mm-screens-fit` measure the line.
+- **Status:** fixed on `fix/0.6-screens`.
+
 ## B-113 · Machinedrum: the longest generator tag in the track list is cut by the M key
 
 - **From:** screen review, 2026-10-13 (six pictures: "E 2/16+4" on tracks 2, 6, 7 and 10 runs under the M key).
