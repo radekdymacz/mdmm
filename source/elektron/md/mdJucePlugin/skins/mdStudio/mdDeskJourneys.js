@@ -531,8 +531,9 @@ const MdJourneys = (() => {
 				machine: c => ok(same(trigsOf(c.t), c.p0) && same(kitLocks(c), c.others), `trigs ${trigsOf(c.t).join(",")} (were ${c.p0.join(",")}); other locks changed: ${!same(kitLocks(c), c.others)}`), within: 8000 }
 		],
 		async tidy(u, c) { if (c.el) pressEv("pointerup", c.el); if (c.nl) pressEv("pointerup", c.nl); keyEv("keyup", "Delete"); if (V.rec) u.click("#rec"); if (V.playing) u.click("#play"); await sleep(600);
-			/* the FLTF locks it drew and the machine left: the lane's clear key */
-			if (c.i >= 0 && locksOf(c.t, c.i).length) { u.click(tab("seq")); await sleep(200); u.click('#chips .pk[data-lane="FLTF"]'); await sleep(200); u.click("#clearLane"); } }
+			/* the FLTF locks it drew and the machine left: its undo steps back (the lane's clear key for what the undo does not hold) */
+			await undoTo(u, c.undo0);
+			if (c.i >= 0 && locksOf(c.t, c.i).length) { u.click(tab("seq")); await sleep(200); u.click('#chips .pk[data-lane="FLTF"]'); await sleep(200); u.click("#clearLane"); await sleep(300); } }
 	};
 	/* the liveErase commands the page sent (MD-140's journey checks what Delete asked for) */
 	const eraseSent = [];
@@ -811,7 +812,8 @@ const MdJourneys = (() => {
 				machine: c => ok(songRows().length === c.n0 + 1, songRows().length + " rows"), screen: c => ok($all("#tl .scell:not(.empty)").length === c.n0 + 1, $all("#tl .scell:not(.empty)").length + " cells") },
 			{ say: "click Delete on the selected row", act: u => u.click('[data-rowact="del"]'), machine: c => ok(songRows().length === c.n0, songRows().length + " rows") },
 			{ say: "Cmd+Z twice, Cmd+Shift+Z, Cmd+Z: the song is as it was", act: async u => { for (const m of [{ cmd: true }, { cmd: true }, { cmd: true, shift: true }, { cmd: true }]) { u.key("z", m); await sleep(800); } }, machine: c => ok(JSON.stringify(songRows()) === c.r0, songRows().length + " rows"), within: 8000 }
-		]
+		],
+		async tidy(u, c) { await back(u, c); }
 	};
 	const songChain = {
 		name: "md-song-chain", proves: ["MD-098"],
@@ -821,7 +823,7 @@ const MdJourneys = (() => {
 				machine: () => ok(desk().chain?.active && same(desk().chain.patterns, [1, 2]), "chain " + JSON.stringify(desk().chain)), screen: () => ok(/CHAIN/.test($1("#songPlays")?.textContent || ""), "header " + $1("#songPlays")?.textContent), within: 6000 },
 			{ say: "click Clear: the chain ends", act: u => u.click('[data-chain="clear"]'), machine: () => ok(!desk().chain?.active, "chain " + JSON.stringify(desk().chain)), within: 6000 }
 		],
-		async tidy(u, c) { if (desk().chain?.active) cmd("chainClear"); if (c.m0 === true && V.songMode !== true) { cmd("seqMode", { song: true }); await sleep(1000); } }
+		async tidy(u, c) { await back(u, c); }
 	};
 
 	/* ---------- Sampler ---------- */
@@ -888,14 +890,15 @@ const MdJourneys = (() => {
 				c.edited = V.kitState === "edited"; u.click(ks(c.k));
 				if (c.edited && await until(dlgShown, 2000)) { u.click(dlgButton("Load without saving")); c.note = "the kit had edits: asked first, loaded without saving"; } else c.note = `K${c.k + 1} ${kitName(c.k)}`;
 			}, screen: c => ok($1(ks(c.k))?.classList.contains("cur") && $1("#dlg").hidden && $1("#kitname").textContent.includes(kitName(c.k).trim()), `LCD kit "${$1("#kitname").textContent}"`), machine: c => ok(currentKitSlot() === c.k, "machine kit " + currentKitSlot()), within: 4000 },
-			{ say: "Alt-click a third kit: selected, not loaded", act: (u, c) => { c.j = [...Array(64).keys()].reverse().find(k => k !== c.k && !kitEmpty(k) && kitLoaded(k)); c.j0 = JSON.stringify(Docs.kits[c.j]); u.click(ks(c.j), { alt: true }); }, screen: c => ok($1(ks(c.j))?.getAttribute("aria-selected") === "true", "not selected"), machine: c => ok(currentKitSlot() === c.k, "machine kit " + currentKitSlot()) },
+			{ say: "Alt-click a third kit: selected, not loaded", act: async (u, c) => { c.j = [...Array(64).keys()].reverse().find(k => k !== c.k && !kitEmpty(k) && kitLoaded(k)); c.j0 = JSON.stringify(Docs.kits[c.j]); await keep(c, "kit", c.j); u.click(ks(c.j), { alt: true }); }, screen: c => ok($1(ks(c.j))?.getAttribute("aria-selected") === "true", "not selected"), machine: c => ok(currentKitSlot() === c.k, "machine kit " + currentKitSlot()) },
 			{ say: "click Save as: the plug-in asks before overwriting", act: (u, c) => { c.u0 = V.undoCount; u.click('#libpop [data-la="saveas"]'); }, screen: () => ok(dlgShown() && !!dlgButton("Overwrite"), "no question"), machine: c => ok(JSON.stringify(Docs.kits[c.j]) === c.j0, "slot changed before the answer") },
 			{ say: "with the question open, press Delete, Backspace, 3 and 1", act: async (u, c) => { c.ws = S.ws; for (const k of ["Delete", "Backspace", "3", "1"]) { u.key(k); await sleep(150); } },
 				screen: c => ok(dlgShown() && S.ws === c.ws && LIB.open === "kit", `dialog ${dlgShown()}, workspace ${S.ws}, library ${LIB.open}`), machine: c => ok(JSON.stringify(Docs.kits[c.j]) === c.j0 && V.undoCount === c.u0, "the page behind acted"), within: 1500 },
 			{ say: "click Overwrite: saved into that slot", act: u => u.click(dlgButton("Overwrite")), screen: c => ok(!dlgShown() && $1(ks(c.j))?.classList.contains("cur"), "slot not current"),
 				machine: c => ok(currentKitSlot() === c.j && same(Docs.kits[c.j]?.tracks.map(t => t.machine), Docs.kits[c.k]?.tracks.map(t => t.machine)), `machine kit ${currentKitSlot()}`), within: 8000 },
 			esc
-		]
+		],
+		async tidy(u, c) { await back(u, c); }
 	};
 	const libSelect = k => ({ say: "Alt-click a slot: selected, not loaded", act: (u, c) => { c.sel = k(c); if (c.sel == null) throw new Error("no slot to pick"); u.click(ks(c.sel), { alt: true }); }, screen: c => ok($1(ks(c.sel))?.getAttribute("aria-selected") === "true", "not selected") });
 	const openKits = { say: "click KIT on the LCD", act: u => u.click("#kitf"), screen: () => ok(!$1("#libpop").hidden && LIB.open === "kit", "closed") };
@@ -1200,7 +1203,7 @@ const MdJourneys = (() => {
 			{ say: "click More and mute track 1 for the row", act: async u => { u.click("[data-rowmore]"); await sleep(250); u.click('[data-rowmute="0"]'); }, machine: c => ok((songRows()[c.i].mutes || []).includes(0), "mutes " + JSON.stringify(songRows()[c.i].mutes)), screen: () => ok($1('[data-rowmute="0"]')?.classList.contains("off"), "key not off") },
 			{ say: "click Add loop: a loop row after it", act: async u => { u.click('[data-rowact="loop"]'); await sleep(400); Journey.snapshot("md-song-loop"); }, machine: c => ok(songRows()[c.i + 1]?.kind === "loop", "row " + JSON.stringify(songRows()[c.i + 1])), screen: () => ok($all("#tl .scell.loop").length >= 1, "no loop cell") }
 		],
-		async tidy(u, c) { if (S.songMore && $1("[data-rowmore]")) u.click("[data-rowmore]"); if (c.r0) await undoUntil(u, () => JSON.stringify(songRows()) === c.r0, 8); }
+		async tidy(u, c) { if (S.songMore && $1("[data-rowmore]")) u.click("[data-rowmore]"); if (c.r0) await undoUntil(u, () => JSON.stringify(songRows()) === c.r0, 8); await back(u, c); }
 	};
 	const songDrag = {
 		name: "md-song-drag-drop", proves: ["MD-150"],
@@ -1211,7 +1214,7 @@ const MdJourneys = (() => {
 			{ say: "drag that row onto the first cell: it moves there", act: async (u, c) => { await u.dragDrop(`#tl .scell[data-i="${c.n0 - 1}"]`, '#tl .scell[data-i="0"]'); },
 				machine: () => ok(songRows()[0]?.pattern === 1, "rows " + songRows().map(r => r.kind === "pattern" ? r.pattern : r.kind).join(",")), within: 6000 }
 		],
-		async tidy(u, c) { if (c.r0) await undoUntil(u, () => JSON.stringify(songRows()) === c.r0, 6); }
+		async tidy(u, c) { if (c.r0) await undoUntil(u, () => JSON.stringify(songRows()) === c.r0, 6); await back(u, c); }
 	};
 	const ramView = {
 		name: "md-sampler-ram-view", proves: ["MD-275"],
@@ -1504,6 +1507,8 @@ const MdJourneys = (() => {
 		if (c.s != null && V.songSlot === c.s) await undoUntil(u, () => songRows().length === 1, 4);
 		if (c.s0 != null) await songTo(u, c.s0);
 		if (c.m0 != null && V.songMode !== c.m0) { u.click(`[data-set="songpick"] button[data-v="${c.m0 ? "song" : "pattern"}"]`); await sleep(1000); }
+		/* the song's rows and the slots cleared to make room: their undo steps back, so each slot holds again what it held */
+		await undoTo(u, c.undo0);
 	};
 	/* 0.6 wave 1: the song slots. Three empty slots A, B, C and D are the person's scratch: A gets rows (the SONG key, pads A01 and
 	   A02) and a name (F2), is copied to B (Copy, Paste), dragged onto C, saved to D with a name (Save to...); Clear asks before it
@@ -1568,6 +1573,8 @@ const MdJourneys = (() => {
 			for (const s of c.slots) if (Docs.songs[s] && !(Docs.songs[s].rows.length === 1 && !kitNameText(Docs.songs[s].name))) cmd("songClear", { s, force: true });
 			await sleep(1000);
 			if (c.m0 != null && V.songMode !== c.m0) { u.click(`[data-set="songpick"] button[data-v="${c.m0 ? "song" : "pattern"}"]`); await sleep(1000); }
+			/* the slots cleared to make room: their undo steps back */
+			await undoTo(u, c.undo0);
 		}
 	};
 	/* the palette's three keys: a pad click goes to the pattern, into the chain or into the song */
@@ -1638,7 +1645,7 @@ const MdJourneys = (() => {
 				screen: c => ok(c.ran && (!c.runningAtEsc || c.afterEsc) && c.afterClick && Modal.top() === "syxpop" && new Set(c.box).size === 1 && c.keys === "" && c.inWindow, `in the window ${c.win}: ${c.inWindow}, ran ${c.ran}, Esc while running ${c.runningAtEsc} -> open ${c.afterEsc}, after the click open ${c.afterClick} (on ${c.under}), boxes ${c.box.join(" | ")}, keys out ${c.keys}`) },
 			{ say: "click Hide (if it still runs), then IMPORT SYSEX… in the engine menu: the same panel again", act: async (u, c) => {
 				c.hid = false; const h = $1('#syxpop .btnrow [data-syxgo="close"]'); if ($1("#syxpop").classList.contains("syx-running") && h) { u.click(h); await sleep(200); c.hid = $1("#syxpop").hidden; }
-				u.pick("engsel", "import"); await sleep(400); },
+				if ($1("#syxpop").hidden) await u.pick("engsel", "import"); /* still running: it is modal, the engine menu is under it */ await sleep(400); },
 				screen: c => ok(!$1("#syxpop").hidden && ($1("#syxpop").classList.contains("syx-running") || $1("#syxpop").classList.contains("syx-report")), `hidden by Hide ${c.hid}; panel ${$1("#syxpop").hidden ? "hidden" : $1("#syxpop").className}`) },
 			{ say: "wait for the report: the same size; click Done", act: async (u, c) => { await until(() => $1("#syxpop").classList.contains("syx-report"), 120000); c.box.push(Journey.boxOf("#syxpop")); u.click('#syxpop [data-syxgo="close"]'); },
 				screen: c => ok($1("#syxpop").hidden && new Set(c.box).size === 1, "open " + !$1("#syxpop").hidden + ", boxes " + c.box.join(" | ")), within: 130000 }
@@ -1970,6 +1977,8 @@ const MdJourneys = (() => {
 		async tidy(u, c) {
 			/* back to the start: the speed and the lengths by their own keys, no undo count to guess */
 			const s = c.s0; if (!s) return; cmd("totalLength", { p: V.pat, v: s.len }); await sleep(400); cmd("length", { p: V.pat, v: s.length }); await sleep(400); cmd("speed", { p: V.pat, v: s.mult }); await sleep(400);
+			/* a longer pattern holds a copy in its new half: the lengths back are not the pattern back, its undo steps are */
+			await undoTo(u, c.undo0);
 		}
 	};
 	/* MD-126, MD-130: ACCENT amount 0-15, SWING amount 50-80 % */
@@ -2074,7 +2083,9 @@ const MdJourneys = (() => {
 			{ say: "press PLAY: the pattern plays with the trig", act: u => { tele.steps = []; u.click("#play"); }, screen: () => ok(V.playing, "not playing"), machine: () => ok(new Set(tele.steps).size >= 3, "steps " + tele.steps.join(",")), within: 8000 },
 			{ say: "press STOP", act: u => { Journey.snapshot("md-quick-start"); u.click("#play"); }, screen: () => ok(!V.playing, "playing") }
 		],
-		async tidy(u, c) { if (V.playing) u.click("#play"); if (c.s != null && trigsOf(c.t).includes(c.s)) { u.key("z", { cmd: true }); await until(idle, 3000); } }
+		async tidy(u, c) { if (V.playing) u.click("#play"); await undoTo(u, c.undo0);
+			/* the kit that was loaded: loaded again (the kit it left is as saved) */
+			if (c.k0 != null && currentKitSlot() !== c.k0) { u.click("#kitf"); await sleep(250); u.click(ks(c.k0)); if (await until(dlgShown, 1500)) u.click(dlgButton("Load without saving") || $1("#dlg .danger")); await until(() => currentKitSlot() === c.k0, 8000); u.key("Escape"); await sleep(200); } }
 	};
 	/* MD-036: a value on the Sound page: the wheel steps by 1, Shift + wheel by 10, Shift + drag finely */
 	const knobSteps = {
@@ -2093,6 +2104,24 @@ const MdJourneys = (() => {
 	/* ---- chapters 3 to 7: the Sound page, the effects, the routing page, the master effects, the LFOs, Appendix A ---- */
 	/* back to an undo count: Cmd+Z until the history is as long as it was (each step waits for the desk) */
 	const undoTo = async (u, n0) => { blur(); for (let i = 0; i < 300 && V.undoCount > n0; i++) { const was = V.undoCount; u.key("z", { cmd: true }); if (!await until(() => V.undoCount < was, 4000)) break; await until(idle, 4000); } };
+	/* Every journey is independent (doc/modern-ux/JOURNEYS.md): the runner notes where the page stood when it began (begin: c.undo0, c.mode0,
+	   c.pat0, c.chain0) and a tidy that changed any of it calls back(u, c), which puts the editor's modes and its undo history back:
+	   the transport stopped, the edits undone, PATTERN or SONG mode as found, the pattern the machine was on, no chain. */
+	const begin = c => { c.undo0 = V.undoCount; c.mode0 = V.songMode; c.pat0 = currentPatternSlot(); c.kit0 = currentKitSlot(); c.chain0 = !!desk().chain?.active; };
+	const back = async (u, c) => {
+		if (V.rec) { u.click("#rec"); await sleep(300); }
+		if (V.playing) { u.click("#play"); await until(() => !V.playing, 3000); }
+		if (c.undo0 != null) await undoTo(u, c.undo0);
+		if (desk().chain?.active && !c.chain0) { cmd("chainClear"); await sleep(300); }
+		if (c.mode0 != null && V.songMode !== c.mode0) { cmd("seqMode", { song: c.mode0 }); await until(() => V.songMode === c.mode0 && machineState().songMode === c.mode0, 4000); await sleep(300); }
+		if (c.pat0 != null && currentPatternSlot() !== c.pat0) { cmd("select", { p: c.pat0, now: true }); await until(() => currentPatternSlot() === c.pat0, 6000); await until(idle, 4000); }
+		if (c.kit0 != null && currentKitSlot() !== c.kit0) { cmd("kitLoad", { k: c.kit0, force: true }); await until(() => currentKitSlot() === c.kit0, 6000); await until(idle, 4000); }
+		/* a slot the journey overwrote (kept with keep(c, "kit", k) before it did): pasted back from the plug-in's clipboard */
+		for (const [kind, slot] of c.kept || []) { cmd(kind === "kit" ? "kitPaste" : kind === "pattern" ? "patPaste" : "songPaste", kind === "song" ? { s: slot, force: true } : kind === "kit" ? { k: slot, force: true } : { p: slot, force: true }); await until(idle, 6000); await sleep(300); }
+	};
+	/* a slot the journey is about to overwrite: its content goes to the plug-in's clipboard (kitCopy, patCopy, songCopy) and back() pastes it back.
+	   One slot per kind at a time (the plug-in holds one clipboard of each) */
+	const keep = async (c, kind, slot) => { cmd(kind === "kit" ? "kitCopy" : kind === "pattern" ? "patCopy" : "songCopy", kind === "song" ? { s: slot } : kind === "kit" ? { k: slot } : { p: slot }); await until(idle, 6000); await sleep(200); (c.kept = c.kept || []).push([kind, slot]); };
 	/* the machines of Appendix A and the knobs the manual lists for each (from the feature data's rows) */
 	const MACHINE_KNOBS = new Map([
 		[["TRX-BD"], "PTCH DEC RAMP RDEC STRT NOIS HARM CLIP"],
@@ -2557,7 +2586,10 @@ const MdJourneys = (() => {
 			{ say: "click REC off, then STOP: the pattern is read back with a lock on one of the track's trigs", act: async u => { u.click("#rec"); await sleep(400); if (V.playing) u.click("#play"); },
 				screen: () => ok(!V.rec && !V.playing, `REC ${V.rec}, playing ${V.playing}`), machine: c => ok(locksOf(c.t, c.i).length >= 1 && locksOf(c.t, c.i).every(([s]) => trigsOf(c.t).includes(s)), `locks ${JSON.stringify(locksOf(c.t, c.i))}`), within: 12000 }
 		],
-		async tidy(u, c) { if (V.rec) u.click("#rec"); await sleep(300); if (V.playing) u.click("#play"); await sleep(500); if (c.i >= 0 && locksOf(c.t, c.i).length) { u.click(tab("seq")); await sleep(200); u.click('#chips .pk[data-lane="FLTF"]'); await sleep(200); u.click("#clearLane"); } }
+		async tidy(u, c) { if (V.rec) u.click("#rec"); await sleep(300); if (V.playing) u.click("#play"); await sleep(500);
+			/* the lock and the value it moved: its undo steps back (the lane's clear key for what the undo does not hold) */
+			await undoTo(u, c.undo0);
+			if (c.i >= 0 && locksOf(c.t, c.i).length) { u.click(tab("seq")); await sleep(200); u.click('#chips .pk[data-lane="FLTF"]'); await sleep(200); u.click("#clearLane"); await sleep(300); } }
 	};
 	/* MD-207: the machine's limits, all in the page */
 	const limitsJ = {
@@ -3395,24 +3427,41 @@ const MdJourneys = (() => {
 	const demos = [groove, full, sampler, techniques];
 
 	/* ---------- the page's neutral state between journeys ---------- */
-	async function between(u) {
-		for (let i = 0; i < 3 && dlgShown(); i++) { u.key("Escape"); await sleep(200); }
-		if (LIB.open) { closeLib(false); await sleep(100); }
-		for (const q of ["#globpop", "#keyspop", "#audiopop", "#machpop", "#kpop"]) if ($1(q) && !$1(q).hidden) { u.key("Escape"); await sleep(150); }
+	/* Every journey is independent (doc/modern-ux/JOURNEYS.md, "Independent journeys"): it builds what it needs and its tidy
+	   puts back what it changed. This is the guard: it looks at what the one before left and SAYS it (the runner logs
+	   "JOURNEY <name> before: left ..." and scripts/mdmm-page.mjs prints them as a WARN), it fixes nothing after a journey that passed;
+	   after a FAILED one (its tidy may not have run to the end: the state is unknown) it puts the page right so one failure
+	   does not become a row of them (the fix is said too, "after a failure: ..."). What it waits for is not a fix: the machine
+	   restarting after a reset (the start-up card), a person waits for it too. */
+	async function between(u, fix = true) {
+		const left = [];
+		const act = async (what, f) => { left.push(what); if (fix) await f(); };
+		for (let i = 0; i < 3 && dlgShown(); i++) { await act("a question open", async () => { u.key("Escape"); await sleep(200); }); if (!fix) break; }
+		if (LIB.open) await act("the library open", async () => { closeLib(false); await sleep(100); });
+		for (const q of ["#globpop", "#keyspop", "#audiopop", "#machpop", "#kpop"]) if ($1(q) && !$1(q).hidden) await act(q + " open", async () => { u.key("Escape"); await sleep(150); });
 		/* the machine restarting (a journey that reset it: the start-up card is back): it is waited for, as a person waits, so
 		   the next journey does not meet a covered page (md-engine-memory, then md-top-cpu-meter ... in the 0.6 evidence run) */
 		if (!$1("#bootcard").hidden) { await until(() => $1("#bootcard").hidden, 120000); await sleep(1500); }
 		if (!$1("#bootcard").hidden) $1('#bootcard [data-bootrom="close"]')?.click();
-		if (V.rec) { u.click("#rec"); await sleep(300); }
-		if (V.playing) { u.click("#play"); await until(() => !V.playing, 3000); }
-		if (S.soloSet.size) { setSolo(new Set()); await sleep(200); }
+		if (V.rec) await act("recording", async () => { u.click("#rec"); await sleep(300); });
+		if (V.playing) await act("playing", async () => { u.click("#play"); await until(() => !V.playing, 3000); });
+		if (S.soloSet.size) await act("a track soloed", async () => { setSolo(new Set()); await sleep(200); });
 		/* PATTERN mode: a journey that left the machine in SONG mode made the next one that plays play a song row (and its
-		   HALT) instead of the pattern (md-song-commands, then md-seq-page-leds). Said, so the journey that left it is found */
-		let said = "";
-		if (machineState().songMode === true) { cmd("seqMode", { song: false }); await until(() => machineState().songMode === false && V.songMode === false, 4000); said = "the machine was in SONG mode: PATTERN mode again"; }
-		await until(idle, 4000);
-		await sleep(500);
-		return said;
+		   HALT) instead of the pattern (md-song-commands, then md-seq-page-leds) */
+		if (machineState().songMode === true) await act("the machine in SONG mode", async () => { cmd("seqMode", { song: false }); await until(() => machineState().songMode === false && V.songMode === false, 4000); });
+		await until(idle, 4000); await sleep(500);
+		return left.length ? `left ${left.join(", ")}${fix ? " (after a failure: put right)" : ""}` : "";
+	}
+	/* what the guard compares before and after each journey (shared/deskJourney.js, page.state): the machine's documents and modes.
+	   A document is its JSON (a slot loaded only in one of the two is not compared; the log says where one differs) */
+	const hash = x => JSON.stringify(x) || "";
+	function state() {
+		const o = { "pattern slot": currentPatternSlot(), "kit slot": currentKitSlot(), "song slot": currentSongSlot(), "song mode": machineState().songMode, playing: !!V.playing, recording: !!V.rec,
+			mutes: mutes().join(), solo: [...S.soloSet].join(), chain: JSON.stringify(desk().chain || null), global: hash(Docs.global), "working kit": hash(Docs.workingKit && { slot: Docs.workingKit.slot, doc: Docs.workingKit.doc }) };
+		for (const [k, v] of Object.entries(Docs.patterns)) o["pattern " + k] = hash(v);
+		for (const [k, v] of Object.entries(Docs.kits)) o["kit " + k] = hash(v);
+		for (const [k, v] of Object.entries(Docs.songs)) o["song " + k] = hash(v);
+		return o;
 	}
 	async function ready() {
 		const up = await until(() => !!machineState().input && V.loaded && $1("#bootcard")?.hidden !== false, 120000);
@@ -3442,7 +3491,7 @@ const MdJourneys = (() => {
 	/* what the page last told the person: its toast and its error line */
 	const context = () => [...[["toast", $1("#toast")], ["error", $1("#errline")]].filter(([, e]) => e && !e.hidden && e.textContent.trim()).map(([k, e]) => `${k} "${e.textContent.trim().slice(0, 160)}"`),
 		...results.filter(r => r.ok === false).slice(-3).map(r => `refused ${r.op}: ${(r.errors || []).join("; ")}`)].join(", ");
-	if (/[?&]selftest=journey/.test(location.search)) setTimeout(() => Journey.run(all, { log: t => Bridge.log(t), ready, prepare, between, context }), 0);
+	if (/[?&]selftest=journey/.test(location.search)) setTimeout(() => Journey.run(all, { log: t => Bridge.log(t), ready, prepare, between, context, state, begin }), 0);
 	if (/[?&]selftest=demo/.test(location.search)) setTimeout(() => Journey.demo(demos, { log: t => Bridge.log(t), ready, between, context }), 0);
 	return { all, demos };
 })();

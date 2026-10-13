@@ -271,8 +271,9 @@ for (const r of results) {
 	passed += r.lines.filter(l => /^JOURNEY \S+ PASS/.test(l)).length;
 	failed += r.lines.filter(l => /^JOURNEY \S+ FAIL/.test(l)).length;
 	skipped += r.lines.filter(l => /^JOURNEY \S+ SKIP/.test(l)).length;
-	/* what a journey left for the next one to put right (the page's between and the runner's close of what stays open) */
-	for (const l of r.lines) if (/^JOURNEY \S+ before: /.test(l)) leftOver.push(`${r.ed}: ${l.replace(/^JOURNEY /, "")}`);
+	/* what a journey left for the next one to put right (the page's between and the runner's close of what stays open), and what it left
+	   changed in the machine's documents and modes (its tidy was to put it back: "left:") */
+	for (const l of r.lines) if (/^JOURNEY \S+ (before|left): /.test(l)) leftOver.push(`${r.ed}: ${l.replace(/^JOURNEY /, "")}`);
 	const uniq = [...new Set(r.problems)];
 	for (const p of uniq.slice(0, 10)) report.push("FAIL " + p);
 	if (uniq.length) status = 1;
@@ -280,7 +281,7 @@ for (const r of results) {
 }
 if (failed) status = 1;
 if (passed + failed + skipped === 0) { report.push("FAIL no journey matched " + sel + tierSel); status = 1; }
-if (leftOver.length) { report.push(`WARN ${leftOver.length} journey(s) started on state the one before left (the journey named comes after the one that left it):`); for (const l of leftOver) report.push("   " + l.slice(0, 200)); }
+if (leftOver.length) { report.push(`WARN ${leftOver.length} journey(s) left state behind ("<journey> left:" is the one that did not tidy; "<journey> before:" names the one after it that met it):`); for (const l of leftOver) report.push("   " + l.slice(0, 200)); }
 if (opt.shuffle != null) report.push(`SHUFFLE seed ${opt.shuffle} (node scripts/mdmm-page.mjs --shuffle ${opt.shuffle}${opt.isolate ? " --isolate" : ""} ... plays the same order)`);
 report.push(`PAGE JOURNEYS: ${passed} passed, ${failed} failed, ${skipped} skipped in ${Math.round((Date.now() - T0) / 1000)} s (${opt.jobs} per editor)`);
 fs.writeFileSync(path.join(OUT, "report.txt"), report.join("\n") + "\n");
