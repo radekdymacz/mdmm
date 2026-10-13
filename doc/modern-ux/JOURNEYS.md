@@ -310,19 +310,19 @@ journey's name: `JOURNEY <name> left: <what> (at <char>: <was> -> <now>)`. For t
 An empty reset has no undo and no copy to keep, and a SysEx import of a whole file (the e2e run's fixture holds many kits, patterns and a global) writes more
 slots than the plug-in's clipboard and one undo step can hold. These journeys are marked `alone: true`: `md-engine-reset-empty`, `mm-engine-reset-empty` (page tier too),
 and on the firmware `md-lib-syx-import`, `md-lib-syx-import-mute`, `md-shots-import` and their `mm-` twins. The runners (`mdmm-page.mjs`, `mdmm-journeys.sh`, so `mdmm-e2e.sh`) start each in a
-page or an editor of its own, and in one page they play last. A journey earns the mark only when the product offers no way back (proposed B-110: no undo for a SysEx import or an
+page or an editor of its own, and in one page they play last. A journey earns the mark only when the product offers no way back (B-130: no undo for a SysEx import or an
 empty reset; the two-slot imports of `md-lib-syx-place` and `md-syx-running-reach` are kept with `keepTwo`, the rest cannot be).
 
 ### Findings (not fixed here: a journey cannot pass without a product change, or the page tier and the firmware differ)
 
-Proposed numbers from B-110; none is in BUGS.md yet.
+Logged in doc/release/BUGS.md as B-130 to B-132.
 
-- **B-110** A SysEx import and the empty reset cannot be undone, and an import of a whole file overwrites more than a clipboard and the undo history can hold: the journeys that run them
+- **B-130** A SysEx import and the empty reset cannot be undone, and an import of a whole file overwrites more than a clipboard and the undo history can hold: the journeys that run them
   (`md-engine-reset-empty`, `mm-engine-reset-empty`, and on the firmware the import journeys `*-lib-syx-import`, `*-lib-syx-import-mute`, `*-shots-import`) are `alone: true`.
-- **B-111** On the firmware, started alone from factory memory, `md-sound-machine-reference` has the page refuse the second machine it picks on track 1: `tracks[0] lfo.track = 16 is outside 0..15` (the kit as the machine
+- **B-131** On the firmware, started alone from factory memory, `md-sound-machine-reference` has the page refuse the second machine it picks on track 1: `tracks[0] lfo.track = 16 is outside 0..15` (the kit as the machine
   reads it back against the contract). In the whole run in order and in the page tier it passes, so it needs the contract or the page's validation to accept what the firmware sends. The journey
   cannot build a kit the page accepts without choosing the data for it.
-- **B-112** `mm-sound-unison-sub-fine` fails on the firmware alone and in order (the sub screen's stems measure 9.2 px against at most 3 px in WebKit; the page tier measures them in Chrome and passes).
+- **B-132** `mm-sound-unison-sub-fine` fails on the firmware alone and in order (the sub screen's stems measure 9.2 px against at most 3 px in WebKit; the page tier measures them in Chrome and passes).
 - `md-sampler-rename`, and the 16 Monomachine journeys whose checks read the stub host's wire log (`mm-wire-cc`, `mm-sound-lfo` ...): stub-only before this work (E2E column), unchanged.
 - `md-mix-master-cards` and `mm-seq-scale-setup` failed now and then at four pages at once on a loaded Mac: their own checks raced the machine's answer (the first is fixed: the knob is looked up after the answer);
   `mm-seq-scale-setup` passes alone three times in three.
