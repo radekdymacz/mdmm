@@ -52,9 +52,8 @@ In grid recording you place notes on the steps of a pattern one by one. The mach
 
 1. Go to the **Sequence** workspace ({key:workspace-1}) and select a track.
 2. If you want the pattern's own kit, open the kit library and load it: click <KIT>, choose a kit, click **Load**. Chapter 6 describes the library.
-3. Check that **Draw** is lit. Press {key:roll-draw} to switch it.
-4. Click an empty step in the roll. A note goes on it, as long as the **Len** key says.
-5. Drag the new note up or down to change its pitch.
+3. Click an empty step in the roll. A note goes on it, as long as the **Len** key says.
+4. Drag the end of the note to make it longer or shorter, drag it up or down to change its pitch, or sideways to move it.
 
 To paint the same note on several steps, drag sideways. The steps you cross get the note. A drag is one undo step. Hold [⌥] and drag over the notes to erase them, which is also one undo step.
 

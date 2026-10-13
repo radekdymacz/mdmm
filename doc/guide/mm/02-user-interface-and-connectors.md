@@ -146,7 +146,7 @@ The sixteen TRIG keys play notes and set trigs. In the editor:
 - The on-screen keyboard in the **Perform** workspace plays notes by click or drag.
 - Clicking in the piano roll of the **Sequence** workspace plays the pitch.
 
-To set a trig on a step, as the TRIG keys do in grid mode, click the piano roll with Draw on, or open the step menu (the ⋯ on a selected step, or a right-click).
+To set a trig on a step, as the TRIG keys do in grid mode, click the piano roll, or open the step menu (the ⋯ on a selected step, or a right-click).
 
 On the machine, [BANK] + [TRIG] picks a pattern. In the editor click the <PATTERN> field of the LCD for the pattern chooser, or the **‹** and **›** keys beside it. Chapter 4 describes picking.
 

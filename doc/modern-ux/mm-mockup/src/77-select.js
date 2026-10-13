@@ -81,7 +81,7 @@ function selKeeps(x){const out=[];for(let t=x.t;t<x.t+x.n;t++){const tr=trk(t);l
   const p=MmRoll.before(tr.steps,S.len,x.from);if(p==null||p>=x.from&&p<x.to)continue;
   if(isMidiT(t)){const v=midiLenOf(t,p);if(v<MmRoll.LEN_HOLD&&v/MmRoll.TICKS<=((e-p)%S.len+S.len)%S.len)continue}out.push([t,e])}return out}
 function selKeep(keep){for(const[t,e] of keep){trk(t).steps[e]={off:1};edit("step",{t,s:e,v:{off:true}})}}
-/* the selection moved (a drag of it with Draw off): copied to step `at` of its tracks, then the steps it left cleared
+/* the selection moved (a drag of it): copied to step `at` of its tracks, then the steps it left cleared
    (the note before it keeps its length, as on a clear); one undo step (the intents of one gesture) */
 function selMoveTo(at){const x=selShown();if(!x)return false;const n=x.to-x.from;if(at===x.from)return true;
  if(at>=S.len){toast(`No room: the pattern is ${S.len} steps.`);return true}
@@ -141,8 +141,7 @@ document.addEventListener("pointerdown",e=>{if(e.button!==0||S.ws!=="seq")return
  if(!c){if(!inSeq&&e.target.closest?.("#main"))clearSel();return}
  const d=StepSel.start({cmd:Modifiers.cmd(e),shift:e.shiftKey,alt:e.altKey,ctrl:e.ctrlKey},{t:c.t,s:c.s},!!c.ruler,S.stepSel,S.sel);
  /* a press that edits (a note, a chord note, an erase, a trig row's paint) ends the selection; Ctrl on a Mac is the step menu's */
- /* in the roll with Draw off a plain press selects, moves or boxes (70-seq.js) */
- if(!d){if(!e.metaKey&&!e.ctrlKey&&!(c.pitch!=null&&!S.rollDraw))clearSel();return}
+  if(!d){if(!e.metaKey&&!e.ctrlKey)clearSel();return}
  if(S.rec){toast("Wait until live recording stops.");return}
  selDrag=d;e.preventDefault();e.stopPropagation()},true);
 document.addEventListener("pointermove",e=>{const d=selDrag;if(!d)return;if(e.buttons===0&&e.pointerType==="mouse"){endSelect();return}
