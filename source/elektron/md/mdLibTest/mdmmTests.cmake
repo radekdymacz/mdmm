@@ -143,6 +143,9 @@ function(mdmm_add_lib_tests _dir)
 		# MIDI out), the stored values as edited
 		add_test(NAME mmTransposeLiveFirmwareTest COMMAND mmDeskFirmwareTest --env transpose)
 		set_tests_properties(mmTransposeLiveFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
+		# B-121: the host's Stop lets go of a note held into a track (All Notes Off after MIDI Stop), judged by the output
+		add_test(NAME mmHostStopFirmwareTest COMMAND mmDeskFirmwareTest --env hoststop)
+		set_tests_properties(mmHostStopFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
 	endif()
 	# B-031 on the Monomachine: the backup from MM_SYX, the ROM from GEARMULATOR_MM_FIRMWARE_BIN; skipped without them.
 	# DEV-CYCLE: the Monomachine's intent cases (doc/modern-ux/intent-cases.json, "mm") through the desk to the firmware
