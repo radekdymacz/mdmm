@@ -458,12 +458,12 @@ const MdJourneys = (() => {
 		name: "md-seq-live-record", proves: ["MD-013", "MD-112"],
 		steps: [
 			go("seq"),
-			{ say: "click REC: live recording, playing", act: (u, c) => { c.t = soundTracks().slice().sort((a, b) => trigsOf(a).length - trigsOf(b).length)[0] ?? soundTrack(); c.n0 = trigsOf(c.t).length; u.click("#rec"); }, screen: () => ok(V.rec && $1("#rec").getAttribute("aria-pressed") === "true", "REC " + V.rec), machine: () => ok(tele.last?.playing, "not playing"), within: 5000 },
+			{ say: "click REC: live recording, playing", act: async (u, c) => { c.t = soundTracks().slice().sort((a, b) => trigsOf(a).length - trigsOf(b).length)[0] ?? soundTrack(); c.n0 = trigsOf(c.t).length; await keep(c, "pattern", currentPatternSlot()); u.click("#rec"); }, screen: () => ok(V.rec && $1("#rec").getAttribute("aria-pressed") === "true", "REC " + V.rec), machine: () => ok(tele.last?.playing, "not playing"), within: 5000 },
 			{ say: "click a step of a track while it records: the machine records a trig", act: async (u, c) => { results.length = 0; c.at = S.step; u.click(cell(c.t, 0)); c.note = `track ${c.t + 1} (${c.n0} trigs), clicked at step ${c.at + 1}`; },
 				machine: c => ok(trigsOf(c.t).length > c.n0, `${c.n0} -> ${trigsOf(c.t).length} trigs; results ${results.map(r => r.op + ":" + r.ok + (r.errors ? " " + r.errors.join(";") : "") + (r.note ? " " + r.note : "")).join(", ")}; telemetry rec ${tele.last?.rec ?? "?"} playing ${tele.last?.playing}`), within: 8000 },
 			{ say: "click REC again, then STOP", act: async u => { u.click("#rec"); await sleep(500); if (V.playing) u.click("#play"); }, screen: () => ok(!V.rec && !V.playing, `REC ${V.rec}, playing ${V.playing}`), machine: () => ok(!tele.last?.playing, "playing") }
 		],
-		async tidy(u) { if (V.rec) u.click("#rec"); if (V.playing) u.click("#play"); }
+		async tidy(u, c) { if (V.rec) u.click("#rec"); if (V.playing) u.click("#play"); await back(u, c); }
 	};
 
 	/* wave 7 (manual p.40): Delete held while live recording is EXIT/NO + the track's TRIG key on the machine; the track's
@@ -1241,7 +1241,7 @@ const MdJourneys = (() => {
 			{ say: "wait: the kit keeps RAM-R and RAM-P", act: () => sleep(4000),
 				machine: c => ok(kit().tracks[c.r].machine === "RAM-R" + c.n && kit().tracks[c.p].machine === "RAM-P" + c.n, `tracks ${kit().tracks[c.r].machine} ${kit().tracks[c.p].machine}`), within: 2000 }
 		],
-		async tidy(u, c) { if (c.m0) await undoUntil(u, () => same([kit().tracks[c.r].machine, kit().tracks[c.p].machine], c.m0) && same(trigsOf(c.p), c.t0), 8); }
+		async tidy(u, c) { if (c.m0) await undoUntil(u, () => same([kit().tracks[c.r].machine, kit().tracks[c.p].machine], c.m0) && same(trigsOf(c.p), c.t0), 8); await back(u, c); }
 	};
 	const panBox = {
 		name: "md-mix-pan-undo", proves: ["MD-066"],
@@ -1287,7 +1287,7 @@ const MdJourneys = (() => {
 	/* the report: the slots of a kind the machine did not take as in the file (every reported item carries its outcome) */
 	const syxNotTaken = kind => new Set($all(`#syxpop [data-syxitem^="${kind}:"][data-syxout]`).filter(d => d.dataset.syxout !== "taken").map(d => +d.dataset.syxitem.split(":")[1]));
 	const syxImportJ = {
-		name: "md-lib-syx-import", proves: ["MD-181", "MD-X13"],
+		name: "md-lib-syx-import", alone: true, proves: ["MD-181", "MD-X13"],
 		needs: () => new URLSearchParams(location.search).get("syxfile") ? null : "no .syx for the run (GEARMULATOR_MDMM_SYX_FILE)",
 		steps: [
 			{ say: "choose IMPORT SYSEX… in the engine menu: the file's preview", act: u => u.pick("engsel", "import"), screen: () => ok(!$1("#syxpop").hidden && syxKitIds().length > 0, "no preview with kits"), within: 8000 },
@@ -1425,7 +1425,7 @@ const MdJourneys = (() => {
 	   not the page's wish). With the file's base channel OFF the M is refused, with the reason, and never lit. The file
 	   is the run's (GEARMULATOR_MDMM_SYX_FILE; mdDeskFirmwareTest syxexport with SYX_BASE_CHANNEL makes one). */
 	const syxImportMute = {
-		name: "md-lib-syx-import-mute", proves: ["MD-094", "MD-122", "MD-181"],
+		name: "md-lib-syx-import-mute", alone: true, proves: ["MD-094", "MD-122", "MD-181"],
 		needs: () => new URLSearchParams(location.search).get("syxfile") ? null : "no .syx for the run (GEARMULATOR_MDMM_SYX_FILE)",
 		steps: [
 			{ say: "choose IMPORT SYSEX… in the engine menu, tick Globals too", act: async u => { await u.pick("engsel", "import"); await until(() => !$1("#syxpop").hidden && $all("#syxpop [data-syxkind]").length, 8000); const g = $1('#syxpop [data-syxkind="global"]'); if (g && !g.checked) u.click(g); },
@@ -1670,7 +1670,7 @@ const MdJourneys = (() => {
 			go("seq"),
 			{ say: "the GEN bar", act: async () => { await sleep(800); shot("gen-md"); Journey.snapshot("gen-md"); }, hold },
 			{ say: "done", act: () => shot("done") }] };
-	const shotsImport = { name: "md-shots-import", proves: [], needs: () => !/md-shots/.test(location.search) ? "screenshots only when asked by name" : syxImportJ.needs(),
+	const shotsImport = { name: "md-shots-import", alone: true, proves: [], needs: () => !/md-shots/.test(location.search) ? "screenshots only when asked by name" : syxImportJ.needs(),
 		steps: [
 			{ say: "choose IMPORT SYSEX… in the engine menu: the preview, the Kits tab", act: async u => { await u.pick("engsel", "import"); await until(() => syxKitIds().length > 0, 8000); await sleep(400); shot("import-1-md-kits"); },
 				screen: () => ok(!$1("#syxpop").hidden && syxKitIds().length > 0, "no preview with kits"), within: 10000, hold },
@@ -2111,7 +2111,7 @@ const MdJourneys = (() => {
 	/* Every journey is independent (doc/modern-ux/JOURNEYS.md): the runner notes where the page stood when it began (begin: c.back0.undo, c.back0.mode,
 	   c.back0.pat, c.back0.chain) and a tidy that changed any of it calls back(u, c), which puts the editor's modes and its undo history back:
 	   the transport stopped, the edits undone, PATTERN or SONG mode as found, the pattern the machine was on, no chain. */
-	const begin = c => { c.back0 = { undo: V.undoCount, mode: V.songMode, pat: currentPatternSlot(), kit: currentKitSlot(), kitw: machineState().kit?.working, chain: !!desk().chain?.active }; };
+	const begin = c => { c.back0 = { tempo: Docs.global?.tempo, undo: V.undoCount, mode: V.songMode, pat: currentPatternSlot(), kit: currentKitSlot(), kitw: machineState().kit?.working, chain: !!desk().chain?.active }; };
 	const back = async (u, c) => {
 		if (!c.back0) return;
 		if (V.rec) { u.click("#rec"); await sleep(300); }
@@ -2120,6 +2120,7 @@ const MdJourneys = (() => {
 		if (desk().chain?.active && !c.back0.chain) { cmd("chainClear"); await sleep(300); }
 		if (c.back0.mode != null && V.songMode !== c.back0.mode) { cmd("seqMode", { song: c.back0.mode }); await until(() => V.songMode === c.back0.mode && machineState().songMode === c.back0.mode, 4000); await sleep(300); }
 		if (c.back0.pat != null && currentPatternSlot() !== c.back0.pat) { cmd("select", { p: c.back0.pat, now: true }); await until(() => currentPatternSlot() === c.back0.pat, 6000); await until(idle, 4000); }
+		if (c.back0.tempo != null && Docs.global && Math.abs(Docs.global.tempo - c.back0.tempo) > 0.05) { cmd("tempo", { bpm: c.back0.tempo }); await until(() => Math.abs(Docs.global.tempo - c.back0.tempo) <= 0.05, 6000); await sleep(300); }
 		if (c.back0.kit != null && currentKitSlot() !== c.back0.kit) { cmd("kitLoad", { k: c.back0.kit, force: true }); await until(() => currentKitSlot() === c.back0.kit, 6000); await until(idle, 4000); }
 		/* a kit edited and undone holds the same sounds, but the machine still calls it edited: saved again, it is the kit it was */
 		if (c.back0.kitw === "clean" && machineState().kit?.working !== "clean") { cmd("saveKit", { force: true }); await until(() => machineState().kit?.working === "clean", 8000); await until(idle, 4000); }
@@ -2799,7 +2800,7 @@ const MdJourneys = (() => {
 					c.note = `${c.good.length} of ${c.songs.length} songs played: ${c.good.join(" ")}`;
 				}, screen: c => ok(!c.bad.length, c.bad.join("; ")) }
 		],
-		async tidy(u, c) { if (V.playing) u.click("#play"); if (c.m0 === false) { cmd("seqMode", { song: false }); await sleep(800); } if (c.s0 != null) await songTo(u, c.s0).catch(() => { }); }
+		async tidy(u, c) { if (V.playing) u.click("#play"); if (c.m0 === false) { cmd("seqMode", { song: false }); await sleep(800); } if (c.s0 != null) await songTo(u, c.s0).catch(() => { }); await back(u, c); }
 	};
 	const realPatterns = {
 		name: "md-real-factory-patterns", proves: ["MD-X03", "MD-X03"],
@@ -2846,7 +2847,7 @@ const MdJourneys = (() => {
 		steps: [
 			go("seq"),
 			{ say: "pick a pattern with no trigs in the pattern chooser", within: 20000,
-				act: async (u, c) => { await until(() => Object.keys(Docs.patterns).length >= 128, 30000); c.p0 = currentPatternSlot(); c.p = emptyPatternSlot(); if (c.p == null) throw new Error("no empty pattern");
+				act: async (u, c) => { await until(() => Object.keys(Docs.patterns).length >= 128, 30000); c.p0 = currentPatternSlot(); c.p = emptyPatternSlot(); if (c.p == null) throw new Error("no empty pattern"); await keep(c, "pattern", c.p);
 					u.click("#pat"); await until(() => $all("#libpop .ps").length === 128, 4000); u.click(psq(c.p)); await confirmIfAsked(u); if (!$1("#libpop").hidden) u.key("Escape"); },
 				machine: c => ok(currentPatternSlot() === c.p && !hasTrigs(c.p), "pattern " + currentPatternSlot()) },
 			sel(() => soundTrack()),
@@ -2861,8 +2862,8 @@ const MdJourneys = (() => {
 				act: async (u, c) => { u.key("z", { cmd: true }); await until(() => c.steps.every(s => trigsOf(c.t).includes(s)) && idle(), 8000); c.back = await playPeak(u, 6000, 1500); },
 				machine: c => ok(c.steps.every(s => trigsOf(c.t).includes(s)) && c.back.started && c.back.peak > 0.0002, `trigs ${trigsOf(c.t).join(",")}, peak ${c.back.peak.toFixed(4)}`) }
 		],
-		async tidy(u, c) { if (V.playing) u.click("#play"); for (let i = 0; i < 6 && c.t != null && c.p != null && hasTrigs(c.p); i++) { document.activeElement?.blur?.(); u.key("Delete", { alt: true }); await until(idle, 4000); await sleep(500); }
-			if (c.p0 != null && currentPatternSlot() !== c.p0) { u.click("#pat"); await sleep(400); u.click(psq(c.p0)); await sleep(800); if (!$1("#libpop").hidden) u.key("Escape"); } }
+		/* the pattern it drew in and cleared: undone, then pasted back from the clipboard (a clear leaves more than the trigs behind) */
+		async tidy(u, c) { if (V.playing) u.click("#play"); await back(u, c); }
 	};
 	const e2eReal = [realSongs, realPatterns, realSequence];
 

@@ -12,6 +12,19 @@ It builds the two standalone editors (diagnostics build), runs every journey in 
 
 Everything lands in `temp/evidence/<version>/` (not in git): `index.html` (the report), `shots/*.webp` (the pictures), `run/` (the page logs and reports), `e2e-<machine>.json`, `report.txt`.
 
+## Independent journeys: shuffled and alone
+
+Every journey must pass alone and in any order (doc/modern-ux/JOURNEYS.md, "Independent journeys"). The proof on the firmware:
+
+```sh
+scripts/mdmm-e2e.sh both --jobs 2 --shuffle 7        # the whole suite in a seeded random order (the seed is in the report: SHUFFLE seed 7)
+scripts/mdmm-e2e.sh md --isolate --tier machine --jobs 4   # each machine-tier journey in an editor of its own, fresh from factory memory (one start each)
+scripts/mdmm-e2e.sh mm --isolate --select 'journey-mm-song-*'   # a few, alone
+```
+
+`--shuffle` and `--isolate` reach `scripts/mdmm-journeys.sh`; `--tier` limits the standalone's journeys to a tier (page, machine, host). The report's `JOURNEY <name> left:` lines name a journey
+that did not put back what it changed (its tidy is to). A journey marked `alone: true` (an empty reset) always gets an editor of its own.
+
 ## What a run does
 
 - **Every journey, on the firmware.** The page journeys run in the standalone too (`--tier all`), so their `machine:` checks read the firmware's read-back, not the stub's. A journey that fails here and passes on the stub is stub-only.
