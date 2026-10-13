@@ -1072,9 +1072,18 @@ namespace
 		const bool taken = m.read8(0x29f300) == 'K' && m.read8(0x29f301) == 'I' && m.read8(0x29f302) == 'K'
 			&& m.read8(0x29f303) == ' ';
 		check(taken, "the firmware took the name (its last-name buffer, RAM 0x29f300)");
+		// B-128 (0.6 e2e, md-sampler-rename): the slot's own name (patch RAM, what SAMPLE MGR and the page's samples
+		// document show) stays as it was, also seconds later: 0x73 alone names the next sample received, it renames no slot
+		_rig.run(3000);
+		std::string slotName;
+		for(uint32_t i = 0; i < 4; ++i)
+			slotName += static_cast<char>(m.read8(0x700000 + ed::g_mdSampleNamesAddress + 5 * 5 + i));
+		std::printf("  ROM-06's name after 0x73 KIK: '%s'\n", slotName.c_str());
+		check(slotName.compare(0, 3, "KIK") != 0, "0x73 alone leaves the slot's name (B-128: Rename does not rename)");
 		_rig.page(R"({"op":"sampleName","slot":5,"name":"TOOLONG","id":61})");
 		check(_rig.lastResult() && !_rig.lastResult()->find("ok")->asBool(), "a name longer than 4 is refused");
 	}
+
 
 	// P4: the start-up animation holds input; the engine label says so until keys work.
 	void bootHold(const Bytes& _rom, const std::string& _romName)

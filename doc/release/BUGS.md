@@ -4,12 +4,20 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-128 · Machinedrum Sampler: Rename sends the name, but no slot is renamed
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`md-sampler-rename` on the firmware; it passes on the stub machine, which renames).
+- **What happens:** Sampler, a ROM slot, Rename, a name, Send name: the toast says the machine shows it in SAMPLE MGR, the slot's card keeps its old name.
+- **Cause (measured, `mdDeskFirmwareTest`, P3 sampler):** the firmware takes 0x73 into its last-name buffer (RAM 0x29f300) and leaves the slot's own name in patch RAM as it was, also seconds later: 0x73 names the next sample received (the name before an SDS dump), it renames no slot. On the emulated machine the page's samples document holds the machine's real names, so the "sent this session" name the page keeps for a real machine (MD-197's note) never shows either. P3-RESULT.md's "Rename is real" was read from the buffer, not from the slot.
+- **Options (Radek):** (a) Rename sends the name with the slot's sample again (name + SDS, the data the emulated machine's snapshot holds: seconds of SysEx, RAM slots only on a real machine); (b) Rename off for ROM slots, with the reason (the firmware renames on a sample transfer only); (c) on the local emulated machine only, write the name into the slot's name table. Not fixed: the choice changes what the feature is.
+- **Status:** open; `md-sampler-rename` stays red on the firmware until decided. The firmware test pins the measured behaviour.
+
 ## B-127 · Machinedrum: after a live recording with an erase, or one ended by STOP, Chain does nothing
 
 - **From:** the 0.6 e2e run, 2026-10-13 (`md-song-chain` after `md-seq-live-erase` on the same editor: the toast said "Chained", the machine held no chain).
 - **Cause (measured, `mdDeskFirmwareTest liveerase`, the chain after it):** after a live recording in which EXIT/NO and a TRIG key were held (Delete held: erase), or one stopped with STOP while recording, the firmware takes no BANK + TRIG gesture: no chain, not even the pattern change, until REC is pressed. Recording left with REC (PLAY) and no erase is not affected. Pressing REC on and off once (grid recording for a moment, nothing pressed in it) brings the gesture back; EXIT or STOP do not.
 - **Fix (`fix/0.6-e2e-2`):** the desk remembers that live recording ran; the first chain after it presses REC twice before the chain's keys. Test: `mdDeskFirmwareTest liveerase` chains A02 A03 after the erase and checks the firmware holds it; `md-seq-live-erase` then `md-song-chain` pass on the firmware.
-- **Status:** fixed on `fix/0.6-e2e-2`. Other panel-key gestures after such a recording (the SONG key's pads use SysEx, not keys) were not seen to fail.
+- **Status:** fixed on `fix/0.6-e2e-2`. Other panel-key gestures after such a recording were not checked.
 
 ## B-126 · Monomachine: a sub at 0 puts its handle on its caption; on a zoomed-out page the track list's tag hangs under its row
 
