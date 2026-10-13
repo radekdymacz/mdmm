@@ -4426,7 +4426,9 @@ ED.uni={geo(W,H){return{cx:W/2,sp:(W/2-12)/26,base:H-14,hh:H-36}},
   label(g,`unison ±${Math.round(uw*10)/10} st`)},
  handles(W,H){const G=this.geo(W,H);return[{x:G.cx+sv("UNIW")/127*12*G.sp,y:G.base-sv("UNIL")/127*G.hh,k:"UNIW · UNIL",drag:(x,y)=>{sset("UNIW",(x-G.cx)/G.sp/12*127);sset("UNIL",(G.base-y)/G.hh*127)}}]}};
 /* the subs: a sine one (SUB1) and two (SUB2) octaves down, a square one octave down (SUBX); the base faint */
-ED.sub={geo(W,H){return{x0:16,sp:(W-28)/27,base:H-16,hh:H-38}},
+/* the base high enough that a sub at 0 keeps its handle (5.5 px, 7 held) clear of the caption under it (0.6 e2e: "SQ" under
+   a handle on the firmware's kit, SUBX 0) */
+ED.sub={geo(W,H){return{x0:16,sp:(W-28)/27,base:H-21,hh:H-43}},
  bars(c){const k=ck(c);return k.map(n=>({n,semi:n==="SUB2"?-24:-12,dx:n==="SUBX"?-8:n==="SUB1"&&k.includes("SUBX")?8:0}))},
  draw(g,W,H,c){const G=this.geo(W,H),ink=cssv("--ink"),X=s=>G.x0+(s+25)*G.sp;grid(g,W,H);
   /* review 1: fine stems (2 px), the base 1 px and faint */

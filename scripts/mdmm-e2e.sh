@@ -55,6 +55,10 @@ PY
 	PIDS=""
 	for M in md mm; do
 		[ "$WHICH" = both ] || [ "$WHICH" = $M ] || continue
+		# the window at the page's design size (1440 x 924, as the page tier and the pictures): the background run's
+		# small window zooms the page below 100 %, where WebKit lays 9 px text out at 15 px (its minimum logical font
+		# size), so every fit check would measure a page no person sees at full size (0.6 e2e: md/mm-screens-fit)
+		GEARMULATOR_MDMM_BACKGROUND_SIZE=${GEARMULATOR_MDMM_BACKGROUND_SIZE:-1440x924} \
 		GEARMULATOR_MDMM_BACKGROUND_METER=1 GEARMULATOR_MDMM_SYX_FILE="$OUT/fixtures/$M.syx" GEARMULATOR_MDMM_WAV_FILE="$OUT/fixtures/e2e.wav" \
 		MDMM_JOURNEY_TIMEOUT=${MDMM_JOURNEY_TIMEOUT:-3600} MDMM_JOURNEY_SETTINGS=fresh MDMM_JOURNEY_E2E=1 MDMM_JOURNEY_OUT="$RUN/$M" \
 			scripts/mdmm-journeys.sh --background --jobs "$JOBS" "$M" "$SEL" > "$OUT/journeys-$M.log" 2>&1 &

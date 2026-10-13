@@ -2848,8 +2848,17 @@ const MdJourneys = (() => {
 		steps: [
 			{ say: "Sequence: the track list's generator tags (E 4/16, E 2/16+4) show whole, inside their row and clear of the M key (B-110)",
 				act: async (u, c) => { await closePops(u); u.click(tab("seq")); await sleep(400);
-					const rows = $all("#rail .th"), out = rows.filter(r => { const t = r.querySelector(".gtag"); if (!t) return false; const a = t.getBoundingClientRect(), b = r.getBoundingClientRect(); return a.bottom > b.bottom + 0.5 || a.right > b.right + 0.5; });
-					c.bad = [...Journey.cutText($1("#rail")), ...Journey.spills("#rail .th .nm, #rail .th .gtag"), ...Journey.overlaps("#rail .th .gtag", "#rail .th .ms, #rail .th .n"), ...out.map(r => r.textContent.trim().slice(0, 16) + ": tag out of its row")]; c.n = $all("#rail .th .gtag").length; },
+					const unseen = nm => { const t = nm.querySelector(".gtag"); if (!t) return false; const a = t.getBoundingClientRect(), n = nm.getBoundingClientRect(); return a.top >= n.bottom - 0.5; };
+					const rows = $all("#rail .th"), out = rows.filter(r => { const t = r.querySelector(".gtag"); if (!t || unseen(r.querySelector(".nm"))) return false; const a = t.getBoundingClientRect(), b = r.getBoundingClientRect(); return a.bottom > b.bottom + 0.5 || a.right > b.right + 0.5; });
+					/* a tag that does not fit beside the name wraps to the name's second line, out of sight (B-113): whole or
+					   unseen, never half. In WebKit on a page zoomed below 100 % (the background run's small window) 9 px
+					   text is laid out at 15 px, every tag goes out of sight that way, and its hidden line is still
+					   counted in the name's scroll width: that is no cut (0.6 e2e) */
+					const seenOverlaps = () => { const seen = $all("#rail .th .nm.tagged").filter(nm => !unseen(nm)).map(nm => nm.querySelector(".gtag")).filter(Boolean);
+						seen.forEach(t => t.dataset.seen = "1"); try { return Journey.overlaps("#rail .th .gtag[data-seen]", "#rail .th .ms, #rail .th .n"); } finally { seen.forEach(t => delete t.dataset.seen); } };
+					const half = $all("#rail .th .nm.tagged").filter(nm => { const t = nm.querySelector(".gtag"), a = t?.getBoundingClientRect(), n = nm.getBoundingClientRect(); return a && !unseen(nm) && (a.right > n.right + 0.5 || a.bottom > n.bottom + 0.5); });
+					const cut = Journey.cutText($1("#rail")).filter(x => !/^div\.nm\.tagged /.test(x) || $all("#rail .th .nm.tagged").some(nm => !unseen(nm) && x.includes(nm.textContent.trim().replace(/\s+/g, " ").slice(0, 40))));
+					c.bad = [...cut, ...half.map(nm => nm.textContent.trim() + ": tag half shown"), ...Journey.spills("#rail .th .nm:not(.tagged), #rail .th .gtag"), ...seenOverlaps(), ...out.map(r => r.textContent.trim().slice(0, 16) + ": tag out of its row")]; c.n = $all("#rail .th .gtag").length; },
 				screen: c => ok(c.n > 0 && !c.bad.length, `${c.n} tags; ${c.bad.slice(0, 4).join(" | ")}`) }
 			,{ say: "Sequence: a long name (EMPTY, an empty kit's tracks) leaves no room for the tag: the tag is whole beside it or out of sight, never half (B-113)",
 				act: async (u, c) => { c.bad = []; c.n = 0; for (const row of $all("#rail .th").slice(0, 4)) { const nm = row.querySelector(".nm"), b = nm?.querySelector("b,.nmt") || nm?.firstChild, tag = row.querySelector(".gtag"); if (!tag || !b) continue; c.n++;
