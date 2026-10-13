@@ -54,7 +54,7 @@ namespace mdDesk
 	{
 		static const std::map<std::string, void (Desk::*)(const Value&)> map{
 			{"modSet", &Desk::setModulators}, {"knobs", &Desk::setKnobs}, {"soloSet", &Desk::setSolo},
-			{"sampleWave", &Desk::sampleWave}, {"audition", &Desk::audition}, {"auditionStop", &Desk::auditionStop}};
+			{"sampleName", &Desk::renameSample}, {"sampleWave", &Desk::sampleWave}, {"audition", &Desk::audition}, {"auditionStop", &Desk::auditionStop}};
 		return map;
 	}
 
@@ -278,6 +278,48 @@ namespace mdDesk
 		m.set("length", a.length);
 		m.set("rate", a.rate);
 		publish(m);
+	}
+
+	// B-128: the firmware takes 0x73 only as the name of the NEXT sample received and renames no slot. So Rename sends the
+	// name, then the slot's own sample again by SDS into the same slot (the samples as the bank read them from memory, so
+	// the audio stays as it was; only the name changes). A machine whose audio cannot be read back (a real one ignores SDS
+	// dump requests) is refused with that reason: the name alone would change nothing.
+	void Desk::renameSample(const Value& _message)
+	{
+		namespace ed = elektronData;
+		const auto refuse = [&](const std::string& _why) { result(_message, {_why}, {}); };
+		const auto slot = static_cast<uint8_t>(_message.find("slot")->asNumber());
+		const auto* name = _message.find("name");
+		if(!name || !name->isString() || ed::mdSetSampleName(slot, name->asString()).empty())
+			return refuse("A sample name is 1-4 letters (A-Z, 0-9, space, punctuation) for ROM slot 1-48");
+		if(!isInputReady())
+			return refuse(MdModel::lifecycleText(lifecycle()));
+		if(!m_samples)
+			return refuse("Rename needs the slot's audio, and this machine cannot send it back over MIDI (it ignores SDS dump requests): "
+				"the Machinedrum renames a sample only when it receives the sample again. Rename it in SAMPLE MGR on the machine, "
+				"or load the file again with Load sample.");
+		const auto& s = m_samples->rom[slot];
+		if(s.empty || !s.pcm || s.pcm->empty() || !s.rate)
+			return refuse("ROM-" + std::to_string(slot + 1) + " holds no sample: there is nothing to name.");
+		ed::MdSampleUpload upload;
+		upload.samples = *s.pcm;
+		upload.rate = s.rate;
+		upload.name = name->asString();
+		if(s.loop)
+			upload.notes.push_back("The slot's loop points are not sent again.");
+		if(const auto why = machine().sendSample(slot, upload); !why.empty())
+			return refuse(why);
+		SampleLoad l;
+		l.slot = slot;
+		l.file = "Rename";
+		l.name = upload.name;
+		l.rate = upload.rate;
+		l.length = static_cast<uint32_t>(upload.samples.size());
+		l.notes = upload.notes;
+		l.notes.insert(l.notes.begin(), "Rename sends the name, then the slot's own sample again: the machine renames a sample only when it receives it.");
+		m_sampleLoad = std::move(l);
+		publishSampleLoad(true);
+		result(_message, {}, {});
 	}
 
 	std::string Desk::loadSample(const uint8_t _slot, const std::string& _fileName, const Bytes& _file)

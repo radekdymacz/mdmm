@@ -2427,13 +2427,13 @@ const MdJourneys = (() => {
 		],
 		async tidy() { $1("#syxpop").hidden = true; }
 	};
-	/* MD-197: a ROM slot's name is sent (SysEx 0x73) and shown */
+	/* MD-197, B-128: Rename sends the name and the slot's own sample again (SysEx 0x73, then SDS); the machine's own name shows. A slot that holds a sample, else there is nothing to send again. */
 	const sampleRename = {
 		name: "md-sampler-rename", proves: ["MD-197"],
 		steps: [
 			go("sampler"),
-			{ say: "click a ROM slot, click Rename, type a name and click Send name", act: async (u, c) => { const k = $all(".slotk.rom")[5]; c.slot = +k.dataset.slot.slice(3); u.click(k); await sleep(300); results.length = 0; u.click(`[data-rename="${c.slot}"]`); await until(() => !!$1("#rname"), 2000); u.type("#rname", "jrny"); await sleep(100); u.click(dlgButton("Send name")); },
-				screen: c => ok(($1(".romsel header")?.textContent || "").includes("JRNY"), "card " + ($1(".romsel header")?.textContent || "")), machine: c => ok(results.some(r => r.op === "sampleName" && r.ok), "results " + results.map(r => r.op + ":" + r.ok).join(",")), within: 6000 }
+			{ say: "click a ROM slot, click Rename, type a name and click Rename", act: async (u, c) => { const k = $all(".slotk.rom").find(b => !b.style.opacity) || $all(".slotk.rom")[0]; c.slot = +k.dataset.slot.slice(3); u.click(k); await sleep(300); results.length = 0; u.click(`[data-rename="${c.slot}"]`); await until(() => !!$1("#rname"), 2000); u.type("#rname", "jrny"); await sleep(100); u.click(dlgButton("Rename")); },
+				screen: c => ok(($1(".romsel header")?.textContent || "").includes("JRNY"), "card " + ($1(".romsel header")?.textContent || "")), machine: c => ok(results.some(r => r.op === "sampleName" && r.ok), "results " + results.map(r => r.op + ":" + r.ok).join(",")), within: 30000 }
 		]
 	};
 	/* MD-280, MD-283: rename the current kit (SysEx 0x55), save it (0x59), and put it back */

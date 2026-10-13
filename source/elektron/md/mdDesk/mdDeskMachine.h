@@ -255,7 +255,6 @@ namespace mdDesk
 		deskCore::Outcome cmdSaveSong(const Value&, const Documents&);
 		deskCore::Outcome askSaveSong(const Value&, const Documents&);
 		deskCore::Outcome cmdReloadSong(const Value&, const Documents&);
-		deskCore::Outcome cmdSampleName(const Value&, const Documents&);
 		deskCore::Outcome cmdSampleCancel(const Value&, const Documents&);
 		// Every SysEx but a sample's goes here (m_out holds it while a sample is on its way).
 		void sendSysex(const Bytes& _message);

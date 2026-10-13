@@ -112,6 +112,7 @@ namespace mdDesk
 		void publishSampleLoad(bool _force = false);
 		void publishSamples();
 		// P9: a slot's detail and the audition (the desk's own: they read the bank it holds).
+		void renameSample(const Value& _message);
 		void sampleWave(const Value& _message);
 		void audition(const Value& _message);
 		void auditionStop(const Value& _message);

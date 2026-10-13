@@ -379,7 +379,6 @@ namespace mdDesk
 			{"selectSong", Owner::Machine, Gate::Input, -1, {s}, "LOAD SONG (stopped)"},
 			{"saveSong", Owner::Machine, Gate::Input, -1, {opt(s)}, "SAVE SONG: the machine's song into its slot (the current one without s)"},
 			{"reloadSong", Owner::Machine, Gate::Input, -1, {}, "stop, load, play"},
-			{"sampleName", Owner::Machine, Gate::Input, -1, {{"slot", ArgType::Integer, 0, 47}, {"name", ArgType::Text}}, "0x73"},
 			{"sampleCancel", Owner::Machine, Gate::None, -1, {}, "stop the sample on its way to a ROM slot (SDS CANCEL); the file is chosen with chooseSample"},
 			{"play", Owner::Machine, Gate::Input, -1, {}, ""},
 			{"stop", Owner::Machine, Gate::Input, -1, {}, ""},
@@ -398,6 +397,8 @@ namespace mdDesk
 			{"soloSet", Owner::Setup, Gate::None, -1, {{"tracks", ArgType::Array}, {"mutes", ArgType::Array, 0, 0, true}},
 				"the page's solo (the tracks soloed) and the mutes the person had before it, kept with the project; the plug-in says them again as {\"type\":\"solo\"}"},
 			// ---- P9: the samples the desk read (the emulated machine's memory), the desk's own ----
+			{"sampleName", Owner::Setup, Gate::None, -1, {{"slot", ArgType::Integer, 0, 47}, {"name", ArgType::Text}},
+				"Rename a ROM slot (B-128): the name (0x73), then the slot's own sample again as SDS into the same slot, so the audio stays as it was; refused when the slot's audio cannot be read (a real machine)"},
 			{"sampleWave", Owner::Setup, Gate::None, -1, {{"bank", ArgType::Text, 0, 0, false, {"rom", "ram"}}, {"slot", ArgType::Integer, 0, 47},
 				{"bins", ArgType::Integer, 1, static_cast<double>(ed::g_mdSampleWaveMaxBins)}},
 				"a slot's waveform at the width it is drawn at: {\"type\":\"sampleWave\"} with up to bins min, max pairs (16-bit)"},
