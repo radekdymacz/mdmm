@@ -145,7 +145,8 @@ namespace elektronData
 				p.range(track + " param " + std::to_string(i), _k.params[t][i], 0, 127);
 			p.range(track + " level", _k.levels[t], 0, 127);
 			const auto& l = _k.lfos[t];
-			p.range(track + " lfo.track", l.track, 0, 15);
+			// B-131: 16 is the firmware's own value after a CTR machine (no track); a dump of it goes back as it is
+			p.range(track + " lfo.track", l.track, 0, 16);
 			p.range(track + " lfo.param", l.param, 0, 23);
 			p.range(track + " lfo.shape1", l.shape1, 0, 5);
 			p.range(track + " lfo.shape2", l.shape2, 0, 5);
