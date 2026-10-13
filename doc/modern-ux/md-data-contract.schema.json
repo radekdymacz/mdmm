@@ -5688,35 +5688,6 @@
         },
         {
           "type": "object",
-          "description": "machine: 0x73",
-          "required": ["op", "slot", "name"],
-          "properties": {
-            "op": {
-              "const": "sampleName"
-            },
-            "id": {
-              "type": "integer"
-            },
-            "g": {
-              "type": "integer",
-              "minimum": 0
-            },
-            "force": {
-              "type": ["boolean", "integer"]
-            },
-            "slot": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 47
-            },
-            "name": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
           "description": "machine: stop the sample on its way to a ROM slot (SDS CANCEL); the file is chosen with chooseSample",
           "required": ["op"],
           "properties": {
@@ -6041,6 +6012,35 @@
             },
             "mutes": {
               "type": "array"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "setup: Rename a ROM slot (B-128): the name (0x73), then the slot's own sample again as SDS into the same slot, so the audio stays as it was; refused when the slot's audio cannot be read (a real machine)",
+          "required": ["op", "slot", "name"],
+          "properties": {
+            "op": {
+              "const": "sampleName"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "slot": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 47
+            },
+            "name": {
+              "type": "string"
             }
           },
           "additionalProperties": false

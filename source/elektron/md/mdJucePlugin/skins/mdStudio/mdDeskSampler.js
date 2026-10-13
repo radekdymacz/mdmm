@@ -339,7 +339,7 @@ function renderSampler() {
 		h = `<section class="card romsel"><header><h3>${code}${s && s.name ? ` <span class="note">${s.name}</span>` : romName(k) ? ` <span class="note" title="Sent this session with Rename; a real machine cannot report names">sent: ${romName(k)}</span>` : ""}</h3><span title="${s ? "" : NA.names}">${s ? smpInfo(s) : smpWhy() || ""}</span></header>
    <div class="romtop">${waveBox(`<canvas class="ed smpwave" data-ed="rom" data-k="${k}" aria-label="${code} waveform"></canvas>`, ["rom", k - 1])}
     <div class="romside"><div class="slotbar"><span class="note">${users.length ? "Used by " + users.map(i => "track " + (i + 1)).join(", ") : "Not used in this kit"}</span></div>
-     <div class="slotbar"><button class="cream" data-romput="${k}">Put on track ${S.sel + 1}</button><button data-smpload="${k}" ${sending ? "disabled" : ""} title="Choose a WAV or AIFF file for ${code}. The plug-in reads it, makes it mono 16-bit (44.1 kHz at most), cuts it to the memory left and sends it as SDS with a 4-letter name from the file name. It replaces what the slot holds.">Load sample…</button><button data-na="send" disabled title="${NA.send}">Send</button><button data-rename="${k}" title="Send a new name (4 letters) to the machine, SysEx 0x73">Rename</button></div>
+     <div class="slotbar"><button class="cream" data-romput="${k}">Put on track ${S.sel + 1}</button><button data-smpload="${k}" ${sending ? "disabled" : ""} title="Choose a WAV or AIFF file for ${code}. The plug-in reads it, makes it mono 16-bit (44.1 kHz at most), cuts it to the memory left and sends it as SDS with a 4-letter name from the file name. It replaces what the slot holds.">Load sample…</button><button data-na="send" disabled title="${NA.send}">Send</button><button data-rename="${k}" title="Rename ${code}: the plug-in sends the new name (4 letters, SysEx 0x73) and then the slot's own sample again, unchanged, because the machine renames a sample only when it receives it. Needs the emulated machine: a real one does not send its samples back.">Rename</button></div>
      ${u != null ? `<div class="romplay"><div class="cap">Playback · track ${u + 1}</div><div class="ctl four">${SMPL.map(q => pc("syn", q, { t: u })).join("")}</div></div>` : `<div class="romplay"><div class="cap">Playback</div><span class="note">No track in this kit plays ${code}. Put it on a track to set its pitch, decay, start and end here.</span></div>`}</div></div>
    ${smpLoadCard(k)}</section>
    ${romTiles(k, sending)}`;
@@ -395,8 +395,8 @@ function clickSamplerSteps(e) {
 	}
 	const rn = e.target.closest("[data-rename]"); if (rn) {
 		const k = +rn.dataset.rename;
-		ask(`Name for <b>${romCode(k)}</b> (up to 4 letters, sent with SysEx 0x73):<br><input id="rname" maxlength="4" value="${romName(k)}" style="font:16px var(--mono);width:8ch;margin-top:8px;text-transform:uppercase">`,
-			[["Send name", "cream", () => { const v = ($("#rname")?.value || "").toUpperCase(); if (!v) return; SENT_NAMES[k] = v; cmd("sampleName", { slot: k - 1, name: v }); render(); }], ["Cancel", "", () => { }]]);
+		ask(`Name for <b>${romCode(k)}</b> (up to 4 letters). The sample is sent to the machine again with the new name, unchanged:<br><input id="rname" maxlength="4" value="${romName(k)}" style="font:16px var(--mono);width:8ch;margin-top:8px;text-transform:uppercase">`,
+			[["Rename", "cream", () => { const v = ($("#rname")?.value || "").toUpperCase(); if (!v) return; cmd("sampleName", { slot: k - 1, name: v }); render(); }], ["Cancel", "", () => { }]]);
 		setTimeout(() => $("#rname")?.focus(), 0); return true;
 	}
 	return false;

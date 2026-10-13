@@ -258,13 +258,18 @@ The desk names the trig it expects (`mdDesk::nextLockStep`) as
 read-back shows the real lock. Checked on firmware: the desk said step 9, the
 firmware locked step 9.
 
-**UW samples (P3, P9).** `sampleName` (slot 0-47, 1-4 characters) sends the
-manual's 0x73. Over MIDI that is all the firmware offers: it has no request for
-names, memory in use or sample audio, and it ignores SDS dump requests (measured,
-no reply for three slots). So on a real Machinedrum the waveforms, names and
-memory cannot be shown (`capabilities.sampleAudio` false, with the reason). P9:
-the emulated machine's memory has all of it; see 4.9 for the `md-desk/samples`
-document, and a sample file into a ROM slot (`chooseSample`, SDS) on both engines.
+**UW samples (P3, P9).** `sampleName` (slot 0-47, 1-4 characters) is the editor's own
+op (Owner::Setup, `Desk::renameSample`). The manual's 0x73 names only the NEXT sample
+the firmware receives and renames no slot (B-128, measured), so Rename sends 0x73 and then
+the slot's own sample again by SDS into the same slot (the bank's samples, bit-identical;
+loop points are not sent again), shown as a `sampleLoad` with file "Rename". It is refused
+with the reason for an empty slot and when the audio cannot be read: over MIDI the firmware
+has no request for names, memory in use or sample audio, and it ignores SDS dump requests
+(measured, no reply for three slots). So on a real Machinedrum the waveforms, names and
+memory cannot be shown, nor can a slot be renamed (`capabilities.sampleAudio` and
+`sampleNames` false, with the reason). P9: the emulated machine's memory has all of it;
+see 4.9 for the `md-desk/samples` document, and a sample file into a ROM slot
+(`chooseSample`, SDS) on both engines.
 
 **Start-up (P4).** MD OS 1.63 answers MIDI about 13 s before it takes panel keys:
 its start-up animation ignores them (PLAY first taken 12.7 s after MIDI ready on a

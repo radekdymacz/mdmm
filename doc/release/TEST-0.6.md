@@ -172,3 +172,7 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 3. MM: on a MIDI track the key reverts its MIDI page only. Save the kit (Save): the saved sound is the stored one, the key is off.
 4. Both: Mix, solo a track (the others go silent), save the DAW project (or quit the standalone), reopen it: the solo is still on (S lit on that track, the others muted), M edits still mean the mutes you had before the solo, and letting the solo go gives those mutes back. A project saved with no solo opens with none (B-123).
 
+## Machinedrum Sampler: Rename (`fix/0.6-b128`, B-128)
+
+1. Sampler, a ROM slot that holds a sample, Rename, a name, Rename: a bar shows the sending, then the slot's card and key show the new name and the sample sounds the same (audition it before and after). The machine's SAMPLE MGR shows the name. The slot's loop points, if it had any, are not kept.
+2. An empty ROM slot: Rename says there is nothing to name. HW MIDI: the Rename key is off with the reason.

@@ -397,7 +397,9 @@ namespace mdDesk
 		c.set("lcd", m_profile.memory, "The machine's own LCD is on the machine.");
 		c.set("workingKitMemory", m_profile.memory, "The working kit is the stored slot plus the edits the editor saw.");
 		c.set("mutesFromMemory", m_profile.memory && m_telemetry.mutes >= 0, "The mutes are the ones the editor sent.");
-		c.set("sampleNames", true);
+		// B-128: Rename sends the slot's own sample again, so it needs its audio
+		c.set("sampleNames", m_profile.memory, "Rename sends the slot's sample again with the new name, and a real Machinedrum does not send its samples "
+			"(it ignores SDS dump requests): rename it in SAMPLE MGR on the machine, or load the file again.");
 		// P9: the waveforms come from the emulated machine's memory; a real Machinedrum ignores SDS dump
 		// requests (measured on OS 1.63, P3), so its sample audio cannot be read.
 		c.set("sampleAudio", m_profile.memory, "A real Machinedrum does not send its samples: it ignores SDS dump requests "
@@ -733,7 +735,7 @@ namespace mdDesk
 			{"record", &MdMachine::cmdRecord}, {"liveErase", &MdMachine::cmdLiveErase}, {"recTrig", &MdMachine::cmdRecTrig}, {"noteOn", &MdMachine::cmdNoteOn}, {"noteOff", &MdMachine::cmdNoteOff}, {"chain", &MdMachine::cmdChain},
 			{"chainClear", &MdMachine::cmdChainClear}, {"globalSlot", &MdMachine::cmdGlobalSlot},
 			{"selectSong", &MdMachine::cmdSelectSong}, {"reloadSong", &MdMachine::cmdReloadSong}, {"saveSong", &MdMachine::cmdSaveSong},
-			{"sampleName", &MdMachine::cmdSampleName}, {"sampleCancel", &MdMachine::cmdSampleCancel}, {"play", &MdMachine::cmdPlay}, {"stop", &MdMachine::cmdStop},
+			{"sampleCancel", &MdMachine::cmdSampleCancel}, {"play", &MdMachine::cmdPlay}, {"stop", &MdMachine::cmdStop},
 			{"mute", &MdMachine::cmdMute}, {"followHost", &MdMachine::cmdFollowHost}, {"seqMode", &MdMachine::cmdSeqMode},
 			{"pause", &MdMachine::cmdPause}, {"resume", &MdMachine::cmdResume}, {"playFrom", &MdMachine::cmdPlayFrom},
 			{"panic", &MdMachine::cmdPanic}, {"nudge", &MdMachine::cmdNudge}};
@@ -1430,24 +1432,6 @@ namespace mdDesk
 		else
 			m_session.loadSong(*song);
 		return ok("Song reloaded: stop, load, play");
-	}
-
-	// UW ROM slot names: the firmware takes 0x73 but never reports names over MIDI (the emulated machine's
-	// are read from its memory with its samples, P9).
-	Outcome MdMachine::cmdSampleName(const Value& _m, const Documents&)
-	{
-		const auto slot = *intOf(_m, "slot");
-		const auto* name = _m.find("name");
-		const auto bytes = name && name->isString() ? ed::mdSetSampleName(static_cast<uint8_t>(slot), name->asString())
-			: std::vector<uint8_t>{};
-		if(bytes.empty())
-			return refuse("A sample name is 1-4 letters (A-Z, 0-9, space, punctuation) for ROM slot 1-48");
-		if(canSendSysex())
-			sendSysex(bytes);
-		char label[8];
-		std::snprintf(label, sizeof(label), "ROM-%02d", slot + 1);
-		return ok(std::string("Sent the name to ") + label + ". The Machinedrum shows it in SAMPLE MGR; a real one cannot report "
-			"names back over MIDI.");
 	}
 
 	// B-098 (the 0.6 e2e run, 2026-10-13): after the emulated machine starts, its working song (the one SONG mode plays) holds

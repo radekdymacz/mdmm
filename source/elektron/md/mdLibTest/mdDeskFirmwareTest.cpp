@@ -1060,30 +1060,29 @@ namespace
 		_rig.page(R"({"op":"modSet","id":73,"doc":{"schema":"md-desk/modulators","version":1,"sources":[],"links":[]}})");
 	}
 
-	// P3 sampler: Rename sends 0x73. The firmware has no name request, so the only
-	// evidence is its own copy of the last name it took (RAM 0x29f300).
+	// P3 sampler: 0x73 on the firmware. The firmware has no name request; the evidence is its own copy of the last name it
+	// took (RAM 0x29f300). B-128: 0x73 alone renames no slot (it names the NEXT sample received), so the desk's Rename
+	// (sampleRename, `samples` mode) sends the sample again; without the slot's audio (no sample bank: a real machine) it refuses.
 	void sampleName(Rig& _rig)
 	{
 		auto& m = _rig.machine();
-		std::puts("== P3 sampler: Rename (0x73)");
-		_rig.page(R"({"op":"sampleName","slot":5,"name":"KIK","id":60})");
-		check(resultOk(_rig), "sample name accepted");
+		std::puts("== P3 sampler: 0x73 (the name of the next sample)");
+		m.send(ed::mdSetSampleName(5, "KIK"));
 		_rig.run(100);
 		const bool taken = m.read8(0x29f300) == 'K' && m.read8(0x29f301) == 'I' && m.read8(0x29f302) == 'K'
 			&& m.read8(0x29f303) == ' ';
 		check(taken, "the firmware took the name (its last-name buffer, RAM 0x29f300)");
-		// B-128 (0.6 e2e, md-sampler-rename): the slot's own name (patch RAM, what SAMPLE MGR and the page's samples
-		// document show) stays as it was, also seconds later: 0x73 alone names the next sample received, it renames no slot
 		_rig.run(3000);
 		std::string slotName;
 		for(uint32_t i = 0; i < 4; ++i)
 			slotName += static_cast<char>(m.read8(0x700000 + ed::g_mdSampleNamesAddress + 5 * 5 + i));
 		std::printf("  ROM-06's name after 0x73 KIK: '%s'\n", slotName.c_str());
-		check(slotName.compare(0, 3, "KIK") != 0, "0x73 alone leaves the slot's name (B-128: Rename does not rename)");
+		check(slotName.compare(0, 3, "KIK") != 0, "0x73 alone leaves the slot's name (B-128: it renames no slot)");
+		_rig.page(R"({"op":"sampleName","slot":5,"name":"KIK","id":60})");
+		check(_rig.lastResult() && !_rig.lastResult()->find("ok")->asBool(), "Rename without the slot's audio is refused (a real machine)");
 		_rig.page(R"({"op":"sampleName","slot":5,"name":"TOOLONG","id":61})");
 		check(_rig.lastResult() && !_rig.lastResult()->find("ok")->asBool(), "a name longer than 4 is refused");
 	}
-
 
 	// P4: the start-up animation holds input; the engine label says so until keys work.
 	void bootHold(const Bytes& _rom, const std::string& _romName)
@@ -3643,6 +3642,32 @@ namespace
 		_rig.page(R"({"op":"stop"})");
 		check(_rig.runUntil([&] { return !slotDoc("ram", 0).find("empty")->asBool(); }, 10000), "RAM 1 shows the take RAM-R1 recorded ("
 			+ std::to_string(int(slotDoc("ram", 0).find("length")->asNumber())) + " samples)");
+
+		// B-128: Rename sends the name, then the slot's own sample again; the audio stays bit-identical, the name reads back.
+		{
+			const auto bankOf = [&] { return ed::readMdSampleBank(md::sampleMemoryOf(_rig.machine().hardware())); };
+			const auto rename = [&](const int _slot, const char* _name)
+			{
+				const auto before = bankOf().rom[size_t(_slot)];
+				check(!before.empty && before.pcm && !before.pcm->empty(), "ROM-" + std::to_string(_slot + 1) + " holds a sample to rename");
+				_rig.page("{\"op\":\"sampleName\",\"slot\":" + std::to_string(_slot) + ",\"name\":\"" + _name + "\",\"id\":" + std::to_string(700 + _slot) + "}");
+				check(resultOk(_rig), "Rename ROM-" + std::to_string(_slot + 1) + " accepted");
+				const bool done = _rig.runUntil([&] { const auto& l = _rig.sampleLoad(); return l && l->find("state")->asString() != "sending"; }, 120000);
+				check(done && _rig.sampleLoad()->find("state")->asString() == "done", "the transfer is shown like a sample load, and ends");
+				_rig.run(3000);
+				const auto after = bankOf().rom[size_t(_slot)];
+				check(after.name == _name, "ROM-" + std::to_string(_slot + 1) + " reads back the new name '" + after.name + "'");
+				check(after.length == before.length && after.rate == before.rate && after.pcm && *after.pcm == *before.pcm,
+					"ROM-" + std::to_string(_slot + 1) + ": the sample data are unchanged (" + std::to_string(after.length) + " samples)");
+				check(_rig.runUntil([&] { return slotDoc("rom", _slot).find("name")->isString() && slotDoc("rom", _slot).find("name")->asString() == _name; }, 20000),
+					"the page's samples document shows the name");
+			};
+			rename(40, "NEWT");		// a sample loaded here
+			rename(0, "KICK");			// a factory sample
+			check(slotDoc("rom", 1).find("length")->asNumber() > 0, "the other slots are untouched");
+			_rig.page(R"({"op":"sampleName","slot":47,"name":"NONE","id":790})");
+			check(_rig.lastResult() && !_rig.lastResult()->find("ok")->asBool(), "an empty slot is refused: nothing to name");
+		}
 	}
 
 	// An unsaved kit edit of the kit that plays survives a trig elsewhere (a pattern dump over the current pattern
