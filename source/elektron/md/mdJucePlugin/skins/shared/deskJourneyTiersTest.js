@@ -39,6 +39,13 @@ const picked = async sel => { ctx.location.search = "?selftest=" + encodeURIComp
 	check(await picked("journey-seq-*~page") === "md-seq-paint-undo md-seq-rotate", "names, then the tier");
 	check(await picked("journey~page@2/2") === "md-seq-rotate", "the shard after the tier: every 2nd page journey from the 2nd");
 	check(await picked("journey") === all.map(j => j.name).join(" "), "no tier: all");
+	/* ":shuffle-<seed>": a permutation, the same for the same seed, another for another, before the shard; ":list": names, nothing run */
+	const a = (await picked("journey:shuffle-7")).split(" "), b = (await picked("journey:shuffle-7")).split(" "), c = (await picked("journey:shuffle-8")).split(" ");
+	check(a.join() === b.join() && [...a].sort().join() === all.map(j => j.name).sort().join(), ":shuffle-7: all of them, the same order each time");
+	check(a.join() !== all.map(j => j.name).join() || c.join() !== all.map(j => j.name).join(), "a shuffle changes the order (for some seed)");
+	check([...(await picked("journey~page@1/2:shuffle-7")).split(" "), ...(await picked("journey~page@2/2:shuffle-7")).split(" ")].sort().join(" ") === "md-mix-ms-off md-seq-paint-undo md-seq-rotate", "the shuffled shards together are the page journeys");
+	let lines = []; ctx.location.search = "?selftest=" + encodeURIComponent("journey-seq-*:list"); await J.run(all, { log: t => lines.push(t), ready: async () => { lines.push("READY"); return false; } });
+	check(lines.some(l => l === "JOURNEYS list: md-seq-paint-undo md-seq-rotate") && !lines.includes("READY"), ":list names the journeys and runs nothing");
 	console.log(failures ? `deskJourneyTiersTest: ${failures} FAILED` : "deskJourneyTiersTest: PASS");
 	process.exit(failures ? 1 : 0);
 })();
