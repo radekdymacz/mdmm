@@ -1,6 +1,5 @@
-/* Download flow: 1 machine -> 2 name your price (optional) -> 3 download.
-   State lives only in the URL (?ed=md|mm&thanks=1). No storage, no cookies, no requests.
-   Payment is a plain link-out to a Lemon Squeezy hosted checkout; no Lemon Squeezy script. */
+/* Download flow: 1 machine -> 2 download. The download is free; support is a plain link to GitHub Sponsors.
+   State lives only in the URL (?ed=md|mm&os=...). No storage, no cookies, no requests. */
 (function () {
   "use strict";
   var C = window.MDMM_CONFIG || {};
@@ -55,7 +54,7 @@
   document.querySelector("[data-name]").textContent = name;
   document.title = "Download " + name + " — MD + MM Editor";
 
-  var hasFile = false, payUi = false; /* hasFile: the chosen OS has a download; payUi: the pay block is set up */
+  var hasFile = false; /* the chosen OS has a download */
   onOs = function () {
     var D = (OS[os] || {})[ed] || {};
     hasFile = ready(D.url);
@@ -67,108 +66,16 @@
     });
     var dmg = document.querySelector("[data-dmg-link]");
     if (dmg) { dmg.href = ready(D.dmg) ? D.dmg : rel; dmg.parentNode.hidden = !ready(D.dmg); }
-    /* no download for this OS (Linux): offer no payment either, only the releases link */
-    if (payUi) { support.hidden = !hasFile; plain.hidden = hasFile; }
   };
   useOs(os);
 
-  var pay = C.payments || {};
-  var ls = (pay.lemonsqueezy || {}).checkoutUrl;
-  var provider = pay.provider === "none" ? null : ready(ls) ? "lemonsqueezy" : null;
-  var thanks = q.get("thanks") === "1";
-  var support = document.getElementById("support");
-  var plain = document.getElementById("plain");
   var started = document.getElementById("started");
-  var nudge = document.getElementById("nudge");
-  var progress = document.querySelectorAll("[data-prog]");
-
-  function mark(n) {
-    progress.forEach(function (li) {
-      var k = Number(li.dataset.prog);
-      li.classList.toggle("done", k < n);
-      if (k === n) li.setAttribute("aria-current", "step"); else li.removeAttribute("aria-current");
-    });
-  }
-  function download() {
-    started.hidden = false;
-    nudge.hidden = !(provider && !thanks && hasFile);
-    mark(3);
-    location.href = fileUrl; /* a file download: this page stays */
-  }
   document.querySelectorAll("[data-download]").forEach(function (el) {
     if (el.tagName === "A") el.href = fileUrl;
-    el.addEventListener("click", function (e) { e.preventDefault(); download(); });
-  });
-
-  if (thanks) {
-    document.getElementById("thanks").hidden = false;
-    plain.hidden = true;
-    mark(3);
-    return;
-  }
-  if (!provider) { mark(3); return; } /* no payment configured: download only */
-
-  /* pay what you want */
-  payUi = true;
-  plain.hidden = hasFile;
-  support.hidden = !hasFile;
-  var sym = pay.symbol || "€", cur = pay.currency || "EUR";
-  document.getElementById("cur").textContent = cur;
-  var box = document.getElementById("amounts");
-  (pay.amounts || []).forEach(function (a) {
-    var l = document.createElement("label");
-    l.className = "choice";
-    var i = document.createElement("input");
-    i.type = "radio"; i.name = "amount"; i.value = String(Number(a.value));
-    if (Number(a.value) === Number(pay.preselect)) i.checked = true;
-    var c = document.createElement("span");
-    c.className = "card";
-    var b = document.createElement("b"); b.textContent = sym + Number(a.value);
-    var s = document.createElement("small"); s.textContent = a.label || "";
-    c.appendChild(b); c.appendChild(s); l.appendChild(i); l.appendChild(c); box.appendChild(l);
-  });
-  var custom = document.getElementById("custom");
-  var btn = document.getElementById("pay");
-  var amount = function () {
-    var v = parseInt(custom.value, 10);
-    if (v > 0) return Math.min(v, 1000);
-    var r = box.querySelector("input:checked");
-    return r ? Number(r.value) : 0;
-  };
-  var sync = function () { var a = amount(); btn.textContent = a > 0 ? "Continue to pay " + sym + a : "Continue to checkout"; };
-  box.addEventListener("change", function () { custom.value = ""; sync(); });
-  custom.addEventListener("input", function () {
-    if (parseInt(custom.value, 10) > 0) box.querySelectorAll("input").forEach(function (i) { i.checked = false; });
-    sync();
-  });
-  sync();
-
-  /* Lemon Squeezy share links take checkout[custom][...] as order metadata only; the price itself
-     cannot be preset by URL, so the person types it at checkout (the note says so). */
-  btn.addEventListener("click", function () {
-    var u = new URL(ls);
-    u.searchParams.set("checkout[custom][editor]", ed);
-    u.searchParams.set("checkout[custom][os]", os);
-    var a = amount();
-    if (a > 0) u.searchParams.set("checkout[custom][suggested]", String(a));
-    window.open(u.toString(), "_blank", "noopener");
-    download();
-  });
-
-  var g = C.goal || {};
-  if (g.enabled && Number(g.target) > 0) {
-    var pct = Math.max(0, Math.min(100, Math.round((Number(g.raised) || 0) / Number(g.target) * 100)));
-    document.getElementById("goalfill").style.width = pct + "%";
-    document.getElementById("goaltxt").textContent = (g.label || "Goal") + ": " + sym + (Number(g.raised) || 0) + " of " + sym + Number(g.target) + (g.updated ? " · updated " + g.updated : "");
-    document.getElementById("goal").hidden = false;
-  }
-  var sp = C.supporters || {};
-  if (sp.enabled && sp.names && sp.names.length) {
-    var el = document.getElementById("supporters");
-    el.textContent = "Thanks to " + sp.names.join(", ") + ".";
-    el.hidden = false;
-  }
-  document.getElementById("nudgelink").addEventListener("click", function (e) {
-    e.preventDefault(); support.scrollIntoView({ block: "start" }); btn.focus({ preventScroll: true });
+    el.addEventListener("click", function (e) {
+      e.preventDefault();
+      started.hidden = false;
+      location.href = fileUrl; /* a file download: this page stays */
+    });
   });
 })();
