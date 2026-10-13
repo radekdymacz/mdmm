@@ -333,18 +333,18 @@ The kit library and the song slots work with the same keys: load, copy, paste, r
 ## PIANO ROLL
 <!-- rows: MM-X23 @610cab -->
 
-The roll on **Sequence** draws notes with a length, moves them and selects them in boxes. It writes the same step data as the machine's own entry.
+The roll on **Sequence** draws notes with a length and moves them. There is no mode to switch: it always draws. It writes the same step data as the machine's own entry.
 
 ![The piano roll](shot:mm-roll-draw)
 
 1. Click the **Sequence** tab and pick a track.
-2. Switch **Draw** on, or press {key:roll-draw}. Set **Len** to 1/16.
+2. Set **Len** to 1/16.
 3. Click an empty cell. A note of that length is there, and a NOTE OFF on the step after it, so that it does not run into the next note.
 4. Click **Len** to 1/8 and click another cell. The note is two steps long.
 5. Drag the end of a note over more steps to make it longer. It then lasts up to the next note.
 6. To paint, press an empty cell and drag sideways. Every step you cross gets a note at that pitch. Hold [⌥] and drag over them to erase them. Each paint or erase is one undo step.
-7. Press {key:roll-draw} to switch **Draw** off. Drag a box round a note. The note is selected, and its NOTE OFF with it.
-8. Drag the selected note four steps right. It moves, with its NOTE OFF. Press {key:delete} to remove it.
+7. Drag the body of a note four steps right. It moves, with its NOTE OFF. Drag it up or down to change its pitch.
+8. Hold [⌘] and drag over steps to select them, then press {key:delete} to remove what is selected.
 9. Press {key:undo} for each step you took.
 
 On **Transpose**, click a key of its keyboard to set the transpose of the track. On a MIDI track the length is a number of ticks: a 1/16 note is 6, and three steps are 18.
