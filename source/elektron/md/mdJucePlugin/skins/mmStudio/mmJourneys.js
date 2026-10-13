@@ -3402,7 +3402,11 @@ const MmJourneys = (() => {
 				act: async (u, c) => { await closeLib(u); u.click(tab("seq")); await sleep(400);
 					const rows = $all("#rail .th"), inside = rows.filter(r => { const t = r.querySelector(".gtag"); if (!t) return false; const a = t.getBoundingClientRect(), b = r.getBoundingClientRect(); return a.bottom > b.bottom + 0.5 || a.right > b.right + 0.5; });
 					c.bad = [...Journey.spills("#rail .th .gtag"), ...Journey.overlaps("#rail .th .gtag", "#rail .th .ms, #rail .th .n"), ...inside.map(r => r.textContent.trim().slice(0, 16) + ": tag out of its row")]; c.n = $all("#rail .th .gtag").length; },
-				screen: c => ok(c.n > 0 && !c.bad.length, `${c.n} tags; ${c.bad.slice(0, 4).join(" | ")}`) }
+				screen: c => ok(c.n > 0 && !c.bad.length, `${c.n} tags; ${c.bad.slice(0, 4).join(" | ")}`) },
+			{ say: "Perform and Sound: what the drawn panels draw fits them: the multi envelope's caption and the amp envelope's caption clear of the curve and its handles, no handle cut by an edge, no caption past the edge (B-111)",
+				act: async (u, c) => { c.bad = []; c.n = 0;
+					for (const ws of ["perform", "sound"]) { u.click(tab(ws)); await sleep(500); c.n += $all("canvas.ed").filter(x => x.clientWidth).length; for (const x of edProblems()) c.bad.push(ws + " " + x); } },
+				screen: c => ok(c.n > 3 && !c.bad.length, `${c.n} canvases; ${[...new Set(c.bad)].slice(0, 4).join(" | ")}`) }
 		],
 		async tidy(u) { await closeLib(u); u.click(tab("seq")); }
 	};

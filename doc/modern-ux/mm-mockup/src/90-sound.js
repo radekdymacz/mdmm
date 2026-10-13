@@ -146,7 +146,7 @@ ED.dflt={draw(g,W,H){const e=V("EFX");bandDraw(g,W,H,e[6]/127,Math.min(1,(e[6]+e
 ED.amp={geo(W,H,c){const e=ampTimes(V("AMP"))||{at:0,ho:0,de:Infinity,re:Infinity},inf=e.de===Infinity,rinf=e.re===Infinity;
   const off=e.at+e.ho+(inf?Math.max(2,(e.at+e.ho)*.4):0),gate=inf?off:e.at+e.ho+2*e.de,rel=off+(rinf?3:2*e.re);
   const need=clamp(Math.ceil(Math.max(gate,rel)*1.08/4)*4,4,64),span=active&&active.c===c&&c&&c._span?Math.max(c._span,need):need;if(c)c._span=span;
-  const T=18,B=H-10;return{e,inf,rinf,off,span,T,B,X:s=>Math.min(W,s/span*W),S:x=>x/W*span,Y:v=>B-v*(B-T)}},
+  const T=28,B=H-10;return{e,inf,rinf,off,span,T,B,X:s=>Math.min(W,s/span*W),S:x=>x/W*span,Y:v=>B-v*(B-T)}},
  draw(g,W,H,c){const G=this.geo(W,H,c),e=G.e,ink=cssv("--ink");grid(g,W,H);
   g.strokeStyle=ink;g.lineWidth=2.2;g.beginPath();g.moveTo(0,G.Y(0));g.lineTo(G.X(e.at),G.Y(1));g.lineTo(G.X(e.at+e.ho),G.Y(1));
   if(G.inf)g.lineTo(G.X(G.off),G.Y(1));else{const d0=e.at+e.ho;for(let k=1;k<=32;k++){const u=k/32*2*e.de;g.lineTo(G.X(d0+u),G.Y(ampFall(u,e.de)))}g.lineTo(W,G.Y(0))}g.stroke();
