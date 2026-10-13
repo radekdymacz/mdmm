@@ -365,6 +365,8 @@ body > main { flex: 1 0 auto; }
 
 /* Download steps: one centred column, the footer at the bottom of the window. */
 .checkout { padding: clamp(40px, 8vh, 96px) 0 clamp(56px, 9vh, 112px); display: flex; flex-direction: column; justify-content: flex-start; }
+/* step 1 and 2 fill the window under the header, so the footer starts below the fold */
+.checkout { min-height: calc(100vh - 61px); min-height: calc(100svh - 61px); box-sizing: border-box; }
 .checkout > .wrap { width: 100%; max-width: 860px; margin: 0 auto; }
 .checkout .progress { margin: 0 auto 36px; max-width: 420px; }
 .checkout h1 { text-align: center; margin: 0 0 28px; }
