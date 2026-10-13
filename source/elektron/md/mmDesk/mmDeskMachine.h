@@ -108,7 +108,7 @@ namespace mmDesk
 		deskCore::Outcome askSelect(const Value&, const Documents&);
 		deskCore::Outcome askPlay(const Value&, const Documents&);
 
-		enum class Act : uint8_t { Stop, Play, SelectPattern, MidiStop, SongMode, FromPosition };
+		enum class Act : uint8_t { Stop, Play, SelectPattern, MidiStop, SongMode, LoadSong, FromPosition };
 		// A push is parked while its dump is queued on the RECV session (or waits for the person's SYSEX
 		// RECV, HW MIDI), not on the wire yet: a newer dump waits for it (PushPolicy::Mode::Held).
 		using Pushes = deskCore::Pushes<Ref, Bytes>;

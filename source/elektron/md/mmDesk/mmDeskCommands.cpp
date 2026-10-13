@@ -593,6 +593,7 @@ namespace mmDesk
 				break;
 			case Act::MidiStop:
 			case Act::SongMode:
+			case Act::LoadSong:
 			case Act::FromPosition:
 				runTransportAct(d.action, d.arg);
 				break;

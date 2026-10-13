@@ -200,6 +200,11 @@ namespace mmDesk
 			steps.push_back({Act::MidiStop, 0, deskCore::Wait::Stopped, 0, 1000});
 		if(m_songMode != 1)
 			steps.push_back({Act::SongMode, 1, deskCore::Wait::SongModeIs, 1, 2000});
+		// B-137 (the 0.6 e2e run, mm-song-play-from: row 2 instead of 3): an edit of the song still waits for its LOAD SONG
+		// (pumpSongReload: stopped, in SONG mode), so the machine played the song as it was before the edit and the song
+		// position landed in another row. Stopped and in SONG mode here: LOAD SONG first, then the position.
+		if(m_songReloadNeeded)
+			steps.push_back({Act::LoadSong, m_curSong, deskCore::Wait::StatusReply, 0, 1000});
 		steps.push_back({Act::FromPosition, pos.sixteenths});
 		m_sequence.start(std::move(steps));
 		pumpSequence(now());
@@ -269,6 +274,12 @@ namespace mmDesk
 		case Act::SongMode:
 			m_port.sendSysex(ed::mmSetStatus(ed::MmStatus::SongMode, _arg ? 1 : 0));
 			m_port.sendSysex(ed::mmStatusRequest(ed::MmStatus::SongMode));
+			break;
+		case Act::LoadSong:
+			m_port.sendSysex(ed::mmLoadSong(static_cast<uint8_t>(_arg)));
+			m_songReloadNeeded = false;
+			requestStatus();
+			m_lastStatusMs = now();
 			break;
 		case Act::FromPosition:
 			if(const auto spp = deskWire::songPosition(_arg); spp && m_port.sendMidi)

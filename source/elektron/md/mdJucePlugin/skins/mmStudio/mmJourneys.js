@@ -2220,7 +2220,8 @@ const MmJourneys = (() => {
 			{ say: "the song the machine plays, Arrange; click row 3, then ▶ From here: the question to set TRANSPORT IN to ACCEPT", act: async (u, c) => { c.m0 = machine().song?.songMode === true; c.tr0 = I().doc("global", machine().global?.current ?? 0)?.controlIn?.transport; c.slot0 = S().songs?.slot; if (S().songs?.slot !== machine().song?.current) await choose(u, "songsel", machine().song?.current ?? 0); u.click('[data-set="songpick"] button[data-v="song"]'); await sleep(200); u.click('.scell[data-i="2"]'); await sleep(150); u.click('[data-rowact="from"]'); },
 				screen: () => ok(dlgShown() && !!dlgButton("Set TRANSPORT to ACCEPT"), "no question"), within: 4000 },
 			{ say: "confirm: ACCEPT goes to the machine, then the song plays from row 3 by itself, in SONG mode", act: u => u.click(dlgButton("Set TRANSPORT to ACCEPT")),
-				machine: () => ok(playing() && tele.last.songRow === 2 && machine().song?.songMode === true, "row " + (tele.last?.songRow + 1) + ", playing " + playing() + ", song mode " + machine().song?.songMode + ", TRANSPORT IN " + I().doc("global", machine().global?.current ?? 0)?.controlIn?.transport), within: 20000 },
+				machine: () => ok(playing() && tele.last.songRow === 2 && machine().song?.songMode === true, "row " + (tele.last?.songRow + 1) + ", playing " + playing() + ", song mode " + machine().song?.songMode + ", TRANSPORT IN " + I().doc("global", machine().global?.current ?? 0)?.controlIn?.transport
+					+ `; song ${machine().song?.current} (page ${S().songs?.slot}) rows ${JSON.stringify(songDoc()?.rows?.slice(0, 4))}`), within: 20000 },
 			{ say: "click row 2 and press Enter: from row 2", act: async u => { u.click('.scell[data-i="1"]'); await sleep(150); blur(); u.key("Enter"); },
 				machine: () => ok(playing() && tele.last.songRow === 1, "row " + (tele.last?.songRow + 1)), within: 8000 }
 		],
