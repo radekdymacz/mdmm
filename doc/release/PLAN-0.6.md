@@ -12,6 +12,18 @@ Done before that order was set: slices 1 to 4, the guide's chapters 1-13 (MD) an
 
 ## Handover (2026-10-12, stopped by the weekly usage limit)
 
+**State on 2026-10-13 (stopped for the weekly usage limit).** Everything of 0.6 is merged into `feat/0.6-features`
+(waves 1-12, MM roll foot, MD greys on the MM, review 1, e2e rounds 1-2, screen review, Discord items, Revert track,
+saved solo, sample Rename re-send, independent journeys). Installed on Radek's Mac: `ccaf8bec5`. The last full e2e on the
+real firmware: 353 pass, 7 fail (`scripts/mdmm-e2e.sh both --jobs 2 --page --write-data`, report
+temp/evidence/0.5.1/index.html). Round 3 for those 7 is on `fix/0.6-e2e-3` (see its BUGS.md entries B-133+ for
+what is done and left; md-seq-live-record "no trig recorded while live recording" is the most important).
+Next: finish fix/0.6-e2e-3, merge, rebuild and install, Radek's final hand test, PGO retrain, release/0.6.0.
+After 0.6: CI runs the ROM-free suite on every push to main (Radek, option A); the firmware e2e runs locally before
+each tag; dev loop = build + the change's own test only (doc/release/DEV-CYCLE.md to update). Decisions taken
+2026-10-12/13: guide pictures stay in git as WebP; I-027 (plug-in reports its sent MIDI) to be checked later.
+
+
 Read this first in a new session. Rule from Radek: build all of 0.6 without per-piece play tests; merge a piece into
 `feat/0.6-features` when its DEV-CYCLE tier checks are green and an independent reviewer agent passes it; at most 3
 agents at once; Radek tests the whole release at the end from doc/release/TEST-0.6.md. Never commit with conflict
