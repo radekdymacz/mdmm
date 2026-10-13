@@ -2911,6 +2911,32 @@ namespace
 	}
 
 
+	// B-131 (0.6 e2e, md-sound-machine-reference): a CTR machine on a track leaves the firmware's LFO track at 16 (no
+	// track) in the working kit; the desk must take the next edit of that kit
+	void ctrLfoTrack(const Bytes& _rom, const std::string& _romName)
+	{
+		std::puts("ctrlfo: a machine after a CTR machine");
+		Rig rig(_rom, _romName);
+		rig.page(R"({"op":"ready"})");
+		rig.runUntil([&] { return rig.desk().isInputReady() && rig.desk().linkState().pattern && rig.desk().linkState().kit; }, 8000);
+		auto& desk = rig.desk();
+		rig.runUntil([&] { return desk.documents().working.has_value() && !desk.isBusy(); }, 10000);
+		const auto kit = std::to_string(*desk.linkState().kit);
+		const auto pick = [&](const char* _name)
+		{
+			const auto model = *ed::mdMachineModel(_name);
+			rig.page("{\"op\":\"machine\",\"k\":" + kit + ",\"t\":0,\"model\":" + std::to_string(model) + ",\"keepFx\":true}");
+			const bool ok = resultOk(rig);
+			rig.runUntil([&] { return !desk.isBusy(); }, 4000);
+			rig.run(1500);
+			std::printf("  %s: %s, LFO track %d\n", _name, ok ? "accepted" : ed::json::write(*rig.lastResult()).c_str(), desk.documents().working->kit.lfos[0].track);
+			return ok;
+		};
+		check(pick("CTR-AL"), "CTR-AL on track 1 accepted");
+		check(pick("CTR-8P"), "the next machine after CTR-AL accepted (the LFO track the firmware left)");
+		check(pick("TRX-BD"), "and a drum machine after it");
+	}
+
 	// 0.6 MD-140: remove locks while live recording (manual p.48) through the desk: liveErase with i selects the track,
 	// shows the parameter's knob page and holds EXIT/NO with that knob's switch; the firmware removes the track's locks of
 	// that parameter on the steps that play meanwhile; its trigs and other locks stay (mdEditorProbeFirmwareTest liveunlock).
@@ -4979,6 +5005,12 @@ int main(const int _argc, char** _argv)
 			resetNoteMap(rom, romPath);
 			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 			std::printf("mdDeskFirmwareTest factoryglobal: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
+			return g_failures ? 1 : 0;
+		}
+		if(mode == "ctrlfo")
+		{
+			ctrLfoTrack(rom, romPath);
+			std::printf("mdDeskFirmwareTest ctrlfo: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
 			return g_failures ? 1 : 0;
 		}
 		if(mode == "liveerase")

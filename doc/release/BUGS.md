@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-131 · Machinedrum: after a CTR machine on a track, every edit of the kit is refused ("lfo.track = 16 is outside 0..15")
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`md-sound-machine-reference` on the firmware from factory memory: the second machine picked on track 1 refused, and every one after it).
+- **Cause (measured, `mdDeskFirmwareTest ctrlfo`):** picking CTR-AL leaves the track's LFO track at 16 (no track) in the firmware's working kit. The desk's kit check and the contract allowed 0..15, so the kit the machine itself holds failed validation and every following edit of it was refused.
+- **Fix (`fix/0.6-e2e-2`):** 16 is a valid LFO track in the kit (validation, the JSON reader, the contract's `lfo.track`); a dump of it goes back as the firmware wrote it. Test: `mdDeskFirmwareTest ctrlfo` (ctest `mdCtrLfoFirmwareTest`: CTR-AL, then CTR-8P and TRX-BD accepted); `md-sound-machine-reference` passes on the firmware and in the page tier.
+- **Status:** fixed on `fix/0.6-e2e-2`.
+
 ## B-129 · Monomachine: a MIDI track's mute while the machine takes an edit is refused ("The panel is busy")
 
 - **From:** the 0.6 e2e run, 2026-10-13 (`mm-perform-mutes` on the firmware, once its wire check was page-tier only: M3 on the Mutes card refused while an edit's dump was on SYSEX RECV).

@@ -255,7 +255,10 @@
       "required": ["track", "param", "shape1", "shape2", "update"],
       "properties": {
         "track": {
-          "$ref": "#/$defs/track"
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16,
+          "description": "the track the LFO modulates; 16 (no track) is what the firmware leaves after a CTR machine (B-131)"
         },
         "param": {
           "type": "integer",
