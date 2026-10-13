@@ -10,6 +10,7 @@
 #     --page         also run the page tier (the stub machine) for the stub-only column (a few minutes)
 #     --write-data   write doc/features/e2e-<machine>.json (the maps' E2E column; commit it with the guide)
 #     --shuffle SEED the journeys in a seeded random order (SEED an integer; printed in the report): proof that none depends on one before it
+#     --tier T       the standalone's journeys of that tier only (page, machine, host; default all: skins/shared/deskJourney.js TIERS)
 #     --isolate      every journey in an editor of its own, fresh from factory memory (slow: one start each; with --select, for the journeys in question)
 #     --select       a journey selector (default: all), for a part of a run: the report then lists the rest as "missing"
 #     --report-only  render the pictures and the report from the last run in temp/evidence/<version>/run
@@ -22,7 +23,7 @@
 set -u
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT"
-WHICH=both JOBS=1 BUILD=1 PAGE=0 WRITE=0 SEL=journey REPORT_ONLY=0 SHUFFLE="" ISOLATE=0
+WHICH=both JOBS=1 BUILD=1 PAGE=0 WRITE=0 SEL=journey REPORT_ONLY=0 SHUFFLE="" ISOLATE=0 TIER=""
 while [ $# -gt 0 ]; do
 	case "$1" in
 		md|mm|both) WHICH=$1 ;;
@@ -34,8 +35,9 @@ while [ $# -gt 0 ]; do
 		--report-only) REPORT_ONLY=1 ;;
 		--shuffle) SHUFFLE=$2; shift ;;
 		--isolate) ISOLATE=1 ;;
+		--tier) TIER=$2; shift ;;
 		--retake) ;;
-		*) sed -n 2,21p "$0"; exit 2 ;;
+		*) sed -n 2,22p "$0"; exit 2 ;;
 	esac
 	shift
 done
@@ -61,7 +63,7 @@ PY
 		[ "$WHICH" = both ] || [ "$WHICH" = $M ] || continue
 		GEARMULATOR_MDMM_BACKGROUND_METER=1 GEARMULATOR_MDMM_SYX_FILE="$OUT/fixtures/$M.syx" GEARMULATOR_MDMM_WAV_FILE="$OUT/fixtures/e2e.wav" \
 		MDMM_JOURNEY_TIMEOUT=${MDMM_JOURNEY_TIMEOUT:-3600} MDMM_JOURNEY_SETTINGS=fresh MDMM_JOURNEY_E2E=1 MDMM_JOURNEY_OUT="$RUN/$M" \
-			scripts/mdmm-journeys.sh --background --jobs "$JOBS" ${SHUFFLE:+--shuffle "$SHUFFLE"} $( [ "$ISOLATE" = 1 ] && echo --isolate ) "$M" "$SEL" > "$OUT/journeys-$M.log" 2>&1 &
+			scripts/mdmm-journeys.sh --background --jobs "$JOBS" ${TIER:+--tier "$TIER"} ${SHUFFLE:+--shuffle "$SHUFFLE"} $( [ "$ISOLATE" = 1 ] && echo --isolate ) "$M" "$SEL" > "$OUT/journeys-$M.log" 2>&1 &
 		PIDS="$PIDS $!"
 	done
 	for p in $PIDS; do wait "$p"; done
@@ -82,8 +84,8 @@ python3 scripts/mdmm-e2e-webp.py "$RAW" "$OUT/shots" | tee "$OUT/shots.size"
 rm -rf "$RAW"
 FW=""; for r in "$HOME/Documents/Gearmulator Preview/Machinedrum/roms/"* "$HOME/Documents/Gearmulator Preview/Monomachine/roms/"*; do FW="$FW $(basename "$r")"; done
 export MDMM_E2E_VERSION=$VERSION MDMM_E2E_COMMIT=$(git rev-parse --short HEAD) MDMM_E2E_FIRMWARE="${GEARMULATOR_MD_FIRMWARE_BIN:+$(basename "$GEARMULATOR_MD_FIRMWARE_BIN") }${GEARMULATOR_MM_FIRMWARE_BIN:+$(basename "$GEARMULATOR_MM_FIRMWARE_BIN")}${FW}"
-ARGS=(--out "$OUT" "${PAGEARGS[@]}")
+ARGS=(--out "$OUT" ${PAGEARGS[@]+"${PAGEARGS[@]}"})
 [ $WRITE = 1 ] && ARGS+=(--write-data)
 FIX=(); [ -d "$OUT/run-fix" ] && FIX=("$OUT/run-fix")
-node scripts/mdmm-e2e.mjs "${ARGS[@]}" "$RUN" "${FIX[@]}"
+node scripts/mdmm-e2e.mjs "${ARGS[@]}" "$RUN" ${FIX[@]+"${FIX[@]}"}
 echo "done in $(( $(date +%s) - START )) s"

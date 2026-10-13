@@ -68,6 +68,12 @@ no row matches runs everything of its tier.
 - **Journey tiers.** `deskJourney.js` `TIERS`: 10 host journeys, 32 machine journeys (the tap tempo ones too: they time key presses), every other one a page journey; a
   selector's `~page`, `~machine`, `~host`. `mdmm-journeys.sh --tier` (the standalone, default all) and `--vst3-tier`
   (default host). `deskJourneyTiersTest.js` keeps the table on real names.
+- **Independent journeys (2026-10-13).** Every journey passes alone, in any order, from fresh settings: it builds its data and its tidy puts back what it changed
+  (doc/modern-ux/JOURNEYS.md, "Independent journeys"). The runner no longer puts the page right between journeys: it says what a journey left
+  (`JOURNEY <name> left: ...`, the page's `state()` before against after the tidy) and fixes only after a journey that failed. Proof modes:
+  `mdmm-page.mjs --isolate` (every page journey in a page and a stub host of its own), `--shuffle <seed>` (a seeded order, the seed printed), `--list`;
+  `mdmm-journeys.sh` and `mdmm-e2e.sh` take `--shuffle <seed>`, `--isolate` (an editor for each journey, fresh from factory memory) and, for the e2e script, `--tier`.
+  A journey whose change has no way back (an empty reset) is `alone: true`: the runners start it in a page or an editor of its own.
 - **Journey fixes.** The runner closes what an earlier journey left open (and logs it); the speed-ups journey waits for
   the CPU details to stay closed and toggles each switch once each way; a click after a drag goes where a browser sends
   it (the common parent of the pressed and released element); waits on the read-back instead of fixed sleeps;
@@ -140,7 +146,8 @@ before it) or under load (`--jobs 4`, 12 to 14 busy loops beside it), its cause 
 Since then a journey that leaves the machine in SONG mode is named in the log (`JOURNEY <next> before: the machine was
 in SONG mode: PATTERN mode again`, against the journey after the one that left it), and the page tier's report ends with
 a WARN line listing every such "before:" (what `between` put right, what the runner closed). Several song journeys still
-leave SONG mode; the next journey no longer pays for it. The hands log a click on a disabled control
+leave SONG mode; the next journey no longer pays for it. (Superseded 2026-10-13: the song journeys put PATTERN mode back, and
+the runner fixes nothing after a journey that passed: see Independent journeys above.) The hands log a click on a disabled control
 (`hands: no click on ...`) instead of sending it, and each page's browser context is disposed when its unit ends.
 
 ## What stays open

@@ -997,7 +997,7 @@ const MmJourneys = (() => {
 		name: "mm-seq-live-record", proves: ["MM-042", "MM-079", "MM-179"],
 		steps: [
 			go("seq"), sel(0),
-			{ say: "press Alt+Space: live recording, playing (pressed again when the plug-in says the panel is busy: an earlier journey's dumps on their way, as mm-seq-grid-record)", act: async (u, c) => { c.n0 = trigsOf(0).length; c.p0 = pat0(); blur(); results.length = 0; u.key(" ", { alt: true }, "Space");
+			{ say: "press Alt+Space: live recording, playing (pressed again when the plug-in says the panel is busy: an earlier journey's dumps on their way, as mm-seq-grid-record)", act: async (u, c) => { c.n0 = trigsOf(0).length; c.p0 = pat0(); await keep(c, "pattern", cur()); blur(); results.length = 0; u.key(" ", { alt: true }, "Space");
 				for (let i = 0; i < 5 && await until(() => results.some(r => r.op === "record" && r.ok === false), 1500); i++) { c.note = "the plug-in said the panel was busy (SYSEX RECV); pressed again"; results.length = 0; await sleep(1500); blur(); u.key(" ", { alt: true }, "Space"); }
 				/* RECORD held + PLAY: the machine plays by itself. No PLAY of the journey's own: pressed while the chord
 				   still waited for a busy panel (an earlier journey's dumps) it reached the machine around the chord and
@@ -1007,7 +1007,7 @@ const MmJourneys = (() => {
 				machine: c => ok(pat0() !== c.p0, "pattern unchanged (" + c.n0 + " notes)"), within: 15000 },
 			{ say: "click RECORD off, then STOP", act: async u => { u.click("#rec"); await sleep(600); if (S().playing) u.click("#play"); }, machine: () => ok(tele.last?.record === "off" && !tele.last?.playing, `record ${tele.last?.record}`), within: 8000 }
 		],
-		async tidy(u, c) { if (tele.last?.record && tele.last.record !== "off") u.click("#rec"); if (S().playing) u.click("#play"); await sleep(800); if (c.p0) await undoUntil(u, () => pat0() === c.p0, 3); }
+		async tidy(u, c) { if (tele.last?.record && tele.last.record !== "off") u.click("#rec"); if (S().playing) u.click("#play"); await sleep(800); if (c.p0) await undoUntil(u, () => pat0() === c.p0, 3); await back(u, c); }
 	};
 	/* wave 7 (manual 1-49, 1-50, doc/modern-ux/DESIGN-machine-menus.md §2). A held key is a keydown now and its keyup later
 	   (u.key presses and lets go at once). */
@@ -1606,7 +1606,7 @@ const MmJourneys = (() => {
 		async tidy(u) { if (!$1("#syxpop").hidden) u.key("Escape"); }
 	};
 	const syxImportJ = {
-		name: "mm-lib-syx-import", proves: ["MM-308", "MM-309", "MM-X13"],
+		name: "mm-lib-syx-import", alone: true, proves: ["MM-308", "MM-309", "MM-X13"],
 		needs: () => new URLSearchParams(location.search).get("syxfile") ? null : "no .syx for the run (GEARMULATOR_MDMM_SYX_FILE)",
 		steps: [
 			{ say: "choose IMPORT SYSEX… in the engine menu: the file's preview", act: u => u.pick("engsel", "import"), screen: () => ok(!$1("#syxpop").hidden && syxKitIds().length > 0, "no preview with kits"), within: 8000 },
@@ -1715,7 +1715,7 @@ const MmJourneys = (() => {
 	const reaches = t => { const c = globalNow()?.channels; return !!c && c.base <= 14 && t < c.span && c.base + t <= 14; };
 	const railM = t => `#rail .th[data-sel="${t}"] .ms.m`;
 	const syxImportMute = {
-		name: "mm-lib-syx-import-mute", proves: ["MM-308", "MM-309", "MM-020"],
+		name: "mm-lib-syx-import-mute", alone: true, proves: ["MM-308", "MM-309", "MM-020"],
 		needs: () => new URLSearchParams(location.search).get("syxfile") ? null : "no .syx for the run (GEARMULATOR_MDMM_SYX_FILE)",
 		steps: [
 			{ say: "choose IMPORT SYSEX… in the engine menu, tick Globals too", act: async u => { await u.pick("engsel", "import"); await until(() => !$1("#syxpop").hidden && $all("#syxpop [data-syxkind]").length, 8000); const g = $1('#syxpop [data-syxkind="global"]'); if (g && !g.checked) u.click(g); },
@@ -1805,7 +1805,7 @@ const MmJourneys = (() => {
 	   and GEARMULATOR_MDMM_SYX_FILE): the preview's tabs, then the default kinds imported (importing, the report).
 	   Each step logs "SHOT <name>" and holds while the script captures the window. */
 	const shot = name => Bridge.log("SHOT " + name), hold = 2500;
-	const shotsImport = { name: "mm-shots-import", proves: [], needs: () => !/mm-shots/.test(location.search) ? "screenshots only when asked by name" : syxImportJ.needs(),
+	const shotsImport = { name: "mm-shots-import", alone: true, proves: [], needs: () => !/mm-shots/.test(location.search) ? "screenshots only when asked by name" : syxImportJ.needs(),
 		steps: [
 			{ say: "choose IMPORT SYSEX… in the engine menu: the preview, the Kits tab", act: async u => { await u.pick("engsel", "import"); await until(() => syxKitIds().length > 0, 8000); await sleep(400); shot("import-1-mm-kits"); },
 				screen: () => ok(!$1("#syxpop").hidden && syxKitIds().length > 0, "no preview with kits"), within: 10000, hold },
@@ -2015,7 +2015,8 @@ const MmJourneys = (() => {
 			{ say: "the Sound page", act: async () => { await sleep(800); shot("sound-mm"); Journey.snapshot("sound-mm"); Bridge.log("MEASURE sound-mm screens " + [...document.querySelectorAll(".snd .sg>.plot")].map(e => Math.round(e.getBoundingClientRect().height)).join(" ") + " page " + Math.round(document.querySelector(".snd").scrollHeight) + "/" + Math.round(document.querySelector("#main").clientHeight)); }, hold },
 			go("seq"), genBarFits("track 1", true),
 			{ say: "the GEN bar", act: async () => { await sleep(400); shot("gen-mm"); }, hold },
-			{ say: "done", act: () => shot("done") }] };
+			{ say: "done", act: () => shot("done") }],
+		async tidy(u, c) { await back(u, c); } };
 	/* Radek's 0.6 review 1 (2026-10-12) as snapshots, before and after (scripts/mdmm-snap.py): the roll's foot, the
 	   Sound page's UNISON and SUB screens, the multi envelope at ATK 73 DEC 0 SUS 127 REL 127, both plates, GLOBAL */
 	const typeVal = async (u, q, v) => { if (!$1(q)) return; u.click(q, { cmd: true }); await until(() => !!field(), 1500); typeIn(u, String(v)); await sleep(250); };
@@ -2205,7 +2206,7 @@ const MmJourneys = (() => {
 	/* Every journey is independent (doc/modern-ux/JOURNEYS.md): the runner notes where the page stood when it began (begin: c.back0.undo, c.back0.mode,
 	   c.back0.pat, c.back0.kit, c.back0.chain) and a tidy that changed any of it calls back(u, c), which puts the editor's modes and its undo history back:
 	   the transport stopped, the edits undone, PATTERN or SONG mode as found, the pattern and kit the machine was on, no chain. */
-	const begin = c => { c.back0 = { undo: histN(), mode: machine().song?.songMode, pat: cur(), kit: machine().kit?.current, kitw: machine().kit?.working, chain: !!desk().chain?.active }; };
+	const begin = c => { c.back0 = { tempo: machine().tempo, undo: histN(), mode: machine().song?.songMode, pat: cur(), kit: machine().kit?.current, kitw: machine().kit?.working, chain: !!desk().chain?.active }; };
 	const back = async (u, c) => {
 		if (!c.back0) return;
 		if (S().playing) { u.click("#play"); await until(() => !S().playing, 3000); }
@@ -2213,6 +2214,7 @@ const MmJourneys = (() => {
 		if (desk().chain?.active && !c.back0.chain) { Bridge.send({ op: "chainClear" }); await sleep(300); }
 		if (c.back0.mode != null && machine().song?.songMode !== c.back0.mode) { Bridge.send({ op: "seqMode", song: c.back0.mode }); await until(() => machine().song?.songMode === c.back0.mode, 4000); await sleep(300); }
 		if (c.back0.pat != null && cur() !== c.back0.pat) { Bridge.send({ op: "select", p: c.back0.pat, now: true }); await until(() => cur() === c.back0.pat, 6000); await sleep(300); }
+		if (c.back0.tempo != null && machine().tempo != null && Math.abs(machine().tempo - c.back0.tempo) > 0.05) { Bridge.send({ op: "tempo", bpm: c.back0.tempo }); await until(() => Math.abs(machine().tempo - c.back0.tempo) <= 0.05, 6000); await sleep(300); }
 		if (c.back0.kit != null && machine().kit?.current !== c.back0.kit) { Bridge.send({ op: "loadKit", k: c.back0.kit, force: true }); await until(() => machine().kit?.current === c.back0.kit, 6000); await sleep(300); }
 		/* a kit edited and undone holds the same sounds, but the machine still calls it edited: saved again, it is the kit it was */
 		if (c.back0.kitw === "clean" && machine().kit?.working !== "clean") { Bridge.send({ op: "saveKit", k: machine().kit?.current, force: true }); await until(() => machine().kit?.working === "clean", 8000); await sleep(600); }
@@ -3362,7 +3364,7 @@ const MmJourneys = (() => {
 					c.note = `${c.good.length} of ${c.songs.length} songs played: ${c.good.join(" ")}`;
 				}, screen: c => ok(!c.bad.length, c.bad.join("; ")) }
 		],
-		async tidy(u, c) { if (S().playing) u.click("#play"); if (c.m0 === false) { u.click('[data-set="songpick"] button[data-v="pattern"]'); await sleep(800); } if (c.s0 != null) await loadSlot(u, c.s0).catch(() => { }); }
+		async tidy(u, c) { if (S().playing) u.click("#play"); if (c.m0 === false) { u.click('[data-set="songpick"] button[data-v="pattern"]'); await sleep(800); } if (c.s0 != null) await loadSlot(u, c.s0).catch(() => { }); await back(u, c); }
 	};
 	const realPatterns = {
 		name: "mm-real-factory-patterns", proves: ["MM-X03", "MM-X03"],
@@ -3408,7 +3410,7 @@ const MmJourneys = (() => {
 		steps: [
 			go("seq"),
 			{ say: "pick a pattern with no notes in the pattern chooser", within: 20000,
-				act: async (u, c) => { await until(() => I().slots("pattern").length >= 128, 30000); c.p0 = cur(); c.p = [...Array(128).keys()].find(p => I().doc("pattern", p) && !hasNotes(p)); if (c.p == null) throw new Error("no empty pattern");
+				act: async (u, c) => { await until(() => I().slots("pattern").length >= 128, 30000); c.p0 = cur(); c.p = [...Array(128).keys()].find(p => I().doc("pattern", p) && !hasNotes(p)); if (c.p == null) throw new Error("no empty pattern"); await keep(c, "pattern", c.p);
 					u.click("#pat"); await until(() => $all("#libpop .ps").length === 128, 4000); u.click(`#libpop .ps[data-ps="${c.p}"]`); await confirmIfAsked(u); if (!$1("#libpop").hidden) u.key("Escape"); },
 				machine: c => ok(cur() === c.p && !hasNotes(c.p), "pattern " + cur()) },
 			sel(0),
@@ -3428,8 +3430,8 @@ const MmJourneys = (() => {
 				act: async (u, c) => { blur(); u.key("z", { cmd: true }); await until(() => c.steps.every(s => trigsOf(c.t).includes(s)), 15000); c.back = await playPeak(u, 6000, 1500); Bridge.log(`E2E undo then play at once: peak ${c.back.peak.toFixed(4)}, ${c.back.steps} steps`); if (c.back.peak <= 0.0002) { await sleep(3000); c.back2 = await playPeak(u, 6000, 1500); Bridge.log(`E2E undo, 3 s later, play: peak ${c.back2.peak.toFixed(4)}`); c.late = c.back2.peak > 0.0002; } },
 				machine: c => ok(c.steps.every(s => trigsOf(c.t).includes(s)) && c.back.started && c.back.peak > 0.0002, `notes ${trigsOf(c.t).join(",")}, the page says they are back but the machine played silence at once after the undo (peak ${c.back.peak.toFixed(4)})${c.late ? ", and played them 3 s later" : ""}`) }
 		],
-		async tidy(u, c) { if (S().playing) u.click("#play"); for (let i = 0; i < 4 && c.p != null && hasNotes(c.p); i++) { blur(); u.key("Delete", { alt: true }); await sleep(2000); }
-			if (c.p0 != null && cur() !== c.p0) { u.click("#pat"); await sleep(400); u.click(`#libpop .ps[data-ps="${c.p0}"]`); await sleep(800); if (!$1("#libpop").hidden) u.key("Escape"); } }
+		/* the pattern it drew in and cleared: undone, then pasted back from the clipboard (a clear leaves more than the notes behind) */
+		async tidy(u, c) { if (S().playing) u.click("#play"); await back(u, c); }
 	};
 	const e2eReal = [realSongs, realPatterns, realSequence];
 
