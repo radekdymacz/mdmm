@@ -8,7 +8,7 @@ namespace mdDesk
 
 	bool DeskSetup::operator==(const DeskSetup& _o) const
 	{
-		return modulators.sources == _o.modulators.sources && modulators.links == _o.modulators.links && knobCcs == _o.knobCcs;
+		return modulators.sources == _o.modulators.sources && modulators.links == _o.modulators.links && knobCcs == _o.knobCcs && solo == _o.solo;
 	}
 
 	std::vector<std::string> validateKnobCcs(const std::vector<int>& _ccs)
@@ -58,6 +58,9 @@ namespace mdDesk
 				for(size_t i = 0; i < 8; ++i)
 					s.knobCcs[i] = static_cast<uint8_t>(ccs[i]);
 		}
+		if(const auto* sl = _doc.find("solo"))
+			if(const auto solo = deskCore::solo::fromJson(*sl, 16, _errors))
+				s.solo = *solo;
 		if(_errors.size() != before)
 			return {};
 		return s;
@@ -73,6 +76,8 @@ namespace mdDesk
 		for(const auto cc : _setup.knobCcs)
 			k.push(static_cast<int>(cc));
 		d.set("knobCcs", std::move(k));
+		if(!_setup.solo.empty())
+			d.set("solo", deskCore::solo::toJson(_setup.solo));
 		return d;
 	}
 }

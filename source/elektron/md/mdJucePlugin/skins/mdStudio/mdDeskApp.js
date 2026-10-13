@@ -310,9 +310,20 @@ function applySolo() { for (const [i, on] of soloWrites(S, V.mutes, soloKeep()))
 /* the tracks a solo leaves alone: the RAM recorders (their mute is the sampler's capture and freeze) */
 function soloKeep() { return new Set(V.tracks.map((t, i) => machineFacts(t.m, Cat).recorder ? i : -1).filter(i => i >= 0)); }
 /* the solo set becomes next (a new Set: solo is UI state the view reads, never mutated in place) */
-function setSolo(next) { Object.assign(S, soloTo(S, V.mutes, next)); V = view(); applySolo(); }
+function setSolo(next) { Object.assign(S, soloTo(S, V.mutes, next)); V = view(); applySolo(); sendSolo(); }
+/* 0.6 (B-123): the solo and the mutes the person had before it are kept with the project: the plug-in stores what
+   soloSet says in the editor's setup and says it again ({type: "solo"}) when a project is opened, the machine starts
+   over or the window is made again. sendSolo says it when it changed; takeSolo is the plug-in's word. */
+let soloSent = "";
+const soloFacts = () => ({ tracks: [...S.soloSet].sort((a, b) => a - b), mutes: S.soloSet.size ? [...S.userMutes].sort((a, b) => a - b) : [] });
+function sendSolo() { const f = soloFacts(), key = JSON.stringify(f); if (key === soloSent) return; soloSent = key; cmd("soloSet", f); }
+function takeSolo(m) {
+	S.soloSet = new Set(m.tracks || []); S.userMutes = new Set(m.mutes || []); soloSent = JSON.stringify(soloFacts());
+	V = view(); if (V.loaded) applySolo();
+	scheduleRender();
+}
 /* M: track i muted or not, as the user means it (during a solo only the page's record; muteSet, mdDeskLive.js, is the gestures') */
-function userMute(i, on) { const u = muteTo(S, i, on); if (!u) { setMute(i, on); return; } S.userMutes = u; V = view(); if (soloKeep().has(i)) setMute(i, on); }
+function userMute(i, on) { const u = muteTo(S, i, on); if (!u) { setMute(i, on); return; } S.userMutes = u; V = view(); if (soloKeep().has(i)) setMute(i, on); sendSolo(); }
 function select(i) { S.sel = i; if (!params(i).includes(S.lane)) S.lane = params(i).includes("FLTF") ? "FLTF" : params(i)[0] || "FLTF"; render(); }
 function refreshAudible() {
 	$$(".th").forEach(h => { const i = +h.dataset.sel; h.classList.toggle("off", !audible(i)); h.querySelector(".m").setAttribute("aria-pressed", V.tracks[i].mute); h.querySelector(".s").setAttribute("aria-pressed", V.tracks[i].solo); });

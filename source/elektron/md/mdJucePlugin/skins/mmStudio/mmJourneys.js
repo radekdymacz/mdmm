@@ -517,6 +517,23 @@ const MmJourneys = (() => {
 			{ say: "click S again: the mutes are as before", act: u => u.click(strip(2, ".ms.s")), machine: c => ok(same(synthMutes(), c.m0), "machine mutes " + synthMutes()) }
 		]
 	};
+	/* B-123, MM-X06: the solo is kept with the project: a page made again (nothing soloed on it) gets the solo the plug-in
+	   keeps, the other tracks are muted, and the mute the person had before it comes back when the solo ends */
+	const soloSaved = {
+		name: "mm-mix-solo-saved", proves: ["MM-X06"],
+		steps: [
+			go("mix"),
+			{ say: "mute track 1 with its M key, solo track 3 with its S key", act: async (u, c) => { c.m0 = synthMutes(); if (c.m0.length) throw new Error("a track is muted already: " + c.m0); u.click(strip(0, ".ms.m")); await sleep(400); u.click(strip(2, ".ms.s")); },
+				screen: () => ok(pressed(strip(2, ".ms.s")) && pressed(strip(0, ".ms.m")), "keys not lit"), machine: () => ok(same(synthMutes(), [0, 1, 3, 4, 5]), "machine mutes " + synthMutes()), within: 8000 },
+			{ say: "the page is made again with nothing soloed on it: the plug-in says its solo and the solo is back", act: async (u, c) => {
+				window.MMView.setSolo([], []); S().tracks[1].mute = true; c.dropped = !S().tracks[2].solo && S().tracks[1].mute; Bridge.ready(); await until(() => S().tracks[2].solo, 6000); await sleep(600); },
+				screen: c => ok(c.dropped && S().tracks[2].solo && S().tracks[0].mute && !S().tracks[1].mute && pressed(strip(2, ".ms.s")) && pressed(strip(0, ".ms.m")), `dropped ${c.dropped}, solo ${S().tracks[2].solo}, mutes ${S().tracks.map(t => +t.mute)}`),
+				machine: () => ok(same(synthMutes(), [0, 1, 3, 4, 5]), "machine mutes " + synthMutes()), within: 10000 },
+			{ say: "click S again: the solo ends and track 1 is still muted", act: u => u.click(strip(2, ".ms.s")),
+				screen: () => ok(!S().tracks[2].solo && pressed(strip(0, ".ms.m")), "solo " + S().tracks[2].solo), machine: () => ok(same(synthMutes(), [0]), "machine mutes " + synthMutes()), within: 8000 }
+		],
+		async tidy(u) { if (S().tracks[2].solo) u.click(strip(2, ".ms.s")); await sleep(300); if (S().tracks[0].mute) { u.click(strip(0, ".ms.m")); await sleep(300); } }
+	};
 	const shiftMutes = {
 		name: "mm-mix-shift-mutes", proves: ["MM-236"],
 		steps: [
@@ -3505,7 +3522,7 @@ const MmJourneys = (() => {
 		async tidy(u) { await closeLib(u); u.click(tab("seq")); }
 	};
 	const all = [screensFit, ...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
-		genMut, shapeSound, machinePick, revertTrackJ, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff, msViews, railLamps,
+		genMut, shapeSound, machinePick, revertTrackJ, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, soloSaved, shiftMutes, routing, panTrim, msOff, msViews, railLamps,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, mutScope,

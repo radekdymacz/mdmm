@@ -109,12 +109,14 @@ When you play with a sound, **Revert track** puts the selected track back as the
 **Revert track** is off while the track is as stored. Saving the kit makes the saved sound the stored one.
 
 ## SOLO
-<!-- rows: MM-X06 @2b81b4 -->
+<!-- rows: MM-X06 @9ed0e1 -->
 
 **S** on a track plays that track alone. The mutes you had come back when you let go.
 
 1. Click **S** on the strip of a track on **Mix**, or on its entry in the rail. The other synth tracks are muted.
 2. Click **S** again. The mutes are as they were before.
+
+The solo is saved with the project, in the DAW and in the standalone editor. Open the project again and the solo is on, the other synth tracks are muted, and the mutes you had before the solo come back when you end it.
 
 ## UNDO AND REDO
 <!-- rows: MM-X07 @5f1db8 -->

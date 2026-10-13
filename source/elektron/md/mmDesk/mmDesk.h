@@ -6,6 +6,7 @@
 
 #include "deskCore/deskDesk.h"
 #include "deskCore/deskMod.h"
+#include "deskCore/deskSolo.h"
 
 #include "elektronData/json.h"
 
@@ -36,7 +37,7 @@ namespace mmDesk
 		{
 			DevicePort device;
 			std::function<void(const Value&)> toPage;
-			// The app modulators (mm-desk/modulators) changed: keep them with the project.
+			// The app modulators (mm-desk/modulators) or the solo changed: keep them with the project (the modulators' document, with the solo beside it).
 			std::function<void(const Value& _setup)> saveSetup;
 			// After every ready of a page, once the desk has published its own documents.
 			std::function<void()> ready;
@@ -81,12 +82,19 @@ namespace mmDesk
 
 	private:
 		void onSetup(const Value& _message) override;
-		void onReadyExtra() override { publishModulators(); }
+		void onReadyExtra() override { publishModulators(); publishSolo(); }
+		// The page dropped its solo with the rest: the project's is said again (B-123).
+		void onStartOver() override { publishSolo(); }
 		void publishModulators();
+		void setSolo(const Value& _message);
+		void publishSolo();
+		// The setup the project keeps: the modulators (mm-desk/modulators) and, beside them, the page's solo.
+		Value setupDoc() const;
 		void runModulators();
 
 		std::function<void(const Value&)> m_saveSetup;
 		deskCore::ModEngine m_mods;
+		deskCore::SoloMemo m_solo;	// the page's solo and the mutes the person had before it
 	};
 
 	// The Monomachine's links address its six synth tracks' DATA pages (page * 8 + index) and levels.
