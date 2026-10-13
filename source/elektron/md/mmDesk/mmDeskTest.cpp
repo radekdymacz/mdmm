@@ -2231,6 +2231,14 @@ void memoryFields()
 	msg(R"({"op":"muteMidi","id":32,"t":1,"on":false})");
 	check(muteWindows == windows + 2, "unmuting what is unmuted: no keys");
 	run(1600);
+	// B-129 (0.6 e2e, mm-perform-mutes): the panel busy (SYSEX RECV taking an edit): the MIDI mute waits, as PLAY does
+	panelFree = false;
+	msg(R"({"op":"muteMidi","id":33,"t":2,"on":true})");
+	check(muteWindows == windows + 2, "a MIDI mute while the panel is busy: no keys yet");
+	panelFree = true;
+	run(20);
+	check(muteWindows == windows + 3 && midi() == 4, "the panel free: the MUTE window's keys go, M3 muted");
+	run(1600);
 
 	// POLY: SET STATUS, read back by the status reply
 	msg(R"({"op":"poly","id":4,"on":true})");

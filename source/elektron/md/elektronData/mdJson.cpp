@@ -650,7 +650,7 @@ namespace elektronData
 			}
 			const auto lfo = track.child("lfo");
 			auto& l = k.lfos[t];
-			lfo.integer("track", l.track, 0, 15);
+			lfo.integer("track", l.track, 0, 16);	// B-131: 16 after a CTR machine (the firmware's)
 			lfo.integer("param", l.param, 0, 23);
 			lfo.integer("shape1", l.shape1, 0, 5);
 			lfo.integer("shape2", l.shape2, 0, 5);

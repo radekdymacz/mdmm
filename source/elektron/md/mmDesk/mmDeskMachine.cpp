@@ -279,6 +279,7 @@ namespace mmDesk
 		}
 		pumpTranspose(_view);
 		pumpTransport(_now);
+		pumpMidiMutes(_now);
 		pumpRecord(_now);
 		pumpAfterAccept(_now, _view);
 		pumpChain();
