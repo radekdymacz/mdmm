@@ -1058,6 +1058,73 @@ void kitAsLoaded()
 	check(ed::mmKitAsLoaded(k) == k, "a written kit loads as it is");
 }
 
+// revertTrack: a track of the kit that plays goes back to how the kit's slot stores it, in one change; what the kit
+// shares between tracks and the other tracks stay.
+void revertTrack()
+{
+	std::printf("revertTrack: a track back as its slot stores it\n");
+	ed::MmKit stored;
+	stored.position = 7;
+	stored.name = {'S', 'T', 'O', 'R', 'E', 'D', 0};
+	for(size_t t = 0; t < 6; ++t)
+	{
+		stored.machines[t] = 1;
+		stored.levels[t] = static_cast<uint8_t>(100 + t);
+		for(size_t pg = 0; pg < 7; ++pg)
+			for(size_t i = 0; i < 8; ++i)
+				stored.tracks[t].pages[pg][i] = static_cast<uint8_t>(t * 8 + pg + i);
+		for(size_t i = 0; i < 8; ++i)
+			stored.tracks[t].midi[i] = static_cast<uint8_t>(20 + t + i);
+		stored.trigPos[t] = ed::MmKit::g_noTrigPos;
+	}
+	stored.mirrorMask = 0x3f;
+	stored.lpfMask = 0x3f;
+	mmDesk::Documents docs;
+	docs.kits[7] = stored;
+	mmDesk::EditContext plays;
+	plays.currentKit = 7;
+	const auto run = [&](const char* _json)
+	{
+		mmDesk::Clipboard clip;
+		return mmDesk::apply(docs, *ed::json::parse(_json), clip, plays);
+	};
+	docs.working = mmDesk::WorkingKit{stored};
+	check(run(R"({"op":"revertTrack","k":7,"t":2})").changes.empty() && run(R"({"op":"revertTrack","k":7,"t":2})").errors.empty(),
+		"a track as stored: nothing to revert, no step");
+	auto k = stored;
+	k.machines[2] = 2;
+	k.levels[2] = 9;
+	k.tracks[2].pages[0][3] = 99;
+	k.tracks[2].pages[6][7] = 98;
+	k.tracks[2].multiEnv[1] = 77;
+	k.tracks[2].midi[1] = 66;
+	ed::mmSetKitOutputs(k, 2, 5);
+	ed::mmSetKitInput(k, 2, 5);
+	k.assignPage[2][3] = 4;
+	k.assignAdd[2][1] = -9;
+	k.trigPos[2] = 4;
+	k.lpfMask = static_cast<uint8_t>(k.lpfMask & ~(1u << 2));
+	k.legatoAmp = static_cast<uint8_t>(k.legatoAmp & ~(1u << 2));
+	k.tracks[4].pages[1][1] = 55;
+	k.mirrorMask = static_cast<uint8_t>(k.mirrorMask & ~(1u << 4));
+	k.multiTrigMode = 2;
+	docs.working = mmDesk::WorkingKit{k};
+	auto r = run(R"({"op":"revertTrack","k":7,"t":2})");
+	check(r.errors.empty() && r.changes.size() == 1 && !r.note.empty(), "one change of the working kit");
+	const auto& after = std::get<mmDesk::WorkingKit>(r.changes[0].after).kit;
+	check(after.machines[2] == stored.machines[2] && after.levels[2] == stored.levels[2] && after.tracks[2].pages == stored.tracks[2].pages
+		&& after.routing[2] == stored.routing[2] && ed::mmKitInput(after, 2) == ed::mmKitInput(stored, 2) && after.assignPage[2] == stored.assignPage[2]
+		&& after.assignAdd[2] == stored.assignAdd[2] && after.trigPos[2] == stored.trigPos[2] && after.lpfMask == stored.lpfMask
+		&& after.legatoAmp == stored.legatoAmp, "a synth track's machine, pages, level, routing, assign rows, mask bits and forward are the slot's");
+	check(after.tracks[2].multiEnv == k.tracks[2].multiEnv && after.tracks[2].midi == k.tracks[2].midi && after.multiTrigMode == k.multiTrigMode
+		&& after.tracks[4] == k.tracks[4] && after.mirrorMask == k.mirrorMask, "the kit's shared parts and the other tracks stay");
+	r = run(R"({"op":"revertTrack","k":7,"t":8})");
+	const auto& midi = std::get<mmDesk::WorkingKit>(r.changes.at(0).after).kit;
+	check(r.errors.empty() && midi.tracks[2].midi == stored.tracks[2].midi && midi.tracks[2].pages == k.tracks[2].pages, "a MIDI track: its MIDI page only");
+	docs.kits.erase(7);
+	check(!run(R"({"op":"revertTrack","k":7,"t":2})").errors.empty(), "a slot not read yet is refused");
+}
+
 // P6: the Control workspace's LFOs run in the plug-in on the machine's steps (deskCore's ModEngine,
 // as the Machinedrum's): a link moves a kit value by CC, the page gets the source values, and
 // nothing of it is an edit or an undo step.
@@ -2205,6 +2272,7 @@ int main(const int _argc, char** _argv)
 	playingFromSteps();
 	watchSteps();
 	kitAsLoaded();
+	revertTrack();
 	kitAfterPatternDump();
 	kitAfterPatternDump(9);
 	kitPickRules();

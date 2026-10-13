@@ -440,6 +440,43 @@ namespace
 			"paste sound copies machine and values, the LFO targets its new track");
 	}
 
+	// revertTrack: a track of the kit that plays goes back to how the kit's slot stores it, in one change.
+	void testRevertTrack()
+	{
+		auto docs = fixtureDocs();
+		Clipboard clip;
+		const EditContext plays{uint8_t{0}};
+		const auto stored = docs.kits[0];
+		docs.working = WorkingKit{stored};
+		check(run(docs, cmd(R"({"op":"revertTrack","k":0,"t":3})"), clip, plays).changes.empty(), "a track as stored: nothing to revert, no step");
+		// edit track 3 in every way revertTrack names, and track 5 once
+		auto k = stored;
+		k.params[3][2] = static_cast<uint8_t>(k.params[3][2] ^ 0x15);
+		k.params[3][12] = static_cast<uint8_t>(k.params[3][12] ^ 0x21);
+		k.params[3][17] = static_cast<uint8_t>(k.params[3][17] ^ 0x31);
+		k.levels[3] = static_cast<uint8_t>(k.levels[3] ^ 0x11);
+		k.models[3] = *ed::mdMachineModel("EFM-SD") == k.models[3] ? *ed::mdMachineModel("TRX-BD") : *ed::mdMachineModel("EFM-SD");
+		k.lfos[3].shape1 = static_cast<uint8_t>((k.lfos[3].shape1 + 1) % 6);
+		k.lfos[3].state[0] = static_cast<uint8_t>(k.lfos[3].state[0] ^ 1);
+		k.muteGroups[3] = k.muteGroups[3] == 5 ? 6 : 5;
+		k.params[5][1] = static_cast<uint8_t>(k.params[5][1] ^ 0x0f);
+		docs.working = WorkingKit{k};
+		auto r = run(docs, cmd(R"({"op":"revertTrack","k":0,"t":3})"), clip, plays);
+		check(r.errors.empty() && r.changes.size() == 1 && !r.note.empty(), "revertTrack: one change of the working kit");
+		const auto& after = std::get<WorkingKit>(r.changes[0].after).kit;
+		check(std::get<WorkingKit>(r.changes[0].before).kit == k, "its before is the kit as it was edited");
+		check(after.models[3] == stored.models[3] && after.params[3] == stored.params[3] && after.levels[3] == stored.levels[3]
+			&& after.lfos[3].shape1 == stored.lfos[3].shape1 && after.lfos[3].track == stored.lfos[3].track
+			&& after.lfos[3].param == stored.lfos[3].param && after.muteGroups[3] == stored.muteGroups[3], "the track's values are the slot's");
+		check(after.lfos[3].state == k.lfos[3].state, "the LFO's running state stays the machine's");
+		check(after.params[5] == k.params[5] && after.params[2] == k.params[2] && after.masterFx == k.masterFx && after.name == k.name,
+			"no other track, no master effect and not the name moved");
+		check(after.position == 0 && docs.kits[0] == stored, "the slot is not touched");
+		docs.kits.erase(0);
+		check(!run(docs, cmd(R"({"op":"revertTrack","k":0,"t":3})"), clip, plays).errors.empty(), "a slot not read yet is refused");
+		check(!run(fixtureDocs(), cmd(R"({"op":"revertTrack","k":0,"t":16})"), clip, plays).errors.empty(), "track 17 is refused");
+	}
+
 	void testSongEdits()
 	{
 		auto docs = fixtureDocs();
@@ -3360,6 +3397,7 @@ int main(const int _argc, char** _argv)
 	testCopyPaste();
 	testStepBlocks();
 	testKitEditsAndDelivery();
+	testRevertTrack();
 	testSongEdits();
 	testGlobal();
 	testHistory();

@@ -4229,6 +4229,37 @@
         },
         {
           "type": "object",
+          "description": "core: the Sound page's Revert track: the track as the kit's slot stores it (a synth track: machine, pages, level, routing, assign rows, its mask bits and where it forwards its notes; a MIDI track: its MIDI page)",
+          "required": ["op", "k", "t"],
+          "properties": {
+            "op": {
+              "const": "revertTrack"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "k": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            },
+            "t": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 11
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "description": "core: many kit values at once (MUTATE, a screen's handle, Control All): values [[t 0-11, page, i 0-7, v 0-127]...], page as param's",
           "required": ["op", "k", "values"],
           "properties": {

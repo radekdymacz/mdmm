@@ -387,6 +387,9 @@ namespace mmDesk
 			{"clearSound", Owner::Core, Gate::Input, W, {k, t6}, "CLEAR MACHINE: GND-SIN, every page at its start"},
 			{"copySound", Owner::Core, Gate::Input, W, {k, t6}, "a track's machine and its seven pages to the clipboard"},
 			{"pasteSound", Owner::Core, Gate::Input, W, {k, t6}, "the clipboard's machine and pages onto a track"},
+			{"revertTrack", Owner::Core, Gate::Input, W, {k, t12},
+				"the Sound page's Revert track: the track as the kit's slot stores it (a synth track: machine, pages, level, routing, assign rows,"
+				" its mask bits and where it forwards its notes; a MIDI track: its MIDI page)"},
 			{"params", Owner::Core, Gate::Input, W, {k, {"values", ArgType::Array}},
 				"many kit values at once (MUTATE, a screen's handle, Control All): values [[t 0-11, page, i 0-7, v 0-127]...], page as param's"},
 			{"assign", Owner::Core, Gate::Input, W, {k, t6, {"src", ArgType::Integer, 0, 5, true}, {"row", ArgType::Integer, 0, 1, true},

@@ -325,6 +325,7 @@ namespace mdDesk
 			{"copySound", Owner::Core, Gate::Input, W, {k, t}, ""},
 			{"pasteSound", Owner::Core, Gate::Input, W, {k, t}, ""},
 			{"clearSound", Owner::Core, Gate::Input, W, {k, t}, ""},
+			{"revertTrack", Owner::Core, Gate::Input, W, {k, t}, "the Sound page's Revert track: the track's machine, values, level, LFO and relations as the kit's slot stores them"},
 			{"tweak", Owner::Core, Gate::Input, W, {k, {"group", ArgType::Text, 0, 0, false, {"syn", "fx", "rt"}}, {"knob", ArgType::Integer, 0, 7},
 				{"d", ArgType::Integer, -127, 127}, opt(t)}, "Control All (FUNCTION + a DATA ENTRY knob): that knob on every track, moved by d; t: the gesture's track"},
 			{"kitCopy", Owner::Core, Gate::Input, K, {k}, "the kit library", CoreOp::Edit, g_library},

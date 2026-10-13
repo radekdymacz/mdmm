@@ -380,6 +380,29 @@ const MmJourneys = (() => {
 			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(kitT(0) === c.k0, "kit not back"), screen: c => ok(S().tracks[0].m === c.m0, "view " + S().tracks[0].m), within: 10000 }
 		]
 	};
+	/* MM-X25: Revert track on the Sound page: the track goes back as the kit's slot stores it, one undo step */
+	const storedPages = t => JSON.stringify(I().doc("kit", machine().kit?.current)?.tracks[t]?.pages?.slice(0, 7));
+	const revertTrackJ = {
+		name: "mm-sound-revert-track", proves: ["MM-X25"],
+		steps: [
+			go("sound"), sel(0),
+			{ say: "the Revert track key is there and off: the track is as its slot stores it",
+				screen: () => ok(!!$1("#revert") && $1("#revert").disabled && /stores it/.test($1("#revert").title), "key " + $1("#revert")?.disabled + " " + $1("#revert")?.title) },
+			{ say: "drag a value of the track: the key turns on", act: async (u, c) => {
+				const el = $1('#main .pc[data-g="FLT"]') || $1('#main .pc[data-g="AMP"]'); if (!el) throw new Error("no FLT or AMP value");
+				c.g = el.dataset.g; c.i = +el.dataset.n; c.pg = PAGES.indexOf(c.g); c.q = `#main .pc[data-g="${c.g}"][data-n="${c.i}"]`;
+				c.v0 = wk().tracks[0].pages[c.pg][c.i]; c.stored = storedPages(0); c.all0 = allKit(); const d = c.v0 > 64 ? -1 : 1;
+				await u.drag(c.q, [[d * 6, 0], [d * 12, 0], [d * 18, 0], [d * 24, 0], [d * 30, 0]]);
+				await until(() => wk().tracks[0].pages[c.pg][c.i] !== c.v0, 6000); c.v1 = wk().tracks[0].pages[c.pg][c.i]; c.h0 = histN(); },
+				screen: () => ok(!$1("#revert").disabled, "key still off"), machine: c => ok(c.v1 !== c.v0 && storedPages(0) === c.stored, `value ${c.v0} -> ${c.v1}`), within: 8000 },
+			{ say: "click Revert track: the value is the slot's, the slot is untouched, the key is off, one undo step more", act: u => u.click("#revert"),
+				screen: () => ok($1("#revert").disabled, "key still on"),
+				machine: c => ok(wk().tracks[0].pages[c.pg][c.i] === c.v0 && allKit() === c.all0 && storedPages(0) === c.stored && histN() === c.h0 + 1, `value ${wk().tracks[0].pages[c.pg][c.i]} for ${c.v0}, undo steps ${histN()} for ${c.h0 + 1}`), within: 8000 },
+			{ say: "press Cmd+Z once: the edit is back and the key is on again", act: u => { blur(); u.key("z", { cmd: true }); },
+				screen: () => ok(!$1("#revert").disabled, "key off"), machine: c => ok(wk().tracks[0].pages[c.pg][c.i] === c.v1, `value ${wk().tracks[0].pages[c.pg][c.i]} for ${c.v1}`), within: 8000 }
+		],
+		async tidy(u, c) { blur(); u.key("z", { cmd: true }); await until(() => wk().tracks[0].pages[c.pg][c.i] === c.v0, 6000); }
+	};
 	/* B-027: a machine picked on Sound stays when the person goes back to Sequence and clicks a step there: the step's
 	   dump makes the Monomachine load the pattern's kit from its slot, and the editor sends the kit's edits again */
 	const machineStays = {
@@ -3482,7 +3505,7 @@ const MmJourneys = (() => {
 		async tidy(u) { await closeLib(u); u.click(tab("seq")); }
 	};
 	const all = [screensFit, ...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
-		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff, msViews, railLamps,
+		genMut, shapeSound, machinePick, revertTrackJ, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff, msViews, railLamps,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, mutScope,

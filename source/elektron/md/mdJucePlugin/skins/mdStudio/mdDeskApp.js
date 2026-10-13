@@ -284,6 +284,7 @@ function syncControls() {
 		if (el.classList.contains("pc") && !["mfx", "src", "link", "lev"].includes(el.dataset.g)) el.classList.toggle("lk", V.locks.has(lk(el.dataset.t != null ? +el.dataset.t : S.sel, el.dataset.g === "lfo" ? lfoRtName(el.dataset.n, el.dataset.t != null ? +el.dataset.t : S.sel) : el.dataset.n)));
 	});
 	$$("#main [data-show]").forEach(el => el.textContent = V.tracks[+el.dataset.show].rt.VOL ?? "—");
+	syncRevert();
 }
 /* ===== Copy / clear / paste (the hardware's COPY CLEAR PASTE, per workspace; clipboard in the plug-in) ===== */
 function secAction(kind) {
