@@ -1,4 +1,4 @@
-/* Download flow: 1 machine -> 2 name your price (optional; only with a payment provider) -> 3 download.
+/* Download flow: 1 machine -> 2 name your price (optional) -> 3 download.
    State lives only in the URL (?ed=md|mm&thanks=1). No storage, no cookies, no requests.
    Payment is a plain link-out to a Lemon Squeezy hosted checkout; no Lemon Squeezy script. */
 (function () {
@@ -8,19 +8,6 @@
   var q = new URLSearchParams(location.search);
   var ed = q.get("ed") === "mm" ? "mm" : "md";
   var ready = function (u) { return typeof u === "string" && /^https:\/\//.test(u) && u.indexOf("REPLACE_ME") < 0; };
-  var pay = C.payments || {};
-  var ls = (pay.lemonsqueezy || {}).checkoutUrl;
-  var provider = pay.provider === "none" ? null : ready(ls) ? "lemonsqueezy" : null;
-
-  /* No payment provider: the download is free and has no price step. The progress shows
-     "1 · Machine, 2 · Download" on both pages (the Price item is removed, the rest renumbered). */
-  if (!provider) {
-    var priceStep = document.querySelector("[data-prog='2']");
-    if (priceStep) priceStep.remove();
-    document.querySelectorAll("[data-prog]").forEach(function (li, i) {
-      li.textContent = li.textContent.replace(/^\d+/, String(i + 1));
-    });
-  }
 
   /* The operating system: ?os= first, then the browser's own report, then macOS. Both steps
      show it as a switch; step 1 passes it on to step 2 in the form (?os=). */
@@ -85,6 +72,9 @@
   };
   useOs(os);
 
+  var pay = C.payments || {};
+  var ls = (pay.lemonsqueezy || {}).checkoutUrl;
+  var provider = pay.provider === "none" ? null : ready(ls) ? "lemonsqueezy" : null;
   var thanks = q.get("thanks") === "1";
   var support = document.getElementById("support");
   var plain = document.getElementById("plain");
