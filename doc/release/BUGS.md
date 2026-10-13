@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-117 · Machinedrum: a handle at a panel's edge is drawn half outside it
+
+- **From:** screen review, 2026-10-13 (the sampler's live view: a ring half cut at the left and at the right edge; the same on the Sound workspace's panels at 0 or 127).
+- **What happens:** a handle of a drawn panel (an envelope's end, a filter's edge) was drawn centred on the value's position, so at 0 or 127 half of it lay outside the canvas and was cut.
+- **Fix (`fix/0.6-screens`):** the handle is drawn wholly inside (the drag still reaches the edge), as B-111 did for the Monomachine. Page journeys `md-screens-fit` and `mm-screens-fit` draw a probe panel with a handle on each of its four edges, and `md-screens-fit` checks the panels of Sound, Mix and Sampler. Left open: on the Mix workspace the master effects' captions ("REVERB · GATED", "ECHO TAPS · FEEDBACK GROWS!") still touch their curve or handle at the default values (the Monomachine's panels were moved clear in B-111); the Machinedrum's journey leaves caption against curve unchecked.
+- **Status:** fixed on `fix/0.6-screens` (edge handles).
+
 ## B-116 · Monomachine: the Arrangement card's header is cut ("65 of 200 rows · T track transpos…")
 
 - **From:** screen review, 2026-10-13 (a picture of the Song workspace).

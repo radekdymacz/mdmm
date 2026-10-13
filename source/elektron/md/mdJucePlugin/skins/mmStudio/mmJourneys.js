@@ -3429,6 +3429,11 @@ const MmJourneys = (() => {
 			,{ say: "Song: the Arrangement card's header shows whole: its state and how many rows (B-116)",
 				act: async (u, c) => { await closeLib(u); u.click(tab("song")); await sleep(500); const card = $1(".arrcard header"); c.bad = card ? [...Journey.cutText(card), ...Journey.spills(".arrcard header *")] : ["no Arrangement card"]; c.text = card?.textContent.trim().replace(/\s+/g, " "); u.click(tab("seq")); },
 				screen: c => ok(c.text && !c.bad.length, `"${c.text}" ${c.bad.join(" | ")}`) }
+			,{ say: "a handle at the very edge of a panel (value 0 or 127) is drawn whole: a probe canvas with handles on all four edges (B-117)",
+				act: async (u, c) => { const cv = document.createElement("canvas"); cv.className = "ed"; cv.dataset.ed = "__probe"; cv.style.cssText = "position:fixed;left:10px;top:10px;width:200px;height:100px;opacity:0;pointer-events:none"; document.body.appendChild(cv);
+					ED.__probe = { draw() {}, handles: (W, H) => [{ x: 0, y: 50, k: "L", c: "#000" }, { x: W, y: 50, k: "R", c: "#000" }, { x: W / 2, y: 0, k: "T", c: "#000" }, { x: W / 2, y: H, k: "B", c: "#000" }] };
+					try { c.bad = Journey.canvasProblems(cv, drawEd, { crossing: false }); } finally { delete ED.__probe; cv.remove(); } },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")) }
 		],
 		async tidy(u) { await closeLib(u); u.click(tab("seq")); }
 	};

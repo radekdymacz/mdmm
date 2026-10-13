@@ -843,8 +843,8 @@ const Journey = (() => {
 	/* A canvas draws its caption and its curve itself, so the problems are read from what it draws: draw(c) is run with a
 	   2d context that records fillText (a caption's box), the dark strokes (a curve, from two px wide up) and the arcs (a
 	   handle), and passes everything on. Problems: a caption past the canvas's edge, a curve through a caption, a handle on
-	   a caption or cut by an edge. W and H are the canvas's CSS size. */
-	function canvasProblems(c, draw) {
+	   a caption or cut by an edge ({crossing: false}: only the edges). W and H are the canvas's CSS size. */
+	function canvasProblems(c, draw, { crossing = true } = {}) {
 		const real = c.getContext("2d"), W = c.clientWidth, H = c.clientHeight, texts = [], segs = [], dots = [];
 		let path = [], last = null, wide = 1;
 		const rec = new Proxy(real, {
@@ -865,6 +865,7 @@ const Journey = (() => {
 		const out = [];
 		for (const t of texts) {
 			if (t.x < 0 || t.x + t.w > W + 0.5) out.push(`"${t.s}" ${Math.round(t.x + t.w - W)} px past the edge`);
+			if (!crossing) continue;
 			const box = { l: t.x - 1, r: t.x + t.w + 1, t: t.y - 10, b: t.y + 2 };
 			for (const [x0, y0, x1, y1] of segs) { const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0)));
 				for (let i = 0; i <= n; i++) { const x = x0 + (x1 - x0) * i / n, y = y0 + (y1 - y0) * i / n;
