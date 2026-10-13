@@ -530,6 +530,32 @@ const MmJourneys = (() => {
 		]
 	};
 
+	/* Discord 2026-10-13 (B-120): mute and solo keep working, and agree, across the Sequence and Mix workspaces; a solo on
+	   the side the rail does not show (Synth or MIDI) is marked on that side's key */
+	const msViews = {
+		name: "mm-ms-across-views", proves: ["MM-020"],
+		steps: [
+			go("seq"),
+			{ say: "click S on track 3 on the rail: the other synth tracks are muted", act: (u, c) => { c.m0 = synthMutes(); u.click('#rail .th[data-sel="2"] .ms.s'); },
+				machine: () => ok(same(synthMutes(), [0, 1, 3, 4, 5]), "machine mutes " + synthMutes()), screen: () => ok(pressed('#rail .th[data-sel="2"] .ms.s'), "rail S not lit") },
+			go("mix"),
+			{ say: "Mix shows track 3's S lit", act: () => {}, screen: () => ok(pressed(strip(2, ".ms.s")), "Mix S not lit") },
+			{ say: "click S on track 3 in Mix: solo off", act: u => u.click(strip(2, ".ms.s")), machine: c => ok(same(synthMutes(), c.m0), "machine mutes " + synthMutes()), screen: () => ok(!pressed(strip(2, ".ms.s")), "Mix S still lit") },
+			go("seq"),
+			{ say: "the rail shows track 3's S off", act: () => {}, screen: () => ok(!pressed('#rail .th[data-sel="2"] .ms.s') && !S().tracks[2].solo, "rail S lit " + pressed('#rail .th[data-sel="2"] .ms.s') + ", state " + S().tracks[2].solo) },
+			{ say: "click M on track 1 on the rail", act: (u, c) => { c.a = synthMuted(0); u.click('#rail .th[data-sel="0"] .ms.m'); }, machine: c => ok(synthMuted(0) === !c.a, "machine mute " + synthMuted(0)), screen: c => ok(pressed('#rail .th[data-sel="0"] .ms.m') === !c.a, "rail M " + pressed('#rail .th[data-sel="0"] .ms.m')) },
+			go("mix"),
+			{ say: "Mix shows track 1's M; click it", act: (u, c) => { c.lit = pressed(strip(0, ".ms.m")); u.click(strip(0, ".ms.m")); }, machine: c => ok(synthMuted(0) === c.a, "machine mute " + synthMuted(0)), screen: c => ok(c.lit === !c.a && pressed(strip(0, ".ms.m")) === c.a, `Mix M was ${c.lit}, now ${pressed(strip(0, ".ms.m"))}`) },
+			{ say: "click S on track 2 in Mix", act: u => u.click(strip(1, ".ms.s")), machine: () => ok(same(synthMutes(), [0, 2, 3, 4, 5]), "machine mutes " + synthMutes()) },
+			go("seq"),
+			{ say: "click MIDI on the rail: the MIDI tracks, and the Synth key says a solo holds there", act: u => u.click('[data-side="midi"]'),
+				screen: () => ok(S().side === "midi" && !!$1('[data-side="int"] .sosign') && !$1('[data-side="midi"] .sosign'), `side ${S().side}; Synth mark ${!!$1('[data-side="int"] .sosign')}, MIDI mark ${!!$1('[data-side="midi"] .sosign')}`) },
+			{ say: "click Synth: back to the synth tracks", act: u => u.click('[data-side="int"]'), screen: () => ok(S().side !== "midi", "side " + S().side) },
+			{ say: "the rail shows track 2's S; click it: solo off", act: (u, c) => { c.lit = pressed('#rail .th[data-sel="1"] .ms.s'); u.click('#rail .th[data-sel="1"] .ms.s'); }, machine: c => ok(same(synthMutes(), c.m0), "machine mutes " + synthMutes()), screen: c => ok(c.lit && !pressed('#rail .th[data-sel="1"] .ms.s') && !$1(".sidesw .sosign"), "rail S was " + c.lit + "; a solo mark left " + !!$1(".sidesw .sosign")) }
+		],
+		async tidy(u) { if ([...S().tracks, ...S().midi].some(x => x.solo || x.mute)) { const b = $1("#allon"); if (b && !b.disabled) u.click(b); await sleep(500); } }
+	};
+
 	/* ---------- Perform ---------- */
 	const poly = {
 		name: "mm-perform-poly", proves: ["MM-032", "MM-087", "MM-239"],
@@ -3438,7 +3464,7 @@ const MmJourneys = (() => {
 		async tidy(u) { await closeLib(u); u.click(tab("seq")); }
 	};
 	const all = [screensFit, ...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
-		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff,
+		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff, msViews,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, mutScope,
