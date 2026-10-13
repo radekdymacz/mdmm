@@ -11,7 +11,9 @@
 //                                        applies a dumped transpose while the pattern plays), intentcases (the intent
 //                                        cases of doc/modern-ux/intent-cases.json through the desk, read back from the machine),
 //                                        steprec (0.6 wave 7: LIVE RECORDING's erase and STEP RECORDING), perform (0.6
-//                                        wave 9, B-064: POLY, key tracking and the MULTI ENV, judged by the output)
+//                                        wave 9, B-064: POLY, key tracking and the MULTI ENV, judged by the output), hoststop
+//                                        (B-121: the host's Stop lets go of a held note), reselect (B-122: picking the
+//                                        current pattern again keeps it)
 //
 // Exits 77 (skip) without arguments.
 
@@ -29,6 +31,8 @@
 
 #include "mdLib/mdautomation.h"
 #include "mdLib/mmtelemetry.h"
+
+#include "synthLib/midiClock.h"
 
 #include <functional>
 
@@ -1142,6 +1146,118 @@ namespace
 		}
 		r.msg(R"({"op":"seqMode","song":false})");
 		r.run(1000);
+	}
+
+	// B-122 (Discord 2026-10-12): "the reset pattern often loads another one". Picking a pattern again (the current one, stopped
+	// and playing, and back to the current one after another was queued) on the firmware: which pattern plays after.
+	void reselect(const Bytes& _rom)
+	{
+		std::puts("reselect: picking the current pattern again keeps it");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		const auto t0 = r.ms();
+		while(r.desk->loaded() < 288 && r.ms() - t0 < 60000)
+			r.run(100);
+		r.run(1000);
+		const auto pick = [&](const int _p, const bool _now = false)
+		{
+			r.msgConfirmed(R"({"op":"select","p":)" + std::to_string(_p) + (_now ? R"(,"now":true})" : "}"));
+		};
+		const auto status = [&] { return "plays " + std::to_string(r.desk->currentPattern()); };
+		for(const int p : {1, 3, 70})
+		{
+			pick(p);
+			r.run(1500);
+			check(r.desk->currentPattern() == p, "stopped: pick " + std::to_string(p) + ": " + status());
+			pick(p);
+			r.run(1500);
+			check(r.desk->currentPattern() == p, "stopped: pick " + std::to_string(p) + " again: " + status());
+			r.msg(R"({"op":"play"})");
+			r.run(1000);
+			pick(p);
+			r.run(5000);
+			check(r.desk->currentPattern() == p, "playing: pick " + std::to_string(p) + " again: " + status());
+			pick(p + 1);
+			r.run(200);
+			pick(p);
+			r.run(6000);
+			check(r.desk->currentPattern() == p, "playing: pick " + std::to_string(p + 1) + ", then " + std::to_string(p) + " before the end: " + status());
+			pick(p, true);
+			r.run(3000);
+			check(r.desk->currentPattern() == p, "playing: switch now to " + std::to_string(p) + ": " + status());
+			r.msg(R"({"op":"stop"})");
+			r.run(1500);
+			check(r.desk->currentPattern() == p, "stopped: " + status());
+		}
+	}
+
+	// B-121 (Discord 2026-10-13, Ableton): a track kept playing after the host's transport stopped until a note was
+	// played on it. In a DAW the machine follows the host (followHost); a note the host played into a track, whose note
+	// off does not come (the host sends none at its stop, or it is lost), keeps sounding after the host's Stop. The
+	// plug-in's Stop is synthLib::hostStopEvents: MIDI Stop alone (as before) leaves the note playing; with All Notes Off
+	// on every channel (the Monomachine plug-in since B-121) the note ends and the sequencer stays stopped.
+	void hostStop(const Bytes& _rom)
+	{
+		std::puts("hoststop: the host's Stop lets go of a held note (B-121)");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		const auto t0 = r.ms();
+		while(r.desk->loaded() < 288 && r.ms() - t0 < 60000)
+			r.run(100);
+		r.run(1000);
+		r.msg(R"({"op":"followHost"})");
+		r.run(6000);
+		const auto gl = r.desk->global(static_cast<uint8_t>(r.desk->currentGlobal()));
+		require(gl.has_value() && gl->tempoSync == 1 && gl->transportIn == 1, "followHost: CLOCK IN and TRANSPORT IN");
+		const auto ch = ed::mmTrackChannel(*gl, 0);
+		require(ch.has_value(), "T1 has a MIDI channel");
+		// T1 a plain voice held to its NOTE OFF (as the perform section's): GND-SIN, AMP HOLD 0 DEC 127, VOL 60, level 48
+		const auto k = std::to_string(r.desk->currentKit());
+		r.msg("{\"op\":\"clearSound\",\"g\":30001,\"k\":" + k + ",\"t\":0}");
+		r.run(400);
+		r.msg("{\"op\":\"params\",\"g\":30002,\"k\":" + k + ",\"values\":[[0,1,1,0],[0,1,2,127],[0,1,3,8],[0,1,5,60]]}");
+		r.msg("{\"op\":\"level\",\"g\":30003,\"k\":" + k + ",\"t\":0,\"v\":48}");
+		r.run(4000);
+		const auto host = [&](const uint8_t _a, const uint8_t _b = 0, const uint8_t _c = 0)
+		{
+			synthLib::SMidiEvent e(synthLib::MidiEventSource::Host, _a, _b, _c);
+			r.m.hardware().sendMidi(e);
+		};
+		// the host plays: Start and its clock at 120 BPM, a note into T1 held; then its Stop (_notesOff: B-121's)
+		const auto playThenStop = [&](const bool _notesOff, const char* _what)
+		{
+			host(0xfa);
+			const double every = 60000.0 / 120 / 24;
+			double t = 0;
+			for(; t < 600; t += every) { host(0xf8); r.run(every); }
+			host(static_cast<uint8_t>(0x90 | *ch), 60, 100);
+			for(; t < 1600; t += every) { host(0xf8); r.run(every); }
+			const double playing = r.rms(300);
+			const int step = r.tel.step.load();
+			synthLib::hostStopEvents(_notesOff, [&](const uint8_t _a, const uint8_t _b, const uint8_t _c) { host(_a, _b, _c); });
+			r.run(1500);
+			const double after = r.rms(300);
+			const int step2 = r.tel.step.load();
+			r.run(500);
+			std::printf("    %s: playing rms %.4f, 1.5 s after the Stop %.4f; step %d, %d, %d\n", _what, playing, after, step, step2, r.tel.step.load());
+			// the note's own off, so the next case starts quiet
+			host(static_cast<uint8_t>(0x80 | *ch), 60, 0);
+			r.run(1500);
+			return std::pair<double, double>{playing, after};
+		};
+		const auto [p0, a0] = playThenStop(false, "MIDI Stop alone (before B-121)");
+		check(p0 > 1e-3, "the rig: the held note sounds while the host plays");
+		check(a0 > 0.25 * p0, "before B-121: MIDI Stop alone leaves the held note sounding (the report)");
+		const auto [p1, a1] = playThenStop(true, "hostStopEvents with All Notes Off (B-121)");
+		check(p1 > 1e-3, "the held note sounds again while the host plays");
+		check(a1 < 0.05 * p1, "the host's Stop lets go of the held note (rms " + std::to_string(a1) + " of " + std::to_string(p1) + ")");
+		const int s0 = r.tel.step.load();
+		r.run(1000);
+		check(r.tel.step.load() == s0, "and the sequencer stays stopped");
 	}
 
 	void hostClock(const Bytes& _rom)
@@ -5118,6 +5234,10 @@ int main(const int _argc, char** _argv)
 			syxExport(rom);
 		if(only.empty() || only == "hostclock")
 			hostClock(rom);
+		if(only == "hoststop")
+			hostStop(rom);
+		if(only == "reselect")
+			reselect(rom);
 		if(only.empty() || only == "songrow")
 			songRowPlayhead(rom);
 		if(only.empty() || only == "transport")

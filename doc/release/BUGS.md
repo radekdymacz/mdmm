@@ -4,6 +4,41 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-122 · "Reset to the pattern often loads another pattern"
+
+- **From:** Discord, 2026-10-12 (in a feature request, below; the editor and host not named).
+- **What happens (as reported):** going back to the saved pattern "often doesn't remember the original pattern and loads another one".
+- **Checked on the firmware (not reproduced):** `mmDeskFirmwareTest <MM ROM> reselect` and `mdDeskFirmwareTest <MD ROM> reselect` pick patterns 1, 3, 70 (MM) and A01, A06, C09 (MD) and pick each again: stopped, playing (queued to the pattern end), after another pattern was queued and before it started, and with switch now; then STOP. Every case plays the pattern picked last (36 of 36 checks).
+- **Also:** the request's "reset the synthesis parameters to the saved state" is the kit library's **Reload** (LOAD KIT on the current slot), in both editors: every parameter of the kit that plays goes back to what its slot holds, which after Import SysEx… is the imported kit (the machine keeps the edits in its UNDO KIT). A pattern's edits are dumped into its slot as they are made, so there is no older saved pattern to go back to; undo is the way back. No new control.
+- **To ask the tester:** which control they used for "reset to pattern" (a pattern pick, the LCD's ‹ ›, undo, Reload, the DAW's preset menu) and in which editor and host; a DAW that sends program changes (a clip's Pgm Change, a preset recall) switches the machine's pattern when its PRG CHANGE is on.
+- **Status:** not reproduced; open, waits for the tester's steps.
+
+## B-121 · Monomachine in a DAW: a track keeps playing after the host's transport stops, until a note is played on it
+
+- **From:** Discord, 2026-10-13 (Ableton Live, macOS; notes from a Push into the editors' tracks).
+- **What happens (as reported):** after the transport stopped, a Monomachine track kept running; a note had to be played on that track to end it.
+- **Cause (measured, `mmDeskFirmwareTest <MM ROM> hoststop`):** in a DAW the plug-in passes the host's transport to the machine (P7): the host's Stop was MIDI Stop alone. That stops the sequencer, but a note the host played into a track whose note off does not come (a host that sends none at its stop, a note off lost) keeps sounding, and with the arpeggiator keeps playing: 1.5 s after the Stop the held note was still at half its level (rms 0.046 of 0.096). Close to B-059 (a held key with the arpeggiator) and B-060 (the transposes a start takes).
+- **Fix (`fix/0.6-discord`):** the host's Stop is `synthLib::hostStopEvents` (midiClock.h): MIDI Stop, then, for the Monomachine plug-in, All Notes Off (CC 123) on all 16 channels (the machine lets held notes go on CC 123, as the panic key's P5 measured; every channel, so any CHANNEL SPAN, base channel and the keyboard modes' channels are covered). The Machinedrum is unchanged (its sounds are not held). Test: `mmDeskFirmwareTest hoststop` (ctest `mmHostStopFirmwareTest`): the host plays with a note held into T1, then stops without its note off: MIDI Stop alone leaves it sounding, the plug-in's Stop ends it (rms 0.002) and the sequencer stays stopped.
+- **Status:** fixed on `fix/0.6-discord`; to confirm with the tester.
+
+## B-120 · Monomachine: mute and solo seem to stop responding after switching views; a solo lit in Mix but not in Sequence
+
+- **From:** Discord, 2026-10-13 (macOS Tahoe, Ableton Live, Monomachine Editor).
+- **What happens (as reported):** after jumping between views, clicking M or S on a track changed nothing; once a track's S was lit in Mix but not in Sequence, and had to be turned off in Mix.
+- **Checked:** the page keeps one mute and solo per track for every workspace; switching Sequence, Sound, Mix, Perform and Song while clicking M, S and the side keys at random (about 75 clicks, 55 switches a run) never showed a key that differs from that state, neither on the stub machine nor on the real firmware (a probe journey, three runs). Found: the Sequence and Sound rails show one side at a time (Synth or MIDI). A solo on a synth track silences the MIDI tracks too, but with the rail on MIDI nothing showed it: M on a MIDI track then lit and changed nothing audible (a solo holds), and the soloed track's S was only to be seen on the other side or in Mix. That matches the report.
+- **Fix (`fix/0.6-discord`):** the rail's Synth and MIDI keys carry a small S while a solo holds on their tracks (and say so in their tooltip), so the solo is found from either side. No new control. Page journey `mm-ms-across-views` (solo and mute in Sequence, then in Mix and back, the S mark on the other side's key).
+- **Left open:** the solo is the page's own (as on the Machinedrum); if the host closes and reopens the plug-in window, the new page has no solo while the machine keeps the mutes the solo made (they show as M). Ask the tester whether the window was closed between views.
+- **Status:** fixed on `fix/0.6-discord`; to confirm with the tester.
+
+## B-119 · Ableton: the Machinedrum and Monomachine Editors seem to hear each other's MIDI (a Push on a third track)
+
+- **From:** Discord, 2026-10-13.
+- **Setup:** Ableton Live on macOS, a Machinedrum Editor and a Monomachine Editor on two tracks, a Push playing a third track that uses an External Instrument.
+- **What happens (as reported):** notes meant for one editor seem to reach the other as well, as if MIDI crossed between the tracks.
+- **Should:** each plug-in hears only the MIDI its own track routes to it.
+- **Facts needed from the tester:** the editors' version; each track's MIDI From / To and Monitor settings; where the External Instrument sends (which port and channel); whether the cross-talk stays with the Push unplugged or with the External Instrument removed; whether "MIDI out" in either editor is on.
+- **Status:** open, not reproduced; waits for the tester's routing and version.
+
 ## B-117 · Machinedrum: a handle at a panel's edge is drawn half outside it
 
 - **From:** screen review, 2026-10-13 (the sampler's live view: a ring half cut at the left and at the right edge; the same on the Sound workspace's panels at 0 or 127).
@@ -661,7 +696,9 @@ where it came from, the setup, what happens, what should happen, status.*
 - **0.3.5:** not reproduced at first: the journey `mm-sound-machine-stays` (pick a machine on Sound, go to Sequence, wait, back to Sound) passes in the standalone and the VST3. It only waited on Sequence.
 - **Cause:** not the Sequence page (going there sends nothing), but what a person does there: an edit of the pattern that plays (a step, a lock, LEN …) goes to the machine as a pattern dump on SYSEX RECV, and OS 1.32B, taking a dump of the pattern that plays, loads the kit the pattern links from its slot, also when that is the kit that plays (measured: memory shows the stored kit 20-40 ms after the dump is taken, stopped or playing). Every unsaved edit of the kit went with it, the machine change and the values alike; the desk read the reloaded kit from memory, so the page showed the old machine and the kit as saved. The Machinedrum's firmware does the same, and its desk has sent the kit's edits again after such a dump since 0.3.0 (B-025); the Monomachine's desk did not. Over HW MIDI too, and worse there: the page, with no memory to read, went on showing a machine the Monomachine no longer played.
 - **Fix (0.4.0, branch `fix/machine-change`):** as the Machinedrum's: a dump of the pattern that plays which links the kit that plays is followed, once the machine has read and applied it (the stream's after-work), by the kit's edits as live messages (0x55 name, 0x5B machine, 0x5C routing, CC, NRPN: from the stored slot to the working kit the page shows), pending until memory shows them; meanwhile no memory image of the kit is taken, so the page never shows the reload (`MmMachine::reloadFollows`, `restoreWorkingKit`). The machine plays the stored kit for about a quarter of a second before the edits are back. Over HW MIDI the edits follow the dumps the person sends on SYSEX RECV (SEND, `hwSend`). Tests: `mmDeskFirmwareTest <MM ROM> machine` (the factory kit, then a saved kit: a machine and a value on Sound, a step on Sequence stopped and while playing, a second machine while playing, PLAY and STOP, another pattern with the same kit and back, each time the machine's memory and the page holding the same edited kit; then a step sent on the person's SYSEX RECV over HW MIDI): 24 failures before, passes after; `mmDeskTest` (0x5B again after a dump of the pattern that plays, not after another pattern's: fails before); the journey `mm-sound-machine-stays` now clicks a step on Sequence (not yet run in the plug-in).
-- **Status:** fixed for 0.4.0; the tester to confirm.
+- **Reported again:** Discord, 2026-10-11 (0.5.0, plug-in): "switching from the sound editor to the sequencer it switches back to some previous state".
+- **Re-checked 2026-10-13 on the 0.6 line (`fix/0.6-discord`), not reproduced:** `mmDeskFirmwareTest <MM ROM> machine` (a machine and values on Sound, then a step and a piano-roll note on Sequence, stopped and playing, another pattern with the kit and back, SAVE KIT, over HW MIDI: 44 of 44 checks) and `kitlink` (an E-H pattern that keeps another kit, its roll edit: 9 of 9) pass; the page journeys `mm-sound-machine-stays` and `mm-ms-across-views` pass on the firmware. So no new number. Left to ask the tester: whether the DAW has automation for the plug-in's parameters (a lane, or Live's automation arm while turning knobs), which writes the recorded values back as the song plays; whether it plays a pattern in banks E-H; the version.
+- **Status:** fixed for 0.4.0; reported again for 0.5.0, not reproduced on the 0.6 line; the tester to confirm with 0.6.
 
 ## B-026 · Mutes don't work after a SysEx import with its globals (0.3.5 candidate)
 
