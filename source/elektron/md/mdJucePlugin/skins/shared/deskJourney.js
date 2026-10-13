@@ -318,8 +318,12 @@ const Journey = (() => {
 		}
 		return out;
 	}
+	let hooks = null;	/* the page's hooks of the running journeys (begin) */
 	async function runOne(j, log, context, film, c0) {
 		const c = c0 || {}, n = j.steps.length;
+		/* where the page's undo and its modes stood when the journey began (page.begin(c): c.undo0 and what else the page restores): the journey's
+		   tidy puts them back with the page's own helper (back(u, c)) */
+		try { if (hooks?.begin) hooks.begin(c); } catch (_) { }
 		let reason = "";
 		/* what the journey needs that this run may not have (the window on screen): it is skipped, not failed */
 		current = j.name; shots = 0;
@@ -359,9 +363,10 @@ const Journey = (() => {
 	   stack, deskModal.js) is closed before the next one, by Esc as a person would, and said: what was closed, or what
 	   stays open. Without it one journey's open details covered the next journeys' controls (0.5.1 gate: md-dev-speedups
 	   then md-lcd-volume). The start-up card is not closed here (only the machine closes it). */
-	async function closeLeftOpen() {
+	async function closeLeftOpen(fix = true) {
 		const open = () => typeof Modal === "undefined" ? [] : Modal.open().filter(id => id !== "bootcard");
 		const was = open(); if (!was.length) return "";
+		if (!fix) return `left open: ${was.join(", ")}`;
 		for (let i = 0; i < 6 && open().length; i++) {
 			const n = open().length;
 			if (Modal.top() === "deskmenu" && typeof closeDeskMenu === "function") closeDeskMenu(); else u.key("Escape");
@@ -369,16 +374,26 @@ const Journey = (() => {
 		}
 		await sleep(100);
 		const still = open();
-		return `closed what was left open: ${was.join(", ")}${still.length ? `; still open: ${still.join(", ")}` : ""}`;
+		return `left open, closed after a failure: ${was.join(", ")}${still.length ? `; still open: ${still.join(", ")}` : ""}`;
 	}
 	/* page: {log, ready: async () => true when the machine takes input, prepare: async (u) => what it did (optional,
 	   once, after ready and before the first journey: logged "JOURNEYS before: ..."), between: async (u) => the page's
 	   neutral state before each journey, context: () => what the page last said (its toast, its error line), added to a
 	   FAIL} */
+	/* page.state(): {name: text} of what a journey may change and must put back (the machine's documents, its modes); the UI's own
+	   (workspace, selection) is not: each journey picks what it needs. A name in only one of the two is not a change (a document that
+	   was not loaded yet). */
+	const safeState = page => { try { return page.state(); } catch (e) { return { "state threw": e.message }; } };
+	const stateDiff = (a, b) => Object.keys(a).filter(k => k in b && a[k] !== b[k]).slice(0, 8).map(k => {
+		const x = String(a[k]), y = String(b[k]);
+		if (x.length < 50 && y.length < 50) return `${k} (${x} -> ${y})`;
+		let i = 0; while (i < x.length && x[i] === y[i]) i++;	/* a document: where it first differs */
+		return `${k} (at ${i}: ${x.slice(Math.max(0, i - 20), i + 30)} -> ${y.slice(Math.max(0, i - 20), i + 30)})`;
+	}).join(", ");
 	let runLog = null;	/* the running journeys' log (the hands say what they could not do) */
 	async function run(all, page) {
 		const list = wanted(all); if (!list) return;
-		const log = page.log; runLog = log;
+		const log = page.log; runLog = log; hooks = page;
 		log(`JOURNEYS start: ${list.length} of ${all.length}: ${list.map(j => j.name).join(" ")}`);
 		if (shuffleSeed != null) log(`JOURNEYS shuffle seed ${shuffleSeed}`);
 		if (listMode) { log(`JOURNEYS list: ${list.map(j => j.name).join(" ")}`); log("JOURNEYS DONE 0/0 (list)"); return; }
@@ -392,11 +407,18 @@ const Journey = (() => {
 		if (page.prepare && list.some(j => !j.boot)) {
 			try { log(`JOURNEYS before: ${await page.prepare(u)}`); } catch (e) { log(`JOURNEYS before: could not prepare: ${e.message}`); }
 		}
+		/* the guard: what the journey before left is said, and put right only when that one failed (or at the start) */
+		let fix = true;
 		for (const j of list.filter(j => !j.boot)) {
-			try { const did = page.between ? await page.between(u) : ""; if (did) log(`JOURNEY ${j.name} before: ${did}`); } catch (e) { log(`JOURNEY ${j.name} before: ${e.message}`); }
-			const left = await closeLeftOpen();
+			try { const did = page.between ? await page.between(u, fix) : ""; if (did) log(`JOURNEY ${j.name} before: ${did}`); } catch (e) { log(`JOURNEY ${j.name} before: ${e.message}`); }
+			const left = await closeLeftOpen(fix);
 			if (left) log(`JOURNEY ${j.name} before: ${left}`);
-			count(await runOne(j, log, page.context));
+			const was = page.state ? safeState(page) : null;
+			const r = await runOne(j, log, page.context);
+			/* the guard's other half: what this journey left changed (its tidy was to put it back), said by the journey's name */
+			if (was && r !== "skip") { const now = safeState(page), diff = stateDiff(was, now); if (diff) log(`JOURNEY ${j.name} left: ${diff}`); }
+			count(r); fix = !r;	/* false: failed; "skip" and true: it changed nothing or passed */
+			if (r === "skip") fix = false;
 		}
 		log(`JOURNEYS DONE ${passed}/${list.length - skipped}${skipped ? `, ${skipped} skipped` : ""}`);
 	}
