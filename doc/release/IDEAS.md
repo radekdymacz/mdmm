@@ -3,6 +3,12 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-027 · Plug-in: its own MIDI in and out ports, on top of the host's MIDI
+
+- **From:** Discord, 2026-10-10 and 2026-10-11 (a virtual port and a Max patch beside the DAW). The tester was told it is on the list.
+- **The idea:** the plug-in can open MIDI input and output ports of its own (as the standalone does), in addition to the MIDI the host routes to it, so a patch or a controller can talk to the editor directly.
+- **Status:** later (not 0.6): needs port handling in the plug-in layer; the standalone already has it.
+
 ## I-026 · In a DAW: the machine's own clock (GLOBAL Tempo in INT)
 
 - **From:** Radek's 0.6 review, 2026-10-12: in the plug-in he must be able to switch the machine to its internal clock. `followHost` set EXT and set it again every 2 s, so Tempo in INT did not stick in a DAW and TEMPO edits were refused ("The DAW sets the tempo").
