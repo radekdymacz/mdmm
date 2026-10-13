@@ -12,7 +12,8 @@
 //                                        cases of doc/modern-ux/intent-cases.json through the desk, read back from the machine),
 //                                        steprec (0.6 wave 7: LIVE RECORDING's erase and STEP RECORDING), perform (0.6
 //                                        wave 9, B-064: POLY, key tracking and the MULTI ENV, judged by the output), hoststop
-//                                        (B-121: the host's Stop lets go of a held note)
+//                                        (B-121: the host's Stop lets go of a held note), reselect (B-122: picking the
+//                                        current pattern again keeps it)
 //
 // Exits 77 (skip) without arguments.
 
@@ -1145,6 +1146,51 @@ namespace
 		}
 		r.msg(R"({"op":"seqMode","song":false})");
 		r.run(1000);
+	}
+
+	// B-122 (Discord 2026-10-12): "the reset pattern often loads another one". Picking a pattern again (the current one, stopped
+	// and playing, and back to the current one after another was queued) on the firmware: which pattern plays after.
+	void reselect(const Bytes& _rom)
+	{
+		std::puts("reselect: picking the current pattern again keeps it");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		const auto t0 = r.ms();
+		while(r.desk->loaded() < 288 && r.ms() - t0 < 60000)
+			r.run(100);
+		r.run(1000);
+		const auto pick = [&](const int _p, const bool _now = false)
+		{
+			r.msgConfirmed(R"({"op":"select","p":)" + std::to_string(_p) + (_now ? R"(,"now":true})" : "}"));
+		};
+		const auto status = [&] { return "plays " + std::to_string(r.desk->currentPattern()); };
+		for(const int p : {1, 3, 70})
+		{
+			pick(p);
+			r.run(1500);
+			check(r.desk->currentPattern() == p, "stopped: pick " + std::to_string(p) + ": " + status());
+			pick(p);
+			r.run(1500);
+			check(r.desk->currentPattern() == p, "stopped: pick " + std::to_string(p) + " again: " + status());
+			r.msg(R"({"op":"play"})");
+			r.run(1000);
+			pick(p);
+			r.run(5000);
+			check(r.desk->currentPattern() == p, "playing: pick " + std::to_string(p) + " again: " + status());
+			pick(p + 1);
+			r.run(200);
+			pick(p);
+			r.run(6000);
+			check(r.desk->currentPattern() == p, "playing: pick " + std::to_string(p + 1) + ", then " + std::to_string(p) + " before the end: " + status());
+			pick(p, true);
+			r.run(3000);
+			check(r.desk->currentPattern() == p, "playing: switch now to " + std::to_string(p) + ": " + status());
+			r.msg(R"({"op":"stop"})");
+			r.run(1500);
+			check(r.desk->currentPattern() == p, "stopped: " + status());
+		}
 	}
 
 	// B-121 (Discord 2026-10-13, Ableton): a track kept playing after the host's transport stopped until a note was
@@ -5190,6 +5236,8 @@ int main(const int _argc, char** _argv)
 			hostClock(rom);
 		if(only == "hoststop")
 			hostStop(rom);
+		if(only == "reselect")
+			reselect(rom);
 		if(only.empty() || only == "songrow")
 			songRowPlayhead(rom);
 		if(only.empty() || only == "transport")

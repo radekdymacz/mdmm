@@ -4,6 +4,15 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-122 · "Reset to the pattern often loads another pattern"
+
+- **From:** Discord, 2026-10-12 (in a feature request, below; the editor and host not named).
+- **What happens (as reported):** going back to the saved pattern "often doesn't remember the original pattern and loads another one".
+- **Checked on the firmware (not reproduced):** `mmDeskFirmwareTest <MM ROM> reselect` and `mdDeskFirmwareTest <MD ROM> reselect` pick patterns 1, 3, 70 (MM) and A01, A06, C09 (MD) and pick each again: stopped, playing (queued to the pattern end), after another pattern was queued and before it started, and with switch now; then STOP. Every case plays the pattern picked last (36 of 36 checks).
+- **Also:** the request's "reset the synthesis parameters to the saved state" is the kit library's **Reload** (LOAD KIT on the current slot), in both editors: every parameter of the kit that plays goes back to what its slot holds, which after Import SysEx… is the imported kit (the machine keeps the edits in its UNDO KIT). A pattern's edits are dumped into its slot as they are made, so there is no older saved pattern to go back to; undo is the way back. No new control.
+- **To ask the tester:** which control they used for "reset to pattern" (a pattern pick, the LCD's ‹ ›, undo, Reload, the DAW's preset menu) and in which editor and host; a DAW that sends program changes (a clip's Pgm Change, a preset recall) switches the machine's pattern when its PRG CHANGE is on.
+- **Status:** not reproduced; open, waits for the tester's steps.
+
 ## B-121 · Monomachine in a DAW: a track keeps playing after the host's transport stops, until a note is played on it
 
 - **From:** Discord, 2026-10-13 (Ableton Live, macOS; notes from a Push into the editors' tracks).
