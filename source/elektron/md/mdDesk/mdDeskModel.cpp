@@ -395,6 +395,8 @@ namespace mdDesk
 			// ---- the editor's setup ----
 			{"modSet", Owner::Setup, Gate::None, -1, {{"doc", ArgType::Object}}, "the app modulators (md-desk/modulators)"},
 			{"knobs", Owner::Setup, Gate::None, -1, {{"ccs", ArgType::Array}}, "the eight knob rows' CCs"},
+			{"soloSet", Owner::Setup, Gate::None, -1, {{"tracks", ArgType::Array}, {"mutes", ArgType::Array, 0, 0, true}},
+				"the page's solo (the tracks soloed) and the mutes the person had before it, kept with the project; the plug-in says them again as {\"type\":\"solo\"}"},
 			// ---- P9: the samples the desk read (the emulated machine's memory), the desk's own ----
 			{"sampleWave", Owner::Setup, Gate::None, -1, {{"bank", ArgType::Text, 0, 0, false, {"rom", "ram"}}, {"slot", ArgType::Integer, 0, 47},
 				{"bins", ArgType::Integer, 1, static_cast<double>(ed::g_mdSampleWaveMaxBins)}},

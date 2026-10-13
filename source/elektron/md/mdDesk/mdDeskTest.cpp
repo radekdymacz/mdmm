@@ -2048,6 +2048,50 @@ namespace
 		const auto before = saved.size();
 		desk.onPageMessage(cmd(R"({"op":"knobs","ccs":[1,1,3,4,5,6,7,8],"id":3})"));
 		check(saved.size() == before && desk.setup().knobCcs[1] == 2, "invalid knob CCs change nothing");
+
+		// B-123: the page's solo and the mutes the person had before it are kept with the project
+		const auto last = [&page](const char* _type) -> const Value*
+		{
+			for(auto it = page.rbegin(); it != page.rend(); ++it)
+				if(it->find("type")->asString() == _type)
+					return &*it;
+			return nullptr;
+		};
+		const auto list = [](const Value* _m, const char* _key)
+		{
+			std::vector<int> out;
+			if(_m)
+				for(const auto& v : _m->find(_key)->asArray())
+					out.push_back(static_cast<int>(v.asNumber()));
+			return out;
+		};
+		const auto n = saved.size();
+		desk.onPageMessage(cmd(R"({"op":"soloSet","id":4,"tracks":[5,2],"mutes":[1,9]})"));
+		check(saved.size() == n + 1 && desk.setup().solo.tracks == std::vector<int>{2, 5} && desk.setup().solo.mutes == std::vector<int>{1, 9},
+			"soloSet: the solo and the person's mutes are kept (sorted)");
+		check(list(saved.back().find("solo"), "tracks") == std::vector<int>{2, 5}, "and saved with the project");
+		desk.onPageMessage(cmd(R"({"op":"soloSet","id":5,"tracks":[2,5],"mutes":[1,9]})"));
+		check(saved.size() == n + 1, "the same solo again saves nothing");
+		desk.onPageMessage(cmd(R"({"op":"soloSet","id":6,"tracks":[2,16],"mutes":[]})"));
+		desk.onPageMessage(cmd(R"({"op":"soloSet","id":7,"tracks":[3,3]})"));
+		check(saved.size() == n + 1 && desk.setup().solo.tracks == std::vector<int>{2, 5}, "a track out of range or listed twice changes nothing");
+		// the project comes back: the solo is said to the page, after a reset too, and a project without one clears it
+		const auto saved1 = saved.back();
+		page.clear();
+		desk.loadSetup(deskSetupToJson({}));
+		desk.tick();
+		check(desk.setup().solo.empty() && last("solo") && list(last("solo"), "tracks").empty(), "a project without a solo: none, and the page is told");
+		page.clear();
+		check(desk.loadSetup(saved1).empty() && desk.setup().solo.tracks == std::vector<int>{2, 5} && desk.setup().solo.mutes == std::vector<int>{1, 9}, "a project's solo loads");
+		desk.tick();
+		check(list(last("solo"), "tracks") == std::vector<int>{2, 5} && list(last("solo"), "mutes") == std::vector<int>{1, 9}, "and is said to the page");
+		page.clear();
+		desk.onPageMessage(cmd(R"({"op":"ready"})"));
+		desk.tick();
+		check(list(last("solo"), "tracks") == std::vector<int>{2, 5}, "a page made again gets the solo");
+		desk.onPageMessage(cmd(R"({"op":"soloSet","id":8,"tracks":[],"mutes":[4]})"));
+		check(desk.setup().solo.empty() && desk.setup().solo.mutes.empty() && saved.back().find("solo") == nullptr,
+			"no solo: no mutes of the person's kept, and the setup says no solo");
 	}
 
 	// P4: which trig a knob turn locks while live recording.

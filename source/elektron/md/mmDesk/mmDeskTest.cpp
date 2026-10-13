@@ -1182,6 +1182,36 @@ void modulators()
 	check(moved, "the link moves FLT page value 1 of track 1 by CC on the machine's steps");
 	check(!d.coreState().history().canUndo(), "modulation is not an undo step");
 	check(last("mod") && last("mod")->find("values")->asArray().size() == 1, "the page gets the source's value");
+
+	// B-123: the page's solo and the mutes the person had before it are kept with the project, beside the modulators
+	const auto list = [](const Value* _m, const char* _key)
+	{
+		std::vector<int> out;
+		if(_m)
+			for(const auto& v : _m->find(_key)->asArray())
+				out.push_back(static_cast<int>(v.asNumber()));
+		return out;
+	};
+	const auto sources = [](const Value& _doc) { return _doc.find("sources")->asArray().size(); };
+	check(saved.find("solo") == nullptr, "no solo yet: the setup holds none");
+	msg(R"({"op":"soloSet","id":2,"tracks":[4,1],"mutes":[0,7]})");
+	check(last("result")->find("ok")->asBool() && saved.find("solo") && list(saved.find("solo"), "tracks") == std::vector<int>{1, 4}
+		&& list(saved.find("solo"), "mutes") == std::vector<int>{0, 7} && sources(saved) == 1, "soloSet: kept with the project, sorted, the modulators beside it");
+	msg(R"({"op":"soloSet","id":3,"tracks":[1,12]})");
+	check(!last("result")->find("ok")->asBool() && list(saved.find("solo"), "tracks") == std::vector<int>{1, 4}, "a track out of range changes nothing");
+	msg(R"({"op":"modSet","id":4,"doc":{"schema":"mm-desk/modulators","version":1,"sources":[],"links":[]}})");
+	check(sources(saved) == 0 && list(saved.find("solo"), "tracks") == std::vector<int>{1, 4}, "a modulator change keeps the solo in the setup");
+	const auto project = saved;
+	page.clear();
+	check(d.loadSetup(deskCore::modSetupToJson({}, mmDesk::g_mmModLimits)).empty() && list(last("solo"), "tracks").empty(), "a project without a solo: none, and the page is told");
+	page.clear();
+	check(d.loadSetup(project).empty() && list(last("solo"), "tracks") == std::vector<int>{1, 4} && list(last("solo"), "mutes") == std::vector<int>{0, 7},
+		"a project's solo loads and is said to the page");
+	page.clear();
+	msg(R"({"op":"ready"})");
+	check(list(last("solo"), "tracks") == std::vector<int>{1, 4}, "a page made again gets the solo");
+	msg(R"({"op":"soloSet","id":5,"tracks":[],"mutes":[3]})");
+	check(saved.find("solo") == nullptr, "no solo: the setup says none");
 }
 
 // P6: the questions, errors, the machine's own screen and a restart, as the page gets them.

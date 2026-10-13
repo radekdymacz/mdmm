@@ -53,7 +53,7 @@ namespace mdDesk
 	const std::map<std::string, void (Desk::*)(const Value&)>& Desk::setups()
 	{
 		static const std::map<std::string, void (Desk::*)(const Value&)> map{
-			{"modSet", &Desk::setModulators}, {"knobs", &Desk::setKnobs},
+			{"modSet", &Desk::setModulators}, {"knobs", &Desk::setKnobs}, {"soloSet", &Desk::setSolo},
 			{"sampleWave", &Desk::sampleWave}, {"audition", &Desk::audition}, {"auditionStop", &Desk::auditionStop}};
 		return map;
 	}
@@ -106,9 +106,31 @@ namespace mdDesk
 		publishSetup();
 	}
 
+	// The page's solo and the mutes the person had before it: kept with the project (B-123). Not echoed: the page
+	// knows what it sent; publishSolo says it again when a project is opened, after a reset and when the page is made.
+	void Desk::setSolo(const Value& _message)
+	{
+		std::vector<std::string> errors;
+		if(const auto solo = deskCore::solo::fromJson(_message.find("tracks"), _message.find("mutes"), 16, errors, "$"))
+		{
+			if(m_setup.solo != *solo)
+			{
+				m_setup.solo = *solo;
+				saveSetup();
+			}
+		}
+		result(_message, errors, {});
+	}
+
+	void Desk::publishSolo()
+	{
+		publish(deskCore::solo::message(m_setup.solo));
+	}
+
 	void Desk::onReadyExtra()
 	{
 		publishSetup();
+		publishSolo();
 		publishModulators();
 		publishSamples();
 		publishSampleLoad(true);
@@ -140,6 +162,7 @@ namespace mdDesk
 	void Desk::onStartOver()
 	{
 		m_samples.reset();
+		publishSolo();	// the page dropped its solo with the rest: the project's is said again
 	}
 
 	void Desk::onSampleBank(const elektronData::MdSampleBank& _bank)
@@ -362,6 +385,7 @@ namespace mdDesk
 		m_setup = *s;
 		m_mods.setSetup(m_setup.modulators);
 		publishSetup();
+		publishSolo();
 		publishModulators();
 		return errors;
 	}

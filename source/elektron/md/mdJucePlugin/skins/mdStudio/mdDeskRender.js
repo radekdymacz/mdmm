@@ -76,6 +76,7 @@ Bridge.onMessage(m => {
 		if (S.ws === "control") { if (!sameValue(Mods.doc, before) && !interacting()) scheduleRender(); else syncMods(); }
 		break;
 	}
+	case "solo": takeSolo(m); break;
 	case "ask": onAsk(m); break;
 	case "samples": Docs.samples = m.doc; Waves.clear(); WavesAsked.clear(); if (S.ws === "sampler" || S.ws === "sound") scheduleRender(); break;
 	case "sampleWave": onSampleWave(m); break;

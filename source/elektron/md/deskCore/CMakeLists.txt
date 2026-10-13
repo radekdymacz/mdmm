@@ -29,6 +29,7 @@ target_sources(deskCore PRIVATE
 	deskPush.h
 	deskRef.h
 	deskSequence.h
+	deskSolo.h
 	deskSongRow.h
 	deskStream.h
 )

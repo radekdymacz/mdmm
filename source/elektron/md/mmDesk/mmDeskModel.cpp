@@ -449,6 +449,8 @@ namespace mmDesk
 			{"stop", Owner::Machine, Gate::Input, -1, {}, ""},
 			// ---- the editor's setup ----
 			{"modSet", Owner::Setup, Gate::None, -1, {{"doc", ArgType::Object}}, "the app modulators (mm-desk/modulators)"},
+			{"soloSet", Owner::Setup, Gate::None, -1, {{"tracks", ArgType::Array}, {"mutes", ArgType::Array, 0, 0, true}},
+				"the page's solo (the tracks soloed, 0-11) and the mutes the person had before it, kept with the project; the plug-in says them again as {\"type\":\"solo\"}"},
 			// ---- the machine ----
 			{"seqMode", Owner::Machine, Gate::Input, -1, {{"song", ArgType::Bool}}, "PATTERN or SONG mode (SET STATUS 0x10), read back from the machine's status"},
 			// wave 2 (doc/modern-ux/PROBES-manual-gaps.md P1, P5 MM)
