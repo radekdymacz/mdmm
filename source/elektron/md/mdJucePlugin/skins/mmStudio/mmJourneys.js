@@ -3406,7 +3406,17 @@ const MmJourneys = (() => {
 			{ say: "Perform and Sound: what the drawn panels draw fits them: the multi envelope's caption and the amp envelope's caption clear of the curve and its handles, no handle cut by an edge, no caption past the edge (B-111)",
 				act: async (u, c) => { c.bad = []; c.n = 0;
 					for (const ws of ["perform", "sound"]) { u.click(tab(ws)); await sleep(500); c.n += $all("canvas.ed").filter(x => x.clientWidth).length; for (const x of edProblems()) c.bad.push(ws + " " + x); } },
-				screen: c => ok(c.n > 3 && !c.bad.length, `${c.n} canvases; ${[...new Set(c.bad)].slice(0, 4).join(" | ")}`) }
+				screen: c => ok(c.n > 3 && !c.bad.length, `${c.n} canvases; ${[...new Set(c.bad)].slice(0, 4).join(" | ")}`) },
+			{ say: "the pattern chooser's toolbar: its labels (SLOT A01, KIT) show whole, clear of the keys beside them (B-112)",
+				act: async (u, c) => { await closeLib(u); u.click(tab("seq")); await sleep(300); u.click("#pat"); await sleep(500);
+					c.bad = [...Journey.spills("#libpop .libacts .ilab"), ...Journey.overlaps("#libpop .libacts .ilab", "#libpop .libacts button")]; c.n = $all("#libpop .libacts .ilab").length; await closeLib(u); },
+				screen: c => ok(c.n >= 2 && !c.bad.length, `${c.n} labels; ${c.bad.join(" | ")}`) },
+			{ say: "the kit library: a kit's name of the longest length (11 letters) fits its tile (B-112)",
+				act: async (u, c) => { await closeLib(u); u.click("#kitf"); await sleep(500);
+					const tile = $1("#libpop .ks .lsn"); c.n = $all("#libpop .ks").length; c.bad = [];
+					if (tile) { const probe = tile.cloneNode(false); probe.textContent = "W".repeat(11); tile.after(probe); if (probe.scrollWidth > probe.clientWidth + 0.5) c.bad.push(`11 letters need ${probe.scrollWidth} px, the name's box is ${probe.clientWidth}`); probe.remove(); }
+					await closeLib(u); },
+				screen: c => ok(c.n >= 64 && !c.bad.length, `${c.n} tiles; ${c.bad.join(" | ")}`) }
 		],
 		async tidy(u) { await closeLib(u); u.click(tab("seq")); }
 	};
