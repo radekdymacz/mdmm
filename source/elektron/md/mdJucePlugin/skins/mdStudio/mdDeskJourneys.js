@@ -2156,7 +2156,7 @@ const MdJourneys = (() => {
 	/* Every journey is independent (doc/modern-ux/JOURNEYS.md): the runner notes where the page stood when it began (begin: c.back0.undo, c.back0.mode,
 	   c.back0.pat, c.back0.chain) and a tidy that changed any of it calls back(u, c), which puts the editor's modes and its undo history back:
 	   the transport stopped, the edits undone, PATTERN or SONG mode as found, the pattern the machine was on, no chain. */
-	const begin = c => { c.back0 = { state: state(), mutes: mutes(), patKit: Docs.patterns[currentPatternSlot()]?.kit, tempo: Docs.global?.tempo, undo: V.undoCount, mode: V.songMode, pat: currentPatternSlot(), kit: currentKitSlot(), kitw: machineState().kit?.working, chain: !!desk().chain?.active }; };
+	const begin = c => { c.back0 = { gslot: Docs.global?.slot, state: state(), mutes: mutes(), patKit: Docs.patterns[currentPatternSlot()]?.kit, tempo: Docs.global?.tempo, undo: V.undoCount, mode: V.songMode, pat: currentPatternSlot(), kit: currentKitSlot(), kitw: machineState().kit?.working, chain: !!desk().chain?.active }; };
 	const back1 = async (u, c) => {
 		if (!c.back0) return;
 		/* a journey that restarted the machine: the start-up card is waited for, as a person waits */
@@ -2172,6 +2172,7 @@ const MdJourneys = (() => {
 		if (c.back0.kitw === "clean" && machineState().kit?.working !== "clean") { cmd("saveKit", { force: true }); await until(() => machineState().kit?.working === "clean", 8000); await until(idle, 4000); }
 		/* a slot the journey overwrote (kept with keep(c, "kit", k) before it did): pasted back from the plug-in's clipboard */
 		for (const [kind, slot] of c.keptSlots || []) { cmd(kind === "kit" ? "kitPaste" : kind === "pattern" ? "patPaste" : "songPaste", kind === "song" ? { s: slot, force: true } : kind === "kit" ? { k: slot, force: true } : { p: slot, force: true }); await until(idle, 6000); await sleep(300); }
+		if (c.back0.gslot != null && Docs.global && Docs.global.slot !== c.back0.gslot) { cmd("globalSlot", { slot: c.back0.gslot }); await until(() => Docs.global?.slot === c.back0.gslot, 6000); await until(idle, 4000); }
 		/* the tempo last: loading a pattern or a song may set it */
 		if (c.back0.tempo != null && Docs.global && Math.abs(Docs.global.tempo - c.back0.tempo) > 0.05) { cmd("tempo", { bpm: c.back0.tempo }); await until(() => Math.abs(Docs.global.tempo - c.back0.tempo) <= 0.05, 6000); await sleep(300); }
 		/* the mutes as they were, and the pattern's kit link (loading another kit links the pattern to it) */
@@ -2263,7 +2264,7 @@ const MdJourneys = (() => {
 			   it passes in the whole run in order and in the page tier (B-131, a finding: the journey cannot build the data the page accepts) */
 			go("sound"), sel(() => soundTrack()),
 			{ say: "pick each machine of the catalogue on the track (its family, then its key): the Sound page shows the knobs the manual lists", act: async (u, c) => {
-				c.n0 = V.undoCount; c.m0 = V.tracks[c.t].m; c.model0 = kit()?.tracks[c.t]?.model; c.bad = []; c.n = 0;
+				c.n0 = V.undoCount; c.m0 = V.tracks[c.t].m; c.bad = []; c.n = 0; await keep(c, "kit", V.kit);
 				const shot = m => { if (m === "TRX-BD") Journey.snapshot("md-sound-groups"); else if (m === "E12-SD") Journey.snapshot("md-machine-e12"); else if (m === "ROM-01") Journey.snapshot("md-machine-rom"); else if (m === "CTR-RE") Journey.snapshot("md-machine-ctr"); };
 				for (const [m, want] of MACHINE_KNOBS) {
 					if (!Cat.byName[m]) { c.bad.push(m + ": not in the catalogue"); continue; }
@@ -2279,9 +2280,8 @@ const MdJourneys = (() => {
 				c.note = `${c.n} machines as the manual lists them`; },
 				screen: c => ok(!c.bad.length, c.bad.slice(0, 6).join(" | ") + (c.bad.length > 6 ? ` (+${c.bad.length - 6})` : "")), machine: c => ok(c.n >= 100, c.n + " machines checked"), within: 1000 }
 		],
-		/* about seventy machine picks overrun the undo history: the track's first machine is picked again by the picker, after the undo */
-		async tidy(u, c) { await back(u, c);
-			if (c.t != null && c.model0 != null && kit()?.tracks[c.t]?.model !== c.model0) { cmd("machine", { k: V.kit, t: c.t, model: c.model0, keepFx: true }); await until(() => kit()?.tracks[c.t]?.model === c.model0, 6000); await until(idle, 4000); await sleep(500); } }
+		/* about seventy machine picks overrun the undo history: the kit is kept first (the clipboard) and back() pastes it back */
+		async tidy(u, c) { await back(u, c); }
 	};
 	/* MD-011, MD-056 to MD-064, MD-067 to MD-069: the three knob pages on one page, each track-effect and routing knob moves its kit value */
 	const trackEffects = {
