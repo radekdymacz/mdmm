@@ -287,10 +287,11 @@ may not have run to the end, it puts the page right, and says so).
 | helper | what it does |
 |---|---|
 | `c.undo0`, `c.mode0`, `c.pat0`, `c.kit0`, `c.kitw0`, `c.chain0` | set by the runner before step 1 (`begin`): the undo depth, PATTERN or SONG mode, the pattern and the kit the machine is on, the kit's `clean` or `edited`, whether a chain plays |
-| `await back(u, c)` | the tidy's one call for editor state: transport and recording stopped, every edit undone (one undo at a time, the machine's answer awaited between: a rush left a level behind), the chain cleared, the mode, pattern and kit as found, a kit that was clean and is called edited after an undo saved again (the same sounds), and the slots kept with `keep` pasted back. Edits to restore first, then any command that is itself an edit (an undo after it would take it back) |
+| (the page's wrapper) | after every journey's own tidy the page looks at `state()` once more: if the machine's documents or modes still differ from what the journey found, it calls `back` (so a tidy need not call it, and a tidy that restores by its own commands is not undone: `back` runs only when something differs). `left:` names what still differs afterwards |
+| `await back(u, c)` | the tidy's one call for editor state: transport and recording stopped, every edit undone (one undo at a time, the machine's answer awaited between: a rush left a level behind), the chain cleared, the mode, pattern and kit as found, a kit that was clean and is called edited after an undo saved again (the same sounds), the tempo, the mutes and the pattern's kit link as found (the tempo last: loading a pattern or a song sets it), the slots kept with `keep` pasted back, and then it waits for the machine's late answers (`settled`: the documents unchanged for 1.2 s; on the firmware a pattern or kit change makes the machine send the kit and pattern again, and the page draws the Mix and Sound pages again when they come). Edits to restore first, then any command that is itself an edit (an undo after it would take it back) |
 | `await keep(c, "kit" \| "pattern" \| "song", slot)` | the slot the journey is about to overwrite and the product cannot undo (a save over a kit, the machine's own live erase): its content goes to the plug-in's clipboard, `back` pastes it back. One slot per kind |
-| `await keepTwo(c, kind, a, b)` | two slots (an import writes two kits and two patterns): the first to the clipboard, the second overwritten by a copy of the first, which is an undo step that holds the second's content: `back` undoes it, then pastes the first |
-| `await keepImportTargets(c)` | the import panel's preview (`kit:N`, `pattern:N`): `keep` or `keepTwo` for each kind; more than two of a kind is an error (the journey keeps two) |
+| `await keepMany(c, kind, slots)` | any number of slots (an import writes the file's kits, patterns and songs): the first to the clipboard, each other one overwritten by a copy of the first, which is an undo step that holds that slot's content: `back` undoes them, then pastes the first |
+| `await keepImportTargets(c)` | the import panel's preview (`kit:N`, `pattern:N`, `song:N`): `keepMany` for each kind |
 | `undoTo(u, n)`, `undoUntil(u, done, n)` | the undo, awaiting the machine |
 | `freeSteps(t, n, from)`, `soundTrack()`, `empties(n)`, `scratch()` | free steps, a sound track, empty or scratch song slots |
 
@@ -311,6 +312,22 @@ slots than the plug-in's clipboard and one undo step can hold. These journeys ar
 and on the firmware `md-lib-syx-import`, `md-lib-syx-import-mute`, `md-shots-import` and their `mm-` twins. The runners (`mdmm-page.mjs`, `mdmm-journeys.sh`, so `mdmm-e2e.sh`) start each in a
 page or an editor of its own, and in one page they play last. A journey earns the mark only when the product offers no way back (proposed B-110: no undo for a SysEx import or an
 empty reset; the two-slot imports of `md-lib-syx-place` and `md-syx-running-reach` are kept with `keepTwo`, the rest cannot be).
+
+### Findings (not fixed here: a journey cannot pass without a product change, or the page tier and the firmware differ)
+
+Proposed numbers from B-110; none is in BUGS.md yet.
+
+- **B-110** A SysEx import and the empty reset cannot be undone, and an import of a whole file overwrites more than a clipboard and the undo history can hold: the journeys that run them
+  (`md-engine-reset-empty`, `mm-engine-reset-empty`, and on the firmware the import journeys `*-lib-syx-import`, `*-lib-syx-import-mute`, `*-shots-import`) are `alone: true`.
+- **B-111** On the firmware, started alone from factory memory, `md-sound-machine-reference` has the page refuse the second machine it picks on track 1: `tracks[0] lfo.track = 16 is outside 0..15` (the kit as the machine
+  reads it back against the contract). In the whole run in order and in the page tier it passes, so it needs the contract or the page's validation to accept what the firmware sends. The journey
+  cannot build a kit the page accepts without choosing the data for it.
+- **B-112** `mm-sound-unison-sub-fine` fails on the firmware alone and in order (the sub screen's stems measure 9.2 px against at most 3 px in WebKit; the page tier measures them in Chrome and passes).
+- `md-sampler-rename`, and the 16 Monomachine journeys whose checks read the stub host's wire log (`mm-wire-cc`, `mm-sound-lfo` ...): stub-only before this work (E2E column), unchanged.
+- `md-mix-master-cards` and `mm-seq-scale-setup` failed now and then at four pages at once on a loaded Mac: their own checks raced the machine's answer (the first is fixed: the knob is looked up after the answer);
+  `mm-seq-scale-setup` passes alone three times in three.
+- The firmware's shuffled run still shows a few `left:` lines for the machine journeys (a working kit value one step off after an undo, a chain list left in a kit that is no longer chained): the late answer of the
+  machine against the guard's read.
 
 ### Proving it
 
