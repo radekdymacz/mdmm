@@ -4,6 +4,14 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-121 · Monomachine in a DAW: a track keeps playing after the host's transport stops, until a note is played on it
+
+- **From:** Discord, 2026-10-13 (Ableton Live, macOS; notes from a Push into the editors' tracks).
+- **What happens (as reported):** after the transport stopped, a Monomachine track kept running; a note had to be played on that track to end it.
+- **Cause (measured, `mmDeskFirmwareTest <MM ROM> hoststop`):** in a DAW the plug-in passes the host's transport to the machine (P7): the host's Stop was MIDI Stop alone. That stops the sequencer, but a note the host played into a track whose note off does not come (a host that sends none at its stop, a note off lost) keeps sounding, and with the arpeggiator keeps playing: 1.5 s after the Stop the held note was still at half its level (rms 0.046 of 0.096). Close to B-059 (a held key with the arpeggiator) and B-060 (the transposes a start takes).
+- **Fix (`fix/0.6-discord`):** the host's Stop is `synthLib::hostStopEvents` (midiClock.h): MIDI Stop, then, for the Monomachine plug-in, All Notes Off (CC 123) on all 16 channels (the machine lets held notes go on CC 123, as the panic key's P5 measured; every channel, so any CHANNEL SPAN, base channel and the keyboard modes' channels are covered). The Machinedrum is unchanged (its sounds are not held). Test: `mmDeskFirmwareTest hoststop` (ctest `mmHostStopFirmwareTest`): the host plays with a note held into T1, then stops without its note off: MIDI Stop alone leaves it sounding, the plug-in's Stop ends it (rms 0.002) and the sequencer stays stopped.
+- **Status:** fixed on `fix/0.6-discord`; to confirm with the tester.
+
 ## B-120 · Monomachine: mute and solo seem to stop responding after switching views; a solo lit in Mix but not in Sequence
 
 - **From:** Discord, 2026-10-13 (macOS Tahoe, Ableton Live, Monomachine Editor).
