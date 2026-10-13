@@ -85,7 +85,7 @@ To save a kit under another slot:
 
 To rename a kit, select its slot and press {key:lib-rename}, or double-click the slot, or click **Rename**. Type a name of up to 11 characters and press [ENTER]. The editor takes the name as text, so there is no character picker. Press {key:undo} to take a rename back.
 
-![Saving a kit to another slot](shot:e2e-mm-lib-kit-saveas)
+![The kit library: Save as under the slot you picked](shot:mm-kit-library)
 
 ## UNDO KIT
 <!-- rows: MM-102 @a29a4e -->

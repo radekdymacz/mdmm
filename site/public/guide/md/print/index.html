@@ -185,7 +185,7 @@
 <section class="gd-sec" id="the-lcd-user-interface">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.9</span></span></aside>
 <div class="gd-body gd-prose"><h2>THE LCD USER INTERFACE</h2>
-<figure class="gd-shot"><img src="/guide/shots/md-lcd.webp" width="1440" height="923" alt="The LCD"><figcaption>The LCD</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/md-workspaces.webp" width="1440" height="923" alt="The LCD at the top of the page"><figcaption>The LCD at the top of the page</figcaption></figure>
 <p>From left to right the LCD holds:</p>
 <ul class="gd-list"><li>The engine label with its LED, and the <b class="gd-ui">REC</b> and Play keys.</li><li><b class="gd-ui">Tempo</b>, with an LED that blinks on every fourth step while the machine plays.</li><li><b class="gd-ui">Position</b>.</li><li><b class="gd-ui">Pattern</b>, with ‹ and › keys.</li><li><b class="gd-ui">Kit</b>, with a chip that reads saved or edited.</li><li><b class="gd-ui">Locks</b>.</li><li>The second line, the <b class="gd-ui">Sync</b> field, and the <b class="gd-ui">Copy</b>, <b class="gd-ui">Clr</b> and <b class="gd-ui">Paste</b> keys.</li></ul>
 <h4 class="gd-h3">The engine label</h4>
@@ -230,7 +230,7 @@
 <p>This is a first session. It loads a kit, places trigs, plays them and changes a sound.</p>
 <h4 class="gd-h3">Playing and tweaking drum sounds</h4>
 <ol class="gd-steps"><li>Click the <b class="gd-ui">Kit</b> field of the LCD. The kit library opens.</li><li>Click a kit. The machine loads it at once. If you have unsaved changes, the editor asks first.</li><li>Press <kbd class="gd-key">[ESC]</kbd>, then press <kbd class="gd-key">[1]</kbd> for the Sequence workspace.</li><li>Click steps in the grid. Each click turns a trig on or off. Each row of the grid is a track.</li><li>Press <kbd class="gd-key">[SPACE]</kbd>. The pattern plays with your trigs. Press it again to stop.</li><li>Click a track in the rail to select it. Press the keys A to L to play it by hand.</li><li>Press <kbd class="gd-key">[2]</kbd> for the Sound workspace. Drag a value box to change the sound of the selected track.</li></ol>
-<figure class="gd-shot"><img src="/guide/shots/md-sound-workspace.webp" width="1440" height="923" alt="The Sound workspace"><figcaption>The Sound workspace</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/md-sound-groups.webp" width="1440" height="923" alt="The Sound workspace"><figcaption>The Sound workspace</figcaption></figure>
 <p>Turn a value in small steps when you need them. Hold <kbd class="gd-key">[⇧]</kbd> and drag for fine steps. Scroll the wheel over a box for one step a notch, and hold <kbd class="gd-key">[⇧]</kbd> for ten. Double-click a box to set it back to 64.</p>
 <figure class="gd-shot"><img src="/guide/shots/md-sound-knob-steps.webp" width="1440" height="923" alt="One notch of the wheel and a drag on a value box"><figcaption>One notch of the wheel and a drag on a value box</figcaption></figure>
 <h4 class="gd-h3">Hear a machine before loading it</h4>
@@ -414,7 +414,7 @@
 <p>To set it:</p>
 <ol class="gd-steps"><li>Click the <b class="gd-ui">Sound</b> tab.</li><li>Select the track on the rail. The page shows the synthesis, effects and routing groups together.</li><li>Drag the dot in <b class="gd-ui">Drive</b>, or click the <b class="gd-ui">DIST</b> box and press the up or down arrow key. The value changes in the kit.</li></ol>
 <p>On the Mix workspace use the <b class="gd-ui">DIST</b> box of the strip.</p>
-<figure class="gd-shot"><img src="/guide/shots/md-sound-workspace.webp" width="1440" height="923" alt="The Sound workspace with the routing groups in the second row"><figcaption>The Sound workspace with the routing groups in the second row</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/md-sound-groups.webp" width="1440" height="923" alt="The Sound workspace with the routing groups in the second row"><figcaption>The Sound workspace with the routing groups in the second row</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="volume">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.25</span></span></aside>
@@ -720,7 +720,6 @@
 <ol class="gd-steps"><li>Select the track.</li><li>Click <b class="gd-ui">▾</b> at the right of <b class="gd-light">&lt;COPY&gt;</b> <b class="gd-light">&lt;CLR&gt;</b> <b class="gd-light">&lt;PASTE&gt;</b> on the LCD, then <b class="gd-ui">Copy…</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[C]</kbd>. The <b class="gd-ui">Copy what</b> window opens.</li><li>Tick the parts to copy. <b class="gd-ui">Pattern</b> has <b class="gd-ui">Trigs</b>, <b class="gd-ui">Accent</b>, <b class="gd-ui">Swing</b>, <b class="gd-ui">Slide</b> and <b class="gd-ui">Locks</b>, each with the number of steps it holds. <b class="gd-ui">Kit</b> has <b class="gd-ui">Machine + sound</b> and <b class="gd-ui">LFO</b>.</li><li>Click <b class="gd-ui">Copy</b>. Every step of the track is copied, not only the page you see.</li><li>Select the track to paste into. Click <b class="gd-ui">▾</b>, then <b class="gd-ui">Paste…</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[V]</kbd>.</li><li>The parts copied are ticked. Untick any you do not want. Under <b class="gd-ui">To tracks</b> the selected track is lit, or the tracks marked with <kbd class="gd-key">[⇧]</kbd>. Click a track key to light or unlight it.</li><li>Click <b class="gd-ui">Paste into 1 track</b> (the key says how many). Each lit track takes the ticked parts.</li></ol>
 <p>The paste is one undo step: press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take it back. The window remembers what you ticked the last time.</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Locks land only on steps that hold a trig. The result line says how many were left out.</p></aside>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: Copy what"><span>Screenshot to come</span></div><figcaption>Copy what</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="clear-track">
 <aside class="gd-margin"><span class="gd-ref"><span>MD manual p.41</span></span></aside>
@@ -1099,7 +1098,6 @@
 <div class="gd-body gd-prose"><h2>GENERAL SYSEX RECEIVE</h2>
 <p>The machine takes SysEx at any time. In the editor you open the file first and choose what to send.</p>
 <ol class="gd-steps"><li>Choose <b class="gd-ui">IMPORT SYSEX…</b> in the engine menu. Or drop the .syx file on the window. Drag and drop works on macOS only.</li><li>Choose the file. The <b class="gd-ui">Import SysEx</b> panel opens. Its header names the model and says &quot;full backup&quot; when the file is one.</li><li>Read the tabs: <b class="gd-ui">Kits</b>, <b class="gd-ui">Patterns</b>, <b class="gd-ui">Songs</b>, <b class="gd-ui">Globals</b> and <b class="gd-ui">Other</b>. A tab shows the slots of the machine as a grid, and the number of items of that kind in the file. Each tab has a box: tick it to send that kind.</li><li>A slot in the grid is marked when it overwrites a slot that holds data on the machine. A slot marked ▶ plays now. Click a slot to leave it out. Click it again to take it back. Click with <kbd class="gd-key">[⇧]</kbd> to change a range.</li><li>Click <b class="gd-ui">All</b>, <b class="gd-ui">Empty slots only</b> or <b class="gd-ui">None</b> to set the whole tab.</li><li>Read the line at the foot. It says how many slots on the machine are overwritten.</li><li>Click <b class="gd-ui">Import</b>. The button says how many items it sends.</li></ol>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The SysEx import panel"><span>Screenshot to come</span></div><figcaption>The SysEx import panel</figcaption></figure>
 <p>While the import runs, the panel shows three steps: <b class="gd-ui">Read the slots</b>, <b class="gd-ui">Send</b> and <b class="gd-ui">Read back</b>, and a bar for each kind. Click <b class="gd-ui">Stop</b> to cancel or <b class="gd-ui">Hide</b> to put the panel away. The import goes on: <b class="gd-ui">IMPORT SYSEX…</b> in the engine menu shows the panel again, with its report when it is done. While it runs, <kbd class="gd-key">[ESC]</kbd> and a click beside the panel leave it open. The panel keeps one size from the preview to the report.</p>
 <p>At the end the panel gives a report, slot by slot:</p>
 <table class="gd-table"><thead><tr><th>Mark</th><th>Meaning</th></tr></thead><tbody><tr><td>✓</td><td>taken as in the file</td></tr><tr><td>≈</td><td>converted</td></tr><tr><td>✕</td><td>ignored</td></tr><tr><td>≠</td><td>different from the file</td></tr><tr><td>~</td><td>not comparable</td></tr><tr><td>?</td><td>no answer, or not known</td></tr></tbody></table>
@@ -1239,7 +1237,7 @@
 <div class="gd-body gd-prose"><h2>EMPTY RESET</h2>
 <p>The empty reset clears the memory of the machine. In the editor it is in the engine menu.</p>
 <ol class="gd-steps"><li>Choose <b class="gd-ui">RESET MACHINE…</b> in the engine menu (the engine name at the left of the LCD). A question says what each reset clears. <b class="gd-ui">Cancel</b> is the default: <kbd class="gd-key">[ESC]</kbd> answers it. A click beside the question does nothing.</li><li>Click <b class="gd-ui">Empty reset…</b>. The editor asks a second time.</li><li>Click <b class="gd-ui">Clear everything</b>. The <b class="gd-ui">Empty reset</b> panel opens. The editor writes an empty kit, pattern and song into every slot, then reads each one back.</li><li>Read the report and click <b class="gd-ui">Done</b>.</li></ol>
-<figure class="gd-shot"><img src="/guide/shots/e2e-md-engine-reset-empty.webp" width="1440" height="923" alt="The Empty reset panel"><figcaption>The Empty reset panel</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-engine-reset-empty.webp" width="1440" height="923" alt="After the Empty reset: an empty kit and an empty pattern"><figcaption>After the Empty reset: an empty kit and an empty pattern</figcaption></figure>
 <p>The globals and the samples stay. A global is reset in its own slot in GLOBAL (chapter 10).</p>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The reset has no undo. Click <b class="gd-ui">Export SysEx…</b> in the question first to keep a way back.</p></aside>
 </div></section>
@@ -1248,7 +1246,7 @@
 <div class="gd-body gd-prose"><h2>FACTORY RESET</h2>
 <p>The factory reset brings back the kits, patterns and songs the machine had when it left the factory. The editor takes them from your own ROM: it starts a second machine with it, in the background, and reads that machine's memory.</p>
 <ol class="gd-steps"><li>Choose <b class="gd-ui">RESET MACHINE…</b> in the engine menu.</li><li>Click <b class="gd-ui">Factory reset…</b>. The editor asks a second time.</li><li>Click <b class="gd-ui">Factory reset</b>. Preparing the factory data takes a few seconds. Then the <b class="gd-ui">Factory reset</b> panel sends every kit, pattern and song and reads each one back. This takes a few minutes.</li><li>Read the report and click <b class="gd-ui">Done</b>. Kits 1 to 4 are named TRX UW, EFM UW, E12 UW and P-I UW.</li></ol>
-<figure class="gd-shot"><img src="/guide/shots/e2e-md-engine-reset-factory.webp" width="1440" height="923" alt="The Factory reset panel"><figcaption>The Factory reset panel</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/e2e-md-engine-reset-factory.webp" width="1440" height="923" alt="After the Factory reset: the factory kit and song are back"><figcaption>After the Factory reset: the factory kit and song are back</figcaption></figure>
 <p>The globals and the samples stay. The reset has no undo: export first.</p>
 <aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>To bring back the whole factory memory at once, globals and samples too, click <b class="gd-ui">Start from factory memory…</b> in the same question. The machine restarts in a few seconds. See &quot;MACHINE MEMORY&quot; in chapter 17.</p></aside>
 </div></section>
@@ -1468,7 +1466,6 @@
 <p>New sessions now start from factory memory until you save again. The reset has no undo: click <b class="gd-ui">Export SysEx…</b> in the question first to keep a way back.</p>
 <h4 class="gd-h3">Turn it off</h4>
 <p>Choose <b class="gd-ui">KEEP MEMORY: ON</b> in the engine menu. It reads <b class="gd-ui">KEEP MEMORY: OFF</b>, and new sessions start from factory memory. The editor no longer writes the file. The file stays, so when you turn it on again, new sessions start with the memory you saved before.</p>
-<figure class="gd-shot"><img src="/guide/shots/e2e-md-engine-memory.webp" width="1440" height="923" alt="The engine menu with KEEP MEMORY and RESET MACHINE"><figcaption>The engine menu with KEEP MEMORY and RESET MACHINE</figcaption></figure>
 <h4 class="gd-h3">Two editors at once</h4>
 <p>Two Machinedrum editors open at the same time, in one DAW project or in two, share the same file. Each writes the slots it saves and leaves the others. When two editors save the same slot, the last save wins.</p>
 <h4 class="gd-h3">When the file cannot be used</h4>
@@ -1536,8 +1533,7 @@
 <section class="gd-sec" id="the-step-menu">
 <aside class="gd-margin"></aside>
 <div class="gd-body gd-prose"><h2>THE STEP MENU</h2>
-<p>Right-click a step for its menu: accent or slide, copy, paste and fill.</p>
-<figure class="gd-shot"><img src="/guide/shots/e2e-md-seq-step-menu.webp" width="1440" height="923" alt="The step menu"><figcaption>The step menu</figcaption></figure>
+<p>Right-click a step, or select it and click the <b class="gd-ui">⋯</b> on it, for its menu: accent or slide, copy, paste and fill.</p>
 <ol class="gd-steps"><li>Click the <b class="gd-ui">Sequence</b> tab and pick a track on the rail.</li><li>Click an empty step to make a trig.</li><li>Right-click the step. Its menu opens. The <b class="gd-ui">⋯</b> on the selected step opens the same menu.</li><li>Choose <b class="gd-ui">Accent</b>. The step is an accent.</li><li>Right-click the step again and choose <b class="gd-ui">Copy</b>.</li><li>Right-click an empty step and choose <b class="gd-ui">Paste here</b>. The trig lands there.</li><li>Right-click an empty step and choose <b class="gd-ui">Fill every 2nd from here</b>. Every second step from there comes on. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> takes it back.</li></ol>
 </div></section>
 <section class="gd-sec" id="select-copy-and-paste-steps">
@@ -1592,14 +1588,12 @@
 <aside class="gd-margin"></aside>
 <div class="gd-body gd-prose"><h2>THE EDITOR'S MENU</h2>
 <p>A right-click menu holds the zoom, the updates and the developer switches.</p>
-<figure class="gd-shot"><img src="/guide/shots/e2e-md-top-editor-menu.webp" width="1440" height="923" alt="The editor's menu"><figcaption>The editor's menu</figcaption></figure>
 <ol class="gd-steps"><li>Right-click an empty part of the header, or the track rail. The menu opens with the editor's name and version.</li><li>Focus <b class="gd-ui">Zoom</b> and press the right arrow key. Its steps open.</li><li>Click a step. The menu closes and the page zooms. Open the menu again: <b class="gd-ui">Zoom</b> names the new step.</li><li>Click <b class="gd-ui">Updates</b>, then <b class="gd-ui">Check Daily</b>. Open <b class="gd-ui">Updates</b> again: the tick has turned.</li><li>Press <kbd class="gd-key">[ESC]</kbd> to close a submenu, and <kbd class="gd-key">[ESC]</kbd> again to close the menu.</li></ol>
 </div></section>
 <section class="gd-sec" id="the-keyboard-view">
 <aside class="gd-margin"></aside>
 <div class="gd-body gd-prose"><h2>THE KEYBOARD VIEW</h2>
 <p>The keyboard view draws the computer keyboard with the words of each key and a search.</p>
-<figure class="gd-shot"><img src="/guide/shots/e2e-md-keys-help.webp" width="1440" height="923" alt="The keyboard view"><figcaption>The keyboard view</figcaption></figure>
 <ol class="gd-steps"><li>Press <kbd class="gd-key">[?]</kbd>, or click <b class="gd-ui">?</b> in the top bar. The keyboard view opens.</li><li>Click the <kbd class="gd-key">[⌥]</kbd> / <kbd class="gd-key">[FN]</kbd> layer to see the keys of that layer.</li><li>Click a key on the drawn keyboard. Its job is written in words.</li><li>Type &quot;undo&quot; in the search. The key <kbd class="gd-key">[⌘]</kbd> <kbd class="gd-key">[Z]</kbd> is marked and the list keeps the undo keys.</li><li>Press <kbd class="gd-key">[ESC]</kbd> to close it.</li></ol>
 </div></section>
 <section class="gd-sec" id="the-computer-keyboard-plays">
@@ -1626,7 +1620,7 @@
 <aside class="gd-margin"></aside>
 <div class="gd-body gd-prose"><h2>KIT AND SONG SLOTS</h2>
 <p>The kit library and the song slots load, copy, paste, rename and clear a slot. Each is one undo step.</p>
-<figure class="gd-shot"><img src="/guide/shots/e2e-md-lib-kit-copy-paste-undo.webp" width="1440" height="923" alt="The kit library after a copy"><figcaption>The kit library after a copy</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/md-kit-library.webp" width="1440" height="923" alt="The kit library"><figcaption>The kit library</figcaption></figure>
 <h4 class="gd-h3">Kit slots</h4>
 <ol class="gd-steps"><li>Click <b class="gd-ui">KIT</b> on the LCD. The kit library opens.</li><li>Click a slot with <kbd class="gd-key">[⌥]</kbd> held. It is selected and not loaded.</li><li>Click <b class="gd-ui">Copy</b>. <kbd class="gd-key">[⌥]</kbd> click another slot and click <b class="gd-ui">Paste</b>. Answer <b class="gd-ui">Overwrite</b> when the editor asks.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd>. The slot is back.</li><li>To rename, click <b class="gd-ui">Rename</b>, type a name, press <kbd class="gd-key">[ENTER]</kbd> and answer the question.</li><li>To clear, select a slot and press <kbd class="gd-key">[DELETE]</kbd>. It is cleared as the machine clears it. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> brings it back.</li></ol>
 <h4 class="gd-h3">Song slots</h4>

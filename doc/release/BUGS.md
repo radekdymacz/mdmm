@@ -4,6 +4,64 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-117 · Machinedrum: a handle at a panel's edge is drawn half outside it
+
+- **From:** screen review, 2026-10-13 (the sampler's live view: a ring half cut at the left and at the right edge; the same on the Sound workspace's panels at 0 or 127).
+- **What happens:** a handle of a drawn panel (an envelope's end, a filter's edge) was drawn centred on the value's position, so at 0 or 127 half of it lay outside the canvas and was cut.
+- **Fix (`fix/0.6-screens`):** the handle is drawn wholly inside (the drag still reaches the edge), as B-111 did for the Monomachine. Page journeys `md-screens-fit` and `mm-screens-fit` draw a probe panel with a handle on each of its four edges, and `md-screens-fit` checks the panels of Sound, Mix and Sampler. Left open: on the Mix workspace the master effects' captions ("REVERB · GATED", "ECHO TAPS · FEEDBACK GROWS!") still touch their curve or handle at the default values (the Monomachine's panels were moved clear in B-111); the Machinedrum's journey leaves caption against curve unchecked.
+- **Status:** fixed on `fix/0.6-screens` (edge handles).
+
+## B-116 · Monomachine: the Arrangement card's header is cut ("65 of 200 rows · T track transpos…")
+
+- **From:** screen review, 2026-10-13 (a picture of the Song workspace).
+- **What happens:** the header of the Arrangement card holds its state, "65 of 200 rows" and a legend of three keys (T, M, B); under 1700 px the legend does not fit and was cut mid-word.
+- **Fix (`fix/0.6-screens`):** under 1700 px only "65 of 200 rows" shows; the legend is in the tooltip (and in the keyboard view). Page journey `mm-screens-fit` measures the header.
+- **Status:** fixed on `fix/0.6-screens`.
+
+## B-115 · Monomachine: the line under the Transpose tab ends in "(…"
+
+- **From:** screen review, 2026-10-13 (two pictures: "Click a key: C plays it (…" up to the LOCKS key).
+- **What happens:** the help line under the Transpose tab is 100 to 120 letters; the line has room for 95, so it was cut in the middle of a sentence.
+- **Fix (`fix/0.6-screens`):** the line is one short sentence for each scale (---, FIX, MAJ, MIN, `TRNSHORT`); the whole help stays in the tooltip. Page journey `mm-screens-fit` measures the line under all four tabs and each of the four sentences.
+- **Status:** fixed on `fix/0.6-screens`.
+
+## B-114 · Both editors: the GEN bar's summary line is cut ("E 5/16 · ×4 · 20 on · steps…")
+
+- **From:** screen review, 2026-10-13 (about 8 pictures on the Monomachine, the same line on the Machinedrum).
+- **What happens:** at 1440 px the line at the right end of the GEN bar has about 90 px; it holds 33 letters, so it ends in "steps…", cut in the middle of a word.
+- **Fix (`fix/0.6-screens`):** under 1500 px the line keeps what matters ("20 on", and what a run changed, "+3 −1"); the cycle ("E 5/16 · ×4") and the step range ("steps 1–64") go, and the whole line is in the tooltip (`gopt`, `deskGenBar.js` / `.css`). Page journeys `md-screens-fit` and `mm-screens-fit` measure the line.
+- **Status:** fixed on `fix/0.6-screens`.
+
+## B-113 · Machinedrum: the longest generator tag in the track list is cut by the M key
+
+- **From:** screen review, 2026-10-13 (six pictures: "E 2/16+4" on tracks 2, 6, 7 and 10 runs under the M key).
+- **What happens:** a tag with a rotation ("E 2/16+4") is 6 px wider than the 75 px the rail leaves beside a two-letter name, and its end was cut.
+- **Also:** beside a long name (EMPTY, the tracks of an empty kit) no tag fits at all, and "E 2/1" showed (picture `e2e-md-top-cpu-meter`).
+- **Fix (`fix/0.6-screens`):** 9 px letters, 2 px padding and a 3 px gap for the tag (`mdOverrides.css`); where it still does not fit beside the name it wraps out of sight (the 19 px rows have no room for a second line, as the Monomachine's do, B-110): whole or not there, never half. Page journey `md-screens-fit` measures all 16 tags and, with a name of five letters put in, that none is half shown.
+- **Status:** fixed on `fix/0.6-screens`.
+
+## B-112 · Monomachine: the pattern chooser's labels run under the keys beside them, and an 11-letter kit name is cut in its tile
+
+- **From:** screen review, 2026-10-13 (the Patterns dialog: "SLOT A01" under the Go key, "KIT" under the kit key; the Kit library: "MULTI PULSE", "MULTI DPRO…" cut at the tile's edge).
+- **What happens:** (1) the labels of the dialog's toolbar were allowed to shrink in the flex row, "Slot A01" to 15 px for 47 px of letters and "Kit" to 5 px, so they wrote under the next key. (2) A kit name has up to 11 letters (6 px each at 10 px) and the tile's name box was 58 px wide.
+- **Fix (`fix/0.6-screens`):** the labels keep their width (`.libacts .ilab`); a kit tile has 2 px side padding and its name 9.5 px letters (an 11-letter name is 62 px in a 64 px box). Page journey `mm-screens-fit` measures the labels and an 11-letter probe in the tile.
+- **Status:** fixed on `fix/0.6-screens`.
+
+## B-111 · Monomachine: a curve and its handles lie over the panel's caption, and a handle is cut by the panel's edge
+
+- **From:** screen review, 2026-10-13 (about 25 of the 97 flagged defects: the MULTI ENVELOPE caption "ADSR OVER ALL TRACKS" struck through on every Perform picture; the delay filter's right handle; the amp envelope's caption under its first handle).
+- **What happens:** the multi envelope's plot starts 18 px from its top, the same height as the caption, so the curve (REL 127 holds the sustain level at the top) runs through the caption and the first handle sits on its first letter. The amp envelope does the same with its peak. A handle at the very edge of a panel (the delay filter's upper edge at DBAS + DWID = 127) was drawn half outside the canvas.
+- **Fix (`fix/0.6-screens`):** the two plots start 28 and 30 px from the top; every handle is drawn wholly inside its canvas (the drag still reaches the edge). Page journey `mm-screens-fit` draws every panel of Perform and Sound into a recording canvas context and checks the caption's box against the curve's strokes and the handles' circles and the canvas's edges.
+- **Status:** fixed on `fix/0.6-screens`.
+
+## B-110 · Monomachine: the generator tag in the track list is cut off
+
+- **From:** screen review, 2026-10-13 (the 0.6 e2e pictures: about 35 of the 97 flagged defects are this one, on every Sequence picture of the Monomachine).
+- **What happens:** next to a track's name the track list shows a small tag for its generator ("E 5/16", "R 30%"). The names of the Monomachine's machines take most of the row (DPRO-BBOX leaves 6 px), so the tag was squeezed to a few pixels and cut: "E…", "R…", half a letter.
+- **Cause:** the tag was allowed to shrink with an ellipsis, the name was not (`.th .nm .gtag`, `25-mm.css`).
+- **Fix (`fix/0.6-screens`):** the tag never shrinks: beside the name when it fits, under it when it does not (the row holds both lines; under 1380 px it is still left out). Page journey `mm-screens-fit` measures every tag at 1440 x 924: whole, inside its row, clear of the M key and the number.
+- **Status:** fixed on `fix/0.6-screens`.
+
 ## B-109 · Machinedrum: the first PLAY after start-up can do nothing
 
 - **From:** the 0.6 e2e work, 2026-10-13: `mdDeskFirmwareTest p4` ("the first PLAY after ready plays") failed on `feat/0.6-e2e` too; a first PLAY that does nothing is what users report.

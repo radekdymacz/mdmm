@@ -16,6 +16,10 @@ const kc = (attr, act, cap, label, tip, off = false, cls = "", on = null) => `<b
 /* the bars' one randomise key: R, with its "all" chord over it */
 const randKey = tip => `<button class="kc cream krand" data-rand="1" title="${tip}" aria-label="Randomise"><small>Random <em>⌥R all</em></small><kbd>R</kbd></button>`;
 /* the bar's title and what it acts on (Alt: all, in the LED's colour) */
+/* the part of the summary line that goes first when the bar is narrow (B-114: under 1500 px the line has room for "8 on"
+   and what a run changed, not for the cycle or the range; the whole line is in the tooltip) */
+const gopt = t => `<span class="gopt">${t}</span>`;
+const plainText = h => String(h).replace(/<[^>]+>/g, "");
 const gtitle = (name, target, all, tip) => `<div class="gbt" title="${tip}"><b>${name}</b><span class="${all ? "all" : ""}">${target}</span></div>`;
 /* an LED radio row: items [[key, words]], tips {key: tip} */
 const gseg = (attr, cur, items, tips) => `<span class="seg">${items.map(([k, n]) => `<button ${attr}="${k}" aria-pressed="${cur === k}" title="${tips[k]}">${n}</button>`).join("")}</span>`;
