@@ -2308,8 +2308,10 @@ const MdJourneys = (() => {
 				for (const el0 of $all('#main .pc[data-g="mfx"]')) {
 					const q = `#main .pc[data-g="mfx"][data-f="${el0.dataset.f}"][data-n="${el0.dataset.n}"]`, el = $1(q);
 					const f = keys[el.dataset.f], names = $all(`#main .pc[data-g="mfx"][data-f="${el.dataset.f}"]`).map(e => e.dataset.n), i = names.indexOf(el.dataset.n);
+					await until(idle, 4000); await sleep(100);	/* the machine's answer to the last knob in before this one is measured (under load it arrived mid-drag: "another value moved") */
 					const before = JSON.stringify(kit().masterFx), v0 = kit().masterFx[f][i]; await nudge(u, el, v0, 24);
 					if (!await until(() => kit().masterFx[f][i] !== v0, 3000)) { c.bad.push(`${f} ${el.dataset.n}: stayed ${v0}`); continue; }
+					await until(idle, 4000); await sleep(100);
 					const now = JSON.parse(JSON.stringify(kit().masterFx)), was = JSON.parse(before); now[f][i] = was[f][i];
 					if (JSON.stringify(now) !== before) c.bad.push(`${f} ${el.dataset.n}: another value moved`);
 					await until(idle, 3000);
