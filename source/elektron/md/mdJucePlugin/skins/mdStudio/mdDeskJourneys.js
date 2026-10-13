@@ -304,7 +304,9 @@ const MdJourneys = (() => {
 			{ say: "press Cmd+C", act: u => { document.activeElement?.blur?.(); u.key("c", { cmd: true }); }, machine: () => ok(V.clipboard.stepsSize?.length === 1 && V.clipboard.stepsSize?.tracks === 1, "clipboard " + JSON.stringify(V.clipboard.stepsSize)) },
 			{ say: "Cmd-click an empty step of the same track", act: (u, c) => u.click(cell(c.t, c.d), { cmd: true }), screen: c => ok($1(cell(c.t, c.d)).classList.contains("selx") && !$1(cell(c.t, c.s)).classList.contains("selx") && $1('[data-sec="paste"]').classList.contains("onsel"), "not selected, or PASTE not marked for it") },
 			{ say: "click PASTE on the LCD: the trig lands on the selected step", act: u => u.click('[data-sec="paste"]'), screen: c => ok(pressed(cell(c.t, c.d)), "not lit"), machine: c => ok(trigsOf(c.t).includes(c.d), "pattern " + trigsOf(c.t).join(",")) },
-			{ say: "Cmd-drag from step 1 of the track to step 4 of the next: a block", act: async (u, c) => { c.b0 = [c.t, c.t + 1].map(t => trigsOf(t).filter(s => s < 4)); await u.drag(cell(c.t, 0), [cell(c.t, 2), cell(c.t + 1, 3)], { cmd: true }); },
+			{ say: "Cmd-drag from step 1 of the track to step 4 of the next: a block", act: async (u, c) => { c.b0 = [c.t, c.t + 1].map(t => trigsOf(t).filter(s => s < 4));
+					/* nothing selected first (Escape): the paste left its step selected, and the step menu's "⋯" key sits on that step, over the cells the drag goes through when the cells are small */
+					document.activeElement?.blur?.(); u.key("Escape"); await sleep(300); await u.drag(cell(c.t, 0), [cell(c.t, 2), cell(c.t + 1, 3)], { cmd: true }); },
 				screen: () => ok($all("#seq .st.selx").length === 8 && S.stepSel?.n === 2 && S.stepSel?.to - S.stepSel?.from === 4, $all("#seq .st.selx").length + " selected, " + JSON.stringify(S.stepSel)) },
 			{ say: "press Cmd+D: the block again on steps 5-8", act: u => { document.activeElement?.blur?.(); u.key("d", { cmd: true }); },
 				machine: c => ok([c.t, c.t + 1].every((t, k) => same(trigsOf(t).filter(s => s >= 4 && s < 8).map(s => s - 4), c.b0[k])), "steps 5-8 " + [c.t, c.t + 1].map(t => trigsOf(t).filter(s => s >= 4 && s < 8).join(",")).join(" / ")),
@@ -2204,7 +2206,9 @@ const MdJourneys = (() => {
 			"MD-241", "MD-242", "MD-243", "MD-244", "MD-245", "MD-246", "MD-247", "MD-248", "MD-249", "MD-250", "MD-251", "MD-252", "MD-253", "MD-254", "MD-255", "MD-256",
 			"MD-257", "MD-258", "MD-259", "MD-260", "MD-261", "MD-262", "MD-263", "MD-264", "MD-265", "MD-266", "MD-267", "MD-268", "MD-269", "MD-270", "MD-271", "MD-272", "MD-274"],
 		steps: [
-			go("sound"), sel(() => soundTrack()),
+			/* a track the contract accepts a machine change on: the factory kit's first track holds an LFO on track 16 (outside 0..15), which the page refuses to send back
+			   (proposed B-111); the journey takes a sound track whose LFO is inside it, so it needs no other journey's kit */
+			go("sound"), sel(() => soundTracks().find(t => (kit()?.tracks[t]?.lfo?.track ?? 0) <= 15) ?? soundTrack()),
 			{ say: "pick each machine of the catalogue on the track (its family, then its key): the Sound page shows the knobs the manual lists", act: async (u, c) => {
 				c.n0 = V.undoCount; c.m0 = V.tracks[c.t].m; c.bad = []; c.n = 0;
 				const shot = m => { if (m === "TRX-BD") Journey.snapshot("md-sound-groups"); else if (m === "E12-SD") Journey.snapshot("md-machine-e12"); else if (m === "ROM-01") Journey.snapshot("md-machine-rom"); else if (m === "CTR-RE") Journey.snapshot("md-machine-ctr"); };
