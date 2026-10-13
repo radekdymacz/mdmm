@@ -96,13 +96,27 @@ The machine has no such function. **MUTATE** nudges the sound of the selected tr
 
 NOTE: A roll on **Sound** with {key:randomise-track} is always taken from the sound as it was before the trials, so repeated rolls do not wander off.
 
+## REVERT TRACK
+<!-- rows: MM-X25 @715aac -->
+
+When you play with a sound, **Revert track** puts the selected track back as the kit's slot stores it. On a synth track it restores the machine, the seven pages, the level, the outputs and input, the assign rows, the key tracking, portamento and legato switches and the track the notes are forwarded to. On a MIDI track it restores the MIDI page. The other tracks, the multi envelope, MULTI TRIG and the kit name stay as they are. The kit library's **Reload** loads the whole kit again. **Revert track** does one track.
+
+1. Click the **Sound** tab and pick a track on the rail.
+2. Turn a few knobs. **Revert track** turns on.
+3. Click **Revert track**. The values are the stored ones, and the key is off again.
+4. Press {key:undo}. Your edits are back, and the key is on.
+
+**Revert track** is off while the track is as stored. Saving the kit makes the saved sound the stored one.
+
 ## SOLO
-<!-- rows: MM-X06 @2b81b4 -->
+<!-- rows: MM-X06 @9ed0e1 -->
 
 **S** on a track plays that track alone. The mutes you had come back when you let go.
 
 1. Click **S** on the strip of a track on **Mix**, or on its entry in the rail. The other synth tracks are muted.
 2. Click **S** again. The mutes are as they were before.
+
+The solo is saved with the project, in the DAW and in the standalone editor. Open the project again and the solo is on, the other synth tracks are muted, and the mutes you had before the solo come back when you end it.
 
 ## UNDO AND REDO
 <!-- rows: MM-X07 @5f1db8 -->
@@ -235,8 +249,6 @@ At the right end of the LCD, two bars show the level of the left and right outpu
 <!-- rows: MM-X17 @bea6bb -->
 
 Right-click the empty part of the header, or the track rail. The editor's menu opens, with the editor and its version as its title. It holds the zoom of the page, the updates, the log folder and the **Developer** switches.
-
-![The editor's menu](shot:e2e-mm-top-editor-menu)
 
 1. Right-click the header. The menu opens.
 2. Move to **Zoom** and press the right arrow. Its steps open, with the first one focused. Click a step. The menu closes and the page zooms.

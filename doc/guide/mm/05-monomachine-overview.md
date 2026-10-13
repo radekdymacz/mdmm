@@ -95,4 +95,4 @@ Click **Split selected range** to add a range. Click the × on a row to delete i
 
 The manual's overview figure shows how the tracks, effects and outputs join. The **Mix** workspace draws this as a signal graph: a node for each track with its machine, three buses AB, CD and EF below, and the outputs at the right. Click a node to select its strip.
 
-![The routing graph](shot:mm-mix-routing)
+![The routing graph](shot:e2e-mm-mix-routing)

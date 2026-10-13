@@ -3,7 +3,7 @@
 
 Routing is on the **Mix** workspace. Press {key:workspace-3}, or click the **Mix** tab. The six synth tracks have a strip each. Under the strips is the **Routing** bar, and under it a drawing of the signal path: the tracks, the three buses AB, CD and EF, the outputs and the input jacks.
 
-![The Mix workspace](shot:mm-mix-routing)
+![The Mix workspace](shot:e2e-mm-mix-routing)
 
 Click a track in the drawing to select its strip. The lines under the drawing say what each bus carries and where it goes, for example AB: T1 + T2 › OUT A/B.
 

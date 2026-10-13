@@ -52,12 +52,18 @@ namespace mmDesk
 
 	// ---- the app modulators (the same engine as the Machinedrum's) ----
 
-	std::vector<std::string> Desk::setupOps() { return {"modSet"}; }
+	std::vector<std::string> Desk::setupOps() { return {"modSet", "soloSet"}; }
 
-	// The table's one Owner::Setup row: modSet.
+	// The table's Owner::Setup rows: modSet and soloSet.
 	void Desk::onSetup(const Value& _message)
 	{
-		if(deskCore::opOf(_message) != "modSet")
+		const auto op = deskCore::opOf(_message);
+		if(op == "soloSet")
+		{
+			setSolo(_message);
+			return;
+		}
+		if(op != "modSet")
 		{
 			result(_message, {"no such setup"}, {});
 			return;
@@ -67,10 +73,40 @@ namespace mmDesk
 		{
 			m_mods.setSetup(*setup);
 			if(m_saveSetup)
-				m_saveSetup(deskCore::modSetupToJson(*setup, g_mmModLimits));
+				m_saveSetup(setupDoc());
 		}
 		result(_message, errors, {});
 		publishModulators();
+	}
+
+	Desk::Value Desk::setupDoc() const
+	{
+		auto doc = deskCore::modSetupToJson(m_mods.setup(), g_mmModLimits);
+		if(!m_solo.empty())
+			doc.set("solo", deskCore::solo::toJson(m_solo));
+		return doc;
+	}
+
+	// The page's solo and the mutes the person had before it: kept with the project (B-123). Not echoed: the page
+	// knows what it sent; publishSolo says it again when a project is opened, after a reset and when the page is made.
+	void Desk::setSolo(const Value& _message)
+	{
+		std::vector<std::string> errors;
+		if(const auto solo = deskCore::solo::fromJson(_message.find("tracks"), _message.find("mutes"), 12, errors, "$"))
+		{
+			if(m_solo != *solo)
+			{
+				m_solo = *solo;
+				if(m_saveSetup)
+					m_saveSetup(setupDoc());
+			}
+		}
+		result(_message, errors, {});
+	}
+
+	void Desk::publishSolo()
+	{
+		publish(deskCore::solo::message(m_solo));
 	}
 
 	std::vector<std::string> Desk::loadSetup(const Value& _setup)
@@ -78,7 +114,12 @@ namespace mmDesk
 		std::vector<std::string> errors;
 		if(const auto setup = deskCore::modSetupFromJson(_setup, errors, g_mmModLimits))
 			m_mods.setSetup(*setup);
+		m_solo = {};
+		if(const auto* s = _setup.find("solo"))
+			if(const auto solo = deskCore::solo::fromJson(*s, 12, errors))
+				m_solo = *solo;
 		publishModulators();
+		publishSolo();
 		flush();
 		return errors;
 	}

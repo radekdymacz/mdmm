@@ -545,7 +545,7 @@ function drawEd(c) {
 	if (c.width !== Math.round(W * dpr) || c.height !== Math.round(H * dpr)) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
 	const g = c.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H); ed.draw(g, W, H, c);
 	ed.handles(W, H, c).forEach(h => {
-		const a = Held.as("editor"), on = !!a && a.c === c && a.k === h.k; g.beginPath(); g.arc(h.x, clamp(h.y, 6, H - 6), on ? 7 : 5.5, 0, 7); g.fillStyle = cssv("--lcd"); g.fill(); g.lineWidth = 2.5; g.strokeStyle = h.c; g.stroke();
+		const a = Held.as("editor"), on = !!a && a.c === c && a.k === h.k; const hr = on ? 7 : 5.5; g.beginPath(); g.arc(clamp(h.x, hr + 1, W - hr - 1), clamp(h.y, 6, H - 6), hr, 0, 7); g.fillStyle = cssv("--lcd"); g.fill(); g.lineWidth = 2.5; g.strokeStyle = h.c; g.stroke();
 		if (on) { g.fillStyle = cssv("--ink"); g.font = "10px Silkscreen, monospace"; g.fillText(h.k, Math.min(W - 40, h.x + 10), Math.max(14, h.y - 10)); }
 	});
 }

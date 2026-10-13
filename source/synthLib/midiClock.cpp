@@ -78,6 +78,9 @@ namespace synthLib
 	void MidiClock::stop()
 	{
 		m_isPlaying = false;
-		m_plugin.insertMidiEvent({MidiEventSource::Internal, M_STOP});
+		hostStopEvents(m_plugin.notesOffOnHostStop(), [&](const uint8_t _a, const uint8_t _b, const uint8_t _c)
+		{
+			m_plugin.insertMidiEvent({MidiEventSource::Internal, _a, _b, _c});
+		});
 	}
 }

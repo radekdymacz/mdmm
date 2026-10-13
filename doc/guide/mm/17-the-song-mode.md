@@ -152,7 +152,7 @@ On the machine each row has columns that you step through with the arrow keys an
 | OF LN | **Part**, under **More** |
 | XTRA | **Tempo**; **Mutes**, under **More** |
 
-![The arrangement and the selected row](shot:mm-song-arrangement)
+![The arrangement and the selected row](shot:mm-song-workspace)
 
 ### Select a row
 
@@ -260,7 +260,7 @@ On the machine a loop is a value of the PAT column, after END. In the editor a l
 3. Click **−** or **+** beside **Back to** to set the first row of the part.
 4. Click **−** or **+** beside **Times** to set how many times the part plays, 1 to 63. Click **Forever** for a loop that never ends. The cell shows ∞.
 
-![A loop row](shot:mm-song-loop)
+![A loop row: its command, the row it goes back to and how many times](shot:e2e-mm-song-row-inspector)
 
 NOTE: Loops can sit inside other loops.
 

@@ -146,7 +146,7 @@ ED.dflt={draw(g,W,H){const e=V("EFX");bandDraw(g,W,H,e[6]/127,Math.min(1,(e[6]+e
 ED.amp={geo(W,H,c){const e=ampTimes(V("AMP"))||{at:0,ho:0,de:Infinity,re:Infinity},inf=e.de===Infinity,rinf=e.re===Infinity;
   const off=e.at+e.ho+(inf?Math.max(2,(e.at+e.ho)*.4):0),gate=inf?off:e.at+e.ho+2*e.de,rel=off+(rinf?3:2*e.re);
   const need=clamp(Math.ceil(Math.max(gate,rel)*1.08/4)*4,4,64),span=active&&active.c===c&&c&&c._span?Math.max(c._span,need):need;if(c)c._span=span;
-  const T=18,B=H-10;return{e,inf,rinf,off,span,T,B,X:s=>Math.min(W,s/span*W),S:x=>x/W*span,Y:v=>B-v*(B-T)}},
+  const T=28,B=H-10;return{e,inf,rinf,off,span,T,B,X:s=>Math.min(W,s/span*W),S:x=>x/W*span,Y:v=>B-v*(B-T)}},
  draw(g,W,H,c){const G=this.geo(W,H,c),e=G.e,ink=cssv("--ink");grid(g,W,H);
   g.strokeStyle=ink;g.lineWidth=2.2;g.beginPath();g.moveTo(0,G.Y(0));g.lineTo(G.X(e.at),G.Y(1));g.lineTo(G.X(e.at+e.ho),G.Y(1));
   if(G.inf)g.lineTo(G.X(G.off),G.Y(1));else{const d0=e.at+e.ho;for(let k=1;k<=32;k++){const u=k/32*2*e.de;g.lineTo(G.X(d0+u),G.Y(ampFall(u,e.de)))}g.lineTo(W,G.Y(0))}g.stroke();
@@ -234,6 +234,20 @@ function lfoGroup(t,k){const l="LF"+k,v=trk(t).v[l],dn=LPAGES[v[0]]?destNames(t,
 function machButton(m){return`<button class="machbtn" id="machbtn" aria-haspopup="dialog" aria-expanded="false" aria-label="Change machine"><span class="lcdtxt">${m}</span><span class="mfam">${famKey(m)}</span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>`}
 /* the track's pattern settings live in the Sequence dock: one key each to go there */
 function sndDockKeys(t){const midi=isMidiT(t);return`<span class="snddock" title="Stored in the pattern (arpeggiator, transpose) or the kit (${midi?"the MIDI page":"trig setup"}): edit them in the Sequence workspace's dock">${[["arp","Arp"],["trn","Transpose"],[midi?"midipage":"trig",midi?"MIDI set":"Trig setup"]].map(([d,n])=>`<button class="ptog" data-snddock="${d}">${n}</button>`).join("")}</span>`}
+/* 0.6: Revert track. The selected track goes back as the kit's slot stores it (the core's revertTrack: a synth track's machine,
+   pages, level, routing, assign rows, mask bits and forward; a MIDI track's MIDI page): one undo step. On while the track
+   differs from the slot (the page's own units, as the library keeps the slot: S.kits[k].data). The library's Reload does the whole kit. */
+function revertFacts(t){const st=S.kits[S.kit]?.data,J=JSON.stringify;
+ if(!st)return{can:false,why:`${kitName(S.kit)} is not read from its slot yet.`};
+ const a=trk(t),b=t<6?st.tracks?.[t]:st.midi?.[t-6];
+ if(!b)return{can:false,why:"This track is not in the stored kit."};
+ const keys=t<6?["m","v","lev","out","inp","trigpos","port","leg","assign"]:["v"];
+ return keys.some(k=>J(a[k])!==J(b[k]))
+  ?{can:true,why:`Put ${tLabel(t)} back as ${kitName(S.kit)} stores it: ${t<6?"its machine, pages, level, routing, assign rows and forward":"its MIDI page"}. One undo step. The kit library's Reload does the whole kit.`}
+  :{can:false,why:`${tLabel(t)} is as ${kitName(S.kit)} stores it.`}}
+function revertKey(t){const f=revertFacts(t);return`<button class="revbtn" id="revert" ${f.can?"":"disabled"} title="${attrS(f.why)}" aria-label="Revert ${tLabel(t)}">Revert track</button>`}
+function syncRevert(){const b=$("#revert");if(!b)return;const f=revertFacts(S.sel);b.disabled=!f.can;b.title=f.why}
+document.addEventListener("click",e=>{const b=e.target.closest("#revert");if(!b||b.disabled)return;edit("revertTrack",{t:S.sel})});
 function renderSound(){const t=S.sel,tr=trk(t);let rows,head;
  if(isMidiT(t)){const int=S.tracks[t-6],G=(title,idx,labels,plain)=>({key:sgKey(title),title,pg:"MID",idx,knobs:idx.map(i=>FIXED.MID[i]),labels,mut:false,note:plain});
   const cc=[4,5,6,7].map(i=>"CC "+(tr.cc[i-4]===128?"AFT":tr.cc[i-4]));
@@ -245,7 +259,7 @@ function renderSound(){const t=S.sel,tr=trk(t);let rows,head;
   const syn=g.SYN.length?g.SYN:[{key:"syn",title:"Synthesis",pg:"SYN",idx:[],knobs:[],n:0,w:3,mut:false,body:`<p class="sgabout">${MACH[tr.m].about}</p>`}];
   rows=[[[...syn,...g.AMP],"srcrow"],[[...g.FLT,...g.EFX],"tonerow"],[[1,2,3].map(k=>lfoGroup(t,k)),"lforow"]];
   head=machButton(tr.m)}
- $("#main").innerHTML=`<div class="snd mutating"><div class="sndhead">${head}${mutBarHtml()}${sndDockKeys(t)}</div>${rows.map(([list,cls])=>sgRow(list,cls)).join("")}</div>`;
+ $("#main").innerHTML=`<div class="snd mutating"><div class="sndhead">${head}${revertKey(t)}${mutBarHtml()}${sndDockKeys(t)}</div>${rows.map(([list,cls])=>sgRow(list,cls)).join("")}</div>`;
  syncControls();redraw()}
 
 /* machine picker (MD Editor pattern) */

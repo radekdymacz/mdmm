@@ -26,8 +26,6 @@ New sessions now start from factory memory until you save again. The reset has n
 
 Choose **KEEP MEMORY: ON** in the engine menu. It reads **KEEP MEMORY: OFF**, and new sessions start from factory memory. The editor no longer writes the file. The file stays, so when you turn it on again, new sessions start with the memory you saved before.
 
-![The engine menu with KEEP MEMORY and RESET MACHINE](shot:e2e-md-engine-memory)
-
 ### Two editors at once
 
 Two Machinedrum editors open at the same time, in one DAW project or in two, share the same file. Each writes the slots it saves and leaves the others. When two editors save the same slot, the last save wins.
@@ -100,8 +98,20 @@ The machine has no such function. **MUTATE** in the **GEN** bar nudges the sound
 
 To mutate and roll together, pick a drum track on the **Sequence** workspace and click **Random** in the **GEN** bar until the rhythm changes. Then click the **Sound** tab and **Random** in **MUTATE**. Click **UNDO** once: the sound is back. Click it again: the rhythm is back.
 
+## REVERT TRACK
+<!-- rows: MD-X25 @8f52bc -->
+
+When you play with a sound, **Revert track** puts the selected track back as the kit's slot stores it. It restores the machine, every value, the level, the LFO and the two relations of that track. The other tracks, the master effects and the kit name stay as they are. The kit library's **Reload** loads the whole kit again. **Revert track** does one track.
+
+1. Click the **Sound** tab and pick a track on the rail.
+2. Turn a few knobs. **Revert track** turns on.
+3. Click **Revert track**. The values are the stored ones, and the key is off again.
+4. Press {key:undo}. Your edits are back, and the key is on.
+
+**Revert track** is off while the track is as stored. Saving the kit makes the saved sound the stored one.
+
 ## SOLO
-<!-- rows: MD-X06 @3a9a39 -->
+<!-- rows: MD-X06 @1198c3 -->
 
 Solo plays one track alone. The mutes you had come back when you let go.
 
@@ -111,6 +121,8 @@ Solo plays one track alone. The mutes you had come back when you let go.
 2. Drag across the **M** keys of four tracks. All four are muted.
 3. Click **S** on another track. That track plays alone.
 4. Click **S** again. The solo ends, and the four mutes are still set.
+
+The solo is saved with the project, in the DAW and in the standalone editor. Open the project again and the solo is on, the other tracks are muted, and the mutes you had before the solo come back when you end it.
 
 ## UNDO AND REDO
 <!-- rows: MD-X07 @4bfdaf -->
@@ -144,9 +156,7 @@ With a value focused, the up and down arrow keys step it. Each typed value is on
 ## THE STEP MENU
 <!-- rows: MD-X09 @ea5076 -->
 
-Right-click a step for its menu: accent or slide, copy, paste and fill.
-
-![The step menu](shot:e2e-md-seq-step-menu)
+Right-click a step, or select it and click the **⋯** on it, for its menu: accent or slide, copy, paste and fill.
 
 1. Click the **Sequence** tab and pick a track on the rail.
 2. Click an empty step to make a trig.
@@ -246,8 +256,6 @@ Two bars and a volume line sit at the right end of the LCD. The bars show the le
 
 A right-click menu holds the zoom, the updates and the developer switches.
 
-![The editor's menu](shot:e2e-md-top-editor-menu)
-
 1. Right-click an empty part of the header, or the track rail. The menu opens with the editor's name and version.
 2. Focus **Zoom** and press the right arrow key. Its steps open.
 3. Click a step. The menu closes and the page zooms. Open the menu again: **Zoom** names the new step.
@@ -258,8 +266,6 @@ A right-click menu holds the zoom, the updates and the developer switches.
 <!-- rows: MD-X18 @297ddb -->
 
 The keyboard view draws the computer keyboard with the words of each key and a search.
-
-![The keyboard view](shot:e2e-md-keys-help)
 
 1. Press {key:keys-help}, or click **?** in the top bar. The keyboard view opens.
 2. Click the [⌥] / [FN] layer to see the keys of that layer.
@@ -304,7 +310,7 @@ Pick any of the 128 patterns from the chooser. A pattern chosen while the machin
 
 The kit library and the song slots load, copy, paste, rename and clear a slot. Each is one undo step.
 
-![The kit library after a copy](shot:e2e-md-lib-kit-copy-paste-undo)
+![The kit library](shot:md-kit-library)
 
 ### Kit slots
 

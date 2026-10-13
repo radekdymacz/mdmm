@@ -71,7 +71,7 @@ document.addEventListener("wheel",e=>{const el=e.target.closest(".l2.ed");if(!el
    mutes apply together when Shift comes up. Leaving the window drops them. */
 const ARMED=new Map();
 function showArmed(){$$(".ms.m[data-mute]").forEach(b=>{const p=ARMED.get(+b.dataset.mute);b.classList.toggle("prep",p!=null);if(p!=null)b.dataset.prep=p?"X":"+";else delete b.dataset.prep})}
-document.addEventListener("keyup",e=>{if(e.key!=="Shift"||!ARMED.size)return;ARMED.forEach((m,i)=>{trk(i).mute=m});ARMED.clear();tx();if(HOST.mutes)HOST.mutes();render()});
+document.addEventListener("keyup",e=>{if(e.key!=="Shift"||!ARMED.size)return;ARMED.forEach((m,i)=>{trk(i).mute=m});ARMED.clear();tx();if(HOST.mutes)HOST.mutes(soloFacts());render()});
 addEventListener("blur",()=>{ARMED.clear();showArmed()});
 /* As the MD Editor: a drag across the M (or S) keys paints them (shared/deskTogglePaint.js), rail, Mix and the
    Perform page's mutes alike: the pressed key toggles where the pointer goes down and its new state is the paint;
@@ -85,7 +85,7 @@ function msKeyAt(el){const b=el?.closest?.("[data-mute],[data-solo],[data-gmute]
  const kind=b.dataset.mute!=null?"mute":b.dataset.solo!=null?"solo":"gmute",i=+b.dataset[kind];if(!trk(i))return null;return{group:kind+(i<6?":synth":":midi"),kind,i}}
 const msOn=k=>!!trk(k.i)[k.kind==="solo"?"solo":"mute"];
 function msSet(k,on){trk(k.i)[k.kind==="solo"?"solo":"mute"]=on}
-function msSend(){tx();if(HOST.mutes)HOST.mutes();render()}
+function msSend(){tx();if(HOST.mutes)HOST.mutes(soloFacts());render()}
 addEventListener("pointerdown",e=>{msClickEaten=false;if(e.button!==0||e.shiftKey||e.altKey||e.metaKey||e.ctrlKey)return;const k=msKeyAt(e.target);if(!k)return;
  const r=TogglePaint.begin(k.group,k.i,msOn(k));msPaint=Object.assign(r.paint,{at:{x:e.clientX,y:e.clientY}});msClickEaten=true;
  try{document.body.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();msSet(k,r.change);msSend()},true);
@@ -173,8 +173,8 @@ function setSide(sd){S.side=sd;select(sd==="int"&&S.mode==="poly"&&S.polyT!=null
 function select(t){S.sel=t;stepFocus();autoRange(t);const pg=S.lane.split(".")[0];if(isMidiT(t)){if(pg!=="MID"){S.lane="MID.1";S.lanePage="MID"}}else if(pg==="MID"||!pname(t,S.lane)){S.lane="FLT.1";S.lanePage="FLT"}render()}
 document.addEventListener("click",e=>{
  const mu=e.target.closest("[data-mute]"),so=e.target.closest("[data-solo]");
- if(mu||so){const i=+(mu||so).dataset[mu?"mute":"solo"],t=trk(i);if(mu&&e.shiftKey){ARMED.has(i)?ARMED.delete(i):ARMED.set(i,!t.mute);showArmed();return}if(mu)t.mute=!t.mute;else t.solo=!t.solo;tx();if(HOST.mutes)HOST.mutes();render();return}
- const gm=e.target.closest("[data-gmute]");if(gm){const t=trk(+gm.dataset.gmute);t.mute=!t.mute;tx();if(HOST.mutes)HOST.mutes();render();return}
+ if(mu||so){const i=+(mu||so).dataset[mu?"mute":"solo"],t=trk(i);if(mu&&e.shiftKey){ARMED.has(i)?ARMED.delete(i):ARMED.set(i,!t.mute);showArmed();return}if(mu)t.mute=!t.mute;else t.solo=!t.solo;tx();if(HOST.mutes)HOST.mutes(soloFacts());render();return}
+ const gm=e.target.closest("[data-gmute]");if(gm){const t=trk(+gm.dataset.gmute);t.mute=!t.mute;tx();if(HOST.mutes)HOST.mutes(soloFacts());render();return}
  const sd=e.target.closest("[data-side]");if(sd){setSide(sd.dataset.side);return}
  const dk=e.target.closest("[data-dock]");if(dk){S.dock=dk.dataset.dock;rerenderSeq();return}
  const sdk=e.target.closest("[data-snddock]");if(sdk){S.dock=sdk.dataset.snddock;goWs("seq");return}
@@ -359,7 +359,13 @@ function stepShown(prev){if(S.step===prev)return;const pp=Math.floor(S.step/16);
  if(pp!==stepPage){stepPage=pp;$$(".pl").forEach(b=>b.classList.toggle("play",+b.dataset.plp===pp&&S.playing))}
  if(S.follow&&S.ws==="seq"&&!S.viewAll&&pp!==S.page&&!laneDraw&&!menuOpen()){S.page=pp;followPage()}
  $("#tempoled").classList.toggle("on",S.step%4===0);setPos();queueMicrotask(movePH);
- if(S.ws==="perform"){const act=[0,1,2,3,4,5].filter(i=>{const st=S.tracks[i].steps[S.step];return st&&!st.off&&st.a&&audible(i)&&(S.mode!=="poly"||i===asgT())});flashTracks(act)}}
+ if(S.ws==="perform"){const act=[0,1,2,3,4,5].filter(i=>{const st=S.tracks[i].steps[S.step];return st&&!st.off&&st.a&&audible(i)&&(S.mode!=="poly"||i===asgT())});flashTracks(act)}
+ if((S.ws==="seq"||S.ws==="sound")&&S.playing&&S.step>=0)railLamps(side().filter(i=>{const st=trk(i).steps[S.step];return st&&!st.off&&(isMidiT(i)||st.a)&&audible(i)}))}
+/* I-028 (Discord 2026-10-12): on Sequence and Sound a rail track's number lights while its trig plays (the step
+   telemetry and the pattern, no audio), as the Perform page's lamps; every lamp of a step in one frame */
+const RailLamps={due:null,off:new Map()};
+function railLamps(ts){if(!ts.length)return;const first=!RailLamps.due;RailLamps.due=new Set([...(RailLamps.due||[]),...ts]);if(!first)return;
+ requestAnimationFrame(()=>{const due=RailLamps.due;RailLamps.due=null;for(const i of due){const l=$(`#rail .th[data-sel="${i}"]`);if(!l)continue;l.classList.add("trig");clearTimeout(RailLamps.off.get(i));RailLamps.off.set(i,setTimeout(()=>$(`#rail .th[data-sel="${i}"]`)?.classList.remove("trig"),110))}})}
 /* the playhead's page while following: the sequencer only (renderPage's work for it), not the whole page */
 function followPage(){const sl=$("#seqscroll")?.scrollLeft||0;renderSeq();const sc=$("#seqscroll");if(sc){sc.scrollLeft=sl;const l=$("#lanescroll");if(l)l.scrollLeft=sl}enhanceSelects($("#main"));movePH(false)}
 function stepMs(){const m={"1X":1,"2X":2,"3/4X":.75,"3/2X":1.5}[S.mult];return 60000/S.bpm/4/m}
@@ -580,7 +586,7 @@ window.MMView={
  /* setters */
  /* the machine's documents: show(view) is the one writer of S's document members (DESIGN-UNIFY.md phase 1); the
     library's other slots keep their own cheap setters; setTempo is the BPM gesture's own write (the self-test's) */
- show,startEmpty,setPatternSlot,setKitSlot,setReading,setTempo:bpm=>{S.bpm=bpm},
+ show,startEmpty,setPatternSlot,setKitSlot,setReading,setSolo,setTempo:bpm=>{S.bpm=bpm},
  setInput,setPlaying,setStep,setPausedStep,setSongRow:r=>{S.songRow=r;markSongRow()},
  setSongSteps:n=>{S.songSteps=n;const st=document.getElementById("arrstate");if(st&&st.textContent!==arrState())st.textContent=arrState()},
  setEng,dlgOpen:()=>!$("#dlg").hidden,setEngineLabel,setEngineTip,setEngines,setAudioEntry,setMemory,clearLearnTarget:()=>{S.learnT=null},setMapping,setModulation,setCtlSetup,disable,

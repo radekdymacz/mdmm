@@ -19,7 +19,7 @@
      togglePlay(), ownsClock          the machine is the sequencer
      selectPattern(p, now)            LOAD PATTERN (now: STOP, LOAD PATTERN, PLAY)
      kit(op, k)                       "save" | "load" | "saveAs" | "reload" | "undo" (the machine's UNDO KIT, MM-102)
-     tempo(bpm), mutes()              the machine's tempo; the tracks' mutes changed (synth and MIDI)
+     tempo(bpm), mutes(state)         the machine's tempo; the tracks' mutes or solos changed (synth and MIDI); state {solo, mutes}: the soloed tracks and, while one holds, the person's mutes (kept with the project)
      keyMode(mode, t)                 the keyboard mode changed ("normal" | "multi" | "map" | "poly"): POLY
                                       is the machine's audio mode, on track t (0-5: its TRACK key; again with
                                       another t while in POLY: POLY moves there)

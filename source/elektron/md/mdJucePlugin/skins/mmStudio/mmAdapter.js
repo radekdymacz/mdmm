@@ -252,6 +252,19 @@
 			if (!r.ok) V().toast(r.errors[0] || "The plug-in did not take the modulators.");
 		} });
 	}
+	/* B-123: the solo and, while one holds, the mutes the person set are kept with the project by the plug-in ("soloSet");
+	   it says them again ({type: "solo"}) when a project is opened, after a reset and when the window is made */
+	function sendSolo(state) {
+		const doc = JSON.stringify({ tracks: state.solo, mutes: state.mutes });
+		if (doc === last.solo) return;
+		last.solo = doc;
+		send({ op: "soloSet", tracks: state.solo, mutes: state.mutes });
+	}
+	function onSolo(m) {
+		last.solo = JSON.stringify({ tracks: m.tracks || [], mutes: m.mutes || [] });
+		V().setSolo(m.tracks || [], m.mutes || []);
+		if (V().engReady()) window.MMHost.mutes();
+	}
 	/* {type:"mod", doc, values, ccPerSecond, ccLimit, runs}: the setup as taken and its sources' values */
 	function onMod(m) {
 		const setup = V().ctlSetup();
@@ -458,7 +471,8 @@
 		tempo(bpm) {
 			expect(send({ op: "tempo", bpm }, { key: "tempo", onResult: answered }), [[["bpm"], bpm]]);
 		},
-		mutes() {
+		mutes(state) {
+			if (state) sendSolo(state);
 			/* mutes and solos: the synth tracks' mute parameters (CC 3); the MIDI tracks' MUTE window (MM-P4),
 			   where the engine can reach it (machine.capabilities). A track is sent when the page's differs from the
 			   machine's (the view's: memory, or what the core expects; not known: sent) */
@@ -690,6 +704,7 @@
 		else if (m.type === "midiHeld") { const chs = playedChannels(); V().setMidiHeld((m.notes || []).filter(n => chs.has(n.ch)).map(n => n.note)); }
 		else if (m.type === "lcd") { lcdBits = Uint8Array.from(atob(m.bits || ""), c => c.charCodeAt(0)); showLcd(); }
 		else if (m.type === "mod") onMod(m);
+		else if (m.type === "solo") onSolo(m);
 		else if (m.type === "catalogue") onCatalogue(m.doc);
 		else if (m.type === "reset") onReset();
 		else if (m.type === "audio") { audioDocument = m.doc; V().setAudioEntry(!!(audioDocument && audioDocument.standalone)); V().redrawAudio(); }

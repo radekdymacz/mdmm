@@ -33,6 +33,8 @@ for m in "${machines[@]}"; do
 		*) echo "Unknown machine: $m" >&2; exit 1 ;;
 	esac
 	"$chrome" --headless=new --disable-gpu --no-first-run --user-data-dir="$profile" --no-pdf-header-footer \
-		--virtual-time-budget=5000 --print-to-pdf="$out/$name" "http://127.0.0.1:$port/guide/$m/print/" 2>/dev/null
+		--virtual-time-budget=20000 --print-to-pdf="$out/$name" "http://127.0.0.1:$port/guide/$m/print/" 2>/dev/null
+	python3 "$root/scripts/mdmm-guide-pdf-shrink.py" "$out/$name" >/dev/null
+	cp "$out/$name" "$root/site/public/guide/$name"
 	echo "$out/$name"
 done

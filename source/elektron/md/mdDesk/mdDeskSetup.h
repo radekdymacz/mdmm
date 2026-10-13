@@ -1,6 +1,7 @@
 #pragma once
 
 #include "deskCore/deskMod.h"
+#include "deskCore/deskSolo.h"
 
 #include "elektronData/json.h"
 
@@ -25,7 +26,7 @@ namespace mdDesk
 
 	// The editor's own setup that belongs to the project, not to the machine (P4): the app
 	// modulators (md-desk/modulators) and the CC numbers of the Control workspace's eight
-	// controller knob rows. As the "md-desk/setup" document it is stored with the plug-in
+	// controller knob rows, and the solo (the tracks soloed and the person's mutes). As the "md-desk/setup" document it is stored with the plug-in
 	// state (the host keeps the text, it never looks inside) and restored with the project.
 	struct DeskSetup
 	{
@@ -33,6 +34,7 @@ namespace mdDesk
 
 		ModSetup modulators;
 		std::array<uint8_t, 8> knobCcs = g_defaultKnobCcs;
+		deskCore::SoloMemo solo;	// the page's solo and the mutes the person had before it (B-123)
 
 		bool operator==(const DeskSetup& _o) const;
 		bool operator!=(const DeskSetup& _o) const { return !(*this == _o); }

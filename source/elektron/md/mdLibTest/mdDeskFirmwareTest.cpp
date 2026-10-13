@@ -9,6 +9,7 @@
 //   mdDeskFirmwareTest <ROM> playload PLAY while the desk loads in the background
 //   mdDeskFirmwareTest <ROM> samples  P9: WAV files into UW ROM slots (SDS), the waveforms read back
 //   mdDeskFirmwareTest <ROM> machine  B-039: a machine change stays (a trig, PLAY, another pattern with the kit)
+//   mdDeskFirmwareTest <ROM> reselect B-122: picking the current pattern again (stopped, playing, after another) keeps it
 //
 // Exits 77 (skip) without arguments.
 
@@ -3366,6 +3367,49 @@ namespace
 		rig.run(400);
 	}
 
+	// B-122 (Discord 2026-10-12): "the reset pattern often loads another one". Picking a pattern again (the current one, stopped
+	// and playing, back to it after another was queued, switch now) on the firmware: which pattern the machine plays.
+	void reselect(const Bytes& _rom, const std::string& _romName)
+	{
+		std::puts("reselect: picking the current pattern again keeps it");
+		Rig rig(_rom, _romName);
+		auto& desk = rig.desk();
+		rig.page(R"({"op":"ready"})");
+		rig.runUntil([&] { return desk.isReady() && desk.documents().global && desk.linkState().pattern; }, 8000);
+		rig.run(1500);
+		const auto pick = [&](const int _p, const bool _now = false)
+		{
+			rig.pageConfirmed(R"({"op":"select","p":)" + std::to_string(_p) + (_now ? R"(,"now":true})" : "}"));
+		};
+		const auto plays = [&] { const auto p = desk.linkState().pattern; return p ? static_cast<int>(*p) : -1; };
+		for(const int p : {0, 5, 40})
+		{
+			const auto at = [&](const char* _what) { check(plays() == p, std::string(_what) + " " + std::to_string(p) + ": plays " + std::to_string(plays())); };
+			pick(p);
+			rig.run(2000);
+			at("stopped: pick");
+			pick(p);
+			rig.run(2000);
+			at("stopped: pick again");
+			rig.page(R"({"op":"play"})");
+			rig.run(1000);
+			pick(p);
+			rig.run(6000);
+			at("playing: pick again");
+			pick(p + 1);
+			rig.run(200);
+			pick(p);
+			rig.run(8000);
+			at("playing: the next one picked, then back to");
+			pick(p, true);
+			rig.run(3000);
+			at("playing: switch now to");
+			rig.page(R"({"op":"stop"})");
+			rig.run(2000);
+			at("stopped:");
+		}
+	}
+
 	void hostClock(const Bytes& _rom, const std::string& _romName)
 	{
 		std::puts("host clock");
@@ -4948,6 +4992,13 @@ int main(const int _argc, char** _argv)
 			songRow(rom, romPath);
 			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 			std::printf("mdDeskFirmwareTest songrow: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
+			return g_failures ? 1 : 0;
+		}
+		if(mode == "reselect")
+		{
+			reselect(rom, romPath);
+			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
+			std::printf("mdDeskFirmwareTest reselect: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
 			return g_failures ? 1 : 0;
 		}
 		if(mode == "hostclock")

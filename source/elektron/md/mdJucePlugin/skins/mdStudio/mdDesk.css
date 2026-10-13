@@ -1764,6 +1764,9 @@ body.erasing .pc.erasing,body.erasing .fader.erasing{box-shadow:inset 0 0 0 2px 
 #main>.snd{flex:1 1 auto;min-height:0}
 .snd{display:flex;flex-direction:column;gap:16px;min-height:0}
 .sndhead{display:flex;align-items:center;gap:22px;min-width:0}
+/* 0.6: Revert track, beside the machine key (a track's sound back as its kit slot stores it); on only while it differs */
+.sndhead .revbtn{flex:none;white-space:nowrap;align-self:center;margin-left:-8px}
+.sndhead .revbtn:disabled{opacity:.4;cursor:default}
 .sgrow{flex:1 1 0;min-height:0;max-height:var(--sgmax,420px);display:grid;grid-template-rows:auto minmax(0,1fr) var(--sgbox,34px);column-gap:14px;row-gap:7px;min-width:0}
 .sgrow.flat{flex:none;grid-template-rows:auto var(--sgbox,34px)}
 /* a column takes its row's three lines (subgrid); an engine without subgrid (macOS 12, Safari 15) skips that and
@@ -1912,7 +1915,7 @@ body.althold #clearLane{color:var(--led);box-shadow:inset 0 0 0 1px var(--led)}
 .sndhead .mutband{flex:1 1 auto;margin:0}
 @media (max-width:1400px){.genband{gap:12px;padding-inline:10px}.genbar{gap:10px}.genbar>.genband{padding:0}.gbt{min-width:0}.gbc .seg{gap:9px}.gkeys{gap:7px}.ghint{display:none}.genbar .pgkey{padding:0 7px}}
 @media (max-width:1340px){.genband{gap:8px}.genbar{gap:8px}.gkeys{gap:5px}.gbc{gap:4px}.gbc .seg{gap:6px;margin-right:0}.gbc .seg button{letter-spacing:.06em}.gv{padding:0 6px;min-width:50px}.genbar .pgkey{padding:0 6px}.genbar .ptog{margin-left:0}}
-@media (max-width:1500px){.genband .gwrite~.gsum{display:none}}
+@media (max-width:1500px){.genband .gwrite~.gsum{display:none}.genband .gsum .gopt{display:none}}
 .th .nm.tagged{gap:4px}
 .th .nm .gtag{font:10px var(--pix);font-style:normal;color:var(--ink);background:var(--lcd);padding:0 3px;border-radius:2px;margin-left:auto;flex:none;align-self:center;white-space:nowrap}
 #seqp>.genbar{flex:none}
@@ -2217,7 +2220,7 @@ html[data-tt=acc] #seq .st:not(.on),html[data-tt=swg] #seq .st:not(.on),html[dat
 .mp-audk{display:flex;gap:6px;align-items:center;background:transparent;box-shadow:none;color:var(--ink);font:11px var(--pix);text-transform:uppercase;padding:2px 4px}
 .mp-audk kbd{font:10px var(--pix);border:1px solid var(--ink);border-radius:2px;padding:0 4px}
 /* I-002: a note from a MIDI keyboard played this track (mdDeskTop.js noteLight): its number on the rail glows a moment */
-.th.hit .n{box-shadow:0 0 0 1px var(--led),0 0 6px 1px var(--led)}
+.th.hit .n,.th.trig .n{box-shadow:0 0 0 1px var(--led),0 0 6px 1px var(--led)}
 .strip .led.act.hit{background:var(--led);box-shadow:0 0 6px 1px var(--led)}
 
 /* MD-033: the machine's clip between two value boxes whose parameters depend on each other (mdDeskSound.js clipMarks:
@@ -2232,3 +2235,9 @@ html[data-tt=acc] #seq .st:not(.on),html[data-tt=swg] #seq .st:not(.on),html[dat
 .scell.ph[data-left]{position:relative}
 .scell.ph[data-left]::after{content:"+" attr(data-left);position:absolute;right:3px;top:2px;font:600 10px var(--mono);color:var(--led);pointer-events:none}
 .scell.ph[data-left="0"]::after{content:"last"}
+
+/* B-113: the track list's generator tag (E 2/16+4, the longest) whole in the 75 px beside a two-letter name: 9 px letters,
+   2 px padding, a 3 px gap. Beside a longer name (EMPTY, an empty kit's tracks) it does not fit: it wraps, out of the one
+   line the box shows (the 19 px rows have no room for a second line, as the Monomachine's have), never half cut */
+.th .nm.tagged{gap:3px;flex-wrap:wrap;align-content:flex-start;row-gap:30px;max-height:1.5em}
+.th .nm .gtag{font-size:9px;padding:0 2px}

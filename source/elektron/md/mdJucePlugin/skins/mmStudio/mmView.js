@@ -314,6 +314,8 @@ const MmView = (() => {
 		machine: (v, c) => machineWrites(v, c.t, C().machineName(c.model), c.keepFx !== false),
 		clearSound: (v, c) => machineWrites(v, c.t, "GND-SIN", false),
 		copySound: () => [],
+		/* Revert track: shown at the result (the core puts the track back as the kit's slot stores it) */
+		revertTrack: () => [],
 		pasteSound: (v, c, clip) => clip && clip.kind === "sound" ? soundWrites(v, c.t, clip.m, clip.v) : [],
 		params: (v, c) => c.values.flatMap(([t, page, i, x]) => WRITES.param(v, { t, page, i, v: x })),
 		assign: (v, c) => {
@@ -486,7 +488,7 @@ const MmView = (() => {
 	   the kit that plays (k), the active global (nothing to name), a song (s: the one the Song workspace edits), the
 	   library's stored slots (the command names them), a track's parts (p and k), else the pattern that plays (p) */
 	const OPS = {
-		kit: ["level", "route", "input", "param", "trigPos", "legato", "portamento", "machine", "clearSound", "copySound", "pasteSound", "params",
+		kit: ["level", "route", "input", "param", "trigPos", "legato", "portamento", "machine", "clearSound", "copySound", "pasteSound", "revertTrack", "params",
 			"assign", "multiEnv", "multiTrig", "kitName"],
 		global: ["routing", "midiTrack", "globalMidi", "masterTune", "globalReset", "multiMap", "multiMapSplit", "multiMapDelete"],
 		song: ["rowSet", "rowInsert", "rowDelete", "rowMove", "copyRow", "pasteRow"],

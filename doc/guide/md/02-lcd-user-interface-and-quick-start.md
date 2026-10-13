@@ -6,7 +6,7 @@ The LCD sits in the middle of the top bar. It shows the state of the machine: th
 ## THE LCD USER INTERFACE
 <!-- rows: MD-027 MD-028 MD-029 MD-030 MD-031 MD-032 MD-033 @ce1796 -->
 
-![The LCD](shot:md-lcd)
+![The LCD at the top of the page](shot:md-workspaces)
 
 From left to right the LCD holds:
 
@@ -110,7 +110,7 @@ This is a first session. It loads a kit, places trigs, plays them and changes a 
 6. Click a track in the rail to select it. Press the keys A to L to play it by hand.
 7. Press {key:workspace-2} for the Sound workspace. Drag a value box to change the sound of the selected track.
 
-![The Sound workspace](shot:md-sound-workspace)
+![The Sound workspace](shot:md-sound-groups)
 
 Turn a value in small steps when you need them. Hold [⇧] and drag for fine steps. Scroll the wheel over a box for one step a notch, and hold [⇧] for ten. Double-click a box to set it back to 64.
 

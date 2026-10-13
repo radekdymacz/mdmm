@@ -740,6 +740,29 @@ const MdJourneys = (() => {
 		],
 		async tidy(u, c) { if (c.b != null && S.soloSet.has(c.b)) u.click(`.strip[data-sel="${c.b}"] .ms.s`); for (const i of c.run || []) if (mutes().includes(i) && !c.m0.includes(i)) { u.click(`.strip[data-sel="${i}"] .ms.m`); await sleep(150); } }
 	};
+	/* B-123, MD-X06: the solo is kept with the project: after the machine restarts (the page drops its solo) and the plug-in
+	   says it again (the page made again: ready), the solo is back, the other tracks are muted, and the mute the person
+	   had before it comes back when the solo ends */
+	const soloSaved = {
+		name: "md-mix-solo-saved", proves: ["MD-X06"],
+		steps: [
+			go("mix"),
+			{ say: "mute a track with its M key, solo another with its S key", act: async (u, c) => {
+				c.m0 = mutes(); const keep = soloKeep(); const free = [...Array(16).keys()].filter(i => !c.m0.includes(i) && !keep.has(i));
+				if (free.length < 2) throw new Error("no two unmuted tracks"); c.m = free[0]; c.b = free[1];
+				u.click(`.strip[data-sel="${c.m}"] .ms.m`); await settledMutes(); u.click(`.strip[data-sel="${c.b}"] .ms.s`); await settledMutes(); },
+				screen: c => ok(pressed(`.strip[data-sel="${c.b}"] .ms.s`) && pressed(`.strip[data-sel="${c.m}"] .ms.m`), "keys not lit"),
+				machine: c => { const keep = soloKeep(), want = [...Array(16).keys()].filter(i => i !== c.b && !keep.has(i)); return ok(want.every(i => mutes().includes(i)) && !mutes().includes(c.b), "machine mutes " + mutes()); }, within: 8000 },
+			{ say: "the machine starts over (the page drops its solo) and the page is made again: the solo comes back", act: async (u, c) => {
+				window.gm.recv([{ type: "reset" }]); await until(() => !S.soloSet.size, 2000); c.dropped = !S.soloSet.size; Bridge.ready(); await until(() => S.soloSet.has(c.b), 6000); await settledMutes(); },
+				screen: c => ok(c.dropped && S.soloSet.has(c.b) && S.soloSet.size === 1 && pressed(`.strip[data-sel="${c.b}"] .ms.s`) && pressed(`.strip[data-sel="${c.m}"] .ms.m`), `solo ${[...S.soloSet]}, dropped ${c.dropped}`),
+				machine: c => { const keep = soloKeep(), want = [...Array(16).keys()].filter(i => i !== c.b && !keep.has(i)); return ok(want.every(i => mutes().includes(i)) && !mutes().includes(c.b), "machine mutes " + mutes()); }, within: 10000 },
+			{ say: "click S again: the solo ends and the mute you had stays", act: async (u, c) => { u.click(`.strip[data-sel="${c.b}"] .ms.s`); await settledMutes(); },
+				screen: c => ok(!S.soloSet.size && pressed(`.strip[data-sel="${c.m}"] .ms.m`) && !pressed(`.strip[data-sel="${c.b}"] .ms.m`), `solo ${[...S.soloSet]}`),
+				machine: c => ok(same(mutes(), sorted([...new Set([...c.m0, c.m])])), "machine mutes " + mutes()), within: 8000 }
+		],
+		async tidy(u, c) { if (c.b != null && S.soloSet.has(c.b)) u.click(`.strip[data-sel="${c.b}"] .ms.s`); await sleep(200); if (c.m != null && mutes().includes(c.m) && !c.m0.includes(c.m)) { u.click(`.strip[data-sel="${c.m}"] .ms.m`); await sleep(200); } }
+	};
 	const shiftMutes = {
 		name: "md-mix-shift-mutes", proves: ["MD-123"],
 		steps: [
@@ -2078,6 +2101,23 @@ const MdJourneys = (() => {
 			esc
 		]
 	};
+	/* MD-X25: Revert track on the Sound page: the track goes back as the kit's slot stores it, one undo step */
+	const revertTrackJ = {
+		name: "md-sound-revert-track", proves: ["MD-X25"],
+		steps: [
+			go("sound"), sel(() => soundTrack()),
+			{ say: "the Revert track key is there and off: the track is as its slot stores it",
+				screen: () => ok(!!$1("#revert") && $1("#revert").disabled && /stores it/.test($1("#revert").title), "key " + $1("#revert")?.disabled + " " + $1("#revert")?.title) },
+			{ say: "drag a value of the track: the key turns on", act: async (u, c) => { c.k = V.kit; c.stored = JSON.stringify(Docs.kits[c.k].tracks[c.t]); const el = $1('#main .pc[data-g="syn"]'); c.n = el.dataset.n; c.i = pidx(c.t, c.n, "syn"); c.v0 = kitVals(c.t)[c.i]; c.o = allKitVals(); await nudge(u, el, c.v0); await until(idle, 5000); c.v1 = kitVals(c.t)[c.i]; c.u0 = V.undoCount; },
+				screen: () => ok(!$1("#revert").disabled, "key still off"), machine: c => ok(c.v1 !== c.v0 && JSON.stringify(Docs.kits[c.k].tracks[c.t]) === c.stored, `value ${c.v0} -> ${kitVals(c.t)[c.i]}`), within: 6000 },
+			{ say: "click Revert track: the value is the slot's, the slot is untouched, the key is off, one undo step more", act: u => u.click("#revert"),
+				screen: () => ok($1("#revert").disabled, "key still on"),
+				machine: c => ok(kitVals(c.t)[c.i] === c.v0 && same(allKitVals(), c.o) && JSON.stringify(Docs.kits[c.k].tracks[c.t]) === c.stored && V.undoCount === c.u0 + 1, `value ${kitVals(c.t)[c.i]} for ${c.v0}, undo steps ${V.undoCount} for ${c.u0 + 1}`), within: 6000 },
+			{ say: "press Cmd+Z once: the edit is back and the key is on again", act: u => u.key("z", { cmd: true }),
+				screen: () => ok(!$1("#revert").disabled, "key off"), machine: c => ok(kitVals(c.t)[c.i] === c.v1, `value ${kitVals(c.t)[c.i]} for ${c.v1}`), within: 6000 }
+		],
+		async tidy(u, c) { blur(); u.key("z", { cmd: true }); await until(() => kitVals(c.t)[c.i] === c.v0, 6000); }
+	};
 	/* MD-035: the quick start: load a kit, trig a track, play */
 	const quickJ = {
 		name: "md-quick-start", proves: ["MD-035"],
@@ -2517,6 +2557,22 @@ const MdJourneys = (() => {
 		],
 		async tidy(u, c) { if (V.playing) u.click("#play"); if (c.f0 != null && S.follow !== c.f0) u.click("#pgfollow"); if (c.a0 != null && S.viewAll !== c.a0) u.click("#pgall"); await back(u, c); }
 	};
+	/* I-028 (Discord 2026-10-12): the rail's trig lamps on Sequence: a track's number lights while its trig plays, only
+	   tracks with a trig light, and none stays lit after STOP */
+	const railLamps = {
+		name: "md-seq-rail-lamps", proves: [],
+		steps: [
+			go("seq"),
+			{ say: "press PLAY and watch the rail for 2.5 s: the tracks with trigs light, the others never", act: async (u, c) => {
+				c.lit = new Set(); const ob = new MutationObserver(ms => { for (const m of ms) if (m.target.classList?.contains("trig")) c.lit.add(+m.target.dataset.sel); });
+				ob.observe($1("#rail"), { subtree: true, attributes: true, attributeFilter: ["class"] });
+				if (!V.playing) u.click("#play"); await until(() => V.playing, 5000); await sleep(2500); ob.disconnect();
+				c.with = V.tracks.map((t, i) => t.trigs.slice(0, V.len).some(Boolean) && audible(i) ? i : -1).filter(i => i >= 0); c.note = `lit ${[...c.lit]}, with trigs ${c.with}`; },
+				screen: c => ok(c.lit.size > 0 && [...c.lit].every(i => c.with.includes(i)), `lit ${[...c.lit]}; tracks with trigs ${c.with}`) },
+			{ say: "press STOP: no lamp stays lit", act: async u => { if (V.playing) u.click("#play"); await until(() => !V.playing, 5000); await sleep(400); }, screen: () => ok(!$1("#rail .th.trig"), "a lamp stays lit") }
+		],
+		async tidy(u) { if (V.playing) { u.click("#play"); await sleep(500); } }
+	};
 	/* MD-031: the Sound page's LCD line says the track, the machine and its name */
 	const soundInfo = {
 		name: "md-sound-focus-info", proves: ["MD-031"],
@@ -2765,7 +2821,7 @@ const MdJourneys = (() => {
 		tidy: songPlayheadTidy
 	};
 	const wave12 = [clipsJ, undoKitJ, stopQueuedJ, lenRepeatJ, songRepeatsJ];
-	const slice5 = [modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, kitNameSave, songCommands, playModeJ, pageLeds, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
+	const slice5 = [modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, revertTrackJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, kitNameSave, songCommands, playModeJ, pageLeds, railLamps, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
 	/* ---------- the end-to-end pass: factory content as a person uses it (scripts/mdmm-e2e.sh, doc/release/E2E.md) ---------- */
 	/* What the machine plays, as the page can see it: the transport and the step from the telemetry, the song row, the output's
 	   peaks (the plug-in's outputLevel, every 250 ms, since the last one). Not silent where sound is the point. */
@@ -2891,11 +2947,43 @@ const MdJourneys = (() => {
 	};
 	const e2eReal = [realSongs, realPatterns, realSequence];
 
-	const all = [...slice5, ...wave12, ...e2eReal, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
+	/* Screen review 2026-10-13 (B-110 and on): the screens the review found cut or overlapped, measured at the page's size
+	   (the page tier runs at 1440 x 924, as the review's pictures) */
+	const closePops = async u => { for (let i = 0; i < 4 && (!$1("#libpop").hidden || !$1("#modalbg").hidden); i++) { if (dlgShown()) u.click(dlgButton("Cancel") || $1("#dlg .danger")); else u.key("Escape"); await sleep(300); } };
+	const screensFit = {
+		name: "md-screens-fit", proves: [],
+		steps: [
+			{ say: "Sequence: the track list's generator tags (E 4/16, E 2/16+4) show whole, inside their row and clear of the M key (B-110)",
+				act: async (u, c) => { await closePops(u); u.click(tab("seq")); await sleep(400);
+					const rows = $all("#rail .th"), out = rows.filter(r => { const t = r.querySelector(".gtag"); if (!t) return false; const a = t.getBoundingClientRect(), b = r.getBoundingClientRect(); return a.bottom > b.bottom + 0.5 || a.right > b.right + 0.5; });
+					c.bad = [...Journey.cutText($1("#rail")), ...Journey.spills("#rail .th .nm, #rail .th .gtag"), ...Journey.overlaps("#rail .th .gtag", "#rail .th .ms, #rail .th .n"), ...out.map(r => r.textContent.trim().slice(0, 16) + ": tag out of its row")]; c.n = $all("#rail .th .gtag").length; },
+				screen: c => ok(c.n > 0 && !c.bad.length, `${c.n} tags; ${c.bad.slice(0, 4).join(" | ")}`) }
+			,{ say: "Sequence: a long name (EMPTY, an empty kit's tracks) leaves no room for the tag: the tag is whole beside it or out of sight, never half (B-113)",
+				act: async (u, c) => { c.bad = []; c.n = 0; for (const row of $all("#rail .th").slice(0, 4)) { const nm = row.querySelector(".nm"), b = nm?.querySelector("b,.nmt") || nm?.firstChild, tag = row.querySelector(".gtag"); if (!tag || !b) continue; c.n++;
+						const keep = b.textContent; b.textContent = "EMPTY"; const t = tag.getBoundingClientRect(), n = nm.getBoundingClientRect(), m = row.querySelector(".ms")?.getBoundingClientRect();
+						const inside = t.right <= n.right + 0.5 && t.bottom <= n.bottom + 0.5 && t.top >= n.top - 0.5, hidden = t.top >= n.bottom - 0.5 || t.left >= n.right - 0.5;
+						if (!inside && !hidden) c.bad.push(`${tag.textContent} beside EMPTY: ${Math.round(t.left)}-${Math.round(t.right)} in ${Math.round(n.left)}-${Math.round(n.right)}`);
+						if (inside && m && t.right > m.left) c.bad.push(`${tag.textContent} under the M key`); b.textContent = keep; } },
+				screen: c => ok(c.n >= 2 && !c.bad.length, `${c.n} rows; ${c.bad.join(" | ")}`) }
+			,{ say: "the GEN bar's summary line shows whole at this size: what it writes (8 on) and, when the bar has room, the cycle and the steps (B-114)",
+				act: async (u, c) => { await closePops(u); u.click(tab("seq")); await sleep(400); const g = $1(".genband"); c.bad = g ? [...Journey.cutText(g), ...Journey.spills(".genband .gsum")] : ["no GEN bar"]; c.text = $1(".genband .gsum")?.textContent.trim(); },
+				screen: c => ok(c.text && !c.bad.length, `"${c.text}" ${c.bad.join(" | ")}`) }
+			,{ say: "Sound, Mix and Sampler: what the drawn panels draw fits them: no handle cut by an edge, no caption past the edge (B-117)",
+				act: async (u, c) => { c.bad = []; c.n = 0; for (const ws of ["sound", "mix", "sampler"]) { u.click(tab(ws)); await sleep(500); const cv = $all("canvas.ed").filter(x => x.clientWidth && ED[x.dataset.ed]); c.n += cv.length; for (const x of cv) for (const p of Journey.canvasProblems(x, drawEd, { crossing: false })) c.bad.push(`${ws} ${x.dataset.ed}: ${p}`); } u.click(tab("seq")); },
+				screen: c => ok(c.n > 5 && !c.bad.length, `${c.n} canvases; ${[...new Set(c.bad)].slice(0, 5).join(" | ")}`) }
+			,{ say: "a handle at the very edge of a panel (value 0 or 127) is drawn whole: a probe canvas with handles on all four edges (B-117)",
+				act: async (u, c) => { const cv = document.createElement("canvas"); cv.className = "ed"; cv.dataset.ed = "__probe"; cv.style.cssText = "position:fixed;left:10px;top:10px;width:200px;height:100px;opacity:0;pointer-events:none"; document.body.appendChild(cv);
+					ED.__probe = { draw() {}, handles: (W, H) => [{ x: 0, y: 50, k: "L", c: "#000" }, { x: W, y: 50, k: "R", c: "#000" }, { x: W / 2, y: 0, k: "T", c: "#000" }, { x: W / 2, y: H, k: "B", c: "#000" }] };
+					try { c.bad = Journey.canvasProblems(cv, drawEd, { crossing: false }); } finally { delete ED.__probe; cv.remove(); } },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")) }
+		],
+		async tidy(u) { await closePops(u); u.click(tab("seq")); }
+	};
+	const all = [screensFit, ...slice5, ...wave12, ...e2eReal, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
 		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
 		genJourney("md-gen-mutate-undo", false, { proves: ["MD-X04", "MD-X05"] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: ["MD-X04"] }), genKeys,
 		shapeSound, typeValue, arrows, machinePick, machAudition, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,
-		mixSolo, shiftMutes, allOff, fader, lev, outKey, masterFx,
+		mixSolo, soloSaved, shiftMutes, allOff, fader, lev, outKey, masterFx,
 		songArrange, songChain, songPlayhead, songSlots, songKeys, shotsSongSlots, samplerSlots, samplerSetup, audition,
 		libDialog, kitCopy, kitRename, kitClear, patGo, patClear, dialogEsc,
 		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, noteLights, audioPanel, romCard, notePlay,
