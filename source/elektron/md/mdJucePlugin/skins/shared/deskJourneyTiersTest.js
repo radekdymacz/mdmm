@@ -46,6 +46,7 @@ const picked = async sel => { ctx.location.search = "?selftest=" + encodeURIComp
 	check([...(await picked("journey~page@1/2:shuffle-7")).split(" "), ...(await picked("journey~page@2/2:shuffle-7")).split(" ")].sort().join(" ") === "md-mix-ms-off md-seq-paint-undo md-seq-rotate", "the shuffled shards together are the page journeys");
 	let lines = []; ctx.location.search = "?selftest=" + encodeURIComponent("journey-seq-*:list"); await J.run(all, { log: t => lines.push(t), ready: async () => { lines.push("READY"); return false; } });
 	check(lines.some(l => l === "JOURNEYS list: md-seq-paint-undo md-seq-rotate") && !lines.includes("READY"), ":list names the journeys and runs nothing");
+	check(await picked("journey-*,!md-seq-*,!md-boot-card") === "md-drop-syx md-dev-speedups md-mix-ms-off", "!name leaves those out");
 	console.log(failures ? `deskJourneyTiersTest: ${failures} FAILED` : "deskJourneyTiersTest: PASS");
 	process.exit(failures ? 1 : 0);
 })();
