@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-129 · Monomachine: a MIDI track's mute while the machine takes an edit is refused ("The panel is busy")
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`mm-perform-mutes` on the firmware, once its wire check was page-tier only: M3 on the Mutes card refused while an edit's dump was on SYSEX RECV).
+- **Cause:** a MIDI track's mute is the MUTE window's keys; while the panel takes a dump the keys would be lost, so the desk refused it ("try again"). PLAY, STOP and RECORD already wait for the panel (0.3.4, B-092).
+- **Fix (`fix/0.6-e2e-2`):** the MIDI mute waits the same way (per track the newest, pressed once the panel is free, given up after 10 s) and says so. Test: `mmDeskTest` (the panel busy: no keys; free: the MUTE window's keys, M3 muted); `mm-perform-mutes` passes on the firmware.
+- **Status:** fixed on `fix/0.6-e2e-2`.
+
 ## B-128 · Machinedrum Sampler: Rename sends the name, but no slot is renamed
 
 - **From:** the 0.6 e2e run, 2026-10-13 (`md-sampler-rename` on the firmware; it passes on the stub machine, which renames).
