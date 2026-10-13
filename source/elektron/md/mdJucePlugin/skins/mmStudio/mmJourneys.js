@@ -556,6 +556,24 @@ const MmJourneys = (() => {
 		async tidy(u) { if ([...S().tracks, ...S().midi].some(x => x.solo || x.mute)) { const b = $1("#allon"); if (b && !b.disabled) u.click(b); await sleep(500); } }
 	};
 
+	/* I-028 (Discord 2026-10-12): the rail's trig lamps on Sequence and Sound: a track's number lights while its trig
+	   plays, only tracks with a trig light, and a frame lights them together */
+	const railLamps = {
+		name: "mm-seq-rail-lamps", proves: [],
+		steps: [
+			go("seq"),
+			{ say: "the synth tracks on the rail", act: u => { if (S().side === "midi") u.click('[data-side="int"]'); }, screen: () => ok(S().side !== "midi", "side " + S().side) },
+			{ say: "press PLAY and watch the rail for 2.5 s: the tracks with trigs light, the others never", act: async (u, c) => {
+				c.lit = new Set(); const ob = new MutationObserver(ms => { for (const m of ms) if (m.target.classList?.contains("trig")) c.lit.add(+m.target.dataset.sel); });
+				ob.observe($1("#rail"), { subtree: true, attributes: true, attributeFilter: ["class"] });
+				if (!S().playing) u.click("#play"); await until(() => S().playing, 5000); await sleep(2500); ob.disconnect();
+				c.with = [0, 1, 2, 3, 4, 5].filter(i => S().tracks[i].steps.slice(0, S().len).some(st => st && !st.off && st.a) && !S().tracks[i].mute); c.note = `lit ${[...c.lit]}, with trigs ${c.with}`; },
+				screen: c => ok(c.lit.size > 0 && [...c.lit].every(i => c.with.includes(i)), `lit ${[...c.lit]}; tracks with trigs ${c.with}`) },
+			{ say: "press STOP: no lamp stays lit", act: async u => { if (S().playing) u.click("#play"); await until(() => !S().playing, 5000); await sleep(400); }, screen: () => ok(!$1("#rail .th.trig"), "a lamp stays lit") }
+		],
+		async tidy(u) { if (S().playing) { u.click("#play"); await sleep(500); } }
+	};
+
 	/* ---------- Perform ---------- */
 	const poly = {
 		name: "mm-perform-poly", proves: ["MM-032", "MM-087", "MM-239"],
@@ -3464,7 +3482,7 @@ const MmJourneys = (() => {
 		async tidy(u) { await closeLib(u); u.click(tab("seq")); }
 	};
 	const all = [screensFit, ...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
-		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff, msViews,
+		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff, msViews, railLamps,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, mutScope,
