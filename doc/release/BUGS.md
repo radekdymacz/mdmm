@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-125 · The step menu's ⋯ key covers the selected step: a ⌘-drag over it does not start
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`md-seq-select-copy-paste` on the real firmware, both editors' code).
+- **What happens:** the ⋯ key (wave 12) sits in the top-right corner of the selection's last step and follows the selection as a ⌘-drag grows it. In the editor (WebKit) it was big enough to cover the step's centre, so the drag's next step was under the ⋯ ("covered by #stepmore") and a click there opened the menu instead of selecting.
+- **Fix (`fix/0.6-e2e-2`):** the ⋯ is at most half the step's width and height (WebKit's own button size switched off), so the centre is always the step's; and while a button is held anywhere on the page (a click, a drag, a ⌘-drag) the ⋯ hides, and comes back at the release. Journey `md-seq-step-menu` checks that the step's centre is not the ⋯; `md-seq-select-copy-paste` passes on the firmware.
+- **Status:** fixed on `fix/0.6-e2e-2`.
+
 ## B-122 · "Reset to the pattern often loads another pattern"
 
 - **From:** Discord, 2026-10-12 (in a feature request, below; the editor and host not named).

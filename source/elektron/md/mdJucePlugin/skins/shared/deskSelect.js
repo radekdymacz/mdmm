@@ -105,7 +105,9 @@ const StepSel = (() => {
 	   or a menu is open. It is placed frame by frame only while there is a selection (moreWake starts that, from the
 	   editors' syncSel, a scroll or a resize). o: {active(): a selection on the Sequence page; cells(): the selected
 	   steps in order; clip(): the scrolling grid, the part of it on screen; open(x, y): the step menu there} ---- */
-	let more = null, moreRaf = 0;
+	/* held: a press on the page (a click, a drag or a ⌘-drag over the steps) hides the key until the release, so it
+	   never sits under the pointer's path (it moves to the selection's last step as a drag grows the selection) */
+	let more = null, moreRaf = 0, held = false;
 	function morePlace() {
 		const b = more?.b, o = more?.o; if (!b) return false;
 		if (!o.active()) { b.hidden = true; return false; }
@@ -116,9 +118,12 @@ const StepSel = (() => {
 			const q = cells[i].getBoundingClientRect();
 			if (q.width && (!c || (q.left >= c.left - 1 && q.right <= c.right + 1 && q.top >= c.top - 1 && q.bottom <= c.bottom + 1))) r = q;
 		}
-		if (!r || busy) { b.hidden = true; return true; }
-		const w = Math.max(10, Math.min(16, Math.floor(r.width) - 2));
-		b.hidden = false; b.style.width = w + "px"; b.style.left = Math.round(r.right - w - 1) + "px"; b.style.top = Math.round(r.top + 1) + "px";
+		if (!r || busy || held) { b.hidden = true; return true; }
+		/* inside the corner only: never over the step's centre, where a click or a drag starts (0.6 e2e: the real
+		   editor's ⌘-drag was "covered by #stepmore") */
+		const w = Math.max(6, Math.min(16, Math.floor(r.width / 2) - 2)), h = Math.max(6, Math.min(11, Math.floor(r.height / 2) - 2));
+		b.hidden = false; b.style.width = w + "px"; b.style.height = h + "px";
+		b.style.left = Math.round(r.right - w - 1) + "px"; b.style.top = Math.round(r.top + 1) + "px";
 		return true;
 	}
 	function moreWake() {
@@ -137,11 +142,15 @@ const StepSel = (() => {
 			b.id = "stepmore"; b.type = "button"; b.textContent = "⋯"; b.hidden = true;
 			b.title = "The step menu: marks, copy, paste, clear, locks, fills (also right-click a step)";
 			b.setAttribute("aria-label", "Step menu");
-			b.style.cssText = "position:fixed;z-index:20;height:11px;padding:0;line-height:6px;font-size:11px;border-radius:2px;cursor:pointer;box-sizing:border-box;"
+			/* appearance none and no minimum: WebKit's button keeps its own size otherwise */
+			b.style.cssText = "position:fixed;z-index:20;height:11px;padding:0;margin:0;min-width:0;min-height:0;-webkit-appearance:none;appearance:none;"
+				+ "line-height:6px;font-size:11px;border-radius:2px;cursor:pointer;box-sizing:border-box;overflow:hidden;"
 				+ "border:1px solid var(--keydim,#777);background:var(--key,#333);color:var(--ink,#eee)";
 			for (const ev of ["pointerdown", "mousedown"]) b.addEventListener(ev, e => e.stopPropagation());
 			b.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); const r = b.getBoundingClientRect(); more?.o.open(r.left, r.bottom + 2); });
 			document.body.appendChild(b);
+			addEventListener("pointerdown", e => { if (e.target === b) return; held = true; b.hidden = true; }, true);
+			for (const ev of ["pointerup", "pointercancel"]) addEventListener(ev, () => { if (!held) return; held = false; moreWake(); }, true);
 			addEventListener("scroll", moreWake, { capture: true, passive: true });
 			addEventListener("resize", moreWake);
 		}
