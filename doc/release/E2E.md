@@ -12,6 +12,19 @@ It builds the two standalone editors (diagnostics build), runs every journey in 
 
 Everything lands in `temp/evidence/<version>/` (not in git): `index.html` (the report), `shots/*.webp` (the pictures), `run/` (the page logs and reports), `e2e-<machine>.json`, `report.txt`.
 
+## Independent journeys: shuffled and alone
+
+Every journey must pass alone and in any order (doc/modern-ux/JOURNEYS.md, "Independent journeys"). The proof on the firmware:
+
+```sh
+scripts/mdmm-e2e.sh both --jobs 2 --shuffle 7        # the whole suite in a seeded random order (the seed is in the report: SHUFFLE seed 7)
+scripts/mdmm-e2e.sh md --isolate --tier machine --jobs 4   # each machine-tier journey in an editor of its own, fresh from factory memory (one start each)
+scripts/mdmm-e2e.sh mm --isolate --select 'journey-mm-song-*'   # a few, alone
+```
+
+`--shuffle` and `--isolate` reach `scripts/mdmm-journeys.sh`; `--tier` limits the standalone's journeys to a tier (page, machine, host). The report's `JOURNEY <name> left:` lines name a journey
+that did not put back what it changed (its tidy is to). A journey marked `alone: true` (an empty reset) always gets an editor of its own.
+
 ## What a run does
 
 - **At the page's design size.** The editors' windows are 1440 x 924 (`GEARMULATOR_MDMM_BACKGROUND_SIZE`), as the page tier and the pictures: the background run's small window zooms the page below 100 %, where WebKit lays 9 px text out at 15 px and every fit check measures a page no person sees.

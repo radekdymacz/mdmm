@@ -4,7 +4,7 @@
 # set to the journeys asked for, waits for "JOURNEYS DONE" in the page's log, prints a line per journey and exits
 # non-zero on any FAIL, a timeout or a missing build or ROM.
 #   scripts/mdmm-journeys.sh [--host standalone|vst3|both] [--tier page|machine|host|all] [--vst3-tier T]
-#                            [--background] [--jobs N] [md|mm|both] [selector]
+#                            [--background] [--jobs N] [--shuffle SEED] [--isolate] [md|mm|both] [selector]
 #     selector: journey (all, the default), journey-seq-*, journey-md-lib-*,mm-mix-* (comma-separated, * any)
 #     --host: the standalone apps (the default), the VST3s in the minimal host scripts/vst3EditorHost, or both
 #     --tier: the standalone's journeys of that tier (skins/shared/deskJourney.js TIERS, doc/release/DEV-CYCLE.md): page,
@@ -12,6 +12,11 @@
 #       same in both hosts; decision 2026-10-11). The page journeys also run without the editor: scripts/mdmm-page.mjs
 #     --jobs N: N editors at once, each playing every N-th of the chosen journeys (the selector's "@k/N" shard,
 #       skins/shared/deskJourney.js); one report at the end. Implies --background. About one core per editor.
+#     --shuffle SEED: the journeys in a seeded random order (SEED an integer, printed in the report): a journey that passes in the
+#       fixed order and fails in this one depends on one before it (every journey is independent: doc/modern-ux/JOURNEYS.md)
+#     --isolate: every journey in an editor of its own, started fresh (the sandbox's factory memory with MDMM_JOURNEY_SETTINGS=fresh), --jobs
+#       of them at once: slow (a start each; use it with a selector of the journeys in question). The names come from the page tier's
+#       list (scripts/mdmm-page.mjs --list), in the shuffled order when --shuffle is given.
 #     --background (macOS): the editor never takes the focus nor comes to the front: an accessory app, its window
 #       small (the page zoomed to half), in the bottom-left corner behind every other window, and the page drawn
 #       while covered, and the standalone's output silent while its audio still runs (GEARMULATOR_MDMM_BACKGROUND=1,
@@ -48,6 +53,8 @@ TIER=""
 VST3_TIER=host
 BACKGROUND=0
 JOBS=1
+SHUFFLE=""
+ISOLATE=0
 while [ $# -gt 0 ]; do
 	case "$1" in
 		--host) HOSTS=${2:-}; shift 2 ;;
@@ -59,6 +66,9 @@ while [ $# -gt 0 ]; do
 		--vst3-tier) VST3_TIER=${2:-}; shift 2 ;;
 		--vst3-tier=*) VST3_TIER=${1#--vst3-tier=}; shift ;;
 		--background) BACKGROUND=1; shift ;;
+		--shuffle) SHUFFLE=${2:-}; shift 2 ;;
+		--shuffle=*) SHUFFLE=${1#--shuffle=}; shift ;;
+		--isolate) ISOLATE=1; shift ;;
 		*) break ;;
 	esac
 done
@@ -69,10 +79,11 @@ VST3S=${MDMM_VST3_DIR:-"$ROOT/bin/plugins/Release/VST3"}
 TIMEOUT=${MDMM_JOURNEY_TIMEOUT:-900}
 OUT=${MDMM_JOURNEY_OUT:-"$ROOT/temp/journeys/$(date +%Y%m%d-%H%M%S)"}
 case "$SEL" in journey*) ;; *) SEL="journey-$SEL" ;; esac
-USAGE="usage: $0 [--host standalone|vst3|both] [--tier page|machine|host|all] [--vst3-tier page|machine|host|all] [--background] [--jobs N] [md|mm|both] [journey|journey-<names>]"
+USAGE="usage: $0 [--host standalone|vst3|both] [--tier page|machine|host|all] [--vst3-tier page|machine|host|all] [--background] [--jobs N] [--shuffle SEED] [--isolate] [md|mm|both] [journey|journey-<names>]"
 case "$WHICH" in md|mm|both) ;; *) echo "$USAGE" >&2; exit 2 ;; esac
 case "$HOSTS" in standalone|vst3|both) ;; *) echo "$USAGE" >&2; exit 2 ;; esac
 case "$JOBS" in ''|*[!0-9]*|0) echo "$USAGE" >&2; exit 2 ;; esac
+case "$SHUFFLE" in ''|*[!0-9]*) [ -z "$SHUFFLE" ] || { echo "$USAGE" >&2; exit 2; } ;; esac
 case "$TIER" in ''|page|machine|host|all) ;; *) echo "$USAGE" >&2; exit 2 ;; esac
 case "$VST3_TIER" in page|machine|host|all) ;; *) echo "$USAGE" >&2; exit 2 ;; esac
 case "$SEL" in *@*) echo "the selector takes no @shard: --jobs makes the shards" >&2; exit 2 ;; esac
@@ -207,11 +218,22 @@ for H in standalone vst3; do
 	for M in MD MM; do
 		[ "$WHICH" = both ] || [ "$WHICH" = "$(echo $M | tr A-Z a-z)" ] || continue
 		if ! check_one "$M" "$H"; then STATUS=1; continue; fi
+		if [ "$ISOLATE" = 1 ]; then
+			# one unit per journey: the names the page tier lists for this selector and tier, in the shuffled order when asked
+			t=$(tier_of "$H"); NAMES=$(node "$ROOT/scripts/mdmm-page.mjs" --list --tier "${t:-all}" ${SHUFFLE:+--shuffle "$SHUFFLE"} "$(echo $M | tr A-Z a-z)" "$SEL" 2>/dev/null | sed -n 's/^LIST [a-z]*: //p')
+			[ -n "$NAMES" ] || { echo "FAIL no journey matched $SEL ($M)"; STATUS=1; continue; }
+			for n in $NAMES; do UNITS="$UNITS $M:$H:$n"; done
+			continue
+		fi
+		# a journey that cannot put back what it changes (alone: true, skins/shared/deskJourney.js) gets an editor of its own; the shards leave it out
+		t=$(tier_of "$H"); ALONE=$(node "$ROOT/scripts/mdmm-page.mjs" --list --tier "${t:-all}" "$(echo $M | tr A-Z a-z)" "$SEL" 2>/dev/null | sed -n 's/^ALONE [a-z]*: //p')
+		eval "EX_${M}_${H}=\"\$ALONE\""
 		k=1
 		while [ $k -le "$JOBS" ]; do
 			UNITS="$UNITS $M:$H:$k"
 			k=$((k + 1))
 		done
+		for n in $ALONE; do UNITS="$UNITS $M:$H:$n"; done
 	done
 done
 [ -n "$UNITS" ] || exit 1
@@ -221,9 +243,15 @@ START=$(date +%s)
 PIDS=""
 for u in $UNITS; do
 	M=${u%%:*}; rest=${u#*:}; H=${rest%%:*}; k=${rest#*:}
-	sel=$SEL; t=$(tier_of "$H"); [ -n "$t" ] && sel="$sel~$t"; [ "$JOBS" -gt 1 ] && sel="$sel@$k/$JOBS"
+	sel=$SEL; t=$(tier_of "$H")
+	ex=$(eval echo "\${EX_${M}_${H}:-}")
+	if [ -n "$ex" ]; then [ "$sel" = journey ] && sel="journey-*"; for n in $ex; do sel="$sel,!$n"; done; fi
+	[ -n "$t" ] && sel="$sel~$t"; [ "$JOBS" -gt 1 ] && sel="$sel@$k/$JOBS"
+	[ -n "$SHUFFLE" ] && sel="$sel:shuffle-$SHUFFLE"
+	NAMED=0; case "$k" in *[!0-9]*) NAMED=1 ;; esac
+	[ "$NAMED" = 1 ] && sel="journey-$k"
 	[ "${MDMM_JOURNEY_E2E:-0}" = 1 ] && sel="$sel:e2e"	# the evidence run: a snapshot at each journey's proof moment (scripts/mdmm-e2e.sh)
-	dir="$OUT/$(echo $M | tr A-Z a-z)-$H$( [ "$JOBS" -gt 1 ] && echo "-$k")"
+	dir="$OUT/$(echo $M | tr A-Z a-z)-$H$( { [ "$JOBS" -gt 1 ] || [ "$NAMED" = 1 ]; } && echo "-$k")"
 	# a free slot: wait on the PIDs started (never on a process name)
 	while [ "$(echo $PIDS | wc -w)" -ge "$JOBS" ]; do
 		sleep 2
@@ -244,14 +272,15 @@ REPORT="$OUT/report.txt"
 passed=0; failed=0; skipped=0
 for u in $UNITS; do
 	M=${u%%:*}; rest=${u#*:}; H=${rest%%:*}; k=${rest#*:}
-	dir="$OUT/$(echo $M | tr A-Z a-z)-$H$( [ "$JOBS" -gt 1 ] && echo "-$k")"
+	NAMED=0; case "$k" in *[!0-9]*) NAMED=1 ;; esac
+	dir="$OUT/$(echo $M | tr A-Z a-z)-$H$( { [ "$JOBS" -gt 1 ] || [ "$NAMED" = 1 ]; } && echo "-$k")"
 	machine_vars "$M"
 	{
 		t=$(tier_of "$H")
-		echo "== $NAME ($H$( [ -n "$t" ] && echo ", $t journeys"))$( [ "$JOBS" -gt 1 ] && echo ", shard $k/$JOBS")"
+		echo "== $NAME ($H$( [ -n "$t" ] && echo ", $t journeys"))$( [ "$NAMED" = 1 ] && echo ", $k alone" || { [ "$JOBS" -gt 1 ] && echo ", shard $k/$JOBS"; } )"
 		if [ -f "$dir/journeys.txt" ]; then
 			if [ "${MDMM_JOURNEY_VERBOSE:-0}" = 1 ]; then cat "$dir/journeys.txt"
-			else grep -E "JOURNEY [^ ]+ (PASS|FAIL|SKIP)|JOURNEYS (start|before|DONE)" "$dir/journeys.txt"; fi
+			else grep -E "JOURNEY [^ ]+ (PASS|FAIL|SKIP|before:|left:)|JOURNEYS (start|before|shuffle|DONE)" "$dir/journeys.txt"; fi
 			echo "   log: $dir/page.log"
 		fi
 		read -r result secs < "$dir/result" 2>/dev/null || result=ENDED
@@ -270,6 +299,7 @@ for u in $UNITS; do
 done
 [ "$failed" -gt 0 ] && STATUS=1
 [ $((passed + failed + skipped)) -eq 0 ] && { echo "FAIL no journey matched $SEL" >> "$REPORT"; STATUS=1; }
+[ -n "$SHUFFLE" ] && echo "SHUFFLE seed $SHUFFLE (--shuffle $SHUFFLE$( [ "$ISOLATE" = 1 ] && echo " --isolate") plays the same order)" >> "$REPORT"
 echo "JOURNEYS: $passed passed, $failed failed, $skipped skipped in $(( $(date +%s) - START )) s ($JOBS at once)" >> "$REPORT"
 cat "$REPORT"
 exit $STATUS

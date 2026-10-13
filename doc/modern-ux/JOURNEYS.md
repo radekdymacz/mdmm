@@ -261,6 +261,87 @@ no journey yet); **not testable** (why). "—": the editor has no such feature.
    rotate run on any event without Alt as well (MM-PORT-PLAN.md 2026-10-05), so the journeys after `mm-seq-rotate` keep
    their own undo steps.
 
+## Independent journeys: how to write one
+
+Radek's rule (2026-10-13): **every journey is independent.** Alone, in any order, from fresh settings (factory memory), it passes on
+its own: it builds the data it needs itself (pattern, kit, song, global state, mode, selection) and its tidy puts back what it
+changed. No journey may rely on what an earlier one left behind, and none may leave anything for the next one to find. The runner
+used to put the page right between journeys (close dialogs, stop the transport, back to PATTERN mode); that hid the journey that
+left the mess. It is now a guard: it says what the one before left and fixes nothing (only after a journey that FAILED, whose tidy
+may not have run to the end, it puts the page right, and says so).
+
+### The four parts
+
+1. **Setup: the journey builds what it needs.** A journey that needs a free step, two trigs, a pattern with a lock free, a kit
+   that is saved or two patterns that recall one kit, makes them in its first steps (a trig drawn, a kit saved, a pattern linked)
+   and never reads them from what the machine happens to hold ("no free lock row on a track with a trig" and "no two patterns
+   with one kit" were the symptoms of a journey that took what an earlier one had left). Modes and UI toggles it depends on are
+   set by the journey as a person sets them (More open: click it only when it is shut; PATTERN or SONG mode: the Song page's keys).
+2. **Proof: the two checks.** Each step's `screen` and `machine` check what a person sees and what the machine read back. A step
+   never waits on timing that another journey's leftovers could move.
+3. **Snapshot.** `Journey.snapshot(name)` where a picture is the journey's evidence (the e2e run takes one at the last step otherwise).
+4. **Tidy: put back what the journey changed**, pass or fail, with the page's own helpers (below). The check after it is the guard.
+
+### The helpers (each page's journey file, mdDeskJourneys.js and mmJourneys.js: the same names)
+
+| helper | what it does |
+|---|---|
+| `c.undo0`, `c.mode0`, `c.pat0`, `c.kit0`, `c.kitw0`, `c.chain0` | set by the runner before step 1 (`begin`): the undo depth, PATTERN or SONG mode, the pattern and the kit the machine is on, the kit's `clean` or `edited`, whether a chain plays |
+| (the page's wrapper) | after every journey's own tidy the page looks at `state()` once more: if the machine's documents or modes still differ from what the journey found, it calls `back` (so a tidy need not call it, and a tidy that restores by its own commands is not undone: `back` runs only when something differs). `left:` names what still differs afterwards |
+| `await back(u, c)` | the tidy's one call for editor state: transport and recording stopped, every edit undone (one undo at a time, the machine's answer awaited between: a rush left a level behind), the chain cleared, the mode, pattern and kit as found, a kit that was clean and is called edited after an undo saved again (the same sounds), the tempo, the mutes and the pattern's kit link as found (the tempo last: loading a pattern or a song sets it), the slots kept with `keep` pasted back, and then it waits for the machine's late answers (`settled`: the documents unchanged for 1.2 s; on the firmware a pattern or kit change makes the machine send the kit and pattern again, and the page draws the Mix and Sound pages again when they come). Edits to restore first, then any command that is itself an edit (an undo after it would take it back) |
+| `await keep(c, "kit" \| "pattern" \| "song", slot)` | the slot the journey is about to overwrite and the product cannot undo (a save over a kit, the machine's own live erase): its content goes to the plug-in's clipboard, `back` pastes it back. One slot per kind |
+| `await keepMany(c, kind, slots)` | any number of slots (an import writes the file's kits, patterns and songs): the first to the clipboard, each other one overwritten by a copy of the first, which is an undo step that holds that slot's content: `back` undoes them, then pastes the first |
+| `await keepImportTargets(c)` | the import panel's preview (`kit:N`, `pattern:N`, `song:N`): `keepMany` for each kind |
+| `undoTo(u, n)`, `undoUntil(u, done, n)` | the undo, awaiting the machine |
+| `freeSteps(t, n, from)`, `soundTrack()`, `empties(n)`, `scratch()` | free steps, a sound track, empty or scratch song slots |
+
+The factory memory the page tier starts from holds a full machine (every kit named, every pattern with trigs, every song with
+rows): there is no spare slot to borrow, so a journey that writes a slot keeps it first or does it in a way the undo takes back.
+
+### What the guard says
+
+Before each journey the runner reads the page's `state()` (the machine's documents, its modes, the kit's clean or edited), after the tidy again, and logs the difference by the
+journey's name: `JOURNEY <name> left: <what> (at <char>: <was> -> <now>)`. For the ones it cannot read as a document it names them: `before: left a question open`,
+`left the machine in SONG mode`. `scripts/mdmm-page.mjs` ends its report with a WARN listing them; `mdmm-journeys.sh` prints them in the report. The UI's own state
+(workspace, selection) is not compared: each journey picks what it needs. A slot loaded in only one of the two readings is not a change.
+
+### A journey that cannot put its change back: `alone: true`
+
+An empty reset has no undo and no copy to keep, and a SysEx import of a whole file (the e2e run's fixture holds many kits, patterns and a global) writes more
+slots than the plug-in's clipboard and one undo step can hold. These journeys are marked `alone: true`: `md-engine-reset-empty`, `mm-engine-reset-empty` (page tier too),
+and on the firmware `md-lib-syx-import`, `md-lib-syx-import-mute`, `md-shots-import` and their `mm-` twins. The runners (`mdmm-page.mjs`, `mdmm-journeys.sh`, so `mdmm-e2e.sh`) start each in a
+page or an editor of its own, and in one page they play last. A journey earns the mark only when the product offers no way back (B-130: no undo for a SysEx import or an
+empty reset; the two-slot imports of `md-lib-syx-place` and `md-syx-running-reach` are kept with `keepTwo`, the rest cannot be).
+
+### Findings (not fixed here: a journey cannot pass without a product change, or the page tier and the firmware differ)
+
+Logged in doc/release/BUGS.md as B-130 to B-132.
+
+- **B-130** A SysEx import and the empty reset cannot be undone, and an import of a whole file overwrites more than a clipboard and the undo history can hold: the journeys that run them
+  (`md-engine-reset-empty`, `mm-engine-reset-empty`, and on the firmware the import journeys `*-lib-syx-import`, `*-lib-syx-import-mute`, `*-shots-import`) are `alone: true`.
+- **B-131** On the firmware, started alone from factory memory, `md-sound-machine-reference` has the page refuse the second machine it picks on track 1: `tracks[0] lfo.track = 16 is outside 0..15` (the kit as the machine
+  reads it back against the contract). In the whole run in order and in the page tier it passes, so it needs the contract or the page's validation to accept what the firmware sends. The journey
+  cannot build a kit the page accepts without choosing the data for it.
+- **B-132** `mm-sound-unison-sub-fine` fails on the firmware alone and in order (the sub screen's stems measure 9.2 px against at most 3 px in WebKit; the page tier measures them in Chrome and passes).
+- `md-sampler-rename`, and the 16 Monomachine journeys whose checks read the stub host's wire log (`mm-wire-cc`, `mm-sound-lfo` ...): stub-only before this work (E2E column), unchanged.
+- `md-mix-master-cards` and `mm-seq-scale-setup` failed now and then at four pages at once on a loaded Mac: their own checks raced the machine's answer (the first is fixed: the knob is looked up after the answer);
+  `mm-seq-scale-setup` passes alone three times in three.
+- The firmware's shuffled run still shows a few `left:` lines for the machine journeys (a working kit value one step off after an undo, a chain list left in a kit that is no longer chained): the late answer of the
+  machine against the guard's read.
+
+### Proving it
+
+```sh
+node scripts/mdmm-page.mjs --isolate --jobs 4 both        # every page journey in a page and a stub host of its own (about 8 minutes)
+node scripts/mdmm-page.mjs --shuffle 101 --jobs 2 both    # a seeded random order; the seed is printed, the same seed plays the same order
+scripts/mdmm-e2e.sh both --shuffle 7 --jobs 2             # the real firmware, shuffled
+scripts/mdmm-e2e.sh md --isolate --select 'journey-md-song-*'   # each journey in an editor of its own, fresh from factory memory (one start each: for a few)
+node scripts/mdmm-page.mjs --list both                    # the names a selector picks ("LIST md: ..."), and the alone ones ("ALONE md: ...")
+```
+
+A selector may leave journeys out with `!`: `journey-*,!md-lib-syx-place`. Add `:shuffle-<seed>` or `:list` to a selector the page reads (`?selftest=journey:shuffle-5`, `GEARMULATOR_MDSTUDIO_SELFTEST`).
+A journey that passes in a run and fails alone, or the other way round, depends on one before it: find the one that logs `left:` and fix its tidy.
+
 ## 0.6 slice 5: the Machinedrum journeys for the rows that had none
 
 Written 2026-10-12 from doc/features/unproved-md.md: each journey names the rows it proves (`proves:`), all in the page tier (headless Chrome on the real core, `scripts/mdmm-page.mjs`), with the guide's pictures as snapshots. Where an existing journey already did the thing, its `proves:` grew instead (MD-279 and MD-283 to MD-295 in the kit, pattern, song, mix and sound journeys). Two rows have none: MD-192 and MD-200 need a dropped sample file, so only the machine tier with a WAV can show them.

@@ -7,9 +7,10 @@
      screen   (c) => true, or what was seen instead: what the page shows afterwards
      machine  (c) => true, or what was seen instead: what the plug-in's documents (the firmware's read-back) say
      within   how long the two may take to agree (ms, default 6000)
-   A journey is {name, proves, steps, tidy, boot, needs}: proves (read by scripts/mdmm-features-check.mjs, never by the runner) lists the feature rows it proves, ["MD-107"]; [] for a journey of the page itself (boot, focus, layout, screenshots); needs (optional) () => why it cannot run here, or null (it is then
+   A journey is {name, proves, steps, tidy, boot, needs, alone}: proves (read by scripts/mdmm-features-check.mjs, never by the runner) lists the feature rows it proves, ["MD-107"]; [] for a journey of the page itself (boot, focus, layout, screenshots); needs (optional) () => why it cannot run here, or null (it is then
    logged "JOURNEY <name> SKIP <why>", neither passed nor failed); tidy (async, optional) puts back what the steps changed and runs pass or
-   fail; boot: true runs it from the page's start, before the machine takes input (the start-up card).
+   fail; boot: true runs it from the page's start, before the machine takes input (the start-up card); alone: true says its change cannot be
+   put back (the product has no undo for it: an empty reset): the runners (scripts/mdmm-page.mjs, mdmm-journeys.sh) start it in an editor of its own, and in one page it plays last.
    One runner (Journey.run) plays them in order, logs a line per step, then "JOURNEY <name> PASS|FAIL <reason>"
    and at the end "JOURNEYS DONE <passed>/<run>". The editors' pages pass their journeys and a ready test
    (mdDeskJourneys.js, mmJourneys.js). Chosen by ?selftest=journey (all) or journey-<names>: comma-separated,
@@ -117,6 +118,11 @@ const Journey = (() => {
 		pointerId: 1, pointerType: "mouse", isPrimary: true, button: 0, buttons, clientX: x, clientY: y }, mods(m))));
 	const me = (type, target, x, y, m, buttons, detail = 1) => target.dispatchEvent(new MouseEvent(type, Object.assign({ bubbles: true, cancelable: true, composed: true,
 		button: 0, buttons, clientX: x, clientY: y, detail, view: window }, mods(m))));
+	/* Alt held by an Alt chord of the journey (u.key with alt): the pages' rotate run (MM) stays open until Alt is seen up, and takes every edit after it into one undo
+	   step; a person lets go of it, so the runner does when the steps are done, before the tidy (see JOURNEYS.md, "Independent journeys") */
+	let altHeld = false;
+	const releaseAlt = () => { if (!altHeld) return; altHeld = false;
+		document.dispatchEvent(new KeyboardEvent("keyup", { key: "Alt", code: "AltLeft", bubbles: true, cancelable: true, composed: true })); };
 	const u = {
 		el, sleep, until,
 		/* demos: the drawn pointer glides to the element's point first (nothing is pressed); nothing otherwise */
@@ -196,6 +202,7 @@ const Journey = (() => {
 		/* a key pressed and let go where the focus is (key: "a", "Delete", " "; code when it matters), with the
 		   browser's default action on a focused button */
 		key(key, m = {}, code) {
+			if (m.alt) altHeld = true;	/* a chord's Alt is never let go by the hands: the runner lets it go when the journey ends (releaseAlt) */
 			const t = document.activeElement && document.activeElement !== document.documentElement ? document.activeElement : document.body;
 			const c = code || (key.length === 1 ? (/[a-z]/i.test(key) ? "Key" + key.toUpperCase() : /[0-9]/.test(key) ? "Digit" + key : key === " " ? "Space" : "") : key);
 			const o = Object.assign({ key, code: c, bubbles: true, cancelable: true, composed: true }, mods(m));
@@ -263,7 +270,14 @@ const Journey = (() => {
 
 	/* ---------- the runner ---------- */
 	/* the journeys (what: "journey") or demos ("demo") this page was asked for: null when none */
-	let e2eMode = false, current = "", shots = 0;
+	/* Fisher-Yates over mulberry32: the same seed, the same order, in every browser */
+	function shuffled(list, seed) {
+		let a = seed >>> 0; const rnd = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+		const out = list.slice();
+		for (let i = out.length - 1; i > 0; i--) { const k = Math.floor(rnd() * (i + 1)); [out[i], out[k]] = [out[k], out[i]]; }
+		return out;
+	}
+	let e2eMode = false, listMode = false, shuffleSeed = null, current = "", shots = 0;
 	function wanted(all, what = "journey") {
 		const m = location.search.match(new RegExp(`[?&]selftest=(${what}[^&]*)`)); if (!m) return null;
 		let kind = decodeURIComponent(m[1]);
@@ -271,6 +285,12 @@ const Journey = (() => {
 		   proof moment (its own, or one of its last step, "e2e-<journey>"; "e2e-<journey>-fail" where it failed), and
 		   logs "JOURNEY <name> SHOT <name>" for each, so scripts/mdmm-e2e.mjs can put a picture to each feature row */
 		e2eMode = /:e2e$/.test(kind); if (e2eMode) kind = kind.replace(/:e2e$/, "");
+		/* ":list" at the end: only the names are logged ("JOURNEYS list: ..."), nothing runs (scripts/mdmm-page.mjs --isolate asks for them).
+		   ":shuffle-<seed>" (an integer): the chosen journeys run in a seeded random order, the seed logged, so an order that
+		   fails can be played again (doc/modern-ux/JOURNEYS.md, "Independent journeys"). Either may come before ":e2e". */
+		listMode = false; shuffleSeed = null;
+		for (let m; (m = kind.match(/:(list|shuffle-\d+)$/));) { if (m[1] === "list") listMode = true; else shuffleSeed = +m[1].slice(8); kind = kind.slice(0, m.index); }
+		e2eMode = e2eMode || /:e2e$/.test(kind); if (/:e2e$/.test(kind)) kind = kind.replace(/:e2e$/, "");
 		/* "@k/n" at the end (scripts/mdmm-journeys.sh --jobs n runs n editors at once): every n-th of the chosen ones,
 		   from the k-th, so the n editors share them without a list of names */
 		const shard = kind.match(/@(\d+)\/(\d+)$/);
@@ -278,12 +298,21 @@ const Journey = (() => {
 		/* "~tiers" before it: only the journeys of those tiers */
 		const tier = kind.match(/~([a-z+]+)$/);
 		if (tier) kind = kind.slice(0, tier.index);
-		const take = list => { if (tier) list = list.filter(j => inTier(j, tier[1])); return shard ? list.filter((_, i) => i % +shard[2] === +shard[1] - 1) : list; };
+		/* the order first, then the shard: n editors sharing one seed play the same order, each its share */
+		const take = list => { if (tier) list = list.filter(j => inTier(j, tier[1])); if (shuffleSeed != null) list = shuffled(list, shuffleSeed);
+			/* a journey that cannot put back what it changes (alone: true) plays last: nothing after it meets the damage */
+			list = [...list.filter(j => !j.alone), ...list.filter(j => j.alone)]; return shard ? list.filter((_, i) => i % +shard[2] === +shard[1] - 1) : list; };
 		if (kind === what) return take(all);
-		const pats = kind.slice(what.length).replace(/^-/, "").split(",").filter(Boolean).map(p => new RegExp("^" + p.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") + "$"));
+		/* "!name" in the list leaves those out (journey-*,!md-lib-syx-place: all but that one) */
+		const words = kind.slice(what.length).replace(/^-/, "").split(",").filter(Boolean);
+		const rx = p => new RegExp("^" + p.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") + "$");
+		const pats = words.filter(p => !p.startsWith("!")).map(rx), nots = words.filter(p => p.startsWith("!")).map(p => rx(p.slice(1)));
 		/* a name matches whole, or without its "demo-" and its "md-"/"mm-" (demo-md-groove: md-groove, groove) */
 		const forms = n => { const bare = n.replace(new RegExp(`^${what}-`), ""); return [n, bare, bare.replace(/^(md|mm)-/, "")]; };
-		return take(all.filter(j => pats.some(r => forms(j.name).some(f => r.test(f)))));
+		let chosen = all.filter(j => pats.some(r => forms(j.name).some(f => r.test(f))) && !nots.some(r => forms(j.name).some(f => r.test(f))));
+		/* a list of names, none with a "*", plays in the order given (to replay the order a run found a journey failing in) */
+		if (shuffleSeed == null && words.length && words.every(p => !p.includes("*") && !p.startsWith("!"))) { const at = j => pats.findIndex(r => forms(j.name).some(f => r.test(f))); chosen = chosen.slice().sort((a, b) => at(a) - at(b)); }
+		return take(chosen);
 	}
 	/* film: {t0} when a demo is filmed (its steps' times are logged against t0) */
 	/* The evidence run's watch (":e2e"): what a person must never read on the page, looked for after each step in the toast, the
@@ -304,6 +333,7 @@ const Journey = (() => {
 		}
 		return out;
 	}
+	let hooks = null;	/* the page's hooks of the running journeys (begin) */
 	/* What the editor sends the machine (the CC, NRPN, note or SysEx on the cable) is seen only in the page tier: its stub
 	   host hands the device edge's messages back ({type: "wire"}); the plug-in reports none (I-027, deferred). On the
 	   firmware a step marked pageOnly ("why") is skipped and said so, and noWire() (true there) lets a step drop its wire
@@ -313,9 +343,12 @@ const Journey = (() => {
 	function noWire() { if (pageTier()) return false; wireSkipped = true; return true; }
 	async function runOne(j, log, context, film, c0) {
 		const c = c0 || {}, n = j.steps.length;
+		/* where the page's undo and its modes stood when the journey began (page.begin(c) sets c.back0: the undo depth and what else the page restores): the journey's
+		   tidy puts them back with the page's own helper (back(u, c)) */
+		try { if (hooks?.begin) hooks.begin(c); } catch (_) { }
 		let reason = "";
 		/* what the journey needs that this run may not have (the window on screen): it is skipped, not failed */
-		current = j.name; shots = 0;
+		current = j.name; shots = 0; altHeld = false;
 		const missing = j.needs ? await j.needs() : null;	/* may be async: what it needs may still be on its way */
 		if (missing) { log(`JOURNEY ${j.name} SKIP ${missing}`); return "skip"; }
 		for (let i = 0; i < n && !reason; i++) {
@@ -346,6 +379,7 @@ const Journey = (() => {
 			if (reason) { try { snapshot(`e2e-${j.name}-fail`); } catch (e) { log(`JOURNEY ${j.name} e2e snapshot: ${e.message}`); } }
 			else if (!shots) { try { await sleep(250); snapshot(`e2e-${j.name}`); } catch (e) { log(`JOURNEY ${j.name} e2e snapshot: ${e.message}`); } }
 		}
+		releaseAlt();
 		if (j.tidy) { try { await j.tidy(u, c); } catch (e) { log(`JOURNEY ${j.name} tidy: ${e.message}`); } }
 		log(`JOURNEY ${j.name} ${reason ? "FAIL " + reason : "PASS"}`);
 		return !reason;
@@ -354,9 +388,10 @@ const Journey = (() => {
 	   stack, deskModal.js) is closed before the next one, by Esc as a person would, and said: what was closed, or what
 	   stays open. Without it one journey's open details covered the next journeys' controls (0.5.1 gate: md-dev-speedups
 	   then md-lcd-volume). The start-up card is not closed here (only the machine closes it). */
-	async function closeLeftOpen() {
+	async function closeLeftOpen(fix = true) {
 		const open = () => typeof Modal === "undefined" ? [] : Modal.open().filter(id => id !== "bootcard");
 		const was = open(); if (!was.length) return "";
+		if (!fix) return `left open: ${was.join(", ")}`;
 		for (let i = 0; i < 6 && open().length; i++) {
 			const n = open().length;
 			if (Modal.top() === "deskmenu" && typeof closeDeskMenu === "function") closeDeskMenu(); else u.key("Escape");
@@ -364,17 +399,29 @@ const Journey = (() => {
 		}
 		await sleep(100);
 		const still = open();
-		return `closed what was left open: ${was.join(", ")}${still.length ? `; still open: ${still.join(", ")}` : ""}`;
+		return `left open, closed after a failure: ${was.join(", ")}${still.length ? `; still open: ${still.join(", ")}` : ""}`;
 	}
 	/* page: {log, ready: async () => true when the machine takes input, prepare: async (u) => what it did (optional,
 	   once, after ready and before the first journey: logged "JOURNEYS before: ..."), between: async (u) => the page's
 	   neutral state before each journey, context: () => what the page last said (its toast, its error line), added to a
 	   FAIL} */
+	/* page.state(): {name: text} of what a journey may change and must put back (the machine's documents, its modes); the UI's own
+	   (workspace, selection) is not: each journey picks what it needs. A name in only one of the two is not a change (a document that
+	   was not loaded yet). */
+	const safeState = page => { try { return page.state(); } catch (e) { return { "state threw": e.message }; } };
+	const stateDiff = (a, b) => Object.keys(a).filter(k => k in b && a[k] !== b[k]).slice(0, 8).map(k => {
+		const x = String(a[k]), y = String(b[k]);
+		if (x.length < 50 && y.length < 50) return `${k} (${x} -> ${y})`;
+		let i = 0; while (i < x.length && x[i] === y[i]) i++;	/* a document: where it first differs */
+		return `${k} (at ${i}: ${x.slice(Math.max(0, i - 20), i + 30)} -> ${y.slice(Math.max(0, i - 20), i + 30)})`;
+	}).join(", ");
 	let runLog = null;	/* the running journeys' log (the hands say what they could not do) */
 	async function run(all, page) {
 		const list = wanted(all); if (!list) return;
-		const log = page.log; runLog = log;
+		const log = page.log; runLog = log; hooks = page;
 		log(`JOURNEYS start: ${list.length} of ${all.length}: ${list.map(j => j.name).join(" ")}`);
+		if (shuffleSeed != null) log(`JOURNEYS shuffle seed ${shuffleSeed}`);
+		if (listMode) { log(`JOURNEYS list: ${list.map(j => j.name).join(" ")}`); log(`JOURNEYS alone: ${list.filter(j => j.alone).map(j => j.name).join(" ")}`); log("JOURNEYS DONE 0/0 (list)"); return; }
 		if (!list.length) { log("JOURNEYS DONE 0/0"); return; }
 		let passed = 0, skipped = 0;
 		const count = r => { if (r === "skip") skipped++; else if (r) passed++; };
@@ -385,11 +432,18 @@ const Journey = (() => {
 		if (page.prepare && list.some(j => !j.boot)) {
 			try { log(`JOURNEYS before: ${await page.prepare(u)}`); } catch (e) { log(`JOURNEYS before: could not prepare: ${e.message}`); }
 		}
+		/* the guard: what the journey before left is said, and put right only when that one failed (or at the start) */
+		let fix = true;
 		for (const j of list.filter(j => !j.boot)) {
-			try { const did = page.between ? await page.between(u) : ""; if (did) log(`JOURNEY ${j.name} before: ${did}`); } catch (e) { log(`JOURNEY ${j.name} before: ${e.message}`); }
-			const left = await closeLeftOpen();
+			try { const did = page.between ? await page.between(u, fix) : ""; if (did) log(`JOURNEY ${j.name} before: ${did}`); } catch (e) { log(`JOURNEY ${j.name} before: ${e.message}`); }
+			const left = await closeLeftOpen(fix);
 			if (left) log(`JOURNEY ${j.name} before: ${left}`);
-			count(await runOne(j, log, page.context));
+			const was = page.state ? safeState(page) : null;
+			const r = await runOne(j, log, page.context);
+			/* the guard's other half: what this journey left changed (its tidy was to put it back), said by the journey's name */
+			if (was && r !== "skip") { const now = safeState(page), diff = stateDiff(was, now); if (diff) log(`JOURNEY ${j.name} ${j.alone ? "alone, left" : "left"}: ${diff}`); }
+			count(r); fix = !r;	/* false: failed; "skip" and true: it changed nothing or passed */
+			if (r === "skip") fix = false;
 		}
 		log(`JOURNEYS DONE ${passed}/${list.length - skipped}${skipped ? `, ${skipped} skipped` : ""}`);
 	}
@@ -1011,5 +1065,5 @@ const Journey = (() => {
 				c.n = document.querySelectorAll(".pk[data-lane]").length; },
 				screen: c => ok(c.n > 0 && Object.values(c.cut).every(x => !x), `${c.n} keys; ` + Object.entries(c.cut).map(([w, x]) => `${w}: ${x || "all fit"}`).join("; ")) }]
 	});
-	return { pageTier, noWire, cutText, spills, overlaps, canvasProblems, lockKeysCut, lockKeysJourney, pressOutside, modalLockJourney, boxOf, keysInside, run, demo, ok, sleep, until, recent, u, TIERS, tierOf, onScreen, osKeyPath, menu, editorMenuJourney, memoryJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, fitJourneys, snapshot, safari15Diff, viewJourneys };
+	return { stateDiff, pageTier, noWire, cutText, spills, overlaps, canvasProblems, lockKeysCut, lockKeysJourney, pressOutside, modalLockJourney, boxOf, keysInside, run, demo, ok, sleep, until, recent, u, TIERS, tierOf, onScreen, osKeyPath, menu, editorMenuJourney, memoryJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, fitJourneys, snapshot, safari15Diff, viewJourneys };
 })();

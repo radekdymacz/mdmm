@@ -9,10 +9,15 @@
 // (doc/modern-ux/<md|mm>-data-contract.schema.json, $defs/command): a command outside it fails the run.
 //
 //   node scripts/mdmm-page.mjs [--jobs N] [--tier page|machine|host|all] [--host stub|record] [--timeout S]
-//                              [--out DIR] [--verbose] [md|mm|both] [selector]
+//                              [--out DIR] [--verbose] [--shuffle [SEED]] [--isolate] [md|mm|both] [selector]
 //     selector: as scripts/mdmm-journeys.sh (journey, journey-seq-*, journey-md-lib-*,mm-mix-*); default journey
 //     --tier: the journeys of that tier (skins/shared/deskJourney.js TIERS); default page
 //     --jobs N: N pages per editor at once, each with its own host, each every N-th journey (default 2)
+//     --shuffle [SEED]: the journeys in a seeded random order (the seed is printed; no SEED: a random one); the same seed, the same order
+//     --list: print the names the selector, tier and shuffle choose (one line per editor: "<md|mm>: name name ...") and exit
+//     --isolate: every journey in a page and a host of its own, fresh from the start: a journey that passes here and fails in a run
+//       (or the other way round) depends on one before it (Radek's rule 2026-10-13: every journey is independent,
+//       doc/modern-ux/JOURNEYS.md). --jobs N then means N journeys at once per editor. Combines with --shuffle (the order they start in).
 // Environment: MDMM_CHROME (Chrome's binary), MDMM_CHROME_ARGS (more Chrome flags, space separated), MDMM_STUB_HOST (deskStubHost's binary; default: the newest under temp/),
 // MDMM_PAGE_OUT (the report folder, default temp/page/<date-time>). Prints the JOURNEY lines and a total; exits 1 on any
 // FAIL, a page that never said JOURNEYS DONE, a command outside the contract or a page error.
@@ -25,10 +30,10 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SKINS = path.join(ROOT, "source/elektron/md/mdJucePlugin/skins");
-const usage = () => { console.error("usage: node scripts/mdmm-page.mjs [--jobs N] [--tier page|machine|host|all] [--host stub|record] [--timeout S] [--out DIR] [--verbose] [md|mm|both] [selector]"); process.exit(2); };
+const usage = () => { console.error("usage: node scripts/mdmm-page.mjs [--jobs N] [--tier page|machine|host|all] [--host stub|record] [--timeout S] [--out DIR] [--verbose] [--shuffle [SEED]] [--isolate] [md|mm|both] [selector]"); process.exit(2); };
 
 /* ---------- arguments ---------- */
-const opt = { jobs: 2, tier: "page", host: "stub", timeout: 1800, out: process.env.MDMM_PAGE_OUT || "", verbose: false };
+const opt = { jobs: 2, tier: "page", host: "stub", timeout: 1800, out: process.env.MDMM_PAGE_OUT || "", verbose: false, shuffle: null, isolate: false, list: false };
 const rest = [];
 for (let a = process.argv.slice(2); a.length;) {
 	const x = a.shift();
@@ -39,6 +44,10 @@ for (let a = process.argv.slice(2); a.length;) {
 	else if (/^--timeout(=|$)/.test(x)) opt.timeout = +val();
 	else if (/^--out(=|$)/.test(x)) opt.out = val();
 	else if (x === "--verbose") opt.verbose = true;
+	else if (x === "--isolate") opt.isolate = true;
+	else if (x === "--list") opt.list = true;
+	else if (x === "--shuffle") opt.shuffle = a.length && /^\d+$/.test(a[0]) ? +a.shift() : Math.floor(Math.random() * 1e9);
+	else if (/^--shuffle=\d+$/.test(x)) opt.shuffle = +x.split("=")[1];
 	else if (x.startsWith("--")) usage();
 	else rest.push(x);
 }
@@ -221,32 +230,68 @@ function runUnit(ed, selector, dir) {
 /* ---------- the units, the report ---------- */
 const eds = which === "both" ? ["md", "mm"] : [which];
 const tierSel = opt.tier === "all" ? "" : "~" + opt.tier;
-console.log(`== page tier: ${sel}${tierSel}, ${eds.join(" + ")}, ${opt.jobs} page(s) each, host ${opt.host === "stub" ? path.relative(ROOT, STUB) : "record"}; report: ${OUT}`);
+const shufSel = opt.shuffle != null ? `:shuffle-${opt.shuffle}` : "";
+if (!opt.list) console.log(`== page tier: ${sel}${tierSel}, ${eds.join(" + ")}, ${opt.isolate ? "each journey in a page of its own, " + opt.jobs + " at once" : opt.jobs + " page(s) each"}, host ${opt.host === "stub" ? path.relative(ROOT, STUB) : "record"}${opt.shuffle != null ? `, shuffle seed ${opt.shuffle}` : ""}; report: ${OUT}`);
 const T0 = Date.now();
-const units = [];
-for (const ed of eds) for (let k = 1; k <= opt.jobs; k++) units.push(runUnit(ed, sel + tierSel + (opt.jobs > 1 ? `@${k}/${opt.jobs}` : ""), path.join(OUT, `${ed}${opt.jobs > 1 ? "-" + k : ""}`)));
-const results = await Promise.all(units);
+let results;
+if (opt.list) {
+	/* no host, no timing: just the names (the list unit needs only the page) */
+	const ls = await Promise.all(eds.map(ed => runUnit(ed, sel + tierSel + shufSel + ":list", path.join(OUT, `${ed}-list`))));
+	ws.close(); chrome.kill(); server.close();
+	for (const l of ls) { console.log(`LIST ${l.ed}: ${(l.lines.find(x => /^JOURNEYS list: /.test(x)) || "").replace(/^JOURNEYS list: ?/, "")}`);
+		console.log(`ALONE ${l.ed}: ${(l.lines.find(x => /^JOURNEYS alone: /.test(x)) || "").replace(/^JOURNEYS alone: ?/, "")}`); }
+	process.exit(0);
+}
+if (!opt.isolate) {
+	/* a journey that cannot put back what it changes (alone: true, deskJourney.js) gets a page of its own: the shards leave it out */
+	const aloneOf = {};
+	await Promise.all(eds.map(async ed => { const l = await runUnit(ed, sel + tierSel + ":list", path.join(OUT, `${ed}-list`));
+		aloneOf[ed] = ((l.lines.find(x => /^JOURNEYS alone: /.test(x)) || "").replace(/^JOURNEYS alone: ?/, "")).split(" ").filter(Boolean); }));
+	const units = [];
+	for (const ed of eds) {
+		const excl = aloneOf[ed].map(n => ",!" + n).join(""), base = excl && sel === "journey" ? "journey-*" : sel;
+		for (let k = 1; k <= opt.jobs; k++) units.push(runUnit(ed, base + excl + tierSel + (opt.jobs > 1 ? `@${k}/${opt.jobs}` : "") + shufSel, path.join(OUT, `${ed}${opt.jobs > 1 ? "-" + k : ""}`)));
+		for (const n of aloneOf[ed]) units.push(runUnit(ed, "journey-" + n, path.join(OUT, `${ed}-alone`, n)));
+	}
+	results = await Promise.all(units);
+} else {
+	/* the names first (":list": nothing runs), then each in a unit of its own, opt.jobs at once per editor, in the shuffled order when asked */
+	results = [];
+	const quiet = opt.verbose; opt.verbose = false;
+	await Promise.all(eds.map(async ed => {
+		const l = await runUnit(ed, sel + tierSel + shufSel + ":list", path.join(OUT, `${ed}-list`));
+		opt.verbose = quiet;
+		const names = ((l.lines.find(x => /^JOURNEYS list: /.test(x)) || "").replace(/^JOURNEYS list: ?/, "")).split(" ").filter(Boolean);
+		if (!names.length) { results.push(l); return; }
+		console.log(`   ${ed}: ${names.length} journeys, each alone`);
+		let next = 0;
+		const worker = async () => { while (next < names.length) { const n = names[next++]; results.push(await runUnit(ed, "journey-" + n, path.join(OUT, `${ed}-alone`, n))); } };
+		await Promise.all(Array.from({ length: opt.jobs }, worker));
+	}));
+}
 ws.close(); chrome.kill(); server.close();
 try { fs.rmSync(profile, { recursive: true, force: true }); } catch { }
 
 let passed = 0, failed = 0, skipped = 0, status = 0;
 const report = [], leftOver = [];
 for (const r of results) {
-	report.push(`== ${r.ed} (${path.basename(r.dir)}), ${r.secs.toFixed(1)} s`);
+	if (!opt.isolate || /-list$/.test(path.basename(r.dir))) report.push(`== ${r.ed} (${path.basename(r.dir)}), ${r.secs.toFixed(1)} s`);
 	for (const l of r.lines) if (/^JOURNEY \S+ (PASS|FAIL|SKIP)|^JOURNEYS (start|DONE)/.test(l)) report.push(l);
 	passed += r.lines.filter(l => /^JOURNEY \S+ PASS/.test(l)).length;
 	failed += r.lines.filter(l => /^JOURNEY \S+ FAIL/.test(l)).length;
 	skipped += r.lines.filter(l => /^JOURNEY \S+ SKIP/.test(l)).length;
-	/* what a journey left for the next one to put right (the page's between and the runner's close of what stays open) */
-	for (const l of r.lines) if (/^JOURNEY \S+ before: /.test(l)) leftOver.push(`${r.ed}: ${l.replace(/^JOURNEY /, "")}`);
+	/* what a journey left for the next one to put right (the page's between and the runner's close of what stays open), and what it left
+	   changed in the machine's documents and modes (its tidy was to put it back: "left:") */
+	for (const l of r.lines) if (/^JOURNEY \S+ (before|left): /.test(l)) leftOver.push(`${r.ed}: ${l.replace(/^JOURNEY /, "")}`);
 	const uniq = [...new Set(r.problems)];
 	for (const p of uniq.slice(0, 10)) report.push("FAIL " + p);
 	if (uniq.length) status = 1;
-	report.push(`   log: ${path.join(r.dir, "page.log")}`);
+	if (!opt.isolate || /-list$/.test(path.basename(r.dir)) || r.problems.length || r.lines.some(l => /^JOURNEY \S+ FAIL/.test(l))) report.push(`   log: ${path.join(r.dir, "page.log")}`);
 }
 if (failed) status = 1;
 if (passed + failed + skipped === 0) { report.push("FAIL no journey matched " + sel + tierSel); status = 1; }
-if (leftOver.length) { report.push(`WARN ${leftOver.length} journey(s) started on state the one before left (the journey named comes after the one that left it):`); for (const l of leftOver) report.push("   " + l.slice(0, 200)); }
+if (leftOver.length) { report.push(`WARN ${leftOver.length} journey(s) left state behind ("<journey> left:" is the one that did not tidy; "<journey> before:" names the one after it that met it):`); for (const l of leftOver) report.push("   " + l.slice(0, 200)); }
+if (opt.shuffle != null) report.push(`SHUFFLE seed ${opt.shuffle} (node scripts/mdmm-page.mjs --shuffle ${opt.shuffle}${opt.isolate ? " --isolate" : ""} ... plays the same order)`);
 report.push(`PAGE JOURNEYS: ${passed} passed, ${failed} failed, ${skipped} skipped in ${Math.round((Date.now() - T0) / 1000)} s (${opt.jobs} per editor)`);
 fs.writeFileSync(path.join(OUT, "report.txt"), report.join("\n") + "\n");
 console.log(report.filter(l => !/^JOURNEY \S+ PASS/.test(l)).join("\n"));
