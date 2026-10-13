@@ -2232,3 +2232,8 @@ html[data-tt=acc] #seq .st:not(.on),html[data-tt=swg] #seq .st:not(.on),html[dat
 .scell.ph[data-left]{position:relative}
 .scell.ph[data-left]::after{content:"+" attr(data-left);position:absolute;right:3px;top:2px;font:600 10px var(--mono);color:var(--led);pointer-events:none}
 .scell.ph[data-left="0"]::after{content:"last"}
+
+/* B-110: the track list's generator tag (E 2/16+4, the longest) whole in the 75 px beside a two-letter name: 9 px letters,
+   2 px padding, a 3 px gap (the 19 px rows have no room for a second line, as the Monomachine's have) */
+.th .nm.tagged{gap:3px}
+.th .nm .gtag{font-size:9px;padding:0 2px}
