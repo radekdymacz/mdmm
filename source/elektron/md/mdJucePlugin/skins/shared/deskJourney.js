@@ -263,7 +263,14 @@ const Journey = (() => {
 
 	/* ---------- the runner ---------- */
 	/* the journeys (what: "journey") or demos ("demo") this page was asked for: null when none */
-	let e2eMode = false, current = "", shots = 0;
+	/* Fisher-Yates over mulberry32: the same seed, the same order, in every browser */
+	function shuffled(list, seed) {
+		let a = seed >>> 0; const rnd = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+		const out = list.slice();
+		for (let i = out.length - 1; i > 0; i--) { const k = Math.floor(rnd() * (i + 1)); [out[i], out[k]] = [out[k], out[i]]; }
+		return out;
+	}
+	let e2eMode = false, listMode = false, shuffleSeed = null, current = "", shots = 0;
 	function wanted(all, what = "journey") {
 		const m = location.search.match(new RegExp(`[?&]selftest=(${what}[^&]*)`)); if (!m) return null;
 		let kind = decodeURIComponent(m[1]);
@@ -271,6 +278,12 @@ const Journey = (() => {
 		   proof moment (its own, or one of its last step, "e2e-<journey>"; "e2e-<journey>-fail" where it failed), and
 		   logs "JOURNEY <name> SHOT <name>" for each, so scripts/mdmm-e2e.mjs can put a picture to each feature row */
 		e2eMode = /:e2e$/.test(kind); if (e2eMode) kind = kind.replace(/:e2e$/, "");
+		/* ":list" at the end: only the names are logged ("JOURNEYS list: ..."), nothing runs (scripts/mdmm-page.mjs --isolate asks for them).
+		   ":shuffle-<seed>" (an integer): the chosen journeys run in a seeded random order, the seed logged, so an order that
+		   fails can be played again (doc/modern-ux/JOURNEYS.md, "Independent journeys"). Either may come before ":e2e". */
+		listMode = false; shuffleSeed = null;
+		for (let m; (m = kind.match(/:(list|shuffle-\d+)$/));) { if (m[1] === "list") listMode = true; else shuffleSeed = +m[1].slice(8); kind = kind.slice(0, m.index); }
+		e2eMode = e2eMode || /:e2e$/.test(kind); if (/:e2e$/.test(kind)) kind = kind.replace(/:e2e$/, "");
 		/* "@k/n" at the end (scripts/mdmm-journeys.sh --jobs n runs n editors at once): every n-th of the chosen ones,
 		   from the k-th, so the n editors share them without a list of names */
 		const shard = kind.match(/@(\d+)\/(\d+)$/);
@@ -278,7 +291,8 @@ const Journey = (() => {
 		/* "~tiers" before it: only the journeys of those tiers */
 		const tier = kind.match(/~([a-z+]+)$/);
 		if (tier) kind = kind.slice(0, tier.index);
-		const take = list => { if (tier) list = list.filter(j => inTier(j, tier[1])); return shard ? list.filter((_, i) => i % +shard[2] === +shard[1] - 1) : list; };
+		/* the order first, then the shard: n editors sharing one seed play the same order, each its share */
+		const take = list => { if (tier) list = list.filter(j => inTier(j, tier[1])); if (shuffleSeed != null) list = shuffled(list, shuffleSeed); return shard ? list.filter((_, i) => i % +shard[2] === +shard[1] - 1) : list; };
 		if (kind === what) return take(all);
 		const pats = kind.slice(what.length).replace(/^-/, "").split(",").filter(Boolean).map(p => new RegExp("^" + p.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") + "$"));
 		/* a name matches whole, or without its "demo-" and its "md-"/"mm-" (demo-md-groove: md-groove, groove) */
@@ -366,6 +380,8 @@ const Journey = (() => {
 		const list = wanted(all); if (!list) return;
 		const log = page.log; runLog = log;
 		log(`JOURNEYS start: ${list.length} of ${all.length}: ${list.map(j => j.name).join(" ")}`);
+		if (shuffleSeed != null) log(`JOURNEYS shuffle seed ${shuffleSeed}`);
+		if (listMode) { log(`JOURNEYS list: ${list.map(j => j.name).join(" ")}`); log("JOURNEYS DONE 0/0 (list)"); return; }
 		if (!list.length) { log("JOURNEYS DONE 0/0"); return; }
 		let passed = 0, skipped = 0;
 		const count = r => { if (r === "skip") skipped++; else if (r) passed++; };
