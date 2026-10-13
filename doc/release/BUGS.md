@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-112 · Monomachine: the pattern chooser's labels run under the keys beside them, and an 11-letter kit name is cut in its tile
+
+- **From:** screen review, 2026-10-13 (the Patterns dialog: "SLOT A01" under the Go key, "KIT" under the kit key; the Kit library: "MULTI PULSE", "MULTI DPRO…" cut at the tile's edge).
+- **What happens:** (1) the labels of the dialog's toolbar were allowed to shrink in the flex row, "Slot A01" to 15 px for 47 px of letters and "Kit" to 5 px, so they wrote under the next key. (2) A kit name has up to 11 letters (6 px each at 10 px) and the tile's name box was 58 px wide.
+- **Fix (`fix/0.6-screens`):** the labels keep their width (`.libacts .ilab`); a kit tile has 2 px side padding and its name 9.5 px letters (an 11-letter name is 62 px in a 64 px box). Page journey `mm-screens-fit` measures the labels and an 11-letter probe in the tile.
+- **Status:** fixed on `fix/0.6-screens`.
+
 ## B-111 · Monomachine: a curve and its handles lie over the panel's caption, and a handle is cut by the panel's edge
 
 - **From:** screen review, 2026-10-13 (about 25 of the 97 flagged defects: the MULTI ENVELOPE caption "ADSR OVER ALL TRACKS" struck through on every Perform picture; the delay filter's right handle; the amp envelope's caption under its first handle).

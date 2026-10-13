@@ -1489,7 +1489,7 @@ body.engwait #main,body.engwait #rail{pointer-events:none;opacity:.6;transition:
 .libx{height:24px;padding:0 9px;font:600 10px var(--sans);letter-spacing:.14em;text-transform:uppercase}
 .libacts{display:flex;gap:10px 22px;align-items:center;flex-wrap:wrap}
 .libacts .grp{display:flex;gap:4px;align-items:center}
-.libacts .ilab{min-width:0;margin-right:4px;white-space:nowrap}
+.libacts .ilab{min-width:0;margin-right:4px;white-space:nowrap;flex:none}
 .libacts button{height:26px;padding:0 10px;font:600 11px var(--sans);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
 .libacts button:disabled{opacity:.35;cursor:default}
 .libacts .danger:hover:not(:disabled){background:var(--rec);color:#fff}
@@ -1503,7 +1503,8 @@ body.engwait #main,body.engwait #rail{pointer-events:none;opacity:.6;transition:
 .ls .lsh .led{width:5px;height:5px}
 .ls .lsn{font:500 10px var(--mono);white-space:nowrap;overflow:hidden;text-overflow:clip;text-transform:uppercase;height:14px;line-height:14px}
 .ls .lsl{font:9px var(--mono);color:var(--keydim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:11px}
-.ks{height:52px}
+.ks{height:52px;padding:4px 2px}
+.ks .lsn{font-size:9.5px}
 .ps{height:42px;padding:4px 6px;gap:1px}
 .ps b{font:500 13px var(--mono)}
 .ps span{font:10px var(--mono);color:var(--keydim);white-space:nowrap;overflow:hidden}
