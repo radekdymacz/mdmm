@@ -2202,24 +2202,25 @@ const MmJourneys = (() => {
 	const cellDiff = (a, b) => Object.keys(b).filter(k => a[k] !== b[k]);
 	const histN = () => machine().history?.undoCount || 0;
 	const undoTo = async (u, n0) => { for (let i = 0; i < 500 && histN() > n0; i++) { const k = histN(); blur(); u.key("z", { cmd: true }); if (!await until(() => histN() < k, 4000)) break; await until(() => !desk().tx, 3000); await sleep(350); /* the machine's answer to one undo before the next (undone in a rush, a level stayed) */ } await sleep(300); };
-	/* Every journey is independent (doc/modern-ux/JOURNEYS.md): the runner notes where the page stood when it began (begin: c.undo0, c.mode0,
-	   c.pat0, c.kit0, c.chain0) and a tidy that changed any of it calls back(u, c), which puts the editor's modes and its undo history back:
+	/* Every journey is independent (doc/modern-ux/JOURNEYS.md): the runner notes where the page stood when it began (begin: c.back0.undo, c.back0.mode,
+	   c.back0.pat, c.back0.kit, c.back0.chain) and a tidy that changed any of it calls back(u, c), which puts the editor's modes and its undo history back:
 	   the transport stopped, the edits undone, PATTERN or SONG mode as found, the pattern and kit the machine was on, no chain. */
-	const begin = c => { c.undo0 = histN(); c.mode0 = machine().song?.songMode; c.pat0 = cur(); c.kit0 = machine().kit?.current; c.kitw0 = machine().kit?.working; c.chain0 = !!desk().chain?.active; };
+	const begin = c => { c.back0 = { undo: histN(), mode: machine().song?.songMode, pat: cur(), kit: machine().kit?.current, kitw: machine().kit?.working, chain: !!desk().chain?.active }; };
 	const back = async (u, c) => {
+		if (!c.back0) return;
 		if (S().playing) { u.click("#play"); await until(() => !S().playing, 3000); }
-		if (c.undo0 != null) { await undoTo(u, c.undo0); await sleep(300); }
-		if (desk().chain?.active && !c.chain0) { Bridge.send({ op: "chainClear" }); await sleep(300); }
-		if (c.mode0 != null && machine().song?.songMode !== c.mode0) { Bridge.send({ op: "seqMode", song: c.mode0 }); await until(() => machine().song?.songMode === c.mode0, 4000); await sleep(300); }
-		if (c.pat0 != null && cur() !== c.pat0) { Bridge.send({ op: "select", p: c.pat0, now: true }); await until(() => cur() === c.pat0, 6000); await sleep(300); }
-		if (c.kit0 != null && machine().kit?.current !== c.kit0) { Bridge.send({ op: "loadKit", k: c.kit0, force: true }); await until(() => machine().kit?.current === c.kit0, 6000); await sleep(300); }
+		if (c.back0.undo != null) { await undoTo(u, c.back0.undo); await sleep(300); }
+		if (desk().chain?.active && !c.back0.chain) { Bridge.send({ op: "chainClear" }); await sleep(300); }
+		if (c.back0.mode != null && machine().song?.songMode !== c.back0.mode) { Bridge.send({ op: "seqMode", song: c.back0.mode }); await until(() => machine().song?.songMode === c.back0.mode, 4000); await sleep(300); }
+		if (c.back0.pat != null && cur() !== c.back0.pat) { Bridge.send({ op: "select", p: c.back0.pat, now: true }); await until(() => cur() === c.back0.pat, 6000); await sleep(300); }
+		if (c.back0.kit != null && machine().kit?.current !== c.back0.kit) { Bridge.send({ op: "loadKit", k: c.back0.kit, force: true }); await until(() => machine().kit?.current === c.back0.kit, 6000); await sleep(300); }
 		/* a kit edited and undone holds the same sounds, but the machine still calls it edited: saved again, it is the kit it was */
-		if (c.kitw0 === "clean" && machine().kit?.working !== "clean") { Bridge.send({ op: "saveKit", k: machine().kit?.current, force: true }); await until(() => machine().kit?.working === "clean", 8000); await sleep(600); }
+		if (c.back0.kitw === "clean" && machine().kit?.working !== "clean") { Bridge.send({ op: "saveKit", k: machine().kit?.current, force: true }); await until(() => machine().kit?.working === "clean", 8000); await sleep(600); }
 		/* a slot the journey overwrote (kept with keep(c, "kit", k) before it did): pasted back from the plug-in's clipboard */
-		for (const [kind, slot] of c.kept || []) { Bridge.send(kind === "kit" ? { op: "kitPaste", k: slot, force: true } : kind === "pattern" ? { op: "patPaste", p: slot, force: true } : { op: "songPaste", s: slot, force: true }); await sleep(600); }
+		for (const [kind, slot] of c.keptSlots || []) { Bridge.send(kind === "kit" ? { op: "kitPaste", k: slot, force: true } : kind === "pattern" ? { op: "patPaste", p: slot, force: true } : { op: "songPaste", s: slot, force: true }); await sleep(600); }
 	};
 	/* a slot the journey is about to overwrite: its content goes to the plug-in's clipboard and back() pastes it back (one slot per kind at a time) */
-	const keep = async (c, kind, slot) => { Bridge.send(kind === "kit" ? { op: "kitCopy", k: slot } : kind === "pattern" ? { op: "patCopy", p: slot } : { op: "songCopy", s: slot }); await sleep(400); (c.kept = c.kept || []).push([kind, slot]); };
+	const keep = async (c, kind, slot) => { Bridge.send(kind === "kit" ? { op: "kitCopy", k: slot } : kind === "pattern" ? { op: "patCopy", p: slot } : { op: "songCopy", s: slot }); await sleep(400); (c.keptSlots = c.keptSlots || []).push([kind, slot]); };
 	/* two slots to be overwritten (an import has no undo): the first goes to the clipboard, the second is overwritten by a copy of the first (an undo
 	   step that holds the second's content: back() undoes it, then pastes the first back) */
 	const keepTwo = async (c, kind, a, b) => { await keep(c, kind, a); Bridge.send({ op: kind === "kit" ? "kitCopyTo" : "patCopyTo", from: a, to: b, force: true }); await sleep(800); };
@@ -2336,7 +2337,7 @@ const MmJourneys = (() => {
 					u.click(q, { cmd: true }); typeIn(u, "40"); await until(() => cellOf(0, "EFX", 5) === 40, 3000); await sleep(200); c.dn = canvasTexts(cv()).join("|"); },
 				machine: c => ok(/GROWS/.test(c.up) && !/GROWS/.test(c.dn), `at 100: "${c.up}", at 40: "${c.dn}"`), within: 8000 }
 		],
-		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); }
+		async tidy(u, c) { await back(u, c); }
 	};
 	/* ---- Sound: the three LFOs of each synth track (the LFO chapter): PAGE and DEST, TRIG, WAVE, MULT, SPD, INTL, DPTH ---- */
 	const LFO_PAGES = ["PTCH", "SYN", "AMP", "FLT", "EFX", "LF1", "LF2", "LF3", "MIDI"];
@@ -2396,7 +2397,7 @@ const MmJourneys = (() => {
 			{ say: "the MIDI track of the same number shares the three LFOs: its page says so and one key goes to the synth track's LFOs", act: async (u, c) => { u.click('[data-side="midi"]'); await sleep(300); u.click(rail(6)); await sleep(300); c.txt = $1("#main .sgabout")?.textContent || ""; u.click('[data-goto="0"]'); await sleep(300); },
 				screen: c => ok(/shares its three LFOs with synth track 1/.test(c.txt) && S().sel === 0 && S().side !== "midi" && !!$1("#lp1"), `text "${c.txt.slice(0, 60)}", track ${S().sel}, side ${S().side}`), within: 6000 }
 		],
-		async tidy(u, c) { if (S().side === "midi") u.click('[data-side="int"]'); if (c.n0 != null) await undoTo(u, c.n0); }
+		async tidy(u, c) { if (S().side === "midi") u.click('[data-side="int"]'); await back(u, c); }
 	};
 	/* ---- Mix: the buses, the inputs and the routing (the Routing chapter) ---- */
 	const BUS_BIT = { AB: 1, CD: 2, EF: 4 }, IN_NAMES = ["NEIBOR", "INP A", "INP B", "INP AB", "BUS AB", "BUS CD", "BUS EF"];
@@ -2447,7 +2448,7 @@ const MmJourneys = (() => {
 				machine: c => ok(gDoc()?.routingMode !== c.r0, "routing " + gDoc()?.routingMode), within: 6000 },
 			{ say: "click 3xSTEREO: the default routing, as GLOBAL Clear leaves it", act: u => u.click('[data-set="routing"] button[data-v="3xSTEREO"]'), machine: () => ok(gDoc()?.routingMode === "3xSTEREO", "routing " + gDoc()?.routingMode), screen: () => ok(pressed('[data-set="routing"] button[data-v="3xSTEREO"]'), "not lit"), within: 8000 }
 		],
-		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); }
+		async tidy(u, c) { await back(u, c); }
 	};
 	/* ---- Appendix B: what the machine is sent as MIDI (CC, NRPN) on which channel; the base channel, and OFF ---- */
 	const ccsOf = n0 => nonSys(n0).filter(w => w.kind === "cc").map(w => w.b);
@@ -2558,7 +2559,7 @@ const MmJourneys = (() => {
 					c.a0 = bitsOf(c.pt, "amp").includes(c.ps); await envPick(u, c.pt, c.ps, "a"); await until(() => bitsOf(c.pt, "amp").includes(c.ps) !== c.a0, 4000); },
 				machine: c => ok(bitsOf(c.pt, "amp").includes(c.ps) !== c.a0 && bitsOf(c.pt, "trig").includes(c.ps) && !noteAt(c.pt, c.ps).length, `amp ${bitsOf(c.pt, "amp").includes(c.ps)}, notes ${noteAt(c.pt, c.ps)}`), screen: c => ok(noteSpans(c.pt).find(sp => sp.s === c.ps)?.pitchless === true, "span"), within: 6000 }
 		],
-		async tidy(u, c) { if (DeskMenu.shown) closeDeskMenu(); if (S().stepSel) clearSel(); drawBack(c); if (c.n0 != null) await undoTo(u, c.n0); }
+		async tidy(u, c) { if (DeskMenu.shown) closeDeskMenu(); if (S().stepSel) clearSel(); drawBack(c); await back(u, c); }
 	};
 	/* the keys that play: the home row on the selected track's channel, velocity C and V, octave Z and X; the roll's pitch, an octave by drag, a chord, a note gone */
 	const noteWires = n0 => nonSys(n0).filter(w => w.kind === "note").map(w => w.b);
@@ -2591,7 +2592,7 @@ const MmJourneys = (() => {
 					u.click(tab("seq")); await sleep(300); } },
 				screen: c => ok(!c.bad.length && c.synN >= 3, c.bad.join(" | ") + " SYN proven on " + c.synN + " tracks"), within: 1000 }
 		],
-		async tidy(u, c) { drawBack(c); /* the keyboard velocity steps 20 40 60 80 100 127: to the top, then down to where the first A played it */ if (c.vel0) { const steps = [20, 40, 60, 80, 100, 127], i0 = steps.indexOf(c.vel0); for (let k = 0; k < 5; k++) { blur(); u.key("v"); } for (let k = 5; k > i0 && i0 >= 0; k--) { blur(); u.key("c"); } } if (c.n0 != null) await undoTo(u, c.n0); }
+		async tidy(u, c) { drawBack(c); /* the keyboard velocity steps 20 40 60 80 100 127: to the top, then down to where the first A played it */ if (c.vel0) { const steps = [20, 40, 60, 80, 100, 127], i0 = steps.indexOf(c.vel0); for (let k = 0; k < 5; k++) { blur(); u.key("v"); } for (let k = 5; k > i0 && i0 >= 0; k--) { blur(); u.key("c"); } } await back(u, c); }
 	};
 	/* ---- Parameter locks: the seven data pages of the lane picker, a value on every step, the pool of 62, live recording ---- */
 	const laneTabs = () => $all("[data-lpage]").map(b => b.textContent.trim());
@@ -2622,7 +2623,7 @@ const MmJourneys = (() => {
 					await drawLock(u, g, i, trigsOf(t).find(x => x < S().len), 0.4); await sleep(800); },
 				screen: () => ok(/All 62 locked parameters are in use/.test($1("#toast")?.textContent || ""), "toast " + $1("#toast")?.textContent), machine: c => ok(lockList().length === 62 && c.n1 === 62, "locks " + lockList().length), within: 6000 }
 		],
-		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); }
+		async tidy(u, c) { await back(u, c); }
 	};
 	/* LIVE RECORDING: a value turned while the pattern plays is locked on the step that plays (the firmware does it; the page names it) */
 	const recLocks = {
@@ -2674,7 +2675,7 @@ const MmJourneys = (() => {
 					const pastEnd = $1(".arptrack .ac.na"); if (pastEnd) { const k = +pastEnd.dataset.ac; u.click(pastEnd); if (!await until(() => arpOf(0).length === k + 1, 3000)) c.bad.push(`extend to ${k + 1}: ${arpOf(0).length}`); } else c.bad.push("no cell past the end"); },
 				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 }
 		],
-		async tidy(u, c) { if (S().side === "midi") u.click('[data-side="int"]'); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); if (c.n0 != null) await undoTo(u, c.n0); }
+		async tidy(u, c) { if (S().side === "midi") u.click('[data-side="int"]'); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); await back(u, c); }
 	};
 	/* the LCD's second line: LEN, ×2, SPD, SWG; the Transpose dock: SCALE, KEY, TRACK and PAT; the Trig setup dock */
 	const lcdSetup = {
@@ -2695,7 +2696,7 @@ const MmJourneys = (() => {
 			{ say: "PAT is the pattern's transpose, shared by all tracks: typed +5, the pattern holds 5 and no track's own transpose moves", act: async (u, c) => { c.tr = [0, 1, 2, 3, 4, 5].map(t => patDoc().tracks[t].transpose); const q = '#main .pc[data-g="ptrn"][data-n="PAT"]'; u.click(q, { cmd: true }); typeIn(u, "+5"); await until(() => patDoc().patternTranspose === 5, 4000); },
 				machine: c => ok(patDoc().patternTranspose === 5 && [0, 1, 2, 3, 4, 5].every(t => patDoc().tracks[t].transpose === c.tr[t]), `PAT ${patDoc().patternTranspose}, tracks ${[0, 1, 2, 3, 4, 5].map(t => patDoc().tracks[t].transpose)}`), within: 6000 }
 		],
-		async tidy(u, c) { if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); if (c.n0 != null) await undoTo(u, c.n0); }
+		async tidy(u, c) { if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); await back(u, c); }
 	};
 	const trigSetup = {
 		name: "mm-seq-trig-setup", proves: ["MM-121", "MM-151", "MM-153", "MM-161"],
@@ -2714,7 +2715,7 @@ const MmJourneys = (() => {
 					u.click(rail(0)); await sleep(300); u.click('[data-set="trigpos"] button[data-v=""]'); if (!await until(() => wk().tracks[0].trigPos == null, 4000)) c.bad.push("none T1: " + wk().tracks[0].trigPos); },
 				screen: c => ok(!c.bad.length && same(c.chain, [1, 2]), c.bad.join(" | ") + " chain " + c.chain), within: 1000 }
 		],
-		async tidy(u, c) { if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); if (c.n0 != null) await undoTo(u, c.n0); }
+		async tidy(u, c) { if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); await back(u, c); }
 	};
 	/* ---- The MIDI sequencer: six tracks of its own, their notes, chords, VEL PB PCHG and CC values, their channels and CC numbers (the MIDI sequencer chapter) ---- */
 	const midiNotesAt = (m, s) => (patDoc()?.midiNotes || []).filter(e => e[0] === m && e[1] === s).map(e => e[2]);
@@ -2761,7 +2762,7 @@ const MmJourneys = (() => {
 			{ say: "Transpose: TRACK typed +3, the pattern holds 3 for M1; the Arp tab says there are no envelope switches on MIDI", act: async (u, c) => { await dockOpen(u, "trn"); const q = '#main .pc[data-g="trn"][data-n="TRACK"]'; u.click(q, { cmd: true }); typeIn(u, "+3"); await until(() => mDoc(0).transpose === 3, 6000); await dockOpen(u, "arp"); c.none = $all("[data-arptrig]").length === 0 && /none on MIDI/.test($1(".dkna")?.textContent || ""); },
 				machine: c => ok(mDoc(0).transpose === 3 && c.none, `transpose ${mDoc(0).transpose}, no switches ${c.none}`), within: 10000 }
 		],
-		async tidy(u, c) { if (DeskMenu.shown) closeDeskMenu(); if (S().stepSel) clearSel(); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); if (S().side === "midi") u.click('[data-side="int"]'); if (c.n0 != null) await undoTo(u, c.n0); }
+		async tidy(u, c) { if (DeskMenu.shown) closeDeskMenu(); if (S().stepSel) clearSel(); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); if (S().side === "midi") u.click('[data-side="int"]'); await back(u, c); }
 	};
 	/* ---- Perform: the keyboard's four modes and the channels they play on, MULTI TRIG and MULTI MAP set-up (Appendix B notes, GLOBAL channels, Additional kit settings) ---- */
 	const gch = () => gDoc()?.channels;
@@ -2847,7 +2848,7 @@ const MmJourneys = (() => {
 					u.click(btn("Clr")); await sleep(800); if (dlgShown()) u.click($1("#dlg .danger") || dlgButton("Clear")); await sleep(1500); const ac = assignOf(1), def = newAssign(); c.cleared = Object.entries(ASSIGN_ROWS).every(([tb, idx]) => idx.every((i, k) => ac.page[i] === def.tabs[tb][k].pg && ac.dest[i] === def.tabs[tb][k].d && ac.add[i] === def.tabs[tb][k].add - 64)); c.clrToast = $1("#toast")?.textContent || ""; blur(); u.key("z", { cmd: true }); await until(() => own() === c.t1, 6000); },
 				screen: c => ok(/Copied the assign tabs of T1/.test(c.copyToast) && c.pasted && c.leftKept && c.undone && c.cleared, `copy "${c.copyToast}", pasted ${c.pasted}, left rows kept ${c.leftKept}, undone ${c.undone}, cleared ${c.cleared} "${c.clrToast}"`), within: 1000 }
 		],
-		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); u.click('[data-set="astrk"] button[data-v="0"]'); }
+		async tidy(u, c) { await back(u, c); u.click('[data-set="astrk"] button[data-v="0"]'); }
 	};
 	const joystickJ = {
 		name: "mm-perform-joystick-midi", proves: ["MM-352", "MM-366", "MM-053"],
@@ -2876,7 +2877,7 @@ const MmJourneys = (() => {
 						if (!ok6 || !wk().tracks.every(t => t.multiEnv[i] === v)) c.bad.push(`${n}: ${m.map(b => b.join(" ")).join(" | ").slice(0, 160)}`); } },
 				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 }
 		],
-		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); }
+		async tidy(u, c) { await back(u, c); }
 	};
 	/* ---- Song: the selected row's settings, the commands and the rows' marks (the song mode chapter) ---- */
 	const rowI = () => S().songSel;
@@ -2913,7 +2914,7 @@ const MmJourneys = (() => {
 					u.click('[data-set="loopkind"] button[data-v="halt"]'); if (!await until(() => songDoc().rows[c.li]?.kind === "halt", 6000)) c.bad.push("HALT: " + songDoc().rows[c.li]?.kind); else if (songDoc().rows[c.li].target !== c.li) c.bad.push("HALT target " + songDoc().rows[c.li].target); await sleep(300); c.cell = cellName(c.li); },
 				screen: c => ok(!c.bad.length && c.cell === "HALT", c.bad.join(" | ") + " cell " + c.cell), within: 10000 }
 		],
-		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); if (c.r0) await undoUntil(u, () => JSON.stringify(songDoc()?.rows) === c.r0, 40); await sleep(300); { const more = $1("[data-rowmore]"); if (S().songMore && more) u.click(more); } if (c.m0 === false && machine().song?.songMode !== false) { u.click('[data-set="songpick"] button[data-v="pattern"]'); await sleep(1500); } }
+		async tidy(u, c) { await back(u, c); if (c.r0) await undoUntil(u, () => JSON.stringify(songDoc()?.rows) === c.r0, 40); await sleep(300); { const more = $1("[data-rowmore]"); if (S().songMore && more) u.click(more); } if (c.m0 === false && machine().song?.songMode !== false) { u.click('[data-set="songpick"] button[data-v="pattern"]'); await sleep(1500); } }
 	};
 	const songRowsCopy = {
 		name: "mm-song-rows-copy", proves: ["MM-269"],
@@ -2926,7 +2927,7 @@ const MmJourneys = (() => {
 			{ say: "Clr takes the selected row out; Cmd+Z brings it back", act: async (u, c) => { c.n1 = songDoc().rows.length; u.click($all(".lcdpanel button").find(b => b.textContent.trim() === "Clr")); await sleep(500); if (dlgShown()) u.click($1("#dlg .danger") || dlgButton("Clear")); await until(() => songDoc().rows.length === c.n1 - 1, 8000); await songSettled(); c.after = songDoc().rows.length; blur(); u.key("z", { cmd: true }); await until(() => songDoc().rows.length === c.n1, 8000); await songSettled(); },
 				machine: c => ok(c.after === c.n1 - 1 && songDoc().rows.length === c.n1 && same(songDoc().rows[4], JSON.parse(c.src)), `rows ${c.n1} -> ${c.after} -> ${songDoc().rows.length}`), within: 20000 }
 		],
-		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); if (c.r0) await undoUntil(u, () => JSON.stringify(songDoc()?.rows) === c.r0, 6); if (c.m0 === false && machine().song?.songMode !== false) { u.click('[data-set="songpick"] button[data-v="pattern"]'); await sleep(1500); } }
+		async tidy(u, c) { await back(u, c); if (c.r0) await undoUntil(u, () => JSON.stringify(songDoc()?.rows) === c.r0, 6); if (c.m0 === false && machine().song?.songMode !== false) { u.click('[data-set="songpick"] button[data-v="pattern"]'); await sleep(1500); } }
 	};
 	/* GLOBAL: TEMPO SYNC INT / EXT and TRANSPORT IN ACCEPT / IGNORE (the machine takes them: the setting is read back from it) */
 	const globalSync = {
@@ -2956,7 +2957,7 @@ const MmJourneys = (() => {
 					c.texts = canvasTexts($1(`#seq canvas.roll[data-big][data-t="2"]`)); Journey.snapshot("mm-lock-lane"); },
 				screen: c => { const got = c.texts.filter(t => /^(M|N|SJ)$/.test(t)).join(" "); return ok(!c.bad.length && got === "M N M SJ N", c.bad.join(" | ") + " roll says: " + got); }, within: 1000 }
 		],
-		async tidy(u, c) { drawBack(c); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); if (c.n0 != null) await undoTo(u, c.n0); }
+		async tidy(u, c) { drawBack(c); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); await back(u, c); }
 	};
 	/* ---- Appendix A, DPRO-BBOX: 24 drums, the key picks the drum; the roll names them ---- */
 	const bboxDrums = {
@@ -2970,7 +2971,7 @@ const MmJourneys = (() => {
 				machine: c => ok(c.steps.every((s, k) => noteAt(2, s).join() === String(c.pitches[k])), `notes ${c.steps.map(s => noteAt(2, s))} for ${c.pitches}`),
 				screen: c => ok(c.pitches.every(pt => BBOX[pt] && c.texts.includes(BBOX[pt])) && Object.keys(BBOX).length === 24 && Object.keys(BBOX).every((k, i) => +k === 48 + i), `roll says ${c.texts.join(" ")}; wanted ${c.pitches.map(pt => BBOX[pt])}`), within: 10000 }
 		],
-		async tidy(u, c) { drawBack(c); if (c.n0 != null) await undoTo(u, c.n0); }
+		async tidy(u, c) { drawBack(c); await back(u, c); }
 	};
 	/* ---- The pattern chooser: 128 patterns in eight banks A to H, what each tile says, each pattern's kit; whole-pattern copy (Pattern operation, Composing a pattern) ---- */
 	const psq = p => `#libpop .ps[data-ps="${p}"]`;
@@ -2993,7 +2994,7 @@ const MmJourneys = (() => {
 			{ say: "click another pattern with another kit: the machine loads that pattern's kit (its tile's number)", act: async (u, c) => { c.q = [1, 2, 3, 5].find(p => p !== cur() && I().doc("pattern", p).kit !== machine().kit.current); c.k = I().doc("pattern", c.q).kit; u.click(psq(c.q)); await confirmIfAsked(u); },
 				machine: c => ok(cur() === c.q && machine().kit.current === c.k, `pattern ${cur()}, kit ${machine().kit.current} for ${c.k}`), within: 12000 }
 		],
-		async tidy(u, c) { if (!$1("#libpop").hidden) u.key("Escape"); if (c.n0 != null) await undoTo(u, c.n0); if (c.p0 != null && cur() !== c.p0) { Bridge.send({ op: "select", p: c.p0, now: true }); await sleep(2000); } }
+		async tidy(u, c) { if (!$1("#libpop").hidden) u.key("Escape"); await back(u, c); if (c.p0 != null && cur() !== c.p0) { Bridge.send({ op: "select", p: c.p0, now: true }); await sleep(2000); } }
 	};
 	const idleNow = () => I().machine?.recv?.state === "idle" && !I().machine?.recv?.sending;
 	/* the same kit is not read again: an edited kit keeps its edits when the next pattern recalls the same kit */
@@ -3036,7 +3037,7 @@ const MmJourneys = (() => {
 					const r = await nudgeBox(u, 0, "AMP", 0); c.m1 = wk().tracks[0].machineName; u.click($all(".lcdpanel button").find(b => b.textContent.trim() === "Clr")); await until(() => wk().tracks[0].machineName === "GND-SIN", 6000); await sleep(600); c.after = JSON.stringify(wk().tracks[0].pages); c.cleared = JSON.stringify(I().doc("kit", c.slot).tracks[0].pages); blur(); u.key("z", { cmd: true }); await until(() => wk().tracks[0].machineName === "SID-6581", 6000); },
 				machine: c => ok(c.m1 === "SID-6581" && c.after === c.cleared && wk().tracks[0].machineName === "SID-6581", `after CLR ${c.after} vs cleared kit ${c.cleared}; machine now ${wk().tracks[0].machineName}`), within: 20000 }
 		],
-		async tidy(u, c) { if (!$1("#libpop").hidden) u.key("Escape"); if (c.n0 != null) await undoTo(u, c.n0); if (c.k0 != null && machine().kit.current !== c.k0) { u.click("#kitf"); await sleep(400); u.click(ksq(c.k0)); if (await until(dlgShown, 1500)) u.click(dlgButton("Load without saving") || $1("#dlg .danger")); await until(() => machine().kit.current === c.k0, 15000); u.key("Escape"); } }
+		async tidy(u, c) { if (!$1("#libpop").hidden) u.key("Escape"); await back(u, c); if (c.k0 != null && machine().kit.current !== c.k0) { u.click("#kitf"); await sleep(400); u.click(ksq(c.k0)); if (await until(dlgShown, 1500)) u.click(dlgButton("Load without saving") || $1("#dlg .danger")); await until(() => machine().kit.current === c.k0, 15000); u.key("Escape"); } }
 	};
 	const kitParts = {
 		name: "mm-kit-parts", proves: ["MM-093", "MM-105", "MM-106", "MM-372"],
@@ -3078,7 +3079,7 @@ const MmJourneys = (() => {
 					let p = rollCell(0, c.s); u.rightClick(p.c, {}, p.fx, p.fy); await sleep(150); u.click('#deskmenu [data-mid="copy"]'); await sleep(200); p = rollCell(0, c.d); u.rightClick(p.c, {}, p.fx, p.fy); await sleep(150); u.click('#deskmenu [data-mid="paste"]'); await until(() => trigsOf(0).includes(c.d), 8000); await sleep(800); },
 				machine: c => ok(same(noteAt(0, c.d), [c.pitch]) && (lockVals(0, 1, 0).find(([x]) => x === c.d) || [])[1] === c.lv, `notes ${noteAt(0, c.d)} for ${c.pitch}, lock ${JSON.stringify(lockVals(0, 1, 0).find(([x]) => x === c.d))} for ${c.lv}`), within: 15000 }
 		],
-		async tidy(u, c) { if (!$1("#deskmenu")?.hidden) closeDeskMenu(); if (S().stepSel) clearSel(); drawBack(c); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); if (c.n0 != null) await undoTo(u, c.n0); if (!S().viewAll) u.click("#pgall"); }
+		async tidy(u, c) { if (!$1("#deskmenu")?.hidden) closeDeskMenu(); if (S().stepSel) clearSel(); drawBack(c); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); await back(u, c); if (!S().viewAll) u.click("#pgall"); }
 	};
 	/* ---- Appendix C: what the machine is sent as SysEx for each edit, and its numbers (the stub host reports the first sixteen bytes and the length) ---- */
 	const sysexAfter = (n0, id) => wireLog.filter(w => w.seq > n0 && w.kind === "sysex" && w.b[6] === id);
@@ -3183,7 +3184,7 @@ const MmJourneys = (() => {
 					const d0 = cellOf(0, "AMP", 2), up = d0 < 80 ? 1 : -1; w0 = wireSeq; await u.drag(q, [[up * 6, 0], [up * 12, 0], [up * 18, 0], [up * 24, 0], [up * 30, 0]]); await sleep(600); const cc = ccsOf(w0).filter(x => x[1] === 58).map(x => x[2]); if (cc.length < 3 || !cc.every((v, k) => k === 0 || (up > 0 ? v >= cc[k - 1] : v <= cc[k - 1])) || cc[cc.length - 1] === cc[0]) c.bad.push("drag CCs " + cc); },
 				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 }
 		],
-		async tidy(u, c) { drawBack(c); if (c.n0 != null) await undoTo(u, c.n0);
+		async tidy(u, c) { drawBack(c); await back(u, c);
 			if (c.p0 != null && cur() !== c.p0) { u.click("#pat"); await sleep(400); u.click(`#libpop .ps[data-ps="${c.p0}"]`); await confirmIfAsked(u); await sleep(800); if (!$1("#libpop").hidden) u.key("Escape"); } }
 	};
 	/* the four things the machine's BANK keys do with FUNCTION on the sequencer: ARP, TRANSPOSE, SWING, SLIDE */
@@ -3198,7 +3199,7 @@ const MmJourneys = (() => {
 					const sw = patDoc().swingAmount; u.wheel('#lcd2 [data-l2="swing"]', sw < 30 ? 1 : -1); if (!await until(() => patDoc().swingAmount !== sw, 4000)) c.bad.push("SWG on the LCD"); },
 				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 }
 		],
-		async tidy(u, c) { if (DeskMenu.shown) closeDeskMenu(); if (S().stepSel) clearSel(); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); if (c.n0 != null) await undoTo(u, c.n0); }
+		async tidy(u, c) { if (DeskMenu.shown) closeDeskMenu(); if (S().stepSel) clearSel(); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); await back(u, c); }
 	};
 	/* SLICE5-MM-END */
 	/* ---------- wave 12: the gaps (doc/release/PLAN-0.6.md, Gap triage) ---------- */

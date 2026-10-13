@@ -118,6 +118,11 @@ const Journey = (() => {
 		pointerId: 1, pointerType: "mouse", isPrimary: true, button: 0, buttons, clientX: x, clientY: y }, mods(m))));
 	const me = (type, target, x, y, m, buttons, detail = 1) => target.dispatchEvent(new MouseEvent(type, Object.assign({ bubbles: true, cancelable: true, composed: true,
 		button: 0, buttons, clientX: x, clientY: y, detail, view: window }, mods(m))));
+	/* Alt held by an Alt chord of the journey (u.key with alt): the pages' rotate run (MM) stays open until Alt is seen up, and takes every edit after it into one undo
+	   step; a person lets go of it, so the runner does when the steps are done, before the tidy (see JOURNEYS.md, "Independent journeys") */
+	let altHeld = false;
+	const releaseAlt = () => { if (!altHeld) return; altHeld = false;
+		document.dispatchEvent(new KeyboardEvent("keyup", { key: "Alt", code: "AltLeft", bubbles: true, cancelable: true, composed: true })); };
 	const u = {
 		el, sleep, until,
 		/* demos: the drawn pointer glides to the element's point first (nothing is pressed); nothing otherwise */
@@ -197,6 +202,7 @@ const Journey = (() => {
 		/* a key pressed and let go where the focus is (key: "a", "Delete", " "; code when it matters), with the
 		   browser's default action on a focused button */
 		key(key, m = {}, code) {
+			if (m.alt) altHeld = true;	/* a chord's Alt is never let go by the hands: the runner lets it go when the journey ends (releaseAlt) */
 			const t = document.activeElement && document.activeElement !== document.documentElement ? document.activeElement : document.body;
 			const c = code || (key.length === 1 ? (/[a-z]/i.test(key) ? "Key" + key.toUpperCase() : /[0-9]/.test(key) ? "Digit" + key : key === " " ? "Space" : "") : key);
 			const o = Object.assign({ key, code: c, bubbles: true, cancelable: true, composed: true }, mods(m));
@@ -303,7 +309,10 @@ const Journey = (() => {
 		const pats = words.filter(p => !p.startsWith("!")).map(rx), nots = words.filter(p => p.startsWith("!")).map(p => rx(p.slice(1)));
 		/* a name matches whole, or without its "demo-" and its "md-"/"mm-" (demo-md-groove: md-groove, groove) */
 		const forms = n => { const bare = n.replace(new RegExp(`^${what}-`), ""); return [n, bare, bare.replace(/^(md|mm)-/, "")]; };
-		return take(all.filter(j => pats.some(r => forms(j.name).some(f => r.test(f))) && !nots.some(r => forms(j.name).some(f => r.test(f)))));
+		let chosen = all.filter(j => pats.some(r => forms(j.name).some(f => r.test(f))) && !nots.some(r => forms(j.name).some(f => r.test(f))));
+		/* a list of names, none with a "*", plays in the order given (to replay the order a run found a journey failing in) */
+		if (shuffleSeed == null && words.length && words.every(p => !p.includes("*") && !p.startsWith("!"))) { const at = j => pats.findIndex(r => forms(j.name).some(f => r.test(f))); chosen = chosen.slice().sort((a, b) => at(a) - at(b)); }
+		return take(chosen);
 	}
 	/* film: {t0} when a demo is filmed (its steps' times are logged against t0) */
 	/* The evidence run's watch (":e2e"): what a person must never read on the page, looked for after each step in the toast, the
@@ -327,12 +336,12 @@ const Journey = (() => {
 	let hooks = null;	/* the page's hooks of the running journeys (begin) */
 	async function runOne(j, log, context, film, c0) {
 		const c = c0 || {}, n = j.steps.length;
-		/* where the page's undo and its modes stood when the journey began (page.begin(c): c.undo0 and what else the page restores): the journey's
+		/* where the page's undo and its modes stood when the journey began (page.begin(c) sets c.back0: the undo depth and what else the page restores): the journey's
 		   tidy puts them back with the page's own helper (back(u, c)) */
 		try { if (hooks?.begin) hooks.begin(c); } catch (_) { }
 		let reason = "";
 		/* what the journey needs that this run may not have (the window on screen): it is skipped, not failed */
-		current = j.name; shots = 0;
+		current = j.name; shots = 0; altHeld = false;
 		const missing = j.needs ? await j.needs() : null;	/* may be async: what it needs may still be on its way */
 		if (missing) { log(`JOURNEY ${j.name} SKIP ${missing}`); return "skip"; }
 		for (let i = 0; i < n && !reason; i++) {
@@ -361,6 +370,7 @@ const Journey = (() => {
 			if (reason) { try { snapshot(`e2e-${j.name}-fail`); } catch (e) { log(`JOURNEY ${j.name} e2e snapshot: ${e.message}`); } }
 			else if (!shots) { try { await sleep(250); snapshot(`e2e-${j.name}`); } catch (e) { log(`JOURNEY ${j.name} e2e snapshot: ${e.message}`); } }
 		}
+		releaseAlt();
 		if (j.tidy) { try { await j.tidy(u, c); } catch (e) { log(`JOURNEY ${j.name} tidy: ${e.message}`); } }
 		log(`JOURNEY ${j.name} ${reason ? "FAIL " + reason : "PASS"}`);
 		return !reason;
