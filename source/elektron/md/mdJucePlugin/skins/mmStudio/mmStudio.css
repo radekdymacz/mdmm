@@ -2285,6 +2285,8 @@ img,svg,canvas{-webkit-user-drag:none}
 .sg>*{min-width:0}
 .sg h3{display:flex;align-items:center;gap:8px}
 .sg>header>span{flex:none}
+/* B-143: the section header is one fixed line (27 px) as Chrome lays it out; WebKit 15 mixed the baseline with the flex h3 and made it 24 */
+.sg>header{align-items:center;height:27px;box-sizing:border-box;flex-wrap:nowrap}
 .sg>.lfobody{grid-row:3;align-self:start;min-width:0}
 .sgrow.flat .sg>.lfobody{grid-row:2}
 .sndhead>.machbtn{flex:none;width:auto!important;grid-template-columns:auto auto 10px!important;max-width:220px}
