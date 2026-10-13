@@ -113,8 +113,6 @@ A slide makes a locked value glide to the next lock instead of jumping. Without 
 2. Choose **Slide**. A tick shows when every selected step slides. On a selection it sets every step, in one undo step.
 3. A small ramp over a note shows a step that slides and holds a lock. In the lock lane the glide is drawn from one lock to the next.
 
-![The step menu](shot:e2e-mm-seq-step-menu)
-
 To copy, paste or clear the slide row of a track, tick **Slide** in **Copy…**, **Paste…** or **Clear…** of the LCD's **▾** menu (chapter 11, "Super copy"). Press {key:undo} to take each back.
 
 ## THE MUTE MODE
