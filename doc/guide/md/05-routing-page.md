@@ -27,7 +27,7 @@ To set it:
 
 On the Mix workspace use the **DIST** box of the strip.
 
-![The Sound workspace with the routing groups in the second row](shot:md-sound-workspace)
+![The Sound workspace with the routing groups in the second row](shot:md-sound-groups)
 
 ## VOLUME
 <!-- rows: MD-065 @475bc1 -->

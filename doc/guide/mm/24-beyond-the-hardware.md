@@ -236,8 +236,6 @@ At the right end of the LCD, two bars show the level of the left and right outpu
 
 Right-click the empty part of the header, or the track rail. The editor's menu opens, with the editor and its version as its title. It holds the zoom of the page, the updates, the log folder and the **Developer** switches.
 
-![The editor's menu](shot:e2e-mm-top-editor-menu)
-
 1. Right-click the header. The menu opens.
 2. Move to **Zoom** and press the right arrow. Its steps open, with the first one focused. Click a step. The menu closes and the page zooms.
 3. Right-click again. **Zoom** names the new step.
