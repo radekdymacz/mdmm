@@ -955,6 +955,31 @@ namespace mdDesk
 			return _k;
 		}
 
+		// revertTrack {k, t}: track t of the kit that plays goes back to how the kit's slot stores it (the Sound page's
+		// Revert track): its machine, its 24 values, its level, its LFO (the running state stays the machine's) and its
+		// two relations. One change of the working kit, so one undo step; the slot itself is not touched.
+		std::optional<ed::MdKit> revertedTrack(const Documents& _docs, ed::MdKit _k, const In& _in)
+		{
+			const auto t = size_t(*_in.a.integer("t"));
+			const auto it = _docs.kits.find(_k.position);
+			if(it == _docs.kits.end())
+			{
+				_in.errors.push_back("kit " + std::to_string(_k.position + 1) + " is not read from its slot yet");
+				return {};
+			}
+			const auto& s = it->second;
+			_k.models[t] = s.models[t];
+			_k.params[t] = s.params[t];
+			_k.levels[t] = s.levels[t];
+			const auto state = _k.lfos[t].state;
+			_k.lfos[t] = s.lfos[t];
+			_k.lfos[t].state = state;
+			_k.trigGroups[t] = s.trigGroups[t];
+			_k.muteGroups[t] = s.muteGroups[t];
+			_in.note = trackName(t) + " is back as kit " + std::to_string(_k.position + 1) + " stores it";
+			return _k;
+		}
+
 		// Control All (manual p.37, FUNCTION + a DATA ENTRY knob): the same knob of one page on every track
 		// the machine's own gesture reaches, moved by d and held at 0..127 (controlAllReaches). "t", the
 		// track the gesture is on, only says which track leads it on the machine (the adapter's).
@@ -1470,6 +1495,13 @@ namespace mdDesk
 				_in.errors.push_back("the working kit of " + slotName("kit", k) + " is not loaded yet");
 				return {};
 			}
+			if(_op == "revertTrack")
+			{
+				auto after = revertedTrack(_docs, *kit, _in);
+				if(!after)
+					return {};
+				return Edited{Document(WorkingKit{*kit}), Document(WorkingKit{*after})};
+			}
 			return run<ed::MdKit, WorkingKit>(kitEdits(), *kit, _op, _in);
 		}
 
@@ -1563,6 +1595,7 @@ namespace mdDesk
 		};
 		add(patternEdits());
 		add(kitEdits());
+		ops.push_back("revertTrack");	// a working-kit edit that reads the stored slot (editWorkingKit)
 		add(songEdits());
 		add(globalEdits());
 		return ops;

@@ -49,7 +49,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Front panel 1-4 | 5 DATA PAGE keys, seven pages | SYN, AMP, FLT, EFX, LFO 1-3 | ✅ | Sound shows every page at once; lock lane page tabs |  | 1 | stub-only (e2e-mm-seq-locks-fail) |
 | Front panel 1-4 | 5 Both DATA PAGE keys open MULTI ENV | Multi envelope window | ✅ | Perform > Multi envelope |  | 1 | pass (mm-perform-menv) |
 | Front panel 1-4 | 6 TRACK keys, select | Pick the track in focus | ✅ | Rail, Up / Down keys, Mix node click |  | 1 | pass (e2e-mm-keys-track-select) |
-| Front panel 1-4 | 6 TRACK keys, mute / unmute (FUNCTION) | Mute a track | ✅ | M key per track, Perform > Mutes, key M | Shift + M prepares mutes | 6 | pass (e2e-mm-mix-level-mute) |
+| Front panel 1-4 | 6 TRACK keys, mute / unmute (FUNCTION) | Mute a track | ✅ | M key per track, Perform > Mutes, key M | Shift + M prepares mutes | 7 | pass (e2e-mm-mix-level-mute) |
 | Front panel 1-4 | 6 TRACK LED colours | Active, muted, in focus | 🟡 | Rail row dims when muted, selected row lit |  | – | n/a |
 | Front panel 1-4 | 7 TEMPO key, tempo window | Tempo screen | ✅ | LCD > TEMPO (drag, arrows) |  | 1 | pass (e2e-mm-top-tempo-drag) |
 | Front panel 1-4 | 7 Tap tempo (FUNCTION + TEMPO) | Tap | ✅ | Shift + B on every workspace; plain B on the others than Sequence | On Sequence, B is the piano roll's Draw (`75-comforts.js`) | 2 | pass (e2e-mm-keys-tap-tempo) |
@@ -549,6 +549,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | KIT AND SONG SLOTS | Kit and song slots | The kit library and the song slots: load, copy, paste, rename and clear a slot, each undoable. | ✅ | The kit on the LCD; Song workspace |  | 5 | pass (e2e-mm-song-slots) |
 | PIANO ROLL | Piano roll | Draw notes on a roll with a note length, move or box-select them and play chords; the roll writes the same step data as the machine's own entry. | ✅ | Sequence: the piano roll, Draw (B), Len | MM only | 5 | pass (e2e-mm-seq-transpose-keyboard) |
 | WHAT YOU DRAW IS WHAT PLAYS | What you draw is what plays | What you enter in the sequencer is what the machine plays. | ✅ | Sequence: the grid or the roll; Alt+Delete clears the pattern; Cmd+Z takes it back | e2e: drawn, played, cleared, undone, each checked on the machine's output | 1 | fail (mm-real-sequence-drawn) |
+| REVERT TRACK | Revert track | The machine has no key that puts one track's sound back as stored; LOAD KIT reloads the whole kit. | ✅ | Sound: Revert track beside the machine key |  | 1 | – |
 
 ## 24. Editor features with no manual counterpart (for orientation)
 
@@ -560,11 +561,11 @@ Counts are rows of sections 1 to 23 by the Our UI column. (Computed from this fi
 
 | Our UI | Rows |
 |---|---|
-| ✅ | 360 |
+| ✅ | 361 |
 | 🟡 | 14 |
 | ❌ | 1 |
 | ➖ | 34 |
-| Total | 409 |
+| Total | 410 |
 
 ### Top gaps, ranked (our UI)
 

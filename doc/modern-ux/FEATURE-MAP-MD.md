@@ -415,18 +415,19 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p. | Pattern queue and chooser | Pick any of the 128 patterns from the chooser; played while it runs, it waits for the end. | ✅ | The pattern on the LCD |  | 3 | pass (md-pattern-chooser) |
 | p. | Kit and song slots | The kit library and the song slots: load, copy, paste, rename and clear a slot, each undoable. | ✅ | The kit on the LCD; Song workspace |  | 4 | pass (e2e-md-lib-kit-copy-paste-undo) |
 | p. | What you draw is what plays | What you enter in the sequencer is what the machine plays. | ✅ | Sequence: the grid or the roll; Alt+Delete clears the pattern; Cmd+Z takes it back | e2e: drawn, played, cleared, undone, each checked on the machine's output | 1 | pass (md-real-sequence-drawn) |
+| p. | Revert track | The machine has no key that puts one track's sound back as stored; LOAD KIT reloads the whole kit. | ✅ | Sound: Revert track beside the machine key |  | 1 | – |
 
 ## Summary
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 288 |
+| ✅ Yes | 289 |
 | 🟡 Partial | 9 |
 | ❌ No | 6 |
 | ➖ Not applicable | 16 |
-| Total | 319 |
+| Total | 320 |
 
-Of the 303 applicable rows, 288 are fully covered, 9 partly, 6 not at all.
+Of the 304 applicable rows, 289 are fully covered, 9 partly, 6 not at all.
 
 ### Top gaps (our UI), most important first
 
