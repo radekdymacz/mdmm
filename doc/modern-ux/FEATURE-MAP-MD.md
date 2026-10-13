@@ -28,12 +28,12 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.5 | DATA ENTRY knobs (A-H), pressed = coarse | Eight parameter knobs | ✅ | Value boxes on Sound and Mix; drag, wheel, Shift = fine; ⌘-click or Enter: type a value | Wheel notch 1, Shift 10. | 3 | pass (e2e-md-sound-shape-undo) |
 | p.5 | SYNTHESIS/EFFECTS/ROUTING toggle | Switch knob page | ✅ | Sound page shows all three as groups | No page toggle; all pages in one view. | 1 | pass (md-sound-workspace) |
 | p.5 | RECORD key (grid record on/off) | Toggle grid edit | ➖ | Grid is always editable | The step grid needs no mode. | – | n/a |
-| p.5 | RECORD + PLAY (live recording) | Live record | ✅ | REC button, Alt+Space | LCD top bar. | 1 | pass (e2e-md-seq-live-record) |
+| p.5 | RECORD + PLAY (live recording) | Live record | ✅ | REC button, Alt+Space | LCD top bar. | 1 | fail (e2e-md-seq-live-record-fail) |
 | p.5 | PLAY (second press pauses) | Start / pause | ✅ | Play key: ⇧-click or ⇧Space pauses (▶ blinks, the position holds), ▶ goes on; the ▶ menu (right-click or its ▾) | Pause and Continue are MIDI Stop and Continue on both engines (P1, P1b): with CTRL IN off the machine takes neither, and the editor says so. | 3 | pass (md-step-grid) |
 | p.5 | STOP; double STOP silences all voices | Stop, panic | ✅ | Panic: ⌘. or the ▶ menu's Panic (the machine's STOP pressed twice) | Over HW MIDI there is no panic: no MIDI message silences the Machinedrum (P5); the menu entry is off and says why. | 1 | pass (e2e-md-top-panic) |
 | p.5 | STOP + PLAY restarts from the top | Restart | 🟡 | Stop then Play | Same result in two clicks. | – | n/a |
 | p.5 | PATTERN/SONG key | Switch sequencer mode | ✅ | Song page: PATTERN · CHAIN · SONG keys; LCD PLAY value | seqMode command. | 4 | pass (e2e-md-song-mode) |
-| p.5 | KIT key (kit menu) / FUNCTION + KIT (song menu) | Open kit / song menus | ✅ | Kit: library popover. Song: the Songs column on the Song page (Load, Save, Save to…, Copy, Paste, Clear, Rename) | The song menu is the Songs column (0.6). | 1 | stub-only (md-kit-library) |
+| p.5 | KIT key (kit menu) / FUNCTION + KIT (song menu) | Open kit / song menus | ✅ | Kit: library popover. Song: the Songs column on the Song page (Load, Save, Save to…, Copy, Paste, Clear, Rename) | The song menu is the Songs column (0.6). | 1 | pass (md-kit-library) |
 | p.5 | TRIG keys 1-16 | Play tracks, place notes, pick patterns | ✅ | Step grid; piano keys A-L play the selected track | Right-click a step for its menu. | 2 | pass (md-step-grid) |
 | p.5 | SCALE SETUP key (page switch) | Pick pattern page | ✅ | Page key and page LEDs above the grid, [ and ] | ALL view shows every step. | 1 | pass (e2e-md-seq-pages) |
 | p.5 | <PATTERN PAGE> LEDs; MKI LEDs | Page indicator | ✅ | Page LEDs (four) in Sequence | MKI 32-step LEDs: see §13. | 1 | pass (md-sequence-workspace) |
@@ -50,7 +50,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.9 | Tempo display with one decimal | Show BPM | ✅ | LCD: Tempo |  | 1 | pass (e2e-md-top-tempo-drag) |
 | p.9 | Four pattern-page boxes | Playback page | ✅ | Page LEDs; LCD Position |  | 1 | pass (md-sequence-workspace) |
 | p.9 | Transport symbols | Record/play/pause/stop | ✅ | Play key: blinks while paused; POSITION keeps the held step |  | 1 | pass (e2e-md-top-pause) |
-| p.9 | Kit name and number | Current kit | ✅ | LCD: Kit with saved/edited chip |  | 1 | stub-only (md-kit-library) |
+| p.9 | Kit name and number | Current kit | ✅ | LCD: Kit with saved/edited chip |  | 1 | pass (md-kit-library) |
 | p.9 | Synth, machine and page text | Focus info | ✅ | Sound: machine button, family; LCD line 2 |  | 1 | pass (md-lcd) |
 | p.9 | Level bar (overall volume of the track) | LEV meter | ✅ | Mix: the LEV box's bar shows the stored level | The box's fill is the level, as the LCD's bar. | 1 | pass (e2e-md-mix-lev) |
 | p.9 | Eight value boxes with 'clip' between dependent values | Parameter display | ✅ | Sound: an arch over the gap between two boxes the machine joins with a clip; each box of a pair names the other in its tooltip | Clips measured on the firmware for every machine and page (gapProbesFirmwareTest w12clip, elektronData::mdMachineClips) | 1 | pass (md-sound-clips) |
@@ -63,9 +63,9 @@ Method: manual read in full; claims checked against the page files (`source/elek
 
 | Manual § / page | Function | What it does | Our UI | Where in our UI | Notes | Journeys | E2E |
 |---|---|---|---|---|---|---|---|
-| p.14 | Kit contents (16 machines, params, track FX, routing, master FX, name) | The kit document | ✅ | Sound, Mix, kit library | Whole kit is read and written as a dump. | 1 | stub-only (md-kit-library) |
+| p.14 | Kit contents (16 machines, params, track FX, routing, master FX, name) | The kit document | ✅ | Sound, Mix, kit library | Whole kit is read and written as a dump. | 1 | pass (md-kit-library) |
 | p.14 | Load kit (64 slots) | LOAD KIT | ✅ | Kit library: click a slot (Enter) | Asks first over unsaved edits. | 1 | pass (e2e-md-lib-load-save-dialog) |
-| p.15 | Kits not linked to a pattern marked with a star | Unused-kit marker | ✅ | Kit library slot name ends with * | EXTENDED only. | 1 | stub-only (md-kit-library) |
+| p.15 | Kits not linked to a pattern marked with a star | Unused-kit marker | ✅ | Kit library slot name ends with * | EXTENDED only. | 1 | pass (md-kit-library) |
 | p.15 | Save kit and choose slot | SAVE KIT | ✅ | Kit library: Save, Save as Knn | UNDO KIT keeps the overwritten kit. | 1 | pass (e2e-md-lib-load-save-dialog) |
 | p.15 | Name a kit (letters, high-score picker) | Kit name | ✅ | Kit library: Rename (F2 / double-click), 16 chars | Typing replaces the wheel. | 1 | pass (e2e-md-lib-kit-rename-undo) |
 | p.16 | UNDO KIT (kit list entry 0) | Restore lost kit | ✅ | Kit library: UNDO KIT (the machine's KIT > LOAD KIT > UNDO KIT through its keys; off over HW MIDI) | Measured: the lost kit plays again unsaved, its own slot current; LOAD KIT 64-127 does not reach it (gapProbesFirmwareTest w12undo) | 1 | pass (e2e-md-lib-undo-kit) |
@@ -156,18 +156,18 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.38 | Scale setup: number of steps | Pattern length | ✅ | LCD LEN with Alt (inner length) |  | 1 | pass (md-seq-scale) |
 | p.38 | Scale setup: total length 16/32/48/64 | Pages | ✅ | LCD LEN | Doubling: LEN x2 key. | 1 | pass (md-seq-scale) |
 | p.38 | Scale setup: tempo multiplier 1X, 2X, 3/4X, 3/2X | Speed | ✅ | LCD SPD |  | 1 | pass (md-seq-scale) |
-| p.38 | First page copied to later pages when extending | Auto fill | ✅ | LCD LEN (total length): a longer total repeats the steps into the new ones, as the machine's SCALE SETUP; a message says so | Measured: copied only when no track has a trig past the old total (gapProbesFirmwareTest w12extend); mdDeskFirmwareTest p4 compares the editor with the panel | 1 | stub-only (e2e-md-seq-len-repeats-fail) |
+| p.38 | First page copied to later pages when extending | Auto fill | ✅ | LCD LEN (total length): a longer total repeats the steps into the new ones, as the machine's SCALE SETUP; a message says so | Measured: copied only when no track has a trig past the old total (gapProbesFirmwareTest w12extend); mdDeskFirmwareTest p4 compares the editor with the panel | 1 | pass (e2e-md-seq-len-repeats) |
 | p.39 | Grid recording (trig toggle per step) | Compose | ✅ | Step grid click; drag paints | Undo is one step per drag. | 3 | pass (md-step-grid) |
 | p.39 | Pattern pages in grid mode | Switch page | ✅ | Page key |  | 1 | pass (e2e-md-seq-pages) |
 | p.39 | No save needed; copy before editing | Work in memory | ✅ | Library copy |  | 1 | pass (md-kit-reload) |
 | p.39 | FUNCTION + LEFT/RIGHT moves notes | Rotate | ✅ | Alt + arrows (Sequence) | Moves trigs, accents and locks, wrapping at the length; a run is one undo step. | 2 | pass (e2e-md-seq-rotate) |
 | p.39 | MKI pattern page LEDs | 32 steps | ➖ |  | See §13. | – | n/a |
-| p.39 | Live recording, quantised | Play TRIG keys | ✅ | REC then click steps / piano keys | Quantised by the machine. | 1 | pass (e2e-md-seq-live-record) |
-| p.40 | Remove notes while live recording (EXIT + TRIG) | Erase live | ✅ | Hold Delete while live recording: the selected track's trigs go as they play |  | 1 | stub-only (e2e-md-seq-live-erase-fail) |
+| p.39 | Live recording, quantised | Play TRIG keys | ✅ | REC then click steps / piano keys | Quantised by the machine. | 1 | fail (e2e-md-seq-live-record-fail) |
+| p.40 | Remove notes while live recording (EXIT + TRIG) | Erase live | ✅ | Hold Delete while live recording: the selected track's trigs go as they play |  | 1 | pass (e2e-md-seq-live-erase) |
 | p.40 | Note copy / paste with locks | COPY NOTE | ✅ | Select a step (Cmd-click), Cmd+C, Cmd+V; also Cmd+X, Cmd+D (duplicate), step menu | Copy carries locks, accents and slides. Shared selection code: skins/shared/deskSelect.js. | 4 | pass (e2e-md-seq-select-copy-paste) |
 | p.40 | Clear note parameter locks / undo | CLEAR NOTE LOCKS | ✅ | Step menu clear; lane erase (Alt-drag) |  | 1 | pass (md-lock-lane) |
-| p.41 | Track copy / paste (notes, machine, LFO, locks) | COPY TRACK | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (⌘⇧C, ⌘⇧V): tick trigs, accent, swing, slide, locks, machine + sound, LFO; Paste lights the tracks to paste into; one undo step. Also a selection's Cmd+C / Cmd+V | The whole track (all 64 steps) and its sound in one copy. | 2 | stub-only (e2e-md-seq-copy-paste-clear) |
-| p.41 | Clear track / undo | CLEAR TRACK | ✅ | ALL view then Clr, or select the track's steps (step ruler) and press Delete | Delete clears only selected steps; with none selected it does nothing (a hint says so). | 2 | stub-only (e2e-md-seq-copy-paste-clear) |
+| p.41 | Track copy / paste (notes, machine, LFO, locks) | COPY TRACK | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (⌘⇧C, ⌘⇧V): tick trigs, accent, swing, slide, locks, machine + sound, LFO; Paste lights the tracks to paste into; one undo step. Also a selection's Cmd+C / Cmd+V | The whole track (all 64 steps) and its sound in one copy. | 2 | pass (md-copy-what-menu) |
+| p.41 | Clear track / undo | CLEAR TRACK | ✅ | ALL view then Clr, or select the track's steps (step ruler) and press Delete | Delete clears only selected steps; with none selected it does nothing (a hint says so). | 2 | pass (e2e-md-seq-copy-paste-clear) |
 | p.42 | Copy / paste track page | COPY PAGE | ✅ | Cmd+C with no selection copies the page shown |  | 2 | pass (e2e-md-seq-copy-paste-clear) |
 | p.42 | Clear track page | CLEAR PAGE | ✅ | Clr key (LCD) | Clears the page shown of the selected track; with Alt held the key reads All and clears the pattern. | 1 | pass (e2e-md-seq-clear-page) |
 | p.43 | Pattern copy / paste (with kit link) | COPY PATTERN | ✅ | Pattern chooser: Copy, Paste, drag |  | 1 | pass (md-pattern-chooser) |
@@ -178,21 +178,21 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.45 | Mutes persist across patterns and modes | Behaviour | ✅ | Machine memory |  | 1 | pass (e2e-md-keys-mutes-persist) |
 | p.45 | Accent amount 0-15 | ACCENT level | ✅ | LCD ACC |  | 1 | pass (md-seq-swing-accent) |
 | p.45 | Accent trigs per step | Accent pattern | ✅ | Shift-click a step; Accent in the trig types under the grid, then click or drag steps | Honours EDIT ALL (All tracks · This track in the trig types). | 2 | pass (md-accent) |
-| p.45 | Accent pattern ALL vs per-track edit | EDIT ALL toggle | ✅ | Sequence: choose Accent, Swing or Slide in the trig types under the grid, then All tracks or This track | The pattern's EDIT ALL per mark (markMode). Measured (gapProbesFirmwareTest p7): any nonzero flag is ALL and reaches every track; there is no per-track take setting, so the design's track dots are not built. | 1 | stub-only (e2e-md-seq-trig-types-fail) |
-| p.46 | Copy / paste / clear accent pattern or track | Accent clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Accent ticked); a selection's copy includes accents | With EDIT ALL on, the accent row is the pattern's, shared by every track. | 2 | stub-only (e2e-md-seq-copy-what-fail) |
+| p.45 | Accent pattern ALL vs per-track edit | EDIT ALL toggle | ✅ | Sequence: choose Accent, Swing or Slide in the trig types under the grid, then All tracks or This track | The pattern's EDIT ALL per mark (markMode). Measured (gapProbesFirmwareTest p7): any nonzero flag is ALL and reaches every track; there is no per-track take setting, so the design's track dots are not built. | 1 | pass (e2e-md-seq-trig-types) |
+| p.46 | Copy / paste / clear accent pattern or track | Accent clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Accent ticked); a selection's copy includes accents | With EDIT ALL on, the accent row is the pattern's, shared by every track. | 2 | pass (md-copy-what-menu) |
 | p.46 | Swing amount 50-80 % | SWING level | ✅ | LCD SWG |  | 1 | pass (md-seq-swing-accent) |
-| p.46 | Swing step pattern (which steps swing) | Swing trigs | ✅ | Sequence: Swing in the trig types under the grid, then click or drag steps with a trig; a teal mark on the step | swingStep; a swing mark needs a trig, as accent and slide. | 1 | stub-only (e2e-md-seq-trig-types-fail) |
-| p.46 | Per-track swing | Swing tracks | ✅ | Sequence: Swing in the trig types, This track: each track's own swing steps | All tracks share the SWG amount, as on the machine. | 1 | stub-only (e2e-md-seq-trig-types-fail) |
-| p.47 | Copy / paste / clear swing | Swing clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Swing ticked); a selection's copy includes swing marks | With EDIT ALL on, the swing row is the pattern's. | 1 | stub-only (e2e-md-seq-swing-copy-fail) |
+| p.46 | Swing step pattern (which steps swing) | Swing trigs | ✅ | Sequence: Swing in the trig types under the grid, then click or drag steps with a trig; a teal mark on the step | swingStep; a swing mark needs a trig, as accent and slide. | 1 | pass (e2e-md-seq-trig-types) |
+| p.46 | Per-track swing | Swing tracks | ✅ | Sequence: Swing in the trig types, This track: each track's own swing steps | All tracks share the SWG amount, as on the machine. | 1 | pass (e2e-md-seq-trig-types) |
+| p.47 | Copy / paste / clear swing | Swing clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Swing ticked); a selection's copy includes swing marks | With EDIT ALL on, the swing row is the pattern's. | 1 | pass (e2e-md-seq-swing-copy) |
 | p.47 | Parameter locks, grid: hold TRIG + knob | Lock a value | ✅ | Lock lane: drag over a step; parameter keys | 64 budget meter on LCD. | 2 | pass (e2e-md-seq-lock-lane) |
 | p.48 | View a step's locks (hold TRIG) | Inspect | ✅ | Lock lane shows each step's value; chips show counts |  | 1 | pass (e2e-md-seq-lock-lane) |
 | p.48 | Remove all locks of a step / one lock | Unlock | ✅ | Step menu; Alt-drag lane erase; Alt+clear key |  | 2 | pass (e2e-md-seq-lock-lane) |
-| p.48 | 64 locked parameters per pattern | Budget | ✅ | LCD Locks counter, refuses past 64 |  | 1 | stub-only (e2e-md-seq-lock-budget-fail) |
+| p.48 | 64 locked parameters per pattern | Budget | ✅ | LCD Locks counter, refuses past 64 |  | 1 | pass (e2e-md-seq-lock-budget) |
 | p.48 | Locks only play in EXTENDED, kept in CLASSIC | Behaviour | ✅ | Lane greyed in CLASSIC |  | 1 | pass (md-top-mode-classic) |
-| p.48 | Live-recorded locks (move a value while recording) | Live locks | ✅ | REC and move a value | Locks next unplayed trig. | 1 | pass (md-live-recording) |
+| p.48 | Live-recorded locks (move a value while recording) | Live locks | ✅ | REC and move a value | Locks next unplayed trig. | 1 | stub-only (md-live-recording) |
 | p.48 | Remove live locks (EXIT + knob) | Erase live locks | ✅ | Press a track value, then hold Delete while live recording: its locks go as they play | EXIT/NO with the knob's switch on the machine (measured: either order, a tap does not latch, trigs and other locks stay); the core selects the track and shows the knob's page first | 1 | pass (e2e-md-seq-live-unlock) |
-| p.49 | Slide trigs (ALL and per track) | Parameter slide | ✅ | Alt+Shift-click a step; Slide in the trig types under the grid, then click or drag steps; All tracks or This track |  | 2 | stub-only (md-accent) |
-| p.50 | Copy / paste / clear slide | Slide clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Slide ticked); a selection's copy includes slides | With EDIT ALL on, the slide row is the pattern's. | 1 | stub-only (e2e-md-seq-copy-what-fail) |
+| p.49 | Slide trigs (ALL and per track) | Parameter slide | ✅ | Alt+Shift-click a step; Slide in the trig types under the grid, then click or drag steps; All tracks or This track |  | 2 | pass (md-accent) |
+| p.50 | Copy / paste / clear slide | Slide clipboard | ✅ | LCD ▾ beside COPY CLR PASTE: Copy…, Paste…, Clear… what (Slide ticked); a selection's copy includes slides | With EDIT ALL on, the slide row is the pattern's. | 1 | pass (md-copy-what-menu) |
 
 ## 9. Song mode (pp.51-56)
 
@@ -243,8 +243,8 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.66 | Kit sysex send, range | Send kits | ✅ | Export SysEx…: untick All, tick Kits, set the range |  | 1 | stub-only |
 | p.67 | General sysex receive (any time) | Import | ✅ | Engine menu: IMPORT SYSEX… / drop a .syx: preview by kind and slot, then report |  | 3 | pass (e2e-md-lib-syx-import) |
 | p.68 | Original place receive (ORIG) | Same slot | ✅ | Import SysEx | Default. | 1 | stub-only |
-| p.68 | Specific place receive (SPEC) | Relocate | ✅ | Import SysEx: PLACE row, Specific place, the first slot per kind; the grid shows where each item lands; Import asks before it lands on a slot that holds data | Each kind has its own first slot; items keep their order and gaps. | 1 | stub-only (e2e-md-lib-syx-place-fail) |
-| p.69 | Sysex verify (VERF) | Check without writing | ✅ | Import SysEx: Verify only beside Import: nothing is written, each slot is read and compared (= the same, ≠ different, ? no answer) | Works with Specific place too. | 2 | stub-only (e2e-md-lib-syx-verify) |
+| p.68 | Specific place receive (SPEC) | Relocate | ✅ | Import SysEx: PLACE row, Specific place, the first slot per kind; the grid shows where each item lands; Import asks before it lands on a slot that holds data | Each kind has its own first slot; items keep their order and gaps. | 1 | pass (e2e-md-lib-syx-place) |
+| p.69 | Sysex verify (VERF) | Check without writing | ✅ | Import SysEx: Verify only beside Import: nothing is written, each slot is read and compared (= the same, ≠ different, ? no answer) | Works with Specific place too. | 2 | pass (e2e-md-lib-syx-verify) |
 | p.75 | Tempo in INTERNAL / EXTERNAL | Sync | ✅ | GLOBAL > Sync |  | 1 | pass (md-global-panel) |
 | p.76 | Control in ON / OFF (start, stop, continue) | CTRL IN | ✅ | GLOBAL > Sync |  | 1 | pass (md-global-panel) |
 | p.77 | Tempo out (send clock) | TEMPO OUT | ✅ | GLOBAL > Sync |  | 2 | pass (e2e-md-global-tempo-out) |
@@ -262,7 +262,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p.75 | Erase one / all samples | ERASE | ❌ | None |  | – | n/a |
 | p.71 | Preview a sample | FUNCTION + ENTER | ✅ | Sampler: audition button | Plays on plug-in output. | 1 | pass (e2e-md-sampler-audition) |
 | p.71 | Slot list with sizes, memory left | POS/SIZE | 🟡 | Sampler: 48 ROM tiles with waveform and length; MEM on LCD | Memory is slot count, not DSP percent. | 1 | n/a |
-| p.71 | Sample names / rename | Name slot | ✅ | Sampler: Rename (sent as 0x73) | A real machine never reports its sample names, so only names sent this session are shown (mdDeskSampler.js NA.names). | 1 | stub-only (e2e-md-sampler-rename-fail) |
+| p.71 | Sample names / rename | Name slot | ✅ | Sampler: Rename (0x73, then the slot's sample again by SDS) | The firmware renames a sample only when it receives it, so Rename sends the name and the slot's own sample again; it needs the slot's audio (the emulated machine). A real machine cannot send it back: the key is off with the reason. | 1 | pass (e2e-md-sampler-rename) |
 | p.71 | Copy / clear / paste / undo in sample manager | Slot clipboard | ❌ | None |  | – | n/a |
 | p.71 | RAM to ROM copy | Keep a take | ❌ | Disabled with reason | The firmware supports it; only a real machine's panel (HW MIDI engine) can do it today. | – | n/a |
 | p.70 | Sample limits (4-48 kHz, mono, 12-bit playback) | Rules | ✅ | Plug-in converts on load |  | – | missing |
@@ -395,16 +395,16 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p. | What you save stays for every new session | The machine keeps its kits, patterns, songs, globals and samples when it is switched off. | ✅ | By itself (a session without a DAW project, and the standalone, start from the saved memory); engine menu: KEEP MEMORY; Reset machine… > Start from factory memory… | I-024, doc/modern-ux/DESIGN-machine-memory.md | 1 | pass (e2e-md-engine-memory) |
 | p. | Factory songs play | The songs of factory memory are there and play: load one, SONG mode, PLAY. | ✅ | Song workspace: the song slots, Load; the arrangement follows the machine | e2e: every factory song | 2 | pass (md-real-song-playing) |
 | p. | Factory patterns play | The patterns of factory memory are there and play: pick one on the LCD, PLAY. | ✅ | The pattern chooser on the LCD | e2e: patterns spread over all 128 | 2 | pass (md-real-pattern-playing) |
-| p. | GEN rolls a rhythm | No such function: you set the hits by hand. The editor rolls a rhythm for you from a few settings. | ✅ | GEN bar on Sequence: Random, Defaults, Hits; R | One undo step | 3 | stub-only (e2e-md-gen-keys-r) |
+| p. | GEN rolls a rhythm | No such function: you set the hits by hand. The editor rolls a rhythm for you from a few settings. | ✅ | GEN bar on Sequence: Random, Defaults, Hits; R | One undo step | 3 | pass (e2e-md-gen-keys-r) |
 | p. | MUTATE changes a sound | No such function. The editor nudges the sound of the tracks at random, within a scope and an amount. | ✅ | GEN bar on Sequence: MUTATE, scope chips, amount | One undo step | 2 | pass (e2e-md-gen-mutate-scope) |
 | p. | Solo | Solo plays one track alone; the mutes you had come back when you let go. | ✅ | Mix: S on the strip; the rail | The machine has mute only | 2 | pass (e2e-md-mix-mute-solo) |
 | p. | Undo and redo | No undo. Every edit of the editor can be taken back and done again, across kits, patterns and songs. | ✅ | UNDO and REDO in the top bar; Cmd+Z, Cmd+Shift+Z | The machine has no undo | 2 | pass (e2e-md-top-undo-redo) |
 | p. | Typed values | Type a value into a knob instead of turning it. | ✅ | Cmd-click or Enter on a value box; the arrow keys step it | A list takes its names | 2 | pass (e2e-md-sound-type-value) |
 | p. | The step menu | Right-click a step for accent or slide, copy, paste and fill. | ✅ | Right-click a step (MM: in the roll or a trig row) | Keyboard and mouse | 2 | pass (e2e-md-seq-step-menu) |
 | p. | Select, copy and paste steps | Select steps with the mouse, copy, paste and clear them, to one track or several. | ✅ | Cmd-click, Cmd-drag, the top bar's Copy, Paste, Clr; Cmd+C, Cmd+V |  | 4 | pass (e2e-md-seq-select-copy-paste) |
-| p. | Copy, Paste and Clear what | Choose what a copy, paste or clear takes: trigs, locks, the sound, the whole track. | ✅ | The what menu on Copy, Paste and Clear |  | 2 | stub-only (e2e-md-seq-copy-what-fail) |
+| p. | Copy, Paste and Clear what | Choose what a copy, paste or clear takes: trigs, locks, the sound, the whole track. | ✅ | The what menu on Copy, Paste and Clear |  | 2 | pass (md-copy-what-menu) |
 | p. | Drop a file on the window | Drop a SysEx file (or, on the Machinedrum, a sample) on the editor. | ✅ | The window itself | macOS | 2 | pass (e2e-md-drop-syx) |
-| p. | SysEx import with a preview | Look inside a SysEx file before you send it: tick the kinds, choose where each goes, read the report. | ✅ | Engine menu: IMPORT SYSEX… |  | 5 | stub-only (e2e-md-lib-syx-import) |
+| p. | SysEx import with a preview | Look inside a SysEx file before you send it: tick the kinds, choose where each goes, read the report. | ✅ | Engine menu: IMPORT SYSEX… |  | 5 | pass (e2e-md-lib-syx-import) |
 | p. | Notes from a MIDI keyboard light the track | The track you play lights on the rail and in the mixer. | ✅ | Rail numbers, Mix LEDs |  | 1 | pass (e2e-md-sound-note-light) |
 | p. | The CPU meter and the speed-ups | No such function. A meter shows how much of the audio time the emulation takes, with the speed-ups to switch. | ✅ | The CPU meter beside the version; Developer › Speed-ups |  | 2 | pass (e2e-md-top-cpu-meter) |
 | p. | The output meter and volume | Two bars and a volume line at the end of the LCD. | ✅ | The LCD's right end |  | 1 | pass (e2e-md-lcd-volume) |
@@ -415,7 +415,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p. | Pattern queue and chooser | Pick any of the 128 patterns from the chooser; played while it runs, it waits for the end. | ✅ | The pattern on the LCD |  | 3 | pass (md-pattern-chooser) |
 | p. | Kit and song slots | The kit library and the song slots: load, copy, paste, rename and clear a slot, each undoable. | ✅ | The kit on the LCD; Song workspace |  | 4 | pass (e2e-md-lib-kit-copy-paste-undo) |
 | p. | What you draw is what plays | What you enter in the sequencer is what the machine plays. | ✅ | Sequence: the grid or the roll; Alt+Delete clears the pattern; Cmd+Z takes it back | e2e: drawn, played, cleared, undone, each checked on the machine's output | 1 | pass (md-real-sequence-drawn) |
-| p. | Revert track | The machine has no key that puts one track's sound back as stored; LOAD KIT reloads the whole kit. | ✅ | Sound: Revert track beside the machine key |  | 1 | – |
+| p. | Revert track | The machine has no key that puts one track's sound back as stored; LOAD KIT reloads the whole kit. | ✅ | Sound: Revert track beside the machine key |  | 1 | pass (e2e-md-sound-revert-track) |
 
 ## Summary
 
