@@ -2,9 +2,9 @@
 	"machine": "mm",
 	"run": {
 		"version": "0.5.1",
-		"date": "2026-10-12",
-		"commit": "",
-		"firmware": ""
+		"date": "2026-10-13",
+		"commit": "95ed4a055",
+		"firmware": " elektron_sps1-1uw_os1.63.bin elektron_sfx6-60_os1.32b.bin"
 	},
 	"rows": {
 		"MM-001": {
@@ -13,8 +13,8 @@
 			"journeys": []
 		},
 		"MM-002": {
-			"result": "stub-only",
-			"shot": "e2e-mm-seq-six-tracks-fail",
+			"result": "pass",
+			"shot": "e2e-mm-seq-six-tracks",
 			"journeys": [
 				"mm-seq-six-tracks"
 			]
@@ -35,21 +35,21 @@
 			]
 		},
 		"MM-005": {
-			"result": "stub-only",
-			"shot": "e2e-mm-mix-buses-fail",
+			"result": "pass",
+			"shot": "mm-mix-routing",
 			"journeys": [
 				"mm-mix-buses"
 			]
 		},
 		"MM-006": {
-			"result": "stub-only",
-			"shot": "e2e-mm-seq-six-tracks-fail",
+			"result": "pass",
+			"shot": "e2e-mm-seq-six-tracks",
 			"journeys": [
 				"mm-seq-six-tracks"
 			]
 		},
 		"MM-007": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-lfos",
 			"journeys": [
 				"mm-sound-lfo"
@@ -63,8 +63,8 @@
 			]
 		},
 		"MM-009": {
-			"result": "stub-only",
-			"shot": "e2e-mm-seq-six-tracks-fail",
+			"result": "pass",
+			"shot": "e2e-mm-seq-six-tracks",
 			"journeys": [
 				"mm-seq-six-tracks"
 			]
@@ -112,8 +112,8 @@
 			"journeys": []
 		},
 		"MM-017": {
-			"result": "stub-only",
-			"shot": "e2e-mm-seq-locks-fail",
+			"result": "pass",
+			"shot": "e2e-mm-seq-locks",
 			"journeys": [
 				"mm-seq-locks"
 			]
@@ -139,6 +139,7 @@
 				"mm-mix-level-mute",
 				"mm-mix-solo",
 				"mm-mix-ms-off",
+				"mm-ms-across-views",
 				"mm-keys-mute",
 				"mm-mix-drag-m-keys",
 				"mm-lib-syx-import-mute"
@@ -192,14 +193,14 @@
 			]
 		},
 		"MM-028": {
-			"result": "stub-only",
-			"shot": "e2e-mm-seq-pitch-keys-fail",
+			"result": "pass",
+			"shot": "e2e-mm-seq-pitch-keys",
 			"journeys": [
 				"mm-seq-pitch-keys"
 			]
 		},
 		"MM-029": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sequence-workspace",
 			"journeys": [
 				"mm-seq-env-trigs"
@@ -233,8 +234,8 @@
 			"journeys": []
 		},
 		"MM-034": {
-			"result": "stub-only",
-			"shot": "e2e-mm-seq-pitch-keys-fail",
+			"result": "pass",
+			"shot": "e2e-mm-seq-pitch-keys",
 			"journeys": [
 				"mm-seq-pitch-keys"
 			]
@@ -247,8 +248,8 @@
 			]
 		},
 		"MM-036": {
-			"result": "stub-only",
-			"shot": "e2e-mm-perform-mutes-fail",
+			"result": "pass",
+			"shot": "e2e-mm-perform-mutes",
 			"journeys": [
 				"mm-perform-mutes"
 			]
@@ -283,7 +284,7 @@
 			]
 		},
 		"MM-041": {
-			"result": "pass",
+			"result": "stub-only",
 			"shot": "e2e-mm-seq-first-beat",
 			"journeys": [
 				"mm-seq-first-beat",
@@ -330,7 +331,7 @@
 			]
 		},
 		"MM-047": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sequence-workspace",
 			"journeys": [
 				"mm-seq-env-trigs"
@@ -374,8 +375,8 @@
 			]
 		},
 		"MM-053": {
-			"result": "stub-only",
-			"shot": "e2e-mm-perform-joystick-midi-fail",
+			"result": "pass",
+			"shot": "e2e-mm-perform-joystick-midi",
 			"journeys": [
 				"mm-perform-joystick-midi"
 			]
@@ -428,7 +429,7 @@
 			]
 		},
 		"MM-063": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference"
@@ -497,15 +498,15 @@
 			]
 		},
 		"MM-073": {
-			"result": "stub-only",
-			"shot": "e2e-mm-perform-keys-channels-fail",
+			"result": "pass",
+			"shot": "e2e-mm-perform-keys-channels",
 			"journeys": [
 				"mm-perform-keys-channels"
 			]
 		},
 		"MM-074": {
-			"result": "stub-only",
-			"shot": "e2e-mm-seq-pitch-keys-fail",
+			"result": "pass",
+			"shot": "e2e-mm-seq-pitch-keys",
 			"journeys": [
 				"mm-seq-pitch-keys"
 			]
@@ -528,8 +529,8 @@
 			]
 		},
 		"MM-077": {
-			"result": "stub-only",
-			"shot": "e2e-mm-seq-pitch-keys-fail",
+			"result": "pass",
+			"shot": "e2e-mm-seq-pitch-keys",
 			"journeys": [
 				"mm-seq-pitch-keys"
 			]
@@ -564,8 +565,8 @@
 			]
 		},
 		"MM-082": {
-			"result": "stub-only",
-			"shot": "e2e-mm-seq-record-locks-fail",
+			"result": "pass",
+			"shot": "e2e-mm-seq-record-locks",
 			"journeys": [
 				"mm-seq-record-locks"
 			]
@@ -579,14 +580,14 @@
 			]
 		},
 		"MM-084": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-workspace",
 			"journeys": [
 				"mm-sound-track-effects"
 			]
 		},
 		"MM-085": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sequence-workspace",
 			"journeys": [
 				"mm-seq-env-trigs"
@@ -608,15 +609,15 @@
 			]
 		},
 		"MM-088": {
-			"result": "stub-only",
-			"shot": "e2e-mm-perform-keys-channels-fail",
+			"result": "pass",
+			"shot": "e2e-mm-perform-keys-channels",
 			"journeys": [
 				"mm-perform-keys-channels"
 			]
 		},
 		"MM-089": {
-			"result": "stub-only",
-			"shot": "e2e-mm-perform-keys-channels-fail",
+			"result": "pass",
+			"shot": "e2e-mm-perform-keys-channels",
 			"journeys": [
 				"mm-perform-keys-channels"
 			]
@@ -627,22 +628,22 @@
 			"journeys": []
 		},
 		"MM-091": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference"
 			]
 		},
 		"MM-092": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-workspace",
 			"journeys": [
 				"mm-sound-track-effects"
 			]
 		},
 		"MM-093": {
-			"result": "stub-only",
-			"shot": "e2e-mm-kit-parts-fail",
+			"result": "pass",
+			"shot": "e2e-mm-kit-parts",
 			"journeys": [
 				"mm-kit-parts"
 			]
@@ -669,14 +670,14 @@
 			]
 		},
 		"MM-097": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-kit-library",
 			"journeys": [
 				"mm-lib-kit-slots"
 			]
 		},
 		"MM-098": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-kit-library",
 			"journeys": [
 				"mm-lib-kit-slots"
@@ -723,15 +724,15 @@
 			]
 		},
 		"MM-105": {
-			"result": "stub-only",
-			"shot": "e2e-mm-kit-parts-fail",
+			"result": "pass",
+			"shot": "e2e-mm-kit-parts",
 			"journeys": [
 				"mm-kit-parts"
 			]
 		},
 		"MM-106": {
-			"result": "stub-only",
-			"shot": "e2e-mm-kit-parts-fail",
+			"result": "pass",
+			"shot": "e2e-mm-kit-parts",
 			"journeys": [
 				"mm-kit-parts"
 			]
@@ -744,28 +745,28 @@
 			]
 		},
 		"MM-108": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-kit-library",
 			"journeys": [
 				"mm-lib-kit-slots"
 			]
 		},
 		"MM-109": {
-			"result": "stub-only",
-			"shot": "e2e-mm-mix-buses-fail",
+			"result": "pass",
+			"shot": "mm-mix-routing",
 			"journeys": [
 				"mm-mix-buses"
 			]
 		},
 		"MM-110": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference"
 			]
 		},
 		"MM-111": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference"
@@ -779,49 +780,49 @@
 			]
 		},
 		"MM-113": {
-			"result": "stub-only",
-			"shot": "e2e-mm-seq-locks-fail",
+			"result": "pass",
+			"shot": "e2e-mm-seq-locks",
 			"journeys": [
 				"mm-seq-locks"
 			]
 		},
 		"MM-114": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-workspace",
 			"journeys": [
 				"mm-sound-track-effects"
 			]
 		},
 		"MM-115": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-workspace",
 			"journeys": [
 				"mm-sound-track-effects"
 			]
 		},
 		"MM-116": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-workspace",
 			"journeys": [
 				"mm-sound-track-effects"
 			]
 		},
 		"MM-117": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-workspace",
 			"journeys": [
 				"mm-sound-track-effects"
 			]
 		},
 		"MM-118": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-workspace",
 			"journeys": [
 				"mm-sound-track-effects"
 			]
 		},
 		"MM-119": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-workspace",
 			"journeys": [
 				"mm-sound-track-effects"
@@ -835,7 +836,7 @@
 			]
 		},
 		"MM-121": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-workspace",
 			"journeys": [
 				"mm-sound-track-effects",
@@ -843,42 +844,42 @@
 			]
 		},
 		"MM-122": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-workspace",
 			"journeys": [
 				"mm-sound-track-effects"
 			]
 		},
 		"MM-123": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-workspace",
 			"journeys": [
 				"mm-sound-track-effects"
 			]
 		},
 		"MM-124": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-workspace",
 			"journeys": [
 				"mm-sound-track-effects"
 			]
 		},
 		"MM-125": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-workspace",
 			"journeys": [
 				"mm-sound-track-effects"
 			]
 		},
 		"MM-126": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-workspace",
 			"journeys": [
 				"mm-sound-track-effects"
 			]
 		},
 		"MM-127": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-workspace",
 			"journeys": [
 				"mm-sound-track-effects"
@@ -892,112 +893,112 @@
 			]
 		},
 		"MM-129": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-workspace",
 			"journeys": [
 				"mm-sound-track-effects"
 			]
 		},
 		"MM-130": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-workspace",
 			"journeys": [
 				"mm-sound-track-effects"
 			]
 		},
 		"MM-131": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-workspace",
 			"journeys": [
 				"mm-sound-track-effects"
 			]
 		},
 		"MM-132": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-workspace",
 			"journeys": [
 				"mm-sound-track-effects"
 			]
 		},
 		"MM-133": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-workspace",
 			"journeys": [
 				"mm-sound-track-effects"
 			]
 		},
 		"MM-134": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-workspace",
 			"journeys": [
 				"mm-sound-track-effects"
 			]
 		},
 		"MM-135": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-lfos",
 			"journeys": [
 				"mm-sound-lfo"
 			]
 		},
 		"MM-136": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-lfos",
 			"journeys": [
 				"mm-sound-lfo"
 			]
 		},
 		"MM-137": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-lfos",
 			"journeys": [
 				"mm-sound-lfo"
 			]
 		},
 		"MM-138": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-lfos",
 			"journeys": [
 				"mm-sound-lfo"
 			]
 		},
 		"MM-139": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-lfos",
 			"journeys": [
 				"mm-sound-lfo"
 			]
 		},
 		"MM-140": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-lfos",
 			"journeys": [
 				"mm-sound-lfo"
 			]
 		},
 		"MM-141": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-lfos",
 			"journeys": [
 				"mm-sound-lfo"
 			]
 		},
 		"MM-142": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-lfos",
 			"journeys": [
 				"mm-sound-lfo"
 			]
 		},
 		"MM-143": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sequence-workspace",
 			"journeys": [
 				"mm-seq-env-trigs"
 			]
 		},
 		"MM-144": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sound-lfos",
 			"journeys": [
 				"mm-sound-lfo"
@@ -1046,7 +1047,7 @@
 			]
 		},
 		"MM-151": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-trig-setup",
 			"journeys": [
 				"mm-seq-trig-setup"
@@ -1060,7 +1061,7 @@
 			]
 		},
 		"MM-153": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-trig-setup",
 			"journeys": [
 				"mm-seq-trig-setup"
@@ -1068,42 +1069,42 @@
 		},
 		"MM-154": {
 			"result": "stub-only",
-			"shot": "mm-perform-multi-trig",
+			"shot": "e2e-mm-perform-multi-setup-fail",
 			"journeys": [
 				"mm-perform-multi-setup"
 			]
 		},
 		"MM-155": {
 			"result": "stub-only",
-			"shot": "mm-perform-multi-trig",
+			"shot": "e2e-mm-perform-multi-setup-fail",
 			"journeys": [
 				"mm-perform-multi-setup"
 			]
 		},
 		"MM-156": {
 			"result": "stub-only",
-			"shot": "mm-perform-multi-trig",
+			"shot": "e2e-mm-perform-multi-setup-fail",
 			"journeys": [
 				"mm-perform-multi-setup"
 			]
 		},
 		"MM-157": {
 			"result": "stub-only",
-			"shot": "mm-perform-multi-trig",
+			"shot": "e2e-mm-perform-multi-setup-fail",
 			"journeys": [
 				"mm-perform-multi-setup"
 			]
 		},
 		"MM-158": {
 			"result": "stub-only",
-			"shot": "mm-perform-multi-trig",
+			"shot": "e2e-mm-perform-multi-setup-fail",
 			"journeys": [
 				"mm-perform-multi-setup"
 			]
 		},
 		"MM-159": {
 			"result": "stub-only",
-			"shot": "mm-perform-multi-trig",
+			"shot": "e2e-mm-perform-multi-setup-fail",
 			"journeys": [
 				"mm-perform-multi-setup"
 			]
@@ -1119,7 +1120,7 @@
 			]
 		},
 		"MM-161": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-trig-setup",
 			"journeys": [
 				"mm-seq-trig-setup"
@@ -1182,14 +1183,14 @@
 			]
 		},
 		"MM-170": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-song-workspace",
 			"journeys": [
 				"mm-song-row-settings"
 			]
 		},
 		"MM-171": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sequence-workspace",
 			"journeys": [
 				"mm-seq-env-trigs"
@@ -1204,15 +1205,15 @@
 			]
 		},
 		"MM-173": {
-			"result": "stub-only",
-			"shot": "e2e-mm-seq-pitch-keys-fail",
+			"result": "pass",
+			"shot": "e2e-mm-seq-pitch-keys",
 			"journeys": [
 				"mm-seq-pitch-keys"
 			]
 		},
 		"MM-174": {
-			"result": "stub-only",
-			"shot": "e2e-mm-seq-pitch-keys-fail",
+			"result": "pass",
+			"shot": "e2e-mm-seq-pitch-keys",
 			"journeys": [
 				"mm-seq-pitch-keys"
 			]
@@ -1225,8 +1226,8 @@
 			]
 		},
 		"MM-176": {
-			"result": "stub-only",
-			"shot": "e2e-mm-seq-pitch-keys-fail",
+			"result": "pass",
+			"shot": "e2e-mm-seq-pitch-keys",
 			"journeys": [
 				"mm-seq-pitch-keys"
 			]
@@ -1391,7 +1392,7 @@
 			]
 		},
 		"MM-199": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-song-workspace",
 			"journeys": [
 				"mm-song-row-settings"
@@ -1433,49 +1434,49 @@
 			]
 		},
 		"MM-205": {
-			"result": "stub-only",
-			"shot": "e2e-mm-seq-locks-fail",
+			"result": "pass",
+			"shot": "e2e-mm-seq-locks",
 			"journeys": [
 				"mm-seq-locks"
 			]
 		},
 		"MM-206": {
-			"result": "stub-only",
-			"shot": "e2e-mm-seq-locks-fail",
+			"result": "pass",
+			"shot": "e2e-mm-seq-locks",
 			"journeys": [
 				"mm-seq-locks"
 			]
 		},
 		"MM-207": {
-			"result": "stub-only",
-			"shot": "e2e-mm-seq-record-locks-fail",
+			"result": "pass",
+			"shot": "e2e-mm-seq-record-locks",
 			"journeys": [
 				"mm-seq-record-locks"
 			]
 		},
 		"MM-208": {
-			"result": "stub-only",
-			"shot": "e2e-mm-seq-locks-fail",
+			"result": "pass",
+			"shot": "e2e-mm-seq-locks",
 			"journeys": [
 				"mm-seq-locks"
 			]
 		},
 		"MM-209": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sequence-workspace",
 			"journeys": [
 				"mm-seq-env-trigs"
 			]
 		},
 		"MM-210": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sequence-workspace",
 			"journeys": [
 				"mm-seq-env-trigs"
 			]
 		},
 		"MM-211": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sequence-workspace",
 			"journeys": [
 				"mm-seq-env-trigs"
@@ -1487,14 +1488,14 @@
 			"journeys": []
 		},
 		"MM-213": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sequence-workspace",
 			"journeys": [
 				"mm-seq-env-trigs"
 			]
 		},
 		"MM-214": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-sequence-workspace",
 			"journeys": [
 				"mm-seq-env-trigs"
@@ -1663,8 +1664,8 @@
 			"journeys": []
 		},
 		"MM-238": {
-			"result": "stub-only",
-			"shot": "e2e-mm-perform-mutes-fail",
+			"result": "pass",
+			"shot": "e2e-mm-perform-mutes",
 			"journeys": [
 				"mm-perform-mutes"
 			]
@@ -1810,8 +1811,8 @@
 			]
 		},
 		"MM-258": {
-			"result": "pass",
-			"shot": "e2e-mm-song-play-from",
+			"result": "stub-only",
+			"shot": "e2e-mm-song-play-from-fail",
 			"journeys": [
 				"mm-song-play-from"
 			]
@@ -1822,7 +1823,7 @@
 			"journeys": []
 		},
 		"MM-260": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-song-workspace",
 			"journeys": [
 				"mm-song-row-settings"
@@ -1845,21 +1846,21 @@
 			]
 		},
 		"MM-263": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-song-workspace",
 			"journeys": [
 				"mm-song-row-settings"
 			]
 		},
 		"MM-264": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-song-workspace",
 			"journeys": [
 				"mm-song-row-settings"
 			]
 		},
 		"MM-265": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-song-workspace",
 			"journeys": [
 				"mm-song-row-settings"
@@ -1873,7 +1874,7 @@
 			]
 		},
 		"MM-267": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-song-workspace",
 			"journeys": [
 				"mm-song-row-settings"
@@ -1894,8 +1895,8 @@
 			]
 		},
 		"MM-270": {
-			"result": "pass",
-			"shot": "e2e-mm-song-play-from",
+			"result": "stub-only",
+			"shot": "e2e-mm-song-play-from-fail",
 			"journeys": [
 				"mm-song-play-from"
 			]
@@ -1915,85 +1916,85 @@
 			]
 		},
 		"MM-273": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-song-workspace",
 			"journeys": [
 				"mm-song-row-settings"
 			]
 		},
 		"MM-274": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-song-workspace",
 			"journeys": [
 				"mm-song-row-settings"
 			]
 		},
 		"MM-275": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-song-workspace",
 			"journeys": [
 				"mm-song-row-settings"
 			]
 		},
 		"MM-276": {
-			"result": "stub-only",
-			"shot": "e2e-mm-mix-buses-fail",
+			"result": "pass",
+			"shot": "mm-mix-routing",
 			"journeys": [
 				"mm-mix-buses"
 			]
 		},
 		"MM-277": {
-			"result": "stub-only",
-			"shot": "e2e-mm-mix-buses-fail",
+			"result": "pass",
+			"shot": "mm-mix-routing",
 			"journeys": [
 				"mm-mix-buses"
 			]
 		},
 		"MM-278": {
-			"result": "stub-only",
-			"shot": "e2e-mm-mix-buses-fail",
+			"result": "pass",
+			"shot": "mm-mix-routing",
 			"journeys": [
 				"mm-mix-buses"
 			]
 		},
 		"MM-279": {
-			"result": "stub-only",
-			"shot": "e2e-mm-mix-buses-fail",
+			"result": "pass",
+			"shot": "mm-mix-routing",
 			"journeys": [
 				"mm-mix-buses"
 			]
 		},
 		"MM-280": {
-			"result": "stub-only",
-			"shot": "e2e-mm-mix-buses-fail",
+			"result": "pass",
+			"shot": "mm-mix-routing",
 			"journeys": [
 				"mm-mix-buses"
 			]
 		},
 		"MM-281": {
-			"result": "stub-only",
-			"shot": "e2e-mm-mix-buses-fail",
+			"result": "pass",
+			"shot": "mm-mix-routing",
 			"journeys": [
 				"mm-mix-buses"
 			]
 		},
 		"MM-282": {
-			"result": "stub-only",
-			"shot": "e2e-mm-mix-buses-fail",
+			"result": "pass",
+			"shot": "mm-mix-routing",
 			"journeys": [
 				"mm-mix-buses"
 			]
 		},
 		"MM-283": {
-			"result": "stub-only",
-			"shot": "e2e-mm-mix-buses-fail",
+			"result": "pass",
+			"shot": "mm-mix-routing",
 			"journeys": [
 				"mm-mix-buses"
 			]
 		},
 		"MM-284": {
-			"result": "stub-only",
-			"shot": "e2e-mm-mix-buses-fail",
+			"result": "pass",
+			"shot": "mm-mix-routing",
 			"journeys": [
 				"mm-mix-buses"
 			]
@@ -2027,8 +2028,8 @@
 			]
 		},
 		"MM-289": {
-			"result": "stub-only",
-			"shot": "e2e-mm-wire-cc-fail",
+			"result": "pass",
+			"shot": "e2e-mm-wire-cc",
 			"journeys": [
 				"mm-wire-cc"
 			]
@@ -2042,22 +2043,22 @@
 			]
 		},
 		"MM-291": {
-			"result": "stub-only",
-			"shot": "e2e-mm-perform-keys-channels-fail",
+			"result": "pass",
+			"shot": "e2e-mm-perform-keys-channels",
 			"journeys": [
 				"mm-perform-keys-channels"
 			]
 		},
 		"MM-292": {
-			"result": "stub-only",
-			"shot": "e2e-mm-perform-keys-channels-fail",
+			"result": "pass",
+			"shot": "e2e-mm-perform-keys-channels",
 			"journeys": [
 				"mm-perform-keys-channels"
 			]
 		},
 		"MM-293": {
-			"result": "stub-only",
-			"shot": "e2e-mm-perform-keys-channels-fail",
+			"result": "pass",
+			"shot": "e2e-mm-perform-keys-channels",
 			"journeys": [
 				"mm-perform-keys-channels"
 			]
@@ -2116,14 +2117,14 @@
 		},
 		"MM-302": {
 			"result": "stub-only",
-			"shot": "mm-perform-multi-trig",
+			"shot": "e2e-mm-perform-multi-setup-fail",
 			"journeys": [
 				"mm-perform-multi-setup"
 			]
 		},
 		"MM-303": {
 			"result": "stub-only",
-			"shot": "mm-perform-multi-trig",
+			"shot": "e2e-mm-perform-multi-setup-fail",
 			"journeys": [
 				"mm-perform-multi-setup"
 			]
@@ -2151,7 +2152,7 @@
 			]
 		},
 		"MM-308": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "e2e-mm-lib-syx-import",
 			"journeys": [
 				"mm-lib-syx-import",
@@ -2247,42 +2248,42 @@
 			"journeys": []
 		},
 		"MM-324": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference"
 			]
 		},
 		"MM-325": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference"
 			]
 		},
 		"MM-326": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference"
 			]
 		},
 		"MM-327": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference"
 			]
 		},
 		"MM-328": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference"
 			]
 		},
 		"MM-329": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference",
@@ -2290,42 +2291,42 @@
 			]
 		},
 		"MM-330": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference"
 			]
 		},
 		"MM-331": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference"
 			]
 		},
 		"MM-332": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference"
 			]
 		},
 		"MM-333": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference"
 			]
 		},
 		"MM-334": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference"
 			]
 		},
 		"MM-335": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference",
@@ -2340,70 +2341,70 @@
 			]
 		},
 		"MM-337": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference"
 			]
 		},
 		"MM-338": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference"
 			]
 		},
 		"MM-339": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference"
 			]
 		},
 		"MM-340": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference"
 			]
 		},
 		"MM-341": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference"
 			]
 		},
 		"MM-342": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference"
 			]
 		},
 		"MM-343": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference"
 			]
 		},
 		"MM-344": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference"
 			]
 		},
 		"MM-345": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference"
 			]
 		},
 		"MM-346": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "mm-machine-picker",
 			"journeys": [
 				"mm-sound-machine-reference"
@@ -2417,106 +2418,106 @@
 			]
 		},
 		"MM-348": {
-			"result": "stub-only",
-			"shot": "e2e-mm-seq-pitch-keys-fail",
+			"result": "pass",
+			"shot": "e2e-mm-seq-pitch-keys",
 			"journeys": [
 				"mm-seq-pitch-keys"
 			]
 		},
 		"MM-349": {
-			"result": "stub-only",
-			"shot": "e2e-mm-perform-keys-channels-fail",
+			"result": "pass",
+			"shot": "e2e-mm-perform-keys-channels",
 			"journeys": [
 				"mm-perform-keys-channels"
 			]
 		},
 		"MM-350": {
-			"result": "stub-only",
-			"shot": "e2e-mm-perform-keys-channels-fail",
+			"result": "pass",
+			"shot": "e2e-mm-perform-keys-channels",
 			"journeys": [
 				"mm-perform-keys-channels"
 			]
 		},
 		"MM-351": {
-			"result": "stub-only",
-			"shot": "e2e-mm-perform-keys-channels-fail",
+			"result": "pass",
+			"shot": "e2e-mm-perform-keys-channels",
 			"journeys": [
 				"mm-perform-keys-channels"
 			]
 		},
 		"MM-352": {
-			"result": "stub-only",
-			"shot": "e2e-mm-perform-joystick-midi-fail",
+			"result": "pass",
+			"shot": "e2e-mm-perform-joystick-midi",
 			"journeys": [
 				"mm-perform-joystick-midi"
 			]
 		},
 		"MM-353": {
-			"result": "stub-only",
-			"shot": "e2e-mm-wire-cc-fail",
+			"result": "pass",
+			"shot": "e2e-mm-wire-cc",
 			"journeys": [
 				"mm-wire-cc"
 			]
 		},
 		"MM-354": {
-			"result": "stub-only",
-			"shot": "e2e-mm-wire-cc-fail",
+			"result": "pass",
+			"shot": "e2e-mm-wire-cc",
 			"journeys": [
 				"mm-wire-cc"
 			]
 		},
 		"MM-355": {
-			"result": "stub-only",
-			"shot": "e2e-mm-wire-cc-fail",
+			"result": "pass",
+			"shot": "e2e-mm-wire-cc",
 			"journeys": [
 				"mm-wire-cc"
 			]
 		},
 		"MM-356": {
-			"result": "stub-only",
-			"shot": "e2e-mm-wire-cc-fail",
+			"result": "pass",
+			"shot": "e2e-mm-wire-cc",
 			"journeys": [
 				"mm-wire-cc"
 			]
 		},
 		"MM-357": {
-			"result": "stub-only",
-			"shot": "e2e-mm-wire-cc-fail",
+			"result": "pass",
+			"shot": "e2e-mm-wire-cc",
 			"journeys": [
 				"mm-wire-cc"
 			]
 		},
 		"MM-358": {
-			"result": "stub-only",
-			"shot": "e2e-mm-wire-cc-fail",
+			"result": "pass",
+			"shot": "e2e-mm-wire-cc",
 			"journeys": [
 				"mm-wire-cc"
 			]
 		},
 		"MM-359": {
-			"result": "stub-only",
-			"shot": "e2e-mm-wire-cc-fail",
+			"result": "pass",
+			"shot": "e2e-mm-wire-cc",
 			"journeys": [
 				"mm-wire-cc"
 			]
 		},
 		"MM-360": {
-			"result": "stub-only",
-			"shot": "e2e-mm-wire-cc-fail",
+			"result": "pass",
+			"shot": "e2e-mm-wire-cc",
 			"journeys": [
 				"mm-wire-cc"
 			]
 		},
 		"MM-361": {
-			"result": "pass",
-			"shot": "e2e-mm-top-panic",
+			"result": "stub-only",
+			"shot": "e2e-mm-top-panic-fail",
 			"journeys": [
 				"mm-top-panic"
 			]
 		},
 		"MM-362": {
-			"result": "stub-only",
-			"shot": "e2e-mm-wire-cc-fail",
+			"result": "pass",
+			"shot": "e2e-mm-wire-cc",
 			"journeys": [
 				"mm-wire-cc"
 			]
@@ -2532,15 +2533,15 @@
 			"journeys": []
 		},
 		"MM-365": {
-			"result": "stub-only",
-			"shot": "e2e-mm-perform-menv-nrpn-fail",
+			"result": "pass",
+			"shot": "e2e-mm-perform-menv-nrpn",
 			"journeys": [
 				"mm-perform-menv-nrpn"
 			]
 		},
 		"MM-366": {
-			"result": "stub-only",
-			"shot": "e2e-mm-perform-joystick-midi-fail",
+			"result": "pass",
+			"shot": "e2e-mm-perform-joystick-midi",
 			"journeys": [
 				"mm-perform-joystick-midi"
 			]
@@ -2563,8 +2564,8 @@
 			]
 		},
 		"MM-370": {
-			"result": "stub-only",
-			"shot": "e2e-mm-wire-sysex-fail",
+			"result": "pass",
+			"shot": "e2e-mm-wire-sysex",
 			"journeys": [
 				"mm-wire-sysex"
 			]
@@ -2575,8 +2576,8 @@
 			"journeys": []
 		},
 		"MM-372": {
-			"result": "stub-only",
-			"shot": "e2e-mm-kit-parts-fail",
+			"result": "pass",
+			"shot": "e2e-mm-kit-parts",
 			"journeys": [
 				"mm-kit-parts"
 			]
@@ -2589,29 +2590,29 @@
 			]
 		},
 		"MM-374": {
-			"result": "stub-only",
-			"shot": "e2e-mm-wire-sysex-fail",
+			"result": "pass",
+			"shot": "e2e-mm-wire-sysex",
 			"journeys": [
 				"mm-wire-sysex"
 			]
 		},
 		"MM-375": {
-			"result": "stub-only",
-			"shot": "e2e-mm-wire-sysex-fail",
+			"result": "pass",
+			"shot": "e2e-mm-wire-sysex",
 			"journeys": [
 				"mm-wire-sysex"
 			]
 		},
 		"MM-376": {
-			"result": "stub-only",
-			"shot": "e2e-mm-wire-sysex-fail",
+			"result": "pass",
+			"shot": "e2e-mm-wire-sysex",
 			"journeys": [
 				"mm-wire-sysex"
 			]
 		},
 		"MM-377": {
-			"result": "stub-only",
-			"shot": "e2e-mm-mix-buses-fail",
+			"result": "pass",
+			"shot": "mm-mix-routing",
 			"journeys": [
 				"mm-mix-buses"
 			]
@@ -2627,36 +2628,36 @@
 			"journeys": []
 		},
 		"MM-380": {
-			"result": "stub-only",
-			"shot": "e2e-mm-wire-sysex-fail",
+			"result": "pass",
+			"shot": "e2e-mm-wire-sysex",
 			"journeys": [
 				"mm-wire-sysex"
 			]
 		},
 		"MM-381": {
-			"result": "stub-only",
-			"shot": "e2e-mm-wire-sysex-fail",
+			"result": "pass",
+			"shot": "e2e-mm-wire-sysex",
 			"journeys": [
 				"mm-wire-sysex"
 			]
 		},
 		"MM-382": {
-			"result": "stub-only",
-			"shot": "e2e-mm-wire-sysex-fail",
+			"result": "pass",
+			"shot": "e2e-mm-wire-sysex",
 			"journeys": [
 				"mm-wire-sysex"
 			]
 		},
 		"MM-383": {
-			"result": "stub-only",
-			"shot": "e2e-mm-wire-sysex-fail",
+			"result": "pass",
+			"shot": "e2e-mm-wire-sysex",
 			"journeys": [
 				"mm-wire-sysex"
 			]
 		},
 		"MM-384": {
-			"result": "stub-only",
-			"shot": "e2e-mm-wire-sysex-fail",
+			"result": "pass",
+			"shot": "e2e-mm-wire-sysex",
 			"journeys": [
 				"mm-wire-sysex"
 			]
@@ -2709,7 +2710,8 @@
 			"result": "pass",
 			"shot": "e2e-mm-mix-solo",
 			"journeys": [
-				"mm-mix-solo"
+				"mm-mix-solo",
+				"mm-mix-solo-saved"
 			]
 		},
 		"MM-X07": {
@@ -2762,7 +2764,7 @@
 			]
 		},
 		"MM-X13": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "e2e-mm-lib-syx-import",
 			"journeys": [
 				"mm-lib-syx-import",
@@ -2855,10 +2857,17 @@
 			]
 		},
 		"MM-X24": {
-			"result": "fail",
+			"result": "pass",
 			"shot": "mm-real-sequence-drawn",
 			"journeys": [
 				"mm-real-sequence-plays"
+			]
+		},
+		"MM-X25": {
+			"result": "pass",
+			"shot": "e2e-mm-sound-revert-track",
+			"journeys": [
+				"mm-sound-revert-track"
 			]
 		}
 	}

@@ -2,9 +2,9 @@
 	"machine": "md",
 	"run": {
 		"version": "0.5.1",
-		"date": "2026-10-12",
-		"commit": "",
-		"firmware": ""
+		"date": "2026-10-13",
+		"commit": "95ed4a055",
+		"firmware": " elektron_sps1-1uw_os1.63.bin elektron_sfx6-60_os1.32b.bin"
 	},
 	"rows": {
 		"MD-001": {
@@ -90,8 +90,8 @@
 			"journeys": []
 		},
 		"MD-013": {
-			"result": "pass",
-			"shot": "e2e-md-seq-live-record",
+			"result": "fail",
+			"shot": "e2e-md-seq-live-record-fail",
 			"journeys": [
 				"md-seq-live-record"
 			]
@@ -128,7 +128,7 @@
 			]
 		},
 		"MD-018": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "md-kit-library",
 			"journeys": [
 				"md-lib-kit-menu"
@@ -203,7 +203,7 @@
 			]
 		},
 		"MD-030": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "md-kit-library",
 			"journeys": [
 				"md-lib-kit-menu"
@@ -257,7 +257,7 @@
 			]
 		},
 		"MD-038": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "md-kit-library",
 			"journeys": [
 				"md-lib-kit-menu"
@@ -271,7 +271,7 @@
 			]
 		},
 		"MD-040": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "md-kit-library",
 			"journeys": [
 				"md-lib-kit-menu"
@@ -740,8 +740,8 @@
 			]
 		},
 		"MD-106": {
-			"result": "stub-only",
-			"shot": "e2e-md-seq-len-repeats-fail",
+			"result": "pass",
+			"shot": "e2e-md-seq-len-repeats",
 			"journeys": [
 				"md-seq-len-repeats"
 			]
@@ -783,15 +783,15 @@
 			"journeys": []
 		},
 		"MD-112": {
-			"result": "pass",
-			"shot": "e2e-md-seq-live-record",
+			"result": "fail",
+			"shot": "e2e-md-seq-live-record-fail",
 			"journeys": [
 				"md-seq-live-record"
 			]
 		},
 		"MD-113": {
-			"result": "stub-only",
-			"shot": "e2e-md-seq-live-erase-fail",
+			"result": "pass",
+			"shot": "e2e-md-seq-live-erase",
 			"journeys": [
 				"md-seq-live-erase"
 			]
@@ -814,15 +814,15 @@
 			]
 		},
 		"MD-116": {
-			"result": "stub-only",
-			"shot": "e2e-md-seq-copy-paste-clear",
+			"result": "pass",
+			"shot": "md-copy-what-menu",
 			"journeys": [
 				"md-seq-copy-paste-clear",
 				"md-seq-copy-what"
 			]
 		},
 		"MD-117": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "e2e-md-seq-copy-paste-clear",
 			"journeys": [
 				"md-seq-copy-paste-clear",
@@ -904,15 +904,15 @@
 			]
 		},
 		"MD-128": {
-			"result": "stub-only",
-			"shot": "e2e-md-seq-trig-types-fail",
+			"result": "pass",
+			"shot": "e2e-md-seq-trig-types",
 			"journeys": [
 				"md-seq-trig-types"
 			]
 		},
 		"MD-129": {
-			"result": "stub-only",
-			"shot": "e2e-md-seq-copy-what-fail",
+			"result": "pass",
+			"shot": "md-copy-what-menu",
 			"journeys": [
 				"md-seq-copy-what",
 				"md-seq-clear-what"
@@ -926,22 +926,22 @@
 			]
 		},
 		"MD-131": {
-			"result": "stub-only",
-			"shot": "e2e-md-seq-trig-types-fail",
+			"result": "pass",
+			"shot": "e2e-md-seq-trig-types",
 			"journeys": [
 				"md-seq-trig-types"
 			]
 		},
 		"MD-132": {
-			"result": "stub-only",
-			"shot": "e2e-md-seq-trig-types-fail",
+			"result": "pass",
+			"shot": "e2e-md-seq-trig-types",
 			"journeys": [
 				"md-seq-trig-types"
 			]
 		},
 		"MD-133": {
-			"result": "stub-only",
-			"shot": "e2e-md-seq-swing-copy-fail",
+			"result": "pass",
+			"shot": "e2e-md-seq-swing-copy",
 			"journeys": [
 				"md-seq-swing-copy"
 			]
@@ -970,8 +970,8 @@
 			]
 		},
 		"MD-137": {
-			"result": "stub-only",
-			"shot": "e2e-md-seq-lock-budget-fail",
+			"result": "pass",
+			"shot": "e2e-md-seq-lock-budget",
 			"journeys": [
 				"md-seq-lock-budget"
 			]
@@ -984,7 +984,7 @@
 			]
 		},
 		"MD-139": {
-			"result": "pass",
+			"result": "stub-only",
 			"shot": "md-live-recording",
 			"journeys": [
 				"md-seq-live-lock"
@@ -998,7 +998,7 @@
 			]
 		},
 		"MD-141": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "md-accent",
 			"journeys": [
 				"md-seq-accent-slide",
@@ -1006,8 +1006,8 @@
 			]
 		},
 		"MD-142": {
-			"result": "stub-only",
-			"shot": "e2e-md-seq-copy-what-fail",
+			"result": "pass",
+			"shot": "md-copy-what-menu",
 			"journeys": [
 				"md-seq-copy-what"
 			]
@@ -1297,14 +1297,14 @@
 			]
 		},
 		"MD-183": {
-			"result": "stub-only",
-			"shot": "e2e-md-lib-syx-place-fail",
+			"result": "pass",
+			"shot": "e2e-md-lib-syx-place",
 			"journeys": [
 				"md-lib-syx-place"
 			]
 		},
 		"MD-184": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "e2e-md-lib-syx-verify",
 			"journeys": [
 				"md-lib-syx-verify",
@@ -1385,8 +1385,8 @@
 			"journeys": []
 		},
 		"MD-197": {
-			"result": "stub-only",
-			"shot": "e2e-md-sampler-rename-fail",
+			"result": "pass",
+			"shot": "e2e-md-sampler-rename",
 			"journeys": [
 				"md-sampler-rename"
 			]
@@ -2094,7 +2094,7 @@
 			]
 		},
 		"MD-X04": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "e2e-md-gen-keys-r",
 			"journeys": [
 				"md-gen-keys-r",
@@ -2114,7 +2114,8 @@
 			"result": "pass",
 			"shot": "e2e-md-mix-mute-solo",
 			"journeys": [
-				"md-mix-mute-solo"
+				"md-mix-mute-solo",
+				"md-mix-solo-saved"
 			]
 		},
 		"MD-X07": {
@@ -2152,8 +2153,8 @@
 			]
 		},
 		"MD-X11": {
-			"result": "stub-only",
-			"shot": "e2e-md-seq-copy-what-fail",
+			"result": "pass",
+			"shot": "md-copy-what-menu",
 			"journeys": [
 				"md-seq-copy-what",
 				"md-seq-clear-what"
@@ -2168,7 +2169,7 @@
 			]
 		},
 		"MD-X13": {
-			"result": "stub-only",
+			"result": "pass",
 			"shot": "e2e-md-lib-syx-import",
 			"journeys": [
 				"md-lib-syx-import",
@@ -2254,6 +2255,13 @@
 			"shot": "md-real-sequence-drawn",
 			"journeys": [
 				"md-real-sequence-plays"
+			]
+		},
+		"MD-X25": {
+			"result": "pass",
+			"shot": "e2e-md-sound-revert-track",
+			"journeys": [
+				"md-sound-revert-track"
 			]
 		}
 	}
