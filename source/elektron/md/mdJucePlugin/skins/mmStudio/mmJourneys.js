@@ -3420,6 +3420,12 @@ const MmJourneys = (() => {
 			,{ say: "the GEN bar's summary line shows whole at this size: what it writes (8 on) and, when the bar has room, the cycle and the steps (B-114)",
 				act: async (u, c) => { await closeLib(u); u.click(tab("seq")); await sleep(400); const g = $1(".genband"); c.bad = g ? [...Journey.cutText(g), ...Journey.spills(".genband .gsum")] : ["no GEN bar"]; c.text = $1(".genband .gsum")?.textContent.trim(); },
 				screen: c => ok(c.text && !c.bad.length, `"${c.text}" ${c.bad.join(" | ")}`) }
+			,{ say: "the line under the Locks, Arp, Transpose and Trig setup tabs shows whole, and so does each of the four Transpose lines (---, FIX, MAJ, MIN) (B-115)",
+				act: async (u, c) => { await closeLib(u); u.click(tab("seq")); await sleep(300); c.bad = []; c.n = 0;
+					for (const d of ["locks", "arp", "trn", "trig"]) { if (!$1(`[data-dock="${d}"]`)) continue; u.click(`[data-dock="${d}"]`); await sleep(350); c.n++; for (const x of Journey.cutText()) if (/dkhelp|lanehelp/.test(x)) c.bad.push(d + ": " + x); }
+					const line = $1(".dkhelp"); if (line && typeof TRNSHORT !== "undefined") { const keep = line.innerHTML; for (const h of TRNSHORT) { line.innerHTML = h; if (line.scrollWidth > line.clientWidth + 1) c.bad.push(`"${line.textContent.slice(0, 20)}" ${line.scrollWidth - line.clientWidth} px cut`); } line.innerHTML = keep; }
+					if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); },
+				screen: c => ok(c.n >= 3 && !c.bad.length, `${c.n} tabs; ${c.bad.join(" | ")}`) }
 		],
 		async tidy(u) { await closeLib(u); u.click(tab("seq")); }
 	};

@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-115 · Monomachine: the line under the Transpose tab ends in "(…"
+
+- **From:** screen review, 2026-10-13 (two pictures: "Click a key: C plays it (…" up to the LOCKS key).
+- **What happens:** the help line under the Transpose tab is 100 to 120 letters; the line has room for 95, so it was cut in the middle of a sentence.
+- **Fix (`fix/0.6-screens`):** the line is one short sentence for each scale (---, FIX, MAJ, MIN, `TRNSHORT`); the whole help stays in the tooltip. Page journey `mm-screens-fit` measures the line under all four tabs and each of the four sentences.
+- **Status:** fixed on `fix/0.6-screens`.
+
 ## B-114 · Both editors: the GEN bar's summary line is cut ("E 5/16 · ×4 · 20 on · steps…")
 
 - **From:** screen review, 2026-10-13 (about 8 pictures on the Monomachine, the same line on the Machinedrum).
