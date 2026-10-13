@@ -4,6 +4,15 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-120 · Monomachine: mute and solo seem to stop responding after switching views; a solo lit in Mix but not in Sequence
+
+- **From:** Discord, 2026-10-13 (macOS Tahoe, Ableton Live, Monomachine Editor).
+- **What happens (as reported):** after jumping between views, clicking M or S on a track changed nothing; once a track's S was lit in Mix but not in Sequence, and had to be turned off in Mix.
+- **Checked:** the page keeps one mute and solo per track for every workspace; switching Sequence, Sound, Mix, Perform and Song while clicking M, S and the side keys at random (about 75 clicks, 55 switches a run) never showed a key that differs from that state, neither on the stub machine nor on the real firmware (a probe journey, three runs). Found: the Sequence and Sound rails show one side at a time (Synth or MIDI). A solo on a synth track silences the MIDI tracks too, but with the rail on MIDI nothing showed it: M on a MIDI track then lit and changed nothing audible (a solo holds), and the soloed track's S was only to be seen on the other side or in Mix. That matches the report.
+- **Fix (`fix/0.6-discord`):** the rail's Synth and MIDI keys carry a small S while a solo holds on their tracks (and say so in their tooltip), so the solo is found from either side. No new control. Page journey `mm-ms-across-views` (solo and mute in Sequence, then in Mix and back, the S mark on the other side's key).
+- **Left open:** the solo is the page's own (as on the Machinedrum); if the host closes and reopens the plug-in window, the new page has no solo while the machine keeps the mutes the solo made (they show as M). Ask the tester whether the window was closed between views.
+- **Status:** fixed on `fix/0.6-discord`; to confirm with the tester.
+
 ## B-119 · Ableton: the Machinedrum and Monomachine Editors seem to hear each other's MIDI (a Push on a third track)
 
 - **From:** Discord, 2026-10-13.
