@@ -1058,6 +1058,73 @@ void kitAsLoaded()
 	check(ed::mmKitAsLoaded(k) == k, "a written kit loads as it is");
 }
 
+// revertTrack: a track of the kit that plays goes back to how the kit's slot stores it, in one change; what the kit
+// shares between tracks and the other tracks stay.
+void revertTrack()
+{
+	std::printf("revertTrack: a track back as its slot stores it\n");
+	ed::MmKit stored;
+	stored.position = 7;
+	stored.name = {'S', 'T', 'O', 'R', 'E', 'D', 0};
+	for(size_t t = 0; t < 6; ++t)
+	{
+		stored.machines[t] = 1;
+		stored.levels[t] = static_cast<uint8_t>(100 + t);
+		for(size_t pg = 0; pg < 7; ++pg)
+			for(size_t i = 0; i < 8; ++i)
+				stored.tracks[t].pages[pg][i] = static_cast<uint8_t>(t * 8 + pg + i);
+		for(size_t i = 0; i < 8; ++i)
+			stored.tracks[t].midi[i] = static_cast<uint8_t>(20 + t + i);
+		stored.trigPos[t] = ed::MmKit::g_noTrigPos;
+	}
+	stored.mirrorMask = 0x3f;
+	stored.lpfMask = 0x3f;
+	mmDesk::Documents docs;
+	docs.kits[7] = stored;
+	mmDesk::EditContext plays;
+	plays.currentKit = 7;
+	const auto run = [&](const char* _json)
+	{
+		mmDesk::Clipboard clip;
+		return mmDesk::apply(docs, *ed::json::parse(_json), clip, plays);
+	};
+	docs.working = mmDesk::WorkingKit{stored};
+	check(run(R"({"op":"revertTrack","k":7,"t":2})").changes.empty() && run(R"({"op":"revertTrack","k":7,"t":2})").errors.empty(),
+		"a track as stored: nothing to revert, no step");
+	auto k = stored;
+	k.machines[2] = 2;
+	k.levels[2] = 9;
+	k.tracks[2].pages[0][3] = 99;
+	k.tracks[2].pages[6][7] = 98;
+	k.tracks[2].multiEnv[1] = 77;
+	k.tracks[2].midi[1] = 66;
+	ed::mmSetKitOutputs(k, 2, 5);
+	ed::mmSetKitInput(k, 2, 5);
+	k.assignPage[2][3] = 4;
+	k.assignAdd[2][1] = -9;
+	k.trigPos[2] = 4;
+	k.lpfMask = static_cast<uint8_t>(k.lpfMask & ~(1u << 2));
+	k.legatoAmp = static_cast<uint8_t>(k.legatoAmp & ~(1u << 2));
+	k.tracks[4].pages[1][1] = 55;
+	k.mirrorMask = static_cast<uint8_t>(k.mirrorMask & ~(1u << 4));
+	k.multiTrigMode = 2;
+	docs.working = mmDesk::WorkingKit{k};
+	auto r = run(R"({"op":"revertTrack","k":7,"t":2})");
+	check(r.errors.empty() && r.changes.size() == 1 && !r.note.empty(), "one change of the working kit");
+	const auto& after = std::get<mmDesk::WorkingKit>(r.changes[0].after).kit;
+	check(after.machines[2] == stored.machines[2] && after.levels[2] == stored.levels[2] && after.tracks[2].pages == stored.tracks[2].pages
+		&& after.routing[2] == stored.routing[2] && ed::mmKitInput(after, 2) == ed::mmKitInput(stored, 2) && after.assignPage[2] == stored.assignPage[2]
+		&& after.assignAdd[2] == stored.assignAdd[2] && after.trigPos[2] == stored.trigPos[2] && after.lpfMask == stored.lpfMask
+		&& after.legatoAmp == stored.legatoAmp, "a synth track's machine, pages, level, routing, assign rows, mask bits and forward are the slot's");
+	check(after.tracks[2].multiEnv == k.tracks[2].multiEnv && after.tracks[2].midi == k.tracks[2].midi && after.multiTrigMode == k.multiTrigMode
+		&& after.tracks[4] == k.tracks[4] && after.mirrorMask == k.mirrorMask, "the kit's shared parts and the other tracks stay");
+	r = run(R"({"op":"revertTrack","k":7,"t":8})");
+	const auto& midi = std::get<mmDesk::WorkingKit>(r.changes.at(0).after).kit;
+	check(r.errors.empty() && midi.tracks[2].midi == stored.tracks[2].midi && midi.tracks[2].pages == k.tracks[2].pages, "a MIDI track: its MIDI page only");
+	docs.kits.erase(7);
+	check(!run(R"({"op":"revertTrack","k":7,"t":2})").errors.empty(), "a slot not read yet is refused");
+}
+
 // P6: the Control workspace's LFOs run in the plug-in on the machine's steps (deskCore's ModEngine,
 // as the Machinedrum's): a link moves a kit value by CC, the page gets the source values, and
 // nothing of it is an edit or an undo step.
@@ -1115,6 +1182,36 @@ void modulators()
 	check(moved, "the link moves FLT page value 1 of track 1 by CC on the machine's steps");
 	check(!d.coreState().history().canUndo(), "modulation is not an undo step");
 	check(last("mod") && last("mod")->find("values")->asArray().size() == 1, "the page gets the source's value");
+
+	// B-123: the page's solo and the mutes the person had before it are kept with the project, beside the modulators
+	const auto list = [](const Value* _m, const char* _key)
+	{
+		std::vector<int> out;
+		if(_m)
+			for(const auto& v : _m->find(_key)->asArray())
+				out.push_back(static_cast<int>(v.asNumber()));
+		return out;
+	};
+	const auto sources = [](const Value& _doc) { return _doc.find("sources")->asArray().size(); };
+	check(saved.find("solo") == nullptr, "no solo yet: the setup holds none");
+	msg(R"({"op":"soloSet","id":2,"tracks":[4,1],"mutes":[0,7]})");
+	check(last("result")->find("ok")->asBool() && saved.find("solo") && list(saved.find("solo"), "tracks") == std::vector<int>{1, 4}
+		&& list(saved.find("solo"), "mutes") == std::vector<int>{0, 7} && sources(saved) == 1, "soloSet: kept with the project, sorted, the modulators beside it");
+	msg(R"({"op":"soloSet","id":3,"tracks":[1,12]})");
+	check(!last("result")->find("ok")->asBool() && list(saved.find("solo"), "tracks") == std::vector<int>{1, 4}, "a track out of range changes nothing");
+	msg(R"({"op":"modSet","id":4,"doc":{"schema":"mm-desk/modulators","version":1,"sources":[],"links":[]}})");
+	check(sources(saved) == 0 && list(saved.find("solo"), "tracks") == std::vector<int>{1, 4}, "a modulator change keeps the solo in the setup");
+	const auto project = saved;
+	page.clear();
+	check(d.loadSetup(deskCore::modSetupToJson({}, mmDesk::g_mmModLimits)).empty() && list(last("solo"), "tracks").empty(), "a project without a solo: none, and the page is told");
+	page.clear();
+	check(d.loadSetup(project).empty() && list(last("solo"), "tracks") == std::vector<int>{1, 4} && list(last("solo"), "mutes") == std::vector<int>{0, 7},
+		"a project's solo loads and is said to the page");
+	page.clear();
+	msg(R"({"op":"ready"})");
+	check(list(last("solo"), "tracks") == std::vector<int>{1, 4}, "a page made again gets the solo");
+	msg(R"({"op":"soloSet","id":5,"tracks":[],"mutes":[3]})");
+	check(saved.find("solo") == nullptr, "no solo: the setup says none");
 }
 
 // P6: the questions, errors, the machine's own screen and a restart, as the page gets them.
@@ -2205,6 +2302,7 @@ int main(const int _argc, char** _argv)
 	playingFromSteps();
 	watchSteps();
 	kitAsLoaded();
+	revertTrack();
 	kitAfterPatternDump();
 	kitAfterPatternDump(9);
 	kitPickRules();

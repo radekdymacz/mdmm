@@ -327,6 +327,10 @@ const kc = (attr, act, cap, label, tip, off = false, cls = "", on = null) => `<b
 /* the bars' one randomise key: R, with its "all" chord over it */
 const randKey = tip => `<button class="kc cream krand" data-rand="1" title="${tip}" aria-label="Randomise"><small>Random <em>⌥R all</em></small><kbd>R</kbd></button>`;
 /* the bar's title and what it acts on (Alt: all, in the LED's colour) */
+/* the part of the summary line that goes first when the bar is narrow (B-114: under 1500 px the line has room for "8 on"
+   and what a run changed, not for the cycle or the range; the whole line is in the tooltip) */
+const gopt = t => `<span class="gopt">${t}</span>`;
+const plainText = h => String(h).replace(/<[^>]+>/g, "");
 const gtitle = (name, target, all, tip) => `<div class="gbt" title="${tip}"><b>${name}</b><span class="${all ? "all" : ""}">${target}</span></div>`;
 /* an LED radio row: items [[key, words]], tips {key: tip} */
 const gseg = (attr, cur, items, tips) => `<span class="seg">${items.map(([k, n]) => `<button ${attr}="${k}" aria-pressed="${cur === k}" title="${tips[k]}">${n}</button>`).join("")}</span>`;
@@ -529,7 +533,7 @@ const MM_SEAM={
  "view":[
   "audible","soloed","engReady","asgT","noteName","pname","machName","kitName","gated","busy","sel","mode",
   "playing","step","tempo","engineState","kitState","learnTarget","learning","ctlSetup","show","startEmpty",
-  "setPatternSlot","setKitSlot","setReading","setTempo","setInput","setPlaying","setStep","setPausedStep","setSongRow","setSongSteps","setEng","dlgOpen",
+  "setPatternSlot","setKitSlot","setReading","setTempo","setSolo","setInput","setPlaying","setStep","setPausedStep","setSongRow","setSongSteps","setEng","dlgOpen",
   "setEngineLabel","setEngineTip","setEngines","setAudioEntry","setMemory","clearLearnTarget","setMapping","setModulation",
   "setCtlSetup","disable","setRecord","setRecLock","setLcd","setKeyDown","setMidiHeld","setPst","closeFirmwareDialog","bootRom",
   "bootInstalled","syxPreview","syxProgress","syxExported","syxExportInfo","render","renderTop","drawLib","toast","ask","redraw","movePH",
@@ -604,7 +608,7 @@ function demoRebase(step){if(window.MMDemoHost)window.MMDemoHost.rebase(step)}
      togglePlay(), ownsClock          the machine is the sequencer
      selectPattern(p, now)            LOAD PATTERN (now: STOP, LOAD PATTERN, PLAY)
      kit(op, k)                       "save" | "load" | "saveAs" | "reload" | "undo" (the machine's UNDO KIT, MM-102)
-     tempo(bpm), mutes()              the machine's tempo; the tracks' mutes changed (synth and MIDI)
+     tempo(bpm), mutes(state)         the machine's tempo; the tracks' mutes or solos changed (synth and MIDI); state {solo, mutes}: the soloed tracks and, while one holds, the person's mutes (kept with the project)
      keyMode(mode, t)                 the keyboard mode changed ("normal" | "multi" | "map" | "poly"): POLY
                                       is the machine's audio mode, on track t (0-5: its TRACK key; again with
                                       another t while in POLY: POLY moves there)
@@ -3188,7 +3192,8 @@ function syncControls(){
    if(mb.length){if(!md){md=document.createElement("i");md.className="mod";el.appendChild(md)}md.textContent="~"+mb.join("");el.title=`Modulated by LFO ${mb.join(" + ")}`}else if(md)md.remove();
    const mp=S.ctl.links.filter(l=>l.t===t&&l.pid===pid);el.classList.toggle("mapped",mp.length>0)}});
  $$("#main [data-show]").forEach(el=>{const t=+el.dataset.show;el.textContent=trk(t).lev});
- if(typeof syncDock==="function")syncDock()}
+ if(typeof syncDock==="function")syncDock();
+ if(typeof syncRevert==="function")syncRevert()}
 
 /* ===== Key-style dropdowns (from the MD Editor) ===== */
 let kFor=null;
@@ -3233,7 +3238,7 @@ function redraw(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;$$("canvas.
 function drawEd(c){const ed=ED[c.dataset.ed];if(!ed)return;const dpr=devicePixelRatio||1,W=c.clientWidth,H=c.clientHeight;if(!W)return;
  if(c.width!==Math.round(W*dpr)||c.height!==Math.round(H*dpr)){c.width=Math.round(W*dpr);c.height=Math.round(H*dpr)}
  const g=c.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,W,H);ed.draw(g,W,H,c);
- (ed.handles?.(W,H,c)||[]).forEach(h=>{const on=active&&active.c===c&&active.k===h.k;g.beginPath();g.arc(h.x,clamp(h.y,6,H-6),on?7:5.5,0,7);g.fillStyle=cssv("--scr");g.fill();g.lineWidth=2.5;g.strokeStyle=cssv("--ink");g.stroke();
+ (ed.handles?.(W,H,c)||[]).forEach(h=>{const on=active&&active.c===c&&active.k===h.k;const hr=on?7:5.5;g.beginPath();g.arc(clamp(h.x,hr+1,W-hr-1),clamp(h.y,6,H-6),hr,0,7);g.fillStyle=cssv("--scr");g.fill();g.lineWidth=2.5;g.strokeStyle=cssv("--ink");g.stroke();
   if(on){g.fillStyle=cssv("--ink");g.font="10px Silkscreen, monospace";g.fillText(h.k,Math.min(W-60,h.x+10),Math.max(14,h.y-10))}})}
 function nearest(c,e){const ed=ED[c.dataset.ed];if(!ed.handles)return null;const r=c.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;let best=null,bd=16;ed.handles(r.width,r.height,c).forEach(h=>{const d=Math.hypot(h.x-x,clamp(h.y,6,r.height-6)-y);if(d<bd){bd=d;best=h}});return best}
 const RND=[.35,-.7,.9,-.25,.55,-.9,.1,.7];
@@ -3269,7 +3274,10 @@ function lockPicker(t){const midi=isMidiT(t),list=pagesOf(t),d=dockOf(t);if(!lis
  return`<div class="railparams ${d==="locks"?"":"dockrail"}"><div class="rphead"><span class="cap">${DOCKN[d]}</span><button id="lockLane" class="iconkey" aria-label="Lock the current value on the selected steps" title="Lock ${pidLabel(t,S.lane)} at its current value on the selected steps (the machine: hold the trig, click the knob)"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M4 6.5V4.5a3 3 0 0 1 6 0v2M3 6.5h8v6H3z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></button><button id="clearLane" class="iconkey" aria-label="Clear these locks" title="Clear ${pidLabel(t,S.lane)} locks"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 4h10M5.5 4V2.5h3V4M3.5 4l.7 8h5.6l.7-8M6 6.5v3.5M8 6.5v3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
   <div class="lpspace"></div><div class="pagetabs" role="group" aria-label="DATA page">${midi?`<button data-lpage="MID" aria-pressed="true" style="grid-column:1/-1"><i class="led"></i>MIDI PAGE</button>`:PAGES.map(p=>{const n=trackLockPids(t).filter(x=>x.startsWith(p+".")).length;return`<button data-lpage="${p}" aria-pressed="${S.lanePage===p}" aria-label="${PAGEN[p]}${n?", "+n+" locked":""}"><i class="led ${n&&S.lanePage!==p?"g on":""}"></i>${p}</button>`}).join("")}</div>
   <div class="pkcol">${pnames(t,S.lanePage).map((nm,i)=>{if(!nm)return`<span class="pk empty"></span>`;const pid=S.lanePage+"."+i,n=S.locks.get(lkKey(t,pid))?.size||0;return`<button class="pk ${n?"has":""}" data-lane="${pid}" aria-pressed="${pid===S.lane}" title="${n?n+" locked step"+(n>1?"s":""):"No locks yet"}"><span class="pkn">${nm}</span>${n?`<i>${n}</i>`:""}</button>`}).join("")}${Array.from({length:8-pnames(t,S.lanePage).length},()=>`<span class="pk empty"></span>`).join("")}</div>${d==="locks"?"":`<div class="dockkeys" id="dockkeys">${dockKeys(t,d)}</div>`}</div>`}
-function sideSw(){return`<div class="sidesw" role="group" aria-label="Sequencer side"><button data-side="int" aria-pressed="${S.side!=="midi"}" title="The six synth tracks"><i class="led"></i>Synth</button><button data-side="midi" aria-pressed="${S.side==="midi"}" title="The six MIDI sequencer tracks (FUNCTION + TRIG SELECT on the machine)"><i class="led"></i>MIDI</button></div>`}
+/* B-120: a solo silences every other track, also those of the side the rail does not show; each side's key says when
+   a solo holds on its tracks (S), so the M keys on the other side are not taken for dead */
+function sideSw(){const so=ts=>ts.some(x=>x.solo),sign=on=>on?`<b class="sosign" aria-label="a solo holds here">S</b>`:"",tip=on=>on?". S: a solo holds on one of them, so every other track is silent":"";
+ return`<div class="sidesw" role="group" aria-label="Sequencer side"><button data-side="int" aria-pressed="${S.side!=="midi"}" title="The six synth tracks${tip(so(S.tracks))}"><i class="led"></i>Synth${sign(so(S.tracks))}</button><button data-side="midi" aria-pressed="${S.side==="midi"}" title="The six MIDI sequencer tracks (FUNCTION + TRIG SELECT on the machine)${tip(so(S.midi))}"><i class="led"></i>MIDI${sign(so(S.midi))}</button></div>`}
 function renderRail(){const r=$("#rail"),withSide=S.ws==="seq"||S.ws==="sound";
  const anyMs=[...S.tracks,...S.midi].some(x=>x.mute||x.solo);
  r.innerHTML=`<div class="railhead">Track<button class="iconkey allon" id="allon" ${anyMs?"":"disabled"} title="Unmute and unsolo every track (0)">M/S off</button></div>`+side().map(th).join("")+(withSide?`<div style="margin-top:4px">${sideSw()}</div>`:"")+(S.ws==="seq"?lockPicker(S.sel):"");altLabels()}
@@ -3651,7 +3659,11 @@ function pasteToMany(){const[a,b]=vis();if(!CLIP?.rows){toast("Copy a track page
 /* ---- mutes from the keys: M the selected track, Alt+M every track (any audible: mute all; none: unmute all), 0
    unmutes and unsolos every track (also the rail's M/S OFF key). MIDI tracks only where the engine mutes them. ---- */
 const muteOk=t=>t<6||!NA.midiMutes;
-function mutesChanged(say){tx();if(HOST.mutes)HOST.mutes();render();if(say&&!["seq","sound","mix","perform"].includes(S.ws))toast(say)}
+/* B-123: the solo (the soloed tracks, 0-11) and, while one holds, the mutes the person set: what the plug-in keeps with the
+   project (HOST.mutes(state) says it with every change; the plug-in says it back as MMView.setSolo) */
+function soloFacts(){const ts=[...S.tracks,...S.midi],solo=ts.flatMap((x,t)=>x.solo?[t]:[]);return{solo,mutes:solo.length?ts.flatMap((x,t)=>x.mute?[t]:[]):[]}}
+function setSolo(tracks,mutes){const ts=[...S.tracks,...S.midi],any=tracks.length>0;ts.forEach((x,t)=>{x.solo=tracks.includes(t);if(any)x.mute=mutes.includes(t)});render()}
+function mutesChanged(say){tx();if(HOST.mutes)HOST.mutes(soloFacts());render();if(say&&!["seq","sound","mix","perform"].includes(S.ws))toast(say)}
 function muteSel(){const t=S.sel;if(!muteOk(t)){toast(NA.midiMutes);return}const tr=trk(t);tr.mute=!tr.mute;mutesChanged(`${tr.mute?"Muted":"Unmuted"} ${tLabel(t)}`)}
 function muteAllToggle(){const ts=[...Array(12).keys()].filter(muteOk),on=ts.some(t=>!trk(t).mute);ts.forEach(t=>trk(t).mute=on);mutesChanged();toast(on?"Every track muted (Alt+M again: unmute all)":"Every track unmuted")}
 function unmuteAll(){const ts=[...Array(12).keys()];if(!ts.some(t=>trk(t).solo||(trk(t).mute&&muteOk(t)))){toast("No track is muted or soloed.");return}ts.forEach(t=>{trk(t).solo=false;if(muteOk(t))trk(t).mute=false});mutesChanged();toast("Every track unmuted and unsoloed")}
@@ -3819,12 +3831,12 @@ function genStripHtml(){const t=S.sel,tr=trk(t),sp=genSpec(t),all=S.alt,[from,to
  let sum="";
  if(r){const on=r.steps.filter(([,st])=>mmTrig(st)).length,b=[];for(let s=from;s<to;s++)if(mmTrig(base[s]))b.push(s);const now=new Set(r.steps.filter(([,st])=>mmTrig(st)).map(([s])=>s));
   const add=[...now].filter(s=>!mmTrig(base[s])).length,gone=b.filter(s=>!now.has(s)).length;
-  sum=all?`every track · steps ${from+1}–${to}`:`${sp.kind==="euclid"?genSummary(sp,S.len)+" · ":""}${on} on${run?` <em>+${add} −${gone}</em>`:""} · steps ${from+1}–${to}`}
- else if(all)sum=`every track · steps ${from+1}–${to}`;
+  sum=all?`every track${gopt(` · steps ${from+1}–${to}`)}`:`${sp.kind==="euclid"?gopt(genSummary(sp,S.len)+" · "):""}${on} on${run?` <em>+${add} −${gone}</em>`:""}${gopt(` · steps ${from+1}–${to}`)}`}
+ else if(all)sum=`every track${gopt(` · steps ${from+1}–${to}`)}`;
  const target=all?`all ${isMidiT(t)?"MIDI":"synth"} tracks`:`${tLabel(t)} · ${isMidiT(t)?"CH"+String(tr.ch).padStart(2,"0"):tr.m.replace("SWAVE-","SW-")}`;
  return`${gtitle("Gen",target,all,"Generators: every change writes to the pattern at once. A run of changes on this track is one undo step; Undo takes it back in one step. Alt: every track of the side shown, the whole pattern.")}
   <div class="gflow">${mode}${params}${genNotesHtml(sp,t)}
-  <div class="gsum" title="${run&&run.applied?"What the run changed, against the pattern before it":"What a change writes"}">${sum}</div></div>
+  <div class="gsum" title="${run&&run.applied?"What the run changed, against the pattern before it":"What a change writes"}: ${plainText(sum)}">${sum}</div></div>
   <div class="gkeys">${randKey(all?"Randomise every track of the side: a new variation of each spec, the whole pattern (Alt+R)":`Randomise ${tLabel(t)}: a new variation, ${sp.kind==="random"?"a new seed":sp.kind==="euclid"?"random hits and rotation in the cycle, a new seed for the notes":"nothing while it is set to Keep"} (R). Alt+R or Alt-click: every track`)}${kc("data-gen","fill","↺","Defaults","Defaults: every track's spec from its machine: a bass 5/16 with a walk in its scale, a lead random 30 % over two octaves, a pad on 1 and 3, the drum box 8/16 on BD SD CH OH; FX machines kept; MIDI tracks 4/16, rhythm only. Writes this track (Alt: every track)")}</div>`}
 /* the step gestures behind a small ? key (a click: the list of keys) */
 function stepLegend(){const midi=isMidiT(S.sel),row=(cls,what,how)=>`<span>${cls!=null?`<i class="lg on ${cls}"></i>`:`<i class="lg none"></i>`}<b>${what}</b>${how}</span>`;
@@ -4200,10 +4212,13 @@ function dockRead(t,d){const tr=trk(t);
  if(d==="trn"){const n=tr.tr.TRACK-64+(tr.tr.SCALE===1?0:S.patTrn-64);return`plays ${n>0?"+":""}${n} semitones${tr.tr.SCALE===1?" · FIX: pattern ignored":""}`}
  if(d==="trig"){const a=ampSteps(t);return a===Infinity?"the gate sustains":`a gate sounds ≈ ${a<10?a.toFixed(1):Math.round(a)} steps`}
  return"CH "+String(tr.ch).padStart(2,"0")}
+/* the line shown under the Transpose tab: one short sentence (B-115: the whole help was 120 letters for a line of 95); the
+   whole help is its tooltip */
+const TRNSHORT=["<b>---</b> no scale: the transposes add up and any note can sound.","<b>FIX</b> only track transpose applies. Use it for drums and FX.","<b>MAJ</b> notes stay in the major scale of KEY: click a key to set it.","<b>MIN</b> notes stay in the minor scale of KEY: click a key to set it."];
 const TRNHELP=["<b>---</b> no transpose scale: track, pattern, song and multi-trig transpose add up and any note can sound. Click a key: C plays it (up from C; Alt-click: down to it).","<b>FIX</b> only track transpose applies. Use it for drums and FX. Click a key: C plays it (up from C; Alt-click: down to it).","<b>MAJ</b> transposed notes stay in the major scale of KEY: click a key to set it. Out-of-scale keys and roll rows are hatched.","<b>MIN</b> transposed notes stay in the minor scale of KEY: click a key to set it. Out-of-scale keys and roll rows are hatched."];
 function dockHelp(t,d){const tr=trk(t);
  if(d==="arp"){const h=dkPlain(ARPHELP[tr.arp.MODE]);return[h,h+" SPD 6 = a 16th. Chords come from the trig: shift-click in the roll. The light notes in the roll are what it plays. In the strip: click a step to mute it, drag it up or down for an offset, click past the end or the LEN row under it to set the length. FUNCTION + ARP: one per track, 12 per pattern."]}
- if(d==="trn"){const h=dkPlain(TRNHELP[tr.tr.SCALE]);return[h,h+" Transpose is live: the programmed notes do not change. Song rows and multi trig add their own. FUNCTION + TRANSPOSE."]}
+ if(d==="trn"){const h=dkPlain(TRNHELP[tr.tr.SCALE]);return[dkPlain(TRNSHORT[tr.tr.SCALE]),h+" Transpose is live: the programmed notes do not change. Song rows and multi trig add their own. FUNCTION + TRANSPOSE."]}
  if(d==="trig")return["Drag the dots or the values · A F L: the envelopes an overlapping note restarts (LEGATO)","ATK, HOLD and DEC shape how long a gate really sounds, in steps after the trig at this tempo (the light part of a bar in the roll: 40 dB down). ATK and DEC are times, each 8 more about doubling (ATK 64 ≈ 0.14 s, DEC 64 ≈ 0.55 s to -20 dB); HOLD counts sixteenths (HOLD 8 = one step); DEC 127 holds to the NOTE OFF. PORT is the glide to the next note: ALWAYS, or only when notes overlap. LEGATO picks the envelopes that still fire when notes overlap (filled A F L): all on = staccato bass, all off = a smooth lead. TRIG POSITION forwards this track's notes to another track. KIT › TRIG."];
  return["LEN 127 = until a NOTE OFF · PCHG only sends when locked","LEN 127 = until a NOTE OFF; drag a note's end in the roll to lock its LEN. PCHG only sends when it is locked. CL1-4 pick the CC numbers (or AFT) of the four CC values above them. Internal tracks can also send MIDI (GLOBAL › CONTROL OUT1), but without these values. GLOBAL › MIDI SEQ › MIDISEQ SET: the page is stored in the kit."]}
 /* the body: value boxes on eight columns, then the picture */
@@ -4525,7 +4540,7 @@ ED.dflt={draw(g,W,H){const e=V("EFX");bandDraw(g,W,H,e[6]/127,Math.min(1,(e[6]+e
 ED.amp={geo(W,H,c){const e=ampTimes(V("AMP"))||{at:0,ho:0,de:Infinity,re:Infinity},inf=e.de===Infinity,rinf=e.re===Infinity;
   const off=e.at+e.ho+(inf?Math.max(2,(e.at+e.ho)*.4):0),gate=inf?off:e.at+e.ho+2*e.de,rel=off+(rinf?3:2*e.re);
   const need=clamp(Math.ceil(Math.max(gate,rel)*1.08/4)*4,4,64),span=active&&active.c===c&&c&&c._span?Math.max(c._span,need):need;if(c)c._span=span;
-  const T=18,B=H-10;return{e,inf,rinf,off,span,T,B,X:s=>Math.min(W,s/span*W),S:x=>x/W*span,Y:v=>B-v*(B-T)}},
+  const T=28,B=H-10;return{e,inf,rinf,off,span,T,B,X:s=>Math.min(W,s/span*W),S:x=>x/W*span,Y:v=>B-v*(B-T)}},
  draw(g,W,H,c){const G=this.geo(W,H,c),e=G.e,ink=cssv("--ink");grid(g,W,H);
   g.strokeStyle=ink;g.lineWidth=2.2;g.beginPath();g.moveTo(0,G.Y(0));g.lineTo(G.X(e.at),G.Y(1));g.lineTo(G.X(e.at+e.ho),G.Y(1));
   if(G.inf)g.lineTo(G.X(G.off),G.Y(1));else{const d0=e.at+e.ho;for(let k=1;k<=32;k++){const u=k/32*2*e.de;g.lineTo(G.X(d0+u),G.Y(ampFall(u,e.de)))}g.lineTo(W,G.Y(0))}g.stroke();
@@ -4613,6 +4628,20 @@ function lfoGroup(t,k){const l="LF"+k,v=trk(t).v[l],dn=LPAGES[v[0]]?destNames(t,
 function machButton(m){return`<button class="machbtn" id="machbtn" aria-haspopup="dialog" aria-expanded="false" aria-label="Change machine"><span class="lcdtxt">${m}</span><span class="mfam">${famKey(m)}</span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>`}
 /* the track's pattern settings live in the Sequence dock: one key each to go there */
 function sndDockKeys(t){const midi=isMidiT(t);return`<span class="snddock" title="Stored in the pattern (arpeggiator, transpose) or the kit (${midi?"the MIDI page":"trig setup"}): edit them in the Sequence workspace's dock">${[["arp","Arp"],["trn","Transpose"],[midi?"midipage":"trig",midi?"MIDI set":"Trig setup"]].map(([d,n])=>`<button class="ptog" data-snddock="${d}">${n}</button>`).join("")}</span>`}
+/* 0.6: Revert track. The selected track goes back as the kit's slot stores it (the core's revertTrack: a synth track's machine,
+   pages, level, routing, assign rows, mask bits and forward; a MIDI track's MIDI page): one undo step. On while the track
+   differs from the slot (the page's own units, as the library keeps the slot: S.kits[k].data). The library's Reload does the whole kit. */
+function revertFacts(t){const st=S.kits[S.kit]?.data,J=JSON.stringify;
+ if(!st)return{can:false,why:`${kitName(S.kit)} is not read from its slot yet.`};
+ const a=trk(t),b=t<6?st.tracks?.[t]:st.midi?.[t-6];
+ if(!b)return{can:false,why:"This track is not in the stored kit."};
+ const keys=t<6?["m","v","lev","out","inp","trigpos","port","leg","assign"]:["v"];
+ return keys.some(k=>J(a[k])!==J(b[k]))
+  ?{can:true,why:`Put ${tLabel(t)} back as ${kitName(S.kit)} stores it: ${t<6?"its machine, pages, level, routing, assign rows and forward":"its MIDI page"}. One undo step. The kit library's Reload does the whole kit.`}
+  :{can:false,why:`${tLabel(t)} is as ${kitName(S.kit)} stores it.`}}
+function revertKey(t){const f=revertFacts(t);return`<button class="revbtn" id="revert" ${f.can?"":"disabled"} title="${attrS(f.why)}" aria-label="Revert ${tLabel(t)}">Revert track</button>`}
+function syncRevert(){const b=$("#revert");if(!b)return;const f=revertFacts(S.sel);b.disabled=!f.can;b.title=f.why}
+document.addEventListener("click",e=>{const b=e.target.closest("#revert");if(!b||b.disabled)return;edit("revertTrack",{t:S.sel})});
 function renderSound(){const t=S.sel,tr=trk(t);let rows,head;
  if(isMidiT(t)){const int=S.tracks[t-6],G=(title,idx,labels,plain)=>({key:sgKey(title),title,pg:"MID",idx,knobs:idx.map(i=>FIXED.MID[i]),labels,mut:false,note:plain});
   const cc=[4,5,6,7].map(i=>"CC "+(tr.cc[i-4]===128?"AFT":tr.cc[i-4]));
@@ -4624,7 +4653,7 @@ function renderSound(){const t=S.sel,tr=trk(t);let rows,head;
   const syn=g.SYN.length?g.SYN:[{key:"syn",title:"Synthesis",pg:"SYN",idx:[],knobs:[],n:0,w:3,mut:false,body:`<p class="sgabout">${MACH[tr.m].about}</p>`}];
   rows=[[[...syn,...g.AMP],"srcrow"],[[...g.FLT,...g.EFX],"tonerow"],[[1,2,3].map(k=>lfoGroup(t,k)),"lforow"]];
   head=machButton(tr.m)}
- $("#main").innerHTML=`<div class="snd mutating"><div class="sndhead">${head}${mutBarHtml()}${sndDockKeys(t)}</div>${rows.map(([list,cls])=>sgRow(list,cls)).join("")}</div>`;
+ $("#main").innerHTML=`<div class="snd mutating"><div class="sndhead">${head}${revertKey(t)}${mutBarHtml()}${sndDockKeys(t)}</div>${rows.map(([list,cls])=>sgRow(list,cls)).join("")}</div>`;
  syncControls();redraw()}
 
 /* machine picker (MD Editor pattern) */
@@ -4758,7 +4787,7 @@ function mapBands(){const[lo,hi]=kbRange(),whites=[];for(let n=lo;n<=hi;n++)if(!
    falls to 0; REL 127 is ∞ (the level holds until the next note), drawn as the sustain running on to the edge, dashed
    past its slot, with ∞. Every dot is on the curve. */
 const MENV_G=W=>({a:W*.22,d:W*.22,hold:W*.16,r:W*.3});
-function menvGeo(W,H){const e=S.menv,T=18,B=H-12,y=v=>B-v*(B-T),M=MENV_G(W),x0=4,ax=x0+e.ATK/127*M.a,dx=ax+e.DEC/127*M.d,s=e.SUS/127,hx=dx+M.hold,inf=e.REL>=127,rx=inf?hx+M.r:hx+e.REL/126*M.r;
+function menvGeo(W,H){const e=S.menv,T=30,B=H-12,y=v=>B-v*(B-T),M=MENV_G(W),x0=4,ax=x0+e.ATK/127*M.a,dx=ax+e.DEC/127*M.d,s=e.SUS/127,hx=dx+M.hold,inf=e.REL>=127,rx=inf?hx+M.r:hx+e.REL/126*M.r;
  return{e,T,B,y,M,x0,ax,dx,s,hx,rx,inf}}
 ED.menv={draw(g,W,H){const G=menvGeo(W,H),ink=cssv("--ink");grid(g,W,H);
   g.strokeStyle=ink;g.lineWidth=2;g.lineJoin="round";g.beginPath();g.moveTo(G.x0,G.y(0));g.lineTo(G.ax,G.y(1));g.lineTo(G.dx,G.y(G.s));g.lineTo(G.hx,G.y(G.s));
@@ -5178,7 +5207,7 @@ function renderSong(){songModeSync();S.songSel=Math.max(0,Math.min(S.songSel,S.s
  const lines=Math.ceil(200/16);
  $("#main").innerHTML=`<div class="songui lay2 withlib ${S.plays.songMode?"songmode":"patmode"}${S.plays.songMode&&S.playing?" songplaying":""}">${SongSlots.html()}<div class="songleft"><section class="card whatplays ${S.plays.songMode?"song":"pattern"} ${chain?"chainmode":""}">${head}${palette}</section>
    ${pick==="song"?`<section class="card"><header><h3>Selected row</h3><span class="rowacts"><button data-rowact="from" title="Play the song from this row (Enter): SONG mode, the row from its first step">▶ From here</button><button data-rowact="up" title="Move left">←</button><button data-rowact="down" title="Move right">→</button><button data-rowact="dup">Duplicate</button><button data-rowact="loop">Add loop</button><button data-rowact="del" class="danger">Delete</button></span></header><div class="insp">${insp}</div></section>`:""}</div>
-  <section class="card arrcard"><header><h3>Arrangement</h3><span class="arrstate" id="arrstate">${arrState()}</span><span class="note" title="${S.song.length} of 200 rows · T track transpose · M mutes · B tempo · ~ part">${S.song.length} of 200 rows · T track transpose · M mutes · B tempo</span></header>
+  <section class="card arrcard"><header><h3>Arrangement</h3><span class="arrstate" id="arrstate">${arrState()}</span><span class="note" title="${S.song.length} of 200 rows · T track transpose · M mutes · B tempo · ~ part">${S.song.length} of 200 rows<span class="gopt"> · T track transpose · M mutes · B tempo</span></span></header>
    <div class="durbar" title="Song shape by time (length × repeats); in SONG mode it fills up to the row that plays">${S.song.map((r,i)=>r.type?`<i class="db dbm" data-i="${i}"></i>`:`<i class="db ${i===S.songSel?"sel":""}" data-row="${i}" data-i="${i}" style="flex:${rowLen(r)*r.rep} 1 0"></i>`).join("")}</div>
    <div class="slotgrid" id="tl">${Array.from({length:lines},(_,line)=>`<span class="sglab">${String(line*16+1).padStart(3,"0")}</span>${Array.from({length:16},(_,c)=>{const i=line*16+c,r=S.song[i];if(i>=200)return`<span></span>`;
      if(!r)return`<div class="scell empty" data-i="${i}"></div>`;
@@ -5748,7 +5777,7 @@ document.addEventListener("wheel",e=>{const el=e.target.closest(".l2.ed");if(!el
    mutes apply together when Shift comes up. Leaving the window drops them. */
 const ARMED=new Map();
 function showArmed(){$$(".ms.m[data-mute]").forEach(b=>{const p=ARMED.get(+b.dataset.mute);b.classList.toggle("prep",p!=null);if(p!=null)b.dataset.prep=p?"X":"+";else delete b.dataset.prep})}
-document.addEventListener("keyup",e=>{if(e.key!=="Shift"||!ARMED.size)return;ARMED.forEach((m,i)=>{trk(i).mute=m});ARMED.clear();tx();if(HOST.mutes)HOST.mutes();render()});
+document.addEventListener("keyup",e=>{if(e.key!=="Shift"||!ARMED.size)return;ARMED.forEach((m,i)=>{trk(i).mute=m});ARMED.clear();tx();if(HOST.mutes)HOST.mutes(soloFacts());render()});
 addEventListener("blur",()=>{ARMED.clear();showArmed()});
 /* As the MD Editor: a drag across the M (or S) keys paints them (shared/deskTogglePaint.js), rail, Mix and the
    Perform page's mutes alike: the pressed key toggles where the pointer goes down and its new state is the paint;
@@ -5762,7 +5791,7 @@ function msKeyAt(el){const b=el?.closest?.("[data-mute],[data-solo],[data-gmute]
  const kind=b.dataset.mute!=null?"mute":b.dataset.solo!=null?"solo":"gmute",i=+b.dataset[kind];if(!trk(i))return null;return{group:kind+(i<6?":synth":":midi"),kind,i}}
 const msOn=k=>!!trk(k.i)[k.kind==="solo"?"solo":"mute"];
 function msSet(k,on){trk(k.i)[k.kind==="solo"?"solo":"mute"]=on}
-function msSend(){tx();if(HOST.mutes)HOST.mutes();render()}
+function msSend(){tx();if(HOST.mutes)HOST.mutes(soloFacts());render()}
 addEventListener("pointerdown",e=>{msClickEaten=false;if(e.button!==0||e.shiftKey||e.altKey||e.metaKey||e.ctrlKey)return;const k=msKeyAt(e.target);if(!k)return;
  const r=TogglePaint.begin(k.group,k.i,msOn(k));msPaint=Object.assign(r.paint,{at:{x:e.clientX,y:e.clientY}});msClickEaten=true;
  try{document.body.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();msSet(k,r.change);msSend()},true);
@@ -5850,8 +5879,8 @@ function setSide(sd){S.side=sd;select(sd==="int"&&S.mode==="poly"&&S.polyT!=null
 function select(t){S.sel=t;stepFocus();autoRange(t);const pg=S.lane.split(".")[0];if(isMidiT(t)){if(pg!=="MID"){S.lane="MID.1";S.lanePage="MID"}}else if(pg==="MID"||!pname(t,S.lane)){S.lane="FLT.1";S.lanePage="FLT"}render()}
 document.addEventListener("click",e=>{
  const mu=e.target.closest("[data-mute]"),so=e.target.closest("[data-solo]");
- if(mu||so){const i=+(mu||so).dataset[mu?"mute":"solo"],t=trk(i);if(mu&&e.shiftKey){ARMED.has(i)?ARMED.delete(i):ARMED.set(i,!t.mute);showArmed();return}if(mu)t.mute=!t.mute;else t.solo=!t.solo;tx();if(HOST.mutes)HOST.mutes();render();return}
- const gm=e.target.closest("[data-gmute]");if(gm){const t=trk(+gm.dataset.gmute);t.mute=!t.mute;tx();if(HOST.mutes)HOST.mutes();render();return}
+ if(mu||so){const i=+(mu||so).dataset[mu?"mute":"solo"],t=trk(i);if(mu&&e.shiftKey){ARMED.has(i)?ARMED.delete(i):ARMED.set(i,!t.mute);showArmed();return}if(mu)t.mute=!t.mute;else t.solo=!t.solo;tx();if(HOST.mutes)HOST.mutes(soloFacts());render();return}
+ const gm=e.target.closest("[data-gmute]");if(gm){const t=trk(+gm.dataset.gmute);t.mute=!t.mute;tx();if(HOST.mutes)HOST.mutes(soloFacts());render();return}
  const sd=e.target.closest("[data-side]");if(sd){setSide(sd.dataset.side);return}
  const dk=e.target.closest("[data-dock]");if(dk){S.dock=dk.dataset.dock;rerenderSeq();return}
  const sdk=e.target.closest("[data-snddock]");if(sdk){S.dock=sdk.dataset.snddock;goWs("seq");return}
@@ -6036,7 +6065,13 @@ function stepShown(prev){if(S.step===prev)return;const pp=Math.floor(S.step/16);
  if(pp!==stepPage){stepPage=pp;$$(".pl").forEach(b=>b.classList.toggle("play",+b.dataset.plp===pp&&S.playing))}
  if(S.follow&&S.ws==="seq"&&!S.viewAll&&pp!==S.page&&!laneDraw&&!menuOpen()){S.page=pp;followPage()}
  $("#tempoled").classList.toggle("on",S.step%4===0);setPos();queueMicrotask(movePH);
- if(S.ws==="perform"){const act=[0,1,2,3,4,5].filter(i=>{const st=S.tracks[i].steps[S.step];return st&&!st.off&&st.a&&audible(i)&&(S.mode!=="poly"||i===asgT())});flashTracks(act)}}
+ if(S.ws==="perform"){const act=[0,1,2,3,4,5].filter(i=>{const st=S.tracks[i].steps[S.step];return st&&!st.off&&st.a&&audible(i)&&(S.mode!=="poly"||i===asgT())});flashTracks(act)}
+ if((S.ws==="seq"||S.ws==="sound")&&S.playing&&S.step>=0)railLamps(side().filter(i=>{const st=trk(i).steps[S.step];return st&&!st.off&&(isMidiT(i)||st.a)&&audible(i)}))}
+/* I-028 (Discord 2026-10-12): on Sequence and Sound a rail track's number lights while its trig plays (the step
+   telemetry and the pattern, no audio), as the Perform page's lamps; every lamp of a step in one frame */
+const RailLamps={due:null,off:new Map()};
+function railLamps(ts){if(!ts.length)return;const first=!RailLamps.due;RailLamps.due=new Set([...(RailLamps.due||[]),...ts]);if(!first)return;
+ requestAnimationFrame(()=>{const due=RailLamps.due;RailLamps.due=null;for(const i of due){const l=$(`#rail .th[data-sel="${i}"]`);if(!l)continue;l.classList.add("trig");clearTimeout(RailLamps.off.get(i));RailLamps.off.set(i,setTimeout(()=>$(`#rail .th[data-sel="${i}"]`)?.classList.remove("trig"),110))}})}
 /* the playhead's page while following: the sequencer only (renderPage's work for it), not the whole page */
 function followPage(){const sl=$("#seqscroll")?.scrollLeft||0;renderSeq();const sc=$("#seqscroll");if(sc){sc.scrollLeft=sl;const l=$("#lanescroll");if(l)l.scrollLeft=sl}enhanceSelects($("#main"));movePH(false)}
 function stepMs(){const m={"1X":1,"2X":2,"3/4X":.75,"3/2X":1.5}[S.mult];return 60000/S.bpm/4/m}
@@ -6257,7 +6292,7 @@ window.MMView={
  /* setters */
  /* the machine's documents: show(view) is the one writer of S's document members (DESIGN-UNIFY.md phase 1); the
     library's other slots keep their own cheap setters; setTempo is the BPM gesture's own write (the self-test's) */
- show,startEmpty,setPatternSlot,setKitSlot,setReading,setTempo:bpm=>{S.bpm=bpm},
+ show,startEmpty,setPatternSlot,setKitSlot,setReading,setSolo,setTempo:bpm=>{S.bpm=bpm},
  setInput,setPlaying,setStep,setPausedStep,setSongRow:r=>{S.songRow=r;markSongRow()},
  setSongSteps:n=>{S.songSteps=n;const st=document.getElementById("arrstate");if(st&&st.textContent!==arrState())st.textContent=arrState()},
  setEng,dlgOpen:()=>!$("#dlg").hidden,setEngineLabel,setEngineTip,setEngines,setAudioEntry,setMemory,clearLearnTarget:()=>{S.learnT=null},setMapping,setModulation,setCtlSetup,disable,

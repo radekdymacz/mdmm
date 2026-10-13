@@ -325,6 +325,7 @@ namespace mdDesk
 			{"copySound", Owner::Core, Gate::Input, W, {k, t}, ""},
 			{"pasteSound", Owner::Core, Gate::Input, W, {k, t}, ""},
 			{"clearSound", Owner::Core, Gate::Input, W, {k, t}, ""},
+			{"revertTrack", Owner::Core, Gate::Input, W, {k, t}, "the Sound page's Revert track: the track's machine, values, level, LFO and relations as the kit's slot stores them"},
 			{"tweak", Owner::Core, Gate::Input, W, {k, {"group", ArgType::Text, 0, 0, false, {"syn", "fx", "rt"}}, {"knob", ArgType::Integer, 0, 7},
 				{"d", ArgType::Integer, -127, 127}, opt(t)}, "Control All (FUNCTION + a DATA ENTRY knob): that knob on every track, moved by d; t: the gesture's track"},
 			{"kitCopy", Owner::Core, Gate::Input, K, {k}, "the kit library", CoreOp::Edit, g_library},
@@ -394,6 +395,8 @@ namespace mdDesk
 			// ---- the editor's setup ----
 			{"modSet", Owner::Setup, Gate::None, -1, {{"doc", ArgType::Object}}, "the app modulators (md-desk/modulators)"},
 			{"knobs", Owner::Setup, Gate::None, -1, {{"ccs", ArgType::Array}}, "the eight knob rows' CCs"},
+			{"soloSet", Owner::Setup, Gate::None, -1, {{"tracks", ArgType::Array}, {"mutes", ArgType::Array, 0, 0, true}},
+				"the page's solo (the tracks soloed) and the mutes the person had before it, kept with the project; the plug-in says them again as {\"type\":\"solo\"}"},
 			// ---- P9: the samples the desk read (the emulated machine's memory), the desk's own ----
 			{"sampleWave", Owner::Setup, Gate::None, -1, {{"bank", ArgType::Text, 0, 0, false, {"rom", "ram"}}, {"slot", ArgType::Integer, 0, 47},
 				{"bins", ArgType::Integer, 1, static_cast<double>(ed::g_mdSampleWaveMaxBins)}},

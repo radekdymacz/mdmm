@@ -4,6 +4,106 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-123 · Solo is lost when the project is saved and opened again
+
+- **From:** Radek, 2026-10-13.
+- **What happens:** solo is the page's idea (it mutes every other track on the machine, and the page keeps which tracks are soloed and the mutes you had). The machine's mutes were saved with the project, the solo and your own mutes were not: a reopened project showed the other tracks muted with no solo on, and the mutes you had before the solo were gone.
+- **Fixed on `feat/0.6-revert-solo`, both editors:** the solo (and your mutes) travel with the editor's setup in the plug-in state (the standalone's state too) and come back when the project loads: the page shows the solo, the machine's mutes match it. A project with no solo opens with none. Core command `soloSet`, message `solo`.
+- **Status:** fixed, not merged.
+
+## B-122 · "Reset to the pattern often loads another pattern"
+
+- **From:** Discord, 2026-10-12 (in a feature request, below; the editor and host not named).
+- **What happens (as reported):** going back to the saved pattern "often doesn't remember the original pattern and loads another one".
+- **Checked on the firmware (not reproduced):** `mmDeskFirmwareTest <MM ROM> reselect` and `mdDeskFirmwareTest <MD ROM> reselect` pick patterns 1, 3, 70 (MM) and A01, A06, C09 (MD) and pick each again: stopped, playing (queued to the pattern end), after another pattern was queued and before it started, and with switch now; then STOP. Every case plays the pattern picked last (36 of 36 checks).
+- **Also:** the request's "reset the synthesis parameters to the saved state" is the kit library's **Reload** (LOAD KIT on the current slot), in both editors: every parameter of the kit that plays goes back to what its slot holds, which after Import SysEx… is the imported kit (the machine keeps the edits in its UNDO KIT). A pattern's edits are dumped into its slot as they are made, so there is no older saved pattern to go back to; undo is the way back. No new control.
+- **To ask the tester:** which control they used for "reset to pattern" (a pattern pick, the LCD's ‹ ›, undo, Reload, the DAW's preset menu) and in which editor and host; a DAW that sends program changes (a clip's Pgm Change, a preset recall) switches the machine's pattern when its PRG CHANGE is on.
+- **Status:** not reproduced; open, waits for the tester's steps.
+
+## B-121 · Monomachine in a DAW: a track keeps playing after the host's transport stops, until a note is played on it
+
+- **From:** Discord, 2026-10-13 (Ableton Live, macOS; notes from a Push into the editors' tracks).
+- **What happens (as reported):** after the transport stopped, a Monomachine track kept running; a note had to be played on that track to end it.
+- **Cause (measured, `mmDeskFirmwareTest <MM ROM> hoststop`):** in a DAW the plug-in passes the host's transport to the machine (P7): the host's Stop was MIDI Stop alone. That stops the sequencer, but a note the host played into a track whose note off does not come (a host that sends none at its stop, a note off lost) keeps sounding, and with the arpeggiator keeps playing: 1.5 s after the Stop the held note was still at half its level (rms 0.046 of 0.096). Close to B-059 (a held key with the arpeggiator) and B-060 (the transposes a start takes).
+- **Fix (`fix/0.6-discord`):** the host's Stop is `synthLib::hostStopEvents` (midiClock.h): MIDI Stop, then, for the Monomachine plug-in, All Notes Off (CC 123) on all 16 channels (the machine lets held notes go on CC 123, as the panic key's P5 measured; every channel, so any CHANNEL SPAN, base channel and the keyboard modes' channels are covered). The Machinedrum is unchanged (its sounds are not held). Test: `mmDeskFirmwareTest hoststop` (ctest `mmHostStopFirmwareTest`): the host plays with a note held into T1, then stops without its note off: MIDI Stop alone leaves it sounding, the plug-in's Stop ends it (rms 0.002) and the sequencer stays stopped.
+- **Status:** fixed on `fix/0.6-discord`; to confirm with the tester.
+
+## B-120 · Monomachine: mute and solo seem to stop responding after switching views; a solo lit in Mix but not in Sequence
+
+- **From:** Discord, 2026-10-13 (macOS Tahoe, Ableton Live, Monomachine Editor).
+- **What happens (as reported):** after jumping between views, clicking M or S on a track changed nothing; once a track's S was lit in Mix but not in Sequence, and had to be turned off in Mix.
+- **Checked:** the page keeps one mute and solo per track for every workspace; switching Sequence, Sound, Mix, Perform and Song while clicking M, S and the side keys at random (about 75 clicks, 55 switches a run) never showed a key that differs from that state, neither on the stub machine nor on the real firmware (a probe journey, three runs). Found: the Sequence and Sound rails show one side at a time (Synth or MIDI). A solo on a synth track silences the MIDI tracks too, but with the rail on MIDI nothing showed it: M on a MIDI track then lit and changed nothing audible (a solo holds), and the soloed track's S was only to be seen on the other side or in Mix. That matches the report.
+- **Fix (`fix/0.6-discord`):** the rail's Synth and MIDI keys carry a small S while a solo holds on their tracks (and say so in their tooltip), so the solo is found from either side. No new control. Page journey `mm-ms-across-views` (solo and mute in Sequence, then in Mix and back, the S mark on the other side's key).
+- **Left open:** the solo is the page's own (as on the Machinedrum); if the host closes and reopens the plug-in window, the new page has no solo while the machine keeps the mutes the solo made (they show as M). Ask the tester whether the window was closed between views.
+- **Status:** fixed on `fix/0.6-discord`; to confirm with the tester.
+
+## B-119 · Ableton: the Machinedrum and Monomachine Editors seem to hear each other's MIDI (a Push on a third track)
+
+- **From:** Discord, 2026-10-13.
+- **Setup:** Ableton Live on macOS, a Machinedrum Editor and a Monomachine Editor on two tracks, a Push playing a third track that uses an External Instrument.
+- **What happens (as reported):** notes meant for one editor seem to reach the other as well, as if MIDI crossed between the tracks.
+- **Should:** each plug-in hears only the MIDI its own track routes to it.
+- **Facts needed from the tester:** the editors' version; each track's MIDI From / To and Monitor settings; where the External Instrument sends (which port and channel); whether the cross-talk stays with the Push unplugged or with the External Instrument removed; whether "MIDI out" in either editor is on.
+- **Status:** open, not reproduced; waits for the tester's routing and version.
+
+## B-117 · Machinedrum: a handle at a panel's edge is drawn half outside it
+
+- **From:** screen review, 2026-10-13 (the sampler's live view: a ring half cut at the left and at the right edge; the same on the Sound workspace's panels at 0 or 127).
+- **What happens:** a handle of a drawn panel (an envelope's end, a filter's edge) was drawn centred on the value's position, so at 0 or 127 half of it lay outside the canvas and was cut.
+- **Fix (`fix/0.6-screens`):** the handle is drawn wholly inside (the drag still reaches the edge), as B-111 did for the Monomachine. Page journeys `md-screens-fit` and `mm-screens-fit` draw a probe panel with a handle on each of its four edges, and `md-screens-fit` checks the panels of Sound, Mix and Sampler. Left open: on the Mix workspace the master effects' captions ("REVERB · GATED", "ECHO TAPS · FEEDBACK GROWS!") still touch their curve or handle at the default values (the Monomachine's panels were moved clear in B-111); the Machinedrum's journey leaves caption against curve unchecked.
+- **Status:** fixed on `fix/0.6-screens` (edge handles).
+
+## B-116 · Monomachine: the Arrangement card's header is cut ("65 of 200 rows · T track transpos…")
+
+- **From:** screen review, 2026-10-13 (a picture of the Song workspace).
+- **What happens:** the header of the Arrangement card holds its state, "65 of 200 rows" and a legend of three keys (T, M, B); under 1700 px the legend does not fit and was cut mid-word.
+- **Fix (`fix/0.6-screens`):** under 1700 px only "65 of 200 rows" shows; the legend is in the tooltip (and in the keyboard view). Page journey `mm-screens-fit` measures the header.
+- **Status:** fixed on `fix/0.6-screens`.
+
+## B-115 · Monomachine: the line under the Transpose tab ends in "(…"
+
+- **From:** screen review, 2026-10-13 (two pictures: "Click a key: C plays it (…" up to the LOCKS key).
+- **What happens:** the help line under the Transpose tab is 100 to 120 letters; the line has room for 95, so it was cut in the middle of a sentence.
+- **Fix (`fix/0.6-screens`):** the line is one short sentence for each scale (---, FIX, MAJ, MIN, `TRNSHORT`); the whole help stays in the tooltip. Page journey `mm-screens-fit` measures the line under all four tabs and each of the four sentences.
+- **Status:** fixed on `fix/0.6-screens`.
+
+## B-114 · Both editors: the GEN bar's summary line is cut ("E 5/16 · ×4 · 20 on · steps…")
+
+- **From:** screen review, 2026-10-13 (about 8 pictures on the Monomachine, the same line on the Machinedrum).
+- **What happens:** at 1440 px the line at the right end of the GEN bar has about 90 px; it holds 33 letters, so it ends in "steps…", cut in the middle of a word.
+- **Fix (`fix/0.6-screens`):** under 1500 px the line keeps what matters ("20 on", and what a run changed, "+3 −1"); the cycle ("E 5/16 · ×4") and the step range ("steps 1–64") go, and the whole line is in the tooltip (`gopt`, `deskGenBar.js` / `.css`). Page journeys `md-screens-fit` and `mm-screens-fit` measure the line.
+- **Status:** fixed on `fix/0.6-screens`.
+
+## B-113 · Machinedrum: the longest generator tag in the track list is cut by the M key
+
+- **From:** screen review, 2026-10-13 (six pictures: "E 2/16+4" on tracks 2, 6, 7 and 10 runs under the M key).
+- **What happens:** a tag with a rotation ("E 2/16+4") is 6 px wider than the 75 px the rail leaves beside a two-letter name, and its end was cut.
+- **Also:** beside a long name (EMPTY, the tracks of an empty kit) no tag fits at all, and "E 2/1" showed (picture `e2e-md-top-cpu-meter`).
+- **Fix (`fix/0.6-screens`):** 9 px letters, 2 px padding and a 3 px gap for the tag (`mdOverrides.css`); where it still does not fit beside the name it wraps out of sight (the 19 px rows have no room for a second line, as the Monomachine's do, B-110): whole or not there, never half. Page journey `md-screens-fit` measures all 16 tags and, with a name of five letters put in, that none is half shown.
+- **Status:** fixed on `fix/0.6-screens`.
+
+## B-112 · Monomachine: the pattern chooser's labels run under the keys beside them, and an 11-letter kit name is cut in its tile
+
+- **From:** screen review, 2026-10-13 (the Patterns dialog: "SLOT A01" under the Go key, "KIT" under the kit key; the Kit library: "MULTI PULSE", "MULTI DPRO…" cut at the tile's edge).
+- **What happens:** (1) the labels of the dialog's toolbar were allowed to shrink in the flex row, "Slot A01" to 15 px for 47 px of letters and "Kit" to 5 px, so they wrote under the next key. (2) A kit name has up to 11 letters (6 px each at 10 px) and the tile's name box was 58 px wide.
+- **Fix (`fix/0.6-screens`):** the labels keep their width (`.libacts .ilab`); a kit tile has 2 px side padding and its name 9.5 px letters (an 11-letter name is 62 px in a 64 px box). Page journey `mm-screens-fit` measures the labels and an 11-letter probe in the tile.
+- **Status:** fixed on `fix/0.6-screens`.
+
+## B-111 · Monomachine: a curve and its handles lie over the panel's caption, and a handle is cut by the panel's edge
+
+- **From:** screen review, 2026-10-13 (about 25 of the 97 flagged defects: the MULTI ENVELOPE caption "ADSR OVER ALL TRACKS" struck through on every Perform picture; the delay filter's right handle; the amp envelope's caption under its first handle).
+- **What happens:** the multi envelope's plot starts 18 px from its top, the same height as the caption, so the curve (REL 127 holds the sustain level at the top) runs through the caption and the first handle sits on its first letter. The amp envelope does the same with its peak. A handle at the very edge of a panel (the delay filter's upper edge at DBAS + DWID = 127) was drawn half outside the canvas.
+- **Fix (`fix/0.6-screens`):** the two plots start 28 and 30 px from the top; every handle is drawn wholly inside its canvas (the drag still reaches the edge). Page journey `mm-screens-fit` draws every panel of Perform and Sound into a recording canvas context and checks the caption's box against the curve's strokes and the handles' circles and the canvas's edges.
+- **Status:** fixed on `fix/0.6-screens`.
+
+## B-110 · Monomachine: the generator tag in the track list is cut off
+
+- **From:** screen review, 2026-10-13 (the 0.6 e2e pictures: about 35 of the 97 flagged defects are this one, on every Sequence picture of the Monomachine).
+- **What happens:** next to a track's name the track list shows a small tag for its generator ("E 5/16", "R 30%"). The names of the Monomachine's machines take most of the row (DPRO-BBOX leaves 6 px), so the tag was squeezed to a few pixels and cut: "E…", "R…", half a letter.
+- **Cause:** the tag was allowed to shrink with an ellipsis, the name was not (`.th .nm .gtag`, `25-mm.css`).
+- **Fix (`fix/0.6-screens`):** the tag never shrinks: beside the name when it fits, under it when it does not (the row holds both lines; under 1380 px it is still left out). Page journey `mm-screens-fit` measures every tag at 1440 x 924: whole, inside its row, clear of the M key and the number.
+- **Status:** fixed on `fix/0.6-screens`.
+
 ## B-109 · Machinedrum: the first PLAY after start-up can do nothing
 
 - **From:** the 0.6 e2e work, 2026-10-13: `mdDeskFirmwareTest p4` ("the first PLAY after ready plays") failed on `feat/0.6-e2e` too; a first PLAY that does nothing is what users report.
@@ -603,7 +703,9 @@ where it came from, the setup, what happens, what should happen, status.*
 - **0.3.5:** not reproduced at first: the journey `mm-sound-machine-stays` (pick a machine on Sound, go to Sequence, wait, back to Sound) passes in the standalone and the VST3. It only waited on Sequence.
 - **Cause:** not the Sequence page (going there sends nothing), but what a person does there: an edit of the pattern that plays (a step, a lock, LEN …) goes to the machine as a pattern dump on SYSEX RECV, and OS 1.32B, taking a dump of the pattern that plays, loads the kit the pattern links from its slot, also when that is the kit that plays (measured: memory shows the stored kit 20-40 ms after the dump is taken, stopped or playing). Every unsaved edit of the kit went with it, the machine change and the values alike; the desk read the reloaded kit from memory, so the page showed the old machine and the kit as saved. The Machinedrum's firmware does the same, and its desk has sent the kit's edits again after such a dump since 0.3.0 (B-025); the Monomachine's desk did not. Over HW MIDI too, and worse there: the page, with no memory to read, went on showing a machine the Monomachine no longer played.
 - **Fix (0.4.0, branch `fix/machine-change`):** as the Machinedrum's: a dump of the pattern that plays which links the kit that plays is followed, once the machine has read and applied it (the stream's after-work), by the kit's edits as live messages (0x55 name, 0x5B machine, 0x5C routing, CC, NRPN: from the stored slot to the working kit the page shows), pending until memory shows them; meanwhile no memory image of the kit is taken, so the page never shows the reload (`MmMachine::reloadFollows`, `restoreWorkingKit`). The machine plays the stored kit for about a quarter of a second before the edits are back. Over HW MIDI the edits follow the dumps the person sends on SYSEX RECV (SEND, `hwSend`). Tests: `mmDeskFirmwareTest <MM ROM> machine` (the factory kit, then a saved kit: a machine and a value on Sound, a step on Sequence stopped and while playing, a second machine while playing, PLAY and STOP, another pattern with the same kit and back, each time the machine's memory and the page holding the same edited kit; then a step sent on the person's SYSEX RECV over HW MIDI): 24 failures before, passes after; `mmDeskTest` (0x5B again after a dump of the pattern that plays, not after another pattern's: fails before); the journey `mm-sound-machine-stays` now clicks a step on Sequence (not yet run in the plug-in).
-- **Status:** fixed for 0.4.0; the tester to confirm.
+- **Reported again:** Discord, 2026-10-11 (0.5.0, plug-in): "switching from the sound editor to the sequencer it switches back to some previous state".
+- **Re-checked 2026-10-13 on the 0.6 line (`fix/0.6-discord`), not reproduced:** `mmDeskFirmwareTest <MM ROM> machine` (a machine and values on Sound, then a step and a piano-roll note on Sequence, stopped and playing, another pattern with the kit and back, SAVE KIT, over HW MIDI: 44 of 44 checks) and `kitlink` (an E-H pattern that keeps another kit, its roll edit: 9 of 9) pass; the page journeys `mm-sound-machine-stays` and `mm-ms-across-views` pass on the firmware. So no new number. Left to ask the tester: whether the DAW has automation for the plug-in's parameters (a lane, or Live's automation arm while turning knobs), which writes the recorded values back as the song plays; whether it plays a pattern in banks E-H; the version.
+- **Status:** fixed for 0.4.0; reported again for 0.5.0, not reproduced on the 0.6 line; the tester to confirm with 0.6.
 
 ## B-026 · Mutes don't work after a SysEx import with its globals (0.3.5 candidate)
 

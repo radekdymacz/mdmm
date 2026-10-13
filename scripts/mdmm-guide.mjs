@@ -190,11 +190,13 @@ function shotHtml(machine, name, caption, web = false) {
 	const cap = caption ? `<figcaption>${esc(caption)}</figcaption>` : '';
 	// on the web page a picture opens full size on a click (a plain link to the image)
 	const zoom = (href, inner) => (web ? `<a class="gd-zoom" href="${href}" aria-label="Open the picture full size: ${alt}">${inner}</a>` : inner);
-	const snap = newestSnapshot(name);
+	// no new snapshot in this tree (temp/ is per worktree): the picture already published beside the guide
+	const kept = path.join(GUIDE, 'shots', `${name}.webp`);
+	const snap = newestSnapshot(name) || (fs.existsSync(kept) ? kept : null);
 	if (snap) {
 		fs.mkdirSync(path.join(GUIDE, 'shots'), { recursive: true });
 		const ext = path.extname(snap);
-		fs.copyFileSync(snap, path.join(GUIDE, 'shots', `${name}${ext}`));
+		if (snap !== kept) fs.copyFileSync(snap, path.join(GUIDE, 'shots', `${name}${ext}`));
 		const { w, h } = snapSize(snap);
 		return `<figure class="gd-shot">${zoom(`/guide/shots/${name}${ext}`, `<img src="/guide/shots/${name}${ext}" width="${w}" height="${h}" alt="${alt}" loading="lazy">`)}${cap}</figure>`;
 	}
@@ -405,7 +407,9 @@ ${items}
 	// the print page: cover, contents, every written chapter; each chapter is a named page, for its running head
 	const named = written.map((ch) => `@page c${ch.num} { @top-left { content: ${cssStr(`${ch.num}. ${ch.title}`)}; } }`).join('\n');
 	const toc = chapters.map((ch) => tocItem(ch, `#c${ch.num}`)).join('\n');
-	const all = written.map((ch) => `<article class="gd-chapter" id="c${ch.num}" style="page: c${ch.num}">\n${runHead(machine, `${ch.num}. ${ch.title}`)}\n${chapterBody(machine, ch, ch.text, byId, ch.block)}\n</article>`).join('\n');
+	const all = written.map((ch) => `<article class="gd-chapter" id="c${ch.num}" style="page: c${ch.num}">\n${runHead(machine, `${ch.num}. ${ch.title}`)}\n${chapterBody(machine, ch, ch.text, byId, ch.block)}\n</article>`).join('\n')
+		// headless Chrome prints without scrolling, so a lazy picture never loads: the print page loads them all at once
+		.replace(/ loading="lazy"/g, '');
 	write('print', pageShell({ title: `${PRODUCT[machine]} guide, for print`, desc: `The whole ${PRODUCT[machine]} guide on one page, for print and PDF.`, canonical: `${base}print/`, mainClass: 'gd-book',
 		head: `<style>\n@page contents { @top-left { content: "Contents"; } }\n${named}\n</style>\n`,
 		body: `<div class="gd-page">

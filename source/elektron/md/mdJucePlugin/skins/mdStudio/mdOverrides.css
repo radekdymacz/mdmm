@@ -325,7 +325,7 @@ html[data-tt=acc] #seq .st:not(.on),html[data-tt=swg] #seq .st:not(.on),html[dat
 .mp-audk{display:flex;gap:6px;align-items:center;background:transparent;box-shadow:none;color:var(--ink);font:11px var(--pix);text-transform:uppercase;padding:2px 4px}
 .mp-audk kbd{font:10px var(--pix);border:1px solid var(--ink);border-radius:2px;padding:0 4px}
 /* I-002: a note from a MIDI keyboard played this track (mdDeskTop.js noteLight): its number on the rail glows a moment */
-.th.hit .n{box-shadow:0 0 0 1px var(--led),0 0 6px 1px var(--led)}
+.th.hit .n,.th.trig .n{box-shadow:0 0 0 1px var(--led),0 0 6px 1px var(--led)}
 .strip .led.act.hit{background:var(--led);box-shadow:0 0 6px 1px var(--led)}
 
 /* MD-033: the machine's clip between two value boxes whose parameters depend on each other (mdDeskSound.js clipMarks:
@@ -340,3 +340,9 @@ html[data-tt=acc] #seq .st:not(.on),html[data-tt=swg] #seq .st:not(.on),html[dat
 .scell.ph[data-left]{position:relative}
 .scell.ph[data-left]::after{content:"+" attr(data-left);position:absolute;right:3px;top:2px;font:600 10px var(--mono);color:var(--led);pointer-events:none}
 .scell.ph[data-left="0"]::after{content:"last"}
+
+/* B-113: the track list's generator tag (E 2/16+4, the longest) whole in the 75 px beside a two-letter name: 9 px letters,
+   2 px padding, a 3 px gap. Beside a longer name (EMPTY, an empty kit's tracks) it does not fit: it wraps, out of the one
+   line the box shows (the 19 px rows have no room for a second line, as the Monomachine's have), never half cut */
+.th .nm.tagged{gap:3px;flex-wrap:wrap;align-content:flex-start;row-gap:30px;max-height:1.5em}
+.th .nm .gtag{font-size:9px;padding:0 2px}

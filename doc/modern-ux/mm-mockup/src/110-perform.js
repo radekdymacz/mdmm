@@ -28,7 +28,7 @@ function mapBands(){const[lo,hi]=kbRange(),whites=[];for(let n=lo;n<=hi;n++)if(!
    falls to 0; REL 127 is ∞ (the level holds until the next note), drawn as the sustain running on to the edge, dashed
    past its slot, with ∞. Every dot is on the curve. */
 const MENV_G=W=>({a:W*.22,d:W*.22,hold:W*.16,r:W*.3});
-function menvGeo(W,H){const e=S.menv,T=18,B=H-12,y=v=>B-v*(B-T),M=MENV_G(W),x0=4,ax=x0+e.ATK/127*M.a,dx=ax+e.DEC/127*M.d,s=e.SUS/127,hx=dx+M.hold,inf=e.REL>=127,rx=inf?hx+M.r:hx+e.REL/126*M.r;
+function menvGeo(W,H){const e=S.menv,T=30,B=H-12,y=v=>B-v*(B-T),M=MENV_G(W),x0=4,ax=x0+e.ATK/127*M.a,dx=ax+e.DEC/127*M.d,s=e.SUS/127,hx=dx+M.hold,inf=e.REL>=127,rx=inf?hx+M.r:hx+e.REL/126*M.r;
  return{e,T,B,y,M,x0,ax,dx,s,hx,rx,inf}}
 ED.menv={draw(g,W,H){const G=menvGeo(W,H),ink=cssv("--ink");grid(g,W,H);
   g.strokeStyle=ink;g.lineWidth=2;g.lineJoin="round";g.beginPath();g.moveTo(G.x0,G.y(0));g.lineTo(G.ax,G.y(1));g.lineTo(G.dx,G.y(G.s));g.lineTo(G.hx,G.y(G.s));

@@ -63,6 +63,10 @@ canvas.ed,.edblank,#lanescroll,.lcdroll,.slotgrid,.lcdbox{box-shadow:0 0 0 2px v
 .sidesw button .led{width:6px;height:6px}
 .sidesw button[aria-pressed=true]{background:var(--cream);color:var(--creamtext)}
 .sidesw button[aria-pressed=true] .led{background:var(--led);box-shadow:0 0 5px var(--led)}
+/* I-028: a track's trig lamp on the rail (its number lights while its trig plays) */
+.th.trig .n{box-shadow:0 0 0 1px var(--led),0 0 6px 1px var(--led)}
+.sidesw .sosign{font:700 9px/12px var(--mono);letter-spacing:0;padding:0 3px;border-radius:1px;background:var(--cream);color:var(--creamtext)}
+.sidesw button[aria-pressed=true] .sosign{background:var(--creamtext);color:var(--cream)}
 .th .nm small{font:500 10px var(--mono);color:var(--print3);margin-left:auto}
 .th.poly-off{opacity:.4}
 .railsec{margin-top:10px;border-top:2px solid var(--print);padding-top:7px;display:grid;gap:5px}
@@ -480,7 +484,7 @@ body.engwait #main,body.engwait #rail{pointer-events:none;opacity:.6;transition:
 .libx{height:24px;padding:0 9px;font:600 10px var(--sans);letter-spacing:.14em;text-transform:uppercase}
 .libacts{display:flex;gap:10px 22px;align-items:center;flex-wrap:wrap}
 .libacts .grp{display:flex;gap:4px;align-items:center}
-.libacts .ilab{min-width:0;margin-right:4px;white-space:nowrap}
+.libacts .ilab{min-width:0;margin-right:4px;white-space:nowrap;flex:none}
 .libacts button{height:26px;padding:0 10px;font:600 11px var(--sans);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
 .libacts button:disabled{opacity:.35;cursor:default}
 .libacts .danger:hover:not(:disabled){background:var(--rec);color:#fff}
@@ -494,7 +498,8 @@ body.engwait #main,body.engwait #rail{pointer-events:none;opacity:.6;transition:
 .ls .lsh .led{width:5px;height:5px}
 .ls .lsn{font:500 10px var(--mono);white-space:nowrap;overflow:hidden;text-overflow:clip;text-transform:uppercase;height:14px;line-height:14px}
 .ls .lsl{font:9px var(--mono);color:var(--keydim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:11px}
-.ks{height:52px}
+.ks{height:52px;padding:4px 2px}
+.ks .lsn{font-size:9.5px}
 .ps{height:42px;padding:4px 6px;gap:1px}
 .ps b{font:500 13px var(--mono)}
 .ps span{font:10px var(--mono);color:var(--keydim);white-space:nowrap;overflow:hidden}

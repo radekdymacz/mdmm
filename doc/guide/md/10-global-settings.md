@@ -211,8 +211,6 @@ The machine takes SysEx at any time. In the editor you open the file first and c
 6. Read the line at the foot. It says how many slots on the machine are overwritten.
 7. Click **Import**. The button says how many items it sends.
 
-![The SysEx import panel](shot:md-sysex-import)
-
 While the import runs, the panel shows three steps: **Read the slots**, **Send** and **Read back**, and a bar for each kind. Click **Stop** to cancel or **Hide** to put the panel away. The import goes on: **IMPORT SYSEX…** in the engine menu shows the panel again, with its report when it is done. While it runs, [ESC] and a click beside the panel leave it open. The panel keeps one size from the preview to the report.
 
 At the end the panel gives a report, slot by slot:

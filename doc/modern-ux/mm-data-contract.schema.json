@@ -2575,6 +2575,34 @@
         },
         {
           "type": "object",
+          "description": "The page's solo and the mutes the person had before it, as the plug-in keeps them with the project (soloSet): said when a project is opened, after a reset and when the page is made; never as an echo of soloSet.",
+          "required": ["type", "tracks", "mutes"],
+          "properties": {
+            "type": {
+              "const": "solo"
+            },
+            "tracks": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 11
+              }
+            },
+            "mutes": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 11
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
           "description": "The window asks the page to open its AUDIO / MIDI panel.",
           "required": ["type"],
           "properties": {
@@ -4229,6 +4257,37 @@
         },
         {
           "type": "object",
+          "description": "core: the Sound page's Revert track: the track as the kit's slot stores it (a synth track: machine, pages, level, routing, assign rows, its mask bits and where it forwards its notes; a MIDI track: its MIDI page)",
+          "required": ["op", "k", "t"],
+          "properties": {
+            "op": {
+              "const": "revertTrack"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "k": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            },
+            "t": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 11
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "description": "core: many kit values at once (MUTATE, a screen's handle, Control All): values [[t 0-11, page, i 0-7, v 0-127]...], page as param's",
           "required": ["op", "k", "values"],
           "properties": {
@@ -5449,6 +5508,33 @@
             },
             "doc": {
               "type": "object"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "setup: the page's solo (the tracks soloed, 0-11) and the mutes the person had before it, kept with the project; the plug-in says them again as {\"type\":\"solo\"}",
+          "required": ["op", "tracks"],
+          "properties": {
+            "op": {
+              "const": "soloSet"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "tracks": {
+              "type": "array"
+            },
+            "mutes": {
+              "type": "array"
             }
           },
           "additionalProperties": false

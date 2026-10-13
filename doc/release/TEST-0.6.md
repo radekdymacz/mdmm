@@ -164,3 +164,11 @@ One list, filled as each piece is merged. Run both editors (`scripts/mdmm-dev.sh
 9. MD: Song page, slot 1 (the factory song), Load, SONG, ▶: the song plays; Space stops and plays it again (B-096; if it does not, note standalone or DAW and whether ▶ blinks).
 10. MM: make an edit that sends a dump (paste a pattern), then at once ●: the LCD says it follows in a moment and recording starts when the dump is in; ● again during the wait cancels it (B-092).
 11. Both, Sequence, the Lock parameter panel at the narrowest window: lock a few parameters (a DIST on SYNTH and on ROUTING on the MD): each key shows its name whole and the count beside it; the tip says SYN·DIST or RTG·DIST (B-097).
+
+## Revert track and solo saved with the project (`feat/0.6-revert-solo`, 2026-10-13)
+
+1. Both: Sound, a track as its kit slot stores it: **Revert track** beside the machine key is off, its tip says so. Turn a knob (or change the machine, an LFO shape, a relation on the MD; an assign row on the MM): the key turns on.
+2. Click **Revert track**: the track is as the slot stores it, the other tracks and the master effects are untouched, the key is off. One ⌘Z brings the edit back (and the key); a second ⌘Z undoes the edit itself. Reload in the kit library still reloads the whole kit.
+3. MM: on a MIDI track the key reverts its MIDI page only. Save the kit (Save): the saved sound is the stored one, the key is off.
+4. Both: Mix, solo a track (the others go silent), save the DAW project (or quit the standalone), reopen it: the solo is still on (S lit on that track, the others muted), M edits still mean the mutes you had before the solo, and letting the solo go gives those mutes back. A project saved with no solo opens with none (B-123).
+

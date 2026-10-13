@@ -380,6 +380,29 @@ const MmJourneys = (() => {
 			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(kitT(0) === c.k0, "kit not back"), screen: c => ok(S().tracks[0].m === c.m0, "view " + S().tracks[0].m), within: 10000 }
 		]
 	};
+	/* MM-X25: Revert track on the Sound page: the track goes back as the kit's slot stores it, one undo step */
+	const storedPages = t => JSON.stringify(I().doc("kit", machine().kit?.current)?.tracks[t]?.pages?.slice(0, 7));
+	const revertTrackJ = {
+		name: "mm-sound-revert-track", proves: ["MM-X25"],
+		steps: [
+			go("sound"), sel(0),
+			{ say: "the Revert track key is there and off: the track is as its slot stores it",
+				screen: () => ok(!!$1("#revert") && $1("#revert").disabled && /stores it/.test($1("#revert").title), "key " + $1("#revert")?.disabled + " " + $1("#revert")?.title) },
+			{ say: "drag a value of the track: the key turns on", act: async (u, c) => {
+				const el = $1('#main .pc[data-g="FLT"]') || $1('#main .pc[data-g="AMP"]'); if (!el) throw new Error("no FLT or AMP value");
+				c.g = el.dataset.g; c.i = +el.dataset.n; c.pg = PAGES.indexOf(c.g); c.q = `#main .pc[data-g="${c.g}"][data-n="${c.i}"]`;
+				c.v0 = wk().tracks[0].pages[c.pg][c.i]; c.stored = storedPages(0); c.all0 = allKit(); const d = c.v0 > 64 ? -1 : 1;
+				await u.drag(c.q, [[d * 6, 0], [d * 12, 0], [d * 18, 0], [d * 24, 0], [d * 30, 0]]);
+				await until(() => wk().tracks[0].pages[c.pg][c.i] !== c.v0, 6000); c.v1 = wk().tracks[0].pages[c.pg][c.i]; c.h0 = histN(); },
+				screen: () => ok(!$1("#revert").disabled, "key still off"), machine: c => ok(c.v1 !== c.v0 && storedPages(0) === c.stored, `value ${c.v0} -> ${c.v1}`), within: 8000 },
+			{ say: "click Revert track: the value is the slot's, the slot is untouched, the key is off, one undo step more", act: u => u.click("#revert"),
+				screen: () => ok($1("#revert").disabled, "key still on"),
+				machine: c => ok(wk().tracks[0].pages[c.pg][c.i] === c.v0 && allKit() === c.all0 && storedPages(0) === c.stored && histN() === c.h0 + 1, `value ${wk().tracks[0].pages[c.pg][c.i]} for ${c.v0}, undo steps ${histN()} for ${c.h0 + 1}`), within: 8000 },
+			{ say: "press Cmd+Z once: the edit is back and the key is on again", act: u => { blur(); u.key("z", { cmd: true }); },
+				screen: () => ok(!$1("#revert").disabled, "key off"), machine: c => ok(wk().tracks[0].pages[c.pg][c.i] === c.v1, `value ${wk().tracks[0].pages[c.pg][c.i]} for ${c.v1}`), within: 8000 }
+		],
+		async tidy(u, c) { blur(); u.key("z", { cmd: true }); await until(() => wk().tracks[0].pages[c.pg][c.i] === c.v0, 6000); }
+	};
 	/* B-027: a machine picked on Sound stays when the person goes back to Sequence and clicks a step there: the step's
 	   dump makes the Monomachine load the pattern's kit from its slot, and the editor sends the kit's edits again */
 	const machineStays = {
@@ -494,6 +517,23 @@ const MmJourneys = (() => {
 			{ say: "click S again: the mutes are as before", act: u => u.click(strip(2, ".ms.s")), machine: c => ok(same(synthMutes(), c.m0), "machine mutes " + synthMutes()) }
 		]
 	};
+	/* B-123, MM-X06: the solo is kept with the project: a page made again (nothing soloed on it) gets the solo the plug-in
+	   keeps, the other tracks are muted, and the mute the person had before it comes back when the solo ends */
+	const soloSaved = {
+		name: "mm-mix-solo-saved", proves: ["MM-X06"],
+		steps: [
+			go("mix"),
+			{ say: "mute track 1 with its M key, solo track 3 with its S key", act: async (u, c) => { c.m0 = synthMutes(); if (c.m0.length) throw new Error("a track is muted already: " + c.m0); u.click(strip(0, ".ms.m")); await sleep(400); u.click(strip(2, ".ms.s")); },
+				screen: () => ok(pressed(strip(2, ".ms.s")) && pressed(strip(0, ".ms.m")), "keys not lit"), machine: () => ok(same(synthMutes(), [0, 1, 3, 4, 5]), "machine mutes " + synthMutes()), within: 8000 },
+			{ say: "the page is made again with nothing soloed on it: the plug-in says its solo and the solo is back", act: async (u, c) => {
+				window.MMView.setSolo([], []); S().tracks[1].mute = true; c.dropped = !S().tracks[2].solo && S().tracks[1].mute; Bridge.ready(); await until(() => S().tracks[2].solo, 6000); await sleep(600); },
+				screen: c => ok(c.dropped && S().tracks[2].solo && S().tracks[0].mute && !S().tracks[1].mute && pressed(strip(2, ".ms.s")) && pressed(strip(0, ".ms.m")), `dropped ${c.dropped}, solo ${S().tracks[2].solo}, mutes ${S().tracks.map(t => +t.mute)}`),
+				machine: () => ok(same(synthMutes(), [0, 1, 3, 4, 5]), "machine mutes " + synthMutes()), within: 10000 },
+			{ say: "click S again: the solo ends and track 1 is still muted", act: u => u.click(strip(2, ".ms.s")),
+				screen: () => ok(!S().tracks[2].solo && pressed(strip(0, ".ms.m")), "solo " + S().tracks[2].solo), machine: () => ok(same(synthMutes(), [0]), "machine mutes " + synthMutes()), within: 8000 }
+		],
+		async tidy(u) { if (S().tracks[2].solo) u.click(strip(2, ".ms.s")); await sleep(300); if (S().tracks[0].mute) { u.click(strip(0, ".ms.m")); await sleep(300); } }
+	};
 	const shiftMutes = {
 		name: "mm-mix-shift-mutes", proves: ["MM-236"],
 		steps: [
@@ -528,6 +568,50 @@ const MmJourneys = (() => {
 			{ say: "mute two tracks on the rail", act: async () => { }, machine: () => true },
 			{ say: "click M on tracks 1 and 2, then M/S off", act: async u => { for (const i of [0, 1]) if (!synthMuted(i)) { u.click(`#rail .th[data-sel="${i}"] .ms.m`); await sleep(400); } await until(() => synthMuted(0) && synthMuted(1), 4000); u.click("#allon"); }, machine: () => ok(!synthMutes().length, "machine mutes " + synthMutes()), screen: () => ok($1("#allon").disabled, "M/S off still on") }
 		]
+	};
+
+	/* Discord 2026-10-13 (B-120): mute and solo keep working, and agree, across the Sequence and Mix workspaces; a solo on
+	   the side the rail does not show (Synth or MIDI) is marked on that side's key */
+	const msViews = {
+		name: "mm-ms-across-views", proves: ["MM-020"],
+		steps: [
+			go("seq"),
+			{ say: "click S on track 3 on the rail: the other synth tracks are muted", act: (u, c) => { c.m0 = synthMutes(); u.click('#rail .th[data-sel="2"] .ms.s'); },
+				machine: () => ok(same(synthMutes(), [0, 1, 3, 4, 5]), "machine mutes " + synthMutes()), screen: () => ok(pressed('#rail .th[data-sel="2"] .ms.s'), "rail S not lit") },
+			go("mix"),
+			{ say: "Mix shows track 3's S lit", act: () => {}, screen: () => ok(pressed(strip(2, ".ms.s")), "Mix S not lit") },
+			{ say: "click S on track 3 in Mix: solo off", act: u => u.click(strip(2, ".ms.s")), machine: c => ok(same(synthMutes(), c.m0), "machine mutes " + synthMutes()), screen: () => ok(!pressed(strip(2, ".ms.s")), "Mix S still lit") },
+			go("seq"),
+			{ say: "the rail shows track 3's S off", act: () => {}, screen: () => ok(!pressed('#rail .th[data-sel="2"] .ms.s') && !S().tracks[2].solo, "rail S lit " + pressed('#rail .th[data-sel="2"] .ms.s') + ", state " + S().tracks[2].solo) },
+			{ say: "click M on track 1 on the rail", act: (u, c) => { c.a = synthMuted(0); u.click('#rail .th[data-sel="0"] .ms.m'); }, machine: c => ok(synthMuted(0) === !c.a, "machine mute " + synthMuted(0)), screen: c => ok(pressed('#rail .th[data-sel="0"] .ms.m') === !c.a, "rail M " + pressed('#rail .th[data-sel="0"] .ms.m')) },
+			go("mix"),
+			{ say: "Mix shows track 1's M; click it", act: (u, c) => { c.lit = pressed(strip(0, ".ms.m")); u.click(strip(0, ".ms.m")); }, machine: c => ok(synthMuted(0) === c.a, "machine mute " + synthMuted(0)), screen: c => ok(c.lit === !c.a && pressed(strip(0, ".ms.m")) === c.a, `Mix M was ${c.lit}, now ${pressed(strip(0, ".ms.m"))}`) },
+			{ say: "click S on track 2 in Mix", act: u => u.click(strip(1, ".ms.s")), machine: () => ok(same(synthMutes(), [0, 2, 3, 4, 5]), "machine mutes " + synthMutes()) },
+			go("seq"),
+			{ say: "click MIDI on the rail: the MIDI tracks, and the Synth key says a solo holds there", act: u => u.click('[data-side="midi"]'),
+				screen: () => ok(S().side === "midi" && !!$1('[data-side="int"] .sosign') && !$1('[data-side="midi"] .sosign'), `side ${S().side}; Synth mark ${!!$1('[data-side="int"] .sosign')}, MIDI mark ${!!$1('[data-side="midi"] .sosign')}`) },
+			{ say: "click Synth: back to the synth tracks", act: u => u.click('[data-side="int"]'), screen: () => ok(S().side !== "midi", "side " + S().side) },
+			{ say: "the rail shows track 2's S; click it: solo off", act: (u, c) => { c.lit = pressed('#rail .th[data-sel="1"] .ms.s'); u.click('#rail .th[data-sel="1"] .ms.s'); }, machine: c => ok(same(synthMutes(), c.m0), "machine mutes " + synthMutes()), screen: c => ok(c.lit && !pressed('#rail .th[data-sel="1"] .ms.s') && !$1(".sidesw .sosign"), "rail S was " + c.lit + "; a solo mark left " + !!$1(".sidesw .sosign")) }
+		],
+		async tidy(u) { if ([...S().tracks, ...S().midi].some(x => x.solo || x.mute)) { const b = $1("#allon"); if (b && !b.disabled) u.click(b); await sleep(500); } }
+	};
+
+	/* I-028 (Discord 2026-10-12): the rail's trig lamps on Sequence and Sound: a track's number lights while its trig
+	   plays, only tracks with a trig light, and a frame lights them together */
+	const railLamps = {
+		name: "mm-seq-rail-lamps", proves: [],
+		steps: [
+			go("seq"),
+			{ say: "the synth tracks on the rail", act: u => { if (S().side === "midi") u.click('[data-side="int"]'); }, screen: () => ok(S().side !== "midi", "side " + S().side) },
+			{ say: "press PLAY and watch the rail for 2.5 s: the tracks with trigs light, the others never", act: async (u, c) => {
+				c.lit = new Set(); const ob = new MutationObserver(ms => { for (const m of ms) if (m.target.classList?.contains("trig")) c.lit.add(+m.target.dataset.sel); });
+				ob.observe($1("#rail"), { subtree: true, attributes: true, attributeFilter: ["class"] });
+				if (!S().playing) u.click("#play"); await until(() => S().playing, 5000); await sleep(2500); ob.disconnect();
+				c.with = [0, 1, 2, 3, 4, 5].filter(i => S().tracks[i].steps.slice(0, S().len).some(st => st && !st.off && st.a) && !S().tracks[i].mute); c.note = `lit ${[...c.lit]}, with trigs ${c.with}`; },
+				screen: c => ok(c.lit.size > 0 && [...c.lit].every(i => c.with.includes(i)), `lit ${[...c.lit]}; tracks with trigs ${c.with}`) },
+			{ say: "press STOP: no lamp stays lit", act: async u => { if (S().playing) u.click("#play"); await until(() => !S().playing, 5000); await sleep(400); }, screen: () => ok(!$1("#rail .th.trig"), "a lamp stays lit") }
+		],
+		async tidy(u) { if (S().playing) { u.click("#play"); await sleep(500); } }
 	};
 
 	/* ---------- Perform ---------- */
@@ -3453,8 +3537,53 @@ const MmJourneys = (() => {
 	const e2eReal = [realSongs, realPatterns, realSequence];
 
 	const wave12 = [undoKitJ, clearStepLocksJ, lockCurrentJ, patKitJ, songCounterJ, mapPatJ];
-	const all = [...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
-		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff,
+	/* Screen review 2026-10-13 (B-110 and on): the screens the review found cut or overlapped, measured at the page's size
+	   (the page tier runs at 1440 x 924, as the review's pictures). One step per defect found. */
+	const edProblems = () => $all("canvas.ed").filter(c => c.clientWidth && ED[c.dataset.ed]).flatMap(c => Journey.canvasProblems(c, drawEd).map(x => `${c.dataset.ed}: ${x}`));
+	const screensFit = {
+		name: "mm-screens-fit", proves: [],
+		steps: [
+			{ say: "Sequence: the track list's generator tags (E 5/16, R 30%) show whole, inside their row and clear of the M key (B-110)",
+				act: async (u, c) => { await closeLib(u); u.click(tab("seq")); await sleep(400);
+					const rows = $all("#rail .th"), inside = rows.filter(r => { const t = r.querySelector(".gtag"); if (!t) return false; const a = t.getBoundingClientRect(), b = r.getBoundingClientRect(); return a.bottom > b.bottom + 0.5 || a.right > b.right + 0.5; });
+					c.bad = [...Journey.spills("#rail .th .gtag"), ...Journey.overlaps("#rail .th .gtag", "#rail .th .ms, #rail .th .n"), ...inside.map(r => r.textContent.trim().slice(0, 16) + ": tag out of its row")]; c.n = $all("#rail .th .gtag").length; },
+				screen: c => ok(c.n > 0 && !c.bad.length, `${c.n} tags; ${c.bad.slice(0, 4).join(" | ")}`) },
+			{ say: "Perform and Sound: what the drawn panels draw fits them: the multi envelope's caption and the amp envelope's caption clear of the curve and its handles, no handle cut by an edge, no caption past the edge (B-111)",
+				act: async (u, c) => { c.bad = []; c.n = 0;
+					for (const ws of ["perform", "sound"]) { u.click(tab(ws)); await sleep(500); c.n += $all("canvas.ed").filter(x => x.clientWidth).length; for (const x of edProblems()) c.bad.push(ws + " " + x); } },
+				screen: c => ok(c.n > 3 && !c.bad.length, `${c.n} canvases; ${[...new Set(c.bad)].slice(0, 4).join(" | ")}`) },
+			{ say: "the pattern chooser's toolbar: its labels (SLOT A01, KIT) show whole, clear of the keys beside them (B-112)",
+				act: async (u, c) => { await closeLib(u); u.click(tab("seq")); await sleep(300); u.click("#pat"); await sleep(500);
+					c.bad = [...Journey.spills("#libpop .libacts .ilab"), ...Journey.overlaps("#libpop .libacts .ilab", "#libpop .libacts button")]; c.n = $all("#libpop .libacts .ilab").length; await closeLib(u); },
+				screen: c => ok(c.n >= 2 && !c.bad.length, `${c.n} labels; ${c.bad.join(" | ")}`) },
+			{ say: "the kit library: a kit's name of the longest length (11 letters) fits its tile (B-112)",
+				act: async (u, c) => { await closeLib(u); u.click("#kitf"); await sleep(500);
+					const tile = $1("#libpop .ks .lsn"); c.n = $all("#libpop .ks").length; c.bad = [];
+					if (tile) { const probe = tile.cloneNode(false); probe.textContent = "W".repeat(11); tile.after(probe); if (probe.scrollWidth > probe.clientWidth + 0.5) c.bad.push(`11 letters need ${probe.scrollWidth} px, the name's box is ${probe.clientWidth}`); probe.remove(); }
+					await closeLib(u); },
+				screen: c => ok(c.n >= 64 && !c.bad.length, `${c.n} tiles; ${c.bad.join(" | ")}`) }
+			,{ say: "the GEN bar's summary line shows whole at this size: what it writes (8 on) and, when the bar has room, the cycle and the steps (B-114)",
+				act: async (u, c) => { await closeLib(u); u.click(tab("seq")); await sleep(400); const g = $1(".genband"); c.bad = g ? [...Journey.cutText(g), ...Journey.spills(".genband .gsum")] : ["no GEN bar"]; c.text = $1(".genband .gsum")?.textContent.trim(); },
+				screen: c => ok(c.text && !c.bad.length, `"${c.text}" ${c.bad.join(" | ")}`) }
+			,{ say: "the line under the Locks, Arp, Transpose and Trig setup tabs shows whole, and so does each of the four Transpose lines (---, FIX, MAJ, MIN) (B-115)",
+				act: async (u, c) => { await closeLib(u); u.click(tab("seq")); await sleep(300); c.bad = []; c.n = 0;
+					for (const d of ["locks", "arp", "trn", "trig"]) { if (!$1(`[data-dock="${d}"]`)) continue; u.click(`[data-dock="${d}"]`); await sleep(350); c.n++; for (const x of Journey.cutText()) if (/dkhelp|lanehelp/.test(x)) c.bad.push(d + ": " + x); }
+					const line = $1(".dkhelp"); if (line && typeof TRNSHORT !== "undefined") { const keep = line.innerHTML; for (const h of TRNSHORT) { line.innerHTML = h; if (line.scrollWidth > line.clientWidth + 1) c.bad.push(`"${line.textContent.slice(0, 20)}" ${line.scrollWidth - line.clientWidth} px cut`); } line.innerHTML = keep; }
+					if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); },
+				screen: c => ok(c.n >= 3 && !c.bad.length, `${c.n} tabs; ${c.bad.join(" | ")}`) }
+			,{ say: "Song: the Arrangement card's header shows whole: its state and how many rows (B-116)",
+				act: async (u, c) => { await closeLib(u); u.click(tab("song")); await sleep(500); const card = $1(".arrcard header"); c.bad = card ? [...Journey.cutText(card), ...Journey.spills(".arrcard header *")] : ["no Arrangement card"]; c.text = card?.textContent.trim().replace(/\s+/g, " "); u.click(tab("seq")); },
+				screen: c => ok(c.text && !c.bad.length, `"${c.text}" ${c.bad.join(" | ")}`) }
+			,{ say: "a handle at the very edge of a panel (value 0 or 127) is drawn whole: a probe canvas with handles on all four edges (B-117)",
+				act: async (u, c) => { const cv = document.createElement("canvas"); cv.className = "ed"; cv.dataset.ed = "__probe"; cv.style.cssText = "position:fixed;left:10px;top:10px;width:200px;height:100px;opacity:0;pointer-events:none"; document.body.appendChild(cv);
+					ED.__probe = { draw() {}, handles: (W, H) => [{ x: 0, y: 50, k: "L", c: "#000" }, { x: W, y: 50, k: "R", c: "#000" }, { x: W / 2, y: 0, k: "T", c: "#000" }, { x: W / 2, y: H, k: "B", c: "#000" }] };
+					try { c.bad = Journey.canvasProblems(cv, drawEd, { crossing: false }); } finally { delete ED.__probe; cv.remove(); } },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")) }
+		],
+		async tidy(u) { await closeLib(u); u.click(tab("seq")); }
+	};
+	const all = [screensFit, ...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
+		genMut, shapeSound, machinePick, revertTrackJ, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, soloSaved, shiftMutes, routing, panTrim, msOff, msViews, railLamps,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, mutScope,

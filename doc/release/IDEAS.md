@@ -3,6 +3,25 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-029 · A quick way back to the original sound while you play with the Sound page
+
+- **From:** Radek, 2026-10-13 ("when you play with the Sound page, a way to quickly restore the original settings").
+- **Today:** the kit library's **Reload** loads the whole kit again from its slot (bug B-122 notes it). Nothing puts back one track.
+- **Built on `feat/0.6-revert-solo`, both editors:** **Revert track** beside the machine key on the Sound page (no new row). It puts the selected track back as the kit's slot stores it, in one undo step: the Machinedrum's machine, its 24 values, level, LFO and the two relations; the Monomachine's machine, seven pages, level, outputs and input, assign rows, key tracking, portamento and legato bits and where it forwards its notes (a MIDI track: its MIDI page). Other tracks, the master effects, the multi envelope and the name stay. The key is on only while the track differs from the slot (Reload = the whole kit, this = one track). Core command `revertTrack {k, t}`.
+- **Status:** built, not merged.
+
+## I-028 · A lamp beside each track name that shows which track is playing
+
+- **From:** Discord, 2026-10-12 ("blinkers next to the track names on the pattern and sound pages, to see where sounds come from"); the same need as a per-track meter in Mix (later: per-track audio is not a cheap tap).
+- **Built on `fix/0.6-discord`, both editors:** on Sequence and Sound, a track's number on the rail lights for a moment when its trig plays (the Monomachine: the synth or MIDI tracks the rail shows), from the step telemetry and the pattern, no audio; a muted or solo-silenced track stays dark. No new control and no new row: the number box glows as it does for a note from a MIDI keyboard (I-002, the Machinedrum) and as the Perform page's lamps (the Monomachine). All the lamps of a step are set in one animation frame. Page journeys `md-seq-rail-lamps` and `mm-seq-rail-lamps` (PLAY for 2.5 s: only tracks with trigs light; none stays lit after STOP).
+- **Status:** built, not merged.
+
+## I-027 · Plug-in: its own MIDI in and out ports, on top of the host's MIDI
+
+- **From:** Discord, 2026-10-10 and 2026-10-11 (a virtual port and a Max patch beside the DAW). The tester was told it is on the list.
+- **The idea:** the plug-in can open MIDI input and output ports of its own (as the standalone does), in addition to the MIDI the host routes to it, so a patch or a controller can talk to the editor directly.
+- **Status:** later (not 0.6): needs port handling in the plug-in layer; the standalone already has it.
+
 ## I-026 · In a DAW: the machine's own clock (GLOBAL Tempo in INT)
 
 - **From:** Radek's 0.6 review, 2026-10-12: in the plug-in he must be able to switch the machine to its internal clock. `followHost` set EXT and set it again every 2 s, so Tempo in INT did not stick in a DAW and TEMPO edits were refused ("The DAW sets the tempo").

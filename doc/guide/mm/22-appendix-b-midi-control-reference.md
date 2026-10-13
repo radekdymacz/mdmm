@@ -13,7 +13,7 @@ Each track listens on its own channel: the base channel plus 0 to 5. You set the
 3. Close the panel and click the **M** of a track on the rail. The editor refuses and offers the fix in a notice.
 4. Open GLOBAL again and click **Give each track its own channel**. The span reads 6 and **M** mutes the track.
 
-![The MIDI channels in GLOBAL](shot:e2e-mm-global-channels)
+![The MIDI channels in GLOBAL](shot:mm-global-panel)
 
 ## NOTE ON / OFF
 <!-- rows: MM-348 @2d02a0 -->
