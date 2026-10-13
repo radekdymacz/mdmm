@@ -2216,12 +2216,13 @@ const MmJourneys = (() => {
 		if (desk().chain?.active && !c.back0.chain) { Bridge.send({ op: "chainClear" }); await sleep(300); }
 		if (c.back0.mode != null && machine().song?.songMode !== c.back0.mode) { Bridge.send({ op: "seqMode", song: c.back0.mode }); await until(() => machine().song?.songMode === c.back0.mode, 4000); await sleep(300); }
 		if (c.back0.pat != null && cur() !== c.back0.pat) { Bridge.send({ op: "select", p: c.back0.pat, now: true }); await until(() => cur() === c.back0.pat, 6000); await sleep(300); }
-		if (c.back0.tempo != null && machine().tempo != null && Math.abs(machine().tempo - c.back0.tempo) > 0.05) { Bridge.send({ op: "tempo", bpm: c.back0.tempo }); await until(() => Math.abs(machine().tempo - c.back0.tempo) <= 0.05, 6000); await sleep(300); }
 		if (c.back0.kit != null && machine().kit?.current !== c.back0.kit) { Bridge.send({ op: "loadKit", k: c.back0.kit, force: true }); await until(() => machine().kit?.current === c.back0.kit, 6000); await sleep(300); }
 		/* a kit edited and undone holds the same sounds, but the machine still calls it edited: saved again, it is the kit it was */
 		if (c.back0.kitw === "clean" && machine().kit?.working !== "clean") { Bridge.send({ op: "saveKit", k: machine().kit?.current, force: true }); await until(() => machine().kit?.working === "clean", 8000); await sleep(600); }
 		/* a slot the journey overwrote (kept with keep(c, "kit", k) before it did): pasted back from the plug-in's clipboard */
 		for (const [kind, slot] of c.keptSlots || []) { Bridge.send(kind === "kit" ? { op: "kitPaste", k: slot, force: true } : kind === "pattern" ? { op: "patPaste", p: slot, force: true } : { op: "songPaste", s: slot, force: true }); await sleep(600); }
+		/* the tempo last: loading a pattern or a song may set it */
+		if (c.back0.tempo != null && machine().tempo != null && Math.abs(machine().tempo - c.back0.tempo) > 0.05) { Bridge.send({ op: "tempo", bpm: c.back0.tempo }); await until(() => Math.abs(machine().tempo - c.back0.tempo) <= 0.05, 6000); await sleep(300); }
 		/* the mutes as they were, and the pattern's kit link (loading another kit links the pattern to it) */
 		{ const was = JSON.parse(c.back0.mutes || "null"), now = machine().mutes;
 			if (was && now) for (const [key, op] of [["synth", "mute"], ["midi", "muteMidi"]]) for (let t = 0; t < 6; t++) { const w = (was[key] >> t & 1) === 1; if (((now[key] ?? 0) >> t & 1) === 1 !== w) { Bridge.send({ op, t, on: w }); await sleep(900); } } }

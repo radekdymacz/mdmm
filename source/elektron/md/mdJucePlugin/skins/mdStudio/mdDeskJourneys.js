@@ -2124,12 +2124,13 @@ const MdJourneys = (() => {
 		if (desk().chain?.active && !c.back0.chain) { cmd("chainClear"); await sleep(300); }
 		if (c.back0.mode != null && V.songMode !== c.back0.mode) { cmd("seqMode", { song: c.back0.mode }); await until(() => V.songMode === c.back0.mode && machineState().songMode === c.back0.mode, 4000); await sleep(300); }
 		if (c.back0.pat != null && currentPatternSlot() !== c.back0.pat) { cmd("select", { p: c.back0.pat, now: true }); await until(() => currentPatternSlot() === c.back0.pat, 6000); await until(idle, 4000); }
-		if (c.back0.tempo != null && Docs.global && Math.abs(Docs.global.tempo - c.back0.tempo) > 0.05) { cmd("tempo", { bpm: c.back0.tempo }); await until(() => Math.abs(Docs.global.tempo - c.back0.tempo) <= 0.05, 6000); await sleep(300); }
 		if (c.back0.kit != null && currentKitSlot() !== c.back0.kit) { cmd("kitLoad", { k: c.back0.kit, force: true }); await until(() => currentKitSlot() === c.back0.kit, 6000); await until(idle, 4000); }
 		/* a kit edited and undone holds the same sounds, but the machine still calls it edited: saved again, it is the kit it was */
 		if (c.back0.kitw === "clean" && machineState().kit?.working !== "clean") { cmd("saveKit", { force: true }); await until(() => machineState().kit?.working === "clean", 8000); await until(idle, 4000); }
 		/* a slot the journey overwrote (kept with keep(c, "kit", k) before it did): pasted back from the plug-in's clipboard */
 		for (const [kind, slot] of c.keptSlots || []) { cmd(kind === "kit" ? "kitPaste" : kind === "pattern" ? "patPaste" : "songPaste", kind === "song" ? { s: slot, force: true } : kind === "kit" ? { k: slot, force: true } : { p: slot, force: true }); await until(idle, 6000); await sleep(300); }
+		/* the tempo last: loading a pattern or a song may set it */
+		if (c.back0.tempo != null && Docs.global && Math.abs(Docs.global.tempo - c.back0.tempo) > 0.05) { cmd("tempo", { bpm: c.back0.tempo }); await until(() => Math.abs(Docs.global.tempo - c.back0.tempo) <= 0.05, 6000); await sleep(300); }
 		/* the mutes as they were, and the pattern's kit link (loading another kit links the pattern to it) */
 		for (const t of Array(16).keys()) { const was = c.back0.mutes.includes(t); if (mutes().includes(t) !== was) { cmd("mute", { t, on: was }); await settledMutes(); } }
 		{ const pd = Docs.patterns[c.back0.pat]; if (pd && c.back0.patKit != null && pd.kit !== c.back0.patKit) { cmd("patternKit", { p: c.back0.pat, v: c.back0.patKit, force: true }); await until(() => Docs.patterns[c.back0.pat]?.kit === c.back0.patKit, 6000); await until(idle, 4000); } }
@@ -2315,10 +2316,12 @@ const MdJourneys = (() => {
 			{ say: "drag each of the 32 knobs sideways: each moves its own value of its own master effect and no other", act: async (u, c) => {
 				c.n0 = V.undoCount; c.bad = []; const keys = { echo: "rhythmEcho", gate: "gateBox", eq: "eq", dyn: "dynamix" };
 				for (const el0 of $all('#main .pc[data-g="mfx"]')) {
+					/* the machine's answer to the last knob in before this one is measured (under load it arrived mid-drag: "another value moved"); the knob is looked up after it:
+					   the page draws the card again when the answer comes (the element looked up before was gone: "not shown") */
+					await until(idle, 4000); await sleep(150);
 					const q = `#main .pc[data-g="mfx"][data-f="${el0.dataset.f}"][data-n="${el0.dataset.n}"]`, el = $1(q);
 					const f = keys[el.dataset.f], names = $all(`#main .pc[data-g="mfx"][data-f="${el.dataset.f}"]`).map(e => e.dataset.n), i = names.indexOf(el.dataset.n);
-					await until(idle, 4000); await sleep(100);	/* the machine's answer to the last knob in before this one is measured (under load it arrived mid-drag: "another value moved") */
-					const before = JSON.stringify(kit().masterFx), v0 = kit().masterFx[f][i]; await nudge(u, el, v0, 24);
+					const before = JSON.stringify(kit().masterFx), v0 = kit().masterFx[f][i]; try { await nudge(u, el, v0, 24); } catch (e) { const r = el.getBoundingClientRect(); throw new Error(`${f} ${el.dataset.n}: ${e.message} (box ${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}x${Math.round(r.height)}, shown ${el.isConnected}, workspace ${S.ws}, window ${innerWidth}x${innerHeight})`); }
 					if (!await until(() => kit().masterFx[f][i] !== v0, 3000)) { c.bad.push(`${f} ${el.dataset.n}: stayed ${v0}`); continue; }
 					await until(idle, 4000); await sleep(100);
 					const now = JSON.parse(JSON.stringify(kit().masterFx)), was = JSON.parse(before); now[f][i] = was[f][i];
