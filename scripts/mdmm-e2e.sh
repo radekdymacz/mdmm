@@ -78,8 +78,9 @@ python3 scripts/mdmm-e2e-webp.py "$RAW" "$OUT/shots" | tee "$OUT/shots.size"
 rm -rf "$RAW"
 FW=""; for r in "$HOME/Documents/Gearmulator Preview/Machinedrum/roms/"* "$HOME/Documents/Gearmulator Preview/Monomachine/roms/"*; do FW="$FW $(basename "$r")"; done
 export MDMM_E2E_VERSION=$VERSION MDMM_E2E_COMMIT=$(git rev-parse --short HEAD) MDMM_E2E_FIRMWARE="${GEARMULATOR_MD_FIRMWARE_BIN:+$(basename "$GEARMULATOR_MD_FIRMWARE_BIN") }${GEARMULATOR_MM_FIRMWARE_BIN:+$(basename "$GEARMULATOR_MM_FIRMWARE_BIN")}${FW}"
-ARGS=(--out "$OUT" "${PAGEARGS[@]}")
+ARGS=(--out "$OUT" ${PAGEARGS[@]+"${PAGEARGS[@]}"})
 [ $WRITE = 1 ] && ARGS+=(--write-data)
 FIX=(); [ -d "$OUT/run-fix" ] && FIX=("$OUT/run-fix")
-node scripts/mdmm-e2e.mjs "${ARGS[@]}" "$RUN" "${FIX[@]}"
+# macOS bash 3.2 with set -u: an empty array is "unbound", hence the ${X[@]+...} form
+node scripts/mdmm-e2e.mjs "${ARGS[@]}" "$RUN" ${FIX[@]+"${FIX[@]}"}
 echo "done in $(( $(date +%s) - START )) s"
