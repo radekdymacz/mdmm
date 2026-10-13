@@ -359,7 +359,13 @@ function stepShown(prev){if(S.step===prev)return;const pp=Math.floor(S.step/16);
  if(pp!==stepPage){stepPage=pp;$$(".pl").forEach(b=>b.classList.toggle("play",+b.dataset.plp===pp&&S.playing))}
  if(S.follow&&S.ws==="seq"&&!S.viewAll&&pp!==S.page&&!laneDraw&&!menuOpen()){S.page=pp;followPage()}
  $("#tempoled").classList.toggle("on",S.step%4===0);setPos();queueMicrotask(movePH);
- if(S.ws==="perform"){const act=[0,1,2,3,4,5].filter(i=>{const st=S.tracks[i].steps[S.step];return st&&!st.off&&st.a&&audible(i)&&(S.mode!=="poly"||i===asgT())});flashTracks(act)}}
+ if(S.ws==="perform"){const act=[0,1,2,3,4,5].filter(i=>{const st=S.tracks[i].steps[S.step];return st&&!st.off&&st.a&&audible(i)&&(S.mode!=="poly"||i===asgT())});flashTracks(act)}
+ if((S.ws==="seq"||S.ws==="sound")&&S.playing&&S.step>=0)railLamps(side().filter(i=>{const st=trk(i).steps[S.step];return st&&!st.off&&(isMidiT(i)||st.a)&&audible(i)}))}
+/* I-028 (Discord 2026-10-12): on Sequence and Sound a rail track's number lights while its trig plays (the step
+   telemetry and the pattern, no audio), as the Perform page's lamps; every lamp of a step in one frame */
+const RailLamps={due:null,off:new Map()};
+function railLamps(ts){if(!ts.length)return;const first=!RailLamps.due;RailLamps.due=new Set([...(RailLamps.due||[]),...ts]);if(!first)return;
+ requestAnimationFrame(()=>{const due=RailLamps.due;RailLamps.due=null;for(const i of due){const l=$(`#rail .th[data-sel="${i}"]`);if(!l)continue;l.classList.add("trig");clearTimeout(RailLamps.off.get(i));RailLamps.off.set(i,setTimeout(()=>$(`#rail .th[data-sel="${i}"]`)?.classList.remove("trig"),110))}})}
 /* the playhead's page while following: the sequencer only (renderPage's work for it), not the whole page */
 function followPage(){const sl=$("#seqscroll")?.scrollLeft||0;renderSeq();const sc=$("#seqscroll");if(sc){sc.scrollLeft=sl;const l=$("#lanescroll");if(l)l.scrollLeft=sl}enhanceSelects($("#main"));movePH(false)}
 function stepMs(){const m={"1X":1,"2X":2,"3/4X":.75,"3/2X":1.5}[S.mult];return 60000/S.bpm/4/m}
