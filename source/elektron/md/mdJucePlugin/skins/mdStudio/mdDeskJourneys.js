@@ -2257,7 +2257,7 @@ const MdJourneys = (() => {
 			"MD-257", "MD-258", "MD-259", "MD-260", "MD-261", "MD-262", "MD-263", "MD-264", "MD-265", "MD-266", "MD-267", "MD-268", "MD-269", "MD-270", "MD-271", "MD-272", "MD-274"],
 		steps: [
 			/* on the firmware, alone from factory memory, the second machine picked on track 1 is refused ("tracks[0] lfo.track = 16 is outside 0..15", the kit as the machine reads it back):
-			   it passes in the whole run in order and in the page tier (proposed B-111, a finding: the journey cannot build the data the page accepts) */
+			   it passes in the whole run in order and in the page tier (B-131, a finding: the journey cannot build the data the page accepts) */
 			go("sound"), sel(() => soundTrack()),
 			{ say: "pick each machine of the catalogue on the track (its family, then its key): the Sound page shows the knobs the manual lists", act: async (u, c) => {
 				c.n0 = V.undoCount; c.m0 = V.tracks[c.t].m; c.bad = []; c.n = 0;
