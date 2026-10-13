@@ -131,7 +131,7 @@ namespace mdJucePlugin
 	{
 	public:
 		explicit MmSession(AudioPluginAudioProcessor& _processor)
-			: SessionOf<mmDesk::Desk, MmEngine>(_processor, engines(), learnModel(), page(), std::nullopt)
+			: SessionOf<mmDesk::Desk, MmEngine>(_processor, engines(), learnModel(), page(), deskCore::modSetupToJson({}, mmDesk::g_mmModLimits))
 		{
 		}
 

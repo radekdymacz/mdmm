@@ -230,8 +230,8 @@ function showFwLcd(on) {
 let wasReady = false;
 Bridge.onMessage(m => {
 	/* The engine changed (emulator <-> HW MIDI) or the machine restarted (a project restored): the documents start
-	   over, and so do the page's solos (the new machine's mutes are its own). */
-	if (m.type === "reset") { resetDocs(Docs); Overlay.clear(); modInFlight = 0; wasReady = false; S.soloSet = new Set(); S.userMutes = new Set(); scheduleRender(); return; }
+	   over, and so do the page's solos; the plug-in then says the solo it keeps with the project again (takeSolo, mdDeskApp.js). */
+	if (m.type === "reset") { resetDocs(Docs); Overlay.clear(); modInFlight = 0; wasReady = false; S.soloSet = new Set(); S.userMutes = new Set(); soloSent = ""; scheduleRender(); return; }
 	/* The firmware's LCD shows while the machine takes no input (machine.input: the firmware starts);
 	   BOOTING OS lasts until keys work: the firmware answers MIDI early, but its start-up animation
 	   ignores panel keys until it is over (about 13 s; the lifecycle's "animating"). */

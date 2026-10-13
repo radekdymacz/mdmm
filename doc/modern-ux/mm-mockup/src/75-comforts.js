@@ -84,7 +84,11 @@ function pasteToMany(){const[a,b]=vis();if(!CLIP?.rows){toast("Copy a track page
 /* ---- mutes from the keys: M the selected track, Alt+M every track (any audible: mute all; none: unmute all), 0
    unmutes and unsolos every track (also the rail's M/S OFF key). MIDI tracks only where the engine mutes them. ---- */
 const muteOk=t=>t<6||!NA.midiMutes;
-function mutesChanged(say){tx();if(HOST.mutes)HOST.mutes();render();if(say&&!["seq","sound","mix","perform"].includes(S.ws))toast(say)}
+/* B-123: the solo (the soloed tracks, 0-11) and, while one holds, the mutes the person set: what the plug-in keeps with the
+   project (HOST.mutes(state) says it with every change; the plug-in says it back as MMView.setSolo) */
+function soloFacts(){const ts=[...S.tracks,...S.midi],solo=ts.flatMap((x,t)=>x.solo?[t]:[]);return{solo,mutes:solo.length?ts.flatMap((x,t)=>x.mute?[t]:[]):[]}}
+function setSolo(tracks,mutes){const ts=[...S.tracks,...S.midi],any=tracks.length>0;ts.forEach((x,t)=>{x.solo=tracks.includes(t);if(any)x.mute=mutes.includes(t)});render()}
+function mutesChanged(say){tx();if(HOST.mutes)HOST.mutes(soloFacts());render();if(say&&!["seq","sound","mix","perform"].includes(S.ws))toast(say)}
 function muteSel(){const t=S.sel;if(!muteOk(t)){toast(NA.midiMutes);return}const tr=trk(t);tr.mute=!tr.mute;mutesChanged(`${tr.mute?"Muted":"Unmuted"} ${tLabel(t)}`)}
 function muteAllToggle(){const ts=[...Array(12).keys()].filter(muteOk),on=ts.some(t=>!trk(t).mute);ts.forEach(t=>trk(t).mute=on);mutesChanged();toast(on?"Every track muted (Alt+M again: unmute all)":"Every track unmuted")}
 function unmuteAll(){const ts=[...Array(12).keys()];if(!ts.some(t=>trk(t).solo||(trk(t).mute&&muteOk(t)))){toast("No track is muted or soloed.");return}ts.forEach(t=>{trk(t).solo=false;if(muteOk(t))trk(t).mute=false});mutesChanged();toast("Every track unmuted and unsoloed")}

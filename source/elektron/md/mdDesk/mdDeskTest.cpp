@@ -440,6 +440,43 @@ namespace
 			"paste sound copies machine and values, the LFO targets its new track");
 	}
 
+	// revertTrack: a track of the kit that plays goes back to how the kit's slot stores it, in one change.
+	void testRevertTrack()
+	{
+		auto docs = fixtureDocs();
+		Clipboard clip;
+		const EditContext plays{uint8_t{0}};
+		const auto stored = docs.kits[0];
+		docs.working = WorkingKit{stored};
+		check(run(docs, cmd(R"({"op":"revertTrack","k":0,"t":3})"), clip, plays).changes.empty(), "a track as stored: nothing to revert, no step");
+		// edit track 3 in every way revertTrack names, and track 5 once
+		auto k = stored;
+		k.params[3][2] = static_cast<uint8_t>(k.params[3][2] ^ 0x15);
+		k.params[3][12] = static_cast<uint8_t>(k.params[3][12] ^ 0x21);
+		k.params[3][17] = static_cast<uint8_t>(k.params[3][17] ^ 0x31);
+		k.levels[3] = static_cast<uint8_t>(k.levels[3] ^ 0x11);
+		k.models[3] = *ed::mdMachineModel("EFM-SD") == k.models[3] ? *ed::mdMachineModel("TRX-BD") : *ed::mdMachineModel("EFM-SD");
+		k.lfos[3].shape1 = static_cast<uint8_t>((k.lfos[3].shape1 + 1) % 6);
+		k.lfos[3].state[0] = static_cast<uint8_t>(k.lfos[3].state[0] ^ 1);
+		k.muteGroups[3] = k.muteGroups[3] == 5 ? 6 : 5;
+		k.params[5][1] = static_cast<uint8_t>(k.params[5][1] ^ 0x0f);
+		docs.working = WorkingKit{k};
+		auto r = run(docs, cmd(R"({"op":"revertTrack","k":0,"t":3})"), clip, plays);
+		check(r.errors.empty() && r.changes.size() == 1 && !r.note.empty(), "revertTrack: one change of the working kit");
+		const auto& after = std::get<WorkingKit>(r.changes[0].after).kit;
+		check(std::get<WorkingKit>(r.changes[0].before).kit == k, "its before is the kit as it was edited");
+		check(after.models[3] == stored.models[3] && after.params[3] == stored.params[3] && after.levels[3] == stored.levels[3]
+			&& after.lfos[3].shape1 == stored.lfos[3].shape1 && after.lfos[3].track == stored.lfos[3].track
+			&& after.lfos[3].param == stored.lfos[3].param && after.muteGroups[3] == stored.muteGroups[3], "the track's values are the slot's");
+		check(after.lfos[3].state == k.lfos[3].state, "the LFO's running state stays the machine's");
+		check(after.params[5] == k.params[5] && after.params[2] == k.params[2] && after.masterFx == k.masterFx && after.name == k.name,
+			"no other track, no master effect and not the name moved");
+		check(after.position == 0 && docs.kits[0] == stored, "the slot is not touched");
+		docs.kits.erase(0);
+		check(!run(docs, cmd(R"({"op":"revertTrack","k":0,"t":3})"), clip, plays).errors.empty(), "a slot not read yet is refused");
+		check(!run(fixtureDocs(), cmd(R"({"op":"revertTrack","k":0,"t":16})"), clip, plays).errors.empty(), "track 17 is refused");
+	}
+
 	void testSongEdits()
 	{
 		auto docs = fixtureDocs();
@@ -2011,6 +2048,50 @@ namespace
 		const auto before = saved.size();
 		desk.onPageMessage(cmd(R"({"op":"knobs","ccs":[1,1,3,4,5,6,7,8],"id":3})"));
 		check(saved.size() == before && desk.setup().knobCcs[1] == 2, "invalid knob CCs change nothing");
+
+		// B-123: the page's solo and the mutes the person had before it are kept with the project
+		const auto last = [&page](const char* _type) -> const Value*
+		{
+			for(auto it = page.rbegin(); it != page.rend(); ++it)
+				if(it->find("type")->asString() == _type)
+					return &*it;
+			return nullptr;
+		};
+		const auto list = [](const Value* _m, const char* _key)
+		{
+			std::vector<int> out;
+			if(_m)
+				for(const auto& v : _m->find(_key)->asArray())
+					out.push_back(static_cast<int>(v.asNumber()));
+			return out;
+		};
+		const auto n = saved.size();
+		desk.onPageMessage(cmd(R"({"op":"soloSet","id":4,"tracks":[5,2],"mutes":[1,9]})"));
+		check(saved.size() == n + 1 && desk.setup().solo.tracks == std::vector<int>{2, 5} && desk.setup().solo.mutes == std::vector<int>{1, 9},
+			"soloSet: the solo and the person's mutes are kept (sorted)");
+		check(list(saved.back().find("solo"), "tracks") == std::vector<int>{2, 5}, "and saved with the project");
+		desk.onPageMessage(cmd(R"({"op":"soloSet","id":5,"tracks":[2,5],"mutes":[1,9]})"));
+		check(saved.size() == n + 1, "the same solo again saves nothing");
+		desk.onPageMessage(cmd(R"({"op":"soloSet","id":6,"tracks":[2,16],"mutes":[]})"));
+		desk.onPageMessage(cmd(R"({"op":"soloSet","id":7,"tracks":[3,3]})"));
+		check(saved.size() == n + 1 && desk.setup().solo.tracks == std::vector<int>{2, 5}, "a track out of range or listed twice changes nothing");
+		// the project comes back: the solo is said to the page, after a reset too, and a project without one clears it
+		const auto saved1 = saved.back();
+		page.clear();
+		desk.loadSetup(deskSetupToJson({}));
+		desk.tick();
+		check(desk.setup().solo.empty() && last("solo") && list(last("solo"), "tracks").empty(), "a project without a solo: none, and the page is told");
+		page.clear();
+		check(desk.loadSetup(saved1).empty() && desk.setup().solo.tracks == std::vector<int>{2, 5} && desk.setup().solo.mutes == std::vector<int>{1, 9}, "a project's solo loads");
+		desk.tick();
+		check(list(last("solo"), "tracks") == std::vector<int>{2, 5} && list(last("solo"), "mutes") == std::vector<int>{1, 9}, "and is said to the page");
+		page.clear();
+		desk.onPageMessage(cmd(R"({"op":"ready"})"));
+		desk.tick();
+		check(list(last("solo"), "tracks") == std::vector<int>{2, 5}, "a page made again gets the solo");
+		desk.onPageMessage(cmd(R"({"op":"soloSet","id":8,"tracks":[],"mutes":[4]})"));
+		check(desk.setup().solo.empty() && desk.setup().solo.mutes.empty() && saved.back().find("solo") == nullptr,
+			"no solo: no mutes of the person's kept, and the setup says no solo");
 	}
 
 	// P4: which trig a knob turn locks while live recording.
@@ -3360,6 +3441,7 @@ int main(const int _argc, char** _argv)
 	testCopyPaste();
 	testStepBlocks();
 	testKitEditsAndDelivery();
+	testRevertTrack();
 	testSongEdits();
 	testGlobal();
 	testHistory();

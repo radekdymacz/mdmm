@@ -101,6 +101,8 @@ namespace mdDesk
 		void onSetup(const Value& _message) override;
 		void setModulators(const Value& _message);
 		void setKnobs(const Value& _message);
+		void setSolo(const Value& _message);
+		void publishSolo();
 		void onReadyExtra() override;
 		void onStartOver() override;
 		void publishSetup();

@@ -533,7 +533,7 @@ const MM_SEAM={
  "view":[
   "audible","soloed","engReady","asgT","noteName","pname","machName","kitName","gated","busy","sel","mode",
   "playing","step","tempo","engineState","kitState","learnTarget","learning","ctlSetup","show","startEmpty",
-  "setPatternSlot","setKitSlot","setReading","setTempo","setInput","setPlaying","setStep","setPausedStep","setSongRow","setSongSteps","setEng","dlgOpen",
+  "setPatternSlot","setKitSlot","setReading","setTempo","setSolo","setInput","setPlaying","setStep","setPausedStep","setSongRow","setSongSteps","setEng","dlgOpen",
   "setEngineLabel","setEngineTip","setEngines","setAudioEntry","setMemory","clearLearnTarget","setMapping","setModulation",
   "setCtlSetup","disable","setRecord","setRecLock","setLcd","setKeyDown","setMidiHeld","setPst","closeFirmwareDialog","bootRom",
   "bootInstalled","syxPreview","syxProgress","syxExported","syxExportInfo","render","renderTop","drawLib","toast","ask","redraw","movePH",
@@ -608,7 +608,7 @@ function demoRebase(step){if(window.MMDemoHost)window.MMDemoHost.rebase(step)}
      togglePlay(), ownsClock          the machine is the sequencer
      selectPattern(p, now)            LOAD PATTERN (now: STOP, LOAD PATTERN, PLAY)
      kit(op, k)                       "save" | "load" | "saveAs" | "reload" | "undo" (the machine's UNDO KIT, MM-102)
-     tempo(bpm), mutes()              the machine's tempo; the tracks' mutes changed (synth and MIDI)
+     tempo(bpm), mutes(state)         the machine's tempo; the tracks' mutes or solos changed (synth and MIDI); state {solo, mutes}: the soloed tracks and, while one holds, the person's mutes (kept with the project)
      keyMode(mode, t)                 the keyboard mode changed ("normal" | "multi" | "map" | "poly"): POLY
                                       is the machine's audio mode, on track t (0-5: its TRACK key; again with
                                       another t while in POLY: POLY moves there)
@@ -3192,7 +3192,8 @@ function syncControls(){
    if(mb.length){if(!md){md=document.createElement("i");md.className="mod";el.appendChild(md)}md.textContent="~"+mb.join("");el.title=`Modulated by LFO ${mb.join(" + ")}`}else if(md)md.remove();
    const mp=S.ctl.links.filter(l=>l.t===t&&l.pid===pid);el.classList.toggle("mapped",mp.length>0)}});
  $$("#main [data-show]").forEach(el=>{const t=+el.dataset.show;el.textContent=trk(t).lev});
- if(typeof syncDock==="function")syncDock()}
+ if(typeof syncDock==="function")syncDock();
+ if(typeof syncRevert==="function")syncRevert()}
 
 /* ===== Key-style dropdowns (from the MD Editor) ===== */
 let kFor=null;
@@ -3658,7 +3659,11 @@ function pasteToMany(){const[a,b]=vis();if(!CLIP?.rows){toast("Copy a track page
 /* ---- mutes from the keys: M the selected track, Alt+M every track (any audible: mute all; none: unmute all), 0
    unmutes and unsolos every track (also the rail's M/S OFF key). MIDI tracks only where the engine mutes them. ---- */
 const muteOk=t=>t<6||!NA.midiMutes;
-function mutesChanged(say){tx();if(HOST.mutes)HOST.mutes();render();if(say&&!["seq","sound","mix","perform"].includes(S.ws))toast(say)}
+/* B-123: the solo (the soloed tracks, 0-11) and, while one holds, the mutes the person set: what the plug-in keeps with the
+   project (HOST.mutes(state) says it with every change; the plug-in says it back as MMView.setSolo) */
+function soloFacts(){const ts=[...S.tracks,...S.midi],solo=ts.flatMap((x,t)=>x.solo?[t]:[]);return{solo,mutes:solo.length?ts.flatMap((x,t)=>x.mute?[t]:[]):[]}}
+function setSolo(tracks,mutes){const ts=[...S.tracks,...S.midi],any=tracks.length>0;ts.forEach((x,t)=>{x.solo=tracks.includes(t);if(any)x.mute=mutes.includes(t)});render()}
+function mutesChanged(say){tx();if(HOST.mutes)HOST.mutes(soloFacts());render();if(say&&!["seq","sound","mix","perform"].includes(S.ws))toast(say)}
 function muteSel(){const t=S.sel;if(!muteOk(t)){toast(NA.midiMutes);return}const tr=trk(t);tr.mute=!tr.mute;mutesChanged(`${tr.mute?"Muted":"Unmuted"} ${tLabel(t)}`)}
 function muteAllToggle(){const ts=[...Array(12).keys()].filter(muteOk),on=ts.some(t=>!trk(t).mute);ts.forEach(t=>trk(t).mute=on);mutesChanged();toast(on?"Every track muted (Alt+M again: unmute all)":"Every track unmuted")}
 function unmuteAll(){const ts=[...Array(12).keys()];if(!ts.some(t=>trk(t).solo||(trk(t).mute&&muteOk(t)))){toast("No track is muted or soloed.");return}ts.forEach(t=>{trk(t).solo=false;if(muteOk(t))trk(t).mute=false});mutesChanged();toast("Every track unmuted and unsoloed")}
@@ -4623,6 +4628,20 @@ function lfoGroup(t,k){const l="LF"+k,v=trk(t).v[l],dn=LPAGES[v[0]]?destNames(t,
 function machButton(m){return`<button class="machbtn" id="machbtn" aria-haspopup="dialog" aria-expanded="false" aria-label="Change machine"><span class="lcdtxt">${m}</span><span class="mfam">${famKey(m)}</span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>`}
 /* the track's pattern settings live in the Sequence dock: one key each to go there */
 function sndDockKeys(t){const midi=isMidiT(t);return`<span class="snddock" title="Stored in the pattern (arpeggiator, transpose) or the kit (${midi?"the MIDI page":"trig setup"}): edit them in the Sequence workspace's dock">${[["arp","Arp"],["trn","Transpose"],[midi?"midipage":"trig",midi?"MIDI set":"Trig setup"]].map(([d,n])=>`<button class="ptog" data-snddock="${d}">${n}</button>`).join("")}</span>`}
+/* 0.6: Revert track. The selected track goes back as the kit's slot stores it (the core's revertTrack: a synth track's machine,
+   pages, level, routing, assign rows, mask bits and forward; a MIDI track's MIDI page): one undo step. On while the track
+   differs from the slot (the page's own units, as the library keeps the slot: S.kits[k].data). The library's Reload does the whole kit. */
+function revertFacts(t){const st=S.kits[S.kit]?.data,J=JSON.stringify;
+ if(!st)return{can:false,why:`${kitName(S.kit)} is not read from its slot yet.`};
+ const a=trk(t),b=t<6?st.tracks?.[t]:st.midi?.[t-6];
+ if(!b)return{can:false,why:"This track is not in the stored kit."};
+ const keys=t<6?["m","v","lev","out","inp","trigpos","port","leg","assign"]:["v"];
+ return keys.some(k=>J(a[k])!==J(b[k]))
+  ?{can:true,why:`Put ${tLabel(t)} back as ${kitName(S.kit)} stores it: ${t<6?"its machine, pages, level, routing, assign rows and forward":"its MIDI page"}. One undo step. The kit library's Reload does the whole kit.`}
+  :{can:false,why:`${tLabel(t)} is as ${kitName(S.kit)} stores it.`}}
+function revertKey(t){const f=revertFacts(t);return`<button class="revbtn" id="revert" ${f.can?"":"disabled"} title="${attrS(f.why)}" aria-label="Revert ${tLabel(t)}">Revert track</button>`}
+function syncRevert(){const b=$("#revert");if(!b)return;const f=revertFacts(S.sel);b.disabled=!f.can;b.title=f.why}
+document.addEventListener("click",e=>{const b=e.target.closest("#revert");if(!b||b.disabled)return;edit("revertTrack",{t:S.sel})});
 function renderSound(){const t=S.sel,tr=trk(t);let rows,head;
  if(isMidiT(t)){const int=S.tracks[t-6],G=(title,idx,labels,plain)=>({key:sgKey(title),title,pg:"MID",idx,knobs:idx.map(i=>FIXED.MID[i]),labels,mut:false,note:plain});
   const cc=[4,5,6,7].map(i=>"CC "+(tr.cc[i-4]===128?"AFT":tr.cc[i-4]));
@@ -4634,7 +4653,7 @@ function renderSound(){const t=S.sel,tr=trk(t);let rows,head;
   const syn=g.SYN.length?g.SYN:[{key:"syn",title:"Synthesis",pg:"SYN",idx:[],knobs:[],n:0,w:3,mut:false,body:`<p class="sgabout">${MACH[tr.m].about}</p>`}];
   rows=[[[...syn,...g.AMP],"srcrow"],[[...g.FLT,...g.EFX],"tonerow"],[[1,2,3].map(k=>lfoGroup(t,k)),"lforow"]];
   head=machButton(tr.m)}
- $("#main").innerHTML=`<div class="snd mutating"><div class="sndhead">${head}${mutBarHtml()}${sndDockKeys(t)}</div>${rows.map(([list,cls])=>sgRow(list,cls)).join("")}</div>`;
+ $("#main").innerHTML=`<div class="snd mutating"><div class="sndhead">${head}${revertKey(t)}${mutBarHtml()}${sndDockKeys(t)}</div>${rows.map(([list,cls])=>sgRow(list,cls)).join("")}</div>`;
  syncControls();redraw()}
 
 /* machine picker (MD Editor pattern) */
@@ -5758,7 +5777,7 @@ document.addEventListener("wheel",e=>{const el=e.target.closest(".l2.ed");if(!el
    mutes apply together when Shift comes up. Leaving the window drops them. */
 const ARMED=new Map();
 function showArmed(){$$(".ms.m[data-mute]").forEach(b=>{const p=ARMED.get(+b.dataset.mute);b.classList.toggle("prep",p!=null);if(p!=null)b.dataset.prep=p?"X":"+";else delete b.dataset.prep})}
-document.addEventListener("keyup",e=>{if(e.key!=="Shift"||!ARMED.size)return;ARMED.forEach((m,i)=>{trk(i).mute=m});ARMED.clear();tx();if(HOST.mutes)HOST.mutes();render()});
+document.addEventListener("keyup",e=>{if(e.key!=="Shift"||!ARMED.size)return;ARMED.forEach((m,i)=>{trk(i).mute=m});ARMED.clear();tx();if(HOST.mutes)HOST.mutes(soloFacts());render()});
 addEventListener("blur",()=>{ARMED.clear();showArmed()});
 /* As the MD Editor: a drag across the M (or S) keys paints them (shared/deskTogglePaint.js), rail, Mix and the
    Perform page's mutes alike: the pressed key toggles where the pointer goes down and its new state is the paint;
@@ -5772,7 +5791,7 @@ function msKeyAt(el){const b=el?.closest?.("[data-mute],[data-solo],[data-gmute]
  const kind=b.dataset.mute!=null?"mute":b.dataset.solo!=null?"solo":"gmute",i=+b.dataset[kind];if(!trk(i))return null;return{group:kind+(i<6?":synth":":midi"),kind,i}}
 const msOn=k=>!!trk(k.i)[k.kind==="solo"?"solo":"mute"];
 function msSet(k,on){trk(k.i)[k.kind==="solo"?"solo":"mute"]=on}
-function msSend(){tx();if(HOST.mutes)HOST.mutes();render()}
+function msSend(){tx();if(HOST.mutes)HOST.mutes(soloFacts());render()}
 addEventListener("pointerdown",e=>{msClickEaten=false;if(e.button!==0||e.shiftKey||e.altKey||e.metaKey||e.ctrlKey)return;const k=msKeyAt(e.target);if(!k)return;
  const r=TogglePaint.begin(k.group,k.i,msOn(k));msPaint=Object.assign(r.paint,{at:{x:e.clientX,y:e.clientY}});msClickEaten=true;
  try{document.body.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();msSet(k,r.change);msSend()},true);
@@ -5860,8 +5879,8 @@ function setSide(sd){S.side=sd;select(sd==="int"&&S.mode==="poly"&&S.polyT!=null
 function select(t){S.sel=t;stepFocus();autoRange(t);const pg=S.lane.split(".")[0];if(isMidiT(t)){if(pg!=="MID"){S.lane="MID.1";S.lanePage="MID"}}else if(pg==="MID"||!pname(t,S.lane)){S.lane="FLT.1";S.lanePage="FLT"}render()}
 document.addEventListener("click",e=>{
  const mu=e.target.closest("[data-mute]"),so=e.target.closest("[data-solo]");
- if(mu||so){const i=+(mu||so).dataset[mu?"mute":"solo"],t=trk(i);if(mu&&e.shiftKey){ARMED.has(i)?ARMED.delete(i):ARMED.set(i,!t.mute);showArmed();return}if(mu)t.mute=!t.mute;else t.solo=!t.solo;tx();if(HOST.mutes)HOST.mutes();render();return}
- const gm=e.target.closest("[data-gmute]");if(gm){const t=trk(+gm.dataset.gmute);t.mute=!t.mute;tx();if(HOST.mutes)HOST.mutes();render();return}
+ if(mu||so){const i=+(mu||so).dataset[mu?"mute":"solo"],t=trk(i);if(mu&&e.shiftKey){ARMED.has(i)?ARMED.delete(i):ARMED.set(i,!t.mute);showArmed();return}if(mu)t.mute=!t.mute;else t.solo=!t.solo;tx();if(HOST.mutes)HOST.mutes(soloFacts());render();return}
+ const gm=e.target.closest("[data-gmute]");if(gm){const t=trk(+gm.dataset.gmute);t.mute=!t.mute;tx();if(HOST.mutes)HOST.mutes(soloFacts());render();return}
  const sd=e.target.closest("[data-side]");if(sd){setSide(sd.dataset.side);return}
  const dk=e.target.closest("[data-dock]");if(dk){S.dock=dk.dataset.dock;rerenderSeq();return}
  const sdk=e.target.closest("[data-snddock]");if(sdk){S.dock=sdk.dataset.snddock;goWs("seq");return}
@@ -6273,7 +6292,7 @@ window.MMView={
  /* setters */
  /* the machine's documents: show(view) is the one writer of S's document members (DESIGN-UNIFY.md phase 1); the
     library's other slots keep their own cheap setters; setTempo is the BPM gesture's own write (the self-test's) */
- show,startEmpty,setPatternSlot,setKitSlot,setReading,setTempo:bpm=>{S.bpm=bpm},
+ show,startEmpty,setPatternSlot,setKitSlot,setReading,setSolo,setTempo:bpm=>{S.bpm=bpm},
  setInput,setPlaying,setStep,setPausedStep,setSongRow:r=>{S.songRow=r;markSongRow()},
  setSongSteps:n=>{S.songSteps=n;const st=document.getElementById("arrstate");if(st&&st.textContent!==arrState())st.textContent=arrState()},
  setEng,dlgOpen:()=>!$("#dlg").hidden,setEngineLabel,setEngineTip,setEngines,setAudioEntry,setMemory,clearLearnTarget:()=>{S.learnT=null},setMapping,setModulation,setCtlSetup,disable,
