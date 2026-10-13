@@ -316,7 +316,16 @@ namespace mmDesk
 			return;
 		}
 		const auto current = m_curKit >= 0 ? std::optional<int>(m_curKit) : std::nullopt;
-		auto r = deskCore::fromImage(std::move(m_working), *k, kitNumber, current, _view.workingKitOf(m_curKit), _now, false, reflects);
+		// B-136: an edit with no live message (the multi trig's mode, timing, split) goes as a dump of the kit's slot and
+		// LOAD KIT; on SYSEX RECV behind other dumps that takes seconds, and memory showed the kit before it for longer
+		// than an expectation waits (1 s): the page put the old value back, and the next edit was reckoned from it. While
+		// that dump is on its way the edits stay pending over memory; when it is through memory gets the usual time again.
+		const Ref slot{Kind::Kit, static_cast<uint8_t>(std::max(0, m_curKit))};
+		const bool hold = m_curKit >= 0 && (m_pushes.busy(slot) || m_loadAfter.count(slot));
+		if(m_kitDumpHold && !hold && m_working.expect.any())
+			m_working.expect.atMs = _now;
+		m_kitDumpHold = hold;
+		auto r = deskCore::fromImage(std::move(m_working), *k, kitNumber, current, _view.workingKitOf(m_curKit), _now, hold, reflects);
 		m_working = std::move(r.next);
 		if(r.askStatus && _now - m_lastStatusMs > 200)
 		{
