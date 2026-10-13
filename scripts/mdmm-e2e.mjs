@@ -51,8 +51,9 @@ function readRun(dir) {
 	for (const f of files) {
 		for (const line of fs.readFileSync(f, 'utf8').split('\n')) {
 			let m;
-			if ((m = /^JOURNEY (\S+) (\d+)\/(\d+) (ok|FAIL) (.*?)\r?$/.exec(line))) {
-				const j = get(m[1]); j.steps.push({ i: +m[2], n: +m[3], ok: m[4] === 'ok', text: m[5] });
+			if ((m = /^JOURNEY (\S+) (\d+)\/(\d+) (ok|FAIL|skip) (.*?)\r?$/.exec(line))) {
+				/* skip: a pageOnly step on the firmware (what the plug-in sends is not reported, I-027) */
+				const j = get(m[1]); j.steps.push({ i: +m[2], n: +m[3], ok: m[4] !== 'FAIL', text: m[4] === 'skip' ? 'skipped: ' + m[5] : m[5] });
 			} else if ((m = /^JOURNEY (\S+) (PASS|FAIL|SKIP)(?: (.*?))?\r?$/.exec(line))) {
 				const j = get(m[1]); j.result = m[2]; j.reason = m[3] || '';
 			} else if ((m = /^JOURNEY (\S+) SHOT (\S+)\r?$/.exec(line))) get(m[1]).shots.push(m[2]);

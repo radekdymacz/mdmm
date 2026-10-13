@@ -23,7 +23,7 @@ const walk = (d, f) => { for (const e of fs.readdirSync(d, { withFileTypes: true
 for (const r of runs) walk(path.resolve(r), (p) => {
 	for (const line of fs.readFileSync(p, 'utf8').split('\n')) {
 		let m;
-		if ((m = /^JOURNEY (\S+) (\d+)\/(\d+) (ok|FAIL) (.*?) \((\d+) ms\)/.exec(line)) || (m = /^JOURNEY (\S+) (\d+)\/(\d+) (ok|FAIL) (.*?)\r?$/.exec(line))) { if (!steps.has(m[1])) steps.set(m[1], []); steps.get(m[1])[+m[2] - 1] = m[5]; }
+		if ((m = /^JOURNEY (\S+) (\d+)\/(\d+) (ok|FAIL) (.*?) \((\d+) ms\)/.exec(line)) || (m = /^JOURNEY (\S+) (\d+)\/(\d+) (ok|FAIL|skip) (.*?)\r?$/.exec(line))) { if (!steps.has(m[1])) steps.set(m[1], []); steps.get(m[1])[+m[2] - 1] = (m[4] === 'skip' ? 'skipped: ' : '') + m[5]; }
 		else if ((m = /^JOURNEY (\S+) SHOT (\S+)/.exec(line))) shotsOf.set(m[1], [...(shotsOf.get(m[1]) || []), m[2].trim()]);
 	}
 });
