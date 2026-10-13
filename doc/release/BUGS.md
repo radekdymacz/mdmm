@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-127 · Machinedrum: after a live recording with an erase, or one ended by STOP, Chain does nothing
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`md-song-chain` after `md-seq-live-erase` on the same editor: the toast said "Chained", the machine held no chain).
+- **Cause (measured, `mdDeskFirmwareTest liveerase`, the chain after it):** after a live recording in which EXIT/NO and a TRIG key were held (Delete held: erase), or one stopped with STOP while recording, the firmware takes no BANK + TRIG gesture: no chain, not even the pattern change, until REC is pressed. Recording left with REC (PLAY) and no erase is not affected. Pressing REC on and off once (grid recording for a moment, nothing pressed in it) brings the gesture back; EXIT or STOP do not.
+- **Fix (`fix/0.6-e2e-2`):** the desk remembers that live recording ran; the first chain after it presses REC twice before the chain's keys. Test: `mdDeskFirmwareTest liveerase` chains A02 A03 after the erase and checks the firmware holds it; `md-seq-live-erase` then `md-song-chain` pass on the firmware.
+- **Status:** fixed on `fix/0.6-e2e-2`. Other panel-key gestures after such a recording (the SONG key's pads use SysEx, not keys) were not seen to fail.
+
 ## B-126 · Monomachine: a sub at 0 puts its handle on its caption; on a zoomed-out page the track list's tag hangs under its row
 
 - **From:** the 0.6 e2e run, 2026-10-13 (`mm-screens-fit`, `md-screens-fit` on the real editor).

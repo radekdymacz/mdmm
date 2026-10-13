@@ -2892,7 +2892,15 @@ namespace
 			return d && static_cast<int>(d->find("tracks")->asArray()[13].find("trigs")->asArray().size()) == t14;
 		}, 4000);
 		check(shown, "the page's pattern document shows the erase");
+		// 0.6 e2e (md-song-chain after md-seq-live-erase): a chain made after the erase, stopped, is held
+		rig.page(R"({"op":"chain","patterns":[1,2],"id":9})");
+		check(resultOk(rig), "chain A02 A03 after the erase accepted");
+		const bool chained = rig.runUntil([&] { return chainOf(rig) == std::vector<int>{1, 2}; }, 3000);
+		const auto& ct = rig.telemetry();
+		std::printf("  chain after the erase: known %d active %d, %zu patterns, recording %d playing %d\n", ct.chainKnown, ct.chain.active, ct.chain.patterns.size(), ct.recording, ct.playing);
+		check(chained, "a chain after a live erase is held by the firmware");
 	}
+
 
 	// 0.6 MD-140: remove locks while live recording (manual p.48) through the desk: liveErase with i selects the track,
 	// shows the parameter's knob page and holds EXIT/NO with that knob's switch; the firmware removes the track's locks of
