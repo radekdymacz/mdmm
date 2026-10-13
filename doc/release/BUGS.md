@@ -4,6 +4,42 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-137 · Monomachine: Play from a song row starts in the wrong row after the song was edited
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`mm-song-play-from`: played from row 3, the machine was in row 2; it passed alone and after any one journey before it).
+- **Cause (measured in the run's order):** an edit of the current song is heard after a LOAD SONG, which the desk sends by itself once the machine is stopped in SONG mode (0.3.5, `pumpSongReload`). Play from a row stops the machine, switches to SONG mode and sends the song position at once, before that reload: the machine counted the position through the song it still held (at the time of the failure the reload was still due), and landed in another row.
+- **Fix (`fix/0.6-e2e-3`):** when a reload is due, Play from sends LOAD SONG (and waits for the status reply) before the song position (`mmDeskTransport.cpp`, `Act::LoadSong`). The journey's failure message names the song and its first rows. Tests: `mmDeskTest`; `mm-song-play-from` after the 26 journeys before it in the e2e run, and after `mm-song-row-settings`.
+- **Status:** fixed on `fix/0.6-e2e-3`.
+
+## B-136 · Monomachine Perform: a multi trig setting jumps back while the machine takes it (Timing stepper gone)
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`mm-perform-multi-setup` step 4: SEQ START clicked, then the Timing key was not on the page; passes alone).
+- **Cause:** the multi trig's mode, timing and split have no live message: each goes as a dump of the kit's slot and LOAD KIT, on SYSEX RECV behind the dumps already on their way (seconds). The working kit's edit waited 1 s for memory to show it, then memory won: the page showed SPLIT KEY again (no Timing stepper), and the next edit was reckoned from the old kit.
+- **Fix (`fix/0.6-e2e-3`):** while a dump of the current kit's slot is on its way (or waits to go), the working kit's edits stay pending over memory; once it is through, memory gets its usual second again (`mmDeskLoad.cpp`, `applyWorkingKit`). The journey waits up to 15 s for SEQ START and says so if it does not come. Tests: `mmDeskTest`; `mm-perform-multi-setup` alone and after the nine journeys before it in the e2e run.
+- **Status:** fixed on `fix/0.6-e2e-3`.
+
+## B-135 · Monomachine: ▶ after a pause refused ("The panel is busy"), Panic leaves it playing, while the machine takes an edit
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`mm-top-pause`: ▶ to go on refused with "The panel is busy (SYSEX RECV); try again.", the machine stayed paused; `mm-top-panic`: ⌘. said "Every note off ... and STOP", the machine played on). Both pass alone; in the run an earlier journey's edit was still on its way to SYSEX RECV.
+- **Cause:** PLAY and STOP wait for the panel while it takes an edit's dump (0.3.4, B-099), and so do RECORD and the MIDI mutes (B-092, B-129). Pause and resume (wave 2) refused instead, and Panic's two STOPs were dropped without a word when the panel keys were refused.
+- **Fix (`fix/0.6-e2e-3`):** pause, resume and the panic's STOPs wait the same way (the newest transport command, pressed once the panel is free, given up after 10 s); pause and resume move the step watch when their key goes (`mmDeskTransport.cpp`, `mmDeskCommands.cpp`). Tests: `mmDeskTest` (each while the panel is busy: accepted, no keys; free: its keys); `mm-top-pause` and `mm-top-panic` after the journeys before them in the e2e run, and alone.
+- **Status:** fixed on `fix/0.6-e2e-3`.
+
+## B-134 · Machinedrum: a value moved while live recording is not recorded as a lock (or turns far past the value)
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`md-seq-live-lock` on the firmware: no lock read back; alone from a fresh start too).
+- **Cause (measured in the standalone):** the firmware records a knob turn as a lock, so while recording the desk turns the machine's DATA ENTRY knob by the difference between the value asked for and the machine's memory (the knob recorder). It read that memory from the working copy's image, which a desk reset or a kit switch drops and which comes back only from a region that changed; the device publishes the region only when memory changes, so after a start the recorder waited for memory that never came: no turn, no lock. With memory, it turned again every 50 ms while the last turns were still on their way (the firmware takes a step about every 12 ms): 49 asked, 127 reached, the lock on the wrong value.
+- **Fix (`fix/0.6-e2e-3`):** the recorder reads the machine's memory as last published (kept over a desk reset), and turns again only once the last turns are through and memory had 50 ms to show them (`mdDeskMachine.cpp`, `pumpRecording`). The journey waits for the machine's read-back of the lock while recording (it turned REC off 600 ms after the drag, before the track's next trig played). Tests: `mdDeskTest`; `mdDeskFirmwareTest` (P3 live recording: the lock 99 on track 15's note); `md-seq-live-lock` alone and after the 42 journeys of the e2e run's first MD editor.
+- **Status:** fixed on `fix/0.6-e2e-3`.
+
+## B-133 · Machinedrum: after a sample is loaded or renamed, live recording records nothing
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`md-seq-live-record`: a step clicked while recording, the machine recorded no trig; `md-seq-live-lock`: no lock). Both pass alone; in the run they came after `md-sampler-rename`.
+- **What happens (measured, `mdDeskFirmwareTest <rom> recaftersample`):** once any sample went into the machine by SDS (Rename, which sends the slot's sample again since B-128; Load sample; a dropped file; any ROM slot), live recording looks right (RECORD blinks, the pattern plays, the TRIG key reaches the panel), but the firmware records no TRIG key and no knob lock, until the machine starts again. Without the sample the same steps record (`recaftersample nosample`). The sample's name alone (0x73) does not cause it.
+- **Tried, no change:** EXIT, PLAY, STOP, RECORD twice, KIT and GLOBAL and out, a pattern and a kit load, a longer key hold, 30 s of waiting, every speed-up lever off. Putting the machine's RAM 0x250000-0x2b8000 back as a run without the sample has it does bring recording back, so the state is in that RAM; which bytes was not found.
+- **Journeys:** `md-sampler-rename` and `md-drop-sample` are `alone: true` (an editor of their own) until this is fixed; `md-sampler-rename` now ends on the machine's own read-back of the name (the machine shows RECEIVING SAMPLE for seconds after the last packet).
+- **Status:** open, high: a person who loads a sample and then live records gets nothing.
+
 ## B-132 · Monomachine Editor, Sound page: the UNISON and SUB screens' stems measure 9 px in WebKit
 
 - **From:** the independent-journeys run, 2026-10-13 (`mm-sound-unison-sub-fine`).

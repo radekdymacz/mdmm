@@ -108,7 +108,7 @@ namespace mmDesk
 		deskCore::Outcome askSelect(const Value&, const Documents&);
 		deskCore::Outcome askPlay(const Value&, const Documents&);
 
-		enum class Act : uint8_t { Stop, Play, SelectPattern, MidiStop, SongMode, FromPosition };
+		enum class Act : uint8_t { Stop, Play, SelectPattern, MidiStop, SongMode, LoadSong, FromPosition };
 		// A push is parked while its dump is queued on the RECV session (or waits for the person's SYSEX
 		// RECV, HW MIDI), not on the wire yet: a newer dump waits for it (PushPolicy::Mode::Held).
 		using Pushes = deskCore::Pushes<Ref, Bytes>;
@@ -276,6 +276,7 @@ namespace mmDesk
 		std::map<uint32_t, Ref> m_recvRefs;		// a dump on the RECV session -> the push it is
 		Pushes m_pushes;
 		std::set<Ref> m_loadAfter;				// kit slots to LOAD KIT once their waiting dump goes
+		bool m_kitDumpHold = false;				// B-136: a dump of the current kit's slot was on its way at the last image
 		// Without the panel: what waits for the person's SYSEX RECV, in order (a dump names its push).
 		struct Waiting
 		{
@@ -333,8 +334,12 @@ namespace mmDesk
 		deskCore::Latest<deskCore::ChainRequest> m_chain;
 		double m_keysUntilMs = -1e9;	// the desk's last panel keys are through by then
 		// 0.3.4: PLAY or STOP asked while the panel was busy (a dump on its way to SYSEX RECV, which the stream paces
-		// at cable speed while playing): pressed once it is free (pumpTransport), the newest wins, given up after a while
-		std::optional<Key> m_pendingTransport;
+		// at cable speed while playing): pressed once it is free (pumpTransport), the newest wins, given up after a while.
+		// B-135: pause, resume and the panic's STOP wait the same way (they were refused or lost)
+		enum class TransportWait : uint8_t { Play, Stop, Pause, Resume, Panic };
+		std::optional<TransportWait> m_pendingTransport;
+		void waitTransport(TransportWait _w);
+		bool pressWaiting(TransportWait _w);
 		std::optional<Value> m_pendingRecord;	// review 1 (B-092): RECORD waiting for the panel (pumpRecord)
 		double m_pendingRecordMs = 0;
 		bool m_recordWaiting = false;

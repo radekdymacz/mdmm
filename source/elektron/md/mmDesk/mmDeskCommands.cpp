@@ -146,8 +146,38 @@ namespace mmDesk
 			m_pendingTransport.reset();
 			return;
 		}
-		if(pressTransportKeys({*m_pendingTransport}))
+		if(pressWaiting(*m_pendingTransport))
 			m_pendingTransport.reset();
+	}
+
+	void MmMachine::waitTransport(const TransportWait _w)
+	{
+		m_pendingTransport = _w;
+		m_pendingTransportMs = now();
+	}
+
+	// The panel keys of a transport command; false while the panel is busy (nothing pressed). PLAY, STOP: also not while
+	// an edit's dump waits for its read-back (B-099). Pause and resume press PLAY at once when the panel is free, as
+	// before; the step watch follows what was pressed.
+	bool MmMachine::pressWaiting(const TransportWait _w)
+	{
+		switch(_w)
+		{
+		case TransportWait::Play: return pressTransportKeys({Key::Play});
+		case TransportWait::Stop: return pressTransportKeys({Key::Stop});
+		case TransportWait::Panic: return pressKeys({Key::Stop, Key::Stop});
+		case TransportWait::Pause:
+			if(!pressKeys({Key::Play}))
+				return false;
+			m_steps = pausedByEditor(m_steps);
+			return true;
+		case TransportWait::Resume:
+			if(!pressKeys({Key::Play}))
+				return false;
+			m_steps = resumedByEditor(m_steps, now());
+			return true;
+		}
+		return false;
 	}
 
 
@@ -378,8 +408,7 @@ namespace mmDesk
 		if(!pressTransportKeys({Key::Play}))
 		{
 			// 0.3.4: the panel is busy taking an edit (SYSEX RECV): PLAY goes once it is free
-			m_pendingTransport = Key::Play;
-			m_pendingTransportMs = now();
+			waitTransport(TransportWait::Play);
 			return ok(g_transportWaits);
 		}
 		m_pendingTransport.reset();
@@ -396,8 +425,7 @@ namespace mmDesk
 			return ok();
 		}
 		// 0.3.4: the panel is busy taking an edit (SYSEX RECV): STOP goes once it is free
-		m_pendingTransport = Key::Stop;
-		m_pendingTransportMs = now();
+		waitTransport(TransportWait::Stop);
 		return ok(g_transportWaits);
 	}
 
@@ -565,6 +593,7 @@ namespace mmDesk
 				break;
 			case Act::MidiStop:
 			case Act::SongMode:
+			case Act::LoadSong:
 			case Act::FromPosition:
 				runTransportAct(d.action, d.arg);
 				break;

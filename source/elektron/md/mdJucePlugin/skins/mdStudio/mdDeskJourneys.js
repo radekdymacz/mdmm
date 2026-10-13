@@ -1775,8 +1775,9 @@ const MdJourneys = (() => {
 		],
 		async tidy(u) { if (!$1("#syxpop").hidden) u.key("Escape"); }
 	};
+	/* alone: B-133 (a sample in by SDS leaves the machine's live recording deaf until it starts again), as md-sampler-rename */
 	const dropSampleJ = {
-		name: "md-drop-sample", proves: ["MD-191", "MD-X12"],
+		name: "md-drop-sample", alone: true, proves: ["MD-191", "MD-X12"],
 		needs: () => new URLSearchParams(location.search).get("wavfile") ? null
 			: "no sample for the run (GEARMULATOR_MDMM_WAV_FILE)",
 		steps: [
@@ -2496,13 +2497,19 @@ const MdJourneys = (() => {
 		],
 		async tidy() { $1("#syxpop").hidden = true; }
 	};
-	/* MD-197, B-128: Rename sends the name and the slot's own sample again (SysEx 0x73, then SDS); the machine's own name shows. A slot that holds a sample, else there is nothing to send again. */
+	/* MD-197, B-128: Rename sends the name and the slot's own sample again (SysEx 0x73, then SDS); the machine's own name shows. A slot that holds a sample, else there is nothing to send again.
+	   The proof is the machine's samples read back with the new name (Docs.samples), so the journey ends once the machine holds it.
+	   alone: B-133, after a sample went in by SDS the machine's live recording records no TRIG key and no lock until it starts again
+	   (mdDeskFirmwareTest recaftersample): nothing after this journey may meet that (the 0.6 e2e run: md-seq-live-record and
+	   md-seq-live-lock failed after it). */
 	const sampleRename = {
-		name: "md-sampler-rename", proves: ["MD-197"],
+		name: "md-sampler-rename", alone: true, proves: ["MD-197"],
 		steps: [
 			go("sampler"),
 			{ say: "click a ROM slot, click Rename, type a name and click Rename", act: async (u, c) => { const k = $all(".slotk.rom").find(b => !b.style.opacity) || $all(".slotk.rom")[0]; c.slot = +k.dataset.slot.slice(3); u.click(k); await sleep(300); results.length = 0; u.click(`[data-rename="${c.slot}"]`); await until(() => !!$1("#rname"), 2000); u.type("#rname", "jrny"); await sleep(100); u.click(dlgButton("Rename")); },
-				screen: c => ok(($1(".romsel header")?.textContent || "").includes("JRNY"), "card " + ($1(".romsel header")?.textContent || "")), machine: c => ok(results.some(r => r.op === "sampleName" && r.ok), "results " + results.map(r => r.op + ":" + r.ok).join(",")), within: 30000 }
+				screen: c => ok(($1(".romsel header")?.textContent || "").includes("JRNY"), "card " + ($1(".romsel header")?.textContent || "")),
+				machine: c => ok(results.some(r => r.op === "sampleName" && r.ok) && (Docs.samples?.rom?.[c.slot - 1]?.name || "").trim() === "JRNY",
+					`results ${results.map(r => r.op + ":" + r.ok).join(",")}; the machine's ROM-${c.slot}: "${Docs.samples?.rom?.[c.slot - 1]?.name ?? "?"}"`), within: 60000 }
 		]
 	};
 	/* MD-280, MD-283: rename the current kit (SysEx 0x55), save it (0x59), and put it back */
@@ -2680,8 +2687,11 @@ const MdJourneys = (() => {
 			{ say: "pick the track with the most trigs and no FLTF locks", act: (u, c) => { c.t = soundTracks().filter(t => !locksOf(t, pidx(t, "FLTF")).length).sort((a, b) => trigsOf(b).length - trigsOf(a).length)[0] ?? soundTrack(); c.i = pidx(c.t, "FLTF"); u.click(rail(c.t)); },
 				machine: c => ok(trigsOf(c.t).length >= 2 && c.i >= 0 && !locksOf(c.t, c.i).length, `track ${c.t + 1}: ${trigsOf(c.t).length} trigs, locks ${locksOf(c.t, c.i).length}`) },
 			{ say: "click REC, then the Sound tab: recording, playing", act: async u => { u.click("#rec"); await sleep(300); u.click(tab("sound")); }, screen: () => ok(V.rec && S.ws === "sound", `REC ${V.rec}, workspace ${S.ws}`), machine: () => ok(tele.last?.playing, "not playing"), within: 5000 },
-			{ say: "drag the FLTF value while it plays: the track's next trig is locked", act: async (u, c) => { const el = $1('#main .pc[data-n="FLTF"]'); c.v0 = getV(el); results.length = 0; await nudge(u, el, c.v0, 36); await sleep(600); Journey.snapshot("md-live-recording"); },
-				screen: () => ok(/Locks track \d+ step \d+/.test($1("#toast")?.textContent || "") || true, ""), machine: () => ok(results.some(r => r.op === "param" && r.ok), "results " + results.map(r => r.op + ":" + r.ok).join(",")), within: 6000 },
+			/* the firmware writes the lock when the track's next trig plays: REC off before that records nothing (the 0.6 e2e run
+			   turned it off 600 ms after the drag, before the trig six steps on), so the step waits for the machine's read-back
+			   (the desk reads the pattern back while recording) */
+			{ say: "drag the FLTF value while it plays: the track's next trig is locked when it plays", act: async (u, c) => { const el = $1('#main .pc[data-n="FLTF"]'); c.v0 = getV(el); results.length = 0; await nudge(u, el, c.v0, 36); await sleep(600); Journey.snapshot("md-live-recording"); },
+				machine: c => ok(results.some(r => r.op === "param" && r.ok) && locksOf(c.t, c.i).length >= 1, `results ${results.map(r => r.op + ":" + r.ok).join(",")}; locks ${JSON.stringify(locksOf(c.t, c.i))}`), within: 12000 },
 			{ say: "click REC off, then STOP: the pattern is read back with a lock on one of the track's trigs", act: async u => { u.click("#rec"); await sleep(400); if (V.playing) u.click("#play"); },
 				screen: () => ok(!V.rec && !V.playing, `REC ${V.rec}, playing ${V.playing}`), machine: c => ok(locksOf(c.t, c.i).length >= 1 && locksOf(c.t, c.i).every(([s]) => trigsOf(c.t).includes(s)), `locks ${JSON.stringify(locksOf(c.t, c.i))}`), within: 12000 }
 		],

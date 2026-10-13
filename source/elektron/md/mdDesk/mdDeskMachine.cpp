@@ -1868,6 +1868,7 @@ namespace mdDesk
 	void MdMachine::onWorkingKitMemory(const Bytes& _region, const Documents& _view)
 	{
 		m_working.region = _region;
+		m_memoryKit = ed::mdWorkingKitFromMemory(_region);
 		takeWorkingKit(&_view);
 	}
 
@@ -2036,7 +2037,19 @@ namespace mdDesk
 		// (it would press the page key too, or turn the held knob's page away)
 		if(m_erasing && m_erasing->param && !m_erasing->gaveUp)
 			return;
-		const auto* memory = m_working.image && currentKit() == m_working.image->position ? &*m_working.image : nullptr;
+		// what the machine's memory holds now (B-134: not the working copy's image, which can be missing while memory
+		// does not change: dropped at a kit switch, taken again only from the next region)
+		const auto* memory = m_profile.memory && m_memoryKit && currentKit() == m_memoryKit->position ? &*m_memoryKit : nullptr;
+		// B-134: the turns of the last step still on their way (the firmware takes a DATA ENTRY step about every 12 ms,
+		// measured in the plug-in): the next turn is reckoned from memory once they are through and memory showed them
+		// (g_turnGapMs after), or it turns past the value and back (49 asked, 127 reached)
+		if(keysOnTheirWay())
+		{
+			m_knobKeysMs = _now;
+			return;
+		}
+		if(_now - m_knobKeysMs < KnobRecorder::g_turnGapMs)
+			return;
 		const auto step = m_knobs.next(_now, m_telemetry.knobPage, memory);
 		if(!step)
 			return;

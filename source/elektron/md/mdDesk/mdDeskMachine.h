@@ -328,6 +328,13 @@ namespace mdDesk
 		struct SoundingNote { uint8_t channel = 0; uint8_t note = 0; int pitch = 0; };
 		std::array<std::optional<SoundingNote>, 16> m_notes{};
 		KnobRecorder m_knobs;
+		// B-134: the kit the machine's memory holds now (its last published region, decoded), for the knob recorder. The
+		// working copy's image is dropped at a desk reset or when another kit plays and taken again only from a region
+		// that changed, and the device publishes the region only when memory changes: the recorder waited for memory
+		// that never came, no turn, no lock (md-seq-live-lock alone, fresh start: one region before the page's reset).
+		// Kept over a desk reset: it is the machine's memory, and a new device publishes its own.
+		std::optional<elektronData::MdKit> m_memoryKit;
+		double m_knobKeysMs = -1e9;	// B-134: when the knob recorder's last turns were seen on their way
 		std::optional<RecLock> m_recLock;
 		// liveErase: the track whose TRIG key is held with EXIT/NO, or (param, MD-140) whose knob switch is: the knob
 		// of kit parameter 0-23 on its page (SYNTHESIS / EFFECTS / ROUTING), which the machine shows before the keys go

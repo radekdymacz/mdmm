@@ -134,9 +134,13 @@ namespace mmDesk
 			return refuse("Nothing plays: PLAY first.");
 		if(panelTransport())
 		{
-			if(!pressKeys({Key::Play}))
-				return refuse(g_panelBusy);
-			m_steps = pausedByEditor(m_steps);
+			// B-135: while the panel takes an edit the pause waits for it, as PLAY does
+			if(!pressWaiting(TransportWait::Pause))
+			{
+				waitTransport(TransportWait::Pause);
+				return ok(g_transportWaits);
+			}
+			m_pendingTransport.reset();
 			return ok("Paused. PLAY goes on from this step; STOP ends it.");
 		}
 		Outcome o;
@@ -155,9 +159,14 @@ namespace mmDesk
 		const auto* g = activeGlobal(_view, m_curGlobal);
 		if(panelTransport() && !(g && g->transportIn == 1 && m_port.sendMidi))
 		{
-			if(!pressKeys({Key::Play}))
-				return refuse(g_panelBusy);
-			m_steps = resumedByEditor(m_steps, now());
+			// B-135 (the 0.6 e2e run, mm-top-pause): ▶ to go on while the panel took an edit was refused ("The panel is
+			// busy"), the machine stayed paused: it waits for the panel, as PLAY does
+			if(!pressWaiting(TransportWait::Resume))
+			{
+				waitTransport(TransportWait::Resume);
+				return ok(g_transportWaits);
+			}
+			m_pendingTransport.reset();
 			return ok();
 		}
 		Outcome o;
@@ -191,6 +200,11 @@ namespace mmDesk
 			steps.push_back({Act::MidiStop, 0, deskCore::Wait::Stopped, 0, 1000});
 		if(m_songMode != 1)
 			steps.push_back({Act::SongMode, 1, deskCore::Wait::SongModeIs, 1, 2000});
+		// B-137 (the 0.6 e2e run, mm-song-play-from: row 2 instead of 3): an edit of the song still waits for its LOAD SONG
+		// (pumpSongReload: stopped, in SONG mode), so the machine played the song as it was before the edit and the song
+		// position landed in another row. Stopped and in SONG mode here: LOAD SONG first, then the position.
+		if(m_songReloadNeeded)
+			steps.push_back({Act::LoadSong, m_curSong, deskCore::Wait::StatusReply, 0, 1000});
 		steps.push_back({Act::FromPosition, pos.sixteenths});
 		m_sequence.start(std::move(steps));
 		pumpSequence(now());
@@ -209,7 +223,14 @@ namespace mmDesk
 				if(const auto ch = ed::mmTrackChannel(*g, t))
 					m_port.sendMidi(deskWire::controlChange(*ch, deskWire::midi::g_allNotesOff, 0));
 		if(panelTransport())
-			pressKeys({Key::Stop, Key::Stop});
+		{
+			// B-135 (mm-top-panic): the two STOPs were dropped while the panel took an edit, the machine played on: they
+			// wait for it, as STOP does
+			if(pressWaiting(TransportWait::Panic))
+				m_pendingTransport.reset();
+			else
+				waitTransport(TransportWait::Panic);
+		}
 		else
 			m_port.sendMidi(deskWire::stopMessage());
 		return ok("Every note off (CC 123 on each track's channel) and STOP.");
@@ -253,6 +274,12 @@ namespace mmDesk
 		case Act::SongMode:
 			m_port.sendSysex(ed::mmSetStatus(ed::MmStatus::SongMode, _arg ? 1 : 0));
 			m_port.sendSysex(ed::mmStatusRequest(ed::MmStatus::SongMode));
+			break;
+		case Act::LoadSong:
+			m_port.sendSysex(ed::mmLoadSong(static_cast<uint8_t>(_arg)));
+			m_songReloadNeeded = false;
+			requestStatus();
+			m_lastStatusMs = now();
 			break;
 		case Act::FromPosition:
 			if(const auto spp = deskWire::songPosition(_arg); spp && m_port.sendMidi)
