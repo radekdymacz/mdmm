@@ -3392,7 +3392,21 @@ const MmJourneys = (() => {
 	const e2eReal = [realSongs, realPatterns, realSequence];
 
 	const wave12 = [undoKitJ, clearStepLocksJ, lockCurrentJ, patKitJ, songCounterJ, mapPatJ];
-	const all = [...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
+	/* Screen review 2026-10-13 (B-110 and on): the screens the review found cut or overlapped, measured at the page's size
+	   (the page tier runs at 1440 x 924, as the review's pictures). One step per defect found. */
+	const edProblems = () => $all("canvas.ed").filter(c => c.clientWidth && ED[c.dataset.ed]).flatMap(c => Journey.canvasProblems(c, drawEd).map(x => `${c.dataset.ed}: ${x}`));
+	const screensFit = {
+		name: "mm-screens-fit", proves: [],
+		steps: [
+			{ say: "Sequence: the track list's generator tags (E 5/16, R 30%) show whole, inside their row and clear of the M key (B-110)",
+				act: async (u, c) => { await closeLib(u); u.click(tab("seq")); await sleep(400);
+					const rows = $all("#rail .th"), inside = rows.filter(r => { const t = r.querySelector(".gtag"); if (!t) return false; const a = t.getBoundingClientRect(), b = r.getBoundingClientRect(); return a.bottom > b.bottom + 0.5 || a.right > b.right + 0.5; });
+					c.bad = [...Journey.spills("#rail .th .gtag"), ...Journey.overlaps("#rail .th .gtag", "#rail .th .ms, #rail .th .n"), ...inside.map(r => r.textContent.trim().slice(0, 16) + ": tag out of its row")]; c.n = $all("#rail .th .gtag").length; },
+				screen: c => ok(c.n > 0 && !c.bad.length, `${c.n} tags; ${c.bad.slice(0, 4).join(" | ")}`) }
+		],
+		async tidy(u) { await closeLib(u); u.click(tab("seq")); }
+	};
+	const all = [screensFit, ...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
