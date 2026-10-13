@@ -115,9 +115,9 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Playing in multi trig 1-12 | Play MULTI TRIG from a keyboard | Multi trig | ✅ | Perform > Multi trig; MIDI channel 7 |  | 1 | pass (e2e-mm-perform-keys-channels) |
 | Exploring a pattern 1-12 | Try each track, tweak SYNTHESIS | Auditioning | ✅ | Sound; roll keys play the track |  | 1 | pass (e2e-mm-seq-pitch-keys) |
 | Grid recording 1-12 | Load kit for the pattern | LOAD KIT | ✅ | Kit library |  | 1 | pass (e2e-mm-lib-kit-load) |
-| Grid recording 1-12 | Add a note trig | Trig on | ✅ | Roll click |  | 4 | pass (e2e-mm-seq-first-beat) |
+| Grid recording 1-12 | Add a note trig | Trig on | ✅ | Roll click |  | 5 | pass (e2e-mm-seq-first-beat) |
 | Grid recording 1-13 | Hold a trig, set pitch on the mini keyboard | Pitch of a trig | ✅ | Roll: click or drag for pitch |  | 1 | pass (e2e-mm-seq-pitch-keys) |
-| Grid recording 1-13 | NOTE OFF (FUNCTION + TRIG) | Note off trig | ✅ | Alt-click an empty step; drag a bar's end |  | 1 | pass (e2e-mm-roll-draw-length) |
+| Grid recording 1-13 | NOTE OFF (FUNCTION + TRIG) | Note off trig | ✅ | Alt-click an empty step; drag a bar's end |  | 2 | pass (e2e-mm-roll-draw-length) |
 | Live recording 1-13 | Record notes in real time, quantised | Live record | ✅ | Alt + Space, record key | Quantising done by firmware | 1 | pass (e2e-mm-seq-live-record) |
 | Live recording 1-13 | Erase with EXIT while notes sound | Live erase | ✅ | Hold Delete while live recording: the selected track's notes go as they play |  | 1 | pass (e2e-mm-seq-live-erase) |
 | Parameter locks 1-13 | Lock a value on a step | P-lock | ✅ | Lock lane (draw bars), wheel on a step |  | 2 | pass (e2e-mm-seq-lock-lane) |
