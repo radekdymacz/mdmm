@@ -4,6 +4,14 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-110 · Monomachine: the generator tag in the track list is cut off
+
+- **From:** screen review, 2026-10-13 (the 0.6 e2e pictures: about 35 of the 97 flagged defects are this one, on every Sequence picture of the Monomachine).
+- **What happens:** next to a track's name the track list shows a small tag for its generator ("E 5/16", "R 30%"). The names of the Monomachine's machines take most of the row (DPRO-BBOX leaves 6 px), so the tag was squeezed to a few pixels and cut: "E…", "R…", half a letter.
+- **Cause:** the tag was allowed to shrink with an ellipsis, the name was not (`.th .nm .gtag`, `25-mm.css`).
+- **Fix (`fix/0.6-screens`):** the tag never shrinks: beside the name when it fits, under it when it does not (the row holds both lines; under 1380 px it is still left out). Page journey `mm-screens-fit` measures every tag at 1440 x 924: whole, inside its row, clear of the M key and the number.
+- **Status:** fixed on `fix/0.6-screens`.
+
 ## B-109 · Machinedrum: the first PLAY after start-up can do nothing
 
 - **From:** the 0.6 e2e work, 2026-10-13: `mdDeskFirmwareTest p4` ("the first PLAY after ready plays") failed on `feat/0.6-e2e` too; a first PLAY that does nothing is what users report.
