@@ -1675,8 +1675,8 @@ const MmJourneys = (() => {
 			{ say: "click Specific place, then the first slot four times: the kits land in K05 and K06", act: async u => { u.click('#syxpop [data-sxp="specific"]'); await sleep(150); for (let i = 0; i < 4; i++) { u.click(syxValue("kit", "place")); await sleep(60); } },
 				screen: () => ok($1(syxValue("kit", "place"))?.textContent === "K05" && !!$1(syxCell("kit:4")) && !!$1(syxCell("kit:5")) && !$1(syxCell("kit:0")), "cells " + $all('#syxpop button[data-syxitem^="kit:"]').map(b => b.dataset.syxitem).join(" ")), within: 4000 },
 			{ say: "leave Kits ticked only, click Import: it asks first (the file's kits land on K05 and on, which hold kits)", act: async (u, c) => { await syxKinds(["kit"])(u); c.names = $all('#syxpop button[data-syxitem^="kit:"]').map(b => [+b.dataset.syxitem.split(":")[1], (b.dataset.syxname || "").trim()]); c.k0 = kitName(0);
-					/* an import has no undo: the two kits it overwrites are kept first (keepTwo) and back() in the tidy puts them back */
-					if (c.names.length !== 2) throw new Error(`${c.names.length} kits in the file: the journey keeps two`); await keepTwo(c, "kit", c.names[0][0], c.names[1][0]); u.click('#syxpop [data-syxgo="start"]'); },
+					/* an import has no undo: the kits it overwrites are kept first (keepMany) and back() in the tidy puts them back */
+					await keepMany(c, "kit", c.names.map(([k]) => k)); u.click('#syxpop [data-syxgo="start"]'); },
 				screen: c => ok(dlgShown() && /K05/.test($1("#dlg").textContent) && !!dlgButton(`Import ${c.names.length}`), `no question for ${c.names.length} kits: ` + ($1("#dlg").textContent || "").slice(0, 80)) },
 			{ say: "click Import n: sent on SYSEX RECV to K05 and on, read back, reported", act: (u, c) => u.click(dlgButton(`Import ${c.names.length}`)),
 				screen: c => ok(new RegExp(`${c.names.length} imported`).test($1("#syxpop .syxsum")?.textContent || ""), "progress: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
@@ -1926,7 +1926,7 @@ const MmJourneys = (() => {
 			openImport,
 			{ say: "click Import; while it runs press Escape and click outside: the panel stays, one size, Stop and Hide inside it", act: async (u, c) => {
 				c.box = [Journey.boxOf("#syxpop")];
-				/* an import has no undo: the kits and patterns it overwrites (two of each at most) are kept first and back() in the tidy puts them back */
+				/* an import has no undo: the kits, patterns and songs it overwrites are kept first and back() in the tidy puts them back */
 				await keepImportTargets(c);
 				/* B-102: wholly inside the window (at 1440 x 923 its foot ran past the bottom) */
 				{ const r = $1("#syxpop").getBoundingClientRect(); c.inWindow = r.top >= 0 && r.left >= 0 && r.bottom <= innerHeight + 0.5 && r.right <= innerWidth + 0.5; c.win = `${innerWidth}x${innerHeight}`; }
@@ -2206,9 +2206,11 @@ const MmJourneys = (() => {
 	/* Every journey is independent (doc/modern-ux/JOURNEYS.md): the runner notes where the page stood when it began (begin: c.back0.undo, c.back0.mode,
 	   c.back0.pat, c.back0.kit, c.back0.chain) and a tidy that changed any of it calls back(u, c), which puts the editor's modes and its undo history back:
 	   the transport stopped, the edits undone, PATTERN or SONG mode as found, the pattern and kit the machine was on, no chain. */
-	const begin = c => { c.back0 = { tempo: machine().tempo, undo: histN(), mode: machine().song?.songMode, pat: cur(), kit: machine().kit?.current, kitw: machine().kit?.working, chain: !!desk().chain?.active }; };
+	const begin = c => { c.back0 = { state: state(), mutes: JSON.stringify(machine().mutes || null), patKit: I().doc("pattern", cur())?.kit, tempo: machine().tempo, undo: histN(), mode: machine().song?.songMode, pat: cur(), kit: machine().kit?.current, kitw: machine().kit?.working, chain: !!desk().chain?.active }; };
 	const back = async (u, c) => {
 		if (!c.back0) return;
+		/* a journey that restarted the machine: the start-up card is waited for, as a person waits */
+		if (!$1("#bootcard").hidden) { await until(() => $1("#bootcard").hidden, 120000); await sleep(1500); await until(() => machine().loading && machine().loading.done >= machine().loading.total, 90000); }
 		if (S().playing) { u.click("#play"); await until(() => !S().playing, 3000); }
 		if (c.back0.undo != null) { await undoTo(u, c.back0.undo); await sleep(300); }
 		if (desk().chain?.active && !c.back0.chain) { Bridge.send({ op: "chainClear" }); await sleep(300); }
@@ -2220,15 +2222,20 @@ const MmJourneys = (() => {
 		if (c.back0.kitw === "clean" && machine().kit?.working !== "clean") { Bridge.send({ op: "saveKit", k: machine().kit?.current, force: true }); await until(() => machine().kit?.working === "clean", 8000); await sleep(600); }
 		/* a slot the journey overwrote (kept with keep(c, "kit", k) before it did): pasted back from the plug-in's clipboard */
 		for (const [kind, slot] of c.keptSlots || []) { Bridge.send(kind === "kit" ? { op: "kitPaste", k: slot, force: true } : kind === "pattern" ? { op: "patPaste", p: slot, force: true } : { op: "songPaste", s: slot, force: true }); await sleep(600); }
+		/* the mutes as they were, and the pattern's kit link (loading another kit links the pattern to it) */
+		{ const was = JSON.parse(c.back0.mutes || "null"), now = machine().mutes;
+			if (was && now) for (const [key, op] of [["synth", "mute"], ["midi", "muteMidi"]]) for (let t = 0; t < 6; t++) { const w = (was[key] >> t & 1) === 1; if (((now[key] ?? 0) >> t & 1) === 1 !== w) { Bridge.send({ op, t, on: w }); await sleep(900); } } }
+		{ const pd = I().doc("pattern", c.back0.pat); if (pd && c.back0.patKit != null && pd.kit !== c.back0.patKit) { Bridge.send({ op: "patternKit", p: c.back0.pat, v: c.back0.patKit, force: true }); await until(() => I().doc("pattern", c.back0.pat)?.kit === c.back0.patKit, 6000); await sleep(600); } }
 	};
 	/* a slot the journey is about to overwrite: its content goes to the plug-in's clipboard and back() pastes it back (one slot per kind at a time) */
 	const keep = async (c, kind, slot) => { Bridge.send(kind === "kit" ? { op: "kitCopy", k: slot } : kind === "pattern" ? { op: "patCopy", p: slot } : { op: "songCopy", s: slot }); await sleep(400); (c.keptSlots = c.keptSlots || []).push([kind, slot]); };
-	/* two slots to be overwritten (an import has no undo): the first goes to the clipboard, the second is overwritten by a copy of the first (an undo
-	   step that holds the second's content: back() undoes it, then pastes the first back) */
-	const keepTwo = async (c, kind, a, b) => { await keep(c, kind, a); Bridge.send({ op: kind === "kit" ? "kitCopyTo" : "patCopyTo", from: a, to: b, force: true }); await sleep(800); };
-	/* the kits and patterns an import panel's preview lists (its cells "kit:N", "pattern:N"), kept: two of a kind at most */
+	/* slots to be overwritten that the product cannot undo (an import): the first goes to the clipboard, each of the others is overwritten by a copy of
+	   the first (an undo step that holds that slot's content): back() undoes them, then pastes the first back. Any number of slots */
+	const keepMany = async (c, kind, slots) => { await keep(c, kind, slots[0]);
+		for (const s of slots.slice(1)) { Bridge.send({ op: kind === "kit" ? "kitCopyTo" : kind === "pattern" ? "patCopyTo" : "songCopyTo", from: slots[0], to: s, force: true }); await sleep(900); } };
+	/* the kits, patterns and songs an import panel's preview lists (its cells "kit:N", "pattern:N", "song:N"), kept */
 	const keepImportTargets = async c => { const it = $all('#syxpop button[data-syxitem]').map(b => b.dataset.syxitem.split(":"));
-		for (const kind of ["kit", "pattern"]) { const slots = it.filter(([k]) => k === kind).map(([, n]) => +n); if (slots.length > 2) throw new Error(`${slots.length} ${kind}s in the file: the journey keeps two`); if (slots.length === 2) await keepTwo(c, kind, slots[0], slots[1]); else if (slots.length === 1) await keep(c, kind, slots[0]); } };
+		for (const kind of ["kit", "pattern", "song"]) { const slots = it.filter(([k]) => k === kind).map(([, n]) => +n); if (slots.length) await keepMany(c, kind, slots); } };
 	/* the strings a canvas draws (its labels): the page's drawing run once on it with fillText watched */
 	const canvasTexts = c => { const f0 = CanvasRenderingContext2D.prototype.fillText, out = []; CanvasRenderingContext2D.prototype.fillText = function (t, ...r) { out.push(String(t)); return f0.call(this, t, ...r); }; try { drawEd(c); } finally { CanvasRenderingContext2D.prototype.fillText = f0; } return out; };
 	/* a value box (page g, index i): its element, meta and the kit's cell of track t */
@@ -3443,6 +3450,9 @@ const MmJourneys = (() => {
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, mutScope,
 		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
 		blackKeys, rollPaint, rollDrawLength, rollBoxMove, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxPlace, resetEmpty, syxRunningReach];
+	/* every journey's tidy is followed by a look: if the machine's documents or modes still differ from what the journey found, back(u, c) puts them back (the journey's own tidy first, for what is its own;
+	   its guard, "left:", names what stays). What back cannot put back, the journey keeps first (keep, keepMany) or is alone: true (doc/modern-ux/JOURNEYS.md, "Independent journeys") */
+	for (const j of all) { const own = j.tidy; j.tidy = async (u, c) => { try { if (own) await own(u, c); } finally { if (c.back0?.state && Journey.stateDiff(c.back0.state, state())) await back(u, c); } }; }
 
 	/* The guard between journeys (as md: mdDeskJourneys.js between): it says what the one before left and puts it right only after a
 	   journey that failed; a journey that passed leaves nothing (doc/modern-ux/JOURNEYS.md, "Independent journeys"). Waiting for the
@@ -3465,7 +3475,8 @@ const MmJourneys = (() => {
 	}
 	/* what the guard compares before and after each journey (shared/deskJourney.js, page.state): the machine's documents and modes
 	   (as mdDeskJourneys.js state); a document is a short hash of its JSON, a slot loaded only in one of the two is not compared */
-	const hash = x => JSON.stringify(x) || "";
+	const VOLATILE = new Set(["nameTail", "lfoState", "source", "pending"]);
+	const hash = x => JSON.stringify(x, (k, v) => VOLATILE.has(k) ? undefined : v) || "";
 	function state() {
 		const i = I(), m = i.machine || {};
 		const o = { "pattern slot": m.pattern?.current, "kit slot": m.kit?.current, "song slot": m.song?.current, "global slot": m.global?.current, "song mode": m.song?.songMode, playing: !!m.playing || !!S().playing,

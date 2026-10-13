@@ -1366,8 +1366,8 @@ const MdJourneys = (() => {
 				screen: () => ok($1(syxValue("kit", "place"))?.textContent === "K05" && !!$1(syxCell("kit:4")) && !!$1(syxCell("kit:5")) && !$1(syxCell("kit:0")) && /from K0[12]/.test($1(syxCell("kit:4"))?.dataset.syxtip || ""),
 					"cells " + $all('#syxpop button[data-syxitem^="kit:"]').map(b => b.dataset.syxitem).join(" ")), within: 4000 },
 			{ say: "leave Kits ticked only, click Import: it asks first (the file's kits land on K05 and on, which hold kits)", act: async (u, c) => { await syxKinds(["kit"])(u); c.names = $all('#syxpop button[data-syxitem^="kit:"]').map(b => [+b.dataset.syxitem.split(":")[1], (b.dataset.syxname || "").trim()]); c.k0 = kitName(0);
-					/* an import has no undo: the two kits it overwrites are kept first (keepTwo) and back() in the tidy puts them back */
-					if (c.names.length !== 2) throw new Error(`${c.names.length} kits in the file: the journey keeps two`); await keepTwo(c, "kit", c.names[0][0], c.names[1][0]); u.click('#syxpop [data-syxgo="start"]'); },
+					/* an import has no undo: the kits it overwrites are kept first (keepMany) and back() in the tidy puts them back */
+					await keepMany(c, "kit", c.names.map(([k]) => k)); u.click('#syxpop [data-syxgo="start"]'); },
 				screen: c => ok(dlgShown() && /K05/.test($1("#dlg").textContent) && !!dlgButton(`Import ${c.names.length}`), `no question for ${c.names.length} kits: ` + ($1("#dlg").textContent || "").slice(0, 80)) },
 			{ say: "click Import n: sent to K05 and on, read back, reported", act: (u, c) => u.click(dlgButton(`Import ${c.names.length}`)),
 				screen: c => ok(new RegExp(`${c.names.length} imported`).test($1("#syxpop .syxsum")?.textContent || ""), "progress: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
@@ -1636,7 +1636,7 @@ const MdJourneys = (() => {
 			openImport,
 			{ say: "click Import; while it runs press Escape and click outside: the panel stays, one size, Stop and Hide inside it", act: async (u, c) => {
 				c.box = [Journey.boxOf("#syxpop")];
-				/* an import has no undo: the kits and patterns it overwrites (two of each at most) are kept first and back() in the tidy puts them back */
+				/* an import has no undo: the kits, patterns and songs it overwrites are kept first and back() in the tidy puts them back */
 				await keepImportTargets(c);
 				/* B-102: wholly inside the window (at 1440 x 923 its foot ran past the bottom) */
 				{ const r = $1("#syxpop").getBoundingClientRect(); c.inWindow = r.top >= 0 && r.left >= 0 && r.bottom <= innerHeight + 0.5 && r.right <= innerWidth + 0.5; c.win = `${innerWidth}x${innerHeight}`; }
@@ -2111,9 +2111,11 @@ const MdJourneys = (() => {
 	/* Every journey is independent (doc/modern-ux/JOURNEYS.md): the runner notes where the page stood when it began (begin: c.back0.undo, c.back0.mode,
 	   c.back0.pat, c.back0.chain) and a tidy that changed any of it calls back(u, c), which puts the editor's modes and its undo history back:
 	   the transport stopped, the edits undone, PATTERN or SONG mode as found, the pattern the machine was on, no chain. */
-	const begin = c => { c.back0 = { tempo: Docs.global?.tempo, undo: V.undoCount, mode: V.songMode, pat: currentPatternSlot(), kit: currentKitSlot(), kitw: machineState().kit?.working, chain: !!desk().chain?.active }; };
+	const begin = c => { c.back0 = { state: state(), mutes: mutes(), patKit: Docs.patterns[currentPatternSlot()]?.kit, tempo: Docs.global?.tempo, undo: V.undoCount, mode: V.songMode, pat: currentPatternSlot(), kit: currentKitSlot(), kitw: machineState().kit?.working, chain: !!desk().chain?.active }; };
 	const back = async (u, c) => {
 		if (!c.back0) return;
+		/* a journey that restarted the machine: the start-up card is waited for, as a person waits */
+		if (!$1("#bootcard").hidden) { await until(() => $1("#bootcard").hidden, 120000); await sleep(1500); await until(() => !desk().loading, 90000); }
 		if (V.rec) { u.click("#rec"); await sleep(300); }
 		if (V.playing) { u.click("#play"); await until(() => !V.playing, 3000); }
 		if (c.back0.undo != null) await undoTo(u, c.back0.undo);
@@ -2126,16 +2128,20 @@ const MdJourneys = (() => {
 		if (c.back0.kitw === "clean" && machineState().kit?.working !== "clean") { cmd("saveKit", { force: true }); await until(() => machineState().kit?.working === "clean", 8000); await until(idle, 4000); }
 		/* a slot the journey overwrote (kept with keep(c, "kit", k) before it did): pasted back from the plug-in's clipboard */
 		for (const [kind, slot] of c.keptSlots || []) { cmd(kind === "kit" ? "kitPaste" : kind === "pattern" ? "patPaste" : "songPaste", kind === "song" ? { s: slot, force: true } : kind === "kit" ? { k: slot, force: true } : { p: slot, force: true }); await until(idle, 6000); await sleep(300); }
+		/* the mutes as they were, and the pattern's kit link (loading another kit links the pattern to it) */
+		for (const t of Array(16).keys()) { const was = c.back0.mutes.includes(t); if (mutes().includes(t) !== was) { cmd("mute", { t, on: was }); await settledMutes(); } }
+		{ const pd = Docs.patterns[c.back0.pat]; if (pd && c.back0.patKit != null && pd.kit !== c.back0.patKit) { cmd("patternKit", { p: c.back0.pat, v: c.back0.patKit, force: true }); await until(() => Docs.patterns[c.back0.pat]?.kit === c.back0.patKit, 6000); await until(idle, 4000); } }
 	};
 	/* a slot the journey is about to overwrite: its content goes to the plug-in's clipboard (kitCopy, patCopy, songCopy) and back() pastes it back.
 	   One slot per kind at a time (the plug-in holds one clipboard of each) */
 	const keep = async (c, kind, slot) => { cmd(kind === "kit" ? "kitCopy" : kind === "pattern" ? "patCopy" : "songCopy", kind === "song" ? { s: slot } : kind === "kit" ? { k: slot } : { p: slot }); await until(idle, 6000); await sleep(200); (c.keptSlots = c.keptSlots || []).push([kind, slot]); };
-	/* two slots to be overwritten (an import has no undo): the first goes to the clipboard, the second is overwritten by a copy of the first (an undo
-	   step that holds the second's content: back() undoes it, then pastes the first back) */
-	const keepTwo = async (c, kind, a, b) => { await keep(c, kind, a); cmd(kind === "kit" ? "kitCopyTo" : "patCopyTo", { from: a, to: b, force: true }); await until(idle, 6000); await sleep(300); };
-	/* the kits and patterns an import panel's preview lists (its cells "kit:N", "pattern:N"), kept: two of a kind at most */
+	/* slots to be overwritten that the product cannot undo (an import): the first goes to the clipboard, each of the others is overwritten by a copy of
+	   the first (an undo step that holds that slot's content): back() undoes them, then pastes the first back. Any number of slots */
+	const keepMany = async (c, kind, slots) => { await keep(c, kind, slots[0]);
+		for (const s of slots.slice(1)) { cmd(kind === "kit" ? "kitCopyTo" : kind === "pattern" ? "patCopyTo" : "songCopyTo", { from: slots[0], to: s, force: true }); await until(idle, 8000); await sleep(300); } };
+	/* the kits, patterns and songs an import panel's preview lists (its cells "kit:N", "pattern:N", "song:N"), kept */
 	const keepImportTargets = async c => { const it = $all('#syxpop button[data-syxitem]').map(b => b.dataset.syxitem.split(":"));
-		for (const kind of ["kit", "pattern"]) { const slots = it.filter(([k]) => k === kind).map(([, n]) => +n); if (slots.length > 2) throw new Error(`${slots.length} ${kind}s in the file: the journey keeps two`); if (slots.length === 2) await keepTwo(c, kind, slots[0], slots[1]); else if (slots.length === 1) await keep(c, kind, slots[0]); } };
+		for (const kind of ["kit", "pattern", "song"]) { const slots = it.filter(([k]) => k === kind).map(([, n]) => +n); if (slots.length) await keepMany(c, kind, slots); } };
 	/* the machines of Appendix A and the knobs the manual lists for each (from the feature data's rows) */
 	const MACHINE_KNOBS = new Map([
 		[["TRX-BD"], "PTCH DEC RAMP RDEC STRT NOIS HARM CLIP"],
@@ -2878,6 +2884,9 @@ const MdJourneys = (() => {
 		lockRamp, pasteMany, mutScope, songInspector, songDrag, ramView, setupChop, panBox, hwNoMachine, syxImportJ,
 		syxImportMute, globalReset, shotsGlobal, shotsSound, shotsReview, shots, shotsSong, shotsImport, editorMenuJ, memoryJ, shotsMenu, ...cpuJs, ...volJs,
 		dropSyxJ, dropSampleJ, ...viewJs, syxExportKinds, syxVerify, syxPlace, modalLock, songFactoryPlay, lockKeysFit, resetFactory, resetEmpty, syxRunningReach];
+	/* every journey's tidy is followed by a look: if the machine's documents or modes still differ from what the journey found, back(u, c) puts them back (the journey's own tidy first, for what is its own;
+	   its guard, "left:", names what stays). What back cannot put back, the journey keeps first (keep, keepMany) or is alone: true (doc/modern-ux/JOURNEYS.md, "Independent journeys") */
+	for (const j of all) { const own = j.tidy; j.tidy = async (u, c) => { try { if (own) await own(u, c); } finally { if (c.back0?.state && Journey.stateDiff(c.back0.state, state())) await back(u, c); } }; }
 
 	/* ---------- demos: journeys played for a camera (doc/modern-ux/DEMO-VIDEOS.md) ---------- */
 	/* Not in `all`: ?selftest=journey never runs them; ?selftest=demo-md-<name> does (Journey.demo), at a person's pace
@@ -3468,7 +3477,8 @@ const MdJourneys = (() => {
 	}
 	/* what the guard compares before and after each journey (shared/deskJourney.js, page.state): the machine's documents and modes.
 	   A document is its JSON (a slot loaded only in one of the two is not compared; the log says where one differs) */
-	const hash = x => JSON.stringify(x) || "";
+	const VOLATILE = new Set(["nameTail", "lfoState", "source", "pending"]);
+	const hash = x => JSON.stringify(x, (k, v) => VOLATILE.has(k) ? undefined : v) || "";
 	function state() {
 		const o = { "pattern slot": currentPatternSlot(), "kit slot": currentKitSlot(), "song slot": currentSongSlot(), "song mode": machineState().songMode, playing: !!V.playing, recording: !!V.rec,
 			mutes: mutes().join(), solo: [...S.soloSet].join(), chain: JSON.stringify(desk().chain || null), global: hash(Docs.global), "working kit": hash(Docs.workingKit && { slot: Docs.workingKit.slot, doc: Docs.workingKit.doc }), "kit state": machineState().kit?.working };
