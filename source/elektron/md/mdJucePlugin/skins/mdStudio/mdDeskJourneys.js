@@ -2450,6 +2450,22 @@ const MdJourneys = (() => {
 		],
 		async tidy(u, c) { if (V.playing) u.click("#play"); if (c.f0 != null && S.follow !== c.f0) u.click("#pgfollow"); if (c.a0 != null && S.viewAll !== c.a0) u.click("#pgall"); if (c.n0 != null) await undoTo(u, c.n0); }
 	};
+	/* I-028 (Discord 2026-10-12): the rail's trig lamps on Sequence: a track's number lights while its trig plays, only
+	   tracks with a trig light, and none stays lit after STOP */
+	const railLamps = {
+		name: "md-seq-rail-lamps", proves: [],
+		steps: [
+			go("seq"),
+			{ say: "press PLAY and watch the rail for 2.5 s: the tracks with trigs light, the others never", act: async (u, c) => {
+				c.lit = new Set(); const ob = new MutationObserver(ms => { for (const m of ms) if (m.target.classList?.contains("trig")) c.lit.add(+m.target.dataset.sel); });
+				ob.observe($1("#rail"), { subtree: true, attributes: true, attributeFilter: ["class"] });
+				if (!V.playing) u.click("#play"); await until(() => V.playing, 5000); await sleep(2500); ob.disconnect();
+				c.with = V.tracks.map((t, i) => t.trigs.slice(0, V.len).some(Boolean) && audible(i) ? i : -1).filter(i => i >= 0); c.note = `lit ${[...c.lit]}, with trigs ${c.with}`; },
+				screen: c => ok(c.lit.size > 0 && [...c.lit].every(i => c.with.includes(i)), `lit ${[...c.lit]}; tracks with trigs ${c.with}`) },
+			{ say: "press STOP: no lamp stays lit", act: async u => { if (V.playing) u.click("#play"); await until(() => !V.playing, 5000); await sleep(400); }, screen: () => ok(!$1("#rail .th.trig"), "a lamp stays lit") }
+		],
+		async tidy(u) { if (V.playing) { u.click("#play"); await sleep(500); } }
+	};
 	/* MD-031: the Sound page's LCD line says the track, the machine and its name */
 	const soundInfo = {
 		name: "md-sound-focus-info", proves: ["MD-031"],
@@ -2695,7 +2711,7 @@ const MdJourneys = (() => {
 		tidy: songPlayheadTidy
 	};
 	const wave12 = [clipsJ, undoKitJ, stopQueuedJ, lenRepeatJ, songRepeatsJ];
-	const slice5 = [modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, kitNameSave, songCommands, playModeJ, pageLeds, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
+	const slice5 = [modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, kitNameSave, songCommands, playModeJ, pageLeds, railLamps, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
 	/* ---------- the end-to-end pass: factory content as a person uses it (scripts/mdmm-e2e.sh, doc/release/E2E.md) ---------- */
 	/* What the machine plays, as the page can see it: the transport and the step from the telemetry, the song row, the output's
 	   peaks (the plug-in's outputLevel, every 250 ms, since the last one). Not silent where sound is the point. */

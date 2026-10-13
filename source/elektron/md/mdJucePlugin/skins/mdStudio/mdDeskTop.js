@@ -178,6 +178,24 @@ function noteLight(m) {
 		NoteLights.due.clear();
 	}, 16);
 }
+/* I-028 (Discord 2026-10-12): on Sequence and Sound a rail track's number lights while its trig plays (the step
+   telemetry and the pattern, no audio), as the Mix LEDs do; every lamp of a step in one frame. Its own class ("trig"),
+   beside I-002's "hit" for a note from a MIDI keyboard. */
+const RailLamps = { due: null, off: new Map() };
+function railLamps(ts) {
+	if (!ts.length) return;
+	const first = !RailLamps.due;
+	RailLamps.due = new Set([...(RailLamps.due || []), ...ts]);
+	if (!first) return;
+	requestAnimationFrame(() => {
+		const due = RailLamps.due; RailLamps.due = null;
+		for (const i of due) {
+			const l = document.querySelector(`#rail .th[data-sel="${i}"]`); if (!l) continue;
+			l.classList.add("trig"); clearTimeout(RailLamps.off.get(i));
+			RailLamps.off.set(i, setTimeout(() => document.querySelector(`#rail .th[data-sel="${i}"]`)?.classList.remove("trig"), 110));
+		}
+	});
+}
 /* ===== Track header (one component, used by rail and grid) ===== */
 function th(i, extra = "") {
 	const t = V.tracks[i]; return `<div class="th ${i === S.sel ? "sel" : ""} ${S.multi.has(i) && S.ws === "seq" ? "multi" : ""} ${audible(i) ? "" : "off"} ${extra}" data-sel="${i}" style="--c:${FAMC[t.fam]}">
@@ -303,6 +321,7 @@ function onTelemetry(m) {
 	}
 	const pp = Math.floor(Math.max(0, S.step) / 16);
 	if (S.ws === "mix" && S.step >= 0) V.tracks.forEach((t, i) => { if (t.trigs[S.step] && audible(i)) { const l = document.querySelector(`.act[data-act="${i}"]`); if (l) { l.classList.add("on"); setTimeout(() => l.classList.remove("on"), 90); } } });
+	if ((S.ws === "seq" || S.ws === "sound") && V.playing && S.step >= 0) railLamps(V.tracks.map((t, i) => t.trigs[S.step] && audible(i) ? i : -1).filter(i => i >= 0));
 	$$(".pl").forEach(b => b.classList.toggle("play", +b.dataset.plp === pp && V.playing));
 	if (S.follow && (S.ws === "seq" || S.ws === "sampler") && !S.viewAll && pp !== S.page && !Held.as("lane") && V.playing) { S.page = pp; render(); }
 	$("#tempoled").classList.toggle("on", V.playing && S.step % 4 === 0); setPos(); queueMicrotask(movePH); $("#playled")?.classList.toggle("on", V.playing && S.step % 4 === 0);

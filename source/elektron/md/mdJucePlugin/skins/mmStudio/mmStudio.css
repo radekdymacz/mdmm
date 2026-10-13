@@ -1072,6 +1072,10 @@ canvas.ed,.edblank,#lanescroll,.lcdroll,.slotgrid,.lcdbox{box-shadow:0 0 0 2px v
 .sidesw button .led{width:6px;height:6px}
 .sidesw button[aria-pressed=true]{background:var(--cream);color:var(--creamtext)}
 .sidesw button[aria-pressed=true] .led{background:var(--led);box-shadow:0 0 5px var(--led)}
+/* I-028: a track's trig lamp on the rail (its number lights while its trig plays) */
+.th.trig .n{box-shadow:0 0 0 1px var(--led),0 0 6px 1px var(--led)}
+.sidesw .sosign{font:700 9px/12px var(--mono);letter-spacing:0;padding:0 3px;border-radius:1px;background:var(--cream);color:var(--creamtext)}
+.sidesw button[aria-pressed=true] .sosign{background:var(--creamtext);color:var(--cream)}
 .th .nm small{font:500 10px var(--mono);color:var(--print3);margin-left:auto}
 .th.poly-off{opacity:.4}
 .railsec{margin-top:10px;border-top:2px solid var(--print);padding-top:7px;display:grid;gap:5px}
