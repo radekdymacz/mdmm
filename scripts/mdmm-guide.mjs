@@ -190,11 +190,13 @@ function shotHtml(machine, name, caption, web = false) {
 	const cap = caption ? `<figcaption>${esc(caption)}</figcaption>` : '';
 	// on the web page a picture opens full size on a click (a plain link to the image)
 	const zoom = (href, inner) => (web ? `<a class="gd-zoom" href="${href}" aria-label="Open the picture full size: ${alt}">${inner}</a>` : inner);
-	const snap = newestSnapshot(name);
+	// no new snapshot in this tree (temp/ is per worktree): the picture already published beside the guide
+	const kept = path.join(GUIDE, 'shots', `${name}.webp`);
+	const snap = newestSnapshot(name) || (fs.existsSync(kept) ? kept : null);
 	if (snap) {
 		fs.mkdirSync(path.join(GUIDE, 'shots'), { recursive: true });
 		const ext = path.extname(snap);
-		fs.copyFileSync(snap, path.join(GUIDE, 'shots', `${name}${ext}`));
+		if (snap !== kept) fs.copyFileSync(snap, path.join(GUIDE, 'shots', `${name}${ext}`));
 		const { w, h } = snapSize(snap);
 		return `<figure class="gd-shot">${zoom(`/guide/shots/${name}${ext}`, `<img src="/guide/shots/${name}${ext}" width="${w}" height="${h}" alt="${alt}" loading="lazy">`)}${cap}</figure>`;
 	}
