@@ -371,6 +371,7 @@ namespace mdDesk
 		m_coalesced.clear();
 		m_telemetrySeen = false;
 		m_recordedMs = -1e18;
+		m_recordedSinceRec = false;
 		m_recordWaitMs = -1;
 		m_session = mdDataLink::Session([this](const Bytes& _b) { sendSysex(_b); });
 		wireSession();
@@ -1299,9 +1300,17 @@ namespace mdDesk
 
 	Outcome MdMachine::sendChain(const std::vector<int>& _patterns)
 	{
-		const auto keys = chainKeys(_patterns, m_telemetry.bankGroup);
+		auto keys = chainKeys(_patterns, m_telemetry.bankGroup);
 		if(keys.empty())
 			return refuse("The machine's BANK GROUP (A-D / E-H) is not known yet");
+		// B-127: after a live recording that ended with STOP, or one with an erase (EXIT/NO and a TRIG key held), the
+		// firmware takes no BANK + TRIG gesture (no chain, no pattern) until REC is pressed: REC on and off again (grid
+		// recording for a moment, nothing pressed in it) first (mdDeskFirmwareTest liveerase, the chain after it)
+		if(m_recordedSinceRec && !m_telemetry.recording)
+		{
+			keys.insert(keys.begin(), {"record", "record"});
+			m_recordedSinceRec = false;
+		}
 		// Whatever plays switches to the chain. A chain is pattern mode's: in SONG mode the firmware
 		// plays it but stays in SONG mode (measured), so the song would be back after CLEAR, which says
 		// the pattern plays on. Pattern mode first (SET STATUS, harmless when already there).
@@ -1961,7 +1970,10 @@ namespace mdDesk
 			&& (!m_telemetry.chainKnown || !m_telemetry.chain.active || m_telemetry.chain.patterns != _t.chain.patterns);
 		m_telemetry = _t;
 		if(_t.recording)
+		{
 			m_recordedMs = now();
+			m_recordedSinceRec = true;
+		}
 		if(chained)
 		{
 			m_audibleQueue.reset();
