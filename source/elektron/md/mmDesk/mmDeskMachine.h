@@ -333,8 +333,12 @@ namespace mmDesk
 		deskCore::Latest<deskCore::ChainRequest> m_chain;
 		double m_keysUntilMs = -1e9;	// the desk's last panel keys are through by then
 		// 0.3.4: PLAY or STOP asked while the panel was busy (a dump on its way to SYSEX RECV, which the stream paces
-		// at cable speed while playing): pressed once it is free (pumpTransport), the newest wins, given up after a while
-		std::optional<Key> m_pendingTransport;
+		// at cable speed while playing): pressed once it is free (pumpTransport), the newest wins, given up after a while.
+		// B-135: pause, resume and the panic's STOP wait the same way (they were refused or lost)
+		enum class TransportWait : uint8_t { Play, Stop, Pause, Resume, Panic };
+		std::optional<TransportWait> m_pendingTransport;
+		void waitTransport(TransportWait _w);
+		bool pressWaiting(TransportWait _w);
 		std::optional<Value> m_pendingRecord;	// review 1 (B-092): RECORD waiting for the panel (pumpRecord)
 		double m_pendingRecordMs = 0;
 		bool m_recordWaiting = false;

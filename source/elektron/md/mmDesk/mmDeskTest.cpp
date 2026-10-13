@@ -1854,6 +1854,7 @@ void transport()
 	std::vector<Value> page;
 	std::vector<Bytes> midi, sysex;
 	std::vector<mmDesk::Key> keys;
+	bool panelBusy = false;
 	mmDesk::Desk::Port port;
 	port.device.sendSysex = [&](const Bytes& _b) { sysex.push_back(_b); m.take(_b); };
 	port.device.sendParam = [](uint8_t, uint8_t, uint8_t, uint8_t) {};
@@ -1861,6 +1862,8 @@ void transport()
 	port.device.sendMidi = [&](const Bytes& _b) { midi.push_back(_b); };
 	port.device.pressKeys = [&](const std::vector<mmDesk::Key>& _k)
 	{
+		if(panelBusy)
+			return false;
 		if(mmDesk::RecvSession::isEnterMacro(_k))
 			m.screenWord = mmDesk::Screen::GlobalEdit;
 		else if(_k == mmDesk::RecvSession::exitKeys())
@@ -1930,6 +1933,28 @@ void transport()
 			cc123 = cc123 && midi[c] == Bytes{static_cast<uint8_t>(0xb0 | c), 123, 0};
 		check(ok() && cc123 && keys == std::vector<mmDesk::Key>{mmDesk::Key::Stop, mmDesk::Key::Stop},
 			"panic: All Notes Off on the six track channels, then STOP twice");
+
+		// B-135 (the 0.6 e2e run, mm-top-pause, mm-top-panic): while the panel takes an edit, pause, resume and the panic's
+		// STOP wait for it as PLAY does (they were refused, or the STOPs lost)
+		running = true;
+		runDesk(d, 300, false);
+		for(const auto& [op, want] : std::vector<std::pair<std::string, std::vector<mmDesk::Key>>>{
+			{"pause", {mmDesk::Key::Play}}, {"resume", {mmDesk::Key::Play}}, {"panic", {mmDesk::Key::Stop, mmDesk::Key::Stop}}})
+		{
+			keys.clear();
+			panelBusy = true;
+			msg(R"({"op":")" + op + R"(","id":90})");
+			check(ok() && keys.empty(), (op + " while the panel is busy: accepted, no keys yet").c_str());
+			runDesk(d, 100, false);
+			check(keys.empty(), (op + ": still waiting while the panel is busy").c_str());
+			panelBusy = false;
+			runDesk(d, 50, false);
+			check(keys == want, (op + ": the panel free, its keys go").c_str());
+			running = op == "pause" ? false : op == "resume";
+			runDesk(d, 300, false);
+		}
+		running = false;
+		runDesk(d, 300, false);
 
 		// play from row 3: TRANSPORT IN is IGNORE, so it asks; confirmed, ACCEPT goes out as the active global
 		page.clear();

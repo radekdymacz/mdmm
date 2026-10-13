@@ -134,9 +134,13 @@ namespace mmDesk
 			return refuse("Nothing plays: PLAY first.");
 		if(panelTransport())
 		{
-			if(!pressKeys({Key::Play}))
-				return refuse(g_panelBusy);
-			m_steps = pausedByEditor(m_steps);
+			// B-135: while the panel takes an edit the pause waits for it, as PLAY does
+			if(!pressWaiting(TransportWait::Pause))
+			{
+				waitTransport(TransportWait::Pause);
+				return ok(g_transportWaits);
+			}
+			m_pendingTransport.reset();
 			return ok("Paused. PLAY goes on from this step; STOP ends it.");
 		}
 		Outcome o;
@@ -155,9 +159,14 @@ namespace mmDesk
 		const auto* g = activeGlobal(_view, m_curGlobal);
 		if(panelTransport() && !(g && g->transportIn == 1 && m_port.sendMidi))
 		{
-			if(!pressKeys({Key::Play}))
-				return refuse(g_panelBusy);
-			m_steps = resumedByEditor(m_steps, now());
+			// B-135 (the 0.6 e2e run, mm-top-pause): ▶ to go on while the panel took an edit was refused ("The panel is
+			// busy"), the machine stayed paused: it waits for the panel, as PLAY does
+			if(!pressWaiting(TransportWait::Resume))
+			{
+				waitTransport(TransportWait::Resume);
+				return ok(g_transportWaits);
+			}
+			m_pendingTransport.reset();
 			return ok();
 		}
 		Outcome o;
@@ -209,7 +218,14 @@ namespace mmDesk
 				if(const auto ch = ed::mmTrackChannel(*g, t))
 					m_port.sendMidi(deskWire::controlChange(*ch, deskWire::midi::g_allNotesOff, 0));
 		if(panelTransport())
-			pressKeys({Key::Stop, Key::Stop});
+		{
+			// B-135 (mm-top-panic): the two STOPs were dropped while the panel took an edit, the machine played on: they
+			// wait for it, as STOP does
+			if(pressWaiting(TransportWait::Panic))
+				m_pendingTransport.reset();
+			else
+				waitTransport(TransportWait::Panic);
+		}
 		else
 			m_port.sendMidi(deskWire::stopMessage());
 		return ok("Every note off (CC 123 on each track's channel) and STOP.");

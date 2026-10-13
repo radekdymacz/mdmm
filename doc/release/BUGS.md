@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-135 · Monomachine: ▶ after a pause refused ("The panel is busy"), Panic leaves it playing, while the machine takes an edit
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`mm-top-pause`: ▶ to go on refused with "The panel is busy (SYSEX RECV); try again.", the machine stayed paused; `mm-top-panic`: ⌘. said "Every note off ... and STOP", the machine played on). Both pass alone; in the run an earlier journey's edit was still on its way to SYSEX RECV.
+- **Cause:** PLAY and STOP wait for the panel while it takes an edit's dump (0.3.4, B-099), and so do RECORD and the MIDI mutes (B-092, B-129). Pause and resume (wave 2) refused instead, and Panic's two STOPs were dropped without a word when the panel keys were refused.
+- **Fix (`fix/0.6-e2e-3`):** pause, resume and the panic's STOPs wait the same way (the newest transport command, pressed once the panel is free, given up after 10 s); pause and resume move the step watch when their key goes (`mmDeskTransport.cpp`, `mmDeskCommands.cpp`). Tests: `mmDeskTest` (each while the panel is busy: accepted, no keys; free: its keys); `mm-top-pause` and `mm-top-panic` after the journeys before them in the e2e run, and alone.
+- **Status:** fixed on `fix/0.6-e2e-3`.
+
 ## B-134 · Machinedrum: a value moved while live recording is not recorded as a lock (or turns far past the value)
 
 - **From:** the 0.6 e2e run, 2026-10-13 (`md-seq-live-lock` on the firmware: no lock read back; alone from a fresh start too).
