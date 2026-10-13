@@ -2263,7 +2263,7 @@ const MdJourneys = (() => {
 			   it passes in the whole run in order and in the page tier (B-131, a finding: the journey cannot build the data the page accepts) */
 			go("sound"), sel(() => soundTrack()),
 			{ say: "pick each machine of the catalogue on the track (its family, then its key): the Sound page shows the knobs the manual lists", act: async (u, c) => {
-				c.n0 = V.undoCount; c.m0 = V.tracks[c.t].m; c.bad = []; c.n = 0;
+				c.n0 = V.undoCount; c.m0 = V.tracks[c.t].m; c.model0 = kit()?.tracks[c.t]?.model; c.bad = []; c.n = 0;
 				const shot = m => { if (m === "TRX-BD") Journey.snapshot("md-sound-groups"); else if (m === "E12-SD") Journey.snapshot("md-machine-e12"); else if (m === "ROM-01") Journey.snapshot("md-machine-rom"); else if (m === "CTR-RE") Journey.snapshot("md-machine-ctr"); };
 				for (const [m, want] of MACHINE_KNOBS) {
 					if (!Cat.byName[m]) { c.bad.push(m + ": not in the catalogue"); continue; }
@@ -2279,7 +2279,9 @@ const MdJourneys = (() => {
 				c.note = `${c.n} machines as the manual lists them`; },
 				screen: c => ok(!c.bad.length, c.bad.slice(0, 6).join(" | ") + (c.bad.length > 6 ? ` (+${c.bad.length - 6})` : "")), machine: c => ok(c.n >= 100, c.n + " machines checked"), within: 1000 }
 		],
-		async tidy(u, c) { await back(u, c); }
+		/* about seventy machine picks overrun the undo history: the track's first machine is picked again by the picker, after the undo */
+		async tidy(u, c) { await back(u, c);
+			if (c.t != null && c.model0 != null && kit()?.tracks[c.t]?.model !== c.model0) { cmd("machine", { k: V.kit, t: c.t, model: c.model0, keepFx: true }); await until(() => kit()?.tracks[c.t]?.model === c.model0, 6000); await until(idle, 4000); await sleep(500); } }
 	};
 	/* MD-011, MD-056 to MD-064, MD-067 to MD-069: the three knob pages on one page, each track-effect and routing knob moves its kit value */
 	const trackEffects = {
