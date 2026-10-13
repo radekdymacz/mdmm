@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-137 · Monomachine: Play from a song row starts in the wrong row after the song was edited
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`mm-song-play-from`: played from row 3, the machine was in row 2; it passed alone and after any one journey before it).
+- **Cause (measured in the run's order):** an edit of the current song is heard after a LOAD SONG, which the desk sends by itself once the machine is stopped in SONG mode (0.3.5, `pumpSongReload`). Play from a row stops the machine, switches to SONG mode and sends the song position at once, before that reload: the machine counted the position through the song it still held (at the time of the failure the reload was still due), and landed in another row.
+- **Fix (`fix/0.6-e2e-3`):** when a reload is due, Play from sends LOAD SONG (and waits for the status reply) before the song position (`mmDeskTransport.cpp`, `Act::LoadSong`). The journey's failure message names the song and its first rows. Tests: `mmDeskTest`; `mm-song-play-from` after the 26 journeys before it in the e2e run, and after `mm-song-row-settings`.
+- **Status:** fixed on `fix/0.6-e2e-3`.
+
 ## B-136 · Monomachine Perform: a multi trig setting jumps back while the machine takes it (Timing stepper gone)
 
 - **From:** the 0.6 e2e run, 2026-10-13 (`mm-perform-multi-setup` step 4: SEQ START clicked, then the Timing key was not on the page; passes alone).
