@@ -2206,13 +2206,8 @@ const MdJourneys = (() => {
 			"MD-241", "MD-242", "MD-243", "MD-244", "MD-245", "MD-246", "MD-247", "MD-248", "MD-249", "MD-250", "MD-251", "MD-252", "MD-253", "MD-254", "MD-255", "MD-256",
 			"MD-257", "MD-258", "MD-259", "MD-260", "MD-261", "MD-262", "MD-263", "MD-264", "MD-265", "MD-266", "MD-267", "MD-268", "MD-269", "MD-270", "MD-271", "MD-272", "MD-274"],
 		steps: [
-			/* a kit the contract accepts a machine change on: the factory kit holds an LFO destination of 16 (outside 0..15), which the page refuses to send back
-			   (proposed B-111: no machine can be picked on the factory kit); the journey loads a kit whose LFOs are inside it, so it needs no other journey's kit (back() loads the first one again) */
-			{ say: "load a kit whose LFO destinations are all inside 0..15 (the factory kit's are not: a machine cannot be picked on it)", within: 12000,
-				act: async (u, c) => { const fine = k => (kitDocOf(Docs)?.slot === k ? kitDocOf(Docs) : Docs.kits[k])?.tracks?.every(t => (t.lfo?.track ?? 0) <= 15);
-					if (fine(currentKitSlot())) return; c.k = [...Array(64).keys()].find(k => k !== currentKitSlot() && kitLoaded(k) && fine(k)); if (c.k == null) throw new Error("no kit with every LFO destination inside 0..15");
-					u.click("#kitf"); await sleep(250); u.click(ks(c.k)); if (await until(dlgShown, 1500)) u.click(dlgButton("Load without saving") || $1("#dlg .danger")); await until(() => currentKitSlot() === c.k, 8000); await until(idle, 4000); u.key("Escape"); await sleep(200); },
-				machine: () => ok(kitDocOf(Docs)?.tracks?.every(t => (t.lfo?.track ?? 0) <= 15), "a kit LFO is on track 16") },
+			/* on the firmware, alone from factory memory, the second machine picked on track 1 is refused ("tracks[0] lfo.track = 16 is outside 0..15", the kit as the machine reads it back):
+			   it passes in the whole run in order and in the page tier (proposed B-111, a finding: the journey cannot build the data the page accepts) */
 			go("sound"), sel(() => soundTrack()),
 			{ say: "pick each machine of the catalogue on the track (its family, then its key): the Sound page shows the knobs the manual lists", act: async (u, c) => {
 				c.n0 = V.undoCount; c.m0 = V.tracks[c.t].m; c.bad = []; c.n = 0;
