@@ -334,6 +334,13 @@ const Journey = (() => {
 		return out;
 	}
 	let hooks = null;	/* the page's hooks of the running journeys (begin) */
+	/* What the editor sends the machine (the CC, NRPN, note or SysEx on the cable) is seen only in the page tier: its stub
+	   host hands the device edge's messages back ({type: "wire"}); the plug-in reports none (I-027, deferred). On the
+	   firmware a step marked pageOnly ("why") is skipped and said so, and noWire() (true there) lets a step drop its wire
+	   check and keep the others; its ok line then says the wire was not checked. */
+	const pageTier = () => typeof window !== "undefined" && !!window.gmDev;
+	let wireSkipped = false;
+	function noWire() { if (pageTier()) return false; wireSkipped = true; return true; }
 	async function runOne(j, log, context, film, c0) {
 		const c = c0 || {}, n = j.steps.length;
 		/* where the page's undo and its modes stood when the journey began (page.begin(c) sets c.back0: the undo depth and what else the page restores): the journey's
@@ -346,6 +353,8 @@ const Journey = (() => {
 		if (missing) { log(`JOURNEY ${j.name} SKIP ${missing}`); return "skip"; }
 		for (let i = 0; i < n && !reason; i++) {
 			const st = j.steps[i], t0 = performance.now(), head = `JOURNEY ${j.name} ${i + 1}/${n}`;
+			if (st.pageOnly && !pageTier()) { log(`${head} skip ${st.say}: ${st.pageOnly} (page tier only)`); continue; }
+			wireSkipped = false;
 			if (film) log(`DEMO ${j.name} at ${Math.round(t0 - film.t0)} step ${i + 1}/${n}${st.section ? " section " + st.section : ""}${st.caption ? " caption " + st.caption : ""}`);
 			try { if (st.act) await st.act(u, c); }
 			catch (e) { reason = `step ${i + 1} "${st.say}": could not do it: ${e.message}`; log(`${head} FAIL ${st.say}: could not do it: ${e.message}${context ? " (page: " + context() + ")" : ""}`); break; }
@@ -358,7 +367,7 @@ const Journey = (() => {
 			const pass = await until(both, st.within ?? 6000);
 			const ms = Math.round(performance.now() - t0);
 			if (e2eMode && !film) for (const l of e2eLeaks()) { c.leaks = c.leaks || []; if (!c.leaks.includes(l)) { c.leaks.push(l); log(`JOURNEY ${j.name} LEAK step ${i + 1}: ${l}`); } }
-			if (pass) { log(`${head} ok ${st.say} (${ms} ms)${c.note ? " · " + c.note : ""}`); c.note = ""; if (st.hold) await sleep(st.hold); continue; }
+			if (pass) { log(`${head} ok ${st.say} (${ms} ms)${c.note ? " · " + c.note : ""}${wireSkipped ? " · what is sent to the machine not checked here (page tier only, I-027)" : ""}`); c.note = ""; if (st.hold) await sleep(st.hold); continue; }
 			let around = ""; try { around = context ? context() : ""; } catch (_) { }
 			const seen = [scr !== true ? "screen: " + scr : "", mac !== true ? "machine: " + mac : "", around ? "page: " + around : ""].filter(Boolean).join("; ");
 			reason = `step ${i + 1} "${st.say}": ${seen}`;
@@ -1056,5 +1065,5 @@ const Journey = (() => {
 				c.n = document.querySelectorAll(".pk[data-lane]").length; },
 				screen: c => ok(c.n > 0 && Object.values(c.cut).every(x => !x), `${c.n} keys; ` + Object.entries(c.cut).map(([w, x]) => `${w}: ${x || "all fit"}`).join("; ")) }]
 	});
-	return { stateDiff, cutText, spills, overlaps, canvasProblems, lockKeysCut, lockKeysJourney, pressOutside, modalLockJourney, boxOf, keysInside, run, demo, ok, sleep, until, recent, u, TIERS, tierOf, onScreen, osKeyPath, menu, editorMenuJourney, memoryJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, fitJourneys, snapshot, safari15Diff, viewJourneys };
+	return { stateDiff, pageTier, noWire, cutText, spills, overlaps, canvasProblems, lockKeysCut, lockKeysJourney, pressOutside, modalLockJourney, boxOf, keysInside, run, demo, ok, sleep, until, recent, u, TIERS, tierOf, onScreen, osKeyPath, menu, editorMenuJourney, memoryJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, fitJourneys, snapshot, safari15Diff, viewJourneys };
 })();

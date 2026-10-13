@@ -476,12 +476,45 @@ namespace mmDesk
 		const auto t = num(_m, "t");
 		const bool mute = flag(_m, "on");
 		const auto i = static_cast<size_t>(6 + t);
+		m_pendingMidiMute[static_cast<size_t>(t)].reset();
 		if(m_expectMute[i].shown(muteInMemory(6 + t), clock(), m_profile.settleMs) == std::optional<bool>(mute))
 			return ok();
 		if(!pressKeys({Key::MuteWindow, static_cast<Key>(static_cast<int>(Key::Trig9) + t), Key::Exit}))
-			return refuse(g_panelBusy);
-		m_expectMute[static_cast<size_t>(6 + t)] = deskCore::FieldExpectation<bool>::sent(mute, clock());
+		{
+			// B-129: the panel is taking an edit (SYSEX RECV): the mute follows once it is free (pumpMidiMutes)
+			m_pendingMidiMute[static_cast<size_t>(t)] = mute;
+			m_pendingMidiMuteMs = now();
+			return ok(g_transportWaits);
+		}
+		m_expectMute[i] = deskCore::FieldExpectation<bool>::sent(mute, clock());
 		return ok();
+	}
+
+	// B-129: the MIDI tracks' mutes that waited for the panel, pressed once it is free, one track a pump
+	void MmMachine::pumpMidiMutes(const double _now)
+	{
+		for(size_t t = 0; t < m_pendingMidiMute.size(); ++t)
+		{
+			auto& want = m_pendingMidiMute[t];
+			if(!want)
+				continue;
+			if(_now - m_pendingMidiMuteMs > g_transportWaitMs)
+			{
+				want.reset();
+				continue;
+			}
+			const auto i = 6 + t;
+			if(m_expectMute[i].shown(muteInMemory(static_cast<int>(i)), clock(), m_profile.settleMs) == want)
+			{
+				want.reset();
+				continue;
+			}
+			if(!pressKeys({Key::MuteWindow, static_cast<Key>(static_cast<int>(Key::Trig9) + static_cast<int>(t)), Key::Exit}))
+				return;
+			m_expectMute[i] = deskCore::FieldExpectation<bool>::sent(*want, clock());
+			want.reset();
+			return;
+		}
 	}
 
 	// MM-P4: POLY is the machine's audio mode, SET STATUS 0x20 (0 mono, 1 POLY), read back by status.

@@ -31,6 +31,49 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Fixed on `feat/0.6-revert-solo`, both editors:** the solo (and your mutes) travel with the editor's setup in the plug-in state (the standalone's state too) and come back when the project loads: the page shows the solo, the machine's mutes match it. A project with no solo opens with none. Core command `soloSet`, message `solo`.
 - **Status:** fixed, not merged.
 
+## B-131 · Machinedrum: after a CTR machine on a track, every edit of the kit is refused ("lfo.track = 16 is outside 0..15")
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`md-sound-machine-reference` on the firmware from factory memory: the second machine picked on track 1 refused, and every one after it).
+- **Cause (measured, `mdDeskFirmwareTest ctrlfo`):** picking CTR-AL leaves the track's LFO track at 16 (no track) in the firmware's working kit. The desk's kit check and the contract allowed 0..15, so the kit the machine itself holds failed validation and every following edit of it was refused.
+- **Fix (`fix/0.6-e2e-2`):** 16 is a valid LFO track in the kit (validation, the JSON reader, the contract's `lfo.track`); a dump of it goes back as the firmware wrote it. Test: `mdDeskFirmwareTest ctrlfo` (ctest `mdCtrLfoFirmwareTest`: CTR-AL, then CTR-8P and TRX-BD accepted); `md-sound-machine-reference` passes on the firmware and in the page tier.
+- **Status:** fixed on `fix/0.6-e2e-2`.
+
+## B-129 · Monomachine: a MIDI track's mute while the machine takes an edit is refused ("The panel is busy")
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`mm-perform-mutes` on the firmware, once its wire check was page-tier only: M3 on the Mutes card refused while an edit's dump was on SYSEX RECV).
+- **Cause:** a MIDI track's mute is the MUTE window's keys; while the panel takes a dump the keys would be lost, so the desk refused it ("try again"). PLAY, STOP and RECORD already wait for the panel (0.3.4, B-092).
+- **Fix (`fix/0.6-e2e-2`):** the MIDI mute waits the same way (per track the newest, pressed once the panel is free, given up after 10 s) and says so. Test: `mmDeskTest` (the panel busy: no keys; free: the MUTE window's keys, M3 muted); `mm-perform-mutes` passes on the firmware.
+- **Status:** fixed on `fix/0.6-e2e-2`.
+
+## B-128 · Machinedrum Sampler: Rename sends the name, but no slot is renamed
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`md-sampler-rename` on the firmware; it passes on the stub machine, which renames).
+- **What happens:** Sampler, a ROM slot, Rename, a name, Send name: the toast says the machine shows it in SAMPLE MGR, the slot's card keeps its old name.
+- **Cause (measured, `mdDeskFirmwareTest`, P3 sampler):** the firmware takes 0x73 into its last-name buffer (RAM 0x29f300) and leaves the slot's own name in patch RAM as it was, also seconds later: 0x73 names the next sample received (the name before an SDS dump), it renames no slot. On the emulated machine the page's samples document holds the machine's real names, so the "sent this session" name the page keeps for a real machine (MD-197's note) never shows either. P3-RESULT.md's "Rename is real" was read from the buffer, not from the slot.
+- **Options (Radek):** (a) Rename sends the name with the slot's sample again (name + SDS, the data the emulated machine's snapshot holds: seconds of SysEx, RAM slots only on a real machine); (b) Rename off for ROM slots, with the reason (the firmware renames on a sample transfer only); (c) on the local emulated machine only, write the name into the slot's name table. Not fixed: the choice changes what the feature is.
+- **Status:** open; `md-sampler-rename` stays red on the firmware until decided. The firmware test pins the measured behaviour.
+
+## B-127 · Machinedrum: after a live recording with an erase, or one ended by STOP, Chain does nothing
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`md-song-chain` after `md-seq-live-erase` on the same editor: the toast said "Chained", the machine held no chain).
+- **Cause (measured, `mdDeskFirmwareTest liveerase`, the chain after it):** after a live recording in which EXIT/NO and a TRIG key were held (Delete held: erase), or one stopped with STOP while recording, the firmware takes no BANK + TRIG gesture: no chain, not even the pattern change, until REC is pressed. Recording left with REC (PLAY) and no erase is not affected. Pressing REC on and off once (grid recording for a moment, nothing pressed in it) brings the gesture back; EXIT or STOP do not.
+- **Fix (`fix/0.6-e2e-2`):** the desk remembers that live recording ran; the first chain after it presses REC twice before the chain's keys. Test: `mdDeskFirmwareTest liveerase` chains A02 A03 after the erase and checks the firmware holds it; `md-seq-live-erase` then `md-song-chain` pass on the firmware.
+- **Status:** fixed on `fix/0.6-e2e-2`. Other panel-key gestures after such a recording were not checked.
+
+## B-126 · Monomachine: a sub at 0 puts its handle on its caption; on a zoomed-out page the track list's tag hangs under its row
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`mm-screens-fit`, `md-screens-fit` on the real editor).
+- **What happens:** (1) the Sound page's subs screen: a sub at 0 (the factory kit's SUBX) has its handle at the base line, over its caption ("SQ" under a handle), at any page size. (2) On a page zoomed below 100 % (a window under 1440 x 720 points) WebKit lays 9 px text out at 15 px (its minimum logical font size): the Monomachine's track name and its generator tag under it were 1.3 px taller than the row. The Machinedrum's tags go out of sight there as designed (B-113; the check counted the hidden line as a cut).
+- **Fix (`fix/0.6-e2e-2`):** the subs screen's base line is 5 px higher (a handle at 0 clears the caption, held or not); the Monomachine's tagged name has a line as tall as its text. `md-screens-fit` counts a tag that is out of sight as no cut, a half-shown one as one. The e2e runner runs the editors at the page's design size (1440 x 924, `GEARMULATOR_MDMM_BACKGROUND_SIZE`), as a person sees the page and as the page tier measures it; the small background window measured a page zoomed to 0.6 (every fit check of `md-screens-fit` and `mm-screens-fit` past the first failed there for the 15 px text).
+- **Status:** fixed on `fix/0.6-e2e-2`; both journeys pass on the firmware.
+
+## B-125 · The step menu's ⋯ key covers the selected step: a ⌘-drag over it does not start
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`md-seq-select-copy-paste` on the real firmware, both editors' code).
+- **What happens:** the ⋯ key (wave 12) sits in the top-right corner of the selection's last step and follows the selection as a ⌘-drag grows it. In the editor (WebKit) it was big enough to cover the step's centre, so the drag's next step was under the ⋯ ("covered by #stepmore") and a click there opened the menu instead of selecting.
+- **Fix (`fix/0.6-e2e-2`):** the ⋯ is at most half the step's width and height (WebKit's own button size switched off), so the centre is always the step's; and while a button is held anywhere on the page (a click, a drag, a ⌘-drag) the ⋯ hides, and comes back at the release. Journey `md-seq-step-menu` checks that the step's centre is not the ⋯; `md-seq-select-copy-paste` passes on the firmware.
+- **Status:** fixed on `fix/0.6-e2e-2`.
+
 ## B-122 · "Reset to the pattern often loads another pattern"
 
 - **From:** Discord, 2026-10-12 (in a feature request, below; the editor and host not named).

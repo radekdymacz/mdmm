@@ -171,6 +171,7 @@ namespace mmDesk
 		bool current(const Ref& _r) const;
 		void pumpRecv(double _now);
 		void pumpTransport(double _now);
+		void pumpMidiMutes(double _now);
 		void pumpRecord(double _now);
 		deskCore::Outcome record(const Value& _m, bool _first);
 		void pumpSequence(double _now);
@@ -338,6 +339,10 @@ namespace mmDesk
 		double m_pendingRecordMs = 0;
 		bool m_recordWaiting = false;
 		double m_pendingTransportMs = 0;
+		// B-129: a MIDI track's mute (the MUTE window's keys) asked while the panel was busy waits as PLAY and STOP do
+		// (pumpMidiMutes): per track the newest, given up after g_transportWaitMs
+		std::array<std::optional<bool>, 6> m_pendingMidiMute{};
+		double m_pendingMidiMuteMs = 0;
 		// B-060: track numbers (transposesMoved) whose transposes the next dump of the pattern that plays moves, and
 		// those of dumps on the wire, applied once the machine took them; the track in focus (status 0x22) to go back to
 		uint8_t m_trnWanted = 0;

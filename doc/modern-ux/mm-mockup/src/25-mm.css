@@ -86,7 +86,8 @@ img,svg,canvas{-webkit-user-drag:none}
 /* the rail's spec tags: the machine's name comes first; the tag, whole, goes beside it when it fits and under it when it
    does not (B-110: the row holds both lines, a name of nine letters leaves no room beside it; gone under 1380 px) */
 .th .nm.tagged{flex-wrap:wrap;gap:0 4px;align-content:center;height:100%;overflow:visible}
-.th .nm.tagged b{flex:none}
+/* the name's line as tall as its text: the name and the tag under it fit the row also where WebKit raises 9 px text to 15 px (a page zoomed below 100 %, 0.6 e2e) */
+.th .nm.tagged b{flex:none;line-height:1}
 .th .nm .gtag{flex:none;line-height:11px}
 @media (max-width:1380px){.th .nm .gtag{display:none}}
 /* ===== Sound by function (MM-PORT-PLAN e; 90-sound.js renderSound): the Machinedrum Editor's page and layout

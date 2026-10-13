@@ -335,7 +335,10 @@ const MdJourneys = (() => {
 			{ say: "right-click it: its menu", act: (u, c) => u.rightClick(cell(c.t, c.s)),
 				screen: c => ok(!$1("#deskmenu").hidden && $1('#deskmenu [data-mid="step-fill-2"]') && $1(cell(c.t, c.s)).classList.contains("selx"), "no step menu") },
 			{ say: "Escape, then click the ⋯ on the selected step (the menu's visible key): the same menu", act: async u => { u.key("Escape"); await until(() => $1("#deskmenu").hidden, 1000);
-				await until(() => !!$1("#stepmore") && !$1("#stepmore").hidden, 2000); u.click("#stepmore"); },
+				await until(() => !!$1("#stepmore") && !$1("#stepmore").hidden, 2000);
+				/* the ⋯ stays in the step's corner: a click or a drag at the step's centre reaches the step (0.6 e2e) */
+				const r = $1(".st.selx").getBoundingClientRect(); if (document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.id === "stepmore") throw new Error("the ⋯ covers the step's centre");
+				u.click("#stepmore"); },
 				screen: c => ok(!$1("#deskmenu").hidden && $1('#deskmenu [data-mid="step-fill-2"]') && $1(cell(c.t, c.s)).classList.contains("selx"), "no step menu from ⋯ (" + ($1("#stepmore") ? "hidden " + $1("#stepmore").hidden : "no key") + ")"), within: 2000 },
 			{ say: "choose Accent", act: u => u.click('#deskmenu [data-mid="step-accent"]'), screen: c => ok($1("#deskmenu").hidden && $1(cell(c.t, c.s)).classList.contains("acc"), "no accent shown"),
 				machine: c => ok(flagsOf(c.t, "accent").includes(c.s) || (V.accAll && (pat().accent?.steps || []).includes(c.s)), "accent " + flagsOf(c.t, "accent").join(",")) },
@@ -1225,7 +1228,7 @@ const MdJourneys = (() => {
 			{ say: "add a row (Arrange, pad A01): it is selected", act: async (u, c) => { u.click('[data-set="songpick"] button[data-v="song"]'); await sleep(200); c.r0 = JSON.stringify(songRows()); c.n0 = songRows().length; u.click('[data-addpat="0"]'); await until(() => songRows().length === c.n0 + 1, 4000); c.i = S.songSel; },
 				machine: c => ok(songRows().length === c.n0 + 1 && songRows()[c.i]?.kind === "pattern", "rows " + songRows().length) },
 			{ say: "click Repeat +", act: (u, c) => { c.rep = songRows()[c.i].repeats; u.click('[data-step="rep"][data-d="1"]'); }, machine: c => ok(songRows()[c.i].repeats === c.rep + 1, "repeats " + songRows()[c.i].repeats), screen: c => ok($1('[data-step="rep"][data-d="1"]')?.previousElementSibling?.textContent === String(c.rep + 2), "shows " + $1('[data-step="rep"][data-d="1"]')?.previousElementSibling?.textContent) },
-			{ say: "click More and mute track 1 for the row", act: async u => { if (!$1('[data-rowmute="0"]')) u.click("[data-rowmore]"); await sleep(250); u.click('[data-rowmute="0"]'); }, machine: c => ok((songRows()[c.i].mutes || []).includes(0), "mutes " + JSON.stringify(songRows()[c.i].mutes)), screen: () => ok($1('[data-rowmute="0"]')?.classList.contains("off"), "key not off") },
+			{ say: "open More (it stays open from an earlier row: then no click) and mute track 1 for the row", act: async u => { if (!S.songMore) { u.click("[data-rowmore]"); await sleep(250); } u.click('[data-rowmute="0"]'); }, machine: c => ok((songRows()[c.i].mutes || []).includes(0), "mutes " + JSON.stringify(songRows()[c.i].mutes)), screen: () => ok($1('[data-rowmute="0"]')?.classList.contains("off"), "key not off") },
 			{ say: "click Add loop: a loop row after it", act: async u => { u.click('[data-rowact="loop"]'); await sleep(400); Journey.snapshot("md-song-loop"); }, machine: c => ok(songRows()[c.i + 1]?.kind === "loop", "row " + JSON.stringify(songRows()[c.i + 1])), screen: () => ok($all("#tl .scell.loop").length >= 1, "no loop cell") }
 		],
 		async tidy(u, c) { if (S.songMore && $1("[data-rowmore]")) u.click("[data-rowmore]"); if (c.r0) await undoUntil(u, () => JSON.stringify(songRows()) === c.r0, 8); await back(u, c); }
@@ -2523,7 +2526,7 @@ const MdJourneys = (() => {
 				machine: () => ok(Object.keys(Docs.songs).length === 32 && songRows().length >= 1 && Docs.songs[currentSongSlot()].rows.slice(-1)[0].kind === "end", "songs " + Object.keys(Docs.songs).length) },
 			{ say: "add a row (pad A01): the bar counter on the LCD goes up", act: async (u, c) => { c.b0 = +($1("#lcd2").innerText.match(/BARS\s*(\d+)/)?.[1]); c.n0 = songRows().length; u.click('[data-addpat="0"]'); await until(() => songRows().length === c.n0 + 1, 4000); c.i = S.songSel; await sleep(300); },
 				screen: c => { const b = +($1("#lcd2").innerText.match(/BARS\s*(\d+)/)?.[1]); return ok(b === Math.round(songSteps() / 16) && b > c.b0, `BARS ${b} (was ${c.b0}), rows give ${Math.round(songSteps() / 16)}`); }, machine: c => ok(songRows().length === c.n0 + 1, "rows " + songRows().length) },
-			{ say: "click More, then Start + and Length −: the row plays part of its pattern", act: async (u, c) => { if (!$1('[data-step="ofs"]')) u.click("[data-rowmore]"); await sleep(250); c.s0 = songRows()[c.i].start; c.e0 = songRows()[c.i].end; u.click('[data-step="ofs"][data-d="1"]'); await until(() => songRows()[c.i].start === c.s0 + 1, 4000); u.click('[data-step="len"][data-d="-1"]'); },
+			{ say: "open More, then Start + and Length −: the row plays part of its pattern", act: async (u, c) => { if (!S.songMore) { u.click("[data-rowmore]"); await sleep(250); } c.s0 = songRows()[c.i].start; c.e0 = songRows()[c.i].end; u.click('[data-step="ofs"][data-d="1"]'); await until(() => songRows()[c.i].start === c.s0 + 1, 4000); u.click('[data-step="len"][data-d="-1"]'); },
 				machine: c => ok(songRows()[c.i].start === c.s0 + 1 && songRows()[c.i].end < c.e0 + 1 && songRows()[c.i].end - songRows()[c.i].start < c.e0 - c.s0, `rows[${c.i}] ${songRows()[c.i].start}-${songRows()[c.i].end}, was ${c.s0}-${c.e0}`), screen: () => ok(!!$1(".partbar .on"), "no part bar"), within: 8000 },
 			{ say: "click Add loop, then JUMP: the row is a jump", act: async (u, c) => { u.click('[data-rowact="loop"]'); await until(() => songRows()[c.i + 1]?.kind === "loop", 4000); u.click('[data-set="loopkind"] button[data-v="jump"]'); },
 				machine: c => ok(songRows()[c.i + 1]?.kind === "jump", "row " + JSON.stringify(songRows()[c.i + 1])), screen: () => ok($1('[data-set="loopkind"] button[data-v="jump"]')?.getAttribute("aria-pressed") === "true", "JUMP not pressed"), within: 6000 },
@@ -2955,8 +2958,17 @@ const MdJourneys = (() => {
 		steps: [
 			{ say: "Sequence: the track list's generator tags (E 4/16, E 2/16+4) show whole, inside their row and clear of the M key (B-110)",
 				act: async (u, c) => { await closePops(u); u.click(tab("seq")); await sleep(400);
-					const rows = $all("#rail .th"), out = rows.filter(r => { const t = r.querySelector(".gtag"); if (!t) return false; const a = t.getBoundingClientRect(), b = r.getBoundingClientRect(); return a.bottom > b.bottom + 0.5 || a.right > b.right + 0.5; });
-					c.bad = [...Journey.cutText($1("#rail")), ...Journey.spills("#rail .th .nm, #rail .th .gtag"), ...Journey.overlaps("#rail .th .gtag", "#rail .th .ms, #rail .th .n"), ...out.map(r => r.textContent.trim().slice(0, 16) + ": tag out of its row")]; c.n = $all("#rail .th .gtag").length; },
+					const unseen = nm => { const t = nm.querySelector(".gtag"); if (!t) return false; const a = t.getBoundingClientRect(), n = nm.getBoundingClientRect(); return a.top >= n.bottom - 0.5; };
+					const rows = $all("#rail .th"), out = rows.filter(r => { const t = r.querySelector(".gtag"); if (!t || unseen(r.querySelector(".nm"))) return false; const a = t.getBoundingClientRect(), b = r.getBoundingClientRect(); return a.bottom > b.bottom + 0.5 || a.right > b.right + 0.5; });
+					/* a tag that does not fit beside the name wraps to the name's second line, out of sight (B-113): whole or
+					   unseen, never half. In WebKit on a page zoomed below 100 % (the background run's small window) 9 px
+					   text is laid out at 15 px, every tag goes out of sight that way, and its hidden line is still
+					   counted in the name's scroll width: that is no cut (0.6 e2e) */
+					const seenOverlaps = () => { const seen = $all("#rail .th .nm.tagged").filter(nm => !unseen(nm)).map(nm => nm.querySelector(".gtag")).filter(Boolean);
+						seen.forEach(t => t.dataset.seen = "1"); try { return Journey.overlaps("#rail .th .gtag[data-seen]", "#rail .th .ms, #rail .th .n"); } finally { seen.forEach(t => delete t.dataset.seen); } };
+					const half = $all("#rail .th .nm.tagged").filter(nm => { const t = nm.querySelector(".gtag"), a = t?.getBoundingClientRect(), n = nm.getBoundingClientRect(); return a && !unseen(nm) && (a.right > n.right + 0.5 || a.bottom > n.bottom + 0.5); });
+					const cut = Journey.cutText($1("#rail")).filter(x => !/^div\.nm\.tagged /.test(x) || $all("#rail .th .nm.tagged").some(nm => !unseen(nm) && x.includes(nm.textContent.trim().replace(/\s+/g, " ").slice(0, 40))));
+					c.bad = [...cut, ...half.map(nm => nm.textContent.trim() + ": tag half shown"), ...Journey.spills("#rail .th .nm:not(.tagged), #rail .th .gtag"), ...seenOverlaps(), ...out.map(r => r.textContent.trim().slice(0, 16) + ": tag out of its row")]; c.n = $all("#rail .th .gtag").length; },
 				screen: c => ok(c.n > 0 && !c.bad.length, `${c.n} tags; ${c.bad.slice(0, 4).join(" | ")}`) }
 			,{ say: "Sequence: a long name (EMPTY, an empty kit's tracks) leaves no room for the tag: the tag is whole beside it or out of sight, never half (B-113)",
 				act: async (u, c) => { c.bad = []; c.n = 0; for (const row of $all("#rail .th").slice(0, 4)) { const nm = row.querySelector(".nm"), b = nm?.querySelector("b,.nmt") || nm?.firstChild, tag = row.querySelector(".gtag"); if (!tag || !b) continue; c.n++;
