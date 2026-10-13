@@ -11,6 +11,14 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Fix (`fix/0.6-e2e-3`):** the recorder reads the machine's memory as last published (kept over a desk reset), and turns again only once the last turns are through and memory had 50 ms to show them (`mdDeskMachine.cpp`, `pumpRecording`). The journey waits for the machine's read-back of the lock while recording (it turned REC off 600 ms after the drag, before the track's next trig played). Tests: `mdDeskTest`; `mdDeskFirmwareTest` (P3 live recording: the lock 99 on track 15's note); `md-seq-live-lock` alone and after the 42 journeys of the e2e run's first MD editor.
 - **Status:** fixed on `fix/0.6-e2e-3`.
 
+## B-133 · Machinedrum: after a sample is loaded or renamed, live recording records nothing
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`md-seq-live-record`: a step clicked while recording, the machine recorded no trig; `md-seq-live-lock`: no lock). Both pass alone; in the run they came after `md-sampler-rename`.
+- **What happens (measured, `mdDeskFirmwareTest <rom> recaftersample`):** once any sample went into the machine by SDS (Rename, which sends the slot's sample again since B-128; Load sample; a dropped file; any ROM slot), live recording looks right (RECORD blinks, the pattern plays, the TRIG key reaches the panel), but the firmware records no TRIG key and no knob lock, until the machine starts again. Without the sample the same steps record (`recaftersample nosample`). The sample's name alone (0x73) does not cause it.
+- **Tried, no change:** EXIT, PLAY, STOP, RECORD twice, KIT and GLOBAL and out, a pattern and a kit load, a longer key hold, 30 s of waiting, every speed-up lever off. Putting the machine's RAM 0x250000-0x2b8000 back as a run without the sample has it does bring recording back, so the state is in that RAM; which bytes was not found.
+- **Journeys:** `md-sampler-rename` and `md-drop-sample` are `alone: true` (an editor of their own) until this is fixed; `md-sampler-rename` now ends on the machine's own read-back of the name (the machine shows RECEIVING SAMPLE for seconds after the last packet).
+- **Status:** open, high: a person who loads a sample and then live records gets nothing.
+
 ## B-132 · Monomachine Editor, Sound page: the UNISON and SUB screens' stems measure 9 px in WebKit
 
 - **From:** the independent-journeys run, 2026-10-13 (`mm-sound-unison-sub-fine`).

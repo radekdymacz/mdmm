@@ -3670,6 +3670,54 @@ namespace
 		}
 	}
 
+	// B-133 (the 0.6 e2e run, 2026-10-13): after any sample went into the machine by SDS (Rename, Load sample, a dropped
+	// file; any ROM slot), live recording looks as it should (RECORD blinks, the pattern plays, the TRIG key reaches the
+	// panel) but the firmware records no TRIG key and no knob lock until the machine starts again. Not fixed: this mode
+	// shows it (FAIL with the sample, PASS without: mdDeskFirmwareTest <rom> recaftersample [nosample]). Measured: no
+	// key (EXIT, PLAY, STOP, RECORD twice, KIT/GLOBAL and out), no pattern or kit load, no longer hold, no wait (30 s) and
+	// no speed-up lever (all off) brings it back; the sample's name alone (0x73) does not cause it. The machine's RAM
+	// (0x250000-0x2b8000) put back as a run without the sample has it does bring it back: the state is in that RAM.
+	void recordAfterSample(Rig& _rig, const bool _sample)
+	{
+		auto& m = _rig.machine();
+		auto& desk = _rig.desk();
+		std::printf("== B-133: live recording after %s\n", _sample ? "a sample went in by SDS" : "no sample load");
+		if(_sample)
+		{
+			_rig.runUntil([&] { return m.hardware().isFactoryFlashReadyForReboot(); }, 60000);
+			_rig.watchSamples();
+			_rig.runUntil([&] { return _rig.samplesDoc().has_value(); }, 5000);
+			_rig.page(R"({"op":"sampleName","slot":0,"name":"KICK","id":870})");
+			check(resultOk(_rig), "Rename ROM-01 accepted (its sample goes again by SDS)");
+			_rig.runUntil([&] { const auto& l = _rig.sampleLoad(); return l && l->find("state")->asString() != "sending"; }, 120000);
+			_rig.run(3000);
+		}
+		_rig.page(R"({"op":"stop","id":880})");
+		_rig.run(500);
+		const auto pattern = *desk.linkState().pattern;
+		const auto trigs16 = [&]
+		{
+			size_t n = 0;
+			if(const auto d = _rig.pageDoc("pattern", pattern))
+				n = d->find("tracks")->asArray()[15].find("trigs")->asArray().size();
+			return n;
+		};
+		const auto n0 = trigs16();
+		const auto recording = [&] { return _rig.pageTelemetry().recording; };
+		_rig.page(R"({"op":"record","id":881})");
+		check(resultOk(_rig) && _rig.runUntil(recording, 1500), "live recording starts");
+		_rig.runUntil([&m] { return m.playhead() == 4; }, 3000);
+		_rig.page(R"({"op":"recTrig","t":15,"id":882})");
+		check(resultOk(_rig), "track 16 played from the page");
+		const bool got = _rig.runUntil([&] { return trigs16() > n0; }, 3000);
+		_rig.page(R"({"op":"record","id":883})");
+		_rig.runUntil([&] { return !recording(); }, 1500);
+		_rig.page(R"({"op":"stop","id":884})");
+		_rig.run(500);
+		std::printf("  track 16 trigs: %zu -> %zu\n", n0, trigs16());
+		check(got, "the TRIG key was recorded");
+	}
+
 	// An unsaved kit edit of the kit that plays survives a trig elsewhere (a pattern dump over the current pattern
 	// makes OS 1.63 load the kit it links from its slot; MdMachine::restoreWorkingKit sends the edits again): a
 	// synthesis value as well as a routing one, stopped and playing, as the demo videos found.
@@ -4983,6 +5031,15 @@ int main(const int _argc, char** _argv)
 			generatorsTruth(rig);
 			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 			std::printf("mdDeskFirmwareTest gen: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
+			return g_failures ? 1 : 0;
+		}
+		if(mode == "recaftersample")
+		{
+			Rig rig(rom, romPath);
+			rig.page(R"({"op":"ready"})");
+			rig.runUntil([&] { return rig.desk().isReady() && rig.desk().linkState().kit && rig.desk().linkState().pattern && rig.desk().documents().working; }, 8000);
+			recordAfterSample(rig, !(_argc > 3 && std::string(_argv[3]) == "nosample"));
+			std::printf("mdDeskFirmwareTest recaftersample: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
 			return g_failures ? 1 : 0;
 		}
 		if(mode == "samples")

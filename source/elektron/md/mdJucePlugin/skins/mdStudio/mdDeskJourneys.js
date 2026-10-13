@@ -1775,8 +1775,9 @@ const MdJourneys = (() => {
 		],
 		async tidy(u) { if (!$1("#syxpop").hidden) u.key("Escape"); }
 	};
+	/* alone: B-133 (a sample in by SDS leaves the machine's live recording deaf until it starts again), as md-sampler-rename */
 	const dropSampleJ = {
-		name: "md-drop-sample", proves: ["MD-191", "MD-X12"],
+		name: "md-drop-sample", alone: true, proves: ["MD-191", "MD-X12"],
 		needs: () => new URLSearchParams(location.search).get("wavfile") ? null
 			: "no sample for the run (GEARMULATOR_MDMM_WAV_FILE)",
 		steps: [
@@ -2496,13 +2497,19 @@ const MdJourneys = (() => {
 		],
 		async tidy() { $1("#syxpop").hidden = true; }
 	};
-	/* MD-197, B-128: Rename sends the name and the slot's own sample again (SysEx 0x73, then SDS); the machine's own name shows. A slot that holds a sample, else there is nothing to send again. */
+	/* MD-197, B-128: Rename sends the name and the slot's own sample again (SysEx 0x73, then SDS); the machine's own name shows. A slot that holds a sample, else there is nothing to send again.
+	   The proof is the machine's samples read back with the new name (Docs.samples), so the journey ends once the machine holds it.
+	   alone: B-133, after a sample went in by SDS the machine's live recording records no TRIG key and no lock until it starts again
+	   (mdDeskFirmwareTest recaftersample): nothing after this journey may meet that (the 0.6 e2e run: md-seq-live-record and
+	   md-seq-live-lock failed after it). */
 	const sampleRename = {
-		name: "md-sampler-rename", proves: ["MD-197"],
+		name: "md-sampler-rename", alone: true, proves: ["MD-197"],
 		steps: [
 			go("sampler"),
 			{ say: "click a ROM slot, click Rename, type a name and click Rename", act: async (u, c) => { const k = $all(".slotk.rom").find(b => !b.style.opacity) || $all(".slotk.rom")[0]; c.slot = +k.dataset.slot.slice(3); u.click(k); await sleep(300); results.length = 0; u.click(`[data-rename="${c.slot}"]`); await until(() => !!$1("#rname"), 2000); u.type("#rname", "jrny"); await sleep(100); u.click(dlgButton("Rename")); },
-				screen: c => ok(($1(".romsel header")?.textContent || "").includes("JRNY"), "card " + ($1(".romsel header")?.textContent || "")), machine: c => ok(results.some(r => r.op === "sampleName" && r.ok), "results " + results.map(r => r.op + ":" + r.ok).join(",")), within: 30000 }
+				screen: c => ok(($1(".romsel header")?.textContent || "").includes("JRNY"), "card " + ($1(".romsel header")?.textContent || "")),
+				machine: c => ok(results.some(r => r.op === "sampleName" && r.ok) && (Docs.samples?.rom?.[c.slot - 1]?.name || "").trim() === "JRNY",
+					`results ${results.map(r => r.op + ":" + r.ok).join(",")}; the machine's ROM-${c.slot}: "${Docs.samples?.rom?.[c.slot - 1]?.name ?? "?"}"`), within: 60000 }
 		]
 	};
 	/* MD-280, MD-283: rename the current kit (SysEx 0x55), save it (0x59), and put it back */
