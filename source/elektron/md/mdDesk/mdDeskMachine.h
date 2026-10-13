@@ -344,6 +344,7 @@ namespace mdDesk
 		};
 		std::optional<Erase> m_erasing;
 		double m_recordedMs = -1e18;		// B-101: telemetry last said live recording
+		bool m_recordedSinceRec = false;	// B-127: live recording ran since REC was last pressed twice (sendChain)
 		double m_recordWaitMs = -1;			// B-101: REC pressed, waiting for the pattern's push (pumpRecordStart)
 		double m_eraseSeenMs = 0;			// liveErase: the page's last word that the key is still held
 		static constexpr int g_eraseMaxPagePresses = 4;

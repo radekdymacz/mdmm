@@ -14,6 +14,8 @@ Everything lands in `temp/evidence/<version>/` (not in git): `index.html` (the r
 
 ## What a run does
 
+- **At the page's design size.** The editors' windows are 1440 x 924 (`GEARMULATOR_MDMM_BACKGROUND_SIZE`), as the page tier and the pictures: the background run's small window zooms the page below 100 %, where WebKit lays 9 px text out at 15 px and every fit check measures a page no person sees.
+- **What is sent is checked in the page tier only.** The plug-in reports no MIDI it sends (I-027): a step marked `pageOnly` is skipped on the firmware with its reason (the report shows it as skipped), and `Journey.noWire()` lets a step drop its wire check and keep the rest (its ok line says so).
 - **Every journey, on the firmware.** The page journeys run in the standalone too (`--tier all`), so their `machine:` checks read the firmware's read-back, not the stub's. A journey that fails here and passes on the stub is stub-only.
 - **A picture at each journey's proof moment.** `MDMM_JOURNEY_E2E=1` (the selector's `:e2e`, `skins/shared/deskJourney.js`): a journey that takes no snapshot itself leaves `e2e-<journey>` where its last step passed, and `e2e-<journey>-fail` where it failed. `scripts/mdmm-snap.py` renders them, `scripts/mdmm-e2e-webp.py` makes WebP (quality 85, at most 1440 px wide) and removes the raw files. `scripts/mdmm-guide.mjs` takes the newest picture of each name from `temp/evidence/*/shots`.
 - **A watch.** After each step the runner reads the toast, the error line and the question: a program word (undefined, NaN, an object, a stack, validation or schema text) fails the journey, and so does a question whose button something covers.

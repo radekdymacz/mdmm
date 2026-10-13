@@ -44,6 +44,8 @@ function(mdmm_add_lib_tests _dir)
 	# wave 7: erase while live recording (EXIT/NO + TRIG held) through the desk to the firmware
 	add_test(NAME mdLiveEraseFirmwareTest COMMAND mdDeskFirmwareTest --env liveerase)
 	set_tests_properties(mdLiveEraseFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
+	add_test(NAME mdCtrLfoFirmwareTest COMMAND mdDeskFirmwareTest --env ctrlfo)
+	set_tests_properties(mdCtrLfoFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
 	# review 1 (B-096): the factory song plays in SONG mode; in a DAW (TEMPO IN EXT) PLAY waits for the host's clock
 	add_test(NAME mdFactorySongFirmwareTest COMMAND mdDeskFirmwareTest --env factorysong)
 	set_tests_properties(mdFactorySongFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
