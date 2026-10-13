@@ -39,13 +39,6 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Facts needed from the tester:** the editors' version; each track's MIDI From / To and Monitor settings; where the External Instrument sends (which port and channel); whether the cross-talk stays with the Push unplugged or with the External Instrument removed; whether "MIDI out" in either editor is on.
 - **Status:** open, not reproduced; waits for the tester's routing and version.
 
-## B-118 · Site: the download page shows a "Price" step although the download is free
-
-- **From:** Discord, 2026-10-12.
-- **What happens:** the progress on /get/ and /get/download/ reads "1 · Machine, 2 · Price, 3 · Download" while config.js has `payments.provider: "none"`, so no price is ever asked.
-- **Fix (`fix/0.6-discord`):** `site/public/assets/get.js` removes the Price item when there is no payment provider and numbers the rest ("1 · Machine, 2 · Download") on both pages; with a provider the three steps stay. Test: `scripts/site/test_download_steps.sh` (headless Chrome on both pages as served).
-- **Status:** fixed on `fix/0.6-discord`; reaches mdmm.dev with the next site deploy.
-
 ## B-117 · Machinedrum: a handle at a panel's edge is drawn half outside it
 
 - **From:** screen review, 2026-10-13 (the sampler's live view: a ring half cut at the left and at the right edge; the same on the Sound workspace's panels at 0 or 127).
