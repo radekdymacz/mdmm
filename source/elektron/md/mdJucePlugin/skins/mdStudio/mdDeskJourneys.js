@@ -2821,7 +2821,21 @@ const MdJourneys = (() => {
 	};
 	const e2eReal = [realSongs, realPatterns, realSequence];
 
-	const all = [...slice5, ...wave12, ...e2eReal, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
+	/* Screen review 2026-10-13 (B-110 and on): the screens the review found cut or overlapped, measured at the page's size
+	   (the page tier runs at 1440 x 924, as the review's pictures) */
+	const closePops = async u => { for (let i = 0; i < 4 && (!$1("#libpop").hidden || !$1("#modalbg").hidden); i++) { if (dlgShown()) u.click(dlgButton("Cancel") || $1("#dlg .danger")); else u.key("Escape"); await sleep(300); } };
+	const screensFit = {
+		name: "md-screens-fit", proves: [],
+		steps: [
+			{ say: "Sequence: the track list's generator tags (E 4/16, E 2/16+4) show whole, inside their row and clear of the M key (B-110)",
+				act: async (u, c) => { await closePops(u); u.click(tab("seq")); await sleep(400);
+					const rows = $all("#rail .th"), out = rows.filter(r => { const t = r.querySelector(".gtag"); if (!t) return false; const a = t.getBoundingClientRect(), b = r.getBoundingClientRect(); return a.bottom > b.bottom + 0.5 || a.right > b.right + 0.5; });
+					c.bad = [...Journey.cutText($1("#rail")), ...Journey.spills("#rail .th .nm, #rail .th .gtag"), ...Journey.overlaps("#rail .th .gtag", "#rail .th .ms, #rail .th .n"), ...out.map(r => r.textContent.trim().slice(0, 16) + ": tag out of its row")]; c.n = $all("#rail .th .gtag").length; },
+				screen: c => ok(c.n > 0 && !c.bad.length, `${c.n} tags; ${c.bad.slice(0, 4).join(" | ")}`) }
+		],
+		async tidy(u) { await closePops(u); u.click(tab("seq")); }
+	};
+	const all = [screensFit, ...slice5, ...wave12, ...e2eReal, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
 		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
 		genJourney("md-gen-mutate-undo", false, { proves: ["MD-X04", "MD-X05"] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: ["MD-X04"] }), genKeys,
 		shapeSound, typeValue, arrows, machinePick, machAudition, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,

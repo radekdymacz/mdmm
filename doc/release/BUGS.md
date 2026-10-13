@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-113 · Machinedrum: the longest generator tag in the track list is cut by the M key
+
+- **From:** screen review, 2026-10-13 (six pictures: "E 2/16+4" on tracks 2, 6, 7 and 10 runs under the M key).
+- **What happens:** a tag with a rotation ("E 2/16+4") is 6 px wider than the 75 px the rail leaves beside a two-letter name, and its end was cut.
+- **Fix (`fix/0.6-screens`):** 9 px letters, 2 px padding and a 3 px gap for the tag (`mdOverrides.css`; the rows are 19 px, so the tag cannot go under the name as the Monomachine's does, B-110). Page journey `md-screens-fit` measures all 16 tags: whole, inside their row, clear of the M key and the number.
+- **Status:** fixed on `fix/0.6-screens`.
+
 ## B-112 · Monomachine: the pattern chooser's labels run under the keys beside them, and an 11-letter kit name is cut in its tile
 
 - **From:** screen review, 2026-10-13 (the Patterns dialog: "SLOT A01" under the Go key, "KIT" under the kit key; the Kit library: "MULTI PULSE", "MULTI DPRO…" cut at the tile's edge).
