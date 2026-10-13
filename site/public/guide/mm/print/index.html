@@ -511,7 +511,7 @@
 <ol class="gd-steps"><li>Click <b class="gd-light">&lt;KIT&gt;</b> on the LCD. The kit library opens.</li><li>Hold <kbd class="gd-key">[⌥]</kbd> and click a slot. It is selected.</li><li>Click <b class="gd-ui">Save as</b> and answer the question.</li></ol>
 <ul class="gd-list"><li><b class="gd-ui">Save</b> writes the current kit to its own slot. The slot's old content goes to the machine's UNDO KIT.</li><li><b class="gd-ui">Save as</b> writes it to the slot you selected, after asking if that slot is used, and the kit becomes that slot's kit. The slot you saved from keeps what it had.</li></ul>
 <p>To rename a kit, select its slot and press <kbd class="gd-key">[F2]</kbd>, or double-click the slot, or click <b class="gd-ui">Rename</b>. Type a name of up to 11 characters and press <kbd class="gd-key">[ENTER]</kbd>. The editor takes the name as text, so there is no character picker. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take a rename back.</p>
-<figure class="gd-shot"><img src="/guide/shots/e2e-mm-lib-kit-saveas.webp" width="1440" height="923" alt="Saving a kit to another slot"><figcaption>Saving a kit to another slot</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/mm-kit-library.webp" width="1440" height="923" alt="The kit library: Save as under the slot you picked"><figcaption>The kit library: Save as under the slot you picked</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="undo-kit">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.1-20</span></span></aside>
@@ -1137,7 +1137,6 @@
 <div class="gd-body gd-prose"><h2>SLIDE</h2>
 <p>A slide makes a locked value glide to the next lock instead of jumping. Without a lock on the step a slide does nothing. The glide of a pitch is PORTAMENTO, in the trig setup.</p>
 <ol class="gd-steps"><li>Right-click a step in the roll, or select steps and click the ⋯ on the selection.</li><li>Choose <b class="gd-ui">Slide</b>. A tick shows when every selected step slides. On a selection it sets every step, in one undo step.</li><li>A small ramp over a note shows a step that slides and holds a lock. In the lock lane the glide is drawn from one lock to the next.</li></ol>
-<figure class="gd-shot"><img src="/guide/shots/e2e-mm-seq-step-menu.webp" width="1440" height="923" alt="The step menu"><figcaption>The step menu</figcaption></figure>
 <p>To copy, paste or clear the slide row of a track, tick <b class="gd-ui">Slide</b> in <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> or <b class="gd-ui">Clear…</b> of the LCD's <b class="gd-ui">▾</b> menu (chapter 11, &quot;Super copy&quot;). Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take each back.</p>
 </div></section>
 <section class="gd-sec" id="the-mute-mode">
@@ -1282,7 +1281,7 @@
 <p>The <b class="gd-ui">Arrangement</b> is where you build the song. Each cell is a row: the pattern it plays, with marks under the name for what else the row does. You can edit the song while it plays.</p>
 <p>On the machine each row has columns that you step through with the arrow keys and set with the LEVEL knob. In the editor you select a cell and set the row in the <b class="gd-ui">Selected row</b> card.</p>
 <table class="gd-table"><thead><tr><th>On the machine</th><th>In the editor</th></tr></thead><tbody><tr><td>ROW</td><td>the place of the cell in the <b class="gd-ui">Arrangement</b>, 001 to 200</td></tr><tr><td>PAT</td><td>the pattern name in the cell; <b class="gd-ui">‹</b> and <b class="gd-ui">›</b> in <b class="gd-ui">Selected row</b></td></tr><tr><td>REP</td><td><b class="gd-ui">Repeat</b></td></tr><tr><td>TRN</td><td><b class="gd-ui">Transpose</b>; single tracks under <b class="gd-ui">More</b></td></tr><tr><td>OF LN</td><td><b class="gd-ui">Part</b>, under <b class="gd-ui">More</b></td></tr><tr><td>XTRA</td><td><b class="gd-ui">Tempo</b>; <b class="gd-ui">Mutes</b>, under <b class="gd-ui">More</b></td></tr></tbody></table>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: The arrangement and the selected row"><span>Screenshot to come</span></div><figcaption>The arrangement and the selected row</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/mm-song-workspace.webp" width="1440" height="923" alt="The arrangement and the selected row"><figcaption>The arrangement and the selected row</figcaption></figure>
 <h4 class="gd-h3">Select a row</h4>
 <ul class="gd-list"><li>Click a cell in the <b class="gd-ui">Arrangement</b>.</li><li>Press <kbd class="gd-key">[←]</kbd> or <kbd class="gd-key">[→]</kbd> for the row before or after.</li><li>Click a bar in the time bar above the grid. Each bar is as long as its row plays.</li></ul>
 <p>The last row of every song is END. The song stops there.</p>
@@ -1328,7 +1327,7 @@
 <p>A loop row sends the song back to an earlier row, a set number of times. Loops keep a song short and its shape clear. They also make parts longer than the 64 steps of one pattern.</p>
 <p>On the machine a loop is a value of the PAT column, after END. In the editor a loop is a command row of its own.</p>
 <ol class="gd-steps"><li>Select the last row of the part to repeat.</li><li>Click <b class="gd-ui">Add loop</b> in the <b class="gd-ui">Selected row</b> header. A loop row goes in after it. Its cell reads ↺ and the row it goes back to, with ×2 under it.</li><li>Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> beside <b class="gd-ui">Back to</b> to set the first row of the part.</li><li>Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> beside <b class="gd-ui">Times</b> to set how many times the part plays, 1 to 63. Click <b class="gd-ui">Forever</b> for a loop that never ends. The cell shows ∞.</li></ol>
-<figure class="gd-shot gd-todo"><div class="gd-ph" role="img" aria-label="Screenshot to come: A loop row"><span>Screenshot to come</span></div><figcaption>A loop row</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/e2e-mm-song-row-inspector.webp" width="1440" height="923" alt="A loop row: its command, the row it goes back to and how many times"><figcaption>A loop row: its command, the row it goes back to and how many times</figcaption></figure>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Loops can sit inside other loops.</p></aside>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>In this version, a loop written by the editor goes back to the first row of the song on the machine, whatever row <b class="gd-ui">Back to</b> names. This is a known fault.</p></aside>
 </div></section>
@@ -1708,7 +1707,7 @@
 <div class="gd-body gd-prose"><h2>CHANNELS</h2>
 <p>Each track listens on its own channel: the base channel plus 0 to 5. You set the base channel and the span in GLOBAL, in the Control section (chapter 19). The on-screen keyboard, the home row keys and the roll keys use these channels.</p>
 <ol class="gd-steps"><li>Click <b class="gd-ui">GLOBAL</b> in the top bar. The panel opens with the MIDI channels.</li><li>Click the minus beside Channel span until it reads 0. No track has a channel, and the panel says so.</li><li>Close the panel and click the <b class="gd-ui">M</b> of a track on the rail. The editor refuses and offers the fix in a notice.</li><li>Open GLOBAL again and click <b class="gd-ui">Give each track its own channel</b>. The span reads 6 and <b class="gd-ui">M</b> mutes the track.</li></ol>
-<figure class="gd-shot"><img src="/guide/shots/e2e-mm-global-channels.webp" width="1440" height="923" alt="The MIDI channels in GLOBAL"><figcaption>The MIDI channels in GLOBAL</figcaption></figure>
+<figure class="gd-shot"><img src="/guide/shots/mm-global-panel.webp" width="1440" height="923" alt="The MIDI channels in GLOBAL"><figcaption>The MIDI channels in GLOBAL</figcaption></figure>
 </div></section>
 <section class="gd-sec" id="note-on-off">
 <aside class="gd-margin"><span class="gd-ref"><span>MM manual p.B-1</span></span></aside>
@@ -2048,7 +2047,6 @@
 <aside class="gd-margin"></aside>
 <div class="gd-body gd-prose"><h2>THE EDITOR'S MENU</h2>
 <p>Right-click the empty part of the header, or the track rail. The editor's menu opens, with the editor and its version as its title. It holds the zoom of the page, the updates, the log folder and the <b class="gd-ui">Developer</b> switches.</p>
-<figure class="gd-shot"><img src="/guide/shots/e2e-mm-top-editor-menu.webp" width="1440" height="923" alt="The editor's menu"><figcaption>The editor's menu</figcaption></figure>
 <ol class="gd-steps"><li>Right-click the header. The menu opens.</li><li>Move to <b class="gd-ui">Zoom</b> and press the right arrow. Its steps open, with the first one focused. Click a step. The menu closes and the page zooms.</li><li>Right-click again. <b class="gd-ui">Zoom</b> names the new step.</li><li>Choose <b class="gd-ui">Updates</b>, then <b class="gd-ui">Check Daily</b>. Open <b class="gd-ui">Updates</b> again: the tick of <b class="gd-ui">Check Daily</b> has turned.</li><li>Press <kbd class="gd-key">[ESC]</kbd> to close a submenu. Press <kbd class="gd-key">[ESC]</kbd> again to close the menu.</li></ol>
 <p>The keys <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[=]</kbd>, <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[-]</kbd> and <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[0]</kbd> zoom as well.</p>
 </div></section>
