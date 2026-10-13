@@ -2114,7 +2114,7 @@ const MdJourneys = (() => {
 	   c.back0.pat, c.back0.chain) and a tidy that changed any of it calls back(u, c), which puts the editor's modes and its undo history back:
 	   the transport stopped, the edits undone, PATTERN or SONG mode as found, the pattern the machine was on, no chain. */
 	const begin = c => { c.back0 = { state: state(), mutes: mutes(), patKit: Docs.patterns[currentPatternSlot()]?.kit, tempo: Docs.global?.tempo, undo: V.undoCount, mode: V.songMode, pat: currentPatternSlot(), kit: currentKitSlot(), kitw: machineState().kit?.working, chain: !!desk().chain?.active }; };
-	const back = async (u, c) => {
+	const back1 = async (u, c) => {
 		if (!c.back0) return;
 		/* a journey that restarted the machine: the start-up card is waited for, as a person waits */
 		if (!$1("#bootcard").hidden) { await until(() => $1("#bootcard").hidden, 120000); await sleep(1500); await until(() => !desk().loading, 90000); }
@@ -2133,6 +2133,15 @@ const MdJourneys = (() => {
 		/* the mutes as they were, and the pattern's kit link (loading another kit links the pattern to it) */
 		for (const t of Array(16).keys()) { const was = c.back0.mutes.includes(t); if (mutes().includes(t) !== was) { cmd("mute", { t, on: was }); await settledMutes(); } }
 		{ const pd = Docs.patterns[c.back0.pat]; if (pd && c.back0.patKit != null && pd.kit !== c.back0.patKit) { cmd("patternKit", { p: c.back0.pat, v: c.back0.patKit, force: true }); await until(() => Docs.patterns[c.back0.pat]?.kit === c.back0.patKit, 6000); await until(idle, 4000); } }
+	};
+	/* what back puts right, then waits for the machine's late answers (a pattern or kit change makes it send the kit and the pattern again, seconds on the firmware, and the page redraws when they come):
+	   the documents the page holds unchanged for 1.2 s */
+	const settled = async () => { let last = "", t0 = performance.now(); const end = t0 + 12000;
+		while (performance.now() < end) { const h = JSON.stringify([currentPatternSlot(), currentKitSlot(), Docs.workingKit, Docs.patterns[currentPatternSlot()], machineState().songMode, mutes()]); if (h !== last || !(idle())) { last = h; t0 = performance.now(); } else if (performance.now() - t0 >= 1200) return; await sleep(100); } };
+	const back = async (u, c) => {
+		if (!c.back0) return;
+		const was = state(); await back1(u, c);
+		if (Journey.stateDiff(was, state())) await settled();
 	};
 	/* a slot the journey is about to overwrite: its content goes to the plug-in's clipboard (kitCopy, patCopy, songCopy) and back() pastes it back.
 	   One slot per kind at a time (the plug-in holds one clipboard of each) */
