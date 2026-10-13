@@ -1072,9 +1072,18 @@ namespace
 		const bool taken = m.read8(0x29f300) == 'K' && m.read8(0x29f301) == 'I' && m.read8(0x29f302) == 'K'
 			&& m.read8(0x29f303) == ' ';
 		check(taken, "the firmware took the name (its last-name buffer, RAM 0x29f300)");
+		// B-128 (0.6 e2e, md-sampler-rename): the slot's own name (patch RAM, what SAMPLE MGR and the page's samples
+		// document show) stays as it was, also seconds later: 0x73 alone names the next sample received, it renames no slot
+		_rig.run(3000);
+		std::string slotName;
+		for(uint32_t i = 0; i < 4; ++i)
+			slotName += static_cast<char>(m.read8(0x700000 + ed::g_mdSampleNamesAddress + 5 * 5 + i));
+		std::printf("  ROM-06's name after 0x73 KIK: '%s'\n", slotName.c_str());
+		check(slotName.compare(0, 3, "KIK") != 0, "0x73 alone leaves the slot's name (B-128: Rename does not rename)");
 		_rig.page(R"({"op":"sampleName","slot":5,"name":"TOOLONG","id":61})");
 		check(_rig.lastResult() && !_rig.lastResult()->find("ok")->asBool(), "a name longer than 4 is refused");
 	}
+
 
 	// P4: the start-up animation holds input; the engine label says so until keys work.
 	void bootHold(const Bytes& _rom, const std::string& _romName)
@@ -2892,6 +2901,40 @@ namespace
 			return d && static_cast<int>(d->find("tracks")->asArray()[13].find("trigs")->asArray().size()) == t14;
 		}, 4000);
 		check(shown, "the page's pattern document shows the erase");
+		// 0.6 e2e (md-song-chain after md-seq-live-erase): a chain made after the erase, stopped, is held
+		rig.page(R"({"op":"chain","patterns":[1,2],"id":9})");
+		check(resultOk(rig), "chain A02 A03 after the erase accepted");
+		const bool chained = rig.runUntil([&] { return chainOf(rig) == std::vector<int>{1, 2}; }, 3000);
+		const auto& ct = rig.telemetry();
+		std::printf("  chain after the erase: known %d active %d, %zu patterns, recording %d playing %d\n", ct.chainKnown, ct.chain.active, ct.chain.patterns.size(), ct.recording, ct.playing);
+		check(chained, "a chain after a live erase is held by the firmware");
+	}
+
+
+	// B-131 (0.6 e2e, md-sound-machine-reference): a CTR machine on a track leaves the firmware's LFO track at 16 (no
+	// track) in the working kit; the desk must take the next edit of that kit
+	void ctrLfoTrack(const Bytes& _rom, const std::string& _romName)
+	{
+		std::puts("ctrlfo: a machine after a CTR machine");
+		Rig rig(_rom, _romName);
+		rig.page(R"({"op":"ready"})");
+		rig.runUntil([&] { return rig.desk().isInputReady() && rig.desk().linkState().pattern && rig.desk().linkState().kit; }, 8000);
+		auto& desk = rig.desk();
+		rig.runUntil([&] { return desk.documents().working.has_value() && !desk.isBusy(); }, 10000);
+		const auto kit = std::to_string(*desk.linkState().kit);
+		const auto pick = [&](const char* _name)
+		{
+			const auto model = *ed::mdMachineModel(_name);
+			rig.page("{\"op\":\"machine\",\"k\":" + kit + ",\"t\":0,\"model\":" + std::to_string(model) + ",\"keepFx\":true}");
+			const bool ok = resultOk(rig);
+			rig.runUntil([&] { return !desk.isBusy(); }, 4000);
+			rig.run(1500);
+			std::printf("  %s: %s, LFO track %d\n", _name, ok ? "accepted" : ed::json::write(*rig.lastResult()).c_str(), desk.documents().working->kit.lfos[0].track);
+			return ok;
+		};
+		check(pick("CTR-AL"), "CTR-AL on track 1 accepted");
+		check(pick("CTR-8P"), "the next machine after CTR-AL accepted (the LFO track the firmware left)");
+		check(pick("TRX-BD"), "and a drum machine after it");
 	}
 
 	// 0.6 MD-140: remove locks while live recording (manual p.48) through the desk: liveErase with i selects the track,
@@ -4962,6 +5005,12 @@ int main(const int _argc, char** _argv)
 			resetNoteMap(rom, romPath);
 			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 			std::printf("mdDeskFirmwareTest factoryglobal: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
+			return g_failures ? 1 : 0;
+		}
+		if(mode == "ctrlfo")
+		{
+			ctrLfoTrack(rom, romPath);
+			std::printf("mdDeskFirmwareTest ctrlfo: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
 			return g_failures ? 1 : 0;
 		}
 		if(mode == "liveerase")

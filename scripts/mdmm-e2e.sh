@@ -55,6 +55,10 @@ PY
 	PIDS=""
 	for M in md mm; do
 		[ "$WHICH" = both ] || [ "$WHICH" = $M ] || continue
+		# the window at the page's design size (1440 x 924, as the page tier and the pictures): the background run's
+		# small window zooms the page below 100 %, where WebKit lays 9 px text out at 15 px (its minimum logical font
+		# size), so every fit check would measure a page no person sees at full size (0.6 e2e: md/mm-screens-fit)
+		GEARMULATOR_MDMM_BACKGROUND_SIZE=${GEARMULATOR_MDMM_BACKGROUND_SIZE:-1440x924} \
 		GEARMULATOR_MDMM_BACKGROUND_METER=1 GEARMULATOR_MDMM_SYX_FILE="$OUT/fixtures/$M.syx" GEARMULATOR_MDMM_WAV_FILE="$OUT/fixtures/e2e.wav" \
 		MDMM_JOURNEY_TIMEOUT=${MDMM_JOURNEY_TIMEOUT:-3600} MDMM_JOURNEY_SETTINGS=fresh MDMM_JOURNEY_E2E=1 MDMM_JOURNEY_OUT="$RUN/$M" \
 			scripts/mdmm-journeys.sh --background --jobs "$JOBS" "$M" "$SEL" > "$OUT/journeys-$M.log" 2>&1 &
@@ -78,8 +82,9 @@ python3 scripts/mdmm-e2e-webp.py "$RAW" "$OUT/shots" | tee "$OUT/shots.size"
 rm -rf "$RAW"
 FW=""; for r in "$HOME/Documents/Gearmulator Preview/Machinedrum/roms/"* "$HOME/Documents/Gearmulator Preview/Monomachine/roms/"*; do FW="$FW $(basename "$r")"; done
 export MDMM_E2E_VERSION=$VERSION MDMM_E2E_COMMIT=$(git rev-parse --short HEAD) MDMM_E2E_FIRMWARE="${GEARMULATOR_MD_FIRMWARE_BIN:+$(basename "$GEARMULATOR_MD_FIRMWARE_BIN") }${GEARMULATOR_MM_FIRMWARE_BIN:+$(basename "$GEARMULATOR_MM_FIRMWARE_BIN")}${FW}"
-ARGS=(--out "$OUT" "${PAGEARGS[@]}")
+ARGS=(--out "$OUT" ${PAGEARGS[@]+"${PAGEARGS[@]}"})
 [ $WRITE = 1 ] && ARGS+=(--write-data)
 FIX=(); [ -d "$OUT/run-fix" ] && FIX=("$OUT/run-fix")
-node scripts/mdmm-e2e.mjs "${ARGS[@]}" "$RUN" "${FIX[@]}"
+# macOS bash 3.2 with set -u: an empty array is "unbound", hence the ${X[@]+...} form
+node scripts/mdmm-e2e.mjs "${ARGS[@]}" "$RUN" ${FIX[@]+"${FIX[@]}"}
 echo "done in $(( $(date +%s) - START )) s"
