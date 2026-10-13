@@ -35,7 +35,9 @@ const MmJourneys = (() => {
 	const midiSent = [];	/* the raw MIDI the keyboard and the joystick sent (op midi), newest last */
 	const polySent = Journey.recent(20);	/* the poly commands ({on, t}), newest last (0.6 wave 9) */
 	const recSent = [];	/* the record commands ({mode, t}), newest last */
+	const noteCmds = Object.assign([], { seq: 0 });	/* the keyboard's noteOn / noteOff commands ({on, t, pitch, vel}), newest last: the firmware run's stand-in for the wire (I-027) */
 	{ const send0 = Bridge.send; Bridge.send = (m, o) => { sent.add(m.op); if (m.op === "noteOn") { notesOn.push(m.pitch); if (notesOn.length > 50) notesOn.shift(); }
+		if (m.op === "noteOn" || m.op === "noteOff") { noteCmds.push({ seq: ++noteCmds.seq, on: m.op === "noteOn" && m.vel > 0, t: m.t, pitch: m.pitch, vel: m.vel || 0 }); if (noteCmds.length > 50) noteCmds.shift(); }
 		if (m.op === "midi") { midiSent.push(m.b); if (midiSent.length > 50) midiSent.shift(); }
 		if (m.op === "record") { recSent.push({ mode: m.mode, t: m.t }); if (recSent.length > 20) recSent.shift(); }
 		if (m.op === "poly") { polySent.add({ on: m.on, t: m.t }); } return send0(m, o); }; }
@@ -1308,10 +1310,10 @@ const MmJourneys = (() => {
 	const uniSubFine = {
 		name: "mm-sound-unison-sub-fine", proves: [],
 		steps: [go("sound"), sel(0),
-			{ say: "SWAVE-SAW on track 1, UNIW 127 UNIL 100 SUB1 90 SUBX 70: each screen's stems are at most 3 px wide", act: async (u, c) => {
+			{ say: "SWAVE-SAW on track 1, UNIW 127 UNIL 100 SUB1 90 SUBX 70 SUB2 80 (every handle above the line measured, whatever the kit held): each screen's stems are at most 3 px wide", act: async (u, c) => {
 				c.m0 = wk().tracks[0].machineName; c.n = 0;
 				if (c.m0 !== "SWAVE-SAW") { c.n++; u.click("#machbtn"); await until(() => !$1("#machpop").hidden, 1500); u.click('#machpop .mf[data-fam="SWAVE"]'); await sleep(50); u.click('#machpop .mk[data-mach="SWAVE-SAW"]'); await until(() => wk().tracks[0].machineName === "SWAVE-SAW", 4000); await sleep(400); }
-				for (const [n, v] of [["UNIW", 127], ["UNIL", 100], ["SUB1", 90], ["SUBX", 70]]) { const q = `#main .pc[data-g="SYN"][aria-label="${n}"]`; if (!$1(q)) continue; const v0 = $1(q + " b")?.textContent; u.click(q, { cmd: true }); await until(() => !!$1("input.vedit"), 1500); $1("input.vedit").value = String(v); u.key("Enter"); await sleep(200); if ($1(q + " b")?.textContent !== v0) c.n++; }
+				for (const [n, v] of [["UNIW", 127], ["UNIL", 100], ["SUB1", 90], ["SUBX", 70], ["SUB2", 80]]) { const q = `#main .pc[data-g="SYN"][aria-label="${n}"]`; if (!$1(q)) continue; const v0 = $1(q + " b")?.textContent; u.click(q, { cmd: true }); await until(() => !!$1("input.vedit"), 1500); $1("input.vedit").value = String(v); u.key("Enter"); await sleep(200); if ($1(q + " b")?.textContent !== v0) c.n++; }
 				await sleep(400); },
 				screen: () => { const a = $1('#main canvas.ed[data-ed="uni"]'), b = $1('#main canvas.ed[data-ed="sub"]'); if (!a || !b) return ok(false, "no UNISON or SUB screen"); const ra = inkRuns(a), rb = inkRuns(b); return ok(ra.n >= 3 && rb.n >= 2 && ra.best <= 3 && rb.best <= 3, `unison ${ra.n} stems, widest ${ra.best} px; sub ${rb.n} stems, widest ${rb.best} px`); } },
 			],
@@ -2568,7 +2570,9 @@ const MmJourneys = (() => {
 	};
 	/* the keys that play: the home row on the selected track's channel, velocity C and V, octave Z and X; the roll's pitch, an octave by drag, a chord, a note gone */
 	const noteWires = n0 => nonSys(n0).filter(w => w.kind === "note").map(w => w.b);
-	const playKey = async (u, k) => { const w0 = wireSeq; blur(); u.key(k); await until(() => noteWires(w0).length >= 2, 2000); await sleep(100); return noteWires(w0); };
+	/* on the firmware (no wire, I-027) the notes are the keyboard's commands, as the core puts them on the track's channel */
+	const playKey = async (u, k) => { if (Journey.noWire()) { const n0 = noteCmds.seq, after = () => noteCmds.filter(m => m.seq > n0); blur(); u.key(k); await until(() => after().length >= 2, 2000); await sleep(100); return after().map(m => m.on ? [0x90 | (baseCh() + m.t), m.pitch, m.vel] : [0x80 | (baseCh() + m.t), m.pitch, 0]); }
+		const w0 = wireSeq; blur(); u.key(k); await until(() => noteWires(w0).length >= 2, 2000); await sleep(100); return noteWires(w0); };
 	const pitchKeys = {
 		name: "mm-seq-pitch-keys", proves: ["MM-028", "MM-034", "MM-074", "MM-077", "MM-173", "MM-174", "MM-176", "MM-348"],
 		steps: [
@@ -2585,7 +2589,7 @@ const MmJourneys = (() => {
 			{ say: "Alt-click the third note: the note is gone", act: async (u, c) => { const p = rollPitch(0, c.steps[2], c.pitches[2]); u.click(p.c, { alt: true }, p.fx, p.fy); await until(() => !bitsOf(0, "trig").includes(c.steps[2]), 4000); },
 				machine: c => ok(!bitsOf(0, "trig").includes(c.steps[2]) && !noteAt(0, c.steps[2]).length, `trig ${bitsOf(0, "trig").includes(c.steps[2])}, notes ${noteAt(0, c.steps[2])}`), within: 8000 },
 			{ say: "V raises the keyboard velocity to 127, C twice brings it to 80: A plays a note on track 1's channel at that velocity, and lets go with its note off", act: async (u, c) => { c.bad = []; const ch = 0x90 | baseCh(), off = 0x80 | baseCh();
-					let w = await playKey(u, "a"); const base = w[0]?.[1]; if (!base) c.bad.push("A: " + JSON.stringify(w)); c.vel0 = w[0]?.[2];
+					let w = await playKey(u, "a"); const base = w[0]?.[1]; if (base == null) c.bad.push("A: " + JSON.stringify(w)); c.vel0 = w[0]?.[2];
 					blur(); u.key("v"); blur(); u.key("v"); w = await playKey(u, "a"); if (!(w[0]?.[0] === ch && w[0][2] === 127 && w[1]?.[0] === off && w[1][1] === w[0][1] && w[1][2] === 0)) c.bad.push("at 127: " + JSON.stringify(w));
 					blur(); u.key("c"); blur(); u.key("c"); w = await playKey(u, "a"); if (!(w[0]?.[0] === ch && w[0][2] === 80)) c.bad.push("at 80: " + JSON.stringify(w)); c.base = base; },
 				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
@@ -2611,7 +2615,7 @@ const MmJourneys = (() => {
 			go("seq"), sel(0),
 			{ say: "the lock lane's picker has the seven data pages in order; each lists that page's own values; LEV is on none of them (it is not lockable)", act: async (u, c) => { c.bad = []; if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); await sleep(200);
 					if (laneTabs().join(" ") !== "SYN AMP FLT EFX LF1 LF2 LF3") c.bad.push("tabs " + laneTabs().join(" "));
-					for (const g of PAGES) { u.click(`[data-lpage="${g}"]`); await sleep(60); const names = $all(".pkcol .pk[data-lane]").map(b => b.textContent.replace(/\d+$/, "")); const want = pnames(0, g).filter(Boolean);
+					for (const g of PAGES) { u.click(`[data-lpage="${g}"]`); await sleep(60); const names = $all(".pkcol .pk[data-lane]").map(b => (b.querySelector(".pkn") || b).textContent.trim());	/* the name, not its lock count (SUB1 keeps its 1) */ const want = pnames(0, g).filter(Boolean);
 						if (names.join(" ") !== want.join(" ")) c.bad.push(`${g}: ${names.join(" ")} (page: ${want.join(" ")})`); if (names.some(n => /^LEV/.test(n))) c.bad.push(g + " lists LEV"); if (S().lanePage !== g || $1(`[data-lpage="${g}"]`).getAttribute("aria-pressed") !== "true") c.bad.push("tab " + g + " not lit"); } },
 				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 },
 			{ say: "lock AMP ATK on three trigs, each drawn at its own height: three different values, the higher the bar the higher the value", act: async (u, c) => { c.n0 = histN(); c.t = [0, 1, 2, 3, 4, 5].find(t => trigsOf(t).length >= 3); u.click(rail(c.t)); await sleep(300); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); await sleep(200);
@@ -2620,10 +2624,12 @@ const MmJourneys = (() => {
 			{ say: "draw the middle step again, higher: only its value changes (edited in the grid afterwards)", act: async (u, c) => { c.before = c.v.map(x => x.slice()); await u.drag(`#lane .lb[data-s="${c.on[1]}"]`, [[0, -1]], {}, { fy: 0.1, settle: 40, stepMs: 10 }); await sleep(500); c.v2 = lockVals(c.t, 1, 0); },
 				machine: c => ok(c.v2.length === 3 && c.v2[1][1] > c.before[1][1] && c.v2[0][1] === c.before[0][1] && c.v2[2][1] === c.before[2][1], `before ${JSON.stringify(c.before)}, after ${JSON.stringify(c.v2)}`), within: 8000 },
 			{ say: "lock parameter after parameter across the tracks until the pattern holds 62: the LCD counts them all (the pool is the pattern's, not a track's)", act: async (u, c) => { c.fill = []; c.tr = new Set();
+					/* the pattern may hold locks already (the firmware's factory patterns do): what is left is spread over at least two tracks */
+					c.start = lockList().length; const cap = Math.max(1, Math.ceil((62 - c.start) / 2));
 					outer: for (let t = 0; t < 6; t++) { if (trigsOf(t).length < 1) continue; let added = 0; u.click(rail(t)); await sleep(150); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); const s = trigsOf(t).find(x => x < S().len); if (s == null) continue;
-						for (const g of PAGES) for (const [i, nm] of pnames(t, g).entries()) { if (!nm) continue; if (lockList().length >= 62) break outer; if (added >= 20) continue; if (lockVals(t, PAGES.indexOf(g), i).length) continue; const n = lockList().length; await drawLock(u, g, i, s, 0.4); if (!await until(() => lockList().length === n + 1, 3000)) { c.fill.push(`T${t + 1} ${g}.${i}: ${lockList().length}`); break outer; } c.tr.add(t); added++; } }
+						for (const g of PAGES) for (const [i, nm] of pnames(t, g).entries()) { if (!nm) continue; if (lockList().length >= 62) break outer; if (added >= cap) continue; if (lockVals(t, PAGES.indexOf(g), i).length) continue; const n = lockList().length; await drawLock(u, g, i, s, 0.4); if (!await until(() => lockList().length === n + 1, 3000)) { c.fill.push(`T${t + 1} ${g}.${i}: ${lockList().length}`); break outer; } c.tr.add(t); added++; } }
 					await sleep(300); c.n = lockList().length; c.lcd = $1("#lockn").textContent; },
-				machine: c => ok(c.n === 62 && !c.fill.length && c.tr.size >= 2, `${c.n} locked parameters on ${c.tr.size} tracks ${c.fill.join(" ")}`), screen: c => ok(c.lcd === "62/62" && $1("#meter").classList.contains("full"), `LCD ${c.lcd}, meter ${$1("#meter").className}`), within: 1000 },
+				machine: c => ok(c.n === 62 && !c.fill.length && c.tr.size >= Math.min(2, 62 - c.start), `${c.n} locked parameters (${c.start} before) on ${c.tr.size} tracks ${c.fill.join(" ")}`), screen: c => ok(c.lcd === "62/62" && $1("#meter").classList.contains("full"), `LCD ${c.lcd}, meter ${$1("#meter").className}`), within: 1000 },
 			{ say: "a 63rd parameter is refused: the machine keeps 62, the page says all are in use", act: async (u, c) => { const t = [0, 1, 2, 3, 4, 5].find(x => trigsOf(x).length && [...PAGES].some(g => pnames(x, g).some((nm, i) => nm && !lockVals(x, PAGES.indexOf(g), i).length))); u.click(rail(t)); await sleep(200); const g = PAGES.find(g => pnames(t, g).some((nm, i) => nm && !lockVals(t, PAGES.indexOf(g), i).length)), i = pnames(t, g).findIndex((nm, i) => nm && !lockVals(t, PAGES.indexOf(g), i).length); c.n1 = lockList().length;
 					await drawLock(u, g, i, trigsOf(t).find(x => x < S().len), 0.4); await sleep(800); },
 				screen: () => ok(/All 62 locked parameters are in use/.test($1("#toast")?.textContent || ""), "toast " + $1("#toast")?.textContent), machine: c => ok(lockList().length === 62 && c.n1 === 62, "locks " + lockList().length), within: 6000 }
@@ -3184,7 +3190,7 @@ const MmJourneys = (() => {
 			{ say: "six delays, one a track: DTIM, DSND, DFB, DBAS and DWID of each track send CC 83 to 87 on that track's channel and move that track's own value", act: async (u, c) => { c.bad = []; c.n = 0; for (let t = 0; t < 6; t++) { u.click(rail(t)); await sleep(250); for (const i of [3, 4, 5, 6, 7]) { const e = checkBox(await nudgeBox(u, t, "EFX", i), t, "EFX", i); if (e) c.bad.push(`T${t + 1}: ${e}`); else c.n++; } } },
 				screen: c => ok(!c.bad.length && c.n === 30, c.bad.slice(0, 3).join(" | ") + ` ${c.n} of 30`), within: 1000 },
 			{ say: "full real-time control: the wheel over a value moves it a step (Shift: ten) and each move is a CC; a drag across the box sends a stream of CCs that climbs with the pointer", act: async (u, c) => { c.bad = []; u.click(rail(0)); await sleep(250); const q = '#main .pc[data-g="AMP"][data-n="2"]'; const v0 = cellOf(0, "AMP", 2); let w0 = wireSeq; u.wheel(q, v0 > 100 ? -1 : 1); await sleep(500); const a = cellOf(0, "AMP", 2); w0 = wireSeq; u.wheel(q, a > 100 ? -1 : 1, { shift: true }); await sleep(500); const b = cellOf(0, "AMP", 2); if (Math.abs(a - v0) !== 1 || Math.abs(b - a) !== 10) c.bad.push(`wheel ${v0} -> ${a} -> ${b}`);
-					const d0 = cellOf(0, "AMP", 2), up = d0 < 80 ? 1 : -1; w0 = wireSeq; await u.drag(q, [[up * 6, 0], [up * 12, 0], [up * 18, 0], [up * 24, 0], [up * 30, 0]]); await sleep(600); const cc = ccsOf(w0).filter(x => x[1] === 58).map(x => x[2]); if (cc.length < 3 || !cc.every((v, k) => k === 0 || (up > 0 ? v >= cc[k - 1] : v <= cc[k - 1])) || cc[cc.length - 1] === cc[0]) c.bad.push("drag CCs " + cc); },
+					const d0 = cellOf(0, "AMP", 2), up = d0 < 80 ? 1 : -1; w0 = wireSeq; await u.drag(q, [[up * 6, 0], [up * 12, 0], [up * 18, 0], [up * 24, 0], [up * 30, 0]]); await sleep(600); const cc = ccsOf(w0).filter(x => x[1] === 58).map(x => x[2]), d1 = cellOf(0, "AMP", 2); if (Journey.noWire()) { if (up > 0 ? d1 <= d0 : d1 >= d0) c.bad.push(`drag: DEC ${d0} -> ${d1}`); } else if (cc.length < 3 || !cc.every((v, k) => k === 0 || (up > 0 ? v >= cc[k - 1] : v <= cc[k - 1])) || cc[cc.length - 1] === cc[0]) c.bad.push("drag CCs " + cc); },
 				screen: c => ok(!c.bad.length, c.bad.join(" | ")), within: 1000 }
 		],
 		async tidy(u, c) { drawBack(c); if (c.n0 != null) await undoTo(u, c.n0);

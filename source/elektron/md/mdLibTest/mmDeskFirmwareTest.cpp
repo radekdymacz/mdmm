@@ -992,6 +992,18 @@ namespace
 		const auto* song = machineDoc.isObject() ? machineDoc.find("song") : nullptr;
 		std::printf("  playing from row %d (page), step %d\n", seen + 1, r.tel.step.load() + 1);
 		check(seen == 2 && playing() && song && song->find("songMode")->asBool(), "it plays song 24 from row 3 in SONG mode, by itself after the question");
+		// 0.6 e2e (mm-song-play-from): from another row while it plays (MIDI Stop, then the song position and Continue)
+		r.msg(R"({"op":"playFrom","i":1})");
+		check(ok(), "play from row 2 while playing: accepted");
+		int fromTwo = -1;
+		for(int i = 0; i < 300 && fromTwo != 1; ++i)
+		{
+			r.run(10);
+			if(playing())
+				fromTwo = pageRow();
+		}
+		std::printf("  from row 2 while playing: row %d, playing %d\n", fromTwo + 1, playing());
+		check(fromTwo == 1 && playing(), "play from row 2 while playing: it plays from row 2");
 
 		// panic while it plays: STOP (twice) with All Notes Off on the track channels
 		r.msg(R"({"op":"panic"})");
