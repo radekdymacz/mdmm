@@ -153,12 +153,12 @@ function genStripHtml() {
 	if (r) {
 		const b = new Set(); for (let s = from; s < to; s++) if (base[s]) b.add(s);
 		const add = r.on.filter(s => !b.has(s)).length, gone = [...b].filter(s => !r.on.includes(s)).length;
-		sum = all ? `every track · steps ${from + 1}–${to}` : `${sp.kind === "euclid" ? genSummary(sp, V.len) + " · " : ""}${r.on.length} on${run ? ` <em>+${add} −${gone}</em>` : ""} · steps ${from + 1}–${to}`;
-	} else if (all) sum = `every track · steps ${from + 1}–${to}`;
+		sum = all ? `every track${gopt(` · steps ${from + 1}–${to}`)}` : `${sp.kind === "euclid" ? gopt(genSummary(sp, V.len) + " · ") : ""}${r.on.length} on${run ? ` <em>+${add} −${gone}</em>` : ""}${gopt(` · steps ${from + 1}–${to}`)}`;
+	} else if (all) sum = `every track${gopt(` · steps ${from + 1}–${to}`)}`;
 	const live = run && run.applied;
 	return `${gtitle("Gen", all ? "all tracks" : `track ${t + 1} · ${codeOf(tr.m, Cat)}`, all, "Generators: every change writes to the pattern at once. A run of changes on this track is one undo step; Undo takes it back in one step. Alt: every track's spec, the whole pattern.")}
   ${mode}${params}
-  <div class="gsum" title="${live ? "What the run changed, against the pattern before it" : "What a change writes"}">${sum}</div>
+  <div class="gsum" title="${live ? "What the run changed, against the pattern before it" : "What a change writes"}: ${plainText(sum)}">${sum}</div>
   <div class="gkeys">${randKey(all ? "Randomise every track: a new variation of each spec, the whole pattern (Alt+R)" : `Randomise track ${t + 1}: a new variation, ${sp.kind === "random" ? "a new seed" : sp.kind === "euclid" ? "random hits and rotation in the cycle" : "nothing while it is set to Keep"} (R). Alt+R or Alt-click: every track`)}${kc("data-gen", "fill", "↺", "Defaults", "Defaults: every track's spec from its machine: kicks 4/16, snares on 2 and 4, hats 8/16, the rest random; MIDI, CTR and inputs kept. Writes this track (Alt: every track)")}</div>`;
 }
 /* the bar again (and the rail's spec tags), without a full render */

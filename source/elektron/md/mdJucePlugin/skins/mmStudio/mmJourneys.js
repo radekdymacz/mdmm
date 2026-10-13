@@ -3392,7 +3392,52 @@ const MmJourneys = (() => {
 	const e2eReal = [realSongs, realPatterns, realSequence];
 
 	const wave12 = [undoKitJ, clearStepLocksJ, lockCurrentJ, patKitJ, songCounterJ, mapPatJ];
-	const all = [...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
+	/* Screen review 2026-10-13 (B-110 and on): the screens the review found cut or overlapped, measured at the page's size
+	   (the page tier runs at 1440 x 924, as the review's pictures). One step per defect found. */
+	const edProblems = () => $all("canvas.ed").filter(c => c.clientWidth && ED[c.dataset.ed]).flatMap(c => Journey.canvasProblems(c, drawEd).map(x => `${c.dataset.ed}: ${x}`));
+	const screensFit = {
+		name: "mm-screens-fit", proves: [],
+		steps: [
+			{ say: "Sequence: the track list's generator tags (E 5/16, R 30%) show whole, inside their row and clear of the M key (B-110)",
+				act: async (u, c) => { await closeLib(u); u.click(tab("seq")); await sleep(400);
+					const rows = $all("#rail .th"), inside = rows.filter(r => { const t = r.querySelector(".gtag"); if (!t) return false; const a = t.getBoundingClientRect(), b = r.getBoundingClientRect(); return a.bottom > b.bottom + 0.5 || a.right > b.right + 0.5; });
+					c.bad = [...Journey.spills("#rail .th .gtag"), ...Journey.overlaps("#rail .th .gtag", "#rail .th .ms, #rail .th .n"), ...inside.map(r => r.textContent.trim().slice(0, 16) + ": tag out of its row")]; c.n = $all("#rail .th .gtag").length; },
+				screen: c => ok(c.n > 0 && !c.bad.length, `${c.n} tags; ${c.bad.slice(0, 4).join(" | ")}`) },
+			{ say: "Perform and Sound: what the drawn panels draw fits them: the multi envelope's caption and the amp envelope's caption clear of the curve and its handles, no handle cut by an edge, no caption past the edge (B-111)",
+				act: async (u, c) => { c.bad = []; c.n = 0;
+					for (const ws of ["perform", "sound"]) { u.click(tab(ws)); await sleep(500); c.n += $all("canvas.ed").filter(x => x.clientWidth).length; for (const x of edProblems()) c.bad.push(ws + " " + x); } },
+				screen: c => ok(c.n > 3 && !c.bad.length, `${c.n} canvases; ${[...new Set(c.bad)].slice(0, 4).join(" | ")}`) },
+			{ say: "the pattern chooser's toolbar: its labels (SLOT A01, KIT) show whole, clear of the keys beside them (B-112)",
+				act: async (u, c) => { await closeLib(u); u.click(tab("seq")); await sleep(300); u.click("#pat"); await sleep(500);
+					c.bad = [...Journey.spills("#libpop .libacts .ilab"), ...Journey.overlaps("#libpop .libacts .ilab", "#libpop .libacts button")]; c.n = $all("#libpop .libacts .ilab").length; await closeLib(u); },
+				screen: c => ok(c.n >= 2 && !c.bad.length, `${c.n} labels; ${c.bad.join(" | ")}`) },
+			{ say: "the kit library: a kit's name of the longest length (11 letters) fits its tile (B-112)",
+				act: async (u, c) => { await closeLib(u); u.click("#kitf"); await sleep(500);
+					const tile = $1("#libpop .ks .lsn"); c.n = $all("#libpop .ks").length; c.bad = [];
+					if (tile) { const probe = tile.cloneNode(false); probe.textContent = "W".repeat(11); tile.after(probe); if (probe.scrollWidth > probe.clientWidth + 0.5) c.bad.push(`11 letters need ${probe.scrollWidth} px, the name's box is ${probe.clientWidth}`); probe.remove(); }
+					await closeLib(u); },
+				screen: c => ok(c.n >= 64 && !c.bad.length, `${c.n} tiles; ${c.bad.join(" | ")}`) }
+			,{ say: "the GEN bar's summary line shows whole at this size: what it writes (8 on) and, when the bar has room, the cycle and the steps (B-114)",
+				act: async (u, c) => { await closeLib(u); u.click(tab("seq")); await sleep(400); const g = $1(".genband"); c.bad = g ? [...Journey.cutText(g), ...Journey.spills(".genband .gsum")] : ["no GEN bar"]; c.text = $1(".genband .gsum")?.textContent.trim(); },
+				screen: c => ok(c.text && !c.bad.length, `"${c.text}" ${c.bad.join(" | ")}`) }
+			,{ say: "the line under the Locks, Arp, Transpose and Trig setup tabs shows whole, and so does each of the four Transpose lines (---, FIX, MAJ, MIN) (B-115)",
+				act: async (u, c) => { await closeLib(u); u.click(tab("seq")); await sleep(300); c.bad = []; c.n = 0;
+					for (const d of ["locks", "arp", "trn", "trig"]) { if (!$1(`[data-dock="${d}"]`)) continue; u.click(`[data-dock="${d}"]`); await sleep(350); c.n++; for (const x of Journey.cutText()) if (/dkhelp|lanehelp/.test(x)) c.bad.push(d + ": " + x); }
+					const line = $1(".dkhelp"); if (line && typeof TRNSHORT !== "undefined") { const keep = line.innerHTML; for (const h of TRNSHORT) { line.innerHTML = h; if (line.scrollWidth > line.clientWidth + 1) c.bad.push(`"${line.textContent.slice(0, 20)}" ${line.scrollWidth - line.clientWidth} px cut`); } line.innerHTML = keep; }
+					if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); },
+				screen: c => ok(c.n >= 3 && !c.bad.length, `${c.n} tabs; ${c.bad.join(" | ")}`) }
+			,{ say: "Song: the Arrangement card's header shows whole: its state and how many rows (B-116)",
+				act: async (u, c) => { await closeLib(u); u.click(tab("song")); await sleep(500); const card = $1(".arrcard header"); c.bad = card ? [...Journey.cutText(card), ...Journey.spills(".arrcard header *")] : ["no Arrangement card"]; c.text = card?.textContent.trim().replace(/\s+/g, " "); u.click(tab("seq")); },
+				screen: c => ok(c.text && !c.bad.length, `"${c.text}" ${c.bad.join(" | ")}`) }
+			,{ say: "a handle at the very edge of a panel (value 0 or 127) is drawn whole: a probe canvas with handles on all four edges (B-117)",
+				act: async (u, c) => { const cv = document.createElement("canvas"); cv.className = "ed"; cv.dataset.ed = "__probe"; cv.style.cssText = "position:fixed;left:10px;top:10px;width:200px;height:100px;opacity:0;pointer-events:none"; document.body.appendChild(cv);
+					ED.__probe = { draw() {}, handles: (W, H) => [{ x: 0, y: 50, k: "L", c: "#000" }, { x: W, y: 50, k: "R", c: "#000" }, { x: W / 2, y: 0, k: "T", c: "#000" }, { x: W / 2, y: H, k: "B", c: "#000" }] };
+					try { c.bad = Journey.canvasProblems(cv, drawEd, { crossing: false }); } finally { delete ED.__probe; cv.remove(); } },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")) }
+		],
+		async tidy(u) { await closeLib(u); u.click(tab("seq")); }
+	};
+	const all = [screensFit, ...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, shiftMutes, routing, panTrim, msOff,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,

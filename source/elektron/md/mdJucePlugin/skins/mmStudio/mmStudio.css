@@ -1489,7 +1489,7 @@ body.engwait #main,body.engwait #rail{pointer-events:none;opacity:.6;transition:
 .libx{height:24px;padding:0 9px;font:600 10px var(--sans);letter-spacing:.14em;text-transform:uppercase}
 .libacts{display:flex;gap:10px 22px;align-items:center;flex-wrap:wrap}
 .libacts .grp{display:flex;gap:4px;align-items:center}
-.libacts .ilab{min-width:0;margin-right:4px;white-space:nowrap}
+.libacts .ilab{min-width:0;margin-right:4px;white-space:nowrap;flex:none}
 .libacts button{height:26px;padding:0 10px;font:600 11px var(--sans);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
 .libacts button:disabled{opacity:.35;cursor:default}
 .libacts .danger:hover:not(:disabled){background:var(--rec);color:#fff}
@@ -1503,7 +1503,8 @@ body.engwait #main,body.engwait #rail{pointer-events:none;opacity:.6;transition:
 .ls .lsh .led{width:5px;height:5px}
 .ls .lsn{font:500 10px var(--mono);white-space:nowrap;overflow:hidden;text-overflow:clip;text-transform:uppercase;height:14px;line-height:14px}
 .ls .lsl{font:9px var(--mono);color:var(--keydim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:11px}
-.ks{height:52px}
+.ks{height:52px;padding:4px 2px}
+.ks .lsn{font-size:9.5px}
 .ps{height:42px;padding:4px 6px;gap:1px}
 .ps b{font:500 13px var(--mono)}
 .ps span{font:10px var(--mono);color:var(--keydim);white-space:nowrap;overflow:hidden}
@@ -2189,7 +2190,7 @@ img,svg,canvas{-webkit-user-drag:none}
 .sndhead .mutband{flex:1 1 auto;margin:0}
 @media (max-width:1400px){.genband{gap:12px;padding-inline:10px}.genbar{gap:10px}.genbar>.genband{padding:0}.gbt{min-width:0}.gbc .seg{gap:9px}.gkeys{gap:7px}.ghint{display:none}.genbar .pgkey{padding:0 7px}}
 @media (max-width:1340px){.genband{gap:8px}.genbar{gap:8px}.gkeys{gap:5px}.gbc{gap:4px}.gbc .seg{gap:6px;margin-right:0}.gbc .seg button{letter-spacing:.06em}.gv{padding:0 6px;min-width:50px}.genbar .pgkey{padding:0 6px}.genbar .ptog{margin-left:0}}
-@media (max-width:1500px){.genband .gwrite~.gsum{display:none}}
+@media (max-width:1500px){.genband .gwrite~.gsum{display:none}.genband .gsum .gopt{display:none}}
 .th .nm.tagged{gap:4px}
 .th .nm .gtag{font:10px var(--pix);font-style:normal;color:var(--ink);background:var(--lcd);padding:0 3px;border-radius:2px;margin-left:auto;flex:none;align-self:center;white-space:nowrap}
 .ws-seq #main>.genbar{flex:none;margin-top:4px}
@@ -2229,9 +2230,11 @@ img,svg,canvas{-webkit-user-drag:none}
 .genbar.fit2 .kc small{letter-spacing:.02em}
 .genbar.fit2 .gkeys{gap:4px}
 .genbar.fit3 .gv small{font-size:8px;letter-spacing:0}
-/* the rail's spec tags: the machine's name comes first, the tag takes what is left (gone under 1380 px) */
+/* the rail's spec tags: the machine's name comes first; the tag, whole, goes beside it when it fits and under it when it
+   does not (B-110: the row holds both lines, a name of nine letters leaves no room beside it; gone under 1380 px) */
+.th .nm.tagged{flex-wrap:wrap;gap:0 4px;align-content:center;height:100%;overflow:visible}
 .th .nm.tagged b{flex:none}
-.th .nm .gtag{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.th .nm .gtag{flex:none;line-height:11px}
 @media (max-width:1380px){.th .nm .gtag{display:none}}
 /* ===== Sound by function (MM-PORT-PLAN e; 90-sound.js renderSound): the Machinedrum Editor's page and layout
    (shared/deskSound.css, shared/deskSoundLayout.js), with what the Monomachine's has more: the head's three keys to
@@ -2653,6 +2656,9 @@ body.erasing .rail .th.sel{box-shadow:inset 0 0 0 2px var(--rec)!important}
 /* Review 1 (Radek, 2026-10-12): the big screens on the Machinedrum MKI's grey (--scr), not the LCD's colour; the top bar's
    LCD and the small LCD chips keep --lcd */
 canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop,.edblank,.timeline,.timeline2{background:var(--scr)}
+
+/* B-116: the Arrangement's key legend (T, M, B) is cut by the card's width under 1700 px: "65 of 200 rows" stays, the keys are in the tooltip */
+@media (max-width:1700px){.arrcard header .note .gopt{display:none}}
 
 /* ===== The real machine's states (not in the mockup) ===== */
 .statusline,.errline{margin:6px 0 0;padding:6px 10px;border-radius:3px;font:12px var(--pix);text-transform:uppercase}

@@ -267,8 +267,6 @@ The paste is one undo step: press {key:undo} to take it back. The window remembe
 
 NOTE: Locks land only on steps that hold a trig. The result line says how many were left out.
 
-![Copy what](shot:md-copy-what)
-
 ## CLEAR TRACK
 <!-- rows: MD-117 @9c11a2 -->
 

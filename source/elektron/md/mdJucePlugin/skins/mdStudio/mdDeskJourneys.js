@@ -2821,7 +2821,39 @@ const MdJourneys = (() => {
 	};
 	const e2eReal = [realSongs, realPatterns, realSequence];
 
-	const all = [...slice5, ...wave12, ...e2eReal, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
+	/* Screen review 2026-10-13 (B-110 and on): the screens the review found cut or overlapped, measured at the page's size
+	   (the page tier runs at 1440 x 924, as the review's pictures) */
+	const closePops = async u => { for (let i = 0; i < 4 && (!$1("#libpop").hidden || !$1("#modalbg").hidden); i++) { if (dlgShown()) u.click(dlgButton("Cancel") || $1("#dlg .danger")); else u.key("Escape"); await sleep(300); } };
+	const screensFit = {
+		name: "md-screens-fit", proves: [],
+		steps: [
+			{ say: "Sequence: the track list's generator tags (E 4/16, E 2/16+4) show whole, inside their row and clear of the M key (B-110)",
+				act: async (u, c) => { await closePops(u); u.click(tab("seq")); await sleep(400);
+					const rows = $all("#rail .th"), out = rows.filter(r => { const t = r.querySelector(".gtag"); if (!t) return false; const a = t.getBoundingClientRect(), b = r.getBoundingClientRect(); return a.bottom > b.bottom + 0.5 || a.right > b.right + 0.5; });
+					c.bad = [...Journey.cutText($1("#rail")), ...Journey.spills("#rail .th .nm, #rail .th .gtag"), ...Journey.overlaps("#rail .th .gtag", "#rail .th .ms, #rail .th .n"), ...out.map(r => r.textContent.trim().slice(0, 16) + ": tag out of its row")]; c.n = $all("#rail .th .gtag").length; },
+				screen: c => ok(c.n > 0 && !c.bad.length, `${c.n} tags; ${c.bad.slice(0, 4).join(" | ")}`) }
+			,{ say: "Sequence: a long name (EMPTY, an empty kit's tracks) leaves no room for the tag: the tag is whole beside it or out of sight, never half (B-113)",
+				act: async (u, c) => { c.bad = []; c.n = 0; for (const row of $all("#rail .th").slice(0, 4)) { const nm = row.querySelector(".nm"), b = nm?.querySelector("b,.nmt") || nm?.firstChild, tag = row.querySelector(".gtag"); if (!tag || !b) continue; c.n++;
+						const keep = b.textContent; b.textContent = "EMPTY"; const t = tag.getBoundingClientRect(), n = nm.getBoundingClientRect(), m = row.querySelector(".ms")?.getBoundingClientRect();
+						const inside = t.right <= n.right + 0.5 && t.bottom <= n.bottom + 0.5 && t.top >= n.top - 0.5, hidden = t.top >= n.bottom - 0.5 || t.left >= n.right - 0.5;
+						if (!inside && !hidden) c.bad.push(`${tag.textContent} beside EMPTY: ${Math.round(t.left)}-${Math.round(t.right)} in ${Math.round(n.left)}-${Math.round(n.right)}`);
+						if (inside && m && t.right > m.left) c.bad.push(`${tag.textContent} under the M key`); b.textContent = keep; } },
+				screen: c => ok(c.n >= 2 && !c.bad.length, `${c.n} rows; ${c.bad.join(" | ")}`) }
+			,{ say: "the GEN bar's summary line shows whole at this size: what it writes (8 on) and, when the bar has room, the cycle and the steps (B-114)",
+				act: async (u, c) => { await closePops(u); u.click(tab("seq")); await sleep(400); const g = $1(".genband"); c.bad = g ? [...Journey.cutText(g), ...Journey.spills(".genband .gsum")] : ["no GEN bar"]; c.text = $1(".genband .gsum")?.textContent.trim(); },
+				screen: c => ok(c.text && !c.bad.length, `"${c.text}" ${c.bad.join(" | ")}`) }
+			,{ say: "Sound, Mix and Sampler: what the drawn panels draw fits them: no handle cut by an edge, no caption past the edge (B-117)",
+				act: async (u, c) => { c.bad = []; c.n = 0; for (const ws of ["sound", "mix", "sampler"]) { u.click(tab(ws)); await sleep(500); const cv = $all("canvas.ed").filter(x => x.clientWidth && ED[x.dataset.ed]); c.n += cv.length; for (const x of cv) for (const p of Journey.canvasProblems(x, drawEd, { crossing: false })) c.bad.push(`${ws} ${x.dataset.ed}: ${p}`); } u.click(tab("seq")); },
+				screen: c => ok(c.n > 5 && !c.bad.length, `${c.n} canvases; ${[...new Set(c.bad)].slice(0, 5).join(" | ")}`) }
+			,{ say: "a handle at the very edge of a panel (value 0 or 127) is drawn whole: a probe canvas with handles on all four edges (B-117)",
+				act: async (u, c) => { const cv = document.createElement("canvas"); cv.className = "ed"; cv.dataset.ed = "__probe"; cv.style.cssText = "position:fixed;left:10px;top:10px;width:200px;height:100px;opacity:0;pointer-events:none"; document.body.appendChild(cv);
+					ED.__probe = { draw() {}, handles: (W, H) => [{ x: 0, y: 50, k: "L", c: "#000" }, { x: W, y: 50, k: "R", c: "#000" }, { x: W / 2, y: 0, k: "T", c: "#000" }, { x: W / 2, y: H, k: "B", c: "#000" }] };
+					try { c.bad = Journey.canvasProblems(cv, drawEd, { crossing: false }); } finally { delete ED.__probe; cv.remove(); } },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")) }
+		],
+		async tidy(u) { await closePops(u); u.click(tab("seq")); }
+	};
+	const all = [screensFit, ...slice5, ...wave12, ...e2eReal, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
 		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
 		genJourney("md-gen-mutate-undo", false, { proves: ["MD-X04", "MD-X05"] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: ["MD-X04"] }), genKeys,
 		shapeSound, typeValue, arrows, machinePick, machAudition, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,

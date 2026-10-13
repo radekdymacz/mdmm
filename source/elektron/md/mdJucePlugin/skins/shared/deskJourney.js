@@ -809,6 +809,72 @@ const Journey = (() => {
 			screen: c => ok(!c.report.length, c.report.slice(0, 6).join(" | ") + (c.report.length > 6 ? ` (+${c.report.length - 6})` : "")), within: 1000 }],
 		async tidy(hands, c) { raiseFloor(0); if (typeof window.gmView === "function") window.gmView(1440, 924); hands.click(`#tabs [data-ws="${c.start || workspaces[0]}"]`); }
 	}];
+	/* Screen review 2026-10-13: what a screen cuts or overlaps, measured.
+	   cutText(root): the visible elements whose words the box cuts (overflow hidden or an ellipsis, and more text than box):
+	   ["<tag.class> "text" 12 px cut", ...]. A drawn caption is no element, so canvasProblems (below) records what a canvas draws. */
+	function cutText(root = document) {
+		const out = [];
+		for (const el of root.querySelectorAll("*")) {
+			if (!el.getClientRects().length || el.closest("[hidden]") || !el.textContent.trim()) continue;
+			const cs = getComputedStyle(el);
+			if (cs.overflowX === "visible" && cs.textOverflow !== "ellipsis") continue;
+			if (cs.overflowX === "auto" || cs.overflowX === "scroll") continue;
+			if ([...el.children].some(k => k.getClientRects().length && getComputedStyle(k).overflowX !== "visible")) continue;
+			const over = el.scrollWidth - el.clientWidth;
+			if (over > 1) out.push(`${describe(el)} "${el.textContent.trim().replace(/\s+/g, " ").slice(0, 40)}" ${over} px cut`);
+		}
+		return out;
+	}
+	/* spills(sel): the visible elements of sel whose words run past their own box, whatever their overflow (a label that a
+	   flex row squeezed narrower than its text writes under its neighbour) */
+	function spills(sel, root = document) {
+		return [...root.querySelectorAll(sel)].filter(el => el.getClientRects().length && el.clientWidth && el.scrollWidth - el.clientWidth > 1)
+			.map(el => `${describe(el)} "${el.textContent.trim().slice(0, 24)}" ${el.scrollWidth - el.clientWidth} px past its box`);
+	}
+	/* Two boxes that share a row and overlap (the part of the first that lies under the second), the keys of a bar and
+	   their labels: [[a, b], ...] for the elements a and b of selectors "A" and "B" that meet by more than 1 px */
+	function overlaps(selA, selB, root = document) {
+		const as = [...root.querySelectorAll(selA)].filter(e => e.getClientRects().length), bs = [...root.querySelectorAll(selB)].filter(e => e.getClientRects().length), out = [];
+		for (const a of as) for (const b of bs) { if (a === b || a.contains(b) || b.contains(a)) continue;
+			const r = a.getBoundingClientRect(), q = b.getBoundingClientRect();
+			if (Math.min(r.right, q.right) - Math.max(r.left, q.left) > 1 && Math.min(r.bottom, q.bottom) - Math.max(r.top, q.top) > 1) out.push(`${describe(a)} "${a.textContent.trim().slice(0, 20)}" under ${describe(b)} "${b.textContent.trim().slice(0, 20)}"`); }
+		return out;
+	}
+	/* A canvas draws its caption and its curve itself, so the problems are read from what it draws: draw(c) is run with a
+	   2d context that records fillText (a caption's box), the dark strokes (a curve, from two px wide up) and the arcs (a
+	   handle), and passes everything on. Problems: a caption past the canvas's edge, a curve through a caption, a handle on
+	   a caption or cut by an edge ({crossing: false}: only the edges). W and H are the canvas's CSS size. */
+	function canvasProblems(c, draw, { crossing = true } = {}) {
+		const real = c.getContext("2d"), W = c.clientWidth, H = c.clientHeight, texts = [], segs = [], dots = [];
+		let path = [], last = null, wide = 1;
+		const rec = new Proxy(real, {
+			get(t, k) {
+				if (k === "fillText") return (s, x, y, ...r) => { texts.push({ s: String(s), x, y, w: t.measureText(String(s)).width }); return t.fillText(s, x, y, ...r); };
+				if (k === "beginPath") return () => { path = []; last = null; return t.beginPath(); };
+				if (k === "moveTo") return (x, y) => { last = [x, y]; return t.moveTo(x, y); };
+				if (k === "lineTo") return (x, y) => { if (last) path.push([last[0], last[1], x, y]); last = [x, y]; return t.lineTo(x, y); };
+				if (k === "arc") return (x, y, r, ...a) => { dots.push({ x, y, r }); return t.arc(x, y, r, ...a); };
+				if (k === "stroke") return (...a) => { if (t.lineWidth >= 2 && t.lineWidth !== 2.5) segs.push(...path); return t.stroke(...a); };
+				const v = t[k]; return typeof v === "function" ? v.bind(t) : v;
+			},
+			set(t, k, v) { t[k] = v; return true; }
+		});
+		const get0 = c.getContext;
+		c.getContext = () => rec;
+		try { draw(c); } finally { c.getContext = get0; }
+		const out = [];
+		for (const t of texts) {
+			if (t.x < 0 || t.x + t.w > W + 0.5) out.push(`"${t.s}" ${Math.round(t.x + t.w - W)} px past the edge`);
+			if (!crossing) continue;
+			const box = { l: t.x - 1, r: t.x + t.w + 1, t: t.y - 10, b: t.y + 2 };
+			for (const [x0, y0, x1, y1] of segs) { const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0)));
+				for (let i = 0; i <= n; i++) { const x = x0 + (x1 - x0) * i / n, y = y0 + (y1 - y0) * i / n;
+					if (x >= box.l && x <= box.r && y >= box.t && y <= box.b) { out.push(`"${t.s}" crossed by the curve at ${Math.round(x)},${Math.round(y)}`); i = n + 1; break; } } if (out.at(-1)?.startsWith(`"${t.s}" crossed`)) break; }
+			for (const d of dots) if (d.x + d.r > box.l && d.x - d.r < box.r && d.y + d.r > box.t && d.y - d.r < box.b) { out.push(`"${t.s}" under a handle at ${Math.round(d.x)},${Math.round(d.y)}`); break; }
+		}
+		for (const d of dots) if (d.x - d.r < -0.5 || d.x + d.r > W + 0.5) out.push(`a handle at ${Math.round(d.x)},${Math.round(d.y)} cut by the edge (canvas ${Math.round(W)} wide)`);
+		return out;
+	}
 	const onScreen = () => document.visibilityState === "visible" ? null : "the editor window is not on screen (display asleep or covered): its canvases are not drawn";
 	/* for needs: real key events through the operating system (u.osKey) exist in the macOS plug-in only */
 	const osKeyPath = () => osKeys() ? null : "no way in for real key events here (the macOS plug-in has one, mdOsKeys.h)";
@@ -936,5 +1002,5 @@ const Journey = (() => {
 				c.n = document.querySelectorAll(".pk[data-lane]").length; },
 				screen: c => ok(c.n > 0 && Object.values(c.cut).every(x => !x), `${c.n} keys; ` + Object.entries(c.cut).map(([w, x]) => `${w}: ${x || "all fit"}`).join("; ")) }]
 	});
-	return { lockKeysCut, lockKeysJourney, pressOutside, modalLockJourney, boxOf, keysInside, run, demo, ok, sleep, until, recent, u, TIERS, tierOf, onScreen, osKeyPath, menu, editorMenuJourney, memoryJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, fitJourneys, snapshot, safari15Diff, viewJourneys };
+	return { cutText, spills, overlaps, canvasProblems, lockKeysCut, lockKeysJourney, pressOutside, modalLockJourney, boxOf, keysInside, run, demo, ok, sleep, until, recent, u, TIERS, tierOf, onScreen, osKeyPath, menu, editorMenuJourney, memoryJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, fitJourneys, snapshot, safari15Diff, viewJourneys };
 })();
