@@ -4,6 +4,15 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-119 · Ableton: the Machinedrum and Monomachine Editors seem to hear each other's MIDI (a Push on a third track)
+
+- **From:** Discord, 2026-10-13.
+- **Setup:** Ableton Live on macOS, a Machinedrum Editor and a Monomachine Editor on two tracks, a Push playing a third track that uses an External Instrument.
+- **What happens (as reported):** notes meant for one editor seem to reach the other as well, as if MIDI crossed between the tracks.
+- **Should:** each plug-in hears only the MIDI its own track routes to it.
+- **Facts needed from the tester:** the editors' version; each track's MIDI From / To and Monitor settings; where the External Instrument sends (which port and channel); whether the cross-talk stays with the Push unplugged or with the External Instrument removed; whether "MIDI out" in either editor is on.
+- **Status:** open, not reproduced; waits for the tester's routing and version.
+
 ## B-118 · Site: the download page shows a "Price" step although the download is free
 
 - **From:** Discord, 2026-10-12.
