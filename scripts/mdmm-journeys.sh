@@ -225,11 +225,15 @@ for H in standalone vst3; do
 			for n in $NAMES; do UNITS="$UNITS $M:$H:$n"; done
 			continue
 		fi
+		# a journey that cannot put back what it changes (alone: true, skins/shared/deskJourney.js) gets an editor of its own; the shards leave it out
+		t=$(tier_of "$H"); ALONE=$(node "$ROOT/scripts/mdmm-page.mjs" --list --tier "${t:-all}" "$(echo $M | tr A-Z a-z)" "$SEL" 2>/dev/null | sed -n 's/^ALONE [a-z]*: //p')
+		eval "EX_${M}_${H}=\"\$ALONE\""
 		k=1
 		while [ $k -le "$JOBS" ]; do
 			UNITS="$UNITS $M:$H:$k"
 			k=$((k + 1))
 		done
+		for n in $ALONE; do UNITS="$UNITS $M:$H:$n"; done
 	done
 done
 [ -n "$UNITS" ] || exit 1
@@ -239,11 +243,15 @@ START=$(date +%s)
 PIDS=""
 for u in $UNITS; do
 	M=${u%%:*}; rest=${u#*:}; H=${rest%%:*}; k=${rest#*:}
-	sel=$SEL; t=$(tier_of "$H"); [ -n "$t" ] && sel="$sel~$t"; [ "$JOBS" -gt 1 ] && sel="$sel@$k/$JOBS"
+	sel=$SEL; t=$(tier_of "$H")
+	ex=$(eval echo "\${EX_${M}_${H}:-}")
+	if [ -n "$ex" ]; then [ "$sel" = journey ] && sel="journey-*"; for n in $ex; do sel="$sel,!$n"; done; fi
+	[ -n "$t" ] && sel="$sel~$t"; [ "$JOBS" -gt 1 ] && sel="$sel@$k/$JOBS"
 	[ -n "$SHUFFLE" ] && sel="$sel:shuffle-$SHUFFLE"
-	[ "$ISOLATE" = 1 ] && sel="journey-$k"
+	NAMED=0; case "$k" in *[!0-9]*) NAMED=1 ;; esac
+	[ "$NAMED" = 1 ] && sel="journey-$k"
 	[ "${MDMM_JOURNEY_E2E:-0}" = 1 ] && sel="$sel:e2e"	# the evidence run: a snapshot at each journey's proof moment (scripts/mdmm-e2e.sh)
-	dir="$OUT/$(echo $M | tr A-Z a-z)-$H$( { [ "$JOBS" -gt 1 ] || [ "$ISOLATE" = 1 ]; } && echo "-$k")"
+	dir="$OUT/$(echo $M | tr A-Z a-z)-$H$( { [ "$JOBS" -gt 1 ] || [ "$NAMED" = 1 ]; } && echo "-$k")"
 	# a free slot: wait on the PIDs started (never on a process name)
 	while [ "$(echo $PIDS | wc -w)" -ge "$JOBS" ]; do
 		sleep 2
@@ -264,11 +272,12 @@ REPORT="$OUT/report.txt"
 passed=0; failed=0; skipped=0
 for u in $UNITS; do
 	M=${u%%:*}; rest=${u#*:}; H=${rest%%:*}; k=${rest#*:}
-	dir="$OUT/$(echo $M | tr A-Z a-z)-$H$( { [ "$JOBS" -gt 1 ] || [ "$ISOLATE" = 1 ]; } && echo "-$k")"
+	NAMED=0; case "$k" in *[!0-9]*) NAMED=1 ;; esac
+	dir="$OUT/$(echo $M | tr A-Z a-z)-$H$( { [ "$JOBS" -gt 1 ] || [ "$NAMED" = 1 ]; } && echo "-$k")"
 	machine_vars "$M"
 	{
 		t=$(tier_of "$H")
-		echo "== $NAME ($H$( [ -n "$t" ] && echo ", $t journeys"))$( [ "$ISOLATE" = 1 ] && echo ", alone" || { [ "$JOBS" -gt 1 ] && echo ", shard $k/$JOBS"; } )"
+		echo "== $NAME ($H$( [ -n "$t" ] && echo ", $t journeys"))$( [ "$NAMED" = 1 ] && echo ", $k alone" || { [ "$JOBS" -gt 1 ] && echo ", shard $k/$JOBS"; } )"
 		if [ -f "$dir/journeys.txt" ]; then
 			if [ "${MDMM_JOURNEY_VERBOSE:-0}" = 1 ]; then cat "$dir/journeys.txt"
 			else grep -E "JOURNEY [^ ]+ (PASS|FAIL|SKIP|before:|left:)|JOURNEYS (start|before|shuffle|DONE)" "$dir/journeys.txt"; fi

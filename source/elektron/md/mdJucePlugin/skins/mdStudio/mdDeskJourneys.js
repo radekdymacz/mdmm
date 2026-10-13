@@ -1200,7 +1200,7 @@ const MdJourneys = (() => {
 			{ say: "add a row (Arrange, pad A01): it is selected", act: async (u, c) => { u.click('[data-set="songpick"] button[data-v="song"]'); await sleep(200); c.r0 = JSON.stringify(songRows()); c.n0 = songRows().length; u.click('[data-addpat="0"]'); await until(() => songRows().length === c.n0 + 1, 4000); c.i = S.songSel; },
 				machine: c => ok(songRows().length === c.n0 + 1 && songRows()[c.i]?.kind === "pattern", "rows " + songRows().length) },
 			{ say: "click Repeat +", act: (u, c) => { c.rep = songRows()[c.i].repeats; u.click('[data-step="rep"][data-d="1"]'); }, machine: c => ok(songRows()[c.i].repeats === c.rep + 1, "repeats " + songRows()[c.i].repeats), screen: c => ok($1('[data-step="rep"][data-d="1"]')?.previousElementSibling?.textContent === String(c.rep + 2), "shows " + $1('[data-step="rep"][data-d="1"]')?.previousElementSibling?.textContent) },
-			{ say: "click More and mute track 1 for the row", act: async u => { u.click("[data-rowmore]"); await sleep(250); u.click('[data-rowmute="0"]'); }, machine: c => ok((songRows()[c.i].mutes || []).includes(0), "mutes " + JSON.stringify(songRows()[c.i].mutes)), screen: () => ok($1('[data-rowmute="0"]')?.classList.contains("off"), "key not off") },
+			{ say: "click More and mute track 1 for the row", act: async u => { if (!$1('[data-rowmute="0"]')) u.click("[data-rowmore]"); await sleep(250); u.click('[data-rowmute="0"]'); }, machine: c => ok((songRows()[c.i].mutes || []).includes(0), "mutes " + JSON.stringify(songRows()[c.i].mutes)), screen: () => ok($1('[data-rowmute="0"]')?.classList.contains("off"), "key not off") },
 			{ say: "click Add loop: a loop row after it", act: async u => { u.click('[data-rowact="loop"]'); await sleep(400); Journey.snapshot("md-song-loop"); }, machine: c => ok(songRows()[c.i + 1]?.kind === "loop", "row " + JSON.stringify(songRows()[c.i + 1])), screen: () => ok($all("#tl .scell.loop").length >= 1, "no loop cell") }
 		],
 		async tidy(u, c) { if (S.songMore && $1("[data-rowmore]")) u.click("[data-rowmore]"); if (c.r0) await undoUntil(u, () => JSON.stringify(songRows()) === c.r0, 8); await back(u, c); }
@@ -1365,7 +1365,9 @@ const MdJourneys = (() => {
 			{ say: "click the first slot four times: K05; the grid shows the kits landing in K05 and K06", act: async u => { for (let i = 0; i < 4; i++) { u.click(syxValue("kit", "place")); await sleep(60); } },
 				screen: () => ok($1(syxValue("kit", "place"))?.textContent === "K05" && !!$1(syxCell("kit:4")) && !!$1(syxCell("kit:5")) && !$1(syxCell("kit:0")) && /from K0[12]/.test($1(syxCell("kit:4"))?.dataset.syxtip || ""),
 					"cells " + $all('#syxpop button[data-syxitem^="kit:"]').map(b => b.dataset.syxitem).join(" ")), within: 4000 },
-			{ say: "leave Kits ticked only, click Import: it asks first (the file's kits land on K05 and on, which hold kits)", act: async (u, c) => { await syxKinds(["kit"])(u); c.names = $all('#syxpop button[data-syxitem^="kit:"]').map(b => [+b.dataset.syxitem.split(":")[1], (b.dataset.syxname || "").trim()]); c.k0 = kitName(0); u.click('#syxpop [data-syxgo="start"]'); },
+			{ say: "leave Kits ticked only, click Import: it asks first (the file's kits land on K05 and on, which hold kits)", act: async (u, c) => { await syxKinds(["kit"])(u); c.names = $all('#syxpop button[data-syxitem^="kit:"]').map(b => [+b.dataset.syxitem.split(":")[1], (b.dataset.syxname || "").trim()]); c.k0 = kitName(0);
+					/* an import has no undo: the two kits it overwrites are kept first (keepTwo) and back() in the tidy puts them back */
+					if (c.names.length !== 2) throw new Error(`${c.names.length} kits in the file: the journey keeps two`); await keepTwo(c, "kit", c.names[0][0], c.names[1][0]); u.click('#syxpop [data-syxgo="start"]'); },
 				screen: c => ok(dlgShown() && /K05/.test($1("#dlg").textContent) && !!dlgButton(`Import ${c.names.length}`), `no question for ${c.names.length} kits: ` + ($1("#dlg").textContent || "").slice(0, 80)) },
 			{ say: "click Import n: sent to K05 and on, read back, reported", act: (u, c) => u.click(dlgButton(`Import ${c.names.length}`)),
 				screen: c => ok(new RegExp(`${c.names.length} imported`).test($1("#syxpop .syxsum")?.textContent || ""), "progress: " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")),
@@ -1378,12 +1380,12 @@ const MdJourneys = (() => {
 				screen: c => ok(new RegExp(`^Verify only: ${c.names.length} of ${c.names.length} the same`).test($1("#syxpop .syxsum")?.textContent || ""), "report " + ($1("#syxpop .syxsum, #syxpop .syxbar span")?.textContent || "")), within: 60000 },
 			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") }
 		],
-		async tidy() { if (dlgShown()) dlgButton("Cancel")?.click(); $1("#syxpop").hidden = true; }
+		async tidy(u, c) { if (dlgShown()) dlgButton("Cancel")?.click(); $1("#syxpop").hidden = true; await back(u, c); }
 	};
 	/* Reset machine… > Empty reset: two questions, then every kit, pattern and song cleared and read back. It empties the
 	   machine: the last journey of all */
 	const resetEmpty = {
-		name: "md-engine-reset-empty", proves: ["MD-203"],
+		name: "md-engine-reset-empty", alone: true, proves: ["MD-203"],
 		steps: [
 			{ say: "choose RESET MACHINE… in the engine menu: what each reset destroys; Cancel is the default", act: u => u.pick("engsel", "reset"),
 				screen: () => ok(dlgShown() && !!dlgButton("Empty reset…") && !!dlgButton("Factory reset…") && !!dlgButton("Export SysEx…") && $1("#dlg .btnrow button:last-child")?.textContent === "Cancel", "the question: " + ($1("#dlg").textContent || "").slice(0, 80)) },
@@ -1634,6 +1636,8 @@ const MdJourneys = (() => {
 			openImport,
 			{ say: "click Import; while it runs press Escape and click outside: the panel stays, one size, Stop and Hide inside it", act: async (u, c) => {
 				c.box = [Journey.boxOf("#syxpop")];
+				/* an import has no undo: the kits and patterns it overwrites (two of each at most) are kept first and back() in the tidy puts them back */
+				await keepImportTargets(c);
 				/* B-102: wholly inside the window (at 1440 x 923 its foot ran past the bottom) */
 				{ const r = $1("#syxpop").getBoundingClientRect(); c.inWindow = r.top >= 0 && r.left >= 0 && r.bottom <= innerHeight + 0.5 && r.right <= innerWidth + 0.5; c.win = `${innerWidth}x${innerHeight}`; }
 				u.click('#syxpop [data-syxgo="start"]'); c.ran = await until(() => $1("#syxpop").classList.contains("syx-running"), 3000);
@@ -1650,7 +1654,7 @@ const MdJourneys = (() => {
 			{ say: "wait for the report: the same size; click Done", act: async (u, c) => { await until(() => $1("#syxpop").classList.contains("syx-report"), 120000); c.box.push(Journey.boxOf("#syxpop")); u.click('#syxpop [data-syxgo="close"]'); },
 				screen: c => ok($1("#syxpop").hidden && new Set(c.box).size === 1, "open " + !$1("#syxpop").hidden + ", boxes " + c.box.join(" | ")), within: 130000 }
 		],
-		async tidy(u) { if (!$1("#syxpop").hidden && !$1("#syxpop").dataset.busy) u.key("Escape"); }
+		async tidy(u, c) { if (!$1("#syxpop").hidden && !$1("#syxpop").dataset.busy) u.key("Escape"); await back(u, c); }
 	};
 	/* Radek's 0.6 review 1 (2026-10-12) as snapshots (scripts/mdmm-snap.py): the MKI light plate's Sequence and Sound,
 	   GLOBAL as a modal */
@@ -2107,7 +2111,7 @@ const MdJourneys = (() => {
 	/* Every journey is independent (doc/modern-ux/JOURNEYS.md): the runner notes where the page stood when it began (begin: c.undo0, c.mode0,
 	   c.pat0, c.chain0) and a tidy that changed any of it calls back(u, c), which puts the editor's modes and its undo history back:
 	   the transport stopped, the edits undone, PATTERN or SONG mode as found, the pattern the machine was on, no chain. */
-	const begin = c => { c.undo0 = V.undoCount; c.mode0 = V.songMode; c.pat0 = currentPatternSlot(); c.kit0 = currentKitSlot(); c.chain0 = !!desk().chain?.active; };
+	const begin = c => { c.undo0 = V.undoCount; c.mode0 = V.songMode; c.pat0 = currentPatternSlot(); c.kit0 = currentKitSlot(); c.kitw0 = machineState().kit?.working; c.chain0 = !!desk().chain?.active; };
 	const back = async (u, c) => {
 		if (V.rec) { u.click("#rec"); await sleep(300); }
 		if (V.playing) { u.click("#play"); await until(() => !V.playing, 3000); }
@@ -2116,12 +2120,20 @@ const MdJourneys = (() => {
 		if (c.mode0 != null && V.songMode !== c.mode0) { cmd("seqMode", { song: c.mode0 }); await until(() => V.songMode === c.mode0 && machineState().songMode === c.mode0, 4000); await sleep(300); }
 		if (c.pat0 != null && currentPatternSlot() !== c.pat0) { cmd("select", { p: c.pat0, now: true }); await until(() => currentPatternSlot() === c.pat0, 6000); await until(idle, 4000); }
 		if (c.kit0 != null && currentKitSlot() !== c.kit0) { cmd("kitLoad", { k: c.kit0, force: true }); await until(() => currentKitSlot() === c.kit0, 6000); await until(idle, 4000); }
+		/* a kit edited and undone holds the same sounds, but the machine still calls it edited: saved again, it is the kit it was */
+		if (c.kitw0 === "clean" && machineState().kit?.working !== "clean") { cmd("saveKit", { force: true }); await until(() => machineState().kit?.working === "clean", 8000); await until(idle, 4000); }
 		/* a slot the journey overwrote (kept with keep(c, "kit", k) before it did): pasted back from the plug-in's clipboard */
 		for (const [kind, slot] of c.kept || []) { cmd(kind === "kit" ? "kitPaste" : kind === "pattern" ? "patPaste" : "songPaste", kind === "song" ? { s: slot, force: true } : kind === "kit" ? { k: slot, force: true } : { p: slot, force: true }); await until(idle, 6000); await sleep(300); }
 	};
 	/* a slot the journey is about to overwrite: its content goes to the plug-in's clipboard (kitCopy, patCopy, songCopy) and back() pastes it back.
 	   One slot per kind at a time (the plug-in holds one clipboard of each) */
 	const keep = async (c, kind, slot) => { cmd(kind === "kit" ? "kitCopy" : kind === "pattern" ? "patCopy" : "songCopy", kind === "song" ? { s: slot } : kind === "kit" ? { k: slot } : { p: slot }); await until(idle, 6000); await sleep(200); (c.kept = c.kept || []).push([kind, slot]); };
+	/* two slots to be overwritten (an import has no undo): the first goes to the clipboard, the second is overwritten by a copy of the first (an undo
+	   step that holds the second's content: back() undoes it, then pastes the first back) */
+	const keepTwo = async (c, kind, a, b) => { await keep(c, kind, a); cmd(kind === "kit" ? "kitCopyTo" : "patCopyTo", { from: a, to: b, force: true }); await until(idle, 6000); await sleep(300); };
+	/* the kits and patterns an import panel's preview lists (its cells "kit:N", "pattern:N"), kept: two of a kind at most */
+	const keepImportTargets = async c => { const it = $all('#syxpop button[data-syxitem]').map(b => b.dataset.syxitem.split(":"));
+		for (const kind of ["kit", "pattern"]) { const slots = it.filter(([k]) => k === kind).map(([, n]) => +n); if (slots.length > 2) throw new Error(`${slots.length} ${kind}s in the file: the journey keeps two`); if (slots.length === 2) await keepTwo(c, kind, slots[0], slots[1]); else if (slots.length === 1) await keep(c, kind, slots[0]); } };
 	/* the machines of Appendix A and the knobs the manual lists for each (from the feature data's rows) */
 	const MACHINE_KNOBS = new Map([
 		[["TRX-BD"], "PTCH DEC RAMP RDEC STRT NOIS HARM CLIP"],
@@ -2256,7 +2268,7 @@ const MdJourneys = (() => {
 			{ say: "choose none in both: the relations go", act: u => { u.choose("#mg", ""); u.choose("#tg", ""); },
 				machine: c => ok(kit().tracks[c.t].muteGroup == null && kit().tracks[c.t].trigGroup == null, `kit trig ${kit().tracks[c.t].trigGroup}, mute ${kit().tracks[c.t].muteGroup}`), within: 6000 }
 		],
-		async tidy(u, c) { if (c.n0 != null) await undoTo(u, c.n0); }
+		async tidy(u, c) { await back(u, c); }
 	};
 	/* MD-048, MD-053: a machine kept with its effects and routing or not; clear a machine and undo */
 	const keepFxJ = {
@@ -2445,7 +2457,7 @@ const MdJourneys = (() => {
 				machine: () => ok(Object.keys(Docs.songs).length === 32 && songRows().length >= 1 && Docs.songs[currentSongSlot()].rows.slice(-1)[0].kind === "end", "songs " + Object.keys(Docs.songs).length) },
 			{ say: "add a row (pad A01): the bar counter on the LCD goes up", act: async (u, c) => { c.b0 = +($1("#lcd2").innerText.match(/BARS\s*(\d+)/)?.[1]); c.n0 = songRows().length; u.click('[data-addpat="0"]'); await until(() => songRows().length === c.n0 + 1, 4000); c.i = S.songSel; await sleep(300); },
 				screen: c => { const b = +($1("#lcd2").innerText.match(/BARS\s*(\d+)/)?.[1]); return ok(b === Math.round(songSteps() / 16) && b > c.b0, `BARS ${b} (was ${c.b0}), rows give ${Math.round(songSteps() / 16)}`); }, machine: c => ok(songRows().length === c.n0 + 1, "rows " + songRows().length) },
-			{ say: "click More, then Start + and Length −: the row plays part of its pattern", act: async (u, c) => { u.click("[data-rowmore]"); await sleep(250); c.s0 = songRows()[c.i].start; c.e0 = songRows()[c.i].end; u.click('[data-step="ofs"][data-d="1"]'); await until(() => songRows()[c.i].start === c.s0 + 1, 4000); u.click('[data-step="len"][data-d="-1"]'); },
+			{ say: "click More, then Start + and Length −: the row plays part of its pattern", act: async (u, c) => { if (!$1('[data-step="ofs"]')) u.click("[data-rowmore]"); await sleep(250); c.s0 = songRows()[c.i].start; c.e0 = songRows()[c.i].end; u.click('[data-step="ofs"][data-d="1"]'); await until(() => songRows()[c.i].start === c.s0 + 1, 4000); u.click('[data-step="len"][data-d="-1"]'); },
 				machine: c => ok(songRows()[c.i].start === c.s0 + 1 && songRows()[c.i].end < c.e0 + 1 && songRows()[c.i].end - songRows()[c.i].start < c.e0 - c.s0, `rows[${c.i}] ${songRows()[c.i].start}-${songRows()[c.i].end}, was ${c.s0}-${c.e0}`), screen: () => ok(!!$1(".partbar .on"), "no part bar"), within: 8000 },
 			{ say: "click Add loop, then JUMP: the row is a jump", act: async (u, c) => { u.click('[data-rowact="loop"]'); await until(() => songRows()[c.i + 1]?.kind === "loop", 4000); u.click('[data-set="loopkind"] button[data-v="jump"]'); },
 				machine: c => ok(songRows()[c.i + 1]?.kind === "jump", "row " + JSON.stringify(songRows()[c.i + 1])), screen: () => ok($1('[data-set="loopkind"] button[data-v="jump"]')?.getAttribute("aria-pressed") === "true", "JUMP not pressed"), within: 6000 },
@@ -3457,7 +3469,7 @@ const MdJourneys = (() => {
 	const hash = x => JSON.stringify(x) || "";
 	function state() {
 		const o = { "pattern slot": currentPatternSlot(), "kit slot": currentKitSlot(), "song slot": currentSongSlot(), "song mode": machineState().songMode, playing: !!V.playing, recording: !!V.rec,
-			mutes: mutes().join(), solo: [...S.soloSet].join(), chain: JSON.stringify(desk().chain || null), global: hash(Docs.global), "working kit": hash(Docs.workingKit && { slot: Docs.workingKit.slot, doc: Docs.workingKit.doc }) };
+			mutes: mutes().join(), solo: [...S.soloSet].join(), chain: JSON.stringify(desk().chain || null), global: hash(Docs.global), "working kit": hash(Docs.workingKit && { slot: Docs.workingKit.slot, doc: Docs.workingKit.doc }), "kit state": machineState().kit?.working };
 		for (const [k, v] of Object.entries(Docs.patterns)) o["pattern " + k] = hash(v);
 		for (const [k, v] of Object.entries(Docs.kits)) o["kit " + k] = hash(v);
 		for (const [k, v] of Object.entries(Docs.songs)) o["song " + k] = hash(v);

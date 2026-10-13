@@ -7,9 +7,10 @@
      screen   (c) => true, or what was seen instead: what the page shows afterwards
      machine  (c) => true, or what was seen instead: what the plug-in's documents (the firmware's read-back) say
      within   how long the two may take to agree (ms, default 6000)
-   A journey is {name, proves, steps, tidy, boot, needs}: proves (read by scripts/mdmm-features-check.mjs, never by the runner) lists the feature rows it proves, ["MD-107"]; [] for a journey of the page itself (boot, focus, layout, screenshots); needs (optional) () => why it cannot run here, or null (it is then
+   A journey is {name, proves, steps, tidy, boot, needs, alone}: proves (read by scripts/mdmm-features-check.mjs, never by the runner) lists the feature rows it proves, ["MD-107"]; [] for a journey of the page itself (boot, focus, layout, screenshots); needs (optional) () => why it cannot run here, or null (it is then
    logged "JOURNEY <name> SKIP <why>", neither passed nor failed); tidy (async, optional) puts back what the steps changed and runs pass or
-   fail; boot: true runs it from the page's start, before the machine takes input (the start-up card).
+   fail; boot: true runs it from the page's start, before the machine takes input (the start-up card); alone: true says its change cannot be
+   put back (the product has no undo for it: an empty reset): the runners (scripts/mdmm-page.mjs, mdmm-journeys.sh) start it in an editor of its own, and in one page it plays last.
    One runner (Journey.run) plays them in order, logs a line per step, then "JOURNEY <name> PASS|FAIL <reason>"
    and at the end "JOURNEYS DONE <passed>/<run>". The editors' pages pass their journeys and a ready test
    (mdDeskJourneys.js, mmJourneys.js). Chosen by ?selftest=journey (all) or journey-<names>: comma-separated,
@@ -292,12 +293,17 @@ const Journey = (() => {
 		const tier = kind.match(/~([a-z+]+)$/);
 		if (tier) kind = kind.slice(0, tier.index);
 		/* the order first, then the shard: n editors sharing one seed play the same order, each its share */
-		const take = list => { if (tier) list = list.filter(j => inTier(j, tier[1])); if (shuffleSeed != null) list = shuffled(list, shuffleSeed); return shard ? list.filter((_, i) => i % +shard[2] === +shard[1] - 1) : list; };
+		const take = list => { if (tier) list = list.filter(j => inTier(j, tier[1])); if (shuffleSeed != null) list = shuffled(list, shuffleSeed);
+			/* a journey that cannot put back what it changes (alone: true) plays last: nothing after it meets the damage */
+			list = [...list.filter(j => !j.alone), ...list.filter(j => j.alone)]; return shard ? list.filter((_, i) => i % +shard[2] === +shard[1] - 1) : list; };
 		if (kind === what) return take(all);
-		const pats = kind.slice(what.length).replace(/^-/, "").split(",").filter(Boolean).map(p => new RegExp("^" + p.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") + "$"));
+		/* "!name" in the list leaves those out (journey-*,!md-lib-syx-place: all but that one) */
+		const words = kind.slice(what.length).replace(/^-/, "").split(",").filter(Boolean);
+		const rx = p => new RegExp("^" + p.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") + "$");
+		const pats = words.filter(p => !p.startsWith("!")).map(rx), nots = words.filter(p => p.startsWith("!")).map(p => rx(p.slice(1)));
 		/* a name matches whole, or without its "demo-" and its "md-"/"mm-" (demo-md-groove: md-groove, groove) */
 		const forms = n => { const bare = n.replace(new RegExp(`^${what}-`), ""); return [n, bare, bare.replace(/^(md|mm)-/, "")]; };
-		return take(all.filter(j => pats.some(r => forms(j.name).some(f => r.test(f)))));
+		return take(all.filter(j => pats.some(r => forms(j.name).some(f => r.test(f))) && !nots.some(r => forms(j.name).some(f => r.test(f)))));
 	}
 	/* film: {t0} when a demo is filmed (its steps' times are logged against t0) */
 	/* The evidence run's watch (":e2e"): what a person must never read on the page, looked for after each step in the toast, the
@@ -396,7 +402,7 @@ const Journey = (() => {
 		const log = page.log; runLog = log; hooks = page;
 		log(`JOURNEYS start: ${list.length} of ${all.length}: ${list.map(j => j.name).join(" ")}`);
 		if (shuffleSeed != null) log(`JOURNEYS shuffle seed ${shuffleSeed}`);
-		if (listMode) { log(`JOURNEYS list: ${list.map(j => j.name).join(" ")}`); log("JOURNEYS DONE 0/0 (list)"); return; }
+		if (listMode) { log(`JOURNEYS list: ${list.map(j => j.name).join(" ")}`); log(`JOURNEYS alone: ${list.filter(j => j.alone).map(j => j.name).join(" ")}`); log("JOURNEYS DONE 0/0 (list)"); return; }
 		if (!list.length) { log("JOURNEYS DONE 0/0"); return; }
 		let passed = 0, skipped = 0;
 		const count = r => { if (r === "skip") skipped++; else if (r) passed++; };
@@ -416,7 +422,7 @@ const Journey = (() => {
 			const was = page.state ? safeState(page) : null;
 			const r = await runOne(j, log, page.context);
 			/* the guard's other half: what this journey left changed (its tidy was to put it back), said by the journey's name */
-			if (was && r !== "skip") { const now = safeState(page), diff = stateDiff(was, now); if (diff) log(`JOURNEY ${j.name} left: ${diff}`); }
+			if (was && r !== "skip") { const now = safeState(page), diff = stateDiff(was, now); if (diff) log(`JOURNEY ${j.name} ${j.alone ? "alone, left" : "left"}: ${diff}`); }
 			count(r); fix = !r;	/* false: failed; "skip" and true: it changed nothing or passed */
 			if (r === "skip") fix = false;
 		}

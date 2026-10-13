@@ -238,12 +238,21 @@ if (opt.list) {
 	/* no host, no timing: just the names (the list unit needs only the page) */
 	const ls = await Promise.all(eds.map(ed => runUnit(ed, sel + tierSel + shufSel + ":list", path.join(OUT, `${ed}-list`))));
 	ws.close(); chrome.kill(); server.close();
-	for (const l of ls) console.log(`LIST ${l.ed}: ${(l.lines.find(x => /^JOURNEYS list: /.test(x)) || "").replace(/^JOURNEYS list: ?/, "")}`);
+	for (const l of ls) { console.log(`LIST ${l.ed}: ${(l.lines.find(x => /^JOURNEYS list: /.test(x)) || "").replace(/^JOURNEYS list: ?/, "")}`);
+		console.log(`ALONE ${l.ed}: ${(l.lines.find(x => /^JOURNEYS alone: /.test(x)) || "").replace(/^JOURNEYS alone: ?/, "")}`); }
 	process.exit(0);
 }
 if (!opt.isolate) {
+	/* a journey that cannot put back what it changes (alone: true, deskJourney.js) gets a page of its own: the shards leave it out */
+	const aloneOf = {};
+	await Promise.all(eds.map(async ed => { const l = await runUnit(ed, sel + tierSel + ":list", path.join(OUT, `${ed}-list`));
+		aloneOf[ed] = ((l.lines.find(x => /^JOURNEYS alone: /.test(x)) || "").replace(/^JOURNEYS alone: ?/, "")).split(" ").filter(Boolean); }));
 	const units = [];
-	for (const ed of eds) for (let k = 1; k <= opt.jobs; k++) units.push(runUnit(ed, sel + tierSel + (opt.jobs > 1 ? `@${k}/${opt.jobs}` : "") + shufSel, path.join(OUT, `${ed}${opt.jobs > 1 ? "-" + k : ""}`)));
+	for (const ed of eds) {
+		const excl = aloneOf[ed].map(n => ",!" + n).join(""), base = excl && sel === "journey" ? "journey-*" : sel;
+		for (let k = 1; k <= opt.jobs; k++) units.push(runUnit(ed, base + excl + tierSel + (opt.jobs > 1 ? `@${k}/${opt.jobs}` : "") + shufSel, path.join(OUT, `${ed}${opt.jobs > 1 ? "-" + k : ""}`)));
+		for (const n of aloneOf[ed]) units.push(runUnit(ed, "journey-" + n, path.join(OUT, `${ed}-alone`, n)));
+	}
 	results = await Promise.all(units);
 } else {
 	/* the names first (":list": nothing runs), then each in a unit of its own, opt.jobs at once per editor, in the shuffled order when asked */
