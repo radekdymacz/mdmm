@@ -1274,6 +1274,53 @@ namespace mmDesk
 			return _k;
 		}
 
+		// revertTrack {k, t}: track t (0-11) of the kit that plays goes back to how the kit's slot stores it (the Sound
+		// page's Revert track), one change of the working kit. A synth track: its machine and seven pages, level, outputs
+		// and input, its assign rows and its bits of the kit's masks (JOY mirror, key tracking, portamento, legato), and
+		// the track it forwards its notes to. A MIDI track: its MIDI page. What the kit shares between tracks (the multi
+		// envelope, MULTI TRIG) stays; the slot itself is not touched.
+		std::optional<MmKit> revertTrack(MmKit _k, const In& _in)
+		{
+			const int t = _in.a.integer("t");
+			const auto it = _in.docs.kits.find(_k.position);
+			if(it == _in.docs.kits.end())
+			{
+				_in.a.error("kit " + std::to_string(_k.position + 1) + " is not read from its slot yet");
+				return {};
+			}
+			const auto& s = it->second;
+			const auto tr = trackOf(t);
+			const size_t k = tr.t;
+			if(tr.midi)
+				_k.tracks[k].midi = s.tracks[k].midi;
+			else
+			{
+				_k.machines[k] = s.machines[k];
+				_k.tracks[k].pages = s.tracks[k].pages;
+				_k.levels[k] = s.levels[k];
+				_k.routing[k] = s.routing[k];
+				const auto bus = [](const MmKit& _m) { return static_cast<unsigned>((_m.x1cd[1] << 8) | _m.x1cd[2]); };
+				const auto mine = static_cast<unsigned>(3u << (2 * k));
+				const auto word = (bus(_k) & ~mine) | (bus(s) & mine);
+				_k.x1cd[1] = static_cast<uint8_t>(word >> 8);
+				_k.x1cd[2] = static_cast<uint8_t>(word & 0xff);
+				_k.assignPage[k] = s.assignPage[k];
+				_k.assignDest[k] = s.assignDest[k];
+				_k.assignAdd[k] = s.assignAdd[k];
+				_k.trigPos[k] = s.trigPos[k];
+				const auto bit = [k](uint8_t& _mine, const uint8_t _stored) { _mine = static_cast<uint8_t>((_mine & ~(1u << k)) | (_stored & (1u << k))); };
+				bit(_k.mirrorMask, s.mirrorMask);
+				bit(_k.lpfMask, s.lpfMask);
+				bit(_k.hpfMask, s.hpfMask);
+				bit(_k.portamentoMask, s.portamentoMask);
+				bit(_k.legatoAmp, s.legatoAmp);
+				bit(_k.legatoFilter, s.legatoFilter);
+				bit(_k.legatoLfo, s.legatoLfo);
+			}
+			_in.note = trackName(t) + " is back as kit " + std::to_string(_k.position + 1) + " stores it";
+			return _k;
+		}
+
 		// Many kit values at once (MUTATE, a screen's handle, Control All): [[t, page, i, v]...], as param's.
 		std::optional<MmKit> params(MmKit _k, const In& _in)
 		{
@@ -1401,7 +1448,7 @@ namespace mmDesk
 		{
 			static const Edits<MmKit> edits{{"level", level}, {"route", route}, {"input", input}, {"param", param},
 				{"trigPos", trigPos}, {"legato", legato}, {"portamento", portamento}, {"machine", machine}, {"clearSound", clearSound},
-				{"copySound", copySound}, {"pasteSound", pasteSound}, {"params", params}, {"assign", assign}, {"multiEnv", multiEnv},
+				{"copySound", copySound}, {"pasteSound", pasteSound}, {"revertTrack", revertTrack}, {"params", params}, {"assign", assign}, {"multiEnv", multiEnv},
 				{"multiTrig", multiTrig}, {"kitName", kitName}};
 			return edits;
 		}

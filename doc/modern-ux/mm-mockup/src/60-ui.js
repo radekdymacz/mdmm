@@ -152,7 +152,8 @@ function syncControls(){
    if(mb.length){if(!md){md=document.createElement("i");md.className="mod";el.appendChild(md)}md.textContent="~"+mb.join("");el.title=`Modulated by LFO ${mb.join(" + ")}`}else if(md)md.remove();
    const mp=S.ctl.links.filter(l=>l.t===t&&l.pid===pid);el.classList.toggle("mapped",mp.length>0)}});
  $$("#main [data-show]").forEach(el=>{const t=+el.dataset.show;el.textContent=trk(t).lev});
- if(typeof syncDock==="function")syncDock()}
+ if(typeof syncDock==="function")syncDock();
+ if(typeof syncRevert==="function")syncRevert()}
 
 /* ===== Key-style dropdowns (from the MD Editor) ===== */
 let kFor=null;

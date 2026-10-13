@@ -98,8 +98,20 @@ The machine has no such function. **MUTATE** in the **GEN** bar nudges the sound
 
 To mutate and roll together, pick a drum track on the **Sequence** workspace and click **Random** in the **GEN** bar until the rhythm changes. Then click the **Sound** tab and **Random** in **MUTATE**. Click **UNDO** once: the sound is back. Click it again: the rhythm is back.
 
+## REVERT TRACK
+<!-- rows: MD-X25 @8f52bc -->
+
+When you play with a sound, **Revert track** puts the selected track back as the kit's slot stores it. It restores the machine, every value, the level, the LFO and the two relations of that track. The other tracks, the master effects and the kit name stay as they are. The kit library's **Reload** loads the whole kit again. **Revert track** does one track.
+
+1. Click the **Sound** tab and pick a track on the rail.
+2. Turn a few knobs. **Revert track** turns on.
+3. Click **Revert track**. The values are the stored ones, and the key is off again.
+4. Press {key:undo}. Your edits are back, and the key is on.
+
+**Revert track** is off while the track is as stored. Saving the kit makes the saved sound the stored one.
+
 ## SOLO
-<!-- rows: MD-X06 @3a9a39 -->
+<!-- rows: MD-X06 @1198c3 -->
 
 Solo plays one track alone. The mutes you had come back when you let go.
 
@@ -109,6 +121,8 @@ Solo plays one track alone. The mutes you had come back when you let go.
 2. Drag across the **M** keys of four tracks. All four are muted.
 3. Click **S** on another track. That track plays alone.
 4. Click **S** again. The solo ends, and the four mutes are still set.
+
+The solo is saved with the project, in the DAW and in the standalone editor. Open the project again and the solo is on, the other tracks are muted, and the mutes you had before the solo come back when you end it.
 
 ## UNDO AND REDO
 <!-- rows: MD-X07 @4bfdaf -->

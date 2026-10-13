@@ -3,6 +3,13 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-029 · A quick way back to the original sound while you play with the Sound page
+
+- **From:** Radek, 2026-10-13 ("when you play with the Sound page, a way to quickly restore the original settings").
+- **Today:** the kit library's **Reload** loads the whole kit again from its slot (bug B-122 notes it). Nothing puts back one track.
+- **Built on `feat/0.6-revert-solo`, both editors:** **Revert track** beside the machine key on the Sound page (no new row). It puts the selected track back as the kit's slot stores it, in one undo step: the Machinedrum's machine, its 24 values, level, LFO and the two relations; the Monomachine's machine, seven pages, level, outputs and input, assign rows, key tracking, portamento and legato bits and where it forwards its notes (a MIDI track: its MIDI page). Other tracks, the master effects, the multi envelope and the name stay. The key is on only while the track differs from the slot (Reload = the whole kit, this = one track). Core command `revertTrack {k, t}`.
+- **Status:** built, not merged.
+
 ## I-028 · A lamp beside each track name that shows which track is playing
 
 - **From:** Discord, 2026-10-12 ("blinkers next to the track names on the pattern and sound pages, to see where sounds come from"); the same need as a per-track meter in Mix (later: per-track audio is not a cheap tap).

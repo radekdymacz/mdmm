@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-123 · Solo is lost when the project is saved and opened again
+
+- **From:** Radek, 2026-10-13.
+- **What happens:** solo is the page's idea (it mutes every other track on the machine, and the page keeps which tracks are soloed and the mutes you had). The machine's mutes were saved with the project, the solo and your own mutes were not: a reopened project showed the other tracks muted with no solo on, and the mutes you had before the solo were gone.
+- **Fixed on `feat/0.6-revert-solo`, both editors:** the solo (and your mutes) travel with the editor's setup in the plug-in state (the standalone's state too) and come back when the project loads: the page shows the solo, the machine's mutes match it. A project with no solo opens with none. Core command `soloSet`, message `solo`.
+- **Status:** fixed, not merged.
+
 ## B-122 · "Reset to the pattern often loads another pattern"
 
 - **From:** Discord, 2026-10-12 (in a feature request, below; the editor and host not named).

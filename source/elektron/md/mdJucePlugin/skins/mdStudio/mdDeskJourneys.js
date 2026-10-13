@@ -737,6 +737,29 @@ const MdJourneys = (() => {
 		],
 		async tidy(u, c) { if (c.b != null && S.soloSet.has(c.b)) u.click(`.strip[data-sel="${c.b}"] .ms.s`); for (const i of c.run || []) if (mutes().includes(i) && !c.m0.includes(i)) { u.click(`.strip[data-sel="${i}"] .ms.m`); await sleep(150); } }
 	};
+	/* B-123, MD-X06: the solo is kept with the project: after the machine restarts (the page drops its solo) and the plug-in
+	   says it again (the page made again: ready), the solo is back, the other tracks are muted, and the mute the person
+	   had before it comes back when the solo ends */
+	const soloSaved = {
+		name: "md-mix-solo-saved", proves: ["MD-X06"],
+		steps: [
+			go("mix"),
+			{ say: "mute a track with its M key, solo another with its S key", act: async (u, c) => {
+				c.m0 = mutes(); const keep = soloKeep(); const free = [...Array(16).keys()].filter(i => !c.m0.includes(i) && !keep.has(i));
+				if (free.length < 2) throw new Error("no two unmuted tracks"); c.m = free[0]; c.b = free[1];
+				u.click(`.strip[data-sel="${c.m}"] .ms.m`); await settledMutes(); u.click(`.strip[data-sel="${c.b}"] .ms.s`); await settledMutes(); },
+				screen: c => ok(pressed(`.strip[data-sel="${c.b}"] .ms.s`) && pressed(`.strip[data-sel="${c.m}"] .ms.m`), "keys not lit"),
+				machine: c => { const keep = soloKeep(), want = [...Array(16).keys()].filter(i => i !== c.b && !keep.has(i)); return ok(want.every(i => mutes().includes(i)) && !mutes().includes(c.b), "machine mutes " + mutes()); }, within: 8000 },
+			{ say: "the machine starts over (the page drops its solo) and the page is made again: the solo comes back", act: async (u, c) => {
+				window.gm.recv([{ type: "reset" }]); await until(() => !S.soloSet.size, 2000); c.dropped = !S.soloSet.size; Bridge.ready(); await until(() => S.soloSet.has(c.b), 6000); await settledMutes(); },
+				screen: c => ok(c.dropped && S.soloSet.has(c.b) && S.soloSet.size === 1 && pressed(`.strip[data-sel="${c.b}"] .ms.s`) && pressed(`.strip[data-sel="${c.m}"] .ms.m`), `solo ${[...S.soloSet]}, dropped ${c.dropped}`),
+				machine: c => { const keep = soloKeep(), want = [...Array(16).keys()].filter(i => i !== c.b && !keep.has(i)); return ok(want.every(i => mutes().includes(i)) && !mutes().includes(c.b), "machine mutes " + mutes()); }, within: 10000 },
+			{ say: "click S again: the solo ends and the mute you had stays", act: async (u, c) => { u.click(`.strip[data-sel="${c.b}"] .ms.s`); await settledMutes(); },
+				screen: c => ok(!S.soloSet.size && pressed(`.strip[data-sel="${c.m}"] .ms.m`) && !pressed(`.strip[data-sel="${c.b}"] .ms.m`), `solo ${[...S.soloSet]}`),
+				machine: c => ok(same(mutes(), sorted([...new Set([...c.m0, c.m])])), "machine mutes " + mutes()), within: 8000 }
+		],
+		async tidy(u, c) { if (c.b != null && S.soloSet.has(c.b)) u.click(`.strip[data-sel="${c.b}"] .ms.s`); await sleep(200); if (c.m != null && mutes().includes(c.m) && !c.m0.includes(c.m)) { u.click(`.strip[data-sel="${c.m}"] .ms.m`); await sleep(200); } }
+	};
 	const shiftMutes = {
 		name: "md-mix-shift-mutes", proves: ["MD-123"],
 		steps: [
@@ -2063,6 +2086,23 @@ const MdJourneys = (() => {
 			esc
 		]
 	};
+	/* MD-X25: Revert track on the Sound page: the track goes back as the kit's slot stores it, one undo step */
+	const revertTrackJ = {
+		name: "md-sound-revert-track", proves: ["MD-X25"],
+		steps: [
+			go("sound"), sel(() => soundTrack()),
+			{ say: "the Revert track key is there and off: the track is as its slot stores it",
+				screen: () => ok(!!$1("#revert") && $1("#revert").disabled && /stores it/.test($1("#revert").title), "key " + $1("#revert")?.disabled + " " + $1("#revert")?.title) },
+			{ say: "drag a value of the track: the key turns on", act: async (u, c) => { c.k = V.kit; c.stored = JSON.stringify(Docs.kits[c.k].tracks[c.t]); const el = $1('#main .pc[data-g="syn"]'); c.n = el.dataset.n; c.i = pidx(c.t, c.n, "syn"); c.v0 = kitVals(c.t)[c.i]; c.o = allKitVals(); await nudge(u, el, c.v0); await until(idle, 5000); c.v1 = kitVals(c.t)[c.i]; c.u0 = V.undoCount; },
+				screen: () => ok(!$1("#revert").disabled, "key still off"), machine: c => ok(c.v1 !== c.v0 && JSON.stringify(Docs.kits[c.k].tracks[c.t]) === c.stored, `value ${c.v0} -> ${kitVals(c.t)[c.i]}`), within: 6000 },
+			{ say: "click Revert track: the value is the slot's, the slot is untouched, the key is off, one undo step more", act: u => u.click("#revert"),
+				screen: () => ok($1("#revert").disabled, "key still on"),
+				machine: c => ok(kitVals(c.t)[c.i] === c.v0 && same(allKitVals(), c.o) && JSON.stringify(Docs.kits[c.k].tracks[c.t]) === c.stored && V.undoCount === c.u0 + 1, `value ${kitVals(c.t)[c.i]} for ${c.v0}, undo steps ${V.undoCount} for ${c.u0 + 1}`), within: 6000 },
+			{ say: "press Cmd+Z once: the edit is back and the key is on again", act: u => u.key("z", { cmd: true }),
+				screen: () => ok(!$1("#revert").disabled, "key off"), machine: c => ok(kitVals(c.t)[c.i] === c.v1, `value ${kitVals(c.t)[c.i]} for ${c.v1}`), within: 6000 }
+		],
+		async tidy(u, c) { blur(); u.key("z", { cmd: true }); await until(() => kitVals(c.t)[c.i] === c.v0, 6000); }
+	};
 	/* MD-035: the quick start: load a kit, trig a track, play */
 	const quickJ = {
 		name: "md-quick-start", proves: ["MD-035"],
@@ -2711,7 +2751,7 @@ const MdJourneys = (() => {
 		tidy: songPlayheadTidy
 	};
 	const wave12 = [clipsJ, undoKitJ, stopQueuedJ, lenRepeatJ, songRepeatsJ];
-	const slice5 = [modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, kitNameSave, songCommands, playModeJ, pageLeds, railLamps, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
+	const slice5 = [modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, revertTrackJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, kitNameSave, songCommands, playModeJ, pageLeds, railLamps, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
 	/* ---------- the end-to-end pass: factory content as a person uses it (scripts/mdmm-e2e.sh, doc/release/E2E.md) ---------- */
 	/* What the machine plays, as the page can see it: the transport and the step from the telemetry, the song row, the output's
 	   peaks (the plug-in's outputLevel, every 250 ms, since the last one). Not silent where sound is the point. */
@@ -2873,7 +2913,7 @@ const MdJourneys = (() => {
 		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
 		genJourney("md-gen-mutate-undo", false, { proves: ["MD-X04", "MD-X05"] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: ["MD-X04"] }), genKeys,
 		shapeSound, typeValue, arrows, machinePick, machAudition, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,
-		mixSolo, shiftMutes, allOff, fader, lev, outKey, masterFx,
+		mixSolo, soloSaved, shiftMutes, allOff, fader, lev, outKey, masterFx,
 		songArrange, songChain, songPlayhead, songSlots, songKeys, shotsSongSlots, samplerSlots, samplerSetup, audition,
 		libDialog, kitCopy, kitRename, kitClear, patGo, patClear, dialogEsc,
 		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, noteLights, audioPanel, romCard, notePlay,

@@ -1507,12 +1507,20 @@
 <ol class="gd-steps"><li>Click the <b class="gd-ui">Sound</b> tab and pick a track on the rail.</li><li>In <b class="gd-ui">MUTATE</b>, switch the <b class="gd-ui">FX</b> chip on and the <b class="gd-ui">SYN</b> chip off. Only the effects move.</li><li>Raise the amount by one step.</li><li>Click <b class="gd-ui">Random</b>. The effect values of the track change and the synth values stay.</li><li>Press <kbd class="gd-key">[⌘]</kbd> <kbd class="gd-key">[Z]</kbd>. The sound is as it was.</li></ol>
 <p>To mutate and roll together, pick a drum track on the <b class="gd-ui">Sequence</b> workspace and click <b class="gd-ui">Random</b> in the <b class="gd-ui">GEN</b> bar until the rhythm changes. Then click the <b class="gd-ui">Sound</b> tab and <b class="gd-ui">Random</b> in <b class="gd-ui">MUTATE</b>. Click <b class="gd-ui">UNDO</b> once: the sound is back. Click it again: the rhythm is back.</p>
 </div></section>
+<section class="gd-sec" id="revert-track">
+<aside class="gd-margin"></aside>
+<div class="gd-body gd-prose"><h2>REVERT TRACK</h2>
+<p>When you play with a sound, <b class="gd-ui">Revert track</b> puts the selected track back as the kit's slot stores it. It restores the machine, every value, the level, the LFO and the two relations of that track. The other tracks, the master effects and the kit name stay as they are. The kit library's <b class="gd-ui">Reload</b> loads the whole kit again. <b class="gd-ui">Revert track</b> does one track.</p>
+<ol class="gd-steps"><li>Click the <b class="gd-ui">Sound</b> tab and pick a track on the rail.</li><li>Turn a few knobs. <b class="gd-ui">Revert track</b> turns on.</li><li>Click <b class="gd-ui">Revert track</b>. The values are the stored ones, and the key is off again.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd>. Your edits are back, and the key is on.</li></ol>
+<p><b class="gd-ui">Revert track</b> is off while the track is as stored. Saving the kit makes the saved sound the stored one.</p>
+</div></section>
 <section class="gd-sec" id="solo">
 <aside class="gd-margin"></aside>
 <div class="gd-body gd-prose"><h2>SOLO</h2>
 <p>Solo plays one track alone. The mutes you had come back when you let go.</p>
 <figure class="gd-shot"><img src="/guide/shots/e2e-md-mix-mute-solo.webp" width="1440" height="923" alt="The Mix workspace with some tracks muted and one soloed"><figcaption>The Mix workspace with some tracks muted and one soloed</figcaption></figure>
 <ol class="gd-steps"><li>Click the <b class="gd-ui">Mix</b> tab.</li><li>Drag across the <b class="gd-ui">M</b> keys of four tracks. All four are muted.</li><li>Click <b class="gd-ui">S</b> on another track. That track plays alone.</li><li>Click <b class="gd-ui">S</b> again. The solo ends, and the four mutes are still set.</li></ol>
+<p>The solo is saved with the project, in the DAW and in the standalone editor. Open the project again and the solo is on, the other tracks are muted, and the mutes you had before the solo come back when you end it.</p>
 </div></section>
 <section class="gd-sec" id="undo-and-redo">
 <aside class="gd-margin"></aside>

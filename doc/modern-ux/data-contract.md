@@ -475,6 +475,19 @@ a project without it starts from the default setup. The page changes the knob ro
 with `{"op":"knobs","ccs":[8 numbers]}` and the modulators with `modSet`. It is not
 machine data: a real Machinedrum never sees it.
 
+The page's solo (B-123) is part of the setup too, for both editors: the page says
+`{"op":"soloSet","tracks":[...],"mutes":[...]}` whenever its solo or, while one holds, the
+mutes the person set change (the machine only has mutes; a solo is the page's idea, which
+mutes every other track). The desk keeps it as the setup's `solo` member
+(`deskCore/deskSolo.h`; the Monomachine beside its modulators) and the host stores it with
+the rest. It is not echoed: the desk says `{"type":"solo","tracks","mutes"}` when a project
+is restored, after a `reset` and when a page is made (`ready`), and the page takes it as
+its solo and mutes, then makes the machine's mutes match.
+
+`revertTrack {k, t}` (a working-kit edit, both editors) puts track `t` of the kit that
+plays back as the kit's stored slot has it, in one undo step (the Sound page's Revert
+track; the kit library's Reload is the whole kit).
+
 The UI must not show `edited` and "project not saved" as one flag. Two different things can be unsaved:
 
 | State | Meaning | Lost by |

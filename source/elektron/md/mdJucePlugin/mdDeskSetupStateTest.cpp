@@ -5,6 +5,7 @@
 #include "mdPluginProcessor.h"
 #include "mdDeskHost.h"
 #include "mdPageEditor.h"
+#include "mdDeskSession.h"
 
 #include "jucePluginEditorLib/pluginEditorState.h"
 
@@ -33,9 +34,81 @@ namespace
 	}
 }
 
+namespace
+{
+	using Value = elektronData::json::Value;
+
+	// B-123: the page's solo (and the mutes the person had before it) are saved with the project and come back, in
+	// either editor: the page says soloSet, the setup in the plug-in state holds it, a new instance restores it and
+	// tells its page ({"type":"solo"}); a project saved without a solo starts without one.
+	void soloState(const md::MachineModel _model, const char* _name)
+	{
+		std::printf("%s: solo saved with the project\n", _name);
+		const auto say = [](mdJucePlugin::DeskSession& _s, const char* _json) { _s.onPageMessage(*elektronData::json::parse(_json)); };
+		const auto solo = [](const std::vector<Value>& _page) -> const Value*
+		{
+			for(auto it = _page.rbegin(); it != _page.rend(); ++it)
+				if(const auto* t = it->find("type"); t && t->isString() && t->asString() == "solo")
+					return &*it;
+			return nullptr;
+		};
+		const auto list = [](const Value* _m, const char* _key)
+		{
+			std::vector<int> out;
+			if(_m)
+				for(const auto& v : _m->find(_key)->asArray())
+					out.push_back(static_cast<int>(v.asNumber()));
+			return out;
+		};
+		juce::MemoryBlock withSolo, without;
+		std::string setupText;
+		{
+			mdJucePlugin::AudioPluginAudioProcessor a(_model, isolated());
+			juce::AudioProcessor& ja = a;
+			auto* session = a.getDeskHost()->session();
+			check(session != nullptr, "the session exists without a ROM");
+			if(!session)
+				return;
+			std::vector<Value> page;
+			session->attach([&page](const Value& _m) { page.push_back(_m); });
+			say(*session, R"({"op":"ready"})");
+			say(*session, R"({"op":"soloSet","id":1,"tracks":[4,1],"mutes":[0,7]})");
+			setupText = a.getDeskHost()->setup();
+			check(setupText.find("\"solo\"") != std::string::npos, "soloSet: the solo is in the setup the project keeps");
+			ja.getStateInformation(withSolo);
+			say(*session, R"({"op":"soloSet","id":2,"tracks":[],"mutes":[]})");
+			check(a.getDeskHost()->setup().find("\"solo\"") == std::string::npos, "no solo: the setup keeps none");
+			// (without a ROM an untouched instance saves nothing: the project without the solo is the one just saved, given back, saved again)
+			ja.getStateInformation(without);
+			session->detach();
+		}
+		check(!withSolo.isEmpty() && !without.isEmpty() && withSolo != without, "both projects are saved, one with the solo");
+		mdJucePlugin::AudioPluginAudioProcessor b(_model, isolated());
+		juce::AudioProcessor& jb = b;
+		jb.setStateInformation(withSolo.getData(), static_cast<int>(withSolo.getSize()));
+		check(b.getDeskHost()->setup() == setupText, "the setup, solo included, comes back with the project, byte for byte");
+		auto* session = b.getDeskHost()->session();
+		std::vector<Value> page;
+		session->attach([&page](const Value& _m) { page.push_back(_m); });
+		say(*session, R"({"op":"ready"})");
+		session->step();
+		say(*session, R"({"op":"ready"})");
+		check(list(solo(page), "tracks") == std::vector<int>{1, 4} && list(solo(page), "mutes") == std::vector<int>{0, 7},
+			"the restored project says its solo and mutes to the page");
+		page.clear();
+		jb.setStateInformation(without.getData(), static_cast<int>(without.getSize()));
+		session->step();
+		say(*session, R"({"op":"ready"})");
+		check(solo(page) && list(solo(page), "tracks").empty() && list(solo(page), "mutes").empty(), "a project saved without a solo starts without one");
+		session->detach();
+	}
+}
+
 int main()
 {
 	juce::ScopedJuceInitialiser_GUI juce;
+	soloState(md::MachineModel::Machinedrum, "Machinedrum");
+	soloState(md::MachineModel::Monomachine, "Monomachine");
 	const std::string setup = R"({"schema":"md-desk/setup","version":1,"modulators":{"schema":"md-desk/modulators","version":1,)"
 		R"("sources":[{"id":"lfo1","label":"LFO A","kind":"lfo","shape":2,"rate":"1/4","depth":80,"smooth":30}],)"
 		R"("links":[{"source":"lfo1","track":3,"param":12,"min":5,"max":90,"curve":"exp","invert":true}]},"knobCcs":[30,31,32,33,34,35,36,37]})";

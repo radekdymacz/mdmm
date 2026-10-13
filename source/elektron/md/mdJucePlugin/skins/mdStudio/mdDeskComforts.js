@@ -129,7 +129,7 @@ function pasteToMany(from) {
 function unmuteAll() {
 	if (!V.tracks.some(t => t.mute || t.solo)) { toast("No track is muted or soloed."); return; }
 	S.soloSet = new Set(); S.userMutes = new Set(); V = view();
-	applySolo();
+	applySolo(); sendSolo();
 	refreshAudible();
 }
 document.addEventListener("click", e => { if (e.target.closest("#allon")) unmuteAll(); });
