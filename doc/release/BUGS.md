@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-111 · Monomachine: a curve and its handles lie over the panel's caption, and a handle is cut by the panel's edge
+
+- **From:** screen review, 2026-10-13 (about 25 of the 97 flagged defects: the MULTI ENVELOPE caption "ADSR OVER ALL TRACKS" struck through on every Perform picture; the delay filter's right handle; the amp envelope's caption under its first handle).
+- **What happens:** the multi envelope's plot starts 18 px from its top, the same height as the caption, so the curve (REL 127 holds the sustain level at the top) runs through the caption and the first handle sits on its first letter. The amp envelope does the same with its peak. A handle at the very edge of a panel (the delay filter's upper edge at DBAS + DWID = 127) was drawn half outside the canvas.
+- **Fix (`fix/0.6-screens`):** the two plots start 28 and 30 px from the top; every handle is drawn wholly inside its canvas (the drag still reaches the edge). Page journey `mm-screens-fit` draws every panel of Perform and Sound into a recording canvas context and checks the caption's box against the curve's strokes and the handles' circles and the canvas's edges.
+- **Status:** fixed on `fix/0.6-screens`.
+
 ## B-110 · Monomachine: the generator tag in the track list is cut off
 
 - **From:** screen review, 2026-10-13 (the 0.6 e2e pictures: about 35 of the 97 flagged defects are this one, on every Sequence picture of the Monomachine).
