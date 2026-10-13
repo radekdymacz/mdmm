@@ -2234,12 +2234,12 @@ img,svg,canvas{-webkit-user-drag:none}
 .genbar.fit2 .kc small{letter-spacing:.02em}
 .genbar.fit2 .gkeys{gap:4px}
 .genbar.fit3 .gv small{font-size:8px;letter-spacing:0}
-/* the rail's spec tags: the machine's name comes first; the tag, whole, goes beside it when it fits and under it when it
-   does not (B-110: the row holds both lines, a name of nine letters leaves no room beside it; gone under 1380 px) */
-.th .nm.tagged{flex-wrap:wrap;gap:0 4px;align-content:center;height:100%;overflow:visible}
-/* the name's line as tall as its text: the name and the tag under it fit the row also where WebKit raises 9 px text to 15 px (a page zoomed below 100 %, 0.6 e2e) */
+/* the rail's spec tags (0.6 review 2): the machine's name has the row; the tag sits on the same line, right-aligned
+   before M/S, only when the row is wide enough for both (else it is in the name's tooltip and the GEN bar) */
+.th .nm.tagged{container-type:inline-size;flex-wrap:nowrap;gap:0 4px;align-items:center;height:100%;overflow:hidden}
 .th .nm.tagged b{flex:none;line-height:1}
-.th .nm .gtag{flex:none;line-height:11px}
+.th .nm .gtag{flex:none;margin-left:auto;line-height:11px;opacity:.75}
+@container (max-width:118px){.th .nm .gtag{display:none}}
 @media (max-width:1380px){.th .nm .gtag{display:none}}
 /* ===== Sound by function (MM-PORT-PLAN e; 90-sound.js renderSound): the Machinedrum Editor's page and layout
    (shared/deskSound.css, shared/deskSoundLayout.js), with what the Monomachine's has more: the head's three keys to

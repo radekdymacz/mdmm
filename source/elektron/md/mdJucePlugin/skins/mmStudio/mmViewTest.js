@@ -61,7 +61,7 @@ function page() {
 	const src = FILES.map(f => fs.readFileSync(f, "utf8").replace(/^"use strict";/, "") + (/mmAdapter/.test(f) ? hold : "")).join("\n;\n")
 		+ "\n;__start();\nreturn { S: () => S, Overlay, MmView, docStore, storeDoc, MM_SEAM, Dlg, Banner, mockup: { " +
 			"mutApply, genLive, genEnd, setMachine, songAction, secAction, setSel, clearSel, selCut, selDuplicate, selTrigs, selMark, selMove, selGrow, stepMenuItems, Keys, HOST, " +
-			"rollAdd, rollLen, rollRemove, editSpan, setRollDraw, setRollLen, selMoveTo, selClear, rollBoxed, noteSpans, vis } };";
+			"rollAdd, rollLen, rollRemove, editSpan, setRollLen, selMoveTo, selClear, noteSpans, vis } };";
 	const out = new Function("scope", "with (scope) {\n" + src + "\n}")(scope);
 	const run = () => { for (let n = 0; timers.length && n < 10000; n++) timers.shift()(); };
 	run();
@@ -399,9 +399,6 @@ const result = (m, ok = true, errors = []) => ({ type: "result", id: m.id, op: m
 	const w = M.noteSpans(0).find(x => x.s === 14);
 	check(w && w.e === 16 && w.wrap === 2, "a note on step 15 of 16 with a NOTE OFF on step 3: drawn to the end and on at the start (two steps), as the machine plays it");
 	put(0, { 14: null, 2: null });
-	/* the box and the move */
-	check(JSON.stringify(M.rollBoxed(0, { s0: 3, s1: 5, n0: 49, n1: 51 })) === "[4]" && !M.rollBoxed(0, { s0: 9, s1: 12, n0: 49, n1: 51 }).length,
-		"a box takes the notes with a pitch in its rows and a gate in its steps");
 	M.setSel({ t: 0, n: 1, from: 4, to: 9 }); take();
 	M.selMoveTo(10);
 	o = take();
@@ -421,11 +418,9 @@ const result = (m, ok = true, errors = []) => ({ type: "result", id: m.id, op: m
 	r = M.rollLen(6, 0, 24); M.editSpan(6, new Set([0, ...r.touched]), r.lock);
 	o = take();
 	check(r.L === 16 && o.length === 1, "longer than the pattern's 16 steps on a one-note track: up to where it comes round (16 steps)");
-	/* B on Sequence toggles Draw; elsewhere it taps */
-	const b = M.Keys.byId("roll-draw"), tap = M.Keys.byId("tap-tempo");
-	check(b && b.keys[0] === "B" && b.scope === "seq" && tap && tap.keys[0] === "B", "B: Draw on Sequence, tap tempo elsewhere");
-	M.setRollDraw(false);
-	check(S.rollDraw === false, "setRollDraw switches it"); M.setRollDraw(true);
+	/* the roll has no Draw key; B taps the tempo on every workspace */
+	const tap = M.Keys.byId("tap-tempo");
+	check(!M.Keys.byId("roll-draw") && !M.Keys.byId("roll-box") && tap && tap.keys[0] === "B", "no Draw key; B taps the tempo");
 }
 
 /* ---- K7 (DESIGN-step-selection.md §7): selected steps send the core's block intents, as the Machinedrum page does ---- */

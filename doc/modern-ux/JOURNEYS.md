@@ -90,8 +90,8 @@ no journey yet); **not testable** (why). "—": the editor has no such feature.
 |---|---|---|
 | Trigs / notes by click (MM: piano roll) | md-seq-first-beat PASS | mm-seq-first-beat PASS |
 | Drag-paint steps, one undo step (MM: the roll: a new note dragged sideways paints, Alt-drag erases, 2026-10-05; slide and swing on a selection from the step menu, one undo step, 2026-10-12) | md-seq-paint-undo PASS | mm-seq-slide-swing PASS, mm-seq-roll-paint PASS (paint, erase, each one undo step) |
-| Piano roll note length (I-010, 0.5 slice 3): Draw at 1/16, a note and its NOTE OFF; the Len key at 1/8, a note two steps long; a note's end dragged to the next note (its NOTE OFF goes, Len 3/16); undo | — | mm-roll-draw-length PASS (2026-10-10) |
-| Piano roll Draw off (I-007, slice 3): B, a box round a note selects it with its NOTE OFF, a drag moves both, Delete, B again, undo | — | mm-roll-box-move PASS (2026-10-10; the first run found a 1/16 note on narrow columns pressed as its end: the end zone is now at most a third of the bar) |
+| Piano roll note length (I-010, 0.5 slice 3): a note at 1/16 and its NOTE OFF; the Len key at 1/8, a note two steps long; a note's end dragged to the next note (its NOTE OFF goes, Len 3/16); undo | — | mm-roll-draw-length PASS (2026-10-10) |
+| The roll always draws (0.6 review 2; no Draw mode): click adds, a note's end lengthens it, its body moves it (sideways) or changes its pitch (up, down), on a note with a swing mark; nothing stays selected; ⌘-drag selects | — | mm-roll-simple (page tier) |
 | A MIDI note's length is its LEN, 6 a step (slice 3, measured): a 1/16 note is LEN 6, its end dragged to three steps locks LEN 18 | — | mm-roll-midi-len PASS (2026-10-10) |
 | Accent (Shift-click), slide (Alt-click) | md-seq-accent-slide PASS | — (MM: Slide under the roll, above) |
 | Trig types: Trig · Accent · Swing · Slide (MD, with All tracks · This track), Esc back (wave 3). MM since 2026-10-12: no trig type row; slide, swing and the envelopes are in the step menu, marks on the notes | md-seq-trig-types PASS | mm-seq-slide-swing PASS, mm-seq-env-trigs PASS |
