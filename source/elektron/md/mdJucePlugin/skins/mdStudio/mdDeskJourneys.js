@@ -2832,6 +2832,13 @@ const MdJourneys = (() => {
 					const rows = $all("#rail .th"), out = rows.filter(r => { const t = r.querySelector(".gtag"); if (!t) return false; const a = t.getBoundingClientRect(), b = r.getBoundingClientRect(); return a.bottom > b.bottom + 0.5 || a.right > b.right + 0.5; });
 					c.bad = [...Journey.cutText($1("#rail")), ...Journey.spills("#rail .th .nm, #rail .th .gtag"), ...Journey.overlaps("#rail .th .gtag", "#rail .th .ms, #rail .th .n"), ...out.map(r => r.textContent.trim().slice(0, 16) + ": tag out of its row")]; c.n = $all("#rail .th .gtag").length; },
 				screen: c => ok(c.n > 0 && !c.bad.length, `${c.n} tags; ${c.bad.slice(0, 4).join(" | ")}`) }
+			,{ say: "Sequence: a long name (EMPTY, an empty kit's tracks) leaves no room for the tag: the tag is whole beside it or out of sight, never half (B-113)",
+				act: async (u, c) => { c.bad = []; c.n = 0; for (const row of $all("#rail .th").slice(0, 4)) { const nm = row.querySelector(".nm"), b = nm?.querySelector("b,.nmt") || nm?.firstChild, tag = row.querySelector(".gtag"); if (!tag || !b) continue; c.n++;
+						const keep = b.textContent; b.textContent = "EMPTY"; const t = tag.getBoundingClientRect(), n = nm.getBoundingClientRect(), m = row.querySelector(".ms")?.getBoundingClientRect();
+						const inside = t.right <= n.right + 0.5 && t.bottom <= n.bottom + 0.5 && t.top >= n.top - 0.5, hidden = t.top >= n.bottom - 0.5 || t.left >= n.right - 0.5;
+						if (!inside && !hidden) c.bad.push(`${tag.textContent} beside EMPTY: ${Math.round(t.left)}-${Math.round(t.right)} in ${Math.round(n.left)}-${Math.round(n.right)}`);
+						if (inside && m && t.right > m.left) c.bad.push(`${tag.textContent} under the M key`); b.textContent = keep; } },
+				screen: c => ok(c.n >= 2 && !c.bad.length, `${c.n} rows; ${c.bad.join(" | ")}`) }
 		],
 		async tidy(u) { await closePops(u); u.click(tab("seq")); }
 	};

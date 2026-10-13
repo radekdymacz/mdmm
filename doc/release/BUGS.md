@@ -8,7 +8,8 @@ where it came from, the setup, what happens, what should happen, status.*
 
 - **From:** screen review, 2026-10-13 (six pictures: "E 2/16+4" on tracks 2, 6, 7 and 10 runs under the M key).
 - **What happens:** a tag with a rotation ("E 2/16+4") is 6 px wider than the 75 px the rail leaves beside a two-letter name, and its end was cut.
-- **Fix (`fix/0.6-screens`):** 9 px letters, 2 px padding and a 3 px gap for the tag (`mdOverrides.css`; the rows are 19 px, so the tag cannot go under the name as the Monomachine's does, B-110). Page journey `md-screens-fit` measures all 16 tags: whole, inside their row, clear of the M key and the number.
+- **Also:** beside a long name (EMPTY, the tracks of an empty kit) no tag fits at all, and "E 2/1" showed (picture `e2e-md-top-cpu-meter`).
+- **Fix (`fix/0.6-screens`):** 9 px letters, 2 px padding and a 3 px gap for the tag (`mdOverrides.css`); where it still does not fit beside the name it wraps out of sight (the 19 px rows have no room for a second line, as the Monomachine's do, B-110): whole or not there, never half. Page journey `md-screens-fit` measures all 16 tags and, with a name of five letters put in, that none is half shown.
 - **Status:** fixed on `fix/0.6-screens`.
 
 ## B-112 · Monomachine: the pattern chooser's labels run under the keys beside them, and an 11-letter kit name is cut in its tile
