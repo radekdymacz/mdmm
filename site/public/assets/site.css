@@ -362,3 +362,23 @@ body > main { flex: 1 0 auto; }
   .nav .themebtn { margin-left: 8px; }
 }
 .hero .sponsor { text-wrap: balance; }
+
+/* Download steps: one centred column, the footer at the bottom of the window. */
+.checkout { padding: clamp(40px, 8vh, 96px) 0 clamp(56px, 9vh, 112px); display: flex; flex-direction: column; justify-content: flex-start; }
+.checkout > .wrap { width: 100%; max-width: 860px; margin: 0 auto; }
+.checkout .progress { margin: 0 auto 36px; max-width: 420px; }
+.checkout h1 { text-align: center; margin: 0 0 28px; }
+.checkout .choices.two { max-width: none; margin: 0 auto; }
+.checkout .osrow { justify-content: center; margin: 26px 0 14px; }
+.checkout form > .small, .checkout .dlgrid .small { text-align: center; }
+.checkout .btns { justify-content: center; margin-top: 28px; }
+.checkout .dlgrid { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+.checkout .dlgrid > div:first-child { text-align: center; }
+.checkout .dlgrid > div:first-child h1 { margin-bottom: 10px; }
+.checkout .dlgrid > div:first-child .btns { margin-top: 8px; }
+.checkout .support { text-align: left; margin: 36px auto 0; }
+.checkout .support .btns { justify-content: flex-start; margin-top: 16px; }
+.checkout .dlgrid > div + div .small { text-align: left; }
+.checkout .dlgrid > div + div > .small:last-child { text-align: center; margin-top: 28px; }
+.checkout .started { text-align: left; }
+.checkout .support .btns .btn { flex: 0 0 auto; }
