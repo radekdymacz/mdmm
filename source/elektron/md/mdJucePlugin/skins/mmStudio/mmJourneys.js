@@ -3426,6 +3426,9 @@ const MmJourneys = (() => {
 					const line = $1(".dkhelp"); if (line && typeof TRNSHORT !== "undefined") { const keep = line.innerHTML; for (const h of TRNSHORT) { line.innerHTML = h; if (line.scrollWidth > line.clientWidth + 1) c.bad.push(`"${line.textContent.slice(0, 20)}" ${line.scrollWidth - line.clientWidth} px cut`); } line.innerHTML = keep; }
 					if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); },
 				screen: c => ok(c.n >= 3 && !c.bad.length, `${c.n} tabs; ${c.bad.join(" | ")}`) }
+			,{ say: "Song: the Arrangement card's header shows whole: its state and how many rows (B-116)",
+				act: async (u, c) => { await closeLib(u); u.click(tab("song")); await sleep(500); const card = $1(".arrcard header"); c.bad = card ? [...Journey.cutText(card), ...Journey.spills(".arrcard header *")] : ["no Arrangement card"]; c.text = card?.textContent.trim().replace(/\s+/g, " "); u.click(tab("seq")); },
+				screen: c => ok(c.text && !c.bad.length, `"${c.text}" ${c.bad.join(" | ")}`) }
 		],
 		async tidy(u) { await closeLib(u); u.click(tab("seq")); }
 	};
