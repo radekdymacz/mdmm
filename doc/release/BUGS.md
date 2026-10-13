@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-134 · Machinedrum: a value moved while live recording is not recorded as a lock (or turns far past the value)
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`md-seq-live-lock` on the firmware: no lock read back; alone from a fresh start too).
+- **Cause (measured in the standalone):** the firmware records a knob turn as a lock, so while recording the desk turns the machine's DATA ENTRY knob by the difference between the value asked for and the machine's memory (the knob recorder). It read that memory from the working copy's image, which a desk reset or a kit switch drops and which comes back only from a region that changed; the device publishes the region only when memory changes, so after a start the recorder waited for memory that never came: no turn, no lock. With memory, it turned again every 50 ms while the last turns were still on their way (the firmware takes a step about every 12 ms): 49 asked, 127 reached, the lock on the wrong value.
+- **Fix (`fix/0.6-e2e-3`):** the recorder reads the machine's memory as last published (kept over a desk reset), and turns again only once the last turns are through and memory had 50 ms to show them (`mdDeskMachine.cpp`, `pumpRecording`). The journey waits for the machine's read-back of the lock while recording (it turned REC off 600 ms after the drag, before the track's next trig played). Tests: `mdDeskTest`; `mdDeskFirmwareTest` (P3 live recording: the lock 99 on track 15's note); `md-seq-live-lock` alone and after the 42 journeys of the e2e run's first MD editor.
+- **Status:** fixed on `fix/0.6-e2e-3`.
+
 ## B-132 · Monomachine Editor, Sound page: the UNISON and SUB screens' stems measure 9 px in WebKit
 
 - **From:** the independent-journeys run, 2026-10-13 (`mm-sound-unison-sub-fine`).
