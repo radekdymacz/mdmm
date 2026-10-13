@@ -81,3 +81,5 @@ are folded in; they are marked **[R]**.
 5. A short FAQ (ROM, real hardware, known limits, is it free), collapsible.
 6. One CTA, then a footer with the GPL-3 note, source link, credits and the trademark notice.
 7. Checkout becomes two steps: choose, then download with the pay-what-you-want panel beside the links.
+
+> Update 2026-10-13: payment moved from Lemon Squeezy (never approved) to GitHub Sponsors; the download is free and the pay-what-you-want step is gone. Sections 5 and the payment decision above are history.

@@ -25,7 +25,7 @@
 <meta name="twitter:description" content="Free desktop editors for the Elektron Machinedrum and Monomachine. VST3, AU and app for macOS (Intel and Apple silicon). Windows build, not tested.">
 <meta name="twitter:image" content="https://mdmm.dev/og.png">
 <link rel="stylesheet" href="/design/tokens.css">
-<link rel="stylesheet" href="/assets/site.css?v=20261010">
+<link rel="stylesheet" href="/assets/site.css?v=20261014b">
 <script src="/assets/theme.js?v=20261008"></script>
 </head>
 <body data-step="2">
@@ -39,6 +39,7 @@
       <a class="opt" href="/#faq">FAQ</a>
       <a class="disc" href="https://discord.gg/8xwXwBHbtn" aria-label="Discord community"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5h11a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7l-3 2.5V11.5H2.5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="5.5" cy="7.5" r="1" fill="currentColor"/><circle cx="8" cy="7.5" r="1" fill="currentColor"/><circle cx="10.5" cy="7.5" r="1" fill="currentColor"/></svg><span>Discord</span></a>
       <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-ghost btn-sm" href="https://github.com/sponsors/radekdymacz" target="_blank" rel="noopener">Sponsor</a>
       <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
     </nav>
   </div>
@@ -46,41 +47,21 @@
 
 <main id="main" class="checkout">
   <div class="wrap">
-    <ol class="progress" aria-label="Download steps"><li class="done" data-prog="1">1 · Machine</li><li aria-current="step" data-prog="2">2 · Price</li><li data-prog="3">3 · Download</li></ol>
+    <ol class="progress" aria-label="Download steps"><li class="done" data-prog="1">1 · Machine</li><li aria-current="step" data-prog="2">2 · Download</li></ol>
     <div class="dlgrid">
       <div>
         <h1 data-name>Download</h1>
         <p class="small"><span data-version></span> · <span data-os-line>macOS · the app, VST3 and AU in one installer</span></p>
         <div class="osrow"><span class="small">Your system</span><div class="seg" id="os" role="group" aria-label="Operating system"></div></div>
-        <div class="support" id="support" hidden>
-          <span class="eyebrow">Pay what you want</span>
-          <h2>Name your price. €0 is fine.</h2>
-          <p class="why">One person builds these editors, in the evenings. Paying something funds testing on real hardware (a Monomachine is next) and new features.</p>
-          <div class="goal" id="goal" hidden><div class="track"><div class="fill" id="goalfill"></div></div><p id="goaltxt"></p></div>
-          <fieldset>
-            <legend class="sr">Suggested amounts</legend>
-            <div class="amounts" id="amounts"></div>
-          </fieldset>
-          <div class="other"><label for="custom">Other amount</label><input id="custom" type="number" inputmode="numeric" min="1" max="1000" step="1" placeholder="e.g. 15"><span id="cur">EUR</span></div>
-          <div class="btns">
-            <button class="btn btn-primary" type="button" id="pay">Continue to pay €10</button>
-            <button class="btn btn-ghost" type="button" data-download>No thanks, just download</button>
-          </div>
-          <p class="small" id="paynote">Checkout opens in a new tab at Lemon Squeezy, who handle the payment and VAT. You type the amount there. Your download starts here either way.</p>
-          <p class="supporters" id="supporters" hidden></p>
-        </div>
-        <div id="plain">
-          <div class="btns"><a class="btn btn-key" data-download data-dl-label href="https://github.com/radekdymacz/mdmm/releases">Download</a></div>
-        </div>
-        <div class="support thanks" id="thanks" hidden>
-          <span class="eyebrow">Thanks for supporting</span>
-          <h2>Thank you.</h2>
-          <p class="why">It goes straight into real-hardware testing and new features. Your download is below.</p>
-          <div class="btns"><a class="btn btn-key" data-download data-dl-label href="https://github.com/radekdymacz/mdmm/releases">Download</a></div>
+        <div class="btns"><a class="btn btn-key" data-download data-dl-label href="https://github.com/radekdymacz/mdmm/releases">Download</a></div>
+        <div class="support" id="support">
+          <span class="eyebrow">Support the work</span>
+          <p class="why">The editors are free and always will be. One person builds them in the evenings; if they are useful to you, you can sponsor the work on GitHub. Entirely optional.</p>
+          <div class="btns"><a class="btn btn-ghost" href="https://github.com/sponsors/radekdymacz" target="_blank" rel="noopener">Sponsor on GitHub</a></div>
         </div>
       </div>
       <div>
-        <p class="started" id="started" hidden>Your download has started. <span id="nudge" hidden>If the editor earns a place in your setup, you can <a href="#support" id="nudgelink">name your price</a> any time.</span></p>
+        <p class="started" id="started" hidden>Your download has started.</p>
         <div data-os="mac">
         <p class="small">The installer puts the app in Applications and the VST3 and AU plug-ins in <code>/Library/Audio/Plug-Ins</code>. No administrator password? Choose <b>Install for me only</b>: then they go to <code>~/Applications</code> and <code>~/Library/Audio/Plug-Ins</code> in your home folder.</p>
         <p class="small dmgline" data-dmg>Prefer to place the files yourself? <a data-dmg-link href="https://github.com/radekdymacz/mdmm/releases">.dmg, loose files</a>: the same app, VST3 and AU in a disk image, with no installer in it.</p>
@@ -146,6 +127,6 @@
 
 <script src="/config.js"></script>
 <script src="/assets/main.js?v=20261008" defer></script>
-<script src="/assets/get.js?v=20261010" defer></script>
+<script src="/assets/get.js?v=20261013" defer></script>
 </body>
 </html>
