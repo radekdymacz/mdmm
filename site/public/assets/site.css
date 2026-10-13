@@ -109,6 +109,7 @@ code { font-family: var(--font-mono); font-size: .86em; background: var(--panel-
 .hero .lede { font-size: clamp(18px, 2vw, 21px); max-width: 44ch; margin: 0 auto 26px; }
 .hero .btns { justify-content: center; }
 .hero .meta { margin-top: 14px; }
+.hero .sponsor { margin-top: 6px; }
 
 /* the editor's real step keys, as a small accent (MKII plate colours from the mockup) */
 .keys {
@@ -325,7 +326,39 @@ body > main { flex: 1 0 auto; }
 .nav a.disc svg { width: 16px; height: 16px; flex: none; }
 @media (max-width: 760px) { .nav a.disc span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } }
 @media (max-width: 420px) { .nav { gap: 6px; } .nav .btn-sm { font-size: 13px; padding-left: 8px; padding-right: 8px; } .nav .themebtn { width: 30px; height: 30px; } .top .brand b { font-size: 12px; } }
-@media (max-width: 360px) { .top .brand b { display: none; } }
 /* The ghost button on the dark download band */
 .cta .btn-ghost { color: var(--hw-text); border-color: var(--hw-line); }
 .cta .btn-ghost:hover { background: var(--hw-key); color: #fff; }
+
+/* header Sponsor button: quiet ghost; on phones Guide and Discord live in the footer so the row fits */
+.nav .btn-ghost.btn-sm { white-space: nowrap; }
+.top .nav .btn-ghost.btn-sm { color: var(--hw-text); border-color: var(--hw-line); }
+.top .nav .btn-ghost.btn-sm:hover { background: transparent; border-color: var(--hw-text); }
+
+/* phones: row 1 = logo + Download, row 2 = Guide, Discord, Sponsor, theme (nothing overlaps down to 320 px) */
+@media (max-width: 560px) {
+  .top .wrap { flex-wrap: wrap; row-gap: 8px; padding-top: 10px; padding-bottom: 10px; }
+  .top .wrap::before { content: ""; order: 2; flex-basis: 100%; height: 0; }
+  .top .brand { order: 0; flex: 0 1 auto; margin-right: 0; min-width: 0; }
+  .top .brand b { font-size: 14px; white-space: nowrap; }
+  .nav { display: contents; }
+  .nav .btn-primary { order: 1; margin-left: auto; font-size: 14px; padding-left: 14px; padding-right: 14px; }
+  .nav a.keep, .nav a.disc, .nav .btn-ghost, .nav .themebtn { order: 3; }
+  .nav a.keep { font-size: 15px; margin-right: 14px; }
+  .nav a.disc { margin-right: 14px; }
+  .nav a.disc span { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+  .nav .btn-ghost.btn-sm { margin-left: auto; font-size: 14px; padding-left: 12px; padding-right: 12px; }
+  .nav .themebtn { margin-left: 10px; width: 32px; height: 32px; }
+}
+@media (max-width: 380px) {
+  .top .wrap { gap: 10px; }
+  .top .brand { flex: 0 0 auto; }
+  .top .brand b { font-size: 13px; }
+  .nav .btn-primary { padding-left: 10px; padding-right: 10px; font-size: 13px; }
+  .nav a.keep { margin-right: 10px; }
+  .nav a.disc { margin-right: 8px; }
+  .nav a.disc span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .nav .btn-ghost.btn-sm { padding-left: 10px; padding-right: 10px; }
+  .nav .themebtn { margin-left: 8px; }
+}
+.hero .sponsor { text-wrap: balance; }
