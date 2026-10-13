@@ -10,13 +10,6 @@ where it came from, the setup, what happens, what should happen, status.*
 - **What happens:** on the firmware, in the standalone's WebKit, the SUB screen's widest stem measures 9.2 px against at most 3 px, alone and in order. The page tier (Chrome) measures it and passes.
 - **Status:** open (the journey fails on the firmware tier until the drawing or the check is looked at).
 
-## B-131 · Machinedrum Editor: a machine cannot be picked on track 1 from factory memory, "lfo.track = 16 is outside 0..15"
-
-- **From:** the independent-journeys run, 2026-10-13 (`md-sound-machine-reference`).
-- **What happens:** on the firmware, started alone from factory memory, the second machine picked on track 1 is refused by the page: `tracks[0] lfo.track = 16 is outside 0..15` (the kit as the machine reads it back against the data contract). In the whole run in order and in the page tier it passes. The journey cannot build a kit the page accepts without choosing the data for it.
-- **Should be:** the contract or the page's check accepts what the firmware sends.
-- **Status:** open.
-
 ## B-130 · A SysEx import and the empty reset cannot be undone
 
 - **From:** the independent-journeys run, 2026-10-13.
