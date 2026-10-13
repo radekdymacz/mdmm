@@ -2207,7 +2207,7 @@ const MmJourneys = (() => {
 	   c.back0.pat, c.back0.kit, c.back0.chain) and a tidy that changed any of it calls back(u, c), which puts the editor's modes and its undo history back:
 	   the transport stopped, the edits undone, PATTERN or SONG mode as found, the pattern and kit the machine was on, no chain. */
 	const begin = c => { c.back0 = { state: state(), mutes: JSON.stringify(machine().mutes || null), patKit: I().doc("pattern", cur())?.kit, tempo: machine().tempo, undo: histN(), mode: machine().song?.songMode, pat: cur(), kit: machine().kit?.current, kitw: machine().kit?.working, chain: !!desk().chain?.active }; };
-	const back = async (u, c) => {
+	const back1 = async (u, c) => {
 		if (!c.back0) return;
 		/* a journey that restarted the machine: the start-up card is waited for, as a person waits */
 		if (!$1("#bootcard").hidden) { await until(() => $1("#bootcard").hidden, 120000); await sleep(1500); await until(() => machine().loading && machine().loading.done >= machine().loading.total, 90000); }
@@ -2226,6 +2226,15 @@ const MmJourneys = (() => {
 		{ const was = JSON.parse(c.back0.mutes || "null"), now = machine().mutes;
 			if (was && now) for (const [key, op] of [["synth", "mute"], ["midi", "muteMidi"]]) for (let t = 0; t < 6; t++) { const w = (was[key] >> t & 1) === 1; if (((now[key] ?? 0) >> t & 1) === 1 !== w) { Bridge.send({ op, t, on: w }); await sleep(900); } } }
 		{ const pd = I().doc("pattern", c.back0.pat); if (pd && c.back0.patKit != null && pd.kit !== c.back0.patKit) { Bridge.send({ op: "patternKit", p: c.back0.pat, v: c.back0.patKit, force: true }); await until(() => I().doc("pattern", c.back0.pat)?.kit === c.back0.patKit, 6000); await sleep(600); } }
+	};
+	/* what back puts right, then waits for the machine's late answers (a pattern or kit change makes it send the kit and the pattern again, seconds on the firmware, and the page redraws when they come):
+	   the documents the page holds unchanged for 1.2 s */
+	const settled = async () => { let last = "", t0 = performance.now(); const end = t0 + 12000;
+		while (performance.now() < end) { const h = JSON.stringify([cur(), machine().kit?.current, I().workingKit, I().doc("pattern", cur()), machine().song?.songMode, machine().mutes]); if (h !== last || !(!desk().tx)) { last = h; t0 = performance.now(); } else if (performance.now() - t0 >= 1200) return; await sleep(100); } };
+	const back = async (u, c) => {
+		if (!c.back0) return;
+		const was = state(); await back1(u, c);
+		if (Journey.stateDiff(was, state())) await settled();
 	};
 	/* a slot the journey is about to overwrite: its content goes to the plug-in's clipboard and back() pastes it back (one slot per kind at a time) */
 	const keep = async (c, kind, slot) => { Bridge.send(kind === "kit" ? { op: "kitCopy", k: slot } : kind === "pattern" ? { op: "patCopy", p: slot } : { op: "songCopy", s: slot }); await sleep(400); (c.keptSlots = c.keptSlots || []).push([kind, slot]); };
