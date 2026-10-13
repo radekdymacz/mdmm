@@ -10,7 +10,7 @@ The rail on the left lists the slots: four RAM slots and 48 ROM slots. The page 
 NOTE: The Sampler needs the UW's ROM and RAM machines. With other firmware, or while the machine has not started, the page says so.
 
 ## SAMPLE MANAGER
-<!-- rows: MD-189 MD-195 MD-196 MD-197 MD-198 MD-200 @2318f4 -->
+<!-- rows: MD-189 MD-195 MD-196 MD-197 MD-198 MD-200 @cb8375 -->
 
 ### The slots
 
@@ -30,11 +30,13 @@ The sample plays once, from the start, on the output of the plug-in. Click the k
 
 ### Name a sample
 
-1. Select the ROM slot.
+1. Select the ROM slot. It must hold a sample.
 2. Click **Rename**.
-3. Type a name of up to four letters and click **Send name**.
+3. Type a name of up to four letters and click **Rename**.
 
-The machine takes the new name. It never reports the names it holds, so the editor shows the names it has sent in this session, and the names of samples it reads from the emulated machine.
+The Machinedrum renames a sample only when it receives the sample. So the editor sends the new name, then the slot's own sample again into the same slot. A bar shows the sending, as when you load a file, and the sample is the same as before: only the name changes. The slot's loop points are not sent again.
+
+Rename needs the editor to read the slot's audio, so it works with the emulated machine. A real Machinedrum does not send its samples back, so the **Rename** key is greyed out, with the reason. Rename the sample in SAMPLE MGR on the machine, or load the file again.
 
 ### Put a sample on a track
 
