@@ -33,7 +33,6 @@ Keys.bind({id:"zoom-reset",short:"Zoom 100 %",scope:"any",keys:["0"],mod:"cmd",g
 [
  ["tip-step-menu","Right-click a note in the piano roll or a step: everything a step can do, with its key (Ctrl-click on a Mac)."],
  ["tip-select","⌘-click or ⌘-drag steps to select them; the LCD's Copy, Clr and Paste then act on the selection."],
- ["tip-draw","B on Sequence turns the piano roll's Draw on and off (off: drag a box round notes to select them). ⇧B taps the tempo on every workspace."],
  ["tip-undo","A drag, a paint or a run of rotates is one undo step: ⌘Z takes it back whole."],
  ["tip-play","A to L play the selected track from any workspace, W E T Y U O P its black keys; Z / X move the octave, C / V the velocity."],
  ["tip-reset","Double-click a value: back to its default. ⇧ while dragging: fine."],

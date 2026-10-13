@@ -1662,15 +1662,6 @@
 			"tip": true
 		},
 		{
-			"id": "tip-draw",
-			"scope": "any",
-			"keys": [],
-			"mod": "",
-			"group": "Tips",
-			"does": "B on Sequence turns the piano roll's Draw on and off (off: drag a box round notes to select them). ⇧B taps the tempo on every workspace.",
-			"tip": true
-		},
-		{
 			"id": "tip-undo",
 			"scope": "any",
 			"keys": [],
@@ -1883,29 +1874,6 @@
 			"area": "Library"
 		},
 		{
-			"id": "roll-draw",
-			"scope": "seq",
-			"keys": [
-				"B"
-			],
-			"mod": "",
-			"group": "Sequence",
-			"does": "Piano roll: draw notes on / off (off: drag a box round notes to select them, drag them to move, double-click adds one). ⇧B taps the tempo here, B on the other workspaces",
-			"short": "Draw",
-			"dispatched": true
-		},
-		{
-			"id": "roll-box",
-			"scope": "seq",
-			"keys": [
-				"drag in an empty place"
-			],
-			"mod": "",
-			"group": "Sequence",
-			"does": "Select (Draw off): box notes; the selection takes them from the first trig to the last one's end. Drag the selection: move it",
-			"area": "Roll"
-		},
-		{
 			"id": "roll-length",
 			"scope": "seq",
 			"keys": [
@@ -2084,7 +2052,7 @@
 			],
 			"mod": "",
 			"group": "Transport",
-			"does": "Tap tempo (the average of the last taps; T plays F♯ here). On Sequence B is the piano roll's Draw: tap with ⇧B",
+			"does": "Tap tempo (the average of the last taps; T plays F♯ here).",
 			"dispatched": true
 		},
 		{
@@ -2977,7 +2945,7 @@
 			],
 			"mod": "",
 			"group": "Sequence",
-			"does": "Draw on (B): click an empty step: a note there, as long as the Len key says; drag it up or down for its pitch, sideways to paint that note on every empty step crossed (the last one as long as the Len key says; one undo step). Draw off: double-click",
+			"does": "Click an empty step: a note there, as long as the Len key says; drag it up or down for its pitch, sideways to paint that note on every empty step crossed (the last one as long as the Len key says; one undo step).",
 			"area": "Roll"
 		},
 		{

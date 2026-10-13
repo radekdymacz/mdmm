@@ -58,7 +58,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Front panel 1-4 | 9 GLOBAL (FUNCTION + KIT / SONG) | Global menu | ✅ | GLOBAL key in the top bar (a page under the header), engine menu > GLOBAL…, link in the AUDIO / MIDI panel | 8 slots with Copy · Paste · Clear, Control, Sync, Routing, Audio (master tune), Control out 1 (`deskGlobal.js`, `117-global.js`) | 1 | pass (e2e-mm-global-page) |
 | Front panel 1-5 | 10 TRIG keys as keyboard | Play notes | ✅ | Home-row keys A-L and W-P, on-screen keyboard (Perform), roll keys |  | 2 | pass (e2e-mm-keys-play-notes) |
 | Front panel 1-5 | 10 Velocity 80, or 127 with FUNCTION | Key velocity | ✅ | Keys C / V (20 40 60 80 100 127) |  | 1 | pass (e2e-mm-seq-pitch-keys) |
-| Front panel 1-5 | 10 TRIG keys edit notes in grid mode | Step trigs | ✅ | Roll click (Draw on), step menu (right-click, ⋯ or the Menu key): Note on / off, NOTE OFF, Trigless trig, Envelopes |  | 1 | pass (mm-sequence-workspace) |
+| Front panel 1-5 | 10 TRIG keys edit notes in grid mode | Step trigs | ✅ | Roll click, step menu (right-click, ⋯ or the Menu key): Note on / off, NOTE OFF, Trigless trig, Envelopes |  | 1 | pass (mm-sequence-workspace) |
 | Front panel 1-5 | 10 BANK + TRIG selects pattern | Pattern pick | ✅ | LCD > PATTERN (‹ ›, chooser) |  | 1 | pass (e2e-mm-top-pattern-next) |
 | Front panel 1-5 | 11 PATTERN / SONG key | Sequencer mode | ✅ | LCD line 2 PLAY PAT / SONG, Song > What plays | `seqMode` op | 1 | pass (e2e-mm-song-mode) |
 | Front panel 1-5 | 11 POLY (FUNCTION + PATTERN / SONG) | Poly mode | ✅ | Perform > Keyboard > Poly, on the track selected (the editor presses its TRACK key) | `poly` op | 2 | pass (mm-perform-poly) |

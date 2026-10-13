@@ -2852,7 +2852,7 @@
 				"mm-seq-transpose-keyboard",
 				"mm-seq-roll-paint",
 				"mm-roll-draw-length",
-				"mm-roll-box-move",
+				"mm-roll-simple",
 				"mm-roll-midi-len"
 			]
 		},
