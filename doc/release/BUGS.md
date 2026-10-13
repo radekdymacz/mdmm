@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-126 · Monomachine: a sub at 0 puts its handle on its caption; on a zoomed-out page the track list's tag hangs under its row
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`mm-screens-fit`, `md-screens-fit` on the real editor).
+- **What happens:** (1) the Sound page's subs screen: a sub at 0 (the factory kit's SUBX) has its handle at the base line, over its caption ("SQ" under a handle), at any page size. (2) On a page zoomed below 100 % (a window under 1440 x 720 points) WebKit lays 9 px text out at 15 px (its minimum logical font size): the Monomachine's track name and its generator tag under it were 1.3 px taller than the row. The Machinedrum's tags go out of sight there as designed (B-113; the check counted the hidden line as a cut).
+- **Fix (`fix/0.6-e2e-2`):** the subs screen's base line is 5 px higher (a handle at 0 clears the caption, held or not); the Monomachine's tagged name has a line as tall as its text. `md-screens-fit` counts a tag that is out of sight as no cut, a half-shown one as one. The e2e runner runs the editors at the page's design size (1440 x 924, `GEARMULATOR_MDMM_BACKGROUND_SIZE`), as a person sees the page and as the page tier measures it; the small background window measured a page zoomed to 0.6 (every fit check of `md-screens-fit` and `mm-screens-fit` past the first failed there for the 15 px text).
+- **Status:** fixed on `fix/0.6-e2e-2`; both journeys pass on the firmware.
+
 ## B-125 · The step menu's ⋯ key covers the selected step: a ⌘-drag over it does not start
 
 - **From:** the 0.6 e2e run, 2026-10-13 (`md-seq-select-copy-paste` on the real firmware, both editors' code).
