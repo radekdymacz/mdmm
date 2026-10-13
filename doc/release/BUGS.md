@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-136 · Monomachine Perform: a multi trig setting jumps back while the machine takes it (Timing stepper gone)
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`mm-perform-multi-setup` step 4: SEQ START clicked, then the Timing key was not on the page; passes alone).
+- **Cause:** the multi trig's mode, timing and split have no live message: each goes as a dump of the kit's slot and LOAD KIT, on SYSEX RECV behind the dumps already on their way (seconds). The working kit's edit waited 1 s for memory to show it, then memory won: the page showed SPLIT KEY again (no Timing stepper), and the next edit was reckoned from the old kit.
+- **Fix (`fix/0.6-e2e-3`):** while a dump of the current kit's slot is on its way (or waits to go), the working kit's edits stay pending over memory; once it is through, memory gets its usual second again (`mmDeskLoad.cpp`, `applyWorkingKit`). The journey waits up to 15 s for SEQ START and says so if it does not come. Tests: `mmDeskTest`; `mm-perform-multi-setup` alone and after the nine journeys before it in the e2e run.
+- **Status:** fixed on `fix/0.6-e2e-3`.
+
 ## B-135 · Monomachine: ▶ after a pause refused ("The panel is busy"), Panic leaves it playing, while the machine takes an edit
 
 - **From:** the 0.6 e2e run, 2026-10-13 (`mm-top-pause`: ▶ to go on refused with "The panel is busy (SYSEX RECV); try again.", the machine stayed paused; `mm-top-panic`: ⌘. said "Every note off ... and STOP", the machine played on). Both pass alone; in the run an earlier journey's edit was still on its way to SYSEX RECV.
