@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-116 · Monomachine: the Arrangement card's header is cut ("65 of 200 rows · T track transpos…")
+
+- **From:** screen review, 2026-10-13 (a picture of the Song workspace).
+- **What happens:** the header of the Arrangement card holds its state, "65 of 200 rows" and a legend of three keys (T, M, B); under 1700 px the legend does not fit and was cut mid-word.
+- **Fix (`fix/0.6-screens`):** under 1700 px only "65 of 200 rows" shows; the legend is in the tooltip (and in the keyboard view). Page journey `mm-screens-fit` measures the header.
+- **Status:** fixed on `fix/0.6-screens`.
+
 ## B-115 · Monomachine: the line under the Transpose tab ends in "(…"
 
 - **From:** screen review, 2026-10-13 (two pictures: "Click a key: C plays it (…" up to the LOCKS key).
