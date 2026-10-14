@@ -382,14 +382,14 @@ const MmJourneys = (() => {
 		],
 		async tidy(u, c) { await genDone(u); await undoUntil(u, () => trk0(c.t) === c.p0 && trk0(c.t2) === c.q0, 4); }
 	};
-	/* the lane toolbox on the lock lane's title row: a shape writes the locks over the steps that hold a note, one undo step; Flat reaches 0 % */
+	/* the lane toolbox in the bar under the roll (over the lock lane): a shape writes the locks over the steps that hold a note, one undo step; Flat reaches 0 % */
 	const laneLocks = (t, pid) => { const [pg, i] = pid.split("."), page = pg === "MID" ? 7 : PAGES.indexOf(pg); return (patDoc()?.locks || []).find(l => l.track === t && l.page === page && l.param === +i)?.steps || []; };
 	const laneTools = {
 		name: "mm-lane-tools", proves: [],
 		steps: [
 			go("seq"),
 			{ say: "pick a synth track with notes, the Locks tab and its lane", act: async (u, c) => { c.t = [0, 1, 2, 3, 4, 5].find(t => trigsOf(t).filter(s => s < S().len).length >= 3) ?? 0; u.click(rail(c.t)); await sleep(200); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); await sleep(200); c.pid = S().lane; c.s = trigsOf(c.t).filter(s => s < Math.min(16, S().len)); c.m0 = JSON.stringify(laneLocks(c.t, c.pid)); },
-				screen: c => ok(S().sel === c.t && !!$1(".lanetop .xlane [data-xs=up]"), "no lane toolbox on the title row") },
+				screen: c => ok(S().sel === c.t && !!$1(".genbar .xlane [data-xs=up]"), "no lane toolbox in the bar under the roll") },
 			{ say: "hover Ramp up: the lane shows it faint, nothing is written", act: async (u, c) => { await u.glide(".xlane [data-xs=up]"); $1(".xlane [data-xs=up]").dispatchEvent(new PointerEvent("pointerover", { bubbles: true })); await sleep(100); }, screen: c => ok($all("#lane .xghost").length >= 3, `${$all("#lane .xghost").length} ghosts`), machine: c => ok(JSON.stringify(laneLocks(c.t, c.pid)) === c.m0, "the machine has locks written") },
 			{ say: "click Ramp up: the machine holds a lock on every note, rising", act: u => u.click(".xlane [data-xs=up]"), screen: () => ok($all("#lane .xghost").length === 0, "ghosts stay"),
 				machine: c => { const m = new Map(laneLocks(c.t, c.pid)), v = trigsOf(c.t).filter(s => s < Math.min(16, S().len)).map(s => m.get(s)); return ok(v.length >= 3 && v.every((x, i) => x != null && (!i || x >= v[i - 1])) && v[v.length - 1] > v[0], "locks in the machine: " + v); }, within: 20000 },

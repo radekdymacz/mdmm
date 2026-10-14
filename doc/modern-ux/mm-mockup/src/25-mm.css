@@ -88,6 +88,11 @@ img,svg,canvas{-webkit-user-drag:none}
 .ws-seq .rail .threw{grid-template-columns:22px minmax(0,1fr) 24px 24px 24px}
 /* the GEN dialog's values area holds the rhythm's groups and, on a synth track, NOTES in a second row */
 .genpop{--gdvals:132px}
+/* the lane toolbox sits in the bar under the roll (76-gen.js genBarHtml), between the roll's keys and the page keys */
+.genbar .xlane{margin:0 auto;align-self:center;gap:8px}
+.genbar .xlseg{gap:1px}
+@media (max-width:1340px){.genbar .xlane [data-xg=cycles]{display:none}}
+@media (max-width:1180px){.genbar .xlane [data-xg=every]{display:none}}
 .gdvals.rows{flex-direction:column;gap:8px}
 .gdrow{display:flex;gap:18px;align-items:flex-start;min-height:62px}
 /* the lock lane's bars: hover is a thin outline, never a fill; the bar keeps its look */
