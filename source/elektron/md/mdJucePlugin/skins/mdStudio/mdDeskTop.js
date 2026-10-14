@@ -198,9 +198,9 @@ function railLamps(ts) {
 }
 /* ===== Track header (one component, used by rail and grid) ===== */
 function th(i, extra = "") {
-	const t = V.tracks[i]; return `<div class="th ${i === S.sel ? "sel" : ""} ${S.multi.has(i) && S.ws === "seq" ? "multi" : ""} ${audible(i) ? "" : "off"} ${extra}" data-sel="${i}" style="--c:${FAMC[t.fam]}">
- <div class="sw"></div><div class="n ${i % 4 === 0 ? "fill" : ""}">${i + 1}</div><div class="nm${S.ws === "seq" ? " tagged" : ""}" title="${t.name}">${S.ws === "seq" ? `<b>${codeOf(t.m, Cat)}</b><i class="gtag" title="${t.m}: its generator (GEN bar)">${genTag(genSpec(i))}</i>` : `<b>${t.m}</b>`}</div>
- <button class="ms m" data-mute="${i}" aria-pressed="${t.mute}" aria-label="Mute track ${i + 1}">M</button><button class="ms s" data-solo="${i}" aria-pressed="${t.solo}" aria-label="Solo track ${i + 1}">S</button></div>`;
+	const t = V.tracks[i]; return `<div class="th ${i === S.sel ? "sel" : ""} ${S.multi.has(i) && S.ws === "seq" ? "multi" : ""} ${audible(i) ? "" : "off"} ${extra}" data-sel="${i}" style="--c:${FAMC[t.fam]}${S.ws === "seq" ? ";grid-template-columns:22px minmax(0,1fr) 24px 24px 24px" : ""}">
+ <div class="sw"></div><div class="n ${i % 4 === 0 ? "fill" : ""}">${i + 1}</div><div class="nm" title="${t.name}">${S.ws === "seq" ? `<b>${codeOf(t.m, Cat)}</b>` : `<b>${t.m}</b>`}</div>
+ <button class="ms m" data-mute="${i}" aria-pressed="${t.mute}" aria-label="Mute track ${i + 1}">M</button><button class="ms s" data-solo="${i}" aria-pressed="${t.solo}" aria-label="Solo track ${i + 1}">S</button>${S.ws === "seq" ? `<button class="ms g" data-genopen="${i}" aria-label="GEN, track ${i + 1}" title="GEN: generate this track"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="11" rx="2.5"/><circle cx="5.6" cy="5.6" r=".9"/><circle cx="10.4" cy="5.6" r=".9"/><circle cx="8" cy="8" r=".9"/><circle cx="5.6" cy="10.4" r=".9"/><circle cx="10.4" cy="10.4" r=".9"/></svg></button>` : ""}</div>`;
 }
 function renderRail() {
 	if (S.ws === "sampler") { renderSlots(); return; }

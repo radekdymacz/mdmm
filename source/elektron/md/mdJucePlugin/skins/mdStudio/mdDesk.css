@@ -1334,6 +1334,7 @@ body{box-sizing:border-box;overflow:hidden}
 .modalbg{position:fixed;inset:0;z-index:var(--mz,59);background:rgba(8,8,6,.52)}
 .modalbg[hidden]{display:none}
 .modalbg.clear{background:transparent}
+.modalbg.through{pointer-events:none}
 .modal:not(.dlg):not(.bootcard):not(.deskmenu){position:fixed!important;left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;margin:0!important;max-width:calc(100vw - 48px)!important;max-height:calc(100vh - 48px)!important;overflow:auto!important;z-index:var(--mz,60)!important;box-sizing:border-box}
 .dlg.modal{background:transparent!important;z-index:var(--mz,60)!important}
 .modal:focus,.modal .dlgbox:focus{outline:none}
@@ -2236,8 +2237,49 @@ html[data-tt=acc] #seq .st:not(.on),html[data-tt=swg] #seq .st:not(.on),html[dat
 .scell.ph[data-left]::after{content:"+" attr(data-left);position:absolute;right:3px;top:2px;font:600 10px var(--mono);color:var(--led);pointer-events:none}
 .scell.ph[data-left="0"]::after{content:"last"}
 
-/* B-113: the track list's generator tag (E 2/16+4, the longest) whole in the 75 px beside a two-letter name: 9 px letters,
-   2 px padding, a 3 px gap. Beside a longer name (EMPTY, an empty kit's tracks) it does not fit: it wraps, out of the one
-   line the box shows (the 19 px rows have no room for a second line, as the Monomachine's have), never half cut */
-.th .nm.tagged{gap:3px;flex-wrap:wrap;align-content:flex-start;row-gap:30px;max-height:1.5em}
-.th .nm .gtag{font-size:9px;padding:0 2px}
+/* The track list's G key (the generator's dialog, mdDeskGenUi.js openGen) is an M / S key: the row is G M S (mdDeskTop.js th()) */
+
+/* The lock lane's bars: hover is a thin outline, never a fill; the bar itself keeps its look (Radek, 2026-10-14) */
+.lb:not(.none):hover{background:var(--key)!important;filter:none!important;outline:1px solid var(--keytext);outline-offset:-2px}
+/* The GEN dialog (mdDeskGenUi.js genDialogHtml; the modal layer places it, draws no backdrop and drags it by .gdhead): a fixed grid, the
+   same size and the same columns in every mode: title | MODE | the mode's values (room for the widest, RANDOM's) | R and Defaults |
+   Cancel and Done; then the summary, then a helper line (its row is always there). Keys sit on the controls' baseline. */
+.genpop{width:min(1060px,calc(100vw - 48px));box-sizing:border-box;padding:14px 18px 12px;overflow:visible!important}
+.gdlg{display:grid;grid-template-columns:112px 200px 372px 140px minmax(0,1fr);column-gap:14px;row-gap:10px;align-items:end}
+.gdhead{align-self:center;display:grid;gap:4px;cursor:grab;user-select:none;touch-action:none;padding:6px 0}
+.gdhead.dragging{cursor:grabbing}
+.gdhead b{font:700 13px var(--sans);letter-spacing:.22em;text-transform:uppercase;color:var(--print)}
+.gdhead span{font:12px var(--mono);color:var(--print2)}
+.gdhead span.all{color:var(--led)}
+.gdvals{display:flex;gap:16px;align-items:end;min-width:0}
+.gdvals .gbg{flex:none}
+.gsc{display:inline-flex;border-radius:4px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--rule)}
+.gbc .gsc button{height:30px;padding:0 10px;border-radius:0;font:600 11px var(--sans);letter-spacing:.1em;text-transform:uppercase;background:var(--key);color:var(--keytext);box-shadow:none;border-right:1px solid color-mix(in srgb,var(--keytext) 18%,transparent)}
+.gbc .gsc button:last-child{border-right:0}
+.gbc .gsc button[aria-pressed=true]{background:var(--led);color:#fff}
+.gdright{display:flex;gap:14px;align-items:end;justify-content:flex-start}
+.gdk{display:grid;justify-items:center;gap:4px}
+.gdk small{font:600 9px var(--sans);letter-spacing:.1em;text-transform:uppercase;line-height:12px;color:var(--print2);white-space:nowrap}
+.gdk small em{font-style:normal;letter-spacing:.04em;text-transform:none;opacity:.8;margin-left:3px}
+.gdkey{width:30px;height:30px;padding:0;display:grid;place-items:center;font:600 12px var(--sans);letter-spacing:0}
+.gdkey.cream{background:var(--cream);color:var(--creamtext)}
+.gdbtns{display:flex;gap:8px;justify-content:flex-end}
+.gdbtns button{height:30px;padding:0 14px;font:600 11px var(--sans);letter-spacing:.1em;text-transform:uppercase}
+.gdbtns .gdone{background:var(--led);color:#fff}
+.gdsum{grid-column:1/-1;font:12px var(--mono);color:var(--print2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:16px}
+.gdsum em{font-style:normal;color:var(--print)}
+.gdhelp{grid-column:1/-1;font:11px var(--sans);color:var(--print3);min-height:14px}
+.genpop .gbg .gbl::after{min-width:6px}
+.genbar .ttlegend{margin-right:auto}
+/* The lane toolbox on the lock lane's title row (mdDeskLaneTools.js) */
+.lanetop .xlane{display:inline-flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:nowrap}
+.xlseg{display:inline-flex;gap:2px}
+.xlseg button{min-width:0;height:22px;padding:0 6px;font:600 10px var(--sans);letter-spacing:.06em;text-transform:uppercase}
+.xlseg button[aria-pressed=true]{background:var(--led);color:#fff}
+.xlseg.shapes button,.xlseg button.ico{width:24px;padding:0;display:inline-grid;place-items:center}
+.xlseg.shapes svg,.xlseg button.ico svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+#lane .lb .xghost{position:absolute;left:22%;right:22%;bottom:6px;height:calc((100% - 14px) * var(--g,0));z-index:3;background:color-mix(in srgb,var(--led) 35%,transparent);outline:1px solid var(--led);pointer-events:none}
+.ms.g svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linejoin:round;pointer-events:none}
+.ms.g circle{fill:currentColor;stroke:none}
+/* a lock of 0 is a lock: its bar keeps one LED lit at the bottom, so it never reads as "no lock" */
+.lb i:not(.bp){min-height:4px}
