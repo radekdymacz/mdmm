@@ -1758,7 +1758,11 @@ const MmJourneys = (() => {
 		steps: [
 			openImport,
 			{ say: "click Specific place, then the first slot four times: the kits land in K05 and K06", act: async u => { u.click('#syxpop [data-sxp="specific"]'); await sleep(150); for (let i = 0; i < 4; i++) { u.click(syxValue("kit", "place")); await sleep(60); } },
-				screen: () => ok($1(syxValue("kit", "place"))?.textContent === "K05" && !!$1(syxCell("kit:4")) && !!$1(syxCell("kit:5")) && !$1(syxCell("kit:0")), "cells " + $all('#syxpop button[data-syxitem^="kit:"]').map(b => b.dataset.syxitem).join(" ")), within: 4000 },
+				/* B-146: the grid of the last place's preview, the panel no longer placing (an earlier preview, K04 on the way, passed this check
+				   once and the last one then reset the panel) */
+				screen: () => { const go = $1('#syxpop [data-syxgo="start"]')?.textContent || "";
+					return ok($1(syxValue("kit", "place"))?.textContent === "K05" && !!$1(syxCell("kit:4")) && !!$1(syxCell("kit:5")) && !$1(syxCell("kit:3")) && !$1(syxCell("kit:0")) && !/Placing/.test(go),
+						"cells " + $all('#syxpop button[data-syxitem^="kit:"]').map(b => b.dataset.syxitem).join(" ") + ", " + go); }, within: 8000 },
 			{ say: "leave Kits ticked only, click Import: it asks first (the file's kits land on K05 and on, which hold kits)", act: async (u, c) => { await syxKinds(["kit"])(u); c.names = $all('#syxpop button[data-syxitem^="kit:"]').map(b => [+b.dataset.syxitem.split(":")[1], (b.dataset.syxname || "").trim()]); c.k0 = kitName(0);
 					/* an import has no undo: the kits it overwrites are kept first (keepMany) and back() in the tidy puts them back */
 					await keepMany(c, "kit", c.names.map(([k]) => k)); u.click('#syxpop [data-syxgo="start"]'); },
