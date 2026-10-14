@@ -62,7 +62,7 @@ list(APPEND SOURCES
 	skins/mdStudio/mdDesk.css
 	skins/mdStudio/mdDeskApp.js skins/mdStudio/mdDeskSoundGroups.js skins/mdStudio/mdDeskTop.js skins/mdStudio/mdDeskSeq.js
 	skins/mdStudio/mdDeskSound.js skins/mdStudio/mdDeskEditors.js skins/mdStudio/mdDeskMix.js skins/mdStudio/mdDeskSampler.js
-	skins/mdStudio/mdDeskSong.js skins/mdStudio/mdDeskPicker.js skins/mdStudio/mdDeskControl.js skins/mdStudio/mdDeskGenUi.js
+	skins/mdStudio/mdDeskSong.js skins/mdStudio/mdDeskPicker.js skins/mdStudio/mdDeskControl.js skins/mdStudio/mdDeskGenUi.js skins/mdStudio/mdDeskLaneTools.js
 	skins/mdStudio/mdDeskComforts.js skins/mdStudio/mdDeskSelect.js skins/mdStudio/mdDeskRom.js skins/mdStudio/mdDeskGestures.js skins/mdStudio/mdDeskRender.js
 	skins/mdStudio/mdOverrides.css
 	skins/mdStudio/mdDeskModel.js
@@ -109,7 +109,7 @@ list(APPEND SOURCES
 	skins/shared/deskDrop.js skins/shared/deskDropTest.js
 	skins/shared/deskDocs.js
 	skins/shared/deskOverlay.js skins/shared/deskOverlayTest.js
-	skins/shared/deskGen.js skins/shared/deskGenTest.js skins/shared/deskGenBar.js skins/shared/deskGenBar.css skins/shared/deskSoundLayout.js skins/shared/deskSoundLayoutTest.js skins/shared/deskSound.css
+	skins/shared/deskGen.js skins/shared/deskGenTest.js skins/shared/deskGenBar.js skins/shared/deskGenBar.css skins/shared/deskLaneShapes.js skins/shared/deskLaneShapesTest.js skins/shared/deskSoundLayout.js skins/shared/deskSoundLayoutTest.js skins/shared/deskSound.css
 	skins/shared/deskKeys.js skins/shared/deskKeysTest.js skins/shared/deskKeymapTest.js skins/shared/deskKeyView.js skins/shared/deskKeyView.css skins/shared/deskKeyViewTest.js skins/shared/deskSongSlots.js skins/shared/deskSongSlots.css skins/shared/deskWhat.js skins/shared/deskWhat.css skins/shared/deskWhatTest.js
 	skins/shared/deskTogglePaint.js skins/shared/deskTogglePaintTest.js
 	skins/shared/deskSelect.js skins/shared/deskSelectTest.js
@@ -148,7 +148,7 @@ option(MDMM_INSTALL_DEV_PLUGINS "Copy the built editors to ~/Library/Audio/Plug-
 # mmMockup.js (sync-mmstudio-skin.py) but for the bridge.
 set(MD_SHARED_PAGE_FILES
 	"skins/shared/deskModal.js" "skins/shared/deskMenu.js" "skins/shared/deskTransport.js" "skins/shared/deskCaps.js" "skins/shared/deskBoot.js" "skins/shared/deskSyx.js" "skins/shared/deskBridge.js"
-	"skins/shared/deskDrop.js" "skins/shared/deskDocs.js" "skins/shared/deskOverlay.js" "skins/shared/deskGen.js" "skins/shared/deskGenBar.js" "skins/shared/deskSoundLayout.js"
+	"skins/shared/deskDrop.js" "skins/shared/deskDocs.js" "skins/shared/deskOverlay.js" "skins/shared/deskGen.js" "skins/shared/deskGenBar.js" "skins/shared/deskLaneShapes.js" "skins/shared/deskSoundLayout.js"
 	"skins/shared/deskKeys.js" "skins/shared/deskKeyView.js" "skins/shared/deskSongSlots.js" "skins/shared/deskWhat.js" "skins/shared/deskTogglePaint.js" "skins/shared/deskSelect.js" "skins/shared/deskValueEdit.js"
 	"skins/shared/deskAudio.js" "skins/shared/deskGlobal.js" "skins/shared/deskCompat.js" "skins/shared/deskZoom.js" "skins/shared/deskAbout.js" "skins/shared/deskCpu.js" "skins/shared/deskVolume.js" "skins/shared/deskTopFit.js")
 file(GLOB MD_SKIN_ASSETS CONFIGURE_DEPENDS
