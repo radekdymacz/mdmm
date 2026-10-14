@@ -13,7 +13,7 @@ Rule of 2026-10-13 (Radek, after 0.6); the short form is in [CLAUDE.md](../../CL
    page file) to under 2 minutes (the page journeys of that area, no ROM). `--branch` is for when asked or before a big
    merge.
 3. A change across the firmware boundary gets one focused firmware test while it is developed.
-4. Merge to main. CI runs the ROM-free light job. Nothing else runs on a push to main.
+4. Merge to main. CI runs two ROM-free jobs in parallel: the light core job and the page suite. Nothing else runs on a push to main.
 5. Before a tag, locally: the full firmware E2E (`scripts/mdmm-e2e.sh`, nonzero on failure) and the gate stages of
    `scripts/mdmm-full-gate.sh --plan`. Radek tests by hand before the tag.
 
@@ -21,13 +21,42 @@ Rule of 2026-10-13 (Radek, after 0.6); the short form is in [CLAUDE.md](../../CL
 
 | Event | Runs |
 |---|---|
-| Push to `main` | One light job in the background: automation core, Linux, unit tests, no memory checker. Nobody waits for it. |
+| Push to `main` | Two light jobs in the background, side by side: the automation core (Linux, unit tests, no memory checker) and the page suite (below). Nobody waits for them. |
 | Push to `release/0.*` | The full suite once: Editors on macOS, Windows (LTCG, what ships) and Linux, each with its tests in a job of their own beside the package (macOS: an arm64 tree without ThinLTO; the package job links only the plug-ins with ThinLTO), core with ASan/UBSan and the transport diagnostics, shared controller. A newer push cancels the older run. (The audio I/O workflow is folded into the Editors' test jobs.) |
 | Tag `mdmm-v*` on the tested release-branch commit | Finds that branch run and reuses its packages: makes the installers, tests them, attaches them. No second build. |
 | Nightly, 02:00 UTC (04:00 Polish summer time) | The full suite on main, only if main changed in the last 24 hours (`mdmm-nightly.yml`), Windows with LTCG so main's sccache holds what a release branch builds. Nobody waits; a red run is there in the morning. The local gate is not scheduled: it runs by hand ([LOCAL-GATE.md](LOCAL-GATE.md)). |
 | By hand | Every workflow has Run workflow; the release installers have a dry run. |
 
 Off: upstream's Elektron workflows (disabled in Actions), the per-push installer dry run.
+
+## Page suite (ROM-free, Linux)
+
+`mdmm-page.yml` runs on every push to `main` and `release/0.*`, and on pull requests that touch the page, the desk
+code, the scripts or the schemas. It is a job of its own, beside the core job. It builds only `deskStubHost` (the
+editors' real core with a fake machine) and `mmDataCorpusTest`, never an editor or a plug-in; CMake is configured with
+the JUCE plug-in on, with every format off, only so that it registers the node page tests. ccache keeps the build
+(one archive per branch, falling back to main's). Then it runs, in this order:
+
+1. the node page tests (`ctest -L Page`, 31 tests);
+2. every page-tier journey of both editors, headless Chrome from the runner image (`node scripts/mdmm-page.mjs
+   --tier page --jobs 3 both`).
+
+A failed test or journey fails the job. A failed run uploads the run folder (`page-run`: the report, each page's log,
+the commands, failure screenshots) as an artifact for 14 days. Time: about 8 to 9 minutes in all; the build is under a minute
+with a warm cache and the journeys are about 7.5. The runner tells the page it is on a Mac (`navigator.platform`), because the journeys press
+Cmd chords; without that every Cmd+Z journey failed on Linux.
+
+### Page suite exclusions
+
+Two journeys measure text against its box to the pixel, and Linux Chrome sets the text a few pixels wider than the
+Mac's. They run locally and in the local gate; CI leaves them out by name in `mdmm-page.yml` (`!name`):
+
+| Journey | Why it fails on Linux |
+|---|---|
+| `md-screens-fit` | the GEN bar's summary line is 2 px wider than its box |
+| `mm-global-page` | the GLOBAL modal's head wraps to two lines (42 px) |
+
+Nothing else is left out. Take a name off the list when the page has room for the Linux text.
 
 ## Release: once per batch
 
