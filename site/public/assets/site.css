@@ -109,6 +109,7 @@ code { font-family: var(--font-mono); font-size: .86em; background: var(--panel-
 .hero .lede { font-size: clamp(18px, 2vw, 21px); max-width: 44ch; margin: 0 auto 26px; }
 .hero .btns { justify-content: center; }
 .hero .meta { margin-top: 14px; }
+.hero .sponsor { margin-top: 6px; }
 
 /* the editor's real step keys, as a small accent (MKII plate colours from the mockup) */
 .keys {
@@ -265,23 +266,10 @@ legend { padding: 0; margin-bottom: 12px; color: var(--muted); }
 .notes ol { margin: 0 0 16px; padding-left: 22px; font-size: 15.5px; }
 .notes li { margin: 5px 0; }
 
-.support { border: 1px solid var(--line); background: var(--panel); padding: 24px; }
-.support h2 { font-size: 26px; }
+.support { border: 1px solid var(--line); background: var(--panel); padding: 24px; margin-top: 28px; }
 .support .why { font-size: 15.5px; }
 .support .sig { color: var(--muted); font-size: 14px; }
-.amounts { display: grid; gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 18px 0 10px; }
-.amounts .choice .card { display: grid; gap: 4px; justify-items: start; padding: 12px; }
-.amounts .choice .card b { font: 600 20px/1 var(--font-mono); }
-.amounts .choice .card small { font-size: 12.5px; line-height: 1.3; }
-.other { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 0 0 18px; font-size: 14px; color: var(--muted); }
-.other input { width: 96px; min-height: 40px; padding: 0 10px; font: 500 16px var(--font-mono); background: var(--bg); color: var(--fg); border: 1px solid var(--ghost-border); border-radius: 0; }
-.other input:focus { border-color: var(--accent); outline: none; box-shadow: inset 0 0 0 1px var(--accent); }
 .support .btns .btn { flex: 1 1 200px; }
-.goal { margin: 16px 0 4px; }
-.goal .track { height: 8px; background: var(--line); }
-.goal .fill { height: 8px; background: var(--accent); width: 0; }
-.goal p { margin: 6px 0 0; font-size: 13.5px; color: var(--muted); }
-.supporters { margin-top: 16px; font-size: 14px; color: var(--muted); }
 .thanks h2 { font-size: 26px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .choices.two { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 760px; }
@@ -338,7 +326,61 @@ body > main { flex: 1 0 auto; }
 .nav a.disc svg { width: 16px; height: 16px; flex: none; }
 @media (max-width: 760px) { .nav a.disc span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } }
 @media (max-width: 420px) { .nav { gap: 6px; } .nav .btn-sm { font-size: 13px; padding-left: 8px; padding-right: 8px; } .nav .themebtn { width: 30px; height: 30px; } .top .brand b { font-size: 12px; } }
-@media (max-width: 360px) { .top .brand b { display: none; } }
 /* The ghost button on the dark download band */
 .cta .btn-ghost { color: var(--hw-text); border-color: var(--hw-line); }
 .cta .btn-ghost:hover { background: var(--hw-key); color: #fff; }
+
+/* header Sponsor button: quiet ghost; on phones Guide and Discord live in the footer so the row fits */
+.nav .btn-ghost.btn-sm { white-space: nowrap; }
+.top .nav .btn-ghost.btn-sm { color: var(--hw-text); border-color: var(--hw-line); }
+.top .nav .btn-ghost.btn-sm:hover { background: transparent; border-color: var(--hw-text); }
+
+/* phones: row 1 = logo + Download, row 2 = Guide, Discord, Sponsor, theme (nothing overlaps down to 320 px) */
+@media (max-width: 560px) {
+  .top .wrap { flex-wrap: wrap; row-gap: 8px; padding-top: 10px; padding-bottom: 10px; }
+  .top .wrap::before { content: ""; order: 2; flex-basis: 100%; height: 0; }
+  .top .brand { order: 0; flex: 0 1 auto; margin-right: 0; min-width: 0; }
+  .top .brand b { font-size: 14px; white-space: nowrap; }
+  .nav { display: contents; }
+  .nav .btn-primary { order: 1; margin-left: auto; font-size: 14px; padding-left: 14px; padding-right: 14px; }
+  .nav a.keep, .nav a.disc, .nav .btn-ghost, .nav .themebtn { order: 3; }
+  .nav a.keep { font-size: 15px; margin-right: 14px; }
+  .nav a.disc { margin-right: 14px; }
+  .nav a.disc span { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+  .nav .btn-ghost.btn-sm { margin-left: auto; font-size: 14px; padding-left: 12px; padding-right: 12px; }
+  .nav .themebtn { margin-left: 10px; width: 32px; height: 32px; }
+}
+@media (max-width: 380px) {
+  .top .wrap { gap: 10px; }
+  .top .brand { flex: 0 0 auto; }
+  .top .brand b { font-size: 13px; }
+  .nav .btn-primary { padding-left: 10px; padding-right: 10px; font-size: 13px; }
+  .nav a.keep { margin-right: 10px; }
+  .nav a.disc { margin-right: 8px; }
+  .nav a.disc span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .nav .btn-ghost.btn-sm { padding-left: 10px; padding-right: 10px; }
+  .nav .themebtn { margin-left: 8px; }
+}
+.hero .sponsor { text-wrap: balance; }
+
+/* Download steps: one centred column, the footer at the bottom of the window. */
+.checkout { padding: clamp(40px, 8vh, 96px) 0 clamp(56px, 9vh, 112px); display: flex; flex-direction: column; justify-content: flex-start; }
+/* step 1 and 2 fill the window under the header, so the footer starts below the fold */
+.checkout { min-height: calc(100vh - 61px); min-height: calc(100svh - 61px); box-sizing: border-box; }
+.checkout > .wrap { width: 100%; max-width: 860px; margin: 0 auto; }
+.checkout .progress { margin: 0 auto 36px; max-width: 420px; }
+.checkout h1 { text-align: center; margin: 0 0 28px; }
+.checkout .choices.two { max-width: none; margin: 0 auto; }
+.checkout .osrow { justify-content: center; margin: 26px 0 14px; }
+.checkout form > .small, .checkout .dlgrid .small { text-align: center; }
+.checkout .btns { justify-content: center; margin-top: 28px; }
+.checkout .dlgrid { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+.checkout .dlgrid > div:first-child { text-align: center; }
+.checkout .dlgrid > div:first-child h1 { margin-bottom: 10px; }
+.checkout .dlgrid > div:first-child .btns { margin-top: 8px; }
+.checkout .support { text-align: left; margin: 36px auto 0; }
+.checkout .support .btns { justify-content: flex-start; margin-top: 16px; }
+.checkout .dlgrid > div + div .small { text-align: left; }
+.checkout .dlgrid > div + div > .small:last-child { text-align: center; margin-top: 28px; }
+.checkout .started { text-align: left; }
+.checkout .support .btns .btn { flex: 0 0 auto; }
