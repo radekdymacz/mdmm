@@ -256,7 +256,7 @@ function pageShell({ title, desc, canonical, head = '', body, mainClass = '' }) 
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="stylesheet" href="/design/tokens.css">
-<link rel="stylesheet" href="/assets/site.css?v=20261010">
+<link rel="stylesheet" href="/assets/site.css?v=20261014b">
 <link rel="stylesheet" href="/guide/guide.css">
 <script src="/assets/theme.js?v=20261008"></script>
 ${head}</head>
@@ -302,7 +302,7 @@ function siteShell({ title, desc, canonical, body, mainClass = '' }) {
 <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 ${SITE_SOCIAL.replaceAll('https://mdmm.dev/guide/', `https://mdmm.dev${canonical}`)}<link rel="stylesheet" href="/design/tokens.css">
-<link rel="stylesheet" href="/assets/site.css?v=20261010">
+<link rel="stylesheet" href="/assets/site.css?v=20261014b">
 <link rel="stylesheet" href="/guide/guide.css">
 <script src="/assets/theme.js?v=20261008"></script>
 </head>
