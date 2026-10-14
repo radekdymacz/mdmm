@@ -1,0 +1,10 @@
+{
+ "title": "Documents arriving, loading",
+ "about": "The stub's documents (patterns, kits, songs) arrive one every 40 ms while the machine reports loading with 200 reads left; when they are in, it goes ready.",
+ "boot": "stub",
+ "pace": {"everyMs": 40},
+ "machine": {"lifecycle": "loading", "lifecycleText": "The machine is being prepared. Editing starts when it is ready.", "input": false, "midi": false, "desk": {"loading": 200}},
+ "steps": [
+  {"at": 0, "machine": null}
+ ]
+}

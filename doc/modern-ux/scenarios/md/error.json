@@ -1,0 +1,9 @@
+{
+ "title": "An error from the plug-in",
+ "about": "The stub's page, then at 1 s an error message (the page's error line), and at 6 s a second, longer one.",
+ "boot": "stub",
+ "steps": [
+  {"at": 1000, "send": [{"type": "error", "message": "The machine did not answer the pattern request."}]},
+  {"at": 6000, "send": [{"type": "error", "message": "The kit could not be sent: 3 of 16 SysEx messages were not taken. Check the MIDI cable, that SYSEX RECEIVE is on, and try again."}]}
+ ]
+}

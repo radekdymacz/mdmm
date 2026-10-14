@@ -1,0 +1,9 @@
+{
+ "title": "Ask: clear a slot",
+ "about": "Clear pattern is answered with a question (clearSlot) with a confirm button; Confirm resends the command with force and the stub does it.",
+ "boot": "stub",
+ "steps": [
+  {"on": {"op": "patClear", "force": null}, "send": [{"type": "ask", "ask": "clearSlot", "message": "Clear pattern A01? Its steps and locks are lost (Undo brings them back).", "confirm": "Clear", "command": {"op": "patClear"}}]},
+  {"on": {"op": "clearPattern", "force": null}, "send": [{"type": "ask", "ask": "clearSlot", "message": "Clear every step and lock of this pattern? Undo brings them back.", "confirm": "Clear", "command": {"op": "clearPattern"}}]}
+ ]
+}
