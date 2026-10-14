@@ -10,7 +10,13 @@
 
 Done before that order was set: slices 1 to 4, the guide's chapters 1-13 (MD) and 1-19 (MM).
 
-## Handover (2026-10-12, stopped by the weekly usage limit)
+## Rule after 0.6 (Radek, 2026-10-13; the authority)
+
+0.6.0 was released on 2026-10-14. Next: 0.6.1. CI runs the ROM-free suite on every push to main; the firmware E2E runs locally
+before each tag (`scripts/mdmm-e2e.sh`, a real pass/fail gate); the dev loop is build and the change's own test
+(`scripts/mdmm-check.sh`). Short form: CLAUDE.md "Development lifecycle".
+
+## Handover (2026-10-12, stopped by the weekly usage limit; history since 0.6.0)
 
 **State on 2026-10-13 (stopped for the weekly usage limit).** Everything of 0.6 is merged into `feat/0.6-features`
 (waves 1-12, MM roll foot, MD greys on the MM, review 1, e2e rounds 1-2, screen review, Discord items, Revert track,
@@ -68,7 +74,7 @@ drafted in the session, not posted; (3) Clear vs Reset to defaults (wave 5).
 
 ## Execution (started 2026-10-11, after 0.5.1 and the dev-cycle work)
 
-- Integration branch `feat/0.6-features` (rebased on main 249ba623a; the old history is `backup/0.6-before-rebase`). Each piece of work: its own branch and worktree from it, checks by doc/release/DEV-CYCLE.md (tier 1 before Radek plays, tier 2 before a merge), Radek plays and accepts, merged back into `feat/0.6-features`.
+- Integration branch `feat/0.6-features` (rebased on main 249ba623a; the old history is `backup/0.6-before-rebase`). Each piece of work: its own branch and worktree from it, checks by doc/release/DEV-CYCLE.md (tier 1 before a merge, tier 2 for big ones), merged back into `feat/0.6-features` (play-and-accept per piece was dropped, below).
 - Radek, 2026-10-11: "don't stop until everything is done for the 0.6 release, then we test." So no play-and-accept per piece: a piece is merged into `feat/0.6-features` when its tier checks are green and an independent reviewer agent passes it; Radek tests the whole of 0.6 at the end. Waves 9 and 10 are mocked up and self-reviewed against his UI rules, then built; he sees them at the end.
 - At most 3 agents at once. Batch 1: wave P (probes), wave 1 (song slots; continues the paused worktrees), the fit fix (B-061, B-065, B-066). Then waves 2-4, then 5-8, then 9-10 (mock-ups to Radek first), slice 5 journeys and the appendices alongside.
 
