@@ -77,10 +77,10 @@ jobs:
             -Dgearmulator_BUILD_JUCEPLUGIN_AU=OFF \
             -Dgearmulator_BUILD_JUCEPLUGIN_Standalone=OFF
 
-      - name: Build deskStubHost
+      - name: Build deskStubHost and mmDataCorpusTest
         run: |
           ccache --zero-stats > /dev/null
-          cmake --build build-page --parallel 4 --target deskStubHost
+          cmake --build build-page --parallel 4 --target deskStubHost mmDataCorpusTest
 
       - name: Node page unit tests
         run: ctest --test-dir build-page -L Page -j 4 --output-on-failure --no-tests=error
