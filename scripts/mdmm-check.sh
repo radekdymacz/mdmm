@@ -9,7 +9,9 @@
 #             without the Slow and Timing ones
 #   --quick   tier 1, "did I break it", the default (under 2 min): what changed since main and is not committed yet.
 #             Tier 0 with the Slow and Timing tests, the page journeys of that area (scripts/mdmm-page.mjs, no ROM),
-#             one playing golden per machine when emulation code changed (ROM)
+#             one playing golden per machine when emulation code changed (ROM). Only the tests of the changed area and the
+#             programs they need are built: never every unit test, never the plug-in bundles (a path no row of the map
+#             names runs every unit test except mdmmIdentityTest, which needs the editors built: --branch has it)
 #   --branch  tier 2, before a merge, in the background (under 10 min): every unit test, every page journey, the
 #             firmware tests (their programs built first, so none runs stale) and the machine journeys of the area (scripts/mdmm-journeys.sh --tier machine), every
 #             golden when emulation code changed (the last three need the ROMs; skipped and said without them)
