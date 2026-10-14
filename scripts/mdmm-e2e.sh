@@ -12,18 +12,20 @@
 #     --shuffle SEED the journeys in a seeded random order (SEED an integer; printed in the report): proof that none depends on one before it
 #     --tier T       the standalone's journeys of that tier only (page, machine, host; default all: skins/shared/deskJourney.js TIERS)
 #     --isolate      every journey in an editor of its own, fresh from factory memory (slow: one start each; with --select, for the journeys in question)
-#     --select       a journey selector (default: all), for a part of a run: the report then lists the rest as "missing"
+#     --select       a journey selector (default: all), for a part of a run: the report then lists the rest as "not selected" (a full run's absent journeys are "missing" and fail it)
 #     --report-only  render the pictures and the report from the last run in temp/evidence/<version>/run
 #     (a targeted re-run of a few journeys whose result a harness fault spoiled goes to $OUT/run-fix/<md|mm>, scripts/mdmm-journeys.sh with
 #      MDMM_JOURNEY_OUT set to it; --report-only then reads both, the later run winning)
 #     --retake       after other branches merged: the same run again, into the same folder (the guide's pictures follow:
 #                    scripts/mdmm-guide.mjs takes the newest snapshot of each name), then the report
 # Fresh settings (MDMM_JOURNEY_SETTINGS=fresh): the machine starts from factory memory, so the pictures are the same each
-# run. The editors run in the background (no focus, no sound). Takes about 40 minutes for both machines.
+# run. Exit status: nonzero when any journey job failed, the page tier failed, a journey failed or (full run) is missing, or the report failed (scripts/mdmm-e2e.mjs; self-test: node scripts/mdmm-e2e-selftest.mjs).
+# The editors run in the background (no focus, no sound). Takes about 40 minutes for both machines.
 set -u
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT"
 WHICH=both JOBS=1 BUILD=1 PAGE=0 WRITE=0 SEL=journey REPORT_ONLY=0 SHUFFLE="" ISOLATE=0 TIER=""
+RC=0   # the run fails when any journey job, the page tier or the report failed
 while [ $# -gt 0 ]; do
 	case "$1" in
 		md|mm|both) WHICH=$1 ;;
@@ -70,14 +72,14 @@ PY
 			scripts/mdmm-journeys.sh --background --jobs "$JOBS" ${TIER:+--tier "$TIER"} ${SHUFFLE:+--shuffle "$SHUFFLE"} $( [ "$ISOLATE" = 1 ] && echo --isolate ) "$M" "$SEL" > "$OUT/journeys-$M.log" 2>&1 &
 		PIDS="$PIDS $!"
 	done
-	for p in $PIDS; do wait "$p"; done
+	for p in $PIDS; do wait "$p" || { echo "a journey job failed (pid $p, exit $?)"; RC=1; }; done
 	tail -qn 1 "$OUT"/journeys-*.log
 fi
 PAGEARGS=()
 if [ $REPORT_ONLY = 1 ] && [ -d "$OUT/page" ]; then PAGEARGS=(--page "$OUT/page")
 elif [ $PAGE = 1 ]; then
 	cmake --build "$ROOT/temp/dev" --target deskStubHost > "$OUT/stubhost-build.log" 2>&1 || { echo "deskStubHost did not build: $OUT/stubhost-build.log"; exit 1; }
-	MDMM_STUB_HOST="$ROOT/temp/dev/source/elektron/md/deskStubHost/deskStubHost" node scripts/mdmm-page.mjs --jobs 2 ${SHUFFLE:+--shuffle "$SHUFFLE"} $( [ "$ISOLATE" = 1 ] && echo --isolate ) --out "$OUT/page" "$WHICH" "$SEL" > "$OUT/page.log" 2>&1
+	MDMM_STUB_HOST="$ROOT/temp/dev/source/elektron/md/deskStubHost/deskStubHost" node scripts/mdmm-page.mjs --jobs 2 ${SHUFFLE:+--shuffle "$SHUFFLE"} $( [ "$ISOLATE" = 1 ] && echo --isolate ) --out "$OUT/page" "$WHICH" "$SEL" > "$OUT/page.log" 2>&1 || { echo "the page tier failed: $OUT/page.log"; RC=1; }
 	tail -2 "$OUT/page.log"
 	PAGEARGS=(--page "$OUT/page")
 fi
@@ -89,8 +91,11 @@ rm -rf "$RAW"
 FW=""; for r in "$HOME/Documents/Gearmulator Preview/Machinedrum/roms/"* "$HOME/Documents/Gearmulator Preview/Monomachine/roms/"*; do FW="$FW $(basename "$r")"; done
 export MDMM_E2E_VERSION=$VERSION MDMM_E2E_COMMIT=$(git rev-parse --short HEAD) MDMM_E2E_FIRMWARE="${GEARMULATOR_MD_FIRMWARE_BIN:+$(basename "$GEARMULATOR_MD_FIRMWARE_BIN") }${GEARMULATOR_MM_FIRMWARE_BIN:+$(basename "$GEARMULATOR_MM_FIRMWARE_BIN")}${FW}"
 ARGS=(--out "$OUT" ${PAGEARGS[@]+"${PAGEARGS[@]}"})
+# a full run (every journey, every tier) must find every journey of its machines; a part of a run lists the rest as "not selected"
+if [ "$SEL" = journey ] && [ -z "$TIER" ] && [ $REPORT_ONLY = 0 ]; then ARGS+=(--full --machines "$WHICH"); fi
 [ $WRITE = 1 ] && ARGS+=(--write-data)
 FIX=(); [ -d "$OUT/run-fix" ] && FIX=("$OUT/run-fix")
 # macOS bash 3.2 with set -u: an empty array is "unbound", hence the ${X[@]+...} form
-node scripts/mdmm-e2e.mjs "${ARGS[@]}" "$RUN" ${FIX[@]+"${FIX[@]}"}
-echo "done in $(( $(date +%s) - START )) s"
+node scripts/mdmm-e2e.mjs "${ARGS[@]}" "$RUN" ${FIX[@]+"${FIX[@]}"} || { echo "the report says FAIL"; RC=1; }
+echo "done in $(( $(date +%s) - START )) s, exit $RC"
+exit $RC

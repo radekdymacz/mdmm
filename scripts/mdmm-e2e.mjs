@@ -10,12 +10,17 @@
 //   <out>/e2e-<machine>.json    the derived data, one entry per row
 //   <out>/report.txt            the counts, for the terminal
 // --write-data also writes doc/features/e2e-<machine>.json (what scripts/mdmm-guide.mjs shows as the maps' E2E column;
-// derived, never edited by hand). --page: the page tier's run (scripts/mdmm-page.mjs, the stub machine): a row whose
+// derived, never edited by hand).
+// Exit status: nonzero when a journey failed, when a full run lacks journeys or rows are missing/failed, or when no
+// journey result was read at all. --full says the run was meant to cover every journey of --machines (md, mm, both;
+// default both); without it the run is targeted and journeys that did not run are "not selected", not "missing".
+// --page: the page tier's run (scripts/mdmm-page.mjs, the stub machine): a row whose
 // journeys pass there and not on the firmware is "stub-only".
 //
 // A row's result: pass (every journey that proves it passed on the firmware), fail (one failed there), stub-only (it
 // passed on the stub and failed or was skipped on the firmware), skipped (every journey of it skipped, with the reason),
-// missing (a done row no journey proves, or one that ran no journey in this run: a red item), n/a (the row is not done:
+// missing (FULL run only: a done row no journey proves, or one with a journey that did not run: a red item that fails
+// the run), not selected (TARGETED run only: some of its journeys were not asked for; never "pass"), n/a (the row is not done:
 // partial, hardware, later, not-needed: listed with its reason, not a red item).
 
 import fs from 'node:fs';
@@ -26,15 +31,19 @@ import { readJourneys, journeysByRow } from './mdmm-journey-index.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MACHINES = ['md', 'mm'];
 const args = process.argv.slice(2);
-let out = '', pageRun = '', writeData = false;
+let out = '', pageRun = '', writeData = false, full = false, machinesArg = 'both';
 const runs = [];
 for (let i = 0; i < args.length; i++) {
 	if (args[i] === '--out') out = path.resolve(args[++i]);
 	else if (args[i] === '--page') pageRun = path.resolve(args[++i]);
 	else if (args[i] === '--write-data') writeData = true;
+	else if (args[i] === '--full') full = true;
+	else if (args[i] === '--machines') machinesArg = args[++i];
 	else runs.push(path.resolve(args[i]));
 }
-if (!out || !runs.length) { console.error('usage: node scripts/mdmm-e2e.mjs --out <folder> [--page <run>] [--write-data] <run folder>...'); process.exit(2); }
+if (!out || !runs.length) { console.error('usage: node scripts/mdmm-e2e.mjs --out <folder> [--page <run>] [--write-data] [--full] [--machines md|mm|both] <run folder>...'); process.exit(2); }
+if (!['md', 'mm', 'both'].includes(machinesArg)) { console.error('--machines: md, mm or both'); process.exit(2); }
+const inScope = (m) => machinesArg === 'both' || machinesArg === m;
 fs.mkdirSync(out, { recursive: true });
 const shotsDir = path.join(out, 'shots');
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -75,20 +84,25 @@ const pictureOf = (names) => {
 	const shots = names.flatMap((n) => real.get(n)?.shots || []).filter(shotFile);
 	return shots.find((s) => !s.startsWith('e2e-')) || shots[0] || '';
 };
-function rowResult(row) {
+function rowResult(row, machine) {
 	if (row.status !== 'done') return { result: 'n/a', why: `${row.status}${row.plan ? ', plan ' + row.plan : ''}${row.planReason ? ': ' + row.planReason : ''}` };
 	const names = (by.get(row.id) || []).filter((n) => known.has(n));
 	if (!names.length) return { result: 'missing', why: 'no journey names this row in proves:', journeys: [] };
-	const ran = names.filter((n) => real.get(n)?.result);
 	const r = (n) => real.get(n)?.result;
-	if (!ran.length) return { result: 'missing', why: 'no journey of this row ran in this run', journeys: names };
-	let result, why = '';
 	const failed = names.filter((n) => r(n) === 'FAIL'), passed = names.filter((n) => r(n) === 'PASS'), skipped = names.filter((n) => r(n) === 'SKIP');
+	const notRan = names.filter((n) => !r(n));
 	const stubOk = (n) => page && page.get(n)?.result === 'PASS';
+	let result, why = '';
 	if (failed.length) {
 		result = failed.every(stubOk) ? 'stub-only' : 'fail';
 		why = failed.map((n) => `${n}: ${real.get(n).reason}`).join(' | ');
-	} else if (passed.length) result = 'pass';
+	} else if (notRan.length && (!inScope(machine) || !full)) {
+		result = 'not selected';
+		why = `${notRan.length} of ${names.length} journeys not selected in this run: ${notRan.join(' ')}`;
+	} else if (notRan.length) {
+		result = 'missing';
+		why = `${notRan.length} of ${names.length} journeys did not run in a full run: ${notRan.join(' ')}`;
+	} else if (passed.length === names.length) result = 'pass';
 	else { result = names.every(stubOk) ? 'stub-only' : 'skipped'; why = skipped.map((n) => `${n}: ${real.get(n).reason}`).join(' | '); }
 	if (result === 'pass' && !pictureOf(names)) why = 'passed, no picture';
 	return { result, why, journeys: names };
@@ -103,7 +117,7 @@ for (const m of MACHINES) {
 	const entries = {};
 	const tally = {};
 	for (const row of d.rows) {
-		const r = rowResult(row);
+		const r = rowResult(row, m);
 		const e = { result: r.result, journeys: r.journeys || [], shot: r.result === 'n/a' ? '' : pictureOf(r.journeys || []) };
 		if (r.why) e.why = r.why;
 		entries[row.id] = e;
@@ -120,9 +134,17 @@ for (const m of MACHINES) {
 const total = { pass: 0, fail: 0, skip: 0 };
 for (const j of real.values()) { if (j.result === 'PASS') total.pass++; else if (j.result === 'FAIL') total.fail++; else if (j.result === 'SKIP') total.skip++; }
 lines.push(`journeys on the firmware: ${total.pass} pass, ${total.fail} fail, ${total.skip} skip, ${real.size} in all` + (page ? `; on the stub: ${[...page.values()].filter((j) => j.result === 'PASS').length} pass` : ''));
+const verdictFail = [];
+if (total.fail) verdictFail.push(`${total.fail} journey(s) failed`);
+if (!real.size) verdictFail.push('no journey result was read from the run folder(s)');
+const rowsBad = reds.filter((x) => x.e.result === 'fail' || (x.e.result === 'missing' && full && inScope(x.m))).length;
+if (rowsBad) verdictFail.push(`${rowsBad} row(s) failed or missing`);
 const noRow = journeys.filter((j) => real.get(j.name)?.result && !(j.proves || []).length).map((j) => j.name);
 const notRun = journeys.filter((j) => !real.get(j.name)?.result).map((j) => j.name);
 lines.push(`journeys not in the run: ${notRun.length}`);
+const fullMissing = full ? notRun.filter((n) => inScope(n.slice(0, 2))) : [];
+if (fullMissing.length) verdictFail.push(`${fullMissing.length} journey(s) missing in a full run`);
+lines.push(`run: ${full ? 'full (' + machinesArg + ')' : 'targeted'}`);
 
 /* ---------- the guide's pictures ---------- */
 const guideShots = new Map(); // name -> where
@@ -141,8 +163,10 @@ for (const f of fs.existsSync(shotsDir) ? fs.readdirSync(shotsDir) : []) if (f.e
 lines.push(`pictures: ${shotCount} WebP files, ${(shotBytes / 1e6).toFixed(1)} MB in all`);
 lines.push(`screenshot review: ${review.length} defects listed`);
 
+lines.push(verdictFail.length ? `VERDICT: FAIL (${verdictFail.join('; ')})` : 'VERDICT: PASS');
+
 /* ---------- index.html ---------- */
-const COLOR = { pass: '#1a7f37', fail: '#cf222e', 'stub-only': '#bc4c00', missing: '#cf222e', skipped: '#9a6700', 'n/a': '#6e7781', 'no picture': '#9a6700' };
+const COLOR = { 'not selected': '#6e7781', pass: '#1a7f37', fail: '#cf222e', 'stub-only': '#bc4c00', missing: '#cf222e', skipped: '#9a6700', 'n/a': '#6e7781', 'no picture': '#9a6700' };
 const badge = (r) => `<b class="b" style="background:${COLOR[r] || '#6e7781'}">${esc(r)}</b>`;
 const img = (n, w = 360) => n && shotFile(n) ? `<a href="shots/${esc(n)}.webp"><img loading="lazy" src="shots/${esc(n)}.webp" width="${w}"></a>` : '';
 const stepsHtml = (names) => names.map((n) => {
@@ -187,3 +211,4 @@ fs.writeFileSync(path.join(out, 'index.html'), html.join('\n'));
 fs.writeFileSync(path.join(out, 'report.txt'), lines.join('\n') + '\n');
 console.log(lines.join('\n'));
 console.log(`report: ${path.join(out, 'index.html')}`);
+process.exitCode = verdictFail.length ? 1 : 0;

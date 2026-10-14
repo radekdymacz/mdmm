@@ -17,14 +17,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Submodules:** only freetype and lunasvg remain, pinned to their own upstream projects (unmodified third-party code we never change); everything we change is a plain folder.
 - **Releases:** `release/0.x.y` branches are merged into `main`; before tagging, the last green full gate on main plus the gate stages of the diff since (`scripts/mdmm-full-gate.sh --plan`), or the full `scripts/mdmm-local-gate.sh`; the tag `mdmm-v0.x.y` runs .github/workflows/mdmm-editors-release.yml; notes in doc/release/vX.Y.Z.md; bugs and ideas in doc/release/BUGS.md and IDEAS.md (testers are never named).
 
-## 0.6 in progress (handover)
+## Current state
 
-0.6 (stability and feature completeness) is built on the integration branch `feat/0.6-features`, not on main
-(worktree `audio/gearmulator-md-mm-wt/features-0.6`). Start with doc/release/PLAN-0.6.md, section "Handover": what is
-merged, which branches wait, what is left, and Radek's rule for this release (no per-piece play tests; merge after green
-tiers and a reviewer agent; he tests at the end from doc/release/TEST-0.6.md). The feature data is doc/features/*.json
-(doc/features/README.md), the user guide doc/guide/ (README.md, STYLE.md), the gap design
-doc/modern-ux/DESIGN-machine-menus.md with its wave plan doc/modern-ux/PLAN-manual-gaps.md.
+0.6.0 was released on 2026-10-14. Next is 0.6.1. State and decisions: doc/release/PLAN-0.6.md (top: Radek's rule after 0.6; "Handover" is history). The feature data is doc/features/*.json (doc/features/README.md), the user guide doc/guide/ (README.md, STYLE.md), the gap design doc/modern-ux/DESIGN-machine-menus.md with its wave plan doc/modern-ux/PLAN-manual-gaps.md.
 
 ## Sister product: xox-plocks
 
@@ -93,15 +88,16 @@ via HDI08.
 
 MIDI Learn: doc/midilearn/. Upstream's long AI notes (`.github/copilot-instructions.md`: Jenkins, YouTrack, the other synths) were deleted in 0.5; they are in the tag `pre-cleanup-0.5`.
 
-## Development lifecycle (since 2026-10-11; details: doc/release/DEV-CYCLE.md, doc/release/CI.md)
+## Development lifecycle (rule of 2026-10-13, after 0.6; details: doc/release/DEV-CYCLE.md, doc/release/CI.md)
 
 What changed decides what runs (`scripts/mdmm-affected.tsv`). Use the lowest tier that answers the question.
 
-0. **Save (seconds).** `scripts/mdmm-check.sh --save`, or `--watch` once: the page contract and the unit tests of what changed.
-1. **Did I break it (under 2 minutes).** `scripts/mdmm-check.sh`: tier 0, every test of what changed, the page journeys of that area (headless Chrome on the real core, no ROM: `scripts/mdmm-page.mjs`), one golden per machine when emulation code changed. Claude runs it by itself before it says a change is good; then `scripts/mdmm-dev.sh play md|mm`, Radek plays and accepts, merge to main.
-2. **Branch check (under 10 minutes, in the background).** `scripts/mdmm-check.sh --branch` when desk or emulator code changed: every unit test and page journey, the firmware tests (the intent cases through the desk) and the machine journeys of that area, every golden for emulation code. Windows-only code: push a `feat/windows-*` branch, CI builds it.
-3. **Full gate on main, by hand.** Claude runs `scripts/mdmm-full-gate.sh` when the Mac is quiet: at the start of a release, after a big merge (`--status`: the last runs). No scheduled job (Radek, 2026-10-11). The CI nightly still runs the full CI.
-4. **Release.** `scripts/mdmm-full-gate.sh --plan` names the last green full gate on main and prints the gate stages the diff since needs (`MDMM_GATE_ONLY=...`); without one in the branch's history: the full gate. Push `release/0.x.y` (the full CI once), tag the tested head, merge to main, push, publish when the files are attached, ask Radek to deploy the site at once (the Discord post waits for the page).
+- **While developing:** build, then the change's own test: `scripts/mdmm-check.sh` (default tier, narrow by area; `--save` or `--watch` for seconds). Claude runs it before it says a change is good. `--branch` is the comprehensive check: when Radek asks, or before a big merge. Not routine.
+- **Across the firmware boundary** (a new command, a MIDI or SysEx adapter, recording or timing): one focused firmware test while the change is developed (needs your ROM).
+- **Push to main:** ROM-free CI only (the light core job). No local full run.
+- **Before a tag:** the full firmware E2E locally, `scripts/mdmm-e2e.sh` (a real gate: nonzero on a failed journey, and in a full run on a missing one), and the gate stages `scripts/mdmm-full-gate.sh --plan` prints (`MDMM_GATE_ONLY=...`; no green full gate in the history: the full gate). Push `release/0.x.y` (the full CI once), tag the tested head, merge to main, push, publish when the files are attached, ask Radek to deploy the site at once (the Discord post waits for the page). Radek tests by hand before the tag, not per change.
+- **Editing the check or E2E scripts:** run their self-tests, `python3 scripts/mdmm-check.py --check-map` and `node scripts/mdmm-e2e-selftest.mjs`.
+- Windows-only code: push a `feat/windows-*` branch, CI builds it. The CI nightly still runs the full CI on main.
 
 Journeys have a tier (`deskJourney.js` TIERS): page journeys run in the page tier, machine journeys in the editor, the VST3 host runs only the host ones. Do not add audits or verification rounds before a cut unless asked.
 
