@@ -4,6 +4,7 @@ add_subdirectory(mdLib)
 include(mdmmEditors.cmake)  # the Machinedrum/Monomachine Editors (doc/modern-ux/UPSTREAM.md)
 
 if(BUILD_TESTING)
+	add_subdirectory(mdNative)
 	add_subdirectory(mdLibTest)
 
 	# This policy test deliberately stays independent of JUCE so pull requests
