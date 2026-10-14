@@ -2656,7 +2656,7 @@ const Syx = (() => {
 	let skip = new Set();
 	const on = {};	// kind -> ticked
 	/* 0.6: what the panel shows (import or export), the import's PLACE (each kind's first slot) and the export's choices */
-	let mode = "import", placing = false, placeT = 0, placeW = 0;
+	let mode = "import", placing = false, placeT = 0, placeW = 0, placeAsked = 0, placeQueued = false;
 	const place = { specific: false, first: {} };
 	const ex = { all: true, kinds: {}, info: null };
 	const hostHas = f => !!(Syx.host && Syx.host[f]);
@@ -2831,8 +2831,16 @@ const Syx = (() => {
 	}
 	function preview(m) {
 		mode = "import"; unseen = false;
-		const again = placing && m.ok && last && last.ok && m.file === last.file && state === "preview";
-		placing = false; clearTimeout(placeW);
+		/* B-146 (the 0.6.0 e2e): a place's previews come back one for each request, in order. Only the last ends the
+		   placing; an earlier one (a slot passed on the way, the clicks slower than the wait) is shown and the panel waits
+		   on. Counted, not a flag: the flag ended at the first reply, and the last one then read as a new file and put
+		   every kind back on and the place back to ORIGINAL, so Import sent the whole file to its own slots, unasked */
+		const reply = placeAsked > 0;
+		if (reply) placeAsked--;
+		const again = reply && m.ok && last && last.ok && m.file === last.file && state === "preview";
+		if (!again) placeAsked = 0;
+		placing = placeQueued || placeAsked > 0;
+		if (!placing) clearTimeout(placeW);
 		last = m; state = m.ok ? "preview" : "error"; skip = new Set(); anchor = null; res = new Map(); rep = null; picks = []; steps = []; lastProgress = null;
 		if (!again) {
 			for (const [k] of KINDS) on[k] = !OFF[k];
@@ -2854,8 +2862,8 @@ const Syx = (() => {
 		if (!hostHas("place")) return;
 		clearTimeout(placeT); clearTimeout(placeW);
 		/* pending from the first change until the host's preview comes back (or a refusal: then the old preview stands) */
-		placing = true; sums();
-		placeT = setTimeout(() => { Syx.host.place(placeAt()); placeW = setTimeout(placeLost, 5000); }, 120);
+		placing = placeQueued = true; sums();
+		placeT = setTimeout(() => { placeQueued = false; placeAsked++; Syx.host.place(placeAt()); placeW = setTimeout(placeLost, 5000); }, 120);
 	}
 	/* no preview came back for the new place: the place goes back to the one the grid shows (the last preview's) */
 	function placeLost() {

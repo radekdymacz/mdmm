@@ -11,6 +11,13 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Fix:** a plain value for a parameter the gesture is moving waits until the gesture has ended (FUNCTION let go, no turns on the panel), the turns not yet made are dropped, then the value goes (`mdDeskMachine.cpp`). Tests: `mdDeskFirmwareTest sweepundo` and `keepedits` (FAIL before: the machine kept the sweep on every track); `md-sound-keep-clear` alone, isolated and after the journeys before it in the run.
 - **Status:** fixed on `release/0.6.0`.
 
+## B-146 · Import SysEx, Specific place: Import sent the whole file to its own slots, unasked
+
+- **From:** the 0.6.0 release e2e, 2026-10-14 (`mm-lib-syx-place` step 3: Kits only ticked, Specific place from K05, Import: no question; the file's kits, patterns and songs went to their own slots). It passed alone; in the run the machine answered slowly.
+- **Cause:** each change of the place asks the editor for a new preview. When the clicks came slower than the panel's wait, two previews were on their way; the first one back ended the "placing" state, and the second was then taken for a newly opened file: every kind ticked again, the place back to Original. Import then sent everything to the file's slots without the question.
+- **Fix:** the panel counts the previews it asked for; only the last ends the placing, and none of them resets the ticks or the place (`deskSyx.js`, both editors). The journey waits for the panel to stop placing before it goes on.
+- **Status:** fixed on `release/0.6.0`.
+
 ## B-137 · Monomachine: Play from a song row starts in the wrong row after the song was edited
 
 - **From:** the 0.6 e2e run, 2026-10-13 (`mm-song-play-from`: played from row 3, the machine was in row 2; it passed alone and after any one journey before it).
