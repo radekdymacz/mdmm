@@ -42,6 +42,9 @@
         if (on) el.querySelectorAll("img").forEach(function (i) { i.loading = "eager"; });
       });
       hero.querySelector("[data-wintitle]").textContent = names[state.machine];
+      hero.dataset.machine = state.machine;
+      document.querySelectorAll("[data-tourset]").forEach(function (el) { el.hidden = el.dataset.tourset !== state.machine; });
+      document.querySelectorAll("[data-tourm]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.tourm === state.machine)); });
       tabs.forEach(function (t) {
         var on = t.dataset.machine === state.machine;
         t.setAttribute("aria-selected", String(on));
@@ -63,6 +66,7 @@
         state.machine = tabs[j].dataset.machine; show(); tabs[j].focus();
       });
     });
+    document.querySelectorAll("[data-tourm]").forEach(function (b) { b.addEventListener("click", function () { state.machine = b.dataset.tourm; show(); }); });
     plates.forEach(function (b) { b.addEventListener("click", function () { state.plate = b.dataset.plate; show(); }); });
   }
 
