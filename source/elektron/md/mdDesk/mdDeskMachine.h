@@ -360,6 +360,8 @@ namespace mdDesk
 		// Control All without the panel (HW MIDI, no telemetry): the latest value per (track, index),
 		// sent as at most one CC each per coalescing tick, within the wire's budget.
 		std::map<std::pair<uint8_t, uint8_t>, uint8_t> m_coalesced;
+		// B-145: plain values (an undo) that came while the machine's Control All gesture was on its way: sent when it ends
+		std::map<std::pair<uint8_t, uint8_t>, uint8_t> m_afterTweak;
 		double m_coalescedMs = -1e9;
 	};
 }

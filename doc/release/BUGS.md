@@ -4,6 +4,13 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-145 · Machinedrum: Cmd+Z right after an Alt-drag (filter sweep) leaves the machine swept, the page says undone
+
+- **From:** the 0.6.0 release e2e, 2026-10-14 (`md-sound-keep-clear` step 4, after `md-sound-filter-sweep`: a machine picked with Keep effects + routing, its FLTF read back 21, the page had 31; both pass alone).
+- **Cause (measured, `mdDeskFirmwareTest sweepundo` and `keepedits`):** an Alt-drag goes to the machine as its own Control All gesture (FUNCTION held, the knob turned, every track steps). An undo sent while that gesture was still on its way went at once as CCs, then the gesture's steps landed on top: every track's FLTF stayed swept (31 0 70 ... became 17 0 56 ...) while the page showed the values before the sweep. Picking a machine read the track back and showed it. The machine change itself keeps effects and routing (measured).
+- **Fix:** a plain value for a parameter the gesture is moving waits until the gesture has ended (FUNCTION let go, no turns on the panel), the turns not yet made are dropped, then the value goes (`mdDeskMachine.cpp`). Tests: `mdDeskFirmwareTest sweepundo` and `keepedits` (FAIL before: the machine kept the sweep on every track); `md-sound-keep-clear` alone, isolated and after the journeys before it in the run.
+- **Status:** fixed on `release/0.6.0`.
+
 ## B-137 · Monomachine: Play from a song row starts in the wrong row after the song was edited
 
 - **From:** the 0.6 e2e run, 2026-10-13 (`mm-song-play-from`: played from row 3, the machine was in row 2; it passed alone and after any one journey before it).
