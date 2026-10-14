@@ -18,6 +18,10 @@
 //     --isolate: every journey in a page and a host of its own, fresh from the start: a journey that passes here and fails in a run
 //       (or the other way round) depends on one before it (Radek's rule 2026-10-13: every journey is independent,
 //       doc/modern-ux/JOURNEYS.md). --jobs N then means N journeys at once per editor. Combines with --shuffle (the order they start in).
+//   node scripts/mdmm-page.mjs --serve md|mm [--port N]
+//     the preview (scripts/mdmm-preview.sh): no Chrome, no journeys. Serves the page to your own browser, one stub host per open page
+//     (killed when the page closes), live reload: a CSS save swaps the stylesheet in place, a JS or HTML save reloads the page, a design
+//     source save runs the sync script first, a C++ save rebuilds deskStubHost (MDMM_PREVIEW_BUILD) and reloads. Default port 8791 (md), 8792 (mm).
 // Environment: MDMM_CHROME (Chrome's binary), MDMM_CHROME_ARGS (more Chrome flags, space separated), MDMM_STUB_HOST (deskStubHost's binary; default: the newest under temp/),
 // MDMM_PAGE_OUT (the report folder, default temp/page/<date-time>). Prints the JOURNEY lines and a total; exits 1 on any
 // FAIL, a page that never said JOURNEYS DONE, a command outside the contract or a page error.
@@ -27,13 +31,15 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { contract } from "./mdmm-contract.mjs";
+import * as Scn from "./mdmm-scenario.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SKINS = path.join(ROOT, "source/elektron/md/mdJucePlugin/skins");
-const usage = () => { console.error("usage: node scripts/mdmm-page.mjs [--jobs N] [--tier page|machine|host|all] [--host stub|record] [--timeout S] [--out DIR] [--verbose] [--shuffle [SEED]] [--isolate] [md|mm|both] [selector]"); process.exit(2); };
+const usage = () => { console.error("usage: node scripts/mdmm-page.mjs --serve md|mm [--port N] | [--jobs N] [--tier page|machine|host|all] [--host stub|record] [--timeout S] [--out DIR] [--verbose] [--shuffle [SEED]] [--isolate] [md|mm|both] [selector]"); process.exit(2); };
 
 /* ---------- arguments ---------- */
-const opt = { jobs: 2, tier: "page", host: "stub", timeout: 1800, out: process.env.MDMM_PAGE_OUT || "", verbose: false, shuffle: null, isolate: false, list: false };
+const opt = { jobs: 2, tier: "page", host: "stub", timeout: 1800, out: process.env.MDMM_PAGE_OUT || "", verbose: false, shuffle: null, isolate: false, list: false, serve: false, port: 0 };
 const rest = [];
 for (let a = process.argv.slice(2); a.length;) {
 	const x = a.shift();
@@ -46,11 +52,14 @@ for (let a = process.argv.slice(2); a.length;) {
 	else if (x === "--verbose") opt.verbose = true;
 	else if (x === "--isolate") opt.isolate = true;
 	else if (x === "--list") opt.list = true;
+	else if (x === "--serve") opt.serve = true;
+	else if (/^--port(=|$)/.test(x)) opt.port = +val();
 	else if (x === "--shuffle") opt.shuffle = a.length && /^\d+$/.test(a[0]) ? +a.shift() : Math.floor(Math.random() * 1e9);
 	else if (/^--shuffle=\d+$/.test(x)) opt.shuffle = +x.split("=")[1];
 	else if (x.startsWith("--")) usage();
 	else rest.push(x);
 }
+if (opt.serve && !["md", "mm"].includes(rest[0])) usage();
 const which = rest[0] || "both";
 let sel = rest[1] || "journey";
 if (!sel.startsWith("journey")) sel = "journey-" + sel;
@@ -59,7 +68,7 @@ if (!["md", "mm", "both"].includes(which) || !["page", "machine", "host", "all"]
 
 const stamp = new Date().toISOString().replace(/[-:]/g, "").replace("T", "-").slice(0, 15);
 const OUT = path.resolve(opt.out || path.join(ROOT, "temp/page", stamp));
-fs.mkdirSync(OUT, { recursive: true });
+if (!opt.serve) fs.mkdirSync(OUT, { recursive: true });
 const version = (fs.readFileSync(path.join(SKINS, "../mdmmPlugins.cmake"), "utf8").match(/set\(MDMM_EDITOR_VERSION ([\d.]+)\)/) || [])[1] || "0.0.0";
 
 /* ---------- the host program ---------- */
@@ -75,45 +84,221 @@ function newest(dir, name) {
 const STUB = opt.host === "stub" ? (process.env.MDMM_STUB_HOST || newest(path.join(ROOT, "temp"), "deskStubHost")) : null;
 if (opt.host === "stub" && !STUB) { console.error("FAIL no deskStubHost (scripts/mdmm-dev.sh build deskStubHost, or set MDMM_STUB_HOST)"); process.exit(1); }
 const CHROME = process.env.MDMM_CHROME || ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser"].find(p => fs.existsSync(p));
-if (!CHROME) { console.error("FAIL no Chrome (set MDMM_CHROME)"); process.exit(1); }
+if (!CHROME && !opt.serve) { console.error("FAIL no Chrome (set MDMM_CHROME)"); process.exit(1); }
 
-/* ---------- the contract: every command the page sends ---------- */
-function validator(schemaFile) {
-	const schema = JSON.parse(fs.readFileSync(schemaFile, "utf8"));
-	const resolve = s => { while (s && s.$ref) s = s.$ref.replace(/^#\//, "").split("/").reduce((o, k) => o[k], schema); return s; };
-	const typeOk = (t, v) => t === "integer" ? Number.isInteger(v) : t === "number" ? typeof v === "number" : t === "array" ? Array.isArray(v)
-		: t === "object" ? v !== null && typeof v === "object" && !Array.isArray(v) : t === "null" ? v === null : typeof v === t;
-	function check(s, v, at) {
-		s = resolve(s); if (!s || s === true) return null;
-		if (s.oneOf || s.anyOf) { const list = s.oneOf || s.anyOf; for (const x of list) if (!check(x, v, at)) return null; return `${at}: matches none of ${list.length}`; }
-		if (s.type && ![].concat(s.type).some(t => typeOk(t, v))) return `${at}: not ${[].concat(s.type).join("|")} (${JSON.stringify(v)})`;
-		if ("const" in s && v !== s.const) return `${at}: not ${JSON.stringify(s.const)}`;
-		if (s.enum && !s.enum.includes(v)) return `${at}: ${JSON.stringify(v)} not one of ${s.enum.join(", ")}`;
-		if (typeof v === "number") { if (s.minimum != null && v < s.minimum) return `${at}: ${v} < ${s.minimum}`; if (s.maximum != null && v > s.maximum) return `${at}: ${v} > ${s.maximum}`; }
-		if (Array.isArray(v)) { if (s.minItems != null && v.length < s.minItems) return `${at}: fewer than ${s.minItems}`; if (s.maxItems != null && v.length > s.maxItems) return `${at}: more than ${s.maxItems}`;
-			if (s.items) for (let i = 0; i < v.length; i++) { const e = check(s.items, v[i], `${at}[${i}]`); if (e) return e; } }
-		if (v && typeof v === "object" && !Array.isArray(v)) {
-			for (const r of s.required || []) if (!(r in v)) return `${at}: no ${r}`;
-			for (const [k, x] of Object.entries(v)) {
-				if (s.properties && k in s.properties) { const e = check(s.properties[k], x, `${at}.${k}`); if (e) return e; }
-				else if (s.additionalProperties === false) return `${at}: ${k} is not in the contract`;
-			}
-		}
-		return null;
-	}
-	const commands = resolve(schema.$defs.command).oneOf.map(resolve);
-	return cmd => {
-		const c = commands.find(s => s.properties?.op?.const === cmd.op);
-		if (!c) return `unknown command ${cmd.op}`;
-		return check(c, cmd, cmd.op);
-	};
+/* ---------- the contract: every command the page sends (scripts/mdmm-contract.mjs) ---------- */
+const VALIDATE = { md: contract("md").command, mm: contract("mm").command };
+
+
+/* ---------- the preview (--serve): the page in your own browser, a stub host per open page, live reload ---------- */
+const PREVIEW_PAGE = which => `${which}/${which}Studio.html`;
+const pageUrl = scn => `/${PREVIEW_PAGE(which)}?dev=1&version=${version}${scn ? "&scenario=" + encodeURIComponent(scn) : ""}`;
+const PREVIEW_CLIENT = `(() => {
+	const sid = Math.random().toString(36).slice(2), q = [], scn = new URLSearchParams(location.search).get("scenario") || "";
+	const tail = "sid=" + sid + (scn ? "&scenario=" + encodeURIComponent(scn) : "");
+	let flushing = false;
+	const banner = t => { let b = document.getElementById("__pv"); if (!b) { b = document.createElement("pre"); b.id = "__pv";
+		b.style.cssText = "position:fixed;left:0;right:0;bottom:0;z-index:2147483647;margin:0;padding:8px 12px;max-height:40vh;overflow:auto;background:#b00;color:#fff;font:12px monospace;white-space:pre-wrap";
+		(document.body || document.documentElement).appendChild(b); } b.textContent = t; b.style.display = t ? "block" : "none"; };
+	const flush = () => { if (flushing) return; flushing = true; const go = () => { while (q.length) { if (!(window.gm && gm.recv)) return setTimeout(go, 20); gm.recv(q.shift()); } flushing = false; }; go(); };
+	window.gmDev = batch => { fetch("/__cmd?" + tail, { method: "POST", body: JSON.stringify(batch) }).catch(() => { }); };
+	const es = new EventSource("/__events?" + tail);
+	es.addEventListener("host", e => { q.push(JSON.parse(e.data)); flush(); });
+	es.addEventListener("reload", () => location.reload());
+	es.addEventListener("error-text", e => banner(JSON.parse(e.data)));
+	es.addEventListener("ok", () => banner(""));
+	es.addEventListener("css", () => {
+		for (const l of document.querySelectorAll('link[rel="stylesheet"]')) {
+			const u = new URL(l.href, location.href); if (u.origin !== location.origin) continue;
+			u.searchParams.set("pv", Date.now()); const n = l.cloneNode(); n.href = u.href;
+			n.onload = () => l.remove(); l.after(n); }
+		banner("");
+	});
+})();`;
+const hosts = new Map();	// sid -> { host, clients: Set<res>, buf: [] }
+const sseAll = (event, data) => { for (const h of hosts.values()) for (const c of h.clients) c.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`); };
+/* a scenario (doc/modern-ux/scenarios): read when the page opens its host, so a saved file is the next reload's */
+function scenarioOf(name) {
+	if (!name) return null;
+	const f = Scn.files(which).find(x => x.name === name);
+	if (!f) { sseAll("error-text", `no scenario ${name} (doc/modern-ux/scenarios/${which})`); console.log(`no scenario ${name}`); return null; }
+	const text = fs.readFileSync(f.file, "utf8"), bad = Scn.problems(name, which, text);
+	if (bad.length) { sseAll("error-text", `scenario ${name} is not valid:\n${bad.join("\n")}`); console.log(`scenario ${name} is not valid:\n  ${bad.join("\n  ")}`); return null; }
+	return JSON.parse(text);
 }
-const VALIDATE = { md: validator(path.join(ROOT, "doc/modern-ux/md-data-contract.schema.json")), mm: validator(path.join(ROOT, "doc/modern-ux/mm-data-contract.schema.json")) };
+const emit = (h, batch) => { const line = JSON.stringify(batch); if (h.clients.size) for (const c of h.clients) c.write(`event: host\ndata: ${line}\n\n`); else h.buf.push(line); };
+function scenarioStart(h) {
+	if (h.started || !h.scn) return;
+	h.started = true;
+	console.log(`scenario ${h.scnName}: playing`);
+	for (const st of h.scn.steps) if (st.at !== undefined) h.timers.push(setTimeout(() => { const out = h.player.fire(st); if (out.length) emit(h, out); }, st.at));
+}
+function previewHost(sid, scnName) {
+	let h = hosts.get(sid);
+	if (h) return h;
+	const host = spawn(STUB, [which], { stdio: ["pipe", "pipe", "pipe"] });
+	h = { host, clients: new Set(), buf: [], scnName: scnName || "", scn: scenarioOf(scnName), timers: [], started: false, queue: [], paceTimer: null, settle: null };
+	if (h.scn) h.player = new Scn.Player(h.scn, which, Scn.fixture(which));
+	hosts.set(sid, h);
+	const none = h.scn && h.scn.boot === "none", pace = h.scn && h.scn.pace && h.scn.pace.everyMs;
+	if (h.scn && !none) h.timers.push(setTimeout(() => scenarioStart(h), 15000));	// the stub never went quiet: start anyway
+	let buf = "";
+	const deliver = line => { if (h.clients.size) for (const c of h.clients) c.write(`event: host\ndata: ${line}\n\n`); else h.buf.push(line); };
+	const out = line => {
+		if (!pace) return deliver(line);
+		h.queue.push(line);
+		if (!h.paceTimer) h.paceTimer = setInterval(() => { const l = h.queue.shift(); if (l === undefined) { clearInterval(h.paceTimer); h.paceTimer = null; return; } deliver(l); }, pace);
+	};
+	/* the stub's boot is over when it has gone quiet (and, paced, the page has been given all of it) */
+	const quiet = () => { if (h.queue.length) { h.settle = setTimeout(quiet, 200); return; } scenarioStart(h); };
+	host.stdout.on("data", d => { buf += d; for (let nl; (nl = buf.indexOf("\n")) >= 0;) { let l = buf.slice(0, nl); buf = buf.slice(nl + 1);
+		if (!l) continue;
+		if (h.scn) {
+			if (none) continue;	// boot none: the page hears only the scenario
+			let boots = false;	// telemetry, meters and the CPU load go on for ever: only the documents say the boot is still on
+			try { const ms = [].concat(JSON.parse(l)); boots = ms.some(m => m.type === "doc" || m.type === "machine" || m.type === "catalogue"); l = JSON.stringify(ms.map(m => h.player.pass(m))); } catch { }
+			if (boots) { clearTimeout(h.settle); h.settle = setTimeout(quiet, 700); }
+		}
+		out(l); } });
+	host.stderr.on("data", d => process.stderr.write(`host: ${d}`));
+	host.stdin.on("error", () => { });
+	host.on("exit", () => { h.timers.forEach(clearTimeout); clearTimeout(h.settle); clearInterval(h.paceTimer); hosts.delete(sid); });
+	return h;
+}
+function previewRoute(req, res, u) {
+	if (u.pathname === "/") { res.writeHead(302, { location: pageUrl(u.searchParams.get("scenario")) }); res.end(); return true; }
+	if (u.pathname === "/scenarios") {
+		const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+		const rows = Scn.files(which).map(f => { let t = {}; try { t = JSON.parse(fs.readFileSync(f.file, "utf8")); } catch { }
+			return `<li><a href="${esc(pageUrl(f.name))}"><b>${esc(f.name)}</b></a> ${esc(t.title || "")}<br><small>${esc(t.about || "")}</small></li>`; }).join("");
+		res.writeHead(200, { "content-type": "text/html", "cache-control": "no-store" });
+		res.end(`<!doctype html><meta charset=utf-8><title>Preview scenarios (${which})</title><body style="font:15px system-ui;max-width:46em;margin:2em auto;padding:0 1em"><h1>Preview scenarios, ${which}</h1><p><a href="${esc(pageUrl(""))}">The page as it is (the stub's own boot)</a></p><ul>${rows}</ul><p><small>doc/modern-ux/scenarios/${which}/README.md. Save a scenario file and its open pages replay it.</small>`);
+		return true;
+	}
+	if (u.pathname === "/__preview.js") { res.writeHead(200, { "content-type": "text/javascript", "cache-control": "no-store" }); res.end(PREVIEW_CLIENT); return true; }
+	if (u.pathname === "/__events") {
+		const h = previewHost(u.searchParams.get("sid") || "", u.searchParams.get("scenario"));
+		res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-store", connection: "keep-alive" });
+		res.write(": open\n\n");
+		h.clients.add(res);
+		for (const l of h.buf.splice(0)) res.write(`event: host\ndata: ${l}\n\n`);
+		req.on("close", () => { h.clients.delete(res); if (!h.clients.size) setTimeout(() => { if (!h.clients.size) { hosts.delete(u.searchParams.get("sid")); h.host.kill(); } }, 3000); });
+		return true;
+	}
+	if (u.pathname === "/__cmd" && req.method === "POST") {
+		let body = ""; req.on("data", d => { body += d; });
+		req.on("end", () => {
+			try { const batch = JSON.parse(body);
+				for (const c of batch) { const bad = VALIDATE[which](c); const note = bad ? `  OUTSIDE THE CONTRACT: ${bad}` : "";
+					if (bad || process.env.MDMM_PREVIEW_VERBOSE) console.log(`cmd ${which} ${JSON.stringify(c).slice(0, 200)}${note}`); }
+				const h = previewHost(u.searchParams.get("sid") || "", u.searchParams.get("scenario"));
+				let forward = batch;
+				if (h.scn) {
+					if (h.scn.boot === "none") scenarioStart(h);	// no stub boot to wait for: the page's first command starts it
+					forward = batch.filter(c => {
+						let swallowed = false;
+						for (const st of h.scn.steps) if (st.on && Scn.matches(st.on, c)) {
+							h.timers.push(setTimeout(() => { const out = h.player.fire(st, c); if (out.length) emit(h, out); }, st.delay || 0));
+							if (st.swallow !== false) swallowed = true;
+						}
+						return !swallowed;
+					});
+				}
+				if (forward.length) h.host.stdin.write(JSON.stringify(forward) + "\n");
+			} catch (e) { console.log("cmd: " + e.message); }
+			res.writeHead(204); res.end(); });
+		return true;
+	}
+	if (u.pathname.endsWith(".html")) {
+		const [, ed, ...rel] = u.pathname.split("/"), name = rel.join("/");
+		const dirs = ed === "md" ? ["mdStudio", "shared"] : ed === "mm" ? ["mmStudio", "shared", "mdStudio"] : [];
+		const file = dirs.map(d => path.join(SKINS, d, name)).find(f => !name.includes("..") && fs.existsSync(f) && fs.statSync(f).isFile());
+		if (!file) return false;
+		const html = fs.readFileSync(file, "utf8").replace(/<head>/i, m => m + '<script src="/__preview.js"></script>');
+		res.writeHead(200, { "content-type": "text/html", "cache-control": "no-store" }); res.end(html);
+		return true;
+	}
+	return false;
+}
+function startPreview() {
+	const BUILD = process.env.MDMM_PREVIEW_BUILD;
+	const tell = (what, t0) => console.log(`[${new Date().toTimeString().slice(0, 8)}] ${what}${t0 ? ` (${Date.now() - t0} ms)` : ""}`);
+	let busy = false, again = null;
+	const run = (cmd, args) => new Promise(done => { const p = spawn(cmd, args, { cwd: ROOT }); let out = ""; p.stdout.on("data", d => { out += d; }); p.stderr.on("data", d => { out += d; }); p.on("close", code => done({ code, out })); });
+	/* what a saved file means: css = swap in place; js or html = reload; design source = sync, then as its kind; C++ = rebuild, restart, reload */
+	const sync = path.join(ROOT, `doc/modern-ux/sync-${which}studio-skin.py`);
+	async function changed(kind, file, t0) {
+		if (busy) { again = [kind, file, t0]; return; }
+		busy = true;
+		try {
+			let how = kind;
+			if (kind === "sync-css" || kind === "sync-reload") {
+				const r = await run("python3", [sync]);
+				if (r.code) { sseAll("error-text", `${path.basename(sync)} failed:\n${r.out.slice(-1500)}`); tell(`sync failed: ${file}\n${r.out.slice(-600)}`); return; }
+				how = kind === "sync-css" ? "css" : "reload";
+				syncedUntil = Date.now() + 400;
+			}
+			if (how === "cpp") {
+				const r = await run("cmake", ["--build", BUILD, "--target", "deskStubHost"]);
+				if (r.code) { sseAll("error-text", `deskStubHost build failed:\n${r.out.slice(-2500)}`); tell(`C++ build failed: ${file}\n${r.out.slice(-1500)}`); return; }
+				for (const h of hosts.values()) h.host.kill();
+				hosts.forEach(h => { h.clients.forEach(c => c.write("event: reload\ndata: 0\n\n")); }); hosts.clear();
+				tell(`${file}: rebuilt, host restarted, reload`, t0); return;
+			}
+			sseAll("ok", 0); sseAll(how, file);
+			tell(`${file}: ${how === "css" ? "stylesheet swapped" : "page reload"}`, t0);
+		} finally { busy = false; if (again) { const a = again; again = null; changed(...a); } }
+	}
+	let syncedUntil = 0, timers = new Map();
+	const later = (key, fn) => { clearTimeout(timers.get(key)); timers.set(key, setTimeout(fn, 60)); };
+	const watch = (dir, onFile) => { try { fs.watch(dir, { recursive: true }, (ev, name) => { if (name) onFile(name.toString()); }); } catch (e) { console.log(`no watch on ${dir}: ${e.message}`); } };
+	watch(SKINS, name => {
+		if (Date.now() < syncedUntil || busy || !/\.(css|js|html|json)$/.test(name)) return;
+		const t0 = Date.now();
+		/* a shared or override stylesheet is part of the generated page stylesheet: sync, then swap */
+		const kind = /\.css$/.test(name) ? (/(^|\/)(shared\/|[a-z]+Overrides\.css)/.test(name) ? "sync-css" : "css") : "reload";
+		later("skin", () => changed(kind, name, t0));
+	});
+	for (const rel of ["doc/modern-ux/mockup/index.html", "doc/modern-ux/mm-mockup/src", "doc/modern-ux/mm-mockup/build.sh"]) {
+		const abs = path.join(ROOT, rel), isDir = fs.statSync(abs).isDirectory();
+		if (which === "md" && rel.includes("mm-mockup") || which === "mm" && rel.includes("modern-ux/mockup")) continue;
+		(isDir ? watch : (d, f) => fs.watch(d, () => f(path.basename(d))))(abs, name => {
+			const t0 = Date.now();
+			later("design", () => changed(/\.css$/.test(name) ? "sync-css" : "sync-reload", rel + (isDir ? "/" + name : ""), t0)); });
+	}
+	/* a saved scenario: checked, then every page playing it reloads (a reload is a fresh host: the scenario starts again); a bad one shows its problems */
+	watch(Scn.dirOf(which), name => {
+		if (!/\.json$/.test(name)) return;
+		const t0 = Date.now(), scn = name.replace(/\.json$/, "");
+		later("scn:" + name, () => {
+			let bad;
+			if (name.startsWith("_")) { const e = contract(which).message(Scn.fixture(which)); bad = e ? [`${name}: ${e}`] : []; }
+			else { try { bad = Scn.problems(scn, which, fs.readFileSync(path.join(Scn.dirOf(which), name), "utf8")); } catch (e) { return; /* deleted */ } }
+			if (bad.length) { sseAll("error-text", `scenario ${scn} is not valid:\n${bad.join("\n")}`); tell(`scenario ${scn} is not valid:\n  ${bad.join("\n  ")}`); return; }
+			let n = 0;
+			sseAll("ok", 0);	// takes an earlier problem's red bar away
+			for (const h of hosts.values()) if (name.startsWith("_") || h.scnName === scn) { h.clients.forEach(c => c.write("event: reload\ndata: 0\n\n")); n++; }
+			tell(`scenario ${scn}: saved, ${n} page(s) replay it`, t0);
+		});
+	});
+	if (BUILD) watch(path.join(ROOT, "source/elektron/md"), name => {
+		if (/^mdJucePlugin\/skins\//.test(name) || !/\.(cpp|h|hpp|cmake|txt)$/.test(name)) return;
+		const t0 = Date.now(); later("cpp", () => changed("cpp", name, t0)); });
+	console.log(`\nPreview of the ${which === "md" ? "Machinedrum" : "Monomachine"} Editor page, stub host ${path.relative(ROOT, STUB)}`);
+	console.log(`   http://127.0.0.1:${PORT}/\n   save a skin or design file: the page follows by itself. Ctrl+C stops.`);
+	const list = Scn.files(which);
+	if (list.length) {
+		console.log(`\nScenarios (doc/modern-ux/scenarios/${which}), ?scenario=<name> on the page's URL, or the list at http://127.0.0.1:${PORT}/scenarios:`);
+		for (const f of list) { let t = {}; try { t = JSON.parse(fs.readFileSync(f.file, "utf8")); } catch { } console.log(`   ${f.name.padEnd(24)} ${t.title || ""}`); }
+	}
+	console.log("");
+}
 
 /* ---------- the page's files, as the plug-in bundles them (by name) ---------- */
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".ttf": "font/ttf", ".woff2": "font/woff2", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((req, res) => {
 	const u = new URL(req.url, "http://x");
+	if (opt.serve && previewRoute(req, res, u)) return;
 	const [, ed, ...rel] = u.pathname.split("/");
 	const name = rel.join("/");
 	const dirs = ed === "md" ? ["mdStudio", "shared"] : ed === "mm" ? ["mmStudio", "shared", "mdStudio"] : [];
@@ -122,8 +307,9 @@ const server = http.createServer((req, res) => {
 	res.writeHead(200, { "content-type": TYPES[path.extname(file)] || "application/octet-stream", "cache-control": "no-store" });
 	fs.createReadStream(file).pipe(res);
 });
-await new Promise(r => server.listen(0, "127.0.0.1", r));
+await new Promise((r, j) => { server.once("error", j); server.listen(opt.serve ? opt.port || (which === "md" ? 8791 : 8792) : 0, "127.0.0.1", r); });
 const PORT = server.address().port;
+if (opt.serve) { startPreview(); await new Promise(() => { }); }
 
 /* ---------- Chrome over the DevTools protocol ---------- */
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), "mdmm-page-chrome-"));

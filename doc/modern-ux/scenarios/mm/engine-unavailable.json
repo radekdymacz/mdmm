@@ -1,0 +1,10 @@
+{
+ "title": "HW MIDI engine, not answering",
+ "about": "The HW MIDI engine is chosen and the Monomachine has not answered: lifecycle hwLost, the emulator-only capabilities off with their reasons, the engine menu says why EMU is unavailable, and a notice offers a way on.",
+ "boot": "stub",
+ "machine": {"lifecycle": "hwLost", "lifecycleText": "The Monomachine has not answered for a while. Check the MIDI cables and that its SYSEX is on.", "capabilities": {"engine": "hw", "label": "HW MIDI", "about": "Engine: a real Monomachine on the MIDI ports.", "can": {"panelKeys": false, "lcd": false, "workingKitMemory": false, "telemetry": false, "midiMutes": false, "gridRecord": false}, "reasons": {"panelKeys": "A real Monomachine has its own panel.", "lcd": "A real Monomachine has its own screen.", "telemetry": "A real Monomachine's RAM cannot be read."}, "values": {"dumps": "manual"}}, "engines": [{"id": "emu", "label": "EMU OS 1.32B", "available": false, "reason": "No firmware is installed."}, {"id": "hw", "label": "HW MIDI", "available": true}]},
+ "steps": [
+  {"at": 0, "machine": {}},
+  {"at": 5000, "send": [{"type": "notice", "id": 1, "title": "Monomachine not answering", "text": "Nothing has answered on the MIDI ports for 3.5 s.\nCheck the cables and that SYSEX is on in the Monomachine's global settings.", "buttons": ["Try again", "Use the emulator"]}]}
+ ]
+}

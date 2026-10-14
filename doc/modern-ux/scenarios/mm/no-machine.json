@@ -1,0 +1,9 @@
+{
+ "title": "No machine (first run)",
+ "about": "No firmware is installed: lifecycle missing, input off, every capability off with its reason. The page shows the FIRMWARE NEEDED card; no documents ever arrive.",
+ "boot": "none",
+ "machine": {"lifecycle": "missing", "lifecycleText": "No Monomachine OS 1.32B firmware is running.", "input": false, "midi": false, "loading": {"done": 0, "failed": 0, "total": 0}, "capabilities": {"can": {"transport": false, "panic": false, "playFrom": false, "panelKeys": false, "recvSession": false, "lcd": false, "workingKitMemory": false, "telemetry": false, "midiMutes": false, "poly": false, "multiTrig": false, "multiMap": false, "portamento": false, "gridRecord": false, "chains": false}, "reasons": {"transport": "No firmware is running.", "panelKeys": "No firmware is running.", "gridRecord": "No firmware is running."}}, "engines": [{"id": "emu", "label": "EMU OS 1.32B", "available": false, "reason": "No firmware is installed."}, {"id": "hw", "label": "HW MIDI", "available": true}]},
+ "steps": [
+  {"at": 0, "send": [{"type": "romInfo", "installed": false, "os": "", "name": "", "size": 0, "folder": "~/Library/Application Support/Monomachine Editor/roms", "inFolder": false}], "machine": {}}
+ ]
+}

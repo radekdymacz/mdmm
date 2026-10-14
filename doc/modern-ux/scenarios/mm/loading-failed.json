@@ -1,0 +1,9 @@
+{
+ "title": "Loading: some documents never arrived",
+ "about": "The machine is ready but loading says 288 documents asked, 281 read, 7 given up on (loading.failed): the state after the load queue's rounds ran out.",
+ "boot": "stub",
+ "machine": {"loading": {"done": 281, "failed": 7, "total": 288}},
+ "steps": [
+  {"at": 0, "machine": {}}
+ ]
+}
