@@ -110,7 +110,7 @@ const Modal = (() => {
 		const d = top(); if (!d) return; const o = opts(d);
 		if (o.drag && e.target.closest?.(o.drag)) { delete moved["#" + d.el.id]; place(d.el.id); }
 	});
-	window.addEventListener("resize", () => { const d = top(); if (d && (opts(d).drag || opts(d).place)) place(d.el.id); });
+	window.addEventListener?.("resize", () => { const d = top(); if (d && (opts(d).drag || opts(d).place)) place(d.el.id); });
 	/* first in line (this file loads before the dialogs' own handlers): Esc, Tab and the backdrop */
 	document.addEventListener("keydown", e => {
 		const d = top(); if (!d) return;

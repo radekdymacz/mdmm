@@ -3029,7 +3029,7 @@ const MdJourneys = (() => {
 					c.bad.push(...Journey.cutText($1("#rail")), ...Journey.overlaps("#rail .th .ms", "#rail .th .n, #rail .th .nm")); },
 				screen: c => ok(c.n === 16 && !c.bad.length, `${c.n} rows; ${c.bad.slice(0, 4).join(" | ")}`) }
 			,{ say: "the GEN dialog is the same size and its right-hand keys stay where they are in Euclid, Random and Keep (the switch); the summary shows whole",
-				act: async (u, c) => { await closePops(u); u.click(tab("seq")); await sleep(400); await genAt(u, 0); c.boxes = [];
+				act: async (u, c) => { await closePops(u); u.click(tab("seq")); await sleep(400); c.t = [...Array(16).keys()].find(t => genRole(V.tracks[t].m) !== "keep") ?? 0; await genAt(u, c.t); c.boxes = [];
 					for (const k of ["euclid", "random", "keep"]) { u.click(k === "keep" ? "#genpop [data-genkeep]" : `#genpop [data-genkind="${k}"]`); await sleep(250); const p = $1("#genpop").getBoundingClientRect(), r = $1("#genpop [data-rand]").getBoundingClientRect(), d = $1("#genpop [data-genclose]").getBoundingClientRect(); c.boxes.push([k, ...[p.left, p.top, p.width, p.height, r.left, r.top, d.left, d.top].map(Math.round)].join(" ")); }
 					u.click("#genpop [data-genkeep]"); await sleep(200); u.click('#genpop [data-genkind="euclid"]'); await sleep(200); c.bad = [...Journey.cutText($1("#genpop")), ...Journey.spills("#genpop .gdsum")]; c.text = $1("#genpop .gdsum")?.textContent.trim(); u.click("#genpop [data-gencancel]"); await sleep(250); },
 				screen: c => ok(c.text && !c.bad.length && new Set(c.boxes.map(x => x.split(" ").slice(1).join(" "))).size === 1, `"${c.text}" ${c.bad.join(" | ")} ${c.boxes.join(" / ")}`) }
