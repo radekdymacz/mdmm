@@ -29,18 +29,29 @@ namespace mmDesk
 		BankGroup,		// [BANK GROUP]: A-D / E-H (MM-P8, before a chain or pick in the other half)
 		Transpose,		// FUNCTION + BANK B: the TRANSPOSE screen (B-060)
 		Track1, Track2, Track3, Track4, Track5, Track6,	// [TRACK 1-6]: the track in focus (B-060)
-		KnobUp, KnobDown	// DATA ENTRY A one value step up or down: four pulses, as the menus take them (MM-P1, B-060)
+		KnobUp, KnobDown,	// DATA ENTRY A one value step up or down: four pulses, as the menus take them (MM-P1, B-060)
+		StepRecord,		// hold STOP, press RECORD: STEP RECORDING (0.6 wave 7, manual 1-50)
+		ExitDown, ExitUp,	// [EXIT/NO] held down, and let go later: LIVE RECORDING erases while it is held (manual 1-49)
+		Kit				// [KIT/SONG] alone: the KIT window (0.6 wave 12: LOAD KIT > UNDO KIT, MM-102)
 	};
 
-	// Keys pressed with another held: FUNCTION for Global, MuteWindow and Transpose, RECORD for LiveRecord.
-	constexpr bool isChord(const Key _k) { return _k == Key::Global || _k == Key::MuteWindow || _k == Key::LiveRecord || _k == Key::Transpose; }
+	// Keys pressed with another held: FUNCTION for Global, MuteWindow and Transpose, RECORD for LiveRecord, STOP for
+	// StepRecord.
+	constexpr bool isChord(const Key _k)
+	{
+		return _k == Key::Global || _k == Key::MuteWindow || _k == Key::LiveRecord || _k == Key::Transpose || _k == Key::StepRecord;
+	}
 	// DATA ENTRY A turned, not a key: g_knobPulses encoder pulses, each its own panel state.
 	constexpr bool isKnob(const Key _k) { return _k == Key::KnobUp || _k == Key::KnobDown; }
 	constexpr int g_knobPulses = 4;
-	// The panel states a key takes (each held 10 ms): down and up, a chord's four, a knob's pulses.
-	constexpr int keyStates(const Key _k) { return isChord(_k) ? 4 : isKnob(_k) ? g_knobPulses : 2; }
-	// The key held for a chord.
+	// Half a press: the key goes down (and stays) or comes up, one panel state.
+	constexpr bool isHalf(const Key _k) { return _k == Key::ExitDown || _k == Key::ExitUp; }
+	constexpr bool isRelease(const Key _k) { return _k == Key::ExitUp; }
+	// The panel states a key takes (each held 10 ms): down and up, a chord's four, a knob's pulses, half a press's one.
+	constexpr int keyStates(const Key _k) { return isChord(_k) ? 4 : isKnob(_k) ? g_knobPulses : isHalf(_k) ? 1 : 2; }
+	// The key held for a chord: RECORD, STOP, else FUNCTION.
 	constexpr bool heldIsRecord(const Key _k) { return _k == Key::LiveRecord; }
+	constexpr bool heldIsStop(const Key _k) { return _k == Key::StepRecord; }
 
 	using Screen = elektronData::MmScreen;
 
@@ -69,9 +80,12 @@ namespace mmDesk
 		bool recvActive = false;	// SYSEX RECV takes dumps (RAM 0x26a3c3)
 		int tempo = 0;				// BPM x 24 (RAM 0x2bc2a6), 0 = unknown
 		int mutes = -1;				// bit t: synth track t, bit 6 + t: MIDI track t (RAM, MM-P4); -1 = unknown
-		int recording = -1;			// 0 off, 1 GRID RECORDING (RAM 0x26bbb3), 2 LIVE RECORDING (0x2bff01); -1 = unknown
+		int recording = -1;			// 0 off, 1 GRID RECORDING (RAM 0x26bbb3), 2 LIVE RECORDING (0x2bff01), 3 STEP RECORDING
+									// (0x2bff05); -1 = unknown
+		int stepCursor = -1;		// STEP RECORDING: the step a note writes next (RAM 0x2bff09, 0-based); -1 = unknown
 		int bankGroup = -1;			// MM-P8: BANK GROUP, 0 A-D, 1 E-H (RAM 0x70000b); -1 = unknown
 		int songRow = -1;			// 0.3.5: the song row that plays (RAM 0x2bdba1, SONG mode); -1 = unknown
+		int songSteps = -1;			// 0.6 (MM-271): the song's played steps since PLAY (RAM 0x2bdf3c); -1 = unknown
 		bool chainKnown = false;	// MM-P8: the chain is readable (RAM 0x2bc2c4)
 		Chain chain;
 	};

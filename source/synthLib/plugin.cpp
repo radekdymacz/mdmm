@@ -22,8 +22,6 @@ namespace
 
 namespace synthLib
 {
-	constexpr uint8_t g_stateVersion = 1;
-
 	Plugin::Plugin(Device* _device, CallbackDeviceInvalid _callbackDeviceInvalid)
 	: m_resampler(_device->getChannelCountIn(), _device->getChannelCountOut())
 	, m_device(_device)
@@ -324,7 +322,12 @@ namespace synthLib
 
 	void Plugin::processMidiClock(const double _bpm, const double _ppqPos, const bool _isPlaying, const size_t _sampleCount, const bool _ppqKnown)
 	{
-		m_midiClock.process(_bpm, _ppqPos, _isPlaying, _sampleCount, _ppqKnown);
+		const bool on = m_hostClockOn.load(std::memory_order_acquire);
+		if(on && !m_hostClockWas)
+			m_midiClock.restart();
+		m_hostClockWas = on;
+		if(on)
+			m_midiClock.process(_bpm, _ppqPos, _isPlaying, _sampleCount, _ppqKnown);
 	}
 
 	float* Plugin::getSilentInputBuffer(const size_t _minimumSize)

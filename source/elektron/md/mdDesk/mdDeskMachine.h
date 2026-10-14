@@ -10,6 +10,7 @@
 
 #include "deskCore/deskAdapter.h"
 #include "deskCore/deskChain.h"
+#include "deskCore/deskHostClock.h"
 #include "deskCore/deskWorkingCopy.h"
 #include "deskCore/deskCore.h"
 #include "deskCore/deskLoadQueue.h"
@@ -89,7 +90,7 @@ namespace mdDesk
 		static const std::map<std::string, Handler>& handlers();
 
 		// What a sequence step does (deskCore::Sequencer, facts instead of fixed delays).
-		enum class Act : uint8_t { Stop, Play, RecordPlay, LoadSong, SelectPattern };
+		enum class Act : uint8_t { Stop, Play, RecordPlay, LoadSong, SelectPattern, MidiStop, SongMode, FromPosition };
 		using Pushes = deskCore::Pushes<DocRef, Document>;
 		// The firmware tweaks from its selected track, which must lead (controlAllLeads): the adapter
 		// selects one first (SET STATUS, then the machine's status says it is selected).
@@ -173,6 +174,11 @@ namespace mdDesk
 		void pumpChain();
 		// 0.3.5: an edited current song is heard without Reload song (pumpSongReload)
 		void pumpSongReload(double _now);
+		// B-098: the emulated machine has not loaded a song since it started (its working song is empty)
+		bool songNotLoaded() const;
+		// B-101: REC once the playing pattern's push is on the machine
+		deskCore::Outcome startRecording();
+		void pumpRecordStart(double _now);
 		double m_songEditedMs = -1;
 		void load(const DocRef& _ref, bool _urgent);
 		void request(const DocRef& _ref);
@@ -220,10 +226,18 @@ namespace mdDesk
 		deskCore::Outcome cmdSelect(const Value&, const Documents&);
 		deskCore::Outcome cmdSaveKit(const Value&, const Documents&);
 		deskCore::Outcome cmdReloadKit(const Value&, const Documents&);
+		deskCore::Outcome cmdLoadUndoKit(const Value&, const Documents&);
+		std::optional<deskCore::Outcome> undoKitRefused() const;
+		deskCore::Outcome askLoadUndoKit(const Value&, const Documents&);
 		deskCore::Outcome cmdKitLoad(const Value&, const Documents&);
 		deskCore::Outcome cmdKitSaveAs(const Value&, const Documents&);
 		deskCore::Outcome kitSwitchedBy(uint8_t _slot, bool _load);
 		deskCore::Outcome cmdRecord(const Value&, const Documents&);
+		deskCore::Outcome cmdLiveErase(const Value&, const Documents&);
+		// liveErase: EXIT/NO and the TRIG key or knob switch let go if they are down.
+		void releaseErase();
+		// liveErase with a parameter: select the track, show its knob page, then hold EXIT/NO and the knob.
+		void pumpErase(double _now);
 		deskCore::Outcome cmdRecTrig(const Value&, const Documents&);
 		deskCore::Outcome cmdNoteOn(const Value&, const Documents&);
 		deskCore::Outcome cmdNoteOff(const Value&, const Documents&);
@@ -238,8 +252,9 @@ namespace mdDesk
 		deskCore::Outcome cmdChainClear(const Value&, const Documents&);
 		deskCore::Outcome cmdGlobalSlot(const Value&, const Documents&);
 		deskCore::Outcome cmdSelectSong(const Value&, const Documents&);
+		deskCore::Outcome cmdSaveSong(const Value&, const Documents&);
+		deskCore::Outcome askSaveSong(const Value&, const Documents&);
 		deskCore::Outcome cmdReloadSong(const Value&, const Documents&);
-		deskCore::Outcome cmdSampleName(const Value&, const Documents&);
 		deskCore::Outcome cmdSampleCancel(const Value&, const Documents&);
 		// Every SysEx but a sample's goes here (m_out holds it while a sample is on its way).
 		void sendSysex(const Bytes& _message);
@@ -252,6 +267,17 @@ namespace mdDesk
 		deskCore::Outcome cmdMute(const Value&, const Documents&);
 		deskCore::Outcome cmdSeqMode(const Value&, const Documents&);
 		deskCore::Outcome cmdFollowHost(const Value&, const Documents&);
+		deskCore::HostClock m_hostClock;	// review 1 (I-026): TEMPO IN is the host-clock switch
+		// Wave 2 (mdDeskTransport.cpp): pause, resume, play from a song row, panic, the tempo nudge.
+		deskCore::Outcome cmdPause(const Value&, const Documents&);
+		deskCore::Outcome cmdResume(const Value&, const Documents&);
+		deskCore::Outcome cmdPlayFrom(const Value&, const Documents&);
+		deskCore::Outcome cmdPanic(const Value&, const Documents&);
+		deskCore::Outcome cmdNudge(const Value&, const Documents&);
+		bool ctrlIn(const Documents& _view) const;
+		void runTransportAct(Act _act, int _arg);
+		// The tempo a nudge started from (BPM x 24), until it is let go.
+		std::optional<uint16_t> m_nudgeFrom;
 
 		const Profile m_profile;
 		Port m_port;
@@ -272,7 +298,11 @@ namespace mdDesk
 		int m_reloadsPending = 0;
 		double m_reloadQueuedMs = 0;
 		static constexpr double g_reloadHoldMs = 10000;	// a reload not restored by then holds nothing any more
-		static constexpr double g_songReloadQuietMs = 300;	// a song edit, then this long before the song loads again
+		static constexpr double g_songReloadQuietMs = 300;
+		static constexpr double g_recordWaitMs = 3000;	// B-101: REC waits at most this long for a pattern push
+		// liveErase: the page says the key is still held every 250 ms; without word for this long the keys are let go
+		// (a page that went away, reloaded or died while Delete was held)
+		static constexpr double g_eraseQuietMs = 1000;	// a song edit, then this long before the song loads again
 		bool reloadHolds() const { return m_reloadsPending > 0 && now() - m_reloadQueuedMs < g_reloadHoldMs; }
 
 		Probe m_probe = Probe::Running;
@@ -290,19 +320,48 @@ namespace mdDesk
 		Telemetry m_telemetry;
 		deskCore::SongRowHeard m_songRow;	// 0.3.5: the row heard (the RAM byte runs ahead by about two steps)
 		int m_songRowHeard = -1;
+		deskCore::SongRowHeard m_songRepeats;	// MD-147: the row's passes still to come, read as the row
+		int m_songRepeatsHeard = -1;
 		std::array<bool, 16> m_mutes{};
 		// The page's keyboard: per track, the note sounding (one at a time; a later key replaces it). The kit
 		// value a key holds is the working copy's held layer (m_working.held).
 		struct SoundingNote { uint8_t channel = 0; uint8_t note = 0; int pitch = 0; };
 		std::array<std::optional<SoundingNote>, 16> m_notes{};
 		KnobRecorder m_knobs;
+		// B-134: the kit the machine's memory holds now (its last published region, decoded), for the knob recorder. The
+		// working copy's image is dropped at a desk reset or when another kit plays and taken again only from a region
+		// that changed, and the device publishes the region only when memory changes: the recorder waited for memory
+		// that never came, no turn, no lock (md-seq-live-lock alone, fresh start: one region before the page's reset).
+		// Kept over a desk reset: it is the machine's memory, and a new device publishes its own.
+		std::optional<elektronData::MdKit> m_memoryKit;
+		double m_knobKeysMs = -1e9;	// B-134: when the knob recorder's last turns were seen on their way
 		std::optional<RecLock> m_recLock;
+		// liveErase: the track whose TRIG key is held with EXIT/NO, or (param, MD-140) whose knob switch is: the knob
+		// of kit parameter 0-23 on its page (SYNTHESIS / EFFECTS / ROUTING), which the machine shows before the keys go
+		// down (held false until then).
+		struct Erase
+		{
+			uint8_t track = 0;
+			std::optional<uint8_t> param;
+			bool held = false;
+			bool gaveUp = false;	// the knob page never showed: nothing held until the page asks for something else
+			int pagePresses = 0;
+			double lastMs = -1e9;
+		};
+		std::optional<Erase> m_erasing;
+		double m_recordedMs = -1e18;		// B-101: telemetry last said live recording
+		bool m_recordedSinceRec = false;	// B-127: live recording ran since REC was last pressed twice (sendChain)
+		double m_recordWaitMs = -1;			// B-101: REC pressed, waiting for the pattern's push (pumpRecordStart)
+		double m_eraseSeenMs = 0;			// liveErase: the page's last word that the key is still held
+		static constexpr int g_eraseMaxPagePresses = 4;
 		double m_recordPollMs = -1e9;
 		deskCore::Sequencer<Act> m_sequence;
 		TweakTurns m_tweak;
 		// Control All without the panel (HW MIDI, no telemetry): the latest value per (track, index),
 		// sent as at most one CC each per coalescing tick, within the wire's budget.
 		std::map<std::pair<uint8_t, uint8_t>, uint8_t> m_coalesced;
+		// B-145: plain values (an undo) that came while the machine's Control All gesture was on its way: sent when it ends
+		std::map<std::pair<uint8_t, uint8_t>, uint8_t> m_afterTweak;
 		double m_coalescedMs = -1e9;
 	};
 }

@@ -18,6 +18,7 @@ function syncSel(ghost) {
 	$$("#seq .st").forEach(b => { const t = +b.dataset.t, s = +b.dataset.s; b.classList.toggle("selx", inSel(t, s)); b.classList.toggle("selghost", inSel(t, s, ghost)); });
 	$$("#seq .rul[data-s]").forEach(r => r.classList.toggle("selx", !!S.stepSel && +r.dataset.s >= S.stepSel.from && +r.dataset.s < S.stepSel.to));
 	secLabels();
+	StepSel.moreWake();
 }
 function setSel(x) { S.stepSel = x; syncSel(); }
 function clearSel() { if (!S.stepSel) return; S.stepSel = null; syncSel(); }
@@ -31,8 +32,8 @@ function lockName(t, i) { return slots(V.tracks[t].m, Cat)[i] || "#" + (i + 1); 
 function blockOf(x) {
 	const rows = [];
 	for (let t = x.t; t < x.t + x.n; t++) {
-		const tr = V.tracks[t], row = { trigs: [], acc: [], slide: [], locks: [] };
-		for (let s = x.from; s < x.to; s++) { row.trigs.push(!!tr.trigs[s]); row.acc.push(tr.acc.has(s)); row.slide.push(tr.slide.has(s)); }
+		const tr = V.tracks[t], row = { trigs: [], acc: [], slide: [], swing: [], locks: [] };
+		for (let s = x.from; s < x.to; s++) { row.trigs.push(!!tr.trigs[s]); row.acc.push(tr.acc.has(s)); row.slide.push(tr.slide.has(s)); row.swing.push(tr.swing.has(s)); }
 		for (const [k, m] of V.locks) {
 			const [kt, name] = [+k.split(":")[0], k.slice(k.indexOf(":") + 1)]; if (kt !== t) continue;
 			const i = lockIndex(t, name); if (i < 0) continue;
@@ -48,7 +49,7 @@ function clearWrites(x) {
 	const w = [];
 	for (let t = x.t; t < x.t + x.n; t++) for (let s = x.from; s < x.to; s++) {
 		if (!V.tracks[t].trigs[s]) continue;
-		w.push([["tracks", t, "trigs", s], false], [["tracks", t, "acc", s], false], [["tracks", t, "slide", s], false], ...clearStep(t, s));
+		w.push([["tracks", t, "trigs", s], false], ...trigOffWrites(t, s));
 	}
 	return w;
 }
@@ -61,6 +62,7 @@ function putWrites(block, dt, at) {
 			w.push([["tracks", t, "trigs", s], true]);
 			if (!V.accAll) w.push([["tracks", t, "acc", s], row.acc[k]]);
 			if (!V.slideAll) w.push([["tracks", t, "slide", s], row.slide[k]]);
+			if (!V.swingAll && row.swing) w.push([["tracks", t, "swing", s], !!row.swing[k]]);
 		}
 		for (const [i, k, v] of row.locks) if (at + k < land.to) w.push([["locks", lk(t, lockName(t, i)), at + k], v]);
 	}
@@ -150,7 +152,7 @@ function selTrigs() {
 			if (on) keep.push(s);
 			if (!!tr.trigs[s] === on) continue;
 			w.push([["tracks", t, "trigs", s], on]);
-			if (!on) w.push([["tracks", t, "acc", s], false], [["tracks", t, "slide", s], false], ...clearStep(t, s));
+			if (!on) w.push(...trigOffWrites(t, s));
 		}
 		rows.push({ t, on: keep });
 	}
@@ -188,6 +190,13 @@ function stepMenu(t, s, x, y) {
 	if (!inSel(t, s)) { setSel({ t, n: 1, from: s, to: s + 1 }); if (t !== S.sel) select(t); }
 	DeskMenu.open(stepMenuItems(t, s), x, y, { title: StepSel.menuTitle(S.stepSel, t, s, trackWords) });
 }
+/* the step menu's visible key: ⋯ on the selection's last step shown (shared/deskSelect.js moreKey) */
+StepSel.moreKey({
+	active: () => S.ws === "seq" && !!S.stepSel && !V.rec,
+	cells: () => document.querySelectorAll("#seq .st.selx"),
+	clip: () => document.getElementById("seqscroll"),
+	open: (x, y) => { if (S.stepSel) stepMenu(S.stepSel.t, S.stepSel.from, x, y); }
+});
 document.addEventListener("contextmenu", e => {
 	const st = e.target.closest?.("#seq .st"); if (!st || S.ws !== "seq") return;
 	e.preventDefault();

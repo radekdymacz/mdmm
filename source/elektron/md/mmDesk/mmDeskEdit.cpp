@@ -987,6 +987,36 @@ namespace mmDesk
 			return _p;
 		}
 
+		// MM-083, MM-184, MM-203: the locks of the steps in [from, to) of tracks t to t + n - 1 go, their notes stay (the
+		// machine's TRIG + PLAY in grid recording, "CLEAR NOTE LOCKS", manual 1-50, 1-57)
+		// MM-095: the kit the pattern plays (manual 1-18). The firmware takes it with the dump; over the pattern that plays
+		// it loads that kit at once (gapProbesFirmwareTest w12patkit)
+		std::optional<MmPattern> patternKit(MmPattern _p, const In& _in)
+		{
+			_p.kit = static_cast<uint8_t>(_in.a.integer("v"));
+			_in.note = ed::mmPatternName(_p.position) + " plays kit " + std::to_string(_p.kit + 1);
+			return _p;
+		}
+
+		std::optional<MmPattern> clearStepLocks(MmPattern _p, const In& _in)
+		{
+			const auto r = stepRange(_in);
+			if(!r)
+				return {};
+			size_t before = 0, after = 0;
+			for(const auto& lp : ed::mmLockParams(_p))
+				if(const auto row = ed::mmLockRow(_p, lp); row >= 0)
+					before += static_cast<size_t>(std::count_if(_p.lockRows[static_cast<size_t>(row)].begin(), _p.lockRows[static_cast<size_t>(row)].end(), [](const uint8_t _v) { return _v != MmPattern::g_noLock; }));
+			for(int t = r->track; t < r->track + r->rows; ++t)
+				for(int s = r->from; s < r->to; ++s)
+					clearStepLocks(_p, trackOf(t), static_cast<size_t>(s));
+			for(const auto& lp : ed::mmLockParams(_p))
+				if(const auto row = ed::mmLockRow(_p, lp); row >= 0)
+					after += static_cast<size_t>(std::count_if(_p.lockRows[static_cast<size_t>(row)].begin(), _p.lockRows[static_cast<size_t>(row)].end(), [](const uint8_t _v) { return _v != MmPattern::g_noLock; }));
+			_in.note = before == after ? rangeName(*r) + ": no locks" : "Cleared " + std::to_string(before - after) + " lock(s) of " + rangeName(*r) + "; the notes stay";
+			return _p;
+		}
+
 		std::optional<MmPattern> copySteps(MmPattern _p, const In& _in)
 		{
 			const auto r = stepRange(_in);
@@ -1044,7 +1074,7 @@ namespace mmDesk
 				{"step", step}, {"slide", slide}, {"swingStep", swingStep}, {"lock", lock}, {"clearLane", clearLane},
 				{"clearLocks", clearLocks}, {"clearPattern", clearPattern}, {"steps", steps}, {"rotate", rotate},
 				{"doublePattern", doublePattern}, {"length", length}, {"speed", speed}, {"swing", swing}, {"transpose", transpose},
-				{"arp", arp}, {"clearSteps", clearSteps}, {"copySteps", copySteps}, {"pasteSteps", pasteSteps}, {"copyStepsTo", copyStepsTo}};
+				{"arp", arp}, {"clearSteps", clearSteps}, {"clearStepLocks", clearStepLocks}, {"patternKit", patternKit}, {"copySteps", copySteps}, {"pasteSteps", pasteSteps}, {"copyStepsTo", copyStepsTo}};
 			return edits;
 		}
 
@@ -1244,6 +1274,53 @@ namespace mmDesk
 			return _k;
 		}
 
+		// revertTrack {k, t}: track t (0-11) of the kit that plays goes back to how the kit's slot stores it (the Sound
+		// page's Revert track), one change of the working kit. A synth track: its machine and seven pages, level, outputs
+		// and input, its assign rows and its bits of the kit's masks (JOY mirror, key tracking, portamento, legato), and
+		// the track it forwards its notes to. A MIDI track: its MIDI page. What the kit shares between tracks (the multi
+		// envelope, MULTI TRIG) stays; the slot itself is not touched.
+		std::optional<MmKit> revertTrack(MmKit _k, const In& _in)
+		{
+			const int t = _in.a.integer("t");
+			const auto it = _in.docs.kits.find(_k.position);
+			if(it == _in.docs.kits.end())
+			{
+				_in.a.error("kit " + std::to_string(_k.position + 1) + " is not read from its slot yet");
+				return {};
+			}
+			const auto& s = it->second;
+			const auto tr = trackOf(t);
+			const size_t k = tr.t;
+			if(tr.midi)
+				_k.tracks[k].midi = s.tracks[k].midi;
+			else
+			{
+				_k.machines[k] = s.machines[k];
+				_k.tracks[k].pages = s.tracks[k].pages;
+				_k.levels[k] = s.levels[k];
+				_k.routing[k] = s.routing[k];
+				const auto bus = [](const MmKit& _m) { return static_cast<unsigned>((_m.x1cd[1] << 8) | _m.x1cd[2]); };
+				const auto mine = static_cast<unsigned>(3u << (2 * k));
+				const auto word = (bus(_k) & ~mine) | (bus(s) & mine);
+				_k.x1cd[1] = static_cast<uint8_t>(word >> 8);
+				_k.x1cd[2] = static_cast<uint8_t>(word & 0xff);
+				_k.assignPage[k] = s.assignPage[k];
+				_k.assignDest[k] = s.assignDest[k];
+				_k.assignAdd[k] = s.assignAdd[k];
+				_k.trigPos[k] = s.trigPos[k];
+				const auto bit = [k](uint8_t& _mine, const uint8_t _stored) { _mine = static_cast<uint8_t>((_mine & ~(1u << k)) | (_stored & (1u << k))); };
+				bit(_k.mirrorMask, s.mirrorMask);
+				bit(_k.lpfMask, s.lpfMask);
+				bit(_k.hpfMask, s.hpfMask);
+				bit(_k.portamentoMask, s.portamentoMask);
+				bit(_k.legatoAmp, s.legatoAmp);
+				bit(_k.legatoFilter, s.legatoFilter);
+				bit(_k.legatoLfo, s.legatoLfo);
+			}
+			_in.note = trackName(t) + " is back as kit " + std::to_string(_k.position + 1) + " stores it";
+			return _k;
+		}
+
 		// Many kit values at once (MUTATE, a screen's handle, Control All): [[t, page, i, v]...], as param's.
 		std::optional<MmKit> params(MmKit _k, const In& _in)
 		{
@@ -1371,9 +1448,275 @@ namespace mmDesk
 		{
 			static const Edits<MmKit> edits{{"level", level}, {"route", route}, {"input", input}, {"param", param},
 				{"trigPos", trigPos}, {"legato", legato}, {"portamento", portamento}, {"machine", machine}, {"clearSound", clearSound},
-				{"copySound", copySound}, {"pasteSound", pasteSound}, {"params", params}, {"assign", assign}, {"multiEnv", multiEnv},
+				{"copySound", copySound}, {"pasteSound", pasteSound}, {"revertTrack", revertTrack}, {"params", params}, {"assign", assign}, {"multiEnv", multiEnv},
 				{"multiTrig", multiTrig}, {"kitName", kitName}};
 			return edits;
+		}
+
+		// ---- a track's parts: COPY / PASTE / CLEAR what (the machine's SUPER COPY and SUPER CLEAR; deskCore/deskEdits.h
+		// trackParts). The whole track: its 64 steps and the pattern's settings of it (arp, transpose), and the kit that
+		// plays for its machine and sound. Parts go between tracks of one kind: synth onto synth, MIDI onto MIDI ----
+
+		using deskCore::trackParts::Mask;
+		using TrackHome = deskCore::trackParts::Home;
+		enum TrackPart : size_t { PartNotes, PartMelody, PartSlide, PartSwing, PartLocks, PartArp, PartTranspose, PartSound };
+		bool has(const Mask _m, const TrackPart _p) { return (_m & deskCore::trackParts::bit(_p)) != 0; }
+		constexpr uint64_t g_defaultSwing = 0xaaaaaaaaaaaaaaaaull;	// every second 16th, as a new pattern
+
+		std::string trackRefuse(const Mask _m, const int _from, const int _t)
+		{
+			if(trackOf(_from).midi != trackOf(_t).midi)
+				return trackName(_t) + ": a " + (trackOf(_from).midi ? "MIDI" : "synth") + " track's parts paste onto " + (trackOf(_from).midi ? "MIDI" : "synth")
+					+ " tracks only";
+			if(has(_m, PartSound) && trackOf(_t).midi)
+				return trackName(_t) + " is a MIDI track: it has no machine (sound is a synth track's)";
+			return {};
+		}
+
+		void trackTake(const MmPattern* _p, const MmKit* _k, const int _t, Mask, Clipboard::Track& _v)
+		{
+			const auto tr = trackOf(_t);
+			_v.midi = tr.midi;
+			if(_p)
+			{
+				auto p = *_p;
+				_v.steps.clear();
+				for(size_t s = 0; s < MmPattern::g_steps; ++s)
+					_v.steps.push_back(stepAt(p, tr, s));
+				_v.slide = slideOf(p, tr);
+				_v.swing = swingOf(p, tr);
+				for(const auto& lp : trackLocks(p, tr))
+				{
+					const auto r = ed::mmLockRow(p, lp);
+					for(size_t s = 0; r >= 0 && s < MmPattern::g_steps; ++s)
+						if(const auto v = p.lockRows[static_cast<size_t>(r)][s]; v != MmPattern::g_noLock)
+							_v.locks[{lp.page, lp.param}][static_cast<uint8_t>(s)] = v;
+				}
+				const auto& a = tr.midi ? p.midiArp : p.arp;
+				_v.arpPlayOjmp = a.playOjmp[tr.t];
+				_v.arpMode = a.mode[tr.t];
+				_v.arpRange = a.range[tr.t];
+				_v.arpSpeed = a.speed[tr.t];
+				_v.arpTrigs = a.trigs[tr.t];
+				_v.arpLength = a.length[tr.t];
+				_v.arpSteps = a.steps[tr.t];
+				const auto& x = tr.midi ? p.midiTranspose : p.transpose;
+				_v.transpose = x.track[tr.t];
+				_v.scale = x.scale[tr.t];
+				_v.key = x.key[tr.t];
+			}
+			if(_k && !tr.midi)
+			{
+				_v.sound.machine = _k->machines[tr.t];
+				_v.sound.pages = _k->tracks[tr.t].pages;
+			}
+		}
+
+		void trackPut(MmPattern* _p, MmKit* _k, const Clipboard::Track& _v, int, const int _t, const Mask _m, std::vector<std::string>& _skipped)
+		{
+			const auto tr = trackOf(_t);
+			if(_p)
+			{
+				auto& p = *_p;
+				std::string error;
+				size_t lost = 0;
+				if(has(_m, PartNotes))
+				{
+					for(size_t s = 0; s < MmPattern::g_steps && s < _v.steps.size(); ++s)
+						if(!setStep(p, tr, s, _v.steps[s], error))
+							++lost;
+				}
+				else if(has(_m, PartMelody))
+				{
+					// the copied pitches onto the trigs that are there; a trig whose step the copy has no pitch on keeps its own
+					for(size_t s = 0; s < MmPattern::g_steps && s < _v.steps.size(); ++s)
+					{
+						auto here = stepAt(p, tr, s);
+						const auto& from = _v.steps[s];
+						if(here.kind != StepValue::Kind::On || from.kind != StepValue::Kind::On || from.notes.empty() || here.notes == from.notes)
+							continue;
+						here.notes = from.notes;
+						here.trig = true;
+						if(!setStep(p, tr, s, here, error))
+							++lost;
+					}
+				}
+				if(lost)
+					_skipped.push_back(trackName(_t) + ": " + std::to_string(lost) + " step(s) left out. " + error);
+				if(has(_m, PartSlide))
+					slideOf(p, tr) = _v.slide;
+				if(has(_m, PartSwing))
+					swingOf(p, tr) = _v.swing;
+				if(has(_m, PartLocks))
+				{
+					for(const auto& lp : trackLocks(p, tr))
+						removeRow(p, static_cast<size_t>(ed::mmLockRow(p, lp)));
+					const auto* machine = _k && !tr.midi ? ed::mmMachine(_k->machines[tr.t]) : nullptr;
+					size_t noTrig = 0, noParam = 0, full = 0;
+					for(const auto& [param, steps] : _v.locks)
+					{
+						// a synthesis page parameter this track's machine does not have is left out
+						if(param.first == 0 && machine && !(machine->synth[param.second] && *machine->synth[param.second]))
+						{
+							noParam += steps.size();
+							continue;
+						}
+						for(const auto& [s, v] : steps)
+						{
+							if(!ed::mmStepSet(holds(p, tr), s))
+								++noTrig;
+							else if(!setLock(p, lockParam(tr, param.first, param.second), s, v))
+								++full;
+						}
+					}
+					if(noTrig)
+						_skipped.push_back(trackName(_t) + ": " + std::to_string(noTrig) + " lock(s) left out, on steps without a trig");
+					if(noParam)
+						_skipped.push_back(trackName(_t) + ": " + std::to_string(noParam) + " lock(s) left out: its machine has no such parameter");
+					if(full)
+						_skipped.push_back(trackName(_t) + ": " + std::to_string(full) + " lock(s) left out: all 62 locked parameters are in use");
+				}
+				if(has(_m, PartArp))
+				{
+					auto& a = tr.midi ? p.midiArp : p.arp;
+					a.playOjmp[tr.t] = _v.arpPlayOjmp;
+					a.mode[tr.t] = _v.arpMode;
+					a.range[tr.t] = _v.arpRange;
+					a.speed[tr.t] = _v.arpSpeed;
+					if(!tr.midi)
+						a.trigs[tr.t] = _v.arpTrigs;
+					a.length[tr.t] = _v.arpLength;
+					a.steps[tr.t] = _v.arpSteps;
+				}
+				if(has(_m, PartTranspose))
+				{
+					auto& x = tr.midi ? p.midiTranspose : p.transpose;
+					x.track[tr.t] = _v.transpose;
+					x.scale[tr.t] = _v.scale;
+					x.key[tr.t] = _v.key;
+				}
+			}
+			if(_k && has(_m, PartSound) && !tr.midi)
+			{
+				_k->machines[tr.t] = _v.sound.machine;
+				_k->tracks[tr.t].pages = _v.sound.pages;
+			}
+		}
+
+		void trackClear(MmPattern* _p, MmKit* _k, const int _t, const Mask _m)
+		{
+			const auto tr = trackOf(_t);
+			if(_p)
+			{
+				auto& p = *_p;
+				std::string error;
+				if(has(_m, PartNotes))
+				{
+					for(size_t s = 0; s < MmPattern::g_steps; ++s)
+						setStep(p, tr, s, StepValue{}, error);
+				}
+				else if(has(_m, PartMelody))
+				{
+					for(size_t s = 0; s < MmPattern::g_steps; ++s)
+					{
+						auto here = stepAt(p, tr, s);
+						if(here.kind != StepValue::Kind::On || here.notes.empty())
+							continue;
+						here.notes.clear();
+						setStep(p, tr, s, here, error);
+					}
+				}
+				if(has(_m, PartSlide))
+					slideOf(p, tr) = 0;
+				if(has(_m, PartSwing))
+					swingOf(p, tr) = g_defaultSwing;
+				if(has(_m, PartLocks))
+					for(const auto& lp : trackLocks(p, tr))
+						removeRow(p, static_cast<size_t>(ed::mmLockRow(p, lp)));
+				if(has(_m, PartArp))
+				{
+					auto& a = tr.midi ? p.midiArp : p.arp;
+					a.playOjmp[tr.t] = static_cast<uint8_t>(a.playOjmp[tr.t] & 0xf8);	// PLAY OFF
+				}
+				if(has(_m, PartTranspose))
+				{
+					auto& x = tr.midi ? p.midiTranspose : p.transpose;
+					x.track[tr.t] = 0;
+					x.scale[tr.t] = 0;
+					x.key[tr.t] = 0;
+				}
+			}
+			if(_k && has(_m, PartSound) && !tr.midi)
+				assignMachine(*_k, tr.t, 1, false);	// CLEAR MACHINE: GND-SIN
+		}
+
+		using TrackSpec = deskCore::trackParts::Spec<MmPattern, MmKit, Clipboard::Track>;
+		const TrackSpec& trackSpec()
+		{
+			static const TrackSpec spec{trackParts(), 12, trackName, trackRefuse, trackTake, trackPut, trackClear};
+			return spec;
+		}
+
+		// trackCopy, trackPaste, trackClear: the pattern (p) and the kit that plays (k) the parts need (the kit that plays is
+		// read for a lock's parameter even when no kit part is named), the run (deskCore), then one change a document it
+		// changed (one undo step).
+		EditResult applyTrack(const Documents& _docs, const Value& _command, Clipboard& _clipboard, const EditContext& _context)
+		{
+			namespace tp = deskCore::trackParts;
+			EditResult r;
+			const auto op = deskCore::opOf(_command);
+			const auto mask = tp::parse(_command.find("what"), trackParts(), r.errors);
+			if(!mask)
+				return r;
+			const Args args(_command, r.errors);
+			std::optional<MmPattern> pattern;
+			std::optional<MmKit> kit;
+			if(tp::touches(*mask, trackParts(), TrackHome::Pattern))
+			{
+				if(!args.has("p"))
+					r.errors.emplace_back("p: the pattern the parts are in");
+				else if(const auto it = _docs.patterns.find(static_cast<uint8_t>(args.integer("p"))); it != _docs.patterns.end())
+					pattern = it->second;
+				else
+					r.errors.push_back("pattern " + std::to_string(args.integer("p") + 1) + " is not read yet");
+			}
+			const bool kitParts = tp::touches(*mask, trackParts(), TrackHome::Kit);
+			if(args.has("k") && args.integer("k") == _context.currentKit)
+				if(const auto* w = _docs.workingKitOf(_context.currentKit))
+					kit = *w;
+			if(kitParts && !kit)
+			{
+				if(!args.has("k"))
+					r.errors.emplace_back("k: the kit that plays");
+				else if(args.integer("k") != _context.currentKit)
+					r.errors.push_back("kit " + std::to_string(args.integer("k") + 1) + " is not the kit that plays: " + op + " edits the kit that plays");
+				else
+					r.errors.emplace_back("the kit that plays is not read yet");
+			}
+			if(!r.errors.empty())
+				return r;
+			const auto before = pattern;
+			const auto kitBefore = kit;
+			if(!tp::run(tp::actions().at(op), _command, *mask, pattern ? &*pattern : nullptr, kit ? &*kit : nullptr, _clipboard.track, trackSpec(),
+				r.errors, r.note))
+			{
+				r.note.clear();
+				return r;
+			}
+			std::vector<Change> changes;
+			if(pattern && !(*pattern == *before))
+				changes.push_back({Document(*before), Document(*pattern)});
+			if(kit && !(*kit == *kitBefore))
+				changes.push_back({Document(WorkingKit{*kitBefore}), Document(WorkingKit{*kit})});
+			for(const auto& c : changes)
+				if(auto problems = problemsOf(c.after); !problems.empty())
+				{
+					r.errors = std::move(problems);
+					r.note.clear();
+					return r;
+				}
+			r.changes = std::move(changes);
+			return r;
 		}
 
 		// ---- the active global ----
@@ -1431,10 +1774,22 @@ namespace mmDesk
 				_g.transportOut = _in.a.flag("transportOut") ? 1 : 0;
 			if(_in.a.has("programChangeOut"))
 				_g.programChangeOut = _in.a.flag("programChangeOut") ? 1 : 0;
+			// CONTROL OUT1 (0.6, PROBES-manual-gaps.md P2): 0 INT, 1 OUT, 2 INT+OUT
+			const char* outs[] = {"sequencerOut", "arpOut", "keyboardOut"};
+			for(size_t i = 0; i < 3; ++i)
+				if(_in.a.has(outs[i]))
+					_g.controlOut1[i] = static_cast<uint8_t>(_in.a.integer(outs[i]));
 			return _g;
 		}
 
-		// B-051, F3: GLOBAL › Reset to defaults: the global the machine ships with, measured (elektronData::mmFactoryGlobal)
+		// GLOBAL › AUDIO › MASTER TUNE (0.6): tenths of Hz, 4400 = 440.0 Hz; the panel runs 4000-4999 (gapProbesFirmwareTest p8)
+		std::optional<MmGlobal> masterTune(MmGlobal _g, const In& _in)
+		{
+			_g.masterTune = static_cast<uint16_t>(_in.a.integer("v"));
+			return _g;
+		}
+
+		// B-051, F3: GLOBAL › Clear: the global the machine ships with, measured (elektronData::mmFactoryGlobal)
 		std::optional<MmGlobal> globalReset(MmGlobal _g, const In&)
 		{
 			return ed::mmFactoryGlobal(_g.position);
@@ -1573,7 +1928,7 @@ namespace mmDesk
 
 		const Edits<MmGlobal>& globalEdits()
 		{
-			static const Edits<MmGlobal> edits{{"routing", routing}, {"midiTrack", midiTrack}, {"globalMidi", globalMidi}, {"globalReset", globalReset}, {"multiMap", multiMap},
+			static const Edits<MmGlobal> edits{{"routing", routing}, {"midiTrack", midiTrack}, {"globalMidi", globalMidi}, {"masterTune", masterTune}, {"globalReset", globalReset}, {"multiMap", multiMap},
 				{"multiMapSplit", multiMapSplit}, {"multiMapDelete", multiMapDelete}};
 			return edits;
 		}
@@ -1641,6 +1996,14 @@ namespace mmDesk
 		}
 	}
 
+	const std::vector<deskCore::trackParts::Part>& trackParts()
+	{
+		using H = deskCore::trackParts::Home;
+		static const std::vector<deskCore::trackParts::Part> parts{{"notes", H::Pattern}, {"melody", H::Pattern}, {"slide", H::Pattern},
+			{"swing", H::Pattern}, {"locks", H::Pattern}, {"arp", H::Pattern}, {"transpose", H::Pattern}, {"sound", H::Kit}};
+		return parts;
+	}
+
 	ed::MmKit emptyKit(const ed::MmKit& _like, const uint8_t _slot)
 	{
 		auto k = _like;
@@ -1674,6 +2037,37 @@ namespace mmDesk
 		while(p.lockRowCount)
 			removeRow(p, 0);
 		return p;
+	}
+
+	ed::MmSong emptySong(const ed::MmSong& _like, const uint8_t _slot)
+	{
+		auto s = _like;
+		s.position = _slot;
+		s.name.fill(0);
+		for(auto& r : s.rows)
+			r.bytes = {};
+		s.rows[0].bytes[ed::mmSongRow::g_pattern] = MmSong::g_end;
+		s.rows[0].bytes[ed::mmSongRow::g_tempo] = s.rows[0].bytes[ed::mmSongRow::g_tempo + 1] = 0xff;	// keep the tempo
+		return s;
+	}
+
+	std::string songNameText(const ed::MmSong& _song)
+	{
+		std::string n;
+		for(const auto c : _song.name)
+		{
+			if(!c || c == 0xff)
+				break;
+			n += (c >= 0x20 && c < 0x7f) ? static_cast<char>(c) : '?';
+		}
+		return n;
+	}
+
+	bool songIsEmpty(const ed::MmSong& _song)
+	{
+		const auto n = songNameText(_song);
+		const bool blank = n.find_first_not_of(' ') == std::string::npos;
+		return blank && _song.rows[0].pattern() == MmSong::g_end;
 	}
 
 	bool kitIsEmpty(const ed::MmKit& _k)
@@ -1758,9 +2152,77 @@ namespace mmDesk
 			": no notes or locks (length, speed, swing and its kit link stay)", asStored, [](const EditContext&, int) { return false; }, nullptr,
 			problemsOf};
 
+		// A song name: 7-bit printable, upper case, at most 14 characters (a name that fills the 14 bytes has no NUL).
+		std::optional<Document> songRenamed(const Document& _d, const std::string& _name, std::string& _error)
+		{
+			auto s = std::get<MmSong>(_d);
+			if(_name.size() > s.name.size())
+			{
+				_error = "A song name has at most 14 characters";
+				return {};
+			}
+			s.name.fill(0);
+			for(size_t i = 0; i < _name.size(); ++i)
+			{
+				const auto c = static_cast<unsigned char>(_name[i]);
+				if(c < 0x20 || c > 0x7e)
+				{
+					_error = "name: 7-bit printable characters only";
+					return {};
+				}
+				s.name[i] = static_cast<uint8_t>(std::toupper(c));
+			}
+			return Document(s);
+		}
+		std::string songLabel(const int _s) { return "S" + std::string(_s < 9 ? "0" : "") + std::to_string(_s + 1); }
+
+		const Shelf g_songs{
+			Kind::Song, "s", "song", songLabel,
+			[](const Documents& _docs, const EditContext&, const int _s) { return stored(_docs, Kind::Song, _s); },
+			[](const Clipboard& _c) { return _c.song ? std::optional<Document>(*_c.song) : std::nullopt; },
+			[](Clipboard& _c, const Document& _d) { _c.song = std::get<MmSong>(_d); },
+			"Copy a song first",
+			[](const int _s, const Document& _d) { return "Copied " + songLabel(_s) + " " + songNameText(std::get<MmSong>(_d)); },
+			[](const Document& _d) { return songNameText(std::get<MmSong>(_d)); },
+			[](const Document& _src, const Document& _dst, const int _slot)
+			{
+				auto s = std::get<MmSong>(_src);
+				const auto& dst = std::get<MmSong>(_dst);
+				s.position = static_cast<uint8_t>(_slot);
+				s.version = dst.version;
+				s.revision = dst.revision;
+				return Document(s);
+			},
+			[](const Document& _d, const int _slot) { return Document(emptySong(std::get<MmSong>(_d), static_cast<uint8_t>(_slot))); },
+			": no rows, no name", asStored, [](const EditContext&, int) { return false; }, songRenamed, problemsOf};
+
+		// 0.6: the GLOBAL page's Copy and Paste (the machine's global slot menu): the active global, whole; a paste keeps
+		// the target's position and format bytes. Clear is globalReset (the factory global).
+		std::string globalLabel(const int _g) { return "GLOBAL " + std::to_string(_g + 1); }
+
+		const Shelf g_globals{
+			Kind::Global, "slot", "global", globalLabel,
+			[](const Documents& _docs, const EditContext&, const int _g) { return stored(_docs, Kind::Global, _g); },
+			[](const Clipboard& _c) { return _c.global ? std::optional<Document>(*_c.global) : std::nullopt; },
+			[](Clipboard& _c, const Document& _d) { _c.global = std::get<MmGlobal>(_d); },
+			"Copy a global first",
+			[](const int _g, const Document&) { return "Copied " + globalLabel(_g) + ": channels, control, multi map, MIDI tracks, routing and tune"; },
+			[](const Document& _d) { return globalLabel(std::get<MmGlobal>(_d).position); },
+			[](const Document& _src, const Document& _dst, const int _slot)
+			{
+				auto g = std::get<MmGlobal>(_src);
+				const auto& dst = std::get<MmGlobal>(_dst);
+				g.position = static_cast<uint8_t>(_slot);
+				g.version = dst.version;
+				g.revision = dst.revision;
+				return Document(g);
+			},
+			[](const Document&, const int _slot) { return Document(ed::mmFactoryGlobal(static_cast<uint8_t>(_slot))); },
+			": the factory settings", asStored, [](const EditContext&, int) { return false; }, nullptr, problemsOf};
+
 		const Shelf* shelfOf(const int _kind)
 		{
-			for(const auto* sh : {&g_kits, &g_patterns})
+			for(const auto* sh : {&g_kits, &g_patterns, &g_songs, &g_globals})
 				if(static_cast<int>(sh->kind) == _kind)
 					return sh;
 			return nullptr;
@@ -1875,6 +2337,8 @@ namespace mmDesk
 		add(deskCore::songRows::edits());
 		for(const auto& op : deskCore::library::ops())
 			ops.push_back(op);
+		for(const auto& op : deskCore::trackParts::ops())
+			ops.push_back(op);
 		return ops;
 	}
 
@@ -1895,6 +2359,13 @@ namespace mmDesk
 			return result;
 		}
 		auto clipboard = _clipboard;
+		if(row->group == g_track)
+		{
+			result = applyTrack(_docs, _command, clipboard, _context);
+			if(result.errors.empty() && !(clipboard == _clipboard))
+				result.clipboard = std::move(clipboard);
+			return result;
+		}
 		if(row->group == g_library)
 		{
 			result = deskCore::library::apply<MmModel>(_docs, _command, op, shelfOf(row->kind), clipboard, _context);

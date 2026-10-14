@@ -401,8 +401,10 @@ table.song tr.cur td:first-child{box-shadow:inset 3px 0 0 var(--led)}
 .pgrid{display:grid;gap:3px}
 .prow{display:grid;grid-template-columns:58px repeat(8,64px);gap:3px;align-items:center}
 .plab{font:600 10px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--print)}
-.pk{height:24px;padding:0 6px;font:500 11px var(--mono);letter-spacing:0;position:relative;text-align:left}
-.pk i{position:absolute;right:4px;top:50%;transform:translateY(-50%);font-style:normal;font-size:10px;color:var(--led)}
+.pk{height:24px;padding:0 6px;font:500 11px var(--mono);letter-spacing:0;position:relative;text-align:left;display:flex;align-items:center;gap:3px;min-width:0}
+/* review 1 (B-097): the name and the lock count side by side, the name cut short (never under the count) */
+.pk .pkn{flex:1 1 auto;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:clip}
+.pk i{flex:none;font-style:normal;font-size:10px;color:var(--led)}
 .pk.has::before{content:"";position:absolute;left:3px;top:3px;width:4px;height:4px;border-radius:50%;background:var(--led);box-shadow:0 0 4px var(--led)}
 .pk[aria-pressed=true]{background:var(--cream);color:var(--creamtext)}
 .pk[aria-pressed=true] i{color:var(--rec)}
@@ -560,7 +562,7 @@ table.song tr.cur td:first-child{box-shadow:inset 3px 0 0 var(--led)}
 :root{--hdr:172px!important}
 .th .nm span{display:none}
 .pgrid.vert .pk{padding:0 4px;font-size:10.5px}
-.pgrid.vert .pk i{right:3px;font-size:9px}
+.pgrid.vert .pk i{font-size:9px}
 .pleds{display:flex;gap:8px;align-items:end}
 .pl{display:grid;justify-items:center;gap:2px}
 .pl .led{width:8px;height:8px}
@@ -1190,8 +1192,9 @@ html,body{min-width:1280px}
 @media (max-width:900px){.amgrid{grid-template-columns:1fr}.amnote{padding-left:0}}
 /* 0.3.5: the line to the machine's own MIDI settings (GLOBAL, the Machinedrum Editor) */
 .amlink{background:none;border:0;padding:0;font:inherit;color:var(--print);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
-/* The GLOBAL panel both editors share (deskGlobal.js; B-051, F3): the Machinedrum Editor's v61 (P5) panel, moved here
-   unchanged, plus the Reset to defaults key and the channel warning. Plain grid and flex (macOS 12's WebKit). */
+/* The GLOBAL dialog both editors share (deskGlobal.js; B-051, F3): the Machinedrum Editor's v61 (P5) panel, moved here,
+   the channel warning; 0.6's page layout (.gpage, DESIGN-machine-menus.md §2, the mock-ups md-08 and mm-06): the head
+   on one line, the cards in three columns; a modal since review 1 (B-091). Plain grid and flex (macOS 12's WebKit). */
 .globpop{position:absolute;z-index:22;width:min(1180px,calc(100vw - 32px));display:grid;gap:10px;align-content:start;padding:14px;background:var(--plate);border:2px solid var(--print);border-radius:6px;box-shadow:0 18px 40px rgba(0,0,0,.35);overflow:auto;overscroll-behavior:contain;color:var(--body)}
 .globgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .globgrid .card{gap:8px}
@@ -1220,6 +1223,35 @@ html,body{min-width:1280px}
 .gnv{font:600 9px var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--print3);border:1px solid var(--rule);border-radius:2px;padding:0 4px;margin-left:6px}
 .libhead .greset{flex:none}
 .gwarn{grid-column:1/-1;margin:0;font-size:12px;color:var(--red)}
+/* the GLOBAL dialog (0.6: the page's head and cards; review 1: a modal again, framed, centred by the modal layer, as wide
+   as the header was at most, scrolls inside) */
+.globpop.gpage{z-index:var(--mz,22);width:min(1400px,calc(100vw - 48px));padding:14px 18px 18px;gap:14px;background:var(--plate);box-sizing:border-box}
+.gphead{display:flex;align-items:center;gap:14px;flex-wrap:nowrap;white-space:nowrap;border-bottom:2px solid var(--print);padding-bottom:10px;min-width:0}
+.gpname{font:600 22px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase;color:var(--print)}
+.gphead .gslots button{width:34px;height:30px;font-size:13px}
+.gpkeys{display:flex;gap:4px}
+.gphead .gpkeys button,.gphead .gpback,.globgrid .mini{height:30px;padding:0 12px;font:600 11px var(--sans);letter-spacing:.14em;text-transform:uppercase;white-space:nowrap}
+.gphead .gpkeys button[disabled]{opacity:.45}
+.gphead .danger:hover{background:var(--rec,var(--red));color:#fff}
+.gphead .gpsp{flex:1 1 auto}
+.gphead .note{font-size:13px}
+.gpage .globgrid{gap:22px 28px;align-items:start}
+.gpage .globgrid .grow2{min-height:32px}
+.gpage .globgrid .grow2 .ilab{min-width:120px}
+.globgrid .mini{height:22px;padding:0 8px;font-size:10px;margin-right:8px}
+/* the map editor's LEARN dots (MD): click one, play a note */
+.gmk small{display:flex;align-items:center;gap:4px}
+.glearn{width:12px;height:12px;padding:0;border:0;border-radius:50%;background:transparent;box-shadow:inset 0 0 0 1.5px currentColor;opacity:.7;cursor:pointer;min-width:0}
+.glearn[aria-pressed=true]{background:var(--led,var(--red));box-shadow:0 0 5px 1px var(--led,var(--red));opacity:1}
+.glearnhint{font-size:12px;color:var(--print2)}
+/* TRIG IN A / B as steppers (MD) and CONTROL OUT1 rows (MM) */
+.ginputs .stepper{display:flex;gap:2px;align-items:center}
+.ginputs .stepper button{width:18px;height:22px;padding:0;min-width:0}
+.ginputs .stepper b{min-width:3ch;text-align:center;font-weight:500}
+.gpage .stepper b{min-width:5ch;text-align:center}
+/* a row's note (the map editor's "16 notes play patterns …"): one line of a fixed height, so a glyph from a fallback
+   font (→) cannot make the row taller while the fonts settle (md-old-webkit measured 38 px against 32) */
+.globgrid .grow2 .note{line-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 /* ===== P7 LAYOUT: the page fills the window and scales with it =====
    One column of fixed bars (the header, the page's own bars) and fluid rows: the Sequence's 16 track
    rows share the height the lock lane leaves (the lane keeps at least the lock parameter list's height,
@@ -1308,7 +1340,10 @@ body{box-sizing:border-box;overflow:hidden}
 .modalopen .kpop{z-index:120!important}
 @keyframes nudge{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 .dlgbox.nudge{animation:nudge .16s 2}
-@media (prefers-reduced-motion:reduce){.dlgbox.nudge{animation:none}}
+/* a panel's box is placed by a transform: it says "not closed" with a flash of its frame instead */
+@keyframes nudgeflash{50%{outline:3px solid var(--led,#e33);outline-offset:2px}}
+.modal.nudge:not(.dlg){animation:nudgeflash .18s 2}
+@media (prefers-reduced-motion:reduce){.dlgbox.nudge,.modal.nudge{animation:none}}
 /* A context menu (K3, deskMenu.js): at the pointer, above the clear backdrop; each item with its key at the right.
    #deskmenu holds the panels (the menu, an open submenu beside it), each placed by the script. The page's tokens
    (--plate --print --body --rule --mono --sans: light and dark, MK1 and MK2 alike); plain colours and rgba only (no
@@ -1463,7 +1498,7 @@ body.deskmidi #main,body.deskmidi #rail{opacity:.3;pointer-events:none;transitio
 .syxtab.work input:checked{animation:blink 1s steps(2) infinite}
 @media (prefers-reduced-motion:reduce){.syxtab.work input:checked{animation:none}}
 /* the slots, as on the machine */
-.syxbody{max-height:calc(100vh - 330px);overflow:auto;overscroll-behavior:contain}
+.syxbody{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain}
 .syxpane[hidden]{display:none}
 .syxgrid{display:grid;gap:4px;align-items:stretch}
 .syxrl{align-self:center;font:600 12px var(--mono);color:var(--print2);text-align:center}
@@ -1534,8 +1569,38 @@ body.deskmidi #main,body.deskmidi #rail{opacity:.3;pointer-events:none;transitio
 .syxbar{position:relative;height:20px;border-radius:3px;background:var(--ledoff);overflow:hidden}
 .syxbar i{position:absolute;left:0;top:0;bottom:0;background:var(--led);width:0;transition:width .2s}
 .syxbar span{position:relative;display:block;padding:0 8px;text-align:center;font:600 11px/20px var(--sans);letter-spacing:.06em;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.syxkeys{display:inline-flex;gap:6px;margin-left:auto}
-.syxkeys+.libx{margin-left:8px!important}
+/* 0.6 (wave 6): the export (ALL, or each kind with its range) and the import's PLACE row; a range or first slot is a
+   value (click, ⇧-click, wheel, drag, arrows) */
+.syx-export .sxall,.syx-export .sxlist{display:grid;gap:2px;padding:0 2px}
+.syx-export .sxall{border-bottom:2px solid var(--print);padding-bottom:4px}
+.syx-export.sxallon .sxlist{opacity:.45}
+.sxrow{display:grid;grid-template-columns:18px 110px 210px 1fr;gap:12px;align-items:center;padding:8px 6px;border-bottom:1px solid var(--rule);font:500 14px var(--sans);color:var(--print);cursor:pointer}
+.sxrow b{font:600 13px var(--sans);letter-spacing:.14em;text-transform:uppercase}
+.sxrow small{font:12px var(--mono);color:var(--print3)}
+.sxrow input{accent-color:var(--led);width:15px;height:15px;margin:0}
+.sxrow input:disabled+b{opacity:.5}
+.sxrng{display:flex;gap:6px;align-items:center;font:12px var(--mono);color:var(--print2)}
+.sxrng i{font-style:normal}
+.syxpop .sxv{display:inline-block;height:auto;padding:3px 8px;font:500 12px var(--mono);letter-spacing:0;background:var(--plate3);color:var(--print);box-shadow:inset 0 0 0 1px var(--rule);border-radius:2px;cursor:ns-resize;touch-action:none}
+.syxpop .sxv:focus-visible{outline:2px solid var(--print);outline-offset:1px}
+.sxplace{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:8px 2px 0;border-top:1px solid var(--rule)}
+.sxplace .ilab{font:600 11px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--print2)}
+.sxplace .seg{display:inline-flex;gap:6px}
+.sxplace .seg button{height:24px;padding:0 10px;font:600 11px var(--sans);letter-spacing:.12em;text-transform:uppercase}
+.sxplace .seg button[aria-pressed=true]{background:var(--cream,var(--lcd));color:var(--creamtext,var(--ink))}
+.sxplace .note{font:500 13px/1.35 var(--sans);color:var(--print2)}
+.sxfirst{display:flex;gap:6px;align-items:center;font:12px var(--mono);color:var(--print2)}
+/* review 1 (B-095): one size for the panel's whole run (preview, import, report, export, reset): as big as the window
+   lets it be up to 1120 x 820, the slots scroll inside; the head and the footer (Stop, Hide, Done) always in view */
+.syxpop{display:flex;flex-direction:column;height:min(820px,calc(100vh - 48px));box-sizing:border-box}
+/* B-102 (the 0.6 e2e run, 1440 x 923): the panel stood where the page's flow put it (under the header) with the height
+   of the whole window, so its foot ran past the bottom. It is centred in the window now, its size the window's alone:
+   always wholly inside, the same size for its whole run */
+.syxpop{position:fixed;inset:0;margin:auto;height:min(820px,calc(100vh - 32px));max-height:none}
+.syxpop>*{flex:none}
+.syxpop>.syxbody,.syxpop>.sxlist{flex:1 1 auto;min-height:0;overflow:auto}
+.syxpop>.syxfoot{margin-top:auto}
+.syxtipline{margin:0;height:16px;font:12px var(--mono);color:var(--print2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ===== The real machine's states (not in the mockup) ===== */
 .st.past{opacity:.45}
@@ -1556,6 +1621,9 @@ header.top{position:relative}
 .kopt:disabled,button[data-na]{opacity:.45;cursor:not-allowed}
 .lcdeng .led:not(.on){opacity:.35}
 body.liverec .st,body.liverec .lb{cursor:cell}
+/* wave 7: Delete held while live recording erases the selected track's trigs as they play */
+body.erasing .th.sel{box-shadow:inset 0 0 0 2px var(--rec)}
+body.erasing .pc.erasing,body.erasing .fader.erasing{box-shadow:inset 0 0 0 2px var(--rec)}
 .recbadge{font:10px var(--pix);text-transform:uppercase;color:var(--rec)}
 /* Control side panel: the title on one line, the description under it. */
 .ctlui .card>header{flex-direction:column!important;align-items:flex-start!important;gap:2px!important}
@@ -1696,6 +1764,9 @@ body.liverec .st,body.liverec .lb{cursor:cell}
 #main>.snd{flex:1 1 auto;min-height:0}
 .snd{display:flex;flex-direction:column;gap:16px;min-height:0}
 .sndhead{display:flex;align-items:center;gap:22px;min-width:0}
+/* 0.6: Revert track, beside the machine key (a track's sound back as its kit slot stores it); on only while it differs */
+.sndhead .revbtn{flex:none;white-space:nowrap;align-self:center;margin-left:-8px}
+.sndhead .revbtn:disabled{opacity:.4;cursor:default}
 .sgrow{flex:1 1 0;min-height:0;max-height:var(--sgmax,420px);display:grid;grid-template-rows:auto minmax(0,1fr) var(--sgbox,34px);column-gap:14px;row-gap:7px;min-width:0}
 .sgrow.flat{flex:none;grid-template-rows:auto var(--sgbox,34px)}
 /* a column takes its row's three lines (subgrid); an engine without subgrid (macOS 12, Safari 15) skips that and
@@ -1844,7 +1915,7 @@ body.althold #clearLane{color:var(--led);box-shadow:inset 0 0 0 1px var(--led)}
 .sndhead .mutband{flex:1 1 auto;margin:0}
 @media (max-width:1400px){.genband{gap:12px;padding-inline:10px}.genbar{gap:10px}.genbar>.genband{padding:0}.gbt{min-width:0}.gbc .seg{gap:9px}.gkeys{gap:7px}.ghint{display:none}.genbar .pgkey{padding:0 7px}}
 @media (max-width:1340px){.genband{gap:8px}.genbar{gap:8px}.gkeys{gap:5px}.gbc{gap:4px}.gbc .seg{gap:6px;margin-right:0}.gbc .seg button{letter-spacing:.06em}.gv{padding:0 6px;min-width:50px}.genbar .pgkey{padding:0 6px}.genbar .ptog{margin-left:0}}
-@media (max-width:1500px){.genband .gwrite~.gsum{display:none}}
+@media (max-width:1500px){.genband .gwrite~.gsum{display:none}.genband .gsum .gopt{display:none}}
 .th .nm.tagged{gap:4px}
 .th .nm .gtag{font:10px var(--pix);font-style:normal;color:var(--ink);background:var(--lcd);padding:0 3px;border-radius:2px;margin-left:auto;flex:none;align-self:center;white-space:nowrap}
 #seqp>.genbar{flex:none}
@@ -1878,6 +1949,72 @@ img,svg,canvas{-webkit-user-drag:none}
 /* K2 (DESIGN-keymap.md): the LCD's COPY CLR PASTE while they act on the selected steps: underlined, as the
    selection is outlined (mdDeskComforts.js secLabels) */
 .lcdsec button.onsel{opacity:1;text-decoration:underline;text-underline-offset:2px}
+/* The Song page's song slots (deskSongSlots.js) and the PATTERN · CHAIN · SONG keys of its one palette (0.6 wave 1,
+   doc/modern-ux/DESIGN-machine-menus.md §2, Song). Both editors: the same classes, the page's own tokens. */
+.songui.withlib{grid-template-columns:366px minmax(340px,400px) minmax(0,1fr)!important}
+@media (max-width:1100px){.songui.withlib{grid-template-columns:minmax(0,1fr)!important}}
+.songlib{border-top:0!important;padding-top:0!important;display:grid;gap:10px;align-content:start;padding-right:16px!important;border-right:2px solid var(--print)}
+.songui.withlib>.songlib{align-self:start!important;align-content:start!important;grid-template-rows:none!important;height:auto!important;grid-row:1/-1}
+.songlib .sltop{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.songlib .sltop .lcdchip{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.songlib .slnote{font-size:12px;line-height:1.4}
+.songlib .songwarn{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.songlib .slacts{display:flex;flex-wrap:nowrap;gap:10px}
+.songlib .sgrp{display:flex;gap:3px}
+.songlib .slacts button{height:26px;padding:0 6px;font:600 10px var(--sans);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.songlib .slacts button:disabled{opacity:.35;cursor:default}
+.songlib .danger:hover{background:var(--rec);color:#fff}
+.songlib .libgrid.songs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;max-height:calc(100vh - 330px);overflow:auto;align-content:start;padding:2px}
+.songlib .ls{grid-template-columns:auto 1fr;column-gap:8px;align-items:center;padding:4px 7px}
+.songlib .ls .lsh{grid-row:1/3}
+.songlib .ls .lsl{grid-column:2;min-height:0}
+.songlib .lsn{height:16px;line-height:16px}
+.songlib .lsin{width:100%;min-width:0;box-sizing:border-box;font:500 12px var(--mono);text-transform:uppercase;height:16px;padding:0 2px}
+.songlib .ls.empty{background:transparent!important;box-shadow:none!important;border:1px dashed var(--rule);color:var(--print3);opacity:.7}
+.songlib .ls.empty .lsh b{font-weight:400}
+.songlib .ss.edited .lsh .led{animation:blink 1s steps(2) infinite}
+@media (prefers-reduced-motion:reduce){.songlib .ss.edited .lsh .led{animation:none}}
+.songlib .slfoot{font-size:12px;line-height:1.4}
+/* the palette's keys: what the machine plays and what a pad click does */
+.pmodekeys{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-start;width:100%}
+.pmodekeys .pkey{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;background:var(--key);color:var(--keytext);font:600 13px var(--sans);letter-spacing:.16em;text-transform:uppercase;border-radius:3px;box-shadow:inset 0 -2px 0 rgba(0,0,0,.35)}
+.pmodekeys .pkey .led{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.2)}
+.pmodekeys .pkey[aria-pressed=true]{background:var(--cream);color:var(--creamtext);box-shadow:inset 0 -2px 0 rgba(0,0,0,.2)}
+.pmodekeys .pkey[aria-pressed=true] .led{background:var(--led);box-shadow:0 0 6px 1px var(--led)}
+.pmodekeys .note{font-size:12px;margin-left:6px}
+.padd.q{animation:blink .8s steps(2) infinite}
+@media (prefers-reduced-motion:reduce){.padd.q{animation:none}}
+.whatplays .playsline{display:flex;min-width:0;margin-bottom:8px}
+/* 0.6 wave 4: COPY / PASTE / CLEAR what (skins/shared/deskWhat.js) */
+/* COPY / PASTE / CLEAR what (deskWhat.js, both editors): the ▾ beside the LCD's COPY CLR PASTE, the dialog's ticks
+   grouped PATTERN and KIT, the target tracks, and the Sound page's LFO ⋯ (Machinedrum). The page's tokens (light and
+   dark, MK1 and MK2); plain colours and rgba only (deskCompat.js) */
+.lcdsec .secmore{flex:none!important;padding:0 3px!important;opacity:1}
+.dlgbox.what{max-width:560px;min-width:min(440px,calc(100vw - 48px));gap:12px}
+.dlgbox.what h3{margin:0;font:600 14px var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--print)}
+.dlgbox.what .whatsrc{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--print2)}
+.dlgbox.what .whatsrc .ilab{min-width:64px}
+.dlgbox.what .whatsrc .lcdchip{font-size:11px}
+.dlgbox.what .whatgrp{display:grid;gap:6px;border-top:1px solid var(--rule);padding-top:8px}
+.dlgbox.what .whatgrp h4{margin:0;display:flex;gap:10px;align-items:baseline;font:600 11px var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--print2)}
+.dlgbox.what .whatgrp h4 small{font:11px var(--mono);letter-spacing:0;text-transform:none;color:var(--print3)}
+.dlgbox.what .whatgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 18px}
+.dlgbox.what label{display:flex;gap:9px;align-items:center;font:500 14px var(--sans);color:var(--print);cursor:pointer}
+.dlgbox.what label.dis{opacity:.45;cursor:default}
+.dlgbox.what label small{font:12px var(--mono);color:var(--print2);margin-left:auto}
+.dlgbox.what input{accent-color:var(--led);width:15px;height:15px;margin:0}
+.dlgbox.what .whatinfo{margin:0;font-size:12px;line-height:1.4;color:var(--print3)}
+.dlgbox.what .whatto{border-top:1px solid var(--rule);padding-top:8px}
+.dlgbox.what .to{display:flex;gap:3px;flex-wrap:wrap;align-items:center}
+.dlgbox.what .to button{min-width:26px;height:24px;padding:0 4px;font:500 11px var(--mono)}
+.dlgbox.what .to button[aria-pressed=true]{background:var(--cream);color:var(--creamtext)}
+.dlgbox.what .to button[disabled]{opacity:.35;cursor:default}
+.dlgbox.what .fine{font-size:12px;color:var(--print3);line-height:1.4;margin:0}
+.dlgbox.what .btnrow{justify-content:flex-end}
+.dlgbox.what .btnrow button[disabled]{opacity:.45;cursor:default}
+.sg>header.hasmenu{justify-content:flex-start}
+.sg>header.hasmenu>span{margin-left:auto}
+.sg>header .lfomenu{flex:none;height:16px;min-height:0;margin:-4px 0;padding:0 7px;font:600 12px var(--mono);line-height:14px;align-self:center}
 /* 0.3.5, the Song page's left column by hierarchy (mdDeskSong.js): (a) What plays: the PATTERN | SONG switch, big,
    and one live line from the machine; (b) the song; (c) the palette; (d) the selected row. The mode is lit by what
    the machine reports; the arrangement is framed in red while the song plays, and looks as ever otherwise */
@@ -1888,8 +2025,6 @@ img,svg,canvas{-webkit-user-drag:none}
 .whatplays .playsline{display:flex;min-width:0}
 .whatplays .playsline .playschip{flex:1;min-width:0;margin:0;overflow:hidden;text-overflow:ellipsis;font:13px var(--pix);padding:7px 10px}
 .whatplays.song .playsline .playschip{box-shadow:inset 0 0 0 2px var(--led)}
-.songslot header{flex-wrap:wrap;align-items:center}
-.songslot .stepper .lcdchip{min-width:72px;text-align:center}
 .arrcard .arrstate{font:11px var(--pix);text-transform:uppercase;letter-spacing:.06em;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .arrcard .arrstate:empty{display:none}
 .songplaying .arrcard .arrstate::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--led);box-shadow:0 0 6px 1px var(--led)}
@@ -1947,6 +2082,67 @@ img,svg,canvas{-webkit-user-drag:none}
 .syncf{padding:0 5px!important;width:calc(8ch + 21px)!important}
 .row2 .lcdsec{padding:0 4px!important}
 }
+/* B-061, B-065, B-066: the measured fit (deskTopFit.js). The script puts tf1, then tf2, then tf3 on the header (each step
+   keeps the ones before it) until every key of the top bar is inside the window, with the LCD as wide as its widest
+   second row on any workspace asks, so the LCD is one size on every workspace. A page zoomed below 100 % (a window
+   under 1440 x 720 points) has its 9 to 15 px text raised by WebKit to 9 points on screen, so the same CSS width holds
+   less there: the steps are for that, not media queries. Plain values only (an older WebKit, deskCompat.js). */
+/* the slots of line 2 never shrink (a cut slot is a slot the fit counts, not one that squeezes) */
+.lcdpanel .lcd2 .l2{flex:none!important}
+/* line 2 asks the LCD for no width of its own: the LCD is as wide as its first row and the fit say (deskTopFit.js) */
+.lcdpanel .row2{width:0;min-width:100%}
+/* tf1: the LCD sits between the two key groups, not in the window's middle (the side columns no longer take equal room) */
+header.top.tf1{grid-template-columns:auto auto auto!important;justify-content:space-between!important}
+/* tf2: gaps and key padding */
+header.top.tf2{column-gap:10px!important}
+header.top.tf2 .left,header.top.tf2 .rightgrp{gap:10px!important}
+header.top.tf2 .tabs>button{min-width:0!important;padding-left:5px!important;padding-right:5px!important;letter-spacing:.04em!important}
+header.top.tf2 .setkeys button{min-width:0!important;padding-left:5px!important;padding-right:5px!important;letter-spacing:.04em!important}
+header.top.tf2 .lcdpanel .f{padding:0 5px!important}
+header.top.tf2 .row2 .lcd2{gap:9px!important;padding:0 6px!important}
+/* tf3: the tightest */
+header.top.tf3{column-gap:8px!important}
+header.top.tf3 .left,header.top.tf3 .rightgrp{gap:8px!important}
+header.top.tf3 .tabs>button{padding-left:4px!important;padding-right:4px!important;letter-spacing:.02em!important}
+header.top.tf3 .setkeys button{padding-left:4px!important;padding-right:4px!important;letter-spacing:.02em!important}
+header.top.tf3 .lcdpanel .f{padding:0 4px!important}
+header.top.tf3 .lcdpanel small,header.top.tf3 .lcdsec button,header.top.tf3 .l2 small{letter-spacing:0!important}
+header.top.tf3 .row2 .lcd2{gap:6px!important;padding:0 5px!important}
+header.top.tf3 .lcdgroup .lcdpanel .syncf{width:calc(6ch + 12px)!important;padding:0 4px!important}
+header.top.tf3 .row2 .lcdsec{padding:0 3px!important}
+/* tf4: line 2's slots are as wide as their text (the Monomachine gives each a width in characters, for the PAT / SONG switch not to move them) */
+header.top.tf4 .lcdpanel .lcd2 .l2{width:auto!important}
+header.top.tf4 .row2 .lcd2{gap:5px!important}
+/* The transport beyond PLAY and STOP (deskTransport.js, both editors): the paused ▶ key, the ▾ that opens its menu without a
+   right-click, the tempo field while its pop-up is open, and the TEMPO pop-up (doc/modern-ux/mockup-next/next.css). */
+.lcdt{position:relative}
+.lcdt .lt.paused{animation:blink .8s steps(2) infinite}
+.lcdt .ltmore{all:unset;cursor:pointer;position:absolute;right:1px;bottom:1px;width:11px;height:11px;display:flex;align-items:center;justify-content:center;font:9px/1 var(--mono,ui-monospace,monospace);color:var(--ink);opacity:.75;border-radius:2px}
+.lcdt .ltmore:hover,.lcdt .ltmore:focus-visible{opacity:1;background:color-mix(in srgb,var(--ink) 18%,transparent)}
+.lcdpanel .f.tempof{background:color-mix(in srgb,var(--ink) 12%,transparent);border-radius:2px}
+.tempopop{position:fixed;z-index:62;width:390px;box-sizing:border-box;display:grid;gap:10px;padding:12px 14px;background:var(--plate);color:var(--body,var(--print));border:2px solid var(--print);border-radius:6px;box-shadow:0 18px 40px rgba(0,0,0,.35);font:13px var(--sans,system-ui,sans-serif)}
+.tempopop::before{content:"";position:absolute;top:-8px;left:var(--ax,40px);width:12px;height:12px;background:var(--plate);border-left:2px solid var(--print);border-top:2px solid var(--print);transform:rotate(45deg)}
+.tempopop .th1{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--rule,color-mix(in srgb,var(--print) 25%,transparent));padding-bottom:8px}
+.tempopop .th1 .cap{margin-right:auto;font:600 11px var(--sans,system-ui,sans-serif);letter-spacing:.14em;text-transform:uppercase}
+.tempopop .note{color:var(--print2,inherit);font-size:12px}
+.tempopop .bpmrow{display:flex;align-items:center;gap:8px}
+.tempopop .bpmbig{font:26px var(--pix,monospace);background:var(--lcd);color:var(--ink);padding:6px 10px;border-radius:3px;min-width:6ch;text-align:right}
+.tempopop .bpmrow small{font:600 11px var(--sans,system-ui,sans-serif);letter-spacing:.14em;color:var(--print2,inherit)}
+.tempopop button{white-space:nowrap;height:30px;padding:0 10px;font:600 11px var(--sans,system-ui,sans-serif);letter-spacing:.12em;text-transform:uppercase}
+.tempopop button:disabled{opacity:.45;cursor:not-allowed}
+.tempopop .sq{width:30px;padding:0;font:600 16px var(--mono,monospace)}
+.tempopop .tap{margin-left:auto;height:38px;width:64px}
+.tempopop .nudging{background:var(--led,#d33);color:#fff}
+.tempopop .tr kbd{font:400 10px var(--mono,monospace);opacity:.7;margin-left:4px}
+.tempopop .tr{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--print2,inherit)}
+.tempopop .tr .ilab{min-width:58px}
+.tempopop .tr .hold{font:11px var(--mono,monospace);color:var(--print3,inherit);margin-left:auto}
+.tempopop .tsync .tglob{margin-left:auto}
+.tempopop .tsync .seg{display:inline-flex;gap:2px}
+.tempopop .tsync .seg button[aria-pressed=true]{background:var(--print);color:var(--plate)}
+.tempopop label.tr{cursor:pointer}
+.tempopop label.tr input{accent-color:var(--led)}
+.tempopop .tnote{font-size:12px;color:var(--print3,inherit);line-height:1.35;border-top:1px solid var(--rule,color-mix(in srgb,var(--print) 25%,transparent));padding-top:7px}
 /* I-021: the output meter and volume at the LCD's right end (skins/shared/deskVolume.js) */
 /* I-021: the stereo output meter and volume at the LCD's right end (deskVolume.js), both editors: a column of about 30 px,
    both LCD rows tall, made at the plug-in's first outputLevel message (the panel gets .hasvol then, so the LCD's grid has
@@ -1954,7 +2150,7 @@ img,svg,canvas{-webkit-user-drag:none}
    across both, a 0 dB tick, the clip mark on top. Only the LCD's ink and ground (opacity for the fainter parts, no
    colour mixing, no parent selector: an older WebKit, deskCompat.js); a clip is the top mark filled, never a warning
    colour. The readout while the volume changes is the LCD's tip (.lcdtip, deskLcd.css). */
-.lcdgroup .lcdpanel.hasvol{grid-template-columns:repeat(6,auto) auto!important}
+.lcdgroup .lcdpanel.hasvol{grid-template-columns:repeat(6,auto) max-content!important}
 .lcdgroup .lcdpanel.hasvol>.row2{grid-column:2/-2!important}
 .lcdpanel .volf{grid-column:-2/-1;grid-row:1/-1;align-self:stretch;display:flex;flex-direction:column;align-items:center;gap:2px;box-sizing:border-box;
  width:30px;min-height:0;padding:0 6px;border-left:var(--lrule,1px solid var(--ink));cursor:ns-resize;touch-action:none;outline:none;color:var(--ink)}
@@ -1985,3 +2181,63 @@ img,svg,canvas{-webkit-user-drag:none}
 .lcdpanel .volf .volzero{left:-3px}
 }
 @media (prefers-reduced-motion:reduce){.lcdpanel .volf .volfill{transition:none}}
+/* I-022: the field over a value box while a value is typed (deskValueEdit.js): the LCD's ink on the LCD's ground, over the
+   box it edits; refused input shows in the record colour until the next key */
+.vedit{position:fixed;z-index:9000;box-sizing:border-box;margin:0;padding:0 6px;border:1px solid var(--ink);border-radius:3px;background:var(--lcd);color:var(--ink);font:600 13px var(--mono);text-align:center;outline:none;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.vedit.bad{border-color:var(--rec);box-shadow:0 0 0 1px var(--rec),0 2px 8px rgba(0,0,0,.35)}
+
+/* Wave 3, the trig types (DESIGN-machine-menus.md §2; mockup-next md-13): Trig · Accent · Swing · Slide in the bar
+   under the grid, the lit one is what a click paints; All tracks · This track (EDIT ALL) beside them; swing is a teal
+   slant on the step */
+:root{--swg:#15a39a}
+.ttlegend{flex:none}
+.ttlegend .gbl::after{order:1}
+.ttlegend .ttkeys{gap:3px}
+.ttlegend .ttk{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 6px 0 4px;background:transparent;color:var(--print2);box-shadow:inset 0 0 0 1px var(--rule);font:500 11px var(--sans);letter-spacing:0;text-transform:none;border-radius:3px}
+.ttlegend .ttk:hover{background:var(--plate2)}
+.ttlegend .ttk[aria-checked=true]{background:var(--cream);color:var(--creamtext);box-shadow:inset 0 -2px 0 rgba(0,0,0,.2)}
+.ttlegend .ttk i.lg{width:13px;height:13px;margin:0;border-radius:2px;display:inline-block;position:relative;background-color:var(--key);background-repeat:no-repeat;background-image:linear-gradient(var(--led),var(--led));background-position:center 2px;background-size:62% 3px}
+.ttlegend .ttk i.lg.acc{background-size:88% 6px}
+.ttlegend .ttk i.lg.sl{background-image:linear-gradient(var(--led),var(--led)),linear-gradient(135deg,transparent 60%,rgba(255,255,255,.3) 60%);background-size:62% 3px,100% 100%;background-position:center 2px,0 0}
+.ttlegend .ttk i.lg.sw,.glegpop i.lg.sw{background-image:linear-gradient(var(--led),var(--led)),linear-gradient(60deg,transparent 40%,var(--swg) 40%,var(--swg) 64%,transparent 64%);background-size:62% 3px,8px 8px;background-position:center 2px,2px 5px}
+.ttlegend .ttall{order:2;display:flex;gap:2px;margin-left:-2px}
+.ttlegend .ttall button{height:14px;padding:0 4px;font:600 9px var(--sans);letter-spacing:.06em;text-transform:uppercase;border-radius:2px;background:transparent;color:var(--print2);box-shadow:inset 0 0 0 1px var(--rule)}
+.ttlegend .ttall button[aria-pressed=true]{background:var(--cream);color:var(--creamtext);box-shadow:none}
+.st.on.sw{background-image:linear-gradient(var(--led),var(--led)),linear-gradient(60deg,transparent 40%,var(--swg) 40%,var(--swg) 64%,transparent 64%);background-size:62% 5px,9px 9px;background-position:center 5px,4px calc(100% - 4px)}
+.st.on.acc.sw{background-size:88% 9px,9px 9px}
+.st.on.sl.sw{background-image:linear-gradient(var(--led),var(--led)),linear-gradient(60deg,transparent 40%,var(--swg) 40%,var(--swg) 64%,transparent 64%),linear-gradient(135deg,transparent 62%,rgba(255,255,255,.18) 62%);background-size:62% 5px,9px 9px,100% 100%;background-position:center 5px,4px calc(100% - 4px),0 0}
+.st.on.acc.sl.sw{background-size:88% 9px,9px 9px,100% 100%}
+html[data-tt=acc] #seq .st,html[data-tt=swg] #seq .st,html[data-tt=sld] #seq .st{cursor:cell}
+html[data-tt=acc] #seq .st:not(.on),html[data-tt=swg] #seq .st:not(.on),html[data-tt=sld] #seq .st:not(.on){cursor:not-allowed}
+/* wave 8: the machine picker's audition. ▶ on the hovered, focused and auditioned machine key; the line under the preview */
+.mk{position:relative}
+.mk .mk-play{display:none;position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;background:var(--led);cursor:pointer}
+.mk .mk-play::after{content:"";position:absolute;left:7px;top:5px;border-style:solid;border-width:4px 0 4px 6px;border-color:transparent transparent transparent #fff}
+.mk:hover .mk-play,.mk.kf .mk-play,.mk.aud .mk-play{display:block}
+.mk.aud{outline:2px solid var(--led);outline-offset:-2px}
+.mp-aud{grid-column:1/-1;display:flex;gap:10px;align-items:center;background:var(--lcd);color:var(--ink);font:11px/1.7 var(--pix);padding:6px 10px;border-radius:3px;outline:1px dashed var(--ink);outline-offset:-4px}
+.mp-aud span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase}
+.mp-audk{display:flex;gap:6px;align-items:center;background:transparent;box-shadow:none;color:var(--ink);font:11px var(--pix);text-transform:uppercase;padding:2px 4px}
+.mp-audk kbd{font:10px var(--pix);border:1px solid var(--ink);border-radius:2px;padding:0 4px}
+/* I-002: a note from a MIDI keyboard played this track (mdDeskTop.js noteLight): its number on the rail glows a moment */
+.th.hit .n,.th.trig .n{box-shadow:0 0 0 1px var(--led),0 0 6px 1px var(--led)}
+.strip .led.act.hit{background:var(--led);box-shadow:0 0 6px 1px var(--led)}
+
+/* MD-033: the machine's clip between two value boxes whose parameters depend on each other (mdDeskSound.js clipMarks:
+   the arch over the gap after column --c of --n, on row --r of --rows; the group's gap is 4px) */
+.sg>.ctl{position:relative}
+.snd .clipmk{position:absolute;left:calc((100% - (var(--n) - 1) * 4px) / var(--n) * var(--c) + (var(--c) - 1) * 4px - 5px);width:14px;
+ top:calc((100% + 4px) / var(--rows) * var(--r) - 5px);height:6px;border:1.5px solid var(--keydim);border-bottom:0;border-radius:6px 6px 0 0;pointer-events:none;box-sizing:border-box}
+.snd .clipgap{flex:0 0 0;align-self:stretch;margin-left:-4px;position:relative;pointer-events:none}
+.snd .clipgap::before{content:"";position:absolute;left:-5px;top:-5px;width:14px;height:6px;border:1.5px solid var(--keydim);border-bottom:0;border-radius:6px 6px 0 0;box-sizing:border-box}
+
+/* MD-147: the playing song row's passes still to come (telemetry songRepeats) */
+.scell.ph[data-left]{position:relative}
+.scell.ph[data-left]::after{content:"+" attr(data-left);position:absolute;right:3px;top:2px;font:600 10px var(--mono);color:var(--led);pointer-events:none}
+.scell.ph[data-left="0"]::after{content:"last"}
+
+/* B-113: the track list's generator tag (E 2/16+4, the longest) whole in the 75 px beside a two-letter name: 9 px letters,
+   2 px padding, a 3 px gap. Beside a longer name (EMPTY, an empty kit's tracks) it does not fit: it wraps, out of the one
+   line the box shows (the 19 px rows have no room for a second line, as the Monomachine's have), never half cut */
+.th .nm.tagged{gap:3px;flex-wrap:wrap;align-content:flex-start;row-gap:30px;max-height:1.5em}
+.th .nm .gtag{font-size:9px;padding:0 2px}

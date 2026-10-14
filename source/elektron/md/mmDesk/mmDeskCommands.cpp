@@ -14,8 +14,9 @@ namespace mmDesk
 	// function per command that has one.
 	const std::map<std::string, MmMachine::Handler>& MmMachine::askers()
 	{
-		static const std::map<std::string, Handler> map{{"loadKit", &MmMachine::askLoadKit}, {"saveKit", &MmMachine::askSaveKit},
-			{"select", &MmMachine::askSelect}, {"play", &MmMachine::askPlay}};
+		static const std::map<std::string, Handler> map{{"loadKit", &MmMachine::askLoadKit}, {"saveKit", &MmMachine::askSaveKit}, {"loadUndoKit", &MmMachine::askLoadUndoKit},
+			{"select", &MmMachine::askSelect}, {"play", &MmMachine::askPlay}, {"saveSong", &MmMachine::askSaveSong},
+			{"pause", &MmMachine::askPause}, {"resume", &MmMachine::askPause}, {"playFrom", &MmMachine::askPlayFrom}};
 		return map;
 	}
 
@@ -51,6 +52,16 @@ namespace mmDesk
 		save.set("op", "saveKit");
 		o.ask->alternatives.push_back({"Save and load", {std::move(save)}});
 		return o;
+	}
+
+	// MM-102: the UNDO KIT drops the unsaved edits of the kit that plays (the machine keeps them nowhere; measured,
+	// gapProbesFirmwareTest w12undo)
+	Outcome MmMachine::askLoadUndoKit(const Value&, const Documents& _view)
+	{
+		if(kitState(_view) != deskCore::KitState::Edited)
+			return ok();
+		return ask("loadUndoKit", "<b>" + kitLabel(_view, m_curKit) + "</b> has unsaved changes. Load the UNDO KIT? The machine does not keep"
+			" these edits: they are lost.", "Load the UNDO KIT");
 	}
 
 	// A pattern that links another kit loads it: the unsaved edits of the kit that plays are lost.
@@ -93,6 +104,26 @@ namespace mmDesk
 			+ "</b>? The machine keeps the overwritten kit in its UNDO KIT.", "Overwrite");
 	}
 
+	// SAVE SONG stores the song the machine holds. The desk's edits are dumps into the slot and the machine loads them
+	// only when it is stopped in SONG mode (pumpSongReload), so until then it would store its older song over them:
+	// asked first, with the way that loses nothing (load the edits, then save) when the machine is stopped.
+	Outcome MmMachine::askSaveSong(const Value& _command, const Documents&)
+	{
+		const auto s = num(_command, "s", m_curSong);
+		if(!m_songReloadNeeded || s != m_curSong || s < 0)
+			return ok();
+		auto o = ask("overwriteSlot", "<b>S" + std::string(s < 9 ? "0" : "") + std::to_string(s + 1) + "</b> was edited here and the machine has not loaded the edits yet:"
+			" saving now stores the song the machine holds, without them.", "Save the machine's song");
+		if(!m_playing)
+		{
+			Value load = Value::object();
+			load.set("op", "loadSong");
+			load.set("s", s);
+			o.ask->alternatives.push_back({"Load the edits, then save", {std::move(load)}});
+		}
+		return o;
+	}
+
 	// Over MIDI PLAY is MIDI Start, which the machine ignores with CONTROL IN TRANSPORT IGNORE (the
 	// factory global): offer to set it (MM-P4). Confirmed, cmdPlay writes it to the active global.
 	Outcome MmMachine::askPlay(const Value&, const Documents& _view)
@@ -115,9 +146,40 @@ namespace mmDesk
 			m_pendingTransport.reset();
 			return;
 		}
-		if(pressKeys({*m_pendingTransport}))
+		if(pressWaiting(*m_pendingTransport))
 			m_pendingTransport.reset();
 	}
+
+	void MmMachine::waitTransport(const TransportWait _w)
+	{
+		m_pendingTransport = _w;
+		m_pendingTransportMs = now();
+	}
+
+	// The panel keys of a transport command; false while the panel is busy (nothing pressed). PLAY, STOP: also not while
+	// an edit's dump waits for its read-back (B-099). Pause and resume press PLAY at once when the panel is free, as
+	// before; the step watch follows what was pressed.
+	bool MmMachine::pressWaiting(const TransportWait _w)
+	{
+		switch(_w)
+		{
+		case TransportWait::Play: return pressTransportKeys({Key::Play});
+		case TransportWait::Stop: return pressTransportKeys({Key::Stop});
+		case TransportWait::Panic: return pressKeys({Key::Stop, Key::Stop});
+		case TransportWait::Pause:
+			if(!pressKeys({Key::Play}))
+				return false;
+			m_steps = pausedByEditor(m_steps);
+			return true;
+		case TransportWait::Resume:
+			if(!pressKeys({Key::Play}))
+				return false;
+			m_steps = resumedByEditor(m_steps, now());
+			return true;
+		}
+		return false;
+	}
+
 
 	bool MmMachine::pressKeys(const std::vector<Key>& _keys)
 	{
@@ -137,18 +199,34 @@ namespace mmDesk
 		return true;
 	}
 
+	// B-099 (the 0.6 e2e run, mm-real-sequence-plays on the firmware): PLAY right after an edit was pressed while the
+	// machine still took the edit's dump on SYSEX RECV and was lost (the page said the notes were there, the machine stood
+	// still or played on without them until PLAY again). The RECV count says when the dump arrived, not when the machine
+	// is done with it, and the editor's clock is not the machine's; the read-back is the machine's own answer that it
+	// holds the dump (it answers the request after it). So the waiting transport keys go once no dump waits for its
+	// read-back (a few hundred ms), or its read-back is late (g_transportSettleMs after it went: a read-back that does not
+	// match keeps a push busy until it times out, which a key need not wait for).
+	bool MmMachine::pressTransportKeys(const std::vector<Key>& _keys)
+	{
+		if(!m_profile.wire && m_pushes.anyBusyWithin(now(), g_transportSettleMs))
+			return false;
+		return pressKeys(_keys);
+	}
+
 	// ---- machine commands ----
 
 	const std::map<std::string, MmMachine::Handler>& MmMachine::handlers()
 	{
 		static const std::map<std::string, Handler> map{
-			{"load", &MmMachine::cmdLoad}, {"select", &MmMachine::cmdSelect}, {"loadKit", &MmMachine::cmdLoadKit},
+			{"load", &MmMachine::cmdLoad}, {"select", &MmMachine::cmdSelect}, {"loadKit", &MmMachine::cmdLoadKit}, {"loadUndoKit", &MmMachine::cmdLoadUndoKit},
 			{"saveKit", &MmMachine::cmdSaveKit}, {"loadSong", &MmMachine::cmdLoadSong}, {"saveSong", &MmMachine::cmdSaveSong},
 			{"tempo", &MmMachine::cmdTempo}, {"play", &MmMachine::cmdPlay}, {"stop", &MmMachine::cmdStop},
 			{"mute", &MmMachine::cmdMute}, {"seqMode", &MmMachine::cmdSeqMode}, {"followHost", &MmMachine::cmdFollowHost}, {"muteMidi", &MmMachine::cmdMuteMidi},
-			{"poly", &MmMachine::cmdPoly}, {"record", &MmMachine::cmdRecord}, {"hwSend", &MmMachine::cmdHwSend},
+			{"poly", &MmMachine::cmdPoly}, {"record", &MmMachine::cmdRecord}, {"liveErase", &MmMachine::cmdLiveErase}, {"stepKey", &MmMachine::cmdStepKey}, {"hwSend", &MmMachine::cmdHwSend},
 			{"chain", &MmMachine::cmdChain}, {"chainClear", &MmMachine::cmdChainClear},
-			{"noteOn", &MmMachine::cmdNoteOn}, {"noteOff", &MmMachine::cmdNoteOff}, {"globalSlot", &MmMachine::cmdGlobalSlot}};
+			{"noteOn", &MmMachine::cmdNoteOn}, {"noteOff", &MmMachine::cmdNoteOff}, {"globalSlot", &MmMachine::cmdGlobalSlot},
+			{"pause", &MmMachine::cmdPause}, {"resume", &MmMachine::cmdResume}, {"playFrom", &MmMachine::cmdPlayFrom},
+			{"panic", &MmMachine::cmdPanic}, {"nudge", &MmMachine::cmdNudge}};
 		return map;
 	}
 
@@ -217,6 +295,30 @@ namespace mmDesk
 		return kitAction(k, false);
 	}
 	Outcome MmMachine::cmdSaveKit(const Value& _m, const Documents&) { return kitAction(num(_m, "k", m_curKit), true); }
+
+	// MM-102: the UNDO KIT, the first entry of the machine's kit list, through the panel's keys (no SysEx reaches it;
+	// LOAD KIT 64-127 loads those slots). Measured (gapProbesFirmwareTest w12undo): the kit last lost to a LOAD KIT or an
+	// overwrite plays again, unsaved, its own slot current. The list opens on the current kit: k + 1 times UP. Memory
+	// then shows the kit number and the kit.
+	Outcome MmMachine::cmdLoadUndoKit(const Value&, const Documents&)
+	{
+		if(!m_port.pressKeys)
+			return refuse("The UNDO KIT has no MIDI message: on the machine, KIT > LOAD KIT, the first entry (00 UNDO KIT).");
+		if(m_curKit < 0)
+			return refuse("The kit that plays is not known yet");
+		// the route starts on the main screen (or parked on SYSEX RECV, which the keys leave): not while recording,
+		// not while a menu of the machine is open
+		if(m_tel.recording > 0)
+			return refuse("Not while recording: stop recording first, then load the UNDO KIT");
+		if(m_tel.valid && m_tel.screen != Screen::Main && m_recv.state() != RecvSession::State::Parked)
+			return refuse("A menu is open on the machine: close it (EXIT), then load the UNDO KIT");
+		std::vector<Key> keys{Key::Kit, Key::Enter};
+		keys.insert(keys.end(), static_cast<size_t>(m_curKit + 1), Key::Up);
+		keys.push_back(Key::Enter);
+		if(!pressKeys(keys))
+			return refuse("The machine is busy (SYSEX RECV): try again in a moment");
+		return ok("UNDO KIT loaded: the kit it came from is current again, unsaved. Save it to keep it");
+	}
 
 	Outcome MmMachine::kitAction(const int _k, const bool _save)
 	{
@@ -303,11 +405,10 @@ namespace mmDesk
 			sendActiveGlobal(activeSlot() & 7);
 			m_reactivateGlobal = false;
 		}
-		if(!pressKeys({Key::Play}))
+		if(!pressTransportKeys({Key::Play}))
 		{
 			// 0.3.4: the panel is busy taking an edit (SYSEX RECV): PLAY goes once it is free
-			m_pendingTransport = Key::Play;
-			m_pendingTransportMs = now();
+			waitTransport(TransportWait::Play);
 			return ok(g_transportWaits);
 		}
 		m_pendingTransport.reset();
@@ -318,21 +419,20 @@ namespace mmDesk
 
 	Outcome MmMachine::cmdStop(const Value&, const Documents&)
 	{
-		if(pressKeys({Key::Stop}))
+		if(pressTransportKeys({Key::Stop}))
 		{
 			m_pendingTransport.reset();
 			return ok();
 		}
 		// 0.3.4: the panel is busy taking an edit (SYSEX RECV): STOP goes once it is free
-		m_pendingTransport = Key::Stop;
-		m_pendingTransportMs = now();
+		waitTransport(TransportWait::Stop);
 		return ok(g_transportWaits);
 	}
 
 	// P7, in a DAW: the machine follows the host's MIDI clock and Start/Stop (MmModel::hostFollowing). The
 	// global goes out as a dump on SYSEX RECV (made active with 0x56 once it is read back, onDump): the
 	// machine's own setting, not an edit, so no undo step.
-	Outcome MmMachine::cmdFollowHost(const Value&, const Documents& _view)
+	Outcome MmMachine::cmdFollowHost(const Value& _m, const Documents& _view)
 	{
 		if(m_curGlobal < 0)
 			return ok();
@@ -341,8 +441,9 @@ namespace mmDesk
 		if(it == _view.globals.end() || m_pushes.busy(ref))
 			return ok();
 		const auto g = MmModel::hostFollowing(it->second);
-		if(!g)
-			return ok();
+		// review 1 (I-026): MIDI SYNC CLOCK IN (with TRANSPORT IN) is the switch; the machine's own clock the person chose stays
+		if(!m_hostClock.wants(!g, flag(_m, "project")))
+			return ok(m_hostClock.on ? "" : "The machine runs on its own clock (GLOBAL " + std::to_string(ref.slot + 1) + ": CLOCK IN off)");
 		pushDump(ref, ed::encodeMmGlobal(*g));
 		return ok("The machine follows the host's tempo and transport (GLOBAL " + std::to_string(ref.slot + 1) + ": MIDI SYNC CLOCK IN, TRANSPORT IN)");
 	}
@@ -403,22 +504,70 @@ namespace mmDesk
 		const auto t = num(_m, "t");
 		const bool mute = flag(_m, "on");
 		const auto i = static_cast<size_t>(6 + t);
+		m_pendingMidiMute[static_cast<size_t>(t)].reset();
 		if(m_expectMute[i].shown(muteInMemory(6 + t), clock(), m_profile.settleMs) == std::optional<bool>(mute))
 			return ok();
 		if(!pressKeys({Key::MuteWindow, static_cast<Key>(static_cast<int>(Key::Trig9) + t), Key::Exit}))
-			return refuse(g_panelBusy);
-		m_expectMute[static_cast<size_t>(6 + t)] = deskCore::FieldExpectation<bool>::sent(mute, clock());
+		{
+			// B-129: the panel is taking an edit (SYSEX RECV): the mute follows once it is free (pumpMidiMutes)
+			m_pendingMidiMute[static_cast<size_t>(t)] = mute;
+			m_pendingMidiMuteMs = now();
+			return ok(g_transportWaits);
+		}
+		m_expectMute[i] = deskCore::FieldExpectation<bool>::sent(mute, clock());
 		return ok();
 	}
 
+	// B-129: the MIDI tracks' mutes that waited for the panel, pressed once it is free, one track a pump
+	void MmMachine::pumpMidiMutes(const double _now)
+	{
+		for(size_t t = 0; t < m_pendingMidiMute.size(); ++t)
+		{
+			auto& want = m_pendingMidiMute[t];
+			if(!want)
+				continue;
+			if(_now - m_pendingMidiMuteMs > g_transportWaitMs)
+			{
+				want.reset();
+				continue;
+			}
+			const auto i = 6 + t;
+			if(m_expectMute[i].shown(muteInMemory(static_cast<int>(i)), clock(), m_profile.settleMs) == want)
+			{
+				want.reset();
+				continue;
+			}
+			if(!pressKeys({Key::MuteWindow, static_cast<Key>(static_cast<int>(Key::Trig9) + static_cast<int>(t)), Key::Exit}))
+				return;
+			m_expectMute[i] = deskCore::FieldExpectation<bool>::sent(*want, clock());
+			want.reset();
+			return;
+		}
+	}
+
 	// MM-P4: POLY is the machine's audio mode, SET STATUS 0x20 (0 mono, 1 POLY), read back by status.
+	// 0.6 wave 9 (B-064): POLY plays the track in focus (the TRACK keys) with six voices and silences the other five,
+	// notes on their channels too (measured, gapProbesFirmwareTest p10). t: TRACK t first, so the track the page shows is
+	// the one that plays; sent again while POLY is on, the TRACK key moves POLY there (measured; the first chord on the
+	// new track can come out as one note, the next ones are chords: the firmware's, CC 123 or POLY off and on first do
+	// not change it).
 	Outcome MmMachine::cmdPoly(const Value& _m, const Documents&)
 	{
 		const bool poly = flag(_m, "on");
+		std::string note;
+		if(const auto t = num(_m, "t"); poly && t >= 0)
+		{
+			if(!m_port.pressKeys)
+				note = "POLY plays the track selected on the machine: press TRACK " + std::to_string(t + 1) + " there.";
+			else if(!pressKeys({static_cast<Key>(static_cast<int>(Key::Track1) + t)}))
+				return refuse(g_panelBusy);
+			else
+				m_expectFocus = deskCore::FieldExpectation<int>::sent(t, clock());
+		}
 		m_port.sendSysex(ed::mmSetStatus(ed::MmStatus::Poly, poly ? 1 : 0));
 		m_port.sendSysex(ed::mmStatusRequest(ed::MmStatus::Poly));
 		m_expectPoly = deskCore::FieldExpectation<bool>::sent(poly, clock());
-		return ok();
+		return note.empty() ? ok() : ok(note);
 	}
 
 	void MmMachine::pumpSequence(const double _now)
@@ -429,6 +578,7 @@ namespace mmDesk
 		f.playing = m_playing;
 		f.statusReplies = m_wire.statusReplies;
 		f.pattern = m_curPattern;
+		f.songMode = m_songMode;
 		for(const auto& d : m_sequence.due(_now, f))
 		{
 			switch(d.action)
@@ -440,6 +590,12 @@ namespace mmDesk
 				m_queuedPattern = -1;
 				requestStatus();
 				m_lastStatusMs = _now;
+				break;
+			case Act::MidiStop:
+			case Act::SongMode:
+			case Act::LoadSong:
+			case Act::FromPosition:
+				runTransportAct(d.action, d.arg);
 				break;
 			}
 		}

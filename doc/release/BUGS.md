@@ -4,13 +4,452 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-145 · Machinedrum: Cmd+Z right after an Alt-drag (filter sweep) leaves the machine swept, the page says undone
+
+- **From:** the 0.6.0 release e2e, 2026-10-14 (`md-sound-keep-clear` step 4, after `md-sound-filter-sweep`: a machine picked with Keep effects + routing, its FLTF read back 21, the page had 31; both pass alone).
+- **Cause (measured, `mdDeskFirmwareTest sweepundo` and `keepedits`):** an Alt-drag goes to the machine as its own Control All gesture (FUNCTION held, the knob turned, every track steps). An undo sent while that gesture was still on its way went at once as CCs, then the gesture's steps landed on top: every track's FLTF stayed swept (31 0 70 ... became 17 0 56 ...) while the page showed the values before the sweep. Picking a machine read the track back and showed it. The machine change itself keeps effects and routing (measured).
+- **Fix:** a plain value for a parameter the gesture is moving waits until the gesture has ended (FUNCTION let go, no turns on the panel), the turns not yet made are dropped, then the value goes (`mdDeskMachine.cpp`). Tests: `mdDeskFirmwareTest sweepundo` and `keepedits` (FAIL before: the machine kept the sweep on every track); `md-sound-keep-clear` alone, isolated and after the journeys before it in the run.
+- **Status:** fixed on `release/0.6.0`.
+
+## B-146 · Import SysEx, Specific place: Import sent the whole file to its own slots, unasked
+
+- **From:** the 0.6.0 release e2e, 2026-10-14 (`mm-lib-syx-place` step 3: Kits only ticked, Specific place from K05, Import: no question; the file's kits, patterns and songs went to their own slots). It passed alone; in the run the machine answered slowly.
+- **Cause:** each change of the place asks the editor for a new preview. When the clicks came slower than the panel's wait, two previews were on their way; the first one back ended the "placing" state, and the second was then taken for a newly opened file: every kind ticked again, the place back to Original. Import then sent everything to the file's slots without the question.
+- **Fix:** the panel counts the previews it asked for; only the last ends the placing, and none of them resets the ticks or the place (`deskSyx.js`, both editors). The journey waits for the panel to stop placing before it goes on.
+- **Status:** fixed on `release/0.6.0`.
+
+## B-137 · Monomachine: Play from a song row starts in the wrong row after the song was edited
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`mm-song-play-from`: played from row 3, the machine was in row 2; it passed alone and after any one journey before it).
+- **Cause (measured in the run's order):** an edit of the current song is heard after a LOAD SONG, which the desk sends by itself once the machine is stopped in SONG mode (0.3.5, `pumpSongReload`). Play from a row stops the machine, switches to SONG mode and sends the song position at once, before that reload: the machine counted the position through the song it still held (at the time of the failure the reload was still due), and landed in another row.
+- **Fix (`fix/0.6-e2e-3`):** when a reload is due, Play from sends LOAD SONG (and waits for the status reply) before the song position (`mmDeskTransport.cpp`, `Act::LoadSong`). The journey's failure message names the song and its first rows. Tests: `mmDeskTest`; `mm-song-play-from` after the 26 journeys before it in the e2e run, and after `mm-song-row-settings`.
+- **Status:** fixed on `fix/0.6-e2e-3`.
+
+## B-136 · Monomachine Perform: a multi trig setting jumps back while the machine takes it (Timing stepper gone)
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`mm-perform-multi-setup` step 4: SEQ START clicked, then the Timing key was not on the page; passes alone).
+- **Cause:** the multi trig's mode, timing and split have no live message: each goes as a dump of the kit's slot and LOAD KIT, on SYSEX RECV behind the dumps already on their way (seconds). The working kit's edit waited 1 s for memory to show it, then memory won: the page showed SPLIT KEY again (no Timing stepper), and the next edit was reckoned from the old kit.
+- **Fix (`fix/0.6-e2e-3`):** while a dump of the current kit's slot is on its way (or waits to go), the working kit's edits stay pending over memory; once it is through, memory gets its usual second again (`mmDeskLoad.cpp`, `applyWorkingKit`). The journey waits up to 15 s for SEQ START and says so if it does not come. Tests: `mmDeskTest`; `mm-perform-multi-setup` alone and after the nine journeys before it in the e2e run.
+- **Status:** fixed on `fix/0.6-e2e-3`.
+
+## B-135 · Monomachine: ▶ after a pause refused ("The panel is busy"), Panic leaves it playing, while the machine takes an edit
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`mm-top-pause`: ▶ to go on refused with "The panel is busy (SYSEX RECV); try again.", the machine stayed paused; `mm-top-panic`: ⌘. said "Every note off ... and STOP", the machine played on). Both pass alone; in the run an earlier journey's edit was still on its way to SYSEX RECV.
+- **Cause:** PLAY and STOP wait for the panel while it takes an edit's dump (0.3.4, B-099), and so do RECORD and the MIDI mutes (B-092, B-129). Pause and resume (wave 2) refused instead, and Panic's two STOPs were dropped without a word when the panel keys were refused.
+- **Fix (`fix/0.6-e2e-3`):** pause, resume and the panic's STOPs wait the same way (the newest transport command, pressed once the panel is free, given up after 10 s); pause and resume move the step watch when their key goes (`mmDeskTransport.cpp`, `mmDeskCommands.cpp`). Tests: `mmDeskTest` (each while the panel is busy: accepted, no keys; free: its keys); `mm-top-pause` and `mm-top-panic` after the journeys before them in the e2e run, and alone.
+- **Status:** fixed on `fix/0.6-e2e-3`.
+
+## B-134 · Machinedrum: a value moved while live recording is not recorded as a lock (or turns far past the value)
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`md-seq-live-lock` on the firmware: no lock read back; alone from a fresh start too).
+- **Cause (measured in the standalone):** the firmware records a knob turn as a lock, so while recording the desk turns the machine's DATA ENTRY knob by the difference between the value asked for and the machine's memory (the knob recorder). It read that memory from the working copy's image, which a desk reset or a kit switch drops and which comes back only from a region that changed; the device publishes the region only when memory changes, so after a start the recorder waited for memory that never came: no turn, no lock. With memory, it turned again every 50 ms while the last turns were still on their way (the firmware takes a step about every 12 ms): 49 asked, 127 reached, the lock on the wrong value.
+- **Fix (`fix/0.6-e2e-3`):** the recorder reads the machine's memory as last published (kept over a desk reset), and turns again only once the last turns are through and memory had 50 ms to show them (`mdDeskMachine.cpp`, `pumpRecording`). The journey waits for the machine's read-back of the lock while recording (it turned REC off 600 ms after the drag, before the track's next trig played). Tests: `mdDeskTest`; `mdDeskFirmwareTest` (P3 live recording: the lock 99 on track 15's note); `md-seq-live-lock` alone and after the 42 journeys of the e2e run's first MD editor.
+- **Status:** fixed on `fix/0.6-e2e-3`.
+
+## B-133 · Machinedrum: after a sample is loaded or renamed, live recording records nothing
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`md-seq-live-record`: a step clicked while recording, the machine recorded no trig; `md-seq-live-lock`: no lock). Both pass alone; in the run they came after `md-sampler-rename`.
+- **What happens (measured, `mdDeskFirmwareTest <rom> recaftersample`):** once any sample went into the machine by SDS (Rename, which sends the slot's sample again since B-128; Load sample; a dropped file; any ROM slot), live recording looks right (RECORD blinks, the pattern plays, the TRIG key reaches the panel), but the firmware records no TRIG key and no knob lock, until the machine starts again. Without the sample the same steps record (`recaftersample nosample`). The sample's name alone (0x73) does not cause it.
+- **Tried, no change:** EXIT, PLAY, STOP, RECORD twice, KIT and GLOBAL and out, a pattern and a kit load, a longer key hold, 30 s of waiting, every speed-up lever off. Putting the machine's RAM 0x250000-0x2b8000 back as a run without the sample has it does bring recording back, so the state is in that RAM; which bytes was not found.
+- **Journeys:** `md-sampler-rename` and `md-drop-sample` are `alone: true` (an editor of their own) until this is fixed; `md-sampler-rename` now ends on the machine's own read-back of the name (the machine shows RECEIVING SAMPLE for seconds after the last packet).
+- **Status:** open, high: a person who loads a sample and then live records gets nothing.
+
+## B-132 · Monomachine Editor, Sound page: the UNISON and SUB screens' stems measure 9 px in WebKit
+
+- **From:** the independent-journeys run, 2026-10-13 (`mm-sound-unison-sub-fine`).
+- **What happens:** on the firmware, in the standalone's WebKit, the SUB screen's widest stem measures 9.2 px against at most 3 px, alone and in order. The page tier (Chrome) measures it and passes.
+- **Status:** open (the journey fails on the firmware tier until the drawing or the check is looked at).
+
+## B-130 · A SysEx import and the empty reset cannot be undone
+
+- **From:** the independent-journeys run, 2026-10-13.
+- **What happens:** an import overwrites kits, patterns and songs and the empty reset clears everything; neither is an undo step, so a journey (or a person) has no way back. The import journeys of whole files and the empty resets are `alone: true` (their own editor); the two-slot imports are kept with the plug-in's clipboard and one undo step (`keepMany`).
+- **Should be:** an undo step, or a copy of what the import is about to overwrite.
+- **Status:** open.
+
+## B-123 · Solo is lost when the project is saved and opened again
+
+- **From:** Radek, 2026-10-13.
+- **What happens:** solo is the page's idea (it mutes every other track on the machine, and the page keeps which tracks are soloed and the mutes you had). The machine's mutes were saved with the project, the solo and your own mutes were not: a reopened project showed the other tracks muted with no solo on, and the mutes you had before the solo were gone.
+- **Fixed on `feat/0.6-revert-solo`, both editors:** the solo (and your mutes) travel with the editor's setup in the plug-in state (the standalone's state too) and come back when the project loads: the page shows the solo, the machine's mutes match it. A project with no solo opens with none. Core command `soloSet`, message `solo`.
+- **Status:** fixed, not merged.
+
+## B-131 · Machinedrum: after a CTR machine on a track, every edit of the kit is refused ("lfo.track = 16 is outside 0..15")
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`md-sound-machine-reference` on the firmware from factory memory: the second machine picked on track 1 refused, and every one after it).
+- **Cause (measured, `mdDeskFirmwareTest ctrlfo`):** picking CTR-AL leaves the track's LFO track at 16 (no track) in the firmware's working kit. The desk's kit check and the contract allowed 0..15, so the kit the machine itself holds failed validation and every following edit of it was refused.
+- **Fix (`fix/0.6-e2e-2`):** 16 is a valid LFO track in the kit (validation, the JSON reader, the contract's `lfo.track`); a dump of it goes back as the firmware wrote it. Test: `mdDeskFirmwareTest ctrlfo` (ctest `mdCtrLfoFirmwareTest`: CTR-AL, then CTR-8P and TRX-BD accepted); `md-sound-machine-reference` passes on the firmware and in the page tier.
+- **Status:** fixed on `fix/0.6-e2e-2`.
+
+## B-129 · Monomachine: a MIDI track's mute while the machine takes an edit is refused ("The panel is busy")
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`mm-perform-mutes` on the firmware, once its wire check was page-tier only: M3 on the Mutes card refused while an edit's dump was on SYSEX RECV).
+- **Cause:** a MIDI track's mute is the MUTE window's keys; while the panel takes a dump the keys would be lost, so the desk refused it ("try again"). PLAY, STOP and RECORD already wait for the panel (0.3.4, B-092).
+- **Fix (`fix/0.6-e2e-2`):** the MIDI mute waits the same way (per track the newest, pressed once the panel is free, given up after 10 s) and says so. Test: `mmDeskTest` (the panel busy: no keys; free: the MUTE window's keys, M3 muted); `mm-perform-mutes` passes on the firmware.
+- **Status:** fixed on `fix/0.6-e2e-2`.
+
+## B-128 · Machinedrum Sampler: Rename sends the name, but no slot is renamed
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`md-sampler-rename` on the firmware; it passes on the stub machine, which renames).
+- **What happens:** Sampler, a ROM slot, Rename, a name, Send name: the toast says the machine shows it in SAMPLE MGR, the slot's card keeps its old name.
+- **Cause (measured, `mdDeskFirmwareTest`, P3 sampler):** the firmware takes 0x73 into its last-name buffer (RAM 0x29f300) and leaves the slot's own name in patch RAM as it was, also seconds later: 0x73 names the next sample received (the name before an SDS dump), it renames no slot. On the emulated machine the page's samples document holds the machine's real names, so the "sent this session" name the page keeps for a real machine (MD-197's note) never shows either. P3-RESULT.md's "Rename is real" was read from the buffer, not from the slot.
+- **Options (Radek):** (a) Rename sends the name with the slot's sample again (name + SDS, the data the emulated machine's snapshot holds: seconds of SysEx, RAM slots only on a real machine); (b) Rename off for ROM slots, with the reason (the firmware renames on a sample transfer only); (c) on the local emulated machine only, write the name into the slot's name table. Not fixed: the choice changes what the feature is.
+- **Fix (`fix/0.6-b128`, option (a), Radek 2026-10-13):** Rename sends 0x73 and then the slot's own sample again by SDS into the same slot (`Desk::renameSample`; the samples as the bank read them from memory, so the audio is bit-identical; shown as a sample load). It is the same on every engine that can read the slot: a real machine ignores SDS dump requests, so there the Rename key is off with that reason and the op refuses. An empty slot is refused. Loop points are not sent again (the SDS header the editor writes has none). Tests: `mdDeskFirmwareTest samples` (a loaded slot and a factory slot: the name reads back, the samples are unchanged; an empty slot refused), `mdDeskFirmwareTest` 0x73 pin kept as the firmware's measured behaviour; journey `md-sampler-rename` (now a machine journey) passes on the firmware.
+- **Status:** fixed on `fix/0.6-b128`, not merged.
+
+## B-127 · Machinedrum: after a live recording with an erase, or one ended by STOP, Chain does nothing
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`md-song-chain` after `md-seq-live-erase` on the same editor: the toast said "Chained", the machine held no chain).
+- **Cause (measured, `mdDeskFirmwareTest liveerase`, the chain after it):** after a live recording in which EXIT/NO and a TRIG key were held (Delete held: erase), or one stopped with STOP while recording, the firmware takes no BANK + TRIG gesture: no chain, not even the pattern change, until REC is pressed. Recording left with REC (PLAY) and no erase is not affected. Pressing REC on and off once (grid recording for a moment, nothing pressed in it) brings the gesture back; EXIT or STOP do not.
+- **Fix (`fix/0.6-e2e-2`):** the desk remembers that live recording ran; the first chain after it presses REC twice before the chain's keys. Test: `mdDeskFirmwareTest liveerase` chains A02 A03 after the erase and checks the firmware holds it; `md-seq-live-erase` then `md-song-chain` pass on the firmware.
+- **Status:** fixed on `fix/0.6-e2e-2`. Other panel-key gestures after such a recording were not checked.
+
+## B-126 · Monomachine: a sub at 0 puts its handle on its caption; on a zoomed-out page the track list's tag hangs under its row
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`mm-screens-fit`, `md-screens-fit` on the real editor).
+- **What happens:** (1) the Sound page's subs screen: a sub at 0 (the factory kit's SUBX) has its handle at the base line, over its caption ("SQ" under a handle), at any page size. (2) On a page zoomed below 100 % (a window under 1440 x 720 points) WebKit lays 9 px text out at 15 px (its minimum logical font size): the Monomachine's track name and its generator tag under it were 1.3 px taller than the row. The Machinedrum's tags go out of sight there as designed (B-113; the check counted the hidden line as a cut).
+- **Fix (`fix/0.6-e2e-2`):** the subs screen's base line is 5 px higher (a handle at 0 clears the caption, held or not); the Monomachine's tagged name has a line as tall as its text. `md-screens-fit` counts a tag that is out of sight as no cut, a half-shown one as one. The e2e runner runs the editors at the page's design size (1440 x 924, `GEARMULATOR_MDMM_BACKGROUND_SIZE`), as a person sees the page and as the page tier measures it; the small background window measured a page zoomed to 0.6 (every fit check of `md-screens-fit` and `mm-screens-fit` past the first failed there for the 15 px text).
+- **Status:** fixed on `fix/0.6-e2e-2`; both journeys pass on the firmware.
+
+## B-125 · The step menu's ⋯ key covers the selected step: a ⌘-drag over it does not start
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`md-seq-select-copy-paste` on the real firmware, both editors' code).
+- **What happens:** the ⋯ key (wave 12) sits in the top-right corner of the selection's last step and follows the selection as a ⌘-drag grows it. In the editor (WebKit) it was big enough to cover the step's centre, so the drag's next step was under the ⋯ ("covered by #stepmore") and a click there opened the menu instead of selecting.
+- **Fix (`fix/0.6-e2e-2`):** the ⋯ is at most half the step's width and height (WebKit's own button size switched off), so the centre is always the step's; and while a button is held anywhere on the page (a click, a drag, a ⌘-drag) the ⋯ hides, and comes back at the release. Journey `md-seq-step-menu` checks that the step's centre is not the ⋯; `md-seq-select-copy-paste` passes on the firmware.
+- **Status:** fixed on `fix/0.6-e2e-2`.
+
+## B-122 · "Reset to the pattern often loads another pattern"
+
+- **From:** Discord, 2026-10-12 (in a feature request, below; the editor and host not named).
+- **What happens (as reported):** going back to the saved pattern "often doesn't remember the original pattern and loads another one".
+- **Checked on the firmware (not reproduced):** `mmDeskFirmwareTest <MM ROM> reselect` and `mdDeskFirmwareTest <MD ROM> reselect` pick patterns 1, 3, 70 (MM) and A01, A06, C09 (MD) and pick each again: stopped, playing (queued to the pattern end), after another pattern was queued and before it started, and with switch now; then STOP. Every case plays the pattern picked last (36 of 36 checks).
+- **Also:** the request's "reset the synthesis parameters to the saved state" is the kit library's **Reload** (LOAD KIT on the current slot), in both editors: every parameter of the kit that plays goes back to what its slot holds, which after Import SysEx… is the imported kit (the machine keeps the edits in its UNDO KIT). A pattern's edits are dumped into its slot as they are made, so there is no older saved pattern to go back to; undo is the way back. No new control.
+- **To ask the tester:** which control they used for "reset to pattern" (a pattern pick, the LCD's ‹ ›, undo, Reload, the DAW's preset menu) and in which editor and host; a DAW that sends program changes (a clip's Pgm Change, a preset recall) switches the machine's pattern when its PRG CHANGE is on.
+- **Status:** not reproduced; open, waits for the tester's steps.
+
+## B-121 · Monomachine in a DAW: a track keeps playing after the host's transport stops, until a note is played on it
+
+- **From:** Discord, 2026-10-13 (Ableton Live, macOS; notes from a Push into the editors' tracks).
+- **What happens (as reported):** after the transport stopped, a Monomachine track kept running; a note had to be played on that track to end it.
+- **Cause (measured, `mmDeskFirmwareTest <MM ROM> hoststop`):** in a DAW the plug-in passes the host's transport to the machine (P7): the host's Stop was MIDI Stop alone. That stops the sequencer, but a note the host played into a track whose note off does not come (a host that sends none at its stop, a note off lost) keeps sounding, and with the arpeggiator keeps playing: 1.5 s after the Stop the held note was still at half its level (rms 0.046 of 0.096). Close to B-059 (a held key with the arpeggiator) and B-060 (the transposes a start takes).
+- **Fix (`fix/0.6-discord`):** the host's Stop is `synthLib::hostStopEvents` (midiClock.h): MIDI Stop, then, for the Monomachine plug-in, All Notes Off (CC 123) on all 16 channels (the machine lets held notes go on CC 123, as the panic key's P5 measured; every channel, so any CHANNEL SPAN, base channel and the keyboard modes' channels are covered). The Machinedrum is unchanged (its sounds are not held). Test: `mmDeskFirmwareTest hoststop` (ctest `mmHostStopFirmwareTest`): the host plays with a note held into T1, then stops without its note off: MIDI Stop alone leaves it sounding, the plug-in's Stop ends it (rms 0.002) and the sequencer stays stopped.
+- **Status:** fixed on `fix/0.6-discord`; to confirm with the tester.
+
+## B-120 · Monomachine: mute and solo seem to stop responding after switching views; a solo lit in Mix but not in Sequence
+
+- **From:** Discord, 2026-10-13 (macOS Tahoe, Ableton Live, Monomachine Editor).
+- **What happens (as reported):** after jumping between views, clicking M or S on a track changed nothing; once a track's S was lit in Mix but not in Sequence, and had to be turned off in Mix.
+- **Checked:** the page keeps one mute and solo per track for every workspace; switching Sequence, Sound, Mix, Perform and Song while clicking M, S and the side keys at random (about 75 clicks, 55 switches a run) never showed a key that differs from that state, neither on the stub machine nor on the real firmware (a probe journey, three runs). Found: the Sequence and Sound rails show one side at a time (Synth or MIDI). A solo on a synth track silences the MIDI tracks too, but with the rail on MIDI nothing showed it: M on a MIDI track then lit and changed nothing audible (a solo holds), and the soloed track's S was only to be seen on the other side or in Mix. That matches the report.
+- **Fix (`fix/0.6-discord`):** the rail's Synth and MIDI keys carry a small S while a solo holds on their tracks (and say so in their tooltip), so the solo is found from either side. No new control. Page journey `mm-ms-across-views` (solo and mute in Sequence, then in Mix and back, the S mark on the other side's key).
+- **Left open:** the solo is the page's own (as on the Machinedrum); if the host closes and reopens the plug-in window, the new page has no solo while the machine keeps the mutes the solo made (they show as M). Ask the tester whether the window was closed between views.
+- **Status:** fixed on `fix/0.6-discord`; to confirm with the tester.
+
+## B-119 · Ableton: the Machinedrum and Monomachine Editors seem to hear each other's MIDI (a Push on a third track)
+
+- **From:** Discord, 2026-10-13.
+- **Setup:** Ableton Live on macOS, a Machinedrum Editor and a Monomachine Editor on two tracks, a Push playing a third track that uses an External Instrument.
+- **What happens (as reported):** notes meant for one editor seem to reach the other as well, as if MIDI crossed between the tracks.
+- **Should:** each plug-in hears only the MIDI its own track routes to it.
+- **Facts needed from the tester:** the editors' version; each track's MIDI From / To and Monitor settings; where the External Instrument sends (which port and channel); whether the cross-talk stays with the Push unplugged or with the External Instrument removed; whether "MIDI out" in either editor is on.
+- **Status:** open, not reproduced; waits for the tester's routing and version.
+
+## B-117 · Machinedrum: a handle at a panel's edge is drawn half outside it
+
+- **From:** screen review, 2026-10-13 (the sampler's live view: a ring half cut at the left and at the right edge; the same on the Sound workspace's panels at 0 or 127).
+- **What happens:** a handle of a drawn panel (an envelope's end, a filter's edge) was drawn centred on the value's position, so at 0 or 127 half of it lay outside the canvas and was cut.
+- **Fix (`fix/0.6-screens`):** the handle is drawn wholly inside (the drag still reaches the edge), as B-111 did for the Monomachine. Page journeys `md-screens-fit` and `mm-screens-fit` draw a probe panel with a handle on each of its four edges, and `md-screens-fit` checks the panels of Sound, Mix and Sampler. Left open: on the Mix workspace the master effects' captions ("REVERB · GATED", "ECHO TAPS · FEEDBACK GROWS!") still touch their curve or handle at the default values (the Monomachine's panels were moved clear in B-111); the Machinedrum's journey leaves caption against curve unchecked.
+- **Status:** fixed on `fix/0.6-screens` (edge handles).
+
+## B-116 · Monomachine: the Arrangement card's header is cut ("65 of 200 rows · T track transpos…")
+
+- **From:** screen review, 2026-10-13 (a picture of the Song workspace).
+- **What happens:** the header of the Arrangement card holds its state, "65 of 200 rows" and a legend of three keys (T, M, B); under 1700 px the legend does not fit and was cut mid-word.
+- **Fix (`fix/0.6-screens`):** under 1700 px only "65 of 200 rows" shows; the legend is in the tooltip (and in the keyboard view). Page journey `mm-screens-fit` measures the header.
+- **Status:** fixed on `fix/0.6-screens`.
+
+## B-115 · Monomachine: the line under the Transpose tab ends in "(…"
+
+- **From:** screen review, 2026-10-13 (two pictures: "Click a key: C plays it (…" up to the LOCKS key).
+- **What happens:** the help line under the Transpose tab is 100 to 120 letters; the line has room for 95, so it was cut in the middle of a sentence.
+- **Fix (`fix/0.6-screens`):** the line is one short sentence for each scale (---, FIX, MAJ, MIN, `TRNSHORT`); the whole help stays in the tooltip. Page journey `mm-screens-fit` measures the line under all four tabs and each of the four sentences.
+- **Status:** fixed on `fix/0.6-screens`.
+
+## B-114 · Both editors: the GEN bar's summary line is cut ("E 5/16 · ×4 · 20 on · steps…")
+
+- **From:** screen review, 2026-10-13 (about 8 pictures on the Monomachine, the same line on the Machinedrum).
+- **What happens:** at 1440 px the line at the right end of the GEN bar has about 90 px; it holds 33 letters, so it ends in "steps…", cut in the middle of a word.
+- **Fix (`fix/0.6-screens`):** under 1500 px the line keeps what matters ("20 on", and what a run changed, "+3 −1"); the cycle ("E 5/16 · ×4") and the step range ("steps 1–64") go, and the whole line is in the tooltip (`gopt`, `deskGenBar.js` / `.css`). Page journeys `md-screens-fit` and `mm-screens-fit` measure the line.
+- **Status:** fixed on `fix/0.6-screens`.
+
+## B-113 · Machinedrum: the longest generator tag in the track list is cut by the M key
+
+- **From:** screen review, 2026-10-13 (six pictures: "E 2/16+4" on tracks 2, 6, 7 and 10 runs under the M key).
+- **What happens:** a tag with a rotation ("E 2/16+4") is 6 px wider than the 75 px the rail leaves beside a two-letter name, and its end was cut.
+- **Also:** beside a long name (EMPTY, the tracks of an empty kit) no tag fits at all, and "E 2/1" showed (picture `e2e-md-top-cpu-meter`).
+- **Fix (`fix/0.6-screens`):** 9 px letters, 2 px padding and a 3 px gap for the tag (`mdOverrides.css`); where it still does not fit beside the name it wraps out of sight (the 19 px rows have no room for a second line, as the Monomachine's do, B-110): whole or not there, never half. Page journey `md-screens-fit` measures all 16 tags and, with a name of five letters put in, that none is half shown.
+- **Status:** fixed on `fix/0.6-screens`.
+
+## B-112 · Monomachine: the pattern chooser's labels run under the keys beside them, and an 11-letter kit name is cut in its tile
+
+- **From:** screen review, 2026-10-13 (the Patterns dialog: "SLOT A01" under the Go key, "KIT" under the kit key; the Kit library: "MULTI PULSE", "MULTI DPRO…" cut at the tile's edge).
+- **What happens:** (1) the labels of the dialog's toolbar were allowed to shrink in the flex row, "Slot A01" to 15 px for 47 px of letters and "Kit" to 5 px, so they wrote under the next key. (2) A kit name has up to 11 letters (6 px each at 10 px) and the tile's name box was 58 px wide.
+- **Fix (`fix/0.6-screens`):** the labels keep their width (`.libacts .ilab`); a kit tile has 2 px side padding and its name 9.5 px letters (an 11-letter name is 62 px in a 64 px box). Page journey `mm-screens-fit` measures the labels and an 11-letter probe in the tile.
+- **Status:** fixed on `fix/0.6-screens`.
+
+## B-111 · Monomachine: a curve and its handles lie over the panel's caption, and a handle is cut by the panel's edge
+
+- **From:** screen review, 2026-10-13 (about 25 of the 97 flagged defects: the MULTI ENVELOPE caption "ADSR OVER ALL TRACKS" struck through on every Perform picture; the delay filter's right handle; the amp envelope's caption under its first handle).
+- **What happens:** the multi envelope's plot starts 18 px from its top, the same height as the caption, so the curve (REL 127 holds the sustain level at the top) runs through the caption and the first handle sits on its first letter. The amp envelope does the same with its peak. A handle at the very edge of a panel (the delay filter's upper edge at DBAS + DWID = 127) was drawn half outside the canvas.
+- **Fix (`fix/0.6-screens`):** the two plots start 28 and 30 px from the top; every handle is drawn wholly inside its canvas (the drag still reaches the edge). Page journey `mm-screens-fit` draws every panel of Perform and Sound into a recording canvas context and checks the caption's box against the curve's strokes and the handles' circles and the canvas's edges.
+- **Status:** fixed on `fix/0.6-screens`.
+
+## B-110 · Monomachine: the generator tag in the track list is cut off
+
+- **From:** screen review, 2026-10-13 (the 0.6 e2e pictures: about 35 of the 97 flagged defects are this one, on every Sequence picture of the Monomachine).
+- **What happens:** next to a track's name the track list shows a small tag for its generator ("E 5/16", "R 30%"). The names of the Monomachine's machines take most of the row (DPRO-BBOX leaves 6 px), so the tag was squeezed to a few pixels and cut: "E…", "R…", half a letter.
+- **Cause:** the tag was allowed to shrink with an ellipsis, the name was not (`.th .nm .gtag`, `25-mm.css`).
+- **Fix (`fix/0.6-screens`):** the tag never shrinks: beside the name when it fits, under it when it does not (the row holds both lines; under 1380 px it is still left out). Page journey `mm-screens-fit` measures every tag at 1440 x 924: whole, inside its row, clear of the M key and the number.
+- **Status:** fixed on `fix/0.6-screens`.
+
+## B-109 · Machinedrum: the first PLAY after start-up can do nothing
+
+- **From:** the 0.6 e2e work, 2026-10-13: `mdDeskFirmwareTest p4` ("the first PLAY after ready plays") failed on `feat/0.6-e2e` too; a first PLAY that does nothing is what users report.
+- **What happens:** the editor says the machine is ready about 30 ms after the firmware takes MIDI, while its start-up animation still runs for 10 to 14 s and ignores the panel's keys: PLAY is pressed and lost.
+- **Cause:** the start-up animation is over when main RAM 0x28998a turns non-zero (`md::BootAnimation`, P4). A status request answered at the instant the firmware takes MIDI leaves 0x20 there at once, with the animation still running (measured: 0x20 from the start, 0x27 at 11.9 s, PLAY first taken then; without that early request the byte stays 0 until 0x27). Whether the editor's first requests land at that instant is timing, so it happened on some starts only. The test also ran its boot on the blank-flash formatting run, which the plug-in shows as loading (B-003), not on the start the page sees.
+- **Fix (`fix/0.6-e2e-md`):** 0x20 is not the main screen (`BootAnimation::isMainScreen`); the 30 s timeout stays. `mdSequencerStateTest` (0x20 then 0x27); `mdDeskFirmwareTest p4` boots on the formatted flash, as the plug-in's second start, and the first PLAY after ready plays (input ready 13.8 s after MIDI; before the fix 33 ms, PLAY lost).
+- **Status:** fixed on `fix/0.6-e2e-md`.
+
+## B-103 · Machinedrum: a pattern made 64 steps long from 48 repeats the wrong steps
+
+- **From:** the 0.6 e2e run, 2026-10-13: `md-seq-len-repeats` fails ("total 32, T1 [0,8,14,16,22,32,40,46,48,56,62]", toast "As the machine does: the first 48 steps repeat into steps 49 to 64").
+- **What happens:** the journey clicked the LCD's LEN round to 16 (32, 48, 64, 16) on a factory pattern, then once more to 32, and expected steps 1-16 repeated into 17-32.
+- **Measured (the firmware's SCALE SETUP against the editor, `mdDeskFirmwareTest p4`):** a longer total length repeats the old steps only while no track has a trig from the old end on, anywhere up to step 64 (W12e). Going up 32 -> 48 -> 64 fills the later pages, so after LEN 16 the later pages hold steps and 16 -> 32 copies nothing: steps 17-32 are what was there. Editor and machine agreed on that; the journey's expectation was wrong. They did not agree on 48 -> 64: the machine repeats steps 17-32 into 49-64 (its repeat runs in 32-step blocks from 32 steps on), the editor repeated steps 1-16 ("the first 48 steps").
+- **Fix (`fix/0.6-e2e-md`):** the core's `totalLength` repeats in 16-step blocks from 16 steps and in 32-step blocks from 32 or 48 (trigs, marks, locks), and says which steps it repeated ("steps 17 to 32 repeat into steps 49 to 64"); `mdDeskTest` (48 -> 64), `mdDeskFirmwareTest p4` (a new case, the LCD's LEN clicked round 32 -> 48 -> 64 -> 16 -> 32 on the panel and in the editor: the same pattern read back, all 64 steps, marks and locks). The journey starts from an empty pattern (or clears one with Alt+Delete), clicks LEN round to 16, draws three trigs on page 1, then LEN 32: they repeat into 17-32; it passes on the firmware from fresh settings and on the page tier. PROBES-manual-gaps.md W12e has the 32-step blocks.
+- **Status:** fixed on `fix/0.6-e2e-md`.
+
+## B-101 · Machinedrum: live erase sets a trig on another track; "Push failed" after locks drawn just before REC
+
+- **From:** the 0.6 e2e run, 2026-10-13: `md-seq-live-erase` fails ("another track changed"); after `md-seq-live-unlock` the page shows the red banner "PUSH FAILED: THE MACHINE DID NOT READ BACK PATTERN A01. SHOWING WHAT IT HOLDS." (picture `e2e-md-seq-live-unlock`).
+- **What happens:** (1) Delete held while live recording erases the selected track's trigs as they play, and one trig appears on track 1 (track 9 erased: track 1 gained step 9; through the desk on the firmware, track 14 erased: track 1 gained step 14). (2) Locks drawn on the playing pattern and REC pressed at once: the editor reports a failed push although the machine holds the locks.
+- **Cause:** (1) the editor let the keys go in the order TRIG, then EXIT/NO. A TRIG key let go while EXIT/NO is still down sets a trig on the machine's selected track at the step of that key's number (measured: with EXIT/NO up first, nothing changes). A move of the erase to another track let a TRIG key go the same way. (2) The pattern's dump was still on its way when REC started: it went out while the machine recorded, and the machine then changed the pattern itself (the erased locks), so its read-back never equalled the dump and the push timed out as failed; such a dump also lands over what is being recorded.
+- **Fix (`fix/0.6-e2e-md`):** EXIT/NO goes up first, then the TRIG key; another track lets both go and presses both again (`MdMachine::releaseErase`, `cmdLiveErase`). REC waits until the playing pattern's push is on the machine (at most 3 s, `pumpRecordStart`). A read-back of the playing pattern after the machine recorded since the dump went out is the machine's truth, not a failed push (`onDumpReadBack`). Tests: `mdLiveEraseFirmwareTest` (the other tracks keep their trigs; every track keeps its trigs in the unlock case; new: locks drawn on the track with the most trigs, REC at once, the locks erased while recording: no page error, the locks that stay are the drawn ones, the editor shows the machine's pattern; the trig check fails with the old order, the push check with both changes undone), `mdDeskTest` (the key order); e2e `md-seq-live-erase` (its failure now names the tracks that changed) and `md-seq-live-unlock` pass from fresh settings, no banner.
+- **Status:** fixed on `fix/0.6-e2e-md`.
+
+## B-100 · Machinedrum: four sequence journeys fail on factory patterns (EDIT ALL on)
+
+- **From:** the 0.6 e2e run, 2026-10-13: `md-seq-trig-types`, `md-seq-swing-copy`, `md-seq-copy-what`, `md-seq-clear-what` fail on the firmware from fresh settings and pass on the page tier.
+- **What happens:** the factory patterns hold the pattern's EDIT ALL on for accent, slide and swing: one pattern-wide row every track takes. A shift-click is then a pattern-wide accent (the page says "Pattern-wide accent (EDIT ALL is on)"), which the journeys read in the track's own row; the swing journeys met the track's own swing row already set on the steps they picked (B-088) and a drag that clears.
+- **Checked, the page:** it handles EDIT ALL as the machine does: the grid shows a pattern-wide mark on every track that has a trig on that step, a click sets the pattern-wide row and says so, the trig types' All tracks / This track switch it (`markMode`), Clear what leaves pattern-wide marks and says so. A person on factory settings sees what the machine plays. Not a page bug.
+- **Fix (`fix/0.6-e2e-md`, the journeys):** a journey about a track's own marks first sets This track on the trig types for the marks it uses, as a person does (`ownMarks`; each switch an undo step its tidy takes back); the swing and copy journeys pick steps whose own row has no mark yet; the trig-types drag check follows the drag's set-or-clear. All four pass on the firmware from fresh settings and on the page tier.
+- **Status:** fixed on `fix/0.6-e2e-md`.
+
+## B-098 · Machinedrum: the first factory song does not play when it is the first thing played after a start
+
+- **From:** the 0.6 e2e run, 2026-10-13 (`md-real-factory-songs` alone, fresh settings); the same as B-096 (Radek: first demo song, SONG mode, PLAY does nothing).
+- **What happens:** right after the editor starts, song 1 (UW DEMO) shows as loaded; SONG, then PLAY: nothing plays, and the row's From here does nothing either. Once any song was loaded with Load, it plays.
+- **Cause:** the emulated machine starts with an empty working song (the one SONG mode plays) while it reports song 1 as its song: measured through the desk on the firmware, factory memory, SONG mode, PLAY: no step moves; after LOAD SONG of that slot it plays. The page's Load sends LOAD SONG, so a song picked and loaded played; song 1 is already the machine's, so the e2e run (and a person) went straight to SONG and PLAY. Review 1's test loaded the song first and so passed.
+- **Fix (`fix/0.6-e2e-md`):** until the editor has sent a LOAD SONG since the machine started (`Session::songLoaded`), SONG mode, PLAY in SONG mode and From here first load the song the machine reports, while it is stopped (`MdMachine::songNotLoaded`; the emulated machine only: the editor's song edits always go into the slot, so nothing of the working song is lost). Test: `mdFactorySongFirmwareTest` (no Load: SONG then PLAY plays; a machine already in SONG mode at the start: PLAY plays, From here plays; then Load and PLAY), each failing without the fix; e2e `md-real-factory-songs` alone from fresh settings passes.
+- **Status:** fixed on `fix/0.6-e2e-md`; B-096 is very likely this (to confirm with Radek).
+
+## B-107 · Journeys that need data factory memory does not hold
+
+- **From:** the 0.6 e2e run, 2026-10-13 (md-seq-lock-budget, mm-seq-env-trigs, mm-perform-multi-setup, mm-seq-six-tracks).
+- **Sorted, each test data (no page bug):**
+  - md-seq-lock-budget, "no pattern with 64 locks": factory memory has none (the page tier's fixture has). The journey makes one in a pattern with no locks: a trig on step 1 of each of the 16 tracks, four locked parameters each; undone in its tidy.
+  - mm-seq-env-trigs, "no pitchless trig": a trig with no note of its own comes only from the machine's own patterns or a backup (the page makes none; the fixture holds some). Without one the journey writes its own with the step intent (a trig with its envelopes and no note) on a free step after a note.
+  - mm-perform-multi-setup, "timing 0: 1": the kit held another MULTI TRIG timing than DIRECT when the journey began (it counted from DIRECT up); it steps down to DIRECT first. Passes alone and after the journeys before it in the run.
+  - mm-seq-six-tracks, "step NaN is not shown": a factory pattern has a note on or under every step from 9 on of some track, so the journey found no free step. When a track has no room it draws in an empty pattern of banks E to H (a pick there loads no kit, B-053) and picks the first pattern again in its tidy.
+- **Fix (`fix/0.6-e2e-mm`):** the journeys above. Each passes on the firmware and in the page tier, except mm-seq-six-tracks, whose next step (the AMP value of each track: "wire nothing", the CC it sends) checks the Monomachine fake's wire report, which only the page tier's stub machine sends: a page-tier-only check, like mm-seq-trig-setup's, mm-sound-track-effects', mm-wire-cc's and the other "wire nothing" fails of the run (not in this entry).
+- **Status:** fixed on `fix/0.6-e2e-mm` (journeys only).
+
+## B-106 · Monomachine: keys that take no click at 1440 x 923 (Perform's OCTAVE +, a row's per-track transpose)
+
+- **From:** the 0.6 e2e run, 2026-10-13 (the plug-in at 1440 x 923: mm-perform-joystick-midi and mm-perform-keys-lit, "OCTAVE + covered by #main"; mm-song-row-settings, More, "+ covered by button").
+- **Cause (measured in the plug-in's WebKit, elementFromPoint across each key):** Perform is 32 px taller than the window there, so the workspace scrolls, and WebKit hit-tests the right 29 px of a scrolling area as its overlay scroll bar: the right half of OCTAVE +, at the edge, took no click. In the Song page's row inspector a per-track cell (− T3 +) is 43 px wide in WebKit's fonts, narrower than its keys and name: the + spilled over the next cell's −, which took the click. Chrome (the page tier) lays both out a few px differently, so the page tier never saw it.
+- **Fix (`fix/0.6-e2e-mm`):** the keyboard's title row on Perform keeps the right 32 px free; a per-track transpose cell gives its name what it needs and its two keys share the rest, inside the cell (the MM mockup's `20-mm.css`). The three journeys pass on the firmware; the page tier's Perform, Song and fit journeys pass.
+- **Status:** fixed on `fix/0.6-e2e-mm`.
+
+## B-105 · Both editors: the library's star (a kit no pattern recalls) "does not show" on the firmware
+
+- **From:** the 0.6 e2e run, 2026-10-13 (md-lib-kit-menu: "stars 0"; mm-lib-kit-slots: K65 to K68 "star false, used false").
+- **Sorted:** test data, not the page. On factory memory every kit that holds data is linked by some pattern, so no kit earns the star; the slots no pattern recalls are empty and show EMPTY without a star, on both editors (the Monomachine journey expected a star there). The page tier's fixture (kits named KIT nn in every slot, some unlinked) never met either.
+- **Fix (`fix/0.6-e2e-mm`):** both journeys make their own data when no kit qualifies: the kit that plays copied and pasted into an empty slot no pattern recalls (undone in the journey's tidy); the Monomachine's expects no star on an empty slot and at least one star. md-lib-kit-menu and mm-lib-kit-slots pass on the firmware and in the page tier.
+- **Status:** fixed on `fix/0.6-e2e-mm` (journeys only).
+
+## B-102 · Both editors: the SysEx import panel runs past the bottom of the window; lib-syx-place says "no question"
+
+- **From:** the 0.6 e2e run, 2026-10-13 (pictures at 1440 x 923: e2e-mm-lib-syx-place-fail, e2e-md-lib-syx-place-fail; journeys md-lib-syx-place, mm-lib-syx-place).
+- **What happens:** the panel starts under the header and is as tall as the window less 48 px, so its foot (Cancel, Verify only, Import) runs past the bottom of the window. The two journeys failed with "no question" while the question was on the page.
+- **Cause:** the panel stood where the page's flow put it (no top of its own) with a height made for the whole window (review 1, B-095). The journeys asked for "Import 2", the two kits of the page tier's file; the e2e run's file (every committed test dump) holds three, so the question said Import 3: test data, not the page.
+- **Fix (`fix/0.6-e2e-mm`):** the panel is centred in the window, its size the window's alone (up to 1120 x 820, 16 px from each edge at most; `deskSyx.css`): always wholly inside, one size for its whole run (B-095 kept). The journeys count the file's kits and ask for that many (`Import n`, `n imported`, the MD's Verify only `n of n`); md-syx-running-reach and mm-syx-running-reach also check the panel is wholly inside the window. Page tier and firmware: both journeys of each editor pass.
+- **Status:** fixed on `fix/0.6-e2e-mm`.
+
+## B-099 · Monomachine: PLAY right after an edit or an undo plays silence (or nothing) for seconds
+
+- **From:** the 0.6 e2e run, 2026-10-13 (mm-real-sequence-plays on the firmware, picture e2e-mm-real-sequence-plays-fail; mm-keys-space-play the same way).
+- **What happens:** four notes drawn, the pattern cleared (Alt+Delete), Cmd+Z: the page shows the notes back, PLAY at once says "The machine is taking an edit (SYSEX RECV): it follows in a moment", and then nothing plays; PLAY again a few seconds later plays them. The same now and then for the first PLAY after drawing notes.
+- **Cause (measured, `mmDeskFirmwareTest undoplay`):** PLAY waits while the panel takes the edit's dump on SYSEX RECV and is pressed once the machine's RECV count says the dump arrived. Two things let it go too early, and a panel key the machine gets while it takes a dump is lost: the machine clears its RECV count as it opens SYSEX RECV, after the screen already shows, so a session parked on the old count saw the dump as taken (an unsigned count below its base); and the count moves as the dump arrives, not when the machine is done with it (a key 10 ms after is lost, 20 ms after is taken; the editor's clock in the plug-in is not the machine's).
+- **Fix (`fix/0.6-e2e-mm`):** the RECV session counts from the cleared count, says "taking" while a dump waits to go out on the next tick, and for 60 ms of machine time after the count moved (`mmRecv`); a waiting PLAY, STOP or RECORD also waits until the dump's read-back is in, the machine's own answer that it holds it (at most 2 s after the dump: `pressTransportKeys`, `Pushes::anyBusyWithin`). The page still says it follows in a moment; it now does, within a second. Tests: `mmDeskTest` (the RECV session: taking until settled, the cleared count; the waiting STOP and RECORD once settled), `mmDeskFirmwareTest undoplay` (four step intents, clearPattern, undo, PLAY at once: the notes sound, rms; it failed before the fix: 8 s, silence), journeys `mm-real-sequence-plays`, `mm-keys-space-play` on the firmware.
+- **Status:** fixed on `fix/0.6-e2e-mm`.
+
+## B-104 · Monomachine: ⇧-click on PLAY says "Paused" but the editor shows it playing on
+
+- **From:** the 0.6 e2e run, 2026-10-13 (mm-top-pause on the firmware; MM-040, MM-065, MM-072).
+- **What happens:** right after an edit (the panel parked on SYSEX RECV for the edit's dump), ⇧-click ▶ (or ⇧Space): the toast says Paused, the machine holds its step, but the editor keeps ▶ lit as playing and the pause is dropped a second later. Alone the pause worked, but ▶ then went on with the playhead a step late.
+- **Cause (measured, `mmDeskFirmwareTest parked`):** the panel's PLAY on SYSEX RECV pauses the machine, but the firmware's running flag in RAM stays 1, also after the panel leaves SYSEX RECV, until the machine plays on or stops (STOP there sets it to 0). The editor's "playing" is that flag or the step moving, so it said playing. After a resume the flag can lag a step, and two steps forward were needed to say playing again.
+- **Fix (`fix/0.6-e2e-mm`):** after a pause the editor pressed, "playing" is the step moving alone until it moves on or the flag reads 0 (`pausedByEditor`, `mmDeskWatch.h`); after a resume the editor sent, the first step forward is playing (`resumedByEditor`). The page takes the step the machine holds as the paused step (the key reaches the machine a moment after the click: POSITION and CONTINUE's step, `setPausedStep`). Tests: `mmDeskTest` (watchStep: the pause with the flag set, the resume), `mmDeskFirmwareTest parked` (the pause while parked holds the step and the page is told it does not play; after the session leaves too; resume plays on), the journey `mm-top-pause` on the firmware, alone and after `mm-seq-first-beat`.
+- **Status:** fixed on `fix/0.6-e2e-mm`.
+
+## B-097 · Both editors: a lock parameter key's count drawn over its name ("RTG·DIST")
+
+- **From:** Radek's 0.6 review, 2026-10-12 (Machinedrum, the Lock parameter panel, screenshot).
+- **What happens:** the key of the routing DIST reads RTG·DIST with its red lock count drawn over the name, so it reads like one key for two parameters; SYN·DIST is tight too.
+- **Cause:** the count sat on the key's right edge (absolute), over a name as wide as the key; the name carried the page (SYN·, RTG·, FX·) that its column heading already says.
+- **Fix (`fix/0.6-review-1`):** a key shows the parameter's name alone (DIST under SYNTH, DIST under ROUTING; the full name, SYN·DIST or RTG·DIST, is its tip and its spoken name); the name and the count sit side by side, the name cut short before it could go under the count (`mdDeskSeq.js`, the MD mockup's and the MM mockup's `.pk`). One key is still one parameter. Journeys `md-lock-keys-fit` (every track's machine), `mm-lock-keys-fit` (every page): each key's name whole, its count beside it, inside the key; at 1280 wide too where the plug-in sizes its window.
+- **Status:** fixed on `fix/0.6-review-1`.
+
+## B-096 · Machinedrum: "loaded a song and can't play it" (not reproduced)
+
+- **From:** Radek's 0.6 review, 2026-10-12 (installed build): the first factory song, SONG mode, PLAY: nothing happens.
+- **Checked (`fix/0.6-review-1`):** on the firmware through the desk (`mdFactorySongFirmwareTest`): factory memory, song 1 (A01 to D16, 32 steps each, then END) loaded as the slot list's Load does (`selectSong`), SONG (`seqMode`), PLAY: the machine is in SONG mode and plays A01, the page is told row 1; STOP stops. The same with TEMPO IN external (a plug-in in a DAW, the DAW stopped): PLAY still plays, so the host clock is not the cause. On the page (`md-song-load-play`, the page tier): song 1 from the slot list, SONG, then ▶ and Space each play the song and stop it. The suspects from the 0.6 waves (B-072's mode keys, the pause state after B-086, play from a row, MD-099's STOP to the queued pattern) are covered by these and by md-song-playhead, md-song-play-from and md-top-pause.
+- **Status:** open, not reproduced. Needed from Radek: standalone or a DAW (and which), whether PATTERN mode plays then, whether ▶ shows ■ or blinks (paused), and the editor's log after the press (Help › Show log). In a DAW, I-026 (Tempo in INT) now lets the machine run on its own clock.
+
+## B-095 · Both editors: the SysEx import panel changes size while it runs; a tooltip covers Stop
+
+- **From:** Radek's 0.6 review, 2026-10-12 (Machinedrum, screenshot).
+- **What happens:** while an import runs, the panel grows and shrinks as the kinds pass (Kits, Patterns, Songs: each its own grid), and Stop at the bottom right is cut off or covered by a slot's tooltip ("F08 · kit 38 · format 3.1 · into …").
+- **Cause:** the panel was as tall as its contents, the slot grid of the kind shown; each slot carried its facts as a native tooltip, which the browser places under the pointer.
+- **Fix (`fix/0.6-review-1`):** the panel (import, report, export, reset) has one size for its whole run, as big as the window allows up to 1120 x 820, the slots scroll inside it, the head and the footer always in view (`deskSyx.css`); a slot's facts show in a line of the panel when the pointer is on it, not as a tooltip (`deskSyx.js`). Journeys `md-syx-running-reach`, `mm-syx-running-reach` (the panel's box at the preview, while it runs and at the report: equal; Stop and Hide wholly inside it and on top).
+- **Status:** fixed on `fix/0.6-review-1`.
+
+## B-094 · Both editors: a click outside a dialog closes it, also while it works
+
+- **From:** Radek's 0.6 review, 2026-10-12: during a Clear or a SysEx import, a click outside lost the screen, and there was no way back to it (the work went on unseen).
+- **Cause:** the modal layer's `panel` kind closed on a click outside (the library, the keys, AUDIO / MIDI, the machine picker, the SysEx panel); some pages closed their dialog on an outside click of their own as well (the keys view, the libraries, AUDIO / MIDI). The SysEx panel closed on Esc while it imported, and its entries in the engine menu then started another import.
+- **Fix (`fix/0.6-review-1`, Radek's rule: every modal locks):** a click outside never closes a dialog, on both editors (its frame flashes instead); a dialog closes by its own keys or Esc; a dialog at work (`data-busy`: the SysEx panel importing or resetting) refuses Esc too. Its **Hide** key still puts it away; IMPORT SYSEX…, EXPORT SYSEX… or RESET MACHINE… in the engine menu then shows the same panel again (with its report when the run ended meanwhile, and a toast says so). The pages' own outside-click closers are gone (`deskModal.js`, `deskAudio.js`, `deskSyx.js`, `mdDeskKeys.js`, `mdDeskLibrary.js`, the MM mockup's `56-keys.js`, `125-lib.js`). Context menus still close on a click outside (a menu, not a dialog). Journeys `md-modal-lock`, `mm-modal-lock` (GLOBAL, a library, the keys, AUDIO / MIDI, Export SysEx, the machine picker, a question: a click outside keeps each open and on top, Esc closes it), `md-syx-running-reach`, `mm-syx-running-reach` (Esc and a click outside while it imports, Hide, back through the engine menu, the report).
+- **Status:** fixed on `fix/0.6-review-1`.
+
+## B-092 · Monomachine: RECORD refused while the panel takes a dump; PLAY waits
+
+- **From:** Radek's 0.6 review, 2026-10-12 (coordinator's decision: RECORD waits like PLAY).
+- **What happens:** ● (or its key) while the machine takes a dump on SYSEX RECV, or leaves it: "The panel is busy (SYSEX RECV); try again." PLAY and STOP at that moment wait and go once the panel is free (0.3.4).
+- **Fix (`fix/0.6-review-1`):** RECORD waits the same way: the desk takes it, says what PLAY says ("The machine is taking an edit (SYSEX RECV): it follows in a moment."), and presses the keys of the mode asked for as soon as the panel is free (`pumpRecord`, worked out again from the mode the machine is in then), giving up after 10 s; ● again while it waits cancels it. The erase (Delete held) still needs the panel at once. The Machinedrum has no such refusal (no SYSEX RECV). Tests: `mmDeskTest` (Bug 4: RECORD waits, a second press cancels, the waiting STOP and RECORD are pressed once each), `mmDeskFirmwareTest parked` (on the firmware: RECORD during a dump, GRID RECORDING once it is taken). Guide: mm chapter 11.
+- **Status:** fixed on `fix/0.6-review-1`.
+
+## B-093 · Monomachine: "tracks[4] step 24 has chord notes but no trig" on Sequence
+
+- **From:** Radek's 0.6 review, 2026-10-12 (installed build, Sequence, the lock lane open: the toast).
+- **What happens:** an edit on Sequence is refused with that message, an internal check the person should never see; every later edit of that pattern is refused the same way.
+- **Cause (measured, `mmDeskFirmwareTest chorderase`):** LIVE RECORDING's erase on the machine (EXIT held, or Delete held in the editor, wave 7) takes a step's trig and envelope bits and its locks, but leaves its chord bit and chord notes. The read-back carries them; the core checks every edited pattern whole (`mmValidate`), and a chord without its trig was an error, so every edit of that pattern failed. No path of the core makes one (it writes a step whole, `setStep`: a chord only with its trig; step clear, cut, Clear… with parts, GEN, undo all go through it).
+- **Fix (`fix/0.6-review-1`):** the check takes such data, as it takes notes without a trig since 0.3.5 (a machine's own backups hold them; the firmware plays nothing there), and a MIDI step's notes without its trig the same way; the page shows such a step as empty, and an edit of it writes it whole. Firmware test `mmChordEraseFirmwareTest` (a chord on each of 16 steps, the erase on the firmware: 4 steps keep chord bits without a trig; the pattern is valid, edits after it are taken and reach the machine).
+- **Status:** fixed on `fix/0.6-review-1`.
+
+## B-091 · Both editors: GLOBAL as a page under the header; back to a modal
+
+- **From:** Radek's 0.6 review, 2026-10-12: GLOBAL looked better as a modal.
+- **What changed:** wave 5 made GLOBAL a page under the header (the modal layer's `page` kind: nothing dimmed, closed by a click outside or on the header, which needed a workaround that ate the press below). It is a modal dialog again: centred over the dimmed backdrop, focus inside and kept there, Esc or its back key closes it; its head (slots, Copy · Paste · Clear) and cards are as the page had them. The `page` kind and the click-outside workaround are gone (`deskModal.js`, `deskGlobal.js`, `deskGlobal.css`, `deskKeys.js`).
+- **Tests:** journeys `md-global-page`, `mm-global-page` (a modal on top, the backdrop shown, centred, focus inside; Esc and the back key close it), `md-global-click-out`, `mm-global-click-out` (a press outside keeps it open and reaches nothing below).
+- **Status:** fixed on `fix/0.6-review-1`. Guide: md chapter 10, mm chapters 2 and 19.
+
+## B-090 · Monomachine: the UNISON and SUB screens draw heavy bars
+
+- **From:** Radek's 0.6 review, 2026-10-12.
+- **What happens:** Sound, a SWAVE machine: the UNISON screen draws its partials as 6 px bars (UNIW at ±12 ST: heavy vertical bars), the SUB screen thick stalks; every other screen on the page draws 2 px lines.
+- **Fix (`fix/0.6-review-1`):** both screens draw fine stems: 2 px for a partial, dashed 1.5 px for the extended unison pair, the base 1.5 px and faint; the dots are the page's usual ones (`90-sound.js` `ED.uni`, `ED.sub`). Journey `mm-sound-unison-sub-fine` (the widest run of ink across each screen is at most 3 px).
+- **Status:** fixed on `fix/0.6-review-1`.
+
+## B-089 · Monomachine: the multi envelope's plot breaks at REL 127 (and DEC 0)
+
+- **From:** Radek's 0.6 review, 2026-10-12.
+- **What happens:** Perform, Multi envelope at ATK 73, DEC 0, SUS 127, REL 127: a line from the bottom left up to a dot near the top, a flat line, and the REL dot alone at the bottom right, off the curve. REL 127 (never fades) was not drawn as such.
+- **Cause:** the plot drew REL 127 as a flat line of a fixed width, but put the REL dot where a release of 127 would end, at the foot (`110-perform.js` `ED.menv`).
+- **Fix (`fix/0.6-review-1`):** the plot is an ADSR for every value: each stage its own slot (ATK rises to the top, DEC falls to SUS, a hold, REL falls to 0); REL 127 is ∞: the sustain runs on to the edge, dashed past its slot, marked ∞, the REL dot on it; dragging that dot past the end of its slot sets 127. Every dot is on the curve. Journey `mm-perform-menv-curve` (Radek's values and ATK 20 DEC 50 SUS 80 REL 40: the dots on the curve, inside the plot, the machine's multi envelope as typed). The envelope on the machine: `mmPerformSoundFirmwareTest` (below).
+- **Status:** fixed on `fix/0.6-review-1`.
+
+## B-088 · Monomachine: swing marks on empty steps (the machine's data, not a bug)
+
+- **From:** Radek's 0.6 review, 2026-10-12 ("slide marks on every step", the teal marks: they are the swing marks).
+- **What happens:** the teal swing marks along the foot of the roll show on empty steps too, on some patterns on every step.
+- **Facts (measured, `mmDeskFirmwareTest <ROM> swingprobe`):** the Monomachine keeps swing as a track of its own per track (a 64-bit mask per track), independent of the trigs; it delays only steps with a trig. Every pattern of a fresh machine read back: 332 tracks hold the default every second 16th over 64 steps (`aaaaaaaaaaaaaaaa`), 395 the same over 32 steps, 5 every other step the other way round, 4 nothing, 1 every step (`ffffffffffffffff`), 2 `ffff5555ffff5555`; 12,847 swing bits sit on empty steps against 1,818 on steps with a trig. The page shows the masks as the machine keeps them; the stub's fixture and the desk do not set swing by themselves (the desk's Clear… with Swing writes the default every second 16th).
+- **Status:** no data or drawing bug. How the foot of the roll shows swing and slide (marks only under trigs, or the masks as they are) is being redesigned separately (Radek, 2026-10-12); the drawing is unchanged here.
+
+## B-087 · Machinedrum: PLAY shows pressed and the machine as playing while the firmware starts
+
+- **From:** the journey md-boot-card (on the "flaky" list: about one start in five in the full runs, 2026-10-12).
+- **What happens:** under the start-up card, within the first second, the page shows ■ on the PLAY key and the telemetry says the machine plays, before the firmware takes MIDI.
+- **Cause:** the plug-in reads "playing" from the firmware's RAM (a step byte that moves, the stopped byte clear: `md::SequencerState`). While the firmware starts, it sets up that RAM: the step byte changed with the stopped byte still 0, which read as playing for 0.7 s. The first step read also counted as a move.
+- **Fix (`fix/0.6-flaky`):** the sequencer state is read only once the firmware takes MIDI (`isFirmwareMidiReady`, as the start-up animation already was), and starts afresh for a new machine and when a machine starts again in place (not ready, then ready); the first step read is where the step is, not a move (`mdsequencerstate.h`, `mddeskdevice.cpp`). Tests: `mdSequencerStateTest` (B-087), md-boot-card 8 of 8 with four editors starting at once.
+- **Status:** fixed on `fix/0.6-flaky`. Shown to the person only under the start-up card (the card covers PLAY), so nobody could press it; the telemetry the core and the page read was wrong for that moment.
+
+## B-086 · Machinedrum: a pause right after PLAY can end at once and stop the machine
+
+- **From:** the journey md-top-pause (on the "flaky" list: step 2 "⇧-click ▶: it pauses", the toast "Paused." shown, then the position gone).
+- **What happens:** ⇧-click ▶ (or ⇧Space) while the machine plays: the toast says Paused, but ▶ does not blink and POSITION reads --.--: the machine stopped, the pause is gone, ▶ starts from the top.
+- **Cause:** the page ended a pause whenever a telemetry frame said "playing" (`onTelemetry`, mdDeskTop.js). A frame the machine sent before the pause reached it arrives after the click and still says playing: the pause just begun was dropped, then the machine stopped. More likely on a busy Mac (frames queue up), and in the plug-in as well as the page tier.
+- **Fix (`fix/0.6-flaky`):** the pause ends only when the machine starts playing again (from stopped to playing: PLAY, or its own panel), or when the machine still plays a second after the pause was sent (it did not take it: ▶ does not blink over a machine that plays on). The MM page already did so (`setPlaying`). Test: mdDeskPageTest.js (B-086: a late frame keeps the pause; stopped, still paused on its step; playing again ends it).
+- **Status:** fixed on `fix/0.6-flaky`. Not in a release (the pause is 0.6 wave 2).
+
+## B-085 · Paste what opens with nothing ticked after another paste
+
+- **From:** the journeys md-seq-swing-copy and md-seq-copy-what (on the "flaky" list), 2026-10-12.
+- **What happens:** paste Trigs alone with ▾ Paste…, later copy Swing alone and open ▾ Paste…: no part is ticked (Swing is offered, the rest "Not copied") and the Paste key is off until Swing is ticked by hand.
+- **Cause:** the dialog's ticks are remembered per verb (deskWhat.js `ticked`); the remembered ones were filtered by what the clipboard offers, and nothing was left.
+- **Fix (`fix/0.6-flaky`):** when none of the remembered ticks is offered, the dialog ticks its defaults among them (for Paste: what was copied). Both editors (the MM page is generated from the same file). Test: deskWhatTest.js (B-085). In the page tier the journeys met it because every page of a run shared one browser store; the runner now gives each page its own (below, DEV-CYCLE.md "Known flaky").
+- **Status:** fixed on `fix/0.6-flaky`. Not in a release (Copy what is 0.6 wave 4).
+
+## B-082 · Machinedrum: a MID machine's routing knobs carry the wrong names (PCHG edits CC6D)
+
+- **From:** the wave 12 clip probe (`gapProbesFirmwareTest <MD ROM> - w12clip`, the LCD of each page with `W12_SNAP_MACHINE`), 2026-10-12.
+- **What happens:** the Sound page lists a MID machine's ROUTING page as CC5D CC5V PCHG and two empty knobs. The machine's LCD shows CC5D CC5V CC6D CC6V on the top row and PCHG LFOS LFOD LFOM below: the box named PCHG moves CC6D, and CC6D, CC6V and the real PCHG have no box. The master-effect CTR machines (CTR-RE, CTR-GB, CTR-EQ, CTR-DX) listed no ROUTING knobs; the LCD shows LFOS LFOD LFOM there.
+- **Cause:** the names were inferred (`elektronData/mdMachines.cpp`, P2-RESULT.md), never read off the machine.
+- **Should:** each box carries the name the machine shows for that knob.
+- **Status:** fixed in 0.6 wave 12 (`feat/0.6-gaps`): the names as the LCD shows them; `elektronDataTest` checks them. Values and SysEx are untouched (a box sends its knob's index as before).
+
+## B-081 · Machinedrum: the Rhythm Echo and Gate Box cards on the Mix page show and edit each other's values
+
+- **From:** slice 5 (the master effects journey), 2026-10-12.
+- **What happens:** the kit lists its master effects as gate box, rhythm echo, EQ, dynamix (the firmware's dump order, `mdNames.h`). The page paired its own cards (echo, gate, EQ, dyn) with that list by position, so the Rhythm Echo card showed the Gate Box's eight values and its knobs edited them (and the Gate Box card the echo's). EQ and Dynamix were right.
+- **Should:** each card reads and writes its own effect.
+- **Status:** fixed in slice 5 (`mfxName` pairs by name, `mdDeskModel.js`); `md-mix-master-cards` moves each of the 32 knobs and checks the value of its own effect moved and no other.
+
+## B-080 · Machinedrum: four E12 machines show another machine's parameter names
+
+- **From:** slice 5 (the machine reference journey), 2026-10-12.
+- **What happens:** on the Sound page E12-LT (low tom) shows RRTL where the manual has HPQ; E12-RS (rim shot) shows HPQ where the manual has RRTL; E12-OH (open hi-hat) shows HPQ where the manual has STOP; E12-CC (crash) shows STOP where the manual has HPQ (Appendix A, pages A-6 and A-7). The names sat on the wrong machines in `elektronData/mdMachines.cpp`.
+- **Should:** each E12 machine lists the knobs the manual lists.
+- **Status:** fixed in slice 5 (four names swapped back); `md-sound-machine-reference` checks every machine against the manual's list. Values and SysEx are untouched: only the labels of the fourth knob moved.
+
+## B-072 · Song page: PATTERN clicked soon after SONG leaves the machine in SONG mode
+
+- **From:** the journey md-song-mode, 2026-10-12 (on the "flaky" list; it fails whenever it runs right after md-seq-live-record, 4 of 6 runs).
+- **What happens:** click SONG, then PATTERN before the page has drawn the machine's answer: PATTERN sends nothing, the machine stays in SONG mode and the switch jumps back to SONG.
+- **Cause:** since 0.6 wave 1 (the PATTERN · CHAIN · SONG keys, 97f1ccfe8) a key sent the mode only when it differed from `V.songMode`, the view of the last render; the machine's answer to SONG was in the machine state but not yet in that view, so PATTERN looked like no change. The MM page had the same check on its own copy of the mode. Before wave 1 every click sent the mode.
+- **Fix (`fix/0.6-span-song`):** every key sends the mode (SET STATUS 0x10 and the status request; the same mode again changes nothing), on both editors. Tests: md-seq-live-record then md-song-mode, 5 of 5 runs pass; `mdDeskFirmwareTest <MD ROM> songrow`: SONG sent again while the song plays is no restart.
+- **Status:** fixed on `fix/0.6-span-song`. Not in a release (wave 1 is on the 0.6 branch only).
+
 ## B-071 · Monomachine: an imported global's MIDI channels do not reach the machine
 
 - **From:** `mmDeskFirmwareTest <MM ROM> span`, once it ran under ctest, 2026-10-12: with base channel 13 and span 6 imported, the T2 and T3 edits, the MULTI ENV and the T1 to T3 mutes did not reach the machine.
 - **What happens:** import a .syx with the active global's channels changed: the GLOBAL page shows the new channels, the machine keeps the old ones (measured, `SPAN_PROBE=12,6 mmDeskFirmwareTest <MM ROM> spanprobe`: CCs on channels 1 to 6 still reach T1 to T6, channels 13 to 15 nothing). The editor sends to the new channels, so those edits and mutes are lost until the slot is made active again.
 - **Cause:** a dump of the active global is stored, not applied, until its slot is made active (0x56) after SYSEX RECV is left. B-067 moved every waiting 0x56 before the SYSEX RECV macro, to make a chosen slot active before the macro's cursor goes there. The re-activation after an imported dump waits in the same place, so it now went out before the macro, before the dump was in.
-- **Fix (`fix/mm-b071-main` (and `fix/0.6-span-song`)):** two separate waits: a slot the person chose goes before the macro (B-067); the re-activation of the active global goes after the macro, once RECV is left and no dump waits for it, as before B-067. A chosen slot drops any re-activation still waiting. Tests: `mmDeskFirmwareTest <MM ROM> span` (all three variants), `factoryglobal` and `intentcases` (B-067), mmDeskTest (a slot chosen while an imported dump waits stays active; the re-activation applies the new dump).
-- **Status:** fixed on `fix/mm-b071-main` (and `fix/0.6-span-song`). Not in a release: B-067 came after 0.5.1, but it is on main.
+- **Fix (`fix/0.6-span-song`):** two separate waits: a slot the person chose goes before the macro (B-067); the re-activation of the active global goes after the macro, once RECV is left and no dump waits for it, as before B-067. A chosen slot drops any re-activation still waiting. Tests: `mmDeskFirmwareTest <MM ROM> span` (all three variants), `factoryglobal` and `intentcases` (B-067), mmDeskTest (a slot chosen while an imported dump waits stays active; the re-activation applies the new dump).
+- **Status:** fixed on `fix/0.6-span-song`. Not in a release: B-067 came after 0.5.1, but it is on main.
+
+## B-070 · Machinedrum: a swing mark can flash back on a step whose trig was just removed
+
+- **From:** the wave 3 review, 2026-10-12.
+- **What happens:** paint Swing on a step, remove its trig: for a moment the swing mark shows again, until the core's result arrives and the view corrects itself.
+- **Cause:** the page's optimistic write on a trig removal clears the step's accent and slide but not its swing; the core clears all three.
+- **Should:** the optimistic write clears swing too.
+- **Status:** fixed in 0.6 (polish B): every write that removes a trig on the page (a click, a paint, a cut or clear of a selection, a fill, GEN) clears its accent, slide and swing and its locks in one place (`trigOffWrites`, mdDeskApp.js); a selection's copy, paste and rotate carry the swing marks too. Proved in mdDeskPageTest.js (B-070).
+
+## B-069 · Machinedrum: the GLOBAL panel's Trig in A / B card shows its values under the wrong names
+
+- **From:** the gap probes (`gapProbesFirmwareTest <MD ROM> - p3`, doc/modern-ux/PROBES-manual-gaps.md P3), 2026-10-11.
+- **What happens:** the card read the global's ten input bytes as five for A, then five for B, in the order Gate, Sens, Vmin, Vmax, Dest. The factory global showed for A: Gate 16, Sens 1, Vmin 0, Vmax 0, Dest 127.
+- **Cause (measured on MD OS 1.63):** the bytes are A and B interleaved: DEST A, DEST B, GATE A, GATE B, SENS A, SENS B, VMIN A, VMIN B, VMAX A, VMAX B. DEST 0-15 is a track, 16 none.
+- **Fix (`feat/0.6-probes`):** the card takes each column from its byte and shows Dest as the track (T4) or -. The factory global now reads Gate 1, Sens 0, Vmin 0, Vmax 127, Dest -.
+- **Status:** fixed on `feat/0.6-probes`. Editing the card is wave 5.
 
 ## B-068 · Monomachine: an FX machine's input reads back as another (INP A for BUS AB)
 
@@ -28,13 +467,53 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Fix (`fix/mm-intent-cases`):** the macro moves the cursor to the active global first (up, left to slot 1, then over and down), then ENTER (`RecvSession::enterMacro(activeGlobal)`); a GLOBAL slot still to be made active is sent before the macro starts. Tests: `mmDeskFirmwareTest <MM ROM> factoryglobal` (a pattern edit with GLOBAL 3 active: GLOBAL 3 stays; GLOBAL 6 without the fix), mmDeskTest (the macro for GLOBAL 7).
 - **Status:** fixed on `fix/mm-intent-cases`.
 
+## B-066 · Monomachine 0.5.1: the LCD's PLAY value (PAT / SONG) is cut off
+
+- **From:** Radek, 2026-10-11, on 0.5.1 (screenshot): the LCD's second row on Sequence reads `SWG 50%  PLAY |  ● HOST`; the PAT or SONG value after PLAY is not shown.
+- **Cause (read from the code):** row 2 is fixed-width slots in one flex line that hides what does not fit (`mmMockup.js` `renderSub`, `L2(...)`; `mmStudio.css` `.row2 .lcd2{flex:1;min-width:0}`, `.lcd2{overflow:hidden}`, `.l2{flex:none;overflow:hidden}`). On Sequence the slots are SEQ 9ch, ×2 3ch, SPD 7ch, SWG 7ch, PLAY 9ch plus gaps; the sync field (HOST) and 0.5.1's output meter and volume strip at the LCD's right end (I-021) now take part of that width, so the last slot, PLAY, is cut. The row has no fit step of its own.
+- **Should:** every slot of row 2 visible on every workspace at 1280 px and up; same family as B-061 (top bar past the right edge) and B-065 (the LCD's size per workspace). Fix all three with one measured fit (as the GEN bar's `genBarFit`) and a journey that checks every row-2 slot and the top bar on every workspace.
+- **Fix (fix/0.6-fit, with B-061 and B-065):** `skins/shared/deskTopFit.js` (below). Line 2 no longer takes part in the LCD's width (`.row2{width:0;min-width:100%}`) and its slots never shrink (`.l2{flex:none}`); the LCD is made as wide as the widest line 2 of any workspace asks, so no slot is cut. The journeys `md-fit-workspaces` and `mm-fit-workspaces` fail on any cut slot at 1280, 1440, 1920 and 2560 px and at three text floors of a zoomed-out page.
+- **Status:** fixed on fix/0.6-fit (a 0.5.1 regression, for 0.6).
+
+## B-065 · The LCD changes size or proportions when you switch workspaces
+
+- **From:** Discord tester M, 2026-10-11 (screenshots sent to Radek), the same session as B-062 to B-064: "the LCD seems to change size or proportions when switching between workspaces. It would be nice if it could keep a consistent size across all of them."
+- **Cause (read, then measured with the page tier):** the Machinedrum's LCD was `width:max-content` and its second row asked for its own width, so the LCD was as wide as the workspace's line 2 (Sequence 818 px, the others 713 at 1440 px, the Setup keys pushed 24 px past the window on Sequence); the Monomachine's panel was already steady (line 2 asked for no width) but cut line 2 instead (B-066). Both: the LCD took what the workspace's own line asked for.
+- **Fix (fix/0.6-fit):** the LCD's width no longer comes from line 2: `skins/shared/deskTopFit.js` draws every workspace's line 2 in turn (nothing painted between), sets the panel's `min-width` to the widest, so the LCD is one size on every workspace (and one height), and a value that later grows past it widens it once. The journeys `md-fit-workspaces` and `mm-fit-workspaces` compare the LCD's box on every workspace at every window size they visit.
+- **Status:** fixed on fix/0.6-fit.
+
+## B-064 · Monomachine: Poly, filter key tracking and the Multi envelope seem broken or missing (hard to find, limits not said)
+
+- **From:** Discord tester M, 2026-10-11, MacBook Pro M1 8 GB, macOS 26.6.2, version not given (0.5.x): "poly mode doesn't seem to be working"; could not find the switch that turns key tracking off for LPF and HPF; the "global ADSR" works "sometimes, only on a single track", and with a pattern playing has no effect.
+- **Cause (read from the code and the manual; not run):** all three exist and do what the firmware does, but the page neither leads to them nor says their limits. Poly: Perform > Keyboard mode > Poly sends the poly status (`mmMockup.js` ~3777, `mmDeskCommands.cpp` ~414); the firmware then gives six voices to the track in focus only, silences the others, and the sequencer plays chords only where the pattern has chord notes (manual 1-69). Key tracking: Perform > Assign > KEY tab, "HPF tracks keys" / "LPF tracks keys", per selected track (`mmMockup.js` ~3812, `mmDeskEdit.cpp` ~1298), as on the machine (KIT > ASSIGN > KEY). Multi envelope: Perform > Multi envelope writes all six tracks (`mmDeskEdit.cpp` ~1304), and the firmware applies it only to notes on the MULTI TRIG channel in ALL TRK mode: not to the sequencer, not to single-track notes (manual 1-43). The journey `mm-perform-poly` checks the poly flag only, not six voices.
+- **Should:** each card says what it does and when it has no effect (one line), the Filter group points to the KEY switches, and the guide (chapters 7, 9, 2) says it. Journeys that prove the sound: six voices in poly, key tracking off changes the filter, the Multi envelope shapes multi-trig notes.
+- **Rows:** MM-032, MM-087, MM-239 (poly), MM-128, MM-149 (key tracking), MM-160 (Multi envelope): done, but unproved by sound.
+- **Measured (0.6 wave 9, doc/modern-ux/PROBES-manual-gaps.md P10):** POLY plays the machine's track in focus (the TRACK keys), not the track the page showed: with another track selected on the page its notes went to a silent track. The MULTI ENV shapes MULTI TRIG notes in ALL TRK, SEQ START and SEQ TRNSP (none in SPLIT KEY), and after such a note with REL under 127 it holds every track silent until the next MULTI TRIG note or STOP: "only sometimes", "no effect with a pattern playing".
+- **Fix (feat/0.6-perform):** `poly {on, t}` presses TRACK t (entering POLY and whenever the selected track changes in it); the Perform page names the POLY track (×6 on its Assign key and lamp, the rest dimmed; ×6 in the rail); the Multi envelope card names the kit's MULTI TRIG mode and says what the envelope does in it; KEY in the Sound page's Filter title shows HPF / LPF tracking and opens Perform › Assign › KEY. Proved on the firmware through the same commands: `mmPerformSoundFirmwareTest` (six notes sound as a chord on the POLY track, the others silent; KEY off fixes the filter; the envelope shapes and silences as above); journeys mm-perform-poly-track, mm-sound-key-tracking, mm-perform-menv-modes.
+- **Status:** fixed on feat/0.6-perform.
+
+## B-063 · Window resizing: the Monomachine window does not resize with the mouse; the Machinedrum looks distorted when resized
+
+- **From:** Discord tester M, 2026-10-11 (screenshots promised): the Monomachine Editor's window cannot be resized by dragging; the Machinedrum Editor's can, but the page "ends up looking distorted".
+- **Read in the code:** both editors use the same window code (free size, 60 % minimum, aspect free: `pluginEditorWindow.cpp` ~149-170, `editorWindowFit.h`); the page zooms to fit its 1440 x 924 design size, and below 1440 x 720 it zooms out (as in B-056). A plug-in window's resizing also depends on the host.
+- **Needs:** standalone or plug-in, which host, and the screenshots. Meanwhile: right-click > Window Size (50-300 %) and Page Zoom (Cmd +/-).
+- **Status:** open, waiting for the tester's screenshots and host.
+
+## B-062 · Monomachine Perform keyboard: a key stays lit after you let go
+
+- **From:** Discord tester M, 2026-10-11, asking for keys that light up when pressed, as Ableton's on-screen keyboard.
+- **Read in the code:** a pressed key gets the class `dn` (`mmMockup.js` ~3838), but key up never clears it (`mmMockup.js` ~4675, `mmAdapter.js` ~510): the key stays lit until another is pressed. Notes from MIDI in are not shown (I-002).
+- **Should:** lit while held (mouse, computer keyboard), dark on release; MIDI in lights the key too (I-002).
+- **Status:** fixed in 0.6 (polish B): the keys are drawn from one state (the key the mouse holds, the computer keyboard's held keys, the notes a MIDI keyboard holds), so a release or a render cannot leave one lit. Journey mm-perform-keys-lit.
 ## B-061 · Machinedrum: in a small window the top bar's Setup keys run past the window's right edge
 
 - **From:** the journeys `md-top-cpu-meter` and `md-lcd-volume`, 2026-10-11, in `--background` runs (both hosts) while cutting 0.5.1; they pass at full size.
 - **What happens:** in the background runs' small window (the page zoomed out, 1440 CSS px wide) the CPU meter, GLOBAL and MKI/MKII end at 1520-1558 px. The CPU meter (I-018) and the output strip (I-021, 20 px there) made the bar wider; the cut was not measured before them.
 - **Cause:** as B-056: a window under 1440 x 720 points zooms the page below 100 % (mdPageZoom.h) and WebKit raises 9 to 15 px text to its minimum logical font size (15 px in that window), so the same CSS width holds less. At 100 % the bar fits at 1280 and 1440 px (the journeys pass in a full-size window).
 - **For 0.5.1:** the journeys check the bar's fit only where 9 px text is laid out at 9 px (`topOut`, shared/deskJourney.js) and say so in the step's note otherwise. Not fixed in the page: a measured tightening as the MM's GEN bar has (76-gen.js `genBarFit`) would do it.
-- **Status:** open (0.6).
+- **Also seen by a user:** Discord tester M, 2026-10-11, with screenshots: the MKI/MKII switch is partly cut off at the window's right edge, "when switching between workspaces" (most of the report was the Monomachine, so the MM bar may need the same fix). Not only a test-window effect.
+- **Fix (fix/0.6-fit):** one measured fit for both editors, as the GEN bar's `genBarFit` (B-056): `skins/shared/deskTopFit.js` + `deskTopFit.css`. It puts `tf1` to `tf4` on the header, one more each time, until every key is inside the header and the three groups (brand and workspaces, LCD, Setup keys) do not overlap, with the LCD at the width B-065 gives it: tf1 the LCD sits between the two key groups instead of the window's middle; tf2 gaps and key padding; tf3 the tightest; tf4 line 2's slots as wide as their text. It measures again on a resize or zoom, when the CPU meter or the volume strip is made, and when fonts load; at 1440 px and wider with 9 px text it chooses tf0 only without the meter and strip (with them the Machinedrum needed tf2). The journeys `md-fit-workspaces` / `mm-fit-workspaces` visit every workspace at 1280, 1440, 1920 and 2560 px and at text floors 10, 12 and 15 px (a window of 90, 75 and 60 % of 1440; 60 % is the smallest window, WebKit's smart minimum raises a text specified at 9 px or more, the 8 px labels stay) and fail on any key outside, any overlap, any cut slot and any LCD that is another size. The page's own minimum width is 1280 px (`html,body{min-width:1280px}`): narrower is not checked. `md-top-cpu-meter` and `md-lcd-volume` keep their own check of the bar at 100 %.
+- **Status:** fixed on fix/0.6-fit.
 
 ## B-060 · Monomachine: a transpose changed while playing is heard only after STOP and PLAY
 
@@ -331,7 +810,9 @@ where it came from, the setup, what happens, what should happen, status.*
 - **0.3.5:** not reproduced at first: the journey `mm-sound-machine-stays` (pick a machine on Sound, go to Sequence, wait, back to Sound) passes in the standalone and the VST3. It only waited on Sequence.
 - **Cause:** not the Sequence page (going there sends nothing), but what a person does there: an edit of the pattern that plays (a step, a lock, LEN …) goes to the machine as a pattern dump on SYSEX RECV, and OS 1.32B, taking a dump of the pattern that plays, loads the kit the pattern links from its slot, also when that is the kit that plays (measured: memory shows the stored kit 20-40 ms after the dump is taken, stopped or playing). Every unsaved edit of the kit went with it, the machine change and the values alike; the desk read the reloaded kit from memory, so the page showed the old machine and the kit as saved. The Machinedrum's firmware does the same, and its desk has sent the kit's edits again after such a dump since 0.3.0 (B-025); the Monomachine's desk did not. Over HW MIDI too, and worse there: the page, with no memory to read, went on showing a machine the Monomachine no longer played.
 - **Fix (0.4.0, branch `fix/machine-change`):** as the Machinedrum's: a dump of the pattern that plays which links the kit that plays is followed, once the machine has read and applied it (the stream's after-work), by the kit's edits as live messages (0x55 name, 0x5B machine, 0x5C routing, CC, NRPN: from the stored slot to the working kit the page shows), pending until memory shows them; meanwhile no memory image of the kit is taken, so the page never shows the reload (`MmMachine::reloadFollows`, `restoreWorkingKit`). The machine plays the stored kit for about a quarter of a second before the edits are back. Over HW MIDI the edits follow the dumps the person sends on SYSEX RECV (SEND, `hwSend`). Tests: `mmDeskFirmwareTest <MM ROM> machine` (the factory kit, then a saved kit: a machine and a value on Sound, a step on Sequence stopped and while playing, a second machine while playing, PLAY and STOP, another pattern with the same kit and back, each time the machine's memory and the page holding the same edited kit; then a step sent on the person's SYSEX RECV over HW MIDI): 24 failures before, passes after; `mmDeskTest` (0x5B again after a dump of the pattern that plays, not after another pattern's: fails before); the journey `mm-sound-machine-stays` now clicks a step on Sequence (not yet run in the plug-in).
-- **Status:** fixed for 0.4.0; the tester to confirm.
+- **Reported again:** Discord, 2026-10-11 (0.5.0, plug-in): "switching from the sound editor to the sequencer it switches back to some previous state".
+- **Re-checked 2026-10-13 on the 0.6 line (`fix/0.6-discord`), not reproduced:** `mmDeskFirmwareTest <MM ROM> machine` (a machine and values on Sound, then a step and a piano-roll note on Sequence, stopped and playing, another pattern with the kit and back, SAVE KIT, over HW MIDI: 44 of 44 checks) and `kitlink` (an E-H pattern that keeps another kit, its roll edit: 9 of 9) pass; the page journeys `mm-sound-machine-stays` and `mm-ms-across-views` pass on the firmware. So no new number. Left to ask the tester: whether the DAW has automation for the plug-in's parameters (a lane, or Live's automation arm while turning knobs), which writes the recorded values back as the song plays; whether it plays a pattern in banks E-H; the version.
+- **Status:** fixed for 0.4.0; reported again for 0.5.0, not reproduced on the 0.6 line; the tester to confirm with 0.6.
 
 ## B-026 · Mutes don't work after a SysEx import with its globals (0.3.5 candidate)
 

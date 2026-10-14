@@ -9,7 +9,10 @@
 .modalopen .kpop{z-index:120!important}
 @keyframes nudge{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 .dlgbox.nudge{animation:nudge .16s 2}
-@media (prefers-reduced-motion:reduce){.dlgbox.nudge{animation:none}}
+/* a panel's box is placed by a transform: it says "not closed" with a flash of its frame instead */
+@keyframes nudgeflash{50%{outline:3px solid var(--led,#e33);outline-offset:2px}}
+.modal.nudge:not(.dlg){animation:nudgeflash .18s 2}
+@media (prefers-reduced-motion:reduce){.dlgbox.nudge,.modal.nudge{animation:none}}
 /* A context menu (K3, deskMenu.js): at the pointer, above the clear backdrop; each item with its key at the right.
    #deskmenu holds the panels (the menu, an open submenu beside it), each placed by the script. The page's tokens
    (--plate --print --body --rule --mono --sans: light and dark, MK1 and MK2 alike); plain colours and rgba only (no

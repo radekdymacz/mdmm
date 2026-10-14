@@ -47,7 +47,7 @@ And: no release after 0.5.1 until this is done.
 |---|---|---|---|---|---|
 | 0 Save | each save, or by hand | `scripts/mdmm-check.sh --save` (`--watch`: on every save) | the pages against the contract and their mockups, the unit tests of what changed (built first), without the Slow and Timing ones | under 30 s | 2 s (a page file), 4 s (a desk file, rebuilt from ccache) |
 | 1 Did I break it | before Radek plays a build, before a merge | `scripts/mdmm-check.sh` | tier 0 with every test of what changed, the page journeys of that area, one golden per machine when emulation code changed | under 2 min | 18 s (a sequencer page change: 28 unit tests, 18 page journeys) |
-| 2 Branch check | before a merge, in the background, when desk or emulator code changed | `scripts/mdmm-check.sh --branch` | every unit test, every page journey, the firmware tests and the machine journeys of the area, every golden when emulation changed | under 10 min | 2.6 min (a desk file: 123 unit tests, 136 page journeys, the MM intent cases on the firmware) |
+| 2 Branch check | before a merge, in the background, when desk or emulator code changed | `scripts/mdmm-check.sh --branch` | every unit test, every page journey, the firmware tests (their programs built first) and the machine journeys of the area, every golden when emulation changed | under 10 min | 2.6 min (a desk file: 123 unit tests, 136 page journeys, the MM intent cases on the firmware) |
 | 3 Full gate on main | by hand, on a quiet Mac: the start of a release, after a big merge | `scripts/mdmm-full-gate.sh` (`--soak` for the soak) | the full local gate | under 30 min | 21.6 min (warm tree; 0.5.1: 62 min) |
 | 4 Release | from main after a green full gate | `scripts/mdmm-full-gate.sh --plan`, then the command it prints | the gate stages the diff since that run touches (`MDMM_GATE_ONLY`), the release CI, the tag | about 30 min, mostly CI | the stages of the diff |
 
@@ -61,13 +61,19 @@ no row matches runs everything of its tier.
   them) in headless Chrome, driven over the DevTools protocol with node's own WebSocket (no npm package), `?dev=1`, and
   puts `deskStubHost` behind the bridge: the editors' real core (`mdDesk`, `mmDesk`) with a fake machine that speaks the
   firmware's SysEx (keeps the dumps, answers requests and status, LOAD PATTERN and KIT, SAVE KIT, the working kit from
-  memory, mutes, the transport, chains, the MM's SYSEX RECV and MUTE window, a small MD sample bank). Undo, refusals,
+  memory, mutes, the transport, chains, the MM's SYSEX RECV and MUTE window, a small MD sample bank). Since slice 5 (0.6) the Monomachine's fake also reports every message the core gives the device edge as `{type: "wire", kind, b, n}` (a CC, NRPN or note as deskWire encodes it on the global's base channel, a SysEx's first sixteen bytes and its length), so a page journey checks the CC number, channel, NRPN triple, note velocity and SysEx id the manual's Appendix B and C name; it also locks a value turned during live recording and keeps the working kit when a pattern recalls the kit that plays. Undo, refusals,
   history, the library and the read-back are the real code. Every command the page sends is checked against the contract
   schema and recorded. Its fixture: the committed test dumps, 16-step patterns, kits named KIT nn, four-row songs,
-  factory globals. All 133 page journeys of both editors pass in about a minute at `--jobs 4`.
+  factory globals. The Machinedrum's 118 page journeys take about 2 minutes at `--jobs 4`; the Monomachine's 136 (slice 5 grew them, many wait for the machine's read-back) 7.5 minutes at `--jobs 2`, so `mdmm-page.mjs` allows 30 minutes a page (`--timeout`) and a full MM run at `--jobs 1` does not abort.
 - **Journey tiers.** `deskJourney.js` `TIERS`: 10 host journeys, 32 machine journeys (the tap tempo ones too: they time key presses), every other one a page journey; a
   selector's `~page`, `~machine`, `~host`. `mdmm-journeys.sh --tier` (the standalone, default all) and `--vst3-tier`
   (default host). `deskJourneyTiersTest.js` keeps the table on real names.
+- **Independent journeys (2026-10-13).** Every journey passes alone, in any order, from fresh settings: it builds its data and its tidy puts back what it changed
+  (doc/modern-ux/JOURNEYS.md, "Independent journeys"). The runner no longer puts the page right between journeys: it says what a journey left
+  (`JOURNEY <name> left: ...`, the page's `state()` before against after the tidy) and fixes only after a journey that failed. Proof modes:
+  `mdmm-page.mjs --isolate` (every page journey in a page and a stub host of its own), `--shuffle <seed>` (a seeded order, the seed printed), `--list`;
+  `mdmm-journeys.sh` and `mdmm-e2e.sh` take `--shuffle <seed>`, `--isolate` (an editor for each journey, fresh from factory memory) and, for the e2e script, `--tier`.
+  A journey whose change has no way back (an empty reset) is `alone: true`: the runners start it in a page or an editor of its own.
 - **Journey fixes.** The runner closes what an earlier journey left open (and logs it); the speed-ups journey waits for
   the CPU details to stay closed and toggles each switch once each way; a click after a drag goes where a browser sends
   it (the common parent of the pressed and released element); waits on the read-back instead of fixed sleeps;
@@ -77,6 +83,13 @@ no row matches runs everything of its tier.
   `mmIntentCases.h` / `mdIntentCases.h` and run by the core tests (`mmDeskTest`, `mdDeskTest`) and, through the desk on
   the firmware, by `mmDeskFirmwareTest intentcases` and `mdDeskFirmwareTest intentcases` (ctest
   `mdIntentCasesFirmwareTest` and `mmIntentCasesFirmwareTest`).
+- **No stale test programs.** ctest runs whatever binary the tree holds, so each tier builds the programs of the tests
+  it is about to run first (`cmake --build temp/dev --target ...`, incremental, ccache): the unit tests' since the
+  start, the firmware tests' in tier 2 since 2026-10-12 (before that a branch check could run a firmware test built
+  from older sources: seen several times on 2026-10-12). A program not built yet, which ctest lists without a command,
+  is found in the tree's `CTestTestfile.cmake`. `mdmmIdentityTest` reads the editors' bundles, not a program: when it is
+  chosen the editors are built first (`NEEDS_EDITORS`; on a fresh tree it failed before the bundles existed). An
+  up-to-date program costs one ninja no-op; tier 0 and 1 run no firmware tests and are unchanged.
 - **ctest lanes.** The 28 node page tests carry the label `Page`; the Timing tests run serially (`RUN_SERIAL`); the slow
   unit tests carry `Slow` (out of the save-time lane).
 - **The gate in lanes.** Stage 1 with ccache; the journeys' diagnostics build in the background while the release
@@ -94,7 +107,7 @@ no row matches runs everything of its tier.
 | | Before (0.5.1) | After |
 |---|---|---|
 | Full local gate | 62 min (+35 for a re-run) | 21.6 min, warm tree (build 3 min; lane 1 7.5 min with 7a-7c beside it; 7d 5.2 min; timing stages 6 min). A cold tree adds about 6 min: ccache is not installed on this Mac (`brew install ccache`) |
-| Journeys in the gate (7d) | 32 min, 362 runs one at a time | 5.2 min: 65 machine and host journeys at 4 at once (and 2c, the page tier, 136 journeys in 1.5 min inside lane 1) |
+| Journeys in the gate (7d) | 32 min, 362 runs one at a time | 5.2 min: 65 machine and host journeys at 4 at once (and 2c, the page tier, 254 journeys of both editors, about 8 minutes at `--jobs 2` for the Monomachine, inside lane 1) |
 | Page journeys, both editors | in the app only | 49-68 s, headless (6 or 4 pages per editor) |
 | Unit tests (no firmware) | 4.6 min in ctest with the firmware ones | 5 s without Timing and Slow, 16 s all, at -j12 |
 | Tier 0 / 1 / 2 | - | 2-4 s / 18 s / 2.6 min |
@@ -112,6 +125,30 @@ no row matches runs everything of its tier.
   the slot of the kit that plays and LOAD KIT, so that slot holds the working kit after (`stores`); a paste into that
   slot is loaded too (`loads`). The test also waits for the base global's MIDI channels to settle. Now 99 of 99, and
   `mmIntentCasesFirmwareTest` is in ctest (about 1 min).
+
+## Known flaky (2026-10-12, `fix/0.6-flaky`: none left)
+
+The journeys that failed in full runs under load and passed alone. Each was reproduced in its order (with the journey
+before it) or under load (`--jobs 4`, 12 to 14 busy loops beside it), its cause found in the logs and fixed there.
+
+| Journey | Cause | Fix |
+|---|---|---|
+| md-top-tempo-window, md-top-tempo-release, mm-top-tempo-release | The journeys' log of the ops the page sent keeps the last 80 (MM 50). A step marked "now" by its length and read what came after: once the log was full its length stays put, so after enough earlier journeys (more on a slow run) nothing was ever "sent". The tempo window also read the "Change on release" tick another page had set (one store, below) | `Journey.recent(cap)`: `mark()` counts every op ever added, `since(mark)` (deskJourney.js); POLY's "nothing sent" check (mm-perform-poly-track) passed whatever was sent, for the same reason |
+| md-seq-swing-copy, md-seq-copy-what | The four pages of a run shared one origin, so one page's remembered ticks (Copy what, Paste what) were another's start. Paste… then opened with nothing ticked (a product bug too: B-085), and the hands clicked its Paste key although it was off, which a browser never sends: an empty paste, refused | Each page in a browser context of its own (mdmm-page.mjs); the hands send no click to a disabled control (deskJourney.js); B-085 |
+| md-seq-page-leds | md-song-commands before it left the machine in SONG mode with a part row and a HALT (its tidy threw on More's key, gone after HALT): PLAY played the song row, the position never passed step 16 | md-song-commands puts the mode back; its and the row inspectors' tidies click More only when it is there; `between` (both editors) sets PATTERN mode when a journey left SONG mode, and says so in the log |
+| mm-top-pattern-next | mm-song-play-from's tidy clicked `[data-seqmode="pattern"]`, a key gone since wave 1: the machine stayed in SONG mode and the LCD's ‹ › were under the song row | the tidy uses the Song page's PATTERN key; `between` as above |
+| md-top-pause | Product bug B-086: a telemetry frame sent before the pause reached the machine ended the pause, then the machine stopped | B-086 |
+| mm-seq-live-erase | RECORD and the erase (EXIT) are refused while the panel takes a dump or leaves SYSEX RECV, by design (mmDeskTest "Bug 4": a key pressed then is lost; PLAY and STOP wait instead). The journey before (mm-seq-fill-every's undo) left a dump going, and the session leaves 3 s after its last dump | The journey presses Alt+Space once the SYSEX RECV session is idle with nothing on its way (`machine.recv`), as mm-seq-first-beat does; the refusal itself is the product's honest answer. Since review 1 (B-092, the coordinator's decision) RECORD waits like PLAY |
+| mm-sound-machine-pick-undo | The picker opens on the family last browsed for the track; slice 5's mm-sound-machine-reference (not on this branch yet) leaves it on VO, a family of one machine, and the check said "picker closed" for a family with fewer than two machines (the "Undo" toast was the journey before's) | The journey clicks the family of the track's machine first; its check names the family shown. Proved by opening the picker on VO: the old journey fails, the new one passes |
+| md-boot-card | Product bug B-087: "playing" read from the firmware's RAM while it starts | B-087 |
+| the MD intent cases (`mdIntentCasesFirmwareTest`) | Harmless. The runs that failed (2026-10-12, 01:07, feat/0.6-transport) ran a test program built from older sources: tier 2 did not build the firmware tests' programs then (fixed in 40f198560). The test runs on the machine's own clock (`nowMs` is the emulator's), so load and other worktrees cannot move it, and it writes no shared file | none needed: four at once beside 8 busy loops, 48 of 48 cases each |
+
+Since then a journey that leaves the machine in SONG mode is named in the log (`JOURNEY <next> before: the machine was
+in SONG mode: PATTERN mode again`, against the journey after the one that left it), and the page tier's report ends with
+a WARN line listing every such "before:" (what `between` put right, what the runner closed). Several song journeys still
+leave SONG mode; the next journey no longer pays for it. (Superseded 2026-10-13: the song journeys put PATTERN mode back, and
+the runner fixes nothing after a journey that passed: see Independent journeys above.) The hands log a click on a disabled control
+(`hands: no click on ...`) instead of sending it, and each page's browser context is disposed when its unit ends.
 
 ## What stays open
 

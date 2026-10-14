@@ -1,0 +1,51 @@
+# 12. Early start-up menu
+<!-- summary: What the machine's start-up menu does, and what to do in the editor instead. -->
+
+On the machine you hold a key while you switch it on to open the early start-up menu. It holds the test mode, three resets and the firmware upgrade. The editor starts the machine for you, with the firmware you gave it, and has no such menu.
+
+## TEST MODE
+<!-- rows: MD-202 @e5ccd3 -->
+
+The test mode checks the hardware of the machine: its keys, knobs, memory and outputs. The editor runs on the emulated machine and has nothing to test.
+
+## EMPTY RESET
+<!-- rows: MD-203 @0ce65e -->
+
+The empty reset clears the memory of the machine. In the editor it is in the engine menu.
+
+1. Choose **RESET MACHINE…** in the engine menu (the engine name at the left of the LCD). A question says what each reset clears. **Cancel** is the default: [ESC] answers it. A click beside the question does nothing.
+2. Click **Empty reset…**. The editor asks a second time.
+3. Click **Clear everything**. The **Empty reset** panel opens. The editor writes an empty kit, pattern and song into every slot, then reads each one back.
+4. Read the report and click **Done**.
+
+![After the Empty reset: an empty kit and an empty pattern](shot:e2e-md-engine-reset-empty)
+
+The globals and the samples stay. A global is reset in its own slot in GLOBAL (chapter 10).
+
+NOTE: The reset has no undo. Click **Export SysEx…** in the question first to keep a way back.
+
+## FACTORY RESET
+<!-- rows: MD-204 @8da2d4 -->
+
+The factory reset brings back the kits, patterns and songs the machine had when it left the factory. The editor takes them from your own ROM: it starts a second machine with it, in the background, and reads that machine's memory.
+
+1. Choose **RESET MACHINE…** in the engine menu.
+2. Click **Factory reset…**. The editor asks a second time.
+3. Click **Factory reset**. Preparing the factory data takes a few seconds. Then the **Factory reset** panel sends every kit, pattern and song and reads each one back. This takes a few minutes.
+4. Read the report and click **Done**. Kits 1 to 4 are named TRX UW, EFM UW, E12 UW and P-I UW.
+
+![After the Factory reset: the factory kit and song are back](shot:e2e-md-engine-reset-factory)
+
+The globals and the samples stay. The reset has no undo: export first.
+
+TIP: To bring back the whole factory memory at once, globals and samples too, click **Start from factory memory…** in the same question. The machine restarts in a few seconds. See "MACHINE MEMORY" in chapter 17.
+
+## SOFT RESET
+<!-- rows: MD-205 @2aa124 -->
+
+{gap:MD-205}You cannot soft reset the machine in the editor. Restart the editor.{/gap}
+
+## MIDI UPGRADE
+<!-- rows: MD-206 @4483c9 -->
+
+The firmware upgrade runs on the real machine. The editor does not upgrade the firmware. It runs the Machinedrum OS 1.63 that you give it as a ROM.

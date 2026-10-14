@@ -136,6 +136,7 @@ namespace mmDesk
 		m_recLock.reset();
 		m_expectMute = {};
 		m_expectPoly = {};
+		m_expectFocus = {};
 		m_expectTempo = {};
 		m_curPattern = m_curKit = m_curSong = m_curGlobal = m_songMode = m_queuedPattern = -1;
 		m_chosenGlobal = -1;
@@ -159,6 +160,9 @@ namespace mmDesk
 		c.about = m_profile.about;
 		const bool panel = m_port.pressKeys && m_profile.panel;
 		c.set("transport", static_cast<bool>(m_port.pressKeys), "This engine has no transport.");
+		// wave 2: panic and play from a song row are MIDI into the machine (P1, P5 MM)
+		c.set("panic", static_cast<bool>(m_port.sendMidi), g_noPanic);
+		c.set("playFrom", static_cast<bool>(m_port.sendMidi), g_noPlayFrom);
 		c.set("panelKeys", panel, "The editor cannot press this machine's keys.");
 		c.set("recvSession", panel, "The Monomachine takes dumps only on GLOBAL › FILE › SYSEX RECV, and the editor cannot put it there:"
 			" put it there to send patterns, songs and globals.");
@@ -242,6 +246,9 @@ namespace mmDesk
 		// 0.3.4: cable speed only while the sequencer plays
 		m_stream.setPlaying(m_playing, _now);
 		m_stream.pump(_now);
+		// liveErase: no word from the page that Delete is still held: EXIT up
+		if(m_exitHeld && _now - m_exitSeenMs > g_eraseQuietMs)
+			releaseExit();
 		pumpSequence(_now);
 		// The emulator takes requests once its start screen is gone; over HW MIDI the status polls
 		// are what finds the machine.
@@ -272,6 +279,9 @@ namespace mmDesk
 		}
 		pumpTranspose(_view);
 		pumpTransport(_now);
+		pumpMidiMutes(_now);
+		pumpRecord(_now);
+		pumpAfterAccept(_now, _view);
 		pumpChain();
 		pumpSongReload(_now);
 		pumpLoads(_now);
@@ -303,17 +313,23 @@ namespace mmDesk
 	{
 		if(!m_tel.valid)
 			return;
-		const auto due = telemetryDue(m_telemetryOut, m_tel.step, m_playing, _recordChanged, _now, g_telemetryMinMs);
+		// STEP RECORDING: the cursor (RAM) moves without the playhead; a move is news too
+		const int cursor = m_tel.recording == 3 ? m_tel.stepCursor : -1;
+		const auto due = telemetryDue(m_telemetryOut, m_tel.step, m_playing, _recordChanged || cursor != m_stepCursorSent, _now, g_telemetryMinMs);
 		if(!due)
 			return;
 		m_telemetryOut = *due;
-		static const char* modes[] = {"off", "grid", "live"};
+		m_stepCursorSent = cursor;
+		static const char* modes[] = {"off", "grid", "live", "step"};
 		Value t = Value::object();
 		t.set("step", m_tel.step);
 		t.set("playing", m_playing);
-		t.set("record", m_tel.recording < 0 || m_tel.recording > 2 ? Value() : Value(modes[m_tel.recording]));
+		t.set("record", m_tel.recording < 0 || m_tel.recording > 3 ? Value() : Value(modes[m_tel.recording]));
+		t.set("stepAt", cursor >= 0 ? Value(cursor) : Value());
 		const int row = m_songRow.update(m_tel.songRow, m_tel.step, m_playing);
 		t.set("songRow", row >= 0 ? Value(row) : Value());
+		// MM-271: the song's played steps, the EDIT SONG header's bars and beats (while a song plays)
+		t.set("songSteps", row >= 0 && m_tel.songSteps >= 0 ? Value(m_tel.songSteps) : Value());
 		publishTelemetry(std::move(t));
 	}
 
@@ -356,6 +372,9 @@ namespace mmDesk
 		d.set("mutes", std::move(mutes));
 		const auto poly = m_expectPoly.shown(polyInMemory(), t, m_profile.settleMs);
 		d.set("poly", poly ? Value(*poly) : Value());
+		// 0.6 wave 9: the track in focus, the one POLY plays (status 0x22); the TRACK the editor pressed until it shows
+		const auto focus = m_expectFocus.shown(focusInMemory(), t, m_profile.settleMs);
+		d.set("focus", focus ? Value(*focus) : Value());
 		// MM-P8: the machine's own chain and BANK GROUP (RAM), as the Machinedrum's machine.desk
 		Value desk = Value::object();
 		if(m_tel.chainKnown)
@@ -420,6 +439,7 @@ namespace mmDesk
 		v.set("recv", m_recv.stateName());
 		v.set("parked", m_recv.parked());
 		v.set("roundTripMs", m_lastRoundTripMs);
+		v.set("hostClock", m_hostClock.on);
 		return v;
 	}
 }

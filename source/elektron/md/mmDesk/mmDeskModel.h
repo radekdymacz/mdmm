@@ -1,6 +1,7 @@
 #pragma once
 
 #include "deskCore/deskCommands.h"
+#include "deskCore/deskEdits.h"
 #include "deskCore/deskCore.h"
 
 namespace deskCore
@@ -136,17 +137,49 @@ namespace mmDesk
 
 			bool operator==(const Steps& _o) const { return length == _o.length && rows == _o.rows; }
 		};
+		// A track's parts (trackCopy: COPY what, the machine's SUPER COPY): its values over the whole track, of the
+		// parts it copied (trackParts below).
+		struct Track
+		{
+			bool midi = false;					// a MIDI sequencer track's (its parts paste onto MIDI tracks only)
+			std::vector<StepValue> steps;		// the 64 steps
+			uint64_t slide = 0, swing = 0;
+			std::map<std::pair<uint8_t, uint8_t>, std::map<uint8_t, uint8_t>> locks;	// (page, param) -> step -> value
+			uint8_t arpPlayOjmp = 0, arpMode = 0, arpRange = 0, arpSpeed = 0, arpTrigs = 0, arpLength = 0;
+			std::array<uint8_t, 16> arpSteps{};
+			int8_t transpose = 0;
+			uint8_t scale = 0, key = 0;
+			Sound sound;
+
+			bool operator==(const Track& _o) const
+			{
+				return midi == _o.midi && steps == _o.steps && slide == _o.slide && swing == _o.swing && locks == _o.locks
+					&& arpPlayOjmp == _o.arpPlayOjmp && arpMode == _o.arpMode && arpRange == _o.arpRange && arpSpeed == _o.arpSpeed
+					&& arpTrigs == _o.arpTrigs && arpLength == _o.arpLength && arpSteps == _o.arpSteps && transpose == _o.transpose
+					&& scale == _o.scale && key == _o.key && sound == _o.sound;
+			}
+		};
 		std::optional<Steps> steps;
 		std::optional<Sound> sound;
+		std::optional<deskCore::trackParts::Clip<Track>> track;
 		std::optional<elektronData::json::Value> songRow;	// a contract row
 		std::optional<elektronData::MmKit> kit;				// the kit library
 		std::optional<elektronData::MmPattern> pattern;		// the pattern library
+		std::optional<elektronData::MmSong> song;			// the song slots (0.6)
+		std::optional<elektronData::MmGlobal> global;		// the GLOBAL page's Copy (0.6)
 
 		bool operator==(const Clipboard& _o) const
 		{
-			return steps == _o.steps && sound == _o.sound && songRow == _o.songRow && kit == _o.kit && pattern == _o.pattern;
+			return steps == _o.steps && sound == _o.sound && track == _o.track && songRow == _o.songRow && kit == _o.kit
+				&& pattern == _o.pattern && song == _o.song && global == _o.global;
 		}
 	};
+
+	// The parts of a track COPY / PASTE / CLEAR what names (trackCopy, trackPaste, trackClear; deskCore/deskEdits.h
+	// trackParts), in the order the page shows them: the pattern's notes (trigs, envelope trigs, NOTE OFFs, pitches),
+	// melody (the pitches alone, onto the trigs that are there), slide, swing, locks, arp and transpose, and the kit's
+	// machine and sound (a synth track's).
+	const std::vector<deskCore::trackParts::Part>& trackParts();
 
 	struct EditContext
 	{
@@ -181,6 +214,11 @@ namespace mmDesk
 	// transposes and kit link stay). What the machine's own CLEAR leaves is not known.
 	elektronData::MmKit emptyKit(const elektronData::MmKit& _like, uint8_t _slot);
 	elektronData::MmPattern emptyPattern(const elektronData::MmPattern& _like);
+	// The song slots (songClear): the END row alone and no name. A slot the library shows as empty: no name (or the
+	// firmware's unused mark) and no row but END. A song's name as text.
+	elektronData::MmSong emptySong(const elektronData::MmSong& _like, uint8_t _slot);
+	bool songIsEmpty(const elektronData::MmSong& _song);
+	std::string songNameText(const elektronData::MmSong& _song);
 	// A slot the library shows as empty: a kit without a name (or the firmware's unused mark), a pattern without a trig.
 	bool kitIsEmpty(const elektronData::MmKit& _kit);
 	bool patternHasTrigs(const elektronData::MmPattern& _pattern);
@@ -190,6 +228,9 @@ namespace mmDesk
 	// The command table's group of the library's slot ops (kitCopy ... patClear): the machine asks before they lose
 	// something (MmMachine::review).
 	constexpr int g_library = 1;
+	// The group of a track's parts (trackCopy, trackPaste, trackClear: COPY / PASTE / CLEAR what): one command may
+	// change the pattern and the kit that plays (deskCore/deskEdits.h trackParts).
+	constexpr int g_track = 2;
 
 	struct MmModel
 	{
@@ -227,7 +268,13 @@ namespace mmDesk
 		// removed or re-meant; adding one keeps it.
 		static constexpr int contractVersion = 2;
 		// The Monomachine's page keeps no clipboard in the core.
-		static std::optional<elektronData::json::Value> clipboardDocument(const Clipboard&) { return {}; }
+		// 0.6: what the page reads of the clipboard: the GLOBAL page's Paste is on while a global is copied
+		static std::optional<elektronData::json::Value> clipboardDocument(const Clipboard& _clip)
+		{
+			auto c = elektronData::json::Value::object();
+			c.set("global", _clip.global ? elektronData::json::Value(static_cast<int>(_clip.global->position)) : elektronData::json::Value());
+			return c;
+		}
 		// The Monomachine Editor's command vocabulary.
 		static const Table& commands();
 		// P7: the active global as it must be for the machine to follow a DAW's tempo and transport (MIDI
@@ -241,7 +288,7 @@ namespace mmDesk
 		// The questions the MM adapter may ask (deskCore::Ask::what): the contract's ask enum.
 		static const std::vector<std::string>& asks()
 		{
-			static const std::vector<std::string> a{"loadKit", "reloadKit", "overwriteSlot", "clearSlot", "discardKit", "transportIgnore", "breakChain"};
+			static const std::vector<std::string> a{"loadKit", "reloadKit", "overwriteSlot", "clearSlot", "discardKit", "transportIgnore", "breakChain", "loadUndoKit"};
 			return a;
 		}
 	};

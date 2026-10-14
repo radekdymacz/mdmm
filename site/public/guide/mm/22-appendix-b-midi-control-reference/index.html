@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>22. Appendix B: MIDI control reference · Monomachine Editor guide</title>
+<meta name="description" content="The MIDI messages the Monomachine understands, and where the editor sends or shows them.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/mm/22-appendix-b-midi-control-reference/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261014b">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>@page { @top-left { content: "22. Appendix B: MIDI control reference"; } }</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › <a href="/guide/mm/">Monomachine Editor</a> › Appendix B: MIDI control reference</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Chapters of the Monomachine Editor guide">
+<p class="gd-side-title"><a href="/guide/mm/">Monomachine Editor guide</a></p>
+<ol class="gd-side-list"><li><a href="/guide/mm/01-introduction-philosophy-highlights/">1. Introduction, philosophy, highlights</a></li>
+<li><a href="/guide/mm/02-user-interface-and-connectors/">2. User interface and connectors</a></li>
+<li><a href="/guide/mm/03-the-lcd-user-interface/">3. The LCD user interface</a></li>
+<li><a href="/guide/mm/04-quick-start/">4. Quick start</a></li>
+<li><a href="/guide/mm/05-monomachine-overview/">5. Monomachine overview</a></li>
+<li><a href="/guide/mm/06-synthesis-arrangement-kits-and-machines/">6. Synthesis arrangement: kits and machines</a></li>
+<li><a href="/guide/mm/07-track-effects/">7. Track effects</a></li>
+<li><a href="/guide/mm/08-low-frequency-oscillators/">8. Low frequency oscillators</a></li>
+<li><a href="/guide/mm/09-additional-kit-settings/">9. Additional kit settings</a></li>
+<li><a href="/guide/mm/10-the-pattern-sequencer-pattern-operation/">10. The pattern sequencer: pattern operation</a></li>
+<li><a href="/guide/mm/11-composing-a-pattern/">11. Composing a pattern</a></li>
+<li><a href="/guide/mm/12-tempo/">12. Tempo</a></li>
+<li><a href="/guide/mm/13-parameter-locks/">13. Parameter locks</a></li>
+<li><a href="/guide/mm/14-advanced-sequencer-control/">14. Advanced sequencer control</a></li>
+<li><a href="/guide/mm/15-additional-sequencer-features/">15. Additional sequencer features</a></li>
+<li><a href="/guide/mm/16-the-midi-sequencer/">16. The MIDI sequencer</a></li>
+<li><a href="/guide/mm/17-the-song-mode/">17. The song mode</a></li>
+<li><a href="/guide/mm/18-routing/">18. Routing</a></li>
+<li><a href="/guide/mm/19-global-settings/">19. Global settings</a></li>
+<li><a href="/guide/mm/20-early-startup-menu-technical-information/">20. Early startup menu, technical information</a></li>
+<li><a href="/guide/mm/21-appendix-a-machine-reference/">21. Appendix A: machine reference</a></li>
+<li class="gd-side-cur"><a href="/guide/mm/22-appendix-b-midi-control-reference/" aria-current="page">22. Appendix B: MIDI control reference</a><ol class="gd-side-subs"><li><a href="#channels">CHANNELS</a></li><li><a href="#note-on-off">NOTE ON / OFF</a></li><li><a href="#multi-trig-channel">MULTI TRIG CHANNEL</a></li><li><a href="#multi-map-channel">MULTI MAP CHANNEL</a></li><li><a href="#auto-channel">AUTO CHANNEL</a></li><li><a href="#cc-joystick-up-down">CC: JOYSTICK UP / DOWN</a></li><li><a href="#cc-mute">CC: MUTE</a></li><li><a href="#cc-level">CC: LEVEL</a></li><li><a href="#cc-pan">CC: PAN</a></li><li><a href="#cc-synthesis-1-to-8">CC: SYNTHESIS 1 TO 8</a></li><li><a href="#cc-amp">CC: AMP</a></li><li><a href="#cc-filter">CC: FILTER</a></li><li><a href="#cc-effects">CC: EFFECTS</a></li><li><a href="#cc-lfo-1-to-3">CC: LFO 1 TO 3</a></li><li><a href="#cc-all-notes-off">CC: ALL NOTES OFF</a></li><li><a href="#nrpn-parameters">NRPN PARAMETERS</a></li><li><a href="#nrpn-pitch">NRPN PITCH</a></li><li><a href="#nrpn-note-off-trig-track">NRPN NOTE OFF, TRIG TRACK</a></li><li><a href="#nrpn-multi-env">NRPN MULTI ENV</a></li><li><a href="#pitch-bend">PITCH BEND</a></li><li><a href="#program-change">PROGRAM CHANGE</a></li><li><a href="#song-pointer-clock-start-continue-stop">SONG POINTER, CLOCK, START, CONTINUE, STOP</a></li></ol></li>
+<li><a href="/guide/mm/23-appendix-c-sysex-reference/">23. Appendix C: SysEx reference</a></li>
+<li><a href="/guide/mm/24-beyond-the-hardware/">24. Beyond the hardware</a></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">22</span><span class="gd-ctitle">Appendix B: MIDI control reference</span></h1><p class="gd-cmeta">MM manual pp.B-1 to B-6</p></header>
+<div class="gd-intro gd-prose"><p>The Monomachine takes notes, controllers, NRPN values and a few system messages. This appendix lists them and says where the editor uses each one. The editor sends them to the emulated machine, or to a real Monomachine over MIDI, as you work: you do not write them by hand.</p></div>
+<section class="gd-sec" id="channels" aria-labelledby="channels-h">
+<div class="gd-body gd-prose"><h2 id="channels-h">CHANNELS <a class="gd-anchor" href="#channels" aria-label="Link to CHANNELS">#</a></h2>
+<p class="gd-ref">MM manual p.B-1</p>
+<p>Each track listens on its own channel: the base channel plus 0 to 5. You set the base channel and the span in GLOBAL, in the Control section (chapter 19). The on-screen keyboard, the home row keys and the roll keys use these channels.</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">GLOBAL</b> in the top bar. The panel opens with the MIDI channels.</li><li>Click the minus beside Channel span until it reads 0. No track has a channel, and the panel says so.</li><li>Close the panel and click the <b class="gd-ui">M</b> of a track on the rail. The editor refuses and offers the fix in a notice.</li><li>Open GLOBAL again and click <b class="gd-ui">Give each track its own channel</b>. The span reads 6 and <b class="gd-ui">M</b> mutes the track.</li></ol>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/mm-global-panel.webp" aria-label="Open the picture full size: The MIDI channels in GLOBAL"><img src="/guide/shots/mm-global-panel.webp" width="1440" height="924" alt="The MIDI channels in GLOBAL" loading="lazy"></a><figcaption>The MIDI channels in GLOBAL</figcaption></figure>
+</div></section>
+<section class="gd-sec" id="note-on-off" aria-labelledby="note-on-off-h">
+<div class="gd-body gd-prose"><h2 id="note-on-off-h">NOTE ON / OFF <a class="gd-anchor" href="#note-on-off" aria-label="Link to NOTE ON / OFF">#</a></h2>
+<p class="gd-ref">MM manual p.B-1</p>
+<p>A note on starts the amp, filter and LFO envelopes of a track and a note off releases them. The on-screen keyboard, the home row keys and the keys of the piano roll send them.</p>
+</div></section>
+<section class="gd-sec" id="multi-trig-channel" aria-labelledby="multi-trig-channel-h">
+<div class="gd-body gd-prose"><h2 id="multi-trig-channel-h">MULTI TRIG CHANNEL <a class="gd-anchor" href="#multi-trig-channel" aria-label="Link to MULTI TRIG CHANNEL">#</a></h2>
+<p class="gd-ref">MM manual p.B-2</p>
+<p>The multi trig channel plays all tracks at once, splits the keyboard between tracks, starts the sequencer or transposes it. The Perform keyboard sends these notes.</p>
+</div></section>
+<section class="gd-sec" id="multi-map-channel" aria-labelledby="multi-map-channel-h">
+<div class="gd-body gd-prose"><h2 id="multi-map-channel-h">MULTI MAP CHANNEL <a class="gd-anchor" href="#multi-map-channel" aria-label="Link to MULTI MAP CHANNEL">#</a></h2>
+<p class="gd-ref">MM manual p.B-2</p>
+<p>Notes on the multi map channel trigger patterns. The Perform keyboard sends them.</p>
+</div></section>
+<section class="gd-sec" id="auto-channel" aria-labelledby="auto-channel-h">
+<div class="gd-body gd-prose"><h2 id="auto-channel-h">AUTO CHANNEL <a class="gd-anchor" href="#auto-channel" aria-label="Link to AUTO CHANNEL">#</a></h2>
+<p class="gd-ref">MM manual p.B-2</p>
+<p>Notes on the auto channel go to the active track. The Perform workspace has an <b class="gd-ui">Auto track</b> setting for it.</p>
+</div></section>
+<section class="gd-sec" id="cc-joystick-up-down" aria-labelledby="cc-joystick-up-down-h">
+<div class="gd-body gd-prose"><h2 id="cc-joystick-up-down-h">CC: JOYSTICK UP / DOWN <a class="gd-anchor" href="#cc-joystick-up-down" aria-label="Link to CC: JOYSTICK UP / DOWN">#</a></h2>
+<p class="gd-ref">MM manual p.B-2</p>
+<p>The joystick sends controller 1 for up and controller 2 for down. The assign pad of the Perform workspace sends them.</p>
+</div></section>
+<section class="gd-sec" id="cc-mute" aria-labelledby="cc-mute-h">
+<div class="gd-body gd-prose"><h2 id="cc-mute-h">CC: MUTE <a class="gd-anchor" href="#cc-mute" aria-label="Link to CC: MUTE">#</a></h2>
+<p class="gd-ref">MM manual p.B-2</p>
+<p>Controller 3 mutes a track. The mute keys send it.</p>
+</div></section>
+<section class="gd-sec" id="cc-level" aria-labelledby="cc-level-h">
+<div class="gd-body gd-prose"><h2 id="cc-level-h">CC: LEVEL <a class="gd-anchor" href="#cc-level" aria-label="Link to CC: LEVEL">#</a></h2>
+<p class="gd-ref">MM manual p.B-2</p>
+<p>Controller 7 sets the level of a track. The LEVEL fader sends it.</p>
+</div></section>
+<section class="gd-sec" id="cc-pan" aria-labelledby="cc-pan-h">
+<div class="gd-body gd-prose"><h2 id="cc-pan-h">CC: PAN <a class="gd-anchor" href="#cc-pan" aria-label="Link to CC: PAN">#</a></h2>
+<p class="gd-ref">MM manual p.B-2</p>
+<p>Controllers 10 and 62 set the pan of a track. The PAN control sends them.</p>
+</div></section>
+<section class="gd-sec" id="cc-synthesis-1-to-8" aria-labelledby="cc-synthesis-1-to-8-h">
+<div class="gd-body gd-prose"><h2 id="cc-synthesis-1-to-8-h">CC: SYNTHESIS 1 TO 8 <a class="gd-anchor" href="#cc-synthesis-1-to-8" aria-label="Link to CC: SYNTHESIS 1 TO 8">#</a></h2>
+<p class="gd-ref">MM manual p.B-2</p>
+<p>Controllers 48 to 55 carry the eight values of the SYN page.</p>
+</div></section>
+<section class="gd-sec" id="cc-amp" aria-labelledby="cc-amp-h">
+<div class="gd-body gd-prose"><h2 id="cc-amp-h">CC: AMP <a class="gd-anchor" href="#cc-amp" aria-label="Link to CC: AMP">#</a></h2>
+<p class="gd-ref">MM manual pp.B-2, B-3</p>
+<p>Controllers 56 to 63 carry the eight values of the AMP page.</p>
+</div></section>
+<section class="gd-sec" id="cc-filter" aria-labelledby="cc-filter-h">
+<div class="gd-body gd-prose"><h2 id="cc-filter-h">CC: FILTER <a class="gd-anchor" href="#cc-filter" aria-label="Link to CC: FILTER">#</a></h2>
+<p class="gd-ref">MM manual p.B-3</p>
+<p>Controllers 72 to 79 carry the eight values of the FLT page.</p>
+</div></section>
+<section class="gd-sec" id="cc-effects" aria-labelledby="cc-effects-h">
+<div class="gd-body gd-prose"><h2 id="cc-effects-h">CC: EFFECTS <a class="gd-anchor" href="#cc-effects" aria-label="Link to CC: EFFECTS">#</a></h2>
+<p class="gd-ref">MM manual p.B-3</p>
+<p>Controllers 80 to 87 carry the eight values of the EFX page.</p>
+</div></section>
+<section class="gd-sec" id="cc-lfo-1-to-3" aria-labelledby="cc-lfo-1-to-3-h">
+<div class="gd-body gd-prose"><h2 id="cc-lfo-1-to-3-h">CC: LFO 1 TO 3 <a class="gd-anchor" href="#cc-lfo-1-to-3" aria-label="Link to CC: LFO 1 TO 3">#</a></h2>
+<p class="gd-ref">MM manual p.B-3</p>
+<p>Controllers 88 to 95, 104 to 111 and 112 to 119 carry the values of LFO 1, LFO 2 and LFO 3.</p>
+</div></section>
+<section class="gd-sec" id="cc-all-notes-off" aria-labelledby="cc-all-notes-off-h">
+<div class="gd-body gd-prose"><h2 id="cc-all-notes-off-h">CC: ALL NOTES OFF <a class="gd-anchor" href="#cc-all-notes-off" aria-label="Link to CC: ALL NOTES OFF">#</a></h2>
+<p class="gd-ref">MM manual p.B-3</p>
+<p>The panic command, <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[.]</kbd> or <b class="gd-ui">Panic</b> in the transport menu, lets every held note go. It sends controller 123 on the channel of each track. Controller 120, which the manual names for this, does nothing on OS 1.32B.</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[SPACE]</kbd>. The machine plays.</li><li>Click the small ▾ in the corner of the play key and click <b class="gd-ui">Panic</b>. Every note goes off and the machine stops.</li></ol>
+</div></section>
+<section class="gd-sec" id="nrpn-parameters" aria-labelledby="nrpn-parameters-h">
+<div class="gd-body gd-prose"><h2 id="nrpn-parameters-h">NRPN PARAMETERS <a class="gd-anchor" href="#nrpn-parameters" aria-label="Link to NRPN PARAMETERS">#</a></h2>
+<p class="gd-ref">MM manual p.B-5</p>
+<p>An NRPN message carries a track, a parameter and a value. The values of the MIDI page go out as NRPN 0x38 to 0x3F.</p>
+</div></section>
+<section class="gd-sec" id="nrpn-pitch" aria-labelledby="nrpn-pitch-h">
+<div class="gd-body gd-prose"><h2 id="nrpn-pitch-h">NRPN PITCH <a class="gd-anchor" href="#nrpn-pitch" aria-label="Link to NRPN PITCH">#</a></h2>
+<p class="gd-ref">MM manual p.B-5</p>
+<p>The machine takes a pitch for a track by NRPN. The editor does not send it.</p>
+</div></section>
+<section class="gd-sec" id="nrpn-note-off-trig-track" aria-labelledby="nrpn-note-off-trig-track-h">
+<div class="gd-body gd-prose"><h2 id="nrpn-note-off-trig-track-h">NRPN NOTE OFF, TRIG TRACK <a class="gd-anchor" href="#nrpn-note-off-trig-track" aria-label="Link to NRPN NOTE OFF, TRIG TRACK">#</a></h2>
+<p class="gd-ref">MM manual p.B-5</p>
+<p>The machine releases a note or triggers the amp, the filter or the LFO of a track by NRPN. The editor does not send these.</p>
+</div></section>
+<section class="gd-sec" id="nrpn-multi-env" aria-labelledby="nrpn-multi-env-h">
+<div class="gd-body gd-prose"><h2 id="nrpn-multi-env-h">NRPN MULTI ENV <a class="gd-anchor" href="#nrpn-multi-env" aria-label="Link to NRPN MULTI ENV">#</a></h2>
+<p class="gd-ref">MM manual p.B-5</p>
+<p>The multi envelope has the NRPN range 0x40 to 0x45. The multi envelope of the Perform workspace sends it.</p>
+</div></section>
+<section class="gd-sec" id="pitch-bend" aria-labelledby="pitch-bend-h">
+<div class="gd-body gd-prose"><h2 id="pitch-bend-h">PITCH BEND <a class="gd-anchor" href="#pitch-bend" aria-label="Link to PITCH BEND">#</a></h2>
+<p class="gd-ref">MM manual p.B-6</p>
+<p>Pitch bend works per track. The joystick pad sends it.</p>
+</div></section>
+<section class="gd-sec" id="program-change" aria-labelledby="program-change-h">
+<div class="gd-body gd-prose"><h2 id="program-change-h">PROGRAM CHANGE <a class="gd-anchor" href="#program-change" aria-label="Link to PROGRAM CHANGE">#</a></h2>
+<p class="gd-ref">MM manual p.B-6</p>
+<p>A program change selects a pattern. The firmware reacts to it when your host sends one; the editor has no control of its own for it.</p>
+</div></section>
+<section class="gd-sec" id="song-pointer-clock-start-continue-stop" aria-labelledby="song-pointer-clock-start-continue-stop-h">
+<div class="gd-body gd-prose"><h2 id="song-pointer-clock-start-continue-stop-h">SONG POINTER, CLOCK, START, CONTINUE, STOP <a class="gd-anchor" href="#song-pointer-clock-start-continue-stop" aria-label="Link to SONG POINTER, CLOCK, START, CONTINUE, STOP">#</a></h2>
+<p class="gd-ref">MM manual p.B-6</p>
+<p>These system messages sync the machine to a host. The firmware handles them, and the editor uses them when it follows the host's clock.</p>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/mm/21-appendix-a-machine-reference/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">21. Appendix A: machine reference</span></a><a href="/guide/mm/23-appendix-c-sysex-reference/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">23. Appendix C: SysEx reference</span></a></nav>
+</article>
+</div>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

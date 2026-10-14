@@ -27,7 +27,10 @@ namespace md
 		void update(const uint8_t _step, const uint8_t _stopped, const uint8_t _recordLed, const uint64_t _frames)
 		{
 			m_frames += _frames;
-			if(_step != m_step)
+			// the first step read is where it is, not a move (B-087: a machine just started does not play)
+			if(m_step < 0)
+				m_step = _step;
+			else if(_step != m_step)
 			{
 				m_step = _step;
 				m_movedAt = m_frames;
@@ -76,8 +79,14 @@ namespace md
 				return;
 			m_frames += _frames;
 			m_seen = true;
-			m_over = _mainScreen != 0 || m_frames >= g_timeoutFrames;
+			m_over = isMainScreen(_mainScreen) || m_frames >= g_timeoutFrames;
 		}
+
+		// The main screen is 0x27 (it then flickers 0x27 / 0x00). A status request answered the instant the firmware
+		// takes MIDI leaves 0x20 there while the animation still runs and ignores the panel's keys (measured
+		// 2026-10-13, mdDeskFirmwareTest p4: 0x20 at once, 0x27 after 11.9 s, PLAY first taken then): not over.
+		static bool isMainScreen(const uint8_t _value) { return _value != 0 && _value != g_earlySysex; }
+		static constexpr uint8_t g_earlySysex = 0x20;
 
 		// -1 not known yet, 1 the animation runs (keys are ignored), 0 over.
 		int state() const { return m_over ? 0 : m_seen ? 1 : -1; }
@@ -103,6 +112,9 @@ namespace md
 	struct SongPosition
 	{
 		static constexpr uint32_t g_rowAddress = 0x2b18f5;
+		// 0.6 (MD-147, gapProbesFirmwareTest w12repeats): the passes of that row still to come, one byte counting down
+		// (REPEATS 3: 3, 2, 1, 0 over the row's four passes); like the row byte it moves near the pattern's end
+		static constexpr uint32_t g_repeatsAddress = 0x2b1901;
 	};
 
 	struct ChainAndMutes

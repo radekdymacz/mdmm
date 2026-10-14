@@ -67,6 +67,7 @@ namespace deskCore
 					case CoreOp::Redo: m_core.redo(_message); break;
 					case CoreOp::Edit: m_core.edit(_message); break;
 					case CoreOp::Set: m_core.set(_message); break;
+					case CoreOp::Trial: m_core.trial(_message); break;
 					}
 					break;
 				case Owner::Machine: m_core.onMachineCommand(_message); break;

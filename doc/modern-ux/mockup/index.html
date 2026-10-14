@@ -397,8 +397,10 @@ table.song tr.cur td:first-child{box-shadow:inset 3px 0 0 var(--led)}
 .pgrid{display:grid;gap:3px}
 .prow{display:grid;grid-template-columns:58px repeat(8,64px);gap:3px;align-items:center}
 .plab{font:600 10px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--print)}
-.pk{height:24px;padding:0 6px;font:500 11px var(--mono);letter-spacing:0;position:relative;text-align:left}
-.pk i{position:absolute;right:4px;top:50%;transform:translateY(-50%);font-style:normal;font-size:10px;color:var(--led)}
+.pk{height:24px;padding:0 6px;font:500 11px var(--mono);letter-spacing:0;position:relative;text-align:left;display:flex;align-items:center;gap:3px;min-width:0}
+/* review 1 (B-097): the name and the lock count side by side, the name cut short (never under the count) */
+.pk .pkn{flex:1 1 auto;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:clip}
+.pk i{flex:none;font-style:normal;font-size:10px;color:var(--led)}
 .pk.has::before{content:"";position:absolute;left:3px;top:3px;width:4px;height:4px;border-radius:50%;background:var(--led);box-shadow:0 0 4px var(--led)}
 .pk[aria-pressed=true]{background:var(--cream);color:var(--creamtext)}
 .pk[aria-pressed=true] i{color:var(--rec)}
@@ -556,7 +558,7 @@ table.song tr.cur td:first-child{box-shadow:inset 3px 0 0 var(--led)}
 :root{--hdr:172px!important}
 .th .nm span{display:none}
 .pgrid.vert .pk{padding:0 4px;font-size:10.5px}
-.pgrid.vert .pk i{right:3px;font-size:9px}
+.pgrid.vert .pk i{font-size:9px}
 .pleds{display:flex;gap:8px;align-items:end}
 .pl{display:grid;justify-items:center;gap:2px}
 .pl .led{width:8px;height:8px}
@@ -1233,16 +1235,17 @@ body{box-sizing:border-box;overflow:hidden}
       <div class="lcdgroup">
         <div class="lcdpanel">
           <div class="lcdfw" id="lcdfw" aria-hidden="true"><canvas id="lcdfwc" width="128" height="64"></canvas></div>
-          <div class="f trf"><small class="engf"><select id="engsel" data-k="1" hidden><option value="emu">EMU OS 1.63</option><option value="hw">HW MIDI</option><option value="global">GLOBAL…</option><option value="audio">AUDIO/MIDI…</option><option value="rom">LOAD ROM</option></select><button class="kselbtn lcdeng" type="button" data-for="engsel" aria-haspopup="listbox" aria-expanded="false" aria-label="Engine: emulator or hardware" title="Engine: run the emulator, or edit a real Machinedrum over MIDI"><i class="led on" id="engled"></i><span>EMU OS 1.63</span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button></small><span class="lcdt">
+          <div class="f trf"><small class="engf"><select id="engsel" data-k="1" hidden><option value="emu">EMU OS 1.63</option><option value="hw">HW MIDI</option><option value="global">GLOBAL…</option><option value="audio">AUDIO/MIDI…</option><option value="rom">LOAD ROM</option><option value="import">IMPORT SYSEX…</option><option value="export">EXPORT SYSEX…</option><option value="reset">RESET MACHINE…</option><option value="memoryKeep" hidden>KEEP MEMORY: ON</option></select><button class="kselbtn lcdeng" type="button" data-for="engsel" aria-haspopup="listbox" aria-expanded="false" aria-label="Engine: emulator or hardware" title="Engine: run the emulator, or edit a real Machinedrum over MIDI"><i class="led on" id="engled"></i><span>EMU OS 1.63</span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button></small><span class="lcdt">
             <button class="lt rec" id="rec" aria-pressed="false" aria-label="Record" title="Record (Alt+Space)"><i class="led" id="recled"></i>●</button>
             <button class="lt" id="play" aria-pressed="false" aria-label="Play" title="Play / stop (Space)"><i class="led" id="playled"></i><span id="playico">▶</span></button>
+            <button class="ltmore" id="playmore" type="button" aria-haspopup="menu" aria-label="Transport menu" title="Transport: Play, Pause, Record, Panic (or right-click ▶)">▾</button>
 </span></div>
           <div class="f"><small>Tempo <i class="led" id="tempoled" aria-hidden="true"></i></small><b id="bpm" role="slider" tabindex="0" aria-label="Tempo in bpm" title="Drag up or down">124.0</b></div>
           <div class="f posf"><small>Position</small><b id="pos">--.--</b></div>
           <div class="f patf"><small>Pattern</small><span class="patrow"><button class="lcdbtn" id="patPrev" aria-label="Previous pattern" title="Previous pattern">‹</button><b id="pat" role="button" tabindex="0" aria-haspopup="dialog" aria-expanded="false" title="Pattern chooser: all 128 patterns">A01</b><button class="lcdbtn" id="patNext" aria-label="Next pattern" title="Next pattern">›</button></span></div>
           <div class="f kitf" id="kitf" role="button" tabindex="0" aria-haspopup="dialog" aria-expanded="false" title="Kit library: all 64 kits. Load, save, copy, rename"><small>Kit <span class="save" id="save" role="status"><i></i><span>saved</span></span></small><b id="kitname">K01 WAREHOUSE</b></div>
           <div class="f meter" id="meter" title="Locked parameters in this pattern. The Machinedrum allows 64."><small>Locks</small><b id="lockn">00/64</b></div>
-          <div class="row2"><div class="lcd2" id="lcd2"></div><div class="syncf" id="syncf" role="status" title="In step with the machine"><i class="led txled" id="txled" aria-hidden="true"></i><b id="synct">Sync</b></div><div class="lcdsec"><button data-sec="copy" title="Copy (Cmd+C)">Copy</button><button data-sec="clear" title="Clear (Delete)">Clr</button><button data-sec="paste" title="Paste (Cmd+V)">Paste</button></div></div>
+          <div class="row2"><div class="lcd2" id="lcd2"></div><div class="syncf" id="syncf" role="status" title="In step with the machine"><i class="led txled" id="txled" aria-hidden="true"></i><b id="synct">Sync</b></div><div class="lcdsec"><button data-sec="copy" title="Copy (Cmd+C)">Copy</button><button data-sec="clear" title="Clear (Delete)">Clr</button><button data-sec="paste" title="Paste (Cmd+V)">Paste</button><button data-secwhat class="secmore" aria-haspopup="menu" aria-label="Copy, paste or clear what" title="Copy… / Paste… / Clear… what: choose the parts of the selected track (the machine's SUPER COPY and SUPER CLEAR)">▾</button></div></div>
         </div>
       </div>
     </div>
@@ -1267,7 +1270,7 @@ body{box-sizing:border-box;overflow:hidden}
 <div class="machpop" id="machpop" role="dialog" aria-label="Choose a machine" hidden></div>
 <div class="kpop" id="kpop" role="listbox" hidden></div>
 <div class="libpop" id="libpop" role="dialog" hidden></div>
-<div class="globpop libpop" id="globpop" role="dialog" aria-label="Global settings" hidden></div>
+<div class="globpop libpop" id="globpop" role="region" aria-label="Global" hidden></div>
 <div class="globpop libpop" id="keyspop" role="dialog" aria-label="Keys" hidden></div>
 <div class="ampop" id="audiopop" role="dialog" aria-label="Audio and MIDI settings" hidden></div>
 <div class="dlg" id="dlg" hidden></div>
@@ -2094,6 +2097,7 @@ document.addEventListener("change",e=>{if(e.target.id!=="engsel")return;const se
  if(sel.value==="rom"){sel.value=S.engine||"emu";btn.querySelector("span").textContent=sel.selectedOptions[0].text;firstRun();return}
  if(sel.value==="global"){sel.value=S.engine||"emu";btn.querySelector("span").textContent=sel.selectedOptions[0].text;openGlobal();return}
  if(sel.value==="audio"){sel.value=S.engine||"emu";btn.querySelector("span").textContent=sel.selectedOptions[0].text;openAudio();return}
+ if(["import","export","reset"].includes(sel.value)){const v=sel.value;sel.value=S.engine||"emu";btn.querySelector("span").textContent=sel.selectedOptions[0].text;Syx.menu(v);return}
  S.engine=sel.value;startEngine(S.engine)});
 /* Engine status: the LCD shows what the engine is doing; editing waits until it is ready */
 const ENG={norom:["NO ROM","off"],loading:["LOADING ROM","blink"],boot:["BOOTING OS","blink"],ready:["EMU OS 1.63","on"],hwwait:["HW CONNECT","blink"],hwready:["HW MIDI","on"],hwnone:["HW NO MIDI","off"],error:["ROM ERROR","off"]};
@@ -2108,8 +2112,10 @@ function setEng(st){S.eng=st;const [txt,led]=ENG[st],b=document.querySelector(".
  b.title=ready?"Engine: running. Click to switch emulator or hardware, or load another ROM.":"Engine: "+txt.toLowerCase()+". Editing starts when it is ready."}
 /* SysEx in the example: a pretend file with a few kits and patterns */
 Syx.host={choose:()=>Syx.preview({ok:true,file:"example.syx",model:"Machinedrum",fullBackup:false,problemCount:0,problems:[],items:{kit:[{slot:0,name:"WAREHOUSE",overwrites:true},{slot:9,name:"",overwrites:false}],pattern:[{slot:0,name:"A01",kit:0,overwrites:true},{slot:1,name:"A02",kit:9,overwrites:false}],song:[],global:[{slot:0,name:"Global 1",overwrites:true}]}}),
- exportAll:()=>toast("In the plug-in: a save dialog, then every document as one .syx."),
- start:(k,s)=>{let d=0;const n=4;const t=setInterval(()=>{d++;Syx.progress(d<n?{phase:"send",done:d,total:n,running:true,text:""}:{phase:"done",done:n,total:n,running:false,text:"3 imported, 1 ignored by the machine (example).",report:{taken:3,ignored:1,items:[{kind:"kit",slot:9,name:"",outcome:"ignored",text:"kit 10: the machine ignored this dump and kept what it held (format 3.1, 1233 bytes)"}]}});if(d>=n)clearInterval(t)},300)},stop:()=>Syx.progress({phase:"done",done:0,total:0,running:false,text:"Import stopped."})};
+ start:(k,s)=>{let d=0;const n=4;const t=setInterval(()=>{d++;Syx.progress(d<n?{phase:"send",done:d,total:n,running:true,text:""}:{phase:"done",done:n,total:n,running:false,text:"3 imported, 1 ignored by the machine (example).",report:{taken:3,ignored:1,items:[{kind:"kit",slot:9,name:"",outcome:"ignored",text:"kit 10: the machine ignored this dump and kept what it held (format 3.1, 1233 bytes)"}]}});if(d>=n)clearInterval(t)},300)},stop:()=>Syx.progress({phase:"done",done:0,total:0,running:false,text:"Import stopped."}),machine:"Machinedrum",factory:true,ask:(h,b)=>ask(h,b),say:t=>toast(t),
+ place:p=>{const k=p.kit,q=p.pattern;Syx.preview({ok:true,file:"example.syx",model:"Machinedrum",place:p,items:{kit:[{slot:k??0,from:k!=null?0:undefined,name:"WAREHOUSE",overwrites:k==null},{slot:k!=null?k+1:9,from:k!=null?9:undefined,name:"",overwrites:false}],pattern:[{slot:q??0,from:q!=null?0:undefined,name:"A01",kit:0,overwrites:q==null},{slot:q!=null?q+1:1,from:q!=null?1:undefined,name:"A02",kit:9,overwrites:false}],song:[],global:[{slot:0,name:"Global 1",overwrites:true}]}})},
+ exportInfo:()=>Syx.exportInfo({type:"syxExportInfo",model:"Machinedrum",kinds:{kit:{slots:64,held:64,used:12,first:0,last:11},pattern:{slots:128,held:128,used:18,first:0,last:31},song:{slots:32,held:32,used:4,first:0,last:3},global:{slots:8,held:1,used:1,first:0,last:0}}}),
+ exportSave:r=>toast("In the plug-in: a save dialog, then "+(r.kinds?r.kinds.join(", "):"everything")+" as one .syx."),reset:h=>toast("In the plug-in: the "+h+" reset runs in the SysEx panel (example).")};
 /* the start-up card's keys in the example: a pretend install (the plug-in's host checks and copies the file) */
 Boot.host={chooseRom:()=>{Boot.rom({ok:true,text:"\u2713 Machinedrum OS 1.63 found (example)"});setTimeout(()=>startEngine("emu"),900)},
  revealRom:()=>toast("In the plug-in: the ROM folder opens in Finder."),recheck:()=>startEngine("emu")};
@@ -2172,7 +2178,7 @@ function kitSlot(k){const cur=k===S.kit,st=S.kits[k],empty=st.empty&&!cur,name=k
  const nm=LIB.renaming===k?`<input class="lsin" id="lsin" maxlength="16" value="${escH(name)}" aria-label="Kit name, up to 16 characters" spellcheck="false" autocomplete="off">`:empty&&!name?"EMPTY":escH(name||"EMPTY")+(S.mode==="EXTENDED"&&!lp.length&&!empty?"*":"");
  return`<button class="ls ks${empty?" empty":""}${cur?" cur":""}${ed?" edited":""}" data-ks="${k}" draggable="${LIB.renaming===k?"false":"true"}" aria-selected="${k===LIB.sel}" title="${escH(tip)}"><span class="lsh"><b>K${nn(k)}</b>${cur?`<em><i class="led${ed?" on":""}"></i>${ed?"edited":"saved"}</em>`:""}</span><span class="lsn">${nm}</span><span class="lsl">${links}</span></button>`}
 function drawKitLib(){const k=LIB.sel,cur=S.kit,ed=S.kitState==="edited",empty=S.kits[k].empty&&k!==cur,dis=c=>c?" disabled":"";
- return`<div class="libhead"><span class="cap">Kit library</span><span class="lcdchip">K${nn(cur)} ${escH(S.workName||"EMPTY")} · ${ed?"edited":"saved"}</span><span class="note">${S.mode==="EXTENDED"?"EXTENDED: every pattern recalls its kit.":"CLASSIC: patterns do not recall kits."} 64 slots.</span>${Syx.keys()}<button class="libx" data-la="close" title="Close (Esc)">Esc</button></div>
+ return`<div class="libhead"><span class="cap">Kit library</span><span class="lcdchip">K${nn(cur)} ${escH(S.workName||"EMPTY")} · ${ed?"edited":"saved"}</span><span class="note">${S.mode==="EXTENDED"?"EXTENDED: every pattern recalls its kit.":"CLASSIC: patterns do not recall kits."} 64 slots.</span><button class="libx" data-la="close" title="Close (Esc)">Esc</button></div>
  <div class="libacts"><div class="grp"><span class="ilab">Current K${nn(cur)}</span><button data-la="save" title="${KTIP.save}">Save</button><button class="danger" data-la="reload"${dis(!ed)} title="${KTIP.reload}">Reload</button></div>
   <div class="grp"><span class="ilab">Slot K${nn(k)}</span><button data-la="load"${dis(k===cur&&!ed)} title="${k===cur?"Already the current kit. Enter reloads it when it is edited. ":""}${KTIP.load} (Enter)">Load</button><button data-la="saveas"${dis(k===cur)} title="${k===cur?"This is the current slot: use Save. ":""}${KTIP.saveas}">Save as K${nn(k)}</button>
   <button data-la="copy" title="${KTIP.copy} (Cmd+C)">Copy</button><button data-la="paste"${dis(CLIP?.type!=="kit")} title="${CLIP?.type==="kit"?"Paste K"+nn(CLIP.from)+" "+escH(CLIP.name)+". ":"Copy a kit first. "}${KTIP.paste} (Cmd+V)">Paste</button>
@@ -2184,7 +2190,7 @@ function patSlot(p){const cur=p===S.pat,q=p===S.queued&&!cur,has=hasPat(p),ext=S
  return`<button class="ls ps${has?"":" empty"}${cur?" cur":""}${q?" q":""}" data-ps="${p}" draggable="${has}" aria-selected="${p===LIB.sel}" title="${escH(tip)}"><b>${patName(p)}</b><span>${has?patLen(p)+(ext?" · K"+nn(S.patKit[p]):""):"EMPTY"}</span></button>`}
 function drawPatLib(){const p=LIB.sel,cur=S.pat,dis=c=>c?" disabled":"",ext=S.mode==="EXTENDED";
  const rows=[..."ABCDEFGH"].map((b,i)=>`<button class="bank lbank${i===cur>>4?" on":""}" data-lb="${i}" title="Bank ${b} (key ${b})"><i class="led"></i>${b}</button>`+Array.from({length:16},(_,j)=>patSlot(i*16+j)).join("")).join("");
- return`<div class="libhead"><span class="cap">Patterns</span><span class="lcdchip">${patName(cur)} · ${S.len} steps${ext?" · K"+nn(S.patKit[cur]):""}${S.queued!=null&&S.queued!==cur?" → "+patName(S.queued):""}</span><span class="note">8 banks × 16. ${S.playing?"Playing: a new pattern starts at the pattern end.":"Stopped: a click switches at once."}</span>${Syx.keys()}<button class="libx" data-la="close" title="Close (Esc)">Esc</button></div>
+ return`<div class="libhead"><span class="cap">Patterns</span><span class="lcdchip">${patName(cur)} · ${S.len} steps${ext?" · K"+nn(S.patKit[cur]):""}${S.queued!=null&&S.queued!==cur?" → "+patName(S.queued):""}</span><span class="note">8 banks × 16. ${S.playing?"Playing: a new pattern starts at the pattern end.":"Stopped: a click switches at once."}</span><button class="libx" data-la="close" title="Close (Esc)">Esc</button></div>
  <div class="libacts"><div class="grp"><span class="ilab">Slot ${patName(p)}</span><button data-la="go"${dis(p===cur&&S.queued==null)} title="${PTIP.go} (Enter)">${S.playing?"Queue":"Go"}</button><button data-la="now"${dis(p===cur&&S.queued==null)} title="${PTIP.now}">Now</button>
   <button data-la="copy" title="${PTIP.copy} (Cmd+C)">Copy</button><button data-la="paste"${dis(CLIP?.type!=="pat")} title="${CLIP?.type==="pat"?"Paste "+patName(CLIP.from)+". ":"Copy a pattern first. "}${PTIP.paste} (Cmd+V)">Paste</button><button class="danger" data-la="clear"${dis(!hasPat(p))} title="${PTIP.clear} (Delete)">Clear</button></div></div>
  <div class="libgrid pats" aria-label="128 patterns">${rows}</div>

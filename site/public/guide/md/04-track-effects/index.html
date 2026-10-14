@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4. Track effects · Machinedrum Editor guide</title>
+<meta name="description" content="The amplitude modulator, EQ, filter and sample rate reducer that every track has, and how to set and lock them.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/md/04-track-effects/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261014b">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>@page { @top-left { content: "4. Track effects"; } }</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › <a href="/guide/md/">Machinedrum Editor</a> › Track effects</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Chapters of the Machinedrum Editor guide">
+<p class="gd-side-title"><a href="/guide/md/">Machinedrum Editor guide</a></p>
+<ol class="gd-side-list"><li><a href="/guide/md/01-introduction-front-panel-and-connectors/">1. Introduction, front panel and connectors</a></li>
+<li><a href="/guide/md/02-lcd-user-interface-and-quick-start/">2. LCD user interface and quick start</a></li>
+<li><a href="/guide/md/03-sound-synthesis-kits/">3. Sound synthesis: kits</a></li>
+<li class="gd-side-cur"><a href="/guide/md/04-track-effects/" aria-current="page">4. Track effects</a><ol class="gd-side-subs"><li><a href="#amplitude-modulator">AMPLITUDE MODULATOR</a></li><li><a href="#track-eq">TRACK EQ</a></li><li><a href="#filter">FILTER</a></li><li><a href="#the-sample-rate-reducer">THE SAMPLE RATE REDUCER</a></li></ol></li>
+<li><a href="/guide/md/05-routing-page/">5. Routing page</a></li>
+<li><a href="/guide/md/06-stereo-master-effects/">6. Stereo master effects</a></li>
+<li><a href="/guide/md/07-lfos/">7. LFOs</a></li>
+<li><a href="/guide/md/08-pattern-sequencer/">8. Pattern sequencer</a></li>
+<li><a href="/guide/md/09-song-mode/">9. Song mode</a></li>
+<li><a href="/guide/md/10-global-settings/">10. Global settings</a></li>
+<li><a href="/guide/md/11-sample-manager-uw-only/">11. Sample manager, UW only</a></li>
+<li><a href="/guide/md/12-early-start-up-menu/">12. Early start-up menu</a></li>
+<li><a href="/guide/md/13-technical-information-mki-vs-mkii/">13. Technical information, MKI vs MKII</a></li>
+<li><a href="/guide/md/14-appendix-a-machine-reference/">14. Appendix A: machine reference</a></li>
+<li><a href="/guide/md/15-appendix-b-midi-control-reference/">15. Appendix B: MIDI control reference</a></li>
+<li><a href="/guide/md/16-appendix-c-sysex-reference/">16. Appendix C: sysex reference</a></li>
+<li><a href="/guide/md/17-beyond-the-hardware/">17. Beyond the hardware</a></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">4</span><span class="gd-ctitle">Track effects</span></h1><p class="gd-cmeta">MD manual pp.22-24</p></header>
+<div class="gd-intro gd-prose"><p>Each track has four effects after its machine: an amplitude modulator, a one-band EQ, a filter and a sample rate reducer. They act on that track only. Their parameters are part of the kit.</p>
+<p>On the Sound workspace they are the first four groups of the second row. A small word at the right of the first group names the machine's EFFECTS page. Each group has a screen and value boxes. Drag a box or a dot on the screen to change a parameter.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/md-track-effects.webp" aria-label="Open the picture full size: The track effects on the Sound workspace"><img src="/guide/shots/md-track-effects.webp" width="1440" height="924" alt="The track effects on the Sound workspace" loading="lazy"></a><figcaption>The track effects on the Sound workspace</figcaption></figure>
+<p>To set an effect:</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[2]</kbd> for the Sound workspace and select a track in the rail.</li><li>Drag the value box of the parameter, or drag a dot on the group's screen.</li><li>Or focus the box and press an arrow key. Each press moves the value one step.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take the change back.</li></ol>
+<p>To lock an effect parameter to a step, open the Sequence workspace and click the parameter's key in the lock lane, in the row of keys labelled <b class="gd-ui">Effects</b>. Chapter 8 describes the lock lane.</p></div>
+<section class="gd-sec" id="amplitude-modulator" aria-labelledby="amplitude-modulator-h">
+<div class="gd-body gd-prose"><h2 id="amplitude-modulator-h">AMPLITUDE MODULATOR <a class="gd-anchor" href="#amplitude-modulator" aria-label="Link to AMPLITUDE MODULATOR">#</a></h2>
+<p class="gd-ref">MD manual p.22</p>
+<p>The group <b class="gd-ui">Amp mod</b> holds <b class="gd-ui">AMD</b> and <b class="gd-ui">AMF</b>. It modulates the level of the track, like a tremolo.</p>
+<ul class="gd-list"><li><b class="gd-ui">AMD</b> is the depth of the modulation.</li><li><b class="gd-ui">AMF</b> is the frequency of the modulation.</li></ul>
+<p>The screen shows the level the modulator leaves. The dot sets <b class="gd-ui">AMF</b> sideways and <b class="gd-ui">AMD</b> upward.</p>
+</div></section>
+<section class="gd-sec" id="track-eq" aria-labelledby="track-eq-h">
+<div class="gd-body gd-prose"><h2 id="track-eq-h">TRACK EQ <a class="gd-anchor" href="#track-eq" aria-label="Link to TRACK EQ">#</a></h2>
+<p class="gd-ref">MD manual p.23</p>
+<p>The group <b class="gd-ui">EQ</b> is a one-band parametric EQ. Use it to boost or cut one range of frequencies.</p>
+<ul class="gd-list"><li><b class="gd-ui">EQF</b> is the centre frequency of the band.</li><li><b class="gd-ui">EQG</b> is the gain. It shows -64 to +63. Negative values cut the band, positive values boost it, and 0 leaves the sound as it is.</li></ul>
+<p>The dot on the screen moves the band: sideways for <b class="gd-ui">EQF</b>, up to boost and down to cut.</p>
+<aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>If a bass drum lacks punch, add a little <b class="gd-ui">EQG</b> in the low range.</p></aside>
+</div></section>
+<section class="gd-sec" id="filter" aria-labelledby="filter-h">
+<div class="gd-body gd-prose"><h2 id="filter-h">FILTER <a class="gd-anchor" href="#filter" aria-label="Link to FILTER">#</a></h2>
+<p class="gd-ref">MD manual pp.23, 24</p>
+<p>The group <b class="gd-ui">Filter</b> is a resonant filter with two cut-offs. You set the lower cut-off and the width of the band between them, so it works as a high-pass, a low-pass or a band-pass filter.</p>
+<ul class="gd-list"><li><b class="gd-ui">FLTF</b> is the base frequency, the lower edge of the band.</li><li><b class="gd-ui">FLTW</b> is the width. The upper edge is <b class="gd-ui">FLTF</b> plus <b class="gd-ui">FLTW</b>.</li><li><b class="gd-ui">FLTQ</b> is the resonance. It boosts the sound around the edges.</li></ul>
+<p>The screen shows the band that passes. The left dot sets <b class="gd-ui">FLTF</b> sideways and <b class="gd-ui">FLTQ</b> upward. The right dot sets <b class="gd-ui">FLTW</b>.</p>
+<p>To use it as a high-pass filter, set <b class="gd-ui">FLTW</b> to its highest value and move <b class="gd-ui">FLTF</b>. To use it as a low-pass filter, set <b class="gd-ui">FLTF</b> to its lowest value and move <b class="gd-ui">FLTW</b>.</p>
+</div></section>
+<section class="gd-sec" id="the-sample-rate-reducer" aria-labelledby="the-sample-rate-reducer-h">
+<div class="gd-body gd-prose"><h2 id="the-sample-rate-reducer-h">THE SAMPLE RATE REDUCER <a class="gd-anchor" href="#the-sample-rate-reducer" aria-label="Link to THE SAMPLE RATE REDUCER">#</a></h2>
+<p class="gd-ref">MD manual p.24</p>
+<p>The group <b class="gd-ui">Sample rate</b> holds <b class="gd-ui">SRR</b>. A higher value holds each sample for longer, which lowers the sample rate and adds a gritty sound.</p>
+<p>The screen shows the held steps. Drag its dot sideways to set <b class="gd-ui">SRR</b>.</p>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/md/03-sound-synthesis-kits/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">3. Sound synthesis: kits</span></a><a href="/guide/md/05-routing-page/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">5. Routing page</span></a></nav>
+</article>
+</div>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

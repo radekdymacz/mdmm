@@ -402,8 +402,10 @@ table.song tr.cur td:first-child{box-shadow:inset 3px 0 0 var(--led)}
 .pgrid{display:grid;gap:3px}
 .prow{display:grid;grid-template-columns:58px repeat(8,64px);gap:3px;align-items:center}
 .plab{font:600 10px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--print)}
-.pk{height:24px;padding:0 6px;font:500 11px var(--mono);letter-spacing:0;position:relative;text-align:left}
-.pk i{position:absolute;right:4px;top:50%;transform:translateY(-50%);font-style:normal;font-size:10px;color:var(--led)}
+.pk{height:24px;padding:0 6px;font:500 11px var(--mono);letter-spacing:0;position:relative;text-align:left;display:flex;align-items:center;gap:3px;min-width:0}
+/* review 1 (B-097): the name and the lock count side by side, the name cut short (never under the count) */
+.pk .pkn{flex:1 1 auto;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:clip}
+.pk i{flex:none;font-style:normal;font-size:10px;color:var(--led)}
 .pk.has::before{content:"";position:absolute;left:3px;top:3px;width:4px;height:4px;border-radius:50%;background:var(--led);box-shadow:0 0 4px var(--led)}
 .pk[aria-pressed=true]{background:var(--cream);color:var(--creamtext)}
 .pk[aria-pressed=true] i{color:var(--rec)}
@@ -561,7 +563,7 @@ table.song tr.cur td:first-child{box-shadow:inset 3px 0 0 var(--led)}
 :root{--hdr:172px!important}
 .th .nm span{display:none}
 .pgrid.vert .pk{padding:0 4px;font-size:10.5px}
-.pgrid.vert .pk i{right:3px;font-size:9px}
+.pgrid.vert .pk i{font-size:9px}
 .pleds{display:flex;gap:8px;align-items:end}
 .pl{display:grid;justify-items:center;gap:2px}
 .pl .led{width:8px;height:8px}
@@ -1011,15 +1013,27 @@ html,body{min-width:1280px}
    Everything above this line is the Machinedrum Editor design system, unchanged.
    ===================================================================== */
 
-/* SFX-60 plate (MKI and MKII share it; the MKII only adds the "MKII" print).
-   Colours from the emulator's mmSfx60 panel skin: silver chassis, dark-grey print,
-   rust track labels, grey-green LCD in a black bezel, red / green / yellow trig LEDs. */
-:root,:root[data-plate="mk1"],:root[data-plate="mk2"]{
+/* SFX-60 plates, true to the product photos (doc/modern-ux/SKIN-COLOURS.md, I-023): the plate key chooses the look.
+   MKI (SFX-6 / SFX-60): cool silver chassis, black window, light-blue LCD with black pixels, dark green-grey keys
+   and knobs, rust label bars. MKII (SFX-6 / SFX-60+ MKII): warm silver, near-black window, bluish-white LCD with
+   black pixels, black keys and knobs, white keys, dusty red-brown label bars, red print. Both are light plates.
+   Review 1 (Radek, 2026-10-12): both plates take the panel greys of the Machinedrum's MKI light plate (--plate,
+   --plate2, --plate3) and its grey for the screens (--scr: the piano roll, the lock lane, the Sound and Perform
+   screens, the arp, routing and song grounds); the top bar's LCD, keys and label colours stay each plate's own. */
+:root,:root[data-plate="mk1"]{
   color-scheme:light;
-  --plate:#d4d5d0;--plate2:#c8cac2;--plate3:#e2e1d9;--print:#383934;--print2:#56574f;--print3:#74756f;--rule:#aaaba5;--body:#292a26;
-  --key:#3a3b36;--key2:#4b4d47;--keytext:#efefe8;--keydim:#aeb0a8;--cream:#efefe8;--creamtext:#292a26;
-  --led:#e65d42;--ledoff:#7b4035;--ledg:#9fc568;--ledgoff:#56604b;--ledy:#e4c45c;--rec:#cf4f39;
-  --lcd:#b9c4b0;--ink:#172014;--bezel:#0d0f0c;--labfill:#a04d39;--labtext:#f0eee7;--knob:#3a3b36;--rust:#a04d39;
+  --plate:#d9dad6;--plate2:#cdcec9;--plate3:#e5e6e2;--print:#2e3232;--print2:#4f5554;--print3:#6d7372;--rule:#a2a8ab;--body:#232727;
+  --key:#232b28;--key2:#323c38;--keytext:#eef0ee;--keydim:#a9b1ae;--cream:#e4e6e6;--creamtext:#232727;
+  --led:#f0331f;--ledoff:#7b4035;--ledg:#9fc568;--ledgoff:#56604b;--ledy:#e4c45c;--rec:#e8301e;
+  --lcd:#b6d2e8;--scr:#cdcec9;--ink:#0d1626;--bezel:#060707;--labfill:#9a3820;--labtext:#f3eee9;--knob:#323d31;--rust:#9a3820;
+  --trig:var(--led);--oxblood:var(--rust);
+}
+:root[data-plate="mk2"]{
+  color-scheme:light;
+  --plate:#d9dad6;--plate2:#cdcec9;--plate3:#e5e6e2;--print:#3b3a3c;--print2:#5a585a;--print3:#787577;--rule:#a8a6a1;--body:#262527;
+  --key:#1a1c22;--key2:#2a2d35;--keytext:#efeee8;--keydim:#a7a8ad;--cream:#ecebe4;--creamtext:#262527;
+  --led:#ff3b2f;--ledoff:#7a6e66;--ledg:#7fd13b;--ledgoff:#5d6656;--ledy:#e4c45c;--rec:#e2452a;
+  --lcd:#dfeaf1;--scr:#cdcec9;--ink:#121b28;--bezel:#1c1a1d;--labfill:#84434d;--labtext:#f6eff0;--knob:#141416;--rust:#b8433d;
   --trig:var(--led);--oxblood:var(--rust);
 }
 html{scrollbar-gutter:stable}
@@ -1058,6 +1072,10 @@ canvas.ed,.edblank,#lanescroll,.lcdroll,.slotgrid,.lcdbox{box-shadow:0 0 0 2px v
 .sidesw button .led{width:6px;height:6px}
 .sidesw button[aria-pressed=true]{background:var(--cream);color:var(--creamtext)}
 .sidesw button[aria-pressed=true] .led{background:var(--led);box-shadow:0 0 5px var(--led)}
+/* I-028: a track's trig lamp on the rail (its number lights while its trig plays) */
+.th.trig .n{box-shadow:0 0 0 1px var(--led),0 0 6px 1px var(--led)}
+.sidesw .sosign{font:700 9px/12px var(--mono);letter-spacing:0;padding:0 3px;border-radius:1px;background:var(--cream);color:var(--creamtext)}
+.sidesw button[aria-pressed=true] .sosign{background:var(--creamtext);color:var(--cream)}
 .th .nm small{font:500 10px var(--mono);color:var(--print3);margin-left:auto}
 .th.poly-off{opacity:.4}
 .railsec{margin-top:10px;border-top:2px solid var(--print);padding-top:7px;display:grid;gap:5px}
@@ -1208,8 +1226,9 @@ svg.route .jack.live{fill:var(--ink)}
 .kb{position:relative;height:150px;user-select:none;touch-action:none}
 .kb .w{position:absolute;top:0;bottom:0;border-radius:0 0 4px 4px;background:var(--cream);box-shadow:inset 0 0 0 1px var(--rule),inset 0 -6px 0 rgba(0,0,0,.08);cursor:pointer}
 .kb .b{position:absolute;top:0;height:92px;border-radius:0 0 3px 3px;background:var(--key);box-shadow:inset 0 -4px 0 rgba(0,0,0,.35);z-index:2;cursor:pointer}
-.kb .w.dn{background:var(--plate2)}
-.kb .b.dn{background:var(--key2)}
+/* B-062, I-002: a key held by the mouse, the computer keyboard (dn) or a MIDI keyboard (mi) */
+.kb .w.dn,.kb .w.mi{background:var(--plate2)}
+.kb .b.dn,.kb .b.mi{background:var(--key2)}
 .kb .w small{position:absolute;bottom:8px;left:0;right:0;text-align:center;font:500 10px var(--mono);color:var(--print3)}
 .kb .zone{position:absolute;top:-8px;height:5px;border-radius:1px;z-index:3}
 .kb .splitm{position:absolute;top:-14px;bottom:-4px;width:4px;margin-left:-2px;background:var(--led);box-shadow:0 0 8px var(--led);z-index:4;cursor:ew-resize;border-radius:2px}
@@ -1247,6 +1266,10 @@ table.mmap tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--led)}
 .ttr{display:grid;grid-template-columns:34px repeat(6,minmax(0,1fr));gap:3px;align-items:center;flex:1}
 .ttr .ilab{min-width:0}
 .ttr .tt{display:grid;grid-template-columns:18px 1fr 18px;align-items:center;height:26px;background:var(--key);border-radius:3px;color:var(--keytext)}
+/* B-106: in a narrow inspector a cell is narrower than − T3 + (43 px in the plug-in at 1440 x 923): the + went over the next
+   cell's −. The name takes what it needs, the two keys share the rest: each cell keeps its own keys */
+.ttr .tt{grid-template-columns:minmax(10px,1fr) auto minmax(10px,1fr);min-width:0;overflow:hidden}
+.ttr .tt b{white-space:nowrap}
 .ttr .tt button{all:unset;cursor:pointer;text-align:center;font:600 12px var(--mono);color:var(--keydim)}
 .ttr .tt button:hover{color:var(--keytext)}
 .ttr .tt b{text-align:center;font:500 12px var(--mono)}
@@ -1298,16 +1321,7 @@ canvas.roll{width:100%;display:block;border-radius:4px;background:var(--lcd);box
 .tlanes{margin-top:8px!important}
 .tlane .tc.envc{display:flex;gap:2px;align-items:center;justify-content:center;box-shadow:none;background:transparent;cursor:default}
 .tlane .tc.envc.na{opacity:.3}
-.tlane .tc.envc .d{width:9px;height:9px;min-width:0;padding:0;border-radius:50%;background:transparent;box-shadow:inset 0 0 0 1.5px var(--print3);cursor:pointer}
-.tlane .tc.envc .d.on.a{background:var(--led);box-shadow:0 0 4px var(--led)}
-.tlane .tc.envc .d.on.f{background:var(--ledy);box-shadow:0 0 4px var(--ledy)}
-.tlane .tc.envc .d.on.l{background:var(--ledg);box-shadow:0 0 4px var(--ledg)}
 .tlane .tc.envc::after{display:none}
-/* ALL (up to 64 steps in the width): the three trig-track dots stack in the narrow step */
-.mstack.all .tlane .tc.envc{flex-direction:column;gap:1px}
-.mstack.all .tlane .tc.envc .d{width:4px;height:4px;box-shadow:inset 0 0 0 1px var(--print3)}
-.envlab{display:inline-flex;gap:2px;align-items:center;font:600 9px var(--sans);letter-spacing:.04em;color:var(--print2)}
-.envlab i{width:6px;height:6px;border-radius:50%;margin-left:2px}.envlab i.a{background:var(--led)}.envlab i.f{background:var(--ledy)}.envlab i.l{background:var(--ledg)}
 .dock{margin-top:10px;border-top:2px solid var(--print);padding-top:8px}
 .docktabs{display:flex;gap:4px;align-items:center;height:30px;white-space:nowrap;margin-bottom:8px}
 .docktabs .lkey[aria-selected=true]{background:var(--cream);color:var(--creamtext)}
@@ -1479,7 +1493,7 @@ body.engwait #main,body.engwait #rail{pointer-events:none;opacity:.6;transition:
 .libx{height:24px;padding:0 9px;font:600 10px var(--sans);letter-spacing:.14em;text-transform:uppercase}
 .libacts{display:flex;gap:10px 22px;align-items:center;flex-wrap:wrap}
 .libacts .grp{display:flex;gap:4px;align-items:center}
-.libacts .ilab{min-width:0;margin-right:4px;white-space:nowrap}
+.libacts .ilab{min-width:0;margin-right:4px;white-space:nowrap;flex:none}
 .libacts button{height:26px;padding:0 10px;font:600 11px var(--sans);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
 .libacts button:disabled{opacity:.35;cursor:default}
 .libacts .danger:hover:not(:disabled){background:var(--rec);color:#fff}
@@ -1493,7 +1507,8 @@ body.engwait #main,body.engwait #rail{pointer-events:none;opacity:.6;transition:
 .ls .lsh .led{width:5px;height:5px}
 .ls .lsn{font:500 10px var(--mono);white-space:nowrap;overflow:hidden;text-overflow:clip;text-transform:uppercase;height:14px;line-height:14px}
 .ls .lsl{font:9px var(--mono);color:var(--keydim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:11px}
-.ks{height:52px}
+.ks{height:52px;padding:4px 2px}
+.ks .lsn{font-size:9.5px}
 .ps{height:42px;padding:4px 6px;gap:1px}
 .ps b{font:500 13px var(--mono)}
 .ps span{font:10px var(--mono);color:var(--keydim);white-space:nowrap;overflow:hidden}
@@ -1616,6 +1631,10 @@ body{box-sizing:border-box;overflow:hidden}
 .app{height:100%;min-height:0;grid-template-rows:auto minmax(0,1fr);max-width:none!important}
 .app>.body{height:100%;min-height:0;align-items:stretch!important}
 #main{min-height:0;overflow:auto;display:flex;flex-direction:column}
+/* B-106 (the 0.6 e2e run, 1440 x 923 in the plug-in): when #main scrolls (Perform is 32 px taller than the window there),
+   WebKit hit-tests the right 29 px of it as its overlay scroll bar: Perform's OCTAVE + at the right edge took no click
+   (measured: elementFromPoint across the key). The keyboard's title row keeps that strip free */
+.perf .kbtitle{padding-right:32px}
 #main>*{flex:none}
 .rail{align-content:start;min-height:0}
 /* Sequence */
@@ -1719,7 +1738,10 @@ svg.route{width:100%;height:auto;aspect-ratio:1200/146;min-height:0}
 .modalopen .kpop{z-index:120!important}
 @keyframes nudge{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 .dlgbox.nudge{animation:nudge .16s 2}
-@media (prefers-reduced-motion:reduce){.dlgbox.nudge{animation:none}}
+/* a panel's box is placed by a transform: it says "not closed" with a flash of its frame instead */
+@keyframes nudgeflash{50%{outline:3px solid var(--led,#e33);outline-offset:2px}}
+.modal.nudge:not(.dlg){animation:nudgeflash .18s 2}
+@media (prefers-reduced-motion:reduce){.dlgbox.nudge,.modal.nudge{animation:none}}
 /* A context menu (K3, deskMenu.js): at the pointer, above the clear backdrop; each item with its key at the right.
    #deskmenu holds the panels (the menu, an open submenu beside it), each placed by the script. The page's tokens
    (--plate --print --body --rule --mono --sans: light and dark, MK1 and MK2 alike); plain colours and rgba only (no
@@ -1825,7 +1847,7 @@ body.deskmidi #main,body.deskmidi #rail{opacity:.3;pointer-events:none;transitio
 .syxtab.work input:checked{animation:blink 1s steps(2) infinite}
 @media (prefers-reduced-motion:reduce){.syxtab.work input:checked{animation:none}}
 /* the slots, as on the machine */
-.syxbody{max-height:calc(100vh - 330px);overflow:auto;overscroll-behavior:contain}
+.syxbody{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain}
 .syxpane[hidden]{display:none}
 .syxgrid{display:grid;gap:4px;align-items:stretch}
 .syxrl{align-self:center;font:600 12px var(--mono);color:var(--print2);text-align:center}
@@ -1896,8 +1918,38 @@ body.deskmidi #main,body.deskmidi #rail{opacity:.3;pointer-events:none;transitio
 .syxbar{position:relative;height:20px;border-radius:3px;background:var(--ledoff);overflow:hidden}
 .syxbar i{position:absolute;left:0;top:0;bottom:0;background:var(--led);width:0;transition:width .2s}
 .syxbar span{position:relative;display:block;padding:0 8px;text-align:center;font:600 11px/20px var(--sans);letter-spacing:.06em;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.syxkeys{display:inline-flex;gap:6px;margin-left:auto}
-.syxkeys+.libx{margin-left:8px!important}
+/* 0.6 (wave 6): the export (ALL, or each kind with its range) and the import's PLACE row; a range or first slot is a
+   value (click, ⇧-click, wheel, drag, arrows) */
+.syx-export .sxall,.syx-export .sxlist{display:grid;gap:2px;padding:0 2px}
+.syx-export .sxall{border-bottom:2px solid var(--print);padding-bottom:4px}
+.syx-export.sxallon .sxlist{opacity:.45}
+.sxrow{display:grid;grid-template-columns:18px 110px 210px 1fr;gap:12px;align-items:center;padding:8px 6px;border-bottom:1px solid var(--rule);font:500 14px var(--sans);color:var(--print);cursor:pointer}
+.sxrow b{font:600 13px var(--sans);letter-spacing:.14em;text-transform:uppercase}
+.sxrow small{font:12px var(--mono);color:var(--print3)}
+.sxrow input{accent-color:var(--led);width:15px;height:15px;margin:0}
+.sxrow input:disabled+b{opacity:.5}
+.sxrng{display:flex;gap:6px;align-items:center;font:12px var(--mono);color:var(--print2)}
+.sxrng i{font-style:normal}
+.syxpop .sxv{display:inline-block;height:auto;padding:3px 8px;font:500 12px var(--mono);letter-spacing:0;background:var(--plate3);color:var(--print);box-shadow:inset 0 0 0 1px var(--rule);border-radius:2px;cursor:ns-resize;touch-action:none}
+.syxpop .sxv:focus-visible{outline:2px solid var(--print);outline-offset:1px}
+.sxplace{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:8px 2px 0;border-top:1px solid var(--rule)}
+.sxplace .ilab{font:600 11px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--print2)}
+.sxplace .seg{display:inline-flex;gap:6px}
+.sxplace .seg button{height:24px;padding:0 10px;font:600 11px var(--sans);letter-spacing:.12em;text-transform:uppercase}
+.sxplace .seg button[aria-pressed=true]{background:var(--cream,var(--lcd));color:var(--creamtext,var(--ink))}
+.sxplace .note{font:500 13px/1.35 var(--sans);color:var(--print2)}
+.sxfirst{display:flex;gap:6px;align-items:center;font:12px var(--mono);color:var(--print2)}
+/* review 1 (B-095): one size for the panel's whole run (preview, import, report, export, reset): as big as the window
+   lets it be up to 1120 x 820, the slots scroll inside; the head and the footer (Stop, Hide, Done) always in view */
+.syxpop{display:flex;flex-direction:column;height:min(820px,calc(100vh - 48px));box-sizing:border-box}
+/* B-102 (the 0.6 e2e run, 1440 x 923): the panel stood where the page's flow put it (under the header) with the height
+   of the whole window, so its foot ran past the bottom. It is centred in the window now, its size the window's alone:
+   always wholly inside, the same size for its whole run */
+.syxpop{position:fixed;inset:0;margin:auto;height:min(820px,calc(100vh - 32px));max-height:none}
+.syxpop>*{flex:none}
+.syxpop>.syxbody,.syxpop>.sxlist{flex:1 1 auto;min-height:0;overflow:auto}
+.syxpop>.syxfoot{margin-top:auto}
+.syxtipline{margin:0;height:16px;font:12px var(--mono);color:var(--print2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* The AUDIO / MIDI panel (P6, deskAudio.js), the plate's own keys, LEDs and dropdowns */
 .ampop{position:absolute;z-index:22;width:min(1180px,calc(100vw - 32px));display:grid;gap:10px;align-content:start;padding:14px;background:var(--plate);border:2px solid var(--print);border-radius:6px;box-shadow:0 18px 40px rgba(0,0,0,.35);overflow:auto;overscroll-behavior:contain;color:var(--print)}
 .ampop[hidden]{display:none}
@@ -1972,8 +2024,9 @@ body.deskmidi #main,body.deskmidi #rail{opacity:.3;pointer-events:none;transitio
 /* a smaller window: fewer words on the keys, the columns one under the other */
 @media (max-width:900px){.kv-cap{height:38px}.kv-cap .kv-act{-webkit-line-clamp:1;font-size:9px}.kv-cols{grid-template-columns:minmax(0,1fr)}.kv-hint{display:none}.globpop.kview .keysgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:640px){.kv-cap{height:30px;padding:2px}.kv-cap .kv-act{display:none}.kv-cap.has::after{content:"";position:absolute;left:50%;bottom:4px;width:5px;height:5px;margin-left:-2px;border-radius:50%;background:var(--cream)}.kv-keys,.kv-board{gap:2px}.kv-cap b{font-size:8px}.globpop.kview .keysgrid{grid-template-columns:minmax(0,1fr)}}
-/* The GLOBAL panel both editors share (deskGlobal.js; B-051, F3): the Machinedrum Editor's v61 (P5) panel, moved here
-   unchanged, plus the Reset to defaults key and the channel warning. Plain grid and flex (macOS 12's WebKit). */
+/* The GLOBAL dialog both editors share (deskGlobal.js; B-051, F3): the Machinedrum Editor's v61 (P5) panel, moved here,
+   the channel warning; 0.6's page layout (.gpage, DESIGN-machine-menus.md §2, the mock-ups md-08 and mm-06): the head
+   on one line, the cards in three columns; a modal since review 1 (B-091). Plain grid and flex (macOS 12's WebKit). */
 .globpop{position:absolute;z-index:22;width:min(1180px,calc(100vw - 32px));display:grid;gap:10px;align-content:start;padding:14px;background:var(--plate);border:2px solid var(--print);border-radius:6px;box-shadow:0 18px 40px rgba(0,0,0,.35);overflow:auto;overscroll-behavior:contain;color:var(--body)}
 .globgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .globgrid .card{gap:8px}
@@ -2002,6 +2055,35 @@ body.deskmidi #main,body.deskmidi #rail{opacity:.3;pointer-events:none;transitio
 .gnv{font:600 9px var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--print3);border:1px solid var(--rule);border-radius:2px;padding:0 4px;margin-left:6px}
 .libhead .greset{flex:none}
 .gwarn{grid-column:1/-1;margin:0;font-size:12px;color:var(--red)}
+/* the GLOBAL dialog (0.6: the page's head and cards; review 1: a modal again, framed, centred by the modal layer, as wide
+   as the header was at most, scrolls inside) */
+.globpop.gpage{z-index:var(--mz,22);width:min(1400px,calc(100vw - 48px));padding:14px 18px 18px;gap:14px;background:var(--plate);box-sizing:border-box}
+.gphead{display:flex;align-items:center;gap:14px;flex-wrap:nowrap;white-space:nowrap;border-bottom:2px solid var(--print);padding-bottom:10px;min-width:0}
+.gpname{font:600 22px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase;color:var(--print)}
+.gphead .gslots button{width:34px;height:30px;font-size:13px}
+.gpkeys{display:flex;gap:4px}
+.gphead .gpkeys button,.gphead .gpback,.globgrid .mini{height:30px;padding:0 12px;font:600 11px var(--sans);letter-spacing:.14em;text-transform:uppercase;white-space:nowrap}
+.gphead .gpkeys button[disabled]{opacity:.45}
+.gphead .danger:hover{background:var(--rec,var(--red));color:#fff}
+.gphead .gpsp{flex:1 1 auto}
+.gphead .note{font-size:13px}
+.gpage .globgrid{gap:22px 28px;align-items:start}
+.gpage .globgrid .grow2{min-height:32px}
+.gpage .globgrid .grow2 .ilab{min-width:120px}
+.globgrid .mini{height:22px;padding:0 8px;font-size:10px;margin-right:8px}
+/* the map editor's LEARN dots (MD): click one, play a note */
+.gmk small{display:flex;align-items:center;gap:4px}
+.glearn{width:12px;height:12px;padding:0;border:0;border-radius:50%;background:transparent;box-shadow:inset 0 0 0 1.5px currentColor;opacity:.7;cursor:pointer;min-width:0}
+.glearn[aria-pressed=true]{background:var(--led,var(--red));box-shadow:0 0 5px 1px var(--led,var(--red));opacity:1}
+.glearnhint{font-size:12px;color:var(--print2)}
+/* TRIG IN A / B as steppers (MD) and CONTROL OUT1 rows (MM) */
+.ginputs .stepper{display:flex;gap:2px;align-items:center}
+.ginputs .stepper button{width:18px;height:22px;padding:0;min-width:0}
+.ginputs .stepper b{min-width:3ch;text-align:center;font-weight:500}
+.gpage .stepper b{min-width:5ch;text-align:center}
+/* a row's note (the map editor's "16 notes play patterns …"): one line of a fixed height, so a glyph from a fallback
+   font (→) cannot make the row taller while the fonts settle (md-old-webkit measured 38 px against 32) */
+.globgrid .grow2 .note{line-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 /* P7: the workspace and setup keys: one minimum width each, so the rows look even (MIX was a sliver) */
 #tabs button{min-width:60px!important;justify-content:center;box-sizing:border-box}
 .setkeys button{min-width:46px!important;justify-content:center;box-sizing:border-box}
@@ -2112,12 +2194,15 @@ img,svg,canvas{-webkit-user-drag:none}
 .sndhead .mutband{flex:1 1 auto;margin:0}
 @media (max-width:1400px){.genband{gap:12px;padding-inline:10px}.genbar{gap:10px}.genbar>.genband{padding:0}.gbt{min-width:0}.gbc .seg{gap:9px}.gkeys{gap:7px}.ghint{display:none}.genbar .pgkey{padding:0 7px}}
 @media (max-width:1340px){.genband{gap:8px}.genbar{gap:8px}.gkeys{gap:5px}.gbc{gap:4px}.gbc .seg{gap:6px;margin-right:0}.gbc .seg button{letter-spacing:.06em}.gv{padding:0 6px;min-width:50px}.genbar .pgkey{padding:0 6px}.genbar .ptog{margin-left:0}}
-@media (max-width:1500px){.genband .gwrite~.gsum{display:none}}
+@media (max-width:1500px){.genband .gwrite~.gsum{display:none}.genband .gsum .gopt{display:none}}
 .th .nm.tagged{gap:4px}
 .th .nm .gtag{font:10px var(--pix);font-style:normal;color:var(--ink);background:var(--lcd);padding:0 3px;border-radius:2px;margin-left:auto;flex:none;align-self:center;white-space:nowrap}
 .ws-seq #main>.genbar{flex:none;margin-top:4px}
 .ws-seq #main>.lanewrap{border-top:2px solid var(--print);margin-top:5px}
-#seq canvas.roll[data-big]{height:clamp(160px,calc(100vh - 552px),620px)!important}
+/* 2026-10-12: no trig type row and no A F L row under the roll (a trig's marks are on its note): the roll takes their
+   height; a MIDI track keeps its VEL row */
+#seq canvas.roll[data-big]{height:clamp(160px,calc(100vh - 494px),620px)!important}
+#seq.midi canvas.roll[data-big]{height:clamp(160px,calc(100vh - 518px),620px)!important}
 .genbar .pagectl .pleds{align-self:center}
 /* the piano roll's Draw key (B) and the length a new note gets (I-007, I-010), beside the page keys */
 .rollkeys{display:flex;align-items:center;gap:6px;flex:none;height:30px}
@@ -2149,9 +2234,12 @@ img,svg,canvas{-webkit-user-drag:none}
 .genbar.fit2 .kc small{letter-spacing:.02em}
 .genbar.fit2 .gkeys{gap:4px}
 .genbar.fit3 .gv small{font-size:8px;letter-spacing:0}
-/* the rail's spec tags: the machine's name comes first, the tag takes what is left (gone under 1380 px) */
-.th .nm.tagged b{flex:none}
-.th .nm .gtag{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+/* the rail's spec tags (0.6 review 2): the machine's name has the row; the tag sits on the same line, right-aligned
+   before M/S, only when the row is wide enough for both (else it is in the name's tooltip and the GEN bar) */
+.th .nm.tagged{container-type:inline-size;flex-wrap:nowrap;gap:0 4px;align-items:center;height:100%;overflow:hidden}
+.th .nm.tagged b{flex:none;line-height:1}
+.th .nm .gtag{flex:none;margin-left:auto;line-height:11px;opacity:.75}
+@container (max-width:118px){.th .nm .gtag{display:none}}
 @media (max-width:1380px){.th .nm .gtag{display:none}}
 /* ===== Sound by function (MM-PORT-PLAN e; 90-sound.js renderSound): the Machinedrum Editor's page and layout
    (shared/deskSound.css, shared/deskSoundLayout.js), with what the Monomachine's has more: the head's three keys to
@@ -2170,6 +2258,9 @@ img,svg,canvas{-webkit-user-drag:none}
 #main>.snd{flex:1 1 auto;min-height:0}
 .snd{display:flex;flex-direction:column;gap:16px;min-height:0}
 .sndhead{display:flex;align-items:center;gap:22px;min-width:0}
+/* 0.6: Revert track, beside the machine key (a track's sound back as its kit slot stores it); on only while it differs */
+.sndhead .revbtn{flex:none;white-space:nowrap;align-self:center;margin-left:-8px}
+.sndhead .revbtn:disabled{opacity:.4;cursor:default}
 .sgrow{flex:1 1 0;min-height:0;max-height:var(--sgmax,420px);display:grid;grid-template-rows:auto minmax(0,1fr) var(--sgbox,34px);column-gap:14px;row-gap:7px;min-width:0}
 .sgrow.flat{flex:none;grid-template-rows:auto var(--sgbox,34px)}
 /* a column takes its row's three lines (subgrid); an engine without subgrid (macOS 12, Safari 15) skips that and
@@ -2194,6 +2285,8 @@ img,svg,canvas{-webkit-user-drag:none}
 .sg>*{min-width:0}
 .sg h3{display:flex;align-items:center;gap:8px}
 .sg>header>span{flex:none}
+/* B-143: the section header is one fixed line (27 px) as Chrome lays it out; WebKit 15 mixed the baseline with the flex h3 and made it 24 */
+.sg>header{align-items:center;height:27px;box-sizing:border-box;flex-wrap:nowrap}
 .sg>.lfobody{grid-row:3;align-self:start;min-width:0}
 .sgrow.flat .sg>.lfobody{grid-row:2}
 .sndhead>.machbtn{flex:none;width:auto!important;grid-template-columns:auto auto 10px!important;max-width:220px}
@@ -2380,6 +2473,67 @@ body.dockother #rail .railparams>:is(.lpspace,.pagetabs,.pkcol),body.dockother #
 .syncf{padding:0 5px!important;width:calc(8ch + 21px)!important}
 .row2 .lcdsec{padding:0 4px!important}
 }
+/* B-061, B-065, B-066: the measured fit (deskTopFit.js). The script puts tf1, then tf2, then tf3 on the header (each step
+   keeps the ones before it) until every key of the top bar is inside the window, with the LCD as wide as its widest
+   second row on any workspace asks, so the LCD is one size on every workspace. A page zoomed below 100 % (a window
+   under 1440 x 720 points) has its 9 to 15 px text raised by WebKit to 9 points on screen, so the same CSS width holds
+   less there: the steps are for that, not media queries. Plain values only (an older WebKit, deskCompat.js). */
+/* the slots of line 2 never shrink (a cut slot is a slot the fit counts, not one that squeezes) */
+.lcdpanel .lcd2 .l2{flex:none!important}
+/* line 2 asks the LCD for no width of its own: the LCD is as wide as its first row and the fit say (deskTopFit.js) */
+.lcdpanel .row2{width:0;min-width:100%}
+/* tf1: the LCD sits between the two key groups, not in the window's middle (the side columns no longer take equal room) */
+header.top.tf1{grid-template-columns:auto auto auto!important;justify-content:space-between!important}
+/* tf2: gaps and key padding */
+header.top.tf2{column-gap:10px!important}
+header.top.tf2 .left,header.top.tf2 .rightgrp{gap:10px!important}
+header.top.tf2 .tabs>button{min-width:0!important;padding-left:5px!important;padding-right:5px!important;letter-spacing:.04em!important}
+header.top.tf2 .setkeys button{min-width:0!important;padding-left:5px!important;padding-right:5px!important;letter-spacing:.04em!important}
+header.top.tf2 .lcdpanel .f{padding:0 5px!important}
+header.top.tf2 .row2 .lcd2{gap:9px!important;padding:0 6px!important}
+/* tf3: the tightest */
+header.top.tf3{column-gap:8px!important}
+header.top.tf3 .left,header.top.tf3 .rightgrp{gap:8px!important}
+header.top.tf3 .tabs>button{padding-left:4px!important;padding-right:4px!important;letter-spacing:.02em!important}
+header.top.tf3 .setkeys button{padding-left:4px!important;padding-right:4px!important;letter-spacing:.02em!important}
+header.top.tf3 .lcdpanel .f{padding:0 4px!important}
+header.top.tf3 .lcdpanel small,header.top.tf3 .lcdsec button,header.top.tf3 .l2 small{letter-spacing:0!important}
+header.top.tf3 .row2 .lcd2{gap:6px!important;padding:0 5px!important}
+header.top.tf3 .lcdgroup .lcdpanel .syncf{width:calc(6ch + 12px)!important;padding:0 4px!important}
+header.top.tf3 .row2 .lcdsec{padding:0 3px!important}
+/* tf4: line 2's slots are as wide as their text (the Monomachine gives each a width in characters, for the PAT / SONG switch not to move them) */
+header.top.tf4 .lcdpanel .lcd2 .l2{width:auto!important}
+header.top.tf4 .row2 .lcd2{gap:5px!important}
+/* The transport beyond PLAY and STOP (deskTransport.js, both editors): the paused ▶ key, the ▾ that opens its menu without a
+   right-click, the tempo field while its pop-up is open, and the TEMPO pop-up (doc/modern-ux/mockup-next/next.css). */
+.lcdt{position:relative}
+.lcdt .lt.paused{animation:blink .8s steps(2) infinite}
+.lcdt .ltmore{all:unset;cursor:pointer;position:absolute;right:1px;bottom:1px;width:11px;height:11px;display:flex;align-items:center;justify-content:center;font:9px/1 var(--mono,ui-monospace,monospace);color:var(--ink);opacity:.75;border-radius:2px}
+.lcdt .ltmore:hover,.lcdt .ltmore:focus-visible{opacity:1;background:color-mix(in srgb,var(--ink) 18%,transparent)}
+.lcdpanel .f.tempof{background:color-mix(in srgb,var(--ink) 12%,transparent);border-radius:2px}
+.tempopop{position:fixed;z-index:62;width:390px;box-sizing:border-box;display:grid;gap:10px;padding:12px 14px;background:var(--plate);color:var(--body,var(--print));border:2px solid var(--print);border-radius:6px;box-shadow:0 18px 40px rgba(0,0,0,.35);font:13px var(--sans,system-ui,sans-serif)}
+.tempopop::before{content:"";position:absolute;top:-8px;left:var(--ax,40px);width:12px;height:12px;background:var(--plate);border-left:2px solid var(--print);border-top:2px solid var(--print);transform:rotate(45deg)}
+.tempopop .th1{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--rule,color-mix(in srgb,var(--print) 25%,transparent));padding-bottom:8px}
+.tempopop .th1 .cap{margin-right:auto;font:600 11px var(--sans,system-ui,sans-serif);letter-spacing:.14em;text-transform:uppercase}
+.tempopop .note{color:var(--print2,inherit);font-size:12px}
+.tempopop .bpmrow{display:flex;align-items:center;gap:8px}
+.tempopop .bpmbig{font:26px var(--pix,monospace);background:var(--lcd);color:var(--ink);padding:6px 10px;border-radius:3px;min-width:6ch;text-align:right}
+.tempopop .bpmrow small{font:600 11px var(--sans,system-ui,sans-serif);letter-spacing:.14em;color:var(--print2,inherit)}
+.tempopop button{white-space:nowrap;height:30px;padding:0 10px;font:600 11px var(--sans,system-ui,sans-serif);letter-spacing:.12em;text-transform:uppercase}
+.tempopop button:disabled{opacity:.45;cursor:not-allowed}
+.tempopop .sq{width:30px;padding:0;font:600 16px var(--mono,monospace)}
+.tempopop .tap{margin-left:auto;height:38px;width:64px}
+.tempopop .nudging{background:var(--led,#d33);color:#fff}
+.tempopop .tr kbd{font:400 10px var(--mono,monospace);opacity:.7;margin-left:4px}
+.tempopop .tr{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--print2,inherit)}
+.tempopop .tr .ilab{min-width:58px}
+.tempopop .tr .hold{font:11px var(--mono,monospace);color:var(--print3,inherit);margin-left:auto}
+.tempopop .tsync .tglob{margin-left:auto}
+.tempopop .tsync .seg{display:inline-flex;gap:2px}
+.tempopop .tsync .seg button[aria-pressed=true]{background:var(--print);color:var(--plate)}
+.tempopop label.tr{cursor:pointer}
+.tempopop label.tr input{accent-color:var(--led)}
+.tempopop .tnote{font-size:12px;color:var(--print3,inherit);line-height:1.35;border-top:1px solid var(--rule,color-mix(in srgb,var(--print) 25%,transparent));padding-top:7px}
 /* I-021: the output meter and volume at the LCD's right end (skins/shared/deskVolume.js, loaded by the plug-in's page) */
 /* I-021: the stereo output meter and volume at the LCD's right end (deskVolume.js), both editors: a column of about 30 px,
    both LCD rows tall, made at the plug-in's first outputLevel message (the panel gets .hasvol then, so the LCD's grid has
@@ -2387,7 +2541,7 @@ body.dockother #rail .railparams>:is(.lpspace,.pagetabs,.pkcol),body.dockother #
    across both, a 0 dB tick, the clip mark on top. Only the LCD's ink and ground (opacity for the fainter parts, no
    colour mixing, no parent selector: an older WebKit, deskCompat.js); a clip is the top mark filled, never a warning
    colour. The readout while the volume changes is the LCD's tip (.lcdtip, deskLcd.css). */
-.lcdgroup .lcdpanel.hasvol{grid-template-columns:repeat(6,auto) auto!important}
+.lcdgroup .lcdpanel.hasvol{grid-template-columns:repeat(6,auto) max-content!important}
 .lcdgroup .lcdpanel.hasvol>.row2{grid-column:2/-2!important}
 .lcdpanel .volf{grid-column:-2/-1;grid-row:1/-1;align-self:stretch;display:flex;flex-direction:column;align-items:center;gap:2px;box-sizing:border-box;
  width:30px;min-height:0;padding:0 6px;border-left:var(--lrule,1px solid var(--ink));cursor:ns-resize;touch-action:none;outline:none;color:var(--ink)}
@@ -2418,6 +2572,103 @@ body.dockother #rail .railparams>:is(.lpspace,.pagetabs,.pkcol),body.dockother #
 .lcdpanel .volf .volzero{left:-3px}
 }
 @media (prefers-reduced-motion:reduce){.lcdpanel .volf .volfill{transition:none}}
+/* I-022: the field over a value box while a value is typed (deskValueEdit.js): the LCD's ink on the LCD's ground, over the
+   box it edits; refused input shows in the record colour until the next key */
+.vedit{position:fixed;z-index:9000;box-sizing:border-box;margin:0;padding:0 6px;border:1px solid var(--ink);border-radius:3px;background:var(--lcd);color:var(--ink);font:600 13px var(--mono);text-align:center;outline:none;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.vedit.bad{border-color:var(--rec);box-shadow:0 0 0 1px var(--rec),0 2px 8px rgba(0,0,0,.35)}
+/* The Song page's song slots (deskSongSlots.js) and the PATTERN · CHAIN · SONG keys of its one palette (0.6 wave 1,
+   doc/modern-ux/DESIGN-machine-menus.md §2, Song). Both editors: the same classes, the page's own tokens. */
+.songui.withlib{grid-template-columns:366px minmax(340px,400px) minmax(0,1fr)!important}
+@media (max-width:1100px){.songui.withlib{grid-template-columns:minmax(0,1fr)!important}}
+.songlib{border-top:0!important;padding-top:0!important;display:grid;gap:10px;align-content:start;padding-right:16px!important;border-right:2px solid var(--print)}
+.songui.withlib>.songlib{align-self:start!important;align-content:start!important;grid-template-rows:none!important;height:auto!important;grid-row:1/-1}
+.songlib .sltop{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.songlib .sltop .lcdchip{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.songlib .slnote{font-size:12px;line-height:1.4}
+.songlib .songwarn{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.songlib .slacts{display:flex;flex-wrap:nowrap;gap:10px}
+.songlib .sgrp{display:flex;gap:3px}
+.songlib .slacts button{height:26px;padding:0 6px;font:600 10px var(--sans);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.songlib .slacts button:disabled{opacity:.35;cursor:default}
+.songlib .danger:hover{background:var(--rec);color:#fff}
+.songlib .libgrid.songs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;max-height:calc(100vh - 330px);overflow:auto;align-content:start;padding:2px}
+.songlib .ls{grid-template-columns:auto 1fr;column-gap:8px;align-items:center;padding:4px 7px}
+.songlib .ls .lsh{grid-row:1/3}
+.songlib .ls .lsl{grid-column:2;min-height:0}
+.songlib .lsn{height:16px;line-height:16px}
+.songlib .lsin{width:100%;min-width:0;box-sizing:border-box;font:500 12px var(--mono);text-transform:uppercase;height:16px;padding:0 2px}
+.songlib .ls.empty{background:transparent!important;box-shadow:none!important;border:1px dashed var(--rule);color:var(--print3);opacity:.7}
+.songlib .ls.empty .lsh b{font-weight:400}
+.songlib .ss.edited .lsh .led{animation:blink 1s steps(2) infinite}
+@media (prefers-reduced-motion:reduce){.songlib .ss.edited .lsh .led{animation:none}}
+.songlib .slfoot{font-size:12px;line-height:1.4}
+/* the palette's keys: what the machine plays and what a pad click does */
+.pmodekeys{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-start;width:100%}
+.pmodekeys .pkey{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;background:var(--key);color:var(--keytext);font:600 13px var(--sans);letter-spacing:.16em;text-transform:uppercase;border-radius:3px;box-shadow:inset 0 -2px 0 rgba(0,0,0,.35)}
+.pmodekeys .pkey .led{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.2)}
+.pmodekeys .pkey[aria-pressed=true]{background:var(--cream);color:var(--creamtext);box-shadow:inset 0 -2px 0 rgba(0,0,0,.2)}
+.pmodekeys .pkey[aria-pressed=true] .led{background:var(--led);box-shadow:0 0 6px 1px var(--led)}
+.pmodekeys .note{font-size:12px;margin-left:6px}
+.padd.q{animation:blink .8s steps(2) infinite}
+@media (prefers-reduced-motion:reduce){.padd.q{animation:none}}
+.whatplays .playsline{display:flex;min-width:0;margin-bottom:8px}
+/* 0.6 wave 4: COPY / PASTE / CLEAR what (skins/shared/deskWhat.js) */
+/* COPY / PASTE / CLEAR what (deskWhat.js, both editors): the ▾ beside the LCD's COPY CLR PASTE, the dialog's ticks
+   grouped PATTERN and KIT, the target tracks, and the Sound page's LFO ⋯ (Machinedrum). The page's tokens (light and
+   dark, MK1 and MK2); plain colours and rgba only (deskCompat.js) */
+.lcdsec .secmore{flex:none!important;padding:0 3px!important;opacity:1}
+.dlgbox.what{max-width:560px;min-width:min(440px,calc(100vw - 48px));gap:12px}
+.dlgbox.what h3{margin:0;font:600 14px var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--print)}
+.dlgbox.what .whatsrc{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--print2)}
+.dlgbox.what .whatsrc .ilab{min-width:64px}
+.dlgbox.what .whatsrc .lcdchip{font-size:11px}
+.dlgbox.what .whatgrp{display:grid;gap:6px;border-top:1px solid var(--rule);padding-top:8px}
+.dlgbox.what .whatgrp h4{margin:0;display:flex;gap:10px;align-items:baseline;font:600 11px var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--print2)}
+.dlgbox.what .whatgrp h4 small{font:11px var(--mono);letter-spacing:0;text-transform:none;color:var(--print3)}
+.dlgbox.what .whatgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 18px}
+.dlgbox.what label{display:flex;gap:9px;align-items:center;font:500 14px var(--sans);color:var(--print);cursor:pointer}
+.dlgbox.what label.dis{opacity:.45;cursor:default}
+.dlgbox.what label small{font:12px var(--mono);color:var(--print2);margin-left:auto}
+.dlgbox.what input{accent-color:var(--led);width:15px;height:15px;margin:0}
+.dlgbox.what .whatinfo{margin:0;font-size:12px;line-height:1.4;color:var(--print3)}
+.dlgbox.what .whatto{border-top:1px solid var(--rule);padding-top:8px}
+.dlgbox.what .to{display:flex;gap:3px;flex-wrap:wrap;align-items:center}
+.dlgbox.what .to button{min-width:26px;height:24px;padding:0 4px;font:500 11px var(--mono)}
+.dlgbox.what .to button[aria-pressed=true]{background:var(--cream);color:var(--creamtext)}
+.dlgbox.what .to button[disabled]{opacity:.35;cursor:default}
+.dlgbox.what .fine{font-size:12px;color:var(--print3);line-height:1.4;margin:0}
+.dlgbox.what .btnrow{justify-content:flex-end}
+.dlgbox.what .btnrow button[disabled]{opacity:.45;cursor:default}
+.sg>header.hasmenu{justify-content:flex-start}
+.sg>header.hasmenu>span{margin-left:auto}
+.sg>header .lfomenu{flex:none;height:16px;min-height:0;margin:-4px 0;padding:0 7px;font:600 12px var(--mono);line-height:14px;align-self:center}
+
+/* the swing mark's teal (a trig's marks in the roll, 70-seq.js) */
+:root{--swg:#15a39a}
+/* wave 7: STEP RECORDING (the REC key says STEP, the machine's cursor on the roll; no row of its own) and live erase */
+.lcdt .lt.rec.step{background:var(--ink)!important;color:var(--lcd)!important;animation:none!important}
+.lcdt .lt.rec .stepm{font:9px var(--pix);margin-left:2px}
+#seq .nlane.big{position:relative}
+.stepcur{position:absolute;top:0;bottom:0;pointer-events:none;z-index:5;border:2px solid var(--led);box-shadow:0 0 0 1px var(--plate),0 0 10px 1px var(--led);border-radius:2px;animation:blink 1s steps(2) infinite}
+.stepcur::after{content:attr(data-l);position:absolute;top:2px;left:2px;font:9px var(--pix);background:var(--led);color:#fff;padding:2px 4px;border-radius:2px;white-space:nowrap}
+body.erasing .rail .th.sel{box-shadow:inset 0 0 0 2px var(--rec)!important}
+/* 0.6 wave 9 (B-064): POLY's track (×6) and the silent ones, the filter's key tracking in the Filter header, the
+   Multi envelope's word per MULTI TRIG mode */
+.x6{font:600 9px var(--mono);font-style:normal;margin-left:4px;padding:0 3px;border-radius:2px;background:var(--led);color:#fff;vertical-align:1px}
+[data-set="astrk"] button.polyoff,#trklamps>span.polyoff{opacity:.42}
+.sg>header>.keytrk{flex:none;margin-left:auto;height:18px;padding:0 6px;display:inline-flex;gap:4px;align-items:center;font:600 9px var(--sans);letter-spacing:.1em;text-transform:uppercase}
+.sg>header>.keytrk .led{width:6px;height:6px}
+.sg>header>span+.keytrk{margin-left:8px}
+.asgcard .keyrow.flash{outline:2px solid var(--led);outline-offset:3px;border-radius:3px}
+.menvsay b{font-weight:600}
+.menvsay .menvto{display:block;margin-top:2px}
+.lkey.ring{box-shadow:0 0 0 2px var(--led)}
+/* Review 1 (Radek, 2026-10-12): the big screens on the Machinedrum MKI's grey (--scr), not the LCD's colour; the top bar's
+   LCD and the small LCD chips keep --lcd */
+canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop,.edblank,.timeline,.timeline2{background:var(--scr)}
+
+/* B-116: the Arrangement's key legend (T, M, B) is cut by the card's width under 1700 px: "65 of 200 rows" stays, the keys are in the tooltip */
+@media (max-width:1700px){.arrcard header .note .gopt{display:none}}
 
 /* ===== The real machine's states (not in the mockup) ===== */
 .statusline,.errline{margin:6px 0 0;padding:6px 10px;border-radius:3px;font:12px var(--pix);text-transform:uppercase}
@@ -2445,8 +2696,6 @@ body.dockother #rail .railparams>:is(.lpspace,.pagetabs,.pkcol),body.dockother #
 .whatplays .playsline{display:flex;min-width:0}
 .whatplays .playsline .playschip{flex:1;min-width:0;margin:0;overflow:hidden;text-overflow:ellipsis;font:13px var(--pix);padding:7px 10px}
 .whatplays.song .playsline .playschip{box-shadow:inset 0 0 0 2px var(--led)}
-.songslot header{flex-wrap:wrap;align-items:center}
-.songslot .songpick{display:inline-flex;gap:6px;flex-wrap:wrap}
 .arrcard .arrstate{font:11px var(--pix);text-transform:uppercase;letter-spacing:.06em;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .songplaying .arrcard .arrstate::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--led);box-shadow:0 0 6px 1px var(--led)}
 .songplaying .arrcard .arrstate{color:var(--print)}

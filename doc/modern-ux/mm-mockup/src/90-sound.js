@@ -20,16 +20,22 @@ function hashN(i){const x=Math.sin(i*127.1)*43758.5;return x-Math.floor(x)}
 /* SWAVE: the base saw with the unison pair at ±UNIW (UNIL), the extended pair at twice the width (UNIX) */
 ED.uni={geo(W,H){return{cx:W/2,sp:(W/2-12)/26,base:H-14,hh:H-36}},
  draw(g,W,H,c){const G=this.geo(W,H),ink=cssv("--ink");grid(g,W,H);
-  const bar=(semi,h,dash)=>{const x=G.cx+semi*G.sp;g.fillStyle=ink;g.globalAlpha=dash?.5:1;g.fillRect(x-3,G.base-h*G.hh,6,Math.max(1,h*G.hh));g.globalAlpha=1};
+  /* review 1 (2026-10-12): a fine stem per partial, 2 px as the other screens' lines (they were 6 px bars); dashed
+     for the extended pair */
+  const bar=(semi,h,dash)=>{const x=Math.round(G.cx+semi*G.sp)+.5;g.strokeStyle=ink;g.lineWidth=dash?1.5:2;g.setLineDash(dash?[3,3]:[]);g.beginPath();g.moveTo(x,G.base);g.lineTo(x,G.base-Math.max(1,h*G.hh));g.stroke();g.setLineDash([])};
   const uw=sv("UNIW")/127*12,ul=sv("UNIL")/127;bar(0,1);if(ul){bar(-uw,ul);bar(uw,ul)}
   if(ck(c).includes("UNIX")){const ux=Math.min(sv("UNIX"),sv("UNIL"))/127;if(ux){bar(-2*uw,ux,1);bar(2*uw,ux,1)}}
   label(g,`unison ±${Math.round(uw*10)/10} st`)},
  handles(W,H){const G=this.geo(W,H);return[{x:G.cx+sv("UNIW")/127*12*G.sp,y:G.base-sv("UNIL")/127*G.hh,k:"UNIW · UNIL",drag:(x,y)=>{sset("UNIW",(x-G.cx)/G.sp/12*127);sset("UNIL",(G.base-y)/G.hh*127)}}]}};
 /* the subs: a sine one (SUB1) and two (SUB2) octaves down, a square one octave down (SUBX); the base faint */
-ED.sub={geo(W,H){return{x0:16,sp:(W-28)/27,base:H-16,hh:H-38}},
+/* the base high enough that a sub at 0 keeps its handle (5.5 px, 7 held) clear of the caption under it (0.6 e2e: "SQ" under
+   a handle on the firmware's kit, SUBX 0) */
+ED.sub={geo(W,H){return{x0:16,sp:(W-28)/27,base:H-21,hh:H-43}},
  bars(c){const k=ck(c);return k.map(n=>({n,semi:n==="SUB2"?-24:-12,dx:n==="SUBX"?-8:n==="SUB1"&&k.includes("SUBX")?8:0}))},
- draw(g,W,H,c){const G=this.geo(W,H),ink=cssv("--ink"),X=s=>G.x0+(s+25)*G.sp;grid(g,W,H);g.fillStyle=inkA(.3);g.fillRect(X(0)-3,G.base-G.hh,6,G.hh);
-  for(const b of this.bars(c)){const v=sv(b.n)/127,x=X(b.semi)+b.dx;g.fillStyle=ink;g.fillRect(x-3,G.base-v*G.hh,6,Math.max(1,v*G.hh));g.font=SFONT;g.fillText(b.n==="SUBX"?"SQ":b.n==="SUB2"?"-24":"-12",x-7,H-4)}
+ draw(g,W,H,c){const G=this.geo(W,H),ink=cssv("--ink"),X=s=>G.x0+(s+25)*G.sp;grid(g,W,H);
+  /* review 1: fine stems (2 px), the base 1 px and faint */
+  const stem=(x,h,w,c)=>{x=Math.round(x)+.5;g.strokeStyle=c;g.lineWidth=w;g.beginPath();g.moveTo(x,G.base);g.lineTo(x,G.base-Math.max(1,h));g.stroke()};stem(X(0),G.hh,1.5,inkA(.35));
+  for(const b of this.bars(c)){const v=sv(b.n)/127,x=X(b.semi)+b.dx;stem(x,v*G.hh,2,ink);g.fillStyle=ink;g.font=SFONT;g.fillText(b.n==="SUBX"?"SQ":b.n==="SUB2"?"-24":"-12",x-7,H-4)}
   g.font=SFONT;g.fillStyle=inkA(.6);g.fillText("BASE",X(0)-12,H-4);label(g,"subs below the base")},
  handles(W,H,c){const G=this.geo(W,H),X=s=>G.x0+(s+25)*G.sp;return this.bars(c).map(b=>({x:X(b.semi)+b.dx,y:G.base-sv(b.n)/127*G.hh,k:b.n,drag:(x,y)=>sset(b.n,(G.base-y)/G.hh*127)}))}};
 /* a pulse: SID's PW is the width; SWAVE's PW is signed, 0 = square, either end a spike. PWAD sweeps it (dashed) */
@@ -45,7 +51,7 @@ ED.sidwave={draw(g,W,H){const w=sv("WAVE"),pw=sv("PW")/127,ink=cssv("--ink");gri
 /* SWAVE-ENS / DPRO-DENS: the chord from one track, C plus PCH2-4 */
 ED.chord={draw(g,W,H){const ink=cssv("--ink"),offs=["PCH2","PCH3","PCH4"].map(p=>sv(p)).filter(v=>v).map(v=>v-64);const kw=(W-16)/15,y0=24,wh=H-30;let wx=8;grid(g,W,H);
   for(let k=0;k<25;k++){if([1,3,6,8,10].includes(k%12))continue;g.strokeStyle=ink;g.lineWidth=1;g.strokeRect(wx+.5,y0+.5,kw-1,wh-1);if(k===0||offs.includes(k)){g.fillStyle=ink;g.beginPath();g.arc(wx+kw/2,y0+wh-10,4.5,0,7);g.fill()}wx+=kw}
-  wx=8;for(let k=0;k<25;k++){if(![1,3,6,8,10].includes(k%12)){wx+=kw;continue}g.fillStyle=ink;g.fillRect(wx-kw*.3,y0,kw*.6,wh*.58);if(offs.includes(k)){g.fillStyle=cssv("--lcd");g.beginPath();g.arc(wx,y0+wh*.45,3.5,0,7);g.fill()}}
+  wx=8;for(let k=0;k<25;k++){if(![1,3,6,8,10].includes(k%12)){wx+=kw;continue}g.fillStyle=ink;g.fillRect(wx-kw*.3,y0,kw*.6,wh*.58);if(offs.includes(k)){g.fillStyle=cssv("--scr");g.beginPath();g.arc(wx,y0+wh*.45,3.5,0,7);g.fill()}}
   label(g,"C + "+(offs.length?offs.join(" "):"no other notes"))}};
 /* the ensemble's wave: saw through square to spikes (WAVE), PW mutates it; DPRO-DENS: one of the 64 waves */
 ED.enswave={draw(g,W,H){const ink=cssv("--ink"),m=trk(S.sel).m;grid(g,W,H);
@@ -142,7 +148,7 @@ ED.dflt={draw(g,W,H){const e=V("EFX");bandDraw(g,W,H,e[6]/127,Math.min(1,(e[6]+e
 ED.amp={geo(W,H,c){const e=ampTimes(V("AMP"))||{at:0,ho:0,de:Infinity,re:Infinity},inf=e.de===Infinity,rinf=e.re===Infinity;
   const off=e.at+e.ho+(inf?Math.max(2,(e.at+e.ho)*.4):0),gate=inf?off:e.at+e.ho+2*e.de,rel=off+(rinf?3:2*e.re);
   const need=clamp(Math.ceil(Math.max(gate,rel)*1.08/4)*4,4,64),span=active&&active.c===c&&c&&c._span?Math.max(c._span,need):need;if(c)c._span=span;
-  const T=18,B=H-10;return{e,inf,rinf,off,span,T,B,X:s=>Math.min(W,s/span*W),S:x=>x/W*span,Y:v=>B-v*(B-T)}},
+  const T=28,B=H-10;return{e,inf,rinf,off,span,T,B,X:s=>Math.min(W,s/span*W),S:x=>x/W*span,Y:v=>B-v*(B-T)}},
  draw(g,W,H,c){const G=this.geo(W,H,c),e=G.e,ink=cssv("--ink");grid(g,W,H);
   g.strokeStyle=ink;g.lineWidth=2.2;g.beginPath();g.moveTo(0,G.Y(0));g.lineTo(G.X(e.at),G.Y(1));g.lineTo(G.X(e.at+e.ho),G.Y(1));
   if(G.inf)g.lineTo(G.X(G.off),G.Y(1));else{const d0=e.at+e.ho;for(let k=1;k<=32;k++){const u=k/32*2*e.de;g.lineTo(G.X(d0+u),G.Y(ampFall(u,e.de)))}g.lineTo(W,G.Y(0))}g.stroke();
@@ -154,7 +160,8 @@ ED.amp={geo(W,H,c){const e=ampTimes(V("AMP"))||{at:0,ho:0,de:Infinity,re:Infinit
    {x:G.inf?Math.min(W-5,G.X(G.off)):G.X(e.at+e.ho+e.de),y:G.Y(G.inf?1:.1),k:"DEC",drag:x=>set(2,x>=W-3?127:Math.min(126,ampValue("fall",G.S(x)-e.at-e.ho)))},
    {x:G.rinf?W-5:G.X(G.off+e.re),y:G.Y(G.rinf?1:.1),k:"REL",drag:x=>set(3,x>=W-3?127:Math.min(126,ampValue("fall",G.S(x)-G.off)))}]}};
 ED.flt={resp(u,env){const f=V("FLT"),b=Math.min(1,(f[0]+(env?f[6]:0))/127),w=(f[1]+(env?f[7]:0))/127,lp=Math.min(1,b+w);let d=0;if(u<b)d-=Math.pow((b-u)*7,2);if(u>lp)d-=Math.pow((u-lp)*7,2);d+=f[2]/127*1.6*Math.exp(-Math.pow((u-b)*26,2))+f[3]/127*1.6*Math.exp(-Math.pow((u-lp)*26,2));return d},
- draw(g,W,H){grid(g,W,H);const f=V("FLT");if(f[6]||f[7])line(g,W,x=>clamp(H/2+8-this.resp(x/W,1)*(H/4),6,H-6),inkA(.55),1.5,[5,4]);line(g,W,x=>clamp(H/2+8-this.resp(x/W)*(H/4),6,H-6),cssv("--ink"),2.2);label(g,"base + width"+(f[6]||f[7]?" · dashed = env peak":""))},
+ draw(g,W,H){grid(g,W,H);const f=V("FLT"),A=S.sel<6?trk(S.sel).assign:null;if(f[6]||f[7])line(g,W,x=>clamp(H/2+8-this.resp(x/W,1)*(H/4),6,H-6),inkA(.55),1.5,[5,4]);line(g,W,x=>clamp(H/2+8-this.resp(x/W)*(H/4),6,H-6),cssv("--ink"),2.2);
+  const fixed=!A||A.hpf&&A.lpf?"":!A.hpf&&!A.lpf?" · fixed: no key tracking":!A.hpf?" · HPF fixed":" · LPF fixed";label(g,"base + width"+(fixed||(f[6]||f[7]?" · dashed = env peak":"")))},
  handles(W,H){const f=V("FLT"),b=f[0]/127,lp=Math.min(1,b+f[1]/127),yy=u=>clamp(H/2+8-this.resp(u)*(H/4),6,H-6);
   return[{x:Math.max(6,b*W),y:yy(b),k:"BASE · HPQ",drag:(x,y)=>{f[0]=clamp(Math.round(x/W*127));f[2]=clamp(Math.round((H/2+8-y)/(H/2)*127))}},{x:Math.min(W-6,lp*W),y:yy(lp),k:"WDTH · LPQ",drag:(x,y)=>{f[1]=clamp(Math.round((x/W-f[0]/127)*127));f[3]=clamp(Math.round((H/2+8-y)/(H/2)*127))}}]}};
 function lfoCycle(v){const m=Math.pow(2,v[4]);return v[5]?2048/(v[5]*m):Infinity}
@@ -189,7 +196,7 @@ const SND_TIP={uni:"The base saw (middle) and the unison pair either side: UNIW 
  amp:"The level after a trig, in steps at this tempo, as the Monomachine plays it: ATK rises (64 ≈ 0.14 s), HOLD keeps it for HOLD/8 steps (no NOTE OFF needed), DEC falls (64 ≈ 0.55 s to -20 dB; 127 holds to the NOTE OFF), REL falls after the NOTE OFF (dashed; 127 never fades). ATK, DEC and REL are times: each 8 more about doubles them. Drag the dots.",
  dist:"Distortion, in to out (dashed = clean). Drag the dot up or down.",
  pan:"The track in the stereo field: PAN sideways, VOL up. Drag the dot.",
- flt:"The 24 dB gap filter: BASE is the high-pass, WDTH the gap to the low-pass, the dots up for HPQ and LPQ. Dashed: where the envelope takes it. Both track the note.",
+ flt:"The 24 dB gap filter: BASE is the high-pass, WDTH the gap to the low-pass, the dots up for HPQ and LPQ. Dashed: where the envelope takes it. Both follow the note unless KEY (Perform › Assign › KEY) switches one off: the label then says which is fixed.",
  fenv:"The filter's own envelope: ATK, DEC; BOFS how far it lifts the base (solid, up), WOFS the width (dashed). Drag the dots.",
  eq:"One EQ band: EQF moves it, EQG boosts (up) or cuts (down). Drag the dot.",
  srr:"Sample-rate reduction: more SRR, longer held steps (the rail).",
@@ -206,7 +213,11 @@ const MM_PG_TIP={SYN:"the machine's SYNTHESIS page",AMP:"the AMPLIFICATION page"
    or what its knobs do, its boxes; each part is a cell of the row's grid */
 function sgHtml(x,cols,tag,note){const t=S.sel;
  const body=x.body||`<div class="ctl" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${x.idx.map((i,k)=>pc(x.pg,i,{t,label:x.labels?.[k]||x.knobs[k]})).join("")}</div>`;
- return`<section class="sg" data-sg="${x.pg}:${x.key}"><header><h3>${sgTitle(x)}</h3>${tag?`<span title="Its knobs are on ${MM_PG_TIP[x.pg]||x.pg}">${tag}</span>`:""}</header>${x.plot||(note?`<p class="sgnote" title="${attrS(note)}">${note}</p>`:"")}${body}</section>`}
+ return`<section class="sg" data-sg="${x.pg}:${x.key}"><header><h3>${sgTitle(x)}</h3>${tag?`<span title="Its knobs are on ${MM_PG_TIP[x.pg]||x.pg}">${tag}</span>`:""}${x.pg==="FLT"&&x.key==="filter"&&t<6?keyTrackKey(t):""}</header>${x.plot||(note?`<p class="sgnote" title="${attrS(note)}">${note}</p>`:"")}${body}</section>`}
+/* 0.6 wave 9 (B-064): the filter's key tracking, shown where the filter is; the switches stay in Perform › Assign › KEY
+   (KIT › ASSIGN › KEY on the machine), where this key leads */
+function keyTrackKey(t){const A=trk(t).assign;return`<button class="keytrk" data-keytrk="${t}" title="The filter follows the note unless switched off: HPF ${A.hpf?"on":"off"}, LPF ${A.lpf?"on":"off"}. Click: Perform › Assign › KEY, where they are switched (KIT › ASSIGN › KEY on the machine)" aria-label="Key tracking: HPF ${A.hpf?"on":"off"}, LPF ${A.lpf?"on":"off"}. Opens Perform, Assign, KEY">KEY <i class="led ${A.hpf?"on":""}"></i>HPF <i class="led ${A.lpf?"on":""}"></i>LPF ›</button>`}
+function keyTrackGo(t){S.ws="perform";S.sel=t;S.asTab="KEY";render();requestAnimationFrame(()=>{const k=$(".keyrow");if(k){k.classList.add("flash");setTimeout(()=>k.classList.remove("flash"),1200)}})}
 /* One row (shared/deskSoundLayout.js soundRow, as the Machinedrum Editor's): a group with a screen is a column of its
    own, the ones without pair up; a lone one says what its knobs do. The page's word on the first group of a page in
    the row (a group's own tag wins: an LFO that is off says so). */
@@ -225,6 +236,20 @@ function lfoGroup(t,k){const l="LF"+k,v=trk(t).v[l],dn=LPAGES[v[0]]?destNames(t,
 function machButton(m){return`<button class="machbtn" id="machbtn" aria-haspopup="dialog" aria-expanded="false" aria-label="Change machine"><span class="lcdtxt">${m}</span><span class="mfam">${famKey(m)}</span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>`}
 /* the track's pattern settings live in the Sequence dock: one key each to go there */
 function sndDockKeys(t){const midi=isMidiT(t);return`<span class="snddock" title="Stored in the pattern (arpeggiator, transpose) or the kit (${midi?"the MIDI page":"trig setup"}): edit them in the Sequence workspace's dock">${[["arp","Arp"],["trn","Transpose"],[midi?"midipage":"trig",midi?"MIDI set":"Trig setup"]].map(([d,n])=>`<button class="ptog" data-snddock="${d}">${n}</button>`).join("")}</span>`}
+/* 0.6: Revert track. The selected track goes back as the kit's slot stores it (the core's revertTrack: a synth track's machine,
+   pages, level, routing, assign rows, mask bits and forward; a MIDI track's MIDI page): one undo step. On while the track
+   differs from the slot (the page's own units, as the library keeps the slot: S.kits[k].data). The library's Reload does the whole kit. */
+function revertFacts(t){const st=S.kits[S.kit]?.data,J=JSON.stringify;
+ if(!st)return{can:false,why:`${kitName(S.kit)} is not read from its slot yet.`};
+ const a=trk(t),b=t<6?st.tracks?.[t]:st.midi?.[t-6];
+ if(!b)return{can:false,why:"This track is not in the stored kit."};
+ const keys=t<6?["m","v","lev","out","inp","trigpos","port","leg","assign"]:["v"];
+ return keys.some(k=>J(a[k])!==J(b[k]))
+  ?{can:true,why:`Put ${tLabel(t)} back as ${kitName(S.kit)} stores it: ${t<6?"its machine, pages, level, routing, assign rows and forward":"its MIDI page"}. One undo step. The kit library's Reload does the whole kit.`}
+  :{can:false,why:`${tLabel(t)} is as ${kitName(S.kit)} stores it.`}}
+function revertKey(t){const f=revertFacts(t);return`<button class="revbtn" id="revert" ${f.can?"":"disabled"} title="${attrS(f.why)}" aria-label="Revert ${tLabel(t)}">Revert track</button>`}
+function syncRevert(){const b=$("#revert");if(!b)return;const f=revertFacts(S.sel);b.disabled=!f.can;b.title=f.why}
+document.addEventListener("click",e=>{const b=e.target.closest("#revert");if(!b||b.disabled)return;edit("revertTrack",{t:S.sel})});
 function renderSound(){const t=S.sel,tr=trk(t);let rows,head;
  if(isMidiT(t)){const int=S.tracks[t-6],G=(title,idx,labels,plain)=>({key:sgKey(title),title,pg:"MID",idx,knobs:idx.map(i=>FIXED.MID[i]),labels,mut:false,note:plain});
   const cc=[4,5,6,7].map(i=>"CC "+(tr.cc[i-4]===128?"AFT":tr.cc[i-4]));
@@ -236,13 +261,13 @@ function renderSound(){const t=S.sel,tr=trk(t);let rows,head;
   const syn=g.SYN.length?g.SYN:[{key:"syn",title:"Synthesis",pg:"SYN",idx:[],knobs:[],n:0,w:3,mut:false,body:`<p class="sgabout">${MACH[tr.m].about}</p>`}];
   rows=[[[...syn,...g.AMP],"srcrow"],[[...g.FLT,...g.EFX],"tonerow"],[[1,2,3].map(k=>lfoGroup(t,k)),"lforow"]];
   head=machButton(tr.m)}
- $("#main").innerHTML=`<div class="snd mutating"><div class="sndhead">${head}${mutBarHtml()}${sndDockKeys(t)}</div>${rows.map(([list,cls])=>sgRow(list,cls)).join("")}</div>`;
+ $("#main").innerHTML=`<div class="snd mutating"><div class="sndhead">${head}${revertKey(t)}${mutBarHtml()}${sndDockKeys(t)}</div>${rows.map(([list,cls])=>sgRow(list,cls)).join("")}</div>`;
  syncControls();redraw()}
 
 /* machine picker (MD Editor pattern) */
 S.keepFx=true;
 function machList(f){return Object.keys(MACH).filter(m=>famKey(m)===f)}
-function openPicker(){const tr=trk(S.sel);S.pickFam=S.pickFam&&S.pickOpenFor===S.sel?S.pickFam:famKey(tr.m);S.pickOpenFor=S.sel;drawPicker();
+function openPicker(){const tr=trk(S.sel);S.pickFam=famKey(tr.m);drawPicker();
  const pop=$("#machpop"),b=$("#machbtn").getBoundingClientRect();pop.hidden=false;pop.style.top=(b.bottom+scrollY+6)+"px";pop.style.left=Math.max(16,Math.min(b.left+scrollX,innerWidth-pop.offsetWidth-16))+"px";$("#machbtn").setAttribute("aria-expanded","true");pop.querySelector(".mk[aria-pressed=true],.mk:not(:disabled)")?.focus()}
 function closePicker(){const pop=$("#machpop");if(pop.hidden)return;pop.hidden=true;$("#machbtn")?.setAttribute("aria-expanded","false")}
 function prevText(m){const k=MACH[m];return`<b>${m}</b> ${k.about} · ${k.p.filter(Boolean).join(" ")||"no parameters"}`}

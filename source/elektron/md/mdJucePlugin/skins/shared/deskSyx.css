@@ -29,7 +29,7 @@
 .syxtab.work input:checked{animation:blink 1s steps(2) infinite}
 @media (prefers-reduced-motion:reduce){.syxtab.work input:checked{animation:none}}
 /* the slots, as on the machine */
-.syxbody{max-height:calc(100vh - 330px);overflow:auto;overscroll-behavior:contain}
+.syxbody{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain}
 .syxpane[hidden]{display:none}
 .syxgrid{display:grid;gap:4px;align-items:stretch}
 .syxrl{align-self:center;font:600 12px var(--mono);color:var(--print2);text-align:center}
@@ -100,5 +100,35 @@
 .syxbar{position:relative;height:20px;border-radius:3px;background:var(--ledoff);overflow:hidden}
 .syxbar i{position:absolute;left:0;top:0;bottom:0;background:var(--led);width:0;transition:width .2s}
 .syxbar span{position:relative;display:block;padding:0 8px;text-align:center;font:600 11px/20px var(--sans);letter-spacing:.06em;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.syxkeys{display:inline-flex;gap:6px;margin-left:auto}
-.syxkeys+.libx{margin-left:8px!important}
+/* 0.6 (wave 6): the export (ALL, or each kind with its range) and the import's PLACE row; a range or first slot is a
+   value (click, ⇧-click, wheel, drag, arrows) */
+.syx-export .sxall,.syx-export .sxlist{display:grid;gap:2px;padding:0 2px}
+.syx-export .sxall{border-bottom:2px solid var(--print);padding-bottom:4px}
+.syx-export.sxallon .sxlist{opacity:.45}
+.sxrow{display:grid;grid-template-columns:18px 110px 210px 1fr;gap:12px;align-items:center;padding:8px 6px;border-bottom:1px solid var(--rule);font:500 14px var(--sans);color:var(--print);cursor:pointer}
+.sxrow b{font:600 13px var(--sans);letter-spacing:.14em;text-transform:uppercase}
+.sxrow small{font:12px var(--mono);color:var(--print3)}
+.sxrow input{accent-color:var(--led);width:15px;height:15px;margin:0}
+.sxrow input:disabled+b{opacity:.5}
+.sxrng{display:flex;gap:6px;align-items:center;font:12px var(--mono);color:var(--print2)}
+.sxrng i{font-style:normal}
+.syxpop .sxv{display:inline-block;height:auto;padding:3px 8px;font:500 12px var(--mono);letter-spacing:0;background:var(--plate3);color:var(--print);box-shadow:inset 0 0 0 1px var(--rule);border-radius:2px;cursor:ns-resize;touch-action:none}
+.syxpop .sxv:focus-visible{outline:2px solid var(--print);outline-offset:1px}
+.sxplace{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:8px 2px 0;border-top:1px solid var(--rule)}
+.sxplace .ilab{font:600 11px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--print2)}
+.sxplace .seg{display:inline-flex;gap:6px}
+.sxplace .seg button{height:24px;padding:0 10px;font:600 11px var(--sans);letter-spacing:.12em;text-transform:uppercase}
+.sxplace .seg button[aria-pressed=true]{background:var(--cream,var(--lcd));color:var(--creamtext,var(--ink))}
+.sxplace .note{font:500 13px/1.35 var(--sans);color:var(--print2)}
+.sxfirst{display:flex;gap:6px;align-items:center;font:12px var(--mono);color:var(--print2)}
+/* review 1 (B-095): one size for the panel's whole run (preview, import, report, export, reset): as big as the window
+   lets it be up to 1120 x 820, the slots scroll inside; the head and the footer (Stop, Hide, Done) always in view */
+.syxpop{display:flex;flex-direction:column;height:min(820px,calc(100vh - 48px));box-sizing:border-box}
+/* B-102 (the 0.6 e2e run, 1440 x 923): the panel stood where the page's flow put it (under the header) with the height
+   of the whole window, so its foot ran past the bottom. It is centred in the window now, its size the window's alone:
+   always wholly inside, the same size for its whole run */
+.syxpop{position:fixed;inset:0;margin:auto;height:min(820px,calc(100vh - 32px));max-height:none}
+.syxpop>*{flex:none}
+.syxpop>.syxbody,.syxpop>.sxlist{flex:1 1 auto;min-height:0;overflow:auto}
+.syxpop>.syxfoot{margin-top:auto}
+.syxtipline{margin:0;height:16px;font:12px var(--mono);color:var(--print2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

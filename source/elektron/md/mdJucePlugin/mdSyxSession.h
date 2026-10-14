@@ -6,6 +6,7 @@
 #include "deskCore/deskPacer.h"
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <cstdio>
 #include <map>
@@ -30,7 +31,11 @@ namespace mdJucePlugin
 	// editor knew of the slot before: the report says per item what the machine did. Only what cannot be sent at
 	// all (not this machine's SysEx, broken framing) is left out up front, with the reason. No undo step: a dump
 	// to a machine is not an edit (the preview says so; Export SysEx first keeps a way back).
-	// Traits (one per model, mdSessionMd.cpp / mdSessionMm.cpp): using Docs; model; name; docs(file).
+	// 0.6 (wave 6): SPECIFIC place (place: each kind's items, in slot order, from a first slot of the person's; the dumps
+	// go with their position byte and checksum made for the slot they land on, elektronData::syxPlaced, and the preview
+	// shows where each lands and whether it overwrites data there), and VERIFY ONLY (start with _checkOnly: nothing is
+	// sent; each item's landing slot is read back and compared with the file).
+	// Traits (one per model, mdSyxTraits.h): using Docs; model; name; docs(file).
 	template<typename Traits>
 	class SyxJob
 	{
@@ -43,7 +48,8 @@ namespace mdJucePlugin
 		// document read back; Done: the report.
 		enum class Phase { Idle, Before, Sending, Reading, Done };
 
-		// The file's preview for the page ({"type":"syxPreview", ...}); remembers the file for an import.
+		// The file's preview for the page ({"type":"syxPreview", ...}); remembers the file for an import. Each item lands
+		// in its own slot until place() says otherwise.
 		Value open(const Bytes& _bytes, const std::string& _fileName, const Docs& _machine, const SyxPlaying& _playing)
 		{
 			namespace ed = elektronData;
@@ -51,9 +57,11 @@ namespace mdJucePlugin
 			m_phase = Phase::Idle;
 			m_text.clear();
 			m_bytes = _bytes;
+			m_fileName = _fileName;
 			m_file = ed::parseSyx(m_bytes);
 			m_items.clear();
 			m_skipped.clear();
+			m_place.clear();
 			Value m = Value::object();
 			m.set("type", "syxPreview");
 			m.set("file", _fileName);
@@ -117,26 +125,89 @@ namespace mdJucePlugin
 			for(auto& i : m_items)
 			{
 				i.name = nameOf(summary, i);
+				i.target = i.slot;
 				if(i.kind == ed::SyxKind::Pattern)
 					if(const auto it = docs.patterns.find(i.slot); it != docs.patterns.end())
 						i.kit = it->second.kit;
-				i.overwrites = i.kind != ed::SyxKind::Other && ed::syxHoldsData(_machine, i.kind, i.slot);
-				i.plays = plays(i, _playing);
 			}
+			m_fullBackup = summary.fullBackup;
+			return preview(_machine, _playing);
+		}
 
+		// SPECIFIC place (0.6): per kind ("kit", "pattern", "song", "global") the first slot its items land in, in the
+		// file's slot order; a kind not named keeps its own slots (ORIGINAL); empty: every item back to its own slot. The
+		// new preview: each item at the slot it lands in (its "from": the file's slot), whether it overwrites data there
+		// and plays there; an item past the last slot does not land (left out, said).
+		Value place(const std::map<std::string, int>& _firstSlots, const Docs& _machine, const SyxPlaying& _playing)
+		{
+			if(m_bytes.empty() || running())
+			{
+				Value m = Value::object();
+				m.set("type", "syxPreview");
+				m.set("ok", false);
+				m.set("file", m_fileName);
+				m.set("text", running() ? "An import is running." : "Open a .syx file first.");
+				return m;
+			}
+			m_place.clear();
+			for(const auto& [k, first] : _firstSlots)
+				for(const auto kind : {elektronData::SyxKind::Kit, elektronData::SyxKind::Pattern, elektronData::SyxKind::Song, elektronData::SyxKind::Global})
+					if(k == kindKey(kind) && first >= 0)
+						m_place[kind] = first;
+			for(const auto kind : {elektronData::SyxKind::Kit, elektronData::SyxKind::Pattern, elektronData::SyxKind::Song, elektronData::SyxKind::Global})
+			{
+				std::vector<Item*> list;
+				for(auto& i : m_items)
+					if(i.kind == kind)
+						list.push_back(&i);
+				std::sort(list.begin(), list.end(), [](const Item* _a, const Item* _b) { return _a->slot < _b->slot; });
+				const auto p = m_place.find(kind);
+				int next = p == m_place.end() ? -1 : p->second;
+				for(auto* i : list)
+					i->target = next < 0 ? i->slot : static_cast<uint8_t>(std::min(next++, 255));
+			}
+			return preview(_machine, _playing);
+		}
+		bool placed() const { return !m_place.empty(); }
+
+		// The preview of the open file as it would land now: per kind its items at their landing slot (with "from" when
+		// placed elsewhere), what they overwrite and what plays there; "place": the first slots of a SPECIFIC place.
+		Value preview(const Docs& _machine, const SyxPlaying& _playing)
+		{
+			namespace ed = elektronData;
+			Value m = Value::object();
+			m.set("type", "syxPreview");
+			m.set("file", m_fileName);
+			if(m_bytes.empty())
+			{
+				m.set("ok", false);
+				m.set("text", "Open a .syx file first.");
+				return m;
+			}
+			std::vector<std::string> outside;
+			for(auto& i : m_items)
+			{
+				i.overwrites = i.kind != ed::SyxKind::Other && fits(i) && ed::syxHoldsData(_machine, i.kind, i.target);
+				i.plays = fits(i) && plays(i, _playing);
+				if(!fits(i))
+					outside.push_back(label(i) + ": it would land past the last slot (" + std::to_string(i.target + 1) + " of "
+						+ std::to_string(ed::syxSlotCount(Traits::model, i.kind)) + "), so it is not sent");
+			}
 			m.set("ok", true);
 			m.set("model", Traits::name);
-			m.set("fullBackup", summary.fullBackup);
+			m.set("fullBackup", m_fullBackup);
 			Value items = Value::object();
 			for(const auto kind : {ed::SyxKind::Kit, ed::SyxKind::Pattern, ed::SyxKind::Song, ed::SyxKind::Global, ed::SyxKind::Other})
 			{
 				Value list = Value::array();
 				for(const auto& i : m_items)
 				{
-					if(i.kind != kind)
+					if(i.kind != kind || !fits(i))
 						continue;
 					Value v = Value::object();
-					v.set("slot", i.slot);
+					v.set("slot", i.target);
+					if(i.target != i.slot)
+						v.set("from", i.slot);
 					v.set("name", i.name);
 					if(i.kind == ed::SyxKind::Pattern && i.kit >= 0)
 						v.set("kit", i.kit);
@@ -149,31 +220,43 @@ namespace mdJucePlugin
 				items.set(kindKey(kind), list);
 			}
 			m.set("items", items);
+			Value place = Value::object();
+			for(const auto& [kind, first] : m_place)
+				place.set(kindKey(kind), first);
+			m.set("place", place);
 			Value skipped = Value::array();
-			for(size_t i = 0; i < m_skipped.size() && i < 40; ++i)
+			for(size_t i = 0; i < outside.size() && skipped.asArray().size() < 40; ++i)
+				skipped.push(outside[i]);
+			for(size_t i = 0; i < m_skipped.size() && skipped.asArray().size() < 40; ++i)
 				skipped.push(m_skipped[i]);
 			m.set("skipped", skipped);
-			m.set("skippedCount", static_cast<int>(m_skipped.size()));
+			m.set("skippedCount", static_cast<int>(m_skipped.size() + outside.size()));
 			m.set("messages", static_cast<int>(m_file.messages.size()));
 			m.set("text", "");
 			return m;
 		}
+		const std::string& fileName() const { return m_fileName; }
 
-		// Queue the chosen kinds (all when empty) but the items in _skip ("kit:3", "pattern:0", "other:1": kind and
-		// slot), in file order. _machine is what the editor knows of the slots now (the before of the report).
-		std::string start(const std::vector<std::string>& _kinds, const std::set<std::string>& _skip, const Docs& _machine)
+		// Queue the chosen kinds (all when empty) but the items in _skip ("kit:3", "pattern:0", "other:1": kind and the
+		// slot it lands in, as the preview shows it), in file order. _machine is what the editor knows of the slots now
+		// (the before of the report). _checkOnly (VERIFY ONLY): nothing is sent; every chosen item's slot is read and
+		// compared with the file.
+		std::string start(const std::vector<std::string>& _kinds, const std::set<std::string>& _skip, const Docs& _machine,
+			const bool _checkOnly = false)
 		{
 			namespace ed = elektronData;
 			if(running())
 				return "An import is running.";
 			if(m_bytes.empty())
 				return "Open a .syx file first.";
+			m_check = _checkOnly;
 			std::set<size_t> chosen;
+			m_placedBytes.clear();
 			for(auto& i : m_items)
 			{
 				const auto key = std::string(kindKey(i.kind));
 				i.chosen = (_kinds.empty() ? i.kind != ed::SyxKind::Other : std::find(_kinds.begin(), _kinds.end(), key) != _kinds.end())
-					&& !_skip.count(key + ":" + std::to_string(i.slot));
+					&& !_skip.count(key + ":" + std::to_string(i.target)) && fits(i) && (!m_check || i.kind != ed::SyxKind::Other);
 				i.before.reset();
 				i.after.reset();
 				i.sent = 0;
@@ -182,16 +265,23 @@ namespace mdJucePlugin
 				i.readBefore = false;
 				if(!i.chosen)
 					continue;
-				chosen.insert(i.messages.begin(), i.messages.end());
+				if(!m_check)
+					chosen.insert(i.messages.begin(), i.messages.end());
 				if(i.kind == ed::SyxKind::Other)
 					continue;
-				const auto before = ed::syxCanonical(_machine, i.kind, i.slot);
-				if(!before.empty())
-					i.before = before;
-				else
-					i.readBefore = true;	// not known to the editor (a slot not read yet, the MD's other globals): read first
-				i.file = ed::syxCanonical(Traits::model, ed::syxBytes(m_bytes, m_file.messages[i.messages.back()]))
-					.value_or(ed::SyxCanonical{}).bytes;
+				// SPECIFIC: the item's dumps go with the slot they land in
+				if(i.target != i.slot)
+					for(const auto index : i.messages)
+						m_placedBytes[index] = ed::syxPlaced(ed::syxBytes(m_bytes, m_file.messages[index]), i.target);
+				if(!m_check)
+				{
+					const auto before = ed::syxCanonical(_machine, i.kind, i.target);
+					if(!before.empty())
+						i.before = before;
+					else
+						i.readBefore = true;	// not known to the editor (a slot not read yet, the MD's other globals): read first
+				}
+				i.file = ed::syxCanonical(Traits::model, messageBytes(i.messages.back())).value_or(ed::SyxCanonical{}).bytes;
 			}
 			m_queue.assign(chosen.begin(), chosen.end());
 			m_total = m_queue.size();
@@ -199,12 +289,23 @@ namespace mdJucePlugin
 			m_reading = 0;
 			m_handedBytes = 0;
 			m_quietAtMs = -1e9;
+			if(m_check)
+			{
+				if(!readCount(Phase::Reading))
+					return "Nothing to verify.";
+				m_phase = Phase::Reading;
+				m_text = "";
+				return "";
+			}
 			if(m_queue.empty())
 				return "Nothing to import.";
 			m_phase = readCount(Phase::Before) ? Phase::Before : Phase::Sending;
 			m_text = "";
 			return "";
 		}
+		bool checkOnly() const { return m_check; }
+		// The report's word for an item taken ("imported"; a reset's "cleared" or "restored").
+		void setWord(std::string _word) { m_word = std::move(_word); }
 
 		// Stop: nothing more is sent; what went is read back and reported.
 		void cancel()
@@ -251,7 +352,7 @@ namespace mdJucePlugin
 					m_queue.erase(m_queue.begin());
 					const auto& r = m_file.messages[index];
 					m_handedBytes += r.size;
-					const auto why = _machine.sendAsIs(ed::syxBytes(m_bytes, r), r.kind != ed::SyxKind::Other);
+					const auto why = _machine.sendAsIs(messageBytes(index), r.kind != ed::SyxKind::Other);
 					if(!why.empty())
 					{
 						m_queue.clear();
@@ -333,7 +434,7 @@ namespace mdJucePlugin
 					++m_reading;
 					return progress();
 				}
-				const auto why = _machine.sendAsIs(ed::syxRequest(Traits::model, item->kind, item->slot), false);
+				const auto why = _machine.sendAsIs(ed::syxRequest(Traits::model, item->kind, item->target), false);
 				if(!why.empty())
 				{
 					item->gaveUp = m_phase == Phase::Reading;
@@ -355,7 +456,7 @@ namespace mdJucePlugin
 			if(m_phase != Phase::Reading && m_phase != Phase::Before)
 				return;
 			auto* item = reading();
-			if(!item || _message.size() < 15 || _message[6] != dumpCommand(item->kind) || _message[9] != item->slot)
+			if(!item || _message.size() < 15 || _message[6] != dumpCommand(item->kind) || _message[9] != item->target)
 				return;
 			const uint8_t product = Traits::model == ed::SyxModel::Md ? 0x02 : 0x03;
 			if(_message[1] != 0x00 || _message[2] != 0x20 || _message[3] != 0x3c || _message[4] != product)
@@ -402,8 +503,15 @@ namespace mdJucePlugin
 				text = m_queue.empty() ? "All " + std::to_string(m_total) + " messages are on their way; the machine reads them"
 					: std::to_string(m_done) + " of " + std::to_string(m_total) + " messages sent to the machine";
 			else if(text.empty() && m_phase == Phase::Reading)
-				text = "Reading back " + std::to_string(std::min(m_reading + 1, toRead)) + " of " + std::to_string(toRead);
-			if(m_phase == Phase::Done)
+				text = (m_check ? "Verify only: reading " : "Reading back ") + std::to_string(std::min(m_reading + 1, toRead)) + " of " + std::to_string(toRead);
+			m.set("check", m_check);
+			if(m_phase == Phase::Done && m_check)
+			{
+				m.set("report", checkReport());
+				if(text.empty())
+					text = checkText();
+			}
+			else if(m_phase == Phase::Done)
 			{
 				Value report = Value::object();
 				std::map<ed::SyxOutcome, int> counts;
@@ -424,7 +532,7 @@ namespace mdJucePlugin
 						continue;
 					Value v = Value::object();
 					v.set("kind", kindKey(i.kind));
-					v.set("slot", i.slot);
+					v.set("slot", i.target);
 					v.set("name", i.name);
 					v.set("outcome", ed::syxOutcomeName(o));
 					v.set("text", outcomeText(i, o));
@@ -447,7 +555,7 @@ namespace mdJucePlugin
 					const auto changes = elektronData::syxGlobalChanges(Traits::model, i.before, i.after);
 					if(changes.empty())
 						continue;
-					text += " Global " + std::to_string(i.slot + 1) + " changed: ";
+					text += " Global " + std::to_string(i.target + 1) + " changed: ";
 					for(size_t c = 0; c < changes.size(); ++c)
 						text += (c ? ", " : "") + changes[c];
 					text += ".";
@@ -462,8 +570,8 @@ namespace mdJucePlugin
 		{
 			std::vector<std::pair<elektronData::SyxItem, elektronData::SyxOutcome>> out;
 			for(const auto& i : m_items)
-				if(i.chosen && i.sent && i.kind != elektronData::SyxKind::Other)
-					out.push_back({{i.kind, i.slot}, outcomeOf(i)});
+				if(i.chosen && (i.sent || m_check) && i.kind != elektronData::SyxKind::Other)
+					out.push_back({{i.kind, i.target}, outcomeOf(i)});
 			return out;
 		}
 
@@ -471,7 +579,8 @@ namespace mdJucePlugin
 		struct Item
 		{
 			elektronData::SyxKind kind = elektronData::SyxKind::Other;
-			uint8_t slot = 0;
+			uint8_t slot = 0;				// the file's slot
+			uint8_t target = 0;				// the slot it lands in (SPECIFIC: another than its own)
 			int otherIndex = -1;			// an Other: its message's index (one item per message)
 			std::vector<size_t> messages;	// its messages, file order (a later dump of a slot replaces the earlier)
 			int version = -1, revision = -1, command = -1;
@@ -548,10 +657,10 @@ namespace mdJucePlugin
 		{
 			switch(_i.kind)
 			{
-			case elektronData::SyxKind::Pattern: return _p.pattern == _i.slot;
-			case elektronData::SyxKind::Kit: return _p.kit == _i.slot;
-			case elektronData::SyxKind::Song: return _p.song == _i.slot;
-			case elektronData::SyxKind::Global: return _p.global == _i.slot;
+			case elektronData::SyxKind::Pattern: return _p.pattern == _i.target;
+			case elektronData::SyxKind::Kit: return _p.kit == _i.target;
+			case elektronData::SyxKind::Song: return _p.song == _i.target;
+			case elektronData::SyxKind::Global: return _p.global == _i.target;
 			default: return false;
 			}
 		}
@@ -564,15 +673,31 @@ namespace mdJucePlugin
 		static std::string label(const Item& _i)
 		{
 			namespace ed = elektronData;
-			const auto n = _i.kind == ed::SyxKind::Pattern ? _i.name : std::string(ed::syxKindName(_i.kind)) + " " + std::to_string(_i.slot + 1)
-				+ (_i.name.empty() || _i.kind == ed::SyxKind::Global ? std::string() : " " + _i.name);
-			return n;
+			const auto at = _i.kind == ed::SyxKind::Pattern ? ed::syxPatternLabel(_i.target)
+				: std::string(ed::syxKindName(_i.kind)) + " " + std::to_string(_i.target + 1);
+			const auto n = _i.kind == ed::SyxKind::Pattern ? at
+				: at + (_i.name.empty() || _i.kind == ed::SyxKind::Global ? std::string() : " " + _i.name);
+			return _i.target == _i.slot ? n : n + " (from " + (_i.kind == ed::SyxKind::Pattern ? _i.name : std::to_string(_i.slot + 1)) + ")";
 		}
 
 		// The items a reading phase reads: before, those the editor does not know; after, every one sent.
-		static bool reads(const Item& _i, const Phase _phase)
+		bool reads(const Item& _i, const Phase _phase) const
 		{
-			return _i.chosen && _i.kind != elektronData::SyxKind::Other && (_phase == Phase::Before ? _i.readBefore : _i.sent > 0);
+			return _i.chosen && _i.kind != elektronData::SyxKind::Other && (_phase == Phase::Before ? _i.readBefore : m_check || _i.sent > 0);
+		}
+
+		// The item lands inside the machine's slots (a SPECIFIC place can push the last ones past the end).
+		static bool fits(const Item& _i)
+		{
+			return _i.kind == elektronData::SyxKind::Other || _i.target < elektronData::syxSlotCount(Traits::model, _i.kind);
+		}
+
+		// A message as it goes: the file's bytes, or placed in another slot (SPECIFIC).
+		Bytes messageBytes(const size_t _index) const
+		{
+			if(const auto it = m_placedBytes.find(_index); it != m_placedBytes.end())
+				return it->second;
+			return elektronData::syxBytes(m_bytes, m_file.messages[_index]);
 		}
 
 		Item* reading()
@@ -663,6 +788,72 @@ namespace mdJucePlugin
 			return elektronData::syxOutcome(_i.file, _i.before, _i.after);
 		}
 
+		// VERIFY ONLY's words for an outcome: the machine's slot is the file's item, or not.
+		static const char* checkName(const elektronData::SyxOutcome _o)
+		{
+			switch(_o)
+			{
+			case elektronData::SyxOutcome::Taken: return "same";
+			case elektronData::SyxOutcome::NoReply: return "no reply";
+			case elektronData::SyxOutcome::Unknown:
+			case elektronData::SyxOutcome::Changed: return "unknown";
+			default: return "differs";
+			}
+		}
+
+		// VERIFY ONLY: per name the count, and every item that is not the same, with its words.
+		Value checkReport() const
+		{
+			namespace ed = elektronData;
+			std::map<std::string, int> counts;
+			Value items = Value::array();
+			for(const auto& i : m_items)
+			{
+				if(!reads(i, Phase::Reading))
+					continue;
+				const auto o = outcomeOf(i);
+				const std::string name = checkName(o);
+				++counts[name];
+				if(name == "same" || items.asArray().size() >= 300)
+					continue;
+				Value v = Value::object();
+				v.set("kind", kindKey(i.kind));
+				v.set("slot", i.target);
+				v.set("name", i.name);
+				v.set("outcome", name);
+				v.set("text", label(i) + (name == "differs" ? ": the machine holds something else than the file"
+					: name == "unknown" ? ": the editor cannot read the file's dump to compare (" + std::to_string(i.size) + " bytes)"
+					: ": the machine did not answer: what it holds is not known"));
+				items.push(v);
+			}
+			Value r = Value::object();
+			for(const char* n : {"same", "differs", "unknown", "no reply"})
+				r.set(n, counts[n]);
+			r.set("items", items);
+			r.set("check", true);
+			return r;
+		}
+
+		std::string checkText() const
+		{
+			std::map<std::string, int> counts;
+			int total = 0;
+			for(const auto& i : m_items)
+				if(reads(i, Phase::Reading))
+				{
+					++counts[checkName(outcomeOf(i))];
+					++total;
+				}
+			std::string t = "Verify only: " + std::to_string(counts["same"]) + " of " + std::to_string(total) + " the same as the file";
+			if(counts["differs"])
+				t += ", " + std::to_string(counts["differs"]) + " different";
+			if(counts["unknown"])
+				t += ", " + std::to_string(counts["unknown"]) + " not comparable";
+			if(counts["no reply"])
+				t += ", " + std::to_string(counts["no reply"]) + " not read";
+			return t + ". Nothing was written.";
+		}
+
 		std::string outcomeText(const Item& _i, const elektronData::SyxOutcome _o) const
 		{
 			namespace ed = elektronData;
@@ -670,7 +861,7 @@ namespace mdJucePlugin
 			const auto what = label(_i) + ": ";
 			switch(_o)
 			{
-			case ed::SyxOutcome::Taken: return what + "imported";
+			case ed::SyxOutcome::Taken: return what + m_word;
 			case ed::SyxOutcome::Converted: return what + "the machine took it and holds it in its own form (the file's dump: " + format + ")";
 			case ed::SyxOutcome::Ignored: return what + "the machine ignored this dump and kept what it held (" + format + ")";
 			case ed::SyxOutcome::Differs: return what + "the machine holds something else than the file's dump: it took it in its own form or ignored it (" + format + "; the editor had not read the slot before)";
@@ -684,7 +875,7 @@ namespace mdJucePlugin
 		std::string summaryText(std::map<elektronData::SyxOutcome, int>& _c, const int _commands) const
 		{
 			namespace ed = elektronData;
-			std::string t = std::to_string(_c[ed::SyxOutcome::Taken]) + " imported";
+			std::string t = std::to_string(_c[ed::SyxOutcome::Taken]) + " " + m_word;
 			const auto add = [&](const ed::SyxOutcome _o, const char* _what)
 			{
 				if(_c[_o])
@@ -704,6 +895,12 @@ namespace mdJucePlugin
 		}
 
 		Bytes m_bytes;
+		std::string m_fileName;
+		bool m_fullBackup = false;
+		std::map<elektronData::SyxKind, int> m_place;	// SPECIFIC: each kind's first slot
+		std::map<size_t, Bytes> m_placedBytes;			// the messages that go placed, by index
+		bool m_check = false;							// VERIFY ONLY: nothing sent, read and compared
+		std::string m_word = "imported";
 		elektronData::SyxFile m_file;
 		std::vector<Item> m_items;
 		std::vector<std::string> m_skipped;
@@ -716,5 +913,95 @@ namespace mdJucePlugin
 		double m_progressMs = -1e9;
 		size_t m_handedBytes = 0;			// the messages' bytes handed to the adapter
 		double m_quietAtMs = -1e9;			// HW MIDI: the cable has carried them by then
+	};
+
+	// The Monomachine's DigiPRO waveforms for an export (P4): one request (0x5E) at a time, the dump that answers
+	// (0x5D) kept as it came; a waveform that does not answer in time is empty (the firmware answers only a used one).
+	class SyxWaveRead
+	{
+	public:
+		using Bytes = std::vector<uint8_t>;
+
+		void start(const uint8_t _from, const uint8_t _to)
+		{
+			m_waves.clear();
+			for(int w = _from; w <= _to && w < elektronData::g_mmWaves; ++w)
+				m_waves.push_back(static_cast<uint8_t>(w));
+			m_next = 0;
+			m_asked = false;
+			m_dumps.clear();
+		}
+		bool running() const { return m_next < m_waves.size(); }
+		size_t total() const { return m_waves.size(); }
+		size_t done() const { return m_next; }
+		// The used waveforms' dumps, in waveform order.
+		std::vector<Bytes> dumps() const
+		{
+			std::vector<Bytes> out;
+			for(const auto& [w, d] : m_dumps)
+				out.push_back(d);
+			return out;
+		}
+
+		// One step: ask for the next waveform, or wait for its answer until the time is out. True when it moved on.
+		template<typename Machine>
+		bool step(Machine& _machine, const double _nowMs, const bool _wire)
+		{
+			if(!running())
+				return false;
+			const auto w = m_waves[m_next];
+			if(m_dumps.count(w))
+			{
+				next();
+				return true;
+			}
+			const auto a = _machine.asIs();
+			if(!m_asked)
+			{
+				if(!_machine.sendAsIs(elektronData::mmWaveRequest(w), false).empty())
+				{
+					next();
+					return true;
+				}
+				m_asked = true;
+				m_askedMs = _nowMs;
+				return false;
+			}
+			if(a.busy)
+			{
+				m_askedMs = _nowMs;	// the request still waits in the stream: its clock starts when it goes
+				return false;
+			}
+			// the emulator answers within a few blocks; over HW MIDI a 7 KB dump takes about 2.3 s on the cable
+			const double timeout = _wire ? 1500.0 + 2.0 * deskCore::DinPacer::wireMs(7100) : 700.0;
+			if(_nowMs - m_askedMs > timeout)
+			{
+				next();
+				return true;
+			}
+			return false;
+		}
+
+		void onMachineSysex(const Bytes& _message)
+		{
+			if(!running())
+				return;
+			const auto w = elektronData::mmWaveDumpSlot(_message);
+			if(w == m_waves[m_next])
+				m_dumps[static_cast<uint8_t>(w)] = _message;
+		}
+
+	private:
+		void next()
+		{
+			++m_next;
+			m_asked = false;
+		}
+
+		std::vector<uint8_t> m_waves;
+		size_t m_next = 0;
+		bool m_asked = false;
+		double m_askedMs = 0;
+		std::map<uint8_t, Bytes> m_dumps;
 	};
 }

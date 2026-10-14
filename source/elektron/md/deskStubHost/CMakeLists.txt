@@ -6,7 +6,7 @@ project(deskStubHost)
 # fake machine that speaks the firmware's SysEx, on stdin and stdout. No JUCE, no emulator, no ROM. A developer tool
 # (POSIX: poll on stdin), never shipped.
 add_executable(deskStubHost deskStubHost.cpp)
-target_link_libraries(deskStubHost PRIVATE mdDesk mmDesk deskHost elektronData)
+target_link_libraries(deskStubHost PRIVATE mdDesk mmDesk deskHost elektronData deskWire)
 target_compile_definitions(deskStubHost PRIVATE DESKSTUB_TESTDATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../elektronData/testdata")
 target_compile_features(deskStubHost PRIVATE cxx_std_17)
 set_property(TARGET deskStubHost PROPERTY FOLDER "Elektron/test")

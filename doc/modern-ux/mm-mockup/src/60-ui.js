@@ -77,11 +77,15 @@ function renderTop(){
  const lkk=$("#learnkey");if(lkk){lkk.setAttribute("aria-pressed",S.learn);lkk.classList.toggle("on",!!S.learn)}
  $("#platekey span").textContent=S.plate==="mk1"?"MKI":"MKII";
  const n=S.locks.size,m=$("#meter");$("#lockn").textContent=String(n).padStart(2,"0")+"/62";m.className="f meter"+(n>=62?" full":n>=52?" warn":"");
- $("#bpm").textContent=S.bpm.toFixed(1);$("#pat").textContent=patName(S.queued??S.pat);$("#pat").parentElement.classList.toggle("queued",S.queued!=null);songLcd();
+ $("#bpm").textContent=(S.tempoDraft??S.bpm).toFixed(1);$("#pat").textContent=patName(S.queued??S.pat);$("#pat").parentElement.classList.toggle("queued",S.queued!=null);songLcd();
  /* B-030: the host's tempo (in a DAW the machine follows): marked, and not edited here */
  $("#bpm").parentElement.classList.toggle("hosttempo",!!S.hostTempo);$("#bpm").title=S.hostTempo?"The DAW's tempo: the machine follows the host. Change it in the DAW.":"Drag up or down";
  $("#kitname").textContent=S.eng==="hwwait"?"—":kitName(S.kit);const hc=HOST.history?HOST.history():{undo:0,redo:0};$("#undo").disabled=!hc.undo;$("#redo").disabled=!hc.redo;$("#undon").textContent=hc.undo||"";$("#redon").textContent=hc.redo||"";
- $("#play").setAttribute("aria-pressed",S.playing);$("#playico").textContent=S.playing?"■":"▶";$("#play").setAttribute("aria-label",S.playing?"Stop":"Play");$("#rec").setAttribute("aria-pressed",!!S.rec);$("#recled").classList.toggle("on",!!S.rec);
+ $("#play").setAttribute("aria-pressed",S.playing);$("#playico").textContent=S.playing?"■":"▶";$("#play").setAttribute("aria-label",S.playing?"Stop":S.paused?"Continue":"Play");
+ /* wave 2: paused, ▶ blinks and goes on from the step it holds (128-transport.js) */
+ $("#play").classList.toggle("paused",!!S.paused);$("#play").title=S.paused?"Paused: ▶ goes on from the step (⇧Space); STOP in the menu ends it":"Play / stop (Space). ⇧-click: pause. Right-click or ▾: Pause, Live record, Panic";
+ if(typeof DeskTransport!=="undefined"&&DeskTransport.tempoShown())DeskTransport.refreshTempo();{const st=S.recMode==="step",rk=$("#rec");rk.setAttribute("aria-pressed",!!S.rec||st);$("#recled").classList.toggle("on",!!S.rec||st);rk.classList.toggle("step",st);
+ let m=rk.querySelector(".stepm");if(st&&!m)rk.insertAdjacentHTML("beforeend",'<span class="stepm">STEP</span>');else if(!st&&m)m.remove();if(S.ws==="seq"&&$("#seqscroll"))stepDraw()}
  renderPst();syncLockBudget()}
 /* line 2: fixed-width slots (as in the MD Editor v46), so values never push into COPY / CLR / PASTE */
 function L2(k,lab,val,title,ed,w=8,id=""){return`<span class="l2 ${ed?"ed":""}" style="width:${w}ch" ${k?`data-l2="${k}"`:""} ${title?`title="${title}"`:""}><small>${lab}</small><b ${id?`id="${id}"`:""}>${val}</b></span>`}
@@ -95,6 +99,9 @@ function renderSub(){const t=S.sel,tr=trk(t);let h="";
  /* 0.3.5, every workspace: PATTERN or SONG mode, as the machine reports it; a click switches (the Song page's switch) */
  h+=L2("seqmode","PLAY",S.plays.songMode?"SONG":"PAT","What the machine plays: PAT (the pattern and its chain) or SONG (the song). Click to switch; it shows what the machine reports.",1,9);
  $("#lcd2").innerHTML=h}
+/* B-061, B-065, B-066 (skins/shared/deskTopFit.js): the LCD is as wide as the widest line 2 of any workspace asks, and the top bar
+   tightens until its keys fit; it draws each workspace's line 2 in turn (nothing is painted between) and puts the shown one back */
+if(typeof TopFit!=="undefined")TopFit.connect({workspaces:()=>$$("#tabs button[data-ws]").map(b=>b.dataset.ws),current:()=>S.ws,show:ws=>{S.ws=ws;renderSub()}});
 /* B-030: an edit of the tempo while the DAW sets it is refused with a word (drag, arrows, tap) */
 function tempoLocked(){if(!S.hostTempo)return false;toast("The DAW sets the tempo. Change it there.");return true}
 
@@ -145,7 +152,8 @@ function syncControls(){
    if(mb.length){if(!md){md=document.createElement("i");md.className="mod";el.appendChild(md)}md.textContent="~"+mb.join("");el.title=`Modulated by LFO ${mb.join(" + ")}`}else if(md)md.remove();
    const mp=S.ctl.links.filter(l=>l.t===t&&l.pid===pid);el.classList.toggle("mapped",mp.length>0)}});
  $$("#main [data-show]").forEach(el=>{const t=+el.dataset.show;el.textContent=trk(t).lev});
- if(typeof syncDock==="function")syncDock()}
+ if(typeof syncDock==="function")syncDock();
+ if(typeof syncRevert==="function")syncRevert()}
 
 /* ===== Key-style dropdowns (from the MD Editor) ===== */
 let kFor=null;
@@ -190,7 +198,7 @@ function redraw(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;$$("canvas.
 function drawEd(c){const ed=ED[c.dataset.ed];if(!ed)return;const dpr=devicePixelRatio||1,W=c.clientWidth,H=c.clientHeight;if(!W)return;
  if(c.width!==Math.round(W*dpr)||c.height!==Math.round(H*dpr)){c.width=Math.round(W*dpr);c.height=Math.round(H*dpr)}
  const g=c.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,W,H);ed.draw(g,W,H,c);
- (ed.handles?.(W,H,c)||[]).forEach(h=>{const on=active&&active.c===c&&active.k===h.k;g.beginPath();g.arc(h.x,clamp(h.y,6,H-6),on?7:5.5,0,7);g.fillStyle=cssv("--lcd");g.fill();g.lineWidth=2.5;g.strokeStyle=cssv("--ink");g.stroke();
+ (ed.handles?.(W,H,c)||[]).forEach(h=>{const on=active&&active.c===c&&active.k===h.k;const hr=on?7:5.5;g.beginPath();g.arc(clamp(h.x,hr+1,W-hr-1),clamp(h.y,6,H-6),hr,0,7);g.fillStyle=cssv("--scr");g.fill();g.lineWidth=2.5;g.strokeStyle=cssv("--ink");g.stroke();
   if(on){g.fillStyle=cssv("--ink");g.font="10px Silkscreen, monospace";g.fillText(h.k,Math.min(W-60,h.x+10),Math.max(14,h.y-10))}})}
 function nearest(c,e){const ed=ED[c.dataset.ed];if(!ed.handles)return null;const r=c.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;let best=null,bd=16;ed.handles(r.width,r.height,c).forEach(h=>{const d=Math.hypot(h.x-x,clamp(h.y,6,r.height-6)-y);if(d<bd){bd=d;best=h}});return best}
 const RND=[.35,-.7,.9,-.25,.55,-.9,.1,.7];

@@ -37,10 +37,14 @@ const DIFFER = {
 const ONLY = {
 	md: { "tip-hold-alt": "the ⌥ hints on the MD's keys (Clr becomes All)", "tip-fn": "the MD's FN note", "step-paint": "the MD's trig grid (the MM paints in the roll: roll-paint)",
 		"page-key": "the MD's Page key", "lcd-len-inner": "the MD's inner length (the MM has one length, 1-46)", "chop-start": "Sampler", "chop-reverse": "Sampler", "chop-retrig": "Sampler",
-		"step-wheel-lock": "the MD's trig grid (the MM's lock lane: lockstep-wheel)", "step-accent": "MD accent (no accent on MM synth tracks)", "step-slide": "MD slide on a step (the MM's is a row)" },
-	mm: { "roll-draw": "the MM's piano roll (I-007)", "roll-box": "the piano roll", "roll-length": "the piano roll (I-010)", "roll-chord": "the piano roll", "roll-paint": "the piano roll",
+		"step-wheel-lock": "the MD's trig grid (the MM's lock lane: lockstep-wheel)", "step-accent": "MD accent (no accent on MM synth tracks)", "step-slide": "MD slide on a step (the MM's is in the step menu)",
+		"trig-type": "the MD's trig type keys under the grid (Esc back to Trig); the MM sets slide, swing and the envelopes in the step menu since 2026-10-12, no trig type row",
+		"picker-audition": "the MD's EDIT KIT preview in the machine picker (MD manual p.11; the Monomachine has none: DESIGN-machine-menus.md §3)" },
+	mm: { "roll-length": "the piano roll (I-010)", "roll-chord": "the piano roll", "roll-paint": "the piano roll",
 		"roll-erase": "the piano roll", "piano-black": "the MM's black keys (the MD's come with D6)", "lockstep-wheel": "the MM's lock lane steps", "learn-knob": "the MM's LEARN",
-		"tip-draw": "the piano roll's Draw", "tip-reclock": "the MM's live-recorded value locks the step that plays" }
+		"tip-reclock": "the MM's live-recorded value locks the step that plays",
+		"step-record": "STEP RECORDING (MM manual 1-50; the Machinedrum has none)", "step-move": "STEP RECORDING's cursor", "step-clear": "STEP RECORDING: clear the step",
+		"step-done": "STEP RECORDING: done" }
 };
 for (const [name, mine, other] of [["md", md, mm], ["mm", mm, md]]) {
 	const otherIds = new Set(other.map(e => e.id)), one = mine.filter(e => !otherIds.has(e.id)).map(e => e.id);

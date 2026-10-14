@@ -10,7 +10,7 @@ function renderTop() {
 	const lkk = $("#learnkey"); if (lkk) { lkk.setAttribute("aria-pressed", S.ctl.learn); lkk.classList.toggle("on", S.ctl.learn); }
 	const pk = $("#platekey"); if (pk) pk.querySelector("span").textContent = S.plate === "mk2" ? "MKII" : "MKI";
 	const n = V.locks.size, m = $("#meter"); $("#lockn").textContent = String(n).padStart(2, "0") + "/64"; m.className = "f meter" + (n >= 64 ? " full" : n >= 52 ? " warn" : ""); syncLockBudget();
-	$("#bpm").textContent = (+V.bpm).toFixed(1);
+	$("#bpm").textContent = (+shownBpm()).toFixed(1);
 	/* B-030: the host's tempo (in a DAW the machine follows): marked, and not edited here */
 	const bf = $("#bpm").parentElement; bf.classList.toggle("hosttempo", !!V.hostTempo);
 	$("#bpm").title = V.hostTempo ? "The DAW's tempo: the machine follows the host. Change it in the DAW." : "Drag up or down";
@@ -29,10 +29,15 @@ function renderTop() {
 	$("#undo").disabled = !V.canUndo; $("#redo").disabled = !V.canRedo; syncUndoCounts();
 	secLabels();	/* COPY CLR PASTE: the selected steps, or the workspace's own (mdDeskComforts.js) */
 	/* One key: PLAY while stopped, STOP while playing (the icon follows the machine). */
-	$("#play").setAttribute("aria-pressed", V.playing); $("#playico").textContent = V.playing ? "■" : "▶"; $("#play").setAttribute("aria-label", V.playing ? "Stop" : "Play");
+	$("#play").setAttribute("aria-pressed", V.playing); $("#playico").textContent = V.playing ? "■" : "▶"; $("#play").setAttribute("aria-label", V.playing ? "Stop" : S.paused ? "Continue" : "Play");
+	/* wave 2: paused, ▶ blinks and goes on from the step it holds (mdDeskTransport.js) */
+	$("#play").classList.toggle("paused", !!S.paused);
+	$("#play").title = S.paused ? "Paused: ▶ goes on from the step (⇧Space); STOP in the menu ends it" : "Play / stop (Space). ⇧-click: pause. Right-click or ▾: Pause, Record, Panic";
+	if (DeskTransport.tempoShown()) DeskTransport.refreshTempo();
 	$("#rec").setAttribute("aria-pressed", !!V.rec); $("#recled").classList.toggle("on", !!V.rec);
-	$("#rec").title = V.rec ? "Live recording: click a track's steps to play it, move a value to lock it. A moved value locks the track's next trig whose step has not started yet (the editor marks it). REC again: stop recording, keep playing (Alt+Space)" : "Live recording, as RECORD + PLAY on the machine (Alt+Space: Alt + play)";
+	$("#rec").title = V.rec ? "Live recording: click a track's steps to play it, move a value to lock it. A moved value locks the track's next trig whose step has not started yet (the editor marks it). Hold Delete: erase the selected track's trigs as they play; press a value first, then hold Delete: its locks instead. REC again: stop recording, keep playing (Alt+Space)" : "Live recording, as RECORD + PLAY on the machine (Alt+Space: Alt + play)";
 	document.body.classList.toggle("liverec", !!V.rec);
+	if (!V.rec && typeof eraseReset === "function") eraseReset();
 	renderEngine();
 	syncTx();
 	const st = $("#status");
@@ -73,7 +78,7 @@ const LIFE = {
 	ready: { label: "READY", led: "on" } };
 const lifeOf = l => LIFE[l] || LIFE.booting;
 /* the engine menu's own entries (not engines) */
-const ENGINE_ACTIONS = ["global", "audio", "rom"];
+const ENGINE_ACTIONS = ["global", "audio", "rom", "import", "export", "reset", "memoryKeep"];
 function engineLabel() {
 	const e = lifeOf(V.lifecycle);
 	if (V.lifecycle === "ready") return [V.caps.label || e.label, e.led, V.caps.about || ""];
@@ -112,14 +117,15 @@ function renderEngine() {
    CAP_INFO: capabilities the page shows no control for (they say how the machine is read). The
    sync script checks both lists against the contract's capability names. */
 const CAP_CONTROLS = {
-	transport: "#play,#rec",
+	transport: "#play,#rec,#playmore",
+	playFrom: '[data-rowact="from"]',
 	liveRecord: "#rec",
 	chains: "[data-chainpad]",
 	sampleNames: "[data-rename]",
 	sampleLoad: "[data-smpload]",
 	sampleAudio: "[data-aud]",
 	modulators: '[data-addsrc],[data-delsrc],[data-srcshape],[data-minv],[data-mdel],#maddl,[data-set="srcrate"] button,[data-set="lcurve"] button,.pc[data-g="src"],.pc[data-g="link"]' };
-const CAP_INFO = ["panelKeys", "lcd", "workingKitMemory", "mutesFromMemory"];
+const CAP_INFO = ["panelKeys", "lcd", "workingKitMemory", "mutesFromMemory", "panic"];
 /* one routine for both editors (skins/shared/deskCaps.js): this page's look is a disabled control whose own tooltip
    comes back when it is allowed again */
 function markCapabilities() {
@@ -134,9 +140,62 @@ document.addEventListener("change", e => {
 	if (v === "rom") romMenu();
 	else if (v === "global") { sel.value = V.caps.engine; openGlobal(); }
 	else if (v === "audio") { sel.value = V.caps.engine; openAudio(); }
+	else if (v === "memoryKeep") { sel.value = V.caps.engine; renderEngine(); cmd("memoryKeep", { on: !Memory.keep }); }
+	else if (Syx.menu(v)) { sel.value = V.caps.engine; renderEngine(); }	/* IMPORT SYSEX…, EXPORT SYSEX…, RESET MACHINE… (wave 6) */
 	else if ((machineState().engines || []).some(x => x.id === v)) cmd("engine", { kind: v });
 });
+/* I-024 (doc/modern-ux/DESIGN-machine-memory.md): the machine memory that stays for new sessions, as the plug-in says
+   (machineMemory). KEEP MEMORY turns it on and off; starting from factory memory is a choice of RESET MACHINE…
+   (shared/deskSyx.js, the host's memory and factoryMemory, mdDeskRom.js). Only where the plug-in keeps a memory file
+   (available). What went wrong is the plug-in's notice (once), and the entry's tooltip. */
+const Memory = { keep: true, available: false, saved: false, note: "" };
+function renderMemoryMenu() {
+	const keep = document.querySelector('#engsel option[value="memoryKeep"]');
+	if (!keep) return;
+	keep.hidden = !Memory.available;
+	keep.textContent = "KEEP MEMORY: " + (Memory.keep ? "ON" : "OFF");
+	keep.dataset.saved = Memory.saved ? "1" : "0";
+	keep.title = Memory.note || (Memory.keep ? "New sessions without a DAW project start with what you saved on the machine. Click to turn it off."
+		: "New sessions start from factory memory. Click to keep what you save on the machine for new sessions.");
+}
+Bridge.onMessage(m => { if (m.type === "machineMemory") { Object.assign(Memory, { keep: !!m.keep, available: !!m.available, saved: !!m.saved, note: m.note || "" }); renderMemoryMenu(); } });
 
+/* I-002: a note from a MIDI keyboard (the plug-in's midiIn) on the global's base channel plays the track its map gives
+   (GLOBAL › Map editor); that track's number on the rail and its Mix LED light for a moment, as a trig does. Notes that
+   come together are drawn in one pass (one timer, at most one a frame), so a burst never floods the page. */
+const NoteLights = { due: new Set(), timer: 0 };
+function noteLight(m) {
+	const g = Docs.global; if (!g || !(g.baseChannel >= 0 && g.baseChannel <= 12) || m.ch !== g.baseChannel) return;
+	if (V.caps.engine === "hw") return;	/* HW MIDI: what comes in is the real machine's own MIDI OUT, not a player */
+	const t = g.keymap?.[m.note]; if (!(t >= 0 && t < 16)) return;
+	NoteLights.due.add(t); if (NoteLights.timer) return;
+	NoteLights.timer = setTimeout(() => {
+		NoteLights.timer = 0;
+		/* its own class and timer ("hit"), so it never ends a trig's flash of the Mix LED ("on") early */
+		for (const i of NoteLights.due) for (const l of document.querySelectorAll(`#rail .th[data-sel="${i}"], .act[data-act="${i}"]`)) {
+			l.classList.add("hit"); clearTimeout(l.nlT); l.nlT = setTimeout(() => l.classList.remove("hit"), 140);
+		}
+		NoteLights.due.clear();
+	}, 16);
+}
+/* I-028 (Discord 2026-10-12): on Sequence and Sound a rail track's number lights while its trig plays (the step
+   telemetry and the pattern, no audio), as the Mix LEDs do; every lamp of a step in one frame. Its own class ("trig"),
+   beside I-002's "hit" for a note from a MIDI keyboard. */
+const RailLamps = { due: null, off: new Map() };
+function railLamps(ts) {
+	if (!ts.length) return;
+	const first = !RailLamps.due;
+	RailLamps.due = new Set([...(RailLamps.due || []), ...ts]);
+	if (!first) return;
+	requestAnimationFrame(() => {
+		const due = RailLamps.due; RailLamps.due = null;
+		for (const i of due) {
+			const l = document.querySelector(`#rail .th[data-sel="${i}"]`); if (!l) continue;
+			l.classList.add("trig"); clearTimeout(RailLamps.off.get(i));
+			RailLamps.off.set(i, setTimeout(() => document.querySelector(`#rail .th[data-sel="${i}"]`)?.classList.remove("trig"), 110));
+		}
+	});
+}
 /* ===== Track header (one component, used by rail and grid) ===== */
 function th(i, extra = "") {
 	const t = V.tracks[i]; return `<div class="th ${i === S.sel ? "sel" : ""} ${S.multi.has(i) && S.ws === "seq" ? "multi" : ""} ${audible(i) ? "" : "off"} ${extra}" data-sel="${i}" style="--c:${FAMC[t.fam]}">
@@ -196,6 +255,9 @@ function hostRefused(m) {
    the arrangement cell, the time bar up to it, the What plays line and the LCD's pattern slot ===== */
 let songRowShown = -2;
 function songRowNow() { const t = Docs.telemetry; return V.songMode === true && V.playing && t && t.songRow != null && t.songRow >= 0 ? t.songRow : -1; }
+/* MD-147: the passes of the playing row still to come (telemetry songRepeats, the machine's counter), -1 unknown */
+function songLeftNow() { const t = Docs.telemetry; return songRowNow() >= 0 && t.songRepeats != null ? t.songRepeats : -1; }
+const leftText = n => n > 0 ? ` · ${n} more` : n === 0 ? " · last" : "";
 const nn3 = n => String(n + 1).padStart(3, "0");
 const songRows = () => V.song.filter(r => r.type !== "end").length;
 /* the What plays line: PATTERN B07 / SONG 01 · row 017 of 65 · B01 / CHAIN A03»A05 */
@@ -203,7 +265,7 @@ function playsText() {
 	const plays = playsOf(Docs);
 	if (plays.kind !== "song") return plays.label;
 	const row = songRowNow(), r = row >= 0 ? V.song[row] : null;
-	return `SONG ${String(V.songSlot + 1).padStart(2, "0")} · ` + (row >= 0 ? `row ${nn3(row)} of ${songRows()}${r && !r.type ? " · " + patName(r.pat) : ""}` : `${songRows()} rows · ${V.playing ? "…" : "stopped"}`);
+	return `SONG ${String(V.songSlot + 1).padStart(2, "0")} · ` + (row >= 0 ? `row ${nn3(row)} of ${songRows()}${r && !r.type ? " · " + patName(r.pat) + (r.rep > 1 ? leftText(songLeftNow()) : "") : ""}` : `${songRows()} rows · ${V.playing ? "…" : "stopped"}`);
 }
 /* the LCD's pattern slot reads SONG 01 · 017 in song mode */
 function songLcd() {
@@ -218,28 +280,36 @@ function markSongRow(force) {
 	const st = document.getElementById("arrstate");
 	if (st && st.textContent !== arrState()) st.textContent = arrState();
 	document.querySelector(".songui")?.classList.toggle("songplaying", V.songMode === true && V.playing);
-	const row = songRowNow();
-	if (row === songRowShown && !force) return;
-	songRowShown = row;
+	const row = songRowNow(), left = songLeftNow(), key = row + ":" + left;
+	if (key === songRowShown && !force) return;
+	songRowShown = key;
 	songLcd();
 	const pl = document.getElementById("songPlays"); if (pl) pl.textContent = playsText();
 	if (S.ws !== "song") return;
-	$$(".scell.ph").forEach(c => c.classList.remove("ph"));
-	if (row >= 0) document.querySelector(`.scell[data-i="${row}"]`)?.classList.add("ph");
+	$$(".scell.ph").forEach(c => { c.classList.remove("ph"); delete c.dataset.left; });
+	if (row >= 0) { const c = document.querySelector(`.scell[data-i="${row}"]`); if (c) { c.classList.add("ph"); if (V.song[row]?.rep > 1 && left >= 0) { c.dataset.left = left; } } }
 	$$(".durbar .db").forEach(d => { const i = +d.dataset.i; d.classList.toggle("past", row >= 0 && i < row); d.classList.toggle("now", i === row); });
 }
 
 /* Transport: the playhead comes from the machine (telemetry), moved by class only */
 let lastStep = -1;
+const g_pauseTakenMs = 1000;	/* B-086: how long a pause sent may wait for the machine to stop */
 function onTelemetry(m) {
 	Docs.telemetry = m;
 	/* the transport is derived from the telemetry document (transportOf): a new view when it changed */
 	const wasPlaying = V.playing, wasRec = V.rec, tp = transportOf(Docs);
 	if (tp.playing !== wasPlaying || tp.rec !== wasRec) { Base = deriveView(Docs, S); V = view(); }
+	/* the machine plays again (PLAY, or its own panel): the pause is over. Only when it starts again: a frame sent while
+	   it still played, before the pause reached it, ended the pause just begun, and the machine then stopped (B-086) */
+	if (V.playing && !wasPlaying && S.paused) { S.paused = null; renderTop(); }
+	/* a pause the machine did not take: still playing a second after it was sent (frames before it are late by tens of
+	   ms, not a second), so ▶ does not blink over a machine that plays on */
+	else if (V.playing && S.paused && S.paused.at && Date.now() - S.paused.at > g_pauseTakenMs) { S.paused = null; renderTop(); setPos(); }
 	if (V.rec !== wasRec) { renderTop(); if (V.rec) toast("Live recording: click a track's steps to play it, move a value to lock it."); }
 	S.step = V.playing ? m.step : -1;
 	markSongRow();
-	if (wasPlaying !== V.playing) { renderTop(); $$(".ph").forEach(c => c.classList.remove("ph")); setPos(); phLast = -1; movePH(); }
+	/* the song row's mark is markSongRow's (just above): PLAY must not take it away until the row changes */
+	if (wasPlaying !== V.playing) { renderTop(); $$(".ph:not(.scell)").forEach(c => c.classList.remove("ph")); setPos(); phLast = -1; movePH(); }
 	const prev = lastStep; lastStep = S.step;
 	if (S.step === prev) return;
 	/* Capture next loop (UW): the recorder track plays (records) for one whole loop from the next
@@ -251,6 +321,7 @@ function onTelemetry(m) {
 	}
 	const pp = Math.floor(Math.max(0, S.step) / 16);
 	if (S.ws === "mix" && S.step >= 0) V.tracks.forEach((t, i) => { if (t.trigs[S.step] && audible(i)) { const l = document.querySelector(`.act[data-act="${i}"]`); if (l) { l.classList.add("on"); setTimeout(() => l.classList.remove("on"), 90); } } });
+	if ((S.ws === "seq" || S.ws === "sound") && V.playing && S.step >= 0) railLamps(V.tracks.map((t, i) => t.trigs[S.step] && audible(i) ? i : -1).filter(i => i >= 0));
 	$$(".pl").forEach(b => b.classList.toggle("play", +b.dataset.plp === pp && V.playing));
 	if (S.follow && (S.ws === "seq" || S.ws === "sampler") && !S.viewAll && pp !== S.page && !Held.as("lane") && V.playing) { S.page = pp; render(); }
 	$("#tempoled").classList.toggle("on", V.playing && S.step % 4 === 0); setPos(); queueMicrotask(movePH); $("#playled")?.classList.toggle("on", V.playing && S.step % 4 === 0);
@@ -278,7 +349,11 @@ function movePH() {
 }
 
 /* POSITION: bar.step of the machine's playhead (a 16-step bar), --.-- when stopped. */
-function setPos() { const p = $("#pos"); if (p) p.textContent = V.playing && S.step >= 0 ? String(Math.floor(S.step / 16) + 1).padStart(2, "0") + "." + String(S.step % 16 + 1).padStart(2, "0") : "--.--"; }
+function setPos() {
+	/* paused: the step the pause holds */
+	const at = V.playing && S.step >= 0 ? S.step : S.paused && S.paused.step >= 0 ? S.paused.step : -1;
+	const p = $("#pos"); if (p) p.textContent = at >= 0 ? String(Math.floor(at / 16) + 1).padStart(2, "0") + "." + String(at % 16 + 1).padStart(2, "0") : "--.--";
+}
 function setPlate(v) { S.plate = v; document.documentElement.dataset.plate = v; try { localStorage.setItem("mddesk.plate", v); } catch (_) { } renderTop(); redraw(); }
 (() => { let v = null; try { v = localStorage.getItem("mddesk.plate"); } catch (_) { } if (!v) v = matchMedia("(prefers-color-scheme: dark)").matches ? "mk2" : "mk1"; S.plate = v; document.documentElement.dataset.plate = v; })();
 
@@ -295,7 +370,7 @@ function clickEdit(e) {
 function clickTop(e) {
 	const tb = e.target.closest("#tabs button"); if (tb) { if (tb.dataset.ws === "control" && !S.mapping) return true; S.ws = tb.dataset.ws; render(); return true; }
 	if (e.target.closest("#platekey")) { setPlate(S.plate === "mk2" ? "mk1" : "mk2"); return true; }
-	if (e.target.closest("#play")) { cmd(V.playing ? "stop" : "play"); return true; }
+	if (e.target.closest("#play")) { if (e.shiftKey) pauseToggle(); else playButton(); return true; }
 	if (e.target.closest("#rec")) { cmd("record"); return true; }
 	if (e.target.closest("#patPrev")) { goPattern((V.queued ?? V.pat) - 1); return true; }
 	if (e.target.closest("#patNext")) { goPattern((V.queued ?? V.pat) + 1); return true; }

@@ -1013,9 +1013,12 @@ namespace elektronData
 		controlOut.set("clock", _g.clockOut);
 		controlOut.set("transport", _g.transportOut);
 		controlOut.set("programChange", _g.programChangeOut);
+		// CONTROL OUT1 (P2): 0 INT, 1 OUT, 2 INT+OUT
+		controlOut.set("sequencer", _g.controlOut1[0]);
+		controlOut.set("arp", _g.controlOut1[1]);
+		controlOut.set("keyboard", _g.controlOut1[2]);
 		v.set("controlOut", std::move(controlOut));
 		Value hidden = Value::object();
-		hidden.set("x07", hex(_g.x07));
 		hidden.set("x0d", hex(_g.x0d));
 		hidden.set("x30", hex(_g.x30));
 		hidden.set("xfd", hex(_g.xfd));
@@ -1091,7 +1094,15 @@ namespace elektronData
 			controlOut.integer("clock", g.clockOut, 0, 255);
 			controlOut.integer("transport", g.transportOut, 0, 255);
 			controlOut.integer("programChange", g.programChangeOut, 0, 255);
-			hidden.hexBytes("x07", g.x07);
+			// CONTROL OUT1 (0.6, P2); before, the three bytes were hidden.x07
+			if(in.value().find("controlOut")->find("sequencer"))
+			{
+				controlOut.integer("sequencer", g.controlOut1[0], 0, 255);
+				controlOut.integer("arp", g.controlOut1[1], 0, 255);
+				controlOut.integer("keyboard", g.controlOut1[2], 0, 255);
+			}
+			else
+				hidden.hexBytes("x07", g.controlOut1);
 			hidden.hexBytes("x0d", g.x0d);
 		}
 		else
@@ -1099,7 +1110,7 @@ namespace elektronData
 			// before B-051 the eleven bytes from 0x07 were one undecoded run
 			std::array<uint8_t, 11> run{};
 			hidden.hexBytes("x07", run);
-			std::copy(run.begin(), run.begin() + 3, g.x07.begin());
+			std::copy(run.begin(), run.begin() + 3, g.controlOut1.begin());
 			g.transportOut = run[3];
 			g.clockOut = run[4];
 			g.programChangeOut = run[5];

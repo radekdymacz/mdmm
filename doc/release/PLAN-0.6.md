@@ -1,0 +1,184 @@
+# Plan: 0.6 — every feature proven, and a guide laid out like the manuals
+
+*Agreed 2026-10-11 (Radek, with Claude Code). Planning only: nothing here is built yet.*
+
+## Order (Radek, 2026-10-11)
+
+1. The running tests finish (0.5.1).
+2. CI/CD and test speed-up, so every later check is faster.
+3. Then 0.6: slice 5 (journeys and screenshots) and the waves of doc/modern-ux/PLAN-manual-gaps.md.
+
+Done before that order was set: slices 1 to 4, the guide's chapters 1-13 (MD) and 1-19 (MM).
+
+## Handover (2026-10-12, stopped by the weekly usage limit)
+
+**State on 2026-10-13 (stopped for the weekly usage limit).** Everything of 0.6 is merged into `feat/0.6-features`
+(waves 1-12, MM roll foot, MD greys on the MM, review 1, e2e rounds 1-2, screen review, Discord items, Revert track,
+saved solo, sample Rename re-send, independent journeys). Installed on Radek's Mac: `ccaf8bec5`. The last full e2e on the
+real firmware: 353 pass, 7 fail (`scripts/mdmm-e2e.sh both --jobs 2 --page --write-data`, report
+temp/evidence/0.5.1/index.html). Round 3 for those 7 is on `fix/0.6-e2e-3` (see its BUGS.md entries B-133+ for
+what is done and left; md-seq-live-record "no trig recorded while live recording" is the most important).
+Next: finish fix/0.6-e2e-3, merge, rebuild and install, Radek's final hand test, PGO retrain, release/0.6.0.
+After 0.6: CI runs the ROM-free suite on every push to main (Radek, option A); the firmware e2e runs locally before
+each tag; dev loop = build + the change's own test only (doc/release/DEV-CYCLE.md to update). Decisions taken
+2026-10-12/13: guide pictures stay in git as WebP; I-027 (plug-in reports its sent MIDI) to be checked later.
+
+
+Read this first in a new session. Rule from Radek: build all of 0.6 without per-piece play tests; merge a piece into
+`feat/0.6-features` when its DEV-CYCLE tier checks are green and an independent reviewer agent passes it; at most 3
+agents at once; Radek tests the whole release at the end from doc/release/TEST-0.6.md. Never commit with conflict
+markers: resolve, grep for `<<<<<<<`, then commit, as separate steps.
+
+**Merged into `feat/0.6-features`** (each reviewed, tier 2 green): wave P (probes, doc/modern-ux/PROBES-manual-gaps.md,
+B-069), wave 1 song slots, wave 2 transport, wave 3 trig types and marks, wave 4 copy / paste / clear what, wave 5 GLOBAL page (2026-10-12, review fixes 4bcacdd4e), wave 6 SysEx and reset (2026-10-12; Import/Export in the engine menu only, Radek), wave 7 recording (2026-10-12), polish A (2026-10-12: MD-140 done, live lock removal: a value pressed and Delete held is EXIT/NO + its DATA ENTRY knob; mdmm-check builds the firmware test programs and the editors before the tests that use them), wave 10 MM skins true to the photos (MD unchanged, Radek), wave 8 MD LEV and machine audition (2026-10-12), wave 9 MM Perform B-064 (2026-10-12), polish A (MD-140, check tooling) and polish B (B-070, B-062, I-002, I-022), the top-bar
+and LCD fit (B-061, B-065, B-066), the volume-strip fix; the feature data, journey links and guide (slices 1-4).
+
+**Pushed, not merged** (each its own worktree under `audio/gearmulator-md-mm-wt/`):
+
+| Branch | State | Next step |
+|---|---|---|
+
+**Wave 11 (added 2026-10-12, I-024):** machine memory that stays for every new session, way A: one memory file per
+machine in the editor's user folder; a session with no project state starts from it; each save on the machine (kit,
+pattern, song, global) writes it; a DAW project still opens with its own memory; a menu item starts from factory memory;
+a setting turns it off. Two instances of one machine: the last save wins (say so in the guide). Branch `feat/0.6-memory`. Built and pushed, not merged (design: doc/modern-ux/DESIGN-machine-memory.md; tests mdMachineMemoryTest, mdMachineMemoryFirmwareTest md/mm, journeys md/mm-engine-memory; rows MD-X01, MM-X01; guide chapter "Beyond the hardware"). Start from factory memory is a choice of wave 6's RESET MACHINE…; the standalone starts from the file too (Radek, 2026-10-12). Next: review, merge.
+
+**Polish C and fix/0.6-span-song merged (2026-10-12):** the wave 9 follow-ups, MM firmware tests now run in ctest, B-071 and B-072 fixed. B-071 is also on main: its port waits on `fix/mm-b071-main` for Radek's OK to merge into main.
+
+**Wave 12, the gaps (`feat/0.6-gaps`, pushed, not merged):** the 14 rows below built, each with its journey, guide section
+and TEST-0.6.md line; the triage set in the data (`plan`, `planReason`); MM-322 done (wave 10); B-082 (MID routing names)
+found and fixed on the way. Firmware facts: doc/modern-ux/PROBES-manual-gaps.md W12. Waits for its review and merge.
+
+**Gap triage (Radek, 2026-10-12)** for the partial and missing rows with no plan:
+- Build in 0.6 (wave 12, `feat/0.6-gaps`): MD-033, MD-043, MD-045, MD-099, MD-106, MD-147, MM-083, MM-184, MM-203, MM-201, MM-095, MM-102, MM-271, MM-301.
+- `later` (0.7): MD-189, MD-193, MD-194, MD-196, MD-198, MD-199 (sample manager, SDS from other tools), MD-208, MD-209 (MKI model).
+- `not-needed`: MD-005, MD-016, MD-023, MD-024, MD-025, MD-205, MD-293, MM-013, MM-016, MM-021, MM-039, MM-056, MM-057, MM-058, MM-061, MM-180, MM-212, MM-299; MM-322 is done by wave 10 (check and mark it done).
+  Reasons: the host routes MIDI and audio, the mouse makes the key combination pointless, the editor restart is the soft reset, the firmware fixes the PRG CHANGE channel, chords are drawn in the roll.
+
+**Slice 5 MD merged** (161 of 163 rows; MD-192 and MD-200 need a WAV in the machine tier). Its review's weak proofs, to fix: MD-277 (no channel checked: the stub ignores CCs), the machine reference compares knob names sorted (compare in order), MD-085, MD-125, MD-138, MD-049/050/290, MD-139 (`|| true`), md-mix-master-cards first check, md-seq-clear-page order flake, MD-088/291 comment, dead MFX_IDS and the unit fixture's masterFx order, a firmware test for LockMode 0x20 then 0x51. **Not started:** slice 5 for the MM (doc/features/unproved-mm.md), the guide
+appendices, doc/guide/OPEN-FACTS.md, retrain the PGO profile (scripts/macos/train_mdmm_pgo.sh: the build says stale),
+then `scripts/mdmm-full-gate.sh` on a quiet Mac and `release/0.6.0`. Wave 11 merged (2026-10-12, five reviews). B-063 waits for the tester's host and screenshots.
+After 0.6: the site moves from Lemon Squeezy to GitHub Sponsors (Radek, 2026-10-12; he sets up Sponsors first).
+
+**Known flaky:** none (`fix/0.6-flaky`, 2026-10-12): each cause and fix in DEV-CYCLE.md "Known flaky"; md-song-mode was B-072.
+
+**Open choices for Radek:** (1) skins true to the product photos on both editors (MD silver with a red LCD; MM MKI
+light-blue LCD, MKII bluish-white) or only the MM (wave 10); (2) the Discord reply to the 2026-10-11 tester report is
+drafted in the session, not posted; (3) Clear vs Reset to defaults (wave 5).
+
+## Execution (started 2026-10-11, after 0.5.1 and the dev-cycle work)
+
+- Integration branch `feat/0.6-features` (rebased on main 249ba623a; the old history is `backup/0.6-before-rebase`). Each piece of work: its own branch and worktree from it, checks by doc/release/DEV-CYCLE.md (tier 1 before Radek plays, tier 2 before a merge), Radek plays and accepts, merged back into `feat/0.6-features`.
+- Radek, 2026-10-11: "don't stop until everything is done for the 0.6 release, then we test." So no play-and-accept per piece: a piece is merged into `feat/0.6-features` when its tier checks are green and an independent reviewer agent passes it; Radek tests the whole of 0.6 at the end. Waves 9 and 10 are mocked up and self-reviewed against his UI rules, then built; he sees them at the end.
+- At most 3 agents at once. Batch 1: wave P (probes), wave 1 (song slots; continues the paused worktrees), the fit fix (B-061, B-065, B-066). Then waves 2-4, then 5-8, then 9-10 (mock-ups to Radek first), slice 5 journeys and the appendices alongside.
+
+## Summary
+
+- **0.5.x carries the CPU work** (0.5.1, 0.5.2, 0.5.3: the levers of [RESEARCH-emulation-cpu.md](../modern-ux/RESEARCH-emulation-cpu.md), each on its own). 0.6 has no CPU work.
+- **0.6 is stability and feature completeness.** The editors do everything the manuals describe that can be done from outside the machine. One list holds every function of the Machinedrum and Monomachine manuals. Each row says what the editor does, which journey proves it, and which screenshot shows it.
+- **The user guide is made from that list.** It follows the manuals' layout (chapters, section names, page style), in our own words and our own design. It is on mdmm.dev/guide, and the same pages print to a PDF.
+- A journey that fails shows a feature we thought was done and is not. That is the stability part: each one becomes a bug in [BUGS.md](BUGS.md).
+
+## Done when
+
+1. **The editors are feature complete against the manuals:** every row is ✅ or ➖ (hardware only). A row may stay 🟡 or ❌ only with `plan: "not-needed"` or `"later"` and a one-line reason Radek agreed (for example: the firmware cannot do it from outside, or the mouse makes it pointless).
+2. Every ✅ row has at least one journey that passes, on both hosts, and a snapshot.
+3. The guide at mdmm.dev/guide and its PDF are made by `scripts/mdmm-guide.mjs` from the hand-written chapters and the data, with no section to review (`--check` green).
+4. The usual release gate is green ([LOCAL-GATE.md](LOCAL-GATE.md), [CI.md](CI.md)).
+
+The map is the backlog: the 🟡 and ❌ rows are the work list of 0.6, worked through chapter by chapter.
+
+## Rules
+
+- **No Elektron text, logo, fonts or PDFs in the repo.** The repo is public. The manuals stay on Radek's Mac in a gitignored folder (`doc/manuals/` goes into `.gitignore`). We copy the chapter order, the section names and the page style. Every sentence is ours. A section cites the manual page ("MM manual p.13").
+- **The data and the chapters are the sources.** `FEATURE-MAP-*.md`, the guide pages and the evidence report are generated. Nobody edits them by hand.
+- **Testers stay anonymous** in everything generated.
+- **Screenshots come from journeys** (`Journey.snapshot`, `scripts/mdmm-snap.py`), never from a hand capture. So they can be made again at each release.
+
+## The data
+
+Two outputs, two sources.
+
+**The feature list and its evidence.** One file per machine: `doc/features/md.json`, `doc/features/mm.json`. One row per manual function, in manual order. It makes `FEATURE-MAP-*.md` and, with the journeys, the evidence.
+
+```json
+{
+  "id": "MM-127",
+  "chapter": "13. Parameter locks",
+  "section": "PARAMETER LOCKS",
+  "manual": "1-57",
+  "function": "Lock a parameter on one step",
+  "machine": "Lock a value to one step, in grid or live recording.",
+  "status": "done | partial | missing | hardware",
+  "plan": "0.6 | later | not-needed | null",
+  "where": "Sequence: the lock lane under the track; Sound: drag a value while a step is held",
+  "missing": null,
+  "bugs": []
+}
+```
+
+- Editor features with no manual counterpart (GEN, MUTATE, solo, undo, the piano roll's draw and box select, file drop, SysEx import preview…) get rows too, in a last chapter "Beyond the hardware", ids `MD-X01`, `MM-X01`. They need journeys and guide sections like any other row.
+- `id` never changes once given. New rows get the next number.
+- `machine`: one line, our words, what the hardware does.
+- `missing`: what a 🟡 or ❌ row lacks, in one line.
+- Journeys name the rows they prove: a `proves: ["MM-127"]` field next to `name:` in `mdDeskJourneys.js` and `mmJourneys.js`. That is the only place the link is written: the row's `journeys` list is derived from it by the generator, never stored by hand.
+
+**The manual.** Hand-written prose, one file per chapter: `doc/guide/md/<nn-slug>.md`, `doc/guide/mm/<nn-slug>.md`, in the Elektron manual's chapter order and section names ([doc/guide/STYLE.md](../guide/STYLE.md)). Prose stays hand-written; what changes with the code comes from data, and the prose that needs a rewrite is flagged ([doc/guide/README.md](../guide/README.md), the loop):
+
+- Each section names its rows, invisibly: `<!-- rows: MM-251 MM-252 @a1b2c3 -->`. The hash covers the rows' status, where and missing and the journeys that prove them; when it no longer matches, `scripts/mdmm-guide.mjs --check` fails and names the section; `--stamp <file>` writes it again after a review.
+- `{key:<action>}`: the current keys from `doc/modern-ux/keymap.json`. No shortcut is typed where the key map has the action.
+- `{gap:<row>}...{/gap}`: a sentence shown while the row is not done ("You cannot rename a song in the editor yet."). Once the row is done it goes, and the check asks for the procedure. `{bug:B-nnn}...{/bug}`: shown while the bug is open.
+- `![caption](shot:<name>)`: the newest journey snapshot of that name (slice 5); until there is one, a placeholder with the caption.
+- `{table:<source>}`: reference tables made from the code's data. Now: `keys:<group>` (the key map). The appendices add the machines' parameters (elektronData), the CC and SysEx tables.
+- `scripts/mdmm-features-check.mjs` fails on a tag or mark that names nothing, an en or em dash, an exclamation mark or a banned word, and reports the done rows in no chapter.
+
+## The guide layout (from the manuals, in our design)
+
+- **Chapters and section names** as in each manual, in its order. One written chapter is one web page: `/guide/mm/17-the-song-mode/`. An index page per machine lists every chapter of the manual: the written ones with a one-line summary, the rest greyed as "to come" (no pages are made from the table). One shared "Install and first start" page.
+- **A chapter reads like a manual:** a short intro (what this part of the machine is for, how the editor shows it), then the sections. A section explains the idea in a paragraph or two, then the exact procedure as numbered steps, keys as **[KEY]**, LCD fields as **\<PLAY\>**, on-screen controls in bold, what you see happen, a screenshot where it helps, NOTE and TIP paragraphs. Where the editor works differently from the machine, it says so. No status marks, row ids, journey names or code names in the visible text.
+- **The page style:** the chapter name across the top between two thin rules; the big chapter number; headings in capitals; the manual page of each section in a wide left margin; the page number at the foot in the PDF.
+- **Fonts and colours:** the mdmm.dev design tokens (`site/public/design/`), light and dark, MK1 and MK2 screenshots where the look differs.
+- **The PDF:** print CSS on the same pages (A4, running header, page numbers, a table of contents), one PDF per machine by headless Chrome: `/guide/machinedrum-editor-guide.pdf`, `/guide/monomachine-editor-guide.pdf`.
+- **Generator:** one command, `scripts/mdmm-guide.mjs`: reads `doc/features/*.json`, `doc/guide/`, the key map, the journeys and the snapshots; writes the two maps, `site/public/guide/` and, with `--pdf`, the PDFs. The Markdown reader is `scripts/mdmm-guide-md.mjs` (no dependencies). Plain HTML, no framework, like the rest of the site.
+
+## Slices
+
+Sizes: S = up to a day, M = 2-4 days, L = a week or more. Implementation goes to subagents; Claude Code (the coordinator) writes the briefs and reviews.
+
+| # | Slice | What comes out | Size | Depends on |
+|---|---|---|---|---|
+| 1 | **Clean the map branch** | `docs/manual-feature-map` without the PDFs (`doc/manuals/` gitignored); both maps checked again against `main` at 0.5.0 (the MM map still says GLOBAL and step selection are missing) | S | – |
+| 2 | **Map → data** | `doc/features/md.json` and `mm.json` with ids; the generator writes the two `.md` maps from them, the same rows as today | M | 1 |
+| 3 | **Link the journeys** | `proves:` on all 342 journeys; `scripts/mdmm-features-check.mjs`: fails on a ✅ row with no journey, a journey with no row, or an unknown id; reports a guide picture with no snapshot. The first output is the list of ✅ rows without proof | M | 2 |
+| 4 | **Guide template** | The page template and print CSS, with 2 sample chapters (MD "Parameter locks", MM "The song mode"), in light and dark, as web pages and PDF. Radek looks at it before slice 6 starts | M | 2 |
+| 5 | **Missing journeys + snapshots** | One journey for each ✅ row without proof, each with a snapshot at the moment that proves it. Done by manual chapter, several subagents at once. A row whose journey fails goes to 🟡 or ❌ and gets a B-number | L | 3 |
+| 6 | **Fill the guide** | Every chapter of both machines written to doc/guide/STYLE.md, each done row tagged in a section; the PDFs | L | 4, alongside 5 |
+| 7 | **Gap triage (one session with Radek)** | The default for every 🟡 and ❌ row (about 135) is **build in 0.6**. The session only picks out the exceptions ("later" or "not-needed", each with its reason) and groups the rest into waves of related rows (one wave = one feature, for example "song slot menu": save, rename, copy, clear, jump to a row) | S | 2 (better after 5) |
+| 8 | **Build the gaps, wave by wave** | Each wave: the feature on both editors where both have it, its journeys with `proves:`, its guide sections, its rows to ✅. One branch per wave, played and accepted by Radek (dev loop), merged to main. First waves, from the maps' top gaps: song slot menu; transport (pause, panic, restart, tempo nudge); per-track LEVEL; swing pattern and accent / slide / swing ALL flags; trig in A/B; reset menu; live-record erase and step recording; MM track, super and melody copy; SysEx send and receive ranges; MD sample manager (erase, clipboard) | L (the bulk of 0.6) | 7 |
+| 9 | **Stability fixes** | The bugs from slice 5, plus the open ones: B-054, B-052, B-045, B-038; the Windows and Linux reports (B-029, B-033, B-035, B-036) as far as testers' logs allow | M-L | 5 |
+| 10 | **Evidence report** | `scripts/mdmm-evidence.sh`: all journeys on both hosts, every snapshot, one HTML page: row → journeys → pass or fail → picture, in `temp/evidence/<version>/` (not in git). Run once per 0.6.x release, after the local gate | S | 3, 5 |
+| 11 | **Release** | 0.6.0 with the guide live and the PDFs linked from the release notes | S | all |
+
+Order of work: 1 → 2 → (3 and 4 at once) → (5 and 6 at once) → 7 → (8 and 9) → 10 → 11.
+
+## From testers (in 0.6)
+
+- B-064: Monomachine Poly, filter key tracking and the Multi envelope: easy to see and set up, journeys that prove the sound. Wave 9 of doc/modern-ux/PLAN-manual-gaps.md.
+- B-063: window resizing (waiting for the tester's host and screenshots).
+- B-062: the Perform keyboard's stuck key light; I-002: light keys for MIDI in.
+- B-065: the LCD keeps one size on every workspace. B-061 (from 0.5.1, now also a user report): the top bar's MKI / MKII key cut off at the right edge; fit the bar as the MM GEN bar does, on both editors. B-066 (0.5.1 regression): the LCD's PLAY value cut off on the MM. One measured fit for the top bar and LCD row 2 fixes B-061, B-065 and B-066, with a journey that checks every slot and key on every workspace.
+- I-022: type a parameter value (both editors).
+- I-023: a real Monomachine MKII look (silver panel, bluish-white LCD with black text) on the MKI / MKII key. Wave 10 of PLAN-manual-gaps.md.
+- CPU on an M1 (MM 57-60 %, MD 47-50 %, macOS 26): goes to the 0.5.x CPU work, not here.
+
+## Out of 0.6
+
+- CPU levers (they are in 0.5.x).
+- Custom firmware (I-016), per-track length (I-015), DigiPRO user waveforms (F14), TurboMIDI (F15).
+- Signing and in-app update (I-005): they go in whenever the Apple account and the keys exist, in any release.
+- HW MIDI on real machines (F1): in 0.6 only if both machines are on the desk; otherwise 0.7.
+
+## Open questions
+
+- Screenshots: MK1 and MK2 both, or MK2 only with MK1 where the layout differs? (Proposal: MK2 by default.)
+- Guide language: British English, as the site?

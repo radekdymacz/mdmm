@@ -57,10 +57,13 @@ function dockRead(t,d){const tr=trk(t);
  if(d==="trn"){const n=tr.tr.TRACK-64+(tr.tr.SCALE===1?0:S.patTrn-64);return`plays ${n>0?"+":""}${n} semitones${tr.tr.SCALE===1?" · FIX: pattern ignored":""}`}
  if(d==="trig"){const a=ampSteps(t);return a===Infinity?"the gate sustains":`a gate sounds ≈ ${a<10?a.toFixed(1):Math.round(a)} steps`}
  return"CH "+String(tr.ch).padStart(2,"0")}
+/* the line shown under the Transpose tab: one short sentence (B-115: the whole help was 120 letters for a line of 95); the
+   whole help is its tooltip */
+const TRNSHORT=["<b>---</b> no scale: the transposes add up and any note can sound.","<b>FIX</b> only track transpose applies. Use it for drums and FX.","<b>MAJ</b> notes stay in the major scale of KEY: click a key to set it.","<b>MIN</b> notes stay in the minor scale of KEY: click a key to set it."];
 const TRNHELP=["<b>---</b> no transpose scale: track, pattern, song and multi-trig transpose add up and any note can sound. Click a key: C plays it (up from C; Alt-click: down to it).","<b>FIX</b> only track transpose applies. Use it for drums and FX. Click a key: C plays it (up from C; Alt-click: down to it).","<b>MAJ</b> transposed notes stay in the major scale of KEY: click a key to set it. Out-of-scale keys and roll rows are hatched.","<b>MIN</b> transposed notes stay in the minor scale of KEY: click a key to set it. Out-of-scale keys and roll rows are hatched."];
 function dockHelp(t,d){const tr=trk(t);
  if(d==="arp"){const h=dkPlain(ARPHELP[tr.arp.MODE]);return[h,h+" SPD 6 = a 16th. Chords come from the trig: shift-click in the roll. The light notes in the roll are what it plays. In the strip: click a step to mute it, drag it up or down for an offset, click past the end or the LEN row under it to set the length. FUNCTION + ARP: one per track, 12 per pattern."]}
- if(d==="trn"){const h=dkPlain(TRNHELP[tr.tr.SCALE]);return[h,h+" Transpose is live: the programmed notes do not change. Song rows and multi trig add their own. FUNCTION + TRANSPOSE."]}
+ if(d==="trn"){const h=dkPlain(TRNHELP[tr.tr.SCALE]);return[dkPlain(TRNSHORT[tr.tr.SCALE]),h+" Transpose is live: the programmed notes do not change. Song rows and multi trig add their own. FUNCTION + TRANSPOSE."]}
  if(d==="trig")return["Drag the dots or the values · A F L: the envelopes an overlapping note restarts (LEGATO)","ATK, HOLD and DEC shape how long a gate really sounds, in steps after the trig at this tempo (the light part of a bar in the roll: 40 dB down). ATK and DEC are times, each 8 more about doubling (ATK 64 ≈ 0.14 s, DEC 64 ≈ 0.55 s to -20 dB); HOLD counts sixteenths (HOLD 8 = one step); DEC 127 holds to the NOTE OFF. PORT is the glide to the next note: ALWAYS, or only when notes overlap. LEGATO picks the envelopes that still fire when notes overlap (filled A F L): all on = staccato bass, all off = a smooth lead. TRIG POSITION forwards this track's notes to another track. KIT › TRIG."];
  return["LEN 127 = until a NOTE OFF · PCHG only sends when locked","LEN 127 = until a NOTE OFF; drag a note's end in the roll to lock its LEN. PCHG only sends when it is locked. CL1-4 pick the CC numbers (or AFT) of the four CC values above them. Internal tracks can also send MIDI (GLOBAL › CONTROL OUT1), but without these values. GLOBAL › MIDI SEQ › MIDISEQ SET: the page is stored in the kit."]}
 /* the body: value boxes on eight columns, then the picture */
@@ -78,7 +81,7 @@ ED.dktrig={geo(W,H,c){const a=trk(S.sel).v.AMP,e=ampTimes(a)||{at:0,ho:0,de:Infi
   const need=clamp(Math.ceil(((inf?at+ho+2:tot)*1.12+.3)/4)*4,4,64),span=active&&active.c===c&&c._span?Math.max(c._span,need):need;c._span=span;
   const gw=clamp(Math.round(W*.26),170,300),x0=12,x1=W-gw-30,T=24,B=H-17;
   return{a,at,ho,de,inf,tot,span,x0,x1,T,B,X:s=>x0+s/span*(x1-x0),S:x=>(x-x0)/(x1-x0)*span,Y:v=>B-v*(B-T),g0:W-gw-8,g1:W-10}},
- draw(g,W,H,c){const G=this.geo(W,H,c),ink=cssv("--ink"),lcd=cssv("--lcd"),tr=trk(S.sel);g.font=SFONT;
+ draw(g,W,H,c){const G=this.geo(W,H,c),ink=cssv("--ink"),lcd=cssv("--scr"),tr=trk(S.sel);g.font=SFONT;
   /* the time axis: 0 = the trig, a tick and its number after each step (every 2nd or 4th when long) */
   const ev=G.span>32?4:G.span>16?2:1;g.fillStyle=inkA(.25);g.fillRect(G.x0,G.B,G.x1-G.x0,1);
   for(let k=1;k<=G.span;k++){const xa=Math.round(G.X(k));g.fillStyle=inkA(k%4?.07:.14);g.fillRect(xa,G.T-6,1,G.B-G.T+6);if(k%ev)continue;g.fillStyle=inkA(.4);g.fillRect(xa,G.B,1,4);g.fillStyle=inkA(.75);const tx=String(k);g.fillText(tx,xa-tx.length*2.5,H-3)}
@@ -119,7 +122,7 @@ ED.dktrn={geo(W,H){const T=22,B=H-6,kh=B-T,ww=clamp(Math.round(kh*.5),30,64);ret
  keyAt(c,e){const r=c.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,K=this.keys(r.width,r.height),hit=k=>x>=k.x&&x<k.x+k.w&&y>=k.y&&y<k.y+k.h;
   const k=K.find(k=>k.blk&&hit(k))||K.find(k=>!k.blk&&hit(k));return k?k.n:null},	/* 0-12: the upper C is 12 */
  shift(tr){return tr.tr.TRACK-64+(tr.tr.SCALE===1?0:S.patTrn-64)},
- draw(g,W,H){const G=this.geo(W,H),K=this.keys(W,H),tr=trk(S.sel),sc=tr.tr.SCALE,key=tr.tr.KEY,ink=cssv("--ink"),lcd=cssv("--lcd"),N=this.shift(tr),sv=sc>1;
+ draw(g,W,H){const G=this.geo(W,H),K=this.keys(W,H),tr=trk(S.sel),sc=tr.tr.SCALE,key=tr.tr.KEY,ink=cssv("--ink"),lcd=cssv("--scr"),N=this.shift(tr),sv=sc>1;
   const src=N<0?12:0,dst=src+(N%12===0&&N?(N>0?12:-12):N%12),cx=n=>{const k=K.find(k=>k.n===n);return k.x+k.w/2},kOf=n=>K.find(k=>k.n===n);g.font=SFONT;
   const hatch=k=>{g.save();g.beginPath();g.rect(k.x+1,k.y+1,k.w-2,k.h-2);g.clip();g.strokeStyle=inkA(.22);g.lineWidth=1;for(let d=-k.h;d<k.w;d+=5){g.beginPath();g.moveTo(k.x+d,k.y+k.h);g.lineTo(k.x+d+k.h,k.y);g.stroke()}g.restore()};
   K.filter(k=>!k.blk).forEach(k=>{if(sv&&!inScale(tr,k.n))hatch(k);g.strokeStyle=ink;g.lineWidth=1.2;g.strokeRect(k.x+.5,k.y+.5,k.w-1,k.h-1)});

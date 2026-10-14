@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>5. Monomachine overview · Monomachine Editor guide</title>
+<meta name="description" content="Six synth tracks, the sequencer, the MIDI tracks, and the keyboard modes poly, multi trig and multi map.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/mm/05-monomachine-overview/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261014b">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>@page { @top-left { content: "5. Monomachine overview"; } }</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › <a href="/guide/mm/">Monomachine Editor</a> › Monomachine overview</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Chapters of the Monomachine Editor guide">
+<p class="gd-side-title"><a href="/guide/mm/">Monomachine Editor guide</a></p>
+<ol class="gd-side-list"><li><a href="/guide/mm/01-introduction-philosophy-highlights/">1. Introduction, philosophy, highlights</a></li>
+<li><a href="/guide/mm/02-user-interface-and-connectors/">2. User interface and connectors</a></li>
+<li><a href="/guide/mm/03-the-lcd-user-interface/">3. The LCD user interface</a></li>
+<li><a href="/guide/mm/04-quick-start/">4. Quick start</a></li>
+<li class="gd-side-cur"><a href="/guide/mm/05-monomachine-overview/" aria-current="page">5. Monomachine overview</a><ol class="gd-side-subs"><li><a href="#six-individual-tracks">SIX INDIVIDUAL TRACKS</a></li><li><a href="#six-track-sequencing">SIX TRACK SEQUENCING</a></li><li><a href="#midi-sequencing">MIDI SEQUENCING</a></li><li><a href="#poly-mode">POLY MODE</a></li><li><a href="#multi-trig-mode">MULTI TRIG MODE</a></li><li><a href="#multi-map-mode">MULTI MAP MODE</a></li><li><a href="#figure-1">FIGURE 1</a></li></ol></li>
+<li><a href="/guide/mm/06-synthesis-arrangement-kits-and-machines/">6. Synthesis arrangement: kits and machines</a></li>
+<li><a href="/guide/mm/07-track-effects/">7. Track effects</a></li>
+<li><a href="/guide/mm/08-low-frequency-oscillators/">8. Low frequency oscillators</a></li>
+<li><a href="/guide/mm/09-additional-kit-settings/">9. Additional kit settings</a></li>
+<li><a href="/guide/mm/10-the-pattern-sequencer-pattern-operation/">10. The pattern sequencer: pattern operation</a></li>
+<li><a href="/guide/mm/11-composing-a-pattern/">11. Composing a pattern</a></li>
+<li><a href="/guide/mm/12-tempo/">12. Tempo</a></li>
+<li><a href="/guide/mm/13-parameter-locks/">13. Parameter locks</a></li>
+<li><a href="/guide/mm/14-advanced-sequencer-control/">14. Advanced sequencer control</a></li>
+<li><a href="/guide/mm/15-additional-sequencer-features/">15. Additional sequencer features</a></li>
+<li><a href="/guide/mm/16-the-midi-sequencer/">16. The MIDI sequencer</a></li>
+<li><a href="/guide/mm/17-the-song-mode/">17. The song mode</a></li>
+<li><a href="/guide/mm/18-routing/">18. Routing</a></li>
+<li><a href="/guide/mm/19-global-settings/">19. Global settings</a></li>
+<li><a href="/guide/mm/20-early-startup-menu-technical-information/">20. Early startup menu, technical information</a></li>
+<li><a href="/guide/mm/21-appendix-a-machine-reference/">21. Appendix A: machine reference</a></li>
+<li><a href="/guide/mm/22-appendix-b-midi-control-reference/">22. Appendix B: MIDI control reference</a></li>
+<li><a href="/guide/mm/23-appendix-c-sysex-reference/">23. Appendix C: SysEx reference</a></li>
+<li><a href="/guide/mm/24-beyond-the-hardware/">24. Beyond the hardware</a></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">5</span><span class="gd-ctitle">Monomachine overview</span></h1><p class="gd-cmeta">MM manual pp.1-15, 1-16</p></header>
+<div class="gd-intro gd-prose"><p>The Monomachine has six synth tracks. Each track has its own machine, filter, amp, effects, delay and three LFOs. The sequencer plays the six tracks from one pattern, and six MIDI tracks beside them. The keyboard can play the tracks one at a time, all together, or as a trigger for patterns.</p></div>
+<section class="gd-sec" id="six-individual-tracks" aria-labelledby="six-individual-tracks-h">
+<div class="gd-body gd-prose"><h2 id="six-individual-tracks-h">SIX INDIVIDUAL TRACKS <a class="gd-anchor" href="#six-individual-tracks" aria-label="Link to SIX INDIVIDUAL TRACKS">#</a></h2>
+<p class="gd-ref">MM manual p.1-15</p>
+<p>The six tracks are independent. A kit holds a machine for each and a full set of parameters. In the editor:</p>
+<ul class="gd-list"><li>The track rail at the left lists the tracks T1 to T6 with their machines.</li><li>The <b class="gd-ui">Sound</b> workspace edits the selected track.</li><li>The <b class="gd-ui">Mix</b> workspace shows the six tracks side by side, each with its own level, pan and routing.</li></ul>
+<p>Chapter 6 describes the machines and kits.</p>
+</div></section>
+<section class="gd-sec" id="six-track-sequencing" aria-labelledby="six-track-sequencing-h">
+<div class="gd-body gd-prose"><h2 id="six-track-sequencing-h">SIX TRACK SEQUENCING <a class="gd-anchor" href="#six-track-sequencing" aria-label="Link to SIX TRACK SEQUENCING">#</a></h2>
+<p class="gd-ref">MM manual p.1-15</p>
+<p>A pattern holds the notes, the envelope trigs and the parameter locks of the six tracks. The <b class="gd-ui">Sequence</b> workspace edits them: a piano roll for notes, with small marks on the notes for envelope trigs, slide, swing and locks, and a lock lane for the parameters. Chapters 10 to 15 describe the sequencer.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/mm-sequence-workspace.webp" aria-label="Open the picture full size: The Sequence workspace"><img src="/guide/shots/mm-sequence-workspace.webp" width="1440" height="924" alt="The Sequence workspace" loading="lazy"></a><figcaption>The Sequence workspace</figcaption></figure>
+</div></section>
+<section class="gd-sec" id="midi-sequencing" aria-labelledby="midi-sequencing-h">
+<div class="gd-body gd-prose"><h2 id="midi-sequencing-h">MIDI SEQUENCING <a class="gd-anchor" href="#midi-sequencing" aria-label="Link to MIDI SEQUENCING">#</a></h2>
+<p class="gd-ref">MM manual p.1-15</p>
+<p>Six more tracks in each pattern send MIDI notes. Click <b class="gd-ui">MIDI</b> in the track rail of the <b class="gd-ui">Sequence</b> workspace to edit them. The rail then lists M1 to M6, each with its MIDI channel. The <b class="gd-ui">Sound</b> workspace shows the MIDI page of the selected MIDI track: note length and velocity, pitch bend and program change, and four controllers. Chapter 16 describes the MIDI sequencer.</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">Sequence</b>, pick track 1 in the rail and check that <b class="gd-ui">Draw</b> is lit.</li><li>Click <b class="gd-ui">MIDI</b>. The rail lists M1 to M6, each with its own roll.</li><li>Click a note into each of the six MIDI tracks. Only that track changes: no other MIDI track and no synth track.</li><li>Hold <kbd class="gd-key">[⇧]</kbd> and click another pitch on a note of M1. The step holds a chord, and all its notes share one length.</li></ol>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/mm-midi-roll.webp" aria-label="Open the picture full size: The MIDI tracks in the Sequence workspace"><img src="/guide/shots/mm-midi-roll.webp" width="1440" height="924" alt="The MIDI tracks in the Sequence workspace" loading="lazy"></a><figcaption>The MIDI tracks in the Sequence workspace</figcaption></figure>
+</div></section>
+<section class="gd-sec" id="poly-mode" aria-labelledby="poly-mode-h">
+<div class="gd-body gd-prose"><h2 id="poly-mode-h">POLY MODE <a class="gd-anchor" href="#poly-mode" aria-label="Link to POLY MODE">#</a></h2>
+<p class="gd-ref">MM manual p.1-15</p>
+<p>In poly mode all six synth engines play one track, the track in focus, so it has six voices. The other five tracks are silent, and so are notes sent on their MIDI channels.</p>
+<ol class="gd-steps"><li>Go to the <b class="gd-ui">Perform</b> workspace (<kbd class="gd-key">[4]</kbd>).</li><li>Select the track with the numbered keys in the title of the <b class="gd-ui">Assign</b> card.</li><li>In the <b class="gd-ui">Keyboard</b> card, click <b class="gd-ui">Poly</b>. The editor presses the <kbd class="gd-key">[TRACK]</kbd> key of that track on the machine, so the track you see is the track that plays.</li><li>Play the keyboard. The machine also takes the notes of the track on its own MIDI channel and on the auto channel.</li></ol>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/mm-perform-poly.webp" aria-label="Open the picture full size: Poly mode on track 3"><img src="/guide/shots/mm-perform-poly.webp" width="1440" height="924" alt="Poly mode on track 3" loading="lazy"></a><figcaption>Poly mode on track 3</figcaption></figure>
+<p>The line under the keyboard modes names the poly track and says that the others are silent. Its key in the <b class="gd-ui">Assign</b> card and its lamp under the keyboard read ×6. The keys and lamps of the other tracks dim, and so do their rows in the rail on <b class="gd-ui">Sequence</b> and <b class="gd-ui">Sound</b>.</p>
+<p>Select another synth track, in the <b class="gd-ui">Assign</b> card or in the rail, and poly mode moves to it. The first chord on the new track can sound as one note. The chords after it sound in full. A MIDI track selected in the rail leaves poly mode where it is.</p>
+<p>The editor follows the machine: press <kbd class="gd-key">[TRACK]</kbd> on the machine in poly mode, or switch poly mode on there, and that track is selected and shown as the poly track. If the machine is busy taking a dump, the editor cannot press <kbd class="gd-key">[TRACK]</kbd>: the page says so and keeps the track the machine plays.</p>
+<p>On the <b class="gd-ui">Perform</b> workspace the <b class="gd-light">&lt;MODE&gt;</b> field in the second line of the LCD reads POLY while the mode is on. Click <b class="gd-ui">Auto track</b> to leave it.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Over a MIDI cable the editor cannot press <kbd class="gd-key">[TRACK]</kbd>. Press it on the machine: poly mode plays the track in focus there.</p></aside>
+</div></section>
+<section class="gd-sec" id="multi-trig-mode" aria-labelledby="multi-trig-mode-h">
+<div class="gd-body gd-prose"><h2 id="multi-trig-mode-h">MULTI TRIG MODE <a class="gd-anchor" href="#multi-trig-mode" aria-label="Link to MULTI TRIG MODE">#</a></h2>
+<p class="gd-ref">MM manual p.1-15</p>
+<p>In multi trig mode one source plays all six tracks, as if they were one large mono synth. Click <b class="gd-ui">Multi trig</b> in the <b class="gd-ui">Keyboard</b> card. The mode takes its notes on MIDI channel 7.</p>
+<p>Multi trig has four settings. Choose one with the keys in the title bar of the <b class="gd-ui">Keyboard</b> card:</p>
+<table class="gd-table"><thead><tr><th>Setting</th><th>What the keyboard does</th></tr></thead><tbody><tr><td><b class="gd-ui">ALL TRK</b></td><td>each note plays all six tracks; each track keeps its own arpeggiator</td></tr><tr><td><b class="gd-ui">SPLIT KEY</b></td><td>keys from the split point play the tracks from <b class="gd-ui">Upper from</b> to T6; keys below play the tracks before it</td></tr><tr><td><b class="gd-ui">SEQ START</b></td><td>each note restarts the pattern, transposed from C-4</td></tr><tr><td><b class="gd-ui">SEQ TRNSP</b></td><td>the first note starts the pattern; later notes only transpose it</td></tr></tbody></table>
+<p>In <b class="gd-ui">SPLIT KEY</b> mode, drag the split marker on the keyboard to move the split point, and click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> beside <b class="gd-ui">Upper from</b> to set the first track of the upper zone. In the two sequencer settings, the <b class="gd-ui">Timing</b> stepper sets when the change happens: DIRECT, or one of the values from 1/16 to 32/16.</p>
+<h4 class="gd-h3" id="multi-envelope">Multi envelope</h4>
+<p>The <b class="gd-ui">Multi envelope</b> card of the <b class="gd-ui">Perform</b> workspace holds an ADSR that works on top of every track's own envelope. It has the values ATK, DEC, SUS, REL and PORT. Drag the dots in the plot or the value boxes. For no effect, set ATK to 0 and DEC, SUS and REL to 127. SPLIT KEY does not use it.</p>
+</div></section>
+<section class="gd-sec" id="multi-map-mode" aria-labelledby="multi-map-mode-h">
+<div class="gd-body gd-prose"><h2 id="multi-map-mode-h">MULTI MAP MODE <a class="gd-anchor" href="#multi-map-mode" aria-label="Link to MULTI MAP MODE">#</a></h2>
+<p class="gd-ref">MM manual p.1-15</p>
+<p>In multi map mode key ranges of the keyboard start patterns. Click <b class="gd-ui">Multi map</b> in the <b class="gd-ui">Keyboard</b> card. The mode takes its notes on MIDI channel 8.</p>
+<p>The <b class="gd-ui">Multi map</b> card lists the ranges. Each row has:</p>
+<ul class="gd-list"><li>the range of keys, its upper key set with <b class="gd-ui">−</b> and <b class="gd-ui">+</b>;</li><li>the pattern to start, or CUR for the current pattern;</li><li>OFS, the first step to play, and LEN, the number of steps. LEN needs an offset first;</li><li>TRN, the transpose;</li><li>the timing, which waits for a bar line.</li></ul>
+<p>Click <b class="gd-ui">Split selected range</b> to add a range. Click the × on a row to delete it. The keyboard shows the ranges as bands with the pattern names. The ranges are stored in the global slot.</p>
+</div></section>
+<section class="gd-sec" id="figure-1" aria-labelledby="figure-1-h">
+<div class="gd-body gd-prose"><h2 id="figure-1-h">FIGURE 1 <a class="gd-anchor" href="#figure-1" aria-label="Link to FIGURE 1">#</a></h2>
+<p class="gd-ref">MM manual p.1-16</p>
+<p>The manual's overview figure shows how the tracks, effects and outputs join. The <b class="gd-ui">Mix</b> workspace draws this as a signal graph: a node for each track with its machine, three buses AB, CD and EF below, and the outputs at the right. Click a node to select its strip.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-mm-mix-routing.webp" aria-label="Open the picture full size: The routing graph"><img src="/guide/shots/e2e-mm-mix-routing.webp" width="1440" height="924" alt="The routing graph" loading="lazy"></a><figcaption>The routing graph</figcaption></figure>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/mm/04-quick-start/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">4. Quick start</span></a><a href="/guide/mm/06-synthesis-arrangement-kits-and-machines/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">6. Synthesis arrangement: kits and machines</span></a></nav>
+</article>
+</div>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

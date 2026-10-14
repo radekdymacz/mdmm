@@ -48,7 +48,10 @@ img,svg,canvas{-webkit-user-drag:none}
 /* @include shared/deskGenBar.css */
 .ws-seq #main>.genbar{flex:none;margin-top:4px}
 .ws-seq #main>.lanewrap{border-top:2px solid var(--print);margin-top:5px}
-#seq canvas.roll[data-big]{height:clamp(160px,calc(100vh - 552px),620px)!important}
+/* 2026-10-12: no trig type row and no A F L row under the roll (a trig's marks are on its note): the roll takes their
+   height; a MIDI track keeps its VEL row */
+#seq canvas.roll[data-big]{height:clamp(160px,calc(100vh - 494px),620px)!important}
+#seq.midi canvas.roll[data-big]{height:clamp(160px,calc(100vh - 518px),620px)!important}
 .genbar .pagectl .pleds{align-self:center}
 /* the piano roll's Draw key (B) and the length a new note gets (I-007, I-010), beside the page keys */
 .rollkeys{display:flex;align-items:center;gap:6px;flex:none;height:30px}
@@ -80,9 +83,12 @@ img,svg,canvas{-webkit-user-drag:none}
 .genbar.fit2 .kc small{letter-spacing:.02em}
 .genbar.fit2 .gkeys{gap:4px}
 .genbar.fit3 .gv small{font-size:8px;letter-spacing:0}
-/* the rail's spec tags: the machine's name comes first, the tag takes what is left (gone under 1380 px) */
-.th .nm.tagged b{flex:none}
-.th .nm .gtag{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+/* the rail's spec tags (0.6 review 2): the machine's name has the row; the tag sits on the same line, right-aligned
+   before M/S, only when the row is wide enough for both (else it is in the name's tooltip and the GEN bar) */
+.th .nm.tagged{container-type:inline-size;flex-wrap:nowrap;gap:0 4px;align-items:center;height:100%;overflow:hidden}
+.th .nm.tagged b{flex:none;line-height:1}
+.th .nm .gtag{flex:none;margin-left:auto;line-height:11px;opacity:.75}
+@container (max-width:118px){.th .nm .gtag{display:none}}
 @media (max-width:1380px){.th .nm .gtag{display:none}}
 /* ===== Sound by function (MM-PORT-PLAN e; 90-sound.js renderSound): the Machinedrum Editor's page and layout
    (shared/deskSound.css, shared/deskSoundLayout.js), with what the Monomachine's has more: the head's three keys to
@@ -95,6 +101,8 @@ img,svg,canvas{-webkit-user-drag:none}
 .sg>*{min-width:0}
 .sg h3{display:flex;align-items:center;gap:8px}
 .sg>header>span{flex:none}
+/* B-143: the section header is one fixed line (27 px) as Chrome lays it out; WebKit 15 mixed the baseline with the flex h3 and made it 24 */
+.sg>header{align-items:center;height:27px;box-sizing:border-box;flex-wrap:nowrap}
 .sg>.lfobody{grid-row:3;align-self:start;min-width:0}
 .sgrow.flat .sg>.lfobody{grid-row:2}
 .sndhead>.machbtn{flex:none;width:auto!important;grid-template-columns:auto auto 10px!important;max-width:220px}
@@ -250,5 +258,37 @@ body.dockother #rail .railparams>:is(.lpspace,.pagetabs,.pkcol),body.dockother #
 /* I-018: the CPU meter beside the version (skins/shared/deskCpu.js, loaded by the plug-in's page) */
 /* @include shared/deskCpu.css */
 /* @include shared/deskTopFit.css */
+/* @include shared/deskTransport.css */
 /* I-021: the output meter and volume at the LCD's right end (skins/shared/deskVolume.js, loaded by the plug-in's page) */
 /* @include shared/deskVolume.css */
+/* @include shared/deskValueEdit.css */
+/* @include shared/deskSongSlots.css */
+/* 0.6 wave 4: COPY / PASTE / CLEAR what (skins/shared/deskWhat.js) */
+/* @include shared/deskWhat.css */
+
+/* the swing mark's teal (a trig's marks in the roll, 70-seq.js) */
+:root{--swg:#15a39a}
+/* wave 7: STEP RECORDING (the REC key says STEP, the machine's cursor on the roll; no row of its own) and live erase */
+.lcdt .lt.rec.step{background:var(--ink)!important;color:var(--lcd)!important;animation:none!important}
+.lcdt .lt.rec .stepm{font:9px var(--pix);margin-left:2px}
+#seq .nlane.big{position:relative}
+.stepcur{position:absolute;top:0;bottom:0;pointer-events:none;z-index:5;border:2px solid var(--led);box-shadow:0 0 0 1px var(--plate),0 0 10px 1px var(--led);border-radius:2px;animation:blink 1s steps(2) infinite}
+.stepcur::after{content:attr(data-l);position:absolute;top:2px;left:2px;font:9px var(--pix);background:var(--led);color:#fff;padding:2px 4px;border-radius:2px;white-space:nowrap}
+body.erasing .rail .th.sel{box-shadow:inset 0 0 0 2px var(--rec)!important}
+/* 0.6 wave 9 (B-064): POLY's track (×6) and the silent ones, the filter's key tracking in the Filter header, the
+   Multi envelope's word per MULTI TRIG mode */
+.x6{font:600 9px var(--mono);font-style:normal;margin-left:4px;padding:0 3px;border-radius:2px;background:var(--led);color:#fff;vertical-align:1px}
+[data-set="astrk"] button.polyoff,#trklamps>span.polyoff{opacity:.42}
+.sg>header>.keytrk{flex:none;margin-left:auto;height:18px;padding:0 6px;display:inline-flex;gap:4px;align-items:center;font:600 9px var(--sans);letter-spacing:.1em;text-transform:uppercase}
+.sg>header>.keytrk .led{width:6px;height:6px}
+.sg>header>span+.keytrk{margin-left:8px}
+.asgcard .keyrow.flash{outline:2px solid var(--led);outline-offset:3px;border-radius:3px}
+.menvsay b{font-weight:600}
+.menvsay .menvto{display:block;margin-top:2px}
+.lkey.ring{box-shadow:0 0 0 2px var(--led)}
+/* Review 1 (Radek, 2026-10-12): the big screens on the Machinedrum MKI's grey (--scr), not the LCD's colour; the top bar's
+   LCD and the small LCD chips keep --lcd */
+canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop,.edblank,.timeline,.timeline2{background:var(--scr)}
+
+/* B-116: the Arrangement's key legend (T, M, B) is cut by the card's width under 1700 px: "65 of 200 rows" stays, the keys are in the tooltip */
+@media (max-width:1700px){.arrcard header .note .gopt{display:none}}

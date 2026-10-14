@@ -8,6 +8,7 @@
 #include "mdDeskLibrary.h"
 #include "mdDeskKeys.h"
 #include "mdDeskMachine.h"
+#include "mdDeskTransport.h"
 #include "mdIntentCases.h"
 
 #include "deskCore/deskContract.h"
@@ -180,6 +181,19 @@ namespace
 		Clipboard clip;
 		auto r = run(docs, cmd(R"({"op":"totalLength","p":1,"v":48})"), clip);
 		check(r.errors.empty() && pat(r).scale == 2 && pat(r).length == 48, "total length sets scale and length");
+		{
+			// B-103: from 48 steps the machine's repeat runs in 32-step blocks: steps 49-64 are steps 17-32 again
+			auto d = fixtureDocs();
+			auto& q = d.patterns.at(1);
+			q.length = 48;
+			q.scale = 2;
+			q.trigs.fill(0);
+			for(const size_t st : {0, 20, 40})
+				q = ed::withTrig(q, 0, st, true);
+			const auto r2 = run(d, cmd(R"({"op":"totalLength","p":1,"v":64})"), clip);
+			check(r2.errors.empty() && pat(r2).trigs[0] == ((1ull << 0) | (1ull << 20) | (1ull << 40) | (1ull << 52))
+				&& r2.note.find("steps 17 to 32 repeat into steps 49 to 64") != std::string::npos, "48 -> 64 steps: steps 17-32 repeat into 49-64 (" + r2.note + ")");
+		}
 		r = run(docs, cmd(R"({"op":"totalLength","p":1,"v":20})"), clip);
 		check(!r.errors.empty() && r.changes.empty(), "total length 20 is refused");
 		r = run(docs, cmd(R"({"op":"length","p":1,"v":0})"), clip);
@@ -426,6 +440,43 @@ namespace
 			"paste sound copies machine and values, the LFO targets its new track");
 	}
 
+	// revertTrack: a track of the kit that plays goes back to how the kit's slot stores it, in one change.
+	void testRevertTrack()
+	{
+		auto docs = fixtureDocs();
+		Clipboard clip;
+		const EditContext plays{uint8_t{0}};
+		const auto stored = docs.kits[0];
+		docs.working = WorkingKit{stored};
+		check(run(docs, cmd(R"({"op":"revertTrack","k":0,"t":3})"), clip, plays).changes.empty(), "a track as stored: nothing to revert, no step");
+		// edit track 3 in every way revertTrack names, and track 5 once
+		auto k = stored;
+		k.params[3][2] = static_cast<uint8_t>(k.params[3][2] ^ 0x15);
+		k.params[3][12] = static_cast<uint8_t>(k.params[3][12] ^ 0x21);
+		k.params[3][17] = static_cast<uint8_t>(k.params[3][17] ^ 0x31);
+		k.levels[3] = static_cast<uint8_t>(k.levels[3] ^ 0x11);
+		k.models[3] = *ed::mdMachineModel("EFM-SD") == k.models[3] ? *ed::mdMachineModel("TRX-BD") : *ed::mdMachineModel("EFM-SD");
+		k.lfos[3].shape1 = static_cast<uint8_t>((k.lfos[3].shape1 + 1) % 6);
+		k.lfos[3].state[0] = static_cast<uint8_t>(k.lfos[3].state[0] ^ 1);
+		k.muteGroups[3] = k.muteGroups[3] == 5 ? 6 : 5;
+		k.params[5][1] = static_cast<uint8_t>(k.params[5][1] ^ 0x0f);
+		docs.working = WorkingKit{k};
+		auto r = run(docs, cmd(R"({"op":"revertTrack","k":0,"t":3})"), clip, plays);
+		check(r.errors.empty() && r.changes.size() == 1 && !r.note.empty(), "revertTrack: one change of the working kit");
+		const auto& after = std::get<WorkingKit>(r.changes[0].after).kit;
+		check(std::get<WorkingKit>(r.changes[0].before).kit == k, "its before is the kit as it was edited");
+		check(after.models[3] == stored.models[3] && after.params[3] == stored.params[3] && after.levels[3] == stored.levels[3]
+			&& after.lfos[3].shape1 == stored.lfos[3].shape1 && after.lfos[3].track == stored.lfos[3].track
+			&& after.lfos[3].param == stored.lfos[3].param && after.muteGroups[3] == stored.muteGroups[3], "the track's values are the slot's");
+		check(after.lfos[3].state == k.lfos[3].state, "the LFO's running state stays the machine's");
+		check(after.params[5] == k.params[5] && after.params[2] == k.params[2] && after.masterFx == k.masterFx && after.name == k.name,
+			"no other track, no master effect and not the name moved");
+		check(after.position == 0 && docs.kits[0] == stored, "the slot is not touched");
+		docs.kits.erase(0);
+		check(!run(docs, cmd(R"({"op":"revertTrack","k":0,"t":3})"), clip, plays).errors.empty(), "a slot not read yet is refused");
+		check(!run(fixtureDocs(), cmd(R"({"op":"revertTrack","k":0,"t":16})"), clip, plays).errors.empty(), "track 17 is refused");
+	}
+
 	void testSongEdits()
 	{
 		auto docs = fixtureDocs();
@@ -629,6 +680,37 @@ namespace
 		check(!run(docs, cmd(R"({"op":"steps","p":1,"rows":[{"t":2,"on":[1]},{"t":2,"on":[2]}]})"), clip).errors.empty(), "steps: a track in two rows is refused");
 		check(!run(docs, cmd(R"({"op":"steps","p":1,"rows":[{"t":2,"on":[1],"acc":[2]}]})"), clip).errors.empty(), "steps: an accent without a trig is refused");
 		check(!run(docs, cmd(R"({"op":"steps","p":1,"rows":[]})"), clip).errors.empty(), "steps: no rows is refused");
+
+		// Wave 3, the trig types: swingStep, markMode, accent / slide with on (a paint sets, it does not toggle).
+		{
+			auto d3 = docs;
+			auto& q = d3.patterns[1];
+			q.trigs[2] |= 1u << 4;
+			q.trigs[2] &= ~(uint64_t{1} << 5);
+			q.accentEditAll = q.slideEditAll = q.swingEditAll = 0;
+			q.trackSwing[2] = q.trackAccent[2] = q.swingPattern = 0;
+			r = run(d3, cmd(R"({"op":"swingStep","p":1,"t":2,"s":4,"on":true})"), clip);
+			check(r.errors.empty() && pat(r).trackSwing[2] == (1u << 4) && pat(r).swingPattern == 0, "swingStep: the track's own swing row (EDIT ALL off)");
+			r = run(d3, cmd(R"({"op":"swingStep","p":1,"t":2,"s":5,"on":true})"), clip);
+			check(!r.errors.empty() && r.errors[0].find("no trig") != std::string::npos, "swingStep: a step without a trig is refused, as accent and slide");
+			q.trackAccent[2] = 1u << 4;
+			r = run(d3, cmd(R"({"op":"accent","p":1,"t":2,"s":4,"on":true})"), clip);
+			check(r.errors.empty() && (r.changes.empty() || pat(r).trackAccent[2] == (1u << 4)), "accent on: true keeps an accent that is on (a paint, not a toggle)");
+			r = run(d3, cmd(R"({"op":"accent","p":1,"t":2,"s":4,"on":false})"), clip);
+			check(r.errors.empty() && pat(r).trackAccent[2] == 0, "accent on: false clears it");
+			r = run(d3, cmd(R"({"op":"accent","p":1,"t":2,"s":4})"), clip);
+			check(r.errors.empty() && pat(r).trackAccent[2] == 0, "accent without on toggles");
+			r = run(d3, cmd(R"({"op":"markMode","p":1,"mark":"swing","all":true})"), clip);
+			check(r.errors.empty() && pat(r).swingEditAll == 1 && pat(r).accentEditAll == 0 && pat(r).trackSwing == q.trackSwing, "markMode: swing EDIT ALL on, the tracks' own rows kept");
+			q.swingEditAll = 1;
+			r = run(d3, cmd(R"({"op":"swingStep","p":1,"t":2,"s":4,"on":true})"), clip);
+			check(r.errors.empty() && pat(r).swingPattern == (1u << 4) && pat(r).trackSwing[2] == 0 && r.note.find("EDIT ALL") != std::string::npos,
+				"swingStep with EDIT ALL: the pattern-wide row, said in the note");
+			r = run(d3, cmd(R"({"op":"markMode","p":1,"mark":"slide","all":true})"), clip);
+			check(r.errors.empty() && pat(r).slideEditAll == 1 && pat(r).accentEditAll == 0, "markMode: slide for all tracks, accent untouched");
+			check(run(d3, cmd(R"({"op":"markMode","p":1,"mark":"slide","all":false})"), clip).changes.empty(), "markMode: the flag it has already is no change");
+			check(!run(d3, cmd(R"({"op":"markMode","p":1,"mark":"trig","all":true})"), clip).errors.empty(), "markMode: only accent, slide or swing");
+		}
 		check(!run(docs, cmd(R"({"op":"steps","p":1,"rows":[{"t":16,"on":[]}]})"), clip).errors.empty(), "steps: track 17 is refused");
 
 		// params: one working-kit change, a CC for each value that changed and nothing else.
@@ -977,6 +1059,20 @@ namespace
 
 		desk.onPageMessage(cmd(R"({"op":"ready"})"));
 		check(lastOf("catalogue") != nullptr, "the page gets the machine catalogue");
+		if(const auto* cat = lastOf("catalogue"))
+		{
+			// MD-033: each machine's clips, as the LCD draws them (gapProbesFirmwareTest w12clip)
+			std::string bd, rom;
+			for(const auto& m : cat->find("doc")->find("machines")->asArray())
+			{
+				std::string c;
+				for(const auto& i : m.find("clips")->asArray())
+					c += std::to_string(static_cast<int>(i.asNumber())) + " ";
+				if(m.find("machine")->asString() == "TRX-BD") bd = c;
+				if(m.find("machine")->asString() == "ROM-01") rom = c;
+			}
+			check(bd == "2 8 10 12 13 21 22 " && rom == "8 10 12 13 21 22 ", "the catalogue's clips: TRX-BD RAMP-RDEC and the effects and LFO pairs (" + bd + "/ " + rom + ")");
+		}
 		desk.onPageMessage(cmd(R"({"op":"trig","p":1,"t":0,"s":0,"id":1})"));
 		const auto* busy = lastOf("result");
 		check(busy && !busy->find("ok")->asBool(), "edits wait until the machine answers (device busy)");
@@ -1352,11 +1448,106 @@ namespace
 		}
 		check(!desk.coreState().state({DocKind::WorkingKit, 0})->pending && desk.documents().working->kit.params[2][3] == 5
 			&& desk.documents().working->kit.params[4][7] == 99, "and the image that shows both settles with both");
+		// 0.6 wave 7: erase while live recording (manual p.40): EXIT/NO and the track's TRIG key held, let go at off.
+		keys.clear();
+		desk.onPageMessage(cmd(R"({"op":"liveErase","t":2,"on":true,"id":51})"));
+		check(ok() && keys == std::vector<std::string>{"hold:exit", "hold:trig3"}, "liveErase on: EXIT/NO down, then TRIG 3");
+		desk.onPageMessage(cmd(R"({"op":"liveErase","t":2,"on":true,"id":52})"));
+		check(ok() && keys.size() == 2, "again for the same track: nothing more pressed");
+		desk.onPageMessage(cmd(R"({"op":"liveErase","t":5,"on":true,"id":53})"));
+		// B-101: a TRIG key let go while EXIT/NO is down sets a trig on the machine's selected track: EXIT/NO always goes up first
+		check(ok() && keys == std::vector<std::string>{"hold:exit", "hold:trig3", "release:exit", "release:trig3", "hold:exit", "hold:trig6"},
+			"another track: both let go (EXIT/NO first), then EXIT/NO and its TRIG key down");
+		desk.onPageMessage(cmd(R"({"op":"liveErase","t":5,"on":false,"id":54})"));
+		check(ok() && keys.size() == 8 && keys[6] == "release:exit" && keys[7] == "release:trig6", "off: both let go, EXIT/NO first");
+		desk.onPageMessage(cmd(R"({"op":"liveErase","t":5,"on":false,"id":55})"));
+		check(ok() && keys.size() == 8, "off again: nothing pressed");
+		// the page says every 250 ms that Delete is still held; a page that goes quiet (closed, reloaded) lets the keys go
+		desk.onPageMessage(cmd(R"({"op":"liveErase","t":3,"on":true,"id":58})"));
+		for(int i = 0; i < 6; ++i)
+		{
+			now += 250;
+			desk.tick();
+			desk.onPageMessage(cmd(R"({"op":"liveErase","t":3,"on":true,"id":59})"));
+		}
+		check(keys.size() == 10, "held with the page's word every 250 ms: nothing let go, nothing pressed again");
+		now += 1100;
+		desk.tick();
+		check(keys.size() == 12 && keys[10] == "release:exit" && keys[11] == "release:trig4", "no word for over a second: both let go");
+		// MD-140 (manual p.48): with i, EXIT/NO and the parameter's knob switch; first the track selected and its knob page shown
+		{
+			using Keys = std::vector<std::string>;
+			t.knobPage = 0;
+			desk.onTelemetry(t);
+			keys.clear();
+			wire.clear();
+			desk.onPageMessage(cmd(R"({"op":"liveErase","t":4,"on":true,"i":10,"id":61})"));
+			check(ok() && keys.empty() && !wire.empty() && wire.back() == ed::mdSetStatus(ed::MdStatus::Track, 4),
+				"liveErase with i: track 5 selected first, no key yet");
+			now += 50;
+			desk.tick();
+			check(keys == Keys{"page"}, "parameter 10 is on the EFFECTS page: the page key");
+			t.knobPage = 1;
+			desk.onTelemetry(t);
+			now += 50;
+			desk.tick();
+			check(keys == Keys{"page", "hold:exit", "hold:knobC"}, "the page shows: EXIT/NO and knob C down");
+			now += 50;
+			desk.onPageMessage(cmd(R"({"op":"liveErase","t":4,"on":true,"i":10,"id":62})"));
+			desk.tick();
+			check(ok() && keys.size() == 3, "the page's word again: nothing more pressed");
+			desk.onPageMessage(cmd(R"({"op":"liveErase","t":4,"on":true,"id":63})"));
+			check(ok() && keys == Keys{"page", "hold:exit", "hold:knobC", "release:knobC", "release:exit", "hold:exit", "hold:trig5"},
+				"the trigs instead (no i): the knob let go, TRIG 5 held");
+			keys.clear();
+			desk.onPageMessage(cmd(R"({"op":"liveErase","t":4,"on":false,"id":64})"));
+			check(ok() && keys == Keys{"release:exit", "release:trig5"}, "off: EXIT/NO and TRIG 5 let go");
+			// a knob page that never shows: a few page presses, then nothing held
+			keys.clear();
+			desk.onPageMessage(cmd(R"({"op":"liveErase","t":4,"on":true,"i":2,"id":65})"));
+			for(int i = 0; i < 8; ++i)
+			{
+				now += 200;
+				desk.onPageMessage(cmd(R"({"op":"liveErase","t":4,"on":true,"i":2,"id":66})"));
+				desk.tick();
+			}
+			check(keys == Keys{"page", "page", "page", "page"}, "a knob page that never shows: four page presses, then it gives up (the page's word does not start it again)");
+			const auto eraseState = [&]() -> std::string
+			{
+				for(auto it = page.rbegin(); it != page.rend(); ++it)
+					if(it->find("type")->asString() == "machine" && it->find("doc")->find("desk"))
+					{
+						const auto* e = it->find("doc")->find("desk")->find("liveErase");
+						return e && e->isObject() ? e->find("state")->asString() : "none";
+					}
+				return "no machine document";
+			};
+			check(eraseState() == "gaveUp", "the page is told it gave up (desk.liveErase.state gaveUp): " + eraseState());
+			keys.clear();
+			desk.onPageMessage(cmd(R"({"op":"liveErase","t":4,"on":false,"id":67})"));
+			check(keys.empty(), "off after that: nothing to let go");
+			desk.tick();
+			check(eraseState() == "none", "and then no erase in the desk document: " + eraseState());
+			t.knobPage = -1;
+			desk.onTelemetry(t);
+			wire.clear();
+			desk.onPageMessage(cmd(R"({"op":"liveErase","t":4,"on":true,"i":2,"id":68})"));
+			check(!ok() && keys.empty() && wire.empty(), "no knob page known: refused at once, nothing selected or pressed");
+		}
+		desk.onPageMessage(cmd(R"({"op":"liveErase","t":3,"on":true,"id":60})"));
+		keys.clear();
+		desk.onPageMessage(cmd(R"({"op":"ready"})"));
+		check(keys == std::vector<std::string>{"release:exit", "release:trig4"}, "the page (re)attached: both let go");
+		keys.resize(6);
+		desk.onPageMessage(cmd(R"({"op":"liveErase","t":1,"on":true,"id":56})"));
 		keys.clear();
 		desk.onPageMessage(cmd(R"({"op":"record","id":5})"));
 		check(ok() && keys == std::vector<std::string>{"play"}, "REC while recording presses PLAY: keep playing");
 		t.recording = false;
 		desk.onTelemetry(t);
+		check(keys.size() == 3 && keys[1] == "release:exit" && keys[2] == "release:trig2", "recording over: held erase keys let go");
+		desk.onPageMessage(cmd(R"({"op":"liveErase","t":1,"on":true,"id":57})"));
+		check(!ok(), "liveErase refused when not recording");
 		keys.clear();
 		desk.onPageMessage(cmd(R"({"op":"record","id":6})"));
 		check(keys == std::vector<std::string>{"stop"}, "REC while playing stops first");
@@ -1376,6 +1567,15 @@ namespace
 		wire.clear();
 		desk.onPageMessage(cmd(R"({"op":"selectSong","s":3,"id":8})"));
 		check(ok() && !wire.empty() && wire[0] == ed::mdLoadSong(3) && desk.linkState().song == 3, "LOAD SONG 4 when stopped");
+
+		// 0.6 song slots: SAVE SONG (0x6D) into the current song's slot, or the slot named.
+		check(ed::mdSaveSong(5) == std::vector<uint8_t>{0xf0, 0x00, 0x20, 0x3c, 0x02, 0x00, 0x6d, 0x05, 0xf7}, "SAVE SONG 6 is F0 00 20 3C 02 00 6D 05 F7");
+		wire.clear();
+		desk.onPageMessage(cmd(R"({"op":"saveSong","id":9})"));
+		check(ok() && !wire.empty() && wire[0] == ed::mdSaveSong(3), "saveSong without s: SAVE SONG into the current song's slot");
+		wire.clear();
+		desk.onPageMessage(cmd(R"({"op":"saveSong","s":7,"id":10})"));
+		check(ok() && !wire.empty() && wire[0] == ed::mdSaveSong(7) && desk.linkState().song == 7, "saveSong s: SAVE SONG into that slot, which becomes the current song");
 	}
 
 	// DESIGN-edit-flow.md: a lock lane drawn at 60 edits a second: at most 5 dumps a second, one read-back.
@@ -1848,6 +2048,50 @@ namespace
 		const auto before = saved.size();
 		desk.onPageMessage(cmd(R"({"op":"knobs","ccs":[1,1,3,4,5,6,7,8],"id":3})"));
 		check(saved.size() == before && desk.setup().knobCcs[1] == 2, "invalid knob CCs change nothing");
+
+		// B-123: the page's solo and the mutes the person had before it are kept with the project
+		const auto last = [&page](const char* _type) -> const Value*
+		{
+			for(auto it = page.rbegin(); it != page.rend(); ++it)
+				if(it->find("type")->asString() == _type)
+					return &*it;
+			return nullptr;
+		};
+		const auto list = [](const Value* _m, const char* _key)
+		{
+			std::vector<int> out;
+			if(_m)
+				for(const auto& v : _m->find(_key)->asArray())
+					out.push_back(static_cast<int>(v.asNumber()));
+			return out;
+		};
+		const auto n = saved.size();
+		desk.onPageMessage(cmd(R"({"op":"soloSet","id":4,"tracks":[5,2],"mutes":[1,9]})"));
+		check(saved.size() == n + 1 && desk.setup().solo.tracks == std::vector<int>{2, 5} && desk.setup().solo.mutes == std::vector<int>{1, 9},
+			"soloSet: the solo and the person's mutes are kept (sorted)");
+		check(list(saved.back().find("solo"), "tracks") == std::vector<int>{2, 5}, "and saved with the project");
+		desk.onPageMessage(cmd(R"({"op":"soloSet","id":5,"tracks":[2,5],"mutes":[1,9]})"));
+		check(saved.size() == n + 1, "the same solo again saves nothing");
+		desk.onPageMessage(cmd(R"({"op":"soloSet","id":6,"tracks":[2,16],"mutes":[]})"));
+		desk.onPageMessage(cmd(R"({"op":"soloSet","id":7,"tracks":[3,3]})"));
+		check(saved.size() == n + 1 && desk.setup().solo.tracks == std::vector<int>{2, 5}, "a track out of range or listed twice changes nothing");
+		// the project comes back: the solo is said to the page, after a reset too, and a project without one clears it
+		const auto saved1 = saved.back();
+		page.clear();
+		desk.loadSetup(deskSetupToJson({}));
+		desk.tick();
+		check(desk.setup().solo.empty() && last("solo") && list(last("solo"), "tracks").empty(), "a project without a solo: none, and the page is told");
+		page.clear();
+		check(desk.loadSetup(saved1).empty() && desk.setup().solo.tracks == std::vector<int>{2, 5} && desk.setup().solo.mutes == std::vector<int>{1, 9}, "a project's solo loads");
+		desk.tick();
+		check(list(last("solo"), "tracks") == std::vector<int>{2, 5} && list(last("solo"), "mutes") == std::vector<int>{1, 9}, "and is said to the page");
+		page.clear();
+		desk.onPageMessage(cmd(R"({"op":"ready"})"));
+		desk.tick();
+		check(list(last("solo"), "tracks") == std::vector<int>{2, 5}, "a page made again gets the solo");
+		desk.onPageMessage(cmd(R"({"op":"soloSet","id":8,"tracks":[],"mutes":[4]})"));
+		check(desk.setup().solo.empty() && desk.setup().solo.mutes.empty() && saved.back().find("solo") == nullptr,
+			"no solo: no mutes of the person's kept, and the setup says no solo");
 	}
 
 	// P4: which trig a knob turn locks while live recording.
@@ -1863,6 +2107,8 @@ namespace
 		check(nextLockStep(p, 14, -1) == 8, "stopped: the first trig");
 		check(!nextLockStep(p, 3, 5), "a track without trigs: none");
 	}
+
+	void testSongSlots();
 
 	// P4: the kit library and pattern chooser as pure slot edits.
 	void testLibrary()
@@ -1908,9 +2154,244 @@ namespace
 			&& std::all_of(cleared.trigs.begin(), cleared.trigs.end(), [](const uint64_t _t) { return !_t; }), "pattern clear: no trigs, length and kit link kept");
 		r = run(docs, cmd("{\"op\":\"patCopyTo\",\"from\":" + std::to_string(pat.position) + ",\"to\":20}"), clip);
 		check(r.errors.empty() && r.changes.empty(), "copying an identical pattern changes nothing");
+		testSongSlots();
+	}
+
+	// 0.6 wave 1: the song slots (the library's actions over the songs shelf).
+	void testSongSlots()
+	{
+		Documents docs;
+		ed::MdSong first;
+		first.position = 0;
+		first.name = {'F', 'I', 'R', 'S', 'T'};
+		first.rows = {ed::MdSongRow{3, 0, 1, 0, 0x0005, ed::MdSongRow::g_noTempo, 0, 16}, ed::MdSongRow{}};
+		auto second = emptySong(first, 1);
+		docs.songs[0] = first;
+		docs.songs[1] = second;
+		docs.songs[2] = emptySong(first, 2);
+		docs.songs[2].name = {'O', 'L', 'D'};
+		Clipboard clip;
+		check(isEmptySong(second) && !isEmptySong(first) && !isEmptySong(docs.songs[2]), "a song is empty with no name and no row but END");
+		check(!run(docs, cmd(R"({"op":"songPaste","s":1})"), clip).errors.empty(), "song paste needs a copy first");
+		auto r = run(docs, cmd(R"({"op":"songCopy","s":0})"), clip);
+		check(r.errors.empty() && r.clipboard && r.clipboard->song && r.clipboard->song->name[0] == 'F', "song copy: the clipboard holds the song");
+		clip = *r.clipboard;
+		r = run(docs, cmd(R"({"op":"songPaste","s":1})"), clip);
+		check(r.errors.empty() && r.changes.size() == 1 && r.changes[0].ref().kind == DocKind::Song && r.changes[0].ref().slot == 1
+				&& std::get<ed::MdSong>(r.changes[0].after).position == 1 && std::get<ed::MdSong>(r.changes[0].after).rows == first.rows,
+			"song paste: the rows and name written into S02");
+		r = run(docs, cmd(R"({"op":"songCopyTo","from":0,"to":2})"), clip);
+		check(r.errors.empty() && r.changes.size() == 1 && std::get<ed::MdSong>(r.changes[0].after).position == 2, "song drag-copy: a slot write");
+		r = run(docs, cmd(R"({"op":"songCopyTo","from":0,"to":1,"name":"saved as"})"), clip);
+		check(r.errors.empty() && r.changes.size() == 1 && songNameText(std::get<ed::MdSong>(r.changes[0].after)) == "SAVED AS"
+				&& std::get<ed::MdSong>(r.changes[0].after).rows == first.rows,
+			"Save to...: the song, named, written into another slot (upper case)");
+		check(!run(docs, cmd(R"({"op":"songCopyTo","from":0,"to":0})"), clip).errors.empty(), "song copy onto itself refused");
+		check(!run(docs, cmd(R"({"op":"songCopyTo","from":0,"to":1,"name":"seventeen chars !!"})"), clip).errors.empty(), "a name of more than 16 characters is refused");
+		r = run(docs, cmd(R"({"op":"songClear","s":2})"), clip);
+		check(r.changes.size() == 1 && isEmptySong(std::get<ed::MdSong>(r.changes[0].after)) && std::get<ed::MdSong>(r.changes[0].after).position == 2,
+			"song clear: no name, the END row alone");
+		r = run(docs, cmd(R"({"op":"songRename","s":0,"name":"dub set"})"), clip);
+		check(r.changes.size() == 1 && songNameText(std::get<ed::MdSong>(r.changes[0].after)) == "DUB SET"
+				&& std::get<ed::MdSong>(r.changes[0].after).rows == first.rows,
+			"song rename: the dump written back with the new name, the rows as they were");
+		check(run(docs, cmd(R"({"op":"songRename","s":0,"name":"FIRST"})"), clip).changes.empty(), "renaming to the same name changes nothing");
+		check(!run(docs, cmd(R"({"op":"songClear","s":9})"), clip).errors.empty(), "a song that is not loaded is refused");
 	}
 
 	// P4: HW MIDI link states.
+	// Wave 2: pause, resume, play from a song row, panic, the tempo nudge (doc/modern-ux/PROBES-manual-gaps.md P1, P5).
+	void testTransport()
+	{
+		const auto row = [](const uint8_t _pattern, const uint8_t _repeats, const uint8_t _start, const uint8_t _end, const uint8_t _target = 0)
+		{
+			ed::MdSongRow r;
+			r.pattern = _pattern;
+			r.repeats = _repeats;
+			r.start = _start;
+			r.end = _end;
+			r.target = _target;
+			return r;
+		};
+		ed::MdSong song;
+		song.rows = {row(1, 0, 0, 8), row(2, 1, 0, 4), row(3, 0, 2, 10), row(ed::MdSongRow::g_loopRow, 1, 0, 16, 1), row(4, 0, 0, 16),
+			row(ed::MdSongRow::g_endRow, 0, 0, 16)};
+		check(songPositionOf(song, 0).sixteenths == 0 && songPositionOf(song, 0).refused.empty(), "song position: row 1 is 0");
+		check(songPositionOf(song, 1).sixteenths == 8, "row 2: the 8 steps of row 1");
+		check(songPositionOf(song, 2).sixteenths == 16, "row 3: 8, then row 2's 4 steps played twice");
+		check(!songPositionOf(song, 3).refused.empty(), "a LOOP row is no place to start");
+		check(songPositionOf(song, 4).refused.find("LOOP") != std::string::npos, "a row after a LOOP: refused, the LOOP named");
+		check(!songPositionOf(song, 5).refused.empty() && !songPositionOf(song, 40).refused.empty(), "END and past the song: refused");
+
+		std::vector<std::vector<uint8_t>> wire, midi;
+		std::vector<std::string> keys;
+		std::vector<Value> page;
+		double now = 0;
+		Desk::Port port;
+		port.device.sendSysex = [&](const std::vector<uint8_t>& _b) { wire.push_back(_b); };
+		port.device.pressKey = [&](const std::string& _k) { keys.push_back(_k); return true; };
+		port.device.sendMidi = [&](const std::vector<uint8_t>& _b) { midi.push_back(_b); };
+		port.device.sendMute = [](uint8_t, bool) {};
+		port.toPage = [&](const Value& _m) { page.push_back(_m); g_published.push_back(_m); };
+		port.device.nowMs = [&] { return now; };
+		const auto last = [&](const char* _type) -> const Value*
+		{
+			for(auto it = page.rbegin(); it != page.rend(); ++it)
+				if(it->find("type")->asString() == _type)
+					return &*it;
+			return nullptr;
+		};
+		const auto ok = [&] { const auto* r = last("result"); return r && r->find("ok")->asBool(); };
+		const auto error = [&] { const auto* r = last("result"); const auto* e = r ? r->find("errors") : nullptr;
+			return e && e->isArray() && !e->asArray().empty() ? e->asArray()[0].asString() : std::string(); };
+		const auto can = [&](const char* _name)
+		{
+			const auto* m = last("machine");
+			return m && m->find("doc")->find("capabilities")->find("can")->find(_name)->asBool();
+		};
+		ed::MdGlobal global;
+		const auto serve = [&](Desk& _desk)
+		{
+			for(int round = 0; round < 4000; ++round)
+			{
+				auto sent = std::move(wire);
+				wire.clear();
+				for(const auto& m : sent)
+				{
+					if(m.size() != 9)
+						continue;
+					const auto s = m[7];
+					if(m == ed::mdKitRequest(s)) { ed::MdKit k; k.position = s; _desk.onDeviceSysex(ed::encodeMdKit(k)); }
+					else if(m == ed::mdPatternRequest(s)) { ed::MdPattern p; p.position = s; _desk.onDeviceSysex(ed::encodeMdPattern(p)); }
+					else if(m == ed::mdSongRequest(s)) { auto g = song; g.position = s; _desk.onDeviceSysex(ed::encodeMdSong(g)); }
+					else if(m == ed::mdGlobalRequest(s)) { auto g = global; g.position = s; _desk.onDeviceSysex(ed::encodeMdGlobal(g)); }
+				}
+				now += 20;
+				_desk.tick();
+				if(!_desk.isBusy() && _desk.documents().songs.size() == 32 && _desk.documents().global && wire.empty())
+					break;
+			}
+		};
+		const auto status = [&](Desk& _desk, const uint8_t _param, const uint8_t _value)
+		{
+			_desk.onDeviceSysex({0xf0, 0x00, 0x20, 0x3c, 0x02, 0x00, 0x72, _param, _value, 0xf7});
+		};
+
+		// The emulator: the panel's PLAY pauses and goes on; panic is STOP twice; play from a row is MIDI.
+		{
+			Desk desk(port);
+			Telemetry t;
+			t.valid = true;
+			t.bootAnimation = 0;
+			t.playing = true;
+			t.step = 5;
+			desk.onTelemetry(t);
+			desk.onPageMessage(cmd(R"({"op":"ready"})"));
+			status(desk, 0x04, 0);
+			status(desk, 0x02, 0);
+			status(desk, 0x08, 0);
+			status(desk, 0x01, 0);
+			status(desk, 0x10, 0);
+			desk.tick();
+			serve(desk);
+			check(desk.isInputReady() && desk.documents().songs.count(0) && desk.documents().global, "the emulator: ready, the song and global known");
+			check(can("panic") && can("playFrom"), "the emulator can panic and play from a row");
+			keys.clear();
+			midi.clear();
+			desk.onPageMessage(cmd(R"({"op":"pause","id":1})"));
+			check(ok() && keys.empty() && midi == std::vector<std::vector<uint8_t>>{{0xfc}}, "pause while playing: MIDI Stop (the panel's PLAY is no pause)");
+			t.playing = false;
+			desk.onTelemetry(t);
+			desk.onPageMessage(cmd(R"({"op":"pause","id":2})"));
+			check(!ok() && error().find("Nothing plays") != std::string::npos, "pause while stopped: refused");
+			desk.onPageMessage(cmd(R"({"op":"resume","id":3})"));
+			check(ok() && midi.size() == 2 && midi.back() == std::vector<uint8_t>{0xfb}, "resume: MIDI Continue");
+			keys.clear();
+			desk.onPageMessage(cmd(R"({"op":"panic","id":4})"));
+			check(ok() && keys == std::vector<std::string>{"stop", "stop"}, "panic: STOP twice (P5)");
+			// MD-043: the UNDO KIT through the panel: KIT, ENTER, UP to the list's first entry from the current kit (3), ENTER
+			status(desk, 0x02, 2);
+			desk.tick();
+			keys.clear();
+			desk.onPageMessage(cmd(R"({"op":"loadUndoKit","id":40,"force":true})"));
+			check(ok() && keys == std::vector<std::string>{"kit", "enter", "up", "up", "up", "enter"}, "UNDO KIT: KIT, ENTER, UP three times from K03, ENTER");
+			status(desk, 0x02, 0);
+			desk.tick();
+
+			// play from row 3 while playing in PATTERN mode: MIDI Stop, then SONG mode, then the position and Continue
+			t.playing = true;
+			desk.onTelemetry(t);
+			desk.tick();
+			midi.clear();
+			wire.clear();
+			desk.onPageMessage(cmd(R"({"op":"playFrom","i":2,"id":5})"));
+			check(ok() && midi == std::vector<std::vector<uint8_t>>{{0xfc}}, "play from row 3 while playing: MIDI Stop first");
+			now += 20;
+			desk.tick();
+			check(midi.size() == 1, "nothing more while it still plays");
+			t.playing = false;
+			desk.onTelemetry(t);
+			now += 20;
+			desk.tick();
+			check(std::any_of(wire.begin(), wire.end(), [](const std::vector<uint8_t>& _b) { return _b == ed::mdSetStatus(ed::MdStatus::SequencerMode, 1); }),
+				"stopped: SONG mode (SET STATUS)");
+			check(midi.size() == 1, "the position waits for the machine to say SONG");
+			status(desk, 0x01, 0);
+			now += 20;
+			desk.tick();
+			check(midi.size() == 1, "another status reply is no sign: it still waits");
+			status(desk, 0x10, 1);
+			now += 20;
+			desk.tick();
+			check(midi.size() == 3 && midi[1] == std::vector<uint8_t>{0xf2, 16, 0} && midi[2] == std::vector<uint8_t>{0xfb},
+				"then the song position of row 3 (16 steps) and Continue");
+			desk.onPageMessage(cmd(R"({"op":"playFrom","i":4,"id":6})"));
+			check(!ok() && error().find("LOOP") != std::string::npos, "a row after a LOOP is refused with the reason");
+
+			// the nudge: 10 % faster while held, then back; nothing stored
+			wire.clear();
+			const auto tempo = desk.documents().global->tempo;
+			desk.onPageMessage(cmd(R"({"op":"nudge","pct":10,"id":7})"));
+			now += 50;
+			desk.tick();
+			const auto faster = ed::mdSetTempo(static_cast<uint16_t>(std::lround(tempo * 1.1)));
+			check(ok() && std::any_of(wire.begin(), wire.end(), [&](const std::vector<uint8_t>& _b) { return _b == faster; }), "nudge +10 %: the tempo 10 % up");
+			desk.onPageMessage(cmd(R"({"op":"nudge","pct":10,"id":8})"));
+			desk.onPageMessage(cmd(R"({"op":"nudge","pct":0,"id":9})"));
+			now += 50;
+			desk.tick();
+			check(ok() && std::any_of(wire.begin(), wire.end(), [&](const std::vector<uint8_t>& _b) { return _b == ed::mdSetTempo(tempo); })
+				&& desk.documents().global->tempo == tempo, "let go: back to the stored tempo, the global document unchanged");
+		}
+
+		// A wire: Stop and Continue; no panic (no MIDI message silences the MD); CTRL IN off refuses.
+		{
+			Desk desk(port);
+			desk.setEngine(Desk::defaultAdapter(wireProfile(), port.device));
+			desk.onTelemetry(Telemetry{});
+			desk.onPageMessage(cmd(R"({"op":"ready"})"));
+			status(desk, 0x04, 0);
+			status(desk, 0x08, 0);
+			status(desk, 0x01, 0);
+			desk.tick();
+			serve(desk);
+			check(desk.isInputReady() && !can("panic") && can("playFrom"), "HW: no panic, play from a row");
+			midi.clear();
+			keys.clear();
+			desk.onPageMessage(cmd(R"({"op":"pause","id":10})"));
+			desk.onPageMessage(cmd(R"({"op":"resume","id":11})"));
+			check(ok() && keys.empty() && midi == std::vector<std::vector<uint8_t>>{{0xfc}, {0xfb}}, "HW: pause is MIDI Stop, resume MIDI Continue");
+			desk.onPageMessage(cmd(R"({"op":"panic","id":12})"));
+			check(!ok() && error().find("STOP twice") != std::string::npos, "HW: panic refused with the reason");
+			global.syncFlags = ed::mdGlobalBits::g_ctrlInOff;
+			desk.onDeviceSysex(ed::encodeMdGlobal(global));
+			desk.tick();
+			desk.onPageMessage(cmd(R"({"op":"pause","id":13})"));
+			check(!ok() && error().find("CTRL IN") != std::string::npos, "HW, CTRL IN off: pause refused, CTRL IN named");
+			global = {};
+		}
+	}
+
 	void testHardwareLink()
 	{
 		std::vector<Value> page;
@@ -2613,7 +3094,7 @@ namespace
 		check(false, gap.c_str());
 		// The plug-in's host sends these; this test has no host.
 		const auto r = contract::checkMessages(*root, g_published, {"learn", "audio", "audioLevel", "openAudio",
-			"romInstall", "romInfo", "notice", "syxPreview", "syxProgress", "syxExport", "host", "audioRun", "cpuLoad", "outputLevel",
+			"romInstall", "romInfo", "notice", "syxPreview", "syxProgress", "syxExport", "syxExportInfo", "syxReset", "host", "audioRun", "cpuLoad", "outputLevel", "machineMemory", "midiIn", "midiHeld",
 			"editorMenu", "zoom", "drop", "dragFiles"});
 		for(const auto& p : r.off)
 			std::printf("    %s\n", p.c_str());
@@ -2960,6 +3441,7 @@ int main(const int _argc, char** _argv)
 	testCopyPaste();
 	testStepBlocks();
 	testKitEditsAndDelivery();
+	testRevertTrack();
 	testSongEdits();
 	testGlobal();
 	testHistory();
@@ -2974,6 +3456,7 @@ int main(const int _argc, char** _argv)
 	testLockStep();
 	testLibrary();
 	testHardwareLink();
+	testTransport();
 	testGlobalSet();
 	testWorkingKitMemory();
 	testKnobRecorder();

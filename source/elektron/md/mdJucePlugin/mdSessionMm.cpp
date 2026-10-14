@@ -61,6 +61,7 @@ namespace mdJucePlugin
 			{
 				m_link.sendMidi(static_cast<uint8_t>((_v ? 0x90 : 0x80) | (_ch & 0x0f)), _n & 0x7f, _v & 0x7f);
 			};
+			p.sendMidi = [this](const std::vector<uint8_t>& _m) { m_link.sendShort(_m); };
 			p.nowMs = [] { return nowMs(); };
 			return p;
 		}
@@ -126,35 +127,11 @@ namespace mdJucePlugin
 
 	// The Monomachine Editor's session: the engine map, the learnable parameters, its page, the page's
 	// MIDI and the app modulators kept with the project.
-	// P7: the Monomachine's SysEx import traits (mdSyxSession.h)
-	template<> struct SyxTraits<mmDesk::Desk>
-	{
-		using Docs = elektronData::MmDocuments;
-		static constexpr elektronData::SyxModel model = elektronData::SyxModel::Mm;
-		static constexpr const char* name = "Monomachine";
-		static const Docs& docs(const elektronData::SyxFile& _f) { return _f.mm; }
-		static Docs machine(const mmDesk::Desk& _d)
-		{
-			const auto& v = _d.documents();
-			Docs o;
-			o.patterns = v.patterns;
-			o.kits = v.kits;
-			o.songs = v.songs;
-			o.globals = v.globals;
-			return o;
-		}
-		// The slots the machine is on (B-019: the preview marks the imported items that land in what plays).
-		static SyxPlaying playing(const mmDesk::Desk& _d)
-		{
-			return {_d.currentPattern(), _d.currentKit(), _d.currentSong(), _d.currentGlobal()};
-		}
-	};
-
 	class MmSession final : public SessionOf<mmDesk::Desk, MmEngine>
 	{
 	public:
 		explicit MmSession(AudioPluginAudioProcessor& _processor)
-			: SessionOf<mmDesk::Desk, MmEngine>(_processor, engines(), learnModel(), page(), std::nullopt)
+			: SessionOf<mmDesk::Desk, MmEngine>(_processor, engines(), learnModel(), page(), deskCore::modSetupToJson({}, mmDesk::g_mmModLimits))
 		{
 		}
 

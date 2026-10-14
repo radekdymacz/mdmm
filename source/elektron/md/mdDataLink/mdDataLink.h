@@ -99,6 +99,8 @@ namespace mdDataLink
 		void saveKit(uint8_t _slot);
 		void loadSong(uint8_t _slot);
 		void saveSong(uint8_t _slot);
+		// B-098: this session sent LOAD SONG (the machine's working song is then a slot's song)
+		bool songLoaded() const { return m_songLoaded; }
 		// The firmware now holds a pattern chain (BANK + TRIG keys, mdDesk/mdDeskChain.h). The
 		// chain is what plays next: the firmware drops a LOAD PATTERN still waiting for the
 		// pattern end (measured, mdDeskFirmwareTest p4), so the queued pattern goes and the
@@ -137,5 +139,6 @@ namespace mdDataLink
 
 		Send m_send;
 		State m_state;
+		bool m_songLoaded = false;
 	};
 }

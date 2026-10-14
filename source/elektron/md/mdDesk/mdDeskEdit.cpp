@@ -267,7 +267,13 @@ namespace mdDesk
 				_in.errors.push_back("Step " + std::to_string(*s + 1) + " of " + trackName(t) + " has no trig");
 				return {};
 			}
-			toggleBit(bitsOf(_p, _m, t), size_t(*s));
+			// on: set or clear (a paint across steps); without it the mark toggles
+			auto& bits = bitsOf(_p, _m, t);
+			const auto bit = uint64_t{1} << size_t(*s);
+			if(const auto on = _in.a.flag("on"))
+				bits = *on ? bits | bit : bits & ~bit;
+			else
+				toggleBit(bits, size_t(*s));
 			if(_p.*_m.editAll)
 				_in.note = "Pattern-wide " + std::string(_m.name) + " (EDIT ALL is on)";
 			return _p;
@@ -275,6 +281,18 @@ namespace mdDesk
 
 		std::optional<ed::MdPattern> accent(ed::MdPattern _p, const In& _in) { return toggleMark(std::move(_p), _in, g_accent); }
 		std::optional<ed::MdPattern> slide(ed::MdPattern _p, const In& _in) { return toggleMark(std::move(_p), _in, g_slide); }
+		std::optional<ed::MdPattern> swingStep(ed::MdPattern _p, const In& _in) { return toggleMark(std::move(_p), _in, g_swing); }
+
+		// The pattern's EDIT ALL of one mark (FUNCTION + B/F, C/G or D/H, then [RIGHT] on the machine): all = one
+		// pattern-wide row every track takes (any nonzero flag is ALL: gapProbesFirmwareTest p7), else each track's own.
+		// Both rows stay in the pattern, as on the machine: switching back shows the other row again.
+		std::optional<ed::MdPattern> markMode(ed::MdPattern _p, const In& _in)
+		{
+			const auto& mark = _in.a.text("mark");
+			const Mark& m = mark == "accent" ? g_accent : mark == "slide" ? g_slide : g_swing;
+			_p.*m.editAll = *_in.a.flag("all") ? 1 : 0;
+			return _p;
+		}
 
 		std::optional<ed::MdPattern> lock(ed::MdPattern _p, const In& _in)
 		{
@@ -537,8 +555,36 @@ namespace mdDesk
 				_in.errors.push_back("Total length is 16, 32, 48 or 64");
 				return {};
 			}
+			const size_t was = ed::visibleSteps(_p), now = size_t(*v);
 			_p.scale = uint8_t(*v / 16 - 1);
 			_p.length = uint8_t(*v);
+			// MD-106, as the machine's SCALE SETUP (measured, gapProbesFirmwareTest w12extend): a longer total length
+			// repeats the steps it had into the new ones (trigs, accent, slide, swing, locks) when no track has a trig
+			// from the old end on; otherwise the new steps stay as they are. The repeat runs in whole 16 or 32 step
+			// blocks: from 48 steps the new page is steps 17-32 again, not 1-16 (B-103, mdDeskFirmwareTest p4, the LCD's
+			// LEN clicked 32 -> 48 -> 64)
+			const uint64_t later = was >= 64 ? 0 : ~0ull << was;
+			const bool clean = std::none_of(_p.trigs.begin(), _p.trigs.end(), [&](const uint64_t _t) { return (_t & later) != 0; });
+			if(now <= was || !clean)
+				return _p;
+			const size_t period = was >= 32 ? 32 : 16;
+			const auto repeat = [&](uint64_t& _bits)
+			{
+				for(size_t i = was; i < now; ++i)
+					_bits = ((_bits >> (i % period)) & 1) ? (_bits | (1ull << i)) : (_bits & ~(1ull << i));
+			};
+			for(size_t t = 0; t < ed::MdPattern::g_tracks; ++t)
+				for(auto* bits : {&_p.trigs[t], &_p.trackAccent[t], &_p.trackSlide[t], &_p.trackSwing[t]})
+					repeat(*bits);
+			repeat(_p.accentPattern);
+			repeat(_p.slidePattern);
+			repeat(_p.swingPattern);
+			for(auto& row : _p.lockRows)
+				for(size_t i = was; i < now; ++i)
+					row[i] = row[i % period];
+			const auto from = was % period;
+			_in.note = "As the machine does: " + (from ? "steps " + std::to_string(from + 1) + " to " + std::to_string(from + now - was)
+				: "the first " + std::to_string(was) + " steps") + " repeat into steps " + std::to_string(was + 1) + " to " + std::to_string(now);
 			return _p;
 		}
 
@@ -752,7 +798,7 @@ namespace mdDesk
 		const Edits<ed::MdPattern>& patternEdits()
 		{
 			static const Edits<ed::MdPattern> edits{
-				{"trig", trig}, {"accent", accent}, {"slide", slide}, {"lock", lock}, {"clearLane", clearLane},
+				{"trig", trig}, {"accent", accent}, {"slide", slide}, {"swingStep", swingStep}, {"markMode", markMode}, {"lock", lock}, {"clearLane", clearLane},
 				{"length", length}, {"totalLength", totalLength}, {"speed", speed}, {"swing", swing},
 				{"accentAmount", accentAmount}, {"patternKit", patternKit}, {"clearSteps", clearSteps},
 				{"clearLocks", clearLocks}, {"clearPattern", clearPattern}, {"steps", steps}, {"rotate", rotate}, {"doublePattern", doublePattern}, {"copySteps", copySteps}, {"pasteSteps", pasteSteps}, {"copyStepsTo", copyStepsTo}};
@@ -909,6 +955,31 @@ namespace mdDesk
 			return _k;
 		}
 
+		// revertTrack {k, t}: track t of the kit that plays goes back to how the kit's slot stores it (the Sound page's
+		// Revert track): its machine, its 24 values, its level, its LFO (the running state stays the machine's) and its
+		// two relations. One change of the working kit, so one undo step; the slot itself is not touched.
+		std::optional<ed::MdKit> revertedTrack(const Documents& _docs, ed::MdKit _k, const In& _in)
+		{
+			const auto t = size_t(*_in.a.integer("t"));
+			const auto it = _docs.kits.find(_k.position);
+			if(it == _docs.kits.end())
+			{
+				_in.errors.push_back("kit " + std::to_string(_k.position + 1) + " is not read from its slot yet");
+				return {};
+			}
+			const auto& s = it->second;
+			_k.models[t] = s.models[t];
+			_k.params[t] = s.params[t];
+			_k.levels[t] = s.levels[t];
+			const auto state = _k.lfos[t].state;
+			_k.lfos[t] = s.lfos[t];
+			_k.lfos[t].state = state;
+			_k.trigGroups[t] = s.trigGroups[t];
+			_k.muteGroups[t] = s.muteGroups[t];
+			_in.note = trackName(t) + " is back as kit " + std::to_string(_k.position + 1) + " stores it";
+			return _k;
+		}
+
 		// Control All (manual p.37, FUNCTION + a DATA ENTRY knob): the same knob of one page on every track
 		// the machine's own gesture reaches, moved by d and held at 0..127 (controlAllReaches). "t", the
 		// track the gesture is on, only says which track leads it on the machine (the adapter's).
@@ -930,6 +1001,238 @@ namespace mdDesk
 				{"masterFx", masterFx}, {"kitName", kitName}, {"copySound", copySound}, {"pasteSound", pasteSound},
 				{"clearSound", clearSound}, {"tweak", tweak}};
 			return edits;
+		}
+
+		// ---- a track's parts: COPY / PASTE / CLEAR what (the machine's SUPER COPY and SUPER CLEAR; deskCore/deskEdits.h
+		// trackParts). The whole track: every step of the pattern (all 64, as the machine copies a track), and the kit
+		// that plays for the sound and the LFO ----
+
+		using deskCore::trackParts::Mask;
+		using TrackHome = deskCore::trackParts::Home;
+		enum TrackPart : size_t { PartTrigs, PartAccent, PartSwing, PartSlide, PartLocks, PartSound, PartLfo };
+		bool has(const Mask _m, const TrackPart _p) { return (_m & deskCore::trackParts::bit(_p)) != 0; }
+
+		// SPD, DEPTH, SHMIX: kit parameters of the routing page that belong to the LFO part, not the sound.
+		bool lfoParam(const size_t _i)
+		{
+			for(const auto& p : ed::g_mdLfoParams)
+				if(p.index == _i)
+					return true;
+			return false;
+		}
+
+		uint64_t markBits(const ed::MdPattern& _p, const Mark& _m, const size_t _t)
+		{
+			return _p.*_m.editAll ? _p.*_m.all : (_p.*_m.perTrack)[_t & 15];
+		}
+
+		constexpr std::array<std::pair<TrackPart, const Mark*>, 3> g_markParts{{{PartAccent, &g_accent}, {PartSwing, &g_swing}, {PartSlide, &g_slide}}};
+		uint64_t Clipboard::Track::* markField(const TrackPart _p)
+		{
+			return _p == PartAccent ? &Clipboard::Track::accent : _p == PartSwing ? &Clipboard::Track::swing : &Clipboard::Track::slide;
+		}
+
+		std::string trackNameOf(const int _t) { return trackName(size_t(_t)); }
+
+		std::string trackRefuse(Mask, int, int) { return {}; }
+
+		void trackTake(const ed::MdPattern* _p, const ed::MdKit* _k, const int _t, Mask, Clipboard::Track& _v)
+		{
+			const auto t = size_t(_t);
+			if(_p)
+			{
+				_v.trigs = _p->trigs[t];
+				for(const auto& [part, mark] : g_markParts)
+					_v.*markField(part) = markBits(*_p, *mark, t);
+				for(uint8_t param = 0; param < ed::MdKit::g_paramsPerTrack; ++param)
+					for(uint8_t s = 0; s < ed::MdPattern::g_maxSteps; ++s)
+						if(const auto v = ed::lockValue(*_p, t, param, s))
+							_v.locks[param][s] = *v;
+			}
+			if(_k)
+			{
+				_v.model = _k->models[t];
+				_v.params = _k->params[t];
+				_v.level = _k->levels[t];
+				_v.lfo = _k->lfos[t];
+			}
+		}
+
+		// Locks need a trig: the ones on steps of track _t without one go.
+		ed::MdPattern withoutTriglessLocks(ed::MdPattern _p, const size_t _t)
+		{
+			for(size_t param = 0; param < ed::MdKit::g_paramsPerTrack; ++param)
+				for(size_t s = 0; s < ed::MdPattern::g_maxSteps; ++s)
+					if(!ed::hasTrig(_p, _t, s) && ed::lockValue(_p, _t, param, s))
+						_p = ed::withoutLock(_p, _t, param, s);
+			return _p;
+		}
+
+		void trackPut(ed::MdPattern* _p, ed::MdKit* _k, const Clipboard::Track& _v, const int _from, const int _to, const Mask _m,
+			std::vector<std::string>& _skipped)
+		{
+			const auto t = size_t(_to);
+			if(_p)
+			{
+				auto& p = *_p;
+				if(has(_m, PartTrigs))
+				{
+					p.trigs[t] = _v.trigs;
+					p = withoutTriglessLocks(std::move(p), t);
+				}
+				// A mark with EDIT ALL on is the pattern's, shared by every track (bitsOf).
+				for(const auto& [part, mark] : g_markParts)
+					if(has(_m, part))
+						bitsOf(p, *mark, t) = _v.*markField(part);
+				if(has(_m, PartLocks))
+				{
+					p = withoutTrackLocks(std::move(p), t);
+					size_t noTrig = 0, full = 0;
+					for(const auto& [param, steps] : _v.locks)
+						for(const auto& [s, v] : steps)
+						{
+							if(!ed::hasTrig(p, t, s))
+							{
+								++noTrig;
+								continue;
+							}
+							if(const auto locked = ed::withLock(p, t, param, s, v))
+								p = *locked;
+							else
+								++full;
+						}
+					if(noTrig)
+						_skipped.push_back(trackName(t) + ": " + std::to_string(noTrig) + " lock(s) left out, on steps without a trig");
+					if(full)
+						_skipped.push_back(trackName(t) + ": " + std::to_string(full) + " lock(s) left out: all 64 locked parameters are in use");
+				}
+			}
+			if(_k)
+			{
+				auto& k = *_k;
+				if(has(_m, PartSound))
+				{
+					k.models[t] = _v.model;
+					for(size_t i = 0; i < ed::MdKit::g_paramsPerTrack; ++i)
+						if(!lfoParam(i))
+							k.params[t][i] = _v.params[i];
+					k.levels[t] = _v.level;
+				}
+				if(has(_m, PartLfo))
+				{
+					// An LFO that modulated its own track modulates the track it lands on.
+					k.lfos[t] = _v.lfo;
+					if(_v.lfo.track == _from)
+						k.lfos[t].track = uint8_t(t);
+					for(const auto& lp : ed::g_mdLfoParams)
+						k.params[t][lp.index] = _v.params[lp.index];
+				}
+			}
+		}
+
+		void trackClear(ed::MdPattern* _p, ed::MdKit* _k, const int _t, const Mask _m)
+		{
+			const auto t = size_t(_t);
+			if(_p)
+			{
+				auto& p = *_p;
+				// a lock needs a trig: clearing the trigs takes the locks too
+				if(has(_m, PartTrigs) || has(_m, PartLocks))
+					p = withoutTrackLocks(std::move(p), t);
+				if(has(_m, PartTrigs))
+					p.trigs[t] = 0;
+				for(const auto& [part, mark] : g_markParts)
+					if(has(_m, part))
+						bitsOf(p, *mark, t) = 0;
+			}
+			if(_k)
+			{
+				auto& k = *_k;
+				if(has(_m, PartSound))
+				{
+					// as clearSound: the machine's own defaults are in the firmware; the machine stays
+					for(size_t i = 0; i < ed::MdKit::g_paramsPerTrack; ++i)
+						if(!lfoParam(i))
+							k.params[t][i] = g_neutral[i];
+					k.levels[t] = g_neutralLevel;
+				}
+				if(has(_m, PartLfo))
+				{
+					auto& l = k.lfos[t];
+					l.track = uint8_t(t);
+					l.param = l.shape1 = l.shape2 = l.update = 0;
+					for(const auto& lp : ed::g_mdLfoParams)
+						k.params[t][lp.index] = g_neutral[lp.index];
+				}
+			}
+		}
+
+		using TrackSpec = deskCore::trackParts::Spec<ed::MdPattern, ed::MdKit, Clipboard::Track>;
+		const TrackSpec& trackSpec()
+		{
+			static const TrackSpec spec{trackParts(), int(ed::MdPattern::g_tracks), trackNameOf, trackRefuse, trackTake, trackPut, trackClear};
+			return spec;
+		}
+
+		// trackCopy, trackPaste, trackClear: the pattern (p) and the kit that plays (k) the named parts need, the run
+		// (deskCore), then one change a document it changed (one undo step).
+		EditResult applyTrack(const Documents& _docs, const Value& _command, Clipboard& _clipboard, const EditContext& _context)
+		{
+			namespace tp = deskCore::trackParts;
+			EditResult r;
+			const auto& op = _command.find("op")->asString();
+			const auto mask = tp::parse(_command.find("what"), trackParts(), r.errors);
+			if(!mask)
+				return r;
+			const Args args(_command, r.errors);
+			std::optional<ed::MdPattern> pattern;
+			std::optional<ed::MdKit> kit;
+			if(tp::touches(*mask, trackParts(), TrackHome::Pattern))
+			{
+				if(const auto p = args.integer("p"))
+				{
+					if(const auto it = _docs.patterns.find(uint8_t(*p)); it != _docs.patterns.end())
+						pattern = it->second;
+					else
+						r.errors.push_back("pattern " + ed::mdPatternName(unsigned(*p)) + " is not loaded yet");
+				}
+			}
+			if(tp::touches(*mask, trackParts(), TrackHome::Kit))
+			{
+				if(const auto k = args.integer("k"))
+				{
+					if(!_context.currentKit || *_context.currentKit != *k)
+						r.errors.push_back("kit " + std::to_string(*k + 1) + " is not the kit that plays: " + op + " edits the working kit of the kit that plays");
+					else if(const auto* w = _docs.workingKitOf(uint8_t(*k)))
+						kit = *w;
+					else
+						r.errors.push_back("the working kit of kit " + std::to_string(*k + 1) + " is not loaded yet");
+				}
+			}
+			if(!r.errors.empty())
+				return r;
+			const auto before = pattern;
+			const auto kitBefore = kit;
+			if(!tp::run(tp::actions().at(op), _command, *mask, pattern ? &*pattern : nullptr, kit ? &*kit : nullptr, _clipboard.track, trackSpec(),
+				r.errors, r.note))
+			{
+				r.note.clear();
+				return r;
+			}
+			std::vector<Change> changes;
+			if(pattern && !(*pattern == *before))
+				changes.push_back({Document(*before), Document(*pattern)});
+			if(kit && !(*kit == *kitBefore))
+				changes.push_back({Document(WorkingKit{*kitBefore}), Document(WorkingKit{*kit})});
+			for(const auto& c : changes)
+				if(auto problems = problemsOf(c.after); !problems.empty())
+				{
+					r.errors = std::move(problems);
+					r.note.clear();
+					return r;
+				}
+			r.changes = std::move(changes);
+			return r;
 		}
 
 		// ---- song (edited as contract rows, so row semantics stay in mdJson; the row ops are deskCore's, shared
@@ -1055,6 +1358,34 @@ namespace mdDesk
 			return true;
 		}
 
+		// 0.6 (PROBES-manual-gaps.md P3): TRIG IN A or B, one setting: GATE, SENS, VMIN, VMAX 0-127, DEST 0-15 a track or
+		// 16 none. The bytes are interleaved: setting i of input A at 2i, of B at 2i + 1.
+		bool trigIn(ed::MdGlobal& _g, const In& _in)
+		{
+			const auto* param = _in.a.value("param");
+			if(!param || !param->isString())
+			{
+				_in.errors.push_back("param: dest, gate, sens, vmin or vmax");
+				return false;
+			}
+			const auto input = _in.a.integer("input");
+			if(!input)
+				return false;
+			const auto i = _in.a.indexIn("param", ed::g_mdTrigInParams);
+			const auto v = _in.a.within("v", 0, i == 0 ? 16 : 127);
+			if(v)
+				_g.inputSettings[i * 2 + static_cast<size_t>(*input)] = uint8_t(*v);
+			return v.has_value();
+		}
+
+		// 0.6: the map editor back to Elektron's note map (what Reset MIDI note map, 0x64, leaves: mdDeskFirmwareTest
+		// resetmap); the rest of the global stays.
+		bool resetMap(ed::MdGlobal& _g, const In&)
+		{
+			_g.keymap = ed::mdFactoryGlobal(_g.position).keymap;
+			return true;
+		}
+
 		const std::map<std::string, GlobalField>& globalFields()
 		{
 			static const std::map<std::string, GlobalField> fields{
@@ -1068,7 +1399,9 @@ namespace mdDesk
 				{"localControl", localControl},
 				{"programChangeChannel", programChangeChannel},
 				{"trigMode", trigMode},
-				{"keymap", keymap}};
+				{"keymap", keymap},
+				{"trigIn", trigIn},
+				{"resetMap", resetMap}};
 			return fields;
 		}
 
@@ -1086,7 +1419,7 @@ namespace mdDesk
 			return _g;
 		}
 
-		// B-051, F3: GLOBAL › Reset to defaults: the global the machine ships with, measured (elektronData::mdFactoryGlobal)
+		// B-051, F3: GLOBAL › Clear: the global the machine ships with, measured (elektronData::mdFactoryGlobal)
 		std::optional<ed::MdGlobal> globalReset(ed::MdGlobal _g, const In&)
 		{
 			return ed::mdFactoryGlobal(_g.position);
@@ -1161,6 +1494,13 @@ namespace mdDesk
 			{
 				_in.errors.push_back("the working kit of " + slotName("kit", k) + " is not loaded yet");
 				return {};
+			}
+			if(_op == "revertTrack")
+			{
+				auto after = revertedTrack(_docs, *kit, _in);
+				if(!after)
+					return {};
+				return Edited{Document(WorkingKit{*kit}), Document(WorkingKit{*after})};
 			}
 			return run<ed::MdKit, WorkingKit>(kitEdits(), *kit, _op, _in);
 		}
@@ -1246,6 +1586,8 @@ namespace mdDesk
 	std::vector<std::string> editOps()
 	{
 		std::vector<std::string> ops = libraryOps();
+		for(const auto& op : deskCore::trackParts::ops())
+			ops.push_back(op);
 		const auto add = [&ops](const auto& _edits)
 		{
 			for(const auto& [op, fn] : _edits)
@@ -1253,6 +1595,7 @@ namespace mdDesk
 		};
 		add(patternEdits());
 		add(kitEdits());
+		ops.push_back("revertTrack");	// a working-kit edit that reads the stored slot (editWorkingKit)
 		add(songEdits());
 		add(globalEdits());
 		return ops;
@@ -1283,10 +1626,19 @@ namespace mdDesk
 		// Values in, values out: the clipboard the command leaves is returned, not changed in place.
 		auto clipboard = _clipboard;
 		result = row->group == g_library ? applyLibrary(_docs, _command, *row, clipboard, _context)
+			: row->group == g_track ? applyTrack(_docs, _command, clipboard, _context)
 			: applyEdit(_docs, _command, *row, clipboard, _context);
 		if(result.errors.empty() && !(clipboard == _clipboard))
 			result.clipboard = std::move(clipboard);
 		return result;
+	}
+
+	const std::vector<deskCore::trackParts::Part>& trackParts()
+	{
+		using H = deskCore::trackParts::Home;
+		static const std::vector<deskCore::trackParts::Part> parts{{"trigs", H::Pattern}, {"accent", H::Pattern}, {"swing", H::Pattern},
+			{"slide", H::Pattern}, {"locks", H::Pattern}, {"sound", H::Kit}, {"lfo", H::Kit}};
+		return parts;
 	}
 
 	bool controlAllReaches(const uint32_t _model, const size_t _index)

@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>23. Appendix C: SysEx reference · Monomachine Editor guide</title>
+<meta name="description" content="The SysEx messages of the Monomachine, and where the editor sends or reads each one.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/mm/23-appendix-c-sysex-reference/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261014b">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>@page { @top-left { content: "23. Appendix C: SysEx reference"; } }</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › <a href="/guide/mm/">Monomachine Editor</a> › Appendix C: SysEx reference</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Chapters of the Monomachine Editor guide">
+<p class="gd-side-title"><a href="/guide/mm/">Monomachine Editor guide</a></p>
+<ol class="gd-side-list"><li><a href="/guide/mm/01-introduction-philosophy-highlights/">1. Introduction, philosophy, highlights</a></li>
+<li><a href="/guide/mm/02-user-interface-and-connectors/">2. User interface and connectors</a></li>
+<li><a href="/guide/mm/03-the-lcd-user-interface/">3. The LCD user interface</a></li>
+<li><a href="/guide/mm/04-quick-start/">4. Quick start</a></li>
+<li><a href="/guide/mm/05-monomachine-overview/">5. Monomachine overview</a></li>
+<li><a href="/guide/mm/06-synthesis-arrangement-kits-and-machines/">6. Synthesis arrangement: kits and machines</a></li>
+<li><a href="/guide/mm/07-track-effects/">7. Track effects</a></li>
+<li><a href="/guide/mm/08-low-frequency-oscillators/">8. Low frequency oscillators</a></li>
+<li><a href="/guide/mm/09-additional-kit-settings/">9. Additional kit settings</a></li>
+<li><a href="/guide/mm/10-the-pattern-sequencer-pattern-operation/">10. The pattern sequencer: pattern operation</a></li>
+<li><a href="/guide/mm/11-composing-a-pattern/">11. Composing a pattern</a></li>
+<li><a href="/guide/mm/12-tempo/">12. Tempo</a></li>
+<li><a href="/guide/mm/13-parameter-locks/">13. Parameter locks</a></li>
+<li><a href="/guide/mm/14-advanced-sequencer-control/">14. Advanced sequencer control</a></li>
+<li><a href="/guide/mm/15-additional-sequencer-features/">15. Additional sequencer features</a></li>
+<li><a href="/guide/mm/16-the-midi-sequencer/">16. The MIDI sequencer</a></li>
+<li><a href="/guide/mm/17-the-song-mode/">17. The song mode</a></li>
+<li><a href="/guide/mm/18-routing/">18. Routing</a></li>
+<li><a href="/guide/mm/19-global-settings/">19. Global settings</a></li>
+<li><a href="/guide/mm/20-early-startup-menu-technical-information/">20. Early startup menu, technical information</a></li>
+<li><a href="/guide/mm/21-appendix-a-machine-reference/">21. Appendix A: machine reference</a></li>
+<li><a href="/guide/mm/22-appendix-b-midi-control-reference/">22. Appendix B: MIDI control reference</a></li>
+<li class="gd-side-cur"><a href="/guide/mm/23-appendix-c-sysex-reference/" aria-current="page">23. Appendix C: SysEx reference</a><ol class="gd-side-subs"><li><a href="#0x50-0x51-global-dump-request">0x50 / 0x51 GLOBAL DUMP, REQUEST</a></li><li><a href="#0x52-0x53-kit-dump-request">0x52 / 0x53 KIT DUMP, REQUEST</a></li><li><a href="#0x54-unused">0x54 UNUSED</a></li><li><a href="#0x55-set-current-kit-name">0x55 SET CURRENT KIT NAME</a></li><li><a href="#0x56-set-active-global">0x56 SET ACTIVE GLOBAL</a></li><li><a href="#0x57-load-pattern">0x57 LOAD PATTERN</a></li><li><a href="#0x58-0x59-load-save-kit">0x58 / 0x59 LOAD / SAVE KIT</a></li><li><a href="#0x5b-assign-machine">0x5B ASSIGN MACHINE</a></li><li><a href="#0x5c-set-track-routing">0x5C SET TRACK ROUTING</a></li><li><a href="#0x5d-0x5e-digipro-waveform-dump-request">0x5D / 0x5E DIGIPRO WAVEFORM DUMP, REQUEST</a></li><li><a href="#0x5e-set-gate-box-parameter">0x5E SET GATE BOX PARAMETER</a></li><li><a href="#0x61-set-tempo">0x61 SET TEMPO</a></li><li><a href="#0x67-0x68-pattern-dump-request">0x67 / 0x68 PATTERN DUMP, REQUEST</a></li><li><a href="#0x69-0x6a-song-dump-request">0x69 / 0x6A SONG DUMP, REQUEST</a></li><li><a href="#0x6c-0x6d-load-save-song">0x6C / 0x6D LOAD / SAVE SONG</a></li><li><a href="#0x70-to-0x72-status-request-set-response">0x70 TO 0x72 STATUS REQUEST, SET, RESPONSE</a></li><li><a href="#turbomidi-speed-messages">TURBOMIDI SPEED MESSAGES</a></li></ol></li>
+<li><a href="/guide/mm/24-beyond-the-hardware/">24. Beyond the hardware</a></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">23</span><span class="gd-ctitle">Appendix C: SysEx reference</span></h1><p class="gd-cmeta">MM manual pp.C-1 to C-6</p></header>
+<div class="gd-intro gd-prose"><p>The Monomachine is edited and backed up with SysEx messages. This appendix lists them by their message number and says where the editor uses each one. You do not write them by hand: the editor sends them as you work, and writes or reads them in a .syx file when you use <b class="gd-ui">Export SysEx…</b> and <b class="gd-ui">Import SysEx…</b> (chapter 19, &quot;FILE&quot;).</p></div>
+<section class="gd-sec" id="0x50-0x51-global-dump-request" aria-labelledby="0x50-0x51-global-dump-request-h">
+<div class="gd-body gd-prose"><h2 id="0x50-0x51-global-dump-request-h">0x50 / 0x51 GLOBAL DUMP, REQUEST <a class="gd-anchor" href="#0x50-0x51-global-dump-request" aria-label="Link to 0x50 / 0x51 GLOBAL DUMP, REQUEST">#</a></h2>
+<p class="gd-ref">MM manual p.C-1</p>
+<p>The global dump holds the data of one global slot: routing, MIDI channels, control in, control out 1 and 2, the MIDI sequencer settings, the multi map and the master tune. The editor reads and writes all of these. A few bytes have no known use, and the editor keeps them as the machine sent them.</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">GLOBAL</b> in the top bar.</li><li>Click the plus beside Master tune. The tune goes up by 0.1 Hz.</li><li>Hold <kbd class="gd-key">[SHIFT]</kbd> and click the minus. The tune goes down by 1 Hz.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> twice. The tune is as before.</li></ol>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-mm-global-tune.webp" aria-label="Open the picture full size: The master tune in GLOBAL"><img src="/guide/shots/e2e-mm-global-tune.webp" width="1440" height="924" alt="The master tune in GLOBAL" loading="lazy"></a><figcaption>The master tune in GLOBAL</figcaption></figure>
+</div></section>
+<section class="gd-sec" id="0x52-0x53-kit-dump-request" aria-labelledby="0x52-0x53-kit-dump-request-h">
+<div class="gd-body gd-prose"><h2 id="0x52-0x53-kit-dump-request-h">0x52 / 0x53 KIT DUMP, REQUEST <a class="gd-anchor" href="#0x52-0x53-kit-dump-request" aria-label="Link to 0x52 / 0x53 KIT DUMP, REQUEST">#</a></h2>
+<p class="gd-ref">MM manual p.C-1</p>
+<p>The kit dump holds a whole kit. The kit library and the SysEx panel send and read it.</p>
+</div></section>
+<section class="gd-sec" id="0x54-unused" aria-labelledby="0x54-unused-h">
+<div class="gd-body gd-prose"><h2 id="0x54-unused-h">0x54 UNUSED <a class="gd-anchor" href="#0x54-unused" aria-label="Link to 0x54 UNUSED">#</a></h2>
+<p class="gd-ref">MM manual p.C-1</p>
+<p>The machine does not use message 0x54, and neither does the editor.</p>
+</div></section>
+<section class="gd-sec" id="0x55-set-current-kit-name" aria-labelledby="0x55-set-current-kit-name-h">
+<div class="gd-body gd-prose"><h2 id="0x55-set-current-kit-name-h">0x55 SET CURRENT KIT NAME <a class="gd-anchor" href="#0x55-set-current-kit-name" aria-label="Link to 0x55 SET CURRENT KIT NAME">#</a></h2>
+<p class="gd-ref">MM manual p.C-1</p>
+<p>This message renames the kit that is loaded. The <b class="gd-ui">Rename</b> control of the kit library sends it.</p>
+</div></section>
+<section class="gd-sec" id="0x56-set-active-global" aria-labelledby="0x56-set-active-global-h">
+<div class="gd-body gd-prose"><h2 id="0x56-set-active-global-h">0x56 SET ACTIVE GLOBAL <a class="gd-anchor" href="#0x56-set-active-global" aria-label="Link to 0x56 SET ACTIVE GLOBAL">#</a></h2>
+<p class="gd-ref">MM manual p.C-1</p>
+<p>This message chooses the global slot in use. The slot keys of the GLOBAL panel send it: click key 2 and it lights, and the machine takes slot 2 as the active global. A slot made active while a dump is arriving on the SYSEX RECV screen stays active.</p>
+</div></section>
+<section class="gd-sec" id="0x57-load-pattern" aria-labelledby="0x57-load-pattern-h">
+<div class="gd-body gd-prose"><h2 id="0x57-load-pattern-h">0x57 LOAD PATTERN <a class="gd-anchor" href="#0x57-load-pattern" aria-label="Link to 0x57 LOAD PATTERN">#</a></h2>
+<p class="gd-ref">MM manual p.C-2</p>
+<p>This message switches the machine to another pattern. The pattern chooser sends it.</p>
+</div></section>
+<section class="gd-sec" id="0x58-0x59-load-save-kit" aria-labelledby="0x58-0x59-load-save-kit-h">
+<div class="gd-body gd-prose"><h2 id="0x58-0x59-load-save-kit-h">0x58 / 0x59 LOAD / SAVE KIT <a class="gd-anchor" href="#0x58-0x59-load-save-kit" aria-label="Link to 0x58 / 0x59 LOAD / SAVE KIT">#</a></h2>
+<p class="gd-ref">MM manual p.C-2</p>
+<p>These messages load a kit from a slot of the machine and save the current kit to one. The kit library uses them.</p>
+</div></section>
+<section class="gd-sec" id="0x5b-assign-machine" aria-labelledby="0x5b-assign-machine-h">
+<div class="gd-body gd-prose"><h2 id="0x5b-assign-machine-h">0x5B ASSIGN MACHINE <a class="gd-anchor" href="#0x5b-assign-machine" aria-label="Link to 0x5B ASSIGN MACHINE">#</a></h2>
+<p class="gd-ref">MM manual p.C-2</p>
+<p>This message gives a track a machine, with its start mode. The machine picker sends it.</p>
+</div></section>
+<section class="gd-sec" id="0x5c-set-track-routing" aria-labelledby="0x5c-set-track-routing-h">
+<div class="gd-body gd-prose"><h2 id="0x5c-set-track-routing-h">0x5C SET TRACK ROUTING <a class="gd-anchor" href="#0x5c-set-track-routing" aria-label="Link to 0x5C SET TRACK ROUTING">#</a></h2>
+<p class="gd-ref">MM manual p.C-2</p>
+<p>This message sets the output bus and the input of a track. The Mix workspace sends it.</p>
+</div></section>
+<section class="gd-sec" id="0x5d-0x5e-digipro-waveform-dump-request" aria-labelledby="0x5d-0x5e-digipro-waveform-dump-request-h">
+<div class="gd-body gd-prose"><h2 id="0x5d-0x5e-digipro-waveform-dump-request-h">0x5D / 0x5E DIGIPRO WAVEFORM DUMP, REQUEST <a class="gd-anchor" href="#0x5d-0x5e-digipro-waveform-dump-request" aria-label="Link to 0x5D / 0x5E DIGIPRO WAVEFORM DUMP, REQUEST">#</a></h2>
+<p class="gd-ref">MM manual p.C-2</p>
+<p>These messages carry the user waveforms of the DigiPRO. The editor requests them when you tick <b class="gd-ui">Waveforms</b> in <b class="gd-ui">Export SysEx…</b> and writes the ones it gets into the file. It does not send waveforms to the machine.</p>
+</div></section>
+<section class="gd-sec" id="0x5e-set-gate-box-parameter" aria-labelledby="0x5e-set-gate-box-parameter-h">
+<div class="gd-body gd-prose"><h2 id="0x5e-set-gate-box-parameter-h">0x5E SET GATE BOX PARAMETER <a class="gd-anchor" href="#0x5e-set-gate-box-parameter" aria-label="Link to 0x5E SET GATE BOX PARAMETER">#</a></h2>
+<p class="gd-ref">MM manual p.C-2</p>
+<p>This message sets a reverb parameter of the gate box. The editor does not use it: the reverb values go out as controllers (appendix B).</p>
+</div></section>
+<section class="gd-sec" id="0x61-set-tempo" aria-labelledby="0x61-set-tempo-h">
+<div class="gd-body gd-prose"><h2 id="0x61-set-tempo-h">0x61 SET TEMPO <a class="gd-anchor" href="#0x61-set-tempo" aria-label="Link to 0x61 SET TEMPO">#</a></h2>
+<p class="gd-ref">MM manual p.C-2</p>
+<p>This message sets the tempo, from 30 to 300 BPM. The TEMPO field of the LCD sends it.</p>
+</div></section>
+<section class="gd-sec" id="0x67-0x68-pattern-dump-request" aria-labelledby="0x67-0x68-pattern-dump-request-h">
+<div class="gd-body gd-prose"><h2 id="0x67-0x68-pattern-dump-request-h">0x67 / 0x68 PATTERN DUMP, REQUEST <a class="gd-anchor" href="#0x67-0x68-pattern-dump-request" aria-label="Link to 0x67 / 0x68 PATTERN DUMP, REQUEST">#</a></h2>
+<p class="gd-ref">MM manual p.C-3</p>
+<p>The pattern dump holds one pattern. Every edit of the sequence and the pattern chooser use it.</p>
+</div></section>
+<section class="gd-sec" id="0x69-0x6a-song-dump-request" aria-labelledby="0x69-0x6a-song-dump-request-h">
+<div class="gd-body gd-prose"><h2 id="0x69-0x6a-song-dump-request-h">0x69 / 0x6A SONG DUMP, REQUEST <a class="gd-anchor" href="#0x69-0x6a-song-dump-request" aria-label="Link to 0x69 / 0x6A SONG DUMP, REQUEST">#</a></h2>
+<p class="gd-ref">MM manual p.C-3</p>
+<p>The song dump holds one song. The Song workspace sends and reads it.</p>
+</div></section>
+<section class="gd-sec" id="0x6c-0x6d-load-save-song" aria-labelledby="0x6c-0x6d-load-save-song-h">
+<div class="gd-body gd-prose"><h2 id="0x6c-0x6d-load-save-song-h">0x6C / 0x6D LOAD / SAVE SONG <a class="gd-anchor" href="#0x6c-0x6d-load-save-song" aria-label="Link to 0x6C / 0x6D LOAD / SAVE SONG">#</a></h2>
+<p class="gd-ref">MM manual p.C-3</p>
+<p>These messages load a song from a slot and save one to it. The <b class="gd-ui">Load</b> and <b class="gd-ui">Save</b> controls of the Songs column send them.</p>
+</div></section>
+<section class="gd-sec" id="0x70-to-0x72-status-request-set-response" aria-labelledby="0x70-to-0x72-status-request-set-response-h">
+<div class="gd-body gd-prose"><h2 id="0x70-to-0x72-status-request-set-response-h">0x70 TO 0x72 STATUS REQUEST, SET, RESPONSE <a class="gd-anchor" href="#0x70-to-0x72-status-request-set-response" aria-label="Link to 0x70 TO 0x72 STATUS REQUEST, SET, RESPONSE">#</a></h2>
+<p class="gd-ref">MM manual pp.C-3, C-4</p>
+<p>The status messages carry the slot, the pattern or song mode, the poly setting and the tracks of the machine. The editor reads and sets them as you change the pattern or song mode, the poly setting and the kit state.</p>
+</div></section>
+<section class="gd-sec" id="turbomidi-speed-messages" aria-labelledby="turbomidi-speed-messages-h">
+<div class="gd-body gd-prose"><h2 id="turbomidi-speed-messages-h">TURBOMIDI SPEED MESSAGES <a class="gd-anchor" href="#turbomidi-speed-messages" aria-label="Link to TURBOMIDI SPEED MESSAGES">#</a></h2>
+<p class="gd-ref">MM manual pp.C-4, C-5</p>
+<p>TurboMIDI messages negotiate a faster speed on the cable between a host and a real machine. The editor does not send them.</p>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/mm/22-appendix-b-midi-control-reference/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">22. Appendix B: MIDI control reference</span></a><a href="/guide/mm/24-beyond-the-hardware/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">24. Beyond the hardware</span></a></nav>
+</article>
+</div>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

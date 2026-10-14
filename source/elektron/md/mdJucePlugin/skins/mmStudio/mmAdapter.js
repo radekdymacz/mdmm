@@ -76,10 +76,11 @@
 	const songSlot = () => songEdit ?? cur("song");
 	/* B-030: the plug-in's "host" message (a DAW's tempo); the plug-in's, so it stays when the engine changes */
 	let hostTempo = null;
+	let memory = { keep: true, available: false, saved: false, note: "" };	/* I-024: the plug-in's machineMemory */
 	const view = () => { const v = MmView.derive(docs(), { songEdit, host: hostTempo }); return Overlay.over(Overlay.size() ? MmView.own(v) : v); };
 	/* the view shows the machine: the catalogue (MmConvert's enumerations), the current pattern and the kit that plays */
 	const ready = () => !!catalogue && !!(docs().patterns[cur("pattern")] && kitNow());
-	const last = { record: null, ready: false, readyLabel: "", caps: null, modSent: null, note: { g: 0, text: "" }, songRow: -1, hostRefused: "" };
+	const last = { record: null, stepAt: -1, ready: false, readyLabel: "", caps: null, modSent: null, note: { g: 0, text: "" }, songRow: -1, songSteps: -1, hostRefused: "" };
 	let gesture = Bridge.gesture();
 	let modInFlight = 0;	// the id of a modSet command not answered yet
 	let clip = null;	// the page's copy of what the core's clipboard holds (MmView.copied): a paste shows at once
@@ -220,13 +221,14 @@
 	/* an edit intent of a gesture: sent with the gesture's id, shown at once (MmView.writes, Overlay) until its
 	   answer, which comes after the documents it changed; refused: the view shows the documents again. The op
 	   names its document (MmView.kindOf): the kit that plays gets k, a song row op s (the song the Song workspace
-	   edits), a pattern op p; the global's and the library's ops name their own. */
+	   edits), a pattern op p, a track's parts (COPY / PASTE / CLEAR what) both; the global's and the library's ops name their own. */
 	function intent(op, args) {
 		if (!canSend()) { unsent = true; return; }
 		const g = gesture, v = view(), kind = MmView.kindOf(op), c = MmView.toFw(Object.assign({ op }, structuredClone(args)), v, fwDocs());
 		if (kind === "kit") c.k = cur("kit");
 		else if (kind === "song") c.s = songSlot();
 		else if (kind === "pattern") c.p = cur("pattern");
+		else if (kind === "track") { c.p = cur("pattern"); c.k = cur("kit"); }
 		c.g = g;
 		const key = KEYED[op] ? op + ":" + JSON.stringify(KEYED[op](c)) : null;
 		const id = send(c, { key, onResult: r => {
@@ -249,6 +251,19 @@
 			if (r.id === modInFlight) modInFlight = 0;
 			if (!r.ok) V().toast(r.errors[0] || "The plug-in did not take the modulators.");
 		} });
+	}
+	/* B-123: the solo and, while one holds, the mutes the person set are kept with the project by the plug-in ("soloSet");
+	   it says them again ({type: "solo"}) when a project is opened, after a reset and when the window is made */
+	function sendSolo(state) {
+		const doc = JSON.stringify({ tracks: state.solo, mutes: state.mutes });
+		if (doc === last.solo) return;
+		last.solo = doc;
+		send({ op: "soloSet", tracks: state.solo, mutes: state.mutes });
+	}
+	function onSolo(m) {
+		last.solo = JSON.stringify({ tracks: m.tracks || [], mutes: m.mutes || [] });
+		V().setSolo(m.tracks || [], m.mutes || []);
+		if (V().engReady()) window.MMHost.mutes();
 	}
 	/* {type:"mod", doc, values, ccPerSecond, ccLimit, runs}: the setup as taken and its sources' values */
 	function onMod(m) {
@@ -313,6 +328,13 @@
 	}
 	/* B-051: a track's own channel by the machine's rule (base + t inside CHANNEL SPAN, up to channel 15), else null */
 	const trackChannel = t => { const c = chan(); return c ? MmView.trackChannel({ base: c.base <= 15 ? c.base : null, span: c.span }, t) : null; };
+	/* I-002: the channels the machine plays notes on, by the active global: AUTO, each synth track's (base + t inside
+	   CHANNEL SPAN), MULTI TRIG, MULTI MAP (a value past 15 is OFF) */
+	function playedChannels() {
+		const c = chan(), out = new Set(); if (!c) return out;
+		for (const ch of [c.auto, c.multiTrig, c.multiMap, ...[0, 1, 2, 3, 4, 5].map(trackChannel)]) if (ch != null && ch >= 0 && ch < 16) out.add(ch);
+		return out;
+	}
 	const midi = (b, key) => send({ op: "midi", b }, key ? { key } : {});
 	let held = null;
 	function noteOff() { if (held) { midi([0x80 | held.ch, held.n, 0]); held = null; } }
@@ -429,6 +451,12 @@
 		redo() { send({ op: "redo" }, { onResult: r => r.ok ? V().toast(r.note || "Redo") : V().toast(r.errors[0]) }); },
 		history() { const h = machine?.history; return { undo: h?.undoCount || 0, redo: h?.redoCount || 0 }; },
 		togglePlay() { if (V().engReady()) send({ op: V().playing() ? "stop" : "play" }); },
+		/* wave 2: pause, resume, stop, panic, playFrom {i}, nudge {pct}; what the machine says comes as a toast (a question,
+		   TRANSPORT ACCEPT, is the "ask" message) */
+		transport(op, args, done) {
+			if (!V().engReady()) { if (done) done(false); return; }
+			send(Object.assign({ op }, args || {}), { onResult: r => { if (!r.ok) V().toast(r.errors[0]); else if (r.note && op !== "nudge") V().toast(r.note); if (done) done(!!r.ok); } });
+		},
 		selectPattern(p, nowFlag) { send({ op: "select", p, now: !!nowFlag }, { onResult: noteOf }); },
 		/* the kit keys: plain commands; the plug-in asks when something would be lost */
 		kit(op, k) {
@@ -436,13 +464,15 @@
 			else if (op === "reload") send({ op: "loadKit" }, { onResult: noteOf });
 			else if (op === "load") send({ op: "loadKit", k }, { onResult: noteOf });
 			else if (op === "saveAs") send({ op: "saveKit", k }, { onResult: noteOf });
+			else if (op === "undo") send({ op: "loadUndoKit" }, { onResult: noteOf });
 		},
 		/* the machine's tempo: shown at once (Overlay); the machine document says it from when the core took it
 		   until its memory does (deskCore::FieldExpectation) */
 		tempo(bpm) {
 			expect(send({ op: "tempo", bpm }, { key: "tempo", onResult: answered }), [[["bpm"], bpm]]);
 		},
-		mutes() {
+		mutes(state) {
+			if (state) sendSolo(state);
 			/* mutes and solos: the synth tracks' mute parameters (CC 3); the MIDI tracks' MUTE window (MM-P4),
 			   where the engine can reach it (machine.capabilities). A track is sent when the page's differs from the
 			   machine's (the view's: memory, or what the core expects; not known: sent) */
@@ -458,11 +488,16 @@
 				}
 			refresh();
 		},
-		/* POLY is the machine's audio mode (SET STATUS 0x20): entering or leaving it */
-		keyMode(mode) {
-			const poly = mode === "poly";
-			if (poly === view().poly) return;
-			expect(send({ op: "poly", on: poly }, { onResult: r => { answered(r); noteOf(r); } }), [[["poly"], poly]]);
+		/* POLY is the machine's audio mode (SET STATUS 0x20): entering or leaving it; on track t (0.6 wave 9: POLY plays
+		   the machine's track in focus, so the core presses TRACK t first; a new t while in POLY moves it there). The
+		   view shows POLY and the focus at once; a refused command (the panel busy) shows the machine's again, which the
+		   page then follows, and says why */
+		keyMode(mode, t) {
+			const poly = mode === "poly", on = poly && t != null && t >= 0 && t < 6 ? t : null;
+			if (poly === view().poly && (!poly || on == null || on === view().focus)) return;
+			const writes = [[["poly"], poly]];
+			if (on != null) writes.push([["focus"], on]);
+			expect(send(Object.assign({ op: "poly", on: poly }, on != null ? { t: on } : {}), { onResult: r => { answered(r); if (r.ok) noteOf(r); else V().toast(r.errors[0] || "POLY did not change."); } }), writes);
 			refresh();
 		},
 		/* the RECORD key: stopped = GRID RECORDING, playing = LIVE RECORDING, recording = off; live (Alt+Space,
@@ -473,12 +508,6 @@
 			send({ op: "record", mode }, { onResult: r => V().toast(!r.ok ? r.errors[0] : mode === "off" ? "Recording off."
 				: mode === "live" ? "LIVE RECORDING: play the keyboard; the notes are recorded to the nearest step."
 				: "GRID RECORDING on the machine: its TRIG keys write steps; the editor reads them back.") });
-		},
-		/* the Song workspace: another of the 24 songs to edit; LOAD SONG makes it the machine's */
-		songSlot(slot) {
-			songEdit = slot === cur("song") ? null : slot;
-			if (!DOCS.songs[slot]) send({ op: "load", kind: "song", slot });
-			refresh();
 		},
 		/* MM-P8: the machine's pattern chain (the Song palette's CHAIN), and its end */
 		chain(patterns) {
@@ -492,7 +521,13 @@
 			send({ op: "chainClear" }, { onResult: r => { if (!r.ok) V().toast(r.errors[0] || "The chain did not end."); } });
 		},
 		loadSong(slot) {
+			songEdit = null;
 			send({ op: "loadSong", s: slot }, { onResult: r => V().toast(r.ok ? `S${String(slot + 1).padStart(2, "0")} is the machine's song now.` : r.errors[0]) });
+		},
+		/* 0.6: SAVE SONG, the song the machine holds into its slot (the core asks first when the desk's edits are not
+		   loaded yet, and offers to load them) */
+		saveSong() {
+			send({ op: "saveSong" }, { onResult: r => V().toast(r.ok ? r.note || "Saved." : r.errors[0]) });
 		},
 		/* HW MIDI: what waits for the machine's SYSEX RECV, and the person says it is there */
 		waiting() { return machine?.recv?.waiting || 0; },
@@ -534,13 +569,26 @@
 		   it), the ROM folder, and a new look */
 		chooseRom() { send({ op: "chooseRom" }); },
 		removeRom(info) { askRemoveRom(info); },
+		/* I-024 (doc/modern-ux/DESIGN-machine-memory.md): KEEP MEMORY on or off; "factory": RESET MACHINE…'s Start from
+		   factory memory (the question was the panel's, shared/deskSyx.js) */
+		memory(what) {
+			if (what === "keep") send({ op: "memoryKeep", on: !memory.keep }, { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } });
+			else send({ op: "memoryFactory" }, { onResult: r => V().toast(r.ok ? r.note : r.errors[0]) });
+		},
 		/* LOAD ROM in the engine menu: which firmware runs, REPLACE or REMOVE it (the reply is the romInfo message) */
 		romManage() { if (machine?.lifecycle === "missing") host.firstRun(); else send({ op: "romInfo" }); },
 		/* SysEx import and export (P7): the window's file dialogs; the plug-in parses and writes */
 		syxChoose() { send({ op: "chooseSyx" }); },
-		syxExport() { send({ op: "syxExport" }); },
-		syxStart(kinds, skip) { send({ op: "syxImport", kinds, skip: skip || [] }, { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } }); },
+		syxExport(request) { send(Object.assign({ op: "syxExport" }, request || {})); },
+		syxStart(kinds, skip, o = {}) {
+			send(Object.assign({ op: "syxImport", kinds, skip: skip || [] }, o.placeAt ? { placeAt: o.placeAt } : {}, o.checkOnly ? { checkOnly: true } : {}),
+				{ onResult: r => { if (!r.ok) V().toast(r.errors[0]); } });
+		},
 		syxStop() { send({ op: "syxCancel" }); },
+		/* 0.6 (wave 6): the open file's preview placed elsewhere, the export panel's facts, Reset machine… (empty) */
+		syxPlace(placeAt) { send({ op: "syxPlace", placeAt }, { onResult: r => { if (!r.ok) V().toast(r.errors[0]); } }); },
+		syxExportInfo() { send({ op: "syxExportInfo" }); },
+		machineReset(how) { send({ op: "machineReset", how }, { onResult: r => V().toast(r.ok ? r.note : r.errors[0]) }); },
 		revealRom() { send({ op: "revealRomFolder" }); },
 		recheck() { send({ op: "recheckFirmware" }, { onResult: r => V().toast(r.ok ? r.note : r.errors[0]) }); },
 		firstRun() {
@@ -627,18 +675,36 @@
 		else if (m.type === "telemetry") {
 			if (m.playing !== V().playing()) V().setPlaying(m.playing);
 			if (V().playing()) V().setStep(m.step);
+			else V().setPausedStep(m.step);
 			/* MM-P4: the machine's recording mode */
-			if (m.record !== undefined && m.record !== last.record) { last.record = m.record; V().setRecord(m.record || "off"); }
+			/* wave 7: STEP RECORDING's cursor (stepAt, the step the next note writes) comes with it */
+			const at = m.stepAt ?? -1;
+			if ((m.record !== undefined && m.record !== last.record) || at !== last.stepAt) {
+				if (m.record !== undefined) last.record = m.record;
+				last.stepAt = at; V().setRecord(last.record || "off", at);
+			}
 			/* 0.3.5: the song row that plays (RAM): the Song page's playhead, without a render */
 			const row = m.songRow ?? -1;
 			if (row !== last.songRow) { last.songRow = row; V().setSongRow(row); }
+			/* MM-271: the song's played steps, the arrangement header's bars and beats */
+			const steps = m.songSteps ?? -1;
+			if (steps !== last.songSteps) { last.songSteps = steps; V().setSongSteps(steps); }
 		}
 		else if (m.type === "host") { hostTempo = m; refresh(); }
 		else if (m.type === "audioRun") Boot.audio(m);
 		else if (m.type === "cpuLoad") CpuMeter.update(m);
 		else if (m.type === "outputLevel") DeskVolume.update(m);
+		/* I-024: the machine memory for new sessions (the engine menu's KEEP MEMORY, RESET MACHINE…'s Start from factory memory) */
+		else if (m.type === "machineMemory") { memory = m; V().setMemory(m); }
+		/* 0.6: a note from a MIDI keyboard (the plug-in's midiIn): the Machinedrum's LEARN reads it; the Monomachine's
+		   page shows the notes held instead (midiHeld: a state, so a lost note off cannot leave a key lit) */
+		else if (m.type === "midiIn") { /* read, nothing to show */ }
+		/* I-002, B-062: the notes a MIDI keyboard holds light the Perform keyboard's keys, those on a channel the machine
+		   plays (playedChannels) */
+		else if (m.type === "midiHeld") { const chs = playedChannels(); V().setMidiHeld((m.notes || []).filter(n => chs.has(n.ch)).map(n => n.note)); }
 		else if (m.type === "lcd") { lcdBits = Uint8Array.from(atob(m.bits || ""), c => c.charCodeAt(0)); showLcd(); }
 		else if (m.type === "mod") onMod(m);
+		else if (m.type === "solo") onSolo(m);
 		else if (m.type === "catalogue") onCatalogue(m.doc);
 		else if (m.type === "reset") onReset();
 		else if (m.type === "audio") { audioDocument = m.doc; V().setAudioEntry(!!(audioDocument && audioDocument.standalone)); V().redrawAudio(); }
@@ -652,7 +718,9 @@
 			else if (m.type === "editorMenu") { if (!CpuMeter.takeMenu(m)) DeskMenu.showEditor(m, menuAt.x, menuAt.y, c => send(c)); }
 			else if (m.type === "syxPreview") V().syxPreview(m);
 			else if (m.type === "syxProgress") V().syxProgress(m);
-			else if (m.type === "syxExport") V().toast(m.text);
+			else if (m.type === "syxExport") V().syxExported(m);
+			else if (m.type === "syxExportInfo") V().syxExportInfo(m);
+			else if (m.type === "syxReset") V().toast(m.text);
 		else if (m.type === "error") onError(m);
 		else if (m.type === "result" && m.op === "followHost" && !m.ok) {
 			/* a refused followHost (B-030): logged, and said once per reason */

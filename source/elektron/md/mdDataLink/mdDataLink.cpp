@@ -166,6 +166,7 @@ namespace mdDataLink
 	{
 		const auto before = m_state;
 		send(ed::mdLoadSong(_slot));
+		m_songLoaded = true;
 		m_state.song = _slot;
 		m_state.songReloadNeeded = false;
 		changed(before);

@@ -4,15 +4,27 @@
    Everything above this line is the Machinedrum Editor design system, unchanged.
    ===================================================================== */
 
-/* SFX-60 plate (MKI and MKII share it; the MKII only adds the "MKII" print).
-   Colours from the emulator's mmSfx60 panel skin: silver chassis, dark-grey print,
-   rust track labels, grey-green LCD in a black bezel, red / green / yellow trig LEDs. */
-:root,:root[data-plate="mk1"],:root[data-plate="mk2"]{
+/* SFX-60 plates, true to the product photos (doc/modern-ux/SKIN-COLOURS.md, I-023): the plate key chooses the look.
+   MKI (SFX-6 / SFX-60): cool silver chassis, black window, light-blue LCD with black pixels, dark green-grey keys
+   and knobs, rust label bars. MKII (SFX-6 / SFX-60+ MKII): warm silver, near-black window, bluish-white LCD with
+   black pixels, black keys and knobs, white keys, dusty red-brown label bars, red print. Both are light plates.
+   Review 1 (Radek, 2026-10-12): both plates take the panel greys of the Machinedrum's MKI light plate (--plate,
+   --plate2, --plate3) and its grey for the screens (--scr: the piano roll, the lock lane, the Sound and Perform
+   screens, the arp, routing and song grounds); the top bar's LCD, keys and label colours stay each plate's own. */
+:root,:root[data-plate="mk1"]{
   color-scheme:light;
-  --plate:#d4d5d0;--plate2:#c8cac2;--plate3:#e2e1d9;--print:#383934;--print2:#56574f;--print3:#74756f;--rule:#aaaba5;--body:#292a26;
-  --key:#3a3b36;--key2:#4b4d47;--keytext:#efefe8;--keydim:#aeb0a8;--cream:#efefe8;--creamtext:#292a26;
-  --led:#e65d42;--ledoff:#7b4035;--ledg:#9fc568;--ledgoff:#56604b;--ledy:#e4c45c;--rec:#cf4f39;
-  --lcd:#b9c4b0;--ink:#172014;--bezel:#0d0f0c;--labfill:#a04d39;--labtext:#f0eee7;--knob:#3a3b36;--rust:#a04d39;
+  --plate:#d9dad6;--plate2:#cdcec9;--plate3:#e5e6e2;--print:#2e3232;--print2:#4f5554;--print3:#6d7372;--rule:#a2a8ab;--body:#232727;
+  --key:#232b28;--key2:#323c38;--keytext:#eef0ee;--keydim:#a9b1ae;--cream:#e4e6e6;--creamtext:#232727;
+  --led:#f0331f;--ledoff:#7b4035;--ledg:#9fc568;--ledgoff:#56604b;--ledy:#e4c45c;--rec:#e8301e;
+  --lcd:#b6d2e8;--scr:#cdcec9;--ink:#0d1626;--bezel:#060707;--labfill:#9a3820;--labtext:#f3eee9;--knob:#323d31;--rust:#9a3820;
+  --trig:var(--led);--oxblood:var(--rust);
+}
+:root[data-plate="mk2"]{
+  color-scheme:light;
+  --plate:#d9dad6;--plate2:#cdcec9;--plate3:#e5e6e2;--print:#3b3a3c;--print2:#5a585a;--print3:#787577;--rule:#a8a6a1;--body:#262527;
+  --key:#1a1c22;--key2:#2a2d35;--keytext:#efeee8;--keydim:#a7a8ad;--cream:#ecebe4;--creamtext:#262527;
+  --led:#ff3b2f;--ledoff:#7a6e66;--ledg:#7fd13b;--ledgoff:#5d6656;--ledy:#e4c45c;--rec:#e2452a;
+  --lcd:#dfeaf1;--scr:#cdcec9;--ink:#121b28;--bezel:#1c1a1d;--labfill:#84434d;--labtext:#f6eff0;--knob:#141416;--rust:#b8433d;
   --trig:var(--led);--oxblood:var(--rust);
 }
 html{scrollbar-gutter:stable}
@@ -51,6 +63,10 @@ canvas.ed,.edblank,#lanescroll,.lcdroll,.slotgrid,.lcdbox{box-shadow:0 0 0 2px v
 .sidesw button .led{width:6px;height:6px}
 .sidesw button[aria-pressed=true]{background:var(--cream);color:var(--creamtext)}
 .sidesw button[aria-pressed=true] .led{background:var(--led);box-shadow:0 0 5px var(--led)}
+/* I-028: a track's trig lamp on the rail (its number lights while its trig plays) */
+.th.trig .n{box-shadow:0 0 0 1px var(--led),0 0 6px 1px var(--led)}
+.sidesw .sosign{font:700 9px/12px var(--mono);letter-spacing:0;padding:0 3px;border-radius:1px;background:var(--cream);color:var(--creamtext)}
+.sidesw button[aria-pressed=true] .sosign{background:var(--creamtext);color:var(--cream)}
 .th .nm small{font:500 10px var(--mono);color:var(--print3);margin-left:auto}
 .th.poly-off{opacity:.4}
 .railsec{margin-top:10px;border-top:2px solid var(--print);padding-top:7px;display:grid;gap:5px}
@@ -201,8 +217,9 @@ svg.route .jack.live{fill:var(--ink)}
 .kb{position:relative;height:150px;user-select:none;touch-action:none}
 .kb .w{position:absolute;top:0;bottom:0;border-radius:0 0 4px 4px;background:var(--cream);box-shadow:inset 0 0 0 1px var(--rule),inset 0 -6px 0 rgba(0,0,0,.08);cursor:pointer}
 .kb .b{position:absolute;top:0;height:92px;border-radius:0 0 3px 3px;background:var(--key);box-shadow:inset 0 -4px 0 rgba(0,0,0,.35);z-index:2;cursor:pointer}
-.kb .w.dn{background:var(--plate2)}
-.kb .b.dn{background:var(--key2)}
+/* B-062, I-002: a key held by the mouse, the computer keyboard (dn) or a MIDI keyboard (mi) */
+.kb .w.dn,.kb .w.mi{background:var(--plate2)}
+.kb .b.dn,.kb .b.mi{background:var(--key2)}
 .kb .w small{position:absolute;bottom:8px;left:0;right:0;text-align:center;font:500 10px var(--mono);color:var(--print3)}
 .kb .zone{position:absolute;top:-8px;height:5px;border-radius:1px;z-index:3}
 .kb .splitm{position:absolute;top:-14px;bottom:-4px;width:4px;margin-left:-2px;background:var(--led);box-shadow:0 0 8px var(--led);z-index:4;cursor:ew-resize;border-radius:2px}
@@ -240,6 +257,10 @@ table.mmap tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--led)}
 .ttr{display:grid;grid-template-columns:34px repeat(6,minmax(0,1fr));gap:3px;align-items:center;flex:1}
 .ttr .ilab{min-width:0}
 .ttr .tt{display:grid;grid-template-columns:18px 1fr 18px;align-items:center;height:26px;background:var(--key);border-radius:3px;color:var(--keytext)}
+/* B-106: in a narrow inspector a cell is narrower than − T3 + (43 px in the plug-in at 1440 x 923): the + went over the next
+   cell's −. The name takes what it needs, the two keys share the rest: each cell keeps its own keys */
+.ttr .tt{grid-template-columns:minmax(10px,1fr) auto minmax(10px,1fr);min-width:0;overflow:hidden}
+.ttr .tt b{white-space:nowrap}
 .ttr .tt button{all:unset;cursor:pointer;text-align:center;font:600 12px var(--mono);color:var(--keydim)}
 .ttr .tt button:hover{color:var(--keytext)}
 .ttr .tt b{text-align:center;font:500 12px var(--mono)}
@@ -291,16 +312,7 @@ canvas.roll{width:100%;display:block;border-radius:4px;background:var(--lcd);box
 .tlanes{margin-top:8px!important}
 .tlane .tc.envc{display:flex;gap:2px;align-items:center;justify-content:center;box-shadow:none;background:transparent;cursor:default}
 .tlane .tc.envc.na{opacity:.3}
-.tlane .tc.envc .d{width:9px;height:9px;min-width:0;padding:0;border-radius:50%;background:transparent;box-shadow:inset 0 0 0 1.5px var(--print3);cursor:pointer}
-.tlane .tc.envc .d.on.a{background:var(--led);box-shadow:0 0 4px var(--led)}
-.tlane .tc.envc .d.on.f{background:var(--ledy);box-shadow:0 0 4px var(--ledy)}
-.tlane .tc.envc .d.on.l{background:var(--ledg);box-shadow:0 0 4px var(--ledg)}
 .tlane .tc.envc::after{display:none}
-/* ALL (up to 64 steps in the width): the three trig-track dots stack in the narrow step */
-.mstack.all .tlane .tc.envc{flex-direction:column;gap:1px}
-.mstack.all .tlane .tc.envc .d{width:4px;height:4px;box-shadow:inset 0 0 0 1px var(--print3)}
-.envlab{display:inline-flex;gap:2px;align-items:center;font:600 9px var(--sans);letter-spacing:.04em;color:var(--print2)}
-.envlab i{width:6px;height:6px;border-radius:50%;margin-left:2px}.envlab i.a{background:var(--led)}.envlab i.f{background:var(--ledy)}.envlab i.l{background:var(--ledg)}
 .dock{margin-top:10px;border-top:2px solid var(--print);padding-top:8px}
 .docktabs{display:flex;gap:4px;align-items:center;height:30px;white-space:nowrap;margin-bottom:8px}
 .docktabs .lkey[aria-selected=true]{background:var(--cream);color:var(--creamtext)}
@@ -472,7 +484,7 @@ body.engwait #main,body.engwait #rail{pointer-events:none;opacity:.6;transition:
 .libx{height:24px;padding:0 9px;font:600 10px var(--sans);letter-spacing:.14em;text-transform:uppercase}
 .libacts{display:flex;gap:10px 22px;align-items:center;flex-wrap:wrap}
 .libacts .grp{display:flex;gap:4px;align-items:center}
-.libacts .ilab{min-width:0;margin-right:4px;white-space:nowrap}
+.libacts .ilab{min-width:0;margin-right:4px;white-space:nowrap;flex:none}
 .libacts button{height:26px;padding:0 10px;font:600 11px var(--sans);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
 .libacts button:disabled{opacity:.35;cursor:default}
 .libacts .danger:hover:not(:disabled){background:var(--rec);color:#fff}
@@ -486,7 +498,8 @@ body.engwait #main,body.engwait #rail{pointer-events:none;opacity:.6;transition:
 .ls .lsh .led{width:5px;height:5px}
 .ls .lsn{font:500 10px var(--mono);white-space:nowrap;overflow:hidden;text-overflow:clip;text-transform:uppercase;height:14px;line-height:14px}
 .ls .lsl{font:9px var(--mono);color:var(--keydim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:11px}
-.ks{height:52px}
+.ks{height:52px;padding:4px 2px}
+.ks .lsn{font-size:9.5px}
 .ps{height:42px;padding:4px 6px;gap:1px}
 .ps b{font:500 13px var(--mono)}
 .ps span{font:10px var(--mono);color:var(--keydim);white-space:nowrap;overflow:hidden}
@@ -609,6 +622,10 @@ body{box-sizing:border-box;overflow:hidden}
 .app{height:100%;min-height:0;grid-template-rows:auto minmax(0,1fr);max-width:none!important}
 .app>.body{height:100%;min-height:0;align-items:stretch!important}
 #main{min-height:0;overflow:auto;display:flex;flex-direction:column}
+/* B-106 (the 0.6 e2e run, 1440 x 923 in the plug-in): when #main scrolls (Perform is 32 px taller than the window there),
+   WebKit hit-tests the right 29 px of it as its overlay scroll bar: Perform's OCTAVE + at the right edge took no click
+   (measured: elementFromPoint across the key). The keyboard's title row keeps that strip free */
+.perf .kbtitle{padding-right:32px}
 #main>*{flex:none}
 .rail{align-content:start;min-height:0}
 /* Sequence */

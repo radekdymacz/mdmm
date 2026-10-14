@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>13. Technical information, MKI vs MKII · Machinedrum Editor guide</title>
+<meta name="description" content="The limits of the machine as the editor keeps them, and where the editor differs for the MKI and MKII models.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/md/13-technical-information-mki-vs-mkii/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261014b">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>@page { @top-left { content: "13. Technical information, MKI vs MKII"; } }</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › <a href="/guide/md/">Machinedrum Editor</a> › Technical information, MKI vs MKII</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Chapters of the Machinedrum Editor guide">
+<p class="gd-side-title"><a href="/guide/md/">Machinedrum Editor guide</a></p>
+<ol class="gd-side-list"><li><a href="/guide/md/01-introduction-front-panel-and-connectors/">1. Introduction, front panel and connectors</a></li>
+<li><a href="/guide/md/02-lcd-user-interface-and-quick-start/">2. LCD user interface and quick start</a></li>
+<li><a href="/guide/md/03-sound-synthesis-kits/">3. Sound synthesis: kits</a></li>
+<li><a href="/guide/md/04-track-effects/">4. Track effects</a></li>
+<li><a href="/guide/md/05-routing-page/">5. Routing page</a></li>
+<li><a href="/guide/md/06-stereo-master-effects/">6. Stereo master effects</a></li>
+<li><a href="/guide/md/07-lfos/">7. LFOs</a></li>
+<li><a href="/guide/md/08-pattern-sequencer/">8. Pattern sequencer</a></li>
+<li><a href="/guide/md/09-song-mode/">9. Song mode</a></li>
+<li><a href="/guide/md/10-global-settings/">10. Global settings</a></li>
+<li><a href="/guide/md/11-sample-manager-uw-only/">11. Sample manager, UW only</a></li>
+<li><a href="/guide/md/12-early-start-up-menu/">12. Early start-up menu</a></li>
+<li class="gd-side-cur"><a href="/guide/md/13-technical-information-mki-vs-mkii/" aria-current="page">13. Technical information, MKI vs MKII</a><ol class="gd-side-subs"><li><a href="#specifications">SPECIFICATIONS</a></li><li><a href="#differences-between-the-mki-and-mkii-models">DIFFERENCES BETWEEN THE MKI AND MKII MODELS</a></li></ol></li>
+<li><a href="/guide/md/14-appendix-a-machine-reference/">14. Appendix A: machine reference</a></li>
+<li><a href="/guide/md/15-appendix-b-midi-control-reference/">15. Appendix B: MIDI control reference</a></li>
+<li><a href="/guide/md/16-appendix-c-sysex-reference/">16. Appendix C: sysex reference</a></li>
+<li><a href="/guide/md/17-beyond-the-hardware/">17. Beyond the hardware</a></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">13</span><span class="gd-ctitle">Technical information, MKI vs MKII</span></h1><p class="gd-cmeta">MD manual pp.82-83</p></header>
+<section class="gd-sec" id="specifications" aria-labelledby="specifications-h">
+<div class="gd-body gd-prose"><h2 id="specifications-h">SPECIFICATIONS <a class="gd-anchor" href="#specifications" aria-label="Link to SPECIFICATIONS">#</a></h2>
+<p class="gd-ref">MD manual p.82</p>
+<p>The editor keeps to the limits of the machine. It refuses what the machine cannot hold, and says why.</p>
+<table class="gd-table"><thead><tr><th>Item</th><th>Limit</th></tr></thead><tbody><tr><td>Tracks</td><td>16</td></tr><tr><td>Patterns</td><td>128, in 8 banks of 16</td></tr><tr><td>Pattern length</td><td>16, 32, 48 or 64 steps</td></tr><tr><td>Kits</td><td>64</td></tr><tr><td>Songs</td><td>32, of up to 256 rows each</td></tr><tr><td>Globals</td><td>8</td></tr><tr><td>Parameter locks</td><td>64 locked parameters in a pattern</td></tr><tr><td>Sample slots</td><td>48 ROM slots and 4 RAM slots</td></tr></tbody></table>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-md-limits.webp" aria-label="Open the picture full size: The limits as the editor shows them"><img src="/guide/shots/e2e-md-limits.webp" width="1440" height="924" alt="The limits as the editor shows them" loading="lazy"></a><figcaption>The limits as the editor shows them</figcaption></figure>
+</div></section>
+<section class="gd-sec" id="differences-between-the-mki-and-mkii-models" aria-labelledby="differences-between-the-mki-and-mkii-models-h">
+<div class="gd-body gd-prose"><h2 id="differences-between-the-mki-and-mkii-models-h">DIFFERENCES BETWEEN THE MKI AND MKII MODELS <a class="gd-anchor" href="#differences-between-the-mki-and-mkii-models" aria-label="Link to DIFFERENCES BETWEEN THE MKI AND MKII MODELS">#</a></h2>
+<p class="gd-ref">MD manual p.83</p>
+<h4 class="gd-h3" id="pattern-length">Pattern length</h4>
+<p>The MKII model holds patterns of up to 64 steps. The editor offers these lengths.</p>
+<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> The editor does not offer the MKI model, whose patterns are 32 steps long at most.</p>
+<h4 class="gd-h3" id="sampler-specifications">Sampler specifications</h4>
+<p>The editor's Sampler has 48 ROM slots and 4 RAM slots.</p>
+<p class="gd-gap"><span class="gd-gaplab">Not in the editor yet:</span> The MKI model has 32 sample slots. The editor offers the MKII model only.</p>
+<h4 class="gd-h3" id="design">Design</h4>
+<p>The MKI machine is silver, the MKII black. The editor gives its panel either colour. Click <b class="gd-ui">MKI</b> or <b class="gd-ui">MKII</b> in the top bar to switch.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-md-top-plate.webp" aria-label="Open the picture full size: The plate key in the top bar"><img src="/guide/shots/e2e-md-top-plate.webp" width="1440" height="924" alt="The plate key in the top bar" loading="lazy"></a><figcaption>The plate key in the top bar</figcaption></figure>
+<p>The choice is kept for the next time. It changes the colour only.</p>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/md/12-early-start-up-menu/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">12. Early start-up menu</span></a><a href="/guide/md/14-appendix-a-machine-reference/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">14. Appendix A: machine reference</span></a></nav>
+</article>
+</div>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

@@ -32,6 +32,11 @@ namespace md
 		static constexpr uint32_t g_midiMuteAddress = 0x2bfedd;
 		static constexpr uint32_t g_gridRecordAddress = 0x26bbb3;	// 1 in GRID RECORDING (MM-P4)
 		static constexpr uint32_t g_liveRecordAddress = 0x2bff01;	// 1 in LIVE RECORDING (MM-P4)
+		// 0.6 wave 7 (mmEditorProbeFirmwareTest recording): STEP RECORDING (STOP + RECORD) sets 0x2bff05 to 1 (and the GRID
+		// byte too); 0x2bff09 is the step the next note writes, 0 on entry, moved by a note, LEFT / RIGHT, ENTER (clear)
+		// and EXIT (NOTE OFF). It keeps its value after.
+		static constexpr uint32_t g_stepRecordAddress = 0x2bff05;
+		static constexpr uint32_t g_stepCursorAddress = 0x2bff09;
 		// MM-P8 (mmEditorProbeFirmwareTest chain): the pattern chain (BANK held + TRIG keys, manual 1-46),
 		// 32-bit big-endian values: 0x2bc2c4 active (0/1), 0x2bc2c8 the next entry to queue, 0x2bc2cc
 		// the length, 0x2bc2d0 + 4 n the patterns 0-127. One bank, each pattern once: at most 16. A
@@ -46,6 +51,9 @@ namespace md
 		// one byte, the row index 0-199 of the loaded song while it plays in SONG mode (a LOOP row is never
 		// "played"). Pattern mode leaves it as it was: read it with the sequencer mode.
 		static constexpr uint32_t g_songRowAddress = 0x2bdba1;
+		// 0.6 (MM-271, gapProbesFirmwareTest w12mmcounter): the song's played steps (16ths) since PLAY, 16 bits
+		// big-endian; the EDIT SONG header's bars and beats are steps / 16 + 1 : steps % 16 / 4 + 1 (read off its LCD)
+		static constexpr uint32_t g_songStepsAddress = 0x2bdf3c;
 		// Patch RAM: 0x700023 is the current kit number, 0x700028 the working kit
 		// (the kit dump's raw payload, 698 bytes, unsaved edits included).
 		static constexpr uint32_t g_workingKitAddress = 0x700023;
@@ -74,9 +82,11 @@ namespace md
 		std::atomic<int> recvActive{0};
 		std::atomic<int> tempo{0};			// BPM x 24, 0 = unknown
 		std::atomic<int> mutes{-1};			// bit t: synth track t (0-5), MIDI track t - 6 (6-11); -1 = unknown
-		std::atomic<int> recording{-1};		// 0 off, 1 grid, 2 live; -1 = unknown
+		std::atomic<int> recording{-1};		// 0 off, 1 grid, 2 live, 3 step; -1 = unknown
+		std::atomic<int> stepCursor{-1};	// STEP RECORDING: the step the next note writes
 		std::atomic<int> bankGroup{-1};		// 0 A-D, 1 E-H; -1 = unknown
 		std::atomic<int> songRow{-1};		// the song row that plays (SONG mode); -1 = unknown
+		std::atomic<int> songSteps{-1};		// MM-271: the song's played steps since PLAY; -1 = unknown
 		std::atomic<int> chainActive{-1};	// 1 a chain plays (pattern mode), 0 none; -1 = unknown
 		std::atomic<int> chainNext{-1};
 		std::atomic<int> chainLength{0};
@@ -142,7 +152,10 @@ namespace md
 			}
 			mutes.store(m, std::memory_order_relaxed);
 			songRow.store(_read8(g_songRowAddress), std::memory_order_relaxed);
-			recording.store(_read8(g_liveRecordAddress) ? 2 : _read8(g_gridRecordAddress) ? 1 : 0, std::memory_order_relaxed);
+			songSteps.store((int(_read8(g_songStepsAddress)) << 8) | _read8(g_songStepsAddress + 1), std::memory_order_relaxed);
+			recording.store(_read8(g_liveRecordAddress) ? 2 : _read8(g_stepRecordAddress) ? 3 : _read8(g_gridRecordAddress) ? 1 : 0,
+				std::memory_order_relaxed);
+			stepCursor.store(_read8(g_stepCursorAddress), std::memory_order_relaxed);
 			{
 				const auto group = _read8(g_bankGroupAddress);
 				bankGroup.store(group <= 1 ? group : -1, std::memory_order_relaxed);
@@ -179,8 +192,10 @@ namespace md
 			tempo.store(0, std::memory_order_relaxed);
 			mutes.store(-1, std::memory_order_relaxed);
 			recording.store(-1, std::memory_order_relaxed);
+			stepCursor.store(-1, std::memory_order_relaxed);
 			bankGroup.store(-1, std::memory_order_relaxed);
 			songRow.store(-1, std::memory_order_relaxed);
+			songSteps.store(-1, std::memory_order_relaxed);
 			chainActive.store(-1, std::memory_order_relaxed);
 			chainNext.store(-1, std::memory_order_relaxed);
 			chainLength.store(0, std::memory_order_relaxed);

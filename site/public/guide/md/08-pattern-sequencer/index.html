@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>8. Pattern sequencer · Machinedrum Editor guide</title>
+<meta name="description" content="Choose, record, edit, copy and clear patterns of 16 tracks, with mutes, accents, swing, parameter locks and slides.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/md/08-pattern-sequencer/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261014b">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>@page { @top-left { content: "8. Pattern sequencer"; } }</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › <a href="/guide/md/">Machinedrum Editor</a> › Pattern sequencer</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Chapters of the Machinedrum Editor guide">
+<p class="gd-side-title"><a href="/guide/md/">Machinedrum Editor guide</a></p>
+<ol class="gd-side-list"><li><a href="/guide/md/01-introduction-front-panel-and-connectors/">1. Introduction, front panel and connectors</a></li>
+<li><a href="/guide/md/02-lcd-user-interface-and-quick-start/">2. LCD user interface and quick start</a></li>
+<li><a href="/guide/md/03-sound-synthesis-kits/">3. Sound synthesis: kits</a></li>
+<li><a href="/guide/md/04-track-effects/">4. Track effects</a></li>
+<li><a href="/guide/md/05-routing-page/">5. Routing page</a></li>
+<li><a href="/guide/md/06-stereo-master-effects/">6. Stereo master effects</a></li>
+<li><a href="/guide/md/07-lfos/">7. LFOs</a></li>
+<li class="gd-side-cur"><a href="/guide/md/08-pattern-sequencer/" aria-current="page">8. Pattern sequencer</a><ol class="gd-side-subs"><li><a href="#classic-vs-extended">CLASSIC VS EXTENDED</a></li><li><a href="#tempo">TEMPO</a></li><li><a href="#tap-tempo">TAP TEMPO</a></li><li><a href="#external-synchronization">EXTERNAL SYNCHRONIZATION</a></li><li><a href="#pattern-selection">PATTERN SELECTION</a></li><li><a href="#pattern-chaining">PATTERN CHAINING</a></li><li><a href="#parameter-tweaking">PARAMETER TWEAKING</a></li><li><a href="#scale-setup">SCALE SETUP</a></li><li><a href="#grid-recording">GRID RECORDING</a></li><li><a href="#pattern-page-functionality-on-mki-units">PATTERN PAGE FUNCTIONALITY ON MKI UNITS</a></li><li><a href="#live-recording">LIVE RECORDING</a></li><li><a href="#note-copy">NOTE COPY</a></li><li><a href="#clear-note-parameter-locks">CLEAR NOTE PARAMETER LOCKS</a></li><li><a href="#track-copy">TRACK COPY</a></li><li><a href="#clear-track">CLEAR TRACK</a></li><li><a href="#track-page-copy">TRACK PAGE COPY</a></li><li><a href="#clear-track-page">CLEAR TRACK PAGE</a></li><li><a href="#pattern-copy">PATTERN COPY</a></li><li><a href="#clear-pattern">CLEAR PATTERN</a></li><li><a href="#track-muting">TRACK MUTING</a></li><li><a href="#accent-track">ACCENT TRACK</a></li><li><a href="#swing">SWING</a></li><li><a href="#parameter-locks">PARAMETER LOCKS</a></li><li><a href="#parameter-locks-in-live-recording-mode">PARAMETER LOCKS IN LIVE RECORDING MODE</a></li><li><a href="#parameter-lock-slide">PARAMETER LOCK SLIDE</a></li></ol></li>
+<li><a href="/guide/md/09-song-mode/">9. Song mode</a></li>
+<li><a href="/guide/md/10-global-settings/">10. Global settings</a></li>
+<li><a href="/guide/md/11-sample-manager-uw-only/">11. Sample manager, UW only</a></li>
+<li><a href="/guide/md/12-early-start-up-menu/">12. Early start-up menu</a></li>
+<li><a href="/guide/md/13-technical-information-mki-vs-mkii/">13. Technical information, MKI vs MKII</a></li>
+<li><a href="/guide/md/14-appendix-a-machine-reference/">14. Appendix A: machine reference</a></li>
+<li><a href="/guide/md/15-appendix-b-midi-control-reference/">15. Appendix B: MIDI control reference</a></li>
+<li><a href="/guide/md/16-appendix-c-sysex-reference/">16. Appendix C: sysex reference</a></li>
+<li><a href="/guide/md/17-beyond-the-hardware/">17. Beyond the hardware</a></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">8</span><span class="gd-ctitle">Pattern sequencer</span></h1><p class="gd-cmeta">MD manual pp.35-50</p></header>
+<div class="gd-intro gd-prose"><p>The pattern sequencer plays 16 tracks, one step after another, in a loop. A pattern is up to 64 steps long. The Machinedrum holds 128 patterns in 8 banks of 16, A01 to H16. Each step can hold a trig, an accent, a slide and parameter locks.</p>
+<p>In the editor the sequencer is the <b class="gd-ui">Sequence</b> workspace. Press <kbd class="gd-key">[1]</kbd>, or click the <b class="gd-ui">Sequence</b> tab. The 16 tracks run down the page, the steps across it, 16 steps to a page. The lock lane lies under the steps. The LCD keeps the tempo, the pattern, the kit and the lock count on every workspace. Its second line holds the pattern's own values: <b class="gd-light">&lt;LEN&gt;</b>, <b class="gd-light">&lt;SPD&gt;</b>, <b class="gd-light">&lt;SWG&gt;</b>, <b class="gd-light">&lt;ACC&gt;</b> and <b class="gd-light">&lt;MODE&gt;</b>.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/md-sequence-workspace.webp" aria-label="Open the picture full size: The Sequence workspace"><img src="/guide/shots/md-sequence-workspace.webp" width="1440" height="924" alt="The Sequence workspace" loading="lazy"></a><figcaption>The Sequence workspace</figcaption></figure>
+<p>Keys are written as on a Mac. <kbd class="gd-key">[⌘]</kbd> is <kbd class="gd-key">[CTRL]</kbd> on Windows and Linux. <kbd class="gd-key">[⌥]</kbd> is <kbd class="gd-key">[ALT]</kbd>. The machine's <kbd class="gd-key">[FUNCTION]</kbd> key has no twin in the editor. Its second jobs follow <kbd class="gd-key">[⌥]</kbd> or have a control of their own, and each section says which.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A drag, a paint or a run of rotates is one undo step. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take it back whole, <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[Z]</kbd> to put it back.</p></aside></div>
+<section class="gd-sec" id="classic-vs-extended" aria-labelledby="classic-vs-extended-h">
+<div class="gd-body gd-prose"><h2 id="classic-vs-extended-h">CLASSIC VS EXTENDED <a class="gd-anchor" href="#classic-vs-extended" aria-label="Link to CLASSIC VS EXTENDED">#</a></h2>
+<p class="gd-ref">MD manual p.35</p>
+<p>The machine edits patterns in one of two modes.</p>
+<p>In <b class="gd-ui">CLASSIC</b> a pattern has no kit of its own and no locks play. Locks that are in the pattern are kept. Patterns are 32 steps long at most.</p>
+<p>In <b class="gd-ui">EXTENDED</b> each pattern is linked to a kit, and the machine loads that kit when the pattern is chosen. Parameter locks play. Patterns can be 48 or 64 steps long.</p>
+<p>To change the mode:</p>
+<ol class="gd-steps"><li>Open the <b class="gd-ui">Sequence</b> workspace.</li><li>Click <b class="gd-light">&lt;MODE&gt;</b> on the second line of the LCD. It reads EXT or CLASSIC.</li></ol>
+<p>In CLASSIC the lock lane is greyed and says &quot;CLASSIC: locks muted&quot;. The locks are all still there. The pattern chooser and the kit library say which mode is on. In EXTENDED the chooser shows the kit of each pattern as K01 to K64.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/md-top-mode-classic.webp" aria-label="Open the picture full size: The pattern chooser in CLASSIC: no pattern shows a kit"><img src="/guide/shots/md-top-mode-classic.webp" width="1440" height="924" alt="The pattern chooser in CLASSIC: no pattern shows a kit" loading="lazy"></a><figcaption>The pattern chooser in CLASSIC: no pattern shows a kit</figcaption></figure>
+</div></section>
+<section class="gd-sec" id="tempo" aria-labelledby="tempo-h">
+<div class="gd-body gd-prose"><h2 id="tempo-h">TEMPO <a class="gd-anchor" href="#tempo" aria-label="Link to TEMPO">#</a></h2>
+<p class="gd-ref">MD manual p.36</p>
+<p>The <b class="gd-light">&lt;TEMPO&gt;</b> field in the LCD is the tempo window of the machine. It reads in beats per minute with one decimal. The range is 30 to 300.</p>
+<ul class="gd-list"><li>Drag the field up or down. A pixel is half a beat per minute. Hold <kbd class="gd-key">[⇧]</kbd> and a pixel is a tenth.</li><li>With the field focused, press the up and down arrow keys: one beat per minute, or a tenth with <kbd class="gd-key">[⇧]</kbd>.</li></ul>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The tempo you set is the machine's global tempo. It does not belong to one pattern.</p></aside>
+<p>Click the field without dragging to open the <b class="gd-ui">TEMPO</b> window. It holds what the machine's TEMPO menu holds:</p>
+<ul class="gd-list"><li><b class="gd-ui">−</b> and <b class="gd-ui">+</b> change the tempo by one beat per minute, or a tenth with <kbd class="gd-key">[⇧]</kbd>.</li><li><b class="gd-ui">TAP</b> taps the tempo, as <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[B]</kbd> does.</li><li><b class="gd-ui">NUDGE</b> shifts the tempo for a moment, as <kbd class="gd-key">[LEFT]</kbd> and <kbd class="gd-key">[RIGHT]</kbd> on the machine. Press and hold <b class="gd-ui">−10 %</b> or <b class="gd-ui">+10 %</b>. The tempo is 10 % slower or faster while you hold it, and goes back when you let go. The keys <kbd class="gd-key">[-]</kbd> or <kbd class="gd-key">[=]</kbd> do the same while held.</li><li><b class="gd-ui">Change on release</b> holds a dragged tempo back until you let go of the field, as <kbd class="gd-key">[FUNCTION]</kbd> held does on the machine. The field shows the new tempo while you drag and the machine takes it at the release.</li><li><b class="gd-ui">Sync</b> says whether the tempo comes from the machine or from MIDI clock. <b class="gd-ui">Sync in GLOBAL</b> opens the GLOBAL page.</li></ul>
+<p>Press <kbd class="gd-key">[Esc]</kbd> or click outside the window to close it.</p>
+<aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>Hold <kbd class="gd-key">[⌥]</kbd> while you drag the field to change the tempo at the release once, without the tick.</p></aside>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A nudge is not stored. The tempo of the global stays as it was.</p></aside>
+</div></section>
+<section class="gd-sec" id="tap-tempo" aria-labelledby="tap-tempo-h">
+<div class="gd-body gd-prose"><h2 id="tap-tempo-h">TAP TEMPO <a class="gd-anchor" href="#tap-tempo" aria-label="Link to TAP TEMPO">#</a></h2>
+<p class="gd-ref">MD manual p.36</p>
+<p>Tap a key to the beat and the machine takes the tempo you tap.</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[T]</kbd> or <kbd class="gd-key">[B]</kbd> twice or more in time. <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[B]</kbd> taps on every workspace of both editors.</li><li>A message reads &quot;Tap tempo&quot; and the new tempo.</li></ol>
+<p>The tempo is the average of your last taps, up to five. A pause of over two seconds starts the count again.</p>
+</div></section>
+<section class="gd-sec" id="external-synchronization" aria-labelledby="external-synchronization-h">
+<div class="gd-body gd-prose"><h2 id="external-synchronization-h">EXTERNAL SYNCHRONIZATION <a class="gd-anchor" href="#external-synchronization" aria-label="Link to EXTERNAL SYNCHRONIZATION">#</a></h2>
+<p class="gd-ref">MD manual p.36</p>
+<p>In a DAW a new plug-in follows the host's tempo and transport. The <b class="gd-light">&lt;TEMPO&gt;</b> field is marked, and it cannot be edited. A drag, an arrow key or a tap says &quot;The DAW sets the tempo. Change it there.&quot;</p>
+<p><b class="gd-ui">Tempo in</b> in the GLOBAL panel is the switch. Set it to INT and the machine runs on its own clock in the DAW: <b class="gd-light">&lt;TEMPO&gt;</b> edits again, PLAY and STOP are the machine's, and the DAW's tempo and transport no longer reach it. Set it to EXT to follow the DAW again. The project keeps the choice.</p>
+<p>To make the machine follow the MIDI clock of another device, set <b class="gd-ui">Tempo in</b> to EXT in the GLOBAL panel. See &quot;SYNC&quot; in chapter 10.</p>
+</div></section>
+<section class="gd-sec" id="pattern-selection" aria-labelledby="pattern-selection-h">
+<div class="gd-body gd-prose"><h2 id="pattern-selection-h">PATTERN SELECTION <a class="gd-anchor" href="#pattern-selection" aria-label="Link to PATTERN SELECTION">#</a></h2>
+<p class="gd-ref">MD manual p.37</p>
+<p>The pattern chooser shows all 128 patterns as eight banks of 16 slots. Each slot gives the pattern's name, its length in steps and, in EXTENDED, its kit. A slot with no pattern reads EMPTY.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/md-pattern-chooser.webp" aria-label="Open the picture full size: The pattern chooser"><img src="/guide/shots/md-pattern-chooser.webp" width="1440" height="924" alt="The pattern chooser" loading="lazy"></a><figcaption>The pattern chooser</figcaption></figure>
+<p>To choose a pattern:</p>
+<ol class="gd-steps"><li>Click the pattern name in the <b class="gd-light">&lt;PATTERN&gt;</b> field of the LCD. The chooser opens. The arrows beside the name step to the previous and next pattern without it.</li><li>Click a bank letter, or press the key A to H, to go to that bank. The arrow keys move over the slots.</li><li>Click a slot, or press <kbd class="gd-key">[ENTER]</kbd>. While the machine is stopped, the pattern changes at once. While it plays, the pattern is queued and starts at the end of the pattern that plays. The pattern name in the LCD and the queued slot blink until it does.</li><li>Click a slot with <kbd class="gd-key">[⇧]</kbd> held, or click <b class="gd-ui">Now</b>, to change at once, without waiting for the end of the pattern. While the machine plays, it stops, loads the pattern and plays again.</li><li>Press <kbd class="gd-key">[ESC]</kbd> to close the chooser.</li></ol>
+<p>The button under <b class="gd-ui">Slot</b> reads <b class="gd-ui">Go</b> while the machine is stopped and <b class="gd-ui">Queue</b> while it plays.</p>
+<p>If the kit has unsaved edits and the new pattern links another kit, the editor asks before it changes.</p>
+<p>On the machine you hold a bank key for two seconds so that you can choose the pattern with a second key. The editor has no such wait: you click the bank and the slot.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>In this version, a pattern chosen while a SysEx import runs can ask about unsaved kit edits that you never made. The question goes away when the import ends. This is a known fault.</p></aside>
+</div></section>
+<section class="gd-sec" id="pattern-chaining" aria-labelledby="pattern-chaining-h">
+<div class="gd-body gd-prose"><h2 id="pattern-chaining-h">PATTERN CHAINING <a class="gd-anchor" href="#pattern-chaining" aria-label="Link to PATTERN CHAINING">#</a></h2>
+<p class="gd-ref">MD manual p.37</p>
+<p>A chain plays patterns of one bank in the order you pick them, and starts again at the first.</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[5]</kbd> to open the <b class="gd-ui">Song</b> workspace.</li><li>Click <b class="gd-ui">CHAIN</b> over the pattern palette.</li><li>Click a bank letter.</li><li>Click the patterns in the order you want. Each pad shows its number in the chain. After the second pad the machine plays the chain at once. While it plays, the chain starts at the end of the pattern. While it is stopped, <kbd class="gd-key">[PLAY]</kbd> starts at the first pad.</li><li>Click a numbered pad to take it out. <b class="gd-ui">Back</b> takes out the last pad. <b class="gd-ui">Clear</b> ends the chain.</li></ol>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-md-song-chain.webp" aria-label="Open the picture full size: A chain of two patterns playing"><img src="/guide/shots/e2e-md-song-chain.webp" width="1440" height="924" alt="A chain of two patterns playing" loading="lazy"></a><figcaption>A chain of two patterns playing</figcaption></figure>
+<p>A chain holds up to 16 patterns of one bank, each pattern once. The palette says which pattern plays now and which comes next. Choosing a pattern ends the chain. Editing the patterns in it does not.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The <b class="gd-ui">Chain</b> pads are disabled, with a reason, when the engine cannot read or set the chain.</p></aside>
+<p>A pattern queued while the machine plays starts at once when you stop:</p>
+<ol class="gd-steps"><li>While a pattern plays, choose another one: click <b class="gd-ui">›</b> next to the pattern on the LCD, or a pattern in the pattern chooser. The LCD shows its name, blinking: it is queued.</li><li>Press <kbd class="gd-key">[STOP]</kbd> (click <b class="gd-ui">▶</b> or press <kbd class="gd-key">[SPACE]</kbd>). The machine stops and the queued pattern is the current one.</li><li>Press <kbd class="gd-key">[PLAY]</kbd> to start it from its first step.</li></ol>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>This is the machine's own STOP, which the editor presses for you. With a real Machinedrum over MIDI the editor has no transport.</p></aside>
+</div></section>
+<section class="gd-sec" id="parameter-tweaking" aria-labelledby="parameter-tweaking-h">
+<div class="gd-body gd-prose"><h2 id="parameter-tweaking-h">PARAMETER TWEAKING <a class="gd-anchor" href="#parameter-tweaking" aria-label="Link to PARAMETER TWEAKING">#</a></h2>
+<p class="gd-ref">MD manual pp.37, 38</p>
+<p>On the machine you hold <kbd class="gd-key">[FUNCTION]</kbd> and turn a knob to move that parameter on all 16 tracks. In the editor you hold <kbd class="gd-key">[⌥]</kbd> and drag a value on <b class="gd-ui">Sound</b> or <b class="gd-ui">Mix</b>. The same knob moves on every track by the same amount.</p>
+<p>To sweep the filters of all tracks, hold <kbd class="gd-key">[⌥]</kbd> and drag the FLTF or FLTW value.</p>
+<p>To drop the tweaks of a kit and load its stored sound again:</p>
+<ol class="gd-steps"><li>Click the kit name in the <b class="gd-light">&lt;KIT&gt;</b> field of the LCD. The kit library opens.</li><li>Click <b class="gd-ui">Reload</b> under <b class="gd-ui">Current</b>. The button is available only when the kit has unsaved edits. The edits are lost and the kit is as stored.</li></ol>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/md-kit-reload.webp" aria-label="Open the picture full size: The kit library with Reload"><img src="/guide/shots/md-kit-reload.webp" width="1440" height="924" alt="The kit library with Reload" loading="lazy"></a><figcaption>The kit library with Reload</figcaption></figure>
+<p>The machine keeps the edits you lose in its UNDO KIT.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Click <b class="gd-ui">FN</b> in the top bar if your system or host takes <kbd class="gd-key">[⌥]</kbd> for itself. The next click, drag or key then counts as if <kbd class="gd-key">[⌥]</kbd> were held. Double-click <b class="gd-ui">FN</b> to keep it on.</p></aside>
+</div></section>
+<section class="gd-sec" id="scale-setup" aria-labelledby="scale-setup-h">
+<div class="gd-body gd-prose"><h2 id="scale-setup-h">SCALE SETUP <a class="gd-anchor" href="#scale-setup" aria-label="Link to SCALE SETUP">#</a></h2>
+<p class="gd-ref">MD manual p.38</p>
+<p>The scale of a pattern is its length and its speed.</p>
+<h4 class="gd-h3" id="length">Length</h4>
+<p>A pattern has a total length of 16, 32, 48 or 64 steps, and a length inside it, from 1 step up to the total.</p>
+<ul class="gd-list"><li>Click <b class="gd-light">&lt;LEN&gt;</b> on the second line of the LCD to step through 16, 32, 48 and 64. Click with <kbd class="gd-key">[⇧]</kbd> to step back. You can also drag or scroll on it.</li><li>Hold <kbd class="gd-key">[⌥]</kbd> and click, drag or scroll on <b class="gd-light">&lt;LEN&gt;</b> to set the length inside the total. The field then reads the length and the total, for example 12/16.</li></ul>
+<p>Steps past the length are dimmed in the grid. In CLASSIC the total is 32 at most.</p>
+<p>To double a pattern, click the <b class="gd-light">&lt;LEN&gt;</b> ×2 key. The new half is a copy of the steps and locks of the first half. This is one undo step. The editor refuses a pattern past 64 steps, and past 32 in CLASSIC, and says why.</p>
+<p>When you make the total longer, the editor does what the machine does: if no track has a trig past the old total, the steps you had repeat into the new ones, with their accents, swings, slides and locks. From 16 to 64 steps the first page fills all four pages. If a track has a trig past the old total, nothing is copied. A message says what was copied. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take it back.</p>
+<h4 class="gd-h3" id="speed">Speed</h4>
+<p>Click <b class="gd-light">&lt;SPD&gt;</b> to step through the tempo multipliers 1X, 2X, 3/4X and 3/2X. Click with <kbd class="gd-key">[⇧]</kbd> to step back. You can also drag or scroll on it: three notches of the wheel walk the four speeds.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/md-seq-scale.webp" aria-label="Open the picture full size: The scale fields on the LCD"><img src="/guide/shots/md-seq-scale.webp" width="1440" height="924" alt="The scale fields on the LCD" loading="lazy"></a><figcaption>The scale fields on the LCD</figcaption></figure>
+</div></section>
+<section class="gd-sec" id="grid-recording" aria-labelledby="grid-recording-h">
+<div class="gd-body gd-prose"><h2 id="grid-recording-h">GRID RECORDING <a class="gd-anchor" href="#grid-recording" aria-label="Link to GRID RECORDING">#</a></h2>
+<p class="gd-ref">MD manual p.39</p>
+<p>In grid recording you place the trigs one step at a time. The pattern plays while you work, and each change is in the pattern at once.</p>
+<ol class="gd-steps"><li>Click a step to put a trig on it. Click it again to take the trig off.</li><li>To place several, press on a step and drag. Every step you cross becomes what the first one became.</li><li>To reach the other steps of a long pattern, click <b class="gd-ui">Page</b> or press <kbd class="gd-key">[[]</kbd> or []]. Click <b class="gd-ui">Page</b> with <kbd class="gd-key">[⇧]</kbd> to go back. The four lights show the page you see.</li><li>Click <b class="gd-ui">All</b> to see every step on one screen. Click <b class="gd-ui">Fol</b> to make the page follow the play position.</li></ol>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/md-step-grid.webp" aria-label="Open the picture full size: The step grid"><img src="/guide/shots/md-step-grid.webp" width="1440" height="924" alt="The step grid" loading="lazy"></a><figcaption>The step grid</figcaption></figure>
+<p>There is no save. Every change is in the pattern. To keep the original while you try something, copy the pattern to another slot first. See &quot;PATTERN COPY&quot;.</p>
+<h4 class="gd-h3" id="move-the-notes">Move the notes</h4>
+<p>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[←]</kbd> or <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[→]</kbd>. The selected track moves one step earlier or later. Its trigs, accents, slides and locks move, and the steps at the ends wrap round. A run of presses while you hold <kbd class="gd-key">[⌥]</kbd> is one undo step.</p>
+</div></section>
+<section class="gd-sec" id="pattern-page-functionality-on-mki-units" aria-labelledby="pattern-page-functionality-on-mki-units-h">
+<div class="gd-body gd-prose"><h2 id="pattern-page-functionality-on-mki-units-h">PATTERN PAGE FUNCTIONALITY ON MKI UNITS <a class="gd-anchor" href="#pattern-page-functionality-on-mki-units" aria-label="Link to PATTERN PAGE FUNCTIONALITY ON MKI UNITS">#</a></h2>
+<p class="gd-ref">MD manual p.39</p>
+<p>This is a feature of the MKI hardware. The editor offers the MKII model only (see chapter 13). Its <b class="gd-ui">Page</b> control shows the pages as four lights, as described under GRID RECORDING.</p>
+</div></section>
+<section class="gd-sec" id="live-recording" aria-labelledby="live-recording-h">
+<div class="gd-body gd-prose"><h2 id="live-recording-h">LIVE RECORDING <a class="gd-anchor" href="#live-recording" aria-label="Link to LIVE RECORDING">#</a></h2>
+<p class="gd-ref">MD manual pp.39, 40</p>
+<p>In live recording you play the tracks and the machine puts the trigs on the steps.</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[SPACE]</kbd>.</li><li>Click <b class="gd-ui">●</b> in the top bar, or press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[SPACE]</kbd> to start recording and playing in one press. The key lights.</li><li>Click the steps of a track, or press the keys A to L, which play the selected track. The track sounds and the machine writes the trig on the step it plays. The machine quantises it.</li><li>Click <b class="gd-ui">●</b> again to stop recording. The pattern goes on playing.</li></ol>
+<p>While recording is on, a click on a step plays the track, and the other edits of the pattern wait. A right-click on a step says &quot;Wait until live recording stops.&quot;</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/md-live-recording.webp" aria-label="Open the picture full size: Live recording"><img src="/guide/shots/md-live-recording.webp" width="1440" height="924" alt="Live recording" loading="lazy"></a><figcaption>Live recording</figcaption></figure>
+<p>To take trigs out while recording, as the machine does with <kbd class="gd-key">[EXIT/NO]</kbd> and a <kbd class="gd-key">[TRIG]</kbd> key:</p>
+<ol class="gd-steps"><li>Select the track on the rail.</li><li>Hold <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd>. The track's header is marked red. The machine removes the track's trigs on each step that plays while the key is down.</li><li>Let the key go to stop erasing.</li></ol>
+<p>Only the selected track is erased. The erase ends by itself when recording stops.</p>
+</div></section>
+<section class="gd-sec" id="note-copy" aria-labelledby="note-copy-h">
+<div class="gd-body gd-prose"><h2 id="note-copy-h">NOTE COPY <a class="gd-anchor" href="#note-copy" aria-label="Link to NOTE COPY">#</a></h2>
+<p class="gd-ref">MD manual p.40</p>
+<p>You select steps, then copy, cut, paste or duplicate them. The copy carries the trigs, the accents, the slides and the locks.</p>
+<p>To select steps:</p>
+<ul class="gd-list"><li><kbd class="gd-key">[⌘]</kbd>-click a step.</li><li><kbd class="gd-key">[⌘]</kbd>-drag over steps and tracks. The selection is a block of steps by tracks.</li><li>Click or drag the step numbers above the grid. This selects steps of the selected track. Drag down over the grid to add tracks.</li><li><kbd class="gd-key">[⌘]</kbd>-<kbd class="gd-key">[⇧]</kbd>-click a step to extend the selection. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[A]</kbd> selects every step of every track up to the length.</li></ul>
+<p>To use the selection:</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>.</li><li>Select the step where the block is to start, on the track where it is to start. A single <kbd class="gd-key">[⌘]</kbd>-click does it.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>. The block lands with its first step on the step you chose.</li></ol>
+<p><kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[X]</kbd> copies and clears. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[D]</kbd> copies the block to the steps right after it; press it again for one more copy. <kbd class="gd-key">[⌘]</kbd>-drag the selection to drop a copy where you let go. <kbd class="gd-key">[ENTER]</kbd> switches the trigs of the selection on, or off when each has one. <kbd class="gd-key">[ESC]</kbd> clears the selection.</p>
+<p>Select a step or steps and click the small ⋯ on the selection for the step menu; a right-click on a step opens it too. It holds trig, accent, slide, copy, cut, paste, duplicate, clear, and <b class="gd-ui">Fill every 2nd</b> and <b class="gd-ui">Fill every 4th</b> from that step. On a selected step the menu acts on the whole selection.</p>
+<p>The <b class="gd-light">&lt;COPY&gt;</b>, <b class="gd-light">&lt;CLR&gt;</b> and <b class="gd-light">&lt;PASTE&gt;</b> keys on the LCD do the same as the keys. They are marked when they act on a selection.</p>
+</div></section>
+<section class="gd-sec" id="clear-note-parameter-locks" aria-labelledby="clear-note-parameter-locks-h">
+<div class="gd-body gd-prose"><h2 id="clear-note-parameter-locks-h">CLEAR NOTE PARAMETER LOCKS <a class="gd-anchor" href="#clear-note-parameter-locks" aria-label="Link to CLEAR NOTE PARAMETER LOCKS">#</a></h2>
+<p class="gd-ref">MD manual p.40</p>
+<p>To take locks off a step, use one of these:</p>
+<ul class="gd-list"><li>Select the step and press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd>, or choose <b class="gd-ui">Clear</b> in the step menu. This clears the trig and its locks together.</li><li>Hold <kbd class="gd-key">[⌥]</kbd> and drag over the bars of the lock lane. This erases the locks it crosses and leaves the trigs.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[BACKSPACE]</kbd>, tick <b class="gd-ui">Locks</b> only and click <b class="gd-ui">Clear</b>. The locks of the track go and the trigs stay.</li><li>Click the bin key above the parameter keys to clear every lock of the parameter on this track. Hold <kbd class="gd-key">[⌥]</kbd> and it clears every lock of the track.</li></ul>
+<p>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take a clear back.</p>
+</div></section>
+<section class="gd-sec" id="track-copy" aria-labelledby="track-copy-h">
+<div class="gd-body gd-prose"><h2 id="track-copy-h">TRACK COPY <a class="gd-anchor" href="#track-copy" aria-label="Link to TRACK COPY">#</a></h2>
+<p class="gd-ref">MD manual p.41</p>
+<ol class="gd-steps"><li>Select the track by its header. Drag across the step numbers above the grid, from the first step to the last.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>.</li><li>Select another track. <kbd class="gd-key">[⌘]</kbd>-click its first step.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>.</li></ol>
+<p>To paste into several tracks at once, click their headers with <kbd class="gd-key">[⇧]</kbd> held. The headers are marked. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd> then fills every marked track, as one undo step. Press <kbd class="gd-key">[ESC]</kbd> to take the marks off.</p>
+<p>To choose what goes with the track, as the machine's SUPER COPY does:</p>
+<ol class="gd-steps"><li>Select the track.</li><li>Click <b class="gd-ui">▾</b> at the right of <b class="gd-light">&lt;COPY&gt;</b> <b class="gd-light">&lt;CLR&gt;</b> <b class="gd-light">&lt;PASTE&gt;</b> on the LCD, then <b class="gd-ui">Copy…</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[C]</kbd>. The <b class="gd-ui">Copy what</b> window opens.</li><li>Tick the parts to copy. <b class="gd-ui">Pattern</b> has <b class="gd-ui">Trigs</b>, <b class="gd-ui">Accent</b>, <b class="gd-ui">Swing</b>, <b class="gd-ui">Slide</b> and <b class="gd-ui">Locks</b>, each with the number of steps it holds. <b class="gd-ui">Kit</b> has <b class="gd-ui">Machine + sound</b> and <b class="gd-ui">LFO</b>.</li><li>Click <b class="gd-ui">Copy</b>. Every step of the track is copied, not only the page you see.</li><li>Select the track to paste into. Click <b class="gd-ui">▾</b>, then <b class="gd-ui">Paste…</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[V]</kbd>.</li><li>The parts copied are ticked. Untick any you do not want. Under <b class="gd-ui">To tracks</b> the selected track is lit, or the tracks marked with <kbd class="gd-key">[⇧]</kbd>. Click a track key to light or unlight it.</li><li>Click <b class="gd-ui">Paste into 1 track</b> (the key says how many). Each lit track takes the ticked parts.</li></ol>
+<p>The paste is one undo step: press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take it back. The window remembers what you ticked the last time.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>Locks land only on steps that hold a trig. The result line says how many were left out.</p></aside>
+</div></section>
+<section class="gd-sec" id="clear-track" aria-labelledby="clear-track-h">
+<div class="gd-body gd-prose"><h2 id="clear-track-h">CLEAR TRACK <a class="gd-anchor" href="#clear-track" aria-label="Link to CLEAR TRACK">#</a></h2>
+<p class="gd-ref">MD manual p.41</p>
+<ol class="gd-steps"><li>Select the track.</li><li>Click <b class="gd-ui">All</b> so that every step shows, then click <b class="gd-light">&lt;CLR&gt;</b>.</li></ol>
+<p>Or select all the steps of the track by the step numbers and press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd>.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>With no steps selected, <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> does nothing and a message says so.</p></aside>
+<p>To clear only some parts of the track, as the machine's SUPER CLEAR does:</p>
+<ol class="gd-steps"><li>Select the track.</li><li>Click <b class="gd-ui">▾</b> at the right of <b class="gd-light">&lt;COPY&gt;</b> <b class="gd-light">&lt;CLR&gt;</b> <b class="gd-light">&lt;PASTE&gt;</b>, then <b class="gd-ui">Clear…</b>, or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[⇧]</kbd> + <kbd class="gd-key">[BACKSPACE]</kbd>.</li><li>Tick the parts to clear and click <b class="gd-ui">Clear</b>. Clearing <b class="gd-ui">Trigs</b> clears their locks too. <b class="gd-ui">Machine + sound</b> sets the sound's values to neutral and keeps the machine.</li></ol>
+<p>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take the clear back.</p>
+</div></section>
+<section class="gd-sec" id="track-page-copy" aria-labelledby="track-page-copy-h">
+<div class="gd-body gd-prose"><h2 id="track-page-copy-h">TRACK PAGE COPY <a class="gd-anchor" href="#track-page-copy" aria-label="Link to TRACK PAGE COPY">#</a></h2>
+<p class="gd-ref">MD manual p.42</p>
+<ol class="gd-steps"><li>Select the track and go to the page to copy.</li><li>With no steps selected, press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>. The page you see is copied.</li><li>Go to the page and track where it is to land.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>.</li></ol>
+</div></section>
+<section class="gd-sec" id="clear-track-page" aria-labelledby="clear-track-page-h">
+<div class="gd-body gd-prose"><h2 id="clear-track-page-h">CLEAR TRACK PAGE <a class="gd-anchor" href="#clear-track-page" aria-label="Link to CLEAR TRACK PAGE">#</a></h2>
+<p class="gd-ref">MD manual p.42</p>
+<p>Click <b class="gd-light">&lt;CLR&gt;</b> on the LCD. The page you see of the selected track is cleared. Hold <kbd class="gd-key">[⌥]</kbd> and the key reads <b class="gd-light">&lt;ALL&gt;</b>: it clears the whole pattern.</p>
+</div></section>
+<section class="gd-sec" id="pattern-copy" aria-labelledby="pattern-copy-h">
+<div class="gd-body gd-prose"><h2 id="pattern-copy-h">PATTERN COPY <a class="gd-anchor" href="#pattern-copy" aria-label="Link to PATTERN COPY">#</a></h2>
+<p class="gd-ref">MD manual p.43</p>
+<p>A copy of a pattern takes its notes, its locks and its kit link.</p>
+<ol class="gd-steps"><li>Open the pattern chooser.</li><li>Click the slot to copy, then click <b class="gd-ui">Copy</b> or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[C]</kbd>.</li><li>Click the slot to copy to, then click <b class="gd-ui">Paste</b> or press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[V]</kbd>.</li></ol>
+<p>Or drag one slot onto another.</p>
+<p>If you paste over the pattern that plays and it links another kit, the machine loads that kit. The editor asks first when the kit that plays has unsaved edits.</p>
+</div></section>
+<section class="gd-sec" id="clear-pattern" aria-labelledby="clear-pattern-h">
+<div class="gd-body gd-prose"><h2 id="clear-pattern-h">CLEAR PATTERN <a class="gd-anchor" href="#clear-pattern" aria-label="Link to CLEAR PATTERN">#</a></h2>
+<p class="gd-ref">MD manual p.44</p>
+<p>To clear the pattern that plays, hold <kbd class="gd-key">[⌥]</kbd> and click <b class="gd-light">&lt;CLR&gt;</b>, which then reads <b class="gd-light">&lt;ALL&gt;</b>. Or press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[BACKSPACE]</kbd>.</p>
+<p>To clear any pattern, click its slot in the pattern chooser and click <b class="gd-ui">Clear</b>, or press <kbd class="gd-key">[DELETE]</kbd>.</p>
+<p>The chooser keeps the length, the speed, the swing, the accent and the kit link of the pattern. It takes out the trigs and the locks.</p>
+<p>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take the clear back.</p>
+</div></section>
+<section class="gd-sec" id="track-muting" aria-labelledby="track-muting-h">
+<div class="gd-body gd-prose"><h2 id="track-muting-h">TRACK MUTING <a class="gd-anchor" href="#track-muting" aria-label="Link to TRACK MUTING">#</a></h2>
+<p class="gd-ref">MD manual pp.44, 45</p>
+<p>Every track has an <b class="gd-ui">M</b> key to mute it and an <b class="gd-ui">S</b> key to solo it. They sit in the track rail and in the strips of <b class="gd-ui">Mix</b>.</p>
+<ul class="gd-list"><li>Click <b class="gd-ui">M</b> to mute or unmute the track.</li><li>Press and drag across the keys. Every key you cross becomes what the first one became.</li><li>Press <kbd class="gd-key">[M]</kbd> to mute the selected track on any workspace. <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[M]</kbd> mutes every track, or unmutes them all when none is audible. <kbd class="gd-key">[0]</kbd>, or <b class="gd-ui">M/S off</b>, unmutes and unsolos everything.</li></ul>
+<p>To prepare mutes and apply them together, as the machine's mute window does:</p>
+<ol class="gd-steps"><li>Hold <kbd class="gd-key">[⇧]</kbd> and click <b class="gd-ui">M</b> on the tracks. Each track shows + for a track it will unmute or X for a track it will mute.</li><li>Let go of <kbd class="gd-key">[⇧]</kbd>. All the changes apply at once.</li></ol>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-md-mix-shift-mutes.webp" aria-label="Open the picture full size: Mutes prepared with the shift key: nothing is sent until you let go"><img src="/guide/shots/e2e-md-mix-shift-mutes.webp" width="1440" height="924" alt="Mutes prepared with the shift key: nothing is sent until you let go" loading="lazy"></a><figcaption>Mutes prepared with the shift key: nothing is sent until you let go</figcaption></figure>
+<p>The mutes are the machine's. The editor reads them from the machine's memory, whoever set them, and they stay when you change pattern or switch between pattern and song mode. A solo is the editor's: it mutes the other tracks on the machine, and when you let the solo go it gives your mutes back.</p>
+<p>On the machine you can minimise the mute window. In the editor the keys are always on the page.</p>
+</div></section>
+<section class="gd-sec" id="accent-track" aria-labelledby="accent-track-h">
+<div class="gd-body gd-prose"><h2 id="accent-track-h">ACCENT TRACK <a class="gd-anchor" href="#accent-track" aria-label="Link to ACCENT TRACK">#</a></h2>
+<p class="gd-ref">MD manual pp.45, 46</p>
+<p>An accent makes a step louder. The accent amount sets how much louder.</p>
+<ul class="gd-list"><li>Click <b class="gd-light">&lt;ACC&gt;</b> on the LCD, or drag or scroll on it, to set the amount from 0 to 15. Click with <kbd class="gd-key">[⇧]</kbd> to go down.</li><li>Click a step with <kbd class="gd-key">[⇧]</kbd> held to put an accent on it. The step needs a trig. Do the same again to take it off.</li></ul>
+<h4 class="gd-h3" id="the-trig-types">The trig types</h4>
+<p>The keys <b class="gd-ui">Trig</b>, <b class="gd-ui">Accent</b>, <b class="gd-ui">Swing</b> and <b class="gd-ui">Slide</b> in the bar under the grid say what a click on a step paints. They are the machine's accent, swing and slide windows (FUNCTION + B/F, C/G and D/H). The lit key is the one in use.</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">Accent</b>. The key lights.</li><li>Click a step with a trig. It gets an accent. Click it again to take the accent off.</li><li>Drag across steps to paint accents on every step with a trig that you cross. The first step decides: on or off. The drag is one undo step.</li><li>Press <kbd class="gd-key">[ESC]</kbd>, or click <b class="gd-ui">Trig</b>, to paint trigs again.</li></ol>
+<p>A step without a trig takes no accent. The editor says so.</p>
+<h4 class="gd-h3" id="all-tracks-or-this-track">All tracks or this track</h4>
+<p>A pattern holds one accent row for all tracks and one for each track. With <b class="gd-ui">Accent</b> lit, <b class="gd-ui">All tracks</b> and <b class="gd-ui">This track</b> show over the keys.</p>
+<ul class="gd-list"><li><b class="gd-ui">All tracks</b>: an accent on a step accents that step on every track. The step legend says &quot;(all)&quot;.</li><li><b class="gd-ui">This track</b>: each track has its own accents. Click the steps of the track you want.</li></ul>
+<p>The pattern keeps both rows. Switch back and the other row is there again. This is the machine's <kbd class="gd-key">[RIGHT]</kbd> key in the accent window. Each of accent, swing and slide has its own setting.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/md-accent.webp" aria-label="Open the picture full size: The accent of a step"><img src="/guide/shots/md-accent.webp" width="1440" height="924" alt="The accent of a step" loading="lazy"></a><figcaption>The accent of a step</figcaption></figure>
+<p>To copy, paste or clear the accents of a track, tick <b class="gd-ui">Accent</b> in <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> or <b class="gd-ui">Clear…</b> of the LCD's <b class="gd-ui">▾</b> menu (see &quot;Track copy&quot;). A selection copy also takes the accents with the steps.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>While the accent is shared by all tracks, a paste or a clear of <b class="gd-ui">Accent</b> changes it for every track.</p></aside>
+</div></section>
+<section class="gd-sec" id="swing" aria-labelledby="swing-h">
+<div class="gd-body gd-prose"><h2 id="swing-h">SWING <a class="gd-anchor" href="#swing" aria-label="Link to SWING">#</a></h2>
+<p class="gd-ref">MD manual pp.46, 47</p>
+<p>Swing delays the steps of the swing row. Click <b class="gd-light">&lt;SWG&gt;</b> on the LCD, or drag or scroll on it, to set the amount from 50 to 80 percent. Click with <kbd class="gd-key">[⇧]</kbd> to go down. At 50 percent nothing swings.</p>
+<p>To choose which steps swing:</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">Swing</b> in the bar under the grid.</li><li>Click a step with a trig. A teal mark shows on it: the step swings. Click it again to take the swing off.</li><li>Drag across steps to paint swing on every step with a trig that you cross.</li><li>Press <kbd class="gd-key">[ESC]</kbd> to paint trigs again.</li></ol>
+<p>With <b class="gd-ui">All tracks</b> the swing row is shared: a mark on a step swings that step on every track. With <b class="gd-ui">This track</b> each track has its own swing steps. Every track uses the same <b class="gd-light">&lt;SWG&gt;</b> amount.</p>
+<aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>Swing only the hi-hats for a feel apart from the rest of the pattern.</p></aside>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/md-seq-swing-accent.webp" aria-label="Open the picture full size: The LCD with the accent and swing amounts, and the trig types under the grid"><img src="/guide/shots/md-seq-swing-accent.webp" width="1440" height="924" alt="The LCD with the accent and swing amounts, and the trig types under the grid" loading="lazy"></a><figcaption>The LCD with the accent and swing amounts, and the trig types under the grid</figcaption></figure>
+<p>Tick <b class="gd-ui">Swing</b> in <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> or <b class="gd-ui">Clear…</b> of the LCD's <b class="gd-ui">▾</b> menu to copy, paste or clear the swing steps of a track (see &quot;Track copy&quot;).</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>With <b class="gd-ui">All tracks</b> the swing row is the pattern's, so a paste or a clear of <b class="gd-ui">Swing</b> changes it for every track.</p></aside>
+</div></section>
+<section class="gd-sec" id="parameter-locks" aria-labelledby="parameter-locks-h">
+<div class="gd-body gd-prose"><h2 id="parameter-locks-h">PARAMETER LOCKS <a class="gd-anchor" href="#parameter-locks" aria-label="Link to PARAMETER LOCKS">#</a></h2>
+<p class="gd-ref">MD manual pp.47, 48</p>
+<p>A parameter lock gives one parameter its own value on one step. The step has to hold a trig. A pattern holds 64 locked parameters. A track and a parameter with any lock count once.</p>
+<h4 class="gd-h3" id="lock-a-parameter">Lock a parameter</h4>
+<ol class="gd-steps"><li>Select the track.</li><li>In the rail under <b class="gd-ui">Lock parameter</b>, click the key of the parameter. The keys are in three groups: <b class="gd-ui">Synth</b>, <b class="gd-ui">Effects</b> and <b class="gd-ui">Routing</b>. A number on a key tells how many steps it has locked.</li><li>Drag over the bars of the <b class="gd-ui">Lock lane</b>. Each step with a trig takes the value where the pointer crosses it. Steps with no trig are hatched and take no lock.</li><li>Hold <kbd class="gd-key">[⇧]</kbd> and drag to draw a ramp, a straight line from where you press to where you let go.</li><li>To move one lock, scroll on its step. Four values a notch, or one with <kbd class="gd-key">[⇧]</kbd>.</li></ol>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/md-lock-lane.webp" aria-label="Open the picture full size: The lock lane"><img src="/guide/shots/md-lock-lane.webp" width="1440" height="924" alt="The lock lane" loading="lazy"></a><figcaption>The lock lane</figcaption></figure>
+<p>The lane shows the value locked on each step, and a dashed line shows the value of the kit. A bipolar parameter draws from the centre: up for right or boost, down for left or cut.</p>
+<h4 class="gd-h3" id="the-lock-count">The lock count</h4>
+<p>The <b class="gd-light">&lt;LOCKS&gt;</b> field of the LCD and the header of the lane count the locked parameters, for example 41 / 64. The count turns to a warning from 52. At 64 the editor refuses a new lock and tells you to clear a lane first.</p>
+<h4 class="gd-h3" id="locks-in-classic">Locks in CLASSIC</h4>
+<p>Locks play only in EXTENDED. In CLASSIC they are kept and do nothing. The lane is greyed.</p>
+<h4 class="gd-h3" id="remove-locks">Remove locks</h4>
+<p>See &quot;CLEAR NOTE PARAMETER LOCKS&quot;.</p>
+</div></section>
+<section class="gd-sec" id="parameter-locks-in-live-recording-mode" aria-labelledby="parameter-locks-in-live-recording-mode-h">
+<div class="gd-body gd-prose"><h2 id="parameter-locks-in-live-recording-mode-h">PARAMETER LOCKS IN LIVE RECORDING MODE <a class="gd-anchor" href="#parameter-locks-in-live-recording-mode" aria-label="Link to PARAMETER LOCKS IN LIVE RECORDING MODE">#</a></h2>
+<p class="gd-ref">MD manual p.48</p>
+<p>While you record live, a value you move is locked.</p>
+<ol class="gd-steps"><li>Start live recording. See &quot;LIVE RECORDING&quot;.</li><li>Move a value, for example on <b class="gd-ui">Sound</b>.</li><li>The machine locks the next trig whose step has not started. The editor marks that step and says which value it locked. A trig that is playing is too late.</li></ol>
+<p>To take the locks of one value out while recording, as the machine does with <kbd class="gd-key">[EXIT/NO]</kbd> and a pressed DATA ENTRY knob:</p>
+<ol class="gd-steps"><li>Select the track on the rail.</li><li>Press the value and keep the mouse button down. The press is the knob held; it does not change the value.</li><li>Hold <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> as well. The track's header and the value are marked red. The machine removes the track's locks of that value on each step that plays while both are down.</li><li>Let them go to stop.</li></ol>
+<p>The trigs and the locks of the other values stay. Press the value first, or within a moment of <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd>: the key on its own erases trigs. A value that cannot be locked, such as a master effect, removes nothing; the editor says so. If you let the value go while <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> is still down, nothing more is removed until you let the key go. The value does not move while it is held for this, even after you let the key go, until you let the mouse go.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The machine removes the locks of the track it has selected, from the knob page that holds the value. The editor selects the track and shows that page before it holds the keys, so the first step or two after the press may keep their lock.</p></aside>
+</div></section>
+<section class="gd-sec" id="parameter-lock-slide" aria-labelledby="parameter-lock-slide-h">
+<div class="gd-body gd-prose"><h2 id="parameter-lock-slide-h">PARAMETER LOCK SLIDE <a class="gd-anchor" href="#parameter-lock-slide" aria-label="Link to PARAMETER LOCK SLIDE">#</a></h2>
+<p class="gd-ref">MD manual pp.49, 50</p>
+<p>A slide glides the value of a lock from the previous step to this one, instead of jumping.</p>
+<ol class="gd-steps"><li>Click a step with a trig, with <kbd class="gd-key">[⇧]</kbd> and <kbd class="gd-key">[⌥]</kbd> held. The step shows a slide mark.</li><li>Do the same again to take it off.</li></ol>
+<p>You can also click <b class="gd-ui">Slide</b> in the bar under the grid. Then a click or a drag on steps with a trig paints slides. Press <kbd class="gd-key">[ESC]</kbd> to paint trigs again.</p>
+<p>With <b class="gd-ui">Slide</b> lit, choose <b class="gd-ui">All tracks</b> or <b class="gd-ui">This track</b>. With <b class="gd-ui">All tracks</b> the slide goes on the step of every track, and the step legend says &quot;(all)&quot;. With <b class="gd-ui">This track</b> each track has its own slides.</p>
+<p>To copy, paste or clear the slides of a track, tick <b class="gd-ui">Slide</b> in <b class="gd-ui">Copy…</b>, <b class="gd-ui">Paste…</b> or <b class="gd-ui">Clear…</b> of the LCD's <b class="gd-ui">▾</b> menu (see &quot;Track copy&quot;). A selection copy also takes the slides with the steps.</p>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/md/07-lfos/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">7. LFOs</span></a><a href="/guide/md/09-song-mode/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">9. Song mode</span></a></nav>
+</article>
+</div>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

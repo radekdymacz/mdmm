@@ -31,6 +31,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <functional>
 #include <string>
 #include <thread>
 #include <vector>
@@ -218,6 +219,74 @@ int main(const int _argc, char** const _argv)
 		pump(100);
 	check(stand(), "no ROM: the processor runs the silent stand-in (no exception, so no alert)");
 	check(lifecycleOf(published) == "missing", "the page is told the ROM is missing (lifecycle '" + lifecycleOf(published) + "'), not left loading");
+	// 0.6 (LEARN, I-002): a note on that reaches the processor from the host goes through addMidiEvent to the page as
+	// midiIn (channel 0-15, note, velocity); one from the device or the editor does not, nor does a note off
+	{
+		const auto before = count(published, "midiIn");
+		processor->addMidiEvent(synthLib::SMidiEvent(synthLib::MidiEventSource::Device, 0x90, 60, 100));
+		processor->addMidiEvent(synthLib::SMidiEvent(synthLib::MidiEventSource::Editor, 0x90, 61, 100));
+		processor->addMidiEvent(synthLib::SMidiEvent(synthLib::MidiEventSource::Host, 0x81, 63, 64));
+		processor->addMidiEvent(synthLib::SMidiEvent(synthLib::MidiEventSource::Host, 0x91, 62, 90));
+		for(int i = 0; i < 20 && count(published, "midiIn") == before; ++i)
+			pump(50);
+		pump(300);
+		check(count(published, "midiIn") == before + 1, "one midiIn reached the page: the host's note on only (" + std::to_string(count(published, "midiIn") - before) + ")");
+		for(const auto& m : published)
+			if(str(m, "type") == "midiIn")
+			{
+				const auto* ch = m.find("ch");
+				const auto* note = m.find("note");
+				const auto* vel = m.find("vel");
+				check(ch && note && vel && ch->asNumber() == 1 && note->asNumber() == 62 && vel->asNumber() == 90, "its channel, note and velocity are the host's (1, 62, 90)");
+			}
+		// a flood: the queue holds 64 and drops the rest, so far fewer than 5000 reach the page
+		const auto flooded = count(published, "midiIn");
+		for(int i = 0; i < 5000; ++i)
+			processor->addMidiEvent(synthLib::SMidiEvent(synthLib::MidiEventSource::Host, 0x90, static_cast<uint8_t>(i % 100), 100));
+		pump(600);
+		const auto got = count(published, "midiIn") - flooded;
+		check(got > 0 && got < 1000, "a flood of 5000 notes: the queue drops what does not fit (" + std::to_string(got) + " reached the page)");
+		// I-002, B-062: the notes held reach the page as a state (midiHeld), at most one message per 32 ms however many
+		// notes come; a note off is never lost, so all notes off leaves no key lit
+		const auto heldNow = [&]() -> std::string
+		{
+			for(auto it = published.rbegin(); it != published.rend(); ++it)
+				if(str(*it, "type") == "midiHeld")
+					if(const auto* n = it->find("notes"))
+						return elektronData::json::write(*n);
+			return "none";
+		};
+		check(heldNow().find("\"ch\":1,\"note\":62") != std::string::npos, "midiHeld names the host's held note 62 on its channel 2 (" + heldNow() + ")");
+		const auto heldBefore = count(published, "midiHeld");
+		processor->addMidiEvent(synthLib::SMidiEvent(synthLib::MidiEventSource::Host, 0xb0, 123, 0));
+		processor->addMidiEvent(synthLib::SMidiEvent(synthLib::MidiEventSource::Host, 0x81, 62, 0));
+		for(int i = 0; i < 20 && heldNow() != "[]"; ++i)
+			pump(50);
+		check(heldNow() == "[]", "after all notes off and the note off of 62 no note is held (" + heldNow() + ")");
+		check(count(published, "midiHeld") > heldBefore && count(published, "midiHeld") - heldBefore < 40, "a few midiHeld messages, not one per note");
+		// a note off that never comes: a MIDI input changed, the host released the plug-in: every key let go
+		const auto holdThen = [&](const std::function<void()>& _what, const std::string& _say)
+		{
+			processor->addMidiEvent(synthLib::SMidiEvent(synthLib::MidiEventSource::Host, 0x92, 70, 100));
+			for(int i = 0; i < 20 && heldNow() == "[]"; ++i)
+				pump(50);
+			check(heldNow().find("70") != std::string::npos, _say + ": held first (" + heldNow() + ")");
+			_what();
+			for(int i = 0; i < 20 && heldNow() != "[]"; ++i)
+				pump(50);
+			check(heldNow() == "[]", _say + ": no note held after (" + heldNow() + ")");
+		};
+		holdThen([&] { processor->midiInputsChanged(); }, "a MIDI input changed");
+		holdThen([&] { processor->releaseResources(); }, "the host released the plug-in");
+		holdThen([&] { processor->processBlockStarted(64, true); }, "the host bypassed the plug-in");
+		// HW MIDI: what comes in is the real machine's own MIDI OUT, never held by a player
+		processor->getExternalMidi().set(true);
+		processor->addMidiEvent(synthLib::SMidiEvent(synthLib::MidiEventSource::Host, 0x90, 72, 100));
+		processor->addMidiEvent(synthLib::SMidiEvent(synthLib::MidiEventSource::Physical, 0x90, 73, 100));
+		pump(300);
+		check(heldNow() == "[]", "HW MIDI: the machine's own notes (host or port) are not held (" + heldNow() + ")");
+		processor->getExternalMidi().set(false);
+	}
 	// B-030: the host's tempo reaches the page while the host is stopped (the LCD's TEMPO shows it)
 	{
 		double bpm = -1;

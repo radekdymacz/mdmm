@@ -9,7 +9,11 @@
 //                                        (live recording: the step a value sent locks), transpose (B-060: a transpose
 //                                        edited while playing is heard at once), trnprobe (B-060's measurements: what
 //                                        applies a dumped transpose while the pattern plays), intentcases (the intent
-//                                        cases of doc/modern-ux/intent-cases.json through the desk, read back from the machine)
+//                                        cases of doc/modern-ux/intent-cases.json through the desk, read back from the machine),
+//                                        steprec (0.6 wave 7: LIVE RECORDING's erase and STEP RECORDING), perform (0.6
+//                                        wave 9, B-064: POLY, key tracking and the MULTI ENV, judged by the output), hoststop
+//                                        (B-121: the host's Stop lets go of a held note), reselect (B-122: picking the
+//                                        current pattern again keeps it)
 //
 // Exits 77 (skip) without arguments.
 
@@ -27,6 +31,8 @@
 
 #include "mdLib/mdautomation.h"
 #include "mdLib/mmtelemetry.h"
+
+#include "synthLib/midiClock.h"
 
 #include <functional>
 
@@ -90,6 +96,9 @@ namespace
 		case K::Track1: case K::Track2: case K::Track3: case K::Track4: case K::Track5: case K::Track6:
 			return static_cast<C>(static_cast<int>(C::Track1) + (static_cast<int>(_k) - static_cast<int>(K::Track1)));
 		case K::KnobUp: case K::KnobDown: return std::nullopt;	// an encoder, not a key (pressKeys)
+		case K::StepRecord: return C::Record;	// with STOP held
+		case K::ExitDown: case K::ExitUp: return C::Exit;
+		case K::Kit: return C::Kit;
 		}
 		return std::nullopt;
 	}
@@ -129,6 +138,8 @@ namespace
 				if(const auto b = deskWire::note(_ch, _n, _v))
 					out.push_back(*b);
 			};
+			// wave 2: MIDI Stop, Continue, the song position and All Notes Off, in order with the rest
+			port.device.sendMidi = [this](const Bytes& _b) { out.push_back(_b); };
 			port.device.pressKeys = [this](const std::vector<mmDesk::Key>& _keys) { return userKeys(_keys); };
 			port.device.pressBankTrigs = [this](const uint8_t _b, const std::vector<uint8_t>& _t) { return userBankTrigs(_b, _t); };
 			port.device.nowMs = [this] { return ms(); };
@@ -186,9 +197,15 @@ namespace
 				}
 				const auto c = control(k);
 				const auto pk = *md::panelPacket(g_mm, *c);
+				if(mmDesk::isHalf(k))
+				{
+					panel.emplace_back(at, mmDesk::isRelease(k) ? md::PanelPacket{pk.row, 0} : pk);
+					at += hold;
+					continue;
+				}
 				if(mmDesk::isChord(k))
 				{
-					const auto held = mmDesk::heldIsRecord(k) ? rec : fn;
+					const auto held = mmDesk::heldIsRecord(k) ? rec : mmDesk::heldIsStop(k) ? *md::panelPacket(g_mm, md::PanelControl::Stop) : fn;
 					md::PanelRowState rows;
 					for(const auto st : {rows.press(held), rows.press(pk), rows.release(pk), rows.release(held)})
 					{
@@ -278,8 +295,10 @@ namespace
 			t.tempo = tel.tempo.load();
 			t.mutes = tel.mutes.load();
 			t.recording = tel.recording.load();
+			t.stepCursor = tel.stepCursor.load();
 			t.bankGroup = tel.bankGroup.load();
 			t.songRow = tel.songRow.load();
+			t.songSteps = tel.songSteps.load();
 			t.chainKnown = tel.readChain(t.chain.active, t.chain.next, t.chain.patterns);
 			return t;
 		}
@@ -327,7 +346,7 @@ namespace
 					else
 					{
 						e.a = b[0];
-						e.b = b[1];
+						e.b = b.size() > 1 ? b[1] : 0;
 						e.c = b.size() > 2 ? b[2] : 0;
 					}
 					m.hardware().sendMidi(e);
@@ -619,6 +638,58 @@ namespace
 		const auto saved = r.desk->kit(static_cast<uint8_t>(from));
 		check(r.desk->currentKit() == to && kitWorking(r) == "clean", "Save and load: K" + std::to_string(to + 1) + " plays, clean");
 		check(saved && saved->tracks[0].pages[2][0] == v, "and the edit is in K" + std::to_string(from + 1) + " (read back from the slot)");
+		// MM-102: an edit of K<to>, LOAD KIT of another slot (the machine keeps the edit as its UNDO KIT), then loadUndoKit
+		// (the panel's keys): K<to> plays again with the edit, unsaved (gapProbesFirmwareTest w12undo)
+		{
+			auto e = *r.desk->workingKit();
+			const auto w = static_cast<uint8_t>(e.tracks[0].pages[2][0] == 33 ? 34 : 33);
+			e.tracks[0].pages[2][0] = w;
+			r.msg(R"({"op":"set","id":10,"kind":"workingKit","doc":)" + ed::json::write(ed::mmKitToJson(e)) + "}");
+			r.run(800);
+			r.msg(R"({"op":"loadKit","id":11,"force":true,"k":)" + std::to_string(from) + "}");
+			const auto t1 = r.ms();
+			while(r.desk->currentKit() != from && r.ms() - t1 < 8000)
+				r.run(100);
+			r.run(800);
+			r.msg(R"({"op":"loadUndoKit","id":12,"force":true})");
+			const auto t2 = r.ms();
+			const auto back = [&] { const auto wk = r.desk->workingKit(); return r.desk->currentKit() == to && wk && wk->tracks[0].pages[2][0] == w; };
+			while(!back() && r.ms() - t2 < 8000)
+				r.run(100);
+			r.run(1000);
+			std::printf("  UNDO KIT: kit %d, %s\n", r.desk->currentKit(), kitWorking(r).c_str());
+			check(back() && kitWorking(r) == "edited", "UNDO KIT: K" + std::to_string(to + 1) + " plays again with its unsaved edit, and the editor follows");
+		}
+		// MM-102 at the top of the list: from K128 the route is 2 + 128 + 1 keys (about 262 panel states, more than the
+		// old queue of 128 held): an edit of K127, LOAD KIT K128, UNDO KIT brings K127 back with its edit
+		{
+			const auto loadTo = [&](const int _k)
+			{
+				r.msg(R"({"op":"loadKit","force":true,"k":)" + std::to_string(_k) + "}");
+				const auto t = r.ms();
+				while(r.desk->currentKit() != _k && r.ms() - t < 8000)
+					r.run(100);
+				r.run(800);
+			};
+			loadTo(126);
+			auto e = *r.desk->workingKit();
+			const auto w = static_cast<uint8_t>(e.tracks[0].pages[2][0] == 35 ? 36 : 35);
+			e.tracks[0].pages[2][0] = w;
+			r.msg(R"({"op":"set","id":13,"kind":"workingKit","doc":)" + ed::json::write(ed::mmKitToJson(e)) + "}");
+			r.run(800);
+			loadTo(127);
+			check(r.desk->currentKit() == 127, "LOAD KIT K128 over the edited K127");
+			r.msg(R"({"op":"loadUndoKit","id":14,"force":true})");
+			const bool taken = r.lastResult().isObject() && r.lastResult().find("ok")->asBool();
+			const auto t3 = r.ms();
+			const auto high = [&] { const auto wk = r.desk->workingKit(); return r.desk->currentKit() == 126 && wk && wk->tracks[0].pages[2][0] == w; };
+			while(!high() && r.ms() - t3 < 12000)
+				r.run(100);
+			r.run(1000);
+			std::printf("  UNDO KIT from K128: kit %d, %s\n", r.desk->currentKit(), kitWorking(r).c_str());
+			check(taken && high() && kitWorking(r) == "edited", "UNDO KIT from K128 (129 UP keys): K127 plays again with its unsaved edit");
+			loadTo(to);
+		}
 	}
 
 	// P7: loading a pattern (which loads its kit) leaves the kit that plays clean, and no question
@@ -724,6 +795,232 @@ namespace
 	// machine plays. Song 24: A02, A03 x2, A04 (8 steps each), a LOOP (forever), END; SONG mode, PLAY: at the middle of
 	// each pass the row's pattern is the pattern the machine reports, a row played twice shows twice, the loop goes
 	// back.
+	// Wave 2 (doc/modern-ux/PROBES-manual-gaps.md P1, P5 MM): the transport's commands through the desk on the firmware.
+	// Pause and resume (the panel's PLAY), play from a song row (TRANSPORT ACCEPT asked for and set, then the song position
+	// and Continue), panic (All Notes Off and STOP), the tempo nudge.
+	// 0.6 wave 7 through the desk (manual 1-49, 1-50; mmEditorProbeFirmwareTest recording): LIVE RECORDING's erase
+	// (EXIT held: the focus track's notes go as they pass, the other tracks stay) and STEP RECORDING (STOP + RECORD: a
+	// note writes the cursor's step and moves on, RIGHT and LEFT move, ENTER clears), the page's commands read back.
+	void stepRecording(const Bytes& _rom)
+	{
+		std::puts("steprec: live erase and step recording");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		while(r.desk->loaded() < 288)
+			r.run(100);
+		constexpr uint8_t slot = 66;
+		auto p = *r.desk->pattern(slot);
+		p.length = 16;
+		for(auto* m : {&p.amp, &p.filter, &p.lfo, &p.noteOff, &p.midiTrig, &p.midiNoteOff, &p.pitch, &p.chord, &p.midiNote, &p.slide, &p.midiSlide})
+			m->fill(0);
+		for(auto& n : p.notes)
+			n.fill(ed::MmPattern::g_noNote);
+		for(auto& m : p.lockMasks)
+			m.fill(0);
+		for(auto& row : p.lockRows)
+			row.fill(ed::MmPattern::g_noLock);
+		p.lockRowCount = 0;
+		p.chordNotes.fill(0xffff);
+		p.chordNoteCount = 0;
+		p.midiNotes.fill(0xffff);
+		p.midiNoteCount = 0;
+		for(uint8_t t = 0; t < 2; ++t)
+			for(uint8_t st = 0; st < 16; ++st)
+			{
+				for(auto* m : {&p.pitch, &p.amp, &p.filter, &p.lfo})
+					(*m)[t] |= ed::mmStepBit(st);
+				p.notes[t][st] = 48;
+			}
+		r.msg(R"({"op":"set","kind":"pattern","doc":)" + ed::json::write(ed::mmPatternToJson(p)) + "}");
+		r.run(2000);
+		r.msgConfirmed(R"({"op":"select","p":66})");
+		r.run(500);
+		const auto ok = [&] { const auto v = r.lastResult(); return v.isObject() && v.find("ok")->asBool(); };
+		const auto trigs = [&](const uint8_t _t) { const auto q = *r.desk->pattern(slot); int n = 0; for(size_t st = 0; st < 16; ++st) n += ed::mmStepSet(q.pitch[_t], st); return n; };
+		const auto telemetry = [&]
+		{
+			for(auto it = r.page.rbegin(); it != r.page.rend(); ++it)
+				if(it->find("type")->asString() == "telemetry")
+					return *it;
+			return Value();
+		};
+		const auto stepAt = [&] { const auto t = telemetry(); const auto* v = t.find("stepAt"); return v && v->isNumber() ? static_cast<int>(v->asNumber()) : -1; };
+
+		// LIVE RECORDING, then Delete held on T1 for about four steps
+		r.msg(R"({"op":"play"})");
+		r.run(1000);
+		r.msg(R"({"op":"record","mode":"live"})");
+		r.run(600);
+		check(r.tel.recording.load() == 2, "LIVE RECORDING on");
+		r.msg(R"({"op":"loadUndoKit","force":true})");
+		check(!ok() && r.tel.recording.load() == 2, "UNDO KIT is refused while recording (its keys would leave the kit list open)");
+		r.msg(R"({"op":"liveErase","t":0,"on":true})");
+		check(ok(), "liveErase on taken");
+		r.run(500);
+		r.msg(R"({"op":"liveErase","t":0,"on":false})");
+		r.run(2500);
+		const int t1 = trigs(0), t2 = trigs(1);
+		std::printf("  after the erase: T1 %d of 16 notes, T2 %d of 16\n", t1, t2);
+		check(t1 < 16 && t1 >= 8, "T1 lost the notes that played while Delete was held (read back while recording)");
+		check(t2 == 16, "T2 kept all its notes");
+		r.msg(R"({"op":"record","mode":"off"})");
+		r.run(800);
+		r.msg(R"({"op":"stop"})");
+		r.run(600);
+		check(r.tel.recording.load() == 0, "recording off");
+
+		// STEP RECORDING on T2
+		r.msg(R"({"op":"record","mode":"step","t":1})");
+		r.run(800);
+		check(r.tel.recording.load() == 3 && telemetry().find("record")->asString() == std::string("step"), "STEP RECORDING on (RAM 0x2bff05), the telemetry says step");
+		check(stepAt() == 0, "the cursor on step 1 (" + std::to_string(stepAt()) + ")");
+		r.msg(R"({"op":"noteOn","t":1,"vel":100,"pitch":12})");
+		r.run(120);
+		r.msg(R"({"op":"noteOff","t":1,"pitch":12})");
+		r.run(400);
+		check(stepAt() == 1, "a note moves the cursor on (" + std::to_string(stepAt()) + ")");
+		r.msg(R"({"op":"stepKey","key":"right"})");
+		r.run(300);
+		check(stepAt() == 2, "RIGHT: on, a rest (" + std::to_string(stepAt()) + ")");
+		r.msg(R"({"op":"stepKey","key":"left"})");
+		r.run(300);
+		check(stepAt() == 1, "LEFT: back (" + std::to_string(stepAt()) + ")");
+		r.msg(R"({"op":"stepKey","key":"clear"})");
+		r.run(300);
+		check(stepAt() == 2, "clear: on (" + std::to_string(stepAt()) + ")");
+		r.run(1500);
+		{
+			const auto q = *r.desk->pattern(slot);
+			check(ed::mmStepSet(q.pitch[1], 0) && q.notes[1][0] == 60, "the played note is on T2 step 1 (read back: " + std::to_string(q.notes[1][0]) + ")");
+			check(!ed::mmStepSet(q.pitch[1], 1), "the cleared step 2 is empty");
+			check(ed::mmStepSet(q.pitch[1], 2) && q.notes[1][2] == 48, "the rest left step 3 as it was");
+			check(trigs(0) == t1, "T1 untouched");
+		}
+		r.msg(R"({"op":"record","mode":"off"})");
+		r.run(800);
+		check(r.tel.recording.load() == 0 && stepAt() == -1, "off: RECORD leaves STEP RECORDING, no cursor");
+	}
+
+	void transport(const Bytes& _rom)
+	{
+		std::puts("transport: pause, play from a row, panic, nudge");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		while(r.desk->loaded() < 288)
+			r.run(100);
+		const auto pageRow = [&]
+		{
+			for(auto it = r.page.rbegin(); it != r.page.rend(); ++it)
+				if(it->find("type")->asString() == "telemetry")
+				{
+					const auto* sr = it->find("songRow");
+					return sr && sr->isNumber() ? static_cast<int>(sr->asNumber()) : -1;
+				}
+			return -1;
+		};
+		const auto ok = [&] { const auto v = r.lastResult(); return v.isObject() && v.find("ok")->asBool(); };
+		// what the page is told (the RAM flag, or the step moving: watchStep)
+		const auto playing = [&]
+		{
+			for(auto it = r.page.rbegin(); it != r.page.rend(); ++it)
+				if(it->find("type")->asString() == "telemetry")
+					return it->find("playing")->asBool();
+			return false;
+		};
+
+		// pause in PATTERN mode: the step holds, PLAY again goes on from it
+		r.msg(R"({"op":"seqMode","song":false})");
+		r.run(800);
+		r.msg(R"({"op":"play"})");
+		r.run(1200);
+		check(r.tel.running.load() == 1, "PLAY: it plays");
+		r.msg(R"({"op":"pause"})");
+		r.run(300);
+		const int held = r.tel.step.load();
+		r.run(600);
+		std::printf("  paused at step %d, 600 ms later %d (running %d)\n", held + 1, r.tel.step.load() + 1, r.tel.running.load());
+		check(ok() && r.tel.running.load() == 0 && r.tel.step.load() == held, "pause: it stops and the step holds");
+		r.msg(R"({"op":"resume"})");
+		std::vector<int> trace;
+		for(int i = 0; i < 10; ++i)
+		{
+			r.run(40);
+			trace.push_back(r.tel.step.load());
+		}
+		std::string tr;
+		for(const int x : trace)
+			tr += " " + std::to_string(x + 1);
+		std::printf("  resumed, the step every 40 ms:%s\n", tr.c_str());
+		check(ok() && playing() && (trace.front() == held || trace.front() == held + 1) && trace.back() != held,
+			"resume: it plays on from the held step");
+		r.msg(R"({"op":"stop"})");
+		r.run(400);
+		r.msg(R"({"op":"stop"})");
+		r.run(400);
+
+		// play from row 3 of song 24 (rows of 8 steps: row 1 once, row 2 twice, row 3)
+		auto s = *r.desk->song(23);
+		const auto row = [&](const size_t _i, const uint8_t _pattern, const uint8_t _repeats)
+		{
+			auto& b = s.rows[_i].bytes;
+			b = {};
+			b[ed::mmSongRow::g_pattern] = _pattern;
+			b[ed::mmSongRow::g_repeats] = _repeats;
+			b[ed::mmSongRow::g_length] = _pattern < 0xfe ? 8 : 0;
+			b[ed::mmSongRow::g_tempo] = b[ed::mmSongRow::g_tempo + 1] = 0xff;
+		};
+		row(0, 1, 0); row(1, 2, 1); row(2, 3, 0); row(3, 4, 0); row(4, ed::MmSong::g_end, 0);
+		r.msg(R"({"op":"set","kind":"song","doc":)" + ed::json::write(ed::mmSongToJson(s)) + "}");
+		r.run(1500);
+		r.msg(R"({"op":"loadSong","s":23})");
+		r.run(1500);
+		// TRANSPORT IN is IGNORE as booted: the question sets ACCEPT, and the command goes by itself once the machine has
+		// applied it (made active after SYSEX RECV)
+		r.msgConfirmed(R"({"op":"playFrom","i":2})");
+		check(ok(), "play from row 3, confirmed: accepted");
+		const auto active = [&] { return r.desk->global(static_cast<uint8_t>(std::max(0, r.machineGlobal) & 7)); };
+		for(int i = 0; i < 1500 && !playing(); ++i)
+			r.run(10);
+		check(active() && active()->transportIn == 1, "the confirmed question set TRANSPORT ACCEPT in the active global");
+		r.run(400);
+		const int seen = pageRow();
+		const auto machineDoc = lastMachine(r);
+		const auto* song = machineDoc.isObject() ? machineDoc.find("song") : nullptr;
+		std::printf("  playing from row %d (page), step %d\n", seen + 1, r.tel.step.load() + 1);
+		check(seen == 2 && playing() && song && song->find("songMode")->asBool(), "it plays song 24 from row 3 in SONG mode, by itself after the question");
+		// 0.6 e2e (mm-song-play-from): from another row while it plays (MIDI Stop, then the song position and Continue)
+		r.msg(R"({"op":"playFrom","i":1})");
+		check(ok(), "play from row 2 while playing: accepted");
+		int fromTwo = -1;
+		for(int i = 0; i < 300 && fromTwo != 1; ++i)
+		{
+			r.run(10);
+			if(playing())
+				fromTwo = pageRow();
+		}
+		std::printf("  from row 2 while playing: row %d, playing %d\n", fromTwo + 1, playing());
+		check(fromTwo == 1 && playing(), "play from row 2 while playing: it plays from row 2");
+
+		// panic while it plays: STOP (twice) with All Notes Off on the track channels
+		r.msg(R"({"op":"panic"})");
+		r.run(600);
+		check(ok() && !playing(), "panic: it stops");
+
+		// the nudge
+		const int base = r.tel.tempo.load();
+		r.msg(R"({"op":"nudge","pct":10})");
+		r.run(400);
+		const int up = r.tel.tempo.load();
+		r.msg(R"({"op":"nudge","pct":0})");
+		r.run(400);
+		std::printf("  tempo %.2f, nudged %.2f, back %.2f BPM\n", base / 24.0, up / 24.0, r.tel.tempo.load() / 24.0);
+		check(std::abs(up - static_cast<int>(std::lround(base * 1.1))) <= 1 && r.tel.tempo.load() == base, "nudge +10 %: faster while held, back at the release");
+	}
+
 	void songRowPlayhead(const Bytes& _rom)
 	{
 		std::puts("song row: the Song page's playhead");
@@ -757,8 +1054,19 @@ namespace
 		r.msg(R"({"op":"seqMode","song":true})");
 		r.run(1500);
 		r.msg(R"({"op":"play"})");
-		std::vector<int> rows, patterns, lateRows;
+		std::vector<int> rows, patterns, lateRows, steps;
 		int last = -1;
+		// MM-271: the song's played steps the page is told (the EDIT SONG header's bars and beats)
+		const auto pageSteps = [&]
+		{
+			for(auto it = r.page.rbegin(); it != r.page.rend(); ++it)
+				if(it->find("type")->asString() == "telemetry")
+				{
+					const auto* ss = it->find("songSteps");
+					return ss && ss->isNumber() ? static_cast<int>(ss->asNumber()) : -1;
+				}
+			return -1;
+		};
 		const auto pageRow = [&]
 		{
 			for(auto it = r.page.rbegin(); it != r.page.rend(); ++it)
@@ -778,6 +1086,7 @@ namespace
 			if(st == 3 && last != 3)
 			{
 				rows.push_back(pageRow());
+				steps.push_back(pageSteps());
 				const auto reply = ed::parseMmStatusResponse(r.m.request(ed::mmStatusRequest(ed::MmStatus::Pattern), 0x72));
 				patterns.push_back(reply ? reply->value : -1);
 			}
@@ -799,6 +1108,16 @@ namespace
 		for(size_t k = 0; k < lateRows.size() && k < rows.size(); ++k)
 			late = late && lateRows[k] == rows[k];
 		check(late, "at the last step of each pass the page is still told that pass's row");
+		// every pass is 8 steps, sampled at its fourth: the played steps grow by 8 a pass, through the repeat and the loop
+		std::string counts;
+		bool counting = steps.size() >= 2 && steps[0] >= 0;
+		for(size_t k = 0; k < steps.size(); ++k)
+		{
+			counts += " " + std::to_string(steps[k]);
+			counting = counting && (k == 0 || steps[k] - steps[k - 1] == 8);
+		}
+		std::printf("  the song's played steps at each pass:%s\n", counts.c_str());
+		check(counting, "the page is told the song's played steps: 8 more every pass of 8 steps (MM-271)");
 		r.msg(R"({"op":"stop"})");
 		r.run(600);
 		// 0.3.5: an edit of the machine's song is heard without LOAD SONG by hand. Stopped in SONG mode: row 1 becomes
@@ -841,6 +1160,118 @@ namespace
 		r.run(1000);
 	}
 
+	// B-122 (Discord 2026-10-12): "the reset pattern often loads another one". Picking a pattern again (the current one, stopped
+	// and playing, and back to the current one after another was queued) on the firmware: which pattern plays after.
+	void reselect(const Bytes& _rom)
+	{
+		std::puts("reselect: picking the current pattern again keeps it");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		const auto t0 = r.ms();
+		while(r.desk->loaded() < 288 && r.ms() - t0 < 60000)
+			r.run(100);
+		r.run(1000);
+		const auto pick = [&](const int _p, const bool _now = false)
+		{
+			r.msgConfirmed(R"({"op":"select","p":)" + std::to_string(_p) + (_now ? R"(,"now":true})" : "}"));
+		};
+		const auto status = [&] { return "plays " + std::to_string(r.desk->currentPattern()); };
+		for(const int p : {1, 3, 70})
+		{
+			pick(p);
+			r.run(1500);
+			check(r.desk->currentPattern() == p, "stopped: pick " + std::to_string(p) + ": " + status());
+			pick(p);
+			r.run(1500);
+			check(r.desk->currentPattern() == p, "stopped: pick " + std::to_string(p) + " again: " + status());
+			r.msg(R"({"op":"play"})");
+			r.run(1000);
+			pick(p);
+			r.run(5000);
+			check(r.desk->currentPattern() == p, "playing: pick " + std::to_string(p) + " again: " + status());
+			pick(p + 1);
+			r.run(200);
+			pick(p);
+			r.run(6000);
+			check(r.desk->currentPattern() == p, "playing: pick " + std::to_string(p + 1) + ", then " + std::to_string(p) + " before the end: " + status());
+			pick(p, true);
+			r.run(3000);
+			check(r.desk->currentPattern() == p, "playing: switch now to " + std::to_string(p) + ": " + status());
+			r.msg(R"({"op":"stop"})");
+			r.run(1500);
+			check(r.desk->currentPattern() == p, "stopped: " + status());
+		}
+	}
+
+	// B-121 (Discord 2026-10-13, Ableton): a track kept playing after the host's transport stopped until a note was
+	// played on it. In a DAW the machine follows the host (followHost); a note the host played into a track, whose note
+	// off does not come (the host sends none at its stop, or it is lost), keeps sounding after the host's Stop. The
+	// plug-in's Stop is synthLib::hostStopEvents: MIDI Stop alone (as before) leaves the note playing; with All Notes Off
+	// on every channel (the Monomachine plug-in since B-121) the note ends and the sequencer stays stopped.
+	void hostStop(const Bytes& _rom)
+	{
+		std::puts("hoststop: the host's Stop lets go of a held note (B-121)");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		const auto t0 = r.ms();
+		while(r.desk->loaded() < 288 && r.ms() - t0 < 60000)
+			r.run(100);
+		r.run(1000);
+		r.msg(R"({"op":"followHost"})");
+		r.run(6000);
+		const auto gl = r.desk->global(static_cast<uint8_t>(r.desk->currentGlobal()));
+		require(gl.has_value() && gl->tempoSync == 1 && gl->transportIn == 1, "followHost: CLOCK IN and TRANSPORT IN");
+		const auto ch = ed::mmTrackChannel(*gl, 0);
+		require(ch.has_value(), "T1 has a MIDI channel");
+		// T1 a plain voice held to its NOTE OFF (as the perform section's): GND-SIN, AMP HOLD 0 DEC 127, VOL 60, level 48
+		const auto k = std::to_string(r.desk->currentKit());
+		r.msg("{\"op\":\"clearSound\",\"g\":30001,\"k\":" + k + ",\"t\":0}");
+		r.run(400);
+		r.msg("{\"op\":\"params\",\"g\":30002,\"k\":" + k + ",\"values\":[[0,1,1,0],[0,1,2,127],[0,1,3,8],[0,1,5,60]]}");
+		r.msg("{\"op\":\"level\",\"g\":30003,\"k\":" + k + ",\"t\":0,\"v\":48}");
+		r.run(4000);
+		const auto host = [&](const uint8_t _a, const uint8_t _b = 0, const uint8_t _c = 0)
+		{
+			synthLib::SMidiEvent e(synthLib::MidiEventSource::Host, _a, _b, _c);
+			r.m.hardware().sendMidi(e);
+		};
+		// the host plays: Start and its clock at 120 BPM, a note into T1 held; then its Stop (_notesOff: B-121's)
+		const auto playThenStop = [&](const bool _notesOff, const char* _what)
+		{
+			host(0xfa);
+			const double every = 60000.0 / 120 / 24;
+			double t = 0;
+			for(; t < 600; t += every) { host(0xf8); r.run(every); }
+			host(static_cast<uint8_t>(0x90 | *ch), 60, 100);
+			for(; t < 1600; t += every) { host(0xf8); r.run(every); }
+			const double playing = r.rms(300);
+			const int step = r.tel.step.load();
+			synthLib::hostStopEvents(_notesOff, [&](const uint8_t _a, const uint8_t _b, const uint8_t _c) { host(_a, _b, _c); });
+			r.run(1500);
+			const double after = r.rms(300);
+			const int step2 = r.tel.step.load();
+			r.run(500);
+			std::printf("    %s: playing rms %.4f, 1.5 s after the Stop %.4f; step %d, %d, %d\n", _what, playing, after, step, step2, r.tel.step.load());
+			// the note's own off, so the next case starts quiet
+			host(static_cast<uint8_t>(0x80 | *ch), 60, 0);
+			r.run(1500);
+			return std::pair<double, double>{playing, after};
+		};
+		const auto [p0, a0] = playThenStop(false, "MIDI Stop alone (before B-121)");
+		check(p0 > 1e-3, "the rig: the held note sounds while the host plays");
+		check(a0 > 0.25 * p0, "before B-121: MIDI Stop alone leaves the held note sounding (the report)");
+		const auto [p1, a1] = playThenStop(true, "hostStopEvents with All Notes Off (B-121)");
+		check(p1 > 1e-3, "the held note sounds again while the host plays");
+		check(a1 < 0.05 * p1, "the host's Stop lets go of the held note (rms " + std::to_string(a1) + " of " + std::to_string(p1) + ")");
+		const int s0 = r.tel.step.load();
+		r.run(1000);
+		check(r.tel.step.load() == s0, "and the sequencer stays stopped");
+	}
+
 	void hostClock(const Bytes& _rom)
 	{
 		std::puts("host clock");
@@ -872,6 +1303,32 @@ namespace
 		check(r.tel.step.load() == t0, "and stops on the host's Stop");
 		r.msg(R"({"op":"followHost"})");
 		check(r.lastResult().find("note")->asString().empty(), "a second followHost changes nothing");
+		// review 1 (I-026): GLOBAL › Tempo in INT (MIDI SYNC CLOCK IN off) is the switch to the machine's own clock
+		{
+			const auto hostClockOn = [&] { const auto st = r.desk->status(); const auto* v = st.find("hostClock"); return v && v->isBool() && v->asBool(); };
+			check(hostClockOn(), "following: the desk's status says hostClock");
+			const auto gs = std::to_string(r.desk->currentGlobal());
+			r.msg(R"({"op":"globalMidi","g":)" + gs + R"(,"clockIn":false})");
+			for(int i = 0; i < 100 && r.desk->global(static_cast<uint8_t>(r.desk->currentGlobal()))->tempoSync; ++i)
+				r.run(100);
+			for(int i = 0; i < 3; ++i)
+			{
+				r.msg(R"({"op":"followHost"})");
+				r.run(2500);
+			}
+			check(r.desk->global(static_cast<uint8_t>(r.desk->currentGlobal()))->tempoSync == 0, "Tempo in INT stays through three followHosts (read back)");
+			check(!hostClockOn(), "the desk's status says the host clock is off");
+			r.msg(R"({"op":"globalMidi","g":)" + gs + R"(,"clockIn":true})");
+			for(int i = 0; i < 100 && !r.desk->global(static_cast<uint8_t>(r.desk->currentGlobal()))->tempoSync; ++i)
+				r.run(100);
+			for(int i = 0; i < 8 && !hostClockOn(); ++i)
+			{
+				r.msg(R"({"op":"followHost"})");
+				r.run(1000);
+			}
+			const auto g4 = *r.desk->global(static_cast<uint8_t>(r.desk->currentGlobal()));
+			check(hostClockOn(), "Tempo in EXT again: the host clock is on (clock in " + std::to_string(g4.tempoSync) + ", transport in " + std::to_string(g4.transportIn) + ")");
+		}
 		// Clock and transport OUT (the leader of two apps over a MIDI bus): which bytes make the machine send them
 		if(std::getenv("MM_SYNC_OUT"))
 		{
@@ -2163,18 +2620,193 @@ namespace
 		r.msg(R"({"op":"record","mode":"grid"})");
 		const auto first = r.lastResult();
 		std::printf("  RECORD while the dump is taken: %s\n", ed::json::write(first).c_str());
-		check(!first.find("ok")->asBool() && first.find("errors")->asArray()[0].asString() == "The panel is busy (SYSEX RECV); try again.",
-			"the desk refuses it as busy (it was answered ok and lost)");
+		check(first.find("ok")->asBool() && r.tel.recording.load() == 0, "review 1 (B-092): the desk takes it and waits, as PLAY does (nothing pressed yet)");
 		taken();
-		r.run(300);
-		r.msg(R"({"op":"record","mode":"grid"})");
-		const auto again = r.lastResult();
-		r.run(800);
-		std::printf("  RECORD once the dump is taken: %s, recording %d, recv %s\n", ed::json::write(again).c_str(), r.tel.recording.load(), r.desk->recvState().c_str());
-		check(again.find("ok")->asBool() && r.tel.recording.load() == 1, "once the dump is taken RECORD is taken: GRID RECORDING");
+		for(int i = 0; i < 30 && r.tel.recording.load() != 1; ++i)
+			r.run(100);
+		std::printf("  RECORD once the dump is taken: recording %d, recv %s\n", r.tel.recording.load(), r.desk->recvState().c_str());
+		check(r.tel.recording.load() == 1, "once the dump is taken the waiting RECORD is pressed: GRID RECORDING");
 		r.msg(R"({"op":"record","mode":"off"})");
 		r.run(800);
 		check(r.tel.recording.load() == 0, "GRID RECORDING off");
+		leave();
+
+		// B-104 (the 0.6 e2e run): the pause while the desk is parked on SYSEX RECV after an edit, the machine playing.
+		// Measured: the machine holds its step, but the RAM running flag stays 1 (on SYSEX RECV and after the panel left
+		// it) until it plays on or stops; STOP there sets it to 0. The page is told it is paused all the same.
+		const auto pagePlaying = [&]
+		{
+			for(auto it = r.page.rbegin(); it != r.page.rend(); ++it)
+				if(it->find("type")->asString() == "telemetry")
+					return it->find("playing")->asBool();
+			return false;
+		};
+		const auto trace = [&](const int _n)
+		{
+			std::string tr;
+			for(int i = 0; i < _n; ++i)
+			{
+				r.run(100);
+				tr += " " + std::to_string(r.tel.step.load() + 1) + "/" + std::to_string(r.tel.running.load()) + (pagePlaying() ? "p" : "");
+			}
+			return tr;
+		};
+		r.msg(R"({"op":"play"})");
+		for(int i = 0; i < 30 && r.tel.running.load() != 1; ++i)
+			r.run(100);
+		check(r.tel.running.load() == 1, "B-104: it plays");
+		check(park(), "B-104: parked on SYSEX RECV while it plays");
+		taken();
+		std::printf("  parked, playing: step/flag(p: the page is told playing) every 100 ms:%s\n", trace(4).c_str());
+		r.msg(R"({"op":"pause"})");
+		const auto paused = r.lastResult();
+		r.run(600);
+		const int held = r.tel.step.load();
+		std::printf("  pause while parked: %s; then%s\n", ed::json::write(paused).c_str(), trace(6).c_str());
+		check(paused.find("ok")->asBool() && r.tel.step.load() == held, "B-104: the pause while parked holds the step");
+		check(!pagePlaying(), "B-104: the page is told it does not play (the RAM flag still says it does)");
+		leave();
+		std::printf("  the session left SYSEX RECV (%s): step %d, flag %d\n", r.desk->recvState().c_str(), r.tel.step.load() + 1, r.tel.running.load());
+		check(r.tel.step.load() == held && !pagePlaying(), "B-104: still paused, and told so, once the session left SYSEX RECV");
+		r.msg(R"({"op":"resume"})");
+		const auto resumed = trace(6);
+		std::printf("  resume:%s\n", resumed.c_str());
+		check(r.tel.step.load() != held && pagePlaying(), "B-104: resume plays on, and the page is told so");
+		r.msg(R"({"op":"stop"})");
+		r.run(400);
+		r.msg(R"({"op":"stop"})");
+		r.run(800);
+		check(!pagePlaying(), "B-104: stopped");
+	}
+
+	// B-099 (the 0.6 e2e run, mm-real-sequence-plays): four notes, PLAY and STOP, the pattern cleared, PLAY and STOP, one
+	// undo, PLAY at once: the machine must play the notes the page shows, at once (the PLAY waits for the dump).
+	// Measured: the machine clears its RECV count as it opens SYSEX RECV, after the screen shows; a park on the old count
+	// saw the dump as taken, and a key 10 ms after the count moved is still lost (20 ms is taken): the PLAY that waited
+	// was pressed into the dump and lost, and the machine stood still until PLAY again.
+	void undoPlay(const Bytes& _rom)
+	{
+		std::puts("undoplay");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		while(r.desk->loaded() < 288)
+			r.run(100);
+		constexpr uint8_t slot = 65;
+		auto empty = *r.desk->pattern(slot);
+		empty.length = 16;
+		for(auto* m : {&empty.amp, &empty.filter, &empty.lfo, &empty.noteOff, &empty.midiTrig, &empty.midiNoteOff, &empty.pitch, &empty.chord, &empty.midiNote, &empty.slide, &empty.midiSlide})
+			m->fill(0);
+		for(auto& n : empty.notes)
+			n.fill(ed::MmPattern::g_noNote);
+		for(auto& m : empty.lockMasks)
+			m.fill(0);
+		for(auto& row : empty.lockRows)
+			row.fill(ed::MmPattern::g_noLock);
+		empty.lockRowCount = 0;
+		empty.chordNotes.fill(0xffff);
+		empty.chordNoteCount = 0;
+		empty.midiNotes.fill(0xffff);
+		empty.midiNoteCount = 0;
+		const auto set = [&](const ed::MmPattern& _p) { r.msg(R"({"op":"set","kind":"pattern","doc":)" + ed::json::write(ed::mmPatternToJson(_p)) + "}"); };
+		set(empty);
+		r.run(2000);
+		r.msgConfirmed(R"({"op":"select","p":65})");
+		r.run(500);
+		for(int i = 0; i < 200 && r.desk->recvState() != "idle"; ++i)
+			r.run(100);
+		const auto trigs = [&] { const auto q = *r.desk->pattern(slot); int n = 0; for(size_t st = 0; st < 16; ++st) n += ed::mmStepSet(q.pitch[0], st); return n; };
+		// PLAY, how long until the step moves twice (the RAM flag can stay 0 here), STOP
+		const auto playNow = [&](const char* _what)
+		{
+			const double t0 = r.ms();
+			r.msg(R"({"op":"play"})");
+			const auto res = r.lastResult();
+			int moves = 0, last = r.tel.step.load();
+			for(int i = 0; i < 400 && moves < 2; ++i)
+			{
+				r.run(20);
+				if(r.tel.step.load() != last)
+				{
+					last = r.tel.step.load();
+					++moves;
+				}
+			}
+			const double took = r.ms() - t0;
+			r.run(2000);
+			const double level = r.rms(2000);
+			std::printf("  %s: PLAY %s, the step moving after %.0f ms (recv %s), rms %.4f\n", _what, ed::json::write(res).c_str(), took, r.desk->recvState().c_str(), level);
+			r.msg(R"({"op":"stop"})");
+			r.run(600);
+			return std::make_pair(took, level);
+		};
+		// as the page does it: four clicks in the roll (step intents, 250 ms apart), Alt+Delete (clearPattern), Cmd+Z (undo)
+		for(const int st : {12, 8, 4, 0})
+		{
+			r.msg(R"({"op":"step","p":65,"t":0,"s":)" + std::to_string(st) + R"(,"v":{"n":[48],"a":1,"f":1,"l":1}})");
+			r.run(250);
+		}
+		r.run(300);
+		const auto on = playNow("four notes, PLAY while their dump goes");
+		check(on.first < 2000 && on.second > 0.002, "B-099: PLAY right after an edit plays the notes once the dump is in");
+		r.msg(R"({"op":"clearPattern","p":65})");
+		r.run(2000);
+		check(trigs() == 0, "cleared");
+		const auto off = playNow("cleared");
+		check(off.second < on.second / 4, "cleared: it plays silence");
+		r.msg(R"({"op":"undo"})");
+		r.run(50);
+		check(trigs() == 4, "undo: the four notes are back in the core's pattern");
+		const auto back = playNow("undo, PLAY at once");
+		check(back.first < 2000 && back.second > on.second / 2, "B-099: PLAY right after the undo plays the notes at once (" + std::to_string(static_cast<int>(back.first)) + " ms, rms "
+			+ std::to_string(back.second) + ")");
+		r.run(3000);
+		const auto later = playNow("undo, PLAY 3 s later");
+		check(later.second > on.second / 2, "and later too");
+		check(r.desk->pattern(slot) && trigs() == 4, "the machine holds the four notes (read back)");
+	}
+
+	// The Machinedrum's B-098 checked on the Monomachine (2026-10-13): after a start, factory memory, SONG mode, PLAY
+	// before any Load plays the song it reports, as after a LOAD SONG of that slot (measured: the same rows, steps and
+	// level). The Monomachine does not have the Machinedrum's empty working song; this keeps it so.
+	void factorySong(const Bytes& _rom)
+	{
+		std::puts("factorysong");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		while(r.desk->loaded() < 288)
+			r.run(100);
+		const auto playFor = [&](const char* _what)
+		{
+			r.msg(R"({"op":"play"})");
+			std::string tr;
+			std::set<int> steps;
+			for(int i = 0; i < 30; ++i)
+			{
+				r.run(100);
+				steps.insert(r.tel.step.load());
+				if(i % 5 == 0)
+					tr += " " + std::to_string(r.tel.songRow.load()) + "/" + std::to_string(r.tel.step.load() + 1);
+			}
+			const double level = r.rms(2000);
+			std::printf("  %s: song %d, row/step every 500 ms:%s, %zu steps seen, rms %.4f\n", _what, r.desk->currentSong(), tr.c_str(), steps.size(), level);
+			r.msg(R"({"op":"stop"})");
+			r.run(400);
+			r.msg(R"({"op":"stop"})");
+			r.run(600);
+			return std::make_pair(steps.size(), level);
+		};
+		r.msg(R"({"op":"seqMode","song":true})");
+		r.run(1000);
+		const auto first = playFor("fresh start, SONG mode, PLAY");
+		r.msg(R"({"op":"loadSong","s":)" + std::to_string(std::max(0, r.desk->currentSong())) + "}");
+		r.run(1500);
+		const auto loaded = playFor("after LOAD SONG of that slot, PLAY");
+		check(loaded.first >= 8 && loaded.second > 0.002, "after LOAD SONG the song plays");
+		check(first.first >= 8 && first.second > loaded.second / 4, "(MD B-098) the first PLAY in SONG mode after a start plays the song");
 	}
 
 	void recording(const Bytes& _rom)
@@ -2220,6 +2852,9 @@ namespace
 		const uint8_t base = g.baseChannel & 15;
 
 		// LIVE RECORDING: a note from the keyboard on T1's channel lands on a step
+		// the panel is free once the machine has left SYSEX RECV (RECORD is refused as busy while it is still on it)
+		for(int i = 0; i < 200 && r.desk->recvState() != "idle"; ++i)
+			r.run(100);
 		r.msg(R"({"op":"play"})");
 		r.run(1500);
 		r.msg(R"({"op":"record","mode":"live"})");
@@ -2620,14 +3255,18 @@ namespace
 		}
 		_r.desk->setSysexTap({});
 		_r.run(2000);
+		// the machine is on SYSEX RECV until the desk leaves it (idle 3 s, then the exit keys; B-062's macro is longer): the
+		// edits that follow are for the main screen
+		for(int i = 0; i < 300 && _r.desk->recvState() != "idle"; ++i)
+			_r.run(100);
 	}
 
 	// B-051, F3: the global the machine ships with (every slot of a fresh machine is elektronData::mmFactoryGlobal; FACTORY_PRINT=1
-	// prints it raw), GLOBAL › Reset to defaults (span 0, base 4 and TEMPO SYNC changed, then globalReset: the factory global
+	// prints it raw), GLOBAL › Clear (span 0, base 4 and TEMPO SYNC changed, then globalReset: the factory global
 	// reads back, a mute reaches T1-T6), and the slot keys (globalSlot: the machine says the slot is active).
 	void factoryGlobal(const Bytes& _rom)
 	{
-		std::puts("factory global, Reset to defaults, the slot keys (B-051, F3)");
+		std::puts("factory global, Clear, the slot keys (B-051, F3)");
 		Rig r(_rom);
 		r.msg(R"({"op":"ready"})");
 		r.desk->setProbe(mmDesk::Desk::Probe::Running);
@@ -3535,6 +4174,8 @@ namespace
 			in >> atStep >> page >> index;
 		}
 		r.msg(R"({"op":"tempo","bpm":60})");
+		for(int i = 0; i < 200 && r.desk->recvState() != "idle"; ++i)	// the panel is free once SYSEX RECV is left
+			r.run(100);
 		r.msg(R"({"op":"play"})");
 		r.run(1000);
 		r.msg(R"({"op":"record","mode":"live"})");
@@ -4101,6 +4742,451 @@ namespace
 	}
 }
 
+namespace
+{
+	// 0.6 wave 9 (B-064): POLY, the filter's key tracking and the MULTI ENV, through the commands the Perform and Sound
+	// pages send, judged by what the machine plays (the facts: doc/modern-ux/PROBES-manual-gaps.md P10).
+	struct Out
+	{
+		const Rig& r;
+		size_t from, to;
+
+		double amp(const double _f) const
+		{
+			const auto& l = r.m.left();
+			const auto& rr = r.m.right();
+			const double w = 2.0 * M_PI * _f / g_rate, c = 2.0 * std::cos(w);
+			double s1 = 0, s2 = 0;
+			for(size_t i = from; i < to; ++i)
+			{
+				const double s = 0.5 * (double(l[i]) + double(rr[i])) + c * s1 - s2;
+				s2 = s1;
+				s1 = s;
+			}
+			return 2.0 * std::sqrt(std::max(0.0, s1 * s1 + s2 * s2 - c * s1 * s2)) / double(std::max<size_t>(1, to - from));
+		}
+		// the strongest amplitude within 3 % of _f: a pitch, whatever its fine tune
+		double pitch(const double _f) const
+		{
+			double best = 0;
+			for(double f = _f * 0.97; f <= _f * 1.03; f += 0.25)
+				best = std::max(best, amp(f));
+			return best;
+		}
+		double rms() const
+		{
+			const auto& l = r.m.left();
+			const auto& rr = r.m.right();
+			double e = 0;
+			for(size_t i = from; i < to; ++i)
+			{
+				const double x = 0.5 * (double(l[i]) + double(rr[i]));
+				e += x * x;
+			}
+			return std::sqrt(e / double(std::max<size_t>(1, to - from)));
+		}
+	};
+
+	// Review 1 (2026-10-12, B-093): "tracks[4] step 24 has chord notes but no trig" on Sequence. A pattern whose chord
+	// steps lose their trig (the machine's LIVE RECORDING erase; a chord made trigless in the step menu) must stay
+	// editable: the core keeps no chord without its trig, and the machine's own data with one is taken and cleaned.
+	void chordErase(const Bytes& _rom)
+	{
+		std::puts("chorderase: chord steps that lose their trig");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		while(r.desk->loaded() < 288)
+			r.run(100);
+		constexpr uint8_t slot = 67;
+		auto p = *r.desk->pattern(slot);
+		p.length = 16;
+		for(auto* m : {&p.amp, &p.filter, &p.lfo, &p.noteOff, &p.midiTrig, &p.midiNoteOff, &p.pitch, &p.chord, &p.midiNote, &p.slide, &p.midiSlide})
+			m->fill(0);
+		for(auto& n : p.notes)
+			n.fill(ed::MmPattern::g_noNote);
+		for(auto& m : p.lockMasks)
+			m.fill(0);
+		for(auto& row : p.lockRows)
+			row.fill(ed::MmPattern::g_noLock);
+		p.lockRowCount = 0;
+		p.chordNotes.fill(0xffff);
+		p.chordNoteCount = 0;
+		p.midiNotes.fill(0xffff);
+		p.midiNoteCount = 0;
+		// T1: a chord (C E G) on every step
+		for(uint8_t st = 0; st < 16; ++st)
+		{
+			for(auto* m : {&p.pitch, &p.amp, &p.filter, &p.lfo, &p.chord})
+				(*m)[0] |= ed::mmStepBit(st);
+			p.notes[0][st] = 48;
+			for(const uint8_t n : {52, 55})
+				p.chordNotes[p.chordNoteCount++] = ed::mmNoteEntryWord({0, st, n});
+		}
+		// and a lock on every step (FLT page, its first parameter): does the erase leave locks without a trig too?
+		p.lockMasks[0][2] = 1;
+		p.lockRowCount = 1;
+		for(uint8_t st = 0; st < 16; ++st)
+			p.lockRows[0][st] = static_cast<uint8_t>(40 + st);
+		r.msg(R"({"op":"set","kind":"pattern","doc":)" + ed::json::write(ed::mmPatternToJson(p)) + "}");
+		r.run(2000);
+		r.msgConfirmed(R"({"op":"select","p":67})");
+		r.run(500);
+		const auto ok = [&] { const auto v = r.lastResult(); return v.isObject() && v.find("ok")->asBool(); };
+		const auto said = [&] { return ed::json::write(r.lastResult()); };
+		const auto orphans = [&](const ed::MmPattern& _q) { int n = 0; for(size_t st = 0; st < 16; ++st) n += ed::mmStepSet(_q.chord[0], st) && !ed::mmStepSet(_q.pitch[0], st); return n; };
+		// LIVE RECORDING, Delete held on T1 for a few steps (the machine erases as they pass); first the SYSEX RECV
+		// session of the dump ends (the erase is refused while the panel takes one)
+		for(int i = 0; i < 300 && r.desk->recvState() != "idle"; ++i)
+			r.run(100);
+		r.msg(R"({"op":"play"})");
+		r.run(1000);
+		r.msg(R"({"op":"record","mode":"live"})");
+		r.run(600);
+		check(r.tel.recording.load() == 2, "LIVE RECORDING on");
+		r.msg(R"({"op":"liveErase","t":0,"on":true})");
+		check(ok(), "liveErase on taken: " + said());
+		r.run(500);
+		r.msg(R"({"op":"liveErase","t":0,"on":false})");
+		r.run(2500);
+		r.msg(R"({"op":"record","mode":"off"})");
+		r.run(800);
+		r.msg(R"({"op":"stop"})");
+		r.run(800);
+		{
+			const auto q = *r.desk->pattern(slot);
+			int trigs = 0;
+			for(size_t st = 0; st < 16; ++st)
+				trigs += ed::mmStepSet(q.pitch[0], st);
+			std::printf("  after the erase: T1 %d of 16 trigs, %d chord steps without a trig (the core's document); pitch %04llx amp %04llx chord %04llx notes %d\n", trigs, orphans(q),
+				static_cast<unsigned long long>(q.pitch[0] & 0xffff), static_cast<unsigned long long>(q.amp[0] & 0xffff), static_cast<unsigned long long>(q.chord[0] & 0xffff), q.chordNoteCount);
+			check(trigs < 16, "the erase took T1's trigs that played");
+			int locks = 0;
+			for(size_t st = 0; st < 16; ++st)
+				locks += q.lockRowCount > 0 && q.lockRows[0][st] != ed::MmPattern::g_noLock;
+			std::printf("  the erase left %d chord steps without a trig (the machine's data, kept) and %d of 16 locks\n", orphans(q), locks);
+			check(orphans(q) > 0, "the firmware's erase leaves chord bits on the erased steps (the case Radek saw)");
+			check(ed::validate(q).empty(), "the pattern read back is valid: " + (ed::validate(q).empty() ? std::string("yes") : ed::validate(q).front()));
+		}
+		// an edit of that pattern afterwards (Radek's case: a lock on Sequence)
+		r.msg(R"({"op":"step","id":71,"p":67,"t":1,"s":3,"v":{"n":[60],"a":true,"f":true,"l":true}})");
+		r.run(300);
+		check(ok(), "an edit after the erase is taken: " + said());
+		// another edit on T1 itself (a step the erase left alone)
+		r.msg(R"({"op":"step","id":72,"p":67,"t":0,"s":15,"v":{"n":[48,52,55],"a":true,"f":true,"l":true,"notrig":true}})");
+		r.run(300);
+		check(ok(), "another edit on T1 is taken: " + said());
+		r.run(2500);
+		{
+			const auto q = *r.desk->pattern(slot);
+			check(ed::validate(q).empty(), "after the edits: valid");
+			check(ed::mmStepSet(q.pitch[1], 3) && q.notes[1][3] == 60, "the edit reached the machine (T2 step 4, read back)");
+		}
+	}
+
+	// Review 1 (2026-10-12, item 1): the swing track as the machine keeps it. Swing marks under the roll showed on every
+	// step, empty ones too: is that the firmware's data? Every pattern of a fresh machine read back, its swing masks
+	// against its trigs; then a step set and cleared through the desk, read back from memory.
+	void swingProbe(const Bytes& _rom)
+	{
+		std::puts("swingprobe: the swing track in the machine's patterns");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		const auto t0 = r.ms();
+		while(r.desk->loaded() < 288 && r.ms() - t0 < 60000)
+			r.run(100);
+		std::map<uint64_t, int> masks;
+		int onEmpty = 0, onTrig = 0, patterns = 0;
+		for(int i = 0; i < 128; ++i)
+		{
+			const auto p = r.desk->pattern(static_cast<uint8_t>(i));
+			if(!p)
+				continue;
+			++patterns;
+			for(size_t t = 0; t < 6; ++t)
+			{
+				++masks[p->swing[t]];
+				for(size_t s = 0; s < p->length; ++s)
+				{
+					if(!ed::mmStepSet(p->swing[t], s))
+						continue;
+					(ed::mmStepSet(p->amp[t] | p->filter[t] | p->lfo[t], s) ? onTrig : onEmpty)++;
+				}
+			}
+		}
+		std::printf("  %d patterns read; swing masks (track count):\n", patterns);
+		for(const auto& [m, n] : masks)
+			std::printf("    %016llx x %d\n", static_cast<unsigned long long>(m), n);
+		std::printf("  swing bits on a step with a trig: %d, on an empty step: %d\n", onTrig, onEmpty);
+		check(patterns == 128, "every pattern read back");
+		check(masks.size() >= 1, "swing masks seen");
+	}
+
+	void performSound(const Bytes& _rom)
+	{
+		std::puts("perform: POLY, key tracking and the MULTI ENV, judged by the output (0.6 wave 9, B-064)");
+		Rig r(_rom);
+		r.msg(R"({"op":"ready"})");
+		r.desk->setProbe(mmDesk::Desk::Probe::Running);
+		r.run(600);
+		const auto t0 = r.ms();
+		while(r.desk->loaded() < 288 && r.ms() - t0 < 60000)
+			r.run(100);
+		r.run(1500);
+		const auto k = std::to_string(r.desk->currentKit()), p = std::to_string(r.desk->currentPattern());
+		const auto gl = r.desk->global(static_cast<uint8_t>(r.desk->currentGlobal()));
+		require(gl.has_value(), "the active global is loaded");
+		const uint8_t mt = gl->multiTrigChannel;
+		int g = 20000;
+		const auto G = [&] { return std::to_string(++g); };
+		const auto settle = [&](const double _ms = 4000) { r.run(_ms); };
+		const auto values = [&](const std::vector<std::array<int, 4>>& _v)
+		{
+			std::string s;
+			for(const auto& x : _v)
+				s += (s.empty() ? "[" : ",[") + std::to_string(x[0]) + "," + std::to_string(x[1]) + "," + std::to_string(x[2]) + "," + std::to_string(x[3]) + "]";
+			r.msg("{\"op\":\"params\",\"g\":" + G() + ",\"k\":" + k + ",\"values\":[" + s + "]}");
+		};
+		const auto noteOn = [&](const int _t, const int _pitch) { r.msg("{\"op\":\"noteOn\",\"t\":" + std::to_string(_t) + ",\"vel\":100,\"pitch\":" + std::to_string(_pitch) + "}"); };
+		const auto noteOff = [&](const int _t) { r.msg("{\"op\":\"noteOff\",\"t\":" + std::to_string(_t) + "}"); };
+		const auto mtNote = [&](const bool _on) { r.out.push_back({static_cast<uint8_t>((_on ? 0x90 : 0x80) | mt), 60, static_cast<uint8_t>(_on ? 100 : 0)}); };
+		// every note let go (not on the MULTI TRIG channel: a note off there moves the MULTI ENV on)
+		const auto quiet = [&]
+		{
+			for(int t = 0; t < 6; ++t)
+				noteOff(t);
+			r.run(800);
+		};
+		// play, wait, then measure _ms
+		const auto measure = [&](const std::function<void()>& _play, const double _ms = 300)
+		{
+			_play();
+			r.run(300);
+			const size_t a = r.m.left().size();
+			r.run(_ms);
+			return Out{r, a, r.m.left().size()};
+		};
+		// every track GND-SIN with every page at its start, then a plain voice: AMP HOLD 0 DEC 127 (held to the
+		// NOTE OFF), VOL 60, level 48 (six together stay under full scale)
+		for(int t = 0; t < 6; ++t)
+		{
+			r.msg("{\"op\":\"clearSound\",\"g\":" + G() + ",\"k\":" + k + ",\"t\":" + std::to_string(t) + "}");
+			r.run(400);	// one at a time, as a person clicks: six in one tick did not all land (2026-10-12, not looked into)
+		}
+		for(int t = 0; t < 6; ++t)
+		{
+			values({{t, 1, 1, 0}, {t, 1, 2, 127}, {t, 1, 3, 8}, {t, 1, 5, 60}});
+			r.msg("{\"op\":\"level\",\"g\":" + G() + ",\"k\":" + k + ",\"t\":" + std::to_string(t) + ",\"v\":48}");
+		}
+		settle();
+		const auto kitIsPages = [&](const char* _when)
+		{
+			const auto mem = workingKitInMemory(r);
+			const auto w = r.desk->workingKit();
+			check(mem && w && ed::mmKitRaw(*mem) == ed::mmKitRaw(*w), std::string(_when) + ": the machine holds the page's kit");
+		};
+		kitIsPages("the plain voices");
+		{
+			const auto mem = workingKitInMemory(r);
+			check(mem && std::all_of(mem->machines.begin(), mem->machines.end(), [](const uint8_t _m) { return _m == 1; }), "the plain voices: every track GND-SIN");
+		}
+		// ---- POLY: six notes on T3's channel; how many of their pitches sound ----
+		const auto c4 = measure([&] { noteOn(2, 12); });
+		double f0 = 0, best = -1;
+		for(double f = 150; f < 600; f *= std::pow(2.0, 1.0 / 192.0))
+			if(const double a = c4.amp(f); a > best)
+			{
+				best = a;
+				f0 = f;
+			}
+		quiet();
+		check(best > 1e-3, "the rig: T3's sine sounds (" + std::to_string(f0) + " Hz)");
+		const std::vector<int> six{12, 16, 19, 24, 28, 31};	// C E G of C-4 and C-5
+		const auto voices = [&](const int _t)
+		{
+			const auto o = measure([&] {
+				for(const int n : six)
+				{
+					noteOn(_t, n);
+					r.run(30);
+				}
+			});
+			std::vector<double> a;
+			for(const int n : six)
+				a.push_back(o.pitch(f0 * std::pow(2.0, (n - 12) / 12.0)));
+			const double top = *std::max_element(a.begin(), a.end());
+			int count = 0;
+			std::string each;
+			for(const double x : a)
+			{
+				count += top > 1e-3 && x > 0.25 * top;
+				char b[16];
+				std::snprintf(b, sizeof b, " %.4f", x);
+				each += b;
+			}
+			quiet();
+			std::printf("    pitches:%s, rms %.4f\n", each.c_str(), o.rms());
+			return std::pair<int, double>{count, o.rms()};
+		};
+		// what the machine says: POLY and the track in focus (status 0x20, 0x22)
+		const auto say = [&](const char* _when)
+		{
+			int focus = -1, polyOn = -1;
+			r.tap = [&](const Bytes& _b) {
+				if(const auto st = ed::parseMmStatusResponse(_b); st && st->param == ed::MmStatus::AudioTrack)
+					focus = st->value;
+				else if(st && st->param == ed::MmStatus::Poly)
+					polyOn = st->value;
+			};
+			r.out.push_back(ed::mmStatusRequest(ed::MmStatus::Poly));
+			r.out.push_back(ed::mmStatusRequest(ed::MmStatus::AudioTrack));
+			r.run(500);
+			r.tap = nullptr;
+			std::printf("    %s: the machine's POLY %d, track in focus %d (0-based)\n", _when, polyOn, focus);
+			return std::pair<int, int>{polyOn, focus};
+		};
+		const auto mono = voices(2);
+		check(mono.first == 1, "mono: six notes on T3's channel, one pitch sounds (" + std::to_string(mono.first) + ")");
+		r.msg("{\"op\":\"poly\",\"id\":1,\"on\":true,\"t\":2}");
+		settle(1500);
+		check(say("poly on, t 2") == std::pair<int, int>{1, 2}, "POLY with t 2: the machine's POLY is on, its focus T3 (TRACK 3 pressed)");
+		const auto poly = voices(2);
+		check(poly.first >= 5, "POLY on T3 (TRACK 3 pressed): the six notes on T3's channel sound as a chord (" + std::to_string(poly.first) + " pitches)");
+		const auto other = voices(0);
+		check(other.second < 1e-3, "POLY on T3: notes on T1's channel are silent (rms " + std::to_string(other.second) + ")");
+		r.msg("{\"op\":\"poly\",\"id\":2,\"on\":true,\"t\":0}");
+		settle(1500);
+		check(say("poly on, t 0") == std::pair<int, int>{1, 0}, "POLY moved to T1 (poly again with t 0): the machine's focus is T1, POLY on");
+		// the first chord on the new track can come out as one note (the firmware's, measured), the next ones are chords
+		const auto first = voices(0), moved = voices(0);
+		check(moved.first >= 5, "POLY moved to T1: its chords sound (" + std::to_string(moved.first) + " pitches; the first chord " + std::to_string(first.first) + ")");
+		r.msg(R"({"op":"poly","id":3,"on":false})");
+		settle(1500);
+
+		// ---- KEY TRACKING: T1 alone, a C-1 and a C-5 through a low LPF, then a high HPF, its switch on and off ----
+		for(int t = 1; t < 6; ++t)
+			values({{t, 1, 5, 0}});
+		const auto level = [&](const int _pitch)
+		{
+			const double v = measure([&] { noteOn(0, _pitch); }).rms();
+			quiet();
+			return v;
+		};
+		const auto keyTrack = [&](const char* _which, const bool _on)
+		{
+			r.msg("{\"op\":\"assign\",\"g\":" + G() + ",\"k\":" + k + ",\"t\":0,\"" + _which + "\":" + (_on ? "true" : "false") + "}");
+			settle(6000);
+		};
+		values({{0, 2, 0, 0}, {0, 2, 1, 24}});	// LPF low: BASE 0, WDTH 24
+		settle();
+		const double lpfOnLo = level(-12), lpfOnHi = level(36);
+		keyTrack("lpf", false);
+		const double lpfOffLo = level(-12), lpfOffHi = level(36);
+		std::printf("    LPF low, tracking on: C-1 %.4f C-5 %.4f; off: %.4f %.4f\n", lpfOnLo, lpfOnHi, lpfOffLo, lpfOffHi);
+		check(lpfOnHi > 0.5 * lpfOnLo && lpfOffHi < 0.5 * lpfOffLo && lpfOffHi < 0.2 * lpfOnHi,
+			"LPF key tracking off (assign lpf false): the filter stays low, a high note is cut (on " + std::to_string(lpfOnHi) + ", off " + std::to_string(lpfOffHi) + ")");
+		keyTrack("lpf", true);
+		values({{0, 2, 0, 80}, {0, 2, 1, 47}});	// HPF high: BASE 80, WDTH 47
+		settle();
+		const double hpfOnLo = level(-12), hpfOnHi = level(36);
+		keyTrack("hpf", false);
+		const double hpfOffLo = level(-12), hpfOffHi = level(36);
+		std::printf("    HPF high, tracking on: C-1 %.4f C-5 %.4f; off: %.4f %.4f\n", hpfOnLo, hpfOnHi, hpfOffLo, hpfOffHi);
+		check(hpfOffHi > 3 * hpfOnHi && hpfOffHi > hpfOffLo,
+			"HPF key tracking off (assign hpf false): the high-pass stays put, a high note gets through (on " + std::to_string(hpfOnHi) + ", off " + std::to_string(hpfOffHi) + ")");
+		keyTrack("hpf", true);
+		values({{0, 2, 0, 0}, {0, 2, 1, 127}});
+		for(int t = 1; t < 6; ++t)
+			values({{t, 1, 5, 60}});
+		settle();
+
+		// ---- MULTI ENV ----
+		const auto env = [&](const std::array<int, 4>& _v)
+		{
+			for(int i = 0; i < 4; ++i)
+				r.msg("{\"op\":\"multiEnv\",\"g\":" + G() + ",\"k\":" + k + ",\"i\":" + std::to_string(i) + ",\"v\":" + std::to_string(_v[static_cast<size_t>(i)]) + "}");
+			settle();
+		};
+		const auto mode = [&](const int _m)
+		{
+			r.msg("{\"op\":\"multiTrig\",\"g\":" + G() + ",\"k\":" + k + ",\"mode\":" + std::to_string(_m) + ",\"splitKey\":0,\"splitTrack\":0,\"timing\":0}");
+			settle(6000);
+		};
+		const auto mtLevel = [&]
+		{
+			const double v = measure([&] { mtNote(true); }).rms();
+			mtNote(false);
+			r.run(800);
+			return v;
+		};
+		const auto panic = [&] { r.msg(R"({"op":"panic"})"); r.run(1500); };
+		// ALL TRK, the envelope closed (DEC 0 SUS 0 REL 0): a track's own note before any MULTI TRIG note, the note, a
+		// track's own note after it, Panic (STOP), a track's own note again
+		mode(0);
+		env({0, 0, 0, 0});
+		panic();
+		kitIsPages("ALL TRK, closed");
+		const double ownBefore = level(12), allClosed = mtLevel(), ownAfter = level(12);
+		panic();
+		const double ownPanic = level(12);
+		env({0, 127, 127, 127});
+		const double allOpen = mtLevel();
+		std::printf("    ALL TRK: a MULTI TRIG note %.4f (env open), %.4f (DEC 0 SUS 0); T1's own note before it %.4f, after it %.4f, after Panic %.4f\n", allOpen, allClosed,
+			ownBefore, ownAfter, ownPanic);
+		check(allOpen > 1e-2 && allClosed < 0.05 * allOpen, "ALL TRK: the MULTI ENV shapes a MULTI TRIG note (closed: silent)");
+		check(ownBefore > 1e-3 && ownAfter < 0.05 * ownBefore, "ALL TRK: a track's own note is not shaped before a MULTI TRIG note; after one the closed envelope keeps every track silent");
+		check(ownPanic > 0.5 * ownBefore, "ALL TRK: Panic (STOP) opens the envelope again");
+		mode(1);
+		env({0, 0, 0, 0});
+		panic();
+		const double splitClosed = mtLevel();
+		std::printf("    SPLIT KEY: a MULTI TRIG note under the closed env %.4f\n", splitClosed);
+		check(splitClosed > 0.3 * allOpen, "SPLIT KEY: the MULTI ENV has no effect");
+		panic();
+		// SEQ START: T1 trigs on every second step; a MULTI TRIG note starts the pattern; REL 0: silent after its note off
+		r.msg("{\"op\":\"clearPattern\",\"g\":" + G() + ",\"p\":" + p + "}");
+		for(int s = 0; s < 16; s += 2)
+			r.msg("{\"op\":\"step\",\"g\":" + G() + ",\"p\":" + p + ",\"t\":0,\"s\":" + std::to_string(s) + ",\"v\":{\"n\":[60],\"a\":1,\"f\":1,\"l\":1}}");
+		settle(10000);
+		mode(2);
+		env({0, 127, 127, 0});
+		kitIsPages("SEQ START, REL 0");
+		const double started = measure([&] { mtNote(true); }, 500).rms();
+		mtNote(false);
+		r.run(400);
+		const double afterOff = measure([] {}, 400).rms();
+		const double ownAfter2 = level(12);
+		r.msg(R"({"op":"stop"})");
+		r.run(600);
+		const double ownStop = level(12);
+		std::printf("    SEQ START, REL 0: the pattern a MULTI TRIG note starts %.4f; after its note off %.4f; T1's own note then %.4f\n", started, afterOff, ownAfter2);
+		check(started > 1e-3 && afterOff < 0.05 * started, "SEQ START: a MULTI TRIG note starts the pattern; with REL 0 it is silent after the note off");
+		check(ownAfter2 < 1e-3, "SEQ START: after that note off the machine is silent, own notes too");
+		check(ownStop > 1e-3, "SEQ START: STOP opens it again (" + std::to_string(ownStop) + ")");
+		panic();
+		// SEQ TRNSP: the same, the pattern started (and transposed) by a MULTI TRIG note
+		mode(3);
+		kitIsPages("SEQ TRNSP, REL 0");
+		const double trnStarted = measure([&] { mtNote(true); }, 500).rms();
+		mtNote(false);
+		r.run(400);
+		const double trnAfter = measure([] {}, 400).rms();
+		const double trnOwn = level(12);
+		r.msg(R"({"op":"stop"})");
+		r.run(600);
+		std::printf("    SEQ TRNSP, REL 0: the pattern a MULTI TRIG note starts %.4f; after its note off %.4f; T1's own note then %.4f\n", trnStarted, trnAfter, trnOwn);
+		check(trnStarted > 1e-3 && trnAfter < 0.05 * trnStarted && trnOwn < 1e-3,
+			"SEQ TRNSP: a MULTI TRIG note starts the pattern; with REL 0 the pattern and the tracks' own notes are silent after its note off");
+		panic();
+		r.msg("{\"op\":\"clearPattern\",\"g\":" + G() + ",\"p\":" + p + "}");
+		mode(0);
+		env({0, 127, 127, 127});
+	}
+}
+
 int main(const int _argc, char** _argv)
 {
 	std::setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -4160,8 +5246,16 @@ int main(const int _argc, char** _argv)
 			syxExport(rom);
 		if(only.empty() || only == "hostclock")
 			hostClock(rom);
+		if(only == "hoststop")
+			hostStop(rom);
+		if(only == "reselect")
+			reselect(rom);
 		if(only.empty() || only == "songrow")
 			songRowPlayhead(rom);
+		if(only.empty() || only == "transport")
+			transport(rom);
+		if(only.empty() || only == "steprec")
+			stepRecording(rom);
 		if(only.empty() || only == "patterns")
 			patterns(rom);
 		if(only.empty() || only == "library")
@@ -4207,6 +5301,16 @@ int main(const int _argc, char** _argv)
 			transposeLive(rom);
 		if(only == "intentcases")
 			intentCasesOnFirmware(rom);
+		if(only == "perform")
+			performSound(rom);
+		if(only == "swingprobe")
+			swingProbe(rom);
+		if(only == "chorderase")
+			chordErase(rom);
+		if(only.empty() || only == "undoplay")
+			undoPlay(rom);
+		if(only.empty() || only == "factorysong")
+			factorySong(rom);
 		check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 		std::printf("%s (%d failures)\n", g_failures ? "FAIL" : "PASS", g_failures);
 		return g_failures ? 1 : 0;

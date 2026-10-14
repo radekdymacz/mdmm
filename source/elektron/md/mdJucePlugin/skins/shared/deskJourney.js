@@ -7,9 +7,10 @@
      screen   (c) => true, or what was seen instead: what the page shows afterwards
      machine  (c) => true, or what was seen instead: what the plug-in's documents (the firmware's read-back) say
      within   how long the two may take to agree (ms, default 6000)
-   A journey is {name, steps, tidy, boot, needs}: needs (optional) () => why it cannot run here, or null (it is then
+   A journey is {name, proves, steps, tidy, boot, needs, alone}: proves (read by scripts/mdmm-features-check.mjs, never by the runner) lists the feature rows it proves, ["MD-107"]; [] for a journey of the page itself (boot, focus, layout, screenshots); needs (optional) () => why it cannot run here, or null (it is then
    logged "JOURNEY <name> SKIP <why>", neither passed nor failed); tidy (async, optional) puts back what the steps changed and runs pass or
-   fail; boot: true runs it from the page's start, before the machine takes input (the start-up card).
+   fail; boot: true runs it from the page's start, before the machine takes input (the start-up card); alone: true says its change cannot be
+   put back (the product has no undo for it: an empty reset): the runners (scripts/mdmm-page.mjs, mdmm-journeys.sh) start it in an editor of its own, and in one page it plays last.
    One runner (Journey.run) plays them in order, logs a line per step, then "JOURNEY <name> PASS|FAIL <reason>"
    and at the end "JOURNEYS DONE <passed>/<run>". The editors' pages pass their journeys and a ready test
    (mdDeskJourneys.js, mmJourneys.js). Chosen by ?selftest=journey (all) or journey-<names>: comma-separated,
@@ -27,6 +28,14 @@ const Journey = (() => {
 	const until = async (f, ms) => { const end = performance.now() + ms; while (performance.now() < end) { if (f()) return true; await sleep(40); } return !!f(); };
 	/* a check's answer: true passes; anything else is what was seen */
 	const ok = (pass, seen) => pass ? true : (seen == null ? "no" : String(seen));
+	/* a log of what the page sent or heard, newest last, the oldest dropped past cap. A journey that asks "what went out
+	   since now" marks it (mark(): how many were ever added) and reads since(mark): marking by length found nothing once
+	   the log was full (it stays at cap), so md-top-tempo-release and the like failed after enough earlier journeys */
+	const recent = cap => { const a = []; a.total = 0;
+		a.add = x => { a.push(x); a.total++; if (a.length > cap) a.shift(); };
+		a.mark = () => a.total;
+		a.since = n => { const k = a.total - n; return k <= 0 ? [] : a.slice(Math.max(0, a.length - k)); };
+		return a; };
 	const describe = el => !el ? "nothing" : (el.id ? "#" + el.id : el.tagName.toLowerCase() + (el.className && typeof el.className === "string" ? "." + el.className.trim().split(/\s+/).join(".") : ""));
 
 	/* ---------- the drawn pointer (demos only) ---------- */
@@ -109,6 +118,11 @@ const Journey = (() => {
 		pointerId: 1, pointerType: "mouse", isPrimary: true, button: 0, buttons, clientX: x, clientY: y }, mods(m))));
 	const me = (type, target, x, y, m, buttons, detail = 1) => target.dispatchEvent(new MouseEvent(type, Object.assign({ bubbles: true, cancelable: true, composed: true,
 		button: 0, buttons, clientX: x, clientY: y, detail, view: window }, mods(m))));
+	/* Alt held by an Alt chord of the journey (u.key with alt): the pages' rotate run (MM) stays open until Alt is seen up, and takes every edit after it into one undo
+	   step; a person lets go of it, so the runner does when the steps are done, before the tidy (see JOURNEYS.md, "Independent journeys") */
+	let altHeld = false;
+	const releaseAlt = () => { if (!altHeld) return; altHeld = false;
+		document.dispatchEvent(new KeyboardEvent("keyup", { key: "Alt", code: "AltLeft", bubbles: true, cancelable: true, composed: true })); };
 	const u = {
 		el, sleep, until,
 		/* demos: the drawn pointer glides to the element's point first (nothing is pressed); nothing otherwise */
@@ -120,7 +134,12 @@ const Journey = (() => {
 			const e = el(q), { x, y } = pointIn(e, fx, fy), t = document.elementFromPoint(x, y);
 			Pointer.ring(x, y);
 			pe("pointerdown", t, x, y, m, 1); me("mousedown", t, x, y, m, 1);
-			pe("pointerup", t, x, y, m, 0); me("mouseup", t, x, y, m, 0); me("click", t, x, y, m, 0);
+			pe("pointerup", t, x, y, m, 0); me("mouseup", t, x, y, m, 0);
+			/* a browser sends no click to a disabled control (a synthetic one would reach the page's click routers: the
+			   Paste what dialog's go key, off while nothing is ticked, sent an empty paste the core refused) */
+			const off = t.closest?.("button:disabled,input:disabled,select:disabled,textarea:disabled");
+			if (!off) me("click", t, x, y, m, 0);
+			else if (runLog) runLog(`hands: no click on ${describe(off)}${off.textContent ? ' "' + off.textContent.trim().slice(0, 40) + '"' : ""}: it is disabled (a browser sends none)`);
 		},
 		/* a right-click at the element's centre: the second button down and up, then the contextmenu event the browser
 		   sends (a step's menu, DESIGN-keymap.md K3) */
@@ -183,6 +202,7 @@ const Journey = (() => {
 		/* a key pressed and let go where the focus is (key: "a", "Delete", " "; code when it matters), with the
 		   browser's default action on a focused button */
 		key(key, m = {}, code) {
+			if (m.alt) altHeld = true;	/* a chord's Alt is never let go by the hands: the runner lets it go when the journey ends (releaseAlt) */
 			const t = document.activeElement && document.activeElement !== document.documentElement ? document.activeElement : document.body;
 			const c = code || (key.length === 1 ? (/[a-z]/i.test(key) ? "Key" + key.toUpperCase() : /[0-9]/.test(key) ? "Digit" + key : key === " " ? "Space" : "") : key);
 			const o = Object.assign({ key, code: c, bubbles: true, cancelable: true, composed: true }, mods(m));
@@ -235,10 +255,10 @@ const Journey = (() => {
 	const TIERS = {
 		host: ["boot-card", "keys-space-play", "seq-os-copy-paste", "keys-os-help", "dev-speedups", "top-cpu-meter", "lcd-volume",
 			"top-editor-menu", "engine-rom-card", "song-playhead"],
-		machine: ["seq-first-beat", "seq-queue-while-playing", "seq-live-record", "seq-grid-record", "sampler-setup-undo", "sampler-audition",
+		machine: ["seq-first-beat", "seq-queue-while-playing", "seq-live-record", "seq-grid-record", "sampler-setup-undo", "sampler-audition", "sampler-rename",
 			"sampler-ram-view", "sampler-setup-chop", "lib-syx-import", "lib-syx-import-mute", "song-mode", "keys-play-notes", "keys-black-keys",
 			"perform-keyboard", "engine-hw-no-machine", "global-tempo-out", "audio-panel", "drop-syx", "drop-sample", "old-webkit",
-			"sound-machine-stays",
+			"sound-machine-stays", "engine-reset-factory", "real-factory-songs", "real-factory-patterns", "real-sequence-plays",
 			/* they time key presses against the journey's clock: in the page tier, beside the gate's busy lane 1, the page
 			   and the journey's clock drifted apart by several per cent (2026-10-11) */
 			"keys-tap-tempo", "keys-tap-tempo-b", "keys-tap-tempo-shift", "shots", "shots-cpu", "shots-global", "shots-import", "shots-menu", "shots-song", "shots-sound", "shots-views"]
@@ -250,9 +270,27 @@ const Journey = (() => {
 
 	/* ---------- the runner ---------- */
 	/* the journeys (what: "journey") or demos ("demo") this page was asked for: null when none */
+	/* Fisher-Yates over mulberry32: the same seed, the same order, in every browser */
+	function shuffled(list, seed) {
+		let a = seed >>> 0; const rnd = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+		const out = list.slice();
+		for (let i = out.length - 1; i > 0; i--) { const k = Math.floor(rnd() * (i + 1)); [out[i], out[k]] = [out[k], out[i]]; }
+		return out;
+	}
+	let e2eMode = false, listMode = false, shuffleSeed = null, current = "", shots = 0;
 	function wanted(all, what = "journey") {
 		const m = location.search.match(new RegExp(`[?&]selftest=(${what}[^&]*)`)); if (!m) return null;
 		let kind = decodeURIComponent(m[1]);
+		/* ":e2e" at the very end (scripts/mdmm-e2e.sh): the evidence run: each journey leaves a snapshot of the page at its
+		   proof moment (its own, or one of its last step, "e2e-<journey>"; "e2e-<journey>-fail" where it failed), and
+		   logs "JOURNEY <name> SHOT <name>" for each, so scripts/mdmm-e2e.mjs can put a picture to each feature row */
+		e2eMode = /:e2e$/.test(kind); if (e2eMode) kind = kind.replace(/:e2e$/, "");
+		/* ":list" at the end: only the names are logged ("JOURNEYS list: ..."), nothing runs (scripts/mdmm-page.mjs --isolate asks for them).
+		   ":shuffle-<seed>" (an integer): the chosen journeys run in a seeded random order, the seed logged, so an order that
+		   fails can be played again (doc/modern-ux/JOURNEYS.md, "Independent journeys"). Either may come before ":e2e". */
+		listMode = false; shuffleSeed = null;
+		for (let m; (m = kind.match(/:(list|shuffle-\d+)$/));) { if (m[1] === "list") listMode = true; else shuffleSeed = +m[1].slice(8); kind = kind.slice(0, m.index); }
+		e2eMode = e2eMode || /:e2e$/.test(kind); if (/:e2e$/.test(kind)) kind = kind.replace(/:e2e$/, "");
 		/* "@k/n" at the end (scripts/mdmm-journeys.sh --jobs n runs n editors at once): every n-th of the chosen ones,
 		   from the k-th, so the n editors share them without a list of names */
 		const shard = kind.match(/@(\d+)\/(\d+)$/);
@@ -260,22 +298,63 @@ const Journey = (() => {
 		/* "~tiers" before it: only the journeys of those tiers */
 		const tier = kind.match(/~([a-z+]+)$/);
 		if (tier) kind = kind.slice(0, tier.index);
-		const take = list => { if (tier) list = list.filter(j => inTier(j, tier[1])); return shard ? list.filter((_, i) => i % +shard[2] === +shard[1] - 1) : list; };
+		/* the order first, then the shard: n editors sharing one seed play the same order, each its share */
+		const take = list => { if (tier) list = list.filter(j => inTier(j, tier[1])); if (shuffleSeed != null) list = shuffled(list, shuffleSeed);
+			/* a journey that cannot put back what it changes (alone: true) plays last: nothing after it meets the damage */
+			list = [...list.filter(j => !j.alone), ...list.filter(j => j.alone)]; return shard ? list.filter((_, i) => i % +shard[2] === +shard[1] - 1) : list; };
 		if (kind === what) return take(all);
-		const pats = kind.slice(what.length).replace(/^-/, "").split(",").filter(Boolean).map(p => new RegExp("^" + p.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") + "$"));
+		/* "!name" in the list leaves those out (journey-*,!md-lib-syx-place: all but that one) */
+		const words = kind.slice(what.length).replace(/^-/, "").split(",").filter(Boolean);
+		const rx = p => new RegExp("^" + p.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*") + "$");
+		const pats = words.filter(p => !p.startsWith("!")).map(rx), nots = words.filter(p => p.startsWith("!")).map(p => rx(p.slice(1)));
 		/* a name matches whole, or without its "demo-" and its "md-"/"mm-" (demo-md-groove: md-groove, groove) */
 		const forms = n => { const bare = n.replace(new RegExp(`^${what}-`), ""); return [n, bare, bare.replace(/^(md|mm)-/, "")]; };
-		return take(all.filter(j => pats.some(r => forms(j.name).some(f => r.test(f)))));
+		let chosen = all.filter(j => pats.some(r => forms(j.name).some(f => r.test(f))) && !nots.some(r => forms(j.name).some(f => r.test(f))));
+		/* a list of names, none with a "*", plays in the order given (to replay the order a run found a journey failing in) */
+		if (shuffleSeed == null && words.length && words.every(p => !p.includes("*") && !p.startsWith("!"))) { const at = j => pats.findIndex(r => forms(j.name).some(f => r.test(f))); chosen = chosen.slice().sort((a, b) => at(a) - at(b)); }
+		return take(chosen);
 	}
 	/* film: {t0} when a demo is filmed (its steps' times are logged against t0) */
+	/* The evidence run's watch (":e2e"): what a person must never read on the page, looked for after each step in the toast, the
+	   error line and the question: the program's own words (an undefined, a NaN, an object, a stack, a validation or contract
+	   message), and a question whose buttons something covers (a click outside lost it: the person cannot answer). */
+	const LEAK = /\bundefined\b|\bNaN\b|\[object|TypeError|ReferenceError|RangeError|is not a function|not a function|cannot read|schema|validation|invalid command|unknown op\b|\$\{|\.js:\d+|\bnull\b/i;
+	function e2eLeaks() {
+		const out = [], q = x => document.querySelector(x);
+		for (const id of ["#toast", "#errline"]) { const e = q(id); const t = e && !e.hidden ? e.textContent.trim() : ""; if (t && LEAK.test(t)) out.push(`${id} "${t.slice(0, 120)}"`); }
+		const d = q("#dlg");
+		if (d && !d.hidden && d.dataset.first !== "1") {
+			if (LEAK.test(d.textContent)) out.push(`#dlg "${d.textContent.trim().slice(0, 120)}"`);
+			for (const b of d.querySelectorAll("[data-dlg]")) {
+				const r = b.getBoundingClientRect(); if (r.width < 1) continue;
+				const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+				if (!top || !d.contains(top)) { out.push(`the question's button "${b.textContent.trim()}" is covered by ${describe(top)}`); break; }
+			}
+		}
+		return out;
+	}
+	let hooks = null;	/* the page's hooks of the running journeys (begin) */
+	/* What the editor sends the machine (the CC, NRPN, note or SysEx on the cable) is seen only in the page tier: its stub
+	   host hands the device edge's messages back ({type: "wire"}); the plug-in reports none (I-027, deferred). On the
+	   firmware a step marked pageOnly ("why") is skipped and said so, and noWire() (true there) lets a step drop its wire
+	   check and keep the others; its ok line then says the wire was not checked. */
+	const pageTier = () => typeof window !== "undefined" && !!window.gmDev;
+	let wireSkipped = false;
+	function noWire() { if (pageTier()) return false; wireSkipped = true; return true; }
 	async function runOne(j, log, context, film, c0) {
 		const c = c0 || {}, n = j.steps.length;
+		/* where the page's undo and its modes stood when the journey began (page.begin(c) sets c.back0: the undo depth and what else the page restores): the journey's
+		   tidy puts them back with the page's own helper (back(u, c)) */
+		try { if (hooks?.begin) hooks.begin(c); } catch (_) { }
 		let reason = "";
 		/* what the journey needs that this run may not have (the window on screen): it is skipped, not failed */
+		current = j.name; shots = 0; altHeld = false;
 		const missing = j.needs ? await j.needs() : null;	/* may be async: what it needs may still be on its way */
 		if (missing) { log(`JOURNEY ${j.name} SKIP ${missing}`); return "skip"; }
 		for (let i = 0; i < n && !reason; i++) {
 			const st = j.steps[i], t0 = performance.now(), head = `JOURNEY ${j.name} ${i + 1}/${n}`;
+			if (st.pageOnly && !pageTier()) { log(`${head} skip ${st.say}: ${st.pageOnly} (page tier only)`); continue; }
+			wireSkipped = false;
 			if (film) log(`DEMO ${j.name} at ${Math.round(t0 - film.t0)} step ${i + 1}/${n}${st.section ? " section " + st.section : ""}${st.caption ? " caption " + st.caption : ""}`);
 			try { if (st.act) await st.act(u, c); }
 			catch (e) { reason = `step ${i + 1} "${st.say}": could not do it: ${e.message}`; log(`${head} FAIL ${st.say}: could not do it: ${e.message}${context ? " (page: " + context() + ")" : ""}`); break; }
@@ -287,12 +366,20 @@ const Journey = (() => {
 			};
 			const pass = await until(both, st.within ?? 6000);
 			const ms = Math.round(performance.now() - t0);
-			if (pass) { log(`${head} ok ${st.say} (${ms} ms)${c.note ? " · " + c.note : ""}`); c.note = ""; if (st.hold) await sleep(st.hold); continue; }
+			if (e2eMode && !film) for (const l of e2eLeaks()) { c.leaks = c.leaks || []; if (!c.leaks.includes(l)) { c.leaks.push(l); log(`JOURNEY ${j.name} LEAK step ${i + 1}: ${l}`); } }
+			if (pass) { log(`${head} ok ${st.say} (${ms} ms)${c.note ? " · " + c.note : ""}${wireSkipped ? " · what is sent to the machine not checked here (page tier only, I-027)" : ""}`); c.note = ""; if (st.hold) await sleep(st.hold); continue; }
 			let around = ""; try { around = context ? context() : ""; } catch (_) { }
 			const seen = [scr !== true ? "screen: " + scr : "", mac !== true ? "machine: " + mac : "", around ? "page: " + around : ""].filter(Boolean).join("; ");
 			reason = `step ${i + 1} "${st.say}": ${seen}`;
 			log(`${head} FAIL ${st.say} after ${ms} ms: ${seen}`);
 		}
+		if (e2eMode && !film && !reason && c.leaks?.length) reason = `internal text or an unreachable question: ${c.leaks.join(" | ")}`;
+		if (e2eMode && !film) {
+			/* the proof moment: where the journey ended (its failing step's page where it failed), before the tidy puts things back */
+			if (reason) { try { snapshot(`e2e-${j.name}-fail`); } catch (e) { log(`JOURNEY ${j.name} e2e snapshot: ${e.message}`); } }
+			else if (!shots) { try { await sleep(250); snapshot(`e2e-${j.name}`); } catch (e) { log(`JOURNEY ${j.name} e2e snapshot: ${e.message}`); } }
+		}
+		releaseAlt();
 		if (j.tidy) { try { await j.tidy(u, c); } catch (e) { log(`JOURNEY ${j.name} tidy: ${e.message}`); } }
 		log(`JOURNEY ${j.name} ${reason ? "FAIL " + reason : "PASS"}`);
 		return !reason;
@@ -301,9 +388,10 @@ const Journey = (() => {
 	   stack, deskModal.js) is closed before the next one, by Esc as a person would, and said: what was closed, or what
 	   stays open. Without it one journey's open details covered the next journeys' controls (0.5.1 gate: md-dev-speedups
 	   then md-lcd-volume). The start-up card is not closed here (only the machine closes it). */
-	async function closeLeftOpen() {
+	async function closeLeftOpen(fix = true) {
 		const open = () => typeof Modal === "undefined" ? [] : Modal.open().filter(id => id !== "bootcard");
 		const was = open(); if (!was.length) return "";
+		if (!fix) return `left open: ${was.join(", ")}`;
 		for (let i = 0; i < 6 && open().length; i++) {
 			const n = open().length;
 			if (Modal.top() === "deskmenu" && typeof closeDeskMenu === "function") closeDeskMenu(); else u.key("Escape");
@@ -311,16 +399,29 @@ const Journey = (() => {
 		}
 		await sleep(100);
 		const still = open();
-		return `closed what was left open: ${was.join(", ")}${still.length ? `; still open: ${still.join(", ")}` : ""}`;
+		return `left open, closed after a failure: ${was.join(", ")}${still.length ? `; still open: ${still.join(", ")}` : ""}`;
 	}
 	/* page: {log, ready: async () => true when the machine takes input, prepare: async (u) => what it did (optional,
 	   once, after ready and before the first journey: logged "JOURNEYS before: ..."), between: async (u) => the page's
 	   neutral state before each journey, context: () => what the page last said (its toast, its error line), added to a
 	   FAIL} */
+	/* page.state(): {name: text} of what a journey may change and must put back (the machine's documents, its modes); the UI's own
+	   (workspace, selection) is not: each journey picks what it needs. A name in only one of the two is not a change (a document that
+	   was not loaded yet). */
+	const safeState = page => { try { return page.state(); } catch (e) { return { "state threw": e.message }; } };
+	const stateDiff = (a, b) => Object.keys(a).filter(k => k in b && a[k] !== b[k]).slice(0, 8).map(k => {
+		const x = String(a[k]), y = String(b[k]);
+		if (x.length < 50 && y.length < 50) return `${k} (${x} -> ${y})`;
+		let i = 0; while (i < x.length && x[i] === y[i]) i++;	/* a document: where it first differs */
+		return `${k} (at ${i}: ${x.slice(Math.max(0, i - 20), i + 30)} -> ${y.slice(Math.max(0, i - 20), i + 30)})`;
+	}).join(", ");
+	let runLog = null;	/* the running journeys' log (the hands say what they could not do) */
 	async function run(all, page) {
 		const list = wanted(all); if (!list) return;
-		const log = page.log;
+		const log = page.log; runLog = log; hooks = page;
 		log(`JOURNEYS start: ${list.length} of ${all.length}: ${list.map(j => j.name).join(" ")}`);
+		if (shuffleSeed != null) log(`JOURNEYS shuffle seed ${shuffleSeed}`);
+		if (listMode) { log(`JOURNEYS list: ${list.map(j => j.name).join(" ")}`); log(`JOURNEYS alone: ${list.filter(j => j.alone).map(j => j.name).join(" ")}`); log("JOURNEYS DONE 0/0 (list)"); return; }
 		if (!list.length) { log("JOURNEYS DONE 0/0"); return; }
 		let passed = 0, skipped = 0;
 		const count = r => { if (r === "skip") skipped++; else if (r) passed++; };
@@ -331,11 +432,18 @@ const Journey = (() => {
 		if (page.prepare && list.some(j => !j.boot)) {
 			try { log(`JOURNEYS before: ${await page.prepare(u)}`); } catch (e) { log(`JOURNEYS before: could not prepare: ${e.message}`); }
 		}
+		/* the guard: what the journey before left is said, and put right only when that one failed (or at the start) */
+		let fix = true;
 		for (const j of list.filter(j => !j.boot)) {
-			try { if (page.between) await page.between(u); } catch (e) { log(`JOURNEY ${j.name} before: ${e.message}`); }
-			const left = await closeLeftOpen();
+			try { const did = page.between ? await page.between(u, fix) : ""; if (did) log(`JOURNEY ${j.name} before: ${did}`); } catch (e) { log(`JOURNEY ${j.name} before: ${e.message}`); }
+			const left = await closeLeftOpen(fix);
 			if (left) log(`JOURNEY ${j.name} before: ${left}`);
-			count(await runOne(j, log, page.context));
+			const was = page.state ? safeState(page) : null;
+			const r = await runOne(j, log, page.context);
+			/* the guard's other half: what this journey left changed (its tidy was to put it back), said by the journey's name */
+			if (was && r !== "skip") { const now = safeState(page), diff = stateDiff(was, now); if (diff) log(`JOURNEY ${j.name} ${j.alone ? "alone, left" : "left"}: ${diff}`); }
+			count(r); fix = !r;	/* false: failed; "skip" and true: it changed nothing or passed */
+			if (r === "skip") fix = false;
 		}
 		log(`JOURNEYS DONE ${passed}/${list.length - skipped}${skipped ? `, ${skipped} skipped` : ""}`);
 	}
@@ -373,6 +481,38 @@ const Journey = (() => {
 		Pointer.on = false;
 		log(`DEMOS DONE ${passed}/${list.length}`);
 	}
+	/* I-024 (doc/modern-ux/DESIGN-machine-memory.md): the machine memory, both editors. The engine menu's KEEP MEMORY
+	   turns off and on again (the plug-in's machineMemory says so, the entry's words follow); RESET MACHINE… offers Start
+	   from factory memory…, which asks again (Cancel changes nothing), then sends it and the saved file is gone. That the
+	   machine then starts from factory memory, and that a save is there in the next session, is
+	   mdMachineMemoryFirmwareTest's. */
+	const memoryJourney = (name, o = {}) => {
+		const keep = () => $q('#engsel option[value="memoryKeep"]');
+		const keepSays = () => keep()?.textContent || "";
+		const saved = () => keep()?.dataset.saved;
+		const dlgOn = () => !!$q("#dlg") && !$q("#dlg").hidden;
+		const dlgKey = text => [...document.querySelectorAll("#dlg [data-dlg]")].find(b => b.textContent.trim() === text);
+		return {
+			name, proves: o.proves,
+			steps: [
+				{ say: "the engine menu has KEEP MEMORY: ON, and no entry of its own for factory memory", act: () => {},
+					screen: () => ok(!!keep() && !keep().hidden && keepSays() === "KEEP MEMORY: ON" && !$q('#engsel option[value="memoryFactory"]'), keepSays() || "no entry") },
+				{ say: "choose KEEP MEMORY: it reads OFF", act: hands => hands.pick("engsel", "memoryKeep"), screen: () => ok(keepSays() === "KEEP MEMORY: OFF", keepSays()) },
+				{ say: "choose it again: ON", act: hands => hands.pick("engsel", "memoryKeep"), screen: () => ok(keepSays() === "KEEP MEMORY: ON", keepSays()) },
+				{ say: "choose RESET MACHINE…: Start from factory memory… is one of its choices", act: hands => hands.pick("engsel", "reset"),
+					screen: () => ok(dlgOn() && !!dlgKey("Start from factory memory…"), "no choice") },
+				{ say: "click it: the editor asks again", act: hands => hands.click(dlgKey("Start from factory memory…")),
+					screen: () => ok(dlgOn() && !!dlgKey("Start from factory memory") && !!dlgKey("Cancel"), "no question") },
+				{ say: "Cancel: nothing happens, the saved memory stays", act: hands => hands.click(dlgKey("Cancel")),
+					screen: () => ok(!dlgOn() && saved() === "1", "saved " + saved()) },
+				{ say: "again, and Start from factory memory: the saved memory is gone", act: async hands => {
+					await hands.pick("engsel", "reset"); await until(() => !!dlgKey("Start from factory memory…"), 2000); hands.click(dlgKey("Start from factory memory…"));
+					await until(() => !!dlgKey("Start from factory memory"), 2000); hands.click(dlgKey("Start from factory memory")); },
+					screen: () => ok(!dlgOn() && saved() === "0", "saved " + saved()) }
+			],
+			tidy: async hands => { if (dlgOn() && dlgKey("Cancel")) hands.click(dlgKey("Cancel")); if (keepSays() === "KEEP MEMORY: OFF") await hands.pick("engsel", "memoryKeep"); }
+		};
+	};
 	/* for needs: the page draws its canvases on animation frames, which WebKit runs only while the window is on screen */
 	/* I-008: the editor's menu, both editors: drawn by the page from the plug-in's entries (editorMenu, deskMenu.js),
 	   opened by a right-click anywhere the page has no menu of its own (the header, the rail). menu.via(u, path) opens it afresh (the plug-in's entries as
@@ -396,8 +536,8 @@ const Journey = (() => {
 		titled: product => ok(menu.on() && new RegExp(product + " \\d").test($q("#deskmenu .mtitle")?.textContent || "") && !!$q(menu.id("developer")),
 			"no editor menu: " + ($q("#deskmenu .mtitle")?.textContent || "(none)"))
 	};
-	const editorMenuJourney = (name, product) => ({
-		name,
+	const editorMenuJourney = (name, product, o = {}) => ({
+		name, proves: o.proves,
 		steps: [
 			{ say: "right-click the header's empty part: the editor's menu, its title the editor and version", act: hands => { if (menu.on()) closeDeskMenu(); hands.rightClick(menu.at); },
 				screen: () => menu.titled(product) },
@@ -657,6 +797,147 @@ const Journey = (() => {
 			else if (c.orig !== 0) await hands.drag("#volf", [[0, c.orig > 0 ? -3 : 3], [0, -2 * c.orig]], {}, { click: false });
 		}
 	}];
+	/* B-061, B-065, B-066: the top bar and the LCD on every workspace, at every window size the page is laid out in.
+	   fitJourneys(prefix, workspaces): [<prefix>-fit-workspaces]. For each view (a window size, and the text floor of a page
+	   zoomed out: WebKit raises text under 9 points on screen, so at 60 % a 9 px text is laid out at 15 px; the page tier
+	   resizes its window, gmView, and the floor is emulated here the same way, see raiseFloor) it visits every workspace
+	   and fails when a key of the top bar (CPU meter, GLOBAL, MKI/MKII ...) is not wholly in the window, when a slot of the
+	   LCD's second row is cut, or when the LCD's box is another size on another workspace. The CPU meter and the output
+	   strip are fed as the plug-in does (a standalone has them already); the tidy puts the window back. */
+	const fitViews = [
+		{ name: "1440", width: 1440, floor: 0 }, { name: "1280", width: 1280, floor: 0 }, { name: "1920", width: 1920, floor: 0 }, { name: "2560", width: 2560, floor: 0 },
+		{ name: "1440-zoom-90", width: 1440, floor: 10.1 }, { name: "1440-zoom-75", width: 1440, floor: 12 }, { name: "1440-zoom-60", width: 1440, floor: 15 }
+	];
+	/* the text floor of a page zoomed out, as WebKit applies it (its "smart minimum": a text that was specified at 9 px or more
+	   and would show under 9 points is laid out at 9 points, a smaller one, the 8 px labels, is left alone): every text laid
+	   out at 9 px or more but under floor px becomes floor px (inline, !important, remembered in data-fit-fs); floor 0
+	   puts every text back. Called again when the page redrew. */
+	let floorNow = 0;
+	const raiseFloor = floor => {
+		const root = document.querySelector("header.top") || document.body;
+		if (floor !== floorNow) {
+			for (const e of root.querySelectorAll("[data-fit-fs]")) { e.style.removeProperty("font-size"); if (e.dataset.fitFs) e.style.setProperty("font-size", e.dataset.fitFs); delete e.dataset.fitFs; }
+			floorNow = floor;
+		}
+		if (!floor) return;
+		const todo = [];
+		for (const e of root.querySelectorAll("*")) { if (e.dataset.fitFs !== undefined || (!e.textContent.trim() && !e.children.length)) continue; const fs = parseFloat(getComputedStyle(e).fontSize); if (fs >= 8.99 && fs < floor) todo.push([e, e.style.getPropertyValue("font-size")]); }
+		for (const [e, old] of todo) { e.dataset.fitFs = old; e.style.setProperty("font-size", floor + "px", "important"); }
+	};
+	const topKeysOut = () => [...document.querySelectorAll(".top button")].filter(b => { const r = b.getBoundingClientRect(); return r.width > 0 && (r.right > innerWidth + 0.5 || r.left < -0.5); });
+	/* the slots of the LCD's second row that are cut: a slot's right edge past the row's, or its text wider than its box */
+	/* the bar's three groups (brand and workspaces, the LCD, the Setup keys) must not overlap each other */
+	const groupsOverlap = () => { const g = ["header.top .left", "header.top .midgrp", "header.top .rightgrp"].map(q => document.querySelector(q)).filter(Boolean).map(e => ({ n: e.className.split(" ")[0], r: e.getBoundingClientRect() }));
+		const out = []; for (let i = 1; i < g.length; i++) if (g[i].r.left < g[i - 1].r.right - 0.5) out.push(`${g[i - 1].n} ..${Math.round(g[i - 1].r.right)} over ${g[i].n} ${Math.round(g[i].r.left)}..`); return out; };
+	const lcdRow2Cut = () => {
+		const row = $q(".lcdpanel .row2"), l2 = $q("#lcd2"), cut = [];
+		if (!row || !l2) return ["no second row"];
+		const lim = l2.getBoundingClientRect().right;
+		for (const s of l2.children) { const r = s.getBoundingClientRect(); if (r.width > 0 && (r.right > lim + 0.5 || s.scrollWidth > s.clientWidth + 1)) cut.push((s.dataset.l2 || s.textContent.trim().slice(0, 12)) + " ..." + Math.round(r.right) + " of " + Math.round(lim)); }
+		if (l2.scrollWidth > l2.clientWidth + 1 && !cut.length) cut.push("row 2 scrolls " + (l2.scrollWidth - l2.clientWidth) + " px");
+		const panel = $q(".lcdpanel").getBoundingClientRect();
+		for (const e of row.children) { const r = e.getBoundingClientRect(); if (r.width > 0 && r.right > panel.right + 0.5) cut.push(e.id || e.className); }
+		return cut;
+	};
+	const fitJourneys = (prefix, workspaces) => [{
+		name: `${prefix}-fit-workspaces`, proves: [],
+		steps: [{ say: "every workspace at every window size and text floor: the top bar's keys wholly in the window, every slot of the LCD's second row visible, the LCD one size",
+			act: async (hands, c) => {
+				const resize = typeof window.gmView === "function";
+				const views = resize ? fitViews : [{ name: "this window", width: innerWidth, floor: 0 }];
+				c.report = []; c.boxes = {}; c.start = $q("#tabs [aria-selected=true]")?.dataset.ws || workspaces[0];
+				if (typeof CpuMeter !== "undefined" && !$q("#cpumeter")) CpuMeter.update({ type: "cpuLoad", state: "running", load: 0.35, worst: 0.55, realtime: 3.1, sampleRate: 48000, blockSize: 256 });
+				if (typeof DeskVolume !== "undefined" && !$q("#volf")) DeskVolume.update({ type: "outputLevel", peakL: 0.2, peakR: 0.2, clip: false, gainDb: 0 });
+				const keepHook = typeof TopFit !== "undefined" ? TopFit.onShow : null;
+				try {
+				for (const v of views) {
+					if (typeof TopFit !== "undefined") TopFit.onShow = () => raiseFloor(v.floor);
+					if (resize) { window.gmView(v.width, 924); await until(() => innerWidth === v.width, 3000); }
+					for (const w of workspaces) {
+						hands.click(`#tabs [data-ws="${w}"]`); await until(() => $q(`#tabs [data-ws="${w}"]`).getAttribute("aria-selected") === "true", 3000);
+						await sleep(250); raiseFloor(v.floor); window.dispatchEvent(new Event("resize")); await sleep(250); raiseFloor(v.floor); await sleep(100);
+						const keys = topKeysOut(), over = groupsOverlap(), cut = lcdRow2Cut(), r = $q(".lcdpanel").getBoundingClientRect();
+						Bridge.log(`MEASURE fit ${prefix} ${v.name} ${w} width ${innerWidth} floor ${v.floor} fit ${typeof TopFit !== "undefined" ? JSON.stringify(TopFit.report()).replace(/"workspaces":\[[^\]]*\],?/, "") : "-"} classes ${$q("header.top")?.className} overflows ${typeof TopFit !== "undefined" && TopFit.overflows()} lcd ${r.width.toFixed(1)} x ${r.height.toFixed(1)} keys out [${keys.map(b => b.id || b.textContent.trim()).join(",")}] row2 cut [${cut.join("; ")}] overlap [${over.join("; ")}]`);
+						if (keys.length) c.report.push(`${v.name} ${w}: top bar keys out: ${keys.map(b => (b.id || b.textContent.trim()) + " ..." + Math.round(b.getBoundingClientRect().right) + " of " + innerWidth).join(", ")}`);
+						if (over.length) c.report.push(`${v.name} ${w}: the top bar overlaps itself: ${over.join(", ")}`);
+						if (cut.length) c.report.push(`${v.name} ${w}: LCD row 2 cut: ${cut.join("; ")}`);
+						(c.boxes[v.name] = c.boxes[v.name] || {})[w] = [r.width, r.height];
+					}
+					raiseFloor(0);
+				}
+				} finally { if (typeof TopFit !== "undefined") TopFit.onShow = keepHook; raiseFloor(0); }
+				for (const [name, b] of Object.entries(c.boxes)) { const first = Object.values(b)[0];
+					for (const [w, s] of Object.entries(b)) if (Math.abs(s[0] - first[0]) > 0.6 || Math.abs(s[1] - first[1]) > 0.6) c.report.push(`${name} ${w}: the LCD is ${s[0].toFixed(1)} x ${s[1].toFixed(1)}, ${Object.keys(b)[0]} ${first[0].toFixed(1)} x ${first[1].toFixed(1)}`); }
+			},
+			screen: c => ok(!c.report.length, c.report.slice(0, 6).join(" | ") + (c.report.length > 6 ? ` (+${c.report.length - 6})` : "")), within: 1000 }],
+		async tidy(hands, c) { raiseFloor(0); if (typeof window.gmView === "function") window.gmView(1440, 924); hands.click(`#tabs [data-ws="${c.start || workspaces[0]}"]`); }
+	}];
+	/* Screen review 2026-10-13: what a screen cuts or overlaps, measured.
+	   cutText(root): the visible elements whose words the box cuts (overflow hidden or an ellipsis, and more text than box):
+	   ["<tag.class> "text" 12 px cut", ...]. A drawn caption is no element, so canvasProblems (below) records what a canvas draws. */
+	function cutText(root = document) {
+		const out = [];
+		for (const el of root.querySelectorAll("*")) {
+			if (!el.getClientRects().length || el.closest("[hidden]") || !el.textContent.trim()) continue;
+			const cs = getComputedStyle(el);
+			if (cs.overflowX === "visible" && cs.textOverflow !== "ellipsis") continue;
+			if (cs.overflowX === "auto" || cs.overflowX === "scroll") continue;
+			if ([...el.children].some(k => k.getClientRects().length && getComputedStyle(k).overflowX !== "visible")) continue;
+			const over = el.scrollWidth - el.clientWidth;
+			if (over > 1) out.push(`${describe(el)} "${el.textContent.trim().replace(/\s+/g, " ").slice(0, 40)}" ${over} px cut`);
+		}
+		return out;
+	}
+	/* spills(sel): the visible elements of sel whose words run past their own box, whatever their overflow (a label that a
+	   flex row squeezed narrower than its text writes under its neighbour) */
+	function spills(sel, root = document) {
+		return [...root.querySelectorAll(sel)].filter(el => el.getClientRects().length && el.clientWidth && el.scrollWidth - el.clientWidth > 1)
+			.map(el => `${describe(el)} "${el.textContent.trim().slice(0, 24)}" ${el.scrollWidth - el.clientWidth} px past its box`);
+	}
+	/* Two boxes that share a row and overlap (the part of the first that lies under the second), the keys of a bar and
+	   their labels: [[a, b], ...] for the elements a and b of selectors "A" and "B" that meet by more than 1 px */
+	function overlaps(selA, selB, root = document) {
+		const as = [...root.querySelectorAll(selA)].filter(e => e.getClientRects().length), bs = [...root.querySelectorAll(selB)].filter(e => e.getClientRects().length), out = [];
+		for (const a of as) for (const b of bs) { if (a === b || a.contains(b) || b.contains(a)) continue;
+			const r = a.getBoundingClientRect(), q = b.getBoundingClientRect();
+			if (Math.min(r.right, q.right) - Math.max(r.left, q.left) > 1 && Math.min(r.bottom, q.bottom) - Math.max(r.top, q.top) > 1) out.push(`${describe(a)} "${a.textContent.trim().slice(0, 20)}" under ${describe(b)} "${b.textContent.trim().slice(0, 20)}"`); }
+		return out;
+	}
+	/* A canvas draws its caption and its curve itself, so the problems are read from what it draws: draw(c) is run with a
+	   2d context that records fillText (a caption's box), the dark strokes (a curve, from two px wide up) and the arcs (a
+	   handle), and passes everything on. Problems: a caption past the canvas's edge, a curve through a caption, a handle on
+	   a caption or cut by an edge ({crossing: false}: only the edges). W and H are the canvas's CSS size. */
+	function canvasProblems(c, draw, { crossing = true } = {}) {
+		const real = c.getContext("2d"), W = c.clientWidth, H = c.clientHeight, texts = [], segs = [], dots = [];
+		let path = [], last = null, wide = 1;
+		const rec = new Proxy(real, {
+			get(t, k) {
+				if (k === "fillText") return (s, x, y, ...r) => { texts.push({ s: String(s), x, y, w: t.measureText(String(s)).width }); return t.fillText(s, x, y, ...r); };
+				if (k === "beginPath") return () => { path = []; last = null; return t.beginPath(); };
+				if (k === "moveTo") return (x, y) => { last = [x, y]; return t.moveTo(x, y); };
+				if (k === "lineTo") return (x, y) => { if (last) path.push([last[0], last[1], x, y]); last = [x, y]; return t.lineTo(x, y); };
+				if (k === "arc") return (x, y, r, ...a) => { dots.push({ x, y, r }); return t.arc(x, y, r, ...a); };
+				if (k === "stroke") return (...a) => { if (t.lineWidth >= 2 && t.lineWidth !== 2.5) segs.push(...path); return t.stroke(...a); };
+				const v = t[k]; return typeof v === "function" ? v.bind(t) : v;
+			},
+			set(t, k, v) { t[k] = v; return true; }
+		});
+		const get0 = c.getContext;
+		c.getContext = () => rec;
+		try { draw(c); } finally { c.getContext = get0; }
+		const out = [];
+		for (const t of texts) {
+			if (t.x < 0 || t.x + t.w > W + 0.5) out.push(`"${t.s}" ${Math.round(t.x + t.w - W)} px past the edge`);
+			if (!crossing) continue;
+			const box = { l: t.x - 1, r: t.x + t.w + 1, t: t.y - 10, b: t.y + 2 };
+			for (const [x0, y0, x1, y1] of segs) { const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0)));
+				for (let i = 0; i <= n; i++) { const x = x0 + (x1 - x0) * i / n, y = y0 + (y1 - y0) * i / n;
+					if (x >= box.l && x <= box.r && y >= box.t && y <= box.b) { out.push(`"${t.s}" crossed by the curve at ${Math.round(x)},${Math.round(y)}`); i = n + 1; break; } } if (out.at(-1)?.startsWith(`"${t.s}" crossed`)) break; }
+			for (const d of dots) if (d.x + d.r > box.l && d.x - d.r < box.r && d.y + d.r > box.t && d.y - d.r < box.b) { out.push(`"${t.s}" under a handle at ${Math.round(d.x)},${Math.round(d.y)}`); break; }
+		}
+		for (const d of dots) if (d.x - d.r < -0.5 || d.x + d.r > W + 0.5) out.push(`a handle at ${Math.round(d.x)},${Math.round(d.y)} cut by the edge (canvas ${Math.round(W)} wide)`);
+		return out;
+	}
 	const onScreen = () => document.visibilityState === "visible" ? null : "the editor window is not on screen (display asleep or covered): its canvases are not drawn";
 	/* for needs: real key events through the operating system (u.osKey) exist in the macOS plug-in only */
 	const osKeyPath = () => osKeys() ? null : "no way in for real key events here (the macOS plug-in has one, mdOsKeys.h)";
@@ -664,6 +945,7 @@ const Journey = (() => {
 	   Chrome, where macOS gives the shell no Screen Recording): the DOM with each canvas's drawing as its background,
 	   the form values as attributes, the window's size; logged in pieces as "SNAP <name> <i>/<n> <text>". */
 	function snapshot(name) {
+		shots++; if (runLog && current) runLog(`JOURNEY ${current} SHOT ${name}`);
 		const doc = document.documentElement.cloneNode(true), live = [...document.querySelectorAll("canvas")], copies = [...doc.querySelectorAll("canvas")];
 		live.forEach((c, i) => { try { const d = c.width && c.height ? c.toDataURL() : ""; if (d && copies[i]) copies[i].style.backgroundImage = `url(${d})`, copies[i].style.backgroundSize = "100% 100%"; } catch (_) { } });
 		const liveSel = [...document.querySelectorAll("select")], copySel = [...doc.querySelectorAll("select")];
@@ -729,9 +1011,59 @@ const Journey = (() => {
 		const verdict = { say: "every view as here", screen: c => { const k = Object.keys(c.diffs || {});
 			return ok(!k.length, k.map(n => `${n}: ${c.diffs[n].length} boxes laid out otherwise by WebKit 15 (${c.diffs[n].slice(0, 3).join("; ")})`).join(" | ")); } };
 		return [
-			{ name: `${prefix}-old-webkit`, needs: () => typeof DeskCompat === "undefined" || !DeskCompat.safari15 ? "no DeskCompat.safari15" : null, steps: [...views.map(v => step(v, false)), verdict] },
-			{ name: `${prefix}-shots-views`, needs: () => location.search.includes(`${prefix}-shots`) ? null : "screenshots only when asked by name", steps: views.map(v => step(v, true)) }
+			{ name: `${prefix}-old-webkit`, proves: [], needs: () => typeof DeskCompat === "undefined" || !DeskCompat.safari15 ? "no DeskCompat.safari15" : null, steps: [...views.map(v => step(v, false)), verdict] },
+			{ name: `${prefix}-shots-views`, proves: [], needs: () => location.search.includes(`${prefix}-shots`) ? null : "screenshots only when asked by name", steps: views.map(v => step(v, true)) }
 		];
 	}
-	return { run, demo, ok, sleep, until, u, TIERS, tierOf, onScreen, osKeyPath, menu, editorMenuJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, snapshot, safari15Diff, viewJourneys };
+	/* Review 1 (Radek, 2026-10-12, B-094): every modal locks. pressOutside() presses, releases and clicks where a person
+	   would click beside the dialog (the window's bottom-left corner: the backdrop, or the question's own overlay), as a
+	   browser sends it to whatever is there; it returns what was under the pointer.
+	   modalLockJourney(name, dialogs): each dialog {name, sel, open(u, c), needs?()} opened, pressed outside (it stays,
+	   on top), then Esc closes it. */
+	function pressOutside() {
+		const x = 6, y = innerHeight - 6, e = document.elementFromPoint(x, y);
+		if (!e) return "nothing";
+		for (const [k, T] of [["pointerdown", PointerEvent], ["mousedown", MouseEvent], ["pointerup", PointerEvent], ["mouseup", MouseEvent], ["click", MouseEvent]])
+			e.dispatchEvent(new T(k, { bubbles: true, cancelable: true, composed: true, clientX: x, clientY: y, button: 0, buttons: k.endsWith("down") ? 1 : 0 }));
+		return e.id || e.className || e.tagName;
+	}
+	const isOpen = sel => { const el = document.querySelector(sel); return !!el && !el.hidden; };
+	/* a box as "x,y wxh" (rounded), and the keys that are not wholly inside it and in view (their words; "" when all are) */
+	const boxOf = sel => { const el = document.querySelector(sel); if (!el || el.hidden) return "hidden"; const r = el.getBoundingClientRect(); return `${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}x${Math.round(r.height)}`; };
+	const keysInside = (sel, keys) => { const el = document.querySelector(sel); if (!el) return "no panel"; const b = el.getBoundingClientRect();
+		return [...document.querySelectorAll(keys)].filter(k => { const r = k.getBoundingClientRect(); const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+			return !(r.left >= b.left - 1 && r.right <= b.right + 1 && r.top >= b.top - 1 && r.bottom <= b.bottom + 1 && r.bottom <= innerHeight && (top === k || k.contains(top))); }).map(k => k.textContent.trim()).join(","); };
+	const modalLockJourney = (name, dialogs) => ({
+		name, proves: [],
+		steps: dialogs.flatMap(d => [
+			{ say: `open ${d.name}`, act: async (u, c) => { c.skip = d.needs ? d.needs() : null; if (c.skip) { Bridge.log(`JOURNEY ${name}: ${d.name} skipped: ${c.skip}`); return; } await d.open(u, c); await until(() => isOpen(d.sel), 4000); await sleep(250); },
+				screen: c => c.skip ? true : ok(isOpen(d.sel), d.name + " not open") },
+			{ say: `click outside ${d.name}: it stays open, on top`, act: async (u, c) => { if (c.skip) return; c.under = pressOutside(); await sleep(350); },
+				screen: c => c.skip ? true : ok(isOpen(d.sel) && typeof Modal !== "undefined" && "#" + Modal.top() === d.sel, `${d.name} ${isOpen(d.sel) ? "open" : "closed"}, on top ${typeof Modal !== "undefined" ? Modal.top() : "-"}, pressed on ${c.under}`) },
+			{ say: `press Escape: ${d.name} closes`, act: async (u, c) => { if (c.skip) return; u.key("Escape"); await sleep(250); },
+				screen: c => c.skip ? true : ok(!isOpen(d.sel), d.name + " still open") }
+		]),
+		async tidy(u) { for (let i = 0; i < 4 && typeof Modal !== "undefined" && Modal.top(); i++) { u.key("Escape"); await sleep(200); } }
+	});
+	/* Review 1 (B-097): every key of the lock parameter panel shows its whole name, and its lock count beside it, never
+	   over it: "" when all fit, else the keys that do not. At the window's size, and at 1280 wide where the plug-in can
+	   size its window (gmView) */
+	function lockKeysCut(sel = ".pk[data-lane]") {
+		return [...document.querySelectorAll(sel)].filter(k => k.getClientRects().length).map(k => {
+			const n = k.querySelector(".pkn"), i = k.querySelector("i"), b = k.getBoundingClientRect();
+			if (!n) return k.textContent.trim() + ": no name";
+			const r = n.getBoundingClientRect(), cut = n.scrollWidth > n.clientWidth + 1, over = i && i.getBoundingClientRect().left < r.right - 0.5, out = r.right > b.right + 0.5 || (i && i.getBoundingClientRect().right > b.right + 0.5);
+			return cut || over || out ? `${n.textContent}${i ? "+" + i.textContent : ""} (${cut ? "cut " + n.scrollWidth + ">" + n.clientWidth : ""}${over ? " under the count" : ""}${out ? " out of its key" : ""})` : "";
+		}).filter(Boolean).join(", ");
+	}
+	const lockKeysJourney = (name, setup) => ({
+		name, proves: [],
+		steps: [...setup,
+			{ say: "every lock parameter key: its whole name, the count beside it", act: async (u, c) => {
+				c.cut = {}; c.cut[innerWidth] = lockKeysCut();
+				if (typeof window.gmView === "function") { const w0 = innerWidth, h0 = innerHeight; window.gmView(1280, 924); await until(() => innerWidth === 1280, 3000); await sleep(400); c.cut[innerWidth] = lockKeysCut(); window.gmView(w0, h0); await until(() => innerWidth === w0, 3000); }
+				c.n = document.querySelectorAll(".pk[data-lane]").length; },
+				screen: c => ok(c.n > 0 && Object.values(c.cut).every(x => !x), `${c.n} keys; ` + Object.entries(c.cut).map(([w, x]) => `${w}: ${x || "all fit"}`).join("; ")) }]
+	});
+	return { stateDiff, pageTier, noWire, cutText, spills, overlaps, canvasProblems, lockKeysCut, lockKeysJourney, pressOutside, modalLockJourney, boxOf, keysInside, run, demo, ok, sleep, until, recent, u, TIERS, tierOf, onScreen, osKeyPath, menu, editorMenuJourney, memoryJourney, cpuMeterJourneys, speedUpsMenuJourney, volumeJourneys, fitJourneys, snapshot, safari15Diff, viewJourneys };
 })();

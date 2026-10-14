@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>16. The MIDI sequencer · Monomachine Editor guide</title>
+<meta name="description" content="Write notes, velocities and controller values for the six MIDI tracks.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/mm/16-the-midi-sequencer/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261014b">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>@page { @top-left { content: "16. The MIDI sequencer"; } }</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › <a href="/guide/mm/">Monomachine Editor</a> › The MIDI sequencer</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Chapters of the Monomachine Editor guide">
+<p class="gd-side-title"><a href="/guide/mm/">Monomachine Editor guide</a></p>
+<ol class="gd-side-list"><li><a href="/guide/mm/01-introduction-philosophy-highlights/">1. Introduction, philosophy, highlights</a></li>
+<li><a href="/guide/mm/02-user-interface-and-connectors/">2. User interface and connectors</a></li>
+<li><a href="/guide/mm/03-the-lcd-user-interface/">3. The LCD user interface</a></li>
+<li><a href="/guide/mm/04-quick-start/">4. Quick start</a></li>
+<li><a href="/guide/mm/05-monomachine-overview/">5. Monomachine overview</a></li>
+<li><a href="/guide/mm/06-synthesis-arrangement-kits-and-machines/">6. Synthesis arrangement: kits and machines</a></li>
+<li><a href="/guide/mm/07-track-effects/">7. Track effects</a></li>
+<li><a href="/guide/mm/08-low-frequency-oscillators/">8. Low frequency oscillators</a></li>
+<li><a href="/guide/mm/09-additional-kit-settings/">9. Additional kit settings</a></li>
+<li><a href="/guide/mm/10-the-pattern-sequencer-pattern-operation/">10. The pattern sequencer: pattern operation</a></li>
+<li><a href="/guide/mm/11-composing-a-pattern/">11. Composing a pattern</a></li>
+<li><a href="/guide/mm/12-tempo/">12. Tempo</a></li>
+<li><a href="/guide/mm/13-parameter-locks/">13. Parameter locks</a></li>
+<li><a href="/guide/mm/14-advanced-sequencer-control/">14. Advanced sequencer control</a></li>
+<li><a href="/guide/mm/15-additional-sequencer-features/">15. Additional sequencer features</a></li>
+<li class="gd-side-cur"><a href="/guide/mm/16-the-midi-sequencer/" aria-current="page">16. The MIDI sequencer</a><ol class="gd-side-subs"><li><a href="#using-the-midi-sequencer">USING THE MIDI SEQUENCER</a></li><li><a href="#the-midi-page">THE MIDI PAGE</a></li><li><a href="#comparison">COMPARISON</a></li></ol></li>
+<li><a href="/guide/mm/17-the-song-mode/">17. The song mode</a></li>
+<li><a href="/guide/mm/18-routing/">18. Routing</a></li>
+<li><a href="/guide/mm/19-global-settings/">19. Global settings</a></li>
+<li><a href="/guide/mm/20-early-startup-menu-technical-information/">20. Early startup menu, technical information</a></li>
+<li><a href="/guide/mm/21-appendix-a-machine-reference/">21. Appendix A: machine reference</a></li>
+<li><a href="/guide/mm/22-appendix-b-midi-control-reference/">22. Appendix B: MIDI control reference</a></li>
+<li><a href="/guide/mm/23-appendix-c-sysex-reference/">23. Appendix C: SysEx reference</a></li>
+<li><a href="/guide/mm/24-beyond-the-hardware/">24. Beyond the hardware</a></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">16</span><span class="gd-ctitle">The MIDI sequencer</span></h1><p class="gd-cmeta">MM manual pp.1-70 to 1-72</p></header>
+<div class="gd-intro gd-prose"><p>The Monomachine has six MIDI tracks next to its six synth tracks. They send notes and controller values to other instruments. The editor edits them on <b class="gd-ui">Sequence</b>, with the same roll, docks and rows.</p></div>
+<section class="gd-sec" id="using-the-midi-sequencer" aria-labelledby="using-the-midi-sequencer-h">
+<div class="gd-body gd-prose"><h2 id="using-the-midi-sequencer-h">USING THE MIDI SEQUENCER <a class="gd-anchor" href="#using-the-midi-sequencer" aria-label="Link to USING THE MIDI SEQUENCER">#</a></h2>
+<p class="gd-ref">MM manual p.1-70</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[1]</kbd>.</li><li>Click <b class="gd-ui">MIDI</b> under the rail, or click SEQ on the second line of the LCD until it reads MIDI. The rail shows M1 to M6.</li><li>Click a track. It shows its MIDI channel, for example CH 03. <b class="gd-ui">M</b> mutes it and <b class="gd-ui">S</b> solos it.</li><li>Draw notes in the roll as on a synth track. See chapter 11. A note you click in the roll of one MIDI track changes that track only.</li><li>To write a chord, hold <kbd class="gd-key">[⇧]</kbd> and click another pitch on a step that has a note. The notes of a chord share one length.</li></ol>
+<p>On <b class="gd-ui">Sound</b> the same <b class="gd-ui">SYNTH</b> and <b class="gd-ui">MIDI</b> keys switch between the six synth tracks and the six MIDI tracks. On <b class="gd-ui">Perform</b>, the <b class="gd-ui">Mutes</b> card has <b class="gd-ui">M1</b> to <b class="gd-ui">M6</b> for the MIDI tracks. Click one to mute the track and click it again to unmute it.</p>
+<p>A MIDI note has a real length. To set it:</p>
+<ol class="gd-steps"><li>Switch <b class="gd-ui">Draw</b> on, choose 1/16 and click a cell. The note is 6 ticks long, one step.</li><li>Drag the end of the note over two more steps. The length reads 18, three steps.</li><li>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take a change back.</li></ol>
+<p>The editor writes the note's LEN, 6 to a step. The row under the roll is <b class="gd-ui">VEL</b>, the velocity of each note. You can lock any value of the MIDI page on a step with the lock lane. See chapter 13.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/mm-midi-roll.webp" aria-label="Open the picture full size: A MIDI track in the roll"><img src="/guide/shots/mm-midi-roll.webp" width="1440" height="924" alt="A MIDI track in the roll" loading="lazy"></a><figcaption>A MIDI track in the roll</figcaption></figure>
+</div></section>
+<section class="gd-sec" id="the-midi-page" aria-labelledby="the-midi-page-h">
+<div class="gd-body gd-prose"><h2 id="the-midi-page-h">THE MIDI PAGE <a class="gd-anchor" href="#the-midi-page" aria-label="Link to THE MIDI PAGE">#</a></h2>
+<p class="gd-ref">MM manual pp.1-71, 1-108, 1-109</p>
+<p>Click <b class="gd-ui">MIDI page</b> in the header of the lock lane. The tab holds these values:</p>
+<ul class="gd-list"><li><b class="gd-ui">LEN</b>: the length of a note, 1 to 127. 127 lasts until a NOTE OFF. Dragging a note's end sets it.</li><li><b class="gd-ui">VEL</b>: the velocity.</li><li><b class="gd-ui">PB</b>: the pitch bend.</li><li><b class="gd-ui">PCHG</b>: a program change. It is sent only when you lock it on a step.</li><li><b class="gd-ui">CC 1 to CC 4</b>: the values of four controllers.</li></ul>
+<p>Below the controller values are the boxes <b class="gd-ui">CL1</b> to <b class="gd-ui">CL4</b>. They choose the controller number of each. Choose AFT to send aftertouch.</p>
+<p>To write a value on a step:</p>
+<ol class="gd-steps"><li>Select a MIDI track and a step that has a note.</li><li>In the lock lane choose <b class="gd-ui">MIDI page</b>, then the value: <b class="gd-ui">VEL</b>, <b class="gd-ui">PB</b> or <b class="gd-ui">PCHG</b>.</li><li>Draw the bar on the step. The value is a lock of that step. A program change goes out only when you lock it.</li><li>Type 74 in <b class="gd-ui">CL1</b> to make the first controller CC 74. Type AFT in <b class="gd-ui">CL2</b> to send aftertouch from the second. The numbers belong to the selected track only.</li></ol>
+<p>The <b class="gd-ui">Channel</b> keys 1 to 16 set the MIDI channel of the track. Choose 4 and only that track changes.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The LFOs of a MIDI track are shared with the synth track of the same number.</p></aside>
+</div></section>
+<section class="gd-sec" id="comparison" aria-labelledby="comparison-h">
+<div class="gd-body gd-prose"><h2 id="comparison-h">COMPARISON <a class="gd-anchor" href="#comparison" aria-label="Link to COMPARISON">#</a></h2>
+<p class="gd-ref">MM manual p.1-71</p>
+<p>A MIDI track has no trig tracks, so its row under the roll shows the velocity, without the A, F and L dots. The step menu has no envelopes or trigless trig for it. It has an arpeggiator without envelope switches, swing, slide and transpose, in the same tabs as a synth track.</p>
+<ol class="gd-steps"><li>Drag across four step columns of <b class="gd-ui">Slide</b> under the roll. Those steps slide.</li><li>Click <b class="gd-ui">Swing</b> on a column to flip the swing of that step.</li><li>Open the transpose tab and type +3 in <b class="gd-ui">TRACK</b>. The pattern holds 3 for the track.</li><li>Open the <b class="gd-ui">Arp</b> tab. It says a MIDI track has no envelope switches.</li></ol>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-mm-midi-seq-docks.webp" aria-label="Open the picture full size: The docks on a MIDI track"><img src="/guide/shots/e2e-mm-midi-seq-docks.webp" width="1440" height="924" alt="The docks on a MIDI track" loading="lazy"></a><figcaption>The docks on a MIDI track</figcaption></figure>
+<p>The MIDI page is stored in the kit, so edits of it are kit edits. Raise <b class="gd-ui">VEL</b>, save the kit to its slot and the slot holds the value.</p>
+<p>The internal tracks can send MIDI too. On the <b class="gd-ui">GLOBAL</b> page, the <b class="gd-ui">Control out 1</b> card sends the notes of the sequencer, the arpeggiator or the keyboard to MIDI out, with or without the sound of the tracks. See chapter 19.</p>
+<ol class="gd-steps"><li>Open <b class="gd-ui">GLOBAL</b>.</li><li>On <b class="gd-ui">Control out 1</b>, click <b class="gd-ui">OUT</b> for <b class="gd-ui">Sequencer</b>. The page warns that the tracks play no sound.</li><li>Click <b class="gd-ui">INT+OUT</b> for <b class="gd-ui">Keyboard</b>, then <b class="gd-ui">INT</b> for <b class="gd-ui">Sequencer</b>. The warning goes.</li></ol>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/mm/15-additional-sequencer-features/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">15. Additional sequencer features</span></a><a href="/guide/mm/17-the-song-mode/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">17. The song mode</span></a></nav>
+</article>
+</div>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

@@ -38,6 +38,17 @@ function(mdmm_add_lib_tests _dir)
 	# DEV-CYCLE: the Machinedrum's intent cases (doc/modern-ux/intent-cases.json, "md") through the desk to the firmware
 	add_test(NAME mdIntentCasesFirmwareTest COMMAND mdDeskFirmwareTest --env intentcases)
 	set_tests_properties(mdIntentCasesFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 900)
+	# wave 2: pause, resume, play from a song row, panic and the tempo nudge through the desk to the firmware
+	add_test(NAME mdTransportFirmwareTest COMMAND mdDeskFirmwareTest --env transport)
+	set_tests_properties(mdTransportFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
+	# wave 7: erase while live recording (EXIT/NO + TRIG held) through the desk to the firmware
+	add_test(NAME mdLiveEraseFirmwareTest COMMAND mdDeskFirmwareTest --env liveerase)
+	set_tests_properties(mdLiveEraseFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
+	add_test(NAME mdCtrLfoFirmwareTest COMMAND mdDeskFirmwareTest --env ctrlfo)
+	set_tests_properties(mdCtrLfoFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
+	# review 1 (B-096): the factory song plays in SONG mode; in a DAW (TEMPO IN EXT) PLAY waits for the host's clock
+	add_test(NAME mdFactorySongFirmwareTest COMMAND mdDeskFirmwareTest --env factorysong)
+	set_tests_properties(mdFactorySongFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
 	add_test(NAME mdSyxPickFirmwareTest COMMAND mdDeskFirmwareTest --env syxpick)
 	set_tests_properties(mdSyxPickFirmwareTest PROPERTIES
 		LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1200)
@@ -96,6 +107,12 @@ function(mdmm_add_lib_tests _dir)
 	set_tests_properties(mdSequencerStateTest PROPERTIES LABELS "UnitTest")
 	set_property(TARGET mdSequencerStateTest PROPERTY FOLDER "Elektron/test")
 
+	# Manual-gap probes P1-P6 (SPP + Continue, MM CONTROL OUT 1, MD trig in A/B, MM DigiPRO, MD stop twice and panic,
+	# the factory baseline): doc/modern-ux/PROBES-manual-gaps.md. Manual: needs both user-supplied ROMs.
+	add_executable(gapProbesFirmwareTest ${_dir}/gapProbesFirmwareTest.cpp ${_dir}/mdFirmwareSession.h ${_dir}/sysexPanelDriver.h)
+	target_link_libraries(gapProbesFirmwareTest PRIVATE mdLib elektronData)
+	set_property(TARGET gapProbesFirmwareTest PROPERTY FOLDER "Elektron/test")
+
 	# MM-P0 Monomachine Editor discovery probes (SYSEX RECV gate, dumps, playhead,
 	# CC live edits) against MM OS 1.32B firmware. Manual: needs a user-supplied ROM.
 	add_executable(mmEditorProbeFirmwareTest ${_dir}/mmEditorProbeFirmwareTest.cpp ${_dir}/mdFirmwareSession.h ${_dir}/sysexPanelDriver.h)
@@ -109,30 +126,44 @@ function(mdmm_add_lib_tests _dir)
 	target_compile_definitions(mmDeskFirmwareTest PRIVATE MMDESK_SCHEMA="${_dir}/../../../../doc/modern-ux/mm-data-contract.schema.json"
 		MMDESK_INTENT_CASES="${_dir}/../../../../doc/modern-ux/intent-cases.json")
 	set_property(TARGET mmDeskFirmwareTest PROPERTY FOLDER "Elektron/test")
-	# -DGEARMULATOR_MM_ROM=<OS 1.32B image> runs it in ctest; without it the test skips.
-	add_test(NAME mmDeskFirmwareTest COMMAND mmDeskFirmwareTest ${GEARMULATOR_MM_ROM})
-	set_tests_properties(mmDeskFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 400)
+	# The default sections (smoke, p4, hw, chain, record, kitlink, reclock ...): the ROM from GEARMULATOR_MM_FIRMWARE_BIN
+	# like the sections below; skips (77) without it. Never a bare ${GEARMULATOR_MM_ROM} (unset in temp/dev = a silent skip).
+	add_test(NAME mmDeskFirmwareTest COMMAND mmDeskFirmwareTest --env)
+	set_tests_properties(mmDeskFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1800)
 	# B-049: the amp envelope the editor draws against the firmware's (one note per value, the output's level).
 	# B-027 and B-050: a kit's unsaved edits stay over a step or a piano-roll note (a dump of the pattern that plays).
-	# Only with a ROM (a section name in its place would be read as the ROM).
-	if(GEARMULATOR_MM_ROM)
-		add_test(NAME mmAmpEnvelopeFirmwareTest COMMAND mmDeskFirmwareTest ${GEARMULATOR_MM_ROM} ampenv)
+	if(TRUE)
+		add_test(NAME mmAmpEnvelopeFirmwareTest COMMAND mmDeskFirmwareTest --env ampenv)
 		set_tests_properties(mmAmpEnvelopeFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
-		add_test(NAME mmKitEditsStayFirmwareTest COMMAND mmDeskFirmwareTest ${GEARMULATOR_MM_ROM} machine)
+		add_test(NAME mmKitEditsStayFirmwareTest COMMAND mmDeskFirmwareTest --env machine)
 		set_tests_properties(mmKitEditsStayFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 900)
 		# I-010: the piano roll's note lengths as the machine stores them (its own dump) and plays them (T1's gates from
 		# the output, M1's LEN on the MIDI out)
-		add_test(NAME mmNoteLengthFirmwareTest COMMAND mmDeskFirmwareTest ${GEARMULATOR_MM_ROM} notelength)
+		add_test(NAME mmNoteLengthFirmwareTest COMMAND mmDeskFirmwareTest --env notelength)
 		set_tests_properties(mmNoteLengthFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
 		# B-060: a transpose edited while the pattern plays is heard at once (T1's pitch from the output, M1 and M2 on the
 		# MIDI out), the stored values as edited
-		add_test(NAME mmTransposeLiveFirmwareTest COMMAND mmDeskFirmwareTest ${GEARMULATOR_MM_ROM} transpose)
+		add_test(NAME mmTransposeLiveFirmwareTest COMMAND mmDeskFirmwareTest --env transpose)
 		set_tests_properties(mmTransposeLiveFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
+		# B-121: the host's Stop lets go of a note held into a track (All Notes Off after MIDI Stop), judged by the output
+		add_test(NAME mmHostStopFirmwareTest COMMAND mmDeskFirmwareTest --env hoststop)
+		set_tests_properties(mmHostStopFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
 	endif()
 	# B-031 on the Monomachine: the backup from MM_SYX, the ROM from GEARMULATOR_MM_FIRMWARE_BIN; skipped without them.
 	# DEV-CYCLE: the Monomachine's intent cases (doc/modern-ux/intent-cases.json, "mm") through the desk to the firmware
 	add_test(NAME mmIntentCasesFirmwareTest COMMAND mmDeskFirmwareTest --env intentcases)
 	set_tests_properties(mmIntentCasesFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 900)
+	add_test(NAME mmTransportFirmwareTest COMMAND mmDeskFirmwareTest --env transport)
+	set_tests_properties(mmTransportFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
+	# wave 7: LIVE RECORDING's erase (EXIT held) and STEP RECORDING through the desk to the firmware
+	add_test(NAME mmStepRecordFirmwareTest COMMAND mmDeskFirmwareTest --env steprec)
+	set_tests_properties(mmStepRecordFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
+	# 0.6 wave 9 (B-064): POLY, key tracking and the MULTI ENV through the desk, judged by the output
+	add_test(NAME mmPerformSoundFirmwareTest COMMAND mmDeskFirmwareTest --env perform)
+	set_tests_properties(mmPerformSoundFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
+	# review 1 (B-093): LIVE RECORDING's erase leaves chord notes without a trig; the pattern stays editable
+	add_test(NAME mmChordEraseFirmwareTest COMMAND mmDeskFirmwareTest --env chorderase)
+	set_tests_properties(mmChordEraseFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
 	add_test(NAME mmSyxPickFirmwareTest COMMAND mmDeskFirmwareTest --env syxpick)
 	set_tests_properties(mmSyxPickFirmwareTest PROPERTIES
 		LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 1200)
