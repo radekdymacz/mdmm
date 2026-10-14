@@ -1,0 +1,10 @@
+{
+ "title": "Busy: edits on the wire",
+ "about": "The machine is ready but behind: desk.tx is on (the TX LED and the Send label), a read-back takes 1.8 s, 12 documents are still being read. Every edit stays pending.",
+ "boot": "stub",
+ "machine": {"desk": {"tx": true, "loading": 12, "roundTripMs": 1800}},
+ "steps": [
+  {"at": 0, "machine": {}},
+  {"at": 15000, "machine": {"desk": {"tx": false, "loading": 0}}}
+ ]
+}

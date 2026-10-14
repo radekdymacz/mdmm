@@ -1,0 +1,10 @@
+{
+ "title": "HW MIDI engine, not answering",
+ "about": "The HW MIDI engine is chosen and the Machinedrum has not answered: lifecycle hwLost, the emulator-only capabilities off with their reasons, the engine menu says why EMU is unavailable.",
+ "boot": "stub",
+ "machine": {"lifecycle": "hwLost", "lifecycleText": "The Machinedrum has not answered for a while. Check the MIDI cables and that its SYSEX is on.", "capabilities": {"engine": "hw", "label": "HW MIDI", "about": "Engine: a real Machinedrum on the MIDI ports.", "can": {"panelKeys": false, "lcd": false, "workingKitMemory": false, "mutesFromMemory": false, "sampleAudio": false, "sampleLoad": false}, "reasons": {"panelKeys": "A real Machinedrum has its own panel.", "lcd": "A real Machinedrum has its own screen.", "sampleAudio": "A real Machinedrum ignores SDS dump requests."}, "values": {"dumps": "direct"}}, "engines": [{"id": "emu", "label": "EMU OS 1.63", "available": false, "reason": "No firmware is installed."}, {"id": "hw", "label": "HW MIDI", "available": true}]},
+ "steps": [
+  {"at": 0, "machine": {}},
+  {"at": 5000, "send": [{"type": "notice", "id": 1, "title": "Machinedrum not answering", "text": "Nothing has answered on the MIDI ports for 3.5 s.\nCheck the cables and that SYSEX is on in the Machinedrum's global settings.", "buttons": ["Try again", "Use the emulator"]}]}
+ ]
+}

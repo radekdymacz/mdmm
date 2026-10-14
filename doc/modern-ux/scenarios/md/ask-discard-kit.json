@@ -1,0 +1,8 @@
+{
+ "title": "Ask: unsaved kit with alternatives",
+ "about": "Loading a kit is answered with a question that offers a second way on (Save and load: saveKit first, then the load), Confirm, and Cancel.",
+ "boot": "stub",
+ "steps": [
+  {"on": {"op": "kitLoad", "force": null}, "send": [{"type": "ask", "ask": "discardKit", "message": "The working kit has changes that are not saved on the machine. Loading another kit loses them.", "confirm": "Load anyway", "command": {"op": "kitLoad"}, "alternatives": [{"label": "Save and load", "first": [{"op": "saveKit"}]}]}]}
+ ]
+}

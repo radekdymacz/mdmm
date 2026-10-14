@@ -22,6 +22,45 @@ Radek's decision in [PLAN-0.6.md](PLAN-0.6.md) is the authority. The tiers below
   page's tests and its area's journeys; generated page files rely on the contract check; a skin row runs the editor's own
   page tests.
 
+## Page preview
+
+For design and interaction work: `scripts/mdmm-preview.sh md|mm`. It builds only `deskStubHost` (its own tree,
+`temp/preview`, ccache), serves the production page from the skin folder and prints `http://127.0.0.1:8791/` (md) or
+`:8792/` (mm). Open it in a normal browser, or start `page-md` or `page-mm` from `.claude/launch.json` in the Claude
+browser pane. Ctrl+C stops it. It is `scripts/mdmm-page.mjs --serve`: the same page, contracts, core and stub as the page
+tier. No second fake: each open page gets its own stub host, a reload starts a fresh one, and a command outside the
+contract is printed in the terminal (`MDMM_PREVIEW_VERBOSE=1` prints every command). The live-reload channel is injected
+by the preview server into the served HTML only; no shipped file has it.
+
+Live reload, by what you save:
+
+| Saved | What happens |
+|---|---|
+| a skin `.css` | the stylesheet is swapped in place, the page keeps its state |
+| a shared stylesheet or `*Overrides.css` | the sync script runs, then the stylesheet is swapped |
+| a skin `.js` or `.html` | the page reloads |
+| `mockup/index.html`, `mm-mockup/src/**` | the sync script runs, then CSS swaps or the page reloads |
+| C++ under `source/elektron/md` | `deskStubHost` is rebuilt, the stub restarts, the page reloads |
+
+A failed sync or build shows its output in a red bar on the page and in the terminal. Measured on an M-series Mac: save to
+screen 0.37 s for a skin CSS edit through sync (md), 0.7 s for an mm design-source CSS edit (sync is 0.25 to 0.55 s of
+that), 0.1 s for a JS edit (reload starts at once); a C++ save about 2 s when ccache has it. Cold setup: first run also
+initialises the freetype and lunasvg submodules when they are missing; configure and build of `deskStubHost` took 20 s
+with a warm ccache. Warm start 3 s.
+
+Scenarios: the states the stub never shows by itself (no machine, unsupported firmware, booting, documents arriving,
+busy, a refused command, a question, an error, a lost HW MIDI engine) are data: `?scenario=<name>` on the page's URL plays
+`doc/modern-ux/scenarios/<md|mm>/<name>.json` into the page. A scenario is a JSON file of contract messages with timed
+steps and answers to commands, checked against the schema (`node scripts/mdmm-scenario.mjs --check`, ctest
+`mdmmScenariosPageTest`, run by `mdmm-check.sh` for that folder, the schemas and the scripts). The terminal lists the
+scenarios at start, `/scenarios` on the preview's port lists them with what each shows (md 8791, mm 8792), and saving a
+scenario file reloads the pages playing it (a file that is not valid shows its problems in the red bar). The format and what
+the contract cannot say: `doc/modern-ux/scenarios/README.md`.
+
+Limits: the sync script runs for the served editor only, so run both before you commit a shared change. The preview
+shows the stub's machine, not the firmware's timing or sound. A scenario can say only what the contract says: a document
+that arrives wrong or pending is not one (the scenarios' README lists what is left out).
+
 ## The finding
 
 Every check of the page went through the slowest path there is: the page, JUCE, the emulator, the firmware and its
