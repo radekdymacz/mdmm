@@ -93,6 +93,7 @@ MIDI Learn: doc/midilearn/. Upstream's long AI notes (`.github/copilot-instructi
 What changed decides what runs (`scripts/mdmm-affected.tsv`). Use the lowest tier that answers the question.
 
 - **While developing:** build, then the change's own test: `scripts/mdmm-check.sh` (default tier, narrow by area; `--save` or `--watch` for seconds). Claude runs it before it says a change is good. `--branch` is the comprehensive check: when Radek asks, or before a big merge. Not routine.
+- **Design and interaction work:** `scripts/mdmm-preview.sh md|mm` (or `page-md`, `page-mm` in `.claude/launch.json`): the real page on the stub, no ROM or app build, live reload on save. Check the result with `scripts/mdmm-check.sh`, not by eye alone.
 - **Across the firmware boundary** (a new command, a MIDI or SysEx adapter, recording or timing): one focused firmware test while the change is developed (needs your ROM).
 - **Push to main:** ROM-free CI only (the light core job and the page suite, in parallel). No local full run.
 - **Before a tag:** the full firmware E2E locally, `scripts/mdmm-e2e.sh` (a real gate: nonzero on a failed journey, and in a full run on a missing one), and the gate stages `scripts/mdmm-full-gate.sh --plan` prints (`MDMM_GATE_ONLY=...`; no green full gate in the history: the full gate). Push `release/0.x.y` (the full CI once), tag the tested head, merge to main, push, publish when the files are attached, ask Radek to deploy the site at once (the Discord post waits for the page). Radek tests by hand before the tag, not per change.
