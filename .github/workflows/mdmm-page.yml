@@ -89,7 +89,7 @@ jobs:
         env:
           MDMM_STUB_HOST: ${{ github.workspace }}/build-page/source/elektron/md/deskStubHost/deskStubHost
           MDMM_CHROME: /usr/bin/google-chrome
-          MDMM_CHROME_ARGS: --no-sandbox --disable-dev-shm-usage
+          MDMM_CHROME_ARGS: --no-sandbox --disable-dev-shm-usage --font-render-hinting=none
           MDMM_PAGE_OUT: ${{ github.workspace }}/page-run
         run: |
           test -x "${MDMM_STUB_HOST}"
