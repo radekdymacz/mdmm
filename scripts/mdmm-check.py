@@ -311,6 +311,13 @@ def check_map(rows):
 	p = Plan(["doc/modern-ux/mm-mockup/src/70-seq.js", "source/elektron/md/mdJucePlugin/skins/mmStudio/mmMockup.js"], rows)
 	if p.page != ["mm-seq-*"]:
 		problems.append(f"a source with its generated page selects journeys {p.page}, not mm-seq-*")
+	# the preview's scenarios take their own check and nothing wider (a scenario is data the contract judges)
+	for path in ("doc/modern-ux/scenarios/md/busy.json", "doc/modern-ux/scenarios/mm/_machine.json", "scripts/mdmm-scenario.mjs"):
+		p = Plan([path], rows)
+		if p.ctest != ["mdmmScenariosPageTest"] or p.ctest_all or p.firmware:
+			problems.append(f"{path} selects tests {p.ctest}, not mdmmScenariosPageTest")
+	if not any("mdmmScenariosPageTest" in t for t in Plan(["doc/modern-ux/md-data-contract.schema.json"], rows).ctest):
+		problems.append("a change of the contract schema must check the scenarios")
 	p = Plan(["doc/release/CI.md"], rows)
 	if p.ctest or p.ctest_all or p.page or p.firmware:
 		problems.append("a plain doc selects checks")

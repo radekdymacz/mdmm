@@ -85,12 +85,16 @@ source/jucePlugin*/*	midiLearn	-	-	*-boot-card	no	7a 7b 7c 7d
 source/juceRml*/*	juceRml	-	-	-	no	2
 # --- what holds no code the tests run
 doc/modern-ux/intent-cases.json	mdDeskTest|mmDeskTest|mmViewPageTest	mdIntentCasesFirmwareTest|mmIntentCasesFirmwareTest	*	-	no	2 2b
-doc/modern-ux/*.schema.json	mdDeskTest|mmDeskTest	-	*	-	no	2 2c
+# the preview's scenarios (doc/modern-ux/scenarios): checked against the contract, no ROM, no browser
+doc/modern-ux/scenarios/*	mdmmScenariosPageTest	-	-	-	no	2c
+doc/modern-ux/*.schema.json	mdDeskTest|mmDeskTest|mdmmScenariosPageTest	-	*	-	no	2 2c
 doc/*	-	-	-	-	no	-
 marketing/*	-	-	-	-	no	-
 site/*	-	-	-	-	no	-
 *.md	-	-	-	-	no	-
-scripts/mdmm-page.mjs	-	-	*	-	no	2c
+scripts/mdmm-page.mjs	mdmmScenariosPageTest	-	*	-	no	2c
+scripts/mdmm-contract.mjs	mdmmScenariosPageTest	-	*	-	no	2c
+scripts/mdmm-scenario.mjs	mdmmScenariosPageTest	-	-	-	no	-
 scripts/mdmm-check*	-	-	-	-	no	-
 scripts/mdmm-affected.tsv	-	-	-	-	no	-
 scripts/mdmm-journeys.sh	-	-	-	journey	no	7d

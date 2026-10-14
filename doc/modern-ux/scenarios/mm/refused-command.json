@@ -1,0 +1,9 @@
+{
+ "title": "A refused command",
+ "about": "Play and a step click are answered with a refusal (result ok false) and nothing else: the page shows the plug-in's words.",
+ "boot": "stub",
+ "steps": [
+  {"on": {"op": "play"}, "send": [{"type": "result", "op": "play", "ok": false, "errors": ["The machine does not take PLAY while its start-up animation runs."], "note": ""}]},
+  {"on": {"op": "step"}, "send": [{"type": "result", "op": "step", "ok": false, "errors": ["The pattern is full: 64 lock rows are used."], "note": ""}]}
+ ]
+}

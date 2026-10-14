@@ -1,0 +1,10 @@
+{
+ "title": "Booting, then the start-up animation",
+ "about": "The page is held in booting for 4 s, animating for 4 s (it answers, its start-up animation still ignores keys), then ready. Shows the input gate, the engine LED and the start-up card.",
+ "boot": "stub",
+ "machine": {"lifecycle": "booting", "lifecycleText": "The machine is starting. Editing starts when it answers.", "input": false, "midi": false},
+ "steps": [
+  {"at": 4000, "machine": {"lifecycle": "animating", "lifecycleText": "The machine is still starting: its start-up animation ignores keys. The editor takes input when it is over.", "input": false, "midi": true}},
+  {"at": 8000, "machine": {"lifecycle": "ready", "lifecycleText": "The machine takes input.", "input": true, "midi": true}}
+ ]
+}

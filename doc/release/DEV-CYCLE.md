@@ -48,9 +48,18 @@ that), 0.1 s for a JS edit (reload starts at once); a C++ save about 2 s when cc
 initialises the freetype and lunasvg submodules when they are missing; configure and build of `deskStubHost` took 20 s
 with a warm ccache. Warm start 3 s.
 
+Scenarios: the states the stub never shows by itself (no machine, unsupported firmware, booting, documents arriving,
+busy, a refused command, a question, an error, a lost HW MIDI engine) are data: `?scenario=<name>` on the page's URL plays
+`doc/modern-ux/scenarios/<md|mm>/<name>.json` into the page. A scenario is a JSON file of contract messages with timed
+steps and answers to commands, checked against the schema (`node scripts/mdmm-scenario.mjs --check`, ctest
+`mdmmScenariosPageTest`, run by `mdmm-check.sh` for that folder, the schemas and the scripts). The terminal lists the
+scenarios at start, `/scenarios` on the preview's port lists them with what each shows (md 8791, mm 8792), and saving a
+scenario file reloads the pages playing it (a file that is not valid shows its problems in the red bar). The format and what
+the contract cannot say: `doc/modern-ux/scenarios/README.md`.
+
 Limits: the sync script runs for the served editor only, so run both before you commit a shared change. The preview
-shows the stub's machine, not the firmware's timing or sound. Loading, busy, refused and error states are not reachable
-by a URL query: the stub has no switch for them (it only has `--real-timing`), and a fake of our own is not worth building.
+shows the stub's machine, not the firmware's timing or sound. A scenario can say only what the contract says: a document
+that arrives wrong or pending is not one (the scenarios' README lists what is left out).
 
 ## The finding
 

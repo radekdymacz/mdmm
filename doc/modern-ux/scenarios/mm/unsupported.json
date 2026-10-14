@@ -1,0 +1,9 @@
+{
+ "title": "Unsupported firmware",
+ "about": "A firmware that is not OS 1.32B sits in the ROM folder: lifecycle unsupported, input off, the plug-in's own words in the engine tooltip.",
+ "boot": "none",
+ "machine": {"lifecycle": "unsupported", "lifecycleText": "This firmware is not the Monomachine OS 1.32B the editor knows.", "input": false, "midi": false, "loading": {"done": 0, "failed": 0, "total": 0}, "capabilities": {"can": {"transport": false, "panic": false, "playFrom": false, "panelKeys": false, "recvSession": false, "lcd": false, "workingKitMemory": false, "telemetry": false, "midiMutes": false, "poly": false, "multiTrig": false, "multiMap": false, "portamento": false, "gridRecord": false, "chains": false}, "reasons": {"transport": "This firmware is not OS 1.32B."}}},
+ "steps": [
+  {"at": 0, "send": [{"type": "romInfo", "installed": true, "os": "OS 1.20", "name": "mm_os120.bin", "size": 524288, "folder": "~/Library/Application Support/Monomachine Editor/roms", "inFolder": true}], "machine": {}}
+ ]
+}

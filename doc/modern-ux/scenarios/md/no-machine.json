@@ -1,0 +1,9 @@
+{
+ "title": "No machine (first run)",
+ "about": "No firmware is installed: lifecycle missing, input off, every capability off with its reason. The page shows the NO ROM card; no documents ever arrive.",
+ "boot": "none",
+ "machine": {"lifecycle": "missing", "lifecycleText": "No Machinedrum OS 1.63 firmware is running.", "input": false, "midi": false, "capabilities": {"can": {"transport": false, "panic": false, "playFrom": false, "panelKeys": false, "liveRecord": false, "chains": false, "lcd": false, "workingKitMemory": false, "mutesFromMemory": false, "sampleNames": false, "sampleAudio": false, "sampleLoad": false, "modulators": false}, "reasons": {"transport": "No firmware is running.", "panelKeys": "No firmware is running.", "liveRecord": "No firmware is running."}}, "engines": [{"id": "emu", "label": "EMU OS 1.63", "available": false, "reason": "No firmware is installed."}, {"id": "hw", "label": "HW MIDI", "available": true}]},
+ "steps": [
+  {"at": 0, "send": [{"type": "romInfo", "installed": false, "os": "", "name": "", "size": 0, "folder": "~/Library/Application Support/Machinedrum Editor/roms", "inFolder": false}], "machine": {}}
+ ]
+}

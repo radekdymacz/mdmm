@@ -1,0 +1,10 @@
+{
+ "title": "Busy: a SYSEX RECV session running",
+ "about": "The machine is ready and its SYSEX RECV session is busy: 40 dumps waiting, 12 being sent, 3 errors, a read-back of 1.8 s.",
+ "boot": "stub",
+ "machine": {"roundTripMs": 1800, "recv": {"state": "sending", "waiting": 40, "sending": 12, "received": 96, "errors": 3}},
+ "steps": [
+  {"at": 0, "machine": {}},
+  {"at": 15000, "machine": {"roundTripMs": -1, "recv": {"state": "idle", "waiting": 0, "sending": 0, "received": 0, "errors": 0}}}
+ ]
+}
