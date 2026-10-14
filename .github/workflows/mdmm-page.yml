@@ -93,7 +93,9 @@ jobs:
           MDMM_PAGE_OUT: ${{ github.workspace }}/page-run
         run: |
           test -x "${MDMM_STUB_HOST}"
-          node scripts/mdmm-page.mjs --tier page --jobs 3 both
+          # Excluded on CI only, each for a reason (doc/release/CI.md, "Page suite exclusions"): they measure text
+          # against its box to the pixel, and Linux Chrome sets the text a few pixels wider than the Mac's.
+          node scripts/mdmm-page.mjs --tier page --jobs 3 both "journey-*,!md-screens-fit,!mm-global-page"
 
       - name: Compiler cache statistics
         if: always()
