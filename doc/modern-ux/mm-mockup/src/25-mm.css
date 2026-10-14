@@ -46,6 +46,7 @@ img,svg,canvas{-webkit-user-drag:none}
    is the line the rail's LOCK PARAMETER block starts on. ===== */
 :root{--genband:58px}
 /* @include shared/deskGenBar.css */
+/* @include shared/deskGenDialog.css */
 .ws-seq #main>.genbar{flex:none;margin-top:4px}
 .ws-seq #main>.lanewrap{border-top:2px solid var(--print);margin-top:5px}
 /* 2026-10-12: no trig type row and no A F L row under the roll (a trig's marks are on its note): the roll takes their
@@ -83,13 +84,19 @@ img,svg,canvas{-webkit-user-drag:none}
 .genbar.fit2 .kc small{letter-spacing:.02em}
 .genbar.fit2 .gkeys{gap:4px}
 .genbar.fit3 .gv small{font-size:8px;letter-spacing:0}
-/* the rail's spec tags (0.6 review 2): the machine's name has the row; the tag sits on the same line, right-aligned
-   before M/S, only when the row is wide enough for both (else it is in the name's tooltip and the GEN bar) */
-.th .nm.tagged{container-type:inline-size;flex-wrap:nowrap;gap:0 4px;align-items:center;height:100%;overflow:hidden}
-.th .nm.tagged b{flex:none;line-height:1}
-.th .nm .gtag{flex:none;margin-left:auto;line-height:11px;opacity:.75}
-@container (max-width:118px){.th .nm .gtag{display:none}}
-@media (max-width:1380px){.th .nm .gtag{display:none}}
+/* the rail's keys in a Sequence row: M, S and the dice (GEN, 76-gen.js openGen), three 24 px keys */
+.ws-seq .rail .threw{grid-template-columns:22px minmax(0,1fr) 24px 24px 24px}
+/* the GEN dialog's values area holds the rhythm's groups and, on a synth track, NOTES in a second row */
+.genpop{--gdvals:132px}
+/* the lane toolbox sits in the bar under the roll (76-gen.js genBarHtml), between the roll's keys and the page keys */
+.genbar .xlane{margin:0 auto;align-self:center;gap:8px}
+.genbar .xlseg{gap:1px}
+@media (max-width:1340px){.genbar .xlane [data-xg=cycles]{display:none}}
+@media (max-width:1180px){.genbar .xlane [data-xg=every]{display:none}}
+.gdvals.rows{flex-direction:column;gap:8px}
+.gdrow{display:flex;gap:18px;align-items:flex-start;min-height:62px}
+/* the lock lane's bars: hover is a thin outline, never a fill; the bar keeps its look */
+.ws-seq .lb:not(.none):hover,.ws-seq #lane:active .lb:not(.none):hover{background:var(--lcd)!important;filter:none!important;outline:1px solid var(--ink);outline-offset:-2px}
 /* ===== Sound by function (MM-PORT-PLAN e; 90-sound.js renderSound): the Machinedrum Editor's page and layout
    (shared/deskSound.css, shared/deskSoundLayout.js), with what the Monomachine's has more: the head's three keys to
    the Sequence dock, 28 px boxes, three LFOs a row (each a route line, eleven shapes and four boxes under its

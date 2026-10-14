@@ -2147,6 +2147,7 @@
 			"does": "Randomise the selected track: on Sound a fresh random sound (MUTATE, from the sound before the trial); everywhere else a new GEN variation: a new seed, or random hits and rotation",
 			"code": "KeyR",
 			"short": "Randomise",
+			"modal": "genpop",
 			"dispatched": true
 		},
 		{
@@ -2160,6 +2161,7 @@
 			"does": "Randomise every track: on Sound every synth track's sound, everywhere else every GEN spec of the side shown over the whole pattern",
 			"code": "KeyR",
 			"short": "Randomise all",
+			"modal": "genpop",
 			"dispatched": true
 		},
 		{
@@ -2171,7 +2173,7 @@
 			"mod": "alt",
 			"group": "All",
 			"does": "Change a GEN value: every track of the side shown, the whole pattern (one undo step per run)",
-			"area": "GEN bar"
+			"area": "GEN"
 		},
 		{
 			"id": "rkey-all",
@@ -2182,7 +2184,7 @@
 			"mod": "alt",
 			"group": "All",
 			"does": "Click: randomise every track (Sound: every synth track; VOL and TUNE stay)",
-			"area": "GEN bar"
+			"area": "GEN"
 		},
 		{
 			"id": "cut",
