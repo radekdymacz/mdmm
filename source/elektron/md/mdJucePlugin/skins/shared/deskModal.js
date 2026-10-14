@@ -92,8 +92,10 @@ const Modal = (() => {
 	/* the handle of a dialog with a drag option: press and move to move it; double-click: back to its own place */
 	let drag = null;
 	document.addEventListener("pointerdown", e => {
-		const d = top(); if (!d || e.button !== 0) return;
-		const o = opts(d), h = o.drag && e.target.closest?.(o.drag); if (!h || !d.el.contains(h)) return;
+		if (e.button !== 0) return;
+		/* the dialog the handle belongs to, not only the top one: a menu or notice stacked later must not take the drag away */
+		const d = stack.find(x => { const o = opts(x); return o.drag && e.target.closest?.(o.drag) && x.el.contains(e.target); }); if (!d) return;
+		const o = opts(d), h = e.target.closest(o.drag);
 		const r = d.el.getBoundingClientRect();
 		drag = { d, dx: e.clientX - r.left, dy: e.clientY - r.top, h }; h.classList.add("dragging"); e.preventDefault();
 		try { h.setPointerCapture(e.pointerId); } catch (_) { /* a pointer the browser no longer tracks: the move still works */ }
