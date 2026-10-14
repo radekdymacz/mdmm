@@ -94,7 +94,7 @@ What changed decides what runs (`scripts/mdmm-affected.tsv`). Use the lowest tie
 
 - **While developing:** build, then the change's own test: `scripts/mdmm-check.sh` (default tier, narrow by area; `--save` or `--watch` for seconds). Claude runs it before it says a change is good. `--branch` is the comprehensive check: when Radek asks, or before a big merge. Not routine.
 - **Across the firmware boundary** (a new command, a MIDI or SysEx adapter, recording or timing): one focused firmware test while the change is developed (needs your ROM).
-- **Push to main:** ROM-free CI only (the light core job). No local full run.
+- **Push to main:** ROM-free CI only (the light core job and the page suite, in parallel). No local full run.
 - **Before a tag:** the full firmware E2E locally, `scripts/mdmm-e2e.sh` (a real gate: nonzero on a failed journey, and in a full run on a missing one), and the gate stages `scripts/mdmm-full-gate.sh --plan` prints (`MDMM_GATE_ONLY=...`; no green full gate in the history: the full gate). Push `release/0.x.y` (the full CI once), tag the tested head, merge to main, push, publish when the files are attached, ask Radek to deploy the site at once (the Discord post waits for the page). Radek tests by hand before the tag, not per change.
 - **Editing the check or E2E scripts:** run their self-tests, `python3 scripts/mdmm-check.py --check-map` and `node scripts/mdmm-e2e-selftest.mjs`.
 - Windows-only code: push a `feat/windows-*` branch, CI builds it. The CI nightly still runs the full CI on main.
