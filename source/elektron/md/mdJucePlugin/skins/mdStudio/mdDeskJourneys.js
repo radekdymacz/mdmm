@@ -619,18 +619,34 @@ const MdJourneys = (() => {
 		name: "md-lane-tools", proves: [],
 		steps: [
 			go("seq"),
-			{ say: "pick a track with trigs and the FLTF lane (or the first lane)", act: async (u, c) => { c.t = [...Array(16).keys()].find(t => trigsOf(t).length >= 3); u.click(rail(c.t)); await sleep(200); c.ln = S.lane; c.s = trigsOf(c.t).filter(s => s < 16); c.l0 = JSON.stringify([...(V.locks.get(lk(c.t, c.ln)) || [])]); },
+			{ say: "pick a track with trigs and the first lane", act: async (u, c) => { c.t = [...Array(16).keys()].find(t => trigsOf(t).length >= 3 && soundTracks().includes(t)); u.click(rail(c.t)); await sleep(200); c.ln = S.lane; c.i = pidx(c.t, c.ln); c.s = trigsOf(c.t).filter(s => s < Math.min(16, V.len)); c.m0 = JSON.stringify(locksOf(c.t, c.i)); c.u0 = V.undoCount; },
 				screen: c => ok(S.sel === c.t && !!$1(".lanetop .xlane [data-xs=up]"), "no lane toolbox on the title row") },
-			{ say: "hover Ramp up: the lane shows it faint, nothing is written", act: async (u, c) => { await u.glide(".xlane [data-xs=up]"); $1(".xlane [data-xs=up]").dispatchEvent(new PointerEvent("pointerover", { bubbles: true })); await sleep(100); }, screen: c => ok($all("#lane .xghost").length >= 3 && JSON.stringify([...(V.locks.get(lk(c.t, c.ln)) || [])]) === c.l0, `${$all("#lane .xghost").length} ghosts`) },
-			{ say: "click Ramp up: a lock on every step with a trig, rising", act: u => u.click(".xlane [data-xs=up]"), screen: c => ok($all("#lane .xghost").length === 0, "ghosts stay"), machine: c => { const m = V.locks.get(lk(c.t, c.ln)), v = trigsOf(c.t).filter(s => s < 16).map(s => m?.get(s)); return ok(v.length >= 3 && v.every((x, i) => x != null && (!i || x > v[i - 1])), "locks " + v); }, within: 4000 },
-			{ say: "click Undo once: the lane is as it was (the shape was one step)", act: async u => { await until(idle, 3000); await sleep(300); u.click("#undo"); }, machine: c => ok(JSON.stringify([...(V.locks.get(lk(c.t, c.ln)) || [])]) === c.l0, "locks " + JSON.stringify([...(V.locks.get(lk(c.t, c.ln)) || [])])), within: 6000 },
-			{ say: "click Flat five times: 50, 75, 100, 25 and 0 % (the lock value 0 is a lock)", act: async (u, c) => { c.vals = []; for (let i = 0; i < 5; i++) { u.click(".xlane [data-xs=flat]"); await sleep(250); c.vals.push(c.s.map(s => V.locks.get(lk(c.t, c.ln))?.get(s)).join("/")); } },
-				screen: () => ok(true), machine: c => ok(c.vals.join(" ") === [64, 95, 127, 32, 0].map(v => c.s.map(() => v).join("/")).join(" "), c.vals.join(" ")) },
-			{ say: "the Flat icon at 0 % differs from the one at 25 %, and the lane still shows the lock", screen: c => ok($1(".xlane [data-xs=flat] path:not([opacity])") && $all("#lane .lb:not(.none) i").length >= c.s.length, "no bars: " + $all("#lane .lb:not(.none) i").length) },
-			{ say: "click Inv, then Undo twice: back to the start", act: async (u, c) => { u.click(".xlane [data-xt=invert]"); await sleep(250); c.inv = c.s.map(s => V.locks.get(lk(c.t, c.ln))?.get(s)).join("/"); for (let i = 0; i < 6; i++) { u.click("#undo"); await sleep(300); } },
-				machine: c => ok(c.inv === c.s.map(() => 127).join("/") && JSON.stringify([...(V.locks.get(lk(c.t, c.ln)) || [])]) === c.l0, `inv ${c.inv}; locks ${JSON.stringify([...(V.locks.get(lk(c.t, c.ln)) || [])])}`), within: 9000 }
+			{ say: "hover Ramp up: the lane shows it faint, nothing is written", act: async (u, c) => { await u.glide(".xlane [data-xs=up]"); $1(".xlane [data-xs=up]").dispatchEvent(new PointerEvent("pointerover", { bubbles: true })); await sleep(100); }, screen: c => ok($all("#lane .xghost").length >= 3 && JSON.stringify([...(V.locks.get(lk(c.t, c.ln)) || [])]) === c.m0 || $all("#lane .xghost").length >= 3, `${$all("#lane .xghost").length} ghosts`), machine: c => ok(JSON.stringify(locksOf(c.t, c.i)) === c.m0, "the machine has locks written") },
+			{ say: "click Ramp up: the machine holds a lock on every step with a trig, rising", act: u => u.click(".xlane [data-xs=up]"), screen: () => ok($all("#lane .xghost").length === 0, "ghosts stay"),
+				machine: c => { const m = new Map(locksOf(c.t, c.i)), v = c.s.map(s => m.get(s)); return ok(idle() && v.length >= 3 && v.every((x, i) => x != null && (!i || x > v[i - 1])), "locks in the machine: " + v); }, within: 8000 },
+			{ say: "click Undo once: the machine's lane is as it was (the shape was one step)", act: async u => { await until(idle, 3000); await sleep(300); u.click("#undo"); }, machine: c => ok(idle() && JSON.stringify(locksOf(c.t, c.i)) === c.m0, "locks " + JSON.stringify(locksOf(c.t, c.i))), within: 9000 },
+			{ say: "click Flat five times: the machine holds 50, 75, 100, 25 and 0 % (the lock value 0 is a lock)", act: async (u, c) => { c.vals = []; for (let i = 0; i < 5; i++) { u.click(".xlane [data-xs=flat]"); await until(idle, 4000); await sleep(300); const m = new Map(locksOf(c.t, c.i)); c.vals.push(c.s.map(s => m.get(s)).join("/")); } },
+				screen: () => ok(true), machine: c => ok(c.vals.join(" ") === [64, 95, 127, 32, 0].map(v => c.s.map(() => v).join("/")).join(" "), c.vals.join(" ")), within: 4000 },
+			{ say: "the Flat icon at 0 % differs from the one at 25 %, and the lane still shows the locks", screen: c => ok($1(".xlane [data-xs=flat] path:not([opacity])") && $all("#lane .lb:not(.none) i").length >= c.s.length, "no bars: " + $all("#lane .lb:not(.none) i").length) },
+			{ say: "click Inv: the machine holds 127; then Undo seven times: the lane is as at the start", act: async (u, c) => { u.click(".xlane [data-xt=invert]"); await until(idle, 4000); await sleep(300); const m = new Map(locksOf(c.t, c.i)); c.inv = c.s.map(s => m.get(s)).join("/"); for (let i = 0; i < 7; i++) { u.click("#undo"); await until(idle, 4000); await sleep(300); } },
+				machine: c => ok(c.inv === c.s.map(() => 127).join("/") && JSON.stringify(locksOf(c.t, c.i)) === c.m0, `inv ${c.inv}; locks ${JSON.stringify(locksOf(c.t, c.i))}`), within: 9000 }
 		],
-		async tidy(u, c) { for (let i = 0; i < 8 && c.l0 != null && JSON.stringify([...(V.locks.get(lk(c.t, c.ln)) || [])]) !== c.l0; i++) { u.click("#undo"); await sleep(500); } }
+		async tidy(u, c) { if (c.u0 != null) await undoTo(u, c.u0); }
+	};
+
+	/* the grid shows the pattern's length, no empty columns past it; doubling it widens the grid at once, Undo narrows it */
+	const gridFits = {
+		name: "md-seq-grid-fits-length", proves: [],
+		steps: [
+			go("seq"),
+			{ say: "the grid has as many columns as the pattern has steps, none greyed past its end", act: (u, c) => { c.n0 = V.len; c.cols0 = $all('#seq .r[data-row="0"] .st').length; c.past0 = $all('#seq .r[data-row="0"] .st.past').length; c.lane0 = $all("#lane .lb").length; c.l0 = V.length; },
+				screen: c => ok(c.cols0 === c.n0 && c.lane0 === c.n0 && (c.l0 < c.n0 || c.past0 === 0), `${c.cols0} columns, ${c.lane0} lane bars, ${c.past0} past the end, pattern ${c.l0} of ${c.n0}`) },
+			{ say: "click LEN x2: the grid and the lock lane widen to the new length at once", act: async (u, c) => { if (c.n0 > 32) throw new Error("already 64 steps"); u.click('[data-l2="dbl"]'); await until(() => V.len === c.n0 * 2 && idle(), 4000); c.cols1 = $all('#seq .r[data-row="0"] .st').length; c.lane1 = $all("#lane .lb").length; },
+				screen: c => ok(c.cols1 === c.n0 * 2 && c.lane1 === c.n0 * 2, `${c.cols1} columns, ${c.lane1} lane bars, expected ${c.n0 * 2}`), machine: c => ok(V.len === c.n0 * 2, "length " + V.len), within: 6000 },
+			{ say: "click Undo: back to the first length", act: async u => { await sleep(300); u.click("#undo"); },
+				screen: c => ok($all('#seq .r[data-row="0"] .st').length === c.n0, `${$all('#seq .r[data-row="0"] .st').length} columns`), machine: c => ok(V.len === c.n0, "length " + V.len), within: 6000 }
+		],
+		async tidy(u, c) { for (let i = 0; i < 2 && c.n0 && V.len !== c.n0; i++) { u.click("#undo"); await sleep(600); } }
 	};
 
 	/* ---------- Sound ---------- */
@@ -2725,6 +2741,8 @@ const MdJourneys = (() => {
 			{ say: "pick a track with a trig and a lock key it has not locked, draw a lock: the editor refuses and says so", act: async (u, c) => { u.key("Escape"); await sleep(200);
 					for (const t of soundTracks()) { const s = trigsOf(t).filter(x => x < V.len)[0]; if (s == null) continue; const p = [...$all("#chips .pk[data-lane]")].map(e => e.dataset.lane).find(n => pidx(t, n) >= 0 && !V.locks.has(lk(t, n))); if (p) { c.t = t; c.s = s; c.pn = p; break; } }
 					if (c.t == null) throw new Error("no free lock row on a track with a trig"); u.click(rail(c.t)); await sleep(250); u.click(`#chips .pk[data-lane="${c.pn}"]`); await sleep(150); c.i = pidx(c.t, c.pn); await u.drag(`#lane .lb[data-s="${c.s}"]`, [[0, 4]], {}, { fy: 0.3 }); },
+				screen: () => ok(/64 locked parameters/.test($1("#toast")?.textContent || ""), "toast " + $1("#toast")?.textContent), machine: c => ok(!locksOf(c.t, c.i).length && patDoc().locks.length === 64, `locks ${locksOf(c.t, c.i).length}, rows ${patDoc().locks.length}`), within: 5000 },
+			{ say: "click Ramp up on the lane toolbox: refused the same way, nothing written, the machine still holds 64 rows", act: async (u, c) => { await sleep(1500); u.click(".xlane [data-xs=up]"); await sleep(400); },
 				screen: () => ok(/64 locked parameters/.test($1("#toast")?.textContent || ""), "toast " + $1("#toast")?.textContent), machine: c => ok(!locksOf(c.t, c.i).length && patDoc().locks.length === 64, `locks ${locksOf(c.t, c.i).length}, rows ${patDoc().locks.length}`), within: 5000 }
 		],
 		async tidy(u, c) { if (c.p0 != null && currentPatternSlot() !== c.p0) { u.click("#pat"); await sleep(400); u.click(psq(c.p0)); await confirmIfAsked(u); await until(() => currentPatternSlot() === c.p0, 6000); u.key("Escape"); }
@@ -3046,7 +3064,7 @@ const MdJourneys = (() => {
 	};
 	const all = [screensFit, ...slice5, ...wave12, ...e2eReal, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
 		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
-		genJourney("md-gen-mutate-undo", false, { proves: ["MD-X04", "MD-X05"] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: ["MD-X04"] }), genKeys, genModal, laneTools,
+		genJourney("md-gen-mutate-undo", false, { proves: ["MD-X04", "MD-X05"] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: ["MD-X04"] }), genKeys, genModal, laneTools, gridFits,
 		shapeSound, typeValue, arrows, machinePick, machAudition, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,
 		mixSolo, soloSaved, shiftMutes, allOff, fader, lev, outKey, masterFx,
 		songArrange, songChain, songPlayhead, songSlots, songKeys, shotsSongSlots, samplerSlots, samplerSetup, audition,
