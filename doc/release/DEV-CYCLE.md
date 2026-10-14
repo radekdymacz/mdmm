@@ -1,8 +1,26 @@
 # The development and test cycle
 
-Since 2026-10-11 (after 0.5.1). The proposal of that day, Radek's three decisions on it, and what was built. The short
-rules are in [CLAUDE.md](../../CLAUDE.md) ("Development lifecycle"); CI in [CI.md](CI.md); the local gate in
+Since 2026-10-11 (after 0.5.1). The proposal of that day, Radek's three decisions on it, and what was built. The current
+rule (2026-10-13, after 0.6) is in the section below; the short form is in [CLAUDE.md](../../CLAUDE.md) ("Development lifecycle"); CI in [CI.md](CI.md); the local gate in
 [LOCAL-GATE.md](LOCAL-GATE.md).
+
+## The current rule (2026-10-13, after 0.6)
+
+Radek's decision in [PLAN-0.6.md](PLAN-0.6.md) is the authority. The tiers below are the menu, not a routine.
+
+- While developing: build and the change's own test, `scripts/mdmm-check.sh` (default tier, narrow by area). `--branch` is
+  the comprehensive check, used when asked or before a big merge.
+- A change across the firmware boundary (a new command, a MIDI or SysEx adapter, recording or timing) gets one focused
+  firmware test while it is developed.
+- Push to main: ROM-free CI. Before a tag: the full firmware E2E locally (`scripts/mdmm-e2e.sh`: nonzero on a failed
+  journey, and in a full run on a missing one; a row passes only when all its journeys ran and passed; a targeted run
+  shows the rest as not selected) and the gate stages of `scripts/mdmm-full-gate.sh --plan`. Radek tests by hand before the
+  tag; there is no play-and-accept per change.
+- When you edit those scripts, run their self-tests: `python3 scripts/mdmm-check.py --check-map` and
+  `node scripts/mdmm-e2e-selftest.mjs`.
+- The default tier leaves `mdmmIdentityTest` to `--branch`. A design source (`mm-mockup/src`, `mockup/index.html`) runs its
+  page's tests and its area's journeys; generated page files rely on the contract check; a skin row runs the editor's own
+  page tests.
 
 ## The finding
 
@@ -43,13 +61,15 @@ And: no release after 0.5.1 until this is done.
 
 ## The tiers
 
+Timings in this section and below are historical measurements of 2026-10-11 (M4 Pro), not targets to re-prove.
+
 | Tier | When | Command | What | Target | Measured |
 |---|---|---|---|---|---|
 | 0 Save | each save, or by hand | `scripts/mdmm-check.sh --save` (`--watch`: on every save) | the pages against the contract and their mockups, the unit tests of what changed (built first), without the Slow and Timing ones | under 30 s | 2 s (a page file), 4 s (a desk file, rebuilt from ccache) |
-| 1 Did I break it | before Radek plays a build, before a merge | `scripts/mdmm-check.sh` | tier 0 with every test of what changed, the page journeys of that area, one golden per machine when emulation code changed | under 2 min | 18 s (a sequencer page change: 28 unit tests, 18 page journeys) |
-| 2 Branch check | before a merge, in the background, when desk or emulator code changed | `scripts/mdmm-check.sh --branch` | every unit test, every page journey, the firmware tests (their programs built first) and the machine journeys of the area, every golden when emulation changed | under 10 min | 2.6 min (a desk file: 123 unit tests, 136 page journeys, the MM intent cases on the firmware) |
-| 3 Full gate on main | by hand, on a quiet Mac: the start of a release, after a big merge | `scripts/mdmm-full-gate.sh` (`--soak` for the soak) | the full local gate | under 30 min | 21.6 min (warm tree; 0.5.1: 62 min) |
-| 4 Release | from main after a green full gate | `scripts/mdmm-full-gate.sh --plan`, then the command it prints | the gate stages the diff since that run touches (`MDMM_GATE_ONLY`), the release CI, the tag | about 30 min, mostly CI | the stages of the diff |
+| 1 Did I break it | the default while developing, before a merge | `scripts/mdmm-check.sh` | tier 0 with every test of what changed, the page journeys of that area, one golden per machine when emulation code changed | under 2 min | 18 s (a sequencer page change: 28 unit tests, 18 page journeys) |
+| 2 Branch check | when asked, or before a big merge, in the background | `scripts/mdmm-check.sh --branch` | every unit test, every page journey, the firmware tests (their programs built first) and the machine journeys of the area, every golden when emulation changed | under 10 min | 2.6 min (a desk file: 123 unit tests, 136 page journeys, the MM intent cases on the firmware) |
+| 3 Full gate on main | by hand, on a quiet Mac: before a tag, after a big merge | `scripts/mdmm-full-gate.sh` (`--soak` for the soak) | the full local gate | under 30 min | 21.6 min (warm tree; 0.5.1: 62 min) |
+| 4 Release | from main after a green full gate | `scripts/mdmm-full-gate.sh --plan`, then the command it prints, plus `scripts/mdmm-e2e.sh` | the gate stages the diff since that run touches (`MDMM_GATE_ONLY`), the release CI, the tag | about 30 min, mostly CI | the stages of the diff |
 
 What changed decides what runs: `scripts/mdmm-affected.tsv`, one row per path pattern (the first one a path matches):
 unit tests, firmware tests, page journeys, machine journeys, goldens, and the gate stages a release runs for it. A path

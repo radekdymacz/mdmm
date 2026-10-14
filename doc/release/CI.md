@@ -4,14 +4,18 @@ Why: on 2026-10-07 and 10-08 there were 182 CI runs, and 0.3.5's Editors job ran
 same commit was tested on the release branch, again on main, again on the tag, and again in the local gate. A small
 fix paid the price of a release. This file is the rule since 0.4.0.
 
-## Dev loop: the checks of what changed, then play
+## Dev loop: build and the change's own test
+
+Rule of 2026-10-13 (Radek, after 0.6); the short form is in [CLAUDE.md](../../CLAUDE.md) ("Development lifecycle").
 
 1. Work on a branch.
-2. `scripts/mdmm-check.sh` (tiers 0-2, [DEV-CYCLE.md](DEV-CYCLE.md)): what changed decides what runs, from seconds (a
-   page file) to under 2 minutes (the page journeys of that area, no ROM).
-3. `scripts/mdmm-dev.sh play md` (or `mm`): builds that one standalone and opens it. Radek plays with it and accepts it.
-4. Merge to main. After a big merge (and at the start of a release) Claude runs the full gate on main when the Mac is quiet
-   (`scripts/mdmm-full-gate.sh`).
+2. `scripts/mdmm-check.sh` (default tier, [DEV-CYCLE.md](DEV-CYCLE.md)): what changed decides what runs, from seconds (a
+   page file) to under 2 minutes (the page journeys of that area, no ROM). `--branch` is for when asked or before a big
+   merge.
+3. A change across the firmware boundary gets one focused firmware test while it is developed.
+4. Merge to main. CI runs the ROM-free light job. Nothing else runs on a push to main.
+5. Before a tag, locally: the full firmware E2E (`scripts/mdmm-e2e.sh`, nonzero on failure) and the gate stages of
+   `scripts/mdmm-full-gate.sh --plan`. Radek tests by hand before the tag.
 
 ## What CI runs
 
@@ -31,7 +35,7 @@ Off: upstream's Elektron workflows (disabled in Actions), the per-push installer
    If the emulation changed since the PGO profile was trained (the build says "stale", below), retrain it on the
    branch first: `scripts/macos/train_mdmm_pgo.sh`, then commit the two files it writes.
 2. Push the branch. The full CI runs once.
-3. The local gate: `scripts/mdmm-full-gate.sh --plan` names the last green full gate on main and prints the gate command
+3. The local gate and the firmware E2E (`scripts/mdmm-e2e.sh`): `scripts/mdmm-full-gate.sh --plan` names the last green full gate on main and prints the gate command
    for the stages the diff since touches (`MDMM_GATE_ONLY=...`); run it. Without a green full gate in the branch's
    history, the full `scripts/mdmm-local-gate.sh`.
 4. A failure: fix it, push, and re-run only the failed stage (`MDMM_GATE_ONLY=<stage>`; in Actions, Re-run failed jobs).
