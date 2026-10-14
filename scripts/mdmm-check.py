@@ -74,7 +74,9 @@ class Plan:
 		self.ctest_all = any(r["ctest"] == "all" for r in used)
 		self.ctest = sorted({r["ctest"] for r in used if r["ctest"] not in ("-", "all")})
 		self.firmware = sorted({r["firmware"] for r in used if r["firmware"] != "-"})
-		self.page = sorted({p for r in used if r["page"] != "-" for p in r["page"].split(",")})
+		page = {p for r in used if r["page"] != "-" for p in r["page"].split(",")}
+		# an editor's whole page tier (md-*) covers the areas of it (md-seq-*) chosen beside it
+		self.page = sorted(p for p in page if not any(p != w and w.endswith("-*") and w.count("-") == 1 and p.startswith(w[:-1]) for w in page))
 		self.machine = sorted({p for r in used if r["machine"] != "-" for p in r["machine"].split(",")})
 		self.goldens = any(r["goldens"] == "yes" for r in used)
 		self.contract = any(f.startswith("source/elektron/md/mdJucePlugin/skins/") or f.startswith("doc/modern-ux/") for f in files)
@@ -204,6 +206,13 @@ def unit_tests(runner, plan, tier, tests, targets):
 			and not (tier == "save" and set(t["labels"]) & {"Slow", "Timing"})
 	if plan.ctest_all or tier == "branch":
 		selected = [n for n in tests if unit(n)]
+		if tier != "branch":
+			# a path no row names runs every unit test, but not the one that needs the editors' bundles (all plug-in formats
+			# built): that one is the branch check's (scripts/mdmm-check.sh --branch) or a row's own
+			skipped = sorted(NEEDS_EDITORS & set(selected))
+			selected = [n for n in selected if n not in NEEDS_EDITORS]
+			if skipped:
+				runner.note("unit tests left to --branch", ", ".join(skipped) + " (needs the editors built)")
 	else:
 		chosen = set()
 		for sel in plan.ctest:
@@ -283,6 +292,28 @@ def check_map(rows):
 		got = row_for(path, rows)["path"]
 		if got != want:
 			problems.append(f"{path} takes {got}, not {want}")
+	# the design sources are not documentation: they take the tests and journeys of the page they make (the canonical
+	# sources used to fall to doc/* and select nothing; development-process-0.6.md finding 3)
+	for path, tests_want, page_want in [("doc/modern-ux/mm-mockup/src/70-seq.js", "mmViewPageTest", ["mm-seq-*"]),
+			("doc/modern-ux/mm-mockup/src/120-song.js", "mmViewPageTest", ["mm-song-*"]),
+			("doc/modern-ux/mm-mockup/src/55-host.js", "mmViewPageTest", ["mm-*"]),
+			("doc/modern-ux/mm-mockup/src/25-mm.css", "deskCompatPageTest", ["mm-*"]),
+			("doc/modern-ux/mockup/index.html", "deskCompatPageTest", ["md-*"]),
+			("source/elektron/md/mdJucePlugin/skins/mmStudio/mmOverrides.css", "deskCompatPageTest", ["mm-*"]),
+			("source/elektron/md/mdJucePlugin/skins/mmStudio/mmView.js", "mmViewPageTest", ["mm-*"])]:
+		p = Plan([path], rows)
+		if not any(re.search(t, tests_want) for t in p.ctest) or p.page != page_want:
+			problems.append(f"{path} selects tests {p.ctest}, journeys {p.page}; wanted {tests_want}, {page_want}")
+	# a small source change runs its own tests and nothing wider
+	p = Plan(["source/elektron/md/mmDesk/mmDeskEdit.cpp"], rows)
+	if p.ctest_all or p.ctest != ["mmDeskTest"] or p.page != ["mm-*"]:
+		problems.append(f"mmDeskEdit.cpp selects {p.ctest} (all: {p.ctest_all}), journeys {p.page}")
+	p = Plan(["doc/modern-ux/mm-mockup/src/70-seq.js", "source/elektron/md/mdJucePlugin/skins/mmStudio/mmMockup.js"], rows)
+	if p.page != ["mm-seq-*"]:
+		problems.append(f"a source with its generated page selects journeys {p.page}, not mm-seq-*")
+	p = Plan(["doc/release/CI.md"], rows)
+	if p.ctest or p.ctest_all or p.page or p.firmware:
+		problems.append("a plain doc selects checks")
 	if row_for("source/elektron/md/mdLib/x.cpp", rows)["goldens"] != "yes":
 		problems.append("emulation code must run the goldens")
 	for p in problems:
