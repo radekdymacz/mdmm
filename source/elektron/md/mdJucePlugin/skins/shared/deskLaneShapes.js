@@ -15,9 +15,10 @@ const LANE_SHAPES = [
 const LANE_FLAT = [.5, .75, 1, .25, 0];
 /* a shape's value (0..1) at x; flat: the level's index */
 const laneShapeAt = (id, x, flat) => id === "flat" ? LANE_FLAT[flat] : LANE_SHAPES.find(s => s[0] === id)[2](x);
-/* the new lock from the old one e and the shape's value v (0..127): replace, add (around the middle), sub, scale; a 0 is a value */
-const laneMix = (mode, e, v) => Math.round(Math.max(0, Math.min(127, mode === "add" ? e + (v - 63.5) : mode === "sub" ? e - (v - 63.5) : mode === "scale" ? e * v / 127 : v)));
+/* the new lock from the old one e and the shape's value v (0..mx; mx the parameter's top, 127 for most): replace, add (around the middle), sub,
+   scale; a 0 is a value */
+const laneMix = (mode, e, v, mx = 127) => Math.round(Math.max(0, Math.min(mx, mode === "add" ? e + (v - mx / 2) : mode === "sub" ? e - (v - mx / 2) : mode === "scale" ? e * v / mx : v)));
 /* the tools on one lock e: human (a little random), shrink / stretch (round the middle), invert */
-const laneTool = (id, e, rnd = Math.random()) => Math.round(Math.max(0, Math.min(127, id === "human" ? e + (rnd * 2 - 1) * 8 : id === "shrink" ? 64 + (e - 64) * .75 : id === "stretch" ? 64 + (e - 64) * 1.33 : 127 - e)));
+const laneTool = (id, e, rnd = Math.random(), mx = 127) => { const mid = Math.round(mx / 2), k = mx / 127; return Math.round(Math.max(0, Math.min(mx, id === "human" ? e + (rnd * 2 - 1) * 8 * k : id === "shrink" ? mid + (e - mid) * .75 : id === "stretch" ? mid + (e - mid) * 1.33 : mx - e))); };
 /* Flat's icon at a level: its line; at 0 % the line is on the bottom edge in full colour and the faint baseline is gone, so it differs from every other level */
 const laneFlatSvg = level => { const y = (14 - LANE_FLAT[level] * 12).toFixed(1); return `<path d="M2 ${y}H14"${LANE_FLAT[level] === 0 ? ' stroke-width="2.4"' : ""}/>${LANE_FLAT[level] === 0 ? "" : '<path d="M2 14H14" opacity=".3"/>'}`; };

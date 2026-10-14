@@ -358,6 +358,32 @@ document.addEventListener("wheel", e => { const v = e.target.closest?.(".gv[data
 /* how much a dragged value moves a notch: the percentages two */
 const gvDragStep = k => k === "dens" || k === "amt" || k === "racc" ? 2 : 1;
 
+/* ---- shared/deskLaneShapes.js ---- */
+"use strict";
+/* The lock lane's shapes (both editors; the lane toolbox of mdStudio/mdDeskLaneTools.js, the MM page's own). Pure data and
+   maths, no page state: the shapes as a function of x (cycles over the steps, 0..1 a cycle) to 0..1, the levels Flat
+   steps through, the tools' maths on one value, and the icons. The shapes are the xox-plocks lane's (ours, copied). */
+const LANE_SHAPES = [
+	["up", "Ramp up", x => x % 1, '<path d="M2 12L14 4"/>'],
+	["down", "Ramp down", x => 1 - x % 1, '<path d="M2 4L14 12"/>'],
+	["tri", "Triangle", x => 1 - Math.abs(2 * (x % 1) - 1), '<path d="M2 12L8 4L14 12"/>'],
+	["sine", "Sine", x => .5 - .5 * Math.cos(2 * Math.PI * x), '<path d="M2 12C5 12 5 4 8 4S11 12 14 12"/>'],
+	["square", "Square", x => x % 1 < .5 ? 1 : 0, '<path d="M2 12V4H8V12H14V4"/>'],
+	["decay", "Decay", x => Math.pow(1 - x % 1, 3), '<path d="M2 4C4 11 8 12 14 12"/>'],
+	["random", "Random", () => Math.random(), '<path d="M2 9L4 5L6 11L8 3L10 10L12 6L14 8"/>'],
+	["flat", "Flat", null, null]];
+/* Flat steps through its levels, one each press: the middle, 75 %, 100 %, 25 %, 0 */
+const LANE_FLAT = [.5, .75, 1, .25, 0];
+/* a shape's value (0..1) at x; flat: the level's index */
+const laneShapeAt = (id, x, flat) => id === "flat" ? LANE_FLAT[flat] : LANE_SHAPES.find(s => s[0] === id)[2](x);
+/* the new lock from the old one e and the shape's value v (0..mx; mx the parameter's top, 127 for most): replace, add (around the middle), sub,
+   scale; a 0 is a value */
+const laneMix = (mode, e, v, mx = 127) => Math.round(Math.max(0, Math.min(mx, mode === "add" ? e + (v - mx / 2) : mode === "sub" ? e - (v - mx / 2) : mode === "scale" ? e * v / mx : v)));
+/* the tools on one lock e: human (a little random), shrink / stretch (round the middle), invert */
+const laneTool = (id, e, rnd = Math.random(), mx = 127) => { const mid = Math.round(mx / 2), k = mx / 127; return Math.round(Math.max(0, Math.min(mx, id === "human" ? e + (rnd * 2 - 1) * 8 * k : id === "shrink" ? mid + (e - mid) * .75 : id === "stretch" ? mid + (e - mid) * 1.33 : mx - e))); };
+/* Flat's icon at a level: its line; at 0 % the line is on the bottom edge in full colour and the faint baseline is gone, so it differs from every other level */
+const laneFlatSvg = level => { const y = (14 - LANE_FLAT[level] * 12).toFixed(1); return `<path d="M2 ${y}H14"${LANE_FLAT[level] === 0 ? ' stroke-width="2.4"' : ""}/>${LANE_FLAT[level] === 0 ? "" : '<path d="M2 14H14" opacity=".3"/>'}`; };
+
 /* ---- shared/deskSoundLayout.js ---- */
 "use strict";
 /* The Sound page's rows, both editors (the look: deskSound.css). A row is a grid of columns over three lines
@@ -3325,8 +3351,8 @@ const gapC=s=>s%16===0&&s!==vis()[0]?"gap":"";
    track's VEL row, lock lane. */
 const ROLL_H=16*28+15*3;
 function th(t){const tr=trk(t),pt=S.polyT??S.sel,polyOff=S.mode==="poly"&&t!==pt&&t<6;return`<div class="th ${t===S.sel?"sel":""} ${S.ws==="seq"&&S.marks?.has(t)?"marked":""} ${trackSel(t)} ${audible(t)?"":"off"} ${polyOff?"poly-off":""}" data-sel="${t}">
- <div class="threw"><div class="sw"></div><div class="n ${t<6?"":"fill"}">${t<6?t+1:"M"+(t-5)}</div><div class="nm${S.ws==="seq"&&S.gen?" tagged":""}" title="${polyOff?"Silent in POLY":S.mode==="poly"&&t===pt?"POLY: six voices":tr.name}${S.ws==="seq"&&S.gen?" · "+genTip(t):""}"><b>${t<6?tr.m.replace("SWAVE-","SW-"):"CH"+String(tr.ch).padStart(2,"0")}${S.mode==="poly"&&t===pt&&t<6?`<em class="x6">×6</em>`:""}</b>${S.ws==="seq"&&S.gen?`<i class="gtag" title="${genTip(t)}">${genTag(genSpec(t))}</i>`:""}</div>
- <button class="ms m ${ARMED.has(t)?"prep":""}" ${ARMED.has(t)?`data-prep="${ARMED.get(t)?"X":"+"}"`:""} data-mute="${t}" aria-pressed="${tr.mute}" aria-label="Mute ${tLabel(t)}">M</button><button class="ms s" data-solo="${t}" aria-pressed="${tr.solo}" aria-label="Solo ${tLabel(t)}">S</button></div></div>`}
+ <div class="threw"><div class="sw"></div><div class="n ${t<6?"":"fill"}">${t<6?t+1:"M"+(t-5)}</div><div class="nm" title="${polyOff?"Silent in POLY":S.mode==="poly"&&t===pt?"POLY: six voices":tr.name}"><b>${t<6?tr.m.replace("SWAVE-","SW-"):"CH"+String(tr.ch).padStart(2,"0")}${S.mode==="poly"&&t===pt&&t<6?`<em class="x6">×6</em>`:""}</b></div>
+ <button class="ms m ${ARMED.has(t)?"prep":""}" ${ARMED.has(t)?`data-prep="${ARMED.get(t)?"X":"+"}"`:""} data-mute="${t}" aria-pressed="${tr.mute}" aria-label="Mute ${tLabel(t)}">M</button><button class="ms s" data-solo="${t}" aria-pressed="${tr.solo}" aria-label="Solo ${tLabel(t)}">S</button>${S.ws==="seq"?`<button class="ms g" data-genopen="${t}" aria-label="GEN, ${tLabel(t)}" title="GEN: generate this track"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="11" rx="2.5"/><circle cx="5.6" cy="5.6" r=".9"/><circle cx="10.4" cy="5.6" r=".9"/><circle cx="8" cy="8" r=".9"/><circle cx="5.6" cy="10.4" r=".9"/><circle cx="10.4" cy="10.4" r=".9"/></svg></button>`:""}</div></div>`}
 function pageKeys(){return`<span class="pagectl rh"><button class="pgkey" id="pgkey" ${pages16()<2?"disabled":""} title="Next page. Shift-click = previous. Keys [ and ].">Page</button><span class="pleds" aria-hidden="true">${[0,1,2,3].map(k=>`<span class="pl ${k<pages16()?"":"na"} ${!S.viewAll&&k===S.page?"cur":""}" data-plp="${k}"><i class="led"></i></span>`).join("")}</span><button class="ptog ${S.viewAll?"on":""}" id="pgall" aria-pressed="${S.viewAll}" title="Show all steps"><i class="led"></i>All</button><button class="ptog ${S.follow?"on":""}" id="pgfollow" aria-pressed="${S.follow}" title="Page follows the play position"><i class="led"></i>Fol</button></span>`}
 function lockPicker(t){const midi=isMidiT(t),list=pagesOf(t),d=dockOf(t);if(!list.includes(S.lanePage))S.lanePage=list[0];
  return`<div class="railparams ${d==="locks"?"":"dockrail"}"><div class="rphead"><span class="cap">${DOCKN[d]}</span><button id="lockLane" class="iconkey" aria-label="Lock the current value on the selected steps" title="Lock ${pidLabel(t,S.lane)} at its current value on the selected steps (the machine: hold the trig, click the knob)"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M4 6.5V4.5a3 3 0 0 1 6 0v2M3 6.5h8v6H3z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></button><button id="clearLane" class="iconkey" aria-label="Clear these locks" title="Clear ${pidLabel(t,S.lane)} locks"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 4h10M5.5 4V2.5h3V4M3.5 4l.7 8h5.6l.7-8M6 6.5v3.5M8 6.5v3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
@@ -3357,9 +3383,9 @@ function renderSeq(){const t=S.sel,tr=trk(t),midi=isMidiT(t);dockOf(t);
   ${midi?`<div class="tlanes" id="tlanes"><div class="tlane env" style="grid-template-columns:${cols()}" title="Velocity per note (VEL, lockable)"><span class="tlab">VEL</span>${steps().map(s=>{const st=tr.steps[s];const v=st&&!st.off?velOf(t,s):null;return`<span class="tc envc ${gapC(s)} ${v==null?"na":""} ${cellSel(s)}" data-s="${s}">${v!=null?`<i class="velbar" style="--v:${v/127*100}%" title="VEL ${v}"></i>`:""}</span>`}).join("")}</div></div>`:""}</div></div>
  ${genBarHtml()}
  <div class="lanewrap"><div class="lanetop">${S.dock==="locks"?`<span class="cap">Lock lane · ${tLabel(t)} ${midi?"CH"+String(tr.ch).padStart(2,"0"):tr.m} · <b id="lanename">${pidLabel(t,S.lane)}</b> <span class="lanescale" id="lanescale"></span></span>
-  <span class="lockbudget" id="lockbudget"></span><span class="lanehelp" title="Draw across the bars to lock this parameter per step. Alt-drag erases. Shift-drag draws a ramp, a straight line from where you press to where you let go. The wheel over a step with a trig moves its lock (Shift: fine). Hatched steps have no trig, so they cannot hold a lock. Dashed line = kit value. A slide step glides to the next lock.">Draw to lock · ⇧ ramp · alt erases</span>`:(()=>{const[h,hl]=dockHelp(t,S.dock);return`<span class="cap">${DOCKN[S.dock]} · ${tLabel(t)} ${midi?"CH"+String(tr.ch).padStart(2,"0"):tr.m}</span><span class="lockbudget dkread" id="dkread">${dockRead(t,S.dock)}</span><span class="lanehelp dkhelp" title="${dkAttr(hl)}">${h}</span>`})()}${dockTabs(t)}</div>
+  <span class="lockbudget" id="lockbudget"></span>${laneToolsHtml()}`:(()=>{const[h,hl]=dockHelp(t,S.dock);return`<span class="cap">${DOCKN[S.dock]} · ${tLabel(t)} ${midi?"CH"+String(tr.ch).padStart(2,"0"):tr.m}</span><span class="lockbudget dkread" id="dkread">${dockRead(t,S.dock)}</span><span class="lanehelp dkhelp" title="${dkAttr(hl)}">${h}</span>`})()}${dockTabs(t)}</div>
   ${S.dock==="locks"?dockBody(t):`<div class="dockbody" id="dock">${dockBody(t)}</div>`}</div>`;
- $("#main").innerHTML=h;document.body.classList.toggle("dockother",S.dock!=="locks");genBarFit();fitLane();renderLane();syncScroll();syncControls();alignLock();syncLockBudget();markRecLock();stepDraw()}
+ $("#main").innerHTML=h;document.body.classList.toggle("dockother",S.dock!=="locks");genDraw();fitLane();renderLane();syncScroll();syncControls();alignLock();syncLockBudget();markRecLock();stepDraw()}
 /* as in the MD Editor: the rail's LOCK PARAMETER block starts on the line above the lock lane (the lane's top border, under the GEN bar) and ends at its bottom edge */
 function alignLock(){const rp=$("#rail .railparams"),lt=$(".lanetop"),ls=$("#lanescroll")||$("#main>.lanewrap>.dockbody");if(!rp||!lt||!ls||S.ws!=="seq")return;
  const roll=$("#seq canvas.roll[data-big]"),tb=rp.querySelector(".pagetabs");
@@ -3497,7 +3523,7 @@ S.rollLen=1;
 (()=>{let v=null;try{v=JSON.parse(localStorage.getItem("mmeditor.roll")||"null")}catch(_){}if(v&&typeof v==="object"){if(v.len>=1&&v.len<=64)S.rollLen=Math.round(v.len)}})();
 function rollPrefs(){try{localStorage.setItem("mmeditor.roll",JSON.stringify({len:S.rollLen}))}catch(_){}}
 function rollKeysHtml(){return`<span class="rollkeys"><button class="pgkey rolllen" id="rolllen" title="The length a new note gets: click for the next, shift-click the one before (dragging a note's end sets it too)">${MmRoll.say(S.rollLen)}</button></span>`}
-function syncRollKeys(){const l=$("#rolllen");if(l)l.textContent=MmRoll.say(S.rollLen);genBarFit();const c=$("#seq canvas.roll[data-big]");if(c){const tp=ROLL_TIP(+c.dataset.t);c.title=tp;c.setAttribute("aria-label",tp)}}
+function syncRollKeys(){const l=$("#rolllen");if(l)l.textContent=MmRoll.say(S.rollLen);const c=$("#seq canvas.roll[data-big]");if(c){const tp=ROLL_TIP(+c.dataset.t);c.title=tp;c.setAttribute("aria-label",tp)}}
 function setRollLen(L,say){L=clamp(Math.round(L),1,64);if(L!==S.rollLen){S.rollLen=L;rollPrefs();syncRollKeys()}if(say)toast(`New notes: ${MmRoll.say(L)}.`)}
 /* the Len key: the next (shift: the one before) of 1/16 1/8 1/4 1/2 1 bar, from where it is */
 function stepRollLen(back){const Ls=MmRoll.LENGTHS,n=back?[...Ls].reverse().find(x=>x<S.rollLen)??Ls[Ls.length-1]:Ls.find(x=>x>S.rollLen)??Ls[0];setRollLen(n,true)}
@@ -3779,7 +3805,7 @@ Keys.bind({id:"track-mark-paste",scope:"seq",area:"Tracks",keys:["track header"]
    GEN's are the steps intent of the tracks it wrote (their steps, slides and locks over the range, so a value moved
    back gives its steps back); MUTATE's are the params intent of the values it moved. Alt is the global "all": Alt + a GEN change
    every track of the side shown over the whole pattern, Alt+R every track (Sound: every synth track). ===== */
-S.gen={specs:null,last:[],m:[],run:null};
+S.gen={specs:null,last:[],m:[],run:null,session:null};
 S.mut={amount:20,seed:genSeed(),scope:new Set(["SYN"]),trial:null,note:""};
 S.genOwn=false;
 const genKey=()=>`${S.ws}:${S.sel}:${S.pat}`,mutKey=()=>`${S.ws}:${S.sel}:${S.kit}`;
@@ -3820,15 +3846,16 @@ function genLive(all=S.alt){
  const run=genRunFor(S.gen.run,genKey(),genBase,()=>0),[from,to]=genRange(all),wrote=[];
  for(const t of all?side():[S.sel])if(genWrite(t,from,to,run))wrote.push(t);
  if(!wrote.length){toast(all?"Every track is set to keep: nothing to generate.":`${tLabel(S.sel)} is set to keep.`);genDraw();return false}
- S.gen.run=run;run.applied++;
+ S.gen.run=run;run.applied++;if(run.applied===1&&S.gen.session)S.gen.session.n++;
  S.genOwn=true;try{edit("steps",{from,to,rows:wrote.map(t=>rangeRow(t,from,to,true))})}finally{S.genOwn=false}
  autoRange(S.sel);if(S.ws==="seq")rerenderSeq();else renderTop();
  return true}
 /* the result of a track's spec for the summary: its trigs over the range from the run's base (or now) */
 function genPreview(t,from,to){const run=S.gen.run&&S.gen.run.key===genKey()?S.gen.run:null,base=run?run.base[t].steps:trk(t).steps;
  return{run,base,r:mmGenSteps(genSpec(t),t,from,to,base,S.len,isMidiT(t))}}
-/* Defaults (↺): every spec from its machine; writes this track (Alt every track) */
-function genDefaults(){genSpecs(true);toast("Every track's spec from its machine.");genLive()}
+/* Defaults (↺): this track's values (Alt: every track of the side) from its machine; the track follows, as with any change */
+function genDefaults(){genSpecs();const len=S.len||64;for(const t of S.alt?side():[S.sel]){S.gen.specs[t]=mmGenDefault(genInfo(t),len,isMidiT(t));S.gen.m[t]=trk(t).m;S.gen.last[t]={edited:true}}
+ toast(S.alt?"Every track's values from its machine.":"This track's values from its machine.");genLive()}
 /* a new variation: a new seed (random, the notes), random hits and rotation in the cycle (euclid); keep stays */
 function genVary(t){const sp=genSpec(t),r=n=>Math.floor(Math.random()*n);if(sp.kind==="keep")return false;
  sp.seed=genSeed();if(sp.kind==="euclid"){sp.k=1+r(sp.n);sp.rot=r(sp.n)}S.gen.last[t].edited=true;return true}
@@ -3865,38 +3892,93 @@ function genNotesHtml(sp,t){const n=sp.notes;if(!n||sp.kind==="keep"||isMidiT(t)
  if(n.motion==="off"||n.motion==="kit")return gbg("Notes",mot+seed,"gnotes","The rhythm decides when, the notes what: they go to the hits the rhythm writes");
  return gbg("Notes",mot+gv("nroot","Root",noteName(n.root),"The lowest note: the scale's root at its octave (the track's KEY when its SCALE is MAJ or MIN)")+gv("nscale","Scale",n.scale==="DORIAN"?"DOR":n.scale,"MAJ, MIN, PENT (minor pentatonic) or DORIAN")
   +gv("nrange","Range",n.range+" oct","One or two octaves from the root")+seed,"gnotes","The rhythm decides when, the notes what: they go to the hits the rhythm writes (every hit; in ADD the new ones, in THIN none)")}
-function genStripHtml(){const t=S.sel,tr=trk(t),sp=genSpec(t),all=S.alt,[from,to]=genRange(all),{run,base,r}=genPreview(t,from,to);
- const mode=gbg("Mode",gseg("data-genkind",sp.kind,[["euclid","Euclid"],["random","Random"],["keep","Keep"]],{euclid:"k hits spread evenly over n steps, rotated",random:"each step on by chance, from a seed",keep:"leave this track as it is (in a run: as it was before the run)"}),"gmode");
- const params=sp.kind==="euclid"?gbg("Euclid",gv("k","Hits",sp.k,"How many hits in a cycle")+gv("n","Steps",sp.n,"The cycle's length in steps, at most the pattern's; it repeats over the pattern")+gv("rot","Rotate",sp.rot,"Moves the hits later"))
-  :sp.kind==="random"?gbg("Random",gv("dens","Density",sp.density+"%","The chance of each step")+gv("seed","Seed",sp.seed,"The same seed gives the same steps"))
-   +gbg("Write",gseg("data-genmode",sp.mode,[["replace","Replace"],["add","Add"],["thin","Thin"]],{replace:"the track becomes the result",add:"only steps that are off may turn on",thin:"only steps that are on may turn off"}),"gwrite")
-  :gbg("Keep",`<span class="gsum">${tLabel(t)} is left as it is.</span>`);
- let sum="";
- if(r){const on=r.steps.filter(([,st])=>mmTrig(st)).length,b=[];for(let s=from;s<to;s++)if(mmTrig(base[s]))b.push(s);const now=new Set(r.steps.filter(([,st])=>mmTrig(st)).map(([s])=>s));
-  const add=[...now].filter(s=>!mmTrig(base[s])).length,gone=b.filter(s=>!now.has(s)).length;
-  sum=all?`every track${gopt(` · steps ${from+1}–${to}`)}`:`${sp.kind==="euclid"?gopt(genSummary(sp,S.len)+" · "):""}${on} on${run?` <em>+${add} −${gone}</em>`:""}${gopt(` · steps ${from+1}–${to}`)}`}
- else if(all)sum=`every track${gopt(` · steps ${from+1}–${to}`)}`;
- const target=all?`all ${isMidiT(t)?"MIDI":"synth"} tracks`:`${tLabel(t)} · ${isMidiT(t)?"CH"+String(tr.ch).padStart(2,"0"):tr.m.replace("SWAVE-","SW-")}`;
- return`${gtitle("Gen",target,all,"Generators: every change writes to the pattern at once. A run of changes on this track is one undo step; Undo takes it back in one step. Alt: every track of the side shown, the whole pattern.")}
-  <div class="gflow">${mode}${params}${genNotesHtml(sp,t)}
-  <div class="gsum" title="${run&&run.applied?"What the run changed, against the pattern before it":"What a change writes"}: ${plainText(sum)}">${sum}</div></div>
-  <div class="gkeys">${randKey(all?"Randomise every track of the side: a new variation of each spec, the whole pattern (Alt+R)":`Randomise ${tLabel(t)}: a new variation, ${sp.kind==="random"?"a new seed":sp.kind==="euclid"?"random hits and rotation in the cycle, a new seed for the notes":"nothing while it is set to Keep"} (R). Alt+R or Alt-click: every track`)}${kc("data-gen","fill","↺","Defaults","Defaults: every track's spec from its machine: a bass 5/16 with a walk in its scale, a lead random 30 % over two octaves, a pad on 1 and 3, the drum box 8/16 on BD SD CH OH; FX machines kept; MIDI tracks 4/16, rhythm only. Writes this track (Alt: every track)")}</div>`}
 /* the step gestures behind a small ? key (a click: the list of keys) */
 function stepLegend(){const midi=isMidiT(S.sel),row=(cls,what,how)=>`<span>${cls!=null?`<i class="lg on ${cls}"></i>`:`<i class="lg none"></i>`}<b>${what}</b>${how}</span>`;
  return`<span class="steplegend"><button class="glegkey" id="steplegend" aria-label="Step gestures" aria-describedby="steplegpop">?</button><span class="legend glegpop" id="steplegpop" role="tooltip">${row("","Note","click in the roll; drag up or down for pitch, sideways to paint (alt: erase)")}${midi?"":row("g","Trigless","no envelope trigs (the ENV row)")}${row("y","Note off","alt-click an empty step")}${row("lk","Has locks","a lock on the step")}${row(null,"Fill","⌘-click: every 2nd step from there to the end gets the note (from a note: off); ⌘⇧-click: every 4th")}<small>? the list of keys</small></span></span>`}
-function genBarHtml(){return`<div class="genbar"><div class="genband" id="genband">${genStripHtml()}</div><span class="gdiv" aria-hidden="true"></span>${stepLegend()}${rollKeysHtml()}${pageKeys()}</div>`}
-/* a rail tag's tooltip: the spec and its notes */
-function genTip(t){const sp=genSpec(t),n=isMidiT(t)?"":mmNotesTag(sp,noteName);return`${genTag(sp)}${n?" · "+n:""}: ${tLabel(t)}'s generator (the GEN bar)`}
-/* the bar again (and the rail's spec tags), without a full render */
-function genDraw(){if(S.ws!=="seq")return;const host=$("#genband");if(host)host.innerHTML=genStripHtml();genBarFit();$$(".th[data-sel] .gtag").forEach(g=>{g.textContent=genTag(genSpec(+g.closest(".th").dataset.sel))})}
-/* The bar's room (B-056): R and Defaults sit outside the groups (.gflow), so they always show and a group is cut
-   instead; and the bar tightens in steps (fit1..fit3, 25-mm.css) until its groups fit. Measured, not a media query:
-   a page zoomed below 100 % (a window under 1440 x 720 points, or the user's zoom) has its 9 to 15 px text raised by
-   WebKit to 9 points on screen (its minimum logical font size), so the same width holds less there. */
-const GEN_BAR_FITS=["fit1","fit2","fit3"];
-function genBarFit(){const bar=$(".genbar"),flow=bar&&bar.querySelector(".gflow");if(!flow)return;bar.classList.remove(...GEN_BAR_FITS);
- for(const f of GEN_BAR_FITS){if(flow.scrollWidth<=flow.clientWidth+1)break;bar.classList.add(f)}}
-
+function genBarHtml(){return`<div class="genbar">${stepLegend()}${rollKeysHtml()}${pageKeys()}</div>`}
+/* ===== The GEN dialog (Radek, 2026-10-14; the Machinedrum Editor's mdDeskGenUi.js has the same one). Opened by the dice key of a track
+   in the rail; it fills that track. One session: opening it starts one, DONE (Enter) keeps what it wrote, CANCEL (Esc) takes it back
+   (Undo, once for each run the session made: a run is one undo step, and the session has one run for each track it was on). The
+   piano roll is not covered: the modal layer puts the dialog under it and draws no backdrop, so the roll shows the result live;
+   another track's dice key moves the dialog to that track, any other click outside is refused. The head drags it (shared/deskModal.js
+   `drag`; the place is kept for the session). The bars' pieces (gbg, gv) and the values' clicks, keys and wheel: shared/deskGenBar.js. ===== */
+const genDlgOpen=()=>{const p=$("#genpop");return!!p&&!p.hidden};
+function openGen(t){if(S.ws!=="seq"||!trk(t))return;
+ if(S.rec){toast("The generators wait while the machine records live.");return}
+ const was=genDlgOpen();if(!was){genEnd();S.gen.session={n:0}}
+ if(t!==S.sel)select(t);else if(!was)render();
+ genSpecs();genDraw(true);const pop=$("#genpop");pop.hidden=false;
+ if(typeof Modal!=="undefined"&&Modal.place)Modal.place("genpop");
+ if(!was)pop.querySelector(".gv")?.focus({preventScroll:true})}
+/* where the dialog opens (shared/deskModal.js `place`): under the piano roll, over the lock lane; kept inside the window */
+function placeGen(el){const roll=$("#seq canvas.roll[data-big]");if(!roll)return null;const r=roll.getBoundingClientRect(),h=el.offsetHeight,w=el.offsetWidth;
+ return{left:(innerWidth-w)/2,top:Math.min(r.bottom+10,innerHeight-h-8)}}
+/* done: keep what the session wrote; otherwise (Esc, Cancel): Undo it, once for each run it made */
+function closeGen(done){const pop=$("#genpop");if(!pop||pop.hidden)return;
+ const n=done===true?0:(S.gen.session?S.gen.session.n:0);pop.hidden=true;genEnd();S.gen.session=null;
+ for(let i=0;i<n;i++)undo();
+ if(n)toast("GEN cancelled: the track is back as it was.")}
+/* another track's key, or ↑ / ↓: the dialog goes to that track, the session goes on */
+function genSwitch(t){if(t>=0&&t<12&&trk(t)&&t!==S.sel&&side().includes(t))openGen(t)}
+/* the dialog's content again (only while it is open, or to fill it before it opens); the focus stays on the same control */
+function genDraw(fill){const pop=$("#genpop");if(!pop||(pop.hidden&&!fill))return;
+ const act=pop.contains(document.activeElement)?document.activeElement:null,ref=act&&["data-gv","data-genkind","data-genmode","data-rand","data-gen","data-genclose","data-gencancel","data-genkeep"].find(a=>act.hasAttribute(a)),key=ref?`[${ref}="${act.getAttribute(ref)}"]`:null;
+ pop.innerHTML=genDialogHtml();if(key)pop.querySelector(key)?.focus({preventScroll:true})}
+document.addEventListener("click",e=>{
+ const o=e.target.closest("[data-genopen]");if(o){genDlgOpen()?genSwitch(+o.dataset.genopen):openGen(+o.dataset.genopen);return}
+ if(e.target.closest("[data-genclose]")){closeGen(true);return}
+ if(e.target.closest("[data-gencancel]")){closeGen(false);return}
+ const kp=e.target.closest("[data-genkeep]");if(kp)genKeep(kp.checked)});
+/* Enter anywhere in the dialog but on a key (a value box too: type a value with ⌘-click): Done; ↑ / ↓ off a value box: the previous / next track of the side */
+document.addEventListener("keydown",e=>{
+ if(!genDlgOpen()||!e.target.closest?.("#genpop")||e.metaKey||e.ctrlKey||e.altKey)return;
+ if(e.key==="Enter"&&!e.target.closest("button")){e.preventDefault();e.stopPropagation();closeGen(true)}
+ else if((e.key==="ArrowUp"||e.key==="ArrowDown")&&!e.target.closest(".gv")){e.preventDefault();e.stopPropagation();genSwitch(S.sel+(e.key==="ArrowDown"?1:-1))}},true);
+/* KEEP, honestly: a track whose spec is Keep is left alone by every generator run (Alt changes and Alt+R over every track skip it, and so does a change here:
+   it gives the pattern before the run back). The dialog shows it as a switch on the track, not a third mode: switching it on keeps the track's generator in
+   S.gen.last (`was`), switching it off brings that generator back. */
+function genKeep(on){const t=S.sel,sp=genSpec(t),last=S.gen.last[t];if(on===(sp.kind==="keep"))return;
+ if(on){last.was=sp.kind;genKind("keep");return}
+ const d=mmGenDefault(genInfo(t),S.len||64,isMidiT(t));genKind(last.was&&last.was!=="keep"?last.was:d.kind!=="keep"?d.kind:"euclid")}
+/* the spec the dialog's boxes show: the track's own, or while it is kept the generator it will come back to */
+function genShown(t){const sp=genSpec(t);if(sp.kind!=="keep")return sp;const l=S.gen.last[t]||{},len=S.len||64,d=mmGenDefault(genInfo(t),len,isMidiT(t));
+ return genFit(l[l.was],len)||(d.kind!=="keep"?d:{kind:"euclid",k:4,n:Math.min(16,len),rot:0,seed:genSeed(),notes:d.notes})}
+/* What a value box says, may hold and does by default (type a value: ⌘-click, shared/deskValueEdit.js; double-click: its default) */
+const genBoxList=k=>{const sp=genSpec(),n=sp.notes;return k==="nscale"?MM_SCALES:k==="nmot"?(n&&(n.motion==="kit"||trk(S.sel).m==="DPRO-BBOX")?["off","kit"]:["off","step","leap"]):null};
+const GenBox={
+ range(el){const k=el.dataset.gv,sp=genSpec(),n=sp.notes,l=genBoxList(k);if(l)return[0,l.length-1];return{k:[0,sp.n],n:[1,Math.min(64,S.len||64)],rot:[0,Math.max(0,sp.n-1)],dens:[0,100],seed:[1,99999],nroot:[0,127-12*(n?n.range:1)],nrange:[1,2]}[k]},
+ shown(el,v){const k=el.dataset.gv,l=genBoxList(k);if(l)return String(l[v]);return k==="nroot"?[noteName(v),String(v)]:k==="dens"?[v+"%",String(v)]:k==="nrange"?[v+" oct",String(v)]:String(v)},
+ get(el){const k=el.dataset.gv,sp=genSpec(),n=sp.notes,l=genBoxList(k);if(l)return Math.max(0,l.indexOf(k==="nmot"?n.motion:n.scale));return{k:sp.k,n:sp.n,rot:sp.rot,dens:sp.density,seed:sp.seed,nroot:n&&n.root,nrange:n&&n.range}[k]},
+ set(el,v){const k=el.dataset.gv,l=genBoxList(k);if(l){for(let i=0;i<l.length&&GenBox.get(el)!==v;i++)genVal(k,1);return}genVal(k,v-GenBox.get(el))},
+ find:el=>$(`#genpop [data-gv="${el.dataset.gv}"]`),say:t=>toast(t),
+ def(k){const t=S.sel,d=mmGenDefault(genInfo(t),S.len||64,isMidiT(t));return{k:d.k,n:d.n,rot:d.rot||0,dens:25,seed:genSeed(),nroot:d.notes&&d.notes.root,nrange:d.notes&&d.notes.range}[k]}};
+document.addEventListener("pointerdown",e=>{const el=e.target.closest("#genpop .gv[data-gv]");if(el&&ValueEdit.isOpenClick(e)){e.preventDefault();e.stopPropagation();ValueEdit.open(el,GenBox)}},true);
+document.addEventListener("dblclick",e=>{const el=e.target.closest("#genpop .gv[data-gv]");if(!el||ValueEdit.isOpenClick(e))return;
+ const v=GenBox.def(el.dataset.gv),r=GenBox.range(el);if(v==null||!r)return;GenBox.set(el,Math.max(r[0],Math.min(r[1],v)))});
+/* The dialog (compact, one size in every mode): the head (the drag handle), MODE, the mode's values in an area of fixed height (the rhythm's groups, then NOTES
+   on a synth track), the KEEP switch, then the footer: the summary at the left, R and Defaults, Cancel and Done at the right. */
+function genDialogHtml(){const real=genSpec(),kept=real.kind==="keep",sp=genShown(S.sel),t=S.sel,tr=trk(t),all=S.alt,[from,to]=genRange(all),{run,base,r}=genPreview(t,from,to);
+ const sc=(attr,cur,items,tips,label)=>`<span class="gsc" role="radiogroup" aria-label="${label}">${items.map(([k,n])=>`<button ${attr}="${k}" role="radio" aria-checked="${cur===k}" aria-pressed="${cur===k}" title="${tips[k]}">${n}</button>`).join("")}</span>`;
+ const mode=sc("data-genkind",sp.kind,[["euclid","Euclid"],["random","Random"]],{euclid:"k hits spread evenly over n steps, rotated",random:"each step on by chance, from a seed"},"Mode");
+ const rhythm=sp.kind==="euclid"?gbg("Euclid",gv("k","Hits",sp.k,"How many hits in a cycle")+gv("n","Steps",sp.n,"The cycle's length in steps, at most the pattern's; it repeats over the pattern")+gv("rot","Rotate",sp.rot,"Moves the hits later"))
+  :gbg("Random",gv("dens","Density",sp.density+"%","The chance of each step")+gv("seed","Seed",sp.seed,"The same seed gives the same steps"))
+   +gbg("Write",sc("data-genmode",sp.mode,[["replace","Replace"],["add","Add"],["thin","Thin"]],{replace:"the track becomes the result",add:"only steps that are off may turn on",thin:"only steps that are on may turn off"},"Write"),"gwrite");
+ let sum="";
+ if(!kept&&r){const on=r.steps.filter(([,st])=>mmTrig(st)).length,b=[];for(let s=from;s<to;s++)if(mmTrig(base[s]))b.push(s);const now=new Set(r.steps.filter(([,st])=>mmTrig(st)).map(([s])=>s));
+  const add=[...now].filter(s=>!mmTrig(base[s])).length,gone=b.filter(s=>!now.has(s)).length;
+  sum=all?`every track · steps ${from+1}–${to}`:`${sp.kind==="euclid"?genSummary(sp,S.len)+" · ":""}${on} on${run&&(add||gone)?` <em>+${add} −${gone}</em>`:""} · steps ${from+1}–${to}`}
+ const help=!kept&&sp.kind==="random"&&sp.mode==="add"?"Add: only steps that are off may turn on.":!kept&&sp.kind==="random"&&sp.mode==="thin"?"Thin: only steps that are on may turn off.":"";
+ const target=all?`all ${isMidiT(t)?"MIDI":"synth"} tracks`:`${tLabel(t)} · ${isMidiT(t)?"CH"+String(tr.ch).padStart(2,"0"):tr.m.replace("SWAVE-","SW-")}`;
+ const keyr=`<span class="gdk"><small>Random <em>⌥R all</em></small><button class="gdkey cream" data-rand="1" aria-label="Randomise" ${kept?"disabled":""} title="Randomise ${tLabel(t)}: a new variation, ${sp.kind==="random"?"a new seed":"random hits and rotation in the cycle"} (R). ⌥R or Alt-click: every track of the side">R</button></span>`;
+ const keyd=`<span class="gdk"><small>Defaults</small><button class="gdkey" data-gen="fill" aria-label="Defaults" ${kept?"disabled":""} title="Defaults: this track's values from its machine (Alt: every track of the side). The track follows, as with any change">↺</button></span>`;
+ return`<div class="gdlg${kept?" kept":""}">
+  <div class="gdhead" data-drag title="Drag to move this window; double-click: back to its place"><b>Gen</b><span class="${all?"all":""}">${target}</span></div>
+  <div class="gdmode"${kept?" inert":""}><span class="gbl">Mode</span>${mode}</div>
+  <div class="gdvals rows"${kept?" inert":""}><div class="gdrow">${rhythm}</div><div class="gdrow">${genNotesHtml(sp,t)}</div></div>
+  <label class="gdkeep" title="A kept track is left as it is: Alt changes and ⌥R over every track skip it, and this window writes nothing to it"><input type="checkbox" data-genkeep="1" ${kept?"checked":""}><span>Keep this track when ⌥R rerolls all</span><em>${help}</em></label>
+  <div class="gdfoot"><div class="gdsum" title="${plainText(sum)}">${sum}</div>${keyr}${keyd}
+   <div class="gdbtns"><button class="gdcancel" data-gencancel="1" title="Cancel (Esc): the track goes back as it was before this window">Cancel</button><button class="gdone" data-genclose="1" title="Done (Enter): keep what it wrote. One Undo takes a run back">Done</button></div></div>
+</div>`}
 /* ---- MUTATE ---- */
 const MUT_SCOPES=[["SYN","Syn","the machine's SYNTHESIS page (an FX machine's INP stays)"],["AMP","Amp","the AMP page (VOL stays)"],["FLT","Flt","the FILTER page"],["EFX","Efx","the EFFECTS page"],["LFO","Lfo","the three LFOs (their PAGE and DEST stay: where an LFO goes is routing)"]];
 /* the groups in the scope (a group's title on the Sound page, "SYN:unison", "LF2:lfo"): their knobs on each
@@ -3949,12 +4031,69 @@ document.addEventListener("pointermove",e=>{if(!gvDrag)return;const d=Math.trunc
  gvDrag.acc+=d;gvDrag.v.dataset.dragged="1";genVal(gvDrag.k,d*gvDragStep(gvDrag.k));
  const n=document.querySelector(`.gv[data-gv="${gvDrag.k}"]`);if(n){n.dataset.dragged="1";gvDrag.v=n}});
 document.addEventListener("pointerup",()=>{if(!gvDrag)return;const k=gvDrag.k;gvDrag=null;setTimeout(()=>{const n=document.querySelector(`.gv[data-gv="${k}"]`);if(n)delete n.dataset.dragged},0)});
-Keys.bind({id:"randomise-track",short:"Randomise",scope:"any",keys:["R"],code:"KeyR",group:"Selected track",when:kbOn,run:()=>randomise(false),
+Keys.bind({id:"randomise-track",short:"Randomise",scope:"any",keys:["R"],code:"KeyR",group:"Selected track",modal:"genpop",when:()=>kbOn()||genDlgOpen(),run:()=>randomise(false),
  does:"Randomise the selected track: on Sound a fresh random sound (MUTATE, from the sound before the trial); everywhere else a new GEN variation: a new seed, or random hits and rotation"});
-Keys.bind({id:"randomise-all",short:"Randomise all",scope:"any",keys:["R"],code:"KeyR",mod:"alt",group:"All",when:kbOn,run:()=>randomise(true),
+Keys.bind({id:"randomise-all",short:"Randomise all",scope:"any",keys:["R"],code:"KeyR",mod:"alt",group:"All",modal:"genpop",when:()=>kbOn()||genDlgOpen(),run:()=>randomise(true),
  does:"Randomise every track: on Sound every synth track's sound, everywhere else every GEN spec of the side shown over the whole pattern"});
-Keys.bind({id:"gen-value-all",scope:"seq",area:"GEN bar",keys:["GEN value"],mod:"alt",group:"All",does:"Change a GEN value: every track of the side shown, the whole pattern (one undo step per run)"});
-Keys.bind({id:"rkey-all",scope:"any",area:"GEN bar",keys:["R key"],mod:"alt",group:"All",does:"Click: randomise every track (Sound: every synth track; VOL and TUNE stay)"});
+Keys.bind({id:"gen-value-all",scope:"seq",area:"GEN",keys:["GEN value"],mod:"alt",group:"All",does:"Change a GEN value: every track of the side shown, the whole pattern (one undo step per run)"});
+Keys.bind({id:"rkey-all",scope:"any",area:"GEN",keys:["R key"],mod:"alt",group:"All",does:"Click: randomise every track (Sound: every synth track; VOL and TUNE stay)"});
+
+/* ---- 79-lane.js ---- */
+/* The lane toolbox (Sequence, the Machinedrum Editor's mdDeskLaneTools.js): on the lock lane's title row, shapes and tools for the lane shown. The
+   bar is drawn by renderSeq (laneToolsHtml), its clicks are the listener below; the state, LT, is a value of this file (the shape's cycles, the
+   steps' filter, Flat's level), kept across renders. The shapes and the maths are shared/deskLaneShapes.js.
+   Shapes: ramp up, ramp down, triangle, sine, square, decay, random, flat (each press the next level: 50, 75, 100, 25, 0 %); ×1 ×2 ×4 cycles over
+   the steps shown. A click replaces the lane's values; ⌘-click adds the shape (around the middle) to them, ⌥-click subtracts it, ⇧-click scales them
+   by it. Hovering a shape previews it on the lane (faint bars).
+   Which steps: ALL, every 2nd, 3rd, 4th, or OFF (the offbeats), of the steps shown that hold a note (a lock rides a note; a trigless one too). Tools on
+   the locks there: HUMAN (a little random), scale down / up (towards / away from the middle), INV (upside down). An apply is one run of ordinary
+   "lock" intents in one go, so the next commit makes it one undo step; a lane with no lock yet needs one of the machine's 62 locked parameters, and
+   when they are all used the apply is refused whole, as a drawn lock is (setLock). */
+const LT={cycles:1,every:"all",flat:0};
+const laneFlatTip=()=>`Flat at ${LANE_FLAT[LT.flat]*100} % (each press: the next level)`;
+const laneTitleOf=tip=>`${tip}: click replaces · ⌘ adds · ⌥ subtracts · ⇧ scales`;
+/* the steps the tools act on: shown, holding a note, and through the filter */
+function laneTargets(){const tr=trk(S.sel),vis=steps().filter(s=>{const st=tr.steps[s];return st&&!st.off}),
+ keep={all:()=>true,"2":(s,k)=>k%2===0,"3":(s,k)=>k%3===0,"4":(s,k)=>k%4===0,off:s=>s%2===1}[LT.every];return{vis,list:vis.filter((s,k)=>keep(s,k))}}
+const laneTop=()=>{const[pg,i]=S.lane.split(".");return maxOf(meta(S.sel,pg,+i))};
+/* a step's lock now, or the lane's own (kit) value */
+function laneExisting(s){const v=S.locks.get(lkKey(S.sel,S.lane))?.get(s);return v!=null?v:(getP(S.sel,S.lane)??0)}
+/* the new value of each target step: [[step, value]]; mode: replace, add, sub, scale (a 0 is a lock like any value) */
+function laneShapeValues(id,mode){const{vis,list}=laneTargets(),n=Math.max(1,vis.length),mx=laneTop();
+ return list.map(s=>[s,laneMix(mode,laneExisting(s),laneShapeAt(id,vis.indexOf(s)/n*LT.cycles,LT.flat)*mx,mx)])}
+/* HUMAN, scale down / up, INV on the locked steps (none locked yet: on the lane's own value) */
+function laneToolValues(id){const{list}=laneTargets(),m=S.locks.get(lkKey(S.sel,S.lane)),locked=list.filter(s=>m&&m.has(s)),on=locked.length?locked:list,mx=laneTop();
+ return on.map(s=>[s,laneTool(id,laneExisting(s),Math.random(),mx)])}
+/* one run: every lock written in one go (the next commit: one undo step); refused whole when the lane needs a 63rd locked parameter */
+function laneWrite(values){
+ if(S.rec){toast("The lane tools wait while the machine records live.");return}
+ if(!values.length){toast("No step with a note in that scope: nothing to write.");return}
+ const t=S.sel;let n=0;
+ for(const[s,v] of values){if(!setLock(t,S.lane,s,v,n>0))return;edit("lock",{t,...pidArgs(S.lane),s,v});n++}
+ renderTop();renderLane()}
+const laneModeOf=e=>Modifiers.cmd(e)?"add":e.altKey?"sub":e.shiftKey?"scale":"replace";
+function laneToolsHtml(){
+ const seg=(k,opts)=>`<span class="xlseg" data-xg="${k}">${opts.map(([v,l,tip])=>`<button data-xv="${v}" aria-pressed="${String(LT[k])===String(v)}" title="${tip}">${l}</button>`).join("")}</span>`;
+ const ico=(id,tip,d)=>`<button class="ico" data-xt="${id}" aria-label="${tip}" title="${tip}"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="${d}"/></svg></button>`;
+ return`<span class="xlane" role="group" aria-label="Lane shapes and tools">
+  <span class="xlseg shapes">${LANE_SHAPES.map(([id,name,,svg])=>`<button data-xs="${id}" aria-label="${name}" title="${laneTitleOf(id==="flat"?laneFlatTip():name)}"><svg viewBox="0 0 16 16" aria-hidden="true">${svg||laneFlatSvg(LT.flat)}</svg></button>`).join("")}</span>
+  ${seg("cycles",[[1,"×1","One cycle over the steps shown"],[2,"×2","Two cycles"],[4,"×4","Four cycles"]])}
+  ${seg("every",[["all","All","Every step with a note"],["2","/2","Every 2nd step with a note"],["3","/3","Every 3rd"],["4","/4","Every 4th"],["off","Off","The offbeats"]])}
+  <span class="xlseg tools"><button data-xt="human" title="Human: a little random on each lock">Human</button>${ico("shrink","Scale down: the locks closer to the middle","M8 3V13M4 9L8 13L12 9")}${ico("stretch","Scale up: the locks further from the middle","M8 13V3M4 7L8 3L12 7")}<button data-xt="invert" title="Inv: the locks upside down">Inv</button></span>
+</span>`}
+/* the preview: a faint bar per step over the lane */
+const laneClearPreview=()=>$$("#lane .xghost").forEach(x=>x.remove());
+function lanePreview(values){laneClearPreview();const mx=laneTop();for(const[s,v] of values||[])$(`#lane .lb[data-s="${s}"]`)?.insertAdjacentHTML("beforeend",`<b class="xghost" style="--g:${(v/mx).toFixed(3)}"></b>`)}
+document.addEventListener("click",e=>{
+ const sh=e.target.closest(".xlane [data-xs]"),sg=e.target.closest(".xlane [data-xg] [data-xv]"),tl=e.target.closest(".xlane [data-xt]");if(!sh&&!sg&&!tl)return;
+ if(sg){const k=sg.parentElement.dataset.xg;LT[k]=k==="cycles"?+sg.dataset.xv:sg.dataset.xv;sg.parentElement.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b===sg));return}
+ laneClearPreview();
+ if(sh){laneWrite(laneShapeValues(sh.dataset.xs,laneModeOf(e)));if(sh.dataset.xs==="flat"){LT.flat=(LT.flat+1)%LANE_FLAT.length;sh.querySelector("svg").innerHTML=laneFlatSvg(LT.flat);sh.title=laneTitleOf(laneFlatTip())}}
+ else laneWrite(laneToolValues(tl.dataset.xt))});
+/* hover a shape (or a tool): its result, faint, on the lane; Random and Human are not previewed (each apply differs) */
+document.addEventListener("pointerover",e=>{const sh=e.target.closest?.(".xlane [data-xs]"),tl=e.target.closest?.(".xlane [data-xt]");
+ if(sh&&sh.dataset.xs!=="random")lanePreview(laneShapeValues(sh.dataset.xs,laneModeOf(e)));else if(tl&&tl.dataset.xt!=="human")lanePreview(laneToolValues(tl.dataset.xt))});
+document.addEventListener("pointerout",e=>{if(e.target.closest?.(".xlane [data-xs],.xlane [data-xt]"))laneClearPreview()});
 
 /* ---- 77-select.js ---- */
 
@@ -6173,8 +6312,8 @@ function setPlate(v){S.plate=v;document.documentElement.dataset.plate=v;try{loca
  if(v==="mk2")toast("MKII: the bluish-white LCD, plus user waveforms and the DigiPRO draw machines.");
  render();redraw()}
 (()=>{let v=null;try{v=localStorage.getItem("mmeditor.plate")}catch(_){}if(!["mk1","mk2"].includes(v))v="mk2";S.plate=v;document.documentElement.dataset.plate=v})();
-document.fonts&&document.fonts.ready.then(()=>{if(S.ws==="seq"){genBarFit();fitLane();drawSlides()}redraw();alignLock()});
-if(window.ResizeObserver)new ResizeObserver(()=>{if(S.ws==="seq"){genBarFit();fitLane();alignLock()}}).observe(document.getElementById("main"));
+document.fonts&&document.fonts.ready.then(()=>{if(S.ws==="seq"){fitLane();drawSlides()}redraw();alignLock()});
+if(window.ResizeObserver)new ResizeObserver(()=>{if(S.ws==="seq"){fitLane();alignLock()}}).observe(document.getElementById("main"));
 addEventListener("resize",()=>{if(S.ws==="seq"){fitLane();drawSlides();alignLock()}redraw()});
 
 /* deep links: #ws=sound&t=3&dock=arp&plate=mk1&mode=multi */
