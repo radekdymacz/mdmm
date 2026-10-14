@@ -398,3 +398,6 @@ body > main { flex: 1 0 auto; }
 .stage { margin-top: 24px; }
 .win[data-machine="md"] .shots { aspect-ratio: 1440 / 1250; }
 .win[data-machine="md"] .shots img { aspect-ratio: 1440 / 1250; }
+
+.tourseg { margin-top: 14px; }
+.tourset[hidden] { display: none; }
