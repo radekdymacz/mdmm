@@ -141,6 +141,8 @@ const wsUrl = await new Promise((resolve, reject) => {
 const ws = new WebSocket(wsUrl);
 await new Promise((r, j) => { ws.onopen = r; ws.onerror = () => j(new Error("no DevTools connection")); });
 let nextId = 1;
+let uaCache = null;
+const userAgent = async () => uaCache ||= (await send("Browser.getVersion")).userAgent;
 const waiting = new Map(), sessions = new Map();
 ws.onmessage = ev => {
 	const m = JSON.parse(ev.data);
@@ -221,6 +223,9 @@ function runUnit(ed, selector, dir) {
 		await send("Page.addScriptToEvaluateOnNewDocument", { source: "window.gmDev = b => __mdmmPost(JSON.stringify(b)); window.gmView = (width, height) => __mdmmView(JSON.stringify({ width, height }));" }, sid);
 		await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 924, deviceScaleFactor: 1, mobile: false }, sid);
 		await send("Emulation.setFocusEmulationEnabled", { enabled: true }, sid);
+		// the journeys are written for the macOS editor (Cmd chords, metaKey): the page reads its platform from navigator.platform,
+		// so a Linux or Windows Chrome says it is a Mac, as the plug-in's WKWebView does
+		await send("Emulation.setUserAgentOverride", { userAgent: await userAgent(), platform: "MacIntel" }, sid);
 		const page = ed === "md" ? "md/mdStudio.html" : "mm/mmStudio.html";
 		timer = setTimeout(() => finish(`no JOURNEYS DONE after ${opt.timeout} s`), opt.timeout * 1000);
 		await send("Page.navigate", { url: `http://127.0.0.1:${PORT}/${page}?dev=1&version=${version}&selftest=${encodeURIComponent(selector)}` }, sid);
