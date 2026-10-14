@@ -121,6 +121,7 @@ namespace
 			// the programmed test dumps (one with all 64 lock rows in use) at A08, B01 and H16
 			auto empty = *ed::decodeMdPattern(load("programmed_pattern_1.syx"));
 			empty.length = 16;
+			empty.scale = 0;	// total length 16, as a machine's own pattern: the programmed dump is 64 steps long, which the real editor never shows for a 16 step pattern
 			empty.accentEditAll = empty.slideEditAll = empty.swingEditAll = 0;
 			empty.accentPattern = empty.slidePattern = empty.swingPattern = 0;
 			empty.trackAccent.fill(0);
