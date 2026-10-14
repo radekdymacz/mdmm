@@ -42,6 +42,7 @@
         if (on) el.querySelectorAll("img").forEach(function (i) { i.loading = "eager"; });
       });
       hero.querySelector("[data-wintitle]").textContent = names[state.machine];
+      hero.dataset.machine = state.machine;
       tabs.forEach(function (t) {
         var on = t.dataset.machine === state.machine;
         t.setAttribute("aria-selected", String(on));
