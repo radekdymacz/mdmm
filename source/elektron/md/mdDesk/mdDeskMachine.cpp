@@ -369,6 +369,7 @@ namespace mdDesk
 		m_tweak = {};
 		m_notes = {};
 		m_coalesced.clear();
+		m_afterTweak.clear();
 		m_telemetrySeen = false;
 		m_recordedMs = -1e18;
 		m_recordedSinceRec = false;
@@ -420,7 +421,7 @@ namespace mdDesk
 		if(m_out.sending(now()))
 			return true;
 		// Control All on its way (FUNCTION held: no dump may be asked for meanwhile), or its CCs.
-		if(m_tweak.active() || !m_coalesced.empty())
+		if(m_tweak.active() || !m_coalesced.empty() || !m_afterTweak.empty())
 			return true;
 		// A live edit the machine's memory does not show yet is on the wire too.
 		return m_working.expect.expecting(now());
@@ -673,11 +674,26 @@ namespace mdDesk
 					// Control All without the panel: coalesced, one CC per value per tick (pumpCoalesced).
 					m_coalesced[{e.track, e.index}] = e.value;
 				}
+				else if(e.kind == LiveEdit::Kind::Param && (m_tweak.active() || (m_tweak.guard & (1u << e.index))))
+				{
+					// B-145 (the 0.6.0 e2e, measured: mdDeskFirmwareTest sweepundo): a plain value (an undo) while the
+					// machine's own Control All gesture is still on its way. Sent at once, the gesture's turns still
+					// queued and on the panel stepped every track on from it (the machine kept the sweep, the page said
+					// undone). The turns not yet made are dropped (relative steps from values that are gone) and the
+					// value waits for the gesture to end (pumpCoalesced), then goes as sendLive sends it (the plug-in's
+					// parameter may still hold this value: the machine's steps are not folded in, so the CC goes on its own too).
+					m_tweak.turns.clear();
+					m_coalesced.erase({e.track, e.index});
+					m_afterTweak[{e.track, e.index}] = e.value;
+				}
 				else if(e.kind == LiveEdit::Kind::Param || e.kind == LiveEdit::Kind::Level)
 				{
 					// A plain edit goes at once; a coalesced value for it would come later and undo it.
 					if(e.kind == LiveEdit::Kind::Param)
+					{
 						m_coalesced.erase({e.track, e.index});
+						m_afterTweak.erase({e.track, e.index});
+					}
 					sendLive(e.track, e.kind == LiveEdit::Kind::Level ? 24 : e.index, e.value);
 				}
 				else if(const auto sysex = liveEditSysex(e); !sysex.empty() && canSendSysex())
@@ -2337,6 +2353,14 @@ namespace mdDesk
 
 	void MdMachine::pumpCoalesced(const double _now)
 	{
+		// B-145: the values that waited for the machine's Control All gesture to end (held, turns queued or still on
+		// the panel: its steps would land after them and move them on)
+		if(!m_afterTweak.empty() && !m_tweak.active() && m_telemetry.panelPending <= 0)
+		{
+			for(const auto& [key, v] : m_afterTweak)
+				sendLive(key.first, key.second, v);
+			m_afterTweak.clear();
+		}
 		if(m_coalesced.empty() || _now - m_coalescedMs < g_coalesceMs)
 			return;
 		m_coalescedMs = _now;

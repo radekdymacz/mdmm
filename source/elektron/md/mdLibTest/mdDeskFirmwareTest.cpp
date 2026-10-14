@@ -3952,6 +3952,50 @@ namespace
 		check(desk.documents().working->kit.params == back->params, "the page's working kit is the machine's after the undo");
 	}
 
+	// The 0.6.0 e2e (md-sound-filter-sweep, then md-sound-keep-clear): an Alt-drag of FLTF and Cmd+Z straight after it, while
+	// the machine's own gesture (FUNCTION + the knob) is still on its way; then a machine picked with Keep effects. The
+	// machine's FLTF must be the one before the sweep on every track, and stay so after the machine change.
+	void undoRightAfterControlAll(Rig& _rig)
+	{
+		std::puts("== KEEP EDITS: undo straight after a Control All drag, then a machine kept with its effects");
+		auto& desk = _rig.desk();
+		const auto kit = std::to_string(*desk.linkState().kit);
+		const auto settle = [&] { _rig.runUntil([&] { return !desk.isBusy() && !_rig.pageTx(); }, 4000); _rig.run(1500); };
+		settle();
+		const auto before = workingFromMemory(_rig);
+		require(before.has_value(), "the working kit in memory");
+		_rig.seedPluginParams(*before);
+		const auto fltf = [](const ed::MdKit& _k) { std::string s; for(size_t t = 0; t < 16; ++t) s += std::to_string(_k.params[t][12]) + " "; return s; };
+		// the page's drag: four moves a frame apart, the knob down, then Cmd+Z 40 ms on
+		for(int k = 0; k < 4; ++k)
+		{
+			_rig.page("{\"op\":\"tweak\",\"k\":" + kit + ",\"group\":\"fx\",\"knob\":4,\"d\":-" + std::to_string(2 + k) + ",\"t\":0,\"g\":991}");
+			_rig.run(17);
+		}
+		_rig.run(40);
+		_rig.page(R"({"op":"undo"})");
+		settle();
+		_rig.run(2000);
+		const auto back = workingFromMemory(_rig);
+		std::printf("  FLTF before: %s\n  FLTF after the undo: %s\n  page's FLTF: %s\n", fltf(*before).c_str(), fltf(*back).c_str(),
+			fltf(desk.documents().working->kit).c_str());
+		check(back->params == before->params, "undo straight after a Control All drag: the machine's kit is the one before it");
+		check(desk.documents().working->kit.params == back->params, "the page's working kit is the machine's after the undo");
+		// a machine picked on a track, Keep effects + routing: the effects as they were
+		const uint8_t t = 1;
+		const auto fx = [](const ed::MdKit& _k, const uint8_t _t) { return std::vector<uint8_t>(_k.params[_t].begin() + 8, _k.params[_t].end()); };
+		const auto text = [](const std::vector<uint8_t>& _v) { std::string s; for(const auto x : _v) s += std::to_string(x) + " "; return s; };
+		const auto fx0 = fx(*back, t);
+		_rig.page("{\"op\":\"machine\",\"k\":" + kit + ",\"t\":" + std::to_string(t) + ",\"model\":" + std::to_string(*ed::mdMachineModel("GND-SIN")) + ",\"keepFx\":true}");
+		settle();
+		_rig.run(1500);
+		const auto after = workingFromMemory(_rig);
+		const auto fx1 = fx(*after, t), page = fx(desk.documents().working->kit, t);
+		std::printf("  T2 effects + routing before the machine change: %s\n  after (machine): %s\n  after (page): %s\n", text(fx0).c_str(), text(fx1).c_str(),
+			text(page).c_str());
+		check(fx1 == fx0 && page == fx0, "a machine kept with its effects: effects and routing as they were, machine and page");
+	}
+
 	// A value moved straight after a machine change reaches the machine and stays (seen in the demo videos: a
 	// GND-SIN's PTCH and an E12-SD's RTRG read back 0).
 	void valueAfterMachine(Rig& _rig)
@@ -4883,7 +4927,7 @@ int main(const int _argc, char** _argv)
 	if(_argc < 2)
 	{
 		std::puts("usage: mdDeskFirmwareTest <MD-1.63-ROM> "
-			"[probe|hw|p4|tweak|sampler|keepedits|machine|recordermix|samples|gen|hostclock|songrow|playload|syxexport|"
+			"[probe|hw|p4|tweak|sampler|keepedits|sweepundo|machine|recordermix|samples|gen|hostclock|songrow|playload|syxexport|"
 			"syximport|syxpick|keymap|intentcases]");
 		std::puts("       mdDeskFirmwareTest --env syxpick   (ctest: the ROM from GEARMULATOR_MD_FIRMWARE_BIN, the "
 			"backup from MD_SYX)");
@@ -5005,9 +5049,22 @@ int main(const int _argc, char** _argv)
 			rig.pluginLike = true;
 			keepEdits(rig);
 			undoControlAll(rig);
+			undoRightAfterControlAll(rig);
 			valueAfterMachine(rig);
 			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 			std::printf("mdDeskFirmwareTest keepedits: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
+			return g_failures ? 1 : 0;
+		}
+		if(mode == "sweepundo")
+		{
+			Rig rig(rom, romPath);
+			rig.page(R"({"op":"ready"})");
+			rig.runUntil([&] { return rig.desk().isReady() && rig.desk().linkState().kit && rig.desk().linkState().pattern && rig.desk().documents().working; }, 8000);
+			rig.runUntil([&] { return !rig.desk().isBusy(); }, 20000);
+			rig.pluginLike = true;
+			undoRightAfterControlAll(rig);
+			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
+			std::printf("mdDeskFirmwareTest sweepundo: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
 			return g_failures ? 1 : 0;
 		}
 		if(mode == "machine")
