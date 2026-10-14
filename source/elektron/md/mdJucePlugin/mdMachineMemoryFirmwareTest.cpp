@@ -47,8 +47,16 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <chrono>
 #include <thread>
 #include <vector>
+
+#if !JUCE_MAC
+namespace juce::detail
+{
+	bool dispatchNextMessageOnSystemQueue(bool _returnIfNoPendingMessages);
+}
+#endif
 
 namespace
 {
@@ -76,7 +84,9 @@ namespace
 #if JUCE_MAC
 			CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.008, false);
 #else
-			juce::MessageManager::getInstance()->runDispatchLoopUntil(8);
+			// JUCE's own step of the message loop (runDispatchLoopUntil needs JUCE_MODAL_LOOPS_PERMITTED)
+			if(!juce::detail::dispatchNextMessageOnSystemQueue(true))
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 #endif
 		}
 	}
@@ -183,7 +193,7 @@ namespace
 		void send(const Bytes& _sysex)
 		{
 			synthLib::SMidiEvent e(synthLib::MidiEventSource::Editor);
-			e.sysex = _sysex;
+			e.sysex = synthLib::SysexBuffer(_sysex.begin(), _sysex.end());
 			processor->addMidiEvent(e);
 		}
 
