@@ -16,7 +16,8 @@
      mdDeskSong.js        Song: the arrangement and the chain
      mdDeskPicker.js      the machine picker and the key-style dropdowns
      mdDeskControl.js     Control: MIDI learn and the app modulators (hidden until enabled)
-     mdDeskGenUi.js       the GEN and MUTATE bars over mdDeskGen.js
+     mdDeskGenUi.js       the GEN dialog and the MUTATE bar over mdDeskGen.js
+     mdDeskLaneTools.js   the lane toolbox: shapes and tools over the lock lane
      mdDeskComforts.js    Alt, rotate, every-N fill, double, paste to many, unmute all
      mdDeskSelect.js      a selection of steps: copy, cut, paste, duplicate, clear, a dropped copy
      mdDeskRom.js         firmware, notices, the dialog, the start-up card's and SysEx import's hosts

@@ -1732,6 +1732,7 @@ svg.route{width:100%;height:auto;aspect-ratio:1200/146;min-height:0}
 .modalbg{position:fixed;inset:0;z-index:var(--mz,59);background:rgba(8,8,6,.52)}
 .modalbg[hidden]{display:none}
 .modalbg.clear{background:transparent}
+.modalbg.through{pointer-events:none}
 .modal:not(.dlg):not(.bootcard):not(.deskmenu){position:fixed!important;left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;margin:0!important;max-width:calc(100vw - 48px)!important;max-height:calc(100vh - 48px)!important;overflow:auto!important;z-index:var(--mz,60)!important;box-sizing:border-box}
 .dlg.modal{background:transparent!important;z-index:var(--mz,60)!important}
 .modal:focus,.modal .dlgbox:focus{outline:none}

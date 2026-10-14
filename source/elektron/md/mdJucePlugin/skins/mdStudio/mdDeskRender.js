@@ -115,7 +115,7 @@ function renderPage() {
 	if (!full) renderRail(); renderSub();
 	({ seq: renderSeq, sound: renderSound, mix: renderMix, song: renderSong, sampler: renderSampler, control: renderControl })[S.ws]();
 	const sc = $("#seqscroll"); if (sc) { sc.scrollLeft = sl; $("#lanescroll").scrollLeft = sl; } enhanceSelects(document.getElementById("main"));
-	markCapabilities(); audKeep(); phLast = -1; movePH(); logFirstRender(); alignLock();
+	if (S.ws === "seq") genDraw(); markCapabilities(); audKeep(); phLast = -1; movePH(); logFirstRender(); alignLock();
 }
 /* The rail's LOCK PARAMETER block lines up with the lock lane: its top border with the line above the lane, its first key with the
    top of the bars and its last key with their bottom (the keys' rows share the height the lane has). */
@@ -164,7 +164,7 @@ function clickSeg(e) {
 	else if (k === "loopkind" && S.ws === "song") { const r = { ...V.song[S.songSel], type: v }; if (v === "halt") r.to = S.songSel; if (v === "loop") { r.count = r.count || 2; r.to = Math.min(r.to ?? 0, Math.max(0, S.songSel - 1)); } if (v === "jump") r.to = Math.max(r.to ?? 0, S.songSel + 1); rowSet(S.songSel, r); render(); }
 	return true;
 }
-const CLICKS = [clickTrackKeys, clickSteps, clickSelect, clickSeg, clickLane, clickShape, clickSamplerSteps, clickPage, clickSlots, clickSong, clickOut,
+const CLICKS = [clickGen, clickLaneTools, clickTrackKeys, clickSteps, clickSelect, clickSeg, clickLane, clickShape, clickSamplerSteps, clickPage, clickSlots, clickSong, clickOut,
 	clickDialogs, clickEdit, clickControl, clickTop];
 document.addEventListener("click", e => { for (const f of CLICKS) if (f(e)) return; });
 /* The editor's keys (mdDeskKeys.js: dispatched from this map, and listed by ?). */
