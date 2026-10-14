@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MD + MM Editor 0.6.0 release notes</title>
+<meta name="description" content="The biggest release so far: the editors now do what the Machinedrum and Monomachine manuals describe, as far as that can be done from outside the machine.">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/releases/0.6.0/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MD + MM Editor">
+<meta property="og:title" content="MD + MM Editor 0.6.0 release notes">
+<meta property="og:description" content="The biggest release so far: the editors now do what the Machinedrum and Monomachine manuals describe, as far as that can be done from outside the machine.">
+<meta property="og:url" content="https://mdmm.dev/releases/0.6.0/">
+<meta property="og:image" content="https://mdmm.dev/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Free editors for Machinedrum and Monomachine, beside a screenshot of the Machinedrum Editor's step grid and GEN bar.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="MD + MM Editor 0.6.0 release notes">
+<meta name="twitter:description" content="The biggest release so far: the editors now do what the Machinedrum and Monomachine manuals describe, as far as that can be done from outside the machine.">
+<meta name="twitter:image" content="https://mdmm.dev/og.png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261014b">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="opt" href="/#features">Features</a>
+      <a class="keep" href="/guide/">Guide</a>
+      <a class="opt" href="/#faq">FAQ</a>
+      <a class="disc" href="https://discord.gg/8xwXwBHbtn" aria-label="Discord community"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5h11a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7l-3 2.5V11.5H2.5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="5.5" cy="7.5" r="1" fill="currentColor"/><circle cx="8" cy="7.5" r="1" fill="currentColor"/><circle cx="10.5" cy="7.5" r="1" fill="currentColor"/></svg><span>Discord</span></a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-ghost btn-sm" href="https://github.com/sponsors/radekdymacz" target="_blank" rel="noopener">Sponsor</a>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="checkout legalpage guide">
+  <div class="wrap">
+    <span class="eyebrow">Release notes</span>
+    <h1>Machinedrum Editor + Monomachine Editor 0.6.0</h1>
+<p><small>Released 2026-10-14</small></p>
+<p>The biggest release so far: the editors now do what the Machinedrum and Monomachine manuals describe, as far as that can be done from outside the machine. There is a user guide that follows the manuals' chapters, a long list of new features on both editors, and many fixes from your reports and from running every function against the real firmware.</p>
+<p>A release on top of <a href="/releases/0.5.1/">0.5.1</a>. Screenshots, features and FAQ: <b><a href="https://mdmm.dev">https://mdmm.dev</a></b> · User guide: <b><a href="https://mdmm.dev/guide/">https://mdmm.dev/guide/</a></b></p>
+<h2>Feature parity with the manuals</h2>
+<ul>
+<li><b>265 of the Machinedrum's 280 functions and 336 of the Monomachine's 351</b> are in the editors, each with a test that uses it on the real firmware. The rest either need the machine's own hardware (a key combination the mouse makes pointless, the soft reset, the fixed PRG CHANGE channel) or are planned for 0.7 (the Machinedrum's sample manager features, SDS from other tools, the MKI model).
+</li>
+<li><b>A user guide, in the manuals' order</b>: every chapter of both manuals, in our own words, with pictures taken from the editors themselves. On the site at <a href="https://mdmm.dev/guide/">https://mdmm.dev/guide/</a> and as a PDF for each machine. It also says where the editor works differently from the hardware.
+</li>
+</ul>
+<h2>New, on both editors</h2>
+<ul>
+<li><b>Song slots.</b> Load, rename (F2), copy, paste, drag one slot onto another, Save to…, clear (it asks, and Cmd+Z brings it back). Switch between PATTERN, CHAIN and SONG. On a real machine over MIDI, Save to… waits as SEND n.
+</li>
+<li><b>Transport.</b> Pause and continue (⇧-click ▶ or ⇧Space), a ▾ on ▶ with Play/Stop, Pause/Continue, Record and Panic (⌘.), a tempo control (−/+, TAP, +10 % / −10 %, ⌥-drag), and ▶ From here on the song page. In a DAW the tempo stays locked to the host.
+</li>
+<li><b>Recording.</b> Hold Delete during live recording to erase the selected track as it plays (Machinedrum and Monomachine), and on the Monomachine step recording from the keyboard: a red cursor on the roll, → leaves a rest, ← goes back, Delete clears the step.
+</li>
+<li><b>Copy, paste and clear "what".</b> The ▾ beside COPY, CLR and PASTE picks what goes: trigs, accent, slide, sound. Also the Machinedrum LFO card's Copy, Paste and Clear LFO. Keys ⌘⇧C, ⌘⇧V and ⌘⇧⌫.
+</li>
+<li><b>GLOBAL as a page.</b> Both editors: copy, paste and clear a global slot. Machinedrum: Trig in A / B (the factory global reads Gate 1, Sens 0, Vmin 0, Vmax 127), and LEARN on a track to map a MIDI note to it. Monomachine: master tune and Control out 1.
+</li>
+<li><b>SysEx import, export and reset</b> in the engine menu. Export all of the machine, or only the kits, patterns, songs, globals and waveforms you tick, and import to a place you choose. Verify only shows what would change. Reset machine…: an empty reset on both, a factory reset on the Machinedrum.
+</li>
+<li><b>Machine memory for new sessions.</b> What you save on the machine (a kit, a pattern, a song, a global) is kept in a file, and a new session starts from it. A DAW project still opens with its own memory. Reset machine… &gt; Start from factory memory…, and a KEEP MEMORY switch turn it off. The standalone starts from the file as well. Two instances of one machine: the last save wins.
+</li>
+<li><b>Type a value.</b> ⌘-click a value (Ctrl-click on Windows), type, Enter. A value out of range is refused with its range; ⌘Z takes a typed value back.
+</li>
+<li><b>Revert track.</b> The key beside the machine key puts one track back to what its kit slot stores.
+</li>
+<li><b>The machine's own clock in a DAW.</b> GLOBAL &gt; Sync &gt; Tempo in INT lets the machine run on its own clock, saved with the project.
+</li>
+<li><b>Incoming MIDI notes light up</b> the keys (Monomachine Perform) and the tracks (Machinedrum), in the standalone and in a DAW.
+</li>
+<li><b>The Perform keyboard's keys</b> light only while a key is held.
+</li>
+<li><b>UNDO KIT</b> brings back the kit that was playing after you loaded another without saving it.
+</li>
+<li><b>GLOBAL, the kit library, AUDIO / MIDI, the machine picker and the SysEx panels</b> are dialogs: a click beside one leaves it open, Esc closes it.
+</li>
+<li><b>The top bar and the LCD fit</b> at every window size down to about 864 px wide, on every workspace.
+</li>
+<li><b>Solo is saved with the DAW project.</b>
+</li>
+</ul>
+<h2>New, Machinedrum</h2>
+<ul>
+<li><b>A LEV box above each Mix strip</b>: the track's level, separate from VOL, with undo.
+</li>
+<li><b>Try a machine before you choose it.</b> In the machine picker, ▶ puts the machine on the track and plays it once; Esc puts the old one back with its sound; Enter keeps it.
+</li>
+<li><b>Paint swing, accent and slide</b> with the keys under the grid, for all tracks or the one you are on.
+</li>
+<li><b>Parameter relations</b> are drawn as an arch over the knobs they link (RAMP and RDEC, AMD and AMF…).
+</li>
+<li><b>Sampler: Rename.</b> Renames a ROM slot's sample on the machine, audio unchanged.
+</li>
+<li><b>Pattern length</b> 32 or 64 repeats the existing pages, and a queued pattern shows as the current one when you stop.
+</li>
+<li><b>A song row with a repeat</b> shows +2, +1, last as it plays.
+</li>
+<li><b>A cleared kit slot</b> loads as a really empty kit.
+</li>
+</ul>
+<h2>New, Monomachine</h2>
+<ul>
+<li><b>MKI and MKII plate key.</b> The LCD is light blue on MKI and bluish white on MKII; the machine list greys the MKII-only machines on MKI.
+</li>
+<li><b>Perform: Poly</b>, filter key tracking and the Multi envelope are easy to set up (a track's six voices, LPF tracks keys, the envelope's hint about the Multi trig mode). The Multi map's pattern list runs A01 to H16.
+</li>
+<li><b>A trig's marks on the roll.</b> Which envelopes a note fires, locks, slides, swing, trigless trigs and NOTE OFF show on the note itself, and the right-click menu sets each one for every selected step. Clear locks keeps the notes. A lock key in the lock lane's header puts a lock at the kit's current value on every selected note.
+</li>
+<li><b>The pattern chooser</b> can give a pattern a kit (⌥-click, then the Kit list), and <b>the arrangement</b> counts bars and beats as the song plays.
+</li>
+<li><b>A foot to the Monomachine roll.</b> The Note, Slide and Swing row is gone; the roll is taller.
+</li>
+</ul>
+<h2>Changed</h2>
+<ul>
+<li><b>The Monomachine roll has no draw mode any more.</b> A click on an empty step adds a note, dragging a note's end lengthens it, dragging its body moves it, and <b>Ctrl/⌘ selects</b> (drag on the ruler or the grid to box select). One solid gate bar replaces the old marks, which show only where there is something to show. If you used the pencil, this is the main difference to learn.
+</li>
+<li><b>Import and Export SysEx are in the engine menu</b> (the kit library and the pattern chooser no longer have SysEx keys). A .syx dropped on the window still opens the import.
+</li>
+</ul>
+<h2>Fixes</h2>
+<ul>
+<li><b>Monomachine: a track kept playing after the host's transport stopped, until a note was played on it</b> (B-121, from Discord).
+</li>
+<li><b>Monomachine: mute and solo seemed to stop responding after switching views, and a solo lit in Mix but not in Sequence</b> (B-120, from Discord).
+</li>
+<li><b>Monomachine: an imported global's MIDI channels reach the machine</b> (B-071).
+</li>
+<li><b>Monomachine: ▶ after a pause, Panic and PLAY right after an edit</b> no longer refuse ("The panel is busy") or play silence while the machine takes an edit (B-099, B-129, B-135).
+</li>
+<li><b>Monomachine: Play from a song row</b> starts in the row you picked after the song was edited (B-137), and a multi trig's setting no longer jumps back while the machine takes it (B-136).
+</li>
+<li><b>Import SysEx, Specific place:</b> moving the first slot quickly no longer puts every kind back on and the place back to Original, so Import asks first and sends only what you ticked (B-146, both editors).
+</li>
+<li><b>Monomachine: RECORD</b> during a dump waits and starts when the dump is in (B-092); a pattern with chords no longer says "chord notes but no trig" (B-093).
+</li>
+<li><b>Machinedrum: the first PLAY after start-up, and the first factory song, now play</b> (B-109, B-098).
+</li>
+<li><b>Machinedrum: a value moved during live recording is recorded as a lock</b> (B-134), live erase no longer sets a trig on another track (B-101), and Chain works after a live recording (B-127).
+</li>
+<li><b>Machinedrum: Undo straight after an Alt-drag</b> (a sweep on every track) now reaches the machine; the sweep no longer stays on the machine while the page shows it undone (B-145).
+</li>
+<li><b>Machinedrum: a kit with a CTR machine on a track</b> no longer refuses every later edit (B-131).
+</li>
+<li><b>Machinedrum: a pattern made 64 steps long from 48</b> repeats the right steps (B-103).
+</li>
+<li><b>Machinedrum: the Rhythm Echo and Gate Box cards on Mix</b> show their own values (B-081); four E12 machines and the MID machines' routing knobs have their right names (B-080, B-082).
+</li>
+<li><b>Both: a swing mark no longer flashes back on a step whose trig you removed</b> (B-070); the lock parameter keys show their names whole (B-097); the SysEx import panel keeps its size while it runs (B-095); the GLOBAL page's Trig in A / B shows its values under the right names (B-069).
+</li>
+<li><b>Both: dialogs stay open on a click beside them</b> (B-094); text that was cut at the edge of a panel, a card or a list was fitted in the Machinedrum and Monomachine editors (B-111 to B-117, B-126).
+</li>
+<li><b>Both: a pause right after PLAY</b> no longer ends at once (B-086), and ⇧-click on PLAY in the Monomachine shows paused (B-104).
+</li>
+<li><b>Both: solo is kept in the saved project</b> (B-123).
+</li>
+<li><b>Both: a step menu's ⋯ key</b> no longer covers its step (B-125).
+</li>
+</ul>
+<h2>Known</h2>
+<ul>
+<li><b>Machinedrum: after a sample is sent to the machine by SDS (Load sample, a dropped file, a rename), live recording records nothing until the machine is restarted</b> (B-133). Look for it if live recording goes quiet after you work in the Sampler: restart the machine before live recording. The sample itself is fine, and so is the rest of the machine.
+</li>
+<li><b>Machinedrum: a SysEx import and the empty reset cannot be undone</b> (B-130). Export a backup first.
+</li>
+<li><b>Monomachine Sound: the UNISON and SUB screens' stems can look thicker than they should in the standalone</b> (B-132).
+</li>
+<li><b>Window resizing:</b> the Monomachine window does not resize with the mouse, and the Machinedrum looks distorted when resized (B-063). Waiting for a tester's host and screenshots.
+</li>
+<li><b>Machinedrum: in a small window the top bar's right end is cut</b> (B-061 is fixed down to 864 px wide; below that it can still run past the edge).
+</li>
+<li><b>Machinedrum: a lock on a step without a trig is kept but not played</b> (I-019). OS 1.63 does this on the real machine too.
+</li>
+<li><b>A song's LOOP row in the Monomachine</b> goes back to row 1 (B-038), and <b>a pattern pick during a SysEx import</b> asks about kit edits you never made (B-045).
+</li>
+<li><b>Drag and drop works on macOS only</b> (I-017). On Windows and Linux, use the buttons.
+</li>
+<li><b>The update banner still offers Download (the site), never Update</b> (I-005, waits for the signing key).
+</li>
+<li><b>Two reports we could not reproduce and are still looking at:</b> Ableton Live seeming to route one editor's MIDI into the other (B-119), and "Reset to the pattern" loading another pattern (B-122). If you have steps, please send them: <a href="https://mdmm.dev/contact/">https://mdmm.dev/contact/</a>
+</li>
+</ul>
+<h2>Tips</h2>
+<ul>
+<li><b>Both editors open at once in Ableton Live:</b> in Live &gt; Settings &gt; Plug-Ins, turn <b>Multiple Plug-In Windows</b> on and <b>Auto-Hide Plug-In Windows</b> off.
+</li>
+<li><b>The machine memory file</b> is <code>~/Documents/Gearmulator Preview/&lt;Machine&gt;/memory/machine-memory.bin</code>. If it is damaged the editor says so, starts from factory memory and keeps the damaged file as <code>machine-memory.unusable.bin</code>.
+</li>
+</ul>
+<h2>Faster</h2>
+<ul>
+<li><b>The macOS profile (PGO) is trained again</b> on this code, so the macOS build uses it for every changed function.
+</li>
+</ul>
+<h2>For developers</h2>
+<ul>
+<li><b>Every function is a row of data</b> in <code>doc/features/</code> (one file per machine), proved by a journey that names it (<code>proves:</code>); <code>scripts/mdmm-guide.mjs</code> writes the feature maps, the guide and its PDFs from the rows and the hand-written chapters. <code>scripts/mdmm-e2e.sh</code> runs every journey on the real firmware.
+</li>
+<li><b>Journeys set up and tidy their own state</b> and can run shuffled or one by one; the last order-dependent ones were fixed.
+</li>
+</ul>
+<h2>Platforms</h2>
+<ul>
+<li>macOS 12 or later (Intel and Apple silicon), not signed by Apple yet: the first install needs <b>Open Anyway</b> (on macOS 12 to 14: right-click the installer &gt; <b>Open</b>).
+</li>
+<li>Windows x64 and Linux x64: not tested by a person yet. Feedback welcome: <a href="https://mdmm.dev/contact/">https://mdmm.dev/contact/</a>
+</li>
+</ul>
+    <p><a href="/releases/">All release notes</a> · <a href="/get/">Download</a></p>
+  </div>
+</main>
+
+<footer class="foot">
+  <div class="wrap grid">
+    <p><b>MD + MM Editor</b> <span data-version></span> · Machinedrum Editor and Monomachine Editor<br>A NativeKloud Consulting project — <a href="https://nativekloud.com">nativekloud.com</a></p>
+    <p><b>Free software</b> under the <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPL-3</a>. <a href="https://github.com/radekdymacz/mdmm">Source</a> · <a href="https://github.com/radekdymacz/mdmm/releases">All releases</a></p>
+    <p><b>Credits.</b> Built on <a href="https://github.com/joelanders/gearmulator-md-mm">gearmulator-md-mm</a> by joelanders (the Machinedrum and Monomachine emulation) and <a href="https://github.com/dsp56300/gearmulator">Gearmulator</a> by The Usual Suspects (dsp56300). Thanks to Elektron for the instruments.</p>
+    <p class="legal"><a href="/guide/">Guide</a> · <a href="/releases/">Release notes</a> · <a href="/terms/">Terms</a> · <a href="/privacy/">Privacy</a> · <a href="/refunds/">Refunds</a> · <a href="/contact/">Contact</a> · <a href="https://discord.gg/8xwXwBHbtn">Discord</a> · <a href="https://github.com/sponsors/radekdymacz">Sponsor</a> · <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#114;&#97;&#100;&#101;&#107;&#100;&#121;&#109;&#97;&#99;&#122;&#64;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;">&#114;&#97;&#100;&#101;&#107;&#100;&#121;&#109;&#97;&#99;&#122;&#64;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;</a></p>
+    <p><b>Trademarks.</b> Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This project is independent and not affiliated with or endorsed by Elektron, joelanders or The Usual Suspects. No firmware is included. No cookies, no analytics, no third-party scripts.</p>
+  </div>
+</footer>
+
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>
