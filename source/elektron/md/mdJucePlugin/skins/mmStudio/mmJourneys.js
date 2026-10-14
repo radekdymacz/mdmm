@@ -53,6 +53,10 @@ const MmJourneys = (() => {
 	const sel = t => ({ say: `pick track ${t + 1} on the rail`, act: (u, c) => { c.t = t; if (S().side === "midi" && t < 6) u.click('[data-side="int"]'); u.click(rail(t)); }, screen: () => ok(S().sel === t, "selected " + S().sel) });
 	const undoKey = { say: "press Cmd+Z", act: u => u.key("z", { cmd: true }) };
 	const blur = () => document.activeElement?.blur?.();
+	/* the GEN dialog (the dice key on the track's row in the rail; the dialog is the track's until Done or Cancel) */
+	const genDice = t => `#rail .th[data-sel="${t}"] [data-genopen]`;
+	const genAt = async (u, t) => { await u.glide(genDice(t)); u.click(genDice(t)); await sleep(250); };
+	const genDone = async u => { if ($1("#genpop") && !$1("#genpop").hidden) { u.click("#genpop [data-genclose]"); await sleep(300); } };
 	const confirmIfAsked = async u => { if (await until(dlgShown, 1200)) u.click($1("#dlg .danger") || dlgButton("Cancel")); };
 	/* a select the page shows as a key-style dropdown (or plain) */
 	const choose = async (u, id, v) => { if ($1(`.kselbtn[data-for="${id}"]`)) await u.pick(id, v); else u.choose("#" + id, v); };
@@ -342,13 +346,74 @@ const MmJourneys = (() => {
 		name: "mm-gen-mutate-undo", proves: ["MM-X04", "MM-X05"],
 		steps: [
 			go("seq"), sel(0),
-			{ say: "the GEN bar offers track 1's generator", screen: () => ok(!!$1("#genband [data-rand]"), "no GEN bar") },
-			{ say: "click GEN's Random key until the notes change", act: async (u, c) => { c.p0 = JSON.stringify(patDoc().tracks[0]); for (let i = 0; i < 5; i++) { u.click("#genband [data-rand]"); if (await until(() => JSON.stringify(patDoc().tracks[0]) !== c.p0, 4000)) break; } },
+			{ say: "click track 1's GEN key: the dialog opens under the piano roll", act: async u => { await genAt(u, 0); }, screen: () => ok(!$1("#genpop").hidden && !!$1("#genpop [data-rand]"), "no GEN dialog") },
+			{ say: "click GEN's Random key until the notes change", act: async (u, c) => { c.p0 = JSON.stringify(patDoc().tracks[0]); for (let i = 0; i < 5; i++) { u.click("#genpop [data-rand]"); if (await until(() => JSON.stringify(patDoc().tracks[0]) !== c.p0, 4000)) break; } },
 				machine: c => ok(JSON.stringify(patDoc().tracks[0]) !== c.p0, "pattern unchanged"), within: 15000 },
+			{ say: "click Done: the dialog closes and keeps the run", act: u => u.click("#genpop [data-genclose]"), screen: () => ok($1("#genpop").hidden, "the dialog is open") },
 			{ say: "click the Sound tab and MUTATE's Random key", act: async (u, c) => { u.click(tab("sound")); await sleep(300); c.k0 = kitT(0); u.click("#mutband [data-rand]"); }, machine: c => ok(kitT(0) !== c.k0, "kit unchanged"), within: 15000 },
 			{ say: "click Undo: the sound is back", act: u => u.click("#undo"), machine: c => ok(kitT(0) === c.k0, "kit not back"), within: 15000 },
 			{ say: "click Undo again: the notes are back", act: u => u.click("#undo"), machine: c => ok(JSON.stringify(patDoc().tracks[0]) === c.p0, "pattern not back"), within: 15000 }
 		]
+	};
+
+	/* the GEN dialog as a session (the Machinedrum Editor's md-gen-modal): Cancel takes it all back, Done keeps it as one undo step,
+	   another track's key moves it without closing, the head drags it, a value is typed or reset, Keep is a switch */
+	const trk0 = t => JSON.stringify(patDoc()?.tracks[t]);
+	const genModal = {
+		name: "mm-gen-modal", proves: ["MM-X04"],
+		steps: [
+			go("seq"), sel(0),
+			{ say: "pick two synth tracks that have a generator and click the first one's GEN key", act: async (u, c) => { const ts = [0, 1, 2, 3, 4, 5].filter(t => genSpec(t).kind !== "keep"); c.t = ts[0]; c.t2 = ts[1]; c.p0 = trk0(c.t); c.q0 = trk0(c.t2); await genAt(u, c.t); },
+				screen: c => ok(!$1("#genpop").hidden && S().sel === c.t && document.activeElement?.classList.contains("gv"), "dialog " + $1("#genpop").hidden + ", focus " + document.activeElement?.className) },
+			{ say: "click Defaults: the notes are written at once", act: u => u.click('#genpop [data-gen="fill"]'), machine: c => ok(trk0(c.t) !== c.p0, "unchanged"), within: 15000 },
+			{ say: "click the second track's GEN key: the dialog goes to it, still open", act: async (u, c) => { await genAt(u, c.t2); }, screen: c => ok(!$1("#genpop").hidden && S().sel === c.t2 && /T\d/.test($1("#genpop .gdhead")?.textContent), "sel " + S().sel) },
+			{ say: "click Defaults there too", act: u => u.click('#genpop [data-gen="fill"]'), machine: c => ok(trk0(c.t2) !== c.q0, "unchanged"), within: 15000 },
+			{ say: "drag the head: the dialog moves and stays inside the window and where it is when another track's key moves it; double-click the head: it goes back to its place", act: async (u, c) => { const p = $1("#genpop"); c.b0 = p.getBoundingClientRect(); await u.drag("#genpop .gdhead", [[-60, -20], [-120, -40]], {}, { click: false }); c.b1 = p.getBoundingClientRect(); c.still = !p.hidden; await genAt(u, c.t); c.b1b = p.getBoundingClientRect(); u.dblclick("#genpop .gdhead"); await sleep(100); c.b2 = p.getBoundingClientRect(); c.want = placeGen(p); await genAt(u, c.t2); },
+				screen: c => ok(c.still && c.b1.left < c.b0.left - 50 && c.b1.top < c.b0.top - 10 && c.b1.left >= 0 && c.b1.bottom <= innerHeight && Math.abs(c.b1b.left - c.b1.left) < 2 && Math.abs(c.b1b.top - c.b1.top) < 2 && Math.abs(c.b2.left - c.want.left) < 2 && Math.abs(c.b2.top - c.want.top) < 2, `before ${Math.round(c.b0.left)},${Math.round(c.b0.top)} moved ${Math.round(c.b1.left)},${Math.round(c.b1.top)} back ${Math.round(c.b2.left)},${Math.round(c.b2.top)}`) },
+			{ say: "click Cancel: both tracks are back as they were", act: u => u.click("#genpop [data-gencancel]"), screen: () => ok($1("#genpop").hidden, "still open"), machine: c => ok(trk0(c.t) === c.p0 && trk0(c.t2) === c.q0, "tracks not back"), within: 20000 },
+			{ say: "open the first track again, click Defaults, press Esc: it is cancelled the same way", act: async (u, c) => { await genAt(u, c.t); u.click('#genpop [data-gen="fill"]'); await until(() => trk0(c.t) !== c.p0, 8000); u.key("Escape"); }, machine: c => ok(trk0(c.t) === c.p0, "track not back"), screen: () => ok($1("#genpop").hidden, "still open"), within: 20000 },
+			{ say: "open it, tick Keep: the boxes are out of use and nothing is written; untick: the generator is back", act: async (u, c) => { await genAt(u, c.t); c.kind0 = $1("#genpop [data-genkind][aria-pressed=true]")?.dataset.genkind; c.p2 = trk0(c.t); u.click("#genpop [data-genkeep]"); await sleep(300); c.inert = $1("#genpop .gdvals").hasAttribute("inert"); c.same = trk0(c.t) === c.p2; u.click("#genpop [data-genkeep]"); await sleep(300); c.kind1 = $1("#genpop [data-genkind][aria-pressed=true]")?.dataset.genkind; },
+				screen: c => ok(c.inert && c.same && c.kind0 && c.kind1 === c.kind0 && !$1("#genpop .gdvals").hasAttribute("inert"), `inert ${c.inert}, same ${c.same}, ${c.kind0} -> ${c.kind1}`) },
+			{ say: "⌘-click a value box, type 3, Enter: the box shows it", act: async (u, c) => { const g = $1('#genpop .gv[data-gv="k"], #genpop .gv[data-gv="dens"]'); c.k = g.dataset.gv; u.click(g, { cmd: true }); await sleep(100); const f = $1("input.vedit"); f.value = "3"; u.key("Enter"); await sleep(400); },
+				screen: c => ok(+$1(`#genpop .gv[data-gv="${c.k}"] b`)?.textContent.replace("%", "") === 3 && !$1("input.vedit"), "box " + $1(`#genpop .gv[data-gv="${c.k}"] b`)?.textContent + ", field " + !!$1("input.vedit")) },
+			{ say: "double-click the box: its default", act: async (u, c) => { u.dblclick(`#genpop .gv[data-gv="${c.k}"]`); await sleep(400); }, screen: c => ok(+$1(`#genpop .gv[data-gv="${c.k}"] b`)?.textContent.replace("%", "") !== 3, "still 3") },
+			{ say: "press Enter: Done keeps it; one Undo takes the whole session of this track back", act: async (u, c) => { u.key("Enter"); await sleep(400); u.click("#undo"); },
+				screen: () => ok($1("#genpop").hidden, "still open"), machine: c => ok(trk0(c.t) === c.p0, "track not back"), within: 20000 }
+		],
+		async tidy(u, c) { await genDone(u); await undoUntil(u, () => trk0(c.t) === c.p0 && trk0(c.t2) === c.q0, 4); }
+	};
+	/* the lane toolbox in the bar under the roll (over the lock lane): a shape writes the locks over the steps that hold a note, one undo step; Flat reaches 0 % */
+	const laneLocks = (t, pid) => { const [pg, i] = pid.split("."), page = pg === "MID" ? 7 : PAGES.indexOf(pg); return (patDoc()?.locks || []).find(l => l.track === t && l.page === page && l.param === +i)?.steps || []; };
+	const laneTools = {
+		name: "mm-lane-tools", proves: [],
+		steps: [
+			go("seq"),
+			{ say: "pick a synth track with notes, the Locks tab and its lane", act: async (u, c) => { c.t = [0, 1, 2, 3, 4, 5].find(t => trigsOf(t).filter(s => s < S().len).length >= 3) ?? 0; u.click(rail(c.t)); await sleep(200); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); await sleep(200); c.pid = S().lane; c.s = trigsOf(c.t).filter(s => s < Math.min(16, S().len)); c.m0 = JSON.stringify(laneLocks(c.t, c.pid)); },
+				screen: c => ok(S().sel === c.t && !!$1(".genbar .xlane [data-xs=up]"), "no lane toolbox in the bar under the roll") },
+			{ say: "hover Ramp up: the lane shows it faint, nothing is written", act: async (u, c) => { await u.glide(".xlane [data-xs=up]"); $1(".xlane [data-xs=up]").dispatchEvent(new PointerEvent("pointerover", { bubbles: true })); await sleep(100); }, screen: c => ok($all("#lane .xghost").length >= 3, `${$all("#lane .xghost").length} ghosts`), machine: c => ok(JSON.stringify(laneLocks(c.t, c.pid)) === c.m0, "the machine has locks written") },
+			{ say: "click Ramp up: the machine holds a lock on every note, rising", act: u => u.click(".xlane [data-xs=up]"), screen: () => ok($all("#lane .xghost").length === 0, "ghosts stay"),
+				machine: c => { const m = new Map(laneLocks(c.t, c.pid)), v = trigsOf(c.t).filter(s => s < Math.min(16, S().len)).map(s => m.get(s)); return ok(v.length >= 3 && v.every((x, i) => x != null && (!i || x >= v[i - 1])) && v[v.length - 1] > v[0], "locks in the machine: " + v); }, within: 20000 },
+			{ say: "click Undo once: the machine's lane is as it was (the shape was one step)", act: async u => { await sleep(600); u.click("#undo"); }, machine: c => ok(JSON.stringify(laneLocks(c.t, c.pid)) === c.m0, "locks " + JSON.stringify(laneLocks(c.t, c.pid))), within: 20000 },
+			{ say: "click Flat five times: the lane's top, 75, 100, 25 and 0 % (a lock of 0 is a lock)", act: async (u, c) => { c.vals = []; const mx = (() => { const [pg, i] = c.pid.split("."); return maxOf(meta(c.t, pg, +i)); })(); c.mx = mx; for (let k = 0; k < 5; k++) { u.click(".xlane [data-xs=flat]"); await until(() => idleNow(), 6000); await sleep(500); const m = new Map(laneLocks(c.t, c.pid)); c.vals.push(c.s.map(s => m.get(s)).join("/")); } },
+				screen: () => ok(true), machine: c => ok(c.vals.join(" ") === [.5, .75, 1, .25, 0].map(f => c.s.map(() => Math.round(f * c.mx)).join("/")).join(" "), c.vals.join(" ") + " (top " + c.mx + ")"), within: 4000 },
+			{ say: "the Flat icon at 0 % differs from the one at 25 %, and the lane still shows the locks", screen: c => ok($1(".xlane [data-xs=flat] path:not([opacity])") && $all("#lane .lb:not(.none) i").length >= c.s.length, "no bars: " + $all("#lane .lb:not(.none) i").length) },
+			{ say: "click Inv: the machine holds the top; then Undo six times: the lane is as at the start", act: async (u, c) => { u.click(".xlane [data-xt=invert]"); await until(() => idleNow(), 6000); await sleep(500); const m = new Map(laneLocks(c.t, c.pid)); c.inv = c.s.map(s => m.get(s)).join("/"); for (let k = 0; k < 6; k++) { u.click("#undo"); await until(() => idleNow(), 6000); await sleep(500); } },
+				machine: c => ok(c.inv === c.s.map(() => c.mx).join("/") && JSON.stringify(laneLocks(c.t, c.pid)) === c.m0, `inv ${c.inv}; locks ${JSON.stringify(laneLocks(c.t, c.pid))}`), within: 20000 }
+		],
+		async tidy(u, c) { if (c.m0 != null) await undoUntil(u, () => JSON.stringify(laneLocks(c.t, c.pid)) === c.m0, 8); }
+	};
+	/* the grid shows the pattern's length in the ALL view; LEN to the next length widens it at once, Undo narrows it */
+	const gridFits = {
+		name: "mm-seq-grid-fits-length", proves: [],
+		steps: [
+			go("seq"),
+			{ say: "ALL: the ruler and the lock lane have as many columns as the pattern has steps", act: async (u, c) => { if (!pressed("#pgall")) u.click("#pgall"); await sleep(300); c.n0 = S().len; c.rul0 = $all("#seq .rul[data-s]").length; c.lane0 = $all("#lane .lb").length; c.doc0 = patDoc().length; Bridge.log(`GRID mm pattern ${cur()} length ${c.doc0} view ${c.n0} ruler ${c.rul0} lane ${c.lane0}`); },
+				screen: c => ok(c.rul0 === c.n0 && c.lane0 === c.n0 && c.doc0 === c.n0, `${c.rul0} ruler columns, ${c.lane0} lane bars, pattern ${c.doc0}, view ${c.n0}`) },
+			{ say: "click LEN: the next length, the ruler and the lane follow at once", act: async (u, c) => { u.click('[data-l2="len"]'); await until(() => patDoc().length !== c.doc0 && S().len === patDoc().length, 8000); await sleep(300); c.n1 = S().len; c.rul1 = $all("#seq .rul[data-s]").length; c.lane1 = $all("#lane .lb").length; },
+				screen: c => ok(c.n1 !== c.n0 && c.rul1 === c.n1 && c.lane1 === c.n1, `${c.rul1} ruler columns, ${c.lane1} lane bars, view ${c.n1} (was ${c.n0})`), within: 10000 },
+			{ say: "click Undo: back to the first length", act: async u => { await sleep(500); u.click("#undo"); }, machine: c => ok(patDoc().length === c.doc0, "length " + patDoc().length), within: 15000 }
+		],
+		async tidy(u, c) { if (c.doc0 != null) await undoUntil(u, () => patDoc().length === c.doc0, 3); if (pressed("#pgall") && c.n0 != null) u.click("#pgall"); }
 	};
 
 	/* ---------- Sound ---------- */
@@ -1159,16 +1224,18 @@ const MmJourneys = (() => {
 		name: "mm-gen-keys-r", proves: ["MM-X04"],
 		steps: [
 			go("seq"), sel(0),
-			{ say: "press R until the notes change", act: async (u, c) => { c.p0 = pat0(); blur(); for (let i = 0; i < 5; i++) { u.key("r"); if (await until(() => pat0() !== c.p0, 4000)) break; } }, machine: c => ok(pat0() !== c.p0, "unchanged"), within: 15000 },
+			{ say: "click track 1's GEN key", act: async u => { await genAt(u, 0); }, screen: () => ok(!$1("#genpop").hidden, "no dialog") },
+			{ say: "press R until the notes change", act: async (u, c) => { c.p0 = pat0(); for (let i = 0; i < 5; i++) { u.key("r"); if (await until(() => pat0() !== c.p0, 4000)) break; } }, machine: c => ok(pat0() !== c.p0, "unchanged"), within: 15000 },
 			/* one up, or one down (Shift-click) when R rolled it to its top: Hits stops at Steps, Density at 100 (the page
 			   tier's one failure in the dev-cycle gate run) */
 			{ say: "click GEN's Hits value (a Euclid spec) or Density (Shift-click when it is at its top)", act: (u, c) => { c.p1 = pat0();
-				const num = q => parseInt($1(q)?.getAttribute("aria-valuenow") || "0", 10), euclid = !!$1('#genband .gv[data-gv="k"]');
-				const q = euclid ? '#genband .gv[data-gv="k"]' : '#genband .gv[data-gv="dens"]', top = euclid ? num('#genband .gv[data-gv="n"]') : 100;
+				const num = q => parseInt($1(q)?.getAttribute("aria-valuenow") || "0", 10), euclid = !!$1('#genpop .gv[data-gv="k"]');
+				const q = euclid ? '#genpop .gv[data-gv="k"]' : '#genpop .gv[data-gv="dens"]', top = euclid ? num('#genpop .gv[data-gv="n"]') : 100;
 				u.click(q, { shift: num(q) >= top }); }, machine: c => ok(pat0() !== c.p1, "unchanged"), within: 15000 },
+			{ say: "press Enter: Done keeps the run", act: u => u.key("Enter"), screen: () => ok($1("#genpop").hidden, "the dialog is open") },
 			{ ...undoKey, say: "press Cmd+Z: the whole run in one step", act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(pat0() === c.p0, "pattern not back"), within: 15000 }
 		],
-		async tidy(u, c) { if (c.p0) await undoUntil(u, () => pat0() === c.p0, 3); }
+		async tidy(u, c) { await genDone(u); if (c.p0) await undoUntil(u, () => pat0() === c.p0, 3); }
 	};
 	const mutScope = {
 		name: "mm-gen-mutate-scope", proves: ["MM-X05"],
@@ -2075,23 +2142,18 @@ const MmJourneys = (() => {
 	const shotsGlobal = { name: "mm-shots-global", proves: [], needs: () => !/mm-shots/.test(location.search) ? "screenshots only when asked by name" : null,
 		steps: [{ say: "open GLOBAL", act: async u => { u.click("#globkey"); await sleep(800); shot("global-mm"); }, screen: () => ok(!$1("#globpop").hidden, "closed"), hold },
 			{ say: "Esc", act: u => { u.key("Escape"); shot("done"); } }] };
-	/* B-056: the GEN bar's room, R and Defaults inside the bar in Random and in Euclid (the roll's Draw and length keys
-	   beside it): a MEASURE line each, with the bar's fit step (76-gen.js genBarFit) and the page's text floor (what 9 px
-	   text becomes: more on a page zoomed below 100 %, where WebKit raises 9 to 15 px text, as in --background's small
-	   window). mm-gen-bar-fit in every run, mm-shots-sound with its snapshots. */
-	const genRoom = () => { const b = $1("#genband").getBoundingClientRect(), k = $1("#genband .gkeys").getBoundingClientRect(); return Math.round(b.right - k.right); };
+	/* B-056, now the GEN dialog: the same size and the same place for R, Defaults and Done in Euclid, Random and Keep (the switch): a MEASURE line each */
 	const textFloor = () => { const x = document.createElement("span"); x.style.fontSize = "9px"; document.body.appendChild(x); const v = parseFloat(getComputedStyle(x).fontSize); x.remove(); return v.toFixed(2); };
-	const genBarFits = (label, snap = false) => ({ say: `the GEN bar on ${label}: Random and Euclid, R and Defaults inside the bar`, act: async (u, c) => {
-		c.room = []; c.cut = [];
-		const w = e => Math.round(e.getBoundingClientRect().width), parts = q => $1(q) ? [...$1(q).children].map(e => (e.className || e.tagName).split(" ")[0] + "=" + w(e)).join(" ") : "-";
-		for (const kind of ["random", "euclid"]) {
-			u.click(`[data-genkind="${kind}"]`); await sleep(400);
-			const room = genRoom(), fit = [...$1(".genbar").classList].filter(k => /^fit\d$/.test(k)).pop() || "fit0";
-			c.room.push(`${kind} ${room} (${fit})`); if (room < -1) c.cut.push(kind);
-			Bridge.log(`MEASURE gen-mm ${label} ${kind} room ${room} ${fit} groups cut ${(fl => fl ? fl.scrollWidth - fl.clientWidth : "-")($1("#genband .gflow"))} text floor ${textFloor()} at ${innerWidth} x ${innerHeight} bar [${parts(".genbar")}] groups [${parts("#genband .gflow")}]`);
-			if (snap) { await sleep(400); Journey.snapshot(kind === "euclid" ? "gen-mm" : "gen-mm-" + kind); }
-		} },
-		screen: c => ok(!c.cut.length, "R and Defaults cut off: " + c.room.join(", ")) });
+	const genBarFits = (label, snap = false) => ({ say: `the GEN dialog on ${label}: Euclid, Random and Keep are one size, R and Done stay where they are`, act: async (u, c) => {
+		c.boxes = []; await genAt(u, S().sel); if ($1("#genpop [data-genkeep]").checked) { u.click("#genpop [data-genkeep]"); await sleep(250); }
+		for (const kind of ["random", "euclid", "keep"]) {
+			u.click(kind === "keep" ? "#genpop [data-genkeep]" : `#genpop [data-genkind="${kind}"]`); await sleep(350);
+			const p = $1("#genpop").getBoundingClientRect(), r = $1("#genpop [data-rand]").getBoundingClientRect(), d = $1("#genpop [data-genclose]").getBoundingClientRect();
+			c.boxes.push([kind, ...[p.left, p.top, p.width, p.height, r.left, r.top, d.left, d.top].map(Math.round)].join(" "));
+			Bridge.log(`MEASURE gen-mm ${label} ${kind} dialog ${Math.round(p.width)} x ${Math.round(p.height)} text floor ${textFloor()} at ${innerWidth} x ${innerHeight}`);
+			if (snap) { await sleep(400); Journey.snapshot(kind === "euclid" ? "gen-mm" : "gen-mm-" + kind); } }
+		c.bad = [...Journey.cutText($1("#genpop")), ...Journey.spills("#genpop .gdsum")]; u.click("#genpop [data-gencancel]"); await sleep(300); },
+		screen: c => ok(!c.bad.length && new Set(c.boxes.map(x => x.split(" ").slice(1).join(" "))).size === 1, c.bad.join(" | ") + " " + c.boxes.join(" / ")) });
 	const genBarFit = { name: "mm-gen-bar-fit", proves: [],
 		steps: [go("seq"), sel(0), genBarFits("track 1"),
 			{ say: "click MIDI: a MIDI track", act: u => u.click('[data-side="midi"]'), screen: () => ok(S().side === "midi" && S().sel >= 6, `side ${S().side}, track ${S().sel}`) },
@@ -2731,8 +2793,10 @@ const MmJourneys = (() => {
 						for (const g of PAGES) for (const [i, nm] of pnames(t, g).entries()) { if (!nm) continue; if (lockList().length >= 62) break outer; if (added >= cap) continue; if (lockVals(t, PAGES.indexOf(g), i).length) continue; const n = lockList().length; await drawLock(u, g, i, s, 0.4); if (!await until(() => lockList().length === n + 1, 3000)) { c.fill.push(`T${t + 1} ${g}.${i}: ${lockList().length}`); break outer; } c.tr.add(t); added++; } }
 					await sleep(300); c.n = lockList().length; c.lcd = $1("#lockn").textContent; },
 				machine: c => ok(c.n === 62 && !c.fill.length && c.tr.size >= Math.min(2, 62 - c.start), `${c.n} locked parameters (${c.start} before) on ${c.tr.size} tracks ${c.fill.join(" ")}`), screen: c => ok(c.lcd === "62/62" && $1("#meter").classList.contains("full"), `LCD ${c.lcd}, meter ${$1("#meter").className}`), within: 1000 },
-			{ say: "a 63rd parameter is refused: the machine keeps 62, the page says all are in use", act: async (u, c) => { const t = [0, 1, 2, 3, 4, 5].find(x => trigsOf(x).length && [...PAGES].some(g => pnames(x, g).some((nm, i) => nm && !lockVals(x, PAGES.indexOf(g), i).length))); u.click(rail(t)); await sleep(200); const g = PAGES.find(g => pnames(t, g).some((nm, i) => nm && !lockVals(t, PAGES.indexOf(g), i).length)), i = pnames(t, g).findIndex((nm, i) => nm && !lockVals(t, PAGES.indexOf(g), i).length); c.n1 = lockList().length;
+			{ say: "a 63rd parameter is refused: the machine keeps 62, the page says all are in use", act: async (u, c) => { const t = [0, 1, 2, 3, 4, 5].find(x => trigsOf(x).length && [...PAGES].some(g => pnames(x, g).some((nm, i) => nm && !lockVals(x, PAGES.indexOf(g), i).length))); u.click(rail(t)); await sleep(200); const g = PAGES.find(g => pnames(t, g).some((nm, i) => nm && !lockVals(t, PAGES.indexOf(g), i).length)), i = pnames(t, g).findIndex((nm, i) => nm && !lockVals(t, PAGES.indexOf(g), i).length); c.n1 = lockList().length; c.g63 = g; c.i63 = i;
 					await drawLock(u, g, i, trigsOf(t).find(x => x < S().len), 0.4); await sleep(800); },
+				screen: () => ok(/All 62 locked parameters are in use/.test($1("#toast")?.textContent || ""), "toast " + $1("#toast")?.textContent), machine: c => ok(lockList().length === 62 && c.n1 === 62, "locks " + lockList().length), within: 6000 },
+			{ say: "click Ramp up on the lane toolbox of that free lane: refused the same way, nothing written, the machine still holds 62", act: async (u, c) => { u.click(`[data-lpage="${c.g63}"]`); await sleep(200); u.click(`[data-lane="${c.g63}.${c.i63}"]`); await sleep(300); u.click(".xlane [data-xs=up]"); await sleep(800); },
 				screen: () => ok(/All 62 locked parameters are in use/.test($1("#toast")?.textContent || ""), "toast " + $1("#toast")?.textContent), machine: c => ok(lockList().length === 62 && c.n1 === 62, "locks " + lockList().length), within: 6000 }
 		],
 		async tidy(u, c) { await back(u, c); }
@@ -3557,11 +3621,15 @@ const MmJourneys = (() => {
 	const screensFit = {
 		name: "mm-screens-fit", proves: [],
 		steps: [
-			{ say: "Sequence: the track list's generator tags (E 5/16, R 30%) show whole, inside their row and clear of the M key (B-110)",
-				act: async (u, c) => { await closeLib(u); u.click(tab("seq")); await sleep(400);
-					const rows = $all("#rail .th"), inside = rows.filter(r => { const t = r.querySelector(".gtag"); if (!t) return false; const a = t.getBoundingClientRect(), b = r.getBoundingClientRect(); return a.bottom > b.bottom + 0.5 || a.right > b.right + 0.5; });
-					c.bad = [...Journey.spills("#rail .th .gtag"), ...Journey.overlaps("#rail .th .gtag", "#rail .th .ms, #rail .th .n"), ...inside.map(r => r.textContent.trim().slice(0, 16) + ": tag out of its row")]; c.n = $all("#rail .th .gtag").length; },
-				screen: c => ok(c.n > 0 && !c.bad.length, `${c.n} tags; ${c.bad.slice(0, 4).join(" | ")}`) },
+			{ say: "Sequence: the track list's rows (number, name, M, S, dice) sit on one centre line, whole, and the keys are one size (B-110)",
+				act: async (u, c) => { await closeLib(u); u.click(tab("seq")); await sleep(400); c.bad = []; c.n = 0;
+					for (const r of $all("#rail .th")) { c.n++; const mid = e => { const q = e.getBoundingClientRect(); return q.top + q.height / 2; }, ks = [".m", ".s", ".g"].map(q => r.querySelector(q)), n = r.querySelector(".n"), nm = r.querySelector(".nm b");
+						if (ks.some(k => !k)) { c.bad.push("a key is missing on " + r.textContent.trim().slice(0, 12)); continue; }
+						const ms = [...ks, n, nm].map(mid), size = ks.map(k => { const q = k.getBoundingClientRect(); return Math.round(q.width) + "x" + Math.round(q.height); });
+						if (Math.max(...ms) - Math.min(...ms) > 1.5) c.bad.push(`track ${r.dataset.sel}: centres ${ms.map(Math.round).join(",")}`);
+						if (new Set(size).size > 1) c.bad.push(`track ${r.dataset.sel}: key sizes ${size.join(" ")}`); }
+					c.bad.push(...Journey.overlaps("#rail .th .ms", "#rail .th .n, #rail .th .nm")); },
+				screen: c => ok(c.n === 6 && !c.bad.length, `${c.n} rows; ${c.bad.slice(0, 4).join(" | ")}`) },
 			{ say: "Perform and Sound: what the drawn panels draw fits them: the multi envelope's caption and the amp envelope's caption clear of the curve and its handles, no handle cut by an edge, no caption past the edge (B-111)",
 				act: async (u, c) => { c.bad = []; c.n = 0;
 					for (const ws of ["perform", "sound"]) { u.click(tab(ws)); await sleep(500); c.n += $all("canvas.ed").filter(x => x.clientWidth).length; for (const x of edProblems()) c.bad.push(ws + " " + x); } },
@@ -3576,8 +3644,8 @@ const MmJourneys = (() => {
 					if (tile) { const probe = tile.cloneNode(false); probe.textContent = "W".repeat(11); tile.after(probe); if (probe.scrollWidth > probe.clientWidth + 0.5) c.bad.push(`11 letters need ${probe.scrollWidth} px, the name's box is ${probe.clientWidth}`); probe.remove(); }
 					await closeLib(u); },
 				screen: c => ok(c.n >= 64 && !c.bad.length, `${c.n} tiles; ${c.bad.join(" | ")}`) }
-			,{ say: "the GEN bar's summary line shows whole at this size: what it writes (8 on) and, when the bar has room, the cycle and the steps (B-114)",
-				act: async (u, c) => { await closeLib(u); u.click(tab("seq")); await sleep(400); const g = $1(".genband"); c.bad = g ? [...Journey.cutText(g), ...Journey.spills(".genband .gsum")] : ["no GEN bar"]; c.text = $1(".genband .gsum")?.textContent.trim(); },
+			,{ say: "the GEN dialog's summary line shows whole at this size: what it writes (8 on), the cycle and the steps (B-114)",
+				act: async (u, c) => { await closeLib(u); u.click(tab("seq")); await sleep(400); await genAt(u, 0); c.bad = [...Journey.cutText($1("#genpop")), ...Journey.spills("#genpop .gdsum")]; c.text = $1("#genpop .gdsum")?.textContent.trim(); u.click("#genpop [data-gencancel]"); await sleep(250); },
 				screen: c => ok(c.text && !c.bad.length, `"${c.text}" ${c.bad.join(" | ")}`) }
 			,{ say: "the line under the Locks, Arp, Transpose and Trig setup tabs shows whole, and so does each of the four Transpose lines (---, FIX, MAJ, MIN) (B-115)",
 				act: async (u, c) => { await closeLib(u); u.click(tab("seq")); await sleep(300); c.bad = []; c.n = 0;
@@ -3600,7 +3668,7 @@ const MmJourneys = (() => {
 		genMut, shapeSound, machinePick, revertTrackJ, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, soloSaved, shiftMutes, routing, panTrim, msOff, msViews, railLamps,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
-		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, mutScope,
+		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, genModal, laneTools, gridFits, mutScope,
 		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
 		blackKeys, rollPaint, rollDrawLength, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxPlace, resetEmpty, syxRunningReach];
 	/* every journey's tidy is followed by a look: if the machine's documents or modes still differ from what the journey found, back(u, c) puts them back (the journey's own tidy first, for what is its own;
