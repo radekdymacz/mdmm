@@ -109,7 +109,7 @@ list(APPEND SOURCES
 	skins/shared/deskDrop.js skins/shared/deskDropTest.js
 	skins/shared/deskDocs.js
 	skins/shared/deskOverlay.js skins/shared/deskOverlayTest.js
-	skins/shared/deskGen.js skins/shared/deskGenTest.js skins/shared/deskGenBar.js skins/shared/deskGenBar.css skins/shared/deskLaneShapes.js skins/shared/deskLaneShapesTest.js skins/shared/deskSoundLayout.js skins/shared/deskSoundLayoutTest.js skins/shared/deskSound.css
+	skins/shared/deskGen.js skins/shared/deskGenTest.js skins/shared/deskGenBar.js skins/shared/deskGenBar.css skins/shared/deskGenDialog.css skins/shared/deskLaneShapes.js skins/shared/deskLaneShapesTest.js skins/shared/deskSoundLayout.js skins/shared/deskSoundLayoutTest.js skins/shared/deskSound.css
 	skins/shared/deskKeys.js skins/shared/deskKeysTest.js skins/shared/deskKeymapTest.js skins/shared/deskKeyView.js skins/shared/deskKeyView.css skins/shared/deskKeyViewTest.js skins/shared/deskSongSlots.js skins/shared/deskSongSlots.css skins/shared/deskWhat.js skins/shared/deskWhat.css skins/shared/deskWhatTest.js
 	skins/shared/deskTogglePaint.js skins/shared/deskTogglePaintTest.js
 	skins/shared/deskSelect.js skins/shared/deskSelectTest.js
