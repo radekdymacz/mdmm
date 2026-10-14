@@ -1,5 +1,5 @@
 /*
- * Site configuration: the only file to edit for a release or for payments.
+ * Site configuration: the only file to edit for a release.
  * Plain public data (no secrets), loaded before the page scripts.
  * A value containing "REPLACE_ME" counts as not configured.
  */
@@ -40,35 +40,5 @@ window.MDMM_CONFIG = {
       md: { name: "Machinedrum Editor", url: "https://github.com/radekdymacz/mdmm/releases/latest/download/Machinedrum-Editor-Linux-x64-not-tested.tar.gz" },
       mm: { name: "Monomachine Editor", url: "https://github.com/radekdymacz/mdmm/releases/latest/download/Monomachine-Editor-Linux-x64-not-tested.tar.gz" }
     }
-  },
-
-  // Pay what you want, through Lemon Squeezy (merchant of record) as a plain link-out.
-  // No Lemon Squeezy script is loaded. provider: "auto" (Lemon Squeezy when checkoutUrl is set,
-  // otherwise download only) | "lemonsqueezy" | "none".
-  payments: {
-    // "none" while the Lemon Squeezy store is not approved: the download page shows a plain Download button.
-    // Switch back to "auto" once the store is live (the checkoutUrl below is kept for that).
-    provider: "none",
-    lemonsqueezy: {
-      // The product's share link (Products > the product > Share), e.g.
-      // https://YOURSTORE.lemonsqueezy.com/buy/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-      checkoutUrl: "https://nativekloud.lemonsqueezy.com/checkout/buy/7a9298ee-861d-4f01-b6f1-61030311c6ae"
-    },
-    currency: "EUR",
-    symbol: "€",
-    // What an amount buys: keep these true.
-    amounts: [
-      { value: 5,  label: "Say thanks" },
-      { value: 10, label: "One feature evening" },
-      { value: 25, label: "Towards test hardware" }
-    ],
-    preselect: 10
-  },
-
-  // Honest progress towards a named goal. Off by default: turn on only with real numbers,
-  // updated by hand (raised = what actually came in, in whole euros).
-  goal: { enabled: false, label: "A Monomachine for real-hardware testing", target: 0, raised: 0, updated: "" },
-
-  // Supporters list: opt-in only. List a name only when the person asked to be listed.
-  supporters: { enabled: false, names: [] }
+  }
 };
