@@ -22,6 +22,36 @@ Radek's decision in [PLAN-0.6.md](PLAN-0.6.md) is the authority. The tiers below
   page's tests and its area's journeys; generated page files rely on the contract check; a skin row runs the editor's own
   page tests.
 
+## Page preview
+
+For design and interaction work: `scripts/mdmm-preview.sh md|mm`. It builds only `deskStubHost` (its own tree,
+`temp/preview`, ccache), serves the production page from the skin folder and prints `http://127.0.0.1:8791/` (md) or
+`:8792/` (mm). Open it in a normal browser, or start `page-md` or `page-mm` from `.claude/launch.json` in the Claude
+browser pane. Ctrl+C stops it. It is `scripts/mdmm-page.mjs --serve`: the same page, contracts, core and stub as the page
+tier. No second fake: each open page gets its own stub host, a reload starts a fresh one, and a command outside the
+contract is printed in the terminal (`MDMM_PREVIEW_VERBOSE=1` prints every command). The live-reload channel is injected
+by the preview server into the served HTML only; no shipped file has it.
+
+Live reload, by what you save:
+
+| Saved | What happens |
+|---|---|
+| a skin `.css` | the stylesheet is swapped in place, the page keeps its state |
+| a shared stylesheet or `*Overrides.css` | the sync script runs, then the stylesheet is swapped |
+| a skin `.js` or `.html` | the page reloads |
+| `mockup/index.html`, `mm-mockup/src/**` | the sync script runs, then CSS swaps or the page reloads |
+| C++ under `source/elektron/md` | `deskStubHost` is rebuilt, the stub restarts, the page reloads |
+
+A failed sync or build shows its output in a red bar on the page and in the terminal. Measured on an M-series Mac: save to
+screen 0.37 s for a skin CSS edit through sync (md), 0.7 s for an mm design-source CSS edit (sync is 0.25 to 0.55 s of
+that), 0.1 s for a JS edit (reload starts at once); a C++ save about 2 s when ccache has it. Cold setup: first run also
+initialises the freetype and lunasvg submodules when they are missing; configure and build of `deskStubHost` took 20 s
+with a warm ccache. Warm start 3 s.
+
+Limits: the sync script runs for the served editor only, so run both before you commit a shared change. The preview
+shows the stub's machine, not the firmware's timing or sound. Loading, busy, refused and error states are not reachable
+by a URL query: the stub has no switch for them (it only has `--real-timing`), and a fake of our own is not worth building.
+
 ## The finding
 
 Every check of the page went through the slowest path there is: the page, JUCE, the emulator, the firmware and its

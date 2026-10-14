@@ -1,0 +1,7 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "page-md", "runtimeExecutable": "scripts/mdmm-preview.sh", "runtimeArgs": ["md"], "port": 8791 },
+    { "name": "page-mm", "runtimeExecutable": "scripts/mdmm-preview.sh", "runtimeArgs": ["mm"], "port": 8792 }
+  ]
+}
