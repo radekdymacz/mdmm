@@ -26,6 +26,10 @@ function lcdSay(ch) {
 /* The message holds LCD line 2 for its time, whatever re-renders meanwhile. */
 const renderSub0 = renderSub;
 renderSub = function () { renderSub0(); const l = $("#lcd2"); if (l && lcdSay.until && performance.now() < lcdSay.until) l.innerHTML = `<b class="lcdmsg">${lcdSay.text}</b>`; };
+/* B-061, B-065, B-066 (shared/deskTopFit.js): the LCD is as wide as the widest line 2 of any workspace asks, and the top bar
+   tightens until its keys fit; it draws each workspace's line 2 in turn (nothing is painted between) and puts the shown one back */
+TopFit.connect({ workspaces: () => $$("#tabs button[data-ws]").map(b => b.dataset.ws), current: () => S.ws, show: ws => { S.ws = ws; renderSub0(); }, done: () => renderSub() });
+/* (here, not in mdDeskTop.js: renderSub0 is made above, and the fit draws line 2 as soon as the page is loaded) */
 function applyPrep() {
 	if (!PREP.size) return; const ch = [...PREP];
 	for (const [i, m] of ch) if (V.tracks[i] && V.tracks[i].mute !== m) muteSet(i, m);
@@ -167,6 +171,9 @@ function sendTweak(g, knob, d, t) {
 }
 const setV0 = setV;
 setV = function (el, v) {
+	/* MD-140: the value pressed for live lock removal is the knob held, not turned (a turn would record a lock); it stays
+	   put until the mouse is let go, or its drag would jump when Delete goes up first */
+	if (eraseHeldEl === el) return;
 	if (!tweak || tweak.el !== el) return setV0(el, v);
 	sendTweak(tweak.g, tweak.knob, clamp(Math.round(v)) - getV(el), tweak.t);
 	syncControls(); redraw();
@@ -223,8 +230,8 @@ function showFwLcd(on) {
 let wasReady = false;
 Bridge.onMessage(m => {
 	/* The engine changed (emulator <-> HW MIDI) or the machine restarted (a project restored): the documents start
-	   over, and so do the page's solos (the new machine's mutes are its own). */
-	if (m.type === "reset") { resetDocs(Docs); Overlay.clear(); modInFlight = 0; wasReady = false; S.soloSet = new Set(); S.userMutes = new Set(); scheduleRender(); return; }
+	   over, and so do the page's solos; the plug-in then says the solo it keeps with the project again (takeSolo, mdDeskApp.js). */
+	if (m.type === "reset") { resetDocs(Docs); Overlay.clear(); modInFlight = 0; wasReady = false; S.soloSet = new Set(); S.userMutes = new Set(); soloSent = ""; scheduleRender(); return; }
 	/* The firmware's LCD shows while the machine takes no input (machine.input: the firmware starts);
 	   BOOTING OS lasts until keys work: the firmware answers MIDI early, but its start-up animation
 	   ignores panel keys until it is over (about 13 s; the lifecycle's "animating"). */

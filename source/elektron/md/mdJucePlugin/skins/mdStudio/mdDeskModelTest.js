@@ -12,8 +12,8 @@ const ctx = vm.createContext({ console });
 /* the page's model with the shared modules it is loaded after (sync-mdstudio-skin.py SCRIPTS) */
 vm.runInContext(["../shared/deskDocs.js", "../shared/deskOverlay.js", "mdDeskModel.js"].map(f => fs.readFileSync(path.join(__dirname, f), "utf8")).join("\n")
 	+ "\nconst S = { soloSet: new Set() };"
-	+ "\nthis.T = { deriveView, Overlay, view, Docs, S, EMPTY_DOCS, storeDoc, resetDocs, canDo, docOf, multFactor, mfxName, nameOf, machineFacts, tweakWrites, catalogueIndex, waveBins, waveWant, waveColumns, auditionAt, WAVE_MAX_BINS, playsOf, keyPitch, keyVel, KEYS_VEL, kitNameText, get V() { return V; } };", ctx);
-const { deriveView, Overlay, Docs, S, EMPTY_DOCS, storeDoc, resetDocs, canDo, docOf, multFactor, nameOf, machineFacts, tweakWrites, catalogueIndex, waveBins, waveWant, waveColumns, auditionAt, WAVE_MAX_BINS, playsOf, keyPitch, keyVel, KEYS_VEL, kitNameText } = ctx.T;
+	+ "\nthis.T = { deriveView, Overlay, view, Docs, S, EMPTY_DOCS, storeDoc, resetDocs, canDo, docOf, multFactor, mfxName, nameOf, machineFacts, tweakWrites, catalogueIndex, clipPairs, waveBins, waveWant, waveColumns, auditionAt, WAVE_MAX_BINS, playsOf, keyPitch, keyVel, KEYS_VEL, kitNameText, get V() { return V; } };", ctx);
+const { deriveView, Overlay, Docs, S, EMPTY_DOCS, storeDoc, resetDocs, canDo, docOf, multFactor, nameOf, machineFacts, tweakWrites, catalogueIndex, clipPairs, waveBins, waveWant, waveColumns, auditionAt, WAVE_MAX_BINS, playsOf, keyPitch, keyVel, KEYS_VEL, kitNameText } = ctx.T;
 const DELETE = Overlay.DELETE;
 let failures = 0;
 const check = (ok, what) => { console.log((ok ? "  ok   " : "  FAIL ") + what); if (!ok) failures++; };
@@ -37,7 +37,7 @@ const enums = { tempoMultipliers: ["1X", "2X", "3/4X", "3/2X"], masterFx: ["rhyt
 const catalogue = { schema: "md-desk/machines", version: 1, machines: [], enums };
 const caps = { engine: "emu", label: "EMU OS 1.63", about: "",
 	can: { transport: true, panelKeys: true, liveRecord: true, chains: false, lcd: true, workingKitMemory: true, mutesFromMemory: true, sampleNames: true, modulators: true,
-		sampleAudio: true, sampleLoad: true },
+		sampleAudio: true, sampleLoad: true, panic: true, playFrom: true },
 	reasons: { chains: "keys only" }, values: { dumps: "direct" } };
 const docs = (extra = {}) => ({ patterns: { 5: pattern }, kits: { 3: kit("STORED") }, songs: {}, global: null, catalogue, telemetry: null,
 	workingKit: null, sources: { "kit:3": "dump" },
@@ -244,6 +244,15 @@ Overlay.clear();
 	check(deriveView(docs(G("external")), S).bpm === 120 && !deriveView(docs(G("external")), S).hostTempo, "no host message: the machine's tempo");
 	check(deriveView(docs({ machine: Object.assign({}, docs().machine, { songMode: true }) }), S).songMode === true && deriveView(docs(), S).songMode !== true,
 		"songMode is the machine document's (the view re-renders on it)");
+}
+
+{
+	/* MD-033: the catalogue's clips as the Sound page's boxes (LFOS LFOD LFOM as SPD DEPTH SHMIX) */
+	const params = ["PTCH", "DEC", "RAMP", "RDEC", "STRT", "NOIS", "HARM", "CLIP", "AMD", "AMF", "EQF", "EQG", "FLTF", "FLTW", "FLTQ", "SRR", "DIST", "VOL", "PAN", "DEL", "REV", "LFOS", "LFOD", "LFOM"];
+	const cat = catalogueIndex({ machines: [{ model: 16, machine: "TRX-BD", family: "TRX", params, clips: [2, 8, 21, 22] }] });
+	const got = JSON.stringify(clipPairs("TRX-BD", cat, { lfoParams: { SPD: 21, DEPTH: 22, SHMIX: 23 } }));
+	check(got === JSON.stringify([[["syn", "RAMP"], ["syn", "RDEC"]], [["fx", "AMD"], ["fx", "AMF"]], [["lfo", "SPD"], ["lfo", "DEPTH"]], [["lfo", "DEPTH"], ["lfo", "SHMIX"]]]), "clipPairs: the boxes the clips join " + got);
+	check(clipPairs("GND-EMPTY", cat, {}).length === 0, "clipPairs: a machine the catalogue does not hold has none");
 }
 
 console.log("mdDeskModelTest: " + (failures ? "FAIL" : "PASS") + " (" + failures + " failures)");

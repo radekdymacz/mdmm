@@ -863,6 +863,18 @@
             },
             "programChange": {
               "$ref": "#/$defs/byte"
+            },
+            "sequencer": {
+              "description": "CONTROL OUT1 SEQUENCER (0.6, PROBES-manual-gaps.md P2): 0 INT, 1 OUT, 2 INT+OUT. Missing in documents from before: then hidden.x07 holds the three bytes.",
+              "$ref": "#/$defs/byte"
+            },
+            "arp": {
+              "description": "CONTROL OUT1 ARP: 0 INT, 1 OUT, 2 INT+OUT.",
+              "$ref": "#/$defs/byte"
+            },
+            "keyboard": {
+              "description": "CONTROL OUT1 KEYBOARD: 0 INT, 1 OUT, 2 INT+OUT.",
+              "$ref": "#/$defs/byte"
             }
           }
         },
@@ -900,7 +912,7 @@
         },
         "can": {
           "type": "object",
-          "required": ["transport", "panelKeys", "recvSession", "lcd", "workingKitMemory", "telemetry", "midiMutes", "poly", "multiTrig", "multiMap", "portamento", "gridRecord", "chains"],
+          "required": ["transport", "panelKeys", "recvSession", "lcd", "workingKitMemory", "telemetry", "midiMutes", "poly", "multiTrig", "multiMap", "portamento", "gridRecord", "chains", "panic", "playFrom"],
           "additionalProperties": true,
           "properties": {
             "transport": {
@@ -941,6 +953,14 @@
             },
             "chains": {
               "type": "boolean"
+            },
+            "panic": {
+              "type": "boolean",
+              "description": "Wave 2: the panic key (every voice off) works on this engine."
+            },
+            "playFrom": {
+              "type": "boolean",
+              "description": "Wave 2: a song can be played from a row (MIDI Stop, a Song Position Pointer and Continue into the machine)."
             }
           }
         },
@@ -1268,6 +1288,19 @@
           ],
           "description": "MM-P4: POLY, the machine's audio mode (status 0x20); null until it answers."
         },
+        "focus": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            }
+          ],
+          "description": "0.6 wave 9: the synth track in focus, its TRACK key (status 0x22): the track POLY plays. The track the editor pressed (poly with t) until the machine shows it; null until it answers."
+        },
         "desk": {
           "type": "object",
           "additionalProperties": true,
@@ -1407,6 +1440,17 @@
         },
         "engines": {
           "$ref": "#/$defs/engines"
+        },
+        "clipboard": {
+          "type": "object",
+          "description": "What the core's clipboard holds that the page reads (0.6): global is the slot the GLOBAL page's Copy took (null when none; Paste is on while it is set).",
+          "required": ["global"],
+          "additionalProperties": true,
+          "properties": {
+            "global": {
+              "type": ["integer", "null"]
+            }
+          }
         },
         "history": {
           "$ref": "#/$defs/history"
@@ -1678,16 +1722,28 @@
                   "type": "null"
                 },
                 {
-                  "enum": ["off", "grid", "live"]
+                  "enum": ["off", "grid", "live", "step"]
                 }
               ],
-              "description": "MM-P4: the recording mode (RAM): GRID RECORDING, LIVE RECORDING or off; null where the engine cannot read it."
+              "description": "MM-P4: the recording mode (RAM): GRID RECORDING, LIVE RECORDING, STEP RECORDING (0.6, RAM 0x2bff05) or off; null where the engine cannot read it."
+            },
+            "stepAt": {
+              "type": ["integer", "null"],
+              "minimum": 0,
+              "maximum": 63,
+              "description": "0.6: STEP RECORDING's cursor, the step the next note writes (RAM 0x2bff09, 0-based); null when not step recording."
             },
             "songRow": {
               "type": ["integer", "null"],
               "minimum": 0,
               "maximum": 199,
               "description": "0.3.5: the song row heard (RAM 0x2bdba1, md::MmTelemetry, as it was at PLAY and at the last wrap), null where the engine cannot read it. Meaningful while song.songMode is true and the machine plays."
+            },
+            "songSteps": {
+              "type": ["integer", "null"],
+              "minimum": 0,
+              "maximum": 65535,
+              "description": "0.6 (MM-271): the song's played steps (16ths) since PLAY (RAM 0x2bdf3c, md::MmTelemetry), as the EDIT SONG header counts them: bar steps / 16 + 1, beat steps % 16 / 4 + 1; null with songRow."
             }
           }
         },
@@ -1772,6 +1828,82 @@
                   "type": "array",
                   "items": {
                     "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "description": "0.6 (GLOBAL › Map editor › LEARN, I-002): a note on that reached the plug-in from outside (the host's MIDI in or a MIDI input port), as it came: ch 0-15, note, vel 1-127. Sent on the next step (every 20 ms or so) while the page is up; a burst past 16 a step, or past the plug-in's queue, is dropped. The page's own keyboard is not in it.",
+          "required": ["type", "ch", "note", "vel"],
+          "properties": {
+            "type": {
+              "const": "midiIn"
+            },
+            "ch": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 15
+            },
+            "note": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            },
+            "vel": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 127
+            }
+          }
+        },
+        {
+          "type": "object",
+          "description": "I-024 (doc/modern-ux/DESIGN-machine-memory.md): the machine memory that stays for new sessions, on the page's ready and whenever it changes. keep: KEEP MEMORY (the setting, default on; memoryKeep sets it); available: the plug-in has a folder for the file (false in an isolated test); saved: the machine memory file is there; note: what went wrong last (a write that failed, a file that could not be used and was moved aside), empty when nothing did.",
+          "required": ["type", "keep", "available", "saved", "note"],
+          "properties": {
+            "type": {
+              "const": "machineMemory"
+            },
+            "keep": {
+              "type": "boolean"
+            },
+            "available": {
+              "type": "boolean"
+            },
+            "saved": {
+              "type": "boolean"
+            },
+            "note": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "description": "I-002, B-062: the notes held down from outside (the host's MIDI in or a MIDI input port), each with its channel (0-15), by channel then low to high: a note on holds a note until its note off (or all notes off, all sound off, a system reset). A state, not events: sent when it changed, looked at every 32 ms (a burst is one message), and once for a new page; a note off is never lost, and a MIDI input that changes or closes, a bypass or a release lets go of every note. Not in HW MIDI (what comes in is the real machine's own MIDI OUT). The page's own keyboard is not in it. The Monomachine Editor lights, on the Perform keyboard, the notes on the channels the machine plays (AUTO, the track channels, MULTI TRIG, MULTI MAP).",
+          "required": ["type", "notes"],
+          "properties": {
+            "type": {
+              "const": "midiHeld"
+            },
+            "notes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["ch", "note"],
+                "properties": {
+                  "ch": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 15
+                  },
+                  "note": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 127
                   }
                 }
               }
@@ -2094,6 +2226,17 @@
             "messages": {
               "type": "integer",
               "minimum": 0
+            },
+            "place": {
+              "description": "0.6: SPECIFIC place, per kind the first slot its items land in (empty: each in its own slot); then each item's slot is where it lands and its from the file's slot",
+              "type": "object"
+            },
+            "reset": {
+              "description": "0.6: Reset machine… (Empty reset, Factory reset): the preview of what the reset sends, which already runs",
+              "type": "string"
+            },
+            "running": {
+              "type": "boolean"
             }
           }
         },
@@ -2144,6 +2287,10 @@
                 }
               }
             },
+            "check": {
+              "description": "0.6: VERIFY ONLY (nothing sent; the report counts same, differs, unknown, no reply)",
+              "type": "boolean"
+            },
             "report": {
               "type": "object"
             }
@@ -2151,7 +2298,7 @@
         },
         {
           "type": "object",
-          "description": "P7: an export to a .syx: written, or why not.",
+          "description": "P7: an export to a .syx: written, or why not. 0.6: running while the Monomachine's DigiPRO waveforms are read from the machine (the text says how far), then the last one says what was written.",
           "required": ["type", "ok", "text"],
           "properties": {
             "type": {
@@ -2159,6 +2306,75 @@
             },
             "ok": {
               "type": "boolean"
+            },
+            "running": {
+              "type": "boolean"
+            },
+            "text": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "description": "0.6 (wave 6): the export panel's facts (syxExportInfo): per kind (global, kit, pattern, song; wave on the Monomachine) its slots, how many the editor holds, how many hold data and the first and last of those (-1: none).",
+          "required": ["type", "model", "kinds"],
+          "properties": {
+            "type": {
+              "const": "syxExportInfo"
+            },
+            "model": {
+              "type": "string"
+            },
+            "kinds": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "required": ["slots"],
+                "properties": {
+                  "slots": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "held": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "used": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "first": {
+                    "type": "integer",
+                    "minimum": -1
+                  },
+                  "last": {
+                    "type": "integer",
+                    "minimum": -1
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "description": "0.6 (wave 6): a factory reset being prepared (the Machinedrum: a second machine started from the user's ROM is read; prepare, with the dumps read of all) or failing (failed, with why). The reset itself follows as a syxPreview with reset and syxProgress.",
+          "required": ["type", "phase", "done", "total", "text"],
+          "properties": {
+            "type": {
+              "const": "syxReset"
+            },
+            "phase": {
+              "enum": ["prepare", "failed"]
+            },
+            "done": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "total": {
+              "type": "integer",
+              "minimum": 0
             },
             "text": {
               "type": "string"
@@ -2234,13 +2450,13 @@
               "const": "ask"
             },
             "ask": {
-              "enum": ["loadKit", "reloadKit", "overwriteSlot", "clearSlot", "discardKit", "transportIgnore", "breakChain"]
+              "enum": ["loadKit", "reloadKit", "overwriteSlot", "clearSlot", "discardKit", "transportIgnore", "breakChain", "loadUndoKit"]
             },
             "also": {
               "type": "array",
               "description": "Other questions this one answers too (force answers all of them).",
               "items": {
-                "enum": ["loadKit", "reloadKit", "overwriteSlot", "clearSlot", "discardKit", "transportIgnore", "breakChain"]
+                "enum": ["loadKit", "reloadKit", "overwriteSlot", "clearSlot", "discardKit", "transportIgnore", "breakChain", "loadUndoKit"]
               }
             },
             "message": {
@@ -2354,6 +2570,34 @@
             },
             "ccLimit": {
               "type": "number"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "description": "The page's solo and the mutes the person had before it, as the plug-in keeps them with the project (soloSet): said when a project is opened, after a reset and when the page is made; never as an echo of soloSet.",
+          "required": ["type", "tracks", "mutes"],
+          "properties": {
+            "type": {
+              "const": "solo"
+            },
+            "tracks": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 11
+              }
+            },
+            "mutes": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 11
+              }
             }
           }
         },
@@ -2794,7 +3038,7 @@
         },
         {
           "type": "object",
-          "description": "core: GLOBAL › MIDI: the active global's channels (0-15, null OFF; base + t is track t's while t < span), CONTROL IN (clockIn: TEMPO SYNC EXT MIDI CLK, transportIn: TRANSPORT ACCEPT) and OUT (clock, Start/Stop, program change)",
+          "description": "core: GLOBAL › MIDI: the active global's channels (0-15, null OFF; base + t is track t's while t < span), CONTROL IN (clockIn: TEMPO SYNC EXT MIDI CLK, transportIn: TRANSPORT ACCEPT), OUT2 (clock, Start/Stop, program change) and OUT1 (sequencerOut, arpOut, keyboardOut: 0 INT, 1 OUT, 2 INT+OUT)",
           "required": ["op"],
           "properties": {
             "op": {
@@ -2877,13 +3121,54 @@
             },
             "programChangeOut": {
               "type": ["boolean", "integer"]
+            },
+            "sequencerOut": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "arpOut": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "keyboardOut": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2
             }
           },
           "additionalProperties": false
         },
         {
           "type": "object",
-          "description": "core: GLOBAL › Reset to defaults: the active global becomes the one the machine ships with (measured, mmDeskFirmwareTest factoryglobal)",
+          "description": "core: GLOBAL › AUDIO › MASTER TUNE: tenths of Hz, 400.0 to 499.9 Hz as the panel sets it (4400 = 440.0 Hz; gapProbesFirmwareTest p8)",
+          "required": ["op", "v"],
+          "properties": {
+            "op": {
+              "const": "masterTune"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "v": {
+              "type": "integer",
+              "minimum": 4000,
+              "maximum": 4999
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core: GLOBAL › Clear: the active global becomes the one the machine ships with (measured, mmDeskFirmwareTest factoryglobal)",
           "required": ["op"],
           "properties": {
             "op": {
@@ -3307,6 +3592,37 @@
         },
         {
           "type": "object",
+          "description": "core: the kit a pattern plays (its link, MM-095): over the pattern that plays the machine loads that kit at once (measured)",
+          "required": ["op", "p", "v"],
+          "properties": {
+            "op": {
+              "const": "patternKit"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "p": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            },
+            "v": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "description": "core: the tempo multiplier",
           "required": ["op", "p", "v"],
           "properties": {
@@ -3505,6 +3821,52 @@
         },
         {
           "type": "object",
+          "description": "core: the locks of the steps in [from, to) of tracks t to t + n - 1, the notes kept (the machine's CLEAR NOTE LOCKS, MM-083)",
+          "required": ["op", "p", "t", "from", "to"],
+          "properties": {
+            "op": {
+              "const": "clearStepLocks"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "p": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            },
+            "t": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 11
+            },
+            "n": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            },
+            "from": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 63
+            },
+            "to": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 64
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "description": "core: a block of steps (tracks t to t + n - 1, steps [from, to)) into the clipboard: notes, NOTE OFFs, envelope trigs, slides, locks",
           "required": ["op", "p", "t", "from", "to"],
           "properties": {
@@ -3648,6 +4010,121 @@
         },
         {
           "type": "object",
+          "description": "core: COPY what (the machine's SUPER COPY): the named parts of track t into the clipboard, over the whole track: notes, melody, slide, swing, locks, arp, transpose (pattern p) and sound (the kit that plays, k; a synth track's)",
+          "required": ["op", "t", "what"],
+          "properties": {
+            "op": {
+              "const": "trackCopy"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "p": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            },
+            "k": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            },
+            "t": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 11
+            },
+            "what": {
+              "type": "array"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core: PASTE what: the clipboard's named parts onto every track of to (0-11, tracks of the copied track's kind), one undo step",
+          "required": ["op", "to", "what"],
+          "properties": {
+            "op": {
+              "const": "trackPaste"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "p": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            },
+            "k": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            },
+            "to": {
+              "type": "array"
+            },
+            "what": {
+              "type": "array"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core: CLEAR what (the machine's SUPER CLEAR): the named parts of track t: notes (and their locks), melody (the trigs pitchless), slide, swing (every second 16th), locks, arp (OFF), transpose (0), sound (GND-SIN)",
+          "required": ["op", "t", "what"],
+          "properties": {
+            "op": {
+              "const": "trackClear"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "p": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            },
+            "k": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            },
+            "t": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 11
+            },
+            "what": {
+              "type": "array"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "description": "core: a track's machine (model: its SysEx 0x5B id): its SYN page starts at the machine's defaults; without keepFx (default on) the other pages too",
           "required": ["op", "k", "t", "model"],
           "properties": {
@@ -3774,6 +4251,37 @@
               "type": "integer",
               "minimum": 0,
               "maximum": 5
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core: the Sound page's Revert track: the track as the kit's slot stores it (a synth track: machine, pages, level, routing, assign rows, its mask bits and where it forwards its notes; a MIDI track: its MIDI page)",
+          "required": ["op", "k", "t"],
+          "properties": {
+            "op": {
+              "const": "revertTrack"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "k": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 127
+            },
+            "t": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 11
             }
           },
           "additionalProperties": false
@@ -4537,6 +5045,199 @@
         },
         {
           "type": "object",
+          "description": "core: the song slots",
+          "required": ["op", "s"],
+          "properties": {
+            "op": {
+              "const": "songCopy"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "s": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 23
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core",
+          "required": ["op", "s"],
+          "properties": {
+            "op": {
+              "const": "songPaste"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "s": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 23
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core: drag-copy; with a name: Save to... (the song, named, into another slot)",
+          "required": ["op", "from", "to"],
+          "properties": {
+            "op": {
+              "const": "songCopyTo"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "from": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 23
+            },
+            "to": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 23
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core",
+          "required": ["op", "s"],
+          "properties": {
+            "op": {
+              "const": "songClear"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "s": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 23
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core: a song's name (14 characters)",
+          "required": ["op", "s", "name"],
+          "properties": {
+            "op": {
+              "const": "songRename"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "s": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 23
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core: GLOBAL › Copy: the global into the clipboard",
+          "required": ["op", "slot"],
+          "properties": {
+            "op": {
+              "const": "globalCopy"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "slot": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 7
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "core: GLOBAL › Paste: the clipboard's global into this slot (its position kept)",
+          "required": ["op", "slot"],
+          "properties": {
+            "op": {
+              "const": "globalPaste"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "slot": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 7
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "description": "machine: read a document now",
           "required": ["op", "kind", "slot"],
           "properties": {
@@ -4616,6 +5317,27 @@
               "type": "integer",
               "minimum": 0,
               "maximum": 127
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "machine: KIT > LOAD KIT > UNDO KIT with the panel's keys: the kit last lost to a LOAD KIT or an overwrite plays again, its own slot current, unsaved (MM-102, measured: gapProbesFirmwareTest w12undo)",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "loadUndoKit"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
             }
           },
           "additionalProperties": false
@@ -4792,6 +5514,33 @@
         },
         {
           "type": "object",
+          "description": "setup: the page's solo (the tracks soloed, 0-11) and the mutes the person had before it, kept with the project; the plug-in says them again as {\"type\":\"solo\"}",
+          "required": ["op", "tracks"],
+          "properties": {
+            "op": {
+              "const": "soloSet"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "tracks": {
+              "type": "array"
+            },
+            "mutes": {
+              "type": "array"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
           "description": "machine: PATTERN or SONG mode (SET STATUS 0x10), read back from the machine's status",
           "required": ["op", "song"],
           "properties": {
@@ -4810,6 +5559,121 @@
             },
             "song": {
               "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "machine: PLAY while playing (the panel) or MIDI Stop (a wire, TRANSPORT ACCEPT): the machine holds its step",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "pause"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "machine: PLAY while paused (the panel) or MIDI Continue (a wire): it plays on from that step",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "resume"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "machine: play the current song from row i: SONG mode, a Song Position Pointer (the steps of the rows before it), Continue (TRANSPORT ACCEPT)",
+          "required": ["op", "i"],
+          "properties": {
+            "op": {
+              "const": "playFrom"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "i": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 199
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "machine: every note off: CC 123 on each track's channel, then STOP",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "panic"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "machine: the tempo pct % off while held, 0 = back (TEMPO, LEFT / RIGHT held); not stored",
+          "required": ["op", "pct"],
+          "properties": {
+            "op": {
+              "const": "nudge"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "pct": {
+              "type": "integer",
+              "minimum": -10,
+              "maximum": 10
             }
           },
           "additionalProperties": false
@@ -4874,7 +5738,7 @@
         },
         {
           "type": "object",
-          "description": "machine: POLY, the machine's audio mode (SET STATUS 0x20)",
+          "description": "machine: POLY, the machine's audio mode (SET STATUS 0x20); t: TRACK t first, the track POLY plays with six voices (again while on: it moves there)",
           "required": ["op", "on"],
           "properties": {
             "op": {
@@ -4892,13 +5756,18 @@
             },
             "on": {
               "type": ["boolean", "integer"]
+            },
+            "t": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
             }
           },
           "additionalProperties": false
         },
         {
           "type": "object",
-          "description": "machine: GRID RECORDING (RECORD), LIVE RECORDING (RECORD + PLAY) or off",
+          "description": "machine: GRID RECORDING (RECORD), LIVE RECORDING (RECORD + PLAY), STEP RECORDING (STOP + RECORD) or off; t: the track in focus first (TRACK t), the one STEP RECORDING writes (again while in it: only the focus)",
           "required": ["op", "mode"],
           "properties": {
             "op": {
@@ -4916,7 +5785,66 @@
             },
             "mode": {
               "type": "string",
-              "enum": ["off", "grid", "live"]
+              "enum": ["off", "grid", "live", "step"]
+            },
+            "t": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "machine: LIVE RECORDING: EXIT held (on) or let go: track t's notes go as they play (TRACK t first)",
+          "required": ["op", "t", "on"],
+          "properties": {
+            "op": {
+              "const": "liveErase"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "t": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "on": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "machine: STEP RECORDING: LEFT (a step back), RIGHT (on, a rest) or ENTER (clear the step, on)",
+          "required": ["op", "key"],
+          "properties": {
+            "op": {
+              "const": "stepKey"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "key": {
+              "type": "string",
+              "enum": ["left", "right", "clear"]
             }
           },
           "additionalProperties": false
@@ -4944,7 +5872,7 @@
         },
         {
           "type": "object",
-          "description": "machine: in a DAW: the active GLOBAL follows the host's clock and transport",
+          "description": "machine: in a DAW: the active GLOBAL follows the host's clock and transport, until the person sets the machine's own clock there (review 1, I-026); project: the plug-in's state came from a DAW project, whose global is kept as it is",
           "required": ["op"],
           "properties": {
             "op": {
@@ -4958,6 +5886,9 @@
               "minimum": 0
             },
             "force": {
+              "type": ["boolean", "integer"]
+            },
+            "project": {
               "type": ["boolean", "integer"]
             }
           },
@@ -5310,7 +6241,7 @@
         },
         {
           "type": "object",
-          "description": "host: import the previewed .syx: the kinds chosen (global, kit, pattern, song, other) but the items in skip (\"kind:slot\"), sent to the machine as they are (the firmware decides what it takes), then read back and reported (syxProgress); no undo step",
+          "description": "host: import the previewed .syx: the kinds chosen (global, kit, pattern, song, other) but the items in skip (\"kind:slot\", the slot an item lands in), sent to the machine as they are (the firmware decides what it takes), then read back and reported (syxProgress); no undo step. placeAt (SPECIFIC, 0.6): per kind the first slot its items land in, in slot order ({\"kit\": 4}; the dumps go with that position byte and checksum); checkOnly (VERIFY ONLY): nothing is sent, each item's slot is read and compared with the file",
           "required": ["op", "kinds"],
           "properties": {
             "op": {
@@ -5331,6 +6262,12 @@
             },
             "skip": {
               "type": "array"
+            },
+            "placeAt": {
+              "type": "object"
+            },
+            "checkOnly": {
+              "type": ["boolean", "integer"]
             }
           },
           "additionalProperties": false
@@ -5358,7 +6295,31 @@
         },
         {
           "type": "object",
-          "description": "host: every document the editor holds, as one .syx: the window's native save dialog",
+          "description": "host: the open .syx's preview again (syxPreview) with its items placed: per kind the first slot ({\"kit\": 4, \"pattern\": 16}), a kind not named in its own slots; each item says where it lands (slot), where it came from (from), whether it overwrites data there; an item past the last slot does not land",
+          "required": ["op", "placeAt"],
+          "properties": {
+            "op": {
+              "const": "syxPlace"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "placeAt": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: the documents the editor holds as one .syx, through the window's native save dialog: every one (no kinds), or the kinds named (global, kit, pattern, song; the Monomachine's DigiPRO waveforms as wave, read from the machine) with their ranges ({\"kit\": [0, 11]}, from 0, inclusive; a kind without one: all its slots); syxExport messages follow",
           "required": ["op"],
           "properties": {
             "op": {
@@ -5373,6 +6334,58 @@
             },
             "force": {
               "type": ["boolean", "integer"]
+            },
+            "kinds": {
+              "type": "array"
+            },
+            "ranges": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: the export panel's facts (a syxExportInfo message): per kind its slots, how many the editor holds, how many hold data and the first and last of those",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "syxExportInfo"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: Reset machine: empty clears every kit, pattern and song (the library's Clear in each slot, sent as dumps; globals and samples stay), factory (the Machinedrum) brings back the factory kits, patterns and songs read from a second machine started from the user's own ROM; both read back and reported as an import (syxPreview with reset, then syxProgress); no undo step: the page asks first",
+          "required": ["op", "how"],
+          "properties": {
+            "op": {
+              "const": "machineReset"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "how": {
+              "type": "string",
+              "enum": ["empty", "factory"]
             }
           },
           "additionalProperties": false
@@ -5882,6 +6895,51 @@
               "type": "number",
               "minimum": -60,
               "maximum": 6
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: KEEP MEMORY: on, a session without a project state starts from the machine memory file and every save on the machine writes it; off, neither (the file stays); kept in the editor's settings; a machineMemory message follows",
+          "required": ["op", "on"],
+          "properties": {
+            "op": {
+              "const": "memoryKeep"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
+            },
+            "on": {
+              "type": ["boolean", "integer"]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "description": "host: RESET MACHINE… > Start from factory memory: the machine memory file is deleted and the machine restarts from factory memory (the page asked the user first); a machineMemory message follows",
+          "required": ["op"],
+          "properties": {
+            "op": {
+              "const": "memoryFactory"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "g": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "force": {
+              "type": ["boolean", "integer"]
             }
           },
           "additionalProperties": false

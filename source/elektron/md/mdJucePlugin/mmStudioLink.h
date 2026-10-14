@@ -47,6 +47,8 @@ namespace mdJucePlugin
 		void sendNrpn(uint8_t _track, uint8_t _param, uint8_t _value) const;
 		// A channel message from the page (keyboard, joystick): note on/off, CC, pitch bend.
 		bool sendMidi(uint8_t _status, uint8_t _data1, uint8_t _data2) const;
+		// A short message of 1-3 bytes (a CC, MIDI Stop, Continue, a song position), editor-sourced, after what was sent before.
+		bool sendShort(const Bytes& _message) const;
 		bool pressKeys(const std::vector<mmDesk::Key>& _keys) const;
 		// MM-P8: BANK held, the TRIG keys pressed and held in order (a chain; one key: a pick).
 		bool pressBankTrigs(uint8_t _bank, const std::vector<uint8_t>& _trigs) const;

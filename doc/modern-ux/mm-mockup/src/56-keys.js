@@ -24,7 +24,7 @@ function drawKeys(){const pop=$("#keyspop");if(!pop)return;
 function toggleKeys(on){const pop=$("#keyspop");if(!pop)return;if(on??pop.hidden)drawKeys();else{pop.hidden=true;keyView?.reset()}}
 Keys.bind({id:"keys-help",short:"This view",scope:"any",keys:["?"],group:"Help",does:"The keyboard view: what every key and gesture does (this)",modal:"keyspop",run:()=>toggleKeys()});
 Keys.bind({id:"keys-help-close",short:"Close",scope:"any",keys:["Escape"],group:"Help",does:"Close the keyboard view",when:()=>!$("#keyspop").hidden,run:()=>toggleKeys(false)});
-document.addEventListener("click",e=>{const pop=$("#keyspop");if(!pop||pop.hidden)return;if(e.target.closest("[data-keysx]")||!pop.contains(e.target)){pop.hidden=true;keyView?.reset()}},true);
+document.addEventListener("click",e=>{const pop=$("#keyspop");if(!pop||pop.hidden)return;/* review 1: every modal locks: only its close key */if(e.target.closest("[data-keysx]")){pop.hidden=true;keyView?.reset()}},true);
 /* the page zoom keys (skins/shared/deskZoom.js takes them before the map), described, as the MD Editor's */
 Keys.bind({id:"zoom-out",short:"Zoom −",scope:"any",keys:["-"],mod:"cmd",group:"Anywhere",does:"Page zoom: smaller (also in the editor's menu)"});
 Keys.bind({id:"zoom-in",short:"Zoom +",scope:"any",keys:["="],mod:"cmd",group:"Anywhere",does:"Page zoom: larger (⌘+ too)"});
@@ -33,7 +33,6 @@ Keys.bind({id:"zoom-reset",short:"Zoom 100 %",scope:"any",keys:["0"],mod:"cmd",g
 [
  ["tip-step-menu","Right-click a note in the piano roll or a step: everything a step can do, with its key (Ctrl-click on a Mac)."],
  ["tip-select","⌘-click or ⌘-drag steps to select them; the LCD's Copy, Clr and Paste then act on the selection."],
- ["tip-draw","B on Sequence turns the piano roll's Draw on and off (off: drag a box round notes to select them). ⇧B taps the tempo on every workspace."],
  ["tip-undo","A drag, a paint or a run of rotates is one undo step: ⌘Z takes it back whole."],
  ["tip-play","A to L play the selected track from any workspace, W E T Y U O P its black keys; Z / X move the octave, C / V the velocity."],
  ["tip-reset","Double-click a value: back to its default. ⇧ while dragging: fine."],
@@ -46,6 +45,7 @@ Keys.bind({id:"zoom-reset",short:"Zoom 100 %",scope:"any",keys:["0"],mod:"cmd",g
  ["value-fine","sound mix perform control","Values",["value"],"shift","Values","Drag: fine, a quarter as fast"],
  ["value-wheel","sound mix perform control","Values",["wheel on a value"],"","Values","One step a notch (⇧: 10)"],
  ["value-reset","sound mix perform control","Values",["double-click a value"],"","Values","Back to its default (64; a list's first entry)"],
+ ["value-type","sound mix perform control","Values",["value"],"cmd","Values","Click: type a value, then Enter (Esc: leave it as it was). Enter on a focused value does the same"],
  ["tempo-drag","any","Top bar",["tempo"],"","Transport","Drag up or down: the tempo, half a BPM a pixel (⇧: a tenth)"],
  ["lcd-value","any","LCD",["LCD value"],"","Anywhere","Click: its next value; ⇧-click the previous one; the wheel steps through them. SWING and PTRN: drag up or down"],
  ["header-menu","any","Anywhere",["right-click"],"","Anywhere","The editor's menu: zoom and window size, updates, the log folder, Developer"],

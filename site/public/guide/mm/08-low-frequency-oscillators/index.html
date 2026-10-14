@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>8. Low frequency oscillators · Monomachine Editor guide</title>
+<meta name="description" content="The three LFOs of each track: where they point, when they start, their shape, speed and depth.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/mm/08-low-frequency-oscillators/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261014b">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>@page { @top-left { content: "8. Low frequency oscillators"; } }</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › <a href="/guide/mm/">Monomachine Editor</a> › Low frequency oscillators</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Chapters of the Monomachine Editor guide">
+<p class="gd-side-title"><a href="/guide/mm/">Monomachine Editor guide</a></p>
+<ol class="gd-side-list"><li><a href="/guide/mm/01-introduction-philosophy-highlights/">1. Introduction, philosophy, highlights</a></li>
+<li><a href="/guide/mm/02-user-interface-and-connectors/">2. User interface and connectors</a></li>
+<li><a href="/guide/mm/03-the-lcd-user-interface/">3. The LCD user interface</a></li>
+<li><a href="/guide/mm/04-quick-start/">4. Quick start</a></li>
+<li><a href="/guide/mm/05-monomachine-overview/">5. Monomachine overview</a></li>
+<li><a href="/guide/mm/06-synthesis-arrangement-kits-and-machines/">6. Synthesis arrangement: kits and machines</a></li>
+<li><a href="/guide/mm/07-track-effects/">7. Track effects</a></li>
+<li class="gd-side-cur"><a href="/guide/mm/08-low-frequency-oscillators/" aria-current="page">8. Low frequency oscillators</a><ol class="gd-side-subs"><li><a href="#lfo">LFO</a></li><li><a href="#trig">TRIG</a></li><li><a href="#wave">WAVE</a></li><li><a href="#mult">MULT</a></li><li><a href="#spd">SPD</a></li><li><a href="#intl">INTL</a></li><li><a href="#dpth">DPTH</a></li><li><a href="#layering">LAYERING</a></li><li><a href="#lfo-trigs">LFO TRIGS</a></li><li><a href="#shared-lfos">SHARED LFOS</a></li></ol></li>
+<li><a href="/guide/mm/09-additional-kit-settings/">9. Additional kit settings</a></li>
+<li><a href="/guide/mm/10-the-pattern-sequencer-pattern-operation/">10. The pattern sequencer: pattern operation</a></li>
+<li><a href="/guide/mm/11-composing-a-pattern/">11. Composing a pattern</a></li>
+<li><a href="/guide/mm/12-tempo/">12. Tempo</a></li>
+<li><a href="/guide/mm/13-parameter-locks/">13. Parameter locks</a></li>
+<li><a href="/guide/mm/14-advanced-sequencer-control/">14. Advanced sequencer control</a></li>
+<li><a href="/guide/mm/15-additional-sequencer-features/">15. Additional sequencer features</a></li>
+<li><a href="/guide/mm/16-the-midi-sequencer/">16. The MIDI sequencer</a></li>
+<li><a href="/guide/mm/17-the-song-mode/">17. The song mode</a></li>
+<li><a href="/guide/mm/18-routing/">18. Routing</a></li>
+<li><a href="/guide/mm/19-global-settings/">19. Global settings</a></li>
+<li><a href="/guide/mm/20-early-startup-menu-technical-information/">20. Early startup menu, technical information</a></li>
+<li><a href="/guide/mm/21-appendix-a-machine-reference/">21. Appendix A: machine reference</a></li>
+<li><a href="/guide/mm/22-appendix-b-midi-control-reference/">22. Appendix B: MIDI control reference</a></li>
+<li><a href="/guide/mm/23-appendix-c-sysex-reference/">23. Appendix C: SysEx reference</a></li>
+<li><a href="/guide/mm/24-beyond-the-hardware/">24. Beyond the hardware</a></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">8</span><span class="gd-ctitle">Low frequency oscillators</span></h1><p class="gd-cmeta">MM manual pp.1-35 to 1-37</p></header>
+<div class="gd-intro gd-prose"><p>Each synth track has three LFOs. An LFO moves one parameter of the track, or of the pitch, in a repeating shape. The three LFOs of a track are independent, and an LFO can move a parameter of another LFO.</p>
+<p>The LFOs are the bottom row of the <b class="gd-ui">Sound</b> workspace. Each has its own group, titled <b class="gd-ui">LFO 1</b>, <b class="gd-ui">LFO 2</b> and <b class="gd-ui">LFO 3</b>. A group holds, from the top:</p>
+<ul class="gd-list"><li>a picture of the LFO over two bars, with ticks where the LFO is triggered;</li><li>the target: <b class="gd-ui">PAGE</b> and <b class="gd-ui">DEST</b> selects, with the <b class="gd-ui">TRIG</b> keys beside them;</li><li>eleven keys for the shape;</li><li>four value boxes: MULT, SPD, INTL and DPTH.</li></ul>
+<p>The group is marked off while its depth is 0.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/mm-sound-lfos.webp" aria-label="Open the picture full size: The LFO groups"><img src="/guide/shots/mm-sound-lfos.webp" width="1440" height="924" alt="The LFO groups" loading="lazy"></a><figcaption>The LFO groups</figcaption></figure></div>
+<section class="gd-sec" id="lfo" aria-labelledby="lfo-h">
+<div class="gd-body gd-prose"><h2 id="lfo-h">LFO <a class="gd-anchor" href="#lfo" aria-label="Link to LFO">#</a></h2>
+<p class="gd-ref">MM manual p.1-35</p>
+<p>An LFO needs a target. Its target is a page and a destination on that page.</p>
+<h4 class="gd-h3" id="choose-a-target">Choose a target</h4>
+<ol class="gd-steps"><li>Select the track and go to the <b class="gd-ui">Sound</b> workspace (<kbd class="gd-key">[2]</kbd>).</li><li>In the LFO's group, open the <b class="gd-ui">PAGE</b> select. It lists PTCH, SYN, AMP, FLT, EFX, LF1, LF2, LF3 and MIDI.</li><li>Open the <b class="gd-ui">DEST</b> select and choose the parameter. It lists the parameters of the page. For PTCH it lists eight ranges: 1/12, 2/12, 7/12, 1OCT, 2OCT, 4OCT, 8OCT and 16OCT. For LF1 to LF3 the parameters are those of the other LFOs. For MIDI they are the parameters of the MIDI page.</li><li>Set DPTH, the depth, above 0.</li></ol>
+<p>Changing the page sets the destination back to the first entry.</p>
+<h4 class="gd-h3" id="route-by-dragging">Route by dragging</h4>
+<p>The key marked <b class="gd-ui">~</b> and the LFO's number, at the head of the group, is a handle. Drag it onto any value box on the page. The value boxes that can be a target are marked while you drag. Drop the handle on one. The editor sets PAGE and DEST to that value, and gives the depth a start value of 32 if it was 0. A note names the LFO and the value it now moves.</p>
+</div></section>
+<section class="gd-sec" id="trig" aria-labelledby="trig-h">
+<div class="gd-body gd-prose"><h2 id="trig-h">TRIG <a class="gd-anchor" href="#trig" aria-label="Link to TRIG">#</a></h2>
+<p class="gd-ref">MM manual p.1-35</p>
+<p>The <b class="gd-ui">TRIG</b> keys set how the LFO starts.</p>
+<table class="gd-table"><thead><tr><th>Key</th><th>What the LFO does</th></tr></thead><tbody><tr><td>FREE</td><td>runs on without being restarted</td></tr><tr><td>TRIG</td><td>starts again on each trig</td></tr><tr><td>HOLD</td><td>holds the value it has when a trig comes</td></tr><tr><td>ONE</td><td>plays one cycle after a trig</td></tr><tr><td>HALF</td><td>plays half a cycle after a trig</td></tr></tbody></table>
+<p>Which steps trigger the LFO is set in the sequencer: see &quot;LFO trigs&quot; below.</p>
+</div></section>
+<section class="gd-sec" id="wave" aria-labelledby="wave-h">
+<div class="gd-body gd-prose"><h2 id="wave-h">WAVE <a class="gd-anchor" href="#wave" aria-label="Link to WAVE">#</a></h2>
+<p class="gd-ref">MM manual p.1-35</p>
+<p>Eleven keys, each with a small picture, choose the shape. They are, in order: TRI, ITRI, SAW, ISAW, SQR, ISQR, EXP, IEXP, RMP, IRMP and RND. Click a key to choose a shape. The picture of the LFO redraws.</p>
+</div></section>
+<section class="gd-sec" id="mult" aria-labelledby="mult-h">
+<div class="gd-body gd-prose"><h2 id="mult-h">MULT <a class="gd-anchor" href="#mult" aria-label="Link to MULT">#</a></h2>
+<p class="gd-ref">MM manual p.1-35</p>
+<p>MULT multiplies the speed. Its values are 1X, 2X, 4X, 8X, 16X, 32X and 64X.</p>
+</div></section>
+<section class="gd-sec" id="spd" aria-labelledby="spd-h">
+<div class="gd-body gd-prose"><h2 id="spd-h">SPD <a class="gd-anchor" href="#spd" aria-label="Link to SPD">#</a></h2>
+<p class="gd-ref">MM manual p.1-36</p>
+<p>SPD sets the speed of the LFO. MULT multiplies it. Drag the value box.</p>
+</div></section>
+<section class="gd-sec" id="intl" aria-labelledby="intl-h">
+<div class="gd-body gd-prose"><h2 id="intl-h">INTL <a class="gd-anchor" href="#intl" aria-label="Link to INTL">#</a></h2>
+<p class="gd-ref">MM manual p.1-36</p>
+<p>INTL is the interlace of the LFO. Drag the value box.</p>
+</div></section>
+<section class="gd-sec" id="dpth" aria-labelledby="dpth-h">
+<div class="gd-body gd-prose"><h2 id="dpth-h">DPTH <a class="gd-anchor" href="#dpth" aria-label="Link to DPTH">#</a></h2>
+<p class="gd-ref">MM manual p.1-36</p>
+<p>DPTH is the depth: how far the LFO moves its target. At 0 the LFO does nothing and its group reads off. Drag the value box.</p>
+</div></section>
+<section class="gd-sec" id="layering" aria-labelledby="layering-h">
+<div class="gd-body gd-prose"><h2 id="layering-h">LAYERING <a class="gd-anchor" href="#layering" aria-label="Link to LAYERING">#</a></h2>
+<p class="gd-ref">MM manual p.1-37</p>
+<p>Two LFOs can move the same target, and their movements add. A value box that an LFO moves shows a small badge, ~ and the number of the LFO, for example ~1 or ~12 when two LFOs move it. Hover over the badge to read which LFOs these are.</p>
+</div></section>
+<section class="gd-sec" id="lfo-trigs" aria-labelledby="lfo-trigs-h">
+<div class="gd-body gd-prose"><h2 id="lfo-trigs-h">LFO TRIGS <a class="gd-anchor" href="#lfo-trigs" aria-label="Link to LFO TRIGS">#</a></h2>
+<p class="gd-ref">MM manual p.1-37</p>
+<p>The sequencer triggers the LFOs on its own. A trig with its LFO trig on triggers the LFOs of the track at that step. It matters for the TRIG, HOLD, ONE and HALF keys. In the <b class="gd-ui">Sequence</b> workspace right-click the step and choose <b class="gd-ui">Envelopes</b>, then <b class="gd-ui">LFO</b>, to switch it. A note without its LFO trig shows the letters of the envelopes it does fire.</p>
+</div></section>
+<section class="gd-sec" id="shared-lfos" aria-labelledby="shared-lfos-h">
+<div class="gd-body gd-prose"><h2 id="shared-lfos-h">SHARED LFOS <a class="gd-anchor" href="#shared-lfos" aria-label="Link to SHARED LFOS">#</a></h2>
+<p class="gd-ref">MM manual p.1-35</p>
+<p>A MIDI track shares its three LFOs with the synth track of the same number. M1 shares with T1, and so on. An LFO that has PAGE set to MIDI moves the MIDI page.</p>
+<p>On a MIDI track, the <b class="gd-ui">Sound</b> workspace shows the MIDI page, and in the place of the LFO groups a note says which synth track they belong to. Click <b class="gd-ui">Open T1 LFOs</b> (with the number of the track) to go to them.</p>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/mm/07-track-effects/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">7. Track effects</span></a><a href="/guide/mm/09-additional-kit-settings/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">9. Additional kit settings</span></a></nav>
+</article>
+</div>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

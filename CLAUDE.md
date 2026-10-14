@@ -19,7 +19,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 0.6 in progress (handover)
 
-0.6 is built on the branch `feat/0.6-features`, not on main. Check it out (worktree `audio/gearmulator-md-mm-wt/features-0.6`) and read doc/release/PLAN-0.6.md there, section "Handover": what is merged, which branches wait, what is left, and Radek's rule for this release.
+0.6 (stability and feature completeness) is built on the integration branch `feat/0.6-features`, not on main
+(worktree `audio/gearmulator-md-mm-wt/features-0.6`). Start with doc/release/PLAN-0.6.md, section "Handover": what is
+merged, which branches wait, what is left, and Radek's rule for this release (no per-piece play tests; merge after green
+tiers and a reviewer agent; he tests at the end from doc/release/TEST-0.6.md). The feature data is doc/features/*.json
+(doc/features/README.md), the user guide doc/guide/ (README.md, STYLE.md), the gap design
+doc/modern-ux/DESIGN-machine-menus.md with its wave plan doc/modern-ux/PLAN-manual-gaps.md.
 
 ## Sister product: xox-plocks
 

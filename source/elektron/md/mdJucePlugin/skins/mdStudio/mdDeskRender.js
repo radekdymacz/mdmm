@@ -23,7 +23,7 @@ function menuOpen() { return !$("#machpop")?.hidden || !$("#kpop")?.hidden; }
 /* a gesture that holds the page (a drag, a paint, a dragged pad): documents re-derive the view, the page renders
    once it ends (pendingRender) */
 const HOLDS = new Set(["value", "editor", "lane", "l2", "chop", "song", "paint", "mutePaint", "select"]);
-function interacting() { const h = Held.now; return !!(h && HOLDS.has(h.kind)) || menuOpen(); }
+function interacting() { const h = Held.now; return !!(h && HOLDS.has(h.kind)) || menuOpen() || SongSlots.busy(); }
 /* the one flush: a render held while a gesture ran is made when it ends, whichever gesture it was (a timer, so
    the gesture's own end handler draws its row first; still held by a menu, it waits for the menu's close) */
 Held.onEnd(() => { if (pendingRender) scheduleRender(); });
@@ -47,7 +47,7 @@ Bridge.onMessage(m => {
 		   plays, "kit" the stored slots */
 		const slot = storeDoc(Docs, m); if (slot == null) break;
 		/* Background loads of other patterns only matter to the song palette. */
-		const relevant = (m.kind === "pattern" && (slot === currentPatternSlot() || S.ws === "song")) || ((m.kind === "kit" || m.kind === "workingKit") && slot === currentKitSlot()) || m.kind === "global" || (m.kind === "song" && slot === currentSongSlot());
+		const relevant = (m.kind === "pattern" && (slot === currentPatternSlot() || S.ws === "song")) || ((m.kind === "kit" || m.kind === "workingKit") && slot === currentKitSlot()) || m.kind === "global" || (m.kind === "song" && (slot === currentSongSlot() || S.ws === "song"));
 		if (relevant) scheduleRender();
 		break;
 	}
@@ -65,6 +65,8 @@ Bridge.onMessage(m => {
 	case "audioRun": Boot.audio(m); break;
 	case "cpuLoad": CpuMeter.update(m); break;
 	case "outputLevel": DeskVolume.update(m); break;
+	case "midiIn": noteLight(m); break;
+	case "midiHeld": break;	/* the notes held: the Monomachine's Perform keyboard lights them; the Machinedrum has no keyboard (its notes are trigs: midiIn) */
 	case "result": if (m.op === "followHost" && !m.ok) hostRefused(m); break;
 	case "setup": { const before = knobCcs().join(); Docs.setup = m.doc; if (knobCcs().join() !== before && S.ws === "control") scheduleRender(); break; }
 	case "mod": {
@@ -74,6 +76,7 @@ Bridge.onMessage(m => {
 		if (S.ws === "control") { if (!sameValue(Mods.doc, before) && !interacting()) scheduleRender(); else syncMods(); }
 		break;
 	}
+	case "solo": takeSolo(m); break;
 	case "ask": onAsk(m); break;
 	case "samples": Docs.samples = m.doc; Waves.clear(); WavesAsked.clear(); if (S.ws === "sampler" || S.ws === "sound") scheduleRender(); break;
 	case "sampleWave": onSampleWave(m); break;
@@ -158,7 +161,6 @@ function clickSeg(e) {
 	if (k === "upd") { sendLfo(S.sel, "UPDTE", v); sg.parentElement.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b === sg)); redraw(); }
 	else if (k === "srcrate" && S.ws === "control") { const id = S.ctl.sel.slice(4); if (Mods.source(id)) { Mods.setSource(id, { rate: v }); sendMods(); render(); } }
 	else if (k === "lcurve" && S.ws === "control") { const li = +sg.parentElement.dataset.li; if (Mods.doc.links[li]) { Mods.setLink(li, { curve: v }); sendMods(); render(); } }
-	else if (k === "songpick" && S.ws === "song") { S.songPick = v; render(); }
 	else if (k === "loopkind" && S.ws === "song") { const r = { ...V.song[S.songSel], type: v }; if (v === "halt") r.to = S.songSel; if (v === "loop") { r.count = r.count || 2; r.to = Math.min(r.to ?? 0, Math.max(0, S.songSel - 1)); } if (v === "jump") r.to = Math.max(r.to ?? 0, S.songSel + 1); rowSet(S.songSel, r); render(); }
 	return true;
 }
@@ -174,11 +176,11 @@ Keys.bind({ id: "redo-y", short: "Redo", scope: "any", keys: ["Y"], mod: "cmd", 
 Keys.bind({ id: "copy", short: "Copy", scope: "any", keys: ["C"], mod: "cmd", group: "Anywhere", does: "Copy (Sequence: the selected steps, or the track page shown; Sound: the sound; Song: the row)", run: () => secAction("copy") });
 Keys.bind({ id: "paste", short: "Paste", scope: "any", keys: ["V"], mod: "cmd", group: "Anywhere", does: "Paste (Sequence: at the selected step, the block from its first step and track)", run: () => secAction("paste") });
 Keys.bind({ id: "leave-learn", short: "Leave LEARN", scope: "control", keys: ["Escape"], group: "Anywhere", does: "Leave LEARN", mapping: true, when: () => S.mapping && S.ctl.learn, run: () => toggleLearn() });
-Keys.bind({ id: "play-stop", short: "Play / stop", scope: "any", keys: ["Space"], group: "Transport", does: "Play / stop", run: () => cmd(V.playing ? "stop" : "play") });
+Keys.bind({ id: "play-stop", short: "Play / stop", scope: "any", keys: ["Space"], group: "Transport", does: "Play / stop (paused: go on from the step)", run: () => playButton() });
 Keys.bind({ id: "record", short: "Record", scope: "any", keys: ["Space"], code: "Space", mod: "alt", group: "Transport", does: "Live recording (RECORD + PLAY): Alt + play, the other Alt that is not \"all\"", run: () => cmd("record") });
 ["seq", "sound", "mix", "sampler", "song", "control"].forEach((ws, i) => Keys.bind({ id: "workspace-" + (i + 1), scope: "any", keys: [String(i + 1)], group: "Workspaces", does: ["Sequence", "Sound", "Mix", "Sampler", "Song", "Control"][i], mapping: ws === "control", when: ws === "control" ? () => S.mapping : null, run: () => { S.ws = ws; render(); } }));
 Keys.bind({ id: "page-prev-next", short: "Page − / Page +", scope: "seq sampler", keys: ["[", "]"], group: "Sequence", does: "Previous / next page", when: () => (S.ws === "seq" || S.ws === "sampler") && pages16() > 1, run: e => { const n = pages16(); S.viewAll = false; S.page = (S.page + (e.key === "]" ? 1 : -1) + n) % n; render(); } });
-Keys.bind({ id: "delete", short: "Clear selected / Clear selected", scope: "seq song", keys: ["Delete", "Backspace"], group: "Sequence", does: "Clear the selected steps; with none selected nothing (Clr clears the page shown, ⌥Delete the pattern). Song: delete the row", when: () => S.ws === "song" || S.ws === "seq",
+Keys.bind({ id: "delete", short: "Clear selected / Clear selected", scope: "seq song", keys: ["Delete", "Backspace"], group: "Sequence", does: "Clear the selected steps; with none selected nothing (Clr clears the page shown, ⌥Delete the pattern). Song: delete the row", when: () => (S.ws === "song" || S.ws === "seq") && !V.rec,
 	run: () => S.ws === "song" ? songAction("del") : S.stepSel ? secAction("clear") : toast(Modifiers.say("Nothing selected: ⌘-click or ⌘-drag steps first. Clr clears the page shown, ⌥Delete the whole pattern.")) });
 Keys.bind({ id: "clear-pattern", short: "Clear pattern / Clear pattern", scope: "seq", keys: ["Delete", "Backspace"], mod: "alt", group: "All", does: "Sequence: clear the whole pattern: every track's trigs and locks", when: () => S.ws === "seq", run: () => clearPattern() });
 Keys.bind({ id: "clr-key-all", scope: "any", area: "Top bar", keys: ["CLR"], mod: "alt", group: "All", does: "Click: clear the whole pattern, every track's trigs and locks (one undo step)" });

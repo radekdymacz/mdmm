@@ -1,4 +1,5 @@
 #include "mdDeskSession.h"
+#include "mdFactorySource.h"
 #include "mdSessions.h"
 
 #include "mdController.h"
@@ -9,6 +10,8 @@
 #include "mdDesk/mdDeskWirePort.h"
 
 #include "deskWire/mdWire.h"
+
+#include "mdLib/mdromloader.h"
 
 #include "elektronData/mdJson.h"
 #include "elektronData/mdValidate.h"
@@ -60,6 +63,7 @@ namespace mdJucePlugin
 			};
 			p.baseChannel = [this](const uint8_t _ch) { m_channel = _ch; };
 			p.pressKey = [this](const std::string& _key) { return m_link.pressKey(_key); };
+			p.sendMidi = [this](const std::vector<uint8_t>& _m) { m_link.sendChannel(_m); };
 			p.turnKnob = [this](const uint8_t _e, const int _s) { return m_link.turnKnob(_e, _s); };
 			p.nowMs = [] { return nowMs(); };
 			p.audition = [this](const elektronData::AuditionClip& _clip) { return m_link.audition(_clip); };
@@ -132,33 +136,6 @@ namespace mdJucePlugin
 
 	// The Machinedrum Editor's session: the engine map, the learnable parameters, its page and the
 	// editor's setup kept with the project.
-	// P7: the Machinedrum's SysEx import traits (mdSyxSession.h)
-	template<> struct SyxTraits<mdDesk::Desk>
-	{
-		using Docs = elektronData::MdDocuments;
-		static constexpr elektronData::SyxModel model = elektronData::SyxModel::Md;
-		static constexpr const char* name = "Machinedrum";
-		static const Docs& docs(const elektronData::SyxFile& _f) { return _f.md; }
-		static Docs machine(const mdDesk::Desk& _d)
-		{
-			const auto& v = _d.documents();
-			Docs o;
-			o.patterns = v.patterns;
-			o.kits = v.kits;
-			o.songs = v.songs;
-			if(v.global)
-				o.globals[v.global->position] = *v.global;
-			return o;
-		}
-		// The slots the machine is on (B-019: the preview marks the imported items that land in what plays).
-		static SyxPlaying playing(const mdDesk::Desk& _d)
-		{
-			const auto& s = _d.linkState();
-			const auto of = [](const std::optional<uint8_t>& _v) { return _v ? static_cast<int>(*_v) : -1; };
-			return {of(s.pattern), of(s.kit), of(s.song), of(s.globalSlot)};
-		}
-	};
-
 	class MdSession final : public SessionOf<mdDesk::Desk>
 	{
 	public:
@@ -193,6 +170,97 @@ namespace mdJucePlugin
 		}
 
 		const char* missingText() const override { return "No MD OS 1.63 ROM is running yet. After adding it, reopen the plug-in."; }
+
+		// Reset machine… > Factory reset (P6): the factory kits, patterns and songs come from a second Machinedrum
+		// started from the user's own ROM with no patch RAM (mdFactorySource.h), read once a session; then they go to
+		// the machine as an import of every slot (mdSyxWork.h), read back and reported. Globals and samples stay.
+		void machineReset(const Value& _message) override
+		{
+			const auto* how = _message.find("how");
+			if(!how || !how->isString() || how->asString() != "factory")
+			{
+				reply(_message, false, "machineReset: empty or factory");
+				return;
+			}
+			if(m_factory.running() || m_factoryWanted)
+			{
+				reply(_message, false, "The factory data is being prepared: the reset follows by itself.");
+				return;
+			}
+			if(syx().running())
+			{
+				reply(_message, false, "An import or export is running: try again when it is done.");
+				return;
+			}
+			if(!m_factoryDumps.empty())
+			{
+				const auto why = syx().reset(desk(), m_factoryDumps, "Factory reset", "restored", [this](const Value& _m) { toPage(_m); });
+				reply(_message, why.empty(), why);
+				return;
+			}
+			const auto rom = md::RomLoader::findROM(md::MachineModel::Machinedrum);
+			if(!rom.isValid())
+			{
+				reply(_message, false, "No MD OS 1.63 ROM found: the factory data comes from it.");
+				return;
+			}
+			m_factory.start(rom.data(), rom.getFilename());
+			m_factoryWanted = true;
+			m_factoryNewsMs = -1e9;
+			reply(_message, true, "Preparing the factory data: a second Machinedrum starts from your ROM, unheard, and is read "
+				"(seconds). Nothing on your machine changes until then.");
+		}
+
+		void stepModel() override
+		{
+			if(!m_factoryWanted)
+				return;
+			const auto now = sessionNowMs();
+			if(m_factory.running())
+			{
+				if(now - m_factoryNewsMs < 1000)
+					return;
+				m_factoryNewsMs = now;
+				const auto n = m_factory.progress();
+				Value m = Value::object();
+				m.set("type", "syxReset");
+				m.set("phase", "prepare");
+				m.set("done", n);
+				m.set("total", MdFactorySource::g_total);
+				m.set("text", n ? "Reading the factory data: " + std::to_string(n) + " of " + std::to_string(MdFactorySource::g_total)
+					: std::string("Starting a second Machinedrum from your ROM for the factory data"));
+				toPage(m);
+				return;
+			}
+			auto r = m_factory.take();
+			if(!r)
+				return;
+			m_factoryWanted = false;
+			std::string why = r->error;
+			if(why.empty())
+			{
+				m_factoryDumps = std::move(r->dumps);
+				if(desk().lifecycle() != deskCore::Lifecycle::Ready)
+					why = "The machine is not ready: choose Factory reset again when it is.";
+				else
+					why = syx().reset(desk(), m_factoryDumps, "Factory reset", "restored", [this](const Value& _m) { toPage(_m); });
+			}
+			if(!why.empty())
+			{
+				Value m = Value::object();
+				m.set("type", "syxReset");
+				m.set("phase", "failed");
+				m.set("done", 0);
+				m.set("total", MdFactorySource::g_total);
+				m.set("text", "Factory reset: " + why);
+				toPage(m);
+			}
+		}
+
+		MdFactorySource m_factory;
+		bool m_factoryWanted = false;
+		double m_factoryNewsMs = -1e9;
+		std::vector<std::vector<uint8_t>> m_factoryDumps;	// read once a session: the same at every start (P6)
 
 		// P9: a sample file the user chose for a UW ROM slot: read here (never through the page), then the
 		// desk converts it and sends it as SDS; the page hears sampleLoad messages.

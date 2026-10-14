@@ -192,6 +192,14 @@ namespace
 			&& elektronData::mdMachineName(0xa2) == "RAM-P1" && elektronData::mdMachineName(99) == "MID-04"
 			&& elektronData::mdMachineName(90).empty(), "machine names");
 		check(elektronData::mdMachineModel("P-I-SD") == uint32_t{65}, "machine by name");
+		{
+			// B-082: MID's ROUTING page and the master-effect CTR machines' as the machine's LCD shows them
+			const auto mid = elektronData::mdMachineParamNames(96);
+			const auto ctr = elektronData::mdMachineParamNames(*elektronData::mdMachineModel("CTR-RE"));
+			check(std::string(mid[18]) == "CC6D" && std::string(mid[19]) == "CC6V" && std::string(mid[20]) == "PCHG" && std::string(mid[21]) == "LFOS",
+				"MID routing: CC5D CC5V CC6D CC6V PCHG LFOS LFOD LFOM");
+			check(std::string(ctr[16]).empty() && std::string(ctr[21]) == "LFOS" && std::string(ctr[23]) == "LFOM", "CTR-RE routing: the LFO knobs only");
+		}
 		auto bad = k;
 		bad.lfos[4].shape1 = 7;
 		check(!elektronData::validate(bad).empty(), "LFO shape beyond 5 is refused");

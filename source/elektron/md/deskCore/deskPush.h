@@ -250,6 +250,14 @@ namespace deskCore
 					return true;
 			return false;
 		}
+		// A push busy (waiting to go, or sent and not read back) that last went out less than _withinMs ago, or not yet
+		bool anyBusyWithin(const double _nowMs, const double _withinMs) const
+		{
+			for(const auto& [ref, push] : m_pushes)
+				if(push.slot.busy() && (!push.slot.inFlight() || push.parked || _nowMs - push.slot.sentMs() < _withinMs))
+					return true;
+			return false;
+		}
 		void clear() { m_pushes.clear(); }
 		// The read-backs asked for wait in the editor's stream behind what it still sends (B-014: a whole import's
 		// dumps): their time starts once the stream is quiet, so a long queue does not time them out.

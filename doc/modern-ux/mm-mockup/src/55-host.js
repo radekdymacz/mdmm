@@ -18,14 +18,16 @@
      undo(), redo(), history()        undo lives with the host; history() = {undo, redo} counts
      togglePlay(), ownsClock          the machine is the sequencer
      selectPattern(p, now)            LOAD PATTERN (now: STOP, LOAD PATTERN, PLAY)
-     kit(op, k)                       "save" | "load" | "saveAs" | "reload"
-     tempo(bpm), mutes()              the machine's tempo; the tracks' mutes changed (synth and MIDI)
-     keyMode(mode)                    the keyboard mode changed ("normal" | "multi" | "map" | "poly"): POLY
-                                      is the machine's audio mode
+     kit(op, k)                       "save" | "load" | "saveAs" | "reload" | "undo" (the machine's UNDO KIT, MM-102)
+     tempo(bpm), mutes(state)         the machine's tempo; the tracks' mutes or solos changed (synth and MIDI); state {solo, mutes}: the soloed tracks and, while one holds, the person's mutes (kept with the project)
+     keyMode(mode, t)                 the keyboard mode changed ("normal" | "multi" | "map" | "poly"): POLY
+                                      is the machine's audio mode, on track t (0-5: its TRACK key; again with
+                                      another t while in POLY: POLY moves there)
      record(live)                     the RECORD key: the host picks GRID or LIVE RECORDING, or off; live
                                       (Alt+Space): LIVE RECORDING, also when stopped
-     songSlot(slot), loadSong(slot)   the Song workspace edits another of the 24 songs; LOAD SONG makes it
-                                      the machine's
+     loadSong(slot)                   LOAD SONG: the song slots' Load makes slot the machine's song, the one
+                                      the Song workspace edits
+     saveSong()                       SAVE SONG: the machine's song into its slot (the song slots' Save)
      chain(patterns), chainClear()    MM-P8: the Song palette's CHAIN: the machine's own pattern chain (one
                                       bank, each pattern once, played in order and looped), and its end; what
                                       the machine then plays comes back through MMView.show
@@ -42,14 +44,23 @@
                                       shows their moving values with MMView.setModulation
      notes                            the host's words for the Control sources ({ccSource, appSource})
      engine(kind), firstRun(), bootScreen(on), renderPst(), engineLabels, menu(x, y) (the editor's menu at that point: the host draws it with DeskMenu, I-008)
-     syxChoose(), syxExport(), syxStart(kinds, skip), syxStop()   SysEx import and export (P7, B-019): the host's file
+     syxChoose(), syxExport(request), syxStart(kinds, skip, {placeAt, checkOnly}), syxStop(), syxPlace(placeAt), syxExportInfo(),
+     machineReset(how)   SysEx import and export (P7, B-019; 0.6: SPECIFIC place, VERIFY ONLY, kinds and ranges, Reset machine…): the host's file
                                       dialogs; the preview and progress come back through MMView
      removeRom(info)   REMOVE in the LOAD ROM card
      romManage()   LOAD ROM in the engine menu (a host shows which firmware runs, REPLACE and REMOVE; none: the start-up card)
+     memory(what)   I-024: "keep" (the engine menu's KEEP MEMORY on / off) or "factory" (RESET MACHINE…'s Start from
+                                      factory memory, asked by the panel); the state comes back with MMView.setMemory
      chooseRom(), revealRom(), recheck()   the start-up card's keys (P7): the native file chooser for the
                                       firmware, the ROM folder, look again (the page never reads the ROM)
      audioDoc(), audioSend(command), audioMeter(on)   the AUDIO / MIDI panel's devices
      globalSlot(n)                    GLOBAL's slot keys: make global slot n (0-7) the active one (B-051)
+     transport(op, args, done)        wave 2, the transport beyond PLAY and STOP: op pause | resume | stop | panic |
+                                      playFrom {i} (a song row) | nudge {pct} (the tempo pct % off while held, 0 =
+                                      back); done(ok) once the machine answered (128-transport.js). Wave 7: record
+                                      {mode: "step", t} (STEP RECORDING, TRACK t in focus), stepKey {key: left | right
+                                      | clear}, liveErase {t, on} (EXIT held while LIVE RECORDING plays); the host gives
+                                      the cursor back with setRecord(mode, stepAt)
    The view's side, for a host: window.MMView (130-main.js): values to read; show(view), the one
    writer of the state's document members (the machine's documents as the host derives them,
    DESIGN-UNIFY.md phase 1: the current pattern and kit, song, global, tempo, mutes, POLY, what

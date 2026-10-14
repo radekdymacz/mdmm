@@ -23,7 +23,9 @@ namespace mdDesk
 	// what it sounds like (the working kit).
 	//
 	// Commands: kitCopy {k}, kitPaste {k}, kitCopyTo {from, to}, kitClear {k}, kitRename
-	// {k, name}; patCopy {p}, patPaste {p}, patCopyTo {from, to}, patClear {p}. One action per
+	// {k, name}; patCopy {p}, patPaste {p}, patCopyTo {from, to}, patClear {p}; songCopy {s}, songPaste {s},
+	// songCopyTo {from, to, name?}, songClear {s}, songRename {s, name}: a song slot is written as a dump, so an
+	// edited song is stored at once (the machine loads it with LOAD SONG, pumpSongReload). One action per
 	// op (copy, paste, copyTo, clear, rename); the command table's kind column says which shelf
 	// (kits or patterns) it acts on, the group column that it is the library's. kitRename of the
 	// kit that plays is refused: kitName renames it.
@@ -37,6 +39,11 @@ namespace mdDesk
 
 	elektronData::MdKit emptyKit(const elektronData::MdKit& _like, uint8_t _slot);
 	elektronData::MdPattern emptyPattern(const elektronData::MdPattern& _like);
+	// The song slots (0.6): a cleared song is the END row alone with no name. A song's name as text (the bytes up to the
+	// NUL when each is printable), and a song counts as empty in the library: no name and no row but END.
+	elektronData::MdSong emptySong(const elektronData::MdSong& _like, uint8_t _slot);
+	std::string songNameText(const elektronData::MdSong& _song);
+	bool isEmptySong(const elektronData::MdSong& _song);
 	// A kit's name as text: the bytes up to the NUL when each is printable ASCII (0x20-0x7e), else
 	// none. A slot never written holds what the battery RAM held (measured on OS 1.63: K17-K64 of a
 	// fresh machine hold DEL bytes, 7f 7f 7f 7f 00 10 7f.., or 7f then left-overs like "MX KIT 1",

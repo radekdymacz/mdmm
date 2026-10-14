@@ -84,7 +84,11 @@ function pasteToMany(){const[a,b]=vis();if(!CLIP?.rows){toast("Copy a track page
 /* ---- mutes from the keys: M the selected track, Alt+M every track (any audible: mute all; none: unmute all), 0
    unmutes and unsolos every track (also the rail's M/S OFF key). MIDI tracks only where the engine mutes them. ---- */
 const muteOk=t=>t<6||!NA.midiMutes;
-function mutesChanged(say){tx();if(HOST.mutes)HOST.mutes();render();if(say&&!["seq","sound","mix","perform"].includes(S.ws))toast(say)}
+/* B-123: the solo (the soloed tracks, 0-11) and, while one holds, the mutes the person set: what the plug-in keeps with the
+   project (HOST.mutes(state) says it with every change; the plug-in says it back as MMView.setSolo) */
+function soloFacts(){const ts=[...S.tracks,...S.midi],solo=ts.flatMap((x,t)=>x.solo?[t]:[]);return{solo,mutes:solo.length?ts.flatMap((x,t)=>x.mute?[t]:[]):[]}}
+function setSolo(tracks,mutes){const ts=[...S.tracks,...S.midi],any=tracks.length>0;ts.forEach((x,t)=>{x.solo=tracks.includes(t);if(any)x.mute=mutes.includes(t)});render()}
+function mutesChanged(say){tx();if(HOST.mutes)HOST.mutes(soloFacts());render();if(say&&!["seq","sound","mix","perform"].includes(S.ws))toast(say)}
 function muteSel(){const t=S.sel;if(!muteOk(t)){toast(NA.midiMutes);return}const tr=trk(t);tr.mute=!tr.mute;mutesChanged(`${tr.mute?"Muted":"Unmuted"} ${tLabel(t)}`)}
 function muteAllToggle(){const ts=[...Array(12).keys()].filter(muteOk),on=ts.some(t=>!trk(t).mute);ts.forEach(t=>trk(t).mute=on);mutesChanged();toast(on?"Every track muted (Alt+M again: unmute all)":"Every track unmuted")}
 function unmuteAll(){const ts=[...Array(12).keys()];if(!ts.some(t=>trk(t).solo||(trk(t).mute&&muteOk(t)))){toast("No track is muted or soloed.");return}ts.forEach(t=>{trk(t).solo=false;if(muteOk(t))trk(t).mute=false});mutesChanged();toast("Every track unmuted and unsoloed")}
@@ -113,8 +117,8 @@ function kbOn(){return Keys.free()}
 function kbTell(k,t){if(KB.told.has(k))return;KB.told.add(k);toast(t)}
 function homeDown(e){if(e.repeat||KB.held.has(e.code))return;const t=S.sel,k=KEYS_PIANO[e.code.replace(/^Key/,"")];if(k==null)return;
  if(isMidiT(t)){kbTell("midi","The keys play the synth tracks: a MIDI track's notes go to the MIDI OUT only.");return}
- const n=clamp(KEYS_BASE+12*KB.oct+k);KB.held.set(e.code,{t,n});keyNote(t,n,KB.vel)}
-function homeUp(code){const h=KB.held.get(code);if(!h)return;KB.held.delete(code);keyNote(h.t,h.n,0)}
+ const n=clamp(KEYS_BASE+12*KB.oct+k);KB.held.set(e.code,{t,n});paintKb();keyNote(t,n,KB.vel)}
+function homeUp(code){const h=KB.held.get(code);if(!h)return;KB.held.delete(code);paintKb();keyNote(h.t,h.n,0)}
 /* a host plays the machine (the note intent: pitch in semitones from KEYS_BASE, C3); the example only shows the track's lamp */
 function keyNote(t,n,vel){if(HOST.noteOn){const p=n-KEYS_BASE;return vel?HOST.noteOn(t,p,vel):HOST.noteOff(t,p)}if(vel){flashTracks([t]);kbTell("eg","Example: in the plug-in the keys play the machine.")}}
 function kbVel(d){KB.vel=keyVel(KB.vel,d);toast(`Keyboard velocity ${KB.vel}`)}
@@ -135,7 +139,7 @@ Keys.bind({id:"mute-track",scope:"any",keys:["M"],code:"KeyM",group:"Selected tr
 Keys.bind({id:"mute-all",scope:"any",keys:["M"],code:"KeyM",mod:"alt",group:"All",does:"Mute every track; when none is audible, unmute every track",when:kbOn,run:()=>muteAllToggle()});
 Keys.bind({id:"track-prev-next",scope:"any",keys:["ArrowUp","ArrowDown"],group:"Selected track",does:"Select the previous / next track of the side shown (a focused value keeps ↑ / ↓ for itself). Sequence with selected steps: move the selection a track",
  when:()=>kbOn()&&$("#kpop").hidden&&S.ws!=="song",run:e=>{if(selKeys()){selMove(e.key==="ArrowDown"?1:-1,0);return}const sd=side(),i=sd.indexOf(S.sel);select(sd[((i<0?0:i)+(e.key==="ArrowDown"?1:5))%6])}});
-Keys.bind({id:"tap-tempo",scope:"any",keys:["B"],group:"Transport",does:"Tap tempo (the average of the last taps; T plays F♯ here). On Sequence B is the piano roll's Draw: tap with ⇧B",when:()=>kbOn()&&S.ws!=="seq",run:()=>tapTempo()});
+Keys.bind({id:"tap-tempo",scope:"any",keys:["B"],group:"Transport",does:"Tap tempo (the average of the last taps; T plays F♯ here).",when:kbOn,run:()=>tapTempo()});
 /* ⇧B taps on every workspace, Sequence included: the one tap chord of both editors (Radek, 2026-10-10) */
 Keys.bind({id:"tap-tempo-shift",short:"Tap",scope:"any",keys:["B"],mod:"shift",group:"Transport",does:"Tap tempo: ⇧B taps on every workspace of both editors",when:kbOn,run:()=>tapTempo()});
 Keys.bind({id:"rotate",scope:"seq",keys:["ArrowLeft","ArrowRight"],mod:"alt",group:"Selected track",does:"Sequence: rotate the selected track one step earlier / later: notes, slides and locks, wrapping at the length. Presses while ⌥ is down are one undo step. The one Alt that is not \"all\": FUNCTION + arrows on the machine",when:seqKeys,run:e=>rotateTrack(e.key==="ArrowRight"?1:-1)});

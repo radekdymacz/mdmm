@@ -2,6 +2,7 @@
 // against a scripted machine (no firmware). The firmware smoke test is
 // mdLibTest/mmDeskFirmwareTest.
 
+#include "mmDeskTransport.h"
 #include "mmDesk.h"
 #include "mmDeskMachine.h"
 #include "mmIntentCases.h"
@@ -58,18 +59,35 @@ namespace
 		auto t = screen(mmDesk::Screen::GlobalEdit);
 		t.recvCount = 7;
 		r.tick(0, t);
-		check(r.parked() && !r.taking(), "parked, nothing sent yet: not taking");
+		check(r.parked() && r.taking(), "B-099: parked, the dump goes on the next tick: taking (a key now reaches the machine before it)");
 		auto out = r.tick(10, t);
 		check(out.sends.size() == 1 && r.taking(), "the dump sent, the RECV count not moved: taking (a key now is lost)");
 		t.recvErrors = 1;
 		r.tick(20, t);
-		check(!r.taking(), "a message counted (an error counts too): taken");
+		check(r.taking(), "B-099: a message counted (an error counts too): still taking for settleMs");
+		r.tick(20 + r.settleMs, t);
+		check(!r.taking(), "settleMs after: taken");
 		r.want({0xf0, 2, 0xf7});
-		r.tick(30, t);
+		r.tick(200, t);
 		check(r.taking(), "another dump sent: taking again");
 		t.recvCount = 8;
-		r.tick(40, t);
+		r.tick(210, t);
+		r.tick(300, t);
 		check(!r.taking() && r.parked(), "taken: keys work on SYSEX RECV, still parked");
+		// B-099: the machine clears its count as it opens SYSEX RECV, and the screen may show first
+		mmDesk::RecvSession c;
+		c.want({0xf0, 1, 0xf7});
+		auto u = screen(mmDesk::Screen::GlobalEdit);
+		u.recvCount = 5;
+		c.tick(0, u);
+		u.recvCount = 0;
+		c.tick(10, u);
+		c.tick(100, u);
+		check(c.taking(), "B-099: parked on the old count, the count cleared, the dump not counted: taking");
+		u.recvCount = 1;
+		c.tick(110, u);
+		c.tick(200, u);
+		check(!c.taking(), "B-099: counted from the cleared count: taken");
 	}
 
 	void recvSession()
@@ -195,12 +213,14 @@ namespace
 		std::map<std::pair<uint8_t, uint8_t>, Bytes> slots;
 		mmDesk::Screen screenWord = mmDesk::Screen::Main;
 		int keysPressed = 0;
-		uint8_t pattern = 3, kit = 5, global = 0;
+		uint8_t pattern = 3, kit = 5, global = 0, songMode = 0;
 		std::vector<uint8_t> activations;	// every SET ACTIVE GLOBAL (0x56) taken, in order
 		std::vector<Bytes> applied;			// the slot's stored global each 0x56 applied (B-071)
 		uint32_t recvTaken = 0;	// dumps taken on SYSEX RECV (the RECV count, RAM 0x26a3c4)
 		bool slow = false;		// dumps stay on their way (inFlight) until taken by hand
 		int recording = -1;		// the recording mode the telemetry says (-1 unknown)
+		int stepCursor = -1;	// STEP RECORDING's cursor (RAM 0x2bff09)
+		std::vector<mmDesk::Key> keyLog;	// every key pressed, in order
 		std::vector<Bytes> replies;
 		std::vector<Bytes> ignored;
 		std::vector<Bytes> inFlight;
@@ -247,9 +267,14 @@ namespace
 				pattern = _m[7];	// LOAD PATTERN while stopped: the machine switches at once
 				return;
 			}
+			if(cmd == 0x71 && _m.size() > 9 && _m[7] == 0x10)
+			{
+				songMode = _m[8];	// SET STATUS: SONG or PATTERN mode
+				return;
+			}
 			if(cmd == 0x70)
 			{
-				const uint8_t v = _m[7] == 0x04 ? pattern : _m[7] == 0x02 ? kit : _m[7] == 0x01 ? global : 0;
+				const uint8_t v = _m[7] == 0x04 ? pattern : _m[7] == 0x02 ? kit : _m[7] == 0x01 ? global : _m[7] == 0x10 ? songMode : 0;
 				replies.push_back({0xf0, 0, 0x20, 0x3c, 3, 0, 0x72, _m[7], v, 0xf7});
 			}
 		}
@@ -311,6 +336,7 @@ namespace
 		port.device.pressKeys = [&](const std::vector<mmDesk::Key>& _k)
 		{
 			m.keysPressed += static_cast<int>(_k.size());
+			m.keyLog.insert(m.keyLog.end(), _k.begin(), _k.end());
 			if(mmDesk::RecvSession::isEnterMacro(_k))
 				m.screenWord = mmDesk::Screen::GlobalEdit;
 			else if(_k == mmDesk::RecvSession::exitKeys())
@@ -331,6 +357,7 @@ namespace
 				mmDesk::Telemetry tel = screen(m.screenWord);
 				tel.recvCount = m.recvTaken;
 				tel.recording = m.recording;
+				tel.stepCursor = m.stepCursor;
 				d.onTelemetry(tel);
 				d.tick();
 				auto replies = std::move(m.replies);
@@ -376,7 +403,8 @@ namespace
 		check(m.screenWord == mmDesk::Screen::Main && !d.recvParked(), "left SYSEX RECV when idle");
 
 		// Bug 4 (the user journeys): a panel key pressed while the machine is still taking a dump on SYSEX RECV is lost
-		// (mmDeskFirmwareTest parked). RECORD then is refused as busy (it was answered ok), and taken once the dump is in.
+		// (mmDeskFirmwareTest parked). Review 1 (B-092): RECORD then waits for the panel, as PLAY and STOP do (0.3.4),
+		// and is pressed once the dump is in; RECORD again while it waits cancels it.
 		{
 			m.slow = true;
 			m.recording = 0;
@@ -387,9 +415,13 @@ namespace
 			check(d.recvParked() && !m.inFlight.empty(), "parked, the dump on its way");
 			const int keys0 = m.keysPressed;
 			msg(R"({"op":"record","mode":"grid"})");
-			const auto r1 = lastResult();
-			check(!r1.find("ok")->asBool() && r1.find("errors")->asArray()[0].asString() == "The panel is busy (SYSEX RECV); try again."
-				&& m.keysPressed == keys0, "RECORD while the dump is taken: refused as busy, no key pressed");
+			check(lastResult().find("ok")->asBool() && lastResult().find("note")->asString() == "The machine is taking an edit (SYSEX RECV): it follows in a moment."
+				&& m.keysPressed == keys0, "B-092: RECORD while the dump is taken: accepted, waits as PLAY does (no key yet)");
+			msg(R"({"op":"record","mode":"off"})");
+			check(lastResult().find("ok")->asBool() && lastResult().find("note")->asString() == "RECORD cancelled: it was waiting for the panel." && m.keysPressed == keys0,
+				"B-092: RECORD again while it waits: cancelled");
+			msg(R"({"op":"record","mode":"grid"})");
+			check(lastResult().find("ok")->asBool() && m.keysPressed == keys0, "RECORD again: waits");
 			// 0.3.4: PLAY then STOP now: accepted, they wait for the panel (the newest, STOP, goes once the dump is in)
 			msg(R"({"op":"play"})");
 			check(lastResult().find("ok")->asBool() && m.keysPressed == keys0, "PLAY while the dump is taken: accepted, waits (no key yet)");
@@ -399,12 +431,90 @@ namespace
 			for(auto& b : std::exchange(m.inFlight, {}))
 				m.take(b);
 			run(20);
-			check(m.keysPressed == keys0 + 1, "taken: the waiting STOP is pressed, once (PLAY is not)");
+			check(m.keysPressed == keys0, "B-099: taken, the machine still settling: nothing pressed yet");
+			run(100);
+			check(m.keysPressed == keys0 + 2, ("taken and settled: the waiting STOP and the waiting RECORD are pressed, once each (PLAY is not): " + std::to_string(m.keysPressed - keys0)).c_str());
 			run(200);
-			msg(R"({"op":"record","mode":"grid"})");
-			check(lastResult().find("ok")->asBool() && m.keysPressed == keys0 + 2 && d.recvParked(), "taken: RECORD is pressed on SYSEX RECV");
+			check(m.keysPressed == keys0 + 2, "and nothing more");
 			m.recording = -1;
 			run(3500);
+		}
+
+		// 0.6 wave 7: STEP RECORDING (STOP held + RECORD) with TRACK t in focus, its keys, and LIVE RECORDING's erase
+		// (EXIT held), as the machine's keys from the mode it is in (mmEditorProbeFirmwareTest recording).
+		{
+			using K = mmDesk::Key;
+			const auto keysOf = [&](const std::string& _json)
+			{
+				m.keyLog.clear();
+				msg(_json);
+				return m.keyLog;
+			};
+			const auto lastTelemetry = [&]
+			{
+				for(auto it = page.rbegin(); it != page.rend(); ++it)
+					if(it->find("type")->asString() == "telemetry")
+						return *it;
+				return Value();
+			};
+			m.recording = 0;
+			run(50);
+			check(keysOf(R"({"op":"record","mode":"step","t":2})") == std::vector<K>{K::Track3, K::StepRecord} && lastResult().find("ok")->asBool(),
+				"step from off: TRACK 3, then STOP held + RECORD");
+			check(keysOf(R"({"op":"stepKey","key":"right"})").empty() && !lastResult().find("ok")->asBool(), "a step key refused until the machine is in it");
+			m.recording = 3;
+			m.stepCursor = 0;
+			run(100);
+			auto tel = lastTelemetry();
+			check(tel.find("record")->asString() == "step" && tel.find("stepAt")->asNumber() == 0, "the telemetry says step, the cursor at 0");
+			m.stepCursor = 1;
+			run(100);
+			check(lastTelemetry().find("stepAt")->asNumber() == 1, "a cursor move is published (the playhead stands)");
+			check(keysOf(R"({"op":"stepKey","key":"right"})") == std::vector<K>{K::Right}, "RIGHT: a rest");
+			check(keysOf(R"({"op":"stepKey","key":"left"})") == std::vector<K>{K::Left}, "LEFT: back");
+			check(keysOf(R"({"op":"stepKey","key":"clear"})") == std::vector<K>{K::Enter}, "clear: ENTER");
+			check(keysOf(R"({"op":"record","mode":"step","t":4})") == std::vector<K>{K::Track5}, "step again with another track: the focus only");
+			check(keysOf(R"({"op":"liveErase","t":0,"on":true})").empty() && !lastResult().find("ok")->asBool(), "erase refused outside LIVE RECORDING");
+			check(keysOf(R"({"op":"record","mode":"off"})") == std::vector<K>{K::Record}, "off from step: RECORD");
+			m.recording = 0;
+			m.stepCursor = 1;	// RAM keeps it
+			run(100);
+			check(lastTelemetry().find("stepAt")->isNull(), "out of step recording: no cursor");
+			check(keysOf(R"({"op":"record","mode":"live"})") == std::vector<K>{K::LiveRecord}, "live from off");
+			m.recording = 2;
+			run(100);
+			check(keysOf(R"({"op":"liveErase","t":1,"on":true})") == std::vector<K>{K::Track2, K::ExitDown}, "erase on: TRACK 2, EXIT down");
+			check(keysOf(R"({"op":"liveErase","t":3,"on":true})") == std::vector<K>{K::Track4}, "another track: the focus moves, EXIT stays down");
+			check(keysOf(R"({"op":"liveErase","t":3,"on":false})") == std::vector<K>{K::ExitUp}, "off: EXIT up");
+			check(keysOf(R"({"op":"liveErase","t":3,"on":false})").empty(), "off again: nothing");
+			// the page says every 250 ms that Delete is still held; a page that goes quiet (closed, reloaded) lets EXIT go
+			keysOf(R"({"op":"liveErase","t":2,"on":true})");
+			m.keyLog.clear();
+			for(int i = 0; i < 6; ++i)
+			{
+				run(250);
+				msg(R"({"op":"liveErase","t":2,"on":true})");
+			}
+			check(m.keyLog.empty(), "held with the page's word every 250 ms: nothing let go, nothing pressed again");
+			run(1200);
+			check(m.keyLog == std::vector<K>{K::ExitUp}, "no word for over a second: EXIT up");
+			keysOf(R"({"op":"liveErase","t":2,"on":true})");
+			m.keyLog.clear();
+			msg(R"({"op":"ready"})");
+			run(20);
+			check(m.keyLog == std::vector<K>{K::ExitUp}, "the page (re)attached: EXIT up");
+			keysOf(R"({"op":"liveErase","t":0,"on":true})");
+			m.keyLog.clear();
+			m.recording = 0;
+			run(100);
+			check(m.keyLog == std::vector<K>{K::ExitUp}, "recording over: EXIT let go");
+			check(keysOf(R"({"op":"record","mode":"step"})") == std::vector<K>{K::StepRecord}, "step without t: the focus as it is");
+			m.recording = 2;
+			run(50);
+			check(keysOf(R"({"op":"record","mode":"step","t":0})") == std::vector<K>{K::Track1, K::Record, K::Record, K::StepRecord}, "step from live: off first (RECORD twice)");
+			m.recording = -1;
+			m.stepCursor = -1;
+			run(200);
 		}
 
 		// Invalid: 63 locked parameters.
@@ -650,6 +760,40 @@ void watchSteps()
 	check(w.playing, "two moves forward: playing");
 	w = mmDesk::watchStep(w.next, t, 700);
 	check(!w.playing && !w.stepped, "standing still for three step times: stopped");
+	// B-104: a pause the editor pressed while the flag stays set (on SYSEX RECV): the step decides
+	t.running = 1;
+	t.step = 7;
+	w = mmDesk::watchStep(w.next, t, 800);
+	t.step = 8;
+	w = mmDesk::watchStep(w.next, t, 925);
+	check(w.playing, "the flag set and stepping: playing");
+	w = mmDesk::watchStep(mmDesk::pausedByEditor(w.next), t, 950);
+	check(!w.playing, "B-104: paused by the editor, the flag still set: not playing");
+	t.step = 9;
+	w = mmDesk::watchStep(w.next, t, 1000);
+	check(!w.playing && w.next.paused, "B-104: one step more (the key on its way): still paused");
+	w = mmDesk::watchStep(w.next, t, 3000);
+	check(!w.playing && w.next.paused, "B-104: the step holds: still paused");
+	t.step = 10;
+	w = mmDesk::watchStep(w.next, t, 3100);
+	t.step = 11;
+	w = mmDesk::watchStep(w.next, t, 3225);
+	check(w.playing && !w.next.paused, "B-104: it moves on (PLAY on the panel): playing, the flag counts again");
+	t.running = 0;
+	w = mmDesk::watchStep(mmDesk::pausedByEditor(w.next), t, 3300);
+	t.running = 1;
+	w = mmDesk::watchStep(w.next, t, 3400);
+	check(w.playing && !w.next.paused, "B-104: the flag read 0 once: it is honest again");
+	// a resume the editor pressed: the first step forward is playing, the flag still 0
+	t.running = 0;
+	w = mmDesk::watchStep(mmDesk::pausedByEditor(w.next), t, 3500);
+	check(!w.playing, "paused (the flag 0)");
+	auto resumed = mmDesk::resumedByEditor(w.next, 4000);
+	w = mmDesk::watchStep(resumed, t, 4010);
+	check(!w.playing, "resumed, the step not moved yet: not playing yet");
+	t.step = 12;
+	w = mmDesk::watchStep(w.next, t, 4100);
+	check(w.playing, "resumed: the first step forward is playing (the flag lags)");
 }
 
 // B-027: the Monomachine loads the kit a pattern links when it takes a dump of the pattern that plays (measured,
@@ -740,7 +884,12 @@ void kitAfterPatternDump(const uint8_t _link3 = 5)
 		auto changed = *relinkOk;
 		changed.kit = 9;
 		// a link the person changes is the person's: the dump keeps it (the machine loads that kit)
+		// MM-095: over unsaved kit edits that asks first (the machine would load kit 10 at once); with force it goes
+		const auto before = m.slots[{0x67, 3}];
 		msg(R"({"op":"set","kind":"pattern","doc":)" + ed::json::write(ed::mmPatternToJson(changed)) + "}");
+		run(500);
+		check(m.slots[{0x67, 3}] == before, "a link changed over unsaved kit edits waits for the answer");
+		msg(R"({"op":"set","force":true,"kind":"pattern","doc":)" + ed::json::write(ed::mmPatternToJson(changed)) + "}");
 		run(2000);
 		check(ed::decodeMmPattern(m.slots[{0x67, 3}])->kit == 9, "a link the edit changes is sent as it is");
 		return;
@@ -909,6 +1058,73 @@ void kitAsLoaded()
 	check(ed::mmKitAsLoaded(k) == k, "a written kit loads as it is");
 }
 
+// revertTrack: a track of the kit that plays goes back to how the kit's slot stores it, in one change; what the kit
+// shares between tracks and the other tracks stay.
+void revertTrack()
+{
+	std::printf("revertTrack: a track back as its slot stores it\n");
+	ed::MmKit stored;
+	stored.position = 7;
+	stored.name = {'S', 'T', 'O', 'R', 'E', 'D', 0};
+	for(size_t t = 0; t < 6; ++t)
+	{
+		stored.machines[t] = 1;
+		stored.levels[t] = static_cast<uint8_t>(100 + t);
+		for(size_t pg = 0; pg < 7; ++pg)
+			for(size_t i = 0; i < 8; ++i)
+				stored.tracks[t].pages[pg][i] = static_cast<uint8_t>(t * 8 + pg + i);
+		for(size_t i = 0; i < 8; ++i)
+			stored.tracks[t].midi[i] = static_cast<uint8_t>(20 + t + i);
+		stored.trigPos[t] = ed::MmKit::g_noTrigPos;
+	}
+	stored.mirrorMask = 0x3f;
+	stored.lpfMask = 0x3f;
+	mmDesk::Documents docs;
+	docs.kits[7] = stored;
+	mmDesk::EditContext plays;
+	plays.currentKit = 7;
+	const auto run = [&](const char* _json)
+	{
+		mmDesk::Clipboard clip;
+		return mmDesk::apply(docs, *ed::json::parse(_json), clip, plays);
+	};
+	docs.working = mmDesk::WorkingKit{stored};
+	check(run(R"({"op":"revertTrack","k":7,"t":2})").changes.empty() && run(R"({"op":"revertTrack","k":7,"t":2})").errors.empty(),
+		"a track as stored: nothing to revert, no step");
+	auto k = stored;
+	k.machines[2] = 2;
+	k.levels[2] = 9;
+	k.tracks[2].pages[0][3] = 99;
+	k.tracks[2].pages[6][7] = 98;
+	k.tracks[2].multiEnv[1] = 77;
+	k.tracks[2].midi[1] = 66;
+	ed::mmSetKitOutputs(k, 2, 5);
+	ed::mmSetKitInput(k, 2, 5);
+	k.assignPage[2][3] = 4;
+	k.assignAdd[2][1] = -9;
+	k.trigPos[2] = 4;
+	k.lpfMask = static_cast<uint8_t>(k.lpfMask & ~(1u << 2));
+	k.legatoAmp = static_cast<uint8_t>(k.legatoAmp & ~(1u << 2));
+	k.tracks[4].pages[1][1] = 55;
+	k.mirrorMask = static_cast<uint8_t>(k.mirrorMask & ~(1u << 4));
+	k.multiTrigMode = 2;
+	docs.working = mmDesk::WorkingKit{k};
+	auto r = run(R"({"op":"revertTrack","k":7,"t":2})");
+	check(r.errors.empty() && r.changes.size() == 1 && !r.note.empty(), "one change of the working kit");
+	const auto& after = std::get<mmDesk::WorkingKit>(r.changes[0].after).kit;
+	check(after.machines[2] == stored.machines[2] && after.levels[2] == stored.levels[2] && after.tracks[2].pages == stored.tracks[2].pages
+		&& after.routing[2] == stored.routing[2] && ed::mmKitInput(after, 2) == ed::mmKitInput(stored, 2) && after.assignPage[2] == stored.assignPage[2]
+		&& after.assignAdd[2] == stored.assignAdd[2] && after.trigPos[2] == stored.trigPos[2] && after.lpfMask == stored.lpfMask
+		&& after.legatoAmp == stored.legatoAmp, "a synth track's machine, pages, level, routing, assign rows, mask bits and forward are the slot's");
+	check(after.tracks[2].multiEnv == k.tracks[2].multiEnv && after.tracks[2].midi == k.tracks[2].midi && after.multiTrigMode == k.multiTrigMode
+		&& after.tracks[4] == k.tracks[4] && after.mirrorMask == k.mirrorMask, "the kit's shared parts and the other tracks stay");
+	r = run(R"({"op":"revertTrack","k":7,"t":8})");
+	const auto& midi = std::get<mmDesk::WorkingKit>(r.changes.at(0).after).kit;
+	check(r.errors.empty() && midi.tracks[2].midi == stored.tracks[2].midi && midi.tracks[2].pages == k.tracks[2].pages, "a MIDI track: its MIDI page only");
+	docs.kits.erase(7);
+	check(!run(R"({"op":"revertTrack","k":7,"t":2})").errors.empty(), "a slot not read yet is refused");
+}
+
 // P6: the Control workspace's LFOs run in the plug-in on the machine's steps (deskCore's ModEngine,
 // as the Machinedrum's): a link moves a kit value by CC, the page gets the source values, and
 // nothing of it is an edit or an undo step.
@@ -966,6 +1182,36 @@ void modulators()
 	check(moved, "the link moves FLT page value 1 of track 1 by CC on the machine's steps");
 	check(!d.coreState().history().canUndo(), "modulation is not an undo step");
 	check(last("mod") && last("mod")->find("values")->asArray().size() == 1, "the page gets the source's value");
+
+	// B-123: the page's solo and the mutes the person had before it are kept with the project, beside the modulators
+	const auto list = [](const Value* _m, const char* _key)
+	{
+		std::vector<int> out;
+		if(_m)
+			for(const auto& v : _m->find(_key)->asArray())
+				out.push_back(static_cast<int>(v.asNumber()));
+		return out;
+	};
+	const auto sources = [](const Value& _doc) { return _doc.find("sources")->asArray().size(); };
+	check(saved.find("solo") == nullptr, "no solo yet: the setup holds none");
+	msg(R"({"op":"soloSet","id":2,"tracks":[4,1],"mutes":[0,7]})");
+	check(last("result")->find("ok")->asBool() && saved.find("solo") && list(saved.find("solo"), "tracks") == std::vector<int>{1, 4}
+		&& list(saved.find("solo"), "mutes") == std::vector<int>{0, 7} && sources(saved) == 1, "soloSet: kept with the project, sorted, the modulators beside it");
+	msg(R"({"op":"soloSet","id":3,"tracks":[1,12]})");
+	check(!last("result")->find("ok")->asBool() && list(saved.find("solo"), "tracks") == std::vector<int>{1, 4}, "a track out of range changes nothing");
+	msg(R"({"op":"modSet","id":4,"doc":{"schema":"mm-desk/modulators","version":1,"sources":[],"links":[]}})");
+	check(sources(saved) == 0 && list(saved.find("solo"), "tracks") == std::vector<int>{1, 4}, "a modulator change keeps the solo in the setup");
+	const auto project = saved;
+	page.clear();
+	check(d.loadSetup(deskCore::modSetupToJson({}, mmDesk::g_mmModLimits)).empty() && list(last("solo"), "tracks").empty(), "a project without a solo: none, and the page is told");
+	page.clear();
+	check(d.loadSetup(project).empty() && list(last("solo"), "tracks") == std::vector<int>{1, 4} && list(last("solo"), "mutes") == std::vector<int>{0, 7},
+		"a project's solo loads and is said to the page");
+	page.clear();
+	msg(R"({"op":"ready"})");
+	check(list(last("solo"), "tracks") == std::vector<int>{1, 4}, "a page made again gets the solo");
+	msg(R"({"op":"soloSet","id":5,"tracks":[],"mutes":[3]})");
+	check(saved.find("solo") == nullptr, "no solo: the setup says none");
 }
 
 // P6: the questions, errors, the machine's own screen and a restart, as the page gets them.
@@ -1053,6 +1299,63 @@ void asksAndErrors()
 		msg(R"({"op":"patClear","p":1,"id":9,"g":53})");
 		check(result(9) && result(9)->find("ok")->asBool() == false && last("ask")->find("command")->find("op")->asString() != "patClear",
 			"a pattern not read yet: refused, no question");
+		{
+			// MM-095 review: a pattern with trigs and another kit copied over the pattern that plays (A02, kit 3) while
+			// the kit is edited: one question naming both, the overwrite and the switch that loses the edits
+			auto plays = emptyPattern(1);
+			plays.kit = 2;
+			plays.amp[0] = 1;
+			auto from = emptyPattern(6);
+			from.kit = 4;
+			from.amp[1] = 1;
+			d.onDeviceSysex(ed::encodeMmPattern(plays));
+			d.onDeviceSysex(ed::encodeMmPattern(from));
+			msg(R"({"op":"patCopyTo","from":6,"to":1,"id":30,"g":70})");
+			const auto* both = last("ask");
+			const auto* also = both ? both->find("also") : nullptr;
+			const auto named = [&](const std::string& _w) { if(both->find("ask")->asString() == _w) return true;
+				if(also && also->isArray()) for(const auto& x : also->asArray()) if(x.asString() == _w) return true; return false; };
+			check(both && both->find("command")->find("op")->asString() == "patCopyTo" && named("overwriteSlot") && named("discardKit")
+				&& d.pattern(1)->kit == 2, "a pattern copied over the one that plays, with another kit, over kit edits: one question, the overwrite and the lost edits");
+		}
+		{
+			// 0.6 wave 1: the song slots. S04 holds a song, S05 and S06 are empty; the library's ops over them.
+			ed::MmSong held;
+			held.position = 3;
+			held.name = {'H', 'E', 'L', 'D'};
+			held.rows[0].bytes[ed::mmSongRow::g_pattern] = 1;
+			held.rows[0].bytes[ed::mmSongRow::g_length] = 16;
+			held.rows[0].bytes[ed::mmSongRow::g_tempo] = held.rows[0].bytes[ed::mmSongRow::g_tempo + 1] = 0xff;
+			held.rows[1].bytes[ed::mmSongRow::g_pattern] = ed::MmSong::g_end;
+			held.rows[1].bytes[ed::mmSongRow::g_tempo] = held.rows[1].bytes[ed::mmSongRow::g_tempo + 1] = 0xff;
+			const auto none = mmDesk::emptySong(held, 4);
+			check(mmDesk::songIsEmpty(none) && !mmDesk::songIsEmpty(held), "a song slot is empty with no name and no row but END");
+			d.onDeviceSysex(ed::encodeMmSong(held));
+			d.onDeviceSysex(ed::encodeMmSong(none));
+			d.onDeviceSysex(ed::encodeMmSong(mmDesk::emptySong(held, 5)));
+			msg(R"({"op":"songPaste","s":4,"id":20,"g":60})");
+			check(result(20) && !result(20)->find("ok")->asBool(), "song paste: nothing copied");
+			msg(R"({"op":"songCopy","s":3,"id":21,"g":61})");
+			msg(R"({"op":"songPaste","s":4,"id":22,"g":61})");
+			check(result(22) && result(22)->find("ok")->asBool() && d.song(4) && d.song(4)->rows[0].pattern() == 1 && d.song(4)->name[0] == 'H' && d.song(4)->position == 4,
+				"song paste into an empty slot: no question, the song written there");
+			msg(R"({"op":"songRename","s":4,"name":"renamed","id":25,"g":64})");
+			check(result(25) && result(25)->find("ok")->asBool() && d.song(4)->name[0] == 'R', "a song renamed: no question");
+			msg(R"({"op":"songCopyTo","from":3,"to":4,"id":23,"g":62})");
+			const auto* over = last("ask");
+			check(over && over->find("ask")->asString() == "overwriteSlot" && over->find("command")->find("op")->asString() == "songCopyTo",
+				"a song written over one that holds something asks first (overwriteSlot)");
+			msg(R"({"op":"songCopyTo","from":3,"to":5,"name":"saved here","id":24,"g":63})");
+			check(result(24) && result(24)->find("ok")->asBool() && d.song(5) && d.song(5)->name[0] == 'S' && d.song(5)->name[6] == 'H' && d.song(5)->rows[0].pattern() == 1,
+				"Save to...: a named copy into an empty slot");
+			msg(R"({"op":"songClear","s":4,"id":26,"g":65})");
+			check(last("ask") && last("ask")->find("ask")->asString() == "clearSlot" && d.song(4)->rows[0].pattern() == 1, "song clear asks first (clearSlot)");
+			msg(R"({"op":"songClear","s":4,"id":27,"g":65,"force":true})");
+			check(result(27) && result(27)->find("ok")->asBool() && mmDesk::songIsEmpty(*d.song(4)), "with force: the song is empty");
+			msg(R"({"op":"songClear","s":5,"id":28,"g":66,"force":true})");
+			msg(R"({"op":"songClear","s":5,"id":29,"g":67})");
+			check(result(29) && result(29)->find("ok")->asBool(), "clearing an empty song asks nothing");
+		}
 		page.clear();
 		d.setProbe(mmDesk::Desk::Probe::Loading);
 		d.setProbe(mmDesk::Desk::Probe::Running);
@@ -1485,6 +1788,235 @@ void chains()
 // The executable spec (deskCore::contract, shared with the Machinedrum's): every published message
 // against the contract, the contract's machine document against what was published, $defs/command
 // generated from the tables (mmDeskTest --write-schema), the adapter's functions against the table.
+// Wave 2: pause, resume, play from a song row, panic, the tempo nudge (doc/modern-ux/PROBES-manual-gaps.md P1, P5 MM).
+void transport()
+{
+	std::puts("the transport: pause, play from a row, panic, nudge");
+	{
+		ed::MmSong s;
+		const auto set = [&](const size_t _i, const uint8_t _p, const uint8_t _len, const uint8_t _reps)
+		{
+			auto& b = s.rows[_i].bytes;
+			b.fill(0);
+			b[ed::mmSongRow::g_pattern] = _p;
+			b[ed::mmSongRow::g_length] = _len;
+			b[ed::mmSongRow::g_repeats] = _reps;
+		};
+		set(0, 0, 8, 0);
+		set(1, 1, 4, 1);
+		set(2, 2, 16, 0);
+		set(3, ed::MmSong::g_loop, 0, 1);
+		s.rows[3].bytes[ed::mmSongRow::g_target] = 1;
+		set(4, 3, 16, 0);
+		set(5, ed::MmSong::g_end, 0, 0);
+		check(mmDesk::songPositionOf(s, 0).sixteenths == 0 && mmDesk::songPositionOf(s, 1).sixteenths == 8, "song position: rows 1 and 2");
+		check(mmDesk::songPositionOf(s, 2).sixteenths == 16, "row 3: 8 + 4 played twice");
+		check(!mmDesk::songPositionOf(s, 3).refused.empty() && mmDesk::songPositionOf(s, 4).refused.find("LOOP") != std::string::npos,
+			"a LOOP row and a row after it: refused");
+		check(!mmDesk::songPositionOf(s, 5).refused.empty(), "END: refused");
+	}
+
+	const auto build = [](FakeMachine& _m)
+	{
+		for(uint8_t s = 0; s < 128; ++s)
+		{
+			_m.slots[{0x67, s}] = ed::encodeMmPattern(emptyPattern(s));
+			ed::MmKit k;
+			k.position = s;
+			k.machines.fill(1);
+			k.trigPos.fill(0xff);
+			_m.slots[{0x52, s}] = ed::encodeMmKit(k);
+		}
+		for(uint8_t s = 0; s < 24; ++s)
+		{
+			ed::MmSong so;
+			so.position = s;
+			for(size_t r = 0; r < so.rows.size(); ++r)
+			{
+				auto& b = so.rows[r].bytes;
+				b[ed::mmSongRow::g_pattern] = r < 3 ? static_cast<uint8_t>(r) : ed::MmSong::g_end;
+				b[ed::mmSongRow::g_length] = r == 1 ? 4 : 8;
+				b[ed::mmSongRow::g_repeats] = r == 1 ? 1 : 0;
+				b[ed::mmSongRow::g_tempo] = b[ed::mmSongRow::g_tempo + 1] = 0xff;
+			}
+			_m.slots[{0x69, s}] = ed::encodeMmSong(so);
+		}
+		for(uint8_t s = 0; s < 8; ++s)
+		{
+			ed::MmGlobal g = ed::mmFactoryGlobal(s);
+			g.transportIn = 0;
+			_m.slots[{0x50, s}] = ed::encodeMmGlobal(g);
+		}
+	};
+	FakeMachine m;
+	build(m);
+	double now = 0;
+	std::vector<Value> page;
+	std::vector<Bytes> midi, sysex;
+	std::vector<mmDesk::Key> keys;
+	bool panelBusy = false;
+	mmDesk::Desk::Port port;
+	port.device.sendSysex = [&](const Bytes& _b) { sysex.push_back(_b); m.take(_b); };
+	port.device.sendParam = [](uint8_t, uint8_t, uint8_t, uint8_t) {};
+	port.device.sendNrpn = [](uint8_t, uint8_t, uint8_t) {};
+	port.device.sendMidi = [&](const Bytes& _b) { midi.push_back(_b); };
+	port.device.pressKeys = [&](const std::vector<mmDesk::Key>& _k)
+	{
+		if(panelBusy)
+			return false;
+		if(mmDesk::RecvSession::isEnterMacro(_k))
+			m.screenWord = mmDesk::Screen::GlobalEdit;
+		else if(_k == mmDesk::RecvSession::exitKeys())
+			m.screenWord = mmDesk::Screen::Main;
+		else
+			keys.insert(keys.end(), _k.begin(), _k.end());
+		return true;
+	};
+	port.toPage = [&](const Value& _v) { page.push_back(_v); g_published.push_back(_v); };
+	port.device.nowMs = [&] { return now; };
+	const auto last = [&](const char* _type) -> const Value*
+	{
+		for(auto it = page.rbegin(); it != page.rend(); ++it)
+			if(it->find("type")->asString() == _type)
+				return &*it;
+		return nullptr;
+	};
+	const auto ok = [&] { const auto* r = last("result"); return r && r->find("ok")->asBool(); };
+	const auto error = [&] { const auto* r = last("result"); const auto* e = r ? r->find("errors") : nullptr;
+		return e && e->isArray() && !e->asArray().empty() ? e->asArray()[0].asString() : std::string(); };
+	bool running = false;
+	const auto runDesk = [&](mmDesk::Desk& _d, const double _ms, const bool _wire)
+	{
+		for(double t = 0; t < _ms; t += 10)
+		{
+			now += 10;
+			if(!_wire)
+			{
+				mmDesk::Telemetry tel = screen(m.screenWord);
+				tel.recvCount = m.recvTaken;
+				tel.running = running;
+				tel.step = running ? static_cast<int>(now / 125) % 16 : 0;
+				tel.tempo = 120 * 24;
+				_d.onTelemetry(tel);
+			}
+			_d.tick();
+			auto replies = std::move(m.replies);
+			m.replies.clear();
+			for(const auto& r : replies)
+				_d.onDeviceSysex(r);
+		}
+	};
+
+	{
+		mmDesk::Desk d(port);
+		const auto msg = [&](const std::string& _json) { d.onPageMessage(*ed::json::parse(_json)); };
+		msg(R"({"op":"ready"})");
+		d.setProbe(mmDesk::Desk::Probe::Running);
+		runDesk(d, 4000, false);
+		check(d.documents().songs.count(0) && !d.documents().globals.empty(), "the emulator: the song and the globals read");
+		const auto* can = last("machine")->find("doc")->find("capabilities")->find("can");
+		check(can->find("panic")->asBool() && can->find("playFrom")->asBool(), "the emulator can panic and play from a row");
+		running = true;
+		runDesk(d, 300, false);
+		keys.clear();
+		msg(R"({"op":"pause","id":1})");
+		check(ok() && keys == std::vector<mmDesk::Key>{mmDesk::Key::Play}, "pause while playing: the panel's PLAY, no question (the machine's own pause)");
+		running = false;
+		runDesk(d, 300, false);
+		msg(R"({"op":"resume","id":2})");
+		check(ok() && keys.size() == 2 && keys.back() == mmDesk::Key::Play, "resume: PLAY again");
+		keys.clear();
+		midi.clear();
+		msg(R"({"op":"panic","id":3})");
+		bool cc123 = midi.size() == 6;
+		for(size_t c = 0; c < midi.size(); ++c)
+			cc123 = cc123 && midi[c] == Bytes{static_cast<uint8_t>(0xb0 | c), 123, 0};
+		check(ok() && cc123 && keys == std::vector<mmDesk::Key>{mmDesk::Key::Stop, mmDesk::Key::Stop},
+			"panic: All Notes Off on the six track channels, then STOP twice");
+
+		// B-135 (the 0.6 e2e run, mm-top-pause, mm-top-panic): while the panel takes an edit, pause, resume and the panic's
+		// STOP wait for it as PLAY does (they were refused, or the STOPs lost)
+		running = true;
+		runDesk(d, 300, false);
+		for(const auto& [op, want] : std::vector<std::pair<std::string, std::vector<mmDesk::Key>>>{
+			{"pause", {mmDesk::Key::Play}}, {"resume", {mmDesk::Key::Play}}, {"panic", {mmDesk::Key::Stop, mmDesk::Key::Stop}}})
+		{
+			keys.clear();
+			panelBusy = true;
+			msg(R"({"op":")" + op + R"(","id":90})");
+			check(ok() && keys.empty(), (op + " while the panel is busy: accepted, no keys yet").c_str());
+			runDesk(d, 100, false);
+			check(keys.empty(), (op + ": still waiting while the panel is busy").c_str());
+			panelBusy = false;
+			runDesk(d, 50, false);
+			check(keys == want, (op + ": the panel free, its keys go").c_str());
+			running = op == "pause" ? false : op == "resume";
+			runDesk(d, 300, false);
+		}
+		running = false;
+		runDesk(d, 300, false);
+
+		// play from row 3: TRANSPORT IN is IGNORE, so it asks; confirmed, ACCEPT goes out as the active global
+		page.clear();
+		msg(R"({"op":"playFrom","i":2,"id":4})");
+		check(last("ask") && last("ask")->find("ask")->asString() == "transportIgnore", "play from a row with TRANSPORT IGNORE: asks to set ACCEPT");
+		msg(R"({"op":"playFrom","i":2,"id":5,"force":true})");
+		check(ok(), "confirmed: accepted");
+		runDesk(d, 6000, false);
+		const auto g = ed::decodeMmGlobal(m.slots[{0x50, m.global}]);
+		check(g && g->transportIn == 1, "the active global now says TRANSPORT ACCEPT");
+		running = true;
+		runDesk(d, 200, false);
+		midi.clear();
+		page.clear();
+		msg(R"({"op":"playFrom","i":2,"id":6})");
+		check(ok() && !last("ask") && midi == std::vector<Bytes>{{0xfc}}, "again with ACCEPT, while playing: MIDI Stop first");
+		running = false;
+		runDesk(d, 1000, false);	// stopped once the step stood still for three steps (watchStep)
+		check(midi.size() == 3 && midi[1] == Bytes{0xf2, 16, 0} && midi[2] == Bytes{0xfb},
+			"stopped, SONG mode asked for and answered: the song position of row 3 (16 steps) and Continue");
+		check(std::any_of(sysex.begin(), sysex.end(), [](const Bytes& _b) { return _b == ed::mmSetStatus(ed::MmStatus::SongMode, 1); }),
+			"SONG mode was set first");
+
+		// the nudge: 10 % off while held, back at the release
+		sysex.clear();
+		msg(R"({"op":"nudge","pct":-10,"id":7})");
+		runDesk(d, 100, false);
+		msg(R"({"op":"nudge","pct":0,"id":8})");
+		runDesk(d, 100, false);
+		const auto slower = ed::mmSetTempo(108), back = ed::mmSetTempo(120);
+		check(std::any_of(sysex.begin(), sysex.end(), [&](const Bytes& _b) { return _b == slower; }) && sysex.back() == back,
+			"nudge -10 %: 108 BPM while held, 120 at the release");
+	}
+
+	{
+		// A wire: pause is MIDI Stop, which asks for ACCEPT first
+		FakeMachine w;
+		build(w);
+		m = w;
+		mmDesk::Desk d(port, mmDesk::wireProfile());
+		const auto msg = [&](const std::string& _json) { d.onPageMessage(*ed::json::parse(_json)); };
+		msg(R"({"op":"ready"})");
+		runDesk(d, 6000, true);
+		page.clear();
+		midi.clear();
+		keys.clear();
+		msg(R"({"op":"pause","id":10})");
+		check(last("ask") && last("ask")->find("ask")->asString() == "transportIgnore" && midi.empty(), "HW, TRANSPORT IGNORE: pause asks first");
+		auto g = *ed::decodeMmGlobal(m.slots[{0x50, m.global}]);
+		g.transportIn = 1;
+		d.onDeviceSysex(ed::encodeMmGlobal(g));
+		runDesk(d, 100, true);
+		msg(R"({"op":"pause","id":11})");
+		msg(R"({"op":"resume","id":12})");
+		check(ok() && keys.empty() && midi == std::vector<Bytes>{{0xfc}, {0xfb}}, "HW, ACCEPT: pause is MIDI Stop, resume MIDI Continue");
+		midi.clear();
+		msg(R"({"op":"panic","id":13})");
+		check(ok() && midi.size() == 7 && midi.back() == Bytes{0xfc}, "HW panic: All Notes Off on each track channel, then MIDI Stop");
+	}
+	(void)error;
+}
+
 void checkContract(const bool _write)
 {
 	namespace contract = deskCore::contract;
@@ -1526,7 +2058,7 @@ void checkContract(const bool _write)
 		check(false, gap.c_str());
 	// The plug-in's host sends these; this test has no host.
 	const auto r = contract::checkMessages(*root, g_published, {"learn", "audio", "audioLevel", "openAudio",
-		"romInstall", "romInfo", "notice", "syxPreview", "syxProgress", "syxExport", "host", "audioRun", "cpuLoad", "outputLevel", "editorMenu",
+		"romInstall", "romInfo", "notice", "syxPreview", "syxProgress", "syxExport", "syxExportInfo", "syxReset", "host", "audioRun", "cpuLoad", "outputLevel", "machineMemory", "midiIn", "midiHeld", "editorMenu",
 		"zoom", "drop", "dragFiles"});
 	for(const auto& p : r.off)
 		std::printf("    %s\n", p.c_str());
@@ -1634,7 +2166,9 @@ void memoryFields()
 	port.device.sendParam = [](uint8_t, uint8_t, uint8_t, uint8_t) {};
 	port.device.sendNrpn = [](uint8_t, uint8_t, uint8_t) {};
 	int muteWindows = 0;
-	port.device.pressKeys = [&](const std::vector<mmDesk::Key>& _keys) { muteWindows += !_keys.empty() && _keys[0] == mmDesk::Key::MuteWindow; return true; };
+	std::vector<mmDesk::Key> lastKeys;
+	bool panelFree = true;
+	port.device.pressKeys = [&](const std::vector<mmDesk::Key>& _keys) { if(!panelFree) return false; muteWindows += !_keys.empty() && _keys[0] == mmDesk::Key::MuteWindow; lastKeys = _keys; return true; };
 	port.device.nowMs = [&] { return now; };
 	port.toPage = [&](const Value& _v) { page.push_back(_v); g_published.push_back(_v); };
 	const auto status = [](const uint8_t _p, const uint8_t _v) { return Bytes{0xf0, 0, 0x20, 0x3c, 3, 0, 0x72, _p, _v, 0xf7}; };
@@ -1722,6 +2256,14 @@ void memoryFields()
 	msg(R"({"op":"muteMidi","id":32,"t":1,"on":false})");
 	check(muteWindows == windows + 2, "unmuting what is unmuted: no keys");
 	run(1600);
+	// B-129 (0.6 e2e, mm-perform-mutes): the panel busy (SYSEX RECV taking an edit): the MIDI mute waits, as PLAY does
+	panelFree = false;
+	msg(R"({"op":"muteMidi","id":33,"t":2,"on":true})");
+	check(muteWindows == windows + 2, "a MIDI mute while the panel is busy: no keys yet");
+	panelFree = true;
+	run(20);
+	check(muteWindows == windows + 3 && midi() == 4, "the panel free: the MUTE window's keys go, M3 muted");
+	run(1600);
 
 	// POLY: SET STATUS, read back by the status reply
 	msg(R"({"op":"poly","id":4,"on":true})");
@@ -1736,6 +2278,30 @@ void memoryFields()
 	msg(R"({"op":"poly","id":5,"on":true})");
 	run(1600);
 	check(poly() == 0, "no status reply for longer than settleMs: memory wins");
+	// 0.6 wave 9 (B-064): POLY plays the track in focus; t presses its TRACK key first (again while on: it moves there)
+	lastKeys.clear();
+	msg(R"({"op":"poly","id":7,"on":true,"t":2})");
+	check(lastKeys == std::vector<mmDesk::Key>{mmDesk::Key::Track3}, "POLY with t: TRACK 3 pressed");
+	const auto focus = [&] { const auto* f = machine()->find("focus"); return !f || f->isNull() ? -1 : static_cast<int>(f->asNumber()); };
+	check(focus() == 2, "POLY with t: the machine document says focus T3 at once");
+	d.onDeviceSysex(status(0x22, 2));
+	run(20);
+	check(focus() == 2, "focus: settled by the status reply");
+	// the panel busy: refused, nothing pressed, the focus stays the machine's
+	panelFree = false;
+	lastKeys.clear();
+	msg(R"({"op":"poly","id":9,"on":true,"t":4})");
+	check(lastKeys.empty() && focus() == 2, "POLY with t while the panel is busy: refused, the focus stays T3");
+	panelFree = true;
+	// TRACK pressed on the machine: memory wins
+	d.onDeviceSysex(status(0x22, 1));
+	run(20);
+	check(focus() == 1, "TRACK 2 on the machine: focus T2");
+	lastKeys.clear();
+	msg(R"({"op":"poly","id":8,"on":false,"t":2})");
+	check(lastKeys.empty(), "POLY off: no TRACK key");
+	d.onDeviceSysex(status(0x20, 0));
+	run(20);
 
 	// the tempo (BPM x 24 in memory)
 	msg(R"({"op":"tempo","id":6,"bpm":130})");
@@ -1769,6 +2335,7 @@ int main(const int _argc, char** _argv)
 	playingFromSteps();
 	watchSteps();
 	kitAsLoaded();
+	revertTrack();
 	kitAfterPatternDump();
 	kitAfterPatternDump(9);
 	kitPickRules();
@@ -1778,6 +2345,7 @@ int main(const int _argc, char** _argv)
 	asksAndErrors();
 	stuckDelivery();
 	chains();
+	transport();
 	memoryFields();
 	intentCases::run();
 	checkContract(false);

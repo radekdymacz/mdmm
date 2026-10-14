@@ -258,13 +258,18 @@ The desk names the trig it expects (`mdDesk::nextLockStep`) as
 read-back shows the real lock. Checked on firmware: the desk said step 9, the
 firmware locked step 9.
 
-**UW samples (P3, P9).** `sampleName` (slot 0-47, 1-4 characters) sends the
-manual's 0x73. Over MIDI that is all the firmware offers: it has no request for
-names, memory in use or sample audio, and it ignores SDS dump requests (measured,
-no reply for three slots). So on a real Machinedrum the waveforms, names and
-memory cannot be shown (`capabilities.sampleAudio` false, with the reason). P9:
-the emulated machine's memory has all of it; see 4.9 for the `md-desk/samples`
-document, and a sample file into a ROM slot (`chooseSample`, SDS) on both engines.
+**UW samples (P3, P9).** `sampleName` (slot 0-47, 1-4 characters) is the editor's own
+op (Owner::Setup, `Desk::renameSample`). The manual's 0x73 names only the NEXT sample
+the firmware receives and renames no slot (B-128, measured), so Rename sends 0x73 and then
+the slot's own sample again by SDS into the same slot (the bank's samples, bit-identical;
+loop points are not sent again), shown as a `sampleLoad` with file "Rename". It is refused
+with the reason for an empty slot and when the audio cannot be read: over MIDI the firmware
+has no request for names, memory in use or sample audio, and it ignores SDS dump requests
+(measured, no reply for three slots). So on a real Machinedrum the waveforms, names and
+memory cannot be shown, nor can a slot be renamed (`capabilities.sampleAudio` and
+`sampleNames` false, with the reason). P9: the emulated machine's memory has all of it;
+see 4.9 for the `md-desk/samples` document, and a sample file into a ROM slot
+(`chooseSample`, SDS) on both engines.
 
 **Start-up (P4).** MD OS 1.63 answers MIDI about 13 s before it takes panel keys:
 its start-up animation ignores them (PLAY first taken 12.7 s after MIDI ready on a
@@ -321,6 +326,21 @@ next block, so the emulated machine and its own volume settings are untouched (t
 with the project (the GAIN chunk) and so with the standalone's state. Measured on the audio thread with one pass over
 the enabled outputs and three lock-free maxima a block (`mdJucePlugin/mdOutputLevel.h`); no lock, no allocation.
 Not a host-automatable parameter (see IDEAS.md I-021).
+
+**Notes from outside (0.6: GLOBAL › Map editor › LEARN, I-002).** `{"type":"midiIn","ch","note","vel"}`: a note on that
+reached the plug-in from outside (the host's MIDI in or a MIDI input port), sent on the next step while the page is up
+(`mdMidiIn.h`, the processor's `midiInReceived` hook; at most 16 a step, a full queue drops the rest). The page's own
+keyboard is not in it. The Machinedrum Editor's LEARN maps the next one to a track, and a note on the base channel
+lights the track its map gives (the rail's number, the Mix LED; at most one redraw a frame).
+
+**Notes held from outside (0.6: B-062, I-002).** `{"type":"midiHeld","notes":[{ch, note}...]}`: the notes held down from
+outside, each with its channel, by channel then low to high, as a state: a note on holds its note until its note off (or
+all notes off, all sound off, a system reset). Sent when it changed, looked at every 32 ms (a burst is one message), and
+once for a new page; a note off is never lost (one bit a note and channel, `midiIn::Held` in `mdMidiIn.h`, not the
+queue). A MIDI input that opens, closes or changes, a bypass, the host's release and a switch of the HW MIDI engine let
+go of every note (`midiInputsChanged`). In HW MIDI nothing is held: what comes in is the real machine's own MIDI OUT.
+The Monomachine Editor lights the keys of the notes on the channels the machine plays (AUTO, the track channels inside
+CHANNEL SPAN, MULTI TRIG, MULTI MAP) on the Perform keyboard; the Machinedrum Editor has no keyboard and ignores it.
 
 **The host's tempo (B-030).** In a DAW the plug-in sends `{"type":"host","bpm","follows"}`:
 the host's tempo as its playhead reports it (also while the host's transport is stopped),
@@ -459,6 +479,19 @@ state's `MDSK` chunk. A restored project brings it back, also into an open edito
 a project without it starts from the default setup. The page changes the knob rows
 with `{"op":"knobs","ccs":[8 numbers]}` and the modulators with `modSet`. It is not
 machine data: a real Machinedrum never sees it.
+
+The page's solo (B-123) is part of the setup too, for both editors: the page says
+`{"op":"soloSet","tracks":[...],"mutes":[...]}` whenever its solo or, while one holds, the
+mutes the person set change (the machine only has mutes; a solo is the page's idea, which
+mutes every other track). The desk keeps it as the setup's `solo` member
+(`deskCore/deskSolo.h`; the Monomachine beside its modulators) and the host stores it with
+the rest. It is not echoed: the desk says `{"type":"solo","tracks","mutes"}` when a project
+is restored, after a `reset` and when a page is made (`ready`), and the page takes it as
+its solo and mutes, then makes the machine's mutes match.
+
+`revertTrack {k, t}` (a working-kit edit, both editors) puts track `t` of the kit that
+plays back as the kit's stored slot has it, in one undo step (the Sound page's Revert
+track; the kit library's Reload is the whole kit).
 
 The UI must not show `edited` and "project not saved" as one flag. Two different things can be unsaved:
 

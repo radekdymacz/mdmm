@@ -51,6 +51,15 @@ function slots(m, cat) {
 }
 /* a lane's (or a knob's) label on machine m: n, or FX·n / RTG·n where its synthesis page has an n too */
 function laneLabel(m, n, cat) { const a = slots(m, cat); if (!a.includes("SYN·" + n)) return n; return (a.indexOf(n) >= 16 ? "RTG·" : "FX·") + n; }
+/* MD-033: the clips the machine's LCD draws between two value boxes whose parameters depend on each other (the
+   catalogue's clips: i joins slot i and i + 1), as the Sound page names its boxes: [[g, a], [g, b]] with g "syn",
+   "fx" or "rt", and LFOS LFOD LFOM as the LFO card's SPD DEPTH SHMIX (E.lfoParams). Pairs with an unnamed slot go. */
+function clipPairs(m, cat, E) {
+	const c = cat.byName[m]; if (!c || !c.clips) return [];
+	const a = slots(m, cat), G = ["syn", "fx", "rt"];
+	const box = i => { const lfo = E && E.lfoParams ? Object.keys(E.lfoParams).find(n => E.lfoParams[n] === i) : null; return lfo ? ["lfo", lfo] : a[i] ? [G[i >> 3], a[i]] : null; };
+	return c.clips.map(i => [box(i), box(i + 1)]).filter(([x, y]) => x && y);
+}
 /* Three pages of 8 slots; an unused slot is null. */
 function pages(m, cat) { const a = slots(m, cat); return { s: a.slice(0, 8), e: a.slice(8, 16), r: a.slice(16, 24) }; }
 const names = list => list.filter(Boolean);
@@ -119,13 +128,14 @@ const patName = p => "ABCDEFGH"[p >> 4] + String((p & 15) + 1).padStart(2, "0");
 /* ---- the catalogue's enumerations (P6: the C++ tables, one source) ----
    outputs, masterFx (the kit's effect names), lfoFields (the lfo command's fields), lfoUpdates,
    lfoParams ({SPD, DEPTH, SHMIX}: kit parameter indexes), tempoMultipliers. The page pairs its own
-   words with them by position: its master effects echo gate eq dyn are masterFx in order, and its
+   words with them: its master effects echo gate eq dyn are the names rhythmEcho gateBox eq dynamix (B-081: not by position, the kit lists the gate box first), and its
    LFO fields TRCK PARAM SHP1 SHP2 UPDTE are lfoFields in order. Before the catalogue: empty. */
 const NO_ENUMS = Object.freeze({ outputs: [], masterFx: [], lfoFields: [], lfoUpdates: [], lfoParams: {}, tempoMultipliers: [] });
 const enumsOf = docs => (docs.catalogue && docs.catalogue.enums) || NO_ENUMS;
 const Enums = () => enumsOf(Docs);
 const MFX_IDS = ["echo", "gate", "eq", "dyn"], LFO_NAMES = ["TRCK", "PARAM", "SHP1", "SHP2", "UPDTE"];
-const mfxName = (id, E = Enums()) => E.masterFx[MFX_IDS.indexOf(id)];
+const MFX_NAMES = { echo: "rhythmEcho", gate: "gateBox", eq: "eq", dyn: "dynamix" };
+const mfxName = (id, E = Enums()) => E.masterFx.includes(MFX_NAMES[id]) ? MFX_NAMES[id] : undefined;
 const lfoField = (n, E = Enums()) => { const i = LFO_NAMES.indexOf(n); return i < 0 ? undefined : E.lfoFields[i]; };
 /* a tempo multiplier's factor: "3/4X" -> 0.75 */
 const multFactor = m => { const [a, b] = String(m || "1X").replace("X", "").split("/").map(Number); return b ? a / b : a || 1; };
@@ -240,9 +250,9 @@ function deriveView(docs, ui) {
 		songMode: M.songMode === true ? true : M.songMode === false ? false : null,
 		roundTrip: desk.roundTripMs, lifecycle: M.lifecycle || "booting", lifecycleText: M.lifecycleText || "",
 		input: !!M.input, midi: !!M.midi, caps,
-		clipboard: Object.assign({ steps: false, sound: false, songRow: false, kit: null, pattern: null }, M.clipboard || {}),
+		clipboard: Object.assign({ steps: false, sound: false, songRow: false, kit: null, pattern: null, song: null, global: null }, M.clipboard || {}),
 		canUndo: !!hist.undo, canRedo: !!hist.redo, undoCount: hist.undoCount || 0, redoCount: hist.redoCount || 0,
-		songReload: !!(M.song && M.song.reloadNeeded), len: 16, length: 16, mult: "1X", swing: 50, accAmt: 0, accAll: false, slideAll: false };
+		songReload: !!(M.song && M.song.reloadNeeded), len: 16, length: 16, mult: "1X", swing: 50, accAmt: 0, accAll: false, slideAll: false, swingAll: false };
 	/* B-030: in a DAW whose clock the machine follows (its global: TEMPO IN external, set by the plug-in), the tempo
 	   is the host's: TEMPO shows it (also while the host is stopped) and is not edited here */
 	const H = docs.host;
@@ -261,15 +271,16 @@ function deriveView(docs, ui) {
 		v.accAmt = accentDisplay(P.accentAmount);
 		v.accAll = P.accent.editAll === 1;
 		v.slideAll = P.slide.editAll === 1;
+		v.swingAll = P.swing.editAll === 1;
 	}
-	const accAll = P ? stepSet(P.accent.steps) : new Set(), slideAll = P ? stepSet(P.slide.steps) : new Set();
+	const accAll = P ? stepSet(P.accent.steps) : new Set(), slideAll = P ? stepSet(P.slide.steps) : new Set(), swingAll = P ? stepSet(P.swing.steps) : new Set();
 	v.tracks = Array.from({ length: 16 }, (_, i) => {
 		const kt = K ? K.tracks[i] : null;
 		const m = kt ? kt.machine || "GND-EMPTY" : "GND-EMPTY";
 		const a = slots(m, cat);
-		const t = { name: nameOf(m, cat), m, model: kt ? kt.model : 0, fam: famOf(m, cat), syn: {}, fx: {}, rt: {}, level: kt ? kt.level : 0,
+		const t = { name: nameOf(m, cat), m, model: kt ? kt.model : 0, fam: famOf(m, cat), syn: {}, fx: {}, rt: {}, level: kt ? kt.level : null,
 			mute: soloing ? !!(ui.userMutes && ui.userMutes.has(i)) : mutes.has(i), solo: soloing && ui.soloSet.has(i), out: G ? (G.routing[i] === "MAIN" ? "MAIN" : G.routing[i]) : "MAIN",
-			trigs: Array(64).fill(false), acc: new Set(), slide: new Set(), muteGroup: kt ? kt.muteGroup : null, trigGroup: kt ? kt.trigGroup : null };
+			trigs: Array(64).fill(false), acc: new Set(), slide: new Set(), swing: new Set(), muteGroup: kt ? kt.muteGroup : null, trigGroup: kt ? kt.trigGroup : null };
 		if (kt) {
 			a.forEach((n, j) => {
 				if (!n) return;
@@ -286,6 +297,7 @@ function deriveView(docs, ui) {
 			for (const s of pt.trigs) t.trigs[s] = true;
 			t.acc = v.accAll ? new Set([...accAll].filter(s => t.trigs[s])) : stepSet(pt.accent);
 			t.slide = v.slideAll ? new Set([...slideAll].filter(s => t.trigs[s])) : stepSet(pt.slide);
+			t.swing = v.swingAll ? new Set([...swingAll].filter(s => t.trigs[s])) : stepSet(pt.swing);
 		}
 		return t;
 	});

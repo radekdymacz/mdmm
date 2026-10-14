@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10. Global settings · Machinedrum Editor guide</title>
+<meta name="description" content="The machine's own settings: MIDI channels, the note map, program change, outputs, sync, and the SysEx send and receive.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/md/10-global-settings/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261014b">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>@page { @top-left { content: "10. Global settings"; } }</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › <a href="/guide/md/">Machinedrum Editor</a> › Global settings</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Chapters of the Machinedrum Editor guide">
+<p class="gd-side-title"><a href="/guide/md/">Machinedrum Editor guide</a></p>
+<ol class="gd-side-list"><li><a href="/guide/md/01-introduction-front-panel-and-connectors/">1. Introduction, front panel and connectors</a></li>
+<li><a href="/guide/md/02-lcd-user-interface-and-quick-start/">2. LCD user interface and quick start</a></li>
+<li><a href="/guide/md/03-sound-synthesis-kits/">3. Sound synthesis: kits</a></li>
+<li><a href="/guide/md/04-track-effects/">4. Track effects</a></li>
+<li><a href="/guide/md/05-routing-page/">5. Routing page</a></li>
+<li><a href="/guide/md/06-stereo-master-effects/">6. Stereo master effects</a></li>
+<li><a href="/guide/md/07-lfos/">7. LFOs</a></li>
+<li><a href="/guide/md/08-pattern-sequencer/">8. Pattern sequencer</a></li>
+<li><a href="/guide/md/09-song-mode/">9. Song mode</a></li>
+<li class="gd-side-cur"><a href="/guide/md/10-global-settings/" aria-current="page">10. Global settings</a><ol class="gd-side-subs"><li><a href="#global-settings">GLOBAL SETTINGS</a></li><li><a href="#turbo-menu">TURBO MENU</a></li><li><a href="#base-channel">BASE CHANNEL</a></li><li><a href="#map-editor">MAP EDITOR</a></li><li><a href="#local-control">LOCAL CONTROL</a></li><li><a href="#program-change">PROGRAM CHANGE</a></li><li><a href="#mechanical-settings-mkii-units-only">MECHANICAL SETTINGS (MKII UNITS ONLY)</a></li><li><a href="#output">OUTPUT</a></li><li><a href="#trig">TRIG</a></li><li><a href="#all-data-sysex-send">ALL DATA SYSEX SEND</a></li><li><a href="#global-sysex-send">GLOBAL SYSEX SEND</a></li><li><a href="#song-pattern-kit-sysex-send">SONG + PATTERN (+ KIT) SYSEX SEND</a></li><li><a href="#pattern-kit-sysex-send">PATTERN (+ KIT) SYSEX SEND</a></li><li><a href="#kit-sysex-send">KIT SYSEX SEND</a></li><li><a href="#general-sysex-receive">GENERAL SYSEX RECEIVE</a></li><li><a href="#original-place-sysex-receive">ORIGINAL PLACE SYSEX RECEIVE</a></li><li><a href="#specific-place-sysex-receive">SPECIFIC PLACE SYSEX RECEIVE</a></li><li><a href="#sysex-verify">SYSEX VERIFY</a></li><li><a href="#sync">SYNC</a></li></ol></li>
+<li><a href="/guide/md/11-sample-manager-uw-only/">11. Sample manager, UW only</a></li>
+<li><a href="/guide/md/12-early-start-up-menu/">12. Early start-up menu</a></li>
+<li><a href="/guide/md/13-technical-information-mki-vs-mkii/">13. Technical information, MKI vs MKII</a></li>
+<li><a href="/guide/md/14-appendix-a-machine-reference/">14. Appendix A: machine reference</a></li>
+<li><a href="/guide/md/15-appendix-b-midi-control-reference/">15. Appendix B: MIDI control reference</a></li>
+<li><a href="/guide/md/16-appendix-c-sysex-reference/">16. Appendix C: sysex reference</a></li>
+<li><a href="/guide/md/17-beyond-the-hardware/">17. Beyond the hardware</a></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">10</span><span class="gd-ctitle">Global settings</span></h1><p class="gd-cmeta">MD manual pp.57-78</p></header>
+<div class="gd-intro gd-prose"><p>The global settings are the machine's own settings. They hold the MIDI channels, the map of notes to tracks and patterns, program change, the output of each track and the sync. They belong to the machine, not to a pattern or a kit.</p>
+<p>In the editor they sit on the <b class="gd-ui">GLOBAL</b> page. It opens over the workspace, which dims behind it.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/md-global-panel.webp" aria-label="Open the picture full size: The GLOBAL page"><img src="/guide/shots/md-global-panel.webp" width="1440" height="924" alt="The GLOBAL page" loading="lazy"></a><figcaption>The GLOBAL page</figcaption></figure></div>
+<section class="gd-sec" id="global-settings" aria-labelledby="global-settings-h">
+<div class="gd-body gd-prose"><h2 id="global-settings-h">GLOBAL SETTINGS <a class="gd-anchor" href="#global-settings" aria-label="Link to GLOBAL SETTINGS">#</a></h2>
+<p class="gd-ref">MD manual p.57</p>
+<p>The machine keeps 8 globals. One is active. On the machine you open the settings with <kbd class="gd-key">[FUNCTION]</kbd> and <kbd class="gd-key">[PATTERN/SONG]</kbd>.</p>
+<p>To open the page:</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">GLOBAL</b> in the top bar. Or choose <b class="gd-ui">GLOBAL…</b> in the engine menu, the menu you open from the engine name on the LCD.</li><li>The page opens in the middle of the window. Its head reads GLOBAL and the number of the active global. The keys 1 to 8 are the 8 globals. The lit key is the active one.</li><li>Click a key to make that global the active one.</li><li>Press <kbd class="gd-key">[ESC]</kbd>, or click the key at the right of the head, to go back to the workspace. A click beside the page does not close it.</li></ol>
+<p>Every change is stored in the active global and made active at once. There is nothing to save.</p>
+<p>The page has five cards: <b class="gd-ui">Control</b>, <b class="gd-ui">Sync</b>, <b class="gd-ui">Trig in A / B</b>, <b class="gd-ui">Map editor</b> and <b class="gd-ui">Routing</b>.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A setting that the editor could not check on the emulated machine is marked &quot;not verified&quot; on the page.</p></aside>
+<h4 class="gd-h3" id="copy-paste-and-clear-a-global">Copy, paste and clear a global</h4>
+<p>The head has the keys <b class="gd-ui">Copy</b>, <b class="gd-ui">Paste</b> and <b class="gd-ui">Clear</b>. They act on the active global.</p>
+<ol class="gd-steps"><li>Click <b class="gd-ui">Copy</b>. The editor keeps all the settings of the active global. <b class="gd-ui">Paste</b> is now on.</li><li>Click the key of another global to make it active.</li><li>Click <b class="gd-ui">Paste</b>. The editor asks first, because the settings of that global are replaced. Click <b class="gd-ui">Paste</b> to go on, or <b class="gd-ui">Cancel</b>.</li></ol>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-md-global-copy-paste.webp" aria-label="Open the picture full size: The Copy, Paste and Clear keys"><img src="/guide/shots/e2e-md-global-copy-paste.webp" width="1440" height="924" alt="The Copy, Paste and Clear keys" loading="lazy"></a><figcaption>The Copy, Paste and Clear keys</figcaption></figure>
+<p>To put the active global back to how the machine shipped, click <b class="gd-ui">Clear</b>. The editor asks first. Click <b class="gd-ui">Clear</b> to go on, or <b class="gd-ui">Cancel</b>.</p>
+<p>Undo takes back a paste or a clear, as any other edit.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The machine's own global menu has no copy or paste. In the editor you copy a whole global from one slot to another.</p></aside>
+</div></section>
+<section class="gd-sec" id="turbo-menu" aria-labelledby="turbo-menu-h">
+<div class="gd-body gd-prose"><h2 id="turbo-menu-h">TURBO MENU <a class="gd-anchor" href="#turbo-menu" aria-label="Link to TURBO MENU">#</a></h2>
+<p class="gd-ref">MD manual p.57</p>
+<p>The turbo menu is for the speed of the MIDI link. The emulated machine and the editor pace their link themselves, so the editor has no turbo setting.</p>
+</div></section>
+<section class="gd-sec" id="base-channel" aria-labelledby="base-channel-h">
+<div class="gd-body gd-prose"><h2 id="base-channel-h">BASE CHANNEL <a class="gd-anchor" href="#base-channel" aria-label="Link to BASE CHANNEL">#</a></h2>
+<p class="gd-ref">MD manual p.59</p>
+<p>The base channel is the first of four MIDI channels the machine listens and sends on: channel n to channel n+3.</p>
+<p>In the <b class="gd-ui">Control</b> card, click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> beside <b class="gd-ui">Base channel</b>. The value reads the four channels, for example 1 to 4. It steps one channel at a time, up to 13 to 16.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>When the global holds a base channel of OFF, the card reads OFF. The machine then takes no notes, mutes or sound values over MIDI, and the editor cannot play it.</p></aside>
+</div></section>
+<section class="gd-sec" id="map-editor" aria-labelledby="map-editor-h">
+<div class="gd-body gd-prose"><h2 id="map-editor-h">MAP EDITOR <a class="gd-anchor" href="#map-editor" aria-label="Link to MAP EDITOR">#</a></h2>
+<p class="gd-ref">MD manual pp.59, 60, C-3</p>
+<p>The map editor says which MIDI note plays what. A note can play a track, start a pattern, or start or stop the machine. The <b class="gd-ui">Map editor</b> card has the sixteen track keys and the controls for the other notes.</p>
+<h4 class="gd-h3" id="notes-for-the-tracks">Notes for the tracks</h4>
+<p>Each of the sixteen keys is named TRACK 1 to TRACK 16. It shows the note that plays the track, or -- when the track has none. Click <b class="gd-ui">‹</b> or <b class="gd-ui">›</b> on a key to move the note down or up. Notes are named as C4, C#4 and so on, from 0 to 127.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/md-map-editor.webp" aria-label="Open the picture full size: The Map editor card"><img src="/guide/shots/md-map-editor.webp" width="1440" height="924" alt="The Map editor card" loading="lazy"></a><figcaption>The Map editor card</figcaption></figure>
+<p>When a MIDI keyboard plays a track's note on the base channel, the track's number in the track rail glows for a moment, and so does its light on the Mix workspace. A note on another channel lights nothing.</p>
+<h4 class="gd-h3" id="notes-for-patterns-and-the-transport">Notes for patterns and the transport</h4>
+<ol class="gd-steps"><li>Beside <b class="gd-ui">Map a note</b>, click <b class="gd-ui">‹</b> or <b class="gd-ui">›</b> to choose the note.</li><li>Choose from the menu what the note plays: nothing, a track, a pattern A01 to H16, START or STOP.</li></ol>
+<p>A note plays one thing. If you give it a new job, it leaves the old one. The line beside <b class="gd-ui">Pattern trig</b> lists the notes that play patterns or the transport.</p>
+<h4 class="gd-h3" id="how-a-pattern-note-starts">How a pattern note starts</h4>
+<p>Beside <b class="gd-ui">Pattern trig</b>, click one of:</p>
+<ul class="gd-list"><li><b class="gd-ui">GATE</b>: the pattern plays while the key is held.</li><li><b class="gd-ui">START</b>: the pattern starts at once.</li><li><b class="gd-ui">QUE</b>: the pattern starts at the end of the pattern that plays.</li></ul>
+<h4 class="gd-h3" id="learn-a-note-from-a-keyboard">Learn a note from a keyboard</h4>
+<p>You can give a track its note by playing the note on a MIDI keyboard, as you do on the machine.</p>
+<ol class="gd-steps"><li>Connect the keyboard to the MIDI input of the editor: the MIDI input of the standalone, or the MIDI track of the plug-in in your DAW.</li><li>Click the round dot beside the name of a track key, for example TRACK 3. The dot lights. The head of the card reads LEARN and the track.</li><li>Play a note on the keyboard. The note now plays the track, and the dot goes out. The key shows the note.</li></ol>
+<p>Click the lit dot again to stop without a note. Going back to the workspace stops it too.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The editor takes the note on any MIDI channel.</p></aside>
+<h4 class="gd-h3" id="reset-the-map">Reset the map</h4>
+<ol class="gd-steps"><li>Click <b class="gd-ui">Reset map</b> in the head of the <b class="gd-ui">Map editor</b> card.</li><li>The editor asks first. Click <b class="gd-ui">Reset map</b> to go on, or <b class="gd-ui">Cancel</b>.</li></ol>
+<p>The map goes back to the one Elektron gives the machine: the tracks from C2, the patterns from E4. The rest of the global stays. Undo brings your map back.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>It is the map that the SysEx message Reset MIDI note map leaves on the machine.</p></aside>
+</div></section>
+<section class="gd-sec" id="local-control" aria-labelledby="local-control-h">
+<div class="gd-body gd-prose"><h2 id="local-control-h">LOCAL CONTROL <a class="gd-anchor" href="#local-control" aria-label="Link to LOCAL CONTROL">#</a></h2>
+<p class="gd-ref">MD manual p.60</p>
+<p>Local control sets whether the keys and the sequencer of the machine play its own sounds. In the <b class="gd-ui">Control</b> card, click <b class="gd-ui">ON</b> or <b class="gd-ui">OFF</b> beside <b class="gd-ui">Local ctrl</b>. With OFF the keys and the sequencer do not play the internal sounds.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The panel marks this switch &quot;not verified&quot;. The setting is stored in the global, but its effect could not be checked on the emulated machine.</p></aside>
+</div></section>
+<section class="gd-sec" id="program-change" aria-labelledby="program-change-h">
+<div class="gd-body gd-prose"><h2 id="program-change-h">PROGRAM CHANGE <a class="gd-anchor" href="#program-change" aria-label="Link to PROGRAM CHANGE">#</a></h2>
+<p class="gd-ref">MD manual p.61</p>
+<p>In the <b class="gd-ui">Control</b> card:</p>
+<ul class="gd-list"><li><b class="gd-ui">Prg change in</b>: ON makes a MIDI program change choose a pattern.</li><li><b class="gd-ui">Prg change out</b>: ON makes the machine send a program change when a pattern is chosen.</li><li><b class="gd-ui">Prg channel</b>: click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> to choose the channel, 1 to 16. BASE means the four base channels for the messages in, and the first of them for the messages out.</li></ul>
+</div></section>
+<section class="gd-sec" id="mechanical-settings-mkii-units-only" aria-labelledby="mechanical-settings-mkii-units-only-h">
+<div class="gd-body gd-prose"><h2 id="mechanical-settings-mkii-units-only-h">MECHANICAL SETTINGS (MKII UNITS ONLY) <a class="gd-anchor" href="#mechanical-settings-mkii-units-only" aria-label="Link to MECHANICAL SETTINGS (MKII UNITS ONLY)">#</a></h2>
+<p class="gd-ref">MD manual p.61</p>
+<p>The machine sets the resolution of its knobs here: 24 or 32 steps. The editor has no knobs, so it has no such setting.</p>
+</div></section>
+<section class="gd-sec" id="output" aria-labelledby="output-h">
+<div class="gd-body gd-prose"><h2 id="output-h">OUTPUT <a class="gd-anchor" href="#output" aria-label="Link to OUTPUT">#</a></h2>
+<p class="gd-ref">MD manual p.62</p>
+<p>Each track plays on the main output, through the master effects, or on one of the individual outputs A to F, which skip the master effects.</p>
+<p>In the <b class="gd-ui">Routing</b> card the sixteen keys show the output of each track: MAIN, or A to F. Click a key to go to the next output: MAIN, A, B, C, D, E, F, then MAIN again.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-md-global-routing.webp" aria-label="Open the picture full size: The Routing card"><img src="/guide/shots/e2e-md-global-routing.webp" width="1440" height="924" alt="The Routing card" loading="lazy"></a><figcaption>The Routing card</figcaption></figure>
+<p>You can also click <b class="gd-ui">OUT</b> on the strip of the track in the <b class="gd-ui">Mix</b> workspace. Delay and reverb sends reach only the main outputs, so a track on an individual output keeps those values but does not use them.</p>
+</div></section>
+<section class="gd-sec" id="trig" aria-labelledby="trig-h">
+<div class="gd-body gd-prose"><h2 id="trig-h">TRIG <a class="gd-anchor" href="#trig" aria-label="Link to TRIG">#</a></h2>
+<p class="gd-ref">MD manual p.63</p>
+<p>The two trig inputs of the machine turn the pulses of a pad into notes. On the machine they are in the ROUTING menu. The <b class="gd-ui">Trig in A / B</b> card has a row for each input, <b class="gd-ui">A</b> and <b class="gd-ui">B</b>, with five values:</p>
+<ul class="gd-list"><li><b class="gd-ui">Gate</b>, <b class="gd-ui">Sens</b>, <b class="gd-ui">Vmin</b> and <b class="gd-ui">Vmax</b>: 0 to 127.</li><li><b class="gd-ui">Dest</b>: the track a pulse plays, T1 to T16, or - for none.</li></ul>
+<p>To change a value, click <b class="gd-ui">‹</b> or <b class="gd-ui">›</b> beside it. Hold <kbd class="gd-key">[⇧]</kbd> and click to move it by 10. <b class="gd-ui">Dest</b> runs from - to T1, T2 and up to T16, as the knob of the machine does.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The emulated machine has no trig inputs. The values are stored in the global and sent to a real machine, but what they do to a pulse could not be checked. The card is marked &quot;not verified&quot;.</p></aside>
+</div></section>
+<section class="gd-sec" id="all-data-sysex-send" aria-labelledby="all-data-sysex-send-h">
+<div class="gd-body gd-prose"><h2 id="all-data-sysex-send-h">ALL DATA SYSEX SEND <a class="gd-anchor" href="#all-data-sysex-send" aria-label="Link to ALL DATA SYSEX SEND">#</a></h2>
+<p class="gd-ref">MD manual p.64</p>
+<p>On the machine you send SysEx to another device. In the editor you write it to a .syx file on your computer.</p>
+<ol class="gd-steps"><li>Open the engine menu (the engine name at the left of the LCD) and choose <b class="gd-ui">EXPORT SYSEX…</b>. The <b class="gd-ui">Export SysEx</b> panel opens.</li><li><b class="gd-ui">All</b> is ticked. The line at the foot says how many kits, patterns, songs and globals the editor holds.</li><li>Click <b class="gd-ui">Save .syx…</b> and choose where to put the file. The name starts as the product name and &quot;backup.syx&quot;, in your Documents folder.</li></ol>
+<p>The file holds every pattern, kit and song the editor has, and the globals. It is one file.</p>
+<aside class="gd-note gd-tip"><span class="gd-notelab">Tip</span><p>Export before you import or reset. Neither has an undo, and the export keeps a way back.</p></aside>
+</div></section>
+<section class="gd-sec" id="global-sysex-send" aria-labelledby="global-sysex-send-h">
+<div class="gd-body gd-prose"><h2 id="global-sysex-send-h">GLOBAL SYSEX SEND <a class="gd-anchor" href="#global-sysex-send" aria-label="Link to GLOBAL SYSEX SEND">#</a></h2>
+<p class="gd-ref">MD manual p.66</p>
+<ol class="gd-steps"><li>Open <b class="gd-ui">Export SysEx…</b> as above and untick <b class="gd-ui">All</b>. Each kind shows its own row with a range.</li><li>Tick <b class="gd-ui">Globals</b>. Untick the kinds you do not want.</li><li>Set the first and the last global of the range. Click a value to step it up, <kbd class="gd-key">[⇧]</kbd>-click to step it down, or turn the wheel, drag up or down, or use the arrow keys. G1 to G1 sends one global, G1 to G8 sends them all.</li><li>Click <b class="gd-ui">Save .syx…</b>.</li></ol>
+<p>Globals are not ticked until you tick them. They hold the MIDI channels and the sync settings.</p>
+</div></section>
+<section class="gd-sec" id="song-pattern-kit-sysex-send" aria-labelledby="song-pattern-kit-sysex-send-h">
+<div class="gd-body gd-prose"><h2 id="song-pattern-kit-sysex-send-h">SONG + PATTERN (+ KIT) SYSEX SEND <a class="gd-anchor" href="#song-pattern-kit-sysex-send" aria-label="Link to SONG + PATTERN (+ KIT) SYSEX SEND">#</a></h2>
+<p class="gd-ref">MD manual p.66</p>
+<ol class="gd-steps"><li>Open <b class="gd-ui">Export SysEx…</b> and untick <b class="gd-ui">All</b>.</li><li>Tick <b class="gd-ui">Songs</b> and set the range of songs.</li><li>Tick <b class="gd-ui">Patterns</b> and <b class="gd-ui">Kits</b> too, with their ranges, if the file must play on its own.</li><li>Click <b class="gd-ui">Save .syx…</b>.</li></ol>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>On the machine a song send takes its patterns and kits with it. In the editor you choose each kind and its range. A kind with data is ticked from its first to its last used slot.</p></aside>
+</div></section>
+<section class="gd-sec" id="pattern-kit-sysex-send" aria-labelledby="pattern-kit-sysex-send-h">
+<div class="gd-body gd-prose"><h2 id="pattern-kit-sysex-send-h">PATTERN (+ KIT) SYSEX SEND <a class="gd-anchor" href="#pattern-kit-sysex-send" aria-label="Link to PATTERN (+ KIT) SYSEX SEND">#</a></h2>
+<p class="gd-ref">MD manual p.66</p>
+<ol class="gd-steps"><li>Open <b class="gd-ui">Export SysEx…</b> and untick <b class="gd-ui">All</b>.</li><li>Tick <b class="gd-ui">Patterns</b> and set the range, for example A01 to B16.</li><li>Tick <b class="gd-ui">Kits</b> and set their range if you want the kits of those patterns too.</li><li>Click <b class="gd-ui">Save .syx…</b>. The line at the foot names each kind and its range before you save.</li></ol>
+</div></section>
+<section class="gd-sec" id="kit-sysex-send" aria-labelledby="kit-sysex-send-h">
+<div class="gd-body gd-prose"><h2 id="kit-sysex-send-h">KIT SYSEX SEND <a class="gd-anchor" href="#kit-sysex-send" aria-label="Link to KIT SYSEX SEND">#</a></h2>
+<p class="gd-ref">MD manual p.66</p>
+<ol class="gd-steps"><li>Open <b class="gd-ui">Export SysEx…</b> and untick <b class="gd-ui">All</b>.</li><li>Tick <b class="gd-ui">Kits</b> only and set the range, for example K01 to K12.</li><li>Click <b class="gd-ui">Save .syx…</b>.</li></ol>
+<p>The editor writes the kits it holds. A message at the end says how many of each kind went into the file.</p>
+</div></section>
+<section class="gd-sec" id="general-sysex-receive" aria-labelledby="general-sysex-receive-h">
+<div class="gd-body gd-prose"><h2 id="general-sysex-receive-h">GENERAL SYSEX RECEIVE <a class="gd-anchor" href="#general-sysex-receive" aria-label="Link to GENERAL SYSEX RECEIVE">#</a></h2>
+<p class="gd-ref">MD manual p.67</p>
+<p>The machine takes SysEx at any time. In the editor you open the file first and choose what to send.</p>
+<ol class="gd-steps"><li>Choose <b class="gd-ui">IMPORT SYSEX…</b> in the engine menu. Or drop the .syx file on the window. Drag and drop works on macOS only.</li><li>Choose the file. The <b class="gd-ui">Import SysEx</b> panel opens. Its header names the model and says &quot;full backup&quot; when the file is one.</li><li>Read the tabs: <b class="gd-ui">Kits</b>, <b class="gd-ui">Patterns</b>, <b class="gd-ui">Songs</b>, <b class="gd-ui">Globals</b> and <b class="gd-ui">Other</b>. A tab shows the slots of the machine as a grid, and the number of items of that kind in the file. Each tab has a box: tick it to send that kind.</li><li>A slot in the grid is marked when it overwrites a slot that holds data on the machine. A slot marked ▶ plays now. Click a slot to leave it out. Click it again to take it back. Click with <kbd class="gd-key">[⇧]</kbd> to change a range.</li><li>Click <b class="gd-ui">All</b>, <b class="gd-ui">Empty slots only</b> or <b class="gd-ui">None</b> to set the whole tab.</li><li>Read the line at the foot. It says how many slots on the machine are overwritten.</li><li>Click <b class="gd-ui">Import</b>. The button says how many items it sends.</li></ol>
+<p>While the import runs, the panel shows three steps: <b class="gd-ui">Read the slots</b>, <b class="gd-ui">Send</b> and <b class="gd-ui">Read back</b>, and a bar for each kind. Click <b class="gd-ui">Stop</b> to cancel or <b class="gd-ui">Hide</b> to put the panel away. The import goes on: <b class="gd-ui">IMPORT SYSEX…</b> in the engine menu shows the panel again, with its report when it is done. While it runs, <kbd class="gd-key">[ESC]</kbd> and a click beside the panel leave it open. The panel keeps one size from the preview to the report.</p>
+<p>At the end the panel gives a report, slot by slot:</p>
+<table class="gd-table"><thead><tr><th>Mark</th><th>Meaning</th></tr></thead><tbody><tr><td>✓</td><td>taken as in the file</td></tr><tr><td>≈</td><td>converted</td></tr><tr><td>✕</td><td>ignored</td></tr><tr><td>≠</td><td>different from the file</td></tr><tr><td>~</td><td>not comparable</td></tr><tr><td>?</td><td>no answer, or not known</td></tr></tbody></table>
+<p>Click <b class="gd-ui">Show problems only</b> to list only the slots that did not go as in the file. Click <b class="gd-ui">Done</b> to close the panel.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The import has no undo. A kit that plays, and has unsaved edits, can lose them when a dump takes its place.</p><p><b class="gd-ui">Globals</b> and <b class="gd-ui">Other</b> are off until you tick them. A global changes the MIDI channels the machine listens on, and so which tracks the editor can mute, play and edit live. The active global becomes active at once.</p></aside>
+</div></section>
+<section class="gd-sec" id="original-place-sysex-receive" aria-labelledby="original-place-sysex-receive-h">
+<div class="gd-body gd-prose"><h2 id="original-place-sysex-receive-h">ORIGINAL PLACE SYSEX RECEIVE <a class="gd-anchor" href="#original-place-sysex-receive" aria-label="Link to ORIGINAL PLACE SYSEX RECEIVE">#</a></h2>
+<p class="gd-ref">MD manual p.68</p>
+<p>The import puts each item in the slot it came from, as the machine does with ORIG. This is the default: <b class="gd-ui">Original place</b> is lit in the <b class="gd-ui">Place</b> row under the grid.</p>
+</div></section>
+<section class="gd-sec" id="specific-place-sysex-receive" aria-labelledby="specific-place-sysex-receive-h">
+<div class="gd-body gd-prose"><h2 id="specific-place-sysex-receive-h">SPECIFIC PLACE SYSEX RECEIVE <a class="gd-anchor" href="#specific-place-sysex-receive" aria-label="Link to SPECIFIC PLACE SYSEX RECEIVE">#</a></h2>
+<p class="gd-ref">MD manual p.68</p>
+<p>With SPEC the machine writes the items from a slot you choose. In the editor each kind has its own first slot.</p>
+<ol class="gd-steps"><li>Open the file with <b class="gd-ui">Import SysEx…</b>.</li><li>Click <b class="gd-ui">Specific place</b> in the <b class="gd-ui">Place</b> row. A value appears for the kind of the tab shown, for example <b class="gd-ui">Kits from K01</b>. It starts at the file's first slot, so nothing moves yet.</li><li>Set the first slot: click it to step it up, <kbd class="gd-key">[⇧]</kbd>-click to step it down, or turn the wheel, drag or use the arrow keys. The grid moves the items to the slots they land in. Each item keeps its place after the first, gaps included. Hover over a slot to see where it came from in the file.</li><li>Choose another tab to set the first slot of that kind.</li><li>Click <b class="gd-ui">Import</b>. When an item lands on a slot that holds data, the editor asks first and names the slots. Click <b class="gd-ui">Import</b> in the question to go on, or <b class="gd-ui">Cancel</b>.</li></ol>
+<p>An item that would land past the last slot of the machine is not sent. <b class="gd-ui">Original place</b> puts every item back where it came from.</p>
+</div></section>
+<section class="gd-sec" id="sysex-verify" aria-labelledby="sysex-verify-h">
+<div class="gd-body gd-prose"><h2 id="sysex-verify-h">SYSEX VERIFY <a class="gd-anchor" href="#sysex-verify" aria-label="Link to SYSEX VERIFY">#</a></h2>
+<p class="gd-ref">MD manual p.69</p>
+<p>VERIFY compares a file with the machine and writes nothing.</p>
+<ol class="gd-steps"><li>Open the file with <b class="gd-ui">Import SysEx…</b> and choose the kinds and slots as for an import. <b class="gd-ui">Specific place</b> works here too.</li><li>Click <b class="gd-ui">Verify only</b>, beside <b class="gd-ui">Import</b>.</li><li>The editor reads each slot the items land in and compares it with the file. The bar shows how far it is.</li></ol>
+<p>The report marks each slot:</p>
+<table class="gd-table"><thead><tr><th>Mark</th><th>Meaning</th></tr></thead><tbody><tr><td>=</td><td>the same as the file</td></tr><tr><td>≠</td><td>different from the file</td></tr><tr><td>?</td><td>no answer</td></tr></tbody></table>
+<p>The line at the foot says how many slots are the same. Nothing was written to the machine.</p>
+<p>An import reads every item back as well. Its report lists the items that differ from the file, marked ≠.</p>
+</div></section>
+<section class="gd-sec" id="sync" aria-labelledby="sync-h">
+<div class="gd-body gd-prose"><h2 id="sync-h">SYNC <a class="gd-anchor" href="#sync" aria-label="Link to SYNC">#</a></h2>
+<p class="gd-ref">MD manual pp.75, 76, 77, 78</p>
+<p>The <b class="gd-ui">Sync</b> card sets how the machine takes and sends the MIDI clock and the transport.</p>
+<h4 class="gd-h3" id="tempo-in">Tempo in</h4>
+<p>Beside <b class="gd-ui">Tempo in</b>, click:</p>
+<ul class="gd-list"><li><b class="gd-ui">INT</b>: the machine runs at its own tempo.</li><li><b class="gd-ui">EXT</b>: the machine follows the MIDI clock it receives. MIDI Start waits for the clock.</li></ul>
+<p>In a DAW, EXT follows the tempo and transport of the host, and a new plug-in starts so. INT runs the machine on its own clock there, and the project keeps it. See &quot;EXTERNAL SYNCHRONIZATION&quot; in chapter 8.</p>
+<h4 class="gd-h3" id="ctrl-in">Ctrl in</h4>
+<p>Beside <b class="gd-ui">Ctrl in</b>, click <b class="gd-ui">ON</b> to make the machine react to MIDI Start, Stop and Continue. Click <b class="gd-ui">OFF</b> to make it ignore them.</p>
+<h4 class="gd-h3" id="tempo-out">Tempo out</h4>
+<p>Beside <b class="gd-ui">Tempo out</b>, click <b class="gd-ui">ON</b> to make the machine send the MIDI clock. Click it again to put it back.</p>
+<h4 class="gd-h3" id="ctrl-out">Ctrl out</h4>
+<p>Beside <b class="gd-ui">Ctrl out</b>, click <b class="gd-ui">ON</b> to make the machine send MIDI Start, Stop and Continue.</p>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/md/09-song-mode/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">9. Song mode</span></a><a href="/guide/md/11-sample-manager-uw-only/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">11. Sample manager, UW only</span></a></nav>
+</article>
+</div>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

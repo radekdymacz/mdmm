@@ -57,7 +57,7 @@ function syncLockBudget() {
 const seqReady = () => { if (!V.loaded) { toast("The pattern is not loaded yet."); return false; } if (V.rec) { toast("Wait until live recording stops."); return false; } return true; };
 const patLenNow = () => Math.min(V.length, V.len);
 
-/* ---- rotate: Alt + Left / Right (the one Alt that is not "all": FUNCTION + arrows on the machine) moves the selected track's trigs, accents, slides and locks one step, wrapping
+/* ---- rotate: Alt + Left / Right (the one Alt that is not "all": FUNCTION + arrows on the machine) moves the selected track's trigs, accents, slides, swings and locks one step, wrapping
    at the length. Every press is one rotate edit; the presses while Alt stays down share one g: one undo step (the
    gesture slot's "rotate", ended when Alt comes up: mdDeskGestures.js). */
 function rotateWrites(t, by, len) {
@@ -67,6 +67,7 @@ function rotateWrites(t, by, len) {
 		w.push([["tracks", t, "trigs", s], !!tr.trigs[f]]);
 		if (!V.accAll) w.push([["tracks", t, "acc", s], tr.acc.has(f)]);
 		if (!V.slideAll) w.push([["tracks", t, "slide", s], tr.slide.has(f)]);
+		if (!V.swingAll) w.push([["tracks", t, "swing", s], tr.swing.has(f)]);
 	}
 	for (const [k, m] of V.locks) {
 		if (+k.split(":")[0] !== t) continue;
@@ -92,7 +93,7 @@ function fillEvery(t, s, n) {
 	for (let k = s; k < end; k++) {
 		if (want.has(k) === !!tr.trigs[k]) continue;
 		w.push([["tracks", t, "trigs", k], want.has(k)]);
-		if (!want.has(k)) w.push([["tracks", t, "acc", k], false], [["tracks", t, "slide", k], false], ...clearStep(t, k));
+		if (!want.has(k)) w.push(...trigOffWrites(t, k));
 	}
 	const say = `${on ? "Filled every" : "Cleared every"} ${n === 2 ? "2nd" : "4th"} step of track ${t + 1}, steps ${s + 1}–${end}`;
 	if (w.length) cmd("steps", { p: V.pat, from: s, to: end, rows: [{ t, on: [...want] }] }, undefined, w, r => { if (r.ok) toast(say); });
@@ -128,7 +129,7 @@ function pasteToMany(from) {
 function unmuteAll() {
 	if (!V.tracks.some(t => t.mute || t.solo)) { toast("No track is muted or soloed."); return; }
 	S.soloSet = new Set(); S.userMutes = new Set(); V = view();
-	applySolo();
+	applySolo(); sendSolo();
 	refreshAudible();
 }
 document.addEventListener("click", e => { if (e.target.closest("#allon")) unmuteAll(); });

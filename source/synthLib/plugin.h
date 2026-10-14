@@ -19,6 +19,9 @@
 
 namespace synthLib
 {
+	// The envelope's first byte of a state from getState (then its StateType): setState refuses another version
+	constexpr uint8_t g_stateVersion = 1;
+
 	class Device;
 
 	class Plugin
@@ -86,6 +89,12 @@ namespace synthLib
 		void insertMidiEvent(const SMidiEvent& _ev);
 
 		bool setLatencyBlocks(uint32_t _latencyBlocks);
+		// Whether the host's tempo and transport go to the device as MIDI clock, Start and Stop (on by default)
+		void setHostClock(bool _on) { m_hostClockOn.store(_on, std::memory_order_release); }
+		bool hostClock() const { return m_hostClockOn.load(std::memory_order_acquire); }
+		// B-121: the host's Stop also sends All Notes Off on every channel (hostStopEvents, midiClock.h)
+		void setNotesOffOnHostStop(bool _on) { m_notesOffOnHostStop.store(_on, std::memory_order_release); }
+		bool notesOffOnHostStop() const { return m_notesOffOnHostStop.load(std::memory_order_acquire); }
 		uint32_t getLatencyBlocks() const { return m_extraLatencyBlocks; }
 
 	private:
@@ -123,6 +132,9 @@ namespace synthLib
 		uint32_t m_deviceExtraLatencyHost = 0;
 
 		MidiClock m_midiClock;
+		std::atomic<bool> m_hostClockOn{true};
+		std::atomic<bool> m_notesOffOnHostStop{false};
+		bool m_hostClockWas = true;		// audio thread
 
 		uint32_t m_extraLatencyBlocks = 1;
 

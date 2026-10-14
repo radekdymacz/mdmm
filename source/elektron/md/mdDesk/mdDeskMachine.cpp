@@ -3,6 +3,7 @@
 #include "mdDeskChain.h"
 #include "mdDeskKeys.h"
 #include "mdDeskLibrary.h"
+#include "mdDeskTransport.h"
 
 #include "deskCore/deskKinds.h"
 
@@ -43,7 +44,7 @@ namespace mdDesk
 		constexpr double g_tweakPageGapMs = KnobRecorder::g_pageGapMs;
 		constexpr double g_coalesceMs = 50;
 		constexpr double g_tweakSelectMs = 100;		// SET STATUS track again if the status did not follow
-		// The device sends one panel packet a block (DeskDevice, 128 at most queued): a turn waits while more
+		// The device sends one panel packet a block (DeskDevice, 512 at most queued): a turn waits while more
 		// than this are on their way, and sends at most this many steps.
 		constexpr int g_tweakMaxPending = 4;
 		constexpr int g_tweakMaxSteps = 16;
@@ -113,6 +114,16 @@ namespace mdDesk
 			return n.empty() ? "KIT " + std::to_string(_k.position + 1) : n;
 		}
 
+		// "S03 NAME": a song slot as the desk holds it.
+		std::string songLabel(const Documents& _view, const uint8_t _slot)
+		{
+			char k[8];
+			std::snprintf(k, sizeof(k), "S%02d", _slot + 1);
+			const auto it = _view.songs.find(_slot);
+			const auto name = it != _view.songs.end() ? songNameText(it->second) : std::string();
+			return std::string(k) + (name.empty() ? std::string() : " " + name);
+		}
+
 		// "K05 NAME": the kit that plays as it sounds, another slot as stored.
 		std::string kitLabel(const Documents& _view, const uint8_t _slot)
 		{
@@ -129,6 +140,7 @@ namespace mdDesk
 
 		// Why the panel-key features are not here (the capabilities' reasons and the refusals).
 		constexpr const char* g_noLiveRecordKeys = "Live recording needs the machine's panel keys; this engine has none.";
+		constexpr const char* g_noUndoKitKeys = "The UNDO KIT has no MIDI message: on the machine, KIT > LOAD KIT, the first entry (00 UNDO KIT).";
 		constexpr const char* g_noLiveRecordTelemetry = "Live recording needs the machine's sequencer telemetry (MD OS 1.63).";
 		constexpr const char* g_noChains = "Chaining is made with the machine's keys: it needs the local emulated MD OS 1.63";
 
@@ -357,7 +369,11 @@ namespace mdDesk
 		m_tweak = {};
 		m_notes = {};
 		m_coalesced.clear();
+		m_afterTweak.clear();
 		m_telemetrySeen = false;
+		m_recordedMs = -1e18;
+		m_recordedSinceRec = false;
+		m_recordWaitMs = -1;
 		m_session = mdDataLink::Session([this](const Bytes& _b) { sendSysex(_b); });
 		wireSession();
 		startedOver();
@@ -373,13 +389,18 @@ namespace mdDesk
 		const bool telemetry = m_telemetry.valid;
 		static const std::string noKeys = "It needs the machine's panel keys; this engine has none.";
 		c.set("transport", static_cast<bool>(m_port.pressKey), "This engine has no transport.");
+		// wave 2: panic is the panel's STOP twice (P5); play from a song row is MIDI (P1)
+		c.set("panic", keys, g_noPanic);
+		c.set("playFrom", static_cast<bool>(m_port.sendMidi), g_noPlayFrom);
 		c.set("panelKeys", keys, noKeys);
 		c.set("liveRecord", canLiveRecord(), panelKeys() ? g_noLiveRecordTelemetry : g_noLiveRecordKeys);
 		c.set("chains", canChain(), g_noChains);
 		c.set("lcd", m_profile.memory, "The machine's own LCD is on the machine.");
 		c.set("workingKitMemory", m_profile.memory, "The working kit is the stored slot plus the edits the editor saw.");
 		c.set("mutesFromMemory", m_profile.memory && m_telemetry.mutes >= 0, "The mutes are the ones the editor sent.");
-		c.set("sampleNames", true);
+		// B-128: Rename sends the slot's own sample again, so it needs its audio
+		c.set("sampleNames", m_profile.memory, "Rename sends the slot's sample again with the new name, and a real Machinedrum does not send its samples "
+			"(it ignores SDS dump requests): rename it in SAMPLE MGR on the machine, or load the file again.");
 		// P9: the waveforms come from the emulated machine's memory; a real Machinedrum ignores SDS dump
 		// requests (measured on OS 1.63, P3), so its sample audio cannot be read.
 		c.set("sampleAudio", m_profile.memory, "A real Machinedrum does not send its samples: it ignores SDS dump requests "
@@ -400,7 +421,7 @@ namespace mdDesk
 		if(m_out.sending(now()))
 			return true;
 		// Control All on its way (FUNCTION held: no dump may be asked for meanwhile), or its CCs.
-		if(m_tweak.active() || !m_coalesced.empty())
+		if(m_tweak.active() || !m_coalesced.empty() || !m_afterTweak.empty())
 			return true;
 		// A live edit the machine's memory does not show yet is on the wire too.
 		return m_working.expect.expecting(now());
@@ -465,7 +486,8 @@ namespace mdDesk
 		const auto kit = currentKit();
 		const auto* row = MdModel::commands().find(deskCore::opOf(_command));
 		const bool library = row && row->group == g_library;
-		const bool clears = library && (deskCore::opOf(_command) == "kitClear" || deskCore::opOf(_command) == "patClear");
+		const auto op = deskCore::opOf(_command);
+		const bool clears = library && (op == "kitClear" || op == "patClear" || op == "songClear");
 		// Every question the changes raise, as one (the answer, force, answers them all).
 		Outcome o;
 		const auto add = [&o](Outcome _a) { o = deskCore::withAsk(std::move(o), _a); };
@@ -484,6 +506,20 @@ namespace mdDesk
 				add(ask("clearSlot", "Clear <b>" + kitLabel(_view, ref.slot) + "</b>? Every track becomes GND-EMPTY.", "Clear kit"));
 			else if(clears && ref.kind == DocKind::Pattern)
 				add(ask("clearSlot", "Clear <b>" + ed::mdPatternName(ref.slot) + "</b>? Its notes and locks are removed.", "Clear pattern"));
+			else if(clears && ref.kind == DocKind::Song)
+			{
+				if(!isEmptySong(std::get<ed::MdSong>(c.before)))
+					add(ask("clearSlot", "Clear <b>" + songLabel(_view, ref.slot) + "</b>? Its rows and its name are removed.", "Clear song"));
+			}
+			else if(library && ref.kind == DocKind::Song)
+			{
+				// a name alone loses nothing; a copy or a paste over a song that holds something does
+				if(op != "songRename" && !isEmptySong(std::get<ed::MdSong>(c.before)))
+					add(ask("overwriteSlot", "Write over <b>" + songLabel(_view, ref.slot) + "</b>? What it holds is replaced.", "Overwrite"));
+			}
+			else if(library && ref.kind == DocKind::Global)
+				add(ask("overwriteSlot", "Paste over <b>GLOBAL " + std::to_string(ref.slot + 1) + "</b>? Its MIDI channels, sync, map,"
+					" trig inputs and routing are replaced (Undo brings them back).", "Paste"));
 			else if(library && ref.kind == DocKind::Kit && !emptyKit(std::get<ed::MdKit>(c.before)))
 				add(ask("overwriteSlot", "Write over <b>" + kitLabel(_view, ref.slot) + "</b>? What it holds is replaced.", "Overwrite"));
 			else if(library && ref.kind == DocKind::Pattern && anyTrig(std::get<ed::MdPattern>(c.before)))
@@ -638,11 +674,26 @@ namespace mdDesk
 					// Control All without the panel: coalesced, one CC per value per tick (pumpCoalesced).
 					m_coalesced[{e.track, e.index}] = e.value;
 				}
+				else if(e.kind == LiveEdit::Kind::Param && (m_tweak.active() || (m_tweak.guard & (1u << e.index))))
+				{
+					// B-145 (the 0.6.0 e2e, measured: mdDeskFirmwareTest sweepundo): a plain value (an undo) while the
+					// machine's own Control All gesture is still on its way. Sent at once, the gesture's turns still
+					// queued and on the panel stepped every track on from it (the machine kept the sweep, the page said
+					// undone). The turns not yet made are dropped (relative steps from values that are gone) and the
+					// value waits for the gesture to end (pumpCoalesced), then goes as sendLive sends it (the plug-in's
+					// parameter may still hold this value: the machine's steps are not folded in, so the CC goes on its own too).
+					m_tweak.turns.clear();
+					m_coalesced.erase({e.track, e.index});
+					m_afterTweak[{e.track, e.index}] = e.value;
+				}
 				else if(e.kind == LiveEdit::Kind::Param || e.kind == LiveEdit::Kind::Level)
 				{
 					// A plain edit goes at once; a coalesced value for it would come later and undo it.
 					if(e.kind == LiveEdit::Kind::Param)
+					{
 						m_coalesced.erase({e.track, e.index});
+						m_afterTweak.erase({e.track, e.index});
+					}
 					sendLive(e.track, e.kind == LiveEdit::Kind::Level ? 24 : e.index, e.value);
 				}
 				else if(const auto sysex = liveEditSysex(e); !sysex.empty() && canSendSysex())
@@ -696,12 +747,14 @@ namespace mdDesk
 	{
 		static const std::map<std::string, Handler> map{
 			{"load", &MdMachine::cmdLoad}, {"select", &MdMachine::cmdSelect}, {"saveKit", &MdMachine::cmdSaveKit},
-			{"reloadKit", &MdMachine::cmdReloadKit}, {"kitLoad", &MdMachine::cmdKitLoad}, {"kitSaveAs", &MdMachine::cmdKitSaveAs},
-			{"record", &MdMachine::cmdRecord}, {"recTrig", &MdMachine::cmdRecTrig}, {"noteOn", &MdMachine::cmdNoteOn}, {"noteOff", &MdMachine::cmdNoteOff}, {"chain", &MdMachine::cmdChain},
+			{"reloadKit", &MdMachine::cmdReloadKit}, {"kitLoad", &MdMachine::cmdKitLoad}, {"kitSaveAs", &MdMachine::cmdKitSaveAs}, {"loadUndoKit", &MdMachine::cmdLoadUndoKit},
+			{"record", &MdMachine::cmdRecord}, {"liveErase", &MdMachine::cmdLiveErase}, {"recTrig", &MdMachine::cmdRecTrig}, {"noteOn", &MdMachine::cmdNoteOn}, {"noteOff", &MdMachine::cmdNoteOff}, {"chain", &MdMachine::cmdChain},
 			{"chainClear", &MdMachine::cmdChainClear}, {"globalSlot", &MdMachine::cmdGlobalSlot},
-			{"selectSong", &MdMachine::cmdSelectSong}, {"reloadSong", &MdMachine::cmdReloadSong},
-			{"sampleName", &MdMachine::cmdSampleName}, {"sampleCancel", &MdMachine::cmdSampleCancel}, {"play", &MdMachine::cmdPlay}, {"stop", &MdMachine::cmdStop},
-			{"mute", &MdMachine::cmdMute}, {"followHost", &MdMachine::cmdFollowHost}, {"seqMode", &MdMachine::cmdSeqMode}};
+			{"selectSong", &MdMachine::cmdSelectSong}, {"reloadSong", &MdMachine::cmdReloadSong}, {"saveSong", &MdMachine::cmdSaveSong},
+			{"sampleCancel", &MdMachine::cmdSampleCancel}, {"play", &MdMachine::cmdPlay}, {"stop", &MdMachine::cmdStop},
+			{"mute", &MdMachine::cmdMute}, {"followHost", &MdMachine::cmdFollowHost}, {"seqMode", &MdMachine::cmdSeqMode},
+			{"pause", &MdMachine::cmdPause}, {"resume", &MdMachine::cmdResume}, {"playFrom", &MdMachine::cmdPlayFrom},
+			{"panic", &MdMachine::cmdPanic}, {"nudge", &MdMachine::cmdNudge}};
 		return map;
 	}
 
@@ -726,7 +779,7 @@ namespace mdDesk
 	const std::map<std::string, MdMachine::Handler>& MdMachine::askers()
 	{
 		static const std::map<std::string, Handler> map{{"select", &MdMachine::askSelect}, {"kitLoad", &MdMachine::askKitLoad},
-			{"reloadKit", &MdMachine::askReloadKit}, {"kitSaveAs", &MdMachine::askKitSaveAs}};
+			{"reloadKit", &MdMachine::askReloadKit}, {"kitSaveAs", &MdMachine::askKitSaveAs}, {"loadUndoKit", &MdMachine::askLoadUndoKit}, {"saveSong", &MdMachine::askSaveSong}};
 		return map;
 	}
 
@@ -911,6 +964,55 @@ namespace mdDesk
 		return kitSwitchedBy(slot, true);
 	}
 
+	// MD-043: the UNDO KIT, the first entry of the machine's kit list, through the panel's keys (there is no SysEx for
+	// it; LOAD KIT 64-127 is ignored). Measured (gapProbesFirmwareTest w12undo): the kit last lost to a LOAD KIT or an
+	// overwrite plays again, unsaved, and its own slot becomes current; the edits of the kit that played are not kept
+	// (the UNDO KIT stays as it was). The list opens on the current kit: k + 1 times UP reaches the UNDO KIT. Memory
+	// then shows the kit number and the kit (takeWorkingKit asks the status), as for a load on the panel.
+	// What stops the UNDO KIT route before it starts: refused before the question is asked, and again when it runs
+	std::optional<Outcome> MdMachine::undoKitRefused() const
+	{
+		if(!panelKeys())
+			return refuse(g_noUndoKitKeys);
+		if(!currentKit())
+			return refuse("The kit that plays is not known yet");
+		// the route starts on the main screen: not while recording, nor while other panel keys are on their way
+		if(m_telemetry.recording || m_telemetry.gridEdit)
+			return refuse("Not while recording: stop recording first, then load the UNDO KIT");
+		if(m_telemetry.panelPending > 0 || !m_keys.waiting.empty())
+			return refuse("The machine's panel is busy: try again in a moment");
+		return std::nullopt;
+	}
+
+	Outcome MdMachine::askLoadUndoKit(const Value&, const Documents& _view)
+	{
+		if(auto no = undoKitRefused())
+			return *no;
+		if(kitState(_view) != deskCore::KitState::Edited)
+			return ok();
+		const auto kit = currentKit();
+		return ask("loadUndoKit", "<b>" + (kit ? kitLabel(_view, *kit) : std::string("The kit that plays")) + "</b> has unsaved changes. Load the"
+			" UNDO KIT? The machine does not keep these edits: they are lost.", "Load the UNDO KIT", kitDetails(kit));
+	}
+
+	Outcome MdMachine::cmdLoadUndoKit(const Value&, const Documents& _view)
+	{
+		if(auto no = undoKitRefused())
+			return *no;
+		const auto kit = currentKit();
+		restore(m_working.held.releaseAll(), _view);
+		bool pressed = pressKey("kit") && pressKey("enter");
+		for(int i = 0; pressed && i <= *kit; ++i)
+			pressed = pressKey("up");
+		pressed = pressed && pressKey("enter");
+		if(!pressed)
+		{
+			pressKey("exit");	// out of the kit list, if the keys stopped in it
+			return refuse("The panel did not take the keys");
+		}
+		return ok("UNDO KIT loaded: the kit it came from is current again, unsaved. Save it to keep it");
+	}
+
 	Outcome MdMachine::cmdKitSaveAs(const Value& _m, const Documents& _view)
 	{
 		const auto slot = static_cast<uint8_t>(*intOf(_m, "k"));
@@ -946,12 +1048,133 @@ namespace mdDesk
 			return refuse(panelKeys() ? g_noLiveRecordTelemetry : g_noLiveRecordKeys);
 		if(m_telemetry.recording)
 			return pressKey("play") ? ok("Recording off, the pattern keeps playing") : refuse("No panel here");
+		// B-101: an edit of the playing pattern still on its way would be dumped over what the recording writes: REC
+		// waits until the machine holds it (pumpRecordStart)
+		if(const auto p = m_session.state().pattern; p && m_pushes.busy({DocKind::Pattern, *p}))
+		{
+			m_recordWaitMs = now();
+			return ok("Live recording once the pattern's last edit is on the machine");
+		}
+		return startRecording();
+	}
+
+	Outcome MdMachine::startRecording()
+	{
+		m_recordWaitMs = -1;
 		if(m_telemetry.playing)
 		{
 			runSequence({{Act::Stop, 0, deskCore::Wait::Stopped, 0, 1500}, {Act::RecordPlay}});
 			return ok("Live recording from step 1 (the Machinedrum starts it from STOP)");
 		}
 		return pressKey("recordPlay") ? ok("Live recording: play the tracks, turn the knobs") : refuse("No panel here");
+	}
+
+	// Erase while live recording (manual p.40): hold EXIT/NO and the track's TRIG key; the firmware removes the
+	// track's trigs for the part of the pattern that plays while both are down (mdEditorProbeFirmwareTest
+	// liveerase: either order; EXIT alone erases nothing). With i (MD-140, manual p.48): EXIT/NO and the parameter's
+	// DATA ENTRY knob pressed (its switch, not a turn) remove that parameter's locks of the selected track on the steps
+	// that play meanwhile; its trigs, its other locks, the other tracks and the knob's value stay (mdEditorProbeFirmwareTest
+	// liveunlock: either order, a tap does not latch, a turn with EXIT held records a lock as without it). So the track
+	// is selected and the knob's page shown first (pumpErase), then both go down. The keys stay down until off, another
+	// track or parameter, or the end of recording; what the firmware erased comes back with the pattern's read-back.
+	Outcome MdMachine::cmdLiveErase(const Value& _m, const Documents&)
+	{
+		if(!canLiveRecord())
+			return refuse(panelKeys() ? g_noLiveRecordTelemetry : g_noLiveRecordKeys);
+		if(!flagOf(_m, "on"))
+		{
+			releaseErase();
+			return ok();
+		}
+		if(!m_telemetry.recording)
+			return refuse("Not recording: erase works while live recording plays.");
+		const auto t = static_cast<uint8_t>(*intOf(_m, "t"));
+		const auto i = intOf(_m, "i");
+		const std::optional<uint8_t> param = i ? std::optional<uint8_t>(static_cast<uint8_t>(*i)) : std::nullopt;
+		m_eraseSeenMs = now();
+		if(m_erasing && m_erasing->track == t && m_erasing->param == param)
+			return ok();
+		if(param)
+		{
+			if(!m_port.turnKnob || !canSendSysex())
+				return refuse("Knob switches need the local emulated machine");
+			if(m_telemetry.knobPage < 0)
+				return refuse("The machine's knob page is not known here, so its locks cannot be removed live.");
+			releaseErase();
+			m_erasing = Erase{t, param};
+			pumpErase(now());
+			return ok("Removing track " + std::to_string(t + 1) + "'s locks of this parameter as they play, while Delete is held.");
+		}
+		// another track: both up (EXIT/NO first, B-101), then both down again
+		releaseErase();
+		if(!pressKey("hold:exit"))
+			return refuse("TRIG keys need the local emulated machine");
+		if(!pressKey("hold:trig" + std::to_string(t + 1)))
+		{
+			pressKey("release:exit");
+			m_erasing.reset();
+			return refuse("TRIG keys need the local emulated machine");
+		}
+		m_erasing = Erase{t, std::nullopt, true};
+		return ok("Erasing track " + std::to_string(t + 1) + "'s trigs as they play, while Delete is held.");
+	}
+
+	void MdMachine::pumpErase(const double _now)
+	{
+		if(!m_erasing || m_erasing->held || m_erasing->gaveUp || !m_erasing->param)
+			return;
+		auto& e = *m_erasing;
+		const int page = *e.param / 8;
+		if(e.lastMs < -1e8)
+		{
+			// the machine removes the selected track's locks: select it (the knob recorder knows it is selected)
+			sendSysex(ed::mdSetStatus(ed::MdStatus::Track, e.track));
+			m_knobs.trackSelected(e.track);
+			e.lastMs = _now;
+			return;
+		}
+		if(m_telemetry.knobPage != page)
+		{
+			if(_now - e.lastMs < (e.pagePresses ? KnobRecorder::g_pageGapMs : KnobRecorder::g_selectGapMs))
+				return;
+			if(e.pagePresses >= g_eraseMaxPagePresses || m_telemetry.knobPage < 0)
+			{
+				e.gaveUp = true;	// the knob page never showed: nothing held, nothing removed
+				return;
+			}
+			++e.pagePresses;
+			e.lastMs = _now;
+			pressKey("page");
+			return;
+		}
+		if(_now - e.lastMs < KnobRecorder::g_selectGapMs)
+			return;
+		pressKey("hold:exit");
+		pressKey(std::string("hold:knob") + static_cast<char>('A' + *e.param % 8));
+		e.held = true;
+	}
+
+	void MdMachine::releaseErase()
+	{
+		if(!m_erasing)
+			return;
+		if(m_erasing->held)
+		{
+			if(m_erasing->param)
+			{
+				pressKey(std::string("release:knob") + static_cast<char>('A' + *m_erasing->param % 8));
+				pressKey("release:exit");
+			}
+			else
+			{
+				// B-101: EXIT/NO up first. A TRIG key let go while EXIT/NO is still down sets a trig on the machine's
+				// selected track at the step of that key's number (measured: track 1 gained step 14 after TRIG 14),
+				// another track than the one erased
+				pressKey("release:exit");
+				pressKey("release:trig" + std::to_string(m_erasing->track + 1));
+			}
+		}
+		m_erasing.reset();
 	}
 
 	// recTrig plays a track like its TRIG key, which the firmware records.
@@ -1095,9 +1318,17 @@ namespace mdDesk
 
 	Outcome MdMachine::sendChain(const std::vector<int>& _patterns)
 	{
-		const auto keys = chainKeys(_patterns, m_telemetry.bankGroup);
+		auto keys = chainKeys(_patterns, m_telemetry.bankGroup);
 		if(keys.empty())
 			return refuse("The machine's BANK GROUP (A-D / E-H) is not known yet");
+		// B-127: after a live recording that ended with STOP, or one with an erase (EXIT/NO and a TRIG key held), the
+		// firmware takes no BANK + TRIG gesture (no chain, no pattern) until REC is pressed: REC on and off again (grid
+		// recording for a moment, nothing pressed in it) first (mdDeskFirmwareTest liveerase, the chain after it)
+		if(m_recordedSinceRec && !m_telemetry.recording)
+		{
+			keys.insert(keys.begin(), {"record", "record"});
+			m_recordedSinceRec = false;
+		}
 		// Whatever plays switches to the chain. A chain is pattern mode's: in SONG mode the firmware
 		// plays it but stays in SONG mode (measured), so the song would be back after CLEAR, which says
 		// the pattern plays on. Pattern mode first (SET STATUS, harmless when already there).
@@ -1169,6 +1400,40 @@ namespace mdDesk
 		return ok("Song " + std::to_string(s + 1) + " loaded");
 	}
 
+	// SAVE SONG stores the song the machine holds into a slot. The desk's edits are dumps into the slot and the machine
+	// loads them only when it is stopped (pumpSongReload), so until then it would store its older song over them: asked
+	// first, with the way that loses nothing (load the edits, then save) when the machine is stopped.
+	Outcome MdMachine::askSaveSong(const Value& _m, const Documents& _view)
+	{
+		const auto& st = m_session.state();
+		const auto s = intOf(_m, "s");
+		const int slot = s ? *s : st.song ? static_cast<int>(*st.song) : -1;
+		if(!st.songReloadNeeded || !st.song || slot != *st.song)
+			return ok();
+		auto o = ask("overwriteSlot", "<b>" + songLabel(_view, static_cast<uint8_t>(slot)) + "</b> was edited here and the machine has not loaded the edits yet:"
+			" saving now stores the song the machine holds, without them.", "Save the machine's song");
+		if(!m_telemetry.playing)
+		{
+			Value load = Value::object();
+			load.set("op", "selectSong");
+			load.set("s", slot);
+			o.ask->alternatives.push_back({"Load the edits, then save", {std::move(load)}});
+		}
+		return o;
+	}
+
+	Outcome MdMachine::cmdSaveSong(const Value& _m, const Documents&)
+	{
+		const auto& st = m_session.state();
+		const auto s = intOf(_m, "s");
+		const int slot = s ? *s : st.song ? static_cast<int>(*st.song) : -1;
+		if(slot < 0)
+			return refuse("The current song is not known yet");
+		m_session.saveSong(static_cast<uint8_t>(slot));
+		load({DocKind::Song, static_cast<uint8_t>(slot)}, true);
+		return ok("Saved song " + std::to_string(slot + 1) + " on the machine");
+	}
+
 	// P1: the playing song ignores dumps and LOAD SONG: stop, load, play, each when the machine
 	// shows the step before it (P6: not after fixed delays).
 	Outcome MdMachine::cmdReloadSong(const Value&, const Documents&)
@@ -1185,26 +1450,23 @@ namespace mdDesk
 		return ok("Song reloaded: stop, load, play");
 	}
 
-	// UW ROM slot names: the firmware takes 0x73 but never reports names over MIDI (the emulated machine's
-	// are read from its memory with its samples, P9).
-	Outcome MdMachine::cmdSampleName(const Value& _m, const Documents&)
+	// B-098 (the 0.6 e2e run, 2026-10-13): after the emulated machine starts, its working song (the one SONG mode plays) holds
+	// nothing until a LOAD SONG, although it reports the song slot it last had: factory memory, SONG mode, PLAY: no step
+	// moves; PLAY after LOAD SONG of that slot plays it (mdDeskFirmwareTest factorysong). Every Load on the page sends LOAD
+	// SONG, so only a play before any Load met it. Until the session has sent one, SONG mode and a song play load the
+	// current slot first (the editor's song edits always go into the slot, so nothing of the working song is lost).
+	bool MdMachine::songNotLoaded() const
 	{
-		const auto slot = *intOf(_m, "slot");
-		const auto* name = _m.find("name");
-		const auto bytes = name && name->isString() ? ed::mdSetSampleName(static_cast<uint8_t>(slot), name->asString())
-			: std::vector<uint8_t>{};
-		if(bytes.empty())
-			return refuse("A sample name is 1-4 letters (A-Z, 0-9, space, punctuation) for ROM slot 1-48");
-		if(canSendSysex())
-			sendSysex(bytes);
-		char label[8];
-		std::snprintf(label, sizeof(label), "ROM-%02d", slot + 1);
-		return ok(std::string("Sent the name to ") + label + ". The Machinedrum shows it in SAMPLE MGR; a real one cannot report "
-			"names back over MIDI.");
+		return m_profile.memory && !m_session.songLoaded() && m_session.state().song && !m_telemetry.playing && canSendSysex();
 	}
 
 	Outcome MdMachine::cmdPlay(const Value&, const Documents& _view)
 	{
+		if(m_port.pressKey && m_session.state().songMode == true && songNotLoaded())
+		{
+			runSequence({{Act::LoadSong, *m_session.state().song, deskCore::Wait::StatusReply, 0, 1000}, {Act::Play}});
+			return ok();
+		}
 		if(!pressKey("play"))
 			return refuse("Transport keys need the local emulated machine");
 		// P7: a machine that follows the host's clock (in a DAW) plays with the host's transport
@@ -1220,14 +1482,15 @@ namespace mdDesk
 	// P7, in a DAW: the machine follows the host's MIDI clock and Start/Stop (MdModel::hostFollowing). The
 	// global goes out as a dump (made active with 0x56, then read back): the machine's own setting, not an
 	// edit, so no undo step.
-	Outcome MdMachine::cmdFollowHost(const Value&, const Documents& _view)
+	Outcome MdMachine::cmdFollowHost(const Value& _m, const Documents& _view)
 	{
 		const auto slot = m_session.state().globalSlot;
 		if(!slot || !_view.global || _view.global->position != *slot)
 			return ok();
 		const auto g = MdModel::hostFollowing(*_view.global);
-		if(!g)
-			return ok();
+		// review 1 (I-026): TEMPO IN is the switch; INT the person chose stays
+		if(!m_hostClock.wants(!g, flagOf(_m, "project")))
+			return ok(m_hostClock.on ? "" : "The machine runs on its own clock (GLOBAL " + std::to_string(*slot + 1) + ": TEMPO IN internal)");
 		if(auto problems = m_session.pushGlobal(*g); !problems.empty())
 			return {problems, {}, {}};
 		if(canSendSysex())
@@ -1264,6 +1527,8 @@ namespace mdDesk
 		if(!canSendSysex())
 			return refuse("This engine cannot send SysEx to the machine.");
 		const bool song = flagOf(_m, "song");
+		if(song && songNotLoaded())
+			m_session.loadSong(*m_session.state().song);	// B-098
 		sendSysex(ed::mdSetStatus(ed::MdStatus::SequencerMode, song ? 1 : 0));
 		sendSysex(ed::mdStatusRequest(ed::MdStatus::SequencerMode));
 		return ok(song ? "SONG mode: the machine plays the song." : "PATTERN mode: the machine plays the pattern.");
@@ -1285,6 +1550,7 @@ namespace mdDesk
 		f.playing = m_telemetry.playing;
 		f.statusReplies = m_wire.statusReplies;
 		f.pattern = m_session.state().pattern ? *m_session.state().pattern : -1;
+		f.songMode = m_session.state().songMode ? (*m_session.state().songMode ? 1 : 0) : -1;
 		for(const auto& d : m_sequence.due(_now, f))
 		{
 			switch(d.action)
@@ -1301,6 +1567,11 @@ namespace mdDesk
 				break;
 			case Act::SelectPattern:
 				m_session.selectPattern(static_cast<uint8_t>(d.arg));
+				break;
+			case Act::MidiStop:
+			case Act::SongMode:
+			case Act::FromPosition:
+				runTransportAct(d.action, d.arg);
 				break;
 			}
 		}
@@ -1453,6 +1724,14 @@ namespace mdDesk
 			settle(_doc, Source::Dump);
 			break;
 		case deskCore::ReadBackAction::Wait:
+			// B-101: live recording writes the playing pattern itself (trigs played, locks turned or erased), so its
+			// read-back can never equal a dump sent before or while it recorded: the machine's pattern is the truth,
+			// not a failed push ("Push failed: the machine did not read back pattern A01" after md-seq-live-unlock)
+			if(ref.kind == DocKind::Pattern && m_session.state().pattern == ref.slot && m_recordedMs >= push.slot.sentMs())
+			{
+				push.slot.abandon();
+				settle(_doc, Source::Dump);
+			}
 			break;
 		}
 	}
@@ -1605,6 +1884,7 @@ namespace mdDesk
 	void MdMachine::onWorkingKitMemory(const Bytes& _region, const Documents& _view)
 	{
 		m_working.region = _region;
+		m_memoryKit = ed::mdWorkingKitFromMemory(_region);
 		takeWorkingKit(&_view);
 	}
 
@@ -1690,6 +1970,11 @@ namespace mdDesk
 		const bool chained = _t.chainKnown && _t.chain.active
 			&& (!m_telemetry.chainKnown || !m_telemetry.chain.active || m_telemetry.chain.patterns != _t.chain.patterns);
 		m_telemetry = _t;
+		if(_t.recording)
+		{
+			m_recordedMs = now();
+			m_recordedSinceRec = true;
+		}
 		if(chained)
 		{
 			m_audibleQueue.reset();
@@ -1697,6 +1982,7 @@ namespace mdDesk
 		}
 		m_telemetrySeen = true;
 		m_songRowHeard = m_songRow.update(_t.songRow, _t.step, _t.playing);
+		m_songRepeatsHeard = m_songRepeats.update(_t.songRepeats, _t.step, _t.playing);
 		// The keys' fact: the device reports them pending, then none left.
 		m_keys.onPending(_t.panelPending);
 		if(!e.any)
@@ -1723,6 +2009,8 @@ namespace mdDesk
 		{
 			m_knobs.reset();
 			m_recLock.reset();
+			if(!_t.recording)
+				releaseErase();
 			// The last recorded notes: read the pattern back.
 			if(!_t.recording && m_session.state().pattern)
 				load({DocKind::Pattern, *m_session.state().pattern}, true);
@@ -1741,6 +2029,8 @@ namespace mdDesk
 		t.set("recording", _t.recording);
 		t.set("valid", _t.valid);
 		t.set("songRow", m_songRowHeard >= 0 ? Value(m_songRowHeard) : Value());
+		// MD-147: the row's passes still to come, read with the row (at PLAY and at each wrap, as the row)
+		t.set("songRepeats", m_songRowHeard >= 0 && m_songRepeatsHeard >= 0 ? Value(m_songRepeatsHeard) : Value());
 		publishTelemetry(std::move(t));
 		return e;
 	}
@@ -1751,6 +2041,7 @@ namespace mdDesk
 			m_recLock.reset();
 		if(!m_telemetry.recording)
 			return;
+		pumpErase(_now);
 		// What the firmware records shows up in the pattern: read it back now and then.
 		const auto pattern = m_session.state().pattern;
 		if(pattern && _now - m_recordPollMs > 400 && !busy())
@@ -1758,7 +2049,23 @@ namespace mdDesk
 			m_recordPollMs = _now;
 			load({DocKind::Pattern, *pattern}, true);
 		}
-		const auto* memory = m_working.image && currentKit() == m_working.image->position ? &*m_working.image : nullptr;
+		// a lock removal owns the track selection, the knob page and the knob until it is let go: the knob recorder waits
+		// (it would press the page key too, or turn the held knob's page away)
+		if(m_erasing && m_erasing->param && !m_erasing->gaveUp)
+			return;
+		// what the machine's memory holds now (B-134: not the working copy's image, which can be missing while memory
+		// does not change: dropped at a kit switch, taken again only from the next region)
+		const auto* memory = m_profile.memory && m_memoryKit && currentKit() == m_memoryKit->position ? &*m_memoryKit : nullptr;
+		// B-134: the turns of the last step still on their way (the firmware takes a DATA ENTRY step about every 12 ms,
+		// measured in the plug-in): the next turn is reckoned from memory once they are through and memory showed them
+		// (g_turnGapMs after), or it turns past the value and back (49 asked, 127 reached)
+		if(keysOnTheirWay())
+		{
+			m_knobKeysMs = _now;
+			return;
+		}
+		if(_now - m_knobKeysMs < KnobRecorder::g_turnGapMs)
+			return;
 		const auto step = m_knobs.next(_now, m_telemetry.knobPage, memory);
 		if(!step)
 			return;
@@ -1788,8 +2095,21 @@ namespace mdDesk
 		}
 	}
 
+	// B-101: REC waited for an edit of the playing pattern on its way; at most g_recordWaitMs
+	void MdMachine::pumpRecordStart(const double _now)
+	{
+		if(m_recordWaitMs < 0)
+			return;
+		const auto p = m_session.state().pattern;
+		if(p && m_pushes.busy({DocKind::Pattern, *p}) && _now - m_recordWaitMs < g_recordWaitMs)
+			return;
+		startRecording();
+	}
+
 	void MdMachine::pageReady()
 	{
+		// a page that came back does not hold Delete
+		releaseErase();
 		if(m_profile.wire || m_probe == Probe::Running)
 		{
 			m_session.requestStatus();
@@ -1809,6 +2129,9 @@ namespace mdDesk
 		// 0.3.4: cable speed only while the sequencer plays (a machine without telemetry counts as playing)
 		m_out.setPlaying(!m_telemetry.valid || m_telemetry.playing, _now);
 		m_out.pump(_now);
+		// liveErase: no word from the page that Delete is still held: let the keys go
+		if(m_erasing && _now - m_eraseSeenMs > g_eraseQuietMs)
+			releaseErase();
 		// A sample on its way owns the wire: no status polls or loads meanwhile (their replies would come
 		// late and their timeouts would run out).
 		pumpSample(_now);
@@ -1835,6 +2158,7 @@ namespace mdDesk
 		pumpTweak(_now);
 		pumpCoalesced(_now);
 		pumpPushes(_now, _view);
+		pumpRecordStart(_now);
 		pumpSongReload(_now);
 	}
 
@@ -2029,6 +2353,14 @@ namespace mdDesk
 
 	void MdMachine::pumpCoalesced(const double _now)
 	{
+		// B-145: the values that waited for the machine's Control All gesture to end (held, turns queued or still on
+		// the panel: its steps would land after them and move them on)
+		if(!m_afterTweak.empty() && !m_tweak.active() && m_telemetry.panelPending <= 0)
+		{
+			for(const auto& [key, v] : m_afterTweak)
+				sendLive(key.first, key.second, v);
+			m_afterTweak.clear();
+		}
 		if(m_coalesced.empty() || _now - m_coalescedMs < g_coalesceMs)
 			return;
 		m_coalescedMs = _now;
@@ -2049,6 +2381,7 @@ namespace mdDesk
 		v.set("known", static_cast<int>(knownCount()));
 		v.set("loading", static_cast<int>(m_loads.pending()));
 		v.set("roundTripMs", m_lastRoundTripMs);
+		v.set("hostClock", m_hostClock.on);
 		return v;
 	}
 
@@ -2095,6 +2428,16 @@ namespace mdDesk
 		}
 		else
 			desk.set("recLock", Value());
+		if(m_erasing)
+		{
+			Value e = Value::object();
+			e.set("track", static_cast<int>(m_erasing->track));
+			e.set("param", m_erasing->param ? Value(static_cast<int>(*m_erasing->param)) : Value());
+			e.set("state", m_erasing->gaveUp ? "gaveUp" : m_erasing->held ? "held" : "preparing");
+			desk.set("liveErase", std::move(e));
+		}
+		else
+			desk.set("liveErase", Value());
 		doc.set("desk", std::move(desk));
 		return doc;
 	}

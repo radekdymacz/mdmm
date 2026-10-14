@@ -8,6 +8,7 @@
 
 #include "deskCore/deskAdapter.h"
 #include "deskCore/deskChain.h"
+#include "deskCore/deskHostClock.h"
 #include "deskCore/deskWorkingCopy.h"
 #include "deskCore/deskCore.h"
 #include "deskCore/deskLoadQueue.h"
@@ -67,6 +68,8 @@ namespace mmDesk
 		deskCore::Outcome askFor(const Value& _command, const Documents& _view) override;
 		void onSysex(const Bytes& _message) override;
 		void tick(double _nowMs, const Documents& _view) override;
+		// a page that came back does not hold Delete: EXIT up
+		void pageReady() override { releaseExit(); }
 		Value state(const Documents& _view) const override;
 		Value status() const override;
 		deskCore::Capabilities capabilities() const override;
@@ -99,11 +102,13 @@ namespace mmDesk
 		static const std::map<std::string, Handler>& handlers();
 		static const std::map<std::string, Handler>& askers();
 		deskCore::Outcome askLoadKit(const Value&, const Documents&);
+		deskCore::Outcome askLoadUndoKit(const Value&, const Documents&);
+		deskCore::Outcome cmdLoadUndoKit(const Value&, const Documents&);
 		deskCore::Outcome askSaveKit(const Value&, const Documents&);
 		deskCore::Outcome askSelect(const Value&, const Documents&);
 		deskCore::Outcome askPlay(const Value&, const Documents&);
 
-		enum class Act : uint8_t { Stop, Play, SelectPattern };
+		enum class Act : uint8_t { Stop, Play, SelectPattern, MidiStop, SongMode, LoadSong, FromPosition };
 		// A push is parked while its dump is queued on the RECV session (or waits for the person's SYSEX
 		// RECV, HW MIDI), not on the wire yet: a newer dump waits for it (PushPolicy::Mode::Held).
 		using Pushes = deskCore::Pushes<Ref, Bytes>;
@@ -120,6 +125,8 @@ namespace mmDesk
 		// memory's mute of track t (0-5 synth, 6-11 MIDI), POLY and tempo (BPM x 24); nullopt: not known
 		std::optional<bool> muteInMemory(const int _t) const { if(m_tel.mutes < 0) return std::nullopt; return ((m_tel.mutes >> _t) & 1) != 0; }
 		std::optional<bool> polyInMemory() const { if(m_poly < 0) return std::nullopt; return m_poly == 1; }
+		// the track in focus (status 0x22, its TRACK keys: the track POLY plays); nullopt: not known
+		std::optional<int> focusInMemory() const { if(m_focus < 0 || m_focus > 5) return std::nullopt; return m_focus; }
 		std::optional<int> tempoInMemory() const { if(m_tel.tempo < 720 || m_tel.tempo > 7200) return std::nullopt; return m_tel.tempo; }
 		void request(const Ref& _ref, bool _urgent);
 		void requestStatus();
@@ -164,9 +171,14 @@ namespace mmDesk
 		bool current(const Ref& _r) const;
 		void pumpRecv(double _now);
 		void pumpTransport(double _now);
+		void pumpMidiMutes(double _now);
+		void pumpRecord(double _now);
+		deskCore::Outcome record(const Value& _m, bool _first);
 		void pumpSequence(double _now);
 		// RECORD: the current pattern read back while the machine records (true: the mode changed).
 		bool readWhileRecording(double _now);
+		// liveErase: EXIT let go if it is down (true then).
+		bool releaseExit();
 		// LIVE RECORDING: a kit value the editor sends (a CC) is recorded by the firmware as a lock on the step that plays
 		// when it arrives (measured, mmDeskFirmwareTest reclock); the desk names that step for about 3 s (machine.desk.recLock).
 		void noteRecLock(const elektronData::MmKit& _before, const elektronData::MmKit& _after, const ChannelReach& _reach);
@@ -174,6 +186,9 @@ namespace mmDesk
 		void publishTransport(double _now, bool _recordChanged);
 		void applyWorkingKit(double _now, const Documents& _view);
 		bool pressKeys(const std::vector<Key>& _keys);
+		// PLAY, STOP and RECORD, which wait for the panel (pumpTransport, pumpRecord): also not while an edit's dump waits
+		// for its read-back (B-099)
+		bool pressTransportKeys(const std::vector<Key>& _keys);
 		deskCore::KitState kitState(const Documents& _view) const;
 		void setBaseChannel(const elektronData::MmGlobal& _g);
 
@@ -184,17 +199,39 @@ namespace mmDesk
 		deskCore::Outcome kitAction(int _kit, bool _save);
 		deskCore::Outcome cmdLoadSong(const Value&, const Documents&);
 		deskCore::Outcome cmdSaveSong(const Value&, const Documents&);
+		deskCore::Outcome askSaveSong(const Value&, const Documents&);
 		deskCore::Outcome cmdTempo(const Value&, const Documents&);
 		deskCore::Outcome cmdPlay(const Value&, const Documents&);
 		deskCore::Outcome cmdStop(const Value&, const Documents&);
 		deskCore::Outcome cmdMute(const Value&, const Documents&);
 		deskCore::Outcome cmdSeqMode(const Value&, const Documents&);
 		deskCore::Outcome cmdFollowHost(const Value&, const Documents&);
+		deskCore::HostClock m_hostClock;	// review 1 (I-026): the global's clock in is the host-clock switch
 		deskCore::Outcome cmdGlobalSlot(const Value&, const Documents&);
 		deskCore::Outcome cmdMuteMidi(const Value&, const Documents&);
 		deskCore::Outcome cmdPoly(const Value&, const Documents&);
 		deskCore::Outcome cmdRecord(const Value&, const Documents&);
+		deskCore::Outcome cmdLiveErase(const Value&, const Documents&);
+		deskCore::Outcome cmdStepKey(const Value&, const Documents&);
 		deskCore::Outcome cmdHwSend(const Value&, const Documents&);
+		// Wave 2 (mmDeskTransport.cpp): pause, resume, play from a song row, panic, the tempo nudge.
+		deskCore::Outcome cmdPause(const Value&, const Documents&);
+		deskCore::Outcome cmdResume(const Value&, const Documents&);
+		deskCore::Outcome cmdPlayFrom(const Value&, const Documents&);
+		deskCore::Outcome cmdPanic(const Value&, const Documents&);
+		deskCore::Outcome cmdNudge(const Value&, const Documents&);
+		deskCore::Outcome askPause(const Value&, const Documents&);
+		deskCore::Outcome askPlayFrom(const Value&, const Documents&);
+		deskCore::Outcome askTransport(const Documents& _view, const std::string& _what);
+		bool acceptTransport(const Value& _m, const Documents& _view, deskCore::Outcome& _out);
+		bool panelTransport() const;
+		void runTransportAct(Act _act, int _arg);
+		// The tempo a nudge started from (BPM x 24), until it is let go.
+		std::optional<int> m_nudgeFrom;
+		void pumpAfterAccept(double _now, const Documents& _view);
+		std::optional<Value> m_afterAccept;	// the command TRANSPORT ACCEPT was asked for, until the machine takes it
+		double m_afterAcceptMs = 0;
+		static constexpr double g_afterAcceptMs = 30000;
 		// MM-P8: pattern chaining as on the machine (hold BANK, press the TRIG keys; manual 1-46)
 		deskCore::Outcome cmdChain(const Value&, const Documents&);
 		deskCore::Outcome cmdChainClear(const Value&, const Documents&);
@@ -239,6 +276,7 @@ namespace mmDesk
 		std::map<uint32_t, Ref> m_recvRefs;		// a dump on the RECV session -> the push it is
 		Pushes m_pushes;
 		std::set<Ref> m_loadAfter;				// kit slots to LOAD KIT once their waiting dump goes
+		bool m_kitDumpHold = false;				// B-136: a dump of the current kit's slot was on its way at the last image
 		// Without the panel: what waits for the person's SYSEX RECV, in order (a dump names its push).
 		struct Waiting
 		{
@@ -275,8 +313,16 @@ namespace mmDesk
 		// Telemetry::mutes), POLY and the tempo (BPM x 24). The machine document says these until then.
 		std::array<deskCore::FieldExpectation<bool>, 12> m_expectMute{};
 		deskCore::FieldExpectation<bool> m_expectPoly;
+		deskCore::FieldExpectation<int> m_expectFocus;	// 0.6 wave 9: the TRACK the editor pressed for POLY
 		deskCore::FieldExpectation<int> m_expectTempo;
 		RecordReads m_recordReads;		// RECORD's read-backs (watchRecord)
+		bool m_exitHeld = false;		// liveErase: EXIT is down on the panel
+		double m_exitSeenMs = 0;
+		int m_eraseTrack = -1;			// liveErase: the track in focus while EXIT is held		// liveErase: the page's last word that the key is still held
+		// liveErase: the page says the key is still held every 250 ms; without word for this long EXIT is let go (a page that
+		// went away, reloaded or died while Delete was held)
+		static constexpr double g_eraseQuietMs = 1000;
+		int m_stepCursorSent = -1;		// STEP RECORDING: the cursor the last transport message said
 		struct RecLock { int track = 0, param = 0, step = 0; double atMs = 0; };
 		std::optional<RecLock> m_recLock;	// the step the last value sent while LIVE RECORDING locks (noteRecLock)
 		int m_queuedPattern = -1;
@@ -288,9 +334,20 @@ namespace mmDesk
 		deskCore::Latest<deskCore::ChainRequest> m_chain;
 		double m_keysUntilMs = -1e9;	// the desk's last panel keys are through by then
 		// 0.3.4: PLAY or STOP asked while the panel was busy (a dump on its way to SYSEX RECV, which the stream paces
-		// at cable speed while playing): pressed once it is free (pumpTransport), the newest wins, given up after a while
-		std::optional<Key> m_pendingTransport;
+		// at cable speed while playing): pressed once it is free (pumpTransport), the newest wins, given up after a while.
+		// B-135: pause, resume and the panic's STOP wait the same way (they were refused or lost)
+		enum class TransportWait : uint8_t { Play, Stop, Pause, Resume, Panic };
+		std::optional<TransportWait> m_pendingTransport;
+		void waitTransport(TransportWait _w);
+		bool pressWaiting(TransportWait _w);
+		std::optional<Value> m_pendingRecord;	// review 1 (B-092): RECORD waiting for the panel (pumpRecord)
+		double m_pendingRecordMs = 0;
+		bool m_recordWaiting = false;
 		double m_pendingTransportMs = 0;
+		// B-129: a MIDI track's mute (the MUTE window's keys) asked while the panel was busy waits as PLAY and STOP do
+		// (pumpMidiMutes): per track the newest, given up after g_transportWaitMs
+		std::array<std::optional<bool>, 6> m_pendingMidiMute{};
+		double m_pendingMidiMuteMs = 0;
 		// B-060: track numbers (transposesMoved) whose transposes the next dump of the pattern that plays moves, and
 		// those of dumps on the wire, applied once the machine took them; the track in focus (status 0x22) to go back to
 		uint8_t m_trnWanted = 0;

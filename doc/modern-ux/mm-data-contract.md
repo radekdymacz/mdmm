@@ -148,6 +148,7 @@ The machine state the page shows, published by `mmDesk::Desk` whenever it change
 | `global` | the active global slot |
 | `mutes` | MM-P4: `synth` and `midi`, bit t = track t muted, from RAM (the MUTE window and CC 3; made on the machine's panel too); `null` where the engine cannot read them (HW MIDI) |
 | `poly` | MM-P4: POLY, the machine's audio mode (status 0x20); `null` until it answers |
+| `focus` | 0.6 wave 9: the synth track in focus, its TRACK key (status 0x22, asked with the other statuses), the track POLY plays; the track a `poly` with `t` pressed until the machine shows it; `null` until it answers |
 | `tempo` | BPM from RAM; `null` while it is not a tempo yet (boot) |
 
 `mutes`, `poly` and `tempo` are memory's, but a value the page set (`mute`, `muteMidi`, `poly`, `tempo`) is
@@ -165,7 +166,7 @@ read back, `working` = the current kit's working copy, `doc`), `telemetry` (`ste
 row the sequencer plays, 0-based, RAM 0x2bdba1, or `null` where the engine cannot read it; the
 transport is only here, never in the machine document), `host` (`bpm`, `follows`: in a DAW the host's
 tempo, also while it is stopped; see the Machinedrum's data-contract.md, B-030), `audioRun` (B-035: the host's
-audio calls and the machine's speed while it starts; see data-contract.md), `cpuLoad` (I-018: the top bar's CPU meter and its popover, every 250 ms; see data-contract.md), `outputLevel` (I-021: the LCD's output meter and volume, every 250 ms; set with `outputGain`; see data-contract.md), `lcd` (the firmware's 128 x 64 LCD as 2048 hex
+audio calls and the machine's speed while it starts; see data-contract.md), `cpuLoad` (I-018: the top bar's CPU meter and its popover, every 250 ms; see data-contract.md), `outputLevel` (I-021: the LCD's output meter and volume, every 250 ms; set with `outputGain`; see data-contract.md), `midiIn` (0.6: a note on from outside; the MM page does not read it; see data-contract.md), `midiHeld` (0.6, B-062, I-002: the notes held from outside, lit on the Perform keyboard; see data-contract.md), `lcd` (the firmware's 128 x 64 LCD as 2048 hex
 digits, row by row, MSB = left pixel, while the engine is not ready),
 `catalogue` (the machines, the fixed pages, the enumerations, and since B-049 `ampEnvelope`: the AMPLIFICATION
 envelope's times per value 0-127 as OS 1.32B plays them, measured: `attackMs`, `holdSixteenths`, `fallMs` for DEC and
@@ -215,7 +216,7 @@ document) is the intent of an import or a restore (the plug-in's own); the page 
 Commands from the page: `ready`, `set` (`kind`, `doc`), `load` (`kind`, `slot`),
 `select` (`p`), `loadKit` / `saveKit` (`k`), `loadSong` / `saveSong` (`s`),
 `tempo` (`bpm`), `play`, `stop`, `mute` (`t`, `on`), `muteMidi` (`t`, `on`: the MUTE window),
-`poly` (`on`), `record` (`mode`: `off`, `grid`, `live`), `hwSend` (HW MIDI: the machine is on
+`poly` (`on`, `t`: TRACK t first), `record` (`mode`: `off`, `grid`, `live`), `hwSend` (HW MIDI: the machine is on
 SYSEX RECV), `followHost`, `revealRomFolder`, `recheckFirmware`, and the `learn*` family. The
 schema's `$defs/command` is generated from the command tables (`mmDeskTest --write-schema`).
 `chain` (`patterns`) and `chainClear`: see Chaining below.
@@ -254,6 +255,13 @@ if(pattern)
 ```
 
 `mmDataCorpusTest [--json <dir>] <dir>` checks byte-exact, JSON-exact and valid on every MM dump under a directory.
+
+**Recording (0.6 wave 7).** `record` (telemetry) is also `step`: STEP RECORDING (STOP held + RECORD, manual 1-50;
+RAM 0x2bff05, `mmEditorProbeFirmwareTest recording`), with `stepAt`, the step the next note writes (RAM 0x2bff09).
+`record {mode: "step", t}` enters it with TRACK t in focus (it writes that track only); again while in it, it only
+moves the focus. `stepKey {key}` is LEFT, RIGHT (a rest) or ENTER (clear the step). `liveErase {t, on}` holds EXIT while
+LIVE RECORDING plays: the machine erases track t's notes as they pass (manual 1-49). All of them are the machine's keys:
+refused over HW MIDI (the `gridRecord` capability's reason).
 
 **Song playhead (0.3.5).** `songRow` (telemetry) is the song row the Monomachine plays, one byte at
 RAM 0x2bdba1 (`md::MmTelemetry::g_songRowAddress`; found with `mmEditorProbeFirmwareTest songrow`,

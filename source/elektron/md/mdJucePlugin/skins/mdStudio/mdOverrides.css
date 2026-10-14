@@ -17,6 +17,9 @@ header.top{position:relative}
 .kopt:disabled,button[data-na]{opacity:.45;cursor:not-allowed}
 .lcdeng .led:not(.on){opacity:.35}
 body.liverec .st,body.liverec .lb{cursor:cell}
+/* wave 7: Delete held while live recording erases the selected track's trigs as they play */
+body.erasing .th.sel{box-shadow:inset 0 0 0 2px var(--rec)}
+body.erasing .pc.erasing,body.erasing .fader.erasing{box-shadow:inset 0 0 0 2px var(--rec)}
 .recbadge{font:10px var(--pix);text-transform:uppercase;color:var(--rec)}
 /* Control side panel: the title on one line, the description under it. */
 .ctlui .card>header{flex-direction:column!important;align-items:flex-start!important;gap:2px!important}
@@ -244,6 +247,9 @@ img,svg,canvas{-webkit-user-drag:none}
 /* K2 (DESIGN-keymap.md): the LCD's COPY CLR PASTE while they act on the selected steps: underlined, as the
    selection is outlined (mdDeskComforts.js secLabels) */
 .lcdsec button.onsel{opacity:1;text-decoration:underline;text-underline-offset:2px}
+/* @include shared/deskSongSlots.css */
+/* 0.6 wave 4: COPY / PASTE / CLEAR what (skins/shared/deskWhat.js) */
+/* @include shared/deskWhat.css */
 /* 0.3.5, the Song page's left column by hierarchy (mdDeskSong.js): (a) What plays: the PATTERN | SONG switch, big,
    and one live line from the machine; (b) the song; (c) the palette; (d) the selected row. The mode is lit by what
    the machine reports; the arrangement is framed in red while the song plays, and looks as ever otherwise */
@@ -254,8 +260,6 @@ img,svg,canvas{-webkit-user-drag:none}
 .whatplays .playsline{display:flex;min-width:0}
 .whatplays .playsline .playschip{flex:1;min-width:0;margin:0;overflow:hidden;text-overflow:ellipsis;font:13px var(--pix);padding:7px 10px}
 .whatplays.song .playsline .playschip{box-shadow:inset 0 0 0 2px var(--led)}
-.songslot header{flex-wrap:wrap;align-items:center}
-.songslot .stepper .lcdchip{min-width:72px;text-align:center}
 .arrcard .arrstate{font:11px var(--pix);text-transform:uppercase;letter-spacing:.06em;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .arrcard .arrstate:empty{display:none}
 .songplaying .arrcard .arrstate::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--led);box-shadow:0 0 6px 1px var(--led)}
@@ -282,5 +286,63 @@ img,svg,canvas{-webkit-user-drag:none}
 /* I-018: the CPU meter beside the version (skins/shared/deskCpu.js) */
 /* @include shared/deskCpu.css */
 /* @include shared/deskTopFit.css */
+/* @include shared/deskTransport.css */
 /* I-021: the output meter and volume at the LCD's right end (skins/shared/deskVolume.js) */
 /* @include shared/deskVolume.css */
+/* @include shared/deskValueEdit.css */
+
+/* Wave 3, the trig types (DESIGN-machine-menus.md §2; mockup-next md-13): Trig · Accent · Swing · Slide in the bar
+   under the grid, the lit one is what a click paints; All tracks · This track (EDIT ALL) beside them; swing is a teal
+   slant on the step */
+:root{--swg:#15a39a}
+.ttlegend{flex:none}
+.ttlegend .gbl::after{order:1}
+.ttlegend .ttkeys{gap:3px}
+.ttlegend .ttk{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 6px 0 4px;background:transparent;color:var(--print2);box-shadow:inset 0 0 0 1px var(--rule);font:500 11px var(--sans);letter-spacing:0;text-transform:none;border-radius:3px}
+.ttlegend .ttk:hover{background:var(--plate2)}
+.ttlegend .ttk[aria-checked=true]{background:var(--cream);color:var(--creamtext);box-shadow:inset 0 -2px 0 rgba(0,0,0,.2)}
+.ttlegend .ttk i.lg{width:13px;height:13px;margin:0;border-radius:2px;display:inline-block;position:relative;background-color:var(--key);background-repeat:no-repeat;background-image:linear-gradient(var(--led),var(--led));background-position:center 2px;background-size:62% 3px}
+.ttlegend .ttk i.lg.acc{background-size:88% 6px}
+.ttlegend .ttk i.lg.sl{background-image:linear-gradient(var(--led),var(--led)),linear-gradient(135deg,transparent 60%,rgba(255,255,255,.3) 60%);background-size:62% 3px,100% 100%;background-position:center 2px,0 0}
+.ttlegend .ttk i.lg.sw,.glegpop i.lg.sw{background-image:linear-gradient(var(--led),var(--led)),linear-gradient(60deg,transparent 40%,var(--swg) 40%,var(--swg) 64%,transparent 64%);background-size:62% 3px,8px 8px;background-position:center 2px,2px 5px}
+.ttlegend .ttall{order:2;display:flex;gap:2px;margin-left:-2px}
+.ttlegend .ttall button{height:14px;padding:0 4px;font:600 9px var(--sans);letter-spacing:.06em;text-transform:uppercase;border-radius:2px;background:transparent;color:var(--print2);box-shadow:inset 0 0 0 1px var(--rule)}
+.ttlegend .ttall button[aria-pressed=true]{background:var(--cream);color:var(--creamtext);box-shadow:none}
+.st.on.sw{background-image:linear-gradient(var(--led),var(--led)),linear-gradient(60deg,transparent 40%,var(--swg) 40%,var(--swg) 64%,transparent 64%);background-size:62% 5px,9px 9px;background-position:center 5px,4px calc(100% - 4px)}
+.st.on.acc.sw{background-size:88% 9px,9px 9px}
+.st.on.sl.sw{background-image:linear-gradient(var(--led),var(--led)),linear-gradient(60deg,transparent 40%,var(--swg) 40%,var(--swg) 64%,transparent 64%),linear-gradient(135deg,transparent 62%,rgba(255,255,255,.18) 62%);background-size:62% 5px,9px 9px,100% 100%;background-position:center 5px,4px calc(100% - 4px),0 0}
+.st.on.acc.sl.sw{background-size:88% 9px,9px 9px,100% 100%}
+html[data-tt=acc] #seq .st,html[data-tt=swg] #seq .st,html[data-tt=sld] #seq .st{cursor:cell}
+html[data-tt=acc] #seq .st:not(.on),html[data-tt=swg] #seq .st:not(.on),html[data-tt=sld] #seq .st:not(.on){cursor:not-allowed}
+/* wave 8: the machine picker's audition. ▶ on the hovered, focused and auditioned machine key; the line under the preview */
+.mk{position:relative}
+.mk .mk-play{display:none;position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;background:var(--led);cursor:pointer}
+.mk .mk-play::after{content:"";position:absolute;left:7px;top:5px;border-style:solid;border-width:4px 0 4px 6px;border-color:transparent transparent transparent #fff}
+.mk:hover .mk-play,.mk.kf .mk-play,.mk.aud .mk-play{display:block}
+.mk.aud{outline:2px solid var(--led);outline-offset:-2px}
+.mp-aud{grid-column:1/-1;display:flex;gap:10px;align-items:center;background:var(--lcd);color:var(--ink);font:11px/1.7 var(--pix);padding:6px 10px;border-radius:3px;outline:1px dashed var(--ink);outline-offset:-4px}
+.mp-aud span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase}
+.mp-audk{display:flex;gap:6px;align-items:center;background:transparent;box-shadow:none;color:var(--ink);font:11px var(--pix);text-transform:uppercase;padding:2px 4px}
+.mp-audk kbd{font:10px var(--pix);border:1px solid var(--ink);border-radius:2px;padding:0 4px}
+/* I-002: a note from a MIDI keyboard played this track (mdDeskTop.js noteLight): its number on the rail glows a moment */
+.th.hit .n,.th.trig .n{box-shadow:0 0 0 1px var(--led),0 0 6px 1px var(--led)}
+.strip .led.act.hit{background:var(--led);box-shadow:0 0 6px 1px var(--led)}
+
+/* MD-033: the machine's clip between two value boxes whose parameters depend on each other (mdDeskSound.js clipMarks:
+   the arch over the gap after column --c of --n, on row --r of --rows; the group's gap is 4px) */
+.sg>.ctl{position:relative}
+.snd .clipmk{position:absolute;left:calc((100% - (var(--n) - 1) * 4px) / var(--n) * var(--c) + (var(--c) - 1) * 4px - 5px);width:14px;
+ top:calc((100% + 4px) / var(--rows) * var(--r) - 5px);height:6px;border:1.5px solid var(--keydim);border-bottom:0;border-radius:6px 6px 0 0;pointer-events:none;box-sizing:border-box}
+.snd .clipgap{flex:0 0 0;align-self:stretch;margin-left:-4px;position:relative;pointer-events:none}
+.snd .clipgap::before{content:"";position:absolute;left:-5px;top:-5px;width:14px;height:6px;border:1.5px solid var(--keydim);border-bottom:0;border-radius:6px 6px 0 0;box-sizing:border-box}
+
+/* MD-147: the playing song row's passes still to come (telemetry songRepeats) */
+.scell.ph[data-left]{position:relative}
+.scell.ph[data-left]::after{content:"+" attr(data-left);position:absolute;right:3px;top:2px;font:600 10px var(--mono);color:var(--led);pointer-events:none}
+.scell.ph[data-left="0"]::after{content:"last"}
+
+/* B-113: the track list's generator tag (E 2/16+4, the longest) whole in the 75 px beside a two-letter name: 9 px letters,
+   2 px padding, a 3 px gap. Beside a longer name (EMPTY, an empty kit's tracks) it does not fit: it wraps, out of the one
+   line the box shows (the 19 px rows have no room for a second line, as the Monomachine's have), never half cut */
+.th .nm.tagged{gap:3px;flex-wrap:wrap;align-content:flex-start;row-gap:30px;max-height:1.5em}
+.th .nm .gtag{font-size:9px;padding:0 2px}

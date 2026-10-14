@@ -1,6 +1,7 @@
 #include "mddeskdevice.h"
 
 #include <algorithm>
+#include <cstdlib>
 
 namespace md
 {
@@ -29,9 +30,22 @@ namespace md
 		// P9: the audition on the main output (Main A/B), from its rate to the machine's.
 		m_audition.mix(_outputs[0], _outputs[1], _samples, getSamplerate());
 		if(m_silentOutput)
+		{
+			// A background run plays nothing to the speakers. With GEARMULATOR_MDMM_BACKGROUND_METER=1 (scripts/mdmm-e2e.sh)
+			// the output is not zero but 0.003 of itself (-50 dB: nothing a person hears), so the output meter still reads what
+			// the machine plays and an end-to-end run can say that a song is not silent. Zero otherwise.
+			static const float g_residue = std::getenv("GEARMULATOR_MDMM_BACKGROUND_METER") ? 0.003f : 0.0f;
 			for(auto* out : _outputs)
-				if(out)
+			{
+				if(!out)
+					continue;
+				if(g_residue == 0.0f)
 					std::fill_n(out, _samples, 0.0f);
+				else
+					for(size_t i = 0; i < _samples; ++i)
+						out[i] *= g_residue;
+			}
+		}
 		publishSequencerTelemetry(_samples);
 		scanSamples();
 		m_frames += _samples;
@@ -138,6 +152,7 @@ namespace md
 			t.mutes.store(-1, std::memory_order_relaxed);
 			t.chainActive.store(-1, std::memory_order_relaxed);
 			t.songRow.store(-1, std::memory_order_relaxed);
+			t.songRepeats.store(-1, std::memory_order_relaxed);
 			return;
 		}
 		auto& uc = hardware.getUC();
@@ -146,16 +161,27 @@ namespace md
 		{
 			m_bootAnimationOf = &hardware;
 			m_bootAnimation.reset();
+			m_sequencer = {};
 		}
-		if(hardware.isFirmwareMidiReady())
+		const bool ready = hardware.isFirmwareMidiReady();
+		// B-087: a machine that starts again in place (not ready, then ready) reads its sequencer afresh
+		if(ready && !m_sequencerReady)
+			m_sequencer = {};
+		m_sequencerReady = ready;
+		if(ready)
 			m_bootAnimation.update(uc.read8(BootAnimation::g_mainScreenAddress), _frames);
 		t.bootAnimation.store(m_bootAnimation.state(), std::memory_order_relaxed);
 		const auto step = uc.read8(SequencerState::g_stepAddress);
 		t.step.store(step, std::memory_order_relaxed);
 		t.pattern.store(uc.read8(patternAddress), std::memory_order_relaxed);
 		t.songRow.store(uc.read8(SongPosition::g_rowAddress), std::memory_order_relaxed);
-		m_sequencer.update(step, uc.read8(SequencerState::g_stoppedAddress), uc.read8(SequencerState::g_recordLedAddress),
-			_frames);
+		t.songRepeats.store(uc.read8(SongPosition::g_repeatsAddress), std::memory_order_relaxed);
+		// B-087: not before the firmware takes MIDI. While it starts, its RAM is being set up: the step byte changed with
+		// the stopped byte still 0 read as "playing" for 0.7 s, so the page showed PLAY pressed under the start-up card
+		// and the machine as playing (md-boot-card, about one start in five)
+		if(ready)
+			m_sequencer.update(step, uc.read8(SequencerState::g_stoppedAddress), uc.read8(SequencerState::g_recordLedAddress),
+				_frames);
 		t.playing.store(m_sequencer.playing() ? 1 : 0, std::memory_order_relaxed);
 		t.recording.store(m_sequencer.recording() ? 1 : 0, std::memory_order_relaxed);
 		t.gridEdit.store(m_sequencer.gridEdit() ? 1 : 0, std::memory_order_relaxed);

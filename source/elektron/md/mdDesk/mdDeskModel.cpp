@@ -137,6 +137,29 @@ namespace mdDesk
 		c.set("songRow", _clip.songRow.has_value());
 		c.set("kit", _clip.kit ? Value(static_cast<int>(_clip.kit->position)) : Value());
 		c.set("pattern", _clip.pattern ? Value(static_cast<int>(_clip.pattern->position)) : Value());
+		c.set("song", _clip.song ? Value(static_cast<int>(_clip.song->position)) : Value());
+		// COPY what: the track and the parts it copied, with what they hold (the paste dialog's numbers)
+		Value track;
+		if(_clip.track)
+		{
+			const auto& v = _clip.track->values;
+			const auto bits = [](uint64_t _b) { int n = 0; for(; _b; _b &= _b - 1) ++n; return n; };
+			int locks = 0;
+			for(const auto& [param, steps] : v.locks)
+				locks += static_cast<int>(steps.size());
+			track = Value::object();
+			track.set("t", _clip.track->t);
+			track.set("what", deskCore::trackParts::names(_clip.track->what, trackParts()));
+			Value counts = Value::object();
+			counts.set("trigs", bits(v.trigs));
+			counts.set("accent", bits(v.accent));
+			counts.set("swing", bits(v.swing));
+			counts.set("slide", bits(v.slide));
+			counts.set("locks", locks);
+			track.set("counts", std::move(counts));
+		}
+		c.set("track", std::move(track));
+		c.set("global", _clip.global ? Value(static_cast<int>(_clip.global->position)) : Value());
 		return c;
 	}
 
@@ -156,6 +179,13 @@ namespace mdDesk
 			for(const auto* p : ed::mdMachineParamNames(model))
 				params.push(p && *p ? Value(p) : Value());
 			m.set("params", std::move(params));
+			// MD-033: the LCD's clips, i: parameters i and i + 1 depend on each other
+			Value clips = Value::array();
+			const auto bits = ed::mdMachineClips(model);
+			for(int i = 0; i < 23; ++i)
+				if(bits & (1u << i))
+					clips.push(i);
+			m.set("clips", std::move(clips));
 			machines.push(std::move(m));
 		}
 		const auto names = [](const auto& _list)
@@ -232,16 +262,23 @@ namespace mdDesk
 		const Arg on{"on", ArgType::Bool, 0, 0, true};
 		const Arg row{"i", ArgType::Integer, 0, 255};
 		const Arg any{"v", ArgType::Any, 0, 0, true};
+		const Arg what{"what", ArgType::Array};	// a track's parts by name (mdDesk::trackParts)
 		const auto opt = [](Arg _a) { _a.optional = true; return _a; };
 		static const CommandTable table({
 			// ---- the core: documents ----
 			{"ready", Owner::Core, Gate::None, -1, {}, "the page is up: everything is published once more", CoreOp::Ready},
 			{"undo", Owner::Core, Gate::Input, -1, {}, "undo the last step (a drag is one step)", CoreOp::Undo},
 			{"redo", Owner::Core, Gate::Input, -1, {}, "", CoreOp::Redo},
+			{"trialBegin", Owner::Core, Gate::None, -1, {{"g", ArgType::Integer, 1, 9007199254740991.0}}, "a trial of edits under the gesture g (the machine picker's audition)", CoreOp::Trial},
+			{"trialEnd", Owner::Core, Gate::None, -1, {{"g", ArgType::Integer, 1, 9007199254740991.0}, {"keep", ArgType::Bool, 0, 0, true}},
+				"the trial g ends: kept, or its step taken back while it is the newest one", CoreOp::Trial},
 			{"set", Owner::Core, Gate::Input, -1, {{"kind", ArgType::Text, 0, 0, false, deskCore::kindNames<MdModel>()}, {"doc", ArgType::Object}}, "a whole document as the intent", CoreOp::Set},
 			{"trig", Owner::Core, Gate::Input, P, {p, t, step, on}, "a trig on or off (toggles without on)"},
-			{"accent", Owner::Core, Gate::Input, P, {p, t, step, on}, ""},
+			{"accent", Owner::Core, Gate::Input, P, {p, t, step, on}, "on: set or clear (a paint), else it toggles; the pattern-wide row while EDIT ALL is on"},
 			{"slide", Owner::Core, Gate::Input, P, {p, t, step, on}, ""},
+			{"swingStep", Owner::Core, Gate::Input, P, {p, t, step, on}, "a step on the swing row (its trig swings by the pattern's amount); on: set or clear, else it toggles"},
+			{"markMode", Owner::Core, Gate::Input, P, {p, {"mark", ArgType::Text, 0, 0, false, {"accent", "slide", "swing"}}, {"all", ArgType::Bool}},
+				"the pattern's EDIT ALL for accent, slide or swing: all = one row for every track, else each track's own (both rows are kept)"},
 			{"lock", Owner::Core, Gate::Input, P, {p, t, i24, step, {"v", ArgType::IntegerOrNull, 0, 127}}, "a parameter lock; v null clears it"},
 			{"clearLane", Owner::Core, Gate::Input, P, {p, t, i24}, ""},
 			{"clearLocks", Owner::Core, Gate::Input, P, {p, t}, "every lock of a track (Alt + the lock lane's clear key)"},
@@ -265,6 +302,14 @@ namespace mdDesk
 			{"copyStepsTo", Owner::Core, Gate::Input, P, {p, t, rows, {"from", ArgType::Integer, 0, 63}, {"to", ArgType::Integer, 1, 64},
 				{"at", ArgType::Integer, 0, 63}, {"dt", ArgType::Integer, 0, 15, true}},
 				"a block of steps copied within the pattern to step at of track dt (its own track without dt), the clipboard untouched: duplicate, Alt-drag"},
+			{"trackCopy", Owner::Core, Gate::Input, P, {opt(p), opt(k), t, what},
+				"COPY what (the machine's SUPER COPY): the named parts of track t into the clipboard, over the whole track: trigs, accent, swing, slide,"
+				" locks (pattern p) and sound, lfo (the kit that plays, k)", CoreOp::Edit, g_track},
+			{"trackPaste", Owner::Core, Gate::Input, P, {opt(p), opt(k), {"to", ArgType::Array}, what},
+				"PASTE what: the clipboard's named parts onto every track of to (tracks 0-15), one undo step", CoreOp::Edit, g_track},
+			{"trackClear", Owner::Core, Gate::Input, P, {opt(p), opt(k), t, what},
+				"CLEAR what (the machine's SUPER CLEAR): the named parts of track t: trigs (and their locks), accent, swing, slide, locks;"
+				" sound to neutral values, the LFO to its start", CoreOp::Edit, g_track},
 			{"patCopy", Owner::Core, Gate::Input, P, {p}, "the pattern chooser", CoreOp::Edit, g_library},
 			{"patPaste", Owner::Core, Gate::Input, P, {p}, "", CoreOp::Edit, g_library},
 			{"patCopyTo", Owner::Core, Gate::Input, P, {slot("from", DocKind::Pattern), slot("to", DocKind::Pattern)}, "drag-copy", CoreOp::Edit, g_library},
@@ -280,6 +325,7 @@ namespace mdDesk
 			{"copySound", Owner::Core, Gate::Input, W, {k, t}, ""},
 			{"pasteSound", Owner::Core, Gate::Input, W, {k, t}, ""},
 			{"clearSound", Owner::Core, Gate::Input, W, {k, t}, ""},
+			{"revertTrack", Owner::Core, Gate::Input, W, {k, t}, "the Sound page's Revert track: the track's machine, values, level, LFO and relations as the kit's slot stores them"},
 			{"tweak", Owner::Core, Gate::Input, W, {k, {"group", ArgType::Text, 0, 0, false, {"syn", "fx", "rt"}}, {"knob", ArgType::Integer, 0, 7},
 				{"d", ArgType::Integer, -127, 127}, opt(t)}, "Control All (FUNCTION + a DATA ENTRY knob): that knob on every track, moved by d; t: the gesture's track"},
 			{"kitCopy", Owner::Core, Gate::Input, K, {k}, "the kit library", CoreOp::Edit, g_library},
@@ -287,6 +333,12 @@ namespace mdDesk
 			{"kitCopyTo", Owner::Core, Gate::Input, K, {slot("from", DocKind::Kit), slot("to", DocKind::Kit)}, "", CoreOp::Edit, g_library},
 			{"kitClear", Owner::Core, Gate::Input, K, {k}, "", CoreOp::Edit, g_library},
 			{"kitRename", Owner::Core, Gate::Input, K, {k, {"name", ArgType::Text}}, "", CoreOp::Edit, g_library},
+			{"songCopy", Owner::Core, Gate::Input, S, {s}, "the song slots", CoreOp::Edit, g_library},
+			{"songPaste", Owner::Core, Gate::Input, S, {s}, "", CoreOp::Edit, g_library},
+			{"songCopyTo", Owner::Core, Gate::Input, S, {slot("from", DocKind::Song), slot("to", DocKind::Song), opt({"name", ArgType::Text})},
+				"drag-copy; with a name: Save to... (the song, named, into another slot)", CoreOp::Edit, g_library},
+			{"songClear", Owner::Core, Gate::Input, S, {s}, "", CoreOp::Edit, g_library},
+			{"songRename", Owner::Core, Gate::Input, S, {s, {"name", ArgType::Text}}, "a song's name (16 characters)", CoreOp::Edit, g_library},
 			{"rowSet", Owner::Core, Gate::Input, S, {s, row, {"row", ArgType::Object}}, "song rows"},
 			{"rowInsert", Owner::Core, Gate::Input, S, {s, row, {"row", ArgType::Object, 0, 0, true}}, ""},
 			{"rowDelete", Owner::Core, Gate::Input, S, {s, row}, ""},
@@ -297,8 +349,12 @@ namespace mdDesk
 			{"tempo", Owner::Core, Gate::Input, G, {{"bpm", ArgType::Number, 30, 300}}, ""},
 			{"extended", Owner::Core, Gate::Input, G, {{"on", ArgType::Bool}}, "EXTENDED or CLASSIC"},
 			{"globalSet", Owner::Core, Gate::Input, G, {{"field", ArgType::Text, 0, 0, false, list(ed::g_mdGlobalFields)}, opt(on), any, {"note", ArgType::Integer, 0, 127, true},
-				{"target", ArgType::IntegerOrNull, 0, ed::MdGlobal::g_keymapStop, true}}, "a GLOBAL setting by name"},
-			{"globalReset", Owner::Core, Gate::Input, G, {}, "GLOBAL › Reset to defaults: the active global becomes the one the machine ships with (measured, mdDeskFirmwareTest factoryglobal)"},
+				{"target", ArgType::IntegerOrNull, 0, ed::MdGlobal::g_keymapStop, true}, {"input", ArgType::Integer, 0, 1, true},
+				{"param", ArgType::Text, 0, 0, true, list(ed::g_mdTrigInParams)}},
+				"a GLOBAL setting by name (keymap: note, target; trigIn: input 0 A 1 B, param, v; resetMap: Elektron's note map)"},
+			{"globalReset", Owner::Core, Gate::Input, G, {}, "GLOBAL › Clear: the active global becomes the one the machine ships with (measured, mdDeskFirmwareTest factoryglobal)"},
+			{"globalCopy", Owner::Core, Gate::Input, G, {slot("slot", DocKind::Global)}, "GLOBAL › Copy: the global into the clipboard", CoreOp::Edit, g_library},
+			{"globalPaste", Owner::Core, Gate::Input, G, {slot("slot", DocKind::Global)}, "GLOBAL › Paste: the clipboard's global into this slot (its position kept)", CoreOp::Edit, g_library},
 			// ---- the machine ----
 			{"load", Owner::Machine, Gate::Midi, -1, {{"kind", ArgType::Text, 0, 0, false, deskCore::kindNames<MdModel>(true)}, {"slot", ArgType::Integer, 0, static_cast<double>(deskCore::maxLoadableSlots<MdModel>() - 1)}}, "read a document now"},
 			{"select", Owner::Machine, Gate::Input, -1, {p, {"now", ArgType::Bool, 0, 0, true}},
@@ -306,9 +362,14 @@ namespace mdDesk
 			{"saveKit", Owner::Machine, Gate::Input, -1, {}, "SAVE KIT to the current slot"},
 			{"reloadKit", Owner::Machine, Gate::Input, -1, {}, "LOAD KIT of the current slot"},
 			{"kitLoad", Owner::Machine, Gate::Input, -1, {k}, "LOAD KIT"},
+			{"loadUndoKit", Owner::Machine, Gate::Input, -1, {}, "KIT > LOAD KIT > UNDO KIT with the panel's keys: the kit last lost to a LOAD KIT"
+				" or an overwrite plays again, its own slot current, unsaved (MD-043, measured: gapProbesFirmwareTest w12undo)"},
 			{"kitSaveAs", Owner::Machine, Gate::Input, -1, {k}, "SAVE KIT n"},
 			{"record", Owner::Machine, Gate::Input, -1, {}, "REC as on the machine"},
 			{"recTrig", Owner::Machine, Gate::Input, -1, {t}, "a TRIG key while recording"},
+			{"liveErase", Owner::Machine, Gate::Input, -1, {t, {"on", ArgType::Bool}, opt({"i", ArgType::Integer, 0, 23})},
+				"live recording: EXIT/NO and track t's TRIG key held (on) or let go; its trigs go as they play (manual p.40). With i: "
+				"EXIT/NO and the DATA ENTRY knob of kit parameter i pressed instead; track t's locks of that parameter go as they play (manual p.48)"},
 			{"noteOn", Owner::Machine, Gate::Input, -1, {t, {"vel", ArgType::Integer, 1, 127}, {"pitch", ArgType::Integer, -48, 48}},
 				"the page's keyboard: play track t (its MAP EDITOR note), pitch semitones from its sound (ROM, RAM-P: a PTCH held while the key is down, not an edit)"},
 			{"noteOff", Owner::Machine, Gate::Input, -1, {t, opt({"pitch", ArgType::Integer, -48, 48})}, "the key let go: track t's note (of that pitch), and what it held"},
@@ -316,18 +377,28 @@ namespace mdDesk
 			{"chainClear", Owner::Machine, Gate::Input, -1, {}, ""},
 			{"globalSlot", Owner::Machine, Gate::Input, -1, {slot("slot", DocKind::Global)}, "the active GLOBAL slot"},
 			{"selectSong", Owner::Machine, Gate::Input, -1, {s}, "LOAD SONG (stopped)"},
+			{"saveSong", Owner::Machine, Gate::Input, -1, {opt(s)}, "SAVE SONG: the machine's song into its slot (the current one without s)"},
 			{"reloadSong", Owner::Machine, Gate::Input, -1, {}, "stop, load, play"},
-			{"sampleName", Owner::Machine, Gate::Input, -1, {{"slot", ArgType::Integer, 0, 47}, {"name", ArgType::Text}}, "0x73"},
 			{"sampleCancel", Owner::Machine, Gate::None, -1, {}, "stop the sample on its way to a ROM slot (SDS CANCEL); the file is chosen with chooseSample"},
 			{"play", Owner::Machine, Gate::Input, -1, {}, ""},
 			{"stop", Owner::Machine, Gate::Input, -1, {}, ""},
 			{"seqMode", Owner::Machine, Gate::Input, -1, {{"song", ArgType::Bool}}, "PATTERN or SONG mode (SET STATUS 0x10), read back from the machine's status"},
+			// wave 2 (doc/modern-ux/PROBES-manual-gaps.md P1, P5)
+			{"pause", Owner::Machine, Gate::Input, -1, {}, "MIDI Stop: the machine holds its step (CTRL IN on)"},
+			{"resume", Owner::Machine, Gate::Input, -1, {}, "MIDI Continue: it plays on from the step a pause held"},
+			{"playFrom", Owner::Machine, Gate::Input, -1, {row}, "play the current song from row i: SONG mode, a Song Position Pointer (the steps of the rows before it), Continue"},
+			{"panic", Owner::Machine, Gate::Input, -1, {}, "every voice off: the panel's STOP twice (no MIDI message silences the Machinedrum)"},
+			{"nudge", Owner::Machine, Gate::Input, -1, {{"pct", ArgType::Integer, -10, 10}}, "the tempo pct % off while held, 0 = back (TEMPO, LEFT / RIGHT held); not stored, no undo step"},
 			{"mute", Owner::Machine, Gate::Input, -1, {t, on}, ""},
-			{"followHost", Owner::Machine, Gate::Input, -1, {}, "in a DAW: the active GLOBAL follows the host's clock and transport"},
+			{"followHost", Owner::Machine, Gate::Input, -1, {{"project", ArgType::Bool, 0, 0, true}}, "in a DAW: the active GLOBAL follows the host's clock and transport, until the person sets the machine's own clock there (review 1, I-026); project: the plug-in's state came from a DAW project, whose global is kept as it is"},
 			// ---- the editor's setup ----
 			{"modSet", Owner::Setup, Gate::None, -1, {{"doc", ArgType::Object}}, "the app modulators (md-desk/modulators)"},
 			{"knobs", Owner::Setup, Gate::None, -1, {{"ccs", ArgType::Array}}, "the eight knob rows' CCs"},
+			{"soloSet", Owner::Setup, Gate::None, -1, {{"tracks", ArgType::Array}, {"mutes", ArgType::Array, 0, 0, true}},
+				"the page's solo (the tracks soloed) and the mutes the person had before it, kept with the project; the plug-in says them again as {\"type\":\"solo\"}"},
 			// ---- P9: the samples the desk read (the emulated machine's memory), the desk's own ----
+			{"sampleName", Owner::Setup, Gate::None, -1, {{"slot", ArgType::Integer, 0, 47}, {"name", ArgType::Text}},
+				"Rename a ROM slot (B-128): the name (0x73), then the slot's own sample again as SDS into the same slot, so the audio stays as it was; refused when the slot's audio cannot be read (a real machine)"},
 			{"sampleWave", Owner::Setup, Gate::None, -1, {{"bank", ArgType::Text, 0, 0, false, {"rom", "ram"}}, {"slot", ArgType::Integer, 0, 47},
 				{"bins", ArgType::Integer, 1, static_cast<double>(ed::g_mdSampleWaveMaxBins)}},
 				"a slot's waveform at the width it is drawn at: {\"type\":\"sampleWave\"} with up to bins min, max pairs (16-bit)"},

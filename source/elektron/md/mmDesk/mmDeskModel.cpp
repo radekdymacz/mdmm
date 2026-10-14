@@ -293,6 +293,7 @@ namespace mmDesk
 		const Arg row{"i", ArgType::Integer, 0, 199};
 		const auto slotP = [](const char* _name) { return deskCore::slotArg<MmModel>(_name, Kind::Pattern); };
 		const auto slotK = [](const char* _name) { return deskCore::slotArg<MmModel>(_name, Kind::Kit); };
+		const auto slotS = [](const char* _name) { return deskCore::slotArg<MmModel>(_name, Kind::Song); };
 		const Arg k = deskCore::slotArg<MmModel>("k", Kind::Kit);
 		const Arg t12{"t", ArgType::Integer, 0, 11};
 		const Arg step{"s", ArgType::Integer, 0, 63};
@@ -301,6 +302,8 @@ namespace mmDesk
 		const Arg i8{"i", ArgType::Integer, 0, 7};
 		const Arg from{"from", ArgType::Integer, 0, 63}, to{"to", ArgType::Integer, 1, 64};
 		const Arg rows{"n", ArgType::Integer, 1, 12, true};	// a block's tracks from t (a selection, steps x tracks)
+		const Arg pOpt = deskCore::slotArg<MmModel>("p", Kind::Pattern, true);
+		const Arg what{"what", ArgType::Array};	// a track's parts by name (mmDesk::trackParts)
 		static const CommandTable table({
 			// ---- the core: documents ----
 			{"ready", Owner::Core, Gate::None, -1, {}, "the page is up: everything is published once more", CoreOp::Ready},
@@ -326,10 +329,13 @@ namespace mmDesk
 			{"globalMidi", Owner::Core, Gate::Input, G, {{"base", ArgType::IntegerOrNull, 0, 15, true}, {"span", ArgType::Integer, 0, 16, true},
 				{"auto", ArgType::IntegerOrNull, 0, 15, true}, {"multiTrig", ArgType::IntegerOrNull, 0, 15, true},
 				{"multiMap", ArgType::IntegerOrNull, 0, 15, true}, {"clockIn", ArgType::Bool, 0, 0, true}, {"transportIn", ArgType::Bool, 0, 0, true},
-				{"clockOut", ArgType::Bool, 0, 0, true}, {"transportOut", ArgType::Bool, 0, 0, true}, {"programChangeOut", ArgType::Bool, 0, 0, true}},
+				{"clockOut", ArgType::Bool, 0, 0, true}, {"transportOut", ArgType::Bool, 0, 0, true}, {"programChangeOut", ArgType::Bool, 0, 0, true},
+				{"sequencerOut", ArgType::Integer, 0, 2, true}, {"arpOut", ArgType::Integer, 0, 2, true}, {"keyboardOut", ArgType::Integer, 0, 2, true}},
 				"GLOBAL › MIDI: the active global's channels (0-15, null OFF; base + t is track t's while t < span), CONTROL IN"
-				" (clockIn: TEMPO SYNC EXT MIDI CLK, transportIn: TRANSPORT ACCEPT) and OUT (clock, Start/Stop, program change)"},
-			{"globalReset", Owner::Core, Gate::Input, G, {}, "GLOBAL › Reset to defaults: the active global becomes the one the machine ships with (measured, mmDeskFirmwareTest factoryglobal)"},
+				" (clockIn: TEMPO SYNC EXT MIDI CLK, transportIn: TRANSPORT ACCEPT), OUT2 (clock, Start/Stop, program change) and"
+				" OUT1 (sequencerOut, arpOut, keyboardOut: 0 INT, 1 OUT, 2 INT+OUT)"},
+			{"masterTune", Owner::Core, Gate::Input, G, {{"v", ArgType::Integer, 4000, 4999}}, "GLOBAL › AUDIO › MASTER TUNE: tenths of Hz, 400.0 to 499.9 Hz as the panel sets it (4400 = 440.0 Hz; gapProbesFirmwareTest p8)"},
+			{"globalReset", Owner::Core, Gate::Input, G, {}, "GLOBAL › Clear: the active global becomes the one the machine ships with (measured, mmDeskFirmwareTest factoryglobal)"},
 			// ---- the edit intents: Sequence (a pattern) ----
 			{"step", Owner::Core, Gate::Input, P, {p, t12, step, {"v", ArgType::Any}},
 				"a step's value: null empty, {off:true} a NOTE OFF, {n:[note...], a, f, l, notrig?} a trig (n: its pitch, chord notes after the base; a f l: AMP FILTER LFO)"},
@@ -347,6 +353,8 @@ namespace mmDesk
 				"a track's steps, slides and locks move by steps, wrapping at the length (swing stays: the groove)"},
 			{"doublePattern", Owner::Core, Gate::Input, P, {p}, "length x2, the new half a copy of every track's steps, slides, swing and locks"},
 			{"length", Owner::Core, Gate::Input, P, {p, {"v", ArgType::Integer, 2, 64}}, ""},
+			{"patternKit", Owner::Core, Gate::Input, P, {p, slotK("v")},
+				"the kit a pattern plays (its link, MM-095): over the pattern that plays the machine loads that kit at once (measured)"},
 			{"speed", Owner::Core, Gate::Input, P, {p, {"v", ArgType::Text, 0, 0, false, {"1X", "2X", "3/4X", "3/2X"}}}, "the tempo multiplier"},
 			{"swing", Owner::Core, Gate::Input, P, {p, {"v", ArgType::Integer, 50, 80}}, "percent"},
 			{"transpose", Owner::Core, Gate::Input, P, {p, {"t", ArgType::Integer, 0, 11, true}, {"v", ArgType::Integer, -64, 63, true},
@@ -356,6 +364,8 @@ namespace mmDesk
 				{"v", ArgType::Integer, 0, 255}, {"i", ArgType::Integer, 0, 15, true}},
 				"ARPEGGIATOR, a field in firmware units (step i: 64 + offset, 255 muted)"},
 			{"clearSteps", Owner::Core, Gate::Input, P, {p, t12, rows, from, to}, "the steps, slides and locks in [from, to) of tracks t to t + n - 1 (n 1 without it)"},
+			{"clearStepLocks", Owner::Core, Gate::Input, P, {p, t12, rows, from, to},
+				"the locks of the steps in [from, to) of tracks t to t + n - 1, the notes kept (the machine's CLEAR NOTE LOCKS, MM-083)"},
 			{"copySteps", Owner::Core, Gate::Input, P, {p, t12, rows, from, to},
 				"a block of steps (tracks t to t + n - 1, steps [from, to)) into the clipboard: notes, NOTE OFFs, envelope trigs, slides, locks"},
 			{"pasteSteps", Owner::Core, Gate::Input, P, {p, t12, from, {"to", ArgType::Integer, 1, 64, true}},
@@ -363,12 +373,23 @@ namespace mmDesk
 				" of its kind (synth or MIDI); to (a page): [from, to) is cleared past the block"},
 			{"copyStepsTo", Owner::Core, Gate::Input, P, {p, t12, rows, from, to, {"at", ArgType::Integer, 0, 63}, {"dt", ArgType::Integer, 0, 11, true}},
 				"a block of steps copied within the pattern to step at of track dt (its own track without dt), the clipboard untouched: duplicate, the ⌘-drag"},
+			{"trackCopy", Owner::Core, Gate::Input, P, {pOpt, kOpt, t12, what},
+				"COPY what (the machine's SUPER COPY): the named parts of track t into the clipboard, over the whole track: notes, melody, slide,"
+				" swing, locks, arp, transpose (pattern p) and sound (the kit that plays, k; a synth track's)", CoreOp::Edit, g_track},
+			{"trackPaste", Owner::Core, Gate::Input, P, {pOpt, kOpt, {"to", ArgType::Array}, what},
+				"PASTE what: the clipboard's named parts onto every track of to (0-11, tracks of the copied track's kind), one undo step", CoreOp::Edit, g_track},
+			{"trackClear", Owner::Core, Gate::Input, P, {pOpt, kOpt, t12, what},
+				"CLEAR what (the machine's SUPER CLEAR): the named parts of track t: notes (and their locks), melody (the trigs pitchless), slide,"
+				" swing (every second 16th), locks, arp (OFF), transpose (0), sound (GND-SIN)", CoreOp::Edit, g_track},
 			// ---- the edit intents: Sound and Perform (the kit that plays) ----
 			{"machine", Owner::Core, Gate::Input, W, {k, t6, {"model", ArgType::Integer, 0, 255}, {"keepFx", ArgType::Bool, 0, 0, true}},
 				"a track's machine (model: its SysEx 0x5B id): its SYN page starts at the machine's defaults; without keepFx (default on) the other pages too"},
 			{"clearSound", Owner::Core, Gate::Input, W, {k, t6}, "CLEAR MACHINE: GND-SIN, every page at its start"},
 			{"copySound", Owner::Core, Gate::Input, W, {k, t6}, "a track's machine and its seven pages to the clipboard"},
 			{"pasteSound", Owner::Core, Gate::Input, W, {k, t6}, "the clipboard's machine and pages onto a track"},
+			{"revertTrack", Owner::Core, Gate::Input, W, {k, t12},
+				"the Sound page's Revert track: the track as the kit's slot stores it (a synth track: machine, pages, level, routing, assign rows,"
+				" its mask bits and where it forwards its notes; a MIDI track: its MIDI page)"},
 			{"params", Owner::Core, Gate::Input, W, {k, {"values", ArgType::Array}},
 				"many kit values at once (MUTATE, a screen's handle, Control All): values [[t 0-11, page, i 0-7, v 0-127]...], page as param's"},
 			{"assign", Owner::Core, Gate::Input, W, {k, t6, {"src", ArgType::Integer, 0, 5, true}, {"row", ArgType::Integer, 0, 1, true},
@@ -405,11 +426,21 @@ namespace mmDesk
 			{"kitCopyTo", Owner::Core, Gate::Input, K, {slotK("from"), slotK("to")}, "", CoreOp::Edit, g_library},
 			{"kitClear", Owner::Core, Gate::Input, K, {k}, "", CoreOp::Edit, g_library},
 			{"kitRename", Owner::Core, Gate::Input, K, {k, {"name", ArgType::Text}}, "a stored kit's name (kitName renames the kit that plays)", CoreOp::Edit, g_library},
+			{"songCopy", Owner::Core, Gate::Input, S, {s}, "the song slots", CoreOp::Edit, g_library},
+			{"songPaste", Owner::Core, Gate::Input, S, {s}, "", CoreOp::Edit, g_library},
+			{"songCopyTo", Owner::Core, Gate::Input, S, {slotS("from"), slotS("to"), {"name", ArgType::Text, 0, 0, true}},
+				"drag-copy; with a name: Save to... (the song, named, into another slot)", CoreOp::Edit, g_library},
+			{"songClear", Owner::Core, Gate::Input, S, {s}, "", CoreOp::Edit, g_library},
+			{"songRename", Owner::Core, Gate::Input, S, {s, {"name", ArgType::Text}}, "a song's name (14 characters)", CoreOp::Edit, g_library},
+			{"globalCopy", Owner::Core, Gate::Input, G, {deskCore::slotArg<MmModel>("slot", Kind::Global)}, "GLOBAL › Copy: the global into the clipboard", CoreOp::Edit, g_library},
+			{"globalPaste", Owner::Core, Gate::Input, G, {deskCore::slotArg<MmModel>("slot", Kind::Global)}, "GLOBAL › Paste: the clipboard's global into this slot (its position kept)", CoreOp::Edit, g_library},
 			// ---- the machine ----
 			{"load", Owner::Machine, Gate::Input, -1, {{"kind", ArgType::Text, 0, 0, false, deskCore::kindNames<MmModel>(true)}, {"slot", ArgType::Integer, 0, static_cast<double>(deskCore::maxLoadableSlots<MmModel>() - 1)}}, "read a document now"},
 			{"select", Owner::Machine, Gate::Input, -1, {p, {"now", ArgType::Bool, 0, 0, true}},
 				"LOAD PATTERN (at the pattern end while playing; now: STOP, LOAD, PLAY)"},
 			{"loadKit", Owner::Machine, Gate::Input, -1, {kOpt}, "LOAD KIT (the current kit without k)"},
+			{"loadUndoKit", Owner::Machine, Gate::Input, -1, {}, "KIT > LOAD KIT > UNDO KIT with the panel's keys: the kit last lost to a LOAD KIT"
+				" or an overwrite plays again, its own slot current, unsaved (MM-102, measured: gapProbesFirmwareTest w12undo)"},
 			{"saveKit", Owner::Machine, Gate::Input, -1, {kOpt}, "SAVE KIT"},
 			{"loadSong", Owner::Machine, Gate::Input, -1, {sOpt}, "LOAD SONG (stopped)"},
 			{"saveSong", Owner::Machine, Gate::Input, -1, {sOpt}, "SAVE SONG"},
@@ -418,17 +449,33 @@ namespace mmDesk
 			{"stop", Owner::Machine, Gate::Input, -1, {}, ""},
 			// ---- the editor's setup ----
 			{"modSet", Owner::Setup, Gate::None, -1, {{"doc", ArgType::Object}}, "the app modulators (mm-desk/modulators)"},
+			{"soloSet", Owner::Setup, Gate::None, -1, {{"tracks", ArgType::Array}, {"mutes", ArgType::Array, 0, 0, true}},
+				"the page's solo (the tracks soloed, 0-11) and the mutes the person had before it, kept with the project; the plug-in says them again as {\"type\":\"solo\"}"},
 			// ---- the machine ----
 			{"seqMode", Owner::Machine, Gate::Input, -1, {{"song", ArgType::Bool}}, "PATTERN or SONG mode (SET STATUS 0x10), read back from the machine's status"},
+			// wave 2 (doc/modern-ux/PROBES-manual-gaps.md P1, P5 MM)
+			{"pause", Owner::Machine, Gate::Input, -1, {}, "PLAY while playing (the panel) or MIDI Stop (a wire, TRANSPORT ACCEPT): the machine holds its step"},
+			{"resume", Owner::Machine, Gate::Input, -1, {}, "PLAY while paused (the panel) or MIDI Continue (a wire): it plays on from that step"},
+			{"playFrom", Owner::Machine, Gate::Input, -1, {{"i", ArgType::Integer, 0, 199}}, "play the current song from row i: SONG mode, a Song Position Pointer (the steps of the rows before it), Continue (TRANSPORT ACCEPT)"},
+			{"panic", Owner::Machine, Gate::Input, -1, {}, "every note off: CC 123 on each track's channel, then STOP"},
+			{"nudge", Owner::Machine, Gate::Input, -1, {{"pct", ArgType::Integer, -10, 10}}, "the tempo pct % off while held, 0 = back (TEMPO, LEFT / RIGHT held); not stored"},
 			{"mute", Owner::Machine, Gate::Input, -1, {t6, {"on", ArgType::Bool, 0, 0, true}}, "a synth track's mute"},
 			// MM-P4
 			{"muteMidi", Owner::Machine, Gate::Input, -1, {t6, {"on", ArgType::Bool, 0, 0, true}},
 				"a MIDI sequencer track's mute (the MUTE window: FUNCTION + BANK GROUP, TRIG 9-14)"},
-			{"poly", Owner::Machine, Gate::Input, -1, {{"on", ArgType::Bool}}, "POLY, the machine's audio mode (SET STATUS 0x20)"},
-			{"record", Owner::Machine, Gate::Input, -1, {{"mode", ArgType::Text, 0, 0, false, {"off", "grid", "live"}}},
-				"GRID RECORDING (RECORD), LIVE RECORDING (RECORD + PLAY) or off"},
+			{"poly", Owner::Machine, Gate::Input, -1, {{"on", ArgType::Bool}, {"t", ArgType::Integer, 0, 5, true}},
+				"POLY, the machine's audio mode (SET STATUS 0x20); t: TRACK t first, the track POLY plays with six voices (again while on: it moves there)"},
+			{"record", Owner::Machine, Gate::Input, -1, {{"mode", ArgType::Text, 0, 0, false, {"off", "grid", "live", "step"}},
+				{"t", ArgType::Integer, 0, 5, true}},
+				"GRID RECORDING (RECORD), LIVE RECORDING (RECORD + PLAY), STEP RECORDING (STOP + RECORD) or off; t: the track in"
+				" focus first (TRACK t), the one STEP RECORDING writes (again while in it: only the focus)"},
+			// 0.6 wave 7 (manual 1-49, 1-50; mmEditorProbeFirmwareTest recording)
+			{"liveErase", Owner::Machine, Gate::Input, -1, {t6, {"on", ArgType::Bool}},
+				"LIVE RECORDING: EXIT held (on) or let go: track t's notes go as they play (TRACK t first)"},
+			{"stepKey", Owner::Machine, Gate::Input, -1, {{"key", ArgType::Text, 0, 0, false, {"left", "right", "clear"}}},
+				"STEP RECORDING: LEFT (a step back), RIGHT (on, a rest) or ENTER (clear the step, on)"},
 			{"hwSend", Owner::Machine, Gate::Input, -1, {}, "HW MIDI: the machine is on SYSEX RECV; send the dumps that wait for it"},
-			{"followHost", Owner::Machine, Gate::Input, -1, {}, "in a DAW: the active GLOBAL follows the host's clock and transport"},
+			{"followHost", Owner::Machine, Gate::Input, -1, {{"project", ArgType::Bool, 0, 0, true}}, "in a DAW: the active GLOBAL follows the host's clock and transport, until the person sets the machine's own clock there (review 1, I-026); project: the plug-in's state came from a DAW project, whose global is kept as it is"},
 			{"globalSlot", Owner::Machine, Gate::Input, -1, {deskCore::slotArg<MmModel>("slot", Kind::Global)}, "the active GLOBAL slot (SET ACTIVE GLOBAL 0x56)"},
 			// MM-P8
 			{"chain", Owner::Machine, Gate::Input, -1, {{"patterns", ArgType::Array}}, "BANK held + TRIG keys: the machine's pattern chain"},

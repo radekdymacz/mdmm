@@ -7,7 +7,7 @@
 
 # The Machinedrum and Monomachine Editors have their own release version, apart from
 # Gearmulator's (the bundles, the AU version, the installers and the site use it).
-set(MDMM_EDITOR_VERSION 0.5.1)
+set(MDMM_EDITOR_VERSION 0.6.0)
 string(REPLACE "." ";" _mdmmVersionParts "${MDMM_EDITOR_VERSION}")
 list(GET _mdmmVersionParts 0 _mdmmVersionMajor)
 list(GET _mdmmVersionParts 1 _mdmmVersionMinor)
@@ -37,14 +37,15 @@ list(APPEND SOURCES
 	mdEditorPages.cpp mdEditorPages.h
 	mdDeskHost.cpp mdDeskHost.h
 	mdStandaloneApp.cpp
-	mdBootDiagnostics.cpp mdBootDiagnostics.h mdCpuLoad.h mdOutputLevel.h
+	mdBootDiagnostics.cpp mdBootDiagnostics.h mdCpuLoad.h mdOutputLevel.h mdMidiIn.h mdMachineMemory.h
 	mdProcessArch.cpp mdProcessArch.h mdRosettaNotice.h
 	mdDeskSession.cpp mdDeskSession.h
 	mdMidiLearnCommands.cpp mdMidiLearnCommands.h
 	mdPageEditor.cpp mdPageEditor.h mdPageZoom.h mdEditorMenu.h mdNoticeBook.h mdDroppedFiles.h
 	mdRomInstall.cpp mdRomInstall.h
 	mdSettingsMigration.cpp mdSettingsMigration.h
-	mdSessionMd.cpp mdSessionMm.cpp mdSessions.h
+	mdSessionMd.cpp mdSessionMm.cpp mdSessions.h mdSyxSession.h mdSyxWork.h
+	mdFactorySource.cpp mdFactorySource.h
 	mdStudioLink.cpp mdStudioLink.h
 	mdWebPageHost.cpp mdWebPageHost.h
 	mmStudioLink.cpp mmStudioLink.h
@@ -93,10 +94,12 @@ list(APPEND SOURCES
 	skins/mdStudio/mdDeskLive.js
 	skins/mdStudio/mdDeskLibrary.js
 	skins/mdStudio/mdDeskKeys.js
+	skins/mdStudio/mdDeskTransport.js
 	skins/mdStudio/mdDeskGlobal.js
 	skins/shared/deskGlobal.js skins/shared/deskGlobal.css
 	skins/mdStudio/mdDeskAudio.js
 	skins/shared/deskModal.js skins/shared/deskModal.css skins/shared/deskModalTest.js skins/shared/deskMenu.js skins/shared/deskMenuTest.js
+	skins/shared/deskTransport.js skins/shared/deskTransport.css skins/shared/deskTransportTest.js
 	skins/shared/deskCaps.js
 	skins/shared/deskBoot.js skins/shared/deskBoot.css
 	skins/shared/deskSyx.js skins/shared/deskSyx.css skins/shared/deskSyxTest.js
@@ -107,13 +110,14 @@ list(APPEND SOURCES
 	skins/shared/deskDocs.js
 	skins/shared/deskOverlay.js skins/shared/deskOverlayTest.js
 	skins/shared/deskGen.js skins/shared/deskGenTest.js skins/shared/deskGenBar.js skins/shared/deskGenBar.css skins/shared/deskSoundLayout.js skins/shared/deskSoundLayoutTest.js skins/shared/deskSound.css
-	skins/shared/deskKeys.js skins/shared/deskKeysTest.js skins/shared/deskKeymapTest.js skins/shared/deskKeyView.js skins/shared/deskKeyView.css skins/shared/deskKeyViewTest.js
+	skins/shared/deskKeys.js skins/shared/deskKeysTest.js skins/shared/deskKeymapTest.js skins/shared/deskKeyView.js skins/shared/deskKeyView.css skins/shared/deskKeyViewTest.js skins/shared/deskSongSlots.js skins/shared/deskSongSlots.css skins/shared/deskWhat.js skins/shared/deskWhat.css skins/shared/deskWhatTest.js
 	skins/shared/deskTogglePaint.js skins/shared/deskTogglePaintTest.js
 	skins/shared/deskSelect.js skins/shared/deskSelectTest.js
+	skins/shared/deskValueEdit.js skins/shared/deskValueEdit.css skins/shared/deskValueEditTest.js
 	skins/shared/deskCompat.js skins/shared/deskCompatTest.js
 	skins/shared/deskZoom.js
 	skins/shared/deskAbout.js skins/shared/deskAboutTest.js
-	skins/shared/deskCpu.js skins/shared/deskCpu.css skins/shared/deskCpuTest.js skins/shared/deskTopFit.css
+	skins/shared/deskCpu.js skins/shared/deskCpu.css skins/shared/deskCpuTest.js skins/shared/deskTopFit.css skins/shared/deskTopFit.js
 	skins/shared/deskVolume.js skins/shared/deskVolume.css skins/shared/deskVolumeTest.js)
 
 # P6: the editors' diagnostics (the log of the web view, the window chrome and the session's
@@ -143,10 +147,10 @@ option(MDMM_INSTALL_DEV_PLUGINS "Copy the built editors to ~/Library/Audio/Plug-
 # The Machinedrum page loads the shared scripts as files; the Monomachine page has them inside
 # mmMockup.js (sync-mmstudio-skin.py) but for the bridge.
 set(MD_SHARED_PAGE_FILES
-	"skins/shared/deskModal.js" "skins/shared/deskMenu.js" "skins/shared/deskCaps.js" "skins/shared/deskBoot.js" "skins/shared/deskSyx.js" "skins/shared/deskBridge.js"
+	"skins/shared/deskModal.js" "skins/shared/deskMenu.js" "skins/shared/deskTransport.js" "skins/shared/deskCaps.js" "skins/shared/deskBoot.js" "skins/shared/deskSyx.js" "skins/shared/deskBridge.js"
 	"skins/shared/deskDrop.js" "skins/shared/deskDocs.js" "skins/shared/deskOverlay.js" "skins/shared/deskGen.js" "skins/shared/deskGenBar.js" "skins/shared/deskSoundLayout.js"
-	"skins/shared/deskKeys.js" "skins/shared/deskKeyView.js" "skins/shared/deskTogglePaint.js" "skins/shared/deskSelect.js"
-	"skins/shared/deskAudio.js" "skins/shared/deskGlobal.js" "skins/shared/deskCompat.js" "skins/shared/deskZoom.js" "skins/shared/deskAbout.js" "skins/shared/deskCpu.js" "skins/shared/deskVolume.js")
+	"skins/shared/deskKeys.js" "skins/shared/deskKeyView.js" "skins/shared/deskSongSlots.js" "skins/shared/deskWhat.js" "skins/shared/deskTogglePaint.js" "skins/shared/deskSelect.js" "skins/shared/deskValueEdit.js"
+	"skins/shared/deskAudio.js" "skins/shared/deskGlobal.js" "skins/shared/deskCompat.js" "skins/shared/deskZoom.js" "skins/shared/deskAbout.js" "skins/shared/deskCpu.js" "skins/shared/deskVolume.js" "skins/shared/deskTopFit.js")
 file(GLOB MD_SKIN_ASSETS CONFIGURE_DEPENDS
 	"skins/mdStudio/*.rml" "skins/mdStudio/*.html" "skins/mdStudio/mdDesk.css" "skins/mdStudio/*.js"
 	"skins/mdStudio/fonts/*.woff2" "skins/mdStudio/fonts/*.ttf")
@@ -159,7 +163,7 @@ file(GLOB MM_SKIN_ASSETS CONFIGURE_DEPENDS
 	# the older-WebKit rewrite (B-001), first in the page's <head>; the page's zoom keys
 	"skins/shared/deskCompat.js" "skins/shared/deskZoom.js"
 	# the version the page shows (0.3.4), the CPU meter beside it (I-018)
-	"skins/shared/deskAbout.js" "skins/shared/deskCpu.js" "skins/shared/deskVolume.js"
+	"skins/shared/deskAbout.js" "skins/shared/deskCpu.js" "skins/shared/deskVolume.js" "skins/shared/deskTopFit.js"
 	# files dropped on the window (macOS): what the page does with them
 	"skins/shared/deskDrop.js")
 # The tests are not the page, named one by one, not by a file-name pattern: the node tests never
@@ -177,10 +181,10 @@ set(MM_NODE_TESTS "skins/mmStudio/mmConvertTest.js" "skins/mmStudio/mmKeysTest.j
 	"skins/mmStudio/mmViewTest.js" "skins/mmStudio/mmViewFixture.json")
 # the shared page files' node tests (never in a glob, so never shipped); checked to be there
 set(SHARED_NODE_TESTS "skins/shared/deskGenTest.js" "skins/shared/deskOverlayTest.js" "skins/shared/deskBridgeTest.js"
-	"skins/shared/deskTogglePaintTest.js" "skins/shared/deskSelectTest.js" "skins/shared/deskKeysTest.js" "skins/shared/deskModalTest.js" "skins/shared/deskMenuTest.js" "skins/shared/deskCompatTest.js"
+	"skins/shared/deskTogglePaintTest.js" "skins/shared/deskSelectTest.js" "skins/shared/deskKeysTest.js" "skins/shared/deskModalTest.js" "skins/shared/deskMenuTest.js" "skins/shared/deskTransportTest.js" "skins/shared/deskCompatTest.js"
 	"skins/shared/deskKeymapTest.js" "skins/shared/deskKeyViewTest.js" "skins/shared/deskAboutTest.js" "skins/shared/deskCpuTest.js" "skins/shared/deskVolumeTest.js"
-	"skins/shared/deskSyxTest.js" "skins/shared/deskDropTest.js" "skins/shared/deskSoundLayoutTest.js"
-	"skins/shared/deskJourneyTiersTest.js")
+	"skins/shared/deskSyxTest.js" "skins/shared/deskDropTest.js" "skins/shared/deskSoundLayoutTest.js" "skins/shared/deskWhatTest.js"
+	"skins/shared/deskJourneyTiersTest.js" "skins/shared/deskValueEditTest.js")
 foreach(test ${MD_NODE_TESTS} ${MD_SELF_TESTS} ${MM_SELF_TESTS} ${MM_NODE_TESTS} ${SHARED_NODE_TESTS} ${MD_SHARED_PAGE_FILES})
 	if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${test}")
 		message(FATAL_ERROR "${test} is not there: update the editors' test lists in ${CMAKE_CURRENT_LIST_FILE}")
@@ -494,6 +498,20 @@ function(mdmm_plugin_targets)
 	set_tests_properties(mdOutputLevelTest PROPERTIES LABELS "UnitTest")
 	set_property(TARGET mdOutputLevelTest PROPERTY FOLDER "Elektron/test")
 
+	# I-024: the machine memory file's frame and when it is written (mdMachineMemory.h, pure; no ROM)
+	add_executable(mdMachineMemoryTest mdMachineMemoryTest.cpp mdMachineMemory.h)
+	target_link_libraries(mdMachineMemoryTest PRIVATE mdLib)
+	target_include_directories(mdMachineMemoryTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../..)
+	add_test(NAME mdMachineMemoryTest COMMAND mdMachineMemoryTest)
+	set_tests_properties(mdMachineMemoryTest PROPERTIES LABELS "UnitTest")
+	set_property(TARGET mdMachineMemoryTest PROPERTY FOLDER "Elektron/test")
+
+	# 0.6 (GLOBAL › LEARN, I-002): the notes from outside for the page's midiIn message (mdMidiIn.h, pure)
+	add_executable(mdMidiInTest mdMidiInTest.cpp mdMidiIn.h)
+	add_test(NAME mdMidiInTest COMMAND mdMidiInTest)
+	set_tests_properties(mdMidiInTest PROPERTIES LABELS "UnitTest")
+	set_property(TARGET mdMidiInTest PROPERTY FOLDER "Elektron/test")
+
 	add_executable(mdProcessArchTest mdProcessArchTest.cpp mdProcessArch.cpp)
 	# the diagnostics builds' GEARMULATOR_MDMM_FAKE_ROSETTA
 	target_compile_definitions(mdProcessArchTest PRIVATE MDMM_DIAGNOSTICS=1)
@@ -596,6 +614,9 @@ function(mdmm_plugin_targets)
 		# the drag across the M and S keys (both editors): which keys a drag changes
 		add_test(NAME deskTogglePaintPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskTogglePaintTest.js)
 		set_tests_properties(deskTogglePaintPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
+		# I-022: a typed value (both editors): what a text becomes, what is refused, the field, the gesture and its wiring
+		add_test(NAME deskValueEditPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskValueEditTest.js)
+		set_tests_properties(deskValueEditPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# the keys' one gating rule (both editors): no page shortcut behind an open dialog or panel
 		add_test(NAME deskKeysPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskKeysTest.js)
 		set_tests_properties(deskKeysPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
@@ -619,6 +640,8 @@ function(mdmm_plugin_targets)
 		# I-008: the menu drawn in the page (placement, keys, the editor menu's message and picks) and its wiring
 		add_test(NAME deskMenuPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskMenuTest.js)
 		set_tests_properties(deskMenuPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
+		add_test(NAME deskTransportPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskTransportTest.js)
+		set_tests_properties(deskTransportPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# the pages on an older WebKit (B-001, macOS 12): the stylesheets without color-mix() and :focus-visible
 		add_test(NAME deskCompatPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskCompatTest.js)
 		set_tests_properties(deskCompatPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
@@ -637,6 +660,9 @@ function(mdmm_plugin_targets)
 		# I-021: the LCD's output meter and volume (the meter's ballistics, the volume's drag, wheel and reset, its wiring)
 		add_test(NAME deskVolumePageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskVolumeTest.js)
 		set_tests_properties(deskVolumePageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
+		# 0.6 wave 4: COPY / PASTE / CLEAR what (the dialog, the remembered ticks, the go key's words, both pages load it)
+		add_test(NAME deskWhatPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/shared/deskWhatTest.js)
+		set_tests_properties(deskWhatPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
 		# the MD page's wiring on its own scripts: solo and the machine's mutes, renders held by a gesture, prepared mutes
 		add_test(NAME mdDeskPageTest COMMAND ${GEARMULATOR_NODE} ${CMAKE_CURRENT_SOURCE_DIR}/skins/mdStudio/mdDeskPageTest.js)
 		set_tests_properties(mdDeskPageTest PROPERTIES LABELS "UnitTest;Page" TIMEOUT 60)
@@ -708,6 +734,30 @@ function(mdmm_plugin_targets)
 	set_property(TARGET mdFirstStartFirmwareTest PROPERTY FOLDER "Elektron/test")
 	add_test(NAME mdFirstStartFirmwareTest COMMAND mdFirstStartFirmwareTest)
 	set_tests_properties(mdFirstStartFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 900)
+
+	# I-024: the machine memory on the firmware: a kit saved in one session is there in the next, a project wins, START
+	# FROM FACTORY MEMORY, a damaged file. In ctest; each skips (77) without its ROM in the environment.
+	add_executable(mdMachineMemoryFirmwareTest mdMachineMemoryFirmwareTest.cpp)
+	target_link_libraries(mdMachineMemoryFirmwareTest PRIVATE
+		mdJucePlugin jucePluginEditorLib mdLib juce_plugin_modules
+		juce::juce_opengl)
+	target_include_directories(mdMachineMemoryFirmwareTest PRIVATE
+		${CMAKE_CURRENT_SOURCE_DIR}/../../..)
+	target_compile_definitions(mdMachineMemoryFirmwareTest PRIVATE JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1)
+	set_property(TARGET mdMachineMemoryFirmwareTest PROPERTY FOLDER "Elektron/test")
+	foreach(m md mm)
+		add_test(NAME mdMachineMemoryFirmwareTest_${m} COMMAND mdMachineMemoryFirmwareTest ${m})
+		set_tests_properties(mdMachineMemoryFirmwareTest_${m} PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 600)
+	endforeach()
+
+	# Wave 6: Reset machine > Factory reset's source, a second machine from the ROM read on its own thread (mdFactorySource.h).
+	# In ctest; it skips (77) without GEARMULATOR_MD_FIRMWARE_BIN in the environment.
+	add_executable(mdFactorySourceFirmwareTest mdFactorySourceFirmwareTest.cpp mdFactorySource.cpp)
+	target_link_libraries(mdFactorySourceFirmwareTest PRIVATE mdLib elektronData)
+	target_include_directories(mdFactorySourceFirmwareTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../..)
+	set_property(TARGET mdFactorySourceFirmwareTest PROPERTY FOLDER "Elektron/test")
+	add_test(NAME mdFactorySourceFirmwareTest COMMAND mdFactorySourceFirmwareTest)
+	set_tests_properties(mdFactorySourceFirmwareTest PROPERTIES LABELS "Integration;FirmwareTest" SKIP_RETURN_CODE 77 TIMEOUT 900)
 
 	# A machine without its ROM is not an error: the session says "missing", the page's card takes the ROM,
 	# and the machine starts in place. The plain runs need no ROM; "install" needs the user's own (skips, 77, without).

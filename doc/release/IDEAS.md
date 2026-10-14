@@ -3,6 +3,59 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-029 · A quick way back to the original sound while you play with the Sound page
+
+- **From:** Radek, 2026-10-13 ("when you play with the Sound page, a way to quickly restore the original settings").
+- **Today:** the kit library's **Reload** loads the whole kit again from its slot (bug B-122 notes it). Nothing puts back one track.
+- **Built on `feat/0.6-revert-solo`, both editors:** **Revert track** beside the machine key on the Sound page (no new row). It puts the selected track back as the kit's slot stores it, in one undo step: the Machinedrum's machine, its 24 values, level, LFO and the two relations; the Monomachine's machine, seven pages, level, outputs and input, assign rows, key tracking, portamento and legato bits and where it forwards its notes (a MIDI track: its MIDI page). Other tracks, the master effects, the multi envelope and the name stay. The key is on only while the track differs from the slot (Reload = the whole kit, this = one track). Core command `revertTrack {k, t}`.
+- **Status:** built, not merged.
+
+## I-028 · A lamp beside each track name that shows which track is playing
+
+- **From:** Discord, 2026-10-12 ("blinkers next to the track names on the pattern and sound pages, to see where sounds come from"); the same need as a per-track meter in Mix (later: per-track audio is not a cheap tap).
+- **Built on `fix/0.6-discord`, both editors:** on Sequence and Sound, a track's number on the rail lights for a moment when its trig plays (the Monomachine: the synth or MIDI tracks the rail shows), from the step telemetry and the pattern, no audio; a muted or solo-silenced track stays dark. No new control and no new row: the number box glows as it does for a note from a MIDI keyboard (I-002, the Machinedrum) and as the Perform page's lamps (the Monomachine). All the lamps of a step are set in one animation frame. Page journeys `md-seq-rail-lamps` and `mm-seq-rail-lamps` (PLAY for 2.5 s: only tracks with trigs light; none stays lit after STOP).
+- **Status:** built, not merged.
+
+## I-027 · Plug-in: its own MIDI in and out ports, on top of the host's MIDI
+
+- **From:** Discord, 2026-10-10 and 2026-10-11 (a virtual port and a Max patch beside the DAW). The tester was told it is on the list.
+- **The idea:** the plug-in can open MIDI input and output ports of its own (as the standalone does), in addition to the MIDI the host routes to it, so a patch or a controller can talk to the editor directly.
+- **Status:** later (not 0.6): needs port handling in the plug-in layer; the standalone already has it.
+
+## I-026 · In a DAW: the machine's own clock (GLOBAL Tempo in INT)
+
+- **From:** Radek's 0.6 review, 2026-10-12: in the plug-in he must be able to switch the machine to its internal clock. `followHost` set EXT and set it again every 2 s, so Tempo in INT did not stick in a DAW and TEMPO edits were refused ("The DAW sets the tempo").
+- **Built on `fix/0.6-review-1`:** the existing GLOBAL › Sync › Tempo in (INT / EXT) is the switch, both editors, no new control. EXT: the machine follows the DAW's tempo and transport (a new plug-in instance starts so: `followHost` sets EXT once). INT: the machine runs on its own clock and tempo, TEMPO edits, `followHost` sets nothing, and the plug-in no longer sends the host's clock and transport (`synthLib::Plugin::setHostClock`). The global is the machine's, saved with the project, so the choice is too: a project that comes back with INT keeps it (`deskCore::HostClock`, the processor's project state). Machine memory (wave 11): the global's host bytes are left out of the memory file only while the machine follows the host; with INT the tempo is a normal save. Tests: `deskCoreTest` (the policy), `mdDeskFirmwareTest hostclock` and `mmDeskFirmwareTest hostclock` (INT stays through three followHosts, PLAY runs on the machine's own clock, EXT again turns it on). Guide: md chapters 1, 8, 10; mm chapters 2, 12, 19; rows MD-093, MM-198, MM-297.
+- **Status:** built, not merged. The DAW itself is in the release's host tests (no host journey here: the page tier has no DAW).
+
+## I-024 · Saved kits and patterns stay on the machine for every new session
+
+- **From:** a user, 2026-10-12: "save kits and patterns created/edited and saved in the editor so they persist on the device each time I open the plugin in a new session".
+- **Today:** the machine's memory (kits, patterns, songs, globals) is saved in the DAW project and, for the standalone, when the app quits. A new DAW project, or a new instance of the plug-in, starts from the factory memory. So a kit saved in one project is not there in the next one. A real machine keeps what you save.
+- **Way A (machine memory file, as a real machine):** one memory file per machine in the editor's user folder. A new session with no project state starts from it. Each SAVE KIT, SAVE PATTERN, song or global save also writes it. An existing DAW project still opens with its own memory. A menu item starts from factory memory again. Risk: two instances of the same machine both write the file; the last save wins.
+- **Way B (start-up memory, by hand):** a menu item "Use this memory for new sessions" copies the current memory into the file; new sessions start from it. Nothing is written by itself. Simpler and safe with many instances, but the user must remember to do it.
+- **Status:** Radek, 2026-10-12: way A, with a setting to turn it off. Planned for 0.6 (wave 11, PLAN-0.6.md). Built on `feat/0.6-memory` (doc/modern-ux/DESIGN-machine-memory.md): one file per machine in `<data folder>/memory/`, a session with no project state starts from it, a watch thread writes each save, the engine menu's KEEP MEMORY, RESET MACHINE…'s Start from factory memory…; the standalone starts from the file too.
+
+## I-023 · Monomachine: a real MKII look (silver panel, bluish-white LCD with black text)
+
+- **From:** Discord tester M, 2026-10-11: on the Monomachine "the MKI/MKII button does nothing"; on the Machinedrum it changes the skin. Wants the Monomachine MKII look: silver, black and white, the MKII LCD's bluish-white background with black text.
+- **Why nothing changes today:** the MM plate key flips `data-plate` and enables the MKII-only machines, but `mmStudio.css` (~line 1017) gives MKI and MKII the same colours; only a small "MKII" print differs.
+- **The look (from a product photo of the SFX-60+ MKII):** brushed silver aluminium panel; a black glass window round the LCD and knobs with the red dot-matrix MONOMACHINE logo; a positive LCD, bluish-white background with black pixels; black keys, white ENTER / EXIT and track keys, a red COPY key; dark brown label bars under the keys with white text; red LEDs, yellow track LEDs; black knobs. Colours to be sampled from photos before building.
+- **Sampled 2026-10-11** (pixel averages from product photos; photo white balance varies, so treat as a starting point): SFX-60+ MKII (Vintage King): panel #e9e9e9, key area #ffffff, display window #010101, LCD ground #f2fcfb, LCD pixels #0e1a19, black keys #0a0a0a, white keys #fbf9f7, COPY #e33b21, knobs #010101. SFX-60 and SFX-6 MKI (Vintage Synth Explorer): panel #b2bcbe to #c4c3c3, window #010101 to #323232, LCD ground #b6dde1 to #cfdff0 (light blue), pixels #000000, COPY #f22518, knobs #323d2f (dark green-grey). Ours today (both plates): panel #d4d5d0, LCD #b9c4b0 (grey-green), ink #172014, bezel #0d0f0c, labels #a04d39.
+- **Built on `feat/0.6-skins` (2026-10-12, not merged):** the Monomachine true to the product photos, the plate key chooses the look: MKI light-blue LCD, MKII bluish-white LCD, each with its own panel, keys and label colours. The Machinedrum Editor is unchanged by choice (Radek, after the side-by-side comparison: keep the light MKI with the green LCD and the dark MKII), although its photos show silver with a red LCD on both. Final tokens and the photos they came from: [doc/modern-ux/SKIN-COLOURS.md](../modern-ux/SKIN-COLOURS.md).
+- **Status:** Monomachine skins accepted by Radek; on its own branch, not merged yet.
+- **In the manual review (Radek, 2026-10-12):** the MM MKII panel in 0.6 (`#d2d1cc`) reads as warm grey, not silver. Make it a light cool silver near the photo sample (`#e9e9e9`), fixed while Radek tests the installed 0.6 by hand, without running the automatic tests again for it.
+- **Review 1 (Radek, 2026-10-12):** instead, both MM plates take the grey of the Machinedrum's MKI light plate (`--plate` #d9dad6, `--plate2` #cdcec9, `--plate3` #e5e6e2); the big screens (piano roll, lock lane, Sound and Perform plots) take the same grey (`--scr` #cdcec9) instead of the LCD colour; the top bar's LCD keeps the MM colours (MKI light blue, MKII bluish white). Built on `fix/0.6-review-1` (journey `mm-plate-greys`; SKIN-COLOURS.md).
+
+## I-022 · Type a parameter value
+
+- **From:** Discord tester M, 2026-10-11: "being able to type in specific parameter values", as Monomodule and other software instruments.
+- **Today:** no value box takes typing; double-click resets to the default (MM `mmMockup.js` ~4694, MD `mdDeskGestures.js` ~171).
+- **Idea:** a way to type a value into any parameter (both editors), without losing double-click = default. The gesture to be decided (for example Enter on a focused value, or a modifier + click).
+- **Chosen (0.6, polish B):** ⌘-click a value box or fader (Ctrl-click off a Mac), or Enter on one that has the focus (Tab to it). A field opens over the box with the value as the box shows it, selected; Enter sets it, Esc or a click elsewhere leaves it. Why: double-click stays the default, a plain click and drag stay the drag, Alt stays Control All and Shift fine, and right-click is out (Radek's rule, and Ctrl-click is a right-click on a Mac). ⌘ on a value had no meaning yet. Enter is the keyboard path to the same field. No new control: the box itself takes the gesture; the field lives only while typing.
+- **What may be typed:** what the box shows. A number takes the nearest value (1200 on a box that shows 1196 or 1210); a signed box takes -64 to +63 with or without the +; a list takes its names in any case (an LFO's wave, a page, OFF), the MM PAN L12 / C / R5 or the number, an MD unit's text ("1/16", "250 ms") or the box's own number. A number past the ends, or a text the box never shows, is refused in the field (red, the range or the names in its tip and a toast) and the field stays open. One edit, its own undo step.
+- **Status:** done in 0.6 (polish B): `skins/shared/deskValueEdit.js` (both editors), deskValueEditTest.js, journeys md-sound-type-value and mm-sound-type-value. The machine-name picker and other menus keep their own lists.
+
 ## I-021 · An output meter and master volume in the LCD (both editors)
 
 - **From:** Radek, 2026-10-11.
@@ -141,7 +194,8 @@
 
 - **From:** Discord tester B, 2026-10-07.
 - **Idea:** a visual sign on the Sound page when a note arrives from a MIDI controller (which track was triggered).
-- **Status:** new.
+- **Also:** Discord tester M, 2026-10-11: light the on-screen keyboard's keys for notes played, as Ableton's (the Monomachine's Perform keyboard; B-062 is the stuck light).
+- **Status:** done in 0.6 (polish B). The plug-in also sends the notes held from outside as a state (`midiHeld`, every 32 ms at most, when they changed; a note off is never lost, all notes off clears), so a burst is one message and a key cannot stay lit. Monomachine: the Perform keyboard lights the keys a MIDI keyboard holds (journey mm-perform-keys-lit; mdMidiInTest, mdSessionNoRomTest). Machinedrum (no keyboard): a note on the base channel that the map gives a track makes that track's number on the rail glow a moment, and its LED on Mix (journey md-sound-note-light); no new control. The MM's Sound page shows no note light yet (its rail has none to glow; a later idea).
 
 ## I-001 · Select steps, copy, paste and duplicate
 

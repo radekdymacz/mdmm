@@ -35,7 +35,7 @@ const SHAPES = ["Triangle", "Saw", "Square", "Linear decay", "Exp decay", "Rando
 /* ===== State (P6): the UI's own store here; the machine's data is the view V (mdDeskModel.js,
    deriveView), a value replaced on every document ===== */
 const S = { ws: "seq", sel: 0, lane: "FLTF", page: 0, viewAll: true, follow: false, step: -1, soloSet: new Set(), userMutes: new Set(),
-	songSel: 0, bank: 0, songZoom: "fit", smpSlot: "RAM1", chopTrack: null, capture: {}, keepFx: true, plate: "mk1" };
+	songSel: 0, bank: 0, songZoom: "fit", smpSlot: "RAM1", chopTrack: null, capture: {}, keepFx: true, plate: "mk1", tt: "trig" };
 S.ctl = { learn: false, learnT: null, sel: null, selT: null, addT: 1 };
 /* MIDI mapping (the CONTROL workspace and LEARN) is hidden until the plug-in's learn document says
    "enabled" (mdmm::midiMappingEnabled, deskHost.h). Off: no tab, no LEARN key, the keys do nothing. */
@@ -138,6 +138,8 @@ function stepLocked(t, s) { for (const [k, m] of V.locks) if (+k.split(":")[0] =
 function trackLocks(t) { return [...V.locks.keys()].filter(k => +k.split(":")[0] === t).map(k => k.split(":")[1]); }
 /* the view writes that clear a step's locks (a trig removed takes its locks with it) */
 function clearStep(t, s) { return [...V.locks].filter(([k, m]) => +k.split(":")[0] === t && m.has(s)).map(([k]) => [["locks", k, s], DELETE]); }
+/* a trig removed: the view writes for what goes with it, as the core does (its accent, slide and swing, its locks; B-070) */
+function trigOffWrites(t, s) { return [[["tracks", t, "acc", s], false], [["tracks", t, "slide", s], false], [["tracks", t, "swing", s], false], ...clearStep(t, s)]; }
 function params(t) { const p = pages(V.tracks[t].m, Cat); return [...names(p.s), ...names(p.e), ...names(p.r)]; }
 function grp(t, p) { const x = V.tracks[t]; return p in x.syn ? x.syn : p in x.fx ? x.fx : x.rt; }
 function audible(t) { const any = V.tracks.some(x => x.solo); return any ? V.tracks[t].solo : !V.tracks[t].mute; }
@@ -219,7 +221,10 @@ function sendControl(el, v) {
 	if (d.g === "syn" || d.g === "fx" || d.g === "rt") sendParam(t, d.g, d.n, v);
 	else if (d.g === "lfo") sendLfo(t, d.n, v);
 	else if (d.g === "mfx") sendMfx(d.f, d.n, v);
+	else if (d.g === "lev") sendLevel(t, v);
 }
+/* LEV: the kit's level of track t (the machine's LEVEL knob; the kit that plays takes it at once as its level CC) */
+function sendLevel(t, v) { cmd("level", { k: V.kit, t, v }, "lev:" + t, [[["tracks", t, "level"], v]]); }
 function goPattern(p) {
 	p = (p + 128) % 128;
 	if (p === V.pat && V.queued == null) return;
@@ -245,12 +250,15 @@ function ref(el) {
 	const d = el.dataset, t = d.t != null ? +d.t : S.sel, tr = V.tracks[t];
 	switch (d.g) {
 	case "syn": return [tr.syn, d.n]; case "fx": return [tr.fx, d.n]; case "rt": return [tr.rt, d.n]; case "lfo": return [tr.lfo, d.n];
+	case "lev": return [tr, "level"];
 	case "mfx": return [V.mfx[d.f].v, d.n]; case "src": return [Mods.source(d.src), d.n]; case "link": return [Mods.doc.links[+d.li], d.n];
 	}
 }
 const getV = el => { const [o, n] = ref(el); return o[n]; };
 function setV(el, v) {
-	const [o, n] = ref(el); v = clamp(Math.round(v), 0, n === "depth" ? 100 : 127); if (o[n] === v) return;
+	const [o, n] = ref(el);
+	if (el.dataset.g === "lev" && o[n] == null) return;	/* LEV before the kit is known: "—", nothing sent */
+	v = clamp(Math.round(v), 0, n === "depth" ? 100 : 127); if (o[n] === v) return;
 	/* the page's own modulator setup (Mods.doc): a new doc, sent whole */
 	if (el.dataset.g === "src") { Mods.setSource(el.dataset.src, { [n]: v }); sendMods(); }
 	else if (el.dataset.g === "link") { Mods.setLink(+el.dataset.li, { [n]: v }); sendMods(); }
@@ -273,9 +281,10 @@ function syncControls() {
 			if (mp.length) el.title = "Mapped: " + mp.map(m => "CC " + m.cc).join(", ");
 		}
 		/* a lock on LFOS, LFOD or LFOM shows on the LFO section's SPD, DEPTH, SHMIX (the same kit parameters) */
-		if (el.classList.contains("pc") && el.dataset.g !== "mfx" && el.dataset.g !== "src" && el.dataset.g !== "link") el.classList.toggle("lk", V.locks.has(lk(el.dataset.t != null ? +el.dataset.t : S.sel, el.dataset.g === "lfo" ? lfoRtName(el.dataset.n, el.dataset.t != null ? +el.dataset.t : S.sel) : el.dataset.n)));
+		if (el.classList.contains("pc") && !["mfx", "src", "link", "lev"].includes(el.dataset.g)) el.classList.toggle("lk", V.locks.has(lk(el.dataset.t != null ? +el.dataset.t : S.sel, el.dataset.g === "lfo" ? lfoRtName(el.dataset.n, el.dataset.t != null ? +el.dataset.t : S.sel) : el.dataset.n)));
 	});
 	$$("#main [data-show]").forEach(el => el.textContent = V.tracks[+el.dataset.show].rt.VOL ?? "—");
+	syncRevert();
 }
 /* ===== Copy / clear / paste (the hardware's COPY CLEAR PASTE, per workspace; clipboard in the plug-in) ===== */
 function secAction(kind) {
@@ -301,9 +310,20 @@ function applySolo() { for (const [i, on] of soloWrites(S, V.mutes, soloKeep()))
 /* the tracks a solo leaves alone: the RAM recorders (their mute is the sampler's capture and freeze) */
 function soloKeep() { return new Set(V.tracks.map((t, i) => machineFacts(t.m, Cat).recorder ? i : -1).filter(i => i >= 0)); }
 /* the solo set becomes next (a new Set: solo is UI state the view reads, never mutated in place) */
-function setSolo(next) { Object.assign(S, soloTo(S, V.mutes, next)); V = view(); applySolo(); }
+function setSolo(next) { Object.assign(S, soloTo(S, V.mutes, next)); V = view(); applySolo(); sendSolo(); }
+/* 0.6 (B-123): the solo and the mutes the person had before it are kept with the project: the plug-in stores what
+   soloSet says in the editor's setup and says it again ({type: "solo"}) when a project is opened, the machine starts
+   over or the window is made again. sendSolo says it when it changed; takeSolo is the plug-in's word. */
+let soloSent = "";
+const soloFacts = () => ({ tracks: [...S.soloSet].sort((a, b) => a - b), mutes: S.soloSet.size ? [...S.userMutes].sort((a, b) => a - b) : [] });
+function sendSolo() { const f = soloFacts(), key = JSON.stringify(f); if (key === soloSent) return; soloSent = key; cmd("soloSet", f); }
+function takeSolo(m) {
+	S.soloSet = new Set(m.tracks || []); S.userMutes = new Set(m.mutes || []); soloSent = JSON.stringify(soloFacts());
+	V = view(); if (V.loaded) applySolo();
+	scheduleRender();
+}
 /* M: track i muted or not, as the user means it (during a solo only the page's record; muteSet, mdDeskLive.js, is the gestures') */
-function userMute(i, on) { const u = muteTo(S, i, on); if (!u) { setMute(i, on); return; } S.userMutes = u; V = view(); if (soloKeep().has(i)) setMute(i, on); }
+function userMute(i, on) { const u = muteTo(S, i, on); if (!u) { setMute(i, on); return; } S.userMutes = u; V = view(); if (soloKeep().has(i)) setMute(i, on); sendSolo(); }
 function select(i) { S.sel = i; if (!params(i).includes(S.lane)) S.lane = params(i).includes("FLTF") ? "FLTF" : params(i)[0] || "FLTF"; render(); }
 function refreshAudible() {
 	$$(".th").forEach(h => { const i = +h.dataset.sel; h.classList.toggle("off", !audible(i)); h.querySelector(".m").setAttribute("aria-pressed", V.tracks[i].mute); h.querySelector(".s").setAttribute("aria-pressed", V.tracks[i].solo); });

@@ -2,6 +2,81 @@
 	"about": "Both editors' key maps (scripts/keymap-export.js; doc/modern-ux/DESIGN-keymap.md). Generated: do not edit.",
 	"md": [
 		{
+			"id": "song-slot-move",
+			"scope": "song",
+			"keys": [
+				"ArrowLeft",
+				"ArrowRight",
+				"ArrowUp",
+				"ArrowDown"
+			],
+			"mod": "",
+			"group": "Song",
+			"does": "Song slots (a slot has the focus): move the selection"
+		},
+		{
+			"id": "song-slot-load",
+			"scope": "song",
+			"keys": [
+				"Enter"
+			],
+			"mod": "",
+			"group": "Song",
+			"does": "Song slots: load the selected song (LOAD SONG, only while stopped)"
+		},
+		{
+			"id": "song-slot-rename",
+			"scope": "song",
+			"keys": [
+				"F2"
+			],
+			"mod": "",
+			"group": "Song",
+			"does": "Song slots: rename the selected song"
+		},
+		{
+			"id": "song-slot-copy",
+			"scope": "song",
+			"keys": [
+				"C"
+			],
+			"mod": "cmd",
+			"group": "Song",
+			"does": "Song slots: copy the selected song"
+		},
+		{
+			"id": "song-slot-paste",
+			"scope": "song",
+			"keys": [
+				"V"
+			],
+			"mod": "cmd",
+			"group": "Song",
+			"does": "Song slots: paste the song into the selected slot"
+		},
+		{
+			"id": "song-slot-clear",
+			"scope": "song",
+			"keys": [
+				"Delete",
+				"Backspace"
+			],
+			"mod": "",
+			"group": "Song",
+			"does": "Song slots: clear the selected song"
+		},
+		{
+			"id": "song-slot-drag",
+			"scope": "song",
+			"keys": [
+				"drag a song slot onto another"
+			],
+			"mod": "",
+			"group": "Song",
+			"does": "Copies the song into that slot",
+			"area": "Song"
+		},
+		{
 			"id": "keys-help",
 			"scope": "any",
 			"keys": [
@@ -200,6 +275,17 @@
 			"area": "Values"
 		},
 		{
+			"id": "value-type",
+			"scope": "sound mix sampler control",
+			"keys": [
+				"value"
+			],
+			"mod": "cmd",
+			"group": "Values",
+			"does": "Click: type a value, then Enter (Esc: leave it as it was). Enter on a focused value does the same",
+			"area": "Values"
+		},
+		{
 			"id": "tempo-drag",
 			"scope": "any",
 			"keys": [
@@ -363,6 +449,31 @@
 			"group": "Kit library, pattern chooser",
 			"does": "Copy it there",
 			"area": "Library"
+		},
+		{
+			"id": "trig-type",
+			"scope": "seq",
+			"keys": [
+				"Escape"
+			],
+			"mod": "",
+			"group": "Sequence",
+			"does": "Back to Trig after Accent, Swing or Slide: a click on a step paints trigs again",
+			"short": "Trig",
+			"dispatched": true
+		},
+		{
+			"id": "picker-audition",
+			"scope": "sound",
+			"keys": [
+				"Space"
+			],
+			"mod": "",
+			"group": "Machine picker",
+			"does": "In the machine picker: hear the focused machine on the track; Enter keeps it, Esc puts the old one back",
+			"short": "Hear",
+			"modal": "machpop",
+			"dispatched": true
 		},
 		{
 			"id": "randomise-track",
@@ -609,8 +720,115 @@
 			],
 			"mod": "",
 			"group": "Sequence",
-			"does": "The step menu: trig, accent, slide, copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (Ctrl-click on a Mac; the Menu key on a focused step)",
+			"does": "The step menu: trig, accent, slide, copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (the ⋯ on the selection; Ctrl-click on a Mac; the Menu key on a focused step)",
 			"area": "Steps"
+		},
+		{
+			"id": "pause",
+			"scope": "any",
+			"keys": [
+				"Space"
+			],
+			"mod": "shift",
+			"group": "Transport",
+			"does": "Pause: the machine holds its step; again (or ▶) goes on from it, STOP ends it (also ⇧-click ▶)",
+			"code": "Space",
+			"short": "Pause",
+			"dispatched": true
+		},
+		{
+			"id": "panic",
+			"scope": "any",
+			"keys": [
+				"."
+			],
+			"mod": "cmd",
+			"group": "Transport",
+			"does": "Panic: every voice off (the machine's STOP twice)",
+			"short": "Panic",
+			"dispatched": true
+		},
+		{
+			"id": "tempo-nudge",
+			"scope": "any",
+			"keys": [
+				"-",
+				"="
+			],
+			"mod": "",
+			"group": "Transport",
+			"does": "Hold: the tempo 10 % slower (-) or faster (=) while held, as the TEMPO menu's nudge",
+			"short": "Nudge",
+			"dispatched": true
+		},
+		{
+			"id": "live-erase",
+			"scope": "any",
+			"keys": [
+				"Delete",
+				"Backspace"
+			],
+			"mod": "",
+			"group": "Transport",
+			"does": "While live recording, hold: erase the selected track's trigs as they play (EXIT/NO + its TRIG key on the machine). With a track value pressed: that parameter's locks instead (EXIT/NO + its DATA ENTRY knob)",
+			"short": "Erase",
+			"dispatched": true
+		},
+		{
+			"id": "song-play-from",
+			"scope": "song",
+			"keys": [
+				"Enter"
+			],
+			"mod": "",
+			"group": "Song",
+			"does": "Play the song from the selected row (▶ From here)",
+			"short": "From here",
+			"dispatched": true
+		},
+		{
+			"id": "transport-menu",
+			"scope": "any",
+			"keys": [
+				"right-click ▶"
+			],
+			"mod": "",
+			"group": "Transport",
+			"does": "The transport menu: Play / Stop, Pause / Continue, Record, Panic (also the ▾ in the key's corner)",
+			"area": "Top bar"
+		},
+		{
+			"id": "pause-click",
+			"scope": "any",
+			"keys": [
+				"▶"
+			],
+			"mod": "shift",
+			"group": "Transport",
+			"does": "Click: pause; ▶ again goes on from the step",
+			"area": "Top bar"
+		},
+		{
+			"id": "tempo-click",
+			"scope": "any",
+			"keys": [
+				"tempo"
+			],
+			"mod": "",
+			"group": "Transport",
+			"does": "Click (no drag): the TEMPO window: − / +, TAP, nudge, change on release",
+			"area": "Top bar"
+		},
+		{
+			"id": "tempo-delayed",
+			"scope": "any",
+			"keys": [
+				"tempo"
+			],
+			"mod": "alt",
+			"group": "Transport",
+			"does": "Drag: the tempo changes when you let go (FUNCTION held on the machine)",
+			"area": "Top bar"
 		},
 		{
 			"id": "close-dialog",
@@ -709,7 +927,7 @@
 			],
 			"mod": "",
 			"group": "Transport",
-			"does": "Play / stop",
+			"does": "Play / stop (paused: go on from the step)",
 			"short": "Play / stop",
 			"dispatched": true
 		},
@@ -1221,6 +1439,42 @@
 			"does": "Close"
 		},
 		{
+			"id": "copy-what",
+			"scope": "any",
+			"keys": [
+				"C"
+			],
+			"mod": "cmd+shift",
+			"group": "Anywhere",
+			"does": "Copy what: choose which parts of the selected track to copy (the machine's SUPER COPY)",
+			"short": "Copy what",
+			"dispatched": true
+		},
+		{
+			"id": "paste-what",
+			"scope": "any",
+			"keys": [
+				"V"
+			],
+			"mod": "cmd+shift",
+			"group": "Anywhere",
+			"does": "Paste what: choose which copied parts go into which tracks",
+			"short": "Paste what",
+			"dispatched": true
+		},
+		{
+			"id": "clear-what",
+			"scope": "any",
+			"keys": [
+				"Backspace"
+			],
+			"mod": "cmd+shift",
+			"group": "Anywhere",
+			"does": "Clear what: choose which parts of the selected track to clear (the machine's SUPER CLEAR)",
+			"short": "Clear what",
+			"dispatched": true
+		},
+		{
 			"id": "global-key",
 			"scope": "any",
 			"keys": [
@@ -1228,7 +1482,7 @@
 			],
 			"mod": "",
 			"group": "Anywhere",
-			"does": "The machine's own settings, kept in its memory: MIDI channels, sync and the rest (also the engine menu: GLOBAL…)",
+			"does": "The GLOBAL page: the machine's own settings, kept in its memory: MIDI channels, sync and the rest (also the engine menu: GLOBAL…)",
 			"area": "Top bar"
 		},
 		{
@@ -1239,7 +1493,7 @@
 			],
 			"mod": "",
 			"group": "Anywhere",
-			"does": "Close the GLOBAL settings",
+			"does": "Back from the GLOBAL page to the workspace",
 			"short": "Close",
 			"dispatched": true
 		},
@@ -1256,6 +1510,81 @@
 		}
 	],
 	"mm": [
+		{
+			"id": "song-slot-move",
+			"scope": "song",
+			"keys": [
+				"ArrowLeft",
+				"ArrowRight",
+				"ArrowUp",
+				"ArrowDown"
+			],
+			"mod": "",
+			"group": "Song",
+			"does": "Song slots (a slot has the focus): move the selection"
+		},
+		{
+			"id": "song-slot-load",
+			"scope": "song",
+			"keys": [
+				"Enter"
+			],
+			"mod": "",
+			"group": "Song",
+			"does": "Song slots: load the selected song (LOAD SONG, only while stopped)"
+		},
+		{
+			"id": "song-slot-rename",
+			"scope": "song",
+			"keys": [
+				"F2"
+			],
+			"mod": "",
+			"group": "Song",
+			"does": "Song slots: rename the selected song"
+		},
+		{
+			"id": "song-slot-copy",
+			"scope": "song",
+			"keys": [
+				"C"
+			],
+			"mod": "cmd",
+			"group": "Song",
+			"does": "Song slots: copy the selected song"
+		},
+		{
+			"id": "song-slot-paste",
+			"scope": "song",
+			"keys": [
+				"V"
+			],
+			"mod": "cmd",
+			"group": "Song",
+			"does": "Song slots: paste the song into the selected slot"
+		},
+		{
+			"id": "song-slot-clear",
+			"scope": "song",
+			"keys": [
+				"Delete",
+				"Backspace"
+			],
+			"mod": "",
+			"group": "Song",
+			"does": "Song slots: clear the selected song"
+		},
+		{
+			"id": "song-slot-drag",
+			"scope": "song",
+			"keys": [
+				"drag a song slot onto another"
+			],
+			"mod": "",
+			"group": "Song",
+			"does": "Copies the song into that slot",
+			"area": "Song"
+		},
 		{
 			"id": "keys-help",
 			"scope": "any",
@@ -1330,15 +1659,6 @@
 			"mod": "",
 			"group": "Tips",
 			"does": "⌘-click or ⌘-drag steps to select them; the LCD's Copy, Clr and Paste then act on the selection.",
-			"tip": true
-		},
-		{
-			"id": "tip-draw",
-			"scope": "any",
-			"keys": [],
-			"mod": "",
-			"group": "Tips",
-			"does": "B on Sequence turns the piano roll's Draw on and off (off: drag a box round notes to select them). ⇧B taps the tempo on every workspace.",
 			"tip": true
 		},
 		{
@@ -1419,6 +1739,17 @@
 			"mod": "",
 			"group": "Values",
 			"does": "Back to its default (64; a list's first entry)",
+			"area": "Values"
+		},
+		{
+			"id": "value-type",
+			"scope": "sound mix perform control",
+			"keys": [
+				"value"
+			],
+			"mod": "cmd",
+			"group": "Values",
+			"does": "Click: type a value, then Enter (Esc: leave it as it was). Enter on a focused value does the same",
 			"area": "Values"
 		},
 		{
@@ -1541,29 +1872,6 @@
 			"group": "Kit library, pattern chooser",
 			"does": "Copy it there",
 			"area": "Library"
-		},
-		{
-			"id": "roll-draw",
-			"scope": "seq",
-			"keys": [
-				"B"
-			],
-			"mod": "",
-			"group": "Sequence",
-			"does": "Piano roll: draw notes on / off (off: drag a box round notes to select them, drag them to move, double-click adds one). ⇧B taps the tempo here, B on the other workspaces",
-			"short": "Draw",
-			"dispatched": true
-		},
-		{
-			"id": "roll-box",
-			"scope": "seq",
-			"keys": [
-				"drag in an empty place"
-			],
-			"mod": "",
-			"group": "Sequence",
-			"does": "Select (Draw off): box notes; the selection takes them from the first trig to the last one's end. Drag the selection: move it",
-			"area": "Roll"
 		},
 		{
 			"id": "roll-length",
@@ -1744,7 +2052,7 @@
 			],
 			"mod": "",
 			"group": "Transport",
-			"does": "Tap tempo (the average of the last taps; T plays F♯ here). On Sequence B is the piano roll's Draw: tap with ⇧B",
+			"does": "Tap tempo (the average of the last taps; T plays F♯ here).",
 			"dispatched": true
 		},
 		{
@@ -2001,8 +2309,44 @@
 			],
 			"mod": "",
 			"group": "Sequence",
-			"does": "The step menu: note on / off, NOTE OFF, trigless, slide, a chord note (roll), copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (Ctrl-click on a Mac)",
+			"does": "The step menu: note on / off, NOTE OFF, a trigless trig, the envelopes a trig fires (Amp, Filter, LFO), slide, swing, a chord note (roll), copy, cut, paste here, duplicate, clear, fill every 2nd / 4th from it; on a selected step for the whole selection (Ctrl-click on a Mac)",
 			"area": "Roll"
+		},
+		{
+			"id": "copy-what",
+			"scope": "any",
+			"keys": [
+				"C"
+			],
+			"mod": "cmd+shift",
+			"group": "Anywhere",
+			"does": "Copy what: choose which parts of the selected track to copy (the machine's SUPER COPY)",
+			"short": "Copy what",
+			"dispatched": true
+		},
+		{
+			"id": "paste-what",
+			"scope": "any",
+			"keys": [
+				"V"
+			],
+			"mod": "cmd+shift",
+			"group": "Anywhere",
+			"does": "Paste what: choose which copied parts go into which tracks",
+			"short": "Paste what",
+			"dispatched": true
+		},
+		{
+			"id": "clear-what",
+			"scope": "any",
+			"keys": [
+				"Backspace"
+			],
+			"mod": "cmd+shift",
+			"group": "Anywhere",
+			"does": "Clear what: choose which parts of the selected track to clear (the machine's SUPER CLEAR)",
+			"short": "Clear what",
+			"dispatched": true
 		},
 		{
 			"id": "global-key",
@@ -2012,7 +2356,7 @@
 			],
 			"mod": "",
 			"group": "Anywhere",
-			"does": "The machine's own settings, kept in its memory: MIDI channels, sync and the rest (also the engine menu: GLOBAL…)",
+			"does": "The GLOBAL page: the machine's own settings, kept in its memory: MIDI channels, sync and the rest (also the engine menu: GLOBAL…)",
 			"area": "Top bar"
 		},
 		{
@@ -2023,7 +2367,7 @@
 			],
 			"mod": "",
 			"group": "Anywhere",
-			"does": "Close the GLOBAL settings",
+			"does": "Back from the GLOBAL page to the workspace",
 			"short": "Close",
 			"dispatched": true
 		},
@@ -2116,6 +2460,164 @@
 			"mod": "",
 			"group": "Kit library, pattern chooser",
 			"does": "Close"
+		},
+		{
+			"id": "pause",
+			"scope": "any",
+			"keys": [
+				"Space"
+			],
+			"mod": "shift",
+			"group": "Transport",
+			"does": "Pause: the machine holds its step; again (or ▶) goes on from it, STOP ends it (also ⇧-click ▶)",
+			"code": "Space",
+			"short": "Pause",
+			"dispatched": true
+		},
+		{
+			"id": "panic",
+			"scope": "any",
+			"keys": [
+				"."
+			],
+			"mod": "cmd",
+			"group": "Transport",
+			"does": "Panic: every note off (All Notes Off on each track's channel) and STOP",
+			"short": "Panic",
+			"dispatched": true
+		},
+		{
+			"id": "tempo-nudge",
+			"scope": "any",
+			"keys": [
+				"-",
+				"="
+			],
+			"mod": "",
+			"group": "Transport",
+			"does": "Hold: the tempo 10 % slower (-) or faster (=) while held, as the TEMPO menu's nudge",
+			"short": "Nudge",
+			"dispatched": true
+		},
+		{
+			"id": "live-erase",
+			"scope": "any",
+			"keys": [
+				"Delete",
+				"Backspace"
+			],
+			"mod": "",
+			"group": "Transport",
+			"does": "While live recording, hold: erase the selected track's notes as they play (EXIT held on the machine)",
+			"short": "Erase",
+			"dispatched": true
+		},
+		{
+			"id": "step-move",
+			"scope": "any",
+			"keys": [
+				"ArrowLeft",
+				"ArrowRight"
+			],
+			"mod": "",
+			"group": "Transport",
+			"does": "Step recording: ← a step back, → on (a rest); Delete clears the step, Esc: done",
+			"short": "Back / Rest",
+			"dispatched": true
+		},
+		{
+			"id": "step-clear",
+			"scope": "any",
+			"keys": [
+				"Delete",
+				"Backspace"
+			],
+			"mod": "",
+			"group": "Transport",
+			"does": "Step recording: clear the step under the cursor and move on",
+			"short": "Clear step",
+			"hidden": true,
+			"dispatched": true
+		},
+		{
+			"id": "step-done",
+			"scope": "any",
+			"keys": [
+				"Escape"
+			],
+			"mod": "",
+			"group": "Transport",
+			"does": "Step recording: done",
+			"short": "Done",
+			"hidden": true,
+			"dispatched": true
+		},
+		{
+			"id": "song-play-from",
+			"scope": "song",
+			"keys": [
+				"Enter"
+			],
+			"mod": "",
+			"group": "Song",
+			"does": "Play the song from the selected row (▶ From here)",
+			"short": "From here",
+			"dispatched": true
+		},
+		{
+			"id": "transport-menu",
+			"scope": "any",
+			"keys": [
+				"right-click ▶"
+			],
+			"mod": "",
+			"group": "Transport",
+			"does": "The transport menu: Play / Stop, Pause / Continue, Live record, Step record, Panic (also the ▾ in the key's corner)",
+			"area": "Top bar"
+		},
+		{
+			"id": "step-record",
+			"scope": "any",
+			"keys": [
+				"REC"
+			],
+			"mod": "shift",
+			"group": "Transport",
+			"does": "Click (stopped): step recording; again (or Esc): done",
+			"area": "Top bar"
+		},
+		{
+			"id": "pause-click",
+			"scope": "any",
+			"keys": [
+				"▶"
+			],
+			"mod": "shift",
+			"group": "Transport",
+			"does": "Click: pause; ▶ again goes on from the step",
+			"area": "Top bar"
+		},
+		{
+			"id": "tempo-click",
+			"scope": "any",
+			"keys": [
+				"tempo"
+			],
+			"mod": "",
+			"group": "Transport",
+			"does": "Click (no drag): the TEMPO window: − / +, TAP, nudge, change on release, INT / EXT",
+			"area": "Top bar"
+		},
+		{
+			"id": "tempo-delayed",
+			"scope": "any",
+			"keys": [
+				"tempo"
+			],
+			"mod": "alt",
+			"group": "Transport",
+			"does": "Drag: the tempo changes when you let go (FUNCTION held on the machine)",
+			"area": "Top bar"
 		},
 		{
 			"id": "close-dialog",
@@ -2228,7 +2730,7 @@
 			],
 			"mod": "",
 			"group": "Transport",
-			"does": "Play / stop",
+			"does": "Play / stop (paused: go on from the step)",
 			"dispatched": true
 		},
 		{
@@ -2443,7 +2945,7 @@
 			],
 			"mod": "",
 			"group": "Sequence",
-			"does": "Draw on (B): click an empty step: a note there, as long as the Len key says; drag it up or down for its pitch, sideways to paint that note on every empty step crossed (the last one as long as the Len key says; one undo step). Draw off: double-click",
+			"does": "Click an empty step: a note there, as long as the Len key says; drag it up or down for its pitch, sideways to paint that note on every empty step crossed (the last one as long as the Len key says; one undo step).",
 			"area": "Roll"
 		},
 		{

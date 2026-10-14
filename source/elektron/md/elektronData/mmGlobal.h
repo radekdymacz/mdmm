@@ -16,7 +16,9 @@ namespace elektronData
 	//              (panel, MM-P4; measured by mmDeskFirmwareTest hostclock, P7)
 	//   0x06   1  CONTROL IN TRANSPORT (TRANSPORT IN): 0 IGNORE, 1 ACCEPT (MIDI Start/Stop)
 	//              (panel, MM-P4); both 0 as booted
-	//   0x07   3  unknown (kept; flipping each changed no MIDI in or out, mmDeskFirmwareTest globalprobe)
+	//   0x07   3  CONTROL OUT1 SEQUENCER, ARP, KEYBOARD: 0 INT, 1 OUT, 2 INT+OUT; factory 0, 0, 2 (gapProbesFirmwareTest p2,
+	//              doc/modern-ux/PROBES-manual-gaps.md P2). OUT: no sound; the sequencer's trigs go out as NRPN on the
+	//              base channel (99 = 0x70 note, 99 = 0x7f trig), the arpeggiator and the keyboard as notes
 	//   0x0a   1  CONTROL OUT TRANSPORT: 1 sends MIDI Start/Stop, 0 not (B-051, globalprobe: factory 1)
 	//   0x0b   1  CONTROL OUT CLOCK: 1 sends MIDI clock, 0 not (globalprobe: factory 1)
 	//   0x0c   1  PROGRAM CHANGE OUT: not 0 sends a program change on the base channel when a pattern is picked
@@ -25,7 +27,7 @@ namespace elektronData
 	//   0x12   6  MIDI sequencer track channels (inferred)
 	//   0x18  24  MIDI sequencer CC numbers CL1-4, 6 x 4 (inferred)
 	//   0x30   6  unknown (kept)
-	//   0x36   6  CONTROL OUT1 / OUT2 / IN settings (kept, not decoded)
+	//   0x36   6  unknown (kept; not CONTROL OUT1: each set to 0, 1 and 2 changed no MIDI out or sound, P2)
 	//   0x3c 192  multi map, 6 fields x 32 ranges (MULTIMAP EDIT, panel, MM-P4): upper key; pattern
 	//             (0xff CUR); offset (0xff ---); length; transpose (signed); timing (0 DIR, 1 2 4
 	//             8 16 32). Ranges past the last repeat its upper key
@@ -44,7 +46,7 @@ namespace elektronData
 
 		uint8_t autoChannel = 8, baseChannel = 0, channelSpan = 6, multiTrigChannel = 6, multiMapChannel = 7;
 		uint8_t tempoSync = 0, transportIn = 0;
-		std::array<uint8_t, 3> x07{};
+		std::array<uint8_t, 3> controlOut1{};	// SEQUENCER, ARP, KEYBOARD: 0 INT, 1 OUT, 2 INT+OUT (P2)
 		uint8_t transportOut = 1, clockOut = 1, programChangeOut = 0;
 		std::array<uint8_t, 5> x0d{};
 		std::array<uint8_t, 6> midiSeqChannels{};

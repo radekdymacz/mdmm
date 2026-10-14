@@ -9,11 +9,16 @@
 // (doc/modern-ux/<md|mm>-data-contract.schema.json, $defs/command): a command outside it fails the run.
 //
 //   node scripts/mdmm-page.mjs [--jobs N] [--tier page|machine|host|all] [--host stub|record] [--timeout S]
-//                              [--out DIR] [--verbose] [md|mm|both] [selector]
+//                              [--out DIR] [--verbose] [--shuffle [SEED]] [--isolate] [md|mm|both] [selector]
 //     selector: as scripts/mdmm-journeys.sh (journey, journey-seq-*, journey-md-lib-*,mm-mix-*); default journey
 //     --tier: the journeys of that tier (skins/shared/deskJourney.js TIERS); default page
 //     --jobs N: N pages per editor at once, each with its own host, each every N-th journey (default 2)
-// Environment: MDMM_CHROME (Chrome's binary), MDMM_STUB_HOST (deskStubHost's binary; default: the newest under temp/),
+//     --shuffle [SEED]: the journeys in a seeded random order (the seed is printed; no SEED: a random one); the same seed, the same order
+//     --list: print the names the selector, tier and shuffle choose (one line per editor: "<md|mm>: name name ...") and exit
+//     --isolate: every journey in a page and a host of its own, fresh from the start: a journey that passes here and fails in a run
+//       (or the other way round) depends on one before it (Radek's rule 2026-10-13: every journey is independent,
+//       doc/modern-ux/JOURNEYS.md). --jobs N then means N journeys at once per editor. Combines with --shuffle (the order they start in).
+// Environment: MDMM_CHROME (Chrome's binary), MDMM_CHROME_ARGS (more Chrome flags, space separated), MDMM_STUB_HOST (deskStubHost's binary; default: the newest under temp/),
 // MDMM_PAGE_OUT (the report folder, default temp/page/<date-time>). Prints the JOURNEY lines and a total; exits 1 on any
 // FAIL, a page that never said JOURNEYS DONE, a command outside the contract or a page error.
 import { spawn } from "node:child_process";
@@ -25,10 +30,10 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SKINS = path.join(ROOT, "source/elektron/md/mdJucePlugin/skins");
-const usage = () => { console.error("usage: node scripts/mdmm-page.mjs [--jobs N] [--tier page|machine|host|all] [--host stub|record] [--timeout S] [--out DIR] [--verbose] [md|mm|both] [selector]"); process.exit(2); };
+const usage = () => { console.error("usage: node scripts/mdmm-page.mjs [--jobs N] [--tier page|machine|host|all] [--host stub|record] [--timeout S] [--out DIR] [--verbose] [--shuffle [SEED]] [--isolate] [md|mm|both] [selector]"); process.exit(2); };
 
 /* ---------- arguments ---------- */
-const opt = { jobs: 2, tier: "page", host: "stub", timeout: 600, out: process.env.MDMM_PAGE_OUT || "", verbose: false };
+const opt = { jobs: 2, tier: "page", host: "stub", timeout: 1800, out: process.env.MDMM_PAGE_OUT || "", verbose: false, shuffle: null, isolate: false, list: false };
 const rest = [];
 for (let a = process.argv.slice(2); a.length;) {
 	const x = a.shift();
@@ -39,6 +44,10 @@ for (let a = process.argv.slice(2); a.length;) {
 	else if (/^--timeout(=|$)/.test(x)) opt.timeout = +val();
 	else if (/^--out(=|$)/.test(x)) opt.out = val();
 	else if (x === "--verbose") opt.verbose = true;
+	else if (x === "--isolate") opt.isolate = true;
+	else if (x === "--list") opt.list = true;
+	else if (x === "--shuffle") opt.shuffle = a.length && /^\d+$/.test(a[0]) ? +a.shift() : Math.floor(Math.random() * 1e9);
+	else if (/^--shuffle=\d+$/.test(x)) opt.shuffle = +x.split("=")[1];
 	else if (x.startsWith("--")) usage();
 	else rest.push(x);
 }
@@ -120,7 +129,7 @@ const PORT = server.address().port;
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), "mdmm-page-chrome-"));
 const chrome = spawn(CHROME, ["--headless=new", "--remote-debugging-port=0", `--user-data-dir=${profile}`, "--no-first-run", "--no-default-browser-check",
 	"--disable-background-timer-throttling", "--disable-renderer-backgrounding", "--disable-backgrounding-occluded-windows", "--hide-scrollbars",
-	"--mute-audio", "--window-size=1440,924", "about:blank"], { stdio: ["ignore", "ignore", "pipe"] });
+	"--mute-audio", "--window-size=1440,924", ...(process.env.MDMM_CHROME_ARGS ? process.env.MDMM_CHROME_ARGS.split(" ") : []), "about:blank"], { stdio: ["ignore", "ignore", "pipe"] });
 let chromeErr = "";
 chrome.stderr.on("data", d => { chromeErr += d; });
 const wsUrl = await new Promise((resolve, reject) => {
@@ -146,13 +155,14 @@ function runUnit(ed, selector, dir) {
 		fs.mkdirSync(dir, { recursive: true });
 		const logf = fs.createWriteStream(path.join(dir, "page.log")), cmdf = fs.createWriteStream(path.join(dir, "commands.jsonl"));
 		const lines = [], problems = [];
-		let finished = false, host = null, sid = null, timer = null, targetId = null;
+		let finished = false, host = null, sid = null, timer = null, targetId = null, contextId = null;
 		const t0 = Date.now();
 		const log = t => { logf.write(`${((Date.now() - t0) / 1000).toFixed(3)} ${t}\n`); };
 		const finish = async why => {
 			if (finished) return; finished = true; clearTimeout(timer);
 			if (why) { problems.push(why); log("FAIL " + why); }
 			if (targetId) try { await send("Target.closeTarget", { targetId }); } catch { }
+			if (contextId) try { await send("Target.disposeBrowserContext", { browserContextId: contextId }); } catch { }
 			if (host) { host.stdin.end(); host.kill(); }
 			logf.end(); cmdf.end();
 			done({ ed, dir, lines, problems, secs: (Date.now() - t0) / 1000 });
@@ -176,10 +186,16 @@ function runUnit(ed, selector, dir) {
 			if (host) host.stdin.write(JSON.stringify(batch) + "\n");
 			else deliver(JSON.stringify(batch.filter(c => c.id != null).map(c => ({ type: "result", id: c.id, op: c.op, ok: true }))));
 		};
-		targetId = (await send("Target.createTarget", { url: "about:blank" })).targetId;
+		/* each page in a browser context of its own: the pages of one run shared one origin, so one page's remembered
+		   ticks (localStorage: Copy what, Paste what) were another's starting state, whatever journey it ran then */
+		contextId = (await send("Target.createBrowserContext", { disposeOnDetach: true })).browserContextId;
+		targetId = (await send("Target.createTarget", { url: "about:blank", browserContextId: contextId })).targetId;
 		sid = (await send("Target.attachToTarget", { targetId, flatten: true })).sessionId;
 		sessions.set(sid, (method, p) => {
 			if (method === "Runtime.bindingCalled" && p.name === "__mdmmPost") { try { fromPage(JSON.parse(p.payload)); } catch (e) { log("post: " + e.message); } }
+			/* a journey that visits window sizes (the fit journeys): __mdmmView({width, height}) resizes the page's viewport */
+			else if (method === "Runtime.bindingCalled" && p.name === "__mdmmView") { try { const v = JSON.parse(p.payload);
+				send("Emulation.setDeviceMetricsOverride", { width: v.width, height: v.height, deviceScaleFactor: 1, mobile: false }, sid).catch(e => log("view: " + e.message)); } catch (e) { log("view: " + e.message); } }
 			else if (method === "Runtime.consoleAPICalled") {
 				const a = p.args.map(x => x.value !== undefined ? x.value : x.description || "");
 				const text = a[0] === "[desk]" ? String(a.slice(1).join(" ")) : a.join(" ");
@@ -201,7 +217,8 @@ function runUnit(ed, selector, dir) {
 		await send("Runtime.enable", {}, sid);
 		await send("Page.enable", {}, sid);
 		await send("Runtime.addBinding", { name: "__mdmmPost" }, sid);
-		await send("Page.addScriptToEvaluateOnNewDocument", { source: "window.gmDev = b => __mdmmPost(JSON.stringify(b));" }, sid);
+		await send("Runtime.addBinding", { name: "__mdmmView" }, sid);
+		await send("Page.addScriptToEvaluateOnNewDocument", { source: "window.gmDev = b => __mdmmPost(JSON.stringify(b)); window.gmView = (width, height) => __mdmmView(JSON.stringify({ width, height }));" }, sid);
 		await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 924, deviceScaleFactor: 1, mobile: false }, sid);
 		await send("Emulation.setFocusEmulationEnabled", { enabled: true }, sid);
 		const page = ed === "md" ? "md/mdStudio.html" : "mm/mmStudio.html";
@@ -213,29 +230,68 @@ function runUnit(ed, selector, dir) {
 /* ---------- the units, the report ---------- */
 const eds = which === "both" ? ["md", "mm"] : [which];
 const tierSel = opt.tier === "all" ? "" : "~" + opt.tier;
-console.log(`== page tier: ${sel}${tierSel}, ${eds.join(" + ")}, ${opt.jobs} page(s) each, host ${opt.host === "stub" ? path.relative(ROOT, STUB) : "record"}; report: ${OUT}`);
+const shufSel = opt.shuffle != null ? `:shuffle-${opt.shuffle}` : "";
+if (!opt.list) console.log(`== page tier: ${sel}${tierSel}, ${eds.join(" + ")}, ${opt.isolate ? "each journey in a page of its own, " + opt.jobs + " at once" : opt.jobs + " page(s) each"}, host ${opt.host === "stub" ? path.relative(ROOT, STUB) : "record"}${opt.shuffle != null ? `, shuffle seed ${opt.shuffle}` : ""}; report: ${OUT}`);
 const T0 = Date.now();
-const units = [];
-for (const ed of eds) for (let k = 1; k <= opt.jobs; k++) units.push(runUnit(ed, sel + tierSel + (opt.jobs > 1 ? `@${k}/${opt.jobs}` : ""), path.join(OUT, `${ed}${opt.jobs > 1 ? "-" + k : ""}`)));
-const results = await Promise.all(units);
+let results;
+if (opt.list) {
+	/* no host, no timing: just the names (the list unit needs only the page) */
+	const ls = await Promise.all(eds.map(ed => runUnit(ed, sel + tierSel + shufSel + ":list", path.join(OUT, `${ed}-list`))));
+	ws.close(); chrome.kill(); server.close();
+	for (const l of ls) { console.log(`LIST ${l.ed}: ${(l.lines.find(x => /^JOURNEYS list: /.test(x)) || "").replace(/^JOURNEYS list: ?/, "")}`);
+		console.log(`ALONE ${l.ed}: ${(l.lines.find(x => /^JOURNEYS alone: /.test(x)) || "").replace(/^JOURNEYS alone: ?/, "")}`); }
+	process.exit(0);
+}
+if (!opt.isolate) {
+	/* a journey that cannot put back what it changes (alone: true, deskJourney.js) gets a page of its own: the shards leave it out */
+	const aloneOf = {};
+	await Promise.all(eds.map(async ed => { const l = await runUnit(ed, sel + tierSel + ":list", path.join(OUT, `${ed}-list`));
+		aloneOf[ed] = ((l.lines.find(x => /^JOURNEYS alone: /.test(x)) || "").replace(/^JOURNEYS alone: ?/, "")).split(" ").filter(Boolean); }));
+	const units = [];
+	for (const ed of eds) {
+		const excl = aloneOf[ed].map(n => ",!" + n).join(""), base = excl && sel === "journey" ? "journey-*" : sel;
+		for (let k = 1; k <= opt.jobs; k++) units.push(runUnit(ed, base + excl + tierSel + (opt.jobs > 1 ? `@${k}/${opt.jobs}` : "") + shufSel, path.join(OUT, `${ed}${opt.jobs > 1 ? "-" + k : ""}`)));
+		for (const n of aloneOf[ed]) units.push(runUnit(ed, "journey-" + n, path.join(OUT, `${ed}-alone`, n)));
+	}
+	results = await Promise.all(units);
+} else {
+	/* the names first (":list": nothing runs), then each in a unit of its own, opt.jobs at once per editor, in the shuffled order when asked */
+	results = [];
+	const quiet = opt.verbose; opt.verbose = false;
+	await Promise.all(eds.map(async ed => {
+		const l = await runUnit(ed, sel + tierSel + shufSel + ":list", path.join(OUT, `${ed}-list`));
+		opt.verbose = quiet;
+		const names = ((l.lines.find(x => /^JOURNEYS list: /.test(x)) || "").replace(/^JOURNEYS list: ?/, "")).split(" ").filter(Boolean);
+		if (!names.length) { results.push(l); return; }
+		console.log(`   ${ed}: ${names.length} journeys, each alone`);
+		let next = 0;
+		const worker = async () => { while (next < names.length) { const n = names[next++]; results.push(await runUnit(ed, "journey-" + n, path.join(OUT, `${ed}-alone`, n))); } };
+		await Promise.all(Array.from({ length: opt.jobs }, worker));
+	}));
+}
 ws.close(); chrome.kill(); server.close();
 try { fs.rmSync(profile, { recursive: true, force: true }); } catch { }
 
 let passed = 0, failed = 0, skipped = 0, status = 0;
-const report = [];
+const report = [], leftOver = [];
 for (const r of results) {
-	report.push(`== ${r.ed} (${path.basename(r.dir)}), ${r.secs.toFixed(1)} s`);
+	if (!opt.isolate || /-list$/.test(path.basename(r.dir))) report.push(`== ${r.ed} (${path.basename(r.dir)}), ${r.secs.toFixed(1)} s`);
 	for (const l of r.lines) if (/^JOURNEY \S+ (PASS|FAIL|SKIP)|^JOURNEYS (start|DONE)/.test(l)) report.push(l);
 	passed += r.lines.filter(l => /^JOURNEY \S+ PASS/.test(l)).length;
 	failed += r.lines.filter(l => /^JOURNEY \S+ FAIL/.test(l)).length;
 	skipped += r.lines.filter(l => /^JOURNEY \S+ SKIP/.test(l)).length;
+	/* what a journey left for the next one to put right (the page's between and the runner's close of what stays open), and what it left
+	   changed in the machine's documents and modes (its tidy was to put it back: "left:") */
+	for (const l of r.lines) if (/^JOURNEY \S+ (before|left): /.test(l)) leftOver.push(`${r.ed}: ${l.replace(/^JOURNEY /, "")}`);
 	const uniq = [...new Set(r.problems)];
 	for (const p of uniq.slice(0, 10)) report.push("FAIL " + p);
 	if (uniq.length) status = 1;
-	report.push(`   log: ${path.join(r.dir, "page.log")}`);
+	if (!opt.isolate || /-list$/.test(path.basename(r.dir)) || r.problems.length || r.lines.some(l => /^JOURNEY \S+ FAIL/.test(l))) report.push(`   log: ${path.join(r.dir, "page.log")}`);
 }
 if (failed) status = 1;
 if (passed + failed + skipped === 0) { report.push("FAIL no journey matched " + sel + tierSel); status = 1; }
+if (leftOver.length) { report.push(`WARN ${leftOver.length} journey(s) left state behind ("<journey> left:" is the one that did not tidy; "<journey> before:" names the one after it that met it):`); for (const l of leftOver) report.push("   " + l.slice(0, 200)); }
+if (opt.shuffle != null) report.push(`SHUFFLE seed ${opt.shuffle} (node scripts/mdmm-page.mjs --shuffle ${opt.shuffle}${opt.isolate ? " --isolate" : ""} ... plays the same order)`);
 report.push(`PAGE JOURNEYS: ${passed} passed, ${failed} failed, ${skipped} skipped in ${Math.round((Date.now() - T0) / 1000)} s (${opt.jobs} per editor)`);
 fs.writeFileSync(path.join(OUT, "report.txt"), report.join("\n") + "\n");
 console.log(report.filter(l => !/^JOURNEY \S+ PASS/.test(l)).join("\n"));

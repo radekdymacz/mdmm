@@ -8,7 +8,10 @@
 //
 // The page's batches come in on stdin, one JSON array per line (what the page's bridge posts); the messages for the
 // page go out on stdout, one JSON array per line (what gm.recv takes). The plug-in's own commands (deskHost's table:
-// the engine map, ROM, audio, menu, notices) are answered ok and do nothing. --real-timing keeps the emulator
+// the engine map, ROM, audio, menu, notices) are answered ok and do nothing, but the SysEx ones (wave 6): the session's
+// SysEx work runs here as in the plug-in (mdJucePlugin/mdSyxWork.h), Import SysEx… opens the page tier's own file (two
+// kits and two patterns named IMPORT, or GEARMULATOR_MDMM_SYX_FILE), Export SysEx… writes into the temp folder, and a
+// factory reset is said to be the plug-in's. --real-timing keeps the emulator
 // profile's dump pacing (a read-back 750 ms after the last edit on the MD) and the desk's clock at the wall's speed; by
 // default the pacing is 20 ms and the desk's clock runs four times as fast (the loads at start take seconds, not ten).
 
@@ -16,6 +19,7 @@
 #include "mdDesk/mdDeskSetup.h"
 #include "mmDesk/mmDesk.h"
 #include "deskHost/deskHost.h"
+#include "mdJucePlugin/mdSyxWork.h"
 
 #include "elektronData/factoryGlobals.h"
 #include "elektronData/mdCommands.h"
@@ -33,6 +37,8 @@
 #include "elektronData/mmPattern.h"
 #include "elektronData/mmSong.h"
 
+#include "deskWire/mmWire.h"
+
 #include <poll.h>
 #include <unistd.h>
 
@@ -45,6 +51,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <type_traits>
 #include <map>
 #include <memory>
 #include <string>
@@ -187,6 +194,8 @@ namespace
 				m_globals[g] = ed::mdFactoryGlobal(g);
 			m_kit = m_patterns[0].kit;
 			m_working = m_kits[m_kit];
+			m_undo = m_kits[(m_kit + 1) % 64];
+			m_undoSlot = static_cast<uint8_t>((m_kit + 1) % 64);
 		}
 
 		mdDesk::DevicePort port()
@@ -205,6 +214,32 @@ namespace
 			p.sendMute = [this](const uint8_t _t, const bool _on) { if(_t < 16) m_mutes = _on ? (m_mutes | (1 << _t)) : (m_mutes & ~(1 << _t)); };
 			p.sendNote = [](uint8_t, uint8_t, uint8_t) {};
 			p.pressKey = [this](const std::string& _k) { return press(_k); };
+			// DATA ENTRY: present (live recording needs it) but no knob page is reported, so Control All stays on CCs
+			p.turnKnob = [this](const uint8_t _knob, const int _d)
+			{
+				// live recording: a DATA ENTRY turn moves the selected track's value on the knob page and locks the next trig
+				// of that track with it (manual p.48; slice 5: MD-139)
+				if(m_recording && m_playing && _knob < 8 && m_knobPage >= 0 && m_knobPage < 3)
+				{
+					const size_t i = static_cast<size_t>(m_knobPage) * 8 + _knob;
+					const int v = std::clamp(static_cast<int>(m_working.params[m_track][i]) + _d, 0, 127);
+					m_working.params[m_track][i] = static_cast<uint8_t>(v);
+					const auto& pat = m_patterns[m_pattern];
+					const size_t len = std::max<size_t>(1, pat.length);
+					for(size_t k = 1; k <= len; ++k)
+					{
+						const size_t st = (static_cast<size_t>(m_step) + k) % len;
+						if((pat.trigs[m_track] >> st) & 1)
+						{
+							if(const auto locked = ed::withLock(pat, m_track, i, st, static_cast<uint8_t>(v)))
+								m_patterns[m_pattern] = *locked;
+							break;
+						}
+					}
+				}
+				return true;
+			};
+			p.sendMidi = [this](const Bytes& _m) { realtime(_m); };
 			p.nowMs = [] { return nowMs(); };
 			p.audition = [this](const ed::AuditionClip& _clip)
 			{
@@ -232,21 +267,42 @@ namespace
 			if(m_playing && now - m_stepAt >= 125 * g_timeScale)	// 120 BPM, a 16th (wall time)
 			{
 				m_stepAt = now;
-				m_step = (m_step + 1) % std::max<int>(1, m_patterns[m_pattern].length);
+				if(m_songMode)
+					m_step = songLocate(++m_songPos).second;
+				else
+				{
+					m_step = (m_step + 1) % std::max<int>(1, m_patterns[m_pattern].length);
+					if(m_step == 0 && m_queued >= 0)
+					{
+						loadPattern(static_cast<uint8_t>(m_queued));
+						m_queued = -1;
+					}
+				}
+				// wave 7: EXIT/NO and a TRIG key held while live recording: that track's trig on the step that plays goes
+				if(m_recording && m_exitHeld && m_heldTrig >= 0)
+					m_patterns[m_pattern] = ed::withTrig(m_patterns[m_pattern], static_cast<size_t>(m_heldTrig), static_cast<size_t>(m_step), false);
+				// MD-140: EXIT/NO and a DATA ENTRY knob's switch: the selected track's lock of that knob's parameter on the step goes
+				if(m_recording && m_exitHeld && m_heldKnob >= 0)
+					m_patterns[m_pattern] = ed::withoutLock(m_patterns[m_pattern], m_track, static_cast<size_t>(m_knobPage * 8 + m_heldKnob),
+						static_cast<size_t>(m_step));
 			}
 			mdDesk::Telemetry t;
 			t.valid = true;
 			t.step = m_playing ? m_step : -1;
 			t.pattern = m_pattern;
 			t.playing = m_playing;
-			t.knobPage = 0;
+			t.recording = m_recording;
+			// the knob page only while live recording (lock removal needs it): stopped or playing none is reported, so
+			// Control All stays on CCs
+			t.knobPage = m_recording ? m_knobPage : -1;
 			t.bootAnimation = 0;
 			t.mutes = m_mutes;
 			t.chainKnown = true;
 			t.chain = m_chain;
 			t.bankGroup = m_bankGroup;
 			t.panelPending = 0;
-			t.songRow = m_songMode && m_playing ? 0 : -1;
+			t.songRow = m_songMode && m_playing ? songLocate(m_songPos).first : -1;
+			t.songRepeats = m_songMode && m_playing ? songRepeatsLeft(m_songPos) : -1;
 			_desk.onTelemetry(t);
 			if(now - m_memoryAt >= 32)
 			{
@@ -262,6 +318,7 @@ namespace
 		}
 
 	private:
+
 		void reply(Bytes _m) { m_replies.push_back(std::move(_m)); }
 	public:
 		// replies waiting: the host steps again at once (a background load is a request and its reply, back to back)
@@ -280,7 +337,7 @@ namespace
 			case 0x04: return m_pattern;
 			case 0x08: return m_song;
 			case 0x10: return m_songMode ? 1 : 0;
-			case 0x20: return 1;	// extended locks
+			case 0x20: return m_globals[m_global].extendedMode ? 1 : 0;	// extended locks: the active global's
 			case 0x22: return m_track;
 			default: return 0;
 			}
@@ -294,6 +351,12 @@ namespace
 		}
 		void loadKit(const uint8_t _k)
 		{
+			// MD-043: unsaved edits go to the UNDO KIT (manual p.16; gapProbesFirmwareTest w12undo)
+			if(!(m_working == m_kits[m_kit]))
+			{
+				m_undo = m_working;
+				m_undoSlot = m_kit;
+			}
 			m_kit = _k & 63;
 			m_working = m_kits[m_kit];
 		}
@@ -317,13 +380,21 @@ namespace
 				case 0x04: loadPattern(_m[8]); break;
 				case 0x08: m_song = _m[8] & 31; break;
 				case 0x10: m_songMode = _m[8] != 0; break;
+				case 0x20: m_globals[m_global].extendedMode = _m[8] != 0 ? 1 : 0; break;	// CLASSIC / EXTENDED (slice 5: MD-004)
 				case 0x22: m_track = _m[8] & 15; break;
 				default: break;
 				}
 				return;
-			case 0x57: loadPattern(v); return;
+			case 0x56: m_global = v & 7; return;	// SET ACTIVE GLOBAL (slice 5: MD-282)
+			case 0x57:	// LOAD PATTERN: while playing (pattern mode) it waits for the pattern's end, or the panel's STOP (MD-099)
+				if(m_playing && !m_songMode)
+					m_queued = v & 127;
+				else
+					loadPattern(v);
+				return;
 			case 0x58: loadKit(v); return;
-			case 0x59: { auto k = m_working; k.position = v & 63; m_kits[v & 63] = k; m_kit = v & 63; return; }	// SAVE KIT
+			case 0x59: { if((v & 63) != m_kit) { m_undo = m_kits[v & 63]; m_undoSlot = v & 63; }	// the overwritten kit: the UNDO KIT
+				auto k = m_working; k.position = v & 63; m_kits[v & 63] = k; m_kit = v & 63; return; }	// SAVE KIT
 			case 0x6c: m_song = v & 31; return;
 			case 0x6d: return;	// SAVE SONG: the song is the slot already
 			case 0x51: reply(ed::encodeMdGlobal(m_globals[v & 7])); return;
@@ -372,18 +443,160 @@ namespace
 			}
 		}
 
-		bool press(const std::string& _key)
+		// the row and the step in it that _pos steps into the song play (rows' end - start times their plays; a LOOP, JUMP
+		// or END stops the count: the fixture's songs have none before their END)
+		std::pair<int, int> songLocate(const int _pos) const
 		{
-			if(_key == "play" || _key == "recordPlay")
+			const auto& song = m_songs[m_song];
+			int at = 0;
+			for(size_t i = 0; i < song.rows.size(); ++i)
+			{
+				const auto& r = song.rows[i];
+				if(ed::songRowKind(r, i) != ed::MdSongRowKind::Pattern)
+					break;
+				const int len = std::max(1, r.end - r.start), all = len * (r.repeats + 1);
+				if(_pos < at + all)
+					return {static_cast<int>(i), (_pos - at) % len};
+				at += all;
+			}
+			return {0, 0};
+		}
+
+		// MD-147: the passes of the row at _pos still to come (the firmware's counter, counting down)
+		int songRepeatsLeft(const int _pos) const
+		{
+			const auto& song = m_songs[m_song];
+			int at = 0;
+			for(size_t i = 0; i < song.rows.size(); ++i)
+			{
+				const auto& r = song.rows[i];
+				if(ed::songRowKind(r, i) != ed::MdSongRowKind::Pattern)
+					break;
+				const int len = std::max(1, r.end - r.start), all = len * (r.repeats + 1);
+				if(_pos < at + all)
+					return r.repeats - (_pos - at) / len;
+				at += all;
+			}
+			return 0;
+		}
+
+		// wave 2: MIDI Stop holds the step, Continue goes on from it, a song position (stopped) sets where (P1; CTRL IN on)
+		void realtime(const Bytes& _m)
+		{
+			if(_m.empty())
+				return;
+			if(_m[0] == 0xfc && m_playing)
+			{
+				m_playing = false;
+				m_paused = true;
+			}
+			else if(_m[0] == 0xfb && !m_playing)
 			{
 				m_playing = true;
+				m_paused = false;
+				m_stepAt = nowMs();
+			}
+			else if(_m[0] == 0xf2 && _m.size() == 3 && !m_playing)
+			{
+				const int pos = _m[1] | (_m[2] << 7);
+				m_songPos = pos;
+				m_step = m_songMode ? songLocate(pos).second : pos % std::max<int>(1, m_patterns[m_pattern].length);
+				m_paused = true;
+			}
+		}
+
+		bool press(const std::string& _key)
+		{
+			// wave 7: keys held down and let go later (EXIT/NO, a TRIG key), a TRIG key recorded while live recording
+			if(_key.rfind("hold:", 0) == 0 || _key.rfind("release:", 0) == 0)
+			{
+				const bool down = _key[0] == 'h';
+				const auto name = _key.substr(down ? 5 : 8);
+				if(name == "exit")
+					m_exitHeld = down;
+				else if(name.rfind("trig", 0) == 0)
+					m_heldTrig = down ? std::atoi(name.c_str() + 4) - 1 : -1;
+				else if(name.size() == 5 && name.rfind("knob", 0) == 0)
+					m_heldKnob = down ? name[4] - 'A' : -1;
+				return true;
+			}
+			// MD-043: KIT > LOAD KIT, the list opens on the current kit, its first entry is the UNDO KIT
+			if(_key == "kit") { m_kitMenu = 1; return true; }
+			if(_key == "exit") { m_kitMenu = 0; return true; }
+			if(_key == "up" || _key == "down")
+			{
+				if(m_kitMenu == 2)
+					m_kitCursor = std::clamp(m_kitCursor + (_key == "up" ? -1 : 1), 0, 64);
+				return true;
+			}
+			if(_key == "enter")
+			{
+				if(m_kitMenu == 1) { m_kitMenu = 2; m_kitCursor = m_kit + 1; return true; }
+				if(m_kitMenu == 2)
+				{
+					if(m_kitCursor == 0)
+					{
+						m_kit = m_undoSlot;
+						m_working = m_undo;
+						m_working.position = m_undoSlot;
+					}
+					else
+						loadKit(static_cast<uint8_t>(m_kitCursor - 1));
+				}
+				m_kitMenu = 0;
+				return true;
+			}
+			if(_key.rfind("trig", 0) == 0)
+			{
+				if(m_recording && m_playing)
+					m_patterns[m_pattern] = ed::withTrig(m_patterns[m_pattern], static_cast<size_t>(std::atoi(_key.c_str() + 4) - 1), static_cast<size_t>(m_step), true);
+				return true;
+			}
+			// REC while recording is PLAY: recording off, the pattern plays on (mdDeskMachine.cpp cmdRecord)
+			if(_key == "play" && m_recording)
+			{
+				m_recording = false;
+				return true;
+			}
+			if(_key == "recordPlay")
+				m_recording = true;
+			else if(_key == "stop")
+				m_recording = false;
+			// PLAY: starts; while playing it pauses, while paused it goes on (the machine's own pause)
+			if(_key == "play" && m_playing)
+			{
+				m_playing = false;
+				m_paused = true;
+			}
+			else if(_key == "play" && m_paused)
+			{
+				m_playing = true;
+				m_paused = false;
+				m_stepAt = nowMs();
+			}
+			else if(_key == "play" || _key == "recordPlay")
+			{
+				m_playing = true;
+				m_paused = false;
 				m_step = 0;
+				m_songPos = 0;
 				m_stepAt = nowMs();
 			}
 			else if(_key == "stop")
-				m_playing = false;
+			{
+				m_playing = m_paused = false;
+				m_step = m_songPos = 0;
+				// MD-099: the panel's STOP changes to a pattern cued while playing (measured, gapProbesFirmwareTest w12stop)
+				if(m_queued >= 0)
+				{
+					loadPattern(static_cast<uint8_t>(m_queued));
+					m_queued = -1;
+				}
+			}
 			else if(_key == "bankGroup")
 				m_bankGroup = 1 - m_bankGroup;
+			else if(_key == "page")	// SYNTHESIS / EFFECTS / ROUTING
+				m_knobPage = (m_knobPage + 1) % 3;
 			else if(_key.rfind("chain:", 0) == 0)	// chain:<bank>:<trig>,<trig>,...: BANK held, the TRIGs (mdDeskChain.cpp)
 			{
 				const auto colon = _key.find(':', 6);
@@ -421,14 +634,19 @@ namespace
 		std::array<ed::MdSong, ed::MdSong::g_slots> m_songs;
 		std::array<ed::MdGlobal, ed::MdGlobal::g_slots> m_globals;
 		ed::MdKit m_working;
+		ed::MdKit m_undo;			// the UNDO KIT and the slot it came from
+		uint8_t m_undoSlot = 0;
+		int m_kitMenu = 0, m_kitCursor = 0;	// 1 the KIT window, 2 its LOAD KIT list
 		ed::MdSampleBank m_samples;
 		ed::AuditionStatus m_audition;
 		uint64_t m_auditionId = 0;
 		double m_auditionEnds = 0;
 		mdDesk::Chain m_chain;
 		uint8_t m_pattern = 0, m_kit = 0, m_song = 0, m_global = 0, m_track = 0;
-		bool m_songMode = false, m_playing = false;
-		int m_mutes = 0, m_step = 0, m_bankGroup = 0;
+		int m_queued = -1;	// a LOAD PATTERN while playing: switched at the pattern's end or STOP
+		bool m_songMode = false, m_playing = false, m_paused = false, m_recording = false, m_exitHeld = false;
+		int m_heldTrig = -1, m_heldKnob = -1, m_knobPage = 0;
+		int m_mutes = 0, m_step = 0, m_bankGroup = 0, m_songPos = 0;
 		double m_stepAt = 0, m_memoryAt = -1000;
 		std::vector<Bytes> m_replies;
 	};
@@ -437,6 +655,8 @@ namespace
 	// The fake MM OS 1.32B (as mmDeskTest's FakeMachine, grown): dumps are taken on SYSEX RECV only (the GLOBAL menu's
 	// screen the desk's key macro opens), requests and status answered, LOAD PATTERN / KIT, SAVE KIT, SET ACTIVE GLOBAL,
 	// the working kit (parameter changes and machine assigns move it; memory shows it), the mutes and the transport.
+	void toPage(const Value& _m);
+
 	class FakeMm
 	{
 	public:
@@ -488,28 +708,38 @@ namespace
 				m_globals[g] = ed::mmFactoryGlobal(g);
 			m_kit = m_patterns[0].kit & 127;
 			m_working = m_kits[m_kit];
+			m_undoSlot = static_cast<uint8_t>((m_kit + 1) & 127);
+			m_undo = m_kits[m_undoSlot];
 		}
 
 		mmDesk::DevicePort port()
 		{
 			mmDesk::DevicePort p;
-			p.sendSysex = [this](const Bytes& _m) { take(_m); };
+			p.sendSysex = [this](const Bytes& _m) { wire("sysex", _m); take(_m); };
 			p.sendParam = [this](const uint8_t _t, const uint8_t _p, const uint8_t _i, const uint8_t _v)
 			{
 				if(_t >= 6 || _i >= 8)
 					return;
+				if(const auto cc = deskWire::mm::param(m_baseCh, _t, _p, _i, _v))
+					wire("cc", *cc);
 				if(_p == 8 && _i == 0)	// the track's mute (mmDeskCommands.cpp)
 					m_mutes = _v ? (m_mutes | (1 << _t)) : (m_mutes & ~(1 << _t));
 				else if(_p == 7 && _i == 0)
 					m_working.levels[_t] = _v;
 				else if(_p < 7)
+				{
 					m_working.tracks[_t].pages[_p][_i] = _v;
+					lockLive(_t, _p, _i, _v);
+				}
 			};
 			// NRPN: a track's MIDI page (0x38 +) and its multi envelope (0x40 +), mmDeskDelivery.cpp
+			p.baseChannel = [this](const uint8_t _ch) { m_baseCh = _ch; };
 			p.sendNrpn = [this](const uint8_t _t, const uint8_t _p, const uint8_t _v)
 			{
 				if(_t >= 6)
 					return;
+				for(const auto& m : deskWire::mm::nrpn(m_baseCh, _t, _p, _v))
+					wire("nrpn", m);
 				if(_p >= 0x38 && _p < 0x40)
 					m_working.tracks[_t].midi[_p - 0x38] = _v;
 				else if(_p >= 0x40 && _p < 0x46)
@@ -525,7 +755,7 @@ namespace
 				{
 					m_chain = {};
 					m_pattern = list[0];
-					loadKit(m_patterns[m_pattern].kit);
+					recallKit(m_patterns[m_pattern].kit);
 				}
 				else
 				{
@@ -535,9 +765,86 @@ namespace
 				}
 				return true;
 			};
-			p.sendNote = [](uint8_t, uint8_t, uint8_t) {};
+			// wave 7: STEP RECORDING writes a played note (any channel here) to the focus track at the cursor, and moves on
+			p.sendNote = [this](const uint8_t _ch, const uint8_t _note, const uint8_t _velocity)
+			{
+				if(const auto n = deskWire::note(_ch, _note, _velocity))
+					wire("note", *n);
+				if(m_recording != 3 || !_velocity || m_stepCursor < 0)
+					return;
+				setNote(m_focus, m_stepCursor, _note);
+				m_stepCursor = (m_stepCursor + 1) % std::max<int>(1, m_patterns[m_pattern].length);
+			};
+			p.sendMidi = [this](const Bytes& _m) { realtime(_m); };
 			p.nowMs = [] { return nowMs(); };
 			return p;
+		}
+
+		// 0.6 slice 5 MM: every message the core hands the device edge, as the wire engine would put it on the cable (the base
+		// channel from baseChannel, deskWire's CC / NRPN / note encoders): {type: "wire", kind, b: the first 16 bytes, n: its
+		// length}. The page ignores the type; a journey listens to it (Bridge.onMessage) to check the CC number and the channel.
+		void wire(const char* _kind, const Bytes& _b)
+		{
+			Value m = Value::object();
+			m.set("type", "wire");
+			m.set("kind", _kind);
+			Value b = Value::array();
+			for(size_t i = 0; i < _b.size() && i < 16; ++i)
+				b.push(Value(static_cast<int>(_b[i])));
+			m.set("b", std::move(b));
+			m.set("n", static_cast<int>(_b.size()));
+			toPage(m);
+		}
+
+		// slice 5 (MM-082, MM-207): LIVE RECORDING plays and a value the editor sends (a CC) is locked on the step that plays when it
+		// arrives, a step without a trig included (mmDeskFirmwareTest reclock): the parameter's row is made when it is new (rows
+		// sit in track, page, parameter order), 62 at most
+		void lockLive(const uint8_t _t, const uint8_t _pg, const uint8_t _i, const uint8_t _v)
+		{
+			if(m_recording != 2 || !m_running)
+				return;
+			// the track's CC reaches the machine only on a channel it plays (as MmMachine::noteRecLock: ChannelReach)
+			if(!ed::mmTrackChannel(m_globals[m_global & 7], _t).has_value())
+				return;
+			auto& p = m_patterns[m_pattern];
+			const ed::MmLockParam param{_t, _pg, _i};
+			int row = ed::mmLockRow(p, param);
+			if(row < 0)
+			{
+				if(p.lockRowCount >= ed::MmPattern::g_lockRows)
+					return;
+				p.lockMasks[_t][_pg] = static_cast<uint8_t>(p.lockMasks[_t][_pg] | (1u << _i));
+				row = ed::mmLockRow(p, param);
+				if(row < 0)
+					return;
+				for(int k = static_cast<int>(ed::MmPattern::g_lockRows) - 1; k > row; --k)
+					p.lockRows[static_cast<size_t>(k)] = p.lockRows[static_cast<size_t>(k) - 1];
+				p.lockRows[static_cast<size_t>(row)].fill(0xff);
+				++p.lockRowCount;
+			}
+			p.lockRows[static_cast<size_t>(row)][static_cast<size_t>(m_step) % ed::MmPattern::g_steps] = _v;
+		}
+
+		// a step of track _t: a note (0-127) or none (-1), as the machine's recordings write it (trigs and pitch)
+		void setNote(const int _t, const int _s, const int _note)
+		{
+			auto& p = m_patterns[m_pattern];
+			const auto bit = ed::mmStepBit(static_cast<size_t>(_s));
+			for(auto* m : {&p.amp, &p.filter, &p.lfo, &p.pitch})
+				(*m)[static_cast<size_t>(_t)] = _note >= 0 ? ((*m)[static_cast<size_t>(_t)] | bit) : ((*m)[static_cast<size_t>(_t)] & ~bit);
+			p.notes[static_cast<size_t>(_t)][static_cast<size_t>(_s)] = _note >= 0 ? static_cast<uint8_t>(_note) : ed::MmPattern::g_noNote;
+			// a step written or erased loses its chord notes (they need the trig, and a written note is one note)
+			p.chord[static_cast<size_t>(_t)] &= ~bit;
+			size_t kept = 0;
+			for(size_t i = 0; i < p.chordNoteCount && i < p.chordNotes.size(); ++i)
+			{
+				const auto e = ed::mmNoteEntry(p.chordNotes[i]);
+				if(e.track != _t || e.step != _s)
+					p.chordNotes[kept++] = p.chordNotes[i];
+			}
+			for(size_t i = kept; i < p.chordNoteCount && i < p.chordNotes.size(); ++i)
+				p.chordNotes[i] = 0;
+			p.chordNoteCount = static_cast<uint8_t>(kept);
 		}
 
 		void step(mmDesk::Desk& _desk)
@@ -550,8 +857,11 @@ namespace
 			if(m_running && now - m_stepAt >= 125 * g_timeScale)
 			{
 				m_stepAt = now;
-				m_step = (m_step + 1) % 16;
+				m_step = m_songMode ? songLocate(++m_songPos).second : (m_step + 1) % 16;
 				++m_blocks;
+				// wave 7: EXIT held in LIVE RECORDING: the focus track's note on the step that plays goes
+				if(m_recording == 2 && m_exitHeld)
+					setNote(m_focus, m_step, -1);
 			}
 			mmDesk::Telemetry t;
 			t.valid = true;
@@ -563,10 +873,13 @@ namespace
 			t.recvActive = m_screen == mmDesk::Screen::GlobalEdit;
 			t.tempo = m_tempo;
 			t.mutes = m_mutes;
-			t.recording = 0;
+			t.recording = m_recording;
+			t.stepCursor = m_recording == 3 ? m_stepCursor : -1;
 			t.bankGroup = m_bankGroup;
 			t.chainKnown = true;
 			t.chain = m_chain;
+			t.songRow = m_songMode ? (m_running ? songLocate(m_songPos).first : 0) : -1;
+			t.songSteps = m_songMode && m_running ? m_songPos : -1;	// MM-271: the song's played steps
 			_desk.onTelemetry(t);
 			if(now - m_memoryAt >= 32)
 			{
@@ -580,13 +893,28 @@ namespace
 		}
 
 	private:
+		uint8_t m_baseCh = 0;
 		void reply(Bytes _m) { m_replies.push_back(std::move(_m)); }
 	public:
 		// replies waiting: the host steps again at once (a background load is a request and its reply, back to back)
 		bool busy() const { return !m_replies.empty(); }
 	private:
+		// a pattern recalls its kit, but the same kit is not read again: the working kit keeps its edits (the firmware does:
+		// mmDeskFirmwareTest machine, "another pattern with the same kit"; MM manual 1-18)
+		void recallKit(const uint8_t _k)
+		{
+			if((_k & 127) != m_kit)
+				loadKit(_k);
+		}
+
 		void loadKit(const uint8_t _k)
 		{
+			// MM-102: unsaved edits go to the UNDO KIT (manual 1-20; gapProbesFirmwareTest w12undo)
+			if(!(m_working == m_kits[m_kit]))
+			{
+				m_undo = m_working;
+				m_undoSlot = m_kit;
+			}
 			m_kit = _k & 127;
 			m_working = m_kits[m_kit];
 		}
@@ -605,7 +933,8 @@ namespace
 				++m_recvTaken;
 				if(cmd == 0x50) { if(const auto g = ed::decodeMmGlobal(_m)) m_globals[g->position & 7] = *g; }
 				else if(cmd == 0x52) { if(const auto k = ed::decodeMmKit(_m)) { m_kits[k->position & 127] = *k; if((k->position & 127) == m_kit) m_working = *k; } }
-				else if(cmd == 0x67) { if(const auto p = ed::decodeMmPattern(_m)) m_patterns[p->position & 127] = *p; }
+				else if(cmd == 0x67) { if(const auto p = ed::decodeMmPattern(_m)) { const bool relink = (p->position & 127) == m_pattern && p->kit != m_patterns[m_pattern].kit;
+					m_patterns[p->position & 127] = *p; if(relink) loadKit(p->kit); } }	// MM-095: a new kit over the pattern that plays is loaded at once (measured)
 				else if(const auto s = ed::decodeMmSong(_m)) m_songs[s->position % ed::MmSong::g_slots] = *s;
 				return;
 			}
@@ -616,11 +945,16 @@ namespace
 			case 0x68: reply(ed::encodeMmPattern(m_patterns[v & 127])); return;
 			case 0x6a: reply(ed::encodeMmSong(m_songs[v % ed::MmSong::g_slots])); return;
 			case 0x56: m_global = v & 7; return;
-			case 0x57: m_chain = {}; m_pattern = v & 127; loadKit(m_patterns[m_pattern].kit); return;
+			case 0x57: m_chain = {}; m_pattern = v & 127; recallKit(m_patterns[m_pattern].kit); return;
 			case 0x58: loadKit(v); return;
-			case 0x59: { auto k = m_working; k.position = v & 127; m_kits[v & 127] = k; m_kit = v & 127; return; }
+			case 0x59: { if((v & 127) != m_kit) { m_undo = m_kits[v & 127]; m_undoSlot = v & 127; }	// the overwritten kit: the UNDO KIT
+				auto k = m_working; k.position = v & 127; m_kits[v & 127] = k; m_kit = v & 127; return; }
 			case 0x6c: m_song = v % ed::MmSong::g_slots; return;
 			case 0x6d: return;
+			case 0x5e:	// a DigiPRO waveform: answered when used (waveforms 1 and 4 here), else nothing (P4)
+				if(v == 0 || v == 3)
+					reply({0xf0, 0x00, 0x20, 0x3c, 0x03, 0x00, 0x5d, 0x01, 0x01, v, 0, 0, 0, 0, static_cast<uint8_t>(0x10 + v), 0, 0, 0xf7});
+				return;
 			case 0x5b: if(_m.size() >= 11 && v < 6) m_working.machines[v] = _m[8]; return;
 			case 0x61: if(_m.size() >= 10) m_tempo = (v << 7) | _m[8]; return;	// TEMPO, BPM x 24
 			case 0x5c:	// the outputs, and an FX machine's input (any other's cleared), as OS 1.32B stores them (elektronData::mmSetKitInput)
@@ -643,6 +977,7 @@ namespace
 				case 0x08: value = m_song; break;
 				case 0x10: value = m_songMode ? 1 : 0; break;
 				case 0x20: value = m_poly ? 1 : 0; break;
+				case 0x22: value = static_cast<uint8_t>(std::max(0, m_focus)); break;	// the track in focus (0.6 wave 9)
 				default: break;
 				}
 				reply({0xf0, 0x00, 0x20, 0x3c, 0x03, 0x00, 0x72, v, static_cast<uint8_t>(value & 0x7f), 0xf7});
@@ -655,7 +990,7 @@ namespace
 				{
 				case 0x01: m_global = _m[8] & 7; break;
 				case 0x02: loadKit(_m[8]); break;
-				case 0x04: m_pattern = _m[8] & 127; loadKit(m_patterns[m_pattern].kit); break;
+				case 0x04: m_pattern = _m[8] & 127; recallKit(m_patterns[m_pattern].kit); break;
 				case 0x08: m_song = _m[8] % ed::MmSong::g_slots; break;
 				case 0x10: m_songMode = _m[8] != 0; break;
 				case 0x20: m_poly = _m[8] != 0; break;
@@ -663,6 +998,57 @@ namespace
 				}
 				return;
 			default: return;
+			}
+		}
+
+		// the row and the step in it that _pos steps into the song play (each row's length times its plays)
+		std::pair<int, int> songLocate(const int _pos) const
+		{
+			const auto& song = m_songs[m_song];
+			int at = 0;
+			for(size_t i = 0; i < song.rows.size(); ++i)
+			{
+				const auto& b = song.rows[i].bytes;
+				if(b[ed::mmSongRow::g_pattern] >= ed::MmSong::g_loop)
+					break;
+				const int len = std::max<int>(1, b[ed::mmSongRow::g_length]), all = len * (b[ed::mmSongRow::g_repeats] + 1);
+				if(_pos < at + all)
+					return {static_cast<int>(i), (_pos - at) % len};
+				at += all;
+			}
+			return {0, 0};
+		}
+
+		// wave 2: with TRANSPORT IN = ACCEPT, MIDI Stop holds the step, Continue goes on, a song position (stopped) sets where;
+		// in SONG mode the row that holds it starts at its first step (P1, internal clock). IGNORE: none of them does anything.
+		void realtime(const Bytes& _m)
+		{
+			if(_m.empty() || !m_globals[m_global & 7].transportIn)
+				return;
+			if(_m[0] == 0xfc && m_running)
+			{
+				m_running = false;
+				m_paused = true;
+			}
+			else if(_m[0] == 0xfb && !m_running)
+			{
+				m_running = true;
+				m_paused = false;
+				m_stepAt = nowMs();
+			}
+			else if(_m[0] == 0xf2 && _m.size() == 3 && !m_running)
+			{
+				const int pos = _m[1] | (_m[2] << 7);
+				if(m_songMode)
+				{
+					const auto [row, inRow] = songLocate(pos);
+					m_songPos = pos - inRow;
+					m_step = 0;
+					(void)row;
+				}
+				else
+					m_step = pos % 16;
+				m_paused = true;
 			}
 		}
 
@@ -686,18 +1072,83 @@ namespace
 						m_mutes ^= 1 << (6 + static_cast<int>(k) - static_cast<int>(mmDesk::Key::Trig9));
 				return true;
 			}
+			// MM-102: KIT, its LOAD KIT list (opens on the current kit), the first entry is the UNDO KIT
+			if(!_keys.empty() && _keys[0] == mmDesk::Key::Kit)
+			{
+				int cursor = -1;
+				for(const auto k : _keys)
+				{
+					if(k == mmDesk::Key::Enter && cursor < 0)
+						cursor = m_kit + 1;
+					else if(k == mmDesk::Key::Up && cursor >= 0)
+						cursor = std::max(0, cursor - 1);
+					else if(k == mmDesk::Key::Down && cursor >= 0)
+						cursor = std::min(128, cursor + 1);
+					else if(k == mmDesk::Key::Enter && cursor == 0)
+					{
+						m_kit = m_undoSlot;
+						m_working = m_undo;
+						m_working.position = m_undoSlot;
+					}
+					else if(k == mmDesk::Key::Enter)
+						loadKit(static_cast<uint8_t>(cursor - 1));
+				}
+				return true;
+			}
 			for(const auto k : _keys)
 			{
+				using K = mmDesk::Key;
+				// wave 7: the recording modes as the machine's keys move them (mmEditorProbeFirmwareTest recording), the focus,
+				// EXIT held, STEP RECORDING's keys
+				if(k >= K::Track1 && k <= K::Track6)
+					m_focus = static_cast<int>(k) - static_cast<int>(K::Track1);
+				else if(k == K::ExitDown || k == K::ExitUp)
+					m_exitHeld = k == K::ExitDown;
+				else if(k == K::Record)
+					m_recording = m_recording == 0 ? 1 : m_recording == 2 ? 1 : 0;
+				else if(k == K::StepRecord)
+				{
+					m_recording = 3;
+					m_stepCursor = 0;
+					m_running = m_paused = false;
+				}
+				else if(m_recording == 3 && (k == K::Left || k == K::Right || k == K::Enter))
+				{
+					const int len = std::max<int>(1, m_patterns[m_pattern].length);
+					if(k == K::Enter)
+						setNote(m_focus, m_stepCursor, -1);
+					m_stepCursor = (m_stepCursor + (k == K::Left ? len - 1 : 1)) % len;
+				}
+				if(k == K::LiveRecord)
+					m_recording = 2;
+				else if(k == K::Stop && m_recording == 2)
+					m_recording = 0;
 				if(k == mmDesk::Key::BankGroup)
 					m_bankGroup = 1 - m_bankGroup;
-				if(k == mmDesk::Key::Play || k == mmDesk::Key::LiveRecord)
+				// PLAY: starts; while playing it pauses, while paused it goes on (the machine's own pause)
+				if(k == mmDesk::Key::Play && m_running)
+				{
+					m_running = false;
+					m_paused = true;
+				}
+				else if(k == mmDesk::Key::Play && m_paused)
 				{
 					m_running = true;
-					m_step = 0;
+					m_paused = false;
+					m_stepAt = nowMs();
+				}
+				else if(k == mmDesk::Key::Play || k == mmDesk::Key::LiveRecord)
+				{
+					m_running = true;
+					m_paused = false;
+					m_step = m_songPos = 0;
 					m_stepAt = nowMs();
 				}
 				else if(k == mmDesk::Key::Stop)
-					m_running = false;
+				{
+					m_running = m_paused = false;
+					m_step = m_songPos = 0;
+				}
 				else if(k == mmDesk::Key::Exit)
 					m_screen = mmDesk::Screen::Main;
 			}
@@ -709,10 +1160,14 @@ namespace
 		std::array<ed::MmSong, ed::MmSong::g_slots> m_songs;
 		std::array<ed::MmGlobal, ed::MmGlobal::g_slots> m_globals;
 		ed::MmKit m_working;
+		ed::MmKit m_undo;			// the UNDO KIT and the slot it came from
+		uint8_t m_undoSlot = 1;
 		mmDesk::Chain m_chain;
 		uint8_t m_pattern = 0, m_kit = 0, m_song = 0, m_global = 0;
-		bool m_songMode = false, m_running = false, m_poly = false;
-		int m_mutes = 0, m_step = 0, m_bankGroup = 0, m_tempo = 120 * 24;
+		bool m_songMode = false, m_running = false, m_poly = false, m_paused = false;
+		int m_mutes = 0, m_step = 0, m_bankGroup = 0, m_tempo = 120 * 24, m_songPos = 0;
+		int m_recording = 0, m_stepCursor = 0, m_focus = 0;	// 0 off, 1 grid, 2 live, 3 step; the cursor; the track in focus
+		bool m_exitHeld = false;
 		uint64_t m_blocks = 0;
 		uint32_t m_recvTaken = 0;
 		mmDesk::Screen m_screen = mmDesk::Screen::Main;
@@ -745,11 +1200,76 @@ namespace
 		toPage(deskCore::resultMessage(_message, _ok ? std::vector<std::string>{} : std::vector<std::string>{_note}, _note));
 	}
 
-	template<typename DeskT> void hostMessage(DeskT& _desk, const Value& _message, double& _gainDb)
+	// I-024: the machine memory as the plug-in publishes it (machineMemory): KEEP MEMORY on, a file saved
+	struct StubMemory
 	{
-		if(_desk.onPageMessage(_message))
-			return;
+		bool keep = true;
+		bool saved = true;
+	} g_memory;
+
+	void publishMemory()
+	{
+		Value m = Value::object();
+		m.set("type", "machineMemory");
+		m.set("keep", g_memory.keep);
+		m.set("available", true);
+		m.set("saved", g_memory.saved);
+		m.set("note", "");
+		toPage(m);
+	}
+
+	// The .syx Import SysEx… opens in the page tier: GEARMULATOR_MDMM_SYX_FILE, else two kits named IMPORT 1 and IMPORT 2
+	// in K01 and K02 and two patterns (A01, A02) with trigs on every step of track 1, from the committed test dumps.
+	Bytes stubSyx(const bool _mm)
+	{
+		if(const char* f = std::getenv("GEARMULATOR_MDMM_SYX_FILE"); f && *f)
+		{
+			std::ifstream in(f, std::ios::binary);
+			if(in)
+				return {std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
+		}
+		Bytes out;
+		const auto add = [&out](const Bytes& _m) { out.insert(out.end(), _m.begin(), _m.end()); };
+		for(uint8_t i = 0; i < 2; ++i)
+		{
+			if(_mm)
+			{
+				auto k = *ed::decodeMmKit(load(i ? "mm/programmed-kit-001.syx" : "mm/programmed-kit-000.syx"));
+				k.position = i;
+				setName(k.name, "IMPORT " + std::to_string(i + 1));
+				add(ed::encodeMmKit(k));
+				auto p = *ed::decodeMmPattern(load("mm/programmed-pattern-001.syx"));
+				p.position = i;
+				p.kit = i;
+				add(ed::encodeMmPattern(p));
+			}
+			else
+			{
+				auto k = *ed::decodeMdKit(load(i ? "programmed_kit_1.syx" : "programmed_kit_0.syx"));
+				k.position = i;
+				setName(k.name, "IMPORT " + std::to_string(i + 1));
+				add(ed::encodeMdKit(k));
+				auto p = *ed::decodeMdPattern(load("programmed_pattern_1.syx"));
+				p.position = i;
+				p.kit = i;
+				p.length = 16;
+				p.trigs.fill(0);
+				p.trigs[0] = 0xffff;
+				add(ed::encodeMdPattern(p));
+			}
+		}
+		return out;
+	}
+
+	template<typename DeskT> void hostMessage(DeskT& _desk, mdJucePlugin::SyxWork<DeskT>& _syx, const Value& _message, double& _gainDb)
+	{
 		const auto op = deskCore::opOf(_message);
+		if(_desk.onPageMessage(_message))
+		{
+			if(op == "ready")
+				publishMemory();
+			return;
+		}
 		const auto* row = deskHost::commands().find(op);
 		if(!row)
 		{
@@ -761,10 +1281,58 @@ namespace
 			reply(_message, false, errors.front());
 			return;
 		}
+		// wave 6: the session's SysEx work, as the plug-in runs it
+		if(_syx.handle(_desk, _message, reply, toPage))
+			return;
+		constexpr bool mm = std::is_same_v<DeskT, mmDesk::Desk>;
+		if(op == "chooseSyx")
+		{
+			reply(_message, true, "");
+			const char* f = std::getenv("GEARMULATOR_MDMM_SYX_FILE");
+			toPage(_syx.open(_desk, stubSyx(mm), f && *f ? std::string(f).substr(std::string(f).find_last_of('/') + 1) : std::string("page-tier.syx")));
+			return;
+		}
+		if(op == "syxExport")
+		{
+			reply(_message, true, "");
+			using Work = mdJucePlugin::SyxWork<DeskT>;
+			const auto r = Work::exportRequest(_message);
+			const auto write = [all = r.all](const Bytes& _bytes, const std::string& _words)
+			{
+				const auto path = std::string(std::getenv("TMPDIR") ? std::getenv("TMPDIR") : "/tmp") + "/deskStubHost-export.syx";
+				std::ofstream o(path, std::ios::binary);
+				o.write(reinterpret_cast<const char*>(_bytes.data()), static_cast<std::streamsize>(_bytes.size()));
+				Value m = Value::object();
+				m.set("type", "syxExport");
+				m.set("ok", !_bytes.empty());
+				m.set("running", false);
+				m.set("text", _bytes.empty() ? std::string("Nothing to write: the editor holds none of what was chosen.")
+					: "Wrote page-tier.syx (" + std::to_string(_bytes.size()) + " bytes): " + (all ? "every document the editor holds (" + _words + ")." : _words + "."));
+				toPage(m);
+			};
+			if(r.waves)
+				_syx.exportStart(_desk, r, write);
+			else
+				write(Work::exportBytes(_desk, r), Work::exportWords(_desk, r));
+			return;
+		}
+		if(op == "machineReset")
+		{
+			reply(_message, false, "The factory reset needs the plug-in (a second machine from the ROM): not in the page tier.");
+			return;
+		}
 		if(op == "outputGain")
 			if(const auto* db = _message.find("db"); db && db->isNumber())
 				_gainDb = db->asNumber();
-		reply(_message, true, "");
+		reply(_message, true, op == "memoryFactory" ? "The machine starts from factory memory." : "");
+		if(op == "memoryKeep" || op == "memoryFactory")
+		{
+			if(op == "memoryKeep")
+				g_memory.keep = _message.find("on")->asBool();
+			else
+				g_memory.saved = false;
+			publishMemory();
+		}
 	}
 
 	void periodic(const double _now, double& _cpuAt, double& _levelAt, const double _gainDb)
@@ -808,6 +1376,8 @@ namespace
 	template<typename DeskT, typename Fake> int serve(DeskT& _desk, Fake& _fake)
 	{
 		double cpuAt = -1000, levelAt = -1000, gainDb = 0;
+		mdJucePlugin::SyxWork<DeskT> syx;
+		_desk.setSysexTap([&syx](const Bytes& _m) { syx.onMachineSysex(_m); });
 		std::string pending;
 		bool open = true;
 		while(open)
@@ -834,10 +1404,15 @@ namespace
 						continue;
 					}
 					for(const auto& m : batch->asArray())
-						hostMessage(_desk, m, gainDb);
+						hostMessage(_desk, syx, m, gainDb);
 				}
 			}
 			_fake.step(_desk);
+			if(syx.running() && _desk.lifecycle() == deskCore::Lifecycle::Ready)
+			{
+				syx.step(_desk, nowMs(), false, toPage);
+				_desk.flush();
+			}
 			if(_desk.pageSeen())
 				periodic(nowMs(), cpuAt, levelAt, gainDb);
 			flushOut();

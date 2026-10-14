@@ -17,7 +17,10 @@ namespace md
 	// One TRIG key is a pattern pick (it ends a chain). Both models (MM-P8: the Monomachine's
 	// BANK keys, the same TRIG rows).
 	// "hold:function" and "release:function": FUNCTION down, and up again later (Control All, manual
-	// p.37: FUNCTION held while a DATA ENTRY knob turns moves that knob on every track).
+	// p.37: FUNCTION held while a DATA ENTRY knob turns moves that knob on every track). The same for
+	// "exit" and "trig1".."trig16" (0.6 wave 7: EXIT/NO and a TRIG key held while live recording erase that
+	// track's trigs as they play, MD manual p.40; EXIT held alone, the Monomachine's, manual 1-49).
+	// "kit", "enter", "exit", "up", "down": those keys pressed once (0.6 wave 12: KIT > LOAD KIT > UNDO KIT).
 	// Empty if unknown.
 	std::vector<PanelPacket> panelKeySequence(MachineModel _model, const std::string& _key);
 

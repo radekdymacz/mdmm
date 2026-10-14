@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>13. Parameter locks · Monomachine Editor guide</title>
+<meta name="description" content="Give a parameter its own value on single steps, draw the values in the lock lane, and record them while the pattern plays.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/mm/13-parameter-locks/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261014b">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>@page { @top-left { content: "13. Parameter locks"; } }</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › <a href="/guide/mm/">Monomachine Editor</a> › Parameter locks</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Chapters of the Monomachine Editor guide">
+<p class="gd-side-title"><a href="/guide/mm/">Monomachine Editor guide</a></p>
+<ol class="gd-side-list"><li><a href="/guide/mm/01-introduction-philosophy-highlights/">1. Introduction, philosophy, highlights</a></li>
+<li><a href="/guide/mm/02-user-interface-and-connectors/">2. User interface and connectors</a></li>
+<li><a href="/guide/mm/03-the-lcd-user-interface/">3. The LCD user interface</a></li>
+<li><a href="/guide/mm/04-quick-start/">4. Quick start</a></li>
+<li><a href="/guide/mm/05-monomachine-overview/">5. Monomachine overview</a></li>
+<li><a href="/guide/mm/06-synthesis-arrangement-kits-and-machines/">6. Synthesis arrangement: kits and machines</a></li>
+<li><a href="/guide/mm/07-track-effects/">7. Track effects</a></li>
+<li><a href="/guide/mm/08-low-frequency-oscillators/">8. Low frequency oscillators</a></li>
+<li><a href="/guide/mm/09-additional-kit-settings/">9. Additional kit settings</a></li>
+<li><a href="/guide/mm/10-the-pattern-sequencer-pattern-operation/">10. The pattern sequencer: pattern operation</a></li>
+<li><a href="/guide/mm/11-composing-a-pattern/">11. Composing a pattern</a></li>
+<li><a href="/guide/mm/12-tempo/">12. Tempo</a></li>
+<li class="gd-side-cur"><a href="/guide/mm/13-parameter-locks/" aria-current="page">13. Parameter locks</a><ol class="gd-side-subs"><li><a href="#parameter-locks">PARAMETER LOCKS</a></li><li><a href="#parameter-locks-in-grid-recording-mode">PARAMETER LOCKS IN GRID RECORDING MODE</a></li><li><a href="#parameter-locks-in-live-recording-mode">PARAMETER LOCKS IN LIVE RECORDING MODE</a></li></ol></li>
+<li><a href="/guide/mm/14-advanced-sequencer-control/">14. Advanced sequencer control</a></li>
+<li><a href="/guide/mm/15-additional-sequencer-features/">15. Additional sequencer features</a></li>
+<li><a href="/guide/mm/16-the-midi-sequencer/">16. The MIDI sequencer</a></li>
+<li><a href="/guide/mm/17-the-song-mode/">17. The song mode</a></li>
+<li><a href="/guide/mm/18-routing/">18. Routing</a></li>
+<li><a href="/guide/mm/19-global-settings/">19. Global settings</a></li>
+<li><a href="/guide/mm/20-early-startup-menu-technical-information/">20. Early startup menu, technical information</a></li>
+<li><a href="/guide/mm/21-appendix-a-machine-reference/">21. Appendix A: machine reference</a></li>
+<li><a href="/guide/mm/22-appendix-b-midi-control-reference/">22. Appendix B: MIDI control reference</a></li>
+<li><a href="/guide/mm/23-appendix-c-sysex-reference/">23. Appendix C: SysEx reference</a></li>
+<li><a href="/guide/mm/24-beyond-the-hardware/">24. Beyond the hardware</a></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">13</span><span class="gd-ctitle">Parameter locks</span></h1><p class="gd-cmeta">MM manual pp.1-57, 1-58</p></header>
+<div class="gd-intro gd-prose"><p>A parameter lock gives one parameter a value of its own on one step. The parameter takes the value when that step plays and goes back to the kit value after it. A lock needs a trig: a step without one cannot hold a lock.</p>
+<p>The pattern holds locks for 62 parameters. The count is shared by all twelve tracks. A parameter counts once however many steps lock it. The <b class="gd-ui">Locks</b> field of the LCD shows the count, for example 12/62. When all 62 are used, the editor refuses a new locked parameter and says so. Clear the locks of one parameter to make room.</p></div>
+<section class="gd-sec" id="parameter-locks" aria-labelledby="parameter-locks-h">
+<div class="gd-body gd-prose"><h2 id="parameter-locks-h">PARAMETER LOCKS <a class="gd-anchor" href="#parameter-locks" aria-label="Link to PARAMETER LOCKS">#</a></h2>
+<p class="gd-ref">MM manual p.1-58</p>
+<p>The lock lane is under the piano roll on <b class="gd-ui">Sequence</b>. Press <kbd class="gd-key">[1]</kbd> and select a track.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/mm-lock-lane.webp" aria-label="Open the picture full size: The lock lane"><img src="/guide/shots/mm-lock-lane.webp" width="1440" height="924" alt="The lock lane" loading="lazy"></a><figcaption>The lock lane</figcaption></figure>
+<p>The rail on the left of the lane lists what you can lock. For a synth track the page keys are SYN, AMP, FLT, EFX, LF1, LF2 and LF3. For a MIDI track there is one key, MIDI PAGE. A green light on a page key means the page holds locks. Under the page keys are the parameters of the page. A number on a parameter key counts its locked steps.</p>
+<p>The lane shows one parameter at a time, the one lit in the rail. Each step with a trig has a bar. A dashed line across the lane marks the value of the kit. Hatched steps have no trig.</p>
+</div></section>
+<section class="gd-sec" id="parameter-locks-in-grid-recording-mode" aria-labelledby="parameter-locks-in-grid-recording-mode-h">
+<div class="gd-body gd-prose"><h2 id="parameter-locks-in-grid-recording-mode-h">PARAMETER LOCKS IN GRID RECORDING MODE <a class="gd-anchor" href="#parameter-locks-in-grid-recording-mode" aria-label="Link to PARAMETER LOCKS IN GRID RECORDING MODE">#</a></h2>
+<p class="gd-ref">MM manual p.1-57</p>
+<p>On the machine you hold a trig and turn a knob. In the editor you draw the value in the lane.</p>
+<ol class="gd-steps"><li>Click the page key and the parameter key in the rail.</li><li>Drag across the bars in the lane. Each step with a trig that the pointer crosses takes the value at the height of the pointer. Every lock shows as a bar.</li><li>To move one lock, scroll the wheel over its step. A notch moves the value by 4. Hold <kbd class="gd-key">[⇧]</kbd> for 1. A step with no lock starts from the kit value.</li><li>To draw a straight line of values, hold <kbd class="gd-key">[⇧]</kbd> and drag from the first step to the last. Every step with a trig under the line gets a lock. It is one undo step.</li></ol>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-mm-seq-lock-ramp-erase-wheel.webp" aria-label="Open the picture full size: Locks drawn across the lane"><img src="/guide/shots/e2e-mm-seq-lock-ramp-erase-wheel.webp" width="1440" height="924" alt="Locks drawn across the lane" loading="lazy"></a><figcaption>Locks drawn across the lane</figcaption></figure>
+<p>Every lock of the parameter shows as a bar, so you can read the values of a step at any time. When you change the selected track or the parameter, the lane shows the new one.</p>
+<h4 class="gd-h3" id="remove-locks">Remove locks</h4>
+<ul class="gd-list"><li>Hold <kbd class="gd-key">[⌥]</kbd> and drag across the bars to remove the locks of that parameter on the steps you cross. The bars go.</li><li>Click the bin in the lane header to remove all the locks of the parameter.</li><li>Hold <kbd class="gd-key">[⌥]</kbd> and click the bin to remove every lock of the track.</li><li>Select a step or steps, click the small ⋯ on the selection (or right-click a step) and choose <b class="gd-ui">Clear locks (keep the notes)</b> to remove all the locks of the step, or of the selected steps. The note stays. Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to put them back.</li><li>Select a step and press <kbd class="gd-key">[DELETE]</kbd> or <kbd class="gd-key">[BACKSPACE]</kbd> to clear the step whole, with its note.</li></ul>
+<h4 class="gd-h3" id="lock-the-current-value">Lock the current value</h4>
+<p>On the machine you hold a trig and click a knob: the step keeps the value the knob has now. In the editor:</p>
+<ol class="gd-steps"><li>Click the page key and the parameter key in the rail.</li><li>Select the steps: hold <kbd class="gd-key">[⌘]</kbd> and click a note, or drag on the step ruler.</li><li>Click the lock key in the rail's header, beside the bin. Each selected step with a note gets a lock at the value the kit has now.</li></ol>
+<p>It is one undo step: press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> to take it back. A step without a note cannot hold a lock and is left out. To lock several steps at once, hold <kbd class="gd-key">[⌘]</kbd> and click one note, hold <kbd class="gd-key">[⌘]</kbd> <kbd class="gd-key">[⇧]</kbd> and click a later one, then click the lock key. Every note between them is locked in one undo step.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/e2e-mm-seq-lock-current.webp" aria-label="Open the picture full size: Locking the current value"><img src="/guide/shots/e2e-mm-seq-lock-current.webp" width="1440" height="924" alt="Locking the current value" loading="lazy"></a><figcaption>Locking the current value</figcaption></figure>
+<h4 class="gd-h3" id="copy-a-note-with-its-locks">Copy a note with its locks</h4>
+<p>The locks of a step go with the step when you copy it. Right-click a note with a lock, choose <b class="gd-ui">Copy</b>, right-click an empty step and choose <b class="gd-ui">Paste here</b>. The new step has the pitch and the lock. See &quot;Note copy&quot; in chapter 11.</p>
+<h4 class="gd-h3" id="slide">Slide</h4>
+<p>A small ramp over a note marks a step that glides. Set it with <b class="gd-ui">Slide</b> in the step menu. On a step with a slide, a locked value glides to the next lock instead of jumping. See &quot;Slide&quot; in chapter 15.</p>
+</div></section>
+<section class="gd-sec" id="parameter-locks-in-live-recording-mode" aria-labelledby="parameter-locks-in-live-recording-mode-h">
+<div class="gd-body gd-prose"><h2 id="parameter-locks-in-live-recording-mode-h">PARAMETER LOCKS IN LIVE RECORDING MODE <a class="gd-anchor" href="#parameter-locks-in-live-recording-mode" aria-label="Link to PARAMETER LOCKS IN LIVE RECORDING MODE">#</a></h2>
+<p class="gd-ref">MM manual p.1-58</p>
+<p>While LIVE RECORDING plays (see chapter 11), turn a value on any page. The machine locks it on the step that plays when the value arrives. A step without a trig gets a trigless lock.</p>
+<ol class="gd-steps"><li>Press <kbd class="gd-key">[⌥]</kbd> + <kbd class="gd-key">[SPACE]</kbd> to record live.</li><li>Turn a value, for example the filter <b class="gd-ui">BASE</b> on <b class="gd-ui">Sound</b>.</li><li>The editor marks the step in the trig row and the bar in the lock lane, and says which value it locked and on which step, for example Locks T1 FLT BASE on step 5.</li></ol>
+<p>To tidy up, stop recording and draw the values again in the lock lane.</p>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/mm/12-tempo/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">12. Tempo</span></a><a href="/guide/mm/14-advanced-sequencer-control/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">14. Advanced sequencer control</span></a></nav>
+</article>
+</div>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

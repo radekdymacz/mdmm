@@ -23,11 +23,16 @@ namespace mmDesk
 	// flag or the step advancing: two single steps forward (or a wrap to 0) in a row, each within three step
 	// times at the tempo (a 3/4X pattern included). A stop that resets the step to 0 is one move, so it never
 	// reads as playing.
+	// B-104 (measured, mmDeskFirmwareTest parked): the panel's PLAY pressed as a pause while the panel is on SYSEX RECV
+	// holds the step but leaves the flag at 1, also after the panel leaves SYSEX RECV, until the machine plays on or
+	// stops. So after a pause the editor pressed (paused), "playing" is the step advancing alone, until the step moves
+	// on or the flag reads 0 again.
 	struct StepWatch
 	{
 		int rawStep = -1;
 		int moves = 0;
 		double movedMs = -1e9;
+		bool paused = false;
 	};
 
 	struct StepSeen
@@ -36,6 +41,24 @@ namespace mmDesk
 		bool playing = false;
 		bool stepped = false;	// the step byte changed
 	};
+
+	// B-104: the editor paused it: from now on the step says whether it plays (two moves anew; the flag may stay set)
+	inline StepWatch pausedByEditor(StepWatch _s)
+	{
+		_s.paused = true;
+		_s.moves = 0;
+		return _s;
+	}
+
+	// The editor made it go on from the step it held: the first step forward is playing (the flag can lag a step, and
+	// the page shows the held step until then, so the step after it is the first the playhead shows)
+	inline StepWatch resumedByEditor(StepWatch _s, const double _now)
+	{
+		_s.paused = false;
+		_s.moves = 1;
+		_s.movedMs = _now;
+		return _s;
+	}
 
 	inline StepSeen watchStep(StepWatch _s, const Telemetry& _t, const double _now)
 	{
@@ -53,7 +76,9 @@ namespace mmDesk
 		const bool stepping = _s.moves >= 2 && _now - _s.movedMs < window;
 		if(!stepping && _now - _s.movedMs >= window)
 			_s.moves = 0;
-		r.playing = _t.valid && (_t.running || stepping);
+		if(_s.paused && _t.valid && (stepping || !_t.running))
+			_s.paused = false;
+		r.playing = _t.valid && ((_t.running && !_s.paused) || stepping);
 		r.next = _s;
 		return r;
 	}

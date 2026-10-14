@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>14. Appendix A: machine reference · Machinedrum Editor guide</title>
+<meta name="description" content="Every machine the Machinedrum can load into a track, by family, and where the editor shows it.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/guide/md/14-appendix-a-machine-reference/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261014b">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+<style>@page { @top-left { content: "14. Appendix A: machine reference"; } }</style>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="keep" href="/guide/">Guide</a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="gd-main">
+<div class="gd-page gd-web">
+<nav class="gd-crumbs" aria-label="Breadcrumb"><a href="/guide/">Guide</a> › <a href="/guide/md/">Machinedrum Editor</a> › Appendix A: machine reference</nav>
+<button class="gd-menubtn" type="button" aria-expanded="false" aria-controls="gd-side" hidden>Contents</button>
+<div class="gd-layout">
+<nav class="gd-side" id="gd-side" aria-label="Chapters of the Machinedrum Editor guide">
+<p class="gd-side-title"><a href="/guide/md/">Machinedrum Editor guide</a></p>
+<ol class="gd-side-list"><li><a href="/guide/md/01-introduction-front-panel-and-connectors/">1. Introduction, front panel and connectors</a></li>
+<li><a href="/guide/md/02-lcd-user-interface-and-quick-start/">2. LCD user interface and quick start</a></li>
+<li><a href="/guide/md/03-sound-synthesis-kits/">3. Sound synthesis: kits</a></li>
+<li><a href="/guide/md/04-track-effects/">4. Track effects</a></li>
+<li><a href="/guide/md/05-routing-page/">5. Routing page</a></li>
+<li><a href="/guide/md/06-stereo-master-effects/">6. Stereo master effects</a></li>
+<li><a href="/guide/md/07-lfos/">7. LFOs</a></li>
+<li><a href="/guide/md/08-pattern-sequencer/">8. Pattern sequencer</a></li>
+<li><a href="/guide/md/09-song-mode/">9. Song mode</a></li>
+<li><a href="/guide/md/10-global-settings/">10. Global settings</a></li>
+<li><a href="/guide/md/11-sample-manager-uw-only/">11. Sample manager, UW only</a></li>
+<li><a href="/guide/md/12-early-start-up-menu/">12. Early start-up menu</a></li>
+<li><a href="/guide/md/13-technical-information-mki-vs-mkii/">13. Technical information, MKI vs MKII</a></li>
+<li class="gd-side-cur"><a href="/guide/md/14-appendix-a-machine-reference/" aria-current="page">14. Appendix A: machine reference</a><ol class="gd-side-subs"><li><a href="#trx-machines">TRX MACHINES</a></li><li><a href="#efm-machines">EFM MACHINES</a></li><li><a href="#e12-machines">E12 MACHINES</a></li><li><a href="#p-i-machines">P-I MACHINES</a></li><li><a href="#gnd-machines">GND MACHINES</a></li><li><a href="#inp-machines">INP MACHINES</a></li><li><a href="#mid-machines">MID MACHINES</a></li><li><a href="#ctr-machines">CTR MACHINES</a></li><li><a href="#rom-machines">ROM MACHINES</a></li><li><a href="#ram-machines">RAM MACHINES</a></li><li><a href="#ram-machines-tutorial">RAM MACHINES TUTORIAL</a></li></ol></li>
+<li><a href="/guide/md/15-appendix-b-midi-control-reference/">15. Appendix B: MIDI control reference</a></li>
+<li><a href="/guide/md/16-appendix-c-sysex-reference/">16. Appendix C: sysex reference</a></li>
+<li><a href="/guide/md/17-beyond-the-hardware/">17. Beyond the hardware</a></li></ol>
+<ul class="gd-side-more"><li><a href="/guide/start/">Install and first start</a></li><li><a href="/guide/keys/">Keyboard shortcuts</a></li><li><a href="/guide/">All manuals</a></li></ul>
+</nav>
+<article class="gd-article">
+<header class="gd-chead"><h1><span class="gd-cnum" aria-hidden="true">14</span><span class="gd-ctitle">Appendix A: machine reference</span></h1><p class="gd-cmeta">MD manual pp.A-1 to A-16</p></header>
+<div class="gd-intro gd-prose"><p>A machine is the sound engine of one track. The Machinedrum holds 16 tracks and each one carries one machine at a time. This chapter lists the machines by family, as the machine's own appendix does.</p>
+<p>In the editor you choose a machine on the <b class="gd-ui">Sound</b> workspace. Pick a track on the rail, click the machine key, choose a family, then choose a machine in it. The track takes the machine and the Sound page shows its knobs. <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> takes the choice back. A machine has up to eight knobs, as on the LCD, and the Sound page shows each one in a group with its value box.</p>
+<aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The kit holds the machine of every track, so a machine is saved and loaded with the kit.</p></aside></div>
+<section class="gd-sec" id="trx-machines" aria-labelledby="trx-machines-h">
+<div class="gd-body gd-prose"><h2 id="trx-machines-h">TRX MACHINES <a class="gd-anchor" href="#trx-machines" aria-label="Link to TRX MACHINES">#</a></h2>
+<p class="gd-ref">MD manual pp.A-1</p>
+<p>The TRX family models classic analogue drum voices. Each machine is one drum sound. The Sound workspace shows its knobs in groups, each knob with its own value box. Pitch, decay and ramp sit in the first groups, and tone and clip in the last.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/md-sound-groups.webp" aria-label="Open the picture full size: TRX-BD on the Sound workspace, its knobs in groups with a box under each."><img src="/guide/shots/md-sound-groups.webp" width="1440" height="924" alt="TRX-BD on the Sound workspace, its knobs in groups with a box under each." loading="lazy"></a><figcaption>TRX-BD on the Sound workspace, its knobs in groups with a box under each.</figcaption></figure>
+<table class="gd-table"><thead><tr><th>Machine</th><th>Sound</th></tr></thead><tbody><tr><td>TRX-BD</td><td>Bass drum</td></tr><tr><td>TRX-B2</td><td>Bass drum 2</td></tr><tr><td>TRX-SD</td><td>Snare</td></tr><tr><td>TRX-XT</td><td>Tom</td></tr><tr><td>TRX-CP</td><td>Clap</td></tr><tr><td>TRX-RS</td><td>Rim shot</td></tr><tr><td>TRX-CB</td><td>Cow bell</td></tr><tr><td>TRX-CH</td><td>Closed hi-hat</td></tr><tr><td>TRX-OH</td><td>Open hi-hat</td></tr><tr><td>TRX-CY</td><td>Cymbal</td></tr><tr><td>TRX-MA</td><td>Maracas</td></tr><tr><td>TRX-CL</td><td>Claves</td></tr><tr><td>TRX-XC</td><td>Congas</td></tr></tbody></table>
+</div></section>
+<section class="gd-sec" id="efm-machines" aria-labelledby="efm-machines-h">
+<div class="gd-body gd-prose"><h2 id="efm-machines-h">EFM MACHINES <a class="gd-anchor" href="#efm-machines" aria-label="Link to EFM MACHINES">#</a></h2>
+<p class="gd-ref">MD manual pp.A-4</p>
+<p>The EFM family makes drum sounds by frequency modulation. The knobs sit in groups on the Sound workspace.</p>
+<table class="gd-table"><thead><tr><th>Machine</th><th>Sound</th></tr></thead><tbody><tr><td>EFM-BD</td><td>Bass drum</td></tr><tr><td>EFM-SD</td><td>Snare</td></tr><tr><td>EFM-XT</td><td>Tom</td></tr><tr><td>EFM-CP</td><td>Clap</td></tr><tr><td>EFM-RS</td><td>Rim shot</td></tr><tr><td>EFM-CB</td><td>Cow bell</td></tr><tr><td>EFM-HH</td><td>Hi-hat</td></tr><tr><td>EFM-CY</td><td>Cymbal</td></tr></tbody></table>
+</div></section>
+<section class="gd-sec" id="e12-machines" aria-labelledby="e12-machines-h">
+<div class="gd-body gd-prose"><h2 id="e12-machines-h">E12 MACHINES <a class="gd-anchor" href="#e12-machines" aria-label="Link to E12 MACHINES">#</a></h2>
+<p class="gd-ref">MD manual pp.A-6</p>
+<p>The E12 family is a set of drums and percussion that follow the sound of a 12 bit sampler. The knobs sit in groups on the Sound workspace.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/md-machine-e12.webp" aria-label="Open the picture full size: E12-SD on the Sound workspace with its pitch, envelope, tone and retrig groups."><img src="/guide/shots/md-machine-e12.webp" width="1440" height="924" alt="E12-SD on the Sound workspace with its pitch, envelope, tone and retrig groups." loading="lazy"></a><figcaption>E12-SD on the Sound workspace with its pitch, envelope, tone and retrig groups.</figcaption></figure>
+<table class="gd-table"><thead><tr><th>Machine</th><th>Sound</th></tr></thead><tbody><tr><td>E12-BD</td><td>Bass drum</td></tr><tr><td>E12-SD</td><td>Snare</td></tr><tr><td>E12-HT</td><td>High tom</td></tr><tr><td>E12-LT</td><td>Low tom</td></tr><tr><td>E12-CP</td><td>Clap</td></tr><tr><td>E12-RS</td><td>Rim shot</td></tr><tr><td>E12-CB</td><td>Cow bell</td></tr><tr><td>E12-CH</td><td>Closed hi-hat</td></tr><tr><td>E12-OH</td><td>Open hi-hat</td></tr><tr><td>E12-RC</td><td>Ride</td></tr><tr><td>E12-CC</td><td>Crash</td></tr><tr><td>E12-BR</td><td>Brushed snare</td></tr><tr><td>E12-TA</td><td>Tambourine</td></tr><tr><td>E12-TR</td><td>Triangle</td></tr><tr><td>E12-SH</td><td>Shaker</td></tr><tr><td>E12-BC</td><td>Bongo conga</td></tr></tbody></table>
+</div></section>
+<section class="gd-sec" id="p-i-machines" aria-labelledby="p-i-machines-h">
+<div class="gd-body gd-prose"><h2 id="p-i-machines-h">P-I MACHINES <a class="gd-anchor" href="#p-i-machines" aria-label="Link to P-I MACHINES">#</a></h2>
+<p class="gd-ref">MD manual pp.A-9</p>
+<p>The P-I family is a set of percussion and instrument voices of its own. The knobs sit in groups on the Sound workspace.</p>
+<table class="gd-table"><thead><tr><th>Machine</th><th>Sound</th></tr></thead><tbody><tr><td>P-I-BD</td><td>Bass drum</td></tr><tr><td>P-I-SD</td><td>Snare</td></tr><tr><td>P-I-MT</td><td>Tom (PI-XT)</td></tr><tr><td>P-I-ML</td><td>Metallica</td></tr><tr><td>P-I-MA</td><td>Maracas</td></tr><tr><td>P-I-RS</td><td>Rim shot</td></tr><tr><td>P-I-HH</td><td>Hi-hat</td></tr><tr><td>P-I-RC</td><td>Ride</td></tr><tr><td>P-I-CC</td><td>Crash</td></tr></tbody></table>
+</div></section>
+<section class="gd-sec" id="gnd-machines" aria-labelledby="gnd-machines-h">
+<div class="gd-body gd-prose"><h2 id="gnd-machines-h">GND MACHINES <a class="gd-anchor" href="#gnd-machines" aria-label="Link to GND MACHINES">#</a></h2>
+<p class="gd-ref">MD manual pp.A-11</p>
+<p>The GND family holds plain sources: a sine, noise, an impulse, and an empty machine that makes no sound. The empty machine is in the machine picker.</p>
+<table class="gd-table"><thead><tr><th>Machine</th><th>Sound</th></tr></thead><tbody><tr><td>GND-SIN</td><td>Sinus</td></tr><tr><td>GND-NS</td><td>Noise</td></tr><tr><td>GND-IM</td><td>Impulse</td></tr><tr><td>GND-EMPTY</td><td>Empty machine</td></tr></tbody></table>
+</div></section>
+<section class="gd-sec" id="inp-machines" aria-labelledby="inp-machines-h">
+<div class="gd-body gd-prose"><h2 id="inp-machines-h">INP MACHINES <a class="gd-anchor" href="#inp-machines" aria-label="Link to INP MACHINES">#</a></h2>
+<p class="gd-ref">MD manual pp.A-11</p>
+<p>The INP family does not make a sound of its own. It reacts to the audio that enters the machine at input A or B. A gate opens when the input is loud enough, a filter follower and an envelope follower turn the input level into a moving sound.</p>
+<table class="gd-table"><thead><tr><th>Machine</th><th>Sound</th></tr></thead><tbody><tr><td>INP-GA/GB</td><td>Input gate A/B</td></tr><tr><td>INP-FA/FB</td><td>Input filter follower A/B</td></tr><tr><td>INP-EA/EB</td><td>Input envelope A/B</td></tr></tbody></table>
+</div></section>
+<section class="gd-sec" id="mid-machines" aria-labelledby="mid-machines-h">
+<div class="gd-body gd-prose"><h2 id="mid-machines-h">MID MACHINES <a class="gd-anchor" href="#mid-machines" aria-label="Link to MID MACHINES">#</a></h2>
+<p class="gd-ref">MD manual pp.A-12</p>
+<p>The MID family turns a track into a MIDI controller, one machine for each of the 16 MIDI channels. The Sound workspace shows its knobs as plain knob boxes, with no picture. The routing and effects pages show as groups.</p>
+</div></section>
+<section class="gd-sec" id="ctr-machines" aria-labelledby="ctr-machines-h">
+<div class="gd-body gd-prose"><h2 id="ctr-machines-h">CTR MACHINES <a class="gd-anchor" href="#ctr-machines" aria-label="Link to CTR MACHINES">#</a></h2>
+<p class="gd-ref">MD manual pp.A-12</p>
+<p>The CTR family does not play a sound. It moves the parameters of other tracks or of a master effect. <b class="gd-ui">Control all</b> and <b class="gd-ui">Control 8 parameters</b> move parameters of the other tracks, and their knobs show as plain knob boxes. The other four, Rhythm Echo, Gate Box, Master EQ and Dynamix, move the knobs of that master effect, and their groups show on the Sound workspace.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/md-machine-ctr.webp" aria-label="Open the picture full size: CTR-RE on the Sound workspace, with the delay, modulation, filter and output groups of the Rhythm Echo."><img src="/guide/shots/md-machine-ctr.webp" width="1440" height="924" alt="CTR-RE on the Sound workspace, with the delay, modulation, filter and output groups of the Rhythm Echo." loading="lazy"></a><figcaption>CTR-RE on the Sound workspace, with the delay, modulation, filter and output groups of the Rhythm Echo.</figcaption></figure>
+<table class="gd-table"><thead><tr><th>Machine</th><th>Sound</th></tr></thead><tbody><tr><td>CTR-AL</td><td>Control all</td></tr><tr><td>CTR-8P</td><td>Control 8 parameters</td></tr><tr><td>CTR-RE</td><td>Control Rhythm Echo</td></tr><tr><td>CTR-GB</td><td>Control Gate Box</td></tr><tr><td>CTR-EQ</td><td>Control Master EQ</td></tr><tr><td>CTR-DX</td><td>Control Dynamix</td></tr></tbody></table>
+</div></section>
+<section class="gd-sec" id="rom-machines" aria-labelledby="rom-machines-h">
+<div class="gd-body gd-prose"><h2 id="rom-machines-h">ROM MACHINES <a class="gd-anchor" href="#rom-machines" aria-label="Link to ROM MACHINES">#</a></h2>
+<p class="gd-ref">MD manual pp.A-15</p>
+<p>The ROM machines play the samples held in the machine's own memory. The first 24 play a sample as a one shot, and the second 24 play a sample as a loop, with a linear start and end. The Sound workspace shows a sample screen with <b class="gd-light">&lt;STRT&gt;</b> and <b class="gd-light">&lt;END&gt;</b>, and the <b class="gd-ui">Sampler</b> workspace shows the slots as tiles.</p>
+<figure class="gd-shot"><a class="gd-zoom" href="/guide/shots/md-machine-rom.webp" aria-label="Open the picture full size: ROM-01 on the Sound workspace, with the sample screen and the &lt;STRT&gt; and &lt;END&gt; knobs."><img src="/guide/shots/md-machine-rom.webp" width="1440" height="924" alt="ROM-01 on the Sound workspace, with the sample screen and the &lt;STRT&gt; and &lt;END&gt; knobs." loading="lazy"></a><figcaption>ROM-01 on the Sound workspace, with the sample screen and the &lt;STRT&gt; and &lt;END&gt; knobs.</figcaption></figure>
+<table class="gd-table"><thead><tr><th>Machine</th><th>Sound</th></tr></thead><tbody><tr><td>ROM-1 to ROM-24</td><td>ROM sample player</td></tr><tr><td>ROM-25 to ROM-48</td><td>ROM loop player (linear STRT, END)</td></tr></tbody></table>
+</div></section>
+<section class="gd-sec" id="ram-machines" aria-labelledby="ram-machines-h">
+<div class="gd-body gd-prose"><h2 id="ram-machines-h">RAM MACHINES <a class="gd-anchor" href="#ram-machines" aria-label="Link to RAM MACHINES">#</a></h2>
+<p class="gd-ref">MD manual pp.A-15</p>
+<p>The RAM machines play and record samples in the four RAM slots of the machine.</p>
+<ul class="gd-list"><li><b class="gd-ui">RAM-R1 to R4</b> record. A recorder writes audio from an input or from the main mix to a RAM slot. You set one up on the <b class="gd-ui">Sampler</b> workspace, or on the Sound workspace.</li><li><b class="gd-ui">RAM-P1 to P4</b> play the sample that is in the slot. The Sound workspace shows a sample screen with <b class="gd-light">&lt;STRT&gt;</b> and <b class="gd-light">&lt;END&gt;</b>, and the <b class="gd-ui">Sampler</b> workspace shows the slot as a tile.</li></ul>
+</div></section>
+<section class="gd-sec" id="ram-machines-tutorial" aria-labelledby="ram-machines-tutorial-h">
+<div class="gd-body gd-prose"><h2 id="ram-machines-tutorial-h">RAM MACHINES TUTORIAL <a class="gd-anchor" href="#ram-machines-tutorial" aria-label="Link to RAM MACHINES TUTORIAL">#</a></h2>
+<p class="gd-ref">MD manual pp.A-16</p>
+<p>To record the main output and play it back in a track:</p>
+<ol class="gd-steps"><li>Click the <b class="gd-ui">Sampler</b> tab.</li><li>Click an unused RAM slot.</li><li>Click <b class="gd-ui">Set up sampling</b>. The editor makes a recorder of the main mix in one track, takes that track out of the mix (its <b class="gd-light">&lt;VOL&gt;</b> is 0), and adds a player.</li><li>Click <b class="gd-ui">Input A</b> to record from input A instead. The recorder's <b class="gd-light">&lt;VOL&gt;</b> comes back. Click <b class="gd-ui">Main mix</b> and it is 0 again.</li><li>Click an empty step of the RAM view to put a recorder trig there. Click <b class="gd-ui">Freeze</b> to mute the recorder on the machine. Click <b class="gd-ui">Live</b> and it records again.</li></ol>
+<p>Press <kbd class="gd-key">[⌘]</kbd> + <kbd class="gd-key">[Z]</kbd> three times to put everything as it was before the set up.</p>
+</div></section>
+<nav class="gd-pager" aria-label="Previous and next chapter"><a href="/guide/md/13-technical-information-mki-vs-mkii/" rel="prev"><span class="gd-pdir">Previous chapter</span><span class="gd-ptitle">13. Technical information, MKI vs MKII</span></a><a href="/guide/md/15-appendix-b-midi-control-reference/" rel="next"><span class="gd-pdir">Next chapter</span><span class="gd-ptitle">15. Appendix B: MIDI control reference</span></a></nav>
+</article>
+</div>
+</div>
+</main>
+<footer class="gd-foot">
+  <p>Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This guide is independent and in our own words. <a href="/guide/">Install and first start</a> · <a href="/releases/">Release notes</a> · <a href="/contact/">Contact</a></p>
+</footer>
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>

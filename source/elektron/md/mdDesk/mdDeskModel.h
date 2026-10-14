@@ -20,6 +20,9 @@ namespace mdDesk
 	using CommandTable = deskCore::CommandTable<>;
 	// The table's group column: the kit library and the pattern chooser (mdDeskLibrary.h).
 	constexpr int g_library = 1;
+	// The group of a track's parts (trackCopy, trackPaste, trackClear: COPY / PASTE / CLEAR what): one command may
+	// change the pattern and the kit that plays (deskCore/deskEdits.h trackParts).
+	constexpr int g_track = 2;
 
 	// Control All (manual p.37, DESIGN-edit-flow.md): what a "tweak" command means beyond its change (the
 	// whole working kit). On the emulated machine it is the firmware's own gesture: FUNCTION held, the DATA
@@ -82,7 +85,7 @@ namespace mdDesk
 		static const std::vector<std::string>& asks()
 		{
 			static const std::vector<std::string> a{"breakChain", "discardKit", "loadKit", "reloadKit", "overwriteKit", "overwriteSlot",
-				"clearSlot", "relinkKit"};
+				"clearSlot", "relinkKit", "loadUndoKit"};
 			return a;
 		}
 	};

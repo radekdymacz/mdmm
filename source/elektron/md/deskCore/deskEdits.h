@@ -2,6 +2,7 @@
 
 #include "elektronData/json.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <map>
@@ -283,9 +284,10 @@ namespace deskCore
 	}
 
 	// ---- the library: slot actions over a model's kinds (DESIGN-UNIFY.md 4.2) ----
-	// One shelf a kind of slot (the kits, the patterns): what differs between them and between the machines is data
-	// here (the shelf's functions), the actions are the same. Commands: <kit|pat>Copy {k|p}, Paste {k|p}, CopyTo {from,
-	// to}, Clear {k|p}, kitRename {k, name}. The command table has checked the arguments. A slot write is validated and
+	// One shelf a kind of slot (the kits, the patterns, the songs): what differs between them and between the machines
+	// is data here (the shelf's functions), the actions are the same. Commands: <kit|pat|song|global>Copy {k|p|s|slot}, Paste
+	// {k|p|s|slot}, CopyTo {from, to} (songCopyTo may carry a name: "Save to..."), Clear {k|p|s}, kitRename {k, name},
+	// songRename {s, name}. The command table has checked the arguments. A slot write is validated and
 	// is no change when it is the same; asking before it loses something is the machine's (its review).
 	namespace library
 	{
@@ -374,15 +376,29 @@ namespace deskCore
 		}
 
 		// Writes _src into slot _target; _verb says how the user did it.
+		// _name (a copy that names its target: songCopyTo "Save to...") is the target's name after the write.
 		template<typename M>
-		void place(const Lib<M>& _l, const std::optional<typename M::Document>& _src, const int _target, const char* _verb)
+		void place(const Lib<M>& _l, const std::optional<typename M::Document>& _src, const int _target, const char* _verb,
+			const std::string* _name = nullptr)
 		{
 			const auto dst = _l.at(_target);
 			if(!dst || !_src)
 				return;
 			const auto src = _l.shelf.stored(*_src);
-			_l.r.note = std::string(_verb) + _l.shelf.title(src) + " into " + _l.shelf.label(_target);
-			_l.put(*dst, _l.shelf.placed(src, *dst, _target));
+			auto placed = _l.shelf.placed(src, *dst, _target);
+			if(_name && _l.shelf.renamed)
+			{
+				std::string error;
+				const auto named = _l.shelf.renamed(placed, *_name, error);
+				if(!named)
+				{
+					_l.r.errors.push_back(error);
+					return;
+				}
+				placed = *named;
+			}
+			_l.r.note = std::string(_verb) + _l.shelf.title(_name ? placed : src) + " into " + _l.shelf.label(_target);
+			_l.put(*dst, std::move(placed));
 		}
 
 		template<typename M>
@@ -403,7 +419,9 @@ namespace deskCore
 				_l.r.errors.emplace_back("That is the same slot");
 				return;
 			}
-			place(_l, _l.from(from), to, "Copied ");
+			const auto* name = _l.command.find("name");
+			const auto text = name && name->isString() ? name->asString() : std::string();
+			place(_l, _l.from(from), to, "Copied ", name && name->isString() ? &text : nullptr);
 		}
 
 		template<typename M>
@@ -448,7 +466,8 @@ namespace deskCore
 			static const std::map<std::string, Action> a{
 				{"kitCopy", Action::Copy}, {"kitPaste", Action::Paste}, {"kitCopyTo", Action::CopyTo}, {"kitClear", Action::Clear},
 				{"kitRename", Action::Rename}, {"patCopy", Action::Copy}, {"patPaste", Action::Paste}, {"patCopyTo", Action::CopyTo},
-				{"patClear", Action::Clear}};
+				{"patClear", Action::Clear}, {"songCopy", Action::Copy}, {"songPaste", Action::Paste}, {"songCopyTo", Action::CopyTo},
+				{"songClear", Action::Clear}, {"songRename", Action::Rename}, {"globalCopy", Action::Copy}, {"globalPaste", Action::Paste}};
 			return a;
 		}
 		inline std::vector<std::string> ops()
@@ -481,6 +500,236 @@ namespace deskCore
 			case Action::Rename: rename(l); break;
 			}
 			return r;
+		}
+	}
+}
+
+namespace deskCore
+{
+	// ---- a track's parts: COPY / PASTE / CLEAR what (the machines' SUPER COPY and SUPER CLEAR, DESIGN-machine-menus.md 2) ----
+	// trackCopy {p?, k?, t, what}, trackPaste {p?, k?, to, what}, trackClear {p?, k?, t, what}: the parts of one track
+	// that "what" names (the machine's part names), over the whole track: every step of pattern p, and for the parts
+	// a kit holds the kit that plays (k). Which parts a machine has, and what each one takes, puts and clears, is the
+	// machine's (its Spec: mdDeskEdit.cpp, mmDeskEdit.cpp); naming the parts, the paste targets, what the clipboard
+	// holds and the result's note are here, once. One command is one undo step, however many documents it changes.
+	namespace trackParts
+	{
+		using Value = elektronData::json::Value;
+
+		// Where a part lives: the pattern or the kit that plays.
+		enum class Home : uint8_t { Pattern, Kit };
+		struct Part
+		{
+			const char* name;	// the command's word (and the page's)
+			Home home;
+		};
+		// A set of a machine's parts: bit i = its part i.
+		using Mask = uint32_t;
+		constexpr Mask bit(const size_t _i) { return Mask{1} << _i; }
+
+		inline bool touches(const Mask _m, const std::vector<Part>& _parts, const Home _home)
+		{
+			for(size_t i = 0; i < _parts.size(); ++i)
+				if((_m & bit(i)) && _parts[i].home == _home)
+					return true;
+			return false;
+		}
+
+		// The parts' names, in the machine's order.
+		inline Value names(const Mask _m, const std::vector<Part>& _parts)
+		{
+			Value a = Value::array();
+			for(size_t i = 0; i < _parts.size(); ++i)
+				if(_m & bit(i))
+					a.push(_parts[i].name);
+			return a;
+		}
+
+		// "trigs, accent and locks"
+		inline std::string say(const Mask _m, const std::vector<Part>& _parts)
+		{
+			std::vector<std::string> n;
+			for(size_t i = 0; i < _parts.size(); ++i)
+				if(_m & bit(i))
+					n.emplace_back(_parts[i].name);
+			std::string s;
+			for(size_t i = 0; i < n.size(); ++i)
+				s += (i == 0 ? "" : i + 1 == n.size() ? " and " : ", ") + n[i];
+			return s;
+		}
+
+		// The command's "what": names of the machine's parts, each once; at least one.
+		inline std::optional<Mask> parse(const Value* _what, const std::vector<Part>& _parts, std::vector<std::string>& _errors)
+		{
+			if(!_what || !_what->isArray() || _what->asArray().empty())
+			{
+				_errors.push_back("what: name at least one part (" + say(bit(_parts.size()) - 1, _parts) + ")");
+				return {};
+			}
+			Mask m = 0;
+			for(const auto& v : _what->asArray())
+			{
+				size_t i = 0;
+				while(i < _parts.size() && !(v.isString() && v.asString() == _parts[i].name))
+					++i;
+				if(i == _parts.size())
+				{
+					_errors.push_back("what: " + (v.isString() ? v.asString() : std::string("a non-text value")) + " is not a part of a track ("
+						+ say(bit(_parts.size()) - 1, _parts) + ")");
+					return {};
+				}
+				if(m & bit(i))
+				{
+					_errors.push_back(std::string("what: ") + _parts[i].name + " is named twice");
+					return {};
+				}
+				m |= bit(i);
+			}
+			return m;
+		}
+
+		// A paste's target tracks ("to"): tracks 0 to _tracks - 1, each once, at least one.
+		inline std::optional<std::vector<int>> targets(const Value* _to, const int _tracks, std::vector<std::string>& _errors)
+		{
+			if(!_to || !_to->isArray() || _to->asArray().empty())
+			{
+				_errors.push_back("to: the tracks to paste into, at least one");
+				return {};
+			}
+			std::vector<int> out;
+			for(const auto& v : _to->asArray())
+			{
+				const auto t = v.isNumber() ? static_cast<int>(v.asNumber()) : -1;
+				if(!v.isNumber() || v.asNumber() != t || t < 0 || t >= _tracks)
+				{
+					_errors.push_back("to: tracks are 0.." + std::to_string(_tracks - 1));
+					return {};
+				}
+				if(std::find(out.begin(), out.end(), t) != out.end())
+				{
+					_errors.push_back("to: track " + std::to_string(t + 1) + " is named twice");
+					return {};
+				}
+				out.push_back(t);
+			}
+			return out;
+		}
+
+		// What a track copy keeps: the track it came from, the parts copied and their values (the machine's).
+		template<typename Values>
+		struct Clip
+		{
+			int t = 0;
+			Mask what = 0;
+			Values values{};
+
+			bool operator==(const Clip& _o) const { return t == _o.t && what == _o.what && values == _o.values; }
+		};
+
+		// A machine's parts and what each one does. Pattern and kit are null when the mask names none of their parts.
+		template<typename Pattern, typename Kit, typename Values>
+		struct Spec
+		{
+			const std::vector<Part>& parts;
+			int tracks;
+			std::string (*trackName)(int);
+			// Why track _t cannot take the parts _m (copied from track _from; for a copy or a clear _from is _t): empty
+			// when it can.
+			std::string (*refuse)(Mask _m, int _from, int _t);
+			void (*take)(const Pattern*, const Kit*, int _t, Mask, Values&);
+			// Puts the parts _m of _v (copied from track _from) onto track _t; what it had to leave out goes to _skipped.
+			void (*put)(Pattern*, Kit*, const Values&, int _from, int _t, Mask, std::vector<std::string>& _skipped);
+			void (*clear)(Pattern*, Kit*, int _t, Mask);
+		};
+
+		enum class Action : uint8_t { Copy, Paste, Clear };
+		inline const std::map<std::string, Action>& actions()
+		{
+			static const std::map<std::string, Action> a{{"trackCopy", Action::Copy}, {"trackPaste", Action::Paste}, {"trackClear", Action::Clear}};
+			return a;
+		}
+		inline std::vector<std::string> ops()
+		{
+			std::vector<std::string> o;
+			for(const auto& [op, a] : actions())
+				o.push_back(op);
+			return o;
+		}
+
+		inline std::string tracksSay(const std::vector<int>& _ts, std::string (*_name)(int))
+		{
+			std::string s;
+			for(size_t i = 0; i < _ts.size(); ++i)
+				s += (i == 0 ? "" : i + 1 == _ts.size() ? " and " : ", ") + _name(_ts[i]);
+			return s;
+		}
+
+		// One track command on _pattern and _kit (the machine fetched the ones the mask needs: either may be null
+		// otherwise), with the clipboard's track part _clip. False, with the errors, when it was refused; nothing
+		// changed then.
+		template<typename Pattern, typename Kit, typename Values>
+		bool run(const Action _action, const Value& _command, const Mask _m, Pattern* _pattern, Kit* _kit, std::optional<Clip<Values>>& _clip,
+			const Spec<Pattern, Kit, Values>& _spec, std::vector<std::string>& _errors, std::string& _note)
+		{
+			const auto* t = _command.find("t");
+			const int track = t && t->isNumber() ? static_cast<int>(t->asNumber()) : 0;
+			switch(_action)
+			{
+			case Action::Copy:
+			{
+				if(const auto why = _spec.refuse(_m, track, track); !why.empty())
+				{
+					_errors.push_back(why);
+					return false;
+				}
+				Clip<Values> c;
+				c.t = track;
+				c.what = _m;
+				_spec.take(_pattern, _kit, track, _m, c.values);
+				_clip = std::move(c);
+				_note = "Copied the " + say(_m, _spec.parts) + " of " + _spec.trackName(track);
+				return true;
+			}
+			case Action::Paste:
+			{
+				const auto to = targets(_command.find("to"), _spec.tracks, _errors);
+				if(!to)
+					return false;
+				if(!_clip)
+				{
+					_errors.emplace_back("Copy a track's parts first (COPY what)");
+					return false;
+				}
+				if(const auto missing = _m & ~_clip->what)
+				{
+					_errors.push_back("Not copied from " + _spec.trackName(_clip->t) + ": " + say(missing, _spec.parts));
+					return false;
+				}
+				for(const auto x : *to)
+					if(const auto why = _spec.refuse(_m, _clip->t, x); !why.empty())
+					{
+						_errors.push_back(why);
+						return false;
+					}
+				std::vector<std::string> skipped;
+				for(const auto x : *to)
+					_spec.put(_pattern, _kit, _clip->values, _clip->t, x, _m, skipped);
+				_note = "Pasted the " + say(_m, _spec.parts) + " of " + _spec.trackName(_clip->t) + " into " + tracksSay(*to, _spec.trackName);
+				for(const auto& s : skipped)
+					_note += ". " + s;
+				return true;
+			}
+			case Action::Clear:
+				if(const auto why = _spec.refuse(_m, track, track); !why.empty())
+				{
+					_errors.push_back(why);
+					return false;
+				}
+				_spec.clear(_pattern, _kit, track, _m);
+				_note = "Cleared the " + say(_m, _spec.parts) + " of " + _spec.trackName(track);
+				return true;
+			}
+			return false;
 		}
 	}
 }

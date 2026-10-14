@@ -63,10 +63,14 @@ const MmView = (() => {
 	});
 	const mapPage = memo(g => g.multiMap ? C().mapToPage(g) : undefined);
 
-	/* the 24 songs for the Song workspace's picker: names, the one edited and the machine's */
-	function songsOf(docs, slot, current) {
-		const names = Array.from({ length: SONGS }, (_, i) => { const s = docs.songs[i]; return s ? (C().kitEmpty(s) ? "EMPTY" : C().kitName(s)) : "…"; });
-		return { names, slot, current };
+	/* the 24 songs for the Song workspace's slots (deskSongSlots.js): each one's name ("" none), rows before END and
+	   whether it is read yet; the one edited, the machine's, and whether its edits wait for a LOAD SONG */
+	function songsOf(docs, slot, current, edited) {
+		const at = i => docs.songs[i];
+		const names = Array.from({ length: SONGS }, (_, i) => at(i) && !C().kitEmpty(at(i)) ? C().kitName(at(i)) : "");
+		const rows = Array.from({ length: SONGS }, (_, i) => at(i) ? at(i).rows.filter(r => r.kind !== "end").length : 0);
+		const loaded = Array.from({ length: SONGS }, (_, i) => !!at(i));
+		return { names, rows, loaded, slot, current, edited };
 	}
 	/* the machine's own mutes, T1-T6 then M1-M6 (null: not known) */
 	function mutesOf(m) {
@@ -78,7 +82,11 @@ const MmView = (() => {
 	function globPage(slot, g) {
 		const c = g.channels || {}, i = g.controlIn || {}, o = g.controlOut || {};
 		return { slot, base: chOf(c.base), span: c.span ?? 0, auto: chOf(c.auto), multiTrig: chOf(c.multiTrig), multiMap: chOf(c.multiMap),
-			clockIn: i.tempoSync === 1, transportIn: i.transport === 1, clockOut: o.clock !== 0, transportOut: o.transport !== 0, programChangeOut: !!o.programChange };
+			clockIn: i.tempoSync === 1, transportIn: i.transport === 1, clockOut: o.clock !== 0, transportOut: o.transport !== 0, programChangeOut: !!o.programChange,
+			/* CONTROL OUT1 (P2): 0 INT, 1 OUT, 2 INT+OUT; null in a document from before 0.6 */
+			sequencerOut: o.sequencer ?? null, arpOut: o.arp ?? null, keyboardOut: o.keyboard ?? null,
+			/* AUDIO › MASTER TUNE in tenths of Hz */
+			tune: g.masterTune ?? null };
 	}
 	/* B-051: the channel the machine takes track t's CCs, mutes and notes on, or null (elektronData::mmTrackChannel,
 	   measured on OS 1.32B: base + t while t < CHANNEL SPAN and base + t is 0-14; channel 16 reaches no track) */
@@ -92,9 +100,10 @@ const MmView = (() => {
 			v.kitState = m.kit?.working || "unknown";
 			if (m.tempo != null) v.bpm = m.tempo;
 			v.poly = m.poly ?? null;
+			v.focus = m.focus ?? null;	/* 0.6 wave 9: the synth track in focus, the one POLY plays */
 			v.mutes = mutesOf(m);
 			v.plays = { chain: m.desk?.chain ?? null, songMode: m.song?.songMode === true, song: m.song?.current ?? 0 };
-			v.songs = songsOf(docs, song, slotIn(m, "song"));
+			v.songs = songsOf(docs, song, slotIn(m, "song"), m.song?.reloadNeeded === true);
 		}
 		const global = glob != null ? docs.globals[glob] || null : null;
 		/* B-030: in a DAW whose clock the machine follows (its global: CONTROL IN TEMPO SYNC external, set by the
@@ -104,7 +113,7 @@ const MmView = (() => {
 		v.hostTempo = !!(H && H.follows && H.bpm > 0 && global && global.controlIn && global.controlIn.tempoSync === 1);
 		if (v.hostTempo) v.bpm = H.bpm;
 		/* B-051, F3: the GLOBAL page's MIDI part, the active global's (a channel 0-15, null OFF) */
-		if (global) v.glob = globPage(glob, global);
+		if (global) { v.glob = globPage(glob, global); v.glob.clip = m?.clipboard?.global ?? null; }
 		const kd = kitDocOf(docs, kit), pd = pat != null ? docs.patterns[pat] || null : null;
 		/* the view shows the machine once the current pattern and the kit that plays are there */
 		v.ready = !!(kd && pd);
@@ -217,8 +226,10 @@ const MmView = (() => {
 		legato: (v, c) => [[["tracks", c.t, "leg", { amp: "amp", filter: "flt", lfo: "lfo" }[c.env]], c.on ? 1 : 0]],
 		portamento: (v, c) => [[["tracks", c.t, "port"], c.v === "always" ? 0 : 1]],
 		routing: (v, c) => [[["routing"], c.v]],
-		globalMidi: (v, c) => ["base", "span", "auto", "multiTrig", "multiMap", "clockIn", "transportIn", "clockOut", "transportOut", "programChangeOut"]
-			.filter(k => c[k] !== undefined).map(k => [["glob", k], k === "span" ? c[k] : typeof c[k] === "boolean" ? c[k] : chOf(c[k])]),
+		globalMidi: (v, c) => ["base", "span", "auto", "multiTrig", "multiMap", "clockIn", "transportIn", "clockOut", "transportOut", "programChangeOut",
+			"sequencerOut", "arpOut", "keyboardOut"]
+			.filter(k => c[k] !== undefined).map(k => [["glob", k], k === "span" || k.endsWith("Out") && typeof c[k] === "number" ? c[k] : typeof c[k] === "boolean" ? c[k] : chOf(c[k])]),
+		masterTune: (v, c) => [[["glob", "tune"], c.v]],
 		globalReset: () => [],
 		midiTrack: (v, c) => [...(c.ch != null ? [[["midi", c.t, "ch"], c.ch + 1]] : []), ...(c.cc ? [[["midi", c.t, "cc"], c.cc.map(Number)]] : [])],
 		step: (v, c) => stepWrites(v, c.t, c.s, c.v),
@@ -287,7 +298,15 @@ const MmView = (() => {
 			for (let t = c.t; t < c.t + (c.n || 1); t++) for (let s = c.from; s < c.to; s++) out.push(...stepWrites(v, t, s, null), [[...trackPath(t), "slide", s], false]);
 			return out;
 		},
+		/* MM-083: the steps' locks go, their notes stay */
+		clearStepLocks: (v, c) => {
+			const out = [];
+			for (let t = c.t; t < c.t + (c.n || 1); t++) for (const k of keysOf(v, t)) for (const s of v.locks.get(k).keys()) if (s >= c.from && s < c.to) out.push([["locks", k, s], DELETE()]);
+			return out;
+		},
 		copySteps: () => [],
+		/* MM-095: a pattern's kit (the chooser's Kit list): shown at the result, as the library's slots */
+		patternKit: () => [],
 		/* the core's clipboard; the page shows the paste from its own copy of it (clip: MmView.copied) */
 		pasteSteps: (v, c, clip) => clip && clip.kind === "steps" ? putWrites(v, clip, c.t, c.from, (c.to ?? c.from + clip.length) - c.from) : [],
 		copyStepsTo: (v, c) => putWrites(v, blockOf(v, c.t, c.n || 1, c.from, c.to), c.dt ?? c.t, c.at, c.to - c.from),
@@ -295,6 +314,8 @@ const MmView = (() => {
 		machine: (v, c) => machineWrites(v, c.t, C().machineName(c.model), c.keepFx !== false),
 		clearSound: (v, c) => machineWrites(v, c.t, "GND-SIN", false),
 		copySound: () => [],
+		/* Revert track: shown at the result (the core puts the track back as the kit's slot stores it) */
+		revertTrack: () => [],
 		pasteSound: (v, c, clip) => clip && clip.kind === "sound" ? soundWrites(v, c.t, clip.m, clip.v) : [],
 		params: (v, c) => c.values.flatMap(([t, page, i, x]) => WRITES.param(v, { t, page, i, v: x })),
 		assign: (v, c) => {
@@ -350,7 +371,8 @@ const MmView = (() => {
 		})
 	};
 	/* the library's slot ops change stored slots: the result brings them (the library's own setters) */
-	for (const op of ["patCopy", "patPaste", "patCopyTo", "patClear", "kitCopy", "kitPaste", "kitCopyTo", "kitClear", "kitRename"]) WRITES[op] = () => [];
+	for (const op of ["patCopy", "patPaste", "patCopyTo", "patClear", "kitCopy", "kitPaste", "kitCopyTo", "kitClear", "kitRename",
+		"songCopy", "songPaste", "songCopyTo", "songClear", "songRename"]) WRITES[op] = () => [];
 	const MENV = ["ATK", "DEC", "SUS", "REL", "PORT"];
 	/* a step of the view as the step intent's value: null, {off:true} or {n, a, f, l, notrig} */
 	function stepVal(st) {
@@ -464,13 +486,16 @@ const MmView = (() => {
 
 	/* ---------------- which document an op edits ----------------
 	   the kit that plays (k), the active global (nothing to name), a song (s: the one the Song workspace edits), the
-	   library's stored slots (the command names them), else the pattern that plays (p) */
+	   library's stored slots (the command names them), a track's parts (p and k), else the pattern that plays (p) */
 	const OPS = {
-		kit: ["level", "route", "input", "param", "trigPos", "legato", "portamento", "machine", "clearSound", "copySound", "pasteSound", "params",
+		kit: ["level", "route", "input", "param", "trigPos", "legato", "portamento", "machine", "clearSound", "copySound", "pasteSound", "revertTrack", "params",
 			"assign", "multiEnv", "multiTrig", "kitName"],
-		global: ["routing", "midiTrack", "globalMidi", "globalReset", "multiMap", "multiMapSplit", "multiMapDelete"],
+		global: ["routing", "midiTrack", "globalMidi", "masterTune", "globalReset", "multiMap", "multiMapSplit", "multiMapDelete"],
 		song: ["rowSet", "rowInsert", "rowDelete", "rowMove", "copyRow", "pasteRow"],
-		library: ["patCopy", "patPaste", "patCopyTo", "patClear", "kitCopy", "kitPaste", "kitCopyTo", "kitClear", "kitRename"]
+		/* COPY / PASTE / CLEAR what (0.6): the pattern that plays (p) and the kit that plays (k) */
+		track: ["trackCopy", "trackPaste", "trackClear"],
+		library: ["patternKit", "patCopy", "patPaste", "patCopyTo", "patClear", "kitCopy", "kitPaste", "kitCopyTo", "kitClear", "kitRename",
+			"songCopy", "songPaste", "songCopyTo", "songClear", "songRename", "globalCopy", "globalPaste"]
 	};
 	const KIND = new Map(Object.entries(OPS).flatMap(([kind, ops]) => ops.map(op => [op, kind])));
 	const kindOf = op => KIND.get(op) || "pattern";

@@ -67,15 +67,20 @@ namespace mmDesk
 		const char* stateName() const;
 		size_t queued() const { return m_queue.size(); }
 		bool parked() const { return m_state == State::Parked; }
-		// Parked and a dump sent is not taken yet (the machine's RECV count, messages and errors, has not caught up):
-		// a panel key pressed now is lost (measured, mmDeskFirmwareTest parked); once taken, keys work on SYSEX RECV.
-		bool taking() const { return parked() && m_taken - m_recvBase < m_sentParked; }
+		// Parked and a dump sent is not taken yet (the machine's RECV count, messages and errors, has not caught up), or
+		// one waits to go out on the next tick (B-099: a key pressed in the tick the session parked went to the machine
+		// before the dump and was lost): a panel key pressed now is lost (measured, mmDeskFirmwareTest parked, undoplay);
+		// once taken, keys work on SYSEX RECV.
+		// The count moves as the dump arrives; a key the machine gets within a few ms after is still lost (measured: 10 ms
+		// lost, 20 ms taken), so the session says taking for settleMs more.
+		bool taking() const { return parked() && (!m_queue.empty() || m_taken - m_recvBase < m_sentParked || m_clock - m_takenMs < settleMs); }
 
 		int activeGlobal = 0;		// the GLOBAL slot that is active (0-7): the macro's cursor goes there (B-067)
 		double idleMs = 3000;		// parked and quiet this long -> leave
 		double timeoutMs = 3000;	// a screen that does not come -> retry
 		int maxFailures = 2;		// failed tries (each three attempts, then a pause) before the queue is given up
 		double maxWaitMs = 45000;	// a dump queued this long and not sent is given up, whatever the screen says
+		double settleMs = 60;		// after the machine's RECV count moved, keys wait this long (B-099)
 
 	private:
 		void go(State _s, double _now) { m_state = _s; m_since = _now; }
@@ -96,5 +101,6 @@ namespace mmDesk
 		uint32_t m_recvBase = 0;	// the machine's RECV count (messages and errors) when the session parked
 		uint32_t m_taken = 0;		// that count now
 		uint32_t m_sentParked = 0;	// dumps sent since the session parked
+		double m_takenMs = -1e9;	// machine time the RECV count last moved while parked
 	};
 }

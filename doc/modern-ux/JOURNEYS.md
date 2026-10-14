@@ -27,9 +27,9 @@ no journey yet); **not testable** (why). "—": the editor has no such feature.
 
 | | Machinedrum | Monomachine | Both |
 |---|---|---|---|
-| Features in the inventory (one row a feature; "—" rows not counted) | 83 | 87 | 170 |
-| Covered by a journey | 71 | 77 | 148 |
-| of which PASS | 71 | 77 | 148 |
+| Features in the inventory (one row a feature; "—" rows not counted) | 85 | 89 | 174 |
+| Covered by a journey | 73 | 79 | 152 |
+| of which PASS | 73 | 79 | 152 |
 | of which FAIL (product bug) | 0 | 0 | 0 |
 | of which SKIP here (window covered) | 0 | 0 | 0 |
 | Not covered yet (reachable through the page) | 1 | 0 | 1 |
@@ -89,17 +89,18 @@ no journey yet); **not testable** (why). "—": the editor has no such feature.
 | Feature | Machinedrum | Monomachine |
 |---|---|---|
 | Trigs / notes by click (MM: piano roll) | md-seq-first-beat PASS | mm-seq-first-beat PASS |
-| Drag-paint steps, one undo step (MM: SLIDE lane; the roll: a new note dragged sideways paints, Alt-drag erases, 2026-10-05) | md-seq-paint-undo PASS | mm-seq-slide-paint PASS, mm-seq-roll-paint PASS (paint, erase, each one undo step) |
-| Piano roll note length (I-010, 0.5 slice 3): Draw at 1/16, a note and its NOTE OFF; the Len key at 1/8, a note two steps long; a note's end dragged to the next note (its NOTE OFF goes, Len 3/16); undo | — | mm-roll-draw-length PASS (2026-10-10) |
-| Piano roll Draw off (I-007, slice 3): B, a box round a note selects it with its NOTE OFF, a drag moves both, Delete, B again, undo | — | mm-roll-box-move PASS (2026-10-10; the first run found a 1/16 note on narrow columns pressed as its end: the end zone is now at most a third of the bar) |
+| Drag-paint steps, one undo step (MM: the roll: a new note dragged sideways paints, Alt-drag erases, 2026-10-05; slide and swing on a selection from the step menu, one undo step, 2026-10-12) | md-seq-paint-undo PASS | mm-seq-slide-swing PASS, mm-seq-roll-paint PASS (paint, erase, each one undo step) |
+| Piano roll note length (I-010, 0.5 slice 3): a note at 1/16 and its NOTE OFF; the Len key at 1/8, a note two steps long; a note's end dragged to the next note (its NOTE OFF goes, Len 3/16); undo | — | mm-roll-draw-length PASS (2026-10-10) |
+| The roll always draws (0.6 review 2; no Draw mode): click adds, a note's end lengthens it, its body moves it (sideways) or changes its pitch (up, down), on a note with a swing mark; nothing stays selected; ⌘-drag selects | — | mm-roll-simple (page tier) |
 | A MIDI note's length is its LEN, 6 a step (slice 3, measured): a 1/16 note is LEN 6, its end dragged to three steps locks LEN 18 | — | mm-roll-midi-len PASS (2026-10-10) |
-| Accent (Shift-click), slide (Alt-click) | md-seq-accent-slide PASS | — (MM: SLIDE lane, above) |
+| Accent (Shift-click), slide (Alt-click) | md-seq-accent-slide PASS | — (MM: Slide under the roll, above) |
+| Trig types: Trig · Accent · Swing · Slide (MD, with All tracks · This track), Esc back (wave 3). MM since 2026-10-12: no trig type row; slide, swing and the envelopes are in the step menu, marks on the notes | md-seq-trig-types PASS | mm-seq-slide-swing PASS, mm-seq-env-trigs PASS |
 | Lock lane: pick a parameter, draw locks, clear | md-seq-lock-lane PASS | mm-seq-lock-lane PASS |
 | Lock lane ramp (Shift-drag), erase (Alt-drag), wheel on a step | md-seq-lock-ramp-erase-wheel PASS | mm-seq-lock-ramp-erase-wheel PASS |
 | Pages: ALL, PAGE, [ ] | md-seq-pages PASS | mm-seq-pages PASS |
 | Copy, paste, clear steps (Cmd+C, Cmd+V; since K2 (MD) and K7 (MM): Delete with no selection does nothing, Clr clears the page) | md-seq-copy-paste-clear PASS | mm-seq-copy-paste-clear PASS (2026-10-10, K7) |
 | Select steps with ⌘-click / ⌘-drag (K2; MM K7: the piano roll, ⌘⇧-click on the next track's roll for a two-track block), the LCD's PASTE and CLR on the selection, ⌘D | md-seq-select-copy-paste PASS | mm-seq-select-copy-paste PASS (2026-10-10) |
-| The step menu (right-click a step, K3; MM K7: in the roll or a trig row): accent (MM: slide), copy, paste here | md-seq-step-menu PASS | mm-seq-step-menu PASS (2026-10-10) |
+| The step menu (right-click a step, K3; MM K7: in the roll): accent (MM: slide; since 2026-10-12 also swing, the envelopes, trigless), copy, paste here | md-seq-step-menu PASS | mm-seq-step-menu PASS (2026-10-10) |
 | Cmd+C, Cmd+V, Cmd+Z as the operating system delivers them (real `NSEvent`s through AppKit's key path, `u.osKey`; B-015), standalone and VST3, 2026-10-08 | md-seq-os-copy-paste PASS (FAIL without the fix: no key reached the page) | mm-seq-os-copy-paste PASS (2026-10-10, standalone) |
 | A selected step copied and pasted with the mouse (the top bar's Copy, Paste, Clr), 2026-10-08 | md-seq-copy-paste-buttons PASS | mm-seq-copy-paste-buttons PASS (2026-10-10) |
 | Clear the whole pattern (Alt+Delete), undo | md-seq-clear-pattern-undo PASS | mm-seq-clear-pattern-undo PASS |
@@ -131,6 +132,8 @@ no journey yet); **not testable** (why). "—": the editor has no such feature.
 |---|---|---|
 | Sound page grouped by function | md-sound-shape-undo PASS | mm-sound-shape-undo PASS |
 | Drag a value, undo restores the kit | md-sound-shape-undo PASS | mm-sound-shape-undo PASS |
+| Type a value (⌘-click or Enter on a value box): one undo step, refused past the ends, a list takes its names (I-022) | md-sound-type-value PASS (page tier) | mm-sound-type-value PASS (page tier) |
+| A note from a MIDI keyboard lights its track: rail number, Mix LED (I-002) | md-sound-note-light PASS (page tier) | — |
 | A focused value: ↑ ↓ step it | md-sound-value-keys PASS (bug 2, fixed) | mm-sound-value-keys PASS (bug 3, fixed) |
 | Machine picker, undo | md-sound-machine-pick-undo PASS | mm-sound-machine-pick-undo PASS |
 | A picked machine stays after a step on Sequence, whose dump reloads the kit on the machine (B-027) | — (mdDeskFirmwareTest machine) | mm-sound-machine-stays |
@@ -179,6 +182,7 @@ no journey yet); **not testable** (why). "—": the editor has no such feature.
 | MULTI TRIG mode | — | mm-perform-multi-trig PASS |
 | MULTI MAP: split and delete a range | — | mm-perform-multi-map PASS |
 | Perform keyboard plays | — | mm-perform-keyboard PASS (the note reaches the plug-in; live notes have no read-back) |
+| Perform keyboard: a key lit while held (mouse, computer keys, MIDI keyboard), dark when let go (B-062, I-002) | — | mm-perform-keys-lit PASS (page tier) |
 | Joystick, assign rows, multi envelope, PORTAMENTO | — | mm-perform-joystick-assign PASS, mm-perform-menv-portamento PASS |
 
 ## Library and GLOBAL
@@ -195,7 +199,13 @@ no journey yet); **not testable** (why). "—": the editor has no such feature.
 | GLOBAL: a setting read back (TEMPO OUT) | md-global-tempo-out PASS | — (MM globals: the Perform and Mix journeys) |
 | GLOBAL › ROUTING fits its dialog, a route read back | md-global-routing PASS | — |
 | GLOBAL › MIDI: CHANNEL SPAN 0 refuses a track's mute (a notice with Give each track its own channel), its sound value still reaches the machine; the notice's key, then the mute lands (B-051) | — | mm-global-channels |
-| GLOBAL › Reset to defaults: asked, then the factory global read back | md-global-reset | mm-global-reset |
+| GLOBAL › Clear: asked, then the factory global read back | md-global-reset | mm-global-reset |
+| GLOBAL as a page under the header (0.6): as wide as it, the head on one line; a workspace tab goes back | md-global-page | mm-global-page |
+| GLOBAL › Copy, a change, Paste (asked), Undo (0.6) | md-global-copy-paste | mm-global-copy-paste |
+| GLOBAL › TRIG IN A / B: Gate and Dest stepped, Undo (0.6, P3) | md-global-trig-in | — |
+| GLOBAL › Map editor › LEARN: a note from a MIDI keyboard (midiIn) maps to the track; Reset map (asked) (0.6) | md-global-learn | — |
+| GLOBAL › AUDIO › MASTER TUNE: 0.1 Hz and 1 Hz steps, Undo (0.6) | — | mm-global-tune |
+| GLOBAL › CONTROL OUT1: OUT and its warning, INT+OUT, INT (0.6, P2) | — | mm-global-control-out |
 | GLOBAL's slot keys: another slot active, then back | — | mm-global-slot |
 | Song page: PATTERN | SONG switch, lit from the machine's status (0.3.5) | md-song-mode | mm-song-mode |
 | Song page: the song playhead (the row the machine plays, from RAM), What plays, PAT/SONG on the LCD (0.3.5) | md-song-playhead | mm-song-playhead |
@@ -250,3 +260,190 @@ no journey yet); **not testable** (why). "—": the editor has no such feature.
 5. A journey's Alt chord (`u.key(k, {alt: true})`) sends no keyup of Alt itself. The Monomachine page now ends a
    rotate run on any event without Alt as well (MM-PORT-PLAN.md 2026-10-05), so the journeys after `mm-seq-rotate` keep
    their own undo steps.
+
+## Independent journeys: how to write one
+
+Radek's rule (2026-10-13): **every journey is independent.** Alone, in any order, from fresh settings (factory memory), it passes on
+its own: it builds the data it needs itself (pattern, kit, song, global state, mode, selection) and its tidy puts back what it
+changed. No journey may rely on what an earlier one left behind, and none may leave anything for the next one to find. The runner
+used to put the page right between journeys (close dialogs, stop the transport, back to PATTERN mode); that hid the journey that
+left the mess. It is now a guard: it says what the one before left and fixes nothing (only after a journey that FAILED, whose tidy
+may not have run to the end, it puts the page right, and says so).
+
+### The four parts
+
+1. **Setup: the journey builds what it needs.** A journey that needs a free step, two trigs, a pattern with a lock free, a kit
+   that is saved or two patterns that recall one kit, makes them in its first steps (a trig drawn, a kit saved, a pattern linked)
+   and never reads them from what the machine happens to hold ("no free lock row on a track with a trig" and "no two patterns
+   with one kit" were the symptoms of a journey that took what an earlier one had left). Modes and UI toggles it depends on are
+   set by the journey as a person sets them (More open: click it only when it is shut; PATTERN or SONG mode: the Song page's keys).
+2. **Proof: the two checks.** Each step's `screen` and `machine` check what a person sees and what the machine read back. A step
+   never waits on timing that another journey's leftovers could move.
+3. **Snapshot.** `Journey.snapshot(name)` where a picture is the journey's evidence (the e2e run takes one at the last step otherwise).
+4. **Tidy: put back what the journey changed**, pass or fail, with the page's own helpers (below). The check after it is the guard.
+
+### The helpers (each page's journey file, mdDeskJourneys.js and mmJourneys.js: the same names)
+
+| helper | what it does |
+|---|---|
+| `c.undo0`, `c.mode0`, `c.pat0`, `c.kit0`, `c.kitw0`, `c.chain0` | set by the runner before step 1 (`begin`): the undo depth, PATTERN or SONG mode, the pattern and the kit the machine is on, the kit's `clean` or `edited`, whether a chain plays |
+| (the page's wrapper) | after every journey's own tidy the page looks at `state()` once more: if the machine's documents or modes still differ from what the journey found, it calls `back` (so a tidy need not call it, and a tidy that restores by its own commands is not undone: `back` runs only when something differs). `left:` names what still differs afterwards |
+| `await back(u, c)` | the tidy's one call for editor state: transport and recording stopped, every edit undone (one undo at a time, the machine's answer awaited between: a rush left a level behind), the chain cleared, the mode, pattern and kit as found, a kit that was clean and is called edited after an undo saved again (the same sounds), the tempo, the mutes and the pattern's kit link as found (the tempo last: loading a pattern or a song sets it), the slots kept with `keep` pasted back, and then it waits for the machine's late answers (`settled`: the documents unchanged for 1.2 s; on the firmware a pattern or kit change makes the machine send the kit and pattern again, and the page draws the Mix and Sound pages again when they come). Edits to restore first, then any command that is itself an edit (an undo after it would take it back) |
+| `await keep(c, "kit" \| "pattern" \| "song", slot)` | the slot the journey is about to overwrite and the product cannot undo (a save over a kit, the machine's own live erase): its content goes to the plug-in's clipboard, `back` pastes it back. One slot per kind |
+| `await keepMany(c, kind, slots)` | any number of slots (an import writes the file's kits, patterns and songs): the first to the clipboard, each other one overwritten by a copy of the first, which is an undo step that holds that slot's content: `back` undoes them, then pastes the first |
+| `await keepImportTargets(c)` | the import panel's preview (`kit:N`, `pattern:N`, `song:N`): `keepMany` for each kind |
+| `undoTo(u, n)`, `undoUntil(u, done, n)` | the undo, awaiting the machine |
+| `freeSteps(t, n, from)`, `soundTrack()`, `empties(n)`, `scratch()` | free steps, a sound track, empty or scratch song slots |
+
+The factory memory the page tier starts from holds a full machine (every kit named, every pattern with trigs, every song with
+rows): there is no spare slot to borrow, so a journey that writes a slot keeps it first or does it in a way the undo takes back.
+
+### What the guard says
+
+Before each journey the runner reads the page's `state()` (the machine's documents, its modes, the kit's clean or edited), after the tidy again, and logs the difference by the
+journey's name: `JOURNEY <name> left: <what> (at <char>: <was> -> <now>)`. For the ones it cannot read as a document it names them: `before: left a question open`,
+`left the machine in SONG mode`. `scripts/mdmm-page.mjs` ends its report with a WARN listing them; `mdmm-journeys.sh` prints them in the report. The UI's own state
+(workspace, selection) is not compared: each journey picks what it needs. A slot loaded in only one of the two readings is not a change.
+
+### A journey that cannot put its change back: `alone: true`
+
+An empty reset has no undo and no copy to keep, and a SysEx import of a whole file (the e2e run's fixture holds many kits, patterns and a global) writes more
+slots than the plug-in's clipboard and one undo step can hold. These journeys are marked `alone: true`: `md-engine-reset-empty`, `mm-engine-reset-empty` (page tier too),
+and on the firmware `md-lib-syx-import`, `md-lib-syx-import-mute`, `md-shots-import` and their `mm-` twins. The runners (`mdmm-page.mjs`, `mdmm-journeys.sh`, so `mdmm-e2e.sh`) start each in a
+page or an editor of its own, and in one page they play last. A journey earns the mark only when the product offers no way back (B-130: no undo for a SysEx import or an
+empty reset; the two-slot imports of `md-lib-syx-place` and `md-syx-running-reach` are kept with `keepTwo`, the rest cannot be).
+
+### Findings (not fixed here: a journey cannot pass without a product change, or the page tier and the firmware differ)
+
+Logged in doc/release/BUGS.md as B-130 to B-132.
+
+- **B-130** A SysEx import and the empty reset cannot be undone, and an import of a whole file overwrites more than a clipboard and the undo history can hold: the journeys that run them
+  (`md-engine-reset-empty`, `mm-engine-reset-empty`, and on the firmware the import journeys `*-lib-syx-import`, `*-lib-syx-import-mute`, `*-shots-import`) are `alone: true`.
+- **B-131** On the firmware, started alone from factory memory, `md-sound-machine-reference` has the page refuse the second machine it picks on track 1: `tracks[0] lfo.track = 16 is outside 0..15` (the kit as the machine
+  reads it back against the contract). In the whole run in order and in the page tier it passes, so it needs the contract or the page's validation to accept what the firmware sends. The journey
+  cannot build a kit the page accepts without choosing the data for it.
+- **B-132** `mm-sound-unison-sub-fine` fails on the firmware alone and in order (the sub screen's stems measure 9.2 px against at most 3 px in WebKit; the page tier measures them in Chrome and passes).
+- `md-sampler-rename`, and the 16 Monomachine journeys whose checks read the stub host's wire log (`mm-wire-cc`, `mm-sound-lfo` ...): stub-only before this work (E2E column), unchanged.
+- `md-mix-master-cards` and `mm-seq-scale-setup` failed now and then at four pages at once on a loaded Mac: their own checks raced the machine's answer (the first is fixed: the knob is looked up after the answer);
+  `mm-seq-scale-setup` passes alone three times in three.
+- The firmware's shuffled run still shows a few `left:` lines for the machine journeys (a working kit value one step off after an undo, a chain list left in a kit that is no longer chained): the late answer of the
+  machine against the guard's read.
+
+### Proving it
+
+```sh
+node scripts/mdmm-page.mjs --isolate --jobs 4 both        # every page journey in a page and a stub host of its own (about 8 minutes)
+node scripts/mdmm-page.mjs --shuffle 101 --jobs 2 both    # a seeded random order; the seed is printed, the same seed plays the same order
+scripts/mdmm-e2e.sh both --shuffle 7 --jobs 2             # the real firmware, shuffled
+scripts/mdmm-e2e.sh md --isolate --select 'journey-md-song-*'   # each journey in an editor of its own, fresh from factory memory (one start each: for a few)
+node scripts/mdmm-page.mjs --list both                    # the names a selector picks ("LIST md: ..."), and the alone ones ("ALONE md: ...")
+```
+
+A selector may leave journeys out with `!`: `journey-*,!md-lib-syx-place`. Add `:shuffle-<seed>` or `:list` to a selector the page reads (`?selftest=journey:shuffle-5`, `GEARMULATOR_MDSTUDIO_SELFTEST`).
+A journey that passes in a run and fails alone, or the other way round, depends on one before it: find the one that logs `left:` and fix its tidy.
+
+## 0.6 slice 5: the Machinedrum journeys for the rows that had none
+
+Written 2026-10-12 from doc/features/unproved-md.md: each journey names the rows it proves (`proves:`), all in the page tier (headless Chrome on the real core, `scripts/mdmm-page.mjs`), with the guide's pictures as snapshots. Where an existing journey already did the thing, its `proves:` grew instead (MD-279 and MD-283 to MD-295 in the kit, pattern, song, mix and sound journeys). Two rows have none: MD-192 and MD-200 need a dropped sample file, so only the machine tier with a WAV can show them.
+
+| Journey | Rows |
+|---|---|
+| md-top-mode | MD-004, MD-087, MD-088, MD-138 |
+| md-seq-scale | MD-103, MD-104, MD-105 |
+| md-seq-swing-accent | MD-126, MD-130 |
+| md-top-tempo-steps | MD-089 |
+| md-lib-pattern-chooser | MD-006, MD-095, MD-120, MD-291 |
+| md-lib-kit-menu | MD-018, MD-030, MD-038, MD-040 |
+| md-lib-kit-memory | MD-109, MD-102 |
+| md-quick-start | MD-035 |
+| md-sound-knob-steps | MD-036 |
+| md-sound-machine-reference | MD-211 to MD-274 (63 rows) |
+| md-sound-track-effects | MD-011 to MD-069 (13 rows) |
+| md-sound-filter-sweep | MD-101 |
+| md-sound-relations | MD-049, MD-050, MD-290 |
+| md-sound-keep-clear | MD-048, MD-053 |
+| md-mix-master-cards | MD-071, MD-072, MD-073, MD-074, MD-287 |
+| md-sound-lfo | MD-288 to MD-085 (11 rows) |
+| md-sound-ctr-locks | MD-075 |
+| md-global-settings | MD-093, MD-170, MD-171, MD-185, MD-186, MD-188, MD-281 |
+| md-global-channel-trig-slot | MD-172, MD-168, MD-282 |
+| md-global-map-track | MD-165, MD-284, MD-276 |
+| md-sound-cc-channels | MD-277 |
+| md-lib-syx-original | MD-182 |
+| md-sampler-rename | MD-197 |
+| md-lib-kit-name-save | MD-280, MD-283 |
+| md-song-commands | MD-143, MD-152, MD-153, MD-155, MD-156, MD-161, MD-295 |
+| md-top-play-mode | MD-295 |
+| md-seq-page-leds | MD-021, MD-028 |
+| md-sound-focus-info | MD-031 |
+| md-seq-clear-page | MD-119 |
+| md-seq-clear-locks | MD-115 |
+| md-seq-swing-copy | MD-133 |
+| md-keys-mutes-persist | MD-125 |
+| md-seq-lock-budget | MD-137 |
+| md-seq-live-lock | MD-139 |
+| md-limits | MD-207 |
+
+## 0.6 slice 5: the Monomachine journeys for the rows that had none
+
+Written 2026-10-12 from doc/features/unproved-mm.md: 205 done rows had no journey, now every one of the 327 has at least one (`proves:`), all in the page tier (headless Chrome on the real core, `scripts/mdmm-page.mjs`), with the guide's pictures as snapshots. The page tier's stub host (deskStubHost) now also hands the page what the core gives the device edge as `{type: "wire"}` messages: each CC, NRPN and note as the wire engine encodes it (the base channel from the global, deskWire's encoders) and every SysEx's first sixteen bytes and length, so a journey checks the CC number, the channel, the NRPN triple, the note's velocity and the SysEx's id and slot against the manual's Appendix B and C, not only that something was sent. The stub also locks a value turned during live recording (MM-082, MM-207) and keeps the kit when a pattern recalls the kit that plays (the firmware's way: `mmDeskFirmwareTest machine`, "another pattern with the same kit"). Comparisons of lists are in the manual's order, never sorted; each knob's edit is checked against its own kit cell, only that cell, and its own CC.
+
+| Journey | Rows |
+|---|---|
+| mm-sound-machine-reference | MM-063, MM-091, MM-110, MM-111, MM-324 to MM-335, MM-337 to MM-346 (26) |
+| mm-sound-track-effects | MM-084, MM-092, MM-114 to MM-119, MM-121 to MM-127, MM-129 to MM-134 (21) |
+| mm-sound-lfo | MM-007, MM-135 to MM-142, MM-144 (10) |
+| mm-mix-buses | MM-005, MM-109, MM-276 to MM-284, MM-377 (12) |
+| mm-wire-cc | MM-289, MM-353 to MM-360, MM-362 (10) |
+| mm-seq-env-trigs | MM-029, MM-047, MM-085, MM-143, MM-171, MM-209, MM-210, MM-211, MM-212, MM-213, MM-214 (11; since 2026-10-12 through the step menu) |
+| mm-seq-pitch-keys | MM-028, MM-034, MM-074, MM-077, MM-173, MM-174, MM-176, MM-348 (8) |
+| mm-seq-locks | MM-017, MM-113, MM-205, MM-206, MM-208 (5) |
+| mm-seq-record-locks | MM-082, MM-207 (2) |
+| mm-seq-arp-setup | MM-008, MM-216, MM-218, MM-220, MM-222 to MM-225 (8) |
+| mm-seq-scale-setup | MM-046, MM-168, MM-169, MM-227 to MM-230 (7) |
+| mm-seq-trig-setup | MM-121, MM-151, MM-153, MM-161 (4) |
+| mm-midi-seq | MM-003, MM-048, MM-086, MM-242, MM-244 to MM-247, MM-249, MM-314, MM-315 (11) |
+| mm-midi-seq-docks | MM-248 (1) |
+| mm-perform-keys-channels | MM-073, MM-088, MM-089, MM-291, MM-292, MM-293, MM-349, MM-350, MM-351 (9) |
+| mm-perform-multi-setup | MM-154 to MM-159, MM-302, MM-303 (8) |
+| mm-perform-assign | MM-146, MM-147, MM-148, MM-150 (4) |
+| mm-perform-joystick-midi | MM-053, MM-352, MM-366 (3) |
+| mm-perform-menv-nrpn | MM-365 (1) |
+| mm-song-row-settings | MM-170, MM-199, MM-260, MM-263, MM-264, MM-265, MM-267, MM-273, MM-274, MM-275 (10) |
+| mm-song-rows-copy | MM-269 (1) |
+| mm-global-sync | MM-297, MM-298 (2) |
+| mm-seq-spell-word | MM-335, MM-336 (2) |
+| mm-seq-bbox-drums | MM-329 (1) |
+| mm-lib-pattern-chooser | MM-035, MM-037, MM-163, MM-189 (4) |
+| mm-lib-pattern-same-kit | MM-094 (1) |
+| mm-lib-kit-slots | MM-097, MM-098, MM-108 (3) |
+| mm-kit-parts | MM-093, MM-105, MM-106, MM-372 (4) |
+| mm-seq-copy-page | MM-185, MM-204 (2) |
+| mm-wire-sysex | MM-370, MM-374, MM-375, MM-376, MM-380 to MM-384 (9) |
+| mm-lcd-boxes | MM-064, MM-066, MM-068 (3) |
+| mm-perform-mutes | MM-036, MM-238 (2) |
+| mm-seq-six-tracks | MM-002, MM-006, MM-009 (3) |
+| mm-seq-bank-functions | MM-038 (1; slide and swing from the step menu since 2026-10-12) |
+
+What the journeys found (no row went down): the manual's phaser page lists no INP, the machine has it (every FX machine takes an input), so mm-sound-machine-reference expects it; the Perform assign Copy and Paste take the five tabs' rows (R, U, D, VEL, KEY) and leave the two left-joystick rows alone (the editor has no box for them: MIRR makes them follow the right); PAN goes out as CC 62 only (the machine also answers the standard CC 10); the multi envelope's sixth NRPN (0x45) has no box on the page.
+
+## 0.6 wave 12: the gaps (`feat/0.6-gaps`)
+
+The rows Radek's gap triage (2026-10-12) put in 0.6, each built and proved by a journey of its own; the firmware facts
+under them are doc/modern-ux/PROBES-manual-gaps.md W12. Page tier, 2026-10-12: all pass.
+
+| Journey | Rows |
+|---|---|
+| md-sound-clips | MD-033 |
+| md-lib-undo-kit | MD-043 |
+| md-lib-kit-clear-undo (values checked now) | MD-045 |
+| md-top-stop-queued | MD-099 |
+| md-seq-len-repeats | MD-106 |
+| md-song-repeats-left | MD-147 |
+| mm-lib-undo-kit | MM-102 |
+| mm-seq-clear-step-locks | MM-083, MM-184, MM-203 |
+| mm-seq-lock-current | MM-201 |
+| mm-lib-pattern-kit | MM-095 |
+| mm-song-counter | MM-271 |
+| mm-perform-map-pattern | MM-301 |
+| mm-top-plate (checks the look now) | MM-322 |

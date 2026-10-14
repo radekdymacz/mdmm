@@ -103,6 +103,54 @@ namespace mdJucePlugin
 		return m;
 	}
 
+	elektronData::json::Value midiInOf(const midiIn::Note& _note)
+	{
+		auto m = elektronData::json::Value::object();
+		m.set("type", "midiIn");
+		m.set("ch", static_cast<int>(_note.channel));
+		m.set("note", static_cast<int>(_note.note));
+		m.set("vel", static_cast<int>(_note.velocity));
+		return m;
+	}
+
+	void machineMemorySampleStoredOf(AudioPluginAudioProcessor& _processor)
+	{
+		_processor.machineMemorySampleStored();
+	}
+
+	elektronData::json::Value machineMemoryOf(AudioPluginAudioProcessor& _processor)
+	{
+		const auto s = _processor.machineMemoryStatus();
+		auto m = elektronData::json::Value::object();
+		m.set("type", "machineMemory");
+		m.set("keep", s.keep);
+		m.set("available", s.available);
+		m.set("saved", s.saved);
+		m.set("note", s.note);
+		return m;
+	}
+
+	elektronData::json::Value midiHeldOf(const midiIn::Notes& _notes)
+	{
+		auto m = elektronData::json::Value::object();
+		m.set("type", "midiHeld");
+		auto notes = elektronData::json::Value::array();
+		for(const auto& n : midiIn::list(_notes))
+		{
+			auto o = elektronData::json::Value::object();
+			o.set("ch", n.ch);
+			o.set("note", n.note);
+			notes.push(std::move(o));
+		}
+		m.set("notes", std::move(notes));
+		return m;
+	}
+
+	midiIn::Notes heldMidiNotesOf(AudioPluginAudioProcessor& _processor)
+	{
+		return _processor.heldMidiNotes();
+	}
+
 	void setOutputGainDb(AudioPluginAudioProcessor& _processor, const double _db)
 	{
 		_processor.setOutputGain(outputLevel::gainOfDb(_db));
@@ -120,6 +168,8 @@ namespace mdJucePlugin
 
 	DeskSession::DeskSession(AudioPluginAudioProcessor& _processor) : m_processor(_processor)
 	{
+		// notes that came before this session are old: a page that opens later does not get them
+		while(processor().takeMidiIn()) {}
 	}
 
 	DeskSession::~DeskSession()
@@ -156,6 +206,10 @@ namespace mdJucePlugin
 
 	void DeskSession::toPage(const Value& _message) const
 	{
+		// I-024: a sample the page sent is a save once the machine stores it (written by the machine memory's watch)
+		if(const auto* type = _message.find("type"); type && type->isString() && type->asString() == "sampleLoad")
+			if(const auto* state = _message.find("state"); state && state->isString() && state->asString() == "done")
+				machineMemorySampleStoredOf(m_processor);
 		if(m_toPage)
 			m_toPage(_message);
 	}
@@ -301,11 +355,13 @@ namespace mdJucePlugin
 	PluginWire::PluginWire(AudioPluginAudioProcessor& _processor) : m_processor(_processor), m_wire(wireOf(_processor))
 	{
 		m_processor.getExternalMidi().set(true);
+		m_processor.midiInputsChanged();	// the held notes: from now on the machine's own MIDI comes in
 	}
 
 	PluginWire::~PluginWire()
 	{
 		m_processor.getExternalMidi().set(false);
+		m_processor.midiInputsChanged();
 	}
 
 	Availability midiOutAvailability(const DeskSession& _session)

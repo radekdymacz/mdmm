@@ -52,7 +52,7 @@ const src = FILES.map(f => fs.readFileSync(path.join(__dirname, f), "utf8").repl
 const P = new Function("scope", "with (scope) {\n" + src + `
 ;let renders = 0;
 render = () => { renders++; }; syncControls = () => { }; renderTop = () => { }; renderSub = () => { }; redraw = () => { }; refreshAudible = () => { };
-return { Boot, hostTempoRefused, l2step, playsText, songLcd, S, Docs, Overlay, Held, PREP, scheduleRender, clickSteps, secAction, selStart, stepMenu, stepMenuItems, Modifiers, selCut, selDuplicate, clearSel, setSel, endSelect, interacting, genEnsure, genSpec, setGenSpec, clickTrackKeys, userMute, soloWrites, muteSel, msSet, prepToggle, unmuteAll, Keys,
+return { Boot, hostTempoRefused, l2step, onTelemetry, pauseNow, playsText, songLcd, S, Docs, Overlay, Held, PREP, scheduleRender, clickSteps, secAction, selStart, stepMenu, stepMenuItems, Modifiers, selCut, selDuplicate, clearSel, setSel, endSelect, interacting, genEnsure, genSpec, setGenSpec, clickTrackKeys, userMute, soloWrites, muteSel, msSet, prepToggle, unmuteAll, Keys,
 	get V() { return V; }, setV(v) { V = v; }, view, get renders() { return renders; }, get pending() { return pendingRender; } }; }`)(scope);
 
 /* the machine document: its mutes (machine.desk.mutes) as the machine has them */
@@ -346,6 +346,21 @@ run(); { const before = P.renders; P.Held.begin("gv", {}); P.Held.end("gv"); run
 		all.run = runs[0]; one.run = runs[1];
 		check(P.Modifiers.fn === undefined && typeof P.Modifiers.setFn === "undefined", "no FN latch any more");
 	}
+	/* B-070: a trig removed takes its accent, slide and swing with it in the optimistic write (the core clears all
+	   three); its swing mark used to flash back until the core's result came. Also a cut: the block's swings go. */
+	{
+		P.Docs.patterns[5].tracks[3] = { trigs: [2, 5], accent: [2], slide: [2], swing: [2, 5] };
+		P.Docs.machine = machine({}); P.Overlay.clear(); P.S.tt = "trig"; P.S.sel = 3; P.setV(P.view()); sent.length = 0;
+		check(P.V.tracks[3].swing.has(2) && P.V.tracks[3].acc.has(2) && P.V.tracks[3].slide.has(2), "B-070: track 4 step 3 has a trig with swing, accent and slide");
+		P.clickSteps(stepEv(3, 2, { detail: 0 }));
+		const t4 = P.V.tracks[3];
+		check(last().op === "trig" && last().on === false, "B-070: the click removes the trig: " + args(last()));
+		check(!t4.trigs[2] && !t4.swing.has(2) && !t4.acc.has(2) && !t4.slide.has(2), "B-070: at once (before the core's answer) the step shows no swing, accent or slide");
+		check(t4.swing.has(5), "B-070: the swing on another step stays");
+		P.setSel({ t: 3, n: 1, from: 4, to: 6 }); sent.length = 0; P.selCut();
+		check(!P.V.tracks[3].trigs[5] && !P.V.tracks[3].swing.has(5), "B-070: a cut takes the swing of its steps too, at once");
+		P.clearSel(); P.Overlay.clear(); P.Docs.patterns[5].tracks[3] = { trigs: [], accent: [], slide: [], swing: [] }; P.setV(P.view());
+	}
 	delete P.Docs.patterns[5]; delete P.Docs.kits[3]; P.Overlay.clear(); P.setV(P.view());
 }
 
@@ -371,6 +386,27 @@ check(P.playsText() === "SONG 01 · row 002 of 2 · B02", "the What plays line: 
 P.Docs.telemetry = Object.assign({}, P.Docs.telemetry, { playing: false });
 P.setV(Object.assign({}, P.V, { playing: false }));
 check(P.playsText() === "SONG 01 · 2 rows · stopped", "stopped: no row is said (" + P.playsText() + ")");
+
+/* ---- B-086: a frame the machine sent while it still played, before the pause reached it, keeps the pause ---- */
+{
+	const frame = (step, playing) => P.onTelemetry({ type: "telemetry", step, pattern: 0, playing, recording: false, valid: true, songRow: -1 });
+	frame(4, true); P.S.paused = null;
+	sent.length = 0; P.pauseNow();
+	check(!!P.S.paused && sent.some(m => m.op === "pause"), "B-086: ⇧-click ▶ while playing: paused, the pause sent");
+	frame(5, true);
+	check(!!P.S.paused, "B-086: a late frame (still playing) keeps the pause");
+	frame(-1, false);
+	check(!!P.S.paused && P.S.paused.step === 4, "B-086: the machine stops: still paused on the step it held");
+	frame(4, true);
+	check(P.S.paused === null, "B-086: the machine plays again (PLAY, or its own panel): the pause is over");
+	/* a pause the machine never took: still playing a second after it was sent, the pause is dropped */
+	sent.length = 0; P.pauseNow();
+	frame(5, true);
+	check(!!P.S.paused, "B-086: within a second of the pause, frames that still play keep it");
+	P.S.paused.at -= 1500; frame(6, true);
+	check(P.S.paused === null, "B-086: still playing 1.5 s after the pause was sent: the pause is dropped, the machine plays on");
+	frame(-1, false);
+}
 
 /* ---- B-035: the start-up card's word about the audio ---- */
 check(/not running audio/.test(P.Boot.audioWord({ plugin: true, seconds: 6, blocks: 0, realtime: null })), "a plug-in with no audio block after 5 s: the host is not running its audio");

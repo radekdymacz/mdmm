@@ -9,6 +9,7 @@
 //   mdDeskFirmwareTest <ROM> playload PLAY while the desk loads in the background
 //   mdDeskFirmwareTest <ROM> samples  P9: WAV files into UW ROM slots (SDS), the waveforms read back
 //   mdDeskFirmwareTest <ROM> machine  B-039: a machine change stays (a trig, PLAY, another pattern with the kit)
+//   mdDeskFirmwareTest <ROM> reselect B-122: picking the current pattern again (stopped, playing, after another) keeps it
 //
 // Exits 77 (skip) without arguments.
 
@@ -82,8 +83,9 @@ namespace
 	class Rig
 	{
 	public:
-		explicit Rig(const Bytes& _rom, const std::string& _romName, const Bytes& _patchRam = {}, const bool _waitSplash = true)
-			: m_machine(_rom, _romName, _patchRam, _waitSplash)
+		explicit Rig(const Bytes& _rom, const std::string& _romName, const Bytes& _patchRam = {}, const bool _waitSplash = true,
+			const Bytes& _flash = {}, const Bytes& _factoryCache = {})
+			: m_machine(_rom, _romName, _patchRam, _waitSplash, md::MachineModel::Machinedrum, _flash, _factoryCache)
 		{
 			mdDesk::Desk::Port port;
 			port.device.sendSysex = [this](const Bytes& _b) { m_patternDumps += _b.size() > 6 && _b[6] == 0x67; m_out.push_back(_b); };
@@ -143,6 +145,8 @@ namespace
 				if(const auto b = deskWire::md::note(_ch, _n, _v))
 					m_out.push_back(*b);
 			};
+			// wave 2: MIDI Stop, Continue and the song position, in order with the rest
+			port.device.sendMidi = [this](const Bytes& _b) { m_out.push_back(_b); };
 			port.device.baseChannel = [this](const uint8_t _ch) { m_channel = _ch; };
 			port.toPage = [this](const Value& _m) { g_contract(_m); onPage(_m); };
 			port.device.nowMs = [this] { return ms(m_machine.now()); };
@@ -232,6 +236,7 @@ namespace
 			bool playing = false;
 			bool recording = false;
 			int songRow = -1;
+			int songRepeats = -1;
 		};
 		PageTelemetry pageTelemetry() const
 		{
@@ -245,6 +250,7 @@ namespace
 			if(const auto* p = v.find("playing")) t.playing = p->asBool();
 			if(const auto* p = v.find("recording")) t.recording = p->asBool();
 			if(const auto* p = v.find("songRow"); p && p->isNumber()) t.songRow = static_cast<int>(p->asNumber());
+			if(const auto* p = v.find("songRepeats"); p && p->isNumber()) t.songRepeats = static_cast<int>(p->asNumber());
 			return t;
 		}
 
@@ -381,6 +387,7 @@ namespace
 			t.knobPage = m_machine.read8(md::SequencerState::g_knobPageAddress);
 			t.panelPending = static_cast<int>(m_keys.size());	// the rig's key queue, as md::Device reports its own
 			t.songRow = m_machine.read8(md::SongPosition::g_rowAddress);	// 0.3.5, as md::DeskDevice publishes it
+			t.songRepeats = m_machine.read8(md::SongPosition::g_repeatsAddress);	// 0.6, MD-147
 			// P4, as md::Device publishes them.
 			m_boot.update(m_machine.read8(md::BootAnimation::g_mainScreenAddress), now - m_bootAt);
 			m_bootAt = now;
@@ -908,6 +915,8 @@ namespace
 		_rig.run(50);
 		_rig.page("{\"op\":\"trig\",\"p\":" + p + R"(,"t":0,"s":3,"id":46})");
 		check(_rig.lastResult() && !_rig.lastResult()->find("ok")->asBool(), "grid edits wait while recording");
+		_rig.page(R"({"op":"loadUndoKit","id":848})");
+		check(_rig.lastResult() && !_rig.lastResult()->find("ok")->asBool() && recording(), "UNDO KIT is refused while recording, before any question (its keys would leave the kit list open)");
 		_rig.runUntil(stepIs(12), 3000);
 		_rig.page(R"({"op":"record","id":47})");
 		check(_rig.runUntil([&] { return !recording(); }, 1000), "REC again leaves recording");
@@ -1051,18 +1060,26 @@ namespace
 		_rig.page(R"({"op":"modSet","id":73,"doc":{"schema":"md-desk/modulators","version":1,"sources":[],"links":[]}})");
 	}
 
-	// P3 sampler: Rename sends 0x73. The firmware has no name request, so the only
-	// evidence is its own copy of the last name it took (RAM 0x29f300).
+	// P3 sampler: 0x73 on the firmware. The firmware has no name request; the evidence is its own copy of the last name it
+	// took (RAM 0x29f300). B-128: 0x73 alone renames no slot (it names the NEXT sample received), so the desk's Rename
+	// (sampleRename, `samples` mode) sends the sample again; without the slot's audio (no sample bank: a real machine) it refuses.
 	void sampleName(Rig& _rig)
 	{
 		auto& m = _rig.machine();
-		std::puts("== P3 sampler: Rename (0x73)");
-		_rig.page(R"({"op":"sampleName","slot":5,"name":"KIK","id":60})");
-		check(resultOk(_rig), "sample name accepted");
+		std::puts("== P3 sampler: 0x73 (the name of the next sample)");
+		m.send(ed::mdSetSampleName(5, "KIK"));
 		_rig.run(100);
 		const bool taken = m.read8(0x29f300) == 'K' && m.read8(0x29f301) == 'I' && m.read8(0x29f302) == 'K'
 			&& m.read8(0x29f303) == ' ';
 		check(taken, "the firmware took the name (its last-name buffer, RAM 0x29f300)");
+		_rig.run(3000);
+		std::string slotName;
+		for(uint32_t i = 0; i < 4; ++i)
+			slotName += static_cast<char>(m.read8(0x700000 + ed::g_mdSampleNamesAddress + 5 * 5 + i));
+		std::printf("  ROM-06's name after 0x73 KIK: '%s'\n", slotName.c_str());
+		check(slotName.compare(0, 3, "KIK") != 0, "0x73 alone leaves the slot's name (B-128: it renames no slot)");
+		_rig.page(R"({"op":"sampleName","slot":5,"name":"KIK","id":60})");
+		check(_rig.lastResult() && !_rig.lastResult()->find("ok")->asBool(), "Rename without the slot's audio is refused (a real machine)");
 		_rig.page(R"({"op":"sampleName","slot":5,"name":"TOOLONG","id":61})");
 		check(_rig.lastResult() && !_rig.lastResult()->find("ok")->asBool(), "a name longer than 4 is refused");
 	}
@@ -1071,7 +1088,19 @@ namespace
 	void bootHold(const Bytes& _rom, const std::string& _romName)
 	{
 		std::puts("== P4 boot: input held until the start-up animation is over");
-		Rig rig(_rom, _romName, {}, false);
+		// The start the page sees (B-003): a machine with a blank UW flash first formats it, which the plug-in shows as
+		// loading, and starts again on the formatted flash. So the formatting run first, then the start under test on
+		// its flash. B-109: the desk's status requests at the instant the firmware takes MIDI left 0x20 in the main
+		// screen byte while the animation still ran; the desk took that for the main screen and its first PLAY was lost.
+		Bytes flash, cache;
+		{
+			Machine prep(_rom, _romName);
+			require(prep.hardware().isFactoryFlashCacheReady(), "the first run did not prepare the UW flash");
+			flash = prep.hardware().copyFlashData();
+			cache = prep.hardware().copyFactoryFlashCache();
+		}
+		Rig rig(_rom, _romName, Bytes{}, false, flash, cache);
+		check(!rig.machine().hardware().isFactoryFlashInitializationExpected(), "the start under test is not the formatting run");
 		auto& m = rig.machine();
 		const auto t0 = m.now();
 		rig.page(R"({"op":"ready"})");
@@ -1422,6 +1451,114 @@ namespace
 	}
 
 	// P4: the kit library and pattern chooser on firmware, checked by the machine's own dumps.
+	// MD-106: the editor's longer total length does what the machine's SCALE SETUP does (gapProbesFirmwareTest w12extend):
+	// the same 16-step pattern in two slots, one lengthened on the panel (FUNCTION + SCALE, the scale field, UP), one by
+	// the editor's totalLength; both read back. Again with a trig past the old length (then neither copies).
+	void extendPattern(Rig& _rig)
+	{
+		auto& m = _rig.machine();
+		auto& desk = _rig.desk();
+		std::puts("== MD-106 a pattern made longer copies its steps, as the machine's SCALE SETUP");
+		const auto settle = [&] { _rig.runUntil([&] { return !desk.isBusy(); }, 3000); _rig.run(300); };
+		const auto hold = [&](const std::vector<md::PanelControl>& _keys)
+		{
+			md::PanelRowState rows;
+			std::vector<md::PanelPacket> states;
+			for(const auto k : _keys)
+				states.push_back(rows.press(*md::panelPacket(m.hardware().getModel(), k)));
+			for(auto it = _keys.rbegin(); it != _keys.rend(); ++it)
+				states.push_back(rows.release(*md::panelPacket(m.hardware().getModel(), *it)));
+			for(const auto& st : states)
+			{
+				m.hardware().trySendPanelEvent(st.row, st.mask);
+				_rig.run(60);
+			}
+			_rig.run(100);
+		};
+		const auto key = [&](const md::PanelControl _k) { hold({_k}); };
+		// B-103 (the 0.6 e2e run): the third case is the LCD's LEN clicked round, 32 -> 48 -> 64 -> 16 -> 32, on a 32-step
+		// pattern whose page 2 differs from page 1: going up copies, so at 16 the later pages hold steps, and 16 -> 32 then
+		// copies nothing: steps 17-32 are what was there (page 2 again), not page 1 repeated
+		for(const int mode : {0, 1, 2})
+		{
+			const bool later = mode == 1, round = mode == 2;
+			auto p = *_rig.readPattern(110);
+			p.length = round ? 32 : 16;
+			p.scale = round ? 1 : 0;
+			p.trigs.fill(0);
+			p.lockMasks.fill(0);
+			for(auto& row : p.lockRows) row.fill(0xff);
+			p.lockedRows = 0;
+			p.accentPattern = 1ull << 4;
+			p.slidePattern = 0;
+			p.swingPattern = 1ull << 8;
+			p.trackAccent.fill(0); p.trackSlide.fill(0); p.trackSwing.fill(0);
+			for(const size_t i : {0, 4, 8, 13})
+				p = ed::withTrig(p, 0, i, true);
+			p = ed::withTrig(p, 1, 2, true);
+			if(later)
+				p = ed::withTrig(p, 2, 40, true);
+			if(round)
+				p = ed::withTrig(p, 0, 20, true);
+			p = *ed::withLock(p, 0, 0, 4, 99);
+			for(const uint8_t slot : {110, 111})
+			{
+				p.position = slot;
+				m.send(ed::encodeMdPattern(p));
+				_rig.run(400);
+			}
+			_rig.pageConfirmed(R"({"op":"load","kind":"pattern","slot":111,"id":1059})");
+			const bool known = _rig.runUntil([&] { const auto it = desk.documents().patterns.find(111); return it != desk.documents().patterns.end() && it->second.trigs == p.trigs; }, 4000);
+			check(known, "the editor read the pattern back");
+			// the machine: SCALE SETUP on the pattern that plays, the scale field one up (16 -> 32)
+			m.send(ed::mdLoadPattern(110));
+			_rig.run(400);
+			key(md::PanelControl::Exit);
+			key(md::PanelControl::Exit);
+			hold({md::PanelControl::Function, md::PanelControl::Scale});
+			// the window keeps its field (LEN, SCALE, the speed; LEFT and RIGHT wrap): LEN at first, SCALE after
+			if(mode == 0)
+				key(md::PanelControl::Right);
+			if(round)
+			{
+				for(const auto k : {md::PanelControl::Up, md::PanelControl::Up, md::PanelControl::Down, md::PanelControl::Down,
+						md::PanelControl::Down, md::PanelControl::Up})
+					key(k);
+			}
+			else
+				key(md::PanelControl::Up);
+			if(const char* snap = std::getenv("EXTEND_SNAP"))
+			{
+				const auto panel = m.hardware().getFrontPanelSnapshot();
+				std::ofstream image(std::string(snap) + (later ? "b.pgm" : "a.pgm"), std::ios::binary);
+				image << "P5\n128 64\n255\n";
+				for(uint32_t y = 0; y < 64; ++y)
+					for(uint32_t x = 0; x < 128; ++x)
+						image.put(panel.getLcdPixel(x, y) ? '\0' : '\xff');
+			}
+			key(md::PanelControl::Exit);
+			_rig.run(400);
+			// the editor: totalLength 32 on the other slot (round: the LCD's LEN clicks, 48, 64, 16, 32)
+			for(const int v : round ? std::vector<int>{48, 64, 16, 32} : std::vector<int>{32})
+			{
+				_rig.pageConfirmed("{\"op\":\"totalLength\",\"p\":111,\"v\":" + std::to_string(v) + ",\"force\":true,\"id\":1060}");
+				settle();
+			}
+			const auto a = *_rig.readPattern(110), b = *_rig.readPattern(111);
+			bool locks = true;
+			for(size_t i = 0; i < 64; ++i)
+				locks = locks && ed::lockValue(a, 0, 0, i) == ed::lockValue(b, 0, 0, i);
+			const bool same = a.length == b.length && a.scale == b.scale && a.trigs == b.trigs && a.accentPattern == b.accentPattern
+				&& a.swingPattern == b.swingPattern && a.trackAccent == b.trackAccent && a.trackSwing == b.trackSwing && a.lockMasks == b.lockMasks && locks;
+			std::printf("  %s: machine %d steps, T1 %016llx; editor %d steps, T1 %016llx\n", round ? "LEN round from 32" : later ? "a trig past the old length" : "the later steps empty",
+				a.length, static_cast<unsigned long long>(a.trigs[0]), b.length, static_cast<unsigned long long>(b.trigs[0]));
+			const uint64_t want = round ? (p.trigs[0] & 0xffffffffull) : later ? p.trigs[0] : (p.trigs[0] | (p.trigs[0] << 16));
+			check(same && a.length == 32 && (a.trigs[0] & 0xffffffffull) == want,
+				std::string("the editor's longer pattern is the machine's: ") + (round ? "steps 17-32 are page 2 again, nothing copied (the trip up filled the later pages)"
+					: later ? "nothing copied (a trig past the old length)" : "steps 1-16 repeated into 17-32"));
+		}
+	}
+
 	void library(Rig& _rig)
 	{
 		auto& m = _rig.machine();
@@ -1455,10 +1592,12 @@ namespace
 		_rig.pageConfirmed(R"({"op":"kitRename","k":40,"name":"lib test","id":952})");
 		settle();
 		check(kitNameOf(readKit(40)) == "LIB TEST", "rename of a slot that does not play: dump with the new name");
+		const auto beforeClear = readKit(40);
 		_rig.pageConfirmed(R"({"op":"kitClear","k":40,"id":953})");
 		settle();
 		const auto cleared = readKit(40);
-		check(std::all_of(cleared.models.begin(), cleared.models.end(), [](const uint32_t _m) { return _m == 0; }) && kitNameOf(cleared).empty(),
+		check(cleared == ed::mdClearedKit(beforeClear, 40), "clear: the slot holds what the machine's CLEAR KIT leaves (MD-045)");
+		check(std::all_of(cleared.models.begin(), cleared.models.end(), [](const uint32_t _m) { return _m == 0; }) && mdDesk::kitNameText(cleared).empty(),
 			"clear: every track GND-EMPTY, no name");
 		_rig.pageConfirmed(R"({"op":"undo","id":954})");
 		settle();
@@ -1546,10 +1685,60 @@ namespace
 		const bool now = _rig.runUntil([&] { return _rig.pageTelemetry().playing && _rig.pageTelemetry().pattern == target; }, 3000);
 		std::printf("  switch now: playing %s after %.0f ms\n", ed::mdPatternName(target).c_str(), ms(m.now() - t0));
 		check(now, "Now while playing: STOP, LOAD PATTERN, PLAY plays the new pattern");
-		_rig.pageConfirmed(R"({"op":"stop","id":963})");
+		// MD-099: a pattern queued while playing (Go) starts at STOP, before the pattern's end (gapProbesFirmwareTest w12stop)
+		{
+			_rig.runUntil([&] { const auto st = _rig.pageTelemetry().step; return st >= 1 && st <= 3; }, 4000);
+			_rig.pageConfirmed("{\"op\":\"select\",\"p\":" + std::to_string(pat) + ",\"force\":true,\"id\":964}");
+			_rig.run(60);
+			const bool queued = _rig.pageTelemetry().pattern == target;
+			const auto t1 = m.now();
+			_rig.pageConfirmed(R"({"op":"stop","id":963})");
+			const bool jumped = _rig.runUntil([&] { return !_rig.pageTelemetry().playing && _rig.pageTelemetry().pattern == pat && desk.linkState().pattern == pat; }, 1500);
+			std::printf("  STOP with %s queued: %s after %.0f ms\n", ed::mdPatternName(pat).c_str(), jumped ? "switched" : "not switched", ms(m.now() - t1));
+			check(queued && jumped, "STOP with a pattern queued: the machine and the editor switch to it at once");
+		}
 		_rig.run(300);
 		m.send(ed::mdLoadPattern(pat));
 		_rig.run(300);
+		// MD-043: LOAD KIT over the edit puts it in the machine's UNDO KIT; loadUndoKit (the panel's keys) brings it back,
+		// unsaved, in its own slot (gapProbesFirmwareTest w12undo)
+		{
+			const auto here = *desk.linkState().kit;
+			const uint8_t other = static_cast<uint8_t>(here == 41 ? 40 : 41);
+			_rig.pageConfirmed("{\"op\":\"kitName\",\"k\":" + std::to_string(here) + ",\"name\":\"UNDO TEST\",\"id\":976}");
+			settle();
+			_rig.pageConfirmed("{\"op\":\"kitLoad\",\"k\":" + std::to_string(other) + ",\"force\":true,\"id\":973}");
+			settle();
+			check(kitStatus() == other, "LOAD KIT of another slot over the renamed kit");
+			_rig.pageConfirmed(R"({"op":"loadUndoKit","force":true,"id":974})");
+			const bool back = _rig.runUntil([&] { return desk.linkState().kit == here && desk.documents().working && kitNameOf(desk.documents().working->kit) == "UNDO TEST"; }, 6000);
+			settle();
+			std::printf("  UNDO KIT: kit %d, working '%s'\n", kitStatus(), desk.documents().working ? kitNameOf(desk.documents().working->kit).c_str() : "?");
+			check(back && kitStatus() == here, "UNDO KIT: the renamed kit plays again in its own slot, and the editor follows");
+			_rig.pageConfirmed(R"({"op":"reloadKit","force":true,"id":975})");
+			settle();
+		}
+		// MD-043 at the top of the list: the route from kit 64 is 2 + 64 + 1 keys (134 panel states, more than the old
+		// queue of 128 held): an edit of kit 63, LOAD KIT 64, UNDO KIT brings kit 63 back
+		{
+			const auto here = *desk.linkState().kit;
+			_rig.pageConfirmed(R"({"op":"kitLoad","k":62,"force":true,"id":977})");
+			settle();
+			_rig.pageConfirmed(R"({"op":"kitName","k":62,"name":"UNDO HIGH","id":978})");
+			settle();
+			_rig.pageConfirmed(R"({"op":"kitLoad","k":63,"force":true,"id":979})");
+			settle();
+			check(kitStatus() == 63, "LOAD KIT 64 over the renamed kit 63");
+			_rig.pageConfirmed(R"({"op":"loadUndoKit","force":true,"id":980})");
+			const bool back = _rig.runUntil([&] { return desk.linkState().kit == 62 && desk.documents().working && kitNameOf(desk.documents().working->kit) == "UNDO HIGH"; }, 8000);
+			settle();
+			std::printf("  UNDO KIT from kit 64: kit %d, working '%s'\n", kitStatus(), desk.documents().working ? kitNameOf(desk.documents().working->kit).c_str() : "?");
+			check(back && kitStatus() == 62, "UNDO KIT from kit 64 (65 UP keys): kit 63 plays again, renamed, and the machine is out of its kit list");
+			_rig.pageConfirmed(R"({"op":"reloadKit","force":true,"id":981})");
+			settle();
+			_rig.pageConfirmed("{\"op\":\"kitLoad\",\"k\":" + std::to_string(here) + ",\"force\":true,\"id\":982}");
+			settle();
+		}
 	}
 
 	// P4 HW MIDI against the emulated MD as the MIDI peer ("a real Machinedrum"): the desk has
@@ -2555,7 +2744,7 @@ namespace
 	}
 
 	// B-051, F3: the global the machine ships with, read from a fresh machine (every slot): elektronData::mdFactoryGlobal
-	// must be it (GLOBAL › Reset to defaults writes it). FACTORY_PRINT=1 prints the dump as the C++ table.
+	// must be it (GLOBAL › Clear writes it). FACTORY_PRINT=1 prints the dump as the C++ table.
 	void factoryGlobal(const Bytes& _rom, const std::string& _romName)
 	{
 		std::puts("== the factory global");
@@ -2577,11 +2766,40 @@ namespace
 		}
 	}
 
-	// B-051, F3: GLOBAL › Reset to defaults. The base channel and TEMPO OUT changed, then globalReset: the active global
+	// 0.6, GLOBAL › Map editor › Reset map: SysEx 0x64 (Reset MIDI note map) leaves Elektron's note map, the factory
+	// global's (elektronData::mdFactoryGlobal), and nothing else of the global changes. The editor's Reset map writes that
+	// map in a global dump (globalSet resetMap, undoable), so the two must agree.
+	void resetNoteMap(const Bytes& _rom, const std::string& _romName)
+	{
+		std::puts("== Reset MIDI note map (0x64)");
+		Machine m(_rom, _romName);
+		auto g = ed::decodeMdGlobal(m.request(ed::mdGlobalRequest(0), ed::g_mdGlobalDump));
+		require(g.has_value(), "global 1 read");
+		g->position = 0;
+		for(size_t n = 0; n < 16; ++n)
+			g->keymap[n] = uint8_t(15 - n);	// notes 0-15 on the tracks backwards, the rest kept
+		g->keymap[60] = ed::MdGlobal::g_unmapped;
+		g->trigMode = 2;
+		m.send(ed::encodeMdGlobal(*g));
+		m.send(ed::mdSetActiveGlobal(0));
+		m.run(300);
+		const auto scrambled = ed::decodeMdGlobal(m.request(ed::mdGlobalRequest(0), ed::g_mdGlobalDump));
+		require(scrambled && scrambled->keymap == g->keymap, "the changed map is on the machine");
+		m.send(ed::mdResetNoteMap());
+		m.run(300);
+		const auto back = ed::decodeMdGlobal(m.request(ed::mdGlobalRequest(0), ed::g_mdGlobalDump));
+		require(back.has_value(), "global 1 read after 0x64");
+		check(back->keymap == ed::mdFactoryGlobal(0).keymap, "after 0x64 the map is the factory global's (the editor's Reset map)");
+		auto rest = *back;
+		rest.keymap = g->keymap;
+		check(rest == *scrambled, "0x64 changes the map only (TRIG mode and the rest kept)");
+	}
+
+	// B-051, F3: GLOBAL › Clear. The base channel and TEMPO OUT changed, then globalReset: the active global
 	// reads back as the factory one, and a mute reaches each of the 16 tracks.
 	void globalReset(const Bytes& _rom, const std::string& _romName)
 	{
-		std::puts("== GLOBAL › Reset to defaults");
+		std::puts("== GLOBAL › Clear");
 		Rig rig(_rom, _romName);
 		auto& desk = rig.desk();
 		rig.page(R"({"op":"ready"})");
@@ -2612,6 +2830,456 @@ namespace
 	// machine plays. A song A02, A03 x2, A04, LOOP to row 2 (forever), END, short patterns, SONG mode, PLAY: at
 	// the middle of each pattern pass the row's pattern is the pattern that plays, and the rows go 1 2 2 3, then
 	// round the loop 2 2 3 2 2 3 (one-based). The page marks a row only while the machine plays in SONG mode.
+	// Wave 2 (doc/modern-ux/PROBES-manual-gaps.md P1, P5): the transport's commands through the desk on the firmware.
+	// Pause and resume (MIDI Stop and Continue), play from a song row (SONG mode, the song position, Continue), panic (STOP
+	// twice), the tempo nudge (0x61, the global document untouched).
+	// 0.6 wave 7: erase while live recording (manual p.40) through the desk: liveErase holds EXIT/NO and the track's
+	// TRIG key until off; the firmware removes the track's trigs that play meanwhile, the other tracks keep theirs, and
+	// the page's pattern document shows it after (mdEditorProbeFirmwareTest liveerase measured the keys).
+	void liveErase(const Bytes& _rom, const std::string& _romName)
+	{
+		std::puts("liveerase: hold Delete while live recording");
+		Rig rig(_rom, _romName);
+		rig.page(R"({"op":"ready"})");
+		rig.runUntil([&] { return rig.desk().isInputReady() && rig.desk().linkState().pattern && rig.desk().linkState().kit; }, 8000);
+		auto& m = rig.machine();
+		auto& desk = rig.desk();
+		const auto pattern = *desk.linkState().pattern;
+		rig.runUntil([&] { return desk.documents().patterns.count(pattern) > 0 && !desk.isBusy(); }, 10000);
+		auto p = *rig.readPattern(pattern);
+		p.length = 16;
+		for(uint8_t t = 12; t < 14; ++t)
+			for(uint8_t st = 0; st < 64; ++st)
+				p = ed::withTrig(p, t, st, st < 16);
+		rig.page(R"({"op":"set","id":1,"kind":"pattern","doc":)" + ed::json::write(ed::patternToJson(p)) + "}");
+		check(resultOk(rig), "the pattern set");
+		rig.runUntil([&] { return !desk.isBusy(); }, 8000);
+		rig.run(1000);
+		const auto count = [&](const ed::MdPattern& _p, const int _t) { int n = 0; for(size_t st = 0; st < 16; ++st) n += ed::hasTrig(_p, _t, st); return n; };
+		check(rig.runUntil([&] { const auto q = rig.readPattern(pattern); return q && count(*q, 13) == 16; }, 8000), "track 14 has a trig on every step");
+		const auto recording = [&] { return rig.pageTelemetry().recording; };
+		rig.page("{\"op\":\"select\",\"p\":" + std::to_string(pattern) + ",\"id\":8}");
+		rig.run(1500);
+		rig.page(R"({"op":"liveErase","t":13,"on":true,"id":2})");
+		check(rig.lastResult() && !rig.lastResult()->find("ok")->asBool(), "liveErase refused while not recording");
+		rig.page(R"({"op":"record","id":3})");
+		check(rig.runUntil(recording, 1500), "live recording starts");
+		rig.runUntil([&] { return m.playhead() == 2; }, 3000);
+		rig.page(R"({"op":"liveErase","t":13,"on":true,"id":4})");
+		check(resultOk(rig), "liveErase on: EXIT/NO and TRIG 14 down");
+		rig.runUntil([&] { return m.playhead() == 7; }, 3000);
+		rig.page(R"({"op":"liveErase","t":13,"on":false,"id":5})");
+		check(resultOk(rig), "liveErase off: both let go");
+		rig.runUntil([&] { return m.playhead() == 12; }, 3000);
+		rig.page(R"({"op":"record","id":6})");
+		check(rig.runUntil([&] { return !recording(); }, 1500), "REC again leaves recording");
+		rig.page(R"({"op":"stop","id":7})");
+		rig.run(1500);
+		rig.runUntil([&] { return !desk.isBusy(); }, 4000);
+		// the desk's own read-back (a request of the test's would race the desk's while it reads back)
+		const auto after = desk.documents().patterns.at(pattern);
+		const int t14 = count(after, 13), t13 = count(after, 12);
+		std::printf("  after: track 14 %d of 16 trigs, track 13 %d of 16\n", t14, t13);
+		check(t14 < 16 && t14 >= 9, "track 14 lost the trigs that played while Delete was held");
+		check(t13 == 16, "track 13 kept its trigs");
+		// B-101: no other track changes (the e2e run: track 1 gained a trig while track 9's were erased)
+		std::string changed;
+		for(int t = 0; t < 16; ++t)
+		{
+			if(t == 13)
+				continue;
+			for(size_t st = 0; st < 64; ++st)
+				if(ed::hasTrig(p, t, st) != ed::hasTrig(after, t, st))
+					changed += " T" + std::to_string(t + 1) + "/" + std::to_string(st + 1) + (ed::hasTrig(after, t, st) ? "+" : "-");
+		}
+		std::printf("  other tracks' trigs changed:%s\n", changed.empty() ? " none" : changed.c_str());
+		check(changed.empty(), "the other tracks kept their trigs");
+		const bool shown = rig.runUntil([&]
+		{
+			const auto d = rig.pageDoc("pattern", pattern);
+			return d && static_cast<int>(d->find("tracks")->asArray()[13].find("trigs")->asArray().size()) == t14;
+		}, 4000);
+		check(shown, "the page's pattern document shows the erase");
+		// 0.6 e2e (md-song-chain after md-seq-live-erase): a chain made after the erase, stopped, is held
+		rig.page(R"({"op":"chain","patterns":[1,2],"id":9})");
+		check(resultOk(rig), "chain A02 A03 after the erase accepted");
+		const bool chained = rig.runUntil([&] { return chainOf(rig) == std::vector<int>{1, 2}; }, 3000);
+		const auto& ct = rig.telemetry();
+		std::printf("  chain after the erase: known %d active %d, %zu patterns, recording %d playing %d\n", ct.chainKnown, ct.chain.active, ct.chain.patterns.size(), ct.recording, ct.playing);
+		check(chained, "a chain after a live erase is held by the firmware");
+	}
+
+
+	// B-131 (0.6 e2e, md-sound-machine-reference): a CTR machine on a track leaves the firmware's LFO track at 16 (no
+	// track) in the working kit; the desk must take the next edit of that kit
+	void ctrLfoTrack(const Bytes& _rom, const std::string& _romName)
+	{
+		std::puts("ctrlfo: a machine after a CTR machine");
+		Rig rig(_rom, _romName);
+		rig.page(R"({"op":"ready"})");
+		rig.runUntil([&] { return rig.desk().isInputReady() && rig.desk().linkState().pattern && rig.desk().linkState().kit; }, 8000);
+		auto& desk = rig.desk();
+		rig.runUntil([&] { return desk.documents().working.has_value() && !desk.isBusy(); }, 10000);
+		const auto kit = std::to_string(*desk.linkState().kit);
+		const auto pick = [&](const char* _name)
+		{
+			const auto model = *ed::mdMachineModel(_name);
+			rig.page("{\"op\":\"machine\",\"k\":" + kit + ",\"t\":0,\"model\":" + std::to_string(model) + ",\"keepFx\":true}");
+			const bool ok = resultOk(rig);
+			rig.runUntil([&] { return !desk.isBusy(); }, 4000);
+			rig.run(1500);
+			std::printf("  %s: %s, LFO track %d\n", _name, ok ? "accepted" : ed::json::write(*rig.lastResult()).c_str(), desk.documents().working->kit.lfos[0].track);
+			return ok;
+		};
+		check(pick("CTR-AL"), "CTR-AL on track 1 accepted");
+		check(pick("CTR-8P"), "the next machine after CTR-AL accepted (the LFO track the firmware left)");
+		check(pick("TRX-BD"), "and a drum machine after it");
+	}
+
+	// 0.6 MD-140: remove locks while live recording (manual p.48) through the desk: liveErase with i selects the track,
+	// shows the parameter's knob page and holds EXIT/NO with that knob's switch; the firmware removes the track's locks of
+	// that parameter on the steps that play meanwhile; its trigs and other locks stay (mdEditorProbeFirmwareTest liveunlock).
+	void liveUnlock(const Bytes& _rom, const std::string& _romName)
+	{
+		std::puts("liveunlock: hold a value and Delete while live recording");
+		Rig rig(_rom, _romName);
+		rig.page(R"({"op":"ready"})");
+		rig.runUntil([&] { return rig.desk().isInputReady() && rig.desk().linkState().pattern && rig.desk().linkState().kit; }, 8000);
+		auto& m = rig.machine();
+		auto& desk = rig.desk();
+		const auto pattern = *desk.linkState().pattern;
+		rig.runUntil([&] { return desk.documents().patterns.count(pattern) > 0 && !desk.isBusy(); }, 10000);
+		auto p = *rig.readPattern(pattern);
+		p.length = 16;
+		for(uint8_t t = 12; t < 14; ++t)
+			for(uint8_t st = 0; st < 64; ++st)
+				p = ed::withTrig(p, t, st, st < 16);
+		// track 14: parameter 9 (EFFECTS page, knob B) and parameter 1 locked on every step; track 13: parameter 9
+		for(uint8_t st = 0; st < 16; ++st)
+		{
+			p = *ed::withLock(p, 13, 9, st, 20);
+			p = *ed::withLock(p, 13, 1, st, 30);
+			p = *ed::withLock(p, 12, 9, st, 40);
+		}
+		rig.page(R"({"op":"set","id":1,"kind":"pattern","doc":)" + ed::json::write(ed::patternToJson(p)) + "}");
+		check(resultOk(rig), "the pattern set");
+		rig.runUntil([&] { return !desk.isBusy(); }, 8000);
+		rig.run(1000);
+		const auto locks = [&](const ed::MdPattern& _p, const int _t, const int _i) { int n = 0; for(size_t st = 0; st < 16; ++st) n += ed::lockValue(_p, _t, _i, st).has_value(); return n; };
+		const auto trigs = [&](const ed::MdPattern& _p, const int _t) { int n = 0; for(size_t st = 0; st < 16; ++st) n += ed::hasTrig(_p, _t, st); return n; };
+		check(rig.runUntil([&] { const auto q = rig.readPattern(pattern); return q && locks(*q, 13, 9) == 16; }, 8000), "track 14 has a lock on every step");
+		const auto recording = [&] { return rig.pageTelemetry().recording; };
+		rig.page("{\"op\":\"select\",\"p\":" + std::to_string(pattern) + ",\"id\":8}");
+		rig.run(1500);
+		rig.page(R"({"op":"record","id":3})");
+		check(rig.runUntil(recording, 1500), "live recording starts");
+		rig.runUntil([&] { return m.playhead() == 1; }, 3000);
+		rig.page(R"({"op":"liveErase","t":13,"on":true,"i":9,"id":4})");
+		check(resultOk(rig), "liveErase with i on: track 14 selected, then EXIT/NO and knob B");
+		// the page's word every 250 ms while Delete is held, to step 9
+		while(m.playhead() != 9)
+		{
+			rig.run(100);
+			rig.page(R"({"op":"liveErase","t":13,"on":true,"i":9,"id":5})");
+			if(!recording())
+				break;
+		}
+		rig.page(R"({"op":"liveErase","t":13,"on":false,"id":6})");
+		check(resultOk(rig), "liveErase off: both let go");
+		rig.runUntil([&] { return m.playhead() == 14; }, 3000);
+		rig.page(R"({"op":"record","id":7})");
+		check(rig.runUntil([&] { return !recording(); }, 1500), "REC again leaves recording");
+		rig.page(R"({"op":"stop","id":9})");
+		rig.run(1500);
+		rig.runUntil([&] { return !desk.isBusy(); }, 4000);
+		const auto after = desk.documents().patterns.at(pattern);
+		const int l9 = locks(after, 13, 9), l1 = locks(after, 13, 1), other = locks(after, 12, 9);
+		std::printf("  after: track 14 parameter 9 %d of 16 locks, parameter 1 %d, trigs %d; track 13 parameter 9 %d\n", l9, l1,
+			trigs(after, 13), other);
+		check(l9 < 16 && l9 >= 6, "track 14 lost parameter 9's locks on the steps that played while it was held");
+		check(l1 == 16 && trigs(after, 13) == 16, "its trigs and parameter 1's locks stay");
+		check(other == 16, "track 13 keeps its locks");
+		// B-101: no track's trigs change (a key let go in the wrong order sets one on the machine's selected track)
+		std::string changed;
+		for(int t = 0; t < 16; ++t)
+			for(size_t st = 0; st < 64; ++st)
+				if(ed::hasTrig(p, t, st) != ed::hasTrig(after, t, st))
+					changed += " T" + std::to_string(t + 1) + "/" + std::to_string(st + 1) + (ed::hasTrig(after, t, st) ? "+" : "-");
+		std::printf("  trigs changed:%s\n", changed.empty() ? " none" : changed.c_str());
+		check(changed.empty(), "every track kept its trigs");
+		const bool shown = rig.runUntil([&]
+		{
+			const auto d = rig.pageDoc("pattern", pattern);
+			std::vector<std::string> errors;
+			const auto q = d ? ed::patternFromJson(*d, errors) : std::nullopt;
+			return q && locks(*q, 13, 9) == l9;
+		}, 4000);
+		check(shown, "the page's pattern document shows it");
+	}
+
+	// B-101 (the 0.6 e2e run, md-seq-live-unlock): locks drawn on the track with the most trigs, REC at once, the locks
+	// erased as they play: no "Push failed: the machine did not read back pattern A01", REC waits for the drawn locks to be
+	// on the machine (none dumped over the recording), and the editor ends with the machine's pattern.
+	void editThenRecord(const Bytes& _rom, const std::string& _romName)
+	{
+		std::puts("edit then record: locks drawn, REC at once, the locks erased while recording");
+		Rig rig(_rom, _romName);
+		rig.page(R"({"op":"ready"})");
+		rig.runUntil([&] { return rig.desk().isInputReady() && rig.desk().linkState().pattern && rig.desk().linkState().kit; }, 8000);
+		auto& desk = rig.desk();
+		const auto pattern = *desk.linkState().pattern;
+		rig.runUntil([&] { return desk.documents().patterns.count(pattern) > 0 && !desk.isBusy(); }, 10000);
+		const auto p0 = desk.documents().patterns.at(pattern);
+		const auto trigs = [&](const int _t) { std::vector<size_t> v; for(size_t st = 0; st < ed::visibleSteps(p0); ++st) if(ed::hasTrig(p0, _t, st)) v.push_back(st); return v; };
+		int t = 0;
+		for(int k = 1; k < 16; ++k)
+			if(trigs(k).size() > trigs(t).size())
+				t = k;
+		const auto on = trigs(t);
+		require(on.size() >= 4, "no track with four trigs");
+		const auto errors = rig.pageErrors;
+		int id = 10;
+		for(const auto st : on)
+		{
+			rig.page("{\"op\":\"lock\",\"p\":" + std::to_string(pattern) + ",\"t\":" + std::to_string(t) + ",\"i\":12,\"s\":" + std::to_string(st) + ",\"v\":" + std::to_string(20 + st) + ",\"id\":" + std::to_string(id++) + "}");
+			rig.run(15);
+		}
+		rig.run(100);
+		rig.page(R"({"op":"record","id":3})");
+		std::printf("  REC: %s\n", rig.lastResult() ? ed::json::write(*rig.lastResult()).c_str() : "none");
+		check(rig.runUntil([&] { return rig.pageTelemetry().recording; }, 5000), "live recording starts");
+		rig.run(200);
+		for(int k = 0; k < 15; ++k)
+		{
+			rig.page("{\"op\":\"liveErase\",\"t\":" + std::to_string(t) + ",\"on\":true,\"i\":12,\"id\":30}");
+			rig.run(100);
+		}
+		rig.page("{\"op\":\"liveErase\",\"t\":" + std::to_string(t) + ",\"on\":false,\"id\":31}");
+		rig.run(1500);
+		rig.page(R"({"op":"record","id":4})");
+		rig.page(R"({"op":"stop","id":5})");
+		rig.run(1500);
+		rig.runUntil([&] { return !desk.isBusy(); }, 10000);
+		rig.run(6000);
+		const auto q = rig.readPattern(pattern);
+		const auto& d = desk.documents().patterns.at(pattern);
+		int machine = 0, shown = 0, drawn = 0;
+		for(const auto st : on)
+		{
+			const auto v = q ? ed::lockValue(*q, t, 12, st) : std::nullopt;
+			machine += v.has_value();
+			drawn += v == std::optional<uint8_t>(static_cast<uint8_t>(20 + st));
+			shown += ed::lockValue(d, t, 12, st).has_value();
+		}
+		std::printf("  track %d: %zu locks drawn; after: %d on the machine (%d with the drawn value), %d in the editor, %zu page errors\n",
+			t + 1, on.size(), machine, drawn, shown, rig.pageErrors - errors);
+		check(rig.pageErrors == errors, "no push failed while recording");
+		check(machine < static_cast<int>(on.size()), "the locks that played while it was held are gone");
+		check(drawn == machine && machine * 2 >= static_cast<int>(on.size()), "the others are the drawn ones: REC waited for them to be on the machine");
+		check(q && *q == d, "the editor shows the machine's pattern");
+	}
+
+	void transport(const Bytes& _rom, const std::string& _romName)
+	{
+		std::puts("transport: pause, play from a row, panic, nudge");
+		Rig rig(_rom, _romName);
+		rig.page(R"({"op":"ready"})");
+		rig.runUntil([&] { return rig.desk().isInputReady() && rig.desk().linkState().pattern; }, 5000);
+		auto& m = rig.machine();
+		const auto base = rig.readPattern(0);
+		require(base.has_value(), "no pattern A01");
+		for(uint8_t s = 1; s < 5; ++s)
+		{
+			auto p = *base;
+			p.position = s;
+			p.length = 8;
+			p.trigs.fill(0);
+			p.lockMasks.fill(0);
+			p.trigs[s] = 0x11;
+			m.send(ed::encodeMdPattern(p));
+		}
+		ed::MdSong song;
+		song.position = 6;
+		const auto row = [](const uint8_t _pattern, const uint8_t _repeats)
+		{
+			ed::MdSongRow r;
+			r.pattern = _pattern;
+			r.repeats = _repeats;
+			r.end = 8;
+			return r;
+		};
+		// rows of 8 steps: row 1 once, row 2 twice, rows 3 and 4 once
+		song.rows = {row(1, 0), row(2, 1), row(3, 0), row(4, 0), row(ed::MdSongRow::g_endRow, 0)};
+		m.send(ed::encodeMdSong(song));
+		m.send(ed::mdLoadSong(6));
+		rig.run(300);
+		rig.page(R"({"op":"load","kind":"song","slot":6,"id":1})");
+		rig.runUntil([&] { return rig.desk().documents().songs.count(6) && rig.desk().linkState().song == 6; }, 5000);
+		const auto ok = [&] { const auto& r = rig.lastResult(); return r && r->find("ok")->asBool(); };
+
+		// pause in PATTERN mode
+		rig.page(R"({"op":"seqMode","song":false,"id":2})");
+		rig.run(500);
+		rig.page(R"({"op":"play","id":3})");
+		rig.runUntil([&] { return rig.pageTelemetry().playing; }, 3000);
+		rig.run(700);
+		rig.page(R"({"op":"pause","id":4})");
+		check(ok(), "pause: taken");
+		rig.run(300);
+		const int held = m.playhead();
+		rig.run(600);
+		std::printf("  paused at step %d, 600 ms later %d (the page: playing %d)\n", held + 1, m.playhead() + 1, rig.pageTelemetry().playing);
+		check(!rig.pageTelemetry().playing && m.playhead() == held, "pause (MIDI Stop): it stops and the step holds");
+		rig.page(R"({"op":"resume","id":5})");
+		// the playhead every 40 ms: the held step first, then on from it (the pattern may wrap)
+		std::vector<int> trace;
+		for(int i = 0; i < 10; ++i)
+		{
+			rig.run(40);
+			trace.push_back(m.playhead());
+		}
+		std::string tr;
+		for(const int x : trace)
+			tr += " " + std::to_string(x + 1);
+		std::printf("  resumed, the step every 40 ms:%s\n", tr.c_str());
+		check(ok() && rig.pageTelemetry().playing && trace.front() == held && trace.back() != held, "resume: it plays on from the held step");
+
+		// play from row 3 while it plays in PATTERN mode: MIDI Stop, SONG mode, the song position (24) and Continue
+		rig.page(R"({"op":"playFrom","i":2,"id":6})");
+		check(ok(), "play from row 3: taken");
+		// MIDI Stop, SONG mode once the machine says so, then the song position and Continue
+		rig.runUntil([&] { return rig.desk().linkState().songMode == true; }, 4000);
+		rig.runUntil([&] { return rig.pageTelemetry().playing; }, 2000);
+		rig.run(150);
+		const int seen = rig.pageTelemetry().songRow;
+		rig.run(200);
+		const auto t = rig.pageTelemetry();
+		std::printf("  from row 3: the page is told row %d, step %d, song mode %d\n", t.songRow + 1, t.step + 1,
+			rig.desk().linkState().songMode.value_or(false));
+		check(seen == 2 && t.playing && rig.desk().linkState().songMode == true, "it plays song 7 from row 3, in SONG mode");
+
+		// panic: STOP twice; the machine stops
+		rig.page(R"({"op":"panic","id":7})");
+		rig.runUntil([&] { return !rig.pageTelemetry().playing; }, 3000);
+		check(ok() && !rig.pageTelemetry().playing, "panic: STOP twice, it stops");
+
+		// the nudge: the machine's tempo 10 % up while held, back after; the global document keeps its tempo
+		const auto tempo = rig.desk().documents().global->tempo;
+		const auto activeTempo = [&]
+		{
+			const auto g = ed::decodeMdGlobal(m.request(ed::mdGlobalRequest(rig.desk().linkState().globalSlot.value_or(0)), 0x50));
+			return g ? static_cast<int>(g->tempo) : -1;
+		};
+		rig.page(R"({"op":"nudge","pct":10,"id":8})");
+		rig.run(400);
+		const int up = activeTempo();
+		rig.page(R"({"op":"nudge","pct":0,"id":9})");
+		rig.run(400);
+		const int back = activeTempo();
+		std::printf("  tempo %.2f, nudged %.2f, back %.2f BPM\n", tempo / 24.0, up / 24.0, back / 24.0);
+		check(std::abs(up - static_cast<int>(std::lround(tempo * 1.1))) <= 1 && back == tempo && rig.desk().documents().global->tempo == tempo,
+			"nudge +10 %: faster while held, back at the release, nothing stored");
+	}
+
+	// Review 1 (2026-10-12, item 11, B-096): Radek, installed build: the first factory song, SONG mode, PLAY: nothing.
+	// Factory memory, the song slot list's Load (selectSong), SONG (seqMode), PLAY as the top bar sends it.
+	void factorySong(const Bytes& _rom, const std::string& _romName)
+	{
+		std::puts("factory song: load song 1, SONG mode, PLAY");
+		Rig rig(_rom, _romName);
+		rig.page(R"({"op":"ready"})");
+		const auto& desk = rig.desk();
+		rig.runUntil([&] { return desk.isReady() && desk.documents().patterns.size() == 128 && desk.documents().kits.size() == 64 && desk.documents().songs.size() == 32; }, 60000);
+		auto& m = rig.machine();
+		for(int sn = 0; sn < 2; ++sn)
+			if(desk.documents().songs.count(static_cast<uint8_t>(sn)))
+			{
+				const auto& so = desk.documents().songs.at(static_cast<uint8_t>(sn));
+				std::string rows;
+				for(const auto& r : so.rows)
+					rows += " " + (r.pattern == ed::MdSongRow::g_endRow ? std::string("END") : r.pattern == ed::MdSongRow::g_loopRow ? "LOOP" + std::to_string(r.target + 1) : ed::mdPatternName(r.pattern) + "x" + std::to_string(r.repeats + 1) + "[" + std::to_string(r.start) + "-" + std::to_string(r.end) + "]");
+				std::printf("  song %d:%s\n", sn + 1, rows.c_str());
+			}
+		const auto mode = [&] { const auto* d = rig.machineDoc() ? rig.machineDoc()->find("songMode") : nullptr; return d && d->isBool() && d->asBool(); };
+		// PLAY as the top bar sends it, 3 s watched: the steps the page is told, with the song row and the pattern
+		const auto playSong = [&](const char* _what, const int _id)
+		{
+			rig.page(std::string(R"({"op":"play","id":)") + std::to_string(_id) + "}");
+			rig.run(200);
+			std::printf("  %s, play: %s\n", _what, (rig.lastResult() ? ed::json::write(*rig.lastResult()) : std::string("no result")).c_str());
+			std::vector<int> steps, rows, pats;
+			for(int i = 0; i < 600; ++i)
+			{
+				rig.run(5);
+				const auto t = rig.pageTelemetry();
+				if(t.playing && (steps.empty() || steps.back() != t.step))
+				{
+					steps.push_back(t.step);
+					rows.push_back(t.songRow);
+					pats.push_back(m.read8(0x28d205));
+				}
+			}
+			std::string seen;
+			for(size_t k = 0; k < steps.size() && k < 24; ++k)
+				seen += " " + std::to_string(steps[k]) + "/r" + std::to_string(rows[k] + 1) + "/" + ed::mdPatternName(static_cast<uint8_t>(pats[k]));
+			std::printf("  3 s after PLAY: %zu steps seen:%s\n", steps.size(), seen.c_str());
+			check(steps.size() >= 8, std::string(_what) + ": PLAY in SONG mode, the machine plays (the step moves)");
+			check(!rows.empty() && rows.front() >= 0, std::string(_what) + ": the page is told a song row");
+			rig.page(R"({"op":"stop","id":4})");
+			rig.run(600);
+			check(!rig.pageTelemetry().playing, std::string(_what) + ": STOP");
+		};
+		// B-098 (the 0.6 e2e run): the first thing after the start, no Load: the machine reports song 1, its working song is
+		// empty until LOAD SONG; SONG mode loads it
+		check(desk.linkState().song == 0, "the machine reports song 1 after the start");
+		rig.page(R"({"op":"seqMode","song":true,"id":2})");
+		const bool inSong = rig.runUntil(mode, 3000);
+		std::printf("  seqMode song: %s, machine in SONG mode %d\n", (rig.lastResult() ? ed::json::write(*rig.lastResult()) : std::string("no result")).c_str(), inSong);
+		check(inSong, "SONG mode on the machine");
+		playSong("B-098, no Load since the start", 3);
+		// B-096: the song slot list's Load (selectSong), then PLAY
+		rig.page(R"({"op":"selectSong","s":0,"id":1})");
+		rig.run(800);
+		std::printf("  selectSong 0: %s\n", (rig.lastResult() ? ed::json::write(*rig.lastResult()) : std::string("no result")).c_str());
+		playSong("after Load", 5);
+		// the same in a DAW (followHost: TEMPO IN external) with the DAW stopped: PLAY waits for the host's clock
+		rig.page(R"({"op":"followHost","id":6})");
+		rig.runUntil([&] { return desk.documents().global && (desk.documents().global->syncFlags & ed::mdGlobalBits::g_tempoInExternal); }, 4000);
+		rig.run(500);
+		rig.page(R"({"op":"play","id":7})");
+		const auto h0 = m.playhead();
+		rig.run(2000);
+		const bool moved = m.playhead() != h0 || rig.pageTelemetry().playing;
+		// measured 2026-10-12: it plays (the panel's PLAY starts the machine on EXT as well): not the cause of B-096
+		std::printf("  in a DAW (TEMPO IN external, no host clock): PLAY %s\n", moved ? "plays" : "does nothing: the machine waits for the DAW's clock");
+		rig.page(R"({"op":"stop","id":8})");
+		rig.page(R"({"op":"globalSet","field":"tempoIn","on":false,"id":9})");
+		rig.run(1500);
+		rig.page(R"({"op":"seqMode","song":false,"id":5})");
+		rig.run(400);
+
+		// B-098: a machine already in SONG mode when the editor meets it (set on the machine, not through the page): the
+		// page's PLAY, and the Song page's From here, each the first thing after a start, play the song too
+		for(const bool from : {false, true})
+		{
+			Rig r2(_rom, _romName);
+			r2.page(R"({"op":"ready"})");
+			r2.runUntil([&] { return r2.desk().isReady() && r2.desk().documents().songs.count(0); }, 60000);
+			r2.machine().send(ed::mdSetStatus(ed::MdStatus::SequencerMode, 1));
+			r2.machine().send(ed::mdStatusRequest(ed::MdStatus::SequencerMode));
+			r2.runUntil([&] { return r2.desk().linkState().songMode == true; }, 3000);
+			r2.page(from ? R"({"op":"playFrom","i":0,"id":1})" : R"({"op":"play","id":1})");
+			r2.runUntil([&] { return r2.pageTelemetry().playing; }, 3000);
+			const int s0 = r2.pageTelemetry().step;
+			r2.run(1000);
+			const auto t = r2.pageTelemetry();
+			std::printf("  B-098, in SONG mode at the start, %s: playing %d, step %d -> %d, row %d\n", from ? "From here" : "PLAY", t.playing, s0 + 1, t.step + 1, t.songRow + 1);
+			check(t.playing && t.step != s0 && t.songRow >= 0, std::string("B-098: the first ") + (from ? "From here" : "PLAY") + " after a start in SONG mode plays the song");
+			r2.page(R"({"op":"stop","id":2})");
+			r2.run(400);
+		}
+	}
+
 	void songRow(const Bytes& _rom, const std::string& _romName)
 	{
 		std::puts("song row: the Song page's playhead");
@@ -2651,7 +3319,7 @@ namespace
 		rig.page(R"({"op":"play","id":2})");
 		// the middle of each pass (step 3) and its last step (7): the RAM byte has queued the next row by then
 		// (two steps early), the page is still told the row heard
-		std::vector<int> rows, patterns, lateRows;
+		std::vector<int> rows, patterns, lateRows, repeats, lateRepeats;
 		int lastStep = -1;
 		for(int i = 0; i < 4000 && rows.size() < 10; ++i)
 		{
@@ -2660,10 +3328,14 @@ namespace
 			if(t.playing && t.step == 3 && lastStep != 3)
 			{
 				rows.push_back(t.songRow);
+				repeats.push_back(t.songRepeats);
 				patterns.push_back(m.read8(0x28d205));
 			}
 			if(t.playing && t.step == 7 && lastStep != 7 && !rows.empty())
+			{
 				lateRows.push_back(t.songRow);
+				lateRepeats.push_back(t.songRepeats);
+			}
 			lastStep = t.step;
 		}
 		bool late = !lateRows.empty();
@@ -2680,6 +3352,31 @@ namespace
 		std::printf("  rows (one-based) at each pass, with the pattern that plays:%s\n", seen.c_str());
 		check(match, "the row the page is told is the row whose pattern plays, at every pass");
 		check(rows == std::vector<int>{0, 1, 1, 2, 1, 1, 2, 1, 1, 2}, "the rows go 1 2 2 3, then round the loop (LOOP to row 2) 2 2 3 2 2 3 2");
+		// MD-147: the passes of the row still to come, as the page is told them (row 2 plays twice: 1, then 0)
+		std::string reps;
+		for(size_t k = 0; k < repeats.size(); ++k)
+			reps += " " + std::to_string(repeats[k]) + "/" + std::to_string(k < lateRepeats.size() ? lateRepeats[k] : -9);
+		std::printf("  passes still to come at step 4 / step 8 of each pass:%s\n", reps.c_str());
+		check(repeats == std::vector<int>{0, 1, 0, 0, 1, 0, 0, 1, 0, 0} && std::equal(lateRepeats.begin(), lateRepeats.end(), repeats.begin()),
+			"the page is told the passes of the row still to come: row 2 (REPEATS 1) 1 then 0, the others 0, the same at the pass's last step");
+		// B-072: the Song page's keys send the mode on every click; SONG again while the song plays is no restart
+		{
+			rig.page(R"({"op":"seqMode","song":true,"id":10})");
+			std::vector<int> again;
+			lastStep = -1;
+			for(int i = 0; i < 2000 && again.size() < 4; ++i)
+			{
+				rig.run(5);
+				const auto t = rig.pageTelemetry();
+				if(t.playing && t.step == 3 && lastStep != 3)
+					again.push_back(t.songRow);
+				lastStep = t.step;
+			}
+			std::string seenAgain;
+			for(const auto r : again) seenAgain += " " + std::to_string(r + 1);
+			check(again.size() == 4 && std::none_of(again.begin(), again.end(), [](const int _r) { return _r == 0; }) && rig.pageTelemetry().playing,
+				"SONG sent again while the song plays: it plays on round the loop, not from row 1 (rows" + seenAgain + ")");
+		}
 		rig.page(R"({"op":"stop","id":3})");
 		rig.run(600);
 		check(!rig.pageTelemetry().playing, "STOP: the page is told the machine stopped (no row is marked then)");
@@ -2710,6 +3407,49 @@ namespace
 		rig.run(600);
 		rig.page(R"({"op":"seqMode","song":false,"id":4})");
 		rig.run(400);
+	}
+
+	// B-122 (Discord 2026-10-12): "the reset pattern often loads another one". Picking a pattern again (the current one, stopped
+	// and playing, back to it after another was queued, switch now) on the firmware: which pattern the machine plays.
+	void reselect(const Bytes& _rom, const std::string& _romName)
+	{
+		std::puts("reselect: picking the current pattern again keeps it");
+		Rig rig(_rom, _romName);
+		auto& desk = rig.desk();
+		rig.page(R"({"op":"ready"})");
+		rig.runUntil([&] { return desk.isReady() && desk.documents().global && desk.linkState().pattern; }, 8000);
+		rig.run(1500);
+		const auto pick = [&](const int _p, const bool _now = false)
+		{
+			rig.pageConfirmed(R"({"op":"select","p":)" + std::to_string(_p) + (_now ? R"(,"now":true})" : "}"));
+		};
+		const auto plays = [&] { const auto p = desk.linkState().pattern; return p ? static_cast<int>(*p) : -1; };
+		for(const int p : {0, 5, 40})
+		{
+			const auto at = [&](const char* _what) { check(plays() == p, std::string(_what) + " " + std::to_string(p) + ": plays " + std::to_string(plays())); };
+			pick(p);
+			rig.run(2000);
+			at("stopped: pick");
+			pick(p);
+			rig.run(2000);
+			at("stopped: pick again");
+			rig.page(R"({"op":"play"})");
+			rig.run(1000);
+			pick(p);
+			rig.run(6000);
+			at("playing: pick again");
+			pick(p + 1);
+			rig.run(200);
+			pick(p);
+			rig.run(8000);
+			at("playing: the next one picked, then back to");
+			pick(p, true);
+			rig.run(3000);
+			at("playing: switch now to");
+			rig.page(R"({"op":"stop"})");
+			rig.run(2000);
+			at("stopped:");
+		}
 	}
 
 	void hostClock(const Bytes& _rom, const std::string& _romName)
@@ -2750,6 +3490,30 @@ namespace
 		check(m.playhead() == p0, "and stops on the host's Stop");
 		rig.page(R"({"op":"followHost","id":2})");
 		check(rig.lastResult() && rig.lastResult()->find("note")->asString().empty(), "a second followHost changes nothing");
+		// review 1 (I-026): GLOBAL › Tempo in INT is the switch to the machine's own clock; followHost (every 2 s in the
+		// plug-in) no longer sets EXT again, the desk's status says the host clock is off; EXT again turns it back on
+		const auto hostClock = [&] { const auto st = desk.status(); const auto* v = st.find("hostClock"); return v && v->isBool() && v->asBool(); };
+		check(hostClock(), "following: the desk's status says hostClock");
+		rig.page(R"({"op":"globalSet","field":"tempoIn","on":false,"id":3})");
+		rig.runUntil([&] { return desk.documents().global && !(desk.documents().global->syncFlags & ed::mdGlobalBits::g_tempoInExternal); }, 4000);
+		for(int i = 0; i < 3; ++i)
+		{
+			rig.page(R"({"op":"followHost","id":4})");
+			rig.run(2000);
+		}
+		check(desk.documents().global && !(desk.documents().global->syncFlags & ed::mdGlobalBits::g_tempoInExternal), "Tempo in INT stays through three followHosts (read back)");
+		check(!hostClock(), "the desk's status says the host clock is off");
+		rig.page(R"({"op":"play","id":5})");
+		const auto q0 = m.playhead();
+		rig.run(1500);
+		check(m.playhead() != q0, "INT: PLAY plays on the machine's own clock, no host clock");
+		rig.page(R"({"op":"stop","id":6})");
+		rig.run(500);
+		rig.page(R"({"op":"globalSet","field":"tempoIn","on":true,"id":7})");
+		rig.runUntil([&] { return desk.documents().global && (desk.documents().global->syncFlags & ed::mdGlobalBits::g_tempoInExternal); }, 4000);
+		rig.page(R"({"op":"followHost","id":8})");
+		check(hostClock(), "Tempo in EXT again: the host clock is on");
+		// a project that comes back with INT keeps it: a new desk state (project) sees INT first
 	}
 
 	// P9: a WAV into a UW ROM slot through the desk (decode, mono 16-bit, SDS with the machine's
@@ -2878,6 +3642,80 @@ namespace
 		_rig.page(R"({"op":"stop"})");
 		check(_rig.runUntil([&] { return !slotDoc("ram", 0).find("empty")->asBool(); }, 10000), "RAM 1 shows the take RAM-R1 recorded ("
 			+ std::to_string(int(slotDoc("ram", 0).find("length")->asNumber())) + " samples)");
+
+		// B-128: Rename sends the name, then the slot's own sample again; the audio stays bit-identical, the name reads back.
+		{
+			const auto bankOf = [&] { return ed::readMdSampleBank(md::sampleMemoryOf(_rig.machine().hardware())); };
+			const auto rename = [&](const int _slot, const char* _name)
+			{
+				const auto before = bankOf().rom[size_t(_slot)];
+				check(!before.empty && before.pcm && !before.pcm->empty(), "ROM-" + std::to_string(_slot + 1) + " holds a sample to rename");
+				_rig.page("{\"op\":\"sampleName\",\"slot\":" + std::to_string(_slot) + ",\"name\":\"" + _name + "\",\"id\":" + std::to_string(700 + _slot) + "}");
+				check(resultOk(_rig), "Rename ROM-" + std::to_string(_slot + 1) + " accepted");
+				const bool done = _rig.runUntil([&] { const auto& l = _rig.sampleLoad(); return l && l->find("state")->asString() != "sending"; }, 120000);
+				check(done && _rig.sampleLoad()->find("state")->asString() == "done", "the transfer is shown like a sample load, and ends");
+				_rig.run(3000);
+				const auto after = bankOf().rom[size_t(_slot)];
+				check(after.name == _name, "ROM-" + std::to_string(_slot + 1) + " reads back the new name '" + after.name + "'");
+				check(after.length == before.length && after.rate == before.rate && after.pcm && *after.pcm == *before.pcm,
+					"ROM-" + std::to_string(_slot + 1) + ": the sample data are unchanged (" + std::to_string(after.length) + " samples)");
+				check(_rig.runUntil([&] { return slotDoc("rom", _slot).find("name")->isString() && slotDoc("rom", _slot).find("name")->asString() == _name; }, 20000),
+					"the page's samples document shows the name");
+			};
+			rename(40, "NEWT");		// a sample loaded here
+			rename(0, "KICK");			// a factory sample
+			check(slotDoc("rom", 1).find("length")->asNumber() > 0, "the other slots are untouched");
+			_rig.page(R"({"op":"sampleName","slot":47,"name":"NONE","id":790})");
+			check(_rig.lastResult() && !_rig.lastResult()->find("ok")->asBool(), "an empty slot is refused: nothing to name");
+		}
+	}
+
+	// B-133 (the 0.6 e2e run, 2026-10-13): after any sample went into the machine by SDS (Rename, Load sample, a dropped
+	// file; any ROM slot), live recording looks as it should (RECORD blinks, the pattern plays, the TRIG key reaches the
+	// panel) but the firmware records no TRIG key and no knob lock until the machine starts again. Not fixed: this mode
+	// shows it (FAIL with the sample, PASS without: mdDeskFirmwareTest <rom> recaftersample [nosample]). Measured: no
+	// key (EXIT, PLAY, STOP, RECORD twice, KIT/GLOBAL and out), no pattern or kit load, no longer hold, no wait (30 s) and
+	// no speed-up lever (all off) brings it back; the sample's name alone (0x73) does not cause it. The machine's RAM
+	// (0x250000-0x2b8000) put back as a run without the sample has it does bring it back: the state is in that RAM.
+	void recordAfterSample(Rig& _rig, const bool _sample)
+	{
+		auto& m = _rig.machine();
+		auto& desk = _rig.desk();
+		std::printf("== B-133: live recording after %s\n", _sample ? "a sample went in by SDS" : "no sample load");
+		if(_sample)
+		{
+			_rig.runUntil([&] { return m.hardware().isFactoryFlashReadyForReboot(); }, 60000);
+			_rig.watchSamples();
+			_rig.runUntil([&] { return _rig.samplesDoc().has_value(); }, 5000);
+			_rig.page(R"({"op":"sampleName","slot":0,"name":"KICK","id":870})");
+			check(resultOk(_rig), "Rename ROM-01 accepted (its sample goes again by SDS)");
+			_rig.runUntil([&] { const auto& l = _rig.sampleLoad(); return l && l->find("state")->asString() != "sending"; }, 120000);
+			_rig.run(3000);
+		}
+		_rig.page(R"({"op":"stop","id":880})");
+		_rig.run(500);
+		const auto pattern = *desk.linkState().pattern;
+		const auto trigs16 = [&]
+		{
+			size_t n = 0;
+			if(const auto d = _rig.pageDoc("pattern", pattern))
+				n = d->find("tracks")->asArray()[15].find("trigs")->asArray().size();
+			return n;
+		};
+		const auto n0 = trigs16();
+		const auto recording = [&] { return _rig.pageTelemetry().recording; };
+		_rig.page(R"({"op":"record","id":881})");
+		check(resultOk(_rig) && _rig.runUntil(recording, 1500), "live recording starts");
+		_rig.runUntil([&m] { return m.playhead() == 4; }, 3000);
+		_rig.page(R"({"op":"recTrig","t":15,"id":882})");
+		check(resultOk(_rig), "track 16 played from the page");
+		const bool got = _rig.runUntil([&] { return trigs16() > n0; }, 3000);
+		_rig.page(R"({"op":"record","id":883})");
+		_rig.runUntil([&] { return !recording(); }, 1500);
+		_rig.page(R"({"op":"stop","id":884})");
+		_rig.run(500);
+		std::printf("  track 16 trigs: %zu -> %zu\n", n0, trigs16());
+		check(got, "the TRIG key was recorded");
 	}
 
 	// An unsaved kit edit of the kit that plays survives a trig elsewhere (a pattern dump over the current pattern
@@ -3112,6 +3950,50 @@ namespace
 				differs += " T" + std::to_string(t + 1) + "=" + std::to_string(back->params[t][12]) + "(was " + std::to_string(before->params[t][12]) + ")";
 		check(differs.empty(), "after undo the machine's FLTF is back on every track" + (differs.empty() ? std::string() : ":" + differs));
 		check(desk.documents().working->kit.params == back->params, "the page's working kit is the machine's after the undo");
+	}
+
+	// The 0.6.0 e2e (md-sound-filter-sweep, then md-sound-keep-clear): an Alt-drag of FLTF and Cmd+Z straight after it, while
+	// the machine's own gesture (FUNCTION + the knob) is still on its way; then a machine picked with Keep effects. The
+	// machine's FLTF must be the one before the sweep on every track, and stay so after the machine change.
+	void undoRightAfterControlAll(Rig& _rig)
+	{
+		std::puts("== KEEP EDITS: undo straight after a Control All drag, then a machine kept with its effects");
+		auto& desk = _rig.desk();
+		const auto kit = std::to_string(*desk.linkState().kit);
+		const auto settle = [&] { _rig.runUntil([&] { return !desk.isBusy() && !_rig.pageTx(); }, 4000); _rig.run(1500); };
+		settle();
+		const auto before = workingFromMemory(_rig);
+		require(before.has_value(), "the working kit in memory");
+		_rig.seedPluginParams(*before);
+		const auto fltf = [](const ed::MdKit& _k) { std::string s; for(size_t t = 0; t < 16; ++t) s += std::to_string(_k.params[t][12]) + " "; return s; };
+		// the page's drag: four moves a frame apart, the knob down, then Cmd+Z 40 ms on
+		for(int k = 0; k < 4; ++k)
+		{
+			_rig.page("{\"op\":\"tweak\",\"k\":" + kit + ",\"group\":\"fx\",\"knob\":4,\"d\":-" + std::to_string(2 + k) + ",\"t\":0,\"g\":991}");
+			_rig.run(17);
+		}
+		_rig.run(40);
+		_rig.page(R"({"op":"undo"})");
+		settle();
+		_rig.run(2000);
+		const auto back = workingFromMemory(_rig);
+		std::printf("  FLTF before: %s\n  FLTF after the undo: %s\n  page's FLTF: %s\n", fltf(*before).c_str(), fltf(*back).c_str(),
+			fltf(desk.documents().working->kit).c_str());
+		check(back->params == before->params, "undo straight after a Control All drag: the machine's kit is the one before it");
+		check(desk.documents().working->kit.params == back->params, "the page's working kit is the machine's after the undo");
+		// a machine picked on a track, Keep effects + routing: the effects as they were
+		const uint8_t t = 1;
+		const auto fx = [](const ed::MdKit& _k, const uint8_t _t) { return std::vector<uint8_t>(_k.params[_t].begin() + 8, _k.params[_t].end()); };
+		const auto text = [](const std::vector<uint8_t>& _v) { std::string s; for(const auto x : _v) s += std::to_string(x) + " "; return s; };
+		const auto fx0 = fx(*back, t);
+		_rig.page("{\"op\":\"machine\",\"k\":" + kit + ",\"t\":" + std::to_string(t) + ",\"model\":" + std::to_string(*ed::mdMachineModel("GND-SIN")) + ",\"keepFx\":true}");
+		settle();
+		_rig.run(1500);
+		const auto after = workingFromMemory(_rig);
+		const auto fx1 = fx(*after, t), page = fx(desk.documents().working->kit, t);
+		std::printf("  T2 effects + routing before the machine change: %s\n  after (machine): %s\n  after (page): %s\n", text(fx0).c_str(), text(fx1).c_str(),
+			text(page).c_str());
+		check(fx1 == fx0 && page == fx0, "a machine kept with its effects: effects and routing as they were, machine and page");
 	}
 
 	// A value moved straight after a machine change reaches the machine and stays (seen in the demo videos: a
@@ -4045,7 +4927,7 @@ int main(const int _argc, char** _argv)
 	if(_argc < 2)
 	{
 		std::puts("usage: mdDeskFirmwareTest <MD-1.63-ROM> "
-			"[probe|hw|p4|tweak|sampler|keepedits|machine|recordermix|samples|gen|hostclock|songrow|playload|syxexport|"
+			"[probe|hw|p4|tweak|sampler|keepedits|sweepundo|machine|recordermix|samples|gen|hostclock|songrow|playload|syxexport|"
 			"syximport|syxpick|keymap|intentcases]");
 		std::puts("       mdDeskFirmwareTest --env syxpick   (ctest: the ROM from GEARMULATOR_MD_FIRMWARE_BIN, the "
 			"backup from MD_SYX)");
@@ -4085,6 +4967,7 @@ int main(const int _argc, char** _argv)
 			chaining(rig);
 			recLockTruth(rig);
 			library(rig);
+			extendPattern(rig);
 			globalSettings(rig);
 			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 			std::printf("mdDeskFirmwareTest p4: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
@@ -4166,9 +5049,22 @@ int main(const int _argc, char** _argv)
 			rig.pluginLike = true;
 			keepEdits(rig);
 			undoControlAll(rig);
+			undoRightAfterControlAll(rig);
 			valueAfterMachine(rig);
 			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 			std::printf("mdDeskFirmwareTest keepedits: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
+			return g_failures ? 1 : 0;
+		}
+		if(mode == "sweepundo")
+		{
+			Rig rig(rom, romPath);
+			rig.page(R"({"op":"ready"})");
+			rig.runUntil([&] { return rig.desk().isReady() && rig.desk().linkState().kit && rig.desk().linkState().pattern && rig.desk().documents().working; }, 8000);
+			rig.runUntil([&] { return !rig.desk().isBusy(); }, 20000);
+			rig.pluginLike = true;
+			undoRightAfterControlAll(rig);
+			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
+			std::printf("mdDeskFirmwareTest sweepundo: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
 			return g_failures ? 1 : 0;
 		}
 		if(mode == "machine")
@@ -4192,6 +5088,15 @@ int main(const int _argc, char** _argv)
 			generatorsTruth(rig);
 			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 			std::printf("mdDeskFirmwareTest gen: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
+			return g_failures ? 1 : 0;
+		}
+		if(mode == "recaftersample")
+		{
+			Rig rig(rom, romPath);
+			rig.page(R"({"op":"ready"})");
+			rig.runUntil([&] { return rig.desk().isReady() && rig.desk().linkState().kit && rig.desk().linkState().pattern && rig.desk().documents().working; }, 8000);
+			recordAfterSample(rig, !(_argc > 3 && std::string(_argv[3]) == "nosample"));
+			std::printf("mdDeskFirmwareTest recaftersample: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
 			return g_failures ? 1 : 0;
 		}
 		if(mode == "samples")
@@ -4236,8 +5141,38 @@ int main(const int _argc, char** _argv)
 		{
 			factoryGlobal(rom, romPath);
 			globalReset(rom, romPath);
+			resetNoteMap(rom, romPath);
 			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 			std::printf("mdDeskFirmwareTest factoryglobal: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
+			return g_failures ? 1 : 0;
+		}
+		if(mode == "ctrlfo")
+		{
+			ctrLfoTrack(rom, romPath);
+			std::printf("mdDeskFirmwareTest ctrlfo: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
+			return g_failures ? 1 : 0;
+		}
+		if(mode == "liveerase")
+		{
+			liveErase(rom, romPath);
+			liveUnlock(rom, romPath);
+			editThenRecord(rom, romPath);
+			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
+			std::printf("mdDeskFirmwareTest liveerase: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
+			return g_failures ? 1 : 0;
+		}
+		if(mode == "transport")
+		{
+			transport(rom, romPath);
+			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
+			std::printf("mdDeskFirmwareTest transport: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
+			return g_failures ? 1 : 0;
+		}
+		if(mode == "factorysong")
+		{
+			factorySong(rom, romPath);
+			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
+			std::printf("mdDeskFirmwareTest factorysong: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
 			return g_failures ? 1 : 0;
 		}
 		if(mode == "songrow")
@@ -4245,6 +5180,13 @@ int main(const int _argc, char** _argv)
 			songRow(rom, romPath);
 			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
 			std::printf("mdDeskFirmwareTest songrow: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
+			return g_failures ? 1 : 0;
+		}
+		if(mode == "reselect")
+		{
+			reselect(rom, romPath);
+			check(g_contract.loaded() && g_contract.bad() == 0, g_contract.summary());
+			std::printf("mdDeskFirmwareTest reselect: %s (%d failure(s))\n", g_failures ? "FAIL" : "PASS", g_failures);
 			return g_failures ? 1 : 0;
 		}
 		if(mode == "hostclock")
