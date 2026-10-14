@@ -19,6 +19,7 @@ on:
   push:
     branches:
       - main
+      - ci/page-journeys  # TEMP
       - "release/0.*"
     paths:
       - ".github/workflows/mdmm-page.yml"
