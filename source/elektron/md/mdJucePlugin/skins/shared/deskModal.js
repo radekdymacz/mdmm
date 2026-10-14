@@ -20,7 +20,13 @@ const Modal = (() => {
 		boot: { outside: false, focusLast: false, esc: false }, menu: { outside: true, focusLast: false, esc: true } };
 	const DIALOGS = [["#dlg", "confirm", null], ["#libpop", "panel", "closeLib"], ["#globpop", "panel", "closeGlobal"],
 		["#keyspop", "panel", "toggleKeys"], ["#audiopop", "panel", "closeAudio"], ["#machpop", "panel", "closePicker"], ["#bootcard", "boot", null],
-		["#syxpop", "panel", null], ["#deskmenu", "menu", "closeDeskMenu"]];
+		["#syxpop", "panel", null], ["#genpop", "panel", "closeGen", { drag: ".gdhead", place: "placeGen", clear: true, through: "[data-genopen]" }], ["#deskmenu", "menu", "closeDeskMenu"]];
+	/* A row's 4th item is its options, all opt-in: drag (a selector: the handle that moves the dialog; the place is kept for the
+	   session, a double-click on the handle puts it back; dragging is no click outside, the dialog stays locked), place (the name
+	   of a function (el) -> {left, top} for where it opens when nobody moved it), clear (no dimmed backdrop), through (a selector:
+	   a click outside, on an element that matches, goes to that element: the one way the page behind may answer a dialog). */
+	const OPTS = Object.fromEntries(DIALOGS.map(([sel, , , o]) => [sel, o || {}]));
+	const moved = {};	/* the session's remembered places, by the dialog's selector: {left, top} */
 	const stack = [];	// {el, kind, close, back}
 	const FOCUSABLE = 'button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea,[tabindex]:not([tabindex="-1"])';
 	let bg = null;
@@ -28,10 +34,21 @@ const Modal = (() => {
 	const overlay = el => el.id === "dlg" || el.id === "bootcard";
 	const box = d => overlay(d.el) ? d.el.querySelector(".dlgbox,.bootbox") || d.el : d.el;
 	const keys = d => [...box(d).querySelectorAll(FOCUSABLE)].filter(e => e.offsetParent !== null || e === document.activeElement);
+	const opts = d => OPTS["#" + d.el.id] || {};
+	/* where a dialog with options sits: the place the person moved it to, else its own place function's, kept inside the window */
+	function place(id) {
+		const d = stack.find(x => x.el.id === id), o = d && opts(d); if (!d || !(o.drag || o.place)) return;
+		const el = d.el, f = o.place && window[o.place];
+		let p = moved["#" + id] || (typeof f === "function" ? f(el) : null);
+		if (!p) { for (const k of ["left", "top", "transform"]) el.style.removeProperty(k); return; }
+		const left = Math.max(8, Math.min(innerWidth - el.offsetWidth - 8, p.left)), top = Math.max(8, Math.min(innerHeight - el.offsetHeight - 8, p.top));
+		el.style.setProperty("left", left + "px", "important"); el.style.setProperty("top", top + "px", "important"); el.style.setProperty("transform", "none", "important");
+	}
 	function layer() {
 		if (!bg) { bg = document.createElement("div"); bg.id = "modalbg"; bg.className = "modalbg"; bg.hidden = true; document.body.appendChild(bg); }
 		bg.hidden = !stack.length;
-		bg.classList.toggle("clear", stack.length > 0 && stack[stack.length - 1].kind === "menu");	/* a menu dims nothing */
+		bg.classList.toggle("through", stack.length > 0 && !!opts(stack[stack.length - 1]).through);
+		bg.classList.toggle("clear", stack.length > 0 && (stack[stack.length - 1].kind === "menu" || !!opts(stack[stack.length - 1]).clear));	/* a menu dims nothing */
 		stack.forEach((d, i) => { d.el.classList.add("modal"); d.el.style.setProperty("--mz", 60 + i * 2); });
 		if (stack.length) bg.style.setProperty("--mz", 59 + (stack.length - 1) * 2);
 		document.documentElement.classList.toggle("modalopen", stack.length > 0);
@@ -44,7 +61,7 @@ const Modal = (() => {
 	function shown(el, kind, close) {
 		if (stack.some(d => d.el === el)) return;
 		const d = { el, kind, close, back: document.activeElement };
-		stack.push(d); layer();
+		stack.push(d); layer(); place(el.id);
 		if (!box(d).hasAttribute("tabindex")) box(d).setAttribute("tabindex", "-1");
 		/* after the dialog's own focus call (a timer, not a frame: a window behind others draws no frames) */
 		setTimeout(() => { if (stack.includes(d) && (KINDS[d.kind].focusLast || !box(d).contains(document.activeElement))) focusIn(d); }, 0);
@@ -72,6 +89,26 @@ const Modal = (() => {
 			if (!el.hidden) shown(el, kind, close);
 		}
 	}
+	/* the handle of a dialog with a drag option: press and move to move it; double-click: back to its own place */
+	let drag = null;
+	document.addEventListener("pointerdown", e => {
+		const d = top(); if (!d || e.button !== 0) return;
+		const o = opts(d), h = o.drag && e.target.closest?.(o.drag); if (!h || !d.el.contains(h)) return;
+		const r = d.el.getBoundingClientRect();
+		drag = { d, dx: e.clientX - r.left, dy: e.clientY - r.top, h }; h.classList.add("dragging"); e.preventDefault();
+		try { h.setPointerCapture(e.pointerId); } catch (_) { /* a pointer the browser no longer tracks: the move still works */ }
+	}, true);
+	document.addEventListener("pointermove", e => {
+		if (!drag) return;
+		moved["#" + drag.d.el.id] = { left: e.clientX - drag.dx, top: e.clientY - drag.dy }; place(drag.d.el.id);
+	});
+	const dragEnd = () => { if (drag) { drag.h.classList.remove("dragging"); drag = null; } };
+	document.addEventListener("pointerup", dragEnd); document.addEventListener("pointercancel", dragEnd);
+	document.addEventListener("dblclick", e => {
+		const d = top(); if (!d) return; const o = opts(d);
+		if (o.drag && e.target.closest?.(o.drag)) { delete moved["#" + d.el.id]; place(d.el.id); }
+	});
+	window.addEventListener("resize", () => { const d = top(); if (d && (opts(d).drag || opts(d).place)) place(d.el.id); });
 	/* first in line (this file loads before the dialogs' own handlers): Esc, Tab and the backdrop */
 	document.addEventListener("keydown", e => {
 		const d = top(); if (!d) return;
@@ -79,20 +116,23 @@ const Modal = (() => {
 		/* keys meant for the page behind (its shortcuts) do not reach it; ⌘ (Ctrl off a Mac: deskKeys.js Modifiers) passes,
 		   for the menu bar's own shortcuts and the map's modal: "panel" entries (⌘Z over a panel) */
 		const cmd = typeof Modifiers !== "undefined" ? Modifiers.cmd(e) : e.metaKey;
-		if (e.key !== "Tab") { if (!box(d).contains(e.target) && !e.target.closest?.("#kpop") && !cmd) { e.preventDefault(); e.stopImmediatePropagation(); } return; }
+		if (e.key !== "Tab") { if (!box(d).contains(e.target) && !e.target.closest?.("#kpop,.vedit") && !cmd) { e.preventDefault(); e.stopImmediatePropagation(); } return; }
 		const k = keys(d); if (!k.length) { e.preventDefault(); return; }
 		const i = k.indexOf(document.activeElement), n = e.shiftKey ? (i <= 0 ? k.length - 1 : i - 1) : (i < 0 || i === k.length - 1 ? 0 : i + 1);
 		e.preventDefault(); k[n].focus();
 	}, true);
 	for (const ev of ["pointerdown", "mousedown", "click"]) document.addEventListener(ev, e => {
 		const d = top(); if (!d) return;
-		const outside = e.target === bg || (overlay(d.el) && e.target === d.el);
+		/* a dialog with a through option has no backdrop in the way: the page behind is reached, and refused here unless the
+		   target matches `through` (its own keys, the value field and the pop-up list are the dialog's) */
+		const thr = opts(d).through, behind = thr && !d.el.contains(e.target) && !e.target.closest?.(thr + ",.vedit,#kpop,#toast");
+		const outside = e.target === bg || (overlay(d.el) && e.target === d.el) || behind;
 		if (!outside) return;
 		e.preventDefault(); e.stopImmediatePropagation();
 		if (ev === "click") { if (KINDS[d.kind].outside) dismiss(d); else nudge(d); }
 	}, true);
 	/* focus that leaves the top dialog (a click on the page behind is stopped above) comes back */
-	document.addEventListener("focusin", e => { const d = top(); if (d && !d.el.contains(e.target) && e.target !== bg && !e.target.closest?.("#kpop")) focusIn(d); });
+	document.addEventListener("focusin", e => { const d = top(); if (d && !d.el.contains(e.target) && e.target !== bg && !e.target.closest?.("#kpop,.vedit")) focusIn(d); });
 	if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", watch); else watch();
 	/* Tips: the LCD's titles show under the display, never over it (a native tooltip covers the fields) */
 	const tip = document.createElement("div"); tip.className = "lcdtip"; tip.hidden = true; tip.setAttribute("role", "tooltip"); document.body.appendChild(tip);
@@ -117,7 +157,7 @@ const Modal = (() => {
 	/* a title set later (a state's new words) moves to the tip too */
 	new MutationObserver(ms => { for (const m of ms) { const el = m.target; if (el.title && el.closest?.(".lcdpanel")) { el.dataset.tip = el.title; el.removeAttribute("title"); } } })
 		.observe(document.body, { attributes: true, attributeFilter: ["title"], subtree: true });
-	return { open: () => stack.map(d => d.el.id), top: () => top()?.el.id || null, kind: () => top()?.kind || null };
+	return { place, open: () => stack.map(d => d.el.id), top: () => top()?.el.id || null, kind: () => top()?.kind || null };
 })();
 /* The question dialog (#dlg) of both editors is one at a time, and what wants it next waits its turn: nothing
    replaces what it shows. A page shows a question as an item {draw, notice?, cancel?, key?}: draw() writes the
