@@ -32,6 +32,9 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
+#ifdef MessageBox
+#undef MessageBox	// windows.h names it MessageBoxA; genericUI::MessageBox is a class
+#endif
 #else
 #include <fcntl.h>
 #include <sys/file.h>
