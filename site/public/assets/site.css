@@ -384,3 +384,17 @@ body > main { flex: 1 0 auto; }
 .checkout .dlgrid > div + div > .small:last-child { text-align: center; margin-top: 28px; }
 .checkout .started { text-align: left; }
 .checkout .support .btns .btn { flex: 0 0 auto; }
+
+/* landing page: who it is for, the OS file box, the update line; the Machinedrum shot is taller (it shows the lock lane) */
+.hero { padding-top: 34px; }
+.hero h1 { font-size: clamp(30px, 4vw, 46px); max-width: 24ch; }
+.hero .lede { max-width: 52ch; margin-bottom: 14px; }
+.hero .who { max-width: 60ch; margin: 0 auto 18px; font-size: 16px; color: var(--muted); }
+.hero .keys { margin-bottom: 20px; }
+.rombox { max-width: 760px; margin: 18px auto 0; padding: 14px 18px; text-align: left; border: 1px solid var(--line); border-left: 3px solid var(--accent); background: var(--panel); }
+.rombox h2 { font-size: 17px; margin: 0 0 6px; }
+.rombox p { margin: 0 0 6px; font-size: 15.5px; }
+.rombox p.small { margin: 0; }
+.stage { margin-top: 24px; }
+.win[data-machine="md"] .shots { aspect-ratio: 1440 / 1250; }
+.win[data-machine="md"] .shots img { aspect-ratio: 1440 / 1250; }
