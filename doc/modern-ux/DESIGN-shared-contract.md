@@ -434,3 +434,9 @@ renamed.
    - (b) String ids from the start, with the MD mapping its indices to names.
    - **Recommendation: (a).** No shipped document changes, xox already fits, and the groovebox's real needs are not known
      yet. Grid 2 is additive beside grid 1.
+
+## 12. Decided (Radek, 2026-10-14)
+
+1. **Home: this repo.** The contract stays in `radekdymacz/mdmm`, in one folder of its own. Each editors release attaches a versioned contract bundle. xox-plocks and the groovebox take a pinned bundle. Section 5.8 and steps 1-3 of section 7 change to match: no new repo.
+2. **Licence: dual licence, copy.** The contract files Radek wrote alone get GPL-3 plus MIT and are copied as they are. Before a file is marked dual, its history is checked: one author (`git log --format='%an %ae'`), no lines from upstream or third-party files, no generated output of GPL code tables. A file that fails the check stays GPL only and its part is written new. The questions in section 6 stay open for a lawyer if revenue justifies it.
+3. **Parameter ids: numbers now.** Grid 1 keeps integer lane ids declared in the catalogue (the MD's 0..23). String ids with units come as grid 2, when the groovebox needs them.
