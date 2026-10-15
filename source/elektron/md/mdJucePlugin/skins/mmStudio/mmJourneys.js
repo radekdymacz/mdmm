@@ -3652,8 +3652,11 @@ const MmJourneys = (() => {
 		steps: [
 			go("seq"),
 			{ say: "pick a pattern with no notes in the pattern chooser", within: 20000,
-				act: async (u, c) => { await until(() => I().slots("pattern").length >= 128, 30000); c.p0 = cur(); c.p = [...Array(128).keys()].find(p => I().doc("pattern", p) && !hasNotes(p)); if (c.p == null) throw new Error("no empty pattern"); await keep(c, "pattern", c.p);
-					u.click("#pat"); await until(() => $all("#libpop .ps").length === 128, 4000); u.click(`#libpop .ps[data-ps="${c.p}"]`); await confirmIfAsked(u); if (!$1("#libpop").hidden) u.key("Escape"); },
+				act: async (u, c) => { await until(() => I().slots("pattern").length >= 128, 30000); c.p0 = cur(); c.p = [...Array(128).keys()].find(p => I().doc("pattern", p) && !hasNotes(p)); c.own = c.p == null;
+					/* the factory memory may hold no empty pattern: then it clears one of its own (kept first, so the tidy puts it back) */
+					if (c.own) c.p = [...Array(128).keys()].find(p => I().doc("pattern", p) && p !== c.p0) ?? c.p0; if (c.p == null) throw new Error("no pattern to use"); await keep(c, "pattern", c.p);
+					u.click("#pat"); await until(() => $all("#libpop .ps").length === 128, 4000); u.click(`#libpop .ps[data-ps="${c.p}"]`); await confirmIfAsked(u); if (!$1("#libpop").hidden) u.key("Escape");
+					if (c.own) { await until(() => cur() === c.p, 8000); blur(); u.key("Delete", { alt: true }); await until(() => !hasNotes(c.p), 15000); await sleep(2000); } },
 				machine: c => ok(cur() === c.p && !hasNotes(c.p), "pattern " + cur()) },
 			sel(0),
 			{ say: "click four cells of the piano roll", act: async (u, c) => {

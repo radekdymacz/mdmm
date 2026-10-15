@@ -20,7 +20,7 @@
 #     --background (macOS): the editor never takes the focus nor comes to the front: an accessory app, its window
 #       small (the page zoomed to half), in the bottom-left corner behind every other window, and the page drawn
 #       while covered, and the standalone's output silent while its audio still runs (GEARMULATOR_MDMM_BACKGROUND=1,
-#       mdBackgroundRun.h). The VST3 host always runs so, and plays to no device.
+#       mdBackgroundRun.h; the meter still reads 0.003 of it, -50 dB, so "not silent" can be proved: MDMM_JOURNEY_METER=0 for none). The VST3 host always runs so, and plays to no device.
 # Isolation: every editor runs in a sandbox of its own and never reads or writes the person's files but the ones it
 # copies from: its own data root (GEARMULATOR_DATA_ROOT: the ROM linked, the person's config copied with the page
 # skin set) and its own home for everything macOS keeps under ~/Library (CFFIXED_USER_HOME, which NSHomeDirectory
@@ -160,7 +160,10 @@ run_unit() {
 	fi
 	touch "$BOX/start"
 	PERF=""; [ "${MDMM_JOURNEY_PERF:-0}" = 1 ] && PERF="GEARMULATOR_RT_INSTRUMENTATION=1"
+	# A background run zeroes the output, which the real-factory journeys read ("not silent"): the output meter then gets 0.003
+	# of the output (-50 dB, nothing a person hears; mdLib/mddeskdevice.cpp), as in scripts/mdmm-e2e.sh. MDMM_JOURNEY_METER=0 keeps zero.
 	BG=""; [ "$BACKGROUND" = 1 ] && BG="GEARMULATOR_MDMM_BACKGROUND=1"
+	[ "$BACKGROUND" = 1 ] && [ "${MDMM_JOURNEY_METER:-1}" = 1 ] && BG="$BG GEARMULATOR_MDMM_BACKGROUND_METER=1"
 	if [ "$HOST" = standalone ]; then
 		env $PERF $BG CFFIXED_USER_HOME="$SHOME" GEARMULATOR_DATA_ROOT="$DROOT" "$VAR=$S" "$APPS/$NAME.app/Contents/MacOS/$NAME" >"$UNIT/app.out" 2>&1 &
 		PID=$!

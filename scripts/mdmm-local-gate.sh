@@ -20,7 +20,8 @@
 #   --out <dir>        the run folder: logs, sandboxes, summary.md (default temp/local-gate/<date-time>)
 #
 # The Mac stays silent: no stage but 7d (the standalones of the journeys) opens an audio device, an audio guard fails
-# any other that does, and 7d runs with the standalone's output zeroed (--background) and the system output muted,
+# any other that does, and 7d runs with the standalone's output at -50 dB (--background: zeroed but for the 0.003 the meter
+# needs, which the real-factory journeys read) and the system output muted,
 # restored afterwards and on any exit (doc/release/LOCAL-GATE.md, Silence).
 #
 # Inputs, all overridable: GEARMULATOR_MD_FIRMWARE_BIN / GEARMULATOR_MM_FIRMWARE_BIN (default: the first file in
@@ -890,7 +891,7 @@ stage_journeys() {
 	rm -rf "${OUT}/journeys"
 	# Silence: the standalones open the audio device (the VST3 host plays to none). --background zeroes the
 	# standalone's output after the machine made it, so nothing reaches any speaker or interface whatever the
-	# person's saved audio setup is (a copy of it is used), and no input is opened (JUCE's standalone does not open
+	# person's saved audio setup is, and no input is opened (JUCE's standalone does not open
 	# one by default and the saved setup has none). On top of that the system output is muted for the stage, and put
 	# back after it and on any exit.
 	if output_mute 7d; then
@@ -906,11 +907,14 @@ stage_journeys() {
 	# The sampler journeys draw canvases and skip unless their window is drawing: --background keeps WebKit drawing
 	# while the window is covered (a sleeping display still stops it). Journeys that skip for that reason make this
 	# stage red.
+	# MDMM_JOURNEY_SETTINGS=fresh: every editor starts from the factory memory, not a copy of the person's settings (their
+	# memory holds their own songs, patterns and kits: the real-factory and real-sequence journeys, which claim factory
+	# content, read silence or find no empty pattern there). The e2e run does the same.
 	# MDMM_JOURNEY_PERF=1 records the audio callbacks of each editor (the performance capture), judged below for the
 	# record.
 	# shellcheck disable=SC2086
 	gate_run --timeout 10800 --log "${log}" -- MDMM_APP_DIR="${DIAG_BUILD}/products/Release/Standalone" \
-		MDMM_VST3_DIR="${DIAG_BUILD}/products/Release/VST3" MDMM_JOURNEY_OUT="${OUT}/journeys" MDMM_JOURNEY_PERF=1 \
+		MDMM_VST3_DIR="${DIAG_BUILD}/products/Release/VST3" MDMM_JOURNEY_OUT="${OUT}/journeys" MDMM_JOURNEY_PERF=1 MDMM_JOURNEY_SETTINGS=fresh \
 		GEARMULATOR_MD_FIRMWARE_BIN="${MD_ROM}" GEARMULATOR_MM_FIRMWARE_BIN="${MM_ROM}" \
 		"${JOURNEYS_CMD}" ${JOURNEY_ARGS} both || status=$?
 	output_restore
