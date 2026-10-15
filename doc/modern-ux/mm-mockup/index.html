@@ -2448,26 +2448,33 @@ body.dockother #rail .railparams>:is(.lpspace,.pagetabs,.pkcol),body.dockother #
    The controls row takes the height the keyboard leaves; the stick is sized from the page height. ===== */
 /* The top row never shrinks below its cards (envelope, assign, mutes): in a short window the page scrolls (#main) instead of the cards printing over each other. */
 #main>.perf{flex:1 1 auto;min-height:min-content;grid-template-rows:minmax(300px,1fr);grid-auto-rows:auto}
-/* Left to right: the multi envelope (the amp's), the joystick, the setup. The envelope's screen and the stick's pad are
-   both --joy tall and start on the same line under the header; every picture has its own controls under it (ADSR faders,
-   assign rows); the right column holds the setup (track, tab, MIRR) and the mutes. One gutter between the columns. */
-.perf3{--joy:clamp(260px,calc(100vh - 600px),400px);--gut:24px;grid-template-columns:minmax(0,1fr) max(var(--joy),290px) minmax(0,1fr)!important;gap:var(--gut)!important;min-height:0;align-items:start!important}
-.perf3>.card,.perf3 .perfside>.card{min-height:0;align-content:start;grid-template-rows:none!important;gap:8px}
-.perf3 .card header{min-height:28px;align-items:center}
-.perf3 .menvcard .menvplot{position:relative;height:var(--joy);min-width:0}
-.perf3 .menvcard .menvplot>canvas.ed{position:absolute;inset:0;width:100%;height:100%!important;min-height:0!important}
-.perf3 .joycard .joy{width:var(--joy)!important;height:var(--joy)!important;justify-self:center}
-.perf3 .asrows{display:grid;gap:6px}
-.perf3 .asrows .asrow{grid-template-columns:14px minmax(0,.8fr) minmax(0,1.2fr) 72px!important;gap:4px}
-.perf3 .perfside{display:grid;gap:14px;align-content:start;min-width:0}
-.perf3 .perfside .asgcard>.seg{justify-self:start;flex-wrap:wrap}
-.perf3 .perfside .hint,.perf3 .menvsay{font-size:12px;line-height:1.35;color:var(--print2)}
-.perf3 .menvsay{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+/* Perform, upper half, by scope: the multi envelope (all tracks), the track card (the selector, then the joystick or
+   the VEL / KEY panel, its assign rows and setup: per track), the mutes (global). The keyboard's mode keys sit under the mutes. */
+.perf3{--joy:clamp(200px,calc(100vh - 640px),400px);--gut:24px;grid-template-columns:minmax(0,1fr) 392px 320px!important;gap:var(--gut)!important;min-height:0;align-items:start!important}
+.perf .card{align-content:start;grid-template-rows:none!important;gap:8px;min-width:0}
+.perf .card header{min-height:28px;align-items:center;flex-wrap:nowrap;white-space:nowrap}
+.perf .card header>span:not(.seg){min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--print2)}
+.perf .menvplot{position:relative;height:calc(var(--joy) + 76px);min-width:0}
+.perf .menvplot>canvas.ed{position:absolute;inset:0;width:100%;height:100%!important;min-height:0!important}
+.perf .trkcard .joy{width:var(--joy)!important;height:var(--joy)!important;max-width:100%;justify-self:center}
+.perf .asrows{display:grid;gap:6px}
+.perf .asrows .asrow{grid-template-columns:14px minmax(0,.8fr) minmax(0,1.2fr) 72px!important;gap:4px}
+.perf .trkcard{border-left:3px solid var(--led);padding-left:12px}
+.perf .hint,.perf .menvsay{font-size:12px;line-height:1.35;color:var(--print2)}
+.perf .menvsay,.perf .hint.onel{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.perf .menvsay .menvto{display:inline;margin:0 0 0 6px}
+.perf .perfside{display:grid;gap:14px;align-content:start;min-width:0}
+.perf .kbcard .kbtitle{flex-wrap:wrap;white-space:normal;padding-right:0;gap:8px 12px}
+.perf .kbcard .kbhint{font-size:12px;color:var(--print2)}
+.perf .trkcard>.seg[data-set=astab]{flex-wrap:wrap;justify-self:start}
+.perf .trksel{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
+.perf .trksel button{display:grid;gap:1px;justify-items:center;height:40px;padding:0 2px;min-width:0}
+.perf .trksel button b{font:600 12px var(--mono)}
+.perf .trksel button small{font:500 9px var(--sans);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .joy.padinfo{display:grid;align-content:center;justify-items:center;gap:8px;padding:0 18px;text-align:center;cursor:default;box-sizing:border-box}
 .joy.padinfo b{font:24px var(--pix);color:var(--ink)}
 .joy.padinfo span{font-size:12px;line-height:1.4;color:var(--print2)}
-/* Multi map: the map table and keyboard below keep their height, so the stick gets what is left of the window. */
-.perf.map .perf3{--joy:clamp(150px,calc(100vh - 765px),400px)}
+.perf.map .perf3{--joy:clamp(150px,calc(100vh - 780px),400px)}
 .joy small.jl{left:5px;top:50%;transform:translateY(-50%)}
 .joy small.jr{right:5px;top:50%;transform:translateY(-50%)}
 .joy small.ju{left:50%;top:4px;transform:translateX(-50%)}
@@ -2762,6 +2769,11 @@ canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop
 #rail .dkk{display:flex;align-items:center;justify-content:center;text-align:center;padding:0 2px}
 .dkvals.dktv{grid-template-columns:repeat(3,minmax(0,1fr)) calc(clamp(170px,26%,300px) + 8px)}
 .dkvis .arptrack .ac.add b{color:var(--print)}
+/* Perform's track selector: keys, the selected one dark with its LED */
+.perf .trksel button{background:var(--plate3);color:var(--print);border-radius:3px;box-shadow:inset 0 0 0 1px var(--rule);position:relative}
+.perf .trksel button::before{display:none!important}
+.perf .trksel button[aria-pressed=true]{background:var(--key);color:var(--keytext);box-shadow:inset 0 -3px 0 var(--led)}
+.perf .trksel button[aria-pressed=true] small{color:var(--keytext)}
 </style>
 <div class="app">
   <header class="top">
@@ -6457,7 +6469,7 @@ S.alt=false;
 function altLabels(){const c=$('[data-sec="clear"]');if(c){c.textContent=S.alt?"All":"Clr";if(S.alt)c.title=`Clear the whole pattern ${patName(S.pat)}: every track's notes, slides and locks (one undo step)`}secLabels();
  const cl=$("#clearLane");if(cl){const t=S.alt?`Clear every lock of ${tLabel(S.sel)}`:`Clear ${pidLabel(S.sel,S.lane)} locks. Alt: every lock of ${tLabel(S.sel)}`;cl.title=t;cl.setAttribute("aria-label",t)}}
 /* Alt seen up (any key or pointer event without it) also ends a rotate run: its keyup may never reach the page */
-function showAlt(on){if(S.alt===on)return;S.alt=on;if(!on)rotHold=false;document.body.classList.toggle("althold",on);altLabels();if(S.gen&&S.ws==="seq")genDraw();if(S.gen&&S.ws==="sound")renderMutStrip()}
+function showAlt(on){if(S.alt===on)return;S.alt=on;if(!on)rotEnd();document.body.classList.toggle("althold",on);altLabels();if(S.gen&&S.ws==="seq")genDraw();if(S.gen&&S.ws==="sound")renderMutStrip()}
 addEventListener("keydown",e=>showAlt(e.altKey),true);addEventListener("keyup",e=>showAlt(e.altKey),true);addEventListener("blur",()=>showAlt(false));
 document.addEventListener("pointermove",e=>showAlt(e.altKey),{passive:true,capture:true});
 function clearPattern(){[...S.tracks,...S.midi].forEach(tr=>{tr.steps=tr.steps.map(()=>null);tr.slide=new Set()});S.locks.clear();edit("clearPattern",{});render();toast(`Cleared ${patName(S.pat)}: every track's notes, slides and locks.`)}
@@ -6472,7 +6484,9 @@ function syncLockBudget(){const el=$("#lockbudget");if(!el)return;const n=S.lock
    and locks one step, wrapping at the length; swing stays on its steps (the groove, not the notes). The presses
    while Alt stays down are one undo step (rotHold holds the commit). ---- */
 let rotHold=false;
-addEventListener("keyup",e=>{if(e.key==="Alt")rotHold=false},true);addEventListener("blur",()=>{rotHold=false});
+/* the run ends: the render it held (busyNow) is made */
+function rotEnd(){if(!rotHold)return;rotHold=false;showHeld()}
+addEventListener("keyup",e=>{if(e.key==="Alt")rotEnd()},true);addEventListener("blur",rotEnd);
 const seqKeys=()=>S.ws==="seq"&&!dialogOpen()&&$("#keyspop").hidden;
 const rotStep=(s,by,len)=>((s+by)%len+len)%len;
 function rotateTrack(by){const t=S.sel,tr=trk(t),len=S.len;if(len<2)return;
@@ -6492,10 +6506,13 @@ function fillEvery(t,s,n,pitch){const tr=trk(t),end=S.len,on=!(tr.steps[s]&&!tr.
 /* ---- the wheel over a lock-lane step with a trig moves its lock in the lane's parameter (from the kit value when
    it has none): 4 a notch (1 on a short list), ⇧ 1. A run of notches on one step is one undo step. The roll's own
    wheel stays the pitch scroll. ---- */
-let wheelLock=null;
+let wheelLock=null,wheelEndT=0;
+const WHEEL_RUN_MS=700;
+/* a run of notches holds the page's renders (busyNow) until it goes quiet */
+const wheelHeld=()=>!!wheelLock&&performance.now()-wheelLock.at<WHEEL_RUN_MS;
 $("#main").addEventListener("wheel",e=>{const el=e.target.closest("#lane .lb");if(!el||S.ws!=="seq")return;const t=S.sel,s=+el.dataset.s,st=trk(t).steps[s],d=e.deltaY||(e.shiftKey?e.deltaX:0);
  if(!d||!st||st.off)return;e.preventDefault();const[pg,i]=S.lane.split("."),m=meta(t,pg,+i),mx=maxOf(m),now=performance.now(),key=t+"|"+S.lane+"|"+s;
- if(!wheelLock||wheelLock.key!==key||now-wheelLock.at>700){commit();wheelLock={key}}wheelLock.at=now;
+ if(!wheelLock||wheelLock.key!==key||now-wheelLock.at>WHEEL_RUN_MS){commit();wheelLock={key}}wheelLock.at=now;clearTimeout(wheelEndT);wheelEndT=setTimeout(showHeld,WHEEL_RUN_MS+10);
  const had=S.locks.get(lkKey(t,S.lane))?.get(s),cur=had??getP(t,S.lane)??0,v=clamp(cur+(d<0?1:-1)*(e.shiftKey||mx<16?1:4),0,mx);if(had!=null&&v===had)return;
  if(!setLock(t,S.lane,s,v))return;edit("lock",{t,...pidArgs(S.lane),s,v});renderTop();renderLane();toast(`${pidLabel(t,S.lane)} ${fmt(m,v)} · ${tLabel(t)}, step ${s+1}`)},{passive:false});
 
@@ -6842,7 +6859,7 @@ document.addEventListener("pointerdown",e=>{const v=e.target.closest(".gv[data-g
 document.addEventListener("pointermove",e=>{if(!gvDrag)return;const d=Math.trunc((gvDrag.y-e.clientY)/6)-gvDrag.acc;if(!d)return;
  gvDrag.acc+=d;gvDrag.v.dataset.dragged="1";genVal(gvDrag.k,d*gvDragStep(gvDrag.k));
  const n=document.querySelector(`.gv[data-gv="${gvDrag.k}"]`);if(n){n.dataset.dragged="1";gvDrag.v=n}});
-document.addEventListener("pointerup",()=>{if(!gvDrag)return;const k=gvDrag.k;gvDrag=null;setTimeout(()=>{const n=document.querySelector(`.gv[data-gv="${k}"]`);if(n)delete n.dataset.dragged},0)});
+document.addEventListener("pointerup",()=>{if(!gvDrag)return;const k=gvDrag.k;gvDrag=null;showHeld();setTimeout(()=>{const n=document.querySelector(`.gv[data-gv="${k}"]`);if(n)delete n.dataset.dragged},0)});
 Keys.bind({id:"randomise-track",short:"Randomise",scope:"any",keys:["R"],code:"KeyR",group:"Selected track",modal:"genpop",when:()=>kbOn()||genDlgOpen(),run:()=>randomise(false),
  does:"Randomise the selected track: on Sound a fresh random sound (MUTATE, from the sound before the trial); everywhere else a new GEN variation: a new seed, or random hits and rotation"});
 Keys.bind({id:"randomise-all",short:"Randomise all",scope:"any",keys:["R"],code:"KeyR",mod:"alt",group:"All",modal:"genpop",when:()=>kbOn()||genDlgOpen(),run:()=>randomise(true),
@@ -7789,26 +7806,30 @@ function renderPerform(){const pm=PMODES.find(p=>p[0]===S.mode),t=asgT(),tr=S.tr
    ${S.multi.mode>=2?`<span class="stepper"><span class="ilab">Timing</span><button data-tim="-1">−</button><b class="mono">${TIMS[S.multi.timing]}</b><button data-tim="1">+</button></span>`:""}`:"";
  const asRow=(r,k)=>`<div class="asrow"><b>${k+1}</b><select id="asp${k}" aria-label="Assign ${k+1} page">${[...PAGES,"PTCH"].map(p=>opt(LPAGES.indexOf(p),p,r.pg)).join("")}</select><select id="asd${k}" aria-label="Assign ${k+1} destination">${destNames(t,r.pg).map((d,i)=>opt(i,d,r.d)).join("")}</select>${pc("asg",k,{t,label:"ADD"})}</div>`;
  const joy=S.asTab.startsWith("JOY");
- $("#main").innerHTML=`<div class="perf ${S.mode==="map"?"map":""}">
-  <div class="perf3">
-   <section class="card menvcard"><header><h3>Multi envelope</h3><span title="Both DATA PAGE keys on the machine. Its effect depends on the kit's MULTI TRIG mode">MULTI TRIG ${MTM[S.multi.mode]}</span></header><div class="menvplot"><canvas class="ed" data-ed="menv" aria-label="Multi envelope. Drag the dots."></canvas></div>
+ const selTrack=`<span class="seg trksel" data-set="astrk">${[0,1,2,3,4,5].map(k=>{const p=S.mode==="poly";return`<button data-v="${k}" aria-pressed="${k===t}"${p?` class="${k===t?"polyt":"polyoff"}" title="${k===t?`T${k+1} plays POLY: six voices`:`Silent in POLY. Click: T${k+1} plays POLY instead`}"`:""}><b>T${k+1}</b><small>${shortM(S.tracks[k].m)}</small>${p&&k===t?`<em class="x6">×6</em>`:""}</button>`}).join("")}</span>`;
+ const tabsH=`<span class="seg" data-set="astab">${Object.keys(A.tabs).map(k=>`<button data-v="${k}" aria-pressed="${S.asTab===k}">${k}</button>`).join("")}</span>`;
+ const extrasH=`${S.asTab==="JOY RL"?`<button class="lkey" data-mirr="1" aria-pressed="${A.mirr}" title="Left = −right"><i class="led"></i>MIRR (left = −right)</button>`:""}
+    ${S.asTab==="KEY"?`<span class="keyrow"><button class="lkey" data-ktrk="hpf" aria-pressed="${A.hpf}"><i class="led"></i>HPF tracks keys</button><button class="lkey" data-ktrk="lpf" aria-pressed="${A.lpf}"><i class="led"></i>LPF tracks keys</button></span>`:""}`;
+ const hintH=`<div class="hint onel" title="${ASG_SAY[S.asTab]} ADD −64…+63.">${ASG_SAY[S.asTab]} ADD −64…+63.</div>`;
+ const padH=`${joy?`<div class="joy" id="joy" title="Drag the stick. It springs back."><span class="cross"></span><span class="cross2"></span><small class="jl">L</small><small class="jr">R</small><small class="ju">U</small><small class="jd">D</small><span class="knobj" id="knobj" style="left:${50+S.joy.x*42}%;top:${50-S.joy.y*42}%"></span></div>`
+     :`<div class="joy padinfo"><b>${S.asTab}</b><span>${ASG_SAY[S.asTab]}</span></div>`}`;
+ const rowsH=`<div class="asrows">${rows.map(asRow).join("")}</div>`;
+ const menvH=`<section class="card menvcard"><header><h3>Multi envelope</h3><span title="Both DATA PAGE keys on the machine. Its effect depends on the kit's MULTI TRIG mode">all tracks · ${MTM[S.multi.mode]}</span></header><div class="menvplot"><canvas class="ed" data-ed="menv" aria-label="Multi envelope. Drag the dots."></canvas></div>
     <div class="ctl" style="grid-template-columns:repeat(5,minmax(0,1fr))">${["ATK","DEC","SUS","REL","PORT"].map(n=>pc("menv",n,{})).join("")}</div>
-    <div class="hint menvsay" title="On top of every track's own envelope. For no effect: ATK 0, DEC, SUS and REL at 127.">${menvHint()}</div></section>
-   <section class="card joycard"><header><h3>${joy?"Joystick":S.asTab==="VEL"?"Velocity":"Key follow"}</h3><span title="The two assign rows of the ${S.asTab} tab">T${t+1} · ${S.asTab}</span></header>
-    ${joy?`<div class="joy" id="joy" title="Drag the stick. It springs back."><span class="cross"></span><span class="cross2"></span><small class="jl">L</small><small class="jr">R</small><small class="ju">U</small><small class="jd">D</small><span class="knobj" id="knobj" style="left:${50+S.joy.x*42}%;top:${50-S.joy.y*42}%"></span></div>`
-     :`<div class="joy padinfo"><b>${S.asTab}</b><span>${ASG_SAY[S.asTab]}</span></div>`}
-    <div class="asrows">${rows.map(asRow).join("")}</div></section>
-   <div class="perfside">
-   <section class="card asgcard"><header><h3>Assign · T${t+1} ${shortM(tr.m)}</h3><span class="seg" data-set="astrk">${[0,1,2,3,4,5].map(k=>{const p=S.mode==="poly";return`<button data-v="${k}" aria-pressed="${k===t}"${p?` class="${k===t?"polyt":"polyoff"}" title="${k===t?`T${k+1} plays POLY: six voices`:`Silent in POLY. Click: T${k+1} plays POLY instead`}"`:""}>${k+1}${p&&k===t?`<em class="x6">×6</em>`:""}</button>`}).join("")}</span></header>
-    <span class="seg" data-set="astab">${Object.keys(A.tabs).map(k=>`<button data-v="${k}" aria-pressed="${S.asTab===k}">${k}</button>`).join("")}</span>
-    ${S.asTab==="JOY RL"?`<button class="lkey" data-mirr="1" aria-pressed="${A.mirr}" title="Left = −right"><i class="led"></i>MIRR (left = −right)</button>`:""}
-    ${S.asTab==="KEY"?`<span class="keyrow"><button class="lkey" data-ktrk="hpf" aria-pressed="${A.hpf}"><i class="led"></i>HPF tracks keys</button><button class="lkey" data-ktrk="lpf" aria-pressed="${A.lpf}"><i class="led"></i>LPF tracks keys</button></span>`:""}
-    <div class="hint" title="ADD −64…+63">${ASG_SAY[S.asTab]} ADD −64…+63.</div></section>
-   <section class="card"><header><h3>Mutes</h3><span>global · FUNCTION + BANK GROUP</span></header>
+    <div class="hint menvsay" title="${menvHint().replace(/<[^>]+>/g,"")} On top of every track's own envelope. For no effect: ATK 0, DEC, SUS and REL at 127.">${menvHint()}</div></section>`;
+ const mutesH=`<section class="card mutecard"><header><h3>Mutes</h3><span title="FUNCTION + BANK GROUP on the machine">global</span></header>
     <div class="mutelab">Synth tracks</div><div class="mutes12">${S.tracks.map((x,i)=>`<button class="${x.mute?"":"on"}" data-gmute="${i}" aria-pressed="${!x.mute}" title="T${i+1} ${x.m}"><i class="led"></i>T${i+1}</button>`).join("")}</div>
     <div class="mutelab">MIDI tracks</div><div class="mutes12">${S.midi.map((x,i)=>`<button class="${x.mute?"":"on"}" data-gmute="${i+6}" aria-pressed="${!x.mute}" title="M${i+1} CH${x.ch}"><i class="led"></i>M${i+1}</button>`).join("")}</div>
     <div class="hint">Mutes work on notes: a sound already playing rings out.</div>
-</section></div></div>
+</section>`;
+ const scope=(w,tip)=>`<span class="scope" title="${tip}">${w}</span>`;
+ const upper=`<div class="perf3">${menvH}
+   <section class="card trkcard"><header><h3>Track</h3>${scope(shortM(tr.m),"These settings belong to the selected track")}</header>${selTrack}${tabsH}${padH}${rowsH}${extrasH}${hintH}</section>
+   <div class="perfside">${mutesH}<section class="card kbcard"><header><h3>Keyboard</h3><span title="What the keys below play">plays · all keys</span></header>  <div class="perfbar kbtitle"><span class="keyrow">${PMODES.map(([k,n])=>`<button class="lkey" data-pmode="${k}" aria-pressed="${S.mode===k}"><i class="led"></i>${n}</button>`).join("")}</span>${mtCtl}
+   <span class="stepper" style="margin-left:auto"><span class="ilab">Octave</span><button data-kboct="-1" aria-label="Octave down">−</button><b class="mono">${noteName(kbRange()[0])}</b><button data-kboct="1" aria-label="Octave up">+</button></span></div>
+  <div class="hint kbhint">${S.mode==="poly"?polyHint(t):pm[2]} ${S.mode==="multi"?{0:"Notes go to all six tracks; each keeps its own arpeggiator.",1:`Keys from ${noteName(S.multi.splitKey)} play T${S.multi.splitTrack}-T6, keys below play T1-T${S.multi.splitTrack-1}. The multi envelope is not used here.`,2:"Each note restarts the pattern, transposed from C-4.",3:"The first note starts the pattern; later notes only transpose it, so the loop never breaks."}[S.multi.mode]:""}</div></section></div></div>`;
+ $("#main").innerHTML=`<div class="perf ${S.mode==="map"?"map":""}">
+  ${upper}
 
   ${S.mode==="map"?`<section class="card maprow"><header><h3>Multi map</h3><span>GLOBAL › CONTROL › MULTIMAP EDIT · stored in the global slot</span></header>
    <table class="mmap"><thead><tr><th>Range</th><th>Pattern</th><th>Offset</th><th>Length</th><th>Transpose</th><th>Timing</th><th></th></tr></thead><tbody>${(()=>{let lo=0;return S.mmap.map((r,i)=>{const a=lo;lo=r.hi+1;return`<tr class="${i===S.mmapSel?"sel":""}" data-mrow="${i}"><td class="mono">${noteName(a)} – <span class="stepper"><button data-mhi="-1" data-i="${i}" ${i===S.mmap.length-1?"disabled":""}>−</button><b class="mono">${i===S.mmap.length-1?"G-9":noteName(r.hi)}</b><button data-mhi="1" data-i="${i}" ${i===S.mmap.length-1?"disabled":""}>+</button></span></td>
@@ -7817,9 +7838,6 @@ function renderPerform(){const pm=PMODES.find(p=>p[0]===S.mode),t=asgT(),tr=S.tr
    <div class="btnrow"><button data-madd="1">Split selected range</button><span class="hint">A range's lower key is the key after the one above. LEN needs an offset first. Timing waits for a bar line.</span></div></section>`:""}
 
   <div class="kbsec">
-  <div class="perfbar kbtitle"><span class="cap">Keyboard</span><span class="keyrow">${PMODES.map(([k,n])=>`<button class="lkey" data-pmode="${k}" aria-pressed="${S.mode===k}"><i class="led"></i>${n}</button>`).join("")}</span>${mtCtl}
-   <span class="stepper" style="margin-left:auto"><span class="ilab">Octave</span><button data-kboct="-1" aria-label="Octave down">−</button><b class="mono">${noteName(kbRange()[0])}</b><button data-kboct="1" aria-label="Octave up">+</button></span></div>
-  <div class="hint kbhint">${S.mode==="poly"?polyHint(t):pm[2]} ${S.mode==="multi"?{0:"Notes go to all six tracks; each keeps its own arpeggiator.",1:`Keys from ${noteName(S.multi.splitKey)} play T${S.multi.splitTrack}-T6, keys below play T1-T${S.multi.splitTrack-1}. The multi envelope is not used here.`,2:"Each note restarts the pattern, transposed from C-4.",3:"The first note starts the pattern; later notes only transpose it, so the loop never breaks."}[S.multi.mode]:""}</div>
   <div class="kbwrap">${S.mode==="map"?`<div class="mapbands">${mapBands()}</div>`:""}<div class="kb" id="kb">${renderKb()}</div>
    <div class="trklamps" id="trklamps">${S.tracks.map((x,i)=>{const p=S.mode==="poly";return`<span${p?` class="${i===t?"polyt":"polyoff"}" title="${i===t?"Six voices in POLY":"Silent in POLY"}"`:""}><i class="led" data-lamp="${i}"></i>T${i+1} ${shortM(x.m)}${p&&i===t?`<em class="x6">×6</em>`:""}</span>`}).join("")}<span class="hint" id="kbinfo" style="margin-left:auto">Click or drag across the keys to play.</span></div></div>
   </div></div>`;
@@ -8977,8 +8995,9 @@ document.addEventListener("dragstart",e=>{if(e.target.closest?.("img,svg,canvas"
 
 /* BPM: drag or arrows */
 /* wave 2, change on release (the TEMPO window's tick, or ⌥ held at the press): the LCD shows the drag, the tempo goes at the release */
-(()=>{const b=$("#bpm");let d=null;b.addEventListener("pointerdown",e=>{if(tempoLocked())return;d={y:e.clientY,v:S.bpm,late:e.altKey||DeskTransport.delayed()};b.setPointerCapture(e.pointerId)});
- const release=()=>{const was=d;d=null;if(was&&was.late&&S.tempoDraft!=null){const v=S.tempoDraft;S.tempoDraft=null;setTempo(v)}else S.tempoDraft=null};
+let bpmHeld=false;	/* the tempo is dragged: renders wait for it (busyNow) */
+(()=>{const b=$("#bpm");let d=null;b.addEventListener("pointerdown",e=>{if(tempoLocked())return;d={y:e.clientY,v:S.bpm,late:e.altKey||DeskTransport.delayed()};bpmHeld=true;b.setPointerCapture(e.pointerId)});
+ const release=()=>{const was=d;d=null;bpmHeld=false;if(was&&was.late&&S.tempoDraft!=null){const v=S.tempoDraft;S.tempoDraft=null;setTempo(v)}else S.tempoDraft=null;showHeld()};
  b.addEventListener("pointermove",e=>{if(!d)return;if(e.buttons===0&&e.pointerType==="mouse"){release();return}const v=clamp(Math.round((d.v+(d.y-e.clientY)*(e.shiftKey?.1:.5))*10)/10,30,300);
   if(d.late){if(v!==S.tempoDraft){S.tempoDraft=v;renderTop()}return}S.bpm=v;if(HOST.tempo)HOST.tempo(S.bpm);renderTop();if(S.playing)restartClock()});
  b.addEventListener("pointerup",()=>release());b.addEventListener("keydown",e=>{const k={ArrowUp:1,ArrowDown:-1}[e.key];if(!k)return;e.preventDefault();if(tempoLocked())return;S.bpm=clamp(S.bpm+k*(e.shiftKey?.1:1),30,300);if(HOST.tempo)HOST.tempo(S.bpm);renderTop();if(S.playing)restartClock()})})();
@@ -9182,8 +9201,13 @@ function show(v,all){
  if(!doc&&!showLater)return;
  if(busyNow()){showLater=true;return}
  showLater=false;render();drawLib()}
-/* busy: a gesture, or a menu open (a render would close it under the person: the drawing waits for it, as for a drag) */
-const busyNow=()=>{try{return !!(S.genEnding||drag||laneDraw||rollDrag||selDrag||active||arpDrag||l2drag||joyDrag||splitDrag||cord||kbDown)||menuOpen()}catch(_){return false}};
+/* busy: a gesture, or a menu open (a render would close it under the person: the drawing waits for it, as for a drag).
+   1.0: also a GEN or MUTATE value dragged (gvDrag), the tempo dragged (bpmHeld), the rotate presses while Alt is down
+   (rotHold) and a run of wheel notches on a lock (wheelHeld): each draws its own change in place, and a document that
+   lands meanwhile would rebuild the grid at every one (the 1.0 review: about 50 % WebContent on the MD page) */
+const busyNow=()=>{try{return !!(S.genEnding||drag||laneDraw||rollDrag||selDrag||active||arpDrag||l2drag||joyDrag||splitDrag||cord||kbDown||gvDrag||bpmHeld||rotHold||wheelHeld())||menuOpen()}catch(_){return false}};
+/* the render a gesture held (showLater) once it ends: the gestures that draw in place call it at their end */
+function showHeld(){if(showLater&&!busyNow()){showLater=false;render();drawLib()}}
 /* RECORD as the machine is in it: "off" | "grid" | "live" | "step" (wave 7: STEP RECORDING, at = the step the next note
    writes, -1 unknown) */
 function setRecord(mode,at=-1){const on=mode==="grid"||mode==="live",was=S.recMode;S.recMode=mode;S.stepAt=mode==="step"?at:-1;if(mode!=="step")S.stepT=null;if(mode!=="live")eraseUp();

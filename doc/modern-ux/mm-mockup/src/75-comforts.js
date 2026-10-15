@@ -9,7 +9,7 @@ S.alt=false;
 function altLabels(){const c=$('[data-sec="clear"]');if(c){c.textContent=S.alt?"All":"Clr";if(S.alt)c.title=`Clear the whole pattern ${patName(S.pat)}: every track's notes, slides and locks (one undo step)`}secLabels();
  const cl=$("#clearLane");if(cl){const t=S.alt?`Clear every lock of ${tLabel(S.sel)}`:`Clear ${pidLabel(S.sel,S.lane)} locks. Alt: every lock of ${tLabel(S.sel)}`;cl.title=t;cl.setAttribute("aria-label",t)}}
 /* Alt seen up (any key or pointer event without it) also ends a rotate run: its keyup may never reach the page */
-function showAlt(on){if(S.alt===on)return;S.alt=on;if(!on)rotHold=false;document.body.classList.toggle("althold",on);altLabels();if(S.gen&&S.ws==="seq")genDraw();if(S.gen&&S.ws==="sound")renderMutStrip()}
+function showAlt(on){if(S.alt===on)return;S.alt=on;if(!on)rotEnd();document.body.classList.toggle("althold",on);altLabels();if(S.gen&&S.ws==="seq")genDraw();if(S.gen&&S.ws==="sound")renderMutStrip()}
 addEventListener("keydown",e=>showAlt(e.altKey),true);addEventListener("keyup",e=>showAlt(e.altKey),true);addEventListener("blur",()=>showAlt(false));
 document.addEventListener("pointermove",e=>showAlt(e.altKey),{passive:true,capture:true});
 function clearPattern(){[...S.tracks,...S.midi].forEach(tr=>{tr.steps=tr.steps.map(()=>null);tr.slide=new Set()});S.locks.clear();edit("clearPattern",{});render();toast(`Cleared ${patName(S.pat)}: every track's notes, slides and locks.`)}
@@ -24,7 +24,9 @@ function syncLockBudget(){const el=$("#lockbudget");if(!el)return;const n=S.lock
    and locks one step, wrapping at the length; swing stays on its steps (the groove, not the notes). The presses
    while Alt stays down are one undo step (rotHold holds the commit). ---- */
 let rotHold=false;
-addEventListener("keyup",e=>{if(e.key==="Alt")rotHold=false},true);addEventListener("blur",()=>{rotHold=false});
+/* the run ends: the render it held (busyNow) is made */
+function rotEnd(){if(!rotHold)return;rotHold=false;showHeld()}
+addEventListener("keyup",e=>{if(e.key==="Alt")rotEnd()},true);addEventListener("blur",rotEnd);
 const seqKeys=()=>S.ws==="seq"&&!dialogOpen()&&$("#keyspop").hidden;
 const rotStep=(s,by,len)=>((s+by)%len+len)%len;
 function rotateTrack(by){const t=S.sel,tr=trk(t),len=S.len;if(len<2)return;
@@ -44,10 +46,13 @@ function fillEvery(t,s,n,pitch){const tr=trk(t),end=S.len,on=!(tr.steps[s]&&!tr.
 /* ---- the wheel over a lock-lane step with a trig moves its lock in the lane's parameter (from the kit value when
    it has none): 4 a notch (1 on a short list), ⇧ 1. A run of notches on one step is one undo step. The roll's own
    wheel stays the pitch scroll. ---- */
-let wheelLock=null;
+let wheelLock=null,wheelEndT=0;
+const WHEEL_RUN_MS=700;
+/* a run of notches holds the page's renders (busyNow) until it goes quiet */
+const wheelHeld=()=>!!wheelLock&&performance.now()-wheelLock.at<WHEEL_RUN_MS;
 $("#main").addEventListener("wheel",e=>{const el=e.target.closest("#lane .lb");if(!el||S.ws!=="seq")return;const t=S.sel,s=+el.dataset.s,st=trk(t).steps[s],d=e.deltaY||(e.shiftKey?e.deltaX:0);
  if(!d||!st||st.off)return;e.preventDefault();const[pg,i]=S.lane.split("."),m=meta(t,pg,+i),mx=maxOf(m),now=performance.now(),key=t+"|"+S.lane+"|"+s;
- if(!wheelLock||wheelLock.key!==key||now-wheelLock.at>700){commit();wheelLock={key}}wheelLock.at=now;
+ if(!wheelLock||wheelLock.key!==key||now-wheelLock.at>WHEEL_RUN_MS){commit();wheelLock={key}}wheelLock.at=now;clearTimeout(wheelEndT);wheelEndT=setTimeout(showHeld,WHEEL_RUN_MS+10);
  const had=S.locks.get(lkKey(t,S.lane))?.get(s),cur=had??getP(t,S.lane)??0,v=clamp(cur+(d<0?1:-1)*(e.shiftKey||mx<16?1:4),0,mx);if(had!=null&&v===had)return;
  if(!setLock(t,S.lane,s,v))return;edit("lock",{t,...pidArgs(S.lane),s,v});renderTop();renderLane();toast(`${pidLabel(t,S.lane)} ${fmt(m,v)} · ${tLabel(t)}, step ${s+1}`)},{passive:false});
 
