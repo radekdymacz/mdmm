@@ -87,7 +87,8 @@ img,svg,canvas{-webkit-user-drag:none}
 .genbar.fit2 .gkeys{gap:4px}
 .genbar.fit3 .gv small{font-size:8px;letter-spacing:0}
 /* the rail's keys in a Sequence row: M, S and the dice (GEN, 76-gen.js openGen), three 24 px keys */
-.ws-seq .rail .threw{grid-template-columns:22px minmax(0,1fr) 24px 24px 24px}
+.ws-seq .rail .threw{grid-template-columns:20px minmax(0,1fr) 22px 22px 22px;gap:4px}
+.ws-seq .rail .th .ms{width:22px}
 /* the lane toolbox sits on the lock lane's header row (70-seq.js renderSeq), on the right, only while the Locks tab is open: tabs and the lock count on the left */
 .lanetop .xlane{display:flex;margin:0 0 0 auto;align-self:center;gap:8px;flex:none}
 .lanetop .xlseg{gap:1px}

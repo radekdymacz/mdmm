@@ -64,3 +64,7 @@
 @media (max-width:1500px){.genband .gwrite~.gsum{display:none}.genband .gsum .gopt{display:none}}
 .th .nm.tagged{gap:4px}
 .th .nm .gtag{font:10px var(--pix);font-style:normal;color:var(--ink);background:var(--lcd);padding:0 3px;border-radius:2px;margin-left:auto;flex:none;align-self:center;white-space:nowrap}
+
+/* The track list's names (both editors): the name ends with an ellipsis when it does not fit, never a hard clip; the full machine name is its tooltip */
+.rail .th .nm{overflow:hidden}
+.rail .th .nm b{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}

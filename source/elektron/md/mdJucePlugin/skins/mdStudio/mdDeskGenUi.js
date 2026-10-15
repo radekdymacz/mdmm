@@ -231,7 +231,17 @@ const genKept = t => !!(S.gen.kept && S.gen.kept[t]);
 const genIsKept = t => genKept(t) || genSpec(t).kind === "keep";
 function setKept(t, on) { const k = (S.gen.kept || []).slice(); k[t] = on; S.gen = Object.assign({}, S.gen, { kept: k }); }
 function genRealise(t) { if (genSpec(t).kind !== "keep") return; setKept(t, true); setGenSpec(t, genShown(t)); }
-function genKeep(on) { genEnsure(); setKept(S.sel, on); render(); genDraw(); }
+function genKeepT(t, on) {
+	genEnsure(); setKept(t, on);
+	if (!on && genSpec(t).kind === "keep") setGenSpec(t, genShown(t));
+	render(); genDraw(); toast(on ? `Track ${t + 1} kept: ⌥R all skips it.` : `Track ${t + 1} is no longer kept.`);
+}
+function genKeep(on) { genKeepT(S.sel, on); }
+/* ⌘-click (Ctrl off a Mac) on a track's dice key: Keep on or off for that track, the dialog not opened. Keep is a setting of the generators, not of the pattern: no undo step */
+document.addEventListener("click", e => {
+	const o = e.target.closest?.("[data-genopen]"); if (!o || !Modifiers.cmd(e)) return;
+	e.stopPropagation(); e.preventDefault(); const t = +o.dataset.genopen; genKeepT(t, !genIsKept(t));
+}, true);
 /* the spec the dialog's boxes show: the track's own, or while it is kept the generator it will come back to */
 function genShown(t) { const sp = genSpec(t); return sp.kind !== "keep" ? sp : genFit((S.gen.last[t] || {})[(S.gen.last[t] || {}).was], V.len || 64) || (genDefault(V.tracks[t].m, V.len || 64).kind !== "keep" ? genDefault(V.tracks[t].m, V.len || 64) : { kind: "euclid", k: 4, n: Math.min(16, V.len || 64), rot: 0 }); }
 /* The dialog (compact, one size in every mode): the head (the drag handle), MODE, the mode's values in an area of fixed height,
