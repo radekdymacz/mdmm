@@ -395,7 +395,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p. | What you save stays for every new session | The machine keeps its kits, patterns, songs, globals and samples when it is switched off. | ✅ | By itself (a session without a DAW project, and the standalone, start from the saved memory); engine menu: KEEP MEMORY; Reset machine… > Start from factory memory… | I-024, doc/modern-ux/DESIGN-machine-memory.md | 1 | pass (e2e-md-engine-memory) |
 | p. | Factory songs play | The songs of factory memory are there and play: load one, SONG mode, PLAY. | ✅ | Song workspace: the song slots, Load; the arrangement follows the machine | e2e: every factory song | 2 | pass (md-real-song-playing) |
 | p. | Factory patterns play | The patterns of factory memory are there and play: pick one on the LCD, PLAY. | ✅ | The pattern chooser on the LCD | e2e: patterns spread over all 128 | 2 | pass (md-real-pattern-playing) |
-| p. | GEN rolls a rhythm | No such function: you set the hits by hand. The editor rolls a rhythm for you from a few settings. | ✅ | GEN bar on Sequence: Random, Defaults, Hits; R | One undo step | 3 | pass (e2e-md-gen-keys-r) |
+| p. | GEN rolls a rhythm | No such function: you set the hits by hand. The editor rolls a rhythm for you from a few settings. | ✅ | GEN bar on Sequence: Random, Defaults, Hits; R | One undo step | 4 | pass (e2e-md-gen-keys-r) |
 | p. | MUTATE changes a sound | No such function. The editor nudges the sound of the tracks at random, within a scope and an amount. | ✅ | GEN bar on Sequence: MUTATE, scope chips, amount | One undo step | 2 | pass (e2e-md-gen-mutate-scope) |
 | p. | Solo | Solo plays one track alone; the mutes you had come back when you let go. | ✅ | Mix: S on the strip; the rail | The machine has mute only | 2 | pass (e2e-md-mix-mute-solo) |
 | p. | Undo and redo | No undo. Every edit of the editor can be taken back and done again, across kits, patterns and songs. | ✅ | UNDO and REDO in the top bar; Cmd+Z, Cmd+Shift+Z | The machine has no undo | 2 | pass (e2e-md-top-undo-redo) |
@@ -415,7 +415,7 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p. | Pattern queue and chooser | Pick any of the 128 patterns from the chooser; played while it runs, it waits for the end. | ✅ | The pattern on the LCD |  | 3 | pass (md-pattern-chooser) |
 | p. | Kit and song slots | The kit library and the song slots: load, copy, paste, rename and clear a slot, each undoable. | ✅ | The kit on the LCD; Song workspace |  | 4 | pass (e2e-md-lib-kit-copy-paste-undo) |
 | p. | What you draw is what plays | What you enter in the sequencer is what the machine plays. | ✅ | Sequence: the grid or the roll; Alt+Delete clears the pattern; Cmd+Z takes it back | e2e: drawn, played, cleared, undone, each checked on the machine's output | 1 | pass (md-real-sequence-drawn) |
-| p. | Revert track | The machine has no key that puts one track's sound back as stored; LOAD KIT reloads the whole kit. | ✅ | Sound: Revert track beside the machine key |  | 1 | pass (e2e-md-sound-revert-track) |
+| p. | Clear (was Revert track) | The machine has no key that puts one track's sound back as stored; LOAD KIT reloads the whole kit. | ✅ | Sound: Clear key at the right end of the MUTATE bar, next to R |  | 1 | pass (e2e-md-sound-revert-track) |
 
 ## Summary
 

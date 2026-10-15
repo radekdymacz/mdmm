@@ -10,9 +10,6 @@
 #main>.snd{flex:1 1 auto;min-height:0}
 .snd{display:flex;flex-direction:column;gap:16px;min-height:0}
 .sndhead{display:flex;align-items:center;gap:22px;min-width:0}
-/* 0.6: Revert track, beside the machine key (a track's sound back as its kit slot stores it); on only while it differs */
-.sndhead .revbtn{flex:none;white-space:nowrap;align-self:center;margin-left:-8px}
-.sndhead .revbtn:disabled{opacity:.4;cursor:default}
 .sgrow{flex:1 1 0;min-height:0;max-height:var(--sgmax,420px);display:grid;grid-template-rows:auto minmax(0,1fr) var(--sgbox,34px);column-gap:14px;row-gap:7px;min-width:0}
 .sgrow.flat{flex:none;grid-template-rows:auto var(--sgbox,34px)}
 /* a column takes its row's three lines (subgrid); an engine without subgrid (macOS 12, Safari 15) skips that and

@@ -15,6 +15,8 @@ const gv = (k, label, v, tip) => `<span class="gv" data-gv="${k}" role="spinbutt
 const kc = (attr, act, cap, label, tip, off = false, cls = "", on = null) => `<button class="kc ${cls}${on ? " on" : ""}" ${attr}="${act}" ${off ? "disabled" : ""}${on != null ? ` aria-pressed="${on}"` : ""} title="${tip}" aria-label="${label}"><small>${label}</small><kbd>${cap}</kbd></button>`;
 /* the bars' one randomise key: R, with its "all" chord over it */
 const randKey = tip => `<button class="kc cream krand" data-rand="1" title="${tip}" aria-label="Randomise"><small>Random <em>⌥R all</em></small><kbd>R</kbd></button>`;
+/* the MUTATE bar's Clear key, beside R and the same key: the track back to the kit's saved sound (the page's revertTrack) */
+const clearKey = (can, tip, label) => `<button class="kc cream kclear" id="revert" ${can ? "" : "disabled"} title="${tip}" aria-label="${label}"><small>Clear</small><kbd>↺</kbd></button>`;
 /* the bar's title and what it acts on (Alt: all, in the LED's colour) */
 /* the part of the summary line that goes first when the bar is narrow (B-114: under 1500 px the line has room for "8 on"
    and what a run changed, not for the cycle or the range; the whole line is in the tooltip) */

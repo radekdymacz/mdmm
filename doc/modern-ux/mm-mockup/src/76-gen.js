@@ -230,7 +230,7 @@ function mutStripHtml(){const t=S.sel,all=S.alt,tr=S.mut.trial&&S.mut.trial.key=
   ${gbg("Move",gv("amt","Amount",S.mut.amount+"%","How far each knob moves toward its random target"))}
   ${gbg("Scope",`<span class="seg">${chips}</span>${(n=>`<span class="ghint">${n?`+ ${n} group${n===1?"":"s"}`:"+ a group's title"}</span>`)([...S.mut.scope].filter(x=>x.includes(":")).length)}`,"gscope","The DATA pages Mutate moves; click a group's title below to add that group")}
   <div class="gsum" title="${S.mut.note}">${S.mut.note||(midi?"A MIDI track has no sound to move: Alt+R moves every synth track.":"")}</div>
-  <div class="gkeys">${randKey(`${all?"Randomise every synth track":`Randomise ${tLabel(t)}`}: a fresh random sound, from the sound before the trial${tr?"":" (this sound)"}. One trial is one undo step (R; Alt+R or Alt-click: every synth track)`)}</div>`}
+  <div class="gkeys">${randKey(`${all?"Randomise every synth track":`Randomise ${tLabel(t)}`}: a fresh random sound, from the sound before the trial${tr?"":" (this sound)"}. One trial is one undo step (R; Alt+R or Alt-click: every synth track)`)}${revertKey(t)}</div>`}
 function mutBarHtml(){return`<div class="genband mutband" id="mutband" title="The groups follow the sound's path: synthesis and amp, filter and effects, then the three LFOs. Drag a dot or a box; hold Alt to move the same knob on every synth track (Control All).">${mutStripHtml()}</div>`}
 function renderMutStrip(){const host=$("#mutband");if(host)host.innerHTML=mutStripHtml();$$("[data-mutsg]").forEach(b=>b.setAttribute("aria-pressed",S.mut.scope.has(b.dataset.mutsg)))}
 

@@ -326,6 +326,8 @@ const gv = (k, label, v, tip) => `<span class="gv" data-gv="${k}" role="spinbutt
 const kc = (attr, act, cap, label, tip, off = false, cls = "", on = null) => `<button class="kc ${cls}${on ? " on" : ""}" ${attr}="${act}" ${off ? "disabled" : ""}${on != null ? ` aria-pressed="${on}"` : ""} title="${tip}" aria-label="${label}"><small>${label}</small><kbd>${cap}</kbd></button>`;
 /* the bars' one randomise key: R, with its "all" chord over it */
 const randKey = tip => `<button class="kc cream krand" data-rand="1" title="${tip}" aria-label="Randomise"><small>Random <em>⌥R all</em></small><kbd>R</kbd></button>`;
+/* the MUTATE bar's Clear key, beside R and the same key: the track back to the kit's saved sound (the page's revertTrack) */
+const clearKey = (can, tip, label) => `<button class="kc cream kclear" id="revert" ${can ? "" : "disabled"} title="${tip}" aria-label="${label}"><small>Clear</small><kbd>↺</kbd></button>`;
 /* the bar's title and what it acts on (Alt: all, in the LED's colour) */
 /* the part of the summary line that goes first when the bar is narrow (B-114: under 1500 px the line has room for "8 on"
    and what a run changed, not for the cycle or the range; the whole line is in the tooltip) */
@@ -4035,7 +4037,7 @@ function mutStripHtml(){const t=S.sel,all=S.alt,tr=S.mut.trial&&S.mut.trial.key=
   ${gbg("Move",gv("amt","Amount",S.mut.amount+"%","How far each knob moves toward its random target"))}
   ${gbg("Scope",`<span class="seg">${chips}</span>${(n=>`<span class="ghint">${n?`+ ${n} group${n===1?"":"s"}`:"+ a group's title"}</span>`)([...S.mut.scope].filter(x=>x.includes(":")).length)}`,"gscope","The DATA pages Mutate moves; click a group's title below to add that group")}
   <div class="gsum" title="${S.mut.note}">${S.mut.note||(midi?"A MIDI track has no sound to move: Alt+R moves every synth track.":"")}</div>
-  <div class="gkeys">${randKey(`${all?"Randomise every synth track":`Randomise ${tLabel(t)}`}: a fresh random sound, from the sound before the trial${tr?"":" (this sound)"}. One trial is one undo step (R; Alt+R or Alt-click: every synth track)`)}</div>`}
+  <div class="gkeys">${randKey(`${all?"Randomise every synth track":`Randomise ${tLabel(t)}`}: a fresh random sound, from the sound before the trial${tr?"":" (this sound)"}. One trial is one undo step (R; Alt+R or Alt-click: every synth track)`)}${revertKey(t)}</div>`}
 function mutBarHtml(){return`<div class="genband mutband" id="mutband" title="The groups follow the sound's path: synthesis and amp, filter and effects, then the three LFOs. Drag a dot or a box; hold Alt to move the same knob on every synth track (Control All).">${mutStripHtml()}</div>`}
 function renderMutStrip(){const host=$("#mutband");if(host)host.innerHTML=mutStripHtml();$$("[data-mutsg]").forEach(b=>b.setAttribute("aria-pressed",S.mut.scope.has(b.dataset.mutsg)))}
 
@@ -4843,8 +4845,9 @@ function revertFacts(t){const st=S.kits[S.kit]?.data,J=JSON.stringify;
  return keys.some(k=>J(a[k])!==J(b[k]))
   ?{can:true,why:`Put ${tLabel(t)} back as ${kitName(S.kit)} stores it: ${t<6?"its machine, pages, level, routing, assign rows and forward":"its MIDI page"}. One undo step. The kit library's Reload does the whole kit.`}
   :{can:false,why:`${tLabel(t)} is as ${kitName(S.kit)} stores it.`}}
-function revertKey(t){const f=revertFacts(t);return`<button class="revbtn" id="revert" ${f.can?"":"disabled"} title="${attrS(f.why)}" aria-label="Revert ${tLabel(t)}">Revert track</button>`}
-function syncRevert(){const b=$("#revert");if(!b)return;const f=revertFacts(S.sel);b.disabled=!f.can;b.title=f.why}
+function revertTip(f,t){return"Clear: back to the kit's saved sound (one undo)"+(f.can?"":`. Track ${t+1} is as saved.`)}
+function revertKey(t){const f=revertFacts(t);return clearKey(f.can,attrS(revertTip(f,t)),`Clear track ${t+1} to the kit's saved sound`)}
+function syncRevert(){const b=$("#revert");if(!b)return;const f=revertFacts(S.sel);b.disabled=!f.can;b.title=revertTip(f,S.sel)}
 document.addEventListener("click",e=>{const b=e.target.closest("#revert");if(!b||b.disabled)return;edit("revertTrack",{t:S.sel})});
 function renderSound(){const t=S.sel,tr=trk(t);let rows,head;
  if(isMidiT(t)){const int=S.tracks[t-6],G=(title,idx,labels,plain)=>({key:sgKey(title),title,pg:"MID",idx,knobs:idx.map(i=>FIXED.MID[i]),labels,mut:false,note:plain});
@@ -4857,7 +4860,7 @@ function renderSound(){const t=S.sel,tr=trk(t);let rows,head;
   const syn=g.SYN.length?g.SYN:[{key:"syn",title:"Synthesis",pg:"SYN",idx:[],knobs:[],n:0,w:3,mut:false,body:`<p class="sgabout">${MACH[tr.m].about}</p>`}];
   rows=[[[...syn,...g.AMP],"srcrow"],[[...g.FLT,...g.EFX],"tonerow"],[[1,2,3].map(k=>lfoGroup(t,k)),"lforow"]];
   head=machButton(tr.m)}
- $("#main").innerHTML=`<div class="snd mutating"><div class="sndhead">${head}${revertKey(t)}${mutBarHtml()}${sndDockKeys(t)}</div>${rows.map(([list,cls])=>sgRow(list,cls)).join("")}</div>`;
+ $("#main").innerHTML=`<div class="snd mutating"><div class="sndhead">${head}${mutBarHtml()}${sndDockKeys(t)}</div>${rows.map(([list,cls])=>sgRow(list,cls)).join("")}</div>`;
  syncControls();redraw()}
 
 /* machine picker (MD Editor pattern) */
@@ -5003,6 +5006,7 @@ ED.menv={draw(g,W,H){const G=menvGeo(W,H),ink=cssv("--ink");grid(g,W,H);
  handles(W,H){const G=menvGeo(W,H),e=G.e;return[{x:Math.max(G.x0+2,G.ax),y:G.y(1),k:"ATK",drag:x=>e.ATK=clamp(Math.round((x-G.x0)/G.M.a*127))},
   {x:G.dx,y:G.y(G.s),k:"DEC · SUS",drag:(x,yy)=>{e.DEC=clamp(Math.round((x-G.ax)/G.M.d*127));e.SUS=clamp(Math.round((G.B-yy)/(G.B-G.T)*127))}},
   {x:G.rx,y:G.inf?G.y(G.s):G.y(0),k:G.inf?"REL ∞":"REL",drag:x=>{const v=(x-G.hx)/G.M.r*126;e.REL=v>=126.5?127:clamp(Math.round(v),0,126)}}]}};
+const ASG_SAY={"JOY RL":"Tabletop: pitch bend. MIRR off = right only.","JOY U":"Tabletop: mod wheel (CC 1).","JOY D":"Tabletop: breath controller (CC 2).",VEL:"Velocity from the keys. The sequencer always plays velocity 100.",KEY:"Follows the last key: low for C-1, near max for C-8."};
 function asgT(){return S.sel<6?S.sel:S.sel-6}
 function renderPerform(){const pm=PMODES.find(p=>p[0]===S.mode),t=asgT(),tr=S.tracks[t],A=tr.assign,rows=A.tabs[S.asTab];
  const mtCtl=S.mode==="multi"?`<span class="seg" data-set="mtmode">${MTM.map((m,i)=>`<button data-v="${i}" aria-pressed="${S.multi.mode===i}">${m}</button>`).join("")}</span>
@@ -5015,18 +5019,21 @@ function renderPerform(){const pm=PMODES.find(p=>p[0]===S.mode),t=asgT(),tr=S.tr
    <section class="card menvcard"><header><h3>Multi envelope</h3><span title="Both DATA PAGE keys on the machine. Its effect depends on the kit's MULTI TRIG mode">MULTI TRIG ${MTM[S.multi.mode]}</span></header><div class="menvplot"><canvas class="ed" data-ed="menv" aria-label="Multi envelope. Drag the dots."></canvas></div>
     <div class="ctl" style="grid-template-columns:repeat(5,minmax(0,1fr))">${["ATK","DEC","SUS","REL","PORT"].map(n=>pc("menv",n,{})).join("")}</div>
     <div class="hint menvsay" title="On top of every track's own envelope. For no effect: ATK 0, DEC, SUS and REL at 127.">${menvHint()}</div></section>
+   <section class="card joycard"><header><h3>${joy?"Joystick":S.asTab==="VEL"?"Velocity":"Key follow"}</h3><span title="The two assign rows of the ${S.asTab} tab">T${t+1} · ${S.asTab}</span></header>
+    ${joy?`<div class="joy" id="joy" title="Drag the stick. It springs back."><span class="cross"></span><span class="cross2"></span><small class="jl">L</small><small class="jr">R</small><small class="ju">U</small><small class="jd">D</small><span class="knobj" id="knobj" style="left:${50+S.joy.x*42}%;top:${50-S.joy.y*42}%"></span></div>`
+     :`<div class="joy padinfo"><b>${S.asTab}</b><span>${ASG_SAY[S.asTab]}</span></div>`}
+    <div class="asrows">${rows.map(asRow).join("")}</div></section>
+   <div class="perfside">
    <section class="card asgcard"><header><h3>Assign · T${t+1} ${shortM(tr.m)}</h3><span class="seg" data-set="astrk">${[0,1,2,3,4,5].map(k=>{const p=S.mode==="poly";return`<button data-v="${k}" aria-pressed="${k===t}"${p?` class="${k===t?"polyt":"polyoff"}" title="${k===t?`T${k+1} plays POLY: six voices`:`Silent in POLY. Click: T${k+1} plays POLY instead`}"`:""}>${k+1}${p&&k===t?`<em class="x6">×6</em>`:""}</button>`}).join("")}</span></header>
     <span class="seg" data-set="astab">${Object.keys(A.tabs).map(k=>`<button data-v="${k}" aria-pressed="${S.asTab===k}">${k}</button>`).join("")}</span>
-    <div class="asgn${joy?"":" nojoy"}">${joy?`<div class="joy" id="joy" title="Drag the stick. It springs back."><span class="cross"></span><span class="cross2"></span><small class="jl">L</small><small class="jr">R</small><small class="ju">U</small><small class="jd">D</small><span class="knobj" id="knobj" style="left:${50+S.joy.x*42}%;top:${50-S.joy.y*42}%"></span></div>`:""}
-     <div style="display:grid;gap:6px">${rows.map(asRow).join("")}
-      ${S.asTab==="JOY RL"?`<button class="lkey" data-mirr="1" aria-pressed="${A.mirr}"><i class="led"></i>MIRR (left = −right)</button>`:""}
-      ${S.asTab==="KEY"?`<span class="keyrow"><button class="lkey" data-ktrk="hpf" aria-pressed="${A.hpf}"><i class="led"></i>HPF tracks keys</button><button class="lkey" data-ktrk="lpf" aria-pressed="${A.lpf}"><i class="led"></i>LPF tracks keys</button></span>`:""}
-      <div class="hint">${{"JOY RL":"Tabletop: pitch bend. MIRR off = right only.","JOY U":"Tabletop: mod wheel (CC 1).","JOY D":"Tabletop: breath controller (CC 2).",VEL:"Velocity from the keys. The sequencer always plays velocity 100.",KEY:"Follows the last key: low for C-1, near max for C-8."}[S.asTab]} ADD −64…+63.</div></div></div></section>
+    ${S.asTab==="JOY RL"?`<button class="lkey" data-mirr="1" aria-pressed="${A.mirr}" title="Left = −right"><i class="led"></i>MIRR (left = −right)</button>`:""}
+    ${S.asTab==="KEY"?`<span class="keyrow"><button class="lkey" data-ktrk="hpf" aria-pressed="${A.hpf}"><i class="led"></i>HPF tracks keys</button><button class="lkey" data-ktrk="lpf" aria-pressed="${A.lpf}"><i class="led"></i>LPF tracks keys</button></span>`:""}
+    <div class="hint" title="ADD −64…+63">${ASG_SAY[S.asTab]} ADD −64…+63.</div></section>
    <section class="card"><header><h3>Mutes</h3><span>global · FUNCTION + BANK GROUP</span></header>
     <div class="mutelab">Synth tracks</div><div class="mutes12">${S.tracks.map((x,i)=>`<button class="${x.mute?"":"on"}" data-gmute="${i}" aria-pressed="${!x.mute}" title="T${i+1} ${x.m}"><i class="led"></i>T${i+1}</button>`).join("")}</div>
     <div class="mutelab">MIDI tracks</div><div class="mutes12">${S.midi.map((x,i)=>`<button class="${x.mute?"":"on"}" data-gmute="${i+6}" aria-pressed="${!x.mute}" title="M${i+1} CH${x.ch}"><i class="led"></i>M${i+1}</button>`).join("")}</div>
     <div class="hint">Mutes work on notes: a sound already playing rings out.</div>
-</section></div>
+</section></div></div>
 
   ${S.mode==="map"?`<section class="card maprow"><header><h3>Multi map</h3><span>GLOBAL › CONTROL › MULTIMAP EDIT · stored in the global slot</span></header>
    <table class="mmap"><thead><tr><th>Range</th><th>Pattern</th><th>Offset</th><th>Length</th><th>Transpose</th><th>Timing</th><th></th></tr></thead><tbody>${(()=>{let lo=0;return S.mmap.map((r,i)=>{const a=lo;lo=r.hi+1;return`<tr class="${i===S.mmapSel?"sel":""}" data-mrow="${i}"><td class="mono">${noteName(a)} – <span class="stepper"><button data-mhi="-1" data-i="${i}" ${i===S.mmap.length-1?"disabled":""}>−</button><b class="mono">${i===S.mmap.length-1?"G-9":noteName(r.hi)}</b><button data-mhi="1" data-i="${i}" ${i===S.mmap.length-1?"disabled":""}>+</button></span></td>
