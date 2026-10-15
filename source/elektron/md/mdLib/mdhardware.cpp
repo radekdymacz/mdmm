@@ -1,4 +1,5 @@
 #include "mdhardware.h"
+#include "mdschedwatchdog.h"
 #include "mdfactorybaseline.h"
 #include "mdhostclock.h"
 #include "mdrampacking.h"
@@ -1275,6 +1276,9 @@ namespace md
 		// immediately, then copy them into the plug-in's six output channels.
 		for(auto& output : m_audioOutputs)
 			std::fill_n(output.data(), _frames, dsp56k::TWord(0));
+		// A stalled machine (advance's watchdog) plays silence, and nothing queued before the stall.
+		if(m_schedStalled.load(std::memory_order_relaxed))
+			return;
 
 		m_schedHostAudioActive = true;
 		const auto trimmed = renderHostAudio(m_schedHostAudio, m_audioOutputs, _frames,
@@ -1832,11 +1836,17 @@ namespace md
 
 	void Hardware::advance(const uint32_t _machineFrames)
 	{
+		// A machine that stopped moving stays muted: its clock is not advanced again (see mdschedwatchdog.h).
+		if(m_schedStalled.load(std::memory_order_relaxed))
+			return;
 		serviceRamRecordingMode();
 		m_schedFramesTotal += static_cast<double>(_machineFrames);
 
-		while(schedStep())
+		if(!runBoundedSteps([this] { return schedStep(); }, schedStepBudget(_machineFrames)))
 		{
+			// no log here (the audio thread): the processor's boot sample logs it once, on the message thread
+			m_schedStalled.store(true, std::memory_order_relaxed);
+			return;
 		}
 
 		schedDrainCodecOutput();					// final drain (also covers a UC-only advance window)

@@ -38,6 +38,11 @@ const msg = o => Object.assign({}, base, o);
 let v = CpuMeter.view(msg({ state: "running", load: 0.234, worst: 0.41 }));
 check(v.text === "23 %" && v.fill === 0.234 && v.worst === 0.41 && v.level === "ok", `running at 23 %, worst 41 %: "23 %", the bar and the mark (${JSON.stringify(v)})`);
 check(/23 %/.test(v.title) && /41 %/.test(v.title), "its tooltip says the average and the worst");
+/* 1.0: a machine the plug-in's watchdog muted says so, whatever the host does */
+v = CpuMeter.view(msg({ state: "running", load: 0.2, worst: 0.3, stalled: true }));
+check(v.state === "stalled" && v.text === "STALLED" && v.level === "over" && /muted/.test(v.title), `a stalled machine: "STALLED", in the over level, the tooltip says it is muted (${JSON.stringify(v)})`);
+check(/^Stalled: .*restart/.test(CpuMeter.details(msg({ state: "stopped", stalled: true }))[0]), "its details say it stalled and how to restart it");
+check(CpuMeter.view(msg({ state: "running", load: 0.2, worst: 0.3, stalled: false })).state === "running", "stalled false: the share as before");
 v = CpuMeter.view(msg({ state: "running", load: 0.5, worst: 0.8 }));
 check(v.level === "high", "a block at 80 %: high");
 v = CpuMeter.view(msg({ state: "running", load: 0.6, worst: 1.4 }));

@@ -10,7 +10,8 @@
    entries (Developer: the switch, Speed-ups (each), L3), so the meter is where speed-ups are compared. Those come from
    the plug-in's editorMenu message, asked for with openMenu and answered with menuPick as the editor menu is
    (mdPluginEditorState.cpp: the same actions, the same saved settings). The plug-in sends the "cpuLoad" message
-   (mdDeskSession.cpp, mdCpuLoad.h) every 250 ms; the details follow it while they are open.
+   (mdDeskSession.cpp, mdCpuLoad.h) every 250 ms; the details follow it while they are open. A machine the plug-in's
+   watchdog muted (it stopped moving: mdschedwatchdog.h) shows STALLED in red, whatever the host does.
      CpuMeter.view(m)      what the meter shows for a message (pure): {state, text, fill, worst, level, title}
      CpuMeter.details(m)   the details' lines (pure)
      CpuMeter.update(m)    a cpuLoad message: the meter (made beside the version the first time) and open details
@@ -30,9 +31,12 @@ const CpuMeter = (() => {
 		bypassed: "the host bypasses the editor: nothing is measured",
 		offline: "the host renders offline, faster or slower than real time: nothing is measured"
 	};
+	const STALLED = "the machine stopped responding and is muted, so the host keeps running. To restart it, load the project again, or remove the plug-in and add it again (the standalone app: quit and open it)";
 	const clamp01 = x => Math.max(0, Math.min(1, x));
 	/* the meter for a message (pure). level: ok below 70 %, high to 100 %, over when a block was late */
 	function view(m) {
+		/* 1.0: the machine stopped moving and was muted (the plug-in's watchdog), so the host goes on: said in red */
+		if (m && m.stalled) return { state: "stalled", text: "STALLED", fill: 1, worst: 1, level: "over", title: "CPU: " + STALLED + ". Click for details." };
 		const state = m && m.state || "none";
 		if (state !== "running" || typeof m.load !== "number") {
 			return { state, text: WORDS[state] || WORDS.none, fill: 0, worst: 0, level: "idle",
@@ -55,7 +59,7 @@ const CpuMeter = (() => {
 	function details(m) {
 		m = m || {};
 		const running = m.state === "running" && typeof m.load === "number";
-		const lines = running
+		const lines = m.stalled ? [`Stalled: ${STALLED}`] : running
 			? [`Average: ${pct(m.load)} of each block's time (the last half second)`,
 				`Worst block: ${pct(Math.max(m.worst || 0, m.load))} (the last 3 s; over 100 % is late and clicks)`]
 			: [`Not measured: ${SAYS[m.state] || SAYS.none}`];

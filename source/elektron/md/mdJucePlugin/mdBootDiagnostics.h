@@ -55,6 +55,9 @@ namespace mdJucePlugin
 		bool speedUps = true;
 		uint32_t leversOff = 0;
 		bool exactEssi = false;
+		// 1.0 review (real time 1): the machine stopped moving and is muted (md::Hardware::schedulerStalled); the CPU
+		// meter says so
+		bool stalled = false;
 	};
 
 	// The rates between two samples. Pure.

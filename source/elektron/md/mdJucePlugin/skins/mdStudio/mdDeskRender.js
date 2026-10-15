@@ -20,9 +20,11 @@ function sameValue(a, b) {
 const beyondStatus = v => { const o = { ...v }; for (const k of STATUS) delete o[k]; return o; };
 /* an open menu (the machine picker, a key-style dropdown) holds renders too: a document landing would rebuild what it belongs to and close it */
 function menuOpen() { return !$("#machpop")?.hidden || !$("#kpop")?.hidden; }
-/* a gesture that holds the page (a drag, a paint, a dragged pad): documents re-derive the view, the page renders
-   once it ends (pendingRender) */
-const HOLDS = new Set(["value", "editor", "lane", "l2", "chop", "song", "paint", "mutePaint", "select"]);
+/* a gesture that holds the page (a drag, a paint, a dragged pad, a GEN or MUTATE value dragged, the tempo dragged, a
+   run of wheel notches on a lock, the rotate presses while Alt is down): documents re-derive the view, the page
+   renders once it ends (pendingRender). Each of them draws its own change in place, so a document that lands meanwhile
+   does not rebuild the grid (1.0 review: the unheld ones cost a full render a document, about 50 % WebContent). */
+const HOLDS = new Set(["value", "editor", "lane", "l2", "chop", "song", "paint", "mutePaint", "select", "gv", "bpm", "wheel", "rotate"]);
 function interacting() { const h = Held.now; return !!(h && HOLDS.has(h.kind)) || menuOpen() || SongSlots.busy(); }
 /* the one flush: a render held while a gesture ran is made when it ends, whichever gesture it was (a timer, so
    the gesture's own end handler draws its row first; still held by a menu, it waits for the menu's close) */
@@ -118,25 +120,40 @@ function renderPage() {
 	if (S.ws === "seq") genDraw(); markCapabilities(); audKeep(); phLast = -1; movePH(); logFirstRender(); alignLock();
 }
 /* The rail's LOCK PARAMETER block lines up with the lock lane: its top border with the line above the lane, its first key with the
-   top of the bars and its last key with their bottom (the keys' rows share the height the lane has). */
+   top of the bars and its last key with their bottom (the keys' rows share the height the lane has). It runs after every
+   render of the sequencer, so its reads and writes are batched (1.0 review): every style back to the stylesheet's, then
+   the measures, then the new styles, three layouts in all (it was one a read, about a dozen). The lane's title moves with
+   the block's margin (it sits in the block), so its line is worked out, not measured again; the chips' last check only
+   corrects what is left (nothing, normally). */
 function alignLock() {
 	const rp = $("#rail .railparams"), lt = $(".lanetop"), ln = $("#lane"), ch = $("#chips");
 	if (!rp || !lt || !ln || !ch || S.ws !== "seq") return;
-	const keys = [...ch.querySelectorAll(".pk")], lab = ch.querySelector(".plab"), top = e => e.getBoundingClientRect().top;
+	const keys = [...ch.querySelectorAll(".pk")], lab = ch.querySelector(".plab"), a = rp.querySelector(".rphead .cap"), b = lt.querySelector(".cap");
+	const lw = lt.closest(".lanewrap"), top = e => e.getBoundingClientRect().top, mid = e => { const q = e.getBoundingClientRect(); return q.top + q.height / 2; };
+	/* 1. writes: the stylesheet's own (the lane's title on its own line) */
 	rp.style.removeProperty("margin-top"); ch.style.removeProperty("grid-template-rows"); ch.style.marginTop = ""; ch.style.height = "";
 	keys.forEach(k => k.style.removeProperty("height"));
-	const lw = lt.closest(".lanewrap"), line = lw ? lw.getBoundingClientRect().top : top(lt);	/* the lane's top border: the line above the lane */
-	rp.style.setProperty("margin-top", (parseFloat(getComputedStyle(rp).marginTop) + line - top(rp)) + "px", "important");
-	const a = rp.querySelector(".rphead .cap"), b = lt.querySelector(".cap"), mid = e => { const q = e.getBoundingClientRect(); return q.top + q.height / 2; };
-	lt.style.marginTop = "0px";	/* the lane's title sits on the LOCK PARAMETER title's line */
-	if (a && b) lt.style.marginTop = (mid(a) - mid(b)) + "px";
+	lt.style.marginTop = "0px";
+	/* 2. reads: the line above the lane (its top border), the block's place and the titles' lines, the chips' rows */
+	const line = lw ? top(lw) : top(lt), shift = line - top(rp), rpMargin = parseFloat(getComputedStyle(rp).marginTop);
+	const title = a && b ? mid(a) + shift - mid(b) : 0;	/* the block's title after the block moved by shift */
 	const rows = getComputedStyle(ch).gridTemplateRows.split(" ").length, lh = lab ? lab.getBoundingClientRect().height : 0;
+	/* 3. writes: the block on the line, the lane's title on the block's title's line, the keys share the rows */
+	rp.style.setProperty("margin-top", (rpMargin + shift) + "px", "important");
+	if (a && b) lt.style.marginTop = title + "px";
 	ch.style.setProperty("grid-template-rows", `${lh}px repeat(${Math.max(1, rows - 1)}, minmax(0, 1fr))`, "important");
 	keys.forEach(k => k.style.setProperty("height", "auto", "important"));
-	if (keys[0]) ch.style.marginTop = (top(ln) - top(keys[0])) + "px";
-	ch.style.height = Math.max(0, ln.getBoundingClientRect().bottom - top(ch)) + "px";
-	if (keys[0]) ch.style.marginTop = (parseFloat(ch.style.marginTop) + top(ln) - top(keys[0])) + "px";
-	ch.style.height = Math.max(0, ln.getBoundingClientRect().bottom - top(ch)) + "px";
+	/* 4. reads, then writes: the first key on the bars' top, the chips down to the bars' bottom */
+	let lane = ln.getBoundingClientRect(), chTop = top(ch), dy = keys[0] ? lane.top - top(keys[0]) : 0;
+	if (keys[0]) ch.style.marginTop = dy + "px";
+	ch.style.height = Math.max(0, lane.bottom - (chTop + dy)) + "px";
+	/* 5. the check: what is left (a grid whose rows moved with its height), corrected once */
+	if (!keys[0]) return;
+	lane = ln.getBoundingClientRect(); const left = lane.top - top(keys[0]);
+	if (Math.abs(left) < 0.5) return;
+	chTop = top(ch);
+	ch.style.marginTop = (dy + left) + "px";
+	ch.style.height = Math.max(0, lane.bottom - (chTop + left)) + "px";
 }
 /* fonts in: the editors and the lock block measure again (a promise: it may settle as soon as this script ends) */
 document.fonts && document.fonts.ready.then(() => { redraw(); alignLock(); });

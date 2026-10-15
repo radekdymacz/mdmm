@@ -1077,7 +1077,13 @@ namespace mdJucePlugin
 			s.speedUps = device->speedUps();
 			s.leversOff = device->speedUpLeversOff();
 			s.exactEssi = device->exactEssiTiming();
+			s.stalled = hw.schedulerStalled();
 		});
+		// the scheduler's watchdog (mdschedwatchdog.h) muted the machine: said once, here on the message thread
+		if(s.stalled && !m_stallLogged)
+			std::fprintf(stderr, "[md] the machine stopped moving (the scheduler's step budget ran out) and is muted until "
+				"the project is loaded again or the plug-in is added again\n");
+		m_stallLogged = s.stalled;
 		if(m_desk && m_desk->session())
 			s.lifecycle = m_desk->session()->lifecycleName();
 		if(m_bootRom.empty())

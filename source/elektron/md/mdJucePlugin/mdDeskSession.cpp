@@ -64,6 +64,8 @@ namespace mdJucePlugin
 		m.set("sampleRate", s.sampleRate > 0 ? s.sampleRate : 0.0);
 		m.set("blockSize", s.blockSize > 0 ? s.blockSize : 0);
 		m.set("plugin", !juce::JUCEApplicationBase::isStandaloneApp());
+		// the machine stopped moving and is muted (the scheduler's watchdog, mdschedwatchdog.h): the meter says so
+		m.set("stalled", s.machine && s.stalled);
 		// the speed-ups as the machine runs them (the boot sample reads them under its lock once a second)
 		auto off = Value::array();
 		if(s.machine && s.speedUps)
@@ -180,8 +182,8 @@ namespace mdJucePlugin
 	std::unique_ptr<DeskSession> DeskSession::create(AudioPluginAudioProcessor& _processor)
 	{
 		auto session = _processor.getModel() == md::MachineModel::Monomachine ? makeMmSession(_processor) : makeMdSession(_processor);
-		// Steps start once the whole session exists.
-		session->startTimer(static_cast<int>(g_stepMs));
+		// Steps start once the whole session exists, at the pace for no page (attach makes it 8 ms).
+		session->pace();
 		return session;
 	}
 
@@ -189,12 +191,14 @@ namespace mdJucePlugin
 	{
 		m_toPage = std::move(_toPage);
 		onAttach();
+		pace();
 	}
 
 	void DeskSession::detach()
 	{
 		onDetach();
 		m_toPage = nullptr;
+		pace();
 	}
 
 	void DeskSession::republish()

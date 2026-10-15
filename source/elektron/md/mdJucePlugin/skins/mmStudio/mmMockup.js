@@ -3693,7 +3693,7 @@ S.alt=false;
 function altLabels(){const c=$('[data-sec="clear"]');if(c){c.textContent=S.alt?"All":"Clr";if(S.alt)c.title=`Clear the whole pattern ${patName(S.pat)}: every track's notes, slides and locks (one undo step)`}secLabels();
  const cl=$("#clearLane");if(cl){const t=S.alt?`Clear every lock of ${tLabel(S.sel)}`:`Clear ${pidLabel(S.sel,S.lane)} locks. Alt: every lock of ${tLabel(S.sel)}`;cl.title=t;cl.setAttribute("aria-label",t)}}
 /* Alt seen up (any key or pointer event without it) also ends a rotate run: its keyup may never reach the page */
-function showAlt(on){if(S.alt===on)return;S.alt=on;if(!on)rotHold=false;document.body.classList.toggle("althold",on);altLabels();if(S.gen&&S.ws==="seq")genDraw();if(S.gen&&S.ws==="sound")renderMutStrip()}
+function showAlt(on){if(S.alt===on)return;S.alt=on;if(!on)rotEnd();document.body.classList.toggle("althold",on);altLabels();if(S.gen&&S.ws==="seq")genDraw();if(S.gen&&S.ws==="sound")renderMutStrip()}
 addEventListener("keydown",e=>showAlt(e.altKey),true);addEventListener("keyup",e=>showAlt(e.altKey),true);addEventListener("blur",()=>showAlt(false));
 document.addEventListener("pointermove",e=>showAlt(e.altKey),{passive:true,capture:true});
 function clearPattern(){[...S.tracks,...S.midi].forEach(tr=>{tr.steps=tr.steps.map(()=>null);tr.slide=new Set()});S.locks.clear();edit("clearPattern",{});render();toast(`Cleared ${patName(S.pat)}: every track's notes, slides and locks.`)}
@@ -3708,7 +3708,9 @@ function syncLockBudget(){const el=$("#lockbudget");if(!el)return;const n=S.lock
    and locks one step, wrapping at the length; swing stays on its steps (the groove, not the notes). The presses
    while Alt stays down are one undo step (rotHold holds the commit). ---- */
 let rotHold=false;
-addEventListener("keyup",e=>{if(e.key==="Alt")rotHold=false},true);addEventListener("blur",()=>{rotHold=false});
+/* the run ends: the render it held (busyNow) is made */
+function rotEnd(){if(!rotHold)return;rotHold=false;showHeld()}
+addEventListener("keyup",e=>{if(e.key==="Alt")rotEnd()},true);addEventListener("blur",rotEnd);
 const seqKeys=()=>S.ws==="seq"&&!dialogOpen()&&$("#keyspop").hidden;
 const rotStep=(s,by,len)=>((s+by)%len+len)%len;
 function rotateTrack(by){const t=S.sel,tr=trk(t),len=S.len;if(len<2)return;
@@ -3728,10 +3730,13 @@ function fillEvery(t,s,n,pitch){const tr=trk(t),end=S.len,on=!(tr.steps[s]&&!tr.
 /* ---- the wheel over a lock-lane step with a trig moves its lock in the lane's parameter (from the kit value when
    it has none): 4 a notch (1 on a short list), ⇧ 1. A run of notches on one step is one undo step. The roll's own
    wheel stays the pitch scroll. ---- */
-let wheelLock=null;
+let wheelLock=null,wheelEndT=0;
+const WHEEL_RUN_MS=700;
+/* a run of notches holds the page's renders (busyNow) until it goes quiet */
+const wheelHeld=()=>!!wheelLock&&performance.now()-wheelLock.at<WHEEL_RUN_MS;
 $("#main").addEventListener("wheel",e=>{const el=e.target.closest("#lane .lb");if(!el||S.ws!=="seq")return;const t=S.sel,s=+el.dataset.s,st=trk(t).steps[s],d=e.deltaY||(e.shiftKey?e.deltaX:0);
  if(!d||!st||st.off)return;e.preventDefault();const[pg,i]=S.lane.split("."),m=meta(t,pg,+i),mx=maxOf(m),now=performance.now(),key=t+"|"+S.lane+"|"+s;
- if(!wheelLock||wheelLock.key!==key||now-wheelLock.at>700){commit();wheelLock={key}}wheelLock.at=now;
+ if(!wheelLock||wheelLock.key!==key||now-wheelLock.at>WHEEL_RUN_MS){commit();wheelLock={key}}wheelLock.at=now;clearTimeout(wheelEndT);wheelEndT=setTimeout(showHeld,WHEEL_RUN_MS+10);
  const had=S.locks.get(lkKey(t,S.lane))?.get(s),cur=had??getP(t,S.lane)??0,v=clamp(cur+(d<0?1:-1)*(e.shiftKey||mx<16?1:4),0,mx);if(had!=null&&v===had)return;
  if(!setLock(t,S.lane,s,v))return;edit("lock",{t,...pidArgs(S.lane),s,v});renderTop();renderLane();toast(`${pidLabel(t,S.lane)} ${fmt(m,v)} · ${tLabel(t)}, step ${s+1}`)},{passive:false});
 
@@ -4077,10 +4082,13 @@ function genMode(mode){const sp=genSpec();if(sp.mode===mode)return;sp.mode=mode;
 document.addEventListener("click",e=>{if(e.target.closest("#steplegend")){toggleKeys(true);e.stopPropagation()}},true);
 let gvDrag=null;
 document.addEventListener("pointerdown",e=>{const v=e.target.closest(".gv[data-gv]");if(!v||e.button!==0)return;gvDrag={v,y:e.clientY,k:v.dataset.gv,acc:0};delete v.dataset.dragged;try{v.setPointerCapture(e.pointerId)}catch(_){}});
-document.addEventListener("pointermove",e=>{if(!gvDrag)return;const d=Math.trunc((gvDrag.y-e.clientY)/6)-gvDrag.acc;if(!d)return;
+/* it ends wherever the button comes up (the bar's redraw drops the capture), on a cancelled pointer, on leaving the window
+   and on a move with no button down: it holds the page's renders (busyNow), so it must never stick */
+function gvEnd(){if(!gvDrag)return;const k=gvDrag.k;gvDrag=null;showHeld();setTimeout(()=>{const n=document.querySelector(`.gv[data-gv="${k}"]`);if(n)delete n.dataset.dragged},0)}
+document.addEventListener("pointermove",e=>{if(!gvDrag)return;if(e.buttons===0&&e.pointerType==="mouse"){gvEnd();return}const d=Math.trunc((gvDrag.y-e.clientY)/6)-gvDrag.acc;if(!d)return;
  gvDrag.acc+=d;gvDrag.v.dataset.dragged="1";genVal(gvDrag.k,d*gvDragStep(gvDrag.k));
  const n=document.querySelector(`.gv[data-gv="${gvDrag.k}"]`);if(n){n.dataset.dragged="1";gvDrag.v=n}});
-document.addEventListener("pointerup",()=>{if(!gvDrag)return;const k=gvDrag.k;gvDrag=null;setTimeout(()=>{const n=document.querySelector(`.gv[data-gv="${k}"]`);if(n)delete n.dataset.dragged},0)});
+document.addEventListener("pointerup",gvEnd);document.addEventListener("pointercancel",gvEnd);addEventListener("blur",gvEnd);
 Keys.bind({id:"randomise-track",short:"Randomise",scope:"any",keys:["R"],code:"KeyR",group:"Selected track",modal:"genpop",when:()=>kbOn()||genDlgOpen(),run:()=>randomise(false),
  does:"Randomise the selected track: on Sound a fresh random sound (MUTATE, from the sound before the trial); everywhere else a new GEN variation: a new seed, or random hits and rotation"});
 Keys.bind({id:"randomise-all",short:"Randomise all",scope:"any",keys:["R"],code:"KeyR",mod:"alt",group:"All",modal:"genpop",when:()=>kbOn()||genDlgOpen(),run:()=>randomise(true),
@@ -6252,11 +6260,14 @@ document.addEventListener("dragstart",e=>{if(e.target.closest?.("img,svg,canvas"
 
 /* BPM: drag or arrows */
 /* wave 2, change on release (the TEMPO window's tick, or ⌥ held at the press): the LCD shows the drag, the tempo goes at the release */
-(()=>{const b=$("#bpm");let d=null;b.addEventListener("pointerdown",e=>{if(tempoLocked())return;d={y:e.clientY,v:S.bpm,late:e.altKey||DeskTransport.delayed()};b.setPointerCapture(e.pointerId)});
- const release=()=>{const was=d;d=null;if(was&&was.late&&S.tempoDraft!=null){const v=S.tempoDraft;S.tempoDraft=null;setTempo(v)}else S.tempoDraft=null};
+let bpmHeld=false;	/* the tempo is dragged: renders wait for it (busyNow) */
+(()=>{const b=$("#bpm");let d=null;b.addEventListener("pointerdown",e=>{if(tempoLocked())return;d={y:e.clientY,v:S.bpm,late:e.altKey||DeskTransport.delayed()};bpmHeld=true;b.setPointerCapture(e.pointerId)});
+ const release=()=>{const was=d;d=null;bpmHeld=false;if(was&&was.late&&S.tempoDraft!=null){const v=S.tempoDraft;S.tempoDraft=null;setTempo(v)}else S.tempoDraft=null;showHeld()};
  b.addEventListener("pointermove",e=>{if(!d)return;if(e.buttons===0&&e.pointerType==="mouse"){release();return}const v=clamp(Math.round((d.v+(d.y-e.clientY)*(e.shiftKey?.1:.5))*10)/10,30,300);
   if(d.late){if(v!==S.tempoDraft){S.tempoDraft=v;renderTop()}return}S.bpm=v;if(HOST.tempo)HOST.tempo(S.bpm);renderTop();if(S.playing)restartClock()});
- b.addEventListener("pointerup",()=>release());b.addEventListener("keydown",e=>{const k={ArrowUp:1,ArrowDown:-1}[e.key];if(!k)return;e.preventDefault();if(tempoLocked())return;S.bpm=clamp(S.bpm+k*(e.shiftKey?.1:1),30,300);if(HOST.tempo)HOST.tempo(S.bpm);renderTop();if(S.playing)restartClock()})})();
+ /* the release may land outside the key (its capture lost) or never come: it holds renders (bpmHeld), so it ends on all of them */
+ b.addEventListener("pointerup",()=>release());document.addEventListener("pointerup",()=>{if(d)release()});document.addEventListener("pointercancel",()=>{if(d)release()});
+ document.addEventListener("pointermove",e=>{if(d&&e.buttons===0&&e.pointerType==="mouse")release()});addEventListener("blur",()=>{if(d)release()});b.addEventListener("keydown",e=>{const k={ArrowUp:1,ArrowDown:-1}[e.key];if(!k)return;e.preventDefault();if(tempoLocked())return;S.bpm=clamp(S.bpm+k*(e.shiftKey?.1:1),30,300);if(HOST.tempo)HOST.tempo(S.bpm);renderTop();if(S.playing)restartClock()})})();
 
 
 /* ===== Engine status (from the MD Editor v48): the LCD says what the engine is doing; editing waits until it is ready ===== */
@@ -6457,8 +6468,13 @@ function show(v,all){
  if(!doc&&!showLater)return;
  if(busyNow()){showLater=true;return}
  showLater=false;render();drawLib()}
-/* busy: a gesture, or a menu open (a render would close it under the person: the drawing waits for it, as for a drag) */
-const busyNow=()=>{try{return !!(S.genEnding||drag||laneDraw||rollDrag||selDrag||active||arpDrag||l2drag||joyDrag||splitDrag||cord||kbDown)||menuOpen()}catch(_){return false}};
+/* busy: a gesture, or a menu open (a render would close it under the person: the drawing waits for it, as for a drag).
+   1.0: also a GEN or MUTATE value dragged (gvDrag), the tempo dragged (bpmHeld), the rotate presses while Alt is down
+   (rotHold) and a run of wheel notches on a lock (wheelHeld): each draws its own change in place, and a document that
+   lands meanwhile would rebuild the grid at every one (the 1.0 review: about 50 % WebContent on the MD page) */
+const busyNow=()=>{try{return !!(S.genEnding||drag||laneDraw||rollDrag||selDrag||active||arpDrag||l2drag||joyDrag||splitDrag||cord||kbDown||gvDrag||bpmHeld||rotHold||wheelHeld())||menuOpen()}catch(_){return false}};
+/* the render a gesture held (showLater) once it ends: the gestures that draw in place call it at their end */
+function showHeld(){if(showLater&&!busyNow()){showLater=false;render();drawLib()}}
 /* RECORD as the machine is in it: "off" | "grid" | "live" | "step" (wave 7: STEP RECORDING, at = the step the next note
    writes, -1 unknown) */
 function setRecord(mode,at=-1){const on=mode==="grid"||mode==="live",was=S.recMode;S.recMode=mode;S.stepAt=mode==="step"?at:-1;if(mode!=="step")S.stepT=null;if(mode!=="live")eraseUp();

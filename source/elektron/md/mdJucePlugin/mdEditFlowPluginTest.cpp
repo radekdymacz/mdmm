@@ -9,6 +9,10 @@
 //   mdEditFlowPluginTest md|mm <ROM> [rate=48000] [block=128]
 //
 // Manual; exits 77 without a ROM. Isolated config (EphemeralConfig).
+// 1.0 (the F2 gate, scripts/mdmm-rt-check.sh --lock): the longest wait of processBlock for the synth lock while the
+// page edits (after the boot settled; the editor's session, the memory thread and the boot sample take the same lock)
+// is a pass/fail line: "synth lock wait ...: PASS" or FAIL (exit 1) above EDITFLOW_LOCK_WAIT_MS (default 1, as the
+// local gate's soak).
 
 #include "mdPluginProcessor.h"
 #include "mdController.h"
@@ -551,6 +555,10 @@ int main(const int _argc, char** _argv)
 			pumpMessages(25);
 		}
 		std::printf("settled after %.1f s (%d resets), kit %d\n", (nowMs() - t0) / 1000, resets, r.currentKit());
+		// the synth lock's waits from here on: the editing, not the boot
+		auto& realtime = r.processor->getPlugin().getRealtimeInstrumentation();
+		realtime.setEnabled(true);
+		realtime.reset();
 		if(const auto* rec = std::getenv("EDITFLOW_RECORD"))
 		{
 			// A fresh ready: everything a page gets, for replaying into the real page in a browser.
@@ -598,6 +606,18 @@ int main(const int _argc, char** _argv)
 		r.host.readCount = 0;
 		pumpMessages(500);
 		scenario(r, "idle2", 0, 0, 3000);
+		{
+			const auto snap = realtime.snapshot();
+			const char* const limitText = std::getenv("EDITFLOW_LOCK_WAIT_MS");
+			const double limitMs = limitText ? std::atof(limitText) : 1.0;
+			const double maxMs = static_cast<double>(snap.synthProcessLockWaitMaxNanoseconds) / 1e6;
+			const bool pass = snap.synthProcessCount > 0 && maxMs <= limitMs;
+			std::printf("synth lock wait while editing: max %.3f ms, %.1f ms in all over %llu blocks (limit %.1f ms): %s\n",
+				maxMs, static_cast<double>(snap.synthProcessLockWaitNanoseconds) / 1e6,
+				static_cast<unsigned long long>(snap.synthProcessCount), limitMs, pass ? "PASS" : "FAIL");
+			if(!pass)
+				return 1;
+		}
 		if(!r.lastDocJson.empty())
 		{
 			const auto f = juce::File::getSpecialLocation(juce::File::tempDirectory).getChildFile(std::string("editflow-") + _argv[1] + "-workingKit.json");
