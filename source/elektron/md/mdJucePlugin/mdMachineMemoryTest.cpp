@@ -139,22 +139,99 @@ namespace
 			auto bad = file;
 			bad[bad.size() - 1] ^= 1;
 			check(decode(bad, model).problem == Problem::Corrupt, "one bit: damaged");
-			bad = file;
-			bad[16] ^= 1;
-			check(decode(bad, model).problem == Problem::Layout, "another layout id: another layout");
-			StoreFile wrongSize;
-			wrongSize.slots[{Kind::Kit, 2}].bytes = {1, 2, 3};
-			check(decode(encode(model, wrongSize), model).problem == Problem::Corrupt, "an entry of the wrong size is refused");
-			StoreFile noSuch;
+			// another slot layout (a newer editor's): compared per slot; the other blocks, cut by the layout, are not used
+			const auto& other = *std::find_if(patchSlots(model).begin(), patchSlots(model).end(), [](const Slot& _s) { return _s.key.kind == Kind::Other; });
+			StoreFile withOther = f;
+			merge(withOther.slots, model, {other.key}, mem, sectors, 43);
+			bad = encode(model, withOther);
+			bad[16] ^= 1;	// (the CRC covers the entries, not the header)
+			const auto dl = decode(bad, model);
+			check(dl.problem == Problem::None && dl.file.slots.size() == 3 && !dl.file.slots.count(other.key) && dl.file.foreign.empty(),
+				"another layout id: its kit, song and sector are used, its other block is not");
+			// one entry this editor cannot use is skipped alone and kept
+			StoreFile wrongSize = f;
+			wrongSize.slots[{Kind::Kit, 3}].bytes = {1, 2, 3};
+			const auto dw = decode(encode(model, wrongSize), model);
+			check(dw.problem == Problem::None && dw.file.slots.size() == 3 && dw.file.foreign.size() == 1 && dw.file.foreign[0].index == 3
+				&& dw.file.foreign[0].entry.bytes.size() == 3, "an entry of another size is skipped alone (kept), the rest loads");
+			StoreFile noSuch = f;
 			noSuch.slots[{Kind::Kit, 999}].bytes = {1};
-			check(decode(encode(model, noSuch), model).problem == Problem::Corrupt, "an entry that names no slot is refused");
+			const auto dn = decode(encode(model, noSuch), model);
+			check(dn.problem == Problem::None && dn.file.slots.size() == 3 && dn.file.foreign.size() == 1, "an entry that names no slot is skipped alone");
 			check(decode(encode(model, {}), model).problem == Problem::None, "an empty store is a store");
+		}
+		{
+			// a 0.7 file, made byte by byte as 0.7 wrote it (format 2 as one u32): it loads, and this editor writes it the same
+			const auto model = Model::Machinedrum;
+			const auto mem = memoryOf(7);
+			const auto kit = slotBytes(*findSlot(model, {Kind::Kit, 5}), mem);
+			std::vector<uint8_t> old(g_magic, g_magic + 8);
+			detail::putU32(old, 2);
+			old.insert(old.end(), {0, 0, 0, 0});
+			detail::putU32(old, layoutId(model));
+			detail::putU32(old, 0);
+			detail::putU64(old, 0);
+			detail::putU32(old, 1);
+			detail::putU32(old, static_cast<uint32_t>(g_entryHeaderSize + kit.size()));
+			old.insert(old.end(), {static_cast<uint8_t>(Kind::Kit), 0, 0, 0});
+			detail::putU32(old, 5);
+			detail::putU64(old, 99);
+			detail::putU32(old, static_cast<uint32_t>(kit.size()));
+			old.insert(old.end(), kit.begin(), kit.end());
+			const auto crc = md::crc32(old.data() + 24, old.size() - 24);
+			for(int i = 0; i < 4; ++i)
+				old[20 + static_cast<size_t>(i)] = static_cast<uint8_t>(crc >> (8 * i));
+			const auto d = decode(old, model);
+			check(d.problem == Problem::None && d.version == 2 && d.minor == 0 && d.file.slots.size() == 1 && d.file.slots.at({Kind::Kit, 5}).bytes == kit
+				&& d.file.slots.at({Kind::Kit, 5}).savedAt == 99, "a 0.7 file loads");
+			check(encode(model, d.file) == old, "and is written back byte for byte (2.0 is 0.7's format, so 0.7 reads this editor's file)");
+		}
+		{
+			// a newer minor: entry kinds and flags this editor does not know are skipped, kept on every rewrite, and replaced
+			// only by this editor's own save of the same slot
+			const auto model = Model::Monomachine;
+			const auto mem = memoryOf(3);
+			StoreFile f;
+			merge(f.slots, model, {{Kind::Kit, 1}}, mem, {}, 10);
+			ForeignEntry unknownKind;
+			unknownKind.kind = 9;
+			unknownKind.index = 4;
+			unknownKind.entry.savedAt = 11;
+			unknownKind.entry.bytes = {1, 2, 3, 4, 5};
+			ForeignEntry flagged;
+			flagged.kind = static_cast<uint8_t>(Kind::Kit);
+			flagged.flags[0] = 1;	// say, compressed
+			flagged.index = 2;
+			flagged.entry.savedAt = 12;
+			flagged.entry.bytes = {7, 7};
+			f.foreign = {unknownKind, flagged};
+			auto file = encode(model, f);
+			file[10] = 3;	// minor 3
+			auto d = decode(file, model);
+			check(d.problem == Problem::None && d.minor == 3 && d.file.slots.size() == 1 && d.file.foreign.size() == 2
+				&& d.file.foreign[0].kind == 9 && d.file.foreign[0].entry.bytes.size() == 5 && d.file.foreign[1].flags[0] == 1,
+				"a newer minor's file loads: its known slots used, the entries it cannot use skipped and kept");
+			auto target = memoryOf(0);
+			overlay(d.file.slots, model, target, nullptr);
+			check(slotBytes(*findSlot(model, {Kind::Kit, 1}), target) == slotBytes(*findSlot(model, {Kind::Kit, 1}), mem)
+				&& slotBytes(*findSlot(model, {Kind::Kit, 2}), target) == slotBytes(*findSlot(model, {Kind::Kit, 2}), memoryOf(0)),
+				"only the known slots are laid over the memory");
+			merge(d.file.slots, model, {{Kind::Kit, 6}}, mem, {}, 20);
+			const auto again = decode(encode(model, d.file), model);
+			check(again.problem == Problem::None && again.file.slots.size() == 2 && again.file.foreign.size() == 2, "a save keeps them in the file");
+			merge(d.file.slots, model, {{Kind::Kit, 2}}, mem, {}, 21);
+			const auto replaced = decode(encode(model, d.file), model);
+			check(replaced.file.slots.count({Kind::Kit, 2}) && replaced.file.foreign.size() == 1 && replaced.file.foreign[0].kind == 9,
+				"this editor's save of the same slot replaces the newer editor's entry");
+			StoreFile cleared = d.file;
+			dropSavedBefore(cleared, 12);
+			check(cleared.foreign.size() == 1 && cleared.foreign[0].index == 2, "start from factory: the newer editor's older entries go too");
 		}
 		{
 			auto newer = encode(Model::Machinedrum, {});
 			newer[8] = 3;
 			const auto d = decode(newer, Model::Machinedrum);
-			check(d.problem == Problem::Version && d.version == 3 && !replaceable(d), "a newer editor's file is never replaced");
+			check(d.problem == Problem::Version && d.version == 3 && !replaceable(d), "a newer major's file is never used nor replaced");
 			newer[8] = 1;
 			check(replaceable(decode(newer, Model::Machinedrum)), "the previews' version 1 may be moved aside");
 			auto other = encode(Model::Monomachine, {});
@@ -201,7 +278,7 @@ namespace
 		auto v1 = encode(Model::Machinedrum, {});
 		v1[8] = 1;
 		check(decode(v1, Model::Machinedrum).problem == Problem::Version, "the previews' whole-memory file (version 1) is another version");
-		for(const auto p : {Problem::Empty, Problem::NotOurs, Problem::Version, Problem::Machine, Problem::Corrupt, Problem::Layout})
+		for(const auto p : {Problem::Empty, Problem::NotOurs, Problem::Version, Problem::Machine, Problem::Corrupt})
 			check(!describe(p).empty() && describe(p).find("machine memory") != std::string::npos, "each problem has its words");
 		check(describe(Problem::None).empty(), "no problem, no words");
 	}
