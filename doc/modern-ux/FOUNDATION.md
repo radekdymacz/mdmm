@@ -96,8 +96,8 @@ The MM steps are the same in `mmDesk/mmDeskModel.*` (`MmModel::kinds()`), `mmDes
      and overlays `MmView.writes(view, command, clip)` (`mmView.js`; `clip` is the page's copy of the core's
      clipboard, `MmView.copied`, so a paste shows at once) under the command's id. Add the op's writes there and
      cases to `doc/modern-ux/intent-cases.json`: `mmDeskTest` runs them on the core (`mmDeskEdit.cpp`), `mmViewTest.js`
-     checks the writes against them. On its own the mockup plays the same intents through its demo host
-     (`src/54-demo.js`). Other commands: `Bridge.send`, through a host call in `mmAdapter.js`.
+     checks the writes against them. The browser mockup plays the same intents through its demo host
+     (`doc/modern-ux/mm-mockup/demo/54-demo.js`, never in the plug-in). Other commands: `Bridge.send`, through a host call in `mmAdapter.js`.
 
    Neither page builds a document: an edit is an intent, and `set` (a whole document) is the intent of an import or
    a restore, which the plug-in sends itself.
@@ -110,7 +110,7 @@ The MM steps are the same in `mmDesk/mmDeskModel.*` (`MmModel::kinds()`), `mmDes
 
 1. **Design first.**
    - MD: the approved mockup `doc/modern-ux/mockup/index.html` (tab markup, `data-ws`).
-   - MM: `doc/modern-ux/mm-mockup/src/`: the tab in `30-body.html` and a `NNN-name.js` in `build.sh`'s order.
+   - MM: the page's sources, `skins/mmStudio/src/`: the tab in `30-body.html` and a `NNN-name.js`, listed in `src/page.txt` (a `js` line at its place in the load order).
 2. **Sync, never hand-edit.**
    - MD: `python3 doc/modern-ux/sync-mdstudio-skin.py`.
    - MM: `python3 doc/modern-ux/sync-mmstudio-skin.py`. It also checks the seam both ways: every `HOST.*` call the mockup makes is implemented by the adapter and every host method is called, every `MMView` member and element id the adapter uses exists, and the adapter never reaches into the mockup's state.
@@ -172,10 +172,10 @@ What both editors use is one file in `source/elektron/md/mdJucePlugin/skins/shar
 
 How each build takes them:
 - The MD mockup (`doc/modern-ux/mockup/index.html`) links the stylesheets and loads the scripts from `skins/shared/` at the place the text used to be (open it over http from the repository root). `sync-mdstudio-skin.py` builds `mdDesk.css` from the mockup's `<style>` blocks and the stylesheets it links, in that order, then `skins/mdStudio/mdOverrides.css`; `mdStudio.html` loads the shared scripts by name (its `SCRIPTS` list), and `mdmmPlugins.cmake` puts them in the MD binary data (`MD_SHARED_PAGE_FILES`).
-- The MM mockup's `build.sh` lists its CSS and JS in order, `src/` and `$SHARED/` files alike; `sync-mmstudio-skin.py` reads the same two lists into `mmStudio.css` (then `skins/mmStudio/mmOverrides.css`) and `mmMockup.js` (each part headed with its name, `shared/<file>` for a shared one). The MM page loads `deskBridge.js`, `deskDocs.js`, `deskOverlay.js` and `deskDrop.js` (the plug-in's only: no mockup has a native drop) on its own, before `mmAdapter.js`, and `mmView.js` (its documents' view and its intents' writes, DESIGN-UNIFY.md 4.3) after `mmConvert.js`; the standalone mockup (`build.sh`'s `DEMO` list) loads the same files and the example's documents (`demo-docs.json`) in a script after its own, for its demo host; `sync-mmstudio-skin.py` checks that the documents reach the mockup's state through `MMView.show` only (`DOC_MEMBERS`).
-- Never edit `mmMockup.js` or `mmStudio.css` by hand: they are generated. Edit `doc/modern-ux/mm-mockup/src/` (or the shared file), run `build.sh`, then `sync-mmstudio-skin.py`; `--check` reports any drift.
+- The MM page's parts are listed in order in `skins/mmStudio/src/page.txt`, one per line, `<kind> <path>` (`css`, `body`, `js` from `skins/`: `mmStudio/src/` and `shared/` files alike; `demo` parts are the browser mockup's, from `doc/modern-ux/mm-mockup/`). `sync-mmstudio-skin.py` reads its `css` and `js` parts into `mmStudio.css` (then `skins/mmStudio/mmOverrides.css`) and `mmMockup.js` (each part headed with its name, `shared/<file>` for a shared one). The MM page loads `deskBridge.js`, `deskDocs.js`, `deskOverlay.js` and `deskDrop.js` (the plug-in's only: no mockup has a native drop) on its own, before `mmAdapter.js`, and `mmView.js` (its documents' view and its intents' writes, DESIGN-UNIFY.md 4.3) after `mmConvert.js`; the browser mockup (`doc/modern-ux/mm-mockup/build.sh`, from the same list with its `demo` parts: the demo host `demo/54-demo.js` and the example's library, song and Control setup `demo/126-example.js`) loads the same files and the example's documents (`demo-docs.json`) in a script after its own, for its demo host. The page itself starts empty, as `MMView.startEmpty` leaves it, until the machine's documents arrive; `sync-mmstudio-skin.py` checks that the documents reach the mockup's state through `MMView.show` only (`DOC_MEMBERS`).
+- Never edit `mmMockup.js` or `mmStudio.css` by hand: they are generated. Edit `skins/mmStudio/src/` (or the shared file; a new part goes in `src/page.txt`), run `sync-mmstudio-skin.py` (and `doc/modern-ux/mm-mockup/build.sh` for the browser mockup); `--check` reports any drift.
 - Change a shared file, then run both sync scripts (and `build.sh`). There is no copy to compare.
-- A shared stylesheet that must keep its place in a page's cascade is taken in at a marker line `/* @include shared/<file>.css */` in the page's own stylesheet (`mdOverrides.css`, the MM mockup's `src/25-mm.css`); `sync-mdstudio-skin.py`, `sync-mmstudio-skin.py` and `build.sh` read it the same way (`deskGenBar.css`, `deskSound.css`).
+- A shared stylesheet that must keep its place in a page's cascade is taken in at a marker line `/* @include shared/<file>.css */` in the page's own stylesheet (`mdOverrides.css`, the MM page's `src/25-mm.css`); `sync-mdstudio-skin.py`, `sync-mmstudio-skin.py` and `build.sh` read it the same way (`deskGenBar.css`, `deskSound.css`).
 - Screenshots without Screen Recording (a shell macOS gives none): a journey calls `Journey.snapshot(name)` (`deskJourney.js`: the DOM with the canvases' drawings, logged in pieces), then `scripts/mdmm-snap.py <out> <page logs>` renders each in headless Chrome at the window's size (the `md-shots-sound` / `mm-shots-sound` journeys: both Sound pages and GEN bars).
 
 The files never pass through the page:

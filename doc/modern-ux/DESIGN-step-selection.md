@@ -130,7 +130,7 @@ always did: swing is the pattern's groove, a track of its own).
 
 The plan, as written before:
 
-The MM page is the generated mockup (`doc/modern-ux/mm-mockup/src/`, synced by `sync-mmstudio-skin.py`); the same
+The MM page is generated from its sources (`skins/mmStudio/src/`, synced by `sync-mmstudio-skin.py`); the same
 model needs, in order:
 
 1. Core (`mmDesk/mmDeskEdit.cpp`): `Clipboard::Steps` as rows (the MM's `StepValue` list, slide bits and locks per
