@@ -207,24 +207,26 @@ body.dockother #rail .railparams>:is(.lpspace,.pagetabs,.pkcol),body.dockother #
    The controls row takes the height the keyboard leaves; the stick is sized from the page height. ===== */
 /* The top row never shrinks below its cards (envelope, assign, mutes): in a short window the page scrolls (#main) instead of the cards printing over each other. */
 #main>.perf{flex:1 1 auto;min-height:min-content;grid-template-rows:minmax(300px,1fr);grid-auto-rows:auto}
-.perf3{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)!important;min-height:0}
-.perf3>.card{min-height:0}
-.perf3 .menvcard{grid-template-rows:auto minmax(0,1fr) auto auto;align-content:stretch}
-/* B-017: the envelope's screen fills its row from a box of its own, the canvas absolute inside it. A canvas in the row
-   itself sized the row from its drawing (its width and height attributes, set on every redraw), so dragging DEC grew
-   the card and the page a little with each redraw until the render on release put it back. */
-.perf3 .menvcard .menvplot{position:relative;min-height:96px;min-width:0}
+/* Left to right: the multi envelope (the amp's), the joystick, the setup. The envelope's screen and the stick's pad are
+   both --joy tall and start on the same line under the header; every picture has its own controls under it (ADSR faders,
+   assign rows); the right column holds the setup (track, tab, MIRR) and the mutes. One gutter between the columns. */
+.perf3{--joy:clamp(260px,calc(100vh - 600px),400px);--gut:24px;grid-template-columns:minmax(0,1fr) max(var(--joy),290px) minmax(0,1fr)!important;gap:var(--gut)!important;min-height:0;align-items:start!important}
+.perf3>.card,.perf3 .perfside>.card{min-height:0;align-content:start;grid-template-rows:none!important;gap:8px}
+.perf3 .card header{min-height:28px;align-items:center}
+.perf3 .menvcard .menvplot{position:relative;height:var(--joy);min-width:0}
 .perf3 .menvcard .menvplot>canvas.ed{position:absolute;inset:0;width:100%;height:100%!important;min-height:0!important}
-.perf3 .asgcard{--joy:clamp(200px,calc(100vh - 500px),440px);grid-template-rows:auto auto minmax(0,1fr)}
-.perf3 .asgcard .asgn{grid-template-columns:var(--joy) 270px;align-items:start}
-.perf3 .asgcard .asgn.nojoy{grid-template-columns:calc(var(--joy) + 284px)}
-.perf3 .asgcard .joy{width:var(--joy)!important;height:var(--joy)!important}
-/* Multi map: the map table and the keyboard below keep their height, so the stick gets what is left of the window
-   (about 100vh minus the page's other rows) and never more than its card's row. */
-.perf.map .asgcard{--joy:clamp(96px,calc(100vh - 725px),440px)}
-/* Too short for any stick above the map table (the card's row is under 170 px): the stick steps aside; the assign
-   rows stay, and the table and keyboard are never covered. */
-@media (max-height:759px){.perf.map .asgcard .joy{display:none}.perf.map .asgcard .asgn{grid-template-columns:minmax(0,1fr)}}
+.perf3 .joycard .joy{width:var(--joy)!important;height:var(--joy)!important;justify-self:center}
+.perf3 .asrows{display:grid;gap:6px}
+.perf3 .asrows .asrow{grid-template-columns:14px minmax(0,.8fr) minmax(0,1.2fr) 72px!important;gap:4px}
+.perf3 .perfside{display:grid;gap:14px;align-content:start;min-width:0}
+.perf3 .perfside .asgcard>.seg{justify-self:start;flex-wrap:wrap}
+.perf3 .perfside .hint,.perf3 .menvsay{font-size:12px;line-height:1.35;color:var(--print2)}
+.perf3 .menvsay{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.joy.padinfo{display:grid;align-content:center;justify-items:center;gap:8px;padding:0 18px;text-align:center;cursor:default;box-sizing:border-box}
+.joy.padinfo b{font:24px var(--pix);color:var(--ink)}
+.joy.padinfo span{font-size:12px;line-height:1.4;color:var(--print2)}
+/* Multi map: the map table and keyboard below keep their height, so the stick gets what is left of the window. */
+.perf.map .perf3{--joy:clamp(150px,calc(100vh - 765px),400px)}
 .joy small.jl{left:5px;top:50%;transform:translateY(-50%)}
 .joy small.jr{right:5px;top:50%;transform:translateY(-50%)}
 .joy small.ju{left:50%;top:4px;transform:translateX(-50%)}

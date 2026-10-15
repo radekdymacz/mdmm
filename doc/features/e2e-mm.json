@@ -1116,7 +1116,8 @@
 				"mm-perform-menv-portamento",
 				"mm-perform-menv-modes",
 				"mm-perform-menv-curve",
-				"mm-perform-menv-layout"
+				"mm-perform-menv-layout",
+				"mm-perform-layout"
 			]
 		},
 		"MM-161": {
