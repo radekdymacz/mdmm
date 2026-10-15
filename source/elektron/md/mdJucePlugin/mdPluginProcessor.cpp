@@ -261,26 +261,12 @@ namespace mdJucePlugin
 			baseLib::ChunkWriter chunk(_stream, "RAMF", 1);
 			_stream.write(static_cast<uint8_t>(getRamRecordingMode()));
 		}
-		m_desk->saveChunks(_stream);
-		const auto& controller = dynamic_cast<const Controller&>(getController());
-		const auto snapshot = controller.createAutomationSnapshot();
-		if(!snapshot.empty())
-		{
-			baseLib::ChunkWriter chunk(_stream, "AUTO", 1);
-			_stream.write(snapshot);
-		}
+		m_desk->saveChunks(_stream);	// the editor's setup and the automation parameters (they live without a machine)
 	}
 
 	void AudioPluginAudioProcessor::loadChunkData(baseLib::ChunkReader& _reader)
 	{
 		jucePluginEditorLib::Processor::loadChunkData(_reader);
-		_reader.add("AUTO", 1, [this](baseLib::BinaryStream& _stream, uint32_t)
-		{
-			std::vector<uint8_t> snapshot;
-			_stream.read(snapshot);
-			auto& controller = dynamic_cast<Controller&>(getController());
-			(void)controller.restoreAutomationSnapshot(snapshot);
-		});
 		m_desk->addChunkReaders(_reader);
 		_reader.add("MMEM", 2, [this](baseLib::BinaryStream& _stream, const uint32_t _version)
 		{
