@@ -5,7 +5,8 @@
    as if every command were answered at once. So what an intent's writes miss is lost on the screen here too. Its undo is
    a snapshot of that view, one per gesture (commit), with the example library's slots. The example engine's own pattern
    and kit switches and its library change the state shown outside it: rebase() takes that state as its view again (a
-   switch is no undo step, a library edit is one). Loaded in the plug-in too, where it does nothing. */
+   switch is no undo step, a library edit is one). The browser mockup's only (build.sh, a demo part of
+   skins/mmStudio/src/page.txt): never in the plug-in's page. */
 window.MMDemoHost=window.MMHost?null:(()=>{
  let base=null,clip=null,rev=0;const U={undo:[],redo:[],last:null};
  const KINDS=[{kind:"pattern",at:"patterns"},{kind:"kit",at:"kits"},{kind:"song",at:"songs"},{kind:"global",at:"globals"},{kind:"workingKit",working:"workingKit"}];
@@ -41,5 +42,3 @@ window.MMDemoHost=window.MMHost?null:(()=>{
   /* the example engine changed the state shown (a pattern or kit switch: step false; its library: true, an undo step) */
   rebase(step){if(!base)return;base=viewOf();SHOWN=base;rev++;if(!step)U.last=entry()}};
  return host})();
-/* the example engine's own changes to the state shown (no intent): the demo host's view follows them */
-function demoRebase(step){if(window.MMDemoHost)window.MMDemoHost.rebase(step)}

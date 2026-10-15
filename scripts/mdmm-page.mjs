@@ -253,15 +253,19 @@ function startPreview() {
 	const later = (key, fn) => { clearTimeout(timers.get(key)); timers.set(key, setTimeout(fn, 60)); };
 	const watch = (dir, onFile) => { try { fs.watch(dir, { recursive: true }, (ev, name) => { if (name) onFile(name.toString()); }); } catch (e) { console.log(`no watch on ${dir}: ${e.message}`); } };
 	watch(SKINS, name => {
-		if (Date.now() < syncedUntil || busy || !/\.(css|js|html|json)$/.test(name)) return;
+		if (Date.now() < syncedUntil || busy || !/\.(css|js|html|json|txt)$/.test(name)) return;
 		const t0 = Date.now();
-		/* a shared or override stylesheet is part of the generated page stylesheet: sync, then swap */
-		const kind = /\.css$/.test(name) ? (/(^|\/)(shared\/|[a-z]+Overrides\.css)/.test(name) ? "sync-css" : "css") : "reload";
+		/* a shared or override stylesheet is part of the generated page stylesheet: sync, then swap; the MM page's sources
+		   (mmStudio/src/, its list page.txt) are the generated page: sync, then as their kind */
+		const src = /(^|\/)mmStudio\/src\//.test(name);
+		if (src && which !== "mm") return;
+		const kind = src ? (/\.css$/.test(name) ? "sync-css" : "sync-reload")
+			: /\.css$/.test(name) ? (/(^|\/)(shared\/|[a-z]+Overrides\.css)/.test(name) ? "sync-css" : "css") : "reload";
 		later("skin", () => changed(kind, name, t0));
 	});
-	for (const rel of ["doc/modern-ux/mockup/index.html", "doc/modern-ux/mm-mockup/src", "doc/modern-ux/mm-mockup/build.sh"]) {
+	/* the Machinedrum page's design source (the MM page's sources are under skins/, above) */
+	for (const rel of which === "md" ? ["doc/modern-ux/mockup/index.html"] : []) {
 		const abs = path.join(ROOT, rel), isDir = fs.statSync(abs).isDirectory();
-		if (which === "md" && rel.includes("mm-mockup") || which === "mm" && rel.includes("modern-ux/mockup")) continue;
 		(isDir ? watch : (d, f) => fs.watch(d, () => f(path.basename(d))))(abs, name => {
 			const t0 = Date.now();
 			later("design", () => changed(/\.css$/.test(name) ? "sync-css" : "sync-reload", rel + (isDir ? "/" + name : ""), t0)); });
