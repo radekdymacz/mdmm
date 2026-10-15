@@ -420,11 +420,9 @@ namespace mdDesk
 
 	std::vector<std::string> Desk::loadSetup(const Value& _setup)
 	{
+		// never the previous project's setup: what this one holds that can be used, else the default (errors say what not)
 		std::vector<std::string> errors;
-		const auto s = deskSetupFromJson(_setup, errors);
-		if(!s)
-			return errors;
-		m_setup = *s;
+		m_setup = deskSetupFromJson(_setup, errors);
 		m_mods.setSetup(m_setup.modulators);
 		publishSetup();
 		publishSolo();

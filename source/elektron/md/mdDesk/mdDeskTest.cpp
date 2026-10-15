@@ -2020,11 +2020,37 @@ namespace
 		a.modulators.sources.push_back(src);
 		std::vector<std::string> errors;
 		const auto b = deskSetupFromJson(deskSetupToJson(a), errors);
-		check(b && *b == a && errors.empty(), "md-desk/setup: value -> JSON -> value");
-		const auto bad = cmd(R"({"schema":"md-desk/setup","version":1,"knobCcs":[40,41,42,40,44,45,46,47]})");
+		check(b == a && errors.empty(), "md-desk/setup: value -> JSON -> value");
+		const auto bad = cmd(R"({"schema":"md-desk/setup","version":1,"knobCcs":[40,41,42,40,44,45,46,47],"solo":{"tracks":[2]}})");
 		errors.clear();
-		check(!deskSetupFromJson(bad, errors) && !errors.empty() && errors[0].find("knobCcs[3]") != std::string::npos,
-			"two knob rows on one CC are refused, with the path");
+		const auto c = deskSetupFromJson(bad, errors);
+		check(c.knobCcs == DeskSetup::g_defaultKnobCcs && c.solo.tracks == std::vector<int>{2} && !errors.empty()
+			&& errors[0].find("knobCcs[3]") != std::string::npos, "two knob rows on one CC: the default rows, the rest kept, the path said");
+
+		// 1.0 promises to read a newer editor's setup (FOUNDATION.md, "What 1.0 promises to read"): a newer minor
+		// version, members it does not know (ignored), values it does not know (the default) and items it cannot use
+		// (left out alone)
+		errors.clear();
+		const auto future = deskSetupFromJson(cmd(R"({"schema":"md-desk/setup","version":1.3,"plates":{"a":1},
+			"modulators":{"schema":"md-desk/modulators","version":1,"swing":3,
+				"sources":[{"id":"l1","kind":"lfo","rate":"1/32","shape":9,"depth":50,"phase":0.5},{"id":"e1","kind":"envelope"},{"id":"r1","kind":"random"}],
+				"links":[{"source":"l1","track":2,"param":12,"curve":"s"},{"source":"e1","track":1,"param":1},{"source":"r1","track":3,"param":40},
+					{"source":"r1","track":4,"param":5,"bend":2}]},
+			"knobCcs":[30,31,32,33,34,35,36,37,38,39],"solo":{"tracks":[3],"mutes":[1],"groups":[1]}})"), errors);
+		const auto& fm = future.modulators;
+		check(fm.sources.size() == 2 && fm.sources[0].id == "l1" && fm.sources[0].rate == ModSource{}.rate && fm.sources[0].shape == 0
+			&& fm.sources[0].depth == 50 && fm.sources[1].id == "r1", "a newer setup: an unknown kind of source is left out, unknown values are the default");
+		check(fm.links.size() == 2 && fm.links[0].curve == ModLink::Curve::Lin && fm.links[1].track == 4 && fm.links[1].param == 5,
+			"its links to a source left out or to no such parameter are left out alone");
+		check(future.knobCcs[0] == 30 && future.knobCcs[7] == 37 && future.solo.tracks == std::vector<int>{3} && future.solo.mutes == std::vector<int>{1},
+			"its knob rows (the first eight) and solo load");
+		check(errors.size() == 6, "and each thing left out or reset is an error");
+		errors.clear();
+		check(deskSetupFromJson(cmd(R"({"schema":"md-desk/setup","version":2,"knobCcs":[30,31,32,33,34,35,36,37]})"), errors) == DeskSetup{}
+			&& errors.size() == 1 && errors[0].find("version") != std::string::npos, "a newer major version: the default setup, and said");
+		errors.clear();
+		check(deskSetupFromJson(cmd(R"({"schema":"xx-desk/setup","version":1})"), errors) == DeskSetup{} && errors.size() == 1,
+			"another schema: the default setup, and said");
 
 		std::vector<Value> saved, page;
 		Desk::Port port;
@@ -2035,7 +2061,10 @@ namespace
 		desk.onTelemetry(Telemetry{});
 		desk.onPageMessage(cmd(R"({"op":"ready"})"));
 		desk.onDeviceSysex({0xf0, 0x00, 0x20, 0x3c, 0x02, 0x00, 0x72, 0x04, 0x00, 0xf7});
-		check(!desk.loadSetup(deskSetupToJson(a)).empty() == false && desk.setup() == a, "a project's setup loads");
+		check(desk.loadSetup(deskSetupToJson(a)).empty() && desk.setup() == a, "a project's setup loads");
+		check(!desk.loadSetup(cmd(R"({"schema":"md-desk/setup","version":2})")).empty() && desk.setup() == DeskSetup{},
+			"a setup it cannot read is the default, never the previous project's, and the errors come back");
+		check(desk.loadSetup(deskSetupToJson(a)).empty() && desk.setup() == a, "the project's setup again");
 		bool published = false;
 		for(const auto& m : page)
 			published |= m.find("type")->asString() == "setup";

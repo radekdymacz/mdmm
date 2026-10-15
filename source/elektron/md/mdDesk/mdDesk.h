@@ -82,7 +82,8 @@ namespace mdDesk
 		// sample memory left, then sent as SDS with its name (0x73, from the file name). The page hears
 		// {"type":"sampleLoad", ...} as it goes. The reason when it does not start ("" = it started).
 		std::string loadSample(uint8_t _slot, const std::string& _fileName, const Bytes& _file);
-		// The setup stored with the project (md-desk/setup); errors if it does not validate.
+		// The setup stored with the project (md-desk/setup): what of it this version can use, the default for the rest
+		// (never the previous project's); errors say what was left out.
 		std::vector<std::string> loadSetup(const Value& _setup);
 		const DeskSetup& setup() const { return m_setup; }
 

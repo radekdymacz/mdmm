@@ -29,7 +29,11 @@ namespace mdJucePlugin::machineMemory
 	constexpr const char* g_keptName = "machine-memory.standalone-kept.bin";
 
 	constexpr char g_magic[8] = {'M', 'D', 'M', 'M', 'M', 'E', 'M', '\0'};
-	constexpr uint32_t g_version = 2;
+	// The format's version is two numbers (FOUNDATION.md, "What 1.0 promises to read"): the major changes only with an
+	// incompatible change (an editor reads no other major); the minor counts additions an editor of the same major reads
+	// past (new entry kinds or entry flags: skipped on read and written back as they were). A 0.7 file is 2.0.
+	constexpr uint16_t g_major = 2;
+	constexpr uint16_t g_minor = 0;
 	constexpr size_t g_headerSize = 40;
 	constexpr size_t g_entryHeaderSize = 20;
 	// Larger than any store of either machine (MD: 1 MiB patch RAM and 6 MiB of sample flash; MM: 3 MiB), so a size
@@ -44,10 +48,10 @@ namespace mdJucePlugin::machineMemory
 		None,
 		Empty,		// no bytes
 		NotOurs,	// another file (the magic is not ours)
-		Version,	// another format than this editor reads (newer, or the 0.6 previews' whole-memory file)
+		Version,	// another major version than this editor reads (newer, or the 0.6 previews' whole-memory file)
 		Machine,	// the other machine's
-		Corrupt,	// size or CRC wrong, an entry that names no slot: a broken write, a damaged or crafted file
-		Layout		// written for another slot layout than this editor knows
+		Corrupt,	// size or CRC wrong, an entry cut short or twice: a broken write, a damaged or crafted file
+		Layout		// written for another slot layout than this editor knows (a layout change is a major version)
 	};
 
 	inline uint8_t machineByte(const md::MachineModel _model)
@@ -423,51 +427,81 @@ namespace mdJucePlugin::machineMemory
 	};
 	using Store = std::map<Key, Entry>;
 
+	// An entry this editor cannot use: a kind or flags it does not know (a newer minor's), a slot of another size or one
+	// it does not have. It is not laid over the memory and is written back as it was, so a newer editor's saves
+	// survive an older one's writes; a save of the same slot by this editor replaces it.
+	struct ForeignEntry
+	{
+		uint8_t kind = 0;
+		uint8_t flags[3] = {0, 0, 0};
+		uint32_t index = 0;
+		Entry entry;
+	};
+
 	struct StoreFile
 	{
 		uint64_t romFingerprint = 0;	// MD: the ROM its flash sectors belong to (0: none)
 		Store slots;
+		std::vector<ForeignEntry> foreign;
+		// The file's minor version and reserved header bytes (13-15) as read: written back while its foreign entries
+		// are, so a newer minor's file keeps its label and header (an older editor then sees "newer", not "damaged")
+		uint16_t minor = 0;
+		uint8_t reserved[3] = {0, 0, 0};
 	};
 
 	// offset  size  field
 	// 0       8     magic "MDMMMEM\0"
-	// 8       4     format version (2)
+	// 8       2     major version (2; 0.7 wrote this and the minor as one u32 2)
+	// 10      2     minor version
 	// 12      1     machine: 0 Machinedrum, 1 Monomachine
-	// 13      3     zero
-	// 16      4     layout id (layoutId)
+	// 13      3     zero (not read: a newer minor may use them; kept with its entries)
+	// 16      4     layout id (layoutId: the slot table it was written with; another one is refused)
 	// 20      4     CRC-32 of everything from 24 on (md::crc32, as zlib's)
 	// 24      8     the MD ROM's fingerprint (its flash sectors belong to that ROM), else 0
 	// 32      4     entry count
 	// 36      4     payload size (everything after the header)
-	// 40      ...   entries: kind u8, zero u8, zero u16, index u32, saved at u64, size u32, then the bytes
+	// 40      ...   entries, each sized: kind u8, flags u8 u8 u8 (zero), index u32, saved at u64, size u32, then the bytes
 	inline std::vector<uint8_t> encode(const md::MachineModel _model, const StoreFile& _f)
 	{
+		// the foreign entries but those this editor saved again
+		std::vector<const ForeignEntry*> foreign;
+		for(const auto& f : _f.foreign)
+			if(std::none_of(_f.slots.begin(), _f.slots.end(), [&](const auto& _s)
+				{ return static_cast<uint8_t>(_s.first.kind) == f.kind && _s.first.index == f.index; }))
+				foreign.push_back(&f);
 		std::vector<uint8_t> out;
 		size_t payload = 0;
 		for(const auto& [k, e] : _f.slots)
 			payload += g_entryHeaderSize + e.bytes.size();
+		for(const auto* f : foreign)
+			payload += g_entryHeaderSize + f->entry.bytes.size();
 		out.reserve(g_headerSize + payload);
 		out.insert(out.end(), g_magic, g_magic + sizeof(g_magic));
-		detail::putU32(out, g_version);
+		const bool keepsNewer = !foreign.empty();
+		detail::putU16(out, g_major);
+		detail::putU16(out, keepsNewer ? std::max(g_minor, _f.minor) : g_minor);
 		out.push_back(machineByte(_model));
-		out.push_back(0);
-		out.push_back(0);
-		out.push_back(0);
+		for(const auto r : _f.reserved)
+			out.push_back(keepsNewer ? r : uint8_t{0});
 		detail::putU32(out, layoutId(_model));
 		detail::putU32(out, 0);	// the CRC, below
 		detail::putU64(out, _f.romFingerprint);
-		detail::putU32(out, static_cast<uint32_t>(_f.slots.size()));
+		detail::putU32(out, static_cast<uint32_t>(_f.slots.size() + foreign.size()));
 		detail::putU32(out, static_cast<uint32_t>(payload));
-		for(const auto& [k, e] : _f.slots)
+		const auto putEntry = [&out](const uint8_t _kind, const uint8_t* _flags, const uint32_t _index, const Entry& _e)
 		{
-			out.push_back(static_cast<uint8_t>(k.kind));
-			out.push_back(0);
-			detail::putU16(out, 0);
-			detail::putU32(out, k.index);
-			detail::putU64(out, e.savedAt);
-			detail::putU32(out, static_cast<uint32_t>(e.bytes.size()));
-			out.insert(out.end(), e.bytes.begin(), e.bytes.end());
-		}
+			out.push_back(_kind);
+			out.insert(out.end(), _flags, _flags + 3);
+			detail::putU32(out, _index);
+			detail::putU64(out, _e.savedAt);
+			detail::putU32(out, static_cast<uint32_t>(_e.bytes.size()));
+			out.insert(out.end(), _e.bytes.begin(), _e.bytes.end());
+		};
+		constexpr uint8_t noFlags[3] = {0, 0, 0};
+		for(const auto& [k, e] : _f.slots)
+			putEntry(static_cast<uint8_t>(k.kind), noFlags, k.index, e);
+		for(const auto* f : foreign)
+			putEntry(f->kind, f->flags, f->index, f->entry);
 		const auto crc = md::crc32(out.data() + 24, out.size() - 24);
 		for(int i = 0; i < 4; ++i)
 			out[20 + static_cast<size_t>(i)] = static_cast<uint8_t>(crc >> (8 * i));
@@ -477,7 +511,8 @@ namespace mdJucePlugin::machineMemory
 	struct Decoded
 	{
 		Problem problem = Problem::Empty;
-		uint32_t version = 0;		// the file's format version (Problem::Version: older or newer than g_version)
+		uint32_t version = 0;		// the file's major version (Problem::Version: older or newer than g_major)
+		uint32_t minor = 0;
 		StoreFile file;
 	};
 
@@ -488,15 +523,16 @@ namespace mdJucePlugin::machineMemory
 	{
 		switch(_d.problem)
 		{
-		case Problem::Version: return _d.version < g_version;
+		case Problem::Version: return _d.version < g_major;
 		case Problem::Layout:
 		case Problem::Machine: return false;
 		default: return true;
 		}
 	}
 
-	// The saved slots of a file of this machine, or why there are none. Never throws, reads nothing past the bytes;
-	// every entry must name a slot of this layout, once, with its exact size.
+	// The saved slots of a file of this machine, or why there are none. Never throws, reads nothing past the bytes.
+	// Any minor version of this major: an entry it cannot use is skipped alone and kept (StoreFile::foreign). A file
+	// written with another slot layout is refused (a slot's bytes could land on other RAM): a layout change is a major.
 	inline Decoded decode(const std::vector<uint8_t>& _file, const md::MachineModel _model)
 	{
 		Decoded d;
@@ -507,8 +543,9 @@ namespace mdJucePlugin::machineMemory
 			d.problem = Problem::NotOurs;
 			return d;
 		}
-		d.version = detail::getU32(_file.data() + 8);
-		if(d.version != g_version)
+		d.version = detail::getU32(_file.data() + 8) & 0xffffu;
+		d.minor = detail::getU32(_file.data() + 8) >> 16;
+		if(d.version != g_major)
 		{
 			d.problem = Problem::Version;
 			return d;
@@ -524,8 +561,7 @@ namespace mdJucePlugin::machineMemory
 			return d;
 		}
 		const auto payload = detail::getU32(_file.data() + 36);
-		if(_file[13] != 0 || _file[14] != 0 || _file[15] != 0 || payload > g_maxPayload
-			|| _file.size() != g_headerSize + static_cast<size_t>(payload)
+		if(payload > g_maxPayload || _file.size() != g_headerSize + static_cast<size_t>(payload)
 			|| detail::getU32(_file.data() + 20) != md::crc32(_file.data() + 24, _file.size() - 24))
 		{
 			d.problem = Problem::Corrupt;
@@ -538,6 +574,8 @@ namespace mdJucePlugin::machineMemory
 		}
 		StoreFile f;
 		f.romFingerprint = detail::getU64(_file.data() + 24);
+		f.minor = static_cast<uint16_t>(d.minor);
+		std::copy(_file.begin() + 13, _file.begin() + 16, f.reserved);
 		const auto count = detail::getU32(_file.data() + 32);
 		size_t at = g_headerSize;
 		for(uint32_t i = 0; i < count; ++i)
@@ -548,11 +586,8 @@ namespace mdJucePlugin::machineMemory
 				return d;
 			}
 			const auto* p = _file.data() + at;
-			const bool kindOk = p[0] >= static_cast<uint8_t>(Kind::Kit) && p[0] <= static_cast<uint8_t>(Kind::Sector);
-			const Key k{static_cast<Kind>(kindOk ? p[0] : 1), detail::getU32(p + 4)};
 			const auto size = detail::getU32(p + 16);
-			if(!kindOk || p[1] != 0 || p[2] != 0 || p[3] != 0 || size == 0 || size != sizeOf(_model, k)
-				|| _file.size() - at - g_entryHeaderSize < size || f.slots.count(k))
+			if(_file.size() - at - g_entryHeaderSize < size)
 			{
 				d.problem = Problem::Corrupt;
 				return d;
@@ -561,8 +596,26 @@ namespace mdJucePlugin::machineMemory
 			e.savedAt = detail::getU64(p + 8);
 			e.bytes.assign(_file.begin() + static_cast<std::ptrdiff_t>(at + g_entryHeaderSize),
 				_file.begin() + static_cast<std::ptrdiff_t>(at + g_entryHeaderSize + size));
-			f.slots.emplace(k, std::move(e));
 			at += g_entryHeaderSize + size;
+			const bool kindOk = p[0] >= static_cast<uint8_t>(Kind::Kit) && p[0] <= static_cast<uint8_t>(Kind::Sector);
+			const Key k{static_cast<Kind>(kindOk ? p[0] : 1), detail::getU32(p + 4)};
+			const bool usable = kindOk && p[1] == 0 && p[2] == 0 && p[3] == 0 && size != 0 && size == sizeOf(_model, k);
+			if(!usable)
+			{
+				ForeignEntry fe;
+				fe.kind = p[0];
+				std::copy(p + 1, p + 4, fe.flags);
+				fe.index = detail::getU32(p + 4);
+				fe.entry = std::move(e);
+				f.foreign.push_back(std::move(fe));
+				continue;
+			}
+			if(f.slots.count(k))
+			{
+				d.problem = Problem::Corrupt;
+				return d;
+			}
+			f.slots.emplace(k, std::move(e));
 		}
 		if(at != _file.size())
 		{
@@ -572,6 +625,15 @@ namespace mdJucePlugin::machineMemory
 		d.problem = Problem::None;
 		d.file = std::move(f);
 		return d;
+	}
+
+	// Start from factory memory: every save older than _ms goes, a newer editor's entries too
+	inline void dropSavedBefore(StoreFile& _f, const uint64_t _ms)
+	{
+		for(auto it = _f.slots.begin(); it != _f.slots.end();)
+			it = it->second.savedAt < _ms ? _f.slots.erase(it) : std::next(it);
+		_f.foreign.erase(std::remove_if(_f.foreign.begin(), _f.foreign.end(), [&](const ForeignEntry& _e) { return _e.entry.savedAt < _ms; }),
+			_f.foreign.end());
 	}
 
 	// The notice's words for a file that cannot be used (its slots are not laid over the memory).
