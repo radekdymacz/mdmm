@@ -1,6 +1,6 @@
 
-/* ===== Undo / redo: the host's, one step per gesture (the plug-in's core; on its own the demo host's snapshots,
-   54-demo.js). A gesture ends on the events below, unless a drag, a hold or a GEN run or MUTATE trial holds it. ===== */
+/* ===== Undo / redo: the host's, one step per gesture (the plug-in's core; in the browser mockup the demo host's snapshots,
+   mm-mockup/demo/54-demo.js). A gesture ends on the events below, unless a drag, a hold or a GEN run or MUTATE trial holds it. ===== */
 function commit(){if(laneDraw||rollDrag||selDrag||drag||active||arpDrag||rotHold)return;genStale();if(genHeld())return;if(HOST.commit)HOST.commit()}
 function undo(){genEnd();if(HOST.undo)HOST.undo()}
 function redo(){genEnd();if(HOST.redo)HOST.redo()}

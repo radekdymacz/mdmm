@@ -8,7 +8,7 @@
 #
 # Port: 8791 for md, 8792 for mm (the entries in .claude/launch.json). Edit a skin file under
 # source/elektron/md/mdJucePlugin/skins/ and reload the browser. Edit a design source (doc/modern-ux/mockup/index.html,
-# doc/modern-ux/mm-mockup/src/**, a shared stylesheet) and the sync script runs by itself, then reload. C++ is rebuilt
+# skins/mmStudio/src/**, a shared stylesheet) and the sync script runs by itself, then reload. C++ is rebuilt
 # only when you start the preview again (ninja does nothing when nothing changed, a second or two).
 # Environment: MDMM_PREVIEW_BUILD another build folder (default <checkout>/temp/preview), MDMM_PREVIEW_JOBS parallel jobs.
 set -eu

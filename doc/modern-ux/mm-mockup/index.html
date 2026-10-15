@@ -3306,7 +3306,7 @@ if (typeof module !== "undefined") module.exports = { soundRow, soundRowsCheck }
 /* ===== GEN and MUTATE, the Monomachine's own (MM-PORT-PLAN.md d) =====
    Pure: values in, values out, nothing of the page. The generators without a machine in them (euclid, random,
    the seeds, genFit, genRunFor, mutPull, genNotes) are skins/shared/deskGen.js, both editors' one module,
-   included just before this file (build.sh, sync-mmstudio-skin.py). Here the roles of the
+   included just before this file (src/page.txt). Here the roles of the
    Monomachine's machines and their defaults, a track's steps from a spec (the MM's steps carry their notes),
    and the mutation of a track's DATA pages. skins/mmStudio/mmGenTest.js checks them in node. */
 
@@ -3426,7 +3426,8 @@ const MM_SEAM={
    as if every command were answered at once. So what an intent's writes miss is lost on the screen here too. Its undo is
    a snapshot of that view, one per gesture (commit), with the example library's slots. The example engine's own pattern
    and kit switches and its library change the state shown outside it: rebase() takes that state as its view again (a
-   switch is no undo step, a library edit is one). Loaded in the plug-in too, where it does nothing. */
+   switch is no undo step, a library edit is one). The browser mockup's only (build.sh, a demo part of
+   skins/mmStudio/src/page.txt): never in the plug-in's page. */
 window.MMDemoHost=window.MMHost?null:(()=>{
  let base=null,clip=null,rev=0;const U={undo:[],redo:[],last:null};
  const KINDS=[{kind:"pattern",at:"patterns"},{kind:"kit",at:"kits"},{kind:"song",at:"songs"},{kind:"global",at:"globals"},{kind:"workingKit",working:"workingKit"}];
@@ -3462,13 +3463,11 @@ window.MMDemoHost=window.MMHost?null:(()=>{
   /* the example engine changed the state shown (a pattern or kit switch: step false; its library: true, an undo step) */
   rebase(step){if(!base)return;base=viewOf();SHOWN=base;rev++;if(!step)U.last=entry()}};
  return host})();
-/* the example engine's own changes to the state shown (no intent): the demo host's view follows them */
-function demoRebase(step){if(window.MMDemoHost)window.MMDemoHost.rebase(step)}
 /* ===== Host (P6): the seam between this UI and what plays it =====
    In the plug-in, mmAdapter.js sets window.MMHost before this script runs, and the real machine
    plays: its transport, its library, its undo and its questions (in C++). A host implements every
    call below (sync-mmstudio-skin.py checks both ways); the mockup hands those actions to it.
-   Without one (this mockup on its own) the demo host plays the edits (54-demo.js, DESIGN-UNIFY.md
+   Without one (the browser mockup) the demo host plays the edits (mm-mockup/demo/54-demo.js, DESIGN-UNIFY.md
    4.6: the same intents, shown through their writes over the example's documents, and snapshot
    undo) and the mockup's example engine the rest: a local clock, a pretend boot, its library and
    its own questions.
@@ -3535,6 +3534,9 @@ function demoRebase(step){if(window.MMDemoHost)window.MMDemoHost.rebase(step)}
    for what the host's engine cannot do (NA_SEL maps each capability to its controls, NA_INFO
    lists those with none). */
 const HOST=window.MMHost||window.MMDemoHost||{};
+/* the example engine's own changes to the state shown (no intent): the browser mockup's demo host's view follows
+   them (window.MMDemoHost, mm-mockup/demo/54-demo.js; never in the plug-in) */
+function demoRebase(step){if(window.MMDemoHost)window.MMDemoHost.rebase(step)}
 /* the plug-in's host implements every call of the seam (53-seam.js) */
 if(window.MMHost){const miss=MM_SEAM.host.filter(k=>!(k in window.MMHost));if(miss.length)console.warn("MMHost lacks "+miss.join(", ")+" (53-seam.js)")}
 "use strict";
@@ -4461,7 +4463,7 @@ if (typeof module !== "undefined") module.exports = { ValueEdit };
    Every shortcut is an entry of Keys: the ? overlay is generated from it, so it lists what the keys really do.
    An entry with run() is dispatched by the one handler (in order, the first match wins); one without run() is
    handled next to its own code and only described. The dispatcher (Keys) is skins/shared/deskKeys.js, both
-   editors' one file, included just before this one (build.sh). */
+   editors' one file, included just before this one (src/page.txt). */
 
 /* ===== The ? keyboard view =====
    The map's rules, as the MD Editor's: plain keys play (the home row, Z / X octave, C / V velocity, Space); a plain
@@ -5963,7 +5965,7 @@ function exampleDump(){if(S.engine==="emu"){S.patSent="recv";renderPst();clearTi
 /* An edit as the machine's intent (DESIGN-UNIFY.md 4.1): one vocabulary with the Machinedrum Editor, {op, args} in
    the contract's units (knob and lock values and song rows in the page's: the host translates). The gesture has
    changed the view's state already; the host sends the intent to its core, which applies it to the machine's own
-   documents, and shows its effect at once until the answer (the demo host, on its own: 54-demo.js). The undo step
+   documents, and shows its effect at once until the answer (the browser mockup's demo host: mm-mockup/demo/54-demo.js). The undo step
    is the gesture's (a commit ends it). */
 function edit(op,args){if(!S.genOwn)genEnd();tx();if(HOST.intent)HOST.intent(op,args)}
 /* a step of the view as the step intent's value: null, {off:true} or {n, a, f, l, notrig} */
@@ -8692,8 +8694,8 @@ Keys.bind({id:"song-play-from",short:"From here",scope:"song",keys:["Enter"],gro
  ["tempo-delayed","any","Top bar",["tempo"],"alt","Transport","Drag: the tempo changes when you let go (FUNCTION held on the machine)"]
 ].forEach(([id,scope,area,keys,mod,group,does])=>Keys.bind({id,scope,area,keys,mod,group,does}));
 
-/* ===== Undo / redo: the host's, one step per gesture (the plug-in's core; on its own the demo host's snapshots,
-   54-demo.js). A gesture ends on the events below, unless a drag, a hold or a GEN run or MUTATE trial holds it. ===== */
+/* ===== Undo / redo: the host's, one step per gesture (the plug-in's core; in the browser mockup the demo host's snapshots,
+   mm-mockup/demo/54-demo.js). A gesture ends on the events below, unless a drag, a hold or a GEN run or MUTATE trial holds it. ===== */
 function commit(){if(laneDraw||rollDrag||selDrag||drag||active||arpDrag||rotHold)return;genStale();if(genHeld())return;if(HOST.commit)HOST.commit()}
 function undo(){genEnd();if(HOST.undo)HOST.undo()}
 function redo(){genEnd();if(HOST.redo)HOST.redo()}
