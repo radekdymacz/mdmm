@@ -2201,41 +2201,44 @@ img,svg,canvas{-webkit-user-drag:none}
 /* The GEN dialog, the lane toolbox and the track list's dice key, both editors (mdDeskGenUi.js / mmMockup's 76-gen.js build the dialog;
    mdDeskLaneTools.js / 79-lane.js the toolbox). Each page's stylesheet takes this file in at its marker. The MM page's dialog holds its
    Notes group in a second row of the values area, so the area's height is a variable (--gdvals). */
-/* The GEN dialog (mdDeskGenUi.js genDialogHtml; the modal layer places it, draws no backdrop and drags it by .gdhead): compact, the
-   same size in every mode. Top to bottom: head, MODE, the mode's values (an area of fixed height), the KEEP switch, the footer
-   (summary at the left; R, Defaults, Cancel, Done at the right, on one baseline). */
-.genpop{width:min(700px,calc(100vw - 48px));box-sizing:border-box;padding:12px 18px 14px;overflow:visible!important}
-.gdlg{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto var(--gdvals,62px) auto auto;row-gap:10px}
-.gdhead{display:flex;align-items:baseline;gap:12px;cursor:grab;user-select:none;touch-action:none;padding:2px 0 6px;border-bottom:1px solid var(--rule);margin-bottom:2px}
+/* The GEN dialog (mdDeskGenUi.js genDialogHtml; the modal layer centres it over the grid, draws no backdrop and drags it by .gdhead).
+   Compact, one size in every mode (--gdw is the content's width, the larger mode's row). Every box, key and button is 30 px high,
+   everything sits on a 4/8 px grid and the left edges line up: the head line (title, target, the mode's segmented control at the right),
+   a row for each group of values with a small label before it (a 56 px label column), a muted summary line, then the footer: Keep at the
+   left, the R and Defaults icon keys, Cancel and Done at the right. No rules cross the dialog. */
+.genpop{--gdw:424px;width:calc(var(--gdw) + 32px)!important;max-width:calc(100vw - 48px);box-sizing:border-box;padding:16px!important;overflow:visible!important}
+.gdlg{display:grid;grid-template-columns:minmax(0,1fr);row-gap:8px}
+.gdhead{display:flex;align-items:center;gap:8px;min-height:30px;cursor:grab;user-select:none;touch-action:none;margin-bottom:8px}
 .gdhead.dragging{cursor:grabbing}
 .gdhead b{font:700 13px var(--sans);letter-spacing:.22em;text-transform:uppercase;color:var(--print)}
-.gdhead span{font:12px var(--mono);color:var(--print2)}
-.gdhead span.all{color:var(--led)}
-.gdmode{display:flex;align-items:center;gap:14px}
-.gdmode .gbl{flex:none;width:auto}
-.gdmode .gbl::after{content:none}
-.gdvals{display:flex;gap:18px;align-items:flex-start;min-width:0;height:var(--gdvals,62px)}
-.gdvals[inert],.gdmode[inert]{opacity:.38}
-.gdvals .gbg{flex:none}
+.gdhead .gdt{font:12px var(--mono);color:var(--print2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.gdhead .gdt.all{color:var(--led)}
+.gdhead .gdlock{flex:none;width:14px;height:14px;color:var(--print2)}
+.gdhead .gsc{margin-left:auto;flex:none}
+.gdrow{display:grid;grid-template-columns:56px minmax(0,1fr);align-items:center;column-gap:0;min-height:30px}
+.gdl{font:600 10px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--print2)}
+.gdrow .gvs{display:flex;align-items:center;gap:8px;min-width:0}
+.gdrow .gv{min-width:64px;padding:0 8px}
+.gdrow .gnone{font:12px var(--mono);color:var(--print3)}
 .gsc{display:inline-flex;border-radius:4px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--rule)}
-.gbc .gsc button,.gdmode .gsc button{height:30px;padding:0 12px;border-radius:0;font:600 11px var(--sans);letter-spacing:.1em;text-transform:uppercase;background:var(--key);color:var(--keytext);box-shadow:none;border-right:1px solid color-mix(in srgb,var(--keytext) 18%,transparent)}
-.gbc .gsc button:last-child,.gdmode .gsc button:last-child{border-right:0}
-.gbc .gsc button[aria-pressed=true],.gdmode .gsc button[aria-pressed=true]{background:var(--led);color:#fff}
-.gdkeep{display:flex;align-items:center;gap:8px;font:12px var(--sans);color:var(--print);cursor:pointer;min-height:18px}
-.gdkeep input{margin:0;accent-color:var(--led)}
-.gdkeep em{font-style:normal;margin-left:auto;font-size:11px;color:var(--print3)}
-.gdfoot{min-width:0;display:flex;align-items:flex-end;gap:14px;border-top:1px solid var(--rule);padding-top:10px}
-.gdsum{flex:1 1 auto;min-width:0;align-self:center;font:12px var(--mono);color:var(--print2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gsc button{height:30px;padding:0 12px;border-radius:0;font:600 11px var(--sans);letter-spacing:.1em;text-transform:uppercase;background:var(--key);color:var(--keytext);box-shadow:none;border-right:1px solid color-mix(in srgb,var(--keytext) 18%,transparent)}
+.gsc button:last-child{border-right:0}
+.gsc button[aria-pressed=true]{background:var(--led);color:#fff}
+.gdrow .gsc{margin-left:8px;flex:none}
+.gdsum{min-height:16px;margin-top:8px;font:12px var(--mono);color:var(--print2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gdsum em{font-style:normal;color:var(--print)}
-.gdk{display:grid;justify-items:center;gap:4px;flex:none}
-.gdk small{font:600 9px var(--sans);letter-spacing:.1em;text-transform:uppercase;line-height:12px;color:var(--print2);white-space:nowrap}
-.gdk small em{font-style:normal;letter-spacing:.04em;text-transform:none;opacity:.8;margin-left:3px}
-.gdkey{width:30px;height:30px;padding:0;display:grid;place-items:center;font:600 12px var(--sans);letter-spacing:0}
+.gdfoot{display:flex;align-items:center;gap:8px;min-width:0}
+.gdkeep{display:flex;align-items:center;gap:8px;font:12px var(--sans);color:var(--print);cursor:pointer;white-space:nowrap;margin-right:auto}
+.gdkeep input{margin:0;width:16px;height:16px;accent-color:var(--led)}
+.gdkey{width:30px;height:30px;padding:0;display:grid;place-items:center;flex:none;font:600 13px var(--sans);letter-spacing:0}
 .gdkey.cream{background:var(--cream);color:var(--creamtext)}
-.gdkey:disabled{opacity:.4;cursor:default}
 .gdbtns{display:flex;gap:8px;flex:none;margin-left:8px}
-.gdbtns button{height:30px;padding:0 14px;font:600 11px var(--sans);letter-spacing:.1em;text-transform:uppercase}
+.gdbtns button{height:30px;padding:0 16px;font:600 11px var(--sans);letter-spacing:.1em;text-transform:uppercase}
 .gdbtns .gdone{background:var(--led);color:#fff}
+/* the dice key of a kept track: a small lock in its corner (⌥R over every track leaves it alone) */
+.ms.g{position:relative}
+.ms.g .lk{display:none;position:absolute;right:1px;bottom:1px;width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:1.6}
+.ms.g.kept .lk{display:block}
 /* The lane toolbox on the lock lane's title row (mdDeskLaneTools.js) */
 .xlane{display:inline-flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:nowrap;flex:0 1 auto;min-width:0}
 .xlseg{display:inline-flex;gap:2px}
@@ -2287,16 +2290,12 @@ img,svg,canvas{-webkit-user-drag:none}
 .genbar.fit3 .gv small{font-size:8px;letter-spacing:0}
 /* the rail's keys in a Sequence row: M, S and the dice (GEN, 76-gen.js openGen), three 24 px keys */
 .ws-seq .rail .threw{grid-template-columns:22px minmax(0,1fr) 24px 24px 24px}
-/* the GEN dialog's values area holds the rhythm's groups and, on a synth track, NOTES in a second row */
-.genpop{--gdvals:132px}
 /* the lane toolbox sits on the lock lane's header row (70-seq.js renderSeq), on the right, only while the Locks tab is open: tabs and the lock count on the left */
 .lanetop .xlane{display:flex;margin:0 0 0 auto;align-self:center;gap:8px;flex:none}
 .lanetop .xlseg{gap:1px}
 .lanetop #lockbudget{flex:none}
 @media (max-width:1340px){.lanetop .xlane [data-xg=cycles]{display:none}}
 @media (max-width:1180px){.lanetop .xlane [data-xg=every]{display:none}}
-.gdvals.rows{flex-direction:column;gap:8px}
-.gdrow{display:flex;gap:18px;align-items:flex-start;min-height:62px}
 /* the lock lane's bars: hover is a thin outline, never a fill; the bar keeps its look */
 .ws-seq .lb:not(.none):hover,.ws-seq #lane:active .lb:not(.none):hover{background:var(--lcd)!important;filter:none!important;outline:1px solid var(--ink);outline-offset:-2px}
 /* ===== Sound by function (MM-PORT-PLAN e; 90-sound.js renderSound): the Machinedrum Editor's page and layout
@@ -2727,6 +2726,7 @@ canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop
 
 /* B-116: the Arrangement's key legend (T, M, B) is cut by the card's width under 1700 px: "65 of 200 rows" stays, the keys are in the tooltip */
 @media (max-width:1700px){.arrcard header .note .gopt{display:none}}
+.genpop{--gdw:416px}
 
 /* ===== The real machine's states (not in the mockup) ===== */
 .statusline,.errline{margin:6px 0 0;padding:6px 10px;border-radius:3px;font:12px var(--pix);text-transform:uppercase}

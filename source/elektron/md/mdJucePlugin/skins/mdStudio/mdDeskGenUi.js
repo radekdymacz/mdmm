@@ -12,7 +12,7 @@
    the workspace edits: a new GEN variation of the selected track (Sequence, and every workspace but Sound), a fresh
    mutation of the selected track from the trial's base (Sound); Alt+R or Alt-click on the R key: every track (the
    whole kit). ===== */
-S.gen = { specs: null, last: [], m: [], edited: [], run: null };
+S.gen = { specs: null, last: [], m: [], edited: [], run: null, kept: [] };
 S.mut = { amount: 20, seed: genSeed(), scope: new Set(["syn"]), trial: null, note: "" };
 const GEN_TRACKS = Array.from({ length: 16 }, (_, t) => t);
 /* Every track's spec, from its machine's role the first time (render, or a GEN change before one) and on
@@ -57,7 +57,7 @@ function genLive(all = S.alt) {
 	if (!V.loaded) { toast("The pattern is not loaded yet."); return false; }
 	const run = genRunFor(S.gen.run, genKey(), () => V.tracks.map(x => x.trigs.slice()), Bridge.gesture);
 	const [from, to] = genRange(all), rows = [], w = [];
-	for (const t of all ? GEN_TRACKS : [S.sel]) {
+	for (const t of all ? GEN_TRACKS.filter(t => !genKept(t)) : [S.sel]) {
 		const r = genResult(t, from, to, run); if (!r) continue;
 		const tr = V.tracks[t], on = new Set(r.on), row = { t, on: r.on };
 		if (r.acc && !V.accAll) row.acc = r.acc;
@@ -98,7 +98,7 @@ function genVaried(sp) {
 function genAgain(all = false) {
 	genEnsure();
 	let varied = 0;
-	for (const t of all ? GEN_TRACKS : [S.sel]) { const sp = genVaried(genSpec(t)); if (sp) { setGenSpec(t, sp); varied++; } }
+	for (const t of all ? GEN_TRACKS.filter(t => !genKept(t)) : [S.sel]) { const sp = genVaried(genSpec(t)); if (sp) { setGenSpec(t, sp); varied++; } }
 	if (!varied) { toast(all ? "Every track is set to keep: nothing to randomise." : `Track ${S.sel + 1} is set to keep: nothing to randomise.`); return; }
 	if (genLive(all) && S.ws !== "seq") toast(all ? "GEN: a new variation of every track." : `GEN: a new variation of track ${S.sel + 1}.`);
 }
@@ -149,16 +149,15 @@ function openGen(t) {
 	const was = genDlgOpen();
 	if (!was) S.gen = Object.assign({}, S.gen, { run: null, session: { n: 0 } });
 	if (t !== S.sel) select(t); else if (!was) render();
-	genEnsure(); genDraw(true);
+	genEnsure(); genRealise(S.sel); genDraw(true);
 	const pop = $("#genpop"); pop.hidden = false;
 	if (typeof Modal !== "undefined" && Modal.place) Modal.place("genpop");
 	if (!was) pop.querySelector(".gv")?.focus({ preventScroll: true });
 }
-/* where the dialog opens (deskModal.js `place`): under the track's own row, over the rows below it; above the row when the row is low */
+/* where the dialog opens (deskModal.js `place`): centred in the window, over the grid (right of the track list, which stays in reach) */
 function placeGen(el) {
-	const row = $(`#seq .r[data-row="${S.sel}"]`); if (!row) return null;
-	const r = row.getBoundingClientRect(), h = el.offsetHeight, w = el.offsetWidth;
-	return { left: (innerWidth - w) / 2, top: r.bottom + 10 + h <= innerHeight - 8 ? r.bottom + 10 : r.top - 10 - h };
+	const rail = $("#rail"), l = rail ? rail.getBoundingClientRect().right : 0, h = el.offsetHeight, w = el.offsetWidth;
+	return { left: l + (innerWidth - l - w) / 2, top: (innerHeight - h) / 2 };
 }
 /* done: keep what the session wrote; otherwise (Esc, Cancel): Undo it, once for each run it made */
 function closeGen(done) {
@@ -180,6 +179,11 @@ function genDraw(fill) {
 	pop.innerHTML = genDialogHtml();
 	if (key) pop.querySelector(key)?.focus({ preventScroll: true });
 }
+/* a click on a track's number or name (the modal layer lets it through): the dialog follows the track, the page's own select is not run twice */
+document.addEventListener("click", e => {
+	const th = genDlgOpen() && e.target.closest(".th[data-sel] .n,.th[data-sel] .nm,.th[data-sel] .sw"); if (!th) return;
+	e.stopPropagation(); genSwitch(+th.closest("[data-sel]").dataset.sel);
+}, true);
 function clickGen(e) {
 	const o = e.target.closest("[data-genopen]"); if (o) { genDlgOpen() ? genSwitch(+o.dataset.genopen) : openGen(+o.dataset.genopen); return true; }
 	if (e.target.closest("[data-genclose]")) { closeGen(true); return true; }
@@ -215,50 +219,47 @@ document.addEventListener("dblclick", e => {
 function genDefaults() {
 	genEnsure();
 	const len = V.len || 64;
-	for (const t of S.alt ? GEN_TRACKS : [S.sel]) setGenSpec(t, genDefault(V.tracks[t].m, len));
+	for (const t of S.alt ? GEN_TRACKS.filter(t => !genKept(t)) : [S.sel]) setGenSpec(t, genDefault(V.tracks[t].m, len));
+	genRealise(S.sel);
 	toast(S.alt ? "Every track's values from its machine." : "This track's values from its machine.");
 	genLive();
 }
-/* KEEP, honestly: a track whose spec is Keep is left alone by every generator run (⌥R and Alt changes over every track skip it, and
-   so does a single change here: it gives the pattern before the run back). The dialog shows it as a switch on the track, not a
-   third mode: switching it on keeps the track's generator in S.gen.last (`was`), switching it off brings that generator back. */
-function genKeep(on) {
-	genEnsure();
-	const t = S.sel, sp = genSpec(t);
-	if (on === (sp.kind === "keep")) return;
-	if (on) { S.gen = Object.assign({}, S.gen, { last: S.gen.last.map((x, i) => i === t ? Object.assign({}, x, { was: sp.kind }) : x) }); genKind("keep"); return; }
-	const was = S.gen.last[t].was, d = genDefault(V.tracks[t].m, V.len || 64);
-	genKind(was && was !== "keep" ? was : d.kind !== "keep" ? d.kind : "euclid");
-}
+/* KEEP: only "⌥R all (and every all-tracks run) skips this track". It switches nothing off in the dialog: the mode, the boxes, R and Defaults
+   still write this track. A track whose machine has no generator (MIDI, CTR, INP, empty: a Keep spec) counts as kept; the dialog gives it the generator
+   it would have (genRealise) the moment it opens, and the track stays marked kept. The marker is a lock on the track's dice key and next to the title. */
+const genKept = t => !!(S.gen.kept && S.gen.kept[t]);
+const genIsKept = t => genKept(t) || genSpec(t).kind === "keep";
+function setKept(t, on) { const k = (S.gen.kept || []).slice(); k[t] = on; S.gen = Object.assign({}, S.gen, { kept: k }); }
+function genRealise(t) { if (genSpec(t).kind !== "keep") return; setKept(t, true); setGenSpec(t, genShown(t)); }
+function genKeep(on) { genEnsure(); setKept(S.sel, on); render(); genDraw(); }
 /* the spec the dialog's boxes show: the track's own, or while it is kept the generator it will come back to */
 function genShown(t) { const sp = genSpec(t); return sp.kind !== "keep" ? sp : genFit((S.gen.last[t] || {})[(S.gen.last[t] || {}).was], V.len || 64) || (genDefault(V.tracks[t].m, V.len || 64).kind !== "keep" ? genDefault(V.tracks[t].m, V.len || 64) : { kind: "euclid", k: 4, n: Math.min(16, V.len || 64), rot: 0 }); }
 /* The dialog (compact, one size in every mode): the head (the drag handle), MODE, the mode's values in an area of fixed height,
    the KEEP switch, then the footer: the summary at the left, R and Defaults, Cancel and Done at the right. */
 function genDialogHtml() {
-	const real = genSpec(), kept = real.kind === "keep", sp = genShown(S.sel), t = S.sel, tr = V.tracks[t], all = S.alt, run = S.gen.run && S.gen.run.key === genKey() ? S.gen.run : null;
-	const [from, to] = genRange(all), r = kept ? null : genResult(t, from, to, run), base = run ? run.base[t] : tr.trigs;
+	const sp = genShown(S.sel), t = S.sel, tr = V.tracks[t], all = S.alt, kept = genIsKept(t), run = S.gen.run && S.gen.run.key === genKey() ? S.gen.run : null;
+	const [from, to] = genRange(all), r = genResult(t, from, to, run), base = run ? run.base[t] : tr.trigs;
 	const sc = (attr, cur, items, tips, label) => `<span class="gsc" role="radiogroup" aria-label="${label}">${items.map(([k, n]) => `<button ${attr}="${k}" role="radio" aria-checked="${cur === k}" aria-pressed="${cur === k}" title="${tips[k]}">${n}</button>`).join("")}</span>`;
 	const mode = sc("data-genkind", sp.kind, [["euclid", "Euclid"], ["random", "Random"]], { euclid: "k hits spread evenly over n steps, rotated", random: "each step on by chance, from a seed" }, "Mode");
+	const write = sc("data-genmode", sp.mode, [["replace", "Replace"], ["add", "Add"], ["thin", "Thin"]], { replace: "the track becomes the result", add: "only steps that are off may turn on", thin: "only steps that are on may turn off" }, "Write");
 	const vals = sp.kind === "euclid"
-		? gbg("Euclid", gv("k", "Hits", sp.k, "How many hits in a cycle") + gv("n", "Steps", sp.n, "The cycle's length in steps, at most the pattern's; it repeats over the pattern") + gv("rot", "Rotate", sp.rot, "Moves the hits later") + gv("acc", "Accent", sp.acc ? sp.acc.k : "off", "Accents spread over the hits" + (V.accAll ? " (EDIT ALL is on: accents are pattern-wide and stay)" : "")))
-		: gbg("Random", gv("dens", "Density", sp.density + "%", "The chance of each step") + gv("racc", "Accent", sp.acc ? sp.acc.density + "%" : "off", "Accents by chance on the hits") + gv("seed", "Seed", sp.seed, "The same seed gives the same steps"))
-			+ gbg("Write", sc("data-genmode", sp.mode, [["replace", "Replace"], ["add", "Add"], ["thin", "Thin"]], { replace: "the track becomes the result", add: "only steps that are off may turn on", thin: "only steps that are on may turn off" }, "Write"), "gwrite");
+		? gv("k", "Hits", sp.k, "How many hits in a cycle") + gv("n", "Steps", sp.n, "The cycle's length in steps, at most the pattern's; it repeats over the pattern") + gv("rot", "Rotate", sp.rot, "Moves the hits later") + gv("acc", "Accent", sp.acc ? sp.acc.k : "off", "Accents spread over the hits" + (V.accAll ? " (EDIT ALL is on: accents are pattern-wide and stay)" : ""))
+		: gv("dens", "Density", sp.density + "%", "The chance of each step") + gv("racc", "Accent", sp.acc ? sp.acc.density + "%" : "off", "Accents by chance on the hits") + gv("seed", "Seed", sp.seed, "The same seed gives the same steps") + write;
 	let sum = "";
 	if (r) {
 		const b = new Set(); for (let s = from; s < to; s++) if (base[s]) b.add(s);
 		const add = r.on.filter(s => !b.has(s)).length, gone = [...b].filter(s => !r.on.includes(s)).length;
 		sum = all ? `every track · steps ${from + 1}–${to}` : `${sp.kind === "euclid" ? genSummary(sp, V.len) + " · " : ""}${r.on.length} on${run && (add || gone) ? ` <em>+${add} −${gone}</em>` : ""} · steps ${from + 1}–${to}`;
 	}
-	const help = !kept && sp.kind === "random" && sp.mode === "add" ? "Add: only steps that are off may turn on." : !kept && sp.kind === "random" && sp.mode === "thin" ? "Thin: only steps that are on may turn off." : "";
-	const keyr = `<span class="gdk"><small>Random <em>⌥R all</em></small><button class="gdkey cream" data-rand="1" aria-label="Randomise" ${kept ? "disabled" : ""} title="Randomise track ${t + 1}: a new variation, ${sp.kind === "random" ? "a new seed" : "random hits and rotation in the cycle"} (R). ⌥R or Alt-click: every track">R</button></span>`;
-	const keyd = `<span class="gdk"><small>Defaults</small><button class="gdkey" data-gen="fill" aria-label="Defaults" ${kept ? "disabled" : ""} title="Defaults: this track's values from its machine: kicks 4/16, snares on 2 and 4, hats 8/16, the rest random (Alt: every track). The track follows, as with any change">↺</button></span>`;
+	const lock = kept ? `<svg class="gdlock" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-label="Kept"><title>Kept: ⌥R all leaves this track alone</title><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>` : "";
 	return `<div class="gdlg${kept ? " kept" : ""}">
-  <div class="gdhead" data-drag title="Drag to move this window; double-click: back to its place"><b>Gen</b><span class="${all ? "all" : ""}">${all ? "all tracks" : `track ${t + 1} · ${codeOf(tr.m, Cat)}`}</span></div>
-  <div class="gdmode"${kept ? " inert" : ""}><span class="gbl">Mode</span>${mode}</div>
-  <div class="gdvals"${kept ? " inert" : ""}>${vals}</div>
-  <label class="gdkeep" title="A kept track is left as it is: ⌥R and every change over all tracks skip it, and this window writes nothing to it"><input type="checkbox" data-genkeep="1" ${kept ? "checked" : ""}><span>Keep this track when ⌥R rerolls all</span><em>${help}</em></label>
-  <div class="gdfoot"><div class="gdsum" title="${plainText(sum)}">${sum}</div>${keyr}${keyd}
-   <div class="gdbtns"><button class="gdcancel" data-gencancel="1" title="Cancel (Esc): the track goes back as it was before this window">Cancel</button><button class="gdone" data-genclose="1" title="Done (Enter): keep what it wrote. One Undo takes a run back">Done</button></div></div>
+  <div class="gdhead" data-drag title="Drag to move this window; double-click: back to the middle"><b>Gen</b><span class="gdt ${all ? "all" : ""}">${all ? "all tracks" : `T${t + 1} · ${codeOf(tr.m, Cat)}`}</span>${lock}${mode}</div>
+  <div class="gdrow"><span class="gdl">Rhythm</span><div class="gvs">${vals}</div></div>
+  <div class="gdsum" title="${plainText(sum)}">${sum}</div>
+  <div class="gdfoot"><label class="gdkeep" title="Keep this track: ⌥R all (and every all-tracks change) leaves it alone. This window still writes it"><input type="checkbox" data-genkeep="1" ${kept ? "checked" : ""}><span>Keep on ⌥R all</span></label>
+   <button class="gdkey cream" data-rand="1" aria-label="Randomise" title="Randomise track ${t + 1} (R): a new variation, ${sp.kind === "random" ? "a new seed" : "random hits and rotation in the cycle"}. ⌥R or Alt-click: every track">R</button>
+   <button class="gdkey" data-gen="fill" aria-label="Defaults" title="Defaults: this track's values from its machine: kicks 4/16, snares on 2 and 4, hats 8/16, the rest random (Alt: every track). The track follows, as with any change">↺</button>
+   <div class="gdbtns"><button class="gdcancel" data-gencancel="1" title="Cancel (Esc): every track this window wrote goes back as it was">Cancel</button><button class="gdone" data-genclose="1" title="Done (Enter): keep what it wrote. One Undo takes a run back">Done</button></div></div>
 </div>`;
 }
 
