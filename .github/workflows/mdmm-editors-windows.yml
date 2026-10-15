@@ -54,18 +54,18 @@ jobs:
       _CL_: ${{ inputs.ltcg && ' ' || '/GL-' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
           submodules: recursive
 
       - name: Configure MSVC environment
-        uses: ilammy/msvc-dev-cmd@v1
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
         with:
           arch: x64
 
       - name: Configure compiler cache
-        uses: mozilla-actions/sccache-action@v0.0.11
+        uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba # v0.0.11
         with:
           version: v0.16.0
 
@@ -101,14 +101,14 @@ jobs:
 
       - name: Upload the flavour marker
         if: ${{ inputs.ltcg }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: windows-mdmm-ltcg
           path: ${{ runner.temp }}\flavour\flavour.txt
           retention-days: 14
 
       - name: Upload the package and receipt
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: windows-mdmm
           path: artifacts/windows-mdmm/*
@@ -128,18 +128,18 @@ jobs:
       _CL_: /GL-
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
           submodules: recursive
 
       - name: Configure MSVC environment
-        uses: ilammy/msvc-dev-cmd@v1
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
         with:
           arch: x64
 
       - name: Configure compiler cache
-        uses: mozilla-actions/sccache-action@v0.0.11
+        uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba # v0.0.11
         with:
           version: v0.16.0
 
@@ -184,7 +184,7 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 1
 
@@ -197,7 +197,7 @@ jobs:
           New-Item -ItemType Directory -Path "${{ runner.temp }}\out" -Force | Out-Null
           Copy-Item -LiteralPath $exe.FullName -Destination "${{ runner.temp }}\out\mdmmVst3EditorHost.exe"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: windows-vst3host
           path: ${{ runner.temp }}\out\mdmmVst3EditorHost.exe
@@ -211,16 +211,16 @@ jobs:
     timeout-minutes: 40
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 1
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: windows-vst3host
           path: ${{ runner.temp }}\vst3host
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: windows-mdmm
           path: ${{ runner.temp }}\windows-mdmm
@@ -254,7 +254,7 @@ jobs:
           ./scripts/ci/mdmm_pluginval.sh --out "$(cygpath -u "${{ runner.temp }}")/pluginval" --label "Windows x64" \
             "${pkg}/${MDMM_PRODUCT_NAME_MD}.vst3" "${pkg}/${MDMM_PRODUCT_NAME_MM}.vst3"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: windows-mdmm-pluginval
@@ -262,7 +262,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: windows-mdmm-smoke

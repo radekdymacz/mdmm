@@ -29,6 +29,21 @@ Rule of 2026-10-13 (Radek, after 0.6); the short form is in [CLAUDE.md](../../CL
 
 Off: upstream's Elektron workflows (disabled in Actions), the per-push installer dry run.
 
+## Core job: every ROM-free unit test
+
+The core job (`mdmm-core.yml`, Linux) runs the unit tests picked by CTest label, not by name: `scripts/mdmm-ci-unit-targets.py`
+takes every test labelled `UnitTest` except `Slow`, `Timing`, `Page` (the page suite runs those) and `dsp56300` (its own
+step), builds their targets and runs them. A new `UnitTest` is in by default. Firmware tests are labelled
+`FirmwareTest` or `Integration` and never run here. The plug-in is configured with every format off, only so its unit
+tests (`mdPageBridgeTest`, `mdMachineMidiOutTest`, ...) are registered.
+
+## Workflow hardening
+
+Every action is pinned by full commit SHA with its tag in a comment (update both together; check the SHA with
+`gh api repos/<owner>/<repo>/git/ref/tags/<tag>`, dereferencing an annotated tag). Each workflow defaults to
+`contents: read`; a job that writes asks for it itself. The site workflow's deploy step runs a pinned
+`wrangler@4.149.0`, but only when the Cloudflare secrets are set; they are not today, so the site is deployed by hand.
+
 ## Page suite (ROM-free, Linux)
 
 `mdmm-page.yml` runs on every push to `main` and `release/0.*`, and on pull requests that touch the page, the desk
@@ -71,8 +86,10 @@ Nothing else is left out. Take a name off the list when the page has room for th
 5. Tag the branch head (`git tag -a mdmm-v0.x.y -m "Machinedrum Editor + Monomachine Editor 0.x.y"`) and push the tag.
    The tag must be on the commit CI tested, or it builds again.
 6. Merge the branch into main and push main (the site workflow reads the notes from main).
-7. Publish the release when the tag run has attached the files.
-8. Deploy the site at once (`cd site && CLOUDFLARE_ACCOUNT_ID=331224f43e4f448483cad2f1185ea965 npx --yes wrangler@4 deploy`;
+7. Publish the release when the tag run has attached the files. The run's last job (`checksums`) attaches `SHA256SUMS`
+   (the SHA-256 of every file on the draft, hand-uploaded ones included); re-run the tag's workflow after attaching
+   anything by hand, so the list is current. A published release is never changed by it.
+8. Deploy the site at once (`cd site && CLOUDFLARE_ACCOUNT_ID=331224f43e4f448483cad2f1185ea965 npx --yes wrangler@4.149.0 deploy`;
    Radek runs it until CI has the Cloudflare secrets). The Discord announcement waits up to an hour for the release
    page to be live, so its link preview has the image.
 
