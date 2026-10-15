@@ -2,15 +2,11 @@
 
 #include "mdAbout.h"
 
-#include "mdEditor.h"
 #include "mdEditorPages.h"
 #include "mdPageEditor.h"
 #include "mdPluginProcessor.h"
 #include "mdLib/mdSpeedUpLevers.h"
-#include "mdProductSkinPolicy.h"
 #include "mdStandaloneRendererPolicy.h"
-
-#include "mdProductSkins.h"
 
 #include "juce_events/juce_events.h"
 #include "jucePluginEditorLib/editorTraits.h"
@@ -44,27 +40,9 @@ namespace mdJucePlugin
 			config.saveIfNeeded();
 		}
 
+		// whatever skin an older config names, the page is what loads
 		keepEditorPage(*this);
-		const auto configuredSkin = readSkinFromConfig();
-		if(configuredSkin.isValid() && isSkinCompatible(_processor.getModel(),
-			configuredSkin.displayName, configuredSkin.filename))
-		{
-			loadSkin(configuredSkin);
-			return;
-		}
-
-		const auto* const defaultSkin = defaultSkinName(_processor.getModel());
-
-		for(const auto& skin : getIncludedSkins())
-		{
-			if(skin.displayName == defaultSkin)
-			{
-				loadSkin(skin);
-				return;
-			}
-		}
-
-		loadDefaultSkin();
+		loadSkin(getIncludedSkins().front());
 	}
 
 	jucePluginEditorLib::Editor* PluginEditorState::createEditor(const jucePluginEditorLib::Skin& _skin)
@@ -111,7 +89,6 @@ namespace mdJucePlugin
 				});
 			}));
 		}
-		addSysexEntries(m.items);
 		m.items.push_back(separator());
 
 		// What a developer or a bug report asks for: the performance captures, the Machinedrum's RAM recording mode
@@ -196,34 +173,6 @@ namespace mdJucePlugin
 			}, {}, std::abs(now - percent) < 0.5));
 		}
 		return submenu("window-size", "Window Size", std::move(sizes));
-	}
-
-	// The panel editor's SysEx transfer (upstream's skins; the editor page has its own import, deskSyx.js).
-	void PluginEditorState::addSysexEntries(std::vector<editorMenu::Item>& _items)
-	{
-		auto* const editor = dynamic_cast<Editor*>(getEditor());
-		if(!editor)
-			return;
-		const bool active = editor->isUserSysexTransferActive();
-		if(editor->canResumeUserSysexTransfer())
-			_items.push_back(editorMenu::action("sysex-resume", "Resume SysEx Transfer - machine is ready",
-				[editor] { editor->resumeUserSysexTransfer(); }));
-		const bool cancellable = editor->canCancelUserSysexTransfer();
-		_items.push_back(editorMenu::action("sysex", editor->getUserSysexMenuText(), [editor, cancellable]
-			{
-				if(cancellable)
-				{
-					editor->cancelUserSysexTransfer();
-					return;
-				}
-				// Defer the native picker until the menu's teardown has completed.
-				const auto lifetime = editor->getLifetimeToken();
-				juce::MessageManager::callAsync([lifetime, editor]
-				{
-					if(!lifetime.expired())
-						editor->chooseUserSysexFile();
-				});
-			}, {}, false, !active || cancellable));
 	}
 
 	// The same tree as an RmlUi menu: the menu bar and the native fallback show it (jucePluginEditorLib::toPopupMenu).

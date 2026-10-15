@@ -348,12 +348,6 @@ namespace mdJucePlugin
 			makeProcessorProperties(g_defaultModel).binaryData, std::string(_filename)).has_value();
 	}
 
-	juce::File AudioPluginAudioProcessor::getInstalledFactoryStorageImage() const
-	{
-		return juce::File(juce::String::fromUTF8(getDataFolder().c_str()))
-			.getChildFile("nvram").getChildFile("mm-factory-live3-be.bin");
-	}
-
 	juce::File AudioPluginAudioProcessor::getStorageRecoveryImage() const
 	{
 		return juce::File(juce::String::fromUTF8(getDataFolder().c_str()))
