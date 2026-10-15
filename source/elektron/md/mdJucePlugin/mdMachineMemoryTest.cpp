@@ -341,6 +341,21 @@ namespace
 		check(!sectorValid(model, 3), "MD: no firmware sector is ever saved");
 	}
 
+	// Each machine's memory shape: what the service looks at, chosen once
+	void shape()
+	{
+		const auto md = shapeOf(Model::Machinedrum), mm = shapeOf(Model::Monomachine);
+		check(md.model == Model::Machinedrum && mm.model == Model::Monomachine, "the shape names its machine");
+		check(mm.userFlash && !mm.sampleFlash, "MM: the user flash, no sample flash");
+		check(md.sampleFlash && !md.userFlash, "MD: the sample flash, no user flash");
+		check(md.firstSector == g_mdFirstSector && md.endSector == g_mdSectors, "MD: the sample sectors");
+		check(mm.firstSector == 0 && mm.endSector == g_mmSectors, "MM: every user flash sector");
+		for(const auto& s : {md, mm})
+			for(uint32_t i = s.firstSector; i < s.endSector; ++i)
+				if(!sectorValid(s.model, i))
+					check(false, "a shape's sectors are the machine's valid ones");
+	}
+
 	void start()
 	{
 		StartFacts f;
@@ -382,6 +397,7 @@ int main()
 	mergeOverlay();
 	start();
 	soon();
+	shape();
 	std::printf("mdMachineMemoryTest: %s\n", g_failures ? "FAIL" : "PASS");
 	return g_failures ? 1 : 0;
 }
