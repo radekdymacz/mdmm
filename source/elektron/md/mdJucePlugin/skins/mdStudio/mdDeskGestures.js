@@ -49,13 +49,19 @@ document.addEventListener("pointerup", () => { const d = Held.end("chop"); if (d
 
 /* ===== GEN and MUTATE values: dragged up or down (their clicks, wheel and arrows: shared/deskGenBar.js) ===== */
 document.addEventListener("pointerdown", e => { const v = e.target.closest(".gv[data-gv]"); if (!v || e.button !== 0) return; Held.begin("gv", { v, y: e.clientY, k: v.dataset.gv, acc: 0 }); delete v.dataset.dragged; grabPointer(v, e); });
+/* it ends wherever the button comes up: the bar's redraw drops the pointer capture, so the release can land outside
+   the window; a move with no button down, a cancelled pointer and leaving the window end it too (it holds renders) */
+function endGv() { const g = Held.end("gv"); if (!g) return; const k = g.k; setTimeout(() => { const n = document.querySelector(`.gv[data-gv="${k}"]`); if (n) delete n.dataset.dragged; }, 0); }
 document.addEventListener("pointermove", e => {
-	const g = Held.as("gv"); if (!g) return; const d = Math.trunc((g.y - e.clientY) / 6) - g.acc; if (!d) return;
+	const g = Held.as("gv"); if (!g) return; if (e.buttons === 0 && e.pointerType === "mouse") { endGv(); return; }
+	const d = Math.trunc((g.y - e.clientY) / 6) - g.acc; if (!d) return;
 	Held.with("gv", { acc: g.acc + d }); g.v.dataset.dragged = "1"; genVal(g.k, d * gvDragStep(g.k));
 	/* the bar was drawn again: the value's new element */
 	const n = document.querySelector(`.gv[data-gv="${g.k}"]`); if (n) { n.dataset.dragged = "1"; Held.with("gv", { v: n }); }
 });
-document.addEventListener("pointerup", () => { const g = Held.end("gv"); if (!g) return; const k = g.k; setTimeout(() => { const n = document.querySelector(`.gv[data-gv="${k}"]`); if (n) delete n.dataset.dragged; }, 0); });
+document.addEventListener("pointerup", endGv);
+document.addEventListener("pointercancel", endGv);
+addEventListener("blur", endGv);
 
 /* ===== Rotate (mdDeskComforts.js): the presses while Alt is down are one run, one undo step ===== */
 addEventListener("keyup", e => { if (e.key === "Alt") Held.end("rotate"); }, true);
@@ -290,6 +296,11 @@ window.addEventListener("blur", () => { if (Held.as("select")) endSelect(); });
 	b.addEventListener("pointermove", e => { const d = Held.as("bpm"); if (!d) return; if (e.buttons === 0 && e.pointerType === "mouse") { release(); return; } const v = d.v + (d.y - e.clientY) * (e.shiftKey ? .1 : .5);
 		if (d.late) { const t = clamp(Math.round(v * 10) / 10, 30, 300); if (t !== S.tempoDraft) { S.tempoDraft = t; renderTop(); } return; }
 		if (Math.abs(v - V.bpm) >= .05) set(v); });
+	/* as the GEN values: the release may land outside the button (its capture lost), or never come */
 	b.addEventListener("pointerup", () => release());
+	document.addEventListener("pointerup", () => { if (Held.as("bpm")) release(); });
+	document.addEventListener("pointercancel", () => { if (Held.as("bpm")) release(); });
+	document.addEventListener("pointermove", e => { if (Held.as("bpm") && e.buttons === 0 && e.pointerType === "mouse") release(); });
+	addEventListener("blur", () => { if (Held.as("bpm")) release(); });
 	b.addEventListener("keydown", e => { const k = { ArrowUp: 1, ArrowDown: -1 }[e.key]; if (!k) return; e.preventDefault(); set(V.bpm + k * (e.shiftKey ? .1 : 1)); });
 })();

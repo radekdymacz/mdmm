@@ -114,6 +114,18 @@ for (const kind of ["paint", "l2", "chop", "song", "lane", "value", "mutePaint",
 	P.Held.end(kind); run();
 	check(held && !P.pending && P.renders === before + 1, `${kind}: the render waits while it is held, and is made when it ends`);
 }
+/* the GEN value and tempo drags never stick (they hold renders): a cancelled pointer, leaving the window or a move with
+   no button down ends them, and the render they held is made */
+for (const [kind, where, type, e] of [["gv", "document", "pointercancel", {}], ["gv", "window", "blur", {}], ["gv", "document", "pointermove", { buttons: 0, pointerType: "mouse" }],
+	["bpm", "document", "pointercancel", {}], ["bpm", "window", "blur", {}], ["bpm", "document", "pointermove", { buttons: 0, pointerType: "mouse" }]]) {
+	run();
+	const before = P.renders;
+	P.Held.begin(kind, { k: "k", y: 0, acc: 0, v: 120 });
+	P.scheduleRender(); run();
+	const held = P.pending && P.renders === before;
+	fire(where, type, e); run();
+	check(held && !P.Held.now && !P.pending && P.renders === before + 1, `${kind}: ${type}${type === "pointermove" ? " with no button" : ""} ends it and makes the held render`);
+}
 /* a gesture with no render held meanwhile ends without a render of its own */
 run(); { const before = P.renders; P.Held.begin("gv", {}); P.Held.end("gv"); run(); check(P.renders === before, "a gesture with nothing held renders nothing when it ends"); }
 

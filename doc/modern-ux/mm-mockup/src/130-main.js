@@ -310,7 +310,9 @@ let bpmHeld=false;	/* the tempo is dragged: renders wait for it (busyNow) */
  const release=()=>{const was=d;d=null;bpmHeld=false;if(was&&was.late&&S.tempoDraft!=null){const v=S.tempoDraft;S.tempoDraft=null;setTempo(v)}else S.tempoDraft=null;showHeld()};
  b.addEventListener("pointermove",e=>{if(!d)return;if(e.buttons===0&&e.pointerType==="mouse"){release();return}const v=clamp(Math.round((d.v+(d.y-e.clientY)*(e.shiftKey?.1:.5))*10)/10,30,300);
   if(d.late){if(v!==S.tempoDraft){S.tempoDraft=v;renderTop()}return}S.bpm=v;if(HOST.tempo)HOST.tempo(S.bpm);renderTop();if(S.playing)restartClock()});
- b.addEventListener("pointerup",()=>release());b.addEventListener("keydown",e=>{const k={ArrowUp:1,ArrowDown:-1}[e.key];if(!k)return;e.preventDefault();if(tempoLocked())return;S.bpm=clamp(S.bpm+k*(e.shiftKey?.1:1),30,300);if(HOST.tempo)HOST.tempo(S.bpm);renderTop();if(S.playing)restartClock()})})();
+ /* the release may land outside the key (its capture lost) or never come: it holds renders (bpmHeld), so it ends on all of them */
+ b.addEventListener("pointerup",()=>release());document.addEventListener("pointerup",()=>{if(d)release()});document.addEventListener("pointercancel",()=>{if(d)release()});
+ document.addEventListener("pointermove",e=>{if(d&&e.buttons===0&&e.pointerType==="mouse")release()});addEventListener("blur",()=>{if(d)release()});b.addEventListener("keydown",e=>{const k={ArrowUp:1,ArrowDown:-1}[e.key];if(!k)return;e.preventDefault();if(tempoLocked())return;S.bpm=clamp(S.bpm+k*(e.shiftKey?.1:1),30,300);if(HOST.tempo)HOST.tempo(S.bpm);renderTop();if(S.playing)restartClock()})})();
 
 
 /* ===== Engine status (from the MD Editor v48): the LCD says what the engine is doing; editing waits until it is ready ===== */
