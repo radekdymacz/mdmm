@@ -262,7 +262,10 @@ function recorderOutOfMix(t, mix) {
 }
 const OUT_OF_MIX = "VOL 0: the recorder is out of the main mix while it samples it, or its own sound would go back into what it records. An input as the source gives VOL back.";
 function sourceOf(t) { const y = V.tracks[t].syn; const hit = SOURCES.find(([, , v]) => Object.keys(v).every(k => y[k] === v[k])); return hit ? hit[0] : "custom"; }
-function sourceSeg(t) { const cur = sourceOf(t); return `<span class="seg srcseg">${SOURCES.map(([id, label]) => `<button data-recsrc="${id}" data-t="${t}" aria-pressed="${cur === id}">${label}</button>`).join("")}</span>${cur === "custom" ? `<span class="note">custom levels</span>` : ""}`; }
+/* The Main mix key carries the VOL 0 hint as its tooltip (and a muted flag when the recorder is in the mix it samples), so the
+   source row sits in the card's header line and the faders of Source and Playback start on the same line. */
+const mixHint = t => !samplesMix(t) ? OUT_OF_MIX : V.tracks[t].rt.VOL === 0 ? "VOL 0: out of the main mix while it samples it. " + OUT_OF_MIX : "Samples the main mix and is in it: its own sound goes back into the recording. Main mix sets its VOL to 0.";
+function sourceSeg(t) { const cur = sourceOf(t); return `<span class="seg srcseg">${SOURCES.map(([id, label]) => `<button data-recsrc="${id}" data-t="${t}" aria-pressed="${cur === id}"${id === "main" ? ` title="${mixHint(t)}"${samplesMix(t) && V.tracks[t].rt.VOL !== 0 ? ' class="recmix"' : ""}` : ""}>${label}</button>`).join("")}</span>${cur === "custom" ? `<span class="note">custom levels</span>` : ""}`; }
 /* RAM-R LEN and RATE in the manual's units (A-15). LEN: "each parameter value is ¼ of step", 127 records
    2 bars (the tutorial: 64 = one bar); the time is at the pattern's tempo and speed. RATE: the manual says
    only that turning it down lowers the quality, 127 = maximum quality (the tutorial); it gives no rate per
@@ -312,7 +315,7 @@ function renderSampler() {
 		else {
 			if (S.chopTrack == null || !ps.includes(S.chopTrack)) S.chopTrack = ps[0] ?? null; const p = S.chopTrack, at = ["ram", n - 1], take = smpSlotOf("ram", n - 1);
 			const plays = ps.length ? ps.map(i => i + 1).join(", ") : "none";
-			const pTrigs = p != null ? V.tracks[p].trigs.slice(0, V.len).filter(Boolean).length : 0;
+			const pTrigs = p != null ? V.tracks[p].trigs.slice(0, V.len).filter(Boolean).length : 0; const tk = `${take ? (take.empty ? "empty: nothing recorded yet" : smpInfo(take)) : smpWhy(at) || "not read"} · ${pTrigs} trig${pTrigs === 1 ? "" : "s"}`.replace(/"/g, "&quot;");
 			/* the slot (its state, its take and audition key on one bar above the take), the steps (where the recorder
 			   records, where the player plays and from where), then the recorder's and the player's values side by side */
 			ram = true; h = `<section class="card ramtop"><header><h3>RAM ${n} · RAM-R${n} → RAM-P${n}</h3><span>record track ${r + 1} · play track ${plays}</span></header>
@@ -327,8 +330,8 @@ function renderSampler() {
      <div class="r" id="recon" data-r="${r}" style="grid-template-columns:${smpCols()}">${smpLab(r, "Record on", "rec")}${steps().map(s => `<button class="${stepCls(r, s)}" data-rc="${s}" aria-pressed="${V.tracks[r].trigs[s]}" aria-label="Record on step ${s + 1}"></button>`).join("")}</div>
      ${p != null ? `<div class="r" id="chop" data-p="${p}" style="grid-template-columns:${smpCols()}">${smpLab(p, "Chop")}${steps().map(s => `<button class="${stepCls(p, s)}" data-cp="${s}" aria-pressed="${V.tracks[p].trigs[s]}" aria-label="Chop step ${s + 1}">${chopInner(p, s)}</button>`).join("")}</div>` : `<div class="r" style="grid-template-columns:var(--srlab) minmax(0,1fr)"><span class="srlab"><b>Chop</b></span><div class="edblank">No track plays RAM-P${n}. Put RAM-P${n} on a track in Sound.</div></div>`}</div>
     <div class="seqfoot"><span></span><div class="legend"><span><i class="lg on"></i>Trig: click</span>${p != null ? `<span>Chop slice: drag up / down</span><span>Reverse: alt-click</span><span>Retrig: shift-click</span>` : ""}<span><i class="lg on lk"></i>Has locks</span></div>${pageCtl()}</div></section>
-   <div class="smp2"><section class="card"><header><h3>Source</h3><span>recorder · track ${r + 1}</span></header><div class="irow">${sourceSeg(r)}</div>${samplesMix(r) ? `<p class="note recmix" title="${OUT_OF_MIX}">${V.tracks[r].rt.VOL === 0 ? "VOL 0: out of the main mix while it samples it" : "Samples the main mix and is in it: its own sound goes back into the recording. Main mix sets its VOL to 0."}</p>` : ""}<div class="ctl four">${RAMR.map(k => pc("syn", k, { t: r, unit: k === "LEN" ? "len" : k === "RATE" ? "rate" : "" })).join("")}</div></section>
-    ${p != null ? `<section class="card"><header><h3>Playback</h3><span>player · track ${p + 1}</span></header><div class="irow"><span class="ilab">Take</span><span class="note pbtake">${take ? (take.empty ? "empty: nothing recorded yet" : smpInfo(take)) : smpWhy(at) || "not read"} · ${pTrigs} trig${pTrigs === 1 ? "" : "s"}</span></div><div class="ctl four">${SMPL.map(k => pc("syn", k, { t: p })).join("")}</div></section>` : ""}</div>`;
+   <div class="smp2"><section class="card"><header class="smph"><h3>Source</h3>${sourceSeg(r)}<span>recorder · track ${r + 1}</span></header><div class="ctl four">${RAMR.map(k => pc("syn", k, { t: r, unit: k === "LEN" ? "len" : k === "RATE" ? "rate" : "" })).join("")}</div></section>
+    ${p != null ? `<section class="card"><header class="smph"><h3>Playback</h3><span class="pbtake" title="${tk}"><span class="ilab">Take</span> ${tk}</span><span>player · track ${p + 1}</span></header><div class="ctl four">${SMPL.map(k => pc("syn", k, { t: p })).join("")}</div></section>` : ""}</div>`;
 		}
 	}
 	else {
