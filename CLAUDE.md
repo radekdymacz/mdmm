@@ -19,7 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current state
 
-0.6.0 was released on 2026-10-14. Next is 0.6.1. State and decisions: doc/release/PLAN-0.6.md (top: Radek's rule after 0.6; "Handover" is history). The feature data is doc/features/*.json (doc/features/README.md), the user guide doc/guide/ (README.md, STYLE.md), the gap design doc/modern-ux/DESIGN-machine-menus.md with its wave plan doc/modern-ux/PLAN-manual-gaps.md.
+0.6.0 was released on 2026-10-14. 0.7.0 is being cut on release/0.7.0 (2026-10-15); B-133 still open. State and decisions: doc/release/PLAN-0.6.md (top: Radek's rule after 0.6; "Handover" is history). The feature data is doc/features/*.json (doc/features/README.md), the user guide doc/guide/ (README.md, STYLE.md), the gap design doc/modern-ux/DESIGN-machine-menus.md with its wave plan doc/modern-ux/PLAN-manual-gaps.md.
 
 ## Sister product: xox-plocks
 
