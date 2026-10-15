@@ -123,9 +123,9 @@ jobs:
 
       - name: Build and run panel input delivery regression
         run: |
-          cmake --build build-mdmm-core --parallel 4 --target mdLibTest mdShiftPanelLatchTest
+          cmake --build build-mdmm-core --parallel 4 --target mdLibTest
           ctest --test-dir build-mdmm-core -C Release --output-on-failure \
-            --no-tests=error --tests-regex '^(mdLibTests|mdShiftPanelLatchTest|mdEncoderPressFirmwareTest|mmEncoderPressFirmwareTest)$'
+            --no-tests=error --tests-regex '^(mdLibTests|mdEncoderPressFirmwareTest|mmEncoderPressFirmwareTest)$'
 
       - name: Build and run enabled transport diagnostics gates
         if: matrix.mode == 'transport-diagnostics'
@@ -164,7 +164,6 @@ jobs:
           midiOutputDispatcherTest
           mdAutomationParameterTest
           mdAutomationRobustnessTest
-          mdFrontPanelPresentationTest
           mdAudioIoLayoutTest
           mdProcessorHooksTest
           mdWindowsPolicyTest
@@ -216,10 +215,4 @@ jobs:
           ctest --test-dir build-mdmm-core -C Release --output-on-failure
           --no-tests=error
           --tests-regex
-          '^(midiOutputDispatcherTest|mdAutomationParameterTest|mdAutomationArchitectureTest|mdAudioIoLayoutTest|mdProcessorHooksTest|mdFrontPanelPresentationTests|mdWindowsPolicyTest|mdMachineMidiOutTest|mdProcessArchTest|mdRosettaNoticeTest|mdDroppedFilesTest|deskDropPageTest)$'
-
-      - name: Build and run Shift panel chording regression
-        run: |
-          cmake --build build-mdmm-core --parallel 4 --target mdShiftPanelLatchTest
-          ctest --test-dir build-mdmm-core -C Release --output-on-failure \
-            --no-tests=error --tests-regex '^mdShiftPanelLatchTest$'
+          '^(midiOutputDispatcherTest|mdAutomationParameterTest|mdAutomationArchitectureTest|mdAudioIoLayoutTest|mdProcessorHooksTest|mdWindowsPolicyTest|mdMachineMidiOutTest|mdProcessArchTest|mdRosettaNoticeTest|mdDroppedFilesTest|deskDropPageTest)$'

@@ -5,30 +5,10 @@
 
 #include "juce_events/juce_events.h"
 
-#include <string_view>
-
 namespace mdJucePlugin
 {
 	namespace
 	{
-		// The HTML studio editor (P0) instead of the panel editor.
-		constexpr bool isStudioSkin(const std::string_view _displayName, const std::string_view _filename)
-		{
-			return _displayName == "mdStudio" || _filename == "mdStudio.rml";
-		}
-
-		// The Monomachine Editor page (MM-P2) instead of the panel editor.
-		constexpr bool isMmStudioSkin(const std::string_view _displayName, const std::string_view _filename)
-		{
-			return _displayName == "mmStudio" || _filename == "mmStudio.rml";
-		}
-
-		bool isMonomachine(const jucePluginEditorLib::Processor& _processor)
-		{
-			const auto* p = dynamic_cast<const AudioPluginAudioProcessor*>(&_processor);
-			return p && p->getModel() == md::MachineModel::Monomachine;
-		}
-
 #if MDMM_DIAGNOSTICS
 		// GEARMULATOR_MDSTUDIO_SELFTEST=p5skin: switch skins live through the same call the
 		// Editor > Skins menu makes, and log the editor each time (P5). Diagnostics builds only.
@@ -47,7 +27,7 @@ namespace mdJucePlugin
 				auto* e = state->getEditor();
 				auto* ui = state->getUiRoot();
 				logLine(_what + ": current skin \"" + juce::String(state->getCurrentSkin().displayName) + "\" (" + juce::String(state->getCurrentSkin().filename)
-					+ "), editor " + (dynamic_cast<PageEditor*>(e) ? "Machinedrum Editor page" : e ? "panel" : "none")
+					+ "), editor " + (dynamic_cast<PageEditor*>(e) ? "editor page" : "none")
 					+ (ui ? ", " + juce::String(ui->getWidth()) + " x " + juce::String(ui->getHeight()) : juce::String()));
 			};
 			juce::String names;
@@ -81,14 +61,12 @@ namespace mdJucePlugin
 	}
 
 	jucePluginEditorLib::Editor* createEditorPage(jucePluginEditorLib::PluginEditorState& _state,
-		jucePluginEditorLib::Processor& _processor, const jucePluginEditorLib::Skin& _skin)
+		jucePluginEditorLib::Processor& _processor, const jucePluginEditorLib::Skin&)
 	{
 		// No licence notice to accept: upstream's "I Agree" box (Editor::showDisclaimer) is a native alert,
 		// and the editors show none. Its config value is what it reads, and the editor's constructor
 		// reads it, so it is set before the editor is made.
 		_processor.getConfig().setValue("disclaimerSeen", true);
-		const auto& page = _state.getIncludedSkins().front();
-		const bool own = isMonomachine(_processor) ? isMmStudioSkin(_skin.displayName, _skin.filename) : isStudioSkin(_skin.displayName, _skin.filename);
-		return new PageEditor(_processor, own ? _skin : page);
+		return new PageEditor(_processor, _state.getIncludedSkins().front());
 	}
 }
