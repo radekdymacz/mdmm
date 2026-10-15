@@ -456,14 +456,14 @@ const MmJourneys = (() => {
 			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(kitT(0) === c.k0, "kit not back"), screen: c => ok(S().tracks[0].m === c.m0, "view " + S().tracks[0].m), within: 10000 }
 		]
 	};
-	/* MM-X25: Revert track on the Sound page: the track goes back as the kit's slot stores it, one undo step */
+	/* MM-X25: Clear (was Revert track) on the Sound page: the track goes back as the kit's slot stores it, one undo step */
 	const storedPages = t => JSON.stringify(I().doc("kit", machine().kit?.current)?.tracks[t]?.pages?.slice(0, 7));
 	const revertTrackJ = {
 		name: "mm-sound-revert-track", proves: ["MM-X25"],
 		steps: [
 			go("sound"), sel(0),
-			{ say: "the Revert track key is there and off: the track is as its slot stores it",
-				screen: () => ok(!!$1("#revert") && $1("#revert").disabled && /stores it/.test($1("#revert").title), "key " + $1("#revert")?.disabled + " " + $1("#revert")?.title) },
+			{ say: "the Clear key is there and off: the track is as its slot stores it",
+				screen: () => ok(!!$1("#revert") && $1("#revert").disabled && /saved sound/.test($1("#revert").title), "key " + $1("#revert")?.disabled + " " + $1("#revert")?.title) },
 			{ say: "drag a value of the track: the key turns on", act: async (u, c) => {
 				const el = $1('#main .pc[data-g="FLT"]') || $1('#main .pc[data-g="AMP"]'); if (!el) throw new Error("no FLT or AMP value");
 				c.g = el.dataset.g; c.i = +el.dataset.n; c.pg = PAGES.indexOf(c.g); c.q = `#main .pc[data-g="${c.g}"][data-n="${c.i}"]`;
@@ -471,7 +471,7 @@ const MmJourneys = (() => {
 				await u.drag(c.q, [[d * 6, 0], [d * 12, 0], [d * 18, 0], [d * 24, 0], [d * 30, 0]]);
 				await until(() => wk().tracks[0].pages[c.pg][c.i] !== c.v0, 6000); c.v1 = wk().tracks[0].pages[c.pg][c.i]; c.h0 = histN(); },
 				screen: () => ok(!$1("#revert").disabled, "key still off"), machine: c => ok(c.v1 !== c.v0 && storedPages(0) === c.stored, `value ${c.v0} -> ${c.v1}`), within: 8000 },
-			{ say: "click Revert track: the value is the slot's, the slot is untouched, the key is off, one undo step more", act: u => u.click("#revert"),
+			{ say: "click Clear: the value is the slot's, the slot is untouched, the key is off, one undo step more", act: u => u.click("#revert"),
 				screen: () => ok($1("#revert").disabled, "key still on"),
 				machine: c => ok(wk().tracks[0].pages[c.pg][c.i] === c.v0 && allKit() === c.all0 && storedPages(0) === c.stored && histN() === c.h0 + 1, `value ${wk().tracks[0].pages[c.pg][c.i]} for ${c.v0}, undo steps ${histN()} for ${c.h0 + 1}`), within: 8000 },
 			{ say: "press Cmd+Z once: the edit is back and the key is on again", act: u => { blur(); u.key("z", { cmd: true }); },
