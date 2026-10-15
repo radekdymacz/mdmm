@@ -491,7 +491,16 @@ namespace mdJucePlugin
 			p.saveSetup = [this](const Value& _setup) { m_setup.save(_setup); };
 			// After the page's ready the plug-in publishes its own document too, and the host's tempo and the held notes
 			// again, and the machine memory's state.
-			p.ready = [this] { m_learn.publish(); m_hostTempo = {}; m_midiHeld = {}; m_memorySeen = 0; };
+			p.ready = [this]
+			{
+				m_learn.publish();
+				m_hostTempo = {};
+				m_midiHeld = {};
+				m_memorySeen = 0;
+				if(m_setupNotice)
+					toPage(*m_setupNotice);
+				m_setupNotice.reset();
+			};
 			return p;
 		}
 
@@ -501,12 +510,35 @@ namespace mdJucePlugin
 				loadSetup(*text);
 		}
 
-		// The editor's setup from the project, or the model's default when the project has none.
+		// The editor's setup from the project, or the model's default when the project has none. The desk takes what it
+		// can use (a newer editor's setup, a damaged one) and the default for the rest, never the previous project's; what
+		// it left out is logged and said to the page (at once, or when the page is ready).
 		void loadSetup(const std::string& _text)
 		{
-			const auto doc = _text.empty() ? m_defaultSetup : elektronData::json::parse(_text);
-			if(doc)
-				m_desk->loadSetup(*doc);
+			std::vector<std::string> errors;
+			auto doc = _text.empty() ? m_defaultSetup : elektronData::json::parse(_text);
+			if(!doc)
+			{
+				errors.emplace_back("$: not JSON; the default setup is used");
+				doc = m_defaultSetup ? *m_defaultSetup : Value::object();
+			}
+			const auto more = m_desk->loadSetup(*doc);
+			errors.insert(errors.end(), more.begin(), more.end());
+			m_setupNotice.reset();
+			if(errors.empty())
+				return;
+			std::string text = "The project's editor setup was written by a newer editor or is damaged: what this version cannot read was left out or reset (";
+			for(size_t i = 0; i < errors.size() && i < 3; ++i)
+				text += (i ? "; " : "") + errors[i];
+			text += errors.size() > 3 ? "; ...)." : ").";
+			log("setup: " + text);
+			Value m = Value::object();
+			m.set("type", "error");
+			m.set("message", text);
+			if(m_desk->pageSeen())
+				toPage(m);
+			else
+				m_setupNotice = std::move(m);
 		}
 
 		std::vector<deskCore::EngineChoice> choices() const
@@ -627,6 +659,7 @@ namespace mdJucePlugin
 		const Record* m_record = &m_engines.front();
 		SetupStore m_setup;
 		std::optional<Value> m_defaultSetup;
+		std::optional<Value> m_setupNotice;	// what the project's setup lacked, for a page that was not up yet
 		MidiLearnCommands m_learn;
 		PageSpec m_page;
 		std::unique_ptr<EngineT> m_engine;
