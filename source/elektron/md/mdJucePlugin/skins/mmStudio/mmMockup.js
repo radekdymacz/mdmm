@@ -3382,8 +3382,7 @@ function renderSeq(){const t=S.sel,tr=trk(t),midi=isMidiT(t);dockOf(t);
   <div class="nlane big"><canvas class="roll" data-ed="lane" data-t="${t}" data-big="1" title="${ROLL_TIP(t)}" aria-label="${ROLL_TIP(t)}"></canvas></div>
   ${midi?`<div class="tlanes" id="tlanes"><div class="tlane env" style="grid-template-columns:${cols()}" title="Velocity per note (VEL, lockable)"><span class="tlab">VEL</span>${steps().map(s=>{const st=tr.steps[s];const v=st&&!st.off?velOf(t,s):null;return`<span class="tc envc ${gapC(s)} ${v==null?"na":""} ${cellSel(s)}" data-s="${s}">${v!=null?`<i class="velbar" style="--v:${v/127*100}%" title="VEL ${v}"></i>`:""}</span>`}).join("")}</div></div>`:""}</div></div>
  ${genBarHtml()}
- <div class="lanewrap"><div class="lanetop">${S.dock==="locks"?`<span class="cap">Lock lane · ${tLabel(t)} ${midi?"CH"+String(tr.ch).padStart(2,"0"):tr.m} · <b id="lanename">${pidLabel(t,S.lane)}</b> <span class="lanescale" id="lanescale"></span></span>
-  <span class="lockbudget" id="lockbudget"></span>`:(()=>{const[h,hl]=dockHelp(t,S.dock);return`<span class="cap">${DOCKN[S.dock]} · ${tLabel(t)} ${midi?"CH"+String(tr.ch).padStart(2,"0"):tr.m}</span><span class="lockbudget dkread" id="dkread">${dockRead(t,S.dock)}</span><span class="lanehelp dkhelp" title="${dkAttr(hl)}">${h}</span>`})()}${dockTabs(t)}</div>
+ <div class="lanewrap"><div class="lanetop">${dockTabs(t)}${S.dock==="locks"?`<span class="lockbudget" id="lockbudget"></span>${laneToolsHtml()}`:(()=>{const[h,hl]=dockHelp(t,S.dock);return`<span class="lockbudget dkread" id="dkread">${dockRead(t,S.dock)}</span><span class="lanehelp dkhelp" title="${dkAttr(hl)}">${h}</span>`})()}</div>
   ${S.dock==="locks"?dockBody(t):`<div class="dockbody" id="dock">${dockBody(t)}</div>`}</div>`;
  $("#main").innerHTML=h;document.body.classList.toggle("dockother",S.dock!=="locks");genDraw();fitLane();renderLane();syncScroll();syncControls();alignLock();syncLockBudget();markRecLock();stepDraw()}
 /* as in the MD Editor: the rail's LOCK PARAMETER block starts on the line above the lock lane (the lane's top border, under the GEN bar) and ends at its bottom edge */
@@ -3391,8 +3390,8 @@ function alignLock(){const rp=$("#rail .railparams"),lt=$(".lanetop"),ls=$("#lan
  const roll=$("#seq canvas.roll[data-big]"),tb=rp.querySelector(".pagetabs");
  const size=()=>{rp.style.marginTop="0px";rp.style.height="auto";const sf=$("#main>.lanewrap"),dy=(sf?sf.getBoundingClientRect().top:lt.getBoundingClientRect().top)-rp.getBoundingClientRect().top;
   rp.style.marginTop=Math.max(0,dy)+"px";rp.style.height=Math.max(0,ls.getBoundingClientRect().bottom-rp.getBoundingClientRect().top)+"px";titles()};
- /* the lane's title sits on the LOCK PARAMETER title's line */
- const titles=()=>{const a=rp.querySelector(".rphead .cap"),b=lt.querySelector(".cap");if(!a||!b)return;const c=e=>{const q=e.getBoundingClientRect();return q.top+q.height/2};lt.style.marginTop="0px";const d=c(a)-c(b);if(Math.abs(d)>.5)lt.style.marginTop=d+"px"};
+ /* the lane's tabs sit on the LOCK PARAMETER title's line */
+ const titles=()=>{const a=rp.querySelector(".rphead .cap"),b=lt.querySelector(".docktabs");if(!a||!b)return;const c=e=>{const q=e.getBoundingClientRect();return q.top+q.height/2};lt.style.marginTop="0px";const d=c(a)-c(b);if(Math.abs(d)>.5)lt.style.marginTop=d+"px"};
  const gap=()=>tb?tb.getBoundingClientRect().top-ls.getBoundingClientRect().top:0;
  /* the lock lane is as tall as the LOCK PARAMETER keys; the space above them goes to the piano roll, which pushes the lane down */
  ls.style.marginTop="0px";if(roll)roll.style.removeProperty("height");size();
@@ -3661,7 +3660,7 @@ function clearTrackLocks(t){const n=trackLockPids(t).length;[...S.locks.keys()].
 
 /* ---- the lock budget over the lock lane: the machine's 62 locked parameters in a pattern, pooled over all
    twelve tracks (manual 1-58), as the LCD's meter (dark from 52, blinking at 62) ---- */
-function syncLockBudget(){const el=$("#lockbudget");if(!el)return;const n=S.locks.size;el.className="lockbudget"+(n>=62?" full":n>=52?" warn":"");el.innerHTML=`<b>${n}</b> / 62 locked parameters`;
+function syncLockBudget(){const el=$("#lockbudget");if(!el)return;const n=S.locks.size;el.className="lockbudget"+(n>=62?" full":n>=52?" warn":"");el.innerHTML=`<b>${n}</b>/62`;
  el.title=`The Monomachine holds 62 locked parameters in a pattern, over all twelve tracks (a track and a parameter with any lock counts once). ${n} in use, ${62-n} left.${n>=62?" Clear a lane before you lock a new parameter.":""}`}
 
 /* ---- rotate: Alt + Left / Right (FUNCTION + arrows on the machine) moves the selected track's steps, slides
@@ -3895,8 +3894,8 @@ function genNotesHtml(sp,t){const n=sp.notes;if(!n||sp.kind==="keep"||isMidiT(t)
 /* the step gestures behind a small ? key (a click: the list of keys) */
 function stepLegend(){const midi=isMidiT(S.sel),row=(cls,what,how)=>`<span>${cls!=null?`<i class="lg on ${cls}"></i>`:`<i class="lg none"></i>`}<b>${what}</b>${how}</span>`;
  return`<span class="steplegend"><button class="glegkey" id="steplegend" aria-label="Step gestures" aria-describedby="steplegpop">?</button><span class="legend glegpop" id="steplegpop" role="tooltip">${row("","Note","click in the roll; drag up or down for pitch, sideways to paint (alt: erase)")}${midi?"":row("g","Trigless","no envelope trigs (the ENV row)")}${row("y","Note off","alt-click an empty step")}${row("lk","Has locks","a lock on the step")}${row(null,"Fill","⌘-click: every 2nd step from there to the end gets the note (from a note: off); ⌘⇧-click: every 4th")}<small>? the list of keys</small></span></span>`}
-/* the bar under the roll: the step legend, the roll's keys, the lane toolbox in the room the GEN bar left (only over the lock lane), the page keys */
-function genBarHtml(){return`<div class="genbar">${stepLegend()}${rollKeysHtml()}${S.dock==="locks"?laneToolsHtml():""}${pageKeys()}</div>`}
+/* the bar under the roll: the step legend, the roll's keys, the page keys (the lane toolbox is on the lock lane's header row, 70-seq.js) */
+function genBarHtml(){return`<div class="genbar">${stepLegend()}${rollKeysHtml()}${pageKeys()}</div>`}
 /* ===== The GEN dialog (Radek, 2026-10-14; the Machinedrum Editor's mdDeskGenUi.js has the same one). Opened by the dice key of a track
    in the rail; it fills that track. One session: opening it starts one, DONE (Enter) keeps what it wrote, CANCEL (Esc) takes it back
    (Undo, once for each run the session made: a run is one undo step, and the session has one run for each track it was on). The
