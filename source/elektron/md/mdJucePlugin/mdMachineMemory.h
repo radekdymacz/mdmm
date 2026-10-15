@@ -4,8 +4,8 @@
 // memory (doc/modern-ux/DESIGN-machine-memory.md). The file is a store of SAVED SLOTS: each save writes only the slots
 // it changed into it (read, merge, write), never the whole memory; a session with no project state starts from factory
 // memory (or the standalone's own) with the file's slots laid over it. Pure: the slot layout of each machine's patch
-// RAM, the file's frame, what changed, when to write and how a session starts. The processor reads and writes the file
-// and runs the watch on its "machine memory" thread (mdPluginProcessor.cpp); mdMachineMemoryTest.
+// RAM, the file's frame, what changed, when to write and how a session starts. MachineMemoryService reads and writes the
+// file and runs the watch on its "machine memory" thread (mdMachineMemoryService.h); mdMachineMemoryTest.
 
 #include "mdLib/mdstate.h"
 #include "mdLib/mdtypes.h"
