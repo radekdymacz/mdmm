@@ -3043,8 +3043,11 @@ const MdJourneys = (() => {
 		steps: [
 			go("seq"),
 			{ say: "pick a pattern with no trigs in the pattern chooser", within: 20000,
-				act: async (u, c) => { await until(() => Object.keys(Docs.patterns).length >= 128, 30000); c.p0 = currentPatternSlot(); c.p = emptyPatternSlot(); if (c.p == null) throw new Error("no empty pattern"); await keep(c, "pattern", c.p);
-					u.click("#pat"); await until(() => $all("#libpop .ps").length === 128, 4000); u.click(psq(c.p)); await confirmIfAsked(u); if (!$1("#libpop").hidden) u.key("Escape"); },
+				act: async (u, c) => { await until(() => Object.keys(Docs.patterns).length >= 128, 30000); c.p0 = currentPatternSlot(); c.p = emptyPatternSlot(); c.own = c.p == null;
+					/* the factory memory may hold no empty pattern: then it clears one of its own (kept first, so the tidy puts it back) */
+					if (c.own) c.p = [...Array(128).keys()].find(p => Docs.patterns[p] && p !== c.p0) ?? c.p0; if (c.p == null) throw new Error("no pattern to use"); await keep(c, "pattern", c.p);
+					u.click("#pat"); await until(() => $all("#libpop .ps").length === 128, 4000); u.click(psq(c.p)); await confirmIfAsked(u); if (!$1("#libpop").hidden) u.key("Escape");
+					if (c.own) { await until(() => currentPatternSlot() === c.p, 8000); document.activeElement?.blur?.(); u.key("Delete", { alt: true }); await until(() => !hasTrigs(c.p) && idle(), 8000); await sleep(1500); } },
 				machine: c => ok(currentPatternSlot() === c.p && !hasTrigs(c.p), "pattern " + currentPatternSlot()) },
 			sel(() => soundTrack()),
 			{ say: "click four steps on that track", act: async (u, c) => { c.steps = [0, 4, 8, 12]; for (const s of c.steps) { u.click(cell(c.t, s)); await sleep(150); } await sleep(300); Journey.snapshot("md-real-sequence-drawn"); },
