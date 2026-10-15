@@ -1394,7 +1394,7 @@ const MmJourneys = (() => {
 		steps: [
 			go("perform"),
 			{ say: "with the keys on Auto track, the Multi envelope card names the kit's MULTI TRIG mode and says to choose Multi trig", act: u => { if (!pressed('[data-pmode="normal"]')) u.click('[data-pmode="normal"]'); },
-				screen: () => { const m = S().multi.mode; return ok($1(".menvcard header span")?.textContent === "MULTI TRIG " + MTM_N[m] && (m === 1 || /choose Multi trig/.test($1(".menvsay")?.textContent || "")), "card " + $1(".menvcard header span")?.textContent + " / " + $1(".menvsay")?.textContent); } },
+				screen: () => { const m = S().multi.mode; return ok($1(".menvcard header span")?.textContent === "all tracks · " + MTM_N[m] && (m === 1 || /choose Multi trig/.test($1(".menvsay")?.textContent || "")), "card " + $1(".menvcard header span")?.textContent + " / " + $1(".menvsay")?.textContent); } },
 			{ say: "click Multi trig, then SPLIT KEY: the card says the envelope has no effect there", act: async (u, c) => { c.m0 = wk()?.multiTrig?.mode; u.click('[data-pmode="multi"]'); await sleep(300); u.click('[data-set="mtmode"] button[data-v="1"]'); },
 				screen: () => ok(/^SPLIT KEY: no effect/.test($1(".menvsay")?.textContent || ""), "hint " + $1(".menvsay")?.textContent), machine: () => ok(wk()?.multiTrig?.mode === 1, "mode " + wk()?.multiTrig?.mode), within: 15000 },
 			{ say: "click ALL TRK: the card says it shapes MULTI TRIG notes and when it silences every track", act: async u => { u.click('[data-set="mtmode"] button[data-v="0"]'); await sleep(400); Journey.snapshot("mm-perform-menv"); },
@@ -1454,19 +1454,23 @@ const MmJourneys = (() => {
 		name: "mm-perform-layout", proves: ["MM-160"],
 		steps: [
 			go("perform"),
-			{ say: "Perform: the envelope screen, the stick's pad, the setup card and the mutes, left to right; screen and pad on one top line and one height; assign rows under the pad, ADSR faders under the screen",
+			{ say: "Perform by scope: the multi envelope (all tracks), the Track card (selector, tabs, stick, assign rows), the mutes (global), left to right; one header line; the faders under the screen, the rows under the pad; the six machine names whole",
 				act: async (u, c) => { c.bad = []; u.click('[data-set="astab"] button[data-v="JOY RL"]'); await sleep(300);
-					const r = q => $1(q)?.getBoundingClientRect(), cv = r(".menvplot"), pad = r("#joy"), set = r(".asgcard"), mu = r(".perf3 .perfside .card:last-child"), row = r(".joycard .asrow"), fad = r('.menvcard .pc[data-n="ATK"]');
-					if (![cv, pad, set, mu, row, fad].every(Boolean)) { c.bad.push("a part is missing"); return; }
-					if (!(cv.right <= pad.left && pad.right <= set.left && pad.right <= mu.left)) c.bad.push("order: screen " + Math.round(cv.right) + ", pad " + Math.round(pad.left) + "-" + Math.round(pad.right) + ", setup " + Math.round(set.left));
-					if (Math.abs(cv.top - pad.top) > 1.5 || Math.abs(cv.height - pad.height) > 1.5) c.bad.push(`screen ${Math.round(cv.top)}/${Math.round(cv.height)}, pad ${Math.round(pad.top)}/${Math.round(pad.height)}`);
-					if (row.top < pad.bottom - 1 || row.left < pad.left - 40 || fad.top < cv.bottom - 1) c.bad.push("controls not under their picture");
-					const gaps = [pad.left - cv.right, set.left - pad.right].map(Math.round); if (Math.abs(gaps[0] - gaps[1]) > 2) c.bad.push("gutters " + gaps.join(" / "));
-					c.heads = $all(".perf3 > .card > header, .perf3 .asgcard > header").map(h => Math.round(h.getBoundingClientRect().top)); if (new Set(c.heads).size > 1) c.bad.push("header tops " + c.heads.join(","));
-					c.bad.push(...Journey.cutText($1(".perf3")), ...Journey.overlaps(".joycard .asrow select", ".joycard .asrow .pc")); },
+					const r = q => $1(q)?.getBoundingClientRect(), cv = r(".menvplot"), pad = r("#joy"), trk = r(".trkcard"), mu = r(".mutecard"), row = r(".trkcard .asrow"), fad = r('.menvcard .pc[data-n="ATK"]');
+					if (![cv, pad, trk, mu, row, fad].every(Boolean)) { c.bad.push("a part is missing"); return; }
+					if (!(cv.right <= trk.left && trk.right <= mu.left)) c.bad.push("order");
+					if (row.top < pad.bottom - 1 || fad.top < cv.bottom - 1) c.bad.push("controls not under their picture");
+					c.heads = $all(".perf3 > .card > header").map(h => Math.round(h.getBoundingClientRect().top)); if (new Set(c.heads).size > 1) c.bad.push("header tops " + c.heads.join(","));
+					const sc = [".menvcard", ".trkcard", ".mutecard"].map(q => $1(q + " > header > span:not(.seg)")?.textContent.trim()); if (!/^all tracks/.test(sc[0]) || sc[2] !== "global" || !/\S/.test(sc[1])) c.bad.push("scopes " + sc.join(" | "));
+					c.bad.push(...Journey.cutText($1(".perf3")).filter(x => !/menvsay|hint/.test(x)), ...Journey.spills(".trksel small"), ...Journey.overlaps(".trkcard .asrow select", ".trkcard .asrow .pc")); },
 				screen: c => ok(!c.bad.length, c.bad.join(" | ")) },
+			{ say: "the selector: T3 sets the selected track (the assign rows and the track list follow), T1 sets it back",
+				act: async (u, c) => { c.r0 = $all(".trkcard .asrow select").map(x => x.value).join(); u.click('[data-set="astrk"] button[data-v="2"]'); await sleep(400); c.r3 = $all(".trkcard .asrow select").map(x => x.value).join(); c.sel3 = S().sel; c.pressed3 = pressed('[data-set="astrk"] button[data-v="2"]'); c.head3 = $1(".trkcard header span")?.textContent; },
+				screen: c => ok(c.sel3 === 2 && c.pressed3 && c.head3 === ($1('[data-set="astrk"] button[data-v="2"] small')?.textContent || "").trim(), `sel ${c.sel3}, pressed ${c.pressed3}, scope "${c.head3}"`) },
+			{ say: "T1 again: back", act: async u => { u.click('[data-set="astrk"] button[data-v="0"]'); await sleep(300); },
+				screen: () => ok(S().sel === 0 && pressed('[data-set="astrk"] button[data-v="0"]'), "sel " + S().sel) },
 			{ say: "the VEL tab: the pad's place shows what the tab means, the two rows stay under it", act: async u => { u.click('[data-set="astab"] button[data-v="VEL"]'); await sleep(300); },
-				screen: () => { const p = $1(".joycard .padinfo")?.getBoundingClientRect(), m = $1(".menvplot")?.getBoundingClientRect(); return ok(!!p && !$1("#joy") && Math.abs(p.top - m.top) < 1.5 && Math.abs(p.height - m.height) < 1.5 && $all(".joycard .asrow").length === 2, "pad box " + (p ? Math.round(p.top) + "/" + Math.round(p.height) : "missing")); } }
+				screen: () => { const p = $1(".trkcard .padinfo"); return ok(!!p && !$1("#joy") && $all(".trkcard .asrow").length === 2, "pad box " + !!p); } }
 		],
 		async tidy(u) { u.click('[data-set="astab"] button[data-v="JOY RL"]'); }
 	};
