@@ -109,7 +109,7 @@ function tempoLocked(){if(!S.hostTempo)return false;toast("The DAW sets the temp
 function ref(el){const d=el.dataset,t=d.t!=null?+d.t:S.sel,tr=trk(t),g=d.g;
  if(PAGES.includes(g)||g==="MID")return[tr.v[g],+d.n,meta(t,g,+d.n),t,g];
  switch(g){case"lev":return[tr,"lev",{name:"LEV",max:127},t,g];case"menv":return[S.menv,d.n,{name:d.n,max:127},t,g];
-  case"arp":return[tr.arp,d.n,{name:d.n,...{SPD:{max:127},RNGE:{en:["—",...Array.from({length:9},(_,k)=>(k+1)+" OCT")]},OJMP:{max:15}}[d.n]},t,g];
+  case"arp":return[tr.arp,d.n,{name:d.n,...{SPD:{max:127},RNGE:{en:["—",...Array.from({length:9},(_,k)=>(k+1)+" OCT")]},OJMP:{max:15},len:{max:16,def:8}}[d.n]},t,g];
   case"trn":return[tr.tr,"TRACK",{name:"TRACK",max:127,signed:1},t,g];case"ptrn":return[S,"patTrn",{name:"PAT",max:127,signed:1},t,g];
   case"key":return[tr.tr,"KEY",{name:"KEY",en:KEYS},t,g];
   case"asg":{const r=tr.assign.tabs[S.asTab][+d.n];return[r,"add",{name:"ADD",max:127,signed:1},t,g]}
@@ -125,17 +125,18 @@ const getV=el=>{const[o,n]=ref(el);return o[n]};
 function controlAll(t0,g,i,d){for(let t=0;t<6;t++){if(t===t0)continue;const tr=trk(t);if(g==="SYN"&&!MACH[tr.m].p[i])continue;tr.v[g][i]=clamp(tr.v[g][i]+d,0,maxOf(meta(t,g,i)))}}
 function pagesCopy(t){const v=trk(t).v,o={};PAGES.forEach(pg=>o[pg]=[...v[pg]]);return o}
 function controlAllFrom(t0,before){PAGES.forEach(pg=>trk(t0).v[pg].forEach((x,i)=>{if(x!==before[pg][i])controlAll(t0,pg,i,x-before[pg][i])}))}
-function setV(el,v){const[o,n,m,t,g]=ref(el);v=clamp(Math.round(v),0,maxOf(m));if(o[n]===v)return;const d=v-o[n];o[n]=v;
+function setV(el,v){const[o,n,m,t,g]=ref(el);v=clamp(Math.round(v),g==="arp"&&n==="len"?1:0,maxOf(m));if(o[n]===v)return;const d=v-o[n];o[n]=v;
  if(PAGES.includes(g)||g==="MID"){const all=drag&&drag.all&&drag.el===el&&PAGES.includes(g),before={};if(all)for(let k=0;k<6;k++)if(k!==t)before[k]=pagesCopy(k);
   edit("param",{t,page:g==="MID"?7:PAGES.indexOf(g),i:+n,v});if(all){controlAll(t,g,+n,d);editParams(before)}}
  else if(g==="lev")edit("level",{t,v});
- else if(g==="arp")edit("arp",n==="SPD"?{t,field:"speed",v:clamp(v-1,0,127)}:n==="RNGE"?{t,field:"range",v:clamp(v-1,0,8)}:{t,field:"ojmp",v});
+ else if(g==="arp")edit("arp",n==="SPD"?{t,field:"speed",v:clamp(v-1,0,127)}:n==="RNGE"?{t,field:"range",v:clamp(v-1,0,8)}:n==="len"?{t,field:"length",v}:{t,field:"ojmp",v});
  else if(g==="trn")edit("transpose",{t,v:v-64});else if(g==="ptrn")edit("transpose",{v:v-64});else if(g==="key")edit("transpose",{t,key:v});
  else if(g==="cc")edit("midiTrack",{t:t-6,cc:[...trk(t).cc]});
  else if(g==="menv")edit("multiEnv",{i:["ATK","DEC","SUS","REL","PORT"].indexOf(n),v});
  else if(g==="asg")edit("assign",{t:asgT(),src:ASRC[S.asTab],row:+el.dataset.n,add:v-64});
  else if(g==="src"||g==="link")ctlChanged();else if(g==="mmap")edit("multiMap",{i:+el.dataset.i,[n]:mmapFw(n,v)});
  if(g.startsWith("LF")&&(+el.dataset.n<2)){if(+el.dataset.n===0)o[1]=0;render();return}
+ if(g==="arp"&&n==="len")renderArp();
  syncControls();redraw()}
 function pc(g,n,{t,label,cls="",extra=""}={}){if(n==null)return`<div class="pc empty" aria-hidden="true"></div>`;
  return`<div class="pc ${cls}" role="slider" tabindex="0" data-g="${g}" data-n="${n}"${t!=null?` data-t="${t}"`:""} ${extra} aria-label="${label||n}"><span>${label||n}</span><b></b></div>`}

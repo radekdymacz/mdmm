@@ -20,7 +20,7 @@ const Modal = (() => {
 		boot: { outside: false, focusLast: false, esc: false }, menu: { outside: true, focusLast: false, esc: true } };
 	const DIALOGS = [["#dlg", "confirm", null], ["#libpop", "panel", "closeLib"], ["#globpop", "panel", "closeGlobal"],
 		["#keyspop", "panel", "toggleKeys"], ["#audiopop", "panel", "closeAudio"], ["#machpop", "panel", "closePicker"], ["#bootcard", "boot", null],
-		["#syxpop", "panel", null], ["#genpop", "panel", "closeGen", { drag: ".gdhead", place: "placeGen", clear: true, through: "[data-genopen]" }], ["#deskmenu", "menu", "closeDeskMenu"]];
+		["#syxpop", "panel", null], ["#genpop", "panel", "closeGen", { drag: ".gdhead", place: "placeGen", clear: true, through: "[data-genopen],.th[data-sel] .n,.th[data-sel] .nm,.th[data-sel] .sw" }], ["#deskmenu", "menu", "closeDeskMenu"]];
 	/* A row's 4th item is its options, all opt-in: drag (a selector: the handle that moves the dialog; the place is kept for the
 	   session, a double-click on the handle puts it back; dragging is no click outside, the dialog stays locked), place (the name
 	   of a function (el) -> {left, top} for where it opens when nobody moved it), clear (no dimmed backdrop), through (a selector:
@@ -68,7 +68,7 @@ const Modal = (() => {
 	}
 	function gone(el) {
 		const i = stack.findIndex(d => d.el === el); if (i < 0) return;
-		const [d] = stack.splice(i, 1); el.classList.remove("modal"); layer();
+		const [d] = stack.splice(i, 1); el.classList.remove("modal"); delete moved["#" + el.id]; layer();	/* the next opening starts at its own place */
 		if (d.back && d.back.isConnected && !stack.length) d.back.focus({ preventScroll: true });
 		else if (stack.length) focusIn(stack[stack.length - 1]);
 	}
@@ -95,6 +95,7 @@ const Modal = (() => {
 		if (e.button !== 0) return;
 		/* the dialog the handle belongs to, not only the top one: a menu or notice stacked later must not take the drag away */
 		const d = stack.find(x => { const o = opts(x); return o.drag && e.target.closest?.(o.drag) && x.el.contains(e.target); }); if (!d) return;
+		if (e.target.closest?.("button,input,label,select")) return;	/* a key in the handle (the GEN dialog's mode control) is a key, not the handle */
 		const o = opts(d), h = e.target.closest(o.drag);
 		const r = d.el.getBoundingClientRect();
 		drag = { d, dx: e.clientX - r.left, dy: e.clientY - r.top, h }; h.classList.add("dragging"); e.preventDefault();
@@ -108,7 +109,7 @@ const Modal = (() => {
 	document.addEventListener("pointerup", dragEnd); document.addEventListener("pointercancel", dragEnd);
 	document.addEventListener("dblclick", e => {
 		const d = top(); if (!d) return; const o = opts(d);
-		if (o.drag && e.target.closest?.(o.drag)) { delete moved["#" + d.el.id]; place(d.el.id); }
+		if (o.drag && e.target.closest?.(o.drag) && !e.target.closest?.("button,input,label,select")) { delete moved["#" + d.el.id]; place(d.el.id); }
 	});
 	window.addEventListener?.("resize", () => { const d = top(); if (d && (opts(d).drag || opts(d).place)) place(d.el.id); });
 	/* first in line (this file loads before the dialogs' own handlers): Esc, Tab and the backdrop */

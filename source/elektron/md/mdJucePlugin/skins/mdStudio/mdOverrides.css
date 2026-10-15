@@ -217,6 +217,8 @@ body.althold #clearLane{color:var(--led);box-shadow:inset 0 0 0 1px var(--led)}
 :root{--genband:58px;--row:clamp(18px,calc((100vh - 428px - var(--genband) / 2) / 16 - 3px),40px)!important}
 /* @include shared/deskGenBar.css */
 /* @include shared/deskGenDialog.css */
+/* the Random mode's row (three boxes and WRITE) is the widest: the dialog's content width */
+.genpop{--gdw:448px}
 #seqp>.genbar{flex:none}
 #seqp>.lanewrap{border-top:2px solid var(--print);margin-top:5px}
 .gkeys .gmut{height:30px;padding:0 11px;margin-right:4px;font:600 11px var(--sans);letter-spacing:.1em;text-transform:uppercase;flex:none}
