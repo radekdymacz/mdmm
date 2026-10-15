@@ -19,6 +19,23 @@ Five read-only reviews ran side by side. Each finding has file:line evidence in 
 The core (elektronData, deskCore, the desk, command tables, engine records) is clean. The complexity sits at the edge:
 the plug-in processor, the MM page, the two emulator links and adapters, and the build and test tooling.
 
+## Status (2026-10-15, end of day)
+
+Fixed and merged to main the same day, each branch after an independent reviewer passed it:
+
+| Branch | What |
+|---|---|
+| fix/1.0-ci-release | all ROM-free unit tests in core CI by label; actions pinned by SHA; wrangler pinned; SHA256SUMS on releases; manifest schema >= 1 |
+| chore/1.0-remove-panel-editor | the never-created panel editor, its skins, settings and tests (about 10k lines) |
+| fix/1.0-formats | one lenient setup codec (MD + MM; MM keeps writing its 0.x shape); memory file major/minor, unknown entries kept, other layout refused; one project codec, held MDLN/AUTO/MDSK changes saved; FOUNDATION "What 1.0 promises to read" |
+| fix/1.0-realtime | scheduler watchdog; page render holds for GEN/MUTATE, wheel, rotate, tempo drags; batched alignLock; idle desk pace without a page (8 ms while the HW wire is busy); non-blocking HW MIDI in; lock-wait check |
+| chore/1.0-mm-page-home | MM page source in skins/mmStudio/src with one manifest; shipped page starts empty, no demo |
+| chore/1.0-machine-memory-service | machine memory out of the processor (2,307 -> 1,218 lines) behind a small port |
+
+Not done: auto-update items (Radek: no auto-update). Still open for 1.0: the audio thread waits for the device lock
+(measured 5.6 ms on a busy Mac against a 1 ms limit: `scripts/mdmm-rt-check.sh --lock`); a command queue and
+published snapshots instead of the 57 `withDeviceLocked` sites. The "After 1.0" list below is unchanged.
+
 ## The one theme: 1.0 freezes formats
 
 Most code findings can wait until after 1.0. The formats cannot. Once 1.0 builds are in the field, every format they
