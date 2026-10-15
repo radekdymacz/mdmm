@@ -73,7 +73,7 @@ namespace mdJucePlugin
 
 		deskCore::LifeFacts::Probe probe() override { return m_link.probe(); }
 
-		void step(mdDesk::Desk& _desk, const uint64_t _tick) override
+		void step(mdDesk::Desk& _desk, const uint64_t _tick, const uint64_t _span) override
 		{
 			while(!m_in.empty())
 			{
@@ -81,16 +81,16 @@ namespace mdJucePlugin
 				m_in.pop_front();
 				_desk.onDeviceSysex(m);
 			}
-			if(due(_tick, g_probeMs))
+			if(due(_tick, g_probeMs, _span))
 				_desk.setProbe(m_link.probe());
 			_desk.onTelemetry(m_link.readTelemetry());
-			m_lcd.step(_desk, _tick, [this](std::vector<uint8_t>& _bits) { return m_link.readLcd(_bits); });
+			m_lcd.step(_desk, _tick, _span, [this](std::vector<uint8_t>& _bits) { return m_link.readLcd(_bits); });
 			std::vector<uint8_t> region;
 			if(m_link.readWorkingKit(region))
 				_desk.onWorkingKitMemory(region);
 			std::shared_ptr<const elektronData::MdSampleBank> bank;
 			// A desk without a bank (none yet, or a reset forgot it) gets the device's current one again (B-012).
-			if(_desk.pageSeen() && due(_tick, g_samplesMs) && m_link.readSampleBank(bank, !_desk.hasSamples()))
+			if(_desk.pageSeen() && due(_tick, g_samplesMs, _span) && m_link.readSampleBank(bank, !_desk.hasSamples()))
 				_desk.onSampleBank(*bank);
 			m_link.drainParameterChanges([&_desk](const uint8_t _t, const uint8_t _i, const uint8_t _v)
 			{
@@ -124,7 +124,7 @@ namespace mdJucePlugin
 		deskCore::LifeFacts::Probe probe() override { return deskCore::LifeFacts::Probe::Running; }
 
 		// What came in, to the desk. No telemetry: the adapter's own is "none" from the start.
-		void step(mdDesk::Desk& _desk, uint64_t) override
+		void step(mdDesk::Desk& _desk, uint64_t, uint64_t) override
 		{
 			m_wire.wire().pump(nowMs(), [&_desk](const std::vector<uint8_t>& _m) { _desk.onDeviceSysex(_m); });
 		}

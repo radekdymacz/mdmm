@@ -182,8 +182,8 @@ namespace mdJucePlugin
 	std::unique_ptr<DeskSession> DeskSession::create(AudioPluginAudioProcessor& _processor)
 	{
 		auto session = _processor.getModel() == md::MachineModel::Monomachine ? makeMmSession(_processor) : makeMdSession(_processor);
-		// Steps start once the whole session exists.
-		session->startTimer(static_cast<int>(g_stepMs));
+		// Steps start once the whole session exists, at the pace for no page (attach makes it 8 ms).
+		session->pace();
 		return session;
 	}
 
@@ -191,12 +191,14 @@ namespace mdJucePlugin
 	{
 		m_toPage = std::move(_toPage);
 		onAttach();
+		pace();
 	}
 
 	void DeskSession::detach()
 	{
 		onDetach();
 		m_toPage = nullptr;
+		pace();
 	}
 
 	void DeskSession::republish()

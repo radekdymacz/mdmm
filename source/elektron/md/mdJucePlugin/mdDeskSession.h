@@ -34,9 +34,15 @@ namespace mdJucePlugin
 	pluginLib::Processor& pluginProcessorOf(AudioPluginAudioProcessor& _processor);
 	double sessionNowMs();
 
-	// The session's pace. One step every 8 ms: the playhead (the app modulators move on its steps)
-	// is looked at faster than the fastest step (300 BPM at 2X: 25 ms). The rest is periods in ms.
+	// The session's pace. One step every 8 ms while a page is up (or a .syx import runs): the playhead (the app
+	// modulators move on its steps) is looked at faster than the fastest step (300 BPM at 2X: 25 ms). With no page
+	// (an editor closed: the usual case for most instances of a DAW project) one step every g_idleStepMs, standing
+	// for that many 8 ms steps (its span), so every period below keeps its length in ms (1.0 review: 125 wake-ups a
+	// second per closed instance were the message thread's for nothing). The host's automation and MIDI reach the
+	// machine on the audio thread either way; the session only mirrors them into its documents, a little later.
+	// The rest is periods in ms.
 	constexpr double g_stepMs = 8;
+	constexpr double g_idleStepMs = 64;
 	constexpr double g_deskTickMs = 32;			// the desk's own work, about 30 Hz
 	constexpr double g_lcdMs = 64;				// the machine's screen while it starts, about 15 Hz
 	constexpr double g_engineChoicesMs = 1000;	// whether the engines are available (a MIDI out appeared)
@@ -97,11 +103,17 @@ namespace mdJucePlugin
 
 	// P7: whether the machine follows the host's tempo and transport: in a DAW's plug-in only.
 
-	// Due on the session's first step, then once every _periodMs (_tick counts steps from 1).
-	constexpr bool due(const uint64_t _tick, const double _periodMs)
+	// Due on the session's first step, then once every _periodMs (_tick counts 8 ms steps from 1). _span: the 8 ms
+	// steps this one stands for (1 with a page up, g_idleStepMs / g_stepMs without one): due when the period fell on
+	// any of them.
+	constexpr bool due(const uint64_t _tick, const double _periodMs, const uint64_t _span = 1)
 	{
 		const auto n = std::max<uint64_t>(1, static_cast<uint64_t>(_periodMs / g_stepMs + 0.5));
-		return _tick > 0 && (_tick - 1) % n == 0;
+		if(_tick == 0)
+			return false;
+		const uint64_t last = _tick - 1;								// the steps from 0: (last - span, last]
+		const uint64_t first = last + 1 > _span ? last + 1 - _span : 0;
+		return first == 0 || last / n != (first - 1) / n;
 	}
 
 	// The editor's session (P6), owned by the processor: the desk (core, Machine adapter, the
@@ -178,8 +190,28 @@ namespace mdJucePlugin
 
 		AudioPluginAudioProcessor& m_processor;
 
+		// The 8 ms steps one step stands for now (its timer's interval): 1 while a page is up.
+		uint64_t stepSpan() const
+		{
+			const auto ms = getTimerInterval();
+			return ms > 0 ? std::max<uint64_t>(1, static_cast<uint64_t>(ms / static_cast<int>(g_stepMs))) : 1;
+		}
+		// Something runs that needs the fast pace without a page (a .syx import): the model's session says.
+		virtual bool needsPace() const { return false; }
+
 	private:
-		void timerCallback() override { step(); }
+		void timerCallback() override
+		{
+			step();
+			pace();
+		}
+		// 8 ms with a page (or work that needs it), g_idleStepMs without
+		void pace()
+		{
+			const auto want = static_cast<int>(m_toPage || needsPace() ? g_stepMs : g_idleStepMs);
+			if(getTimerInterval() != want)
+				startTimer(want);
+		}
 
 		ToPage m_toPage;
 		std::function<void(const std::string&)> m_log;
@@ -252,8 +284,9 @@ namespace mdJucePlugin
 		// protocol.
 		virtual std::unique_ptr<Adapter> adapter(const Profile& _profile) { return DeskT::defaultAdapter(_profile, device()); }
 		// Feed the desk what the device said since the last step (sysex, telemetry, memory, probes,
-		// its screen). _tick counts the session's steps (g_stepMs) from 1; due() makes periods of it.
-		virtual void step(DeskT& _desk, uint64_t _tick) = 0;
+		// its screen). _tick counts the session's 8 ms steps (g_stepMs) from 1, _span the ones this step stands for;
+		// due() makes periods of them.
+		virtual void step(DeskT& _desk, uint64_t _tick, uint64_t _span) = 0;
 		// What the device says about the firmware now (Running for a wire: its replies decide).
 		virtual deskCore::LifeFacts::Probe probe() = 0;
 	};
@@ -370,14 +403,17 @@ namespace mdJucePlugin
 
 		void step() override
 		{
-			const auto t = ++m_tick;
+			// the 8 ms steps this one stands for (more than one without a page: g_idleStepMs)
+			const auto span = stepSpan();
+			const auto t = m_tick += span;
+			const auto due = [t, span](const double _periodMs) { return mdJucePlugin::due(t, _periodMs, span); };
 			m_learn.enforce();	// MIDI mapping off: none applied, whatever the disk or the project brought
-			m_engine->step(*m_desk, t);
+			m_engine->step(*m_desk, t, span);
 			if(const auto text = m_setup.restored())
 				loadSetup(*text);
-			if(due(t, g_engineChoicesMs))
+			if(due(g_engineChoicesMs))
 				publishChoices();
-			if(m_desk->pageSeen() && due(t, g_deskTickMs))
+			if(m_desk->pageSeen() && due(g_deskTickMs))
 				m_desk->tick();
 			// P7: in a DAW the host's tempo and transport reach the machine as MIDI clock, Start and Stop
 			// (synthLib::MidiClock); the machine follows them only with its global set for it. The model
@@ -393,7 +429,7 @@ namespace mdJucePlugin
 			// B-030: at once when the machine becomes ready (not up to 2 s later), then on the cadence. A refusal is a
 			// result (op followHost) the page shows and logs.
 			const bool ready = m_desk->lifecycle() == deskCore::Lifecycle::Ready;
-			if(m_followHost && ready && (!m_followReady || due(t, g_followHostMs)))
+			if(m_followHost && ready && (!m_followReady || due(g_followHostMs)))
 			{
 				Value m = Value::object();
 				m.set("op", "followHost");
@@ -414,15 +450,15 @@ namespace mdJucePlugin
 			m_followReady = ready;
 			// B-035: while the machine starts (and for the first minute): the host's audio calls and the machine's
 			// speed, for the start-up card
-			if(m_desk->pageSeen() && due(t, g_audioRunMs) && (static_cast<double>(t) * g_stepMs < 60000 || !ready))
+			if(m_desk->pageSeen() && due(g_audioRunMs) && (static_cast<double>(t) * g_stepMs < 60000 || !ready))
 				if(auto a = audioRunOf(processor()))
 					toPage(*a);
 			// I-018: the CPU meter in the top bar (no lock: atomics read on this thread, mdCpuLoad.h)
-			if(m_desk->pageSeen() && due(t, g_cpuLoadMs))
+			if(m_desk->pageSeen() && due(g_cpuLoadMs))
 				toPage(cpuLoadOf(processor()));
 			// 0.6: the notes from outside (LEARN; no lock: mdMidiIn.h). Taken also while no page is up, so a page that opens
 			// later does not get old ones (the queue is emptied when the session starts, too).
-			for(int n = 0; n < g_midiInPerStep; ++n)
+			for(uint64_t n = 0; n < g_midiInPerStep * span; ++n)
 			{
 				const auto note = processor().takeMidiIn();
 				if(!note)
@@ -437,14 +473,14 @@ namespace mdJucePlugin
 				toPage(machineMemoryOf(processor()));
 			}
 			// I-002, B-062: the notes held from outside, as a state (the Perform keyboard's lit keys; no lock)
-			if(m_desk->pageSeen() && due(t, g_midiHeldMs))
+			if(m_desk->pageSeen() && due(g_midiHeldMs))
 				if(const auto held = m_midiHeld.next(heldMidiNotesOf(processor())))
 					toPage(midiHeldOf(*held));
 			// I-021: the LCD's output meter and volume (no lock: one atomic swap, mdOutputLevel.h)
-			if(m_desk->pageSeen() && due(t, g_outputLevelMs))
+			if(m_desk->pageSeen() && due(g_outputLevelMs))
 				toPage(outputLevelOf(processor()));
 			// B-030: the host's tempo (a DAW's playhead, also while it is stopped) for the LCD's TEMPO
-			if(m_desk->pageSeen() && due(t, g_hostTempoMs))
+			if(m_desk->pageSeen() && due(g_hostTempoMs))
 				if(const auto bpm = m_hostTempo.next(hostBpmOf(processor())))
 				{
 					Value h = Value::object();
@@ -462,6 +498,8 @@ namespace mdJucePlugin
 		}
 
 		std::string lifecycleName() const override { return deskCore::lifecycleName(m_desk->lifecycle()); }
+		// a .syx import paces its messages on the session's steps: 8 ms also with no page up
+		bool needsPace() const override { return m_syx.running(); }
 
 		const PageSpec& pageSpec() const override { return m_page; }
 
@@ -652,14 +690,14 @@ namespace mdJucePlugin
 	{
 	public:
 		template<typename DeskT, typename Read>
-		void step(DeskT& _desk, const uint64_t _tick, const Read& _read)
+		void step(DeskT& _desk, const uint64_t _tick, const uint64_t _span, const Read& _read)
 		{
 			if(_desk.isInputReady() || _desk.lifecycle() == deskCore::Lifecycle::Loading)
 			{
 				m_last.clear();
 				return;
 			}
-			if(!due(_tick, g_lcdMs))
+			if(!due(_tick, g_lcdMs, _span))
 				return;
 			std::vector<uint8_t> bits;
 			if(_read(bits) && bits != m_last)
