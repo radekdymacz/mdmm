@@ -253,7 +253,8 @@ function genDialogHtml() {
 	}
 	const lock = kept ? `<svg class="gdlock" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-label="Kept"><title>Kept: ⌥R all leaves this track alone</title><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>` : "";
 	return `<div class="gdlg${kept ? " kept" : ""}">
-  <div class="gdhead" data-drag title="Drag to move this window; double-click: back to the middle"><b>Gen</b><span class="gdt ${all ? "all" : ""}">${all ? "all tracks" : `T${t + 1} · ${codeOf(tr.m, Cat)}`}</span>${lock}${mode}</div>
+  <div class="gdhead" data-drag title="Drag to move this window; double-click: back to the middle"><b>Gen</b><span class="gdt ${all ? "all" : ""}">${all ? "all tracks" : `T${t + 1} · ${codeOf(tr.m, Cat)}`}</span>${lock}<button class="gdesc" data-gencancel="1" aria-label="Close" title="Close (Esc): same as Cancel">ESC</button></div>
+  <div class="gdrow"><span class="gdl">Mode</span><div class="gvs">${mode}</div></div>
   <div class="gdrow"><span class="gdl">Rhythm</span><div class="gvs">${vals}</div></div>
   <div class="gdsum" title="${plainText(sum)}">${sum}</div>
   <div class="gdfoot"><label class="gdkeep" title="Keep this track: ⌥R all (and every all-tracks change) leaves it alone. This window still writes it"><input type="checkbox" data-genkeep="1" ${kept ? "checked" : ""}><span>Keep on ⌥R all</span></label>

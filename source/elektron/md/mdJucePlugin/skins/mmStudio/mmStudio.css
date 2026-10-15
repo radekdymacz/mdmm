@@ -2214,7 +2214,7 @@ img,svg,canvas{-webkit-user-drag:none}
 .gdhead .gdt{font:12px var(--mono);color:var(--print2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .gdhead .gdt.all{color:var(--led)}
 .gdhead .gdlock{flex:none;width:14px;height:14px;color:var(--print2)}
-.gdhead .gsc{margin-left:auto;flex:none}
+.gdhead .gdesc{margin-left:auto;flex:none;height:24px;min-width:40px;padding:0 8px;font:600 10px var(--sans);letter-spacing:.1em}
 .gdrow{display:grid;grid-template-columns:56px minmax(0,1fr);align-items:center;column-gap:0;min-height:30px}
 .gdl{font:600 10px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--print2)}
 .gdrow .gvs{display:flex;align-items:center;gap:8px;min-width:0}
@@ -2224,7 +2224,8 @@ img,svg,canvas{-webkit-user-drag:none}
 .gsc button{height:30px;padding:0 12px;border-radius:0;font:600 11px var(--sans);letter-spacing:.1em;text-transform:uppercase;background:var(--key);color:var(--keytext);box-shadow:none;border-right:1px solid color-mix(in srgb,var(--keytext) 18%,transparent)}
 .gsc button:last-child{border-right:0}
 .gsc button[aria-pressed=true]{background:var(--led);color:#fff}
-.gdrow .gsc{margin-left:8px;flex:none}
+.gdrow .gsc{flex:none}
+.gdrow .gvs>.gsc:not(:first-child){margin-left:8px}
 .gdsum{min-height:16px;margin-top:8px;font:12px var(--mono);color:var(--print2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gdsum em{font-style:normal;color:var(--print)}
 .gdfoot{display:flex;align-items:center;gap:8px;min-width:0}
