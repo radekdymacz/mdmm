@@ -196,8 +196,13 @@ namespace mdJucePlugin
 			const auto ms = getTimerInterval();
 			return ms > 0 ? std::max<uint64_t>(1, static_cast<uint64_t>(ms / static_cast<int>(g_stepMs))) : 1;
 		}
-		// Something runs that needs the fast pace without a page (a .syx import): the model's session says.
+		// Something runs that needs the fast pace without a page (a .syx import, messages waiting for a real machine's
+		// wire): the model's session says.
 		virtual bool needsPace() const { return false; }
+	public:
+		// The step interval the session wants now: 8 ms with a page or work that needs it, g_idleStepMs without.
+		int paceMs() const { return static_cast<int>(m_toPage || needsPace() ? g_stepMs : g_idleStepMs); }
+	protected:
 
 	private:
 		void timerCallback() override
@@ -208,7 +213,7 @@ namespace mdJucePlugin
 		// 8 ms with a page (or work that needs it), g_idleStepMs without
 		void pace()
 		{
-			const auto want = static_cast<int>(m_toPage || needsPace() ? g_stepMs : g_idleStepMs);
+			const auto want = paceMs();
 			if(getTimerInterval() != want)
 				startTimer(want);
 		}
@@ -289,6 +294,9 @@ namespace mdJucePlugin
 		virtual void step(DeskT& _desk, uint64_t _tick, uint64_t _span) = 0;
 		// What the device says about the firmware now (Running for a wire: its replies decide).
 		virtual deskCore::LifeFacts::Probe probe() = 0;
+		// Messages still wait for a real machine's wire (DinPacer: one leaves a step once the wire is free, so the
+		// session keeps its 8 ms pace without a page until they are out). The emulator: never.
+		virtual bool wireBusy() { return false; }
 	};
 
 	// One engine of the engine map: its profile (id, label, what it offers), how to make it and
@@ -499,7 +507,8 @@ namespace mdJucePlugin
 
 		std::string lifecycleName() const override { return deskCore::lifecycleName(m_desk->lifecycle()); }
 		// a .syx import paces its messages on the session's steps: 8 ms also with no page up
-		bool needsPace() const override { return m_syx.running(); }
+		// and a real machine's wire with messages waiting (one leaves per step: at 64 ms a kit would crawl)
+		bool needsPace() const override { return m_syx.running() || m_engine->wireBusy(); }
 
 		const PageSpec& pageSpec() const override { return m_page; }
 

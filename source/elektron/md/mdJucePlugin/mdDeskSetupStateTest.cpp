@@ -201,6 +201,45 @@ namespace
 	}
 }
 
+// Review (real time 4): a real machine's wire lets one message out per step once it is free, so the session keeps the
+// 8 ms pace without a page while messages wait for the wire; idle, without a page, it slows down.
+void wirePace(const md::MachineModel _model, const char* _name)
+{
+	mdJucePlugin::AudioPluginAudioProcessor p(_model, isolated());
+	juce::AudioProcessor& jp = p;
+	auto* session = p.getDeskHost()->session();
+	if(!session)
+	{
+		check(false, "wire pace: no session");
+		return;
+	}
+	check(session->paceMs() == static_cast<int>(mdJucePlugin::g_idleStepMs), "no page, the emulator: the idle pace");
+	jp.prepareToPlay(44100.0, 256);
+	// the page chose HW MIDI and was ready (the desk asks the machine for its documents over the wire), then closed
+	session->attach([](const elektronData::json::Value&) {});
+	session->onPageMessage(*elektronData::json::parse(R"({"op":"engine","kind":"hw"})"));
+	session->onPageMessage(*elektronData::json::parse(R"({"op":"ready"})"));
+	session->detach();
+	bool busy = false;
+	for(int i = 0; i < 50 && !busy; ++i)
+	{
+		session->step();
+		busy = session->paceMs() == static_cast<int>(mdJucePlugin::g_stepMs);
+	}
+	std::printf("  (%s)\n", _name);
+	check(busy, "the HW MIDI engine with messages waiting for the wire: the 8 ms pace, no page up");
+	bool idle = false;
+	const auto t0 = juce::Time::getMillisecondCounterHiRes();
+	while(!idle && juce::Time::getMillisecondCounterHiRes() - t0 < 20000)
+	{
+		session->step();
+		juce::Thread::sleep(8);
+		idle = session->paceMs() == static_cast<int>(mdJucePlugin::g_idleStepMs);
+	}
+	check(idle, "once the wire is free again: the idle pace");
+	jp.releaseResources();
+}
+
 int main()
 {
 	// No ROM anywhere: an empty data root, set before anything reads it (a Mac with the ROMs installed in Documents
@@ -210,6 +249,8 @@ int main()
 	setenv("GEARMULATOR_DATA_ROOT", (root.getFullPathName() + "/").toRawUTF8(), 1);
 	juce::ScopedJuceInitialiser_GUI juce;
 	idlePace();
+	wirePace(md::MachineModel::Machinedrum, "Machinedrum");
+	wirePace(md::MachineModel::Monomachine, "Monomachine");
 	soloState(md::MachineModel::Machinedrum, "Machinedrum");
 	soloState(md::MachineModel::Monomachine, "Monomachine");
 	const std::string setup = R"({"schema":"md-desk/setup","version":1,"modulators":{"schema":"md-desk/modulators","version":1,)"
