@@ -224,7 +224,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | Multi trig 1-43 | SEQ TRNSP | Transpose, loop unbroken | ✅ | Perform > Multi trig |  | 1 | stub-only (e2e-mm-perform-multi-setup-fail) |
 | Multi trig 1-43 | TIMING context tab | Delay to bar | ✅ | Perform Timing stepper |  | 1 | stub-only (e2e-mm-perform-multi-setup-fail) |
 | Multi trig 1-43 | Arpeggiators work in all-track mode | Arp | ✅ | Per track arp | Firmware | 1 | stub-only (e2e-mm-perform-multi-setup-fail) |
-| Multi env 1-43 | ATK, DEC, SUS, REL | ADSR on top | ✅ | Perform > Multi envelope: the card names the kit's MULTI TRIG mode and says what the envelope shapes in it |  | 4 | pass (mm-perform-menv) |
+| Multi env 1-43 | ATK, DEC, SUS, REL | ADSR on top | ✅ | Perform > Multi envelope: the card names the kit's MULTI TRIG mode and says what the envelope shapes in it |  | 5 | pass (mm-perform-menv) |
 | Multi env 1-44 | PORT | Multi portamento | ✅ | Same |  | 1 | pass (mm-trig-setup) |
 
 ## 10. The pattern sequencer: pattern operation (1-45 to 1-47)
@@ -528,7 +528,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | MACHINE MEMORY | What you save stays for every new session | The machine keeps its kits, patterns, songs and globals when it is switched off. | ✅ | By itself (a session without a DAW project, and the standalone, start from the saved memory); engine menu: KEEP MEMORY; Reset machine… > Start from factory memory… | I-024, doc/modern-ux/DESIGN-machine-memory.md | 1 | pass (e2e-mm-engine-memory) |
 | FACTORY SONGS PLAY | Factory songs play | The songs of factory memory are there and play: load one, SONG mode, PLAY. | ✅ | Song workspace: the song slots, Load; the arrangement follows the machine | e2e: every factory song | 2 | pass (mm-real-song-playing) |
 | FACTORY PATTERNS PLAY | Factory patterns play | The patterns of factory memory are there and play: pick one on the LCD, PLAY. | ✅ | The pattern chooser on the LCD | e2e: patterns spread over all 128 | 2 | pass (mm-real-pattern-playing) |
-| GEN ROLLS A RHYTHM | GEN rolls a rhythm | No such function: you set the hits by hand. The editor rolls a rhythm for you from a few settings. | ✅ | GEN bar on Sequence: Random, Defaults, Hits; R | One undo step | 2 | pass (e2e-mm-gen-mutate-undo) |
+| GEN ROLLS A RHYTHM | GEN rolls a rhythm | No such function: you set the hits by hand. The editor rolls a rhythm for you from a few settings. | ✅ | GEN bar on Sequence: Random, Defaults, Hits; R | One undo step | 3 | pass (e2e-mm-gen-mutate-undo) |
 | MUTATE CHANGES A SOUND | MUTATE changes a sound | No such function. The editor nudges the sound of the tracks at random, within a scope and an amount. | ✅ | GEN bar on Sequence: MUTATE, scope chips, amount | One undo step | 2 | pass (e2e-mm-gen-mutate-undo) |
 | SOLO | Solo | Solo plays one track alone; the mutes you had come back when you let go. | ✅ | Mix: S on the strip; the rail | The machine has mute only | 2 | pass (e2e-mm-mix-solo) |
 | UNDO AND REDO | Undo and redo | No undo. Every edit of the editor can be taken back and done again, across kits, patterns and songs. | ✅ | UNDO and REDO in the top bar; Cmd+Z, Cmd+Shift+Z | The machine has no undo | 2 | pass (e2e-mm-top-undo-redo) |
@@ -549,7 +549,7 @@ Manual page numbers are the manual's own (1-xx, A-x, B-x, C-x).
 | KIT AND SONG SLOTS | Kit and song slots | The kit library and the song slots: load, copy, paste, rename and clear a slot, each undoable. | ✅ | The kit on the LCD; Song workspace |  | 5 | pass (e2e-mm-song-slots) |
 | PIANO ROLL | Piano roll | Draw notes on a roll with a note length, move or box-select them and play chords; the roll writes the same step data as the machine's own entry. | ✅ | Sequence: the piano roll, Draw (B), Len | MM only | 5 | pass (e2e-mm-seq-transpose-keyboard) |
 | WHAT YOU DRAW IS WHAT PLAYS | What you draw is what plays | What you enter in the sequencer is what the machine plays. | ✅ | Sequence: the grid or the roll; Alt+Delete clears the pattern; Cmd+Z takes it back | e2e: drawn, played, cleared, undone, each checked on the machine's output | 1 | pass (mm-real-sequence-drawn) |
-| REVERT TRACK | Revert track | The machine has no key that puts one track's sound back as stored; LOAD KIT reloads the whole kit. | ✅ | Sound: Revert track beside the machine key |  | 1 | pass (e2e-mm-sound-revert-track) |
+| CLEAR | Clear (was Revert track) | The machine has no key that puts one track's sound back as stored; LOAD KIT reloads the whole kit. | ✅ | Sound: Clear key at the right end of the MUTATE bar, next to R |  | 1 | pass (e2e-mm-sound-revert-track) |
 
 ## 24. Editor features with no manual counterpart (for orientation)
 

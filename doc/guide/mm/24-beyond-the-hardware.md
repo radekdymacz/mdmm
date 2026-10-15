@@ -96,17 +96,17 @@ The machine has no such function. **MUTATE** nudges the sound of the selected tr
 
 NOTE: A roll on **Sound** with {key:randomise-track} is always taken from the sound as it was before the trials, so repeated rolls do not wander off.
 
-## REVERT TRACK
+## CLEAR
 <!-- rows: MM-X25 @715aac -->
 
-When you play with a sound, **Revert track** puts the selected track back as the kit's slot stores it. On a synth track it restores the machine, the seven pages, the level, the outputs and input, the assign rows, the key tracking, portamento and legato switches and the track the notes are forwarded to. On a MIDI track it restores the MIDI page. The other tracks, the multi envelope, MULTI TRIG and the kit name stay as they are. The kit library's **Reload** loads the whole kit again. **Revert track** does one track.
+When you play with a sound, **Clear** puts the selected track back as the kit's slot stores it. On a synth track it restores the machine, the seven pages, the level, the outputs and input, the assign rows, the key tracking, portamento and legato switches and the track the notes are forwarded to. On a MIDI track it restores the MIDI page. The other tracks, the multi envelope, MULTI TRIG and the kit name stay as they are. The kit library's **Reload** loads the whole kit again. **Clear** does one track.
 
 1. Click the **Sound** tab and pick a track on the rail.
-2. Turn a few knobs. **Revert track** turns on.
-3. Click **Revert track**. The values are the stored ones, and the key is off again.
+2. Turn a few knobs. **Clear** turns on.
+3. Click **Clear**. The values are the stored ones, and the key is off again.
 4. Press {key:undo}. Your edits are back, and the key is on.
 
-**Revert track** is off while the track is as stored. Saving the kit makes the saved sound the stored one.
+**Clear** is off while the track is as stored. Saving the kit makes the saved sound the stored one.
 
 ## SOLO
 <!-- rows: MM-X06 @9ed0e1 -->
