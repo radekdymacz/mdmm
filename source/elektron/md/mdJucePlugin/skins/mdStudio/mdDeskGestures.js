@@ -65,6 +65,8 @@ addEventListener("blur", () => { Held.end("rotate"); });
    none): 4 a notch, Shift 1. A run of notches on one step is one undo step (the slot's "wheel": its step and
    the time of its last notch). Only the vertical wheel (and Shift's sideways one), so a sideways scroll of the
    grid still scrolls. ===== */
+const WHEEL_RUN_MS = 700;
+let wheelEndT = 0;
 $("#main").addEventListener("wheel", e => {
 	const st = e.target.closest("#seq .st"); if (!st || S.ws !== "seq") return;
 	const t = +st.dataset.t, s = +st.dataset.s, d = e.deltaY || (e.shiftKey ? e.deltaX : 0);
@@ -72,7 +74,9 @@ $("#main").addEventListener("wheel", e => {
 	e.preventDefault();
 	if (t !== S.sel) select(t);
 	const now = performance.now(), key = t + ":" + s + ":" + S.lane, run = Held.as("wheel");
-	const w = !run || run.key !== key || now - run.at > 700 ? Held.begin("wheel", { key, g: Bridge.gesture(), at: now }) : Held.with("wheel", { at: now });
+	const w = !run || run.key !== key || now - run.at > WHEEL_RUN_MS ? Held.begin("wheel", { key, g: Bridge.gesture(), at: now }) : Held.with("wheel", { at: now });
+	/* the run ends when the notches stop (it holds the page's renders meanwhile, mdDeskRender.js) */
+	clearTimeout(wheelEndT); wheelEndT = setTimeout(() => Held.end("wheel"), WHEEL_RUN_MS);
 	const had = V.locks.get(lk(t, S.lane))?.get(s), cur = had ?? grp(t, S.lane)[S.lane] ?? 0, v = clamp(cur + (d < 0 ? 1 : -1) * (e.shiftKey ? 1 : 4));
 	if (had != null && v === had) return;
 	const ok = setLock(t, S.lane, s, v, false, w.g);

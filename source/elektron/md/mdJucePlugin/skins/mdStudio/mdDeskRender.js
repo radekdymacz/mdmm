@@ -20,9 +20,11 @@ function sameValue(a, b) {
 const beyondStatus = v => { const o = { ...v }; for (const k of STATUS) delete o[k]; return o; };
 /* an open menu (the machine picker, a key-style dropdown) holds renders too: a document landing would rebuild what it belongs to and close it */
 function menuOpen() { return !$("#machpop")?.hidden || !$("#kpop")?.hidden; }
-/* a gesture that holds the page (a drag, a paint, a dragged pad): documents re-derive the view, the page renders
-   once it ends (pendingRender) */
-const HOLDS = new Set(["value", "editor", "lane", "l2", "chop", "song", "paint", "mutePaint", "select"]);
+/* a gesture that holds the page (a drag, a paint, a dragged pad, a GEN or MUTATE value dragged, the tempo dragged, a
+   run of wheel notches on a lock, the rotate presses while Alt is down): documents re-derive the view, the page
+   renders once it ends (pendingRender). Each of them draws its own change in place, so a document that lands meanwhile
+   does not rebuild the grid (1.0 review: the unheld ones cost a full render a document, about 50 % WebContent). */
+const HOLDS = new Set(["value", "editor", "lane", "l2", "chop", "song", "paint", "mutePaint", "select", "gv", "bpm", "wheel", "rotate"]);
 function interacting() { const h = Held.now; return !!(h && HOLDS.has(h.kind)) || menuOpen() || SongSlots.busy(); }
 /* the one flush: a render held while a gesture ran is made when it ends, whichever gesture it was (a timer, so
    the gesture's own end handler draws its row first; still held by a menu, it waits for the menu's close) */

@@ -5,7 +5,8 @@
    answered), timers run by hand and the window's listeners recorded.
    - S1 solo: the machine's own mutes survive a solo and its end; M (click, key, drag) during a solo edits only
      the user's mutes, which the end of the solo gives to the machine;
-   - S4: a render held while a gesture ran is made when the gesture ends (paint, l2, chop, song alike);
+   - S4: a render held while a gesture ran is made when the gesture ends (paint, l2, chop, song alike; since 1.0 also
+     a GEN or MUTATE value drag, the tempo drag, a wheel run, which ends by itself, and the rotate presses);
    - S6: Shift-prepared mutes are dropped when the window loses the focus.
    And, on the page with the real bridge (deskBridge.js) against a model of the plug-in's notice book (mdNoticeBook.h):
    a notice's key answers that notice, never another, the update banner's too (codex review 2026-10: the bridge's
@@ -104,7 +105,7 @@ sent.length = 0; fire("document", "keyup", { key: "Shift" });
 check(muteCmds() === "", "a later Shift keyup applies nothing: " + (muteCmds() || "none"));
 
 /* ---- S4: a render held during a gesture is made when it ends ---- */
-for (const kind of ["paint", "l2", "chop", "song", "lane", "value", "mutePaint"]) {
+for (const kind of ["paint", "l2", "chop", "song", "lane", "value", "mutePaint", "gv", "bpm", "wheel", "rotate"]) {
 	run();
 	const before = P.renders;
 	P.Held.begin(kind, {});
@@ -113,7 +114,7 @@ for (const kind of ["paint", "l2", "chop", "song", "lane", "value", "mutePaint"]
 	P.Held.end(kind); run();
 	check(held && !P.pending && P.renders === before + 1, `${kind}: the render waits while it is held, and is made when it ends`);
 }
-/* a gesture not holding the page (gv, bpm, wheel, rotate) ends without a render of its own */
+/* a gesture with no render held meanwhile ends without a render of its own */
 run(); { const before = P.renders; P.Held.begin("gv", {}); P.Held.end("gv"); run(); check(P.renders === before, "a gesture with nothing held renders nothing when it ends"); }
 
 /* ---- a rotate run (Alt + arrows, one undo step) ends when an event shows Alt up, not only on Alt's own keyup ---- */
