@@ -18,7 +18,7 @@
   (`site/public/guide/index.html` #keys).
 
 Paths below are relative to `source/elektron/md/mdJucePlugin/skins/` unless they start with `source/` or `doc/`.
-`mm:` lines are in the generated `mmStudio/mmMockup.js` (its sources: `doc/modern-ux/mm-mockup/src/`).
+`mm:` lines are in the generated `mmStudio/mmMockup.js` (its sources: `skins/mmStudio/src/`).
 
 ## 1. Inventory: what is bound today
 
