@@ -31,6 +31,7 @@ set(SOURCES
 	parametervaluelist.cpp parametervaluelist.h
 	pluginVersion.cpp pluginVersion.h
 	processor.cpp processor.h
+	projectState.cpp projectState.h
 	processorPropertiesInit.h
 	programChangeRouter.cpp programChangeRouter.h
 	softknob.cpp softknob.h

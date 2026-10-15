@@ -1,13 +1,11 @@
 #pragma once
 
 #include "deskCore/deskMod.h"
+#include "deskCore/deskSetup.h"
 #include "deskCore/deskSolo.h"
 
 #include "elektronData/json.h"
 
-#include <array>
-#include <cstdint>
-#include <optional>
 #include <string>
 #include <vector>
 
@@ -24,24 +22,16 @@ namespace mdDesk
 	using deskCore::modSetupToJson;
 	constexpr deskCore::ModLimits g_mdModLimits{"md-desk/modulators", 15, 23};
 
-	// The editor's own setup that belongs to the project, not to the machine (P4): the app
-	// modulators (md-desk/modulators) and the CC numbers of the Control workspace's eight
-	// controller knob rows, and the solo (the tracks soloed and the person's mutes). As the "md-desk/setup" document it is stored with the plug-in
-	// state (the host keeps the text, it never looks inside) and restored with the project.
-	struct DeskSetup
+	// The editor's setup kept with the project (deskCore::DeskSetup): the app modulators, the Control workspace's eight
+	// knob-row CCs and the solo, as the "md-desk/setup" document.
+	using deskCore::DeskSetup;
+	using deskCore::validateKnobCcs;
+	constexpr deskCore::SetupSpec g_mdSetupSpec{"md-desk/setup", g_mdModLimits, 16, true};
+
+	// A project's setup: what this version can use (deskCore::setupFromJson); errors carry JSON paths.
+	inline DeskSetup deskSetupFromJson(const elektronData::json::Value& _doc, std::vector<std::string>& _errors)
 	{
-		static constexpr std::array<uint8_t, 8> g_defaultKnobCcs{21, 22, 23, 24, 25, 26, 27, 28};
-
-		ModSetup modulators;
-		std::array<uint8_t, 8> knobCcs = g_defaultKnobCcs;
-		deskCore::SoloMemo solo;	// the page's solo and the mutes the person had before it (B-123)
-
-		bool operator==(const DeskSetup& _o) const;
-		bool operator!=(const DeskSetup& _o) const { return !(*this == _o); }
-	};
-
-	// Errors carry JSON paths. Knob CCs must be 0-127 and distinct.
-	std::optional<DeskSetup> deskSetupFromJson(const elektronData::json::Value& _doc, std::vector<std::string>& _errors);
-	elektronData::json::Value deskSetupToJson(const DeskSetup& _setup);
-	std::vector<std::string> validateKnobCcs(const std::vector<int>& _ccs);
+		return deskCore::setupFromJson(_doc, g_mdSetupSpec, _errors);
+	}
+	inline elektronData::json::Value deskSetupToJson(const DeskSetup& _setup) { return deskCore::setupToJson(_setup, g_mdSetupSpec); }
 }

@@ -1193,6 +1193,8 @@ void modulators()
 		return out;
 	};
 	const auto sources = [](const Value& _doc) { return _doc.find("sources")->asArray().size(); };
+	check(saved.find("schema")->asString() == "mm-desk/modulators" && saved.find("version")->asNumber() == 1 && sources(saved) == 1 && !saved.find("knobCcs"),
+		"the MM writes its setup in the 0.x shape (the bare modulators, solo beside them), so 0.7 reads it");
 	check(saved.find("solo") == nullptr, "no solo yet: the setup holds none");
 	msg(R"({"op":"soloSet","id":2,"tracks":[4,1],"mutes":[0,7]})");
 	check(last("result")->find("ok")->asBool() && saved.find("solo") && list(saved.find("solo"), "tracks") == std::vector<int>{1, 4}
@@ -1207,6 +1209,28 @@ void modulators()
 	page.clear();
 	check(d.loadSetup(project).empty() && list(last("solo"), "tracks") == std::vector<int>{1, 4} && list(last("solo"), "mutes") == std::vector<int>{0, 7},
 		"a project's solo loads and is said to the page");
+	// the bare modulators document with the solo beside it (0.x and 1.0 write it); and the mm-desk/setup wrapper
+	page.clear();
+	check(d.loadSetup(*ed::json::parse(R"({"schema":"mm-desk/modulators","version":1,"sources":[{"id":"l1","kind":"lfo","rate":"1/8"}],
+		"links":[{"source":"l1","track":1,"param":9}],"solo":{"tracks":[2],"mutes":[5]}})")).empty()
+		&& list(last("solo"), "tracks") == std::vector<int>{2} && last("mod") && last("mod")->find("doc")->find("sources")->asArray().size() == 1,
+		"a 0.x project's setup (bare modulators, solo beside them) loads");
+	check(d.loadSetup(*ed::json::parse(R"({"schema":"mm-desk/setup","version":1,"modulators":{"schema":"mm-desk/modulators","version":1,"sources":[]},
+		"solo":{"tracks":[7]}})")).empty() && list(last("solo"), "tracks") == std::vector<int>{7}, "the wrapper (mm-desk/setup) is read too");
+	// a newer editor's setup: what can be used loads, a bad item is left out alone; a newer major is the default
+	page.clear();
+	auto errors = d.loadSetup(*ed::json::parse(R"({"schema":"mm-desk/setup","version":1.1,"engine":"x",
+		"modulators":{"schema":"mm-desk/modulators","version":1,"sources":[{"id":"l1","kind":"lfo"},{"id":"w1","kind":"wave"}],
+			"links":[{"source":"l1","track":5,"param":63},{"source":"l1","track":6,"param":1},{"source":"w1","track":0,"param":0}]},
+		"solo":{"tracks":[0,11]}})"));
+	const auto* mod = last("mod");
+	check(errors.size() == 3 && mod && mod->find("doc")->find("sources")->asArray().size() == 1 && mod->find("doc")->find("links")->asArray().size() == 1
+		&& list(last("solo"), "tracks") == std::vector<int>{0, 11}, "a newer setup: the unknown kind and the links it cannot use are left out alone");
+	page.clear();
+	errors = d.loadSetup(*ed::json::parse(R"({"schema":"mm-desk/setup","version":2,"solo":{"tracks":[3]}})"));
+	check(errors.size() == 1 && last("mod")->find("doc")->find("sources")->asArray().empty() && list(last("solo"), "tracks").empty(),
+		"a newer major version: the default setup (not the previous project's), and said");
+	check(d.loadSetup(project).empty(), "the project's setup again");
 	page.clear();
 	msg(R"({"op":"ready"})");
 	check(list(last("solo"), "tracks") == std::vector<int>{1, 4}, "a page made again gets the solo");

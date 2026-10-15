@@ -1,4 +1,5 @@
 #include "processor.h"
+#include "projectState.h"
 
 #include <algorithm>
 #include <limits>
@@ -28,8 +29,8 @@ namespace synthLib
 
 namespace pluginLib
 {
-	constexpr char g_saveMagic[] = "DSP56300";
-	constexpr uint32_t g_saveVersion = 2;
+	constexpr const auto& g_saveMagic = g_projectMagic;	// the frame: projectState.h
+	constexpr uint32_t g_saveVersion = g_projectVersion;
 	constexpr const char* const g_defaultProgramName = "default";
 
 	Processor::Processor(const BusesProperties& _busesProperties, Properties _properties)
