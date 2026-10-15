@@ -46,3 +46,11 @@ document.addEventListener("keydown", e => {
 document.addEventListener("wheel", e => { const v = e.target.closest?.(".gv[data-gv]"); if (!v) return; e.preventDefault(); genVal(v.dataset.gv, ((e.deltaY || e.deltaX) < 0 ? 1 : -1) * (e.shiftKey ? 10 : 1)); }, { passive: false });
 /* how much a dragged value moves a notch: the percentages two */
 const gvDragStep = k => k === "dens" || k === "amt" || k === "racc" ? 2 : 1;
+
+/* the step-gesture popup (the ? key): it opens above the key and is kept fully inside the window, right of the track list (it is measured while hidden, then shifted) */
+function legendFit(box) {
+	const p = box && box.querySelector(".glegpop"); if (!p) return;
+	p.style.transform = ""; const r = p.getBoundingClientRect(), rail = document.querySelector("#rail"), lo = (rail ? rail.getBoundingClientRect().right : 0) + 8, hi = innerWidth - 8;
+	const dx = r.left < lo ? lo - r.left : r.right > hi ? hi - r.right : 0; if (dx) p.style.transform = `translateX(${dx}px)`;
+}
+for (const ev of ["mouseover", "focusin"]) document.addEventListener(ev, e => { const b = e.target.closest?.(".steplegend"); if (b) legendFit(b); });

@@ -15,12 +15,12 @@
 .genbar .ptog{margin-left:2px}
 .steplegend{position:relative;flex:none;height:30px;display:flex;align-items:center}
 .glegkey{width:22px;height:22px;padding:0;border-radius:50%;font:700 12px var(--sans);letter-spacing:0;display:grid;place-items:center}
-.glegpop.legend{display:none;position:absolute;right:-6px;bottom:calc(100% + 24px);z-index:30;flex-direction:column;align-items:stretch;gap:7px;margin:0;padding:10px 12px;background:var(--plate);border-radius:4px;box-shadow:0 6px 24px rgba(0,0,0,.45),inset 0 0 0 1px var(--rule);white-space:normal;width:300px;font:12px var(--sans);color:var(--print2)}
+.glegpop.legend{display:flex;visibility:hidden;pointer-events:none;position:absolute;right:-6px;bottom:calc(100% + 24px);z-index:30;flex-direction:column;align-items:stretch;gap:7px;margin:0;padding:10px 12px;background:var(--plate);border-radius:4px;box-shadow:0 6px 24px rgba(0,0,0,.45),inset 0 0 0 1px var(--rule);white-space:normal;width:300px;font:12px var(--sans);color:var(--print2)}
 .glegpop.legend>span{display:grid;grid-template-columns:16px 66px 1fr;gap:8px;align-items:start}
 .glegpop.legend b{font-weight:600;color:var(--print)}
 .glegpop.legend i.lg.none{background:none}
 .glegpop.legend small{font:11px var(--mono);color:var(--print3);padding-top:2px;border-top:1px solid var(--rule)}
-.steplegend:hover .glegpop,.glegkey:focus-visible+.glegpop{display:flex}
+.steplegend:hover .glegpop,.glegkey:focus-visible+.glegpop{visibility:visible;pointer-events:auto}
 .genband{display:flex;align-items:flex-end;gap:16px;min-width:0;height:var(--genband);box-sizing:border-box;margin:5px 0 0;padding:6px 10px 7px 12px;background:var(--plate3);border-radius:4px;white-space:nowrap;overflow:hidden;flex:none;font:12px var(--mono);color:var(--print2)}
 .gbt{display:grid;gap:4px;flex:none;align-self:center;min-width:92px}
 .gbt b{font:700 13px var(--sans);letter-spacing:.22em;text-transform:uppercase;color:var(--print)}
@@ -64,3 +64,7 @@
 @media (max-width:1500px){.genband .gwrite~.gsum{display:none}.genband .gsum .gopt{display:none}}
 .th .nm.tagged{gap:4px}
 .th .nm .gtag{font:10px var(--pix);font-style:normal;color:var(--ink);background:var(--lcd);padding:0 3px;border-radius:2px;margin-left:auto;flex:none;align-self:center;white-space:nowrap}
+
+/* The track list's names (both editors): the name ends with an ellipsis when it does not fit, never a hard clip; the full machine name is its tooltip */
+.rail .th .nm{overflow:hidden}
+.rail .th .nm b{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
