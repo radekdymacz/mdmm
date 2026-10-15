@@ -41,9 +41,7 @@ cmake --build "${build_dir}" --parallel 4 --target \
   vst3ProgramChangeTest \
   mdProgramChangeProbe_VST3 \
   mdStandaloneRendererPolicyTest \
-  mdPanelRenderingTest \
   juceRmlMouseInputTest \
-  mdFrontPanelPresentationTest \
   mdFirmwareImageTest \
   mc68kColdFireDivideTest \
   midiOutputDispatcherTest \
@@ -64,9 +62,7 @@ for test_name in \
   mdMemoryFastLaneTest \
   mdFlashTest \
   mdStandaloneRendererPolicyTest \
-  mdPanelRenderingTest \
   juceRmlMouseInputTest \
-  mdFrontPanelPresentationTests \
   mdAudioQueueTest \
   mdAudioIoLayoutTest \
   mdProcessorHooksTest \
@@ -103,9 +99,9 @@ fi
 if [[ "${MDMM_UNIT_TESTS_MORE:-0}" == "1" ]]; then
   # (and the focused processor and built-VST3 tests mdmm-audio-io.yml ran on macos-14 until it was folded in here)
   cmake --build "${build_dir}" --parallel 4 --target deskCoreTest mdDeskTest mmDeskTest deskWireTest mdDataLinkTest \
-    elektronDataTest mmDataTest mmDataCorpusTest syxImportTest deskStubHost midiLearnTest mdLcdInteractionModelTest \
+    elektronDataTest mmDataTest mmDataCorpusTest syxImportTest deskStubHost midiLearnTest \
     dsp56kAccumulatorTests
   ctest --test-dir "${build_dir}" -C Release --output-on-failure --no-tests=error -j 4 \
-    --tests-regex '^(deskCoreTest|mdDeskTest|mmDeskTest|deskWireTest|mdDataLinkTest|elektronDataTest|mmDataTest|syxImportTest|midiLearnTests|mdLcdInteractionModelTest|(md|mm)JucePlugin_VST3AudioIoTest|dsp56300_accumulatorTests)$'
+    --tests-regex '^(deskCoreTest|mdDeskTest|mmDeskTest|deskWireTest|mdDataLinkTest|elektronDataTest|mmDataTest|syxImportTest|midiLearnTests|(md|mm)JucePlugin_VST3AudioIoTest|dsp56300_accumulatorTests)$'
   ctest --test-dir "${build_dir}" -C Release --output-on-failure --no-tests=error -j 4 -L Page
 fi

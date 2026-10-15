@@ -8,7 +8,7 @@ Selection: label UnitTest, without Slow (long), Timing (a shared runner's clock 
 tests run in the page suite, mdmm-page.yml) and dsp56300 (its own step). Firmware tests carry other labels
 (FirmwareTest, Integration) and the ones that read a local file skip themselves (exit 77), so no test is picked by
 name. A test is selected when it has a build target of its own name, or of its name without a final "s"
-(mdFrontPanelPresentationTests): tests that run a script (node, python, cmake) or share another test's executable
+(mdLibTests): tests that run a script (node, python, cmake) or share another test's executable
 are left to their own jobs.
 """
 import json
