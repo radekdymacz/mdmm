@@ -3,7 +3,9 @@
 Radek chose way A on 2026-10-12 (doc/release/IDEAS.md I-024): what you save on the machine is there in every new
 session, like a real Machinedrum or Monomachine with its battery-backed memory. A DAW project still opens with its own
 memory. Code: `source/elektron/md/mdJucePlugin/mdMachineMemory.h` (the slot layout, the file, merge and overlay, the
-write policy; pure) and the processor's part (`mdPluginProcessor.cpp`, "machine memory").
+write policy, each machine's memory shape; pure) and `MachineMemoryService` (`mdMachineMemoryService.h`: the thread, the
+watch, the file's reads and writes, the start), which reaches the machine only through `MachineMemoryPort` (the
+processor's side, `mdMachineMemoryDevice.h`); the processor owns one and forwards the host's events.
 
 **The file is a store of saved slots, not a snapshot of the memory** (second review, 2026-10-12; see "Why slots"
 below). A save writes only the slots it changed into the file: the file is read, those slots are merged in, the file
@@ -161,7 +163,7 @@ is a save. CCs from a DAW with live recording off change the working kit only.
   the factory patterns play). A sample another program sends by SDS is written with the next sample the page sends.
 - **A new machine** (another hardware epoch or another device: a reboot, MIDI panic's restart, a ROM installed, the MD's
   factory flash prepared, a storage image): the base stays, so what differs from it is a save, written as one (E). Only
-  a memory replaced on purpose (`machineMemoryWillBeReplaced`: a project's state, the file's slots at the start,
+  a memory replaced on purpose (`MachineMemoryService::willBeReplaced`: a project's state, the file's slots at the start,
   factory memory) writes the saves of the memory before first and then takes the new memory as the base once it holds
   still for a look; opening a project therefore writes nothing until something is saved in it.
 - **The file's lock** (`mdMachineMemoryLock.h`). Every read-merge-write, every move of the file, its deletion and the
