@@ -208,8 +208,10 @@ namespace mdmmUpdate
 		if(!doc->isObject())
 			return fail("not an object");
 		const auto* schema = doc->find("schema");
-		if(!schema || !schema->isNumber() || schema->asNumber() != 1)
-			return fail("schema is not 1");
+		// Schema 1 or newer: a later feed adds fields, never changes the ones read here, so an old build
+		// keeps its update check (only the fields below are read; unknown ones are ignored).
+		if(!schema || !schema->isNumber() || schema->asNumber() < 1)
+			return fail("schema is below 1");
 
 		Manifest m;
 		const auto* version = stringOf(*doc, "version");

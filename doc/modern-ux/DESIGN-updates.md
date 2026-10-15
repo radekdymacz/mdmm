@@ -86,7 +86,7 @@ check". One code path on three systems, on a background thread, never the audio 
 - `size`: bytes (integer). `sha256`: 64 lowercase hex. `sig`: base64 (88 characters) of the 64-byte ed25519 signature, or
   absent when the release was not signed.
 
-Rules for readers (the app, `mdmmUpdate::parseManifest`): `schema` must be 1; `version` is `MAJOR.MINOR.PATCH`;
+Rules for readers (the app, `mdmmUpdate::parseManifest`): `schema` must be 1 or newer (later feeds only add fields; a reader reads the ones it knows and ignores the rest); `version` is `MAJOR.MINOR.PATCH`;
 an OS or a machine may be missing (no build for it: the app offers the site instead); unknown members are ignored. Any
 other deviation (not JSON, wrong types, a bad hash, a foreign URL, a name that is not the fixed one) is "malformed" and
 the app says nothing to the user.
