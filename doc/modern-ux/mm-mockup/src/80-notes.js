@@ -31,11 +31,10 @@ function arpTicks(t,span){const tr=trk(t),a=tr.arp;if(!a.MODE||!a.SPD)return[];i
  for(let k=0;k*tl<span.e-span.s&&k<256;k++){const r=k%a.len;if(!a.rhy[r])continue;out.push({x:span.s+k*tl,w:tl,n:seq[k%seq.length]+a.ofs[r]})}return out}
 /* a lane-style key per arp step: the offset is a bipolar LED meter from the middle line (±24 = the half key) */
 /* only the arp's length is drawn (as the grid fits the pattern's length), one step after it is a "+" that adds a step */
-const arpCols=a=>`repeat(${a.len},minmax(0,1fr))${a.len<16?" 56px":""}`;
+const arpCols=a=>`repeat(${a.len},minmax(0,1fr))`;
 function arpCells(a){const n=a.len,cells=Array.from({length:n},(_,k)=>{const o=a.ofs[k],on=a.rhy[k],f=(Math.abs(o)/24).toFixed(4);
  return`<div class="ac ${on?"":"mute"}" data-ac="${k}" title="Step ${k+1}: ${on?"plays, offset "+(o>0?"+":"")+o:"muted"}. Click = mute, drag = offset.">`+`<span class="z"></span><i class="${o>=0?"up":"dn"}" style="${o>=0?`bottom:50%;height:max(2px,calc((50% - 8px)*${f}))`:`top:50%;height:calc((50% - 8px)*${f})`}"></i><b>${o?(o>0?"+":"")+o:k+1}</b></div>`});
- if(n<16)cells.push(`<div class="ac na add" data-ac="${n}" title="Add step ${n+1}: the arp gets one step longer"><b>+</b></div>`);return cells.join("")}
-const arpLenRow=a=>Array.from({length:a.len},(_,k)=>`<button class="on" data-arplen="${k+1}" aria-label="Length ${k+1}" title="Length ${k+1}: the arp ends after this step (the LEVEL knob)"></button>`).join("")+(a.len<16?"<span></span>":"");
+ return cells.join("")}
 /* The dock's tabs share one layout, the lock lane's: the rail's LOCK PARAMETER keys area holds the panel's
    choices as keys (a group label over each row, the lock-parameter key style), the dock body holds one row of
    value boxes on eight fixed columns and the panel's picture under it, down to the lane's bottom line. The
@@ -99,8 +98,6 @@ ED.dktrig={geo(W,H,c){const a=trk(S.sel).v.AMP,e=ampTimes(a)||{at:0,ho:0,de:Infi
   if(G.inf){g.fillStyle=ink;g.beginPath();g.moveTo(G.x1+7,G.Y(1));g.lineTo(G.x1,G.Y(1)-4);g.lineTo(G.x1,G.Y(1)+4);g.fill()}
   else{g.setLineDash([3,3]);g.strokeStyle=inkA(.6);g.lineWidth=1;g.beginPath();g.moveTo(Math.round(end)+.5,G.T-6);g.lineTo(Math.round(end)+.5,G.B);g.stroke();g.setLineDash([]);
    g.fillStyle=ink;const t="≈"+dkSteps(G.tot);g.fillText(t,Math.min(G.x1-t.length*5,end+4),G.T)}
-  /* segment names, inside the shape where they fit */
-  [["ATK",0,G.at],["HOLD",G.at,G.at+G.ho],["DEC",G.at+G.ho,G.inf?G.span:G.tot]].forEach(([n,s0,s1])=>{const w=G.X(s1)-G.X(s0);if(w<n.length*6+4)return;g.fillStyle=ink;g.fillText(n,(G.X(s0)+G.X(Math.min(s1,G.span)))/2-n.length*3,G.B-5)});
   dkLabel(g,G.inf?"One gate · DEC 127 holds to the NOTE OFF":"One gate · steps after the trig");
   /* the glide: note 1 low, note 2 high, starting before note 1 ends (they overlap); the line is the pitch */
   const L=this.leg(W,H),on=["amp","flt","lfo"].filter(k=>tr.leg[k]);g.fillStyle=inkA(.2);g.fillRect(G.g0-14,6,1,H-12);
@@ -168,10 +165,10 @@ const dkScale=(a,b,c)=>`<div class="dkscale" aria-hidden="true"><b>${a}</b><b>${
    place, so a dot being dragged keeps its canvas. */
 function syncDock(){const v=$("#dkvis[data-live]");if(!v||S.ws!=="seq")return;const t=S.sel,d=S.dock;if(v.querySelector("canvas.ed"))redraw();else v.innerHTML=dockVis(t,d);const r=$("#dkread");if(r)r.innerHTML=dockRead(t,d)}
 function arpPanel(t){const a=trk(t).arp;
- return`${dkVals([pc("arp","SPD",{t}),pc("arp","RNGE",{t}),pc("arp","OJMP",{t})],"dk3")}<div class="dkvis" id="dkvis">
-  <div class="arptrack" id="arptrack" style="grid-template-columns:${arpCols(a)}" title="Rhythm + offset: click a step to mute it, drag it up or down for an offset (−24…+24), click + to add a step">${arpCells(a)}</div>
-  ${dkScale("+24","0","−24")}<div class="arplenrow" style="grid-template-columns:${arpCols(a)}">${arpLenRow(a)}</div></div>`}
+ return`<div class="dkvis" id="dkvis">
+  <div class="arptrack" id="arptrack" style="grid-template-columns:${arpCols(a)}" title="Rhythm + offset: click a step to mute it, drag it up or down for an offset (−24…+24). LEN sets how many steps there are">${arpCells(a)}</div>
+  ${dkScale("+24","0","−24")}</div>${dkVals([pc("arp","SPD",{t}),pc("arp","RNGE",{t}),pc("arp","OJMP",{t}),pc("arp","len",{t,label:"LEN"})],"dk4")}`}
 function trnPanel(t){return`${dkVals([pc("trn","TRACK",{t,label:"TRACK"}),pc("ptrn","PAT",{t,label:"PAT · all"})])}<div class="dkvis" id="dkvis" data-live="1">${dockVis(t,"trn")}</div>`}
-function trigPanel(t){return`${dkVals([pc("AMP",0,{t,label:"ATK"}),pc("AMP",1,{t,label:"HOLD"}),pc("AMP",2,{t,label:"DEC"}),pc("AMP",7,{t,label:"PORT"})],"dktv")}<div class="dkvis" id="dkvis" data-live="1">${dockVis(t,"trig")}</div>`}
+function trigPanel(t){return`<div class="dkvis" id="dkvis" data-live="1">${dockVis(t,"trig")}</div>${dkVals([pc("AMP",0,{t,label:"ATK"}),pc("AMP",1,{t,label:"HOLD"}),pc("AMP",2,{t,label:"DEC"}),pc("AMP",7,{t,label:"PORT"})],"dktv")}`}
 function midiPanel(t){const tr=trk(t);
  return`${dkVals([0,1,2,3,4,5,6,7].map(i=>pc("MID",i,{t,label:i<4?FIXED.MID[i]:"CC "+(tr.cc[i-4]===128?"AFT":tr.cc[i-4])})))}<div class="dkvis" id="dkvis">${dkVals([0,1,2,3].map(()=>`<span class="dkcell"></span>`).concat([0,1,2,3].map(i=>pc("cc",i,{t,label:"CL"+(i+1)}))),"dkvals2")}</div>`}

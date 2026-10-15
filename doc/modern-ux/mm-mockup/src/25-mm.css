@@ -55,7 +55,8 @@ img,svg,canvas{-webkit-user-drag:none}
 #seq.midi canvas.roll[data-big]{height:clamp(160px,calc(100vh - 518px),620px)!important}
 .genbar .pagectl .pleds{align-self:center}
 /* under the roll: ? and the roll keys on the left, the page keys on the right */
-.ws-seq #main>.genbar .pagectl{margin-left:auto!important}
+.ws-seq #main>.genbar .pagectl{margin-left:0!important}
+.ws-seq #main>.genbar .rollkeys{margin-left:auto}
 /* the piano roll's Draw key (B) and the length a new note gets (I-007, I-010), beside the page keys */
 .rollkeys{display:flex;align-items:center;gap:6px;flex:none;height:30px}
 .genbar .rollkeys .rolllen{min-width:58px;letter-spacing:.06em;text-transform:none}
@@ -310,7 +311,8 @@ canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop
 #rail .dkk:last-child{border-right:0}
 #rail .dkrow.tight .dkk{font-size:10.5px;letter-spacing:.02em}
 .dkna{height:28px;font:12px/28px var(--mono)}
-.dkvals.dk3{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.dkvals.dk4{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.ws-seq .lanewrap>.dockbody.dk-arp,.ws-seq .lanewrap>.dockbody.dk-trig{grid-template-rows:minmax(0,1fr) 34px}
 .dkvals.dktv{grid-template-columns:repeat(3,minmax(0,1fr)) calc(clamp(170px,26%,300px) + 2px);gap:8px}
 .ws-seq .lanewrap>.dockbody.dk-trig,.ws-seq .lanewrap>.dockbody.dk-trn{padding-left:0}
 .dkvis .arptrack .ac i{left:max(6px,calc(50% - 44px));right:max(6px,calc(50% - 44px))}
