@@ -49,7 +49,7 @@ jobs:
       CMAKE_OBJCXX_COMPILER_LAUNCHER: ccache
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
           submodules: recursive
@@ -66,7 +66,7 @@ jobs:
       # One cache per branch and toolchain; a new branch starts from main's (the default branch: its caches are
       # readable from every branch). Saved after every run, pass or fail, under a new key.
       - name: Restore the compiler cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ runner.temp }}/ccache
           key: ccache-v1-macos15-universal-${{ github.ref_name }}-${{ github.run_id }}
@@ -113,12 +113,12 @@ jobs:
 
       - name: Save the compiler cache
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ runner.temp }}/ccache
           key: ccache-v1-macos15-universal-${{ github.ref_name }}-${{ github.run_id }}
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: macos-mdmm-universal
           path: artifacts/macos-mdmm/Gearmulator-Elektron-macOS-*.zip
@@ -136,7 +136,7 @@ jobs:
       CCACHE_MAXSIZE: 2G
       CCACHE_COMPRESS: "true"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 1
           submodules: recursive
@@ -150,7 +150,7 @@ jobs:
           echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> "${GITHUB_ENV}"
 
       - name: Restore the compiler cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ runner.temp }}/ccache
           key: ccache-v1-macos15-arm64-tests-${{ github.ref_name }}-${{ github.run_id }}
@@ -187,7 +187,7 @@ jobs:
 
       - name: Save the compiler cache
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ runner.temp }}/ccache
           key: ccache-v1-macos15-arm64-tests-${{ github.ref_name }}-${{ github.run_id }}
@@ -202,12 +202,12 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 1
           submodules: false
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: macos-mdmm-universal
           path: ${{ runner.temp }}/macos-mdmm
@@ -223,7 +223,7 @@ jobs:
           MDMM_EXPECT_SIGNED: "0"
         run: ./scripts/macos/verify_mdmm_signed.sh "${RUNNER_TEMP}/mdmm-pkg"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: macos-mdmm-ci-installers-UNSIGNED
           path: |
@@ -237,7 +237,7 @@ jobs:
     runs-on: macos-14
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 1
           submodules: false
@@ -250,7 +250,7 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/out"
           ditto -c -k --keepParent "${app}" "${RUNNER_TEMP}/out/mdmmVst3EditorHost-macOS.zip"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: macos-vst3host
           path: ${{ runner.temp }}/out/mdmmVst3EditorHost-macOS.zip
@@ -268,17 +268,17 @@ jobs:
     timeout-minutes: 25
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 1
           submodules: false
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: macos-vst3host
           path: ${{ runner.temp }}/vst3host
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: macos-mdmm-universal
           path: ${{ runner.temp }}/macos-mdmm
@@ -306,7 +306,7 @@ jobs:
             "${PACKAGE_DIR}/${MDMM_PRODUCT_NAME_MD}.vst3" "${PACKAGE_DIR}/${MDMM_PRODUCT_NAME_MM}.vst3" \
             "${PACKAGE_DIR}/${MDMM_PRODUCT_NAME_MD}.component" "${PACKAGE_DIR}/${MDMM_PRODUCT_NAME_MM}.component"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: macos-mdmm-pluginval-${{ matrix.os }}
@@ -314,7 +314,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: macos-mdmm-smoke-${{ matrix.os }}

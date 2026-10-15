@@ -24,9 +24,8 @@ on:
         description: "The published release's tag (mdmm-vMAJOR.MINOR.PATCH)"
         required: true
 
-permissions:
-  contents: write
-  pull-requests: write
+# No workflow-wide write: the one job below asks for what it needs.
+permissions: {}
 
 concurrency:
   group: mdmm-site-release
@@ -36,6 +35,9 @@ jobs:
   site:
     name: latest.json, config.js, deploy
     runs-on: ubuntu-latest
+    permissions:
+      contents: write        # latest.json and config.js pushed to main
+      pull-requests: write   # the fallback pull request when main refuses the push
     timeout-minutes: 75
     env:
       GH_TOKEN: ${{ github.token }}
@@ -69,7 +71,7 @@ jobs:
             echo "date=${published:-$(date -u +%Y-%m-%d)}"
           } >> "${GITHUB_OUTPUT}"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         if: steps.release.outputs.skip == 'false'
         with:
           ref: main
@@ -153,7 +155,7 @@ jobs:
             exit 0
           fi
           cd site
-          npx --yes wrangler@4 deploy
+          npx --yes wrangler@4.149.0 deploy
           curl -fsS https://mdmm.dev/latest.json | python3 -c 'import json,sys; d=json.load(sys.stdin); print("mdmm.dev/latest.json says", d["version"])' \
             || echo "::warning::mdmm.dev/latest.json is not readable yet (cache, or the deploy did not take)."
 
