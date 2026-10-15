@@ -118,7 +118,8 @@ list(APPEND SOURCES
 	skins/shared/deskZoom.js
 	skins/shared/deskAbout.js skins/shared/deskAboutTest.js
 	skins/shared/deskCpu.js skins/shared/deskCpu.css skins/shared/deskCpuTest.js skins/shared/deskTopFit.css skins/shared/deskTopFit.js
-	skins/shared/deskVolume.js skins/shared/deskVolume.css skins/shared/deskVolumeTest.js)
+	skins/shared/deskVolume.js skins/shared/deskVolume.css skins/shared/deskVolumeTest.js
+	skins/shared/deskTrig.js skins/shared/deskTrig.css)
 
 # P6: the editors' diagnostics (the log of the web view, the window chrome and the session's
 # state, and the pages' self-tests: mdDeskSelfTest.js, mmSelfTest.js) observe the editors. Off by
@@ -150,7 +151,7 @@ set(MD_SHARED_PAGE_FILES
 	"skins/shared/deskModal.js" "skins/shared/deskMenu.js" "skins/shared/deskTransport.js" "skins/shared/deskCaps.js" "skins/shared/deskBoot.js" "skins/shared/deskSyx.js" "skins/shared/deskBridge.js"
 	"skins/shared/deskDrop.js" "skins/shared/deskDocs.js" "skins/shared/deskOverlay.js" "skins/shared/deskGen.js" "skins/shared/deskGenBar.js" "skins/shared/deskLaneShapes.js" "skins/shared/deskSoundLayout.js"
 	"skins/shared/deskKeys.js" "skins/shared/deskKeyView.js" "skins/shared/deskSongSlots.js" "skins/shared/deskWhat.js" "skins/shared/deskTogglePaint.js" "skins/shared/deskSelect.js" "skins/shared/deskValueEdit.js"
-	"skins/shared/deskAudio.js" "skins/shared/deskGlobal.js" "skins/shared/deskCompat.js" "skins/shared/deskZoom.js" "skins/shared/deskAbout.js" "skins/shared/deskCpu.js" "skins/shared/deskVolume.js" "skins/shared/deskTopFit.js")
+	"skins/shared/deskAudio.js" "skins/shared/deskGlobal.js" "skins/shared/deskCompat.js" "skins/shared/deskZoom.js" "skins/shared/deskAbout.js" "skins/shared/deskCpu.js" "skins/shared/deskVolume.js" "skins/shared/deskTopFit.js" "skins/shared/deskTrig.js")
 file(GLOB MD_SKIN_ASSETS CONFIGURE_DEPENDS
 	"skins/mdStudio/*.rml" "skins/mdStudio/*.html" "skins/mdStudio/mdDesk.css" "skins/mdStudio/*.js"
 	"skins/mdStudio/fonts/*.woff2" "skins/mdStudio/fonts/*.ttf")

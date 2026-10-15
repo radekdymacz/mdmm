@@ -8,14 +8,13 @@ function renderMix() {
 	$("#main").innerHTML = `<div class="panel pad">
  <div class="scroll"><div class="strips">${V.tracks.map((t, i) => {
 		const out = t.out || "MAIN", direct = out !== "MAIN"; return `<div class="strip ${i === S.sel ? "sel" : ""} ${direct ? "direct" : ""}" data-sel="${i}" style="${audible(i) ? "" : "opacity:.5"}">
-  <div class="top2"><i class="led act" data-act="${i}"></i><span>${i + 1}</span></div>
+  <div class="top2"><span class="tn">${i + 1}</span><span class="tnm" title="${t.name}">${t.m}</span><i class="trigsq" data-trig="${i}" aria-hidden="true" title="Flashes when track ${i + 1} trigs"></i></div>
   ${levBox(i)}
   ${"VOL" in t.rt ? `<div class="fader" role="slider" tabindex="0" aria-label="Track ${i + 1} volume" data-g="rt" data-n="VOL" data-t="${i}"><div class="tr"><i></i></div><div class="cap2"></div></div>` : `<div class="fader"></div>`}
   <div class="v" data-show="${i}"></div>
   ${["PAN", "DIST", "DEL", "REV"].map(n => n in t.rt ? (direct && (n === "DEL" || n === "REV") ? pc("rt", n, { t: i }).replace('class="pc"', `class="pc mainonly" title="${n === "DEL" ? "Delay" : "Reverb"} sends only reach the main outputs; this track goes to OUT ${out}. The value is kept."`) : pc("rt", n, { t: i })) : `<div class="pc empty" aria-hidden="true"></div>`).join("")}
   <button class="outk ${direct ? "on" : ""}" data-out="${i}" title="${direct ? "Individual output " + out + ": skips the master effects" : "Main output, through the master effects"}">OUT ${out}</button>
-  <div class="mrow"><button class="ms m" data-mute="${i}" aria-pressed="${t.mute}" aria-label="Mute track ${i + 1}">M</button><button class="ms s" data-solo="${i}" aria-pressed="${t.solo}" aria-label="Solo track ${i + 1}">S</button></div>
-  <div class="nm" title="${t.name}">${t.m}</div></div>`;
+  <div class="mrow"><button class="ms m" data-mute="${i}" aria-pressed="${t.mute}" aria-label="Mute track ${i + 1}">M</button><button class="ms s" data-solo="${i}" aria-pressed="${t.solo}" aria-label="Solo track ${i + 1}">S</button></div></div>`;
 	}).join("")}</div></div></div>
  <div class="flow" aria-label="Signal path">SENDS <i>→</i> RHYTHM ECHO <i>→</i> GATE BOX <i>→</i> MASTER EQ <i>→</i> DYNAMIX <i>→</i> MAIN OUT <span>tracks on A–F skip this chain</span></div>
  <div class="fx4">${Object.entries(V.mfx).map(([id, f]) => `<section class="card"><header><h3>${f.name}</h3><span>${{ echo: "DEL send", gate: "REV send + DVOL", eq: "main out", dyn: "main out" }[id]}</span></header>

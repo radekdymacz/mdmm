@@ -161,18 +161,19 @@ function renderMemoryMenu() {
 Bridge.onMessage(m => { if (m.type === "machineMemory") { Object.assign(Memory, { keep: !!m.keep, available: !!m.available, saved: !!m.saved, note: m.note || "" }); renderMemoryMenu(); } });
 
 /* I-002: a note from a MIDI keyboard (the plug-in's midiIn) on the global's base channel plays the track its map gives
-   (GLOBAL › Map editor); that track's number on the rail and its Mix LED light for a moment, as a trig does. Notes that
+   (GLOBAL › Map editor); that track's number on the rail and its Mix trig square light for a moment, as a trig does. Notes that
    come together are drawn in one pass (one timer, at most one a frame), so a burst never floods the page. */
 const NoteLights = { due: new Set(), timer: 0 };
 function noteLight(m) {
 	const g = Docs.global; if (!g || !(g.baseChannel >= 0 && g.baseChannel <= 12) || m.ch !== g.baseChannel) return;
 	if (V.caps.engine === "hw") return;	/* HW MIDI: what comes in is the real machine's own MIDI OUT, not a player */
 	const t = g.keymap?.[m.note]; if (!(t >= 0 && t < 16)) return;
+	if (S.ws === "mix" && audible(t)) DeskTrig.light([t]);
 	NoteLights.due.add(t); if (NoteLights.timer) return;
 	NoteLights.timer = setTimeout(() => {
 		NoteLights.timer = 0;
 		/* its own class and timer ("hit"), so it never ends a trig's flash of the Mix LED ("on") early */
-		for (const i of NoteLights.due) for (const l of document.querySelectorAll(`#rail .th[data-sel="${i}"], .act[data-act="${i}"]`)) {
+		for (const i of NoteLights.due) for (const l of document.querySelectorAll(`#rail .th[data-sel="${i}"]`)) {
 			l.classList.add("hit"); clearTimeout(l.nlT); l.nlT = setTimeout(() => l.classList.remove("hit"), 140);
 		}
 		NoteLights.due.clear();
@@ -320,7 +321,7 @@ function onTelemetry(m) {
 		else { delete S.capture[n]; if (r >= 0) userMute(r, true); toast("RAM " + n + " captured and frozen."); if (S.ws === "sampler") render(); }
 	}
 	const pp = Math.floor(Math.max(0, S.step) / 16);
-	if (S.ws === "mix" && S.step >= 0) V.tracks.forEach((t, i) => { if (t.trigs[S.step] && audible(i)) { const l = document.querySelector(`.act[data-act="${i}"]`); if (l) { l.classList.add("on"); setTimeout(() => l.classList.remove("on"), 90); } } });
+	if (S.ws === "mix" && V.playing && S.step >= 0) DeskTrig.light(V.tracks.map((t, i) => t.trigs[S.step] && audible(i) ? i : -1).filter(i => i >= 0));
 	if ((S.ws === "seq" || S.ws === "sound") && V.playing && S.step >= 0) railLamps(V.tracks.map((t, i) => t.trigs[S.step] && audible(i) ? i : -1).filter(i => i >= 0));
 	$$(".pl").forEach(b => b.classList.toggle("play", +b.dataset.plp === pp && V.playing));
 	if (S.follow && (S.ws === "seq" || S.ws === "sampler") && !S.viewAll && pp !== S.page && !Held.as("lane") && V.playing) { S.page = pp; render(); }
