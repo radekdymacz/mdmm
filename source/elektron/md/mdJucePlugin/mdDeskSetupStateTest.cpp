@@ -182,6 +182,25 @@ int main()
 		std::vector<synthLib::SMidiEvent> in;
 		b.getExternalMidi().drainIn(in);
 		check(in.size() == 1 && in[0].sysex.size() == sizeof(reply) && in[0].sysex[6] == 0x72, "and the hardware's SysEx comes to the editor, not the device");
+		// 1.0 review (real time 5): the inbox is made when HW MIDI goes on and never grows on the audio thread; what
+		// does not fit is dropped and counted (still kept from the device), and the next drain has room again
+		{
+			auto& ext = b.getExternalMidi();
+			synthLib::SMidiEvent big(synthLib::MidiEventSource::Physical);
+			big.sysex.assign(pluginLib::ExternalMidi::InCapacity / 2, 0x11);
+			big.sysex.front() = 0xf0;
+			big.sysex.back() = 0xf7;
+			const auto dropped0 = ext.inDropped();
+			const bool kept = ext.takeIn(big) && ext.takeIn(big) && ext.takeIn(big);
+			in.clear();
+			ext.drainIn(in);
+			check(kept && in.size() == 1 && in[0].sysex.size() == big.sysex.size() && ext.inDropped() == dropped0 + 2,
+				"a full inbox drops and counts what does not fit, never gives it to the device");
+			in.clear();
+			const bool again = ext.takeIn(big);
+			ext.drainIn(in);
+			check(again && in.size() == 1 && ext.inDropped() == dropped0 + 2, "after a drain there is room again");
+		}
 		b.getExternalMidi().set(false);
 		jb.releaseResources();
 	}
