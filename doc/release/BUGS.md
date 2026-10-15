@@ -4,6 +4,14 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-147 · Test harness: `mdSyxPickFirmwareTest` crashed (SIGSEGV, exit 139) after its import checks
+
+- **From:** the full gate on main, 2026-10-15 (every run, a quiet Mac too, Release and dev builds; already so at `mdmm-v0.6.0`).
+- **Cause (lldb):** the syxpick case's import set the desk's SysEx tap to a lambda holding its `SyxJob` by reference, and the job was a local of the import. After the import returned the tap stayed on the desk, so the machine's next reply (the first pick after the import) went to the freed job: `SyxJob::onMachineSysex` < `mdDesk::Desk::onDeviceSysex` < `Rig::deliverIn` < `Rig::stepOnce` < `pickedWrong` < `syxPick`. The checks after the import (picks after it, picks while playing, the second import) never ran. The other imports in `mdDeskFirmwareTest` and `mmDeskFirmwareTest` left the tap the same way, harmless only because nothing that reached the tap ran after them.
+- **Product:** not affected. The plug-in's tap goes to the session's own `SyxWork` member (`mdDeskSession.h`), which lives as long as the desk; the session stops its timer (the only caller of the desk's SysEx input) before its members go.
+- **Fix:** an `ImportTap` in both firmware tests sets the tap for the job and takes it off when the job goes (`mdDeskFirmwareTest.cpp`, `mmDeskFirmwareTest.cpp`). Test: `mdDeskFirmwareTest --env syxpick` runs to the end and passes (exit 0, the second import included); `mmDeskFirmwareTest` syxpick, span and syximport pass.
+- **Status:** fixed on `fix/syxpick-exit-crash`.
+
 ## B-145 · Machinedrum: Cmd+Z right after an Alt-drag (filter sweep) leaves the machine swept, the page says undone
 
 - **From:** the 0.6.0 release e2e, 2026-10-14 (`md-sound-keep-clear` step 4, after `md-sound-filter-sweep`: a machine picked with Keep effects + routing, its FLTF read back 21, the page had 31; both pass alone).
