@@ -2011,6 +2011,27 @@ namespace
 		static const Docs& docs(const ed::SyxFile& _f) { return _f.md; }
 	};
 
+	// An import's tap on the machine's SysEx (the session's B-019 read-back), for as long as its job lives. The desk
+	// outlives the job: a tap left on it after the job went handed the next machine reply to freed memory (B-147,
+	// syxpick's SIGSEGV on the first pick after the import).
+	class ImportTap
+	{
+	public:
+		ImportTap(mdDesk::Desk& _desk, mdJucePlugin::SyxJob<MdSyxTraits>& _job) : m_desk(_desk)
+		{
+			m_desk.setSysexTap([&_job](const Bytes& _m) { _job.onMachineSysex(_m); });
+		}
+		~ImportTap()
+		{
+			m_desk.setSysexTap({});
+		}
+		ImportTap(const ImportTap&) = delete;
+		ImportTap& operator=(const ImportTap&) = delete;
+
+	private:
+		mdDesk::Desk& m_desk;
+	};
+
 	ed::MdDocuments machineDocs(const mdDesk::Desk& _desk)
 	{
 		const auto& v = _desk.documents();
@@ -2088,7 +2109,7 @@ namespace
 				rig.runUntil([&] { return rig.pageTelemetry().playing; }, 2000);
 			}
 		}
-		desk.setSysexTap([&job](const Bytes& _m) { job.onMachineSysex(_m); });
+		const ImportTap tap(desk, job);
 		const auto why = job.start(kinds, {}, machineDocs(desk));
 		check(why.empty(), "the import starts" + (why.empty() ? std::string() : ": " + why));
 		const auto secs = [&] { return double(rig.machine().now()) / g_rate; };
@@ -2322,7 +2343,7 @@ namespace
 			const auto& st = desk.linkState();
 			job.open(_bytes, _fileName, machineDocs(desk), {st.pattern ? *st.pattern : -1, st.kit ? *st.kit : -1,
 				st.song ? *st.song : -1, st.globalSlot ? *st.globalSlot : -1});
-			desk.setSysexTap([&job](const Bytes& _m) { job.onMachineSysex(_m); });
+			const ImportTap tap(desk, job);
 			check(job.start(_kinds, {}, machineDocs(desk)).empty(), "the import starts");
 			const double t0 = ms(m.now());
 			const auto step = [&] { if(desk.lifecycle() == deskCore::Lifecycle::Ready)
