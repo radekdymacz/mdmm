@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/mdmm-core.yml"
+      - "scripts/mdmm-ci-unit-targets.py"
       - ".gitmodules"
       - "CMakeLists.txt"
       - "base.cmake"
@@ -37,6 +38,7 @@ on:
       - "release/0.*"
     paths:
       - ".github/workflows/mdmm-core.yml"
+      - "scripts/mdmm-ci-unit-targets.py"
       - ".gitmodules"
       - "CMakeLists.txt"
       - "base.cmake"
@@ -87,12 +89,12 @@ jobs:
         mode: ${{ fromJSON(github.event_name == 'push' && github.ref == 'refs/heads/main' && '["release"]' || '["release", "transport-diagnostics", "asan-ubsan"]') }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           submodules: recursive
 
       - name: Configure compiler cache
-        uses: mozilla-actions/sccache-action@v0.0.11
+        uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba # v0.0.11
         with:
           version: v0.16.0
 
@@ -114,16 +116,16 @@ jobs:
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
             -DBUILD_TESTING=ON \
             -DMD_TRANSPORT_DIAGNOSTICS=${{ matrix.mode == 'transport-diagnostics' && 'ON' || 'OFF' }} \
-            -Dgearmulator_BUILD_JUCEPLUGIN=${{ matrix.mode == 'asan-ubsan' && 'ON' || 'OFF' }} \
+            -Dgearmulator_BUILD_JUCEPLUGIN=${{ matrix.mode != 'transport-diagnostics' && 'ON' || 'OFF' }} \
             -Dgearmulator_BUILD_JUCEPLUGIN_VST3=OFF \
             -Dgearmulator_BUILD_JUCEPLUGIN_AU=OFF \
             -Dgearmulator_BUILD_JUCEPLUGIN_Standalone=OFF
 
       - name: Build and run panel input delivery regression
         run: |
-          cmake --build build-mdmm-core --parallel 4 --target mdLibTest mdShiftPanelLatchTest
+          cmake --build build-mdmm-core --parallel 4 --target mdLibTest
           ctest --test-dir build-mdmm-core -C Release --output-on-failure \
-            --no-tests=error --tests-regex '^(mdLibTests|mdShiftPanelLatchTest|mdEncoderPressFirmwareTest|mmEncoderPressFirmwareTest)$'
+            --no-tests=error --tests-regex '^(mdLibTests|mdEncoderPressFirmwareTest|mmEncoderPressFirmwareTest)$'
 
       - name: Build and run enabled transport diagnostics gates
         if: matrix.mode == 'transport-diagnostics'
@@ -162,7 +164,6 @@ jobs:
           midiOutputDispatcherTest
           mdAutomationParameterTest
           mdAutomationRobustnessTest
-          mdFrontPanelPresentationTest
           mdAudioIoLayoutTest
           mdProcessorHooksTest
           mdWindowsPolicyTest
@@ -180,6 +181,21 @@ jobs:
           --no-tests=error
           --tests-regex
           '^(baseLibBinaryStreamTest|midiRoutingMatrixTest|mdAutomationMidiTest|synthLibAudioTest|synthLibMidiQueueTest|synthLibStateCaptureTest|mdAudioQueueTest|mdAudioFirmwareTest|mdStateTest|mdStateCaptureTest|mdMemoryFastLaneTest|mdFlashTest)$'
+
+      # Every ROM-free unit test, picked by CTest label (UnitTest) rather than by name, so a new test is in by
+      # default (scripts/mdmm-ci-unit-targets.py: what is left out and why). The JUCE plug-in is configured with
+      # every format off, only so that its unit tests (mdPageBridgeTest, ...) are registered.
+      - name: Build and run every ROM-free unit test
+        if: matrix.mode != 'transport-diagnostics'
+        shell: bash
+        env:
+          ASAN_OPTIONS: detect_leaks=1:strict_string_checks=1:check_initialization_order=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+        run: |
+          mapfile -t targets < <(python3 scripts/mdmm-ci-unit-targets.py build-mdmm-core)
+          cmake --build build-mdmm-core --parallel 4 --target "${targets[@]}"
+          ctest --test-dir build-mdmm-core -C Release --output-on-failure --no-tests=error \
+            --tests-regex "$(python3 scripts/mdmm-ci-unit-targets.py build-mdmm-core --tests)"
 
       - name: Build and run realtime instrumentation gate
         env:
@@ -199,10 +215,4 @@ jobs:
           ctest --test-dir build-mdmm-core -C Release --output-on-failure
           --no-tests=error
           --tests-regex
-          '^(midiOutputDispatcherTest|mdAutomationParameterTest|mdAutomationArchitectureTest|mdAudioIoLayoutTest|mdProcessorHooksTest|mdFrontPanelPresentationTests|mdWindowsPolicyTest|mdMachineMidiOutTest|mdProcessArchTest|mdRosettaNoticeTest|mdDroppedFilesTest|deskDropPageTest)$'
-
-      - name: Build and run Shift panel chording regression
-        run: |
-          cmake --build build-mdmm-core --parallel 4 --target mdShiftPanelLatchTest
-          ctest --test-dir build-mdmm-core -C Release --output-on-failure \
-            --no-tests=error --tests-regex '^mdShiftPanelLatchTest$'
+          '^(midiOutputDispatcherTest|mdAutomationParameterTest|mdAutomationArchitectureTest|mdAudioIoLayoutTest|mdProcessorHooksTest|mdWindowsPolicyTest|mdMachineMidiOutTest|mdProcessArchTest|mdRosettaNoticeTest|mdDroppedFilesTest|deskDropPageTest)$'

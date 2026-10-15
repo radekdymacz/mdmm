@@ -9,6 +9,11 @@
 
 #include "mdLib/mddeskdevice.h"
 
+#include "jucePluginLib/projectState.h"
+
+#include <optional>
+#include <vector>
+
 namespace baseLib
 {
 	class BinaryStream;
@@ -50,6 +55,7 @@ namespace mdJucePlugin
 		void startSession();
 		DeskSession* session() const { return m_session.get(); }
 
+		// The editor's setup ("MDSK") and the DAW's automation parameters ("AUTO"), written and read with the processor's.
 		void saveChunks(baseLib::BinaryStream& _stream) const;
 		void addChunkReaders(baseLib::ChunkReader& _reader);
 		// A project without the editor's setup starts from the default setup.
@@ -63,10 +69,12 @@ namespace mdJucePlugin
 		// overwrite the saved one (with an empty state and stale automation). While the stand-in runs the
 		// host keeps the project it was given, hands the same bytes back when the host asks to save, and
 		// gives it to the machine that replaces the stand-in (takeHeldState; the processor's hooks).
-		// Two parts of the project live without a machine: the DAW's automation parameters ("AUTO") and the
-		// editor's setup ("MDSK"). Holding a project restores both from it, and when either has moved since,
-		// the save is the held project with that chunk rewritten (the rest stays byte for byte). With no
-		// project held and something moved, heldState declines: the plug-in's own state carries them.
+		// The parts of the project that live without a machine (the editor's setup "MDSK", the DAW's automation
+		// parameters "AUTO", the MIDI mapping "MDLN": machineFreeChunks) follow it at once: holding a project restores
+		// them from it, and when any has moved since, the save is the held project with those chunks rewritten by the
+		// processor's own writers (the rest stays byte for byte; pluginLib::parseProject). The machine that replaces
+		// the stand-in gets the same bytes. With no project held and something moved, heldState declines: the
+		// plug-in's own state carries them.
 		bool holdState(const void* _data, int _size);
 		bool heldState(juce::MemoryBlock& _out) const;
 		bool takeHeldState(std::vector<uint8_t>& _out);
@@ -76,14 +84,16 @@ namespace mdJucePlugin
 
 	private:
 		std::vector<uint8_t> automationSnapshot() const;	// the controller's (Controller::createAutomationSnapshot)
+		std::vector<pluginLib::ProjectChunk> machineFreeChunks() const;
+		void applyMachineFreeChunks(const pluginLib::ProjectState& _project);
+		std::optional<std::vector<uint8_t>> heldProject() const;
 
 		AudioPluginAudioProcessor& m_processor;
 		mutable std::mutex m_setupMutex;
 		std::string m_setup;
 		mutable std::mutex m_heldMutex;
 		std::vector<uint8_t> m_held;
-		std::vector<uint8_t> m_heldAutomation;	// the automation snapshot as the held project left it
-		std::string m_heldSetup;	// the editor's setup as the held project left it
+		std::vector<pluginLib::ProjectChunk> m_heldFree;	// the machine-free chunks as the held project left them
 		std::atomic<uint32_t> m_setupVersion{0};
 		std::unique_ptr<DeskSession> m_session;
 		std::shared_ptr<void> m_editFlowDriver;	// a test build's edit-flow driver (mdEditFlowDriver.h); gone before the session

@@ -44,16 +44,28 @@ namespace deskCore
 		}
 	}
 
-	std::optional<ModSetup> modSetupFromJson(const json::Value& _doc, std::vector<std::string>& _errors, const ModLimits& _limits)
+	bool readsMajor(const json::Value& _doc, const int _major)
 	{
-		const auto before = _errors.size();
+		const auto* v = _doc.find("version");
+		return v && v->isNumber() && std::floor(v->asNumber()) == _major;
+	}
+
+	// Each item on its own: an item that cannot be used (no id, a kind or a target this version does not know) is
+	// left out, a value it does not know is the default; members it does not know are ignored. Every one is an error.
+	ModSetup modSetupRead(const json::Value& _doc, std::vector<std::string>& _errors, const ModLimits& _limits)
+	{
+		ModSetup s;
 		const auto* schema = _doc.find("schema");
 		if(!schema || !schema->isString() || schema->asString() != _limits.schema)
+		{
 			_errors.emplace_back(std::string("$.schema: expected ") + _limits.schema);
-		const auto* version = _doc.find("version");
-		if(!version || !version->isNumber() || version->asNumber() != 1)
-			_errors.emplace_back("$.version: expected 1");
-		ModSetup s;
+			return s;
+		}
+		if(!readsMajor(_doc, g_modVersion))
+		{
+			_errors.emplace_back("$.version: expected " + std::to_string(g_modVersion));
+			return s;
+		}
 		if(const auto* sources = _doc.find("sources"); sources && sources->isArray())
 		{
 			if(sources->asArray().size() > g_modMaxSources)
@@ -63,18 +75,30 @@ namespace deskCore
 				const auto& o = sources->asArray()[i];
 				const auto path = "$.sources[" + std::to_string(i) + "]";
 				ModSource m;
+				bool usable = true;	// a source without an id or of a kind this version does not know is left out
 				const auto* id = o.find("id");
 				const auto* kind = o.find("kind");
 				if(!id || !id->isString() || id->asString().empty())
+				{
 					_errors.push_back(path + ".id: expected a name");
+					usable = false;
+				}
+				else if(std::any_of(s.sources.begin(), s.sources.end(), [&](const ModSource& _o) { return _o.id == id->asString(); }))
+				{
+					_errors.push_back(path + ".id: " + id->asString() + " is used twice");
+					usable = false;
+				}
 				else
 					m.id = id->asString();
-				if(const auto* l = o.find("label"); l && l->isString())
-					m.label = l->asString();
 				if(!kind || !kind->isString() || (kind->asString() != "lfo" && kind->asString() != "random"))
+				{
 					_errors.push_back(path + ".kind: expected lfo or random");
+					usable = false;
+				}
 				else
 					m.kind = kind->asString() == "lfo" ? ModSource::Kind::Lfo : ModSource::Kind::Random;
+				if(const auto* l = o.find("label"); l && l->isString())
+					m.label = l->asString();
 				m.shape = static_cast<uint8_t>(intIn(o, "shape", 0, 5, 0, path, _errors));
 				m.depth = static_cast<uint8_t>(intIn(o, "depth", 0, 100, 100, path, _errors));
 				m.smooth = static_cast<uint8_t>(intIn(o, "smooth", 0, 127, 30, path, _errors));
@@ -87,10 +111,8 @@ namespace deskCore
 					else
 						m.rate = static_cast<uint8_t>(it - std::begin(g_modRates));
 				}
-				for(const auto& other : s.sources)
-					if(other.id == m.id)
-						_errors.push_back(path + ".id: " + m.id + " is used twice");
-				s.sources.push_back(m);
+				if(usable)
+					s.sources.push_back(m);
 			}
 		}
 		if(const auto* links = _doc.find("links"); links && links->isArray())
@@ -102,14 +124,20 @@ namespace deskCore
 				const auto& o = links->asArray()[i];
 				const auto path = "$.links[" + std::to_string(i) + "]";
 				ModLink l;
+				bool usable = true;	// a link to no source, or to a parameter this model does not have, is left out
 				const auto* src = o.find("source");
 				if(!src || !src->isString() || std::none_of(s.sources.begin(), s.sources.end(),
 					[&](const ModSource& _s) { return _s.id == src->asString(); }))
+				{
 					_errors.push_back(path + ".source: expected one of the sources");
+					usable = false;
+				}
 				else
 					l.source = src->asString();
+				const auto before = _errors.size();
 				l.track = static_cast<uint8_t>(intIn(o, "track", 0, _limits.maxTrack, 0, path, _errors));
 				l.param = static_cast<uint8_t>(intIn(o, "param", 0, _limits.maxParam, 0, path, _errors));
+				usable = usable && _errors.size() == before;
 				l.min = static_cast<uint8_t>(intIn(o, "min", 0, 127, 0, path, _errors));
 				l.max = static_cast<uint8_t>(intIn(o, "max", 0, 127, 127, path, _errors));
 				if(const auto* c = o.find("curve"))
@@ -122,9 +150,17 @@ namespace deskCore
 				}
 				if(const auto* inv = o.find("invert"); inv && inv->isBool())
 					l.invert = inv->asBool();
-				s.links.push_back(l);
+				if(usable)
+					s.links.push_back(l);
 			}
 		}
+		return s;
+	}
+
+	std::optional<ModSetup> modSetupFromJson(const json::Value& _doc, std::vector<std::string>& _errors, const ModLimits& _limits)
+	{
+		const auto before = _errors.size();
+		auto s = modSetupRead(_doc, _errors, _limits);
 		if(_errors.size() != before)
 			return {};
 		return s;
@@ -134,7 +170,7 @@ namespace deskCore
 	{
 		json::Value doc = json::Value::object();
 		doc.set("schema", _limits.schema);
-		doc.set("version", 1);
+		doc.set("version", g_modVersion);
 		json::Value sources = json::Value::array();
 		for(const auto& m : _s.sources)
 		{

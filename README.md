@@ -15,6 +15,8 @@ as a standalone app, VST3 and AU on macOS (Windows x64 and Linux x64 builds exis
 - **Installing on macOS.** Needs macOS 12 or later (Intel and Apple silicon). The installers are not signed or notarised yet. On macOS 15 and later,
   double-click the `.pkg`, then open System Settings › Privacy & Security, scroll to the message
   about the installer and click **Open Anyway** (right-click › Open no longer works for installers).
+- **Checking a download.** From 1.0 each release carries a `SHA256SUMS` file: put it beside the downloads and run
+  `shasum -a 256 -c SHA256SUMS --ignore-missing` (macOS) or `sha256sum -c SHA256SUMS --ignore-missing` (Linux).
 - **Uninstalling.** Delete the three bundles of each editor: the app in `/Applications`
   (`Machinedrum Editor.app`, `Monomachine Editor.app`), the VST3 and the AU
   (`Machinedrum Editor.vst3`/`.component`, `Monomachine Editor.vst3`/`.component`;

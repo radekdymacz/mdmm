@@ -35,7 +35,7 @@ jobs:
       CXX: g++-13
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
           submodules: recursive
@@ -56,7 +56,7 @@ jobs:
         run: echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> "${GITHUB_ENV}"
 
       - name: Restore the compiler cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ runner.temp }}/ccache
           key: ccache-v1-linux-x64-gcc13-2204-${{ github.ref_name }}-${{ github.run_id }}
@@ -94,7 +94,7 @@ jobs:
 
       - name: Save the compiler cache
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ runner.temp }}/ccache
           key: ccache-v1-linux-x64-gcc13-2204-${{ github.ref_name }}-${{ github.run_id }}
@@ -119,14 +119,14 @@ jobs:
           echo "Highest glibc symbol version used:"
           objdump -T "${app}" | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -n 1
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: linux-mdmm
           path: artifacts/linux-mdmm/*.tar.gz
           if-no-files-found: error
           retention-days: 14
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: linux-mdmm-vst3host
           path: artifacts/linux-vst3host/mdmmVst3EditorHost
@@ -148,7 +148,7 @@ jobs:
       CC: gcc-13
       CXX: g++-13
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 1
           submodules: recursive
@@ -165,7 +165,7 @@ jobs:
         run: echo "CCACHE_DIR=${RUNNER_TEMP}/ccache" >> "${GITHUB_ENV}"
 
       - name: Restore the compiler cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ runner.temp }}/ccache
           key: ccache-v1-linux-x64-gcc13-2204-tests-${{ github.ref_name }}-${{ github.run_id }}
@@ -191,7 +191,7 @@ jobs:
 
       - name: Save the compiler cache
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ runner.temp }}/ccache
           key: ccache-v1-linux-x64-gcc13-2204-tests-${{ github.ref_name }}-${{ github.run_id }}
@@ -211,7 +211,7 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           sparse-checkout: scripts
 
@@ -223,12 +223,12 @@ jobs:
           libxcomposite1 libfreetype6 libfontconfig1 &&
           dpkg -l | grep -i -E 'webkit2gtk|libgtk-3-0'
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: linux-mdmm
           path: ${{ runner.temp }}/linux-mdmm
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: linux-mdmm-vst3host
           path: ${{ runner.temp }}/vst3host
@@ -252,7 +252,7 @@ jobs:
             "${RUNNER_TEMP}/pv-unpacked/Machinedrum-Editor-Linux-x64/VST3/${MDMM_PRODUCT_NAME_MD}.vst3" \
             "${RUNNER_TEMP}/pv-unpacked/Monomachine-Editor-Linux-x64/VST3/${MDMM_PRODUCT_NAME_MM}.vst3"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: linux-mdmm-pluginval-${{ matrix.os }}
@@ -260,7 +260,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: linux-mdmm-smoke-${{ matrix.os }}

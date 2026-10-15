@@ -24,6 +24,7 @@ target_sources(deskCore PRIVATE
 	deskLifecycle.cpp deskLifecycle.h
 	deskLoadQueue.h
 	deskMod.cpp deskMod.h
+	deskSetup.cpp deskSetup.h
 	deskNotes.h
 	deskPacer.h
 	deskPush.h

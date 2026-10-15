@@ -78,7 +78,7 @@ source/mc68k/*	mc68k	mdSessionFirmwareTest|mmBootFirmwareTest	-	*-boot-card	yes	
 source/elektron/md/pgo/*	-	-	-	-	yes	1 2 2b 3 4 5 5b 6a 6b 7a 7d
 # --- the plug-in (JUCE, the window, the host side)
 source/elektron/md/mdJucePlugin/mdMachineMemory*	mdMachineMemoryTest	mdMachineMemoryFirmwareTest	*-engine-memory	-	no	2 6b 7a 7b 7c 7d
-source/elektron/md/mdJucePlugin/*	mdPageBridge|mdEditorMenu|mdDroppedFiles|mdAbout|mdCpuLoad|mdOutputLevel|mdDeskSetupState|mdSessionNoRom|mdRomInstall|mdSettingsMigration|mdProcessArch|mdRosettaNotice|mdWindow|mdAudioIo|mdAutomation|mdFrontPanel|mdMachineMidiOut|mdLcd|mdStandalone|mdPanelRendering|mdProcessorHooks|mdmmIdentity|mdMachineMemory	mdSessionFirmwareTest|mdFirstStartFirmwareTest|mdFactorySourceFirmwareTest|mdMachineMemoryFirmwareTest	-	journey	no	2 6b 7a 7b 7c 7d
+source/elektron/md/mdJucePlugin/*	mdPageBridge|mdEditorMenu|mdDroppedFiles|mdAbout|mdCpuLoad|mdOutputLevel|mdDeskSetupState|mdSessionNoRom|mdRomInstall|mdSettingsMigration|mdProcessArch|mdRosettaNotice|mdWindow|mdAudioIo|mdAutomation|mdMachineMidiOut|mdStandalone|mdProcessorHooks|mdmmIdentity|mdMachineMemory	mdSessionFirmwareTest|mdFirstStartFirmwareTest|mdFactorySourceFirmwareTest|mdMachineMemoryFirmwareTest	-	journey	no	2 6b 7a 7b 7c 7d
 source/synthLib/*	synthLib|midiRouting|midiOutput	-	-	*-boot-card,*-keys-space-play	yes	2 5 6a 6b 7a 7c 7d
 source/baseLib/*	baseLib	-	-	-	no	2
 source/jucePlugin*/*	midiLearn	-	-	*-boot-card	no	7a 7b 7c 7d
