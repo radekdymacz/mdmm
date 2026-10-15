@@ -293,6 +293,8 @@ img,svg,canvas{-webkit-user-drag:none}
 /* I-021: the output meter and volume at the LCD's right end (skins/shared/deskVolume.js) */
 /* @include shared/deskVolume.css */
 /* @include shared/deskValueEdit.css */
+/* the trig square on a Mix strip head (skins/shared/deskTrig.js) */
+/* @include shared/deskTrig.css */
 
 /* Wave 3, the trig types (DESIGN-machine-menus.md §2; mockup-next md-13): Trig · Accent · Swing · Slide in the bar
    under the grid, the lit one is what a click paints; All tracks · This track (EDIT ALL) beside them; swing is a teal
@@ -329,7 +331,12 @@ html[data-tt=acc] #seq .st:not(.on),html[data-tt=swg] #seq .st:not(.on),html[dat
 .mp-audk kbd{font:10px var(--pix);border:1px solid var(--ink);border-radius:2px;padding:0 4px}
 /* I-002: a note from a MIDI keyboard played this track (mdDeskTop.js noteLight): its number on the rail glows a moment */
 .th.hit .n,.th.trig .n{box-shadow:0 0 0 1px var(--led),0 0 6px 1px var(--led)}
-.strip .led.act.hit{background:var(--led);box-shadow:0 0 6px 1px var(--led)}
+/* Mix strip head, both editors: the track number small and muted, then the track's name (the machine's short name; the
+   full name is the tooltip, an ellipsis when it does not fit, never a hard clip: the track list's rule), then the trig square */
+.strip .top2{display:flex;justify-content:flex-start;align-items:center;gap:4px;min-width:0}
+.strip .top2 i.trigsq{display:block}
+.strip .top2 .tn{font:10px var(--mono);color:var(--print3);flex:none}
+.strip .top2 .tnm{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 11px var(--mono);color:var(--body)}
 
 /* MD-033: the machine's clip between two value boxes whose parameters depend on each other (mdDeskSound.js clipMarks:
    the arch over the gap after column --c of --n, on row --r of --rows; the group's gap is 4px) */

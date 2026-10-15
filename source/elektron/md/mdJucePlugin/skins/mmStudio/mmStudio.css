@@ -1208,7 +1208,9 @@ svg.route .jack.live{fill:var(--ink)}
 .strips6{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px}
 .strip6{display:grid;gap:5px;padding:6px 6px 8px;border-left:3px solid transparent;align-content:start}
 .strip6.sel{border-left-color:var(--led);background:var(--plate3)}
-.strip6 .shead{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.strip6 .shead{display:flex;justify-content:flex-start;align-items:center;gap:6px;min-width:0}
+.strip6 .shead .tn{font:11px var(--mono);color:var(--print3);flex:none}
+.strip6 .shead .mc{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .strip6 .shead b{font:500 13px var(--mono);color:var(--body)}
 .strip6 .shead span{font-size:12px;color:var(--print2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .busk{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
@@ -2647,6 +2649,11 @@ header.top.tf4 .row2 .lcd2{gap:5px!important}
    box it edits; refused input shows in the record colour until the next key */
 .vedit{position:fixed;z-index:9000;box-sizing:border-box;margin:0;padding:0 6px;border:1px solid var(--ink);border-radius:3px;background:var(--lcd);color:var(--ink);font:600 13px var(--mono);text-align:center;outline:none;box-shadow:0 2px 8px rgba(0,0,0,.35)}
 .vedit.bad{border-color:var(--rec);box-shadow:0 0 0 1px var(--rec),0 2px 8px rgba(0,0,0,.35)}
+/* The trig square on a Mix strip's head (deskTrig.js), both editors: a small square, off until its track trigs, then a
+   flash in the accent colour that goes out by itself (CSS animation, restarted by the script). */
+.trigsq{display:block;width:8px;height:8px;flex:none;box-sizing:border-box;border:1px solid var(--print3,#888);border-radius:1px;background:transparent;opacity:.8}
+.trigsq.fl{animation:trigsqflash 150ms ease-out}
+@keyframes trigsqflash{0%{background:var(--led);border-color:var(--led);box-shadow:0 0 6px 1px var(--led);opacity:1}100%{background:transparent;box-shadow:none;opacity:.8}}
 /* The Song page's song slots (deskSongSlots.js) and the PATTERN · CHAIN · SONG keys of its one palette (0.6 wave 1,
    doc/modern-ux/DESIGN-machine-menus.md §2, Song). Both editors: the same classes, the page's own tokens. */
 .songui.withlib{grid-template-columns:366px minmax(340px,400px) minmax(0,1fr)!important}

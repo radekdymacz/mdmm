@@ -368,6 +368,35 @@ function legendFit(box) {
 }
 for (const ev of ["mouseover", "focusin"]) document.addEventListener(ev, e => { const b = e.target.closest?.(".steplegend"); if (b) legendFit(b); });
 
+/* ---- shared/deskTrig.js ---- */
+"use strict";
+/* The trig square on a Mix strip's head, both editors (the Machinedrum's .strip, the Monomachine's .strip6): it flashes
+   once, in the accent colour, when its track trigs while the sequencer plays (the page's own step and the pattern's
+   trigs: no new firmware traffic) and when the track is played from the keyboard. Callers pass only the tracks that are
+   audible: a muted track, or one a solo leaves out, never flashes (a dimmed flash read worse than none).
+   Cheap by construction: every call of a frame is collected and drawn in one requestAnimationFrame (one reflow to
+   restart the CSS animation, deskTrig.css); nothing is rebuilt, no timer runs, the square goes out by itself.
+   DeskTrig.count[t] is how many times track t flashed (for the journeys). ES2020, as the other shared files. */
+const DeskTrig = (() => {
+	const due = new Set(), count = {};
+	let queued = false;
+	function draw() {
+		queued = false;
+		const els = [];
+		for (const t of due) for (const e of document.querySelectorAll(`.trigsq[data-trig="${t}"]`)) { e.classList.remove("fl"); els.push(e); }
+		due.clear();
+		if (!els.length) return;
+		void document.body.offsetWidth;	/* one reflow for all: the animation starts again */
+		for (const e of els) e.classList.add("fl");
+	}
+	function light(tracks) {
+		for (const t of tracks) { due.add(t); count[t] = (count[t] || 0) + 1; }
+		if (!queued && due.size) { queued = true; requestAnimationFrame(draw); }
+	}
+	return { light, count };
+})();
+if (typeof module !== "undefined") module.exports = DeskTrig;
+
 /* ---- shared/deskLaneShapes.js ---- */
 "use strict";
 /* The lock lane's shapes (both editors; the lane toolbox of mdStudio/mdDeskLaneTools.js, the MM page's own). Pure data and
@@ -3775,7 +3804,7 @@ function homeDown(e){if(e.repeat||KB.held.has(e.code))return;const t=S.sel,k=KEY
  const n=clamp(KEYS_BASE+12*KB.oct+k);KB.held.set(e.code,{t,n});paintKb();keyNote(t,n,KB.vel)}
 function homeUp(code){const h=KB.held.get(code);if(!h)return;KB.held.delete(code);paintKb();keyNote(h.t,h.n,0)}
 /* a host plays the machine (the note intent: pitch in semitones from KEYS_BASE, C3); the example only shows the track's lamp */
-function keyNote(t,n,vel){if(HOST.noteOn){const p=n-KEYS_BASE;return vel?HOST.noteOn(t,p,vel):HOST.noteOff(t,p)}if(vel){flashTracks([t]);kbTell("eg","Example: in the plug-in the keys play the machine.")}}
+function keyNote(t,n,vel){if(vel&&S.ws==="mix"&&!isMidiT(t)&&audible(t))DeskTrig.light([t]);if(HOST.noteOn){const p=n-KEYS_BASE;return vel?HOST.noteOn(t,p,vel):HOST.noteOff(t,p)}if(vel){flashTracks([t]);kbTell("eg","Example: in the plug-in the keys play the machine.")}}
 function kbVel(d){KB.vel=keyVel(KB.vel,d);toast(`Keyboard velocity ${KB.vel}`)}
 function kbOct(d){KB.oct=clamp(KB.oct+d,KEYS_OCT[0],KEYS_OCT[1]);toast(`Keyboard octave ${KB.oct>0?"+":""}${KB.oct}: A plays ${noteName(KEYS_BASE+12*KB.oct)}`)}
 document.addEventListener("keyup",e=>homeUp(e.code));addEventListener("blur",()=>[...KB.held.keys()].forEach(homeUp));
@@ -4945,7 +4974,7 @@ const MIXTIP={
 const mixBox=(g,n,i,label,tip)=>pc(g,n,{t:i,label,cls:"mini",extra:`title="${tip}"`});
 function mixStrip(tr,i){const fx=isFx(tr.m);
  return`<div class="strip6 ${i===S.sel?"sel":""}" data-sel="${i}" style="${audible(i)?"":"opacity:.5"}">
-   <div class="shead"><b>T${i+1}</b><b class="mc">${shortM(tr.m)}</b><span title="${tr.name}">${tr.name}</span></div>
+   <div class="shead"><span class="tn">${i+1}</span><b class="mc" title="${tr.name}">${shortM(tr.m)}</b><i class="trigsq" data-trig="${i}" aria-hidden="true" title="Flashes when T${i+1} trigs"></i></div>
    <div class="trim">${mixBox("AMP",5,i,"AMP VOL",MIXTIP.VOL)}${mixBox("AMP",4,i,"DIST",MIXTIP.DIST)}${mixBox("EFX",4,i,"DSND",MIXTIP.DSND)}</div>
    <div class="pc pan hz" role="slider" tabindex="0" data-g="AMP" data-n="6" data-t="${i}" aria-label="T${i+1} PAN" title="${MIXTIP.PAN}"><span>PAN</span><i class="pt"></i><b></b></div>
    <div class="lvl"><div class="scale" aria-hidden="true">${[127,96,64,32,0].map(v=>`<i style="bottom:${v/127*100}%">${v}</i>`).join("")}</div>
@@ -6277,6 +6306,7 @@ function stepShown(prev){if(S.step===prev)return;const pp=Math.floor(S.step/16);
  if(S.follow&&S.ws==="seq"&&!S.viewAll&&pp!==S.page&&!laneDraw&&!menuOpen()){S.page=pp;followPage()}
  $("#tempoled").classList.toggle("on",S.step%4===0);setPos();queueMicrotask(movePH);
  if(S.ws==="perform"){const act=[0,1,2,3,4,5].filter(i=>{const st=S.tracks[i].steps[S.step];return st&&!st.off&&st.a&&audible(i)&&(S.mode!=="poly"||i===asgT())});flashTracks(act)}
+ if(S.ws==="mix"&&S.playing&&S.step>=0)DeskTrig.light([0,1,2,3,4,5].filter(i=>{const st=S.tracks[i].steps[S.step];return st&&!st.off&&st.a&&audible(i)}));
  if((S.ws==="seq"||S.ws==="sound")&&S.playing&&S.step>=0)railLamps(side().filter(i=>{const st=trk(i).steps[S.step];return st&&!st.off&&(isMidiT(i)||st.a)&&audible(i)}))}
 /* I-028 (Discord 2026-10-12): on Sequence and Sound a rail track's number lights while its trig plays (the step
    telemetry and the pattern, no audio), as the Perform page's lamps; every lamp of a step in one frame */
