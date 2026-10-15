@@ -25,6 +25,7 @@
 
   /* version, from config (no API call) */
   if (C.version) document.querySelectorAll("[data-version]").forEach(function (el) { el.textContent = "v" + C.version; });
+  if (C.version) document.querySelectorAll("[data-version-notes]").forEach(function (el) { el.href = "/releases/" + C.version + "/"; });
 
   /* hero: one window; editor tabs (tablist, arrow keys) and the MKI / MKII plate, one image at a time */
   var hero = document.getElementById("hero-shot");
