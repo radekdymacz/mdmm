@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MD + MM Editor 0.7.0 release notes</title>
+<meta name="description" content="A release about the grid and the lanes: a small GEN dialog on every track, shape tools for the lock lane, and a new look for the Monomachine&#x27;s lane row, Arp, Trig setup and Perform pages.">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fbfbf7">
+<link rel="canonical" href="https://mdmm.dev/releases/0.7.0/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MD + MM Editor">
+<meta property="og:title" content="MD + MM Editor 0.7.0 release notes">
+<meta property="og:description" content="A release about the grid and the lanes: a small GEN dialog on every track, shape tools for the lock lane, and a new look for the Monomachine&#x27;s lane row, Arp, Trig setup and Perform pages.">
+<meta property="og:url" content="https://mdmm.dev/releases/0.7.0/">
+<meta property="og:image" content="https://mdmm.dev/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Free editors for Machinedrum and Monomachine, beside a screenshot of the Machinedrum Editor's step grid and GEN bar.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="MD + MM Editor 0.7.0 release notes">
+<meta name="twitter:description" content="A release about the grid and the lanes: a small GEN dialog on every track, shape tools for the lock lane, and a new look for the Monomachine&#x27;s lane row, Arp, Trig setup and Perform pages.">
+<meta name="twitter:image" content="https://mdmm.dev/og.png">
+<link rel="stylesheet" href="/design/tokens.css">
+<link rel="stylesheet" href="/assets/site.css?v=20261014b">
+<link rel="stylesheet" href="/guide/guide.css">
+<script src="/assets/theme.js?v=20261008"></script>
+</head>
+<body class="gd">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="MD + MM Editor, home"><i class="dot" aria-hidden="true"></i><b>MD + MM Editor</b></a>
+    <nav class="nav" aria-label="Main">
+      <a class="opt" href="/#features">Features</a>
+      <a class="keep" href="/guide/">Guide</a>
+      <a class="opt" href="/#faq">FAQ</a>
+      <a class="disc" href="https://discord.gg/8xwXwBHbtn" aria-label="Discord community"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5h11a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7l-3 2.5V11.5H2.5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="5.5" cy="7.5" r="1" fill="currentColor"/><circle cx="8" cy="7.5" r="1" fill="currentColor"/><circle cx="10.5" cy="7.5" r="1" fill="currentColor"/></svg><span>Discord</span></a>
+      <button class="themebtn" type="button" data-theme-toggle aria-label="Switch to dark theme"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+      <a class="btn btn-ghost btn-sm" href="https://github.com/sponsors/radekdymacz" target="_blank" rel="noopener">Sponsor</a>
+      <a class="btn btn-primary btn-sm" href="/get/">Download free</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="checkout legalpage guide">
+  <div class="wrap">
+    <span class="eyebrow">Release notes</span>
+    <h1>Machinedrum Editor + Monomachine Editor 0.7.0</h1>
+<p><small>Released 2026-10-15</small></p>
+<p>A release about the grid and the lanes: a small GEN dialog on every track, shape tools for the lock lane, and a new look for the Monomachine's lane row, Arp, Trig setup and Perform pages.</p>
+<p>A release on top of <a href="/releases/0.6.0/">0.6.0</a>. Screenshots, features and FAQ: <b><a href="https://mdmm.dev">https://mdmm.dev</a></b> · User guide: <b><a href="https://mdmm.dev/guide/">https://mdmm.dev/guide/</a></b></p>
+<h2>New, on both editors</h2>
+<ul>
+<li><b>A dice key on each track</b>, after M and S, opens a small GEN dialog. Pick Euclid or Random, set the MODE row, and the track changes as you turn the controls. Cancel puts the track back; Done keeps it. Either way it is one undo.
+</li>
+<li><b>The GEN dialog stays out of your way.</b> Drag it by its head. Change track while it is open and it follows. ESC closes it. A Keep switch holds what you have; ⌘-click the dice to keep without opening, and ⌥R rolls all tracks and keeps them.
+</li>
+<li><b>The GEN bar under the grid is gone.</b> The dice key replaces it.
+</li>
+<li><b>Lane shape tools on the lock lane.</b> Eight shapes, ×1, ×2 and ×4, every 2nd, 3rd or 4th step, offbeats, Human, scale and Inv. Hover a tool to see a preview on the lane before you apply it. ⌘ adds the shape to the lane, ⌥ subtracts it, ⇧ scales it.
+</li>
+<li><b>Lane hover shows an outline only</b>, so the values underneath stay readable.
+</li>
+<li><b>Mix strip heads show the track number and the machine name</b>, and a trig light that flashes on trigs and played notes.
+</li>
+<li><b>Sound page: Clear</b> sits next to R. It replaces Revert track on that page.
+</li>
+<li><b>Long track names end with an ellipsis</b>, and the full name shows as a tooltip.
+</li>
+</ul>
+<h2>New, Monomachine</h2>
+<ul>
+<li><b>Lane row:</b> the tabs on the left, the tools on the right.
+</li>
+<li><b>Arp</b> has a LEN box. The strip shows the LEN steps, and the values sit under the strips.
+</li>
+<li><b>Trig setup:</b> the values sit under the graph, the graph is easier to read, and Legato has a restarts panel.
+</li>
+<li><b>Perform page redesigned.</b> The envelope covers all tracks on the left. The track card has a T1 to T6 selector, the joystick and assign. Mutes and the keyboard modes sit on the right.
+</li>
+<li><b>? help and 1/16</b> are now on the right of the roll bar.
+</li>
+</ul>
+<h2>New, Machinedrum</h2>
+<ul>
+<li><b>Sampler:</b> the source choice and the take status are in the card heads. Source and Playback faders share one line.
+</li>
+</ul>
+<h2>Fixes</h2>
+<ul>
+<li><b>Firmware tests</b> no longer crash when a SysEx import ends (B-147, test harness only).
+</li>
+</ul>
+<h2>Known</h2>
+<ul>
+<li><b>Machinedrum: after a sample is sent to the machine by SDS (Load sample, a dropped file, a rename), live recording records nothing until the machine is restarted</b> (B-133). Restart the machine before live recording if you work in the Sampler first. The sample itself is fine, and so is the rest of the machine.
+</li>
+<li><b>Machinedrum: a SysEx import and the empty reset cannot be undone</b> (B-130). Export a backup first.
+</li>
+<li><b>Monomachine Sound: the UNISON and SUB screens' stems can look thicker than they should in the standalone</b> (B-132).
+</li>
+<li><b>Window resizing:</b> the Monomachine window does not resize with the mouse, and the Machinedrum looks distorted when resized (B-063).
+</li>
+<li><b>Machinedrum: in a small window the top bar's right end is cut</b> below 864 px wide (B-061).
+</li>
+<li><b>Machinedrum: a lock on a step without a trig is kept but not played</b> (I-019). OS 1.63 does this on the real machine too.
+</li>
+<li><b>A song's LOOP row in the Monomachine</b> goes back to row 1 (B-038), and <b>a pattern pick during a SysEx import</b> asks about kit edits you never made (B-045).
+</li>
+<li><b>Drag and drop works on macOS only</b> (I-017). On Windows and Linux, use the buttons.
+</li>
+<li><b>The update banner still offers Download (the site), never Update</b> (I-005, waits for the signing key).
+</li>
+<li><b>Two reports we could not reproduce and are still looking at:</b> Ableton Live seeming to route one editor's MIDI into the other (B-119), and "Reset to the pattern" loading another pattern (B-122). If you have steps, please send them: <a href="https://mdmm.dev/contact/">https://mdmm.dev/contact/</a>
+</li>
+</ul>
+<h2>For developers</h2>
+<ul>
+<li><b>ROM-free page preview</b> with live reload: <code>scripts/mdmm-preview.sh md|mm</code>. Data-driven scenarios (<code>?scenario=</code>, <code>doc/modern-ux/scenarios</code>) are checked against a schema.
+</li>
+<li><b>The page suite runs in CI on every push to main</b>: the page tests and the page-tier journeys of both editors, on Linux, no ROM.
+</li>
+<li><b>The E2E run ends with a pass or fail verdict</b>, and check selection is narrower by area.
+</li>
+<li><b>Gate journeys start from factory memory</b>, and the background meter reads -50 dB, so the six real-factory and real-sequence journeys can prove sound and pass.
+</li>
+<li><b>B-147:</b> firmware tests clear the import's SysEx tap when the import ends.
+</li>
+</ul>
+<h2>Platforms</h2>
+<ul>
+<li>macOS 12 or later (Intel and Apple silicon), not signed by Apple yet: the first install needs <b>Open Anyway</b> (on macOS 12 to 14: right-click the installer &gt; <b>Open</b>).
+</li>
+<li>Windows x64 and Linux x64: not tested by a person yet. Feedback welcome: <a href="https://mdmm.dev/contact/">https://mdmm.dev/contact/</a>
+</li>
+</ul>
+    <p><a href="/releases/">All release notes</a> · <a href="/get/">Download</a></p>
+  </div>
+</main>
+
+<footer class="foot">
+  <div class="wrap grid">
+    <p><b>MD + MM Editor</b> <span data-version></span> · Machinedrum Editor and Monomachine Editor<br>A NativeKloud Consulting project — <a href="https://nativekloud.com">nativekloud.com</a></p>
+    <p><b>Free software</b> under the <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPL-3</a>. <a href="https://github.com/radekdymacz/mdmm">Source</a> · <a href="https://github.com/radekdymacz/mdmm/releases">All releases</a></p>
+    <p><b>Credits.</b> Built on <a href="https://github.com/joelanders/gearmulator-md-mm">gearmulator-md-mm</a> by joelanders (the Machinedrum and Monomachine emulation) and <a href="https://github.com/dsp56300/gearmulator">Gearmulator</a> by The Usual Suspects (dsp56300). Thanks to Elektron for the instruments.</p>
+    <p class="legal"><a href="/guide/">Guide</a> · <a href="/releases/">Release notes</a> · <a href="/terms/">Terms</a> · <a href="/privacy/">Privacy</a> · <a href="/refunds/">Refunds</a> · <a href="/contact/">Contact</a> · <a href="https://discord.gg/8xwXwBHbtn">Discord</a> · <a href="https://github.com/sponsors/radekdymacz">Sponsor</a> · <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#114;&#97;&#100;&#101;&#107;&#100;&#121;&#109;&#97;&#99;&#122;&#64;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;">&#114;&#97;&#100;&#101;&#107;&#100;&#121;&#109;&#97;&#99;&#122;&#64;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;</a></p>
+    <p><b>Trademarks.</b> Elektron, Machinedrum and Monomachine are trademarks of Elektron Music Machines. This project is independent and not affiliated with or endorsed by Elektron, joelanders or The Usual Suspects. No firmware is included. No cookies, no analytics, no third-party scripts.</p>
+  </div>
+</footer>
+
+<script src="/config.js"></script>
+<script src="/assets/main.js?v=20261008" defer></script>
+<script src="/guide/guide.js" defer></script>
+</body>
+</html>
