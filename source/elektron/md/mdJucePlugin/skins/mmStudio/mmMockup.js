@@ -5014,26 +5014,33 @@ function renderPerform(){const pm=PMODES.find(p=>p[0]===S.mode),t=asgT(),tr=S.tr
    ${S.multi.mode>=2?`<span class="stepper"><span class="ilab">Timing</span><button data-tim="-1">−</button><b class="mono">${TIMS[S.multi.timing]}</b><button data-tim="1">+</button></span>`:""}`:"";
  const asRow=(r,k)=>`<div class="asrow"><b>${k+1}</b><select id="asp${k}" aria-label="Assign ${k+1} page">${[...PAGES,"PTCH"].map(p=>opt(LPAGES.indexOf(p),p,r.pg)).join("")}</select><select id="asd${k}" aria-label="Assign ${k+1} destination">${destNames(t,r.pg).map((d,i)=>opt(i,d,r.d)).join("")}</select>${pc("asg",k,{t,label:"ADD"})}</div>`;
  const joy=S.asTab.startsWith("JOY");
- $("#main").innerHTML=`<div class="perf ${S.mode==="map"?"map":""}">
-  <div class="perf3">
-   <section class="card menvcard"><header><h3>Multi envelope</h3><span title="Both DATA PAGE keys on the machine. Its effect depends on the kit's MULTI TRIG mode">MULTI TRIG ${MTM[S.multi.mode]}</span></header><div class="menvplot"><canvas class="ed" data-ed="menv" aria-label="Multi envelope. Drag the dots."></canvas></div>
+ const pv=(new URLSearchParams(location.hash.slice(1)).get("pv")||"A").toUpperCase();
+ const selTrack=`<span class="seg trksel" data-set="astrk">${[0,1,2,3,4,5].map(k=>{const p=S.mode==="poly";return`<button data-v="${k}" aria-pressed="${k===t}"${p?` class="${k===t?"polyt":"polyoff"}" title="${k===t?`T${k+1} plays POLY: six voices`:`Silent in POLY. Click: T${k+1} plays POLY instead`}"`:""}><b>T${k+1}</b><small>${shortM(S.tracks[k].m)}</small>${p&&k===t?`<em class="x6">×6</em>`:""}</button>`}).join("")}</span>`;
+ const tabsH=`<span class="seg" data-set="astab">${Object.keys(A.tabs).map(k=>`<button data-v="${k}" aria-pressed="${S.asTab===k}">${k}</button>`).join("")}</span>`;
+ const extrasH=`${S.asTab==="JOY RL"?`<button class="lkey" data-mirr="1" aria-pressed="${A.mirr}" title="Left = −right"><i class="led"></i>MIRR (left = −right)</button>`:""}
+    ${S.asTab==="KEY"?`<span class="keyrow"><button class="lkey" data-ktrk="hpf" aria-pressed="${A.hpf}"><i class="led"></i>HPF tracks keys</button><button class="lkey" data-ktrk="lpf" aria-pressed="${A.lpf}"><i class="led"></i>LPF tracks keys</button></span>`:""}`;
+ const hintH=`<div class="hint" title="ADD −64…+63">${ASG_SAY[S.asTab]} ADD −64…+63.</div>`;
+ const padH=`${joy?`<div class="joy" id="joy" title="Drag the stick. It springs back."><span class="cross"></span><span class="cross2"></span><small class="jl">L</small><small class="jr">R</small><small class="ju">U</small><small class="jd">D</small><span class="knobj" id="knobj" style="left:${50+S.joy.x*42}%;top:${50-S.joy.y*42}%"></span></div>`
+     :`<div class="joy padinfo"><b>${S.asTab}</b><span>${ASG_SAY[S.asTab]}</span></div>`}`;
+ const rowsH=`<div class="asrows">${rows.map(asRow).join("")}</div>`;
+ const menvH=`<section class="card menvcard"><header><h3>Multi envelope</h3><span title="Both DATA PAGE keys on the machine. Its effect depends on the kit's MULTI TRIG mode">all tracks · ${MTM[S.multi.mode]}</span></header><div class="menvplot"><canvas class="ed" data-ed="menv" aria-label="Multi envelope. Drag the dots."></canvas></div>
     <div class="ctl" style="grid-template-columns:repeat(5,minmax(0,1fr))">${["ATK","DEC","SUS","REL","PORT"].map(n=>pc("menv",n,{})).join("")}</div>
-    <div class="hint menvsay" title="On top of every track's own envelope. For no effect: ATK 0, DEC, SUS and REL at 127.">${menvHint()}</div></section>
-   <section class="card joycard"><header><h3>${joy?"Joystick":S.asTab==="VEL"?"Velocity":"Key follow"}</h3><span title="The two assign rows of the ${S.asTab} tab">T${t+1} · ${S.asTab}</span></header>
-    ${joy?`<div class="joy" id="joy" title="Drag the stick. It springs back."><span class="cross"></span><span class="cross2"></span><small class="jl">L</small><small class="jr">R</small><small class="ju">U</small><small class="jd">D</small><span class="knobj" id="knobj" style="left:${50+S.joy.x*42}%;top:${50-S.joy.y*42}%"></span></div>`
-     :`<div class="joy padinfo"><b>${S.asTab}</b><span>${ASG_SAY[S.asTab]}</span></div>`}
-    <div class="asrows">${rows.map(asRow).join("")}</div></section>
-   <div class="perfside">
-   <section class="card asgcard"><header><h3>Assign · T${t+1} ${shortM(tr.m)}</h3><span class="seg" data-set="astrk">${[0,1,2,3,4,5].map(k=>{const p=S.mode==="poly";return`<button data-v="${k}" aria-pressed="${k===t}"${p?` class="${k===t?"polyt":"polyoff"}" title="${k===t?`T${k+1} plays POLY: six voices`:`Silent in POLY. Click: T${k+1} plays POLY instead`}"`:""}>${k+1}${p&&k===t?`<em class="x6">×6</em>`:""}</button>`}).join("")}</span></header>
-    <span class="seg" data-set="astab">${Object.keys(A.tabs).map(k=>`<button data-v="${k}" aria-pressed="${S.asTab===k}">${k}</button>`).join("")}</span>
-    ${S.asTab==="JOY RL"?`<button class="lkey" data-mirr="1" aria-pressed="${A.mirr}" title="Left = −right"><i class="led"></i>MIRR (left = −right)</button>`:""}
-    ${S.asTab==="KEY"?`<span class="keyrow"><button class="lkey" data-ktrk="hpf" aria-pressed="${A.hpf}"><i class="led"></i>HPF tracks keys</button><button class="lkey" data-ktrk="lpf" aria-pressed="${A.lpf}"><i class="led"></i>LPF tracks keys</button></span>`:""}
-    <div class="hint" title="ADD −64…+63">${ASG_SAY[S.asTab]} ADD −64…+63.</div></section>
-   <section class="card"><header><h3>Mutes</h3><span>global · FUNCTION + BANK GROUP</span></header>
+    <div class="hint menvsay" title="On top of every track's own envelope. For no effect: ATK 0, DEC, SUS and REL at 127.">${menvHint()}</div></section>`;
+ const mutesH=`<section class="card mutecard"><header><h3>Mutes</h3><span title="FUNCTION + BANK GROUP on the machine">global</span></header>
     <div class="mutelab">Synth tracks</div><div class="mutes12">${S.tracks.map((x,i)=>`<button class="${x.mute?"":"on"}" data-gmute="${i}" aria-pressed="${!x.mute}" title="T${i+1} ${x.m}"><i class="led"></i>T${i+1}</button>`).join("")}</div>
     <div class="mutelab">MIDI tracks</div><div class="mutes12">${S.midi.map((x,i)=>`<button class="${x.mute?"":"on"}" data-gmute="${i+6}" aria-pressed="${!x.mute}" title="M${i+1} CH${x.ch}"><i class="led"></i>M${i+1}</button>`).join("")}</div>
     <div class="hint">Mutes work on notes: a sound already playing rings out.</div>
-</section></div></div>
+</section>`;
+ const scope=(w,tip)=>`<span class="scope" title="${tip}">${w}</span>`;
+ const upper=pv==="B"
+ ?`<div class="perfB"><section class="card trkcard"><header><h3>Track</h3>${selTrack}${scope("per track · "+shortM(tr.m),"These settings belong to the selected track")}</header>
+    <div class="trkbody"><div class="tcol">${padH}</div><div class="tcol tset">${tabsH}${rowsH}${extrasH}${hintH}</div></div></section>
+   <div class="perfB2">${menvH}${mutesH}</div></div>`
+ :`<div class="perf3">${menvH}
+   <section class="card trkcard"><header><h3>Track</h3>${scope(shortM(tr.m),"These settings belong to the selected track")}</header>${selTrack}${tabsH}${padH}${rowsH}${extrasH}${hintH}</section>
+   ${mutesH}</div>`;
+ $("#main").innerHTML=`<div class="perf ${S.mode==="map"?"map":""} pv${pv}">
+  ${upper}
 
   ${S.mode==="map"?`<section class="card maprow"><header><h3>Multi map</h3><span>GLOBAL › CONTROL › MULTIMAP EDIT · stored in the global slot</span></header>
    <table class="mmap"><thead><tr><th>Range</th><th>Pattern</th><th>Offset</th><th>Length</th><th>Transpose</th><th>Timing</th><th></th></tr></thead><tbody>${(()=>{let lo=0;return S.mmap.map((r,i)=>{const a=lo;lo=r.hi+1;return`<tr class="${i===S.mmapSel?"sel":""}" data-mrow="${i}"><td class="mono">${noteName(a)} – <span class="stepper"><button data-mhi="-1" data-i="${i}" ${i===S.mmap.length-1?"disabled":""}>−</button><b class="mono">${i===S.mmap.length-1?"G-9":noteName(r.hi)}</b><button data-mhi="1" data-i="${i}" ${i===S.mmap.length-1?"disabled":""}>+</button></span></td>
