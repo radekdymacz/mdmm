@@ -2446,26 +2446,38 @@ body.dockother #rail .railparams>:is(.lpspace,.pagetabs,.pkcol),body.dockother #
    The controls row takes the height the keyboard leaves; the stick is sized from the page height. ===== */
 /* The top row never shrinks below its cards (envelope, assign, mutes): in a short window the page scrolls (#main) instead of the cards printing over each other. */
 #main>.perf{flex:1 1 auto;min-height:min-content;grid-template-rows:minmax(300px,1fr);grid-auto-rows:auto}
-/* Left to right: the multi envelope (the amp's), the joystick, the setup. The envelope's screen and the stick's pad are
-   both --joy tall and start on the same line under the header; every picture has its own controls under it (ADSR faders,
-   assign rows); the right column holds the setup (track, tab, MIRR) and the mutes. One gutter between the columns. */
-.perf3{--joy:clamp(260px,calc(100vh - 600px),400px);--gut:24px;grid-template-columns:minmax(0,1fr) max(var(--joy),290px) minmax(0,1fr)!important;gap:var(--gut)!important;min-height:0;align-items:start!important}
-.perf3>.card,.perf3 .perfside>.card{min-height:0;align-content:start;grid-template-rows:none!important;gap:8px}
-.perf3 .card header{min-height:28px;align-items:center}
-.perf3 .menvcard .menvplot{position:relative;height:var(--joy);min-width:0}
-.perf3 .menvcard .menvplot>canvas.ed{position:absolute;inset:0;width:100%;height:100%!important;min-height:0!important}
-.perf3 .joycard .joy{width:var(--joy)!important;height:var(--joy)!important;justify-self:center}
-.perf3 .asrows{display:grid;gap:6px}
-.perf3 .asrows .asrow{grid-template-columns:14px minmax(0,.8fr) minmax(0,1.2fr) 72px!important;gap:4px}
-.perf3 .perfside{display:grid;gap:14px;align-content:start;min-width:0}
-.perf3 .perfside .asgcard>.seg{justify-self:start;flex-wrap:wrap}
-.perf3 .perfside .hint,.perf3 .menvsay{font-size:12px;line-height:1.35;color:var(--print2)}
-.perf3 .menvsay{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+/* Perform, upper half, by scope: the multi envelope (all tracks), the track card (the selector, then the joystick or
+   the VEL / KEY panel, its assign rows and setup: per track), the mutes (global). Variant B (#pv=B) puts the per-track
+   band on top across the page and the all-track and global cards below it. */
+.perf3{--joy:clamp(200px,calc(100vh - 640px),400px);--gut:24px;grid-template-columns:minmax(0,1fr) 340px 340px!important;gap:var(--gut)!important;min-height:0;align-items:start!important}
+.perf .card{align-content:start;grid-template-rows:none!important;gap:8px;min-width:0}
+.perf .card header{min-height:28px;align-items:center;flex-wrap:nowrap;white-space:nowrap}
+.perf .card header>span:not(.seg){min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--print2)}
+.perf .menvplot{position:relative;height:var(--joy);min-width:0}
+.perf .menvplot>canvas.ed{position:absolute;inset:0;width:100%;height:100%!important;min-height:0!important}
+.perf .trkcard .joy{width:var(--joy)!important;height:var(--joy)!important;max-width:100%;justify-self:center}
+.perf .asrows{display:grid;gap:6px}
+.perf .asrows .asrow{grid-template-columns:14px minmax(0,.8fr) minmax(0,1.2fr) 72px!important;gap:4px}
+.perf .trkcard{border-left:3px solid var(--led);padding-left:12px}
+.perf .hint,.perf .menvsay{font-size:12px;line-height:1.35;color:var(--print2)}
+.perf .menvsay{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.perf .trkcard>.seg[data-set=astab]{flex-wrap:wrap;justify-self:start}
+.perf .trksel{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
+.perf .trksel button{display:grid;gap:1px;justify-items:center;height:40px;padding:0 2px;min-width:0}
+.perf .trksel button b{font:600 12px var(--mono)}
+.perf .trksel button small{font:500 9px var(--sans);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .joy.padinfo{display:grid;align-content:center;justify-items:center;gap:8px;padding:0 18px;text-align:center;cursor:default;box-sizing:border-box}
 .joy.padinfo b{font:24px var(--pix);color:var(--ink)}
 .joy.padinfo span{font-size:12px;line-height:1.4;color:var(--print2)}
-/* Multi map: the map table and keyboard below keep their height, so the stick gets what is left of the window. */
-.perf.map .perf3{--joy:clamp(150px,calc(100vh - 765px),400px)}
+.perf.map .perf3{--joy:clamp(150px,calc(100vh - 780px),400px)}
+/* variant B */
+.pvB .perfB{display:grid;gap:14px}
+.pvB .trkbody{display:grid;grid-template-columns:auto minmax(0,1fr);gap:24px;align-items:start}
+.pvB{--joy:clamp(150px,calc(100vh - 780px),300px)}
+.pvB .tset{display:grid;gap:8px;max-width:520px;align-content:start}
+.pvB .trkcard header .trksel{flex:1;max-width:620px}
+.pvB .perfB2{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:24px;align-items:start}
+.pvB .menvplot{height:calc(var(--joy)*.7)}
 .joy small.jl{left:5px;top:50%;transform:translateY(-50%)}
 .joy small.jr{right:5px;top:50%;transform:translateY(-50%)}
 .joy small.ju{left:50%;top:4px;transform:translateX(-50%)}
@@ -2755,6 +2767,11 @@ canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop
 #rail .dkk{display:flex;align-items:center;justify-content:center;text-align:center;padding:0 2px}
 .dkvals.dktv{grid-template-columns:repeat(3,minmax(0,1fr)) calc(clamp(170px,26%,300px) + 8px)}
 .dkvis .arptrack .ac.add b{color:var(--print)}
+/* Perform's track selector: keys, the selected one dark with its LED */
+.perf .trksel button{background:var(--plate3);color:var(--print);border-radius:3px;box-shadow:inset 0 0 0 1px var(--rule);position:relative}
+.perf .trksel button::before{display:none!important}
+.perf .trksel button[aria-pressed=true]{background:var(--key);color:var(--keytext);box-shadow:inset 0 -3px 0 var(--led)}
+.perf .trksel button[aria-pressed=true] small{color:var(--keytext)}
 
 /* ===== The real machine's states (not in the mockup) ===== */
 .statusline,.errline{margin:6px 0 0;padding:6px 10px;border-radius:3px;font:12px var(--pix);text-transform:uppercase}
