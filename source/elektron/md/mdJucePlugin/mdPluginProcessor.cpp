@@ -1535,8 +1535,7 @@ namespace mdJucePlugin
 		{
 			// Start from factory memory not done yet: its clear goes first, in this same hold of the lock (the slots
 			// saved before it go; a newer save another editor made stays)
-			for(auto it = store.slots.begin(); it != store.slots.end();)
-				it = it->second.savedAt < w.factoryAtMs ? store.slots.erase(it) : std::next(it);
+			machineMemory::dropSavedBefore(store, w.factoryAtMs);
 		}
 		std::vector<uint8_t> bytes;
 		if(readOk)
@@ -2161,10 +2160,9 @@ namespace mdJucePlugin
 			m_memoryNote = moveMemoryFileAside("The saved machine memory was written by another editor; it was not deleted.");
 		else if(decoded.problem == machineMemory::Problem::None)
 		{
-			auto& slots = decoded.file.slots;
-			for(auto it = slots.begin(); it != slots.end();)
-				it = it->second.savedAt < w.factoryAtMs ? slots.erase(it) : std::next(it);
-			const bool gone = slots.empty() ? file.deleteFile() : writeMemoryFile(file, machineMemory::encode(m_model, decoded.file), error);
+			machineMemory::dropSavedBefore(decoded.file, w.factoryAtMs);
+			const bool empty = decoded.file.slots.empty() && decoded.file.foreign.empty();
+			const bool gone = empty ? file.deleteFile() : writeMemoryFile(file, machineMemory::encode(m_model, decoded.file), error);
 			if(!gone && !writeMemoryFile(file, machineMemory::encode(m_model, {}), error))
 				m_memoryNote = "The machine memory file could not be cleared: " + file.getFullPathName().toStdString();
 		}
