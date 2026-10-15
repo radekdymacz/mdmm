@@ -246,6 +246,7 @@ namespace mdJucePlugin
 		double m_lastBootRecordMs = 0;	// when recordBoot last ran
 		const double m_bootStartMs = juce::Time::getMillisecondCounterHiRes();
 		std::string m_bootRom;
+		bool m_stallLogged = false;	// the watchdog's stall was logged (recordBoot)
 		// the speed-ups as last written to the log (logSpeedUps): -1 none yet; else on | levers << 1 | L3 << 31
 		int64_t m_loggedSpeedUps = -1;
 		std::unique_ptr<class DeskHost> m_desk;

@@ -2011,7 +2011,7 @@
             },
             "stalled": {
               "type": "boolean",
-              "description": "1.0: the machine stopped moving and the scheduler's watchdog muted it (md::Hardware::schedulerStalled); the meter says STALLED until a restart. Absent: false."
+              "description": "1.0: the machine stopped moving and the scheduler's watchdog muted it (md::Hardware::schedulerStalled); the meter says STALLED until a new machine replaces it (the project loaded again, or the plug-in removed and added again). Absent: false."
             },
             "translated": {
               "type": "boolean"

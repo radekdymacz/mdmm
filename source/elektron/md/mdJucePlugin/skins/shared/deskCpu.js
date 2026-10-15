@@ -31,7 +31,7 @@ const CpuMeter = (() => {
 		bypassed: "the host bypasses the editor: nothing is measured",
 		offline: "the host renders offline, faster or slower than real time: nothing is measured"
 	};
-	const STALLED = "the machine stopped responding and is muted, so the host keeps running. Close and open the plug-in (or the project) again to restart it";
+	const STALLED = "the machine stopped responding and is muted, so the host keeps running. To restart it, load the project again, or remove the plug-in and add it again (the standalone app: quit and open it)";
 	const clamp01 = x => Math.max(0, Math.min(1, x));
 	/* the meter for a message (pure). level: ok below 70 %, high to 100 %, over when a block was late */
 	function view(m) {

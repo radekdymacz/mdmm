@@ -198,7 +198,8 @@ namespace md
 		// processAudio retains the drained frames; headless callers discard them.
 		void advance(uint32_t _machineFrames);
 		// True once an advance() spent its step budget (mdschedwatchdog.h): the machine stopped moving and is
-		// muted for good; a new device (a restart) is the way back. Any thread may read it.
+		// muted for good. Only a new Hardware clears it: a project (re)load, or the plug-in removed and added again
+		// (the standalone: quit and open it). Any thread may read it.
 		bool schedulerStalled() const { return m_schedStalled.load(std::memory_order_relaxed); }
 
 		// Advance DSP _dspIndex to the UC's current machine-time position
