@@ -358,6 +358,14 @@ document.addEventListener("wheel", e => { const v = e.target.closest?.(".gv[data
 /* how much a dragged value moves a notch: the percentages two */
 const gvDragStep = k => k === "dens" || k === "amt" || k === "racc" ? 2 : 1;
 
+/* the step-gesture popup (the ? key): it opens above the key and is kept fully inside the window, right of the track list (it is measured while hidden, then shifted) */
+function legendFit(box) {
+	const p = box && box.querySelector(".glegpop"); if (!p) return;
+	p.style.transform = ""; const r = p.getBoundingClientRect(), rail = document.querySelector("#rail"), lo = (rail ? rail.getBoundingClientRect().right : 0) + 8, hi = innerWidth - 8;
+	const dx = r.left < lo ? lo - r.left : r.right > hi ? hi - r.right : 0; if (dx) p.style.transform = `translateX(${dx}px)`;
+}
+for (const ev of ["mouseover", "focusin"]) document.addEventListener(ev, e => { const b = e.target.closest?.(".steplegend"); if (b) legendFit(b); });
+
 /* ---- shared/deskLaneShapes.js ---- */
 "use strict";
 /* The lock lane's shapes (both editors; the lane toolbox of mdStudio/mdDeskLaneTools.js, the MM page's own). Pure data and
@@ -1759,7 +1767,7 @@ const Modal = (() => {
 		boot: { outside: false, focusLast: false, esc: false }, menu: { outside: true, focusLast: false, esc: true } };
 	const DIALOGS = [["#dlg", "confirm", null], ["#libpop", "panel", "closeLib"], ["#globpop", "panel", "closeGlobal"],
 		["#keyspop", "panel", "toggleKeys"], ["#audiopop", "panel", "closeAudio"], ["#machpop", "panel", "closePicker"], ["#bootcard", "boot", null],
-		["#syxpop", "panel", null], ["#genpop", "panel", "closeGen", { drag: ".gdhead", place: "placeGen", clear: true, through: "[data-genopen]" }], ["#deskmenu", "menu", "closeDeskMenu"]];
+		["#syxpop", "panel", null], ["#genpop", "panel", "closeGen", { drag: ".gdhead", place: "placeGen", clear: true, through: "[data-genopen],.th[data-sel] .n,.th[data-sel] .nm,.th[data-sel] .sw" }], ["#deskmenu", "menu", "closeDeskMenu"]];
 	/* A row's 4th item is its options, all opt-in: drag (a selector: the handle that moves the dialog; the place is kept for the
 	   session, a double-click on the handle puts it back; dragging is no click outside, the dialog stays locked), place (the name
 	   of a function (el) -> {left, top} for where it opens when nobody moved it), clear (no dimmed backdrop), through (a selector:
@@ -1807,7 +1815,7 @@ const Modal = (() => {
 	}
 	function gone(el) {
 		const i = stack.findIndex(d => d.el === el); if (i < 0) return;
-		const [d] = stack.splice(i, 1); el.classList.remove("modal"); layer();
+		const [d] = stack.splice(i, 1); el.classList.remove("modal"); delete moved["#" + el.id]; layer();	/* the next opening starts at its own place */
 		if (d.back && d.back.isConnected && !stack.length) d.back.focus({ preventScroll: true });
 		else if (stack.length) focusIn(stack[stack.length - 1]);
 	}
@@ -1834,6 +1842,7 @@ const Modal = (() => {
 		if (e.button !== 0) return;
 		/* the dialog the handle belongs to, not only the top one: a menu or notice stacked later must not take the drag away */
 		const d = stack.find(x => { const o = opts(x); return o.drag && e.target.closest?.(o.drag) && x.el.contains(e.target); }); if (!d) return;
+		if (e.target.closest?.("button,input,label,select")) return;	/* a key in the handle (the GEN dialog's mode control) is a key, not the handle */
 		const o = opts(d), h = e.target.closest(o.drag);
 		const r = d.el.getBoundingClientRect();
 		drag = { d, dx: e.clientX - r.left, dy: e.clientY - r.top, h }; h.classList.add("dragging"); e.preventDefault();
@@ -1847,7 +1856,7 @@ const Modal = (() => {
 	document.addEventListener("pointerup", dragEnd); document.addEventListener("pointercancel", dragEnd);
 	document.addEventListener("dblclick", e => {
 		const d = top(); if (!d) return; const o = opts(d);
-		if (o.drag && e.target.closest?.(o.drag)) { delete moved["#" + d.el.id]; place(d.el.id); }
+		if (o.drag && e.target.closest?.(o.drag) && !e.target.closest?.("button,input,label,select")) { delete moved["#" + d.el.id]; place(d.el.id); }
 	});
 	window.addEventListener?.("resize", () => { const d = top(); if (d && (opts(d).drag || opts(d).place)) place(d.el.id); });
 	/* first in line (this file loads before the dialogs' own handlers): Esc, Tab and the backdrop */
@@ -3233,7 +3242,7 @@ function tempoLocked(){if(!S.hostTempo)return false;toast("The DAW sets the temp
 function ref(el){const d=el.dataset,t=d.t!=null?+d.t:S.sel,tr=trk(t),g=d.g;
  if(PAGES.includes(g)||g==="MID")return[tr.v[g],+d.n,meta(t,g,+d.n),t,g];
  switch(g){case"lev":return[tr,"lev",{name:"LEV",max:127},t,g];case"menv":return[S.menv,d.n,{name:d.n,max:127},t,g];
-  case"arp":return[tr.arp,d.n,{name:d.n,...{SPD:{max:127},RNGE:{en:["—",...Array.from({length:9},(_,k)=>(k+1)+" OCT")]},OJMP:{max:15}}[d.n]},t,g];
+  case"arp":return[tr.arp,d.n,{name:d.n,...{SPD:{max:127},RNGE:{en:["—",...Array.from({length:9},(_,k)=>(k+1)+" OCT")]},OJMP:{max:15},len:{max:16,def:8}}[d.n]},t,g];
   case"trn":return[tr.tr,"TRACK",{name:"TRACK",max:127,signed:1},t,g];case"ptrn":return[S,"patTrn",{name:"PAT",max:127,signed:1},t,g];
   case"key":return[tr.tr,"KEY",{name:"KEY",en:KEYS},t,g];
   case"asg":{const r=tr.assign.tabs[S.asTab][+d.n];return[r,"add",{name:"ADD",max:127,signed:1},t,g]}
@@ -3249,17 +3258,18 @@ const getV=el=>{const[o,n]=ref(el);return o[n]};
 function controlAll(t0,g,i,d){for(let t=0;t<6;t++){if(t===t0)continue;const tr=trk(t);if(g==="SYN"&&!MACH[tr.m].p[i])continue;tr.v[g][i]=clamp(tr.v[g][i]+d,0,maxOf(meta(t,g,i)))}}
 function pagesCopy(t){const v=trk(t).v,o={};PAGES.forEach(pg=>o[pg]=[...v[pg]]);return o}
 function controlAllFrom(t0,before){PAGES.forEach(pg=>trk(t0).v[pg].forEach((x,i)=>{if(x!==before[pg][i])controlAll(t0,pg,i,x-before[pg][i])}))}
-function setV(el,v){const[o,n,m,t,g]=ref(el);v=clamp(Math.round(v),0,maxOf(m));if(o[n]===v)return;const d=v-o[n];o[n]=v;
+function setV(el,v){const[o,n,m,t,g]=ref(el);v=clamp(Math.round(v),g==="arp"&&n==="len"?1:0,maxOf(m));if(o[n]===v)return;const d=v-o[n];o[n]=v;
  if(PAGES.includes(g)||g==="MID"){const all=drag&&drag.all&&drag.el===el&&PAGES.includes(g),before={};if(all)for(let k=0;k<6;k++)if(k!==t)before[k]=pagesCopy(k);
   edit("param",{t,page:g==="MID"?7:PAGES.indexOf(g),i:+n,v});if(all){controlAll(t,g,+n,d);editParams(before)}}
  else if(g==="lev")edit("level",{t,v});
- else if(g==="arp")edit("arp",n==="SPD"?{t,field:"speed",v:clamp(v-1,0,127)}:n==="RNGE"?{t,field:"range",v:clamp(v-1,0,8)}:{t,field:"ojmp",v});
+ else if(g==="arp")edit("arp",n==="SPD"?{t,field:"speed",v:clamp(v-1,0,127)}:n==="RNGE"?{t,field:"range",v:clamp(v-1,0,8)}:n==="len"?{t,field:"length",v}:{t,field:"ojmp",v});
  else if(g==="trn")edit("transpose",{t,v:v-64});else if(g==="ptrn")edit("transpose",{v:v-64});else if(g==="key")edit("transpose",{t,key:v});
  else if(g==="cc")edit("midiTrack",{t:t-6,cc:[...trk(t).cc]});
  else if(g==="menv")edit("multiEnv",{i:["ATK","DEC","SUS","REL","PORT"].indexOf(n),v});
  else if(g==="asg")edit("assign",{t:asgT(),src:ASRC[S.asTab],row:+el.dataset.n,add:v-64});
  else if(g==="src"||g==="link")ctlChanged();else if(g==="mmap")edit("multiMap",{i:+el.dataset.i,[n]:mmapFw(n,v)});
  if(g.startsWith("LF")&&(+el.dataset.n<2)){if(+el.dataset.n===0)o[1]=0;render();return}
+ if(g==="arp"&&n==="len")renderArp();
  syncControls();redraw()}
 function pc(g,n,{t,label,cls="",extra=""}={}){if(n==null)return`<div class="pc empty" aria-hidden="true"></div>`;
  return`<div class="pc ${cls}" role="slider" tabindex="0" data-g="${g}" data-n="${n}"${t!=null?` data-t="${t}"`:""} ${extra} aria-label="${label||n}"><span>${label||n}</span><b></b></div>`}
@@ -3351,8 +3361,8 @@ const gapC=s=>s%16===0&&s!==vis()[0]?"gap":"";
    track's VEL row, lock lane. */
 const ROLL_H=16*28+15*3;
 function th(t){const tr=trk(t),pt=S.polyT??S.sel,polyOff=S.mode==="poly"&&t!==pt&&t<6;return`<div class="th ${t===S.sel?"sel":""} ${S.ws==="seq"&&S.marks?.has(t)?"marked":""} ${trackSel(t)} ${audible(t)?"":"off"} ${polyOff?"poly-off":""}" data-sel="${t}">
- <div class="threw"><div class="sw"></div><div class="n ${t<6?"":"fill"}">${t<6?t+1:"M"+(t-5)}</div><div class="nm" title="${polyOff?"Silent in POLY":S.mode==="poly"&&t===pt?"POLY: six voices":tr.name}"><b>${t<6?tr.m.replace("SWAVE-","SW-"):"CH"+String(tr.ch).padStart(2,"0")}${S.mode==="poly"&&t===pt&&t<6?`<em class="x6">×6</em>`:""}</b></div>
- <button class="ms m ${ARMED.has(t)?"prep":""}" ${ARMED.has(t)?`data-prep="${ARMED.get(t)?"X":"+"}"`:""} data-mute="${t}" aria-pressed="${tr.mute}" aria-label="Mute ${tLabel(t)}">M</button><button class="ms s" data-solo="${t}" aria-pressed="${tr.solo}" aria-label="Solo ${tLabel(t)}">S</button>${S.ws==="seq"?`<button class="ms g" data-genopen="${t}" aria-label="GEN, ${tLabel(t)}" title="GEN: generate this track"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="11" rx="2.5"/><circle cx="5.6" cy="5.6" r=".9"/><circle cx="10.4" cy="5.6" r=".9"/><circle cx="8" cy="8" r=".9"/><circle cx="5.6" cy="10.4" r=".9"/><circle cx="10.4" cy="10.4" r=".9"/></svg></button>`:""}</div></div>`}
+ <div class="threw"><div class="sw"></div><div class="n ${t<6?"":"fill"}">${t<6?t+1:"M"+(t-5)}</div><div class="nm" title="${polyOff?"Silent in POLY":S.mode==="poly"&&t===pt?"POLY: six voices":tr.name}"><b title="${t<6?tr.m:"MIDI channel "+tr.ch}">${t<6?tr.m.replace("SWAVE-","SW-"):"CH"+String(tr.ch).padStart(2,"0")}${S.mode==="poly"&&t===pt&&t<6?`<em class="x6">×6</em>`:""}</b></div>
+ <button class="ms m ${ARMED.has(t)?"prep":""}" ${ARMED.has(t)?`data-prep="${ARMED.get(t)?"X":"+"}"`:""} data-mute="${t}" aria-pressed="${tr.mute}" aria-label="Mute ${tLabel(t)}">M</button><button class="ms s" data-solo="${t}" aria-pressed="${tr.solo}" aria-label="Solo ${tLabel(t)}">S</button>${S.ws==="seq"?`<button class="ms g${genIsKept(t)?" kept":""}" data-genopen="${t}" aria-label="GEN, ${tLabel(t)}" title="GEN: generate this track · ⌘-click: keep on ⌥R all${genIsKept(t)?" (kept now)":""}"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="11" rx="2.5"/><circle cx="5.6" cy="5.6" r=".9"/><circle cx="10.4" cy="5.6" r=".9"/><circle cx="8" cy="8" r=".9"/><circle cx="5.6" cy="10.4" r=".9"/><circle cx="10.4" cy="10.4" r=".9"/></svg><svg class="lk" viewBox="0 0 12 12" aria-hidden="true"><rect x="1.5" y="5.5" width="9" height="6" rx="1" fill="currentColor" stroke="none"/><path d="M3.5 5.5V4a2.5 2.5 0 0 1 5 0v1.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>`:""}</div></div>`}
 function pageKeys(){return`<span class="pagectl rh"><button class="pgkey" id="pgkey" ${pages16()<2?"disabled":""} title="Next page. Shift-click = previous. Keys [ and ].">Page</button><span class="pleds" aria-hidden="true">${[0,1,2,3].map(k=>`<span class="pl ${k<pages16()?"":"na"} ${!S.viewAll&&k===S.page?"cur":""}" data-plp="${k}"><i class="led"></i></span>`).join("")}</span><button class="ptog ${S.viewAll?"on":""}" id="pgall" aria-pressed="${S.viewAll}" title="Show all steps"><i class="led"></i>All</button><button class="ptog ${S.follow?"on":""}" id="pgfollow" aria-pressed="${S.follow}" title="Page follows the play position"><i class="led"></i>Fol</button></span>`}
 function lockPicker(t){const midi=isMidiT(t),list=pagesOf(t),d=dockOf(t);if(!list.includes(S.lanePage))S.lanePage=list[0];
  return`<div class="railparams ${d==="locks"?"":"dockrail"}"><div class="rphead"><span class="cap">${DOCKN[d]}</span><button id="lockLane" class="iconkey" aria-label="Lock the current value on the selected steps" title="Lock ${pidLabel(t,S.lane)} at its current value on the selected steps (the machine: hold the trig, click the knob)"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M4 6.5V4.5a3 3 0 0 1 6 0v2M3 6.5h8v6H3z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></button><button id="clearLane" class="iconkey" aria-label="Clear these locks" title="Clear ${pidLabel(t,S.lane)} locks"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 4h10M5.5 4V2.5h3V4M3.5 4l.7 8h5.6l.7-8M6 6.5v3.5M8 6.5v3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
@@ -3382,17 +3392,16 @@ function renderSeq(){const t=S.sel,tr=trk(t),midi=isMidiT(t);dockOf(t);
   <div class="nlane big"><canvas class="roll" data-ed="lane" data-t="${t}" data-big="1" title="${ROLL_TIP(t)}" aria-label="${ROLL_TIP(t)}"></canvas></div>
   ${midi?`<div class="tlanes" id="tlanes"><div class="tlane env" style="grid-template-columns:${cols()}" title="Velocity per note (VEL, lockable)"><span class="tlab">VEL</span>${steps().map(s=>{const st=tr.steps[s];const v=st&&!st.off?velOf(t,s):null;return`<span class="tc envc ${gapC(s)} ${v==null?"na":""} ${cellSel(s)}" data-s="${s}">${v!=null?`<i class="velbar" style="--v:${v/127*100}%" title="VEL ${v}"></i>`:""}</span>`}).join("")}</div></div>`:""}</div></div>
  ${genBarHtml()}
- <div class="lanewrap"><div class="lanetop">${S.dock==="locks"?`<span class="cap">Lock lane · ${tLabel(t)} ${midi?"CH"+String(tr.ch).padStart(2,"0"):tr.m} · <b id="lanename">${pidLabel(t,S.lane)}</b> <span class="lanescale" id="lanescale"></span></span>
-  <span class="lockbudget" id="lockbudget"></span>`:(()=>{const[h,hl]=dockHelp(t,S.dock);return`<span class="cap">${DOCKN[S.dock]} · ${tLabel(t)} ${midi?"CH"+String(tr.ch).padStart(2,"0"):tr.m}</span><span class="lockbudget dkread" id="dkread">${dockRead(t,S.dock)}</span><span class="lanehelp dkhelp" title="${dkAttr(hl)}">${h}</span>`})()}${dockTabs(t)}</div>
-  ${S.dock==="locks"?dockBody(t):`<div class="dockbody" id="dock">${dockBody(t)}</div>`}</div>`;
+ <div class="lanewrap"><div class="lanetop">${dockTabs(t)}${S.dock==="locks"?`<span class="lockbudget" id="lockbudget"></span>${laneToolsHtml()}`:(()=>{const[h,hl]=dockHelp(t,S.dock);return`<span class="lockbudget dkread" id="dkread">${dockRead(t,S.dock)}</span><span class="lanehelp dkhelp" title="${dkAttr(hl)}">${h}</span>`})()}</div>
+  ${S.dock==="locks"?dockBody(t):`<div class="dockbody dk-${S.dock}" id="dock">${dockBody(t)}</div>`}</div>`;
  $("#main").innerHTML=h;document.body.classList.toggle("dockother",S.dock!=="locks");genDraw();fitLane();renderLane();syncScroll();syncControls();alignLock();syncLockBudget();markRecLock();stepDraw()}
 /* as in the MD Editor: the rail's LOCK PARAMETER block starts on the line above the lock lane (the lane's top border, under the GEN bar) and ends at its bottom edge */
 function alignLock(){const rp=$("#rail .railparams"),lt=$(".lanetop"),ls=$("#lanescroll")||$("#main>.lanewrap>.dockbody");if(!rp||!lt||!ls||S.ws!=="seq")return;
  const roll=$("#seq canvas.roll[data-big]"),tb=rp.querySelector(".pagetabs");
  const size=()=>{rp.style.marginTop="0px";rp.style.height="auto";const sf=$("#main>.lanewrap"),dy=(sf?sf.getBoundingClientRect().top:lt.getBoundingClientRect().top)-rp.getBoundingClientRect().top;
   rp.style.marginTop=Math.max(0,dy)+"px";rp.style.height=Math.max(0,ls.getBoundingClientRect().bottom-rp.getBoundingClientRect().top)+"px";titles()};
- /* the lane's title sits on the LOCK PARAMETER title's line */
- const titles=()=>{const a=rp.querySelector(".rphead .cap"),b=lt.querySelector(".cap");if(!a||!b)return;const c=e=>{const q=e.getBoundingClientRect();return q.top+q.height/2};lt.style.marginTop="0px";const d=c(a)-c(b);if(Math.abs(d)>.5)lt.style.marginTop=d+"px"};
+ /* the lane's tabs sit on the LOCK PARAMETER title's line */
+ const titles=()=>{const a=rp.querySelector(".rphead .cap"),b=lt.querySelector(".docktabs");if(!a||!b)return;const c=e=>{const q=e.getBoundingClientRect();return q.top+q.height/2};lt.style.marginTop="0px";const d=c(a)-c(b);if(Math.abs(d)>.5)lt.style.marginTop=d+"px"};
  const gap=()=>tb?tb.getBoundingClientRect().top-ls.getBoundingClientRect().top:0;
  /* the lock lane is as tall as the LOCK PARAMETER keys; the space above them goes to the piano roll, which pushes the lane down */
  ls.style.marginTop="0px";if(roll)roll.style.removeProperty("height");size();
@@ -3407,7 +3416,7 @@ const DOCKN={locks:"Lock parameter",arp:"Arpeggiator",trn:"Transpose",trig:"Trig
 /* the fourth tab is the kit's: TRIG SETUP on a synth track, the MIDI PAGE on a MIDI track (it stays the fourth when the track changes) */
 function dockOf(t){const midi=isMidiT(t);if(S.dock==="midipage")S.dock="midi";if(!DOCKN[S.dock])S.dock="locks";if(S.dock==="midi"&&!midi)S.dock="trig";if(S.dock==="trig"&&midi)S.dock="midi";return S.dock}
 function dockTabs(t){const midi=isMidiT(t),tabs=[["locks","Locks"],["arp","Arp"],["trn","Transpose"],midi?["midi","MIDI page"]:["trig","Trig setup"]];
- return`<span class="docktabs" role="tablist">${tabs.map(([k,n])=>`<button role="tab" class="lkey" data-dock="${k}" aria-selected="${S.dock===k}"><i class="led"></i>${n}</button>`).join("")}</span>`}
+ return`<span class="docktabs" role="tablist">${tabs.map(([k,n])=>`<button role="tab" class="lkey" data-dock="${k}" aria-selected="${S.dock===k}"${S.dock===k&&k!=="locks"?` title="${dkAttr(dockHelp(t,k)[0])}"`:""}><i class="led"></i>${n}</button>`).join("")}</span>`}
 function dockBody(t){if(S.dock==="locks")return`<div class="scroll" id="lanescroll"><div class="lanebox"><div class="lane" id="lane" style="grid-template-columns:${cols()}"></div><svg class="lanesvg" id="lanesvg"></svg></div></div>`;
  if(S.dock==="arp")return arpPanel(t);if(S.dock==="trn")return trnPanel(t);if(S.dock==="trig")return trigPanel(t);return midiPanel(t)}
 /* the roll takes the stack width from CSS (.nlane width:0; min-width:100%), so the canvas bitmap size (dpr) never widens the grid */
@@ -3661,7 +3670,7 @@ function clearTrackLocks(t){const n=trackLockPids(t).length;[...S.locks.keys()].
 
 /* ---- the lock budget over the lock lane: the machine's 62 locked parameters in a pattern, pooled over all
    twelve tracks (manual 1-58), as the LCD's meter (dark from 52, blinking at 62) ---- */
-function syncLockBudget(){const el=$("#lockbudget");if(!el)return;const n=S.locks.size;el.className="lockbudget"+(n>=62?" full":n>=52?" warn":"");el.innerHTML=`<b>${n}</b> / 62 locked parameters`;
+function syncLockBudget(){const el=$("#lockbudget");if(!el)return;const n=S.locks.size;el.className="lockbudget"+(n>=62?" full":n>=52?" warn":"");el.innerHTML=`<b>${n}</b>/62`;
  el.title=`The Monomachine holds 62 locked parameters in a pattern, over all twelve tracks (a track and a parameter with any lock counts once). ${n} in use, ${62-n} left.${n>=62?" Clear a lane before you lock a new parameter.":""}`}
 
 /* ---- rotate: Alt + Left / Right (FUNCTION + arrows on the machine) moves the selected track's steps, slides
@@ -3805,7 +3814,7 @@ Keys.bind({id:"track-mark-paste",scope:"seq",area:"Tracks",keys:["track header"]
    GEN's are the steps intent of the tracks it wrote (their steps, slides and locks over the range, so a value moved
    back gives its steps back); MUTATE's are the params intent of the values it moved. Alt is the global "all": Alt + a GEN change
    every track of the side shown over the whole pattern, Alt+R every track (Sound: every synth track). ===== */
-S.gen={specs:null,last:[],m:[],run:null,session:null};
+S.gen={specs:null,last:[],m:[],run:null,session:null,kept:new Set()};
 S.mut={amount:20,seed:genSeed(),scope:new Set(["SYN"]),trial:null,note:""};
 S.genOwn=false;
 const genKey=()=>`${S.ws}:${S.sel}:${S.pat}`,mutKey=()=>`${S.ws}:${S.sel}:${S.kit}`;
@@ -3844,8 +3853,8 @@ function genLive(all=S.alt){
  if(S.rec){toast("The generators wait while the machine records live.");return false}
  genStale();genStart(genKey());
  const run=genRunFor(S.gen.run,genKey(),genBase,()=>0),[from,to]=genRange(all),wrote=[];
- for(const t of all?side():[S.sel])if(genWrite(t,from,to,run))wrote.push(t);
- if(!wrote.length){toast(all?"Every track is set to keep: nothing to generate.":`${tLabel(S.sel)} is set to keep.`);genDraw();return false}
+ for(const t of all?side().filter(t=>!genKept(t)):[S.sel])if(genWrite(t,from,to,run))wrote.push(t);
+ if(!wrote.length){toast(all?"Every track is set to keep: nothing to generate.":`${tLabel(S.sel)} has no generator.`);genDraw();return false}
  S.gen.run=run;run.applied++;if(run.applied===1&&S.gen.session)S.gen.session.n++;
  S.genOwn=true;try{edit("steps",{from,to,rows:wrote.map(t=>rangeRow(t,from,to,true))})}finally{S.genOwn=false}
  autoRange(S.sel);if(S.ws==="seq")rerenderSeq();else renderTop();
@@ -3854,12 +3863,13 @@ function genLive(all=S.alt){
 function genPreview(t,from,to){const run=S.gen.run&&S.gen.run.key===genKey()?S.gen.run:null,base=run?run.base[t].steps:trk(t).steps;
  return{run,base,r:mmGenSteps(genSpec(t),t,from,to,base,S.len,isMidiT(t))}}
 /* Defaults (↺): this track's values (Alt: every track of the side) from its machine; the track follows, as with any change */
-function genDefaults(){genSpecs();const len=S.len||64;for(const t of S.alt?side():[S.sel]){S.gen.specs[t]=mmGenDefault(genInfo(t),len,isMidiT(t));S.gen.m[t]=trk(t).m;S.gen.last[t]={edited:true}}
+function genDefaults(){genSpecs();const len=S.len||64;for(const t of S.alt?side().filter(t=>!genKept(t)):[S.sel]){S.gen.specs[t]=mmGenDefault(genInfo(t),len,isMidiT(t));S.gen.m[t]=trk(t).m;S.gen.last[t]={edited:true}}
+ genRealise(S.sel);
  toast(S.alt?"Every track's values from its machine.":"This track's values from its machine.");genLive()}
 /* a new variation: a new seed (random, the notes), random hits and rotation in the cycle (euclid); keep stays */
 function genVary(t){const sp=genSpec(t),r=n=>Math.floor(Math.random()*n);if(sp.kind==="keep")return false;
  sp.seed=genSeed();if(sp.kind==="euclid"){sp.k=1+r(sp.n);sp.rot=r(sp.n)}S.gen.last[t].edited=true;return true}
-function genAgain(all=false){const ts=all?side():[S.sel],varied=ts.filter(genVary).length;
+function genAgain(all=false){const ts=all?side().filter(t=>!genKept(t)):[S.sel],varied=ts.filter(genVary).length;
  if(!varied){toast(all?"Every track is set to keep: nothing to randomise.":`${tLabel(S.sel)} is set to keep: nothing to randomise.`);return}
  if(genLive(all)&&S.ws!=="seq")toast(all?"GEN: a new variation of every track.":`GEN: a new variation of ${tLabel(S.sel)}.`)}
 /* the one randomise action (R; Alt+R or Alt-click on the R key: all), by workspace */
@@ -3886,17 +3896,18 @@ function genVal(k,d){const lim=(v,a,b)=>Math.max(a,Math.min(b,v));
  genLive()}
 /* The bars' pieces (gbg, gv, kc, randKey, gtitle, gseg) and their clicks, wheel and arrows: shared/deskGenBar.js,
    the Machinedrum Editor's. */
-function genNotesHtml(sp,t){const n=sp.notes;if(!n||sp.kind==="keep"||isMidiT(t))return"";const kit=n.motion==="kit"||trk(t).m==="DPRO-BBOX";
- const mot=gv("nmot","Notes",n.motion==="off"?"off":n.motion,kit?"Off: the steps keep their drums (a new one takes the last). KIT: each hit picks BD1, SD1, CH or OH":"Off: the steps keep their pitch (a new one takes the track's last note). STEP: a walk of 1 or 2 scale degrees from the root. LEAP: any note of the range");
+function genNotesHtml(sp,t,bare){const n=sp.notes;if(!n||sp.kind==="keep"||isMidiT(t))return"";const kit=n.motion==="kit"||trk(t).m==="DPRO-BBOX";
+ const mot=gv("nmot",bare?"Motion":"Notes",n.motion==="off"?"off":n.motion,kit?"Off: the steps keep their drums (a new one takes the last). KIT: each hit picks BD1, SD1, CH or OH":"Off: the steps keep their pitch (a new one takes the track's last note). STEP: a walk of 1 or 2 scale degrees from the root. LEAP: any note of the range");
  const seed=sp.kind==="euclid"&&n.motion!=="off"?gv("seed","Seed",sp.seed,"The same seed gives the same notes"):"";
- if(n.motion==="off"||n.motion==="kit")return gbg("Notes",mot+seed,"gnotes","The rhythm decides when, the notes what: they go to the hits the rhythm writes");
- return gbg("Notes",mot+gv("nroot","Root",noteName(n.root),"The lowest note: the scale's root at its octave (the track's KEY when its SCALE is MAJ or MIN)")+gv("nscale","Scale",n.scale==="DORIAN"?"DOR":n.scale,"MAJ, MIN, PENT (minor pentatonic) or DORIAN")
-  +gv("nrange","Range",n.range+" oct","One or two octaves from the root")+seed,"gnotes","The rhythm decides when, the notes what: they go to the hits the rhythm writes (every hit; in ADD the new ones, in THIN none)")}
+ const wrap=(body,tip)=>bare?body:gbg("Notes",body,"gnotes",tip);
+ if(n.motion==="off"||n.motion==="kit")return wrap(mot+seed,"The rhythm decides when, the notes what: they go to the hits the rhythm writes");
+ return wrap(mot+gv("nroot","Root",noteName(n.root),"The lowest note: the scale's root at its octave (the track's KEY when its SCALE is MAJ or MIN)")+gv("nscale","Scale",n.scale==="DORIAN"?"DOR":n.scale,"MAJ, MIN, PENT (minor pentatonic) or DORIAN")
+  +gv("nrange","Range",n.range+" oct","One or two octaves from the root")+seed,"The rhythm decides when, the notes what: they go to the hits the rhythm writes (every hit; in ADD the new ones, in THIN none)")}
 /* the step gestures behind a small ? key (a click: the list of keys) */
 function stepLegend(){const midi=isMidiT(S.sel),row=(cls,what,how)=>`<span>${cls!=null?`<i class="lg on ${cls}"></i>`:`<i class="lg none"></i>`}<b>${what}</b>${how}</span>`;
- return`<span class="steplegend"><button class="glegkey" id="steplegend" aria-label="Step gestures" aria-describedby="steplegpop">?</button><span class="legend glegpop" id="steplegpop" role="tooltip">${row("","Note","click in the roll; drag up or down for pitch, sideways to paint (alt: erase)")}${midi?"":row("g","Trigless","no envelope trigs (the ENV row)")}${row("y","Note off","alt-click an empty step")}${row("lk","Has locks","a lock on the step")}${row(null,"Fill","⌘-click: every 2nd step from there to the end gets the note (from a note: off); ⌘⇧-click: every 4th")}<small>? the list of keys</small></span></span>`}
-/* the bar under the roll: the step legend, the roll's keys, the lane toolbox in the room the GEN bar left (only over the lock lane), the page keys */
-function genBarHtml(){return`<div class="genbar">${stepLegend()}${rollKeysHtml()}${S.dock==="locks"?laneToolsHtml():""}${pageKeys()}</div>`}
+ return`<span class="steplegend"><button class="glegkey" id="steplegend" aria-label="Step gestures" aria-describedby="steplegpop">?</button><span class="legend glegpop" id="steplegpop" role="tooltip">${row("","Note","click in the roll; drag up or down for pitch, sideways to paint (alt: erase)")}${midi?"":row("g","Trigless","no envelope trigs (the ENV row)")}${row("y","Note off","alt-click an empty step")}${row("lk","Has locks","a lock on the step")}${row(null,"Fill","⌘-click: every 2nd step from there to the end gets the note (from a note: off); ⌘⇧-click: every 4th")}${S.dock==="arp"&&!midi?row(null,"Arp",dockHelp(S.sel,"arp")[1]):""}<small>? the list of keys</small></span></span>`}
+/* the bar under the roll: the step legend, the roll's keys, the page keys (the lane toolbox is on the lock lane's header row, 70-seq.js) */
+function genBarHtml(){return`<div class="genbar">${rollKeysHtml()}${stepLegend()}<i class="gdiv"></i>${pageKeys()}</div>`}
 /* ===== The GEN dialog (Radek, 2026-10-14; the Machinedrum Editor's mdDeskGenUi.js has the same one). Opened by the dice key of a track
    in the rail; it fills that track. One session: opening it starts one, DONE (Enter) keeps what it wrote, CANCEL (Esc) takes it back
    (Undo, once for each run the session made: a run is one undo step, and the session has one run for each track it was on). The
@@ -3908,12 +3919,12 @@ function openGen(t){if(S.ws!=="seq"||!trk(t))return;
  if(S.rec){toast("The generators wait while the machine records live.");return}
  const was=genDlgOpen();if(!was){genEnd();S.gen.session={n:0}}
  if(t!==S.sel)select(t);else if(!was)render();
- genSpecs();genDraw(true);const pop=$("#genpop");pop.hidden=false;
+ genSpecs();genRealise(S.sel);genDraw(true);const pop=$("#genpop");pop.hidden=false;
  if(typeof Modal!=="undefined"&&Modal.place)Modal.place("genpop");
  if(!was)pop.querySelector(".gv")?.focus({preventScroll:true})}
-/* where the dialog opens (shared/deskModal.js `place`): under the piano roll, over the lock lane; kept inside the window */
-function placeGen(el){const roll=$("#seq canvas.roll[data-big]");if(!roll)return null;const r=roll.getBoundingClientRect(),h=el.offsetHeight,w=el.offsetWidth;
- return{left:(innerWidth-w)/2,top:Math.min(r.bottom+10,innerHeight-h-8)}}
+/* where the dialog opens (shared/deskModal.js `place`): centred in the window, over the grid (right of the track list, which stays in reach) */
+function placeGen(el){const rail=$("#rail"),l=rail?rail.getBoundingClientRect().right:0,h=el.offsetHeight,w=el.offsetWidth;
+ return{left:l+(innerWidth-l-w)/2,top:(innerHeight-h)/2}}
 /* done: keep what the session wrote; otherwise (Esc, Cancel): Undo it, once for each run it made */
 function closeGen(done){const pop=$("#genpop");if(!pop||pop.hidden)return;
  const n=done===true?0:(S.gen.session?S.gen.session.n:0);pop.hidden=true;genEnd();S.gen.session=null;
@@ -3925,6 +3936,8 @@ function genSwitch(t){if(t>=0&&t<12&&trk(t)&&t!==S.sel&&side().includes(t))openG
 function genDraw(fill){const pop=$("#genpop");if(!pop||(pop.hidden&&!fill))return;
  const act=pop.contains(document.activeElement)?document.activeElement:null,ref=act&&["data-gv","data-genkind","data-genmode","data-rand","data-gen","data-genclose","data-gencancel","data-genkeep"].find(a=>act.hasAttribute(a)),key=ref?`[${ref}="${act.getAttribute(ref)}"]`:null;
  pop.innerHTML=genDialogHtml();if(key)pop.querySelector(key)?.focus({preventScroll:true})}
+/* a click on a track's number or name (the modal layer lets it through): the dialog follows the track, the page's own select is not run twice */
+document.addEventListener("click",e=>{const th=genDlgOpen()&&e.target.closest(".th[data-sel] .n,.th[data-sel] .nm,.th[data-sel] .sw");if(!th)return;e.stopPropagation();genSwitch(+th.closest("[data-sel]").dataset.sel)},true);
 document.addEventListener("click",e=>{
  const o=e.target.closest("[data-genopen]");if(o){genDlgOpen()?genSwitch(+o.dataset.genopen):openGen(+o.dataset.genopen);return}
  if(e.target.closest("[data-genclose]")){closeGen(true);return}
@@ -3935,12 +3948,15 @@ document.addEventListener("keydown",e=>{
  if(!genDlgOpen()||!e.target.closest?.("#genpop")||e.metaKey||e.ctrlKey||e.altKey)return;
  if(e.key==="Enter"&&!e.target.closest("button")){e.preventDefault();e.stopPropagation();closeGen(true)}
  else if((e.key==="ArrowUp"||e.key==="ArrowDown")&&!e.target.closest(".gv")){e.preventDefault();e.stopPropagation();genSwitch(S.sel+(e.key==="ArrowDown"?1:-1))}},true);
-/* KEEP, honestly: a track whose spec is Keep is left alone by every generator run (Alt changes and Alt+R over every track skip it, and so does a change here:
-   it gives the pattern before the run back). The dialog shows it as a switch on the track, not a third mode: switching it on keeps the track's generator in
-   S.gen.last (`was`), switching it off brings that generator back. */
-function genKeep(on){const t=S.sel,sp=genSpec(t),last=S.gen.last[t];if(on===(sp.kind==="keep"))return;
- if(on){last.was=sp.kind;genKind("keep");return}
- const d=mmGenDefault(genInfo(t),S.len||64,isMidiT(t));genKind(last.was&&last.was!=="keep"?last.was:d.kind!=="keep"?d.kind:"euclid")}
+/* KEEP: only "⌥R all (and every all-tracks run) skips this track". It switches nothing off in the dialog: the mode, the boxes, R and Defaults
+   still write this track. A track whose machine has no generator (FX, GND: a Keep spec) counts as kept; the dialog gives it the generator it would
+   have (genRealise) the moment it opens, and the track stays marked kept. The marker is a lock on the track's dice key and next to the title. */
+const genKept=t=>S.gen.kept.has(t),genIsKept=t=>genKept(t)||genSpec(t).kind==="keep";
+function genRealise(t){if(genSpec(t).kind!=="keep")return;S.gen.kept.add(t);S.gen.specs[t]=genShown(t)}
+function genKeepT(t,on){if(on)S.gen.kept.add(t);else{S.gen.kept.delete(t);if(genSpec(t).kind==="keep")S.gen.specs[t]=genShown(t)}render();genDraw();toast(on?`${tLabel(t)} kept: ⌥R all skips it.`:`${tLabel(t)} is no longer kept.`)}
+function genKeep(on){genKeepT(S.sel,on)}
+/* ⌘-click (Ctrl off a Mac) on a track's dice key: Keep on or off for that track, the dialog not opened. Keep is a setting of the generators, not of the pattern: no undo step */
+document.addEventListener("click",e=>{const o=e.target.closest?.("[data-genopen]");if(!o||!Modifiers.cmd(e))return;e.stopPropagation();e.preventDefault();const t=+o.dataset.genopen;genKeepT(t,!genIsKept(t))},true);
 /* the spec the dialog's boxes show: the track's own, or while it is kept the generator it will come back to */
 function genShown(t){const sp=genSpec(t);if(sp.kind!=="keep")return sp;const l=S.gen.last[t]||{},len=S.len||64,d=mmGenDefault(genInfo(t),len,isMidiT(t));
  return genFit(l[l.was],len)||(d.kind!=="keep"?d:{kind:"euclid",k:4,n:Math.min(16,len),rot:0,seed:genSeed(),notes:d.notes})}
@@ -3958,27 +3974,29 @@ document.addEventListener("dblclick",e=>{const el=e.target.closest("#genpop .gv[
  const v=GenBox.def(el.dataset.gv),r=GenBox.range(el);if(v==null||!r)return;GenBox.set(el,Math.max(r[0],Math.min(r[1],v)))});
 /* The dialog (compact, one size in every mode): the head (the drag handle), MODE, the mode's values in an area of fixed height (the rhythm's groups, then NOTES
    on a synth track), the KEEP switch, then the footer: the summary at the left, R and Defaults, Cancel and Done at the right. */
-function genDialogHtml(){const real=genSpec(),kept=real.kind==="keep",sp=genShown(S.sel),t=S.sel,tr=trk(t),all=S.alt,[from,to]=genRange(all),{run,base,r}=genPreview(t,from,to);
+function genDialogHtml(){const sp=genShown(S.sel),t=S.sel,tr=trk(t),all=S.alt,kept=genIsKept(t),[from,to]=genRange(all),{run,base,r}=genPreview(t,from,to);
  const sc=(attr,cur,items,tips,label)=>`<span class="gsc" role="radiogroup" aria-label="${label}">${items.map(([k,n])=>`<button ${attr}="${k}" role="radio" aria-checked="${cur===k}" aria-pressed="${cur===k}" title="${tips[k]}">${n}</button>`).join("")}</span>`;
  const mode=sc("data-genkind",sp.kind,[["euclid","Euclid"],["random","Random"]],{euclid:"k hits spread evenly over n steps, rotated",random:"each step on by chance, from a seed"},"Mode");
- const rhythm=sp.kind==="euclid"?gbg("Euclid",gv("k","Hits",sp.k,"How many hits in a cycle")+gv("n","Steps",sp.n,"The cycle's length in steps, at most the pattern's; it repeats over the pattern")+gv("rot","Rotate",sp.rot,"Moves the hits later"))
-  :gbg("Random",gv("dens","Density",sp.density+"%","The chance of each step")+gv("seed","Seed",sp.seed,"The same seed gives the same steps"))
-   +gbg("Write",sc("data-genmode",sp.mode,[["replace","Replace"],["add","Add"],["thin","Thin"]],{replace:"the track becomes the result",add:"only steps that are off may turn on",thin:"only steps that are on may turn off"},"Write"),"gwrite");
+ const write=sc("data-genmode",sp.mode,[["replace","Replace"],["add","Add"],["thin","Thin"]],{replace:"the track becomes the result",add:"only steps that are off may turn on",thin:"only steps that are on may turn off"},"Write");
+ const rhythm=sp.kind==="euclid"?gv("k","Hits",sp.k,"How many hits in a cycle")+gv("n","Steps",sp.n,"The cycle's length in steps, at most the pattern's; it repeats over the pattern")+gv("rot","Rotate",sp.rot,"Moves the hits later")
+  :gv("dens","Density",sp.density+"%","The chance of each step")+gv("seed","Seed",sp.seed,"The same seed gives the same steps")+write;
+ const notes=genNotesHtml(sp,t,true)||`<span class="gnone">${isMidiT(t)?"A MIDI track has no notes of its own":"No notes"}</span>`;
  let sum="";
- if(!kept&&r){const on=r.steps.filter(([,st])=>mmTrig(st)).length,b=[];for(let s=from;s<to;s++)if(mmTrig(base[s]))b.push(s);const now=new Set(r.steps.filter(([,st])=>mmTrig(st)).map(([s])=>s));
+ {const on=r.steps.filter(([,st])=>mmTrig(st)).length,b=[];for(let s=from;s<to;s++)if(mmTrig(base[s]))b.push(s);const now=new Set(r.steps.filter(([,st])=>mmTrig(st)).map(([s])=>s));
   const add=[...now].filter(s=>!mmTrig(base[s])).length,gone=b.filter(s=>!now.has(s)).length;
   sum=all?`every track · steps ${from+1}–${to}`:`${sp.kind==="euclid"?genSummary(sp,S.len)+" · ":""}${on} on${run&&(add||gone)?` <em>+${add} −${gone}</em>`:""} · steps ${from+1}–${to}`}
- const help=!kept&&sp.kind==="random"&&sp.mode==="add"?"Add: only steps that are off may turn on.":!kept&&sp.kind==="random"&&sp.mode==="thin"?"Thin: only steps that are on may turn off.":"";
  const target=all?`all ${isMidiT(t)?"MIDI":"synth"} tracks`:`${tLabel(t)} · ${isMidiT(t)?"CH"+String(tr.ch).padStart(2,"0"):tr.m.replace("SWAVE-","SW-")}`;
- const keyr=`<span class="gdk"><small>Random <em>⌥R all</em></small><button class="gdkey cream" data-rand="1" aria-label="Randomise" ${kept?"disabled":""} title="Randomise ${tLabel(t)}: a new variation, ${sp.kind==="random"?"a new seed":"random hits and rotation in the cycle"} (R). ⌥R or Alt-click: every track of the side">R</button></span>`;
- const keyd=`<span class="gdk"><small>Defaults</small><button class="gdkey" data-gen="fill" aria-label="Defaults" ${kept?"disabled":""} title="Defaults: this track's values from its machine (Alt: every track of the side). The track follows, as with any change">↺</button></span>`;
+ const lock=kept?`<svg class="gdlock" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-label="Kept"><title>Kept: ⌥R all leaves this track alone</title><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>`:"";
  return`<div class="gdlg${kept?" kept":""}">
-  <div class="gdhead" data-drag title="Drag to move this window; double-click: back to its place"><b>Gen</b><span class="${all?"all":""}">${target}</span></div>
-  <div class="gdmode"${kept?" inert":""}><span class="gbl">Mode</span>${mode}</div>
-  <div class="gdvals rows"${kept?" inert":""}><div class="gdrow">${rhythm}</div><div class="gdrow">${genNotesHtml(sp,t)}</div></div>
-  <label class="gdkeep" title="A kept track is left as it is: Alt changes and ⌥R over every track skip it, and this window writes nothing to it"><input type="checkbox" data-genkeep="1" ${kept?"checked":""}><span>Keep this track when ⌥R rerolls all</span><em>${help}</em></label>
-  <div class="gdfoot"><div class="gdsum" title="${plainText(sum)}">${sum}</div>${keyr}${keyd}
-   <div class="gdbtns"><button class="gdcancel" data-gencancel="1" title="Cancel (Esc): the track goes back as it was before this window">Cancel</button><button class="gdone" data-genclose="1" title="Done (Enter): keep what it wrote. One Undo takes a run back">Done</button></div></div>
+  <div class="gdhead" data-drag title="Drag to move this window; double-click: back to the middle"><b>Gen</b><span class="gdt ${all?"all":""}">${target}</span>${lock}<button class="gdesc" data-gencancel="1" aria-label="Close" title="Close (Esc): same as Cancel">ESC</button></div>
+  <div class="gdrow"><span class="gdl">Mode</span><div class="gvs">${mode}</div></div>
+  <div class="gdrow"><span class="gdl">Rhythm</span><div class="gvs">${rhythm}</div></div>
+  <div class="gdrow"><span class="gdl">Notes</span><div class="gvs">${notes}</div></div>
+  <div class="gdsum" title="${plainText(sum)}">${sum}</div>
+  <div class="gdfoot"><label class="gdkeep" title="Keep this track: ⌥R all (and every all-tracks change) leaves it alone. This window still writes it"><input type="checkbox" data-genkeep="1" ${kept?"checked":""}><span>Keep on ⌥R all</span></label>
+   <button class="gdkey cream" data-rand="1" aria-label="Randomise" title="Randomise ${tLabel(t)} (R): a new variation, ${sp.kind==="random"?"a new seed":"random hits and rotation in the cycle"}. ⌥R or Alt-click: every track of the side">R</button>
+   <button class="gdkey" data-gen="fill" aria-label="Defaults" title="Defaults: this track's values from its machine (Alt: every track of the side). The track follows, as with any change">↺</button>
+   <div class="gdbtns"><button class="gdcancel" data-gencancel="1" title="Cancel (Esc): every track this window wrote goes back as it was">Cancel</button><button class="gdone" data-genclose="1" title="Done (Enter): keep what it wrote. One Undo takes a run back">Done</button></div></div>
 </div>`}
 /* ---- MUTATE ---- */
 const MUT_SCOPES=[["SYN","Syn","the machine's SYNTHESIS page (an FX machine's INP stays)"],["AMP","Amp","the AMP page (VOL stays)"],["FLT","Flt","the FILTER page"],["EFX","Efx","the EFFECTS page"],["LFO","Lfo","the three LFOs (their PAGE and DEST stay: where an LFO goes is routing)"]];
@@ -4367,8 +4385,11 @@ function arpSeq(tr,chord){const a=tr.arp;let c=[...chord];if(a.PLAY===1)c.sort((
 function arpTicks(t,span){const tr=trk(t),a=tr.arp;if(!a.MODE||!a.SPD)return[];if(a.MODE===2&&span.n.length<2)return[];const tl=a.SPD/6,seq=arpSeq(tr,span.n),out=[];
  for(let k=0;k*tl<span.e-span.s&&k<256;k++){const r=k%a.len;if(!a.rhy[r])continue;out.push({x:span.s+k*tl,w:tl,n:seq[k%seq.length]+a.ofs[r]})}return out}
 /* a lane-style key per arp step: the offset is a bipolar LED meter from the middle line (±24 = the half key) */
-function arpCells(a){return Array.from({length:16},(_,k)=>{const o=a.ofs[k],on=a.rhy[k],na=k>=a.len,f=(Math.abs(o)/24).toFixed(4);
- return`<div class="ac ${na?"na":""} ${on?"":"mute"}" data-ac="${k}" title="Step ${k+1}: ${na?"past the end (click to extend)":on?"plays, offset "+(o>0?"+":"")+o:"muted"}. Click = mute, drag = offset.">${na?"":`<span class="z"></span><i class="${o>=0?"up":"dn"}" style="${o>=0?`bottom:50%;height:max(2px,calc((50% - 8px)*${f}))`:`top:50%;height:calc((50% - 8px)*${f})`}"></i><b>${o?(o>0?"+":"")+o:k+1}</b>`}</div>`}).join("")}
+/* only the arp's length is drawn (as the grid fits the pattern's length), one step after it is a "+" that adds a step */
+const arpCols=a=>`repeat(${a.len},minmax(0,1fr))`;
+function arpCells(a){const n=a.len,cells=Array.from({length:n},(_,k)=>{const o=a.ofs[k],on=a.rhy[k],f=(Math.abs(o)/24).toFixed(4);
+ return`<div class="ac ${on?"":"mute"}" data-ac="${k}" title="Step ${k+1}: ${on?"plays, offset "+(o>0?"+":"")+o:"muted"}. Click = mute, drag = offset.">`+`<span class="z"></span><i class="${o>=0?"up":"dn"}" style="${o>=0?`bottom:50%;height:max(2px,calc((50% - 8px)*${f}))`:`top:50%;height:calc((50% - 8px)*${f})`}"></i><b>${o?(o>0?"+":"")+o:k+1}</b></div>`});
+ return cells.join("")}
 /* The dock's tabs share one layout, the lock lane's: the rail's LOCK PARAMETER keys area holds the panel's
    choices as keys (a group label over each row, the lock-parameter key style), the dock body holds one row of
    value boxes on eight fixed columns and the panel's picture under it, down to the lane's bottom line. The
@@ -4399,14 +4420,15 @@ function dockRead(t,d){const tr=trk(t);
 const TRNSHORT=["<b>---</b> no scale: the transposes add up and any note can sound.","<b>FIX</b> only track transpose applies. Use it for drums and FX.","<b>MAJ</b> notes stay in the major scale of KEY: click a key to set it.","<b>MIN</b> notes stay in the minor scale of KEY: click a key to set it."];
 const TRNHELP=["<b>---</b> no transpose scale: track, pattern, song and multi-trig transpose add up and any note can sound. Click a key: C plays it (up from C; Alt-click: down to it).","<b>FIX</b> only track transpose applies. Use it for drums and FX. Click a key: C plays it (up from C; Alt-click: down to it).","<b>MAJ</b> transposed notes stay in the major scale of KEY: click a key to set it. Out-of-scale keys and roll rows are hatched.","<b>MIN</b> transposed notes stay in the minor scale of KEY: click a key to set it. Out-of-scale keys and roll rows are hatched."];
 function dockHelp(t,d){const tr=trk(t);
- if(d==="arp"){const h=dkPlain(ARPHELP[tr.arp.MODE]);return[h,h+" SPD 6 = a 16th. Chords come from the trig: shift-click in the roll. The light notes in the roll are what it plays. In the strip: click a step to mute it, drag it up or down for an offset, click past the end or the LEN row under it to set the length. FUNCTION + ARP: one per track, 12 per pattern."]}
+ if(d==="arp"){const h=dkPlain(ARPHELP[tr.arp.MODE]);return["Click a step to mute it, drag for an offset",h+" SPD 6 = a 16th. Chords come from the trig: shift-click in the roll. The light notes in the roll are what it plays. In the strip: click a step to mute it, drag it up or down for an offset, click past the end or the LEN row under it to set the length. FUNCTION + ARP: one per track, 12 per pattern."]}
  if(d==="trn"){const h=dkPlain(TRNHELP[tr.tr.SCALE]);return[dkPlain(TRNSHORT[tr.tr.SCALE]),h+" Transpose is live: the programmed notes do not change. Song rows and multi trig add their own. FUNCTION + TRANSPOSE."]}
- if(d==="trig")return["Drag the dots or the values · A F L: the envelopes an overlapping note restarts (LEGATO)","ATK, HOLD and DEC shape how long a gate really sounds, in steps after the trig at this tempo (the light part of a bar in the roll: 40 dB down). ATK and DEC are times, each 8 more about doubling (ATK 64 ≈ 0.14 s, DEC 64 ≈ 0.55 s to -20 dB); HOLD counts sixteenths (HOLD 8 = one step); DEC 127 holds to the NOTE OFF. PORT is the glide to the next note: ALWAYS, or only when notes overlap. LEGATO picks the envelopes that still fire when notes overlap (filled A F L): all on = staccato bass, all off = a smooth lead. TRIG POSITION forwards this track's notes to another track. KIT › TRIG."];
+ if(d==="trig")return["Drag the dots or the values","ATK, HOLD and DEC shape how long a gate really sounds, in steps after the trig at this tempo (the light part of a bar in the roll: 40 dB down). ATK and DEC are times, each 8 more about doubling (ATK 64 ≈ 0.14 s, DEC 64 ≈ 0.55 s to -20 dB); HOLD counts sixteenths (HOLD 8 = one step); DEC 127 holds to the NOTE OFF. PORT is the glide to the next note: ALWAYS, or only when notes overlap. LEGATO picks the envelopes that still fire when notes overlap (filled A F L): all on = staccato bass, all off = a smooth lead. TRIG POSITION forwards this track's notes to another track. KIT › TRIG."];
  return["LEN 127 = until a NOTE OFF · PCHG only sends when locked","LEN 127 = until a NOTE OFF; drag a note's end in the roll to lock its LEN. PCHG only sends when it is locked. CL1-4 pick the CC numbers (or AFT) of the four CC values above them. Internal tracks can also send MIDI (GLOBAL › CONTROL OUT1), but without these values. GLOBAL › MIDI SEQ › MIDISEQ SET: the page is stored in the kit."]}
 /* the body: value boxes on eight columns, then the picture */
 const dkVals=(cells,cls="")=>`<div class="dkvals ${cls}">${cells.join("")}</div>`;
 /* TRIG SETUP and TRANSPOSE are not per step, so their pictures are LCD plates (the Sound page's small plots),
    not lane bars: one gate's envelope on its own time axis, and a one-octave keyboard. */
+const DKF="10px Silkscreen, monospace",dkLabel=(g,t,x=8,y=15)=>{g.fillStyle=cssv("--ink");g.font="11px Silkscreen, monospace";g.fillText(String(t).toUpperCase(),x,y)};
 const dkSteps=a=>a<10?a.toFixed(1):String(Math.round(a));
 /* the fall after HOLD (DEC) or a NOTE OFF (REL): -20 dB per fall time f, from level l0; u steps in */
 const ampFall=(u,f,l0=1)=>f===Infinity?l0:l0*Math.pow(10,-u/Math.max(f,1e-3));
@@ -4418,11 +4440,11 @@ ED.dktrig={geo(W,H,c){const a=trk(S.sel).v.AMP,e=ampTimes(a)||{at:0,ho:0,de:Infi
   const need=clamp(Math.ceil(((inf?at+ho+2:tot)*1.12+.3)/4)*4,4,64),span=active&&active.c===c&&c._span?Math.max(c._span,need):need;c._span=span;
   const gw=clamp(Math.round(W*.26),170,300),x0=12,x1=W-gw-30,T=24,B=H-17;
   return{a,at,ho,de,inf,tot,span,x0,x1,T,B,X:s=>x0+s/span*(x1-x0),S:x=>(x-x0)/(x1-x0)*span,Y:v=>B-v*(B-T),g0:W-gw-8,g1:W-10}},
- draw(g,W,H,c){const G=this.geo(W,H,c),ink=cssv("--ink"),lcd=cssv("--scr"),tr=trk(S.sel);g.font=SFONT;
+ draw(g,W,H,c){const G=this.geo(W,H,c),ink=cssv("--ink"),lcd=cssv("--scr"),tr=trk(S.sel);g.font=DKF;
   /* the time axis: 0 = the trig, a tick and its number after each step (every 2nd or 4th when long) */
   const ev=G.span>32?4:G.span>16?2:1;g.fillStyle=inkA(.25);g.fillRect(G.x0,G.B,G.x1-G.x0,1);
-  for(let k=1;k<=G.span;k++){const xa=Math.round(G.X(k));g.fillStyle=inkA(k%4?.07:.14);g.fillRect(xa,G.T-6,1,G.B-G.T+6);if(k%ev)continue;g.fillStyle=inkA(.4);g.fillRect(xa,G.B,1,4);g.fillStyle=inkA(.75);const tx=String(k);g.fillText(tx,xa-tx.length*2.5,H-3)}
-  g.fillStyle=inkA(.75);g.fillText("TRIG",G.x0-2,H-3);
+  for(let k=1;k<=G.span;k++){const xa=Math.round(G.X(k));g.fillStyle=inkA(k%4?.07:.14);g.fillRect(xa,G.T-6,1,G.B-G.T+6);if(k%ev)continue;g.fillStyle=inkA(.4);g.fillRect(xa,G.B,1,4);g.fillStyle=inkA(.9);const tx=String(k);g.fillText(tx,xa-tx.length*2.5,H-3)}
+  g.fillStyle=inkA(.9);g.fillText("TRIG",G.x0-2,H-3);
   /* the envelope */
   const end=G.inf?G.x1:Math.min(G.x1,G.X(G.tot)),pts=[[G.x0,G.Y(0)],[Math.min(G.x1,G.X(G.at)),G.Y(G.at>G.span?G.span/G.at:1)],[Math.min(G.x1,G.X(G.at+G.ho)),G.Y(G.at>G.span?G.span/G.at:1)]];
   if(G.inf)pts.push([end,G.Y(1)]);else{const d0=G.at+G.ho;for(let k=1;k<=24;k++){const u=k/24*2*G.de;if(d0+u>G.span){pts.push([G.x1,G.Y(ampFall(G.span-d0,G.de))]);break}pts.push([G.X(d0+u),G.Y(ampFall(u,G.de))])}}
@@ -4431,20 +4453,18 @@ ED.dktrig={geo(W,H,c){const a=trk(S.sel).v.AMP,e=ampTimes(a)||{at:0,ho:0,de:Infi
   if(G.inf){g.fillStyle=ink;g.beginPath();g.moveTo(G.x1+7,G.Y(1));g.lineTo(G.x1,G.Y(1)-4);g.lineTo(G.x1,G.Y(1)+4);g.fill()}
   else{g.setLineDash([3,3]);g.strokeStyle=inkA(.6);g.lineWidth=1;g.beginPath();g.moveTo(Math.round(end)+.5,G.T-6);g.lineTo(Math.round(end)+.5,G.B);g.stroke();g.setLineDash([]);
    g.fillStyle=ink;const t="≈"+dkSteps(G.tot);g.fillText(t,Math.min(G.x1-t.length*5,end+4),G.T)}
-  /* segment names, inside the shape where they fit */
-  [["ATK",0,G.at],["HOLD",G.at,G.at+G.ho],["DEC",G.at+G.ho,G.inf?G.span:G.tot]].forEach(([n,s0,s1])=>{const w=G.X(s1)-G.X(s0);if(w<n.length*6+4)return;g.fillStyle=ink;g.fillText(n,(G.X(s0)+G.X(Math.min(s1,G.span)))/2-n.length*3,G.B-5)});
-  label(g,G.inf?"one gate · DEC 127 holds to the NOTE OFF":"one gate · steps after the trig");
+  dkLabel(g,G.inf?"One gate · DEC 127 holds to the NOTE OFF":"One gate · steps after the trig");
   /* the glide: note 1 low, note 2 high, starting before note 1 ends (they overlap); the line is the pitch */
   const L=this.leg(W,H),on=["amp","flt","lfo"].filter(k=>tr.leg[k]);g.fillStyle=inkA(.2);g.fillRect(G.g0-14,6,1,H-12);
   g.fillStyle=inkA(.35);g.fillRect(L.n1,L.yl-5,L.e1-L.n1,10);g.fillRect(L.s2,L.yh-5,L.n2-L.s2,10);
   g.beginPath();g.moveTo(L.n1,L.yl);g.lineTo(L.s2,L.yl);g.lineTo(L.s2+L.pw,L.yh);g.lineTo(L.n2,L.yh);g.strokeStyle=ink;g.lineWidth=2.2;g.stroke();
-  g.fillStyle=ink;g.fillText(tr.port?"PORT · ONLY WHEN NOTES OVERLAP":"PORT · GLIDES TO EVERY NOTE",G.g0,15);
-  g.fillStyle=inkA(.75);g.fillText(L.pw<1?"NO GLIDE":"GLIDE",L.s2+L.pw/2+9,(L.yl+L.yh)/2+3);
-  /* LEGATO, under where note 2 starts over note 1: the envelopes that fire again (filled) or run on (open) */
-  g.setLineDash([2,3]);g.strokeStyle=inkA(.5);g.lineWidth=1;g.beginPath();g.moveTo(Math.round(L.s2)+.5,L.yh+6);g.lineTo(Math.round(L.s2)+.5,L.ym-2);g.stroke();g.setLineDash([]);
-  ["amp","flt","lfo"].forEach((k,i)=>{const x=L.s2+i*15,y=L.ym,f=!!tr.leg[k];g.lineWidth=1.2;g.strokeStyle=ink;g.strokeRect(x+.5,y+.5,12,12);if(f){g.fillStyle=ink;g.fillRect(x+.5,y+.5,12,12)}g.fillStyle=f?lcd:ink;g.fillText(k[0].toUpperCase(),x+3.5,y+10)});
-  g.fillStyle=inkA(.75);g.fillText(on.length?on.join(" ").toUpperCase()+" FIRE AGAIN":"NONE FIRE AGAIN: SMOOTH",L.s2+50,L.ym+10)},
- leg(W,H){const G=this.geo(W,H,{}),w=G.g1-G.g0;return{n1:G.g0,e1:G.g0+w*.5,s2:G.g0+w*.36,n2:G.g1,yl:H-44,yh:32,ym:H-17,pw:trk(S.sel).v.AMP[7]/127*w*.5}},
+  dkLabel(g,"Port",G.g0);g.font=DKF;g.fillStyle=inkA(.9);g.fillText(tr.port?"ONLY WHEN NOTES OVERLAP":"GLIDES TO EVERY NOTE",G.g0+38,15);
+  g.fillStyle=inkA(.9);g.fillText(L.pw<1?"NO GLIDE":"GLIDE",L.s2+L.pw/2+9,(L.yl+L.yh)/2+3);
+  /* LEGATO, under where note 2 starts over note 1: a title and one named key for each envelope, filled when it fires again, open when it runs on */
+  g.setLineDash([2,3]);g.strokeStyle=inkA(.5);g.lineWidth=1;g.beginPath();g.moveTo(Math.round(L.s2)+.5,L.yh+6);g.lineTo(Math.round(L.s2)+.5,L.ym-18);g.stroke();g.setLineDash([]);
+  dkLabel(g,"Legato",G.g0,L.ym-8);g.font=DKF;g.fillStyle=inkA(.9);g.fillText(on.length?"RESTARTS":"NONE RESTART: SMOOTH",G.g0+50,L.ym-8);
+  ["amp","flt","lfo"].forEach((k,i)=>{const x=G.g0+i*44,y=L.ym,f=!!tr.leg[k];g.lineWidth=1.2;g.strokeStyle=ink;g.strokeRect(x+.5,y+.5,38,15);if(f){g.fillStyle=ink;g.fillRect(x+.5,y+.5,38,15)}g.font=DKF;g.fillStyle=f?lcd:ink;g.fillText(k.toUpperCase(),x+8,y+12)})},
+ leg(W,H){const G=this.geo(W,H,{}),w=G.g1-G.g0;return{n1:G.g0,e1:G.g0+w*.5,s2:G.g0+w*.36,n2:G.g1,yl:H-70,yh:36,ym:H-23,pw:trk(S.sel).v.AMP[7]/127*w*.5}},
  handles(W,H,c){const G=this.geo(W,H,c),a=G.a,L=this.leg(W,H),port={x:L.s2+L.pw,y:L.yh,k:"PORT",drag:x=>a[7]=clamp(Math.round((x-L.s2)/((L.n2-L.n1)*.5)*127),0,127)};
   if(!AENV())return[port];	/* no times before the catalogue */
   const set=(i,v)=>{if(v!=null)a[i]=v};
@@ -4500,11 +4520,11 @@ const dkScale=(a,b,c)=>`<div class="dkscale" aria-hidden="true"><b>${a}</b><b>${
    place, so a dot being dragged keeps its canvas. */
 function syncDock(){const v=$("#dkvis[data-live]");if(!v||S.ws!=="seq")return;const t=S.sel,d=S.dock;if(v.querySelector("canvas.ed"))redraw();else v.innerHTML=dockVis(t,d);const r=$("#dkread");if(r)r.innerHTML=dockRead(t,d)}
 function arpPanel(t){const a=trk(t).arp;
- return`${dkVals([pc("arp","SPD",{t}),pc("arp","RNGE",{t}),pc("arp","OJMP",{t})])}<div class="dkvis" id="dkvis">
-  <div class="arptrack" id="arptrack" title="Rhythm + offset: click a step to mute it, drag it up or down for an offset (−24…+24), click past the end to extend">${arpCells(a)}</div>
-  ${dkScale("+24","0","−24")}<div class="arplenrow">${Array.from({length:16},(_,k)=>`<button class="${k<a.len?"on":""}" data-arplen="${k+1}" aria-label="Length ${k+1}" title="Length ${k+1} (the LEVEL knob)"></button>`).join("")}</div></div>`}
+ return`<div class="dkvis" id="dkvis">
+  <div class="arptrack" id="arptrack" style="grid-template-columns:${arpCols(a)}" title="Rhythm + offset: click a step to mute it, drag it up or down for an offset (−24…+24). LEN sets how many steps there are">${arpCells(a)}</div>
+  ${dkScale("+24","0","−24")}</div>${dkVals([pc("arp","SPD",{t}),pc("arp","RNGE",{t}),pc("arp","OJMP",{t}),pc("arp","len",{t,label:"LEN"})],"dk4")}`}
 function trnPanel(t){return`${dkVals([pc("trn","TRACK",{t,label:"TRACK"}),pc("ptrn","PAT",{t,label:"PAT · all"})])}<div class="dkvis" id="dkvis" data-live="1">${dockVis(t,"trn")}</div>`}
-function trigPanel(t){return`${dkVals([pc("AMP",0,{t,label:"ATK"}),pc("AMP",1,{t,label:"HOLD"}),pc("AMP",2,{t,label:"DEC"}),pc("AMP",7,{t,label:"PORT"})])}<div class="dkvis" id="dkvis" data-live="1">${dockVis(t,"trig")}</div>`}
+function trigPanel(t){return`<div class="dkvis" id="dkvis" data-live="1">${dockVis(t,"trig")}</div>${dkVals([pc("AMP",0,{t,label:"ATK"}),pc("AMP",1,{t,label:"HOLD"}),pc("AMP",2,{t,label:"DEC"}),pc("AMP",7,{t,label:"PORT"})],"dktv")}`}
 function midiPanel(t){const tr=trk(t);
  return`${dkVals([0,1,2,3,4,5,6,7].map(i=>pc("MID",i,{t,label:i<4?FIXED.MID[i]:"CC "+(tr.cc[i-4]===128?"AFT":tr.cc[i-4])})))}<div class="dkvis" id="dkvis">${dkVals([0,1,2,3].map(()=>`<span class="dkcell"></span>`).concat([0,1,2,3].map(i=>pc("cc",i,{t,label:"CL"+(i+1)}))),"dkvals2")}</div>`}
 
@@ -6035,7 +6055,7 @@ const dragging=()=>!!(drag||active||laneDraw||arpDrag||joyDrag||splitDrag||rollD
 function joyAt(e){const r=$("#joy").getBoundingClientRect();S.joy={x:clamp((e.clientX-r.left)/r.width*2-1,-1,1),y:clamp(1-(e.clientY-r.top)/r.height*2,-1,1)};const k=$("#knobj");k.style.left=(50+S.joy.x*42)+"%";k.style.top=(50-S.joy.y*42)+"%";
  const tr=S.tracks[asgT()],A=tr.assign,rows=A.tabs[S.asTab];const amt=S.asTab==="JOY U"?Math.max(0,S.joy.y):S.asTab==="JOY D"?Math.max(0,-S.joy.y):A.mirr?S.joy.x:Math.max(0,S.joy.x);
  $("#kbinfo")&&($("#kbinfo").textContent=rows.map(r=>`${LPAGES[r.pg]} ${destNames(asgT(),r.pg)[r.d]} ${Math.round((r.add-64)*amt)>=0?"+":""}${Math.round((r.add-64)*amt)}`).join(" · "));tx();if(HOST.joy)HOST.joy(S.joy)}
-function renderArp(){const el=$("#arptrack");if(!el)return;const a=trk(S.sel).arp;el.innerHTML=arpCells(a);$$(".arplenrow button").forEach((b,k)=>b.classList.toggle("on",k<a.len));const c2=$("#arpcap");if(c2)c2.textContent="Rhythm + offset · "+a.len+" steps";$$(".mrowg .rowst").length&&0;redraw()}
+function renderArp(){const el=$("#arptrack");if(!el)return;const a=trk(S.sel).arp;el.innerHTML=arpCells(a);el.style.gridTemplateColumns=arpCols(a);const c2=$("#arpcap");if(c2)c2.textContent="Rhythm + offset · "+a.len+" steps";$$(".mrowg .rowst").length&&0;redraw()}
 /* I-022: a value typed (shared/deskValueEdit.js): ⌘-click a value box or fader, or Enter on one that has the focus. What
    may be typed is what the box shows (a list's names, a signed value as -64 to +63, PAN as L12 / C / R5 or the number);
    one edit, its own undo step (commit before and after) */
@@ -6048,7 +6068,7 @@ main.addEventListener("wheel",e=>{
  const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el){e.preventDefault();const d=(e.deltaY||e.deltaX)<0?1:-1;setV(el,getV(el)+d*(e.shiftKey?10:1));return}
  const st=e.target.closest(".mst");if(st){const t=+st.dataset.t,s=+st.dataset.s,x=trk(t).steps[s];if(!x?.n)return;e.preventDefault();const d=((e.deltaY||e.deltaX)<0?1:-1)*(e.shiftKey?12:1);x.n=x.n.map(n=>clamp(n+d));editStep(t,s);refreshRow(t);return}
  const roll=e.target.closest("canvas.roll[data-big]");if(roll){e.preventDefault();const t=+roll.dataset.t;S.rollLoT[t]=clamp((S.rollLoT[t]??S.rollLo)+((e.deltaY)<0?1:-1)*(e.shiftKey?12:2),0,127-ROWS);redraw()}},{passive:false});
-main.addEventListener("dblclick",e=>{const el=e.target.closest(".pc[data-g]");if(el&&!ValueEdit.isOpenClick(e)){const m=ref(el)[2];setV(el,m.en?0:m.signed?64:64)}});
+main.addEventListener("dblclick",e=>{const el=e.target.closest(".pc[data-g]");if(el&&!ValueEdit.isOpenClick(e)){const m=ref(el)[2];setV(el,m.def??(m.en?0:64))}});
 main.addEventListener("keydown",e=>{const el=e.target.closest("[data-g]");if(!el)return;if(e.key==="Enter"&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&el.matches(".pc,.fader")){e.preventDefault();ValueEdit.open(el,ValueBox);return}const d={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1,PageUp:10,PageDown:-10}[e.key];if(d==null)return;e.preventDefault();setV(el,getV(el)+d*(e.shiftKey?10:1))});
 
 /* ===== Clicks ===== */
@@ -6085,7 +6105,7 @@ document.addEventListener("click",e=>{
   if(k==="loopkind"){const r=S.song[S.songSel];r.type=v;if(v==="halt")r.to=S.songSel;if(v==="jump"&&r.to<=S.songSel)r.to=Math.min(S.song.length-1,S.songSel+1);if(v==="loop"){if(!r.count)r.count=2;if(r.to>=S.songSel)r.to=Math.max(0,S.songSel-1)}editRow();render();return}}
  const at=e.target.closest("[data-arptrig]");if(at){const a=trk(S.sel).arp,k=at.dataset.arptrig;a[k]=a[k]?0:1;edit("arp",{t:S.sel,field:"trigs",v:(a.amp?1:0)|(a.flt?2:0)|(a.lfo?4:0)});render();return}
  const lg=e.target.closest("[data-leg]");if(lg){const l=trk(S.sel).leg,k=lg.dataset.leg;l[k]=l[k]?0:1;edit("legato",{t:S.sel,env:{amp:"amp",flt:"filter",lfo:"lfo"}[k],on:!!l[k]});render();return}
- const al=e.target.closest("[data-arplen]");if(al){trk(S.sel).arp.len=+al.dataset.arplen;edit("arp",{t:S.sel,field:"length",v:+al.dataset.arplen});renderArp();return}
+ 
  const rl=e.target.closest("[data-roll]");if(rl){S.rollLo=clamp(S.rollLo+ +rl.dataset.roll,0,127-ROWS);render();return}
  if(e.target.closest("#ghost")){S.ghost=!S.ghost;render();return}
  const lw=e.target.closest("[data-lwave]");if(lw){editTrack(S.sel,()=>{V(lw.dataset.lwave)[3]=+lw.dataset.w});render();return}

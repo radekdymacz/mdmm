@@ -54,6 +54,9 @@ img,svg,canvas{-webkit-user-drag:none}
 #seq canvas.roll[data-big]{height:clamp(160px,calc(100vh - 494px),620px)!important}
 #seq.midi canvas.roll[data-big]{height:clamp(160px,calc(100vh - 518px),620px)!important}
 .genbar .pagectl .pleds{align-self:center}
+/* under the roll: ? and the roll keys on the left, the page keys on the right */
+.ws-seq #main>.genbar .pagectl{margin-left:0!important}
+.ws-seq #main>.genbar .rollkeys{margin-left:auto}
 /* the piano roll's Draw key (B) and the length a new note gets (I-007, I-010), beside the page keys */
 .rollkeys{display:flex;align-items:center;gap:6px;flex:none;height:30px}
 .genbar .rollkeys .rolllen{min-width:58px;letter-spacing:.06em;text-transform:none}
@@ -85,16 +88,14 @@ img,svg,canvas{-webkit-user-drag:none}
 .genbar.fit2 .gkeys{gap:4px}
 .genbar.fit3 .gv small{font-size:8px;letter-spacing:0}
 /* the rail's keys in a Sequence row: M, S and the dice (GEN, 76-gen.js openGen), three 24 px keys */
-.ws-seq .rail .threw{grid-template-columns:22px minmax(0,1fr) 24px 24px 24px}
-/* the GEN dialog's values area holds the rhythm's groups and, on a synth track, NOTES in a second row */
-.genpop{--gdvals:132px}
-/* the lane toolbox sits in the bar under the roll (76-gen.js genBarHtml), between the roll's keys and the page keys */
-.genbar .xlane{margin:0 auto;align-self:center;gap:8px}
-.genbar .xlseg{gap:1px}
-@media (max-width:1340px){.genbar .xlane [data-xg=cycles]{display:none}}
-@media (max-width:1180px){.genbar .xlane [data-xg=every]{display:none}}
-.gdvals.rows{flex-direction:column;gap:8px}
-.gdrow{display:flex;gap:18px;align-items:flex-start;min-height:62px}
+.ws-seq .rail .threw{grid-template-columns:20px minmax(0,1fr) 22px 22px 22px;gap:4px}
+.ws-seq .rail .th .ms{width:22px}
+/* the lane toolbox sits on the lock lane's header row (70-seq.js renderSeq), on the right, only while the Locks tab is open: tabs and the lock count on the left */
+.lanetop .xlane{display:flex;margin:0 0 0 auto;align-self:center;gap:8px;flex:none}
+.lanetop .xlseg{gap:1px}
+.lanetop #lockbudget{flex:none}
+@media (max-width:1340px){.lanetop .xlane [data-xg=cycles]{display:none}}
+@media (max-width:1180px){.lanetop .xlane [data-xg=every]{display:none}}
 /* the lock lane's bars: hover is a thin outline, never a fill; the bar keeps its look */
 .ws-seq .lb:not(.none):hover,.ws-seq #lane:active .lb:not(.none):hover{background:var(--lcd)!important;filter:none!important;outline:1px solid var(--ink);outline-offset:-2px}
 /* ===== Sound by function (MM-PORT-PLAN e; 90-sound.js renderSound): the Machinedrum Editor's page and layout
@@ -299,3 +300,25 @@ canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop
 
 /* B-116: the Arrangement's key legend (T, M, B) is cut by the card's width under 1700 px: "65 of 200 rows" stays, the keys are in the tooltip */
 @media (max-width:1700px){.arrcard header .note .gopt{display:none}}
+.genpop{--gdw:416px}
+/* ===== The Arp and Trig setup docks, redesigned (Radek 2026-10-15). Rail keys: joined, equal-width groups on one 28 px row height
+   with readable labels; ARP: only the arp's length is drawn (+ adds a step), its three values span the steps' width; TRIG SETUP: no gutter,
+   the graph and the values start at the tab row's edge, ATK / HOLD / DEC sit over the envelope and PORT over its own panel. ===== */
+.dkl{height:12px;font:600 10px/12px var(--sans);letter-spacing:.14em;color:var(--print2)}
+.dkg{gap:3px}
+.dkrow{gap:0;border-radius:4px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--rule)}
+#rail .dkk{height:28px;border-radius:0;font:600 11px var(--sans);letter-spacing:.06em;text-transform:uppercase;border-right:1px solid color-mix(in srgb,var(--keytext) 18%,transparent)}
+#rail .dkk:last-child{border-right:0}
+#rail .dkrow.tight .dkk{font-size:10.5px;letter-spacing:.02em}
+.dkna{height:28px;font:12px/28px var(--mono)}
+.dkvals.dk4{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.ws-seq .lanewrap>.dockbody.dk-arp,.ws-seq .lanewrap>.dockbody.dk-trig{grid-template-rows:minmax(0,1fr) 34px}
+.dkvals.dktv{grid-template-columns:repeat(3,minmax(0,1fr)) calc(clamp(170px,26%,300px) + 2px);gap:8px}
+.ws-seq .lanewrap>.dockbody.dk-trig,.ws-seq .lanewrap>.dockbody.dk-trn{padding-left:0}
+.dkvis .arptrack .ac i{left:max(6px,calc(50% - 44px));right:max(6px,calc(50% - 44px))}
+.dkvis .arptrack .ac.add{cursor:pointer;display:grid;place-items:center}
+.dkvis .arptrack .ac.add b{position:static;font:600 18px var(--sans);color:var(--keytext)}
+.dkvis .arptrack .ac b{font-size:10px}
+#rail .dkk{display:flex;align-items:center;justify-content:center;text-align:center;padding:0 2px}
+.dkvals.dktv{grid-template-columns:repeat(3,minmax(0,1fr)) calc(clamp(170px,26%,300px) + 8px)}
+.dkvis .arptrack .ac.add b{color:var(--print)}
