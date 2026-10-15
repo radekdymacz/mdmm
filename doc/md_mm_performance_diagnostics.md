@@ -168,6 +168,14 @@ to count all callbacks. A trace is a selected sample, not an exhaustive profiler
 | `translated` is `true` | The editor ran as an Intel build on an Arm machine: expect about twice the CPU. Compare with a capture of the same project in a host opened as an Apple silicon app (Windows on Arm: there is no native build yet). |
 | Callback timing is comfortably within budget despite audible trouble | Investigate host/driver scheduling and other processing; the capture does not prove the entire audio system met its deadline. |
 
+**The synth lock as a pass/fail line (1.0, the F2 gate).** `scripts/mdmm-rt-check.sh --lock` runs
+`mdEditFlowPluginTest` per machine: the real processor, its audio thread at real time, the page's edits on the
+message thread. After the boot settles it turns this instrumentation on and prints `synth lock wait while editing:
+max <ms> ... : PASS` or `FAIL` when processBlock waited longer than `EDITFLOW_LOCK_WAIT_MS` (default 1 ms, as the
+local gate's soak, `MDMM_GATE_SOAK_LOCK_US`). It measures wall time: run it on a quiet Mac. First run (2026-10-15,
+M-series Mac at load average 6-14, MD): 18 738 blocks, 13 ms of waiting in all, the longest 5.6 ms: FAIL. The 57
+`withDeviceLocked` sites are architecture review finding 1 (a command ring and published snapshots); not changed yet.
+
 Timings are **inclusive**: synth time includes its lock wait and resampler work;
 resampler time includes device processing; device time includes deferred-machine
 advancement. Do not add these totals together. Resampler minus device time is an
