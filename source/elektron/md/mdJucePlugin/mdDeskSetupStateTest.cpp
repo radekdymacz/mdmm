@@ -12,6 +12,7 @@
 #include "juce_audio_processors/juce_audio_processors.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <memory>
 #include <string>
 
@@ -104,9 +105,36 @@ namespace
 	}
 }
 
+// 1.0 review (real time 4): with no page the session steps every g_idleStepMs, each step standing for several 8 ms
+// ones; every period keeps its length: over the same time the idle pace is due as often as the 8 ms pace (one more or
+// one less at the edges), and on the first step.
+void idlePace()
+{
+	using mdJucePlugin::due;
+	const auto span = static_cast<uint64_t>(mdJucePlugin::g_idleStepMs / mdJucePlugin::g_stepMs);
+	bool same = span > 1;
+	for(const double period : {mdJucePlugin::g_deskTickMs, mdJucePlugin::g_lcdMs, mdJucePlugin::g_cpuLoadMs, 96.0,
+		mdJucePlugin::g_hostTempoMs, mdJucePlugin::g_engineChoicesMs, mdJucePlugin::g_followHostMs})
+	{
+		int fast = 0, idle = 0;
+		for(uint64_t t = 1; t <= 10000; ++t)
+			fast += due(t, period) ? 1 : 0;
+		for(uint64_t t = span; t <= 10000; t += span)
+			idle += due(t, period, span) ? 1 : 0;
+		const int expected = period <= mdJucePlugin::g_idleStepMs ? static_cast<int>(10000 / span) : fast;
+		same = same && std::abs(idle - expected) <= 1 && due(span, period, span);
+	}
+	check(same, "idle pace: each period is as long in ms at 64 ms steps as at 8 ms steps (and due at once)");
+	bool exact = true;
+	for(uint64_t t = 1; t < 1000; ++t)
+		exact = exact && due(t, 96.0, 1) == (((t - 1) % 12) == 0);
+	check(exact, "a page's pace (span 1): due as before, every n-th step from the first");
+}
+
 int main()
 {
 	juce::ScopedJuceInitialiser_GUI juce;
+	idlePace();
 	soloState(md::MachineModel::Machinedrum, "Machinedrum");
 	soloState(md::MachineModel::Monomachine, "Monomachine");
 	const std::string setup = R"({"schema":"md-desk/setup","version":1,"modulators":{"schema":"md-desk/modulators","version":1,)"

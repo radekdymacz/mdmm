@@ -69,7 +69,7 @@ namespace mdJucePlugin
 		deskCore::LifeFacts::Probe probe() override { return m_link.probe(); }
 		bool sendMidi(const uint8_t _s, const uint8_t _d1, const uint8_t _d2) override { return m_link.sendMidi(_s, _d1, _d2); }
 
-		void step(mmDesk::Desk& _desk, const uint64_t _tick) override
+		void step(mmDesk::Desk& _desk, const uint64_t _tick, const uint64_t _span) override
 		{
 			while(!m_in.empty())
 			{
@@ -78,11 +78,11 @@ namespace mdJucePlugin
 				_desk.onDeviceSysex(m);
 			}
 			_desk.onTelemetry(m_link.readTelemetry());
-			if(due(_tick, g_probeMs))
+			if(due(_tick, g_probeMs, _span))
 				_desk.setProbe(m_link.probe());
-			m_lcd.step(_desk, _tick, [this](std::vector<uint8_t>& _bits) { return m_link.readLcd(_bits); });
+			m_lcd.step(_desk, _tick, _span, [this](std::vector<uint8_t>& _bits) { return m_link.readLcd(_bits); });
 			std::vector<uint8_t> region;
-			if(due(_tick, g_memoryMs) && m_link.readWorkingKit(region))
+			if(due(_tick, g_memoryMs, _span) && m_link.readWorkingKit(region))
 				_desk.onWorkingKit(region);
 			// The working kit from memory follows host automation by itself.
 			m_link.drainParameterChanges([](uint8_t, uint8_t, uint8_t, uint8_t) {});
@@ -115,7 +115,7 @@ namespace mdJucePlugin
 			return true;
 		}
 
-		void step(mmDesk::Desk& _desk, uint64_t) override
+		void step(mmDesk::Desk& _desk, uint64_t, uint64_t) override
 		{
 			m_wire.wire().pump(nowMs(), [&_desk](const std::vector<uint8_t>& _m) { _desk.onDeviceSysex(_m); });
 		}
