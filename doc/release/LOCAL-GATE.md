@@ -127,9 +127,7 @@ headless, and the gate checks that instead of assuming it:
   working (a silent file played by `afplay` trips it).
 - **7d: a quiet setup, then the output muted.** `--background` (the default here) runs each editor as an accessory app behind
   every window, and its standalone zeroes its output after the machine made it (`md::DeskDevice::setSilentOutput`): the audio
-  device still runs, so the emulation keeps its timing, but nothing is sent to it, whichever output your saved audio setup names. The journeys use a copy of your settings; on this Mac they name no input device (`audioInputDeviceName` is empty, `shouldMuteInput` is 1)
-  and JUCE's standalone does not open one by default (`mdAudioIoLayoutTest` pins that). If your saved setup ever names an input, start the gate with
-  `MDMM_JOURNEY_SETTINGS=fresh` in the environment (no copy of your settings). Before its first journey each editor resets the
+  device still runs, so the emulation keeps its timing, but only 0.003 of the output (-50 dB, `GEARMULATOR_MDMM_BACKGROUND_METER=1`, which `scripts/mdmm-journeys.sh --background` sets; `MDMM_JOURNEY_METER=0` for exact zero) is sent to it, so the output meter can show that a factory song is not silent (`*-real-factory-*`); the system mute below keeps the speakers quiet whichever output your saved audio setup names. The journeys start fresh (`MDMM_JOURNEY_SETTINGS=fresh`, as the e2e run): factory memory and no copy of your settings, so the `*-real-*` journeys (factory songs, patterns, an empty pattern to draw in) meet the content they claim, not your own songs and kits; and JUCE's standalone opens no input by default (`mdAudioIoLayoutTest` pins that). Before its first journey each editor resets the
   active GLOBAL of its sandboxed machine to the factory settings through the GLOBAL panel's Clear (the report's
   `JOURNEYS before:` line says what it was): a copied machine may hold a personal or imported global (CHANNEL SPAN 0 after a
   backup import) that fails the mute and note journeys. Your own settings and data root are never written. The gate never opens a microphone or an input. A real "null" output device does not exist
