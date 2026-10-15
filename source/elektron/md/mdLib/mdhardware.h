@@ -197,6 +197,9 @@ namespace md
 		// catch-up at every host access). Drains the codec output ring so the mixer never blocks.
 		// processAudio retains the drained frames; headless callers discard them.
 		void advance(uint32_t _machineFrames);
+		// True once an advance() spent its step budget (mdschedwatchdog.h): the machine stopped moving and is
+		// muted for good; a new device (a restart) is the way back. Any thread may read it.
+		bool schedulerStalled() const { return m_schedStalled.load(std::memory_order_relaxed); }
 
 		// Advance DSP _dspIndex to the UC's current machine-time position
 		// before a host (HI08) access. Called from the DSP-side HI08
@@ -443,6 +446,7 @@ namespace md
 		RealtimeHostAudioQueue m_schedHostAudio;
 		std::atomic<uint64_t> m_schedHostAudioOverflow{0};
 		bool     m_schedHostAudioActive = false;	// retain drained frames for a host callback
+		std::atomic<bool> m_schedStalled{false};	// advance()'s watchdog fired (schedulerStalled)
 		// Cycle-bounded DSP background slices (GEARMULATOR_MDMM_BOUNDED_JIT=0: the
 		// instruction-by-instruction loop). Not part of the speed-ups switch.
 		bool     m_schedBoundedJit = true;

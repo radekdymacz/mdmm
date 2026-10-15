@@ -1097,6 +1097,7 @@ namespace mdJucePlugin
 			s.speedUps = device->speedUps();
 			s.leversOff = device->speedUpLeversOff();
 			s.exactEssi = device->exactEssiTiming();
+			s.stalled = hw.schedulerStalled();
 		});
 		if(m_desk && m_desk->session())
 			s.lifecycle = m_desk->session()->lifecycleName();
