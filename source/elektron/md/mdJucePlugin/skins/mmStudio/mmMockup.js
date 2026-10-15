@@ -3976,7 +3976,8 @@ function genDialogHtml(){const sp=genShown(S.sel),t=S.sel,tr=trk(t),all=S.alt,ke
  const target=all?`all ${isMidiT(t)?"MIDI":"synth"} tracks`:`${tLabel(t)} · ${isMidiT(t)?"CH"+String(tr.ch).padStart(2,"0"):tr.m.replace("SWAVE-","SW-")}`;
  const lock=kept?`<svg class="gdlock" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-label="Kept"><title>Kept: ⌥R all leaves this track alone</title><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>`:"";
  return`<div class="gdlg${kept?" kept":""}">
-  <div class="gdhead" data-drag title="Drag to move this window; double-click: back to the middle"><b>Gen</b><span class="gdt ${all?"all":""}">${target}</span>${lock}${mode}</div>
+  <div class="gdhead" data-drag title="Drag to move this window; double-click: back to the middle"><b>Gen</b><span class="gdt ${all?"all":""}">${target}</span>${lock}<button class="gdesc" data-gencancel="1" aria-label="Close" title="Close (Esc): same as Cancel">ESC</button></div>
+  <div class="gdrow"><span class="gdl">Mode</span><div class="gvs">${mode}</div></div>
   <div class="gdrow"><span class="gdl">Rhythm</span><div class="gvs">${rhythm}</div></div>
   <div class="gdrow"><span class="gdl">Notes</span><div class="gvs">${notes}</div></div>
   <div class="gdsum" title="${plainText(sum)}">${sum}</div>
