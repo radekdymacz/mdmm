@@ -88,16 +88,12 @@ img,svg,canvas{-webkit-user-drag:none}
 .genbar.fit3 .gv small{font-size:8px;letter-spacing:0}
 /* the rail's keys in a Sequence row: M, S and the dice (GEN, 76-gen.js openGen), three 24 px keys */
 .ws-seq .rail .threw{grid-template-columns:22px minmax(0,1fr) 24px 24px 24px}
-/* the GEN dialog's values area holds the rhythm's groups and, on a synth track, NOTES in a second row */
-.genpop{--gdvals:132px}
 /* the lane toolbox sits on the lock lane's header row (70-seq.js renderSeq), on the right, only while the Locks tab is open: tabs and the lock count on the left */
 .lanetop .xlane{display:flex;margin:0 0 0 auto;align-self:center;gap:8px;flex:none}
 .lanetop .xlseg{gap:1px}
 .lanetop #lockbudget{flex:none}
 @media (max-width:1340px){.lanetop .xlane [data-xg=cycles]{display:none}}
 @media (max-width:1180px){.lanetop .xlane [data-xg=every]{display:none}}
-.gdvals.rows{flex-direction:column;gap:8px}
-.gdrow{display:flex;gap:18px;align-items:flex-start;min-height:62px}
 /* the lock lane's bars: hover is a thin outline, never a fill; the bar keeps its look */
 .ws-seq .lb:not(.none):hover,.ws-seq #lane:active .lb:not(.none):hover{background:var(--lcd)!important;filter:none!important;outline:1px solid var(--ink);outline-offset:-2px}
 /* ===== Sound by function (MM-PORT-PLAN e; 90-sound.js renderSound): the Machinedrum Editor's page and layout
@@ -302,3 +298,4 @@ canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop
 
 /* B-116: the Arrangement's key legend (T, M, B) is cut by the card's width under 1700 px: "65 of 200 rows" stays, the keys are in the tooltip */
 @media (max-width:1700px){.arrcard header .note .gopt{display:none}}
+.genpop{--gdw:416px}
