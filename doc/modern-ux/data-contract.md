@@ -487,9 +487,10 @@ mutes every other track). The desk keeps it as the setup's `solo` member
 (`deskCore/deskSolo.h`) and the host stores it with the rest.
 
 Both editors' setups are one codec, `deskCore/deskSetup.h`: `md-desk/setup {schema, version,
-modulators, knobCcs, solo}` and, since 1.0, `mm-desk/setup {schema, version, modulators, solo}`
-(the Monomachine has no knob rows). The MM reader still takes the 0.x shape, the bare
-`mm-desk/modulators` document with `solo` beside it. A project's setup is read for what it
+modulators, knobCcs, solo}`; the Monomachine (no knob rows) writes the 0.x shape, the bare
+`mm-desk/modulators` document with `solo` beside it, so 0.7 reads a 1.0 project. Its reader
+also takes an `mm-desk/setup {schema, version, modulators, solo}` wrapper, which is reserved
+for when a new member needs it (then it is written). A project's setup is read for what it
 can give (FOUNDATION.md, "What 1.0 promises to read"): unknown members are ignored, a bad
 source or link is left out alone, a bad `knobCcs` or `solo` falls back to its default, and
 another schema or a newer major `version` is the default setup, never the previous project's.

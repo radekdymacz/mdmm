@@ -1,5 +1,6 @@
 #include "deskSetup.h"
 
+#include <cmath>
 #include <set>
 
 namespace deskCore
@@ -45,7 +46,7 @@ namespace deskCore
 		const std::string name = schema && schema->isString() ? schema->asString() : std::string();
 		if(name == _spec.modulators.schema)
 		{
-			// the bare modulators with the solo beside them (the MM's setup before 1.0)
+			// the bare modulators with the solo beside them (the MM's setup)
 			s.modulators = modSetupRead(_doc, _errors, _spec.modulators);
 			readSolo(_doc, _spec, s, _errors);
 			return s;
@@ -74,7 +75,8 @@ namespace deskCore
 				for(size_t i = 0; i < k->asArray().size() && i < s.knobCcs.size(); ++i)
 				{
 					const auto& v = k->asArray()[i];
-					ccs.push_back(v.isNumber() ? static_cast<int>(v.asNumber()) : -1);
+					const bool ok = v.isNumber() && v.asNumber() >= 0 && v.asNumber() <= 127 && v.asNumber() == std::floor(v.asNumber());
+					ccs.push_back(ok ? static_cast<int>(v.asNumber()) : -1);
 				}
 			const auto errors = validateKnobCcs(ccs);
 			_errors.insert(_errors.end(), errors.begin(), errors.end());
@@ -88,6 +90,13 @@ namespace deskCore
 
 	json::Value setupToJson(const DeskSetup& _setup, const SetupSpec& _spec)
 	{
+		if(_spec.writesBare)
+		{
+			auto d = modSetupToJson(_setup.modulators, _spec.modulators);
+			if(!_setup.solo.empty())
+				d.set("solo", solo::toJson(_setup.solo));
+			return d;
+		}
 		json::Value d = json::Value::object();
 		d.set("schema", _spec.schema);
 		d.set("version", g_setupVersion);

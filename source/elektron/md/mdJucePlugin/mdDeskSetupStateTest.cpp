@@ -14,6 +14,7 @@
 #include "juce_audio_processors/juce_audio_processors.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <memory>
 #include <string>
 
@@ -176,6 +177,11 @@ namespace
 
 int main()
 {
+	// No ROM anywhere: an empty data root, set before anything reads it (a Mac with the ROMs installed in Documents
+	// would otherwise start a machine, and the no-ROM hold path is what this test checks)
+	const auto root = juce::File::getSpecialLocation(juce::File::tempDirectory).getNonexistentChildFile("mdDeskSetupStateTest", "");
+	root.createDirectory();
+	setenv("GEARMULATOR_DATA_ROOT", (root.getFullPathName() + "/").toRawUTF8(), 1);
 	juce::ScopedJuceInitialiser_GUI juce;
 	soloState(md::MachineModel::Machinedrum, "Machinedrum");
 	soloState(md::MachineModel::Monomachine, "Monomachine");
@@ -249,6 +255,7 @@ int main()
 		check(true, "teardown: the processor goes after its editor page, no use of a freed session");
 	}
 #endif
+	root.deleteRecursively();
 	std::printf("mdDeskSetupStateTest: %s\n", g_failures ? "FAIL" : "PASS");
 	return g_failures ? 1 : 0;
 }

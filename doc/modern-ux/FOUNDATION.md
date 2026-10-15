@@ -234,15 +234,17 @@ the previous project's or session's state.
 - **The chunk version rule:** a chunk's version is raised only for an incompatible change (one an older reader would
   misread). Additions never raise it: they go inside the payload where the payload can carry them (`MDSK` is JSON, so a
   new member), or into a new chunk. A raised version means every older editor drops that chunk whole.
-- **The editor's setup (`MDSK`):** `md-desk/setup` and `mm-desk/setup` (`deskCore/deskSetup.h`, one codec for both;
+- **The editor's setup (`MDSK`):** `md-desk/setup`, and the MM's bare `mm-desk/modulators` with `solo` beside it (`deskCore/deskSetup.h`, one codec for both;
   data-contract.md 4.7). `version` is the major: 1 and 1.x are read, members it does not know are ignored, a source or
   link it cannot use is left out alone, a value it does not know is the default, a bad `knobCcs` or `solo` falls back to
   its default; another schema or a newer major is the default setup. What was left out is logged and shown on the page.
-  The MM also reads its 0.x shape (bare `mm-desk/modulators` with `solo` beside it).
+  The MM writes the 0.x shape so 0.7 reads 1.0 projects; it also reads an `mm-desk/setup` wrapper, reserved for when a
+  new member needs it.
 - **The machine memory file:** `machine-memory.bin` (`mdJucePlugin/mdMachineMemory.h`, DESIGN-machine-memory.md):
   version major.minor (2.0 is what 0.7 wrote), self-sized entries; an entry it cannot use (a kind, flags or size it
-  does not know) is skipped and written back as it was; another slot layout is compared per slot. Only another major is
-  refused (kept, never written over).
+  does not know) is skipped and written back as it was, with the file's minor and reserved header bytes. Another major,
+  or another slot layout id, is refused (kept, never written over): **a change of the slot layout is a major bump**,
+  since a slot matched on size alone could lay its bytes over other RAM.
 - **What is not promised:** the page wire (JSON documents between the plug-in and its page) ships inside the same
   binary, so it may change with any version; the firmware's own bytes (patch RAM, flash, `.syx`) are the machine's
   format, not ours.
