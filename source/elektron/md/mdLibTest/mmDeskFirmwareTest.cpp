@@ -1391,6 +1391,27 @@ namespace
 		static const Docs& docs(const ed::SyxFile& _f) { return _f.mm; }
 	};
 
+	// An import's tap on the machine's SysEx (the session's B-019 read-back), for as long as its job lives. The desk
+	// outlives the job: a tap left on it after the job went handed the next machine reply to freed memory (B-147,
+	// syxpick's SIGSEGV on the first pick after the import).
+	class ImportTap
+	{
+	public:
+		ImportTap(mmDesk::Desk& _desk, mdJucePlugin::SyxJob<MmSyxTraits>& _job) : m_desk(_desk)
+		{
+			m_desk.setSysexTap([&_job](const Bytes& _m) { _job.onMachineSysex(_m); });
+		}
+		~ImportTap()
+		{
+			m_desk.setSysexTap({});
+		}
+		ImportTap(const ImportTap&) = delete;
+		ImportTap& operator=(const ImportTap&) = delete;
+
+	private:
+		mmDesk::Desk& m_desk;
+	};
+
 	ed::MmDocuments machineDocs(const mmDesk::Desk& _desk)
 	{
 		const auto& v = _desk.documents();
@@ -1471,7 +1492,7 @@ namespace
 				if(k.find(kind) != std::string::npos)
 					kinds.emplace_back(kind);
 		}
-		r.desk->setSysexTap([&job](const Bytes& _m) { job.onMachineSysex(_m); });
+		const ImportTap tap(*r.desk, job);
 		const auto why = job.start(kinds, {}, machineDocs(*r.desk));
 		check(why.empty(), "the import starts" + (why.empty() ? std::string() : ": " + why));
 		using Phase = mdJucePlugin::SyxJob<MmSyxTraits>::Phase;
@@ -1737,7 +1758,7 @@ namespace
 			mdJucePlugin::SyxJob<MmSyxTraits> job;
 			job.open(_bytes, _fileName, machineDocs(*r.desk), {r.desk->currentPattern(), r.desk->currentKit(),
 				r.desk->currentSong(), r.desk->currentGlobal()});
-			r.desk->setSysexTap([&job](const Bytes& _m) { job.onMachineSysex(_m); });
+			const ImportTap tap(*r.desk, job);
 			check(job.start(_kinds, {}, machineDocs(*r.desk)).empty(), "the import starts");
 			const auto t0 = r.ms();
 			const auto step = [&] { if(r.desk->isInputReady()) job.step(r.desk->machine(), r.ms(), false); r.run(10); };
@@ -3242,7 +3263,7 @@ namespace
 	{
 		mdJucePlugin::SyxJob<MmSyxTraits> job;
 		job.open(_file, _name, machineDocs(*_r.desk), {_r.desk->currentPattern(), _r.desk->currentKit(), _r.desk->currentSong(), _r.desk->currentGlobal()});
-		_r.desk->setSysexTap([&job](const Bytes& _m) { job.onMachineSysex(_m); });
+		const ImportTap tap(*_r.desk, job);
 		const auto why = job.start({"global"}, {}, machineDocs(*_r.desk));
 		check(why.empty(), "the import of the globals starts" + (why.empty() ? std::string() : ": " + why));
 		const auto t0 = _r.ms();
