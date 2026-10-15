@@ -1844,9 +1844,8 @@ namespace md
 
 		if(!runBoundedSteps([this] { return schedStep(); }, schedStepBudget(_machineFrames)))
 		{
+			// no log here (the audio thread): the processor's boot sample logs it once, on the message thread
 			m_schedStalled.store(true, std::memory_order_relaxed);
-			std::fprintf(stderr, "[md] the machine stopped moving: %llu scheduler steps for %u frames; muted until "
-				"it starts again\n", static_cast<unsigned long long>(schedStepBudget(_machineFrames)), _machineFrames);
 			return;
 		}
 
