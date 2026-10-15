@@ -31,8 +31,7 @@ add_library(mdmmVersion STATIC ${CMAKE_CURRENT_BINARY_DIR}/mdmmVersion.cpp mdmmV
 target_include_directories(mdmmVersion PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 set_property(TARGET mdmmVersion PROPERTY FOLDER "Elektron")
 
-# The editor page is the only UI (P5): upstream's panel skins stay in the tree, not in the product.
-list(FILTER SOURCES EXCLUDE REGEX "^skins/(mdDefault|mmSfx60)/")
+# The editor page is the only UI.
 list(APPEND SOURCES
 	mdEditorPages.cpp mdEditorPages.h
 	mdDeskHost.cpp mdDeskHost.h
@@ -141,7 +140,7 @@ endif()
 # release is installed there. Never on in CI or for release packages.
 option(MDMM_INSTALL_DEV_PLUGINS "Copy the built editors to ~/Library/Audio/Plug-Ins and ~/Applications after each build (macOS, developers only)" OFF)
 
-# The pages instead of the panel skins in the plug-ins' binary data. The stylesheets are the generated
+# The pages in the plug-ins' binary data. The stylesheets are the generated
 # ones only (mdDesk.css, mmStudio.css: the sync scripts concatenate the mockups', the shared ones and
 # mdOverrides.css / mmOverrides.css into them). The editor finds a page file by its name, so the shared
 # files (skins/shared/, named desk*) sit beside each page's own.
@@ -439,15 +438,6 @@ function(mdmm_plugin_targets)
 	if(NOT BUILD_TESTING)
 		return()
 	endif()
-
-	# The panel editor's pointer tests (mdLcdEditorPointerTest.cpp) went with the panel skins (P5):
-	# the editor page is the only UI, the panel skins are not in the plug-ins' binary data.
-	foreach(test mdLcdEditorPointerTest mmLcdEditorPointerTest)
-		if(TARGET ${test})
-			set_property(TARGET ${test} PROPERTY EXCLUDE_FROM_ALL TRUE)
-			set_tests_properties(${test} PROPERTIES DISABLED TRUE)
-		endif()
-	endforeach()
 
 	# jucePluginEditorLib/standaloneApp.h: native title bar and menu bar (P4).
 	if(TARGET mdAudioIoLayoutTest)

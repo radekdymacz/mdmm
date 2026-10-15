@@ -86,7 +86,7 @@ namespace mdJucePlugin
 		std::function<void(const Bytes&)> onSysex;
 
 		// Parameters that changed since the last call (host automation, MIDI learn,
-		// the panel editor): (track, index 0-24 or 25 = mute, value).
+		// the page): (track, index 0-24 or 25 = mute, value).
 		void drainParameterChanges(const std::function<void(uint8_t, uint8_t, uint8_t)>& _visit);
 
 		Controller& controller() { return m_controller; }
