@@ -38,8 +38,9 @@
 .gdbtns .gdone{background:var(--led);color:#fff}
 /* the dice key of a kept track: a small lock in its corner (⌥R over every track leaves it alone) */
 .ms.g{position:relative}
-.ms.g .lk{display:none;position:absolute;right:1px;bottom:1px;width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:1.6}
+.ms.g .lk{display:none;position:absolute;right:2px;bottom:3px;width:7px;height:8px;color:var(--led)}
 .ms.g.kept .lk{display:block}
+.ms.g.kept svg:not(.lk){width:12px;height:12px;margin-right:6px}
 /* The lane toolbox on the lock lane's title row (mdDeskLaneTools.js) */
 .xlane{display:inline-flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:nowrap;flex:0 1 auto;min-width:0}
 .xlseg{display:inline-flex;gap:2px}

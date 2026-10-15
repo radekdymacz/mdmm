@@ -148,7 +148,10 @@ document.addEventListener("keydown",e=>{
    have (genRealise) the moment it opens, and the track stays marked kept. The marker is a lock on the track's dice key and next to the title. */
 const genKept=t=>S.gen.kept.has(t),genIsKept=t=>genKept(t)||genSpec(t).kind==="keep";
 function genRealise(t){if(genSpec(t).kind!=="keep")return;S.gen.kept.add(t);S.gen.specs[t]=genShown(t)}
-function genKeep(on){const t=S.sel;if(on)S.gen.kept.add(t);else S.gen.kept.delete(t);render();genDraw()}
+function genKeepT(t,on){if(on)S.gen.kept.add(t);else{S.gen.kept.delete(t);if(genSpec(t).kind==="keep")S.gen.specs[t]=genShown(t)}render();genDraw();toast(on?`${tLabel(t)} kept: ⌥R all skips it.`:`${tLabel(t)} is no longer kept.`)}
+function genKeep(on){genKeepT(S.sel,on)}
+/* ⌘-click (Ctrl off a Mac) on a track's dice key: Keep on or off for that track, the dialog not opened. Keep is a setting of the generators, not of the pattern: no undo step */
+document.addEventListener("click",e=>{const o=e.target.closest?.("[data-genopen]");if(!o||!Modifiers.cmd(e))return;e.stopPropagation();e.preventDefault();const t=+o.dataset.genopen;genKeepT(t,!genIsKept(t))},true);
 /* the spec the dialog's boxes show: the track's own, or while it is kept the generator it will come back to */
 function genShown(t){const sp=genSpec(t);if(sp.kind!=="keep")return sp;const l=S.gen.last[t]||{},len=S.len||64,d=mmGenDefault(genInfo(t),len,isMidiT(t));
  return genFit(l[l.was],len)||(d.kind!=="keep"?d:{kind:"euclid",k:4,n:Math.min(16,len),rot:0,seed:genSeed(),notes:d.notes})}
