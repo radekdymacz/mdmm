@@ -219,6 +219,36 @@ The editors ship without MIDI mapping (MIDI Learn and the CONTROL workspace) unt
 - **Back on:** turn the switch on; nothing else. The app LFOs and Random sources live on the CONTROL tab, so they return with it.
 - **Checks:** `sync-*-skin.py` keep the pages' gate (`page_contract_check.py: check_mapping_gate`); `mdSessionFirmwareTest` checks the document and the refusals while the switch is off.
 
+## What 1.0 promises to read
+
+From 1.0 on, an editor reads what a later editor wrote: everything that outlives a session accretes (provide more,
+require less). A newer file is used for what this version understands, never thrown away whole, and never replaced by
+the previous project's or session's state.
+
+- **The project (the plug-in state):** pluginLib's frame (`jucePluginLib/projectState.h`: `parseProject` and
+  `writeProject`, the one codec besides `Processor` itself) around chunks of a 4CC, a version and their bytes. A reader
+  skips the chunks it does not know and the ones whose version is above its own (`baseLib::ChunkReader`); a writer that
+  holds a project it did not make (`DeskHost`, no ROM) puts back only the chunks its own writers changed and keeps every
+  other one byte for byte. Our chunks: `MIDI` (the device state), `MMEM` 2 (the machine memory's mark), `RAMF` 1, `MDSK`
+  1 (the editor's setup), `AUTO` 1 (the automation parameters), `MDLN` 2 (MIDI mapping), plus pluginLib's own.
+- **The chunk version rule:** a chunk's version is raised only for an incompatible change (one an older reader would
+  misread). Additions never raise it: they go inside the payload where the payload can carry them (`MDSK` is JSON, so a
+  new member), or into a new chunk. A raised version means every older editor drops that chunk whole.
+- **The editor's setup (`MDSK`):** `md-desk/setup`, and the MM's bare `mm-desk/modulators` with `solo` beside it (`deskCore/deskSetup.h`, one codec for both;
+  data-contract.md 4.7). `version` is the major: 1 and 1.x are read, members it does not know are ignored, a source or
+  link it cannot use is left out alone, a value it does not know is the default, a bad `knobCcs` or `solo` falls back to
+  its default; another schema or a newer major is the default setup. What was left out is logged and shown on the page.
+  The MM writes the 0.x shape so 0.7 reads 1.0 projects; it also reads an `mm-desk/setup` wrapper, reserved for when a
+  new member needs it.
+- **The machine memory file:** `machine-memory.bin` (`mdJucePlugin/mdMachineMemory.h`, DESIGN-machine-memory.md):
+  version major.minor (2.0 is what 0.7 wrote), self-sized entries; an entry it cannot use (a kind, flags or size it
+  does not know) is skipped and written back as it was, with the file's minor and reserved header bytes. Another major,
+  or another slot layout id, is refused (kept, never written over): **a change of the slot layout is a major bump**,
+  since a slot matched on size alone could lay its bytes over other RAM.
+- **What is not promised:** the page wire (JSON documents between the plug-in and its page) ships inside the same
+  binary, so it may change with any version; the firmware's own bytes (patch RAM, flash, `.syx`) are the machine's
+  format, not ours.
+
 ## Build and check
 
 Until 0.5, code of ours went in files of ours and upstream's files carried hooks only ([UPSTREAM.md](UPSTREAM.md)); since 0.5 all the code is ours (doc/release/PLAN-0.5.md).

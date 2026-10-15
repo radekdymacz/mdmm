@@ -24,7 +24,6 @@ namespace mdJucePlugin
 		jucePluginEditorLib::Editor* createEditor(const jucePluginEditorLib::Skin& _skin) override;
 		void addSettingsEntry(juceRmlUi::Menu& _menu) override;
 		editorMenu::Item windowSizeMenu();
-		void addSysexEntries(std::vector<editorMenu::Item>& _items);
 		static void toRml(const std::vector<editorMenu::Item>& _items, juceRmlUi::Menu& _menu);
 	};
 }

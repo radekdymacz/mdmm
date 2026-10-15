@@ -20,7 +20,7 @@ target_sources(mdDesk PRIVATE
 	mdDeskModel.cpp mdDeskModel.h
 	mdDeskRecord.cpp mdDeskRecord.h
 	mdDeskSds.cpp mdDeskSds.h
-	mdDeskSetup.cpp mdDeskSetup.h
+	mdDeskSetup.h
 	mdDeskTelemetry.h
 	mdDeskTransport.cpp mdDeskTransport.h
 	mdDeskWorkingKit.cpp mdDeskWorkingKit.h

@@ -16,58 +16,23 @@ add_compile_definitions(MDMM_DIAGNOSTICS_REVISION="${MDMM_DIAGNOSTICS_REVISION}"
 
 set(SOURCES
 	mdController.cpp mdController.h
-	mdEditor.cpp mdEditor.h
-	mdFrontPanelPresentation.h
-	mdLcdGesture.h
-	mdLcdInteractionModel.cpp mdLcdInteractionModel.h
-	mdLcdViewport.h
-	mdPixelPerfectPanel.cpp mdPixelPerfectPanel.h
-	mdPanelAffordances.h
 	mdPluginEditorState.cpp mdPluginEditorState.h
-	mdProductSkinPolicy.h
-	mdProductSkins.h
 	mdPluginProcessor.cpp mdPluginProcessor.h
 	mdStorageImage.cpp mdStorageImage.h
 	mdPluginEntry.cpp
 
 	parameterDescriptions_md.json parameterDescriptions_mm.json
-
-	skins/mdDefault/mdDefault.rml
-	skins/mdDefault/mdKnobs.rcss
-	skins/mdDefault/mdDefault.rcss
-	skins/mmSfx60/mmSfx60.rml
-	skins/mmSfx60/mmKnobAtlas.svg
-	skins/mmSfx60/mmKnobs.rcss
-	skins/mmSfx60/mmSfx60.rcss
-	mdSettingsPanelFeel.cpp mdSettingsPanelFeel.h
-	mdSettingsAudioInput.cpp mdSettingsAudioInput.h
 )
 
 set(COMMON_ASSETS
-	"../../../jucePluginData/elektronKnobBlankAtlas.png"
-	"../../../jucePluginData/elektronMasterKnobAtlas.png"
-	"../../../jucePluginData/elektronButtonBevelAtlas.png"
-	"../../../jucePluginData/elektronLedLens.png"
-	"../../../jucePluginData/elektronLedLensSoft.png"
-	"../../../jucePluginData/elektronPlayTriangle.png"
 	"parameterDescriptions_md.json"
-	"parameterDescriptions_mm.json"
-	"../../../jucePluginData/elektron_panel.rcss"
-	"../../../jucePluginData/elektron_materials.rcss")
-file(GLOB MD_SKIN_ASSETS CONFIGURE_DEPENDS
-	"skins/mdDefault/*.png" "skins/mdDefault/*.rml" "skins/mdDefault/*.rcss"
-	"skins/mdDefault/*.ttf" "skins/mdDefault/*.lua")
-file(GLOB MM_SKIN_ASSETS CONFIGURE_DEPENDS
-	"skins/mmSfx60/*.png" "skins/mmSfx60/*.rml" "skins/mmSfx60/*.rcss"
-	"skins/mmSfx60/*.ttf" "skins/mmSfx60/*.lua")
+	"parameterDescriptions_mm.json")
 include(mdmmPlugins.cmake)  # the Machinedrum/Monomachine Editors: their sources, skins and targets (doc/modern-ux/UPSTREAM.md)
 
 juce_add_binary_data(mdJucePlugin_BinaryData SOURCES
-	${COMMON_ASSETS} "tus_settings_gui_Machinedrum.rml"
-	"tus_settings_dspaudio_Machinedrum.rml" ${MD_SKIN_ASSETS})
+	${COMMON_ASSETS} ${MD_SKIN_ASSETS})
 juce_add_binary_data(mmJucePlugin_BinaryData SOURCES
-	${COMMON_ASSETS} "tus_settings_gui_Monomachine.rml"
-	"tus_settings_dspaudio_Monomachine.rml" ${MM_SKIN_ASSETS})
+	${COMMON_ASSETS} ${MM_SKIN_ASSETS})
 
 createJucePlugin(mdJucePlugin "${MDMM_PRODUCT_NAME_MD}" TRUE "${MDMM_AU_SUBTYPE_MD}" mdJucePlugin_BinaryData mdLib)
 createJucePlugin(mmJucePlugin "${MDMM_PRODUCT_NAME_MM}" TRUE "${MDMM_AU_SUBTYPE_MM}" mmJucePlugin_BinaryData mdLib)
@@ -148,56 +113,6 @@ if(BUILD_TESTING)
 		endif()
 	endforeach()
 
-	add_executable(mdLcdInteractionModelTest
-		mdLcdInteractionModelTest.cpp mdLcdInteractionModel.cpp)
-	target_link_libraries(mdLcdInteractionModelTest PRIVATE mdLib)
-	add_test(NAME mdLcdInteractionModelTest COMMAND mdLcdInteractionModelTest)
-	set_tests_properties(mdLcdInteractionModelTest PROPERTIES
-		LABELS "UnitTest;LcdInteraction")
-	set_property(TARGET mdLcdInteractionModelTest PROPERTY FOLDER "Elektron/test")
-	add_executable(mmLcdEditPagesFirmwareTest
-		mmLcdEditPagesFirmwareTest.cpp mdLcdInteractionModel.cpp)
-	target_link_libraries(mmLcdEditPagesFirmwareTest PRIVATE mdLib)
-	add_test(NAME mmLcdEditPagesFirmwareTest COMMAND mmLcdEditPagesFirmwareTest)
-	set_tests_properties(mmLcdEditPagesFirmwareTest PROPERTIES
-		LABELS "Integration;FirmwareTest;Panel;LcdInteraction"
-		SKIP_RETURN_CODE 77 TIMEOUT 180)
-	set_property(TARGET mmLcdEditPagesFirmwareTest PROPERTY FOLDER "Elektron/test")
-	set(MD_LCD_TEST_CORPUS_DIR "" CACHE PATH
-		"Optional private MD/MM LCD screenshot corpus used by the exhaustive classifier replay")
-	if(MD_LCD_TEST_CORPUS_DIR)
-		add_executable(mdLcdInteractionCorpusTest
-			mdLcdInteractionCorpusTest.cpp mdLcdInteractionModel.cpp)
-		target_link_libraries(mdLcdInteractionCorpusTest PRIVATE mdLib)
-		target_compile_definitions(mdLcdInteractionCorpusTest PRIVATE
-			MD_LCD_TEST_CORPUS_DIR="${MD_LCD_TEST_CORPUS_DIR}")
-		add_test(NAME mdLcdInteractionCorpusTest COMMAND mdLcdInteractionCorpusTest)
-		set_tests_properties(mdLcdInteractionCorpusTest PROPERTIES
-			LABELS "LcdInteraction;LocalCorpus")
-		set_property(TARGET mdLcdInteractionCorpusTest PROPERTY FOLDER "Elektron/test")
-	endif()
-
-	add_executable(mdLcdEditorPointerTest mdLcdEditorPointerTest.cpp)
-	target_include_directories(mdLcdEditorPointerTest PRIVATE
-		"${CMAKE_SOURCE_DIR}/source" "${CMAKE_SOURCE_DIR}/source/elektron/md")
-	target_link_libraries(mdLcdEditorPointerTest PRIVATE mdJucePlugin
-		jucePluginEditorLib juceRmlUi juceUiLib juce_plugin_modules mdLib)
-	add_test(NAME mdLcdEditorPointerTest COMMAND mdLcdEditorPointerTest)
-	set_tests_properties(mdLcdEditorPointerTest PROPERTIES
-		LABELS "IntegrationTest;LcdInteraction;PointerInput")
-	set_property(TARGET mdLcdEditorPointerTest PROPERTY FOLDER "Elektron/test")
-
-	add_executable(mmLcdEditorPointerTest mdLcdEditorPointerTest.cpp)
-	target_compile_definitions(mmLcdEditorPointerTest PRIVATE MD_LCD_POINTER_TEST_MM=1)
-	target_include_directories(mmLcdEditorPointerTest PRIVATE
-		"${CMAKE_SOURCE_DIR}/source" "${CMAKE_SOURCE_DIR}/source/elektron/md")
-	target_link_libraries(mmLcdEditorPointerTest PRIVATE mmJucePlugin
-		jucePluginEditorLib juceRmlUi juceUiLib juce_plugin_modules mdLib)
-	add_test(NAME mmLcdEditorPointerTest COMMAND mmLcdEditorPointerTest)
-	set_tests_properties(mmLcdEditorPointerTest PROPERTIES
-		LABELS "IntegrationTest;LcdInteraction;PointerInput")
-	set_property(TARGET mmLcdEditorPointerTest PROPERTY FOLDER "Elektron/test")
-
 	# The Machinedrum Editor page's key map (skins/mdStudio/mdDeskKeys.js): its rules and no two keys on one
 	# chord, from every Keys.bind of the page's scripts, when node is there.
 	find_program(GEARMULATOR_NODE node)
@@ -223,13 +138,6 @@ if(BUILD_TESTING)
 	set_tests_properties(mdStandaloneRendererPolicyTest PROPERTIES
 		LABELS "UnitTest;Rendering")
 	set_property(TARGET mdStandaloneRendererPolicyTest PROPERTY FOLDER "Elektron/test")
-
-	add_executable(mdPanelRenderingTest mdPanelRenderingTest.cpp mdPixelPerfectPanel.cpp)
-	target_link_libraries(mdPanelRenderingTest PRIVATE juceRmlUi juceUiLib juce_plugin_modules juce::juce_opengl)
-	target_compile_definitions(mdPanelRenderingTest PRIVATE JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1)
-	add_test(NAME mdPanelRenderingTest COMMAND mdPanelRenderingTest)
-	set_tests_properties(mdPanelRenderingTest PROPERTIES LABELS "UnitTest;Rendering")
-	set_property(TARGET mdPanelRenderingTest PROPERTY FOLDER "Elektron/test")
 
 	juce_add_plugin(mdAudioProbePlugin
 		PRODUCTS_FOLDER "${CMAKE_BINARY_DIR}/test-products/$<CONFIG>"
@@ -286,12 +194,6 @@ if(BUILD_TESTING)
 		set_tests_properties(mdAudioProbePluginVST3IdentityTest PROPERTIES
 			LABELS "PluginTest;AudioIo")
 	endif()
-
-	add_executable(mdFrontPanelPresentationTest mdFrontPanelPresentationTest.cpp)
-	target_link_libraries(mdFrontPanelPresentationTest PRIVATE mdLib)
-	add_test(NAME mdFrontPanelPresentationTests COMMAND mdFrontPanelPresentationTest)
-	set_tests_properties(mdFrontPanelPresentationTests PROPERTIES LABELS "UnitTest")
-	set_property(TARGET mdFrontPanelPresentationTest PROPERTY FOLDER "Elektron")
 
 	add_executable(mdAutomationParameterTest mdAutomationParameterTest.cpp)
 	target_link_libraries(mdAutomationParameterTest PRIVATE

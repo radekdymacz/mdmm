@@ -261,26 +261,12 @@ namespace mdJucePlugin
 			baseLib::ChunkWriter chunk(_stream, "RAMF", 1);
 			_stream.write(static_cast<uint8_t>(getRamRecordingMode()));
 		}
-		m_desk->saveChunks(_stream);
-		const auto& controller = dynamic_cast<const Controller&>(getController());
-		const auto snapshot = controller.createAutomationSnapshot();
-		if(!snapshot.empty())
-		{
-			baseLib::ChunkWriter chunk(_stream, "AUTO", 1);
-			_stream.write(snapshot);
-		}
+		m_desk->saveChunks(_stream);	// the editor's setup and the automation parameters (they live without a machine)
 	}
 
 	void AudioPluginAudioProcessor::loadChunkData(baseLib::ChunkReader& _reader)
 	{
 		jucePluginEditorLib::Processor::loadChunkData(_reader);
-		_reader.add("AUTO", 1, [this](baseLib::BinaryStream& _stream, uint32_t)
-		{
-			std::vector<uint8_t> snapshot;
-			_stream.read(snapshot);
-			auto& controller = dynamic_cast<Controller&>(getController());
-			(void)controller.restoreAutomationSnapshot(snapshot);
-		});
 		m_desk->addChunkReaders(_reader);
 		_reader.add("MMEM", 2, [this](baseLib::BinaryStream& _stream, const uint32_t _version)
 		{
@@ -346,12 +332,6 @@ namespace mdJucePlugin
 	{
 		return pluginLib::Processor::findResource(
 			makeProcessorProperties(g_defaultModel).binaryData, std::string(_filename)).has_value();
-	}
-
-	juce::File AudioPluginAudioProcessor::getInstalledFactoryStorageImage() const
-	{
-		return juce::File(juce::String::fromUTF8(getDataFolder().c_str()))
-			.getChildFile("nvram").getChildFile("mm-factory-live3-be.bin");
 	}
 
 	juce::File AudioPluginAudioProcessor::getStorageRecoveryImage() const
@@ -1536,8 +1516,7 @@ namespace mdJucePlugin
 		{
 			// Start from factory memory not done yet: its clear goes first, in this same hold of the lock (the slots
 			// saved before it go; a newer save another editor made stays)
-			for(auto it = store.slots.begin(); it != store.slots.end();)
-				it = it->second.savedAt < w.factoryAtMs ? store.slots.erase(it) : std::next(it);
+			machineMemory::dropSavedBefore(store, w.factoryAtMs);
 		}
 		std::vector<uint8_t> bytes;
 		if(readOk)
@@ -2162,10 +2141,9 @@ namespace mdJucePlugin
 			m_memoryNote = moveMemoryFileAside("The saved machine memory was written by another editor; it was not deleted.");
 		else if(decoded.problem == machineMemory::Problem::None)
 		{
-			auto& slots = decoded.file.slots;
-			for(auto it = slots.begin(); it != slots.end();)
-				it = it->second.savedAt < w.factoryAtMs ? slots.erase(it) : std::next(it);
-			const bool gone = slots.empty() ? file.deleteFile() : writeMemoryFile(file, machineMemory::encode(m_model, decoded.file), error);
+			machineMemory::dropSavedBefore(decoded.file, w.factoryAtMs);
+			const bool empty = decoded.file.slots.empty() && decoded.file.foreign.empty();
+			const bool gone = empty ? file.deleteFile() : writeMemoryFile(file, machineMemory::encode(m_model, decoded.file), error);
 			if(!gone && !writeMemoryFile(file, machineMemory::encode(m_model, {}), error))
 				m_memoryNote = "The machine memory file could not be cleared: " + file.getFullPathName().toStdString();
 		}

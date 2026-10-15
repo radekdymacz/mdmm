@@ -184,12 +184,21 @@ int main()
 		check(win.manifest && win.manifest->find(Os::Win, Machine::Mm) && !win.manifest->find(Os::Win, Machine::Md), "one machine on one OS");
 		check(parseManifest(manifest("{}")).manifest.has_value(), "no assets at all: parses, offers the site");
 
+		// A newer feed (schema 2, extra fields) still gives the update check: only known fields are read.
+		{
+			auto next = manifest("{}");
+			next.replace(next.find("\"schema\": 1"), 11, "\"schema\": 2");
+			next.insert(1, "\"newField\": {\"a\": [1]}, ");
+			const auto r = parseManifest(next);
+			check(r.manifest.has_value() && r.manifest->tag == "mdmm-v0.3.3", "schema 2 with unknown fields: still parses");
+		}
+
 		struct Bad { const char* what; std::string text; };
 		const Bad bad[] = {
 			{"not JSON", "{\"schema\": 1,"},
 			{"an array", "[1, 2]"},
 			{"empty", ""},
-			{"schema 2", manifest("{}").replace(manifest("{}").find("\"schema\": 1"), 11, "\"schema\": 2")},
+			{"schema 0", manifest("{}").replace(manifest("{}").find("\"schema\": 1"), 11, "\"schema\": 0")},
 			{"a bad version", manifest("{}", "0.3")},
 			{"the tag not the version", manifest("{}").replace(manifest("{}").find("mdmm-v0.3.3"), 11, "mdmm-v0.3.4")},
 			{"assets not an object", manifest("[]")},

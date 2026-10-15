@@ -473,7 +473,7 @@ Rules (`mdDesk/mdDeskMod.h`):
 
 The editor's own setup: `modulators` (4.6) and `knobCcs`, the eight controller
 knob rows' CC numbers (0-127, distinct; default 21-28). The desk keeps it
-(`mdDesk/mdDeskSetup.h`), publishes `{"type":"setup","doc"}` to the page and hands
+(`deskCore/deskSetup.h`, `mdDesk/mdDeskSetup.h`), publishes `{"type":"setup","doc"}` to the page and hands
 every change to the host (`Port::saveSetup`), which stores the text as the plug-in
 state's `MDSK` chunk. A restored project brings it back, also into an open editor;
 a project without it starts from the default setup. The page changes the knob rows
@@ -484,8 +484,17 @@ The page's solo (B-123) is part of the setup too, for both editors: the page say
 `{"op":"soloSet","tracks":[...],"mutes":[...]}` whenever its solo or, while one holds, the
 mutes the person set change (the machine only has mutes; a solo is the page's idea, which
 mutes every other track). The desk keeps it as the setup's `solo` member
-(`deskCore/deskSolo.h`; the Monomachine beside its modulators) and the host stores it with
-the rest. It is not echoed: the desk says `{"type":"solo","tracks","mutes"}` when a project
+(`deskCore/deskSolo.h`) and the host stores it with the rest.
+
+Both editors' setups are one codec, `deskCore/deskSetup.h`: `md-desk/setup {schema, version,
+modulators, knobCcs, solo}`; the Monomachine (no knob rows) writes the 0.x shape, the bare
+`mm-desk/modulators` document with `solo` beside it, so 0.7 reads a 1.0 project. Its reader
+also takes an `mm-desk/setup {schema, version, modulators, solo}` wrapper, which is reserved
+for when a new member needs it (then it is written). A project's setup is read for what it
+can give (FOUNDATION.md, "What 1.0 promises to read"): unknown members are ignored, a bad
+source or link is left out alone, a bad `knobCcs` or `solo` falls back to its default, and
+another schema or a newer major `version` is the default setup, never the previous project's.
+What was left out is logged and shown on the page as an `error` message. It is not echoed: the desk says `{"type":"solo","tracks","mutes"}` when a project
 is restored, after a `reset` and when a page is made (`ready`), and the page takes it as
 its solo and mutes, then makes the machine's mutes match.
 

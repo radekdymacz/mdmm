@@ -11,7 +11,8 @@
 #include "juceUiLib/messageRoute.h"
 #include "jucePluginLib/dummydevice.h"
 
-#include <cstring>
+#include <algorithm>
+#include <array>
 #include <optional>
 
 namespace mdJucePlugin
@@ -37,169 +38,6 @@ namespace mdJucePlugin
 		m_editFlowDriver.reset();
 	}
 
-	namespace
-	{
-		// A project as pluginLib::Processor::getStateInformation writes it: a header (the magic string, the
-		// version and, in version 1, the device state) and then the processor's chunks as one length-prefixed
-		// block, each chunk a 4CC, a version, a length and its data (baseLib::ChunkWriter). Bytes in, bytes out.
-		struct ProjectBytes
-		{
-			std::vector<uint8_t> header;	// everything before the chunk block
-			std::vector<uint8_t> chunks;	// the block's content
-		};
-
-		constexpr size_t g_chunkHeadSize = 12;	// 4CC, version, length
-
-		std::optional<ProjectBytes> splitProject(const std::vector<uint8_t>& _project)
-		{
-			try
-			{
-				baseLib::BinaryStream s(_project);
-				if(!s.checkString("DSP56300"))	// pluginLib::Processor's g_saveMagic
-					return {};
-				(void)s.readString();
-				const auto version = s.read<uint32_t>();
-				if(version != 1 && version != 2)
-					return {};
-				if(version == 1)
-				{
-					std::vector<uint8_t> deviceState;
-					s.read(deviceState);
-				}
-				ProjectBytes p;
-				const auto headerEnd = s.getReadPos();
-				p.header.assign(_project.begin(), _project.begin() + headerEnd);
-				s.read(p.chunks);
-				if(s.getReadPos() != _project.size())
-					return {};
-				return p;
-			}
-			catch(const std::exception&)
-			{
-				return {};
-			}
-		}
-
-		// [begin, end) of the chunk _fourCC (its head included) in a chunk block; nullopt if absent or malformed.
-		std::optional<std::pair<size_t, size_t>> findChunk(const std::vector<uint8_t>& _chunks, const char* _fourCC)
-		{
-			size_t at = 0;
-			while(at + g_chunkHeadSize <= _chunks.size())
-			{
-				uint32_t length;
-				std::memcpy(&length, &_chunks[at + 8], sizeof(length));	// BinaryStream's own byte order
-				const auto end = at + g_chunkHeadSize + static_cast<size_t>(length);
-				if(end > _chunks.size())
-					return {};
-				if(std::memcmp(&_chunks[at], _fourCC, 4) == 0)
-					return std::make_pair(at, end);
-				at = end;
-			}
-			return {};
-		}
-
-		// The data of a project's chunk _fourCC; nullopt when the bytes are no such project, an empty vector
-		// when the project has no such chunk.
-		std::optional<std::vector<uint8_t>> chunkIn(const std::vector<uint8_t>& _project, const char* _fourCC)
-		{
-			const auto p = splitProject(_project);
-			if(!p)
-				return {};
-			const auto c = findChunk(p->chunks, _fourCC);
-			if(!c)
-				return std::vector<uint8_t>{};
-			return std::vector<uint8_t>(p->chunks.begin() + static_cast<ptrdiff_t>(c->first + g_chunkHeadSize),
-				p->chunks.begin() + static_cast<ptrdiff_t>(c->second));
-		}
-
-		// The project with its chunk replaced by _chunk (a whole chunk, head included: in place, at the end if
-		// the project had none, removed if _chunk is empty); nullopt when the bytes are no such project.
-		std::optional<std::vector<uint8_t>> withChunk(const std::vector<uint8_t>& _project, const char* _fourCC, const std::vector<uint8_t>& _chunk)
-		{
-			auto p = splitProject(_project);
-			if(!p)
-				return {};
-			auto at = p->chunks.end();
-			if(const auto c = findChunk(p->chunks, _fourCC))
-				at = p->chunks.erase(p->chunks.begin() + static_cast<ptrdiff_t>(c->first), p->chunks.begin() + static_cast<ptrdiff_t>(c->second));
-			p->chunks.insert(at, _chunk.begin(), _chunk.end());
-			baseLib::BinaryStream out;
-			out.write(p->header.data(), p->header.size());
-			out.write(p->chunks);
-			std::vector<uint8_t> result;
-			out.toVector(result);
-			return result;
-		}
-
-		// The automation snapshot in a project's "AUTO" chunk (AudioPluginAudioProcessor::saveChunkData);
-		// empty when there is none.
-		std::vector<uint8_t> automationIn(const std::vector<uint8_t>& _project)
-		{
-			const auto data = chunkIn(_project, "AUTO");
-			if(!data || data->empty())
-				return {};
-			try
-			{
-				baseLib::BinaryStream s(*data);
-				std::vector<uint8_t> snapshot;
-				s.read(snapshot);
-				return snapshot;
-			}
-			catch(const std::exception&)
-			{
-				return {};
-			}
-		}
-
-		// The editor's setup in a project's "MDSK" chunk (DeskHost::saveChunks): empty when the project has
-		// none (the default setup), nullopt when the bytes are no such project.
-		std::optional<std::string> setupIn(const std::vector<uint8_t>& _project)
-		{
-			const auto data = chunkIn(_project, "MDSK");
-			if(!data)
-				return {};
-			if(data->empty())
-				return std::string();
-			try
-			{
-				baseLib::BinaryStream s(*data);
-				return s.readString();
-			}
-			catch(const std::exception&)
-			{
-				return std::string();
-			}
-		}
-
-		std::vector<uint8_t> automationChunk(const std::vector<uint8_t>& _snapshot)
-		{
-			std::vector<uint8_t> chunk;
-			if(_snapshot.empty())
-				return chunk;
-			baseLib::BinaryStream s;
-			{
-				baseLib::ChunkWriter cw(s, "AUTO", 1);
-				s.write(_snapshot);
-			}
-			s.toVector(chunk);
-			return chunk;
-		}
-
-		std::vector<uint8_t> setupChunk(const std::string& _setup)
-		{
-			std::vector<uint8_t> chunk;
-			if(_setup.empty())
-				return chunk;
-			baseLib::BinaryStream s;
-			{
-				baseLib::ChunkWriter cw(s, "MDSK", 1);
-				s.write(_setup);
-			}
-			s.toVector(chunk);
-			return chunk;
-		}
-	}
-
 	std::vector<uint8_t> DeskHost::automationSnapshot() const
 	{
 		if(!m_processor.hasController())
@@ -207,62 +45,101 @@ namespace mdJucePlugin
 		return dynamic_cast<const Controller&>(m_processor.getController()).createAutomationSnapshot();
 	}
 
+	namespace
+	{
+		// The project's chunks that live without a machine: the editor's setup, the DAW's automation parameters, the MIDI
+		// mapping. The rest (the device state "MIDI", the machine memory's mark "MMEM", ...) is the machine's or is
+		// taken from the project when the machine comes.
+		constexpr std::array<std::array<char, 4>, 3> g_machineFree{pluginLib::fourCC("MDSK"), pluginLib::fourCC("AUTO"), pluginLib::fourCC("MDLN")};
+	}
+
+	// Those chunks as the plug-in writes them now (the processor's own writers: saveChunks, pluginLib's MIDI learn).
+	std::vector<pluginLib::ProjectChunk> DeskHost::machineFreeChunks() const
+	{
+		baseLib::BinaryStream s;
+		saveChunks(s);
+		if(auto* learn = m_processor.getMidiLearnTranslator())
+			learn->saveChunkData(s);
+		std::vector<uint8_t> block;
+		s.toVector(block);
+		auto chunks = pluginLib::parseChunks(block);
+		return chunks ? std::move(*chunks) : std::vector<pluginLib::ProjectChunk>{};
+	}
+
+	// A project's chunks of those kinds, read by the processor's own readers (none: the setup is the default, the others
+	// stay as they are, as with any project load).
+	void DeskHost::applyMachineFreeChunks(const pluginLib::ProjectState& _project)
+	{
+		std::vector<pluginLib::ProjectChunk> given;
+		for(const auto& k : g_machineFree)
+			if(const auto* c = pluginLib::findChunk(_project.chunks, k))
+				given.push_back(*c);
+		beginProjectLoad();
+		baseLib::BinaryStream s(pluginLib::writeChunks(given));
+		baseLib::ChunkReader reader(s);
+		addChunkReaders(reader);
+		if(auto* learn = m_processor.getMidiLearnTranslator())
+			learn->loadChunkData(reader);
+		(void)reader.tryRead();
+	}
+
 	bool DeskHost::holdState(const void* const _data, const int _size)
 	{
 		if(!m_processor.getPlugin().withDeviceLocked([](synthLib::Device* const _d) { return isNoRomDevice(_d); }))
 			return false;
 		std::vector<uint8_t> project(static_cast<const uint8_t*>(_data), static_cast<const uint8_t*>(_data) + std::max(_size, 0));
-		// What lives without a machine follows the project at once: the DAW's parameters and the editor's setup.
-		if(const auto given = automationIn(project); !given.empty())
-			(void)dynamic_cast<Controller&>(m_processor.getController()).restoreAutomationSnapshot(given);
-		if(auto given = setupIn(project))
-			setSetup(std::move(*given));
-		auto automation = automationSnapshot();
-		auto editorSetup = setup();
+		// What lives without a machine follows the project at once: the editor's setup, the DAW's parameters, the MIDI mapping.
+		if(const auto p = pluginLib::parseProject(project))
+			applyMachineFreeChunks(*p);
+		auto free = machineFreeChunks();
 		const std::lock_guard lock(m_heldMutex);
 		m_held = std::move(project);
-		m_heldAutomation = std::move(automation);
-		m_heldSetup = std::move(editorSetup);
+		m_heldFree = std::move(free);
 		return true;
+	}
+
+	// The held project with every machine-free chunk that moved since it was given rewritten (the rest byte for byte);
+	// none when something moved and no project is held.
+	std::optional<std::vector<uint8_t>> DeskHost::heldProject() const
+	{
+		std::vector<uint8_t> held;
+		std::vector<pluginLib::ProjectChunk> heldFree;
+		{
+			const std::lock_guard lock(m_heldMutex);
+			held = m_held;
+			heldFree = m_heldFree;
+		}
+		const auto now = machineFreeChunks();
+		if(now == heldFree)
+			return held;
+		if(held.empty())
+			return std::nullopt;	// no project to keep: the plug-in's own state saves them
+		auto project = pluginLib::parseProject(held);
+		if(!project)
+			return held;
+		pluginLib::putMoved(project->chunks, heldFree, now);
+		return pluginLib::writeProject(*project);
 	}
 
 	bool DeskHost::heldState(juce::MemoryBlock& _out) const
 	{
 		if(!m_processor.getPlugin().withDeviceLocked([](synthLib::Device* const _d) { return isNoRomDevice(_d); }))
 			return false;
-		std::vector<uint8_t> held;
-		std::vector<uint8_t> heldAutomation;
-		std::string heldSetup;
-		{
-			const std::lock_guard lock(m_heldMutex);
-			held = m_held;
-			heldAutomation = m_heldAutomation;
-			heldSetup = m_heldSetup;
-		}
-		const auto automation = automationSnapshot();
-		const auto editorSetup = setup();
-		if(automation != heldAutomation || editorSetup != heldSetup)	// moved since the project was given
-		{
-			if(held.empty())
-				return false;	// no project to keep: the plug-in's own state saves them
-			if(automation != heldAutomation)
-				if(auto project = withChunk(held, "AUTO", automationChunk(automation)))
-					held = std::move(*project);
-			if(editorSetup != heldSetup)
-				if(auto project = withChunk(held, "MDSK", setupChunk(editorSetup)))
-					held = std::move(*project);
-		}
-		_out.append(held.data(), held.size());
+		const auto project = heldProject();
+		if(!project)
+			return false;
+		_out.append(project->data(), project->size());
 		return true;
 	}
 
 	bool DeskHost::takeHeldState(std::vector<uint8_t>& _out)
 	{
+		// what moved while it was held goes to the machine with it
+		auto project = heldProject();
 		const std::lock_guard lock(m_heldMutex);
-		_out = std::move(m_held);
+		_out = project && !m_held.empty() ? std::move(*project) : std::move(m_held);
 		m_held.clear();
-		m_heldAutomation.clear();
-		m_heldSetup.clear();
+		m_heldFree.clear();
 		return !_out.empty();
 	}
 
@@ -281,6 +158,11 @@ namespace mdJucePlugin
 			baseLib::ChunkWriter chunk(_stream, "MDSK", 1);
 			_stream.write(s);
 		}
+		if(const auto snapshot = automationSnapshot(); !snapshot.empty())
+		{
+			baseLib::ChunkWriter chunk(_stream, "AUTO", 1);
+			_stream.write(snapshot);
+		}
 	}
 
 	void DeskHost::addChunkReaders(baseLib::ChunkReader& _reader)
@@ -288,6 +170,13 @@ namespace mdJucePlugin
 		_reader.add("MDSK", 1, [this](baseLib::BinaryStream& _stream, uint32_t)
 		{
 			setSetup(_stream.readString());
+		});
+		_reader.add("AUTO", 1, [this](baseLib::BinaryStream& _stream, uint32_t)
+		{
+			std::vector<uint8_t> snapshot;
+			_stream.read(snapshot);
+			if(m_processor.hasController())
+				(void)dynamic_cast<Controller&>(m_processor.getController()).restoreAutomationSnapshot(snapshot);
 		});
 	}
 
