@@ -81,7 +81,7 @@ function renderSound() {
 			body: `<div class="sgsel pair"><label title="Mute group: this track's trig mutes the chosen track, as open and closed hihats.">Mute${relSel("mg", "muteGroup", "mutes")}</label>
 			<label title="Trig group: this track's trig also trigs the chosen track. Trig relations do not chain.">Trig${relSel("tg", "trigGroup", "trigs")}</label></div>` }];
 	$("#main").innerHTML = `<div class="snd mutating">
-  <div class="sndhead">${machButton(tr)}${revertKey()}
+  <div class="sndhead">${machButton(tr)}
    <div class="genband mutband" id="mutband" title="The groups follow the sound's path: synthesis, effects, routing, then the LFO and the track's relations. Drag a dot or a box; hold Alt to move the same knob on every track (Control All).">${mutStripHtml()}</div></div>
   ${sgRow(syn, "synrow", color)}
   ${sgRow(fxrt, "fxrow", color)}
@@ -121,7 +121,7 @@ document.addEventListener("change", e => {
 	if (id === "tg") sendGroup(S.sel, "trig", v === "" ? null : +v);
 });
 
-/* 0.6: Revert track. The selected track's sound (machine, its 24 values, level, LFO and the two relations) goes back
+/* 0.6: Clear (was Revert track; the command stays revertTrack). The selected track's sound (machine, its 24 values, level, LFO and the two relations) goes back
    to how the kit's slot stores it: one command, one undo step. The kit library's Reload does the whole kit; this one
    track. On while the track differs from the slot (the kit's JSON, as the contract makes it: tracks[t] without the LFO's
    running state, which the contract keeps apart). */
@@ -135,13 +135,14 @@ function revertFacts(t) {
 		? { can: false, why: `Track ${t + 1} is as kit ${nn(k)} stores it.` }
 		: { can: true, why: `Put track ${t + 1} back as kit ${nn(k)} stores it: its machine, values, level, LFO and relations. One undo step. The kit library's Reload does the whole kit.` };
 }
+function revertTip(f, t) { return "Clear: back to the kit's saved sound (one undo)" + (f.can ? "" : `. Track ${t + 1} is as saved.`); }
 function revertKey() {
 	const f = revertFacts(S.sel);
-	return `<button class="revbtn" id="revert" ${f.can ? "" : "disabled"} title="${attr(f.why)}" aria-label="Revert track ${S.sel + 1}">Revert track</button>`;
+	return clearKey(f.can, attr(revertTip(f, S.sel)), `Clear track ${S.sel + 1} to the kit's saved sound`);
 }
 function syncRevert() {
 	const b = $("#revert"); if (!b) return;
-	const f = revertFacts(S.sel); b.disabled = !f.can; b.title = f.why;
+	const f = revertFacts(S.sel); b.disabled = !f.can; b.title = revertTip(f, S.sel);
 }
 document.addEventListener("click", e => {
 	const b = e.target.closest("#revert"); if (!b || b.disabled) return;

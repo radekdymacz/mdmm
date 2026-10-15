@@ -2183,16 +2183,16 @@ const MdJourneys = (() => {
 			esc
 		]
 	};
-	/* MD-X25: Revert track on the Sound page: the track goes back as the kit's slot stores it, one undo step */
+	/* MD-X25: Clear (was Revert track) on the Sound page: the track goes back as the kit's slot stores it, one undo step */
 	const revertTrackJ = {
 		name: "md-sound-revert-track", proves: ["MD-X25"],
 		steps: [
 			go("sound"), sel(() => soundTrack()),
-			{ say: "the Revert track key is there and off: the track is as its slot stores it",
-				screen: () => ok(!!$1("#revert") && $1("#revert").disabled && /stores it/.test($1("#revert").title), "key " + $1("#revert")?.disabled + " " + $1("#revert")?.title) },
+			{ say: "the Clear key is there and off: the track is as its slot stores it",
+				screen: () => ok(!!$1("#revert") && $1("#revert").disabled && /saved sound/.test($1("#revert").title), "key " + $1("#revert")?.disabled + " " + $1("#revert")?.title) },
 			{ say: "drag a value of the track: the key turns on", act: async (u, c) => { c.k = V.kit; c.stored = JSON.stringify(Docs.kits[c.k].tracks[c.t]); const el = $1('#main .pc[data-g="syn"]'); c.n = el.dataset.n; c.i = pidx(c.t, c.n, "syn"); c.v0 = kitVals(c.t)[c.i]; c.o = allKitVals(); await nudge(u, el, c.v0); await until(idle, 5000); c.v1 = kitVals(c.t)[c.i]; c.u0 = V.undoCount; },
 				screen: () => ok(!$1("#revert").disabled, "key still off"), machine: c => ok(c.v1 !== c.v0 && JSON.stringify(Docs.kits[c.k].tracks[c.t]) === c.stored, `value ${c.v0} -> ${kitVals(c.t)[c.i]}`), within: 6000 },
-			{ say: "click Revert track: the value is the slot's, the slot is untouched, the key is off, one undo step more", act: u => u.click("#revert"),
+			{ say: "click Clear: the value is the slot's, the slot is untouched, the key is off, one undo step more", act: u => u.click("#revert"),
 				screen: () => ok($1("#revert").disabled, "key still on"),
 				machine: c => ok(kitVals(c.t)[c.i] === c.v0 && same(allKitVals(), c.o) && JSON.stringify(Docs.kits[c.k].tracks[c.t]) === c.stored && V.undoCount === c.u0 + 1, `value ${kitVals(c.t)[c.i]} for ${c.v0}, undo steps ${V.undoCount} for ${c.u0 + 1}`), within: 6000 },
 			{ say: "press Cmd+Z once: the edit is back and the key is on again", act: u => u.key("z", { cmd: true }),

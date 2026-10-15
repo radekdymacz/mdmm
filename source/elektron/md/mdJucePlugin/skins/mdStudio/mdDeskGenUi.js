@@ -324,7 +324,7 @@ function mutStripHtml() {
   ${gbg("Move", gv("amt", "Amount", S.mut.amount + "%", "How far each knob moves toward its random target"))}
   ${gbg("Scope", `<span class="seg">${chips}</span><span class="ghint">${groups ? `+ ${groups} group${groups === 1 ? "" : "s"}` : "+ a group's title"}</span>`, "gscope", "Click a group's title below to add that group to the scope")}
   <div class="gsum" title="${S.mut.note}">${S.mut.note}</div>
-  <div class="gkeys">${randKey(`${all ? "Randomise the whole kit" : `Randomise track ${t + 1}`}: a fresh random mutation, from the sound before the trial${tr ? "" : " (this sound)"}. One trial is one undo step (R; Alt+R or Alt-click: the whole kit)`)}</div>`;
+  <div class="gkeys">${randKey(`${all ? "Randomise the whole kit" : `Randomise track ${t + 1}`}: a fresh random mutation, from the sound before the trial${tr ? "" : " (this sound)"}. One trial is one undo step (R; Alt+R or Alt-click: the whole kit)`)}${revertKey()}</div>`;
 }
 function renderMutStrip() {
 	const host = $("#mutband"); if (host) host.innerHTML = mutStripHtml();

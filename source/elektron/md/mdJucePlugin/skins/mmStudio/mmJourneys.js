@@ -456,14 +456,14 @@ const MmJourneys = (() => {
 			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(kitT(0) === c.k0, "kit not back"), screen: c => ok(S().tracks[0].m === c.m0, "view " + S().tracks[0].m), within: 10000 }
 		]
 	};
-	/* MM-X25: Revert track on the Sound page: the track goes back as the kit's slot stores it, one undo step */
+	/* MM-X25: Clear (was Revert track) on the Sound page: the track goes back as the kit's slot stores it, one undo step */
 	const storedPages = t => JSON.stringify(I().doc("kit", machine().kit?.current)?.tracks[t]?.pages?.slice(0, 7));
 	const revertTrackJ = {
 		name: "mm-sound-revert-track", proves: ["MM-X25"],
 		steps: [
 			go("sound"), sel(0),
-			{ say: "the Revert track key is there and off: the track is as its slot stores it",
-				screen: () => ok(!!$1("#revert") && $1("#revert").disabled && /stores it/.test($1("#revert").title), "key " + $1("#revert")?.disabled + " " + $1("#revert")?.title) },
+			{ say: "the Clear key is there and off: the track is as its slot stores it",
+				screen: () => ok(!!$1("#revert") && $1("#revert").disabled && /saved sound/.test($1("#revert").title), "key " + $1("#revert")?.disabled + " " + $1("#revert")?.title) },
 			{ say: "drag a value of the track: the key turns on", act: async (u, c) => {
 				const el = $1('#main .pc[data-g="FLT"]') || $1('#main .pc[data-g="AMP"]'); if (!el) throw new Error("no FLT or AMP value");
 				c.g = el.dataset.g; c.i = +el.dataset.n; c.pg = PAGES.indexOf(c.g); c.q = `#main .pc[data-g="${c.g}"][data-n="${c.i}"]`;
@@ -471,7 +471,7 @@ const MmJourneys = (() => {
 				await u.drag(c.q, [[d * 6, 0], [d * 12, 0], [d * 18, 0], [d * 24, 0], [d * 30, 0]]);
 				await until(() => wk().tracks[0].pages[c.pg][c.i] !== c.v0, 6000); c.v1 = wk().tracks[0].pages[c.pg][c.i]; c.h0 = histN(); },
 				screen: () => ok(!$1("#revert").disabled, "key still off"), machine: c => ok(c.v1 !== c.v0 && storedPages(0) === c.stored, `value ${c.v0} -> ${c.v1}`), within: 8000 },
-			{ say: "click Revert track: the value is the slot's, the slot is untouched, the key is off, one undo step more", act: u => u.click("#revert"),
+			{ say: "click Clear: the value is the slot's, the slot is untouched, the key is off, one undo step more", act: u => u.click("#revert"),
 				screen: () => ok($1("#revert").disabled, "key still on"),
 				machine: c => ok(wk().tracks[0].pages[c.pg][c.i] === c.v0 && allKit() === c.all0 && storedPages(0) === c.stored && histN() === c.h0 + 1, `value ${wk().tracks[0].pages[c.pg][c.i]} for ${c.v0}, undo steps ${histN()} for ${c.h0 + 1}`), within: 8000 },
 			{ say: "press Cmd+Z once: the edit is back and the key is on again", act: u => { blur(); u.key("z", { cmd: true }); },
@@ -1448,6 +1448,28 @@ const MmJourneys = (() => {
 				for (const pl of ["mk1", "mk2"]) { if (S().plate !== pl) u.click("#platekey"); await until(() => S().plate === pl, 1500); await sleep(150); c.seen[pl] = ["--plate", "--plate2", "--plate3", "--lcd", "--scr"].map(cssTok); const roll = $1("#seq canvas.roll"), lcd = $1(".lcdpanel"); c.seen[pl].push(roll ? getComputedStyle(roll).backgroundColor : "no roll", lcd ? getComputedStyle(lcd).backgroundColor : "no lcd"); } },
 				screen: c => ok(["mk1", "mk2"].every(pl => c.seen[pl] && c.seen[pl].slice(0, 3).join() === "#d9dad6,#cdcec9,#e5e6e2" && c.seen[pl][4] === "#cdcec9" && (c.seen[pl][5] === "rgb(205, 206, 201)" || c.seen[pl][5] === "no roll")) && c.seen.mk1[3] === "#b6d2e8" && c.seen.mk2[3] === "#dfeaf1" && c.seen.mk1[6] === "rgb(182, 210, 232)" && c.seen.mk2[6] === "rgb(223, 234, 241)", JSON.stringify(c.seen)) }],
 		async tidy(u, c) { if (c.p0 && S().plate !== c.p0) u.click("#platekey"); } };
+	/* Radek's review 2026-10-15: left to right the multi envelope, the joystick, the setup and the mutes; the envelope's screen
+	   and the stick's pad start on one line and are as tall as each other; the assign rows sit under the pad, the ADSR faders under the screen. */
+	const performLayout = {
+		name: "mm-perform-layout", proves: ["MM-160"],
+		steps: [
+			go("perform"),
+			{ say: "Perform: the envelope screen, the stick's pad, the setup card and the mutes, left to right; screen and pad on one top line and one height; assign rows under the pad, ADSR faders under the screen",
+				act: async (u, c) => { c.bad = []; u.click('[data-set="astab"] button[data-v="JOY RL"]'); await sleep(300);
+					const r = q => $1(q)?.getBoundingClientRect(), cv = r(".menvplot"), pad = r("#joy"), set = r(".asgcard"), mu = r(".perf3 .perfside .card:last-child"), row = r(".joycard .asrow"), fad = r('.menvcard .pc[data-n="ATK"]');
+					if (![cv, pad, set, mu, row, fad].every(Boolean)) { c.bad.push("a part is missing"); return; }
+					if (!(cv.right <= pad.left && pad.right <= set.left && pad.right <= mu.left)) c.bad.push("order: screen " + Math.round(cv.right) + ", pad " + Math.round(pad.left) + "-" + Math.round(pad.right) + ", setup " + Math.round(set.left));
+					if (Math.abs(cv.top - pad.top) > 1.5 || Math.abs(cv.height - pad.height) > 1.5) c.bad.push(`screen ${Math.round(cv.top)}/${Math.round(cv.height)}, pad ${Math.round(pad.top)}/${Math.round(pad.height)}`);
+					if (row.top < pad.bottom - 1 || row.left < pad.left - 40 || fad.top < cv.bottom - 1) c.bad.push("controls not under their picture");
+					const gaps = [pad.left - cv.right, set.left - pad.right].map(Math.round); if (Math.abs(gaps[0] - gaps[1]) > 2) c.bad.push("gutters " + gaps.join(" / "));
+					c.heads = $all(".perf3 > .card > header, .perf3 .asgcard > header").map(h => Math.round(h.getBoundingClientRect().top)); if (new Set(c.heads).size > 1) c.bad.push("header tops " + c.heads.join(","));
+					c.bad.push(...Journey.cutText($1(".perf3")), ...Journey.overlaps(".joycard .asrow select", ".joycard .asrow .pc")); },
+				screen: c => ok(!c.bad.length, c.bad.join(" | ")) },
+			{ say: "the VEL tab: the pad's place shows what the tab means, the two rows stay under it", act: async u => { u.click('[data-set="astab"] button[data-v="VEL"]'); await sleep(300); },
+				screen: () => { const p = $1(".joycard .padinfo")?.getBoundingClientRect(), m = $1(".menvplot")?.getBoundingClientRect(); return ok(!!p && !$1("#joy") && Math.abs(p.top - m.top) < 1.5 && Math.abs(p.height - m.height) < 1.5 && $all(".joycard .asrow").length === 2, "pad box " + (p ? Math.round(p.top) + "/" + Math.round(p.height) : "missing")); } }
+		],
+		async tidy(u) { u.click('[data-set="astab"] button[data-v="JOY RL"]'); }
+	};
 	const menvLayout = {
 		name: "mm-perform-menv-layout", proves: ["MM-160"],
 		steps: [
@@ -3688,7 +3710,7 @@ const MmJourneys = (() => {
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, genModal, laneTools, gridFits, mutScope,
-		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
+		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, performLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
 		blackKeys, rollPaint, rollDrawLength, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxPlace, resetEmpty, syxRunningReach];
 	/* every journey's tidy is followed by a look: if the machine's documents or modes still differ from what the journey found, back(u, c) puts them back (the journey's own tidy first, for what is its own;
 	   its guard, "left:", names what stays). What back cannot put back, the journey keeps first (keep, keepMany) or is alone: true (doc/modern-ux/JOURNEYS.md, "Independent journeys") */
