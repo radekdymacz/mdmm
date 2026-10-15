@@ -12,7 +12,7 @@ Done before that order was set: slices 1 to 4, the guide's chapters 1-13 (MD) an
 
 ## Rule after 0.6 (Radek, 2026-10-13; the authority)
 
-0.6.0 was released on 2026-10-14. Next: 0.6.1. CI runs the ROM-free suite on every push to main; the firmware E2E runs locally
+0.6.0 was released on 2026-10-14. 0.7.0 is being cut on release/0.7.0 (2026-10-15); B-133 still open. CI runs the ROM-free suite on every push to main; the firmware E2E runs locally
 before each tag (`scripts/mdmm-e2e.sh`, a real pass/fail gate); the dev loop is build and the change's own test
 (`scripts/mdmm-check.sh`). Short form: CLAUDE.md "Development lifecycle".
 
