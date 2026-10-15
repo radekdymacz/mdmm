@@ -73,7 +73,7 @@ const DOCKN={locks:"Lock parameter",arp:"Arpeggiator",trn:"Transpose",trig:"Trig
 /* the fourth tab is the kit's: TRIG SETUP on a synth track, the MIDI PAGE on a MIDI track (it stays the fourth when the track changes) */
 function dockOf(t){const midi=isMidiT(t);if(S.dock==="midipage")S.dock="midi";if(!DOCKN[S.dock])S.dock="locks";if(S.dock==="midi"&&!midi)S.dock="trig";if(S.dock==="trig"&&midi)S.dock="midi";return S.dock}
 function dockTabs(t){const midi=isMidiT(t),tabs=[["locks","Locks"],["arp","Arp"],["trn","Transpose"],midi?["midi","MIDI page"]:["trig","Trig setup"]];
- return`<span class="docktabs" role="tablist">${tabs.map(([k,n])=>`<button role="tab" class="lkey" data-dock="${k}" aria-selected="${S.dock===k}"${S.dock===k&&k!=="locks"?` title="${dkAttr(dockHelp(t,k)[1])}"`:""}><i class="led"></i>${n}</button>`).join("")}</span>`}
+ return`<span class="docktabs" role="tablist">${tabs.map(([k,n])=>`<button role="tab" class="lkey" data-dock="${k}" aria-selected="${S.dock===k}"${S.dock===k&&k!=="locks"?` title="${dkAttr(dockHelp(t,k)[0])}"`:""}><i class="led"></i>${n}</button>`).join("")}</span>`}
 function dockBody(t){if(S.dock==="locks")return`<div class="scroll" id="lanescroll"><div class="lanebox"><div class="lane" id="lane" style="grid-template-columns:${cols()}"></div><svg class="lanesvg" id="lanesvg"></svg></div></div>`;
  if(S.dock==="arp")return arpPanel(t);if(S.dock==="trn")return trnPanel(t);if(S.dock==="trig")return trigPanel(t);return midiPanel(t)}
 /* the roll takes the stack width from CSS (.nlane width:0; min-width:100%), so the canvas bitmap size (dpr) never widens the grid */

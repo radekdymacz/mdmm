@@ -358,6 +358,14 @@ document.addEventListener("wheel", e => { const v = e.target.closest?.(".gv[data
 /* how much a dragged value moves a notch: the percentages two */
 const gvDragStep = k => k === "dens" || k === "amt" || k === "racc" ? 2 : 1;
 
+/* the step-gesture popup (the ? key): it opens above the key and is kept fully inside the window, right of the track list (it is measured while hidden, then shifted) */
+function legendFit(box) {
+	const p = box && box.querySelector(".glegpop"); if (!p) return;
+	p.style.transform = ""; const r = p.getBoundingClientRect(), rail = document.querySelector("#rail"), lo = (rail ? rail.getBoundingClientRect().right : 0) + 8, hi = innerWidth - 8;
+	const dx = r.left < lo ? lo - r.left : r.right > hi ? hi - r.right : 0; if (dx) p.style.transform = `translateX(${dx}px)`;
+}
+for (const ev of ["mouseover", "focusin"]) document.addEventListener(ev, e => { const b = e.target.closest?.(".steplegend"); if (b) legendFit(b); });
+
 /* ---- shared/deskLaneShapes.js ---- */
 "use strict";
 /* The lock lane's shapes (both editors; the lane toolbox of mdStudio/mdDeskLaneTools.js, the MM page's own). Pure data and
@@ -3234,7 +3242,7 @@ function tempoLocked(){if(!S.hostTempo)return false;toast("The DAW sets the temp
 function ref(el){const d=el.dataset,t=d.t!=null?+d.t:S.sel,tr=trk(t),g=d.g;
  if(PAGES.includes(g)||g==="MID")return[tr.v[g],+d.n,meta(t,g,+d.n),t,g];
  switch(g){case"lev":return[tr,"lev",{name:"LEV",max:127},t,g];case"menv":return[S.menv,d.n,{name:d.n,max:127},t,g];
-  case"arp":return[tr.arp,d.n,{name:d.n,...{SPD:{max:127},RNGE:{en:["—",...Array.from({length:9},(_,k)=>(k+1)+" OCT")]},OJMP:{max:15}}[d.n]},t,g];
+  case"arp":return[tr.arp,d.n,{name:d.n,...{SPD:{max:127},RNGE:{en:["—",...Array.from({length:9},(_,k)=>(k+1)+" OCT")]},OJMP:{max:15},len:{max:16,def:8}}[d.n]},t,g];
   case"trn":return[tr.tr,"TRACK",{name:"TRACK",max:127,signed:1},t,g];case"ptrn":return[S,"patTrn",{name:"PAT",max:127,signed:1},t,g];
   case"key":return[tr.tr,"KEY",{name:"KEY",en:KEYS},t,g];
   case"asg":{const r=tr.assign.tabs[S.asTab][+d.n];return[r,"add",{name:"ADD",max:127,signed:1},t,g]}
@@ -3250,17 +3258,18 @@ const getV=el=>{const[o,n]=ref(el);return o[n]};
 function controlAll(t0,g,i,d){for(let t=0;t<6;t++){if(t===t0)continue;const tr=trk(t);if(g==="SYN"&&!MACH[tr.m].p[i])continue;tr.v[g][i]=clamp(tr.v[g][i]+d,0,maxOf(meta(t,g,i)))}}
 function pagesCopy(t){const v=trk(t).v,o={};PAGES.forEach(pg=>o[pg]=[...v[pg]]);return o}
 function controlAllFrom(t0,before){PAGES.forEach(pg=>trk(t0).v[pg].forEach((x,i)=>{if(x!==before[pg][i])controlAll(t0,pg,i,x-before[pg][i])}))}
-function setV(el,v){const[o,n,m,t,g]=ref(el);v=clamp(Math.round(v),0,maxOf(m));if(o[n]===v)return;const d=v-o[n];o[n]=v;
+function setV(el,v){const[o,n,m,t,g]=ref(el);v=clamp(Math.round(v),g==="arp"&&n==="len"?1:0,maxOf(m));if(o[n]===v)return;const d=v-o[n];o[n]=v;
  if(PAGES.includes(g)||g==="MID"){const all=drag&&drag.all&&drag.el===el&&PAGES.includes(g),before={};if(all)for(let k=0;k<6;k++)if(k!==t)before[k]=pagesCopy(k);
   edit("param",{t,page:g==="MID"?7:PAGES.indexOf(g),i:+n,v});if(all){controlAll(t,g,+n,d);editParams(before)}}
  else if(g==="lev")edit("level",{t,v});
- else if(g==="arp")edit("arp",n==="SPD"?{t,field:"speed",v:clamp(v-1,0,127)}:n==="RNGE"?{t,field:"range",v:clamp(v-1,0,8)}:{t,field:"ojmp",v});
+ else if(g==="arp")edit("arp",n==="SPD"?{t,field:"speed",v:clamp(v-1,0,127)}:n==="RNGE"?{t,field:"range",v:clamp(v-1,0,8)}:n==="len"?{t,field:"length",v}:{t,field:"ojmp",v});
  else if(g==="trn")edit("transpose",{t,v:v-64});else if(g==="ptrn")edit("transpose",{v:v-64});else if(g==="key")edit("transpose",{t,key:v});
  else if(g==="cc")edit("midiTrack",{t:t-6,cc:[...trk(t).cc]});
  else if(g==="menv")edit("multiEnv",{i:["ATK","DEC","SUS","REL","PORT"].indexOf(n),v});
  else if(g==="asg")edit("assign",{t:asgT(),src:ASRC[S.asTab],row:+el.dataset.n,add:v-64});
  else if(g==="src"||g==="link")ctlChanged();else if(g==="mmap")edit("multiMap",{i:+el.dataset.i,[n]:mmapFw(n,v)});
  if(g.startsWith("LF")&&(+el.dataset.n<2)){if(+el.dataset.n===0)o[1]=0;render();return}
+ if(g==="arp"&&n==="len")renderArp();
  syncControls();redraw()}
 function pc(g,n,{t,label,cls="",extra=""}={}){if(n==null)return`<div class="pc empty" aria-hidden="true"></div>`;
  return`<div class="pc ${cls}" role="slider" tabindex="0" data-g="${g}" data-n="${n}"${t!=null?` data-t="${t}"`:""} ${extra} aria-label="${label||n}"><span>${label||n}</span><b></b></div>`}
@@ -3407,7 +3416,7 @@ const DOCKN={locks:"Lock parameter",arp:"Arpeggiator",trn:"Transpose",trig:"Trig
 /* the fourth tab is the kit's: TRIG SETUP on a synth track, the MIDI PAGE on a MIDI track (it stays the fourth when the track changes) */
 function dockOf(t){const midi=isMidiT(t);if(S.dock==="midipage")S.dock="midi";if(!DOCKN[S.dock])S.dock="locks";if(S.dock==="midi"&&!midi)S.dock="trig";if(S.dock==="trig"&&midi)S.dock="midi";return S.dock}
 function dockTabs(t){const midi=isMidiT(t),tabs=[["locks","Locks"],["arp","Arp"],["trn","Transpose"],midi?["midi","MIDI page"]:["trig","Trig setup"]];
- return`<span class="docktabs" role="tablist">${tabs.map(([k,n])=>`<button role="tab" class="lkey" data-dock="${k}" aria-selected="${S.dock===k}"${S.dock===k&&k!=="locks"?` title="${dkAttr(dockHelp(t,k)[1])}"`:""}><i class="led"></i>${n}</button>`).join("")}</span>`}
+ return`<span class="docktabs" role="tablist">${tabs.map(([k,n])=>`<button role="tab" class="lkey" data-dock="${k}" aria-selected="${S.dock===k}"${S.dock===k&&k!=="locks"?` title="${dkAttr(dockHelp(t,k)[0])}"`:""}><i class="led"></i>${n}</button>`).join("")}</span>`}
 function dockBody(t){if(S.dock==="locks")return`<div class="scroll" id="lanescroll"><div class="lanebox"><div class="lane" id="lane" style="grid-template-columns:${cols()}"></div><svg class="lanesvg" id="lanesvg"></svg></div></div>`;
  if(S.dock==="arp")return arpPanel(t);if(S.dock==="trn")return trnPanel(t);if(S.dock==="trig")return trigPanel(t);return midiPanel(t)}
 /* the roll takes the stack width from CSS (.nlane width:0; min-width:100%), so the canvas bitmap size (dpr) never widens the grid */
@@ -3896,9 +3905,9 @@ function genNotesHtml(sp,t,bare){const n=sp.notes;if(!n||sp.kind==="keep"||isMid
   +gv("nrange","Range",n.range+" oct","One or two octaves from the root")+seed,"The rhythm decides when, the notes what: they go to the hits the rhythm writes (every hit; in ADD the new ones, in THIN none)")}
 /* the step gestures behind a small ? key (a click: the list of keys) */
 function stepLegend(){const midi=isMidiT(S.sel),row=(cls,what,how)=>`<span>${cls!=null?`<i class="lg on ${cls}"></i>`:`<i class="lg none"></i>`}<b>${what}</b>${how}</span>`;
- return`<span class="steplegend"><button class="glegkey" id="steplegend" aria-label="Step gestures" aria-describedby="steplegpop">?</button><span class="legend glegpop" id="steplegpop" role="tooltip">${row("","Note","click in the roll; drag up or down for pitch, sideways to paint (alt: erase)")}${midi?"":row("g","Trigless","no envelope trigs (the ENV row)")}${row("y","Note off","alt-click an empty step")}${row("lk","Has locks","a lock on the step")}${row(null,"Fill","⌘-click: every 2nd step from there to the end gets the note (from a note: off); ⌘⇧-click: every 4th")}<small>? the list of keys</small></span></span>`}
+ return`<span class="steplegend"><button class="glegkey" id="steplegend" aria-label="Step gestures" aria-describedby="steplegpop">?</button><span class="legend glegpop" id="steplegpop" role="tooltip">${row("","Note","click in the roll; drag up or down for pitch, sideways to paint (alt: erase)")}${midi?"":row("g","Trigless","no envelope trigs (the ENV row)")}${row("y","Note off","alt-click an empty step")}${row("lk","Has locks","a lock on the step")}${row(null,"Fill","⌘-click: every 2nd step from there to the end gets the note (from a note: off); ⌘⇧-click: every 4th")}${S.dock==="arp"&&!midi?row(null,"Arp",dockHelp(S.sel,"arp")[1]):""}<small>? the list of keys</small></span></span>`}
 /* the bar under the roll: the step legend, the roll's keys, the page keys (the lane toolbox is on the lock lane's header row, 70-seq.js) */
-function genBarHtml(){return`<div class="genbar">${stepLegend()}${rollKeysHtml()}${pageKeys()}</div>`}
+function genBarHtml(){return`<div class="genbar">${rollKeysHtml()}${stepLegend()}<i class="gdiv"></i>${pageKeys()}</div>`}
 /* ===== The GEN dialog (Radek, 2026-10-14; the Machinedrum Editor's mdDeskGenUi.js has the same one). Opened by the dice key of a track
    in the rail; it fills that track. One session: opening it starts one, DONE (Enter) keeps what it wrote, CANCEL (Esc) takes it back
    (Undo, once for each run the session made: a run is one undo step, and the session has one run for each track it was on). The
@@ -4377,11 +4386,10 @@ function arpTicks(t,span){const tr=trk(t),a=tr.arp;if(!a.MODE||!a.SPD)return[];i
  for(let k=0;k*tl<span.e-span.s&&k<256;k++){const r=k%a.len;if(!a.rhy[r])continue;out.push({x:span.s+k*tl,w:tl,n:seq[k%seq.length]+a.ofs[r]})}return out}
 /* a lane-style key per arp step: the offset is a bipolar LED meter from the middle line (±24 = the half key) */
 /* only the arp's length is drawn (as the grid fits the pattern's length), one step after it is a "+" that adds a step */
-const arpCols=a=>`repeat(${a.len},minmax(0,1fr))${a.len<16?" 56px":""}`;
+const arpCols=a=>`repeat(${a.len},minmax(0,1fr))`;
 function arpCells(a){const n=a.len,cells=Array.from({length:n},(_,k)=>{const o=a.ofs[k],on=a.rhy[k],f=(Math.abs(o)/24).toFixed(4);
  return`<div class="ac ${on?"":"mute"}" data-ac="${k}" title="Step ${k+1}: ${on?"plays, offset "+(o>0?"+":"")+o:"muted"}. Click = mute, drag = offset.">`+`<span class="z"></span><i class="${o>=0?"up":"dn"}" style="${o>=0?`bottom:50%;height:max(2px,calc((50% - 8px)*${f}))`:`top:50%;height:calc((50% - 8px)*${f})`}"></i><b>${o?(o>0?"+":"")+o:k+1}</b></div>`});
- if(n<16)cells.push(`<div class="ac na add" data-ac="${n}" title="Add step ${n+1}: the arp gets one step longer"><b>+</b></div>`);return cells.join("")}
-const arpLenRow=a=>Array.from({length:a.len},(_,k)=>`<button class="on" data-arplen="${k+1}" aria-label="Length ${k+1}" title="Length ${k+1}: the arp ends after this step (the LEVEL knob)"></button>`).join("")+(a.len<16?"<span></span>":"");
+ return cells.join("")}
 /* The dock's tabs share one layout, the lock lane's: the rail's LOCK PARAMETER keys area holds the panel's
    choices as keys (a group label over each row, the lock-parameter key style), the dock body holds one row of
    value boxes on eight fixed columns and the panel's picture under it, down to the lane's bottom line. The
@@ -4445,8 +4453,6 @@ ED.dktrig={geo(W,H,c){const a=trk(S.sel).v.AMP,e=ampTimes(a)||{at:0,ho:0,de:Infi
   if(G.inf){g.fillStyle=ink;g.beginPath();g.moveTo(G.x1+7,G.Y(1));g.lineTo(G.x1,G.Y(1)-4);g.lineTo(G.x1,G.Y(1)+4);g.fill()}
   else{g.setLineDash([3,3]);g.strokeStyle=inkA(.6);g.lineWidth=1;g.beginPath();g.moveTo(Math.round(end)+.5,G.T-6);g.lineTo(Math.round(end)+.5,G.B);g.stroke();g.setLineDash([]);
    g.fillStyle=ink;const t="≈"+dkSteps(G.tot);g.fillText(t,Math.min(G.x1-t.length*5,end+4),G.T)}
-  /* segment names, inside the shape where they fit */
-  [["ATK",0,G.at],["HOLD",G.at,G.at+G.ho],["DEC",G.at+G.ho,G.inf?G.span:G.tot]].forEach(([n,s0,s1])=>{const w=G.X(s1)-G.X(s0);if(w<n.length*6+4)return;g.fillStyle=ink;g.fillText(n,(G.X(s0)+G.X(Math.min(s1,G.span)))/2-n.length*3,G.B-5)});
   dkLabel(g,G.inf?"One gate · DEC 127 holds to the NOTE OFF":"One gate · steps after the trig");
   /* the glide: note 1 low, note 2 high, starting before note 1 ends (they overlap); the line is the pitch */
   const L=this.leg(W,H),on=["amp","flt","lfo"].filter(k=>tr.leg[k]);g.fillStyle=inkA(.2);g.fillRect(G.g0-14,6,1,H-12);
@@ -4514,11 +4520,11 @@ const dkScale=(a,b,c)=>`<div class="dkscale" aria-hidden="true"><b>${a}</b><b>${
    place, so a dot being dragged keeps its canvas. */
 function syncDock(){const v=$("#dkvis[data-live]");if(!v||S.ws!=="seq")return;const t=S.sel,d=S.dock;if(v.querySelector("canvas.ed"))redraw();else v.innerHTML=dockVis(t,d);const r=$("#dkread");if(r)r.innerHTML=dockRead(t,d)}
 function arpPanel(t){const a=trk(t).arp;
- return`${dkVals([pc("arp","SPD",{t}),pc("arp","RNGE",{t}),pc("arp","OJMP",{t})],"dk3")}<div class="dkvis" id="dkvis">
-  <div class="arptrack" id="arptrack" style="grid-template-columns:${arpCols(a)}" title="Rhythm + offset: click a step to mute it, drag it up or down for an offset (−24…+24), click + to add a step">${arpCells(a)}</div>
-  ${dkScale("+24","0","−24")}<div class="arplenrow" style="grid-template-columns:${arpCols(a)}">${arpLenRow(a)}</div></div>`}
+ return`<div class="dkvis" id="dkvis">
+  <div class="arptrack" id="arptrack" style="grid-template-columns:${arpCols(a)}" title="Rhythm + offset: click a step to mute it, drag it up or down for an offset (−24…+24). LEN sets how many steps there are">${arpCells(a)}</div>
+  ${dkScale("+24","0","−24")}</div>${dkVals([pc("arp","SPD",{t}),pc("arp","RNGE",{t}),pc("arp","OJMP",{t}),pc("arp","len",{t,label:"LEN"})],"dk4")}`}
 function trnPanel(t){return`${dkVals([pc("trn","TRACK",{t,label:"TRACK"}),pc("ptrn","PAT",{t,label:"PAT · all"})])}<div class="dkvis" id="dkvis" data-live="1">${dockVis(t,"trn")}</div>`}
-function trigPanel(t){return`${dkVals([pc("AMP",0,{t,label:"ATK"}),pc("AMP",1,{t,label:"HOLD"}),pc("AMP",2,{t,label:"DEC"}),pc("AMP",7,{t,label:"PORT"})],"dktv")}<div class="dkvis" id="dkvis" data-live="1">${dockVis(t,"trig")}</div>`}
+function trigPanel(t){return`<div class="dkvis" id="dkvis" data-live="1">${dockVis(t,"trig")}</div>${dkVals([pc("AMP",0,{t,label:"ATK"}),pc("AMP",1,{t,label:"HOLD"}),pc("AMP",2,{t,label:"DEC"}),pc("AMP",7,{t,label:"PORT"})],"dktv")}`}
 function midiPanel(t){const tr=trk(t);
  return`${dkVals([0,1,2,3,4,5,6,7].map(i=>pc("MID",i,{t,label:i<4?FIXED.MID[i]:"CC "+(tr.cc[i-4]===128?"AFT":tr.cc[i-4])})))}<div class="dkvis" id="dkvis">${dkVals([0,1,2,3].map(()=>`<span class="dkcell"></span>`).concat([0,1,2,3].map(i=>pc("cc",i,{t,label:"CL"+(i+1)}))),"dkvals2")}</div>`}
 
@@ -6049,7 +6055,7 @@ const dragging=()=>!!(drag||active||laneDraw||arpDrag||joyDrag||splitDrag||rollD
 function joyAt(e){const r=$("#joy").getBoundingClientRect();S.joy={x:clamp((e.clientX-r.left)/r.width*2-1,-1,1),y:clamp(1-(e.clientY-r.top)/r.height*2,-1,1)};const k=$("#knobj");k.style.left=(50+S.joy.x*42)+"%";k.style.top=(50-S.joy.y*42)+"%";
  const tr=S.tracks[asgT()],A=tr.assign,rows=A.tabs[S.asTab];const amt=S.asTab==="JOY U"?Math.max(0,S.joy.y):S.asTab==="JOY D"?Math.max(0,-S.joy.y):A.mirr?S.joy.x:Math.max(0,S.joy.x);
  $("#kbinfo")&&($("#kbinfo").textContent=rows.map(r=>`${LPAGES[r.pg]} ${destNames(asgT(),r.pg)[r.d]} ${Math.round((r.add-64)*amt)>=0?"+":""}${Math.round((r.add-64)*amt)}`).join(" · "));tx();if(HOST.joy)HOST.joy(S.joy)}
-function renderArp(){const el=$("#arptrack");if(!el)return;const a=trk(S.sel).arp;el.innerHTML=arpCells(a);el.style.gridTemplateColumns=arpCols(a);const lr=$(".arplenrow");if(lr){lr.innerHTML=arpLenRow(a);lr.style.gridTemplateColumns=arpCols(a)}const c2=$("#arpcap");if(c2)c2.textContent="Rhythm + offset · "+a.len+" steps";$$(".mrowg .rowst").length&&0;redraw()}
+function renderArp(){const el=$("#arptrack");if(!el)return;const a=trk(S.sel).arp;el.innerHTML=arpCells(a);el.style.gridTemplateColumns=arpCols(a);const c2=$("#arpcap");if(c2)c2.textContent="Rhythm + offset · "+a.len+" steps";$$(".mrowg .rowst").length&&0;redraw()}
 /* I-022: a value typed (shared/deskValueEdit.js): ⌘-click a value box or fader, or Enter on one that has the focus. What
    may be typed is what the box shows (a list's names, a signed value as -64 to +63, PAN as L12 / C / R5 or the number);
    one edit, its own undo step (commit before and after) */
@@ -6062,7 +6068,7 @@ main.addEventListener("wheel",e=>{
  const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el){e.preventDefault();const d=(e.deltaY||e.deltaX)<0?1:-1;setV(el,getV(el)+d*(e.shiftKey?10:1));return}
  const st=e.target.closest(".mst");if(st){const t=+st.dataset.t,s=+st.dataset.s,x=trk(t).steps[s];if(!x?.n)return;e.preventDefault();const d=((e.deltaY||e.deltaX)<0?1:-1)*(e.shiftKey?12:1);x.n=x.n.map(n=>clamp(n+d));editStep(t,s);refreshRow(t);return}
  const roll=e.target.closest("canvas.roll[data-big]");if(roll){e.preventDefault();const t=+roll.dataset.t;S.rollLoT[t]=clamp((S.rollLoT[t]??S.rollLo)+((e.deltaY)<0?1:-1)*(e.shiftKey?12:2),0,127-ROWS);redraw()}},{passive:false});
-main.addEventListener("dblclick",e=>{const el=e.target.closest(".pc[data-g]");if(el&&!ValueEdit.isOpenClick(e)){const m=ref(el)[2];setV(el,m.en?0:m.signed?64:64)}});
+main.addEventListener("dblclick",e=>{const el=e.target.closest(".pc[data-g]");if(el&&!ValueEdit.isOpenClick(e)){const m=ref(el)[2];setV(el,m.def??(m.en?0:64))}});
 main.addEventListener("keydown",e=>{const el=e.target.closest("[data-g]");if(!el)return;if(e.key==="Enter"&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&el.matches(".pc,.fader")){e.preventDefault();ValueEdit.open(el,ValueBox);return}const d={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1,PageUp:10,PageDown:-10}[e.key];if(d==null)return;e.preventDefault();setV(el,getV(el)+d*(e.shiftKey?10:1))});
 
 /* ===== Clicks ===== */
@@ -6099,7 +6105,7 @@ document.addEventListener("click",e=>{
   if(k==="loopkind"){const r=S.song[S.songSel];r.type=v;if(v==="halt")r.to=S.songSel;if(v==="jump"&&r.to<=S.songSel)r.to=Math.min(S.song.length-1,S.songSel+1);if(v==="loop"){if(!r.count)r.count=2;if(r.to>=S.songSel)r.to=Math.max(0,S.songSel-1)}editRow();render();return}}
  const at=e.target.closest("[data-arptrig]");if(at){const a=trk(S.sel).arp,k=at.dataset.arptrig;a[k]=a[k]?0:1;edit("arp",{t:S.sel,field:"trigs",v:(a.amp?1:0)|(a.flt?2:0)|(a.lfo?4:0)});render();return}
  const lg=e.target.closest("[data-leg]");if(lg){const l=trk(S.sel).leg,k=lg.dataset.leg;l[k]=l[k]?0:1;edit("legato",{t:S.sel,env:{amp:"amp",flt:"filter",lfo:"lfo"}[k],on:!!l[k]});render();return}
- const al=e.target.closest("[data-arplen]");if(al){trk(S.sel).arp.len=+al.dataset.arplen;edit("arp",{t:S.sel,field:"length",v:+al.dataset.arplen});renderArp();return}
+ 
  const rl=e.target.closest("[data-roll]");if(rl){S.rollLo=clamp(S.rollLo+ +rl.dataset.roll,0,127-ROWS);render();return}
  if(e.target.closest("#ghost")){S.ghost=!S.ghost;render();return}
  const lw=e.target.closest("[data-lwave]");if(lw){editTrack(S.sel,()=>{V(lw.dataset.lwave)[3]=+lw.dataset.w});render();return}
