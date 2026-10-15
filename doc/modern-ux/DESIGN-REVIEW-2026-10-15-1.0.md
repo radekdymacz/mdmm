@@ -27,6 +27,7 @@ fixed before the tag:
 
 1. **Update manifest accepts only schema 1** (mdmmUpdate/updateCore.cpp:211). A schema 2 feed makes every 1.0 build go
    silent. Fix: accept schema >= 1 and read only known fields, or write down "schema 1 is append-only forever".
+   **Done (fix/1.0-ci-release):** the reader accepts schema 1 or newer and reads only the fields it knows.
 2. **Project setup is all-or-nothing and needs an exact version** (mdDesk/mdDeskSetup.cpp:36-38, deskCore/deskMod.cpp,
    mdDesk/mdDesk.cpp:425). A 1.1 project with one new member loses every modulator, knob CC and solo in 1.0, with no
    message. A rejected setup also keeps the previous project's setup. Fix: one shared setup codec that ignores unknown
@@ -43,13 +44,14 @@ Do 1 to 5 as one short hammock: "what 1.0 promises to read forever", then the co
 ## Before 1.0 (should-fix)
 
 **Security and release**
-- The update key is still the placeholder (mdmmUpdate/updateKey.h:14). In-app install is off. Decide: ship 1.0 with
-  the real key, or with installs off.
-- Packages are unsigned and no checksums are published. Publish SHA256SUMS with each release; sign and notarise when
+- The update key is still the placeholder (mdmmUpdate/updateKey.h:14). In-app install is off. **Not done: no
+  auto-update (Radek, 2026-10-15).** No key is set and the install code is untouched; the update check stays.
+- Packages are unsigned and no checksums are published. Publish SHA256SUMS with each release (**done**: the release workflow's `checksums` job); sign and notarise when
   the Apple account exists (the workflow already supports it).
 - Pin third-party actions by SHA (sccache-action, msvc-dev-cmd) and pin wrangler in the site release; it holds the
-  Cloudflare token.
+  Cloudflare token. **Done:** all actions by SHA, wrangler@4.149.0, site workflow's write permissions per job.
 - Before installs go on: stage updates in a private 0700 temp dir, not a fixed shared path (mdUpdater.cpp:82-86, 560-585).
+  **Not done: no auto-update (Radek, 2026-10-15).**
 
 **Real-time and performance**
 - The audio thread takes the device mutex (synthLib/plugin.cpp:111-122) that 57 other call sites also take, some on
@@ -69,7 +71,7 @@ Do 1 to 5 as one short hammock: "what 1.0 promises to read forever", then the co
 
 **Build and CI**
 - Core CI on push to main skips the core's own tests (deskCoreTest, mdDeskTest, mmDeskTest, elektronDataTest,
-  mdPageBridgeTest, mdmmUpdateTest, page tests). One-line fix: `ctest -L UnitTest` in mdmm-core.yml.
+  mdPageBridgeTest, mdmmUpdateTest, page tests). One-line fix: `ctest -L UnitTest` in mdmm-core.yml. **Done (fix/1.0-ci-release):** by label, `scripts/mdmm-ci-unit-targets.py`.
 
 **Simplicity (reduces what 1.0 must support)**
 - Delete the dead panel editor: `mdEditor.cpp` (2,093 lines), the `mdDefault`/`mmSfx60` skins and the panel-feel
