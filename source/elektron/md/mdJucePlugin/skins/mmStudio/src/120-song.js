@@ -1,8 +1,8 @@
 
 /* ===== Song (from the MD Editor, with the MM's per-row transpose, 6 + 6 mutes, 200 rows) ===== */
 const T64=()=>Array(12).fill(64);
-S.song=[{pat:0,rep:2},{pat:1,rep:2,trn:69},{pat:0,rep:2,mutes:[3]},{pat:2,rep:1,ofs:8,len:16},{pat:1,rep:2,ttr:[64,64,64,71,64,64,64,64,64,64,64,64]},{pat:3,rep:1,bpm:124,mutes:[4,7]},{type:"loop",to:1,count:2},{type:"end"}];
-S.songSel=1;S.bank=0;
+S.song=[{type:"end"}];
+S.songSel=0;S.bank=0;
 /* the row's rarer settings (per-track transpose, part, mutes) behind MORE, as the Machinedrum Editor's Song (2026-10) */
 S.songMore=false;
 function patLen(p){return p===S.pat?S.len:S.patInfo[p].len}

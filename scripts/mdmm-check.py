@@ -294,10 +294,10 @@ def check_map(rows):
 			problems.append(f"{path} takes {got}, not {want}")
 	# the design sources are not documentation: they take the tests and journeys of the page they make (the canonical
 	# sources used to fall to doc/* and select nothing; development-process-0.6.md finding 3)
-	for path, tests_want, page_want in [("doc/modern-ux/mm-mockup/src/70-seq.js", "mmViewPageTest", ["mm-seq-*"]),
-			("doc/modern-ux/mm-mockup/src/120-song.js", "mmViewPageTest", ["mm-song-*"]),
-			("doc/modern-ux/mm-mockup/src/55-host.js", "mmViewPageTest", ["mm-*"]),
-			("doc/modern-ux/mm-mockup/src/25-mm.css", "deskCompatPageTest", ["mm-*"]),
+	for path, tests_want, page_want in [("source/elektron/md/mdJucePlugin/skins/mmStudio/src/70-seq.js", "mmViewPageTest", ["mm-seq-*"]),
+			("source/elektron/md/mdJucePlugin/skins/mmStudio/src/120-song.js", "mmViewPageTest", ["mm-song-*"]),
+			("source/elektron/md/mdJucePlugin/skins/mmStudio/src/55-host.js", "mmViewPageTest", ["mm-*"]),
+			("source/elektron/md/mdJucePlugin/skins/mmStudio/src/25-mm.css", "deskCompatPageTest", ["mm-*"]),
 			("doc/modern-ux/mockup/index.html", "deskCompatPageTest", ["md-*"]),
 			("source/elektron/md/mdJucePlugin/skins/mmStudio/mmOverrides.css", "deskCompatPageTest", ["mm-*"]),
 			("source/elektron/md/mdJucePlugin/skins/mmStudio/mmView.js", "mmViewPageTest", ["mm-*"])]:
@@ -308,7 +308,7 @@ def check_map(rows):
 	p = Plan(["source/elektron/md/mmDesk/mmDeskEdit.cpp"], rows)
 	if p.ctest_all or p.ctest != ["mmDeskTest"] or p.page != ["mm-*"]:
 		problems.append(f"mmDeskEdit.cpp selects {p.ctest} (all: {p.ctest_all}), journeys {p.page}")
-	p = Plan(["doc/modern-ux/mm-mockup/src/70-seq.js", "source/elektron/md/mdJucePlugin/skins/mmStudio/mmMockup.js"], rows)
+	p = Plan(["source/elektron/md/mdJucePlugin/skins/mmStudio/src/70-seq.js", "source/elektron/md/mdJucePlugin/skins/mmStudio/mmMockup.js"], rows)
 	if p.page != ["mm-seq-*"]:
 		problems.append(f"a source with its generated page selects journeys {p.page}, not mm-seq-*")
 	# the preview's scenarios take their own check and nothing wider (a scenario is data the contract judges)

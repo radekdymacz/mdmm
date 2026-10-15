@@ -78,14 +78,13 @@ global.Modal = { top: () => "libpop" };
 check(!DeskMenu.wantsEditor(ev(null)), "while a dialog or panel is open: not");
 delete global.Modal;
 check(/DeskMenu\.wantsEditor\(e\)/.test(read("../mdStudio/mdDeskLive.js"))
-	&& /DeskMenu\.wantsEditor\(e\)/.test(fs.readFileSync(path.join(HERE, "../../../../../../doc/modern-ux/mm-mockup/src/130-main.js"), "utf8")), "both pages ask it");
+	&& /DeskMenu\.wantsEditor\(e\)/.test(read("../mmStudio/src/130-main.js")), "both pages ask it");
 
 /* the wiring: both pages ask for the menu and draw the answer; the MM page has the file; the window answers it */
-const R = path.join(HERE, "../../../../../..");
 const live = read("../mdStudio/mdDeskLive.js"), adapter = read("../mmStudio/mmAdapter.js");
 check(/op: "openMenu"/.test(live) && /m\.type === "editorMenu" && !CpuMeter\.takeMenu\(m\)\) DeskMenu\.showEditor/.test(live), "the Machinedrum page asks for the menu and draws the answer (unless the CPU meter asked for it, I-018)");
 check(/send\(\{ op: "openMenu" \}\)/.test(adapter) && /m\.type === "editorMenu"\) \{ if \(!CpuMeter\.takeMenu\(m\)\) DeskMenu\.showEditor/.test(adapter), "the Monomachine page too");
-check(/\$SHARED\/deskMenu\.js/.test(fs.readFileSync(path.join(R, "doc/modern-ux/mm-mockup/build.sh"), "utf8")), "the Monomachine page loads deskMenu.js (build.sh)");
+check(/^js +shared\/deskMenu\.js$/m.test(read("../mmStudio/src/page.txt")), "the Monomachine page loads deskMenu.js (mmStudio/src/page.txt)");
 check(/<script src="deskMenu\.js"><\/script>/.test(read("../mdStudio/mdStudio.html")), "the Machinedrum page loads deskMenu.js");
 check(/\["#deskmenu", "menu", "closeDeskMenu"\]/.test(read("deskModal.js")), "the modal layer knows it (Esc, a click outside)");
 const editor = fs.readFileSync(path.join(HERE, "../../mdPageEditor.cpp"), "utf8"), state = fs.readFileSync(path.join(HERE, "../../mdPluginEditorState.cpp"), "utf8");

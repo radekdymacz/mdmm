@@ -2,7 +2,7 @@
    Every shortcut is an entry of Keys: the ? overlay is generated from it, so it lists what the keys really do.
    An entry with run() is dispatched by the one handler (in order, the first match wins); one without run() is
    handled next to its own code and only described. The dispatcher (Keys) is skins/shared/deskKeys.js, both
-   editors' one file, included just before this one (build.sh). */
+   editors' one file, included just before this one (src/page.txt). */
 
 /* ===== The ? keyboard view =====
    The map's rules, as the MD Editor's: plain keys play (the home row, Z / X octave, C / V velocity, Space); a plain

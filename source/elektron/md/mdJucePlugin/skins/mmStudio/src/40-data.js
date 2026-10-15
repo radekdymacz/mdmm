@@ -1,6 +1,7 @@
 "use strict";
 /* ===================================================================
-   Monomachine Editor mockup. Example state follows the OS 1.32 manual.
+   Monomachine Editor page (OS 1.32). It starts empty (50-state.js); the browser
+   mockup's example is its own (doc/modern-ux/mm-mockup/demo/).
    Values are firmware units (0-127, or small enums); display converts.
    =================================================================== */
 

@@ -18,7 +18,7 @@ Radek's decision in [PLAN-0.6.md](PLAN-0.6.md) is the authority. The tiers below
   tag; there is no play-and-accept per change.
 - When you edit those scripts, run their self-tests: `python3 scripts/mdmm-check.py --check-map` and
   `node scripts/mdmm-e2e-selftest.mjs`.
-- The default tier leaves `mdmmIdentityTest` to `--branch`. A design source (`mm-mockup/src`, `mockup/index.html`) runs its
+- The default tier leaves `mdmmIdentityTest` to `--branch`. A design source (`skins/mmStudio/src`, `mockup/index.html`) runs its
   page's tests and its area's journeys; generated page files rely on the contract check; a skin row runs the editor's own
   page tests.
 
@@ -39,7 +39,7 @@ Live reload, by what you save:
 | a skin `.css` | the stylesheet is swapped in place, the page keeps its state |
 | a shared stylesheet or `*Overrides.css` | the sync script runs, then the stylesheet is swapped |
 | a skin `.js` or `.html` | the page reloads |
-| `mockup/index.html`, `mm-mockup/src/**` | the sync script runs, then CSS swaps or the page reloads |
+| `mockup/index.html`, `skins/mmStudio/src/**` | the sync script runs, then CSS swaps or the page reloads |
 | C++ under `source/elektron/md` | `deskStubHost` is rebuilt, the stub restarts, the page reloads |
 
 A failed sync or build shows its output in a red bar on the page and in the terminal. Measured on an M-series Mac: save to

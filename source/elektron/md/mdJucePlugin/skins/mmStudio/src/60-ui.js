@@ -19,7 +19,7 @@ function exampleDump(){if(S.engine==="emu"){S.patSent="recv";renderPst();clearTi
 /* An edit as the machine's intent (DESIGN-UNIFY.md 4.1): one vocabulary with the Machinedrum Editor, {op, args} in
    the contract's units (knob and lock values and song rows in the page's: the host translates). The gesture has
    changed the view's state already; the host sends the intent to its core, which applies it to the machine's own
-   documents, and shows its effect at once until the answer (the demo host, on its own: 54-demo.js). The undo step
+   documents, and shows its effect at once until the answer (the browser mockup's demo host: mm-mockup/demo/54-demo.js). The undo step
    is the gesture's (a commit ends it). */
 function edit(op,args){if(!S.genOwn)genEnd();tx();if(HOST.intent)HOST.intent(op,args)}
 /* a step of the view as the step intent's value: null, {off:true} or {n, a, f, l, notrig} */
