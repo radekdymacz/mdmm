@@ -267,6 +267,7 @@ function kbSaid(r) { const say = r.ok ? r.note : (r.errors || [])[0]; if (say) k
 function kbDown(e) {
 	if (e.repeat || KB.held.has(e.code)) return;
 	const t = S.sel, pitch = keyPitch(e.code.replace(/^Key/, ""), KB.oct); if (!V.tracks[t] || pitch == null) return;
+	if (S.ws === "mix" && audible(t)) DeskTrig.light([t]);
 	Bridge.send({ op: "noteOn", t, vel: KB.vel, pitch }, { onResult: kbSaid }); tx();
 	KB.held.set(e.code, { t, pitch });
 }

@@ -42,7 +42,7 @@ const MIXTIP={
 const mixBox=(g,n,i,label,tip)=>pc(g,n,{t:i,label,cls:"mini",extra:`title="${tip}"`});
 function mixStrip(tr,i){const fx=isFx(tr.m);
  return`<div class="strip6 ${i===S.sel?"sel":""}" data-sel="${i}" style="${audible(i)?"":"opacity:.5"}">
-   <div class="shead"><b>T${i+1}</b><b class="mc">${shortM(tr.m)}</b><span title="${tr.name}">${tr.name}</span></div>
+   <div class="shead"><span class="tn">${i+1}</span><b class="mc" title="${tr.name}">${shortM(tr.m)}</b><i class="trigsq" data-trig="${i}" aria-hidden="true" title="Flashes when T${i+1} trigs"></i></div>
    <div class="trim">${mixBox("AMP",5,i,"AMP VOL",MIXTIP.VOL)}${mixBox("AMP",4,i,"DIST",MIXTIP.DIST)}${mixBox("EFX",4,i,"DSND",MIXTIP.DSND)}</div>
    <div class="pc pan hz" role="slider" tabindex="0" data-g="AMP" data-n="6" data-t="${i}" aria-label="T${i+1} PAN" title="${MIXTIP.PAN}"><span>PAN</span><i class="pt"></i><b></b></div>
    <div class="lvl"><div class="scale" aria-hidden="true">${[127,96,64,32,0].map(v=>`<i style="bottom:${v/127*100}%">${v}</i>`).join("")}</div>

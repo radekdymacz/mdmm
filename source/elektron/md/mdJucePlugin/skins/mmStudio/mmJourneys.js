@@ -585,6 +585,28 @@ const MmJourneys = (() => {
 			{ say: "click M again", act: u => u.click(strip(0, ".ms.m")), screen: c => ok($1(strip(0, ".ms.m")).getAttribute("aria-pressed") === String(c.m0), "M " + $1(strip(0, ".ms.m")).getAttribute("aria-pressed")), machine: c => ok(synthMuted(0) === c.m0, "machine mute " + synthMuted(0)) }
 		]
 	};
+	/* The Mix strip heads: the track number, then the machine's short name (the full name the tooltip, an ellipsis when it does
+	   not fit), then a square that flashes when the track trigs while the sequencer plays (skins/shared/deskTrig.js); a muted
+	   track does not flash */
+	const mixHeads = {
+		name: "mm-mix-heads-trigs", proves: [],
+		steps: [
+			go("mix"),
+			{ say: "every strip head shows the number small, the machine's name and a trig square", screen: () => { const hs = $all(".strip6 .shead"); return ok(hs.length === 6 && hs.every((h, i) => h.querySelector(".tn")?.textContent === String(i + 1) && h.querySelector(".mc")?.textContent.length > 0 && h.querySelector(".mc").title && h.querySelector(".trigsq")), hs.length + " heads: " + hs.map(h => h.textContent.trim()).join(" | ")); } },
+			{ say: "the name is cut with an ellipsis, never clipped hard", screen: () => { const cs = getComputedStyle($1(".strip6 .shead .mc")); return ok(cs.textOverflow === "ellipsis" && cs.overflow === "hidden", cs.textOverflow + " " + cs.overflow); } },
+			{ say: "press PLAY for 2.5 s: the squares of tracks with trigs flash, the others never", act: async (u, c) => {
+				c.c0 = { ...DeskTrig.count }; c.fl = new Set(); const ob = new MutationObserver(ms => { for (const m of ms) if (m.target.classList?.contains("fl")) c.fl.add(+m.target.dataset.trig); });
+				ob.observe($1("#main"), { subtree: true, attributes: true, attributeFilter: ["class"] });
+				if (!S().playing) u.click("#play"); await until(() => S().playing, 5000); await sleep(2500); ob.disconnect();
+				c.with = [0, 1, 2, 3, 4, 5].filter(i => S().tracks[i].steps.slice(0, S().len).some(st => st && !st.off && st.a) && !S().tracks[i].mute); c.cnt = Object.keys(DeskTrig.count).filter(k => DeskTrig.count[k] !== (c.c0[k] || 0)).map(Number); },
+				screen: c => ok(c.fl.size > 0 && [...c.fl].every(i => c.with.includes(i)) && c.cnt.every(i => c.with.includes(i)), `drawn ${[...c.fl]}; counted ${c.cnt}; tracks with trigs ${c.with}`) },
+			{ say: "press STOP: every square is out", act: async u => { if (S().playing) u.click("#play"); await until(() => !S().playing, 5000); await sleep(500); }, screen: () => ok($all(".trigsq").every(e => e.getAnimations().length === 0), "a square still flashes") },
+			{ say: "click the M key of a track that has trigs", act: (u, c) => { c.t = c.with[0]; u.click(strip(c.t, ".ms.m")); }, screen: c => ok(!S().tracks[c.t] || S().tracks[c.t].mute, "not muted") },
+			{ say: "play 2 s again: the muted track's square never flashes", act: async (u, c) => { c.c1 = { ...DeskTrig.count }; if (!S().playing) u.click("#play"); await until(() => S().playing, 5000); await sleep(2000); if (S().playing) u.click("#play"); await until(() => !S().playing, 5000); },
+				screen: c => ok((DeskTrig.count[c.t] || 0) === (c.c1[c.t] || 0), "track " + c.t + " counted " + ((DeskTrig.count[c.t] || 0) - (c.c1[c.t] || 0))), within: 8000 }
+		],
+		async tidy(u, c) { if (S().playing) { u.click("#play"); await sleep(500); } if (c?.t != null && S().tracks[c.t]?.mute) u.click(strip(c.t, ".ms.m")); }
+	};
 	const mixSolo = {
 		name: "mm-mix-solo", proves: ["MM-020", "MM-X06"],
 		steps: [
@@ -3706,7 +3728,7 @@ const MmJourneys = (() => {
 		async tidy(u) { await closeLib(u); u.click(tab("seq")); }
 	};
 	const all = [screensFit, ...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
-		genMut, shapeSound, machinePick, revertTrackJ, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixSolo, soloSaved, shiftMutes, routing, panTrim, msOff, msViews, railLamps,
+		genMut, shapeSound, machinePick, revertTrackJ, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixHeads, mixSolo, soloSaved, shiftMutes, routing, panTrim, msOff, msViews, railLamps,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, genModal, laneTools, gridFits, mutScope,

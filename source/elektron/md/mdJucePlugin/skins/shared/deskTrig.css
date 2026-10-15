@@ -1,0 +1,5 @@
+/* The trig square on a Mix strip's head (deskTrig.js), both editors: a small square, off until its track trigs, then a
+   flash in the accent colour that goes out by itself (CSS animation, restarted by the script). */
+.trigsq{display:block;width:8px;height:8px;flex:none;box-sizing:border-box;border:1px solid var(--print3,#888);border-radius:1px;background:transparent;opacity:.8}
+.trigsq.fl{animation:trigsqflash 150ms ease-out}
+@keyframes trigsqflash{0%{background:var(--led);border-color:var(--led);box-shadow:0 0 6px 1px var(--led);opacity:1}100%{background:transparent;box-shadow:none;opacity:.8}}
