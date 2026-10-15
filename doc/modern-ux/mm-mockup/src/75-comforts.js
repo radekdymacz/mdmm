@@ -17,7 +17,7 @@ function clearTrackLocks(t){const n=trackLockPids(t).length;[...S.locks.keys()].
 
 /* ---- the lock budget over the lock lane: the machine's 62 locked parameters in a pattern, pooled over all
    twelve tracks (manual 1-58), as the LCD's meter (dark from 52, blinking at 62) ---- */
-function syncLockBudget(){const el=$("#lockbudget");if(!el)return;const n=S.locks.size;el.className="lockbudget"+(n>=62?" full":n>=52?" warn":"");el.innerHTML=`<b>${n}</b> / 62 locked parameters`;
+function syncLockBudget(){const el=$("#lockbudget");if(!el)return;const n=S.locks.size;el.className="lockbudget"+(n>=62?" full":n>=52?" warn":"");el.innerHTML=`<b>${n}</b>/62`;
  el.title=`The Monomachine holds 62 locked parameters in a pattern, over all twelve tracks (a track and a parameter with any lock counts once). ${n} in use, ${62-n} left.${n>=62?" Clear a lane before you lock a new parameter.":""}`}
 
 /* ---- rotate: Alt + Left / Right (FUNCTION + arrows on the machine) moves the selected track's steps, slides

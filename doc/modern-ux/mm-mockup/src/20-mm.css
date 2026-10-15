@@ -319,7 +319,7 @@ canvas.roll{width:100%;display:block;border-radius:4px;background:var(--lcd);box
 .docktabs .lkey[aria-selected=true] .led{background:var(--led);box-shadow:0 0 6px 1px var(--led)}
 .dockinfo{margin-left:12px;font-size:12px;color:var(--print3);overflow:hidden;text-overflow:ellipsis;display:flex;gap:10px;align-items:baseline}
 .dockbody{height:158px;overflow:hidden}
-.lanetop .docktabs{margin:0 0 0 auto;height:auto}
+.lanetop .docktabs{margin:0;height:auto;flex:none}
 .lanewrap>.dockbody{height:auto;min-height:158px;overflow:auto;padding-top:8px}
 .ws-seq .lanewrap>.dockbody{flex:1 1 auto;min-height:150px}
 /* the arpeggiator, transpose and trig setup tabs: the LOCK PARAMETER keys have no meaning there */

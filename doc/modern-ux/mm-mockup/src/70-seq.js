@@ -49,8 +49,7 @@ function renderSeq(){const t=S.sel,tr=trk(t),midi=isMidiT(t);dockOf(t);
   <div class="nlane big"><canvas class="roll" data-ed="lane" data-t="${t}" data-big="1" title="${ROLL_TIP(t)}" aria-label="${ROLL_TIP(t)}"></canvas></div>
   ${midi?`<div class="tlanes" id="tlanes"><div class="tlane env" style="grid-template-columns:${cols()}" title="Velocity per note (VEL, lockable)"><span class="tlab">VEL</span>${steps().map(s=>{const st=tr.steps[s];const v=st&&!st.off?velOf(t,s):null;return`<span class="tc envc ${gapC(s)} ${v==null?"na":""} ${cellSel(s)}" data-s="${s}">${v!=null?`<i class="velbar" style="--v:${v/127*100}%" title="VEL ${v}"></i>`:""}</span>`}).join("")}</div></div>`:""}</div></div>
  ${genBarHtml()}
- <div class="lanewrap"><div class="lanetop">${S.dock==="locks"?`<span class="cap">Lock lane · ${tLabel(t)} ${midi?"CH"+String(tr.ch).padStart(2,"0"):tr.m} · <b id="lanename">${pidLabel(t,S.lane)}</b> <span class="lanescale" id="lanescale"></span></span>
-  <span class="lockbudget" id="lockbudget"></span>`:(()=>{const[h,hl]=dockHelp(t,S.dock);return`<span class="cap">${DOCKN[S.dock]} · ${tLabel(t)} ${midi?"CH"+String(tr.ch).padStart(2,"0"):tr.m}</span><span class="lockbudget dkread" id="dkread">${dockRead(t,S.dock)}</span><span class="lanehelp dkhelp" title="${dkAttr(hl)}">${h}</span>`})()}${dockTabs(t)}</div>
+ <div class="lanewrap"><div class="lanetop">${dockTabs(t)}${S.dock==="locks"?`<span class="lockbudget" id="lockbudget"></span>${laneToolsHtml()}`:(()=>{const[h,hl]=dockHelp(t,S.dock);return`<span class="lockbudget dkread" id="dkread">${dockRead(t,S.dock)}</span><span class="lanehelp dkhelp" title="${dkAttr(hl)}">${h}</span>`})()}</div>
   ${S.dock==="locks"?dockBody(t):`<div class="dockbody" id="dock">${dockBody(t)}</div>`}</div>`;
  $("#main").innerHTML=h;document.body.classList.toggle("dockother",S.dock!=="locks");genDraw();fitLane();renderLane();syncScroll();syncControls();alignLock();syncLockBudget();markRecLock();stepDraw()}
 /* as in the MD Editor: the rail's LOCK PARAMETER block starts on the line above the lock lane (the lane's top border, under the GEN bar) and ends at its bottom edge */
@@ -58,8 +57,8 @@ function alignLock(){const rp=$("#rail .railparams"),lt=$(".lanetop"),ls=$("#lan
  const roll=$("#seq canvas.roll[data-big]"),tb=rp.querySelector(".pagetabs");
  const size=()=>{rp.style.marginTop="0px";rp.style.height="auto";const sf=$("#main>.lanewrap"),dy=(sf?sf.getBoundingClientRect().top:lt.getBoundingClientRect().top)-rp.getBoundingClientRect().top;
   rp.style.marginTop=Math.max(0,dy)+"px";rp.style.height=Math.max(0,ls.getBoundingClientRect().bottom-rp.getBoundingClientRect().top)+"px";titles()};
- /* the lane's title sits on the LOCK PARAMETER title's line */
- const titles=()=>{const a=rp.querySelector(".rphead .cap"),b=lt.querySelector(".cap");if(!a||!b)return;const c=e=>{const q=e.getBoundingClientRect();return q.top+q.height/2};lt.style.marginTop="0px";const d=c(a)-c(b);if(Math.abs(d)>.5)lt.style.marginTop=d+"px"};
+ /* the lane's tabs sit on the LOCK PARAMETER title's line */
+ const titles=()=>{const a=rp.querySelector(".rphead .cap"),b=lt.querySelector(".docktabs");if(!a||!b)return;const c=e=>{const q=e.getBoundingClientRect();return q.top+q.height/2};lt.style.marginTop="0px";const d=c(a)-c(b);if(Math.abs(d)>.5)lt.style.marginTop=d+"px"};
  const gap=()=>tb?tb.getBoundingClientRect().top-ls.getBoundingClientRect().top:0;
  /* the lock lane is as tall as the LOCK PARAMETER keys; the space above them goes to the piano roll, which pushes the lane down */
  ls.style.marginTop="0px";if(roll)roll.style.removeProperty("height");size();
