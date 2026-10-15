@@ -681,7 +681,7 @@ jobs:
           while IFS=$'\t' read -r id name; do
             gh api -H "Accept: application/octet-stream" "repos/${GITHUB_REPOSITORY}/releases/assets/${id}" > "${dir}/${name}"
           done < "${dir}/assets.tsv"
-          (cd "${dir}" && cut -f2 assets.tsv | sort | xargs sha256sum > SHA256SUMS && cat SHA256SUMS)
+          (cd "${dir}" && cut -f2 assets.tsv | sort | xargs -d '\n' sha256sum > SHA256SUMS && cat SHA256SUMS)
           old="$(gh api "repos/${GITHUB_REPOSITORY}/releases/${release_id}" --jq '.assets[] | select(.name == "SHA256SUMS") | .id')"
           if [[ -n "${old}" ]]; then
             gh api --method DELETE "repos/${GITHUB_REPOSITORY}/releases/assets/${old}"
