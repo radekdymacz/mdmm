@@ -48,7 +48,7 @@ offset  size  field
 8       2     major version, little endian (2; 1 was the previews' whole-memory file: not read)
 10      2     minor version (0; 0.7 wrote major and minor as one u32 2, the same bytes)
 12      1     machine: 0 Machinedrum, 1 Monomachine
-13      3     zero (not read)
+13      3     zero (not read; a newer minor's are kept with its entries)
 16      4     layout id (machineMemory::layoutId: a hash of the slot table below)
 20      4     CRC-32 of everything from 24 on (md::crc32, as zlib's)
 24      8     MD: the ROM's fingerprint its flash sectors belong to (FNV-1a 64 of the ROM), else 0
@@ -62,9 +62,10 @@ Since 1.0 the file accretes (FOUNDATION.md, "What 1.0 promises to read"). The ma
 incompatible change and an editor reads no other major; the minor counts additions an editor of the same major reads
 past. Each entry carries its size, so an entry the editor cannot use (a kind or flags it does not know, a slot of
 another size or one its layout lacks) is skipped alone, kept (`StoreFile::foreign`) and written back as it was; the
-editor's own save of the same slot replaces it, and Start from factory memory drops it with the rest. A file of another
-layout id is compared per slot: a kit, pattern, song, global or sector of the size this layout has is used; the other
-blocks (cut by the layout) are not. An entry cut short, or the same slot twice, is damage.
+editor's own save of the same slot replaces it, and Start from factory memory drops it with the rest. While such entries
+are kept, the file keeps its minor and its reserved header bytes, so an older editor sees a newer file. A file of another
+layout id is refused (a layout change is a major bump: a slot matched on size alone could land on other RAM). An entry
+cut short, or the same slot twice, is damage.
 
 ### The slots (measured, `machineMemory::patchSlots`)
 
@@ -220,8 +221,8 @@ What closes each way a save could be lost, and its test (mdMachineMemoryFirmware
 |---|---|
 | No file | factory memory, silently |
 | Damaged (size or CRC wrong, an entry cut short or twice), not ours, the previews' version 1 | its slots are not used; the file is renamed `machine-memory.unusable-<date-time>.bin` (never deleted, never over another) and the plug-in says so in a notice; the next save writes a new file (5, 5b) |
-| An entry this editor cannot use, another layout | that entry is skipped (kept and written back), the rest is used |
-| A newer major version, the other machine's | kept as it is and never written over: the notice says so and every save is refused (its slots stay pending) until the person moves the file or uses that editor (5c) |
+| An entry this editor cannot use | that entry is skipped (kept and written back), the rest is used |
+| A newer major version, another layout, the other machine's | kept as it is and never written over: the notice says so and every save is refused (its slots stay pending) until the person moves the file or uses that editor (5c) |
 | The machine refuses the slots laid over (a restore that fails) | the file stays as it is; the notice says why; the session goes on with the memory it has |
 | MD: the samples were saved with another ROM | the sectors are not laid over; the other slots are; when a sample is saved with this ROM the old sectors are kept in their own file first (3o) |
 | No ROM | nothing is read until a ROM is installed; then as at a start |

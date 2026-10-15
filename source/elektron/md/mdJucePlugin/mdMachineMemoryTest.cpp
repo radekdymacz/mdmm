@@ -139,15 +139,10 @@ namespace
 			auto bad = file;
 			bad[bad.size() - 1] ^= 1;
 			check(decode(bad, model).problem == Problem::Corrupt, "one bit: damaged");
-			// another slot layout (a newer editor's): compared per slot; the other blocks, cut by the layout, are not used
-			const auto& other = *std::find_if(patchSlots(model).begin(), patchSlots(model).end(), [](const Slot& _s) { return _s.key.kind == Kind::Other; });
-			StoreFile withOther = f;
-			merge(withOther.slots, model, {other.key}, mem, sectors, 43);
-			bad = encode(model, withOther);
-			bad[16] ^= 1;	// (the CRC covers the entries, not the header)
-			const auto dl = decode(bad, model);
-			check(dl.problem == Problem::None && dl.file.slots.size() == 3 && !dl.file.slots.count(other.key) && dl.file.foreign.empty(),
-				"another layout id: its kit, song and sector are used, its other block is not");
+			// another slot layout: refused whole (a slot's bytes could land on other RAM) and never written over
+			bad = file;
+			bad[16] ^= 1;
+			check(decode(bad, model).problem == Problem::Layout && !replaceable(decode(bad, model)), "another layout id: refused, kept as it is");
 			// one entry this editor cannot use is skipped alone and kept
 			StoreFile wrongSize = f;
 			wrongSize.slots[{Kind::Kit, 3}].bytes = {1, 2, 3};
@@ -207,6 +202,7 @@ namespace
 			f.foreign = {unknownKind, flagged};
 			auto file = encode(model, f);
 			file[10] = 3;	// minor 3
+			file[13] = 0xab;	// and a header byte of its own
 			auto d = decode(file, model);
 			check(d.problem == Problem::None && d.minor == 3 && d.file.slots.size() == 1 && d.file.foreign.size() == 2
 				&& d.file.foreign[0].kind == 9 && d.file.foreign[0].entry.bytes.size() == 5 && d.file.foreign[1].flags[0] == 1,
@@ -219,10 +215,17 @@ namespace
 			merge(d.file.slots, model, {{Kind::Kit, 6}}, mem, {}, 20);
 			const auto again = decode(encode(model, d.file), model);
 			check(again.problem == Problem::None && again.file.slots.size() == 2 && again.file.foreign.size() == 2, "a save keeps them in the file");
+			const auto rewritten = encode(model, d.file);
+			check(rewritten[10] == 3 && rewritten[11] == 0 && rewritten[13] == 0xab && rewritten[14] == 0 && rewritten[15] == 0,
+				"with the newer minor's label and header bytes (an older editor sees a newer file, not a damaged one)");
 			merge(d.file.slots, model, {{Kind::Kit, 2}}, mem, {}, 21);
 			const auto replaced = decode(encode(model, d.file), model);
 			check(replaced.file.slots.count({Kind::Kit, 2}) && replaced.file.foreign.size() == 1 && replaced.file.foreign[0].kind == 9,
 				"this editor's save of the same slot replaces the newer editor's entry");
+			StoreFile own = d.file;
+			own.foreign.clear();
+			const auto plain = encode(model, own);
+			check(plain[10] == 0 && plain[13] == 0, "no newer entries left: its own minor and zero header bytes");
 			StoreFile cleared = d.file;
 			dropSavedBefore(cleared, 12);
 			check(cleared.foreign.size() == 1 && cleared.foreign[0].index == 2, "start from factory: the newer editor's older entries go too");
@@ -278,7 +281,7 @@ namespace
 		auto v1 = encode(Model::Machinedrum, {});
 		v1[8] = 1;
 		check(decode(v1, Model::Machinedrum).problem == Problem::Version, "the previews' whole-memory file (version 1) is another version");
-		for(const auto p : {Problem::Empty, Problem::NotOurs, Problem::Version, Problem::Machine, Problem::Corrupt})
+		for(const auto p : {Problem::Empty, Problem::NotOurs, Problem::Version, Problem::Machine, Problem::Corrupt, Problem::Layout})
 			check(!describe(p).empty() && describe(p).find("machine memory") != std::string::npos, "each problem has its words");
 		check(describe(Problem::None).empty(), "no problem, no words");
 	}
