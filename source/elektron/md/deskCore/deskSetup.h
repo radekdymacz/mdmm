@@ -35,6 +35,9 @@ namespace deskCore
 		ModLimits modulators;
 		int tracks = 16;
 		bool knobCcs = true;	// the model has the knob rows
+		// Written as the bare modulators document with "solo" beside it (the MM: the 0.x shape, so 0.7 reads a 1.0
+		// project). The schema's wrapper is read already and is written once a member needs it.
+		bool writesBare = false;
 	};
 
 	constexpr int g_setupVersion = 1;	// the major (readsMajor)
@@ -42,7 +45,7 @@ namespace deskCore
 	// A project's setup, as much of it as this version can use; never fails. Members it does not know are ignored, a
 	// bad item is left out alone (a source, a link; the knob rows or the solo as a whole fall back to the default), and
 	// a document of another schema or a newer major version is the default setup. Errors carry JSON paths. The bare
-	// modulators document beside a "solo" member ("<model>-desk/modulators", the MM's setup before 1.0) is read too.
+	// modulators document beside a "solo" member ("<model>-desk/modulators", what the MM writes) is read too.
 	DeskSetup setupFromJson(const elektronData::json::Value& _doc, const SetupSpec& _spec, std::vector<std::string>& _errors);
 	elektronData::json::Value setupToJson(const DeskSetup& _setup, const SetupSpec& _spec);
 

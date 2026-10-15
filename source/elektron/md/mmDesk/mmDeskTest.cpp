@@ -1192,9 +1192,9 @@ void modulators()
 				out.push_back(static_cast<int>(v.asNumber()));
 		return out;
 	};
-	const auto sources = [](const Value& _doc) { return _doc.find("modulators")->find("sources")->asArray().size(); };
-	check(saved.find("schema")->asString() == "mm-desk/setup" && saved.find("version")->asNumber() == 1 && sources(saved) == 1 && !saved.find("knobCcs"),
-		"the MM's setup is its own document (mm-desk/setup: modulators, solo; no knob rows)");
+	const auto sources = [](const Value& _doc) { return _doc.find("sources")->asArray().size(); };
+	check(saved.find("schema")->asString() == "mm-desk/modulators" && saved.find("version")->asNumber() == 1 && sources(saved) == 1 && !saved.find("knobCcs"),
+		"the MM writes its setup in the 0.x shape (the bare modulators, solo beside them), so 0.7 reads it");
 	check(saved.find("solo") == nullptr, "no solo yet: the setup holds none");
 	msg(R"({"op":"soloSet","id":2,"tracks":[4,1],"mutes":[0,7]})");
 	check(last("result")->find("ok")->asBool() && saved.find("solo") && list(saved.find("solo"), "tracks") == std::vector<int>{1, 4}
@@ -1209,12 +1209,14 @@ void modulators()
 	page.clear();
 	check(d.loadSetup(project).empty() && list(last("solo"), "tracks") == std::vector<int>{1, 4} && list(last("solo"), "mutes") == std::vector<int>{0, 7},
 		"a project's solo loads and is said to the page");
-	// a 0.x project: the bare modulators document with the solo beside it
+	// the bare modulators document with the solo beside it (0.x and 1.0 write it); and the mm-desk/setup wrapper
 	page.clear();
 	check(d.loadSetup(*ed::json::parse(R"({"schema":"mm-desk/modulators","version":1,"sources":[{"id":"l1","kind":"lfo","rate":"1/8"}],
 		"links":[{"source":"l1","track":1,"param":9}],"solo":{"tracks":[2],"mutes":[5]}})")).empty()
 		&& list(last("solo"), "tracks") == std::vector<int>{2} && last("mod") && last("mod")->find("doc")->find("sources")->asArray().size() == 1,
 		"a 0.x project's setup (bare modulators, solo beside them) loads");
+	check(d.loadSetup(*ed::json::parse(R"({"schema":"mm-desk/setup","version":1,"modulators":{"schema":"mm-desk/modulators","version":1,"sources":[]},
+		"solo":{"tracks":[7]}})")).empty() && list(last("solo"), "tracks") == std::vector<int>{7}, "the wrapper (mm-desk/setup) is read too");
 	// a newer editor's setup: what can be used loads, a bad item is left out alone; a newer major is the default
 	page.clear();
 	auto errors = d.loadSetup(*ed::json::parse(R"({"schema":"mm-desk/setup","version":1.1,"engine":"x",
