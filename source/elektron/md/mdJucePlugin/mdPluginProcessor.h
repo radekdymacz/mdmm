@@ -6,6 +6,7 @@
 #include "mdMidiIn.h"
 #include "mdOutputLevel.h"
 #include "mdMachineMemory.h"
+#include "mdMachineMemoryService.h"
 
 #include <functional>
 #include "mdLib/mdtypes.h"
@@ -108,64 +109,40 @@ namespace mdJucePlugin
 		void logSpeedUps(const char* _via);
 		uint32_t savedSpeedUpLeversOff();
 		// I-024: the machine's memory that stays for every new session (doc/modern-ux/DESIGN-machine-memory.md,
-		// mdMachineMemory.h). A session with no project state starts from the file; a background thread writes each
-		// save on the machine to it. Message thread unless said otherwise.
-		struct MachineMemoryStatus
-		{
-			bool keep = false;			// the setting (KEEP MEMORY), default on
-			bool available = false;		// a folder for the file (none in an isolated test)
-			bool saved = false;			// the file is there
-			std::string note;			// the last thing to say (a write that failed, a file that could not be used)
-		};
-		MachineMemoryStatus machineMemoryStatus() const;
+		// mdMachineMemoryService.h): the processor owns it and forwards. Message thread unless said otherwise.
+		using MachineMemoryStatus = MachineMemoryService::Status;
+		using MachineMemoryCost = MachineMemoryService::Cost;
+		using FlushMode = MachineMemoryService::FlushMode;
+		MachineMemoryStatus machineMemoryStatus() const { return m_memory.status(); }
 		// Changes whenever the status may have changed (any thread): the session republishes it to the page.
-		uint32_t machineMemoryVersion() const { return m_memoryVersion.load(std::memory_order_acquire); }
-		bool keepMachineMemory() const { return m_memoryKeep.load(std::memory_order_acquire); }
+		uint32_t machineMemoryVersion() const { return m_memory.version(); }
+		bool keepMachineMemory() const { return m_memory.keep(); }
+		void setKeepMachineMemory(bool _keep);
 		// The start's decision is made (the file's slots laid over, or not needed): tests wait for it
-		bool machineMemoryStarted() const { return m_memoryStartDone.load(); }
+		bool machineMemoryStarted() const { return m_memory.started(); }
 		// Tests: the next restore the machine memory asks for (the start's overlay, factory memory) is refused at once
-		void refuseNextMachineMemoryRestoreForTest() { m_refuseNextRestoreForTest = true; }
+		void refuseNextMachineMemoryRestoreForTest() { m_memory.refuseNextRestoreForTest(); }
 		// Tests: the machine follows the host (a plug-in in a DAW: tempo and sync are the host's, never saved)
-		void setMachineMemoryFollowsHostForTest(bool _follows) { m_memoryFollowsHost = _follows; }
+		void setMachineMemoryFollowsHostForTest(bool _follows) { m_memory.setFollowsHostForTest(_follows); }
 		// Review 1 (I-026): in a DAW, the machine follows the host's clock (the active global's TEMPO IN says EXT) or runs
 		// on its own (INT): the host's clock and transport go to the machine, and the global's host bytes are left out of
 		// the machine memory file, only while it follows (the session sets it from the desk's status)
 		void setHostClock(bool _on);
-		bool projectStateSeen() const { return m_projectStateSeen.load(); }
+		bool projectStateSeen() const { return m_memory.projectStateSeen(); }
 		// Tests: called by the watch's thread after each piece of a look (the offset of the piece it copied)
-		void setMachineMemoryLookHookForTest(std::function<void(size_t)> _hook)
-		{
-			const std::lock_guard lock(m_lookHookMutex);
-			m_hasLookHookForTest = static_cast<bool>(_hook);
-			m_lookPieceHookForTest = std::move(_hook);
-		}
-		void setKeepMachineMemory(bool _keep);
+		void setMachineMemoryLookHookForTest(std::function<void(size_t)> _hook) { m_memory.setLookHookForTest(std::move(_hook)); }
 		// RESET MACHINE… > Start from factory memory: the file goes and the machine restarts from factory memory (a fresh machine's
 		// state, as on a new install). The page asked the user first. False with the reason in _note.
-		bool startFromFactoryMemory(std::string& _note);
-		juce::File machineMemoryFile() const;
-		// What the watch measured (tests and the design note): the look's time under the plug-in's lock (the worst
-		// and the last), a look's whole time with its hash, the last write's time, how many looks and writes.
-		struct MachineMemoryCost
-		{
-			double lookLockMaxMs = 0, lookLockLastMs = 0, lookMs = 0, writeMs = 0;
-			uint32_t looks = 0, writes = 0, failedWrites = 0;
-			size_t lastSlots = 0;		// how many slots the last write merged in
-			double flashHoldMaxMs = 0, flashHoldLastMs = 0;	// MD: the sample flash copy's longest hold of the plug-in's lock
-			size_t fileBytes = 0;
-		};
-		MachineMemoryCost machineMemoryCost() const;
+		bool startFromFactoryMemory(std::string& _note) { return m_memory.startFromFactoryMemory(_note); }
+		juce::File machineMemoryFile() const { return m_memory.file(); }
+		MachineMemoryCost machineMemoryCost() const { return m_memory.cost(); }
 		// The saves this memory holds that the file lacks (the "MMEM" chunk of the standalone's state)
-		machineMemory::Mark machineMemoryMark() const;
-		// One last look now and a write when a save is not in the file yet (the instance going away, a state save)
-		enum class FlushMode : uint8_t { Close, Replace, HostSave };
-		void flushMachineMemory(FlushMode _mode);
+		machineMemory::Mark machineMemoryMark() const { return m_memory.mark(); }
+		void flushMachineMemory(FlushMode _mode) { m_memory.flush(_mode); }
 		// MD: the page's sample transfer ended; the machine stores it into a ROM slot (a save, written once stored)
-		void machineMemorySampleStored();
+		void machineMemorySampleStored() { m_memory.sampleStored(); }
 		// The watch's thread runs once a second; a test may run it faster (milliseconds between looks).
-		void setMachineMemoryLookMs(int _ms);
-		// The thread's one look and maybe a write (any thread but the audio thread; the thread calls it).
-		void lookAtMachineMemory();
+		void setMachineMemoryLookMs(int _ms) { m_memory.setLookMs(_ms); }
 		// The Machinedrum/Monomachine Editors' setup and session (mdDeskHost.h, doc/modern-ux/UPSTREAM.md).
 		class DeskHost* getDeskHost() const { return m_desk.get(); }
 
@@ -195,29 +172,6 @@ namespace mdJucePlugin
 		void recordStandaloneStartupDiagnostics();
 		void reportProjectStateRestoreFailure(const std::string& _error);
 		void timerCallback() override;
-		// I-024 (mdPluginProcessor.cpp, "machine memory")
-		void serviceMachineMemoryStart();
-		void startMachineMemoryThread();
-		void stopMachineMemoryThread();
-		bool writeMachineMemory(const std::vector<machineMemory::Key>& _keys, const std::vector<uint8_t>& _base, const std::vector<uint8_t>& _patch,
-			const std::vector<uint8_t>& _sectors);
-		enum class WriteResult : uint8_t { Done, HeldBack, Failed };
-		WriteResult writeChanges(bool _withForced, bool _consistent);
-		bool lookMachineMemory(uint64_t& _signature, uint64_t& _epoch, bool _atomic);
-		void clearMemoryFile();
-		bool rebaseMachineMemory(uint64_t _signature, uint64_t _epoch);
-		void serviceSampleStore();
-		void takeSampleSectors(bool _atomic);
-		bool copyMachineFlash(std::vector<uint8_t>& _flash, bool _atomic = false);
-		machineMemory::StoreFile readMemoryStore(bool& _ok, std::string& _note);
-		static bool writeMemoryFile(const juce::File& _file, const std::vector<uint8_t>& _bytes, std::string& _error);
-		std::string moveMemoryFileAside(std::string _text);
-		void showMachineMemoryNotice(const std::string& _text);
-		void factoryMemoryRefused();
-		void machineMemoryWillBeReplaced();
-		void machineMemoryUnusable(const std::string& _why);
-		void setMachineMemoryNote(std::string _note);
-		bool machineDeviceReady();
 
 		std::unique_ptr<synthLib::PerformanceReport> m_performanceReport;
 		juce::File m_performanceReportFile;
@@ -250,33 +204,9 @@ namespace mdJucePlugin
 		// the speed-ups as last written to the log (logSpeedUps): -1 none yet; else on | levers << 1 | L3 << 31
 		int64_t m_loggedSpeedUps = -1;
 		std::unique_ptr<class DeskHost> m_desk;
-		// I-024: machine memory. m_memoryFolder empty: off (an isolated test, or a processor no plug-in wrapper made)
-		std::string m_memoryFolder;
-		std::atomic<bool> m_projectStateSeen{false};	// a DAW project's state came this session (any thread)
-		std::optional<machineMemory::Mark> m_loadedMark;	// the last state's "MMEM" chunk, version 2 (m_memoryMutex)
-		bool m_standaloneState = false;		// the state at the start is the standalone's own: the file's slots are laid over it
-		std::atomic<bool> m_ownStateSeen{false};	// the standalone's own state came
-		std::atomic<uint64_t> m_memoryRomFingerprint{0};	// MD: the ROM's (the file's flash sectors belong to it)
-		std::atomic<uint64_t> m_factoryRestoreGeneration{0};	// Start from factory memory's restore, 0: none
-		std::atomic<bool> m_memoryStartDone{false};
-		std::atomic<bool> m_refuseNextRestoreForTest{false};
-		std::atomic<bool> m_memoryFollowsHost{false};	// a plug-in in a DAW: the global's host bytes are never saved
-		std::atomic<bool> m_memoryNoticePending{false};	// a note for the timer to show (written on the thread)
-		std::function<void(size_t)> m_lookPieceHookForTest;	// (m_lookHookMutex)
-		std::mutex m_lookHookMutex;
-		std::atomic<bool> m_hasLookHookForTest{false};
-		std::atomic<uint64_t> m_memoryRestoreGeneration{0};	// the device's restore generation of the file's payload, 0: none
-		std::atomic<uint32_t> m_memoryVersion{1};
-		std::atomic<bool> m_memorySampleStored{false};	// machineMemorySampleStored, for the thread's next look
-		std::atomic<bool> m_memoryKeep{true};	// the setting, cached for the thread (the config is the message thread's)
-		std::atomic<int> m_memoryLookMs{1000};
-		std::atomic<bool> m_memoryWriteWarned{false};	// a failed write was said this session
-		std::atomic<bool> m_memoryWriteFailed{false};	// a failed write for the timer to say
-		mutable std::mutex m_memoryMutex;		// the file, the note, the watch, the cost
-		std::string m_memoryNote;
-		struct MemoryWatchState;
-		std::unique_ptr<MemoryWatchState> m_memoryWatch;
-		std::unique_ptr<class MachineMemoryThread> m_memoryThread;
+		// I-024: the machine memory and its port to this machine (the port first: the service talks to it)
+		std::unique_ptr<class MachineMemoryDevice> m_memoryDevice;
+		MachineMemoryService m_memory;
 		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPluginAudioProcessor)
 	};
 }
