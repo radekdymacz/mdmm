@@ -162,7 +162,7 @@ reached at all.
 
 | # | Gap | Machine | Effort | When |
 |---|---|---|---|---|
-| F1 | HW MIDI proven on a real MD **and** a real MM, separately: connect/reconnect, edits both ways, mutes, transport, transfers, imported globals; Windows MIDI (B-037). FR-09 is the MD demo only | both | L | before 1.0 |
+| F1 | HW MIDI proven on a real MD **and** a real MM, separately: connect/reconnect, edits both ways, mutes, transport, transfers, imported globals; Windows MIDI (B-037); a host that suspends processing (stopped transport with "suspend when idle", an offline bounce): what the editor sends to the machine leaves only inside an audio block (`ExternalMidi::flushOut`), so it waits while the host calls none, and the desk's pacing, read-backs and time-outs with it. FR-09 is the MD demo only | both | L | before 1.0 |
 | F2 | Stability: MM crackle (B-036), Windows blank window/freeze (B-029, B-035), Linux blank window (B-033), CPU in Live (B-005), save/autosave stalls (B-034). Gate in §7 | both | L | before 1.0 |
 | F3 | GLOBAL page: done in 0.5.0 (B-051): the MD's panel, shared: the 8 slots, MIDI channels, program change, sync in and out, routing mode, Clear. 0.6 (wave 5): a page under the header, Copy · Paste · Clear, MM master tune and CONTROL OUT1 (0x07-0x09, P2), MD TRIG IN A / B editable, LEARN and Reset map. Left: the global's still undecoded bytes (0x0d-0x11, 0x30-0x35, the six CONTROL bytes 0x36-0x3b: no MIDI effect found) | MM | S | before 1.0 |
 | F4 | ~~Step selection, step menu and keyboard shortcuts, as in the MD editor (I-001)~~ done in 0.5.0 | MM | L | done |

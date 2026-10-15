@@ -107,6 +107,32 @@ namespace
 	}
 }
 
+// 1.0 review (real time 4): with no page the session steps every g_idleStepMs, each step standing for several 8 ms
+// ones; every period keeps its length: over the same time the idle pace is due as often as the 8 ms pace (one more or
+// one less at the edges), and on the first step.
+void idlePace()
+{
+	using mdJucePlugin::due;
+	const auto span = static_cast<uint64_t>(mdJucePlugin::g_idleStepMs / mdJucePlugin::g_stepMs);
+	bool same = span > 1;
+	for(const double period : {mdJucePlugin::g_deskTickMs, mdJucePlugin::g_lcdMs, mdJucePlugin::g_cpuLoadMs, 96.0,
+		mdJucePlugin::g_hostTempoMs, mdJucePlugin::g_engineChoicesMs, mdJucePlugin::g_followHostMs})
+	{
+		int fast = 0, idle = 0;
+		for(uint64_t t = 1; t <= 10000; ++t)
+			fast += due(t, period) ? 1 : 0;
+		for(uint64_t t = span; t <= 10000; t += span)
+			idle += due(t, period, span) ? 1 : 0;
+		const int expected = period <= mdJucePlugin::g_idleStepMs ? static_cast<int>(10000 / span) : fast;
+		same = same && std::abs(idle - expected) <= 1 && due(span, period, span);
+	}
+	check(same, "idle pace: each period is as long in ms at 64 ms steps as at 8 ms steps (and due at once)");
+	bool exact = true;
+	for(uint64_t t = 1; t < 1000; ++t)
+		exact = exact && due(t, 96.0, 1) == (((t - 1) % 12) == 0);
+	check(exact, "a page's pace (span 1): due as before, every n-th step from the first");
+}
+
 namespace
 {
 	std::vector<uint8_t> bytesOf(const juce::MemoryBlock& _m)
@@ -175,6 +201,45 @@ namespace
 	}
 }
 
+// Review (real time 4): a real machine's wire lets one message out per step once it is free, so the session keeps the
+// 8 ms pace without a page while messages wait for the wire; idle, without a page, it slows down.
+void wirePace(const md::MachineModel _model, const char* _name)
+{
+	mdJucePlugin::AudioPluginAudioProcessor p(_model, isolated());
+	juce::AudioProcessor& jp = p;
+	auto* session = p.getDeskHost()->session();
+	if(!session)
+	{
+		check(false, "wire pace: no session");
+		return;
+	}
+	check(session->paceMs() == static_cast<int>(mdJucePlugin::g_idleStepMs), "no page, the emulator: the idle pace");
+	jp.prepareToPlay(44100.0, 256);
+	// the page chose HW MIDI and was ready (the desk asks the machine for its documents over the wire), then closed
+	session->attach([](const elektronData::json::Value&) {});
+	session->onPageMessage(*elektronData::json::parse(R"({"op":"engine","kind":"hw"})"));
+	session->onPageMessage(*elektronData::json::parse(R"({"op":"ready"})"));
+	session->detach();
+	bool busy = false;
+	for(int i = 0; i < 50 && !busy; ++i)
+	{
+		session->step();
+		busy = session->paceMs() == static_cast<int>(mdJucePlugin::g_stepMs);
+	}
+	std::printf("  (%s)\n", _name);
+	check(busy, "the HW MIDI engine with messages waiting for the wire: the 8 ms pace, no page up");
+	bool idle = false;
+	const auto t0 = juce::Time::getMillisecondCounterHiRes();
+	while(!idle && juce::Time::getMillisecondCounterHiRes() - t0 < 20000)
+	{
+		session->step();
+		juce::Thread::sleep(8);
+		idle = session->paceMs() == static_cast<int>(mdJucePlugin::g_idleStepMs);
+	}
+	check(idle, "once the wire is free again: the idle pace");
+	jp.releaseResources();
+}
+
 int main()
 {
 	// No ROM anywhere: an empty data root, set before anything reads it (a Mac with the ROMs installed in Documents
@@ -183,6 +248,9 @@ int main()
 	root.createDirectory();
 	setenv("GEARMULATOR_DATA_ROOT", (root.getFullPathName() + "/").toRawUTF8(), 1);
 	juce::ScopedJuceInitialiser_GUI juce;
+	idlePace();
+	wirePace(md::MachineModel::Machinedrum, "Machinedrum");
+	wirePace(md::MachineModel::Monomachine, "Monomachine");
 	soloState(md::MachineModel::Machinedrum, "Machinedrum");
 	soloState(md::MachineModel::Monomachine, "Monomachine");
 	const std::string setup = R"({"schema":"md-desk/setup","version":1,"modulators":{"schema":"md-desk/modulators","version":1,)"
@@ -231,6 +299,25 @@ int main()
 		std::vector<synthLib::SMidiEvent> in;
 		b.getExternalMidi().drainIn(in);
 		check(in.size() == 1 && in[0].sysex.size() == sizeof(reply) && in[0].sysex[6] == 0x72, "and the hardware's SysEx comes to the editor, not the device");
+		// 1.0 review (real time 5): the inbox is made when HW MIDI goes on and never grows on the audio thread; what
+		// does not fit is dropped and counted (still kept from the device), and the next drain has room again
+		{
+			auto& ext = b.getExternalMidi();
+			synthLib::SMidiEvent big(synthLib::MidiEventSource::Physical);
+			big.sysex.assign(pluginLib::ExternalMidi::InCapacity / 2, 0x11);
+			big.sysex.front() = 0xf0;
+			big.sysex.back() = 0xf7;
+			const auto dropped0 = ext.inDropped();
+			const bool kept = ext.takeIn(big) && ext.takeIn(big) && ext.takeIn(big);
+			in.clear();
+			ext.drainIn(in);
+			check(kept && in.size() == 1 && in[0].sysex.size() == big.sysex.size() && ext.inDropped() == dropped0 + 2,
+				"a full inbox drops and counts what does not fit, never gives it to the device");
+			in.clear();
+			const bool again = ext.takeIn(big);
+			ext.drainIn(in);
+			check(again && in.size() == 1 && ext.inDropped() == dropped0 + 2, "after a drain there is room again");
+		}
 		b.getExternalMidi().set(false);
 		jb.releaseResources();
 	}

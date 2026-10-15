@@ -1,6 +1,7 @@
 #include "mdLib/mdfrontpanel.h"
 #include "mdLib/mdhardware.h"
 #include "mdLib/mdpanel.h"
+#include "mdLib/mdschedwatchdog.h"
 #include "mdLib/mdsim.h"
 #include "mdLib/mdtransportpolicy.h"
 #include "dsp56kEmu/memory.h"
@@ -91,6 +92,28 @@ namespace
 				&& mm.exactEssiCycleDeadlines
 				&& mm.exactEssiCycleDeadlinesL3,
 				"Monomachine transport policy changed during consolidation");
+	}
+
+	// 1.0 review (real time 1): the scheduler's loop is bounded. A step that never says it is done (a machine whose
+	// clock stopped) ends at the budget; one that finishes, however late within it, ends as before.
+	bool testSchedulerWatchdog()
+	{
+		uint64_t steps = 0;
+		const bool done = md::runBoundedSteps([&steps] { ++steps; return true; }, md::schedStepBudget(128));
+		uint64_t finished = 0;
+		const bool finishedDone = md::runBoundedSteps([&finished] { return ++finished < 1000; }, md::schedStepBudget(1));
+		uint64_t atEdge = 0;
+		const auto budget = md::schedStepBudget(1);
+		const bool edgeDone = md::runBoundedSteps([&atEdge, budget] { return ++atEdge < budget; }, budget);
+		return check(!done && steps == md::schedStepBudget(128), "a step that never finishes must stop at the budget")
+			&& check(finishedDone && finished == 1000, "a loop that finishes inside the budget must run to its end")
+			&& check(edgeDone && atEdge == budget, "a loop that finishes on its last allowed step is done")
+			&& check(md::schedStepBudget(0) == md::g_schedStepsBase
+				&& md::schedStepBudget(512) == md::g_schedStepsBase + 512 * md::g_schedStepsPerFrame,
+				"the budget is the base plus a fixed number a frame")
+			// a running machine needs about 3 steps a quantum (MM: 30 us, 1.3 frames): the budget leaves 20x and more
+			&& check(md::g_schedStepsPerFrame * md::g_samplerate * 30 >= 20 * 3 * 1'000'000ull,
+				"the budget a frame must stay far above what a running Monomachine needs");
 	}
 
 	// What a machine runs with nothing set: every speed-up of the umbrella switch on, L3 (its own opt-in) off. A
@@ -548,7 +571,7 @@ namespace
 
 int main()
 {
-	if(!testTransportPolicy() || !testDefaultSwitches() || !testDspMemoryFallback() || !testMk2PortAInvertedLoopback()
+	if(!testTransportPolicy() || !testSchedulerWatchdog() || !testDefaultSwitches() || !testDspMemoryFallback() || !testMk2PortAInvertedLoopback()
 		|| !testFrontPanelStepLeds() || !testMachinedrumPanelLedBanks()
 		|| !testFrontPanelTransitionPublication()
 		|| !testPanelInputReleaseRecovery()

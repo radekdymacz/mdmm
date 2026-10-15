@@ -305,11 +305,14 @@ document.addEventListener("dragstart",e=>{if(e.target.closest?.("img,svg,canvas"
 
 /* BPM: drag or arrows */
 /* wave 2, change on release (the TEMPO window's tick, or ⌥ held at the press): the LCD shows the drag, the tempo goes at the release */
-(()=>{const b=$("#bpm");let d=null;b.addEventListener("pointerdown",e=>{if(tempoLocked())return;d={y:e.clientY,v:S.bpm,late:e.altKey||DeskTransport.delayed()};b.setPointerCapture(e.pointerId)});
- const release=()=>{const was=d;d=null;if(was&&was.late&&S.tempoDraft!=null){const v=S.tempoDraft;S.tempoDraft=null;setTempo(v)}else S.tempoDraft=null};
+let bpmHeld=false;	/* the tempo is dragged: renders wait for it (busyNow) */
+(()=>{const b=$("#bpm");let d=null;b.addEventListener("pointerdown",e=>{if(tempoLocked())return;d={y:e.clientY,v:S.bpm,late:e.altKey||DeskTransport.delayed()};bpmHeld=true;b.setPointerCapture(e.pointerId)});
+ const release=()=>{const was=d;d=null;bpmHeld=false;if(was&&was.late&&S.tempoDraft!=null){const v=S.tempoDraft;S.tempoDraft=null;setTempo(v)}else S.tempoDraft=null;showHeld()};
  b.addEventListener("pointermove",e=>{if(!d)return;if(e.buttons===0&&e.pointerType==="mouse"){release();return}const v=clamp(Math.round((d.v+(d.y-e.clientY)*(e.shiftKey?.1:.5))*10)/10,30,300);
   if(d.late){if(v!==S.tempoDraft){S.tempoDraft=v;renderTop()}return}S.bpm=v;if(HOST.tempo)HOST.tempo(S.bpm);renderTop();if(S.playing)restartClock()});
- b.addEventListener("pointerup",()=>release());b.addEventListener("keydown",e=>{const k={ArrowUp:1,ArrowDown:-1}[e.key];if(!k)return;e.preventDefault();if(tempoLocked())return;S.bpm=clamp(S.bpm+k*(e.shiftKey?.1:1),30,300);if(HOST.tempo)HOST.tempo(S.bpm);renderTop();if(S.playing)restartClock()})})();
+ /* the release may land outside the key (its capture lost) or never come: it holds renders (bpmHeld), so it ends on all of them */
+ b.addEventListener("pointerup",()=>release());document.addEventListener("pointerup",()=>{if(d)release()});document.addEventListener("pointercancel",()=>{if(d)release()});
+ document.addEventListener("pointermove",e=>{if(d&&e.buttons===0&&e.pointerType==="mouse")release()});addEventListener("blur",()=>{if(d)release()});b.addEventListener("keydown",e=>{const k={ArrowUp:1,ArrowDown:-1}[e.key];if(!k)return;e.preventDefault();if(tempoLocked())return;S.bpm=clamp(S.bpm+k*(e.shiftKey?.1:1),30,300);if(HOST.tempo)HOST.tempo(S.bpm);renderTop();if(S.playing)restartClock()})})();
 
 
 /* ===== Engine status (from the MD Editor v48): the LCD says what the engine is doing; editing waits until it is ready ===== */
@@ -510,8 +513,13 @@ function show(v,all){
  if(!doc&&!showLater)return;
  if(busyNow()){showLater=true;return}
  showLater=false;render();drawLib()}
-/* busy: a gesture, or a menu open (a render would close it under the person: the drawing waits for it, as for a drag) */
-const busyNow=()=>{try{return !!(S.genEnding||drag||laneDraw||rollDrag||selDrag||active||arpDrag||l2drag||joyDrag||splitDrag||cord||kbDown)||menuOpen()}catch(_){return false}};
+/* busy: a gesture, or a menu open (a render would close it under the person: the drawing waits for it, as for a drag).
+   1.0: also a GEN or MUTATE value dragged (gvDrag), the tempo dragged (bpmHeld), the rotate presses while Alt is down
+   (rotHold) and a run of wheel notches on a lock (wheelHeld): each draws its own change in place, and a document that
+   lands meanwhile would rebuild the grid at every one (the 1.0 review: about 50 % WebContent on the MD page) */
+const busyNow=()=>{try{return !!(S.genEnding||drag||laneDraw||rollDrag||selDrag||active||arpDrag||l2drag||joyDrag||splitDrag||cord||kbDown||gvDrag||bpmHeld||rotHold||wheelHeld())||menuOpen()}catch(_){return false}};
+/* the render a gesture held (showLater) once it ends: the gestures that draw in place call it at their end */
+function showHeld(){if(showLater&&!busyNow()){showLater=false;render();drawLib()}}
 /* RECORD as the machine is in it: "off" | "grid" | "live" | "step" (wave 7: STEP RECORDING, at = the step the next note
    writes, -1 unknown) */
 function setRecord(mode,at=-1){const on=mode==="grid"||mode==="live",was=S.recMode;S.recMode=mode;S.stepAt=mode==="step"?at:-1;if(mode!=="step")S.stepT=null;if(mode!=="live")eraseUp();

@@ -3,11 +3,15 @@
 # device, no sound), as a pass/fail check. The emulator, the desk and the page's commands run as the plug-in runs
 # them, one audio block at a time on this thread; the cost is counted in retired instructions, so what else the
 # computer runs does not change it.
-#   scripts/mdmm-rt-check.sh [--md <MD ROM>] [--mm <MM ROM>] [--build <dir>] [--budget <hot ms/s>] [--plock] [VAR=value ...]
+#   scripts/mdmm-rt-check.sh [--md <MD ROM>] [--mm <MM ROM>] [--build <dir>] [--budget <hot ms/s>] [--plock] [--lock] [VAR=value ...]
 #     --md / --mm   the ROMs (default: the plug-ins' ROM folders); only read
 #     --budget      fail any user action whose blocks run hot (a 5-block mean over 1.3x idle) longer than this
 #                   many ms a second (default 100; the stream keeps every action under about 75)
 #     --plock       also mdDeskFirmwareTest plocktiming-strict (B-010's sequencer timing, B-014's per-block tables)
+#     --lock        also the synth lock (the F2 gate, architecture review 1): mdEditFlowPluginTest, the real processor
+#                   with its audio thread at real time and the page's edits on the message thread, per machine; fails
+#                   when processBlock waited longer than EDITFLOW_LOCK_WAIT_MS (default 1 ms) for the device lock.
+#                   Wall time, so run it on a quiet Mac; a few minutes a machine
 #     VAR=value     passed on: GEARMULATOR_MDMM_EDIT_RATE=0 measures without the stream (0.3.3), ACTIONS=a,b
 #                   only some actions, PLOCK_* for plocktiming (mdDeskFirmwareTest.cpp)
 # Per action (mdDeskFirmwareTest / mmDeskFirmwareTest actions): what went to the machine, the 128- and 256-frame host
@@ -20,6 +24,7 @@ MM=$(ls "$HOME/Documents/Gearmulator Preview/Monomachine/roms/"* 2>/dev/null | h
 BUILD=$ROOT/temp/mac_perf
 BUDGET=100
 PLOCK=0
+LOCK=0
 while [ $# -gt 0 ]; do
 	case "$1" in
 		--md) MD=$2; shift 2 ;;
@@ -27,6 +32,7 @@ while [ $# -gt 0 ]; do
 		--build) BUILD=$2; shift 2 ;;
 		--budget) BUDGET=$2; shift 2 ;;
 		--plock) PLOCK=1; shift ;;
+		--lock) LOCK=1; shift ;;
 		*) break ;;
 	esac
 done
@@ -52,6 +58,19 @@ if [ -n "$MM" ] && [ -x "$MMBIN" ]; then
 	grep -E "^== B-014|^  [a-zA-Z]+ +[0-9]+ \||FAIL|^PASS" "$OUT/mm-actions.txt"
 else
 	echo "MM: no ROM or no mmDeskFirmwareTest in $BUILD (cmake --build $BUILD --target mmDeskFirmwareTest)"; STATUS=1
+fi
+if [ "$LOCK" = 1 ]; then
+	FLOWBIN=$(find_bin mdEditFlowPluginTest)
+	for m in md mm; do
+		rom=$MD; [ "$m" = mm ] && rom=$MM
+		if [ -z "$rom" ] || [ ! -x "$FLOWBIN" ]; then
+			echo "lock $m: no ROM or no mdEditFlowPluginTest in $BUILD (cmake --build $BUILD --target mdEditFlowPluginTest)"; STATUS=1; continue
+		fi
+		env GEARMULATOR_DATA_ROOT="$OUT/data" "$@" "$FLOWBIN" "$m" "$rom" > "$OUT/$m-lock.txt" 2>&1 || STATUS=1
+		line=$(grep "^synth lock wait" "$OUT/$m-lock.txt")
+		[ -n "$line" ] || { line="synth lock wait: no result (see $OUT/$m-lock.txt): FAIL"; STATUS=1; }
+		echo "lock $m: $line"
+	done
 fi
 sysctl -n machdep.cpu.brand_string
 echo "output: $OUT"
