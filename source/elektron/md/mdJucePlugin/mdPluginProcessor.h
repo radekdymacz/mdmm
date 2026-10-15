@@ -46,7 +46,6 @@ namespace mdJucePlugin
 		md::MachineModel getModel() const { return m_model; }
 		static md::MachineModel getCompiledProductModel();
 		static bool hasEmbeddedProductResource(std::string_view _filename);
-		juce::File getInstalledFactoryStorageImage() const;
 		juce::File getStorageRecoveryImage() const;
 		bool loadStorageImage(const juce::File& _source, juce::String& _result);
 		bool serviceFactoryInitialization();
