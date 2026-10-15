@@ -2009,6 +2009,10 @@
             "exactEssi": {
               "type": "boolean"
             },
+            "stalled": {
+              "type": "boolean",
+              "description": "1.0: the machine stopped moving and the scheduler's watchdog muted it (md::Hardware::schedulerStalled); the meter says STALLED until a restart. Absent: false."
+            },
             "translated": {
               "type": "boolean"
             },
