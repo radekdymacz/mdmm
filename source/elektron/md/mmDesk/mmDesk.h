@@ -6,6 +6,7 @@
 
 #include "deskCore/deskDesk.h"
 #include "deskCore/deskMod.h"
+#include "deskCore/deskSetup.h"
 #include "deskCore/deskSolo.h"
 
 #include "elektronData/json.h"
@@ -37,7 +38,7 @@ namespace mmDesk
 		{
 			DevicePort device;
 			std::function<void(const Value&)> toPage;
-			// The app modulators (mm-desk/modulators) or the solo changed: keep them with the project (the modulators' document, with the solo beside it).
+			// The app modulators or the solo changed: keep them with the project (mm-desk/setup).
 			std::function<void(const Value& _setup)> saveSetup;
 			// After every ready of a page, once the desk has published its own documents.
 			std::function<void()> ready;
@@ -54,7 +55,8 @@ namespace mmDesk
 		// Device facts; what they change goes out at once, as with the MD's.
 		void onWorkingKit(const Bytes& _region) { machine().onWorkingKit(_region); flush(); }
 		void setProbe(Probe _probe) { machine().setProbe(_probe); flush(); }
-		// The modulators stored with the project (mm-desk/modulators); errors if they do not validate.
+		// The setup stored with the project (mm-desk/setup, or the bare mm-desk/modulators of 0.x projects): what of it
+		// this version can use, the default for the rest (never the previous project's); errors say what was left out.
 		std::vector<std::string> loadSetup(const Value& _setup);
 
 		bool isReady() const { return isInputReady(); }
@@ -88,7 +90,7 @@ namespace mmDesk
 		void publishModulators();
 		void setSolo(const Value& _message);
 		void publishSolo();
-		// The setup the project keeps: the modulators (mm-desk/modulators) and, beside them, the page's solo.
+		// The setup the project keeps (mm-desk/setup): the modulators and the page's solo.
 		Value setupDoc() const;
 		void runModulators();
 
@@ -99,4 +101,6 @@ namespace mmDesk
 
 	// The Monomachine's links address its six synth tracks' DATA pages (page * 8 + index) and levels.
 	constexpr deskCore::ModLimits g_mmModLimits{"mm-desk/modulators", 5, 63};
+	// Its setup document: the modulators and the solo of its 12 tracks (no knob rows).
+	constexpr deskCore::SetupSpec g_mmSetupSpec{"mm-desk/setup", g_mmModLimits, 12, false};
 }

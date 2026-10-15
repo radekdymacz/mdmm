@@ -81,10 +81,10 @@ namespace mmDesk
 
 	Desk::Value Desk::setupDoc() const
 	{
-		auto doc = deskCore::modSetupToJson(m_mods.setup(), g_mmModLimits);
-		if(!m_solo.empty())
-			doc.set("solo", deskCore::solo::toJson(m_solo));
-		return doc;
+		deskCore::DeskSetup s;
+		s.modulators = m_mods.setup();
+		s.solo = m_solo;
+		return deskCore::setupToJson(s, g_mmSetupSpec);
 	}
 
 	// The page's solo and the mutes the person had before it: kept with the project (B-123). Not echoed: the page
@@ -111,13 +111,11 @@ namespace mmDesk
 
 	std::vector<std::string> Desk::loadSetup(const Value& _setup)
 	{
+		// never the previous project's setup: what this one holds that can be used, else the default (errors say what not)
 		std::vector<std::string> errors;
-		if(const auto setup = deskCore::modSetupFromJson(_setup, errors, g_mmModLimits))
-			m_mods.setSetup(*setup);
-		m_solo = {};
-		if(const auto* s = _setup.find("solo"))
-			if(const auto solo = deskCore::solo::fromJson(*s, 12, errors))
-				m_solo = *solo;
+		const auto s = deskCore::setupFromJson(_setup, g_mmSetupSpec, errors);
+		m_mods.setSetup(s.modulators);
+		m_solo = s.solo;
 		publishModulators();
 		publishSolo();
 		flush();

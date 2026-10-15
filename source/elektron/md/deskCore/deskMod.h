@@ -70,6 +70,9 @@ namespace deskCore
 	{
 		std::vector<ModSource> sources;
 		std::vector<ModLink> links;
+
+		bool operator==(const ModSetup& _o) const { return sources == _o.sources && links == _o.links; }
+		bool operator!=(const ModSetup& _o) const { return !(*this == _o); }
 	};
 
 	// Rates as the mockup names them, in 16th-note steps.
@@ -92,8 +95,17 @@ namespace deskCore
 		int maxParam = 23;
 	};
 
+	// The document's major version: a reader takes every version whose whole number it knows (1, 1.x) and ignores the
+	// members it does not know; additions never raise it (FOUNDATION.md, "What 1.0 promises to read").
+	constexpr int g_modVersion = 1;
+	bool readsMajor(const elektronData::json::Value& _doc, int _major);
+
+	// A command's setup (the page's, ours): all or nothing, every error refuses it.
 	std::optional<ModSetup> modSetupFromJson(const elektronData::json::Value& _doc, std::vector<std::string>& _errors,
 		const ModLimits& _limits = {});
+	// A stored setup (a project's, maybe a newer editor's): what can be used. A bad source or link is left out alone,
+	// a value this version does not know is the default; another schema or major version gives none. Errors say what.
+	ModSetup modSetupRead(const elektronData::json::Value& _doc, std::vector<std::string>& _errors, const ModLimits& _limits);
 	elektronData::json::Value modSetupToJson(const ModSetup& _setup, const ModLimits& _limits = {});
 
 	struct ModOutput
