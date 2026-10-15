@@ -14,15 +14,15 @@ const escH=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"
 const KNAME=11;
 /* Name characters: SysEx 0x55 takes 11 ASCII bytes (7-bit). Which of them the MM font draws is not checked, so the mockup keeps to a safe set. */
 const KBAD=/[^A-Z0-9 \-.\/+&!?'#*():]/g;
-const KITN={0:"MONOMACHINE",1:"ACID BATH",2:"VOCODED",3:"FM BELLS",4:"DIGI CHOIR",5:"SID LEADS",6:"NOISE TOYS",7:"DUB CHORDS"};
 /* kit content (1-18): machines + all DATA pages, LFOs, MIDI page, routing, trig and multi-trig settings, multi env, name */
 function captureKit(){return clone({tracks:S.tracks.map(t=>({m:t.m,name:t.name,v:t.v,lev:t.lev,out:t.out,inp:t.inp,trigpos:t.trigpos,port:t.port,leg:t.leg,assign:t.assign})),midi:S.midi.map(t=>({v:t.v,cc:t.cc,ch:t.ch,name:t.name})),multi:S.multi,menv:S.menv})}
-const FACTORY=captureKit();
+/* the kit the empty start is made of; the browser mockup's example makes it its own (demo/126-example.js) */
+let FACTORY=captureKit();
 const FKM=[["SWAVE-PULS","FM+STAT","SID-6581","DPRO-WAVE","GND-NOIS","FX-CHORUS"],["VO-6","SWAVE-ENS","FM+DYN","DPRO-BBOX","SID-6581","FX-REVERB"]];
 function setMach(d,i,m){const t=d.tracks[i];t.m=m;t.v.SYN=synDefaults(m);t.name=machName(m);t.inp=isFx(m)?(i?"NEIBOR":"INP AB"):t.inp}
 function factoryKit(k){const d=clone(FACTORY);if(!k)return d;const set=FKM[k%2];d.tracks.forEach((t,i)=>{if((k+i)%3===0)setMach(d,i,set[i]);Object.values(t.v).forEach(a=>a.forEach((x,j)=>a[j]=clamp(x+(k*37+i*11+j*5)%21-10)))});return d}
 function clearedKit(){const d=clone(FACTORY);d.tracks.forEach((t,i)=>{t.m="GND-SIN";t.name="Sine";t.v={SYN:synDefaults("GND-SIN"),AMP:[...DEFV.AMP],FLT:[...DEFV.FLT],EFX:[...DEFV.EFX],LF1:[...DEFV.LFO],LF2:[...DEFV.LFO],LF3:[...DEFV.LFO]};t.lev=100;t.out={AB:true,CD:false,EF:false};t.inp="NEIBOR";t.trigpos=null});return d}
-S.kits=Array.from({length:128},(_,k)=>({name:KITN[k]||"",empty:!KITN[k],data:null}));S.workName=S.kits[0].name;
+S.kits=Array.from({length:128},()=>({name:"",empty:true,data:null}));S.workName="";
 function kitData(k){const s=S.kits[k];return s.data?clone(s.data):s.empty?clearedKit():factoryKit(k)}
 function pruneLocks(){for(const k of [...S.locks.keys()]){const[t,p]=k.split("|");if(!pname(+t,p))S.locks.delete(k)}if(!pname(S.sel,S.lane)){S.lane=isMidiT(S.sel)?"MID.1":"FLT.1";S.lanePage=S.lane.split(".")[0]}}
 function applyKit(d){d=clone(d);S.tracks.forEach((t,i)=>Object.assign(t,d.tracks[i]));S.midi.forEach((t,i)=>Object.assign(t,d.midi[i]));S.multi=d.multi;S.menv=d.menv;pruneLocks()}
@@ -31,9 +31,7 @@ const packSeq=t=>({steps:t.steps,slide:[...t.slide],swing:[...t.swing],arp:t.arp
 function capturePat(){return clone({len:S.len,mult:S.mult,swingAmt:S.swingAmt,patTrn:S.patTrn,tr:[...S.tracks,...S.midi].map(packSeq),locks:[...S.locks].map(([k,m])=>[k,[...m]])})}
 function emptyPat(len){return{len,mult:"1X",swingAmt:50,patTrn:64,tr:[...S.tracks,...S.midi].map(()=>({steps:Array(64).fill(null),slide:[],swing:[1,3,5,7,9,11,13,15].flatMap(x=>[x,x+16,x+32,x+48]),arp:newArp(),tr:{TRACK:64,SCALE:0,KEY:0}})),locks:[]}}
 function applyPat(d){d=clone(d);S.len=d.len;S.mult=d.mult;S.swingAmt=d.swingAmt;S.patTrn=d.patTrn;[...S.tracks,...S.midi].forEach((t,i)=>{const x=d.tr[i];t.steps=x.steps;t.slide=new Set(x.slide);t.swing=new Set(x.swing);t.arp=x.arp;t.tr=x.tr});S.locks=new Map(d.locks.map(([k,m])=>[k,new Map(m)]));pruneLocks()}
-S.patInfo=Array.from({length:128},(_,p)=>({has:p<8,len:[32,16,32,64,16,48,32,16][p%8]}));S.patData={};
-(()=>{const base=capturePat();for(let p=1;p<8;p++){const d=clone(base),r=(p*2)%d.len,tn=[0,5,7,-2,3,-5,10,12][p];d.len=S.patInfo[p].len;
- d.tr.forEach((x,i)=>{const s=x.steps.slice(0,32);x.steps=Array.from({length:64},(_,k)=>{const st=s[(k+r)%32];if(!st||!st.n||i===4)return st&&clone(st);return{...clone(st),n:st.n.map(n=>clamp(n+tn))}})});d.locks=[];S.patData[p]=d}})();
+S.patInfo=Array.from({length:128},()=>({has:false,len:16}));S.patData={};
 const curHas=()=>[...S.tracks,...S.midi].some(t=>t.steps.slice(0,S.len).some(Boolean));
 const linked=k=>Array.from({length:128},(_,p)=>p).filter(p=>S.patKit[p]===k&&hasPat(p));
 const kDisp=k=>k===S.kit?S.workName:S.kits[k].name;
