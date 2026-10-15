@@ -38,7 +38,7 @@ What this costs:
 3. Undo is one step per gesture (`g`). A GEN run or a MUTATE trial is one gesture.
 4. Pacing stays in the core (`PushSlot`, `DinPacer`, kit delivery as CC/NRPN from a before/after diff).
 5. The existing contracts stay valid. New command rows are additions. `set` stays legal.
-6. The MM mockup (`doc/modern-ux/mm-mockup/src/`, about 350 KB built) is also the design prototype. It must
+6. The MM mockup (`source/elektron/md/mdJucePlugin/skins/mmStudio/src/`, about 350 KB built) is also the design prototype. It must
    still open in a browser on its own, with no plug-in.
 7. Feature parity exists today (MM-PORT-PLAN phases 1 to 4). Migration must keep every feature working.
 8. Effects at the edges. The core stays pure and clock-free except where a clock is injected.
@@ -188,7 +188,7 @@ That is a UI rule about when to draw. The view itself is always current.
 
 ### 4.6 The standalone mockup
 
-`doc/modern-ux/mm-mockup/src/55-host.js` keeps the host seam. Without `window.MMHost`, a demo host
+`skins/mmStudio/src/55-host.js` keeps the host seam. Without `window.MMHost`, a demo host
 (`src/54-demo.js`, new, about 100 lines) runs: it starts from example contract documents (one fixture in
 `doc/modern-ux/mm-mockup/demo-docs.json`), answers every command ok, and folds the command's overlay writes
 into its base view. Its undo is a snapshot of that base. So every intent the page shows at once must carry

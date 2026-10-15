@@ -2,7 +2,7 @@
    In the plug-in, mmAdapter.js sets window.MMHost before this script runs, and the real machine
    plays: its transport, its library, its undo and its questions (in C++). A host implements every
    call below (sync-mmstudio-skin.py checks both ways); the mockup hands those actions to it.
-   Without one (this mockup on its own) the demo host plays the edits (54-demo.js, DESIGN-UNIFY.md
+   Without one (the browser mockup) the demo host plays the edits (mm-mockup/demo/54-demo.js, DESIGN-UNIFY.md
    4.6: the same intents, shown through their writes over the example's documents, and snapshot
    undo) and the mockup's example engine the rest: a local clock, a pretend boot, its library and
    its own questions.
@@ -69,5 +69,8 @@
    for what the host's engine cannot do (NA_SEL maps each capability to its controls, NA_INFO
    lists those with none). */
 const HOST=window.MMHost||window.MMDemoHost||{};
+/* the example engine's own changes to the state shown (no intent): the browser mockup's demo host's view follows
+   them (window.MMDemoHost, mm-mockup/demo/54-demo.js; never in the plug-in) */
+function demoRebase(step){if(window.MMDemoHost)window.MMDemoHost.rebase(step)}
 /* the plug-in's host implements every call of the seam (53-seam.js) */
 if(window.MMHost){const miss=MM_SEAM.host.filter(k=>!(k in window.MMHost));if(miss.length)console.warn("MMHost lacks "+miss.join(", ")+" (53-seam.js)")}

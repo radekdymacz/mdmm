@@ -15,21 +15,21 @@
 # the skin rows and the doc/* row, so a source takes the tests and journeys of the page it makes. A source file of one
 # area (its journeys are named <editor>-<area>-*, skins/shared/deskJourney.js) runs that area's journeys; a shared or
 # cross-cutting one, and every stylesheet (any view can change), runs the machine's page journeys.
-doc/modern-ux/mm-mockup/src/52-gen.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-gen-*,mm-seq-*	-	no	2 2c 7d
-doc/modern-ux/mm-mockup/src/76-gen.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-gen-*,mm-seq-*	-	no	2 2c 7d
-doc/modern-ux/mm-mockup/src/56-keys.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-keys-*	-	no	2 2c 7d
-doc/modern-ux/mm-mockup/src/58-roll.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-roll-*,mm-seq-*	-	no	2 2c 7d
-doc/modern-ux/mm-mockup/src/70-seq.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-seq-*	-	no	2 2c 7d
-doc/modern-ux/mm-mockup/src/85-sound-groups.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-sound-*	-	no	2 2c 7d
-doc/modern-ux/mm-mockup/src/90-sound.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-sound-*	-	no	2 2c 7d
-doc/modern-ux/mm-mockup/src/100-mix.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-mix-*	-	no	2 2c 7d
-doc/modern-ux/mm-mockup/src/110-perform.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-perform-*	-	no	2 2c 7d
-doc/modern-ux/mm-mockup/src/117-global.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-global-*	-	no	2 2c 7d
-doc/modern-ux/mm-mockup/src/120-song.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-song-*	-	no	2 2c 7d
-doc/modern-ux/mm-mockup/src/125-lib.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-lib-*	-	no	2 2c 7d
-doc/modern-ux/mm-mockup/src/*.css	deskCompatPageTest|deskCpuPageTest|deskVolumePageTest|deskSoundLayoutPageTest|deskTransportPageTest|deskValueEditPageTest|deskWhatPageTest|deskKeyViewPageTest	-	mm-*	-	no	2 2c 7d
-doc/modern-ux/mm-mockup/src/*.html	deskCompatPageTest|deskCpuPageTest|deskVolumePageTest|deskSoundLayoutPageTest|deskTransportPageTest|deskValueEditPageTest|deskWhatPageTest|deskKeyViewPageTest	-	mm-*	-	no	2 2c 7d
-doc/modern-ux/mm-mockup/src/*	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-*	-	no	2 2c 7d
+source/elektron/md/mdJucePlugin/skins/mmStudio/src/52-gen.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-gen-*,mm-seq-*	-	no	2 2c 7d
+source/elektron/md/mdJucePlugin/skins/mmStudio/src/76-gen.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-gen-*,mm-seq-*	-	no	2 2c 7d
+source/elektron/md/mdJucePlugin/skins/mmStudio/src/56-keys.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-keys-*	-	no	2 2c 7d
+source/elektron/md/mdJucePlugin/skins/mmStudio/src/58-roll.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-roll-*,mm-seq-*	-	no	2 2c 7d
+source/elektron/md/mdJucePlugin/skins/mmStudio/src/70-seq.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-seq-*	-	no	2 2c 7d
+source/elektron/md/mdJucePlugin/skins/mmStudio/src/85-sound-groups.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-sound-*	-	no	2 2c 7d
+source/elektron/md/mdJucePlugin/skins/mmStudio/src/90-sound.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-sound-*	-	no	2 2c 7d
+source/elektron/md/mdJucePlugin/skins/mmStudio/src/100-mix.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-mix-*	-	no	2 2c 7d
+source/elektron/md/mdJucePlugin/skins/mmStudio/src/110-perform.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-perform-*	-	no	2 2c 7d
+source/elektron/md/mdJucePlugin/skins/mmStudio/src/117-global.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-global-*	-	no	2 2c 7d
+source/elektron/md/mdJucePlugin/skins/mmStudio/src/120-song.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-song-*	-	no	2 2c 7d
+source/elektron/md/mdJucePlugin/skins/mmStudio/src/125-lib.js	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-lib-*	-	no	2 2c 7d
+source/elektron/md/mdJucePlugin/skins/mmStudio/src/*.css	deskCompatPageTest|deskCpuPageTest|deskVolumePageTest|deskSoundLayoutPageTest|deskTransportPageTest|deskValueEditPageTest|deskWhatPageTest|deskKeyViewPageTest	-	mm-*	-	no	2 2c 7d
+source/elektron/md/mdJucePlugin/skins/mmStudio/src/*.html	deskCompatPageTest|deskCpuPageTest|deskVolumePageTest|deskSoundLayoutPageTest|deskTransportPageTest|deskValueEditPageTest|deskWhatPageTest|deskKeyViewPageTest	-	mm-*	-	no	2 2c 7d
+source/elektron/md/mdJucePlugin/skins/mmStudio/src/*	mmViewPageTest|mmConvertTest|mmKeysTest|mmGenTest|mmRollTest|mmSoundTest	-	mm-*	-	no	2 2c 7d
 doc/modern-ux/mockup/index.html	deskCompatPageTest|deskCpuPageTest|deskVolumePageTest|deskSoundLayoutPageTest|deskTransportPageTest|deskValueEditPageTest|deskWhatPageTest|deskKeyViewPageTest	-	md-*	-	no	2 2c 7d
 # --- the generated page files: the sync scripts' --check (the page contract, which runs for any change under skins/) proves they
 # are in step with the sources above, so the sources carry the tests; a hand edit that is not in a source fails the check

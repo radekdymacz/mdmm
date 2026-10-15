@@ -1,0 +1,68 @@
+# The Monomachine Editor page, its parts in order: one per line, "<kind> <path>", the path from skins/
+# (source/elektron/md/mdJucePlugin/skins/). Read by doc/modern-ux/sync-mmstudio-skin.py (the plug-in's page:
+# mmStudio.css, mmStudio.html, mmMockup.js) and doc/modern-ux/mm-mockup/build.sh (the browser mockup).
+#   css   a stylesheet, in cascade order
+#   body  the markup
+#   js    a script of the page, in load order
+#   demo  a script of the browser mockup only, at this place (the path from doc/modern-ux/mm-mockup/); never in the plug-in
+
+css   mmStudio/src/10-md-base.css
+css   mmStudio/src/20-mm.css
+css   shared/deskLcd.css
+css   shared/deskModal.css
+css   shared/deskBoot.css
+css   shared/deskSyx.css
+css   shared/deskAudio.css
+css   shared/deskKeyView.css
+css   shared/deskGlobal.css
+css   mmStudio/src/25-mm.css
+body  mmStudio/src/30-body.html
+js    mmStudio/src/40-data.js
+js    mmStudio/src/50-state.js
+js    shared/deskGen.js
+js    shared/deskGenBar.js
+js    shared/deskTrig.js
+js    shared/deskLaneShapes.js
+js    shared/deskSoundLayout.js
+js    mmStudio/src/52-gen.js
+js    mmStudio/src/53-seam.js
+demo  demo/54-demo.js
+js    mmStudio/src/55-host.js
+js    shared/deskKeys.js
+js    shared/deskKeyView.js
+js    shared/deskSongSlots.js
+js    shared/deskWhat.js
+js    shared/deskTogglePaint.js
+js    shared/deskSelect.js
+js    shared/deskValueEdit.js
+js    mmStudio/src/56-keys.js
+js    mmStudio/src/58-roll.js
+js    shared/deskModal.js
+js    shared/deskMenu.js
+js    shared/deskTransport.js
+js    shared/deskCaps.js
+js    shared/deskBoot.js
+js    shared/deskSyx.js
+js    mmStudio/src/60-ui.js
+js    mmStudio/src/70-seq.js
+js    mmStudio/src/75-comforts.js
+js    mmStudio/src/76-gen.js
+js    mmStudio/src/79-lane.js
+js    mmStudio/src/77-select.js
+js    mmStudio/src/78-what.js
+js    mmStudio/src/80-notes.js
+js    mmStudio/src/85-sound-groups.js
+js    mmStudio/src/90-sound.js
+js    mmStudio/src/100-mix.js
+js    mmStudio/src/110-perform.js
+js    mmStudio/src/115-control.js
+js    shared/deskGlobal.js
+js    mmStudio/src/117-global.js
+js    mmStudio/src/120-song.js
+js    mmStudio/src/125-lib.js
+demo  demo/126-example.js
+js    shared/deskAudio.js
+js    shared/deskAudioSelfTest.js
+js    mmStudio/src/127-audio.js
+js    mmStudio/src/128-transport.js
+js    mmStudio/src/130-main.js

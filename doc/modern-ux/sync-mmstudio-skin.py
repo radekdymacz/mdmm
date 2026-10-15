@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
-# Regenerates the Monomachine Editor skin (source/elektron/md/mdJucePlugin/skins/mmStudio/:
-# mmStudio.html, mmStudio.css, mmMockup.js) from the approved mockup in
-# doc/modern-ux/mm-mockup/src/ (copy the design source there first).
+# Regenerates the Monomachine Editor page (source/elektron/md/mdJucePlugin/skins/mmStudio/:
+# mmStudio.html, mmStudio.css, mmMockup.js) from its sources, skins/mmStudio/src/, and the page
+# files both editors share (skins/shared/), the parts listed in order in skins/mmStudio/src/page.txt.
+# The browser mockup (doc/modern-ux/mm-mockup/build.sh) reads the same list and adds its demo parts.
 #   python3 doc/modern-ux/sync-mmstudio-skin.py          write the skin
 #   python3 doc/modern-ux/sync-mmstudio-skin.py --check  only report drift
 #
-# Unlike the MD skin, the mockup's own script runs in the plug-in: it is the UI, copied as it
-# is (P6: no patches). It hands what the machine does to its host (src/55-host.js):
+# Unlike the MD skin, the page's sources are its script as they are (P6: no patches), the
+# same in the plug-in and the browser mockup. They hand what the machine does to a host (src/55-host.js):
 # mmAdapter.js (hand-written, loaded before it) is the plug-in's host and uses the view through
 # window.MMView. What the engine cannot do comes from the machine's capabilities at run time.
-#  1. Markup: 30-body.html as it is.
-#  2. Stylesheet: build.sh's CSS list (the mockup's src/*.css and the shared skins/shared/*.css),
+#  1. Markup: the list's body (src/30-body.html) as it is.
+#  2. Stylesheet: the list's css parts (src/*.css and the shared skins/shared/*.css),
 #     the bundled fonts (skins/shared/deskFonts.css) instead of Google Fonts, then the real
 #     machine's states (skins/mmStudio/mmOverrides.css).
-#  3. Script: build.sh's JS list (src/40-data.js .. 130-main.js and the shared skins/shared/*.js:
+#  3. Script: the list's js parts (src/40-data.js .. 130-main.js and the shared skins/shared/*.js:
 #     the generators, the key dispatcher, the modal layer, the start-up card, SysEx import, the
 #     AUDIO / MIDI panel), in its order, as they are, each headed with its name.
 #  4. Contract check: every MMView member and id mmAdapter.js uses exists (the self-tests,
@@ -34,34 +35,36 @@ import re
 import sys
 
 R = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..') + '/'
-SRC = R + 'doc/modern-ux/mm-mockup/src/'
-SK = R + 'source/elektron/md/mdJucePlugin/skins/mmStudio/'
+SKINS = R + 'source/elektron/md/mdJucePlugin/skins/'
+SK = SKINS + 'mmStudio/'
 check_only = '--check' in sys.argv
-SHARED = R + 'source/elektron/md/mdJucePlugin/skins/shared/'
+SHARED = SKINS + 'shared/'
+TITLE = 'Monomachine Editor'
 
-build = open(R + 'doc/modern-ux/mm-mockup/build.sh').read()
 
-
-def parts(var):
-    """build.sh's list of files (CSS or JS), in order: (name, path); the shared ones are named shared/<file>"""
-    x = re.search(r'^%s="([^"]*)"$' % var, build, re.M)
-    assert x, 'build.sh has no %s list' % var
+def parts(kind):
+    """the page's parts of one kind (css, body, js), in the list's order (skins/mmStudio/src/page.txt): (name, path); the
+    shared ones are named shared/<file>, the page's own by their file name. The list's demo parts are the browser mockup's
+    (doc/modern-ux/mm-mockup/build.sh) and never the plug-in's."""
     out = []
-    for f in x.group(1).split():
-        if f.startswith('$SHARED/'):
-            out.append(('shared/' + f[8:], SHARED + f[8:]))
-        else:
-            assert f.startswith('src/'), 'build.sh %s: %s is neither src/ nor $SHARED/' % (var, f)
-            out.append((f[4:], SRC + f[4:]))
+    for n, line in enumerate(open(SK + 'src/page.txt'), 1):
+        f = line.split()
+        if not f or f[0].startswith('#'):
+            continue
+        assert len(f) == 2 and f[0] in ('css', 'body', 'js', 'demo'), 'page.txt:%d: "<kind> <path>", kind css, body, js or demo' % n
+        if f[0] != kind:
+            continue
+        assert f[1].startswith(('shared/', 'mmStudio/src/')), 'page.txt:%d: %s is neither shared/ nor mmStudio/src/' % (n, f[1])
+        out.append((f[1] if f[1].startswith('shared/') else os.path.basename(f[1]), SKINS + f[1]))
     return out
 
 
-css_files, js_files = parts('CSS'), parts('JS')
-body_file = re.search(r'src/(\d+-body\.html)', build).group(1)
-title = re.search(r'<title>(.*?)</title>', build).group(1)
+css_files, js_files = parts('css'), parts('js')
+assert len(parts('body')) == 1, 'page.txt: one body'
+body_path = parts('body')[0][1]
 
 # ---- 1. markup ----
-m = open(SRC + body_file).read()
+m = open(body_path).read()
 # The host first (it defines window.MMHost, which the mockup reads when it loads), with the shared
 # document store and overlays it keeps the documents in (DESIGN-UNIFY.md phase 1), then the UI, then
 # the translation and the view of the documents (they read the mockup's tables).
@@ -76,10 +79,10 @@ page = '''<!doctype html>
 <head>
 <meta charset="utf-8">
 <title>%s</title>
-<!-- The Monomachine Editor page: the approved mockup (doc/modern-ux/mm-mockup)
-     played by the plug-in: mmAdapter.js is its host (P6). Markup, stylesheet and
-     mmMockup.js are copied by doc/modern-ux/sync-mmstudio-skin.py; do not edit
-     them by hand. The editor inlines stylesheet, scripts and fonts. -->
+<!-- The Monomachine Editor page (sources: skins/mmStudio/src, in the order of
+     src/page.txt) played by the plug-in: mmAdapter.js is its host (P6). Markup,
+     stylesheet and mmMockup.js are generated by doc/modern-ux/sync-mmstudio-skin.py;
+     do not edit them by hand. The editor inlines stylesheet, scripts and fonts. -->
 <link rel="stylesheet" href="mmStudio.css">
 <!-- first, before the page draws: the stylesheet without what an older WebKit lacks (macOS 12) -->
 <script src="deskCompat.js"></script>
@@ -89,17 +92,17 @@ page = '''<!doctype html>
 %s
 </body>
 </html>
-''' % (title, m.rstrip(), '\n'.join('<script src="%s"></script>' % f for f in SCRIPTS))
+''' % (TITLE, m.rstrip(), '\n'.join('<script src="%s"></script>' % f for f in SCRIPTS))
 
 # ---- 2. stylesheet ----
 # a stylesheet both pages share at a place in a page's own file: "/* @include shared/<file> */" on a line of its own
-# (the MD's sync script and build.sh read it the same way), so the cascade stays as it was
+# (the MD's sync script and the MM mockup's build.sh read it the same way), so the cascade stays as it was
 INCLUDE = re.compile(r'^/\* @include shared/([\w.-]+\.css) \*/$', re.M)
 def with_includes(text):
     return INCLUDE.sub(lambda x: open(SHARED + x.group(1)).read().rstrip('\n'), text)
 css = ''.join(with_includes(open(p).read()) for _, p in css_files)
-assert 'fonts.googleapis' not in css, 'mockup stylesheet: Google Fonts belong in build.sh\'s <link>, not a stylesheet'
-head = """/* Monomachine Editor stylesheet: the mockup's (doc/modern-ux/mm-mockup, with the shared stylesheets)
+assert 'fonts.googleapis' not in css, 'page stylesheet: Google Fonts belong in the mockup\'s build.sh <link>, not a stylesheet'
+head = """/* Monomachine Editor stylesheet: the page's (skins/mmStudio/src, with the shared stylesheets)
    as is, with bundled fonts instead of Google Fonts and the real machine's states at the end. Generated by
    doc/modern-ux/sync-mmstudio-skin.py. Fonts: Barlow Condensed, IBM Plex Mono and Silkscreen, SIL Open Font
    License 1.1, shared with the Machinedrum Editor (skins/mdStudio/fonts/, with their OFL-*.txt). */
@@ -111,7 +114,7 @@ out_css = head + css.strip('\n') + '\n' + tail
 js = ''
 for name, p in js_files:
     js += '/* ---- %s ---- */\n' % name + open(p).read() + '\n'
-out_js = '/* Generated by doc/modern-ux/sync-mmstudio-skin.py from doc/modern-ux/mm-mockup/src and skins/shared. Do not edit. */\n' + js
+out_js = '/* Generated by doc/modern-ux/sync-mmstudio-skin.py from skins/mmStudio/src and skins/shared (src/page.txt). Do not edit. */\n' + js
 
 # ---- 4. contract check ----
 # The product seam is checked from mmAdapter.js alone (a release page has no self-tests); the
@@ -253,7 +256,7 @@ if problems:
 outs = [('mmStudio.html', page), ('mmStudio.css', out_css), ('mmMockup.js', out_js)]
 if check_only:
     drift = [n for n, text in outs if not os.path.exists(SK + n) or open(SK + n).read() != text]
-    print('drift: ' + ', '.join(drift) if drift else 'in step with the mockup')
+    print('drift: ' + ', '.join(drift) if drift else 'in step with its sources')
     sys.exit(1 if drift else 0)
 for n, text in outs:
     open(SK + n, 'w').write(text)

@@ -1,6 +1,6 @@
 "use strict";
 /* Monomachine Editor: the plug-in's host for the approved mockup (P6).
-   The mockup (mmMockup.js, copied verbatim from doc/modern-ux/mm-mockup) is the UI. It hands
+   The mockup (mmMockup.js, generated as it is from skins/mmStudio/src) is the UI. It hands
    everything the machine does to its host, window.MMHost, which this file defines before the
    mockup loads: transport, patterns, the kit library, undo, tempo, mutes, the keyboard, the
    Control workspace's modulators and the AUDIO / MIDI panel. Nothing of the mockup is replaced.

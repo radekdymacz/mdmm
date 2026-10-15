@@ -4,11 +4,9 @@
    The editor sends each target's CC on the track channel (Appendix B: SYN 48-55, AMP 56-63, FLT 72-79,
    EFX 80-87, LFO1 88-95, LFO2 104-111, LFO3 112-119). Locks are not involved. */
 S.ctl={sel:"cc21",selT:null,sent:0,addT:0,phase:0,
- sources:[...Array.from({length:8},(_,k)=>({id:"cc"+(21+k),kind:"cc",cc:21+k,label:"Knob "+(k+1),val:[64,40,0,0,0,0,0,0][k]})),
-  {id:"lfoA",kind:"lfo",label:"LFO A",val:64,SHAPE:0,RATE:"1/2",DEPTH:100},{id:"rndA",kind:"rnd",label:"Random A",val:64,RATE:"1/16",SMOOTH:30,_t:64}],
- links:[{src:"cc21",t:0,pid:"FLT.1",min:20,max:110,curve:"lin",inv:false},{src:"cc21",t:2,pid:"FLT.0",min:0,max:80,curve:"exp",inv:false},
-  {src:"cc22",t:2,pid:"EFX.4",min:64,max:127,curve:"lin",inv:false},{src:"cc22",t:3,pid:"SYN.0",min:10,max:127,curve:"log",inv:false},
-  {src:"lfoA",t:2,pid:"AMP.6",min:30,max:98,curve:"lin",inv:false},{src:"rndA",t:7,pid:"MID.4",min:0,max:127,curve:"lin",inv:false}]};
+ /* the eight knobs, no app sources and no links: the browser mockup's example adds its own (demo/126-example.js) */
+ sources:Array.from({length:8},(_,k)=>({id:"cc"+(21+k),kind:"cc",cc:21+k,label:"Knob "+(k+1),val:[64,40,0,0,0,0,0,0][k]})),
+ links:[]};
 const RATES={"1/16":1,"1/8":2,"1/4":4,"1/2":8,"1":16,"2":32,"4":64};
 const srcById=id=>S.ctl.sources.find(x=>x.id===id);
 function curveF(c,x){return c==="exp"?x*x:c==="log"?Math.sqrt(x):x}

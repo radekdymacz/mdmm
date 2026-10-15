@@ -7,7 +7,7 @@ tried for it are kept below for the record; they are not in the skin. Only colou
 from the photos below, rounded and evened out by eye: photo white balance varies, JPEG blurs LCD pixels into the
 ground (so ink colours are set darker than the raw sample), and small photos lose fine print.
 
-Where they live: the Monomachine's in `doc/modern-ux/mm-mockup/src/20-mm.css` (the plate blocks); `build.sh` and
+Where they live: the Monomachine's in `skins/mmStudio/src/20-mm.css` (the plate blocks); `build.sh` and
 `sync-mmstudio-skin.py` write them into `mmStudio.css`. The Machinedrum's (unchanged) in `doc/modern-ux/mockup/index.html`
 ("Hardware-true pass").
 

@@ -8,7 +8,7 @@
    are exclusive.
      node mmKeysTest.js */
 const fs = require("fs"), path = require("path");
-/* the page's UI script (sync-mmstudio-skin.py: the mockup's sources in build.sh order); the host and the translation are not keys */
+/* the page's UI script (sync-mmstudio-skin.py: the page's sources in src/page.txt order); the host and the translation are not keys */
 const FILES = ["mmMockup.js"];
 let failures = 0;
 const check = (ok, what) => { console.log((ok ? "  ok   " : "  FAIL ") + what); if (!ok) failures++; };
