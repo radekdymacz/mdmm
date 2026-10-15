@@ -122,6 +122,7 @@ namespace mdJucePlugin
 		}
 
 		deskCore::LifeFacts::Probe probe() override { return deskCore::LifeFacts::Probe::Running; }
+		bool wireBusy() override { return !m_wire.wire().idle(nowMs()); }
 
 		// What came in, to the desk. No telemetry: the adapter's own is "none" from the start.
 		void step(mdDesk::Desk& _desk, uint64_t, uint64_t) override
