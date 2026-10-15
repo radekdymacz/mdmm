@@ -120,7 +120,7 @@ function homeDown(e){if(e.repeat||KB.held.has(e.code))return;const t=S.sel,k=KEY
  const n=clamp(KEYS_BASE+12*KB.oct+k);KB.held.set(e.code,{t,n});paintKb();keyNote(t,n,KB.vel)}
 function homeUp(code){const h=KB.held.get(code);if(!h)return;KB.held.delete(code);paintKb();keyNote(h.t,h.n,0)}
 /* a host plays the machine (the note intent: pitch in semitones from KEYS_BASE, C3); the example only shows the track's lamp */
-function keyNote(t,n,vel){if(HOST.noteOn){const p=n-KEYS_BASE;return vel?HOST.noteOn(t,p,vel):HOST.noteOff(t,p)}if(vel){flashTracks([t]);kbTell("eg","Example: in the plug-in the keys play the machine.")}}
+function keyNote(t,n,vel){if(vel&&S.ws==="mix"&&!isMidiT(t)&&audible(t))DeskTrig.light([t]);if(HOST.noteOn){const p=n-KEYS_BASE;return vel?HOST.noteOn(t,p,vel):HOST.noteOff(t,p)}if(vel){flashTracks([t]);kbTell("eg","Example: in the plug-in the keys play the machine.")}}
 function kbVel(d){KB.vel=keyVel(KB.vel,d);toast(`Keyboard velocity ${KB.vel}`)}
 function kbOct(d){KB.oct=clamp(KB.oct+d,KEYS_OCT[0],KEYS_OCT[1]);toast(`Keyboard octave ${KB.oct>0?"+":""}${KB.oct}: A plays ${noteName(KEYS_BASE+12*KB.oct)}`)}
 document.addEventListener("keyup",e=>homeUp(e.code));addEventListener("blur",()=>[...KB.held.keys()].forEach(homeUp));

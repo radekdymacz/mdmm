@@ -1219,10 +1219,9 @@ const MdJourneys = (() => {
 				screen: c => ok(c.lit.has(2) && c.lit.size === 1, "lit " + [...c.lit]), within: 2000 },
 			{ say: "and goes out", screen: () => ok(!$1('#rail .th[data-sel="2"]').classList.contains("hit"), "still lit"), within: 2000 },
 			go("mix"),
-			{ say: "on Mix a burst of 50 notes for track 3: its LED lights, no other", act: (u, c) => { watchLit(c, ".strip .act", "hit"); window.gm.recv(Array.from({ length: 50 }, () => ({ type: "midiIn", ch: c.g.baseChannel, note: c.n, vel: 100 }))); },
-				screen: c => ok(c.lit.has(2) && c.lit.size === 1, "lit " + [...c.lit]), within: 2000 },
-			{ say: "a trig's flash of that LED (on) stays while the note's light (hit) goes", act: async (u, c) => { const l = $1('.act[data-act="2"]'); l.classList.remove("hit"); l.classList.add("on"); window.gm.recv([{ type: "midiIn", ch: c.g.baseChannel, note: c.n, vel: 100 }]); await sleep(400); c.on = l.classList.contains("on"); l.classList.remove("on"); },
-				screen: c => ok(c.on && !$1('.act[data-act="2"]').classList.contains("hit"), "trig flash cut: " + !c.on) }
+			{ say: "on Mix a burst of 50 notes for track 3: its trig square flashes, no other", act: async (u, c) => { c.c0 = { ...DeskTrig.count }; window.gm.recv(Array.from({ length: 50 }, () => ({ type: "midiIn", ch: c.g.baseChannel, note: c.n, vel: 100 }))); await sleep(100); },
+				screen: c => { const d = Object.keys(DeskTrig.count).filter(k => DeskTrig.count[k] !== (c.c0[k] || 0)); return ok(d.length === 1 && d[0] === "2", "flashed " + d); }, within: 2000 },
+			{ say: "the square goes out by itself", screen: () => ok($all(".trigsq").every(e => e.getAnimations().length === 0), "still animating"), within: 2000 }
 		],
 		async tidy(u, c) { c?.obs?.disconnect(); }
 	};
@@ -2663,6 +2662,28 @@ const MdJourneys = (() => {
 		],
 		async tidy(u) { if (V.playing) { u.click("#play"); await sleep(500); } }
 	};
+	/* The Mix strip heads: the track number, then the machine's short name (its full name the tooltip, an ellipsis when it does
+	   not fit), then a square that flashes when the track trigs while the sequencer plays (skins/shared/deskTrig.js); a muted
+	   track does not flash */
+	const mixHeads = {
+		name: "md-mix-heads-trigs", proves: [],
+		steps: [
+			go("mix"),
+			{ say: "every strip head shows the number small, the machine's name and a trig square", screen: () => { const hs = $all(".strip .top2"); return ok(hs.length === 16 && hs.every((h, i) => h.querySelector(".tn")?.textContent === String(i + 1) && h.querySelector(".tnm")?.textContent === V.tracks[i].m && h.querySelector(".tnm").title === V.tracks[i].name && h.querySelector(".trigsq")), hs.length + " heads: " + hs.slice(0, 3).map(h => h.textContent.trim()).join(" | ")); } },
+			{ say: "the name is cut with an ellipsis, never clipped hard", screen: () => { const e = $1(".strip .tnm"), cs = getComputedStyle(e); return ok(cs.textOverflow === "ellipsis" && cs.overflow === "hidden" && cs.whiteSpace === "nowrap", cs.textOverflow + " " + cs.overflow); } },
+			{ say: "press PLAY for 2.5 s: the squares of tracks with trigs flash, the others never", act: async (u, c) => {
+				c.c0 = { ...DeskTrig.count }; c.fl = new Set(); const ob = new MutationObserver(ms => { for (const m of ms) if (m.target.classList?.contains("fl")) c.fl.add(+m.target.dataset.trig); });
+				ob.observe($1("#main"), { subtree: true, attributes: true, attributeFilter: ["class"] });
+				if (!V.playing) u.click("#play"); await until(() => V.playing, 5000); await sleep(2500); ob.disconnect();
+				c.with = V.tracks.map((t, i) => t.trigs.slice(0, V.len).some(Boolean) && audible(i) ? i : -1).filter(i => i >= 0); c.cnt = Object.keys(DeskTrig.count).filter(k => DeskTrig.count[k] !== (c.c0[k] || 0)).map(Number); },
+				screen: c => ok(c.fl.size > 0 && [...c.fl].every(i => c.with.includes(i)) && c.cnt.every(i => c.with.includes(i)), `drawn ${[...c.fl]}; counted ${c.cnt}; tracks with trigs ${c.with}`) },
+			{ say: "press STOP: every square is out", act: async u => { if (V.playing) u.click("#play"); await until(() => !V.playing, 5000); await sleep(500); }, screen: () => ok($all(".trigsq").every(e => e.getAnimations().length === 0), "a square still flashes") },
+			{ say: "mute a track that has trigs", act: (u, c) => { c.t = c.with[0]; u.click(`.strip[data-sel="${c.t}"] [data-mute]`); }, screen: c => ok(!audible(c.t), "still audible") },
+			{ say: "play 2 s again: the muted track's square never flashes", act: async (u, c) => { c.c1 = { ...DeskTrig.count }; if (!V.playing) u.click("#play"); await until(() => V.playing, 5000); await sleep(2000); if (V.playing) u.click("#play"); await until(() => !V.playing, 5000); },
+				screen: c => ok((DeskTrig.count[c.t] || 0) === (c.c1[c.t] || 0) && Object.keys(DeskTrig.count).some(k => DeskTrig.count[k] !== (c.c1[k] || 0) || c.with.length < 2), "track " + c.t + " counted " + ((DeskTrig.count[c.t] || 0) - (c.c1[c.t] || 0))), within: 8000 }
+		],
+		async tidy(u, c) { if (V.playing) { u.click("#play"); await sleep(500); } if (c?.t != null && !audible(c.t)) u.click(`.strip[data-sel="${c.t}"] [data-mute]`); }
+	};
 	/* MD-031: the Sound page's LCD line says the track, the machine and its name */
 	const soundInfo = {
 		name: "md-sound-focus-info", proves: ["MD-031"],
@@ -2916,7 +2937,7 @@ const MdJourneys = (() => {
 		tidy: songPlayheadTidy
 	};
 	const wave12 = [clipsJ, undoKitJ, stopQueuedJ, lenRepeatJ, songRepeatsJ];
-	const slice5 = [modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, revertTrackJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, kitNameSave, songCommands, playModeJ, pageLeds, railLamps, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
+	const slice5 = [mixHeads, modeJ, scaleJ, amountsJ, tempoSteps, chooserJ, kitMenuJ, kitMemoryJ, revertTrackJ, quickJ, knobSteps, machineReference, trackEffects, filterSweep, relationsJ, keepFxJ, masterCards, lfoJ, ctrLocks, globalToggles, globalMore, globalMapJ, ccChannels, syxOriginal, sampleRename, kitNameSave, songCommands, playModeJ, pageLeds, railLamps, soundInfo, clearPageJ, clearLocksJ, swingCopy, mutesPersist, lockBudget, liveLock, limitsJ];
 	/* ---------- the end-to-end pass: factory content as a person uses it (scripts/mdmm-e2e.sh, doc/release/E2E.md) ---------- */
 	/* What the machine plays, as the page can see it: the transport and the step from the telemetry, the song row, the output's
 	   peaks (the plug-in's outputLevel, every 250 ms, since the last one). Not silent where sound is the point. */
