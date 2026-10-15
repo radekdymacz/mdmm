@@ -37,6 +37,7 @@ list(APPEND SOURCES
 	mdDeskHost.cpp mdDeskHost.h
 	mdStandaloneApp.cpp
 	mdBootDiagnostics.cpp mdBootDiagnostics.h mdCpuLoad.h mdOutputLevel.h mdMidiIn.h mdMachineMemory.h
+	mdMachineMemoryService.cpp mdMachineMemoryService.h mdMachineMemoryDevice.cpp mdMachineMemoryDevice.h
 	mdProcessArch.cpp mdProcessArch.h mdRosettaNotice.h
 	mdDeskSession.cpp mdDeskSession.h
 	mdMidiLearnCommands.cpp mdMidiLearnCommands.h

@@ -4,8 +4,8 @@
 // memory (doc/modern-ux/DESIGN-machine-memory.md). The file is a store of SAVED SLOTS: each save writes only the slots
 // it changed into it (read, merge, write), never the whole memory; a session with no project state starts from factory
 // memory (or the standalone's own) with the file's slots laid over it. Pure: the slot layout of each machine's patch
-// RAM, the file's frame, what changed, when to write and how a session starts. The processor reads and writes the file
-// and runs the watch on its "machine memory" thread (mdPluginProcessor.cpp); mdMachineMemoryTest.
+// RAM, the file's frame, what changed, when to write and how a session starts. MachineMemoryService reads and writes the
+// file and runs the watch on its "machine memory" thread (mdMachineMemoryService.h); mdMachineMemoryTest.
 
 #include "mdLib/mdstate.h"
 #include "mdLib/mdtypes.h"
@@ -124,6 +124,27 @@ namespace mdJucePlugin::machineMemory
 	constexpr uint32_t g_mdFirstSector = md::g_mdFirmwareFlashEnd / g_sectorSize;	// 32
 	constexpr uint32_t g_mdSectors = md::g_romSize / g_sectorSize;					// 128
 	constexpr uint32_t g_mmSectors = md::g_mmUserFlashStateSize / g_sectorSize;	// 32
+
+	// The memory a save changes on each machine, chosen once (MachineMemory asks this, never which machine it is).
+	// Both: the patch RAM. The Monomachine: its user flash (the DigiPRO waveforms), looked at with the patch RAM, part
+	// of the signature, its sectors the file's sector slots. The Machinedrum: its sample flash (the ROM-xx slots), not
+	// watched (the OS writes it by itself while the factory patterns play) but copied when the page stores a sample;
+	// the samples belong to the ROM (its fingerprint), and its memory is known only once its factory flash is.
+	struct Shape
+	{
+		md::MachineModel model = md::MachineModel::Machinedrum;
+		bool userFlash = false;			// MM: the user flash is looked at and saved
+		bool sampleFlash = false;		// MD: the sample sectors, the ROM's fingerprint, the factory flash first
+		uint32_t firstSector = 0;		// the sector slots a state from before I-024 seeds into the file
+		uint32_t endSector = 0;
+	};
+
+	inline Shape shapeOf(const md::MachineModel _model)
+	{
+		if(_model == md::MachineModel::Monomachine)
+			return {_model, true, false, 0, g_mmSectors};
+		return {_model, false, true, g_mdFirstSector, g_mdSectors};
+	}
 
 	// What a save never is: the working areas and bytes that move by themselves (the working kit and its copy, the
 	// working song, the last loaded pattern, the MD's byte that moves while it plays, the MM's stack). Knobs, CCs and
