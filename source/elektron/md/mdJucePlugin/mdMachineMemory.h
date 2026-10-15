@@ -50,7 +50,8 @@ namespace mdJucePlugin::machineMemory
 		NotOurs,	// another file (the magic is not ours)
 		Version,	// another major version than this editor reads (newer, or the 0.6 previews' whole-memory file)
 		Machine,	// the other machine's
-		Corrupt		// size or CRC wrong, an entry cut short or twice: a broken write, a damaged or crafted file
+		Corrupt,	// size or CRC wrong, an entry cut short or twice: a broken write, a damaged or crafted file
+		Layout		// written for another slot layout than this editor knows (a layout change is a major version)
 	};
 
 	inline uint8_t machineByte(const md::MachineModel _model)
@@ -427,7 +428,7 @@ namespace mdJucePlugin::machineMemory
 	using Store = std::map<Key, Entry>;
 
 	// An entry this editor cannot use: a kind or flags it does not know (a newer minor's), a slot of another size or one
-	// its layout does not have. It is not laid over the memory and is written back as it was, so a newer editor's saves
+	// it does not have. It is not laid over the memory and is written back as it was, so a newer editor's saves
 	// survive an older one's writes; a save of the same slot by this editor replaces it.
 	struct ForeignEntry
 	{
@@ -442,6 +443,10 @@ namespace mdJucePlugin::machineMemory
 		uint64_t romFingerprint = 0;	// MD: the ROM its flash sectors belong to (0: none)
 		Store slots;
 		std::vector<ForeignEntry> foreign;
+		// The file's minor version and reserved header bytes (13-15) as read: written back while its foreign entries
+		// are, so a newer minor's file keeps its label and header (an older editor then sees "newer", not "damaged")
+		uint16_t minor = 0;
+		uint8_t reserved[3] = {0, 0, 0};
 	};
 
 	// offset  size  field
@@ -449,8 +454,8 @@ namespace mdJucePlugin::machineMemory
 	// 8       2     major version (2; 0.7 wrote this and the minor as one u32 2)
 	// 10      2     minor version
 	// 12      1     machine: 0 Machinedrum, 1 Monomachine
-	// 13      3     zero (not read: a newer minor may use them)
-	// 16      4     layout id (layoutId: the slot table it was written with; another one is compared per slot)
+	// 13      3     zero (not read: a newer minor may use them; kept with its entries)
+	// 16      4     layout id (layoutId: the slot table it was written with; another one is refused)
 	// 20      4     CRC-32 of everything from 24 on (md::crc32, as zlib's)
 	// 24      8     the MD ROM's fingerprint (its flash sectors belong to that ROM), else 0
 	// 32      4     entry count
@@ -472,12 +477,12 @@ namespace mdJucePlugin::machineMemory
 			payload += g_entryHeaderSize + f->entry.bytes.size();
 		out.reserve(g_headerSize + payload);
 		out.insert(out.end(), g_magic, g_magic + sizeof(g_magic));
+		const bool keepsNewer = !foreign.empty();
 		detail::putU16(out, g_major);
-		detail::putU16(out, g_minor);
+		detail::putU16(out, keepsNewer ? std::max(g_minor, _f.minor) : g_minor);
 		out.push_back(machineByte(_model));
-		out.push_back(0);
-		out.push_back(0);
-		out.push_back(0);
+		for(const auto r : _f.reserved)
+			out.push_back(keepsNewer ? r : uint8_t{0});
 		detail::putU32(out, layoutId(_model));
 		detail::putU32(out, 0);	// the CRC, below
 		detail::putU64(out, _f.romFingerprint);
@@ -519,6 +524,7 @@ namespace mdJucePlugin::machineMemory
 		switch(_d.problem)
 		{
 		case Problem::Version: return _d.version < g_major;
+		case Problem::Layout:
 		case Problem::Machine: return false;
 		default: return true;
 		}
@@ -526,8 +532,7 @@ namespace mdJucePlugin::machineMemory
 
 	// The saved slots of a file of this machine, or why there are none. Never throws, reads nothing past the bytes.
 	// Any minor version of this major: an entry it cannot use is skipped alone and kept (StoreFile::foreign). A file
-	// written with another slot layout is compared per slot: a slot of this layout with the entry's size is used; the
-	// other blocks (Kind::Other: watched bytes in no slot, cut by the layout) are not, and not kept.
+	// written with another slot layout is refused (a slot's bytes could land on other RAM): a layout change is a major.
 	inline Decoded decode(const std::vector<uint8_t>& _file, const md::MachineModel _model)
 	{
 		Decoded d;
@@ -562,9 +567,15 @@ namespace mdJucePlugin::machineMemory
 			d.problem = Problem::Corrupt;
 			return d;
 		}
-		const bool sameLayout = detail::getU32(_file.data() + 16) == layoutId(_model);
+		if(detail::getU32(_file.data() + 16) != layoutId(_model))
+		{
+			d.problem = Problem::Layout;
+			return d;
+		}
 		StoreFile f;
 		f.romFingerprint = detail::getU64(_file.data() + 24);
+		f.minor = static_cast<uint16_t>(d.minor);
+		std::copy(_file.begin() + 13, _file.begin() + 16, f.reserved);
 		const auto count = detail::getU32(_file.data() + 32);
 		size_t at = g_headerSize;
 		for(uint32_t i = 0; i < count; ++i)
@@ -589,8 +600,6 @@ namespace mdJucePlugin::machineMemory
 			const bool kindOk = p[0] >= static_cast<uint8_t>(Kind::Kit) && p[0] <= static_cast<uint8_t>(Kind::Sector);
 			const Key k{static_cast<Kind>(kindOk ? p[0] : 1), detail::getU32(p + 4)};
 			const bool usable = kindOk && p[1] == 0 && p[2] == 0 && p[3] == 0 && size != 0 && size == sizeOf(_model, k);
-			if(usable && !sameLayout && k.kind == Kind::Other)
-				continue;	// another layout's block: its bytes are not this layout's block
 			if(!usable)
 			{
 				ForeignEntry fe;
@@ -638,6 +647,7 @@ namespace mdJucePlugin::machineMemory
 		case Problem::Version: return "The saved machine memory was written by another version of the editor.";
 		case Problem::Machine: return "The saved machine memory belongs to the other machine.";
 		case Problem::Corrupt: return "The saved machine memory is damaged (an interrupted write, or the file was changed).";
+		case Problem::Layout: return "The saved machine memory was written for another memory layout.";
 		}
 		return {};
 	}
