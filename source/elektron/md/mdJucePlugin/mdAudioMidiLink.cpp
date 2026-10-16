@@ -1,5 +1,6 @@
 #include "mdAudioMidiLink.h"
 #include "mdMidiPortRefusal.h"
+#include "mdMicPermission.h"
 #include "jucePluginLib/processor.h"
 
 #include "deskCore/deskCommands.h"
@@ -8,6 +9,7 @@
 #include "juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h"
 
 #include <cmath>
+#include <vector>
 
 namespace mdJucePlugin
 {
@@ -122,10 +124,45 @@ namespace mdJucePlugin
 		return str(line);
 	}
 
+	std::string AudioMidiLink::midiLoopWarning() const
+	{
+		auto* h = holder();
+		if(!h)
+			return {};
+		auto& dm = h->deviceManager;
+		std::vector<std::string> inputs;
+		for(const auto& m : juce::MidiInput::getAvailableDevices())
+			if(dm.isMidiInputDeviceEnabled(m.identifier))
+				inputs.push_back(str(m.name));
+		const auto out = dm.getDefaultMidiOutputIdentifier();
+		if(out.isEmpty())
+			return {};
+		return midiLoop::warning(inputs, portName(juce::MidiOutput::getAvailableDevices(), str(out)));
+	}
+
+	std::string AudioMidiLink::inputNote() const
+	{
+		auto* h = holder();
+		if(!h)
+			return {};
+		auto& dm = h->deviceManager;
+		auto* dev = dm.getCurrentAudioDevice();
+		const bool chosen = dm.getAudioDeviceSetup().inputDeviceName.isNotEmpty();
+		const bool active = dev && !dev->getActiveInputChannels().isZero();
+		return audioInput::note(micPermission::state(), chosen, active, m_setupError);
+	}
+
 	void AudioMidiLink::logDevices()
 	{
 		if(!m_log)
 			return;
+		const auto loop = midiLoopWarning();
+		if(loop != m_loopLogged)
+		{
+			m_loopLogged = loop;
+			if(!loop.empty())
+				m_log(loop);
+		}
 		auto line = summary();
 		if(line.empty() || line == m_logged)
 			return;
@@ -220,6 +257,10 @@ namespace mdJucePlugin
 		}
 		d.set("midiOutput", named(str(dm.getDefaultMidiOutputIdentifier()), outList));
 		d.set("bluetooth", juce::BluetoothMidiDevicePairingDialogue::isAvailable());
+		d.set("setupError", m_setupError);
+		d.set("inputPermission", audioInput::name(micPermission::state()));
+		d.set("inputNote", inputNote());
+		d.set("midiLoop", midiLoopWarning());
 		return d;
 	}
 
@@ -244,7 +285,8 @@ namespace mdJucePlugin
 			_f(s);
 			const auto error = dm.setAudioDeviceSetup(s, true);
 			h->saveAudioDeviceState();
-			return str(error);
+			m_setupError = str(error);	// B-155: shown by the panel, not only as this command's result
+			return m_setupError;
 		};
 		const auto saved = [&]
 		{
@@ -281,6 +323,7 @@ namespace mdJucePlugin
 			if(!device)
 				return needs("device");
 			dm.setCurrentAudioDeviceType(juce::String(*device), true);
+			m_setupError = dm.getCurrentAudioDevice() ? std::string() : "No audio device opened on " + *device;
 			return saved();
 		case S::Output:
 			if(!device)

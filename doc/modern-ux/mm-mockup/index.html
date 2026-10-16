@@ -1981,6 +1981,11 @@ body.deskmidi #main,body.deskmidi #rail{opacity:.3;pointer-events:none;transitio
 .ammeter i{display:block;height:100%;width:0;background:var(--led);transition:width .08s linear}
 .amnote{font:500 11px var(--sans);color:var(--print2);padding-left:100px}
 .amerr{color:var(--led);font-weight:600}
+/* 0.8 (WP4): the loop warning and the input note, the MIDI monitor row */
+.amwarn{color:var(--led);font-weight:600}
+.ammons{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px;min-width:0;font:500 11px var(--sans);color:var(--print2)}
+.ammon b{font-weight:600;letter-spacing:.1em;color:var(--print)}
+.ammon i{font-style:normal;opacity:.7}
 @media (max-width:900px){.amgrid{grid-template-columns:1fr}.amnote{padding-left:0}}
 /* 0.3.5: the line to the machine's own MIDI settings (GLOBAL, the Machinedrum Editor) */
 .amlink{background:none;border:0;padding:0;font:inherit;color:var(--print);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
@@ -3464,7 +3469,7 @@ const MM_SEAM={
   "setEngineLabel","setEngineTip","setEngines","setAudioEntry","setMemory","setFollow","selectTrack","clearLearnTarget","setMapping","setModulation",
   "setCtlSetup","disable","setRecord","setRecLock","setLcd","setKeyDown","setMidiHeld","setPst","closeFirmwareDialog","bootRom",
   "bootInstalled","syxPreview","syxProgress","syxExported","syxExportInfo","render","renderTop","drawLib","toast","ask","redraw","movePH",
-  "setPos","flashTracks","goWs","clickStep","autoRange","kitSave","redrawAudio","audioLevel","openAudio"]};
+  "setPos","flashTracks","goWs","clickStep","autoRange","kitSave","redrawAudio","audioLevel","audioStats","openAudio"]};
 /* ===== The demo host (DESIGN-UNIFY.md 4.6): this mockup on its own plays its edits as the plug-in does =====
    Without a host (no window.MMHost) every edit is still the machine's intent: the demo host keeps a view of the
    example's contract documents (demo-docs.json, through MmView.derive), folds each intent's writes into it (MmView.toFw,
@@ -7691,18 +7696,28 @@ ED.dist={k(){return(kget("AMP","DIST")-64)/63},
 ED.pan={draw(g,W,H){const ink=cssv("--ink");grid(g,W,H);g.font=SFONT;g.fillStyle=ink;g.fillText("L",6,H-6);g.fillText("R",W-12,H-6);g.fillStyle=inkA(.5);g.fillRect(W/2,20,1,H-30);
   const p=kget("AMP","PAN")-64;label(g,p?(p<0?"left "+(-p):"right "+p):"centre")},
  handles(W,H){return[{x:10+u7(kget("AMP","PAN"))*(W-20),y:H-10-u7(kget("AMP","VOL"))*(H-34),k:"PAN · VOL",drag:(x,y)=>{kset("AMP","PAN",(x-10)/(W-20)*127);kset("AMP","VOL",(H-10-y)/(H-34)*127)}}]}};
-/* FILTER ATK DEC: the filter's own envelope; BOFS moves the base (solid), WOFS the width (dashed). Both are signed
-   (B-148: -64 to +63, 64 = no sweep): up from the middle line for a positive offset, down for a negative one */
-ED.fenv={seg(W){const f=V("FLT");return{a:f[4]/127*W*.3,d:f[5]/127*W*.6}},
- geo(H){const T=22,B=H-10;return{M:(T+B)/2,A:(B-T)/2}},
- off:v=>(v-64)/64,
- draw(g,W,H){const f=V("FLT"),s=this.seg(W),G=this.geo(H),ink=cssv("--ink"),bo=this.off(f[6]),wo=this.off(f[7]);grid(g,W,H);
-  const env=x=>x<s.a?x/Math.max(1,s.a):Math.exp(-3*(x-s.a)/Math.max(4,s.d));
-  g.strokeStyle=inkA(.3);g.lineWidth=1;g.beginPath();g.moveTo(0,G.M+.5);g.lineTo(W,G.M+.5);g.stroke();
-  line(g,W,x=>G.M-env(x)*G.A*bo,ink,2.2);if(wo)line(g,W,x=>G.M-env(x)*G.A*wo,inkA(.6),1.5,[5,4]);
-  label(g,bo||wo?"solid = base · dashed = width":"no offset: the envelope does nothing")},
- handles(W,H){const s=this.seg(W),f=V("FLT"),G=this.geo(H),bo=this.off(f[6]);return[{x:Math.max(5,s.a),y:G.M-G.A*bo,k:"ATK · BOFS",drag:(x,y)=>{f[4]=clamp(Math.round(x/(W*.3)*127));f[6]=clamp(Math.round(64+(G.M-y)/G.A*64))}},
-  {x:s.a+Math.max(4,s.d)*.35,y:G.M-G.A*bo*Math.exp(-1.05),k:"DEC",drag:x=>f[5]=clamp(Math.round((x-s.a)/.35/(W*.6)*127))}]}};
+/* FILTER ATK DEC BOFS WOFS (I-043): the filter's own envelope in two panes of the one screen. The big pane is the reach:
+   BOFS (solid, the base) and WOFS (dashed, the width) each a row across the whole pane, -64 on the left edge, 0 on the
+   line, +63 on the right (B-148: 64 = no sweep), so a drag left or right covers the full range. The small square pane
+   at the right is the envelope's shape alone: ATK and DEC. */
+ED.fenv={geo(W,H){const side=clamp(Math.round(H*.62),56,Math.round(W*.4)),sx=W-side-4,bw=sx-8,P=5;
+  return{side,sx,sy:H-side-4,bw,P,iw:side-2*P,ih:side-2*P,x0:10,x1:Math.max(40,bw-10),rb:Math.round(H*.4),rw:Math.round(H*.72)}},
+ X(G,v){return G.x0+v/127*(G.x1-G.x0)},
+ V(G,x){return clamp(Math.round((x-G.x0)/(G.x1-G.x0)*127),0,127)},
+ shape(G,f){const a=f[4]/127*G.iw*.4,d=Math.max(4,f[5]/127*G.iw*.6);return{a,d,at:x=>x<a?x/Math.max(1,a):Math.exp(-3*(x-a)/d)}},
+ draw(g,W,H){const f=V("FLT"),G=this.geo(W,H),ink=cssv("--ink"),S0=this.shape(G,f),zx=this.X(G,64);
+  g.strokeStyle=inkA(.13);g.lineWidth=1;for(let i=1;i<4;i++){const y=Math.round(H*i/4)+.5;g.beginPath();g.moveTo(0,y);g.lineTo(G.bw,y);g.stroke()}
+  g.strokeStyle=inkA(.35);g.beginPath();g.moveTo(Math.round(zx)+.5,22);g.lineTo(Math.round(zx)+.5,H-14);g.stroke();
+  g.font=SFONT;g.fillStyle=inkA(.6);g.fillText("-64",G.x0-4,H-4);g.fillText("0",zx-2,H-4);g.fillText("+63",G.x1-12,H-4);
+  [["BOFS",f[6],G.rb,0],["WOFS",f[7],G.rw,1]].forEach(([n,v,y,dash])=>{const x=this.X(G,v),o=v-64;g.fillStyle=ink;g.font=SFONT;g.fillText(n+" "+(o>0?"+":"")+o,G.x0-4,y-9);
+   g.strokeStyle=dash?inkA(.6):ink;g.lineWidth=dash?1.5:2.2;g.setLineDash(dash?[5,4]:[]);g.beginPath();g.moveTo(zx,y);g.lineTo(x,y);g.stroke();g.setLineDash([])});
+  g.strokeStyle=inkA(.5);g.lineWidth=1;g.strokeRect(G.sx+.5,G.sy+.5,G.side-1,G.side-1);
+  g.save();g.translate(G.sx+G.P,G.sy+G.side-G.P);line(g,G.iw,x=>-S0.at(x)*G.ih,ink,2);g.restore();
+  label(g,f[6]===64&&f[7]===64?"no reach: the envelope does nothing":"how far it moves",8,15)},
+ handles(W,H){const f=V("FLT"),G=this.geo(W,H),S0=this.shape(G,f),bx=G.sx+G.P,by=G.sy+G.side-G.P;
+  return[{x:this.X(G,f[6]),y:G.rb,k:"BOFS",drag:x=>kset("FLT","BOFS",this.V(G,x))},{x:this.X(G,f[7]),y:G.rw,k:"WOFS",drag:x=>kset("FLT","WOFS",this.V(G,x))},
+   {x:bx+Math.max(0,S0.a),y:by-G.ih,k:"ATK",drag:x=>kset("FLT","ATK",(x-bx)/(G.iw*.4)*127)},
+   {x:bx+S0.a+S0.d*.35,y:by-Math.exp(-1.05)*G.ih,k:"DEC",drag:x=>kset("FLT","DEC",(x-bx-S0.a)/.35/(G.iw*.6)*127)}]}};
 /* EFFECTS EQF EQG: one band, boosted (up) or cut (down) */
 ED.eq={draw(g,W,H){const e=V("EFX"),mid=H/2+4;grid(g,W,H);line(g,W,x=>mid-(e[1]-64)/64*(mid-22)*Math.exp(-Math.pow((x/W-e[0]/127)*8,2)),cssv("--ink"),2);label(g,e[1]===64?"flat":e[1]>64?"boost":"cut")},
  handles(W,H){const e=V("EFX"),mid=H/2+4;return[{x:e[0]/127*W,y:mid-(e[1]-64)/64*(mid-22),k:"EQF · EQG",drag:(x,y)=>{e[0]=clamp(Math.round(x/W*127));e[1]=clamp(Math.round(64+(mid-y)/(mid-22)*64))}}]}};
@@ -7742,14 +7757,27 @@ ED.flt={resp(u,env){const f=V("FLT"),b=clamp((f[0]+(env?f[6]-64:0))/127,0,1),w=M
  handles(W,H){const f=V("FLT"),b=f[0]/127,lp=Math.min(1,b+f[1]/127),yy=u=>clamp(H/2+8-this.resp(u)*(H/4),6,H-6);
   return[{x:Math.max(6,b*W),y:yy(b),k:"BASE · HPQ",drag:(x,y)=>{f[0]=clamp(Math.round(x/W*127));f[2]=clamp(Math.round((H/2+8-y)/(H/2)*127))}},{x:Math.min(W-6,lp*W),y:yy(lp),k:"WDTH · LPQ",drag:(x,y)=>{f[1]=clamp(Math.round((x/W-f[0]/127)*127));f[3]=clamp(Math.round((H/2+8-y)/(H/2)*127))}}]}};
 function lfoCycle(v){const m=Math.pow(2,v[4]);return v[5]?2048/(v[5]*m):Infinity}
-ED.lfo={draw(g,W,H,c){const l=c.dataset.l,v=V(l),tr=trk(S.sel),ink=cssv("--ink"),N=32,cyc=lfoCycle(v),dep=.15+.85*v[7]/127;grid(g,W,H);
-  const trigs=[];for(let s=0;s<N;s++){const st=tr.steps[s%S.len];if(st&&!st.off&&st.l)trigs.push(s)}
-  const lastTrig=p=>{let t=null;for(const s of trigs)if(s<=p)t=s;return t};const mode=v[2];
-  line(g,W,x=>{const p=x/W*N;let ph;const lt=lastTrig(p);
-   if(mode===0||lt==null)ph=p/cyc;else if(mode===1)ph=(p-lt)/cyc;else if(mode===2)ph=lt/cyc;else{const lim=mode===3?1:.5;ph=Math.min(lim-.0001,(p-lt)/cyc)}
-   let o=lshape(v[3],((ph%1)+1)%1);if(v[6]){const il=Math.max(1,(128-v[6])/8);if(Math.floor(p/il)%2)o=0}return H/2+4-o*(H/2-16)*dep},ink,2);
-  trigs.forEach(s=>{const x=s/N*W;g.fillStyle=ink;g.fillRect(x,H-7,2,6)});
-  label(g,`${LTRIG[mode]} · ${cyc===Infinity?"stopped":"cycle "+(cyc>=1?Math.round(cyc*10)/10+" steps":Math.round(cyc*16)/16+" step")}`)}};
+/* I-042: the LFO as the track's locks change it. step(s) says whether pattern step s plays (locks only apply on a step
+   that plays), trig(s) whether it trigs the LFO, lock(i,s) the step's lock on the LFO's parameter i (2 TRIG, 3 WAVE, 4 MULT,
+   5 SPD, 6 INTL, 7 DPTH) or undefined. A lock holds for its own step: the phase runs on at that step's speed, the shape,
+   interval and depth are that step's. M samples across N steps; each is the output times its depth (-1 to 1). */
+function lfoTrace(v,N,M,len,step,trig,lock){const at=(i,s)=>{const x=step(s)?lock(i,s):undefined;return x==null?v[i]:x},out=new Array(M);let free=0,since=null,held=0;
+ for(let k=0;k<M;k++){const p=k/M*N,s=Math.floor(p),ps=s%len,first=k===0||Math.floor((k-1)/M*N)!==s;
+  if(first&&trig(ps)){since=0;held=free}
+  const mode=at(2,ps),spd=at(5,ps),cyc=spd?2048/(spd*Math.pow(2,at(4,ps))):Infinity,rate=cyc===Infinity?0:1/cyc,dep=.15+.85*at(7,ps)/127;let ph;
+  if(since==null||mode===0)ph=free;else if(mode===1)ph=since;else if(mode===2)ph=held;else ph=Math.min((mode===3?1:.5)-.0001,since);
+  let o=lshape(at(3,ps),((ph%1)+1)%1),il=at(6,ps);if(il){il=Math.max(1,(128-il)/8);if(Math.floor(p/il)%2)o=0}
+  out[k]=o*dep;const d=rate*N/M;free+=d;if(since!=null)since+=d}
+ return out}
+/* the locks of this track on LFO l: the parameter indices (2-7) that have any, and the steps (0..len-1) with one */
+function lfoLocks(t,l,len){const idx=[],steps=new Set(),tr=trk(t);for(let i=2;i<8;i++){const m=S.locks.get(lkKey(t,l+"."+i));if(!m)continue;let any=false;for(const s of m.keys()){const q=tr.steps[s];if(s<len&&q&&!q.off){any=true;steps.add(s)}}if(any)idx.push(i)}return{idx,steps}}
+ED.lfo={draw(g,W,H,c){const l=c.dataset.l,v=V(l),t=S.sel,tr=trk(t),ink=cssv("--ink"),N=Math.max(32,Math.min(64,S.len)),cyc=lfoCycle(v),LK=lfoLocks(t,l,S.len);grid(g,W,H);
+  const act=s=>{const q=tr.steps[s];return!!q&&!q.off},tg=s=>act(s)&&!!tr.steps[s].l;
+  const o=lfoTrace(v,N,Math.max(2,Math.floor(W)+1),S.len,act,tg,(i,s)=>S.locks.get(lkKey(t,l+"."+i))?.get(s)),sw=W/N;
+  g.fillStyle=inkA(.1);LK.steps.forEach(s=>{for(let r=s;r<N;r+=S.len)g.fillRect(Math.round(r*sw),0,Math.max(1,Math.round(sw)),H-2)});
+  line(g,W,x=>H/2+4-o[Math.min(o.length-1,Math.round(x))]*(H/2-16),ink,2);
+  for(let s=0;s<N;s++)if(tg(s%S.len)){const x=Math.round(s*sw);g.fillStyle=ink;const lk=LK.steps.has(s%S.len);g.fillRect(x,H-(lk?13:7),2,lk?12:6)}
+  label(g,`${LTRIG[v[2]]} · ${cyc===Infinity?"stopped":"cycle "+(cyc>=1?Math.round(cyc*10)/10+" steps":Math.round(cyc*16)/16+" step")}${LK.idx.length?" · locks "+LK.idx.map(i=>FIXED[l][i]).join(" "):""}`)}};
 function inputLabel(t){const tr=trk(t);if(!isFx(tr.m))return"—";if(tr.inp==null)return"none";if(tr.inp==="NEIBOR")return t===0?"NEIBOR (none)":"T"+t+" "+S.tracks[t-1].m;return tr.inp}
 /* each screen's help: its tooltip */
 const SND_TIP={uni:"The base saw (middle) and the unison pair either side: UNIW how far (sideways), UNIL how loud (up); dashed, the extended pair at twice the width (UNIX, never above UNIL). Drag the dot.",
@@ -7774,12 +7802,12 @@ const SND_TIP={uni:"The base saw (middle) and the unison pair either side: UNIW 
  dist:"Distortion, in to out (dashed = clean). Drag the dot up or down.",
  pan:"The track in the stereo field: PAN sideways, VOL up. Drag the dot.",
  flt:"The 24 dB gap filter: BASE is the high-pass, WDTH the gap to the low-pass, the dots up for HPQ and LPQ. Dashed: where the envelope takes it. Both follow the note unless KEY (Perform › Assign › KEY) switches one off: the label then says which is fixed.",
- fenv:"The filter's own envelope: ATK, DEC; BOFS how far it moves the base (solid), WOFS the width (dashed), -64 to +63: up for +, down for -, 0 none. Drag the dots.",
+ fenv:"The filter's own envelope. Big pane: BOFS how far it moves the base (solid) and WOFS the width (dashed), -64 on the left edge to +63 on the right, 0 on the line: drag a dot left or right. Small square: its shape, ATK and DEC.",
  eq:"One EQ band: EQF moves it, EQG boosts (up) or cuts (down). Drag the dot.",
  srr:"Sample-rate reduction: more SRR, longer held steps (the rail).",
  delay:"The repeats over one bar: DTIM apart (in 256ths: 64 = a beat), DSND how loud (below 0 keeps stereo, above ping-pongs), DFB how much each keeps.",
  dflt:"The repeats' band: DBAS the low edge, DWID up to the high edge. Drag the edges.",
- lfo:"The LFO over two bars, as the trig mode makes it (the ticks are this track's LFO trigs). Drag the ~ key onto any value to route it there."};
+ lfo:"The LFO across the pattern (two bars at least), as the trig mode makes it and as this track's locks on TRIG, WAVE, MULT, SPD, INTL and DPTH change it: a lock holds for its own step (shaded; the tick is taller). The ticks are this track's LFO trigs. Drag the ~ key onto any value to route it there."};
 const attrS=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
 const sndPlot=(ed,pg,knobs,extra="")=>`<div class="plot" title="${attrS(SND_TIP[ed]||"Drag the dots.")}"><canvas class="ed" data-ed="${ed}" data-pg="${pg}" data-k="${knobs.join(" ")}" ${extra} aria-label="${attrS(SND_TIP[ed]||"")}"></canvas></div>`;
 /* a group's title: a MUTATE scope chip (its knobs join what R moves), or plain */
@@ -7805,7 +7833,7 @@ const sgRow=(list,cls)=>soundRow(list,cls,SND_ROW);
 function lfoGroup(t,k){const l="LF"+k,v=trk(t).v[l],dn=LPAGES[v[0]]?destNames(t,v[0]):["—"];
  return{key:"lfo",title:"LFO "+k,pg:l,idx:[4,5,6,7],knobs:[4,5,6,7].map(i=>FIXED[l][i]),n:4,w:4,tag:v[7]?"":"off",
   titleHtml:`<span class="lfohead"><button class="lfohandle" data-cord="${l}" title="Drag onto any value to route LFO ${k} there" aria-label="Route LFO ${k}">~${k}</button><button class="mutg" data-mutsg="${l}:lfo" aria-pressed="${S.mut.scope.has(l+":lfo")}" title="Add LFO ${k} to what Mutate moves (its PAGE and DEST stay)">LFO ${k}</button></span>`,
-  plot:`<div class="plot" title="${attrS(SND_TIP.lfo)}"><canvas class="ed" data-ed="lfo" data-l="${l}" aria-label="LFO ${k} over two bars, ticks = LFO trigs"></canvas></div>`,
+  plot:`<div class="plot" title="${attrS(SND_TIP.lfo)}"><canvas class="ed" data-ed="lfo" data-l="${l}" aria-label="LFO ${k} across the pattern with this track's locks, ticks = LFO trigs"></canvas></div>`,
   body:`<div class="lfobody"><div class="sgline lforoute"><select id="lp${k}" aria-label="LFO ${k} page">${LPAGES.map((p,i)=>opt(i,p==="MID"?"MIDI":p,v[0])).join("")}</select><span class="arrow">›</span><select id="ld${k}" aria-label="LFO ${k} destination">${dn.map((d,i)=>opt(i,d,v[1])).join("")}</select>
    <span class="seg" data-set="ltrig" data-l="${l}" title="TRIG: FREE runs on, TRIG restarts it on a trig, HOLD keeps the value a trig takes, ONE and HALF play one cycle or half of one">${LTRIG.map((n,i)=>`<button data-v="${i}" aria-pressed="${v[2]===i}">${n}</button>`).join("")}</span></div>
    <div class="shapes w11">${LWAVE.map((n,i)=>`<button data-lwave="${l}" data-w="${i}" aria-pressed="${v[3]===i}" title="${n}" aria-label="${n}">${shapeIcon(i)}</button>`).join("")}</div>
@@ -8739,8 +8767,11 @@ S.patInfo=Array.from({length:128},(_,p)=>({has:p<8,len:[32,16,32,64,16,48,32,16]
    One file for both editors and both mockups (skins/shared/); its self-test is deskAudioSelfTest.js.
    It only renders a gm-audio/devices document: audioDoc() gives it, audioSend(command) changes one
    thing, audioMeter(on) asks for the input level (audioLevel(v) brings it). The host is the page's:
-   a simulated device list in the mockups, the plug-in's AudioDeviceManager in the editors. */
-var AP={open:false,level:0};
+   a simulated device list in the mockups, the plug-in's AudioDeviceManager in the editors.
+   0.8 (WP4): the document may also carry midiLoop (an input that is also the output, B-154), inputNote (why the
+   input is on NONE, B-155) and setupError; audioStats(m) takes the MIDI monitor's midiStats message (once a second)
+   for the MONITOR row. Each says nothing when it has nothing to say. */
+var AP={open:false,level:0,stats:null,prev:null};
 const AMTIP={
  output:"Where the sound goes. The engine keeps running while the device changes",
  test:"A short test tone on the active outputs",
@@ -8751,7 +8782,16 @@ const AMTIP={
  buffer:"Smaller: less latency, more CPU. Larger: safer on a busy computer",
  midiIn:"MIDI inputs that play and control the machine",
  midiOut:"Where the machine's own MIDI goes: its notes, CCs, program changes, clock and transport (never its SysEx)",
- bt:"Pair a Bluetooth MIDI device (the system's dialog)" };
+ bt:"Pair a Bluetooth MIDI device (the system's dialog)",
+ monitor:"What the editor has taken in from MIDI and sent out since it started, counted live (hover a number for the types)" };
+const amN=n=>(+n||0).toLocaleString("en-US");
+function amMonitor(){const s=AP.stats;if(!s)return`<span class="note">No MIDI counted yet</span>`;
+ const d=s.directions||{},i=d.inHost||{total:0,types:{}},o=d.outHost||{total:0,types:{}},p=AP.prev&&AP.prev.directions,dt=Math.max(1,(s.at-AP.prev?.at)/1000||1);
+ const rate=(c,k)=>p&&p[k]?Math.max(0,Math.round((c.total-p[k].total)/dt)):null,r=(c,k)=>{const v=rate(c,k);return v==null?"":` <i>${v}/s</i>`};
+ const ty=c=>["note","cc","pc","clock","transport","sysex"].filter(k=>c.types&&c.types[k]).map(k=>amN(c.types[k])+" "+k).join(", ")||"nothing yet";
+ const drop=s.dropped?(s.dropped.scheduled||0)+(s.dropped.external||0)+(s.dropped.allocation||0):0;
+ return`<span class="ammon" title="Into the editor from a MIDI port or the host: ${amEsc(ty(i))}"><b>IN</b> <span class="mono">${amN(i.total)}</span>${r(i,"inHost")}</span><span class="ammon" title="Out of the editor to the MIDI output: ${amEsc(ty(o))}"><b>OUT</b> <span class="mono">${amN(o.total)}</span>${r(o,"outHost")}</span>${drop?`<span class="ammon amerr" title="MIDI events the editor had to drop">DROPPED <span class="mono">${amN(drop)}</span></span>`:""}`}
+function audioStats(m){AP.prev=AP.stats;AP.stats=Object.assign({},m,{at:Date.now()});const e=document.getElementById("ammon");if(AP.open&&e)e.innerHTML=amMonitor()}
 const amEsc=t=>String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
 function drawAudio(){const pop=$("#audiopop");if(!pop)return;if(!AP.open){pop.hidden=true;return}const D=audioDoc();
  const head=note=>`<div class="libhead"><span class="cap">Audio / MIDI</span>${note}<button class="libx" data-am="close" title="Close (Esc)">Esc</button></div>`;
@@ -8771,14 +8811,14 @@ function drawAudio(){const pop=$("#audiopop");if(!pop)return;if(!AP.open){pop.hi
    <div class="grow2"><span class="ilab">Device</span>${sel("input",D.input?.id,D.input?.list||[],AMTIP.input,"NONE")}</div>
    <div class="grow2"><span class="ilab">Level</span><span class="ammeter" title="The input level before the mute"><i id="amlevel" style="width:${Math.round(Math.min(1,Math.sqrt(Math.max(0,AP.level)))*100)}%"></i></span></div>
    <div class="grow2"><span class="ilab">Input</span><span class="seg" title="${AMTIP.mute}"><button data-am="mute" data-v="1" aria-pressed="${!!D.input?.muted}">MUTED</button><button data-am="mute" data-v="0" aria-pressed="${!D.input?.muted}">LIVE</button></span></div>
-   <div class="amnote">${D.input?.muted?"Input muted (prevents feedback)":"Input live: keep speakers away from the microphone"}</div></section>
+   <div class="amnote">${D.input?.muted?"Input muted (prevents feedback)":"Input live: keep speakers away from the microphone"}</div>${D.inputNote?`<div class="amnote amwarn" role="alert" id="aminputnote">${amEsc(D.inputNote)}</div>`:""}</section>
   <section class="card"><header><h3>Clock</h3><span>rate and buffer</span></header>
    <div class="grow2"><span class="ilab">Sample rate</span>${sel("rate",rate.value,rate.list.map(r=>({id:String(r),name:(r/1000)+" kHz"})),AMTIP.rate)}</div>
    <div class="grow2"><span class="ilab">Buffer</span>${sel("buffer",buf.value,buf.list.map(b=>({id:String(b),name:b+" samples"+(rate.value?" · "+(Math.round(b/rate.value*10000)/10)+" ms":"")})),AMTIP.buffer)}</div>
    <div class="grow2"><span class="ilab">Latency</span><b class="mono">${D.latencyMs?D.latencyMs+" ms":"--"}</b></div></section>
   <section class="card amwide"><header><h3>MIDI</h3><span>inputs, output, Bluetooth</span></header>
    <div class="grow2 amtop"><span class="ilab">Inputs</span><span class="amins" title="${AMTIP.midiIn}">${(D.midiInputs||[]).map(m=>`<button class="amled" data-am="midiIn" data-id="${amEsc(m.id)}" aria-pressed="${!!m.on}"><i class="led${m.on?" on":""}"></i>${amEsc(m.name)}</button>`).join("")||`<span class="note">No MIDI inputs.</span>`}</span></div>
-   <div class="grow2"><span class="ilab">Output</span>${sel("midiOut",D.midiOutput?.id||"",D.midiOutput?.list||[],AMTIP.midiOut,"NONE")}${D.bluetooth?`<button class="amkey" data-am="bt" title="${AMTIP.bt}">BLUETOOTH MIDI…</button>`:""}</div>${typeof openGlobal==="function"?`<div class="grow2"><span class="ilab"></span><button class="amlink" data-am="global" title="GLOBAL: the machine's own settings, kept in its memory">The machine's MIDI channel and sync are in GLOBAL</button></div>`:""}</section>
+   <div class="grow2"><span class="ilab">Output</span>${sel("midiOut",D.midiOutput?.id||"",D.midiOutput?.list||[],AMTIP.midiOut,"NONE")}${D.bluetooth?`<button class="amkey" data-am="bt" title="${AMTIP.bt}">BLUETOOTH MIDI…</button>`:""}</div>${D.midiLoop?`<div class="amnote amwarn" role="alert" id="amloop">${amEsc(D.midiLoop)}</div>`:""}<div class="grow2"><span class="ilab">Monitor</span><span class="ammons" id="ammon" title="${AMTIP.monitor}">${amMonitor()}</span></div>${typeof openGlobal==="function"?`<div class="grow2"><span class="ilab"></span><button class="amlink" data-am="global" title="GLOBAL: the machine's own settings, kept in its memory">The machine's MIDI channel and sync are in GLOBAL</button></div>`:""}</section>
  </div>
  <div class="libfoot"><span>Also in the engine menu · Esc closes · a change applies at once and is kept</span><span class="fw">${amEsc(D.output?.id||"no output")}</span></div>`;
  if(typeof enhanceSelects==="function")enhanceSelects(pop);pop.hidden=false;placeAudio()}
@@ -8823,6 +8863,10 @@ async function audioSelfTest(T){const sleep=ms=>new Promise(r=>setTimeout(r,ms))
  await check("output "+out0+" -> "+(out1??"-"),async()=>{if(!out1)return "one output device only, skipped";audioSend({set:"output",device:out1});await until(D=>D.output.id===out1&&D.running);if(!(await moving()))throw new Error("audio stopped");return "still playing"});
  await check("output back to "+out0,async()=>{if(!out1)return "skipped";audioSend({set:"output",device:out0});await until(D=>D.output.id===out0&&D.running);if(!(await moving()))throw new Error("audio stopped");return "still playing"});
  await check("input mute toggles and is kept",async()=>{audioSend({set:"mute",on:!muted0});await until(D=>!!D.input.muted===!muted0);audioSend({set:"mute",on:muted0});await until(D=>!!D.input.muted===muted0);return muted0?"muted again":"live again"});
+ await check("loop warning, input note and monitor row show",async()=>{const real=window.audioDoc;window.audioDoc=()=>Object.assign({},real(),{midiLoop:"MIDI loop: test",inputNote:"Input note: test"});
+  try{drawAudio();const loop=document.getElementById("amloop"),note=document.getElementById("aminputnote");if(!loop||!/MIDI loop/.test(loop.textContent))throw new Error("no loop warning");if(!note||!/Input note/.test(note.textContent))throw new Error("no input note");
+   const z=()=>({total:0,types:{},channels:[]});audioStats({directions:{inHost:Object.assign(z(),{total:5}),outHost:Object.assign(z(),{total:7})},dropped:{}});const m=document.getElementById("ammon");if(!m||!/IN\s*5/.test(m.textContent)||!/OUT\s*7/.test(m.textContent))throw new Error("monitor row: "+(m&&m.textContent))}
+  finally{window.audioDoc=real;AP.stats=null;AP.prev=null;drawAudio()}return "warning, note and counts drawn"});
  T.play(false);closeAudio();await sleep(300);
  T.log((res.every(Boolean)?"PASS ":"FAIL ")+res.filter(Boolean).length+"/"+res.length)}
 /* The mockup's example devices (in the plug-in: its AudioDeviceManager, as a gm-audio/devices document) */
@@ -8832,10 +8876,13 @@ const AUD={schema:"gm-audio/devices",version:1,standalone:true,driver:{id:"CoreA
  outputChannels:[{name:"Output 1",on:true},{name:"Output 2",on:true}],
  sampleRate:{value:48000,list:[44100,48000,88200,96000]},bufferSize:{value:512,list:[64,128,256,512,1024,2048]},
  latencyMs:11.3,running:true,midiInputs:[{id:"iac",name:"IAC Driver Bus 1",on:false},{id:"tm1",name:"Elektron TM-1",on:true}],
- midiOutput:{id:"",list:[{id:"iac",name:"IAC Driver Bus 1"},{id:"tm1",name:"Elektron TM-1"}]},bluetooth:true,error:""};
-let audMeterT=0;
+ midiOutput:{id:"",list:[{id:"iac",name:"IAC Driver Bus 1"},{id:"tm1",name:"Elektron TM-1"}]},bluetooth:true,error:"",setupError:"",inputPermission:"granted",inputNote:"",midiLoop:""};
+let audStats={directions:{inHost:{total:0,types:{}},outHost:{total:0,types:{}}},dropped:{scheduled:0,external:0,allocation:0}};
+/* the MIDI loop of the plug-in (mdMidiLoop.h): a virtual loopback bus (IAC, loopMIDI, Midi Through) on as an input and the output; a real port never warns */
+function audLoop(D){const o=D.midiOutput.list.find(x=>x.id===D.midiOutput.id),i=o&&/iac driver|loopmidi|midi through/i.test(o.name)&&D.midiInputs.find(x=>x.on&&x.name===o.name);return i?"MIDI loop: "+o.name+" is on as an input and is also the output. Everything the editor sends comes straight back in and the sound can turn to noise. Switch the input off, or send to another "+(/^IAC/.test(o.name)?"IAC bus":"port")+".":""}
+let audMeterT=0,audStatsT=0;
 function audioDoc(){return HOST.audioDoc?HOST.audioDoc():AUD}
-function audioMeter(on){if(HOST.audioMeter)return HOST.audioMeter(on);clearInterval(audMeterT);if(on)audMeterT=setInterval(()=>audioLevel(!AUD.input.id?0:(AUD.input.muted?.01:.04)+Math.random()*.12),120)}
+function audioMeter(on){if(HOST.audioMeter)return HOST.audioMeter(on);clearInterval(audMeterT);if(on)audMeterT=setInterval(()=>audioLevel(!AUD.input.id?0:(AUD.input.muted?.01:.04)+Math.random()*.12),120);clearInterval(audStatsT);if(on&&typeof audioStats==="function")audStatsT=setInterval(()=>{const h=audStats.directions.inHost,o=audStats.directions.outHost;h.total+=AUD.midiInputs.some(x=>x.on)?24:0;o.total+=AUD.midiOutput.id?24:0;audStats.directions.inHost.types={clock:h.total};audioStats(audStats)},1000)}
 function audioSend(c){if(HOST.audioSend)return HOST.audioSend(c);const D=AUD,say=t=>typeof toast==="function"&&toast(t);
  if(c.do==="test"){say("Test tone on "+D.output.id);return}
  if(c.do==="bluetooth"){say("The system's Bluetooth MIDI dialog opens here");return}
@@ -8848,7 +8895,7 @@ function audioSend(c){if(HOST.audioSend)return HOST.audioSend(c);const D=AUD,say
  else if(c.set==="midiInput"){const m=D.midiInputs.find(x=>x.id===c.device);if(m)m.on=c.on}
  else if(c.set==="midiOutput")D.midiOutput.id=c.device;
  if(c.set!=="outputChannel")D.error="";
- D.latencyMs=Math.round((D.bufferSize.value+96)/D.sampleRate.value*10000)/10;drawAudio()}
+ D.latencyMs=Math.round((D.bufferSize.value+96)/D.sampleRate.value*10000)/10;D.midiLoop=audLoop(D);drawAudio()}
 /* ===== Wave 2 (doc/modern-ux/DESIGN-machine-menus.md §2): the transport beyond PLAY and STOP =====
    The ▶ menu and the TEMPO pop-up are drawn by shared/deskTransport.js; here are this page's commands for them:
      the pause: ⇧-click ▶ or ⇧Space; ▶ again (or ⇧Space) goes on from the step, STOP ends it. S.paused holds the step the
@@ -9583,7 +9630,7 @@ window.MMView={
  setFollow,selectTrack:followSelect,setLcd,setKeyDown,setMidiHeld,setPst,closeFirmwareDialog,bootRom:r=>Boot.rom(r),bootInstalled:o=>Boot.showInstalled(o),syxPreview:m=>Syx.preview(m),syxProgress:m=>Syx.progress(m),syxExported:m=>Syx.exported(m),syxExportInfo:m=>Syx.exportInfo(m),
  /* calls */
  render,renderTop,drawLib,toast,ask,redraw,movePH,setPos,flashTracks,goWs,clickStep,autoRange,kitSave,
- redrawAudio:()=>{if(AP.open)drawAudio()},audioLevel,openAudio};
+ redrawAudio:()=>{if(AP.open)drawAudio()},audioLevel,audioStats,openAudio};
 /* the view gives exactly the seam's members (53-seam.js) */
 {const have=Object.keys(window.MMView),odd=[...MM_SEAM.view.filter(k=>!have.includes(k)),...have.filter(k=>!MM_SEAM.view.includes(k))];if(odd.length)console.warn("MMView and 53-seam.js differ: "+odd.join(", "))}
 /* The self-tests (a diagnostics build's bundle sets window.MMDiagnostics before this script) play the
