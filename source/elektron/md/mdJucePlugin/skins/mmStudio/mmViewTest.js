@@ -485,9 +485,9 @@ const result = (m, ok = true, errors = []) => ({ type: "result", id: m.id, op: m
 	check(o.length === 1 && args(o[0]) === 'copyStepsTo {"t":0,"n":2,"from":0,"to":4,"at":4,"dt":0}' && S.stepSel.from === 4 && S.stepSel.to === 8, "⌘D: copyStepsTo right after the block, the selection on the copy: " + o.map(args).join("; "));
 	M.selCut();
 	o = take();
-	/* I-010: T2's note on step 4 ran into its trig on 8 (cut): it keeps its length, a NOTE OFF there, in the same gesture */
-	check(o.length === 3 && args(o[0]) === 'copySteps {"t":0,"n":2,"from":4,"to":8}' && args(o[1]) === 'clearSteps {"t":0,"n":2,"from":4,"to":8}' && args(o[2]) === 'step {"t":1,"s":7,"v":{"off":true}}'
-		&& o[0].g === o[1].g && o[1].g === o[2].g, "⌘X: copySteps then clearSteps in one gesture (one undo step), and the note before the block keeps its length (a NOTE OFF where it ended): " + o.map(args).join("; "));
+	/* I-037: T2's note on step 4 ran into its trig on 8 (cut): no NOTE OFF is written where the block was, the note before runs on */
+	check(o.length === 2 && args(o[0]) === 'copySteps {"t":0,"n":2,"from":4,"to":8}' && args(o[1]) === 'clearSteps {"t":0,"n":2,"from":4,"to":8}'
+		&& o[0].g === o[1].g, "⌘X: copySteps then clearSteps in one gesture (one undo step), no NOTE OFF written (the note before runs on through the gap): " + o.map(args).join("; "));
 	M.setSel({ t: 6, n: 1, from: 0, to: 1 });
 	M.secAction("paste");
 	check(!take().length, "a synth block onto a MIDI track: nothing sent (it says so)");
