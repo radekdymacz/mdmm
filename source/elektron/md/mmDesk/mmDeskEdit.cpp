@@ -1191,7 +1191,7 @@ namespace mmDesk
 		// are enumerations.
 		constexpr std::array<std::array<uint8_t, 8>, 4> g_neutralPages{{
 			{0, 40, 64, 20, 64, 100, 64, 0},	// AMP
-			{0, 127, 0, 0, 0, 40, 0, 0},		// FLT
+			{0, 127, 0, 0, 0, 40, 64, 64},		// FLT: BOFS WOFS 64, no sweep (B-148: signed; the firmware's machine change writes 64)
 			{64, 64, 0, 32, 64, 0, 0, 127},		// EFX
 			{2, 1, 1, 0, 1, 32, 0, 0}}};		// LF1-3
 		std::array<uint8_t, 8> neutralPage(const uint8_t _page)
