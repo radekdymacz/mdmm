@@ -4,6 +4,14 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-153 · Linux: the editor does not work on SteamOS (Holo, Steam Deck)
+
+- **From:** a beta tester on Discord, 2026-10-16 ("doesn't work on SteamOS Holo"). Which editor, standalone or VST3 (and which DAW), and what happens are not known yet.
+- **Setup:** SteamOS 3 (Holo) is Arch-based, desktop mode is KDE Plasma, its system disk is read-only, and packages installed with pacman are lost on a SteamOS update. Our Linux build is the CI's `*-Linux-x64-not-tested.tar.gz` (built on Ubuntu 22.04, glibc 2.35 or newer).
+- **Suspects (not confirmed):** the editor window needs WebKitGTK (webkit2gtk 4.0 or 4.1) and GTK 3 at run time (the two shims beside the app load them, scripts/linux/README-Linux.txt); SteamOS may not ship webkit2gtk. The README lists apt and dnf lines only, no Arch or SteamOS line. Audio is ALSA (PipeWire's ALSA layer on SteamOS).
+- **Needed from the tester:** the editor and version; standalone or VST3 (DAW); what happens (nothing starts, an empty window, an error card, no sound); the output of starting the standalone from Konsole; `ls /usr/lib/libwebkit2gtk*`.
+- **Status:** open, waiting for the tester's facts.
+
 ## B-152 · Monomachine: no way to make a pitchless trig in the editor
 
 - **From:** a beta tester on Discord, 2026-10-16, 0.7.0 ("how do you do pitchless trigs for the dashed bar? They show from my loaded SysEx but I don't know how to create them").
