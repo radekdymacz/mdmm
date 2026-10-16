@@ -6,6 +6,7 @@
 #include "mdLearnRouter.h"
 #include "mdMidiIn.h"
 #include "mdMidiMonitor.h"
+#include "mdMixMeters.h"
 #include "mdOutputLevel.h"
 #include "mdMachineMemory.h"
 #include "mdMachineMemoryService.h"
@@ -100,6 +101,12 @@ namespace mdJucePlugin
 		// session's outputLevel message)
 		void processBlockOutput(const synthLib::TAudioOutputs& _outputs, size_t _frames) override;
 		outputLevel::Peaks takeOutputPeaks() { return m_outputMeter.take(); }
+		// I-032 (0.8, WP9): the Mix page's meters, one per output pair (mdMixMeters.h): peak and RMS of each channel
+		// since the last call (the page's mixLevels message, only while its Mix page is shown)
+		mixMeters::Levels takeMixLevels() { return m_mixMeter.take(); }
+		// the pass runs only while a page shows the Mix page (the page's mixMeters command): off, the audio thread skips it
+		void setMixMeterWanted(const bool _on) { m_mixMeterWanted.store(_on, std::memory_order_relaxed); }
+		bool mixMeterWanted() const { return m_mixMeterWanted.load(std::memory_order_relaxed); }
 		// 0.6 (LEARN, I-002): each note on from the host's MIDI in or a port, kept for the session's midiIn message
 		// (mdMidiIn.h); taken on the message thread
 		void midiInReceived(const synthLib::SMidiEvent& _ev) override;
@@ -229,6 +236,8 @@ namespace mdJucePlugin
 		cpuLoad::Meter m_cpuMeter;
 		cpuLoad::Smoother m_cpuSmoother;	// message thread
 		outputLevel::Meter m_outputMeter;
+		std::atomic<bool> m_mixMeterWanted{false};
+		mixMeters::Meter m_mixMeter;		// I-032: written on the audio thread once a block, read by the session
 		midiIn::Queue m_midiIn;
 		midiMonitor::Monitor m_midiMonitor;
 		midiMonitor::LogPacer m_midiLogPacer;	// message thread

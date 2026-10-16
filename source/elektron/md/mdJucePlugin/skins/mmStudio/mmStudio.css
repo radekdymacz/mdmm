@@ -1696,6 +1696,15 @@ svg.route{width:100%;height:auto;aspect-ratio:1200/146;min-height:0}
 .strip6 .busk button,.strip6 .busrow .kselbtn{height:22px}
 .strip6 .mrow{display:grid;grid-template-columns:1fr 1fr;gap:3px}
 .strip6 .mrow .ms{width:auto;height:22px}
+/* I-032: the output meters on the routing graph (100-mix.js): the LCD's ink only */
+svg.route .mgnd{fill:var(--lcd)}
+svg.route .mbg{fill:none;stroke:var(--ink);stroke-width:.6;opacity:.45}
+svg.route .mpk{fill:var(--ink);opacity:.3}
+svg.route .mrm{fill:var(--ink)}
+svg.route .mhd{fill:var(--ink)}
+svg.route .mclip{fill:transparent;stroke:var(--ink);stroke-width:.8}
+svg.route .mclip.on{fill:var(--ink)}
+svg.route .mtr.off{opacity:.3}
 /* The header's LCD as one real display (P7), one stylesheet for both editors (skins/shared/). One dot grid: labels are 8 px Silkscreen (one dot = 1 px) and values 16 px (two
    dots), line 2's values 12 px (on the same device-pixel grid at 2x: 2, 3 and 4 pixels a dot), every
    text line box is its font size; one rule weight (1 px) between all fields; no rule

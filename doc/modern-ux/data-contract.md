@@ -342,6 +342,18 @@ go of every note (`midiInputsChanged`). In HW MIDI nothing is held: what comes i
 The Monomachine Editor lights the keys of the notes on the channels the machine plays (AUTO, the track channels inside
 CHANNEL SPAN, MULTI TRIG, MULTI MAP) on the Perform keyboard; the Machinedrum Editor has no keyboard and ignores it.
 
+**The Mix page's output meters (0.8, WP9, I-032).** The page sends `{"op":"mixMeters","on":bool}` when it shows Mix (on) and
+when it leaves it or the window hides (off); only between the two does the plug-in measure the outputs (a relaxed atomic
+flag the audio thread reads) and send `{"type":"mixLevels","pairs":[{on, clip, peak:[L,R], rms:[L,R]} x3]}` every 40 ms.
+The pairs are the plug-in's three stereo outputs in order, A/B, C/D, E/F (the emulation gives no audio per track).
+`peak` is the largest |sample| and `rms` the RMS of each channel since the previous message, after the volume, in dBFS to
+0.1 dB (-96 for silence); `on` says the host enabled that output; `clip` is a sample above 0 dBFS in the window. The audio
+thread's part is `mdMixMeters.h` (one pass over six channels, relaxed atomics, no allocation, no lock; NaN and infinity
+are left out by their bits). Decay (30 dB a second), peak hold (1.5 s) and the clip mark's lifetime (4 s) are the page's.
+A page that sends `ready` is not metered until it says `mixMeters` on again; a `mixLevels` that reaches a page not showing
+Mix is answered with off. Only the Monomachine page draws them (`100-mix.js`, on the routing graph's bus lines); the
+Machinedrum page does not send `mixMeters`, so its plug-in never measures.
+
 **The MIDI monitor (0.8, WP3).** `{"type":"midiStats","directions":{inHost, inFirmware, outMachine, outHost: {total, types:
 {note, cc, pc, clock, transport, sysex, other}, channels:[16]}},"dropped":{scheduled, external, allocation}}` once a second
 while the page is up: what this plug-in instance did with MIDI since it started (`mdMidiMonitor.h`; the AUDIO / MIDI panel's
