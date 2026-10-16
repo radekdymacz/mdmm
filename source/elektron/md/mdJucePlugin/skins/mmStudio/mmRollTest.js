@@ -70,17 +70,24 @@ const show = (a, len) => a.slice(0, len).map((x, i) => x ? i + (x.off ? ":OFF" :
 	check(same(R.setLen(m, 64, 0, 24, { kitLen: 127 }), { steps: [[24, OFF]], len: null, L: 24 }), "MIDI, 24 steps on a kit LEN of 127: the NOTE OFF only");
 }
 
-/* ---- removing a note (I-037, 0.8: as the machine: no NOTE OFF is written, the note before runs on) ---- */
+/* ---- removing a note (I-037, 0.8: as the machine: its own step goes and nothing else is written or taken away) ---- */
 {
 	const a = steps(16, { 0: N(48), 3: N(50), 5: OFF, 9: N(52) });
 	let r = R.remove(a, 16, 3);
-	check(same(r, [[3, null], [5, null]]) && !r.some(([, v]) => v), "the note before ran into it: only the note and the NOTE OFF that closed it go, no new NOTE OFF");
+	check(same(r, [[3, null]]), "the review's case {0 3 5:OFF 9}, remove 3: only step 3; the NOTE OFF on 5 stays (no new one, none taken away)");
 	const after = apply(a, r);
-	check(R.end(after, 16, 0) === 9 && !after.some(x => x?.off), "and the note before now sounds on through the gap, to the next trig on step 10");
+	check(after[5]?.off && R.end(after, 16, 0) === 5, "the earlier note now sounds on to the NOTE OFF on step 6");
 	check(same(R.remove(a, 16, 9), [[9, null]]), "after a NOTE OFF: just gone");
 	const b = steps(16, { 0: N(48), 4: N(50) });
 	check(same(R.remove(b, 16, 0), [[0, null]]), "the first note when the last one runs round into it: just gone, no NOTE OFF");
 	check(same(R.remove(steps(16, { 4: N(50) }), 16, 4), [[4, null]]), "a track's only note: gone");
+	const w = steps(16, { 12: N(48), 14: N(50), 2: OFF });
+	r = R.remove(w, 16, 14);
+	check(same(r, [[14, null]]) && R.end(apply(w, r), 16, 12) === 18, "wrap-around: {12, 14, OFF on 3}: removing 14 keeps the NOTE OFF on 3, the note on 13 sounds round the end to it (18)");
+	r = R.remove(steps(16, { 12: N(48), 2: OFF, 5: N(50) }), 16, 12);
+	check(same(r, [[12, null]]), "wrap-around: the removed note's own NOTE OFF (round the end) stays too");
+	const c = steps(16, { 4: { n: [60, 64, 67], a: 1, f: 1, l: 1 }, 8: OFF });
+	check(same(R.remove(c, 16, 4), [[4, null]]), "a chord step: the whole step goes, its NOTE OFF stays");
 	const m = steps(16, { 0: N(60), 8: N(62) });
 	check(same(R.remove(m, 16, 8), [[8, null]]), "MIDI: gone, no NOTE OFF whatever the LEN of the note before");
 }

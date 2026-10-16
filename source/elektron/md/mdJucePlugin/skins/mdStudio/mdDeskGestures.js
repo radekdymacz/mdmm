@@ -215,12 +215,16 @@ function paintStep(el) {
 	refreshRow(i);
 	if (!p.on) Held.with("paint", { locks: true });
 }
+/* the step the last press on the grid was on, and when: the second click of a double-click on an empty step must not remove the trig the first drew */
+let lastPaint = null;
+const DBL_MS = 400;
 main.addEventListener("pointerdown", e => {
 	const st = e.target.closest("#seq .st"); if (!st || e.button !== 0 || e.shiftKey || e.altKey || e.metaKey || e.ctrlKey || V.rec) return;
 	if (!V.loaded) { toast("The pattern is not loaded yet."); return; }
 	const i = +st.dataset.t, s = +st.dataset.s, mark = TT_MARK[S.tt];
 	/* I-036: a plain press on a step that has a trig selects it and keeps the selection (Delete clears it, a double-click removes it, ←/→ move it); no paint starts from it */
 	if (!mark && V.tracks[i].trigs[s]) { setSel({ t: i, n: 1, from: s, to: s + 1 }); if (i !== S.sel) select(i); e.preventDefault(); return; }
+	lastPaint = { t: i, s, at: Date.now() };
 	clearSel();	/* a press on an empty step paints, and ends the selection (DESIGN-step-selection.md §3) */
 	if (mark && !V.tracks[i].trigs[s]) { toast(`A ${mark.name.toLowerCase()} needs a trig: step ${s + 1} of track ${i + 1} has none.`); e.preventDefault(); return; }
 	Held.begin("paint", { on: mark ? !V.tracks[i][mark.set].has(s) : !V.tracks[i].trigs[s], mark, done: new Set(), first: i });
@@ -231,6 +235,7 @@ main.addEventListener("pointerdown", e => {
 main.addEventListener("dblclick", e => {
 	const st = e.target.closest("#seq .st"); if (!st || e.shiftKey || e.altKey || e.metaKey || e.ctrlKey || V.rec || !V.loaded || TT_MARK[S.tt]) return;
 	const i = +st.dataset.t, s = +st.dataset.s; if (!V.tracks[i].trigs[s]) return;
+	if (lastPaint && lastPaint.t === i && lastPaint.s === s && Date.now() - lastPaint.at < DBL_MS) return;
 	setSel({ t: i, n: 1, from: s, to: s + 1 }); selClear(); clearSel();
 	toast(`Removed the trig on track ${i + 1}, step ${s + 1} (⌘Z brings it back).`);
 });

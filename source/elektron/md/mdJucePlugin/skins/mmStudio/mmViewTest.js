@@ -61,7 +61,7 @@ function page() {
 	const src = FILES.map(f => fs.readFileSync(f, "utf8").replace(/^"use strict";/, "") + (/mmAdapter/.test(f) ? hold : "")).join("\n;\n")
 		+ "\n;__start();\nreturn { S: () => S, Overlay, MmView, docStore, storeDoc, MM_SEAM, Dlg, Banner, mockup: { " +
 			"mutApply, genLive, genEnd, setMachine, songAction, secAction, setSel, clearSel, selCut, selDuplicate, selTrigs, selMark, selMove, selGrow, stepMenuItems, Keys, HOST, " +
-			"rollAdd, rollLen, rollRemove, editSpan, setRollLen, selMoveTo, selClear, pitchSel, noteSpans, vis } };";
+			"rollAdd, rollLen, rollRemove, editSpan, setRollLen, selMoveTo, selClear, pitchSel, rollDelNote, noteSpans, vis } };";
 	const out = new Function("scope", "with (scope) {\n" + src + "\n}")(scope);
 	const run = () => { for (let n = 0; timers.length && n < 10000; n++) timers.shift()(); };
 	run();
@@ -395,11 +395,17 @@ const result = (m, ok = true, errors = []) => ({ type: "result", id: m.id, op: m
 		"a removed note the note on 5 ran into (I-037): gone, and no NOTE OFF in its place: " + o.map(args).join("; "));
 	const sp = M.noteSpans(0).find(x => x.s === 4);
 	check(sp && (sp.e > 8 || sp.wrap > 0), "the note before runs on through the gap, as the machine plays it: " + JSON.stringify(sp && { s: sp.s, e: sp.e, wrap: sp.wrap }));
-	/* a NOTE OFF that only closed the removed note goes with it */
+	/* a NOTE OFF is a step of its own: removing the note it closed leaves it (the machine's way) */
 	put(0, { 4: N(50), 8: N(52), 10: { off: 1 } });
 	const ch2 = M.rollRemove(0, 8); M.editSpan(0, new Set(ch2), true);
 	o = take();
-	check(!T().steps[8] && !T().steps[10] && JSON.stringify(o[0].rows[0].steps) === '[]', "the removed note's own NOTE OFF goes with it: " + o.map(args).join("; "));
+	check(!T().steps[8] && T().steps[10]?.off && o.length === 1, "removing a note keeps the NOTE OFF on 11 (nothing else changes): " + o.map(args).join("; "));
+	/* a chord: deleting one pitch of the step keeps the step; the last one takes the step */
+	put(0, { 4: { n: [50, 54], a: 1, f: 1, l: 1 }, 10: null });
+	M.rollDelNote(0, { s: 4, k: 1 });
+	check(JSON.stringify(T().steps[4].n) === "[50]", "a chord note deleted: the other pitch stays on the step");
+	M.rollDelNote(0, { s: 4, k: 0 }); M.editSpan(0, new Set([4]), true); take();
+	check(!T().steps[4], "the last pitch deleted: the step is empty");
 	/* I-036: Delete on a selected note (selClear) writes nothing but the clear, no NOTE OFF before it */
 	put(0, { 4: N(50), 8: N(52) });
 	M.setSel({ t: 0, n: 1, from: 8, to: 9 }); take();
@@ -420,6 +426,13 @@ const result = (m, ok = true, errors = []) => ({ type: "result", id: m.id, op: m
 	p.host.commit(); take();
 	up.run({ key: "ArrowDown" }); const d1 = take(); p.host.commit(); up.run({ key: "ArrowDown" }); const d2 = take();
 	check(T().steps[4].n[0] === 49 && d1.length === 1 && d2.length === 1 && d1[0].g !== d2[0].g, "ArrowDown twice (the key released between): two semitones down, one intent each, each its own undo step (gesture): " + [...d1, ...d2].map(m => args(m) + " g" + m.g).join("; "));
+	/* a held key repeats: the note follows, and the hold is one undo step (the commit comes with the key's release) */
+	p.host.commit(); take();
+	const base = T().steps[4].n[0];
+	for (let k = 0; k < 3; k++) { up.run({ key: "ArrowUp", repeat: k > 0 }); p.run(); }
+	const held = p.sent.filter(m => /step$/.test(m.op || "")); p.sent.length = 0;
+	check(T().steps[4].n[0] === base + 3 && held.length === 3 && held.every(m => m.g === held[0].g), "a held ↑ (three repeats): the note is three semitones up, all under one gesture (one undo step): " + held.map(m => "g" + m.g).join(","));
+	up.run({ key: "ArrowDown" }); up.run({ key: "ArrowDown" }); up.run({ key: "ArrowDown" }); take(); p.host.commit();
 	oct.run({ key: "ArrowUp" });
 	check(T().steps[4].n[0] === 61, "Shift+ArrowUp: an octave up");
 	take();
