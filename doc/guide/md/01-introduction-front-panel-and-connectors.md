@@ -195,7 +195,7 @@ To play a first beat:
 
 ![The step grid with trigs](shot:md-step-grid)
 
-The piano keys play the selected track from any workspace: {key:piano-white} play the white keys C to D. {key:octave} moves the octave and {key:velocity} sets the velocity.
+The piano keys play the selected track from any workspace: {key:piano-white} play the white keys C to D. {key:octave} moves the octave, two up or down (the PTCH range of the machines) and {key:velocity} sets the velocity.
 
 ### Pattern pages
 

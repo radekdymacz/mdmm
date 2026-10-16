@@ -32,7 +32,7 @@ The record key and the play key light while the machine records and plays. The p
 
 ### Kit
 
-<KIT> shows the number and the name of the current kit, for example K01 MONOMACHINE. Beside the label a small field reads saved or edited. It reads edited when the values of the kit differ from the kit saved in its slot on the machine. Click the field to open the kit library.
+<KIT> shows the number and the name of the current kit, for example K01 MONOMACHINE. Beside the label a small field reads saved or edited. It reads edited when the values of the kit differ from the kit saved in its slot on the machine. Click the field to open the kit library. The **‹** and **›** keys beside the name load the kit before or after, as a click in the library does. When the kit has unsaved edits the machine asks first.
 
 ### Pattern
 

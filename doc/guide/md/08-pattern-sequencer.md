@@ -127,6 +127,8 @@ On the machine you hold [FUNCTION] and turn a knob to move that parameter on all
 
 To sweep the filters of all tracks, hold [⌥] and drag the FLTF or FLTW value.
 
+The ‹ and › keys beside the kit name in the <KIT> field of the LCD load the kit before or after, as a click in the kit library does. When the kit has unsaved edits the machine asks first.
+
 To drop the tweaks of a kit and load its stored sound again:
 
 1. Click the kit name in the <KIT> field of the LCD. The kit library opens.

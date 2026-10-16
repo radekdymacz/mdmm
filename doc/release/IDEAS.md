@@ -23,13 +23,13 @@
 ## I-041 · Kit: left/right navigation like the pattern selector
 
 - **From:** the same tester, 2026-10-16 (0.7.0, Monomachine). The pattern selector has previous/next arrows; the kit selector should too.
-- **Status:** idea; check what the kit field does today in both editors (the Machinedrum has the same field).
+- **Status:** done on branch `feat/0.8-octave-kitnav` (not merged): ‹ › sit in the KIT field of both editors, beside the name, and step to the previous / next kit (K01 follows the last kit) by the same load as a click in the kit chooser (the machine asks first over unsaved edits). The pattern field has no keys, so the kit has none. Page: `#kitPrev` / `#kitNext`; journeys `md-kit-step`, `mm-kit-step`.
 
 ## I-040 · Computer keyboard: the octave range does not reach -2 to +8
 
 - **From:** the same tester, 2026-10-16 (0.7.0, Monomachine). Z / X stop at -3 to +3 (`KEYS_OCT=[-3,3]`, `mmStudio/src/75-comforts.js:117`), seven octaves; the tester expects -2 to +8. The Perform page's own keyboard is clamped 0-6 (`130-main.js:207`).
 - **Open:** is -3..+3 a choice or the machine's limit? The note range is 0-127 (clamped in `keyNote`); -2..+8 is wider than the 128 notes from a C3 base, so the base or the range label may differ from what the tester sees. Check the Monomachine manual before calling it a bug.
-- **Status:** idea (bug if the manual says the machine's range is wider).
+- **Status:** done on branch `feat/0.8-octave-kitnav` (not merged). The machine plays MIDI notes 0-127 (the core refuses others), so -3..+3 was a page choice. Monomachine Editor: Z / X now run -4 to +6 (the A key from MIDI 0 to 120, 11 octaves; the keys above it clamp at 127) and the Perform keyboard (four octaves) from MIDI 0 to the top, the last stop cut at 127. The tester's -2..+8 is those 11 octaves; the page names notes C-4 = MIDI 60, so the labels differ from the tester's (0-11 read LOW as before; the Z / X toast also gives the MIDI number). Machinedrum Editor: unchanged at -2..+2: its keys are pitch offsets of the track's own sound (PTCH, two octaves each way, mdDesk/mdDeskKeys.h), not notes. Journey `mm-keys-octave-range`.
 
 ## I-039 · Song rows: show and edit mutes, transpose and tempo in the arrangement itself
 
