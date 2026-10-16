@@ -4,6 +4,7 @@
 #include "mdBootDiagnostics.h"
 #include "mdCpuLoad.h"
 #include "mdMidiIn.h"
+#include "mdMidiMonitor.h"
 #include "mdOutputLevel.h"
 #include "mdMachineMemory.h"
 #include "mdMachineMemoryService.h"
@@ -101,6 +102,12 @@ namespace mdJucePlugin
 		// 0.6 (LEARN, I-002): each note on from the host's MIDI in or a port, kept for the session's midiIn message
 		// (mdMidiIn.h); taken on the message thread
 		void midiInReceived(const synthLib::SMidiEvent& _ev) override;
+		// 0.8 (WP3): the MIDI monitor (mdMidiMonitor.h). The hooks count on the audio thread; the rest is the message
+		// thread's, and takes no lock.
+		void midiTraffic(MidiTraffic _where, const synthLib::SMidiEvent& _ev) override;
+		midiMonitor::Counts midiMonitorCounts();			// the counts and the drops
+		void logMidiMonitor(double _nowMs);						// the 10 s log line, when due (timerCallback)
+		const std::string& lastMidiLogLine() const { return m_midiLogLine; }
 		std::optional<midiIn::Note> takeMidiIn() { midiIn::Note n; if(m_midiIn.tryPop(n)) return n; return {}; }
 		// I-002, B-062: the notes held from outside (any channel), for the session's midiHeld message (mdMidiIn.h)
 		midiIn::Notes heldMidiNotes() const { return m_midiHeld.notes(); }
@@ -214,6 +221,9 @@ namespace mdJucePlugin
 		cpuLoad::Smoother m_cpuSmoother;	// message thread
 		outputLevel::Meter m_outputMeter;
 		midiIn::Queue m_midiIn;
+		midiMonitor::Monitor m_midiMonitor;
+		midiMonitor::LogPacer m_midiLogPacer;	// message thread
+		std::string m_midiLogLine;				// the last line logged, message thread
 		midiIn::Held m_midiHeld;
 		uint64_t m_blockStartNs = 0;		// audio thread
 		static uint64_t cpuClockNs();
