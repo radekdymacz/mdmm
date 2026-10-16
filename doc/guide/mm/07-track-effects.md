@@ -74,7 +74,9 @@ In the picture, drag the dots sideways for BASE and WDTH and up for HPQ and LPQ.
 ## FILTER ENVELOPE
 <!-- rows: MM-126 MM-127 @1f635f -->
 
-The **Filter env** group holds ATK and DEC, the attack and decay times of the filter envelope, and BOFS and WOFS, how far the envelope moves BASE and WDTH: -64 to +63, up for a positive value, down for a negative one, 0 not at all.
+The **Filter env** group holds ATK and DEC, the attack and decay times of the filter envelope, and BOFS and WOFS, how far the envelope moves BASE and WDTH: -64 to +63, 0 not at all.
+
+The screen has two parts. The large part is for BOFS and WOFS: a line for each, solid for BOFS and dashed for WOFS, with -64 at the left edge, 0 on the vertical line and +63 at the right edge. Drag a dot left or right; it covers the whole range. The small square at the right shows the shape of the envelope only, with a dot for ATK and a dot for DEC.
 
 ## FILTER TRACKING
 <!-- rows: MM-128 @acbf71 -->

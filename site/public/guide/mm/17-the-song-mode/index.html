@@ -160,7 +160,8 @@
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>The END row cannot be copied, moved or deleted.</p><p>A song holds 200 rows. The editor refuses a row past that.</p></aside>
 <h4 class="gd-h3" id="read-the-cells">Read the cells</h4>
 <p>The marks under a pattern name say what else the row does.</p>
-<table class="gd-table"><thead><tr><th>Mark</th><th>Meaning</th></tr></thead><tbody><tr><td>×4</td><td>the row plays four times</td></tr><tr><td>+5, −7</td><td>the row's transpose, in semitones</td></tr><tr><td>T</td><td>single tracks are transposed</td></tr><tr><td>M</td><td>tracks are muted</td></tr><tr><td>B</td><td>the row has a tempo of its own</td></tr><tr><td>~</td><td>the row plays part of its pattern</td></tr></tbody></table>
+<table class="gd-table"><thead><tr><th>Mark</th><th>Meaning</th></tr></thead><tbody><tr><td>×4</td><td>the row plays four times</td></tr><tr><td>120</td><td>the row has a tempo of its own, in beats per minute</td></tr><tr><td>M3</td><td>three tracks are muted</td></tr><tr><td>+5, −7</td><td>the row's transpose, in semitones</td></tr><tr><td>T±</td><td>single tracks are transposed</td></tr><tr><td>~</td><td>the row plays part of its pattern</td></tr></tbody></table>
+<p>The marks come in that order, for example 120 M3 +2 T±. A row with none of them shows none. When the cells are too narrow for words, letters stand for them, in the same order: B for the tempo, M for the mutes, ± for the transpose and T for single tracks, for example BM±. Hold the pointer over the cell to read them in full. Click the marks to open <b class="gd-ui">More</b> for that row.</p>
 <p>On the machine a T replaces the TRN value. The editor shows both.</p>
 <p>The <b class="gd-ui">Arrangement</b> header counts the rows, out of 200. The line under the chip in the <b class="gd-ui">Songs</b> column shows the song's rows, its length in bars and its playing time at the current tempo. On the Song workspace the LCD's second line shows the same: SONG, ROWS, BARS and TIME.</p>
 <h4 class="gd-h3" id="when-the-machine-hears-an-edit">When the machine hears an edit</h4>
@@ -202,7 +203,7 @@
 <div class="gd-body gd-prose"><h2 id="song-track-transpose-h">SONG TRACK TRANSPOSE <a class="gd-anchor" href="#song-track-transpose" aria-label="Link to SONG TRACK TRANSPOSE">#</a></h2>
 <p class="gd-ref">MM manual p.1-77</p>
 <p>Besides the transpose of the whole pattern, a row can transpose single tracks: the six synth tracks and the six MIDI tracks.</p>
-<ol class="gd-steps"><li>Select the row and click <b class="gd-ui">More</b>.</li><li>Under <b class="gd-ui">Per track</b>, the INT line holds the synth tracks T1 to T6, the MIDI line the MIDI tracks M1 to M6.</li><li>Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> on a track to transpose it, in semitones. The track shows its value. The cell shows T.</li></ol>
+<ol class="gd-steps"><li>Select the row and click <b class="gd-ui">More</b>.</li><li>Under <b class="gd-ui">Per track</b>, the INT line holds the synth tracks T1 to T6, the MIDI line the MIDI tracks M1 to M6.</li><li>Click <b class="gd-ui">−</b> or <b class="gd-ui">+</b> on a track to transpose it, in semitones. The track shows its value. The cell shows T±.</li></ol>
 <aside class="gd-note gd-note"><span class="gd-notelab">Note</span><p>A track transpose holds for that row only.</p></aside>
 </div></section>
 <section class="gd-sec" id="song-extra" aria-labelledby="song-extra-h">

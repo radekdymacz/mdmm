@@ -1467,6 +1467,47 @@ const MmJourneys = (() => {
 			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(kitT(0) === c.k0, "kit not back"), within: 15000 }
 		]
 	};
+	/* I-043: the filter envelope's reach pane: a drag left or right on its BOFS and WOFS dots covers -64 to +63 */
+	const filterEnv = {
+		name: "mm-sound-filter-env", proves: [],
+		steps: [
+			go("sound"), sel(0),
+			{ say: "drag the BOFS dot of the filter envelope screen to the left edge", act: async (u, c) => {
+				const cv = $1('#main canvas.ed[data-ed="fenv"]'); if (!cv) throw new Error("no filter envelope screen"); c.cv = cv; c.b0 = wk().tracks[0].pages[2][6]; c.w0 = wk().tracks[0].pages[2][7];
+				const r = cv.getBoundingClientRect(), h = ED.fenv.handles(r.width, r.height, cv).find(x => x.k === "BOFS");
+				await u.drag(cv, [[-20, 0], [-80, 0], [-300, 0]], {}, { fx: h.x / r.width, fy: h.y / r.height }); },
+				screen: () => ok(valueText('#main .pc[data-g="FLT"][data-n="6"]') === "-64", "BOFS shows " + valueText('#main .pc[data-g="FLT"][data-n="6"]')),
+				machine: () => ok(wk().tracks[0].pages[2][6] === 0, "kit BOFS " + wk().tracks[0].pages[2][6]), within: 8000 },
+			{ say: "drag the WOFS dot to the right edge", act: async u => {
+				const cv = $1('#main canvas.ed[data-ed="fenv"]'), r = cv.getBoundingClientRect(), h = ED.fenv.handles(r.width, r.height, cv).find(x => x.k === "WOFS");
+				await u.drag(cv, [[20, 0], [80, 0], [300, 0]], {}, { fx: h.x / r.width, fy: h.y / r.height }); },
+				screen: () => ok(valueText('#main .pc[data-g="FLT"][data-n="7"]') === "+63", "WOFS shows " + valueText('#main .pc[data-g="FLT"][data-n="7"]')),
+				machine: () => ok(wk().tracks[0].pages[2][7] === 127, "kit WOFS " + wk().tracks[0].pages[2][7]), within: 8000 },
+			{ say: "drag the ATK dot of the small square screen: BOFS stays", act: async (u, c) => {
+				const cv = $1('#main canvas.ed[data-ed="fenv"]'), r = cv.getBoundingClientRect(), h = ED.fenv.handles(r.width, r.height, cv).find(x => x.k === "ATK"); c.a0 = wk().tracks[0].pages[2][4];
+				await u.drag(cv, [[10, 0], [20, 0], [30, 0]], {}, { fx: h.x / r.width, fy: h.y / r.height }); },
+				machine: c => ok(wk().tracks[0].pages[2][4] !== c.a0 && wk().tracks[0].pages[2][6] === 0, `ATK ${wk().tracks[0].pages[2][4]} (was ${c.a0}), BOFS ${wk().tracks[0].pages[2][6]}`), within: 8000 }
+		],
+		async tidy(u, c) { blur(); for (let i = 0; i < 3 && c.b0 != null && (wk().tracks[0].pages[2][6] !== c.b0 || wk().tracks[0].pages[2][7] !== c.w0); i++) { u.key("z", { cmd: true }); await sleep(700); } }
+	};
+	/* I-042: the LFO screen shades the steps whose locks change the LFO */
+	const lfoLocksJ = {
+		name: "mm-sound-lfo-locks", proves: [],
+		steps: [
+			go("seq"),
+			{ say: "pick a track with a trig and draw a lock on LFO 1's SPD at that step", act: async (u, c) => {
+				c.t = [0, 1, 2, 3, 4, 5].find(t => trigsOf(t).some(s => s < S().len)); if (c.t == null) throw new Error("no track with a trig"); c.s = trigsOf(c.t).find(s => s < S().len); c.l0 = JSON.stringify(patDoc().locks);
+				u.click(rail(c.t)); await sleep(200); if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); await sleep(200); await drawLock(u, "LF1", 5, c.s, 0.8); await sleep(400); },
+				machine: c => ok(lockVals(c.t, PAGES.indexOf("LF1"), 5).some(([s]) => s === c.s), "locks " + JSON.stringify(lockVals(c.t, 4, 5))), within: 15000 },
+			go("sound"),
+			{ say: "the LFO 1 screen shades that step", act: async (u, c) => { await sleep(300); },
+				screen: c => { const cv = $1('#main canvas.ed[data-ed="lfo"][data-l="LF1"]'); if (!cv) return ok(false, "no LFO 1 screen");
+					const r = cv.getBoundingClientRect(), N = Math.max(32, Math.min(64, S().len)), k = cv.width / r.width, px = s => cv.getContext("2d").getImageData(Math.round((s + .5) / N * r.width * k), 2, 1, 1).data.join();
+					const other = [...Array(N).keys()].find(s => s % S().len !== c.s && Math.abs(s - c.s) > 3);
+					return ok(px(c.s) !== px(other), `column of step ${c.s}: ${px(c.s)}, of step ${other}: ${px(other)}`); } }
+		],
+		async tidy(u, c) { if (c.l0) await undoUntil(u, () => JSON.stringify(patDoc().locks) === c.l0, 5); }
+	};
 	const dragM = {
 		name: "mm-mix-drag-m-keys", proves: ["MM-020"],
 		steps: [
@@ -3393,8 +3434,8 @@ const MmJourneys = (() => {
 	/* ---- Song: the selected row's settings, the commands and the rows' marks (the song mode chapter) ---- */
 	const rowI = () => S().songSel;
 	const rowDoc = () => songDoc()?.rows[rowI()];
-	/* the marks a row's cell shows under its pattern name (its <small>: x2, +2, T, M, B, ~) and what it says in big (its <b>: the pattern, HALT) */
-	const cellMarks = i => ($1(`#tl .scell[data-i="${i}"] small`)?.textContent || "").replace(/\s+/g, " ").trim();
+	/* the marks a row's cell shows under its pattern name (its <small>: x2, the tempo, M1, +2, T±, ~) and what it says in big (its <b>: the pattern, HALT) */
+	const cellMarks = i => ($1(`#tl .scell[data-i="${i}"] small .rt`)?.textContent ?? $1(`#tl .scell[data-i="${i}"] small`)?.textContent ?? "").replace(/\s+/g, " ").trim();
 	const cellName = i => ($1(`#tl .scell[data-i="${i}"] b`)?.textContent || "").trim();
 	const hasMark = (marks, m) => new RegExp(`(^| )${m.replace("+", "\\+")}( |$)`).test(marks);
 	/* a row edit is a song dump through SYSEX RECV and its read-back: the next edit waits for it */
@@ -3416,16 +3457,36 @@ const MmJourneys = (() => {
 			{ say: "Part: Offset + and Length −: the row plays a part of the pattern (its own length), the pattern keeps its length; Whole pattern puts both back", act: async (u, c) => { c.plen = patDoc()?.length; await stepRow(u, "ofs", 1, "offset", () => rowDoc().offset); const l = await stepRow(u, "len", -1, "length", () => rowDoc().length); c.part = [rowDoc().offset, rowDoc().length]; c.pat1 = JSON.stringify(I().doc("pattern", rowDoc().pattern)?.length); c.pat0 = I().doc("pattern", rowDoc().pattern)?.length;
 					c.mk = cellMarks(c.i); u.click("[data-fullpat]"); await until(() => rowDoc().offset === 0 && rowDoc().length >= (I().doc("pattern", rowDoc().pattern)?.length || 16), 6000); c.whole = [rowDoc().offset, rowDoc().length]; },
 				machine: c => ok(c.part[0] === 1 && c.part[1] < (c.pat0 || 99) && c.whole[0] === 0 && c.whole[1] === c.pat0, `part ${c.part}, whole ${c.whole}, pattern length ${c.pat0}`), within: 10000 },
-			{ say: "Tempo: Keep off gives the row a tempo of its own (the current BPM), + raises it; the song stores it in the row and the cell shows B", act: async (u, c) => { u.click("[data-bpmkeep]"); await until(() => rowDoc().tempo != null, 6000); await songSettled(); c.t0 = rowDoc().tempo; u.click('[data-step="bpm"][data-d="1"]'); await until(() => rowDoc().tempo !== c.t0, 6000); await songSettled(); c.mk2 = cellMarks(c.i); },
-				machine: c => ok(rowDoc().tempo === c.t0 + 1 && c.t0 > 0, `tempo ${rowDoc().tempo} (was ${c.t0})`), screen: c => ok(hasMark(c.mk2, "B"), "cell " + c.mk2), within: 8000 },
-			{ say: "Mutes: T1 muted for the row: the row's mute mask holds bit 0, the cell shows M; its marks now T, M and B", act: async (u, c) => { u.click('[data-rowmute="0"]'); await until(() => (rowDoc().mutes & 1) === 1, 6000); await songSettled(); c.mk3 = cellMarks(c.i); Journey.snapshot("mm-song-arrangement"); },
-				machine: () => ok((rowDoc().mutes & 1) === 1, "mutes " + rowDoc().mutes), screen: c => ok(hasMark(c.mk3, "T") && hasMark(c.mk3, "M") && hasMark(c.mk3, "B"), "cell " + c.mk3), within: 8000 },
+			{ say: "Tempo: Keep off gives the row a tempo of its own (the current BPM), + raises it; the song stores it in the row and the cell shows the number", act: async (u, c) => { u.click("[data-bpmkeep]"); await until(() => rowDoc().tempo != null, 6000); await songSettled(); c.t0 = rowDoc().tempo; u.click('[data-step="bpm"][data-d="1"]'); await until(() => rowDoc().tempo !== c.t0, 6000); await songSettled(); c.mk2 = cellMarks(c.i); },
+				machine: c => ok(rowDoc().tempo === c.t0 + 1 && c.t0 > 0, `tempo ${rowDoc().tempo} (was ${c.t0})`), screen: c => ok(hasMark(c.mk2, String(c.t0 + 1)), "cell " + c.mk2), within: 8000 },
+			{ say: "Mutes: T1 muted for the row: the row's mute mask holds bit 0, the cell shows M1; its marks now the tempo, M1, +2 and T±", act: async (u, c) => { u.click('[data-rowmute="0"]'); await until(() => (rowDoc().mutes & 1) === 1, 6000); await songSettled(); c.mk3 = cellMarks(c.i); Journey.snapshot("mm-song-arrangement"); },
+				machine: () => ok((rowDoc().mutes & 1) === 1, "mutes " + rowDoc().mutes), screen: c => ok(hasMark(c.mk3, "T±") && hasMark(c.mk3, "M1") && hasMark(c.mk3, String(c.t0 + 1)) && hasMark(c.mk3, "+2"), "cell " + c.mk3), within: 8000 },
 			{ say: "Add loop, then JUMP: a forward jump, its target a later row (stepper +); then HALT: it pauses the playback, its target the row itself", act: async (u, c) => { c.bad = []; u.click('[data-rowact="loop"]'); await until(() => songDoc().rows.some(r => r.kind === "loop"), 6000); c.li = rowI(); await songSettled(); Journey.snapshot("mm-song-loop");
 					u.click('[data-set="loopkind"] button[data-v="jump"]'); await songSettled(); if (!await until(() => songDoc().rows[c.li]?.kind === "jump", 6000)) c.bad.push("JUMP: " + songDoc().rows[c.li]?.kind); else { c.jt = songDoc().rows[c.li].target; if (!(c.jt > c.li)) c.bad.push(`JUMP target ${c.jt} not after row ${c.li}`); }
 					u.click('[data-set="loopkind"] button[data-v="halt"]'); if (!await until(() => songDoc().rows[c.li]?.kind === "halt", 6000)) c.bad.push("HALT: " + songDoc().rows[c.li]?.kind); else if (songDoc().rows[c.li].target !== c.li) c.bad.push("HALT target " + songDoc().rows[c.li].target); await sleep(300); c.cell = cellName(c.li); },
 				screen: c => ok(!c.bad.length && c.cell === "HALT", c.bad.join(" | ") + " cell " + c.cell), within: 10000 }
 		],
 		async tidy(u, c) { await back(u, c); if (c.r0) await undoUntil(u, () => JSON.stringify(songDoc()?.rows) === c.r0, 40); await sleep(300); { const more = $1("[data-rowmore]"); if (S().songMore && more) u.click(more); } if (c.m0 === false && machine().song?.songMode !== false) { u.click('[data-set="songpick"] button[data-v="pattern"]'); await sleep(1500); } }
+	};
+	/* 0.8 I-039: a row that holds a tempo, mutes or transpose says so in its cell (the small line: the tempo as a number, M and the count, +2, T± for a track of its own);
+	   a plain row looks as ever, the cell keeps its height and the marks are not cut; clicking them opens Row > More. */
+	const songRowMarks = {
+		name: "mm-song-row-marks", proves: ["MM-199", "MM-263", "MM-264", "MM-266", "MM-267"],
+		steps: [
+			go("song"),
+			{ say: "SONG mode, add a row (pad A03): its cell has no marks; remember its height", act: async (u, c) => { c.r0 = JSON.stringify(songDoc()?.rows); c.m0 = machine().song?.songMode === true; const n0 = S().song.length; u.click('[data-set="songpick"] button[data-v="song"]'); await sleep(300); u.click('[data-addpat="2"]'); await until(() => S().song.length === n0 + 1, 8000); await sleep(300); c.i = rowI(); if (S().songMore && $1("[data-rowmore]")) { u.click("[data-rowmore]"); await sleep(250); } c.cell = () => $1(`#tl .scell[data-i="${c.i}"]`); c.h0 = c.cell().getBoundingClientRect().height; },
+				screen: c => ok(!c.cell().querySelector(".rmk") && !/\n/.test(c.cell().title), "marks " + c.cell().querySelector(".rmk .rt")?.textContent), within: 10000 },
+			{ say: "Transpose + twice, Tempo Keep off, Mute T1, the row's track 3 + : the cell shows tempo, M1, +2 and T±, in that order", act: async (u, c) => { u.click('[data-step="trn"][data-d="1"]'); await sleep(250); u.click('[data-step="trn"][data-d="1"]'); await sleep(250); u.click("[data-bpmkeep]"); await until(() => S().song[c.i]?.bpm, 4000); c.t = S().song[c.i].bpm; if (!$1("[data-rowmute]")) { u.click("[data-rowmore]"); await sleep(300); } u.click('[data-rowmute="0"]'); await sleep(250); u.click('[data-ttr="2"][data-d="1"]'); await sleep(300); },
+				screen: c => ok(c.cell().querySelector(".rmk .rt")?.textContent === `${c.t} M1 +2 T±`, "marks " + c.cell().querySelector(".rmk .rt")?.textContent), within: 8000 },
+			{ say: "the marks are whole (not cut), the cell is as tall as before, the tooltip tells the detail", act: () => {},
+				screen: c => { const wide = $1("#tl").classList.contains("rmkwide"), v = c.cell().querySelector(wide ? ".rmk .rt" : ".rmk .rg"), r = v.getBoundingClientRect(), cr = c.cell().getBoundingClientRect(), codes = c.cell().querySelector(".rmk .rg")?.textContent; Journey.snapshot("mm-song-row-marks");
+					return ok(r.width > 0 && r.left >= cr.left - 1 && r.right <= cr.right + 1 && r.top >= cr.top - 1 && r.bottom <= cr.bottom + 1 && codes === "BM±T" && Math.abs(cr.height - c.h0) < 1 && /Tempo \d+ BPM/.test(c.cell().title) && /Muted: T1/.test(c.cell().title) && /Transpose \+2/.test(c.cell().title) && /Per track: T3 \+1/.test(c.cell().title), `${wide ? "words" : "codes"} ${Math.round(r.left - cr.left)}..${Math.round(r.right - cr.left)} of ${Math.round(cr.width)} wide, codes ${codes}, height ${cr.height} (was ${c.h0}), title ${c.cell().title.replace(/\n/g, " | ")}`); } },
+			{ say: "click the marks with Row > More closed: it opens", act: async (u, c) => { if ($1("[data-rowmute]")) { u.click("[data-rowmore]"); await sleep(250); } c.closed = !$1("[data-rowmute]"); u.click(c.cell().querySelector($1("#tl").classList.contains("rmkwide") ? ".rmk .rt" : ".rmk .rg")); await sleep(300); },
+				screen: c => ok(c.closed && !!$1("[data-rowmute]") && !!$1("[data-ttr]"), "closed " + c.closed + ", mutes " + !!$1("[data-rowmute]")) },
+			{ say: "take them all off (transpose −2, track 3 −, unmute, Keep): the cell has no marks again", act: async (u, c) => { u.click('[data-step="trn"][data-d="-1"]'); await sleep(250); u.click('[data-step="trn"][data-d="-1"]'); await sleep(250); u.click('[data-ttr="2"][data-d="-1"]'); await sleep(250); u.click('[data-rowmute="0"]'); await sleep(250); u.click("[data-bpmkeep]"); await sleep(400); },
+				screen: c => ok(!c.cell().querySelector(".rmk"), "marks " + c.cell().querySelector(".rmk .rt")?.textContent), within: 6000 }
+		],
+		async tidy(u, c) { const more = $1("[data-rowmore]"); if (S().songMore && more) u.click(more); if (c.r0) await undoUntil(u, () => JSON.stringify(songDoc()?.rows) === c.r0, 40); await sleep(300); if (c.m0 === false && machine().song?.songMode !== false) { u.click('[data-set="songpick"] button[data-v="pattern"]'); await sleep(1500); } }
 	};
 	const songRowsCopy = {
 		name: "mm-song-rows-copy", proves: ["MM-269"],
@@ -4007,12 +4068,12 @@ const MmJourneys = (() => {
 		],
 		async tidy(u) { await closeLib(u); u.click(tab("seq")); }
 	};
-	const all = [screensFit, ...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
+	const all = [screensFit, ...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowMarks, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
 		genMut, shapeSound, machinePick, revertTrackJ, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixHeads, mixSolo, soloSaved, shiftMutes, routing, panTrim, msOff, msViews, railLamps, railLampsFwd,
 		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, followPlayed, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, modeCycle, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, laneKitDrag, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, genModal, laneTools, gridFits, mutScope,
-		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, performLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
+		valueKeys, soundCopy, screenDrag, filterEnv, lfoLocksJ, dragM, midiMutes, joyAssign, menvPort, menvLayout, performLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,
 		blackKeys, octaveRange, kitStep, rollPaint, rollDrawLength, deleteGap, noteClickArrows, rollSimple, rollMidiLen, selectCopyPaste, stepMenuJ, buttonsCopyPaste, syxImportJ, syxImportMute, osCopyPaste, rotateUndo, faderUndo, tapTempoShift, shotsImport, editorMenuJ, memoryJ, dropSyxJ, globalChannels, globalReset, globalSlot, globalPage, globalClickOut, modalLock, lockKeysFit, globalCopyPaste, globalTune, globalControlOut, shotsGlobal, genBarFit, shotsSound, shotsReview, ...viewJs, ...cpuJs, ...volJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, resetEmpty, syxRunningReach];
 	/* every journey's tidy is followed by a look: if the machine's documents or modes still differ from what the journey found, back(u, c) puts them back (the journey's own tidy first, for what is its own;
 	   its guard, "left:", names what stays). What back cannot put back, the journey keeps first (keep, keepMany) or is alone: true (doc/modern-ux/JOURNEYS.md, "Independent journeys") */

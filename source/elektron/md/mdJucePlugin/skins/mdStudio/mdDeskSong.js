@@ -59,6 +59,7 @@ function songModeSync() {
 /* B-072: every key sends the mode, as the PATTERN | SONG switch did before 0.6: V.songMode is the view of the last
    render and the machine's answer to a key just pressed may not be in it yet (SONG, then PATTERN at once: PATTERN
    sent nothing, the machine stayed in SONG mode and the switch went back to SONG) */
+SongMarks.watch(() => document.getElementById("tl"));
 function songPickSet(v) {
 	/* B-162: a chain still waiting for its 150 ms (chainSoon) is not sent into the other mode: its keys are PATTERN mode's gesture */
 	if (v !== "chain" && S.chainTimer) {
@@ -161,11 +162,13 @@ function renderSong() {
 		if (!r) return `<div class="scell empty" data-i="${i}"></div>`;
 		const cls = `scell ${i === S.songSel ? "sel" : ""} ${r.type ? "cmd " + r.type : ""} ${!r.type && loopOf(i) >= 0 ? "inloop" : ""}`;
 		const txt = r.type === "end" ? "END" : r.type === "loop" ? `↺${String(r.to + 1).padStart(3, "0")}` : r.type === "jump" ? `→${String(r.to + 1).padStart(3, "0")}` : r.type === "halt" ? "HALT" : patName(r.pat);
-		const sub = r.type === "loop" ? (r.count === Infinity ? "∞" : "×" + r.count) : !r.type ? `${r.rep > 1 ? "×" + r.rep : ""}${r.ofs || r.len ? "~" : ""}` : "";
-		return `<button class="${cls}" data-row="${i}" data-i="${i}" draggable="${r.type === "end" ? "false" : "true"}" title="Row ${String(i + 1).padStart(3, "0")}${r.type ? "" : " · " + patName(r.pat) + " ×" + r.rep + " · " + rowLen(r) + " steps"}"><b>${txt}</b><small>${sub}</small></button>`;
+		const mk = SongMarks.marks(r, "md");
+		const sub = r.type === "loop" ? (r.count === Infinity ? "∞" : "×" + r.count) : !r.type ? `${r.rep > 1 ? "×" + r.rep : ""}${mk.any ? (r.rep > 1 ? " " : "") + SongMarks.html(r, "md") : ""}${r.ofs || r.len ? "~" : ""}` : "";
+		return `<button class="${cls}" data-row="${i}" data-i="${i}" draggable="${r.type === "end" ? "false" : "true"}" title="Row ${String(i + 1).padStart(3, "0")}${r.type ? "" : " · " + patName(r.pat) + " ×" + r.rep + " · " + rowLen(r) + " steps" + (mk.any ? "\n" + mk.title + " · click the marks: Row > More" : "")}"><b>${txt}</b><small>${sub}</small></button>`;
 	}).join("")}`).join("")}</div></section></div>`;
 	markSongRow(true);
 	SongSlots.afterRender();
+	SongMarks.fit(document.getElementById("tl"));
 }
 /* The song slots (deskSongSlots.js): the host. Every slot is the desk's document (it loads all the songs in the
    background); Load is the machine's LOAD SONG, Save its SAVE SONG into the song's slot, and the rest are the
@@ -237,6 +240,7 @@ function clickSong(e) {
 		else if (ca.dataset.chain === "clear") { clearTimeout(S.chainTimer); S.chainTimer = 0; S.chainWaitFrom = 0; S.chainDraft = []; if (chainDoc()?.active || S.chainSent) { S.chainOwnEnd = !!chainDoc()?.active; S.chainPending = { until: performance.now() + 4000 }; cmd("chainClear"); S.chainSent = false; } render(); }
 		return true;
 	}
+	const rmk = e.target.closest("[data-rowmarks]"); if (rmk) { S.songSel = +rmk.closest(".scell").dataset.row; S.songMore = true; render(); return true; }
 	if (e.target.closest("[data-rowmore]")) { S.songMore = !S.songMore; render(); return true; }
 	const ap = e.target.closest("[data-addpat]"); if (ap) { if (V.song.length >= 256) { toast("A song holds 256 rows."); return true; } let at = S.songSel + 1; if (V.song[S.songSel]?.type === "end") at = S.songSel; songCmd("rowInsert", { i: at, row: rowToContract({ pat: +ap.dataset.addpat, rep: 1 }, patLen) }); S.songSel = at; return true; }
 	const rw = e.target.closest(".scell:not(.empty),.db[data-row]"); if (rw) { S.songSel = +rw.dataset.row; render(); return true; }
