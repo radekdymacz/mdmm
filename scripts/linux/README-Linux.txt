@@ -49,6 +49,13 @@ runs through XWayland). Built on Ubuntu 22.04: needs glibc 2.35 or newer.
       libxcomposite1 libfreetype6 libfontconfig1
   Fedora:  sudo dnf install webkit2gtk4.1 gtk3 alsa-lib mesa-libGL
   Arch:    sudo pacman -S webkit2gtk-4.1 gtk3 alsa-lib
+  SteamOS 3 (Steam Deck, desktop mode; same line as Arch):
+    sudo steamos-readonly disable
+    sudo pacman-key --init && sudo pacman-key --populate holo archlinux
+    sudo pacman -S webkit2gtk-4.1 gtk3 alsa-lib
+    sudo steamos-readonly enable
+    SteamOS keeps its system disk read-only, and packages installed with
+    pacman are lost on every SteamOS update: run the line again afterwards.
 
 Troubleshooting
 ---------------
