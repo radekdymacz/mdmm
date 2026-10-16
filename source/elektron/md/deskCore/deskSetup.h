@@ -1,5 +1,6 @@
 #pragma once
 
+#include "deskLearn.h"
 #include "deskMod.h"
 #include "deskSolo.h"
 
@@ -26,8 +27,16 @@ namespace deskCore
 		// I-003: the selected track follows the last one played from a MIDI controller (off by default; written only when on,
 		// read leniently: anything but a boolean is off)
 		bool followPlayed = false;
+		// MIDI Learn (0.8): the learned CCs and what they drive, at most g_learnMaxMappings; written only when there are any
+		// (a missing member is none), read leniently (deskLearn.h). Owned by the message thread; the audio thread sees a table
+		// derived from this, never this.
+		std::vector<LearnMapping> mappings;
 
-		bool operator==(const DeskSetup& _o) const { return modulators == _o.modulators && knobCcs == _o.knobCcs && solo == _o.solo && followPlayed == _o.followPlayed; }
+		bool operator==(const DeskSetup& _o) const
+		{
+			return modulators == _o.modulators && knobCcs == _o.knobCcs && solo == _o.solo && followPlayed == _o.followPlayed
+				&& mappings == _o.mappings;
+		}
 		bool operator!=(const DeskSetup& _o) const { return !(*this == _o); }
 	};
 
@@ -41,6 +50,7 @@ namespace deskCore
 		// Written as the bare modulators document with "solo" beside it (the MM: the 0.x shape, so 0.7 reads a 1.0
 		// project). The schema's wrapper is read already and is written once a member needs it.
 		bool writesBare = false;
+		LearnLimits learn;	// what the learn model offers: tracks, DATA pages (the MM), parameters
 	};
 
 	constexpr int g_setupVersion = 1;	// the major (readsMajor)
@@ -51,6 +61,10 @@ namespace deskCore
 	// modulators document beside a "solo" member ("<model>-desk/modulators", what the MM writes) is read too.
 	DeskSetup setupFromJson(const elektronData::json::Value& _doc, const SetupSpec& _spec, std::vector<std::string>& _errors);
 	elektronData::json::Value setupToJson(const DeskSetup& _setup, const SetupSpec& _spec);
+
+	// Whether the setup document has a "mappings" member (an alpha project's "MDLN" mapping is imported only when it has
+	// not: deskLearn.h, importMdln).
+	bool setupHasMappings(const elektronData::json::Value& _doc);
 
 	// Knob CCs must be 8, 0-127 and distinct.
 	std::vector<std::string> validateKnobCcs(const std::vector<int>& _ccs);

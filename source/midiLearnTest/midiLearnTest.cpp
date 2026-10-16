@@ -1,3 +1,4 @@
+#include <array>
 #include <iostream>
 #include <cassert>
 #include <cstring>
@@ -1063,6 +1064,94 @@ void testMidiLearnMixedTypes()
 	std::cout << "  Mixed Types tests passed!" << std::endl;
 }
 
+void testMidiLearnDetectModeButton()
+{
+	std::cout << "Testing MIDI Learn detectMode (buttons)..." << std::endl;
+
+	using Mode = MidiLearnMapping::Mode;
+	// a button sends 127 then 0 (or the reverse): an absolute min/max, not an encoder
+	TEST_ASSERT(MidiLearnTranslator::detectMode({127, 0}) == Mode::Absolute);
+	TEST_ASSERT(MidiLearnTranslator::detectMode({0, 127}) == Mode::Absolute);
+	TEST_ASSERT(MidiLearnTranslator::detectMode({127}) == Mode::Absolute);
+	// encoders still are what they were
+	TEST_ASSERT(MidiLearnTranslator::detectMode({1, 127}) == Mode::RelativeSigned);
+	TEST_ASSERT(MidiLearnTranslator::detectMode({127, 1}) == Mode::RelativeSigned);
+	TEST_ASSERT(MidiLearnTranslator::detectMode({63, 65}) == Mode::RelativeOffset);
+	TEST_ASSERT(MidiLearnTranslator::detectMode({10, 40}) == Mode::Absolute);
+	TEST_ASSERT(MidiLearnTranslator::detectMode({}) == Mode::Absolute);
+
+	// through learning: a 0/127 button is learned as absolute
+	MidiLearnTestProcessor processor;
+	MidiLearnTestController controller(processor);
+	MidiLearnTranslator translator(controller, controller.getParameterDescriptions().getControllerMap());
+	MidiLearnMapping learned;
+	translator.onMappingLearned = [&learned](const MidiLearnMapping& _m) { learned = _m; };
+	translator.startLearning("FeedbackEnabled");
+	TEST_ASSERT(translator.processMidiInput(synthLib::SMidiEvent(synthLib::MidiEventSource::Host, synthLib::M_CONTROLCHANGE | 0, 30, 127)));
+	TEST_ASSERT(translator.processMidiInput(synthLib::SMidiEvent(synthLib::MidiEventSource::Host, synthLib::M_CONTROLCHANGE | 0, 30, 0)));
+	TEST_ASSERT(!translator.isLearning());
+	TEST_ASSERT(learned.controller == 30 && learned.paramName == "FeedbackEnabled");
+	TEST_ASSERT(learned.mode == Mode::Absolute);
+
+	std::cout << "  detectMode (buttons) tests passed!" << std::endl;
+}
+
+void testMidiLearnCallbackClearsItself()
+{
+	std::cout << "Testing MIDI Learn callbacks that clear their own slot..." << std::endl;
+
+	MidiLearnTestProcessor processor;
+	MidiLearnTestController controller(processor);
+	MidiLearnTranslator translator(controller, controller.getParameterDescriptions().getControllerMap());
+
+	// A capture too big for std::function's inline storage, so clearing the slot frees it (AddressSanitizer reports
+	// the read of the capture after the slot was cleared when the translator runs the member instead of a copy).
+	struct Big
+	{
+		std::array<int, 64> data{};
+		int* out = nullptr;
+		MidiLearnTranslator* translator = nullptr;
+	};
+	Big big;
+	for (size_t i = 0; i < big.data.size(); ++i)
+		big.data[i] = static_cast<int>(i);
+
+	int progressCalls = 0, learnedCalls = 0, sum = 0;
+	big.out = &sum;
+	big.translator = &translator;
+
+	translator.onLearningProgress = [big, &progressCalls](size_t _got, size_t)
+	{
+		++progressCalls;
+		auto* t = big.translator;
+		t->onLearningProgress = nullptr;	// clears itself, then keeps using its captures
+		*big.out += big.data[_got];
+	};
+	translator.onMappingLearned = [big, &learnedCalls](const MidiLearnMapping&)
+	{
+		++learnedCalls;
+		auto* t = big.translator;
+		t->onMappingLearned = nullptr;
+		for (const auto v : big.data)
+			*big.out += v;
+	};
+
+	translator.startLearning("FeedbackEnabled");
+	const auto cc = [&translator](const uint8_t _value)
+	{
+		translator.processMidiInput(synthLib::SMidiEvent(synthLib::MidiEventSource::Host, synthLib::M_CONTROLCHANGE | 0, 31, _value));
+	};
+	cc(10);		// progress (first value): the callback clears itself
+	cc(20);		// complete: progress is gone, the learned callback clears itself
+	TEST_ASSERT(progressCalls == 1);
+	TEST_ASSERT(learnedCalls == 1);
+	TEST_ASSERT(sum == 1 + 2016);
+	TEST_ASSERT(!translator.onMappingLearned && !translator.onLearningProgress);
+	TEST_ASSERT(!translator.isLearning());
+
+	std::cout << "  self-clearing callback tests passed!" << std::endl;
+}
+
 int main()
 {
 	juce::ScopedJuceInitialiser_GUI juce;
@@ -1085,6 +1174,8 @@ int main()
 		testMidiLearnPolyPressure();
 		testMidiLearnInvert();
 		testMidiLearnMixedTypes();
+		testMidiLearnDetectModeButton();
+		testMidiLearnCallbackClearsItself();
 
 		std::cout << std::endl;
 		std::cout << "All tests passed successfully!" << std::endl;

@@ -102,10 +102,10 @@ fi
 # MDMM_UNIT_TESTS_MORE=1 (CI's test job): also the cores (no JUCE) and the node page tests
 if [[ "${MDMM_UNIT_TESTS_MORE:-0}" == "1" ]]; then
   # (and the focused processor and built-VST3 tests mdmm-audio-io.yml ran on macos-14 until it was folded in here)
-  cmake --build "${build_dir}" --parallel 4 --target deskCoreTest mdDeskTest mmDeskTest deskWireTest mdDataLinkTest \
+  cmake --build "${build_dir}" --parallel 4 --target deskCoreTest deskLearnTest mdDeskTest mmDeskTest deskWireTest mdDataLinkTest \
     elektronDataTest mmDataTest mmDataCorpusTest syxImportTest deskStubHost midiLearnTest \
     dsp56kAccumulatorTests
   ctest --test-dir "${build_dir}" -C Release --output-on-failure --no-tests=error -j 4 \
-    --tests-regex '^(deskCoreTest|mdDeskTest|mmDeskTest|deskWireTest|mdDataLinkTest|elektronDataTest|mmDataTest|syxImportTest|midiLearnTests|(md|mm)JucePlugin_VST3AudioIoTest|dsp56300_accumulatorTests)$'
+    --tests-regex '^(deskCoreTest|deskLearnTest|mdDeskTest|mmDeskTest|deskWireTest|mdDataLinkTest|elektronDataTest|mmDataTest|syxImportTest|midiLearnTests|(md|mm)JucePlugin_VST3AudioIoTest|dsp56300_accumulatorTests)$'
   ctest --test-dir "${build_dir}" -C Release --output-on-failure --no-tests=error -j 4 -L Page
 fi

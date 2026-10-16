@@ -34,6 +34,10 @@ namespace pluginLib
 		// MIDI input processing
 		bool processMidiInput(const synthLib::SMidiEvent& _event);
 
+		// The mode the values of a learned controller say: only 0 and 127 (a button) is Absolute, 1/127 is Relative
+		// Signed, around 63/65 Relative Offset, anything else Absolute.
+		static MidiLearnMapping::Mode detectMode(const std::vector<uint8_t>& _values);
+
 		// Learning mode
 		void startLearning(const std::string& _paramName);
 		void cancelLearning();
@@ -60,7 +64,6 @@ namespace pluginLib
 		void applyMappingToParam(const MidiLearnMapping& _mapping, const synthLib::SMidiEvent& _event, Parameter& _param);
 		void handleLearning(const synthLib::SMidiEvent& _event);
 		
-		MidiLearnMapping::Mode detectMode(const std::vector<uint8_t>& _values) const;
 
 		// Parameter feedback
 		void subscribeToParameters();
