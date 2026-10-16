@@ -1,5 +1,5 @@
 # 5. Routing page
-<!-- summary: Distortion, volume, pan, the delay and reverb sends and the LFO controls of each track, on the Sound and Mix workspaces. -->
+<!-- summary: Distortion, volume, pan, the delay and reverb sends and the LFO controls of each track, on the Kit and Mix workspaces. -->
 
 The routing parameters set how a track's sound goes through the distortion, the volume and pan, and on to the effect buses. They are part of the kit.
 
