@@ -1,6 +1,53 @@
 # The audio thread and the device lock (1.0, architecture review finding 1)
 
-Status: design, 2026-10-16. No product code changed yet. Branch fix/1.0-lock-free-audio.
+Status: steps 1, 2, 3 (the panel sends) and 6 done, 2026-10-16; the gate passes (below). Steps 4 and 5 not needed for
+it and not done. Branch fix/1.0-lock-free-audio.
+
+## Status (2026-10-16, M-series Mac, 12 cores, dev build temp/dev)
+
+`scripts/mdmm-rt-check.sh --build temp/dev --lock [--load 24]` (mdEditFlowPluginTest, `EDITFLOW_LOCK_WAIT_MS` 1 ms,
+test audio thread at normal priority), load average from start to end of each machine's run:
+
+| Build | Load | MD worst / total wait | MM worst / total wait |
+|---|---|---|---|
+| step 1 only (before step 2) | 24 loops | 27 ms / 384 ms | 21 ms |
+| steps 1 + 2 (the WIP commit) | 24 loops | 19.6 ms / 24 ms FAIL | 1.8 ms FAIL |
+| steps 1 + 2, blamed (lock blame, below) | 24 loops, load 47 to 104 (another build ran) | 38.8 ms / 109.9 ms FAIL: 9 waits on `mdStudioLink.cpp:173` (turnKnob), 1 unnamed | 0 |
+| **steps 1, 2, 3, 6** | quiet, load 2.0 to 2.2, no build | **0 / 0 PASS** (18584 blocks) | **0 / 0 PASS** (18663 blocks) |
+| **steps 1, 2, 3, 6** | 24 loops, load 71 to 80, no build | **0 / 0 PASS** (14464 blocks) | **0 / 0 PASS** (12826 blocks) |
+
+No panel event and no device command was dropped in any run, and the B-014 actions part of rt-check passed. While
+editing, no thread but the audio thread takes the device lock any more: the edit flow records no hold at all.
+
+What was left after step 2 was the Send class: the desk's panel keys and knob steps took the lock per edit, and under
+load a blocking wait of a normal-priority thread is woken late. Step 3 moved those (MD `sendPanel`, `pressKey`,
+`turnKnob`; MM `pressKeys`, `pressBankTrigs`) to a command queue (`synthLib::Plugin::sendCommands`,
+`synthLib/deviceCommand.h`, `md::DeskDevice::applyCommand`). The rest of the Send class (audition, the tester
+switches, `setLatencyBlocks`, `addMidiEvent` when its ring is full) still takes the lock: user actions, not edits, and
+none ran in the gate.
+
+Lock blame (diagnostics, always compiled, recorded when the realtime instrumentation is on): every hold of the lock
+records its site (`withDeviceLocked` and plugin.cpp take `__builtin_FILE`/`__builtin_LINE`), a wait of the audio
+thread is blamed on the holder's site, and every hold off the audio thread is recorded with its wall time and the
+holder's own CPU time. rt-check --lock prints them.
+
+**One firmware test at the boundary**, mdMachineMemoryFirmwareTest md (save, restore, factory start, damaged file, two
+instances, ...) with every product hold reported: PASS, load 12 to 2 (no build): the worst hold of a session 0.42 ms
+(`mdMachineMemoryDevice.cpp:62`, `look`), wall time equal to the work. An earlier run while other builds loaded the
+Mac had walls of 3.4 and 6.3 ms at the same site with means of 3 to 8 us: the low-priority memory thread preempted
+while holding (the second way a short hold becomes a long wait, below). So the test fails on the work done under the
+lock (holder CPU time over 1 ms) and reports the wall time beside it. On macOS a real-time audio thread that waits
+lends its priority to that holder (measured 14 us at load 90, below); on Linux and Windows it does not. Only steps 4
+and 5 (copy jobs, the try-lock owner token) remove that case; they wait for evidence from a host on those systems.
+
+**Goldens:** local gate stage 5 (`MDMM_GATE_ONLY=5 MDMM_GATE_SKIP_BUILD=1 --build temp/dev`): 30 of 30 runs equal their
+golden. **Tests:** synthLibDeviceCommandTest (new: order, one block per call, a full queue applied by the sender, a
+stale or refused command dropped and counted, the blame names the holder), synthLibStateTransactionTest,
+synthLibMidiQueueTest, synthLibSeqlockTest, synthLibStateCaptureTest, mdStateCaptureTest, mdSessionNoRomTest md/mm,
+mdProjectStateRestoreTest: pass; `scripts/mdmm-check.sh` (quick tier against main: 126 unit tests, page contracts,
+page journeys, one golden a machine) green. mdSysexLifecycleTest needs the Monomachine factory patch RAM, absent on this Mac (the
+gate says the same). Not done: the ticket echo of the design's command (callers read the device's own pending facts,
+`panelPending`), `missedBlocks` (step 5).
 
 ## Problem
 
@@ -189,12 +236,14 @@ first `prepareToPlay`, offline tests). If audio resumes in that window `process`
    build feature).
 2. **Facts snapshot.** Every Read-facts and Read-handles site. This removes all holds of the desk step and the
    processor timers: the sites the gate blamed. Proof: --lock MD and MM pass at 1 ms with the 24-loop load.
-3. **Command ring.** Every Send site, `addMidiEvent` overflow, the deferred-restore take/reject.
+3. **Command ring.** Every Send site, `addMidiEvent` overflow, the deferred-restore take/reject. Done for the panel
+   sends (the gate's sites); a full queue is applied by the sender under the lock (no blocks run), not dropped.
 4. **Copy jobs.** `look`, `copyFlash`, `startMemory` flash, state capture.
 5. **Commit / Swap commands, try-lock owner token, idle fallback, retire ring.** After this `process` cannot wait.
    `withDeviceLocked` is renamed `withDeviceIdle` and asserts (diagnostics builds) that no block ran in 20 ms.
 6. **Gate.** --lock also fails on `missedBlocks > 0` and `droppedCommands > 0`; mdmm-rt-check.sh gets a `--load`
-   switch (N busy loops) so "busy Mac" is reproducible instead of luck.
+   switch (N busy loops) so "busy Mac" is reproducible instead of luck. Done (`missedBlocks` comes with step 5), with
+   the lock blame printed.
 
 ## Done when
 

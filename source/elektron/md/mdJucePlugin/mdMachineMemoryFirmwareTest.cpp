@@ -32,6 +32,7 @@
 #include "juce_audio_utils/juce_audio_utils.h"
 #include "synthLib/romLoader.h"
 
+#include <algorithm>
 #include <atomic>
 #if JUCE_MAC
 #include <CoreFoundation/CoreFoundation.h>
@@ -106,6 +107,42 @@ namespace
 	// One session: a plug-in instance with its audio running about real time, and the machine's SysEx answers.
 	class Session
 	{
+		// The plug-in's holds of the device lock off the audio thread while audio ran, by site. The work done under the
+		// lock (the holder's CPU time) must be under 1 ms in every hold; the wall time is reported beside it, as it also
+		// counts the holder preempted while holding (a busy Mac; DESIGN-audio-lock.md, what steps 4-5 would remove).
+		// The test's own probes (this file) are not the product's.
+		void reportLockHolds() const
+		{
+			const auto snap = processor->getPlugin().getRealtimeInstrumentation().snapshot();
+			double worstCpu = 0, worstWall = 0;
+			std::string worstSite = "none";
+			for(size_t i = 0; i < snap.lockHoldCount; ++i)
+			{
+				const auto& h = snap.lockHolds[i];
+				std::string file = h.file ? h.file : "?";
+				const auto slash = file.find_last_of("/\\");
+				if(slash != std::string::npos)
+					file = file.substr(slash + 1);
+				if(file == "mdMachineMemoryFirmwareTest.cpp")
+					continue;
+				const double wallMs = static_cast<double>(h.maxNanoseconds) / 1e6;
+				const double cpuMs = static_cast<double>(h.maxCpuNanoseconds) / 1e6;
+				std::printf("    lock hold %s:%u: %llu holds, mean %.4f ms, max %.3f ms (work %.3f ms)\n", file.c_str(), h.line,
+					static_cast<unsigned long long>(h.waits), h.waits ? static_cast<double>(h.nanoseconds) / 1e6 / static_cast<double>(h.waits) : 0.0,
+					wallMs, cpuMs);
+				worstWall = std::max(worstWall, wallMs);
+				if(cpuMs > worstCpu)
+				{
+					worstCpu = cpuMs;
+					worstSite = file + ":" + std::to_string(h.line);
+				}
+			}
+			char text[200];
+			std::snprintf(text, sizeof(text), "the work under the device lock off the audio thread under 1 ms a hold (worst %.3f ms, %s; wall time %.3f ms at most)",
+				worstCpu, worstSite.c_str(), worstWall);
+			check(worstCpu < 1.0, text);
+		}
+
 	public:
 		explicit Session(const std::optional<Bytes>& _projectState = std::nullopt, const bool _standalone = false)
 		{
@@ -125,6 +162,8 @@ namespace
 				m_in.emplace_back(_m.begin(), _m.end());
 			});
 			ap.prepareToPlay(44100.0, 128);
+			// every hold of the device lock off the audio thread from here on (DESIGN-audio-lock.md "done when")
+			processor->getPlugin().getRealtimeInstrumentation().setEnabled(true);
 			m_audio = std::thread([this, &ap]
 			{
 				juce::AudioBuffer<float> buf(ap.getTotalNumOutputChannels(), 128);
@@ -163,6 +202,7 @@ namespace
 				processor->getDeskHost()->session()->detach();
 			m_run = false;
 			m_audio.join();
+			reportLockHolds();
 			static_cast<juce::AudioProcessor&>(*processor).releaseResources();
 			m_listener.reset();
 			processor.reset();

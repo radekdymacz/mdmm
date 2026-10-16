@@ -34,6 +34,18 @@ namespace synthLib
 		bool resamplingActive = false, dualMachine = false;
 	};
 
+	// Where the device lock's holder took it when the audio thread had to wait for it (DESIGN-audio-lock.md): the
+	// site is the holder's file and line (synthLib::Plugin records them for every locked call)
+	struct RealtimeLockBlame
+	{
+		const char* file = nullptr;
+		uint32_t line = 0;
+		uint64_t waits = 0, nanoseconds = 0, maxNanoseconds = 0;
+		// holds only: the holder's own CPU time in its longest (wall time minus the time it was preempted while
+		// holding); 0 where the thread clock is not known
+		uint64_t maxCpuNanoseconds = 0;
+	};
+
 	struct RealtimeInstrumentationSnapshot
 	{
 		bool enabled = false;
@@ -76,6 +88,13 @@ namespace synthLib
 		uint32_t maximumActiveOutputBuses = 0;
 		uint32_t latestActiveOutputChannels = 0;
 		uint32_t maximumActiveOutputChannels = 0;
+		// the waits by holder site, in the order first met; waits whose site did not fit count under the last entry
+		static constexpr size_t LockBlameCapacity = 16;
+		std::array<RealtimeLockBlame, LockBlameCapacity> lockBlame{};
+		size_t lockBlameCount = 0;
+		// every hold of the device lock off the audio thread, by site (waits: the holds)
+		std::array<RealtimeLockBlame, LockBlameCapacity> lockHolds{};
+		size_t lockHoldCount = 0;
 	};
 
 	// Opt-in counters for diagnosing work performed on the host audio callback.
@@ -158,7 +177,14 @@ namespace synthLib
 		RealtimeInstrumentationSnapshot snapshot() const noexcept;
 
 		void recordSynthProcess(uint64_t _nanoseconds) noexcept;
-		void recordSynthProcessLockWait(uint64_t _nanoseconds) noexcept;
+		// _holderFile / _holderLine: the holder's site when the lock was contended (nullptr when it was free).
+		// The audio thread only
+		void recordSynthProcessLockWait(uint64_t _nanoseconds, const char* _holderFile = nullptr, uint32_t _holderLine = 0) noexcept;
+		// A hold of the device lock off the audio thread, by its site. Called while still holding it (the lock
+		// serialises the writers)
+		void recordLockHold(uint64_t _nanoseconds, uint64_t _cpuNanoseconds, const char* _file, uint32_t _line) noexcept;
+		// The calling thread's CPU time (holds); 0 where not known (Windows)
+		static uint64_t threadCpuNanoseconds() noexcept;
 		void recordResampler(uint64_t _nanoseconds, uint64_t _deviceNanoseconds,
 			size_t _hostFrames, bool _resamplingActive) noexcept;
 
@@ -213,6 +239,22 @@ namespace synthLib
 		std::atomic<uint64_t> m_synthProcessMaxNanoseconds{0};
 		std::atomic<uint64_t> m_synthProcessLockWaitNanoseconds{0};
 		std::atomic<uint64_t> m_synthProcessLockWaitMaxNanoseconds{0};
+		struct LockBlameSlot
+		{
+			std::atomic<const char*> file{nullptr};
+			std::atomic<uint32_t> line{0};
+			std::atomic<uint64_t> waits{0}, nanoseconds{0}, maxNanoseconds{0}, maxCpuNanoseconds{0};
+		};
+		using LockBlameTable = std::array<LockBlameSlot, RealtimeInstrumentationSnapshot::LockBlameCapacity>;
+		static void recordLockSite(LockBlameTable& _table, std::atomic<size_t>& _count, const char* _file, uint32_t _line,
+			uint64_t _nanoseconds, uint64_t _cpuNanoseconds = 0) noexcept;
+		static size_t readLockSites(const LockBlameTable& _table, const std::atomic<size_t>& _count,
+			std::array<RealtimeLockBlame, RealtimeInstrumentationSnapshot::LockBlameCapacity>& _out) noexcept;
+		static void resetLockSites(LockBlameTable& _table, std::atomic<size_t>& _count) noexcept;
+		LockBlameTable m_lockBlame{};
+		std::atomic<size_t> m_lockBlameCount{0};
+		LockBlameTable m_lockHolds{};
+		std::atomic<size_t> m_lockHoldCount{0};
 		std::atomic<uint64_t> m_resamplerCallCount{0};
 		std::atomic<uint64_t> m_resamplerNanoseconds{0};
 		std::atomic<uint64_t> m_resamplerMaxNanoseconds{0};

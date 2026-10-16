@@ -6,6 +6,7 @@
 #include <string>
 
 #include "audioTypes.h"
+#include "deviceCommand.h"
 #include "deviceTypes.h"
 
 #include "midiTypes.h"
@@ -127,6 +128,11 @@ namespace synthLib
 		virtual uint32_t getDspClockPercent() const = 0;
 		virtual uint64_t getDspClockHz() const = 0;
 		virtual bool canModifyDspClock() const { return false; }
+
+		// A command another thread queued with Plugin::sendCommands (deviceCommand.h), on the audio thread at the
+		// start of a block, or under the device lock when no blocks run. Must not block or allocate. False: not
+		// applied (counted by the plug-in as dropped). The default applies none.
+		virtual bool applyCommand(const DeviceCommand&) { return false; }
 
 		BASELIB_NOINLINE virtual void release(std::vector<SMidiEvent>& _events);
 

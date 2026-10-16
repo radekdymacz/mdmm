@@ -56,6 +56,12 @@ namespace mdJucePlugin
 		// The machine's facts as the audio thread (or the last locked call) published them, without the device lock
 		// (mdMachineFacts.h, DESIGN-audio-lock.md step 2). Any thread.
 		MachineFacts machineFacts() const { return m_facts->read(); }
+		// Commands for the machine's desk device (md::DeskDevice::panelSequenceCommands, panelEventCommand), queued
+		// for the audio thread without the device lock (DESIGN-audio-lock.md step 3). False without a desk device.
+		bool sendDeskCommands(const std::vector<synthLib::DeviceCommand>& _commands)
+		{
+			return machineFacts().desk && getPlugin().sendCommands(_commands.data(), _commands.size());
+		}
 		static md::MachineModel getCompiledProductModel();
 		static bool hasEmbeddedProductResource(std::string_view _filename);
 		juce::File getStorageRecoveryImage() const;
