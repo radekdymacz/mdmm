@@ -112,9 +112,9 @@ function selMark(kind){const x=selShown();if(!x)return false;const cells=[];
    else if(stepKind(st)==="trigless"){tr.steps[s]=null;tr.slide.delete(s);clearStepLocks(t,s)}}});return true}
  /* B-152: a pitchless trig (the machine's EXIT held on a trig, manual 1-59): the trig and its envelope trigs, no note of
     its own (it plays the note before). On: a note loses its note (a trig with no envelope gets all three, else it would be
-    nothing), an empty step or a NOTE OFF becomes one; off: it gets the track's last pitch back */
+    nothing), an empty step or a NOTE OFF becomes one; off (when every trig of the range is pitchless; empty steps do not count): it gets the track's last pitch back */
  if(kind==="pitchless"){const syn=cells.filter(([t])=>!isMidiT(t));if(!syn.length){toast("A MIDI track has no pitchless trigs: its notes are its own.");return true}
-  const on=syn.some(([,,st])=>!isPitchless(st));
+  const trigs=syn.filter(([,,st])=>hasTrig(st)),on=!trigs.length||trigs.some(([,,st])=>!isPitchless(st));
   selSteps(x,(t,tr)=>{if(isMidiT(t))return;for(let s=x.from;s<x.to;s++){const st=tr.steps[s];
    if(on){if(!st||st.off)tr.steps[s]={a:1,f:1,l:1};else{delete st.n;delete st.notrig;if(!st.a&&!st.f&&!st.l)Object.assign(st,{a:1,f:1,l:1})}}
    else if(isPitchless(st))st.n=[lastNote(t,s)]}});return true}
@@ -126,11 +126,11 @@ function selMark(kind){const x=selShown();if(!x)return false;const cells=[];
   commit();rerenderSeq();return true}
  return false}
 /* what the step menu ticks: true when every selected step (of those it applies to) has the mark */
-const isPitchless=st=>!!st&&!st.off&&!st.notrig&&!st.n;
+const hasTrig=st=>!!st&&!st.off&&!st.notrig,isPitchless=st=>hasTrig(st)&&!st.n;
 function selHas(kind){const x=selShown();if(!x)return false;const c=[];for(let t=x.t;t<x.t+x.n;t++)for(let s=x.from;s<x.to;s++)c.push([t,s,trk(t).steps[s]]);
  if(kind==="noteoff")return c.every(([,,st])=>st?.off);
  if(kind==="trigless"){const y=c.filter(([t])=>!isMidiT(t));return y.length>0&&y.every(([,,st])=>stepKind(st)==="trigless")}
- if(kind==="pitchless"){const y=c.filter(([t])=>!isMidiT(t));return y.length>0&&y.every(([,,st])=>isPitchless(st))}
+ if(kind==="pitchless"){const y=c.filter(([t,,st])=>!isMidiT(t)&&hasTrig(st));return y.length>0&&y.every(([,,st])=>isPitchless(st))}
  if(kind==="slide")return c.every(([t,s])=>trk(t).slide.has(s));
  if(kind==="swing")return c.every(([t,s])=>trk(t).swing.has(s));
  const y=c.filter(([t,,st])=>st&&!st.off&&!isMidiT(t));return y.length>0&&y.every(([,,st])=>!!st[kind])}

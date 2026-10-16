@@ -119,6 +119,7 @@ const box = (m, pg, name, v) => { P.S.sel = 0; P.S.tracks[0].m = m; const i = pg
 	check(mt.max === 127 && tab.length === 24 && tab[0].lo === 0 && tab.every((e, k) => !k || e.lo > tab[k - 1].lo), "FM+STAT 1FRQ: 24 entries over 0-127, the full value to the machine");
 	const steps = []; for (let v = 0, k = 0; k < 30; k++) { steps.push(v); v = stepTab(tab, v, 1); }
 	check(new Set(steps).size === 24 && steps[1] === 6 && steps.at(-1) === 123 && stepTab(tab, 6, -1) === 0 && stepTab(tab, 0, -1) === 0, "a step moves one entry (0 6 11 ... 123, and stays at the ends)");
+	check(stepTab(tab, 127, 1) === 127 && stepTab(tab, 125, 1) === 125 && stepTab(tab, 3, -1) === 3 && stepTab(tab, 0, -1) === 0, "a step past the first or last entry leaves the value as it is (127 up stays 127, 3 down stays 3)");
 	const r1 = box("FM+DYN", "SYN", "1FRQ", 0).mt.tab.map(e => e.r), r2 = box("FM+DYN", "SYN", "2FRQ", 0).mt.tab.map(e => e.r);
 	check(r1.length === 128 && r2.length === 128 && [r1, r2].every(r => r.every((x, k) => !k || x >= r[k - 1] - .0021)), "FM+DYN 1FRQ and 2FRQ: 128 texts, the ratios the drawing takes in line (the decimal point the LCD moves on 11-40 put back)");
 	check(Math.abs(r1[11] - .156) < 1e-9 && Math.abs(r2[11] - .0244) < 1e-9 && r1[40] === .2 && r2[40] === .04, "the LCD's 1.56 (1FRQ 11) is 0.156, its 4.0 (2FRQ 40) is 0.04");
