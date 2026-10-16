@@ -159,11 +159,11 @@ namespace elektronData
 			return {};
 		case 5: return _slot == 6 ? onOff : std::vector<std::string>{};						// SWAVE-PULS PWRS
 		case 6:																				// DPRO-WAVE
-			if(_slot == 0)																	// WAVE: the 32 DigiPro waveforms, by number
+			if(_slot == 0)																	// WAVE: the 32 waveforms as the LCD names them, S01-S32 (B-150)
 			{
 				std::vector<std::string> waves;
 				for(int w = 1; w <= 32; ++w)
-					waves.push_back((w < 10 ? "0" : "") + std::to_string(w));
+					waves.push_back((w < 10 ? "S0" : "S") + std::to_string(w));
 				return waves;
 			}
 			return _slot == 3 || _slot == 4 ? onOff : std::vector<std::string>{};			// WPRS SYNC

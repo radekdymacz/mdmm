@@ -207,6 +207,36 @@ const MdJourneys = (() => {
 			{ ...undoKey, say: "press Cmd+Z once: all four go", screen: c => ok(c.run.every(s => !pressed(cell(c.t, s))), "still lit"), machine: c => ok(c.run.every(s => !trigsOf(c.t).includes(s)), "pattern " + trigsOf(c.t).join(",")) }
 		]
 	};
+	/* I-036 (0.8): a click on a trig selects it and keeps the selection; an empty step still draws; ← → move the selection, Delete clears it, a double-click removes the trig */
+	const stepClickSelect = {
+		name: "md-step-click-select", proves: [],
+		steps: [
+			go("seq"), sel(() => soundTrack()),
+			{ say: "click an empty step: a trig is drawn there, nothing is selected", act: (u, c) => {
+				c.L = Math.min(V.length, V.len); c.t0 = trigsOf(c.t); c.s = [...Array(c.L - 2).keys()].find(s => !c.t0.includes(s) && !c.t0.includes(s + 1));
+				if (c.s == null) throw new Error("no two free steps in a row"); if (S.stepSel) clearSel(); document.activeElement?.blur?.(); u.click(cell(c.t, c.s)); },
+				screen: c => ok(pressed(cell(c.t, c.s)) && !S.stepSel, "lit " + pressed(cell(c.t, c.s)) + ", selection " + JSON.stringify(S.stepSel)), machine: c => ok(trigsOf(c.t).includes(c.s), "no trig") },
+			{ say: "click the trig: it stays, and it is selected (its step is marked, the selection is one step)", act: (u, c) => { c.u1 = V.undoCount; u.click(cell(c.t, c.s)); },
+				screen: c => ok(same(S.stepSel, { t: c.t, n: 1, from: c.s, to: c.s + 1 }) && $1(cell(c.t, c.s)).classList.contains("selx") && pressed(cell(c.t, c.s)), "selection " + JSON.stringify(S.stepSel)),
+				machine: c => ok(trigsOf(c.t).includes(c.s) && V.undoCount === c.u1, "trigs " + trigsOf(c.t).join(",") + ", undo steps " + c.u1 + " -> " + V.undoCount) },
+			{ say: "after a moment it is still selected (the release does not drop it)", act: () => sleep(300), screen: c => ok(same(S.stepSel, { t: c.t, n: 1, from: c.s, to: c.s + 1 }), "selection " + JSON.stringify(S.stepSel)) },
+			{ say: "press →: the selection moves one step, the trig stays", act: u => { document.activeElement?.blur?.(); u.key("ArrowRight"); },
+				screen: c => ok(S.stepSel?.from === c.s + 1 && S.stepSel?.n === 1, "selection " + JSON.stringify(S.stepSel)), machine: c => ok(trigsOf(c.t).includes(c.s), "trigs " + trigsOf(c.t).join(",")) },
+			{ say: "press ←, then double-click the trig: it is removed, nothing stays selected, one undo step", act: async (u, c) => { document.activeElement?.blur?.(); u.key("ArrowLeft"); await sleep(150); c.u2 = V.undoCount; u.dblclick(cell(c.t, c.s)); },
+				screen: c => ok(!pressed(cell(c.t, c.s)) && !S.stepSel, "lit " + pressed(cell(c.t, c.s)) + ", selection " + JSON.stringify(S.stepSel)),
+				machine: c => ok(!trigsOf(c.t).includes(c.s) && V.undoCount === c.u2 + 1, "trigs " + trigsOf(c.t).join(",") + ", undo steps " + c.u2 + " -> " + V.undoCount), within: 8000 },
+			{ ...undoKey, say: "press Cmd+Z: the trig is back", act: u => { document.activeElement?.blur?.(); u.key("z", { cmd: true }); }, machine: c => ok(trigsOf(c.t).includes(c.s), "trigs " + trigsOf(c.t).join(",")), within: 8000 },
+			{ say: "click the trig, press Delete: it is cleared (the selection's Delete)", act: async (u, c) => { await until(idle, 3000); u.click(cell(c.t, c.s)); await sleep(150); document.activeElement?.blur?.(); u.key("Delete"); },
+				machine: c => ok(!trigsOf(c.t).includes(c.s), "trigs " + trigsOf(c.t).join(",")), within: 8000 },
+			{ say: "double-click another empty step: one trig is drawn and stays (the second click does not remove it), no message says it was removed", act: async (u, c) => { await until(idle, 3000); c.s2 = [...Array(c.L).keys()].find(s => s !== c.s && !trigsOf(c.t).includes(s)); await sleep(500); u.dblclick(cell(c.t, c.s2)); await sleep(300); },
+				screen: c => ok(pressed(cell(c.t, c.s2)) && !/Removed/.test($1("#toast")?.textContent || ""), "lit " + pressed(cell(c.t, c.s2)) + ", toast \"" + $1("#toast")?.textContent + "\""), machine: c => ok(trigsOf(c.t).includes(c.s2), "trigs " + trigsOf(c.t).join(",")), within: 8000 },
+			{ say: "after a moment double-click that trig: now it is removed", act: async (u, c) => { await sleep(500); u.dblclick(cell(c.t, c.s2)); },
+				screen: c => ok(!pressed(cell(c.t, c.s2)), "still lit"), machine: c => ok(!trigsOf(c.t).includes(c.s2), "trigs " + trigsOf(c.t).join(",")), within: 8000 },
+			{ say: "press Cmd+Z, then Cmd+Z again: the track is as it was", act: async (u, c) => { document.activeElement?.blur?.(); await undoUntil(u, () => same(trigsOf(c.t), c.t0), 8); },
+				machine: c => ok(same(trigsOf(c.t), c.t0), "trigs " + trigsOf(c.t).join(",")), within: 8000 }
+		],
+		async tidy(u, c) { if (S.stepSel) clearSel(); if (c.t0 && !same(trigsOf(c.t), c.t0)) await undoUntil(u, () => same(trigsOf(c.t), c.t0), 4); }
+	};
 	const accentSlide = {
 		name: "md-seq-accent-slide", proves: ["MD-127", "MD-141"],
 		steps: [
@@ -1459,6 +1489,37 @@ const MdJourneys = (() => {
 			{ say: "click Done: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") }
 		],
 		async tidy() { $1("#syxpop").hidden = true; }
+	};
+	/* I-038: Read back and compare, off. The tick sits beside Verify only and is kept; an import without it ends after Send and
+	   says "not read back", never "imported". The tick is put back on at the end (it is kept in the page's storage). */
+	const syxNoReadBack = {
+		name: "md-lib-syx-noreadback", alone: true, proves: ["MD-184", "MD-X13"],
+		needs: syxWanted,
+		steps: [
+			openImport,
+			{ say: "the footer has Read back and compare beside Verify only, ticked by default", act: () => {},
+				screen: () => ok(!!$1('#syxpop .syxfoot [data-syxrb]')?.checked && !!$1('#syxpop .syxfoot [data-syxgo="verify"]') && /Read back and compare/.test($1("#syxpop .syxfoot .syxrb")?.textContent || ""), "tick " + $1('#syxpop [data-syxrb]')?.checked) },
+			{ say: "untick it, click Cancel and open the import again: it stays unticked", act: async u => {
+				u.click('#syxpop [data-syxrb]'); await sleep(100); u.click('#syxpop [data-syxgo="close"]'); await sleep(300); u.pick("engsel", "import"); },
+				screen: () => ok(!$1("#syxpop").hidden && $all('#syxpop button[data-syxitem^="kit:"]').length > 0 && $1('#syxpop [data-syxrb]') && !$1('#syxpop [data-syxrb]').checked, "tick " + $1('#syxpop [data-syxrb]')?.checked), within: 8000 },
+			{ say: "leave Kits ticked only, click Import: sent, and the report says not read back", act: async u => {
+				for (const b of $all("#syxpop [data-syxkind]")) if (b.checked !== (b.dataset.syxkind === "kit")) u.click(b);
+				await sleep(100); u.click('#syxpop [data-syxgo="start"]'); },
+				screen: () => { const s = $1("#syxpop .syxsum")?.textContent || "", steps = $1("#syxpop .syxsteps")?.textContent || "";
+					return ok(/\d+ sent, not read back/.test(s) && !/imported|taken/.test(s) && !/Read back/.test(steps), "summary: " + s + " / steps: " + steps); }, within: 180000 },
+			{ say: "the grid marks the kits as sent, none as taken", act: () => {},
+				screen: () => { const o = $all("#syxpop [data-syxout]").map(d => d.dataset.syxout); return ok(o.every(x => x === "sent"), o.join(" ")); } },
+			{ say: "click Done, open the import again and tick Read back and compare again", act: async u => {
+				u.click('#syxpop [data-syxgo="close"]'); await sleep(300); u.pick("engsel", "import"); await until(() => !!$1('#syxpop [data-syxrb]'), 8000); u.click('#syxpop [data-syxrb]'); },
+				screen: () => ok(!!$1('#syxpop [data-syxrb]')?.checked, "tick " + $1('#syxpop [data-syxrb]')?.checked), within: 10000 },
+			{ say: "click Cancel: the panel closes", act: u => u.click('#syxpop [data-syxgo="close"]'), screen: () => ok($1("#syxpop").hidden, "still open") }
+		],
+		async tidy(u) {
+			const t = $1('#syxpop [data-syxrb]');
+			if (!$1("#syxpop").hidden && t && !t.checked) t.click();
+			if (!$1("#syxpop").hidden) $1("#syxpop").hidden = true;
+			try { localStorage.removeItem("deskSyx.readBack"); } catch (_) { }
+		}
 	};
 	const syxPlace = {
 		name: "md-lib-syx-place", proves: ["MD-183", "MD-184", "MD-X13"],
@@ -3102,7 +3163,7 @@ const MdJourneys = (() => {
 		async tidy(u) { await closePops(u); u.click(tab("seq")); }
 	};
 	const all = [screensFit, ...slice5, ...wave12, ...e2eReal, bootCard, firstBeat, spaceTransport, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, tapTempo, tapTempoB, tapTempoShift, patStep, queuePattern, plate, wsKeys, helpKeys, osHelp, undoRedo,
-		paintUndo, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
+		paintUndo, stepClickSelect, accentSlide, trigTypesJ, lockLane, pagesJ, copyPaste, copyWhat, clearWhat, lfoMenuJ, selectCopyPaste, stepMenuJ, osCopyPaste, buttonsCopyPaste, clearPatternJ, fillEveryJ, rotateJ, rotateUndo, trackKeys, muteKeys, liveRec, liveErase, liveUnlock,
 		genJourney("md-gen-mutate-undo", false, { proves: ["MD-X04", "MD-X05"] }), genJourney("md-gen-defaults-mutate-undo", true, { proves: ["MD-X04"] }), genKeys, genModal, laneTools, gridFits,
 		shapeSound, typeValue, arrows, machinePick, machAudition, soundCopy, editorDrag, controlAll, globalKey, globalClickOut, songModeJ,
 		mixSolo, soloSaved, shiftMutes, allOff, fader, lev, outKey, masterFx,
@@ -3111,7 +3172,7 @@ const MdJourneys = (() => {
 		globalJ, globalRouting, globalMapNote, globalPage, globalCopyPaste, globalTrigIn, globalLearn, noteLights, audioPanel, romCard, notePlay,
 		lockRamp, pasteMany, mutScope, songInspector, songDrag, ramView, setupChop, panBox, hwNoMachine, syxImportJ,
 		syxImportMute, globalReset, shotsGlobal, shotsSound, shotsReview, shots, shotsSong, shotsImport, editorMenuJ, memoryJ, shotsMenu, ...cpuJs, ...volJs,
-		dropSyxJ, dropSampleJ, ...viewJs, syxExportKinds, syxVerify, syxPlace, modalLock, songFactoryPlay, lockKeysFit, resetFactory, resetEmpty, syxRunningReach];
+		dropSyxJ, dropSampleJ, ...viewJs, syxExportKinds, syxVerify, syxNoReadBack, syxPlace, modalLock, songFactoryPlay, lockKeysFit, resetFactory, resetEmpty, syxRunningReach];
 	/* every journey's tidy is followed by a look: if the machine's documents or modes still differ from what the journey found, back(u, c) puts them back (the journey's own tidy first, for what is its own;
 	   its guard, "left:", names what stays). What back cannot put back, the journey keeps first (keep, keepMany) or is alone: true (doc/modern-ux/JOURNEYS.md, "Independent journeys") */
 	for (const j of all) { const own = j.tidy; j.tidy = async (u, c) => { try { if (own) await own(u, c); } finally { if (c.back0?.state && Journey.stateDiff(c.back0.state, state())) await back(u, c); } }; }

@@ -73,7 +73,7 @@ namespace
 	{
 		const auto md = md::transportPolicy(md::MachineModel::Machinedrum);
 		const auto mm = md::transportPolicy(md::MachineModel::Monomachine);
-		return check(md.backgroundQuantumMicroseconds == 125.0
+		return check(md.backgroundQuantumMicroseconds == 30.0	// 125 until 0.8 (stacked LFOs, mdtransportpolicy.h)
 			&& md.catchUpMaxDspCycles == 100'000
 			&& md.hostReceiveIrqMinWords == 3
 			&& md.hostReceiveQueueCapacityWords == 16

@@ -4,13 +4,111 @@
 repository; the site sends reports to the contact address. Newest first. Each entry:
 where it came from, the setup, what happens, what should happen, status.*
 
+## B-164 · Monomachine: a lock the panel counts is not drawn in the lane ("12 on the machine, 16 in the editor", DEC shows nothing)
+
+- **From:** a beta tester on Discord, 2026-10-16 (0.7.0): "There are 12 plocks in this pattern. The top right says only 7. The editor shows that there are 16, it claims there are 4 on DEC but they do not show up or are implemented." Earlier: some trigs show a lock but cannot be identified.
+- **Setup:** Monomachine Editor, Sequence, a pattern from the machine, track 4 (SID-6581), 8 trigs; the lock panel says ATK 4, DEC 4, VOL 4, PAN 4; the lane shows bars for ATK, VOL and PAN, none for DEC (tooltip "4 locked steps"); the LCD says LOCKS 07/62.
+- **The numbers are two units, not one error.** LOCKS 07/62 counts locked parameters over all tracks (a track and a parameter with any lock is one: `syncLockBudget`, `75-comforts.js:20`; `60-ui.js:79` is `S.locks.size`): 4 on track 4 and 3 on other tracks. The panel's 4 per parameter counts locked steps (`70-seq.js:27`, `S.locks.get(key).size`): 4 parameters x 4 steps = 16. The tester's 12 is the three lanes that draw (3 x 4). The UI does not say which unit is which.
+- **Why DEC draws nothing (two causes, both reproduced on the page, no ROM):** the lane draws a bar only on a step with a trig (`70-seq.js:89`, `on`), and the bar of a lock of value 0 has no height (`barHTML`, `70-seq.js:85`). (1) A lock on a step with no trig: the page's import keeps it (`mmConvert.js:181`, every lock step is read; the core only refuses writing one, `mmDeskEdit.cpp:491`, and `mmValidate.cpp:110` takes them on read because a machine's own backup holds them), so it is counted and drawn nowhere; the machine plays and shows none. This best fits the tester's 12 (the 4 DEC locks sit beside the trigs, not on them). (2) A lock to 0 (a very short DEC) is a bar of no height. The decode (`mmPattern.h:52`, rows in (track, page, parameter) order) was read and looks right; it cannot map DEC to another parameter without ATK, VOL and PAN being wrong too.
+- **What should happen:** every counted lock is seen: a lock of 0 gets a visible mark, a lock on a step without a trig is either not counted or shown (a ghost mark, and a way to clear it); the panel and LCD say their unit ("4 locked steps", "7 of 62 locked parameters").
+- **Test:** `mmLockLaneTest.js` (page, no ROM): fails today on both causes. Not verified on the firmware (needs the tester's pattern).
+- **Status:** fixed on fix/0.8-mm-lock-count (decision: keep the data, show it). A lock on a step without a trig is kept on import and drawn as a ghost bar (hollow, dashed, the step hatched; tooltip "Lock on a step without a trig: the machine ignores it"; Alt-click erases it; painting there still needs a trig, the core refuses). A lock of 0 keeps a 2 px mark. The panel tooltip says "n locked steps" (and "(n on steps without a trig)"); the LCD LOCKS tooltip says "n of 62 locked parameters (the machine's limit)". No layout change, no new control. `mmLockLaneTest` covers ghost bars and the 0 mark (registered in ctest and `mdmm-affected.tsv`); page journeys mm-seq-lock*, mm-seq-locks, mm-lane-tools pass. Still worth asking the tester for the .syx to confirm which cause hit their pattern.
+
+## B-163 · Machinedrum: host notes 36 to 51 pressed TRIG keys instead of playing the key map
+
+- **From:** found by Claude Code while writing the host-notes test (WP1 of PLAN-0.8, D2), 2026-10-16.
+- **What happened:** `Hardware::pumpScheduledMidi` turned every host note 36 to 51, on any channel, into a press of the panel TRIG key (note - 36), and ignored the firmware's key map and base channels. With the factory key map (36 38 40 41 43 45 47 48 50 52 53 55 57 59 60 62 play tracks 1 to 16) a DAW's note 38 played track 3, not track 2; 11 of 16 tracks, a note on a channel outside the base channels, a note after a MAP EDITOR change (the old note kept sounding) and, with GRID RECORD on, any of those notes toggled a trig in the pattern.
+- **Measured (`mdHostNotesFirmwareTest md`, before the change, 12 checks failed):** tracks 2 to 9 played another track or the wrong level; tracks 10 to 16 (notes outside 36-51) already went through the firmware and matched their TRIG key exactly (signature cosine 1.000). Channel 9 sounded track 1 and 6. The unmapped old note 40 still played. Two host notes in GRID RECORD changed the pattern dump (the control with the panel key did too).
+- **D2, branch A (Radek, 2026-10-16: A if the native path plays all 16 tracks):** the rewrite is removed. After the change all 16 factory notes on the base channel match their TRIG key (level 0.93-1.04 of it, cosine 1.000), a note on channel 9 is silent, an edited map moves the note, and host notes leave a GRID RECORD pattern as it was. Channels 1 to 4 (the four base channels) all play the key map, as on the machine. Branch B (keep it, limit it to the base channel and the map) was not needed.
+- **Also:** `mdMidiTimingTest --firmware` (midiTimingTest.cpp; ctest `mdMidiTimingFirmwareTest`) expected the pad bytes on the panel UART for note 36; it now expects the note on the MIDI wire.
+- **Behaviour change for the 0.8 notes:** notes on a channel outside the four base channels no longer play (as on a real Machinedrum); a DAW drum track on channel 10 must use the Global base channel.
+- **Status:** fixed on branch `fix/0.8-notes-in`, not yet merged.
+
+## B-162 · Switching between Chain, Pattern and Song makes things go weird (mode out of step, parameters change)
+
+- **From:** a beta tester on Discord, 2026-10-16 (0.7.0). Not specific: "things go weird" when switching between Chain, Pattern and Song; for example the editor still believes it is in chain mode while the machine is in pattern mode, and parameters change at random.
+- **Both editors.** The three keys are the Song page's `songpick` switch (`mdStudio/mdDeskSong.js:22-37`, `mmStudio/src/120-song.js:22-27`). Only PATTERN and SONG are machine modes (`seqMode`); CHAIN is a page state (`S.songPick`) over pattern mode, and the chain is the BANK + TRIG key gesture sent as hardware keys.
+- **Suspects (read, not yet reproduced):** (1) `songPickSet` does not cancel `S.chainTimer`: pads clicked in CHAIN send the chain 150 ms after the last click (`chainSoon`), so SONG or PATTERN pressed inside that window sends `seqMode` and then the chain's BANK/TRIG keys into the other mode; TRIG keys in SONG mode are not the chain gesture and can hit the panel (B-127 shows the firmware takes no BANK + TRIG gesture in some states). (2) `S.songPick === "chain"` stays after the machine's chain ended (the LCD or a pattern pick), so the page says CHAIN while `chainDoc().active` is false; `songModeSync` only corrects the Song to Pattern direction. (3) The B-072 fix sends the mode on every key, so a fast PATTERN, CHAIN, SONG run queues several `seqMode` before the machine answers.
+- **Related:** B-072 (fixed, mode keys), B-127 (Chain does nothing after a live recording).
+- **Reproduction plan:** a firmware journey `md-song-mode-cycle` / `mm-song-mode-cycle`: SONG, PATTERN, CHAIN with two pads, SONG, PATTERN in quick sequence and with 50 ms gaps; after each step the machine's `songMode`, the page's switch, the chain document and the kit values of all tracks are compared with what they were; nothing may change).
+- **Status:** open; needs the tester's exact steps (which keys, how fast, which parameters).
+
+## B-161 · Stacked LFOs are unstable: three LFOs on a kick's pitch, the sweep sometimes does not trigger
+
+- **From:** a beta tester on Discord, 2026-10-16: three LFOs stacked on one kick's pitch, the sweep randomly does not trigger, "on most emulators".
+- **Setup:** one track, its pitch (or a pitch parameter) modulated by three LFOs at once.
+- **What happens:** the pitch sweep does not fire on some hits, at random.
+- **What should happen:** every trig restarts the sweep, as on the machine.
+- **Cause:** the emulation, not the firmware. The scheduler that runs the ColdFire and the two DSPs on one thread let a Machinedrum DSP run up to 125 µs of machine time ahead of the ColdFire (`backgroundQuantumMicroseconds`, `mdLib/mdtransportpolicy.h`, upstream's value). A DSP that is ahead takes the ColdFire's host words late in its own time, so a trig and the LFO values sent with it fell on either side of the DSP's start of the note: some kick hits played without their sweep, and which ones moved with the host's block size (a real machine has none). Measured with `stackedLfoFirmwareTest` (TRX-BD on every beat, the LFOs of tracks 2-4 on its PTCH in TRIG, their tracks trigged with it, 64 hits): at 64-frame blocks 11 hits without the sweep and 10 with half of it; 7 and 512 frames 1 and 7; 1 frame none; the same with the speed-ups off and with L3. A short DSP slice alone fixes it. All the upstream fixes named on Discord (mc68k 6c0f85032, 13ebbaded, ae8c8815b; dsp56300 217696ff5, fa0140503; upstream's default branch to 8cea0524a, and its MM LFO clock fix eb89cd49f) were already in our tree; none touches this.
+- **Fix:** the Machinedrum's quantum is 30 µs, the Monomachine's value: every hit plays at blocks 1, 7, 64 and 512, with the speed-ups on and off and L3 on and off; host instructions per frame unchanged; speed-ups on and off stay bit-exact to each other. The Machinedrum's 18 playing goldens were re-recorded (Radek's sign-off, 2026-10-16); the Monomachine's 12 are unchanged. The Monomachine (LFO1-3 of one track on PTCH, note trigs, `stackedLfoFirmwareTest --mm`) plays every hit at every block size; it already ran at 30 µs. Tests: `stackedLfoFirmwareTest`, `stackedLfoMmFirmwareTest` (ctest, need the ROMs).
+- **Release note:** "Machinedrum: stacked LFOs no longer miss trigs; the sound of patterns that relied on that may change slightly."
+- **Status:** fixed on branch `fix/0.8-stacked-lfo` (not merged).
+
+## B-160 · Monomachine machine-tier journeys depend on run order
+
+- **From:** found by Claude Code while checking a branch, 2026-10-16.
+- **Setup:** origin/main at 5b87182fd, `scripts/mdmm-journeys.sh --background --tier machine mm`. In two full runs out of two three journeys fail: `mm-real-factory-songs` ("no factory song holds rows", also when run alone), `mm-real-sequence-plays` (peak 0.0002, toast "the machine loaded no kit when it was picked"; passes alone) and `mm-old-webkit` ("no piano roll for track 3" at the step menu; passes alone).
+- **What happens:** a journey passes or fails depending on what ran before it, so the machine state it starts from is not known.
+- **What should happen:** each journey starts from a known machine state.
+- **Status:** open.
+
+## B-159 · The download flow shows a "price" (site)
+
+- **From:** a beta tester on Discord, 2026-10-12 (screenshot of the download flow): "why does it show 'price' here on the download flow? It skips it of course, but it's odd."
+- **What happens:** the flow still shows a price/amount step before the download. Radek (2026-10-13): the editors stay free (the emulator is GPL, no charge for the UI), donations go through GitHub Sponsors (github.com/sponsors/radekdymacz).
+- **What should happen:** no price step; a donate link instead, as agreed. Check the site's `/get/` flow and whether any wording says "price", "pay" or "buy".
+- **Status:** open; the tester was told it is donationware (Radek, 2026-10-13). Needs Radek's decision on the wording; the site deploy is by hand.
+
+## B-158 · A .syx project "did say waiting in the receive" and nothing loaded
+
+- **From:** a beta tester on Discord, 2026-10-14, the Monomachine ("gearmulator MM"): has a .syx project, "tried to load and it did say waiting in the receive, but it took too long".
+- **Setup (probable):** no ROM loaded yet. The Machinedrum/Monomachine LCD's SysEx receive mode waits for a dump from a machine; a .syx file is read from the SysEx import (drag and drop, or Import SysEx), not received.
+- **What should happen:** without a ROM, say so (the ROM card), and say where a .syx file is imported; the LCD's "Receive ... waiting" is the machine's own mode and should not be the first thing a new user finds.
+- **Status:** open, waiting for the tester's facts (a reply is drafted in section 3). Radek asked whether the ROM was loaded and explained the difference between the OS/ROM and a SysEx backup; the tester has not answered.
+
+## B-157 · Monomachine 0.4.0: the piano roll cannot delete, copy or paste notes; right-click shows only the old menu
+
+- **From:** a beta tester on Discord, 2026-10-10 (macOS 12, Monomachine Editor 0.4.0, Ableton Live): "the sequencer isn't as polished as the one on the Machinedrum. At least on my OS, I can't delete notes, or copy or paste them. Right-click on the MD editor is very deep; right-click on the MM has Gearmulator functions only."
+- **What happens/should happen:** the Machinedrum had the step menu, copy/paste and delete; the Monomachine did not yet.
+- **Status:** probably fixed by 0.5.0 ("the Monomachine Editor catches up with the Machinedrum Editor") and 0.6.0 (Copy / Paste / Clear with parts, the step menu with the right-click). Not rechecked on the tester's macOS 12. Close when the tester confirms on 0.7.0. (Radek: "I will be syncing the functionality", 2026-10-10.)
+
+## B-156 · Windows 0.5.1: crackle when steps are entered during playback (both editors), glitches when a Monomachine parameter is changed
+
+- **From:** a beta tester on Discord, 2026-10-14, 0.5.1, Windows, Ableton Live 12.4.1, AMD Ryzen 7 3800X, 48 GB, Focusrite Clarett 2Pre ASIO at 48 kHz / 512 samples. CPU read from Live's meter (average), one plug-in per empty project, "> 1 %" ambient.
+- **What happens:** (1) on both editors "crackling occurs when putting in notes into the sequencers during playback" (the persistent crackle of 0.4.0/0.5.0 is gone). (2) Monomachine only: "adjusting a synth parameter during playback can cause general instability" (crackle, graphical hitches). The Machinedrum has no problem when parameters are adjusted. No crashes in more than 2 hours.
+- **What should happen:** edits during playback do not disturb the audio (as on the Mac since 0.4.0: B-028).
+- **To check:** the same drop-out family as B-014/B-028 on Windows: the burst of SysEx pushes after an edit (`Pushes::pump`), WinMM waiting on the audio thread for a SysEx to leave (B-037), the MM's heavier read-backs (B-021/B-099). Worth a log with `MDMM_*` diagnostics and Speed-ups on/off.
+- **Numbers (to B-005 as well):** the Monomachine idles at 89 % (+- 6) in Live's meter and 89 % running; the Machinedrum 75 % (+- 3) idle, 80 % running; CPU down 3 % from 0.5.0 and about 30 % from 0.4.0 (MM), unchanged from 0.5.0 and about 25 % down from 0.4.0 (MD); initialises much faster. Reference on the same PC: the original Gearmulator MD/MM 120 % peak average, "differences very minor between versions", the standalone "dangerously close to causing a system crash"; Monomodule (no sequencer) 5 % for one track, 26 % for six. Verdict: "the MD editor is in a usable state on its own; the MM editor is a step behind".
+- **Which block is which:** the two blocks of numbers were posted without the product names; the first (89 %, instability) reads as the Monomachine, the second as the Machinedrum. Confirm with the tester.
+- **Status:** open, not reproduced (no Windows machine here; the Windows CI cannot hear drop-outs).
+
+## B-155 · Machinedrum standalone: choosing Bluetooth MIDI crashes the app; the External Input list cannot be changed from None
+
+- **From:** a beta tester on Discord, 2026-10-14 (macOS Tahoe, Machinedrum Editor standalone, the AUDIO / MIDI panel; the same tester as B-154).
+- **What happens:** (1) selecting Bluetooth MIDI in the panel closes the app (a crash). (2) The External Input drop-down lists the tester's audio interfaces, but picking one leaves it on "None". The tester is not sure these are bugs or "not implemented yet".
+- **What should happen:** (1) no crash; if CoreMIDI's Bluetooth pairing window is what opens, it must not take the app down. (2) A picked input stays picked, or the panel says why not (the machine's external audio input, the interface needs the same sample rate or has no input channels, macOS microphone permission).
+- **To check:** (1) JUCE's `BluetoothMidiDevicePairingDialogue` (macOS CoreMIDI needs a signed app with the Bluetooth usage key: Info.plist `NSBluetoothAlwaysUsageDescription`; without it macOS kills the process); the standalone's Info.plist. (2) the microphone usage key and permission (`NSMicrophoneUsageDescription`): without it macOS gives an input device but no input, and JUCE shows None; the app is unsigned in 0.x, so the prompt may never appear. Also whether the External Input drop-down is the audio or MIDI input.
+- **Needed from the tester:** version; the crash report (Console > Crash Reports) for (1); System Settings > Privacy > Microphone, whether the app is listed (2).
+- **Status:** open, not reproduced.
+
+## B-154 · Machinedrum standalone, MIDI from Ableton over the IAC driver: when a pattern plays the audio turns to noise
+
+- **From:** a beta tester on Discord, 2026-10-14 (macOS Tahoe, Ableton Live, Machinedrum Editor standalone; version not given, 0.5.1 or 0.6.0).
+- **Setup:** the standalone app used as an external device: Ableton sends notes, clock and start/stop to the app through macOS's IAC MIDI driver. The tester says notes, sync and remote start/stop all worked.
+- **What happens:** "when a pattern plays the audio engine completely fails into a digital cacophony and crashes the audio output from the app" (the app itself does not crash). The tester wonders whether the audio has to be routed back into Ableton.
+- **What should happen:** the same sound as with the app's own clock, or a clear message.
+- **To check:** the app's tempo in = EXT with an external clock (clock at 24 ppqn from Live, possibly plus Start/Continue and song position); whether the noise comes only with the clock on (try the app on INT and notes only); CPU meter and buffer size at the time; whether Live's own IAC clock jitter or a clock flood reaches the firmware (the firmware's MIDI clock handling, `synthLib::midiClock`, the machine MIDI-in path); whether the app's audio device was shared with Live. Routing audio back into Live is not needed: the app plays through its own audio device.
+- **Needed from the tester:** the version; GLOBAL Tempo in (INT/EXT) and clock/transport settings in the app; whether the sound is clean with the pattern playing on the app's own clock; the app's audio device and buffer; `editor-*.log` (right-click > Open Log Folder).
+- **Status:** open, not reproduced (Radek: "will check that").
+
 ## B-153 · Linux: the editor does not work on SteamOS (Holo, Steam Deck)
 
 - **From:** a beta tester on Discord, 2026-10-16 ("doesn't work on SteamOS Holo"). Which editor, standalone or VST3 (and which DAW), and what happens are not known yet.
 - **Setup:** SteamOS 3 (Holo) is Arch-based, desktop mode is KDE Plasma, its system disk is read-only, and packages installed with pacman are lost on a SteamOS update. Our Linux build is the CI's `*-Linux-x64-not-tested.tar.gz` (built on Ubuntu 22.04, glibc 2.35 or newer).
 - **Suspects (not confirmed):** the editor window needs WebKitGTK (webkit2gtk 4.0 or 4.1) and GTK 3 at run time (the two shims beside the app load them, scripts/linux/README-Linux.txt); SteamOS may not ship webkit2gtk. The README lists apt and dnf lines only, no Arch or SteamOS line. Audio is ALSA (PipeWire's ALSA layer on SteamOS).
 - **Needed from the tester:** the editor and version; standalone or VST3 (DAW); what happens (nothing starts, an empty window, an error card, no sound); the output of starting the standalone from Konsole; `ls /usr/lib/libwebkit2gtk*`.
-- **Status:** open, waiting for the tester's facts.
+- **Status:** open (2026-10-16). The tester's facts are still missing, but the CI job `steamos` (mdmm-editors-linux.yml, scripts/linux/steamos_start_test.sh, run 38930346449) starts the packaged tarballs in the SteamOS 3.7.20 (holo) container. With nothing installed both standalones fail at once: libasound.so.2 and libGL.so.1 not found (exit 127). With only alsa-lib, mesa and the X11 libraries both start and keep running, but no GTK or WebKitGTK is loaded (no WebKitWebProcess), so the editor window has no page. With `pacman -S webkit2gtk-4.1 gtk3` (webkit2gtk-4.1 2.46.5, gtk3 3.24.43) the full smoke test passes (standalone and VST3, page, bridge). So the build works on SteamOS once the packages are there; the likely cause is missing packages. README-Linux.txt now has the SteamOS line and the note that pacman installs are lost on a SteamOS update. Still unknown: the tester's real SteamOS state, and whether to ship the web view libraries in the archive.
+- **More (Discord roundup, 2026-10-16):** the tester is the same person as B-033 (Linux, blank window: reports on 2026-10-08, 10-11 with a screenshot, 10-15 "still broken"); on 2026-10-16 "both plugin and standalone", SteamOS Holo. Radek asked for the exact OS and standalone or plug-in. Still missing: the Konsole output and `ls /usr/lib/libwebkit2gtk*`. B-033 and B-153 are one case.
 
 ## B-152 · Monomachine: no way to make a pitchless trig in the editor
 
@@ -18,7 +116,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Setup:** Monomachine Editor, Sequence, a pattern loaded from a .syx that holds pitchless trigs (a trig with its envelope trigs and no note of its own; the machine makes one with EXIT held on a trig, manual 1-59).
 - **What happens:** the roll draws them as a dashed bar at the track's last pitch (`mmStudio/src/70-seq.js:148`, `src/80-notes.js:16`) and they play, but the page has no way to make one: a click makes a note, ⌥-click a trigless trig, the step menu has Trigless trig and Envelopes (`src/77-select.js:173`), nothing takes a note away and keeps the trig. B-107 already says so ("the page makes none"); the guide says what one is and not how to make it (`doc/guide/mm/14-advanced-sequencer-control.md` PITCHLESS TRIGS; `doc/guide/OPEN-FACTS.md`: "MM-214: how to make a pitchless trig"), while `doc/features/mm.json` MM-214 says done.
 - **What should happen:** a way to turn a trig pitchless and back (for example a **Pitchless** item in the step menu beside Trigless trig, on a selection, one undo step; the step intent can already write one, `doc/modern-ux/intent-cases.json` "step: pitchless"), the guide's section saying how, and MM-214 partial until then.
-- **Status:** open.
+- **Status:** fixed on fix/mm-tester-bugs-1016. The step menu has **Pitchless trig (the note before)** after Trigless trig (synth tracks, on the selection, one steps intent so one undo step, ticked when every selected step is one; no key, as Trigless trig has none): a note loses its note and keeps its envelope trigs and locks, an empty step or a NOTE OFF gets a trig with all three envelopes, a trigless trig gets its envelopes (a trig with neither is no step), and choosing it again gives the step the track's last pitch. It sends the step intent without `n`, which the core stores as the machine does: the trig bit (the 0x120 mask, set on every trig; the header comment in elektronData/mmPattern.h said the opposite and is corrected), the envelope bits, notes[] 0xff. Guide: doc/guide/mm/14-advanced-sequencer-control.md says how; OPEN-FACTS MM-214 removed; mm.json MM-214 names the menu item. Tests: `mmViewTest` (the menu, the intents), the intent case "step: a note made pitchless" (`mmDeskTest`, `mmViewTest` writes), journey `mm-seq-env-trigs` (page tier, two new steps; its last step makes its pitchless trig with the menu now, not the intent), firmware `MMDESK_INTENT_ONLY=pitchless mmDeskFirmwareTest <MM ROM> intentcases` (both pitchless cases read back from the machine as the core says) and `mmDeskFirmwareTest <MM ROM> trigkinds` (a pitchless trig fires the envelopes at the pitch before).
 
 ## B-151 · Monomachine: SWAVE-ENS and DPRO-DENS PCH2-PCH4 shown as -64 to +63 semitones; the machine has OFF and ±12 with interval steps
 
@@ -26,7 +124,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Setup:** Monomachine Editor, Sound, a track with SWAVE-ENS (or DPRO-DENS), the Chord group.
 - **What happens:** the page shows PCH2, PCH3 and PCH4 as signed values -64 to +63 (`mmStudio/src/50-state.js:42`, `/^PCH/` is signed) and the chord keyboard draws value - 64 as semitones above C, with the raw 0 taken as no note (`src/90-sound.js:52`). The machine reads the value as a list: one step about every four values, OFF in the middle (around 64), then +01 +02 +03 6/5 5/4 +04 4/3 +05 +06 +07 3/2 +08 +09 +10 +11 +12 upwards and the same below (-01 to -12 with 5/6 4/5 3/4 2/3). So the ends are an octave, a value step is mostly no change, and the 6/5 to 2/3 steps are interval ratios, not semitones (measured on OS 1.32B: the LCD after single knob steps from OFF, `mmEditorProbeFirmwareTest lab`, 2026-10-16). `doc/features/mm.json` MM-326 already notes "Offset-ratio options of PCH not modelled".
 - **What should happen:** the boxes and the lock lane show the machine's names (OFF, -12 to +12, the ratios) and step one entry at a time; the chord keyboard draws what the machine plays (OFF = no note, the ratios as their nearest key, marked). The exact value ranges of each entry are to be read from the firmware (CC value to LCD text), not guessed.
-- **Status:** open.
+- **Status:** fixed on fix/mm-tester-bugs-1016. Read from the firmware (OS 1.32B LCD for every value, `mmEditorProbeFirmwareTest enums`; the same on PCH2, PCH3 and PCH4 of both machines, pixel for pixel): 33 entries starting at 0 -12, 4 -11, 8 -10, 12 -09, 16 -08, 20 2/3, 24 -07, 28 -06, 32 -05, 35 3/4, 39 -04, 43 4/5, 47 5/6, 51 -03, 55 -02, 59 -01, 63 OFF, 66 +01, 70 +02, 74 +03, 78 6/5, 82 5/4, 86 +04, 90 4/3, 94 +05, 97 +06, 101 +07, 105 3/2, 109 +08, 113 +09, 117 +10, 121 +11, 125 +12 (to 127). The boxes, lock lane and typed values show these names and step one entry, the full value goes to the machine; the chord keyboard spans two octaves with C in the middle, OFF plays no note, a ratio sits on its nearest key with a ring. A new SWAVE-ENS or DPRO-DENS from the editor starts with PCH2-4 OFF (63, what the firmware's own machine change writes: the kit read back after 0x5B), not 0 (-12). Test: `mmSoundTest`; `mmDeskTest`.
 
 ## B-150 · Monomachine: DigiPRO wave numbers wrong (DDRW and DENS show 128 waves, DPRO-WAVE reaches only 8 of its 32)
 
@@ -34,7 +132,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Setup:** Monomachine Editor, Sound, a track with DPRO-DDRW (WAV1, WAV2), DPRO-DENS (WAVE) or DPRO-WAVE (WAVE).
 - **What happens:** DPRO-DDRW WAV1 and WAV2 and DPRO-DENS WAVE are plain 0-127 boxes and the drawing labels them "wave 1" to "wave 128" (`mmStudio/src/90-sound.js:57`, `:63`). The machine shows D01 to D64 there, two values a wave (value 71 = D36, 111 = D56, 127 = D64). DPRO-WAVE's WAVE box runs 0 to 31 (`src/50-state.js:41`), while the machine's WAVE is 0-127, four values a wave, S01 to S32 (10 = S03, 34 = S09, 102 = S26, 126 = S32): from the page only S01 to S08 can be reached and a kit's value above 31 shows as its raw number. (Measured on OS 1.32B, MKII: the LCD after knob steps and the kit's byte read back, `mmEditorProbeFirmwareTest lab`, 2026-10-16.)
 - **What should happen:** the boxes show the machine's wave names and numbers (S01-S32, D01-D64) and step one wave at a time; the morph drawing and the lock lane use the same; the full 0-127 value goes to the machine.
-- **Status:** open.
+- **Status:** fixed on fix/mm-tester-bugs-1016. Read from the firmware (OS 1.32B LCD for every value, `mmEditorProbeFirmwareTest enums`): DPRO-DDRW WAV1 WAV2 and DPRO-DENS WAVE are D01-D64, two values a wave (0-1 D01 ... 126-127 D64; the LCD writes the wave's name above the number, SINE HSIN TRI ...); DPRO-WAVE WAVE is S01-S32, four values a wave. The D boxes show D01-D64 and step one wave, the full value goes to the machine; DPRO-WAVE WAVE was already an enumeration of the catalogue (32 entries, the host turns the value into its index) but named 01-32 (`mmSynthEnum`, now S01-S32, mm-catalogue.json rewritten) and the page shows S01-S32 (the 31 cap was that index). The morph and wave screens name the waves the same way (D36 ↔ D64, S32 → S01). **Left:** the D waves' own names (SINE, HSIN, TRI ...), which the LCD writes above the number, are not shown: the list of 64 names has to be read from the firmware (needs the ROM, `mmEditorProbeFirmwareTest enums` on the D screens), not guessed. Test: `mmSoundTest`; `mmDeskTest` (the catalogue file).
 
 ## B-149 · Monomachine: FM+ modulator frequency shown as a made-up "ratio 0.5 to 6.5"
 
@@ -42,7 +140,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Setup:** Monomachine Editor, Sound, a track with FM+STAT, FM+PAR or FM+DYN, a Modulator or Block group.
 - **What happens:** the FM drawing labels the frequency "ratio" 0.5 + value/127 × 6, so up to 6.5 (`mmStudio/src/90-sound.js:76`), and the 1FRQ / 2FRQ / 3FRQ boxes show 0-127. The machine shows a list on FM+STAT and FM+PAR, 1/64 at the bottom to 4 at the top (1/2, 3/4, 1, 1.5, 2 among them), and a number from 0.0 to 2.0 on FM+DYN's 1FRQ (2FRQ showed 1.33 at the start) (measured on OS 1.32B, the LCD at both ends, 2026-10-16).
 - **What should happen:** the boxes, the lock lane and the drawing show the machine's frequency text, and the drawing's carrier uses that ratio. The full value-to-text table per machine is to be read from the firmware.
-- **Status:** open.
+- **Status:** fixed on fix/mm-tester-bugs-1016. The value-to-text lists were read from the firmware (OS 1.32B: every value 0-127 sent as its CC, the LCD read back, `mmEditorProbeFirmwareTest enums`, new switch `MM_ENUM_SETTLE`; a CC writes the kit byte as it is). FM+STAT 1FRQ 2FRQ and FM+PAR 1FRQ 2FRQ 3FRQ: 24 entries, 1/64 1/32 1/16 3/32 1/8 3/16 1/4 5/16 3/8 5/32 7/16 1/2 5/8 3/4 7/8 1 1.25 1.5 1.75 2 2.5 3 3.5 4, starting at 0 6 11 16 22 27 32 38 43 48 54 59 64 70 75 80 86 91 96 102 107 112 118 123 (the machine writes 5/32 for 48-53, between 3/8 and 7/16). FM+DYN 1FRQ and 2FRQ: a text per value (1FRQ 0.0 to 1.54 with 2.0 at 40, 2FRQ 0.0 to 2.39 with 4.0 at 40, 1.33 at 102); on 11-40, but 21 and 32, the LCD moves the decimal point (1FRQ 11 shows 1.56 for 0.156, 2FRQ 11 shows 2.44 for 0.0244). The boxes, lock lane and typed values show these texts, a wheel or arrow step moves one entry, the full value goes to the machine; the FM screen labels the frequency as the LCD does and turns the modulator at that ratio (the decimal point put back). Test: `mmSoundTest` (texts at chosen values, the steps, the ratios, the screen).
 
 ## B-148 · Monomachine: filter envelope BOFS and WOFS shown 0-127, drawn upwards only; the machine's are -64 to +63
 
@@ -50,7 +148,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Setup:** Monomachine Editor, Sound, the Filter env group (ATK DEC BOFS WOFS), any machine.
 - **What happens:** BOFS and WOFS are not in the page's signed list (`mmStudio/src/40-data.js:55`), so their boxes and the lock lane show 0-127, and the envelope drawing moves BASE and WIDTH only up, by value/127 (`src/90-sound.js:124`); at 0 it says "no offset: the envelope does nothing". The machine shows both as -64 to +63 (measured on OS 1.32B, the LCD at both ends of the knob, 2026-10-16): 0 is the largest downward sweep, 64 is no sweep.
 - **What should happen:** BOFS and WOFS shown signed (-64 to +63) wherever they appear (boxes, lock lane, typed values), and the drawing sweeps up for positive and down for negative, flat at 0.
-- **Status:** open.
+- **Status:** fixed on fix/mm-tester-bugs-1016: BOFS and WOFS are in the page's signed list (boxes, lock lane, typed values -64 to +63); the Filter env screen draws from a middle line, up for +, down for -, flat at 0, its handle sets the signed value; the filter curve's dashed peak moves BASE and WDTH by the signed offsets. Test: `mmSoundTest` (the values at 0 64 127, the sweep both ways, the handle). The neutral FILTER page a cleared track or a machine change without Keep effects gets (`g_neutralPages` in mmDeskEdit.cpp, `DEFV.FLT` in src/40-data.js) held BOFS and WOFS 0, which the machine reads as -64 (the largest downward sweep): now 64, no sweep, as the firmware's own machine change (0x5B) writes (the kit read back). The intent cases machine without keepFx, clearSound and kitClear and the demo documents (8 tracks) follow. Tests: `mmSoundTest` (the neutral page), `mmDeskTest`, `mmViewTest`, page journeys `mm-sound-*`, `mm-lib-*`, `mm-wire-sysex`, `mm-wire-cc`, and on the firmware `MMDESK_INTENT_ONLY=<case> mmDeskFirmwareTest <MM ROM> intentcases` for the three cases (each read back as the core says, BOFS WOFS 64).
 
 ## B-147 · Test harness: `mdSyxPickFirmwareTest` crashed (SIGSEGV, exit 139) after its import checks
 
@@ -159,6 +257,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Cause (measured, `mdDeskFirmwareTest liveerase`, the chain after it):** after a live recording in which EXIT/NO and a TRIG key were held (Delete held: erase), or one stopped with STOP while recording, the firmware takes no BANK + TRIG gesture: no chain, not even the pattern change, until REC is pressed. Recording left with REC (PLAY) and no erase is not affected. Pressing REC on and off once (grid recording for a moment, nothing pressed in it) brings the gesture back; EXIT or STOP do not.
 - **Fix (`fix/0.6-e2e-2`):** the desk remembers that live recording ran; the first chain after it presses REC twice before the chain's keys. Test: `mdDeskFirmwareTest liveerase` chains A02 A03 after the erase and checks the firmware holds it; `md-seq-live-erase` then `md-song-chain` pass on the firmware.
 - **Status:** fixed on `fix/0.6-e2e-2`. Other panel-key gestures after such a recording were not checked.
+- **More (2026-10-16):** a possible link to B-162 (switching modes after a chain); not checked.
 
 ## B-126 · Monomachine: a sub at 0 puts its handle on its caption; on a zoomed-out page the track list's tag hangs under its row
 
@@ -190,6 +289,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Cause (measured, `mmDeskFirmwareTest <MM ROM> hoststop`):** in a DAW the plug-in passes the host's transport to the machine (P7): the host's Stop was MIDI Stop alone. That stops the sequencer, but a note the host played into a track whose note off does not come (a host that sends none at its stop, a note off lost) keeps sounding, and with the arpeggiator keeps playing: 1.5 s after the Stop the held note was still at half its level (rms 0.046 of 0.096). Close to B-059 (a held key with the arpeggiator) and B-060 (the transposes a start takes).
 - **Fix (`fix/0.6-discord`):** the host's Stop is `synthLib::hostStopEvents` (midiClock.h): MIDI Stop, then, for the Monomachine plug-in, All Notes Off (CC 123) on all 16 channels (the machine lets held notes go on CC 123, as the panic key's P5 measured; every channel, so any CHANNEL SPAN, base channel and the keyboard modes' channels are covered). The Machinedrum is unchanged (its sounds are not held). Test: `mmDeskFirmwareTest hoststop` (ctest `mmHostStopFirmwareTest`): the host plays with a note held into T1, then stops without its note off: MIDI Stop alone leaves it sounding, the plug-in's Stop ends it (rms 0.002) and the sequencer stays stopped.
 - **Status:** fixed on `fix/0.6-discord`; to confirm with the tester.
+- **More (Discord roundup, 2026-10-16):** [MIDI] see B-119: the reporter's later report (2026-10-14) is about the Monomachine plug-in only.
 
 ## B-120 · Monomachine: mute and solo seem to stop responding after switching views; a solo lit in Mix but not in Sequence
 
@@ -199,6 +299,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Fix (`fix/0.6-discord`):** the rail's Synth and MIDI keys carry a small S while a solo holds on their tracks (and say so in their tooltip), so the solo is found from either side. No new control. Page journey `mm-ms-across-views` (solo and mute in Sequence, then in Mix and back, the S mark on the other side's key).
 - **Left open:** the solo is the page's own (as on the Machinedrum); if the host closes and reopens the plug-in window, the new page has no solo while the machine keeps the mutes the solo made (they show as M). Ask the tester whether the window was closed between views.
 - **Status:** fixed on `fix/0.6-discord`; to confirm with the tester.
+- **More (Discord roundup, 2026-10-16):** [MIDI] see B-119: no mute or solo problem seen in the Machinedrum standalone (2026-10-14).
 
 ## B-119 · Ableton: the Machinedrum and Monomachine Editors seem to hear each other's MIDI (a Push on a third track)
 
@@ -208,6 +309,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Should:** each plug-in hears only the MIDI its own track routes to it.
 - **Facts needed from the tester:** the editors' version; each track's MIDI From / To and Monitor settings; where the External Instrument sends (which port and channel); whether the cross-talk stays with the Push unplugged or with the External Instrument removed; whether "MIDI out" in either editor is on.
 - **Status:** open, not reproduced; waits for the tester's routing and version.
+- **More (Discord roundup, 2026-10-16):** [MIDI] the reporter said on 2026-10-14 that he saw no mute or solo problem in the Machinedrum standalone, so B-120 is a Monomachine (plug-in) matter; the editors were in Ableton with a Push on a third track. No answer yet to the facts asked for here (MIDI From/To, monitor, External Instrument target).
 
 ## B-117 · Machinedrum: a handle at a panel's edge is drawn half outside it
 
@@ -312,7 +414,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **From:** the 0.6 e2e run, 2026-10-13 (md-seq-lock-budget, mm-seq-env-trigs, mm-perform-multi-setup, mm-seq-six-tracks).
 - **Sorted, each test data (no page bug):**
   - md-seq-lock-budget, "no pattern with 64 locks": factory memory has none (the page tier's fixture has). The journey makes one in a pattern with no locks: a trig on step 1 of each of the 16 tracks, four locked parameters each; undone in its tidy.
-  - mm-seq-env-trigs, "no pitchless trig": a trig with no note of its own comes only from the machine's own patterns or a backup (the page makes none; the fixture holds some). Without one the journey writes its own with the step intent (a trig with its envelopes and no note) on a free step after a note.
+  - mm-seq-env-trigs, "no pitchless trig": a trig with no note of its own comes only from the machine's own patterns or a backup (the page makes none; the fixture holds some). Without one the journey writes its own with the step intent (a trig with its envelopes and no note) on a free step after a note. Since B-152 (fix/mm-tester-bugs-1016) the page makes pitchless trigs (step menu > Pitchless trig): the journey makes its own with that menu item, no longer with the raw intent.
   - mm-perform-multi-setup, "timing 0: 1": the kit held another MULTI TRIG timing than DIRECT when the journey began (it counted from DIRECT up); it steps down to DIRECT first. Passes alone and after the journeys before it in the run.
   - mm-seq-six-tracks, "step NaN is not shown": a factory pattern has a note on or under every step from 9 on of some track, so the journey found no free step. When a track has no room it draws in an empty pattern of banks E to H (a pick there loads no kit, B-053) and picks the first pattern again in its tidy.
 - **Fix (`fix/0.6-e2e-mm`):** the journeys above. Each passes on the firmware and in the page tier, except mm-seq-six-tracks, whose next step (the AMP value of each track: "wire nothing", the CC it sends) checks the Monomachine fake's wire report, which only the page tier's stub machine sends: a page-tier-only check, like mm-seq-trig-setup's, mm-sound-track-effects', mm-wire-cc's and the other "wire nothing" fails of the run (not in this entry).
@@ -482,6 +584,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Cause:** since 0.6 wave 1 (the PATTERN · CHAIN · SONG keys, 97f1ccfe8) a key sent the mode only when it differed from `V.songMode`, the view of the last render; the machine's answer to SONG was in the machine state but not yet in that view, so PATTERN looked like no change. The MM page had the same check on its own copy of the mode. Before wave 1 every click sent the mode.
 - **Fix (`fix/0.6-span-song`):** every key sends the mode (SET STATUS 0x10 and the status request; the same mode again changes nothing), on both editors. Tests: md-seq-live-record then md-song-mode, 5 of 5 runs pass; `mdDeskFirmwareTest <MD ROM> songrow`: SONG sent again while the song plays is no restart.
 - **Status:** fixed on `fix/0.6-span-song`. Not in a release (wave 1 is on the 0.6 branch only).
+- **More (2026-10-16):** a beta tester on Discord reports the three-way switch (Chain, Pattern, Song) still going wrong on 0.7.0, see B-162.
 
 ## B-071 · Monomachine: an imported global's MIDI channels do not reach the machine
 
@@ -586,6 +689,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Found and fixed on the way (MM only):** a key of the Sequence dock's transpose keyboard plays its note while the mouse is down (`trnDown`), but that press was not one of the page's gestures (`dragging()`), so a window that stopped being the key window with the button down (no mouse up comes) left the note sounding; with the arpeggiator on the track keeps playing by itself. Fix: the held key is a gesture (`trnHeld` in `dragging()`, mm-mockup `130-main.js`): leaving the window or a move with no button ends it. Journey `mm-seq-transpose-key-blur` fails before in both hosts (no note off), passes after. The Machinedrum has no transpose keyboard; its keys and drags already end on `blur`.
 - **To ask the tester:** what was on screen (Sequence with the transpose keyboard, Perform, the arpeggiator on); whether the DAW's transport was running (the plug-in follows it) or its computer keyboard / a MIDI track was sending notes to the plug-in; whether it plays from the pattern (steps moving) or one note held.
 - **Status:** the stuck-note path fixed on `fix/mm-selfplay-transpose`; the report itself open.
+- **More (Discord roundup, 2026-10-16):** a tester (2026-10-12): it happens in Ableton with the Monomachine Editor only (not in Bitwig, not with the Machinedrum), randomly while testing; he cannot reproduce it. B-119 has a related symptom (sequences running on after the transport stopped).
 
 ## B-058 · Journeys on a copy of the person's settings: a personal GLOBAL fails the mute and note journeys
 
@@ -665,6 +769,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Tests:** `mmDeskFirmwareTest <MM ROM> ampenv` (new, ctest `mmAmpEnvelopeFirmwareTest`): ATK 48-96, HOLD 16 and 64 at 120 and 90 BPM, DEC 32-127 and REL 32-127 played on the firmware against the editor's times: passes; with the editor's old model 10 of 16 fail (ATK 64: 132 ms played, 1008 ms drawn). `mmConvertTest`: the page's model is the catalogue's, the times rise with the value, a dragged dot finds its value back.
 - **Not measured:** whether HOLD follows the pattern's speed multiplier (the page assumes it does not); FX machines (they need an input). What the tester heard as "wrong" was not described: the page's pictures are the likely reading, a reply asks.
 - **Status:** fixed on the branch, waiting on review and the tester.
+- **More (Discord roundup, 2026-10-16):** a tester reported on 2026-10-10 that the amp envelopes seem all wrong; fixed per this entry, no confirmation yet.
 
 ## B-051 · Monomachine: sound edits do nothing after a SysEx import with its globals
 
@@ -684,6 +789,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Not verified:** the "higher version wins" rule on this Mac (a stand-in old AU was not put in the plug-in folder); a real package run.
 - **Ask the user:** `ls` of `/Library/Audio/Plug-Ins/Components` and `~/Library/Audio/Plug-Ins/Components`, and the version Live shows for the AU.
 - **Status:** cause found (an old install); installer fix on fix/au-old-ui, waiting on review and the user's folder list.
+- **More (Discord roundup, 2026-10-16):** a tester confirmed on 2026-10-12 that it is fixed in 0.5.1 ("works great now as AU"); can be closed on his word.
 - **Follow-up (2026-10-11, branch feat/fna-plugin-ids):** the editors get their own plug-in identity, so the clash is gone at its root rather than by removing bundles: AU `aumu Mded FNAu` / `aumu Mmed FNAu` (Future Native Audio's manufacturer code, as RND-4X), and the VST3 class IDs that follow (`scripts/mdmm-product.env`, checked on the built bundles by `scripts/check_mdmm_plugin_ids.py`). The original Gearmulator MD / MM keep `GmPv Tmdr / Tmno` and may stay installed beside the editors; the installer no longer removes them (only bundles provably ours: our identifier or our receipt). Projects saved with 0.5.x or earlier need the editor inserted again once.
 
 ## B-047 · Windows CI: bridgeLibTest and the machine MIDI out tests crash
@@ -819,6 +925,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **To check:** WebKitGTK version/packages on the tester's system, the start-up log, the file-based bridge (LINUX.md); CI's Ubuntu 22.04/24.04 start tests pass. The Linux README says an empty (grey) window means WebKitGTK is missing (`libwebkit2gtk-4.0` or `-4.1`, `libgtk-3`); the tester has not said whether it is installed, or which distribution, desktop or X11/Wayland.
 - **May be fixed by (0.4.0, branch `fix/codex-review-2026-10`, unverified):** `ffa87311b` (the page's fit zoom on Linux went as a `javascript:` URL, which crashes webkit2gtk's web process next to the bridge iframes: any window not at the design size, e.g. a laptop screen below 1440 x 924, could blank the page) and `1b81fb867` (a failed batch-file write froze the page; it is now retried in order and logged). Not run on a real Linux desktop.
 - **Status:** open: the tester's distribution, WebKitGTK package and start-up log are missing; a reply is drafted.
+- **More (Discord roundup, 2026-10-16):** the same tester as B-153 (2026-10-11 "steam os", 10-15 "still broken"); follow B-153.
 
 ## B-032 · Old AU plug-ins still show next to the new ones (macOS)
 
@@ -828,6 +935,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Not verified:** a real package run: the script has not run under the real Installer (what `$HOME`, `$USER` and `$2` are there, `pkgutil --files` for a "for me only" install), nor on macOS 12; the rendered script and the page texts were checked in a temporary folder and a browser only. A same-named copy in the other domain (an all-users install and a per-user one of the same version) is still the person's to remove (the read-me says so).
 - **Ask the tester:** `ls` of `/Library/Audio/Plug-Ins/{VST3,Components}` and the same under `~/Library`, and the version of the AU in Live's plug-in list.
 - **Status:** fixed for 0.4.0; open until the tester confirms with a 0.4.0 installer.
+- **More (Discord roundup, 2026-10-16):** Logic: the new editors did not appear until the old `GearmulatorMD.component` and `GearmulatorMM.component` were deleted from `/Library/Audio/Plug-Ins/Components` and Logic relaunched (the installer does not delete them); before that the plug-ins were listed in Logic's plug-in manager but not in the track slots. Another tester (2026-10-12): "works great now as AU, I can have both versions open".
 
 ## B-031 · After a SysEx import the pattern can't be changed (0.3.4)
 
@@ -869,6 +977,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **Reported again:** Discord, 2026-10-11 (0.5.0, plug-in): "switching from the sound editor to the sequencer it switches back to some previous state".
 - **Re-checked 2026-10-13 on the 0.6 line (`fix/0.6-discord`), not reproduced:** `mmDeskFirmwareTest <MM ROM> machine` (a machine and values on Sound, then a step and a piano-roll note on Sequence, stopped and playing, another pattern with the kit and back, SAVE KIT, over HW MIDI: 44 of 44 checks) and `kitlink` (an E-H pattern that keeps another kit, its roll edit: 9 of 9) pass; the page journeys `mm-sound-machine-stays` and `mm-ms-across-views` pass on the firmware. So no new number. Left to ask the tester: whether the DAW has automation for the plug-in's parameters (a lane, or Live's automation arm while turning knobs), which writes the recorded values back as the song plays; whether it plays a pattern in banks E-H; the version.
 - **Status:** fixed for 0.4.0; reported again for 0.5.0, not reproduced on the 0.6 line; the tester to confirm with 0.6.
+- **More (Discord roundup, 2026-10-16):** reported again for 0.5.0 on 2026-10-11 ("still got the bug with switching from sound editor to sequencer where it switches back to some previous state"); no reply since. Ask to retest on 0.7.0.
 
 ## B-026 · Mutes don't work after a SysEx import with its globals (0.3.5 candidate)
 
@@ -1022,7 +1131,8 @@ where it came from, the setup, what happens, what should happen, status.*
 - **What happens:** with the emulated MIDI input paced at 3.1 or 62.5 KB/s, the sixth DigiPRO voice stays silent; at 31, 125 and 250 KB/s it plays. Timing-dependent, cause unknown.
 - **Now:** B-010's pacing uses 125 KB/s, which passes. Not seen by users.
 - **Should:** every pacing rate plays all voices; understand the cause (possibly the same DSP1→DSP2 timing as joelanders' PR #98, "dropped Monomachine notes on tracks 4-6").
-- **Status:** open.
+- **Retest 2026-10-16 (WP1, `mdHostNotesFirmwareTest mm`):** six notes on six channels at one sample offset (0, 1, 33 and 63) through `Hardware::scheduleMidi`, GND-SIN on every track (a sine each, found by pitch): all six voices sound at the level they have alone. The same with DPRO-DDRW assigned to every track (offsets 0 and 33): all six sound. So the sixth-voice loss is not reproduced by a chord at one offset; it was seen with the emulated input paced at 3.1 and 62.5 KB/s (`mmDigiproFirmwareTest`), which this test does not pace. Not fixed, not seen again.
+- **Status:** open (cause unknown, chord at one offset ruled out).
 
 ## B-010 · Timing lags ("swing") while editing parameter locks
 
@@ -1074,6 +1184,7 @@ where it came from, the setup, what happens, what should happen, status.*
 - **More reports, 2026-10-08 and 09:** tester E (Windows 11, Live 12): 65 % at 44.1 kHz, same at 4096 and 1024, glitches at 48 kHz and above (B-029). Tester I (macOS M1, 2026-10-09, before 0.3.5): "performance issues running both together standalone. Buffer at 1024 helps"; upstream's original (joelanders) "seems ok" on the same Mac. Tester A (2026-10-09): both editors in one Ableton project on a MacBook Pro M2 Pro 16 GB "working flawlessly" (version not stated). Tester A (Windows 10 PC): the Monomachine standalone crackles at 8 % CPU (B-036).
 - **Fix (0.4.0, merged in main as `cba2ace1f`, branch `perf/step1-quick-wins`):** step 1 of the CPU research (see B-028): host work per frame -15 to -21 %, CPU for one instance -16 to -19 % on an M4 Pro. Steps 2 (a DSP idle skip, moves the MD serial timing; Radek listens and signs off) and 3 (compiler profile) are not built.
 - **Status:** open; step 1 is in 0.4.0 (in main).
+- **More (Discord roundup, 2026-10-16):** M1 8 GB, macOS 26.6.2 (2026-10-11): Monomachine 57 to 60 %, Machinedrum 47 to 50 %. Another M1 tester (2026-10-11): 50 %, then 10 % less on 0.5.0, both editors together at 60 % (2026-10-12). An M1 Pro tester (2026-10-10): no crackles or pops, Monomachine multi-out in Live fine. Windows numbers are in B-156 (the original Gearmulator MD/MM: 120 % on the same PC).
 
 ## B-004 · MIX faders look far too big at some window sizes
 

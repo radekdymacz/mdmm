@@ -136,13 +136,15 @@ namespace
 		return bytes;
 	}
 
-	void deviceAdmission(md::Device& _device, bool _panel, uint32_t _offset,
+	// _md: the Machinedrum, tested with a note from the range 36-51 that the old code turned into panel pad presses. Since 0.8 (WP1, D2) it is a plain note on the
+	// MIDI wire like every other; nothing reaches the panel UART.
+	void deviceAdmission(md::Device& _device, bool _md, uint32_t _offset,
 		uint32_t _extraLatency, uint64_t _frame)
 	{
 		auto& hardware = _device.getHardware();
 		Access::frame(hardware, _frame);
 		_device.setExtraLatencySamples(_extraLatency);
-		const SMidiEvent note(MidiEventSource::Host, 0x90, _panel ? 36 : 60, 100, _offset);
+		const SMidiEvent note(MidiEventSource::Host, 0x90, _md ? 36 : 60, 100, _offset);
 		std::vector<SMidiEvent> output;
 		// The real Device translation/routing path admits events before a native
 		// block. A zero-length block isolates admission without running firmware.
@@ -155,10 +157,9 @@ namespace
 			"Device delivered MIDI/pad input before its sample deadline");
 		require(Access::pending(hardware) == 1, "future event was lost");
 		Access::pump(hardware, expected);
-		const std::vector<uint8_t> bytes = _panel ? std::vector<uint8_t>{0x20, 1, 0x20, 0}
-			: std::vector<uint8_t>{0x90, 60, 100};
-		require(drain(hardware, _panel) == bytes, "deadline delivery changed UART bytes");
-		require(drain(hardware, !_panel).empty(), "event reached the wrong UART");
+		const std::vector<uint8_t> bytes{0x90, static_cast<uint8_t>(_md ? 36 : 60), 100};
+		require(drain(hardware, false) == bytes, "deadline delivery changed UART bytes");
+		require(drain(hardware, true).empty(), "event reached the wrong UART");
 		require(Access::pending(hardware) == 0, "delivered event was retained");
 	}
 
@@ -255,7 +256,7 @@ namespace
 		}
 	}
 
-	void pressureAndArbitration(md::Device& _device, bool _panel)
+	void pressureAndArbitration(md::Device& _device, bool _md)
 	{
 		auto& hardware = _device.getHardware();
 		Access::frame(hardware, 0);
@@ -264,22 +265,19 @@ namespace
 		std::vector<uint8_t> expected, actual;
 		for(unsigned i=0;i<16384;++i)
 		{
-			const uint8_t first = _panel ? 36 + i % 16 : i % 128;
-			const uint8_t second = _panel ? 100 : (i / 128) % 128;
-			require(hardware.scheduleMidi({MidiEventSource::Host,
-				static_cast<uint8_t>(_panel ? 0x90 : 0xb0), first, second}, 0),
+			const uint8_t status = _md ? 0x90 : 0xb0;
+			const uint8_t first = _md ? 36 + i % 16 : i % 128;
+			const uint8_t second = _md ? 100 : (i / 128) % 128;
+			require(hardware.scheduleMidi({MidiEventSource::Host, status, first, second}, 0),
 				"production scheduled queue filled before its advertised capacity");
-			if(_panel) {
-				const uint8_t row = 0x20 + (first-36)/8, mask = 1u << ((first-36)%8);
-				expected.insert(expected.end(), {row,mask,row,0});
-			} else expected.insert(expected.end(), {0xb0,first,second});
+			expected.insert(expected.end(), {status,first,second});
 		}
 		require(!hardware.scheduleMidi({MidiEventSource::Host,0xf8},0),
 			"production scheduled queue accepted an event beyond capacity");
 		require(Access::overflow(hardware) == oldOverflow+1, "overflow was not counted");
 		for(unsigned n=0;n<1024 && actual.size()<expected.size();++n) {
 			Access::pump(hardware,0);
-			auto chunk=drain(hardware,_panel);
+			auto chunk=drain(hardware,false);
 			actual.insert(actual.end(),chunk.begin(),chunk.end());
 		}
 		require(actual == expected && Access::pending(hardware) == 0,

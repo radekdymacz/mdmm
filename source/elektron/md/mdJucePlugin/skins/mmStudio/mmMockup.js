@@ -54,8 +54,51 @@ const LMULT=["1X","2X","4X","8X","16X","32X","64X"];
 const CONS=["-","B","D","F","G","H","J","K","L","M","N","P","R","RR","S","SJ","T","TH","TJ","V","Z"];
 const EN={"SID-6581.WAVE":["TRI","SAW","PULS","MIX","NOIS"],"SID-6581.MOD":["OFF","RING","SYNC","R+S"],"SID-6581.MSRC":["MFRQ","PRCH"],
  PWRS:["OFF","ON"],WPRS:["OFF","ON"],STON:["OFF","ON"],"V-SW":["OFF","ON"],CONS};
-const SIGNED=new Set(["PAN","EQG","DIST","DSND","TUNE","PB"]);
-const DEFV={SYN:[0,0,0,0,0,0,0,64],AMP:[0,40,64,20,64,100,64,0],FLT:[0,127,0,0,0,40,0,0],EFX:[64,64,0,32,64,0,0,127],LFO:[2,1,1,0,1,32,0,0],MID:[64,100,64,0,0,0,0,0]};
+/* Value lists the machine shows (B-149, B-150, B-151): a value is 0-127 and goes to the machine as it is; the page shows
+   the entry it falls in, as the LCD writes it, and a step (wheel, arrows) moves one entry. An entry is {lo, t, r}: from
+   value lo up to the next entry's lo, the text t, and r what a drawing needs (a ratio, semitones, a wave's index). Read
+   on OS 1.32B from the LCD, every value 0-127 sent as its CC and the screen read back (mmEditorProbeFirmwareTest enums,
+   2026-10-16; a CC writes the kit's byte as it is). */
+const tabRuns=rows=>rows.map(([lo,t,r])=>({lo,t,r}));
+const tabAt=(tab,v)=>{let e=tab[0];for(const x of tab){if(x.lo>v)break;e=x}return e};
+/* d entries on from v's (a step past either end stays there): the entry's first value */
+const tabStep=(tab,v,d)=>{const i=tab.indexOf(tabAt(tab,v)),j=i+d;return j<0||j>=tab.length?v:tab[j].lo};
+const num=t=>t.includes("/")?t.split("/").reduce((a,b)=>a/b):+t;
+/* FM+STAT and FM+PAR 1FRQ 2FRQ 3FRQ: the modulator's frequency, 24 entries. The machine writes 5/32 for 48-53, between
+   3/8 and 7/16 (13/32 in four characters): the drawing takes 13/32 there. */
+const FMFRQ=tabRuns([[0,"1/64"],[6,"1/32"],[11,"1/16"],[16,"3/32"],[22,"1/8"],[27,"3/16"],[32,"1/4"],[38,"5/16"],[43,"3/8"],[48,"5/32",13/32],[54,"7/16"],[59,"1/2"],
+ [64,"5/8"],[70,"3/4"],[75,"7/8"],[80,"1"],[86,"1.25"],[91,"1.5"],[96,"1.75"],[102,"2"],[107,"2.5"],[112,"3"],[118,"3.5"],[123,"4"]].map(([lo,t,r])=>[lo,t,r??num(t)]));
+/* FM+DYN 1FRQ and 2FRQ: a text per value. 1FRQ is value / 64 (0.0 to 1.54, 2.0 at 40); 2FRQ a curve (0.0 to 2.39, 4.0 at
+   40). On 11-40 (but 21 and 32) the machine writes the decimal point one place (1FRQ) or two places (2FRQ) to the right:
+   1.56 there is 0.156 (between 5/32 at 10 and .171 at 21). The drawing takes the number in line. */
+const dynTab=(texts,div)=>texts.split(" ").map((t,lo)=>{let r=num(t);if(lo>=11&&lo<=40&&r>=1)r/=div;return{lo,t,r}});
+const FMDYN1=dynTab("0.0 1/64 1/32 .046 1/16 .078 3/32 .109 1/8 .140 5/32 1.56 1.57 1.59 1.60 1.62 1.64 1.65 1.67 1.68 1.70 .171 1.71 1.73 1.75 1.76 1.78 1.79 1.81 1.82 1.84 1.85 "+
+ "3/16 1.87 1.89 1.90 1.92 1.93 1.95 1.96 2.0 .203 .218 .234 1/4 .265 .281 .296 5/16 .328 .343 .359 3/8 .390 .406 .421 7/16 .453 .468 .484 1/2 .515 .531 .546 "+
+ "9/16 .578 .593 .609 5/8 .640 .656 .671 .687 .703 .718 .734 3/4 .765 .781 .796 .812 .828 .843 .859 7/8 .890 .906 .921 .937 .953 .968 .984 1.0 1.01 1.03 1.04 "+
+ "1.06 1.07 1.09 1.10 1.12 1.14 1.15 1.17 1.18 1.20 1.21 1.23 1.25 1.26 1.28 1.29 1.31 1.32 1.34 1.35 1.37 1.39 1.40 1.42 1.43 1.45 1.46 1.48 1.5 1.51 1.53 1.54",10);
+const FMDYN2=dynTab("0.0 .000 .001 .002 .003 .006 .008 .011 1/64 .019 .024 2.44 2.49 2.54 2.59 2.64 2.69 2.74 2.79 2.84 2.90 .029 2.95 3.0 3.06 3.11 3.17 3.22 3.28 3.34 3.39 3.45 "+
+ ".035 3.51 3.57 3.63 3.69 3.75 3.81 3.87 4.0 .041 .047 .054 1/16 .070 .079 .088 .097 .107 .118 .129 9/64 .152 .165 .177 .191 .205 .219 .234 1/4 .265 .282 .299 "+
+ ".316 .334 .352 .371 .390 .410 .430 .451 .472 .494 .516 .539 9/16 .586 .610 .635 .660 .685 .711 .738 .765 .793 .821 .849 .878 .908 .938 .968 1.0 1.03 1.06 1.09 "+
+ "1.12 1.16 1.19 1.23 1.26 1.30 1.33 1.37 1.41 1.44 1.48 1.52 1.56 1.60 1.64 1.68 1.72 1.76 1.80 1.84 1.89 1.93 1.97 2.02 2.06 2.11 2.15 2.20 2.25 2.29 2.34 2.39",100);
+/* B-151: SWAVE-ENS and DPRO-DENS PCH2 PCH3 PCH4, a chord note: 33 entries, OFF in the middle (63-65), semitones to
+   ±12 and interval ratios among them (2/3 3/4 4/5 5/6 below, 6/5 5/4 4/3 3/2 above); r: semitones (a ratio's 12 × log2),
+   null for OFF */
+const PCHTAB=tabRuns([[0,"-12"],[4,"-11"],[8,"-10"],[12,"-09"],[16,"-08"],[20,"2/3"],[24,"-07"],[28,"-06"],[32,"-05"],[35,"3/4"],[39,"-04"],[43,"4/5"],[47,"5/6"],[51,"-03"],
+ [55,"-02"],[59,"-01"],[63,"OFF"],[66,"+01"],[70,"+02"],[74,"+03"],[78,"6/5"],[82,"5/4"],[86,"+04"],[90,"4/3"],[94,"+05"],[97,"+06"],[101,"+07"],[105,"3/2"],
+ [109,"+08"],[113,"+09"],[117,"+10"],[121,"+11"],[125,"+12"]].map(([lo,t])=>[lo,t,t==="OFF"?null:t.includes("/")?12*Math.log2(num(t)):+t]));
+const pchRatio=e=>e.t.includes("/");
+/* B-150: DigiPRO waves. DPRO-DDRW WAV1 WAV2 and DPRO-DENS WAVE: D01-D64, two values a wave (71 = D36, 127 = D64);
+   r: the wave's index. DPRO-WAVE WAVE is S01-S32, four values a wave (10 = S03, 126 = S32): an enumeration of the
+   catalogue (mmSynthEnum), so the page holds its index (EN below) and the host sends the machine's value */
+const WAVD=Array.from({length:64},(_,k)=>({lo:k*2,t:"D"+String(k+1).padStart(2,"0"),r:k}));
+const WAVS=Array.from({length:32},(_,k)=>"S"+String(k+1).padStart(2,"0"));
+EN["DPRO-WAVE.WAVE"]=WAVS;
+const TAB={"FM+STAT.1FRQ":FMFRQ,"FM+STAT.2FRQ":FMFRQ,"FM+PAR.1FRQ":FMFRQ,"FM+PAR.2FRQ":FMFRQ,"FM+PAR.3FRQ":FMFRQ,"FM+DYN.1FRQ":FMDYN1,"FM+DYN.2FRQ":FMDYN2,
+ "SWAVE-ENS.PCH2":PCHTAB,"SWAVE-ENS.PCH3":PCHTAB,"SWAVE-ENS.PCH4":PCHTAB,"DPRO-DENS.PCH2":PCHTAB,"DPRO-DENS.PCH3":PCHTAB,"DPRO-DENS.PCH4":PCHTAB,
+ "DPRO-DDRW.WAV1":WAVD,"DPRO-DDRW.WAV2":WAVD,"DPRO-DENS.WAVE":WAVD};
+/* B-148: the filter envelope's BOFS and WOFS are -64 to +63 on the machine (OS 1.32B LCD at both ends; 64 = no sweep) */
+const SIGNED=new Set(["PAN","EQG","DIST","DSND","TUNE","PB","BOFS","WOFS"]);
+const DEFV={SYN:[0,0,0,0,0,0,0,64],AMP:[0,40,64,20,64,100,64,0],FLT:[0,127,0,0,0,40,64,64],EFX:[64,64,0,32,64,0,0,127],LFO:[2,1,1,0,1,32,0,0],MID:[64,100,64,0,0,0,0,0]};
 
 /* Note names, the MM way: C-4 = MIDI 60 */
 const NN=["C-","C#","D-","D#","E-","F-","F#","G-","G#","A-","A#","B-"];
@@ -71,7 +114,7 @@ const $=q=>document.querySelector(q),$$=q=>[...document.querySelectorAll(q)];
 function clamp(v,a=0,b=127){return Math.max(a,Math.min(b,v))}
 const newArp=()=>({MODE:0,PLAY:1,SPD:6,RNGE:1,OJMP:0,amp:1,flt:1,lfo:1,len:8,rhy:Array(16).fill(true),ofs:Array(16).fill(0)});
 const newAssign=()=>({mirr:true,hpf:true,lpf:true,tabs:{"JOY RL":[{pg:3,d:1,add:88},{pg:2,d:5,add:64}],"JOY U":[{pg:5,d:7,add:94},{pg:3,d:3,add:64}],"JOY D":[{pg:3,d:0,add:40},{pg:2,d:5,add:64}],VEL:[{pg:2,d:5,add:84},{pg:3,d:7,add:64}],KEY:[{pg:3,d:0,add:64},{pg:3,d:1,add:64}]}});
-function synDefaults(m){const p=MACH[m].p;return Array.from({length:8},(_,i)=>{const n=p[i];if(!n)return 0;if(n==="TUNE")return 64;if(n==="INP")return 100;if(n==="MIX")return 64;return({UNIL:40,UNIW:20,UNIX:0,SUB1:30,PW:64,VOC1:64,VOC2:64,"V-SW":1,CVOL:100,LP:127,GATE:127,DEC:64,"1ENV":80,TONE:64})[n]??0})}
+function synDefaults(m){const p=MACH[m].p;return Array.from({length:8},(_,i)=>{const n=p[i];if(!n)return 0;if(n==="TUNE")return 64;if(n==="INP")return 100;if(n==="MIX")return 64;return({UNIL:40,UNIW:20,UNIX:0,SUB1:30,PW:64,VOC1:64,VOC2:64,"V-SW":1,CVOL:100,LP:127,GATE:127,DEC:64,"1ENV":80,TONE:64,PCH2:63,PCH3:63,PCH4:63})[n]??0})}
 function newTrack(m,name){return{m,name,v:{SYN:synDefaults(m),AMP:[...DEFV.AMP],FLT:[...DEFV.FLT],EFX:[...DEFV.EFX],LF1:[...DEFV.LFO],LF2:[...DEFV.LFO],LF3:[...DEFV.LFO]},
  lev:100,out:{AB:true,CD:false,EF:false},inp:"NEIBOR",mute:false,solo:false,steps:Array(64).fill(null),slide:new Set(),swing:new Set([1,3,5,7,9,11,13,15].flatMap(x=>[x,x+16,x+32,x+48])),
  arp:newArp(),tr:{TRACK:64,SCALE:0,KEY:0},trigpos:null,port:0,leg:{amp:1,flt:1,lfo:1},assign:newAssign()}}
@@ -105,13 +148,13 @@ function pidLabel(t,pid){const[pg]=pid.split(".");return pg+" "+pname(t,pid)}
 function destNames(t,pidx){const pg=LPAGES[pidx];if(pg==="PTCH")return PTCHD;if(pg==="MID")return FIXED.MID;const a=[...pnames(t,pg)].map(n=>n||"—");while(a.length<8)a.push("—");return a}
 function meta(t,pg,i){const tr=trk(t),name=pnames(t,pg)[i];
  if(pg.startsWith("LF")){if(i===0)return{name,en:LPAGES};if(i===1)return{name,en:destNames(t,tr.v[pg][0])};if(i===2)return{name,en:LTRIG};if(i===3)return{name,en:LWAVE};if(i===4)return{name,en:LMULT};return{name,max:127}}
- if(pg==="SYN"){const en=EN[tr.m+"."+name]||EN[name];if(en)return{name,en};if(tr.m==="DPRO-WAVE"&&name==="WAVE")return{name,max:31}}
- return{name,max:127,signed:SIGNED.has(name)||(pg==="SYN"&&/^PCH/.test(name))}}
+ if(pg==="SYN"){const tab=TAB[tr.m+"."+name];if(tab)return{name,max:127,tab};const en=EN[tr.m+"."+name]||EN[name];if(en)return{name,en}}
+ return{name,max:127,signed:SIGNED.has(name)}}
 /* LEN (P7): a click steps a page and goes round (16 32 48 64 16 ...), shift-click back; a scroll one step, 2-64.
    It used to stop at 64: a click on the factory patterns' LEN 64 did nothing. */
 function lenStep(len,d,fine){if(fine)return clamp(len+d,2,64);const p=Math.ceil(len/16)+d;return(((p-1)%4+4)%4+1)*16}
 const maxOf=m=>m.en?m.en.length-1:m.max;
-function fmt(m,v){if(v==null)return"—";if(m.en)return m.en[clamp(v,0,m.en.length-1)];if(m.signed){const d=v-64;return(d>0?"+":"")+d}return String(v)}
+function fmt(m,v){if(v==null)return"—";if(m.tab)return tabAt(m.tab,v).t;if(m.en)return m.en[clamp(v,0,m.en.length-1)];if(m.signed){const d=v-64;return(d>0?"+":"")+d}return String(v)}
 function getP(t,pid){const[pg,i]=pid.split(".");return trk(t).v[pg]?.[+i]}
 function lkKey(t,pid){return t+"|"+pid}
 function setLock(t,pid,s,v,quiet){const k=lkKey(t,pid);if(!S.locks.has(k)){if(S.locks.size>=62){if(!quiet)toast("All 62 locked parameters are in use. Clear one before you lock a new parameter.");return false}S.locks.set(k,new Map())}S.locks.get(k).set(s,v);return true}
@@ -617,7 +660,7 @@ const MM_SEAM={
                                       shows their moving values with MMView.setModulation
      notes                            the host's words for the Control sources ({ccSource, appSource})
      engine(kind), firstRun(), bootScreen(on), renderPst(), engineLabels, menu(x, y) (the editor's menu at that point: the host draws it with DeskMenu, I-008)
-     syxChoose(), syxExport(request), syxStart(kinds, skip, {placeAt, checkOnly}), syxStop(), syxPlace(placeAt), syxExportInfo(),
+     syxChoose(), syxExport(request), syxStart(kinds, skip, {placeAt, checkOnly, readBack}), syxStop(), syxPlace(placeAt), syxExportInfo(),
      machineReset(how)   SysEx import and export (P7, B-019; 0.6: SPECIFIC place, VERIFY ONLY, kinds and ranges, Reset machine…): the host's file
                                       dialogs; the preview and progress come back through MMView
      removeRom(info)   REMOVE in the LOAD ROM card
@@ -1657,7 +1700,8 @@ Keys.bind({id:"zoom-reset",short:"Zoom 100 %",scope:"any",keys:["0"],mod:"cmd",g
      (LEN 1-126, at every tempo); LEN 127 lasts until a NOTE OFF trig. The track's next trig ends a note before its
      LEN does, as on a synth track.
    So a note can only be drawn up to the track's next trig; a NOTE OFF the drawn length no longer needs is taken away,
-   and a removed note leaves the note before it its length (a NOTE OFF where the removed one began). */
+   and a removed note leaves a gap the note before it runs on through, as on the machine (I-037, 0.8: no NOTE OFF is
+   written where the removed one began, and none is taken away: a NOTE OFF goes only when its own step is cleared). */
 const MmRoll=(()=>{
  const TICKS=6,LEN_MAX=126,LEN_HOLD=127;
  const trig=st=>!!st&&!st.off;
@@ -1683,11 +1727,10 @@ const MmRoll=(()=>{
   const off=(!midi||lock===LEN_HOLD||(lock==null&&midi.kitLen===LEN_HOLD))&&L<r?(s+L)%len:-1;
   for(const i of offs)if(i!==off)out.push([i,null]);if(off>=0&&!steps[off]?.off)out.push([off,{off:1}]);
   return midi?{steps:out,len:lock,L}:{steps:out,L}}
- /* a removed note: its step, and the NOTE OFF that ended it, go; the note before it keeps its length (a NOTE OFF where
-    the removed one began, when that note ran into it; on a MIDI track only when its LEN went past it: lenOf(step)) */
- function remove(steps,len,s,lenOf){const out=[],c=closer(steps,len,s),p=before(steps,len,s);
-  const ranInto=p!=null&&p!==s&&(!lenOf||lenOf(p)>=LEN_HOLD||lenOf(p)/TICKS>((s-p)%len+len)%len);
-  out.push([s,ranInto?{off:1}:null]);if(c>=0&&c!==s)out.push([c,null]);return out}
+ /* a removed note (I-037): its own step goes and nothing else is written or taken away, as on the machine: a NOTE OFF
+    is a step of its own and stays, wherever it is. The note before it runs on to the next trig or NOTE OFF (a MIDI
+    note keeps its LEN) */
+ function remove(steps,len,s){return[[s,null]]}
  /* the steps a selection of the note on s takes: from its trig to its end, its closing NOTE OFF too (so a copy carries
     where it ends); not past the pattern's end */
  function span(steps,len,s,midi){const c=closer(steps,len,s);const e=c>s?c+1:Math.min(len,Math.ceil(end(steps,len,s,midi)));return{from:s,to:Math.max(s+1,e)}}
@@ -2551,16 +2594,16 @@ const Boot = (() => {
    as an import of the slots it clears (Syx.reset).
      Syx.preview(m)        {type:"syxPreview", ok, text, file, model, fullBackup, items:{kind:[{slot,from?,name,kit?,overwrites,plays,format,
                             readable}]}, skipped, skippedCount, messages, place?, reset?, running?}
-     Syx.progress(m)       {type:"syxProgress", phase, done, total, running, text, check?, report?:{taken, converted, ignored, differs,
+     Syx.progress(m)       {type:"syxProgress", phase, done, total, running, text, check?, readBack, report?:{taken, converted, ignored, differs,
                             changed, unknown, "no reply", commands, unsent, items:[{kind, slot, name, outcome, text}]} (check: same, differs,
-                            unknown, "no reply")}
+                            unknown, "no reply"); readBack false (I-038): the report is {readBack:false, sent, commands, unsent, items:[]}}
      Syx.exported(m)       {type:"syxExport", ok, running?, text}
      Syx.exportInfo(m)     {type:"syxExportInfo", model, kinds:{kind:{slots, held, used, first, last}}}
      Syx.resetNews(m)      {type:"syxReset", phase, done, total, text}: a factory reset being prepared
      Syx.openExport()      the export panel (the engine menu's EXPORT SYSEX…)
      Syx.reset()           Reset machine…: the question (the engine menu's RESET MACHINE…)
      Syx.menu(value)       an engine menu entry of the panel's (import, export, reset): true when it was one
-     Syx.host = {choose(), start(kinds, skip, {placeAt, checkOnly}), stop(), place(placeAt), exportInfo(), exportSave({kinds?, ranges?}),
+     Syx.host = {choose(), start(kinds, skip, {placeAt, checkOnly, readBack}), stop(), place(placeAt), exportInfo(), exportSave({kinds?, ranges?}),
                  reset(how), ask(html, keys), say(text), machine, factory, memory(), factoryMemory()}   the app's host (machine:
                  its name; factory: it has a factory reset; I-024: memory() the plug-in's machineMemory, factoryMemory() start
                  from factory memory, a third choice of Reset machine… where memory().available)
@@ -2613,6 +2656,12 @@ const Syx = (() => {
 	function outcomes(picked, report) {
 		const out = new Map(), listed = new Map((report?.items || []).map(i => [key(i.kind, i.slot), i]));
 		const slots = picked.filter(p => p.kind !== "other"), ok = report?.check ? "same" : "taken";
+		/* I-038: read back off: nothing was compared; each item says what went (sent, partly sent, not sent), an item the
+		   report does not name is unclear, and a command (other) is sent */
+		if (report?.readBack === false) {
+			for (const p of picked) { const l = listed.get(key(p.kind, p.slot)); out.set(key(p.kind, p.slot), p.kind === "other" ? { outcome: "sent" } : l ? { outcome: l.outcome, text: l.text } : { outcome: "unclear" }); }
+			return out;
+		}
 		const whole = (report?.[ok] || 0) + listed.size === slots.length;
 		for (const p of picked) {
 			const id = key(p.kind, p.slot), l = listed.get(id);
@@ -2654,8 +2703,15 @@ const Syx = (() => {
 			+ (kinds.wave?.on ? ". The waveforms are read from the machine first (an empty one answers nothing)." : ".");
 	}
 	const OUTCOME = { taken: ["taken", "✓"], converted: ["converted", "≈"], ignored: ["ignored", "✕"], differs: ["different", "≠"], changed: ["not comparable", "~"],
-		unknown: ["not comparable", "~"], "no reply": ["no answer", "?"], unclear: ["not known", "?"], sent: ["sent", "→"], same: ["the same as the file", "="] };
+		unknown: ["not comparable", "~"], "no reply": ["no answer", "?"], unclear: ["not known", "?"], sent: ["sent", "→"], "partly sent": ["partly sent", "~"], "not sent": ["not sent", "✕"], same: ["the same as the file", "="] };
 	const problem = o => o !== "taken" && o !== "sent" && o !== "same";
+	/* I-038: "Read back and compare", beside Verify only in the import footer; on by default. A person's preference, not the
+	   project's (the editor's setup, MDSK, is what a DAW project restores): kept in the page's storage, as the transport's
+	   delayed start; a blocked storage means on. */
+	const RB_KEY = "deskSyx.readBack";
+	function readBackLoad(store) { try { return (store || localStorage).getItem(RB_KEY) !== "0"; } catch (_) { return true; } }
+	function readBackSave(on, store) { try { (store || localStorage).setItem(RB_KEY, on ? "1" : "0"); } catch (_) { } }
+	const readBackTick = on => `<label class="syxrb" title="After sending, read every slot back and compare it with the file. Off: the import ends when the messages are sent and the report says so."><input type="checkbox" data-syxrb${on ? " checked" : ""}> Read back and compare</label>`;
 	/* the footer's one line before the import */
 	function footLine(t) {
 		if (!t.n) return "Nothing chosen.";
@@ -2674,7 +2730,7 @@ const Syx = (() => {
 		const all = kp.done >= kp.total;
 		return { text: `${all ? "✓ " : ""}${verb} ${kp.done} of ${kp.total}`, pct: Math.round(kp.done / kp.total * 100) };
 	}
-	const model = { KINDS, OFF, slotLabel, capacity, layout, kindSums, toggleRange, outcomes, footLine, kindLine, OUTCOME, placeFirst, EXPORT_KINDS, rangeLabel,
+	const model = { readBackLoad, readBackSave, readBackTick, KINDS, OFF, slotLabel, capacity, layout, kindSums, toggleRange, outcomes, footLine, kindLine, OUTCOME, placeFirst, EXPORT_KINDS, rangeLabel,
 		exportDefaults, exportRequest, exportLine };
 
 	/* ---- the panel ---- */
@@ -2684,6 +2740,7 @@ const Syx = (() => {
 	document.body.appendChild(pop);
 	let last = null, state = "idle", tab = null, anchor = null, problemsOnly = true, steps = [], rep = null, picks = [], res = new Map(), follow = true;
 	let skip = new Set();
+	let readBack = readBackLoad();
 	const on = {};	// kind -> ticked
 	/* 0.6: what the panel shows (import or export), the import's PLACE (each kind's first slot) and the export's choices */
 	let mode = "import", placing = false, placeT = 0, placeW = 0, placeAsked = 0, placeQueued = false;
@@ -2736,6 +2793,7 @@ const Syx = (() => {
 			const mine = picks.filter(p => p.kind === k), bad = mine.filter(p => problem(res.get(key(k, p.slot))?.outcome)).length;
 			if (!mine.length) return { text: "not sent", bad: 0 };
 			if (k === "other") return { text: `${mine.length} sent`, bad: 0 };
+			if (rep?.report?.readBack === false) { const n = mine.length - bad; return { text: `${n} sent${bad ? ` · ${bad} not (all) sent` : ""} · not read back`, bad }; }
 			if (rep?.report?.check) return { text: `${mine.length - bad} the same${bad ? ` · ${bad} different or unread` : ""}`, bad };
 			return { text: `${mine.length - bad} taken${bad ? ` · ${bad} problem${bad > 1 ? "s" : ""}` : ""}`, bad };
 		}
@@ -2754,7 +2812,8 @@ const Syx = (() => {
 	function tools() {
 		if (state === "report") {
 			const bad = [...res.values()].filter(r => problem(r.outcome)).length;
-			const leg = rep?.report?.check ? `<i class="lg">=</i>the same as the file <i class="lg bad">≠</i>different <i class="lg bad">?</i>no answer`
+			const leg = rep?.report?.readBack === false ? `<i class="lg">→</i>sent, not read back`
+				: rep?.report?.check ? `<i class="lg">=</i>the same as the file <i class="lg bad">≠</i>different <i class="lg bad">?</i>no answer`
 				: `<i class="lg">✓</i>taken as in the file <i class="lg bad">≈</i>converted <i class="lg bad">✕</i>ignored <i class="lg bad">≠</i>different`;
 			return `<div class="syxtools"><label class="syxfilt"><input type="checkbox" data-syxgo="problems"${problemsOnly && bad ? " checked" : ""}${bad ? "" : " disabled"}> Show problems only</label>
 				<span class="syxleg">${leg}</span></div>`;
@@ -2764,7 +2823,7 @@ const Syx = (() => {
 	}
 	function problems() {
 		const rows = picks.map(p => ({ p, r: res.get(key(p.kind, p.slot)) })).filter(x => x.r && problem(x.r.outcome));
-		if (!rows.length) return `<p class="syxnote">Every item as in the file.</p>`;
+		if (!rows.length) return `<p class="syxnote">${rep?.report?.readBack === false ? "Not read back: nothing was compared with the file." : "Every item as in the file."}</p>`;
 		return `<div class="syxlist">${rows.map(({ p, r }) => `<div class="syxli" data-syxitem="${esc(key(p.kind, p.slot))}" data-syxout="${esc(r.outcome)}"><b>${slotLabel(p.kind, p.slot)}</b><span class="nm">${esc(p.name || "")}</span><span class="tag">${esc(OUTCOME[r.outcome]?.[0] || r.outcome)}</span><span class="why">${esc(r.text || "")}</span></div>`).join("")}</div>`;
 	}
 	function foot() {
@@ -2772,7 +2831,7 @@ const Syx = (() => {
 		if (state === "running") return `<div class="syxfoot"><div class="syxmsg"><div class="syxsteps"></div><div class="syxbar"><i></i><span></span></div></div><div class="btnrow"><button type="button" data-syxgo="close">Hide</button><button type="button" data-syxgo="stop">Stop</button></div></div>`;
 		const skipped = last.skippedCount ? `<details class="syxprob"><summary>${last.skippedCount} message${last.skippedCount > 1 ? "s" : ""} cannot be sent</summary>${(last.skipped || []).map(p => `<div>${esc(p)}</div>`).join("")}</details>` : "";
 		const verify = hostHas("start") ? `<button type="button" data-syxgo="verify" title="Read the slots the items land in and compare them with the file; nothing is written">Verify only</button>` : "";
-		return `<div class="syxfoot"><div class="syxmsg"><p class="syxwarn"></p>${skipped}</div><div class="btnrow"><button type="button" data-syxgo="close">Cancel</button>${verify}<button type="button" class="go" data-syxgo="start">Import</button></div></div>`;
+		return `<div class="syxfoot"><div class="syxmsg"><p class="syxwarn"></p>${skipped}</div><div class="btnrow"><button type="button" data-syxgo="close">Cancel</button>${hostHas("start") ? readBackTick(readBack) : ""}${verify}<button type="button" class="go" data-syxgo="start">Import</button></div></div>`;
 	}
 	function head() {
 		const what = last.ok ? `<span class="lcdchip">${esc(last.model || "")}${last.fullBackup ? " · full backup" : ""}</span>` : "";
@@ -2836,7 +2895,7 @@ const Syx = (() => {
 	function bar() {
 		const m = lastProgress, box = q(".syxsteps");
 		if (state !== "running" || !box || !m) return;
-		const PH = [["before", "Read the slots"], ["send", "Send"], ["read", "Read back"]].filter(([p]) => p !== "before" || steps.includes("before"));
+		const PH = [["before", "Read the slots"], ["send", "Send"], ["read", "Read back"]].filter(([p]) => (p !== "before" || steps.includes("before")) && (p !== "read" || m.readBack !== false));
 		const at = PH.findIndex(([p]) => p === m.phase);
 		box.innerHTML = PH.map(([p, t], n) => `<span class="syxstep${n < at ? " done" : n === at ? " now" : ""}"><i class="led${n <= at ? " on" : ""}"></i>${t}</span>`).join("");
 		const b = q(".syxbar");
@@ -2919,8 +2978,10 @@ const Syx = (() => {
 	}
 	function start(check) {
 		follow = true; picks = picked(); const kinds = chosen(), sk2 = [...skip];
-		state = "running"; lastProgress = { phase: check ? "read" : "send", done: 0, total: 0, running: true, text: check ? "Verify only: starting" : "Starting" }; draw();
-		Syx.host.start(kinds, sk2, { placeAt: placeAt(), checkOnly: !!check });
+		state = "running"; lastProgress = { phase: check ? "read" : "send", done: 0, total: 0, running: true, readBack: check || readBack, text: check ? "Verify only: starting" : "Starting" }; draw();
+		const o = { placeAt: placeAt(), checkOnly: !!check };
+		if (!check && !readBack) o.readBack = false;	/* I-038: absent means on */
+		Syx.host.start(kinds, sk2, o);
 	}
 	function progress(m) {
 		if (!last || !last.ok) return;
@@ -2946,6 +3007,7 @@ const Syx = (() => {
 		}
 		const k = e.target.dataset?.syxkind;
 		if (k && state === "preview") { on[k] = e.target.checked; show(k); sums(); return; }
+		if (e.target.dataset?.syxrb !== undefined) { readBack = e.target.checked; readBackSave(readBack); return; }
 		if (e.target.dataset?.syxgo === "problems") { problemsOnly = e.target.checked; draw(); }
 	});
 	/* a value (place, from, to): the wheel, a drag up or down, the arrow keys, as other values */
@@ -3162,7 +3224,7 @@ function renderTop(){
  $$("#tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.ws===S.ws));
  const lkk=$("#learnkey");if(lkk){lkk.setAttribute("aria-pressed",S.learn);lkk.classList.toggle("on",!!S.learn)}
  $("#platekey span").textContent=S.plate==="mk1"?"MKI":"MKII";
- const n=S.locks.size,m=$("#meter");$("#lockn").textContent=String(n).padStart(2,"0")+"/62";m.className="f meter"+(n>=62?" full":n>=52?" warn":"");
+ const n=S.locks.size,m=$("#meter");$("#lockn").textContent=String(n).padStart(2,"0")+"/62";m.title=`${n} of 62 locked parameters (the machine's limit). A parameter with any lock counts once.`;m.className="f meter"+(n>=62?" full":n>=52?" warn":"");
  $("#bpm").textContent=(S.tempoDraft??S.bpm).toFixed(1);$("#pat").textContent=patName(S.queued??S.pat);$("#pat").parentElement.classList.toggle("queued",S.queued!=null);songLcd();
  /* B-030: the host's tempo (in a DAW the machine follows): marked, and not edited here */
  $("#bpm").parentElement.classList.toggle("hosttempo",!!S.hostTempo);$("#bpm").title=S.hostTempo?"The DAW's tempo: the machine follows the host. Change it in the DAW.":"Drag up or down";
@@ -3224,6 +3286,8 @@ function setV(el,v){const[o,n,m,t,g]=ref(el);v=clamp(Math.round(v),g==="arp"&&n=
  if(g.startsWith("LF")&&(+el.dataset.n<2)){if(+el.dataset.n===0)o[1]=0;render();return}
  if(g==="arp"&&n==="len")renderArp();
  syncControls();redraw()}
+/* a step of a value box (wheel, arrows): d values, or on a list the machine shows (B-149) d entries */
+function stepV(el,d){const m=ref(el)[2],v=getV(el);setV(el,m.tab?tabStep(m.tab,v,d):v+d)}
 function pc(g,n,{t,label,cls="",extra=""}={}){if(n==null)return`<div class="pc empty" aria-hidden="true"></div>`;
  return`<div class="pc ${cls}" role="slider" tabindex="0" data-g="${g}" data-n="${n}"${t!=null?` data-t="${t}"`:""} ${extra} aria-label="${label||n}"><span>${label||n}</span><b></b></div>`}
 function page8(t,pg){const names=pnames(t,pg);return Array.from({length:8},(_,i)=>names[i]?pc(pg,i,{t,label:names[i]}):pc(0,null)).join("")}
@@ -3320,7 +3384,7 @@ function pageKeys(){return`<span class="pagectl rh"><button class="pgkey" id="pg
 function lockPicker(t){const midi=isMidiT(t),list=pagesOf(t),d=dockOf(t);if(!list.includes(S.lanePage))S.lanePage=list[0];
  return`<div class="railparams ${d==="locks"?"":"dockrail"}"><div class="rphead"><span class="cap">${DOCKN[d]}</span><button id="lockLane" class="iconkey" aria-label="Lock the current value on the selected steps" title="Lock ${pidLabel(t,S.lane)} at its current value on the selected steps (the machine: hold the trig, click the knob)"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M4 6.5V4.5a3 3 0 0 1 6 0v2M3 6.5h8v6H3z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></button><button id="clearLane" class="iconkey" aria-label="Clear these locks" title="Clear ${pidLabel(t,S.lane)} locks"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 4h10M5.5 4V2.5h3V4M3.5 4l.7 8h5.6l.7-8M6 6.5v3.5M8 6.5v3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
   <div class="lpspace"></div><div class="pagetabs" role="group" aria-label="DATA page">${midi?`<button data-lpage="MID" aria-pressed="true" style="grid-column:1/-1"><i class="led"></i>MIDI PAGE</button>`:PAGES.map(p=>{const n=trackLockPids(t).filter(x=>x.startsWith(p+".")).length;return`<button data-lpage="${p}" aria-pressed="${S.lanePage===p}" aria-label="${PAGEN[p]}${n?", "+n+" locked":""}"><i class="led ${n&&S.lanePage!==p?"g on":""}"></i>${p}</button>`}).join("")}</div>
-  <div class="pkcol">${pnames(t,S.lanePage).map((nm,i)=>{if(!nm)return`<span class="pk empty"></span>`;const pid=S.lanePage+"."+i,n=S.locks.get(lkKey(t,pid))?.size||0;return`<button class="pk ${n?"has":""}" data-lane="${pid}" aria-pressed="${pid===S.lane}" title="${n?n+" locked step"+(n>1?"s":""):"No locks yet"}"><span class="pkn">${nm}</span>${n?`<i>${n}</i>`:""}</button>`}).join("")}${Array.from({length:8-pnames(t,S.lanePage).length},()=>`<span class="pk empty"></span>`).join("")}</div>${d==="locks"?"":`<div class="dockkeys" id="dockkeys">${dockKeys(t,d)}</div>`}</div>`}
+  <div class="pkcol">${pnames(t,S.lanePage).map((nm,i)=>{if(!nm)return`<span class="pk empty"></span>`;const pid=S.lanePage+"."+i,lm=S.locks.get(lkKey(t,pid)),n=lm?.size||0,gh=lm?[...lm.keys()].filter(x=>{const q=trk(t).steps[x];return !q||q.off}).length:0;return`<button class="pk ${n?"has":""}" data-lane="${pid}" aria-pressed="${pid===S.lane}" title="${n?n+" locked step"+(n>1?"s":"")+(gh?` (${gh} on steps without a trig)`:""):"No locks yet"}"><span class="pkn">${nm}</span>${n?`<i>${n}</i>`:""}</button>`}).join("")}${Array.from({length:8-pnames(t,S.lanePage).length},()=>`<span class="pk empty"></span>`).join("")}</div>${d==="locks"?"":`<div class="dockkeys" id="dockkeys">${dockKeys(t,d)}</div>`}</div>`}
 /* B-120: a solo silences every other track, also those of the side the rail does not show; each side's key says when
    a solo holds on its tracks (S), so the M keys on the other side are not taken for dead */
 function sideSw(){const so=ts=>ts.some(x=>x.solo),sign=on=>on?`<b class="sosign" aria-label="a solo holds here">S</b>`:"",tip=on=>on?". S: a solo holds on one of them, so every other track is silent":"";
@@ -3329,7 +3393,7 @@ function renderRail(){const r=$("#rail"),withSide=S.ws==="seq"||S.ws==="sound";
  const anyMs=[...S.tracks,...S.midi].some(x=>x.mute||x.solo);
  r.innerHTML=`<div class="railhead">Track<button class="iconkey allon" id="allon" ${anyMs?"":"disabled"} title="Unmute and unsolo every track (0)">M/S off</button></div>`+side().map(th).join("")+(withSide?`<div style="margin-top:4px">${sideSw()}</div>`:"")+(S.ws==="seq"?lockPicker(S.sel):"");altLabels()}
 function rowStatus(t){const tr=trk(t),arp=tr.arp.MODE>0,trn=tr.tr.TRACK-64;return[arp?"ARP":"",t<6&&tr.tr.SCALE?["","FIX","MAJ","MIN"][tr.tr.SCALE]:(trn?(trn>0?"+":"")+trn:"")].filter(Boolean).join(" ")}
-const ROLL_TIP=t=>`${tLabel(t)} notes. Click an empty place: a note of ${MmRoll.say(S.rollLen)} (drag sideways paints) · drag a note's end: its length (new notes get it too; a ${isMidiT(t)?"MIDI note's LEN, 6 a step":"NOTE OFF where it ends"}) · drag a note: up or down its pitch, sideways to move it · shift-click adds a chord note · alt-click deletes a note (the one before keeps its length), or sets a NOTE OFF on an empty step · ⌘-click or ⌘-drag selects steps · right-click: the step menu · scroll = pitch${isMidiT(t)?"":" · the keys on the left play the note"}${(()=>{const a=trk(t).arp;return a.MODE&&a.SPD?` · light notes: what the arpeggiator plays${a.PLAY===4?" (random order: outlined, the pitches vary)":""}`:""})()}`;
+const ROLL_TIP=t=>`${tLabel(t)} notes. Click an empty place: a note of ${MmRoll.say(S.rollLen)} (drag sideways paints) · drag a note's end: its length (new notes get it too; a ${isMidiT(t)?"MIDI note's LEN, 6 a step":"NOTE OFF where it ends"}) · drag a note: up or down its pitch, sideways to move it · shift-click adds a chord note · alt-click deletes a note (the earlier note runs on to the next trig or NOTE OFF), or sets a NOTE OFF on an empty step · ⌘-click or ⌘-drag selects steps · right-click: the step menu · scroll = pitch${isMidiT(t)?"":" · the keys on the left play the note"}${(()=>{const a=trk(t).arp;return a.MODE&&a.SPD?` · light notes: what the arpeggiator plays${a.PLAY===4?" (random order: outlined, the pitches vary)":""}`:""})()}`;
 /* ===== Values while live recording (as the MD Editor's): the firmware locks the step that plays when a value arrives (CC; a
    step without a trig gets a trigless lock); the plug-in names it (machine.desk.recLock: track, page.value, step) and
    the trig row's cell and the lock lane's bar show it until the read-back brings the real lock. ===== */
@@ -3378,19 +3442,20 @@ function fitLane(){const g=$("#seq"),sc=$("#seqscroll");if(!g)return;$$("#seq ca
    One barHTML for render and drag. Heights are fractions of the key's inner meter (key height minus 14 px). */
 const IN="(100% - 14px)";
 function laneMeta(){const t=S.sel,[pg,i]=S.lane.split(".");const m=meta(t,pg,+i);return{m,mx:maxOf(m),bip:!!m.signed}}
-function barHTML(v){const{mx,bip}=laneMeta(),f=v/mx;if(bip)return f>=.5?`<i class="bp up" style="bottom:calc(6px + ${IN}*.5);height:calc(${IN}*${(f-.5).toFixed(4)})"></i>`:`<i class="bp dn" style="top:calc(8px + ${IN}*.5);height:calc(${IN}*${(.5-f).toFixed(4)})"></i>`;
- return`<i style="bottom:6px;height:calc(${IN}*${f.toFixed(4)})"></i>`}
+function barHTML(v){const{mx,bip}=laneMeta(),f=v/mx;if(bip)return f>=.5?`<i class="bp up" style="bottom:calc(6px + ${IN}*.5);height:max(2px,calc(${IN}*${(f-.5).toFixed(4)}))"></i>`:`<i class="bp dn" style="top:calc(8px + ${IN}*.5);height:max(2px,calc(${IN}*${(.5-f).toFixed(4)}))"></i>`;
+ return`<i style="bottom:6px;height:max(2px,calc(${IN}*${f.toFixed(4)}))"></i>`}
 function baseHTML(v,mx){return`<div class="base" style="bottom:calc(6px + ${IN}*${(v/mx).toFixed(4)})"></div>`}
 function renderLane(){const lane=$("#lane");if(!lane)return;const t=S.sel,tr=trk(t),pid=S.lane,[pg,i]=pid.split("."),m=meta(t,pg,+i),mx=maxOf(m),lm=S.locks.get(lkKey(t,pid)),base=getP(t,pid);
- const sc=$("#lanescale");if(sc)sc.textContent=m.en?`${m.en[0]}…${m.en[mx]}`:m.signed?"−64…+63":"0–127";
+ const sc=$("#lanescale");if(sc)sc.textContent=m.tab?`${m.tab[0].t}…${m.tab[m.tab.length-1].t}`:m.en?`${m.en[0]}…${m.en[mx]}`:m.signed?"−64…+63":"0–127";
  lane.innerHTML=`<div class="lbscale"><b>${fmt(m,mx)}</b><span>${fmt(m,base)}<small>kit</small></span><b>${fmt(m,0)}</b></div>`+steps().map(s=>{const st=tr.steps[s],on=st&&!st.off,v=lm?.get(s);
-  return`<div class="lb ${on?"":"none"} ${on?"k-"+(isMidiT(t)?"full":stepKind(st)):""} ${gapC(s)} " data-s="${s}" title="${on?(v!=null?"Locked "+fmt(m,v):"Kit value "+fmt(m,base)):"No trig here: add one (a trigless trig with alt-click keeps the envelopes quiet)"}">${on?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${v!=null?barHTML(v):""}`:""}</div>`}).join("");
+  const ghost=!on&&v!=null;/* a lock on a step without a trig: kept (a machine's backup holds them), the machine ignores it */
+  return`<div class="lb ${on||ghost?"":"none"} ${ghost?"ghost":""} ${on?"k-"+(isMidiT(t)?"full":stepKind(st)):""} ${gapC(s)} " data-s="${s}" title="${on?(v!=null?"Locked "+fmt(m,v):"Kit value "+fmt(m,base)):ghost?"Lock on a step without a trig: the machine ignores it ("+fmt(m,v)+"). Alt-click removes it.":"No trig here: add one (a trigless trig with alt-click keeps the envelopes quiet)"}">${on?`${baseHTML(base,mx)}${m.signed?`<div class="mid"></div>`:""}${v!=null?barHTML(v):""}`:ghost?`${m.signed?`<div class="mid"></div>`:""}${barHTML(v)}`:""}</div>`}).join("");
  requestAnimationFrame(drawSlides)}
 function drawSlides(){const svg=$("#lanesvg"),lane=$("#lane");if(!svg||!lane)return;const t=S.sel,tr=trk(t),lm=S.locks.get(lkKey(t,S.lane));svg.innerHTML="";if(!lm)return;
- const[pg,i]=S.lane.split("."),mx=maxOf(meta(t,pg,+i)),box=lane.getBoundingClientRect(),ink=cssv("--ink");let d="";const locked=[...lm.keys()].sort((a,b)=>a-b);
+ const[pg,i]=S.lane.split("."),mx=maxOf(meta(t,pg,+i)),box=lane.getBoundingClientRect(),ink=cssv("--ink");let d="";const real=x=>{const q=tr.steps[x];return !!q&&!q.off},locked=[...lm.keys()].filter(real).sort((a,b)=>a-b);/* a slide runs between locks on steps with a trig: a lock on a step without one is never played, so no line starts or ends there */
  locked.forEach(s=>{if(!tr.slide.has(s))return;const nx=locked.find(x=>x>s);if(nx==null)return;const a=lane.querySelector(`.lb[data-s="${s}"]`),b=lane.querySelector(`.lb[data-s="${nx}"]`);if(!a)return;
   const ra=a.getBoundingClientRect(),y=v=>ra.bottom-box.top-6-v/mx*(ra.height-14),xa=ra.left-box.left+ra.width/2;
-  const xb=b?b.getBoundingClientRect().left-box.left+b.getBoundingClientRect().width/2:box.width;d+=`<path d="M${xa} ${y(lm.get(s))} L${xb} ${y(lm.get(nx))}" fill="none" stroke="${ink}" stroke-width="2.5" stroke-dasharray="6 3"/><circle cx="${xa}" cy="${y(lm.get(s))}" r="4" fill="${ink}"/>`});
+  const xb=b?b.getBoundingClientRect().left-box.left+b.getBoundingClientRect().width/2:box.width;const ya=y(lm.get(s)),yb=y(lm.get(nx)),hl=cssv("--lcd")||"#fff";/* drawn after the lane, so above the bars; a light halo under the ink line reads on a solid bar and on an empty step */const fl=ra.bottom-box.top-6;/* automation ramp: a translucent fill down to the lane floor, a solid line bar top to bar top, a light halo under it; drawn after the lane so it sits above the bars and reads on solid bars, empty and hatched steps. The slide mark itself is the roll's top mark row (rollTopMarks) */d+=`<path d="M${xa} ${ya} L${xb} ${yb} L${xb} ${fl} L${xa} ${fl} Z" fill="${hl}" fill-opacity=".45"/><path d="M${xa} ${ya} L${xb} ${yb} L${xb} ${fl} L${xa} ${fl} Z" fill="${ink}" fill-opacity=".18"/><path d="M${xa} ${ya} L${xb} ${yb}" fill="none" stroke="${hl}" stroke-width="5" stroke-linecap="round"/><path d="M${xa} ${ya} L${xb} ${yb}" fill="none" stroke="${ink}" stroke-width="2" stroke-linecap="round"/><circle cx="${xa}" cy="${ya}" r="4" fill="${ink}" stroke="${hl}" stroke-width="1.5"/><circle cx="${xb}" cy="${yb}" r="3" fill="${ink}" stroke="${hl}" stroke-width="1.5"/>`});
  svg.setAttribute("width",box.width);svg.setAttribute("height",box.height);svg.innerHTML=d}
 function syncScroll(){const a=$("#seqscroll"),b=$("#lanescroll");if(!a||!b)return;a.onscroll=()=>{b.scrollLeft=a.scrollLeft};b.onscroll=()=>{a.scrollLeft=b.scrollLeft}}
 function refreshRow(t){redraw();return;const gate={},am=ampSteps(t);noteSpans(t).forEach(sp=>{for(let k=sp.s;k<sp.e;k++)gate[k]=(k===sp.s?(sp.e-sp.s>1?"gs":"g1"):k===sp.e-1?"ge":"gm")+(k-sp.s>=am?" gd":"")});$$(`.mst[data-t="${t}"]`).forEach(b=>{const s=+b.dataset.s,st=trk(t).steps[s];b.className=stepCls(t,s);b.setAttribute("aria-pressed",!!st);b.title=stepTitle(t,s,st);b.innerHTML=`<span class="nt">${stepText(t,s,st)}</span>${gate[s]?`<span class="gt ${gate[s]}"></span>`:""}`})}
@@ -3402,7 +3467,7 @@ function clickStep(t,s,e){const tr=trk(t),st=tr.steps[s];
  editStep(t,s);renderTop();if(t!==S.sel){S.sel=t;stepFocus();autoRange(t);render()}else rerenderSeq()}
 let laneDraw=null;
 function laneAt(e){const lane=$("#lane");if(!lane)return;if(laneDraw.ramp){rampAt(e);return}const el=document.elementFromPoint(e.clientX,e.clientY)?.closest(".lb");if(!el||!lane.contains(el))return;
- const s=+el.dataset.s,t=S.sel,st=trk(t).steps[s];if(!st||st.off)return;const[pg,i]=S.lane.split("."),mx=maxOf(meta(t,pg,+i));const r=el.getBoundingClientRect();const v=clamp(Math.round((r.bottom-6-e.clientY)/(r.height-14)*mx),0,mx);
+ const s=+el.dataset.s,t=S.sel,st=trk(t).steps[s];if(!st||st.off){if(!(laneDraw.erase&&S.locks.get(lkKey(t,S.lane))?.has(s)))return}const[pg,i]=S.lane.split("."),mx=maxOf(meta(t,pg,+i));const r=el.getBoundingClientRect();const v=clamp(Math.round((r.bottom-6-e.clientY)/(r.height-14)*mx),0,mx);
  if(laneDraw.erase){const m=S.locks.get(lkKey(t,S.lane));if(!m?.has(s))return;m.delete(s);if(!m.size)S.locks.delete(lkKey(t,S.lane));edit("lock",{t,...pidArgs(S.lane),s,v:null})}
  else{if(S.locks.get(lkKey(t,S.lane))?.get(s)===v)return;if(!setLock(t,S.lane,s,v))return;edit("lock",{t,...pidArgs(S.lane),s,v})}
  el.querySelector("i")?.remove();if(!laneDraw.erase)el.insertAdjacentHTML("beforeend",barHTML(v));
@@ -3479,8 +3544,8 @@ document.addEventListener("pointerout",e=>{const c=e.target.closest?.("canvas.ro
    key; a NOTE OFF where it ends, or a MIDI note's LEN), a drag sideways paints. Off (select): a drag in an empty place
    boxes notes (the selection both editors share, StepSel: the steps from the first note's trig to the last one's end,
    its NOTE OFF too), a press on a note selects it, a drag of the selection moves it (⌘-drag: a copy, 77-select.js),
-   a double-click adds a note. Both: a note's end drags its length (the draw length follows), up or down its pitch,
-   alt-click deletes it (the note before it keeps its length). Prefs per viewer (localStorage); draw by default. */
+   a double-click on a note deletes it (an empty place: the first click draws, the second is ignored). Both: a note's end drags its length (the draw length follows), up or down its pitch,
+   alt-click deletes it (the earlier note runs on to the next trig or NOTE OFF). Prefs per viewer (localStorage); draw by default. */
 S.rollLen=1;
 (()=>{let v=null;try{v=JSON.parse(localStorage.getItem("mmeditor.roll")||"null")}catch(_){}if(v&&typeof v==="object"){if(v.len>=1&&v.len<=64)S.rollLen=Math.round(v.len)}})();
 function rollPrefs(){try{localStorage.setItem("mmeditor.roll",JSON.stringify({len:S.rollLen}))}catch(_){}}
@@ -3498,24 +3563,34 @@ function rollPut(t,changes){const tr=trk(t);for(const[k,v] of changes){tr.steps[
 function rollLen(t,s,L){const r=MmRoll.setLen(trk(t).steps,S.len,s,L,midiOf(t)),off=(r.steps.find(([,v])=>v&&v.off)||[-1])[0],touched=rollPut(t,r.steps);let lock=false;
  if(isMidiT(t)){const key=lkKey(t,"MID.0"),m=S.locks.get(key),had=m?.get(s);if(r.len==null){if(had!=null){m.delete(s);if(!m.size)S.locks.delete(key);lock=true}}else if(had!==r.len&&setLock(t,"MID.0",s,r.len))lock=true}
  return{touched,lock,L:r.L,off}}
-/* a note removed as a person means it: the note before it keeps its length (MmRoll.remove) */
-function rollRemove(t,s){return rollPut(t,MmRoll.remove(trk(t).steps,S.len,s,isMidiT(t)?k=>midiLenOf(t,k):null))}
+/* a note removed as a person means it (Alt-click, the erase drag, a double-click): the machine's way (MmRoll.remove, I-037): no NOTE OFF is written, the earlier note runs on to the next trig or NOTE OFF */
+function rollRemove(t,s){return rollPut(t,MmRoll.remove(trk(t).steps,S.len,s))}
+/* the note under the pointer deleted (one chord note of several: just that pitch); the steps changed */
+/* the step the last press drew a note on, and when: the second click of a double-click on an empty cell must not delete what the first drew */
+let rollDrawn=null;
+const DBL_MS=400;
+function rollDelNote(t,h){const st=trk(t).steps[h.s];if(h.k>0||(st.n&&st.n.length>1)){st.n.splice(h.k,1);return[h.s]}return rollRemove(t,h.s)}
+/* I-036: a double-click on a note deletes it (the first click selected it; one undo step) */
+document.addEventListener("dblclick",e=>{const c=e.target.closest?.("canvas.roll[data-big]");if(!c||S.ws!=="seq"||+c.dataset.t!==S.sel||e.altKey||e.metaKey||e.ctrlKey||e.shiftKey)return;
+ const G=laneGeom(c);if(onKeys(c,G,e))return;const h=laneHit(c,e);if(!h||h.k<0||h.edge||!trk(S.sel).steps[h.s])return;
+ if(rollDrawn&&rollDrawn.t===S.sel&&rollDrawn.s===h.s&&Date.now()-rollDrawn.at<DBL_MS)return;
+ const t=S.sel,touched=rollDelNote(t,h);S.stepSel=null;editSpan(t,new Set(touched),true);renderTop();rerenderSeq();syncSel();toast(`Deleted the note on ${tLabel(t)} step ${h.s+1} (⌘Z brings it back).`)});
 /* a new note on step s at pitch n that lasts the draw length */
 function rollAdd(t,s,n){trk(t).steps[s]=note(n);const r=rollLen(t,s,S.rollLen);return{touched:new Set([s,...r.touched]),lock:r.lock,off:r.off}}
 function rollDown(c,e){if(e.button!==0)return;const t=+c.dataset.t;if(t!==S.sel){select(t);return}
  {const G=laneGeom(c);if(e.button===0&&onKeys(c,G,e)){const n=rollRow(c,G,e);if(n==null)return;if(isMidiT(t)){kbTell("midi","The keys play the synth tracks: a MIDI track's notes go to the MIDI OUT only.");return}rollDrag={mode:"key",t,c};rollKey(t,n);drawEd(c);return}}
  const h=laneHit(c,e);if(!h)return;const tr=trk(t);
  if(e.metaKey||e.ctrlKey)return;	/* ⌘ selects (77-select.js), Ctrl on a Mac is the step menu's; the fill is in the step menu (K7) */
- if(h.k>=0&&e.altKey){const st=tr.steps[h.s];let touched;if(h.k>0||(st.n&&st.n.length>1)){st.n.splice(h.k,1);touched=[h.s]}else touched=rollRemove(t,h.s);rollDrag={mode:"erase",s:h.s,c,last:h.s,touched:new Set(touched)};redraw();return}
+ if(h.k>=0&&e.altKey){const st=tr.steps[h.s];let touched;touched=rollDelNote(t,h);rollDrag={mode:"erase",s:h.s,c,last:h.s,touched:new Set(touched)};redraw();return}
  if(h.k<0&&e.altKey){const st=tr.steps[h.cell];if(!st||st.off){tr.steps[h.cell]=st?.off?null:{off:1};editStep(t,h.cell);rerenderSeq()}return}
  if(h.k>=0&&h.edge){rollDrag={mode:"len",s:h.s,c,wrap:!!h.wrap,touched:new Set([h.s]),lock:false,L:null};return}
  if(h.k>=0){rollSelectDown(c,e,h);return}	/* a note: its end lengthens it (above), its body moves it, across the steps or its pitch up or down; an empty place draws */
  const st=tr.steps[h.cell];
- if(!st||st.off){const a=rollAdd(t,h.cell,h.n);rollDrag={mode:"pitch",s:h.cell,k:0,c,moved:true,paint:true,touched:a.touched,lock:a.lock,paintOff:a.off}}
+ if(!st||st.off){rollDrawn={t,s:h.cell,at:Date.now()};const a=rollAdd(t,h.cell,h.n);rollDrag={mode:"pitch",s:h.cell,k:0,c,moved:true,paint:true,touched:a.touched,lock:a.lock,paintOff:a.off}}
  else if(e.shiftKey){if(!st.n)st.n=[h.n];else if(!st.n.includes(h.n))st.n.push(h.n);rollDrag={mode:"pitch",s:h.cell,k:st.n.length-1,c,moved:true}}
  else{if(!st.n)st.n=[h.n];else st.n[0]=h.n;rollDrag={mode:"pitch",s:h.cell,k:0,c,moved:true}}
  redraw()}
-/* select mode: a press in an empty place starts a box (a double-click adds a note); on a note it selects the note (shift:
+/* select mode: a press in an empty place starts a box; on a note it selects the note (shift:
    the selection grows to it), and what the drag does next decides: across the steps it moves the selection, up or
    down the note's pitch */
 function rollSelectDown(c,e,h){const t=S.sel,tr=trk(t);
@@ -3543,7 +3618,7 @@ function rollMove(c,e){const t=+c.dataset.t;if(!rollDrag){if(t!==S.sel){c.style.
 /* Paint (the Machinedrum Editor's drag across steps, MM-PORT-PLAN.md 2026-10-05): a new note dragged sideways out of its
    column paints a note at its pitch on every empty step the pointer crosses, the last one lasting the draw length
    (the NOTE OFF the drag put down moves with it); Alt-press on a note deletes it, and the drag goes on deleting every
-   note it crosses (its slide and locks; the note before keeps its length). The steps: mmPaint (52-gen.js) and
+   note it crosses (its slide and locks; the earlier note runs on to the next trig or NOTE OFF). The steps: mmPaint (52-gen.js) and
    MmRoll. Nothing is sent before the release (an intent shows the view again, which would draw the roll anew under
    the pointer): then one steps intent (editSpan), one undo step. The columns between two moves count too. */
 function rollPaintMove(c,e){const d=rollDrag;if(d.mode==="pitch"&&!d.paint)return false;if(d.mode!=="pitch"&&d.mode!=="paint"&&d.mode!=="erase")return false;
@@ -3560,9 +3635,9 @@ function rollPaintMove(c,e){const d=rollDrag;if(d.mode==="pitch"&&!d.paint)retur
 function editSpan(t,touched,locks){const ss=[...touched];if(!ss.length)return;const a=Math.min(...ss),b=Math.max(...ss)+1;edit("steps",{from:a,to:b,rows:[rangeRow(t,a,b,locks)]})}
 /* the drag's edit, when it ends: the dragged step's notes, or its length (a synth track's NOTE OFFs, a MIDI track's
    LEN lock), or the steps a paint or an erase touched, or the box's selection, or the selection moved */
-function rollUp(){const d=rollDrag;rollUp0();if(d?.sel&&S.stepSel)clearSel()}
+function rollUp(){rollUp0()}	/* I-036: the note a click selected stays selected (arrows, Delete, double-click act on it) */
 function rollUp0(){const d=rollDrag;rollDrag=null;if(d?.mode==="key"){if(d.n!=null)keyNote(d.t,d.n,0);drawEd(d.c);return}const t=S.sel;
- if(d?.mode==="note")return;	/* a press on a note that went nowhere: nothing changed (rollUp drops the selection the press made) */
+ if(d?.mode==="note")return;	/* a press on a note that went nowhere: nothing changed (the selection the press made stays) */
  if(d?.mode==="move"){syncSel();if(d.ghost)selMoveTo(d.ghost.from);return}
  if(d?.mode==="paint"||d?.mode==="erase"){editSpan(t,d.touched,true);const n=d.mode==="paint"?d.painted.size:d.touched.size;if(n>1)toast(`${d.mode==="paint"?"Painted":"Erased"} ${n} ${d.mode==="paint"?"notes":"steps"} of ${tLabel(t)}${d.mode==="paint"?" with "+noteName(d.n):""} (one undo step).`);renderTop();rerenderSeq();return}
  if(!d?.moved)return;
@@ -3659,7 +3734,7 @@ const wheelHeld=()=>!!wheelLock&&performance.now()-wheelLock.at<WHEEL_RUN_MS;
 $("#main").addEventListener("wheel",e=>{const el=e.target.closest("#lane .lb");if(!el||S.ws!=="seq")return;const t=S.sel,s=+el.dataset.s,st=trk(t).steps[s],d=e.deltaY||(e.shiftKey?e.deltaX:0);
  if(!d||!st||st.off)return;e.preventDefault();const[pg,i]=S.lane.split("."),m=meta(t,pg,+i),mx=maxOf(m),now=performance.now(),key=t+"|"+S.lane+"|"+s;
  if(!wheelLock||wheelLock.key!==key||now-wheelLock.at>WHEEL_RUN_MS){commit();wheelLock={key}}wheelLock.at=now;clearTimeout(wheelEndT);wheelEndT=setTimeout(showHeld,WHEEL_RUN_MS+10);
- const had=S.locks.get(lkKey(t,S.lane))?.get(s),cur=had??getP(t,S.lane)??0,v=clamp(cur+(d<0?1:-1)*(e.shiftKey||mx<16?1:4),0,mx);if(had!=null&&v===had)return;
+ const had=S.locks.get(lkKey(t,S.lane))?.get(s),cur=had??getP(t,S.lane)??0,v=m.tab?tabStep(m.tab,cur,d<0?1:-1):clamp(cur+(d<0?1:-1)*(e.shiftKey||mx<16?1:4),0,mx);if(had!=null&&v===had)return;
  if(!setLock(t,S.lane,s,v))return;edit("lock",{t,...pidArgs(S.lane),s,v});renderTop();renderLane();toast(`${pidLabel(t,S.lane)} ${fmt(m,v)} · ${tLabel(t)}, step ${s+1}`)},{passive:false});
 
 /* ---- a ramp in the lock lane: ⇧-drag draws a straight line from the press to the pointer, shown as it moves; at
@@ -3748,6 +3823,17 @@ Keys.bind({id:"velocity",scope:"any",keys:["C","V"],group:"Playing",does:()=>`Ve
 /* ---- the selected track's keys, the all keys, the step gestures ---- */
 Keys.bind({id:"mute-track",scope:"any",keys:["M"],code:"KeyM",group:"Selected track",does:"Mute or unmute the selected track",when:kbOn,run:()=>muteSel()});
 Keys.bind({id:"mute-all",scope:"any",keys:["M"],code:"KeyM",mod:"alt",group:"All",does:"Mute every track; when none is audible, unmute every track",when:kbOn,run:()=>muteAllToggle()});
+/* I-036: with exactly one note selected (a click on it selects it), ↑ / ↓ change its pitch a semitone, ⇧ an octave: the
+   note's chord notes together, one undo step a press (the key's release commits). Without a note selected they stay the track move below. */
+function pitchSel(){const x=S.stepSel;if(!x||x.n!==1||S.ws!=="seq")return null;const tr=trk(x.t);let hit=-1,cnt=0;
+ for(let s=x.from;s<Math.min(x.to,S.len);s++){const st=tr.steps[s];if(st&&!st.off&&st.n?.length){cnt++;hit=s}}return cnt===1?{t:x.t,s:hit}:null}
+function pitchSelMove(d){const h=pitchSel();if(!h)return;const st=trk(h.t).steps[h.s],ns=st.n.map(n=>n+d);
+ if(ns.some(n=>n<0||n>127)){toast(`${tLabel(h.t)} step ${h.s+1}: ${noteName(d>0?127:0)} is as far as it goes.`);return}
+ st.n=ns;editStep(h.t,h.s);autoRange(h.t);rerenderSeq();toast(`${tLabel(h.t)} step ${h.s+1}: ${ns.map(noteName).join(" ")}`)}
+Keys.bind({id:"note-pitch",short:"Note ↑ / ↓",scope:"seq",keys:["ArrowUp","ArrowDown"],group:"Sequence",does:"One note selected (click it): its pitch a semitone up / down, one undo step a press. Anything else selected: the track move below",
+ when:()=>selKeys()&&!!pitchSel(),run:e=>pitchSelMove(e.key==="ArrowUp"?1:-1)});
+Keys.bind({id:"note-octave",short:"Note ⇧↑ / ⇧↓",scope:"seq",keys:["ArrowUp","ArrowDown"],mod:"shift",group:"Sequence",does:"One note selected: its pitch an octave up / down",
+ when:()=>selKeys()&&!!pitchSel(),run:e=>pitchSelMove(e.key==="ArrowUp"?12:-12)});
 Keys.bind({id:"track-prev-next",scope:"any",keys:["ArrowUp","ArrowDown"],group:"Selected track",does:"Select the previous / next track of the side shown (a focused value keeps ↑ / ↓ for itself). Sequence with selected steps: move the selection a track",
  when:()=>kbOn()&&$("#kpop").hidden&&S.ws!=="song",run:e=>{if(selKeys()){selMove(e.key==="ArrowDown"?1:-1,0);return}const sd=side(),i=sd.indexOf(S.sel);select(sd[((i<0?0:i)+(e.key==="ArrowDown"?1:5))%6])}});
 Keys.bind({id:"tap-tempo",scope:"any",keys:["B"],group:"Transport",does:"Tap tempo (the average of the last taps; T plays F♯ here).",when:kbOn,run:()=>tapTempo()});
@@ -4127,7 +4213,7 @@ const clipSize=()=>CLIP&&CLIP.rows?{tracks:CLIP.rows.length,length:CLIP.length}:
 /* ---- the operations (⌘C ⌘X ⌘V ⌘D Delete Enter, the drop, the step menu): each one undo step; the result's note says what was done ---- */
 const selArgs=x=>({t:x.t,n:x.n,from:x.from,to:x.to});
 function selCopy(){const x=selShown();if(!x)return false;CLIP=clipOf(x);edit("copySteps",selArgs(x));toast(`Copied ${selSay(x)}.`);return true}
-function selCut(){const x=selShown();if(!x)return false;CLIP=clipOf(x);const keep=selKeeps(x);edit("copySteps",selArgs(x));edit("clearSteps",selArgs(x));selKeep(keep);toast(`Cut ${selSay(x)}.`);return true}
+function selCut(){const x=selShown();if(!x)return false;CLIP=clipOf(x);edit("copySteps",selArgs(x));edit("clearSteps",selArgs(x));toast(`Cut ${selSay(x)}.`);return true}
 /* ⌘V at the selection: the copied block's first step on its first step and track */
 function selPaste(){const x=S.stepSel;if(!x)return false;const size=clipSize();
  if(!size){toast(Modifiers.say("Copy some steps first: ⌘-click or ⌘-drag steps, then ⌘C."));return true}
@@ -4140,7 +4226,8 @@ function selCopyTo(dt,at){const x=selShown();if(!x)return false;
  if(at>=S.len){toast(`No room: the pattern is ${S.len} steps.`);return true}
  edit("copyStepsTo",Object.assign(selArgs(x),{at,dt}));setSel(StepSel.landing({tracks:x.n,length:x.to-x.from},dt,at,SEL_TRACKS,S.len));return true}
 function selDuplicate(){const x=selShown();return x?selCopyTo(x.t,x.to):false}
-function selClear(){const x=selShown();if(!x)return false;const keep=selKeeps(x);edit("clearSteps",selArgs(x));selKeep(keep);return true}
+/* Delete / Clr / the step menu's Clear (I-037): the selected steps go (a NOTE OFF only when its own step is selected) and nothing is written; the earlier note runs on to the next trig or NOTE OFF, as on the machine */
+function selClear(){const x=selShown();if(!x)return false;edit("clearSteps",selArgs(x));return true}
 /* MM-201: the lane's parameter locked at its current value (the kit's) on every selected step of the lane's track that has a
    note (the machine: hold the TRIG key, click the knob, manual 1-57); one undo step */
 function lockCurrent(){const t=S.sel,x=S.stepSel,pid=S.lane;
@@ -4152,20 +4239,13 @@ function lockCurrent(){const t=S.sel,x=S.stepSel,pid=S.lane;
  const[pg,i]=pid.split("."),m=meta(t,pg,+i);renderTop();renderLane();toast(`${pidLabel(t,pid)} locked at ${fmt(m,v)} on ${n} step${n>1?"s":""} · ${tLabel(t)}`)}
 /* MM-083, MM-184, MM-203: the selected steps' locks go, their notes stay (the machine's CLEAR NOTE LOCKS, TRIG + PLAY) */
 function selClearLocks(){const x=selShown();if(!x)return false;edit("clearStepLocks",selArgs(x));return true}
-/* I-010: a note before the selection that ran into it keeps its length when the selection is cleared: a NOTE OFF on
-   the selection's first step with anything on it (where that note ended; on a MIDI track only when its LEN went that
-   far). Read before the clear, put down after it (a step intent of its own, in the same gesture: one undo step). */
-function selKeeps(x){const out=[];for(let t=x.t;t<x.t+x.n;t++){const tr=trk(t);let e=-1;for(let s=x.from;s<x.to;s++)if(tr.steps[s]){e=s;break}if(e<0)continue;
-  const p=MmRoll.before(tr.steps,S.len,x.from);if(p==null||p>=x.from&&p<x.to)continue;
-  if(isMidiT(t)){const v=midiLenOf(t,p);if(v<MmRoll.LEN_HOLD&&v/MmRoll.TICKS<=((e-p)%S.len+S.len)%S.len)continue}out.push([t,e])}return out}
-function selKeep(keep){for(const[t,e] of keep){trk(t).steps[e]={off:1};edit("step",{t,s:e,v:{off:true}})}}
 /* the selection moved (a drag of it): copied to step `at` of its tracks, then the steps it left cleared
-   (the note before it keeps its length, as on a clear); one undo step (the intents of one gesture) */
+   (no NOTE OFF written where it was: the earlier note runs on to the next trig or NOTE OFF, I-037); one undo step (the intents of one gesture) */
 function selMoveTo(at){const x=selShown();if(!x)return false;const n=x.to-x.from;if(at===x.from)return true;
  if(at>=S.len){toast(`No room: the pattern is ${S.len} steps.`);return true}
- const keep=selKeeps(x);edit("copyStepsTo",Object.assign(selArgs(x),{at,dt:x.t}));
+ edit("copyStepsTo",Object.assign(selArgs(x),{at,dt:x.t}));
  const a=at>x.from?x.from:Math.max(x.from,at+n),b=at>x.from?Math.min(x.to,at):x.to;
- if(b>a){edit("clearSteps",{t:x.t,n:x.n,from:a,to:b});selKeep(keep.filter(([,e])=>e>=a&&e<b))}
+ if(b>a){edit("clearSteps",{t:x.t,n:x.n,from:a,to:b})}
  setSel(StepSel.landing({tracks:x.n,length:n},x.t,at,SEL_TRACKS,S.len));toast(`Moved ${selSay(x)} to step ${at+1} (⌘Z undoes it).`);return true}
 /* the selection's steps of each track as one steps intent (rows), after f changed the view's steps */
 function selSteps(x,f){const rows=[];for(let t=x.t;t<x.t+x.n;t++){f(t,trk(t));rows.push(rangeRow(t,x.from,x.to))}edit("steps",{from:x.from,to:x.to,rows});renderTop();rerenderSeq()}
@@ -4188,6 +4268,14 @@ function selMark(kind){const x=selShown();if(!x)return false;const cells=[];
   selSteps(x,(t,tr)=>{if(isMidiT(t))return;for(let s=x.from;s<x.to;s++){const st=tr.steps[s];
    if(on){if(!st||st.off)tr.steps[s]={n:[lastNote(t,s)],a:0,f:0,l:0};else Object.assign(st,{a:0,f:0,l:0})}
    else if(stepKind(st)==="trigless"){tr.steps[s]=null;tr.slide.delete(s);clearStepLocks(t,s)}}});return true}
+ /* B-152: a pitchless trig (the machine's EXIT held on a trig, manual 1-59): the trig and its envelope trigs, no note of
+    its own (it plays the note before). On: a note loses its note (a trig with no envelope gets all three, else it would be
+    nothing), an empty step or a NOTE OFF becomes one; off (when every trig of the range is pitchless; empty steps do not count): it gets the track's last pitch back */
+ if(kind==="pitchless"){const syn=cells.filter(([t])=>!isMidiT(t));if(!syn.length){toast("A MIDI track has no pitchless trigs: its notes are its own.");return true}
+  const trigs=syn.filter(([,,st])=>hasTrig(st)),on=!trigs.length||trigs.some(([,,st])=>!isPitchless(st));
+  selSteps(x,(t,tr)=>{if(isMidiT(t))return;for(let s=x.from;s<x.to;s++){const st=tr.steps[s];
+   if(on){if(!st||st.off)tr.steps[s]={a:1,f:1,l:1};else{delete st.n;delete st.notrig;if(!st.a&&!st.f&&!st.l)Object.assign(st,{a:1,f:1,l:1})}}
+   else if(isPitchless(st))st.n=[lastNote(t,s)]}});return true}
  if(kind==="a"||kind==="f"||kind==="l"){const trigs=cells.filter(([t,,st])=>st&&!st.off&&!isMidiT(t));
   if(!trigs.length){toast("No synth trig there: the envelopes are a synth trig's.");return true}
   const on=trigs.some(([,,st])=>!st[kind]);selSteps(x,(t,tr)=>{for(const[nt,,st] of trigs)if(nt===t)st[kind]=on?1:0});return true}
@@ -4196,9 +4284,11 @@ function selMark(kind){const x=selShown();if(!x)return false;const cells=[];
   commit();rerenderSeq();return true}
  return false}
 /* what the step menu ticks: true when every selected step (of those it applies to) has the mark */
+const hasTrig=st=>!!st&&!st.off&&!st.notrig,isPitchless=st=>hasTrig(st)&&!st.n;
 function selHas(kind){const x=selShown();if(!x)return false;const c=[];for(let t=x.t;t<x.t+x.n;t++)for(let s=x.from;s<x.to;s++)c.push([t,s,trk(t).steps[s]]);
  if(kind==="noteoff")return c.every(([,,st])=>st?.off);
  if(kind==="trigless"){const y=c.filter(([t])=>!isMidiT(t));return y.length>0&&y.every(([,,st])=>stepKind(st)==="trigless")}
+ if(kind==="pitchless"){const y=c.filter(([t,,st])=>!isMidiT(t)&&hasTrig(st));return y.length>0&&y.every(([,,st])=>isPitchless(st))}
  if(kind==="slide")return c.every(([t,s])=>trk(t).slide.has(s));
  if(kind==="swing")return c.every(([t,s])=>trk(t).swing.has(s));
  const y=c.filter(([t,,st])=>st&&!st.off&&!isMidiT(t));return y.length>0&&y.every(([,,st])=>!!st[kind])}
@@ -4242,13 +4332,14 @@ function selGrow(ds){const x=S.stepSel;if(!x)return;setSel(StepSel.grown(x,ds,S.
 /* ===== the step menu (right-click a step in the roll; Ctrl-click on a Mac; the ⋯ key; the Menu key): every step and
    selection action with its key, the fill's home. On a selected step it acts on the selection, on another it selects
    that step first. The Monomachine's marks, ticked when every selected step has them: note on / off, NOTE OFF, a
-   trigless trig, the envelopes a trig fires (AMP, FILTER, LFO), slide, swing, and in the roll a chord note at the
+   trigless trig, a pitchless trig, the envelopes a trig fires (AMP, FILTER, LFO), slide, swing, and in the roll a chord note at the
    pitch; Clear locks after Clear. ===== */
 const keyOf=id=>StepSel.keyOf(Keys,id);
 function stepMenuItems(t,s,pitch){const x=S.stepSel,st=trk(t).steps[s],one=StepSel.one(x),midi=isMidiT(t);
  const marks=[{id:"sel-trigs",label:one?(st&&!st.off?"Note off":"Note on"):"Notes on / off",key:keyOf("sel-trigs"),run:()=>selTrigs()},
   {id:"step-note-off",label:"NOTE OFF",key:"",checked:selHas("noteoff"),run:()=>selMark("noteoff")},
   ...(midi?[]:[{id:"step-trigless",label:"Trigless trig (locks only)",key:"",checked:selHas("trigless"),run:()=>selMark("trigless")},
+   {id:"step-pitchless",label:"Pitchless trig (the note before)",key:"",checked:selHas("pitchless"),run:()=>selMark("pitchless")},
    {id:"step-env",label:"Envelopes",items:[["a","Amp"],["f","Filter"],["l","LFO"]].map(([k,n])=>({id:"step-env-"+k,label:n,key:"",checked:selHas(k),enabled:selHasTrig(),run:()=>selMark(k)}))}]),
   {id:"step-slide",label:"Slide",key:"",checked:selHas("slide"),run:()=>selMark("slide")},
   {id:"step-swing",label:"Swing",key:"",checked:selHas("swing"),run:()=>selMark("swing")},
@@ -4605,20 +4696,25 @@ ED.pulse={duty(){const m=trk(S.sel).m,p=sv("PW");return m==="SID-6581"?clamp(p/1
 ED.sidwave={draw(g,W,H){const w=sv("WAVE"),pw=sv("PW")/127,ink=cssv("--ink");grid(g,W,H);
   line(g,W,x=>{const p=(x/W*3)%1;const v=[1-4*Math.abs(p-.5),2*p-1,p<pw?1:-1,((p*7)%1<.5?1:-1)*(p<.5?1:.4),RND[Math.floor(x/3)%8]][w]??0;return H/2+4-v*(H/2-22)},ink,2);
   label(g,EN["SID-6581.WAVE"][w]+(sv("MOD")?" · "+EN["SID-6581.MOD"][sv("MOD")]+(sv("MSRC")?" from PRCH":" from MFRQ"):""))}};
-/* SWAVE-ENS / DPRO-DENS: the chord from one track, C plus PCH2-4 */
-ED.chord={draw(g,W,H){const ink=cssv("--ink"),offs=["PCH2","PCH3","PCH4"].map(p=>sv(p)).filter(v=>v).map(v=>v-64);const kw=(W-16)/15,y0=24,wh=H-30;let wx=8;grid(g,W,H);
-  for(let k=0;k<25;k++){if([1,3,6,8,10].includes(k%12))continue;g.strokeStyle=ink;g.lineWidth=1;g.strokeRect(wx+.5,y0+.5,kw-1,wh-1);if(k===0||offs.includes(k)){g.fillStyle=ink;g.beginPath();g.arc(wx+kw/2,y0+wh-10,4.5,0,7);g.fill()}wx+=kw}
-  wx=8;for(let k=0;k<25;k++){if(![1,3,6,8,10].includes(k%12)){wx+=kw;continue}g.fillStyle=ink;g.fillRect(wx-kw*.3,y0,kw*.6,wh*.58);if(offs.includes(k)){g.fillStyle=cssv("--scr");g.beginPath();g.arc(wx,y0+wh*.45,3.5,0,7);g.fill()}}
-  label(g,"C + "+(offs.length?offs.join(" "):"no other notes"))}};
-/* the ensemble's wave: saw through square to spikes (WAVE), PW mutates it; DPRO-DENS: one of the 64 waves */
+/* SWAVE-ENS / DPRO-DENS: the chord from one track, C plus PCH2-4 as the machine reads them (B-151: 40-data.js PCHTAB):
+   OFF no note, a semitone on its key, an interval ratio on its nearest key, marked with a ring. Two octaves, C in the middle */
+ED.chord={notes(){return["PCH2","PCH3","PCH4"].map(p=>tabAt(PCHTAB,sv(p))).filter(e=>e.r!=null).map(e=>({k:12+Math.round(e.r),ratio:pchRatio(e),t:e.t}))},
+ draw(g,W,H){const ink=cssv("--ink"),N=this.notes(),kw=(W-16)/15,y0=24,wh=H-30;let wx=8;grid(g,W,H);
+  const mark=(x,y,r,n,on,off)=>{const ring=n.some(o=>o.ratio)&&!n.some(o=>!o.ratio);g.beginPath();g.arc(x,y,r,0,7);if(ring){g.strokeStyle=on;g.lineWidth=1.5;g.stroke()}else{g.fillStyle=on;g.fill()}};
+  for(let k=0;k<25;k++){if([1,3,6,8,10].includes(k%12))continue;g.strokeStyle=ink;g.lineWidth=1;g.strokeRect(wx+.5,y0+.5,kw-1,wh-1);const n=N.filter(o=>o.k===k);if(k===12)mark(wx+kw/2,y0+wh-10,4.5,[{}],ink);else if(n.length)mark(wx+kw/2,y0+wh-10,4.5,n,ink);wx+=kw}
+  wx=8;for(let k=0;k<25;k++){if(![1,3,6,8,10].includes(k%12)){wx+=kw;continue}g.fillStyle=ink;g.fillRect(wx-kw*.3,y0,kw*.6,wh*.58);const n=N.filter(o=>o.k===k);if(n.length)mark(wx,y0+wh*.45,3.5,n,cssv("--scr"))}
+  label(g,"C + "+(N.length?N.map(o=>o.t).join(" "):"no other notes"))}};
+/* the ensemble's wave: saw through square to spikes (WAVE), PW mutates it; DPRO-DENS: one of the 64 waves, D01-D64 */
+/* a DigiPRO wave knob as the machine names it (B-150: 40-data.js WAVD, WAVS): {i: its index, t: D01 / S01} */
+const dpWave=n=>{const tab=TAB[trk(S.sel).m+"."+n];if(tab){const e=tabAt(tab,sv(n));return{i:e.r,t:e.t}}const i=clamp(sv(n),0,31);return{i,t:WAVS[i]}};
 ED.enswave={draw(g,W,H){const ink=cssv("--ink"),m=trk(S.sel).m;grid(g,W,H);
-  if(m==="DPRO-DENS"){const a=sv("WAVE");line(g,W,x=>H/2+4-wfDP(a,(x/W*2)%1)*(H/2-24),ink,2);label(g,"wave "+(a+1));return}
+  if(m==="DPRO-DENS"){const a=dpWave("WAVE");line(g,W,x=>H/2+4-wfDP(a.i,(x/W*2)%1)*(H/2-24),ink,2);label(g,"wave "+a.t);return}
   const w=sv("WAVE")/127,pw=.5+(sv("PW")-64)/140;railDraw(g,W,H);
   line(g,W,x=>{const p=(x/W*2)%1,saw=1-2*p,sq=p<pw?1:-1,spk=p<.08?1:-.25;const v=w<.5?saw+(sq-saw)*w*2:sq+(spk-sq)*(w-.5)*2;return H/2+2-v*(H/2-24)},ink,2);label(g,w<.35?"saw":w<.65?"square":"spikes")},
  handles(W,H){return trk(S.sel).m==="DPRO-DENS"?[]:[railH(W,H,"SYN","WAVE")]}};
-/* DPRO-WAVE: WAVE morphing into the next at WP; DPRO-DDRW: two waves mixed (MIX) */
-ED.morph={draw(g,W,H){const m=trk(S.sel).m,dd=m==="DPRO-DDRW",a=dd?sv("WAV1"):sv("WAVE"),b=dd?sv("WAV2"):(a+1)%32,mix=(dd?sv("MIX"):sv("WP"))/127,ink=cssv("--ink");grid(g,W,H);
-  line(g,W,x=>{const p=(x/W*2)%1;return H/2+4-((1-mix)*wfDP(a,p)+mix*wfDP(b,p))*(H/2-24)},ink,2);label(g,dd?`wave ${a+1} ↔ ${b+1} · mix ${sv("MIX")}`:`wave ${a+1} → ${b+1}${sv("WPM")?" · sweeps":""}`)},
+/* DPRO-WAVE: WAVE (S01-S32) morphing into the next at WP; DPRO-DDRW: two waves (D01-D64) mixed (MIX) */
+ED.morph={draw(g,W,H){const m=trk(S.sel).m,dd=m==="DPRO-DDRW",a=dpWave(dd?"WAV1":"WAVE"),b=dd?dpWave("WAV2"):{i:(a.i+1)%32,t:WAVS[(a.i+1)%32]},bi=b.i,mix=(dd?sv("MIX"):sv("WP"))/127,ink=cssv("--ink");grid(g,W,H);
+  line(g,W,x=>{const p=(x/W*2)%1;return H/2+4-((1-mix)*wfDP(a.i,p)+mix*wfDP(bi,p))*(H/2-24)},ink,2);label(g,dd?`${a.t} ↔ ${b.t} · mix ${sv("MIX")}`:`${a.t} → ${b.t}${sv("WPM")?" · sweeps":""}`)},
  handles(W,H){const dd=trk(S.sel).m==="DPRO-DDRW";return[{x:u7(sv(dd?"MIX":"WP"))*W,y:20,k:dd?"MIX":"WP",drag:x=>sset(dd?"MIX":"WP",x/W*127)}]}};
 /* DPRO-BBOX: one hit, from STRT on (the key picks the drum) */
 ED.drum={draw(g,W,H){const ink=cssv("--ink"),s0=u7(sv("STRT"))*.5,f=.6+u7(sv("PTCH"))*1.2;grid(g,W,H);railDraw(g,W,H);
@@ -4629,11 +4725,14 @@ ED.rtrg={geo(W){const n=sv("RTRG"),dt=(6+u7(sv("RTIM"))*(W*.3));return{n:n>=127?
  draw(g,W,H){const G=this.geo(W),ink=cssv("--ink");grid(g,W,H);railDraw(g,W,H);for(let k=0;k<=G.n;k++){const x=10+k*G.dt;if(x>W-4)break;const h=(H-38)*Math.pow(.86,k);g.fillStyle=ink;g.fillRect(x,H-14-h,3,h)}
   label(g,G.n?(sv("RTRG")>=127?"retrigs on and on":G.n+" retrig"+(G.n>1?"s":"")):"one hit")},
  handles(W,H){const G=this.geo(W);return[{x:10+G.dt,y:H-14-(H-38)*.86,k:"RTIM",drag:x=>sset("RTIM",(x-16)/(W*.3)*127)},railH(W,H,"SYN","RTRG")]}};
-/* FM+: one block: the carrier moved by its modulator; dot = the modulator's frequency (sideways) and level (up) */
+/* FM+: one block: the carrier moved by its modulator; dot = the modulator's frequency (sideways) and level (up). The
+   frequency is the machine's (B-149: 40-data.js FMFRQ, FMDYN1, FMDYN2): the label writes it as the LCD does, the
+   modulator turns at that ratio to the carrier */
 ED.fm={ks(c){const k=ck(c);return{f:k.find(n=>/FRQ$/.test(n)),a:k.find(n=>/(ENV|VOL)$/.test(n)&&!/VEN$/.test(n)),fb:k.find(n=>/FB$/.test(n))}},
- draw(g,W,H,c){const K=this.ks(c),ink=cssv("--ink"),r=.5+u7(sv(K.f))*6,I=(K.a?u7(sv(K.a)):.5)*4,fb=K.fb?u7(sv(K.fb)):0;grid(g,W,H);
+ frq(n){const tab=TAB[trk(S.sel).m+"."+n],e=tab?tabAt(tab,sv(n)):null;return e?{r:e.r,t:e.t}:{r:1,t:"1"}},
+ draw(g,W,H,c){const K=this.ks(c),ink=cssv("--ink"),F=this.frq(K.f),r=F.r,I=(K.a?u7(sv(K.a)):.5)*4,fb=K.fb?u7(sv(K.fb)):0;grid(g,W,H);
   line(g,W,x=>{const p=x/W*2;return H/2+4-Math.sin(p*6.283*r)*(K.a?u7(sv(K.a)):.5)*(H/2-26)*.5},inkA(.4),1.2,[2,3]);
-  line(g,W,x=>{const p=x/W*2,mod=Math.sin(p*6.283*r+fb*Math.sin(p*6.283*r));return H/2+4-Math.sin(p*6.283+I*mod)*(H/2-24)},ink,2);label(g,`ratio ${r.toFixed(1)}${fb?" · feedback":""}`)},
+  line(g,W,x=>{const p=x/W*2,mod=Math.sin(p*6.283*r+fb*Math.sin(p*6.283*r));return H/2+4-Math.sin(p*6.283+I*mod)*(H/2-24)},ink,2);label(g,`${K.f} ${F.t}${fb?" · feedback":""}`)},
  handles(W,H,c){const K=this.ks(c);return K.f?[{x:u7(sv(K.f))*W,y:K.a?H-8-u7(sv(K.a))*(H-28):H/2,k:K.a?K.f+" · "+K.a:K.f,drag:(x,y)=>{sset(K.f,x/W*127);if(K.a)sset(K.a,(H-8-y)/(H-28)*127)}}]:[]}};
 /* VO-6: the vowel map (VOC1 across, VOC2 up) with the tutorial's points */
 ED.vowel={draw(g,W,H){const P=[["O",35,5],["A",127,60],["I",40,110],["E",80,100],["U",10,30]];grid(g,W,H);g.font="10px Silkscreen, monospace";
@@ -4677,13 +4776,18 @@ ED.dist={k(){return(kget("AMP","DIST")-64)/63},
 ED.pan={draw(g,W,H){const ink=cssv("--ink");grid(g,W,H);g.font=SFONT;g.fillStyle=ink;g.fillText("L",6,H-6);g.fillText("R",W-12,H-6);g.fillStyle=inkA(.5);g.fillRect(W/2,20,1,H-30);
   const p=kget("AMP","PAN")-64;label(g,p?(p<0?"left "+(-p):"right "+p):"centre")},
  handles(W,H){return[{x:10+u7(kget("AMP","PAN"))*(W-20),y:H-10-u7(kget("AMP","VOL"))*(H-34),k:"PAN · VOL",drag:(x,y)=>{kset("AMP","PAN",(x-10)/(W-20)*127);kset("AMP","VOL",(H-10-y)/(H-34)*127)}}]}};
-/* FILTER ATK DEC: the filter's own envelope; BOFS lifts the base (solid), WOFS the width (dashed) */
+/* FILTER ATK DEC: the filter's own envelope; BOFS moves the base (solid), WOFS the width (dashed). Both are signed
+   (B-148: -64 to +63, 64 = no sweep): up from the middle line for a positive offset, down for a negative one */
 ED.fenv={seg(W){const f=V("FLT");return{a:f[4]/127*W*.3,d:f[5]/127*W*.6}},
- draw(g,W,H){const f=V("FLT"),s=this.seg(W),T=22,B=H-10,ink=cssv("--ink");grid(g,W,H);
+ geo(H){const T=22,B=H-10;return{M:(T+B)/2,A:(B-T)/2}},
+ off:v=>(v-64)/64,
+ draw(g,W,H){const f=V("FLT"),s=this.seg(W),G=this.geo(H),ink=cssv("--ink"),bo=this.off(f[6]),wo=this.off(f[7]);grid(g,W,H);
   const env=x=>x<s.a?x/Math.max(1,s.a):Math.exp(-3*(x-s.a)/Math.max(4,s.d));
-  line(g,W,x=>B-env(x)*(B-T)*Math.max(.04,f[6]/127),ink,2.2);if(f[7])line(g,W,x=>B-env(x)*(B-T)*f[7]/127,inkA(.6),1.5,[5,4]);label(g,f[6]||f[7]?"solid = base · dashed = width":"no offset: the envelope does nothing")},
- handles(W,H){const s=this.seg(W),f=V("FLT"),T=22,B=H-10;return[{x:Math.max(5,s.a),y:B-(B-T)*Math.max(.04,f[6]/127),k:"ATK · BOFS",drag:(x,y)=>{f[4]=clamp(Math.round(x/(W*.3)*127));f[6]=clamp(Math.round((B-y)/(B-T)*127))}},
-  {x:s.a+Math.max(4,s.d)*.35,y:B-(B-T)*Math.max(.04,f[6]/127)*Math.exp(-1.05),k:"DEC",drag:x=>f[5]=clamp(Math.round((x-s.a)/.35/(W*.6)*127))}]}};
+  g.strokeStyle=inkA(.3);g.lineWidth=1;g.beginPath();g.moveTo(0,G.M+.5);g.lineTo(W,G.M+.5);g.stroke();
+  line(g,W,x=>G.M-env(x)*G.A*bo,ink,2.2);if(wo)line(g,W,x=>G.M-env(x)*G.A*wo,inkA(.6),1.5,[5,4]);
+  label(g,bo||wo?"solid = base · dashed = width":"no offset: the envelope does nothing")},
+ handles(W,H){const s=this.seg(W),f=V("FLT"),G=this.geo(H),bo=this.off(f[6]);return[{x:Math.max(5,s.a),y:G.M-G.A*bo,k:"ATK · BOFS",drag:(x,y)=>{f[4]=clamp(Math.round(x/(W*.3)*127));f[6]=clamp(Math.round(64+(G.M-y)/G.A*64))}},
+  {x:s.a+Math.max(4,s.d)*.35,y:G.M-G.A*bo*Math.exp(-1.05),k:"DEC",drag:x=>f[5]=clamp(Math.round((x-s.a)/.35/(W*.6)*127))}]}};
 /* EFFECTS EQF EQG: one band, boosted (up) or cut (down) */
 ED.eq={draw(g,W,H){const e=V("EFX"),mid=H/2+4;grid(g,W,H);line(g,W,x=>mid-(e[1]-64)/64*(mid-22)*Math.exp(-Math.pow((x/W-e[0]/127)*8,2)),cssv("--ink"),2);label(g,e[1]===64?"flat":e[1]>64?"boost":"cut")},
  handles(W,H){const e=V("EFX"),mid=H/2+4;return[{x:e[0]/127*W,y:mid-(e[1]-64)/64*(mid-22),k:"EQF · EQG",drag:(x,y)=>{e[0]=clamp(Math.round(x/W*127));e[1]=clamp(Math.round(64+(mid-y)/(mid-22)*64))}}]}};
@@ -4716,9 +4820,10 @@ ED.amp={geo(W,H,c){const e=ampTimes(V("AMP"))||{at:0,ho:0,de:Infinity,re:Infinit
   return[{x:Math.max(5,G.X(e.at)),y:G.Y(1),k:"ATK",drag:x=>set(0,ampValue("attack",G.S(x)))},{x:G.X(e.at+e.ho),y:G.Y(1)+8,k:"HOLD",drag:x=>set(1,ampValue("hold",G.S(x)-e.at))},
    {x:G.inf?Math.min(W-5,G.X(G.off)):G.X(e.at+e.ho+e.de),y:G.Y(G.inf?1:.1),k:"DEC",drag:x=>set(2,x>=W-3?127:Math.min(126,ampValue("fall",G.S(x)-e.at-e.ho)))},
    {x:G.rinf?W-5:G.X(G.off+e.re),y:G.Y(G.rinf?1:.1),k:"REL",drag:x=>set(3,x>=W-3?127:Math.min(126,ampValue("fall",G.S(x)-G.off)))}]}};
-ED.flt={resp(u,env){const f=V("FLT"),b=Math.min(1,(f[0]+(env?f[6]:0))/127),w=(f[1]+(env?f[7]:0))/127,lp=Math.min(1,b+w);let d=0;if(u<b)d-=Math.pow((b-u)*7,2);if(u>lp)d-=Math.pow((u-lp)*7,2);d+=f[2]/127*1.6*Math.exp(-Math.pow((u-b)*26,2))+f[3]/127*1.6*Math.exp(-Math.pow((u-lp)*26,2));return d},
- draw(g,W,H){grid(g,W,H);const f=V("FLT"),A=S.sel<6?trk(S.sel).assign:null;if(f[6]||f[7])line(g,W,x=>clamp(H/2+8-this.resp(x/W,1)*(H/4),6,H-6),inkA(.55),1.5,[5,4]);line(g,W,x=>clamp(H/2+8-this.resp(x/W)*(H/4),6,H-6),cssv("--ink"),2.2);
-  const fixed=!A||A.hpf&&A.lpf?"":!A.hpf&&!A.lpf?" · fixed: no key tracking":!A.hpf?" · HPF fixed":" · LPF fixed";label(g,"base + width"+(fixed||(f[6]||f[7]?" · dashed = env peak":"")))},
+/* the dashed curve: the envelope at its peak, BASE and WDTH moved by the signed BOFS and WOFS (B-148: 64 = no sweep) */
+ED.flt={resp(u,env){const f=V("FLT"),b=clamp((f[0]+(env?f[6]-64:0))/127,0,1),w=Math.max(0,(f[1]+(env?f[7]-64:0))/127),lp=Math.min(1,b+w);let d=0;if(u<b)d-=Math.pow((b-u)*7,2);if(u>lp)d-=Math.pow((u-lp)*7,2);d+=f[2]/127*1.6*Math.exp(-Math.pow((u-b)*26,2))+f[3]/127*1.6*Math.exp(-Math.pow((u-lp)*26,2));return d},
+ draw(g,W,H){grid(g,W,H);const f=V("FLT"),A=S.sel<6?trk(S.sel).assign:null;if(f[6]!==64||f[7]!==64)line(g,W,x=>clamp(H/2+8-this.resp(x/W,1)*(H/4),6,H-6),inkA(.55),1.5,[5,4]);line(g,W,x=>clamp(H/2+8-this.resp(x/W)*(H/4),6,H-6),cssv("--ink"),2.2);
+  const fixed=!A||A.hpf&&A.lpf?"":!A.hpf&&!A.lpf?" · fixed: no key tracking":!A.hpf?" · HPF fixed":" · LPF fixed";label(g,"base + width"+(fixed||(f[6]!==64||f[7]!==64?" · dashed = env peak":"")))},
  handles(W,H){const f=V("FLT"),b=f[0]/127,lp=Math.min(1,b+f[1]/127),yy=u=>clamp(H/2+8-this.resp(u)*(H/4),6,H-6);
   return[{x:Math.max(6,b*W),y:yy(b),k:"BASE · HPQ",drag:(x,y)=>{f[0]=clamp(Math.round(x/W*127));f[2]=clamp(Math.round((H/2+8-y)/(H/2)*127))}},{x:Math.min(W-6,lp*W),y:yy(lp),k:"WDTH · LPQ",drag:(x,y)=>{f[1]=clamp(Math.round((x/W-f[0]/127)*127));f[3]=clamp(Math.round((H/2+8-y)/(H/2)*127))}}]}};
 function lfoCycle(v){const m=Math.pow(2,v[4]);return v[5]?2048/(v[5]*m):Infinity}
@@ -4736,7 +4841,7 @@ const SND_TIP={uni:"The base saw (middle) and the unison pair either side: UNIW 
  sub:"The subs below the base (faint): SUB1 a sine one octave down, SUB2 two, SUBX a square one octave down. Drag a bar's top.",
  pulse:"Two cycles of the pulse: PW its width (SWAVE: 0 = square, either end a spike), dashed the PWAD sweep. The dot on the rail is PW.",
  sidwave:"The SID's waveform at PW; the modulation (RING, SYNC) and where its second frequency comes from in the title.",
- chord:"The notes one trig plays: C, and PCH2-4 semitones above it. Lock PCH2-4 per step to change chord.",
+ chord:"The notes one trig plays: C, and PCH2-4 up or down from it: OFF, -12 to +12 semitones, or an interval (2/3 to 3/2, a ring on the nearest key). Lock PCH2-4 per step to change chord.",
  enswave:"The ensemble's wave: WAVE from saw through square to spikes (the rail), PW mutates it.",
  morph:"Two cycles of the wave: WP morphs it into the next one (DPRO-DDRW: MIX blends WAV1 and WAV2). Drag the dot sideways.",
  drum:"One hit from STRT on (the rail); the key picks which of the 24 drums plays.",
@@ -4754,7 +4859,7 @@ const SND_TIP={uni:"The base saw (middle) and the unison pair either side: UNIW 
  dist:"Distortion, in to out (dashed = clean). Drag the dot up or down.",
  pan:"The track in the stereo field: PAN sideways, VOL up. Drag the dot.",
  flt:"The 24 dB gap filter: BASE is the high-pass, WDTH the gap to the low-pass, the dots up for HPQ and LPQ. Dashed: where the envelope takes it. Both follow the note unless KEY (Perform › Assign › KEY) switches one off: the label then says which is fixed.",
- fenv:"The filter's own envelope: ATK, DEC; BOFS how far it lifts the base (solid, up), WOFS the width (dashed). Drag the dots.",
+ fenv:"The filter's own envelope: ATK, DEC; BOFS how far it moves the base (solid), WOFS the width (dashed), -64 to +63: up for +, down for -, 0 none. Drag the dots.",
  eq:"One EQ band: EQF moves it, EQG boosts (up) or cuts (down). Drag the dot.",
  srr:"Sample-rate reduction: more SRR, longer held steps (the rail).",
  delay:"The repeats over one bar: DTIM apart (in 256ths: 64 = a beat), DSND how loud (below 0 keeps stereo, above ping-pongs), DFB how much each keeps.",
@@ -6028,11 +6133,11 @@ const ValueBox={range:el=>[0,maxOf(ref(el)[2])],
  find:el=>$("#main")?.querySelector(Object.entries(el.dataset).filter(([k])=>["g","n","t","i","src","li"].includes(k)).map(([k,v])=>`[data-${k}="${CSS.escape(v)}"]`).join(""))||null,
  say:t=>toast(t)};
 main.addEventListener("wheel",e=>{
- const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el){e.preventDefault();const d=(e.deltaY||e.deltaX)<0?1:-1;setV(el,getV(el)+d*(e.shiftKey?10:1));return}
+ const el=e.target.closest(".pc[data-g],.fader[data-g]");if(el){e.preventDefault();const d=(e.deltaY||e.deltaX)<0?1:-1;stepV(el,d*(e.shiftKey?10:1));return}
  const st=e.target.closest(".mst");if(st){const t=+st.dataset.t,s=+st.dataset.s,x=trk(t).steps[s];if(!x?.n)return;e.preventDefault();const d=((e.deltaY||e.deltaX)<0?1:-1)*(e.shiftKey?12:1);x.n=x.n.map(n=>clamp(n+d));editStep(t,s);refreshRow(t);return}
  const roll=e.target.closest("canvas.roll[data-big]");if(roll){e.preventDefault();const t=+roll.dataset.t;S.rollLoT[t]=clamp((S.rollLoT[t]??S.rollLo)+((e.deltaY)<0?1:-1)*(e.shiftKey?12:2),0,127-ROWS);redraw()}},{passive:false});
 main.addEventListener("dblclick",e=>{const el=e.target.closest(".pc[data-g]");if(el&&!ValueEdit.isOpenClick(e)){const m=ref(el)[2];setV(el,m.def??(m.en?0:64))}});
-main.addEventListener("keydown",e=>{const el=e.target.closest("[data-g]");if(!el)return;if(e.key==="Enter"&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&el.matches(".pc,.fader")){e.preventDefault();ValueEdit.open(el,ValueBox);return}const d={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1,PageUp:10,PageDown:-10}[e.key];if(d==null)return;e.preventDefault();setV(el,getV(el)+d*(e.shiftKey?10:1))});
+main.addEventListener("keydown",e=>{const el=e.target.closest("[data-g]");if(!el)return;if(e.key==="Enter"&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&el.matches(".pc,.fader")){e.preventDefault();ValueEdit.open(el,ValueBox);return}const d={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1,PageUp:10,PageDown:-10}[e.key];if(d==null)return;e.preventDefault();stepV(el,d*(e.shiftKey?10:1))});
 
 /* ===== Clicks ===== */
 function autoRange(t){const ns=trk(t).steps.flatMap(x=>x?.n||[]);if(!ns.length)return;const lo=Math.min(...ns),hi=Math.max(...ns),cur=S.rollLoT[t];if(cur==null||lo<cur||hi>cur+ROWS-1)S.rollLoT[t]=clamp(Math.round((lo+hi)/2)-Math.floor(ROWS/2),0,127-ROWS)}
@@ -6165,7 +6270,8 @@ Keys.bind({id:"mkey-prepare",scope:"any",area:"Tracks",keys:["M key"],mod:"shift
 Keys.bind({id:"ms-paint",scope:"any",area:"Tracks",keys:["drag M / S keys"],group:"Anywhere",does:"Mute (solo) or unmute every track the drag crosses, as the first key became"});
 Keys.bind({id:"roll-chord",scope:"seq",area:"Roll",keys:["roll"],mod:"shift",group:"Sequence",does:"Click: a chord note on the step"});
 Keys.bind({id:"roll-paint",scope:"seq",area:"Roll",keys:["roll"],group:"Sequence",does:"Click an empty step: a note there, as long as the Len key says; drag it up or down for its pitch, sideways to paint that note on every empty step crossed (the last one as long as the Len key says; one undo step)."});
-Keys.bind({id:"roll-erase",scope:"seq",area:"Roll",keys:["roll"],mod:"alt",group:"Sequence",does:"Click: delete a note, the note before it keeps its length (drag on: every step crossed loses its notes, one undo step), or a NOTE OFF on an empty step"});
+Keys.bind({id:"roll-erase",scope:"seq",area:"Roll",keys:["roll"],mod:"alt",group:"Sequence",does:"Click: delete a note, the earlier note runs on to the next trig or NOTE OFF, as on the machine; no NOTE OFF is written or taken away (drag on: every step crossed loses its notes, one undo step), or a NOTE OFF on an empty step"});
+Keys.bind({id:"roll-select-note",scope:"seq",area:"Roll",keys:["note"],group:"Sequence",does:"Click a note: select it (it stays selected: ↑ / ↓ its pitch, ⇧ an octave, Delete removes it). Double-click: delete it (one undo step)"});
 Keys.bind({id:"lane-draw",scope:"seq",area:"Lock lane",keys:["lock lane"],group:"Sequence",does:"Drag over the bars: lock the lane's parameter on each step with a trig"});
 Keys.bind({id:"lane-erase",scope:"seq",area:"Lock lane",keys:["lock lane"],mod:"alt",group:"Sequence",does:"Drag: erase locks"});
 Keys.bind({id:"lane-clear-all",scope:"seq",area:"Lock lane",keys:["lock lane clear"],mod:"alt",group:"Sequence",does:"Click: clear every lock of the track (all its parameters)"});

@@ -20,16 +20,16 @@
    as an import of the slots it clears (Syx.reset).
      Syx.preview(m)        {type:"syxPreview", ok, text, file, model, fullBackup, items:{kind:[{slot,from?,name,kit?,overwrites,plays,format,
                             readable}]}, skipped, skippedCount, messages, place?, reset?, running?}
-     Syx.progress(m)       {type:"syxProgress", phase, done, total, running, text, check?, report?:{taken, converted, ignored, differs,
+     Syx.progress(m)       {type:"syxProgress", phase, done, total, running, text, check?, readBack, report?:{taken, converted, ignored, differs,
                             changed, unknown, "no reply", commands, unsent, items:[{kind, slot, name, outcome, text}]} (check: same, differs,
-                            unknown, "no reply")}
+                            unknown, "no reply"); readBack false (I-038): the report is {readBack:false, sent, commands, unsent, items:[]}}
      Syx.exported(m)       {type:"syxExport", ok, running?, text}
      Syx.exportInfo(m)     {type:"syxExportInfo", model, kinds:{kind:{slots, held, used, first, last}}}
      Syx.resetNews(m)      {type:"syxReset", phase, done, total, text}: a factory reset being prepared
      Syx.openExport()      the export panel (the engine menu's EXPORT SYSEX…)
      Syx.reset()           Reset machine…: the question (the engine menu's RESET MACHINE…)
      Syx.menu(value)       an engine menu entry of the panel's (import, export, reset): true when it was one
-     Syx.host = {choose(), start(kinds, skip, {placeAt, checkOnly}), stop(), place(placeAt), exportInfo(), exportSave({kinds?, ranges?}),
+     Syx.host = {choose(), start(kinds, skip, {placeAt, checkOnly, readBack}), stop(), place(placeAt), exportInfo(), exportSave({kinds?, ranges?}),
                  reset(how), ask(html, keys), say(text), machine, factory, memory(), factoryMemory()}   the app's host (machine:
                  its name; factory: it has a factory reset; I-024: memory() the plug-in's machineMemory, factoryMemory() start
                  from factory memory, a third choice of Reset machine… where memory().available)
@@ -82,6 +82,12 @@ const Syx = (() => {
 	function outcomes(picked, report) {
 		const out = new Map(), listed = new Map((report?.items || []).map(i => [key(i.kind, i.slot), i]));
 		const slots = picked.filter(p => p.kind !== "other"), ok = report?.check ? "same" : "taken";
+		/* I-038: read back off: nothing was compared; each item says what went (sent, partly sent, not sent), an item the
+		   report does not name is unclear, and a command (other) is sent */
+		if (report?.readBack === false) {
+			for (const p of picked) { const l = listed.get(key(p.kind, p.slot)); out.set(key(p.kind, p.slot), p.kind === "other" ? { outcome: "sent" } : l ? { outcome: l.outcome, text: l.text } : { outcome: "unclear" }); }
+			return out;
+		}
 		const whole = (report?.[ok] || 0) + listed.size === slots.length;
 		for (const p of picked) {
 			const id = key(p.kind, p.slot), l = listed.get(id);
@@ -123,8 +129,15 @@ const Syx = (() => {
 			+ (kinds.wave?.on ? ". The waveforms are read from the machine first (an empty one answers nothing)." : ".");
 	}
 	const OUTCOME = { taken: ["taken", "✓"], converted: ["converted", "≈"], ignored: ["ignored", "✕"], differs: ["different", "≠"], changed: ["not comparable", "~"],
-		unknown: ["not comparable", "~"], "no reply": ["no answer", "?"], unclear: ["not known", "?"], sent: ["sent", "→"], same: ["the same as the file", "="] };
+		unknown: ["not comparable", "~"], "no reply": ["no answer", "?"], unclear: ["not known", "?"], sent: ["sent", "→"], "partly sent": ["partly sent", "~"], "not sent": ["not sent", "✕"], same: ["the same as the file", "="] };
 	const problem = o => o !== "taken" && o !== "sent" && o !== "same";
+	/* I-038: "Read back and compare", beside Verify only in the import footer; on by default. A person's preference, not the
+	   project's (the editor's setup, MDSK, is what a DAW project restores): kept in the page's storage, as the transport's
+	   delayed start; a blocked storage means on. */
+	const RB_KEY = "deskSyx.readBack";
+	function readBackLoad(store) { try { return (store || localStorage).getItem(RB_KEY) !== "0"; } catch (_) { return true; } }
+	function readBackSave(on, store) { try { (store || localStorage).setItem(RB_KEY, on ? "1" : "0"); } catch (_) { } }
+	const readBackTick = on => `<label class="syxrb" title="After sending, read every slot back and compare it with the file. Off: the import ends when the messages are sent and the report says so."><input type="checkbox" data-syxrb${on ? " checked" : ""}> Read back and compare</label>`;
 	/* the footer's one line before the import */
 	function footLine(t) {
 		if (!t.n) return "Nothing chosen.";
@@ -143,7 +156,7 @@ const Syx = (() => {
 		const all = kp.done >= kp.total;
 		return { text: `${all ? "✓ " : ""}${verb} ${kp.done} of ${kp.total}`, pct: Math.round(kp.done / kp.total * 100) };
 	}
-	const model = { KINDS, OFF, slotLabel, capacity, layout, kindSums, toggleRange, outcomes, footLine, kindLine, OUTCOME, placeFirst, EXPORT_KINDS, rangeLabel,
+	const model = { readBackLoad, readBackSave, readBackTick, KINDS, OFF, slotLabel, capacity, layout, kindSums, toggleRange, outcomes, footLine, kindLine, OUTCOME, placeFirst, EXPORT_KINDS, rangeLabel,
 		exportDefaults, exportRequest, exportLine };
 
 	/* ---- the panel ---- */
@@ -153,6 +166,7 @@ const Syx = (() => {
 	document.body.appendChild(pop);
 	let last = null, state = "idle", tab = null, anchor = null, problemsOnly = true, steps = [], rep = null, picks = [], res = new Map(), follow = true;
 	let skip = new Set();
+	let readBack = readBackLoad();
 	const on = {};	// kind -> ticked
 	/* 0.6: what the panel shows (import or export), the import's PLACE (each kind's first slot) and the export's choices */
 	let mode = "import", placing = false, placeT = 0, placeW = 0, placeAsked = 0, placeQueued = false;
@@ -205,6 +219,7 @@ const Syx = (() => {
 			const mine = picks.filter(p => p.kind === k), bad = mine.filter(p => problem(res.get(key(k, p.slot))?.outcome)).length;
 			if (!mine.length) return { text: "not sent", bad: 0 };
 			if (k === "other") return { text: `${mine.length} sent`, bad: 0 };
+			if (rep?.report?.readBack === false) { const n = mine.length - bad; return { text: `${n} sent${bad ? ` · ${bad} not (all) sent` : ""} · not read back`, bad }; }
 			if (rep?.report?.check) return { text: `${mine.length - bad} the same${bad ? ` · ${bad} different or unread` : ""}`, bad };
 			return { text: `${mine.length - bad} taken${bad ? ` · ${bad} problem${bad > 1 ? "s" : ""}` : ""}`, bad };
 		}
@@ -223,7 +238,8 @@ const Syx = (() => {
 	function tools() {
 		if (state === "report") {
 			const bad = [...res.values()].filter(r => problem(r.outcome)).length;
-			const leg = rep?.report?.check ? `<i class="lg">=</i>the same as the file <i class="lg bad">≠</i>different <i class="lg bad">?</i>no answer`
+			const leg = rep?.report?.readBack === false ? `<i class="lg">→</i>sent, not read back`
+				: rep?.report?.check ? `<i class="lg">=</i>the same as the file <i class="lg bad">≠</i>different <i class="lg bad">?</i>no answer`
 				: `<i class="lg">✓</i>taken as in the file <i class="lg bad">≈</i>converted <i class="lg bad">✕</i>ignored <i class="lg bad">≠</i>different`;
 			return `<div class="syxtools"><label class="syxfilt"><input type="checkbox" data-syxgo="problems"${problemsOnly && bad ? " checked" : ""}${bad ? "" : " disabled"}> Show problems only</label>
 				<span class="syxleg">${leg}</span></div>`;
@@ -233,7 +249,7 @@ const Syx = (() => {
 	}
 	function problems() {
 		const rows = picks.map(p => ({ p, r: res.get(key(p.kind, p.slot)) })).filter(x => x.r && problem(x.r.outcome));
-		if (!rows.length) return `<p class="syxnote">Every item as in the file.</p>`;
+		if (!rows.length) return `<p class="syxnote">${rep?.report?.readBack === false ? "Not read back: nothing was compared with the file." : "Every item as in the file."}</p>`;
 		return `<div class="syxlist">${rows.map(({ p, r }) => `<div class="syxli" data-syxitem="${esc(key(p.kind, p.slot))}" data-syxout="${esc(r.outcome)}"><b>${slotLabel(p.kind, p.slot)}</b><span class="nm">${esc(p.name || "")}</span><span class="tag">${esc(OUTCOME[r.outcome]?.[0] || r.outcome)}</span><span class="why">${esc(r.text || "")}</span></div>`).join("")}</div>`;
 	}
 	function foot() {
@@ -241,7 +257,7 @@ const Syx = (() => {
 		if (state === "running") return `<div class="syxfoot"><div class="syxmsg"><div class="syxsteps"></div><div class="syxbar"><i></i><span></span></div></div><div class="btnrow"><button type="button" data-syxgo="close">Hide</button><button type="button" data-syxgo="stop">Stop</button></div></div>`;
 		const skipped = last.skippedCount ? `<details class="syxprob"><summary>${last.skippedCount} message${last.skippedCount > 1 ? "s" : ""} cannot be sent</summary>${(last.skipped || []).map(p => `<div>${esc(p)}</div>`).join("")}</details>` : "";
 		const verify = hostHas("start") ? `<button type="button" data-syxgo="verify" title="Read the slots the items land in and compare them with the file; nothing is written">Verify only</button>` : "";
-		return `<div class="syxfoot"><div class="syxmsg"><p class="syxwarn"></p>${skipped}</div><div class="btnrow"><button type="button" data-syxgo="close">Cancel</button>${verify}<button type="button" class="go" data-syxgo="start">Import</button></div></div>`;
+		return `<div class="syxfoot"><div class="syxmsg"><p class="syxwarn"></p>${skipped}</div><div class="btnrow"><button type="button" data-syxgo="close">Cancel</button>${hostHas("start") ? readBackTick(readBack) : ""}${verify}<button type="button" class="go" data-syxgo="start">Import</button></div></div>`;
 	}
 	function head() {
 		const what = last.ok ? `<span class="lcdchip">${esc(last.model || "")}${last.fullBackup ? " · full backup" : ""}</span>` : "";
@@ -305,7 +321,7 @@ const Syx = (() => {
 	function bar() {
 		const m = lastProgress, box = q(".syxsteps");
 		if (state !== "running" || !box || !m) return;
-		const PH = [["before", "Read the slots"], ["send", "Send"], ["read", "Read back"]].filter(([p]) => p !== "before" || steps.includes("before"));
+		const PH = [["before", "Read the slots"], ["send", "Send"], ["read", "Read back"]].filter(([p]) => (p !== "before" || steps.includes("before")) && (p !== "read" || m.readBack !== false));
 		const at = PH.findIndex(([p]) => p === m.phase);
 		box.innerHTML = PH.map(([p, t], n) => `<span class="syxstep${n < at ? " done" : n === at ? " now" : ""}"><i class="led${n <= at ? " on" : ""}"></i>${t}</span>`).join("");
 		const b = q(".syxbar");
@@ -388,8 +404,10 @@ const Syx = (() => {
 	}
 	function start(check) {
 		follow = true; picks = picked(); const kinds = chosen(), sk2 = [...skip];
-		state = "running"; lastProgress = { phase: check ? "read" : "send", done: 0, total: 0, running: true, text: check ? "Verify only: starting" : "Starting" }; draw();
-		Syx.host.start(kinds, sk2, { placeAt: placeAt(), checkOnly: !!check });
+		state = "running"; lastProgress = { phase: check ? "read" : "send", done: 0, total: 0, running: true, readBack: check || readBack, text: check ? "Verify only: starting" : "Starting" }; draw();
+		const o = { placeAt: placeAt(), checkOnly: !!check };
+		if (!check && !readBack) o.readBack = false;	/* I-038: absent means on */
+		Syx.host.start(kinds, sk2, o);
 	}
 	function progress(m) {
 		if (!last || !last.ok) return;
@@ -415,6 +433,7 @@ const Syx = (() => {
 		}
 		const k = e.target.dataset?.syxkind;
 		if (k && state === "preview") { on[k] = e.target.checked; show(k); sums(); return; }
+		if (e.target.dataset?.syxrb !== undefined) { readBack = e.target.checked; readBackSave(readBack); return; }
 		if (e.target.dataset?.syxgo === "problems") { problemsOnly = e.target.checked; draw(); }
 	});
 	/* a value (place, from, to): the wheel, a drag up or down, the arrow keys, as other values */

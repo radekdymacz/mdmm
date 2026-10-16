@@ -21,6 +21,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 0.7.0 was released on 2026-10-15; B-133 still open. Toward 1.0: the review of 2026-10-15 and what was fixed is doc/modern-ux/DESIGN-REVIEW-2026-10-15-1.0.md (status table at the top). No auto-update (Radek, 2026-10-15): the update check stays, install stays off.
 
+0.8 (the MIDI release): plan is doc/release/PLAN-0.8.md. Radek's decisions 2026-10-16: MIDI Learn in 0.8; the MD pad rewrite is removed if WP1's test agrees. Handover items 1 and 3 merged on 2026-10-16 (fix/mm-tester-bugs-1016, ci/linux-steamos); item 2 (fix/1.0-lock-free-audio) is in final fixes after review.
+
 ### Handover (2026-10-16): three pushed branches, none merged
 
 The usage limit stopped the work mid-way. Each branch is pushed to origin and has its own worktree in `audio/gearmulator-md-mm-wt/`. Rule: merge to main only after the branch's own tests pass and an independent reviewer passes it.

@@ -48,20 +48,25 @@ ED.pulse={duty(){const m=trk(S.sel).m,p=sv("PW");return m==="SID-6581"?clamp(p/1
 ED.sidwave={draw(g,W,H){const w=sv("WAVE"),pw=sv("PW")/127,ink=cssv("--ink");grid(g,W,H);
   line(g,W,x=>{const p=(x/W*3)%1;const v=[1-4*Math.abs(p-.5),2*p-1,p<pw?1:-1,((p*7)%1<.5?1:-1)*(p<.5?1:.4),RND[Math.floor(x/3)%8]][w]??0;return H/2+4-v*(H/2-22)},ink,2);
   label(g,EN["SID-6581.WAVE"][w]+(sv("MOD")?" · "+EN["SID-6581.MOD"][sv("MOD")]+(sv("MSRC")?" from PRCH":" from MFRQ"):""))}};
-/* SWAVE-ENS / DPRO-DENS: the chord from one track, C plus PCH2-4 */
-ED.chord={draw(g,W,H){const ink=cssv("--ink"),offs=["PCH2","PCH3","PCH4"].map(p=>sv(p)).filter(v=>v).map(v=>v-64);const kw=(W-16)/15,y0=24,wh=H-30;let wx=8;grid(g,W,H);
-  for(let k=0;k<25;k++){if([1,3,6,8,10].includes(k%12))continue;g.strokeStyle=ink;g.lineWidth=1;g.strokeRect(wx+.5,y0+.5,kw-1,wh-1);if(k===0||offs.includes(k)){g.fillStyle=ink;g.beginPath();g.arc(wx+kw/2,y0+wh-10,4.5,0,7);g.fill()}wx+=kw}
-  wx=8;for(let k=0;k<25;k++){if(![1,3,6,8,10].includes(k%12)){wx+=kw;continue}g.fillStyle=ink;g.fillRect(wx-kw*.3,y0,kw*.6,wh*.58);if(offs.includes(k)){g.fillStyle=cssv("--scr");g.beginPath();g.arc(wx,y0+wh*.45,3.5,0,7);g.fill()}}
-  label(g,"C + "+(offs.length?offs.join(" "):"no other notes"))}};
-/* the ensemble's wave: saw through square to spikes (WAVE), PW mutates it; DPRO-DENS: one of the 64 waves */
+/* SWAVE-ENS / DPRO-DENS: the chord from one track, C plus PCH2-4 as the machine reads them (B-151: 40-data.js PCHTAB):
+   OFF no note, a semitone on its key, an interval ratio on its nearest key, marked with a ring. Two octaves, C in the middle */
+ED.chord={notes(){return["PCH2","PCH3","PCH4"].map(p=>tabAt(PCHTAB,sv(p))).filter(e=>e.r!=null).map(e=>({k:12+Math.round(e.r),ratio:pchRatio(e),t:e.t}))},
+ draw(g,W,H){const ink=cssv("--ink"),N=this.notes(),kw=(W-16)/15,y0=24,wh=H-30;let wx=8;grid(g,W,H);
+  const mark=(x,y,r,n,on,off)=>{const ring=n.some(o=>o.ratio)&&!n.some(o=>!o.ratio);g.beginPath();g.arc(x,y,r,0,7);if(ring){g.strokeStyle=on;g.lineWidth=1.5;g.stroke()}else{g.fillStyle=on;g.fill()}};
+  for(let k=0;k<25;k++){if([1,3,6,8,10].includes(k%12))continue;g.strokeStyle=ink;g.lineWidth=1;g.strokeRect(wx+.5,y0+.5,kw-1,wh-1);const n=N.filter(o=>o.k===k);if(k===12)mark(wx+kw/2,y0+wh-10,4.5,[{}],ink);else if(n.length)mark(wx+kw/2,y0+wh-10,4.5,n,ink);wx+=kw}
+  wx=8;for(let k=0;k<25;k++){if(![1,3,6,8,10].includes(k%12)){wx+=kw;continue}g.fillStyle=ink;g.fillRect(wx-kw*.3,y0,kw*.6,wh*.58);const n=N.filter(o=>o.k===k);if(n.length)mark(wx,y0+wh*.45,3.5,n,cssv("--scr"))}
+  label(g,"C + "+(N.length?N.map(o=>o.t).join(" "):"no other notes"))}};
+/* the ensemble's wave: saw through square to spikes (WAVE), PW mutates it; DPRO-DENS: one of the 64 waves, D01-D64 */
+/* a DigiPRO wave knob as the machine names it (B-150: 40-data.js WAVD, WAVS): {i: its index, t: D01 / S01} */
+const dpWave=n=>{const tab=TAB[trk(S.sel).m+"."+n];if(tab){const e=tabAt(tab,sv(n));return{i:e.r,t:e.t}}const i=clamp(sv(n),0,31);return{i,t:WAVS[i]}};
 ED.enswave={draw(g,W,H){const ink=cssv("--ink"),m=trk(S.sel).m;grid(g,W,H);
-  if(m==="DPRO-DENS"){const a=sv("WAVE");line(g,W,x=>H/2+4-wfDP(a,(x/W*2)%1)*(H/2-24),ink,2);label(g,"wave "+(a+1));return}
+  if(m==="DPRO-DENS"){const a=dpWave("WAVE");line(g,W,x=>H/2+4-wfDP(a.i,(x/W*2)%1)*(H/2-24),ink,2);label(g,"wave "+a.t);return}
   const w=sv("WAVE")/127,pw=.5+(sv("PW")-64)/140;railDraw(g,W,H);
   line(g,W,x=>{const p=(x/W*2)%1,saw=1-2*p,sq=p<pw?1:-1,spk=p<.08?1:-.25;const v=w<.5?saw+(sq-saw)*w*2:sq+(spk-sq)*(w-.5)*2;return H/2+2-v*(H/2-24)},ink,2);label(g,w<.35?"saw":w<.65?"square":"spikes")},
  handles(W,H){return trk(S.sel).m==="DPRO-DENS"?[]:[railH(W,H,"SYN","WAVE")]}};
-/* DPRO-WAVE: WAVE morphing into the next at WP; DPRO-DDRW: two waves mixed (MIX) */
-ED.morph={draw(g,W,H){const m=trk(S.sel).m,dd=m==="DPRO-DDRW",a=dd?sv("WAV1"):sv("WAVE"),b=dd?sv("WAV2"):(a+1)%32,mix=(dd?sv("MIX"):sv("WP"))/127,ink=cssv("--ink");grid(g,W,H);
-  line(g,W,x=>{const p=(x/W*2)%1;return H/2+4-((1-mix)*wfDP(a,p)+mix*wfDP(b,p))*(H/2-24)},ink,2);label(g,dd?`wave ${a+1} ↔ ${b+1} · mix ${sv("MIX")}`:`wave ${a+1} → ${b+1}${sv("WPM")?" · sweeps":""}`)},
+/* DPRO-WAVE: WAVE (S01-S32) morphing into the next at WP; DPRO-DDRW: two waves (D01-D64) mixed (MIX) */
+ED.morph={draw(g,W,H){const m=trk(S.sel).m,dd=m==="DPRO-DDRW",a=dpWave(dd?"WAV1":"WAVE"),b=dd?dpWave("WAV2"):{i:(a.i+1)%32,t:WAVS[(a.i+1)%32]},bi=b.i,mix=(dd?sv("MIX"):sv("WP"))/127,ink=cssv("--ink");grid(g,W,H);
+  line(g,W,x=>{const p=(x/W*2)%1;return H/2+4-((1-mix)*wfDP(a.i,p)+mix*wfDP(bi,p))*(H/2-24)},ink,2);label(g,dd?`${a.t} ↔ ${b.t} · mix ${sv("MIX")}`:`${a.t} → ${b.t}${sv("WPM")?" · sweeps":""}`)},
  handles(W,H){const dd=trk(S.sel).m==="DPRO-DDRW";return[{x:u7(sv(dd?"MIX":"WP"))*W,y:20,k:dd?"MIX":"WP",drag:x=>sset(dd?"MIX":"WP",x/W*127)}]}};
 /* DPRO-BBOX: one hit, from STRT on (the key picks the drum) */
 ED.drum={draw(g,W,H){const ink=cssv("--ink"),s0=u7(sv("STRT"))*.5,f=.6+u7(sv("PTCH"))*1.2;grid(g,W,H);railDraw(g,W,H);
@@ -72,11 +77,14 @@ ED.rtrg={geo(W){const n=sv("RTRG"),dt=(6+u7(sv("RTIM"))*(W*.3));return{n:n>=127?
  draw(g,W,H){const G=this.geo(W),ink=cssv("--ink");grid(g,W,H);railDraw(g,W,H);for(let k=0;k<=G.n;k++){const x=10+k*G.dt;if(x>W-4)break;const h=(H-38)*Math.pow(.86,k);g.fillStyle=ink;g.fillRect(x,H-14-h,3,h)}
   label(g,G.n?(sv("RTRG")>=127?"retrigs on and on":G.n+" retrig"+(G.n>1?"s":"")):"one hit")},
  handles(W,H){const G=this.geo(W);return[{x:10+G.dt,y:H-14-(H-38)*.86,k:"RTIM",drag:x=>sset("RTIM",(x-16)/(W*.3)*127)},railH(W,H,"SYN","RTRG")]}};
-/* FM+: one block: the carrier moved by its modulator; dot = the modulator's frequency (sideways) and level (up) */
+/* FM+: one block: the carrier moved by its modulator; dot = the modulator's frequency (sideways) and level (up). The
+   frequency is the machine's (B-149: 40-data.js FMFRQ, FMDYN1, FMDYN2): the label writes it as the LCD does, the
+   modulator turns at that ratio to the carrier */
 ED.fm={ks(c){const k=ck(c);return{f:k.find(n=>/FRQ$/.test(n)),a:k.find(n=>/(ENV|VOL)$/.test(n)&&!/VEN$/.test(n)),fb:k.find(n=>/FB$/.test(n))}},
- draw(g,W,H,c){const K=this.ks(c),ink=cssv("--ink"),r=.5+u7(sv(K.f))*6,I=(K.a?u7(sv(K.a)):.5)*4,fb=K.fb?u7(sv(K.fb)):0;grid(g,W,H);
+ frq(n){const tab=TAB[trk(S.sel).m+"."+n],e=tab?tabAt(tab,sv(n)):null;return e?{r:e.r,t:e.t}:{r:1,t:"1"}},
+ draw(g,W,H,c){const K=this.ks(c),ink=cssv("--ink"),F=this.frq(K.f),r=F.r,I=(K.a?u7(sv(K.a)):.5)*4,fb=K.fb?u7(sv(K.fb)):0;grid(g,W,H);
   line(g,W,x=>{const p=x/W*2;return H/2+4-Math.sin(p*6.283*r)*(K.a?u7(sv(K.a)):.5)*(H/2-26)*.5},inkA(.4),1.2,[2,3]);
-  line(g,W,x=>{const p=x/W*2,mod=Math.sin(p*6.283*r+fb*Math.sin(p*6.283*r));return H/2+4-Math.sin(p*6.283+I*mod)*(H/2-24)},ink,2);label(g,`ratio ${r.toFixed(1)}${fb?" · feedback":""}`)},
+  line(g,W,x=>{const p=x/W*2,mod=Math.sin(p*6.283*r+fb*Math.sin(p*6.283*r));return H/2+4-Math.sin(p*6.283+I*mod)*(H/2-24)},ink,2);label(g,`${K.f} ${F.t}${fb?" · feedback":""}`)},
  handles(W,H,c){const K=this.ks(c);return K.f?[{x:u7(sv(K.f))*W,y:K.a?H-8-u7(sv(K.a))*(H-28):H/2,k:K.a?K.f+" · "+K.a:K.f,drag:(x,y)=>{sset(K.f,x/W*127);if(K.a)sset(K.a,(H-8-y)/(H-28)*127)}}]:[]}};
 /* VO-6: the vowel map (VOC1 across, VOC2 up) with the tutorial's points */
 ED.vowel={draw(g,W,H){const P=[["O",35,5],["A",127,60],["I",40,110],["E",80,100],["U",10,30]];grid(g,W,H);g.font="10px Silkscreen, monospace";
@@ -120,13 +128,18 @@ ED.dist={k(){return(kget("AMP","DIST")-64)/63},
 ED.pan={draw(g,W,H){const ink=cssv("--ink");grid(g,W,H);g.font=SFONT;g.fillStyle=ink;g.fillText("L",6,H-6);g.fillText("R",W-12,H-6);g.fillStyle=inkA(.5);g.fillRect(W/2,20,1,H-30);
   const p=kget("AMP","PAN")-64;label(g,p?(p<0?"left "+(-p):"right "+p):"centre")},
  handles(W,H){return[{x:10+u7(kget("AMP","PAN"))*(W-20),y:H-10-u7(kget("AMP","VOL"))*(H-34),k:"PAN · VOL",drag:(x,y)=>{kset("AMP","PAN",(x-10)/(W-20)*127);kset("AMP","VOL",(H-10-y)/(H-34)*127)}}]}};
-/* FILTER ATK DEC: the filter's own envelope; BOFS lifts the base (solid), WOFS the width (dashed) */
+/* FILTER ATK DEC: the filter's own envelope; BOFS moves the base (solid), WOFS the width (dashed). Both are signed
+   (B-148: -64 to +63, 64 = no sweep): up from the middle line for a positive offset, down for a negative one */
 ED.fenv={seg(W){const f=V("FLT");return{a:f[4]/127*W*.3,d:f[5]/127*W*.6}},
- draw(g,W,H){const f=V("FLT"),s=this.seg(W),T=22,B=H-10,ink=cssv("--ink");grid(g,W,H);
+ geo(H){const T=22,B=H-10;return{M:(T+B)/2,A:(B-T)/2}},
+ off:v=>(v-64)/64,
+ draw(g,W,H){const f=V("FLT"),s=this.seg(W),G=this.geo(H),ink=cssv("--ink"),bo=this.off(f[6]),wo=this.off(f[7]);grid(g,W,H);
   const env=x=>x<s.a?x/Math.max(1,s.a):Math.exp(-3*(x-s.a)/Math.max(4,s.d));
-  line(g,W,x=>B-env(x)*(B-T)*Math.max(.04,f[6]/127),ink,2.2);if(f[7])line(g,W,x=>B-env(x)*(B-T)*f[7]/127,inkA(.6),1.5,[5,4]);label(g,f[6]||f[7]?"solid = base · dashed = width":"no offset: the envelope does nothing")},
- handles(W,H){const s=this.seg(W),f=V("FLT"),T=22,B=H-10;return[{x:Math.max(5,s.a),y:B-(B-T)*Math.max(.04,f[6]/127),k:"ATK · BOFS",drag:(x,y)=>{f[4]=clamp(Math.round(x/(W*.3)*127));f[6]=clamp(Math.round((B-y)/(B-T)*127))}},
-  {x:s.a+Math.max(4,s.d)*.35,y:B-(B-T)*Math.max(.04,f[6]/127)*Math.exp(-1.05),k:"DEC",drag:x=>f[5]=clamp(Math.round((x-s.a)/.35/(W*.6)*127))}]}};
+  g.strokeStyle=inkA(.3);g.lineWidth=1;g.beginPath();g.moveTo(0,G.M+.5);g.lineTo(W,G.M+.5);g.stroke();
+  line(g,W,x=>G.M-env(x)*G.A*bo,ink,2.2);if(wo)line(g,W,x=>G.M-env(x)*G.A*wo,inkA(.6),1.5,[5,4]);
+  label(g,bo||wo?"solid = base · dashed = width":"no offset: the envelope does nothing")},
+ handles(W,H){const s=this.seg(W),f=V("FLT"),G=this.geo(H),bo=this.off(f[6]);return[{x:Math.max(5,s.a),y:G.M-G.A*bo,k:"ATK · BOFS",drag:(x,y)=>{f[4]=clamp(Math.round(x/(W*.3)*127));f[6]=clamp(Math.round(64+(G.M-y)/G.A*64))}},
+  {x:s.a+Math.max(4,s.d)*.35,y:G.M-G.A*bo*Math.exp(-1.05),k:"DEC",drag:x=>f[5]=clamp(Math.round((x-s.a)/.35/(W*.6)*127))}]}};
 /* EFFECTS EQF EQG: one band, boosted (up) or cut (down) */
 ED.eq={draw(g,W,H){const e=V("EFX"),mid=H/2+4;grid(g,W,H);line(g,W,x=>mid-(e[1]-64)/64*(mid-22)*Math.exp(-Math.pow((x/W-e[0]/127)*8,2)),cssv("--ink"),2);label(g,e[1]===64?"flat":e[1]>64?"boost":"cut")},
  handles(W,H){const e=V("EFX"),mid=H/2+4;return[{x:e[0]/127*W,y:mid-(e[1]-64)/64*(mid-22),k:"EQF · EQG",drag:(x,y)=>{e[0]=clamp(Math.round(x/W*127));e[1]=clamp(Math.round(64+(mid-y)/(mid-22)*64))}}]}};
@@ -159,9 +172,10 @@ ED.amp={geo(W,H,c){const e=ampTimes(V("AMP"))||{at:0,ho:0,de:Infinity,re:Infinit
   return[{x:Math.max(5,G.X(e.at)),y:G.Y(1),k:"ATK",drag:x=>set(0,ampValue("attack",G.S(x)))},{x:G.X(e.at+e.ho),y:G.Y(1)+8,k:"HOLD",drag:x=>set(1,ampValue("hold",G.S(x)-e.at))},
    {x:G.inf?Math.min(W-5,G.X(G.off)):G.X(e.at+e.ho+e.de),y:G.Y(G.inf?1:.1),k:"DEC",drag:x=>set(2,x>=W-3?127:Math.min(126,ampValue("fall",G.S(x)-e.at-e.ho)))},
    {x:G.rinf?W-5:G.X(G.off+e.re),y:G.Y(G.rinf?1:.1),k:"REL",drag:x=>set(3,x>=W-3?127:Math.min(126,ampValue("fall",G.S(x)-G.off)))}]}};
-ED.flt={resp(u,env){const f=V("FLT"),b=Math.min(1,(f[0]+(env?f[6]:0))/127),w=(f[1]+(env?f[7]:0))/127,lp=Math.min(1,b+w);let d=0;if(u<b)d-=Math.pow((b-u)*7,2);if(u>lp)d-=Math.pow((u-lp)*7,2);d+=f[2]/127*1.6*Math.exp(-Math.pow((u-b)*26,2))+f[3]/127*1.6*Math.exp(-Math.pow((u-lp)*26,2));return d},
- draw(g,W,H){grid(g,W,H);const f=V("FLT"),A=S.sel<6?trk(S.sel).assign:null;if(f[6]||f[7])line(g,W,x=>clamp(H/2+8-this.resp(x/W,1)*(H/4),6,H-6),inkA(.55),1.5,[5,4]);line(g,W,x=>clamp(H/2+8-this.resp(x/W)*(H/4),6,H-6),cssv("--ink"),2.2);
-  const fixed=!A||A.hpf&&A.lpf?"":!A.hpf&&!A.lpf?" · fixed: no key tracking":!A.hpf?" · HPF fixed":" · LPF fixed";label(g,"base + width"+(fixed||(f[6]||f[7]?" · dashed = env peak":"")))},
+/* the dashed curve: the envelope at its peak, BASE and WDTH moved by the signed BOFS and WOFS (B-148: 64 = no sweep) */
+ED.flt={resp(u,env){const f=V("FLT"),b=clamp((f[0]+(env?f[6]-64:0))/127,0,1),w=Math.max(0,(f[1]+(env?f[7]-64:0))/127),lp=Math.min(1,b+w);let d=0;if(u<b)d-=Math.pow((b-u)*7,2);if(u>lp)d-=Math.pow((u-lp)*7,2);d+=f[2]/127*1.6*Math.exp(-Math.pow((u-b)*26,2))+f[3]/127*1.6*Math.exp(-Math.pow((u-lp)*26,2));return d},
+ draw(g,W,H){grid(g,W,H);const f=V("FLT"),A=S.sel<6?trk(S.sel).assign:null;if(f[6]!==64||f[7]!==64)line(g,W,x=>clamp(H/2+8-this.resp(x/W,1)*(H/4),6,H-6),inkA(.55),1.5,[5,4]);line(g,W,x=>clamp(H/2+8-this.resp(x/W)*(H/4),6,H-6),cssv("--ink"),2.2);
+  const fixed=!A||A.hpf&&A.lpf?"":!A.hpf&&!A.lpf?" · fixed: no key tracking":!A.hpf?" · HPF fixed":" · LPF fixed";label(g,"base + width"+(fixed||(f[6]!==64||f[7]!==64?" · dashed = env peak":"")))},
  handles(W,H){const f=V("FLT"),b=f[0]/127,lp=Math.min(1,b+f[1]/127),yy=u=>clamp(H/2+8-this.resp(u)*(H/4),6,H-6);
   return[{x:Math.max(6,b*W),y:yy(b),k:"BASE · HPQ",drag:(x,y)=>{f[0]=clamp(Math.round(x/W*127));f[2]=clamp(Math.round((H/2+8-y)/(H/2)*127))}},{x:Math.min(W-6,lp*W),y:yy(lp),k:"WDTH · LPQ",drag:(x,y)=>{f[1]=clamp(Math.round((x/W-f[0]/127)*127));f[3]=clamp(Math.round((H/2+8-y)/(H/2)*127))}}]}};
 function lfoCycle(v){const m=Math.pow(2,v[4]);return v[5]?2048/(v[5]*m):Infinity}
@@ -179,7 +193,7 @@ const SND_TIP={uni:"The base saw (middle) and the unison pair either side: UNIW 
  sub:"The subs below the base (faint): SUB1 a sine one octave down, SUB2 two, SUBX a square one octave down. Drag a bar's top.",
  pulse:"Two cycles of the pulse: PW its width (SWAVE: 0 = square, either end a spike), dashed the PWAD sweep. The dot on the rail is PW.",
  sidwave:"The SID's waveform at PW; the modulation (RING, SYNC) and where its second frequency comes from in the title.",
- chord:"The notes one trig plays: C, and PCH2-4 semitones above it. Lock PCH2-4 per step to change chord.",
+ chord:"The notes one trig plays: C, and PCH2-4 up or down from it: OFF, -12 to +12 semitones, or an interval (2/3 to 3/2, a ring on the nearest key). Lock PCH2-4 per step to change chord.",
  enswave:"The ensemble's wave: WAVE from saw through square to spikes (the rail), PW mutates it.",
  morph:"Two cycles of the wave: WP morphs it into the next one (DPRO-DDRW: MIX blends WAV1 and WAV2). Drag the dot sideways.",
  drum:"One hit from STRT on (the rail); the key picks which of the 24 drums plays.",
@@ -197,7 +211,7 @@ const SND_TIP={uni:"The base saw (middle) and the unison pair either side: UNIW 
  dist:"Distortion, in to out (dashed = clean). Drag the dot up or down.",
  pan:"The track in the stereo field: PAN sideways, VOL up. Drag the dot.",
  flt:"The 24 dB gap filter: BASE is the high-pass, WDTH the gap to the low-pass, the dots up for HPQ and LPQ. Dashed: where the envelope takes it. Both follow the note unless KEY (Perform › Assign › KEY) switches one off: the label then says which is fixed.",
- fenv:"The filter's own envelope: ATK, DEC; BOFS how far it lifts the base (solid, up), WOFS the width (dashed). Drag the dots.",
+ fenv:"The filter's own envelope: ATK, DEC; BOFS how far it moves the base (solid), WOFS the width (dashed), -64 to +63: up for +, down for -, 0 none. Drag the dots.",
  eq:"One EQ band: EQF moves it, EQG boosts (up) or cuts (down). Drag the dot.",
  srr:"Sample-rate reduction: more SRR, longer held steps (the rail).",
  delay:"The repeats over one bar: DTIM apart (in 256ths: 64 = a beat), DSND how loud (below 0 keeps stereo, above ping-pongs), DFB how much each keeps.",

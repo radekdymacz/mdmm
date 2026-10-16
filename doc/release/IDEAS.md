@@ -3,26 +3,97 @@
 *Feature ideas from beta testers and users (Discord, email). Not bugs: see
 [BUGS.md](BUGS.md). Newest first. Each entry: who and when, the idea, status.*
 
+## I-043 · Filter envelope: a larger display with the full BOFS/WOFS range, the second window smaller (square) with attack and decay only
+
+- **From:** the same tester, 2026-10-16 (0.7.0, Monomachine). The filter envelope display should be larger, and left/right on it show the full BOFS/WOFS range (-64 to +63, B-148); the second window smaller and square, with just attack and decay.
+- **Status:** idea; needs Radek's call on the look (Sound > Filter env).
+
+## I-042 · LFO preview: show the p-locked LFO values, not only the trig markers
+
+- **From:** the same tester, 2026-10-16 (0.7.0, Monomachine). The LFO preview marks the trigs; it should draw the LFO as the locks change it.
+- **Status:** idea; read the preview's code before sizing (locks on LF1-LF3 are in `S.locks` as `LF1.i`).
+
+## I-041 · Kit: left/right navigation like the pattern selector
+
+- **From:** the same tester, 2026-10-16 (0.7.0, Monomachine). The pattern selector has previous/next arrows; the kit selector should too.
+- **Status:** idea; check what the kit field does today in both editors (the Machinedrum has the same field).
+
+## I-040 · Computer keyboard: the octave range does not reach -2 to +8
+
+- **From:** the same tester, 2026-10-16 (0.7.0, Monomachine). Z / X stop at -3 to +3 (`KEYS_OCT=[-3,3]`, `mmStudio/src/75-comforts.js:117`), seven octaves; the tester expects -2 to +8. The Perform page's own keyboard is clamped 0-6 (`130-main.js:207`).
+- **Open:** is -3..+3 a choice or the machine's limit? The note range is 0-127 (clamped in `keyNote`); -2..+8 is wider than the 128 notes from a C3 base, so the base or the range label may differ from what the tester sees. Check the Monomachine manual before calling it a bug.
+- **Status:** idea (bug if the manual says the machine's range is wider).
+
+## I-039 · Song rows: show and edit mutes, transpose and tempo in the arrangement itself
+
+- **From:** a beta tester on Discord, 2026-10-16: loves Song mode and wants more song options: per-track mutes, per-track transpose and BPM per row.
+- **Today:** the editors have all three (feature rows MD-149/MD-157, MM-199/MM-263/MM-264/MM-266/MM-267, as on the machines: MD rows hold pattern, REP, BPM, offset, length, mutes; MM rows hold pattern, repeats, transpose, per-track transpose TR1-6 + six MIDI, offset/length, mutes 6 + 6, BPM). But the arrangement cell shows only the pattern name, `x` repeats and a `~` for offset/length (`mdDeskSong.js:116-120`, `120-song.js:125-128`); mutes and per-track transpose are behind the selected row's inspector > More (`data-rowmute`, `data-rowmore`), and the tempo behind a Keep toggle. The tester probably does not know they are there, or wants them at a glance.
+- **The idea:** small marks on the arrangement cells (a tempo number when the row sets one, a mute dot, a transpose number), without a new row above the grid; the inspector stays the place to edit. Needs Radek's call on the look.
+- **Status:** idea; first answer the tester that the options exist (Row > More), then decide on the marks.
+
+## I-038 · SysEx import: make the read-back (the second scan) optional
+
+- **From:** a beta tester on Discord, 2026-10-16: the second scan that verifies a SysEx transfer should be optional.
+- **Today:** an import is Read the slots (only when the editor does not know them yet), Send, Read back (`SyxJob`, `mdJucePlugin/mdSyxSession.h:49` phases Before / Sending / Reading; the page `skins/shared/deskSyx.js:308`). The read-back compares each slot with the file and fills the report; Verify only is a separate button. Both editors, one code path.
+- **The idea:** a tick "Read back and compare" on the import panel (on by default), off = Send then done, report says "not checked". Saves the read time (a pattern per 1.7 s at cable speed). Needs Radek's call where the tick sits.
+- **Decision (2026-10-16):** the tick sits beside Verify only in the import footer, on by default (PLAN-0.8 WP10 F).
+- **Status:** built on branch `feat/0.8-syx-readback-option`, not merged. The page sends `readBack: false` with `syxImport` when the tick is off (absent means on). Off: the Read the slots phase before still runs where the editor does not know a slot, Send, then done; the report is `{readBack: false, sent, commands, unsent}` and says "n sent, not read back", never "imported". The choice is kept in the page's storage (`deskSyx.readBack`), not in the editor setup: the setup (`MDSK`) is what a DAW project restores (modulators, knob CCs, solo), this is the person's habit, and the page already keeps such conveniences in storage (the transport's delayed start). Reset machine… and Verify only always read back. Tests: `syxImportTest` (job, both paths), `deskSyxTest.js` (tick, saved state, report), journeys `md-lib-syx-noreadback`, `mm-lib-syx-noreadback`.
+
+## I-037 · Piano roll: deleting a note should let the note before it fill the gap, not write a note off
+
+- **From:** a beta tester on Discord, 2026-10-16: deleting a note produces a note off, which is usually not wanted; the previous note filling the gap would fit better.
+- **Today (Monomachine only; the Machinedrum has no note off):** `MmRoll.remove` (`mmStudio/src/58-roll.js:41-43`, used by `rollRemove`, `70-seq.js:206`) puts a NOTE OFF where the removed note began when the note before it ran into it, so the earlier note keeps its length. The machine itself does not: a synth note sounds from its trig to the next NOTE OFF or trig (header of `58-roll.js`), so clearing a trig on the machine lets the earlier note run on.
+- **The idea:** the removal writes nothing but the removed trig (and, as now, its own closing NOTE OFF), as the machine does. Alt-click and the erase drag use the same function.
+- **Status:** built on branch `feat/0.8-mm-note-edit` (0.8, WP10 C; Radek left the call to Claude: A, machine-like). Deleting a note (Alt-click, the erase drag, a double-click, Delete / Clr / the step menu's Clear) writes no NOTE OFF; the note before runs on through the gap. A NOTE OFF that only closed the deleted note goes with it. Cut (⌘X) and a moved selection write none either (a NOTE OFF that only closed the cut or moved note goes with it). Tests: `mmRollTest`, `mmViewTest`, page journey `mm-roll-delete-gap`.
+
+## I-036 · Notes: a click keeps the note selected, arrows move it, Delete removes it, double-click removes a note
+
+- **From:** a beta tester on Discord, 2026-10-16: clicking a note should keep focus (now it needs a ⌘-click) so the up/down arrow keys move it; Delete while the note is held is awkward; maybe a double-click removes a note.
+- **Today:** a plain press on a step paints (toggles the trig) and ends the selection (Machinedrum `mdDeskGestures.js:218-221`; Monomachine step grid `clickStep`, `70-seq.js:101-106`); only ⌘-click selects. In the Monomachine piano roll a plain click already selects the note (`rollSelectDown`, `70-seq.js:225`). Up/Down with a selection moves the selection to the next track (`track-prev-next`, `75-comforts.js:145`), never the pitch; Delete clears the selection (`77-select.js:49`). There is no double-click on steps.
+- **The idea:** (1) a click on an existing trig selects it instead of removing it (the toggle moves to the empty step or the double-click); (2) Up/Down on one selected note changes its pitch (Monomachine; on the Machinedrum a trig has no pitch, so only left/right); (3) double-click removes.
+- **Status:** built on branch `feat/0.8-mm-note-edit` (0.8, WP10 D; Radek left the call to Claude: A). A click on a note (Monomachine roll) or a trig (Machinedrum grid) selects it and keeps the selection; an empty step still draws (drag-paint from an empty step kept); a double-click removes the note or trig (one undo step); Delete / Backspace remove the selection; Monomachine: ↑ / ↓ with exactly one note selected change its pitch a semitone (⇧ an octave), one undo step per press, otherwise ↑ / ↓ stay the track move; ⌘-click still adds to the selection. The Machinedrum has no pitch, so ← → move the selection as before. `clickStep` (70-seq.js) is not wired to the pointer any more and is left for the firmware self-test. Tests: `mmViewTest`, `mmKeysTest`, page journeys `mm-note-click-arrows`, `md-step-click-select`.
+
+## I-035 · Lock lane: a thicker kit-value line, ⌘-drag to change it, the value as a number under the line
+
+- **From:** a beta tester on Discord, 2026-10-16: the dashed line that shows the current parameter value should be thicker; it should be changeable by ⌘-drag (or similar) so all the editing happens in the lock window; the value should be a number below it instead of only on hover.
+- **Today:** the dashed line is `.lb .base` (a 1 px dashed border at 55 % opacity: `mdStudio/mdDesk.css:139,1152`, `mmStudio/src/*.css`), drawn per trig by `baseHTML` (`70-seq.js:83`) and `mdDeskSeq.js:87`. A lock's value is only in the tooltip (`title` "Locked 64" / "Kit value 64"); the kit value is in the lane's left scale (`.lbscale`, MM only) as a number. A plain drag draws locks (`laneAt`, `mdDeskGestures.js:11-18`); changing the kit value itself is done on the Sound page.
+- **The idea:** (1) 2 px line, full opacity; (2) ⌘-drag on the lane moves the kit value (the same value the Sound page edits), shown live; (3) the lane shows the number of the value under the pointer or of the selected step in a small readout under the lane, always visible.
+- **Status:** idea; (2) and (3) add to the lane, Radek decides. Both editors.
+
+## I-034 · GEN settings: Keep on for every track by default, placed between the patterns and the mutes/solos
+
+- **From:** a beta tester on Discord, 2026-10-12 (0.5.1 / 0.6 line).
+- **The idea:** (1) make the GEN setting "keep" the default for all tracks; (2) put the GEN settings column to the right of the patterns column and before the mutes/solos column, because they act on the patterns, and so the mutes/solos column sits right beside the track names (easy to see what is muted or soloed); (3) a panel/frame round the GEN column so it reads as separate from mutes/solos.
+- **Today:** 0.7.0 has a GEN dialog on every track's dice key (release note 2026-10-15); the placement and the Keep default are not discussed in the log.
+- **Status:** idea; ask the tester whether 0.7.0's GEN dialog answers it.
+
+## I-033 · Ableton Link for the standalone apps, and the Machinedrum and Monomachine apps that find each other
+
+- **From:** Radek and a beta tester on Discord, 2026-10-10 and 2026-10-14. Radek (10-10): wants the MD and MM standalone apps to detect each other and sync "like in the real world, no need for a DAW" (even two laptops over Wi-Fi), then record jams. Radek (10-14): "thinking about adding Ableton Link for standalone apps". The tester (10-14): "Ableton Link would probably be more accurate than MIDI sync" (after trying Ableton -> the standalone over the IAC driver: notes, sync and remote start worked, B-154).
+- **The idea:** Link (tempo and beat phase) in the standalone apps, a switch next to GLOBAL Tempo in (INT / EXT / LINK); optionally songs and patterns that follow each other between the two apps, as two linked machines do.
+- **Notes:** Link's SDK is GPL-3 or commercial; the editors are GPL, so it fits, but the licence has to be checked. In a DAW the host's clock stays the source. The standalone's MIDI clock in (IAC) already works (B-154 is about the sound that follows it).
+- **Status:** idea; Radek decides.
+
 ## I-032 · Mix: a level meter per track, and one per output (the mix buses)
 
 - **From:** a beta tester on Discord, 2026-10-16, 0.7.0 ("meters for each track on the Mix tab, and the same for the MIX buses or the summed levels").
 - **Today:** the only meter is the LCD's (I-021): the main output's left and right after the volume, and a clip mark for every output (`mdJucePlugin/mdOutputLevel.h`). The plug-in has three stereo outputs, Main A/B, Out C/D and Out E/F (`mdPluginProcessor.cpp:541`), which carry the machine's own outputs; the emulation gives no audio per track (the DSP mixes the voices inside the firmware), so a true per-track meter is not a cheap tap (the same finding as I-028).
 - **The idea, what is honest:** (1) a meter per output pair on Mix (A/B, C/D, E/F): cheap, the plug-in already takes the peaks of every output once a block for the clip mark; on the Monomachine a track routed alone to C/D or E/F would then have its own meter. (2) Per track, the rail lamps of I-028 (trig activity from the pattern, no audio) beside each fader, not a level. A real per-track level needs a tap in the DSP emulation: research, not planned.
-- **Status:** later (Radek decides).
+- **Status:** planned for 0.8 (WP9, doc/release/PLAN-0.8.md).
 
 ## I-031 · A lamp in another colour on a track that plays because another track triggered it
 
 - **From:** a beta tester on Discord, 2026-10-16, 0.7.0 ("a blue LED lit up on a track if it was triggered from another track").
 - **Today:** the rail lamps (I-028) light a track only for its own trigs (Monomachine `mmStudio/mmMockup.js` ~6239, Machinedrum `mdStudio/mdDeskTop.js:325`). A track that plays because of the Monomachine's kit Trig position (`trigpos`, Sequence > Trig setup: "Also play T2") or the Machinedrum's trig group (`trigGroup`, `mdDeskSound.js:82`) stays dark.
 - **The idea:** light that track's lamp too, in a second colour (blue, or the LCD ink), from the same data the lamps use: the step telemetry, the pattern and the kit's trig relations, no audio. One trig relation each, they do not chain (as the page says), so it stays one look-up a step.
-- **Status:** idea.
+- **Status:** planned for 0.8 (WP9, doc/release/PLAN-0.8.md).
 
 ## I-030 · Name the trig mark of the lock lane (red and green)
 
 - **From:** a beta tester on Discord, 2026-10-16, 0.7.0 ("in the locked parameters view some trigs were green and some were red at the top, what is that?").
 - **Today:** on the Monomachine's lock lane each step with a trig has a small mark at its top: red when the trig fires all three envelopes (AMP, FILTER, LFO), green when it fires only some of them or none (a trigless trig) (`mmStudio/mmStudio.css:1617-1619`, `src/50-state.js:55` stepKind). The step's tip says only "Locked …" or "Kit value …", and the guide's PARAMETER LOCKS section (`doc/guide/mm/13-parameter-locks.md`) does not mention the mark; the roll's step legend (?) names trigless trigs but not this mark.
 - **The idea:** say it where it shows: the lane step's tip adds "all envelopes" / "some envelopes" / "trigless", and one sentence in chapter 13 ("A red mark at the top of a bar: the trig fires every envelope; green: only some, or none"). No new control.
-- **Status:** idea.
+- **Status:** planned for 0.8 (WP9, doc/release/PLAN-0.8.md).
 
 ## I-029 · A quick way back to the original sound while you play with the Sound page
 
@@ -42,6 +113,7 @@
 - **From:** Discord, 2026-10-10 and 2026-10-11 (a virtual port and a Max patch beside the DAW). The tester was told it is on the list.
 - **The idea:** the plug-in can open MIDI input and output ports of its own (as the standalone does), in addition to the MIDI the host routes to it, so a patch or a controller can talk to the editor directly.
 - **Status:** later (not 0.6): needs port handling in the plug-in layer; the standalone already has it.
+- **More (Discord roundup, 2026-10-16):** [MIDI] a Max-patch user wants outboard MIDI channels or a virtual port next to the host MIDI (2026-10-10, 10-11). Radek's first answer (10-10: MIDI out "should be fixed in new release, settings in GLOBAL top right") was wrong and was corrected on 10-11: the port choice is not in yet; the workaround is DAW routing (a MIDI track from the interface input to the plug-in; the plug-in's MIDI out to a track with the interface output).
 
 ## I-026 · In a DAW: the machine's own clock (GLOBAL Tempo in INT)
 
@@ -56,6 +128,7 @@
 - **Way A (machine memory file, as a real machine):** one memory file per machine in the editor's user folder. A new session with no project state starts from it. Each SAVE KIT, SAVE PATTERN, song or global save also writes it. An existing DAW project still opens with its own memory. A menu item starts from factory memory again. Risk: two instances of the same machine both write the file; the last save wins.
 - **Way B (start-up memory, by hand):** a menu item "Use this memory for new sessions" copies the current memory into the file; new sessions start from it. Nothing is written by itself. Simpler and safe with many instances, but the user must remember to do it.
 - **Status:** Radek, 2026-10-12: way A, with a setting to turn it off. Planned for 0.6 (wave 11, PLAN-0.6.md). Built on `feat/0.6-memory` (doc/modern-ux/DESIGN-machine-memory.md): one file per machine in `<data folder>/memory/`, a session with no project state starts from it, a watch thread writes each save, the engine menu's KEEP MEMORY, RESET MACHINE…'s Start from factory memory…; the standalone starts from the file too.
+- **More (Discord roundup, 2026-10-16):** a tester (2026-10-14): in the standalone, saved kits and patterns persist across restarts; he asks for the same in the plug-in. No new request.
 
 ## I-023 · Monomachine: a real MKII look (silver panel, bluish-white LCD with black text)
 
@@ -136,6 +209,7 @@
 - **Spike (two days):** try way A headless with mdFirmwareSession; relax the loader behind the switch; boot the
   custom OS; list what works and what breaks on the page. Decide the product shape after that.
 - **Status:** queued after 0.4.
+- **More (Discord roundup, 2026-10-16):** 2026-10-14: loading the X.14 custom firmware as a sysex in the LCD's boot menu does nothing (on the hardware it is sent as a sysex file at boot); Radek: the UI is coded against stock firmware, custom firmware is on the list. So the boot-menu route does nothing today. 2026-10-10: a community user pointed to a script in a gearmulator fork (branch md-mm-remote-panel) that converts an OS .syx to a flash image with your own stock .bin; a tester tried it: X.13 and X.14 worked, X.20 did not. Another user named github.com/jmamma/MDX as the newest X.20 and suggested asking Elektron about redistribution (Radek: the original ROM is the issue).
 
 ## I-015 · Pattern length per track, and microtiming
 

@@ -1167,7 +1167,8 @@ namespace mmDesk
 		{
 			static const std::map<std::string, int> d{{"TUNE", 64}, {"INP", 100}, {"MIX", 64}, {"UNIL", 40}, {"UNIW", 20}, {"UNIX", 0},
 				{"SUB1", 30}, {"PW", 64}, {"VOC1", 64}, {"VOC2", 64}, {"V-SW", 1}, {"CVOL", 100}, {"LP", 127}, {"GATE", 127},
-				{"DEC", 64}, {"1ENV", 80}, {"TONE", 64}};
+				{"DEC", 64}, {"1ENV", 80}, {"TONE", 64},
+				{"PCH2", 63}, {"PCH3", 63}, {"PCH4", 63}};	// OFF (B-151: the firmware's own machine change sets 63)
 			const auto it = d.find(_name);
 			return it == d.end() ? 0 : it->second;
 		}
@@ -1190,7 +1191,7 @@ namespace mmDesk
 		// are enumerations.
 		constexpr std::array<std::array<uint8_t, 8>, 4> g_neutralPages{{
 			{0, 40, 64, 20, 64, 100, 64, 0},	// AMP
-			{0, 127, 0, 0, 0, 40, 0, 0},		// FLT
+			{0, 127, 0, 0, 0, 40, 64, 64},		// FLT: BOFS WOFS 64, no sweep (B-148: signed; the firmware's machine change writes 64)
 			{64, 64, 0, 32, 64, 0, 0, 127},		// EFX
 			{2, 1, 1, 0, 1, 32, 0, 0}}};		// LF1-3
 		std::array<uint8_t, 8> neutralPage(const uint8_t _page)

@@ -114,7 +114,7 @@ Do 1 to 5 as one short hammock: "what 1.0 promises to read forever", then the co
   out of mdLib; a `deskSyx` library for `mdSyxWork`/`mdSyxSession`.
 - One source for test selection (now in 5 places: mdmm-affected.tsv, workflow regexes, build_mdmm.sh, path filters,
   CMake labels). One stage table for mdmm-local-gate.sh (1,159 lines, stage ids like `2b`, `7d`).
-- Page prefs in localStorage: move to a `prefs` document in the plug-in config.
+- Page prefs in localStorage: move to a `prefs` document in the plug-in config. Includes `deskSyx.readBack` (the SysEx import's "Read back and compare" tick, I-038; storage blocked means on).
 - Save the engine id in the project (HW MIDI).
 - Feature data: stop storing `journeys`, clean `plan`, add schema/version.
 - Low security items: size caps on .syx/WAV and MM RLE output, Linux /tmp page files O_EXCL 0600, curl size poll.

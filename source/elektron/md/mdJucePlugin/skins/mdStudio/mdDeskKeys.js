@@ -49,7 +49,8 @@ Keys.bind({ id: "zoom-reset", short: "Zoom 100 %", scope: "any", keys: ["0"], mo
    on the page (the "Mouse tricks" of the keyboard view). ===== */
 [
 	/* Sequence (mdDeskGestures.js, mdDeskSeq.js) */
-	["step-paint", "seq", "Steps", ["step"], "", "Sequence", "Click: trig on / off. Drag: every step crossed becomes what the first became (one undo step)"],
+	["step-paint", "seq", "Steps", ["step"], "", "Sequence", "Click an empty step: a trig there. Drag: every step crossed becomes what the first became (one undo step)"],
+	["step-select-trig", "seq", "Steps", ["trig"], "", "Sequence", "Click a trig: select it (it stays selected: Delete removes it, ← → move it). Double-click: remove it (one undo step)"],
 	["lane-draw", "seq", "Lock lane", ["lock lane"], "", "Sequence", "Drag over the bars: lock the lane's parameter on each step with a trig"],
 	["page-key", "seq sampler", "Steps", ["Page key"], "shift", "Sequence", "Click: the previous page (a plain click: the next)"],
 	/* the values (mdDeskGestures.js) */
