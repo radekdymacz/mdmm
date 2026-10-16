@@ -29,7 +29,6 @@ set(SOURCES
 	mdromdata.cpp mdromdata.h
 	mdromloader.cpp mdromloader.h
 	mdscheduledmidi.h
-	mdscreenlist.h
 	mdschedwatchdog.h
 	mdstate.cpp mdstate.h
 	mdsysextransfer.h

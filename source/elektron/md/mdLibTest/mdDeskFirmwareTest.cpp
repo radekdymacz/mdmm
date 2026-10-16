@@ -3692,11 +3692,13 @@ namespace
 	}
 
 	// B-133 (the 0.6 e2e run, 2026-10-13): after any sample went into the machine by SDS (Rename, Load sample, a dropped
-	// file; any ROM slot), live recording looked as it should (RECORD blinks, the pattern plays, the TRIG key reaches
-	// the panel) but the firmware recorded no TRIG key and no knob lock until the machine started again. The cause is
-	// the OS's screen list left with one node by the RECEIVING SAMPLE screen (md::ScreenListFix, mdLib/mdscreenlist.h,
-	// which puts the list's head back); this mode keeps the proof: PASS with the sample and without
-	// (mdDeskFirmwareTest <rom> recaftersample [nosample]).
+	// file; any ROM slot), live recording looks as it should (RECORD blinks, the pattern plays, the TRIG key reaches the
+	// panel) but the firmware records no TRIG key and no knob lock until the machine starts again. Cause (found 2026-10-16
+	// by bisecting the RAM, doc/release/BUGS.md B-133): OS 1.63's RECEIVING SAMPLE screen swaps its screen list and leaves
+	// the head cell 0x28092c at 0x280a6a (one node) instead of 0x2811a2. A firmware bug; the emulator keeps the hardware's
+	// behaviour (Radek, 2026-10-16). This mode DOCUMENTS it: without a sample the TRIG key is recorded, after one it is
+	// NOT (a pass says the emulator still behaves like the firmware; if the sample case ever records, the firmware path
+	// changed: read B-133). Not in the gate list.
 	void recordAfterSample(Rig& _rig, const bool _sample)
 	{
 		auto& m = _rig.machine();
@@ -3735,7 +3737,10 @@ namespace
 		_rig.page(R"({"op":"stop","id":884})");
 		_rig.run(500);
 		std::printf("  track 16 trigs: %zu -> %zu\n", n0, trigs16());
-		check(got, "the TRIG key was recorded");
+		if(_sample)
+			check(!got, "B-133 (OS 1.63 as it is): after a sample by SDS the TRIG key is not recorded");
+		else
+			check(got, "the TRIG key was recorded");
 	}
 
 	// An unsaved kit edit of the kit that plays survives a trig elsewhere (a pattern dump over the current pattern

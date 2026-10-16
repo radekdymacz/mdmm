@@ -1293,11 +1293,6 @@ namespace md
 		// stale output to accumulate beyond one current host block.
 		if(trimmed)
 			m_schedHostAudioOverflow.fetch_add(trimmed, std::memory_order_relaxed);
-
-		// B-133: OS 1.63 leaves its screen list wrong after a sample came in by SDS (mdscreenlist.h)
-		if(m_model == MachineModel::Machinedrum && m_firmwareFingerprint == g_mdOs163Fingerprint)
-			m_screenListFix.update(_frames, [this](const uint32_t _a) { return m_uc.read32(_a); },
-				[this](const uint32_t _a, const uint32_t _v) { m_uc.write32(_a, _v); });
 	}
 
 	void Hardware::processAudio(const synthLib::TAudioOutputs& _outputs, const uint32_t _frames, const uint32_t _latency)
