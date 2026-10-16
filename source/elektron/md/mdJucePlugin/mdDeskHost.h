@@ -59,7 +59,7 @@ namespace mdJucePlugin
 		void saveChunks(baseLib::BinaryStream& _stream) const;
 		void addChunkReaders(baseLib::ChunkReader& _reader);
 		// A project without the editor's setup starts from the default setup.
-		void beginProjectLoad() { setSetup({}); }
+		void beginProjectLoad();
 
 		// The Machinedrum Editor's own setup (md-desk/setup JSON: app modulators, knob-row CCs). The
 		// host only stores the text; the session's mdDesk::Desk validates it. Any thread.
@@ -79,8 +79,14 @@ namespace mdJucePlugin
 		bool heldState(juce::MemoryBlock& _out) const;
 		bool takeHeldState(std::vector<uint8_t>& _out);
 
-		// Changes with every setSetup (the session's saves and project restores).
+		// Changes with every setSetup (the session's saves and project restores) and every "MDLN" read.
 		uint32_t setupVersion() const { return m_setupVersion.load(std::memory_order_acquire); }
+
+		// An alpha project's "MDLN" chunk (the pluginLib translator's preset as JSON text, DESIGN-learn-0.8.md): kept as read,
+		// for the session to import once when the setup has no "mappings" member. Never written again. Empty: the project
+		// has none. Any thread.
+		std::string legacyMapping() const;
+		void clearLegacyMapping();	// the session imported it
 
 	private:
 		std::vector<uint8_t> automationSnapshot() const;	// the controller's (Controller::createAutomationSnapshot)
@@ -91,6 +97,7 @@ namespace mdJucePlugin
 		AudioPluginAudioProcessor& m_processor;
 		mutable std::mutex m_setupMutex;
 		std::string m_setup;
+		std::string m_legacyMapping;
 		mutable std::mutex m_heldMutex;
 		std::vector<uint8_t> m_held;
 		std::vector<pluginLib::ProjectChunk> m_heldFree;	// the machine-free chunks as the held project left them

@@ -86,6 +86,10 @@ namespace mdDesk
 		// (never the previous project's); errors say what was left out.
 		std::vector<std::string> loadSetup(const Value& _setup);
 		const DeskSetup& setup() const { return m_setup; }
+		// MIDI Learn (0.8): the learned CCs, part of the setup. setMappings keeps them with the project and says so on the
+		// setup document.
+		const std::vector<deskCore::LearnMapping>& mappings() const { return m_setup.mappings; }
+		void setMappings(std::vector<deskCore::LearnMapping> _mappings);
 
 		bool isBusy() const { return machine().busy(); }
 		// The default adapter's protocol facts (MdMachine), for tests and diagnostics; empty, false

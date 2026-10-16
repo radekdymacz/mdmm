@@ -72,6 +72,7 @@ namespace mdJucePlugin
 		}
 
 		deskCore::LifeFacts::Probe probe() override { return m_link.probe(); }
+		int baseChannel() const override { return m_channel; }
 
 		void step(mdDesk::Desk& _desk, const uint64_t _tick, const uint64_t _span) override
 		{
@@ -123,6 +124,7 @@ namespace mdJucePlugin
 
 		deskCore::LifeFacts::Probe probe() override { return deskCore::LifeFacts::Probe::Running; }
 		bool wireBusy() override { return !m_wire.wire().idle(nowMs()); }
+		int baseChannel() const override { return m_channel; }
 
 		// What came in, to the desk. No telemetry: the adapter's own is "none" from the start.
 		void step(mdDesk::Desk& _desk, uint64_t, uint64_t) override
@@ -164,10 +166,30 @@ namespace mdJucePlugin
 			MidiLearnCommands::Model m;
 			m.pages = false;
 			m.tracks = 16;
+			m.limits = mdDesk::g_mdSetupSpec.learn;
+			m.span = 4;		// the Machinedrum's CCs: four channels from the base channel
 			for(uint8_t i = 0; i <= deskWire::md::g_levelIndex; ++i)
 				if(const std::string name = StudioLink::parameterName(i); !name.empty())
 					m.params.push_back({{-1, -1, i}, name});
 			return m;
+		}
+
+		// What the Machinedrum's firmware drives with CC _cc on the channel _offset from its base channel (mdLib's pure map):
+		// a kit parameter or the level of a track (the mute has no learn target)
+		std::optional<deskCore::LearnRef> firmwareCc(const int _offset, const int _cc) const override
+		{
+			namespace a = ::md::automation;
+			if(_offset < 0 || _offset > 15 || _cc < 0 || _cc > 127)
+				return std::nullopt;
+			const auto c = a::decodeParameterChange(::md::MachineModel::Machinedrum,
+				{static_cast<uint8_t>(0xb0 | _offset), static_cast<uint8_t>(_cc), 0}, 0);
+			if(!c)
+				return std::nullopt;
+			if(c->page == a::machinedrum::Level)
+				return deskCore::LearnRef{c->track, -1, deskWire::md::g_levelIndex};
+			if(c->page <= a::machinedrum::Routing)
+				return deskCore::LearnRef{c->track, -1, c->page * 8 + c->index};
+			return std::nullopt;
 		}
 
 		const char* missingText() const override { return "No MD OS 1.63 ROM is running yet. After adding it, reopen the plug-in."; }

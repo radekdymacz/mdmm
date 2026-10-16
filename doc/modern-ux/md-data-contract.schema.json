@@ -806,6 +806,43 @@
             "$ref": "#/$defs/u7"
           }
         },
+        "mappings": {
+          "type": "array",
+          "maxItems": 128,
+          "description": "MIDI Learn (0.8): the learned CCs and what they drive; absent: none. Read leniently: an unknown member is ignored, an unknown mode is absolute, a bad item or a target outside the model's limits is left out alone.",
+          "items": {
+            "type": "object",
+            "required": ["ch", "cc", "t", "i"],
+            "properties": {
+              "ch": {
+                "type": "integer",
+                "description": "0-15, or 255: any channel.",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "cc": {
+                "$ref": "#/$defs/u7"
+              },
+              "t": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 15
+              },
+              "i": {
+                "type": "integer",
+                "description": "The learn model's parameter index: 0-23 the kit values, 24 the level.",
+                "minimum": 0,
+                "maximum": 24
+              },
+              "mode": {
+                "enum": ["absolute", "relative-signed", "relative-offset"]
+              },
+              "invert": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
         "solo": {
           "type": "object",
           "description": "The page's solo (B-123): the tracks soloed and the mutes the person had before it; absent: no solo.",
@@ -2982,11 +3019,81 @@
                   "type": "boolean",
                   "description": "MIDI mapping (MIDI learn and the Control workspace) is on; the pages hide both unless true (mdmm::midiMappingEnabled, deskHost.h)."
                 },
+                "mappings": {
+                  "type": "array",
+                  "description": "The setup's mappings in order. overrides: the machine's own targets of that (channel, CC) the mapping hides (the firmware's CC map, the Global's base channel); empty when the CC is not on the map.",
+                  "items": {
+                    "type": "object",
+                    "required": ["index", "t", "i", "name", "cc", "ch", "mode", "invert"],
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "overrides": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": ["ch", "t", "i"],
+                          "properties": {
+                            "ch": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 15
+                            },
+                            "t": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "i": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "learning": {
+                  "description": "The target that waits for a controller, with the progress (got of need values seen); null when not learning.",
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "object",
+                      "required": ["t", "i", "got", "need"],
+                      "properties": {
+                        "got": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "need": {
+                          "type": "integer",
+                          "minimum": 1
+                        }
+                      }
+                    }
+                  ]
+                },
+                "left": {
+                  "type": "array",
+                  "description": "What the last project load left out (the setup's mappings and an alpha project's MDLN mapping), one reason each; absent: nothing.",
+                  "items": {
+                    "type": "string"
+                  }
+                },
                 "limits": {
                   "type": "object",
                   "description": "P6: exactly the learnable targets.",
                   "required": ["tracks", "params"],
                   "properties": {
+                    "max": {
+                      "type": "integer",
+                      "description": "The most mappings (128).",
+                      "minimum": 1
+                    },
                     "tracks": {
                       "type": "integer",
                       "minimum": 1
@@ -7120,37 +7227,6 @@
               "type": "integer",
               "minimum": 0,
               "maximum": 15
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "description": "host: a controller row's CC changed: its mappings follow",
-          "required": ["op", "from", "to"],
-          "properties": {
-            "op": {
-              "const": "learnSetCc"
-            },
-            "id": {
-              "type": "integer"
-            },
-            "g": {
-              "type": "integer",
-              "minimum": 0
-            },
-            "force": {
-              "type": ["boolean", "integer"]
-            },
-            "from": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 127
-            },
-            "to": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 127
             }
           },
           "additionalProperties": false

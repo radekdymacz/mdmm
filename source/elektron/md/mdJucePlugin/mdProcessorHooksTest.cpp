@@ -1,8 +1,11 @@
 // The fork's hooks in jucePluginLib's Processor (doc/modern-ux/UPSTREAM.md): the host latency published after a
-// resampler mode change (codex review 2026-10, item 7), and no MIDI learn translator while the editors' MIDI mapping
-// is off (item 8), and a project saved with upstream's DSP bridge (a remote device, deleted in 0.5) loading on the
+// resampler mode change (codex review 2026-10, item 7), and MIDI Learn on (0.8: no pluginLib translator, the router in its place), and a project saved with upstream's DSP bridge (a remote device, deleted in 0.5) loading on the
 // local device. No firmware: a synthetic device, and the editors' processors without a ROM.
 #include "mdPluginProcessor.h"
+
+#include "mdMidiLearnCommands.h"
+#include "mdStudioLink.h"
+#include "mmStudioLink.h"
 
 #include "deskHost/deskHost.h"
 
@@ -269,13 +272,121 @@ namespace
 		}
 	}
 
-	// MIDI mapping off: incoming MIDI must not run through the (not thread-safe) learn translator at all
-	void verifyNoMidiLearnTranslatorWhileMappingIsOff(const md::MachineModel _model)
+	// MIDI Learn on (0.8, DESIGN-learn-0.8.md decision C): the pluginLib translator is never made, so nothing of the old
+	// path (not thread-safe) runs for Editor, Physical or Device events; the router is the host's MIDI path. A learned
+	// CC moves its parameter through Parameter::setValue (the realtime host-automation entry), is consumed, and does not
+	// reach the machine; the other sources pass raw (a CC from a port is counted); every learnable parameter takes the
+	// realtime branch.
+	void verifyMidiLearnPath(const md::MachineModel _model)
 	{
+		require(deskHost::midiMappingEnabled, "MIDI mapping is on in 0.8");
 		mdJucePlugin::AudioPluginAudioProcessor processor(_model,
 			mdJucePlugin::AudioPluginAudioProcessor::EphemeralConfig{});
-		require((processor.getMidiLearnTranslator() != nullptr) == deskHost::midiMappingEnabled,
-			"the MIDI learn translator does not follow the MIDI mapping switch");
+		require(processor.getMidiLearnTranslator() == nullptr, "the pluginLib MIDI learn translator is never made");
+		auto& controller = processor.getController();
+
+		// every parameter of the learn model takes the realtime branch (the non-realtime one allocates and locks)
+		const bool mm = _model == md::MachineModel::Monomachine;
+		std::string name;
+		int tracks = mm ? 6 : 16, learnable = 0;
+		for(int t = 0; t < tracks; ++t)
+		{
+			if(mm)
+			{
+				for(uint8_t pg = 0; pg < 8; ++pg)
+					for(uint8_t i = 0; i < (pg == 7 ? 1 : 8); ++i)
+					{
+						const std::string n = mdJucePlugin::MmStudioLink::parameterName(pg, i);
+						if(n.empty())
+							continue;	// not every DATA page slot is a plug-in parameter (the learn model leaves it out)
+						auto* p = controller.getParameter(n, static_cast<uint8_t>(t));
+						require(p && p->takesRealtimeHostValues(), "MM learn target " + n + " takes the realtime host path");
+						++learnable;
+					}
+			}
+			else
+			{
+				for(uint8_t i = 0; i <= 24; ++i)
+				{
+					const std::string n = mdJucePlugin::StudioLink::parameterName(i);
+					require(!n.empty(), "the MD learn model names every kit value and the level");
+					auto* p = controller.getParameter(n, static_cast<uint8_t>(t));
+					require(p && p->takesRealtimeHostValues(), "MD learn target " + n + " takes the realtime host path");
+					++learnable;
+				}
+			}
+		}
+		require(learnable >= tracks * (mm ? 40 : 25) && learnable % tracks == 0, "the whole learn model was checked");
+		name = mm ? mdJucePlugin::MmStudioLink::parameterName(0, 0) : mdJucePlugin::StudioLink::parameterName(0);
+
+		// a learned CC: table published, block started, the host's event consumed and the parameter follows
+		auto* param = controller.getParameter(name, 0);
+		require(param != nullptr, "the first learn target exists");
+		deskCore::LearnMapping m;
+		m.ch = 0;
+		m.cc = 21;
+		m.at = {0, mm ? 0 : -1, 0};
+		auto& router = processor.learnRouter();
+		router.publish(mdJucePlugin::buildLearnTable({m}, [param](const deskCore::LearnRef&) { return param; }, 1));
+		router.beginBlock();
+		require(param->getUnnormalizedValue() != 127, "the parameter starts away from 127");
+		synthLib::SMidiEvent cc(synthLib::MidiEventSource::Host);
+		cc.a = 0xb0;
+		cc.b = 21;
+		cc.c = 127;
+		require(processor.consumeMidiIn(cc), "a mapped CC from the host is consumed (it never reaches the firmware)");
+		require(param->getUnnormalizedValue() == 127, "applyLearnedCc: Parameter::setValue moved the parameter to the learned value");
+		require(router.counts().applied == 1, "one target moved");
+		const auto touched = router.takeTouched();
+		require((touched[0] & 1) == 1, "and its mapping is marked touched for the host's notification");
+
+		// the same CC from the page, the device or a port: not translated, passes raw
+		for(const auto source : {synthLib::MidiEventSource::Editor, synthLib::MidiEventSource::Device, synthLib::MidiEventSource::Physical})
+		{
+			auto other = cc;
+			other.source = source;
+			other.c = 0;
+			require(!processor.consumeMidiIn(other), "a CC that is not the host's is not consumed");
+		}
+		require(param->getUnnormalizedValue() == 127 && router.counts().applied == 1, "and moves no parameter");
+		require(router.counts().physicalPassed == 1, "a CC from a MIDI port is counted as passed raw");
+
+		// HW MIDI engine: the host's MIDI in is the real machine's own MIDI out, so nothing is translated or captured
+		processor.getExternalMidi().set(true);
+		const auto appliedHw = router.counts().applied;
+		router.setLearning(true);
+		synthLib::SMidiEvent hwCc(synthLib::MidiEventSource::Host);
+		hwCc.a = 0xb0;
+		hwCc.b = 21;
+		hwCc.c = 5;
+		require(!processor.consumeMidiIn(hwCc), "HW MIDI on: a mapped CC passes through, also while learning");
+		require(router.counts().applied == appliedHw && router.counts().captured == 0, "and nothing was applied or captured");
+		router.setLearning(false);
+		processor.getExternalMidi().set(false);
+
+		// the controller is going: an empty table, and the audio thread is past any block that read the old one
+		router.endBlock();
+		require(router.publishEmptyAndSettle(), "publishing the empty table settles when no block runs");
+		router.beginBlock();
+		require(router.table().count == 0, "the next block reads the empty table");
+		router.endBlock();
+	}
+
+	// The learnable model keeps only parameters that take the realtime branch: one that does not (a plain Parameter) is
+	// left out of the targets, on any track
+	void verifyOnlyRealtimeParametersAreLearnable()
+	{
+		mdJucePlugin::MidiLearnCommands::Model model;
+		model.tracks = 4;
+		model.params = {{{-1, -1, 0}, "A"}, {{-1, -1, 1}, "B"}, {{-1, -1, 2}, "C"}};
+		const auto kept = mdJucePlugin::MidiLearnCommands::onlyRealtime(model, [](const std::string& _name, const int _track)
+		{
+			return !(_name == "B" && _track == 3);		// B is not realtime on the last track
+		});
+		require(kept.params.size() == 2 && kept.params[0].name == "A" && kept.params[1].name == "C",
+			"a parameter that is not realtime-capable on any track is not a learn target");
+		const auto none = mdJucePlugin::MidiLearnCommands::onlyRealtime(model, [](const std::string&, int) { return false; });
+		require(none.params.empty(), "none realtime: no targets");
 	}
 }
 
@@ -320,8 +431,9 @@ int main()
 	try
 	{
 		verifyResamplerModeLatencyIsPublished();
-		verifyNoMidiLearnTranslatorWhileMappingIsOff(md::MachineModel::Machinedrum);
-		verifyNoMidiLearnTranslatorWhileMappingIsOff(md::MachineModel::Monomachine);
+		verifyMidiLearnPath(md::MachineModel::Machinedrum);
+		verifyMidiLearnPath(md::MachineModel::Monomachine);
+		verifyOnlyRealtimeParametersAreLearnable();
 		verifyOldRemoteDeviceStateLoadsLocal();
 		verifyNativeMenuEntriesCanBeTriggered();
 		std::cout << "mdProcessorHooksTest: PASS\n";

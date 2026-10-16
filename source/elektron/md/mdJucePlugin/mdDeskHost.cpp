@@ -47,8 +47,8 @@ namespace mdJucePlugin
 
 	namespace
 	{
-		// The project's chunks that live without a machine: the editor's setup, the DAW's automation parameters, the MIDI
-		// mapping. The rest (the device state "MIDI", the machine memory's mark "MMEM", ...) is the machine's or is
+		// The project's chunks that live without a machine: the editor's setup, the DAW's automation parameters, an
+		// alpha project's MIDI mapping (read only). The rest (the device state "MIDI", the machine memory's mark "MMEM", ...) is the machine's or is
 		// taken from the project when the machine comes.
 		constexpr std::array<std::array<char, 4>, 3> g_machineFree{pluginLib::fourCC("MDSK"), pluginLib::fourCC("AUTO"), pluginLib::fourCC("MDLN")};
 	}
@@ -58,8 +58,6 @@ namespace mdJucePlugin
 	{
 		baseLib::BinaryStream s;
 		saveChunks(s);
-		if(auto* learn = m_processor.getMidiLearnTranslator())
-			learn->saveChunkData(s);
 		std::vector<uint8_t> block;
 		s.toVector(block);
 		auto chunks = pluginLib::parseChunks(block);
@@ -78,8 +76,6 @@ namespace mdJucePlugin
 		baseLib::BinaryStream s(pluginLib::writeChunks(given));
 		baseLib::ChunkReader reader(s);
 		addChunkReaders(reader);
-		if(auto* learn = m_processor.getMidiLearnTranslator())
-			learn->loadChunkData(reader);
 		(void)reader.tryRead();
 	}
 
@@ -171,6 +167,15 @@ namespace mdJucePlugin
 		{
 			setSetup(_stream.readString());
 		});
+		// An alpha project's MIDI mapping (the pluginLib translator's chunk, versions 1 and 2: the preset's JSON text first;
+		// the input sources of version 2 are not used). Read only: it is imported into the setup once, never written.
+		_reader.add("MDLN", 2, [this](baseLib::BinaryStream& _stream, uint32_t)
+		{
+			auto text = _stream.readString();
+			const std::lock_guard lock(m_setupMutex);
+			m_legacyMapping = std::move(text);
+			m_setupVersion.fetch_add(1, std::memory_order_release);	// the session looks at the setup again
+		});
 		_reader.add("AUTO", 1, [this](baseLib::BinaryStream& _stream, uint32_t)
 		{
 			std::vector<uint8_t> snapshot;
@@ -178,6 +183,27 @@ namespace mdJucePlugin
 			if(m_processor.hasController())
 				(void)dynamic_cast<Controller&>(m_processor.getController()).restoreAutomationSnapshot(snapshot);
 		});
+	}
+
+	void DeskHost::beginProjectLoad()
+	{
+		{
+			const std::lock_guard lock(m_setupMutex);
+			m_legacyMapping.clear();
+		}
+		setSetup({});
+	}
+
+	void DeskHost::clearLegacyMapping()
+	{
+		const std::lock_guard lock(m_setupMutex);
+		m_legacyMapping.clear();
+	}
+
+	std::string DeskHost::legacyMapping() const
+	{
+		const std::lock_guard lock(m_setupMutex);
+		return m_legacyMapping;
 	}
 
 	std::string DeskHost::setup() const

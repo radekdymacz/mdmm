@@ -6,6 +6,10 @@
 #include "mdDeskHost.h"
 #include "mdPageEditor.h"
 #include "mdDeskSession.h"
+#include "mdStudioLink.h"
+#include "mmStudioLink.h"
+
+#include "baseLib/binarystream.h"
 
 #include "jucePluginLib/projectState.h"
 
@@ -111,6 +115,299 @@ namespace
 	}
 }
 
+namespace
+{
+	// 0.8 (MIDI Learn L2, DESIGN-learn-0.8.md): the mappings are part of the setup. In either editor: a mapping the page adds
+	// (learnAdd) is saved with the project and comes back in a new instance, which tells its page and publishes the table the
+	// audio thread reads (a CC then moves the parameter); learning is pulled by the session step from the captured CCs
+	// (nothing happens on the audio thread's side but the capture); a knob row's new CC takes its mappings with it (the
+	// Machinedrum); an alpha project's MDLN mapping is taken over once; a mapping the project cannot be read for is left
+	// out and said (left).
+	void learnState(const md::MachineModel _model, const char* _name)
+	{
+		std::printf("%s: MIDI Learn in the setup\n", _name);
+		const bool mm = _model == md::MachineModel::Monomachine;
+		const auto say = [](mdJucePlugin::DeskSession& _s, const std::string& _json) { _s.onPageMessage(*elektronData::json::parse(_json)); };
+		const auto lastLearn = [](const std::vector<Value>& _page) -> const Value*
+		{
+			for(auto it = _page.rbegin(); it != _page.rend(); ++it)
+				if(const auto* t = it->find("type"); t && t->isString() && t->asString() == "learn")
+					return it->find("doc");
+			return nullptr;
+		};
+		const auto mappingsOf = [&](const std::vector<Value>& _page) -> const std::vector<Value>*
+		{
+			const auto* d = lastLearn(_page);
+			return d && d->find("mappings") ? &d->find("mappings")->asArray() : nullptr;
+		};
+		const std::string target = mm ? R"("t":0,"pg":0,"i":0)" : R"("t":0,"i":0)";
+		const std::string target2 = mm ? R"("t":1,"pg":1,"i":2)" : R"("t":1,"i":2)";
+		const int ccAny = mm ? 60 : 21;		// the Monomachine's page 1 starts at CC 56; the Machinedrum's CC 16-39 are the first lane's
+		const std::string name = mm ? mdJucePlugin::MmStudioLink::parameterName(0, 0) : mdJucePlugin::StudioLink::parameterName(0);
+
+		juce::MemoryBlock saved;
+		{
+			mdJucePlugin::AudioPluginAudioProcessor a(_model, isolated());
+			juce::AudioProcessor& ja = a;
+			auto* session = a.getDeskHost()->session();
+			std::vector<Value> page;
+			session->attach([&page](const Value& _m) { page.push_back(_m); });
+			say(*session, R"({"op":"ready"})");
+			check(mappingsOf(page) && mappingsOf(page)->empty() && lastLearn(page)->find("enabled")->asBool(), "no mapping at first, and MIDI mapping is on");
+			check(lastLearn(page)->find("limits")->find("max")->asNumber() == 128, "the document says the most mappings");
+			say(*session, R"({"op":"learnAdd","id":1,"cc":)" + std::to_string(ccAny) + "," + target + "}");
+			const auto* list = mappingsOf(page);
+			check(list && list->size() == 1 && (*list)[0].find("cc")->asNumber() == ccAny && (*list)[0].find("ch")->asNumber() == 255
+				&& (*list)[0].find("mode")->asString() == "Absolute", "learnAdd: one mapping on any channel");
+			// the machine's own CCs it hides (the base channel 0: 4 channels of the Machinedrum, 6 of the Monomachine)
+			check(list && (*list)[0].find("overrides")->asArray().size() == (mm ? 6u : 4u), "and it says which firmware targets it overrides");
+			say(*session, R"({"op":"learnAdd","id":2,"cc":)" + std::to_string(ccAny) + "," + target + "}");
+			check(mappingsOf(page)->size() == 1, "learnAdd: the same mapping again is refused (already mapped)");
+			check(a.getDeskHost()->setup().find("\"mappings\"") != std::string::npos, "the mapping is in the setup the project keeps");
+
+			// the audio thread's table: published; a CC moves the parameter
+			auto& router = a.learnRouter();
+			router.beginBlock();
+			check(router.table().count == 1, "the table the audio thread reads has the mapping");
+			auto* param = a.getController().getParameter(name, 0);
+			check(router.translate(0xb3, static_cast<uint8_t>(ccAny), 127) && param && param->getUnnormalizedValue() == 127,
+				"a CC on any channel moves the parameter and is consumed");
+
+			// learning is pulled by the step: two values from one controller make the mapping, only on the message thread
+			say(*session, R"({"op":"learnStart","id":3,)" + target2 + "}");
+			check(lastLearn(page)->find("learning")->isObject() && lastLearn(page)->find("learning")->find("got")->asNumber() == 0
+				&& lastLearn(page)->find("learning")->find("need")->asNumber() == 2, "learnStart: the document says what waits, 0 of 2");
+			router.beginBlock();
+			check(router.translate(0xb2, 30, 10), "while learning a CC is captured and consumed");
+			check(router.translate(0x90, 60, 100) == false, "and a note goes on to the machine");
+			check(mappingsOf(page)->size() == 1, "nothing is learned yet: the audio thread only captured");
+			session->step();
+			check(lastLearn(page)->find("learning")->isObject() && lastLearn(page)->find("learning")->find("got")->asNumber() == 1, "the step took the first value: 1 of 2");
+			check(router.translate(0xb2, 30, 100), "the second value");
+			session->step();
+			list = mappingsOf(page);
+			check(list && list->size() == 2 && (*list)[1].find("cc")->asNumber() == 30 && (*list)[1].find("ch")->asNumber() == 2
+				&& (*list)[1].find("t")->asNumber() == 1 && lastLearn(page)->find("learning")->isNull(),
+				"the step learned the mapping: the CC and channel it came on, the target; learning is over");
+			router.beginBlock();
+			check(router.table().count == 2, "and the audio thread has the new table at its next block");
+			auto* p2 = a.getController().getParameter(mm ? mdJucePlugin::MmStudioLink::parameterName(1, 2) : mdJucePlugin::StudioLink::parameterName(2), 1);
+			check(router.translate(0xb2, 30, 127) && p2 && p2->getUnnormalizedValue() == 127, "the learned CC moves its parameter");
+			router.translate(0xb2, 30, 0);
+			session->step();
+			check(router.takeTouched() == std::array<uint64_t, 2>{0, 0}, "the session step took the touched bits (the host is told on the message thread)");
+
+			// a second learnStart moves the target, learnCancel ends it
+			say(*session, R"({"op":"learnStart","id":4,)" + target + "}");
+			say(*session, R"({"op":"learnStart","id":5,)" + target2 + "}");
+			check(router.learning() && lastLearn(page)->find("learning")->find("t")->asNumber() == 1, "a second learnStart moves the target");
+			say(*session, R"({"op":"learnCancel","id":6})");
+			check(!router.learning() && lastLearn(page)->find("learning")->isNull(), "learnCancel ends it");
+
+			// invert and remove
+			say(*session, R"({"op":"learnInvert","id":7,"index":0})");
+			check((*mappingsOf(page))[0].find("invert")->asBool(), "learnInvert");
+			say(*session, R"({"op":"learnRemove","id":8,"index":1})");
+			check(mappingsOf(page)->size() == 1, "learnRemove");
+			router.beginBlock();
+			check(router.table().count == 1, "and the table follows");
+
+			// the host hears the moves in change gestures: one begin, values, one end 250 ms after the last move; a rebuild closes
+			// an open one (none stays stuck), and a bit the old table set names nothing in the new
+			struct Gestures final : juce::AudioProcessorParameter::Listener
+			{
+				void parameterValueChanged(int, float) override { ++values; }
+				void parameterGestureChanged(int, const bool _starting) override { (_starting ? begins : ends)++; }
+				int begins = 0, ends = 0, values = 0;
+			} gestures;
+			auto* gp = a.getController().getParameter(name, 0);
+			gp->addListener(&gestures);
+			router.beginBlock();
+			router.translate(0xb0, static_cast<uint8_t>(ccAny), 10);
+			session->step();
+			check(gestures.begins == 1 && gestures.ends == 0 && gestures.values >= 1, "gesture: a learned move opens one change gesture and tells the host the value");
+			router.translate(0xb0, static_cast<uint8_t>(ccAny), 100);
+			session->step();
+			check(gestures.begins == 1 && gestures.ends == 0, "gesture: the next move is in the same gesture");
+			juce::Thread::sleep(300);
+			session->step();
+			check(gestures.begins == 1 && gestures.ends == 1, "gesture: it ends 250 ms after the last move");
+			router.translate(0xb0, static_cast<uint8_t>(ccAny), 40);
+			session->step();
+			check(gestures.begins == 2 && gestures.ends == 1, "gesture: a new move, a new gesture");
+			router.translate(0xb0, static_cast<uint8_t>(ccAny), 90);
+			say(*session, R"({"op":"learnInvert","id":70,"index":0})");
+			check(gestures.begins == 2 && gestures.ends == 2, "gesture: a rebuild of the table closes the open one (none stays stuck)");
+			check(router.takeTouched() == std::array<uint64_t, 2>{0, 0}, "and the bit the old table set is gone");
+			say(*session, R"({"op":"learnInvert","id":71,"index":0})");
+			gp->removeListener(&gestures);
+			check(gestures.begins == gestures.ends, "every gesture opened was closed");
+
+			// HW MIDI engine: the host's MIDI in is the machine's own MIDI out: nothing is translated or captured, the document says why
+			const auto asOk = [&](const char* _id)
+			{
+				for(auto it = page.rbegin(); it != page.rend(); ++it)
+					if(const auto* t = it->find("type"); t && t->asString() == "result" && it->find("id") && it->find("id")->asNumber() == std::atof(_id))
+						return it->find("ok")->asBool();
+				return true;
+			};
+			say(*session, R"({"op":"learnStart","id":72,)" + target2 + "}");
+			check(router.learning(), "a learn waits for a controller");
+			a.getExternalMidi().set(true);
+			session->step();
+			check(!router.learning() && lastLearn(page)->find("paused") && lastLearn(page)->find("learning")->isNull(), "HW MIDI on: the learn ends, and the document says Learn is off (paused, with the reason)");
+			say(*session, R"({"op":"learnStart","id":73,)" + target2 + "}");
+			check(!asOk("73") && !router.learning(), "and a new learn is refused");
+			const auto applied0 = router.counts().applied, captured0 = router.counts().captured;
+			synthLib::SMidiEvent hostCc(synthLib::MidiEventSource::Host);
+			hostCc.a = 0xb0; hostCc.b = static_cast<uint8_t>(ccAny); hostCc.c = 3;
+			router.beginBlock();
+			check(!a.consumeMidiIn(hostCc) && router.counts().applied == applied0 && router.counts().captured == captured0,
+				"and a mapped CC from the host passes through untouched, not translated and not captured");
+			a.getExternalMidi().set(false);
+			session->step();
+			check(!lastLearn(page)->find("paused") && a.consumeMidiIn(hostCc), "back on the emulator: no reason, and the mapping works again");
+			ja.getStateInformation(saved);
+			say(*session, R"({"op":"learnStart","id":80,)" + target2 + "}");
+			check(router.learning(), "a learn waits when the page goes");
+			session->detach();
+			check(!router.learning(), "the page detached (the editor closed): the learn is cancelled");
+		}
+
+		// a new instance restores the mapping with the project, tells its page and publishes the table
+		mdJucePlugin::AudioPluginAudioProcessor b(_model, isolated());
+		juce::AudioProcessor& jb = b;
+		jb.setStateInformation(saved.getData(), static_cast<int>(saved.getSize()));
+		auto* session = b.getDeskHost()->session();
+		std::vector<Value> page;
+		session->attach([&page](const Value& _m) { page.push_back(_m); });
+		say(*session, R"({"op":"ready"})");
+		session->step();
+		say(*session, R"({"op":"ready"})");
+		const auto* list = mappingsOf(page);
+		check(list && list->size() == 1 && (*list)[0].find("cc")->asNumber() == ccAny && (*list)[0].find("invert")->asBool(),
+			"a mapping survives save and load of the project: the new instance's document has it, inverted as saved");
+		auto& router = b.learnRouter();
+		router.beginBlock();
+		auto* param = b.getController().getParameter(name, 0);
+		check(router.table().count == 1 && router.translate(0xb0, static_cast<uint8_t>(ccAny), 127) && param->getUnnormalizedValue() == 0,
+			"and its table moves the parameter (the inversion kept)");
+
+		// an alpha project's MDLN mapping: taken over once when the setup has no mappings member
+		{
+			auto project = pluginLib::parseProject(std::vector<uint8_t>(static_cast<const uint8_t*>(saved.getData()),
+				static_cast<const uint8_t*>(saved.getData()) + saved.getSize()));
+			check(project.has_value(), "the saved project parses");
+			if(project)
+			{
+				pluginLib::putChunk(project->chunks, pluginLib::fourCC("MDSK"), std::nullopt);		// no setup member
+				const std::string preset = std::string(R"({"name":"x","version":1,"mappings":[)")
+					+ R"({"type":"ControlChange","mode":"RelativeSigned","channel":2,"part":3,"controller":44,"paramName":")" + name + R"(","invert":true},)"
+					+ R"({"type":"ControlChange","channel":0,"controller":45,"paramName":")" + name + R"("},)"
+					+ R"({"type":"ControlChange","channel":0,"part":1,"controller":46,"paramName":"NoSuchParameter"}]})";
+				baseLib::BinaryStream chunkData;
+				chunkData.write(preset);
+				std::vector<uint8_t> bytes;
+				chunkData.toVector(bytes);
+				pluginLib::putChunk(project->chunks, pluginLib::fourCC("MDLN"), pluginLib::ProjectChunk{pluginLib::fourCC("MDLN"), 2, bytes});
+				const auto alpha = pluginLib::writeProject(*project);
+				mdJucePlugin::AudioPluginAudioProcessor c(_model, isolated());
+				juce::AudioProcessor& jc = c;
+				jc.setStateInformation(alpha.data(), static_cast<int>(alpha.size()));
+				auto* cs = c.getDeskHost()->session();
+				std::vector<Value> cp;
+				cs->attach([&cp](const Value& _m) { cp.push_back(_m); });
+				say(*cs, R"({"op":"ready"})");
+				cs->step();
+				say(*cs, R"({"op":"ready"})");
+				const auto* l = mappingsOf(cp);
+				check(l && l->size() == 1 && (*l)[0].find("cc")->asNumber() == 44 && (*l)[0].find("ch")->asNumber() == 2
+					&& (*l)[0].find("t")->asNumber() == 3 && (*l)[0].find("mode")->asString() == "RelativeSigned" && (*l)[0].find("invert")->asBool(),
+					"MDLN of an alpha project is imported: the mapping with a track part, its channel, mode and inversion");
+				const auto* left = lastLearn(cp)->find("left");
+				check(left && left->asArray().size() == 2, "the automatic part and the unknown parameter are left out, said in left");
+				check(c.getDeskHost()->legacyMapping().empty() && c.getDeskHost()->setup().find("\"mappings\"") != std::string::npos,
+					"and it is in the setup now, MDLN is not kept");
+				say(*cs, R"({"op":"learnRemove","id":60,"index":0})");
+				check(c.getDeskHost()->setup().find("\"mappings\":[]") != std::string::npos,
+					"deleting the imported mapping writes mappings: [] so the alpha MDLN is not imported again");
+				cs->detach();
+			}
+		}
+
+		// a setup with a mapping the editor cannot read: that one is left out alone, said in the document
+		{
+			const std::string badTarget = mm ? R"("t":0,"pg":99,"i":0)" : R"("t":0,"i":99)";
+			const std::string setup = mm
+				? R"({"schema":"mm-desk/setup","version":1,"mappings":[{"ch":0,"cc":21,"t":0,"pg":0,"i":0,"mode":"future-mode"},{"ch":0,"cc":22,)" + badTarget + "}]}"
+				: R"({"schema":"md-desk/setup","version":1,"mappings":[{"ch":0,"cc":21,"t":0,"i":0,"mode":"future-mode","extra":1},{"ch":0,"cc":22,)" + badTarget + "}]}";
+			mdJucePlugin::AudioPluginAudioProcessor d(_model, isolated());
+			d.getDeskHost()->setSetup(setup);
+			auto* ds = d.getDeskHost()->session();
+			std::vector<Value> dp;
+			ds->attach([&dp](const Value& _m) { dp.push_back(_m); });
+			say(*ds, R"({"op":"ready"})");
+			ds->step();
+			say(*ds, R"({"op":"ready"})");
+			const auto* l = mappingsOf(dp);
+			check(l && l->size() == 1 && (*l)[0].find("mode")->asString() == "Absolute", "an unknown mode is absolute, the other mapping is kept");
+			const auto* left = lastLearn(dp)->find("left");
+			bool path = false;
+			if(left)
+				for(const auto& e : left->asArray())
+					path = path || e.asString().find("$.mappings[1]") == 0;
+			check(path, "the one outside the limits is left out alone, with its path");
+			ds->detach();
+		}
+		session->detach();
+	}
+
+	// MD: a knob row's CC changed (knobs) takes its any-channel mappings with it, in the same command
+	void knobRowMovesMappings()
+	{
+		std::printf("Machinedrum: a knob row's CC moves its mappings\n");
+		mdJucePlugin::AudioPluginAudioProcessor a(md::MachineModel::Machinedrum, isolated());
+		auto* session = a.getDeskHost()->session();
+		std::vector<Value> page;
+		session->attach([&page](const Value& _m) { page.push_back(_m); });
+		const auto say = [&](const char* _json) { session->onPageMessage(*elektronData::json::parse(_json)); };
+		say(R"({"op":"ready"})");
+		say(R"({"op":"learnAdd","id":1,"cc":21,"t":0,"i":0})");
+		say(R"({"op":"learnAdd","id":2,"cc":21,"t":1,"i":1,"ch":3})");
+		say(R"({"op":"knobs","id":3,"ccs":[41,22,23,24,25,26,27,28]})");
+		const Value* doc = nullptr;
+		for(auto it = page.rbegin(); it != page.rend() && !doc; ++it)
+			if(const auto* t = it->find("type"); t && t->asString() == "learn")
+				doc = it->find("doc");
+		session->step();
+		for(auto it = page.rbegin(); it != page.rend(); ++it)
+			if(const auto* t = it->find("type"); t && t->asString() == "learn")
+			{
+				doc = it->find("doc");
+				break;
+			}
+		const auto& list = doc->find("mappings")->asArray();
+		check(list.size() == 2 && list[0].find("cc")->asNumber() == 41 && list[0].find("ch")->asNumber() == 255
+			&& list[1].find("cc")->asNumber() == 21 && list[1].find("ch")->asNumber() == 3,
+			"the any-channel mapping follows the knob row to CC 41, the channel-specific one is the person's own and stays");
+		auto& router = a.learnRouter();
+		router.beginBlock();
+		check(router.table().count == 2, "and the table follows");
+		say(R"({"op":"learnAdd","id":4,"cc":22,"t":3,"i":3})");
+		say(R"({"op":"knobs","id":5,"ccs":[22,41,23,24,25,26,27,28]})");
+		session->step();
+		for(auto it = page.rbegin(); it != page.rend(); ++it)
+			if(const auto* t = it->find("type"); t && t->asString() == "learn")
+			{
+				const auto& l2 = it->find("doc")->find("mappings")->asArray();
+				check(l2.size() == 3 && l2[0].find("cc")->asNumber() == 22 && l2[2].find("cc")->asNumber() == 41,
+					"two rows swapped in one command: each mapping follows its own row (22 and 41), none merged");
+				break;
+			}
+		session->detach();
+	}
+}
+
 // 1.0 review (real time 4): with no page the session steps every g_idleStepMs, each step standing for several 8 ms
 // ones; every period keeps its length: over the same time the idle pace is due as often as the 8 ms pace (one more or
 // one less at the edges), and on the first step.
@@ -189,18 +486,7 @@ namespace
 		std::vector<uint8_t> taken;
 		check(c.getDeskHost()->takeHeldState(taken) && taken == bytesOf(changed), "the machine that comes gets the same bytes (the change is not lost there)");
 		c.getDeskHost()->holdState(given.data(), static_cast<int>(given.size()));
-		if(auto* learn = c.getMidiLearnTranslator())
-		{
-			// MIDI mapping on (MDMM_MIDI_MAPPING=1): a mapping changed while held is saved
-			learn->setLearnInputSources(static_cast<uint8_t>(learn->getLearnInputSources() ^ 1));
-			juce::MemoryBlock mapped;
-			jc.getStateInformation(mapped);
-			const auto m = pluginLib::parseProject(bytesOf(mapped));
-			check(m && pluginLib::findChunk(m->chunks, fourCC("MDLN")) && pluginLib::findChunk(m->chunks, fourCC("MDLN"))->data != learnOld.data,
-				"a MIDI mapping changed while held is saved (was lost)");
-		}
-		else
-			std::printf("  (MIDI mapping is off in this build: the translator's own change is not exercised; putMoved is)\n");
+		check(c.getMidiLearnTranslator() == nullptr, "the pluginLib translator is not made: an alpha MDLN chunk is kept as it was (read only, never rewritten)");
 		c.getDeskHost()->takeHeldState(taken);
 	}
 }
@@ -257,6 +543,9 @@ int main()
 	wirePace(md::MachineModel::Monomachine, "Monomachine");
 	soloState(md::MachineModel::Machinedrum, "Machinedrum");
 	soloState(md::MachineModel::Monomachine, "Monomachine");
+	learnState(md::MachineModel::Machinedrum, "Machinedrum");
+	learnState(md::MachineModel::Monomachine, "Monomachine");
+	knobRowMovesMappings();
 	const std::string setup = R"({"schema":"md-desk/setup","version":1,"modulators":{"schema":"md-desk/modulators","version":1,)"
 		R"("sources":[{"id":"lfo1","label":"LFO A","kind":"lfo","shape":2,"rate":"1/4","depth":80,"smooth":30}],)"
 		R"("links":[{"source":"lfo1","track":3,"param":12,"min":5,"max":90,"curve":"exp","invert":true}]},"knobCcs":[30,31,32,33,34,35,36,37]})";
