@@ -49,7 +49,7 @@ const MmJourneys = (() => {
 		if (m.type === "result") { results.push(m); if (results.length > 50) results.shift(); }
 	});
 	const PAGES = ["SYN", "AMP", "FLT", "EFX", "LF1", "LF2", "LF3"];
-	const go = ws => ({ say: `click the ${{ seq: "Sequence", sound: "Sound", mix: "Mix", perform: "Perform", song: "Song" }[ws]} tab`, act: u => u.click(tab(ws)), screen: () => onTab(ws) });
+	const go = ws => ({ say: `click the ${{ seq: "Pattern", sound: "Kit", mix: "Mix", perform: "Perform", song: "Song" }[ws]} tab`, act: u => u.click(tab(ws)), screen: () => onTab(ws) });
 	const sel = t => ({ say: `pick track ${t + 1} on the rail`, act: (u, c) => { c.t = t; if (S().side === "midi" && t < 6) u.click('[data-side="int"]'); u.click(rail(t)); }, screen: () => ok(S().sel === t, "selected " + S().sel) });
 	const undoKey = { say: "press Cmd+Z", act: u => u.key("z", { cmd: true }) };
 	const blur = () => document.activeElement?.blur?.();
@@ -89,7 +89,7 @@ const MmJourneys = (() => {
 	const firstBeat = {
 		name: "mm-seq-first-beat", proves: ["MM-076", "MM-172", "MM-040", "MM-041"],
 		steps: [
-			{ say: "click the Sequence tab", act: u => u.click(tab("seq")), screen: () => onTab("seq") === true ? ok(!!$1("#seq canvas.roll[data-big]"), "no piano roll") : onTab("seq"), machine: () => ok(!!patDoc(), "pattern not read") },
+			{ say: "click the Pattern tab", act: u => u.click(tab("seq")), screen: () => onTab("seq") === true ? ok(!!$1("#seq canvas.roll[data-big]"), "no piano roll") : onTab("seq"), machine: () => ok(!!patDoc(), "pattern not read") },
 			sel(0),
 			{ say: "click four empty cells of the piano roll", act: async (u, c) => {
 				/* A synth note's bar runs on to the next step that holds anything, and a click on a bar takes that note
@@ -350,7 +350,7 @@ const MmJourneys = (() => {
 			{ say: "click GEN's Random key until the notes change", act: async (u, c) => { c.p0 = JSON.stringify(patDoc().tracks[0]); for (let i = 0; i < 5; i++) { u.click("#genpop [data-rand]"); if (await until(() => JSON.stringify(patDoc().tracks[0]) !== c.p0, 4000)) break; } },
 				machine: c => ok(JSON.stringify(patDoc().tracks[0]) !== c.p0, "pattern unchanged"), within: 15000 },
 			{ say: "click Done: the dialog closes and keeps the run", act: u => u.click("#genpop [data-genclose]"), screen: () => ok($1("#genpop").hidden, "the dialog is open") },
-			{ say: "click the Sound tab and MUTATE's Random key", act: async (u, c) => { u.click(tab("sound")); await sleep(300); c.k0 = kitT(0); u.click("#mutband [data-rand]"); }, machine: c => ok(kitT(0) !== c.k0, "kit unchanged"), within: 15000 },
+			{ say: "click the Kit tab and MUTATE's Random key", act: async (u, c) => { u.click(tab("sound")); await sleep(300); c.k0 = kitT(0); u.click("#mutband [data-rand]"); }, machine: c => ok(kitT(0) !== c.k0, "kit unchanged"), within: 15000 },
 			{ say: "click Undo: the sound is back", act: u => u.click("#undo"), machine: c => ok(kitT(0) === c.k0, "kit not back"), within: 15000 },
 			{ say: "click Undo again: the notes are back", act: u => u.click("#undo"), machine: c => ok(JSON.stringify(patDoc().tracks[0]) === c.p0, "pattern not back"), within: 15000 }
 		]
@@ -459,7 +459,7 @@ const MmJourneys = (() => {
 	const shapeSound = {
 		name: "mm-sound-shape-undo", proves: ["MM-015"],
 		steps: [
-			{ say: "click the Sound tab: grouped by function", act: u => u.click(tab("sound")), screen: () => onTab("sound") === true ? ok($all("#main .sg").length >= 4, $all("#main .sg").length + " groups") : onTab("sound"), machine: () => ok(!!wk(), "no working kit") },
+			{ say: "click the Kit tab: grouped by function", act: u => u.click(tab("sound")), screen: () => onTab("sound") === true ? ok($all("#main .sg").length >= 4, $all("#main .sg").length + " groups") : onTab("sound"), machine: () => ok(!!wk(), "no working kit") },
 			sel(0),
 			{ say: "drag a filter value sideways", act: async (u, c) => {
 				const el = $1('#main .pc[data-g="FLT"]') || $1('#main .pc[data-g="AMP"]'); if (!el) throw new Error("no FLT or AMP value");
@@ -517,12 +517,12 @@ const MmJourneys = (() => {
 				act: (u, c) => { c.n = rollCell(0, 0).n; c.s = freeSteps(0, 1, 0, c.n)[0]; if (c.s == null)
 				throw new Error("no free step"); const p = rollCell(0, c.s); u.click(p.c, {}, p.fx, p.fy); },
 				machine: c => ok(trigsOf(0).includes(c.s), "pattern trigs " + trigsOf(0).join(",")), within: 15000 },
-			{ say: "wait on Sequence: the machine stays", act: () => sleep(5000),
+			{ say: "wait on Pattern: the machine stays", act: () => sleep(5000),
 				screen: c => ok(S().tracks[0].m === c.m1, "view " + S().tracks[0].m),
 				machine: c => ok(kitT(0) !== c.k0 && machine().kit?.working === "edited", "kit back to " + kitT(0)
 				+ ", " + machine().kit?.working), within: 2000 },
 			go("sound"),
-			{ say: "and on Sound again", act: () => sleep(1000), screen: c => ok(S().tracks[0].m === c.m1, "view " + S().tracks[0].m), machine: c => ok(kitT(0) !== c.k0, "kit back to " + kitT(0)), within: 2000 }
+			{ say: "and on Kit again", act: () => sleep(1000), screen: c => ok(S().tracks[0].m === c.m1, "view " + S().tracks[0].m), machine: c => ok(kitT(0) !== c.k0, "kit back to " + kitT(0)), within: 2000 }
 		],
 		async tidy(u, c) {
 			blur();
@@ -737,6 +737,31 @@ const MmJourneys = (() => {
 		async tidy(u) { if (S().playing) { u.click("#play"); await sleep(500); } }
 	};
 
+	/* I-031 (Discord 2026-10-16): a track that plays because another track's trig forwards to it (the kit's Trig
+	   position) lights its rail number in a second colour, as "trig2"; the forwarding track keeps its own lamp */
+	const railLampsFwd = {
+		name: "mm-seq-rail-lamps-forwarded", proves: [],
+		steps: [
+			go("seq"),
+			{ say: "the synth tracks on the rail; pick a track with trigs and send its trig on to a track of its own", act: async (u, c) => {
+				if (S().side === "midi") u.click('[data-side="int"]');
+				const trig = (t, k) => { const st = S().tracks[t].steps[k]; return !!(st && !st.off && st.a); }, T = [0, 1, 2, 3, 4, 5];
+				/* the pair with the earliest step where a trigs and b does not (the stub plays slowly) */
+				const first = (a, b) => { for (let k = 0; k < S().len; k++) if (trig(a, k) && !trig(b, k)) return k; return 99; };
+				const best = T.flatMap(a => T.filter(b => b !== a).map(b => [a, b, first(a, b)])).sort((x, y) => x[2] - y[2])[0]; c.a = best[0]; c.b = best[1]; /* a step where a trigs and b does not */
+				u.click(rail(c.a)); await sleep(300); await dockOpen(u, "trig"); u.click(`[data-set="trigpos"] button[data-v="${c.b}"]`);
+				c.set = await until(() => S().tracks[c.a].trigpos === c.b, 4000); }, screen: c => ok(c.set, `T${c.a + 1} trig position ${S().tracks[c.a].trigpos}`) },
+			{ say: "press PLAY until the target's number lights in the second colour, the source's own lamp stays the first", act: async (u, c) => {
+				c.own = new Set(); c.fwd = new Set(); const ob = new MutationObserver(ms => { for (const m of ms) { const cl = m.target.classList; if (!cl) continue; if (cl.contains("trig")) c.own.add(+m.target.dataset.sel); if (cl.contains("trig2")) c.fwd.add(+m.target.dataset.sel); } });
+				ob.observe($1("#rail"), { subtree: true, attributes: true, attributeFilter: ["class"] });
+				if (!S().playing) u.click("#play"); await until(() => S().playing, 5000); await until(() => c.fwd.size > 0, 15000); ob.disconnect(); Journey.snapshot("mm-seq-rail-lamps-forwarded"); },
+				screen: c => ok(c.fwd.has(c.b) && !c.fwd.has(c.a) && c.own.has(c.a), `second colour on ${[...c.fwd]} (target T${c.b + 1}); first colour on ${[...c.own]} (source T${c.a + 1}); trigpos now ${S().tracks[c.a].trigpos}, ws ${S().ws}`) },
+			{ say: "press STOP, send the trig nowhere: no second-colour lamp stays, and after the change none lights", act: async (u, c) => { if (S().playing) u.click("#play"); await until(() => !S().playing, 5000); u.click(rail(c.a)); await sleep(300); u.click('[data-set="trigpos"] button[data-v=""]'); await until(() => S().tracks[c.a].trigpos == null, 4000); await sleep(400); },
+				screen: () => ok(!$1("#rail .th.trig2") && S().tracks.every(t => t.trigpos == null), "a second-colour lamp stays or a trig position is left") }
+		],
+		async tidy(u, c) { if (S().playing) { u.click("#play"); await sleep(500); } if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); await back(u, c); }
+	};
+
 	/* ---------- Perform ---------- */
 	const poly = {
 		name: "mm-perform-poly", proves: ["MM-032", "MM-087", "MM-239"],
@@ -779,6 +804,45 @@ const MmJourneys = (() => {
 	const pdown = (q, type) => { const k = $1(q), r = k.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height * 0.8;
 		document.elementFromPoint(x, y).dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, composed: true, pointerId: 1, pointerType: "mouse", isPrimary: true, button: 0, buttons: type === "pointerdown" ? 1 : 0, clientX: x, clientY: y })); };
 	const kbKey = (type, key) => document.body.dispatchEvent(new KeyboardEvent(type, { key, code: "Key" + key.toUpperCase(), bubbles: true, cancelable: true }));
+	/* I-003: FOLLOW PLAYED TRACK in the engine menu (off by default, kept in the editor's setup): a note from a MIDI controller
+	   (midiIn) on a synth track's channel (base + t inside CHANNEL SPAN) selects that track; another channel, and the
+	   editor's own computer keyboard, do not */
+	const followKeyLabel = () => $1('#engsel option[value="followPlayed"]')?.textContent;
+	const followPlayed = {
+		name: "mm-follow-played-track", proves: ["MM-X26"],
+		steps: [
+			go("seq"), sel(0),
+			{ say: "track 1 is selected; the engine menu says FOLLOW PLAYED TRACK: OFF", act: (u, c) => { const g = globalNow()?.channels; c.base = g?.base; c.span = g?.span; if (!(c.base <= 8 && c.span >= 5)) throw new Error("the global's channels: " + JSON.stringify(g)); },
+				screen: () => ok(S().sel === 0 && followKeyLabel() === "FOLLOW PLAYED TRACK: OFF", "track " + S().sel + ", " + followKeyLabel()), within: 6000 },
+			{ say: "off: a MIDI keyboard plays track 4's channel: the selection stays", act: async (u, c) => { window.gm.recv([{ type: "midiIn", ch: c.base + 3, note: 60, vel: 100 }]); await sleep(300); },
+				screen: () => ok(S().sel === 0, "track " + S().sel) },
+			{ say: "choose FOLLOW PLAYED TRACK in the engine menu: it reads ON", act: u => u.pick("engsel", "followPlayed"),
+				screen: () => ok(followKeyLabel() === "FOLLOW PLAYED TRACK: ON", followKeyLabel()), within: 4000 },
+			{ say: "on: a note on track 4's channel selects track 4", act: (u, c) => window.gm.recv([{ type: "midiIn", ch: c.base + 3, note: 60, vel: 100 }]),
+				screen: () => ok(S().sel === 3, "track " + S().sel), within: 2000 },
+			{ say: "a note on a channel no synth track plays (past the span): the selection stays", act: async (u, c) => { c.far = [...Array(16).keys()].find(x => x < c.base || x >= c.base + c.span); window.gm.recv([{ type: "midiIn", ch: c.far, note: 60, vel: 100 }]); await sleep(300); },
+				screen: c => ok(c.far != null && S().sel === 3, "channel " + c.far + ", track " + S().sel) },
+			{ say: "press A on the computer keyboard (the editor's own audition): the selection stays", act: async u => { blur(); u.key("a"); await sleep(300); },
+				screen: () => ok(S().sel === 3, "track " + S().sel) },
+			{ say: "a burst of 40 notes alternating track 5 and track 6, ending on 6: one selection, track 6", act: async (u, c) => { c.n = 0; const sl = window.select; window.select = t => { c.n++; sl(t); };
+					try { window.gm.recv(Array.from({ length: 40 }, (_, i) => ({ type: "midiIn", ch: c.base + 4 + (i % 2 ? 1 : 0), note: 60, vel: 100 }))); await sleep(300); } finally { window.select = sl; } },
+				screen: c => ok(S().sel === 5 && c.n === 1, "track " + S().sel + ", " + c.n + " selections") },
+			{ say: "a question open: a note for track 1 leaves the selection", act: async (u, c) => { u.pick("engsel", "reset"); await until(() => !$1("#dlg").hidden, 3000); window.gm.recv([{ type: "midiIn", ch: c.base, note: 60, vel: 100 }]); await sleep(300); },
+				screen: () => ok(S().sel === 5 && !$1("#dlg").hidden, "track " + S().sel) },
+			{ say: "close the question: a note for track 1 selects it again", act: async (u, c) => { u.key("Escape"); await until(() => $1("#dlg").hidden, 3000); window.gm.recv([{ type: "midiIn", ch: c.base, note: 60, vel: 100 }]); },
+				screen: () => ok(S().sel === 0, "track " + S().sel), within: 2000 },
+			{ say: "LEARN waiting for a note: a note for track 3 leaves the selection", act: async (u, c) => { window.GP.learn = 2; window.gm.recv([{ type: "midiIn", ch: c.base + 2, note: 60, vel: 100 }]); await sleep(300); window.GP.learn = null; },
+				screen: () => ok(S().sel === 0, "track " + S().sel) },
+			{ say: "the HW MIDI engine (the port carries the machine's own MIDI out): a note for track 3 leaves the selection", act: async (u, c) => { const m0 = machine(), hw = { ...m0, capabilities: { ...m0.capabilities, engine: "hw" } };
+					window.gm.recv([{ type: "machine", doc: hw }]); await sleep(100); window.gm.recv([{ type: "midiIn", ch: c.base + 2, note: 60, vel: 100 }]); await sleep(300); window.gm.recv([{ type: "machine", doc: m0 }]); },
+				screen: () => ok(S().sel === 0, "track " + S().sel) },
+			{ say: "a note on track 2's channel selects track 2", act: (u, c) => window.gm.recv([{ type: "midiIn", ch: c.base + 1, note: 60, vel: 100 }]),
+				screen: () => ok(S().sel === 1, "track " + S().sel), within: 2000 },
+			{ say: "choose it again: OFF; a note on track 5's channel leaves track 2 selected", act: async (u, c) => { await u.pick("engsel", "followPlayed"); await sleep(300); window.gm.recv([{ type: "midiIn", ch: c.base + 4, note: 60, vel: 100 }]); await sleep(300); },
+				screen: () => ok(followKeyLabel() === "FOLLOW PLAYED TRACK: OFF" && S().sel === 1, followKeyLabel() + ", track " + S().sel), within: 4000 }
+		],
+		async tidy(u) { if (followKeyLabel() === "FOLLOW PLAYED TRACK: ON") await u.pick("engsel", "followPlayed"); }
+	};
 	const kbLit = {
 		name: "mm-perform-keys-lit", proves: ["MM-050", "MM-X14"],
 		steps: [
@@ -1332,7 +1396,7 @@ const MmJourneys = (() => {
 		name: "mm-sound-screen-drag", proves: [],
 		steps: [
 			go("sound"), sel(0),
-			{ say: "drag a handle of a Sound screen", act: async (u, c) => { const cv = $all("#main canvas.ed").find(x => ED[x.dataset.ed]?.handles); if (!cv) throw new Error("no screen"); c.k0 = kitT(0); const r = cv.getBoundingClientRect(), h = ED[cv.dataset.ed].handles(r.width, r.height, cv)[0]; c.note = cv.dataset.ed + " " + h.k; await u.drag(cv, [[10, 0], [20, -6], [30, -10]], {}, { fx: h.x / r.width, fy: Math.min(Math.max(h.y, 6), r.height - 6) / r.height }); },
+			{ say: "drag a handle of a Kit screen", act: async (u, c) => { const cv = $all("#main canvas.ed").find(x => ED[x.dataset.ed]?.handles); if (!cv) throw new Error("no screen"); c.k0 = kitT(0); const r = cv.getBoundingClientRect(), h = ED[cv.dataset.ed].handles(r.width, r.height, cv)[0]; c.note = cv.dataset.ed + " " + h.k; await u.drag(cv, [[10, 0], [20, -6], [30, -10]], {}, { fx: h.x / r.width, fy: Math.min(Math.max(h.y, 6), r.height - 6) / r.height }); },
 				machine: c => ok(kitT(0) !== c.k0, "kit unchanged"), within: 15000 },
 			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(kitT(0) === c.k0, "kit not back"), within: 15000 }
 		]
@@ -1343,7 +1407,7 @@ const MmJourneys = (() => {
 			go("mix"),
 			{ say: "drag across the M keys of tracks 1 to 3", act: async (u, c) => { c.m0 = synthMutes(); if ([0, 1, 2].some(synthMuted)) throw new Error("tracks 1-3 not all audible"); await u.drag(strip(0, ".ms.m"), [strip(1, ".ms.m"), strip(2, ".ms.m")], {}, { captured: false }); },
 				machine: () => ok([0, 1, 2].every(synthMuted), "machine mutes " + synthMutes()), screen: () => ok([0, 1, 2].every(i => pressed(strip(i, ".ms.m"))), "M keys not lit") },
-			{ say: "click M/S off on the Sequence rail", act: async u => { u.click(tab("seq")); await sleep(300); u.click("#allon"); }, machine: c => ok(same(synthMutes(), c.m0), "machine mutes " + synthMutes()) }
+			{ say: "click M/S off on the Pattern rail", act: async u => { u.click(tab("seq")); await sleep(300); u.click("#allon"); }, machine: c => ok(same(synthMutes(), c.m0), "machine mutes " + synthMutes()) }
 		]
 	};
 	/* a MIDI track's mute is the MUTE window's keys: refused while the panel takes an earlier journey's dumps on SYSEX
@@ -1377,7 +1441,7 @@ const MmJourneys = (() => {
 			go("perform"),
 			{ say: "drag the multi envelope's ATK", act: async (u, c) => { c.e0 = JSON.stringify(wk().tracks.map(t => t.multiEnv)); const q = '#main .pc[data-g="menv"][data-n="ATK"]', d = parseInt($1(q + " b")?.textContent) > 64 ? -1 : 1; await u.drag(q, [[d * 6, 0], [d * 12, 0], [d * 18, 0], [d * 24, 0]]); }, machine: c => ok(JSON.stringify(wk().tracks.map(t => t.multiEnv)) !== c.e0, "multi env unchanged"), within: 15000 },
 			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(JSON.stringify(wk().tracks.map(t => t.multiEnv)) === c.e0, "multi env not back"), within: 15000 },
-			{ say: "on Sequence's Trig setup, click the other PORT mode", act: async (u, c) => { u.click(tab("seq")); await sleep(200); u.click(rail(0)); await sleep(200); u.click('[data-dock="trig"]'); await sleep(300); c.p0 = wk().trackMasks?.portamento ?? 0; const b = $all('[data-set="port"] button').find(x => x.getAttribute("aria-pressed") !== "true"); u.click(b); },
+			{ say: "on Pattern's Trig setup, click the other PORT mode", act: async (u, c) => { u.click(tab("seq")); await sleep(200); u.click(rail(0)); await sleep(200); u.click('[data-dock="trig"]'); await sleep(300); c.p0 = wk().trackMasks?.portamento ?? 0; const b = $all('[data-set="port"] button').find(x => x.getAttribute("aria-pressed") !== "true"); u.click(b); },
 				machine: c => ok(((wk().trackMasks?.portamento ?? 0) & 1) !== (c.p0 & 1), "portamento mask " + wk().trackMasks?.portamento), within: 15000 },
 			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(((wk().trackMasks?.portamento ?? 0) & 1) === (c.p0 & 1), "portamento mask " + wk().trackMasks?.portamento), within: 15000 }
 		],
@@ -1405,7 +1469,7 @@ const MmJourneys = (() => {
 			{ say: "click track key 5: POLY moves to track 5", act: async u => { await recvIdle(); u.click(astrk(4)); },
 				screen: () => ok(/^POLY: T5 plays six voices/.test($1(".kbhint")?.textContent || "") && !!$1(astrk(4) + " .x6"), "hint " + $1(".kbhint")?.textContent),
 				machine: () => ok(machine().poly === true && lastPoly().t === 4, `poly ${machine().poly}, sent ${JSON.stringify(lastPoly())}`), within: 8000 },
-			{ say: "on Sequence the rail marks track 5 ×6 and dims the others", act: u => u.click(tab("seq")),
+			{ say: "on Pattern the rail marks track 5 ×6 and dims the others", act: u => u.click(tab("seq")),
 				screen: () => ok(!!$1('#rail .th[data-sel="4"] .x6') && $all("#rail .th.poly-off").length === 5, "rail " + $all("#rail .th.poly-off").length + " dimmed") },
 			{ say: "click MIDI and pick M2 on the rail: POLY stays on track 5 (a MIDI track has no voices)", act: async (u, c) => { c.n = polySent.mark(); u.click('[data-side="midi"]'); await sleep(200); u.click(rail(7)); await sleep(600); },
 				screen: () => ok(S().sel === 7, "selected " + S().sel), machine: c => ok(!polySent.since(c.n).length && machine().focus === 4, `poly sent ${JSON.stringify(polySent.since(c.n))}, focus ${machine().focus}`) },
@@ -1429,7 +1493,7 @@ const MmJourneys = (() => {
 				screen: () => ok(S().ws === "perform" && S().asTab === "KEY" && pressed(astrk(0)) && !!$1('[data-ktrk="lpf"]'), `workspace ${S().ws}, tab ${S().asTab}`) },
 			{ say: "click LPF tracks keys: track 1's low-pass stops following the note", act: (u, c) => { c.l0 = lpfOf(0); u.click('[data-ktrk="lpf"]'); },
 				machine: c => ok(lpfOf(0) !== c.l0, "LPF mask " + wk()?.trackMasks?.lpf), within: 15000 },
-			{ say: "on Sound the Filter's KEY shows LPF off", act: async u => { u.click(tab("sound")); await sleep(400); Journey.snapshot("mm-sound-key-tracking"); },
+			{ say: "on Kit the Filter's KEY shows LPF off", act: async u => { u.click(tab("sound")); await sleep(400); Journey.snapshot("mm-sound-key-tracking"); },
 				screen: c => ok(keyLamps()[1] === !c.l0, "lamps " + keyLamps()) },
 			{ ...undoKey, act: u => { blur(); u.key("z", { cmd: true }); }, machine: c => ok(lpfOf(0) === c.l0, "LPF mask " + wk()?.trackMasks?.lpf), within: 15000 }
 		],
@@ -2057,7 +2121,7 @@ const MmJourneys = (() => {
 			{ say: "choose IMPORT SYSEX… in the engine menu, tick Globals too", act: async u => { await u.pick("engsel", "import"); await until(() => !$1("#syxpop").hidden && $all("#syxpop [data-syxkind]").length, 8000); const g = $1('#syxpop [data-syxkind="global"]'); if (g && !g.checked) u.click(g); },
 				screen: () => ok(!$1("#syxpop").hidden && !!$1('#syxpop [data-syxkind="global"]')?.checked, "no Globals in the preview"), within: 8000 },
 			{ say: "click Import: sent on SYSEX RECV, read back, reported", act: u => u.click('#syxpop [data-syxgo="start"]'), screen: () => ok(/imported/.test($1("#syxpop .syxsum")?.textContent || ""), "progress: " + ($1("#syxpop .syxbar span")?.textContent || "")), within: 3000 },
-			{ say: "click Done, Escape, then the Sequence tab", act: async u => { u.click('#syxpop [data-syxgo="close"]'); await sleep(300); u.key("Escape"); await sleep(300); u.click(tab("seq")); if (S().side === "midi") u.click('[data-side="int"]'); },
+			{ say: "click Done, Escape, then the Pattern tab", act: async u => { u.click('#syxpop [data-syxgo="close"]'); await sleep(300); u.key("Escape"); await sleep(300); u.click(tab("seq")); if (S().side === "midi") u.click('[data-side="int"]'); },
 				screen: () => onTab("seq"), machine: () => ok(!!globalNow() && machine().mutes?.synth != null, "global " + !!globalNow() + ", mutes " + machine().mutes?.synth), within: 8000 },
 			{ say: "click M on a track of the rail: its mute flips on the machine; a track with no MIDI channel (B-051) is refused, the notice offers the fix: take it, then M again",
 				act: async (u, c) => { c.m0 = synthMutes(); c.t = [0, 1, 2, 3, 4, 5].find(t => !c.m0.includes(t)) ?? 0; c.want = !c.m0.includes(c.t); c.fixed = !reaches(c.t); await sleep(1500); u.click(railM(c.t));
@@ -2132,7 +2196,7 @@ const MmJourneys = (() => {
 		name: "mm-keys-tap-tempo-shift", proves: ["MM-023", "MM-197", "MM-X20"],
 		steps: [
 			go("seq"),
-			{ say: "on Sequence tap Shift+B five times, about 0.5 s apart: the tempo follows", act: async (u, c) => { c.b0 = machine().tempo; blur(); if (typeof TAP !== "undefined" && TAP.length) await sleep(2100); /* a new run of taps (the page joins taps less than 2 s apart) */ const at = []; for (let i = 0; i < 5; i++) { at.push(performance.now()); u.key("B", { shift: true }); await sleep(500); } c.want = Math.round(60000 / ((at[4] - at[0]) / 4) * 10) / 10; c.note = c.want + " BPM"; },
+			{ say: "on Pattern tap Shift+B five times, about 0.5 s apart: the tempo follows", act: async (u, c) => { c.b0 = machine().tempo; blur(); if (typeof TAP !== "undefined" && TAP.length) await sleep(2100); /* a new run of taps (the page joins taps less than 2 s apart) */ const at = []; for (let i = 0; i < 5; i++) { at.push(performance.now()); u.key("B", { shift: true }); await sleep(500); } c.want = Math.round(60000 / ((at[4] - at[0]) / 4) * 10) / 10; c.note = c.want + " BPM"; },
 				screen: c => ok(Math.abs(S().bpm - c.want) <= tapSlack(c.want), "BPM " + S().bpm + ", want " + c.want), machine: c => ok(Math.abs(machine().tempo - c.want) <= tapSlack(c.want), "tempo " + machine().tempo + ", want " + c.want), within: 8000 }
 		],
 		async tidy(u, c) { if (c.b0 != null) { const d = c.b0 > machine().tempo ? -1 : 1; await u.drag("#bpm", [[0, d * 2 * (c.b0 - machine().tempo)]]); } }
@@ -2344,7 +2408,7 @@ const MmJourneys = (() => {
 	/* 0.5 slice 5: the Sound page and the GEN bar as screenshots, beside the Machinedrum Editor's (md-shots-sound) */
 	const shotsSound = { name: "mm-shots-sound", proves: [], needs: () => !/mm-shots/.test(location.search) ? "screenshots only when asked by name" : null,
 		steps: [go("sound"), sel(0),
-			{ say: "the Sound page", act: async () => { await sleep(800); shot("sound-mm"); Journey.snapshot("sound-mm"); Bridge.log("MEASURE sound-mm screens " + [...document.querySelectorAll(".snd .sg>.plot")].map(e => Math.round(e.getBoundingClientRect().height)).join(" ") + " page " + Math.round(document.querySelector(".snd").scrollHeight) + "/" + Math.round(document.querySelector("#main").clientHeight)); }, hold },
+			{ say: "the Kit page", act: async () => { await sleep(800); shot("sound-mm"); Journey.snapshot("sound-mm"); Bridge.log("MEASURE sound-mm screens " + [...document.querySelectorAll(".snd .sg>.plot")].map(e => Math.round(e.getBoundingClientRect().height)).join(" ") + " page " + Math.round(document.querySelector(".snd").scrollHeight) + "/" + Math.round(document.querySelector("#main").clientHeight)); }, hold },
 			go("seq"), genBarFits("track 1", true),
 			{ say: "the GEN bar", act: async () => { await sleep(400); shot("gen-mm"); }, hold },
 			{ say: "done", act: () => shot("done") }],
@@ -2620,7 +2684,7 @@ const MmJourneys = (() => {
 			"MM-341", "MM-342", "MM-343", "MM-344", "MM-345", "MM-346", "MM-091", "MM-110", "MM-111", "MM-063"],
 		steps: [
 			go("sound"), sel(0),
-			{ say: "the Sound page has seven pages of eight values: SYN, AMP, FLT, EFX and the three LFOs, and the kit holds them all", screen: () => ok(["AMP", "FLT", "EFX"].every(g => $all(`#main .pc[data-g="${g}"]`).length === 8) && ["LF1", "LF2", "LF3"].every(g => $all(`#main .pc[data-g="${g}"]`).length === 4 && $1(`#lp${g[2]}`) && $1(`#ld${g[2]}`) && $all(`[data-set="ltrig"][data-l="${g}"] button`).length === 5 && $all(`[data-lwave="${g}"]`).length === 11), "boxes " + ["AMP", "FLT", "EFX", "LF1"].map(g => g + $all(`#main .pc[data-g="${g}"]`).length)),
+			{ say: "the Kit page has seven pages of eight values: SYN, AMP, FLT, EFX and the three LFOs, and the kit holds them all", screen: () => ok(["AMP", "FLT", "EFX"].every(g => $all(`#main .pc[data-g="${g}"]`).length === 8) && ["LF1", "LF2", "LF3"].every(g => $all(`#main .pc[data-g="${g}"]`).length === 4 && $1(`#lp${g[2]}`) && $1(`#ld${g[2]}`) && $all(`[data-set="ltrig"][data-l="${g}"] button`).length === 5 && $all(`[data-lwave="${g}"]`).length === 11), "boxes " + ["AMP", "FLT", "EFX", "LF1"].map(g => g + $all(`#main .pc[data-g="${g}"]`).length)),
 				machine: () => ok(wk().tracks.every(tr => tr.pages.length >= 7 && tr.pages.slice(0, 7).every(pg => pg.length === 8)), "pages " + wk().tracks[0].pages.map(p => p.length)) },
 			{ say: "the MKII plate on (two of the machines are MKII only)", act: (u, c) => { c.plate0 = document.documentElement.dataset.plate; if (c.plate0 !== "mk2") u.click("#platekey"); }, screen: () => ok(document.documentElement.dataset.plate === "mk2", "plate " + document.documentElement.dataset.plate) },
 			{ say: "pick each machine of the manual (its family, then its key): the machine is in the kit, the page shows the manual's knobs in the manual's order, each knob moves its own value and sends its own CC", act: async (u, c) => {
@@ -2997,12 +3061,12 @@ const MmJourneys = (() => {
 			go("sound"), sel(0),
 			{ say: "press Alt+Space: live recording, playing", act: (u, c) => { c.p0 = pat0(); c.l0 = lockList().length; blur(); results.length = 0; u.key(" ", { alt: true }, "Space"); },
 				machine: () => ok(tele.last?.record === "live" && tele.last?.playing, `record ${tele.last?.record}, playing ${tele.last?.playing}`), within: 8000 },
-			{ say: "turn AMP's DEC on Sound: the CC goes to the machine on track 1's channel, the page says which step it locks", act: async (u, c) => { c.r = await nudgeBox(u, 0, "AMP", 2); await sleep(300); c.toast = $1("#toast")?.textContent || ""; c.cell = c.r.v1; },
+			{ say: "turn AMP's DEC on Kit: the CC goes to the machine on track 1's channel, the page says which step it locks", act: async (u, c) => { c.r = await nudgeBox(u, 0, "AMP", 2); await sleep(300); c.toast = $1("#toast")?.textContent || ""; c.cell = c.r.v1; },
 				machine: c => ok(!checkBox(c.r, 0, "AMP", 2) && /Locks T1 AMP DEC on step \d+/.test(c.toast), `${checkBox(c.r, 0, "AMP", 2) || ""} toast "${c.toast}"`), within: 6000 },
 			{ say: "click RECORD off, then STOP: the pattern holds a lock of AMP DEC, with the value turned, on a step of track 1", act: async (u, c) => { u.click("#rec"); await sleep(800); if (S().playing) u.click("#play"); await sleep(1500); },
 				machine: c => { const l = lockVals(0, 1, 2); return ok(l.length >= 1 && l.some(([, v]) => v === c.cell), `locks ${JSON.stringify(l)}, value turned ${c.cell}`); }, within: 10000 },
 			go("seq"),
-			{ say: "on Sequence the lane picker counts the lock the recording made on AMP DEC; the lane's clear key takes it away", act: async (u, c) => { if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); await sleep(200); u.click('[data-lpage="AMP"]'); await sleep(60); u.click('.pk[data-lane="AMP.2"]'); await sleep(300); c.has = $1('.pk[data-lane="AMP.2"]')?.classList.contains("has") && +$1('.pk[data-lane="AMP.2"] i')?.textContent >= 1; u.click("#clearLane"); await sleep(600); },
+			{ say: "on Pattern the lane picker counts the lock the recording made on AMP DEC; the lane's clear key takes it away", act: async (u, c) => { if ($1('[data-dock="locks"]')) u.click('[data-dock="locks"]'); await sleep(200); u.click('[data-lpage="AMP"]'); await sleep(60); u.click('.pk[data-lane="AMP.2"]'); await sleep(300); c.has = $1('.pk[data-lane="AMP.2"]')?.classList.contains("has") && +$1('.pk[data-lane="AMP.2"] i')?.textContent >= 1; u.click("#clearLane"); await sleep(600); },
 				screen: c => ok(c.has, "AMP DEC in the picker has no locked step"), machine: () => ok(lockVals(0, 1, 2).length === 0, "locks " + JSON.stringify(lockVals(0, 1, 2))), within: 8000 }
 		],
 		async tidy(u, c) { if (tele.last?.record && tele.last.record !== "off") u.click("#rec"); await sleep(400); if (S().playing) u.click("#play"); await sleep(800); await back(u, c); if (c.p0) await undoUntil(u, () => pat0() === c.p0, 4); const n0 = c.l0; if (n0 != null && lockList().length !== n0) { for (const l of lockList().slice()) if (l.track === 0 && l.page === 1 && l.param === 2) Bridge.send({ op: "clearLane", p: cur(), t: 0, page: 1, i: 2 }); await sleep(800); } }
@@ -3366,7 +3430,7 @@ const MmJourneys = (() => {
 		steps: [
 			/* independent (JOURNEYS.md): factory memory gives each pattern its own kit, so the journey links two patterns to one
 			   kit itself, as a person does (the pattern chooser's Kit list, an undo step the tidy takes back) */
-			{ say: "make two patterns recall the same kit (the pattern chooser: Alt-click the second, its Kit list: the first's kit), go to the first (its kit loads), edit a Sound value (the kit is edited)", act: async (u, c) => { c.p0 = cur(); c.u0 = histN(); await until(() => I().slots("pattern").length >= 128, 20000);
+			{ say: "make two patterns recall the same kit (the pattern chooser: Alt-click the second, its Kit list: the first's kit), go to the first (its kit loads), edit a Kit value (the kit is edited)", act: async (u, c) => { c.p0 = cur(); c.u0 = histN(); await until(() => I().slots("pattern").length >= 128, 20000);
 					[c.a, c.b] = [1, 2, 3, 4, 5, 6].map(d => (c.p0 % 64 + d) % 64).filter(p => p !== c.p0 && I().doc("pattern", p)); if (c.b == null) throw new Error("no two patterns in banks A to D");
 					c.kk = I().doc("pattern", c.a).kit; u.click("#pat"); await sleep(300);
 					if (I().doc("pattern", c.b).kit !== c.kk) { u.click(psq(c.b), { alt: true }); await until(() => !!$1("#patkit"), 2000); await choose(u, "patkit", String(c.kk)); c.linked = true;
@@ -3403,7 +3467,7 @@ const MmJourneys = (() => {
 			{ say: "Clear a kit (it asks): its slot holds six GND-SIN tracks; load that slot: the machine plays six GND-SIN", act: async (u, c) => { c.n0 ??= histN(); c.slot = otherSlot(); c.d0 = JSON.stringify(I().doc("kit", c.slot)); u.click(ksq(c.slot), { alt: true }); await sleep(200); u.click('#libpop [data-la="clear"]'); await answer(u, c); await until(() => MmConvert.kitEmpty(I().doc("kit", c.slot)), 20000);
 					c.docT = I().doc("kit", c.slot).tracks.map(t => t.machineName); u.click(ksq(c.slot)); if (await until(dlgShown, 1500)) u.click(dlgButton("Load without saving") || $1("#dlg .danger")); await until(() => machine().kit.current === c.slot, 15000); await sleep(800); },
 				machine: c => ok(c.docT.every(m => m === "GND-SIN") && machine().kit.current === c.slot && wk().tracks.every(t => t.machineName === "GND-SIN"), `slot ${c.docT}, loaded ${wk().tracks.map(t => t.machineName)}`), within: 50000 },
-			{ say: "Esc; on Sound, track 1 as FM or SID again, then CLR on the LCD: the track is GND-SIN with every page at its start, as the cleared kit's; Cmd+Z brings the machine back", act: async (u, c) => { if (!$1("#libpop").hidden) u.key("Escape"); await sleep(200); u.click(tab("sound")); await sleep(300); u.click(rail(0)); await sleep(200); u.click("#machbtn"); await until(() => !$1("#machpop").hidden, 1500); u.click('#machpop .mf[data-fam="SID"]'); await sleep(50); u.click('#machpop .mk[data-mach="SID-6581"]'); await until(() => wk().tracks[0].machineName === "SID-6581", 4000); await sleep(300);
+			{ say: "Esc; on Kit, track 1 as FM or SID again, then CLR on the LCD: the track is GND-SIN with every page at its start, as the cleared kit's; Cmd+Z brings the machine back", act: async (u, c) => { if (!$1("#libpop").hidden) u.key("Escape"); await sleep(200); u.click(tab("sound")); await sleep(300); u.click(rail(0)); await sleep(200); u.click("#machbtn"); await until(() => !$1("#machpop").hidden, 1500); u.click('#machpop .mf[data-fam="SID"]'); await sleep(50); u.click('#machpop .mk[data-mach="SID-6581"]'); await until(() => wk().tracks[0].machineName === "SID-6581", 4000); await sleep(300);
 					const r = await nudgeBox(u, 0, "AMP", 0); c.m1 = wk().tracks[0].machineName; u.click($all(".lcdpanel button").find(b => b.textContent.trim() === "Clr")); await until(() => wk().tracks[0].machineName === "GND-SIN", 6000); await sleep(600); c.after = JSON.stringify(wk().tracks[0].pages); c.cleared = JSON.stringify(I().doc("kit", c.slot).tracks[0].pages); blur(); u.key("z", { cmd: true }); await until(() => wk().tracks[0].machineName === "SID-6581", 6000); },
 				machine: c => ok(c.m1 === "SID-6581" && c.after === c.cleared && wk().tracks[0].machineName === "SID-6581", `after CLR ${c.after} vs cleared kit ${c.cleared}; machine now ${wk().tracks[0].machineName}`), within: 20000 }
 		],
@@ -3462,7 +3526,7 @@ const MmJourneys = (() => {
 				machine: c => ok(c.load.length >= 1 && c.load[0][7] === c.q && c.req.length >= 1 && c.req[0][7] === I().doc("pattern", c.q).kit, `0x57 ${JSON.stringify(c.load)}, 0x53 ${JSON.stringify(c.req)}`), within: 25000 },
 			{ say: "click a roll cell: the pattern goes to the machine as a pattern dump (0x67) of that pattern's slot, the whole pattern (a few thousand bytes), and is read back with 0x68", pageOnly: "the SysEx on the cable", act: async (u, c) => { const w0 = wireSeq; const s = freeSteps(0, 1, 6, rollCell(0, 0).n)[0]; const p = rollCell(0, s); u.click(p.c, {}, p.fx, p.fy); await until(() => sysexAfter(w0, 0x67).length >= 1, 8000); await sleep(1500); c.dump = sysexAfter(w0, 0x67).map(w => [w.b[9], w.n]); c.rq = sysexAfter(w0, 0x68).map(w => w.b[7]); },
 				machine: c => ok(c.dump.length >= 1 && c.dump[0][0] === cur() && c.dump[0][1] > 2000 && c.rq.includes(cur()), `0x67 slot/length ${JSON.stringify(c.dump)}, 0x68 ${c.rq}, pattern ${cur()}`), within: 15000 },
-			{ say: "KIT, click another kit: LOAD KIT 0x58 with its slot; edit a Sound value and Save: SAVE KIT 0x59; copy a kit and paste it into another slot: a kit dump 0x52 for that slot", pageOnly: "the SysEx on the cable", act: async (u, c) => { c.bad = []; u.click("#kitf"); await sleep(400); c.k1 = machine().kit.current === 5 ? 6 : 5; let w0 = wireSeq; u.click(ksq(c.k1)); if (await until(dlgShown, 1500)) u.click(dlgButton("Load without saving") || $1("#dlg .danger")); await until(() => machine().kit.current === c.k1, 15000); await sleep(800); const l = sysexAfter(w0, 0x58).map(w => w.b); if (!l.length || l[0][7] !== c.k1) c.bad.push("0x58 " + JSON.stringify(l));
+			{ say: "KIT, click another kit: LOAD KIT 0x58 with its slot; edit a Kit value and Save: SAVE KIT 0x59; copy a kit and paste it into another slot: a kit dump 0x52 for that slot", pageOnly: "the SysEx on the cable", act: async (u, c) => { c.bad = []; u.click("#kitf"); await sleep(400); c.k1 = machine().kit.current === 5 ? 6 : 5; let w0 = wireSeq; u.click(ksq(c.k1)); if (await until(dlgShown, 1500)) u.click(dlgButton("Load without saving") || $1("#dlg .danger")); await until(() => machine().kit.current === c.k1, 15000); await sleep(800); const l = sysexAfter(w0, 0x58).map(w => w.b); if (!l.length || l[0][7] !== c.k1) c.bad.push("0x58 " + JSON.stringify(l));
 					await closeLib(u); u.click(tab("sound")); await sleep(300); u.click(rail(0)); await sleep(200); await nudgeBox(u, 0, "AMP", 0); u.click("#kitf"); await sleep(400); w0 = wireSeq; u.click('#libpop [data-la="save"]'); await answer(u, c); await until(() => sysexAfter(w0, 0x59).length >= 1, 15000); const sv = sysexAfter(w0, 0x59).map(w => w.b); if (!sv.length || sv[0][7] !== c.k1) c.bad.push("0x59 " + JSON.stringify(sv));
 					/* the stored kit is put back as it was: undo the edit, Save again */
 					await closeLib(u); blur(); u.key("z", { cmd: true }); await sleep(1500); u.click("#kitf"); await sleep(400); u.click(ksq(c.k1), { alt: true }); await sleep(200); u.click('#libpop [data-la="save"]'); await answer(u, c); await sleep(2500);
@@ -3508,7 +3572,7 @@ const MmJourneys = (() => {
 					u.click("#kitf"); await sleep(400); u.click(ksq(cur0), { alt: true }); await sleep(150); u.click('#libpop [data-la="save"]'); await answer(u, c); await until(() => chip() === "saved", 25000); c.chip2 = chip(); await closeLib(u);
 					u.click("#kitf"); await sleep(400); const k1 = cur0 === 5 ? 6 : 5; u.click(ksq(k1)); if (await until(dlgShown, 1500)) u.click(dlgButton("Load without saving") || $1("#dlg .danger")); await until(() => machine().kit.current === k1, 15000); await sleep(600); await closeLib(u); if (!lcd().startsWith(expect(k1)) || !lcd().includes(kitName(k1).trim())) c.bad.push(`LCD "${lcd()}" for kit ${k1 + 1} ${kitName(k1)}`); c.k0 = cur0; },
 				screen: c => ok(!c.bad.length && c.chip0 === "saved" && c.chip1 === "edited" && c.chip2 === "saved", `${c.bad.join(" | ")} chips ${c.chip0}, ${c.chip1}, ${c.chip2}`), within: 80000 },
-			{ say: "pick each of the six tracks: the rail and the Sound header name the machine of the track in focus, the kit's machine", act: async (u, c) => { c.bad = []; u.click(tab("sound")); await sleep(300); for (let t = 0; t < 6; t++) { u.click(rail(t)); await sleep(250); const m = wk().tracks[t].machineName, hdr = $1("#machbtn .lcdtxt")?.textContent, railText = $1(`#rail .th[data-sel="${t}"]`)?.textContent || ""; if (hdr !== m) c.bad.push(`T${t + 1} header ${hdr} for ${m}`); if (!railText.includes(shortM(m).slice(0, 3)) && !railText.includes(m)) c.bad.push(`T${t + 1} rail "${railText.replace(/\\s+/g, " ").slice(0, 40)}" for ${m}`); if (S().tracks[t].m !== m) c.bad.push(`T${t + 1} page ${S().tracks[t].m}`); } },
+			{ say: "pick each of the six tracks: the rail and the Kit header name the machine of the track in focus, the kit's machine", act: async (u, c) => { c.bad = []; u.click(tab("sound")); await sleep(300); for (let t = 0; t < 6; t++) { u.click(rail(t)); await sleep(250); const m = wk().tracks[t].machineName, hdr = $1("#machbtn .lcdtxt")?.textContent, railText = $1(`#rail .th[data-sel="${t}"]`)?.textContent || ""; if (hdr !== m) c.bad.push(`T${t + 1} header ${hdr} for ${m}`); if (!railText.includes(shortM(m).slice(0, 3)) && !railText.includes(m)) c.bad.push(`T${t + 1} rail "${railText.replace(/\\s+/g, " ").slice(0, 40)}" for ${m}`); if (S().tracks[t].m !== m) c.bad.push(`T${t + 1} page ${S().tracks[t].m}`); } },
 				screen: c => ok(!c.bad.length, c.bad.slice(0, 4).join(" | ")), within: 1000 }
 		],
 		async tidy(u, c) { await closeLib(u); await back(u, c); if (c.k0 != null && machine().kit.current !== c.k0) { u.click("#kitf"); await sleep(400); u.click(ksq(c.k0)); if (await until(dlgShown, 1500)) u.click(dlgButton("Load without saving") || $1("#dlg .danger")); await sleep(2000); await closeLib(u); } }
@@ -3814,7 +3878,7 @@ const MmJourneys = (() => {
 	const screensFit = {
 		name: "mm-screens-fit", proves: [],
 		steps: [
-			{ say: "Sequence: the track list's rows (number, name, M, S, dice) sit on one centre line, whole, and the keys are one size (B-110)",
+			{ say: "Pattern: the track list's rows (number, name, M, S, dice) sit on one centre line, whole, and the keys are one size (B-110)",
 				act: async (u, c) => { await closeLib(u); u.click(tab("seq")); await sleep(400); c.bad = []; c.n = 0;
 					for (const r of $all("#rail .th")) { c.n++; const mid = e => { const q = e.getBoundingClientRect(); return q.top + q.height / 2; }, ks = [".m", ".s", ".g"].map(q => r.querySelector(q)), n = r.querySelector(".n"), nm = r.querySelector(".nm b");
 						if (ks.some(k => !k)) { c.bad.push("a key is missing on " + r.textContent.trim().slice(0, 12)); continue; }
@@ -3827,7 +3891,7 @@ const MmJourneys = (() => {
 				screen: c => ok(c.n === 6 && !c.bad.length, `${c.n} rows; ${c.bad.slice(0, 4).join(" | ")}`) },
 			{ say: "the step help (the ? key) opens fully inside the window and right of the track list, never under it", act: async (u, c) => { await closeLib(u); u.click(tab("seq")); await sleep(400); const k = $1("#steplegend"); k.focus(); k.dispatchEvent(new MouseEvent("mouseover", { bubbles: true })); await sleep(250); const p = $1(".glegpop").getBoundingClientRect(), r = $1("#rail").getBoundingClientRect(); c.p = p; c.ok = p.width > 100 && p.left >= r.right && p.right <= innerWidth && p.top >= 0 && p.bottom <= innerHeight; },
 				screen: c => ok(c.ok, `popup ${Math.round(c.p.left)}..${Math.round(c.p.right)} x ${Math.round(c.p.top)}..${Math.round(c.p.bottom)} in ${innerWidth} x ${innerHeight}`) }
-			,			{ say: "Perform and Sound: what the drawn panels draw fits them: the multi envelope's caption and the amp envelope's caption clear of the curve and its handles, no handle cut by an edge, no caption past the edge (B-111)",
+			,			{ say: "Perform and Kit: what the drawn panels draw fits them: the multi envelope's caption and the amp envelope's caption clear of the curve and its handles, no handle cut by an edge, no caption past the edge (B-111)",
 				act: async (u, c) => { c.bad = []; c.n = 0;
 					for (const ws of ["perform", "sound"]) { u.click(tab(ws)); await sleep(500); c.n += $all("canvas.ed").filter(x => x.clientWidth).length; for (const x of edProblems()) c.bad.push(ws + " " + x); } },
 				screen: c => ok(c.n > 3 && !c.bad.length, `${c.n} canvases; ${[...new Set(c.bad)].slice(0, 4).join(" | ")}`) },
@@ -3862,8 +3926,8 @@ const MmJourneys = (() => {
 		async tidy(u) { await closeLib(u); u.click(tab("seq")); }
 	};
 	const all = [screensFit, ...e2eReal, /* SLICE5-MM-LIST */ machineReference, trackEffects, lfoJ, mixBuses, wireCc, envJ, pitchKeys, locksJ, recLocks, arpSetup, lcdSetup, trigSetup, midiSeqJ, midiDocks, performKeys, performMulti, assignJ, joystickJ, menvNrpn, songRowSettings, songRowsCopy, globalSync, spellWord, bboxDrums, chooserJ, sameKit, kitSlots, kitParts, copyPageNote, wireSysex, lcdBoxes, mutesGlobal, sixTracks, bankFunctions, ...wave12, bootCard, copyWhat, clearWhat, firstBeat, spaceKey, pauseJ, panicJ, tempoWindowJ, tempoReleaseJ, playFromJ, tempoDrag, patNext, wsKeys, helpKeys, plate, undoRedo, gridRecord, slidePaint, lenKey, lockLane, arpDock, arpRange, trnKeys, trnKeyBlur, trnPlaying, leaveStopped,
-		genMut, shapeSound, machinePick, revertTrackJ, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixHeads, mixSolo, soloSaved, shiftMutes, routing, panTrim, msOff, msViews, railLamps,
-		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
+		genMut, shapeSound, machinePick, revertTrackJ, machineStays, songModeJ, songPlayhead, midiSide, controlAll, mixStrip, mixHeads, mixSolo, soloSaved, shiftMutes, routing, panTrim, msOff, msViews, railLamps, railLampsFwd,
+		poly, polyTrack, keyTracking, menvModes, multiTrig, multiMap, kbPlay, kbLit, followPlayed, typeValue, songRows, songPicker, songSlotsJ, songKeysJ, songChain, kitLoad, kitCopy, patGo, dialogEsc,
 		audioPanel, romCard, notePlay,
 		tapTempo, queue, dialogKeys, trackKeys, muteKeys, lockRamp, laneKitDrag, pages, copyPaste, clearAll, fill, rotate, pasteMany, pasteKeeps, liveRec, liveErase, stepRec, genKeys, genModal, laneTools, gridFits, mutScope,
 		valueKeys, soundCopy, screenDrag, dragM, midiMutes, joyAssign, menvPort, menvLayout, performLayout, menvCurve, uniSubFine, plateGreys, osHelp, songInspector, songDrag, kitSaveAs, kitRename, kitClear, patClear, hwNoMachine,

@@ -1,7 +1,7 @@
 # 10. The pattern sequencer
 <!-- summary: Choose a pattern, chain patterns, and set the length and speed of the pattern that plays. -->
 
-The sequencer plays patterns. The Monomachine holds 128 patterns, A01 to H16, in eight banks of 16. A pattern has twelve tracks: six synth tracks and six MIDI tracks. It is up to 64 steps long. The editor shows the patterns on the **Sequence** workspace. Press {key:workspace-1}, or click the **Sequence** tab.
+The sequencer plays patterns. The Monomachine holds 128 patterns, A01 to H16, in eight banks of 16. A pattern has twelve tracks: six synth tracks and six MIDI tracks. It is up to 64 steps long. The editor shows the patterns on the **Pattern** workspace. Press {key:workspace-1}, or click the **Pattern** tab.
 
 ## BASIC PATTERN OPERATION
 
@@ -51,7 +51,7 @@ NOTE: In song mode the machine plays the song, not the chain. Click **PATTERN** 
 ### SCALE SETUP
 <!-- rows: MM-166 MM-167 MM-168 MM-169 MM-170 @ba87bf -->
 
-The scale of a pattern is its length and its speed. Both are on the second line of the LCD while **Sequence** is open.
+The scale of a pattern is its length and its speed. Both are on the second line of the LCD while **Pattern** is open.
 
 #### Length
 

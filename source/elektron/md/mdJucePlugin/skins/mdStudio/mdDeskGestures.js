@@ -25,7 +25,7 @@ function endLaneDraw() { let d = Held.as("lane"); if (!d) return;
 	if (d.ramp) rampSend(); Held.end("lane"); Gesture.end(); $("#lane")?.classList.remove("kitdrag"); refreshRow(S.sel); renderLane(); }
 
 /* ===== The lock lane's kit-value line (I-035): grab the line itself (a hit zone of KIT_HIT px each side of it) and
-   drag: the kit value of the lane's parameter on the selected track changes, the edit the Sound page's knob makes
+   drag: the kit value of the lane's parameter on the selected track changes, the edit the Kit page's knob makes
    (sendParam), one undo step for the drag. Nothing is locked while it is held. ===== */
 const KIT_HIT = 4, KIT_MOVE = 3;
 /* the line's y in a step's key (the .base: bottom 3px + (height - 6px) * kit / 127, 2 px thick) */

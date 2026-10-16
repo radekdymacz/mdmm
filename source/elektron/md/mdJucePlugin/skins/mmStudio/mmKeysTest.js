@@ -76,7 +76,7 @@ const GONE = [["cmd", "KeyR", "⌘R"], ["shift", "KeyR", "⇧R"], ["shift", "Key
 const still = GONE.filter(([m, id]) => has(m, id));
 /* R randomises: on Sound MUTATE, elsewhere GEN; Alt+R every track (matched on the physical key, e.code) */
 const rKeys = run.filter(b => b.code === "KeyR");
-check(rKeys.length === 2 && rKeys.every(b => /randomise/i.test(does(b))) && rKeys.some(b => b.mod === "alt" && /every/i.test(does(b))), "R and Alt+R randomise (GEN, on Sound MUTATE), on the physical key");
+check(rKeys.length === 2 && rKeys.every(b => /randomise/i.test(does(b))) && rKeys.some(b => b.mod === "alt" && /every/i.test(does(b))), "R and Alt+R randomise (GEN, on Kit MUTATE), on the physical key");
 /* W is a black key now (C♯), not Walk; T is F♯, so tap tempo is B (MM-PORT-PLAN.md 2026-10-05) */
 const walk = run.filter(b => ids(b).includes("KeyW") && /walk/i.test(does(b))), tTap = run.filter(b => ids(b).includes("KeyT") && /tap/i.test(does(b)));
 check(!walk.length && !tTap.length, "W is not Walk and T does not tap (both play notes)" + (walk.length || tTap.length ? ": " + [...walk, ...tTap].map(name).join(", ") : ""));

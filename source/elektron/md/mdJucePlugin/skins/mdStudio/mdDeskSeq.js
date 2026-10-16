@@ -89,7 +89,7 @@ function renderLane() {
 	}).join("");
 }
 /* I-035: a lock's value as a number at its bar's end (shown on hover and on a selected step) and the kit value on the
-   kit line at the lane's right end; both in the form the Sound page shows (a signed parameter: -64 to +63) */
+   kit line at the lane's right end; both in the form the Kit page shows (a signed parameter: -64 to +63) */
 function laneFmt(v) { return BIP.has(S.lane) ? (v - 64 > 0 ? "+" : "") + (v - 64) : String(v); }
 /* where a value's bar ends, as a CSS length from the key's bottom, and whether the number sits below it (a bar's
    end near the top, or the down end of a bipolar bar, puts the number inside / below) */
@@ -153,5 +153,5 @@ function clickPage(e) {
 	if (e.target.closest("#pgfollow")) { S.follow = !S.follow; render(); return true; }
 	return false;
 }
-Keys.bind({ id: "trig-type", short: "Trig", scope: "seq", keys: ["Escape"], group: "Sequence", does: "Back to Trig after Accent, Swing or Slide: a click on a step paints trigs again",
+Keys.bind({ id: "trig-type", short: "Trig", scope: "seq", keys: ["Escape"], group: "Pattern", does: "Back to Trig after Accent, Swing or Slide: a click on a step paints trigs again",
 	when: () => S.ws === "seq" && S.tt !== "trig", run: () => setTrigType("trig") });

@@ -33,14 +33,14 @@ TIP: Hold [⌥] while you drag the field to change the tempo at the release once
 NOTE: In a DAW, with **Tempo in** on EXT, the machine follows the tempo of the DAW and the field refuses edits. The page says "The DAW sets the tempo. Change it there."
 
 ## TAP TEMPO
-<!-- rows: MM-197 @66da4a -->
+<!-- rows: MM-197 @463ab0 -->
 
 1. Press {key:tap-tempo-shift} in time with the music. It works on every workspace.
 2. After the second tap the tempo is set and the page shows it, for example Tap tempo: 128.0 BPM.
 
 The tempo is the average of the last five taps. A pause of two seconds starts the count again.
 
-On workspaces other than **Sequence**, [B] taps too. On **Sequence** [B] is the **Draw** key of the piano roll.
+On workspaces other than **Pattern**, [B] taps too. On **Pattern** [B] is the **Draw** key of the piano roll.
 
 ## EXTERNAL SYNCHRONISATION
 <!-- rows: MM-198 @35e91f -->

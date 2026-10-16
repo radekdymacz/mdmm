@@ -707,7 +707,7 @@ return { Bridge, cmd, asked, errors, banners, S, Drop, get V() { return V; }, se
 	P.laneAt(at(60)); P.laneAt(at(60));
 	const params = sent.filter(m => m.op === "param");
 	check(sent.filter(m => m.op === "lock").length === 0, "dragging the line paints no lock: " + sent.map(m => m.op).join(" "));
-	check(params.length === 2 && params[0].t === 0 && params[0].i === 12 && params[0].v === 123 && params[1].v === 127, "the drag sets the track's FLTF kit value as the Sound page's knob does (param, index 12): " + JSON.stringify(params.map(m => m.v)));
+	check(params.length === 2 && params[0].t === 0 && params[0].i === 12 && params[0].v === 123 && params[1].v === 127, "the drag sets the track's FLTF kit value as the Kit page's knob does (param, index 12): " + JSON.stringify(params.map(m => m.v)));
 	check(new Set(params.map(m => m.g)).size === 1 && params[0].g, "all the drag's edits are one undo step (one gesture id): " + params.map(m => m.g));
 	check(P.grp(0, "FLTF").FLTF === 127, "the view shows the new kit value at once");
 	fire("document", "pointerup"); run();

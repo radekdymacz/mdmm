@@ -23,8 +23,11 @@ namespace deskCore
 		ModSetup modulators;
 		std::array<uint8_t, 8> knobCcs = g_defaultKnobCcs;
 		SoloMemo solo;
+		// I-003: the selected track follows the last one played from a MIDI controller (off by default; written only when on,
+		// read leniently: anything but a boolean is off)
+		bool followPlayed = false;
 
-		bool operator==(const DeskSetup& _o) const { return modulators == _o.modulators && knobCcs == _o.knobCcs && solo == _o.solo; }
+		bool operator==(const DeskSetup& _o) const { return modulators == _o.modulators && knobCcs == _o.knobCcs && solo == _o.solo && followPlayed == _o.followPlayed; }
 		bool operator!=(const DeskSetup& _o) const { return !(*this == _o); }
 	};
 
