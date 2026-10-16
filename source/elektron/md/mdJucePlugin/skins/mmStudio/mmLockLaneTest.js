@@ -23,13 +23,17 @@ const FILES = ["shared/deskBridge.js", "shared/deskDocs.js", "shared/deskOverlay
 /* ---- the page on a stand-in: every unknown name is "any" (callable, constructible, every property any); timers
    run when the test says; the bridge's dev transport collects what the page sends ---- */
 /* a DOM that keeps what the page writes to #lane and answers the rest with "any" */
-const laneEl = { getBoundingClientRect: () => ({ left: 0, top: 0, width: 1, height: 1, bottom: 1 }), querySelector: () => null, innerHTML: "", textContent: "", style: {}, dataset: {}, classList: { add() { }, remove() { } } };
+/* the lane's keys: one per step, 10 px wide, 124 px tall (what drawSlides measures) */
+const keyEl = s => ({ dataset: { s: String(s) }, getBoundingClientRect: () => ({ left: s * 10, top: 0, width: 10, height: 124, bottom: 124 }), querySelector: () => null, closest: () => keyEl(s) });
+const meterEl = { title: "", className: "", classList: { add() { }, remove() { } }, style: {}, dataset: {} };
+const svgEl = { innerHTML: "", setAttribute() { } };
+const laneEl = { getBoundingClientRect: () => ({ left: 0, top: 0, width: 640, height: 124, bottom: 124 }), contains: () => true, querySelector: q => { const m = /data-s="(\d+)"/.exec(q); return m ? keyEl(+m[1]) : null; }, innerHTML: "", textContent: "", style: {}, dataset: {}, classList: { add() { }, remove() { } } };
 let DOC;
 function page() {
 	const any = new Proxy(function () { }, {
 		get: (t, k) => k === Symbol.toPrimitive ? () => 0 : k === Symbol.iterator ? function* () { } : k === "length" ? 0 : any,
 		apply: () => any, construct: () => any, has: () => false, set: () => true });
-	DOC = new Proxy({}, { get: (t, k) => k === "querySelector" ? q => q === "#lane" ? laneEl : any : any });
+	DOC = new Proxy({}, { get: (t, k) => k === "querySelector" ? q => q === "#lane" ? laneEl : q === "#lanesvg" ? svgEl : q === "#meter" ? meterEl : any : k === "elementFromPoint" ? () => keyEl(win.__pick) : any });
 	const timers = [], sent = [], win = {}, frames = { n: 0 };
 	const windowP = new Proxy(win, { get: (t, k) => k in t ? t[k] : /EventListener$/.test(String(k)) ? () => { } : undefined,
 		set: (t, k, v) => { t[k] = v; return true; }, has: (t, k) => k in t });
@@ -52,7 +56,7 @@ function page() {
 	const src = FILES.map(f => fs.readFileSync(f, "utf8").replace(/^"use strict";/, "") + (/mmAdapter/.test(f) ? hold : "")).join("\n;\n")
 		+ "\n;__start();\nreturn { S: () => S, renderLane, Overlay, MmView, docStore, storeDoc, MM_SEAM, Dlg, Banner, mockup: { " +
 			"mutApply, genLive, genEnd, setMachine, songAction, secAction, setSel, clearSel, selCut, selDuplicate, selTrigs, selMark, selMove, selGrow, stepMenuItems, Keys, HOST, " +
-			"rollAdd, rollLen, rollRemove, editSpan, setRollLen, selMoveTo, selClear, noteSpans, vis } };";
+			"drawSlides, lockPicker, renderTop, laneAlt: s => { window.__pick = s; laneDraw = { erase: true, touched: false }; try { laneAt({ clientX: 0, clientY: 0 }); } catch (e) { console.log('ERR', e.message); } }, rollAdd, rollLen, rollRemove, editSpan, setRollLen, selMoveTo, selClear, noteSpans, vis } };";
 	const out = new Function("scope", "with (scope) {\n" + src + "\n}")(scope);
 	const run = () => { for (let n = 0; timers.length && n < 10000; n++) timers.shift()(); };
 	run();
@@ -91,6 +95,37 @@ check(counted("AMP.2") === 4 && S.locks.has(TRK + "|AMP.2"), "the locks stay in 
 lane("AMP.5", { 2: 0, 10: 0, 18: 0, 26: 0 });
 const vol = bars("AMP.5");
 check(vol.length === 4 && vol.every(b => !b.ghost) && /max\(2px,/.test(draw("AMP.5")), "VOL locked to 0: four bars with a 2 px minimum");
+
+/* 3. a slide runs between locks on steps with a trig: a lock on a step without one is never played, so no line starts or ends there */
+S.tracks[TRK].slide = new Set();
+const lines = () => { p.mockup.drawSlides(); return (svgEl.innerHTML.match(/stroke-width="2" /g) || []).length; };
+lane("AMP.0", { 2: 90, 10: 40, 11: 70, 18: 60 });	// 11 is a ghost
+S.lane = "AMP.0"; S.sel = TRK;
+S.tracks[TRK].slide = new Set([2]);
+check(lines() === 1, "slide on a real lock, next real lock after a ghost: one line (" + lines() + ")");
+check(/M25 \S+ L105 /.test(svgEl.innerHTML), "the line joins step 2 to step 10, over the ghost at 11");
+S.tracks[TRK].slide = new Set([11]);
+check(lines() === 0, "slide on a ghost lock: no line");
+S.tracks[TRK].slide = new Set([10]);
+check(lines() === 1 && /M105 \S+ L185 /.test(svgEl.innerHTML), "slide on 10 skips the ghost at 11 and runs to step 18");
+S.tracks[TRK].slide = new Set([2, 10]);
+check(lines() === 2, "two slides in a row: two lines");
+S.locks.get(TRK + "|AMP.0").delete(18); S.tracks[TRK].slide = new Set([10]);
+check(lines() === 0, "no real lock after the slide step: no line");
+
+/* 4. Alt on a ghost key removes its lock (the machine's clear) */
+lane("AMP.2", { 3: 90, 11: 90 });
+S.lane = "AMP.2"; p.sent.length = 0;
+p.mockup.laneAlt(3);
+p.run();check(!S.locks.get(TRK + "|AMP.2")?.has(3) && S.locks.get(TRK + "|AMP.2")?.has(11) && p.sent.some(m => /lock/i.test(JSON.stringify(m)) && /null/.test(JSON.stringify(m))), "Alt-erase of a ghost lock sends a lock clear for that step only");
+
+/* 5. the tooltips' units */
+lane("AMP.2", { 3: 90, 11: 90, 19: 90, 27: 90 });
+const picker = p.mockup.lockPicker(TRK);
+check(/data-lane="AMP\.2"[^>]*title="4 locked steps \(4 on steps without a trig\)"/.test(picker), "the parameter's tooltip counts the locks without a trig: \"4 locked steps (4 on steps without a trig)\"");
+check(/data-lane="AMP\.5"[^>]*title="4 locked steps"/.test(picker), "a parameter with no ghost locks has no such note");
+p.mockup.renderTop();
+check(/of 62 locked parameters/.test(meterEl.title), "the lock meter's tooltip counts \"of 62 locked parameters\" (" + meterEl.title.slice(0, 40) + ")");
 
 console.log(failures ? `mmLockLaneTest: ${failures} failure(s)` : "mmLockLaneTest: PASS");
 process.exit(failures ? 1 : 0);
