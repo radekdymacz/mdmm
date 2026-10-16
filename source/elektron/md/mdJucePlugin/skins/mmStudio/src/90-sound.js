@@ -137,7 +137,7 @@ ED.fenv={seg(W){const f=V("FLT");return{a:f[4]/127*W*.3,d:f[5]/127*W*.6}},
   const env=x=>x<s.a?x/Math.max(1,s.a):Math.exp(-3*(x-s.a)/Math.max(4,s.d));
   g.strokeStyle=inkA(.3);g.lineWidth=1;g.beginPath();g.moveTo(0,G.M+.5);g.lineTo(W,G.M+.5);g.stroke();
   line(g,W,x=>G.M-env(x)*G.A*bo,ink,2.2);if(wo)line(g,W,x=>G.M-env(x)*G.A*wo,inkA(.6),1.5,[5,4]);
-  label(g,bo||wo?"solid = base · dashed = width · up +, down −":"no offset: the envelope does nothing")},
+  label(g,bo||wo?"solid = base · dashed = width":"no offset: the envelope does nothing")},
  handles(W,H){const s=this.seg(W),f=V("FLT"),G=this.geo(H),bo=this.off(f[6]);return[{x:Math.max(5,s.a),y:G.M-G.A*bo,k:"ATK · BOFS",drag:(x,y)=>{f[4]=clamp(Math.round(x/(W*.3)*127));f[6]=clamp(Math.round(64+(G.M-y)/G.A*64))}},
   {x:s.a+Math.max(4,s.d)*.35,y:G.M-G.A*bo*Math.exp(-1.05),k:"DEC",drag:x=>f[5]=clamp(Math.round((x-s.a)/.35/(W*.6)*127))}]}};
 /* EFFECTS EQF EQG: one band, boosted (up) or cut (down) */

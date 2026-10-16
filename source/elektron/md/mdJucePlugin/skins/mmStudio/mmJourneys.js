@@ -2534,7 +2534,7 @@ const MmJourneys = (() => {
 	/* ---- Sound: the track effects, every value of AMP, FLT and EFX in the manual's order (Track effects chapter) ---- */
 	const EFFECT_PAGES = [["AMP", "ATK HOLD DEC REL DIST VOL PAN PORT"], ["FLT", "BASE WDTH HPQ LPQ ATK DEC BOFS WOFS"], ["EFX", "EQF EQG SRR DTIM DSND DFB DBAS DWID"]];
 	/* the values the manual gives a sign (below 0: headroom for DIST, a cut for EQG, left for PAN, stereo kept for DSND) */
-	const SIGNED_NAMES = new Set(["DIST", "PAN", "EQG", "DSND"]);
+	const SIGNED_NAMES = new Set(["DIST", "PAN", "EQG", "DSND", "BOFS", "WOFS"]);	/* B-148: BOFS, WOFS -64 to +63 */
 	const signedText = v => (v - 64 > 0 ? "+" : "") + (v - 64);
 	const trackEffects = {
 		name: "mm-sound-track-effects", proves: ["MM-114", "MM-115", "MM-116", "MM-117", "MM-118", "MM-119", "MM-121", "MM-122", "MM-123", "MM-124", "MM-125", "MM-126", "MM-127", "MM-129", "MM-130", "MM-131", "MM-132", "MM-133", "MM-134", "MM-092", "MM-084"],
