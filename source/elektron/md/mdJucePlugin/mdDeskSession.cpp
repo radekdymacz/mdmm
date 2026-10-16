@@ -105,6 +105,34 @@ namespace mdJucePlugin
 		return m;
 	}
 
+	elektronData::json::Value mixLevelsOf(AudioPluginAudioProcessor& _processor)
+	{
+		using Value = elektronData::json::Value;
+		namespace mm = mixMeters;
+		const auto l = _processor.takeMixLevels();
+		auto pairs = Value::array();
+		for(size_t p = 0; p < mm::g_pairs; ++p)
+		{
+			auto peak = Value::array();
+			auto rms = Value::array();
+			for(size_t ch = p * 2; ch < p * 2 + 2; ++ch)
+			{
+				peak.push(mm::toDb(l.peak[ch]));
+				rms.push(mm::toDb(l.rms[ch]));
+			}
+			auto o = Value::object();
+			o.set("on", l.on[p]);
+			o.set("clip", mm::clipped(std::max(l.peak[p * 2], l.peak[p * 2 + 1])));
+			o.set("peak", std::move(peak));
+			o.set("rms", std::move(rms));
+			pairs.push(std::move(o));
+		}
+		auto m = Value::object();
+		m.set("type", "mixLevels");
+		m.set("pairs", std::move(pairs));
+		return m;
+	}
+
 	elektronData::json::Value midiInOf(const midiIn::Note& _note)
 	{
 		auto m = elektronData::json::Value::object();

@@ -148,6 +148,10 @@ namespace deskHost
 				"the editor's volume in dB (I-021: the LCD's output meter): the plug-in's output gain on every output, after the "
 				"emulation (the machine's own volume is untouched); -60 is off; saved with the project and the standalone's state",
 				Action::OutputGain),
+			row("mixMeters", {{"on", ArgType::Bool}},
+				"I-032: the Mix page's output meters: on while the page shows Mix, off when it leaves; the plug-in then sends mixLevels "
+				"messages (about 25 a second) and the audio thread measures the outputs, or neither",
+				Action::MixMeters),
 			// I-024 (doc/modern-ux/DESIGN-machine-memory.md): the machine memory that stays for new sessions
 			row("memoryKeep", {{"on", ArgType::Bool}},
 				"KEEP MEMORY: on, a session without a project state starts from the machine memory file and every save on the "

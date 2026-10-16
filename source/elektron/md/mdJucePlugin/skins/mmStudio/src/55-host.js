@@ -56,6 +56,8 @@
      chooseRom(), revealRom(), recheck()   the start-up card's keys (P7): the native file chooser for the
                                       firmware, the ROM folder, look again (the page never reads the ROM)
      audioDoc(), audioSend(command), audioMeter(on)   the AUDIO / MIDI panel's devices
+     mixMeters(on)                    I-032: the Mix page's output meters: on while the page shows Mix (and the window is
+                                      visible), off when it leaves; the host then feeds MMView.mixLevels(message)
      globalSlot(n)                    GLOBAL's slot keys: make global slot n (0-7) the active one (B-051)
      transport(op, args, done)        wave 2, the transport beyond PLAY and STOP: op pause | resume | stop | panic |
                                       playFrom {i} (a song row) | nudge {pct} (the tempo pct % off while held, 0 =

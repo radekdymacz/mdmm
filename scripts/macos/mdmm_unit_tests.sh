@@ -34,6 +34,7 @@ cmake --build "${build_dir}" --parallel 4 --target \
   mdProcessorHooksTest \
   mdWindowsPolicyTest \
   mdMachineMidiOutTest \
+  mdMidiLoopTest \
   mdProcessArchTest \
   mdRosettaNoticeTest \
   mdDroppedFilesTest \
@@ -72,6 +73,7 @@ for test_name in \
   mdProcessorHooksTest \
   mdWindowsPolicyTest \
   mdMachineMidiOutTest \
+  mdMidiLoopTest \
   mdProcessArchTest \
   mdRosettaNoticeTest \
   mdDroppedFilesTest \

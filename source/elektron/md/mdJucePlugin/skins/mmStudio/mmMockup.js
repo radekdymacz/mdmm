@@ -605,7 +605,7 @@ const MM_SEAM={
   "selectPattern","kit","tempo","mutes","keyMode","record","chain","chainClear","seqMode","loadSong","saveSong","waiting",
   "sendNow","playKey","keyUp","transport","noteOn","noteOff","joy","learning","learnTarget","learnBind","modulators",
   "engine","chooseRom","removeRom","romManage","syxChoose","syxExport","syxStart","syxStop","syxPlace","syxExportInfo","machineReset","revealRom",
-  "recheck","firstRun","bootScreen","renderPst","menu","audioDoc","audioSend","audioMeter","globalSlot","memory","follow"],
+  "recheck","firstRun","bootScreen","renderPst","menu","audioDoc","audioSend","audioMeter","mixMeters","globalSlot","memory","follow"],
  "view":[
   "audible","soloed","engReady","asgT","noteName","pname","machName","kitName","gated","busy","sel","mode",
   "playing","step","tempo","engineState","kitState","learnTarget","learning","ctlSetup","show","startEmpty",
@@ -613,7 +613,7 @@ const MM_SEAM={
   "setEngineLabel","setEngineTip","setEngines","setAudioEntry","setMemory","setFollow","selectTrack","clearLearnTarget","setMapping","setModulation",
   "setCtlSetup","disable","setRecord","setRecLock","setLcd","setKeyDown","setMidiHeld","setPst","closeFirmwareDialog","bootRom",
   "bootInstalled","syxPreview","syxProgress","syxExported","syxExportInfo","render","renderTop","drawLib","toast","ask","redraw","movePH",
-  "setPos","flashTracks","goWs","clickStep","autoRange","kitSave","redrawAudio","audioLevel","openAudio"]};
+  "setPos","flashTracks","goWs","clickStep","autoRange","kitSave","redrawAudio","audioLevel","audioStats","openAudio","mixLevels","mixMeterState"]};
 
 /* ---- 55-host.js ---- */
 /* ===== Host (P6): the seam between this UI and what plays it =====
@@ -674,6 +674,8 @@ const MM_SEAM={
      chooseRom(), revealRom(), recheck()   the start-up card's keys (P7): the native file chooser for the
                                       firmware, the ROM folder, look again (the page never reads the ROM)
      audioDoc(), audioSend(command), audioMeter(on)   the AUDIO / MIDI panel's devices
+     mixMeters(on)                    I-032: the Mix page's output meters: on while the page shows Mix (and the window is
+                                      visible), off when it leaves; the host then feeds MMView.mixLevels(message)
      globalSlot(n)                    GLOBAL's slot keys: make global slot n (0-7) the active one (B-051)
      transport(op, args, done)        wave 2, the transport beyond PLAY and STOP: op pause | resume | stop | panic |
                                       playFrom {i} (a song row) | nudge {pct} (the tempo pct % off while held, 0 =
@@ -5072,6 +5074,48 @@ function busFlow(b){const T=S.tracks;let items=[];const notes=[];
 function outOf(b){if(S.routing==="6xMONO")return"not sent out";if(b==="AB")return"OUT A/B";return S.routing==="3xSTEREO+AB=MIX"?`OUT ${b[0]}/${b[1]} + A/B`:`OUT ${b[0]}/${b[1]}`}
 /* compact: the node row, then the three buses close under it with the INPUT jack inline on their left, the
    outputs on their right and the mode label in the bottom corner */
+/* I-032: the output meters, under the graph's bus lines. The plug-in has three stereo outputs, A/B, C/D, E/F, and measures each
+   (mixLevels, about 25 a second, only while this page is shown: HOST.mixMeters); the emulation gives no audio per track,
+   so a meter is a bus's, never a track's. Per pair, just under its line, two thin bars (left, right) on the LCD's ground: the RMS solid, the peak
+   behind it paler, a hold tick at the largest peak (1.5 s, then it falls), and a clip mark on the left (lit 4 s after a
+   sample over 0 dBFS). -60 dB at the left end, 0 dBFS at the right. Decay is the page's: 30 dB a second, the bars fall
+   on their own between messages. An output the host did not enable is dimmed. The LCD's ink only. */
+const MX0=1052,MXW=90,MFLOOR=-60,MFALL=0.03,MHOLD=1500,MCLIP=4000,MQ=-96;
+const MIXM={want:false,raf:0,els:null,drawn:"",pairs:BUSES.map(()=>({on:false,clipAt:-1e9,ch:[0,1].map(()=>({pk:MQ,rm:MQ,hv:MQ,ht:-1e9,t:0}))}))};
+const mdecay=(v,t0,now)=>Math.max(MQ,v-MFALL*Math.max(0,now-t0));
+const mholdAt=(c,now)=>now-c.ht<MHOLD?c.hv:mdecay(c.hv,c.ht+MHOLD,now);
+const mpos=db=>Math.max(0,Math.min(1,(db-MFLOOR)/-MFLOOR));
+/* a message's reading into the state at time now (pure on the state) */
+function mixFeed(m,now){(m.pairs||[]).slice(0,3).forEach((q,k)=>{const P=MIXM.pairs[k];P.on=!!q.on;if(q.clip)P.clipAt=now;
+ [0,1].forEach(i=>{const c=P.ch[i],pk=q.peak?.[i]??MQ,rm=q.rms?.[i]??MQ,fp=mdecay(c.pk,c.t,now),fr=mdecay(c.rm,c.t,now);
+  if(pk>=mholdAt(c,now)){c.hv=pk;c.ht=now}else if(now-c.ht>=MHOLD){c.hv=mholdAt(c,now);c.ht=now-MHOLD}
+  c.pk=Math.max(fp,pk);c.rm=Math.max(fr,rm);c.t=now})})}
+/* what is drawn for pair k, channel i at time now: bar ends as fractions of the meter */
+function mixShown(k,i,now){const P=MIXM.pairs[k],c=P.ch[i];return{pk:mpos(mdecay(c.pk,c.t,now)),rm:mpos(mdecay(c.rm,c.t,now)),hd:mpos(mholdAt(c,now)),clip:now-P.clipAt<MCLIP,on:P.on}}
+function meterSvg(k,y){const nm=["A/B","C/D","E/F"][k],bar=(i,yy)=>`<rect class="mbg" x="${MX0}" y="${yy}" width="${MXW}" height="3.5"/><rect class="mpk" data-mp="${k}.${i}" x="${MX0}" y="${yy}" width="0" height="3.5"/><rect class="mrm" data-mr="${k}.${i}" x="${MX0}" y="${yy}" width="0" height="3.5"/><rect class="mhd" data-mh="${k}.${i}" x="${MX0}" y="${yy}" width="1.5" height="3.5"/>`;
+ return`<g class="mtr" data-mt="${k}"><title>${nm} meter: RMS (solid), peak (pale) and the peak hold, in dBFS from -60 to 0, left over right. Measured on the output, after the volume.</title><rect class="mgnd" x="${MX0-10}" y="${y+4}" width="${MXW+12}" height="9"/>${bar(0,y+4.5)}${bar(1,y+9)}<rect class="mclip" data-mc="${k}" x="${MX0-8}" y="${y+4.5}" width="4.5" height="8"/></g>`}
+function mixMeterEls(){const E=MIXM.els;if(E&&E.root.isConnected)return E;const root=document.querySelector("svg.route");if(!root)return MIXM.els=null;
+ const one=a=>{const o={};root.querySelectorAll(`[${a}]`).forEach(e=>{o[e.getAttribute(a)]=e});return o};
+ return MIXM.els={root,pk:one("data-mp"),rm:one("data-mr"),hd:one("data-mh"),clip:one("data-mc"),grp:one("data-mt")}}
+function mixMeterPaint(now,force){const E=mixMeterEls();if(!E)return;if(force)MIXM.drawn="";let key="";
+ BUSES.forEach((b,k)=>{const sh=[0,1].map(i=>mixShown(k,i,now));key+=sh.map(x=>[x.pk,x.rm,x.hd,x.clip,x.on].map(v=>typeof v==="number"?Math.round(v*MXW):+v).join(",")).join(";")+"|"});
+ if(key===MIXM.drawn)return;MIXM.drawn=key;
+ BUSES.forEach((b,k)=>{const P=MIXM.pairs[k];E.grp[k]?.classList.toggle("off",!P.on);
+  [0,1].forEach(i=>{const x=mixShown(k,i,now),id=k+"."+i;
+   E.pk[id]?.setAttribute("width",(x.pk*MXW).toFixed(1));E.rm[id]?.setAttribute("width",(x.rm*MXW).toFixed(1));
+   E.hd[id]?.setAttribute("x",(MX0+Math.max(0,x.hd*MXW-1.5)).toFixed(1));E.hd[id]?.setAttribute("opacity",x.hd>0?"1":"0")});
+  E.clip[k]?.classList.toggle("on",mixShown(k,0,now).clip)})}
+function mixMeterFrame(){MIXM.raf=0;if(!MIXM.want)return;mixMeterPaint(performance.now());MIXM.raf=requestAnimationFrame(mixMeterFrame)}
+/* the host's message: into the state, drawn at once when this page is shown; a message while it is not (a restarted page,
+   a host that did not hear the page leave) is answered with off */
+function mixLevels(m){if(!MIXM.want){if(HOST.mixMeters)HOST.mixMeters(false);return}mixFeed(m,performance.now());mixMeterPaint(performance.now())}
+/* called after every render and when the window hides or shows: the page asks the host for levels only while Mix is on screen */
+function mixMetersSync(){const want=S.ws==="mix"&&!document.hidden;
+ if(want===MIXM.want){if(want){mixMeterPaint(performance.now(),true);if(!MIXM.raf)MIXM.raf=requestAnimationFrame(mixMeterFrame)}return}
+ MIXM.want=want;if(HOST.mixMeters)HOST.mixMeters(want);
+ if(want){mixMeterPaint(performance.now(),true);if(!MIXM.raf)MIXM.raf=requestAnimationFrame(mixMeterFrame)}else{if(MIXM.raf)cancelAnimationFrame(MIXM.raf);MIXM.raf=0}}
+document.addEventListener("visibilitychange",mixMetersSync);
+const mixMeterState=()=>({want:MIXM.want,running:!!MIXM.raf,drawn:!!(MIXM.els&&MIXM.els.root.isConnected),pairs:MIXM.pairs.map(P=>({on:P.on}))});
 function routeSvg(){const T=S.tracks,W=1200,NW=140,nx=i=>118+172*i,NY=30,NH=44,by={AB:94,CD:110,EF:126},H=146,BX=110,mono=S.routing==="6xMONO";let h="";
  const IX=6,IY=by.AB-10,IW=78,IH=by.EF-by.AB+20;h+=`<g><rect x="${IX}" y="${IY}" width="${IW}" height="${IH}" rx="3" class="jack"/><text x="${IX+8}" y="${IY+15}" font-size="9">INPUT</text><text x="${IX+8}" y="${IY+IH-9}" font-size="12">A  B</text></g>`;
  BUSES.forEach(b=>{h+=`<line x1="${BX}" y1="${by[b]}" x2="1146" y2="${by[b]}" class="bus ${mono?"dim":""}"/><text x="${BX-4}" y="${by[b]+3}" font-size="8" text-anchor="end">${b}</text>`});
@@ -5088,6 +5132,7 @@ function routeSvg(){const T=S.tracks,W=1200,NW=140,nx=i=>118+172*i,NY=30,NH=44,b
   if(tr.trigpos!=null){const j=tr.trigpos;h+=`<path d="M${x+NW/2} ${NY} C${x+NW/2} ${NY-24},${nx(j)+NW/2} ${NY-24},${nx(j)+NW/2} ${NY}" class="cord dot"/><text x="${(x+nx(j))/2+NW/2-18}" y="${NY-20}" font-size="7">TRIG ›T${j+1}</text>`}
   h+=`<g class="node ${fx?"fx":""} ${sel?"sel":""} ${audible(i)?"":"muted"}" data-node="${i}"><rect class="body" x="${x}" y="${NY}" width="${NW}" height="${NH}" rx="3"/>${sel?`<rect class="frame" x="${x-4}" y="${NY-4}" width="${NW+8}" height="${NH+8}" rx="5"/>`:""}
    <text x="${x+8}" y="${NY+13}" font-size="9">T${i+1}${fx?" · FX":""}</text><text x="${x+8}" y="${NY+28}" font-size="11">${shortM(tr.m)}</text><text x="${x+8}" y="${NY+39}" font-size="7" opacity=".8">${tr.name.toUpperCase().slice(0,18)}</text></g>`});
+ BUSES.forEach((b,k)=>{h+=meterSvg(k,by[b])});
  return`<svg class="route" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Routing: tracks, mix buses, outputs">${h}</svg>`}
 function sv2(tr,n){const i=MACH[tr.m].p.indexOf(n);return i<0?0:tr.v.SYN[i]}
 /* A channel strip, top to bottom in signal order (manual 1-26..1-29, 1-33): the sound's own mix values, then PAN,
@@ -5870,8 +5915,11 @@ document.addEventListener("keydown",e=>{
    One file for both editors and both mockups (skins/shared/); its self-test is deskAudioSelfTest.js.
    It only renders a gm-audio/devices document: audioDoc() gives it, audioSend(command) changes one
    thing, audioMeter(on) asks for the input level (audioLevel(v) brings it). The host is the page's:
-   a simulated device list in the mockups, the plug-in's AudioDeviceManager in the editors. */
-var AP={open:false,level:0};
+   a simulated device list in the mockups, the plug-in's AudioDeviceManager in the editors.
+   0.8 (WP4): the document may also carry midiLoop (an input that is also the output, B-154), inputNote (why the
+   input is on NONE, B-155) and setupError; audioStats(m) takes the MIDI monitor's midiStats message (once a second)
+   for the MONITOR row. Each says nothing when it has nothing to say. */
+var AP={open:false,level:0,stats:null,prev:null};
 const AMTIP={
  output:"Where the sound goes. The engine keeps running while the device changes",
  test:"A short test tone on the active outputs",
@@ -5882,7 +5930,16 @@ const AMTIP={
  buffer:"Smaller: less latency, more CPU. Larger: safer on a busy computer",
  midiIn:"MIDI inputs that play and control the machine",
  midiOut:"Where the machine's own MIDI goes: its notes, CCs, program changes, clock and transport (never its SysEx)",
- bt:"Pair a Bluetooth MIDI device (the system's dialog)" };
+ bt:"Pair a Bluetooth MIDI device (the system's dialog)",
+ monitor:"What the editor has taken in from MIDI and sent out since it started, counted live (hover a number for the types)" };
+const amN=n=>(+n||0).toLocaleString("en-US");
+function amMonitor(){const s=AP.stats;if(!s)return`<span class="note">No MIDI counted yet</span>`;
+ const d=s.directions||{},i=d.inHost||{total:0,types:{}},o=d.outHost||{total:0,types:{}},p=AP.prev&&AP.prev.directions,dt=Math.max(1,(s.at-AP.prev?.at)/1000||1);
+ const rate=(c,k)=>p&&p[k]?Math.max(0,Math.round((c.total-p[k].total)/dt)):null,r=(c,k)=>{const v=rate(c,k);return v==null?"":` <i>${v}/s</i>`};
+ const ty=c=>["note","cc","pc","clock","transport","sysex"].filter(k=>c.types&&c.types[k]).map(k=>amN(c.types[k])+" "+k).join(", ")||"nothing yet";
+ const drop=s.dropped?(s.dropped.scheduled||0)+(s.dropped.external||0)+(s.dropped.allocation||0):0;
+ return`<span class="ammon" title="Into the editor from a MIDI port or the host: ${amEsc(ty(i))}"><b>IN</b> <span class="mono">${amN(i.total)}</span>${r(i,"inHost")}</span><span class="ammon" title="Out of the editor to the MIDI output: ${amEsc(ty(o))}"><b>OUT</b> <span class="mono">${amN(o.total)}</span>${r(o,"outHost")}</span>${drop?`<span class="ammon amerr" title="MIDI events the editor had to drop">DROPPED <span class="mono">${amN(drop)}</span></span>`:""}`}
+function audioStats(m){AP.prev=AP.stats;AP.stats=Object.assign({},m,{at:Date.now()});const e=document.getElementById("ammon");if(AP.open&&e)e.innerHTML=amMonitor()}
 const amEsc=t=>String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
 function drawAudio(){const pop=$("#audiopop");if(!pop)return;if(!AP.open){pop.hidden=true;return}const D=audioDoc();
  const head=note=>`<div class="libhead"><span class="cap">Audio / MIDI</span>${note}<button class="libx" data-am="close" title="Close (Esc)">Esc</button></div>`;
@@ -5902,14 +5959,14 @@ function drawAudio(){const pop=$("#audiopop");if(!pop)return;if(!AP.open){pop.hi
    <div class="grow2"><span class="ilab">Device</span>${sel("input",D.input?.id,D.input?.list||[],AMTIP.input,"NONE")}</div>
    <div class="grow2"><span class="ilab">Level</span><span class="ammeter" title="The input level before the mute"><i id="amlevel" style="width:${Math.round(Math.min(1,Math.sqrt(Math.max(0,AP.level)))*100)}%"></i></span></div>
    <div class="grow2"><span class="ilab">Input</span><span class="seg" title="${AMTIP.mute}"><button data-am="mute" data-v="1" aria-pressed="${!!D.input?.muted}">MUTED</button><button data-am="mute" data-v="0" aria-pressed="${!D.input?.muted}">LIVE</button></span></div>
-   <div class="amnote">${D.input?.muted?"Input muted (prevents feedback)":"Input live: keep speakers away from the microphone"}</div></section>
+   <div class="amnote">${D.input?.muted?"Input muted (prevents feedback)":"Input live: keep speakers away from the microphone"}</div>${D.inputNote?`<div class="amnote amwarn" role="alert" id="aminputnote">${amEsc(D.inputNote)}</div>`:""}</section>
   <section class="card"><header><h3>Clock</h3><span>rate and buffer</span></header>
    <div class="grow2"><span class="ilab">Sample rate</span>${sel("rate",rate.value,rate.list.map(r=>({id:String(r),name:(r/1000)+" kHz"})),AMTIP.rate)}</div>
    <div class="grow2"><span class="ilab">Buffer</span>${sel("buffer",buf.value,buf.list.map(b=>({id:String(b),name:b+" samples"+(rate.value?" · "+(Math.round(b/rate.value*10000)/10)+" ms":"")})),AMTIP.buffer)}</div>
    <div class="grow2"><span class="ilab">Latency</span><b class="mono">${D.latencyMs?D.latencyMs+" ms":"--"}</b></div></section>
   <section class="card amwide"><header><h3>MIDI</h3><span>inputs, output, Bluetooth</span></header>
    <div class="grow2 amtop"><span class="ilab">Inputs</span><span class="amins" title="${AMTIP.midiIn}">${(D.midiInputs||[]).map(m=>`<button class="amled" data-am="midiIn" data-id="${amEsc(m.id)}" aria-pressed="${!!m.on}"><i class="led${m.on?" on":""}"></i>${amEsc(m.name)}</button>`).join("")||`<span class="note">No MIDI inputs.</span>`}</span></div>
-   <div class="grow2"><span class="ilab">Output</span>${sel("midiOut",D.midiOutput?.id||"",D.midiOutput?.list||[],AMTIP.midiOut,"NONE")}${D.bluetooth?`<button class="amkey" data-am="bt" title="${AMTIP.bt}">BLUETOOTH MIDI…</button>`:""}</div>${typeof openGlobal==="function"?`<div class="grow2"><span class="ilab"></span><button class="amlink" data-am="global" title="GLOBAL: the machine's own settings, kept in its memory">The machine's MIDI channel and sync are in GLOBAL</button></div>`:""}</section>
+   <div class="grow2"><span class="ilab">Output</span>${sel("midiOut",D.midiOutput?.id||"",D.midiOutput?.list||[],AMTIP.midiOut,"NONE")}${D.bluetooth?`<button class="amkey" data-am="bt" title="${AMTIP.bt}">BLUETOOTH MIDI…</button>`:""}</div>${D.midiLoop?`<div class="amnote amwarn" role="alert" id="amloop">${amEsc(D.midiLoop)}</div>`:""}<div class="grow2"><span class="ilab">Monitor</span><span class="ammons" id="ammon" title="${AMTIP.monitor}">${amMonitor()}</span></div>${typeof openGlobal==="function"?`<div class="grow2"><span class="ilab"></span><button class="amlink" data-am="global" title="GLOBAL: the machine's own settings, kept in its memory">The machine's MIDI channel and sync are in GLOBAL</button></div>`:""}</section>
  </div>
  <div class="libfoot"><span>Also in the engine menu · Esc closes · a change applies at once and is kept</span><span class="fw">${amEsc(D.output?.id||"no output")}</span></div>`;
  if(typeof enhanceSelects==="function")enhanceSelects(pop);pop.hidden=false;placeAudio()}
@@ -5956,6 +6013,10 @@ async function audioSelfTest(T){const sleep=ms=>new Promise(r=>setTimeout(r,ms))
  await check("output "+out0+" -> "+(out1??"-"),async()=>{if(!out1)return "one output device only, skipped";audioSend({set:"output",device:out1});await until(D=>D.output.id===out1&&D.running);if(!(await moving()))throw new Error("audio stopped");return "still playing"});
  await check("output back to "+out0,async()=>{if(!out1)return "skipped";audioSend({set:"output",device:out0});await until(D=>D.output.id===out0&&D.running);if(!(await moving()))throw new Error("audio stopped");return "still playing"});
  await check("input mute toggles and is kept",async()=>{audioSend({set:"mute",on:!muted0});await until(D=>!!D.input.muted===!muted0);audioSend({set:"mute",on:muted0});await until(D=>!!D.input.muted===muted0);return muted0?"muted again":"live again"});
+ await check("loop warning, input note and monitor row show",async()=>{const real=window.audioDoc;window.audioDoc=()=>Object.assign({},real(),{midiLoop:"MIDI loop: test",inputNote:"Input note: test"});
+  try{drawAudio();const loop=document.getElementById("amloop"),note=document.getElementById("aminputnote");if(!loop||!/MIDI loop/.test(loop.textContent))throw new Error("no loop warning");if(!note||!/Input note/.test(note.textContent))throw new Error("no input note");
+   const z=()=>({total:0,types:{},channels:[]});audioStats({directions:{inHost:Object.assign(z(),{total:5}),outHost:Object.assign(z(),{total:7})},dropped:{}});const m=document.getElementById("ammon");if(!m||!/IN\s*5/.test(m.textContent)||!/OUT\s*7/.test(m.textContent))throw new Error("monitor row: "+(m&&m.textContent))}
+  finally{window.audioDoc=real;AP.stats=null;AP.prev=null;drawAudio()}return "warning, note and counts drawn"});
  T.play(false);closeAudio();await sleep(300);
  T.log((res.every(Boolean)?"PASS ":"FAIL ")+res.filter(Boolean).length+"/"+res.length)}
 
@@ -5967,10 +6028,13 @@ const AUD={schema:"gm-audio/devices",version:1,standalone:true,driver:{id:"CoreA
  outputChannels:[{name:"Output 1",on:true},{name:"Output 2",on:true}],
  sampleRate:{value:48000,list:[44100,48000,88200,96000]},bufferSize:{value:512,list:[64,128,256,512,1024,2048]},
  latencyMs:11.3,running:true,midiInputs:[{id:"iac",name:"IAC Driver Bus 1",on:false},{id:"tm1",name:"Elektron TM-1",on:true}],
- midiOutput:{id:"",list:[{id:"iac",name:"IAC Driver Bus 1"},{id:"tm1",name:"Elektron TM-1"}]},bluetooth:true,error:""};
-let audMeterT=0;
+ midiOutput:{id:"",list:[{id:"iac",name:"IAC Driver Bus 1"},{id:"tm1",name:"Elektron TM-1"}]},bluetooth:true,error:"",setupError:"",inputPermission:"granted",inputNote:"",midiLoop:""};
+let audStats={directions:{inHost:{total:0,types:{}},outHost:{total:0,types:{}}},dropped:{scheduled:0,external:0,allocation:0}};
+/* the MIDI loop of the plug-in (mdMidiLoop.h): a virtual loopback bus (IAC, loopMIDI, Midi Through) on as an input and the output; a real port never warns */
+function audLoop(D){const o=D.midiOutput.list.find(x=>x.id===D.midiOutput.id),i=o&&/iac driver|loopmidi|midi through/i.test(o.name)&&D.midiInputs.find(x=>x.on&&x.name===o.name);return i?"MIDI loop: "+o.name+" is on as an input and is also the output. Everything the editor sends comes straight back in and the sound can turn to noise. Switch the input off, or send to another "+(/^IAC/.test(o.name)?"IAC bus":"port")+".":""}
+let audMeterT=0,audStatsT=0;
 function audioDoc(){return HOST.audioDoc?HOST.audioDoc():AUD}
-function audioMeter(on){if(HOST.audioMeter)return HOST.audioMeter(on);clearInterval(audMeterT);if(on)audMeterT=setInterval(()=>audioLevel(!AUD.input.id?0:(AUD.input.muted?.01:.04)+Math.random()*.12),120)}
+function audioMeter(on){if(HOST.audioMeter)return HOST.audioMeter(on);clearInterval(audMeterT);if(on)audMeterT=setInterval(()=>audioLevel(!AUD.input.id?0:(AUD.input.muted?.01:.04)+Math.random()*.12),120);clearInterval(audStatsT);if(on&&typeof audioStats==="function")audStatsT=setInterval(()=>{const h=audStats.directions.inHost,o=audStats.directions.outHost;h.total+=AUD.midiInputs.some(x=>x.on)?24:0;o.total+=AUD.midiOutput.id?24:0;audStats.directions.inHost.types={clock:h.total};audioStats(audStats)},1000)}
 function audioSend(c){if(HOST.audioSend)return HOST.audioSend(c);const D=AUD,say=t=>typeof toast==="function"&&toast(t);
  if(c.do==="test"){say("Test tone on "+D.output.id);return}
  if(c.do==="bluetooth"){say("The system's Bluetooth MIDI dialog opens here");return}
@@ -5983,7 +6047,7 @@ function audioSend(c){if(HOST.audioSend)return HOST.audioSend(c);const D=AUD,say
  else if(c.set==="midiInput"){const m=D.midiInputs.find(x=>x.id===c.device);if(m)m.on=c.on}
  else if(c.set==="midiOutput")D.midiOutput.id=c.device;
  if(c.set!=="outputChannel")D.error="";
- D.latencyMs=Math.round((D.bufferSize.value+96)/D.sampleRate.value*10000)/10;drawAudio()}
+ D.latencyMs=Math.round((D.bufferSize.value+96)/D.sampleRate.value*10000)/10;D.midiLoop=audLoop(D);drawAudio()}
 
 /* ---- 128-transport.js ---- */
 /* ===== Wave 2 (doc/modern-ux/DESIGN-machine-menus.md §2): the transport beyond PLAY and STOP =====
@@ -6523,7 +6587,7 @@ function render(){const f=focusedValue();renderPage();if(f){const el=document.qu
 function renderPage(){closePicker();closeK();const sl=$("#seqscroll")?.scrollLeft||0;renderTop();{const m=(S.ws==="seq"||S.ws==="sound")&&S.side==="midi";if(!m&&S.sel>5)S.sel-=6;if(m&&S.sel<6)S.sel+=6}const full=["mix","perform","song","control"].includes(S.ws);
  $("#body").className="body "+(full?"full ":"")+"ws-"+S.ws;$("#rail").hidden=full;if(!full)renderRail();renderSub();
  ({control:renderControl,seq:renderSeq,sound:renderSound,mix:renderMix,perform:renderPerform,song:renderSong})[S.ws]();
- const sc=$("#seqscroll");if(sc){sc.scrollLeft=sl;const l=$("#lanescroll");if(l)l.scrollLeft=sl}enhanceSelects($("#main"));if(S.learn)document.body.classList.add("learn");movePH(false);polyFollows()}
+ const sc=$("#seqscroll");if(sc){sc.scrollLeft=sl;const l=$("#lanescroll");if(l)l.scrollLeft=sl}enhanceSelects($("#main"));if(S.learn)document.body.classList.add("learn");movePH(false);polyFollows();mixMetersSync()}
 /* 0.6 wave 9 (B-064): POLY plays the machine's track in focus; the synth track the person selects here (rail, Assign's
    1-6) is the one that plays it: a new selection while in POLY moves it (the host presses that TRACK key) */
 /* the Multi envelope's "choose Multi trig" rings that key while pointed at (no :has(): macOS 12's WebKit) */
@@ -6722,7 +6786,7 @@ window.MMView={
  setFollow,selectTrack:followSelect,setLcd,setKeyDown,setMidiHeld,setPst,closeFirmwareDialog,bootRom:r=>Boot.rom(r),bootInstalled:o=>Boot.showInstalled(o),syxPreview:m=>Syx.preview(m),syxProgress:m=>Syx.progress(m),syxExported:m=>Syx.exported(m),syxExportInfo:m=>Syx.exportInfo(m),
  /* calls */
  render,renderTop,drawLib,toast,ask,redraw,movePH,setPos,flashTracks,goWs,clickStep,autoRange,kitSave,
- redrawAudio:()=>{if(AP.open)drawAudio()},audioLevel,openAudio};
+ redrawAudio:()=>{if(AP.open)drawAudio()},audioLevel,audioStats,openAudio,mixLevels,mixMeterState};
 /* the view gives exactly the seam's members (53-seam.js) */
 {const have=Object.keys(window.MMView),odd=[...MM_SEAM.view.filter(k=>!have.includes(k)),...have.filter(k=>!MM_SEAM.view.includes(k))];if(odd.length)console.warn("MMView and 53-seam.js differ: "+odd.join(", "))}
 /* The self-tests (a diagnostics build's bundle sets window.MMDiagnostics before this script) play the
