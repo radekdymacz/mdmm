@@ -59,6 +59,11 @@ namespace mmDesk
 		// this version can use, the default for the rest (never the previous project's); errors say what was left out.
 		std::vector<std::string> loadSetup(const Value& _setup);
 
+		// MIDI Learn (0.8): the learned CCs, part of the setup (the same contract as the Machinedrum desk's). setMappings keeps
+		// them with the project.
+		const std::vector<deskCore::LearnMapping>& mappings() const { return m_mappings; }
+		void setMappings(std::vector<deskCore::LearnMapping> _mappings);
+
 		bool isReady() const { return isInputReady(); }
 		// The adapter's status line (Machine::status), read for tests and diagnostics.
 		std::string recvState() const { const auto s = status(); const auto* v = s.find("recv"); return v && v->isString() ? v->asString() : std::string(); }
@@ -98,6 +103,7 @@ namespace mmDesk
 		deskCore::ModEngine m_mods;
 		bool m_follow = false;	// I-003: the selected track follows the last played
 		deskCore::SoloMemo m_solo;	// the page's solo and the mutes the person had before it
+		std::vector<deskCore::LearnMapping> m_mappings;	// MIDI Learn
 	};
 
 	// The Monomachine's links address its six synth tracks' DATA pages (page * 8 + index) and levels.
@@ -105,5 +111,6 @@ namespace mmDesk
 	// Its setup: the modulators and the solo of its 12 tracks (no knob rows), written in the 0.x shape (the bare
 	// mm-desk/modulators with "solo" beside it) so 0.7 reads 1.0 projects; mm-desk/setup is read too, and written once a
 	// member needs the wrapper.
-	constexpr deskCore::SetupSpec g_mmSetupSpec{"mm-desk/setup", g_mmModLimits, 12, false, true};
+	// The learn model: 6 synth tracks, 8 pages (the 7 DATA pages and the level), 8 values a page.
+	constexpr deskCore::SetupSpec g_mmSetupSpec{"mm-desk/setup", g_mmModLimits, 12, false, true, {6, 8, 8}};
 }

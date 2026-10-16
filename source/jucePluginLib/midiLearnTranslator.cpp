@@ -245,7 +245,11 @@ namespace pluginLib
 			m_learningType = statusByte;
 			m_learningValues.push_back(value);
 
-			// Notify progress (a copy, as onMappingLearned below)
+			// Notify progress (a copy, as onMappingLearned below). Threading: the copy fixes the closure that clears its own
+			// slot, not the thread: the std::function is read here on the thread that delivers the event (the audio, MIDI-input
+			// or message thread) while another may assign it, which is a data race. The Machinedrum and Monomachine Editors
+			// never make this translator (usesMidiLearn() is false; MIDI Learn is the LearnRouter's, DESIGN-learn-0.8.md); a
+			// plug-in that does must set the callbacks before audio runs and not change them while it does.
 			if (const auto progress = onLearningProgress)
 				progress(1, kRequiredUniqueValues);
 			return;
@@ -294,7 +298,9 @@ namespace pluginLib
 		cancelLearning();
 
 		// Run a copy: the callback may clear or replace onMappingLearned from inside itself (destroying the closure that is
-		// running), and a closure that uses its captures afterwards would read freed memory.
+		// running), and a closure that uses its captures afterwards would read freed memory. The copy is not a thread
+		// guard (see onLearningProgress above): the member is read on the delivering thread, and a function object may
+		// allocate when copied, so this path is never for the audio thread of a plug-in that has one (the editors have none).
 		if (const auto learned = onMappingLearned)
 			learned(newMapping);
 	}

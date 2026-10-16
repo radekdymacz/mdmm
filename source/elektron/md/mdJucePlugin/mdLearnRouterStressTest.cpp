@@ -94,6 +94,7 @@ int main(int _argc, char** _argv)
 	std::thread audio([&]
 	{
 		uint32_t last = 0;
+		LearnTable expected = makeTable(0);
 		uint32_t cc = 0;
 		while(!stop.load(std::memory_order_acquire))
 		{
@@ -103,11 +104,14 @@ int main(int _argc, char** _argv)
 			{
 				if(table.generation < last)
 					backwards.fetch_add(1, std::memory_order_relaxed);
-				if(!sameTable(table, makeTable(table.generation)))
-					torn.fetch_add(1, std::memory_order_relaxed);
 				last = table.generation;
+				expected = makeTable(last);
 				distinct.fetch_add(1, std::memory_order_relaxed);
 			}
+			// every block, not only when the generation moved: the copy in use is exactly the published table of its
+			// generation, whole, however many writes overlapped it
+			if(!sameTable(table, expected))
+				torn.fetch_add(1, std::memory_order_relaxed);
 			uint64_t c = 0;
 			for(int i = 0; i < 32; ++i)
 			{

@@ -137,8 +137,6 @@ namespace deskHost
 			row("learnStart", {t, pg, i}, "MIDI learn a track's parameter (learn.doc.limits: which)", Action::LearnStart),
 			row("learnAdd", {{"cc", ArgType::Integer, 0, 127}, t, pg, i, {"ch", ArgType::Integer, 0, 15, true}},
 				"a CC mapping without learning, on channel ch (none: all channels)", Action::LearnAdd),
-			row("learnSetCc", {{"from", ArgType::Integer, 0, 127}, {"to", ArgType::Integer, 0, 127}},
-				"a controller row's CC changed: its mappings follow", Action::LearnSetCc),
 			row("learnCancel", {}, "", Action::LearnCancel),
 			row("learnRemove", {index}, "", Action::LearnRemove),
 			row("learnInvert", {index}, "", Action::LearnInvert),

@@ -119,7 +119,7 @@ function clickControl(e) {
 	const kc = e.target.closest("[data-knobcc]"); if (kc) {
 		const [, cc] = C.sel.split(":").map(Number), ccs = knobCcs(), k = ccs.indexOf(cc), to = clamp(cc + +kc.dataset.knobcc, 0, 127);
 		if (k < 0 || ccs.includes(to)) { toast("Another knob row already uses CC " + to + "."); return true; }
-		setKnobCc(k, to); cmd("learnSetCc", { from: cc, to }); C.sel = "255:" + to; render(); return true;
+		setKnobCc(k, to); C.sel = "255:" + to; render(); return true;
 	}
 	if (e.target.closest("[data-selt]")) { C.selT = null; render(); return true; }
 	const li = e.target.closest("[data-linv]"); if (li) { cmd("learnInvert", { index: +li.dataset.linv }); return true; }
