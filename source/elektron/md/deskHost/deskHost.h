@@ -56,7 +56,8 @@ namespace deskHost
 		DropSample,			// a sample dropped on the window: into a UW ROM slot, as a chosen one
 		OutputGain,			// I-021: the editor's volume (the plug-in's output gain, after the emulation)
 		MemoryKeep,			// I-024: KEEP MEMORY on or off (the machine memory file for new sessions)
-		MemoryFactory		// I-024: RESET MACHINE… > Start from factory memory (the file goes; the page asked the user first)
+		MemoryFactory,		// I-024: RESET MACHINE… > Start from factory memory (the file goes; the page asked the user first)
+		MixMeters			// I-032: the Mix page is shown (on) or left (off): the output pair meters' levels (mixLevels) flow or stop
 	};
 
 	// Who acts on a row: the session (it outlives the window) or the window (the menu and the

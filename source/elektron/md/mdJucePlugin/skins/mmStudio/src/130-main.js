@@ -423,7 +423,7 @@ function render(){const f=focusedValue();renderPage();if(f){const el=document.qu
 function renderPage(){closePicker();closeK();const sl=$("#seqscroll")?.scrollLeft||0;renderTop();{const m=(S.ws==="seq"||S.ws==="sound")&&S.side==="midi";if(!m&&S.sel>5)S.sel-=6;if(m&&S.sel<6)S.sel+=6}const full=["mix","perform","song","control"].includes(S.ws);
  $("#body").className="body "+(full?"full ":"")+"ws-"+S.ws;$("#rail").hidden=full;if(!full)renderRail();renderSub();
  ({control:renderControl,seq:renderSeq,sound:renderSound,mix:renderMix,perform:renderPerform,song:renderSong})[S.ws]();
- const sc=$("#seqscroll");if(sc){sc.scrollLeft=sl;const l=$("#lanescroll");if(l)l.scrollLeft=sl}enhanceSelects($("#main"));if(S.learn)document.body.classList.add("learn");movePH(false);polyFollows()}
+ const sc=$("#seqscroll");if(sc){sc.scrollLeft=sl;const l=$("#lanescroll");if(l)l.scrollLeft=sl}enhanceSelects($("#main"));if(S.learn)document.body.classList.add("learn");movePH(false);polyFollows();mixMetersSync()}
 /* 0.6 wave 9 (B-064): POLY plays the machine's track in focus; the synth track the person selects here (rail, Assign's
    1-6) is the one that plays it: a new selection while in POLY moves it (the host presses that TRACK key) */
 /* the Multi envelope's "choose Multi trig" rings that key while pointed at (no :has(): macOS 12's WebKit) */
@@ -622,7 +622,7 @@ window.MMView={
  setFollow,selectTrack:followSelect,setLcd,setKeyDown,setMidiHeld,setPst,closeFirmwareDialog,bootRom:r=>Boot.rom(r),bootInstalled:o=>Boot.showInstalled(o),syxPreview:m=>Syx.preview(m),syxProgress:m=>Syx.progress(m),syxExported:m=>Syx.exported(m),syxExportInfo:m=>Syx.exportInfo(m),
  /* calls */
  render,renderTop,drawLib,toast,ask,redraw,movePH,setPos,flashTracks,goWs,clickStep,autoRange,kitSave,
- redrawAudio:()=>{if(AP.open)drawAudio()},audioLevel,audioStats,openAudio};
+ redrawAudio:()=>{if(AP.open)drawAudio()},audioLevel,audioStats,openAudio,mixLevels,mixMeterState};
 /* the view gives exactly the seam's members (53-seam.js) */
 {const have=Object.keys(window.MMView),odd=[...MM_SEAM.view.filter(k=>!have.includes(k)),...have.filter(k=>!MM_SEAM.view.includes(k))];if(odd.length)console.warn("MMView and 53-seam.js differ: "+odd.join(", "))}
 /* The self-tests (a diagnostics build's bundle sets window.MMDiagnostics before this script) play the
