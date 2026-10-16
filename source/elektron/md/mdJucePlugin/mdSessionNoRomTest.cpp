@@ -305,6 +305,44 @@ int main(const int _argc, char** const _argv)
 			pump(100);
 		check(count(published, "midiStats") > 0, "the page is sent the counts (midiStats)");
 	}
+	// I-032 (0.8, WP9): the Mix page's meters: nothing is measured or sent until the page says mixMeters on; then mixLevels
+	// comes (three pairs, the main one enabled by the host's buffer) about 25 times a second; off, it stops; a page that
+	// starts again (ready) must say it again
+	{
+		check(!processor->mixMeterWanted() && count(published, "mixLevels") == 0, "before the page asks: the audio thread does not measure, no mixLevels");
+		session->onPageMessage(*elektronData::json::parse(R"({"op":"mixMeters","id":31,"on":true})"));
+		check(processor->mixMeterWanted(), "mixMeters on: the audio thread measures");
+		for(int i = 0; i < 30 && count(published, "mixLevels") < 3; ++i)
+			pump(50);
+		check(count(published, "mixLevels") >= 3, "mixLevels flows (" + std::to_string(count(published, "mixLevels")) + " in the wait)");
+		const Value* last = nullptr;
+		for(auto it = published.rbegin(); it != published.rend() && !last; ++it)
+			if(str(*it, "type") == "mixLevels")
+				last = &*it;
+		const auto* pairs = last ? last->find("pairs") : nullptr;
+		const auto& arr = pairs && pairs->isArray() ? pairs->asArray() : std::vector<Value>{};
+		bool shape = arr.size() == 3;
+		for(const auto& p : arr)
+		{
+			const auto* on = p.find("on");
+			const auto* clip = p.find("clip");
+			const auto* peak = p.find("peak");
+			const auto* rms = p.find("rms");
+			shape = shape && on && on->isBool() && clip && clip->isBool() && peak && peak->isArray() && peak->asArray().size() == 2
+				&& rms && rms->isArray() && rms->asArray().size() == 2 && peak->asArray()[0].asNumber() >= -96 && peak->asArray()[0].asNumber() <= 6;
+		}
+		check(shape, "each message: three pairs, each with on, clip, peak [L, R] and rms [L, R] in dBFS");
+		check(shape && arr[0].find("on")->asBool(), "the main pair A/B is on (the host's buffer has it)");
+		session->onPageMessage(*elektronData::json::parse(R"({"op":"mixMeters","id":32,"on":false})"));
+		check(!processor->mixMeterWanted(), "mixMeters off: the audio thread stops measuring");
+		pump(100);
+		const auto after = count(published, "mixLevels");
+		pump(300);
+		check(count(published, "mixLevels") == after, "and no mixLevels follows");
+		session->onPageMessage(*elektronData::json::parse(R"({"op":"mixMeters","id":33,"on":true})"));
+		session->onPageMessage(*elektronData::json::parse(R"({"op":"ready"})"));
+		check(!processor->mixMeterWanted(), "a page that starts again is not metered until it says so");
+	}
 	// B-030: the host's tempo reaches the page while the host is stopped (the LCD's TEMPO shows it)
 	{
 		double bpm = -1;
