@@ -339,8 +339,8 @@
 	/* I-003: with FOLLOW PLAYED TRACK on, a note from a MIDI controller (the plug-in's midiIn, never the editor's own
 	   keyboard) on a synth track's channel (base + t inside CHANNEL SPAN) selects that track */
 	function followPlayed(m) {
-		if (!follow) return;
-		for (let t = 0; t < 6; t++) if (trackChannel(t) === m.ch) { if (V().sel() !== t) V().selectTrack(t); return; }
+		if (!follow || machine?.capabilities?.engine === "hw") return;	/* HW MIDI: the port carries the real machine's own MIDI out */
+		for (let t = 0; t < 6; t++) if (trackChannel(t) === m.ch) { V().selectTrack(t); return; }
 	}
 	const midi = (b, key) => send({ op: "midi", b }, key ? { key } : {});
 	let held = null;

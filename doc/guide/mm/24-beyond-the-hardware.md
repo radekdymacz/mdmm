@@ -229,7 +229,7 @@ The machine has no such function. With it on, the track you select changes to th
 3. Play it on a channel no synth track plays. The selection stays where it was.
 4. Choose the entry again to turn it off.
 
-A track's channel is the base channel plus the track's number, inside the CHANNEL SPAN of the global. The keys of the computer keyboard never move the selection.
+A track's channel is the base channel plus the track's number, inside the CHANNEL SPAN of the global. The keys of the computer keyboard never move the selection. With the HW MIDI engine it does nothing, since the port then carries the machine's own MIDI. While a question is open, or LEARN waits for its note, the selection stays where it is.
 
 ## THE CPU METER AND THE SPEED-UPS
 <!-- rows: MM-X15 @9cd295 -->
