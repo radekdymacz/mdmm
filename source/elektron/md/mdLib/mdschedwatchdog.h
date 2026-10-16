@@ -6,8 +6,8 @@ namespace md
 {
 	// The audio thread's bound on one Hardware::advance() (1.0 review, real time 1). The scheduler loop ends when
 	// the ColdFire and both DSPs reach the shared clock; each step moves the one furthest behind by at most one
-	// background quantum (MD 125 us = 5.5 frames, MM 30 us = 1.3 frames), so a running machine needs about three
-	// steps per quantum: under 3 a frame on the Monomachine, under 1 on the Machinedrum, plus a few hundred for a
+	// background quantum (30 us = 1.3 frames on both machines since 0.8, B-161), so a running machine needs about
+	// three steps per quantum: under 3 a frame, plus a few hundred for a
 	// DSP released after a backpressure park. The budget is 64 a frame plus 4096: far above that, so it never ends
 	// a running machine's loop (the sound stays bit-exact), and small enough that a machine that stops moving
 	// (its clock no longer advances) gives the host its thread back within the block instead of freezing the DAW
