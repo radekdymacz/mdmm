@@ -211,7 +211,18 @@ namespace
 				+ ") sounds as its TRIG key does (ratio "
 				+ std::to_string(ratio) + ", cosine " + std::to_string(c) + ")");
 		}
-		check(silentReference < 8, "the default kit sounds on most tracks (silent: " + std::to_string(silentReference) + ")");
+		check(silentReference == 0, "the factory kit sounds on every track (silent: " + std::to_string(silentReference) + ")");
+
+		// a softer note is softer: velocity 64 on track 1 sounds lower than 127
+		{
+			const int note = noteForTrack(*g, 0);
+			const auto loud = playNote(m, base, static_cast<uint8_t>(note), 17, 350, 127);
+			settle(m);
+			const auto soft = playNote(m, base, static_cast<uint8_t>(note), 17, 350, 64);
+			settle(m);
+			std::printf("    velocity 127 rms %.5f, velocity 64 rms %.5f\n", loud.rms(), soft.rms());
+			check(soft.rms() > g_silent && soft.rms() < loud.rms() * 0.8, "velocity 64 sounds lower than 127");
+		}
 
 		// (b) a channel outside the four base channels sounds nothing; the in-group channels are only reported
 		std::puts("-- (b) another channel sounds nothing");
@@ -329,7 +340,6 @@ namespace
 		emptyKit(m);
 		settle(m);
 		const std::array<uint8_t, 6> notes{48, 52, 55, 59, 62, 66};	// distinct pitches, a sine each
-		std::array<double, 6> alone{};
 		const auto chords = [&](const char* _what, const std::initializer_list<uint32_t> _offsets)
 		{
 			std::array<double, 6> alone{};
