@@ -5,23 +5,89 @@
 
 namespace md
 {
-	bool DeskDevice::sendPanelSequence(const std::vector<PanelPacket>& _states, const uint32_t _holdFrames)
+	bool DeskDevice::beginPanelSequence(const size_t _count)
 	{
-		// Drop what was sent, then append.
+		// Drop what was sent, then see whether the new packets fit.
 		std::copy(m_panelSequence.begin() + static_cast<std::ptrdiff_t>(m_panelSequenceNext),
 			m_panelSequence.begin() + static_cast<std::ptrdiff_t>(m_panelSequenceSize), m_panelSequence.begin());
 		std::copy(m_panelSequenceHolds.begin() + static_cast<std::ptrdiff_t>(m_panelSequenceNext),
 			m_panelSequenceHolds.begin() + static_cast<std::ptrdiff_t>(m_panelSequenceSize), m_panelSequenceHolds.begin());
 		m_panelSequenceSize -= m_panelSequenceNext;
 		m_panelSequenceNext = 0;
-		if(_states.empty() || m_panelSequenceSize + _states.size() > m_panelSequence.size())
-			return false;
-		std::copy(_states.begin(), _states.end(), m_panelSequence.begin() + static_cast<std::ptrdiff_t>(m_panelSequenceSize));
+		return _count && m_panelSequenceSize + _count <= m_panelSequence.size();
+	}
+
+	void DeskDevice::appendPanelSequence(const PanelPacket* const _states, const size_t _count, const uint32_t _holdFrames)
+	{
+		const auto count = std::min(_count, m_panelSequence.size() - m_panelSequenceSize);
+		std::copy(_states, _states + count, m_panelSequence.begin() + static_cast<std::ptrdiff_t>(m_panelSequenceSize));
 		// Each packet keeps its own hold (a knob turn queued after a key does not shorten the key's).
 		std::fill(m_panelSequenceHolds.begin() + static_cast<std::ptrdiff_t>(m_panelSequenceSize),
-			m_panelSequenceHolds.begin() + static_cast<std::ptrdiff_t>(m_panelSequenceSize + _states.size()), _holdFrames);
-		m_panelSequenceSize += _states.size();
+			m_panelSequenceHolds.begin() + static_cast<std::ptrdiff_t>(m_panelSequenceSize + count), _holdFrames);
+		m_panelSequenceSize += count;
+	}
+
+	bool DeskDevice::sendPanelSequence(const std::vector<PanelPacket>& _states, const uint32_t _holdFrames)
+	{
+		if(!beginPanelSequence(_states.size()))
+			return false;
+		appendPanelSequence(_states.data(), _states.size(), _holdFrames);
 		return true;
+	}
+
+	synthLib::DeviceCommand DeskDevice::panelEventCommand(const uint8_t _row, const uint8_t _mask)
+	{
+		synthLib::DeviceCommand c;
+		c.kind = static_cast<uint32_t>(CommandKind::PanelEvent);
+		c.a = _row;
+		c.b = _mask;
+		return c;
+	}
+
+	std::vector<synthLib::DeviceCommand> DeskDevice::panelSequenceCommands(const std::vector<PanelPacket>& _states, const uint32_t _holdFrames)
+	{
+		std::vector<synthLib::DeviceCommand> commands;
+		for(size_t at = 0; at < _states.size(); at += PacketsPerCommand)
+		{
+			synthLib::DeviceCommand c;
+			c.kind = static_cast<uint32_t>(at ? CommandKind::PanelSequenceMore : CommandKind::PanelSequenceBegin);
+			c.a = _holdFrames;
+			c.b = static_cast<uint32_t>(_states.size());
+			const auto count = std::min(PacketsPerCommand, _states.size() - at);
+			for(size_t i = 0; i < count; ++i)
+			{
+				c.data[i * 2] = _states[at + i].row;
+				c.data[i * 2 + 1] = _states[at + i].mask;
+			}
+			c.size = static_cast<uint32_t>(count * 2);
+			commands.push_back(c);
+		}
+		return commands;
+	}
+
+	bool DeskDevice::applyCommand(const synthLib::DeviceCommand& _command)
+	{
+		std::array<PanelPacket, PacketsPerCommand> packets;
+		const auto count = std::min<size_t>(_command.size / 2, packets.size());
+		for(size_t i = 0; i < count; ++i)
+			packets[i] = PanelPacket{_command.data[i * 2], _command.data[i * 2 + 1]};
+		switch(static_cast<CommandKind>(_command.kind))
+		{
+		case CommandKind::PanelEvent:
+			return sendPanelEvent(static_cast<uint8_t>(_command.a), static_cast<uint8_t>(_command.b));
+		case CommandKind::PanelSequenceBegin:
+			m_panelSequenceRefused = !beginPanelSequence(_command.b);
+			if(m_panelSequenceRefused)
+				return false;
+			appendPanelSequence(packets.data(), count, _command.a);
+			return true;
+		case CommandKind::PanelSequenceMore:
+			if(m_panelSequenceRefused)
+				return false;
+			appendPanelSequence(packets.data(), count, _command.a);
+			return true;
+		}
+		return false;
 	}
 
 	void DeskDevice::processAudio(const synthLib::TAudioInputs& _inputs, const synthLib::TAudioOutputs& _outputs, const size_t _samples)

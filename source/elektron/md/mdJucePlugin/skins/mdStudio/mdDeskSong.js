@@ -18,21 +18,58 @@ function rowSet(i, r) { songCmd("rowSet", { i, row: rowToContract(r, patLen) }, 
    into the machine's own chain (live, one bank, loops; chainFooter). SONG: the pad is added after the selected row of
    the song (stored, any bank, loops and jumps; heard after STOP + reload; the machine is in SONG mode). A key sets the
    machine's mode too (seqMode); a mode the machine reports (the LCD's PLAY key) moves the switch (songModeSync). */
-S.songPick = null; S.songModeSeen = undefined; S.songMore = false; S.chainDraft = []; S.chainTimer = 0; S.chainSent = false;
+S.songPick = null; S.songModeSeen = undefined; S.songMore = false; S.chainDraft = []; S.chainTimer = 0; S.chainSent = false; S.chainWas = false; S.chainOwnEnd = false; S.chainPending = null; S.chainWaitFrom = 0; S.modeSentAt = -1e9; S.modeWanted = false;
 const SONG_PICKS = [["pattern", "Pattern"], ["chain", "Chain"], ["song", "Song"]];
+/* B-162: the machine's chain ended without the page (a pattern pick, the LCD): the pads start over and the CHAIN key goes back to
+   PATTERN, as the screen would otherwise say CHAIN over a machine that plays one pattern. Not while the page's own chain or Clear
+   is on its way (chainPending: until the machine shows it, 4 s at most), and not for the page's own Clear (chainOwnEnd: CHAIN stays, the pads are empty). */
+function chainSync() {
+	const c = chainDoc(), act = !!(c && c.active), p = S.chainPending;
+	/* a send waits for the machine to show it (a slow host: while it still applies the keys, tx, the wait goes on) */
+	if (p && (act && p.patterns ? JSON.stringify(c.patterns) === JSON.stringify(p.patterns) : !p.patterns && !act)) S.chainPending = null;
+	else if (p && performance.now() > p.until) { if (machineState().desk?.tx && performance.now() - (p.born ??= performance.now() - 4000) < 12000) p.until = performance.now() + 1000; else S.chainPending = null; }
+	if (act && !S.chainWas) S.chainOwnEnd = false;
+	if (S.chainWas && !act && !S.chainTimer && !S.chainPending) {
+		S.chainDraft = []; S.chainSent = false;
+		if (!S.chainOwnEnd && S.songPick === "chain") S.songPick = "pattern";
+		S.chainOwnEnd = false;
+	}
+	/* a chain the machine plays that the pads do not show (made elsewhere, or kept while another key was lit): the pads show it */
+	else if (act && !S.chainTimer && !S.chainPending) {
+		/* only a chain of the bank the page shows: the draft of another bank is filtered away by renderSong, a refill would render every tick */
+		const mine = c.patterns.every(p => p >> 4 === S.bank) ? c.patterns : [];
+		if (JSON.stringify(S.chainDraft) !== JSON.stringify(mine)) S.chainDraft = mine.slice();
+	}
+	S.chainWas = act || (S.chainWas && !c);
+}
+/* the machine's chain changes between renders (the LCD, a pick): watched on its own clock, a render only when the page has to change */
+setInterval(() => { if (S.ws !== "song") { chainSync(); return; } const k = S.songPick + S.chainDraft.join(); songModeSync(); if (k !== S.songPick + S.chainDraft.join()) render(); }, 300);
 function songModeSync() {
+	chainSync();
 	const sm = V.songMode;
 	if (!SONG_PICKS.some(([k]) => k === S.songPick)) S.songPick = sm === true ? "song" : chainDoc()?.active && sm === false ? "chain" : "pattern";
 	if (S.songModeSeen !== sm) {
 		S.songModeSeen = sm;
-		if (sm === true) S.songPick = "song"; else if (sm === false && S.songPick === "song") S.songPick = chainDoc()?.active ? "chain" : "pattern";
+		/* B-162: a report of the mode before the one just asked for (SONG, then CHAIN at once: SONG's answer comes late) is not the person's choice */
+		if (performance.now() - S.modeSentAt < 2000 && sm !== S.modeWanted) { }
+		else if (sm === true) S.songPick = "song"; else if (sm === false && S.songPick === "song") S.songPick = chainDoc()?.active ? "chain" : "pattern";
 	}
+	else if (sm != null && performance.now() - S.modeSentAt > 2000 && (S.songPick === "song") !== (sm === true)) S.songPick = sm ? "song" : chainDoc()?.active ? "chain" : "pattern";
 }
 /* B-072: every key sends the mode, as the PATTERN | SONG switch did before 0.6: V.songMode is the view of the last
    render and the machine's answer to a key just pressed may not be in it yet (SONG, then PATTERN at once: PATTERN
    sent nothing, the machine stayed in SONG mode and the switch went back to SONG) */
+SongMarks.watch(() => document.getElementById("tl"));
 function songPickSet(v) {
-	S.songPick = v;
+	/* B-162: a chain still waiting for its 150 ms (chainSoon) is not sent into the other mode: its keys are PATTERN mode's gesture */
+	if (v !== "chain" && S.chainTimer) {
+		/* a pending Back/Clear that ends the chain still goes out (page and machine agree); an unsent chain is dropped */
+		const wasClear = canDo(V, "chains") && S.chainDraft.length < 2 && (chainDoc()?.active || S.chainSent);
+		clearTimeout(S.chainTimer); S.chainTimer = 0; S.chainWaitFrom = 0;
+		if (wasClear) { S.chainOwnEnd = true; S.chainPending = { until: performance.now() + 4000 }; cmd("chainClear"); S.chainSent = false; }
+		S.chainDraft = [];
+	}
+	S.songPick = v; S.modeSentAt = performance.now(); S.modeWanted = v === "song";
 	cmd("seqMode", { song: v === "song" });
 	render();
 }
@@ -42,12 +79,21 @@ function chainDoc() { const d = machineState().desk || {}; return d.chain || nul
    their way, MdMachine::cmdChain). Fewer than two pads: the chain the machine plays ends. */
 function chainSoon() {
 	clearTimeout(S.chainTimer);
-	S.chainTimer = setTimeout(() => {
-		const d = S.chainDraft.slice(), c = chainDoc();
-		if (!canDo(V, "chains")) return;
-		if (d.length >= 2) { if (!(c && c.active && c.patterns.length === d.length && c.patterns.every((p, i) => p === d[i]))) { cmd("chain", { patterns: d }); S.chainSent = true; } }
-		else if ((c && c.active) || S.chainSent) { cmd("chainClear"); S.chainSent = false; }
-	}, 150);
+	S.chainTimer = setTimeout(chainFire, 150);
+}
+/* in SONG mode the chain gesture is not the machine's: right after SONG, then CHAIN the machine may not have left it yet; wait for it (2 s) */
+function chainFire() {
+	S.chainTimer = 0;
+	if (!canDo(V, "chains") || S.songPick !== "chain") return;
+	if (V.songMode === true) {
+		S.chainWaitFrom ||= performance.now();
+		if (performance.now() - S.chainWaitFrom < 2000) { S.chainTimer = setTimeout(chainFire, 150); return; }
+		S.chainWaitFrom = 0; toast("The machine is still in SONG mode: the chain was not sent. Click a pad again."); return;
+	}
+	S.chainWaitFrom = 0;
+	const d = S.chainDraft.slice(), c = chainDoc();
+	if (d.length >= 2) { if (!(c && c.active && c.patterns.length === d.length && c.patterns.every((p, i) => p === d[i]))) { S.chainPending = { patterns: d, until: performance.now() + 4000 }; cmd("chain", { patterns: d }); S.chainSent = true; } }
+	else if ((c && c.active) || S.chainSent) { S.chainOwnEnd = !!(c && c.active); S.chainPending = { until: performance.now() + 4000 }; cmd("chainClear"); S.chainSent = false; }
 }
 function chainFooter() {
 	const c = chainDoc(), bn = "ABCDEFGH"[S.bank], d = S.chainDraft;
@@ -116,11 +162,13 @@ function renderSong() {
 		if (!r) return `<div class="scell empty" data-i="${i}"></div>`;
 		const cls = `scell ${i === S.songSel ? "sel" : ""} ${r.type ? "cmd " + r.type : ""} ${!r.type && loopOf(i) >= 0 ? "inloop" : ""}`;
 		const txt = r.type === "end" ? "END" : r.type === "loop" ? `↺${String(r.to + 1).padStart(3, "0")}` : r.type === "jump" ? `→${String(r.to + 1).padStart(3, "0")}` : r.type === "halt" ? "HALT" : patName(r.pat);
-		const sub = r.type === "loop" ? (r.count === Infinity ? "∞" : "×" + r.count) : !r.type ? `${r.rep > 1 ? "×" + r.rep : ""}${r.ofs || r.len ? "~" : ""}` : "";
-		return `<button class="${cls}" data-row="${i}" data-i="${i}" draggable="${r.type === "end" ? "false" : "true"}" title="Row ${String(i + 1).padStart(3, "0")}${r.type ? "" : " · " + patName(r.pat) + " ×" + r.rep + " · " + rowLen(r) + " steps"}"><b>${txt}</b><small>${sub}</small></button>`;
+		const mk = SongMarks.marks(r, "md");
+		const sub = r.type === "loop" ? (r.count === Infinity ? "∞" : "×" + r.count) : !r.type ? `${r.rep > 1 ? "×" + r.rep : ""}${mk.any ? (r.rep > 1 ? " " : "") + SongMarks.html(r, "md") : ""}${r.ofs || r.len ? "~" : ""}` : "";
+		return `<button class="${cls}" data-row="${i}" data-i="${i}" draggable="${r.type === "end" ? "false" : "true"}" title="Row ${String(i + 1).padStart(3, "0")}${r.type ? "" : " · " + patName(r.pat) + " ×" + r.rep + " · " + rowLen(r) + " steps" + (mk.any ? "\n" + mk.title + " · click the marks: Row > More" : "")}"><b>${txt}</b><small>${sub}</small></button>`;
 	}).join("")}`).join("")}</div></section></div>`;
 	markSongRow(true);
 	SongSlots.afterRender();
+	SongMarks.fit(document.getElementById("tl"));
 }
 /* The song slots (deskSongSlots.js): the host. Every slot is the desk's document (it loads all the songs in the
    background); Load is the machine's LOAD SONG, Save its SAVE SONG into the song's slot, and the rest are the
@@ -185,13 +233,14 @@ function clickSong(e) {
 	const bk = e.target.closest("[data-bank]"); if (bk) { S.bank = +bk.dataset.bank; render(); return true; }
 	const pk = e.target.closest('[data-set="songpick"] button[data-v]'); if (pk) { songPickSet(pk.dataset.v); return true; }
 	const pg = e.target.closest("[data-patgo]"); if (pg) { const p = +pg.dataset.patgo; if (e.shiftKey) cmd("select", { p, now: true }); else goPattern(p); return true; }
-	const cp = e.target.closest("[data-chainpad]"); if (cp) { if (cp.disabled) return true; const n = +cp.dataset.chainpad, i = S.chainDraft.indexOf(n); if (i >= 0) S.chainDraft.splice(i, 1); else if (S.chainDraft.length < 16) S.chainDraft.push(n); render(); chainSoon(); return true; }
+	const cp = e.target.closest("[data-chainpad]"); if (cp) { if (cp.disabled) return true; const n = +cp.dataset.chainpad, i = S.chainDraft.indexOf(n); if (i >= 0) S.chainDraft.splice(i, 1); else if (S.chainDraft.length < 16) S.chainDraft.push(n); chainSoon(); render(); return true; }
 	const ca = e.target.closest("[data-chain]"); if (ca) {
 		if (ca.disabled) return true;
-		if (ca.dataset.chain === "undo") { S.chainDraft.pop(); render(); chainSoon(); }
-		else if (ca.dataset.chain === "clear") { clearTimeout(S.chainTimer); S.chainDraft = []; render(); if (chainDoc()?.active || S.chainSent) { cmd("chainClear"); S.chainSent = false; } }
+		if (ca.dataset.chain === "undo") { S.chainDraft.pop(); chainSoon(); render(); }
+		else if (ca.dataset.chain === "clear") { clearTimeout(S.chainTimer); S.chainTimer = 0; S.chainWaitFrom = 0; S.chainDraft = []; if (chainDoc()?.active || S.chainSent) { S.chainOwnEnd = !!chainDoc()?.active; S.chainPending = { until: performance.now() + 4000 }; cmd("chainClear"); S.chainSent = false; } render(); }
 		return true;
 	}
+	const rmk = e.target.closest("[data-rowmarks]"); if (rmk) { S.songSel = +rmk.closest(".scell").dataset.row; S.songMore = true; render(); return true; }
 	if (e.target.closest("[data-rowmore]")) { S.songMore = !S.songMore; render(); return true; }
 	const ap = e.target.closest("[data-addpat]"); if (ap) { if (V.song.length >= 256) { toast("A song holds 256 rows."); return true; } let at = S.songSel + 1; if (V.song[S.songSel]?.type === "end") at = S.songSel; songCmd("rowInsert", { i: at, row: rowToContract({ pat: +ap.dataset.addpat, rep: 1 }, patLen) }); S.songSel = at; return true; }
 	const rw = e.target.closest(".scell:not(.empty),.db[data-row]"); if (rw) { S.songSel = +rw.dataset.row; render(); return true; }

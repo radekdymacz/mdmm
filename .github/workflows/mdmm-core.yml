@@ -143,6 +143,8 @@ jobs:
           synthLibAudioTest
           synthLibMidiQueueTest
           synthLibStateCaptureTest
+          synthLibDeviceCommandTest
+          synthLibSeqlockTest
           mdAudioQueueTest
           mdAudioFirmwareTest
           mdStateTest
@@ -180,7 +182,7 @@ jobs:
           ctest --test-dir build-mdmm-core -C Release --output-on-failure
           --no-tests=error
           --tests-regex
-          '^(baseLibBinaryStreamTest|midiRoutingMatrixTest|mdAutomationMidiTest|synthLibAudioTest|synthLibMidiQueueTest|synthLibStateCaptureTest|mdAudioQueueTest|mdAudioFirmwareTest|mdStateTest|mdStateCaptureTest|mdMemoryFastLaneTest|mdFlashTest)$'
+          '^(baseLibBinaryStreamTest|midiRoutingMatrixTest|mdAutomationMidiTest|synthLibAudioTest|synthLibMidiQueueTest|synthLibStateCaptureTest|synthLibDeviceCommandTest|synthLibSeqlockTest|mdAudioQueueTest|mdAudioFirmwareTest|mdStateTest|mdStateCaptureTest|mdMemoryFastLaneTest|mdFlashTest)$'
 
       # Every ROM-free unit test, picked by CTest label (UnitTest) rather than by name, so a new test is in by
       # default (scripts/mdmm-ci-unit-targets.py: what is left out and why). The JUCE plug-in is configured with

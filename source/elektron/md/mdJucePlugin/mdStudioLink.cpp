@@ -32,11 +32,6 @@ namespace mdJucePlugin
 			"Distortion", "Volume", "Pan", "DelaySend", "ReverbSend", "LFOSpeed", "LFOAmount", "LFOShape",
 			"Level", "Mute"};
 		constexpr uint8_t g_muteIndex = 25;
-
-		double nowMs()
-		{
-			return juce::Time::getMillisecondCounterHiRes();
-		}
 	}
 
 	StudioLink::StudioLink(AudioPluginAudioProcessor& _processor, Controller& _controller)
@@ -142,11 +137,7 @@ namespace mdJucePlugin
 
 	bool StudioLink::sendPanel(const uint8_t _row, const uint8_t _mask) const
 	{
-		return m_processor.getPlugin().withDeviceLocked([&](synthLib::Device* _base)
-		{
-			auto* device = dynamic_cast<md::DeskDevice*>(_base);
-			return device && device->sendPanelEvent(_row, _mask);
-		});
+		return m_processor.sendDeskCommands({md::DeskDevice::panelEventCommand(_row, _mask)});
 	}
 
 	bool StudioLink::pressKey(const std::string& _key)
@@ -156,11 +147,7 @@ namespace mdJucePlugin
 			return false;
 		editFlow::panelOut(states.size());
 		// Held 40 ms each in machine time (the audio thread sends them).
-		return m_processor.getPlugin().withDeviceLocked([&](synthLib::Device* _base)
-		{
-			auto* device = dynamic_cast<md::DeskDevice*>(_base);
-			return device && device->sendPanelSequence(states, md::g_samplerate * 40 / 1000);
-		});
+		return m_processor.sendDeskCommands(md::DeskDevice::panelSequenceCommands(states, md::g_samplerate * 40 / 1000), states.size());
 	}
 
 	bool StudioLink::turnKnob(const uint8_t _encoder, const int _steps) const
@@ -175,20 +162,17 @@ namespace mdJucePlugin
 		const std::vector<md::PanelPacket> steps(static_cast<size_t>(std::abs(_steps)),
 			md::PanelPacket{*command, static_cast<uint8_t>(_steps > 0 ? 0x01 : 0xff)});
 		editFlow::panelOut(steps.size());
-		return m_processor.getPlugin().withDeviceLocked([&](synthLib::Device* _base)
-		{
-			auto* device = dynamic_cast<md::DeskDevice*>(_base);
-			return device && device->sendPanelSequence(steps, 1);
-		});
+		return m_processor.sendDeskCommands(md::DeskDevice::panelSequenceCommands(steps, 1), steps.size());
 	}
 
 	mdDesk::Telemetry StudioLink::readTelemetry()
 	{
-		// The device can be replaced (ROM change, state restore): look again now and then.
-		const auto now = nowMs();
-		if(!m_telemetry || now - m_telemetryCheckedMs > 1000)
+		// The device can be replaced (ROM change, state restore): look again when the facts name another one.
+		const auto device = m_processor.machineFacts().deviceId;
+		if(!m_handlesKnown || device != m_handlesDevice)
 		{
-			m_telemetryCheckedMs = now;
+			m_handlesKnown = true;
+			m_handlesDevice = device;
 			m_telemetry = m_processor.getPlugin().withDeviceLocked(
 				[](synthLib::Device* _base) -> std::shared_ptr<const md::DeskDevice::SequencerTelemetry>
 			{
@@ -259,15 +243,21 @@ namespace mdJucePlugin
 	bool StudioLink::readSampleBank(std::shared_ptr<const elektronData::MdSampleBank>& _bank, const bool _again)
 	{
 		uint32_t sequence = 0;
-		const void* source = nullptr;
-		auto exchange = m_processor.getPlugin().withDeviceLocked([&](synthLib::Device* _base) -> std::shared_ptr<md::SampleExchange>
+		// the exchange is the device's: looked up again (under the lock) only for another device (DESIGN-audio-lock.md
+		// step 2). The cached exchange stays alive, so another one never has its address.
+		const auto device = m_processor.machineFacts().deviceId;
+		if(!m_sampleKnown || device != m_sampleDevice)
 		{
-			auto* device = dynamic_cast<md::DeskDevice*>(_base);
-			if(!device)
-				return nullptr;
-			source = device;
-			return device->sampleExchange();
-		});
+			m_sampleKnown = true;
+			m_sampleDevice = device;
+			m_sampleExchange = m_processor.getPlugin().withDeviceLocked([&](synthLib::Device* _base) -> std::shared_ptr<md::SampleExchange>
+			{
+				auto* desk = dynamic_cast<md::DeskDevice*>(_base);
+				return desk ? desk->sampleExchange() : nullptr;
+			});
+		}
+		const auto& exchange = m_sampleExchange;
+		const void* const source = exchange.get();
 		// the list is built from the audio thread's raw copy here, without the lock the audio thread needs
 		auto bank = exchange ? exchange->read(sequence) : nullptr;
 		if(!bank || (!_again && sequence == m_sampleSequence && source == m_sampleSource))
@@ -289,11 +279,9 @@ namespace mdJucePlugin
 
 	elektronData::AuditionStatus StudioLink::auditionStatus() const
 	{
-		return m_processor.getPlugin().withDeviceLocked([](synthLib::Device* _base)
-		{
-			auto* device = dynamic_cast<md::DeskDevice*>(_base);
-			return device ? device->auditionStatus() : elektronData::AuditionStatus{};
-		});
+		// published with the facts after every block and after audition() itself
+		const auto f = m_processor.machineFacts();
+		return f.desk ? f.audition : elektronData::AuditionStatus{};
 	}
 
 	bool StudioLink::readLcd(std::vector<uint8_t>& _bits)
@@ -312,29 +300,26 @@ namespace mdJucePlugin
 	deskCore::LifeFacts::Probe StudioLink::probe() const
 	{
 		using P = deskCore::LifeFacts::Probe;
-		return m_processor.getPlugin().withDeviceLocked([](synthLib::Device* _base)
-		{
-			auto* device = dynamic_cast<md::DeskDevice*>(_base);
-			// No device yet (the processor is still making or replacing it): not a missing ROM.
-			// Only a device that exists and has no valid firmware is a definite NO ROM.
-			if(!device)
-				return isNoRomDevice(_base) ? P::Missing : P::Loading;
-			if(!device->isValid())
-				return P::Missing;
-			const auto& hw = device->getHardware();
-			if(hw.getModel() != md::MachineModel::Machinedrum || hw.firmwareFingerprint() != md::g_mdOs163Fingerprint)
-				return P::Unsupported;
-			if(device->isProjectStateRestorePending())
-				return P::Loading;
-			// No UW factory cache yet (the first start in this data folder): the firmware formats its sample
-			// flash and the processor starts it again (serviceFactoryInitialization). That first run prepares
-			// the machine; the start the page shows, with its animation, is the one after it (B-003).
-			if(hw.isFactoryFlashInitializationExpected())
-				return P::Loading;
-			if(!hw.isFirmwareMidiReady())
-				return P::Booting;
-			return P::Running;
-		});
+		// from the facts the audio thread published (DESIGN-audio-lock.md step 2): no device lock every desk step
+		const auto f = m_processor.machineFacts();
+		// No device yet (the processor is still making or replacing it): not a missing ROM.
+		// Only a device that exists and has no valid firmware is a definite NO ROM.
+		if(!f.desk)
+			return f.kind == MachineFacts::Kind::NoRom ? P::Missing : P::Loading;
+		if(!f.valid)
+			return P::Missing;
+		if(f.model != static_cast<uint8_t>(md::MachineModel::Machinedrum) || f.firmwareFingerprint != md::g_mdOs163Fingerprint)
+			return P::Unsupported;
+		if(f.restorePending)
+			return P::Loading;
+		// No UW factory cache yet (the first start in this data folder): the firmware formats its sample
+		// flash and the processor starts it again (serviceFactoryInitialization). That first run prepares
+		// the machine; the start the page shows, with its animation, is the one after it (B-003).
+		if(f.factoryFlashInitializationExpected)
+			return P::Loading;
+		if(!f.firmwareMidiReady)
+			return P::Booting;
+		return P::Running;
 	}
 
 	void StudioLink::onDeviceSysex(const synthLib::SysexBuffer& _message)

@@ -416,18 +416,19 @@ Method: manual read in full; claims checked against the page files (`source/elek
 | p. | Kit and song slots | The kit library and the song slots: load, copy, paste, rename and clear a slot, each undoable. | ✅ | The kit on the LCD; Song workspace |  | 4 | pass (e2e-md-lib-kit-copy-paste-undo) |
 | p. | What you draw is what plays | What you enter in the sequencer is what the machine plays. | ✅ | Pattern: the grid or the roll; Alt+Delete clears the pattern; Cmd+Z takes it back | e2e: drawn, played, cleared, undone, each checked on the machine's output | 1 | pass (md-real-sequence-drawn) |
 | p. | Clear (was Revert track) | The machine has no key that puts one track's sound back as stored; LOAD KIT reloads the whole kit. | ✅ | Kit: Clear key at the right end of the MUTATE bar, next to R |  | 1 | pass (e2e-md-sound-revert-track) |
+| p. | The selected track follows the last track played | No such function. With it on, the track you select changes to the last one you played from a MIDI keyboard. | ✅ | Engine menu: FOLLOW PLAYED TRACK (off at first) | I-003 | 1 | – |
 
 ## Summary
 
 | Status | Rows |
 |---|---|
-| ✅ Yes | 289 |
+| ✅ Yes | 290 |
 | 🟡 Partial | 9 |
 | ❌ No | 6 |
 | ➖ Not applicable | 16 |
-| Total | 320 |
+| Total | 321 |
 
-Of the 304 applicable rows, 289 are fully covered, 9 partly, 6 not at all.
+Of the 305 applicable rows, 290 are fully covered, 9 partly, 6 not at all.
 
 ### Top gaps (our UI), most important first
 

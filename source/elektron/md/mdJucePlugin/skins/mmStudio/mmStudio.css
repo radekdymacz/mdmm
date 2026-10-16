@@ -2801,6 +2801,15 @@ canvas.ed,canvas.roll,#lanescroll,.lane,.lane .lh,.arptrack,svg.route,.joy,.chop
 .ws-seq .lbscale b:first-child{top:8px;transform:translateY(-50%)}
 .ws-seq .lbscale b:last-child{bottom:6px;transform:translateY(50%)}
 
+/* I-039: the marks on an arrangement cell (tempo, mutes, transpose): the words in the small line when every cell has room for them
+   (SongMarks.fit puts .rmkwide on the grid), else short letter codes (B M ± T) in the same line; the cell keeps its height either way */
+.scell .rmk{font-style:normal;cursor:pointer}
+.scell .rmk .rt{display:none}
+.scell .rmk .rg{letter-spacing:-.6px}
+.slotgrid.rmkwide .rmk .rt{display:inline}
+.slotgrid.rmkwide .rmk .rg{display:none}
+.scell small{white-space:nowrap}
+
 /* ===== The real machine's states (not in the mockup) ===== */
 .statusline,.errline{margin:6px 0 0;padding:6px 10px;border-radius:3px;font:12px var(--pix);text-transform:uppercase}
 .statusline{background:var(--lcd);color:var(--ink)}

@@ -158,6 +158,11 @@ namespace md
 		const auto* const speedUps = std::getenv("GEARMULATOR_MDMM_SPEEDUPS");
 		setSpeedUps(speedUps == nullptr || std::strcmp(speedUps, "0") != 0);
 
+		// The factory baseline of a given cache, made here (off the plug-in's device lock, the Hardware is not shared
+		// yet): made on first use it copied the cache under that lock, 1 ms and more (DESIGN-audio-lock.md)
+		if(!m_factoryFlashCache.empty())
+			m_factoryBaseline = std::make_shared<FactoryFlashBaseline>(m_factoryFlashCache, m_rom);
+
 		if(!m_rom->isValid())
 			return;
 		// B-010: the MIDI UART at a pace the firmware keeps time at. GEARMULATOR_MDMM_MIDI_PACING=0 turns
@@ -657,6 +662,34 @@ namespace md
 	{
 		std::lock_guard lock(m_factoryFlashMutex);
 		return m_pendingFlashOverlay.valid ? m_pendingPatchRam : m_uc.copyPatchRam();
+	}
+
+	bool Hardware::patchRamEquals(const std::vector<uint8_t>& _data) const
+	{
+		std::lock_guard lock(m_factoryFlashMutex);
+		return m_pendingFlashOverlay.valid ? m_pendingPatchRam == _data : m_uc.patchRamEquals(_data);
+	}
+
+	bool Hardware::hasFactoryFlashBaseline() const
+	{
+		if(!m_factoryFlashReady.load(std::memory_order_acquire))
+			return false;
+		std::lock_guard lock(m_factoryFlashMutex);
+		const bool has = m_factoryBaseline || !m_factoryFlashCache.empty() || !m_factoryFlashBaseline->empty();
+		m_factoryFlashBaselineSeen.store(has, std::memory_order_relaxed);
+		return has;
+	}
+
+	bool Hardware::hasFactoryFlashBaselineRealtime() const
+	{
+		if(!m_factoryFlashReady.load(std::memory_order_acquire))
+			return false;
+		std::unique_lock lock(m_factoryFlashMutex, std::try_to_lock);
+		if(!lock.owns_lock())
+			return m_factoryFlashBaselineSeen.load(std::memory_order_relaxed);
+		const bool has = m_factoryBaseline || !m_factoryFlashCache.empty() || !m_factoryFlashBaseline->empty();
+		m_factoryFlashBaselineSeen.store(has, std::memory_order_relaxed);
+		return has;
 	}
 
 	void Hardware::copyPatchRamTo(std::vector<uint8_t>& _out) const

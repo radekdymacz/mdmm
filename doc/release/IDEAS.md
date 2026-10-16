@@ -13,30 +13,31 @@
 ## I-043 · Filter envelope: a larger display with the full BOFS/WOFS range, the second window smaller (square) with attack and decay only
 
 - **From:** the same tester, 2026-10-16 (0.7.0, Monomachine). The filter envelope display should be larger, and left/right on it show the full BOFS/WOFS range (-64 to +63, B-148); the second window smaller and square, with just attack and decay.
-- **Status:** idea; needs Radek's call on the look (Sound > Filter env).
+- **Status:** done on branch `feat/0.8-mm-lfo-filter-views` (not merged). The filter envelope group keeps its place and size (no new panel; the screens of a row stay level): its one screen is now two panes. The big pane (left, about two thirds) holds BOFS (solid) and WOFS (dashed) as one row each, -64 on the left edge, 0 on the centre line, +63 on the right edge: a drag left or right reaches every value. The small square pane (right, 62 % of the screen's height at most 40 % of its width) draws the envelope's shape with ATK and DEC dots only. Reason for one screen with two panes and not two screens: the group has room for one screen under the page's layout rules, and a second screen would be a new panel. Left over: the big pane no longer draws the envelope curve scaled by BOFS (the Filter group's own screen keeps the dashed envelope-peak curve); say if the tester wants the curve back in the big pane. Page: `ED.fenv` (90-sound.js); `mmSoundTest`, journey `mm-sound-filter-env`; guide: chapter 7, Filter envelope.
 
 ## I-042 · LFO preview: show the p-locked LFO values, not only the trig markers
 
 - **From:** the same tester, 2026-10-16 (0.7.0, Monomachine). The LFO preview marks the trigs; it should draw the LFO as the locks change it.
-- **Status:** idea; read the preview's code before sizing (locks on LF1-LF3 are in `S.locks` as `LF1.i`).
+- **Status:** done on branch `feat/0.8-mm-lfo-filter-views` (not merged). The LFO screen now draws the pattern's whole length (32 steps at least, 64 at most; it was a fixed 32) with the locks of the selected track on the LFO's TRIG, WAVE, MULT, SPD, INTL and DPTH: a lock holds for its own step only (the phase runs on at that step's speed, in its shape and depth, then back), a lock on a step without a trig is ignored as on the machine. Locked steps are shaded, their tick is taller, the label names the locked parameters. It redraws when the page renders (opening KIT, any value change), not per frame. Left over: locks on PAGE and DEST (routing) are not drawn, and the picture shows the LFO's own output, not its effect on the target. Page: `lfoTrace`, `ED.lfo` (90-sound.js); `mmSoundTest`, journey `mm-sound-lfo-locks`; guide: chapter 8, LFO and parameter locks.
 
 ## I-041 · Kit: left/right navigation like the pattern selector
 
 - **From:** the same tester, 2026-10-16 (0.7.0, Monomachine). The pattern selector has previous/next arrows; the kit selector should too.
-- **Status:** idea; check what the kit field does today in both editors (the Machinedrum has the same field).
+- **Status:** done on branch `feat/0.8-octave-kitnav` (not merged): ‹ › sit in the KIT field of both editors, beside the name, and step to the previous / next kit (K01 follows the last kit) by the same load as a click in the kit chooser (the machine asks first over unsaved edits). The pattern field has no keys, so the kit has none. Page: `#kitPrev` / `#kitNext`; journeys `md-kit-step`, `mm-kit-step`.
 
 ## I-040 · Computer keyboard: the octave range does not reach -2 to +8
 
 - **From:** the same tester, 2026-10-16 (0.7.0, Monomachine). Z / X stop at -3 to +3 (`KEYS_OCT=[-3,3]`, `mmStudio/src/75-comforts.js:117`), seven octaves; the tester expects -2 to +8. The Perform page's own keyboard is clamped 0-6 (`130-main.js:207`).
 - **Open:** is -3..+3 a choice or the machine's limit? The note range is 0-127 (clamped in `keyNote`); -2..+8 is wider than the 128 notes from a C3 base, so the base or the range label may differ from what the tester sees. Check the Monomachine manual before calling it a bug.
-- **Status:** idea (bug if the manual says the machine's range is wider).
+- **Status:** done on branch `feat/0.8-octave-kitnav` (not merged). The machine plays MIDI notes 0-127 (the core refuses others), so -3..+3 was a page choice. Monomachine Editor: Z / X now run -4 to +6 (the A key from MIDI 0 to 120, 11 octaves; the keys above it clamp at 127) and the Perform keyboard (four octaves) from MIDI 0 to the top, the last stop cut at 127. The tester's -2..+8 is those 11 octaves; the page names notes C-4 = MIDI 60, so the labels differ from the tester's (0-11 read LOW as before; the Z / X toast also gives the MIDI number). Machinedrum Editor: unchanged at -2..+2: its keys are pitch offsets of the track's own sound (PTCH, two octaves each way, mdDesk/mdDeskKeys.h), not notes. Journey `mm-keys-octave-range`.
 
 ## I-039 · Song rows: show and edit mutes, transpose and tempo in the arrangement itself
 
 - **From:** a beta tester on Discord, 2026-10-16: loves Song mode and wants more song options: per-track mutes, per-track transpose and BPM per row.
 - **Today:** the editors have all three (feature rows MD-149/MD-157, MM-199/MM-263/MM-264/MM-266/MM-267, as on the machines: MD rows hold pattern, REP, BPM, offset, length, mutes; MM rows hold pattern, repeats, transpose, per-track transpose TR1-6 + six MIDI, offset/length, mutes 6 + 6, BPM). But the arrangement cell shows only the pattern name, `x` repeats and a `~` for offset/length (`mdDeskSong.js:116-120`, `120-song.js:125-128`); mutes and per-track transpose are behind the selected row's inspector > More (`data-rowmute`, `data-rowmore`), and the tempo behind a Keep toggle. The tester probably does not know they are there, or wants them at a glance.
 - **The idea:** small marks on the arrangement cells (a tempo number when the row sets one, a mute dot, a transpose number), without a new row above the grid; the inspector stays the place to edit. Needs Radek's call on the look.
-- **Status:** idea; first answer the tester that the options exist (Row > More), then decide on the marks.
+- **Done (0.8, branch feat/0.8-song-row-marks):** Radek left the look to Claude. A row that holds a tempo, mutes or a transpose marks its cell, in the cell's existing small line, so no cell changes its height: the tempo as a number, mutes as `M` and their count, the row's transpose as `+2` / `-3`, per-track transpose (MM) as `T±`, in that order (`120 M3 +2 T±`); a row with none looks as before. The cells are only 22 to 36 px wide at the page's smaller sizes (as wide as the pattern name), so the words fit only in a wide layout: when any cell cannot hold them, the same marks show as letter codes in the same line (B tempo, M mutes, ± transpose, T single tracks, e.g. `BM±`; `SongMarks.fit`). The tooltip names the detail; a click on the marks selects the row and opens Row > More (no new control). Code: `SongMarks` in `shared/deskSongSlots.js`, cells in `mdDeskSong.js` and `mmStudio/src/120-song.js`; tests `deskSongMarksTest.js`, journeys `md-song-row-marks`, `mm-song-row-marks`. The MM cell's old letters (T, M, B) are gone. A click on the marks while PATTERN or CHAIN is picked only selects the row (the inspector shows in SONG).
+- **Status:** done on the branch; the tester still wants the answer that Row > More has the options.
 
 ## I-038 · SysEx import: make the read-back (the second scan) optional
 
@@ -290,7 +291,7 @@
 
 - **From:** Discord tester B, 2026-10-07.
 - **Idea:** an option to switch the selected track (instrument focus) to the one last played from an external MIDI controller.
-- **Status:** new.
+- **Status:** done on `feat/0.8-follow-track` (WP7 of PLAN-0.8), not yet merged. Both editors: engine menu entry FOLLOW PLAYED TRACK: OFF / ON (off at first, no new control). On, a note from a MIDI controller (the plug-in's `midiIn`, host or port, never the editor's own keyboard or audition) selects the track it plays: Machinedrum, the track the Global key map gives the note on the four base channels; Monomachine, the synth track whose channel (base + t inside CHANNEL SPAN) it arrives on. Another channel or an unmapped note changes nothing. Kept with the project in the editor's setup (`followPlayed`, written only when on; no new chunk). Journeys md-follow-played-track, mm-follow-played-track; tests in mdDeskTest and mmDeskTest.
 
 ## I-002 · Show incoming notes on the Sound page
 

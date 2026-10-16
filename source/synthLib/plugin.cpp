@@ -38,7 +38,8 @@ namespace synthLib
 
 		if(m_midiInRingBuffer.full())
 		{
-			std::lock_guard l(m_lock);
+			const LockScope l(*this);
+			const PublishOnExit publish(*this);
 			// The audio thread may have drained the ring while we waited for m_lock. Popping an
 			// empty Lock=false ring hands out a stale slot and corrupts the counters, so check
 			// again: with both locks held nobody else pushes or pops.
@@ -50,7 +51,8 @@ namespace synthLib
 
 	bool Plugin::setPreferredDeviceSamplerate(const float _samplerate)
 	{
-		std::lock_guard lock(m_lock);
+		const LockScope lock(*this);
+		const PublishOnExit publish(*this);
 
 		const auto sr = m_device->getDeviceSamplerate(_samplerate, m_hostSamplerate);
 
@@ -69,7 +71,8 @@ namespace synthLib
 
 	void Plugin::setHostSamplerate(const float _hostSamplerate, const float _preferredDeviceSamplerate)
 	{
-		std::lock_guard lock(m_lock);
+		const LockScope lock(*this);
+		const PublishOnExit publish(*this);
 
 		m_deviceSamplerate = m_device->getDeviceSamplerate(_preferredDeviceSamplerate, _hostSamplerate);
 		m_device->setSamplerate(m_deviceSamplerate);
@@ -83,14 +86,16 @@ namespace synthLib
 
 	void Plugin::setResamplerMode(const Resampler::Mode _mode)
 	{
-		std::lock_guard lock(m_lock);
+		const LockScope lock(*this);
+		const PublishOnExit publish(*this);
 		m_resampler.setResamplerMode(_mode);
 		updateDeviceLatency();
 	}
 
 	void Plugin::reserveMidiEventCapacity(const size_t _capacity)
 	{
-		std::lock_guard lock(m_lock);
+		const LockScope lock(*this);
+		const PublishOnExit publish(*this);
 		m_midiIn.reserve(_capacity);
 		m_midiOut.reserve(_capacity);
 		m_resampler.reserveMidiEventCapacity(_capacity);
@@ -111,15 +116,30 @@ namespace synthLib
 		std::unique_lock lock(m_lock, std::defer_lock);
 		if(instrument)
 		{
-			const auto lockStart = nowNanoseconds();
-			lock.lock();
-			m_realtimeInstrumentation.recordSynthProcessLockWait(
-				nowNanoseconds() - lockStart);
+			// A wait is counted only when the lock was held by another thread: timing an uncontended lock() also
+			// counted the audio thread being preempted between the two clock reads (DESIGN-audio-lock.md, measured
+			// 20 ms "waits" at load 75 with no holder at all)
+			uint64_t waited = 0;
+			const char* holderFile = nullptr;
+			uint32_t holderLine = 0;
+			if(!lock.try_lock())
+			{
+				holderFile = m_holderFile.load(std::memory_order_relaxed);
+				holderLine = m_holderLine.load(std::memory_order_relaxed);
+				const auto lockStart = nowNanoseconds();
+				lock.lock();
+				waited = nowNanoseconds() - lockStart;
+				if(!holderFile)
+					holderFile = "(unnamed)";
+			}
+			m_realtimeInstrumentation.recordSynthProcessLockWait(waited, holderFile, holderLine);
 		}
 		else
 		{
 			lock.lock();
 		}
+		// the facts for every reader, at the block's end (DESIGN-audio-lock.md step 2)
+		const PublishOnExit publish(*this);
 		if(_count > m_blockSize)
 			++m_realtimeAllocationFallbackCount;
 
@@ -140,6 +160,7 @@ namespace synthLib
 			outputs[i] = _outputs[i] ? _outputs[i]
 				: getDiscardOutputBuffer(i, _count);
 
+		applyCommands();
 		processMidiInEvents();
 		processMidiClock(_bpm, _ppqPos, _isPlaying, _count, _ppqKnown);
 
@@ -180,6 +201,54 @@ namespace synthLib
 		m_midiOut.clear();
 	}
 
+	bool Plugin::sendCommands(const DeviceCommand* const _commands, const size_t _count)
+	{
+		if(_count > m_commands.size())
+			return false;
+		if(!_count)
+			return true;
+		std::lock_guard lock(m_lockCommands);
+		auto write = m_commandWrite.load(std::memory_order_relaxed);
+		if(write + _count - m_commandRead.load(std::memory_order_acquire) > m_commands.size())
+		{
+			// Full: no block took them (the host does not run audio). Apply them here, under the lock. Lock order
+			// m_lockCommands -> m_lock (plugin.h): m_lock is never held when sendCommands is called
+			const LockScope deviceLock(*this);
+			const PublishOnExit publish(*this);
+			applyCommands();
+		}
+		const auto generation = m_deviceGeneration.load(std::memory_order_acquire);
+		for(size_t i = 0; i < _count; ++i)
+		{
+			auto& slot = m_commands[(write + i) % m_commands.size()];
+			slot = _commands[i];
+			slot.deviceGeneration = generation;
+		}
+		// all at once: the audio thread applies none of them or all
+		m_commandWrite.store(write + _count, std::memory_order_release);
+		return true;
+	}
+
+	void Plugin::applyCommands()
+	{
+		const auto write = m_commandWrite.load(std::memory_order_acquire);
+		auto read = m_commandRead.load(std::memory_order_relaxed);
+		if(read == write)
+			return;
+		const auto generation = m_deviceGeneration.load(std::memory_order_relaxed);
+		const bool valid = m_device && m_device->isValid();
+		uint64_t dropped = 0;
+		for(; read != write; ++read)
+		{
+			const auto& command = m_commands[read % m_commands.size()];
+			if(!valid || command.deviceGeneration != generation || !m_device->applyCommand(command))
+				++dropped;
+		}
+		m_commandRead.store(read, std::memory_order_release);
+		if(dropped)
+			m_droppedCommands.fetch_add(dropped, std::memory_order_relaxed);
+	}
+
 	bool Plugin::isValid() const
 	{
 		return m_device->isValid();
@@ -190,42 +259,79 @@ namespace synthLib
 		if(!_device)
 			return;
 
-		std::lock_guard lock(m_lock);
-
+		// DESIGN-audio-lock.md step 1: the long parts (the old device's state, the new device's Hardware built from
+		// it) run without the lock; the audio thread waits only for the swap. In the same order as before: the new
+		// device's sample rate and latency, then the state, then the plug-in's audio set up for it.
 		std::vector<uint8_t> deviceState;
 		getState(deviceState, StateTypeGlobal);
 
-		delete m_device;
-
-		m_device = _device;
-
-		configureDeviceAudio();
+		float deviceSamplerate = 0.0f;
+		uint32_t extraLatency = 0;
+		bool latencyKnown = false;
+		{
+			const LockScope lock(*this);
+			const PublishOnExit publish(*this);
+			deviceSamplerate = m_deviceSamplerate;
+			latencyKnown = m_blockSize > 0 && m_hostSamplerate > 0;
+			if(latencyKnown)
+				extraLatency = static_cast<uint32_t>(std::min<uint64_t>(rescaleSamplesCeil(uint64_t(m_blockSize) * m_extraLatencyBlocks,
+					m_hostSamplerate, _device->getSamplerate()), std::numeric_limits<uint32_t>::max()));
+		}
+		_device->setSamplerate(deviceSamplerate);
+		if(latencyKnown)
+			_device->setExtraLatencySamples(extraLatency);
+#if !SYNTHLIB_DEMO_MODE
 		if(!deviceState.empty())
-			setState(deviceState);
+			setStateUnshared(*_device, deviceState);
+#endif
 
-		// MIDI clock has to send the start event again, some device find it confusing and do strange things if there isn't any
-		m_midiClock.restart();
+		Device* retired = nullptr;
+		{
+			const LockScope lock(*this);
+			const PublishOnExit publish(*this);
+			retired = m_device;
+			m_device = _device;
+			m_deviceGeneration.fetch_add(1, std::memory_order_release);
 
+			configureDeviceAudio();
+
+			// MIDI clock has to send the start event again, some device find it confusing and do strange things if there isn't any
+			m_midiClock.restart();
+		}
+		delete retired;
 	}
 
 #if !SYNTHLIB_DEMO_MODE
 	bool Plugin::getState(std::vector<uint8_t>& _state, StateType _type) const
 	{
+		// The capture begins under the lock and takes the rest a part per hold (StateCapture::captureMore), the lock
+		// released between; a device replaced meanwhile begins it again on the new one.
 		std::unique_ptr<Device::StateCapture> capture;
+		uint64_t capturing = 0;
+		for(;;)
 		{
-			std::lock_guard lock(m_lock);
+			std::unique_ptr<Device::StateCapture> retired;	// dropped after the lock is released
+			const LockScope lock(*this);
+			const PublishOnExit publish(*this);
 
 			if(!m_device)
 				return false;
 
-			capture = m_device->beginStateCapture(_type);
-			if(!capture)
+			if(!capture || capturing != m_deviceGeneration.load(std::memory_order_relaxed))
 			{
-				_state.push_back(g_stateVersion);
-				_state.push_back(_type);
+				retired = std::move(capture);
+				capturing = m_deviceGeneration.load(std::memory_order_relaxed);
+				capture = m_device->beginStateCapture(_type);
+				if(!capture)
+				{
+					_state.push_back(g_stateVersion);
+					_state.push_back(_type);
 
-				return m_device->getState(_state, _type);
+					return m_device->getState(_state, _type);
+				}
 			}
+			if(!capture->captureMore())
+				break;
 		}
 		// The device encodes from what it captured, without the process/device lock the audio thread needs. The
 		// capture may own copies of whole memories: it is destroyed here too, after the lock is released.
@@ -235,6 +341,23 @@ namespace synthLib
 		return capture->encode(_state);
 	}
 
+	bool Plugin::setStateUnshared(Device& _device, const std::vector<uint8_t>& _state)
+	{
+		if(_state.empty())
+			return false;
+		if(_state.size() < 2 || _state[0] != g_stateVersion)
+			return _device.setStateFromUnknownCustomData(_state);
+		const auto stateType = static_cast<StateType>(_state[1]);
+		const std::vector<uint8_t> state(_state.begin() + 2, _state.end());
+		if(!_device.supportsStateTransactions())
+			return _device.setState(state, stateType);
+		auto transaction = _device.beginStateTransaction(std::make_shared<const std::vector<uint8_t>>(state), stateType);
+		if(!transaction)
+			return false;
+		const auto preparationSucceeded = transaction->prepare();
+		return _device.finishStateTransaction(*transaction) && preparationSucceeded;
+	}
+
 	bool Plugin::setState(const std::vector<uint8_t>& _state) const
 	{
 		if(_state.empty())
@@ -242,7 +365,8 @@ namespace synthLib
 
 		if(_state.size() < 2)
 		{
-			std::lock_guard lock(m_lock);
+			const LockScope lock(*this);
+			const PublishOnExit publish(*this);
 			return m_device && m_device->setStateFromUnknownCustomData(_state);
 		}
 
@@ -250,7 +374,8 @@ namespace synthLib
 
 		if(version != g_stateVersion)
 		{
-			std::lock_guard lock(m_lock);
+			const LockScope lock(*this);
+			const PublishOnExit publish(*this);
 			return m_device && m_device->setStateFromUnknownCustomData(_state);
 		}
 
@@ -264,7 +389,8 @@ namespace synthLib
 		Device* transactionDevice = nullptr;
 		std::unique_ptr<Device::StateTransaction> transaction;
 		{
-			std::lock_guard lock(m_lock);
+			const LockScope lock(*this);
+			const PublishOnExit publish(*this);
 			if(!m_device)
 				return false;
 			if(!m_device->supportsStateTransactions())
@@ -279,7 +405,8 @@ namespace synthLib
 		const auto preparationSucceeded = transaction->prepare();
 		bool finished = false;
 		{
-			std::lock_guard lock(m_lock);
+			const LockScope lock(*this);
+			const PublishOnExit publish(*this);
 			if(m_device == transactionDevice)
 				finished = m_device->finishStateTransaction(*transaction);
 		}
@@ -310,7 +437,8 @@ namespace synthLib
 
 	bool Plugin::setLatencyBlocks(uint32_t _latencyBlocks)
 	{
-		std::lock_guard lock(m_lock);
+		const LockScope lock(*this);
+		const PublishOnExit publish(*this);
 
 		if(m_extraLatencyBlocks == _latencyBlocks)
 			return false;
@@ -431,7 +559,8 @@ namespace synthLib
 
 	void Plugin::setBlockSize(const uint32_t _blockSize)
 	{
-		std::lock_guard lock(m_lock);
+		const LockScope lock(*this);
+		const PublishOnExit publish(*this);
 		m_blockSize = _blockSize;
 		m_silentInputBuffer.resize(_blockSize);
 		for(size_t channel = 0; channel < m_device->getChannelCountOut(); ++channel)
@@ -440,17 +569,20 @@ namespace synthLib
 		updateDeviceLatency();
 	}
 
-	uint32_t Plugin::getLatencyMidiToOutput() const
+	void Plugin::setFactsCallback(FactsCallback _callback)
 	{
-		std::lock_guard lock(m_lock);
-		return m_deviceExtraLatencyHost + m_deviceLatencyMidiToOutput
-			+ m_resampler.getOutputLatency();
+		const LockScope lock(*this);
+		const PublishOnExit publish(*this);
+		m_factsCallback = std::move(_callback);
 	}
 
-	uint32_t Plugin::getLatencyInputToOutput() const
+	void Plugin::publishFacts() const
 	{
-		std::lock_guard lock(m_lock);
-		return m_deviceExtraLatencyHost + m_deviceLatencyInputToOutput
-			+ m_resampler.getOutputLatency() + m_resampler.getInputLatency();
+		m_latencyMidiToOutput.store(m_deviceExtraLatencyHost + m_deviceLatencyMidiToOutput
+			+ m_resampler.getOutputLatency(), std::memory_order_release);
+		m_latencyInputToOutput.store(m_deviceExtraLatencyHost + m_deviceLatencyInputToOutput
+			+ m_resampler.getOutputLatency() + m_resampler.getInputLatency(), std::memory_order_release);
+		if(m_factsCallback)
+			m_factsCallback(m_device);
 	}
 }

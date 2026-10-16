@@ -2,9 +2,11 @@
 
 #include "baseLib/finite.h"
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
+#include <ctime>
 #include <string_view>
 
 namespace
@@ -78,6 +80,8 @@ namespace synthLib
 		m_synthProcessMaxNanoseconds.store(0, std::memory_order_relaxed);
 		m_synthProcessLockWaitNanoseconds.store(0, std::memory_order_relaxed);
 		m_synthProcessLockWaitMaxNanoseconds.store(0, std::memory_order_relaxed);
+		resetLockSites(m_lockBlame, m_lockBlameCount);
+		resetLockSites(m_lockHolds, m_lockHoldCount);
 		m_resamplerCallCount.store(0, std::memory_order_relaxed);
 		m_resamplerNanoseconds.store(0, std::memory_order_relaxed);
 		m_resamplerMaxNanoseconds.store(0, std::memory_order_relaxed);
@@ -122,6 +126,8 @@ namespace synthLib
 		result.synthProcessMaxNanoseconds = m_synthProcessMaxNanoseconds.load(std::memory_order_relaxed);
 		result.synthProcessLockWaitNanoseconds = m_synthProcessLockWaitNanoseconds.load(std::memory_order_relaxed);
 		result.synthProcessLockWaitMaxNanoseconds = m_synthProcessLockWaitMaxNanoseconds.load(std::memory_order_relaxed);
+		result.lockBlameCount = readLockSites(m_lockBlame, m_lockBlameCount, result.lockBlame);
+		result.lockHoldCount = readLockSites(m_lockHolds, m_lockHoldCount, result.lockHolds);
 		result.resamplerCallCount = m_resamplerCallCount.load(std::memory_order_relaxed);
 		result.resamplerNanoseconds = m_resamplerNanoseconds.load(std::memory_order_relaxed);
 		result.resamplerMaxNanoseconds = m_resamplerMaxNanoseconds.load(std::memory_order_relaxed);
@@ -407,13 +413,92 @@ namespace synthLib
 	}
 
 	void RealtimeInstrumentation::recordSynthProcessLockWait(
-		const uint64_t _nanoseconds) noexcept
+		const uint64_t _nanoseconds, const char* const _holderFile, const uint32_t _holderLine) noexcept
 	{
 		if(!isEnabled())
 			return;
 		if(g_callbackContext.owner == this) g_callbackContext.callback.lockWaitNanoseconds += _nanoseconds;
 		m_synthProcessLockWaitNanoseconds.fetch_add(_nanoseconds, std::memory_order_relaxed);
 		updateMaximum(m_synthProcessLockWaitMaxNanoseconds, _nanoseconds);
+		if(_holderFile)
+			recordLockSite(m_lockBlame, m_lockBlameCount, _holderFile, _holderLine, _nanoseconds);	// the audio thread only
+	}
+
+	void RealtimeInstrumentation::recordLockHold(const uint64_t _nanoseconds, const uint64_t _cpuNanoseconds,
+		const char* const _file, const uint32_t _line) noexcept
+	{
+		if(isEnabled() && _file)
+			recordLockSite(m_lockHolds, m_lockHoldCount, _file, _line, _nanoseconds, _cpuNanoseconds);	// writers serialised by the lock
+	}
+
+	uint64_t RealtimeInstrumentation::threadCpuNanoseconds() noexcept
+	{
+#if defined(CLOCK_THREAD_CPUTIME_ID)
+		timespec t{};
+		if(clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t) != 0)
+			return 0;
+		return static_cast<uint64_t>(t.tv_sec) * 1'000'000'000ull + static_cast<uint64_t>(t.tv_nsec);
+#else
+		return 0;
+#endif
+	}
+
+	void RealtimeInstrumentation::recordLockSite(LockBlameTable& _table, std::atomic<size_t>& _count, const char* const _file,
+		const uint32_t _line, const uint64_t _nanoseconds, const uint64_t _cpuNanoseconds) noexcept
+	{
+		// one writer at a time: the site's entry, a new one while there is room, else the last
+		const auto count = _count.load(std::memory_order_relaxed);
+		size_t i = 0;
+		while(i < count && (_table[i].file.load(std::memory_order_relaxed) != _file
+			|| _table[i].line.load(std::memory_order_relaxed) != _line))
+			++i;
+		if(i == count)
+		{
+			if(count < _table.size())
+			{
+				_table[i].file.store(_file, std::memory_order_relaxed);
+				_table[i].line.store(_line, std::memory_order_relaxed);
+				_count.store(count + 1, std::memory_order_release);
+			}
+			else
+			{
+				i = count - 1;
+			}
+		}
+		auto& slot = _table[i];
+		slot.waits.fetch_add(1, std::memory_order_relaxed);
+		slot.nanoseconds.fetch_add(_nanoseconds, std::memory_order_relaxed);
+		updateMaximum(slot.maxNanoseconds, _nanoseconds);
+		updateMaximum(slot.maxCpuNanoseconds, _cpuNanoseconds);
+	}
+
+	size_t RealtimeInstrumentation::readLockSites(const LockBlameTable& _table, const std::atomic<size_t>& _count,
+		std::array<RealtimeLockBlame, RealtimeInstrumentationSnapshot::LockBlameCapacity>& _out) noexcept
+	{
+		const auto count = std::min(_count.load(std::memory_order_acquire), _out.size());
+		for(size_t i = 0; i < count; ++i)
+		{
+			auto& b = _out[i];
+			b.file = _table[i].file.load(std::memory_order_relaxed);
+			b.line = _table[i].line.load(std::memory_order_relaxed);
+			b.waits = _table[i].waits.load(std::memory_order_relaxed);
+			b.nanoseconds = _table[i].nanoseconds.load(std::memory_order_relaxed);
+			b.maxNanoseconds = _table[i].maxNanoseconds.load(std::memory_order_relaxed);
+			b.maxCpuNanoseconds = _table[i].maxCpuNanoseconds.load(std::memory_order_relaxed);
+		}
+		return count;
+	}
+
+	void RealtimeInstrumentation::resetLockSites(LockBlameTable& _table, std::atomic<size_t>& _count) noexcept
+	{
+		_count.store(0, std::memory_order_relaxed);
+		for(auto& slot : _table)
+		{
+			slot.waits.store(0, std::memory_order_relaxed);
+			slot.nanoseconds.store(0, std::memory_order_relaxed);
+			slot.maxNanoseconds.store(0, std::memory_order_relaxed);
+			slot.maxCpuNanoseconds.store(0, std::memory_order_relaxed);
+		}
 	}
 
 	void RealtimeInstrumentation::recordResampler(const uint64_t _nanoseconds,

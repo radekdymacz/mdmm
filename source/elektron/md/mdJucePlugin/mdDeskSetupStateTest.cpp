@@ -76,6 +76,9 @@ namespace
 			session->attach([&page](const Value& _m) { page.push_back(_m); });
 			say(*session, R"({"op":"ready"})");
 			say(*session, R"({"op":"soloSet","id":1,"tracks":[4,1],"mutes":[0,7]})");
+			check(a.getDeskHost()->setup().find("followPlayed") == std::string::npos, "I-003: follow played track is off, and not written");
+			say(*session, R"({"op":"followSet","id":3,"on":true})");
+			check(a.getDeskHost()->setup().find("\"followPlayed\":true") != std::string::npos, "followSet: kept in the setup the project keeps");
 			setupText = a.getDeskHost()->setup();
 			check(setupText.find("\"solo\"") != std::string::npos, "soloSet: the solo is in the setup the project keeps");
 			ja.getStateInformation(withSolo);
@@ -90,6 +93,7 @@ namespace
 		juce::AudioProcessor& jb = b;
 		jb.setStateInformation(withSolo.getData(), static_cast<int>(withSolo.getSize()));
 		check(b.getDeskHost()->setup() == setupText, "the setup, solo included, comes back with the project, byte for byte");
+		check(b.getDeskHost()->setup().find("\"followPlayed\":true") != std::string::npos, "and so does follow played track");
 		auto* session = b.getDeskHost()->session();
 		std::vector<Value> page;
 		session->attach([&page](const Value& _m) { page.push_back(_m); });
