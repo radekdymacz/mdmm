@@ -1037,6 +1037,7 @@ namespace mdJucePlugin
 	// pass by
 	void AudioPluginAudioProcessor::midiInReceived(const synthLib::SMidiEvent& _ev)
 	{
+		m_midiMonitor.onEvent(midiMonitor::Direction::InHost, _ev.a, !_ev.sysex.empty());
 		if(!_ev.sysex.empty())
 			return;
 		// HW MIDI: what comes in is (also) the real machine's own MIDI OUT, never a key held by a player
@@ -1044,6 +1045,34 @@ namespace mdJucePlugin
 			m_midiHeld.onMidi(_ev.a, _ev.b, _ev.c);
 		if(const auto n = midiIn::noteOn(_ev.a, _ev.b, _ev.c))
 			m_midiIn.tryPush(*n);
+	}
+
+	// 0.8 (WP3): the MIDI monitor's other three counting places (jucePluginLib/processor.cpp calls this)
+	void AudioPluginAudioProcessor::midiTraffic(const MidiTraffic _where, const synthLib::SMidiEvent& _ev)
+	{
+		using midiMonitor::Direction;
+		const auto d = _where == MidiTraffic::ToFirmware ? Direction::InFirmware
+			: _where == MidiTraffic::FromMachine ? Direction::OutMachine : Direction::OutHost;
+		m_midiMonitor.onEvent(d, _ev.a, !_ev.sysex.empty());
+	}
+
+	midiMonitor::Counts AudioPluginAudioProcessor::midiMonitorCounts()
+	{
+		auto c = m_midiMonitor.take();
+		c.dropped.scheduledOverflow = machineFacts().scheduledMidiOverflow;
+		c.dropped.externalIn = getExternalMidi().inDropped();
+		c.dropped.allocationFallback = getRealtimeMidiAllocationFallbackCount();
+		return c;
+	}
+
+	// at most every 10 s, and only while the counts changed (mdMidiMonitor.h)
+	void AudioPluginAudioProcessor::logMidiMonitor(const double _nowMs)
+	{
+		const auto c = midiMonitorCounts();
+		if(!m_midiLogPacer.due(_nowMs, c.fingerprint()))
+			return;
+		m_midiLogLine = midiMonitor::logLine(c);
+		m_boot.note(m_midiLogLine);
 	}
 
 	uint64_t AudioPluginAudioProcessor::cpuClockNs()
@@ -1115,6 +1144,7 @@ namespace mdJucePlugin
 			m_lastBootRecordMs = now;
 			recordBoot();
 		}
+		logMidiMonitor(juce::Time::getMillisecondCounterHiRes());
 		recordStandaloneStartupDiagnostics();
 		m_memory.serviceTimer();	// I-024: the start's overlay, and the notices the memory's thread left
 		if(serviceProjectStateRestore())

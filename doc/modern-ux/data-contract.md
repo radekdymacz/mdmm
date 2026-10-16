@@ -342,6 +342,17 @@ go of every note (`midiInputsChanged`). In HW MIDI nothing is held: what comes i
 The Monomachine Editor lights the keys of the notes on the channels the machine plays (AUTO, the track channels inside
 CHANNEL SPAN, MULTI TRIG, MULTI MAP) on the Perform keyboard; the Machinedrum Editor has no keyboard and ignores it.
 
+**The MIDI monitor (0.8, WP3).** `{"type":"midiStats","directions":{inHost, inFirmware, outMachine, outHost: {total, types:
+{note, cc, pc, clock, transport, sysex, other}, channels:[16]}},"dropped":{scheduled, external, allocation}}` once a second
+while the page is up: what this plug-in instance did with MIDI since it started (`mdMidiMonitor.h`; the pages do not read
+it yet). `inHost` is what the host's MIDI in or a MIDI port gave the processor, `inFirmware` what the routing let into the
+firmware's MIDI input, `outMachine` what the machine sent (before the routing), `outHost` what the routing let into the
+host's MIDI out. The counts are relaxed atomics written on the audio thread (no allocation, no lock); `channels` counts
+channel messages only (channel 1 first). `dropped` are the counters the instance already had: the scheduled-MIDI ring
+(`scheduled`), HW MIDI events the editor's queue dropped (`external`) and host messages that took the allocating path
+(`allocation`). The same counts go to the start-up log as `midi: in host=N ... out machine=N ... dropped sched=N ext=N
+alloc=N`, at most every 10 s and only while they change.
+
 **The host's tempo (B-030).** In a DAW the plug-in sends `{"type":"host","bpm","follows"}`:
 the host's tempo as its playhead reports it (also while the host's transport is stopped),
 when it changed (by 0.01 BPM) or a page is new; `follows` is true in a DAW (the plug-in

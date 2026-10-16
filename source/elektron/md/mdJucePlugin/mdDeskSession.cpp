@@ -132,6 +132,37 @@ namespace mdJucePlugin
 		return m;
 	}
 
+	elektronData::json::Value midiStatsOf(AudioPluginAudioProcessor& _processor)
+	{
+		using Value = elektronData::json::Value;
+		namespace mon = midiMonitor;
+		const auto c = _processor.midiMonitorCounts();
+		auto dirs = Value::object();
+		for(size_t d = 0; d < mon::g_directions; ++d)
+		{
+			auto types = Value::object();
+			for(size_t t = 0; t < mon::g_types; ++t)
+				types.set(mon::typeName(static_cast<mon::Type>(t)), static_cast<double>(c.type[d][t]));
+			auto channels = Value::array();
+			for(const auto n : c.channel[d])
+				channels.push(static_cast<double>(n));
+			auto o = Value::object();
+			o.set("total", static_cast<double>(c.total(static_cast<mon::Direction>(d))));
+			o.set("types", std::move(types));
+			o.set("channels", std::move(channels));
+			dirs.set(mon::directionName(static_cast<mon::Direction>(d)), std::move(o));
+		}
+		auto dropped = Value::object();
+		dropped.set("scheduled", static_cast<double>(c.dropped.scheduledOverflow));
+		dropped.set("external", static_cast<double>(c.dropped.externalIn));
+		dropped.set("allocation", static_cast<double>(c.dropped.allocationFallback));
+		auto m = Value::object();
+		m.set("type", "midiStats");
+		m.set("directions", std::move(dirs));
+		m.set("dropped", std::move(dropped));
+		return m;
+	}
+
 	elektronData::json::Value midiHeldOf(const midiIn::Notes& _notes)
 	{
 		auto m = elektronData::json::Value::object();

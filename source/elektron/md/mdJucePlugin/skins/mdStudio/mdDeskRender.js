@@ -69,6 +69,7 @@ Bridge.onMessage(m => {
 	case "outputLevel": DeskVolume.update(m); break;
 	case "midiIn": noteLight(m); followNote(m); break;
 	case "midiHeld": break;	/* the notes held: the Monomachine's Perform keyboard lights them; the Machinedrum has no keyboard (its notes are trigs: midiIn) */
+	case "midiStats": break;	/* 0.8: the MIDI monitor's counts; the monitor panel (WP4) reads them, the page does not yet */
 	case "result": if (m.op === "followHost" && !m.ok) hostRefused(m); break;
 	case "setup": { const before = knobCcs().join(); Docs.setup = m.doc; takeFollowSetup(m.doc); if (knobCcs().join() !== before && S.ws === "control") scheduleRender(); break; }
 	case "mod": {

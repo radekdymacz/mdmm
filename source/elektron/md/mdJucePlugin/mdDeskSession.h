@@ -100,6 +100,11 @@ namespace mdJucePlugin
 	elektronData::json::Value midiHeldOf(const midiIn::Notes& _notes);
 	midiIn::Notes heldMidiNotesOf(AudioPluginAudioProcessor& _processor);
 	constexpr double g_midiHeldMs = 32;
+	// 0.8 (WP3): the MIDI monitor's counts ({"type":"midiStats","directions":{inHost, inFirmware, outMachine, outHost:
+	// {total, types, channels}},"dropped":{scheduled, external, allocation}}), once a second while the page is up (no lock:
+	// relaxed atomics, mdMidiMonitor.h). The pages do not read it yet (the monitor panel is WP4's).
+	elektronData::json::Value midiStatsOf(AudioPluginAudioProcessor& _processor);
+	constexpr double g_midiStatsMs = 1000;
 
 	// P7: whether the machine follows the host's tempo and transport: in a DAW's plug-in only.
 
@@ -484,6 +489,9 @@ namespace mdJucePlugin
 			if(m_desk->pageSeen() && due(g_midiHeldMs))
 				if(const auto held = m_midiHeld.next(heldMidiNotesOf(processor())))
 					toPage(midiHeldOf(*held));
+			// 0.8 (WP3): the MIDI monitor's counts (no lock: relaxed atomics, mdMidiMonitor.h)
+			if(m_desk->pageSeen() && due(g_midiStatsMs))
+				toPage(midiStatsOf(processor()));
 			// I-021: the LCD's output meter and volume (no lock: one atomic swap, mdOutputLevel.h)
 			if(m_desk->pageSeen() && due(g_outputLevelMs))
 				toPage(outputLevelOf(processor()));
