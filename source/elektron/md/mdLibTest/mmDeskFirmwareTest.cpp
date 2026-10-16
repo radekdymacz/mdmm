@@ -1493,7 +1493,9 @@ namespace
 					kinds.emplace_back(kind);
 		}
 		const ImportTap tap(*r.desk, job);
-		const auto why = job.start(kinds, {}, machineDocs(*r.desk));
+		// SYX_READBACK=0 (I-038): the tick "Read back and compare" off
+		const bool readBack = !(std::getenv("SYX_READBACK") && std::string(std::getenv("SYX_READBACK")) == "0");
+		const auto why = job.start(kinds, {}, machineDocs(*r.desk), false, readBack);
 		check(why.empty(), "the import starts" + (why.empty() ? std::string() : ": " + why));
 		using Phase = mdJucePlugin::SyxJob<MmSyxTraits>::Phase;
 		const auto t0 = r.ms();
@@ -1523,12 +1525,42 @@ namespace
 				readAt = r.ms();
 			r.run(10);
 		}
-		std::printf("  import: read before %.1f s, sent in %.1f s, read back in %.1f s (emulated time)\n", (sendAt - t0) / 1000,
-			(readAt - sendAt) / 1000, (r.ms() - readAt) / 1000);
+		if(readAt < 0)	// I-038: no read-back phase
+			std::printf("  import: read before %.1f s, sent in %.1f s, not read back (emulated time)\n", (sendAt - t0) / 1000, (r.ms() - sendAt) / 1000);
+		else
+			std::printf("  import: read before %.1f s, sent in %.1f s, read back in %.1f s (emulated time)\n", (sendAt - t0) / 1000,
+				(readAt - sendAt) / 1000, (r.ms() - readAt) / 1000);
 		check(last && last->find("phase")->asString() == "done", "the import ends with a report");
 		if(!last)
 			return;
 		std::printf("  report: %s\n", last->find("text")->asString().c_str());
+		if(!readBack)
+		{
+			// I-038: Send, then done: nothing read back, nothing called imported; Verify only then finds the file on the machine
+			const auto text = last->find("text")->asString();
+			const auto& rep = *last->find("report");
+			check(!last->find("readBack")->asBool() && !rep.find("readBack")->asBool() && rep.find("sent")->asNumber() > 0
+				&& text.find("not read back") != std::string::npos && text.find("imported") == std::string::npos, "read-back off: the report says sent, not read back");
+			check(job.outcomes().empty() && readAt < 0, "read-back off: no Reading phase, no outcome");
+			r.run(2000);
+			mdJucePlugin::SyxJob<MmSyxTraits> verify;
+			verify.open(bytes, file, machineDocs(*r.desk), {r.desk->currentPattern(), r.desk->currentKit(), r.desk->currentSong(), r.desk->currentGlobal()});
+			const ImportTap vtap(*r.desk, verify);
+			check(verify.start(kinds, {}, machineDocs(*r.desk), true).empty(), "Verify only starts");
+			const auto tv = r.ms();
+			while(verify.running() && r.ms() - tv < 3600000)
+			{
+				if(r.desk->isInputReady())
+					verify.step(r.desk->machine(), r.ms(), hw);
+				r.run(10);
+			}
+			std::map<std::string, int> held;
+			for(const auto& [item, o] : verify.outcomes())
+				++held[ed::syxOutcomeName(o)];
+			check(held["taken"] > 0 && held["no reply"] == 0, "the machine holds the file after an import that was not read back (" + std::to_string(held["taken"]) + " of "
+				+ std::to_string(verify.outcomes().size()) + " the same)");
+			return;
+		}
 		int n = 0;
 		for(const auto& i : last->find("report")->find("items")->asArray())
 			if(n++ < 24)

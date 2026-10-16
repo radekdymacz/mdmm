@@ -311,7 +311,7 @@ namespace mdJucePlugin
 			return m_job.open(_bytes, _name, Traits::machine(_desk), Traits::playing(_desk));
 		}
 
-		// The page's SysEx rows the session runs: syxImport {kinds, skip, placeAt, checkOnly}, syxCancel, syxPlace
+		// The page's SysEx rows the session runs: syxImport {kinds, skip, placeAt, checkOnly, readBack}, syxCancel, syxPlace
 		// {placeAt}, syxExportInfo, machineReset {how: "empty"} (factory is the session's own: false). False: none of them.
 		bool handle(DeskT& _desk, const Value& _message, const Reply& _reply, const ToPage& _toPage)
 		{
@@ -321,7 +321,9 @@ namespace mdJucePlugin
 				if(const auto* p = _message.find("placeAt"); p && p->isObject() && !m_job.running())
 					m_job.place(firstSlots(*p), Traits::machine(_desk), Traits::playing(_desk));
 				const auto* c = _message.find("checkOnly");
-				const auto why = m_job.start(strings(_message, "kinds"), skipOf(_message), Traits::machine(_desk), c && c->isBool() && c->asBool());
+				const auto* r = _message.find("readBack");	// I-038: absent = on
+				const auto why = m_job.start(strings(_message, "kinds"), skipOf(_message), Traits::machine(_desk), c && c->isBool() && c->asBool(),
+					!(r && r->isBool() && !r->asBool()));
 				_reply(_message, why.empty(), why);
 				_toPage(m_job.progress());
 				return true;
