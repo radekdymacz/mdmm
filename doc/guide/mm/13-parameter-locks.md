@@ -16,6 +16,8 @@ The rail on the left of the lane lists what you can lock. For a synth track the 
 
 The lane shows one parameter at a time, the one lit in the rail. Each step with a trig has a bar. A solid line across the lane marks the value of the kit, and its number sits on the line at the right end of the lane. Rest the pointer on a step, or select it, to read its lock as a number at the top of its bar. Drag the line itself to change the kit value of the parameter on that track, the value the knob changes. The whole drag is one undo step and draws no lock. A click on or near the line, without moving up or down, still sets a lock on that step. Hatched steps have no trig.
 
+A small mark at the top of a bar tells what the trig fires. Red: the trig fires all three envelopes (AMP, FILTER and LFO). Green: it fires only some of them, or none (a trigless trig). The tip of the bar says the same.
+
 ## PARAMETER LOCKS IN GRID RECORDING MODE
 <!-- rows: MM-200 MM-201 MM-202 MM-203 MM-204 @ae7b8d -->
 

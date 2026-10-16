@@ -59,7 +59,7 @@ These settings belong to one track. They sit in the **Trig setup** tab, in the h
 
 ![The Trig setup tab](shot:mm-trig-setup)
 
-**Trig position** chooses a second track that also plays this track's notes. The keys are T1 to T6, without the track itself, and a dash for none. The **Mix** workspace draws the link as a dotted cord labelled TRIG and the target track.
+**Trig position** chooses a second track that also plays this track's notes. The keys are T1 to T6, without the track itself, and a dash for none. The **Mix** workspace draws the link as a dotted cord labelled TRIG and the target track. On Sequence and Sound, the number of a track that plays only because another track forwards its trig lights in blue; a track with its own trig lights in the usual colour.
 
 **Port** sets how the portamento works.
 

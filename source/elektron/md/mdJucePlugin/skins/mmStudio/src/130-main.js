@@ -367,12 +367,15 @@ function stepShown(prev){if(S.step===prev)return;const pp=Math.floor(S.step/16);
  $("#tempoled").classList.toggle("on",S.step%4===0);setPos();queueMicrotask(movePH);
  if(S.ws==="perform"){const act=[0,1,2,3,4,5].filter(i=>{const st=S.tracks[i].steps[S.step];return st&&!st.off&&st.a&&audible(i)&&(S.mode!=="poly"||i===asgT())});flashTracks(act)}
  if(S.ws==="mix"&&S.playing&&S.step>=0)DeskTrig.light([0,1,2,3,4,5].filter(i=>{const st=S.tracks[i].steps[S.step];return st&&!st.off&&st.a&&audible(i)}));
- if((S.ws==="seq"||S.ws==="sound")&&S.playing&&S.step>=0)railLamps(side().filter(i=>{const st=trk(i).steps[S.step];return st&&!st.off&&(isMidiT(i)||st.a)&&audible(i)}))}
+ if((S.ws==="seq"||S.ws==="sound")&&S.playing&&S.step>=0){const own=side().filter(i=>{const st=trk(i).steps[S.step];return st&&!st.off&&(isMidiT(i)||st.a)&&audible(i)});railLamps(own);railLamps(fwdTargets(own).filter(i=>side().includes(i)),"trig2")}}
 /* I-028 (Discord 2026-10-12): on Sequence and Sound a rail track's number lights while its trig plays (the step
    telemetry and the pattern, no audio), as the Perform page's lamps; every lamp of a step in one frame */
 const RailLamps={due:null,off:new Map()};
-function railLamps(ts){if(!ts.length)return;const first=!RailLamps.due;RailLamps.due=new Set([...(RailLamps.due||[]),...ts]);if(!first)return;
- requestAnimationFrame(()=>{const due=RailLamps.due;RailLamps.due=null;for(const i of due){const l=$(`#rail .th[data-sel="${i}"]`);if(!l)continue;l.classList.add("trig");clearTimeout(RailLamps.off.get(i));RailLamps.off.set(i,setTimeout(()=>$(`#rail .th[data-sel="${i}"]`)?.classList.remove("trig"),110))}})}
+/* I-031: cls "trig2" (a second colour) lights a track that plays because another track's trig forwards to it (the kit's
+   Trig position, trigpos: the source's own trig makes the target play, and on to that track's own target) */
+function railLamps(ts,cls="trig"){if(!ts.length)return;const first=!RailLamps.due;RailLamps.due=RailLamps.due||new Map();for(const i of ts)RailLamps.due.set(i+cls,[i,cls]);if(!first)return;
+ requestAnimationFrame(()=>{const due=RailLamps.due;RailLamps.due=null;for(const[k,[i,c]]of due){const l=$(`#rail .th[data-sel="${i}"]`);if(!l)continue;l.classList.add(c);clearTimeout(RailLamps.off.get(k));RailLamps.off.set(k,setTimeout(()=>$(`#rail .th[data-sel="${i}"]`)?.classList.remove(c),110))}})}
+function fwdTargets(own){const out=new Set();for(const i of own){let c=i;for(let h=0;h<6;h++){const j=isMidiT(c)?null:trk(c).trigpos;if(j==null||j===i||out.has(j))break;out.add(j);c=j}}return[...out].filter(j=>!own.includes(j)&&audible(j))}
 /* the playhead's page while following: the sequencer only (renderPage's work for it), not the whole page */
 function followPage(){const sl=$("#seqscroll")?.scrollLeft||0;renderSeq();const sc=$("#seqscroll");if(sc){sc.scrollLeft=sl;const l=$("#lanescroll");if(l)l.scrollLeft=sl}enhanceSelects($("#main"));movePH(false)}
 function stepMs(){const m={"1X":1,"2X":2,"3/4X":.75,"3/2X":1.5}[S.mult];return 60000/S.bpm/4/m}

@@ -58,7 +58,7 @@ ED.chord={notes(){return["PCH2","PCH3","PCH4"].map(p=>tabAt(PCHTAB,sv(p))).filte
   label(g,"C + "+(N.length?N.map(o=>o.t).join(" "):"no other notes"))}};
 /* the ensemble's wave: saw through square to spikes (WAVE), PW mutates it; DPRO-DENS: one of the 64 waves, D01-D64 */
 /* a DigiPRO wave knob as the machine names it (B-150: 40-data.js WAVD, WAVS): {i: its index, t: D01 / S01} */
-const dpWave=n=>{const tab=TAB[trk(S.sel).m+"."+n];if(tab){const e=tabAt(tab,sv(n));return{i:e.r,t:e.t}}const i=clamp(sv(n),0,31);return{i,t:WAVS[i]}};
+const dpWave=n=>{const tab=TAB[trk(S.sel).m+"."+n];if(tab){const e=tabAt(tab,sv(n));return{i:e.r,t:e.n?e.t+" "+e.n:e.t}}const i=clamp(sv(n),0,31);return{i,t:WAVS[i]}};
 ED.enswave={draw(g,W,H){const ink=cssv("--ink"),m=trk(S.sel).m;grid(g,W,H);
   if(m==="DPRO-DENS"){const a=dpWave("WAVE");line(g,W,x=>H/2+4-wfDP(a.i,(x/W*2)%1)*(H/2-24),ink,2);label(g,"wave "+a.t);return}
   const w=sv("WAVE")/127,pw=.5+(sv("PW")-64)/140;railDraw(g,W,H);
@@ -67,7 +67,7 @@ ED.enswave={draw(g,W,H){const ink=cssv("--ink"),m=trk(S.sel).m;grid(g,W,H);
 /* DPRO-WAVE: WAVE (S01-S32) morphing into the next at WP; DPRO-DDRW: two waves (D01-D64) mixed (MIX) */
 ED.morph={draw(g,W,H){const m=trk(S.sel).m,dd=m==="DPRO-DDRW",a=dpWave(dd?"WAV1":"WAVE"),b=dd?dpWave("WAV2"):{i:(a.i+1)%32,t:WAVS[(a.i+1)%32]},bi=b.i,mix=(dd?sv("MIX"):sv("WP"))/127,ink=cssv("--ink");grid(g,W,H);
   line(g,W,x=>{const p=(x/W*2)%1;return H/2+4-((1-mix)*wfDP(a.i,p)+mix*wfDP(bi,p))*(H/2-24)},ink,2);label(g,dd?`${a.t} ↔ ${b.t} · mix ${sv("MIX")}`:`${a.t} → ${b.t}${sv("WPM")?" · sweeps":""}`)},
- handles(W,H){const dd=trk(S.sel).m==="DPRO-DDRW";return[{x:u7(sv(dd?"MIX":"WP"))*W,y:20,k:dd?"MIX":"WP",drag:x=>sset(dd?"MIX":"WP",x/W*127)}]}};
+ handles(W,H){const dd=trk(S.sel).m==="DPRO-DDRW";return[{x:u7(sv(dd?"MIX":"WP"))*W,y:38,k:dd?"MIX":"WP",drag:x=>sset(dd?"MIX":"WP",x/W*127)}]}};
 /* DPRO-BBOX: one hit, from STRT on (the key picks the drum) */
 ED.drum={draw(g,W,H){const ink=cssv("--ink"),s0=u7(sv("STRT"))*.5,f=.6+u7(sv("PTCH"))*1.2;grid(g,W,H);railDraw(g,W,H);
   for(let x=0;x<W;x++){const p=x/W+s0,v=Math.exp(-p*6)*Math.sin(p*90*f+Math.sin(p*400)*2);g.fillStyle=ink;g.fillRect(x,H/2-v*(H/2-24),1,1+Math.abs(v)*2)}label(g,"the key picks the drum")},
